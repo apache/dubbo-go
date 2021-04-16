@@ -144,11 +144,11 @@ func (fssd *fileSystemServiceDiscovery) Register(instance registry.ServiceInstan
 
 // nolint
 func getServiceInstanceId(si registry.ServiceInstance) string {
-	if si.GetId() == "" {
+	if si.GetID() == "" {
 		return si.GetHost() + "." + strconv.Itoa(si.GetPort())
 	}
 
-	return si.GetId()
+	return si.GetID()
 }
 
 // nolint
@@ -181,7 +181,7 @@ func (fssd *fileSystemServiceDiscovery) Unregister(instance registry.ServiceInst
 		return perrors.WithStack(err)
 	}
 
-	delete(fssd.fileMap, instance.GetId())
+	delete(fssd.fileMap, instance.GetID())
 	return nil
 }
 
@@ -264,7 +264,7 @@ func (fssd *fileSystemServiceDiscovery) GetRequestInstances(serviceNames []strin
 // ----------------- event ----------------------
 // AddListener adds a new ServiceInstancesChangedListener
 // client
-func (fssd *fileSystemServiceDiscovery) AddListener(listener *registry.ServiceInstancesChangedListener) error {
+func (fssd *fileSystemServiceDiscovery) AddListener(listener registry.ServiceInstanceChangeListener) error {
 	// fssd.dynamicConfiguration.AddListener(listener.ServiceName)
 	return nil
 }

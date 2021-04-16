@@ -21,7 +21,6 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"reflect"
 	"strconv"
@@ -54,9 +53,9 @@ var (
 	// it should be used combine with double-check to avoid the race condition
 	configAccessMutex sync.Mutex
 
-	maxWait        = 3
-	confRouterFile string
-	confBaseFile   string
+	maxWait                         = 3
+	confRouterFile                  string
+	confBaseFile                    string
 	uniformVirturlServiceConfigPath string
 	uniformDestRuleConfigPath       string
 )
@@ -299,6 +298,10 @@ func registerServiceInstance() {
 			panic(err)
 		}
 	}
+	// todo publish metadata to remote
+	if remoteMetadataServiceImpl, err := extension.GetRemoteMetadataService(); err == nil {
+		remoteMetadataServiceImpl.PublishMetadata(GetApplicationConfig().Name)
+	}
 }
 
 // nolint
@@ -337,19 +340,14 @@ func selectMetadataServiceExportedURL() *common.URL {
 		logger.Warn(err)
 		return nil
 	}
-	list, err := metaDataService.GetExportedURLs(constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE)
+	urlList, err := metaDataService.GetExportedURLs(constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE)
 	if err != nil {
 		panic(err)
 	}
-	if len(list) == 0 {
+	if len(urlList) == 0 {
 		return nil
 	}
-	for _, urlStr := range list {
-		url, err := common.NewURL(urlStr.(string))
-		if err != nil {
-			logger.Errorf("url format error {%v}", url)
-			continue
-		}
+	for _, url := range urlList {
 		selectedUrl = url
 		// rest first
 		if url.Protocol == "rest" {
@@ -379,9 +377,9 @@ func LoadWithOptions(options ...LoaderInitOption) {
 	}
 	for _, option := range options {
 		option.apply()
-  }
+	}
 	// init router
-  initRouter()
+	initRouter()
 
 	// init the shutdown callback
 	GracefulShutdownInit()

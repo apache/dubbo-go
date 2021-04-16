@@ -19,6 +19,7 @@ package inmemory
 
 import (
 	"encoding/json"
+	"sync"
 )
 
 import (
@@ -31,10 +32,19 @@ import (
 )
 
 func init() {
-	factory := service.NewBaseMetadataServiceProxyFactory(createProxy)
-	extension.SetMetadataServiceProxyFactory(local, func() service.MetadataServiceProxyFactory {
-		return factory
+	extension.SetMetadataService(constant.DEFAULT_METADATA_STORAGE_TYPE, GetInMemoryMetadataService)
+	once = &sync.Once{}
+}
+
+var factory service.MetadataServiceProxyFactory
+
+var once *sync.Once
+
+func GetInMemoryMetadataServiceProxyFactory() service.MetadataServiceProxyFactory {
+	once.Do(func() {
+		factory = service.NewBaseMetadataServiceProxyFactory(createProxy)
 	})
+	return factory
 }
 
 // createProxy creates an instance of MetadataServiceProxy

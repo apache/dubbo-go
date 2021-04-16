@@ -26,19 +26,19 @@ import (
 )
 
 // The Service Discovery Changed  Event Listener
-type ServiceInstancesChangedListener struct {
+type ServiceInstancesChangedListenerBase struct {
 	ServiceName   string
 	ChangedNotify observer.ChangedNotify
 }
 
 // OnEvent on ServiceInstancesChangedEvent the service instances change event
-func (lstn *ServiceInstancesChangedListener) OnEvent(e observer.Event) error {
+func (lstn *ServiceInstancesChangedListenerBase) OnEvent(e observer.Event) error {
 	lstn.ChangedNotify.Notify(e)
 	return nil
 }
 
 // Accept return true if the name is the same
-func (lstn *ServiceInstancesChangedListener) Accept(e observer.Event) bool {
+func (lstn *ServiceInstancesChangedListenerBase) Accept(e observer.Event) bool {
 	if ce, ok := e.(*ServiceInstancesChangedEvent); ok {
 		return ce.ServiceName == lstn.ServiceName
 	}
@@ -46,11 +46,18 @@ func (lstn *ServiceInstancesChangedListener) Accept(e observer.Event) bool {
 }
 
 // GetPriority returns -1, it will be the first invoked listener
-func (lstn *ServiceInstancesChangedListener) GetPriority() int {
+func (lstn *ServiceInstancesChangedListenerBase) GetPriority() int {
 	return -1
 }
 
 // GetEventType returns ServiceInstancesChangedEvent
-func (lstn *ServiceInstancesChangedListener) GetEventType() reflect.Type {
+func (lstn *ServiceInstancesChangedListenerBase) GetEventType() reflect.Type {
 	return reflect.TypeOf(&ServiceInstancesChangedEvent{})
+}
+
+type ServiceInstanceChangeListener interface {
+	OnEvent(e observer.Event) error
+	Accept(e observer.Event) bool
+	GetPriority() int
+	GetEventType() reflect.Type
 }

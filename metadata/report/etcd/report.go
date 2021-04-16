@@ -50,6 +50,16 @@ type etcdMetadataReport struct {
 	root   string
 }
 
+func (e *etcdMetadataReport) GetAppMetadata(metadataIdentifier *identifier.SubscriberMetadataIdentifier) (*common.MetadataInfo, error) {
+	// TODO will implement
+	panic("implement me")
+}
+
+func (e *etcdMetadataReport) PublishAppMetadata(metadataIdentifier *identifier.SubscriberMetadataIdentifier, info *common.MetadataInfo) error {
+	// TODO will implement
+	panic("implement me")
+}
+
 // StoreProviderMetadata will store the metadata
 // metadata including the basic info of the server, provider info, and other user custom info
 func (e *etcdMetadataReport) StoreProviderMetadata(providerIdentifier *identifier.MetadataIdentifier, serviceDefinitions string) error {

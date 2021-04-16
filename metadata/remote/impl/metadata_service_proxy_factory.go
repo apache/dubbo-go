@@ -15,16 +15,14 @@
  * limitations under the License.
  */
 
-package remote
+package impl
 
 import (
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/metadata/service"
 )
 
 func init() {
-	factory := service.NewBaseMetadataServiceProxyFactory(newMetadataServiceProxy)
-	extension.SetMetadataServiceProxyFactory(remote, func() service.MetadataServiceProxyFactory {
-		return factory
-	})
+	extension.SetMetadataRemoteService(GetRemoteMetadataService)
+	extension.SetMetadataService(constant.REMOTE_METADATA_STORAGE_TYPE, GetMetadataService)
 }

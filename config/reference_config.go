@@ -117,7 +117,7 @@ func (c *ReferenceConfig) Refer(_ interface{}) {
 					serviceURL.Path = "/" + c.InterfaceName
 				}
 				// merge url need to do
-				newURL := common.MergeURL(serviceURL, cfgURL)
+				newURL := common.MergeUrl(serviceURL, cfgURL)
 				c.urls = append(c.urls, newURL)
 			}
 		}
@@ -152,7 +152,7 @@ func (c *ReferenceConfig) Refer(_ interface{}) {
 			// not a registry url, must be direct invoke.
 			hitClu = constant.FAILOVER_CLUSTER_NAME
 			if len(invokers) > 0 {
-				u := invokers[0].GetURL()
+				u := invokers[0].GetUrl()
 				if nil != &u {
 					hitClu = u.GetParam(constant.CLUSTER_KEY, constant.ZONEAWARE_CLUSTER_NAME)
 				}
@@ -262,8 +262,8 @@ func (c *ReferenceConfig) GetInvoker() protocol.Invoker {
 }
 
 func publishConsumerDefinition(url *common.URL) {
-	if remoteMetadataService, err := extension.GetRemoteMetadataService(); err == nil && remoteMetadataService != nil {
-		remoteMetadataService.PublishServiceDefinition(url)
+	if remoteMetadataServiceImpl, err := extension.GetRemoteMetadataService(); err == nil && remoteMetadataServiceImpl != nil {
+		remoteMetadataServiceImpl.PublishServiceDefinition(url)
 	}
 }
 

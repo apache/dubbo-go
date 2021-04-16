@@ -50,6 +50,16 @@ type nacosMetadataReport struct {
 	client config_client.IConfigClient
 }
 
+func (n *nacosMetadataReport) GetAppMetadata(metadataIdentifier *identifier.SubscriberMetadataIdentifier) (*common.MetadataInfo, error) {
+	// TODO will implement
+	panic("implement me")
+}
+
+func (n *nacosMetadataReport) PublishAppMetadata(metadataIdentifier *identifier.SubscriberMetadataIdentifier, info *common.MetadataInfo) error {
+	// TODO will implement
+	panic("implement me")
+}
+
 // StoreProviderMetadata stores the metadata.
 func (n *nacosMetadataReport) StoreProviderMetadata(providerIdentifier *identifier.MetadataIdentifier, serviceDefinitions string) error {
 	return n.storeMetadata(vo.ConfigParam{
