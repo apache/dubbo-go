@@ -85,12 +85,16 @@ func GetRemoteMetadataService() (remote.RemoteMetadataService, error) {
 
 // publishMetadata
 func (mts *RemoteMetadataServiceImpl) PublishMetadata(service string) {
-	info := mts.MetadataService.GetMetadataInfo("")
+	info, err := mts.MetadataService.GetMetadataInfo("")
+	if err != nil {
+		logger.Errorf("GetMetadataInfo error[%v]", err)
+		return
+	}
 	if info.HasReported() {
 		return
 	}
 	id := identifier.NewSubscriberMetadataIdentifier(service, info.CalAndGetRevision())
-	err := mts.delegateReport.PublishAppMetadata(id, info)
+	err = mts.delegateReport.PublishAppMetadata(id, info)
 	if err != nil {
 		logger.Errorf("Publishing metadata to error[%v]", err)
 		return
