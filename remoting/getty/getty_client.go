@@ -140,6 +140,9 @@ func NewClient(opt Options) *Client {
 	return c
 }
 
+func (c *Client) SetExchangeClient(client *remoting.ExchangeClient) {
+}
+
 // init client and try to connection.
 func (c *Client) Connect(url *common.URL) error {
 	initClient(url.Protocol)
@@ -214,7 +217,7 @@ func (c *Client) IsAvailable() bool {
 func (c *Client) selectSession(addr string) (*gettyRPCClient, getty.Session, error) {
 	c.mux.Lock()
 	defer c.mux.Unlock()
-	if c.closed == true {
+	if c.closed {
 		return nil, nil, perrors.New("client have been closed")
 	}
 
