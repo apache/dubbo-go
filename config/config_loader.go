@@ -20,6 +20,7 @@ package config
 import (
 	"flag"
 	"fmt"
+	hessian "github.com/apache/dubbo-go-hessian2"
 	"io/ioutil"
 	"os"
 	"reflect"
@@ -29,7 +30,6 @@ import (
 )
 
 import (
-	hessian "github.com/apache/dubbo-go-hessian2"
 	perrors "github.com/pkg/errors"
 )
 
@@ -373,8 +373,9 @@ func Load() {
 }
 
 func LoadWithOptions(options ...LoaderInitOption) {
-	// register metadata info
+	// register metadata info and service info
 	hessian.RegisterPOJO(&common.MetadataInfo{})
+	hessian.RegisterPOJO(&common.ServiceInfo{})
 
 	for _, option := range options {
 		option.init()
