@@ -104,12 +104,12 @@ func TestMetadataService(t *testing.T) {
 	u, err := common.NewURL("mock://127.0.0.1:20000/?sync.report=true")
 	assert.NoError(t, err)
 	instance.GetMetadataReportInstance(u)
-	mts, err := GetMetadataService()
+	mts, err := GetRemoteMetadataService()
 	assert.NoError(t, err)
 	assert.NotNil(t, mts)
 }
 
-func TestMockInmemoryProc(t *testing.T) *inmemory.MetadataService {
+func TestMockInmemoryProc(t *testing.T) {
 	mts, _ := inmemory.GetInMemoryMetadataService()
 	serviceName := "com.ikurento.user.UserProvider"
 	group := "group1"
@@ -144,5 +144,4 @@ func TestMockInmemoryProc(t *testing.T) *inmemory.MetadataService {
 	serviceKey := definition.ServiceDescriperBuild(serviceName, group, version)
 	def2, _ := mts.GetServiceDefinitionByServiceKey(serviceKey)
 	assert.Equal(t, expected, def2)
-	return mts.(*inmemory.MetadataService)
 }

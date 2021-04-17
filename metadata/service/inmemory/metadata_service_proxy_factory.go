@@ -32,7 +32,7 @@ import (
 )
 
 func init() {
-	extension.SetMetadataService(constant.DEFAULT_METADATA_STORAGE_TYPE, GetInMemoryMetadataService)
+	extension.SetLocalMetadataService(constant.DEFAULT_KEY, GetInMemoryMetadataService)
 	once = &sync.Once{}
 }
 

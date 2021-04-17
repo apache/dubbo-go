@@ -81,7 +81,12 @@ func (m *MetadataServiceProxy) GetExportedServiceURLs() []*common.URL {
 }
 
 func (m *MetadataServiceProxy) GetMetadataServiceURL() *common.URL {
+	logger.Error("you should never invoke this implementation")
 	return nil
+}
+
+func (m *MetadataServiceProxy) SetMetadataServiceURL(*common.URL) {
+	logger.Error("you should never invoke this implementation")
 }
 
 func (m *MetadataServiceProxy) MethodMapper() map[string]string {

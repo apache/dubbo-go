@@ -227,6 +227,13 @@ func (c *ServiceConfig) Export() error {
 				c.exporters = append(c.exporters, exporter)
 			}
 		} else {
+			if ivkURL.GetParam(constant.INTERFACE_KEY, "") == constant.METADATA_SERVICE_NAME {
+				ms, err := extension.GetLocalMetadataService("")
+				if err != nil {
+					return err
+				}
+				ms.SetMetadataServiceURL(ivkURL)
+			}
 			invoker := proxyFactory.GetInvoker(ivkURL)
 			exporter := extension.GetProtocol(protocolwrapper.FILTER).Export(invoker)
 			if exporter == nil {

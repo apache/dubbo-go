@@ -262,3 +262,7 @@ func (mts *MetadataService) Version() (string, error) {
 func (mts *MetadataService) GetMetadataServiceURL() *common.URL {
 	return mts.metadataServiceURL
 }
+
+func (mts *MetadataService) SetMetadataServiceURL(url *common.URL) {
+	mts.metadataServiceURL = url
+}
