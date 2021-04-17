@@ -31,7 +31,6 @@ import (
 )
 
 var (
-	// there will be two types: local or remote
 	metadataServiceInsMap = make(map[string]func() (service.MetadataService, error), 2)
 )
 

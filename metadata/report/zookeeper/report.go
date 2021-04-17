@@ -74,7 +74,7 @@ func (m *zookeeperMetadataReport) PublishAppMetadata(metadataIdentifier *identif
 	if err != nil {
 		return err
 	}
-	err = m.client.CreateTempWithValue(k, data)
+	err = m.client.CreateWithValue(k, data)
 	if err == zk.ErrNodeExists {
 		logger.Debugf("Try to create the node data failed. In most cases, it's not a problem. ")
 		return nil
