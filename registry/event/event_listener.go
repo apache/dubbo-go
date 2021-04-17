@@ -148,9 +148,13 @@ func (lstn *ServiceInstancesChangedListener) getMetadataInfo(instance registry.S
 			return nil, err
 		}
 	} else {
+		var err error
 		proxyFactory := inmemory.GetInMemoryMetadataServiceProxyFactory()
 		metadataService := proxyFactory.GetProxy(instance)
-		metadataInfo = metadataService.GetMetadataInfo(revision)
+		metadataInfo, err = metadataService.GetMetadataInfo(revision)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return metadataInfo, nil
 }

@@ -235,14 +235,14 @@ func (mts *MetadataService) GetServiceDefinitionByServiceKey(serviceKey string) 
 	return v.(string), nil
 }
 
-func (mts *MetadataService) GetMetadataInfo(revision string) *common.MetadataInfo {
+func (mts *MetadataService) GetMetadataInfo(revision string) (*common.MetadataInfo, error) {
 	if revision == "" {
-		return mts.metadataInfo
+		return mts.metadataInfo, nil
 	}
 	if mts.metadataInfo.CalAndGetRevision() != revision {
-		return nil
+		return nil, nil
 	}
-	return mts.metadataInfo
+	return mts.metadataInfo, nil
 }
 
 func (mts *MetadataService) GetExportedServiceURLs() []*common.URL {

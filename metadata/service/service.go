@@ -63,7 +63,7 @@ type MetadataService interface {
 	// Version will return the metadata service version
 	Version() (string, error)
 
-	GetMetadataInfo(revision string) *common.MetadataInfo
+	GetMetadataInfo(revision string) (*common.MetadataInfo, error)
 
 	GetExportedServiceURLs() []*common.URL
 

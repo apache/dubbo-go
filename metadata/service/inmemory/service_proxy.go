@@ -148,7 +148,7 @@ func (m *MetadataServiceProxy) Version() (string, error) {
 	return "", nil
 }
 
-func (m *MetadataServiceProxy) GetMetadataInfo(revision string) *common.MetadataInfo {
+func (m *MetadataServiceProxy) GetMetadataInfo(revision string) (*common.MetadataInfo, error) {
 	rV := reflect.ValueOf(revision)
 	const methodName = "getMetadataInfo"
 	inv := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName(methodName),
@@ -159,8 +159,8 @@ func (m *MetadataServiceProxy) GetMetadataInfo(revision string) *common.Metadata
 	res := m.invkr.Invoke(context.Background(), inv)
 	if res.Error() != nil {
 		logger.Errorf("could not get the metadata info from remote provider: %v", res.Error())
-		return nil
+		return nil, res.Error()
 	}
 	metaDataInfo := res.Result().(*common.MetadataInfo)
-	return metaDataInfo
+	return metaDataInfo, nil
 }
