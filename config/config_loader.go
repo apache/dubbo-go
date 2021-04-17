@@ -336,7 +336,7 @@ func createInstance(url *common.URL) (registry.ServiceInstance, error) {
 // selectMetadataServiceExportedURL get already be exported url
 func selectMetadataServiceExportedURL() *common.URL {
 	var selectedUrl *common.URL
-	metaDataService, err := extension.GetMetadataService(GetApplicationConfig().MetadataType)
+	metaDataService, err := extension.GetMetadataService(constant.DEFAULT_METADATA_STORAGE_TYPE)
 	if err != nil {
 		logger.Warn(err)
 		return nil

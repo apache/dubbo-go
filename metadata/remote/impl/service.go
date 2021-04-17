@@ -18,8 +18,8 @@
 package impl
 
 import (
+	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/metadata/remote"
-	"github.com/apache/dubbo-go/metadata/service"
 	"github.com/apache/dubbo-go/registry"
 	"sync"
 )
@@ -58,8 +58,8 @@ var (
 	remoteMetadataServiceImplInstance remote.RemoteMetadataService
 )
 
-func GetMetadataService() (service.MetadataService, error) {
-	return remoteMetadataServiceImplInstance.(*RemoteMetadataServiceImpl), nil
+func init() {
+	extension.SetMetadataRemoteService(GetRemoteMetadataService)
 }
 
 // GetRemoteMetadataService will create a new remote MetadataService instance
@@ -83,7 +83,7 @@ func GetRemoteMetadataService() (remote.RemoteMetadataService, error) {
 	return remoteMetadataServiceImplInstance, err
 }
 
-// publishMetadata
+// PublishMetadata publish the medata info of service from report
 func (mts *RemoteMetadataServiceImpl) PublishMetadata(service string) {
 	info, err := mts.MetadataService.GetMetadataInfo("")
 	if err != nil {
@@ -102,7 +102,7 @@ func (mts *RemoteMetadataServiceImpl) PublishMetadata(service string) {
 	info.MarkReported()
 }
 
-// publishMetadata
+// GetMetadata get the medata info of service from report
 func (mts *RemoteMetadataServiceImpl) GetMetadata(instance registry.ServiceInstance) (*common.MetadataInfo, error) {
 	revision := instance.GetMetadata()[constant.EXPORTED_SERVICES_REVISION_PROPERTY_NAME]
 	id := identifier.NewSubscriberMetadataIdentifier(instance.GetServiceName(), revision)
