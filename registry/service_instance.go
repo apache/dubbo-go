@@ -61,6 +61,8 @@ type ServiceInstance interface {
 
 	// GetAddress
 	GetAddress() string
+
+	SetServiceMetadata(info *common.MetadataInfo)
 }
 
 // nolint
@@ -83,7 +85,7 @@ type DefaultServiceInstance struct {
 	Address         string
 }
 
-// GetID will return this instance's id. It should be unique.
+// GetId will return this instance's id. It should be unique.
 func (d *DefaultServiceInstance) GetID() string {
 	return d.ID
 }
@@ -123,6 +125,10 @@ func (d *DefaultServiceInstance) GetAddress() string {
 		d.Address = d.Host + ":" + strconv.Itoa(d.Port)
 	}
 	return d.Address
+}
+
+func (d *DefaultServiceInstance) SetServiceMetadata(m *common.MetadataInfo) {
+	d.ServiceMetadata = m
 }
 
 // ToURLs

@@ -212,7 +212,8 @@ func (n *nacosServiceDiscovery) GetRequestInstances(serviceNames []string, offse
 }
 
 // AddListener will add a listener
-func (n *nacosServiceDiscovery) AddListener(listener *registry.ServiceInstancesChangedListener) error {
+func (n *nacosServiceDiscovery) AddListener(lst registry.ServiceInstanceChangeListener) error {
+	listener := lst.(*registry.ServiceInstancesChangedListenerBase)
 	return n.namingClient.Subscribe(&vo.SubscribeParam{
 		ServiceName: listener.ServiceName,
 		SubscribeCallback: func(services []model.SubscribeService, err error) {

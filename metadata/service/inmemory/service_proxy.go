@@ -43,7 +43,7 @@ type MetadataServiceProxy struct {
 	// golangServer bool
 }
 
-func (m *MetadataServiceProxy) GetExportedURLs(serviceInterface string, group string, version string, protocol string) ([]interface{}, error) {
+func (m *MetadataServiceProxy) GetExportedURLs(serviceInterface string, group string, version string, protocol string) ([]*common.URL, error) {
 	siV := reflect.ValueOf(serviceInterface)
 	gV := reflect.ValueOf(group)
 	vV := reflect.ValueOf(version)
@@ -60,13 +60,19 @@ func (m *MetadataServiceProxy) GetExportedURLs(serviceInterface string, group st
 	res := m.invkr.Invoke(context.Background(), inv)
 	if res.Error() != nil {
 		logger.Errorf("could not get the metadata service from remote provider: %v", res.Error())
-		return []interface{}{}, nil
+		return []*common.URL{}, nil
 	}
 
-	urlStrs := res.Result().(*[]interface{})
-
-	ret := make([]interface{}, 0, len(*urlStrs))
-	return append(ret, *urlStrs...), nil
+	urlStrs := res.Result().([]string)
+	ret := make([]*common.URL, 0, len(urlStrs))
+	for _, v := range urlStrs {
+		tempURL, err := common.NewURL(v)
+		if err != nil {
+			return []*common.URL{}, err
+		}
+		ret = append(ret, tempURL)
+	}
+	return ret, nil
 }
 
 func (m *MetadataServiceProxy) GetExportedServiceURLs() []*common.URL {
@@ -75,7 +81,12 @@ func (m *MetadataServiceProxy) GetExportedServiceURLs() []*common.URL {
 }
 
 func (m *MetadataServiceProxy) GetMetadataServiceURL() *common.URL {
+	logger.Error("you should never invoke this implementation")
 	return nil
+}
+
+func (m *MetadataServiceProxy) SetMetadataServiceURL(*common.URL) {
+	logger.Error("you should never invoke this implementation")
 }
 
 func (m *MetadataServiceProxy) MethodMapper() map[string]string {
@@ -142,19 +153,19 @@ func (m *MetadataServiceProxy) Version() (string, error) {
 	return "", nil
 }
 
-func (m *MetadataServiceProxy) GetMetadataInfo(revision string) *common.MetadataInfo {
+func (m *MetadataServiceProxy) GetMetadataInfo(revision string) (*common.MetadataInfo, error) {
 	rV := reflect.ValueOf(revision)
 	const methodName = "getMetadataInfo"
 	inv := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName(methodName),
-		invocation.WithArguments([]interface{}{rV}),
+		invocation.WithArguments([]interface{}{rV.Interface()}),
 		invocation.WithReply(reflect.ValueOf(&common.MetadataInfo{}).Interface()),
 		invocation.WithAttachments(map[string]interface{}{constant.ASYNC_KEY: "false"}),
 		invocation.WithParameterValues([]reflect.Value{rV}))
 	res := m.invkr.Invoke(context.Background(), inv)
 	if res.Error() != nil {
 		logger.Errorf("could not get the metadata info from remote provider: %v", res.Error())
-		return nil
+		return nil, res.Error()
 	}
 	metaDataInfo := res.Result().(*common.MetadataInfo)
-	return metaDataInfo
+	return metaDataInfo, nil
 }

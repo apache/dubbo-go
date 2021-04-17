@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package remote
+package impl
 
 import (
 	"fmt"
@@ -54,6 +54,14 @@ func (mrf *metadataReportFactory) CreateMetadataReport(*common.URL) report.Metad
 }
 
 type metadataReport struct{}
+
+func (mr metadataReport) GetAppMetadata(metadataIdentifier *identifier.SubscriberMetadataIdentifier) (*common.MetadataInfo, error) {
+	panic("implement me")
+}
+
+func (mr metadataReport) PublishAppMetadata(metadataIdentifier *identifier.SubscriberMetadataIdentifier, info *common.MetadataInfo) error {
+	panic("implement me")
+}
 
 func (metadataReport) StoreProviderMetadata(*identifier.MetadataIdentifier, string) error {
 	return nil
@@ -96,14 +104,13 @@ func TestMetadataService(t *testing.T) {
 	u, err := common.NewURL("mock://127.0.0.1:20000/?sync.report=true")
 	assert.NoError(t, err)
 	instance.GetMetadataReportInstance(u)
-	mts, err := newMetadataService()
+	mts, err := GetRemoteMetadataService()
 	assert.NoError(t, err)
-	mts.(*MetadataService).setInMemoryMetadataService(mockInmemoryProc(t))
-	_, _ = mts.RefreshMetadata("0.0.1", "0.0.1")
+	assert.NotNil(t, mts)
 }
 
-func mockInmemoryProc(t *testing.T) *inmemory.MetadataService {
-	mts, _ := inmemory.NewMetadataService()
+func TestMockInmemoryProc(t *testing.T) {
+	mts, _ := inmemory.GetInMemoryMetadataService()
 	serviceName := "com.ikurento.user.UserProvider"
 	group := "group1"
 	version := "0.0.1"
@@ -137,5 +144,4 @@ func mockInmemoryProc(t *testing.T) *inmemory.MetadataService {
 	serviceKey := definition.ServiceDescriperBuild(serviceName, group, version)
 	def2, _ := mts.GetServiceDefinitionByServiceKey(serviceKey)
 	assert.Equal(t, expected, def2)
-	return mts.(*inmemory.MetadataService)
 }

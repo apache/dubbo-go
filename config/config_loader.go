@@ -20,6 +20,7 @@ package config
 import (
 	"flag"
 	"fmt"
+	hessian "github.com/apache/dubbo-go-hessian2"
 	"io/ioutil"
 	"os"
 	"reflect"
@@ -298,6 +299,10 @@ func registerServiceInstance() {
 			panic(err)
 		}
 	}
+	// todo publish metadata to remote
+	if remoteMetadataServiceImpl, err := extension.GetRemoteMetadataService(); err == nil {
+		remoteMetadataServiceImpl.PublishMetadata(GetApplicationConfig().Name)
+	}
 }
 
 // nolint
@@ -331,24 +336,19 @@ func createInstance(url *common.URL) (registry.ServiceInstance, error) {
 // selectMetadataServiceExportedURL get already be exported url
 func selectMetadataServiceExportedURL() *common.URL {
 	var selectedUrl *common.URL
-	metaDataService, err := extension.GetMetadataService(GetApplicationConfig().MetadataType)
+	metaDataService, err := extension.GetLocalMetadataService("")
 	if err != nil {
 		logger.Warn(err)
 		return nil
 	}
-	list, err := metaDataService.GetExportedURLs(constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE)
+	urlList, err := metaDataService.GetExportedURLs(constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE)
 	if err != nil {
 		panic(err)
 	}
-	if len(list) == 0 {
+	if len(urlList) == 0 {
 		return nil
 	}
-	for _, urlStr := range list {
-		url, err := common.NewURL(urlStr.(string))
-		if err != nil {
-			logger.Errorf("url format error {%v}", url)
-			continue
-		}
+	for _, url := range urlList {
 		selectedUrl = url
 		// rest first
 		if url.Protocol == "rest" {
@@ -373,6 +373,10 @@ func Load() {
 }
 
 func LoadWithOptions(options ...LoaderInitOption) {
+	// register metadata info and service info
+	hessian.RegisterPOJO(&common.MetadataInfo{})
+	hessian.RegisterPOJO(&common.ServiceInfo{})
+
 	for _, option := range options {
 		option.init()
 	}

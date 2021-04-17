@@ -67,10 +67,11 @@ type serviceDiscoveryRegistry struct {
 	registeredListeners              *gxset.HashSet
 	subscribedURLsSynthesizers       []synthesizer.SubscribedURLsSynthesizer
 	serviceRevisionExportedURLsCache map[string]map[string][]*common.URL
-	serviceListeners                 map[string]*registry.ServiceInstancesChangedListener
+	serviceListeners                 map[string]*event.ServiceInstancesChangedListener
 }
 
 func newServiceDiscoveryRegistry(url *common.URL) (registry.Registry, error) {
+
 	tryInitMetadataService(url)
 
 	serviceDiscovery, err := creatServiceDiscovery(url)
@@ -93,6 +94,7 @@ func newServiceDiscoveryRegistry(url *common.URL) (registry.Registry, error) {
 		serviceRevisionExportedURLsCache: make(map[string]map[string][]*common.URL, 8),
 		serviceNameMapping:               serviceNameMapping,
 		metaDataService:                  metaDataService,
+		serviceListeners:                 make(map[string]*event.ServiceInstancesChangedListener),
 	}, nil
 }
 
@@ -140,7 +142,7 @@ func parseServices(literalServices string) *gxset.HashSet {
 	if len(literalServices) == 0 {
 		return set
 	}
-	splitServices := strings.Split(literalServices, ",")
+	var splitServices = strings.Split(literalServices, ",")
 	for _, s := range splitServices {
 		if len(s) != 0 {
 			set.Add(s)
@@ -153,7 +155,7 @@ func (s *serviceDiscoveryRegistry) GetServiceDiscovery() registry.ServiceDiscove
 	return s.serviceDiscovery
 }
 
-func (s *serviceDiscoveryRegistry) GetURL() *common.URL {
+func (s *serviceDiscoveryRegistry) GetUrl() *common.URL {
 	return s.url
 }
 
@@ -176,6 +178,7 @@ func (s *serviceDiscoveryRegistry) Register(url *common.URL) error {
 		return nil
 	}
 	ok, err := s.metaDataService.ExportURL(url)
+
 	if err != nil {
 		logger.Errorf("The URL[%s] registry catch error:%s!", url.String(), err.Error())
 		return err
@@ -217,9 +220,7 @@ func (s *serviceDiscoveryRegistry) Subscribe(url *common.URL, notify registry.No
 	protocolServiceKey := url.ServiceKey() + ":" + url.Protocol
 	listener := s.serviceListeners[serviceNamesKey]
 	if listener == nil {
-		listener = &registry.ServiceInstancesChangedListener{
-			ServiceNames: services,
-		}
+		listener = event.NewServiceInstancesChangedListener(services)
 		for _, serviceNameTmp := range services.Values() {
 			serviceName := serviceNameTmp.(string)
 			instances := s.serviceDiscovery.GetInstances(serviceName)
@@ -238,7 +239,8 @@ func (s *serviceDiscoveryRegistry) Subscribe(url *common.URL, notify registry.No
 	return nil
 }
 
-func (s *serviceDiscoveryRegistry) registerServiceInstancesChangedListener(url *common.URL, listener *registry.ServiceInstancesChangedListener) {
+func (s *serviceDiscoveryRegistry) registerServiceInstancesChangedListener(url *common.URL, listener *event.ServiceInstancesChangedListener) {
+
 	// FIXME ServiceNames.String() is not good
 	listenerId := listener.ServiceNames.String() + ":" + getUrlKey(url)
 	if !s.subscribedServices.Contains(listenerId) {
@@ -247,6 +249,7 @@ func (s *serviceDiscoveryRegistry) registerServiceInstancesChangedListener(url *
 			logger.Errorf("add listener[%s] catch error,url:%s err:%s", listenerId, url.String(), err.Error())
 		}
 	}
+
 }
 
 func getUrlKey(url *common.URL) string {
@@ -327,6 +330,7 @@ var (
 // tryInitMetadataService will try to initialize metadata service
 // TODO (move to somewhere)
 func tryInitMetadataService(url *common.URL) {
+
 	ms, err := inmemory.GetInMemoryMetadataService()
 	if err != nil {
 		logger.Errorf("could not init metadata service", err)

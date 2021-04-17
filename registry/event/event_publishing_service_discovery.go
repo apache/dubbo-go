@@ -27,6 +27,7 @@ import (
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/observer"
 	"github.com/apache/dubbo-go/metadata/service"
+	"github.com/apache/dubbo-go/metadata/service/inmemory"
 	"github.com/apache/dubbo-go/registry"
 )
 
@@ -114,7 +115,7 @@ func (epsd *EventPublishingServiceDiscovery) GetRequestInstances(serviceNames []
 }
 
 // AddListener add event listener
-func (epsd *EventPublishingServiceDiscovery) AddListener(listener *registry.ServiceInstancesChangedListener) error {
+func (epsd *EventPublishingServiceDiscovery) AddListener(listener registry.ServiceInstanceChangeListener) error {
 	extension.GetGlobalDispatcher().AddEventListener(listener)
 	return epsd.serviceDiscovery.AddListener(listener)
 }

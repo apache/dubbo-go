@@ -213,7 +213,8 @@ func (e *etcdV3ServiceDiscovery) GetRequestInstances(serviceNames []string, offs
 // ----------------- event ----------------------
 // AddListener adds a new ServiceInstancesChangedListener
 // see addServiceInstancesChangedListener in Java
-func (e *etcdV3ServiceDiscovery) AddListener(listener *registry.ServiceInstancesChangedListener) error {
+func (e *etcdV3ServiceDiscovery) AddListener(lst registry.ServiceInstanceChangeListener) error {
+	listener := lst.(*registry.ServiceInstancesChangedListenerBase)
 	return e.registerSreviceWatcher(listener.ServiceName)
 }
 

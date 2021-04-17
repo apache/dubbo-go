@@ -20,6 +20,7 @@ package consul
 import (
 	"encoding/base64"
 	"fmt"
+	"github.com/apache/dubbo-go/registry/event"
 	"strconv"
 	"sync"
 	"time"
@@ -366,7 +367,8 @@ func (csd *consulServiceDiscovery) GetRequestInstances(serviceNames []string, of
 	return res
 }
 
-func (csd *consulServiceDiscovery) AddListener(listener *registry.ServiceInstancesChangedListener) error {
+func (csd *consulServiceDiscovery) AddListener(lst registry.ServiceInstanceChangeListener) error {
+	listener := lst.(*event.ServiceInstancesChangedListener)
 	for _, v := range listener.ServiceNames.Values() {
 		serviceName := v.(string)
 		params := make(map[string]interface{}, 8)

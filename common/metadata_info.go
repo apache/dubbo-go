@@ -56,6 +56,10 @@ func NewMetadataInfo(app string, revision string, services map[string]*ServiceIn
 	}
 }
 
+func (mi *MetadataInfo) JavaClassName() string {
+	return "org.apache.dubbo.metadata.MetadataInfo"
+}
+
 // CalAndGetRevision is different from Dubbo because golang doesn't support overload
 // so that we could use interface + method name as identifier and ignore the method params
 // per my understanding, it's enough because Dubbo actually ignore the url params.
@@ -71,7 +75,7 @@ func (mi *MetadataInfo) CalAndGetRevision() string {
 
 	for _, s := range mi.Services {
 		sk := s.serviceKey
-		ms := s.GetMethods()
+		ms := s.url.Methods
 		if len(ms) == 0 {
 			candidates = append(candidates, sk)
 		} else {
@@ -165,6 +169,10 @@ func NewServiceInfo(name string, group string, version string, protocol string, 
 		serviceKey: serviceKey,
 		matchKey:   matchKey,
 	}
+}
+
+func (si *ServiceInfo) JavaClassName() string {
+	return "org.apache.dubbo.metadata.MetadataInfo.ServiceInfo"
 }
 
 func (si *ServiceInfo) GetMethods() []string {

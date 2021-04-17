@@ -15,9 +15,11 @@
  * limitations under the License.
  */
 
-package remote
+package impl
 
 import (
+	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/metadata/remote"
 	"github.com/apache/dubbo-go/registry"
 	"sync"
 )
@@ -38,26 +40,30 @@ import (
 
 // version will be used by Version func
 const (
-	version = "1.0.0"
-	remote  = "remote"
+	version   = "1.0.0"
+	remoteKey = "remote"
 )
 
 // MetadataService is a implement of metadata service which will delegate the remote metadata report
 // This is singleton
-type RemoteMetadataService struct {
-	inMemoryMetadataService *inmemory.MetadataService
-	exportedRevision        atomic.String
-	subscribedRevision      atomic.String
-	delegateReport          *delegate.MetadataReport
+type RemoteMetadataServiceImpl struct {
+	*inmemory.MetadataService
+	exportedRevision   atomic.String
+	subscribedRevision atomic.String
+	delegateReport     *delegate.MetadataReport
 }
 
 var (
-	metadataServiceOnce     sync.Once
-	metadataServiceInstance *RemoteMetadataService
+	metadataServiceOnce               sync.Once
+	remoteMetadataServiceImplInstance remote.RemoteMetadataService
 )
 
+func init() {
+	extension.SetMetadataRemoteService(GetRemoteMetadataService)
+}
+
 // GetRemoteMetadataService will create a new remote MetadataService instance
-func GetRemoteMetadataService() (*RemoteMetadataService, error) {
+func GetRemoteMetadataService() (remote.RemoteMetadataService, error) {
 	var err error
 	metadataServiceOnce.Do(func() {
 		var mr *delegate.MetadataReport
@@ -67,22 +73,28 @@ func GetRemoteMetadataService() (*RemoteMetadataService, error) {
 		}
 		// it will never return error
 		inms, _ := inmemory.GetInMemoryMetadataService()
-		metadataServiceInstance = &RemoteMetadataService{
-			inMemoryMetadataService: inms.(*inmemory.MetadataService),
-			delegateReport:          mr,
+		remoteMetadataServiceImplInstance = &RemoteMetadataServiceImpl{
+			// todo serviceName
+			//BaseMetadataService:     service.NewBaseMetadataService(""),
+			MetadataService: inms.(*inmemory.MetadataService),
+			delegateReport:  mr,
 		}
 	})
-	return metadataServiceInstance, err
+	return remoteMetadataServiceImplInstance, err
 }
 
-// publishMetadata
-func (mts *RemoteMetadataService) PublishMetadata(service string) {
-	info := mts.inMemoryMetadataService.GetMetadataInfo("")
+// PublishMetadata publish the medata info of service from report
+func (mts *RemoteMetadataServiceImpl) PublishMetadata(service string) {
+	info, err := mts.MetadataService.GetMetadataInfo("")
+	if err != nil {
+		logger.Errorf("GetMetadataInfo error[%v]", err)
+		return
+	}
 	if info.HasReported() {
 		return
 	}
 	id := identifier.NewSubscriberMetadataIdentifier(service, info.CalAndGetRevision())
-	err := mts.delegateReport.PublishAppMetadata(id, info)
+	err = mts.delegateReport.PublishAppMetadata(id, info)
 	if err != nil {
 		logger.Errorf("Publishing metadata to error[%v]", err)
 		return
@@ -90,15 +102,15 @@ func (mts *RemoteMetadataService) PublishMetadata(service string) {
 	info.MarkReported()
 }
 
-// publishMetadata
-func (mts *RemoteMetadataService) GetMetadata(instance registry.ServiceInstance) (*common.MetadataInfo, error) {
+// GetMetadata get the medata info of service from report
+func (mts *RemoteMetadataServiceImpl) GetMetadata(instance registry.ServiceInstance) (*common.MetadataInfo, error) {
 	revision := instance.GetMetadata()[constant.EXPORTED_SERVICES_REVISION_PROPERTY_NAME]
 	id := identifier.NewSubscriberMetadataIdentifier(instance.GetServiceName(), revision)
 	return mts.delegateReport.GetAppMetadata(id)
 }
 
 // PublishServiceDefinition will call remote metadata's StoreProviderMetadata to store url info and service definition
-func (mts *RemoteMetadataService) PublishServiceDefinition(url *common.URL) error {
+func (mts *RemoteMetadataServiceImpl) PublishServiceDefinition(url *common.URL) error {
 	interfaceName := url.GetParam(constant.INTERFACE_KEY, "")
 	isGeneric := url.GetParamBool(constant.GENERIC_KEY, false)
 	if common.RoleType(common.PROVIDER).Role() == url.GetParam(constant.SIDE_KEY, "") {

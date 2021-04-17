@@ -277,6 +277,20 @@ func NewURL(urlString string, opts ...Option) (*URL, error) {
 	return &s, nil
 }
 
+func MatchKey(serviceKey string, protocol string) string {
+	return serviceKey + ":" + protocol
+}
+
+// Group get group
+func (c *URL) Group() string {
+	return c.GetParam(constant.GROUP_KEY, "")
+}
+
+// Version get group
+func (c *URL) Version() string {
+	return c.GetParam(constant.VERSION_KEY, "")
+}
+
 // URLEqual judge @url and @c is equal or not.
 func (c *URL) URLEqual(url *URL) bool {
 	tmpC := c.Clone()
@@ -677,7 +691,7 @@ func MergeURL(serviceUrl *URL, referenceUrl *URL) *URL {
 	mergedUrl := serviceUrl.Clone()
 	params := mergedUrl.GetParams()
 	// iterator the referenceUrl if serviceUrl not have the key ,merge in
-	// referenceUrl usually will not changed. so change RangeParams to GetParams to avoid the string value copy.
+	// referenceUrl usually will not changed. so change RangeParams to GetParams to avoid the string value copy.// Group get group
 	for key, value := range referenceUrl.GetParams() {
 		if v := mergedUrl.GetParam(key, ""); len(v) == 0 {
 			if len(value) > 0 {

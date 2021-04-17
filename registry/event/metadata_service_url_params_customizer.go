@@ -19,21 +19,33 @@ package event
 
 import (
 	"encoding/json"
+	"github.com/apache/dubbo-go/common/extension"
+)
+
+import (
+	gxset "github.com/dubbogo/gost/container/set"
 )
 
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/registry"
 )
 
 func init() {
-	extension.AddCustomizers(&metadataServiceURLParamsMetadataCustomizer{})
+	exceptKeys := gxset.NewSet(
+		// remove APPLICATION_KEY because service name must be present
+		constant.APPLICATION_KEY,
+		// remove GROUP_KEY, always uses service name.
+		constant.GROUP_KEY,
+		// remove TIMESTAMP_KEY because it's nonsense
+		constant.TIMESTAMP_KEY)
+	extension.AddCustomizers(&metadataServiceURLParamsMetadataCustomizer{exceptKeys: exceptKeys})
 }
 
 type metadataServiceURLParamsMetadataCustomizer struct {
+	exceptKeys *gxset.HashSet
 }
 
 // GetPriority will return 0 so that it will be invoked in front of user defining Customizer
@@ -58,8 +70,6 @@ func (m *metadataServiceURLParamsMetadataCustomizer) Customize(instance registry
 }
 
 func (m *metadataServiceURLParamsMetadataCustomizer) convertToParams(url *common.URL) map[string]string {
-	// usually there will be only one protocol
-	res := make(map[string]string, 1)
 	// those keys are useless
 	p := make(map[string]string, len(url.GetParams()))
 	for k, v := range url.GetParams() {
@@ -71,5 +81,5 @@ func (m *metadataServiceURLParamsMetadataCustomizer) convertToParams(url *common
 	}
 	p[constant.PORT_KEY] = url.Port
 	p[constant.PROTOCOL_KEY] = url.Protocol
-	return res
+	return p
 }

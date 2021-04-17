@@ -68,6 +68,7 @@ func GetInMemoryMetadataService() (service.MetadataService, error) {
 			serviceDefinitions:    &sync.Map{},
 			lock:                  &sync.RWMutex{},
 			metadataInfo:          nil,
+			mOnce:                 &sync.Once{},
 		}
 	})
 	return metadataServiceInstance, nil
@@ -207,12 +208,12 @@ func (mts *MetadataService) PublishServiceDefinition(url *common.URL) error {
 }
 
 // GetExportedURLs get all exported urls
-func (mts *MetadataService) GetExportedURLs(serviceInterface string, group string, version string, protocol string) ([]interface{}, error) {
+func (mts *MetadataService) GetExportedURLs(serviceInterface string, group string, version string, protocol string) ([]*common.URL, error) {
 	if serviceInterface == constant.ANY_VALUE {
-		return service.ConvertURLArrToIntfArr(mts.getAllService(mts.exportedServiceURLs)), nil
+		return mts.getAllService(mts.exportedServiceURLs), nil
 	} else {
 		serviceKey := definition.ServiceDescriperBuild(serviceInterface, group, version)
-		return service.ConvertURLArrToIntfArr(mts.getSpecifiedService(mts.exportedServiceURLs, serviceKey, protocol)), nil
+		return mts.getSpecifiedService(mts.exportedServiceURLs, serviceKey, protocol), nil
 	}
 }
 
@@ -234,14 +235,14 @@ func (mts *MetadataService) GetServiceDefinitionByServiceKey(serviceKey string) 
 	return v.(string), nil
 }
 
-func (mts *MetadataService) GetMetadataInfo(revision string) *common.MetadataInfo {
+func (mts *MetadataService) GetMetadataInfo(revision string) (*common.MetadataInfo, error) {
 	if revision == "" {
-		return mts.metadataInfo
+		return mts.metadataInfo, nil
 	}
 	if mts.metadataInfo.CalAndGetRevision() != revision {
-		return nil
+		return nil, nil
 	}
-	return mts.metadataInfo
+	return mts.metadataInfo, nil
 }
 
 func (mts *MetadataService) GetExportedServiceURLs() []*common.URL {
@@ -260,4 +261,8 @@ func (mts *MetadataService) Version() (string, error) {
 
 func (mts *MetadataService) GetMetadataServiceURL() *common.URL {
 	return mts.metadataServiceURL
+}
+
+func (mts *MetadataService) SetMetadataServiceURL(url *common.URL) {
+	mts.metadataServiceURL = url
 }

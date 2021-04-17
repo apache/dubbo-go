@@ -60,9 +60,11 @@ func (exporter *MetadataServiceExporter) Export(url *common.URL) error {
 				Port: url.SubURL.Port,
 			},
 		}
+		serviceConfig.Registry = "N/A"
 		serviceConfig.InterfaceName = constant.METADATA_SERVICE_NAME
 		// identify this is a golang server
 		serviceConfig.Params = map[string]string{}
+
 		serviceConfig.Group = config.GetApplicationConfig().Name
 		// now the error will always be nil
 		serviceConfig.Version, _ = exporter.metadataService.Version()

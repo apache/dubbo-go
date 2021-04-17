@@ -32,10 +32,19 @@ import (
 )
 
 func init() {
-	factory := service.NewBaseMetadataServiceProxyFactory(createProxy)
-	extension.SetMetadataServiceProxyFactory(local, func() service.MetadataServiceProxyFactory {
-		return factory
+	extension.SetLocalMetadataService(constant.DEFAULT_KEY, GetInMemoryMetadataService)
+	once = &sync.Once{}
+}
+
+var factory service.MetadataServiceProxyFactory
+
+var once *sync.Once
+
+func GetInMemoryMetadataServiceProxyFactory() service.MetadataServiceProxyFactory {
+	once.Do(func() {
+		factory = service.NewBaseMetadataServiceProxyFactory(createProxy)
 	})
+	return factory
 }
 
 var factory service.MetadataServiceProxyFactory
@@ -74,30 +83,28 @@ func buildStandardMetadataServiceURL(ins registry.ServiceInstance) []*common.URL
 	res := make([]*common.URL, 0, len(ps))
 	sn := ins.GetServiceName()
 	host := ins.GetHost()
-	for protocol, params := range ps {
-
-		convertedParams := make(map[string][]string, len(params))
-		for k, v := range params {
-			convertedParams[k] = []string{v}
-		}
-
-		u := common.NewURLWithOptions(common.WithIp(host),
-			common.WithPath(constant.METADATA_SERVICE_NAME),
-			common.WithProtocol(protocol),
-			common.WithPort(params[constant.PORT_KEY]),
-			common.WithParams(convertedParams),
-			common.WithParamsValue(constant.GROUP_KEY, sn))
-		res = append(res, u)
+	convertedParams := make(map[string][]string, len(ps))
+	for k, v := range ps {
+		convertedParams[k] = []string{v}
 	}
+	u := common.NewURLWithOptions(common.WithIp(host),
+		common.WithPath(constant.METADATA_SERVICE_NAME),
+		common.WithProtocol(ps[constant.PROTOCOL_KEY]),
+		common.WithPort(ps[constant.PORT_KEY]),
+		common.WithParams(convertedParams),
+		common.WithParamsValue(constant.GROUP_KEY, sn),
+		common.WithParamsValue(constant.INTERFACE_KEY, constant.METADATA_SERVICE_NAME))
+	res = append(res, u)
+
 	return res
 }
 
 // getMetadataServiceUrlParams this will convert the metadata service url parameters to map structure
 // it looks like:
 // {"dubbo":{"timeout":"10000","version":"1.0.0","dubbo":"2.0.2","release":"2.7.6","port":"20880"}}
-func getMetadataServiceUrlParams(ins registry.ServiceInstance) map[string]map[string]string {
+func getMetadataServiceUrlParams(ins registry.ServiceInstance) map[string]string {
 	ps := ins.GetMetadata()
-	res := make(map[string]map[string]string, 2)
+	res := make(map[string]string, 2)
 	if str, ok := ps[constant.METADATA_SERVICE_URL_PARAMS_PROPERTY_NAME]; ok && len(str) > 0 {
 
 		err := json.Unmarshal([]byte(str), &res)

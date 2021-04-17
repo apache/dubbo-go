@@ -148,6 +148,16 @@ func NewMetadataReport() (*MetadataReport, error) {
 	return bmr, nil
 }
 
+func (mr *MetadataReport) PublishAppMetadata(identifier *identifier.SubscriberMetadataIdentifier, info *common.MetadataInfo) error {
+	report := instance.GetMetadataReportInstance()
+	return report.PublishAppMetadata(identifier, info)
+}
+
+func (mr *MetadataReport) GetAppMetadata(identifier *identifier.SubscriberMetadataIdentifier) (*common.MetadataInfo, error) {
+	report := instance.GetMetadataReportInstance()
+	return report.GetAppMetadata(identifier)
+}
+
 // retry will do metadata failed reports collection by call metadata report sdk
 func (mr *MetadataReport) retry() bool {
 	mr.failedReportsLock.RLock()
@@ -200,11 +210,6 @@ func (mr *MetadataReport) storeMetadataTask(role int, identifier *identifier.Met
 		err = report.StoreProviderMetadata(identifier, string(data))
 	} else if role == common.CONSUMER {
 		err = report.StoreConsumerMetadata(identifier, string(data))
-	}
-
-	if err != nil {
-		logger.Errorf("storeProviderMetadataTask error in stage call  metadata report to StoreProviderMetadata, msg is %+v", err)
-		panic(err)
 	}
 }
 
