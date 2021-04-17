@@ -183,7 +183,7 @@ func loadConsumerConfig() {
 		if data, err := yaml.MarshalYML(consumerConfig); err != nil {
 			logger.Errorf("Marshal consumer config err: %s", err.Error())
 		} else {
-			if err := ioutil.WriteFile(consumerConfig.CacheFile, data, 0o666); err != nil {
+			if err := ioutil.WriteFile(consumerConfig.CacheFile, data, 0666); err != nil {
 				logger.Errorf("Write consumer config cache file err: %s", err.Error())
 			}
 		}
@@ -250,7 +250,7 @@ func loadProviderConfig() {
 		if data, err := yaml.MarshalYML(providerConfig); err != nil {
 			logger.Errorf("Marshal provider config err: %s", err.Error())
 		} else {
-			if err := ioutil.WriteFile(providerConfig.CacheFile, data, 0o666); err != nil {
+			if err := ioutil.WriteFile(providerConfig.CacheFile, data, 0666); err != nil {
 				logger.Errorf("Write provider config cache file err: %s", err.Error())
 			}
 		}

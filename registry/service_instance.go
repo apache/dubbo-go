@@ -85,7 +85,7 @@ type DefaultServiceInstance struct {
 	Address         string
 }
 
-// GetId will return this instance's id. It should be unique.
+// GetID will return this instance's id. It should be unique.
 func (d *DefaultServiceInstance) GetID() string {
 	return d.ID
 }
