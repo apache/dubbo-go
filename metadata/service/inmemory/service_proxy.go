@@ -152,7 +152,7 @@ func (m *MetadataServiceProxy) GetMetadataInfo(revision string) *common.Metadata
 	rV := reflect.ValueOf(revision)
 	const methodName = "getMetadataInfo"
 	inv := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName(methodName),
-		invocation.WithArguments([]interface{}{rV}),
+		invocation.WithArguments([]interface{}{rV.Interface()}),
 		invocation.WithReply(reflect.ValueOf(&common.MetadataInfo{}).Interface()),
 		invocation.WithAttachments(map[string]interface{}{constant.ASYNC_KEY: "false"}),
 		invocation.WithParameterValues([]reflect.Value{rV}))
