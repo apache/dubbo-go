@@ -70,8 +70,6 @@ func (m *metadataServiceURLParamsMetadataCustomizer) Customize(instance registry
 }
 
 func (m *metadataServiceURLParamsMetadataCustomizer) convertToParams(url *common.URL) map[string]string {
-	// usually there will be only one protocol
-	res := make(map[string]string, 1)
 	// those keys are useless
 	p := make(map[string]string, len(url.GetParams()))
 	for k, v := range url.GetParams() {
@@ -83,5 +81,5 @@ func (m *metadataServiceURLParamsMetadataCustomizer) convertToParams(url *common
 	}
 	p[constant.PORT_KEY] = url.Port
 	p[constant.PROTOCOL_KEY] = url.Protocol
-	return res
+	return p
 }
