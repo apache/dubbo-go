@@ -29,6 +29,7 @@ import (
 )
 
 import (
+	hessian "github.com/apache/dubbo-go-hessian2"
 	perrors "github.com/pkg/errors"
 )
 
@@ -372,6 +373,9 @@ func Load() {
 }
 
 func LoadWithOptions(options ...LoaderInitOption) {
+	// register metadata info
+	hessian.RegisterPOJO(&common.MetadataInfo{})
+
 	for _, option := range options {
 		option.init()
 	}
