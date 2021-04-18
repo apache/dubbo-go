@@ -394,10 +394,6 @@ func ServiceKey(intf string, group string, version string) string {
 	return buf.String()
 }
 
-func MatchKey(serviceKey string, protocol string) string {
-	return serviceKey + ":" + protocol
-}
-
 // ColonSeparatedKey
 // The format is "{interface}:[version]:[group]"
 func (c *URL) ColonSeparatedKey() string {
@@ -438,16 +434,6 @@ func (c *URL) Service() string {
 		}
 	}
 	return ""
-}
-
-// Group get group
-func (c *URL) Group() string {
-	return c.GetParam(constant.GROUP_KEY, "")
-}
-
-// Version get group
-func (c *URL) Version() string {
-	return c.GetParam(constant.VERSION_KEY, "")
 }
 
 // AddParam will add the key-value pair

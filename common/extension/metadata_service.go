@@ -31,12 +31,12 @@ import (
 )
 
 var (
-	metadataServiceInsMap = make(map[string]func() (service.MetadataService, error), 2)
+	localMetadataServiceInsMap = make(map[string]func() (service.MetadataService, error), 2)
 )
 
 // SetLocalMetadataService will store the msType => creator pair
 func SetLocalMetadataService(key string, creator func() (service.MetadataService, error)) {
-	metadataServiceInsMap[key] = creator
+	localMetadataServiceInsMap[key] = creator
 }
 
 // GetMetadataService will create a inmemory MetadataService instance
@@ -44,7 +44,7 @@ func GetLocalMetadataService(key string) (service.MetadataService, error) {
 	if key == "" {
 		key = constant.DEFAULT_KEY
 	}
-	if creator, ok := metadataServiceInsMap[key]; ok {
+	if creator, ok := localMetadataServiceInsMap[key]; ok {
 		return creator()
 	}
 	return nil, perrors.New(fmt.Sprintf("could not find the metadata service creator for metadataType: local, please check whether you have imported relative packages, \n" +

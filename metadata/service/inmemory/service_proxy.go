@@ -40,9 +40,9 @@ import (
 // for now, only GetExportedURLs need to be implemented
 type MetadataServiceProxy struct {
 	invkr protocol.Invoker
-	// golangServer bool
 }
 
+// nolint
 func (m *MetadataServiceProxy) GetExportedURLs(serviceInterface string, group string, version string, protocol string) ([]*common.URL, error) {
 	siV := reflect.ValueOf(serviceInterface)
 	gV := reflect.ValueOf(group)
@@ -75,84 +75,101 @@ func (m *MetadataServiceProxy) GetExportedURLs(serviceInterface string, group st
 	return ret, nil
 }
 
+// nolint
 func (m *MetadataServiceProxy) GetExportedServiceURLs() []*common.URL {
 	logger.Error("you should never invoke this implementation")
 	return nil
 }
 
+// nolint
 func (m *MetadataServiceProxy) GetMetadataServiceURL() *common.URL {
 	logger.Error("you should never invoke this implementation")
 	return nil
 }
 
+// nolint
 func (m *MetadataServiceProxy) SetMetadataServiceURL(*common.URL) {
 	logger.Error("you should never invoke this implementation")
 }
 
+// nolint
 func (m *MetadataServiceProxy) MethodMapper() map[string]string {
 	return map[string]string{}
 }
 
+// nolint
 func (m *MetadataServiceProxy) Reference() string {
 	logger.Error("you should never invoke this implementation")
 	return constant.METADATA_SERVICE_NAME
 }
 
+// nolint
 func (m *MetadataServiceProxy) ServiceName() (string, error) {
 	logger.Error("you should never invoke this implementation")
 	return "", nil
 }
 
+// nolint
 func (m *MetadataServiceProxy) ExportURL(url *common.URL) (bool, error) {
 	logger.Error("you should never invoke this implementation")
 	return false, nil
 }
 
+// nolint
 func (m *MetadataServiceProxy) UnexportURL(url *common.URL) error {
 	logger.Error("you should never invoke this implementation")
 	return nil
 }
 
+// nolint
 func (m *MetadataServiceProxy) SubscribeURL(url *common.URL) (bool, error) {
 	logger.Error("you should never invoke this implementation")
 	return false, nil
 }
 
+// nolint
 func (m *MetadataServiceProxy) UnsubscribeURL(url *common.URL) error {
 	logger.Error("you should never invoke this implementation")
 	return nil
 }
 
+// nolint
 func (m *MetadataServiceProxy) PublishServiceDefinition(url *common.URL) error {
 	logger.Error("you should never invoke this implementation")
 	return nil
 }
 
+// nolint
 func (m *MetadataServiceProxy) GetSubscribedURLs() ([]*common.URL, error) {
 	logger.Error("you should never invoke this implementation")
 	return nil, nil
 }
 
+// nolint
 func (m *MetadataServiceProxy) GetServiceDefinition(interfaceName string, group string, version string) (string, error) {
 	logger.Error("you should never invoke this implementation")
 	return "", nil
 }
 
+// nolint
 func (m *MetadataServiceProxy) GetServiceDefinitionByServiceKey(serviceKey string) (string, error) {
 	logger.Error("you should never invoke this implementation")
 	return "", nil
 }
 
+// nolint
 func (m *MetadataServiceProxy) RefreshMetadata(exportedRevision string, subscribedRevision string) (bool, error) {
 	logger.Error("you should never invoke this implementation")
 	return false, nil
 }
 
+// nolint
 func (m *MetadataServiceProxy) Version() (string, error) {
 	logger.Error("you should never invoke this implementation")
 	return "", nil
 }
 
+// nolint
 func (m *MetadataServiceProxy) GetMetadataInfo(revision string) (*common.MetadataInfo, error) {
 	rV := reflect.ValueOf(revision)
 	const methodName = "getMetadataInfo"

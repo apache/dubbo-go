@@ -235,6 +235,7 @@ func (mts *MetadataService) GetServiceDefinitionByServiceKey(serviceKey string) 
 	return v.(string), nil
 }
 
+// GetMetadataInfo can get metadata in memory
 func (mts *MetadataService) GetMetadataInfo(revision string) (*common.MetadataInfo, error) {
 	if revision == "" {
 		return mts.metadataInfo, nil
@@ -245,6 +246,7 @@ func (mts *MetadataService) GetMetadataInfo(revision string) (*common.MetadataIn
 	return mts.metadataInfo, nil
 }
 
+// GetExportedServiceURLs get exported service urls
 func (mts *MetadataService) GetExportedServiceURLs() []*common.URL {
 	return mts.getAllService(mts.exportedServiceURLs)
 }
@@ -259,10 +261,12 @@ func (mts *MetadataService) Version() (string, error) {
 	return version, nil
 }
 
+// GetMetadataServiceURL get url of MetadataService
 func (mts *MetadataService) GetMetadataServiceURL() *common.URL {
 	return mts.metadataServiceURL
 }
 
+// GetMetadataServiceURL save url of MetadataService
 func (mts *MetadataService) SetMetadataServiceURL(url *common.URL) {
 	mts.metadataServiceURL = url
 }

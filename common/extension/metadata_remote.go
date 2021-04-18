@@ -2,7 +2,7 @@ package extension
 
 import (
 	"fmt"
-	"github.com/apache/dubbo-go/metadata/remote"
+	"github.com/apache/dubbo-go/metadata/service/remote"
 	perrors "github.com/pkg/errors"
 )
 

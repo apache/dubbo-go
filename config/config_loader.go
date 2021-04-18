@@ -20,7 +20,6 @@ package config
 import (
 	"flag"
 	"fmt"
-	hessian "github.com/apache/dubbo-go-hessian2"
 	"io/ioutil"
 	"os"
 	"reflect"
@@ -34,6 +33,7 @@ import (
 )
 
 import (
+	hessian "github.com/apache/dubbo-go-hessian2"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"

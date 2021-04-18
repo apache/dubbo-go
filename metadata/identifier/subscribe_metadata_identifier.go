@@ -27,13 +27,8 @@ func NewSubscriberMetadataIdentifier(application string, revision string) *Subsc
 	return &SubscriberMetadataIdentifier{
 		Revision: revision,
 		MetadataIdentifier: MetadataIdentifier{
-			Application: application,
-			BaseMetadataIdentifier: BaseMetadataIdentifier{
-				ServiceInterface: "",
-				Version:          "",
-				Group:            "",
-				Side:             "",
-			},
+			Application:            application,
+			BaseMetadataIdentifier: BaseMetadataIdentifier{},
 		},
 	}
 }
@@ -46,19 +41,4 @@ func (mdi *SubscriberMetadataIdentifier) GetIdentifierKey() string {
 // GetFilePathKey returns string that format is metadata/path/Version/Group/Side/Revision
 func (mdi *SubscriberMetadataIdentifier) GetFilePathKey() string {
 	return mdi.BaseMetadataIdentifier.getFilePathKey(mdi.Revision)
-}
-
-func NewSubscriberMetadataIdentifier(application string, revision string) *SubscriberMetadataIdentifier {
-	return &SubscriberMetadataIdentifier{
-		Revision: revision,
-		MetadataIdentifier: MetadataIdentifier{
-			Application: application,
-			BaseMetadataIdentifier: BaseMetadataIdentifier{
-				ServiceInterface: "",
-				Version:          "",
-				Group:            "",
-				Side:             "",
-			},
-		},
-	}
 }

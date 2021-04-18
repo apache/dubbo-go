@@ -33,23 +33,12 @@ import (
 
 func init() {
 	extension.SetLocalMetadataService(constant.DEFAULT_KEY, GetInMemoryMetadataService)
-	once = &sync.Once{}
 }
 
-var factory service.MetadataServiceProxyFactory
-
-var once *sync.Once
-
-func GetInMemoryMetadataServiceProxyFactory() service.MetadataServiceProxyFactory {
-	once.Do(func() {
-		factory = service.NewBaseMetadataServiceProxyFactory(createProxy)
-	})
-	return factory
-}
-
-var factory service.MetadataServiceProxyFactory
-
-var once *sync.Once
+var (
+	factory service.MetadataServiceProxyFactory
+	once    *sync.Once
+)
 
 func GetInMemoryMetadataServiceProxyFactory() service.MetadataServiceProxyFactory {
 	once.Do(func() {
