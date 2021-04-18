@@ -86,7 +86,7 @@ func (lstn *ServiceInstancesChangedListenerImpl) OnEvent(e observer.Event) error
 			revisionToInstances[revision] = append(subInstances, instance)
 			metadataInfo := lstn.revisionToMetadata[revision]
 			if metadataInfo == nil {
-				metadataInfo, err = lstn.getMetadataInfo(instance, metadataInfo, revision)
+				metadataInfo, err = lstn.getMetadataInfo(instance, revision)
 				if err != nil {
 					return err
 				}
@@ -142,8 +142,9 @@ func (lstn *ServiceInstancesChangedListenerImpl) OnEvent(e observer.Event) error
 }
 
 // getMetadataInfo get metadata info when METADATA_STORAGE_TYPE_PROPERTY_NAME is null
-func (lstn *ServiceInstancesChangedListenerImpl) getMetadataInfo(instance registry.ServiceInstance, metadataInfo *common.MetadataInfo, revision string) (*common.MetadataInfo, error) {
+func (lstn *ServiceInstancesChangedListenerImpl) getMetadataInfo(instance registry.ServiceInstance, revision string) (*common.MetadataInfo, error) {
 	var metadataStorageType string
+	var metadataInfo *common.MetadataInfo
 	if instance.GetMetadata() == nil {
 		metadataStorageType = constant.DEFAULT_METADATA_STORAGE_TYPE
 	} else {
