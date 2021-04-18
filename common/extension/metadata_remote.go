@@ -18,8 +18,8 @@ var (
 	creator remoteMetadataServiceCreator
 )
 
-// SetMetadataRemoteService will store the
-func SetMetadataRemoteService(creatorFunc remoteMetadataServiceCreator) {
+// SetRemoteMetadataService will store the remote metadata service
+func SetRemoteMetadataService(creatorFunc remoteMetadataServiceCreator) {
 	creator = creatorFunc
 }
 

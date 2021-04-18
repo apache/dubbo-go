@@ -53,7 +53,7 @@ var (
 )
 
 func init() {
-	extension.SetMetadataRemoteService(GetRemoteMetadataService)
+	extension.SetRemoteMetadataService(GetRemoteMetadataService)
 }
 
 // GetRemoteMetadataService will create a new remote MetadataService instance
