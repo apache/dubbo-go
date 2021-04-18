@@ -18,6 +18,7 @@
 package getty
 
 import (
+	"go.uber.org/atomic"
 	"math/rand"
 	"sync"
 	"time"
@@ -114,14 +115,16 @@ type Options struct {
 
 // Client : some configuration for network communication.
 type Client struct {
-	addr        string
-	opts        Options
-	conf        ClientConfig
-	mux         sync.Mutex
-	sslEnabled  bool
-	closed      bool
-	gettyClient *gettyRPCClient
-	codec       remoting.Codec
+	addr               string
+	opts               Options
+	conf               ClientConfig
+	mux                sync.RWMutex
+	sslEnabled         bool
+	clientClosed       bool
+	gettyClient        *gettyRPCClient
+	gettyClientMux     sync.RWMutex
+	gettyClientCreated atomic.Bool
+	codec              remoting.Codec
 }
 
 // create client
@@ -135,8 +138,10 @@ func NewClient(opt Options) *Client {
 	}
 
 	c := &Client{
-		opts: opt,
+		opts:         opt,
+		clientClosed: false,
 	}
+	c.gettyClientCreated.Store(false)
 	return c
 }
 
@@ -147,7 +152,6 @@ func (c *Client) SetExchangeClient(client *remoting.ExchangeClient) {
 func (c *Client) Connect(url *common.URL) error {
 	initClient(url.Protocol)
 	c.conf = *clientConf
-	c.closed = false
 	c.sslEnabled = url.GetParamBool(constant.SSL_ENABLED_KEY, false)
 	// codec
 	c.codec = remoting.GetCodec(url.Protocol)
@@ -164,7 +168,7 @@ func (c *Client) Close() {
 	c.mux.Lock()
 	client := c.gettyClient
 	c.gettyClient = nil
-	c.closed = true
+	c.clientClosed = true
 	c.mux.Unlock()
 	if client != nil {
 		client.close()
@@ -215,20 +219,34 @@ func (c *Client) IsAvailable() bool {
 }
 
 func (c *Client) selectSession(addr string) (*gettyRPCClient, getty.Session, error) {
-	c.mux.Lock()
-	defer c.mux.Unlock()
-	if c.closed {
+	c.mux.RLock()
+	defer c.mux.RUnlock()
+	if c.clientClosed {
 		return nil, nil, perrors.New("client have been closed")
 	}
 
-	if c.gettyClient == nil {
-		rpcClientConn, rpcErr := newGettyRPCClientConn(c, addr)
-		if rpcErr != nil {
-			return nil, nil, perrors.WithStack(rpcErr)
+	if !c.gettyClientCreated.Load() {
+		c.gettyClientMux.Lock()
+		if c.gettyClient == nil {
+			rpcClientConn, rpcErr := newGettyRPCClientConn(c, addr)
+			if rpcErr != nil {
+				c.gettyClientMux.Unlock()
+				return nil, nil, perrors.WithStack(rpcErr)
+			}
+			c.gettyClientCreated.Store(true)
+			c.gettyClient = rpcClientConn
 		}
-		c.gettyClient = rpcClientConn
+		client := c.gettyClient
+		session := c.gettyClient.selectSession()
+		c.gettyClientMux.Unlock()
+		return client, session, nil
 	}
-	return c.gettyClient, c.gettyClient.selectSession(), nil
+	c.gettyClientMux.RLock()
+	client := c.gettyClient
+	session := c.gettyClient.selectSession()
+	c.gettyClientMux.RUnlock()
+	return client, session, nil
+
 }
 
 func (c *Client) transfer(session getty.Session, request *remoting.Request, timeout time.Duration) (int, int, error) {
@@ -237,8 +255,9 @@ func (c *Client) transfer(session getty.Session, request *remoting.Request, time
 }
 
 func (c *Client) resetRpcConn() {
-	c.mux.Lock()
+	c.gettyClientMux.Lock()
 	c.gettyClient = nil
-	c.mux.Unlock()
+	c.gettyClientCreated.Store(false)
+	c.gettyClientMux.Unlock()
 
 }
