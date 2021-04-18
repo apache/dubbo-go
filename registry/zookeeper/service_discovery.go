@@ -19,7 +19,6 @@ package zookeeper
 
 import (
 	"fmt"
-	"github.com/apache/dubbo-go/registry/event"
 	"net/url"
 	"strconv"
 	"strings"
@@ -270,7 +269,7 @@ func (zksd *zookeeperServiceDiscovery) GetRequestInstances(serviceNames []string
 }
 
 // AddListener ListenServiceEvent will add a data listener in service
-func (zksd *zookeeperServiceDiscovery) AddListener(listener *event.ServiceInstancesChangedListenerImpl) error {
+func (zksd *zookeeperServiceDiscovery) AddListener(listener registry.ServiceInstancesChangedListener) error {
 	zksd.listenLock.Lock()
 	defer zksd.listenLock.Unlock()
 	for _, t := range listener.GetServiceNames().Values() {
