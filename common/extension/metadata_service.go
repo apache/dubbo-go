@@ -30,12 +30,14 @@ import (
 	"github.com/apache/dubbo-go/metadata/service"
 )
 
+type localMetadataServiceCreator func() (service.MetadataService, error)
+
 var (
-	localMetadataServiceInsMap = make(map[string]func() (service.MetadataService, error), 2)
+	localMetadataServiceInsMap = make(map[string]localMetadataServiceCreator, 2)
 )
 
 // SetLocalMetadataService will store the msType => creator pair
-func SetLocalMetadataService(key string, creator func() (service.MetadataService, error)) {
+func SetLocalMetadataService(key string, creator localMetadataServiceCreator) {
 	localMetadataServiceInsMap[key] = creator
 }
 
