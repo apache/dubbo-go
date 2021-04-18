@@ -122,6 +122,7 @@ func (d *DefaultServiceInstance) IsHealthy() bool {
 	return d.Healthy
 }
 
+// GetAddress will return the ip:Port
 func (d *DefaultServiceInstance) GetAddress() string {
 	if d.Address != "" {
 		return d.Address
@@ -134,6 +135,7 @@ func (d *DefaultServiceInstance) GetAddress() string {
 	return d.Address
 }
 
+// SetServiceMetadata save metadata in instance
 func (d *DefaultServiceInstance) SetServiceMetadata(m *common.MetadataInfo) {
 	d.ServiceMetadata = m
 }
@@ -150,6 +152,7 @@ func (d *DefaultServiceInstance) ToURLs() []*common.URL {
 	return urls
 }
 
+// GetEndPoints get end points from metadata
 func (d *DefaultServiceInstance) GetEndPoints() []*Endpoint {
 	rawEndpoints := d.Metadata[constant.SERVICE_INSTANCE_ENDPOINTS]
 	if len(rawEndpoints) == 0 {
@@ -164,6 +167,7 @@ func (d *DefaultServiceInstance) GetEndPoints() []*Endpoint {
 	return endpoints
 }
 
+// Copy return a instance with different port
 func (d *DefaultServiceInstance) Copy(endpoint *Endpoint) ServiceInstance {
 	dn := &DefaultServiceInstance{
 		ID:              d.ID,
