@@ -19,7 +19,6 @@ package zookeeper
 
 import (
 	"fmt"
-	"github.com/apache/dubbo-go/registry/event"
 	"net/url"
 	"strconv"
 	"strings"
@@ -27,6 +26,7 @@ import (
 )
 
 import (
+	"github.com/apache/dubbo-go/registry/event"
 	gxset "github.com/dubbogo/gost/container/set"
 	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
 	gxpage "github.com/dubbogo/gost/hash/page"
