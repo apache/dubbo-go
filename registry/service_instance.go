@@ -19,11 +19,17 @@ package registry
 
 import (
 	"encoding/json"
+	"strconv"
+)
+
+import (
+	gxsort "github.com/dubbogo/gost/sort"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
-	gxsort "github.com/dubbogo/gost/sort"
-	"strconv"
 )
 
 // ServiceInstance is the model class of an instance of a service, which is used for service registration and discovery.
@@ -62,6 +68,7 @@ type ServiceInstance interface {
 	// GetAddress
 	GetAddress() string
 
+	// SetServiceMetadata
 	SetServiceMetadata(info *common.MetadataInfo)
 }
 
