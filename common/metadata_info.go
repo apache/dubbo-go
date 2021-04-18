@@ -55,7 +55,7 @@ type MetadataInfo struct {
 	Revision string                  `json:"revision,omitempty"`
 	Services map[string]*ServiceInfo `json:"services,omitempty"`
 
-	reported *atomic.Bool `json:"-"`
+	Reported *atomic.Bool `json:"-"`
 }
 
 // nolint
@@ -69,7 +69,7 @@ func NewMetadataInfo(app string, revision string, services map[string]*ServiceIn
 		App:      app,
 		Revision: revision,
 		Services: services,
-		reported: atomic.NewBool(false),
+		Reported: atomic.NewBool(false),
 	}
 }
 
@@ -80,10 +80,10 @@ func (mi *MetadataInfo) JavaClassName() string {
 
 // CalAndGetRevision is different from Dubbo because golang doesn't support overload
 // so that we should use interface + method name as identifier and ignore the method params
-// in my opinion, it's enough because Dubbo actually ignore the url params.
+// in my opinion, it's enough because Dubbo actually ignore the Url params.
 // please refer org.apache.dubbo.common.URL#toParameterString(java.lang.String...)
 func (mi *MetadataInfo) CalAndGetRevision() string {
-	if mi.Revision != "" && mi.reported.Load() {
+	if mi.Revision != "" && mi.Reported.Load() {
 		return mi.Revision
 	}
 	if len(mi.Services) == 0 {
@@ -92,8 +92,8 @@ func (mi *MetadataInfo) CalAndGetRevision() string {
 	candidates := make([]string, 8)
 
 	for _, s := range mi.Services {
-		sk := s.serviceKey
-		ms := s.url.Methods
+		sk := s.ServiceKey
+		ms := s.Url.Methods
 		if len(ms) == 0 {
 			candidates = append(candidates, sk)
 		} else {
@@ -103,7 +103,7 @@ func (mi *MetadataInfo) CalAndGetRevision() string {
 			}
 		}
 
-		// append url params if we need it
+		// append Url params if we need it
 	}
 	sort.Strings(candidates)
 
@@ -119,12 +119,12 @@ func (mi *MetadataInfo) CalAndGetRevision() string {
 
 // nolint
 func (mi *MetadataInfo) HasReported() bool {
-	return mi.reported.Load()
+	return mi.Reported.Load()
 }
 
 // nolint
 func (mi *MetadataInfo) MarkReported() {
-	mi.reported.CAS(false, true)
+	mi.Reported.CAS(false, true)
 }
 
 // nolint
@@ -140,7 +140,7 @@ func (mi *MetadataInfo) RemoveService(service *ServiceInfo) {
 	if service == nil {
 		return
 	}
-	delete(mi.Services, service.matchKey)
+	delete(mi.Services, service.MatchKey)
 }
 
 // ServiceInfo the information of service
@@ -152,15 +152,15 @@ type ServiceInfo struct {
 	Path     string            `json:"path,omitempty"`
 	Params   map[string]string `json:"params,omitempty"`
 
-	serviceKey string `json:"-"`
-	matchKey   string `json:"-"`
-	url        *URL   `json:"-"`
+	ServiceKey string `json:"-"`
+	MatchKey   string `json:"-"`
+	Url        *URL   `json:"-"`
 }
 
 // nolint
 func NewServiceInfoWithUrl(url *URL) *ServiceInfo {
 	service := NewServiceInfo(url.Service(), url.Group(), url.Version(), url.Protocol, url.Path, nil)
-	service.url = url
+	service.Url = url
 	// TODO includeKeys load dynamic
 	p := make(map[string]string, 8)
 	for _, keyInter := range IncludeKeys.Values() {
@@ -191,8 +191,8 @@ func NewServiceInfo(name, group, version, protocol, path string, params map[stri
 		Protocol:   protocol,
 		Path:       path,
 		Params:     params,
-		serviceKey: serviceKey,
-		matchKey:   matchKey,
+		ServiceKey: serviceKey,
+		MatchKey:   matchKey,
 	}
 }
 
@@ -233,19 +233,19 @@ func (si *ServiceInfo) GetParams() url.Values {
 
 // nolint
 func (si *ServiceInfo) GetMatchKey() string {
-	if si.matchKey != "" {
-		return si.matchKey
+	if si.MatchKey != "" {
+		return si.MatchKey
 	}
 	serviceKey := si.GetServiceKey()
-	si.matchKey = MatchKey(serviceKey, si.Protocol)
-	return si.matchKey
+	si.MatchKey = MatchKey(serviceKey, si.Protocol)
+	return si.MatchKey
 }
 
 // nolint
 func (si *ServiceInfo) GetServiceKey() string {
-	if si.serviceKey != "" {
-		return si.serviceKey
+	if si.ServiceKey != "" {
+		return si.ServiceKey
 	}
-	si.serviceKey = ServiceKey(si.Name, si.Group, si.Version)
-	return si.serviceKey
+	si.ServiceKey = ServiceKey(si.Name, si.Group, si.Version)
+	return si.ServiceKey
 }
