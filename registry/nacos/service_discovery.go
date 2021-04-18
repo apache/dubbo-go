@@ -212,40 +212,46 @@ func (n *nacosServiceDiscovery) GetRequestInstances(serviceNames []string, offse
 }
 
 // AddListener will add a listener
-func (n *nacosServiceDiscovery) AddListener(lst registry.ServiceInstanceChangeListener) error {
-	listener := lst.(*registry.ServiceInstancesChangedListenerBase)
-	return n.namingClient.Subscribe(&vo.SubscribeParam{
-		ServiceName: listener.ServiceName,
-		SubscribeCallback: func(services []model.SubscribeService, err error) {
-			if err != nil {
-				logger.Errorf("Could not handle the subscribe notification because the err is not nil."+
-					" service name: %s, err: %v", listener.ServiceName, err)
-			}
-			instances := make([]registry.ServiceInstance, 0, len(services))
-			for _, service := range services {
-				// we won't use the nacos instance id here but use our instance id
-				metadata := service.Metadata
-				id := metadata[idKey]
+func (n *nacosServiceDiscovery) AddListener(listener registry.ServiceInstancesChangedListener) error {
+	for _, t := range listener.GetServiceNames().Values() {
+		serviceName := t.(string)
+		err := n.namingClient.Subscribe(&vo.SubscribeParam{
+			ServiceName: serviceName,
+			SubscribeCallback: func(services []model.SubscribeService, err error) {
+				if err != nil {
+					logger.Errorf("Could not handle the subscribe notification because the err is not nil."+
+						" service name: %s, err: %v", serviceName, err)
+				}
+				instances := make([]registry.ServiceInstance, 0, len(services))
+				for _, service := range services {
+					// we won't use the nacos instance id here but use our instance id
+					metadata := service.Metadata
+					id := metadata[idKey]
 
-				delete(metadata, idKey)
+					delete(metadata, idKey)
 
-				instances = append(instances, &registry.DefaultServiceInstance{
-					ID:          id,
-					ServiceName: service.ServiceName,
-					Host:        service.Ip,
-					Port:        int(service.Port),
-					Enable:      service.Enable,
-					Healthy:     true,
-					Metadata:    metadata,
-				})
-			}
+					instances = append(instances, &registry.DefaultServiceInstance{
+						ID:          id,
+						ServiceName: service.ServiceName,
+						Host:        service.Ip,
+						Port:        int(service.Port),
+						Enable:      service.Enable,
+						Healthy:     true,
+						Metadata:    metadata,
+					})
+				}
 
-			e := n.DispatchEventForInstances(listener.ServiceName, instances)
-			if e != nil {
-				logger.Errorf("Dispatching event got exception, service name: %s, err: %v", listener.ServiceName, err)
-			}
-		},
-	})
+				e := n.DispatchEventForInstances(serviceName, instances)
+				if e != nil {
+					logger.Errorf("Dispatching event got exception, service name: %s, err: %v", serviceName, err)
+				}
+			},
+		})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // DispatchEventByServiceName will dispatch the event for the service with the service name

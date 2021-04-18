@@ -39,7 +39,6 @@ import (
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/registry"
-	"github.com/apache/dubbo-go/registry/event"
 )
 
 const (
@@ -367,9 +366,8 @@ func (csd *consulServiceDiscovery) GetRequestInstances(serviceNames []string, of
 	return res
 }
 
-func (csd *consulServiceDiscovery) AddListener(lst registry.ServiceInstanceChangeListener) error {
-	listener := lst.(*event.ServiceInstancesChangedListener)
-	for _, v := range listener.ServiceNames.Values() {
+func (csd *consulServiceDiscovery) AddListener(listener registry.ServiceInstancesChangedListener) error {
+	for _, v := range listener.GetServiceNames().Values() {
 		serviceName := v.(string)
 		params := make(map[string]interface{}, 8)
 		params[watch_type] = watch_type_service

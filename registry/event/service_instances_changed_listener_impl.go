@@ -36,18 +36,17 @@ import (
 )
 
 // The Service Discovery Changed  Event Listener
-type ServiceInstancesChangedListener struct {
-	registry.ServiceInstancesChangedListenerBase
-	ServiceNames       *gxset.HashSet
+type ServiceInstancesChangedListenerImpl struct {
+	serviceNames       *gxset.HashSet
 	listeners          map[string]registry.NotifyListener
 	serviceUrls        map[string][]*common.URL
 	revisionToMetadata map[string]*common.MetadataInfo
 	allInstances       map[string][]registry.ServiceInstance
 }
 
-func NewServiceInstancesChangedListener(services *gxset.HashSet) *ServiceInstancesChangedListener {
-	return &ServiceInstancesChangedListener{
-		ServiceNames:       services,
+func NewServiceInstancesChangedListener(services *gxset.HashSet) registry.ServiceInstancesChangedListener {
+	return &ServiceInstancesChangedListenerImpl{
+		serviceNames:       services,
 		listeners:          make(map[string]registry.NotifyListener),
 		serviceUrls:        make(map[string][]*common.URL),
 		revisionToMetadata: make(map[string]*common.MetadataInfo),
@@ -56,7 +55,7 @@ func NewServiceInstancesChangedListener(services *gxset.HashSet) *ServiceInstanc
 }
 
 // OnEvent on ServiceInstancesChangedEvent the service instances change event
-func (lstn *ServiceInstancesChangedListener) OnEvent(e observer.Event) error {
+func (lstn *ServiceInstancesChangedListenerImpl) OnEvent(e observer.Event) error {
 	ce, ok := e.(*registry.ServiceInstancesChangedEvent)
 	if !ok {
 		return nil
@@ -143,7 +142,7 @@ func (lstn *ServiceInstancesChangedListener) OnEvent(e observer.Event) error {
 }
 
 // getMetadataInfo get metadata info when METADATA_STORAGE_TYPE_PROPERTY_NAME is null
-func (lstn *ServiceInstancesChangedListener) getMetadataInfo(instance registry.ServiceInstance, metadataInfo *common.MetadataInfo, revision string) (*common.MetadataInfo, error) {
+func (lstn *ServiceInstancesChangedListenerImpl) getMetadataInfo(instance registry.ServiceInstance, metadataInfo *common.MetadataInfo, revision string) (*common.MetadataInfo, error) {
 	var metadataStorageType string
 	if instance.GetMetadata() == nil {
 		metadataStorageType = constant.DEFAULT_METADATA_STORAGE_TYPE
@@ -172,7 +171,7 @@ func (lstn *ServiceInstancesChangedListener) getMetadataInfo(instance registry.S
 }
 
 // AddListenerAndNotify add notify listener and notify to listen service event
-func (lstn *ServiceInstancesChangedListener) AddListenerAndNotify(serviceKey string, notify registry.NotifyListener) {
+func (lstn *ServiceInstancesChangedListenerImpl) AddListenerAndNotify(serviceKey string, notify registry.NotifyListener) {
 	lstn.listeners[serviceKey] = notify
 	urls := lstn.serviceUrls[serviceKey]
 	for _, url := range urls {
@@ -184,24 +183,29 @@ func (lstn *ServiceInstancesChangedListener) AddListenerAndNotify(serviceKey str
 }
 
 // RemoveListener remove notify listener
-func (lstn *ServiceInstancesChangedListener) RemoveListener(serviceKey string) {
+func (lstn *ServiceInstancesChangedListenerImpl) RemoveListener(serviceKey string) {
 	delete(lstn.listeners, serviceKey)
 }
 
+// GetServiceNames return all listener service names
+func (lstn *ServiceInstancesChangedListenerImpl) GetServiceNames() *gxset.HashSet {
+	return lstn.serviceNames
+}
+
 // Accept return true if the name is the same
-func (lstn *ServiceInstancesChangedListener) Accept(e observer.Event) bool {
+func (lstn *ServiceInstancesChangedListenerImpl) Accept(e observer.Event) bool {
 	if ce, ok := e.(*registry.ServiceInstancesChangedEvent); ok {
-		return lstn.ServiceNames.Contains(ce.ServiceName)
+		return lstn.serviceNames.Contains(ce.ServiceName)
 	}
 	return false
 }
 
 // GetPriority returns -1, it will be the first invoked listener
-func (lstn *ServiceInstancesChangedListener) GetPriority() int {
+func (lstn *ServiceInstancesChangedListenerImpl) GetPriority() int {
 	return -1
 }
 
 // GetEventType returns ServiceInstancesChangedEvent
-func (lstn *ServiceInstancesChangedListener) GetEventType() reflect.Type {
+func (lstn *ServiceInstancesChangedListenerImpl) GetEventType() reflect.Type {
 	return reflect.TypeOf(&registry.ServiceInstancesChangedEvent{})
 }

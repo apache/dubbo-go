@@ -114,7 +114,7 @@ func (epsd *EventPublishingServiceDiscovery) GetRequestInstances(serviceNames []
 }
 
 // AddListener add event listener
-func (epsd *EventPublishingServiceDiscovery) AddListener(listener registry.ServiceInstanceChangeListener) error {
+func (epsd *EventPublishingServiceDiscovery) AddListener(listener registry.ServiceInstancesChangedListener) error {
 	extension.GetGlobalDispatcher().AddEventListener(listener)
 	return epsd.serviceDiscovery.AddListener(listener)
 }

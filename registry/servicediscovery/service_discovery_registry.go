@@ -67,7 +67,7 @@ type serviceDiscoveryRegistry struct {
 	registeredListeners              *gxset.HashSet
 	subscribedURLsSynthesizers       []synthesizer.SubscribedURLsSynthesizer
 	serviceRevisionExportedURLsCache map[string]map[string][]*common.URL
-	serviceListeners                 map[string]*event.ServiceInstancesChangedListener
+	serviceListeners                 map[string]registry.ServiceInstancesChangedListener
 }
 
 func newServiceDiscoveryRegistry(url *common.URL) (registry.Registry, error) {
@@ -94,7 +94,7 @@ func newServiceDiscoveryRegistry(url *common.URL) (registry.Registry, error) {
 		serviceRevisionExportedURLsCache: make(map[string]map[string][]*common.URL, 8),
 		serviceNameMapping:               serviceNameMapping,
 		metaDataService:                  metaDataService,
-		serviceListeners:                 make(map[string]*event.ServiceInstancesChangedListener),
+		serviceListeners:                 make(map[string]registry.ServiceInstancesChangedListener),
 	}, nil
 }
 
@@ -229,7 +229,7 @@ func (s *serviceDiscoveryRegistry) Subscribe(url *common.URL, notify registry.No
 				Instances:   instances,
 			})
 			if err != nil {
-				logger.Warnf("[ServiceDiscoveryRegistry] ServiceInstancesChangedListener handle error:%v", err)
+				logger.Warnf("[ServiceDiscoveryRegistry] ServiceInstancesChangedListenerImpl handle error:%v", err)
 			}
 		}
 	}
@@ -239,10 +239,9 @@ func (s *serviceDiscoveryRegistry) Subscribe(url *common.URL, notify registry.No
 	return nil
 }
 
-func (s *serviceDiscoveryRegistry) registerServiceInstancesChangedListener(url *common.URL, listener *event.ServiceInstancesChangedListener) {
-
+func (s *serviceDiscoveryRegistry) registerServiceInstancesChangedListener(url *common.URL, listener registry.ServiceInstancesChangedListener) {
 	// FIXME ServiceNames.String() is not good
-	listenerId := listener.ServiceNames.String() + ":" + getUrlKey(url)
+	listenerId := listener.GetServiceNames().String() + ":" + getUrlKey(url)
 	if !s.subscribedServices.Contains(listenerId) {
 		err := s.serviceDiscovery.AddListener(listener)
 		if err != nil {
