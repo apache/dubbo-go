@@ -38,6 +38,7 @@ import (
 // we must call metadata service
 // this is the stub, or proxy
 // for now, only GetMetadataInfo need to be implemented
+// TODO use ProxyFactory to create proxy
 type MetadataServiceProxy struct {
 	invkr protocol.Invoker
 }
