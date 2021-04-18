@@ -19,21 +19,35 @@ package common
 
 import (
 	"fmt"
-	"github.com/apache/dubbo-go/common/constant"
-	gxset "github.com/dubbogo/gost/container/set"
-	"go.uber.org/atomic"
 	"hash/crc32"
 	"net/url"
 	"sort"
 	"strings"
 )
 
+import (
+	gxset "github.com/dubbogo/gost/container/set"
+	"go.uber.org/atomic"
+)
+
+import (
+	"github.com/apache/dubbo-go/common/constant"
+)
+
 var IncludeKeys = gxset.NewSet(
 	constant.APPLICATION_KEY,
-	constant.GROUP_KEY, constant.TIMESTAMP_KEY, constant.SERIALIZATION_KEY, constant.CLUSTER_KEY,
-	constant.LOADBALANCE_KEY, constant.PATH_KEY, constant.TIMEOUT_KEY,
-	constant.TOKEN_KEY, constant.VERSION_KEY, constant.WARMUP_KEY,
-	constant.WEIGHT_KEY, constant.RELEASE_KEY)
+	constant.GROUP_KEY,
+	constant.TIMESTAMP_KEY,
+	constant.SERIALIZATION_KEY,
+	constant.CLUSTER_KEY,
+	constant.LOADBALANCE_KEY,
+	constant.PATH_KEY,
+	constant.TIMEOUT_KEY,
+	constant.TOKEN_KEY,
+	constant.VERSION_KEY,
+	constant.WARMUP_KEY,
+	constant.WEIGHT_KEY,
+	constant.RELEASE_KEY)
 
 // MetadataInfo the metadata information of instance
 type MetadataInfo struct {
@@ -65,8 +79,8 @@ func (mi *MetadataInfo) JavaClassName() string {
 }
 
 // CalAndGetRevision is different from Dubbo because golang doesn't support overload
-// so that we could use interface + method name as identifier and ignore the method params
-// per my understanding, it's enough because Dubbo actually ignore the url params.
+// so that we should use interface + method name as identifier and ignore the method params
+// in my opinion, it's enough because Dubbo actually ignore the url params.
 // please refer org.apache.dubbo.common.URL#toParameterString(java.lang.String...)
 func (mi *MetadataInfo) CalAndGetRevision() string {
 	if mi.Revision != "" && mi.reported.Load() {
