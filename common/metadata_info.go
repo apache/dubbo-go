@@ -35,18 +35,21 @@ var IncludeKeys = gxset.NewSet(
 	constant.TOKEN_KEY, constant.VERSION_KEY, constant.WARMUP_KEY,
 	constant.WEIGHT_KEY, constant.RELEASE_KEY)
 
+// MetadataInfo the metadata information of instance
 type MetadataInfo struct {
-	App      string                  `json:"app"`
-	Revision string                  `json:"revision"`
-	Services map[string]*ServiceInfo `json:"services"`
+	App      string                  `json:"app,omitempty"`
+	Revision string                  `json:"revision,omitempty"`
+	Services map[string]*ServiceInfo `json:"services,omitempty"`
 
 	reported *atomic.Bool `json:"-"`
 }
 
+// nolint
 func NewMetadataInfWithApp(app string) *MetadataInfo {
 	return NewMetadataInfo(app, "", make(map[string]*ServiceInfo))
 }
 
+// nolint
 func NewMetadataInfo(app string, revision string, services map[string]*ServiceInfo) *MetadataInfo {
 	return &MetadataInfo{
 		App:      app,
@@ -56,6 +59,7 @@ func NewMetadataInfo(app string, revision string, services map[string]*ServiceIn
 	}
 }
 
+// nolint
 func (mi *MetadataInfo) JavaClassName() string {
 	return "org.apache.dubbo.metadata.MetadataInfo"
 }
@@ -99,14 +103,17 @@ func (mi *MetadataInfo) CalAndGetRevision() string {
 
 }
 
+// nolint
 func (mi *MetadataInfo) HasReported() bool {
 	return mi.reported.Load()
 }
 
+// nolint
 func (mi *MetadataInfo) MarkReported() {
 	mi.reported.CAS(false, true)
 }
 
+// nolint
 func (mi *MetadataInfo) AddService(service *ServiceInfo) {
 	if service == nil {
 		return
@@ -114,6 +121,7 @@ func (mi *MetadataInfo) AddService(service *ServiceInfo) {
 	mi.Services[service.GetMatchKey()] = service
 }
 
+// nolint
 func (mi *MetadataInfo) RemoveService(service *ServiceInfo) {
 	if service == nil {
 		return
@@ -121,19 +129,21 @@ func (mi *MetadataInfo) RemoveService(service *ServiceInfo) {
 	delete(mi.Services, service.matchKey)
 }
 
+// ServiceInfo the information of service
 type ServiceInfo struct {
-	Name     string            `json:"name"`
-	Group    string            `json:"group"`
-	Version  string            `json:"version"`
-	Protocol string            `json:"protocol"`
-	Path     string            `json:"path"`
-	Params   map[string]string `json:"params"`
+	Name     string            `json:"name,omitempty"`
+	Group    string            `json:"group,omitempty"`
+	Version  string            `json:"version,omitempty"`
+	Protocol string            `json:"protocol,omitempty"`
+	Path     string            `json:"path,omitempty"`
+	Params   map[string]string `json:"params,omitempty"`
 
 	serviceKey string `json:"-"`
 	matchKey   string `json:"-"`
 	url        *URL   `json:"-"`
 }
 
+// nolint
 func NewServiceInfoWithUrl(url *URL) *ServiceInfo {
 	service := NewServiceInfo(url.Service(), url.Group(), url.Version(), url.Protocol, url.Path, nil)
 	service.url = url
@@ -156,6 +166,7 @@ func NewServiceInfoWithUrl(url *URL) *ServiceInfo {
 	return service
 }
 
+// nolint
 func NewServiceInfo(name, group, version, protocol, path string, params map[string]string) *ServiceInfo {
 	serviceKey := ServiceKey(name, group, version)
 	matchKey := MatchKey(serviceKey, protocol)
@@ -171,10 +182,12 @@ func NewServiceInfo(name, group, version, protocol, path string, params map[stri
 	}
 }
 
+// nolint
 func (si *ServiceInfo) JavaClassName() string {
 	return "org.apache.dubbo.metadata.MetadataInfo.ServiceInfo"
 }
 
+// nolint
 func (si *ServiceInfo) GetMethods() []string {
 	if si.Params[constant.METHODS_KEY] != "" {
 		s := si.Params[constant.METHODS_KEY]
@@ -190,6 +203,7 @@ func (si *ServiceInfo) GetMethods() []string {
 	return methods
 }
 
+// nolint
 func (si *ServiceInfo) GetParams() url.Values {
 	v := url.Values{}
 	for k, p := range si.Params {
@@ -203,6 +217,7 @@ func (si *ServiceInfo) GetParams() url.Values {
 	return v
 }
 
+// nolint
 func (si *ServiceInfo) GetMatchKey() string {
 	if si.matchKey != "" {
 		return si.matchKey
@@ -212,6 +227,7 @@ func (si *ServiceInfo) GetMatchKey() string {
 	return si.matchKey
 }
 
+// nolint
 func (si *ServiceInfo) GetServiceKey() string {
 	if si.serviceKey != "" {
 		return si.serviceKey
