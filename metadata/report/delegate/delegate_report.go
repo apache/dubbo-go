@@ -213,6 +213,10 @@ func (mr *MetadataReport) storeMetadataTask(role int, identifier *identifier.Met
 	} else if role == common.CONSUMER {
 		err = report.StoreConsumerMetadata(identifier, string(data))
 	}
+
+	if err != nil {
+		logger.Errorf("storeProviderMetadataTask error in stage call  metadata report to StoreProviderMetadata, msg is %+v", err)
+	}
 }
 
 // StoreConsumerMetadata will delegate to call remote metadata's sdk to store consumer side service definition
