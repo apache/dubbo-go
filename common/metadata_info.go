@@ -156,7 +156,7 @@ func NewServiceInfoWithUrl(url *URL) *ServiceInfo {
 	return service
 }
 
-func NewServiceInfo(name string, group string, version string, protocol string, path string, params map[string]string) *ServiceInfo {
+func NewServiceInfo(name, group, version, protocol, path string, params map[string]string) *ServiceInfo {
 	serviceKey := ServiceKey(name, group, version)
 	matchKey := MatchKey(serviceKey, protocol)
 	return &ServiceInfo{
