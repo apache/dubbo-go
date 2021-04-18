@@ -18,7 +18,6 @@
 package getty
 
 import (
-	"go.uber.org/atomic"
 	"math/rand"
 	"sync"
 	"time"
@@ -28,6 +27,7 @@ import (
 	"github.com/apache/dubbo-getty"
 	gxsync "github.com/dubbogo/gost/sync"
 	perrors "github.com/pkg/errors"
+	"go.uber.org/atomic"
 	"gopkg.in/yaml.v2"
 )
 
