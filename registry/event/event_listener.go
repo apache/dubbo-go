@@ -18,18 +18,21 @@
 package event
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/registry"
-	"github.com/apache/dubbo-go/remoting"
-	gxset "github.com/dubbogo/gost/container/set"
 	"reflect"
 )
 
 import (
+	gxset "github.com/dubbogo/gost/container/set"
+)
+
+import (
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/common/observer"
+	"github.com/apache/dubbo-go/registry"
+	"github.com/apache/dubbo-go/remoting"
 )
 
 // The Service Discovery Changed  Event Listener
@@ -68,6 +71,10 @@ func (lstn *ServiceInstancesChangedListener) OnEvent(e observer.Event) error {
 
 	for _, instances := range lstn.allInstances {
 		for _, instance := range instances {
+			if instance.GetMetadata() == nil {
+				logger.Warnf("Instance metadata is nil: %s", instance.GetHost())
+				continue
+			}
 			revision := instance.GetMetadata()[constant.EXPORTED_SERVICES_REVISION_PROPERTY_NAME]
 			if "0" == revision {
 				logger.Infof("Find instance without valid service metadata: %s", instance.GetHost())
@@ -135,6 +142,7 @@ func (lstn *ServiceInstancesChangedListener) OnEvent(e observer.Event) error {
 	return nil
 }
 
+// getMetadataInfo get metadata info when METADATA_STORAGE_TYPE_PROPERTY_NAME is null
 func (lstn *ServiceInstancesChangedListener) getMetadataInfo(instance registry.ServiceInstance, metadataInfo *common.MetadataInfo, revision string) (*common.MetadataInfo, error) {
 	metadataStorageType := instance.GetMetadata()[constant.METADATA_STORAGE_TYPE_PROPERTY_NAME]
 	if metadataStorageType == constant.REMOTE_METADATA_STORAGE_TYPE {
@@ -158,6 +166,7 @@ func (lstn *ServiceInstancesChangedListener) getMetadataInfo(instance registry.S
 	return metadataInfo, nil
 }
 
+// AddListenerAndNotify add notify listener and notify to listen service event
 func (lstn *ServiceInstancesChangedListener) AddListenerAndNotify(serviceKey string, notify registry.NotifyListener) {
 	lstn.listeners[serviceKey] = notify
 	urls := lstn.serviceUrls[serviceKey]
@@ -169,6 +178,7 @@ func (lstn *ServiceInstancesChangedListener) AddListenerAndNotify(serviceKey str
 	}
 }
 
+// RemoveListener remove notify listener
 func (lstn *ServiceInstancesChangedListener) RemoveListener(serviceKey string) {
 	delete(lstn.listeners, serviceKey)
 }

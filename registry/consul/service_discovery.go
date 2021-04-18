@@ -20,7 +20,6 @@ package consul
 import (
 	"encoding/base64"
 	"fmt"
-	"github.com/apache/dubbo-go/registry/event"
 	"strconv"
 	"sync"
 	"time"
@@ -40,6 +39,7 @@ import (
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/registry"
+	"github.com/apache/dubbo-go/registry/event"
 )
 
 const (
