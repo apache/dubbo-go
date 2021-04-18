@@ -72,6 +72,9 @@ func createProxy(ins registry.ServiceInstance) service.MetadataService {
 // buildStandardMetadataServiceURL will use standard format to build the metadata service url.
 func buildStandardMetadataServiceURL(ins registry.ServiceInstance) []*common.URL {
 	ps := getMetadataServiceUrlParams(ins)
+	if ps[constant.PROTOCOL_KEY] == "" {
+		return nil
+	}
 	res := make([]*common.URL, 0, len(ps))
 	sn := ins.GetServiceName()
 	host := ins.GetHost()

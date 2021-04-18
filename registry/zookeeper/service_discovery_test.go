@@ -170,11 +170,9 @@ func TestAddListenerZookeeperServiceDiscovery(t *testing.T) {
 		wg: wg,
 		t:  t,
 	}
-	hs := &gxset.HashSet{}
+	hs := gxset.NewSet()
 	hs.Add(testName)
-	sicl := &event.ServiceInstancesChangedListenerImpl{
-		ServiceNames: hs,
-	}
+	sicl := event.NewServiceInstancesChangedListener(hs)
 	extension.SetAndInitGlobalDispatcher("direct")
 	extension.GetGlobalDispatcher().AddEventListener(sicl)
 	err = sd.AddListener(sicl)

@@ -18,7 +18,6 @@
 package servicediscovery
 
 import (
-	"github.com/apache/dubbo-go/registry/event"
 	"testing"
 )
 
@@ -168,7 +167,7 @@ func (m *mockServiceDiscovery) GetRequestInstances([]string, int, int) map[strin
 	panic("implement me")
 }
 
-func (m *mockServiceDiscovery) AddListener(*event.ServiceInstancesChangedListenerImpl) error {
+func (m *mockServiceDiscovery) AddListener(registry.ServiceInstancesChangedListener) error {
 	panic("implement me")
 }
 

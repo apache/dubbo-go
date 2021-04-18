@@ -60,6 +60,10 @@ func (m *metadataServiceURLParamsMetadataCustomizer) Customize(instance registry
 		return
 	}
 	url := ms.GetMetadataServiceURL()
+	if url == nil {
+		logger.Errorf("the metadata service url is nil")
+		return
+	}
 	ps := m.convertToParams(url)
 	str, err := json.Marshal(ps)
 	if err != nil {
