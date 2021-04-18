@@ -144,7 +144,12 @@ func (lstn *ServiceInstancesChangedListener) OnEvent(e observer.Event) error {
 
 // getMetadataInfo get metadata info when METADATA_STORAGE_TYPE_PROPERTY_NAME is null
 func (lstn *ServiceInstancesChangedListener) getMetadataInfo(instance registry.ServiceInstance, metadataInfo *common.MetadataInfo, revision string) (*common.MetadataInfo, error) {
-	metadataStorageType := instance.GetMetadata()[constant.METADATA_STORAGE_TYPE_PROPERTY_NAME]
+	var metadataStorageType string
+	if instance.GetMetadata() == nil {
+		metadataStorageType = constant.DEFAULT_METADATA_STORAGE_TYPE
+	} else {
+		metadataStorageType = instance.GetMetadata()[constant.METADATA_STORAGE_TYPE_PROPERTY_NAME]
+	}
 	if metadataStorageType == constant.REMOTE_METADATA_STORAGE_TYPE {
 		remoteMetadataServiceImpl, err := extension.GetRemoteMetadataService()
 		if err != nil {
