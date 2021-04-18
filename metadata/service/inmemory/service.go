@@ -28,16 +28,20 @@ import (
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/metadata/definition"
 	"github.com/apache/dubbo-go/metadata/service"
 )
 
+func init() {
+	extension.SetLocalMetadataService(constant.DEFAULT_KEY, GetInMemoryMetadataService)
+}
+
 // version will be used by Version func
 const (
 	version = "1.0.0"
-	local   = "local"
 )
 
 // MetadataService is store and query the metadata info in memory when each service registry

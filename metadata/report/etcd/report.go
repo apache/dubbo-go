@@ -50,11 +50,13 @@ type etcdMetadataReport struct {
 	root   string
 }
 
+// GetAppMetadata get metadata info from etcd
 func (e *etcdMetadataReport) GetAppMetadata(metadataIdentifier *identifier.SubscriberMetadataIdentifier) (*common.MetadataInfo, error) {
 	// TODO will implement
 	panic("implement me")
 }
 
+// PublishAppMetadata publish metadata info to etcd
 func (e *etcdMetadataReport) PublishAppMetadata(metadataIdentifier *identifier.SubscriberMetadataIdentifier, info *common.MetadataInfo) error {
 	// TODO will implement
 	panic("implement me")

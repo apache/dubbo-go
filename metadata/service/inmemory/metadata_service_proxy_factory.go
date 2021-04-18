@@ -32,7 +32,10 @@ import (
 )
 
 func init() {
-	extension.SetLocalMetadataService(constant.DEFAULT_KEY, GetInMemoryMetadataService)
+	factory := service.NewBaseMetadataServiceProxyFactory(createProxy)
+	extension.SetMetadataServiceProxyFactory(constant.DEFAULT_KEY, func() service.MetadataServiceProxyFactory {
+		return factory
+	})
 }
 
 var (

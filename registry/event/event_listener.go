@@ -22,7 +22,6 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/metadata/service/inmemory"
 	"github.com/apache/dubbo-go/registry"
 	"github.com/apache/dubbo-go/remoting"
 	gxset "github.com/dubbogo/gost/container/set"
@@ -149,7 +148,7 @@ func (lstn *ServiceInstancesChangedListener) getMetadataInfo(instance registry.S
 		}
 	} else {
 		var err error
-		proxyFactory := inmemory.GetInMemoryMetadataServiceProxyFactory()
+		proxyFactory := extension.GetMetadataServiceProxyFactory(constant.DEFAULT_KEY)
 		metadataService := proxyFactory.GetProxy(instance)
 		metadataInfo, err = metadataService.GetMetadataInfo(revision)
 		if err != nil {

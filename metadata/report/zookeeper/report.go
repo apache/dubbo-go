@@ -54,6 +54,7 @@ type zookeeperMetadataReport struct {
 	rootDir string
 }
 
+// GetAppMetadata get metadata info from zookeeper
 func (m *zookeeperMetadataReport) GetAppMetadata(metadataIdentifier *identifier.SubscriberMetadataIdentifier) (*common.MetadataInfo, error) {
 	k := m.rootDir + metadataIdentifier.GetFilePathKey()
 	data, _, err := m.client.GetContent(k)
@@ -68,6 +69,7 @@ func (m *zookeeperMetadataReport) GetAppMetadata(metadataIdentifier *identifier.
 	return &metadataInfo, nil
 }
 
+// PublishAppMetadata publish metadata info to zookeeper
 func (m *zookeeperMetadataReport) PublishAppMetadata(metadataIdentifier *identifier.SubscriberMetadataIdentifier, info *common.MetadataInfo) error {
 	k := m.rootDir + metadataIdentifier.GetFilePathKey()
 	data, err := json.Marshal(info)

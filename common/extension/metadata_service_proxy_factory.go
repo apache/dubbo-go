@@ -22,6 +22,7 @@ import (
 )
 
 import (
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/metadata/service"
 )
 
@@ -37,6 +38,9 @@ func SetMetadataServiceProxyFactory(name string, creator MetadataServiceProxyFac
 // GetMetadataServiceProxyFactory will create an instance.
 // it will panic if the factory with name not found
 func GetMetadataServiceProxyFactory(name string) service.MetadataServiceProxyFactory {
+	if name == "" {
+		name = constant.DEFAULT_KEY
+	}
 	if f, ok := metadataServiceProxyFactoryMap[name]; ok {
 		return f()
 	}

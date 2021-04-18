@@ -44,11 +44,15 @@ type consulMetadataReport struct {
 	client *consul.Client
 }
 
+// GetAppMetadata get metadata info from consul
 func (m *consulMetadataReport) GetAppMetadata(metadataIdentifier *identifier.SubscriberMetadataIdentifier) (*common.MetadataInfo, error) {
+	// TODO will implement
 	panic("implement me")
 }
 
+// PublishAppMetadata publish metadata info from consul
 func (m *consulMetadataReport) PublishAppMetadata(metadataIdentifier *identifier.SubscriberMetadataIdentifier, info *common.MetadataInfo) error {
+	// TODO will implement
 	panic("implement me")
 }
 

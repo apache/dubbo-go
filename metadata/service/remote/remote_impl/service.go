@@ -77,7 +77,7 @@ func GetRemoteMetadataService() (remote.RemoteMetadataService, error) {
 	return remoteMetadataServiceImplInstance, err
 }
 
-// PublishMetadata publish the medata info of service from report
+// PublishMetadata publishes the metadata info of @service to remote metadata center
 func (mts *RemoteMetadataServiceImpl) PublishMetadata(service string) {
 	info, err := mts.MetadataService.GetMetadataInfo("")
 	if err != nil {

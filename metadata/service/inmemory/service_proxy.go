@@ -37,7 +37,7 @@ import (
 // so in client-side, if we want to get the metadata information,
 // we must call metadata service
 // this is the stub, or proxy
-// for now, only GetExportedURLs need to be implemented
+// for now, only GetMetadataInfo need to be implemented
 type MetadataServiceProxy struct {
 	invkr protocol.Invoker
 }
