@@ -18,7 +18,6 @@
 package event
 
 import (
-	"github.com/apache/dubbo-go/metadata/service/inmemory"
 	gxset "github.com/dubbogo/gost/container/set"
 	gxpage "github.com/dubbogo/gost/hash/page"
 )
