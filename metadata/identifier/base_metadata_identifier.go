@@ -96,7 +96,7 @@ type BaseApplicationMetadataIdentifier struct {
 	Application string
 }
 
-// getIdentifierKey returns string that format is service:Version:Group:Side:param1:param2...
+// getIdentifierKey returns string that format is application/param
 func (madi *BaseApplicationMetadataIdentifier) getIdentifierKey(params ...string) string {
 	return madi.Application + joinParams(constant.KEY_SEPARATOR, params)
 }
