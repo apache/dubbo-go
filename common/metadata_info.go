@@ -198,7 +198,7 @@ func NewServiceInfo(name, group, version, protocol, path string, params map[stri
 
 // nolint
 func (si *ServiceInfo) JavaClassName() string {
-	return "org.apache.dubbo.metadata.MetadataInfo.ServiceInfo"
+	return "org.apache.dubbo.metadata.MetadataInfo$ServiceInfo"
 }
 
 // nolint
