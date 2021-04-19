@@ -328,6 +328,7 @@ func (zksd *zookeeperServiceDiscovery) toCuratorInstance(instance registry.Servi
 		Port:                instance.GetPort(),
 		Payload:             pl,
 		RegistrationTimeUTC: 0,
+		ClassType:           "org.apache.dubbo.registry.zookeeper.ZookeeperInstance",
 	}
 	return cuis
 }
