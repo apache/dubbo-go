@@ -90,5 +90,5 @@ func createPxy() service.MetadataService {
 		Metadata:    map[string]string{constant.METADATA_SERVICE_URL_PARAMS_PROPERTY_NAME: `{"mock":{"timeout":"10000","version":"1.0.0","dubbo":"2.0.2","release":"2.7.6","port":"20880"}}`},
 	}
 
-	return extension.GetMetadataServiceProxyFactory(local).GetProxy(ins)
+	return extension.GetMetadataServiceProxyFactory("").GetProxy(ins)
 }

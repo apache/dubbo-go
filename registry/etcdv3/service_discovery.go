@@ -211,10 +211,17 @@ func (e *etcdV3ServiceDiscovery) GetRequestInstances(serviceNames []string, offs
 }
 
 // ----------------- event ----------------------
-// AddListener adds a new ServiceInstancesChangedListener
+// AddListener adds a new ServiceInstancesChangedListenerImpl
 // see addServiceInstancesChangedListener in Java
-func (e *etcdV3ServiceDiscovery) AddListener(listener *registry.ServiceInstancesChangedListener) error {
-	return e.registerSreviceWatcher(listener.ServiceName)
+func (e *etcdV3ServiceDiscovery) AddListener(listener registry.ServiceInstancesChangedListener) error {
+	for _, t := range listener.GetServiceNames().Values() {
+		serviceName := t.(string)
+		err := e.registerSreviceWatcher(serviceName)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // DispatchEventByServiceName dispatches the ServiceInstancesChangedEvent to service instance whose name is serviceName
