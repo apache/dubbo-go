@@ -321,6 +321,7 @@ func (zksd *zookeeperServiceDiscovery) toCuratorInstance(instance registry.Servi
 	pl["id"] = id
 	pl["name"] = instance.GetServiceName()
 	pl["metadata"] = instance.GetMetadata()
+	pl["@class"] = "org.apache.dubbo.registry.zookeeper.ZookeeperInstance"
 	cuis := &curator_discovery.ServiceInstance{
 		Name:                instance.GetServiceName(),
 		ID:                  id,
@@ -328,7 +329,6 @@ func (zksd *zookeeperServiceDiscovery) toCuratorInstance(instance registry.Servi
 		Port:                instance.GetPort(),
 		Payload:             pl,
 		RegistrationTimeUTC: 0,
-		ClassType:           "org.apache.dubbo.registry.zookeeper.ZookeeperInstance",
 	}
 	return cuis
 }

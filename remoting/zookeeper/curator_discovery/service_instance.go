@@ -26,5 +26,4 @@ type ServiceInstance struct {
 	Port                int         `json:"port,omitempty"`
 	Payload             interface{} `json:"payload,omitempty"`
 	RegistrationTimeUTC int64       `json:"registrationTimeUTC,omitempty"`
-	ClassType           string      `json:"@class,omitempty"`
 }
