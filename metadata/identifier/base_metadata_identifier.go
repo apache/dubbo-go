@@ -104,6 +104,6 @@ func (madi *BaseApplicationMetadataIdentifier) getIdentifierKey(params ...string
 // getFilePathKey returns string that format is metadata/application/revision
 func (madi *BaseApplicationMetadataIdentifier) getFilePathKey(params ...string) string {
 	return constant.DEFAULT_PATH_TAG +
-		madi.Application +
+		withPathSeparator(madi.Application) +
 		joinParams(constant.PATH_SEPARATOR, params)
 }
