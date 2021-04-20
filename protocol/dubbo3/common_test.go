@@ -23,7 +23,6 @@ import (
 )
 
 import (
-	triCommon "github.com/dubbogo/triple/pkg/common"
 	native_grpc "google.golang.org/grpc"
 )
 
@@ -86,6 +85,16 @@ func (g *greeterProviderBase) ServiceDesc() *native_grpc.ServiceDesc {
 	}
 }
 
+// Dubbo3GrpcService is gRPC  service
+type Dubbo3GrpcService interface {
+	// SetProxyImpl sets proxy.
+	SetProxyImpl(impl protocol.Invoker)
+	// GetProxyImpl gets proxy.
+	GetProxyImpl() protocol.Invoker
+	// ServiceDesc gets an RPC service's specification.
+	ServiceDesc() *native_grpc.ServiceDesc
+}
+
 func dubboGreeterSayHelloHandler(srv interface{}, ctx context.Context,
 	dec func(interface{}) error, interceptor native_grpc.UnaryServerInterceptor) (interface{}, error) {
 
@@ -93,7 +102,7 @@ func dubboGreeterSayHelloHandler(srv interface{}, ctx context.Context,
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	base := srv.(triCommon.Dubbo3GrpcService)
+	base := srv.(Dubbo3GrpcService)
 
 	args := []interface{}{}
 	args = append(args, in)

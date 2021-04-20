@@ -19,7 +19,6 @@ package dubbo3
 import (
 	"context"
 	"fmt"
-	"github.com/apache/dubbo-go/protocol/invocation"
 	"reflect"
 	"sync"
 )
@@ -37,6 +36,7 @@ import (
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/protocol"
+	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
 var protocolOnce sync.Once
