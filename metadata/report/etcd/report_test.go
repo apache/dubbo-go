@@ -102,8 +102,10 @@ func TestEtcdMetadataReport_CRUD(t *testing.T) {
 
 func newSubscribeMetadataIdentifier() *identifier.SubscriberMetadataIdentifier {
 	return &identifier.SubscriberMetadataIdentifier{
-		Revision:           "subscribe",
-		MetadataIdentifier: *newMetadataIdentifier("provider"),
+		Revision: "subscribe",
+		BaseApplicationMetadataIdentifier: identifier.BaseApplicationMetadataIdentifier{
+			Application: "provider",
+		},
 	}
 }
 
