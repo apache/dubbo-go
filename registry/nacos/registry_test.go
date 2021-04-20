@@ -65,6 +65,7 @@ func TestNacosRegistry_Register(t *testing.T) {
 		t.Errorf("register error:%s \n", err.Error())
 		return
 	}
+	time.Sleep(time.Second)
 	nacosReg := reg.(*nacosRegistry)
 	service, _ := nacosReg.namingClient.GetService(vo.GetServiceParam{ServiceName: "providers:com.ikurento.user.UserProvider:1.0.0:guangzhou-idc"})
 	data, _ := json.Marshal(service)
