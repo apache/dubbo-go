@@ -38,6 +38,7 @@ import (
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config"
+	_ "github.com/apache/dubbo-go/metadata/mapping/memory"
 	"github.com/apache/dubbo-go/registry"
 )
 
