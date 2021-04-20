@@ -27,6 +27,7 @@ import (
 	tripleConstant "github.com/dubbogo/triple/pkg/common/constant"
 	triConfig "github.com/dubbogo/triple/pkg/config"
 	"github.com/dubbogo/triple/pkg/triple"
+	"google.golang.org/grpc"
 )
 
 import (
@@ -137,6 +138,16 @@ func (dp *DubboProtocol) Destroy() {
 		}
 		delete(dp.serverMap, v)
 	}
+}
+
+// Dubbo3GrpcService is gRPC  service
+type Dubbo3GrpcService interface {
+	// SetProxyImpl sets proxy.
+	SetProxyImpl(impl protocol.Invoker)
+	// GetProxyImpl gets proxy.
+	GetProxyImpl() protocol.Invoker
+	// ServiceDesc gets an RPC service's specification.
+	ServiceDesc() *grpc.ServiceDesc
 }
 
 type Dubbo3HessianService struct {

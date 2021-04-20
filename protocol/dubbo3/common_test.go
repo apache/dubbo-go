@@ -85,16 +85,6 @@ func (g *greeterProviderBase) ServiceDesc() *native_grpc.ServiceDesc {
 	}
 }
 
-// Dubbo3GrpcService is gRPC  service
-type Dubbo3GrpcService interface {
-	// SetProxyImpl sets proxy.
-	SetProxyImpl(impl protocol.Invoker)
-	// GetProxyImpl gets proxy.
-	GetProxyImpl() protocol.Invoker
-	// ServiceDesc gets an RPC service's specification.
-	ServiceDesc() *native_grpc.ServiceDesc
-}
-
 func dubboGreeterSayHelloHandler(srv interface{}, ctx context.Context,
 	dec func(interface{}) error, interceptor native_grpc.UnaryServerInterceptor) (interface{}, error) {
 
