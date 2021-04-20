@@ -18,7 +18,6 @@
 package nacos
 
 import (
-	"encoding/json"
 	"net/http"
 	"strconv"
 	"testing"
@@ -63,25 +62,8 @@ func TestNacosMetadataReport_CRUD(t *testing.T) {
 	assert.Equal(t, 1, len(exportedUrls))
 	assert.Nil(t, err)
 
-	subMi := newSubscribeMetadataIdentifier()
-	urls := []string{serviceUrl.String()}
-	bytes, _ := json.Marshal(urls)
-	err = rpt.SaveSubscribedData(subMi, string(bytes))
-	assert.Nil(t, err)
-
-	subscribeUrl, err := rpt.GetSubscribedURLs(subMi)
-	assert.Equal(t, 1, len(subscribeUrl))
-	assert.Nil(t, err)
-
 	err = rpt.RemoveServiceMetadata(serviceMi)
 	assert.Nil(t, err)
-}
-
-func newSubscribeMetadataIdentifier() *identifier.SubscriberMetadataIdentifier {
-	return &identifier.SubscriberMetadataIdentifier{
-		Revision:                          "subscribe",
-		BaseApplicationMetadataIdentifier: identifier.BaseApplicationMetadataIdentifier{Application: "provider"},
-	}
 }
 
 func newServiceMetadataIdentifier() *identifier.ServiceMetadataIdentifier {
