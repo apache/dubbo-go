@@ -32,7 +32,6 @@ import (
 )
 
 func TestGetCustomizableServiceInstanceListener(t *testing.T) {
-	prepareMetadataServiceForTest()
 
 	cus := GetCustomizableServiceInstanceListener()
 

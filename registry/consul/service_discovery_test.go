@@ -19,6 +19,8 @@ package consul
 
 import (
 	"fmt"
+	"github.com/apache/dubbo-go/registry/event"
+	gxset "github.com/dubbogo/gost/container/set"
 	"math/rand"
 	"strconv"
 	"testing"
@@ -150,7 +152,9 @@ func TestConsulServiceDiscovery_CRUD(t *testing.T) {
 	// assert.Nil(t, err)
 
 	// test AddListener
-	err = serviceDiscovery.AddListener(&registry.ServiceInstancesChangedListener{ServiceName: instance.GetServiceName()})
+	hs := &gxset.HashSet{}
+	hs.Add(instance.GetServiceName())
+	err = serviceDiscovery.AddListener(event.NewServiceInstancesChangedListener(hs))
 	assert.Nil(t, err)
 	err = serviceDiscovery.Unregister(instance)
 	assert.Nil(t, err)

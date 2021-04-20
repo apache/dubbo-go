@@ -269,11 +269,18 @@ func (zksd *zookeeperServiceDiscovery) GetRequestInstances(serviceNames []string
 }
 
 // AddListener ListenServiceEvent will add a data listener in service
-func (zksd *zookeeperServiceDiscovery) AddListener(listener *registry.ServiceInstancesChangedListener) error {
+func (zksd *zookeeperServiceDiscovery) AddListener(listener registry.ServiceInstancesChangedListener) error {
 	zksd.listenLock.Lock()
 	defer zksd.listenLock.Unlock()
-	zksd.listenNames = append(zksd.listenNames, listener.ServiceName)
-	zksd.csd.ListenServiceEvent(listener.ServiceName, zksd)
+	for _, t := range listener.GetServiceNames().Values() {
+		serviceName, ok := t.(string)
+		if !ok {
+			logger.Errorf("service name error %s", t)
+			continue
+		}
+		zksd.listenNames = append(zksd.listenNames, serviceName)
+		zksd.csd.ListenServiceEvent(serviceName, zksd)
+	}
 	return nil
 }
 
@@ -314,6 +321,7 @@ func (zksd *zookeeperServiceDiscovery) toCuratorInstance(instance registry.Servi
 	pl["id"] = id
 	pl["name"] = instance.GetServiceName()
 	pl["metadata"] = instance.GetMetadata()
+	pl["@class"] = "org.apache.dubbo.registry.zookeeper.ZookeeperInstance"
 	cuis := &curator_discovery.ServiceInstance{
 		Name:                instance.GetServiceName(),
 		ID:                  id,

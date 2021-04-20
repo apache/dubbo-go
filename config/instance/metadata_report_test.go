@@ -50,6 +50,14 @@ func (m *mockMetadataReportFactory) CreateMetadataReport(*common.URL) report.Met
 
 type mockMetadataReport struct{}
 
+func (m mockMetadataReport) GetAppMetadata(metadataIdentifier *identifier.SubscriberMetadataIdentifier) (*common.MetadataInfo, error) {
+	panic("implement me")
+}
+
+func (m mockMetadataReport) PublishAppMetadata(metadataIdentifier *identifier.SubscriberMetadataIdentifier, info *common.MetadataInfo) error {
+	panic("implement me")
+}
+
 func (m mockMetadataReport) StoreProviderMetadata(*identifier.MetadataIdentifier, string) error {
 	panic("implement me")
 }

@@ -18,6 +18,8 @@
 package zookeeper
 
 import (
+	"github.com/apache/dubbo-go/registry/event"
+	gxset "github.com/dubbogo/gost/container/set"
 	"strconv"
 	"sync"
 	"testing"
@@ -168,10 +170,9 @@ func TestAddListenerZookeeperServiceDiscovery(t *testing.T) {
 		wg: wg,
 		t:  t,
 	}
-	sicl := &registry.ServiceInstancesChangedListener{
-		ServiceName:   testName,
-		ChangedNotify: tn,
-	}
+	hs := gxset.NewSet()
+	hs.Add(testName)
+	sicl := event.NewServiceInstancesChangedListener(hs)
 	extension.SetAndInitGlobalDispatcher("direct")
 	extension.GetGlobalDispatcher().AddEventListener(sicl)
 	err = sd.AddListener(sicl)

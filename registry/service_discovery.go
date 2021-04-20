@@ -72,9 +72,9 @@ type ServiceDiscovery interface {
 	GetRequestInstances(serviceNames []string, offset int, requestedSize int) map[string]gxpage.Pager
 
 	// ----------------- event ----------------------
-	// AddListener adds a new ServiceInstancesChangedListener
+	// AddListener adds a new ServiceInstancesChangedListenerImpl
 	// see addServiceInstancesChangedListener in Java
-	AddListener(listener *ServiceInstancesChangedListener) error
+	AddListener(listener ServiceInstancesChangedListener) error
 
 	// DispatchEventByServiceName dispatches the ServiceInstancesChangedEvent to service instance whose name is serviceName
 	DispatchEventByServiceName(serviceName string) error

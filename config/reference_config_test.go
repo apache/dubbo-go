@@ -342,7 +342,7 @@ func (*mockRegistryProtocol) Refer(url *common.URL) protocol.Invoker {
 func (*mockRegistryProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	registryURL := getRegistryURL(invoker)
 	if registryURL.Protocol == "service-discovery" {
-		metaDataService, err := extension.GetMetadataService(GetApplicationConfig().MetadataType)
+		metaDataService, err := extension.GetLocalMetadataService("")
 		if err != nil {
 			panic(err)
 		}
