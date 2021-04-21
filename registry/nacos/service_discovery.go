@@ -349,5 +349,6 @@ func newNacosServiceDiscovery(name string) (registry.ServiceDiscovery, error) {
 		descriptor:        descriptor,
 		registryInstances: []registry.ServiceInstance{},
 	}
+	instanceMap[name] = newInstance
 	return newInstance, nil
 }
