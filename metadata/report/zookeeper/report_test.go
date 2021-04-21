@@ -70,11 +70,8 @@ func newServiceMetadataIdentifier(side string) *identifier.ServiceMetadataIdenti
 	}
 }
 
-func newSubscribeMetadataIdentifier(side string) *identifier.SubscriberMetadataIdentifier {
-	return &identifier.SubscriberMetadataIdentifier{
-		Revision:           "1.0",
-		MetadataIdentifier: *newMetadataIdentifier(side),
-	}
+func newSubscribeMetadataIdentifier() *identifier.SubscriberMetadataIdentifier {
+	return identifier.NewSubscriberMetadataIdentifier("application", "1.0")
 }
 
 type zookeeperMetadataReportTestSuite struct {
@@ -120,7 +117,7 @@ func (suite *zookeeperMetadataReportTestSuite) testGetExportedURLs() {
 }
 
 func (suite *zookeeperMetadataReportTestSuite) testSaveSubscribedData(url *common.URL) {
-	subscribeMi := newSubscribeMetadataIdentifier("provider")
+	subscribeMi := newSubscribeMetadataIdentifier()
 	urls := []string{url.String()}
 	bytes, _ := json.Marshal(urls)
 	err := suite.m.SaveSubscribedData(subscribeMi, string(bytes))
@@ -128,7 +125,7 @@ func (suite *zookeeperMetadataReportTestSuite) testSaveSubscribedData(url *commo
 }
 
 func (suite *zookeeperMetadataReportTestSuite) testGetSubscribedURLs() {
-	subscribeMi := newSubscribeMetadataIdentifier("provider")
+	subscribeMi := newSubscribeMetadataIdentifier()
 	urls, err := suite.m.GetSubscribedURLs(subscribeMi)
 	assert.Equal(suite.t, 1, len(urls))
 	assert.NoError(suite.t, err)

@@ -29,6 +29,7 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/metadata/identifier"
@@ -48,6 +49,7 @@ func init() {
 // of MetadataReport based on nacos.
 type nacosMetadataReport struct {
 	client config_client.IConfigClient
+	group  string
 }
 
 // GetAppMetadata get metadata info from nacos
@@ -66,7 +68,7 @@ func (n *nacosMetadataReport) PublishAppMetadata(metadataIdentifier *identifier.
 func (n *nacosMetadataReport) StoreProviderMetadata(providerIdentifier *identifier.MetadataIdentifier, serviceDefinitions string) error {
 	return n.storeMetadata(vo.ConfigParam{
 		DataId:  providerIdentifier.GetIdentifierKey(),
-		Group:   providerIdentifier.Group,
+		Group:   n.group,
 		Content: serviceDefinitions,
 	})
 }
@@ -75,7 +77,7 @@ func (n *nacosMetadataReport) StoreProviderMetadata(providerIdentifier *identifi
 func (n *nacosMetadataReport) StoreConsumerMetadata(consumerMetadataIdentifier *identifier.MetadataIdentifier, serviceParameterString string) error {
 	return n.storeMetadata(vo.ConfigParam{
 		DataId:  consumerMetadataIdentifier.GetIdentifierKey(),
-		Group:   consumerMetadataIdentifier.Group,
+		Group:   n.group,
 		Content: serviceParameterString,
 	})
 }
@@ -84,7 +86,7 @@ func (n *nacosMetadataReport) StoreConsumerMetadata(consumerMetadataIdentifier *
 func (n *nacosMetadataReport) SaveServiceMetadata(metadataIdentifier *identifier.ServiceMetadataIdentifier, url *common.URL) error {
 	return n.storeMetadata(vo.ConfigParam{
 		DataId:  metadataIdentifier.GetIdentifierKey(),
-		Group:   metadataIdentifier.Group,
+		Group:   n.group,
 		Content: url.String(),
 	})
 }
@@ -93,7 +95,7 @@ func (n *nacosMetadataReport) SaveServiceMetadata(metadataIdentifier *identifier
 func (n *nacosMetadataReport) RemoveServiceMetadata(metadataIdentifier *identifier.ServiceMetadataIdentifier) error {
 	return n.deleteMetadata(vo.ConfigParam{
 		DataId: metadataIdentifier.GetIdentifierKey(),
-		Group:  metadataIdentifier.Group,
+		Group:  n.group,
 	})
 }
 
@@ -101,7 +103,7 @@ func (n *nacosMetadataReport) RemoveServiceMetadata(metadataIdentifier *identifi
 func (n *nacosMetadataReport) GetExportedURLs(metadataIdentifier *identifier.ServiceMetadataIdentifier) ([]string, error) {
 	return n.getConfigAsArray(vo.ConfigParam{
 		DataId: metadataIdentifier.GetIdentifierKey(),
-		Group:  metadataIdentifier.Group,
+		Group:  n.group,
 	})
 }
 
@@ -109,7 +111,7 @@ func (n *nacosMetadataReport) GetExportedURLs(metadataIdentifier *identifier.Ser
 func (n *nacosMetadataReport) SaveSubscribedData(subscriberMetadataIdentifier *identifier.SubscriberMetadataIdentifier, urls string) error {
 	return n.storeMetadata(vo.ConfigParam{
 		DataId:  subscriberMetadataIdentifier.GetIdentifierKey(),
-		Group:   subscriberMetadataIdentifier.Group,
+		Group:   n.group,
 		Content: urls,
 	})
 }
@@ -118,7 +120,7 @@ func (n *nacosMetadataReport) SaveSubscribedData(subscriberMetadataIdentifier *i
 func (n *nacosMetadataReport) GetSubscribedURLs(subscriberMetadataIdentifier *identifier.SubscriberMetadataIdentifier) ([]string, error) {
 	return n.getConfigAsArray(vo.ConfigParam{
 		DataId: subscriberMetadataIdentifier.GetIdentifierKey(),
-		Group:  subscriberMetadataIdentifier.Group,
+		Group:  n.group,
 	})
 }
 
@@ -126,7 +128,7 @@ func (n *nacosMetadataReport) GetSubscribedURLs(subscriberMetadataIdentifier *id
 func (n *nacosMetadataReport) GetServiceDefinition(metadataIdentifier *identifier.MetadataIdentifier) (string, error) {
 	return n.getConfig(vo.ConfigParam{
 		DataId: metadataIdentifier.GetIdentifierKey(),
-		Group:  metadataIdentifier.Group,
+		Group:  n.group,
 	})
 }
 
@@ -194,5 +196,6 @@ func (n *nacosMetadataReportFactory) CreateMetadataReport(url *common.URL) repor
 		logger.Errorf("Could not create nacos metadata report. URL: %s", url.String())
 		return nil
 	}
-	return &nacosMetadataReport{client: client}
+	group := url.GetParam(constant.GROUP_KEY, "dubbo")
+	return &nacosMetadataReport{client: client, group: group}
 }
