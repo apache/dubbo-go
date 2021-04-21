@@ -153,11 +153,26 @@ func (mts *MetadataService) getSpecifiedService(services *sync.Map, serviceKey s
 
 // ExportURL can store the in memory
 func (mts *MetadataService) ExportURL(url *common.URL) (bool, error) {
+	if constant.METADATA_SERVICE_NAME == url.GetParam(constant.INTERFACE_KEY, "") {
+		mts.metadataServiceURL = url
+		return true, nil
+	}
+	mts.mOnce.Do(func() {
+		mts.metadataInfo = common.NewMetadataInfWithApp(config.GetApplicationConfig().Name)
+	})
+	mts.metadataInfo.AddService(common.NewServiceInfoWithURL(url))
 	return mts.addURL(mts.exportedServiceURLs, url), nil
 }
 
 // UnexportURL can remove the url store in memory
 func (mts *MetadataService) UnexportURL(url *common.URL) error {
+	if constant.METADATA_SERVICE_NAME == url.GetParam(constant.INTERFACE_KEY, "") {
+		mts.metadataServiceURL = nil
+		return nil
+	}
+	if mts.metadataInfo != nil {
+		mts.metadataInfo.RemoveService(common.NewServiceInfoWithURL(url))
+	}
 	mts.removeURL(mts.exportedServiceURLs, url)
 	return nil
 }
