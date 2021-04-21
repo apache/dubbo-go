@@ -12,7 +12,6 @@ require (
 	github.com/alibaba/sentinel-golang v1.0.2
 	github.com/apache/dubbo-getty v1.4.3
 	github.com/apache/dubbo-go-hessian2 v1.9.1
-	github.com/coreos/etcd v3.3.25+incompatible
 	github.com/creasty/defaults v1.5.1
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/dubbogo/go-zookeeper v1.0.3
@@ -63,9 +62,7 @@ require (
 )
 
 replace (
-	github.com/coreos/bbolt => go.etcd.io/bbolt v1.3.4
 	github.com/envoyproxy/go-control-plane => github.com/envoyproxy/go-control-plane v0.8.0
 	github.com/shirou/gopsutil => github.com/shirou/gopsutil v0.0.0-20181107111621-48177ef5f880
-	go.etcd.io/bbolt v1.3.4 => github.com/coreos/bbolt v1.3.4
 	google.golang.org/grpc => google.golang.org/grpc v1.29.1
 )
