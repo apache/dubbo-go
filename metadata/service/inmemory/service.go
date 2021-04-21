@@ -164,7 +164,7 @@ func (mts *MetadataService) ExportURL(url *common.URL) (bool, error) {
 	mts.mOnce.Do(func() {
 		mts.metadataInfo = common.NewMetadataInfWithApp(config.GetApplicationConfig().Name)
 	})
-	mts.metadataInfo.AddService(common.NewServiceInfoWithUrl(url))
+	mts.metadataInfo.AddService(common.NewServiceInfoWithURL(url))
 	return mts.addURL(mts.exportedServiceURLs, url), nil
 }
 
@@ -175,7 +175,7 @@ func (mts *MetadataService) UnexportURL(url *common.URL) error {
 		return nil
 	}
 	if mts.metadataInfo != nil {
-		mts.metadataInfo.RemoveService(common.NewServiceInfoWithUrl(url))
+		mts.metadataInfo.RemoveService(common.NewServiceInfoWithURL(url))
 	}
 	mts.removeURL(mts.exportedServiceURLs, url)
 	return nil
