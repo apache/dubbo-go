@@ -152,9 +152,7 @@ func TestConsulServiceDiscovery_CRUD(t *testing.T) {
 	// assert.Nil(t, err)
 
 	// test AddListener
-	hs := &gxset.HashSet{
-		Items: make(map[interface{}]struct{}),
-	}
+	hs := gxset.NewSet()
 	hs.Add(instance.GetServiceName())
 	err = serviceDiscovery.AddListener(event.NewServiceInstancesChangedListener(hs))
 	assert.Nil(t, err)

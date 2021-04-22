@@ -140,7 +140,7 @@ func (dp *DubboProtocol) Destroy() {
 	}
 }
 
-// Dubbo3GrpcService is gRPC  service
+// Dubbo3GrpcService is gRPC service
 type Dubbo3GrpcService interface {
 	// SetProxyImpl sets proxy.
 	SetProxyImpl(impl protocol.Invoker)

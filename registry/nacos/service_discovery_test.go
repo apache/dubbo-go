@@ -158,7 +158,7 @@ func TestNacosServiceDiscovery_CRUD(t *testing.T) {
 	// test dispatcher event
 	err = serviceDiscovery.DispatchEventByServiceName(serviceName)
 	assert.Nil(t, err)
-	hs := &gxset.HashSet{}
+	hs := gxset.NewSet()
 	hs.Add(serviceName)
 	// test AddListener
 	err = serviceDiscovery.AddListener(event.NewServiceInstancesChangedListener(hs))
