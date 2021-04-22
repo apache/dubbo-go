@@ -23,7 +23,6 @@ import (
 	"strconv"
 	"sync"
 	"testing"
-	"time"
 )
 
 import (
@@ -65,8 +64,6 @@ func TestNewZookeeperServiceDiscovery(t *testing.T) {
 	name := "zookeeper1"
 	_, err := newZookeeperServiceDiscovery(name)
 
-	time.Sleep(time.Second)
-
 	// the ServiceDiscoveryConfig not found
 	assert.NotNil(t, err)
 
@@ -85,7 +82,6 @@ func TestCURDZookeeperServiceDiscovery(t *testing.T) {
 	prepareData(t)
 	sd, err := newZookeeperServiceDiscovery(testName)
 	assert.Nil(t, err)
-	time.Sleep(time.Second)
 	defer func() {
 		_ = sd.Destroy()
 	}()
@@ -154,7 +150,6 @@ func TestAddListenerZookeeperServiceDiscovery(t *testing.T) {
 	}()
 	sd, err := newZookeeperServiceDiscovery(testName)
 	assert.Nil(t, err)
-	time.Sleep(time.Second)
 	defer func() {
 		_ = sd.Destroy()
 	}()
