@@ -18,8 +18,6 @@
 package zookeeper
 
 import (
-	"github.com/apache/dubbo-go/registry/event"
-	gxset "github.com/dubbogo/gost/container/set"
 	"strconv"
 	"sync"
 	"testing"
@@ -27,6 +25,7 @@ import (
 
 import (
 	"github.com/dubbogo/go-zookeeper/zk"
+	gxset "github.com/dubbogo/gost/container/set"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -35,6 +34,7 @@ import (
 	"github.com/apache/dubbo-go/common/observer"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/registry"
+	"github.com/apache/dubbo-go/registry/event"
 )
 
 var testName = "test"

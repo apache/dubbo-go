@@ -19,8 +19,6 @@ package consul
 
 import (
 	"fmt"
-	"github.com/apache/dubbo-go/registry/event"
-	gxset "github.com/dubbogo/gost/container/set"
 	"math/rand"
 	"strconv"
 	"testing"
@@ -28,6 +26,7 @@ import (
 )
 
 import (
+	gxset "github.com/dubbogo/gost/container/set"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -37,7 +36,9 @@ import (
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/observer"
 	"github.com/apache/dubbo-go/config"
+	"github.com/apache/dubbo-go/metadata/mapping"
 	"github.com/apache/dubbo-go/registry"
+	"github.com/apache/dubbo-go/registry/event"
 	"github.com/apache/dubbo-go/remoting/consul"
 )
 
@@ -100,6 +101,10 @@ func TestConsulServiceDiscovery_CRUD(t *testing.T) {
 	extension.SetAndInitGlobalDispatcher("mock")
 	rand.Seed(time.Now().Unix())
 
+	extension.SetGlobalServiceNameMapping(func() mapping.ServiceNameMapping {
+		return &mockServiceNameMapping{}
+	})
+
 	instance, _ := prepareService()
 
 	// clean data
@@ -152,7 +157,7 @@ func TestConsulServiceDiscovery_CRUD(t *testing.T) {
 	// assert.Nil(t, err)
 
 	// test AddListener
-	hs := &gxset.HashSet{}
+	hs := gxset.NewSet()
 	hs.Add(instance.GetServiceName())
 	err = serviceDiscovery.AddListener(event.NewServiceInstancesChangedListener(hs))
 	assert.Nil(t, err)
@@ -235,4 +240,14 @@ func (m *MockEventDispatcher) RemoveAllEventListeners() {
 func (m *MockEventDispatcher) Dispatch(event observer.Event) {
 	m.Event = event
 	m.Notify <- struct{}{}
+}
+
+type mockServiceNameMapping struct{}
+
+func (m *mockServiceNameMapping) Map(string, string, string, string) error {
+	return nil
+}
+
+func (m *mockServiceNameMapping) Get(string, string, string, string) (*gxset.HashSet, error) {
+	panic("implement me")
 }
