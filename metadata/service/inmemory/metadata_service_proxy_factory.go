@@ -101,7 +101,6 @@ func getMetadataServiceUrlParams(ins registry.ServiceInstance) map[string]string
 	ps := ins.GetMetadata()
 	res := make(map[string]string, 2)
 	if str, ok := ps[constant.METADATA_SERVICE_URL_PARAMS_PROPERTY_NAME]; ok && len(str) > 0 {
-
 		err := json.Unmarshal([]byte(str), &res)
 		if err != nil {
 			logger.Errorf("could not parse the metadata service url parameters to map", err)

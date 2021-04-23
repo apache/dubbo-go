@@ -71,12 +71,7 @@ func newServiceMetadataIdentifier(side string) *identifier.ServiceMetadataIdenti
 }
 
 func newSubscribeMetadataIdentifier(side string) *identifier.SubscriberMetadataIdentifier {
-	return &identifier.SubscriberMetadataIdentifier{
-		Revision: "1.0",
-		BaseApplicationMetadataIdentifier: identifier.BaseApplicationMetadataIdentifier{
-			Application: side,
-		},
-	}
+	return identifier.NewSubscriberMetadataIdentifier(side, "1.0")
 }
 
 type consulMetadataReportTestSuite struct {

@@ -25,8 +25,8 @@ import (
 )
 
 import (
-	"github.com/coreos/etcd/embed"
 	"github.com/stretchr/testify/assert"
+	"go.etcd.io/etcd/embed"
 )
 
 import (
@@ -101,12 +101,7 @@ func TestEtcdMetadataReport_CRUD(t *testing.T) {
 }
 
 func newSubscribeMetadataIdentifier() *identifier.SubscriberMetadataIdentifier {
-	return &identifier.SubscriberMetadataIdentifier{
-		Revision: "subscribe",
-		BaseApplicationMetadataIdentifier: identifier.BaseApplicationMetadataIdentifier{
-			Application: "provider",
-		},
-	}
+	return identifier.NewSubscriberMetadataIdentifier("provider", "subscribe")
 }
 
 func newServiceMetadataIdentifier() *identifier.ServiceMetadataIdentifier {

@@ -64,10 +64,10 @@ func (m *MetadataServiceProxy) GetExportedURLs(serviceInterface string, group st
 		return []*common.URL{}, nil
 	}
 
-	urlStrs := res.Result().([]string)
+	urlStrs := *res.Result().(*[]interface{})
 	ret := make([]*common.URL, 0, len(urlStrs))
 	for _, v := range urlStrs {
-		tempURL, err := common.NewURL(v)
+		tempURL, err := common.NewURL(v.(string))
 		if err != nil {
 			return []*common.URL{}, err
 		}

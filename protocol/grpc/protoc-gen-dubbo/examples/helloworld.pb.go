@@ -21,14 +21,13 @@
 package main
 
 import (
-	"context"
-	"fmt"
-	"math"
-
-	"github.com/golang/protobuf/proto"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	context "context"
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
+	math "math"
 )
 
 import (
@@ -38,11 +37,9 @@ import (
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
-var (
-	_ = proto.Marshal
-	_ = fmt.Errorf
-	_ = math.Inf
-)
+var _ = proto.Marshal
+var _ = fmt.Errorf
+var _ = math.Inf
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the proto package it is being compiled against.
@@ -68,19 +65,15 @@ func (*HelloRequest) Descriptor() ([]byte, []int) {
 func (m *HelloRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_HelloRequest.Unmarshal(m, b)
 }
-
 func (m *HelloRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_HelloRequest.Marshal(b, m, deterministic)
 }
-
 func (m *HelloRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_HelloRequest.Merge(m, src)
 }
-
 func (m *HelloRequest) XXX_Size() int {
 	return xxx_messageInfo_HelloRequest.Size(m)
 }
-
 func (m *HelloRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_HelloRequest.DiscardUnknown(m)
 }
@@ -112,19 +105,15 @@ func (*HelloReply) Descriptor() ([]byte, []int) {
 func (m *HelloReply) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_HelloReply.Unmarshal(m, b)
 }
-
 func (m *HelloReply) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_HelloReply.Marshal(b, m, deterministic)
 }
-
 func (m *HelloReply) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_HelloReply.Merge(m, src)
 }
-
 func (m *HelloReply) XXX_Size() int {
 	return xxx_messageInfo_HelloReply.Size(m)
 }
-
 func (m *HelloReply) XXX_DiscardUnknown() {
 	xxx_messageInfo_HelloReply.DiscardUnknown(m)
 }
@@ -162,14 +151,12 @@ var fileDescriptor_17b8c58d586b62f2 = []byte{
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
-var (
-	_ context.Context
-	_ grpc.ClientConn
-)
+var _ context.Context
+var _ grpc.ClientConnInterface
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
-const _ = grpc.SupportPackageIsVersion4
+const _ = grpc.SupportPackageIsVersion6
 
 // GreeterClient is the client API for Greeter service.
 //
@@ -180,10 +167,10 @@ type GreeterClient interface {
 }
 
 type greeterClient struct {
-	cc *grpc.ClientConn
+	cc grpc.ClientConnInterface
 }
 
-func NewGreeterClient(cc *grpc.ClientConn) GreeterClient {
+func NewGreeterClient(cc grpc.ClientConnInterface) GreeterClient {
 	return &greeterClient{cc}
 }
 
@@ -203,7 +190,8 @@ type GreeterServer interface {
 }
 
 // UnimplementedGreeterServer can be embedded to have forward compatible implementations.
-type UnimplementedGreeterServer struct{}
+type UnimplementedGreeterServer struct {
+}
 
 func (*UnimplementedGreeterServer) SayHello(ctx context.Context, req *HelloRequest) (*HelloReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SayHello not implemented")
@@ -282,7 +270,7 @@ func _DUBBO_Greeter_SayHello_Handler(srv interface{}, ctx context.Context, dec f
 	args = append(args, in)
 	invo := invocation.NewRPCInvocation("SayHello", args, nil)
 	if interceptor == nil {
-		result := base.GetProxyImpl().Invoke(context.Background(), invo)
+		result := base.GetProxyImpl().Invoke(ctx, invo)
 		return result.Result(), result.Error()
 	}
 	info := &grpc.UnaryServerInfo{
@@ -290,7 +278,7 @@ func _DUBBO_Greeter_SayHello_Handler(srv interface{}, ctx context.Context, dec f
 		FullMethod: "/main.Greeter/SayHello",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		result := base.GetProxyImpl().Invoke(context.Background(), invo)
+		result := base.GetProxyImpl().Invoke(ctx, invo)
 		return result.Result(), result.Error()
 	}
 	return interceptor(ctx, in, info, handler)
