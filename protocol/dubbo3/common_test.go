@@ -23,7 +23,6 @@ import (
 )
 
 import (
-	triCommon "github.com/dubbogo/triple/pkg/common"
 	native_grpc "google.golang.org/grpc"
 )
 
@@ -93,7 +92,7 @@ func dubboGreeterSayHelloHandler(srv interface{}, ctx context.Context,
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	base := srv.(triCommon.Dubbo3GrpcService)
+	base := srv.(Dubbo3GrpcService)
 
 	args := []interface{}{}
 	args = append(args, in)

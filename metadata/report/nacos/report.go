@@ -109,7 +109,6 @@ func (n *nacosMetadataReport) GetExportedURLs(metadataIdentifier *identifier.Ser
 func (n *nacosMetadataReport) SaveSubscribedData(subscriberMetadataIdentifier *identifier.SubscriberMetadataIdentifier, urls string) error {
 	return n.storeMetadata(vo.ConfigParam{
 		DataId:  subscriberMetadataIdentifier.GetIdentifierKey(),
-		Group:   subscriberMetadataIdentifier.Group,
 		Content: urls,
 	})
 }
@@ -118,7 +117,6 @@ func (n *nacosMetadataReport) SaveSubscribedData(subscriberMetadataIdentifier *i
 func (n *nacosMetadataReport) GetSubscribedURLs(subscriberMetadataIdentifier *identifier.SubscriberMetadataIdentifier) ([]string, error) {
 	return n.getConfigAsArray(vo.ConfigParam{
 		DataId: subscriberMetadataIdentifier.GetIdentifierKey(),
-		Group:  subscriberMetadataIdentifier.Group,
 	})
 }
 

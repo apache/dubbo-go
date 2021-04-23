@@ -22,7 +22,7 @@ import (
 )
 
 import (
-	tripleCommon "github.com/dubbogo/triple/pkg/common"
+	tripleConstant "github.com/dubbogo/triple/pkg/common/constant"
 )
 
 import (
@@ -53,7 +53,7 @@ func (de *DubboExporter) Unexport() {
 	serviceId := url.GetParam(constant.BEAN_NAME_KEY, "")
 	interfaceName := url.GetParam(constant.INTERFACE_KEY, "")
 	de.BaseExporter.Unexport()
-	err := common.ServiceMap.UnRegister(interfaceName, tripleCommon.TRIPLE, serviceId)
+	err := common.ServiceMap.UnRegister(interfaceName, tripleConstant.TRIPLE, serviceId)
 	if err != nil {
 		logger.Errorf("[DubboExporter.Unexport] error: %v", err)
 	}

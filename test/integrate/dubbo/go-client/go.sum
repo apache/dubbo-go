@@ -148,10 +148,13 @@ github.com/dubbogo/gost v1.9.0/go.mod h1:pPTjVyoJan3aPxBPNUX0ADkXjPibLo+/Ib0/fAD
 github.com/dubbogo/gost v1.10.1/go.mod h1:+mQGS51XQEUWZP2JeGZTxJwipjRKtJO7Tr+FOg+72rI=
 github.com/dubbogo/gost v1.11.3 h1:PSP9KQyuRJugmPLqC18MFgoIL0g1G4n/9FTKgQYjjbE=
 github.com/dubbogo/gost v1.11.3/go.mod h1:3QQEj50QOhkWTERT785YZ5ZxIRGNdR11FCLP7FzHsMc=
+github.com/dubbogo/gost v1.11.5/go.mod h1:Q//0o51ooLfwpWzZMftJLvIitNEZXH3rRKkxdu37xJg=
+github.com/dubbogo/gost v1.11.6/go.mod h1:Q//0o51ooLfwpWzZMftJLvIitNEZXH3rRKkxdu37xJg=
 github.com/dubbogo/jsonparser v1.0.1/go.mod h1:tYAtpctvSP/tWw4MeelsowSPgXQRVHHWbqL6ynps8jU=
 github.com/dubbogo/net v0.0.2-0.20210326124702-e6a866993192/go.mod h1:B6/ka3g8VzcyrmdCH4VkHP1K0aHeI37FmclS+TCwIBU=
 github.com/dubbogo/triple v0.0.0-20210403061850-372f2dc47e02/go.mod h1:ArB/FJCvy6DQXs8tW6LmNRtLaZuncGmDHqD/1JOAwsU=
 github.com/dubbogo/triple v0.1.0/go.mod h1:ArB/FJCvy6DQXs8tW6LmNRtLaZuncGmDHqD/1JOAwsU=
+github.com/dubbogo/triple v0.1.2/go.mod h1:duJFWIYOE+Ajxxvk+AOBpEBePFNnviJ52fveZ3vYA04=
 github.com/dubbogo/v3router v0.0.0-20210403094230-574be83d8d6d/go.mod h1:prAeY9nOJfo09GBDh5DMV4khJhQOhy5JnLdMCzVk18c=
 github.com/dubbogo/v3router v0.1.0/go.mod h1:lJ2qS8FLme8RXE8hq4kKdh/6aRi2sRq5MilrITnNxcE=
 github.com/dustin/go-humanize v0.0.0-20171111073723-bb3d318650d4/go.mod h1:HtrtbFcZ19U5GC7JDqmcUSB87Iq5E25KnS6fMYU6eOk=
