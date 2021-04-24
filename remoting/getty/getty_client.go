@@ -89,7 +89,6 @@ func initClient(protocol string) {
 		return
 	}
 	setClientGrpool()
-
 	rand.Seed(time.Now().UnixNano())
 }
 
