@@ -18,6 +18,7 @@
 package tag
 
 import (
+	"encoding/base64"
 	"net/url"
 	"strconv"
 	"sync"
@@ -41,7 +42,7 @@ type FileTagRouter struct {
 	router     *tagRouter
 	routerRule *RouterRule
 	url        *common.URL
-	//force      bool
+	// force      bool
 }
 
 // NewFileTagRouter Create file tag router instance with content (from config file)
@@ -54,21 +55,19 @@ func NewFileTagRouter(content []byte) (*FileTagRouter, error) {
 	}
 	fileRouter.routerRule = rule
 	notify := make(chan struct{})
+	fileRouter.url = common.NewURLWithOptions(
+		common.WithProtocol(constant.TAG_ROUTE_PROTOCOL),
+		common.WithParams(url.Values{}),
+		common.WithParamsValue(constant.RULE_KEY, base64.URLEncoding.EncodeToString(content)),
+		common.WithParamsValue(constant.ForceUseTag, strconv.FormatBool(rule.Force)),
+		common.WithParamsValue(constant.RouterPriority, strconv.Itoa(rule.Priority)),
+		common.WithParamsValue(constant.ROUTER_KEY, constant.TAG_ROUTE_PROTOCOL))
 	fileRouter.router, err = NewTagRouter(fileRouter.URL(), notify)
 	return fileRouter, err
 }
 
 // URL Return URL in file tag router n
 func (f *FileTagRouter) URL() *common.URL {
-	f.parseOnce.Do(func() {
-		routerRule := f.routerRule
-		f.url = common.NewURLWithOptions(
-			common.WithProtocol(constant.TAG_ROUTE_PROTOCOL),
-			common.WithParams(url.Values{}),
-			common.WithParamsValue(constant.ForceUseTag, strconv.FormatBool(routerRule.Force)),
-			common.WithParamsValue(constant.RouterPriority, strconv.Itoa(routerRule.Priority)),
-			common.WithParamsValue(constant.ROUTER_KEY, constant.TAG_ROUTE_PROTOCOL))
-	})
 	return f.url
 }
 
@@ -78,9 +77,5 @@ func (f *FileTagRouter) Priority() int64 {
 }
 
 func (f *FileTagRouter) Route(invokers *roaring.Bitmap, cache router.Cache, url *common.URL, invocation protocol.Invocation) *roaring.Bitmap {
-	if invokers.IsEmpty() {
-		return invokers
-	}
-	// FIXME: I believe this is incorrect.
-	return f.Route(invokers, cache, url, invocation)
+	return invokers
 }
