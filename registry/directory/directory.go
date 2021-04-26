@@ -224,7 +224,7 @@ func (dir *RegistryDirectory) invokerCacheKey(event *registry.ServiceEvent) stri
 	referenceUrl := dir.GetDirectoryUrl().SubURL
 	newUrl := common.MergeURL(event.Service, referenceUrl)
 	event.Update(newUrl)
-	return newUrl.Key()
+	return newUrl.GetCacheInvokerMapKey()
 }
 
 // setNewInvokers groups the invokers from the cache first, then set the result to both directory and router chain.
@@ -317,7 +317,7 @@ func (dir *RegistryDirectory) toGroupInvokers() []protocol.Invoker {
 
 // uncacheInvoker will return abandoned Invoker, if no Invoker to be abandoned, return nil
 func (dir *RegistryDirectory) uncacheInvoker(url *common.URL) protocol.Invoker {
-	return dir.uncacheInvokerWithKey(url.Key())
+	return dir.uncacheInvokerWithKey(url.GetCacheInvokerMapKey())
 }
 
 func (dir *RegistryDirectory) uncacheInvokerWithKey(key string) protocol.Invoker {
@@ -356,7 +356,7 @@ func (dir *RegistryDirectory) cacheInvoker(url *common.URL) protocol.Invoker {
 }
 
 func (dir *RegistryDirectory) doCacheInvoker(newUrl *common.URL) (protocol.Invoker, bool) {
-	key := newUrl.Key()
+	key := newUrl.GetCacheInvokerMapKey()
 	if cacheInvoker, ok := dir.cacheInvokersMap.Load(key); !ok {
 		logger.Debugf("service will be added in cache invokers: invokers url is  %s!", newUrl)
 		newInvoker := extension.GetProtocol(protocolwrapper.FILTER).Refer(newUrl)

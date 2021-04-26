@@ -76,5 +76,5 @@ protocol_conf:
       tcp_read_timeout: "1s"
       tcp_write_timeout: "5s"
       wait_timeout: "1s"
-      max_msg_len: 1024
+      max_msg_len: 16498688
       session_name: "server"

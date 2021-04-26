@@ -25,6 +25,7 @@ import (
 )
 
 import (
+	gxset "github.com/dubbogo/gost/container/set"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -35,6 +36,7 @@ import (
 	"github.com/apache/dubbo-go/common/observer/dispatcher"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/registry"
+	"github.com/apache/dubbo-go/registry/event"
 )
 
 var testName = "test"
@@ -156,9 +158,10 @@ func TestNacosServiceDiscovery_CRUD(t *testing.T) {
 	// test dispatcher event
 	err = serviceDiscovery.DispatchEventByServiceName(serviceName)
 	assert.Nil(t, err)
-
+	hs := gxset.NewSet()
+	hs.Add(serviceName)
 	// test AddListener
-	err = serviceDiscovery.AddListener(&registry.ServiceInstancesChangedListener{ServiceName: serviceName})
+	err = serviceDiscovery.AddListener(event.NewServiceInstancesChangedListener(hs))
 	assert.Nil(t, err)
 }
 
