@@ -55,7 +55,7 @@ func TestConfigurableExporter(t *testing.T) {
 		},
 	})
 	mockInitProviderWithSingleRegistry()
-	metadataService, _ := inmemory.NewMetadataService()
+	metadataService, _ := inmemory.GetInMemoryMetadataService()
 	exported := NewMetadataServiceExporter(metadataService)
 
 	t.Run("configurableExporterUrlNil", func(t *testing.T) {

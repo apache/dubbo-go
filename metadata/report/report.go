@@ -57,4 +57,10 @@ type MetadataReport interface {
 
 	// GetServiceDefinition gets the service definition.
 	GetServiceDefinition(*identifier.MetadataIdentifier) (string, error)
+
+	// GetAppMetadata get metadata info from report
+	GetAppMetadata(*identifier.SubscriberMetadataIdentifier) (*common.MetadataInfo, error)
+
+	// PublishAppMetadata publish metadata info to reportss
+	PublishAppMetadata(*identifier.SubscriberMetadataIdentifier, *common.MetadataInfo) error
 }

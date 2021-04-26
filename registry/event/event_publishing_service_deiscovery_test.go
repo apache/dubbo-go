@@ -159,7 +159,7 @@ func (msd *ServiceDiscoveryA) GetRequestInstances(serviceNames []string, offset 
 	return nil
 }
 
-func (msd *ServiceDiscoveryA) AddListener(listener *registry.ServiceInstancesChangedListener) error {
+func (msd *ServiceDiscoveryA) AddListener(listener registry.ServiceInstancesChangedListener) error {
 	return nil
 }
 
