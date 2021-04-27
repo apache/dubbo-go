@@ -99,7 +99,7 @@ func (h *HessianCodec) Write(service Service, header DubboHeader, body interface
 		return packResponse(header, body)
 
 	default:
-		return nil, perrors.Errorf("Unrecognised message type: %v", header.Type)
+		return nil, perrors.Errorf("Unrecognized message type: %v", header.Type)
 	}
 
 	// unreachable return nil, nil
@@ -107,7 +107,6 @@ func (h *HessianCodec) Write(service Service, header DubboHeader, body interface
 
 // ReadHeader uses hessian codec to read dubbo header
 func (h *HessianCodec) ReadHeader(header *DubboHeader) error {
-
 	var err error
 
 	if h.reader.Size() < HEADER_LENGTH {
@@ -169,12 +168,10 @@ func (h *HessianCodec) ReadHeader(header *DubboHeader) error {
 	}
 
 	return perrors.WithStack(err)
-
 }
 
 // ReadBody uses hessian codec to read response body
 func (h *HessianCodec) ReadBody(rspObj interface{}) error {
-
 	if h.reader.Buffered() < h.bodyLen {
 		return ErrBodyNotEnough
 	}
@@ -190,9 +187,9 @@ func (h *HessianCodec) ReadBody(rspObj interface{}) error {
 	switch h.pkgType & PackageType_BitSize {
 	case PackageResponse | PackageHeartbeat | PackageResponse_Exception, PackageResponse | PackageResponse_Exception:
 		decoder := hessian.NewDecoder(buf[:])
-		exception, err := decoder.Decode()
-		if err != nil {
-			return perrors.WithStack(err)
+		exception, exceptionErr := decoder.Decode()
+		if exceptionErr != nil {
+			return perrors.WithStack(exceptionErr)
 		}
 		rsp, ok := rspObj.(*DubboResponse)
 		if !ok {

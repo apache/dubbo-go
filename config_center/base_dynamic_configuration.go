@@ -18,8 +18,7 @@
 package config_center
 
 // BaseDynamicConfiguration will default implementation DynamicConfiguration some method
-type BaseDynamicConfiguration struct {
-}
+type BaseDynamicConfiguration struct{}
 
 // RemoveConfig
 func (bdc *BaseDynamicConfiguration) RemoveConfig(string, string) error {

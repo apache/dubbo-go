@@ -27,6 +27,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+import (
+	"github.com/apache/dubbo-go/common/constant"
+)
+
 const (
 	referenceTestPath             = "com.test.Path"
 	referenceTestPathDistinct     = "com.test.Path1"
@@ -35,47 +39,52 @@ const (
 	testSuiteMethodExpectedString = "interface {}"
 )
 
-type TestService struct {
-}
+type TestService struct{}
 
 func (s *TestService) MethodOne(ctx context.Context, arg1, arg2, arg3 interface{}) error {
 	return nil
 }
+
 func (s *TestService) MethodTwo(arg1, arg2, arg3 interface{}) (interface{}, error) {
 	return struct{}{}, nil
 }
+
 func (s *TestService) MethodThree() error {
 	return nil
 }
+
 func (s *TestService) Reference() string {
 	return referenceTestPath
 }
+
 func (s *TestService) MethodMapper() map[string]string {
 	return map[string]string{
 		"MethodTwo": "methodTwo",
 	}
 }
 
-type testService struct {
-}
+type testService struct{}
 
 func (s *testService) Method1(ctx context.Context, args testService, rsp *struct{}) error {
 	return nil
 }
+
 func (s *testService) Method2(ctx context.Context, args []interface{}) (testService, error) {
 	return testService{}, nil
 }
+
 func (s *testService) Method3(ctx context.Context, args []interface{}, rsp *struct{}) {
 }
+
 func (s *testService) Method4(ctx context.Context, args []interface{}, rsp *struct{}) *testService {
 	return nil
 }
+
 func (s *testService) Reference() string {
 	return referenceTestPath
 }
 
-type TestService1 struct {
-}
+type TestService1 struct{}
 
 func (s *TestService1) Reference() string {
 	return referenceTestPathDistinct
@@ -85,23 +94,23 @@ func TestServiceMapRegister(t *testing.T) {
 	// lowercase
 	s0 := &testService{}
 	// methods, err := ServiceMap.Register("testporotocol", s0)
-	_, err := ServiceMap.Register(testInterfaceName, "testporotocol", s0)
+	_, err := ServiceMap.Register(testInterfaceName, "testporotocol", "", "v0", s0)
 	assert.EqualError(t, err, "type testService is not exported")
 
 	// succ
 	s := &TestService{}
-	methods, err := ServiceMap.Register(testInterfaceName, "testporotocol", s)
+	methods, err := ServiceMap.Register(testInterfaceName, "testporotocol", "", "v1", s)
 	assert.NoError(t, err)
 	assert.Equal(t, "MethodOne,MethodThree,methodTwo", methods)
 
 	// repeat
-	_, err = ServiceMap.Register(testInterfaceName, "testporotocol", s)
-	assert.EqualError(t, err, "service already defined: com.test.Path")
+	_, err = ServiceMap.Register(testInterfaceName, "testporotocol", "", "v1", s)
+	assert.EqualError(t, err, "service already defined: testService:v1")
 
 	// no method
 	s1 := &TestService1{}
-	_, err = ServiceMap.Register(testInterfaceName, "testporotocol", s1)
-	assert.EqualError(t, err, "type com.test.Path1 has no exported methods of suitable type")
+	_, err = ServiceMap.Register(testInterfaceName, "testporotocol", "", "v2", s1)
+	assert.EqualError(t, err, "type testService:v2 has no exported methods of suitable type")
 
 	ServiceMap = &serviceMap{
 		serviceMap:   make(map[string]map[string]*Service),
@@ -111,35 +120,34 @@ func TestServiceMapRegister(t *testing.T) {
 
 func TestServiceMapUnRegister(t *testing.T) {
 	s := &TestService{}
-	_, err := ServiceMap.Register("TestService", testProtocol, s)
+	_, err := ServiceMap.Register("TestService", testProtocol, "", "v1", s)
 	assert.NoError(t, err)
-	assert.NotNil(t, ServiceMap.GetService(testProtocol, referenceTestPath))
+	assert.NotNil(t, ServiceMap.GetService(testProtocol, "TestService", "", "v1"))
 	assert.Equal(t, 1, len(ServiceMap.GetInterface("TestService")))
 
-	err = ServiceMap.UnRegister("", "", referenceTestPath)
-	assert.EqualError(t, err, "protocol or serviceName is nil")
+	err = ServiceMap.UnRegister("", "", ServiceKey("TestService", "", "v1"))
+	assert.EqualError(t, err, "protocol or ServiceKey is nil")
 
-	err = ServiceMap.UnRegister("", "protocol", referenceTestPath)
+	err = ServiceMap.UnRegister("", "protocol", ServiceKey("TestService", "", "v1"))
 	assert.EqualError(t, err, "no services for protocol")
 
-	err = ServiceMap.UnRegister("", testProtocol, referenceTestPathDistinct)
-	assert.EqualError(t, err, "no service for com.test.Path1")
+	err = ServiceMap.UnRegister("", testProtocol, ServiceKey("TestService", "", "v0"))
+	assert.EqualError(t, err, "no service for TestService:v0")
 
-	// succ
-	err = ServiceMap.UnRegister("TestService", testProtocol, referenceTestPath)
+	// success
+	err = ServiceMap.UnRegister("TestService", testProtocol, ServiceKey("TestService", "", "v1"))
 	assert.NoError(t, err)
 }
 
 func TestMethodTypeSuiteContext(t *testing.T) {
 	mt := &MethodType{ctxType: reflect.TypeOf(context.TODO())}
-	ctx := context.WithValue(context.Background(), "key", "value")
+	ctx := context.Background()
+	key := constant.DubboCtxKey("key")
+	ctx = context.WithValue(ctx, key, "value")
 	assert.Equal(t, reflect.ValueOf(ctx), mt.SuiteContext(ctx))
-
-	assert.Equal(t, reflect.Zero(mt.ctxType), mt.SuiteContext(nil))
 }
 
 func TestSuiteMethod(t *testing.T) {
-
 	s := &TestService{}
 	method, ok := reflect.TypeOf(s).MethodByName("MethodOne")
 	assert.True(t, ok)

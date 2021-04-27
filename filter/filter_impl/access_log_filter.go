@@ -34,7 +34,7 @@ import (
 )
 
 const (
-	//used in URL.
+	// used in URL.
 
 	// nolint
 	FileDateFormat = "2006-01-02"
@@ -43,7 +43,7 @@ const (
 	// nolint
 	LogMaxBuffer = 5000
 	// nolint
-	LogFileMode = 0600
+	LogFileMode = 0o600
 
 	// those fields are the data collected by this filter
 
@@ -80,7 +80,7 @@ type AccessLogFilter struct {
 // Invoke will check whether user wants to use this filter.
 // If we find the value of key constant.ACCESS_LOG_KEY, we will log the invocation info
 func (ef *AccessLogFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
-	accessLog := invoker.GetUrl().GetParam(constant.ACCESS_LOG_KEY, "")
+	accessLog := invoker.GetURL().GetParam(constant.ACCESS_LOG_KEY, "")
 
 	// the user do not
 	if len(accessLog) > 0 {
@@ -105,8 +105,12 @@ func (ef *AccessLogFilter) logIntoChannel(accessLogData AccessLogData) {
 func (ef *AccessLogFilter) buildAccessLogData(_ protocol.Invoker, invocation protocol.Invocation) map[string]string {
 	dataMap := make(map[string]string, 16)
 	attachments := invocation.Attachments()
-	if v, ok := attachments[constant.INTERFACE_KEY]; ok && v != nil {
-		dataMap[constant.INTERFACE_KEY] = v.(string)
+	itf := attachments[constant.INTERFACE_KEY]
+	if itf == nil || len(itf.(string)) == 0 {
+		itf = attachments[constant.PATH_KEY]
+	}
+	if itf != nil {
+		dataMap[constant.INTERFACE_KEY] = itf.(string)
 	}
 	if v, ok := attachments[constant.METHOD_KEY]; ok && v != nil {
 		dataMap[constant.METHOD_KEY] = v.(string)

@@ -56,14 +56,14 @@ func newFailbackClusterInvoker(directory cluster.Directory) protocol.Invoker {
 	invoker := &failbackClusterInvoker{
 		baseClusterInvoker: newBaseClusterInvoker(directory),
 	}
-	retriesConfig := invoker.GetUrl().GetParam(constant.RETRIES_KEY, constant.DEFAULT_FAILBACK_TIMES)
+	retriesConfig := invoker.GetURL().GetParam(constant.RETRIES_KEY, constant.DEFAULT_FAILBACK_TIMES)
 	retries, err := strconv.Atoi(retriesConfig)
 	if err != nil || retries < 0 {
 		logger.Error("Your retries config is invalid,pls do a check. And will use the default fail back times configuration instead.")
 		retries = constant.DEFAULT_FAILBACK_TIMES_INT
 	}
 
-	failbackTasksConfig := invoker.GetUrl().GetParamInt(constant.FAIL_BACK_TASKS_KEY, constant.DEFAULT_FAILBACK_TASKS)
+	failbackTasksConfig := invoker.GetURL().GetParamInt(constant.FAIL_BACK_TASKS_KEY, constant.DEFAULT_FAILBACK_TASKS)
 	if failbackTasksConfig <= 0 {
 		failbackTasksConfig = constant.DEFAULT_FAILBACK_TASKS
 	}
@@ -77,8 +77,7 @@ func (invoker *failbackClusterInvoker) tryTimerTaskProc(ctx context.Context, ret
 	invoked = append(invoked, retryTask.lastInvoker)
 
 	retryInvoker := invoker.doSelect(retryTask.loadbalance, retryTask.invocation, retryTask.invokers, invoked)
-	var result protocol.Result
-	result = retryInvoker.Invoke(ctx, retryTask.invocation)
+	result := retryInvoker.Invoke(ctx, retryTask.invocation)
 	if result.Error() != nil {
 		retryTask.lastInvoker = retryInvoker
 		invoker.checkRetry(retryTask, result.Error())
@@ -115,14 +114,17 @@ func (invoker *failbackClusterInvoker) process(ctx context.Context) {
 
 func (invoker *failbackClusterInvoker) checkRetry(retryTask *retryTimerTask, err error) {
 	logger.Errorf("Failed retry to invoke the method %v in the service %v, wait again. The exception: %v.\n",
-		retryTask.invocation.MethodName(), invoker.GetUrl().Service(), err.Error())
+		retryTask.invocation.MethodName(), invoker.GetURL().Service(), err.Error())
 	retryTask.retries++
 	retryTask.lastT = time.Now()
 	if retryTask.retries > invoker.maxRetries {
 		logger.Errorf("Failed retry times exceed threshold (%v), We have to abandon, invocation-> %v.\n",
 			retryTask.retries, retryTask.invocation)
-	} else {
-		invoker.taskList.Put(retryTask)
+		return
+	}
+
+	if err := invoker.taskList.Put(retryTask); err != nil {
+		logger.Errorf("invoker.taskList.Put(retryTask:%#v) = error:%v", retryTask, err)
 	}
 }
 
@@ -131,14 +133,14 @@ func (invoker *failbackClusterInvoker) Invoke(ctx context.Context, invocation pr
 	invokers := invoker.directory.List(invocation)
 	if err := invoker.checkInvokers(invokers, invocation); err != nil {
 		logger.Errorf("Failed to invoke the method %v in the service %v, wait for retry in background. Ignored exception: %v.\n",
-			invocation.MethodName(), invoker.GetUrl().Service(), err)
+			invocation.MethodName(), invoker.GetURL().Service(), err)
 		return &protocol.RPCResult{}
 	}
 
-	//Get the service loadbalance config
-	url := invokers[0].GetUrl()
+	// Get the service loadbalance config
+	url := invokers[0].GetURL()
 	lb := url.GetParam(constant.LOADBALANCE_KEY, constant.DEFAULT_LOADBALANCE)
-	//Get the service method loadbalance config if have
+	// Get the service method loadbalance config if have
 	methodName := invocation.MethodName()
 	if v := url.GetMethodParam(methodName, constant.LOADBALANCE_KEY, ""); v != "" {
 		lb = v
@@ -147,7 +149,7 @@ func (invoker *failbackClusterInvoker) Invoke(ctx context.Context, invocation pr
 	loadBalance := extension.GetLoadbalance(lb)
 	invoked := make([]protocol.Invoker, 0, len(invokers))
 	ivk := invoker.doSelect(loadBalance, invocation, invokers, invoked)
-	//DO INVOKE
+	// DO INVOKE
 	result := ivk.Invoke(ctx, invocation)
 	if result.Error() != nil {
 		invoker.once.Do(func() {

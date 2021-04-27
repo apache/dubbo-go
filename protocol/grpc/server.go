@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"net"
 	"reflect"
+	"sync"
+	"time"
 )
 
 import (
@@ -31,7 +33,6 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/protocol"
@@ -40,6 +41,7 @@ import (
 // Server is a gRPC server
 type Server struct {
 	grpcServer *grpc.Server
+	bufferSize int
 }
 
 // NewServer creates a new server
@@ -57,8 +59,12 @@ type DubboGrpcService interface {
 	ServiceDesc() *grpc.ServiceDesc
 }
 
+func (s *Server) SetBufferSize(n int) {
+	s.bufferSize = n
+}
+
 // Start gRPC server with @url
-func (s *Server) Start(url common.URL) {
+func (s *Server) Start(url *common.URL) {
 	var (
 		addr string
 		err  error
@@ -72,41 +78,89 @@ func (s *Server) Start(url common.URL) {
 	// if global trace instance was set, then server tracer instance can be get. If not , will return Nooptracer
 	tracer := opentracing.GlobalTracer()
 	server := grpc.NewServer(
-		grpc.UnaryInterceptor(otgrpc.OpenTracingServerInterceptor(tracer)))
-
-	key := url.GetParam(constant.BEAN_NAME_KEY, "")
-	service := config.GetProviderService(key)
-
-	ds, ok := service.(DubboGrpcService)
-	if !ok {
-		panic("illegal service type registered")
-	}
-
-	m, ok := reflect.TypeOf(service).MethodByName("SetProxyImpl")
-	if !ok {
-		panic("method SetProxyImpl is necessary for grpc service")
-	}
-
-	exporter, _ := grpcProtocol.ExporterMap().Load(url.ServiceKey())
-	if exporter == nil {
-		panic(fmt.Sprintf("no exporter found for servicekey: %v", url.ServiceKey()))
-	}
-	invoker := exporter.(protocol.Exporter).GetInvoker()
-	if invoker == nil {
-		panic(fmt.Sprintf("no invoker found for servicekey: %v", url.ServiceKey()))
-	}
-	in := []reflect.Value{reflect.ValueOf(service)}
-	in = append(in, reflect.ValueOf(invoker))
-	m.Func.Call(in)
-
-	server.RegisterService(ds.ServiceDesc(), service)
-
+		grpc.UnaryInterceptor(otgrpc.OpenTracingServerInterceptor(tracer)),
+		grpc.MaxRecvMsgSize(1024*1024*s.bufferSize),
+		grpc.MaxSendMsgSize(1024*1024*s.bufferSize))
 	s.grpcServer = server
+
 	go func() {
+		providerServices := config.GetProviderConfig().Services
+
+		if len(providerServices) == 0 {
+			panic("provider service map is null")
+		}
+		// wait all exporter ready , then set proxy impl and grpc registerService
+		waitGrpcExporter(providerServices)
+		registerService(providerServices, server)
+
 		if err = server.Serve(lis); err != nil {
 			logger.Errorf("server serve failed with err: %v", err)
 		}
 	}()
+}
+
+// getSyncMapLen get sync map len
+func getSyncMapLen(m *sync.Map) int {
+	length := 0
+
+	m.Range(func(_, _ interface{}) bool {
+		length++
+		return true
+	})
+	return length
+}
+
+// waitGrpcExporter wait until len(providerServices) = len(ExporterMap)
+func waitGrpcExporter(providerServices map[string]*config.ServiceConfig) {
+	t := time.NewTicker(50 * time.Millisecond)
+	defer t.Stop()
+	pLen := len(providerServices)
+	ta := time.After(10 * time.Second)
+
+	for {
+		select {
+		case <-t.C:
+			mLen := getSyncMapLen(grpcProtocol.ExporterMap())
+			if pLen == mLen {
+				return
+			}
+		case <-ta:
+			panic("wait grpc exporter timeout when start grpc server")
+		}
+	}
+}
+
+// registerService SetProxyImpl invoker and grpc service
+func registerService(providerServices map[string]*config.ServiceConfig, server *grpc.Server) {
+	for key, providerService := range providerServices {
+		service := config.GetProviderService(key)
+
+		ds, ok := service.(DubboGrpcService)
+		if !ok {
+			panic("illegal service type registered")
+		}
+
+		m, ok := reflect.TypeOf(service).MethodByName("SetProxyImpl")
+		if !ok {
+			panic("method SetProxyImpl is necessary for grpc service")
+		}
+		serviceKey := common.ServiceKey(providerService.InterfaceName, providerService.Group, providerService.Version)
+
+		exporter, _ := grpcProtocol.ExporterMap().Load(serviceKey)
+		if exporter == nil {
+			panic(fmt.Sprintf("no exporter found for servicekey: %v", serviceKey))
+		}
+		invoker := exporter.(protocol.Exporter).GetInvoker()
+		if invoker == nil {
+			panic(fmt.Sprintf("no invoker found for servicekey: %v", serviceKey))
+		}
+		in := []reflect.Value{reflect.ValueOf(service)}
+		in = append(in, reflect.ValueOf(invoker))
+		m.Func.Call(in)
+
+		server.RegisterService(ds.ServiceDesc(), service)
+
+	}
 }
 
 // Stop gRPC server

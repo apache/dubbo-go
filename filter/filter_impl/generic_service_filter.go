@@ -20,7 +20,6 @@ package filter_impl
 import (
 	"context"
 	"reflect"
-	"strings"
 )
 
 import (
@@ -72,10 +71,10 @@ func (ef *GenericServiceFilter) Invoke(ctx context.Context, invoker protocol.Inv
 		oldParams  []hessian.Object
 	)
 
-	url := invoker.GetUrl()
+	url := invoker.GetURL()
 	methodName = invocation.Arguments()[0].(string)
 	// get service
-	svc := common.ServiceMap.GetService(url.Protocol, strings.TrimPrefix(url.Path, "/"))
+	svc := common.ServiceMap.GetServiceByServiceKey(url.Protocol, url.ServiceKey())
 	// get method
 	method := svc.Method()[methodName]
 	if method == nil {

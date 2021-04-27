@@ -25,10 +25,9 @@ import (
 )
 
 import (
-	cm "github.com/Workiva/go-datastructures/common"
 	"github.com/Workiva/go-datastructures/slice/skip"
 	gxset "github.com/dubbogo/gost/container/set"
-	gxpage "github.com/dubbogo/gost/page"
+	gxpage "github.com/dubbogo/gost/hash/page"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/atomic"
 )
@@ -46,8 +45,10 @@ import (
 	"github.com/apache/dubbo-go/registry"
 )
 
-const mockConsumerConfigPath = "./testdata/consumer_config.yml"
-const mockProviderConfigPath = "./testdata/provider_config.yml"
+const (
+	mockConsumerConfigPath = "./testdata/consumer_config.yml"
+	mockProviderConfigPath = "./testdata/provider_config.yml"
+)
 
 func TestConfigLoader(t *testing.T) {
 	conPath, err := filepath.Abs(mockConsumerConfigPath)
@@ -85,7 +86,7 @@ func TestLoad(t *testing.T) {
 	extension.SetProxyFactory("default", proxy_factory.NewDefaultProxyFactory)
 	GetApplicationConfig().MetadataType = "mock"
 	var mm *mockMetadataService
-	extension.SetMetadataService("mock", func() (metadataService service.MetadataService, err error) {
+	extension.SetLocalMetadataService("mock", func() (metadataService service.MetadataService, err error) {
 		if mm == nil {
 			mm = &mockMetadataService{
 				exportedServiceURLs: new(sync.Map),
@@ -105,7 +106,8 @@ func TestLoad(t *testing.T) {
 
 	conServices = map[string]common.RPCService{}
 	proServices = map[string]common.RPCService{}
-	err := common.ServiceMap.UnRegister("com.MockService", "mock", "MockService")
+	err := common.ServiceMap.UnRegister("com.MockService", "mock",
+		common.ServiceKey("com.MockService", "huadong_idc", "1.0.0"))
 	assert.Nil(t, err)
 	consumerConfig = nil
 	providerConfig = nil
@@ -124,7 +126,7 @@ func TestLoadWithSingleReg(t *testing.T) {
 	extension.SetProxyFactory("default", proxy_factory.NewDefaultProxyFactory)
 	var mm *mockMetadataService
 	GetApplicationConfig().MetadataType = "mock"
-	extension.SetMetadataService("mock", func() (metadataService service.MetadataService, err error) {
+	extension.SetLocalMetadataService("mock", func() (metadataService service.MetadataService, err error) {
 		if mm == nil {
 			mm = &mockMetadataService{
 				exportedServiceURLs: new(sync.Map),
@@ -144,7 +146,7 @@ func TestLoadWithSingleReg(t *testing.T) {
 
 	conServices = map[string]common.RPCService{}
 	proServices = map[string]common.RPCService{}
-	common.ServiceMap.UnRegister("com.MockService", "mock", "MockService")
+	common.ServiceMap.UnRegister("com.MockService", "mock", common.ServiceKey("com.MockService", "huadong_idc", "1.0.0"))
 	consumerConfig = nil
 	providerConfig = nil
 }
@@ -163,7 +165,7 @@ func TestWithNoRegLoad(t *testing.T) {
 	extension.SetProxyFactory("default", proxy_factory.NewDefaultProxyFactory)
 	var mm *mockMetadataService
 	GetApplicationConfig().MetadataType = "mock"
-	extension.SetMetadataService("mock", func() (metadataService service.MetadataService, err error) {
+	extension.SetLocalMetadataService("mock", func() (metadataService service.MetadataService, err error) {
 		if mm == nil {
 			mm = &mockMetadataService{
 				exportedServiceURLs: new(sync.Map),
@@ -183,11 +185,34 @@ func TestWithNoRegLoad(t *testing.T) {
 
 	conServices = map[string]common.RPCService{}
 	proServices = map[string]common.RPCService{}
-	common.ServiceMap.UnRegister("com.MockService", "mock", "MockService")
+	err := common.ServiceMap.UnRegister("com.MockService", "mock",
+		common.ServiceKey("com.MockService", "huadong_idc", "1.0.0"))
+	assert.Nil(t, err)
+	common.ServiceMap.UnRegister("com.MockService", "mock", common.ServiceKey("com.MockService", "huadong_idc", "1.0.0"))
 	consumerConfig = nil
 	providerConfig = nil
 }
 
+func TestSetDefaultValue(t *testing.T) {
+	proConfig := &ProviderConfig{Registries: make(map[string]*RegistryConfig), Protocols: make(map[string]*ProtocolConfig)}
+	assert.Nil(t, proConfig.ApplicationConfig)
+	setDefaultValue(proConfig)
+	assert.Equal(t, proConfig.Registries["demoZK"].Address, "127.0.0.1:2181")
+	assert.Equal(t, proConfig.Registries["demoZK"].TimeoutStr, "3s")
+	assert.Equal(t, proConfig.Registries["demoZK"].Protocol, "zookeeper")
+	assert.Equal(t, proConfig.Protocols["dubbo"].Name, "dubbo")
+	assert.Equal(t, proConfig.Protocols["dubbo"].Port, "20000")
+	assert.NotNil(t, proConfig.ApplicationConfig)
+
+	conConfig := &ConsumerConfig{Registries: make(map[string]*RegistryConfig)}
+	assert.Nil(t, conConfig.ApplicationConfig)
+	setDefaultValue(conConfig)
+	assert.Equal(t, conConfig.Registries["demoZK"].Address, "127.0.0.1:2181")
+	assert.Equal(t, conConfig.Registries["demoZK"].TimeoutStr, "3s")
+	assert.Equal(t, conConfig.Registries["demoZK"].Protocol, "zookeeper")
+	assert.NotNil(t, conConfig.ApplicationConfig)
+
+}
 func TestConfigLoaderWithConfigCenter(t *testing.T) {
 	extension.SetConfigCenterFactory("mock", func() config_center.DynamicConfigurationFactory {
 		return &config_center.MockDynamicConfigurationFactory{}
@@ -204,10 +229,12 @@ func TestConfigLoaderWithConfigCenter(t *testing.T) {
 	assert.Equal(t, ProviderConfig{}, GetProviderConfig())
 
 	err = ConsumerInit(conPath)
-	configCenterRefreshConsumer()
+	assert.NoError(t, err)
+	err = configCenterRefreshConsumer()
 	assert.NoError(t, err)
 	err = ProviderInit(proPath)
-	configCenterRefreshProvider()
+	assert.NoError(t, err)
+	err = configCenterRefreshProvider()
 	assert.NoError(t, err)
 
 	assert.NotNil(t, consumerConfig)
@@ -217,7 +244,6 @@ func TestConfigLoaderWithConfigCenter(t *testing.T) {
 
 	assert.Equal(t, "BDTService", consumerConfig.ApplicationConfig.Name)
 	assert.Equal(t, "127.0.0.1:2181", consumerConfig.Registries["hangzhouzk"].Address)
-
 }
 
 func TestConfigLoaderWithConfigCenterSingleRegistry(t *testing.T) {
@@ -257,13 +283,15 @@ func TestConfigLoaderWithConfigCenterSingleRegistry(t *testing.T) {
 	assert.Equal(t, ProviderConfig{}, GetProviderConfig())
 
 	err = ConsumerInit(conPath)
+	assert.NoError(t, err)
 	checkApplicationName(consumerConfig.ApplicationConfig)
-	configCenterRefreshConsumer()
+	err = configCenterRefreshConsumer()
 	checkRegistries(consumerConfig.Registries, consumerConfig.Registry)
 	assert.NoError(t, err)
 	err = ProviderInit(proPath)
+	assert.NoError(t, err)
 	checkApplicationName(providerConfig.ApplicationConfig)
-	configCenterRefreshProvider()
+	err = configCenterRefreshProvider()
 	checkRegistries(providerConfig.Registries, providerConfig.Registry)
 	assert.NoError(t, err)
 
@@ -274,7 +302,6 @@ func TestConfigLoaderWithConfigCenterSingleRegistry(t *testing.T) {
 
 	assert.Equal(t, "BDTService", consumerConfig.ApplicationConfig.Name)
 	assert.Equal(t, "mock://127.0.0.1:2182", consumerConfig.Registries[constant.DEFAULT_KEY].Address)
-
 }
 
 func TestGetBaseConfig(t *testing.T) {
@@ -294,7 +321,8 @@ func mockInitProviderWithSingleRegistry() {
 				Module:       "module",
 				Version:      "1.0.0",
 				Owner:        "dubbo",
-				Environment:  "test"},
+				Environment:  "test",
+			},
 		},
 
 		Registry: &RegistryConfig{
@@ -345,6 +373,26 @@ type mockMetadataService struct {
 	lock                *sync.RWMutex
 }
 
+func (m *mockMetadataService) GetExportedURLs(serviceInterface string, group string, version string, protocol string) ([]*common.URL, error) {
+	panic("implement me")
+}
+
+func (m *mockMetadataService) GetMetadataInfo(revision string) (*common.MetadataInfo, error) {
+	panic("implement me")
+}
+
+func (m *mockMetadataService) GetExportedServiceURLs() []*common.URL {
+	panic("implement me")
+}
+
+func (m *mockMetadataService) GetMetadataServiceURL() *common.URL {
+	panic("implement me")
+}
+
+func (m *mockMetadataService) SetMetadataServiceURL(url *common.URL) {
+	panic("implement me")
+}
+
 func (m *mockMetadataService) Reference() string {
 	panic("implement me")
 }
@@ -353,47 +401,43 @@ func (m *mockMetadataService) ServiceName() (string, error) {
 	panic("implement me")
 }
 
-func (m *mockMetadataService) ExportURL(url common.URL) (bool, error) {
-	return m.addURL(m.exportedServiceURLs, &url), nil
+func (m *mockMetadataService) ExportURL(url *common.URL) (bool, error) {
+	return m.addURL(m.exportedServiceURLs, url), nil
 }
 
-func (m *mockMetadataService) UnexportURL(url common.URL) error {
+func (m *mockMetadataService) UnexportURL(*common.URL) error {
 	panic("implement me")
 }
 
-func (m *mockMetadataService) SubscribeURL(url common.URL) (bool, error) {
+func (m *mockMetadataService) SubscribeURL(*common.URL) (bool, error) {
 	panic("implement me")
 }
 
-func (m *mockMetadataService) UnsubscribeURL(url common.URL) error {
+func (m *mockMetadataService) UnsubscribeURL(*common.URL) error {
 	panic("implement me")
 }
 
-func (m *mockMetadataService) PublishServiceDefinition(url common.URL) error {
+func (m *mockMetadataService) PublishServiceDefinition(*common.URL) error {
 	return nil
-}
-
-func (m *mockMetadataService) GetExportedURLs(serviceInterface string, group string, version string, protocol string) ([]interface{}, error) {
-	return ConvertURLArrToIntfArr(m.getAllService(m.exportedServiceURLs)), nil
 }
 
 func (m *mockMetadataService) MethodMapper() map[string]string {
 	panic("implement me")
 }
 
-func (m *mockMetadataService) GetSubscribedURLs() ([]common.URL, error) {
+func (m *mockMetadataService) GetSubscribedURLs() ([]*common.URL, error) {
 	panic("implement me")
 }
 
-func (m *mockMetadataService) GetServiceDefinition(interfaceName string, group string, version string) (string, error) {
+func (m *mockMetadataService) GetServiceDefinition(string, string, string) (string, error) {
 	panic("implement me")
 }
 
-func (m *mockMetadataService) GetServiceDefinitionByServiceKey(serviceKey string) (string, error) {
+func (m *mockMetadataService) GetServiceDefinitionByServiceKey(string) (string, error) {
 	panic("implement me")
 }
 
-func (m *mockMetadataService) RefreshMetadata(exportedRevision string, subscribedRevision string) (bool, error) {
+func (m *mockMetadataService) RefreshMetadata(string, string) (bool, error) {
 	panic("implement me")
 }
 
@@ -409,7 +453,7 @@ func (mts *mockMetadataService) addURL(targetMap *sync.Map, url *common.URL) boo
 	logger.Debug(url.ServiceKey())
 	if urlSet, loaded = targetMap.LoadOrStore(url.ServiceKey(), skip.New(uint64(0))); loaded {
 		mts.lock.RLock()
-		wantedUrl := urlSet.(*skip.SkipList).Get(Comparator(*url))
+		wantedUrl := urlSet.(*skip.SkipList).Get(url)
 		if len(wantedUrl) > 0 && wantedUrl[0] != nil {
 			mts.lock.RUnlock()
 			return false
@@ -418,23 +462,23 @@ func (mts *mockMetadataService) addURL(targetMap *sync.Map, url *common.URL) boo
 	}
 	mts.lock.Lock()
 	// double chk
-	wantedUrl := urlSet.(*skip.SkipList).Get(Comparator(*url))
+	wantedUrl := urlSet.(*skip.SkipList).Get(url)
 	if len(wantedUrl) > 0 && wantedUrl[0] != nil {
 		mts.lock.Unlock()
 		return false
 	}
-	urlSet.(*skip.SkipList).Insert(Comparator(*url))
+	urlSet.(*skip.SkipList).Insert(url)
 	mts.lock.Unlock()
 	return true
 }
 
-func (m *mockMetadataService) getAllService(services *sync.Map) []common.URL {
+func (m *mockMetadataService) getAllService(services *sync.Map) []*common.URL {
 	// using skip list to dedup and sorting
-	res := make([]common.URL, 0)
+	var res []*common.URL
 	services.Range(func(key, value interface{}) bool {
 		urls := value.(*skip.SkipList)
 		for i := uint64(0); i < urls.Len(); i++ {
-			url := common.URL(urls.ByPosition(i).(Comparator))
+			url := urls.ByPosition(i).(*common.URL)
 			if url.GetParam(constant.INTERFACE_KEY, url.Path) != constant.METADATA_SERVICE_NAME {
 				res = append(res, url)
 			}
@@ -445,26 +489,9 @@ func (m *mockMetadataService) getAllService(services *sync.Map) []common.URL {
 	return res
 }
 
-type Comparator common.URL
+type mockServiceDiscoveryRegistry struct{}
 
-// Compare is defined as Comparator for skip list to compare the URL
-func (c Comparator) Compare(comp cm.Comparator) int {
-	a := common.URL(c).String()
-	b := common.URL(comp.(Comparator)).String()
-	switch {
-	case a > b:
-		return 1
-	case a < b:
-		return -1
-	default:
-		return 0
-	}
-}
-
-type mockServiceDiscoveryRegistry struct {
-}
-
-func (mr *mockServiceDiscoveryRegistry) GetUrl() common.URL {
+func (mr *mockServiceDiscoveryRegistry) GetURL() *common.URL {
 	panic("implement me")
 }
 
@@ -476,11 +503,11 @@ func (mr *mockServiceDiscoveryRegistry) Destroy() {
 	panic("implement me")
 }
 
-func (mr *mockServiceDiscoveryRegistry) Register(url common.URL) error {
+func (mr *mockServiceDiscoveryRegistry) Register(*common.URL) error {
 	panic("implement me")
 }
 
-func (mr *mockServiceDiscoveryRegistry) UnRegister(url common.URL) error {
+func (mr *mockServiceDiscoveryRegistry) UnRegister(*common.URL) error {
 	panic("implement me")
 }
 
@@ -496,8 +523,7 @@ func (s *mockServiceDiscoveryRegistry) GetServiceDiscovery() registry.ServiceDis
 	return &mockServiceDiscovery{}
 }
 
-type mockServiceDiscovery struct {
-}
+type mockServiceDiscovery struct{}
 
 func (m *mockServiceDiscovery) String() string {
 	panic("implement me")
@@ -507,15 +533,15 @@ func (m *mockServiceDiscovery) Destroy() error {
 	panic("implement me")
 }
 
-func (m *mockServiceDiscovery) Register(instance registry.ServiceInstance) error {
+func (m *mockServiceDiscovery) Register(registry.ServiceInstance) error {
 	return nil
 }
 
-func (m *mockServiceDiscovery) Update(instance registry.ServiceInstance) error {
+func (m *mockServiceDiscovery) Update(registry.ServiceInstance) error {
 	panic("implement me")
 }
 
-func (m *mockServiceDiscovery) Unregister(instance registry.ServiceInstance) error {
+func (m *mockServiceDiscovery) Unregister(registry.ServiceInstance) error {
 	panic("implement me")
 }
 
@@ -527,39 +553,39 @@ func (m *mockServiceDiscovery) GetServices() *gxset.HashSet {
 	panic("implement me")
 }
 
-func (m *mockServiceDiscovery) GetInstances(serviceName string) []registry.ServiceInstance {
+func (m *mockServiceDiscovery) GetInstances(string) []registry.ServiceInstance {
 	panic("implement me")
 }
 
-func (m *mockServiceDiscovery) GetInstancesByPage(serviceName string, offset int, pageSize int) gxpage.Pager {
+func (m *mockServiceDiscovery) GetInstancesByPage(string, int, int) gxpage.Pager {
 	panic("implement me")
 }
 
-func (m *mockServiceDiscovery) GetHealthyInstancesByPage(serviceName string, offset int, pageSize int, healthy bool) gxpage.Pager {
+func (m *mockServiceDiscovery) GetHealthyInstancesByPage(string, int, int, bool) gxpage.Pager {
 	panic("implement me")
 }
 
-func (m *mockServiceDiscovery) GetRequestInstances(serviceNames []string, offset int, requestedSize int) map[string]gxpage.Pager {
+func (m *mockServiceDiscovery) GetRequestInstances([]string, int, int) map[string]gxpage.Pager {
 	panic("implement me")
 }
 
-func (m *mockServiceDiscovery) AddListener(listener *registry.ServiceInstancesChangedListener) error {
+func (m *mockServiceDiscovery) AddListener(registry.ServiceInstancesChangedListener) error {
 	panic("implement me")
 }
 
-func (m *mockServiceDiscovery) DispatchEventByServiceName(serviceName string) error {
+func (m *mockServiceDiscovery) DispatchEventByServiceName(string) error {
 	panic("implement me")
 }
 
-func (m *mockServiceDiscovery) DispatchEventForInstances(serviceName string, instances []registry.ServiceInstance) error {
+func (m *mockServiceDiscovery) DispatchEventForInstances(string, []registry.ServiceInstance) error {
 	panic("implement me")
 }
 
-func (m *mockServiceDiscovery) DispatchEvent(event *registry.ServiceInstancesChangedEvent) error {
+func (m *mockServiceDiscovery) DispatchEvent(*registry.ServiceInstancesChangedEvent) error {
 	panic("implement me")
 }
 
-func ConvertURLArrToIntfArr(urls []common.URL) []interface{} {
+func ConvertURLArrToIntfArr(urls []*common.URL) []interface{} {
 	if len(urls) == 0 {
 		return []interface{}{}
 	}

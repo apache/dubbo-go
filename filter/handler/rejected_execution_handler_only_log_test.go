@@ -21,6 +21,7 @@ import (
 	"net/url"
 	"testing"
 )
+
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
@@ -31,5 +32,5 @@ func TestOnlyLogRejectedExecutionHandler_RejectedExecution(t *testing.T) {
 	invokeUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
 		common.WithParamsValue(constant.INTERFACE_KEY, "methodName"))
-	handler.RejectedExecution(*invokeUrl, nil)
+	handler.RejectedExecution(invokeUrl, nil)
 }

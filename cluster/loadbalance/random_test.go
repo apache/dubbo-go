@@ -50,7 +50,7 @@ func TestRandomlbSelect(t *testing.T) {
 	url, _ := common.NewURL(fmt.Sprintf(tmpUrlFormat, 0))
 	invokers = append(invokers, protocol.NewBaseInvoker(url))
 	i := randomlb.Select(invokers, &invocation.RPCInvocation{})
-	assert.True(t, i.GetUrl().URLEqual(url))
+	assert.True(t, i.GetURL().URLEqual(url))
 
 	for i := 1; i < 10; i++ {
 		url, _ := common.NewURL(fmt.Sprintf(tmpUrlFormat, i))
@@ -78,11 +78,12 @@ func TestRandomlbSelectWeight(t *testing.T) {
 	var selected float64
 	for i := 0; i < 10000; i++ {
 		s := randomlb.Select(invokers, ivc)
-		if s.GetUrl().Ip == tmpIp {
+		if s.GetURL().Ip == tmpIp {
 			selected++
 		}
 		selectedInvoker = append(selectedInvoker, s)
 	}
+	assert.Equal(t, 10000, len(selectedInvoker))
 
 	assert.Condition(t, func() bool {
 		// really is 0.9999999999999
@@ -109,11 +110,13 @@ func TestRandomlbSelectWarmup(t *testing.T) {
 	var selected float64
 	for i := 0; i < 10000; i++ {
 		s := randomlb.Select(invokers, ivc)
-		if s.GetUrl().Ip == tmpIp {
+		if s.GetURL().Ip == tmpIp {
 			selected++
 		}
 		selectedInvoker = append(selectedInvoker, s)
 	}
+	assert.Equal(t, 10000, len(selectedInvoker))
+
 	assert.Condition(t, func() bool {
 		return selected/10000 < 0.1
 	})

@@ -41,11 +41,10 @@ func init() {
 }
 
 // DefaultProxyFactory is the default proxy factory
-type DefaultProxyFactory struct {
-	//delegate ProxyFactory
+type DefaultProxyFactory struct { // delegate ProxyFactory
 }
 
-//you can rewrite DefaultProxyFactory in extension and delegate the default proxy factory like below
+// you can rewrite DefaultProxyFactory in extension and delegate the default proxy factory like below
 
 //func WithDelegate(delegateProxyFactory ProxyFactory) Option {
 //	return func(proxy ProxyFactory) {
@@ -65,14 +64,14 @@ func (factory *DefaultProxyFactory) GetProxy(invoker protocol.Invoker, url *comm
 
 // GetAsyncProxy gets a async proxy
 func (factory *DefaultProxyFactory) GetAsyncProxy(invoker protocol.Invoker, callBack interface{}, url *common.URL) *proxy.Proxy {
-	//create proxy
+	// create proxy
 	attachments := map[string]string{}
 	attachments[constant.ASYNC_KEY] = url.GetParam(constant.ASYNC_KEY, "false")
 	return proxy.NewProxy(invoker, callBack, attachments)
 }
 
 // GetInvoker gets a invoker
-func (factory *DefaultProxyFactory) GetInvoker(url common.URL) protocol.Invoker {
+func (factory *DefaultProxyFactory) GetInvoker(url *common.URL) protocol.Invoker {
 	return &ProxyInvoker{
 		BaseInvoker: *protocol.NewBaseInvoker(url),
 	}
@@ -88,9 +87,8 @@ func (pi *ProxyInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 	result := &protocol.RPCResult{}
 	result.SetAttachments(invocation.Attachments())
 
-	url := pi.GetUrl()
-	//get providerUrl. The origin url may be is registry URL.
-	url = *getProviderURL(&url)
+	// get providerUrl. The origin url may be is registry URL.
+	url := getProviderURL(pi.GetURL())
 
 	methodName := invocation.MethodName()
 	proto := url.Protocol
@@ -98,7 +96,7 @@ func (pi *ProxyInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 	args := invocation.Arguments()
 
 	// get service
-	svc := common.ServiceMap.GetService(proto, path)
+	svc := common.ServiceMap.GetServiceByServiceKey(proto, url.ServiceKey())
 	if svc == nil {
 		logger.Errorf("cannot find service [%s] in %s", path, proto)
 		result.SetError(perrors.Errorf("cannot find service [%s] in %s", path, proto))

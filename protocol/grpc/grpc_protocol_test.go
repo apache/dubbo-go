@@ -28,13 +28,49 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/grpc/internal"
 )
 
+func doInitProvider() {
+	providerConfig := config.ProviderConfig{
+		BaseConfig: config.BaseConfig{
+			ApplicationConfig: &config.ApplicationConfig{
+				Organization: "dubbo_org",
+				Name:         "BDTService",
+				Module:       "module",
+				Version:      "0.0.1",
+				Owner:        "dubbo",
+				Environment:  "test",
+			},
+		},
+		Services: map[string]*config.ServiceConfig{
+			"GrpcGreeterImpl": {
+				InterfaceName: "io.grpc.examples.helloworld.GreeterGrpc$IGreeter",
+				Protocol:      "grpc",
+				Registry:      "shanghai_reg1,shanghai_reg2,hangzhou_reg1,hangzhou_reg2,hangzhou_service_discovery_reg",
+				Cluster:       "failover",
+				Loadbalance:   "random",
+				Retries:       "3",
+				Methods: []*config.MethodConfig{
+					{
+						Name:        "SayHello",
+						Retries:     "2",
+						LoadBalance: "random",
+						Weight:      200,
+					},
+				},
+			},
+		},
+	}
+	config.SetProviderConfig(providerConfig)
+}
+
 func TestGrpcProtocolExport(t *testing.T) {
 	// Export
 	addService()
+	doInitProvider()
 
 	proto := GetProtocol()
 	url, err := common.NewURL(mockGrpcCommonUrl)
@@ -43,7 +79,7 @@ func TestGrpcProtocolExport(t *testing.T) {
 	time.Sleep(time.Second)
 
 	// make sure url
-	eq := exporter.GetInvoker().GetUrl().URLEqual(url)
+	eq := exporter.GetInvoker().GetURL().URLEqual(url)
 	assert.True(t, eq)
 
 	// make sure exporterMap after 'Unexport'
@@ -72,7 +108,7 @@ func TestGrpcProtocolRefer(t *testing.T) {
 	invoker := proto.Refer(url)
 
 	// make sure url
-	eq := invoker.GetUrl().URLEqual(url)
+	eq := invoker.GetURL().URLEqual(url)
 	assert.True(t, eq)
 
 	// make sure invokers after 'Destroy'

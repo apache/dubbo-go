@@ -37,7 +37,7 @@ import (
 )
 
 func TestActiveFilterInvoke(t *testing.T) {
-	invoc := invocation.NewRPCInvocation("test", []interface{}{"OK"}, make(map[string]interface{}, 0))
+	invoc := invocation.NewRPCInvocation("test", []interface{}{"OK"}, make(map[string]interface{}))
 	url, _ := common.NewURL("dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
 	filter := ActiveFilter{}
 	ctrl := gomock.NewController(t)
@@ -47,7 +47,6 @@ func TestActiveFilterInvoke(t *testing.T) {
 	invoker.EXPECT().GetUrl().Return(url).Times(1)
 	filter.Invoke(context.Background(), invoker, invoc)
 	assert.True(t, invoc.AttachmentsByKey(dubboInvokeStartTime, "") != "")
-
 }
 
 func TestActiveFilterOnResponse(t *testing.T) {
@@ -65,7 +64,7 @@ func TestActiveFilterOnResponse(t *testing.T) {
 	result := &protocol.RPCResult{
 		Err: errors.New("test"),
 	}
-	filter.OnResponse(nil, result, invoker, invoc)
+	filter.OnResponse(context.TODO(), result, invoker, invoc)
 	methodStatus := protocol.GetMethodStatus(url, "test")
 	urlStatus := protocol.GetURLStatus(url)
 
@@ -79,5 +78,4 @@ func TestActiveFilterOnResponse(t *testing.T) {
 	assert.True(t, urlStatus.GetFailedElapsed() >= int64(elapsed))
 	assert.True(t, urlStatus.GetLastRequestFailedTimestamp() != int64(0))
 	assert.True(t, methodStatus.GetLastRequestFailedTimestamp() != int64(0))
-
 }

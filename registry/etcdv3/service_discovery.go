@@ -19,13 +19,15 @@ package etcdv3
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 )
 
 import (
 	gxset "github.com/dubbogo/gost/container/set"
-	gxpage "github.com/dubbogo/gost/page"
+	gxetcd "github.com/dubbogo/gost/database/kv/etcd/v3"
+	gxpage "github.com/dubbogo/gost/hash/page"
 	"github.com/hashicorp/vault/sdk/helper/jsonutil"
 	perrors "github.com/pkg/errors"
 )
@@ -44,9 +46,7 @@ const (
 	ROOT = "/services"
 )
 
-var (
-	initLock sync.Mutex
-)
+var initLock sync.Mutex
 
 func init() {
 	extension.SetServiceDiscovery(constant.ETCDV3_KEY, newEtcdV3ServiceDiscovery)
@@ -57,7 +57,7 @@ type etcdV3ServiceDiscovery struct {
 	// descriptor is a short string about the basic information of this instance
 	descriptor string
 	// client is current Etcdv3 client
-	client *etcdv3.Client
+	client *gxetcd.Client
 	// serviceInstance is current serviceInstance
 	serviceInstance *registry.ServiceInstance
 	// services is when register or update will add service name
@@ -81,7 +81,6 @@ func (e *etcdV3ServiceDiscovery) Destroy() error {
 
 // Register will register an instance of ServiceInstance to registry
 func (e *etcdV3ServiceDiscovery) Register(instance registry.ServiceInstance) error {
-
 	e.serviceInstance = &instance
 
 	path := toPath(instance)
@@ -107,8 +106,11 @@ func (e *etcdV3ServiceDiscovery) Update(instance registry.ServiceInstance) error
 
 	if nil != e.client {
 		ins, err := jsonutil.EncodeJSON(instance)
-		if nil == err {
-			e.client.RegisterTemp(path, string(ins))
+		if err == nil {
+			if err = e.client.RegisterTemp(path, string(ins)); err != nil {
+				logger.Warnf("etcdV3ServiceDiscovery.client.RegisterTemp(path:%v, instance:%v) = error:%v",
+					path, string(ins), err)
+			}
 			e.services.Add(instance.GetServiceName())
 		}
 	}
@@ -143,7 +145,6 @@ func (e *etcdV3ServiceDiscovery) GetServices() *gxset.HashSet {
 
 // GetInstances will return all service instances with serviceName
 func (e *etcdV3ServiceDiscovery) GetInstances(serviceName string) []registry.ServiceInstance {
-
 	if nil != e.client {
 		// get keys and values
 		_, vList, err := e.client.GetChildrenKVList(toParentPath(serviceName))
@@ -161,13 +162,12 @@ func (e *etcdV3ServiceDiscovery) GetInstances(serviceName string) []registry.Ser
 		logger.Infof("could not getChildrenKVList the err is:%v", err)
 	}
 
-	return make([]registry.ServiceInstance, 0, 0)
+	return make([]registry.ServiceInstance, 0)
 }
 
 // GetInstancesByPage will return a page containing instances of ServiceInstance with the serviceName
 // the page will start at offset
 func (e *etcdV3ServiceDiscovery) GetInstancesByPage(serviceName string, offset int, pageSize int) gxpage.Pager {
-
 	all := e.GetInstances(serviceName)
 
 	res := make([]interface{}, 0, pageSize)
@@ -176,7 +176,7 @@ func (e *etcdV3ServiceDiscovery) GetInstancesByPage(serviceName string, offset i
 		res = append(res, all[i])
 	}
 
-	return gxpage.New(offset, pageSize, res, len(all))
+	return gxpage.NewPage(offset, pageSize, res, len(all))
 }
 
 // GetHealthyInstancesByPage will return a page containing instances of ServiceInstance.
@@ -198,7 +198,7 @@ func (e *etcdV3ServiceDiscovery) GetHealthyInstancesByPage(serviceName string, o
 		}
 		i++
 	}
-	return gxpage.New(offset, pageSize, res, len(all))
+	return gxpage.NewPage(offset, pageSize, res, len(all))
 }
 
 // Batch get all instances by the specified service names
@@ -211,10 +211,17 @@ func (e *etcdV3ServiceDiscovery) GetRequestInstances(serviceNames []string, offs
 }
 
 // ----------------- event ----------------------
-// AddListener adds a new ServiceInstancesChangedListener
+// AddListener adds a new ServiceInstancesChangedListenerImpl
 // see addServiceInstancesChangedListener in Java
-func (e *etcdV3ServiceDiscovery) AddListener(listener *registry.ServiceInstancesChangedListener) error {
-	return e.registerSreviceWatcher(listener.ServiceName)
+func (e *etcdV3ServiceDiscovery) AddListener(listener registry.ServiceInstancesChangedListener) error {
+	for _, t := range listener.GetServiceNames().Values() {
+		serviceName := t.(string)
+		err := e.registerSreviceWatcher(serviceName)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // DispatchEventByServiceName dispatches the ServiceInstancesChangedEvent to service instance whose name is serviceName
@@ -249,7 +256,6 @@ func toParentPath(serviceName string) string {
 
 // register service watcher
 func (e *etcdV3ServiceDiscovery) registerSreviceWatcher(serviceName string) error {
-
 	initLock.Lock()
 	defer initLock.Unlock()
 
@@ -269,7 +275,6 @@ func (e *etcdV3ServiceDiscovery) registerSreviceWatcher(serviceName string) erro
 
 // when child data change should DispatchEventByServiceName
 func (e *etcdV3ServiceDiscovery) DataChange(eventType remoting.Event) bool {
-
 	if eventType.Action == remoting.EventTypeUpdate {
 		instance := &registry.DefaultServiceInstance{}
 		err := jsonutil.DecodeJSON([]byte(eventType.Content), &instance)
@@ -287,7 +292,6 @@ func (e *etcdV3ServiceDiscovery) DataChange(eventType remoting.Event) bool {
 
 // netEcdv3ServiceDiscovery
 func newEtcdV3ServiceDiscovery(name string) (registry.ServiceDiscovery, error) {
-
 	initLock.Lock()
 	defer initLock.Unlock()
 
@@ -311,12 +315,12 @@ func newEtcdV3ServiceDiscovery(name string) (registry.ServiceDiscovery, error) {
 	logger.Infof("etcd address is: %v,timeout is:%s", remoteConfig.Address, timeout.String())
 
 	client := etcdv3.NewServiceDiscoveryClient(
-		etcdv3.WithName(etcdv3.RegistryETCDV3Client),
-		etcdv3.WithTimeout(timeout),
-		etcdv3.WithEndpoints(remoteConfig.Address),
+		gxetcd.WithName(gxetcd.RegistryETCDV3Client),
+		gxetcd.WithTimeout(timeout),
+		gxetcd.WithEndpoints(strings.Split(remoteConfig.Address, ",")...),
 	)
 
 	descriptor := fmt.Sprintf("etcd-service-discovery[%s]", remoteConfig.Address)
 
-	return &etcdV3ServiceDiscovery{descriptor, client, nil, gxset.NewSet(), make(map[string]*etcdv3.EventListener, 0)}, nil
+	return &etcdV3ServiceDiscovery{descriptor, client, nil, gxset.NewSet(), make(map[string]*etcdv3.EventListener)}, nil
 }

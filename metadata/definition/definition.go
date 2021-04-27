@@ -57,13 +57,13 @@ func (def *ServiceDefinition) String() string {
 		}
 		var param strings.Builder
 		for _, d := range m.Parameters {
-			param.WriteString(fmt.Sprintf("{id:%v,type:%v,builderName:%v}", d.Id, d.Type, d.TypeBuilderName))
+			param.WriteString(fmt.Sprintf("{id:%v,type:%v,builderName:%v}", d.ID, d.Type, d.TypeBuilderName))
 		}
 		methodStr.WriteString(fmt.Sprintf("{name:%v,parameterTypes:[%v],returnType:%v,params:[%v] }", m.Name, paramType.String(), m.ReturnType, param.String()))
 	}
 	var types strings.Builder
 	for _, d := range def.Types {
-		types.WriteString(fmt.Sprintf("{id:%v,type:%v,builderName:%v}", d.Id, d.Type, d.TypeBuilderName))
+		types.WriteString(fmt.Sprintf("{id:%v,type:%v,builderName:%v}", d.ID, d.Type, d.TypeBuilderName))
 	}
 	return fmt.Sprintf("{canonicalName:%v, codeSource:%v, methods:[%v], types:[%v]}", def.CanonicalName, def.CodeSource, methodStr.String(), types.String())
 }
@@ -84,7 +84,7 @@ type MethodDefinition struct {
 
 // TypeDefinition is the describer of type definition
 type TypeDefinition struct {
-	Id              string
+	ID              string
 	Type            string
 	Items           []TypeDefinition
 	Enums           []string
@@ -93,7 +93,7 @@ type TypeDefinition struct {
 }
 
 // BuildServiceDefinition can build service definition which will be used to describe a service
-func BuildServiceDefinition(service common.Service, url common.URL) *ServiceDefinition {
+func BuildServiceDefinition(service common.Service, url *common.URL) *ServiceDefinition {
 	sd := &ServiceDefinition{}
 	sd.CanonicalName = url.Service()
 

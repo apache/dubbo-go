@@ -18,9 +18,10 @@
 package nacos
 
 import (
-	"encoding/json"
+	"net/http"
 	"strconv"
 	"testing"
+	"time"
 )
 
 import (
@@ -36,6 +37,9 @@ import (
 )
 
 func TestNacosMetadataReport_CRUD(t *testing.T) {
+	if !checkNacosServerAlive() {
+		return
+	}
 	rpt := newTestReport()
 	assert.NotNil(t, rpt)
 
@@ -58,25 +62,8 @@ func TestNacosMetadataReport_CRUD(t *testing.T) {
 	assert.Equal(t, 1, len(exportedUrls))
 	assert.Nil(t, err)
 
-	subMi := newSubscribeMetadataIdentifier()
-	urls := []string{serviceUrl.String()}
-	bytes, _ := json.Marshal(urls)
-	err = rpt.SaveSubscribedData(subMi, string(bytes))
-	assert.Nil(t, err)
-
-	subscribeUrl, err := rpt.GetSubscribedURLs(subMi)
-	assert.Equal(t, 1, len(subscribeUrl))
-	assert.Nil(t, err)
-
 	err = rpt.RemoveServiceMetadata(serviceMi)
 	assert.Nil(t, err)
-}
-
-func newSubscribeMetadataIdentifier() *identifier.SubscriberMetadataIdentifier {
-	return &identifier.SubscriberMetadataIdentifier{
-		Revision:           "subscribe",
-		MetadataIdentifier: *newMetadataIdentifier("provider"),
-	}
 }
 
 func newServiceMetadataIdentifier() *identifier.ServiceMetadataIdentifier {
@@ -111,6 +98,14 @@ func TestNacosMetadataReportFactory_CreateMetadataReport(t *testing.T) {
 
 func newTestReport() report.MetadataReport {
 	regurl, _ := common.NewURL("registry://console.nacos.io:80", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)))
-	res := extension.GetMetadataReportFactory("nacos").CreateMetadataReport(&regurl)
+	res := extension.GetMetadataReportFactory("nacos").CreateMetadataReport(regurl)
 	return res
+}
+
+func checkNacosServerAlive() bool {
+	c := http.Client{Timeout: time.Second}
+	if _, err := c.Get("http://console.nacos.io/nacos/"); err != nil {
+		return false
+	}
+	return true
 }

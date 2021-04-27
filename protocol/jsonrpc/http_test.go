@@ -39,17 +39,16 @@ import (
 
 type (
 	User struct {
-		Id   string `json:"id"`
+		ID   string `json:"id"`
 		Name string `json:"name"`
 	}
 
-	UserProvider struct {
-		user map[string]User
+	UserProvider struct { // user map[string]User
 	}
 )
 
 const (
-	mockJsonCommonUrl = "jsonrpc://127.0.0.1:20001/UserProvider?anyhost=true&" +
+	mockJsonCommonUrl = "jsonrpc://127.0.0.1:20001/com.ikurento.user.UserProvider?anyhost=true&" +
 		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
 		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
@@ -57,8 +56,7 @@ const (
 )
 
 func TestHTTPClientCall(t *testing.T) {
-
-	methods, err := common.ServiceMap.Register("com.ikurento.user.UserProvider", "jsonrpc", &UserProvider{})
+	methods, err := common.ServiceMap.Register("com.ikurento.user.UserProvider", "jsonrpc", "", "", &UserProvider{})
 	assert.NoError(t, err)
 	assert.Equal(t, "GetUser,GetUser0,GetUser1,GetUser2,GetUser3,GetUser4", methods)
 
@@ -84,7 +82,7 @@ func TestHTTPClientCall(t *testing.T) {
 	reply := &User{}
 	err = client.Call(ctx, url, req, reply)
 	assert.NoError(t, err)
-	assert.Equal(t, "1", reply.Id)
+	assert.Equal(t, "1", reply.ID)
 	assert.Equal(t, "username", reply.Name)
 
 	// call GetUser0
@@ -97,7 +95,7 @@ func TestHTTPClientCall(t *testing.T) {
 	reply = &User{}
 	err = client.Call(ctx, url, req, reply)
 	assert.NoError(t, err)
-	assert.Equal(t, "1", reply.Id)
+	assert.Equal(t, "1", reply.ID)
 	assert.Equal(t, "username", reply.Name)
 
 	// call GetUser1
@@ -122,7 +120,7 @@ func TestHTTPClientCall(t *testing.T) {
 	reply1 := []User{}
 	err = client.Call(ctx, url, req, &reply1)
 	assert.NoError(t, err)
-	assert.Equal(t, User{Id: "1", Name: "username"}, reply1[0])
+	assert.Equal(t, User{ID: "1", Name: "username"}, reply1[0])
 
 	// call GetUser3
 	ctx = context.WithValue(context.Background(), constant.DUBBOGO_CTX_KEY, map[string]string{
@@ -134,7 +132,7 @@ func TestHTTPClientCall(t *testing.T) {
 	reply1 = []User{}
 	err = client.Call(ctx, url, req, &reply1)
 	assert.NoError(t, err)
-	assert.Equal(t, User{Id: "1", Name: "username"}, reply1[0])
+	assert.Equal(t, User{ID: "1", Name: "username"}, reply1[0])
 
 	// call GetUser4
 	ctx = context.WithValue(context.Background(), constant.DUBBOGO_CTX_KEY, map[string]string{
@@ -146,7 +144,7 @@ func TestHTTPClientCall(t *testing.T) {
 	reply = &User{}
 	err = client.Call(ctx, url, req, reply)
 	assert.NoError(t, err)
-	assert.Equal(t, &User{Id: "", Name: ""}, reply)
+	assert.Equal(t, &User{ID: "", Name: ""}, reply)
 
 	ctx = context.WithValue(context.Background(), constant.DUBBOGO_CTX_KEY, map[string]string{
 		"X-Proxy-ID": "dubbogo",
@@ -161,21 +159,20 @@ func TestHTTPClientCall(t *testing.T) {
 	reply = &User{}
 	err = client.Call(ctx, url, req, reply)
 	assert.NoError(t, err)
-	assert.Equal(t, &User{Id: "1", Name: ""}, reply)
+	assert.Equal(t, &User{ID: "1", Name: ""}, reply)
 
 	// destroy
 	proto.Destroy()
-
 }
 
 func (u *UserProvider) GetUser(ctx context.Context, req []interface{}, rsp *User) error {
-	rsp.Id = req[0].(string)
+	rsp.ID = req[0].(string)
 	rsp.Name = req[1].(string)
 	return nil
 }
 
 func (u *UserProvider) GetUser0(id string, k *User, name string) (User, error) {
-	return User{Id: id, Name: name}, nil
+	return User{ID: id, Name: name}, nil
 }
 
 func (u *UserProvider) GetUser1() error {
@@ -183,19 +180,19 @@ func (u *UserProvider) GetUser1() error {
 }
 
 func (u *UserProvider) GetUser2(ctx context.Context, req []interface{}, rsp *[]User) error {
-	*rsp = append(*rsp, User{Id: req[0].(string), Name: req[1].(string)})
+	*rsp = append(*rsp, User{ID: req[0].(string), Name: req[1].(string)})
 	return nil
 }
 
 func (u *UserProvider) GetUser3(ctx context.Context, req []interface{}) ([]User, error) {
-	return []User{{Id: req[0].(string), Name: req[1].(string)}}, nil
+	return []User{{ID: req[0].(string), Name: req[1].(string)}}, nil
 }
 
 func (u *UserProvider) GetUser4(id float64) (*User, error) {
 	if id == 0 {
 		return nil, nil
 	}
-	return &User{Id: "1"}, nil
+	return &User{ID: "1"}, nil
 }
 
 func (u *UserProvider) Reference() string {

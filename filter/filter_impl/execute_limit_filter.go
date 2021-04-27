@@ -82,9 +82,9 @@ type ExecuteState struct {
 // Invoke judges whether the current processing requests over the threshold
 func (ef *ExecuteLimitFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	methodConfigPrefix := "methods." + invocation.MethodName() + "."
-	ivkURL := invoker.GetUrl()
+	ivkURL := invoker.GetURL()
 	limitTarget := ivkURL.ServiceKey()
-	limitRateConfig := constant.DEFAULT_EXECUTE_LIMIT
+	var limitRateConfig string
 
 	methodLevelConfig := ivkURL.GetParam(methodConfigPrefix+constant.EXECUTE_LIMIT_KEY, "")
 	if len(methodLevelConfig) > 0 {
@@ -134,8 +134,10 @@ func (state *ExecuteState) decrease() {
 	atomic.AddInt64(&state.concurrentCount, -1)
 }
 
-var executeLimitOnce sync.Once
-var executeLimitFilter *ExecuteLimitFilter
+var (
+	executeLimitOnce   sync.Once
+	executeLimitFilter *ExecuteLimitFilter
+)
 
 // GetExecuteLimitFilter returns the singleton ExecuteLimitFilter instance
 func GetExecuteLimitFilter() filter.Filter {

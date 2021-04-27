@@ -20,6 +20,7 @@ package getty
 import (
 	"github.com/opentracing/opentracing-go"
 )
+
 import (
 	invocation_impl "github.com/apache/dubbo-go/protocol/invocation"
 )
@@ -35,16 +36,8 @@ func injectTraceCtx(currentSpan opentracing.Span, inv *invocation_impl.RPCInvoca
 	return err
 }
 
-func extractTraceCtx(inv *invocation_impl.RPCInvocation) (opentracing.SpanContext, error) {
-	traceAttachments := filterContext(inv.Attachments())
-	// actually, if user do not use any opentracing framework, the err will not be nil.
-	spanCtx, err := opentracing.GlobalTracer().Extract(opentracing.TextMap,
-		opentracing.TextMapCarrier(traceAttachments))
-	return spanCtx, err
-}
-
 func filterContext(attachments map[string]interface{}) map[string]string {
-	var traceAttchment = make(map[string]string)
+	traceAttchment := make(map[string]string)
 	for k, v := range attachments {
 		if r, ok := v.(string); ok {
 			traceAttchment[k] = r

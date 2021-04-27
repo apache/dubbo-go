@@ -27,20 +27,16 @@ import (
 
 var subscribeMetadataId = &SubscriberMetadataIdentifier{
 	Revision: "1.0",
-	MetadataIdentifier: MetadataIdentifier{
-		BaseMetadataIdentifier: BaseMetadataIdentifier{
-			ServiceInterface: "org.apache.pkg.mockService",
-			Version:          "1.0.0",
-			Group:            "Group",
-			Side:             "provider",
-		},
+	BaseApplicationMetadataIdentifier: BaseApplicationMetadataIdentifier{
+		Application: "foo",
 	},
 }
 
 func TestSubscribeGetFilePathKey(t *testing.T) {
-	assert.Equal(t, "metadata/1.0.0/Group/provider/1.0", subscribeMetadataId.GetFilePathKey())
+	t.Logf(subscribeMetadataId.GetFilePathKey())
+	assert.Equal(t, "metadata/foo/1.0", subscribeMetadataId.GetFilePathKey())
 }
 
 func TestSubscribeGetIdentifierKey(t *testing.T) {
-	assert.Equal(t, "org.apache.pkg.mockService:1.0.0:Group:provider:1.0", subscribeMetadataId.GetIdentifierKey())
+	assert.Equal(t, "foo:1.0", subscribeMetadataId.GetIdentifierKey())
 }

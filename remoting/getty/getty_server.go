@@ -40,10 +40,7 @@ import (
 	"github.com/apache/dubbo-go/remoting"
 )
 
-var (
-	srvConf   *ServerConfig
-	srvGrpool *gxsync.TaskPool
-)
+var srvConf *ServerConfig
 
 func initServer(protocol string) {
 	// load clientconfig from provider_config
@@ -76,7 +73,6 @@ func initServer(protocol string) {
 	if err := srvConf.CheckValidity(); err != nil {
 		panic(err)
 	}
-	SetServerGrpool()
 }
 
 // SetServerConfig set dubbo server config.
@@ -87,23 +83,11 @@ func SetServerConfig(s ServerConfig) {
 		logger.Warnf("[ServerConfig CheckValidity] error: %v", err)
 		return
 	}
-	SetServerGrpool()
 }
 
 // GetServerConfig get getty server config.
 func GetServerConfig() ServerConfig {
 	return *srvConf
-}
-
-// SetServerGrpool set getty server GrPool
-func SetServerGrpool() {
-	if srvConf.GrPoolSize > 1 {
-		srvGrpool = gxsync.NewTaskPool(
-			gxsync.WithTaskPoolTaskPoolSize(srvConf.GrPoolSize),
-			gxsync.WithTaskPoolTaskQueueLength(srvConf.QueueLen),
-			gxsync.WithTaskPoolTaskQueueNumber(srvConf.QueueNumber),
-		)
-	}
 }
 
 // Server define getty server
@@ -117,8 +101,8 @@ type Server struct {
 }
 
 // NewServer create a new Server
-func NewServer(url common.URL, handlers func(*invocation.RPCInvocation) protocol.RPCResult) *Server {
-	//init
+func NewServer(url *common.URL, handlers func(*invocation.RPCInvocation) protocol.RPCResult) *Server {
+	// init
 	initServer(url.Protocol)
 
 	srvConf.SSLEnabled = url.GetParamBool(constant.SSL_ENABLED_KEY, false)
@@ -151,16 +135,14 @@ func (s *Server) newSession(session getty.Session) error {
 		session.SetMaxMsgLen(conf.GettySessionParam.MaxMsgLen)
 		session.SetPkgHandler(NewRpcServerPackageHandler(s))
 		session.SetEventListener(s.rpcHandler)
-		session.SetWQLen(conf.GettySessionParam.PkgWQSize)
 		session.SetReadTimeout(conf.GettySessionParam.tcpReadTimeout)
 		session.SetWriteTimeout(conf.GettySessionParam.tcpWriteTimeout)
-		session.SetCronPeriod((int)(conf.sessionTimeout.Nanoseconds() / 1e6))
+		session.SetCronPeriod((int)(conf.heartbeatPeriod.Nanoseconds() / 1e6))
 		session.SetWaitTime(conf.GettySessionParam.waitTimeout)
 		logger.Debugf("server accepts new session:%s\n", session.Stat())
-		session.SetTaskPool(srvGrpool)
 		return nil
 	}
-	if tcpConn, ok = session.Conn().(*net.TCPConn); !ok {
+	if _, ok = session.Conn().(*net.TCPConn); !ok {
 		panic(fmt.Sprintf("%s, session.conn{%#v} is not tcp connection\n", session.Stat(), session.Conn()))
 	}
 
@@ -192,13 +174,11 @@ func (s *Server) newSession(session getty.Session) error {
 	session.SetMaxMsgLen(conf.GettySessionParam.MaxMsgLen)
 	session.SetPkgHandler(NewRpcServerPackageHandler(s))
 	session.SetEventListener(s.rpcHandler)
-	session.SetWQLen(conf.GettySessionParam.PkgWQSize)
 	session.SetReadTimeout(conf.GettySessionParam.tcpReadTimeout)
 	session.SetWriteTimeout(conf.GettySessionParam.tcpWriteTimeout)
-	session.SetCronPeriod((int)(conf.sessionTimeout.Nanoseconds() / 1e6))
+	session.SetCronPeriod((int)(conf.heartbeatPeriod.Nanoseconds() / 1e6))
 	session.SetWaitTime(conf.GettySessionParam.waitTimeout)
 	logger.Debugf("server accepts new session: %s", session.Stat())
-	session.SetTaskPool(srvGrpool)
 	return nil
 }
 
@@ -210,17 +190,15 @@ func (s *Server) Start() {
 	)
 
 	addr = s.addr
+	serverOpts := []getty.ServerOption{getty.WithLocalAddress(addr)}
 	if s.conf.SSLEnabled {
-		tcpServer = getty.NewTCPServer(
-			getty.WithLocalAddress(addr),
-			getty.WithServerSslEnabled(s.conf.SSLEnabled),
-			getty.WithServerTlsConfigBuilder(config.GetServerTlsConfigBuilder()),
-		)
-	} else {
-		tcpServer = getty.NewTCPServer(
-			getty.WithLocalAddress(addr),
-		)
+		serverOpts = append(serverOpts, getty.WithServerSslEnabled(s.conf.SSLEnabled),
+			getty.WithServerTlsConfigBuilder(config.GetServerTlsConfigBuilder()))
 	}
+
+	serverOpts = append(serverOpts, getty.WithServerTaskPool(gxsync.NewTaskPoolSimple(s.conf.GrPoolSize)))
+
+	tcpServer = getty.NewTCPServer(serverOpts...)
 	tcpServer.RunEventLoop(s.newSession)
 	logger.Debugf("s bind addr{%s} ok!", s.addr)
 	s.tcpServer = tcpServer

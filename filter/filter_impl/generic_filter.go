@@ -21,6 +21,7 @@ import (
 	"context"
 	"reflect"
 	"strings"
+	"time"
 )
 
 import (
@@ -37,7 +38,7 @@ import (
 
 const (
 	// GENERIC
-	//generic module name
+	// generic module name
 	GENERIC = "generic"
 )
 
@@ -93,39 +94,60 @@ func struct2MapAll(obj interface{}) interface{} {
 	if t.Kind() == reflect.Struct {
 		result := make(map[string]interface{}, t.NumField())
 		for i := 0; i < t.NumField(); i++ {
-			if v.Field(i).Kind() == reflect.Struct || v.Field(i).Kind() == reflect.Slice || v.Field(i).Kind() == reflect.Map {
-				if v.Field(i).CanInterface() {
-					setInMap(result, t.Field(i), struct2MapAll(v.Field(i).Interface()))
+			field := t.Field(i)
+			value := v.Field(i)
+			kind := value.Kind()
+			if kind == reflect.Struct || kind == reflect.Slice || kind == reflect.Map {
+				if value.CanInterface() {
+					tmp := value.Interface()
+					if _, ok := tmp.(time.Time); ok {
+						setInMap(result, field, tmp)
+						continue
+					}
+					setInMap(result, field, struct2MapAll(tmp))
 				}
 			} else {
-				if v.Field(i).CanInterface() {
-					setInMap(result, t.Field(i), v.Field(i).Interface())
+				if value.CanInterface() {
+					setInMap(result, field, value.Interface())
 				}
 			}
 		}
 		return result
 	} else if t.Kind() == reflect.Slice {
 		value := reflect.ValueOf(obj)
-		var newTemps = make([]interface{}, 0, value.Len())
+		newTemps := make([]interface{}, 0, value.Len())
 		for i := 0; i < value.Len(); i++ {
 			newTemp := struct2MapAll(value.Index(i).Interface())
 			newTemps = append(newTemps, newTemp)
 		}
 		return newTemps
 	} else if t.Kind() == reflect.Map {
-		var newTempMap = make(map[string]interface{}, v.Len())
+		newTempMap := make(map[interface{}]interface{}, v.Len())
 		iter := v.MapRange()
 		for iter.Next() {
-			mapK := iter.Key().String()
 			if !iter.Value().CanInterface() {
 				continue
 			}
+			key := iter.Key()
 			mapV := iter.Value().Interface()
-			newTempMap[mapK] = struct2MapAll(mapV)
+			newTempMap[convertMapKey(key)] = struct2MapAll(mapV)
 		}
 		return newTempMap
 	} else {
 		return obj
+	}
+}
+
+func convertMapKey(key reflect.Value) interface{} {
+	switch key.Kind() {
+	case reflect.Bool, reflect.Int, reflect.Int8,
+		reflect.Int16, reflect.Int32, reflect.Int64,
+		reflect.Uint, reflect.Uint8, reflect.Uint16,
+		reflect.Uint32, reflect.Uint64, reflect.Float32,
+		reflect.Float64, reflect.String:
+		return key.Interface()
+	default:
+		return key.String()
 	}
 }
 

@@ -27,9 +27,11 @@ import (
 	"strconv"
 	"strings"
 )
+
 import (
 	gxsort "github.com/dubbogo/gost/sort"
 )
+
 import (
 	"github.com/apache/dubbo-go/cluster"
 	"github.com/apache/dubbo-go/common/constant"
@@ -56,8 +58,7 @@ func init() {
 }
 
 // ConsistentHashLoadBalance implementation of load balancing: using consistent hashing
-type ConsistentHashLoadBalance struct {
-}
+type ConsistentHashLoadBalance struct{}
 
 // NewConsistentHashLoadBalance creates NewConsistentHashLoadBalance
 //
@@ -69,7 +70,7 @@ func NewConsistentHashLoadBalance() cluster.LoadBalance {
 // Select gets invoker based on load balancing strategy
 func (lb *ConsistentHashLoadBalance) Select(invokers []protocol.Invoker, invocation protocol.Invocation) protocol.Invoker {
 	methodName := invocation.MethodName()
-	key := invokers[0].GetUrl().ServiceKey() + "." + methodName
+	key := invokers[0].GetURL().ServiceKey() + "." + methodName
 
 	// hash the invokers
 	bs := make([]byte, 0)
@@ -104,8 +105,8 @@ func newConsistentHashSelector(invokers []protocol.Invoker, methodName string,
 	selector := &ConsistentHashSelector{}
 	selector.virtualInvokers = make(map[uint32]protocol.Invoker)
 	selector.hashCode = hashCode
-	url := invokers[0].GetUrl()
-	selector.replicaNum = int(url.GetMethodParamInt(methodName, HashNodes, 160))
+	url := invokers[0].GetURL()
+	selector.replicaNum = url.GetMethodParamIntValue(methodName, HashNodes, 160)
 	indices := re.Split(url.GetMethodParam(methodName, HashArguments, "0"), -1)
 	for _, index := range indices {
 		i, err := strconv.Atoi(index)
@@ -115,7 +116,7 @@ func newConsistentHashSelector(invokers []protocol.Invoker, methodName string,
 		selector.argumentIndex = append(selector.argumentIndex, i)
 	}
 	for _, invoker := range invokers {
-		u := invoker.GetUrl()
+		u := invoker.GetURL()
 		address := u.Ip + ":" + u.Port
 		for i := 0; i < selector.replicaNum/4; i++ {
 			digest := md5.Sum([]byte(address + strconv.Itoa(i)))

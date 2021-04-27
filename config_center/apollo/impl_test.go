@@ -59,8 +59,7 @@ const (
 }]`
 )
 
-var (
-	mockConfigRes = `{
+var mockConfigRes = `{
 	"appId": "testApplication_yang",
 	"cluster": "default",
 	"namespaceName": "mockDubbog.properties",
@@ -116,7 +115,6 @@ var (
 	},
 	"releaseKey": "20191104105242-0f13805d89f834a4"
 }`
-)
 
 func initApollo() *httptest.Server {
 	handlerMap := make(map[string]func(http.ResponseWriter, *http.Request), 1)
@@ -126,24 +124,24 @@ func initApollo() *httptest.Server {
 }
 
 func configResponse(rw http.ResponseWriter, _ *http.Request) {
-	result := fmt.Sprintf(mockConfigRes)
+	result := mockConfigRes
 	fmt.Fprintf(rw, "%s", result)
 }
 
 func notifyResponse(rw http.ResponseWriter, req *http.Request) {
-	result := fmt.Sprintf(mockNotifyRes)
+	result := mockNotifyRes
 	fmt.Fprintf(rw, "%s", result)
 }
 
 func serviceConfigResponse(rw http.ResponseWriter, _ *http.Request) {
-	result := fmt.Sprintf(mockServiceConfigRes)
+	result := mockServiceConfigRes
 	fmt.Fprintf(rw, "%s", result)
 }
 
 // run mock config server
 func runMockConfigServer(handlerMap map[string]func(http.ResponseWriter, *http.Request),
 	notifyHandler func(http.ResponseWriter, *http.Request)) *httptest.Server {
-	uriHandlerMap := make(map[string]func(http.ResponseWriter, *http.Request), 0)
+	uriHandlerMap := make(map[string]func(http.ResponseWriter, *http.Request))
 	for namespace, handler := range handlerMap {
 		uri := fmt.Sprintf("/configs/%s/%s/%s", mockAppId, mockCluster, namespace)
 		uriHandlerMap[uri] = handler
@@ -197,7 +195,7 @@ func initMockApollo(t *testing.T) *apolloConfiguration {
 	apolloUrl := strings.ReplaceAll(apollo.URL, "http", "apollo")
 	url, err := common.NewURL(apolloUrl, common.WithParams(c.ConfigCenterConfig.GetUrlMap()))
 	assert.NoError(t, err)
-	configuration, err := newApolloConfiguration(&url)
+	configuration, err := newApolloConfiguration(url)
 	assert.NoError(t, err)
 	return configuration
 }
@@ -215,19 +213,19 @@ func TestListener(t *testing.T) {
 	},
 	"releaseKey": "20191104105242-0f13805d89f834a4"
 }`
-	//test add
+	// test add
 	apollo.AddListener(mockNamespace, listener)
 	listener.wg.Wait()
 	assert.Equal(t, "mockDubbog.properties", listener.event)
 	assert.Greater(t, listener.count, 0)
 
-	//test remove
+	// test remove
 	apollo.RemoveListener(mockNamespace, listener)
 	listenerCount := 0
 	apollo.listeners.Range(func(_, value interface{}) bool {
 		apolloListener := value.(*apolloListener)
 		for e := range apolloListener.listeners {
-			fmt.Println(e)
+			t.Logf("listener:%v", e)
 			listenerCount++
 		}
 		return true

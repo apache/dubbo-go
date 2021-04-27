@@ -38,13 +38,15 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
+// Integrate Sentinel Go MUST HAVE:
+// 1. Must initialize Sentinel Go run environment,
+//     refer to https://github.com/alibaba/sentinel-golang/blob/master/api/init.go
+// 2. Register rules for resources user want to guard
+
 func init() {
 	extension.SetFilter(SentinelProviderFilterName, GetSentinelProviderFilter)
 	extension.SetFilter(SentinelConsumerFilterName, GetSentinelConsumerFilter)
 
-	if err := sentinel.InitDefault(); err != nil {
-		logger.Errorf("[Sentinel Filter] fail to initialize Sentinel")
-	}
 	if err := logging.ResetGlobalLogger(DubboLoggerWrapper{Logger: logger.GetLogger()}); err != nil {
 		logger.Errorf("[Sentinel Filter] fail to ingest dubbo logger into sentinel")
 	}
@@ -54,20 +56,36 @@ type DubboLoggerWrapper struct {
 	logger.Logger
 }
 
-func (d DubboLoggerWrapper) Fatal(v ...interface{}) {
-	d.Logger.Error(v...)
+func (d DubboLoggerWrapper) Debug(msg string, keysAndValues ...interface{}) {
+	d.Logger.Debug(logging.AssembleMsg(logging.GlobalCallerDepth, "DEBUG", msg, nil, keysAndValues))
 }
 
-func (d DubboLoggerWrapper) Fatalf(format string, v ...interface{}) {
-	d.Logger.Errorf(format, v...)
+func (d DubboLoggerWrapper) DebugEnabled() bool {
+	return true
 }
 
-func (d DubboLoggerWrapper) Panic(v ...interface{}) {
-	d.Logger.Error(v...)
+func (d DubboLoggerWrapper) Info(msg string, keysAndValues ...interface{}) {
+	d.Logger.Info(logging.AssembleMsg(logging.GlobalCallerDepth, "INFO", msg, nil, keysAndValues))
 }
 
-func (d DubboLoggerWrapper) Panicf(format string, v ...interface{}) {
-	d.Logger.Errorf(format, v...)
+func (d DubboLoggerWrapper) InfoEnabled() bool {
+	return true
+}
+
+func (d DubboLoggerWrapper) Warn(msg string, keysAndValues ...interface{}) {
+	d.Logger.Warn(logging.AssembleMsg(logging.GlobalCallerDepth, "WARN", msg, nil, keysAndValues))
+}
+
+func (d DubboLoggerWrapper) WarnEnabled() bool {
+	return true
+}
+
+func (d DubboLoggerWrapper) Error(err error, msg string, keysAndValues ...interface{}) {
+	d.Logger.Warn(logging.AssembleMsg(logging.GlobalCallerDepth, "ERROR", msg, err, keysAndValues))
+}
+
+func (d DubboLoggerWrapper) ErrorEnabled() bool {
+	return true
 }
 
 func GetSentinelConsumerFilter() filter.Filter {
@@ -168,9 +186,11 @@ type DubboFallback func(context.Context, protocol.Invoker, protocol.Invocation, 
 func SetDubboConsumerFallback(f DubboFallback) {
 	sentinelDubboConsumerFallback = f
 }
+
 func SetDubboProviderFallback(f DubboFallback) {
 	sentinelDubboProviderFallback = f
 }
+
 func getDefaultDubboFallback() DubboFallback {
 	return func(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation, blockError *base.BlockError) protocol.Result {
 		result := &protocol.RPCResult{}
@@ -187,8 +207,8 @@ const (
 	DefaultProviderPrefix = "dubbo:provider:"
 	DefaultConsumerPrefix = "dubbo:consumer:"
 
-	MethodEntryKey    = "$$sentinelMethodEntry"
-	InterfaceEntryKey = "$$sentinelInterfaceEntry"
+	MethodEntryKey    = constant.DubboCtxKey("$$sentinelMethodEntry")
+	InterfaceEntryKey = constant.DubboCtxKey("$$sentinelInterfaceEntry")
 )
 
 func getResourceName(invoker protocol.Invoker, invocation protocol.Invocation, prefix string) (interfaceResourceName, methodResourceName string) {
@@ -196,9 +216,9 @@ func getResourceName(invoker protocol.Invoker, invocation protocol.Invocation, p
 
 	sb.WriteString(prefix)
 	if getInterfaceGroupAndVersionEnabled() {
-		interfaceResourceName = getColonSeparatedKey(invoker.GetUrl())
+		interfaceResourceName = getColonSeparatedKey(invoker.GetURL())
 	} else {
-		interfaceResourceName = invoker.GetUrl().Service()
+		interfaceResourceName = invoker.GetURL().Service()
 	}
 	sb.WriteString(interfaceResourceName)
 	sb.WriteString(":")
@@ -229,7 +249,7 @@ func getInterfaceGroupAndVersionEnabled() bool {
 	return true
 }
 
-func getColonSeparatedKey(url common.URL) string {
+func getColonSeparatedKey(url *common.URL) string {
 	return fmt.Sprintf("%s:%s:%s",
 		url.Service(),
 		url.GetParam(constant.GROUP_KEY, ""),

@@ -83,7 +83,6 @@ func (f *MockDynamicConfigurationFactory) GetDynamicConfiguration(_ *common.URL)
 		dynamicConfiguration.content = f.Content
 	}
 	return dynamicConfiguration, err
-
 }
 
 // PublishConfig will publish the config with the (key, group, value) pair
@@ -116,7 +115,6 @@ func (c *MockDynamicConfiguration) RemoveListener(_ string, _ ConfigurationListe
 
 // GetConfig returns content of MockDynamicConfiguration
 func (c *MockDynamicConfiguration) GetConfig(_ string, _ ...Option) (string, error) {
-
 	return c.content, nil
 }
 
@@ -158,7 +156,8 @@ func (c *MockDynamicConfiguration) MockServiceConfigEvent() {
 		Key:           mockServiceName,
 		Enabled:       true,
 		Configs: []parser.ConfigItem{
-			{Type: parser.GeneralType,
+			{
+				Type:       parser.GeneralType,
 				Enabled:    true,
 				Addresses:  []string{"0.0.0.0"},
 				Services:   []string{mockServiceName},
@@ -180,7 +179,8 @@ func (c *MockDynamicConfiguration) MockApplicationConfigEvent() {
 		Key:           mockServiceName,
 		Enabled:       true,
 		Configs: []parser.ConfigItem{
-			{Type: parser.ScopeApplication,
+			{
+				Type:       parser.ScopeApplication,
 				Enabled:    true,
 				Addresses:  []string{"0.0.0.0"},
 				Services:   []string{mockServiceName},

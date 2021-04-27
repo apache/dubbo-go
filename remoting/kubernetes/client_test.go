@@ -59,9 +59,8 @@ var tests = []struct {
 // test dataset prefix
 const prefix = "name"
 
-var (
-	watcherStopLog = "the watcherSet watcher was stopped"
-)
+var watcherStopLog = "the watcherSet watcher was stopped"
+
 var clientPodListJsonData = `{
     "apiVersion": "v1",
     "items": [
@@ -228,7 +227,6 @@ var clientPodListJsonData = `{
 `
 
 func getTestClient(t *testing.T) *Client {
-
 	pl := &v1.PodList{}
 	// 1. install test data
 	if err := json.Unmarshal([]byte(clientPodListJsonData), &pl); err != nil {
@@ -257,7 +255,6 @@ func getTestClient(t *testing.T) *Client {
 }
 
 func TestClientValid(t *testing.T) {
-
 	client := getTestClient(t)
 	defer client.Close()
 
@@ -272,7 +269,6 @@ func TestClientValid(t *testing.T) {
 }
 
 func TestClientDone(t *testing.T) {
-
 	client := getTestClient(t)
 
 	go func() {
@@ -287,7 +283,6 @@ func TestClientDone(t *testing.T) {
 }
 
 func TestClientCreateKV(t *testing.T) {
-
 	client := getTestClient(t)
 	defer client.Close()
 
@@ -304,7 +299,6 @@ func TestClientCreateKV(t *testing.T) {
 }
 
 func TestClientGetChildrenKVList(t *testing.T) {
-
 	client := getTestClient(t)
 	defer client.Close()
 
@@ -314,10 +308,10 @@ func TestClientGetChildrenKVList(t *testing.T) {
 	syncDataComplete := make(chan struct{})
 
 	go func() {
-
 		wc, done, err := client.WatchWithPrefix(prefix)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
+			return
 		}
 
 		wg.Done()
@@ -365,7 +359,7 @@ func TestClientGetChildrenKVList(t *testing.T) {
 	// start get all children
 	kList, vList, err := client.GetChildren(prefix)
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 
 	for i := 0; i < len(kList); i++ {
@@ -373,26 +367,22 @@ func TestClientGetChildrenKVList(t *testing.T) {
 	}
 
 	for expectK, expectV := range expect {
-
 		if got[expectK] != expectV {
 			t.Fatalf("expect {%s: %s} but got {%s: %v}", expectK, expectV, expectK, got[expectK])
 		}
 	}
-
 }
 
 func TestClientWatchPrefix(t *testing.T) {
-
 	client := getTestClient(t)
 
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 
 	go func() {
-
 		wc, done, err := client.WatchWithPrefix(prefix)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		wg.Done()
@@ -425,17 +415,15 @@ func TestClientWatchPrefix(t *testing.T) {
 }
 
 func TestClientWatch(t *testing.T) {
-
 	client := getTestClient(t)
 
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 
 	go func() {
-
 		wc, done, err := client.Watch(prefix)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 		wg.Done()
 
@@ -448,7 +436,6 @@ func TestClientWatch(t *testing.T) {
 				return
 			}
 		}
-
 	}()
 
 	// must wait the watch goroutine already start the watch goroutine

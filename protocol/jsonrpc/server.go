@@ -43,12 +43,10 @@ import (
 	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
-var (
-	// A value sent as a placeholder for the server's response value when the server
-	// receives an invalid request. It is never decoded by the client since the Response
-	// contains an error when it is used.
-	invalidRequest = struct{}{}
-)
+// A value sent as a placeholder for the server's response value when the server
+// receives an invalid request. It is never decoded by the client since the Response
+// contains an error when it is used.
+var invalidRequest = struct{}{}
 
 const (
 	// DefaultMaxSleepTime max sleep interval in accept
@@ -92,7 +90,9 @@ func (s *Server) handlePkg(conn net.Conn) {
 			t = time.Now().Add(timeout)
 		}
 
-		conn.SetDeadline(t)
+		if err := conn.SetDeadline(t); err != nil {
+			logger.Error("connection.SetDeadline(t:%v) = error:%v", t, err)
+		}
 	}
 
 	sendErrorResp := func(header http.Header, body []byte) error {
@@ -229,7 +229,7 @@ func accept(listener net.Listener, fn func(net.Conn)) error {
 }
 
 // Start JSON RPC server then ready for accept request.
-func (s *Server) Start(url common.URL) {
+func (s *Server) Start(url *common.URL) {
 	listener, err := net.Listen("tcp", url.Location)
 	if err != nil {
 		logger.Errorf("jsonrpc server [%s] start failed: %v", url.Path, err)
@@ -239,7 +239,9 @@ func (s *Server) Start(url common.URL) {
 
 	s.wg.Add(1)
 	go func() {
-		accept(listener, func(conn net.Conn) { s.handlePkg(conn) })
+		if err := accept(listener, func(conn net.Conn) { s.handlePkg(conn) }); err != nil {
+			logger.Error("accept() = error:%v", err)
+		}
 		s.wg.Done()
 	}()
 
@@ -345,7 +347,8 @@ func serveRequest(ctx context.Context, header map[string]string, body []byte, co
 	if invoker != nil {
 		result := invoker.Invoke(ctx, invocation.NewRPCInvocation(methodName, args, map[string]interface{}{
 			constant.PATH_KEY:    path,
-			constant.VERSION_KEY: codec.req.Version}))
+			constant.VERSION_KEY: codec.req.Version,
+		}))
 		if err := result.Error(); err != nil {
 			rspStream, codecErr := codec.Write(err.Error(), invalidRequest)
 			if codecErr != nil {

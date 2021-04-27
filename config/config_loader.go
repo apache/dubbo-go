@@ -18,8 +18,9 @@
 package config
 
 import (
+	"flag"
 	"fmt"
-	"log"
+	"io/ioutil"
 	"os"
 	"reflect"
 	"strconv"
@@ -28,6 +29,7 @@ import (
 )
 
 import (
+	hessian "github.com/apache/dubbo-go-hessian2"
 	perrors "github.com/pkg/errors"
 )
 
@@ -37,6 +39,7 @@ import (
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	_ "github.com/apache/dubbo-go/common/observer/dispatcher"
+	"github.com/apache/dubbo-go/common/yaml"
 	"github.com/apache/dubbo-go/registry"
 )
 
@@ -51,38 +54,75 @@ var (
 	// it should be used combine with double-check to avoid the race condition
 	configAccessMutex sync.Mutex
 
-	maxWait        = 3
-	confRouterFile string
+	maxWait                         = 3
+	confRouterFile                  string
+	confBaseFile                    string
+	uniformVirturlServiceConfigPath string
+	uniformDestRuleConfigPath       string
 )
 
 // loaded consumer & provider config from xxx.yml, and log config from xxx.xml
 // Namely: dubbo.consumer.xml & dubbo.provider.xml in java dubbo
-func init() {
+func DefaultInit() []LoaderInitOption {
 	var (
 		confConFile string
 		confProFile string
 	)
 
-	confConFile = os.Getenv(constant.CONF_CONSUMER_FILE_PATH)
-	confProFile = os.Getenv(constant.CONF_PROVIDER_FILE_PATH)
-	confRouterFile = os.Getenv(constant.CONF_ROUTER_FILE_PATH)
-
-	if errCon := ConsumerInit(confConFile); errCon != nil {
-		log.Printf("[consumerInit] %#v", errCon)
-		consumerConfig = nil
-	} else {
-		// Even though baseConfig has been initialized, we override it
-		// because we think read from config file is correct config
-		baseConfig = &consumerConfig.BaseConfig
+	fs := flag.NewFlagSet("config", flag.ContinueOnError)
+	fs.StringVar(&confConFile, "conConf", os.Getenv(constant.CONF_CONSUMER_FILE_PATH), "default client config path")
+	fs.StringVar(&confProFile, "proConf", os.Getenv(constant.CONF_PROVIDER_FILE_PATH), "default server config path")
+	fs.StringVar(&confRouterFile, "rouConf", os.Getenv(constant.CONF_ROUTER_FILE_PATH), "default router config path")
+	fs.StringVar(&uniformVirturlServiceConfigPath, "vsConf", os.Getenv(constant.CONF_VIRTUAL_SERVICE_FILE_PATH), "default virtual service of uniform router config path")
+	fs.StringVar(&uniformDestRuleConfigPath, "drConf", os.Getenv(constant.CONF_DEST_RULE_FILE_PATH), "default destination rule of uniform router config path")
+	fs.Parse(os.Args[1:])
+	for len(fs.Args()) != 0 {
+		fs.Parse(fs.Args()[1:])
 	}
+	// If user did not set the environment variables or flags,
+	// we provide default value
+	if confConFile == "" {
+		confConFile = constant.DEFAULT_CONSUMER_CONF_FILE_PATH
+	}
+	if confProFile == "" {
+		confProFile = constant.DEFAULT_PROVIDER_CONF_FILE_PATH
+	}
+	if confRouterFile == "" {
+		confRouterFile = constant.DEFAULT_ROUTER_CONF_FILE_PATH
+	}
+	return []LoaderInitOption{RouterInitOption(confRouterFile), BaseInitOption(""), ConsumerInitOption(confConFile), ProviderInitOption(confProFile)}
+}
 
-	if errPro := ProviderInit(confProFile); errPro != nil {
-		log.Printf("[providerInit] %#v", errPro)
-		providerConfig = nil
-	} else {
-		// Even though baseConfig has been initialized, we override it
-		// because we think read from config file is correct config
-		baseConfig = &providerConfig.BaseConfig
+// setDefaultValue set default value for providerConfig or consumerConfig if it is null
+func setDefaultValue(target interface{}) {
+	registryConfig := &RegistryConfig{
+		Protocol:   "zookeeper",
+		TimeoutStr: "3s",
+		Address:    "127.0.0.1:2181",
+	}
+	switch target.(type) {
+	case *ProviderConfig:
+		p := target.(*ProviderConfig)
+		if len(p.Registries) == 0 {
+			p.Registries["demoZK"] = registryConfig
+		}
+		if len(p.Protocols) == 0 {
+			p.Protocols["dubbo"] = &ProtocolConfig{
+				Name: "dubbo",
+				Port: "20000",
+			}
+		}
+		if p.ApplicationConfig == nil {
+			p.ApplicationConfig = NewDefaultApplicationConfig()
+		}
+	default:
+		c := target.(*ConsumerConfig)
+		if len(c.Registries) == 0 {
+			c.Registries["demoZK"] = registryConfig
+		}
+		if c.ApplicationConfig == nil {
+			c.ApplicationConfig = NewDefaultApplicationConfig()
+		}
 	}
 }
 
@@ -136,6 +176,17 @@ func loadConsumerConfig() {
 		ref.id = key
 		ref.Refer(rpcService)
 		ref.Implement(rpcService)
+	}
+
+	// Write current configuration to cache file.
+	if consumerConfig.CacheFile != "" {
+		if data, err := yaml.MarshalYML(consumerConfig); err != nil {
+			logger.Errorf("Marshal consumer config err: %s", err.Error())
+		} else {
+			if err := ioutil.WriteFile(consumerConfig.CacheFile, data, 0666); err != nil {
+				logger.Errorf("Write consumer config cache file err: %s", err.Error())
+			}
+		}
 	}
 
 	// wait for invoker is available, if wait over default 3s, then panic
@@ -194,6 +245,17 @@ func loadProviderConfig() {
 	}
 	checkRegistries(providerConfig.Registries, providerConfig.Registry)
 
+	// Write the current configuration to cache file.
+	if providerConfig.CacheFile != "" {
+		if data, err := yaml.MarshalYML(providerConfig); err != nil {
+			logger.Errorf("Marshal provider config err: %s", err.Error())
+		} else {
+			if err := ioutil.WriteFile(providerConfig.CacheFile, data, 0666); err != nil {
+				logger.Errorf("Write provider config cache file err: %s", err.Error())
+			}
+		}
+	}
+
 	for key, svs := range providerConfig.Services {
 		rpcService := GetProviderService(key)
 		if rpcService == nil {
@@ -216,7 +278,7 @@ func registerServiceInstance() {
 	if url == nil {
 		return
 	}
-	instance, err := createInstance(*url)
+	instance, err := createInstance(url)
 	if err != nil {
 		panic(err)
 	}
@@ -237,10 +299,14 @@ func registerServiceInstance() {
 			panic(err)
 		}
 	}
+	// todo publish metadata to remote
+	if remoteMetadataServiceImpl, err := extension.GetRemoteMetadataService(); err == nil {
+		remoteMetadataServiceImpl.PublishMetadata(GetApplicationConfig().Name)
+	}
 }
 
 // nolint
-func createInstance(url common.URL) (registry.ServiceInstance, error) {
+func createInstance(url *common.URL) (registry.ServiceInstance, error) {
 	appConfig := GetApplicationConfig()
 	port, err := strconv.ParseInt(url.Port, 10, 32)
 	if err != nil {
@@ -250,9 +316,6 @@ func createInstance(url common.URL) (registry.ServiceInstance, error) {
 	host := url.Ip
 	if len(host) == 0 {
 		host = common.GetLocalIp()
-		if err != nil {
-			return nil, perrors.WithMessage(err, "could not get the local Ip")
-		}
 	}
 
 	// usually we will add more metadata
@@ -263,7 +326,7 @@ func createInstance(url common.URL) (registry.ServiceInstance, error) {
 		ServiceName: appConfig.Name,
 		Host:        host,
 		Port:        int(port),
-		Id:          host + constant.KEY_SEPARATOR + url.Port,
+		ID:          host + constant.KEY_SEPARATOR + url.Port,
 		Enable:      true,
 		Healthy:     true,
 		Metadata:    metadata,
@@ -272,62 +335,56 @@ func createInstance(url common.URL) (registry.ServiceInstance, error) {
 
 // selectMetadataServiceExportedURL get already be exported url
 func selectMetadataServiceExportedURL() *common.URL {
-	var selectedUrl common.URL
-	metaDataService, err := extension.GetMetadataService(GetApplicationConfig().MetadataType)
+	var selectedUrl *common.URL
+	metaDataService, err := extension.GetLocalMetadataService("")
 	if err != nil {
 		logger.Warn(err)
 		return nil
 	}
-	list, err := metaDataService.GetExportedURLs(constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE)
+	urlList, err := metaDataService.GetExportedURLs(constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE)
 	if err != nil {
 		panic(err)
 	}
-	if len(list) == 0 {
+	if len(urlList) == 0 {
 		return nil
 	}
-	for _, urlStr := range list {
-		url, err := common.NewURL(urlStr.(string))
-		if err != nil {
-			logger.Errorf("url format error {%v}", url)
-			continue
-		}
+	for _, url := range urlList {
 		selectedUrl = url
 		// rest first
 		if url.Protocol == "rest" {
 			break
 		}
 	}
-	return &selectedUrl
+	return selectedUrl
 }
 
 func initRouter() {
-	if confRouterFile != "" {
-		if err := RouterInit(confRouterFile); err != nil {
-			log.Printf("[routerConfig init] %#v", err)
+	if uniformDestRuleConfigPath != "" && uniformVirturlServiceConfigPath != "" {
+		if err := RouterInit(uniformVirturlServiceConfigPath, uniformDestRuleConfigPath); err != nil {
+			logger.Warnf("[routerConfig init] %#v", err)
 		}
 	}
 }
 
 // Load Dubbo Init
 func Load() {
+	options := DefaultInit()
+	LoadWithOptions(options...)
+}
 
+func LoadWithOptions(options ...LoaderInitOption) {
+	// register metadata info and service info
+	hessian.RegisterPOJO(&common.MetadataInfo{})
+	hessian.RegisterPOJO(&common.ServiceInfo{})
+
+	for _, option := range options {
+		option.init()
+	}
+	for _, option := range options {
+		option.apply()
+	}
 	// init router
 	initRouter()
-
-	// init the global event dispatcher
-	extension.SetAndInitGlobalDispatcher(GetBaseConfig().EventDispatcherType)
-
-	// start the metadata report if config set
-	if err := startMetadataReport(GetApplicationConfig().MetadataType, GetBaseConfig().MetadataReportConfig); err != nil {
-		logger.Errorf("Provider starts metadata report error, and the error is {%#v}", err)
-		return
-	}
-
-	// reference config
-	loadConsumerConfig()
-
-	// service config
-	loadProviderConfig()
 
 	// init the shutdown callback
 	GracefulShutdownInit()
@@ -409,9 +466,9 @@ func GetBaseConfig() *BaseConfig {
 			baseConfig = &BaseConfig{
 				MetricConfig:       &MetricConfig{},
 				ConfigCenterConfig: &ConfigCenterConfig{},
-				Remotes:            make(map[string]*RemoteConfig, 0),
+				Remotes:            make(map[string]*RemoteConfig),
 				ApplicationConfig:  &ApplicationConfig{},
-				ServiceDiscoveries: make(map[string]*ServiceDiscoveryConfig, 0),
+				ServiceDiscoveries: make(map[string]*ServiceDiscoveryConfig),
 			}
 		}
 	}
@@ -421,9 +478,11 @@ func GetBaseConfig() *BaseConfig {
 func GetSslEnabled() bool {
 	return sslEnabled
 }
+
 func SetSslEnabled(enabled bool) {
 	sslEnabled = enabled
 }
+
 func IsProvider() bool {
 	return providerConfig != nil
 }

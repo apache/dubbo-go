@@ -40,7 +40,7 @@ import (
 // run mock config server
 func runMockConfigServer(configHandler func(http.ResponseWriter, *http.Request),
 	configListenHandler func(http.ResponseWriter, *http.Request)) *httptest.Server {
-	uriHandlerMap := make(map[string]func(http.ResponseWriter, *http.Request), 0)
+	uriHandlerMap := make(map[string]func(http.ResponseWriter, *http.Request))
 
 	uriHandlerMap["/nacos/v1/cs/configs"] = configHandler
 	uriHandlerMap["/nacos/v1/cs/configs/listener"] = configListenHandler
@@ -73,7 +73,7 @@ func initNacosData(t *testing.T) (*nacosDynamicConfiguration, error) {
 	nacosURL := strings.ReplaceAll(server.URL, "http", "registry")
 	regurl, _ := common.NewURL(nacosURL)
 	factory := &nacosDynamicConfigurationFactory{}
-	nacosConfiguration, err := factory.GetDynamicConfiguration(&regurl)
+	nacosConfiguration, err := factory.GetDynamicConfiguration(regurl)
 	assert.NoError(t, err)
 
 	nacosConfiguration.SetParser(&parser.DefaultConfigurationParser{})
@@ -85,6 +85,8 @@ func TestGetConfig(t *testing.T) {
 	nacos, err := initNacosData(t)
 	assert.NoError(t, err)
 	configs, err := nacos.GetProperties("dubbo.properties", config_center.WithGroup("dubbo"))
+	assert.Empty(t, configs)
+	assert.NoError(t, err)
 	_, err = nacos.Parser().Parse(configs)
 	assert.NoError(t, err)
 }
@@ -100,12 +102,13 @@ func TestNacosDynamicConfiguration_GetConfigKeysByGroup(t *testing.T) {
 }
 `
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(data))
+		_, err := w.Write([]byte(data))
+		assert.Nil(t, err)
 	}))
 
 	nacosURL := strings.ReplaceAll(ts.URL, "http", "registry")
 	regurl, _ := common.NewURL(nacosURL)
-	nacosConfiguration, err := newNacosDynamicConfiguration(&regurl)
+	nacosConfiguration, err := newNacosDynamicConfiguration(regurl)
 	assert.NoError(t, err)
 
 	nacosConfiguration.SetParser(&parser.DefaultConfigurationParser{})
@@ -114,7 +117,6 @@ func TestNacosDynamicConfiguration_GetConfigKeysByGroup(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 1, configs.Size())
 	assert.True(t, configs.Contains("application"))
-
 }
 
 func TestNacosDynamicConfigurationPublishConfig(t *testing.T) {
@@ -136,7 +138,7 @@ func TestAddListener(t *testing.T) {
 }
 
 func TestRemoveListener(_ *testing.T) {
-	//TODO not supported in current go_nacos_sdk version
+	// TODO not supported in current go_nacos_sdk version
 }
 
 type mockDataListener struct {

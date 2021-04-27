@@ -17,6 +17,7 @@
 package remoting
 
 import (
+	"sync"
 	"time"
 )
 
@@ -26,21 +27,27 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/logger"
 )
 
 var (
 	// generate request ID for global use
 	sequence atomic.Int64
+
+	// store requestID and response
+	pendingResponses = new(sync.Map)
 )
+
+type SequenceType int64
 
 func init() {
 	// init request ID
 	sequence.Store(0)
 }
 
-func SequenceId() int64 {
+func SequenceID() int64 {
 	// increse 2 for every request as the same before.
-	// We expect that the request from client to server, the requestId is even; but from server to client, the requestId is odd.
+	// We expect that the request from client to server, the requestID is even; but from server to client, the requestID is odd.
 	return sequence.Add(2)
 }
 
@@ -61,7 +68,7 @@ type Request struct {
 // The ID is auto increase.
 func NewRequest(version string) *Request {
 	return &Request{
-		ID:      SequenceId(),
+		ID:      SequenceID(),
 		Version: version,
 	}
 }
@@ -90,12 +97,29 @@ func (response *Response) IsHeartbeat() bool {
 	return response.Event && response.Result == nil
 }
 
+func (response *Response) Handle() {
+	pendingResponse := removePendingResponse(SequenceType(response.ID))
+	if pendingResponse == nil {
+		logger.Errorf("failed to get pending response context for response package %s", *response)
+		return
+	}
+
+	pendingResponse.response = response
+
+	if pendingResponse.Callback == nil {
+		pendingResponse.Err = pendingResponse.response.Error
+		close(pendingResponse.Done)
+	} else {
+		pendingResponse.Callback(pendingResponse.GetCallResponse())
+	}
+}
+
 type Options struct {
 	// connect timeout
 	ConnectTimeout time.Duration
 }
 
-//AsyncCallbackResponse async response for dubbo
+// AsyncCallbackResponse async response for dubbo
 type AsyncCallbackResponse struct {
 	common.CallbackResponse
 	Opts      Options
@@ -105,7 +129,7 @@ type AsyncCallbackResponse struct {
 	Reply     interface{}
 }
 
-// the client sends requst to server, there is one pendingResponse at client side to wait the response from server
+// the client sends request to server, there is one pendingResponse at client side to wait the response from server
 type PendingResponse struct {
 	seq       int64
 	Err       error
@@ -118,7 +142,7 @@ type PendingResponse struct {
 }
 
 // NewPendingResponse aims to create PendingResponse.
-// Id is always from ID of Request
+// ID is always from ID of Request
 func NewPendingResponse(id int64) *PendingResponse {
 	return &PendingResponse{
 		seq:      id,
@@ -141,4 +165,29 @@ func (r PendingResponse) GetCallResponse() common.CallbackResponse {
 		ReadStart: r.ReadStart,
 		Reply:     r.response,
 	}
+}
+
+// store response into map
+func AddPendingResponse(pr *PendingResponse) {
+	pendingResponses.Store(SequenceType(pr.seq), pr)
+}
+
+// get and remove response
+func removePendingResponse(seq SequenceType) *PendingResponse {
+	if pendingResponses == nil {
+		return nil
+	}
+	if presp, ok := pendingResponses.Load(seq); ok {
+		pendingResponses.Delete(seq)
+		return presp.(*PendingResponse)
+	}
+	return nil
+}
+
+// get response
+func GetPendingResponse(seq SequenceType) *PendingResponse {
+	if presp, ok := pendingResponses.Load(seq); ok {
+		return presp.(*PendingResponse)
+	}
+	return nil
 }

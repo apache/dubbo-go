@@ -50,12 +50,12 @@ func initZkData(group string, t *testing.T) (*zk.TestCluster, *zookeeperDynamicC
 	assert.NoError(t, err)
 	regurl.AddParam(constant.REGISTRY_TIMEOUT_KEY, "15s")
 	zkFactory := &zookeeperDynamicConfigurationFactory{}
-	reg, err := zkFactory.GetDynamicConfiguration(&regurl)
+	reg, err := zkFactory.GetDynamicConfiguration(regurl)
 	zreg, ok := reg.(*zookeeperDynamicConfiguration)
 	assert.True(t, ok)
 	assert.NoError(t, err)
 	assert.True(t, zreg.IsAvailable())
-	assert.Equal(t, zreg.GetUrl(), regurl)
+	assert.Equal(t, zreg.GetURL(), regurl)
 	assert.True(t, zreg.RestartCallBack())
 	zreg.SetParser(&parser.DefaultConfigurationParser{})
 
@@ -81,10 +81,10 @@ func initZkData(group string, t *testing.T) (*zk.TestCluster, *zookeeperDynamicC
 	dubbo.service.com.ikurento.user.UserProvider.cluster=failover
 `
 	if group != "" {
-		err = zreg.client.Create(path.Join(zreg.rootPath, "dubbo", dubboPropertyFileName))
+		err = zreg.client.Create(path.Join(zreg.rootPath, group, dubboPropertyFileName))
 		assert.NoError(t, err)
 
-		_, err = zreg.client.Conn.Set(path.Join(zreg.rootPath, "dubbo", dubboPropertyFileName), []byte(data), 0)
+		_, err = zreg.client.Conn.Set(path.Join(zreg.rootPath, group, dubboPropertyFileName), []byte(data), 0)
 		assert.NoError(t, err)
 	} else {
 		err = zreg.client.Create(path.Join(zreg.rootPath, dubboPropertyFileName))
@@ -99,7 +99,11 @@ func initZkData(group string, t *testing.T) (*zk.TestCluster, *zookeeperDynamicC
 
 func TestGetConfig(t *testing.T) {
 	ts, reg := initZkData("dubbo", t)
-	defer ts.Stop()
+	defer func() {
+		reg.client.Close()
+		err := ts.Stop()
+		assert.NoError(t, err)
+	}()
 	configs, err := reg.GetProperties(dubboPropertyFileName, config_center.WithGroup("dubbo"))
 	assert.NoError(t, err)
 	m, err := reg.Parser().Parse(configs)
@@ -107,17 +111,25 @@ func TestGetConfig(t *testing.T) {
 	assert.Equal(t, "5s", m["dubbo.consumer.request_timeout"])
 	configs, err = reg.GetProperties(dubboPropertyFileName)
 	assert.Error(t, err)
+	assert.Equal(t, "", configs)
 	configs, err = reg.GetInternalProperty(dubboPropertyFileName)
 	assert.Error(t, err)
+	assert.Equal(t, "", configs)
 	configs, err = reg.GetRule(dubboPropertyFileName)
 	assert.Error(t, err)
+	assert.Equal(t, "", configs)
 }
 
 func TestAddListener(t *testing.T) {
 	ts, reg := initZkData("", t)
-	defer ts.Stop()
+	defer func() {
+		reg.client.Close()
+		err := ts.Stop()
+		assert.NoError(t, err)
+	}()
 	listener := &mockDataListener{}
 	reg.AddListener(dubboPropertyFileName, listener)
+
 	listener.wg.Add(1)
 	data := `
 	dubbo.consumer.request_timeout=3s
@@ -148,7 +160,11 @@ func TestAddListener(t *testing.T) {
 
 func TestRemoveListener(t *testing.T) {
 	ts, reg := initZkData("", t)
-	defer ts.Stop()
+	defer func() {
+		reg.client.Close()
+		err := ts.Stop()
+		assert.NoError(t, err)
+	}()
 	listener := &mockDataListener{}
 	reg.AddListener(dubboPropertyFileName, listener)
 	listener.wg.Add(1)
@@ -185,20 +201,23 @@ func TestZookeeperDynamicConfigurationPublishConfig(t *testing.T) {
 	value := "Test Data"
 	customGroup := "Custom Group"
 	key := "myKey"
-	ts, zk := initZkData(config_center.DEFAULT_GROUP, t)
-	defer ts.Stop()
-	err := zk.PublishConfig(key, customGroup, value)
+	ts, reg := initZkData(config_center.DEFAULT_GROUP, t)
+	defer func() {
+		reg.client.Close()
+		err := ts.Stop()
+		assert.NoError(t, err)
+	}()
+	err := reg.PublishConfig(key, customGroup, value)
 	assert.Nil(t, err)
-	result, err := zk.GetInternalProperty("myKey", config_center.WithGroup(customGroup))
+	result, err := reg.GetInternalProperty("myKey", config_center.WithGroup(customGroup))
 	assert.Nil(t, err)
 	assert.Equal(t, value, result)
 
 	var keys *gxset.HashSet
-	keys, err = zk.GetConfigKeysByGroup(customGroup)
+	keys, err = reg.GetConfigKeysByGroup(customGroup)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, keys.Size())
 	assert.True(t, keys.Contains(key))
-
 }
 
 type mockDataListener struct {

@@ -25,6 +25,7 @@ import (
 import (
 	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/mvcc/mvccpb"
+	gxetcd "github.com/dubbogo/gost/database/kv/etcd/v3"
 	perrors "github.com/pkg/errors"
 )
 
@@ -35,14 +36,14 @@ import (
 
 // nolint
 type EventListener struct {
-	client     *Client
-	keyMapLock sync.Mutex
+	client     *gxetcd.Client
+	keyMapLock sync.RWMutex
 	keyMap     map[string]struct{}
 	wg         sync.WaitGroup
 }
 
 // NewEventListener returns a EventListener instance
-func NewEventListener(client *Client) *EventListener {
+func NewEventListener(client *gxetcd.Client) *EventListener {
 	return &EventListener{
 		client: client,
 		keyMap: make(map[string]struct{}),
@@ -69,7 +70,7 @@ func (l *EventListener) ListenServiceNodeEvent(key string, listener ...remoting.
 			return false
 
 		// client ctx stop
-		case <-l.client.ctx.Done():
+		case <-l.client.GetCtx().Done():
 			logger.Warnf("etcd client ctx cancel")
 			return false
 
@@ -97,7 +98,6 @@ func (l *EventListener) ListenServiceNodeEvent(key string, listener ...remoting.
 // return true means the event type is DELETE
 // return false means the event type is CREATE || UPDATE
 func (l *EventListener) handleEvents(event *clientv3.Event, listeners ...remoting.DataListener) bool {
-
 	logger.Infof("got a etcd event {type: %s, key: %s}", event.Type, event.Kv.Key)
 
 	switch event.Type {
@@ -129,8 +129,6 @@ func (l *EventListener) handleEvents(event *clientv3.Event, listeners ...remotin
 	default:
 		return false
 	}
-
-	panic("unreachable")
 }
 
 // ListenServiceNodeEventWithPrefix listens on a set of key with spec prefix
@@ -150,7 +148,7 @@ func (l *EventListener) ListenServiceNodeEventWithPrefix(prefix string, listener
 			return
 
 		// client ctx stop
-		case <-l.client.ctx.Done():
+		case <-l.client.GetCtx().Done():
 			logger.Warnf("etcd client ctx cancel")
 			return
 
@@ -182,10 +180,9 @@ func timeSecondDuration(sec int) time.Duration {
 //                            |
 //                            --------> listenServiceNodeEvent
 func (l *EventListener) ListenServiceEvent(key string, listener remoting.DataListener) {
-
-	l.keyMapLock.Lock()
+	l.keyMapLock.RLock()
 	_, ok := l.keyMap[key]
-	l.keyMapLock.Unlock()
+	l.keyMapLock.RUnlock()
 	if ok {
 		logger.Warnf("etcdv3 key %s has already been listened.", key)
 		return
@@ -195,7 +192,7 @@ func (l *EventListener) ListenServiceEvent(key string, listener remoting.DataLis
 	l.keyMap[key] = struct{}{}
 	l.keyMapLock.Unlock()
 
-	keyList, valueList, err := l.client.getChildren(key)
+	keyList, valueList, err := l.client.GetChildren(key)
 	if err != nil {
 		logger.Warnf("Get new node path {%v} 's content error,message is  {%v}", key, perrors.WithMessage(err, "get children"))
 	}

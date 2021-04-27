@@ -38,18 +38,24 @@ func TestGetMetadataReportInstance(t *testing.T) {
 		return &mockMetadataReportFactory{}
 	})
 	u, _ := common.NewURL("mock://127.0.0.1")
-	rpt := GetMetadataReportInstance(&u)
+	rpt := GetMetadataReportInstance(u)
 	assert.NotNil(t, rpt)
 }
 
-type mockMetadataReportFactory struct {
-}
+type mockMetadataReportFactory struct{}
 
 func (m *mockMetadataReportFactory) CreateMetadataReport(*common.URL) report.MetadataReport {
 	return &mockMetadataReport{}
 }
 
-type mockMetadataReport struct {
+type mockMetadataReport struct{}
+
+func (m mockMetadataReport) GetAppMetadata(metadataIdentifier *identifier.SubscriberMetadataIdentifier) (*common.MetadataInfo, error) {
+	panic("implement me")
+}
+
+func (m mockMetadataReport) PublishAppMetadata(metadataIdentifier *identifier.SubscriberMetadataIdentifier, info *common.MetadataInfo) error {
+	panic("implement me")
 }
 
 func (m mockMetadataReport) StoreProviderMetadata(*identifier.MetadataIdentifier, string) error {
@@ -60,7 +66,7 @@ func (m mockMetadataReport) StoreConsumerMetadata(*identifier.MetadataIdentifier
 	panic("implement me")
 }
 
-func (m mockMetadataReport) SaveServiceMetadata(*identifier.ServiceMetadataIdentifier, common.URL) error {
+func (m mockMetadataReport) SaveServiceMetadata(*identifier.ServiceMetadataIdentifier, *common.URL) error {
 	panic("implement me")
 }
 

@@ -23,7 +23,7 @@ import (
 
 // DataListener defines common data listener interface
 type DataListener interface {
-	DataChange(eventType Event) bool //bool is return for interface implement is interesting
+	DataChange(eventType Event) bool // bool is return for interface implement is interesting
 }
 
 //////////////////////////////////////////

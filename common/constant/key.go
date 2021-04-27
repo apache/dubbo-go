@@ -17,6 +17,8 @@
 
 package constant
 
+type DubboCtxKey string
+
 const (
 	ASYNC_KEY = "async" // it's value should be "true" or "false" of string type
 )
@@ -25,6 +27,7 @@ const (
 	GROUP_KEY                = "group"
 	VERSION_KEY              = "version"
 	INTERFACE_KEY            = "interface"
+	MESSAGE_SIZE_KEY         = "message_size"
 	PATH_KEY                 = "path"
 	SERVICE_KEY              = "service"
 	METHODS_KEY              = "methods"
@@ -46,8 +49,10 @@ const (
 	PORT_KEY                 = "port"
 	PROTOCOL_KEY             = "protocol"
 	PATH_SEPARATOR           = "/"
-	DUBBO_KEY                = "dubbo"
-	SSL_ENABLED_KEY          = "ssl-enabled"
+	// DUBBO_KEY                = "dubbo"
+	SSL_ENABLED_KEY = "ssl-enabled"
+	// PARAMS_TYPE_Key key used in pass through invoker factory, to define param type
+	PARAMS_TYPE_Key = "parameter-type-names"
 )
 
 const (
@@ -88,10 +93,11 @@ const (
 	RETRY_PERIOD_KEY                       = "retry.period"
 	RETRY_TIMES_KEY                        = "retry.times"
 	CYCLE_REPORT_KEY                       = "cycle.report"
+	DEFAULT_BLACK_LIST_RECOVER_BLOCK       = 16
 )
 
 const (
-	DUBBOGO_CTX_KEY = "dubbogo-ctx"
+	DUBBOGO_CTX_KEY = DubboCtxKey("dubbogo-ctx")
 )
 
 const (
@@ -126,6 +132,7 @@ const (
 	TAG_ROUTE_PROTOCOL       = "tag"
 	PROVIDERS_CATEGORY       = "providers"
 	ROUTER_KEY               = "router"
+	EXPORT_KEY               = "export"
 )
 
 const (
@@ -139,6 +146,7 @@ const (
 	CONFIG_VERSION_KEY    = "configVersion"
 	COMPATIBLE_CONFIG_KEY = "compatible_config"
 )
+
 const (
 	RegistryConfigPrefix       = "dubbo.registries."
 	SingleRegistryConfigPrefix = "dubbo.registry."
@@ -169,6 +177,7 @@ const (
 	NACOS_NAMESPACE_ID           = "namespaceId"
 	NACOS_PASSWORD               = "password"
 	NACOS_USERNAME               = "username"
+	NACOS_NOT_LOAD_LOCAL_CACHE   = "nacos.not.load.cache"
 )
 
 const (
@@ -193,22 +202,18 @@ const (
 	// default deregister critical server after
 	DEFAULT_DEREGISTER_TIME = "20s"
 	DEREGISTER_AFTER        = "consul-deregister-critical-service-after"
+	// PassThroughProxyFactoryKey is key of proxy factory with raw data input service
+	PassThroughProxyFactoryKey = "dubbo-raw"
 )
 
 const (
-	TRACING_REMOTE_SPAN_CTX = "tracing.remote.span.ctx"
+	TRACING_REMOTE_SPAN_CTX = DubboCtxKey("tracing.remote.span.ctx")
 )
 
 // Use for router module
 const (
-	// ConditionRouterName Specify file condition router name
-	ConditionRouterName = "condition"
-	// ConditionAppRouterName Specify listenable application router name
-	ConditionAppRouterName = "app"
-	// ListenableRouterName Specify listenable router name
-	ListenableRouterName = "listenable"
-	// HealthCheckRouterName Specify the name of HealthCheckRouter
-	HealthCheckRouterName = "health_check"
+	// UniformRouterName Specifythe name of UniformRouter
+	UniformRouterName = "uniform"
 	// TagRouterName Specify the name of TagRouter
 	TagRouterName = "tag"
 	// TagRouterRuleSuffix Specify tag router suffix
@@ -217,12 +222,6 @@ const (
 	// ConditionRouterRuleSuffix Specify condition router suffix
 	ConditionRouterRuleSuffix = ".condition-router"
 
-	// Force Force key in router module
-	RouterForce = "force"
-	// Enabled Enabled key in router module
-	RouterEnabled = "enabled"
-	// Priority Priority key in router module
-	RouterPriority = "priority"
 	// RouterScope Scope key in router module
 	RouterScope = "scope"
 	// RouterApplicationScope Scope key in router module
@@ -234,9 +233,10 @@ const (
 	// ForceUseTag is the tag in attachment
 	ForceUseTag = "dubbo.force.tag"
 	Tagkey      = "dubbo.tag"
-
-	// Attachment key in context in invoker
-	AttachmentKey = "attachment"
+	// HEALTH_ROUTE_ENABLED_KEY defines if use health router
+	HEALTH_ROUTE_ENABLED_KEY = "health.route.enabled"
+	// AttachmentKey in context in invoker
+	AttachmentKey = DubboCtxKey("attachment")
 )
 
 const (
@@ -263,7 +263,7 @@ const (
 	// signature format
 	SIGNATURE_STRING_FORMAT = "%s#%s#%s#%s"
 	// key whether enable signature
-	PARAMTER_SIGNATURE_ENABLE_KEY = "param.sign"
+	PARAMETER_SIGNATURE_ENABLE_KEY = "param.sign"
 	// consumer
 	CONSUMER = "consumer"
 	// key of access key id
@@ -291,7 +291,9 @@ const (
 	HEALTH_CHECKER = "health.checker"
 	// The name of the default implementation of HealthChecker
 	DEFAULT_HEALTH_CHECKER = "default"
-	// The key of oustanding-request-limit
+	// The name of the default implementation of C
+	DEFAULT_CONN_CHECKER = "default"
+	// The key of outstanding-request-limit\
 	OUTSTANDING_REQUEST_COUNT_LIMIT_KEY = "outstanding.request.limit"
 	// The key of successive-failed-request's threshold
 	SUCCESSIVE_FAILED_REQUEST_THRESHOLD_KEY = "successive.failed.threshold"
@@ -311,11 +313,12 @@ const (
 const (
 	SUBSCRIBED_SERVICE_NAMES_KEY               = "subscribed-services"
 	PROVIDER_BY                                = "provided-by"
-	EXPORTED_SERVICES_REVISION_PROPERTY_NAME   = "dubbo.exported-services.revision"
+	EXPORTED_SERVICES_REVISION_PROPERTY_NAME   = "dubbo.metadata.revision"
 	SUBSCRIBED_SERVICES_REVISION_PROPERTY_NAME = "dubbo.subscribed-services.revision"
 	SERVICE_INSTANCE_SELECTOR                  = "service-instance-selector"
 	METADATA_STORAGE_TYPE_PROPERTY_NAME        = "dubbo.metadata.storage-type"
 	DEFAULT_METADATA_STORAGE_TYPE              = "local"
+	REMOTE_METADATA_STORAGE_TYPE               = "remote"
 	SERVICE_INSTANCE_ENDPOINTS                 = "dubbo.endpoints"
 	METADATA_SERVICE_PREFIX                    = "dubbo.metadata-service."
 	METADATA_SERVICE_URL_PARAMS_PROPERTY_NAME  = METADATA_SERVICE_PREFIX + "url-params"

@@ -23,21 +23,22 @@ import (
 	"testing"
 	"time"
 )
+
 import (
 	"github.com/dubbogo/go-zookeeper/zk"
+	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
 	"github.com/stretchr/testify/assert"
 )
+
 import (
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/remoting"
 )
 
-var (
-	dubboPropertiesPath = "/dubbo/dubbo.properties"
-)
+var dubboPropertiesPath = "/dubbo/dubbo.properties"
 
-func initZkData(t *testing.T) (*zk.TestCluster, *ZookeeperClient, <-chan zk.Event) {
-	ts, client, event, err := NewMockZookeeperClient("test", 15*time.Second)
+func initZkData(t *testing.T) (*zk.TestCluster, *gxzookeeper.ZookeeperClient, <-chan zk.Event) {
+	ts, client, event, err := gxzookeeper.NewMockZookeeperClient("test", 15*time.Second)
 	assert.NoError(t, err)
 
 	data := `
@@ -94,11 +95,15 @@ func TestListener(t *testing.T) {
 	dubbo.service.com.ikurento.user.UserProvider.cluster=failover
 `
 	var wait sync.WaitGroup
-	ts, client, event := initZkData(t)
-	defer ts.Stop()
+	ts, client, _ := initZkData(t)
+	defer func() {
+		if err := ts.Stop(); err != nil {
+			t.Errorf("ts.Stop() = error: %v", err)
+		}
+	}()
 	client.Wait.Add(1)
 	wait.Add(1)
-	go client.HandleZkEvent(event)
+	go client.GetEventHandler().HandleZkEvent(client)
 	listener := NewZkEventListener(client)
 	dataListener := &mockDataListener{client: client, changedData: changedData, wait: &wait}
 	listener.ListenServiceEvent(nil, "/dubbo", dataListener)
@@ -107,12 +112,11 @@ func TestListener(t *testing.T) {
 	assert.NoError(t, err)
 	wait.Wait()
 	assert.Equal(t, changedData, dataListener.eventList[1].Content)
-
 }
 
 type mockDataListener struct {
 	eventList   []remoting.Event
-	client      *ZookeeperClient
+	client      *gxzookeeper.ZookeeperClient
 	changedData string
 	wait        *sync.WaitGroup
 }
@@ -122,8 +126,6 @@ func (m *mockDataListener) DataChange(eventType remoting.Event) bool {
 	m.eventList = append(m.eventList, eventType)
 	if eventType.Content == m.changedData {
 		m.wait.Done()
-		m.client.Close()
-
 	}
 	return true
 }

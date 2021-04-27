@@ -39,18 +39,18 @@ func TestDefaultAuthenticator_Authenticate(t *testing.T) {
 	secret := "dubbo-sk"
 	access := "dubbo-ak"
 	testurl, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=gg&version=2.6.0")
-	testurl.SetParam(constant.PARAMTER_SIGNATURE_ENABLE_KEY, "true")
+	testurl.SetParam(constant.PARAMETER_SIGNATURE_ENABLE_KEY, "true")
 	testurl.SetParam(constant.ACCESS_KEY_ID_KEY, access)
 	testurl.SetParam(constant.SECRET_ACCESS_KEY_KEY, secret)
 	parmas := []interface{}{"OK", struct {
 		Name string
-		Id   int64
+		ID   int64
 	}{"YUYU", 1}}
 	inv := invocation.NewRPCInvocation("test", parmas, nil)
 	requestTime := strconv.Itoa(int(time.Now().Unix() * 1000))
-	signature, _ := getSignature(&testurl, inv, secret, requestTime)
+	signature, _ := getSignature(testurl, inv, secret, requestTime)
 
-	var authenticator = &DefaultAuthenticator{}
+	authenticator := &DefaultAuthenticator{}
 
 	invcation := invocation.NewRPCInvocation("test", parmas, map[string]interface{}{
 		constant.REQUEST_SIGNATURE_KEY: signature,
@@ -58,7 +58,7 @@ func TestDefaultAuthenticator_Authenticate(t *testing.T) {
 		constant.REQUEST_TIMESTAMP_KEY: requestTime,
 		constant.AK_KEY:                access,
 	})
-	err := authenticator.Authenticate(invcation, &testurl)
+	err := authenticator.Authenticate(invcation, testurl)
 	assert.Nil(t, err)
 	// modify the params
 	invcation = invocation.NewRPCInvocation("test", parmas[:1], map[string]interface{}{
@@ -67,9 +67,8 @@ func TestDefaultAuthenticator_Authenticate(t *testing.T) {
 		constant.REQUEST_TIMESTAMP_KEY: requestTime,
 		constant.AK_KEY:                access,
 	})
-	err = authenticator.Authenticate(invcation, &testurl)
+	err = authenticator.Authenticate(invcation, testurl)
 	assert.NotNil(t, err)
-
 }
 
 func TestDefaultAuthenticator_Sign(t *testing.T) {
@@ -77,14 +76,13 @@ func TestDefaultAuthenticator_Sign(t *testing.T) {
 	testurl, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?application=test&interface=com.ikurento.user.UserProvider&group=gg&version=2.6.0")
 	testurl.SetParam(constant.ACCESS_KEY_ID_KEY, "akey")
 	testurl.SetParam(constant.SECRET_ACCESS_KEY_KEY, "skey")
-	testurl.SetParam(constant.PARAMTER_SIGNATURE_ENABLE_KEY, "false")
+	testurl.SetParam(constant.PARAMETER_SIGNATURE_ENABLE_KEY, "false")
 	inv := invocation.NewRPCInvocation("test", []interface{}{"OK"}, nil)
-	_ = authenticator.Sign(inv, &testurl)
+	_ = authenticator.Sign(inv, testurl)
 	assert.NotEqual(t, inv.AttachmentsByKey(constant.REQUEST_SIGNATURE_KEY, ""), "")
 	assert.NotEqual(t, inv.AttachmentsByKey(constant.CONSUMER, ""), "")
 	assert.NotEqual(t, inv.AttachmentsByKey(constant.REQUEST_TIMESTAMP_KEY, ""), "")
 	assert.Equal(t, inv.AttachmentsByKey(constant.AK_KEY, ""), "akey")
-
 }
 
 func Test_getAccessKeyPairSuccess(t *testing.T) {
@@ -113,18 +111,18 @@ func Test_getAccessKeyPairFailed(t *testing.T) {
 		common.WithParamsValue(constant.SECRET_ACCESS_KEY_KEY, "skey"),
 		common.WithParamsValue(constant.ACCESS_KEY_ID_KEY, "akey"), common.WithParamsValue(constant.ACCESS_KEY_STORAGE_KEY, "dubbo"))
 	_, e = getAccessKeyPair(invcation, testurl)
-
+	assert.NoError(t, e)
 }
 
 func Test_getSignatureWithinParams(t *testing.T) {
 	testurl, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=gg&version=2.6.0")
-	testurl.SetParam(constant.PARAMTER_SIGNATURE_ENABLE_KEY, "true")
+	testurl.SetParam(constant.PARAMETER_SIGNATURE_ENABLE_KEY, "true")
 	inv := invocation.NewRPCInvocation("test", []interface{}{"OK"}, map[string]interface{}{
 		"": "",
 	})
 	secret := "dubbo"
 	current := strconv.Itoa(int(time.Now().Unix() * 1000))
-	signature, _ := getSignature(&testurl, inv, secret, current)
+	signature, _ := getSignature(testurl, inv, secret, current)
 	requestString := fmt.Sprintf(constant.SIGNATURE_STRING_FORMAT,
 		testurl.ColonSeparatedKey(), inv.MethodName(), secret, current)
 	s, _ := SignWithParams(inv.Arguments(), requestString, secret)
@@ -134,11 +132,11 @@ func Test_getSignatureWithinParams(t *testing.T) {
 
 func Test_getSignature(t *testing.T) {
 	testurl, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=gg&version=2.6.0")
-	testurl.SetParam(constant.PARAMTER_SIGNATURE_ENABLE_KEY, "false")
+	testurl.SetParam(constant.PARAMETER_SIGNATURE_ENABLE_KEY, "false")
 	inv := invocation.NewRPCInvocation("test", []interface{}{"OK"}, nil)
 	secret := "dubbo"
 	current := strconv.Itoa(int(time.Now().Unix() * 1000))
-	signature, _ := getSignature(&testurl, inv, secret, current)
+	signature, _ := getSignature(testurl, inv, secret, current)
 	requestString := fmt.Sprintf(constant.SIGNATURE_STRING_FORMAT,
 		testurl.ColonSeparatedKey(), inv.MethodName(), secret, current)
 	s := Sign(requestString, secret)

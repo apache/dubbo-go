@@ -22,12 +22,11 @@ import (
 )
 
 import (
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/metadata/service"
 )
 
-var (
-	metadataServiceProxyFactoryMap = make(map[string]func() service.MetadataServiceProxyFactory, 2)
-)
+var metadataServiceProxyFactoryMap = make(map[string]func() service.MetadataServiceProxyFactory, 2)
 
 type MetadataServiceProxyFactoryFunc func() service.MetadataServiceProxyFactory
 
@@ -39,10 +38,12 @@ func SetMetadataServiceProxyFactory(name string, creator MetadataServiceProxyFac
 // GetMetadataServiceProxyFactory will create an instance.
 // it will panic if the factory with name not found
 func GetMetadataServiceProxyFactory(name string) service.MetadataServiceProxyFactory {
+	if name == "" {
+		name = constant.DEFAULT_KEY
+	}
 	if f, ok := metadataServiceProxyFactoryMap[name]; ok {
 		return f()
 	}
 	panic(fmt.Sprintf("could not find the metadata service factory creator for name: %s, please check whether you have imported relative packages, \n"+
-		"local - github.com/apache/dubbo-go/metadata/service/inmemory, \n"+
-		"remote - github.com/apache/dubbo-go/metadata/service/remote", name))
+		"local - github.com/apache/dubbo-go/metadata/service/inmemory, \n", name))
 }

@@ -51,7 +51,6 @@ func (l *dataListener) AddInterestedURL(url *common.URL) {
 // DataChange
 // notify listen, when interest event
 func (l *dataListener) DataChange(eventType remoting.Event) bool {
-
 	index := strings.Index(eventType.Path, "/providers/")
 	if index == -1 {
 		logger.Warnf("Listen with no url, event.path={%v}", eventType.Path)
@@ -65,7 +64,7 @@ func (l *dataListener) DataChange(eventType remoting.Event) bool {
 	}
 
 	for _, v := range l.interestedURL {
-		if serviceURL.URLEqual(*v) {
+		if serviceURL.URLEqual(v) {
 			l.listener.Process(
 				&config_center.ConfigChangeEvent{
 					Key:        eventType.Path,
@@ -114,7 +113,7 @@ func (l *configurationListener) Next() (*registry.ServiceEvent, error) {
 				}
 				continue
 			}
-			return &registry.ServiceEvent{Action: e.ConfigType, Service: e.Value.(common.URL)}, nil
+			return &registry.ServiceEvent{Action: e.ConfigType, Service: e.Value.(*common.URL)}, nil
 		}
 	}
 }

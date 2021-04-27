@@ -40,10 +40,8 @@ import (
 	"github.com/apache/dubbo-go/protocol/mock"
 )
 
-var (
-	failfastUrl, _ = common.NewURL(
-		fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LOCAL_HOST_VALUE, constant.DEFAULT_PORT))
-)
+var failfastUrl, _ = common.NewURL(
+	fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LOCAL_HOST_VALUE, constant.DEFAULT_PORT))
 
 // registerFailfast register failfastCluster to cluster extension.
 func registerFailfast(invoker *mock.MockInvoker) protocol.Invoker {
@@ -53,6 +51,7 @@ func registerFailfast(invoker *mock.MockInvoker) protocol.Invoker {
 	invokers := []protocol.Invoker{}
 	invokers = append(invokers, invoker)
 
+	invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
 	invoker.EXPECT().GetUrl().Return(failfastUrl)
 
 	staticDir := directory.NewStaticDirectory(invokers)
@@ -67,6 +66,7 @@ func TestFailfastInvokeSuccess(t *testing.T) {
 	invoker := mock.NewMockInvoker(ctrl)
 	clusterInvoker := registerFailfast(invoker)
 
+	invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
 	invoker.EXPECT().GetUrl().Return(failfastUrl).AnyTimes()
 
 	mockResult := &protocol.RPCResult{Rest: rest{tried: 0, success: true}}
@@ -87,6 +87,7 @@ func TestFailfastInvokeFail(t *testing.T) {
 	invoker := mock.NewMockInvoker(ctrl)
 	clusterInvoker := registerFailfast(invoker)
 
+	invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
 	invoker.EXPECT().GetUrl().Return(failfastUrl).AnyTimes()
 
 	mockResult := &protocol.RPCResult{Err: perrors.New("error")}

@@ -26,7 +26,6 @@ import (
 )
 
 func TestWatchSet(t *testing.T) {
-
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
@@ -42,7 +41,8 @@ func TestWatchSet(t *testing.T) {
 			defer wg.Done()
 			w, err := s.Watch("key-1", false)
 			if err != nil {
-				t.Fatal(err)
+				t.Error(err)
+				return
 			}
 			for {
 				select {
@@ -60,11 +60,11 @@ func TestWatchSet(t *testing.T) {
 
 		wg.Add(1)
 		go func() {
-
 			defer wg.Done()
 			w, err := s.Watch("key", true)
 			if err != nil {
-				t.Fatal(err)
+				t.Error(err)
+				return
 			}
 
 			for {
@@ -86,7 +86,8 @@ func TestWatchSet(t *testing.T) {
 				Key:   "key-" + strconv.Itoa(i),
 				Value: strconv.Itoa(i),
 			}); err != nil {
-				t.Fatal(err)
+				t.Error(err)
+				return
 			}
 		}(i)
 	}

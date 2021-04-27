@@ -51,10 +51,10 @@ import (
  * The signals are different on different platforms.
  * We define them by using 'package build' feature https://golang.org/pkg/go/build/
  */
+const defaultShutDownTime = time.Second * 60
 
 // nolint
 func GracefulShutdownInit() {
-
 	signals := make(chan os.Signal, 1)
 
 	signal.Notify(signals, ShutdownSignals...)
@@ -64,20 +64,17 @@ func GracefulShutdownInit() {
 		case sig := <-signals:
 			logger.Infof("get signal %s, application will shutdown.", sig)
 			// gracefulShutdownOnce.Do(func() {
+			time.AfterFunc(totalTimeout(), func() {
+				logger.Warn("Shutdown gracefully timeout, application will shutdown immediately. ")
+				os.Exit(0)
+			})
 			BeforeShutdown()
-
 			// those signals' original behavior is exit with dump ths stack, so we try to keep the behavior
 			for _, dumpSignal := range DumpHeapShutdownSignals {
 				if sig == dumpSignal {
 					debug.WriteHeapDump(os.Stdout.Fd())
 				}
 			}
-
-			time.AfterFunc(totalTimeout(), func() {
-				logger.Warn("Shutdown gracefully timeout, application will shutdown immediately. ")
-				os.Exit(0)
-			})
-
 			os.Exit(0)
 		}
 	}()
@@ -85,7 +82,6 @@ func GracefulShutdownInit() {
 
 // BeforeShutdown provides processing flow before shutdown
 func BeforeShutdown() {
-
 	destroyAllRegistries()
 	// waiting for a short time so that the clients have enough time to get the notification that server shutdowns
 	// The value of configuration depends on how long the clients will get notification.
@@ -129,7 +125,6 @@ func destroyConsumerProtocols(consumerProtocols *gxset.HashSet) {
 // destroyProviderProtocols destroys the provider's protocol.
 // if the protocol is consumer's protocol too, we will keep it
 func destroyProviderProtocols(consumerProtocols *gxset.HashSet) {
-
 	logger.Info("Graceful shutdown --- Destroy provider's protocols. ")
 
 	if providerConfig == nil || providerConfig.Protocols == nil {
@@ -147,7 +142,6 @@ func destroyProviderProtocols(consumerProtocols *gxset.HashSet) {
 }
 
 func waitAndAcceptNewRequests() {
-
 	logger.Info("Graceful shutdown --- Keep waiting and accept new requests for a short time. ")
 	if providerConfig == nil || providerConfig.ShutdownConfig == nil {
 		return
@@ -196,7 +190,7 @@ func waitingProcessedTimeout(shutdownConfig *ShutdownConfig) {
 }
 
 func totalTimeout() time.Duration {
-	var providerShutdown time.Duration
+	providerShutdown := defaultShutDownTime
 	if providerConfig != nil && providerConfig.ShutdownConfig != nil {
 		providerShutdown = providerConfig.ShutdownConfig.GetTimeout()
 	}
@@ -206,7 +200,7 @@ func totalTimeout() time.Duration {
 		consumerShutdown = consumerConfig.ShutdownConfig.GetTimeout()
 	}
 
-	var timeout = providerShutdown
+	timeout := providerShutdown
 	if consumerShutdown > providerShutdown {
 		timeout = consumerShutdown
 	}

@@ -27,7 +27,7 @@ import (
 
 import (
 	"github.com/dubbogo/gost/container/set"
-	"github.com/dubbogo/gost/page"
+	"github.com/dubbogo/gost/hash/page"
 	consul "github.com/hashicorp/consul/api"
 	"github.com/hashicorp/consul/api/watch"
 	perrors "github.com/pkg/errors"
@@ -38,6 +38,7 @@ import (
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config"
+	_ "github.com/apache/dubbo-go/metadata/mapping/memory"
 	"github.com/apache/dubbo-go/registry"
 )
 
@@ -50,9 +51,7 @@ const (
 	watch_passingonly_true = true
 )
 
-var (
-	errConsulClientClosed = perrors.New("consul client is closed")
-)
+var errConsulClientClosed = perrors.New("consul client is closed")
 
 // init will put the service discovery into extension
 func init() {
@@ -218,12 +217,12 @@ func (csd *consulServiceDiscovery) Unregister(instance registry.ServiceInstance)
 	}
 	err = consulClient.Agent().ServiceDeregister(buildID(instance))
 	if err != nil {
-		logger.Errorf("unregister service instance %s,error: %v", instance.GetId(), err)
+		logger.Errorf("unregister service instance %s,error: %v", instance.GetID(), err)
 		return err
 	}
 	stopChanel, ok := csd.ttl.Load(buildID(instance))
 	if !ok {
-		logger.Warnf("ttl for service instance %s didn't exist", instance.GetId())
+		logger.Warnf("ttl for service instance %s didn't exist", instance.GetID())
 		return nil
 	}
 	close(stopChanel.(chan struct{}))
@@ -241,7 +240,7 @@ func (csd *consulServiceDiscovery) GetServices() *gxset.HashSet {
 		consulClient *consul.Client
 		services     map[string][]string
 	)
-	var res = gxset.NewSet()
+	res := gxset.NewSet()
 	if consulClient = csd.getConsulClient(); consulClient == nil {
 		logger.Warnf("consul client is closed!")
 		return res
@@ -252,11 +251,10 @@ func (csd *consulServiceDiscovery) GetServices() *gxset.HashSet {
 		return res
 	}
 
-	for service, _ := range services {
+	for service := range services {
 		res.Add(service)
 	}
 	return res
-
 }
 
 // encodeConsulMetadata because consul validate key strictly.
@@ -320,7 +318,7 @@ func (csd *consulServiceDiscovery) GetInstances(serviceName string) []registry.S
 			healthy = true
 		}
 		res = append(res, &registry.DefaultServiceInstance{
-			Id:          ins.Service.ID,
+			ID:          ins.Service.ID,
 			ServiceName: ins.Service.Service,
 			Host:        ins.Service.Address,
 			Port:        ins.Service.Port,
@@ -339,7 +337,7 @@ func (csd *consulServiceDiscovery) GetInstancesByPage(serviceName string, offset
 	for i := offset; i < len(all) && i < offset+pageSize; i++ {
 		res = append(res, all[i])
 	}
-	return gxpage.New(offset, pageSize, res, len(all))
+	return gxpage.NewPage(offset, pageSize, res, len(all))
 }
 
 func (csd *consulServiceDiscovery) GetHealthyInstancesByPage(serviceName string, offset int, pageSize int, healthy bool) gxpage.Pager {
@@ -358,7 +356,7 @@ func (csd *consulServiceDiscovery) GetHealthyInstancesByPage(serviceName string,
 		}
 		i++
 	}
-	return gxpage.New(offset, pageSize, res, len(all))
+	return gxpage.NewPage(offset, pageSize, res, len(all))
 }
 
 func (csd *consulServiceDiscovery) GetRequestInstances(serviceNames []string, offset int, requestedSize int) map[string]gxpage.Pager {
@@ -369,60 +367,62 @@ func (csd *consulServiceDiscovery) GetRequestInstances(serviceNames []string, of
 	return res
 }
 
-func (csd *consulServiceDiscovery) AddListener(listener *registry.ServiceInstancesChangedListener) error {
-
-	params := make(map[string]interface{}, 8)
-	params[watch_type] = watch_type_service
-	params[watch_service] = listener.ServiceName
-	params[watch_passingonly] = watch_passingonly_true
-	plan, err := watch.Parse(params)
-	if err != nil {
-		logger.Errorf("add listener for service %s,error:%v", listener.ServiceName, err)
-		return err
-	}
-
-	plan.Handler = func(idx uint64, raw interface{}) {
-		services, ok := raw.([]*consul.ServiceEntry)
-		if !ok {
-			err = perrors.New("handler get non ServiceEntry type parameter")
-			return
-		}
-		instances := make([]registry.ServiceInstance, 0, len(services))
-		for _, ins := range services {
-			metadata := ins.Service.Meta
-
-			// enable status
-			enableStr := metadata[enable]
-			delete(metadata, enable)
-			enable, _ := strconv.ParseBool(enableStr)
-
-			// health status
-			status := ins.Checks.AggregatedStatus()
-			healthy := false
-			if status == consul.HealthPassing {
-				healthy = true
-			}
-			instances = append(instances, &registry.DefaultServiceInstance{
-				Id:          ins.Service.ID,
-				ServiceName: ins.Service.Service,
-				Host:        ins.Service.Address,
-				Port:        ins.Service.Port,
-				Enable:      enable,
-				Healthy:     healthy,
-				Metadata:    metadata,
-			})
-		}
-		e := csd.DispatchEventForInstances(listener.ServiceName, instances)
-		if e != nil {
-			logger.Errorf("Dispatching event got exception, service name: %s, err: %v", listener.ServiceName, err)
-		}
-	}
-	go func() {
-		err = plan.RunWithConfig(csd.Config.Address, csd.Config)
+func (csd *consulServiceDiscovery) AddListener(listener registry.ServiceInstancesChangedListener) error {
+	for _, v := range listener.GetServiceNames().Values() {
+		serviceName := v.(string)
+		params := make(map[string]interface{}, 8)
+		params[watch_type] = watch_type_service
+		params[watch_service] = serviceName
+		params[watch_passingonly] = watch_passingonly_true
+		plan, err := watch.Parse(params)
 		if err != nil {
-			logger.Error("consul plan run failure!error:%v", err)
+			logger.Errorf("add listener for service %s,error:%v", serviceName, err)
+			return err
 		}
-	}()
+
+		plan.Handler = func(idx uint64, raw interface{}) {
+			services, ok := raw.([]*consul.ServiceEntry)
+			if !ok {
+				err = perrors.New("handler get non ServiceEntry type parameter")
+				return
+			}
+			instances := make([]registry.ServiceInstance, 0, len(services))
+			for _, ins := range services {
+				metadata := ins.Service.Meta
+
+				// enable status
+				enableStr := metadata[enable]
+				delete(metadata, enable)
+				enable, _ := strconv.ParseBool(enableStr)
+
+				// health status
+				status := ins.Checks.AggregatedStatus()
+				healthy := false
+				if status == consul.HealthPassing {
+					healthy = true
+				}
+				instances = append(instances, &registry.DefaultServiceInstance{
+					ID:          ins.Service.ID,
+					ServiceName: ins.Service.Service,
+					Host:        ins.Service.Address,
+					Port:        ins.Service.Port,
+					Enable:      enable,
+					Healthy:     healthy,
+					Metadata:    metadata,
+				})
+			}
+			e := csd.DispatchEventForInstances(serviceName, instances)
+			if e != nil {
+				logger.Errorf("Dispatching event got exception, service name: %s, err: %v", serviceName, err)
+			}
+		}
+		go func() {
+			err = plan.RunWithConfig(csd.Config.Address, csd.Config)
+			if err != nil {
+				logger.Error("consul plan run failure!error:%v", err)
+			}
+		}()
+	}
 	return nil
 }
 
@@ -444,7 +444,7 @@ func (csd *consulServiceDiscovery) buildRegisterInstance(instance registry.Servi
 	metadata = encodeConsulMetadata(metadata)
 	metadata[enable] = strconv.FormatBool(instance.IsEnable())
 	// check
-	check := csd.buildCheck(instance)
+	check := csd.buildCheck()
 
 	return &consul.AgentServiceRegistration{
 		ID:      buildID(instance),
@@ -456,12 +456,7 @@ func (csd *consulServiceDiscovery) buildRegisterInstance(instance registry.Servi
 	}, nil
 }
 
-func (csd *consulServiceDiscovery) buildCheck(instance registry.ServiceInstance) consul.AgentServiceCheck {
-
-	deregister, ok := instance.GetMetadata()[constant.DEREGISTER_AFTER]
-	if !ok || len(deregister) == 0 {
-		deregister = constant.DEFAULT_DEREGISTER_TIME
-	}
+func (csd *consulServiceDiscovery) buildCheck() consul.AgentServiceCheck {
 	return consul.AgentServiceCheck{
 		TTL:                            strconv.FormatInt(csd.checkPassInterval/1000, 10) + "s",
 		DeregisterCriticalServiceAfter: csd.deregisterCriticalServiceAfter,
@@ -493,6 +488,6 @@ func getDeregisterAfter(metadata map[string]string) string {
 
 // nolint
 func buildID(instance registry.ServiceInstance) string {
-	id := fmt.Sprintf("id:%s,serviceName:%s,host:%s,port:%d", instance.GetId(), instance.GetServiceName(), instance.GetHost(), instance.GetPort())
+	id := fmt.Sprintf("id:%s,serviceName:%s,host:%s,port:%d", instance.GetID(), instance.GetServiceName(), instance.GetHost(), instance.GetPort())
 	return id
 }

@@ -45,24 +45,22 @@ import (
 func TestRunSuite(t *testing.T) {
 	svr, url := InitTest(t)
 	client := getClient(url)
-	testRequestOneWay(t, svr, url, client)
-	testClient_Call(t, svr, url, client)
-	testClient_AsyncCall(t, svr, url, client)
+	assert.NotNil(t, client)
+	testRequestOneWay(t, client)
+	testClient_Call(t, client)
+	testClient_AsyncCall(t, client)
 	svr.Stop()
 }
 
-func testRequestOneWay(t *testing.T, svr *Server, url common.URL, client *Client) {
-
+func testRequestOneWay(t *testing.T, client *Client) {
 	request := remoting.NewRequest("2.0.2")
-	up := &UserProvider{}
-	invocation := createInvocation("GetUser", nil, nil, []interface{}{[]interface{}{"1", "username"}, up},
-		[]reflect.Value{reflect.ValueOf([]interface{}{"1", "username"}), reflect.ValueOf(up)})
+	invocation := createInvocation("GetUser", nil, nil, []interface{}{"1", "username"},
+		[]reflect.Value{reflect.ValueOf("1"), reflect.ValueOf("username")})
 	attachment := map[string]string{INTERFACE_KEY: "com.ikurento.user.UserProvider"}
 	setAttachment(invocation, attachment)
 	request.Data = invocation
 	request.Event = false
 	request.TwoWay = false
-	//user := &User{}
 	err := client.Request(request, 3*time.Second, nil)
 	assert.NoError(t, err)
 }
@@ -80,21 +78,17 @@ func setAttachment(invocation *invocation.RPCInvocation, attachments map[string]
 	}
 }
 
-func getClient(url common.URL) *Client {
+func getClient(url *common.URL) *Client {
 	client := NewClient(Options{
 		ConnectTimeout: config.GetConsumerConfig().ConnectTimeout,
 	})
-
-	exchangeClient := remoting.NewExchangeClient(url, client, 5*time.Second, false)
-	client.SetExchangeClient(exchangeClient)
-	client.Connect(url)
-	client.SetResponseHandler(exchangeClient)
+	if err := client.Connect(url); err != nil {
+		return nil
+	}
 	return client
 }
 
-func testClient_Call(t *testing.T, svr *Server, url common.URL, c *Client) {
-	c.pool = newGettyRPCClientConnPool(c, clientConf.PoolSize, time.Duration(int(time.Second)*clientConf.PoolTTL))
-
+func testClient_Call(t *testing.T, c *Client) {
 	testGetBigPkg(t, c)
 	testGetUser(t, c)
 	testGetUser0(t, c)
@@ -122,7 +116,7 @@ func testGetBigPkg(t *testing.T, c *Client) {
 	remoting.AddPendingResponse(pendingResponse)
 	err := c.Request(request, 8*time.Second, pendingResponse)
 	assert.NoError(t, err)
-	assert.NotEqual(t, "", user.Id)
+	assert.NotEqual(t, "", user.ID)
 	assert.NotEqual(t, "", user.Name)
 }
 
@@ -141,7 +135,7 @@ func testGetUser(t *testing.T, c *Client) {
 	remoting.AddPendingResponse(pendingResponse)
 	err := c.Request(request, 3*time.Second, pendingResponse)
 	assert.NoError(t, err)
-	assert.Equal(t, User{Id: "1", Name: "username"}, *user)
+	assert.Equal(t, User{ID: "1", Name: "username"}, *user)
 }
 
 func testGetUser0(t *testing.T, c *Client) {
@@ -164,13 +158,11 @@ func testGetUser0(t *testing.T, c *Client) {
 	rsp.Reply = user
 	err = c.Request(request, 3*time.Second, rsp)
 	assert.NoError(t, err)
-	assert.Equal(t, User{Id: "1", Name: "username"}, *user)
+	assert.Equal(t, User{ID: "1", Name: "username"}, *user)
 }
 
 func testGetUser1(t *testing.T, c *Client) {
-	var (
-		err error
-	)
+	var err error
 	request := remoting.NewRequest("2.0.2")
 	invocation := createInvocation("GetUser1", nil, nil, []interface{}{},
 		[]reflect.Value{})
@@ -188,9 +180,7 @@ func testGetUser1(t *testing.T, c *Client) {
 }
 
 func testGetUser2(t *testing.T, c *Client) {
-	var (
-		err error
-	)
+	var err error
 	request := remoting.NewRequest("2.0.2")
 	invocation := createInvocation("GetUser2", nil, nil, []interface{}{},
 		[]reflect.Value{})
@@ -206,13 +196,13 @@ func testGetUser2(t *testing.T, c *Client) {
 }
 
 func testGetUser3(t *testing.T, c *Client) {
-	var (
-		err error
-	)
+	var err error
 	request := remoting.NewRequest("2.0.2")
 	invocation := createInvocation("GetUser3", nil, nil, []interface{}{},
 		[]reflect.Value{})
-	attachment := map[string]string{INTERFACE_KEY: "com.ikurento.user.UserProvider"}
+	attachment := map[string]string{
+		INTERFACE_KEY: "com.ikurento.user.UserProvider",
+	}
 	setAttachment(invocation, attachment)
 	request.Data = invocation
 	request.Event = false
@@ -223,13 +213,11 @@ func testGetUser3(t *testing.T, c *Client) {
 	remoting.AddPendingResponse(pendingResponse)
 	err = c.Request(request, 3*time.Second, pendingResponse)
 	assert.NoError(t, err)
-	assert.Equal(t, &User{Id: "1", Name: "username"}, user2[0])
+	assert.Equal(t, &User{ID: "1", Name: "username"}, user2[0])
 }
 
 func testGetUser4(t *testing.T, c *Client) {
-	var (
-		err error
-	)
+	var err error
 	request := remoting.NewRequest("2.0.2")
 	invocation := invocation.NewRPCInvocation("GetUser4", []interface{}{[]interface{}{"1", "username"}}, nil)
 	attachment := map[string]string{INTERFACE_KEY: "com.ikurento.user.UserProvider"}
@@ -243,13 +231,11 @@ func testGetUser4(t *testing.T, c *Client) {
 	remoting.AddPendingResponse(pendingResponse)
 	err = c.Request(request, 3*time.Second, pendingResponse)
 	assert.NoError(t, err)
-	assert.Equal(t, &User{Id: "1", Name: "username"}, user2[0])
+	assert.Equal(t, &User{ID: "1", Name: "username"}, user2[0])
 }
 
 func testGetUser5(t *testing.T, c *Client) {
-	var (
-		err error
-	)
+	var err error
 	request := remoting.NewRequest("2.0.2")
 	invocation := invocation.NewRPCInvocation("GetUser5", []interface{}{map[interface{}]interface{}{"id": "1", "name": "username"}}, nil)
 	attachment := map[string]string{INTERFACE_KEY: "com.ikurento.user.UserProvider"}
@@ -264,7 +250,7 @@ func testGetUser5(t *testing.T, c *Client) {
 	err = c.Request(request, 3*time.Second, pendingResponse)
 	assert.NoError(t, err)
 	assert.NotNil(t, user3)
-	assert.Equal(t, &User{Id: "1", Name: "username"}, user3["key"])
+	assert.Equal(t, &User{ID: "1", Name: "username"}, user3["key"])
 }
 
 func testGetUser6(t *testing.T, c *Client) {
@@ -285,7 +271,7 @@ func testGetUser6(t *testing.T, c *Client) {
 	remoting.AddPendingResponse(pendingResponse)
 	err = c.Request(request, 3*time.Second, pendingResponse)
 	assert.NoError(t, err)
-	assert.Equal(t, User{Id: "", Name: ""}, *user)
+	assert.Equal(t, User{ID: "", Name: ""}, *user)
 }
 
 func testGetUser61(t *testing.T, c *Client) {
@@ -306,10 +292,10 @@ func testGetUser61(t *testing.T, c *Client) {
 	remoting.AddPendingResponse(pendingResponse)
 	err = c.Request(request, 3*time.Second, pendingResponse)
 	assert.NoError(t, err)
-	assert.Equal(t, User{Id: "1", Name: ""}, *user)
+	assert.Equal(t, User{ID: "1", Name: ""}, *user)
 }
 
-func testClient_AsyncCall(t *testing.T, svr *Server, url common.URL, client *Client) {
+func testClient_AsyncCall(t *testing.T, client *Client) {
 	user := &User{}
 	lock := sync.Mutex{}
 	request := remoting.NewRequest("2.0.2")
@@ -327,7 +313,7 @@ func testClient_AsyncCall(t *testing.T, svr *Server, url common.URL, client *Cli
 	rsp.Callback = func(response common.CallbackResponse) {
 		r := response.(remoting.AsyncCallbackResponse)
 		rst := *r.Reply.(*remoting.Response).Result.(*protocol.RPCResult)
-		assert.Equal(t, User{Id: "4", Name: "username"}, *(rst.Rest.(*User)))
+		assert.Equal(t, User{ID: "4", Name: "username"}, *(rst.Rest.(*User)))
 		lock.Unlock()
 	}
 	lock.Lock()
@@ -337,12 +323,11 @@ func testClient_AsyncCall(t *testing.T, svr *Server, url common.URL, client *Cli
 	time.Sleep(1 * time.Second)
 }
 
-func InitTest(t *testing.T) (*Server, common.URL) {
-
+func InitTest(t *testing.T) (*Server, *common.URL) {
 	hessian.RegisterPOJO(&User{})
 	remoting.RegistryCodec("dubbo", &DubboTestCodec{})
 
-	methods, err := common.ServiceMap.Register("", "dubbo", &UserProvider{})
+	methods, err := common.ServiceMap.Register("com.ikurento.user.UserProvider", "dubbo", "", "", &UserProvider{})
 	assert.NoError(t, err)
 	assert.Equal(t, "GetBigPkg,GetUser,GetUser0,GetUser1,GetUser2,GetUser3,GetUser4,GetUser5,GetUser6", methods)
 
@@ -351,8 +336,6 @@ func InitTest(t *testing.T) (*Server, common.URL) {
 		ConnectionNum:   2,
 		HeartbeatPeriod: "5s",
 		SessionTimeout:  "20s",
-		PoolTTL:         600,
-		PoolSize:        64,
 		GettySessionParam: GettySessionParam{
 			CompressEncoding: false,
 			TcpNoDelay:       true,
@@ -385,22 +368,25 @@ func InitTest(t *testing.T) (*Server, common.URL) {
 			WaitTimeout:      "1s",
 			MaxMsgLen:        10240000000,
 			SessionName:      "server",
-		}})
+		},
+	})
 	assert.NoError(t, srvConf.CheckValidity())
 
-	url, err := common.NewURL("dubbo://127.0.0.1:20060/UserProvider?anyhost=true&" +
+	url, err := common.NewURL("dubbo://127.0.0.1:20060/com.ikurento.user.UserProvider?anyhost=true&" +
 		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
 		"environment=dev&interface=com.ikurento.user.UserProvider&ip=127.0.0.1&methods=GetUser%2C&" +
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
 		"side=provider&timeout=3000&timestamp=1556509797245&bean.name=UserProvider")
+	assert.NoError(t, err)
 	// init server
 	userProvider := &UserProvider{}
-	common.ServiceMap.Register("", url.Protocol, userProvider)
+	_, err = common.ServiceMap.Register("", url.Protocol, "", "0.0.1", userProvider)
+	assert.NoError(t, err)
 	invoker := &proxy_factory.ProxyInvoker{
 		BaseInvoker: *protocol.NewBaseInvoker(url),
 	}
 	handler := func(invocation *invocation.RPCInvocation) protocol.RPCResult {
-		//result := protocol.RPCResult{}
+		// result := protocol.RPCResult{}
 		r := invoker.Invoke(context.Background(), invocation)
 		result := protocol.RPCResult{
 			Err:   r.Error(),
@@ -423,12 +409,11 @@ func InitTest(t *testing.T) (*Server, common.URL) {
 
 type (
 	User struct {
-		Id   string `json:"id"`
+		ID   string `json:"id"`
 		Name string `json:"name"`
 	}
 
-	UserProvider struct {
-		user map[string]User
+	UserProvider struct { // user map[string]User
 	}
 )
 
@@ -439,19 +424,19 @@ func (u *UserProvider) GetBigPkg(ctx context.Context, req []interface{}, rsp *Us
 		argBuf.WriteString("击鼓其镗，踊跃用兵。土国城漕，我独南行。从孙子仲，平陈与宋。不我以归，忧心有忡。爰居爰处？爰丧其马？于以求之？于林之下。死生契阔，与子成说。执子之手，与子偕老。于嗟阔兮，不我活兮。于嗟洵兮，不我信兮。")
 		argBuf.WriteString("击鼓其镗，踊跃用兵。土国城漕，我独南行。从孙子仲，平陈与宋。不我以归，忧心有忡。爰居爰处？爰丧其马？于以求之？于林之下。死生契阔，与子成说。执子之手，与子偕老。于嗟阔兮，不我活兮。于嗟洵兮，不我信兮。")
 	}
-	rsp.Id = argBuf.String()
+	rsp.ID = argBuf.String()
 	rsp.Name = argBuf.String()
 	return nil
 }
 
 func (u *UserProvider) GetUser(ctx context.Context, req []interface{}, rsp *User) error {
-	rsp.Id = req[0].(string)
+	rsp.ID = req[0].(string)
 	rsp.Name = req[1].(string)
 	return nil
 }
 
 func (u *UserProvider) GetUser0(id string, k *User, name string) (User, error) {
-	return User{Id: id, Name: name}, nil
+	return User{ID: id, Name: name}, nil
 }
 
 func (u *UserProvider) GetUser1() error {
@@ -463,24 +448,23 @@ func (u *UserProvider) GetUser2() error {
 }
 
 func (u *UserProvider) GetUser3(rsp *[]interface{}) error {
-	*rsp = append(*rsp, User{Id: "1", Name: "username"})
+	*rsp = append(*rsp, User{ID: "1", Name: "username"})
 	return nil
 }
 
 func (u *UserProvider) GetUser4(ctx context.Context, req []interface{}) ([]interface{}, error) {
-
-	return []interface{}{User{Id: req[0].([]interface{})[0].(string), Name: req[0].([]interface{})[1].(string)}}, nil
+	return []interface{}{User{ID: req[0].([]interface{})[0].(string), Name: req[0].([]interface{})[1].(string)}}, nil
 }
 
 func (u *UserProvider) GetUser5(ctx context.Context, req []interface{}) (map[interface{}]interface{}, error) {
-	return map[interface{}]interface{}{"key": User{Id: req[0].(map[interface{}]interface{})["id"].(string), Name: req[0].(map[interface{}]interface{})["name"].(string)}}, nil
+	return map[interface{}]interface{}{"key": User{ID: req[0].(map[interface{}]interface{})["id"].(string), Name: req[0].(map[interface{}]interface{})["name"].(string)}}, nil
 }
 
 func (u *UserProvider) GetUser6(id int64) (*User, error) {
 	if id == 0 {
 		return nil, nil
 	}
-	return &User{Id: "1"}, nil
+	return &User{ID: "1"}, nil
 }
 
 func (u *UserProvider) Reference() string {

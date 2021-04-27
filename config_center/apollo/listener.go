@@ -36,13 +36,12 @@ type apolloListener struct {
 // nolint
 func newApolloListener() *apolloListener {
 	return &apolloListener{
-		listeners: make(map[config_center.ConfigurationListener]struct{}, 0),
+		listeners: make(map[config_center.ConfigurationListener]struct{}),
 	}
 }
 
 // OnChange process each listener
 func (a *apolloListener) OnChange(changeEvent *storage.ChangeEvent) {
-
 }
 
 // OnNewestChange process each listener by all changes

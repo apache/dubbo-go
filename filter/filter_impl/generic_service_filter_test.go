@@ -93,10 +93,11 @@ func TestGenericServiceFilterInvoke(t *testing.T) {
 			hessian.Object(append(make([]map[string]interface{}, 1), m)),
 			hessian.Object("111"),
 			hessian.Object(append(make([]map[string]interface{}, 1), m)),
-			hessian.Object("222")},
+			hessian.Object("222"),
+		},
 	}
 	s := &TestService{}
-	_, _ = common.ServiceMap.Register("TestService", "testprotocol", s)
+	_, _ = common.ServiceMap.Register("com.test.Path", "testprotocol", "", "", s)
 	rpcInvocation := invocation.NewRPCInvocation(methodName, aurguments, nil)
 	filter := GetGenericServiceFilter()
 	url, _ := common.NewURL("testprotocol://127.0.0.1:20000/com.test.Path")
@@ -125,7 +126,7 @@ func TestGenericServiceFilterResponseTestStruct(t *testing.T) {
 	filter := GetGenericServiceFilter()
 	methodName := "$invoke"
 	rpcInvocation := invocation.NewRPCInvocation(methodName, aurguments, nil)
-	r := filter.OnResponse(nil, result, nil, rpcInvocation)
+	r := filter.OnResponse(context.TODO(), result, nil, rpcInvocation)
 	assert.NotNil(t, r.Result())
 	assert.Equal(t, reflect.ValueOf(r.Result()).Kind(), reflect.Map)
 }
@@ -143,7 +144,7 @@ func TestGenericServiceFilterResponseString(t *testing.T) {
 	filter := GetGenericServiceFilter()
 	methodName := "$invoke"
 	rpcInvocation := invocation.NewRPCInvocation(methodName, aurguments, nil)
-	r := filter.OnResponse(nil, result, nil, rpcInvocation)
+	r := filter.OnResponse(context.TODO(), result, nil, rpcInvocation)
 	assert.NotNil(t, r.Result())
 	assert.Equal(t, reflect.ValueOf(r.Result()).Kind(), reflect.String)
 }

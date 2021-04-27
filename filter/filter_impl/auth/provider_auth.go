@@ -30,8 +30,7 @@ import (
 )
 
 // ProviderAuthFilter verifies the correctness of the signature on provider side
-type ProviderAuthFilter struct {
-}
+type ProviderAuthFilter struct{}
 
 func init() {
 	extension.SetFilter(constant.PROVIDER_AUTH_FILTER, getProviderAuthFilter)
@@ -40,10 +39,10 @@ func init() {
 // Invoke retrieves the configured Authenticator to verify the signature in an invocation
 func (paf *ProviderAuthFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	logger.Infof("invoking providerAuth filter.")
-	url := invoker.GetUrl()
+	url := invoker.GetURL()
 
-	err := doAuthWork(&url, func(authenticator filter.Authenticator) error {
-		return authenticator.Authenticate(invocation, &url)
+	err := doAuthWork(url, func(authenticator filter.Authenticator) error {
+		return authenticator.Authenticate(invocation, url)
 	})
 	if err != nil {
 		logger.Infof("auth the request: %v occur exception, cause: %s", invocation, err.Error())

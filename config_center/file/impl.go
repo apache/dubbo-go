@@ -24,7 +24,6 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
-	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -41,11 +40,17 @@ import (
 	"github.com/apache/dubbo-go/config_center/parser"
 )
 
+var osType = runtime.GOOS
+
 const (
-	PARAM_NAME_PREFIX                 = "dubbo.config-center."
-	CONFIG_CENTER_DIR_PARAM_NAME      = PARAM_NAME_PREFIX + "dir"
-	CONFIG_CENTER_ENCODING_PARAM_NAME = PARAM_NAME_PREFIX + "encoding"
-	DEFAULT_CONFIG_CENTER_ENCODING    = "UTF-8"
+	windowsOS = "windows"
+)
+
+const (
+	ParamNamePrefix               = "dubbo.config-center."
+	ConfigCenterDirParamName      = ParamNamePrefix + "dir"
+	ConfigCenterEncodingParamName = ParamNamePrefix + "encoding"
+	defaultConfigCenterEncoding   = "UTF-8"
 )
 
 // FileSystemDynamicConfiguration
@@ -59,24 +64,14 @@ type FileSystemDynamicConfiguration struct {
 }
 
 func newFileSystemDynamicConfiguration(url *common.URL) (*FileSystemDynamicConfiguration, error) {
-	encode := url.GetParam(CONFIG_CENTER_ENCODING_PARAM_NAME, DEFAULT_CONFIG_CENTER_ENCODING)
+	encode := url.GetParam(ConfigCenterEncodingParamName, defaultConfigCenterEncoding)
 
-	root := url.GetParam(CONFIG_CENTER_DIR_PARAM_NAME, "")
+	root := url.GetParam(ConfigCenterDirParamName, "")
 	var c *FileSystemDynamicConfiguration
-	if _, err := os.Stat(root); err != nil {
-		// not exist, use default, /XXX/xx/.dubbo/config-center
-		if rp, err := Home(); err != nil {
-			return nil, perrors.WithStack(err)
-		} else {
-			root = path.Join(rp, ".dubbo", "config-center")
-		}
-	}
 
-	if _, err := os.Stat(root); err != nil {
-		// it must be dir, if not exist, will create
-		if err = createDir(root); err != nil {
-			return nil, perrors.WithStack(err)
-		}
+	root, err := mkdirIfNecessary(root)
+	if err != nil {
+		return nil, err
 	}
 
 	c = &FileSystemDynamicConfiguration{
@@ -113,9 +108,8 @@ func (fsdc *FileSystemDynamicConfiguration) AddListener(key string, listener con
 		opt(tmpOpts)
 	}
 
-	path := fsdc.GetPath(key, tmpOpts.Group)
-
-	fsdc.cacheListener.AddListener(path, listener)
+	tmpPath := fsdc.GetPath(key, tmpOpts.Group)
+	fsdc.cacheListener.AddListener(tmpPath, listener)
 }
 
 // RemoveListener Remove listener
@@ -126,9 +120,8 @@ func (fsdc *FileSystemDynamicConfiguration) RemoveListener(key string, listener 
 		opt(tmpOpts)
 	}
 
-	path := fsdc.GetPath(key, tmpOpts.Group)
-
-	fsdc.cacheListener.RemoveListener(path, listener)
+	tmpPath := fsdc.GetPath(key, tmpOpts.Group)
+	fsdc.cacheListener.RemoveListener(tmpPath, listener)
 }
 
 // GetProperties get properties file
@@ -138,12 +131,11 @@ func (fsdc *FileSystemDynamicConfiguration) GetProperties(key string, opts ...co
 		opt(tmpOpts)
 	}
 
-	path := fsdc.GetPath(key, tmpOpts.Group)
-	file, err := ioutil.ReadFile(path)
+	tmpPath := fsdc.GetPath(key, tmpOpts.Group)
+	file, err := ioutil.ReadFile(tmpPath)
 	if err != nil {
 		return "", perrors.WithStack(err)
 	}
-
 	return string(file), nil
 }
 
@@ -160,16 +152,16 @@ func (fsdc *FileSystemDynamicConfiguration) GetInternalProperty(key string, opts
 
 // PublishConfig will publish the config with the (key, group, value) pair
 func (fsdc *FileSystemDynamicConfiguration) PublishConfig(key string, group string, value string) error {
-	path := fsdc.GetPath(key, group)
-	return fsdc.write2File(path, value)
+	tmpPath := fsdc.GetPath(key, group)
+	return fsdc.write2File(tmpPath, value)
 }
 
 // GetConfigKeysByGroup will return all keys with the group
 func (fsdc *FileSystemDynamicConfiguration) GetConfigKeysByGroup(group string) (*gxset.HashSet, error) {
-	path := fsdc.GetPath("", group)
+	tmpPath := fsdc.GetPath("", group)
 	r := gxset.NewSet()
 
-	fileInfo, _ := ioutil.ReadDir(path)
+	fileInfo, _ := ioutil.ReadDir(tmpPath)
 
 	for _, file := range fileInfo {
 		// list file
@@ -183,10 +175,10 @@ func (fsdc *FileSystemDynamicConfiguration) GetConfigKeysByGroup(group string) (
 	return r, nil
 }
 
-// RemoveConfig will remove the config whit hte (key, group)
+// RemoveConfig will remove tconfig_center/nacos/impl_testhe config whit hte (key, group)
 func (fsdc *FileSystemDynamicConfiguration) RemoveConfig(key string, group string) error {
-	path := fsdc.GetPath(key, group)
-	_, err := fsdc.deleteDelay(path)
+	tmpPath := fsdc.GetPath(key, group)
+	_, err := fsdc.deleteDelay(tmpPath)
 	return err
 }
 
@@ -198,18 +190,18 @@ func (fsdc *FileSystemDynamicConfiguration) Close() error {
 // GetPath get path
 func (fsdc *FileSystemDynamicConfiguration) GetPath(key string, group string) string {
 	if len(key) == 0 {
-		return path.Join(fsdc.rootPath, group)
+		return filepath.Join(fsdc.rootPath, group)
 	}
 
 	if len(group) == 0 {
 		group = config_center.DEFAULT_GROUP
 	}
 
-	return path.Join(fsdc.rootPath, group, key)
+	return filepath.Join(fsdc.rootPath, group, adapterKey(key))
 }
 
 func (fsdc *FileSystemDynamicConfiguration) deleteDelay(path string) (bool, error) {
-	if path == "" {
+	if len(path) == 0 {
 		return false, nil
 	}
 
@@ -229,9 +221,7 @@ func (fsdc *FileSystemDynamicConfiguration) write2File(fp string, value string) 
 }
 
 func forceMkdirParent(fp string) error {
-	pd := getParentDirectory(fp)
-
-	return createDir(pd)
+	return createDir(getParentDirectory(fp))
 }
 
 func createDir(path string) error {
@@ -253,6 +243,7 @@ func substr(s string, pos, length int) string {
 	if l > len(runes) {
 		l = len(runes)
 	}
+
 	return string(runes[pos:l])
 }
 
@@ -261,13 +252,13 @@ func substr(s string, pos, length int) string {
 // This uses an OS-specific method for discovering the home directory.
 // An error is returned if a home directory cannot be detected.
 func Home() (string, error) {
-	user, err := user.Current()
+	currentUser, err := user.Current()
 	if nil == err {
-		return user.HomeDir, nil
+		return currentUser.HomeDir, nil
 	}
 
 	// cross compile support
-	if "windows" == runtime.GOOS {
+	if windowsOS == osType {
 		return homeWindows()
 	}
 
@@ -290,7 +281,7 @@ func homeUnix() (string, error) {
 	}
 
 	result := strings.TrimSpace(stdout.String())
-	if result == "" {
+	if len(result) == 0 {
 		return "", errors.New("blank output when reading home directory")
 	}
 
@@ -299,14 +290,68 @@ func homeUnix() (string, error) {
 
 func homeWindows() (string, error) {
 	drive := os.Getenv("HOMEDRIVE")
-	path := os.Getenv("HOMEPATH")
-	home := drive + path
-	if drive == "" || path == "" {
+	homePath := os.Getenv("HOMEPATH")
+	home := drive + homePath
+	if len(drive) == 0 || len(homePath) == 0 {
 		home = os.Getenv("USERPROFILE")
 	}
-	if home == "" {
+	if len(home) == 0 {
 		return "", errors.New("HOMEDRIVE, HOMEPATH, and USERPROFILE are blank")
 	}
 
 	return home, nil
+}
+
+func mkdirIfNecessary(urlRoot string) (string, error) {
+	if !legalPath(urlRoot) {
+		// not exist, use default, mac is: /XXX/xx/.dubbo/config-center
+		rp, err := Home()
+		if err != nil {
+			return "", perrors.WithStack(err)
+		}
+
+		urlRoot = adapterUrl(rp)
+	}
+
+	if _, err := os.Stat(urlRoot); err != nil {
+		// it must be dir, if not exist, will create
+		if err = createDir(urlRoot); err != nil {
+			return "", perrors.WithStack(err)
+		}
+	}
+
+	return urlRoot, nil
+}
+
+func legalPath(path string) bool {
+	if len(path) == 0 {
+		return false
+	}
+	if _, err := os.Stat(path); err != nil {
+		return false
+	}
+
+	return true
+}
+
+func adapterUrl(rp string) string {
+	if osType == windowsOS {
+		return filepath.Join(rp, "_dubbo", "config-center")
+	}
+
+	return filepath.Join(rp, ".dubbo", "config-center")
+}
+
+// used for GetPath. param key default is instance's id.
+// e.g: (ip:port) 127.0.0.1:20081, in windows env, will change to 127_0_0_1_20081
+func adapterKey(key string) string {
+	if len(key) == 0 {
+		return ""
+	}
+
+	if osType == windowsOS {
+		return strings.ReplaceAll(strings.ReplaceAll(key, ".", "_"), ":", "_")
+	}
+
+	return key
 }

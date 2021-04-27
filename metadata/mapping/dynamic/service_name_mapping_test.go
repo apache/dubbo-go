@@ -33,12 +33,12 @@ import (
 )
 
 func TestDynamicConfigurationServiceNameMapping(t *testing.T) {
-
 	// mock data
 	appName := "myApp"
 	dc, err := (&config_center.MockDynamicConfigurationFactory{
 		Content: appName,
 	}).GetDynamicConfiguration(nil)
+	assert.NoError(t, err)
 	config.GetApplicationConfig().Name = appName
 
 	mapping := &DynamicConfigurationServiceNameMapping{dc: dc}

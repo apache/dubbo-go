@@ -112,7 +112,7 @@ func (parser *DefaultConfigurationParser) ParseToUrls(content string) ([]*common
 
 // serviceItemToUrls is used to transfer item and config to urls
 func serviceItemToUrls(item ConfigItem, config ConfiguratorConfig) ([]*common.URL, error) {
-	var addresses = item.Addresses
+	addresses := item.Addresses
 	if len(addresses) == 0 {
 		addresses = append(addresses, constant.ANYHOST_VALUE)
 	}
@@ -144,14 +144,14 @@ func serviceItemToUrls(item ConfigItem, config ConfiguratorConfig) ([]*common.UR
 				if err != nil {
 					return nil, perrors.WithStack(err)
 				}
-				urls = append(urls, &url)
+				urls = append(urls, url)
 			}
 		} else {
 			url, err := common.NewURL(urlStr)
 			if err != nil {
 				return nil, perrors.WithStack(err)
 			}
-			urls = append(urls, &url)
+			urls = append(urls, url)
 		}
 	}
 	return urls, nil
@@ -159,7 +159,7 @@ func serviceItemToUrls(item ConfigItem, config ConfiguratorConfig) ([]*common.UR
 
 // nolint
 func appItemToUrls(item ConfigItem, config ConfiguratorConfig) ([]*common.URL, error) {
-	var addresses = item.Addresses
+	addresses := item.Addresses
 	if len(addresses) == 0 {
 		addresses = append(addresses, constant.ANYHOST_VALUE)
 	}
@@ -192,7 +192,7 @@ func appItemToUrls(item ConfigItem, config ConfiguratorConfig) ([]*common.URL, e
 			if err != nil {
 				return nil, perrors.WithStack(err)
 			}
-			urls = append(urls, &url)
+			urls = append(urls, url)
 		}
 	}
 	return urls, nil

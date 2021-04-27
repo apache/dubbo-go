@@ -25,9 +25,7 @@ import (
 	"github.com/apache/dubbo-go/registry/servicediscovery/instance"
 )
 
-var (
-	serviceInstanceSelectorMappings = make(map[string]func() instance.ServiceInstanceSelector, 2)
-)
+var serviceInstanceSelectorMappings = make(map[string]func() instance.ServiceInstanceSelector, 2)
 
 // nolint
 func SetServiceInstanceSelector(name string, f func() instance.ServiceInstanceSelector) {

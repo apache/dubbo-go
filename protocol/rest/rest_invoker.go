@@ -43,7 +43,7 @@ type RestInvoker struct {
 }
 
 // NewRestInvoker returns a RestInvoker
-func NewRestInvoker(url common.URL, client *client.RestClient, restMethodConfig map[string]*config.RestMethodConfig) *RestInvoker {
+func NewRestInvoker(url *common.URL, client *client.RestClient, restMethodConfig map[string]*config.RestMethodConfig) *RestInvoker {
 	return &RestInvoker{
 		BaseInvoker:         *protocol.NewBaseInvoker(url),
 		client:              *client,
@@ -83,7 +83,7 @@ func (ri *RestInvoker) Invoke(ctx context.Context, invocation protocol.Invocatio
 		body = inv.Arguments()[methodConfig.Body]
 	}
 	req := &client.RestClientRequest{
-		Location:    ri.GetUrl().Location,
+		Location:    ri.GetURL().Location,
 		Method:      methodConfig.MethodType,
 		Path:        methodConfig.Path,
 		PathParams:  pathParams,

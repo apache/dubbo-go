@@ -37,9 +37,7 @@ import (
 	_ "github.com/apache/dubbo-go/registry/zookeeper"
 )
 
-var (
-	survivalTimeout int = 10e9
-)
+var survivalTimeout int = 10e9
 
 func println(format string, args ...interface{}) {
 	fmt.Printf("\033[32;40m"+format+"\033[0m\n", args...)

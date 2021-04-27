@@ -19,14 +19,11 @@ package servicediscovery
 
 import (
 	"bytes"
-	"encoding/json"
-	"strconv"
 	"strings"
 	"sync"
 )
 
 import (
-	cm "github.com/Workiva/go-datastructures/common"
 	gxset "github.com/dubbogo/gost/container/set"
 	perrors "github.com/pkg/errors"
 	"go.uber.org/atomic"
@@ -37,15 +34,14 @@ import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/common/observer"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/metadata/mapping"
 	"github.com/apache/dubbo-go/metadata/service"
 	"github.com/apache/dubbo-go/metadata/service/exporter/configurable"
+	"github.com/apache/dubbo-go/metadata/service/inmemory"
 	"github.com/apache/dubbo-go/registry"
 	"github.com/apache/dubbo-go/registry/event"
 	"github.com/apache/dubbo-go/registry/servicediscovery/synthesizer"
-	"github.com/apache/dubbo-go/remoting"
 )
 
 const (
@@ -70,7 +66,8 @@ type serviceDiscoveryRegistry struct {
 	metaDataService                  service.MetadataService
 	registeredListeners              *gxset.HashSet
 	subscribedURLsSynthesizers       []synthesizer.SubscribedURLsSynthesizer
-	serviceRevisionExportedURLsCache map[string]map[string][]common.URL
+	serviceRevisionExportedURLsCache map[string]map[string][]*common.URL
+	serviceListeners                 map[string]registry.ServiceInstancesChangedListener
 }
 
 func newServiceDiscoveryRegistry(url *common.URL) (registry.Registry, error) {
@@ -84,7 +81,7 @@ func newServiceDiscoveryRegistry(url *common.URL) (registry.Registry, error) {
 	subscribedServices := parseServices(url.GetParam(constant.SUBSCRIBED_SERVICE_NAMES_KEY, ""))
 	subscribedURLsSynthesizers := synthesizer.GetAllSynthesizer()
 	serviceNameMapping := extension.GetGlobalServiceNameMapping()
-	metaDataService, err := extension.GetMetadataService(config.GetApplicationConfig().MetadataType)
+	metaDataService, err := inmemory.GetInMemoryMetadataService()
 	if err != nil {
 		return nil, perrors.WithMessage(err, "could not init metadata service")
 	}
@@ -94,13 +91,14 @@ func newServiceDiscoveryRegistry(url *common.URL) (registry.Registry, error) {
 		subscribedServices:               subscribedServices,
 		subscribedURLsSynthesizers:       subscribedURLsSynthesizers,
 		registeredListeners:              gxset.NewSet(),
-		serviceRevisionExportedURLsCache: make(map[string]map[string][]common.URL, 8),
+		serviceRevisionExportedURLsCache: make(map[string]map[string][]*common.URL, 8),
 		serviceNameMapping:               serviceNameMapping,
 		metaDataService:                  metaDataService,
+		serviceListeners:                 make(map[string]registry.ServiceInstancesChangedListener),
 	}, nil
 }
 
-func (s *serviceDiscoveryRegistry) UnRegister(url common.URL) error {
+func (s *serviceDiscoveryRegistry) UnRegister(url *common.URL) error {
 	if !shouldRegister(url) {
 		return nil
 	}
@@ -108,10 +106,22 @@ func (s *serviceDiscoveryRegistry) UnRegister(url common.URL) error {
 }
 
 func (s *serviceDiscoveryRegistry) UnSubscribe(url *common.URL, listener registry.NotifyListener) error {
-	if !shouldSubscribe(*url) {
+	if !shouldSubscribe(url) {
 		return nil
 	}
-	return s.metaDataService.UnsubscribeURL(*url)
+	err := s.metaDataService.UnsubscribeURL(url)
+	if err != nil {
+		return err
+	}
+	services := s.getServices(url)
+	if services == nil {
+		return nil
+	}
+	// FIXME ServiceNames.String() is not good
+	serviceNamesKey := services.String()
+	l := s.serviceListeners[serviceNamesKey]
+	l.RemoveListener(url.ServiceKey())
+	return nil
 }
 
 func creatServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, error) {
@@ -145,13 +155,15 @@ func (s *serviceDiscoveryRegistry) GetServiceDiscovery() registry.ServiceDiscove
 	return s.serviceDiscovery
 }
 
-func (s *serviceDiscoveryRegistry) GetUrl() common.URL {
-	return *s.url
+func (s *serviceDiscoveryRegistry) GetURL() *common.URL {
+	return s.url
 }
 
 func (s *serviceDiscoveryRegistry) IsAvailable() bool {
-	// TODO(whether available depends on metadata service and service discovery)
-	return true
+	if s.serviceDiscovery.GetServices() == nil {
+		return false
+	}
+	return len(s.serviceDiscovery.GetServices().Values()) > 0
 }
 
 func (s *serviceDiscoveryRegistry) Destroy() {
@@ -161,7 +173,7 @@ func (s *serviceDiscoveryRegistry) Destroy() {
 	}
 }
 
-func (s *serviceDiscoveryRegistry) Register(url common.URL) error {
+func (s *serviceDiscoveryRegistry) Register(url *common.URL) error {
 	if !shouldRegister(url) {
 		return nil
 	}
@@ -175,17 +187,13 @@ func (s *serviceDiscoveryRegistry) Register(url common.URL) error {
 		logger.Warnf("The URL[%s] has been registry!", url.String())
 	}
 
-	err = s.metaDataService.PublishServiceDefinition(url)
-	if err != nil {
-		return perrors.WithMessage(err, "publish the service definition failed. ")
-	}
 	return s.serviceNameMapping.Map(url.GetParam(constant.INTERFACE_KEY, ""),
 		url.GetParam(constant.GROUP_KEY, ""),
 		url.GetParam(constant.Version, ""),
 		url.Protocol)
 }
 
-func shouldRegister(url common.URL) bool {
+func shouldRegister(url *common.URL) bool {
 	side := url.GetParam(constant.SIDE_KEY, "")
 	if side == constant.PROVIDER_PROTOCOL {
 		return true
@@ -195,36 +203,45 @@ func shouldRegister(url common.URL) bool {
 }
 
 func (s *serviceDiscoveryRegistry) Subscribe(url *common.URL, notify registry.NotifyListener) error {
-	if !shouldSubscribe(*url) {
+	if !shouldSubscribe(url) {
 		return nil
 	}
-	_, err := s.metaDataService.SubscribeURL(*url)
+	_, err := s.metaDataService.SubscribeURL(url)
 	if err != nil {
 		return perrors.WithMessage(err, "subscribe url error: "+url.String())
 	}
-	services := s.getServices(*url)
+	services := s.getServices(url)
 	if services.Empty() {
 		return perrors.Errorf("Should has at least one way to know which services this interface belongs to, "+
 			"subscription url:%s", url.String())
 	}
-	for _, srv := range services.Values() {
-		serviceName := srv.(string)
-		serviceInstances := s.serviceDiscovery.GetInstances(serviceName)
-		s.subscribe(url, notify, serviceName, serviceInstances)
-		listener := &registry.ServiceInstancesChangedListener{
-			ServiceName: serviceName,
-			ChangedNotify: &InstanceChangeNotify{
-				notify:                   notify,
-				serviceDiscoveryRegistry: s,
-			},
+	// FIXME ServiceNames.String() is not good
+	serviceNamesKey := services.String()
+	protocolServiceKey := url.ServiceKey() + ":" + url.Protocol
+	listener := s.serviceListeners[serviceNamesKey]
+	if listener == nil {
+		listener = event.NewServiceInstancesChangedListener(services)
+		for _, serviceNameTmp := range services.Values() {
+			serviceName := serviceNameTmp.(string)
+			instances := s.serviceDiscovery.GetInstances(serviceName)
+			err = listener.OnEvent(&registry.ServiceInstancesChangedEvent{
+				ServiceName: serviceName,
+				Instances:   instances,
+			})
+			if err != nil {
+				logger.Warnf("[ServiceDiscoveryRegistry] ServiceInstancesChangedListenerImpl handle error:%v", err)
+			}
 		}
-		s.registerServiceInstancesChangedListener(*url, listener)
 	}
+	s.serviceListeners[serviceNamesKey] = listener
+	listener.AddListenerAndNotify(protocolServiceKey, notify)
+	s.registerServiceInstancesChangedListener(url, listener)
 	return nil
 }
 
-func (s *serviceDiscoveryRegistry) registerServiceInstancesChangedListener(url common.URL, listener *registry.ServiceInstancesChangedListener) {
-	listenerId := listener.ServiceName + ":" + getUrlKey(url)
+func (s *serviceDiscoveryRegistry) registerServiceInstancesChangedListener(url *common.URL, listener registry.ServiceInstancesChangedListener) {
+	// FIXME ServiceNames.String() is not good
+	listenerId := listener.GetServiceNames().String() + ":" + getUrlKey(url)
 	if !s.subscribedServices.Contains(listenerId) {
 		err := s.serviceDiscovery.AddListener(listener)
 		if err != nil {
@@ -234,7 +251,7 @@ func (s *serviceDiscoveryRegistry) registerServiceInstancesChangedListener(url c
 
 }
 
-func getUrlKey(url common.URL) string {
+func getUrlKey(url *common.URL) string {
 	var bf bytes.Buffer
 	if len(url.Protocol) != 0 {
 		bf.WriteString(url.Protocol)
@@ -256,34 +273,14 @@ func getUrlKey(url common.URL) string {
 	return bf.String()
 }
 
-func appendParam(buffer bytes.Buffer, paramKey string, url common.URL) {
+func appendParam(buffer bytes.Buffer, paramKey string, url *common.URL) {
 	buffer.WriteString(paramKey)
 	buffer.WriteString("=")
 	buffer.WriteString(url.GetParam(paramKey, ""))
 }
 
-func (s *serviceDiscoveryRegistry) subscribe(url *common.URL, notify registry.NotifyListener,
-	serviceName string, serviceInstances []registry.ServiceInstance) {
-	if len(serviceInstances) == 0 {
-		logger.Warnf("here is no instance in service[name : %s]", serviceName)
-		return
-	}
-	var subscribedURLs []common.URL
-	subscribedURLs = append(subscribedURLs, s.getExportedUrls(*url, serviceInstances)...)
-	if len(subscribedURLs) == 0 {
-		subscribedURLs = s.synthesizeSubscribedURLs(url, serviceInstances)
-	}
-	for _, url := range subscribedURLs {
-		notify.Notify(&registry.ServiceEvent{
-			Action:  remoting.EventTypeAdd,
-			Service: url,
-		})
-	}
-
-}
-
-func (s *serviceDiscoveryRegistry) synthesizeSubscribedURLs(subscribedURL *common.URL, serviceInstances []registry.ServiceInstance) []common.URL {
-	var urls []common.URL
+func (s *serviceDiscoveryRegistry) synthesizeSubscribedURLs(subscribedURL *common.URL, serviceInstances []registry.ServiceInstance) []*common.URL {
+	var urls []*common.URL
 	for _, syn := range s.subscribedURLsSynthesizers {
 		if syn.Support(subscribedURL) {
 			urls = append(urls, syn.Synthesize(subscribedURL, serviceInstances)...)
@@ -292,11 +289,11 @@ func (s *serviceDiscoveryRegistry) synthesizeSubscribedURLs(subscribedURL *commo
 	return urls
 }
 
-func shouldSubscribe(url common.URL) bool {
+func shouldSubscribe(url *common.URL) bool {
 	return !shouldRegister(url)
 }
 
-func (s *serviceDiscoveryRegistry) getServices(url common.URL) *gxset.HashSet {
+func (s *serviceDiscoveryRegistry) getServices(url *common.URL) *gxset.HashSet {
 	services := gxset.NewSet()
 	serviceNames := url.GetParam(constant.PROVIDER_BY, "")
 	if len(serviceNames) > 0 {
@@ -311,7 +308,7 @@ func (s *serviceDiscoveryRegistry) getServices(url common.URL) *gxset.HashSet {
 	return services
 }
 
-func (s *serviceDiscoveryRegistry) findMappedServices(url common.URL) *gxset.HashSet {
+func (s *serviceDiscoveryRegistry) findMappedServices(url *common.URL) *gxset.HashSet {
 	serviceInterface := url.GetParam(constant.INTERFACE_KEY, url.Path)
 	group := url.GetParam(constant.GROUP_KEY, "")
 	version := url.GetParam(constant.VERSION_KEY, "")
@@ -325,317 +322,6 @@ func (s *serviceDiscoveryRegistry) findMappedServices(url common.URL) *gxset.Has
 	return serviceNames
 }
 
-func (s *serviceDiscoveryRegistry) getExportedUrls(subscribedURL common.URL, serviceInstances []registry.ServiceInstance) []common.URL {
-	var filterInstances []registry.ServiceInstance
-	for _, s := range serviceInstances {
-		if !s.IsEnable() || !s.IsHealthy() {
-			continue
-		}
-		metaData := s.GetMetadata()
-		_, ok1 := metaData[constant.METADATA_SERVICE_URL_PARAMS_PROPERTY_NAME]
-		_, ok2 := metaData[constant.METADATA_SERVICE_URLS_PROPERTY_NAME]
-		if !ok1 && !ok2 {
-			continue
-		}
-		filterInstances = append(filterInstances, s)
-	}
-	if len(filterInstances) == 0 {
-		return []common.URL{}
-	}
-	s.prepareServiceRevisionExportedURLs(filterInstances)
-	subscribedURLs := s.cloneExportedURLs(subscribedURL, filterInstances)
-	return subscribedURLs
-}
-
-// comparator is defined as Comparator for skip list to compare the URL
-type comparator common.URL
-
-// Compare is defined as Comparator for skip list to compare the URL
-func (c comparator) Compare(comp cm.Comparator) int {
-	a := common.URL(c).String()
-	b := common.URL(comp.(comparator)).String()
-	switch {
-	case a > b:
-		return 1
-	case a < b:
-		return -1
-	default:
-		return 0
-	}
-}
-
-func (s *serviceDiscoveryRegistry) getExportedUrlsByInst(serviceInstance registry.ServiceInstance) []common.URL {
-	var urls []common.URL
-	metadataStorageType := getExportedStoreType(serviceInstance)
-	proxyFactory := extension.GetMetadataServiceProxyFactory(metadataStorageType)
-	if proxyFactory == nil {
-		return urls
-	}
-	metadataService := proxyFactory.GetProxy(serviceInstance)
-	if metadataService == nil {
-		return urls
-	}
-	result, err := metadataService.GetExportedURLs(constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE)
-	if err != nil {
-		logger.Errorf("get exported urls catch error:%s,instance:%+v", err.Error(), serviceInstance)
-		return urls
-	}
-
-	ret := make([]common.URL, 0, len(result))
-	for _, ui := range result {
-
-		u, err := common.NewURL(ui.(string))
-
-		if err != nil {
-			logger.Errorf("could not parse the url string to URL structure: %s", ui.(string), err)
-			continue
-		}
-		ret = append(ret, u)
-	}
-	return ret
-}
-
-func (s *serviceDiscoveryRegistry) prepareServiceRevisionExportedURLs(serviceInstances []registry.ServiceInstance) {
-	s.lock.Lock()
-	// 1. expunge stale
-	s.expungeStaleRevisionExportedURLs(serviceInstances)
-	// 2. Initialize
-	s.initRevisionExportedURLs(serviceInstances)
-	s.lock.Unlock()
-}
-
-func (s *serviceDiscoveryRegistry) expungeStaleRevisionExportedURLs(serviceInstances []registry.ServiceInstance) {
-	serviceName := serviceInstances[0].GetServiceName()
-	revisionExportedURLsMap, exist := s.serviceRevisionExportedURLsCache[serviceName]
-	if !exist {
-		return
-	}
-	existRevision := gxset.NewSet()
-	for k := range revisionExportedURLsMap {
-		existRevision.Add(k)
-	}
-	currentRevision := gxset.NewSet()
-	for _, s := range serviceInstances {
-		rv := getExportedServicesRevision(s)
-		if len(rv) != 0 {
-			currentRevision.Add(rv)
-		}
-	}
-	// staleRevisions = existedRevisions(copy) - currentRevisions
-	staleRevision := gxset.NewSet(existRevision.Values()...)
-	staleRevision.Remove(currentRevision.Values()...)
-	// remove exported URLs if staled
-	for _, s := range staleRevision.Values() {
-		delete(revisionExportedURLsMap, s.(string))
-	}
-}
-
-func (s *serviceDiscoveryRegistry) initRevisionExportedURLs(serviceInstances []registry.ServiceInstance) {
-	// initialize the revision exported URLs that the selected service instance exported
-	s.initSelectedRevisionExportedURLs(serviceInstances)
-	// initialize the revision exported URLs that other service instances exported
-	for _, serviceInstance := range serviceInstances {
-		s.initRevisionExportedURLsByInst(serviceInstance)
-	}
-}
-
-func (s *serviceDiscoveryRegistry) initSelectedRevisionExportedURLs(serviceInstances []registry.ServiceInstance) {
-	for range serviceInstances {
-		selectServiceInstance := s.selectServiceInstance(serviceInstances)
-		revisionExportedURLs := s.initRevisionExportedURLsByInst(selectServiceInstance)
-		if len(revisionExportedURLs) > 0 {
-			// If the result is valid,break
-			break
-		}
-	}
-}
-
-func (s *serviceDiscoveryRegistry) selectServiceInstance(serviceInstances []registry.ServiceInstance) registry.ServiceInstance {
-	size := len(serviceInstances)
-	if size == 0 {
-		return nil
-	}
-	if size == 1 {
-		return serviceInstances[0]
-	}
-	selectorName := s.url.GetParam(constant.SERVICE_INSTANCE_SELECTOR, "random")
-	selector, err := extension.GetServiceInstanceSelector(selectorName)
-	if err != nil {
-		logger.Errorf("get service instance selector cathe error:%s", err.Error())
-		return nil
-	}
-	return selector.Select(*s.url, serviceInstances)
-}
-
-func (s *serviceDiscoveryRegistry) initRevisionExportedURLsByInst(serviceInstance registry.ServiceInstance) []common.URL {
-	if serviceInstance == nil {
-		return []common.URL{}
-	}
-	serviceName := serviceInstance.GetServiceName()
-	revision := getExportedServicesRevision(serviceInstance)
-	revisionExportedURLsMap := s.serviceRevisionExportedURLsCache[serviceName]
-	if revisionExportedURLsMap == nil {
-		revisionExportedURLsMap = make(map[string][]common.URL, 4)
-		s.serviceRevisionExportedURLsCache[serviceName] = revisionExportedURLsMap
-	}
-	revisionExportedURLs := revisionExportedURLsMap[revision]
-	firstGet := false
-	if revisionExportedURLs == nil || len(revisionExportedURLs) == 0 {
-		if len(revisionExportedURLsMap) > 0 {
-			// The case is that current ServiceInstance with the different revision
-			logger.Warnf("The ServiceInstance[id: %s, host : %s , port : %s] has different revision : %s"+
-				", please make sure the service [name : %s] is changing or not.", serviceInstance.GetId(),
-				serviceInstance.GetHost(), serviceInstance.GetPort(), revision, serviceInstance.GetServiceName())
-		} else {
-			firstGet = true
-		}
-		revisionExportedURLs = s.getExportedUrlsByInst(serviceInstance)
-		if revisionExportedURLs != nil {
-			revisionExportedURLsMap[revision] = revisionExportedURLs
-			logger.Debugf("Get the exported URLs[size : %s, first : %s] from the target service "+
-				"instance [id: %s , service : %s , host : %s , port : %s , revision : %s]",
-				len(revisionExportedURLs), firstGet, serviceInstance.GetId(), serviceInstance.GetServiceName(),
-				serviceInstance.GetHost(), serviceInstance.GetPort(), revision)
-		}
-	} else {
-		// Else, The cache is hit
-		logger.Debugf("Get the exported URLs[size : %s] from cache, the instance"+
-			"[id: %s , service : %s , host : %s , port : %s , revision : %s]", len(revisionExportedURLs), firstGet,
-			serviceInstance.GetId(), serviceInstance.GetServiceName(), serviceInstance.GetHost(),
-			serviceInstance.GetPort(), revision)
-	}
-	return revisionExportedURLs
-}
-
-func getExportedServicesRevision(serviceInstance registry.ServiceInstance) string {
-	metaData := serviceInstance.GetMetadata()
-	return metaData[constant.EXPORTED_SERVICES_REVISION_PROPERTY_NAME]
-}
-
-func getExportedStoreType(serviceInstance registry.ServiceInstance) string {
-	metaData := serviceInstance.GetMetadata()
-	result, ok := metaData[constant.METADATA_STORAGE_TYPE_PROPERTY_NAME]
-	if !ok {
-		return constant.DEFAULT_METADATA_STORAGE_TYPE
-	}
-	return result
-}
-
-func (s *serviceDiscoveryRegistry) cloneExportedURLs(url common.URL, serviceInsances []registry.ServiceInstance) []common.URL {
-	if len(serviceInsances) == 0 {
-		return []common.URL{}
-	}
-	var clonedExportedURLs []common.URL
-	removeParamSet := gxset.NewSet()
-	removeParamSet.Add(constant.PID_KEY)
-	removeParamSet.Add(constant.TIMESTAMP_KEY)
-	for _, serviceInstance := range serviceInsances {
-		templateExportURLs := s.getTemplateExportedURLs(url, serviceInstance)
-		host := serviceInstance.GetHost()
-		for _, u := range templateExportURLs {
-			port := strconv.Itoa(getProtocolPort(serviceInstance, u.Protocol))
-			if u.Location != host || u.Port != port {
-				u.Port = port                  // reset port
-				u.Location = host + ":" + port // reset host
-			}
-
-			cloneUrl := u.CloneExceptParams(removeParamSet)
-			clonedExportedURLs = append(clonedExportedURLs, *cloneUrl)
-		}
-	}
-	return clonedExportedURLs
-
-}
-
-type endpoint struct {
-	Port     int    `json:"port, omitempty"`
-	Protocol string `json:"protocol, omitempty"`
-}
-
-func getProtocolPort(serviceInstance registry.ServiceInstance, protocol string) int {
-	md := serviceInstance.GetMetadata()
-	rawEndpoints := md[constant.SERVICE_INSTANCE_ENDPOINTS]
-	if len(rawEndpoints) == 0 {
-		return -1
-	}
-	var endpoints []endpoint
-	err := json.Unmarshal([]byte(rawEndpoints), &endpoints)
-	if err != nil {
-		logger.Errorf("json umarshal rawEndpoints[%s] catch error:%s", rawEndpoints, err.Error())
-		return -1
-	}
-	for _, e := range endpoints {
-		if e.Protocol == protocol {
-			return e.Port
-		}
-	}
-	return -1
-}
-func (s *serviceDiscoveryRegistry) getTemplateExportedURLs(url common.URL, serviceInstance registry.ServiceInstance) []common.URL {
-	exportedURLs := s.getRevisionExportedURLs(serviceInstance)
-	if len(exportedURLs) == 0 {
-		return []common.URL{}
-	}
-	return filterSubscribedURLs(url, exportedURLs)
-}
-
-func (s *serviceDiscoveryRegistry) getRevisionExportedURLs(serviceInstance registry.ServiceInstance) []common.URL {
-	if serviceInstance == nil {
-		return []common.URL{}
-	}
-	serviceName := serviceInstance.GetServiceName()
-	revision := getExportedServicesRevision(serviceInstance)
-	s.lock.RLock()
-	revisionExportedURLsMap, exist := s.serviceRevisionExportedURLsCache[serviceName]
-	if !exist {
-		return []common.URL{}
-	}
-	exportedURLs, exist := revisionExportedURLsMap[revision]
-	if !exist {
-		return []common.URL{}
-	}
-	s.lock.RUnlock()
-	// Get a copy from source in order to prevent the caller trying to change the cached data
-	cloneExportedURLs := make([]common.URL, len(exportedURLs))
-	copy(cloneExportedURLs, exportedURLs)
-	return cloneExportedURLs
-}
-
-func filterSubscribedURLs(subscribedURL common.URL, exportedURLs []common.URL) []common.URL {
-	var filterExportedURLs []common.URL
-	for _, url := range exportedURLs {
-		if url.GetParam(constant.INTERFACE_KEY, url.Path) != subscribedURL.GetParam(constant.INTERFACE_KEY, url.Path) {
-			break
-		}
-		if url.GetParam(constant.VERSION_KEY, "") != subscribedURL.GetParam(constant.VERSION_KEY, "") {
-			break
-		}
-		if url.GetParam(constant.GROUP_KEY, "") != subscribedURL.GetParam(constant.GROUP_KEY, "") {
-			break
-		}
-		if len(subscribedURL.Protocol) != 0 {
-			if subscribedURL.Protocol != url.Protocol {
-				break
-			}
-		}
-		filterExportedURLs = append(filterExportedURLs, url)
-	}
-	return filterExportedURLs
-}
-
-type InstanceChangeNotify struct {
-	notify                   registry.NotifyListener
-	serviceDiscoveryRegistry *serviceDiscoveryRegistry
-}
-
-func (icn *InstanceChangeNotify) Notify(event observer.Event) {
-
-	if se, ok := event.(*registry.ServiceInstancesChangedEvent); ok {
-		sdr := icn.serviceDiscoveryRegistry
-		sdr.subscribe(sdr.url.SubURL, icn.notify, se.ServiceName, se.Instances)
-	}
-}
-
 var (
 	exporting = &atomic.Bool{}
 )
@@ -644,7 +330,7 @@ var (
 // TODO (move to somewhere)
 func tryInitMetadataService(url *common.URL) {
 
-	ms, err := extension.GetMetadataService(config.GetApplicationConfig().MetadataType)
+	ms, err := inmemory.GetInMemoryMetadataService()
 	if err != nil {
 		logger.Errorf("could not init metadata service", err)
 	}

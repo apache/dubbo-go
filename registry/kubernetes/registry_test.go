@@ -202,7 +202,6 @@ var clientPodListJsonData = `{
 `
 
 func getTestRegistry(t *testing.T) *kubernetesRegistry {
-
 	const (
 		podNameKey              = "HOSTNAME"
 		nameSpaceKey            = "NAMESPACE"
@@ -231,7 +230,7 @@ func getTestRegistry(t *testing.T) *kubernetesRegistry {
 	if err != nil {
 		t.Fatal(err)
 	}
-	out, err := newMockKubernetesRegistry(&regurl, pl)
+	out, err := newMockKubernetesRegistry(regurl, pl)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -240,7 +239,6 @@ func getTestRegistry(t *testing.T) *kubernetesRegistry {
 }
 
 func TestRegister(t *testing.T) {
-
 	r := getTestRegistry(t)
 	defer r.Destroy()
 
@@ -259,7 +257,6 @@ func TestRegister(t *testing.T) {
 }
 
 func TestSubscribe(t *testing.T) {
-
 	r := getTestRegistry(t)
 	defer r.Destroy()
 
@@ -268,7 +265,7 @@ func TestSubscribe(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	listener, err := r.DoSubscribe(&url)
+	listener, err := r.DoSubscribe(url)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -276,11 +273,10 @@ func TestSubscribe(t *testing.T) {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
-
 		defer wg.Done()
 		registerErr := r.Register(url)
 		if registerErr != nil {
-			t.Fatal(registerErr)
+			t.Error(registerErr)
 		}
 	}()
 
@@ -294,28 +290,25 @@ func TestSubscribe(t *testing.T) {
 }
 
 func TestConsumerDestroy(t *testing.T) {
-
 	r := getTestRegistry(t)
 
 	url, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider",
 		common.WithParamsValue(constant.CLUSTER_KEY, "mock"),
 		common.WithMethods([]string{"GetUser", "AddUser"}))
 
-	_, err := r.DoSubscribe(&url)
+	_, err := r.DoSubscribe(url)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	//listener.Close()
+	// listener.Close()
 	time.Sleep(1e9)
 	r.Destroy()
 
 	assert.Equal(t, false, r.IsAvailable())
-
 }
 
 func TestProviderDestroy(t *testing.T) {
-
 	r := getTestRegistry(t)
 
 	url, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider",
@@ -330,20 +323,18 @@ func TestProviderDestroy(t *testing.T) {
 }
 
 func TestNewRegistry(t *testing.T) {
-
 	regUrl, err := common.NewURL("registry://127.0.0.1:443",
 		common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)))
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = newKubernetesRegistry(&regUrl)
+	_, err = newKubernetesRegistry(regUrl)
 	if err == nil {
 		t.Fatal("not in cluster, should be a err")
 	}
 }
 
 func TestHandleClientRestart(t *testing.T) {
-
 	r := getTestRegistry(t)
 	r.WaitGroup().Add(1)
 	go r.HandleClientRestart()
