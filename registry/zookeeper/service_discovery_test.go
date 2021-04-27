@@ -43,7 +43,7 @@ var tc *zk.TestCluster
 
 func prepareData(t *testing.T) *zk.TestCluster {
 	var err error
-	tc, err = zk.StartTestCluster(1, nil, nil)
+	tc, err = zk.StartTestCluster(1, nil, nil, zk.WithRetryTimes(20))
 	assert.NoError(t, err)
 	assert.NotNil(t, tc.Servers[0])
 	address := "127.0.0.1:" + strconv.Itoa(tc.Servers[0].Port)
