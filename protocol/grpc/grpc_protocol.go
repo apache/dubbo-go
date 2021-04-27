@@ -113,7 +113,7 @@ func (gp *GrpcProtocol) Destroy() {
 	}
 }
 
-// GetProtocol gets gRPC protocol , will create if null.
+// GetProtocol gets gRPC protocol, will create if null.
 func GetProtocol() protocol.Protocol {
 	if grpcProtocol == nil {
 		grpcProtocol = NewGRPCProtocol()

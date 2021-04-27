@@ -15,27 +15,22 @@
  * limitations under the License.
  */
 
-syntax = "proto3";
+package mapping
 
-option java_multiple_files = true;
-option java_package = "io.grpc.examples.helloworld";
-option java_outer_classname = "HelloWorldProto";
-option objc_class_prefix = "HLW";
+import (
+	gxset "github.com/dubbogo/gost/container/set"
+)
 
-package main;
+type MockServiceNameMapping struct{}
 
-// The greeting service definition.
-service Greeter {
-  // Sends a greeting
-  rpc SayHello (HelloRequest) returns (HelloReply) {}
+func NewMockServiceNameMapping() *MockServiceNameMapping {
+	return &MockServiceNameMapping{}
 }
 
-// The request message containing the user's name.
-message HelloRequest {
-  string name = 1;
+func (m *MockServiceNameMapping) Map(string, string, string, string) error {
+	return nil
 }
 
-// The response message containing the greetings
-message HelloReply {
-  string message = 1;
+func (m *MockServiceNameMapping) Get(string, string, string, string) (*gxset.HashSet, error) {
+	panic("implement me")
 }
