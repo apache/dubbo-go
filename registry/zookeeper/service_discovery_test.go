@@ -18,9 +18,10 @@
 package zookeeper
 
 import (
+	"math/rand"
 	"strconv"
-	"sync"
 	"testing"
+	"time"
 )
 
 import (
@@ -32,7 +33,9 @@ import (
 import (
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/observer"
+	"github.com/apache/dubbo-go/common/observer/dispatcher"
 	"github.com/apache/dubbo-go/config"
+	"github.com/apache/dubbo-go/metadata/mapping"
 	"github.com/apache/dubbo-go/registry"
 	"github.com/apache/dubbo-go/registry/event"
 )
@@ -148,6 +151,19 @@ func TestAddListenerZookeeperServiceDiscovery(t *testing.T) {
 	defer func() {
 		_ = tc.Stop()
 	}()
+
+	eventDispatcher := dispatcher.NewMockEventDispatcher()
+	extension.SetEventDispatcher("mock", func() observer.EventDispatcher {
+		return eventDispatcher
+	})
+
+	extension.SetAndInitGlobalDispatcher("mock")
+	rand.Seed(time.Now().Unix())
+
+	extension.SetGlobalServiceNameMapping(func() mapping.ServiceNameMapping {
+		return mapping.NewMockServiceNameMapping()
+	})
+
 	sd, err := newZookeeperServiceDiscovery(testName)
 	assert.Nil(t, err)
 	defer func() {
@@ -164,16 +180,10 @@ func TestAddListenerZookeeperServiceDiscovery(t *testing.T) {
 		Metadata:    nil,
 	})
 	assert.Nil(t, err)
-	wg := &sync.WaitGroup{}
-	wg.Add(1)
-	tn := &testNotify{
-		wg: wg,
-		t:  t,
-	}
+
 	hs := gxset.NewSet()
 	hs.Add(testName)
 	sicl := event.NewServiceInstancesChangedListener(hs)
-	extension.SetAndInitGlobalDispatcher("direct")
 	extension.GetGlobalDispatcher().AddEventListener(sicl)
 	err = sd.AddListener(sicl)
 	assert.NoError(t, err)
@@ -188,17 +198,14 @@ func TestAddListenerZookeeperServiceDiscovery(t *testing.T) {
 		Metadata:    nil,
 	})
 	assert.NoError(t, err)
-	tn.wg.Wait()
-}
 
-type testNotify struct {
-	wg *sync.WaitGroup
-	t  *testing.T
-}
-
-func (tn *testNotify) Notify(e observer.Event) {
-	ice := e.(*registry.ServiceInstancesChangedEvent)
-	assert.Equal(tn.t, 1, len(ice.Instances))
-	assert.Equal(tn.t, "127.0.0.1:2233", ice.Instances[0].GetID())
-	tn.wg.Done()
+	timer := time.NewTimer(time.Second * 10)
+	select {
+	case <-eventDispatcher.Notify:
+		assert.NotNil(t, eventDispatcher.Event)
+		break
+	case <-timer.C:
+		assert.Fail(t, "")
+		break
+	}
 }

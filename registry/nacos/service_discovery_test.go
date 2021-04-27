@@ -86,14 +86,14 @@ func TestNacosServiceDiscovery_CRUD(t *testing.T) {
 	}
 	prepareData()
 	extension.SetEventDispatcher("mock", func() observer.EventDispatcher {
-		return &dispatcher.MockEventDispatcher{}
+		return dispatcher.NewMockEventDispatcher()
 	})
 
 	extension.SetAndInitGlobalDispatcher("mock")
 	rand.Seed(time.Now().Unix())
 
 	extension.SetGlobalServiceNameMapping(func() mapping.ServiceNameMapping {
-		return &mockServiceNameMapping{}
+		return mapping.NewMockServiceNameMapping()
 	})
 
 	serviceName := "service-name" + strconv.Itoa(rand.Intn(10000))
@@ -187,14 +187,4 @@ func prepareData() {
 		Address:    "console.nacos.io:80",
 		TimeoutStr: "10s",
 	}
-}
-
-type mockServiceNameMapping struct{}
-
-func (m *mockServiceNameMapping) Map(string, string, string, string) error {
-	return nil
-}
-
-func (m *mockServiceNameMapping) Get(string, string, string, string) (*gxset.HashSet, error) {
-	panic("implement me")
 }
