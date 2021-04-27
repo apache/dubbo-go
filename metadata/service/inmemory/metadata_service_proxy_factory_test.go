@@ -47,24 +47,22 @@ func TestCreateProxy(t *testing.T) {
 		return &mockProtocol{}
 	})
 	ins := &registry.DefaultServiceInstance{
-		Id:          "test-id",
+		ID:          "test-id",
 		ServiceName: "com.dubbo",
 		Host:        "localhost",
 		Port:        8080,
 		Enable:      true,
 		Healthy:     true,
 	}
-
 	pxy := createProxy(ins)
 	assert.Nil(t, pxy)
 
-	ins.Metadata = map[string]string{constant.METADATA_SERVICE_URL_PARAMS_PROPERTY_NAME: `{"mock":{"timeout":"10000","version":"1.0.0","dubbo":"2.0.2","release":"2.7.6","port":"20880"}}`}
+	ins.Metadata = map[string]string{constant.METADATA_SERVICE_URL_PARAMS_PROPERTY_NAME: `{"protocol":"mock","timeout":"10000","version":"1.0.0","dubbo":"2.0.2","release":"2.7.6","port":"20880"}`}
 	pxy = createProxy(ins)
 	assert.NotNil(t, pxy)
 }
 
-type mockProtocol struct {
-}
+type mockProtocol struct{}
 
 func (m mockProtocol) Export(protocol.Invoker) protocol.Exporter {
 	panic("implement me")
@@ -78,10 +76,9 @@ func (m mockProtocol) Destroy() {
 	panic("implement me")
 }
 
-type mockInvoker struct {
-}
+type mockInvoker struct{}
 
-func (m *mockInvoker) GetUrl() *common.URL {
+func (m *mockInvoker) GetURL() *common.URL {
 	panic("implement me")
 }
 
@@ -95,6 +92,6 @@ func (m *mockInvoker) Destroy() {
 
 func (m *mockInvoker) Invoke(context.Context, protocol.Invocation) protocol.Result {
 	return &protocol.RPCResult{
-		Rest: &[]interface{}{"dubbo://localhost"},
+		Rest: []string{"dubbo://localhost"},
 	}
 }

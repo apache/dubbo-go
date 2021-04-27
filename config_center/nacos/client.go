@@ -65,7 +65,7 @@ type option func(*options)
 
 type options struct {
 	nacosName string
-	//client    *NacosClient
+	// client    *NacosClient
 }
 
 // WithNacosName Set nacos name
@@ -85,7 +85,7 @@ func ValidateNacosClient(container nacosClientFacade, opts ...option) error {
 		opt(os)
 	}
 
-	url := container.GetUrl()
+	url := container.GetURL()
 	timeout, err := time.ParseDuration(url.GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT))
 	if err != nil {
 		logger.Errorf("invalid timeout config %+v,got err %+v",
@@ -94,7 +94,7 @@ func ValidateNacosClient(container nacosClientFacade, opts ...option) error {
 	}
 	nacosAddresses := strings.Split(url.Location, ",")
 	if container.NacosClient() == nil {
-		//in dubbo ,every registry only connect one node ,so this is []string{r.Address}
+		// in dubbo ,every registry only connect one node ,so this is []string{r.Address}
 		newClient, err := newNacosClient(os.nacosName, nacosAddresses, timeout, url)
 		if err != nil {
 			logger.Errorf("newNacosClient(name{%s}, nacos address{%v}, timeout{%d}) = error{%v}",

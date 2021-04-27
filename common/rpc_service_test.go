@@ -39,47 +39,52 @@ const (
 	testSuiteMethodExpectedString = "interface {}"
 )
 
-type TestService struct {
-}
+type TestService struct{}
 
 func (s *TestService) MethodOne(ctx context.Context, arg1, arg2, arg3 interface{}) error {
 	return nil
 }
+
 func (s *TestService) MethodTwo(arg1, arg2, arg3 interface{}) (interface{}, error) {
 	return struct{}{}, nil
 }
+
 func (s *TestService) MethodThree() error {
 	return nil
 }
+
 func (s *TestService) Reference() string {
 	return referenceTestPath
 }
+
 func (s *TestService) MethodMapper() map[string]string {
 	return map[string]string{
 		"MethodTwo": "methodTwo",
 	}
 }
 
-type testService struct {
-}
+type testService struct{}
 
 func (s *testService) Method1(ctx context.Context, args testService, rsp *struct{}) error {
 	return nil
 }
+
 func (s *testService) Method2(ctx context.Context, args []interface{}) (testService, error) {
 	return testService{}, nil
 }
+
 func (s *testService) Method3(ctx context.Context, args []interface{}, rsp *struct{}) {
 }
+
 func (s *testService) Method4(ctx context.Context, args []interface{}, rsp *struct{}) *testService {
 	return nil
 }
+
 func (s *testService) Reference() string {
 	return referenceTestPath
 }
 
-type TestService1 struct {
-}
+type TestService1 struct{}
 
 func (s *TestService1) Reference() string {
 	return referenceTestPathDistinct
@@ -121,7 +126,7 @@ func TestServiceMapUnRegister(t *testing.T) {
 	assert.Equal(t, 1, len(ServiceMap.GetInterface("TestService")))
 
 	err = ServiceMap.UnRegister("", "", ServiceKey("TestService", "", "v1"))
-	assert.EqualError(t, err, "protocol or serviceKey is nil")
+	assert.EqualError(t, err, "protocol or ServiceKey is nil")
 
 	err = ServiceMap.UnRegister("", "protocol", ServiceKey("TestService", "", "v1"))
 	assert.EqualError(t, err, "no services for protocol")

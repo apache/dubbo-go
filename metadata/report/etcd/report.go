@@ -23,6 +23,10 @@ import (
 )
 
 import (
+	gxetcd "github.com/dubbogo/gost/database/kv/etcd/v3"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
@@ -30,7 +34,6 @@ import (
 	"github.com/apache/dubbo-go/metadata/identifier"
 	"github.com/apache/dubbo-go/metadata/report"
 	"github.com/apache/dubbo-go/metadata/report/factory"
-	"github.com/apache/dubbo-go/remoting/etcdv3"
 )
 
 const DEFAULT_ROOT = "dubbo"
@@ -43,8 +46,20 @@ func init() {
 
 // etcdMetadataReport is the implementation of MetadataReport based etcd
 type etcdMetadataReport struct {
-	client *etcdv3.Client
+	client *gxetcd.Client
 	root   string
+}
+
+// GetAppMetadata get metadata info from etcd
+func (e *etcdMetadataReport) GetAppMetadata(metadataIdentifier *identifier.SubscriberMetadataIdentifier) (*common.MetadataInfo, error) {
+	// TODO will implement
+	panic("implement me")
+}
+
+// PublishAppMetadata publish metadata info to etcd
+func (e *etcdMetadataReport) PublishAppMetadata(metadataIdentifier *identifier.SubscriberMetadataIdentifier, info *common.MetadataInfo) error {
+	// TODO will implement
+	panic("implement me")
 }
 
 // StoreProviderMetadata will store the metadata
@@ -121,7 +136,7 @@ type etcdMetadataReportFactory struct{}
 func (e *etcdMetadataReportFactory) CreateMetadataReport(url *common.URL) report.MetadataReport {
 	timeout, _ := time.ParseDuration(url.GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT))
 	addresses := strings.Split(url.Location, ",")
-	client, err := etcdv3.NewClient(etcdv3.MetadataETCDV3Client, addresses, timeout, 1)
+	client, err := gxetcd.NewClient(gxetcd.MetadataETCDV3Client, addresses, timeout, 1)
 	if err != nil {
 		logger.Errorf("Could not create etcd metadata report. URL: %s,error:{%v}", url.String(), err)
 		return nil

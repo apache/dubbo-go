@@ -28,7 +28,6 @@ import (
 var (
 	routers               = make(map[string]func() router.PriorityRouterFactory)
 	fileRouterFactoryOnce sync.Once
-	fileRouterFactories   = make(map[string]router.FilePriorityRouterFactory)
 )
 
 // SetRouterFactory sets create router factory function with @name
@@ -47,21 +46,4 @@ func GetRouterFactory(name string) router.PriorityRouterFactory {
 // GetRouterFactories gets all create router factory function
 func GetRouterFactories() map[string]func() router.PriorityRouterFactory {
 	return routers
-}
-
-// GetFileRouterFactories gets all create file router factory instance
-func GetFileRouterFactories() map[string]router.FilePriorityRouterFactory {
-	l := len(routers)
-	if l == 0 {
-		return nil
-	}
-	fileRouterFactoryOnce.Do(func() {
-		for k := range routers {
-			factory := GetRouterFactory(k)
-			if fr, ok := factory.(router.FilePriorityRouterFactory); ok {
-				fileRouterFactories[k] = fr
-			}
-		}
-	})
-	return fileRouterFactories
 }

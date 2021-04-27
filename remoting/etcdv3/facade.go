@@ -24,6 +24,7 @@ import (
 
 import (
 	"github.com/apache/dubbo-getty"
+	gxetcd "github.com/dubbogo/gost/database/kv/etcd/v3"
 	perrors "github.com/pkg/errors"
 )
 
@@ -34,18 +35,17 @@ import (
 )
 
 type clientFacade interface {
-	Client() *Client
-	SetClient(*Client)
+	Client() *gxetcd.Client
+	SetClient(client *gxetcd.Client)
 	ClientLock() *sync.Mutex
-	WaitGroup() *sync.WaitGroup //for wait group control, etcd client listener & etcd client container
-	Done() chan struct{}        //for etcd client control
+	WaitGroup() *sync.WaitGroup // for wait group control, etcd client listener & etcd client container
+	Done() chan struct{}        // for etcd client control
 	RestartCallBack() bool
 	common.Node
 }
 
 // HandleClientRestart keeps the connection between client and server
 func HandleClientRestart(r clientFacade) {
-
 	var (
 		err       error
 		failTimes int
@@ -61,9 +61,9 @@ LOOP:
 			// re-register all services
 		case <-r.Client().Done():
 			r.ClientLock().Lock()
-			clientName := RegistryETCDV3Client
-			timeout, _ := time.ParseDuration(r.GetUrl().GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT))
-			endpoints := r.Client().endpoints
+			clientName := gxetcd.RegistryETCDV3Client
+			timeout, _ := time.ParseDuration(r.GetURL().GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT))
+			endpoints := r.Client().GetEndPoints()
 			r.Client().Close()
 			r.SetClient(nil)
 			r.ClientLock().Unlock()
@@ -75,13 +75,14 @@ LOOP:
 				case <-r.Done():
 					logger.Warnf("(ETCDV3ProviderRegistry)reconnectETCDRegistry goroutine exit now...")
 					break LOOP
-				case <-getty.GetTimeWheel().After(timeSecondDuration(failTimes * ConnDelay)): // avoid connect frequent
+				case <-getty.GetTimeWheel().After(timeSecondDuration(failTimes * gxetcd.ConnDelay)): // avoid connect frequent
 				}
 				err = ValidateClient(
 					r,
-					WithName(clientName),
-					WithEndpoints(endpoints...),
-					WithTimeout(timeout),
+					gxetcd.WithName(clientName),
+					gxetcd.WithEndpoints(endpoints...),
+					gxetcd.WithTimeout(timeout),
+					gxetcd.WithHeartbeat(1),
 				)
 				logger.Infof("ETCDV3ProviderRegistry.validateETCDV3Client(etcd Addr{%s}) = error{%#v}",
 					endpoints, perrors.WithStack(err))
@@ -89,8 +90,8 @@ LOOP:
 					break
 				}
 				failTimes++
-				if MaxFailTimes <= failTimes {
-					failTimes = MaxFailTimes
+				if gxetcd.MaxFailTimes <= failTimes {
+					failTimes = gxetcd.MaxFailTimes
 				}
 			}
 		}

@@ -25,6 +25,7 @@ import (
 
 import (
 	gxset "github.com/dubbogo/gost/container/set"
+	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -48,7 +49,7 @@ var (
 	reserveParams = []string{
 		"application", "codec", "exchanger", "serialization", "cluster", "connections", "deprecated", "group",
 		"loadbalance", "mock", "path", "timeout", "token", "version", "warmup", "weight", "timestamp", "dubbo",
-		"release", "interface",
+		"release", "interface", "registry.role",
 	}
 )
 
@@ -70,7 +71,8 @@ func init() {
 	extension.SetProtocol("registry", GetProtocol)
 }
 
-func getCacheKey(url *common.URL) string {
+func getCacheKey(invoker protocol.Invoker) string {
+	url := getProviderUrl(invoker)
 	delKeys := gxset.NewSet("dynamic", "enabled")
 	return url.CloneExceptParams(delKeys).String()
 }
@@ -131,8 +133,8 @@ func (proto *registryProtocol) GetRegistries() []registry.Registry {
 
 // Refer provider service from registry center
 func (proto *registryProtocol) Refer(url *common.URL) protocol.Invoker {
-	var registryUrl = url
-	var serviceUrl = registryUrl.SubURL
+	registryUrl := url
+	serviceUrl := registryUrl.SubURL
 	if registryUrl.Protocol == constant.REGISTRY_PROTOCOL {
 		registryUrl.Protocol = registryUrl.GetParam(constant.REGISTRY_KEY, "")
 	}
@@ -200,7 +202,7 @@ func (proto *registryProtocol) Export(invoker protocol.Invoker) protocol.Exporte
 		return nil
 	}
 
-	key := getCacheKey(providerUrl)
+	key := getCacheKey(invoker)
 	logger.Infof("The cached exporter keys is %v!", key)
 	cachedExporter, loaded := proto.bounds.Load(key)
 	if loaded {
@@ -221,15 +223,45 @@ func (proto *registryProtocol) Export(invoker protocol.Invoker) protocol.Exporte
 }
 
 func (proto *registryProtocol) reExport(invoker protocol.Invoker, newUrl *common.URL) {
-	url := getProviderUrl(invoker)
-	key := getCacheKey(url)
+	key := getCacheKey(invoker)
 	if oldExporter, loaded := proto.bounds.Load(key); loaded {
 		wrappedNewInvoker := newWrappedInvoker(invoker, newUrl)
 		oldExporter.(protocol.Exporter).Unexport()
 		proto.bounds.Delete(key)
+		// oldExporter Unexport function unRegister rpcService from the serviceMap, so need register it again as far as possible
+		if err := registerServiceMap(invoker); err != nil {
+			logger.Error(err.Error())
+		}
 		proto.Export(wrappedNewInvoker)
 		// TODO:  unregister & unsubscribe
 	}
+}
+
+func registerServiceMap(invoker protocol.Invoker) error {
+	providerUrl := getProviderUrl(invoker)
+	// the bean.name param of providerUrl is the ServiceConfig id property
+	// such as dubbo://:20000/org.apache.dubbo.UserProvider?bean.name=UserProvider&cluster=failfast...
+	id := providerUrl.GetParam(constant.BEAN_NAME_KEY, "")
+
+	serviceConfig := config.GetProviderConfig().Services[id]
+	if serviceConfig == nil {
+		s := "reExport can not get serviceConfig"
+		return perrors.New(s)
+	}
+	rpcService := config.GetProviderService(id)
+	if rpcService == nil {
+		s := "reExport can not get RPCService"
+		return perrors.New(s)
+	}
+
+	_, err := common.ServiceMap.Register(serviceConfig.InterfaceName,
+		serviceConfig.Protocol, serviceConfig.Group,
+		serviceConfig.Version, rpcService)
+	if err != nil {
+		s := "reExport can not re register ServiceMap. Error message is " + err.Error()
+		return perrors.New(s)
+	}
+	return nil
 }
 
 type overrideSubscribeListener struct {
@@ -263,9 +295,9 @@ func (nl *overrideSubscribeListener) NotifyAll(events []*registry.ServiceEvent, 
 
 func (nl *overrideSubscribeListener) doOverrideIfNecessary() {
 	providerUrl := getProviderUrl(nl.originInvoker)
-	key := getCacheKey(providerUrl)
+	key := getCacheKey(nl.originInvoker)
 	if exporter, ok := nl.protocol.bounds.Load(key); ok {
-		currentUrl := exporter.(protocol.Exporter).GetInvoker().GetUrl()
+		currentUrl := exporter.(protocol.Exporter).GetInvoker().GetURL()
 		// Compatible with the 2.6.x
 		if nl.configurator != nil {
 			nl.configurator.Configure(providerUrl)
@@ -283,7 +315,7 @@ func (nl *overrideSubscribeListener) doOverrideIfNecessary() {
 		}
 
 		if currentUrl.String() != providerUrl.String() {
-			newRegUrl := nl.originInvoker.GetUrl().Clone()
+			newRegUrl := nl.originInvoker.GetURL().Clone()
 			setProviderUrl(newRegUrl, providerUrl)
 			nl.protocol.reExport(nl.originInvoker, newRegUrl)
 		}
@@ -374,7 +406,7 @@ func (proto *registryProtocol) Destroy() {
 
 func getRegistryUrl(invoker protocol.Invoker) *common.URL {
 	// here add * for return a new url
-	url := invoker.GetUrl()
+	url := invoker.GetURL()
 	// if the protocol == registry, set protocol the registry value in url.params
 	if url.Protocol == constant.REGISTRY_PROTOCOL {
 		url.Protocol = url.GetParam(constant.REGISTRY_KEY, "")
@@ -383,7 +415,7 @@ func getRegistryUrl(invoker protocol.Invoker) *common.URL {
 }
 
 func getProviderUrl(invoker protocol.Invoker) *common.URL {
-	url := invoker.GetUrl()
+	url := invoker.GetURL()
 	// be careful params maps in url is map type
 	return url.SubURL.Clone()
 }

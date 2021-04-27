@@ -18,14 +18,25 @@
 package registry
 
 import (
+	"encoding/json"
+	"strconv"
+)
+
+import (
 	gxsort "github.com/dubbogo/gost/sort"
+)
+
+import (
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/logger"
 )
 
 // ServiceInstance is the model class of an instance of a service, which is used for service registration and discovery.
 type ServiceInstance interface {
 
-	// GetId will return this instance's id. It should be unique.
-	GetId() string
+	// GetID will return this instance's id. It should be unique.
+	GetID() string
 
 	// GetServiceName will return the serviceName
 	GetServiceName() string
@@ -44,23 +55,46 @@ type ServiceInstance interface {
 
 	// GetMetadata will return the metadata
 	GetMetadata() map[string]string
+
+	// ToURLs
+	ToURLs() []*common.URL
+
+	// GetEndPoints
+	GetEndPoints() []*Endpoint
+
+	// Copy
+	Copy(endpoint *Endpoint) ServiceInstance
+
+	// GetAddress
+	GetAddress() string
+
+	// SetServiceMetadata
+	SetServiceMetadata(info *common.MetadataInfo)
+}
+
+// nolint
+type Endpoint struct {
+	Port     int    `json:"port, omitempty"`
+	Protocol string `json:"protocol, omitempty"`
 }
 
 // DefaultServiceInstance the default implementation of ServiceInstance
 // or change the ServiceInstance to be struct???
 type DefaultServiceInstance struct {
-	Id          string
-	ServiceName string
-	Host        string
-	Port        int
-	Enable      bool
-	Healthy     bool
-	Metadata    map[string]string
+	ID              string
+	ServiceName     string
+	Host            string
+	Port            int
+	Enable          bool
+	Healthy         bool
+	Metadata        map[string]string
+	ServiceMetadata *common.MetadataInfo
+	Address         string
 }
 
-// GetId will return this instance's id. It should be unique.
-func (d *DefaultServiceInstance) GetId() string {
-	return d.Id
+// GetID will return this instance's id. It should be unique.
+func (d *DefaultServiceInstance) GetID() string {
+	return d.ID
 }
 
 // GetServiceName will return the serviceName
@@ -86,6 +120,67 @@ func (d *DefaultServiceInstance) IsEnable() bool {
 // IsHealthy will return the value represent the instance whether healthy or not
 func (d *DefaultServiceInstance) IsHealthy() bool {
 	return d.Healthy
+}
+
+// GetAddress will return the ip:Port
+func (d *DefaultServiceInstance) GetAddress() string {
+	if d.Address != "" {
+		return d.Address
+	}
+	if d.Port <= 0 {
+		d.Address = d.Host
+	} else {
+		d.Address = d.Host + ":" + strconv.Itoa(d.Port)
+	}
+	return d.Address
+}
+
+// SetServiceMetadata save metadata in instance
+func (d *DefaultServiceInstance) SetServiceMetadata(m *common.MetadataInfo) {
+	d.ServiceMetadata = m
+}
+
+// ToURLs
+func (d *DefaultServiceInstance) ToURLs() []*common.URL {
+	urls := make([]*common.URL, 0, 8)
+	for _, service := range d.ServiceMetadata.Services {
+		url := common.NewURLWithOptions(common.WithProtocol(service.Protocol),
+			common.WithIp(d.Host), common.WithPort(strconv.Itoa(d.Port)),
+			common.WithMethods(service.GetMethods()), common.WithParams(service.GetParams()))
+		urls = append(urls, url)
+	}
+	return urls
+}
+
+// GetEndPoints get end points from metadata
+func (d *DefaultServiceInstance) GetEndPoints() []*Endpoint {
+	rawEndpoints := d.Metadata[constant.SERVICE_INSTANCE_ENDPOINTS]
+	if len(rawEndpoints) == 0 {
+		return nil
+	}
+	var endpoints []*Endpoint
+	err := json.Unmarshal([]byte(rawEndpoints), &endpoints)
+	if err != nil {
+		logger.Errorf("json umarshal rawEndpoints[%s] catch error:%s", rawEndpoints, err.Error())
+		return nil
+	}
+	return endpoints
+}
+
+// Copy return a instance with different port
+func (d *DefaultServiceInstance) Copy(endpoint *Endpoint) ServiceInstance {
+	dn := &DefaultServiceInstance{
+		ID:              d.ID,
+		ServiceName:     d.ServiceName,
+		Host:            d.Host,
+		Port:            endpoint.Port,
+		Enable:          d.Enable,
+		Healthy:         d.Healthy,
+		Metadata:        d.Metadata,
+		ServiceMetadata: d.ServiceMetadata,
+	}
+	dn.ID = d.GetAddress()
+	return dn
 }
 
 // GetMetadata will return the metadata, it will never return nil

@@ -37,8 +37,9 @@ import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
-const (
-	timeInterval = 5 * time.Second
+var (
+	virtualServiceConfigByte  []byte
+	destinationRuleConfigByte []byte
 )
 
 // RouterChain Router chain
@@ -71,24 +72,10 @@ func (c *RouterChain) GetNotifyChan() chan struct{} {
 
 // Route Loop routers in RouterChain and call Route method to determine the target invokers list.
 func (c *RouterChain) Route(url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
-	cache := c.loadCache()
-	if cache == nil {
-		c.mutex.RLock()
-		defer c.mutex.RUnlock()
-		return c.invokers
-	}
-
-	bitmap := cache.bitmap
+	finalInvokers := c.invokers
 	for _, r := range c.copyRouters() {
-		bitmap = r.Route(bitmap, cache, url, invocation)
+		finalInvokers = r.Route(c.invokers, url, invocation)
 	}
-
-	indexes := bitmap.ToArray()
-	finalInvokers := make([]protocol.Invoker, len(indexes))
-	for i, index := range indexes {
-		finalInvokers[i] = cache.invokers[index]
-	}
-
 	return finalInvokers
 }
 
@@ -121,22 +108,6 @@ func (c *RouterChain) SetInvokers(invokers []protocol.Invoker) {
 	}()
 }
 
-// loop listens on events to update the address cache  when it receives notification
-// from address update,
-func (c *RouterChain) loop() {
-	ticker := time.NewTicker(timeInterval)
-	for {
-		select {
-		case <-ticker.C:
-			if protocol.GetAndRefreshState() {
-				c.buildCache()
-			}
-		case <-c.notify:
-			c.buildCache()
-		}
-	}
-}
-
 // copyRouters make a snapshot copy from RouterChain's router list.
 func (c *RouterChain) copyRouters() []router.PriorityRouter {
 	c.mutex.RLock()
@@ -158,66 +129,9 @@ func (c *RouterChain) copyInvokers() []protocol.Invoker {
 	return ret
 }
 
-// loadCache loads cache from sync.Value to guarantee the visibility
-func (c *RouterChain) loadCache() *InvokerCache {
-	v := c.cache.Load()
-	if v == nil {
-		return nil
-	}
-
-	return v.(*InvokerCache)
-}
-
-// copyInvokerIfNecessary compares chain's invokers copy and cache's invokers copy, to avoid copy as much as possible
-func (c *RouterChain) copyInvokerIfNecessary(cache *InvokerCache) []protocol.Invoker {
-	var invokers []protocol.Invoker
-	if cache != nil {
-		invokers = cache.invokers
-	}
-
-	c.mutex.RLock()
-	defer c.mutex.RUnlock()
-	if isInvokersChanged(invokers, c.invokers) {
-		invokers = c.copyInvokers()
-	}
-	return invokers
-}
-
-// buildCache builds address cache with the new invokers for all poolable routers.
-func (c *RouterChain) buildCache() {
-	origin := c.loadCache()
-	invokers := c.copyInvokerIfNecessary(origin)
-	if len(invokers) == 0 {
-		return
-	}
-
-	var (
-		mutex sync.Mutex
-		wg    sync.WaitGroup
-	)
-
-	cache := BuildCache(invokers)
-	for _, r := range c.copyRouters() {
-		if p, ok := r.(router.Poolable); ok {
-			wg.Add(1)
-			go func(p router.Poolable) {
-				defer wg.Done()
-				pool, info := poolRouter(p, origin, invokers)
-				mutex.Lock()
-				defer mutex.Unlock()
-				cache.pools[p.Name()] = pool
-				cache.metadatas[p.Name()] = info
-			}(p)
-		}
-	}
-	wg.Wait()
-
-	c.cache.Store(cache)
-}
-
-// URL Return URL in RouterChain
-func (c *RouterChain) URL() *common.URL {
-	return c.url
+func SetVSAndDRConfigByte(vs, dr []byte) {
+	virtualServiceConfigByte = vs
+	destinationRuleConfigByte = dr
 }
 
 // NewRouterChain Use url to init router chain
@@ -234,10 +148,14 @@ func NewRouterChain(url *common.URL) (*RouterChain, error) {
 	}
 
 	routers := make([]router.PriorityRouter, 0, len(routerFactories))
+
 	for key, routerFactory := range routerFactories {
-		r, err := routerFactory().NewPriorityRouter(url, chain.notify)
+		if virtualServiceConfigByte == nil || destinationRuleConfigByte == nil {
+			logger.Warnf("virtual Service Config or destinationRule Confi Byte may be empty, pls check your CONF_VIRTUAL_SERVICE_FILE_PATH and CONF_DEST_RULE_FILE_PATH env is correctly point to your yaml file\n")
+		}
+		r, err := routerFactory().NewPriorityRouter(virtualServiceConfigByte, destinationRuleConfigByte, chain.notify)
 		if r == nil || err != nil {
-			logger.Errorf("router chain build router fail! routerFactories key:%s  error:%s", key, err.Error())
+			logger.Errorf("router chain build router fail! routerFactories key:%s  error:%vv", key, err)
 			continue
 		}
 		routers = append(routers, r)
@@ -256,32 +174,7 @@ func NewRouterChain(url *common.URL) (*RouterChain, error) {
 		chain.url = url
 	}
 
-	go chain.loop()
 	return chain, nil
-}
-
-// poolRouter calls poolable router's Pool() to create new address pool and address metadata if necessary.
-// If the corresponding cache entry exists, and the poolable router answers no need to re-pool (possibly because its
-// rule doesn't change), and the address list doesn't change, then the existing data will be re-used.
-func poolRouter(p router.Poolable, origin *InvokerCache, invokers []protocol.Invoker) (router.AddrPool, router.AddrMetadata) {
-	name := p.Name()
-	if isCacheMiss(origin, name) || p.ShouldPool() || &(origin.invokers) != &invokers {
-		logger.Debugf("build address cache for router %q", name)
-		return p.Pool(invokers)
-	}
-
-	logger.Debugf("reuse existing address cache for router %q", name)
-	return origin.pools[name], origin.metadatas[name]
-}
-
-// isCacheMiss checks if the corresponding cache entry for a poolable router has already existed.
-// False returns when the cache is nil, or cache's pool is nil, or cache's invokers snapshot is nil, or the entry
-// doesn't exist.
-func isCacheMiss(cache *InvokerCache, key string) bool {
-	if cache == nil || cache.pools == nil || cache.invokers == nil || cache.pools[key] == nil {
-		return true
-	}
-	return false
 }
 
 // isInvokersChanged compares new invokers on the right changes, compared with the old invokers on the left.
@@ -292,9 +185,9 @@ func isInvokersChanged(left []protocol.Invoker, right []protocol.Invoker) bool {
 
 	for _, r := range right {
 		found := false
-		rurl := r.GetUrl()
+		rurl := r.GetURL()
 		for _, l := range left {
-			lurl := l.GetUrl()
+			lurl := l.GetURL()
 			if common.GetCompareURLEqualFunc()(lurl, rurl, constant.TIMESTAMP_KEY, constant.REMOTE_TIMESTAMP_KEY) {
 				found = true
 				break

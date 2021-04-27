@@ -153,7 +153,7 @@ func (n *nacosServiceDiscovery) GetInstances(serviceName string) []registry.Serv
 		delete(metadata, idKey)
 
 		res = append(res, &registry.DefaultServiceInstance{
-			Id:          id,
+			ID:          id,
 			ServiceName: ins.ServiceName,
 			Host:        ins.Ip,
 			Port:        int(ins.Port),
@@ -212,39 +212,46 @@ func (n *nacosServiceDiscovery) GetRequestInstances(serviceNames []string, offse
 }
 
 // AddListener will add a listener
-func (n *nacosServiceDiscovery) AddListener(listener *registry.ServiceInstancesChangedListener) error {
-	return n.namingClient.Subscribe(&vo.SubscribeParam{
-		ServiceName: listener.ServiceName,
-		SubscribeCallback: func(services []model.SubscribeService, err error) {
-			if err != nil {
-				logger.Errorf("Could not handle the subscribe notification because the err is not nil."+
-					" service name: %s, err: %v", listener.ServiceName, err)
-			}
-			instances := make([]registry.ServiceInstance, 0, len(services))
-			for _, service := range services {
-				// we won't use the nacos instance id here but use our instance id
-				metadata := service.Metadata
-				id := metadata[idKey]
+func (n *nacosServiceDiscovery) AddListener(listener registry.ServiceInstancesChangedListener) error {
+	for _, t := range listener.GetServiceNames().Values() {
+		serviceName := t.(string)
+		err := n.namingClient.Subscribe(&vo.SubscribeParam{
+			ServiceName: serviceName,
+			SubscribeCallback: func(services []model.SubscribeService, err error) {
+				if err != nil {
+					logger.Errorf("Could not handle the subscribe notification because the err is not nil."+
+						" service name: %s, err: %v", serviceName, err)
+				}
+				instances := make([]registry.ServiceInstance, 0, len(services))
+				for _, service := range services {
+					// we won't use the nacos instance id here but use our instance id
+					metadata := service.Metadata
+					id := metadata[idKey]
 
-				delete(metadata, idKey)
+					delete(metadata, idKey)
 
-				instances = append(instances, &registry.DefaultServiceInstance{
-					Id:          id,
-					ServiceName: service.ServiceName,
-					Host:        service.Ip,
-					Port:        int(service.Port),
-					Enable:      service.Enable,
-					Healthy:     true,
-					Metadata:    metadata,
-				})
-			}
+					instances = append(instances, &registry.DefaultServiceInstance{
+						ID:          id,
+						ServiceName: service.ServiceName,
+						Host:        service.Ip,
+						Port:        int(service.Port),
+						Enable:      service.Enable,
+						Healthy:     true,
+						Metadata:    metadata,
+					})
+				}
 
-			e := n.DispatchEventForInstances(listener.ServiceName, instances)
-			if e != nil {
-				logger.Errorf("Dispatching event got exception, service name: %s, err: %v", listener.ServiceName, err)
-			}
-		},
-	})
+				e := n.DispatchEventForInstances(serviceName, instances)
+				if e != nil {
+					logger.Errorf("Dispatching event got exception, service name: %s, err: %v", serviceName, err)
+				}
+			},
+		})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // DispatchEventByServiceName will dispatch the event for the service with the service name
@@ -270,7 +277,7 @@ func (n *nacosServiceDiscovery) toRegisterInstance(instance registry.ServiceInst
 	if metadata == nil {
 		metadata = make(map[string]string, 1)
 	}
-	metadata[idKey] = instance.GetId()
+	metadata[idKey] = instance.GetID()
 	return vo.RegisterInstanceParam{
 		ServiceName: instance.GetServiceName(),
 		Ip:          instance.GetHost(),
@@ -306,19 +313,11 @@ var (
 )
 
 // newNacosServiceDiscovery will create new service discovery instance
-// use double-check pattern to reduce race condition
 func newNacosServiceDiscovery(name string) (registry.ServiceDiscovery, error) {
-
-	instance, ok := instanceMap[name]
-	if ok {
-		return instance, nil
-	}
-
 	initLock.Lock()
 	defer initLock.Unlock()
 
-	// double check
-	instance, ok = instanceMap[name]
+	instance, ok := instanceMap[name]
 	if ok {
 		return instance, nil
 	}
@@ -344,10 +343,12 @@ func newNacosServiceDiscovery(name string) (registry.ServiceDiscovery, error) {
 
 	descriptor := fmt.Sprintf("nacos-service-discovery[%s]", remoteConfig.Address)
 
-	return &nacosServiceDiscovery{
+	newInstance := &nacosServiceDiscovery{
 		group:             group,
 		namingClient:      client,
 		descriptor:        descriptor,
 		registryInstances: []registry.ServiceInstance{},
-	}, nil
+	}
+	instanceMap[name] = newInstance
+	return newInstance, nil
 }

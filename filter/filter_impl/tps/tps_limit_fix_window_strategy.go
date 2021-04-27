@@ -68,7 +68,6 @@ type FixedWindowTpsLimitStrategyImpl struct {
 // IsAllowable determines if the requests over the TPS limit within the interval.
 // It is not thread-safe.
 func (impl *FixedWindowTpsLimitStrategyImpl) IsAllowable() bool {
-
 	current := time.Now().UnixNano()
 	if impl.timestamp+impl.interval < current {
 		// it's a new window

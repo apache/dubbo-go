@@ -29,9 +29,7 @@ import (
 	"github.com/apache/dubbo-go/metadata/report/factory"
 )
 
-var (
-	emptyStrSlice = make([]string, 0)
-)
+var emptyStrSlice = make([]string, 0)
 
 func init() {
 	mf := &consulMetadataReportFactory{}
@@ -44,6 +42,18 @@ func init() {
 // MetadataReport based on consul.
 type consulMetadataReport struct {
 	client *consul.Client
+}
+
+// GetAppMetadata get metadata info from consul
+func (m *consulMetadataReport) GetAppMetadata(metadataIdentifier *identifier.SubscriberMetadataIdentifier) (*common.MetadataInfo, error) {
+	// TODO will implement
+	panic("implement me")
+}
+
+// PublishAppMetadata publish metadata info from consul
+func (m *consulMetadataReport) PublishAppMetadata(metadataIdentifier *identifier.SubscriberMetadataIdentifier, info *common.MetadataInfo) error {
+	// TODO will implement
+	panic("implement me")
 }
 
 // StoreProviderMetadata stores the metadata.
@@ -111,8 +121,7 @@ func (m *consulMetadataReport) GetServiceDefinition(metadataIdentifier *identifi
 	return string(kv.Value), nil
 }
 
-type consulMetadataReportFactory struct {
-}
+type consulMetadataReportFactory struct{}
 
 // nolint
 func (mf *consulMetadataReportFactory) CreateMetadataReport(url *common.URL) report.MetadataReport {

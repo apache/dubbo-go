@@ -72,5 +72,4 @@ func TestGenericFilterInvoke(t *testing.T) {
 	})
 	assert.True(t, providerConfig.ShutdownConfig.RequestsFinished)
 	assert.Equal(t, rejectHandler, shutdownFilter.getRejectHandler())
-
 }

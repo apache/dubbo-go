@@ -32,7 +32,7 @@ import (
 )
 
 func TestMetadataService(t *testing.T) {
-	mts, _ := NewMetadataService()
+	mts, _ := GetInMemoryMetadataService()
 	serviceName := "com.ikurento.user.UserProvider"
 	group := "group1"
 	version := "0.0.1"

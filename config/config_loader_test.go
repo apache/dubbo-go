@@ -45,8 +45,10 @@ import (
 	"github.com/apache/dubbo-go/registry"
 )
 
-const mockConsumerConfigPath = "./testdata/consumer_config.yml"
-const mockProviderConfigPath = "./testdata/provider_config.yml"
+const (
+	mockConsumerConfigPath = "./testdata/consumer_config.yml"
+	mockProviderConfigPath = "./testdata/provider_config.yml"
+)
 
 func TestConfigLoader(t *testing.T) {
 	conPath, err := filepath.Abs(mockConsumerConfigPath)
@@ -84,7 +86,7 @@ func TestLoad(t *testing.T) {
 	extension.SetProxyFactory("default", proxy_factory.NewDefaultProxyFactory)
 	GetApplicationConfig().MetadataType = "mock"
 	var mm *mockMetadataService
-	extension.SetMetadataService("mock", func() (metadataService service.MetadataService, err error) {
+	extension.SetLocalMetadataService("mock", func() (metadataService service.MetadataService, err error) {
 		if mm == nil {
 			mm = &mockMetadataService{
 				exportedServiceURLs: new(sync.Map),
@@ -124,7 +126,7 @@ func TestLoadWithSingleReg(t *testing.T) {
 	extension.SetProxyFactory("default", proxy_factory.NewDefaultProxyFactory)
 	var mm *mockMetadataService
 	GetApplicationConfig().MetadataType = "mock"
-	extension.SetMetadataService("mock", func() (metadataService service.MetadataService, err error) {
+	extension.SetLocalMetadataService("mock", func() (metadataService service.MetadataService, err error) {
 		if mm == nil {
 			mm = &mockMetadataService{
 				exportedServiceURLs: new(sync.Map),
@@ -163,7 +165,7 @@ func TestWithNoRegLoad(t *testing.T) {
 	extension.SetProxyFactory("default", proxy_factory.NewDefaultProxyFactory)
 	var mm *mockMetadataService
 	GetApplicationConfig().MetadataType = "mock"
-	extension.SetMetadataService("mock", func() (metadataService service.MetadataService, err error) {
+	extension.SetLocalMetadataService("mock", func() (metadataService service.MetadataService, err error) {
 		if mm == nil {
 			mm = &mockMetadataService{
 				exportedServiceURLs: new(sync.Map),
@@ -191,6 +193,26 @@ func TestWithNoRegLoad(t *testing.T) {
 	providerConfig = nil
 }
 
+func TestSetDefaultValue(t *testing.T) {
+	proConfig := &ProviderConfig{Registries: make(map[string]*RegistryConfig), Protocols: make(map[string]*ProtocolConfig)}
+	assert.Nil(t, proConfig.ApplicationConfig)
+	setDefaultValue(proConfig)
+	assert.Equal(t, proConfig.Registries["demoZK"].Address, "127.0.0.1:2181")
+	assert.Equal(t, proConfig.Registries["demoZK"].TimeoutStr, "3s")
+	assert.Equal(t, proConfig.Registries["demoZK"].Protocol, "zookeeper")
+	assert.Equal(t, proConfig.Protocols["dubbo"].Name, "dubbo")
+	assert.Equal(t, proConfig.Protocols["dubbo"].Port, "20000")
+	assert.NotNil(t, proConfig.ApplicationConfig)
+
+	conConfig := &ConsumerConfig{Registries: make(map[string]*RegistryConfig)}
+	assert.Nil(t, conConfig.ApplicationConfig)
+	setDefaultValue(conConfig)
+	assert.Equal(t, conConfig.Registries["demoZK"].Address, "127.0.0.1:2181")
+	assert.Equal(t, conConfig.Registries["demoZK"].TimeoutStr, "3s")
+	assert.Equal(t, conConfig.Registries["demoZK"].Protocol, "zookeeper")
+	assert.NotNil(t, conConfig.ApplicationConfig)
+
+}
 func TestConfigLoaderWithConfigCenter(t *testing.T) {
 	extension.SetConfigCenterFactory("mock", func() config_center.DynamicConfigurationFactory {
 		return &config_center.MockDynamicConfigurationFactory{}
@@ -222,7 +244,6 @@ func TestConfigLoaderWithConfigCenter(t *testing.T) {
 
 	assert.Equal(t, "BDTService", consumerConfig.ApplicationConfig.Name)
 	assert.Equal(t, "127.0.0.1:2181", consumerConfig.Registries["hangzhouzk"].Address)
-
 }
 
 func TestConfigLoaderWithConfigCenterSingleRegistry(t *testing.T) {
@@ -281,7 +302,6 @@ func TestConfigLoaderWithConfigCenterSingleRegistry(t *testing.T) {
 
 	assert.Equal(t, "BDTService", consumerConfig.ApplicationConfig.Name)
 	assert.Equal(t, "mock://127.0.0.1:2182", consumerConfig.Registries[constant.DEFAULT_KEY].Address)
-
 }
 
 func TestGetBaseConfig(t *testing.T) {
@@ -301,7 +321,8 @@ func mockInitProviderWithSingleRegistry() {
 				Module:       "module",
 				Version:      "1.0.0",
 				Owner:        "dubbo",
-				Environment:  "test"},
+				Environment:  "test",
+			},
 		},
 
 		Registry: &RegistryConfig{
@@ -352,6 +373,26 @@ type mockMetadataService struct {
 	lock                *sync.RWMutex
 }
 
+func (m *mockMetadataService) GetExportedURLs(serviceInterface string, group string, version string, protocol string) ([]*common.URL, error) {
+	panic("implement me")
+}
+
+func (m *mockMetadataService) GetMetadataInfo(revision string) (*common.MetadataInfo, error) {
+	panic("implement me")
+}
+
+func (m *mockMetadataService) GetExportedServiceURLs() []*common.URL {
+	panic("implement me")
+}
+
+func (m *mockMetadataService) GetMetadataServiceURL() *common.URL {
+	panic("implement me")
+}
+
+func (m *mockMetadataService) SetMetadataServiceURL(url *common.URL) {
+	panic("implement me")
+}
+
 func (m *mockMetadataService) Reference() string {
 	panic("implement me")
 }
@@ -378,10 +419,6 @@ func (m *mockMetadataService) UnsubscribeURL(*common.URL) error {
 
 func (m *mockMetadataService) PublishServiceDefinition(*common.URL) error {
 	return nil
-}
-
-func (m *mockMetadataService) GetExportedURLs(string, string, string, string) ([]interface{}, error) {
-	return ConvertURLArrToIntfArr(m.getAllService(m.exportedServiceURLs)), nil
 }
 
 func (m *mockMetadataService) MethodMapper() map[string]string {
@@ -452,10 +489,9 @@ func (m *mockMetadataService) getAllService(services *sync.Map) []*common.URL {
 	return res
 }
 
-type mockServiceDiscoveryRegistry struct {
-}
+type mockServiceDiscoveryRegistry struct{}
 
-func (mr *mockServiceDiscoveryRegistry) GetUrl() *common.URL {
+func (mr *mockServiceDiscoveryRegistry) GetURL() *common.URL {
 	panic("implement me")
 }
 
@@ -487,8 +523,7 @@ func (s *mockServiceDiscoveryRegistry) GetServiceDiscovery() registry.ServiceDis
 	return &mockServiceDiscovery{}
 }
 
-type mockServiceDiscovery struct {
-}
+type mockServiceDiscovery struct{}
 
 func (m *mockServiceDiscovery) String() string {
 	panic("implement me")
@@ -534,7 +569,7 @@ func (m *mockServiceDiscovery) GetRequestInstances([]string, int, int) map[strin
 	panic("implement me")
 }
 
-func (m *mockServiceDiscovery) AddListener(*registry.ServiceInstancesChangedListener) error {
+func (m *mockServiceDiscovery) AddListener(registry.ServiceInstancesChangedListener) error {
 	panic("implement me")
 }
 

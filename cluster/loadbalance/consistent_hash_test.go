@@ -75,7 +75,7 @@ func (s *consistentHashSelectorSuite) TestSelectForKey() {
 	s.selector.virtualInvokers[9999945] = protocol.NewBaseInvoker(url2)
 	s.selector.keys = []uint32{99874, 9999945}
 	result := s.selector.selectForKey(9999944)
-	s.Equal(result.GetUrl().String(), url8081Short+"?")
+	s.Equal(result.GetURL().String(), url8081Short+"?")
 }
 
 func TestConsistentHashLoadBalanceSuite(t *testing.T) {
@@ -114,9 +114,9 @@ func (s *consistentHashLoadBalanceSuite) SetupTest() {
 func (s *consistentHashLoadBalanceSuite) TestSelect() {
 	args := []interface{}{"name", "password", "age"}
 	invoker := s.lb.Select(s.invokers, invocation.NewRPCInvocation("echo", args, nil))
-	s.Equal(invoker.GetUrl().Location, fmt.Sprintf("%s:%d", ip, port8080))
+	s.Equal(invoker.GetURL().Location, fmt.Sprintf("%s:%d", ip, port8080))
 
 	args = []interface{}{"ok", "abc"}
 	invoker = s.lb.Select(s.invokers, invocation.NewRPCInvocation("echo", args, nil))
-	s.Equal(invoker.GetUrl().Location, fmt.Sprintf("%s:%d", ip, port8082))
+	s.Equal(invoker.GetURL().Location, fmt.Sprintf("%s:%d", ip, port8082))
 }

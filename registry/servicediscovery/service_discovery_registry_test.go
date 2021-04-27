@@ -26,6 +26,7 @@ import (
 	"github.com/dubbogo/gost/hash/page"
 	"github.com/stretchr/testify/assert"
 )
+
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/extension"
@@ -44,7 +45,7 @@ var (
 
 func TestServiceDiscoveryRegistry_Register(t *testing.T) {
 	config.GetApplicationConfig().MetadataType = "mock"
-	extension.SetMetadataService("mock", func() (service service.MetadataService, err error) {
+	extension.SetLocalMetadataService("mock", func() (service service.MetadataService, err error) {
 		service = &mockMetadataService{}
 		return
 	})
@@ -83,8 +84,7 @@ func TestServiceDiscoveryRegistry_Register(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-type mockEventDispatcher struct {
-}
+type mockEventDispatcher struct{}
 
 func (m *mockEventDispatcher) AddEventListener(observer.EventListener) {
 }
@@ -111,8 +111,7 @@ func (m *mockEventDispatcher) RemoveAllEventListeners() {
 func (m *mockEventDispatcher) Dispatch(observer.Event) {
 }
 
-type mockServiceNameMapping struct {
-}
+type mockServiceNameMapping struct{}
 
 func (m *mockServiceNameMapping) Map(string, string, string, string) error {
 	return nil
@@ -122,8 +121,7 @@ func (m *mockServiceNameMapping) Get(string, string, string, string) (*gxset.Has
 	panic("implement me")
 }
 
-type mockServiceDiscovery struct {
-}
+type mockServiceDiscovery struct{}
 
 func (m *mockServiceDiscovery) String() string {
 	panic("implement me")
@@ -169,7 +167,7 @@ func (m *mockServiceDiscovery) GetRequestInstances([]string, int, int) map[strin
 	panic("implement me")
 }
 
-func (m *mockServiceDiscovery) AddListener(*registry.ServiceInstancesChangedListener) error {
+func (m *mockServiceDiscovery) AddListener(registry.ServiceInstancesChangedListener) error {
 	panic("implement me")
 }
 
@@ -185,7 +183,26 @@ func (m *mockServiceDiscovery) DispatchEvent(*registry.ServiceInstancesChangedEv
 	panic("implement me")
 }
 
-type mockMetadataService struct {
+type mockMetadataService struct{}
+
+func (m *mockMetadataService) GetExportedURLs(string, string, string, string) ([]*common.URL, error) {
+	panic("implement me")
+}
+
+func (m *mockMetadataService) GetMetadataInfo(revision string) (*common.MetadataInfo, error) {
+	panic("implement me")
+}
+
+func (m *mockMetadataService) GetExportedServiceURLs() []*common.URL {
+	panic("implement me")
+}
+
+func (m *mockMetadataService) GetMetadataServiceURL() *common.URL {
+	panic("implement me")
+}
+
+func (m *mockMetadataService) SetMetadataServiceURL(url *common.URL) {
+	panic("implement me")
 }
 
 func (m *mockMetadataService) Reference() string {
@@ -214,10 +231,6 @@ func (m *mockMetadataService) UnsubscribeURL(*common.URL) error {
 
 func (m *mockMetadataService) PublishServiceDefinition(*common.URL) error {
 	return nil
-}
-
-func (m *mockMetadataService) GetExportedURLs(string, string, string, string) ([]interface{}, error) {
-	panic("implement me")
 }
 
 func (m *mockMetadataService) MethodMapper() map[string]string {

@@ -56,7 +56,7 @@ func TestRestProtocolRefer(t *testing.T) {
 	invoker := proto.Refer(url)
 
 	// make sure url
-	eq := invoker.GetUrl().URLEqual(url)
+	eq := invoker.GetURL().URLEqual(url)
 	assert.True(t, eq)
 
 	// make sure invokers after 'Destroy'
@@ -104,7 +104,7 @@ func TestRestProtocolExport(t *testing.T) {
 	proxyFactory := extension.GetProxyFactory("default")
 	exporter := proto.Export(proxyFactory.GetInvoker(url))
 	// make sure url
-	eq := exporter.GetInvoker().GetUrl().URLEqual(url)
+	eq := exporter.GetInvoker().GetURL().URLEqual(url)
 	assert.True(t, eq)
 	// make sure exporterMap after 'Unexport'
 	fmt.Println(url.Path)
@@ -122,8 +122,7 @@ func TestRestProtocolExport(t *testing.T) {
 	assert.False(t, ok)
 }
 
-type UserProvider struct {
-}
+type UserProvider struct{}
 
 func (p *UserProvider) Reference() string {
 	return "com.ikurento.user.UserProvider"
@@ -131,7 +130,7 @@ func (p *UserProvider) Reference() string {
 
 func (p *UserProvider) GetUser(ctx context.Context, id int, age int32, name string, contentType string) (*User, error) {
 	return &User{
-		Id:   id,
+		ID:   id,
 		Time: nil,
 		Age:  age,
 		Name: name,
@@ -169,7 +168,7 @@ func (p *UserProvider) GetUserFive(ctx context.Context, user []interface{}) (*Us
 }
 
 type User struct {
-	Id   int
+	ID   int
 	Time *time.Time
 	Age  int32
 	Name string

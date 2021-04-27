@@ -39,10 +39,10 @@ import (
 	"github.com/apache/dubbo-go/remoting"
 )
 
-var (
-	attachmentKey = []string{constant.INTERFACE_KEY, constant.GROUP_KEY, constant.TOKEN_KEY, constant.TIMEOUT_KEY,
-		constant.VERSION_KEY}
-)
+var attachmentKey = []string{
+	constant.INTERFACE_KEY, constant.GROUP_KEY, constant.TOKEN_KEY, constant.TIMEOUT_KEY,
+	constant.VERSION_KEY,
+}
 
 // DubboInvoker is implement of protocol.Invoker. A dubboInvoker refers to one service and ip.
 type DubboInvoker struct {
@@ -120,9 +120,9 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 
 	inv := invocation.(*invocation_impl.RPCInvocation)
 	// init param
-	inv.SetAttachments(constant.PATH_KEY, di.GetUrl().GetParam(constant.INTERFACE_KEY, ""))
+	inv.SetAttachments(constant.PATH_KEY, di.GetURL().GetParam(constant.INTERFACE_KEY, ""))
 	for _, k := range attachmentKey {
-		if v := di.GetUrl().GetParam(k, ""); len(v) > 0 {
+		if v := di.GetURL().GetParam(k, ""); len(v) > 0 {
 			inv.SetAttachments(k, v)
 		}
 	}
@@ -130,7 +130,7 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 	// put the ctx into attachment
 	di.appendCtx(ctx, inv)
 
-	url := di.GetUrl()
+	url := di.GetURL()
 	// default hessian2 serialization, compatible
 	if url.GetParam(constant.SERIALIZATION_KEY, "") == "" {
 		url.SetParam(constant.SERIALIZATION_KEY, constant.HESSIAN2_SERIALIZATION)
@@ -141,7 +141,7 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 		logger.Errorf("ParseBool - error: %v", err)
 		async = false
 	}
-	//response := NewResponse(inv.Reply(), nil)
+	// response := NewResponse(inv.Reply(), nil)
 	rest := &protocol.RPCResult{}
 	timeout := di.getTimeout(inv)
 	if async {
@@ -168,7 +168,7 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 
 // get timeout including methodConfig
 func (di *DubboInvoker) getTimeout(invocation *invocation_impl.RPCInvocation) time.Duration {
-	var timeout = di.GetUrl().GetParam(strings.Join([]string{constant.METHOD_KEYS, invocation.MethodName(), constant.TIMEOUT_KEY}, "."), "")
+	timeout := di.GetURL().GetParam(strings.Join([]string{constant.METHOD_KEYS, invocation.MethodName(), constant.TIMEOUT_KEY}, "."), "")
 	if len(timeout) != 0 {
 		if t, err := time.ParseDuration(timeout); err == nil {
 			// config timeout into attachment
@@ -196,8 +196,12 @@ func (di *DubboInvoker) Destroy() {
 		di.BaseInvoker.Destroy()
 		client := di.getClient()
 		if client != nil {
+			activeNumber := client.DecreaseActiveNumber()
 			di.setClient(nil)
-			client.Close()
+			if activeNumber == 0 {
+				exchangeClientMap.Delete(di.GetURL().Location)
+				client.Close()
+			}
 		}
 	})
 }

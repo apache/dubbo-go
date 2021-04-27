@@ -54,7 +54,7 @@ func (c CaseA) JavaClassName() string {
 	return "com.test.casea"
 }
 
-//JavaClassName  java fully qualified path
+// JavaClassName  java fully qualified path
 func (c Case) JavaClassName() string {
 	return "com.test.case"
 }
@@ -199,7 +199,7 @@ func TestHessianCodec_ReadAttachments(t *testing.T) {
 	body := &DubboResponse{
 		RspObj:      &CaseB{A: "A", B: CaseA{A: "a", B: 1, C: Case{A: "c", B: 2}}},
 		Exception:   nil,
-		Attachments: map[string]interface{}{DUBBO_VERSION_KEY: "2.6.4", "att": AttachTestObject{Id: 23, Name: "haha"}},
+		Attachments: map[string]interface{}{DUBBO_VERSION_KEY: "2.6.4", "att": AttachTestObject{ID: 23, Name: "haha"}},
 	}
 	resp, err := doTestHessianEncodeHeader(t, PackageResponse, Response_OK, body)
 	assert.NoError(t, err)
@@ -217,14 +217,14 @@ func TestHessianCodec_ReadAttachments(t *testing.T) {
 	attrs, err := codecR2.ReadAttachments()
 	assert.NoError(t, err)
 	assert.Equal(t, "2.6.4", attrs[DUBBO_VERSION_KEY])
-	assert.Equal(t, AttachTestObject{Id: 23, Name: "haha"}, *(attrs["att"].(*AttachTestObject)))
-	assert.NotEqual(t, AttachTestObject{Id: 24, Name: "nohaha"}, *(attrs["att"].(*AttachTestObject)))
+	assert.Equal(t, AttachTestObject{ID: 23, Name: "haha"}, *(attrs["att"].(*AttachTestObject)))
+	assert.NotEqual(t, AttachTestObject{ID: 24, Name: "nohaha"}, *(attrs["att"].(*AttachTestObject)))
 
 	t.Log(attrs)
 }
 
 type AttachTestObject struct {
-	Id   int32
+	ID   int32
 	Name string `dubbo:"name"`
 }
 

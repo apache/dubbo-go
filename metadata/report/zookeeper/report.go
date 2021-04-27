@@ -18,23 +18,27 @@
 package zookeeper
 
 import (
+	"encoding/json"
 	"strings"
 	"time"
+)
+
+import (
+	"github.com/dubbogo/go-zookeeper/zk"
+	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
 )
 
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/metadata/identifier"
 	"github.com/apache/dubbo-go/metadata/report"
 	"github.com/apache/dubbo-go/metadata/report/factory"
-	"github.com/apache/dubbo-go/remoting/zookeeper"
 )
 
-var (
-	emptyStrSlice = make([]string, 0)
-)
+var emptyStrSlice = make([]string, 0)
 
 func init() {
 	mf := &zookeeperMetadataReportFactory{}
@@ -46,8 +50,38 @@ func init() {
 // zookeeperMetadataReport is the implementation of
 // MetadataReport based on zookeeper.
 type zookeeperMetadataReport struct {
-	client  *zookeeper.ZookeeperClient
+	client  *gxzookeeper.ZookeeperClient
 	rootDir string
+}
+
+// GetAppMetadata get metadata info from zookeeper
+func (m *zookeeperMetadataReport) GetAppMetadata(metadataIdentifier *identifier.SubscriberMetadataIdentifier) (*common.MetadataInfo, error) {
+	k := m.rootDir + metadataIdentifier.GetFilePathKey()
+	data, _, err := m.client.GetContent(k)
+	if err != nil {
+		return nil, err
+	}
+	var metadataInfo common.MetadataInfo
+	err = json.Unmarshal(data, &metadataInfo)
+	if err != nil {
+		return nil, err
+	}
+	return &metadataInfo, nil
+}
+
+// PublishAppMetadata publish metadata info to zookeeper
+func (m *zookeeperMetadataReport) PublishAppMetadata(metadataIdentifier *identifier.SubscriberMetadataIdentifier, info *common.MetadataInfo) error {
+	k := m.rootDir + metadataIdentifier.GetFilePathKey()
+	data, err := json.Marshal(info)
+	if err != nil {
+		return err
+	}
+	err = m.client.CreateWithValue(k, data)
+	if err == zk.ErrNodeExists {
+		logger.Debugf("Try to create the node data failed. In most cases, it's not a problem. ")
+		return nil
+	}
+	return err
 }
 
 // StoreProviderMetadata stores the metadata.
@@ -107,15 +141,15 @@ func (m *zookeeperMetadataReport) GetServiceDefinition(metadataIdentifier *ident
 	return string(v), err
 }
 
-type zookeeperMetadataReportFactory struct {
-}
+type zookeeperMetadataReportFactory struct{}
 
 // nolint
 func (mf *zookeeperMetadataReportFactory) CreateMetadataReport(url *common.URL) report.MetadataReport {
-	client, err := zookeeper.NewZookeeperClient(
+	client, err := gxzookeeper.NewZookeeperClient(
 		"zookeeperMetadataReport",
 		strings.Split(url.Location, ","),
-		15*time.Second,
+		false,
+		gxzookeeper.WithZkTimeOut(15*time.Second),
 	)
 	if err != nil {
 		panic(err)

@@ -42,14 +42,20 @@ func TestGetMetadataReportInstance(t *testing.T) {
 	assert.NotNil(t, rpt)
 }
 
-type mockMetadataReportFactory struct {
-}
+type mockMetadataReportFactory struct{}
 
 func (m *mockMetadataReportFactory) CreateMetadataReport(*common.URL) report.MetadataReport {
 	return &mockMetadataReport{}
 }
 
-type mockMetadataReport struct {
+type mockMetadataReport struct{}
+
+func (m mockMetadataReport) GetAppMetadata(metadataIdentifier *identifier.SubscriberMetadataIdentifier) (*common.MetadataInfo, error) {
+	panic("implement me")
+}
+
+func (m mockMetadataReport) PublishAppMetadata(metadataIdentifier *identifier.SubscriberMetadataIdentifier, info *common.MetadataInfo) error {
+	panic("implement me")
 }
 
 func (m mockMetadataReport) StoreProviderMetadata(*identifier.MetadataIdentifier, string) error {
