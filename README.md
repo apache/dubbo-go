@@ -202,7 +202,22 @@ If u want to communicate with our community, pls scan the following dubbobo Ding
 </table>
 </div>
 
-If u want to visit the wechat group, pls add my wechat AlexanderStocks.
+If u want to visit the wechat group, pls add my wechat AlexanderStocks or scan the following wechat picture.
+
+<div>
+<table>
+  <tbody>
+  <tr></tr>
+    <tr>
+      <td align="center"  valign="middle">
+          <img width="80px" height="115px" src="./doc/pic/misc/dubbogo-wechat.png">
+        </a>
+      </td>
+    </tr>
+    <tr></tr>
+  </tbody>
+</table>
+</div>
 
 We welcome the friends who can give us constructing suggestions instead of known-nothing.
 

@@ -201,7 +201,7 @@ make test
 </table>
 </div>
 
-dubbogo 社区已经开通微信公众号 "dubbogo大区"，可在微信搜索 "dubbogo大区" 或者扫描如下二维码关注，可通过公众号私信留言加入 dubbogo 微信社区。
+dubbogo 社区已经开通微信公众号，可在微信搜索 "dubbogo示土区" 或者扫描如下二维码关注，可通过公众号私信留言加入 dubbogo 微信社区。
 
 <div>
 <table>
