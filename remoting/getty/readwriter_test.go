@@ -91,8 +91,6 @@ func getServer(t *testing.T) (*Server, *common.URL) {
 		ConnectionNum:   2,
 		HeartbeatPeriod: "5s",
 		SessionTimeout:  "20s",
-		PoolTTL:         600,
-		PoolSize:        64,
 		GettySessionParam: GettySessionParam{
 			CompressEncoding: false,
 			TcpNoDelay:       true,

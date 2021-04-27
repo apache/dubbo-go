@@ -63,8 +63,6 @@ func initDubboInvokerTest() {
 		ConnectionNum:   1,
 		HeartbeatPeriod: "3s",
 		SessionTimeout:  "20s",
-		PoolTTL:         600,
-		PoolSize:        64,
 		GettySessionParam: getty.GettySessionParam{
 			CompressEncoding: false,
 			TcpNoDelay:       true,

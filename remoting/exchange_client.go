@@ -66,7 +66,7 @@ func NewExchangeClient(url *common.URL, client Client, connectTimeout time.Durat
 		address:        url.Location,
 		client:         client,
 	}
-	client.SetExchangeClient(exchangeClient)
+
 	if !lazyInit {
 		if err := exchangeClient.doInit(url); err != nil {
 			return nil
