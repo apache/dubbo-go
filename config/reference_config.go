@@ -20,7 +20,6 @@ package config
 import (
 	"context"
 	"fmt"
-	"github.com/apache/dubbo-go/protocol/protocolwrapper"
 	"net/url"
 	"strconv"
 	"time"
@@ -38,6 +37,7 @@ import (
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/proxy"
 	"github.com/apache/dubbo-go/protocol"
+	"github.com/apache/dubbo-go/protocol/protocolwrapper"
 )
 
 // ReferenceConfig is the configuration of service consumer
