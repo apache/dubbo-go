@@ -36,7 +36,7 @@ import (
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/registry"
-	"github.com/apache/dubbo-go/remoting/etcdv3"
+	retcdv3 "github.com/apache/dubbo-go/remoting/etcdv3"
 )
 
 const (
@@ -53,7 +53,7 @@ type etcdV3Registry struct {
 	cltLock        sync.Mutex
 	client         *gxetcd.Client
 	listenerLock   sync.RWMutex
-	listener       *etcdv3.EventListener
+	listener       *retcdv3.EventListener
 	dataListener   *dataListener
 	configListener *configurationListener
 }
@@ -87,7 +87,7 @@ func newETCDV3Registry(url *common.URL) (registry.Registry, error) {
 
 	r.InitBaseRegistry(url, r)
 
-	if err := etcdv3.ValidateClient(
+	if err := retcdv3.ValidateClient(
 		r,
 		gxetcd.WithName(gxetcd.RegistryETCDV3Client),
 		gxetcd.WithTimeout(timeout),
@@ -97,7 +97,7 @@ func newETCDV3Registry(url *common.URL) (registry.Registry, error) {
 	}
 	r.WaitGroup().Add(1) // etcdv3 client start successful, then wg +1
 
-	go etcdv3.HandleClientRestart(r)
+	go retcdv3.HandleClientRestart(r)
 
 	r.InitListeners()
 
@@ -106,7 +106,7 @@ func newETCDV3Registry(url *common.URL) (registry.Registry, error) {
 
 // InitListeners init listeners of etcd registry center
 func (r *etcdV3Registry) InitListeners() {
-	r.listener = etcdv3.NewEventListener(r.client)
+	r.listener = retcdv3.NewEventListener(r.client)
 	r.configListener = NewConfigurationListener(r)
 	r.dataListener = NewRegistryDataListener(r.configListener)
 }
@@ -161,7 +161,7 @@ func (r *etcdV3Registry) DoSubscribe(svc *common.URL) (registry.Listener, error)
 			return nil, perrors.New("etcd client broken")
 		}
 		r.listenerLock.Lock()
-		r.listener = etcdv3.NewEventListener(r.client) // new client & listener
+		r.listener = retcdv3.NewEventListener(r.client) // new client & listener
 		r.listenerLock.Unlock()
 	}
 
