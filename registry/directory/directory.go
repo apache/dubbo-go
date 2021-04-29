@@ -365,7 +365,7 @@ func (dir *RegistryDirectory) cacheInvoker(url *common.URL) protocol.Invoker {
 }
 
 //getReferInvoker try to get refer invoker in two minutes
-func (dir *RegistryDirectory) getReferInvoker(url *common.URL) protocol.Invoker  {
+func (dir *RegistryDirectory) getReferInvoker(url *common.URL) protocol.Invoker {
 	maxTryTimes := 120
 	for maxTryTimes > 0 {
 		maxTryTimes--
