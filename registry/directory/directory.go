@@ -22,6 +22,7 @@ import (
 	"net/url"
 	"os"
 	"sync"
+	"time"
 )
 
 import (
@@ -363,11 +364,27 @@ func (dir *RegistryDirectory) cacheInvoker(url *common.URL) protocol.Invoker {
 	return nil
 }
 
+//getReferInvoker try to get refer invoker in two minutes
+func (dir *RegistryDirectory) getReferInvoker(url *common.URL) protocol.Invoker  {
+	maxTryTimes := 120
+	for maxTryTimes > 0 {
+		maxTryTimes--
+		newInvoker := extension.GetProtocol(protocolwrapper.FILTER).Refer(url)
+		if newInvoker != nil {
+			return newInvoker
+		} else {
+			time.Sleep(1 * time.Second)
+		}
+	}
+
+	return nil
+}
+
 func (dir *RegistryDirectory) doCacheInvoker(newUrl *common.URL) (protocol.Invoker, bool) {
 	key := newUrl.GetCacheInvokerMapKey()
 	if cacheInvoker, ok := dir.cacheInvokersMap.Load(key); !ok {
 		logger.Debugf("service will be added in cache invokers: invokers url is  %s!", newUrl)
-		newInvoker := extension.GetProtocol(protocolwrapper.FILTER).Refer(newUrl)
+		newInvoker := dir.getReferInvoker(newUrl)
 		if newInvoker != nil {
 			dir.cacheInvokersMap.Store(key, newInvoker)
 		} else {
@@ -381,7 +398,7 @@ func (dir *RegistryDirectory) doCacheInvoker(newUrl *common.URL) (protocol.Invok
 		}
 
 		logger.Debugf("service will be updated in cache invokers: new invoker url is %s, old invoker url is %s", newUrl, cacheInvoker.(protocol.Invoker).GetUrl())
-		newInvoker := extension.GetProtocol(protocolwrapper.FILTER).Refer(newUrl)
+		newInvoker := dir.getReferInvoker(newUrl)
 		if newInvoker != nil {
 			dir.cacheInvokersMap.Store(key, newInvoker)
 			return cacheInvoker.(protocol.Invoker), true
