@@ -19,6 +19,7 @@ package cluster_impl
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"sync"
 	"time"
@@ -134,7 +135,7 @@ func (invoker *failbackClusterInvoker) Invoke(ctx context.Context, invocation pr
 	if err := invoker.checkInvokers(invokers, invocation); err != nil {
 		logger.Errorf("Failed to invoke the method %v in the service %v, wait for retry in background. Ignored exception: %v.\n",
 			invocation.MethodName(), invoker.GetURL().Service(), err)
-		return &protocol.RPCResult{}
+		return &protocol.RPCResult{Err: err}
 	}
 
 	// Get the service loadbalance config
@@ -160,7 +161,7 @@ func (invoker *failbackClusterInvoker) Invoke(ctx context.Context, invocation pr
 		taskLen := invoker.taskList.Len()
 		if taskLen >= invoker.failbackTasks {
 			logger.Warnf("tasklist is too full > %d.\n", taskLen)
-			return &protocol.RPCResult{}
+			return &protocol.RPCResult{Err:fmt.Errorf("tasklist is too full > %d.", taskLen)}
 		}
 
 		timerTask := newRetryTimerTask(loadBalance, invocation, invokers, ivk)
