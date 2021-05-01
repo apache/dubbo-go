@@ -90,3 +90,20 @@ func withPathSeparator(path string) string {
 	}
 	return path
 }
+
+// BaseApplicationMetadataIdentifier is the base implement of BaseApplicationMetadataIdentifier interface
+type BaseApplicationMetadataIdentifier struct {
+	Application string
+}
+
+// getIdentifierKey returns string that format is application/param
+func (madi *BaseApplicationMetadataIdentifier) getIdentifierKey(params ...string) string {
+	return madi.Application + joinParams(constant.KEY_SEPARATOR, params)
+}
+
+// getFilePathKey returns string that format is metadata/application/revision
+func (madi *BaseApplicationMetadataIdentifier) getFilePathKey(params ...string) string {
+	return constant.DEFAULT_PATH_TAG +
+		withPathSeparator(madi.Application) +
+		joinParams(constant.PATH_SEPARATOR, params)
+}

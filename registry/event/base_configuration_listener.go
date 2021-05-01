@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package registry
+package event
 
 import (
 	perrors "github.com/pkg/errors"
@@ -48,7 +48,7 @@ func (bcl *BaseConfigurationListener) InitWith(key string, listener config_cente
 
 	bcl.dynamicConfiguration = config.GetEnvInstance().GetDynamicConfiguration()
 	if bcl.dynamicConfiguration == nil {
-		//set configurators to empty
+		// set configurators to empty
 		bcl.configurators = []config_center.Configurator{}
 		return
 	}
@@ -56,7 +56,7 @@ func (bcl *BaseConfigurationListener) InitWith(key string, listener config_cente
 	bcl.dynamicConfiguration.AddListener(key, listener)
 	if rawConfig, err := bcl.dynamicConfiguration.GetInternalProperty(key,
 		config_center.WithGroup(constant.DUBBO)); err != nil {
-		//set configurators to empty
+		// set configurators to empty
 		bcl.configurators = []config_center.Configurator{}
 		return
 	} else if len(rawConfig) > 0 {
@@ -68,7 +68,7 @@ func (bcl *BaseConfigurationListener) InitWith(key string, listener config_cente
 
 // Process the notification event once there's any change happens on the config.
 func (bcl *BaseConfigurationListener) Process(event *config_center.ConfigChangeEvent) {
-	logger.Debugf("Notification of overriding rule, change type is: %v , raw config content is:%v", event.ConfigType, event.Value)
+	logger.Infof("Notification of overriding rule, change type is: %v , raw config content is:%v", event.ConfigType, event.Value)
 	if event.ConfigType == remoting.EventTypeDel {
 		bcl.configurators = nil
 	} else {

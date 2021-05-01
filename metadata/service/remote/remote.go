@@ -15,37 +15,19 @@
  * limitations under the License.
  */
 
-package getty
+package remote
 
 import (
-	"testing"
-	"time"
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/registry"
 )
 
-import (
-	"github.com/stretchr/testify/assert"
-)
-
-func TestGetConnFromPool(t *testing.T) {
-	var rpcClient Client
-
-	clientPoll := newGettyRPCClientConnPool(&rpcClient, 1, time.Duration(5*time.Second))
-
-	var conn1 gettyRPCClient
-	conn1.active = time.Now().Unix()
-	clientPoll.put(&conn1)
-	assert.Equal(t, 1, len(clientPoll.conns))
-
-	var conn2 gettyRPCClient
-	conn2.active = time.Now().Unix()
-	clientPoll.put(&conn2)
-	assert.Equal(t, 1, len(clientPoll.conns))
-	conn, err := clientPoll.get()
-	assert.Nil(t, err)
-	assert.Equal(t, &conn1, conn)
-	time.Sleep(6 * time.Second)
-	conn, err = clientPoll.get()
-	assert.Nil(t, conn)
-	assert.Nil(t, err)
-	assert.Equal(t, 0, len(clientPoll.conns))
+// RemoteMetadataService for save and get metadata
+type RemoteMetadataService interface {
+	// PublishMetadata publish the medata info of service from report
+	PublishMetadata(service string)
+	// GetMetadata get the medata info of service from report
+	GetMetadata(instance registry.ServiceInstance) (*common.MetadataInfo, error)
+	// PublishServiceDefinition will call remote metadata's StoreProviderMetadata to store url info and service definition
+	PublishServiceDefinition(url *common.URL) error
 }

@@ -202,7 +202,22 @@ If u want to communicate with our community, pls scan the following dubbobo Ding
 </table>
 </div>
 
-If u want to visit the wechat group, pls add my wechat AlexanderStocks.
+If u want to visit the wechat group, pls add my wechat AlexanderStocks or scan the following wechat picture.
+
+<div>
+<table>
+  <tbody>
+  <tr></tr>
+    <tr>
+      <td align="center"  valign="middle">
+          <img width="80px" height="115px" src="./doc/pic/misc/dubbogo-wechat.png">
+        </a>
+      </td>
+    </tr>
+    <tr></tr>
+  </tbody>
+</table>
+</div>
 
 We welcome the friends who can give us constructing suggestions instead of known-nothing.
 
@@ -286,6 +301,11 @@ If you are using [apache/dubbo-go](https://github.com/apache/dubbo-go) and think
       <td align="center"  valign="middle">
         <a href="http://www.dmall.com" target="_blank">
           <img width="222px"  src="https://mosn.io/images/community/duodian.png">
+        </a>
+      </td>
+      <td align="center"  valign="middle">
+        <a href="http://www.ruubypay.com" target="_blank">
+           <img width="222px"  src="http://website.ruubypay.com/wifi/image/line5.png">
         </a>
       </td>
     </tr>

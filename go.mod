@@ -6,7 +6,7 @@ require (
 	cloud.google.com/go v0.50.0 // indirect
 	github.com/Microsoft/go-winio v0.4.15-0.20190919025122-fc70bd9a86b5 // indirect
 	github.com/NYTimes/gziphandler v1.1.1 // indirect
-	github.com/RoaringBitmap/roaring v0.5.5
+	github.com/RoaringBitmap/roaring v0.6.0
 	github.com/Workiva/go-datastructures v1.0.52
 	github.com/afex/hystrix-go v0.0.0-20180502004556-fa1af6a1f4f5
 	github.com/alibaba/sentinel-golang v1.0.2
@@ -16,8 +16,8 @@ require (
 	github.com/creasty/defaults v1.5.1
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/dubbogo/go-zookeeper v1.0.3
-	github.com/dubbogo/gost v1.11.3
-	github.com/dubbogo/triple v0.1.0
+	github.com/dubbogo/gost v1.11.7
+	github.com/dubbogo/triple v0.1.3
 	github.com/elazarl/go-bindata-assetfs v1.0.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.4.0
 	github.com/frankban/quicktest v1.4.1 // indirect

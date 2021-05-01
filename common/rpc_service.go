@@ -236,7 +236,7 @@ func (sm *serviceMap) Register(interfaceName, protocol, group, version string, r
 // UnRegister cancels a service by @interfaceName, @protocol and @serviceId
 func (sm *serviceMap) UnRegister(interfaceName, protocol, serviceKey string) error {
 	if protocol == "" || serviceKey == "" {
-		return perrors.New("protocol or serviceKey is nil")
+		return perrors.New("protocol or ServiceKey is nil")
 	}
 
 	var (
