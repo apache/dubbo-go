@@ -159,6 +159,7 @@ github.com/dubbogo/triple v0.0.0-20210403061850-372f2dc47e02/go.mod h1:ArB/FJCvy
 github.com/dubbogo/triple v0.1.0/go.mod h1:ArB/FJCvy6DQXs8tW6LmNRtLaZuncGmDHqD/1JOAwsU=
 github.com/dubbogo/triple v0.1.2/go.mod h1:duJFWIYOE+Ajxxvk+AOBpEBePFNnviJ52fveZ3vYA04=
 github.com/dubbogo/triple v0.1.3/go.mod h1:duJFWIYOE+Ajxxvk+AOBpEBePFNnviJ52fveZ3vYA04=
+github.com/dubbogo/triple v1.0.0/go.mod h1:duJFWIYOE+Ajxxvk+AOBpEBePFNnviJ52fveZ3vYA04=
 github.com/dubbogo/v3router v0.0.0-20210403094230-574be83d8d6d/go.mod h1:prAeY9nOJfo09GBDh5DMV4khJhQOhy5JnLdMCzVk18c=
 github.com/dubbogo/v3router v0.1.0/go.mod h1:lJ2qS8FLme8RXE8hq4kKdh/6aRi2sRq5MilrITnNxcE=
 github.com/dustin/go-humanize v0.0.0-20171111073723-bb3d318650d4/go.mod h1:HtrtbFcZ19U5GC7JDqmcUSB87Iq5E25KnS6fMYU6eOk=
