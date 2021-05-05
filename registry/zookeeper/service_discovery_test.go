@@ -197,6 +197,7 @@ func TestAddListenerZookeeperServiceDiscovery(t *testing.T) {
 	hs.Add(testName)
 
 	sicl := event.NewServiceInstancesChangedListener(hs)
+	sicl.AddListenerAndNotify(testName, tn)
 	extension.SetAndInitGlobalDispatcher("direct")
 	extension.GetGlobalDispatcher().AddEventListener(sicl)
 	err = sd.AddListener(sicl)
@@ -222,11 +223,12 @@ type testNotify struct {
 	t  *testing.T
 }
 
-func (tn *testNotify) Notify(e observer.Event) {
-	ice := e.(*registry.ServiceInstancesChangedEvent)
-	assert.Equal(tn.t, 1, len(ice.Instances))
-	assert.Equal(tn.t, "127.0.0.1:2233", ice.Instances[0].GetID())
+func (tn *testNotify) Notify(e *registry.ServiceEvent) {
+	assert.Equal(tn.t, "2233", e.Service.Port)
 	tn.wg.Done()
+}
+func (tn *testNotify) NotifyAll([]*registry.ServiceEvent, func()) {
+
 }
 
 type mockServiceNameMapping struct{}
@@ -268,8 +270,13 @@ func (m *mockInvoker) Destroy() {
 }
 
 func (m *mockInvoker) Invoke(context.Context, protocol.Invocation) protocol.Result {
-	// for getMetadataInfo
+	// for getMetadataInfo and ServiceInstancesChangedListenerImpl onEvent
+	serviceInfo := &common.ServiceInfo{ServiceKey: "test", MatchKey: "test"}
+	services := make(map[string]*common.ServiceInfo)
+	services["test"] = serviceInfo
 	return &protocol.RPCResult{
-		Rest: &common.MetadataInfo{},
+		Rest: &common.MetadataInfo{
+			Services: services,
+		},
 	}
 }
