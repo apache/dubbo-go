@@ -219,5 +219,5 @@ func (m *mockServiceNameMapping) Map(string, string, string, string) error {
 }
 
 func (m *mockServiceNameMapping) Get(string, string, string, string) (*gxset.HashSet, error) {
-	panic("implement me")
+	return gxset.NewSet(config.GetApplicationConfig().Name), nil
 }
