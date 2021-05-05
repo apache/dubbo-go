@@ -16,7 +16,7 @@ require (
 	github.com/creasty/defaults v1.5.1
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/dubbogo/go-zookeeper v1.0.3
-	github.com/dubbogo/gost v1.11.7
+	github.com/dubbogo/gost v1.11.8
 	github.com/dubbogo/triple v0.1.3
 	github.com/elazarl/go-bindata-assetfs v1.0.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.4.0
@@ -51,6 +51,7 @@ require (
 	github.com/stretchr/objx v0.2.0 // indirect
 	github.com/stretchr/testify v1.7.0
 	github.com/zouyx/agollo/v3 v3.4.5
+	go.etcd.io/etcd v0.0.0-20200402134248-51bdeb39e698
 	go.uber.org/atomic v1.7.0
 	go.uber.org/zap v1.16.0
 	google.golang.org/grpc v1.33.1
