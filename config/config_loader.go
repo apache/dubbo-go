@@ -109,7 +109,7 @@ func setDefaultValue(target interface{}) {
 		if len(p.Protocols) == 0 {
 			p.Protocols[constant.DEFAULT_PROTOCOL] = &ProtocolConfig{
 				Name: constant.DEFAULT_PROTOCOL,
-				Port: string(constant.DEFAULT_PORT),
+				Port: strconv.Itoa(constant.DEFAULT_PORT),
 			}
 		}
 		if p.ApplicationConfig == nil {
