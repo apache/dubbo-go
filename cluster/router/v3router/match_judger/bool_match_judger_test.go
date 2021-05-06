@@ -22,8 +22,11 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/config"
 	"github.com/stretchr/testify/assert"
+)
+
+import (
+	"github.com/apache/dubbo-go/config"
 )
 
 func TestBoolMatchJudger(t *testing.T) {

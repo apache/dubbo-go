@@ -18,11 +18,8 @@
 package match_judger
 
 import (
-	"github.com/apache/dubbo-go/protocol"
-)
-
-import (
 	"github.com/apache/dubbo-go/config"
+	"github.com/apache/dubbo-go/protocol"
 )
 
 // nolint
