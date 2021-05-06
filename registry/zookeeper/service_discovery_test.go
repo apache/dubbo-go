@@ -18,8 +18,7 @@
 package zookeeper
 
 import (
-	"github.com/apache/dubbo-go/registry/event"
-	gxset "github.com/dubbogo/gost/container/set"
+	"context"
 	"strconv"
 	"sync"
 	"testing"
@@ -27,14 +26,21 @@ import (
 
 import (
 	"github.com/dubbogo/go-zookeeper/zk"
+	gxset "github.com/dubbogo/gost/container/set"
 	"github.com/stretchr/testify/assert"
 )
 
 import (
+	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/observer"
+	"github.com/apache/dubbo-go/common/observer/dispatcher"
 	"github.com/apache/dubbo-go/config"
+	"github.com/apache/dubbo-go/metadata/mapping"
+	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/registry"
+	"github.com/apache/dubbo-go/registry/event"
 )
 
 var testName = "test"
@@ -80,22 +86,34 @@ func TestNewZookeeperServiceDiscovery(t *testing.T) {
 
 func TestCURDZookeeperServiceDiscovery(t *testing.T) {
 	prepareData(t)
+	extension.SetEventDispatcher("mock", func() observer.EventDispatcher {
+		return &dispatcher.MockEventDispatcher{}
+	})
+	extension.SetGlobalServiceNameMapping(func() mapping.ServiceNameMapping {
+		return &mockServiceNameMapping{}
+	})
+
+	extension.SetProtocol("mock", func() protocol.Protocol {
+		return &mockProtocol{}
+	})
+
 	sd, err := newZookeeperServiceDiscovery(testName)
 	assert.Nil(t, err)
 	defer func() {
 		_ = sd.Destroy()
 	}()
-	md := make(map[string]string)
-	md["t1"] = "test1"
-	err = sd.Register(&registry.DefaultServiceInstance{
+	ins := &registry.DefaultServiceInstance{
 		ID:          "testID",
 		ServiceName: testName,
 		Host:        "127.0.0.1",
 		Port:        2233,
 		Enable:      true,
 		Healthy:     true,
-		Metadata:    md,
-	})
+		Metadata:    nil,
+	}
+	ins.Metadata = map[string]string{"t1": "test1", constant.METADATA_SERVICE_URL_PARAMS_PROPERTY_NAME: `{"protocol":"mock","timeout":"10000","version":"1.0.0","dubbo":"2.0.2","release":"2.7.6","port":"2233"}`}
+	err = sd.Register(ins)
+
 	assert.Nil(t, err)
 
 	testsPager := sd.GetHealthyInstancesByPage(testName, 0, 1, true)
@@ -105,16 +123,18 @@ func TestCURDZookeeperServiceDiscovery(t *testing.T) {
 	assert.Equal(t, "127.0.0.1:2233", test.GetID())
 	assert.Equal(t, "test1", test.GetMetadata()["t1"])
 
-	md["t1"] = "test12"
-	err = sd.Update(&registry.DefaultServiceInstance{
+	ins = &registry.DefaultServiceInstance{
 		ID:          "testID",
 		ServiceName: testName,
 		Host:        "127.0.0.1",
 		Port:        2233,
 		Enable:      true,
 		Healthy:     true,
-		Metadata:    md,
-	})
+	}
+	ins.Metadata = map[string]string{"t1": "test12", constant.METADATA_SERVICE_URL_PARAMS_PROPERTY_NAME: `{"protocol":"mock","timeout":"10000","version":"1.0.0","dubbo":"2.0.2","release":"2.7.6","port":"2233"}`}
+
+	err = sd.Update(ins)
+
 	assert.Nil(t, err)
 
 	testsPager = sd.GetInstancesByPage(testName, 0, 1)
@@ -154,7 +174,7 @@ func TestAddListenerZookeeperServiceDiscovery(t *testing.T) {
 		_ = sd.Destroy()
 	}()
 
-	err = sd.Register(&registry.DefaultServiceInstance{
+	ins := &registry.DefaultServiceInstance{
 		ID:          "testID",
 		ServiceName: testName,
 		Host:        "127.0.0.1",
@@ -162,7 +182,10 @@ func TestAddListenerZookeeperServiceDiscovery(t *testing.T) {
 		Enable:      true,
 		Healthy:     true,
 		Metadata:    nil,
-	})
+	}
+	ins.Metadata = map[string]string{"t1": "test12", constant.METADATA_SERVICE_URL_PARAMS_PROPERTY_NAME: `{"protocol":"mock","timeout":"10000","version":"1.0.0","dubbo":"2.0.2","release":"2.7.6","port":"2233"}`}
+	err = sd.Register(ins)
+
 	assert.Nil(t, err)
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
@@ -172,13 +195,15 @@ func TestAddListenerZookeeperServiceDiscovery(t *testing.T) {
 	}
 	hs := gxset.NewSet()
 	hs.Add(testName)
+
 	sicl := event.NewServiceInstancesChangedListener(hs)
+	sicl.AddListenerAndNotify(testName, tn)
 	extension.SetAndInitGlobalDispatcher("direct")
 	extension.GetGlobalDispatcher().AddEventListener(sicl)
 	err = sd.AddListener(sicl)
 	assert.NoError(t, err)
 
-	err = sd.Update(&registry.DefaultServiceInstance{
+	ins = &registry.DefaultServiceInstance{
 		ID:          "testID",
 		ServiceName: testName,
 		Host:        "127.0.0.1",
@@ -186,7 +211,9 @@ func TestAddListenerZookeeperServiceDiscovery(t *testing.T) {
 		Enable:      true,
 		Healthy:     true,
 		Metadata:    nil,
-	})
+	}
+	ins.Metadata = map[string]string{"t1": "test12", constant.METADATA_SERVICE_URL_PARAMS_PROPERTY_NAME: `{"protocol":"mock","timeout":"10000","version":"1.0.0","dubbo":"2.0.2","release":"2.7.6","port":"2233"}`}
+	err = sd.Update(ins)
 	assert.NoError(t, err)
 	tn.wg.Wait()
 }
@@ -196,9 +223,60 @@ type testNotify struct {
 	t  *testing.T
 }
 
-func (tn *testNotify) Notify(e observer.Event) {
-	ice := e.(*registry.ServiceInstancesChangedEvent)
-	assert.Equal(tn.t, 1, len(ice.Instances))
-	assert.Equal(tn.t, "127.0.0.1:2233", ice.Instances[0].GetID())
+func (tn *testNotify) Notify(e *registry.ServiceEvent) {
+	assert.Equal(tn.t, "2233", e.Service.Port)
 	tn.wg.Done()
+}
+func (tn *testNotify) NotifyAll([]*registry.ServiceEvent, func()) {
+
+}
+
+type mockServiceNameMapping struct{}
+
+func (m *mockServiceNameMapping) Map(string, string, string, string) error {
+	return nil
+}
+
+func (m *mockServiceNameMapping) Get(string, string, string, string) (*gxset.HashSet, error) {
+	return gxset.NewSet(config.GetApplicationConfig().Name), nil
+}
+
+type mockProtocol struct{}
+
+func (m mockProtocol) Export(protocol.Invoker) protocol.Exporter {
+	panic("implement me")
+}
+
+func (m mockProtocol) Refer(*common.URL) protocol.Invoker {
+	return &mockInvoker{}
+}
+
+func (m mockProtocol) Destroy() {
+	panic("implement me")
+}
+
+type mockInvoker struct{}
+
+func (m *mockInvoker) GetURL() *common.URL {
+	panic("implement me")
+}
+
+func (m *mockInvoker) IsAvailable() bool {
+	panic("implement me")
+}
+
+func (m *mockInvoker) Destroy() {
+	panic("implement me")
+}
+
+func (m *mockInvoker) Invoke(context.Context, protocol.Invocation) protocol.Result {
+	// for getMetadataInfo and ServiceInstancesChangedListenerImpl onEvent
+	serviceInfo := &common.ServiceInfo{ServiceKey: "test", MatchKey: "test"}
+	services := make(map[string]*common.ServiceInfo)
+	services["test"] = serviceInfo
+	return &protocol.RPCResult{
+		Rest: &common.MetadataInfo{
+			Services: services,
+		},
+	}
 }
