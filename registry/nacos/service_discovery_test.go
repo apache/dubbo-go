@@ -35,6 +35,7 @@ import (
 	"github.com/apache/dubbo-go/common/observer"
 	"github.com/apache/dubbo-go/common/observer/dispatcher"
 	"github.com/apache/dubbo-go/config"
+	"github.com/apache/dubbo-go/metadata/mapping"
 	"github.com/apache/dubbo-go/registry"
 	"github.com/apache/dubbo-go/registry/event"
 )
@@ -69,16 +70,6 @@ func Test_newNacosServiceDiscovery(t *testing.T) {
 	assert.NotNil(t, res)
 }
 
-func TestNacosServiceDiscovery_Destroy(t *testing.T) {
-	prepareData()
-	serviceDiscovery, err := extension.GetServiceDiscovery(constant.NACOS_KEY, testName)
-	assert.Nil(t, err)
-	assert.NotNil(t, serviceDiscovery)
-	err = serviceDiscovery.Destroy()
-	assert.Nil(t, err)
-	assert.Nil(t, serviceDiscovery.(*nacosServiceDiscovery).namingClient)
-}
-
 func TestNacosServiceDiscovery_CRUD(t *testing.T) {
 	if !checkNacosServerAlive() {
 		return
@@ -86,6 +77,10 @@ func TestNacosServiceDiscovery_CRUD(t *testing.T) {
 	prepareData()
 	extension.SetEventDispatcher("mock", func() observer.EventDispatcher {
 		return &dispatcher.MockEventDispatcher{}
+	})
+
+	extension.SetGlobalServiceNameMapping(func() mapping.ServiceNameMapping {
+		return &mockServiceNameMapping{}
 	})
 
 	extension.SetAndInitGlobalDispatcher("mock")
@@ -171,6 +166,16 @@ func TestNacosServiceDiscovery_GetDefaultPageSize(t *testing.T) {
 	assert.Equal(t, registry.DefaultPageSize, serviceDiscovery.GetDefaultPageSize())
 }
 
+func TestNacosServiceDiscovery_Destroy(t *testing.T) {
+	prepareData()
+	serviceDiscovery, err := extension.GetServiceDiscovery(constant.NACOS_KEY, testName)
+	assert.Nil(t, err)
+	assert.NotNil(t, serviceDiscovery)
+	err = serviceDiscovery.Destroy()
+	assert.Nil(t, err)
+	assert.Nil(t, serviceDiscovery.(*nacosServiceDiscovery).namingClient)
+}
+
 func prepareData() {
 	config.GetBaseConfig().ServiceDiscoveries[testName] = &config.ServiceDiscoveryConfig{
 		Protocol:  "nacos",
@@ -181,4 +186,14 @@ func prepareData() {
 		Address:    "console.nacos.io:80",
 		TimeoutStr: "10s",
 	}
+}
+
+type mockServiceNameMapping struct{}
+
+func (m *mockServiceNameMapping) Map(string, string, string, string) error {
+	return nil
+}
+
+func (m *mockServiceNameMapping) Get(string, string, string, string) (*gxset.HashSet, error) {
+	panic("implement me")
 }
