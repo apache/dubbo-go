@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package match_judger
+package judger
 
 import (
 	"github.com/apache/dubbo-go/config"

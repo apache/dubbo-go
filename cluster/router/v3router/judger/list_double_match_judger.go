@@ -15,33 +15,30 @@
  * limitations under the License.
  */
 
-package match_judger
-
-import (
-	"testing"
-)
-
-import (
-	"github.com/stretchr/testify/assert"
-)
+package judger
 
 import (
 	"github.com/apache/dubbo-go/config"
 )
 
-func TestDoubleRangeMatchJudger(t *testing.T) {
-	assert.True(t, newDoubleRangeMatchJudger(&config.DoubleRangeMatch{
-		Start: 1.0,
-		End:   1.5,
-	}).Judge(1.3))
+// nolint
+type ListDoubleMatchJudger struct {
+	config.ListDoubleMatch
+}
 
-	assert.False(t, newDoubleRangeMatchJudger(&config.DoubleRangeMatch{
-		Start: 1.0,
-		End:   1.5,
-	}).Judge(1.9))
+// nolint
+func (lsmj *ListDoubleMatchJudger) Judge(input float64) bool {
+	for _, v := range lsmj.Oneof {
+		if newDoubleMatchJudger(v).Judge(input) {
+			return true
+		}
+	}
+	return false
+}
 
-	assert.False(t, newDoubleRangeMatchJudger(&config.DoubleRangeMatch{
-		Start: 1.0,
-		End:   1.5,
-	}).Judge(0.9))
+// nolint
+func newListDoubleMatchJudger(matchConf *config.ListDoubleMatch) *ListDoubleMatchJudger {
+	return &ListDoubleMatchJudger{
+		ListDoubleMatch: *matchConf,
+	}
 }

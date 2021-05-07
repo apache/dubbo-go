@@ -15,47 +15,18 @@
  * limitations under the License.
  */
 
-package match_judger
+package judger
 
 import (
-	"testing"
+	"github.com/apache/dubbo-go/common"
 )
 
-import (
-	"github.com/stretchr/testify/assert"
-)
-
-import (
-	"github.com/apache/dubbo-go/config"
-)
-
-func TestDoubleMatchJudger(t *testing.T) {
-	assert.True(t, newDoubleMatchJudger(&config.DoubleMatch{
-		Exact: 3.14159,
-	}).Judge(3.14159))
-
-	assert.False(t, newDoubleMatchJudger(&config.DoubleMatch{
-		Exact: 3.14159,
-	}).Judge(3.14155927))
-
-	assert.True(t, newDoubleMatchJudger(&config.DoubleMatch{
-		Range: &config.DoubleRangeMatch{
-			Start: 1.0,
-			End:   1.5,
-		},
-	}).Judge(1.3))
-
-	assert.False(t, newDoubleMatchJudger(&config.DoubleMatch{
-		Range: &config.DoubleRangeMatch{
-			Start: 1.0,
-			End:   1.5,
-		},
-	}).Judge(1.9))
-
-	assert.False(t, newDoubleMatchJudger(&config.DoubleMatch{
-		Range: &config.DoubleRangeMatch{
-			Start: 1.0,
-			End:   1.5,
-		},
-	}).Judge(0.9))
+// nolint
+func JudgeUrlLabel(url *common.URL, labels map[string]string) bool {
+	for k, v := range labels {
+		if url.GetParam(k, "") != v {
+			return false
+		}
+	}
+	return true
 }

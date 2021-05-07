@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package match_judger
+package judger
 
 import (
 	"testing"
@@ -29,28 +29,33 @@ import (
 	"github.com/apache/dubbo-go/config"
 )
 
-func TestNewStringMatchJudger(t *testing.T) {
-	assert.True(t, NewStringMatchJudger(&config.StringMatch{
-		Exact: "abc",
-	}).Judge("abc"))
+func TestDoubleMatchJudger(t *testing.T) {
+	assert.True(t, newDoubleMatchJudger(&config.DoubleMatch{
+		Exact: 3.14159,
+	}).Judge(3.14159))
 
-	assert.False(t, NewStringMatchJudger(&config.StringMatch{
-		Exact: "abcd",
-	}).Judge("abc"))
+	assert.False(t, newDoubleMatchJudger(&config.DoubleMatch{
+		Exact: 3.14159,
+	}).Judge(3.14155927))
 
-	assert.True(t, NewStringMatchJudger(&config.StringMatch{
-		Prefix: "abc",
-	}).Judge("abcd"))
+	assert.True(t, newDoubleMatchJudger(&config.DoubleMatch{
+		Range: &config.DoubleRangeMatch{
+			Start: 1.0,
+			End:   1.5,
+		},
+	}).Judge(1.3))
 
-	assert.False(t, NewStringMatchJudger(&config.StringMatch{
-		Exact: "abcd",
-	}).Judge("abdc"))
+	assert.False(t, newDoubleMatchJudger(&config.DoubleMatch{
+		Range: &config.DoubleRangeMatch{
+			Start: 1.0,
+			End:   1.5,
+		},
+	}).Judge(1.9))
 
-	assert.True(t, NewStringMatchJudger(&config.StringMatch{
-		Empty: "true",
-	}).Judge(""))
-
-	assert.False(t, NewStringMatchJudger(&config.StringMatch{
-		NoEmpty: "true",
-	}).Judge(""))
+	assert.False(t, newDoubleMatchJudger(&config.DoubleMatch{
+		Range: &config.DoubleRangeMatch{
+			Start: 1.0,
+			End:   1.5,
+		},
+	}).Judge(0.9))
 }

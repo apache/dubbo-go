@@ -15,34 +15,23 @@
  * limitations under the License.
  */
 
-package match_judger
+package judger
 
-import (
-	"testing"
-)
+import "github.com/apache/dubbo-go/config"
 
-import (
-	"github.com/stretchr/testify/assert"
-)
+// nolint
+type BoolMatchJudger struct {
+	config.BoolMatch
+}
 
-import (
-	"github.com/apache/dubbo-go/config"
-)
+// nolint
+func (lsmj *BoolMatchJudger) Judge(input bool) bool {
+	return input == lsmj.Exact
+}
 
-func TestBoolMatchJudger(t *testing.T) {
-	assert.True(t, newBoolMatchJudger(&config.BoolMatch{
-		Exact: true,
-	}).Judge(true))
-
-	assert.True(t, newBoolMatchJudger(&config.BoolMatch{
-		Exact: false,
-	}).Judge(false))
-
-	assert.False(t, newBoolMatchJudger(&config.BoolMatch{
-		Exact: true,
-	}).Judge(false))
-
-	assert.False(t, newBoolMatchJudger(&config.BoolMatch{
-		Exact: false,
-	}).Judge(true))
+// nolint
+func newBoolMatchJudger(matchConf *config.BoolMatch) *BoolMatchJudger {
+	return &BoolMatchJudger{
+		BoolMatch: *matchConf,
+	}
 }

@@ -19,7 +19,6 @@ package v3router
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"strings"
 )
@@ -105,7 +104,7 @@ func (r *RouterChain) Process(event *config_center.ConfigChangeEvent) {
 			newVirtualServiceConfig.YamlAPIVersion = newVirtualServiceConfig.APIVersion
 			newVirtualServiceConfig.YamlKind = newVirtualServiceConfig.Kind
 			newVirtualServiceConfig.MetaData.Name = newVirtualServiceConfig.ObjectMeta.Name
-			fmt.Printf("get event after asseration = %+v\n", newVirtualServiceConfig)
+			logger.Debugf("get event after asseration = %+v\n", newVirtualServiceConfig)
 			data, err := yaml.Marshal(newVirtualServiceConfig)
 			if err != nil {
 				logger.Error("Process change of virtual service: event.Value marshal error:", err)
@@ -137,7 +136,7 @@ func (r *RouterChain) Process(event *config_center.ConfigChangeEvent) {
 			newDestRuleConfig.YamlAPIVersion = newDestRuleConfig.APIVersion
 			newDestRuleConfig.YamlKind = newDestRuleConfig.Kind
 			newDestRuleConfig.MetaData.Name = newDestRuleConfig.ObjectMeta.Name
-			fmt.Printf("get event after asseration = %+v\n", newDestRuleConfig)
+			logger.Debugf("get event after asseration = %+v\n", newDestRuleConfig)
 			data, err := yaml.Marshal(newDestRuleConfig)
 			if err != nil {
 				logger.Error("Process change of dest rule: event.Value marshal error:", err)

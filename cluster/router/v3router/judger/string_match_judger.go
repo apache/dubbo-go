@@ -15,18 +15,46 @@
  * limitations under the License.
  */
 
-package match_judger
+package judger
 
 import (
-	"github.com/apache/dubbo-go/common"
+	"regexp"
+	"strings"
+)
+
+import (
+	"github.com/apache/dubbo-go/config"
 )
 
 // nolint
-func JudgeUrlLabel(url *common.URL, labels map[string]string) bool {
-	for k, v := range labels {
-		if url.GetParam(k, "") != v {
-			return false
-		}
+type StringMatchJudger struct {
+	config.StringMatch
+}
+
+// nolint
+func (smj *StringMatchJudger) Judge(input string) bool {
+	if smj.Exact != "" {
+		return input == smj.Exact
+	}
+	if smj.Prefix != "" {
+		return strings.HasPrefix(input, smj.Prefix)
+	}
+	if smj.Regex != "" {
+		ok, err := regexp.MatchString(smj.Regex, input)
+		return ok && err == nil
+	}
+	if smj.NoEmpty != "" {
+		return input != ""
+	}
+	if smj.Empty != "" {
+		return input == ""
 	}
 	return true
+}
+
+// nolint
+func NewStringMatchJudger(matchConf *config.StringMatch) *StringMatchJudger {
+	return &StringMatchJudger{
+		StringMatch: *matchConf,
+	}
 }

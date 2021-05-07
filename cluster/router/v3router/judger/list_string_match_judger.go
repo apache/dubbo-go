@@ -15,21 +15,21 @@
  * limitations under the License.
  */
 
-package match_judger
+package judger
 
 import (
 	"github.com/apache/dubbo-go/config"
 )
 
 // nolint
-type ListDoubleMatchJudger struct {
-	config.ListDoubleMatch
+type ListStringMatchJudger struct {
+	config.ListStringMatch
 }
 
 // nolint
-func (lsmj *ListDoubleMatchJudger) Judge(input float64) bool {
+func (lsmj *ListStringMatchJudger) Judge(input string) bool {
 	for _, v := range lsmj.Oneof {
-		if newDoubleMatchJudger(v).Judge(input) {
+		if NewStringMatchJudger(v).Judge(input) {
 			return true
 		}
 	}
@@ -37,8 +37,8 @@ func (lsmj *ListDoubleMatchJudger) Judge(input float64) bool {
 }
 
 // nolint
-func newListDoubleMatchJudger(matchConf *config.ListDoubleMatch) *ListDoubleMatchJudger {
-	return &ListDoubleMatchJudger{
-		ListDoubleMatch: *matchConf,
+func newListStringMatchJudger(matchConf *config.ListStringMatch) *ListStringMatchJudger {
+	return &ListStringMatchJudger{
+		ListStringMatch: *matchConf,
 	}
 }

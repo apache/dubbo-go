@@ -15,30 +15,42 @@
  * limitations under the License.
  */
 
-package match_judger
+package judger
+
+import (
+	"testing"
+)
+
+import (
+	"github.com/stretchr/testify/assert"
+)
 
 import (
 	"github.com/apache/dubbo-go/config"
 )
 
-// nolint
-type ListStringMatchJudger struct {
-	config.ListStringMatch
-}
+func TestNewStringMatchJudger(t *testing.T) {
+	assert.True(t, NewStringMatchJudger(&config.StringMatch{
+		Exact: "abc",
+	}).Judge("abc"))
 
-// nolint
-func (lsmj *ListStringMatchJudger) Judge(input string) bool {
-	for _, v := range lsmj.Oneof {
-		if NewStringMatchJudger(v).Judge(input) {
-			return true
-		}
-	}
-	return false
-}
+	assert.False(t, NewStringMatchJudger(&config.StringMatch{
+		Exact: "abcd",
+	}).Judge("abc"))
 
-// nolint
-func newListStringMatchJudger(matchConf *config.ListStringMatch) *ListStringMatchJudger {
-	return &ListStringMatchJudger{
-		ListStringMatch: *matchConf,
-	}
+	assert.True(t, NewStringMatchJudger(&config.StringMatch{
+		Prefix: "abc",
+	}).Judge("abcd"))
+
+	assert.False(t, NewStringMatchJudger(&config.StringMatch{
+		Exact: "abcd",
+	}).Judge("abdc"))
+
+	assert.True(t, NewStringMatchJudger(&config.StringMatch{
+		Empty: "true",
+	}).Judge(""))
+
+	assert.False(t, NewStringMatchJudger(&config.StringMatch{
+		NoEmpty: "true",
+	}).Judge(""))
 }

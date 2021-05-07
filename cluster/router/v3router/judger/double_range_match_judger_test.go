@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package match_judger
+package judger
 
 import (
 	"testing"
@@ -27,23 +27,21 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/config"
-	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
-func TestAttachmentMatchJudger(t *testing.T) {
-	dubboCtxMap := make(map[string]*config.StringMatch)
-	dubboIvkMap := make(map[string]interface{})
-	dubboCtxMap["test-key"] = &config.StringMatch{
-		Exact: "abc",
-	}
-	dubboIvkMap["test-key"] = "abc"
-	assert.True(t, NewAttachmentMatchJudger(&config.DubboAttachmentMatch{
-		DubboContext: dubboCtxMap,
-	}).Judge(invocation.NewRPCInvocation("method", nil, dubboIvkMap)))
+func TestDoubleRangeMatchJudger(t *testing.T) {
+	assert.True(t, newDoubleRangeMatchJudger(&config.DoubleRangeMatch{
+		Start: 1.0,
+		End:   1.5,
+	}).Judge(1.3))
 
-	dubboIvkMap["test-key"] = "abd"
-	assert.False(t, NewAttachmentMatchJudger(&config.DubboAttachmentMatch{
-		DubboContext: dubboCtxMap,
-	}).Judge(invocation.NewRPCInvocation("method", nil, dubboIvkMap)))
+	assert.False(t, newDoubleRangeMatchJudger(&config.DoubleRangeMatch{
+		Start: 1.0,
+		End:   1.5,
+	}).Judge(1.9))
 
+	assert.False(t, newDoubleRangeMatchJudger(&config.DoubleRangeMatch{
+		Start: 1.0,
+		End:   1.5,
+	}).Judge(0.9))
 }

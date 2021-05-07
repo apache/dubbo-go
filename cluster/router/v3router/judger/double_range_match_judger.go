@@ -15,35 +15,25 @@
  * limitations under the License.
  */
 
-package match_judger
+package judger
 
 import (
 	"github.com/apache/dubbo-go/config"
 )
 
 // nolint
-type DoubleMatchJudger struct {
-	config.DoubleMatch
+type DoubleRangeMatchJudger struct {
+	config.DoubleRangeMatch
 }
 
 // nolint
-func (dmj *DoubleMatchJudger) Judge(input float64) bool {
-	if dmj.Exact != 0 {
-		return input == dmj.Exact
-	}
-	if dmj.Range != nil {
-		return newDoubleRangeMatchJudger(dmj.Range).Judge(input)
-	}
-	// todo  mod  match ??
-	//if dmj.Mode != 0 {
-	//
-	//}
-	return true
+func (drmj *DoubleRangeMatchJudger) Judge(input float64) bool {
+	return input >= drmj.Start && input < drmj.End
 }
 
 // nolint
-func newDoubleMatchJudger(matchConf *config.DoubleMatch) *DoubleMatchJudger {
-	return &DoubleMatchJudger{
-		DoubleMatch: *matchConf,
+func newDoubleRangeMatchJudger(matchConf *config.DoubleRangeMatch) *DoubleRangeMatchJudger {
+	return &DoubleRangeMatchJudger{
+		DoubleRangeMatch: *matchConf,
 	}
 }

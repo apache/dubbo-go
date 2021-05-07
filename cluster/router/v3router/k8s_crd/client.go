@@ -75,7 +75,6 @@ func NewK8sCRDClient(groupName, groupVersion, namespace string, handlers ...List
 		listenerHandlerList: handlers,
 		namespace:           namespace,
 		groupVersion:        schema.GroupVersion{Group: groupName, Version: groupVersion},
-		once:                sync.Once{},
 	}
 
 	// register object

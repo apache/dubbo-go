@@ -31,7 +31,8 @@ const (
 func SetK8sEventListener(listener config_center.ConfigurationListener) error {
 	vsUniformRouterListenerHandler := newVirtualServiceListenerHandler(listener)
 	drUniformRouterListenerHandler := newDestRuleListenerHandler(listener)
-	k8sCRDClient, err := k8s_crd.NewK8sCRDClient(GroupName, GroupVersion, Namespace, vsUniformRouterListenerHandler, drUniformRouterListenerHandler)
+	k8sCRDClient, err := k8s_crd.NewK8sCRDClient(GroupName, GroupVersion, Namespace,
+		vsUniformRouterListenerHandler, drUniformRouterListenerHandler)
 	if err != nil {
 		return err
 	}

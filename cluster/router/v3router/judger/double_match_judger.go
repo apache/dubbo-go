@@ -15,46 +15,35 @@
  * limitations under the License.
  */
 
-package match_judger
-
-import (
-	"regexp"
-	"strings"
-)
+package judger
 
 import (
 	"github.com/apache/dubbo-go/config"
 )
 
 // nolint
-type StringMatchJudger struct {
-	config.StringMatch
+type DoubleMatchJudger struct {
+	config.DoubleMatch
 }
 
 // nolint
-func (smj *StringMatchJudger) Judge(input string) bool {
-	if smj.Exact != "" {
-		return input == smj.Exact
+func (dmj *DoubleMatchJudger) Judge(input float64) bool {
+	if dmj.Exact != 0 {
+		return input == dmj.Exact
 	}
-	if smj.Prefix != "" {
-		return strings.HasPrefix(input, smj.Prefix)
+	if dmj.Range != nil {
+		return newDoubleRangeMatchJudger(dmj.Range).Judge(input)
 	}
-	if smj.Regex != "" {
-		ok, err := regexp.MatchString(smj.Regex, input)
-		return ok && err == nil
-	}
-	if smj.NoEmpty != "" {
-		return input != ""
-	}
-	if smj.Empty != "" {
-		return input == ""
-	}
+	// todo  mod  match ??
+	//if dmj.Mode != 0 {
+	//
+	//}
 	return true
 }
 
 // nolint
-func NewStringMatchJudger(matchConf *config.StringMatch) *StringMatchJudger {
-	return &StringMatchJudger{
-		StringMatch: *matchConf,
+func newDoubleMatchJudger(matchConf *config.DoubleMatch) *DoubleMatchJudger {
+	return &DoubleMatchJudger{
+		DoubleMatch: *matchConf,
 	}
 }

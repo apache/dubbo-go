@@ -51,7 +51,6 @@ type VirtualServiceListenerHandler struct {
 
 // nolint
 func (r *VirtualServiceListenerHandler) AddFunc(obj interface{}) {
-	//fmt.Println("addFunc")
 	if vsc, ok := obj.(*config.VirtualServiceConfig); ok {
 		fmt.Printf("in add func: get asserted VirtualServiceConfig = %+v\n", *vsc)
 		event := &config_center.ConfigChangeEvent{
@@ -65,7 +64,6 @@ func (r *VirtualServiceListenerHandler) AddFunc(obj interface{}) {
 
 // nolint
 func (r *VirtualServiceListenerHandler) UpdateFunc(oldObj, newObj interface{}) {
-	//fmt.Println("update func = ")
 	if vsc, ok := newObj.(*config.VirtualServiceConfig); ok {
 		event := &config_center.ConfigChangeEvent{
 			Key:        VirtualServiceEventKey,
@@ -170,7 +168,6 @@ func (r *DestRuleListenerHandler) DeleteFunc(obj interface{}) {
 
 // nolint
 func (r *DestRuleListenerHandler) Watch(opts metav.ListOptions, restClient *rest.RESTClient, ns string) (watch.Interface, error) {
-	//fmt.Println("dest rule Call Watch")
 	opts.Watch = true
 	return restClient.
 		Get().
@@ -182,7 +179,6 @@ func (r *DestRuleListenerHandler) Watch(opts metav.ListOptions, restClient *rest
 
 // nolint
 func (r *DestRuleListenerHandler) List(opts metav.ListOptions, restClient *rest.RESTClient, ns string) (runtime.Object, error) {
-	//fmt.Println("Call List")
 	result := config.DestinationRuleConfigList{}
 	err := restClient.
 		Get().

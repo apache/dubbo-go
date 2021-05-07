@@ -15,25 +15,35 @@
  * limitations under the License.
  */
 
-package match_judger
+package judger
+
+import (
+	"testing"
+)
+
+import (
+	"github.com/stretchr/testify/assert"
+)
 
 import (
 	"github.com/apache/dubbo-go/config"
+	"github.com/apache/dubbo-go/protocol/invocation"
 )
 
-// nolint
-type DoubleRangeMatchJudger struct {
-	config.DoubleRangeMatch
-}
-
-// nolint
-func (drmj *DoubleRangeMatchJudger) Judge(input float64) bool {
-	return input >= drmj.Start && input < drmj.End
-}
-
-// nolint
-func newDoubleRangeMatchJudger(matchConf *config.DoubleRangeMatch) *DoubleRangeMatchJudger {
-	return &DoubleRangeMatchJudger{
-		DoubleRangeMatch: *matchConf,
+func TestAttachmentMatchJudger(t *testing.T) {
+	dubboCtxMap := make(map[string]*config.StringMatch)
+	dubboIvkMap := make(map[string]interface{})
+	dubboCtxMap["test-key"] = &config.StringMatch{
+		Exact: "abc",
 	}
+	dubboIvkMap["test-key"] = "abc"
+	assert.True(t, NewAttachmentMatchJudger(&config.DubboAttachmentMatch{
+		DubboContext: dubboCtxMap,
+	}).Judge(invocation.NewRPCInvocation("method", nil, dubboIvkMap)))
+
+	dubboIvkMap["test-key"] = "abd"
+	assert.False(t, NewAttachmentMatchJudger(&config.DubboAttachmentMatch{
+		DubboContext: dubboCtxMap,
+	}).Judge(invocation.NewRPCInvocation("method", nil, dubboIvkMap)))
+
 }
