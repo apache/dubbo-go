@@ -18,10 +18,6 @@
 package k8s_api
 
 import (
-	"fmt"
-)
-
-import (
 	metav "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
@@ -52,7 +48,6 @@ type VirtualServiceListenerHandler struct {
 // nolint
 func (r *VirtualServiceListenerHandler) AddFunc(obj interface{}) {
 	if vsc, ok := obj.(*config.VirtualServiceConfig); ok {
-		fmt.Printf("in add func: get asserted VirtualServiceConfig = %+v\n", *vsc)
 		event := &config_center.ConfigChangeEvent{
 			Key:        VirtualServiceEventKey,
 			Value:      vsc,
