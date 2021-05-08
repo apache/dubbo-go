@@ -36,6 +36,7 @@ func (amj *AttachmentMatchJudger) Judge(invocation protocol.Invocation) bool {
 				if v.Empty == "" {
 					return false
 				}
+				continue
 			}
 			// exist this key
 			str, ok := invAttaValue.(string)
@@ -56,6 +57,7 @@ func (amj *AttachmentMatchJudger) Judge(invocation protocol.Invocation) bool {
 				if v.Empty == "" {
 					return false
 				}
+				continue
 			}
 			// exist this key
 			str, ok := invAttaValue.(string)
