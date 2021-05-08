@@ -1,8 +1,10 @@
-module go-server
+module dubbo.apache.org/dubbogo/tools/cli/example/server/v3
 
 go 1.13
 
 require (
-	github.com/apache/dubbo-go v1.5.4
-	github.com/apache/dubbo-go-hessian2 v1.7.0
+	dubbo.apache.org/dubbogo/v3 v3.0.0-00010101000000-000000000000
+	github.com/apache/dubbo-go-hessian2 v1.9.1
 )
+
+replace dubbo.apache.org/dubbogo/v3 => ../../../../../dubbo-go

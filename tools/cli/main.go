@@ -23,8 +23,8 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbogo/v3/tools/cli/client"
-	"dubbo.apache.org/dubbogo/v3/tools/cli/json_register"
+	"dubbo.apache.org/dubbogo/tools/cli/v3/client"
+	"dubbo.apache.org/dubbogo/tools/cli/v3/json_register"
 )
 
 var (

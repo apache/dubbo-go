@@ -30,9 +30,9 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbogo/v3/tools/cli/common"
-	"dubbo.apache.org/dubbogo/v3/tools/cli/protocol"
-	_ "dubbo.apache.org/dubbogo/v3/tools/cli/protocol/dubbo"
+	"dubbo.apache.org/dubbogo/tools/cli/v3/common"
+	"dubbo.apache.org/dubbogo/tools/cli/v3/protocol"
+	_ "dubbo.apache.org/dubbogo/tools/cli/v3/protocol/dubbo"
 )
 
 // defaultBufferSize is the tcp read default buffer size

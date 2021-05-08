@@ -29,7 +29,7 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbogo/v3/tools/cli/common"
+	"dubbo.apache.org/dubbogo/tools/cli/v3/common"
 )
 
 // RegisterStructFromFile create the interface defined by @path file, and register it to hessian
