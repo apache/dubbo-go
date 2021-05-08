@@ -22,7 +22,7 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/container/set"
+	gxset "github.com/dubbogo/gost/container/set"
 	"github.com/dubbogo/gost/hash/page"
 	"github.com/stretchr/testify/assert"
 )
@@ -31,6 +31,7 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/observer"
+	"github.com/apache/dubbo-go/common/observer/dispatcher"
 	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/metadata/mapping"
 	"github.com/apache/dubbo-go/metadata/service"
@@ -55,11 +56,11 @@ func TestServiceDiscoveryRegistry_Register(t *testing.T) {
 	})
 
 	extension.SetGlobalServiceNameMapping(func() mapping.ServiceNameMapping {
-		return &mockServiceNameMapping{}
+		return mapping.NewMockServiceNameMapping()
 	})
 
 	extension.SetEventDispatcher("mock", func() observer.EventDispatcher {
-		return &mockEventDispatcher{}
+		return dispatcher.NewMockEventDispatcher()
 	})
 	extension.SetAndInitGlobalDispatcher("mock")
 
@@ -82,43 +83,6 @@ func TestServiceDiscoveryRegistry_Register(t *testing.T) {
 	assert.NotNil(t, registry)
 	err = registry.Register(url)
 	assert.NoError(t, err)
-}
-
-type mockEventDispatcher struct{}
-
-func (m *mockEventDispatcher) AddEventListener(observer.EventListener) {
-}
-
-func (m *mockEventDispatcher) AddEventListeners([]observer.EventListener) {
-}
-
-func (m *mockEventDispatcher) RemoveEventListener(observer.EventListener) {
-	panic("implement me")
-}
-
-func (m *mockEventDispatcher) RemoveEventListeners([]observer.EventListener) {
-	panic("implement me")
-}
-
-func (m *mockEventDispatcher) GetAllEventListeners() []observer.EventListener {
-	return []observer.EventListener{}
-}
-
-func (m *mockEventDispatcher) RemoveAllEventListeners() {
-	panic("implement me")
-}
-
-func (m *mockEventDispatcher) Dispatch(observer.Event) {
-}
-
-type mockServiceNameMapping struct{}
-
-func (m *mockServiceNameMapping) Map(string, string, string, string) error {
-	return nil
-}
-
-func (m *mockServiceNameMapping) Get(string, string, string, string) (*gxset.HashSet, error) {
-	panic("implement me")
 }
 
 type mockServiceDiscovery struct{}

@@ -87,10 +87,10 @@ func TestNewZookeeperServiceDiscovery(t *testing.T) {
 func TestCURDZookeeperServiceDiscovery(t *testing.T) {
 	prepareData(t)
 	extension.SetEventDispatcher("mock", func() observer.EventDispatcher {
-		return &dispatcher.MockEventDispatcher{}
+		return dispatcher.NewMockEventDispatcher()
 	})
 	extension.SetGlobalServiceNameMapping(func() mapping.ServiceNameMapping {
-		return &mockServiceNameMapping{}
+		return mapping.NewMockServiceNameMapping()
 	})
 
 	extension.SetProtocol("mock", func() protocol.Protocol {
@@ -229,16 +229,6 @@ func (tn *testNotify) Notify(e *registry.ServiceEvent) {
 }
 func (tn *testNotify) NotifyAll([]*registry.ServiceEvent, func()) {
 
-}
-
-type mockServiceNameMapping struct{}
-
-func (m *mockServiceNameMapping) Map(string, string, string, string) error {
-	return nil
-}
-
-func (m *mockServiceNameMapping) Get(string, string, string, string) (*gxset.HashSet, error) {
-	return gxset.NewSet(config.GetApplicationConfig().Name), nil
 }
 
 type mockProtocol struct{}
