@@ -34,7 +34,7 @@ import (
 )
 
 func initZkDynamicConfiguration(t *testing.T) (*zk.TestCluster, *zookeeperDynamicConfiguration) {
-	ts, err := zk.StartTestCluster(1, nil, nil)
+	ts, err := zk.StartTestCluster(1, nil, nil, zk.WithRetryTimes(20))
 	assert.NoError(t, err)
 	assert.NotNil(t, ts.Servers[0])
 	urlString := "registry://127.0.0.1:" + strconv.Itoa(ts.Servers[0].Port)

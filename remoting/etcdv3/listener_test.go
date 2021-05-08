@@ -101,7 +101,7 @@ func TestListener(t *testing.T) {
 		{input: struct {
 			k string
 			v string
-		}{k: "/dubbo", v: changedData}},
+		}{k: "/dubbo/", v: changedData}},
 	}
 	SetUpEtcdServer(t)
 	c, err := gxetcd.NewClient("test", []string{"localhost:2381"}, time.Second, 1)
@@ -109,7 +109,7 @@ func TestListener(t *testing.T) {
 
 	listener := NewEventListener(c)
 	dataListener := &mockDataListener{client: c, changedData: changedData, rc: make(chan remoting.Event)}
-	listener.ListenServiceEvent("/dubbo", dataListener)
+	listener.ListenServiceEvent("/dubbo/", dataListener)
 
 	// NOTICE:  direct listen will lose create msg
 	time.Sleep(time.Second)
@@ -117,7 +117,7 @@ func TestListener(t *testing.T) {
 
 		k := tc.input.k
 		v := tc.input.v
-		if err := c.Create(k, v); err != nil {
+		if err := c.Update(k, v); err != nil {
 			t.Fatal(err)
 		}
 
