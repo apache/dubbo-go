@@ -18,8 +18,8 @@
 package remote
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/registry"
+	"dubbo.apache.org/dubbogo/v3/common"
+	"dubbo.apache.org/dubbogo/v3/registry"
 )
 
 // RemoteMetadataService for save and get metadata

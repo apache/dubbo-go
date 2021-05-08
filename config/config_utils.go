@@ -24,7 +24,7 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common/constant"
+	"dubbo.apache.org/dubbogo/v3/common/constant"
 )
 
 func mergeValue(str1, str2, def string) string {

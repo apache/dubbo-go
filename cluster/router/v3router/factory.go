@@ -18,7 +18,7 @@
 package v3router
 
 import (
-	"github.com/apache/dubbo-go/cluster/router"
+	"dubbo.apache.org/dubbogo/v3/cluster/router"
 )
 
 // UniformRouteFactory is uniform router's factory

@@ -26,16 +26,16 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/metadata/definition"
-	"github.com/apache/dubbo-go/metadata/identifier"
-	"github.com/apache/dubbo-go/metadata/report/delegate"
-	"github.com/apache/dubbo-go/metadata/service/inmemory"
-	"github.com/apache/dubbo-go/metadata/service/remote"
-	"github.com/apache/dubbo-go/registry"
+	"dubbo.apache.org/dubbogo/v3/common"
+	"dubbo.apache.org/dubbogo/v3/common/constant"
+	"dubbo.apache.org/dubbogo/v3/common/extension"
+	"dubbo.apache.org/dubbogo/v3/common/logger"
+	"dubbo.apache.org/dubbogo/v3/metadata/definition"
+	"dubbo.apache.org/dubbogo/v3/metadata/identifier"
+	"dubbo.apache.org/dubbogo/v3/metadata/report/delegate"
+	"dubbo.apache.org/dubbogo/v3/metadata/service/inmemory"
+	"dubbo.apache.org/dubbogo/v3/metadata/service/remote"
+	"dubbo.apache.org/dubbogo/v3/registry"
 )
 
 // MetadataService is a implement of metadata service which will delegate the remote metadata report

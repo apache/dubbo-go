@@ -28,14 +28,14 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/cluster/router"
-	"github.com/apache/dubbo-go/cluster/router/v3router/k8s_api"
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/config"
-	"github.com/apache/dubbo-go/config_center"
-	"github.com/apache/dubbo-go/protocol"
-	"github.com/apache/dubbo-go/remoting"
+	"dubbo.apache.org/dubbogo/v3/cluster/router"
+	"dubbo.apache.org/dubbogo/v3/cluster/router/v3router/k8s_api"
+	"dubbo.apache.org/dubbogo/v3/common"
+	"dubbo.apache.org/dubbogo/v3/common/logger"
+	"dubbo.apache.org/dubbogo/v3/config"
+	"dubbo.apache.org/dubbogo/v3/config_center"
+	"dubbo.apache.org/dubbogo/v3/protocol"
+	"dubbo.apache.org/dubbogo/v3/remoting"
 )
 
 // RouterChain contains all uniform router logic

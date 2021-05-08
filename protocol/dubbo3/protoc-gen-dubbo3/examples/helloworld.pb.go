@@ -31,9 +31,9 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/protocol"
-	dgrpc "github.com/apache/dubbo-go/protocol/dubbo3"
-	"github.com/apache/dubbo-go/protocol/invocation"
+	"dubbo.apache.org/dubbogo/v3/protocol"
+	dgrpc "dubbo.apache.org/dubbogo/v3/protocol/dubbo3"
+	"dubbo.apache.org/dubbogo/v3/protocol/invocation"
 	tripleConstant "github.com/dubbogo/triple/pkg/common/constant"
 	dubbo3 "github.com/dubbogo/triple/pkg/triple"
 )

@@ -18,7 +18,7 @@
 package registry
 
 import (
-	"github.com/apache/dubbo-go/common/observer"
+	"dubbo.apache.org/dubbogo/v3/common/observer"
 	gxset "github.com/dubbogo/gost/container/set"
 	"reflect"
 )
