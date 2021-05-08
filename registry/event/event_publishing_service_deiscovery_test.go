@@ -30,13 +30,13 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/common/observer"
-	dispatcher2 "github.com/apache/dubbo-go/common/observer/dispatcher"
-	"github.com/apache/dubbo-go/config"
-	"github.com/apache/dubbo-go/metadata/mapping"
-	_ "github.com/apache/dubbo-go/metadata/service/inmemory"
-	"github.com/apache/dubbo-go/registry"
+	"dubbo.apache.org/dubbogo/v3/common/extension"
+	"dubbo.apache.org/dubbogo/v3/common/observer"
+	dispatcher2 "dubbo.apache.org/dubbogo/v3/common/observer/dispatcher"
+	"dubbo.apache.org/dubbogo/v3/config"
+	"dubbo.apache.org/dubbogo/v3/metadata/mapping"
+	_ "dubbo.apache.org/dubbogo/v3/metadata/service/inmemory"
+	"dubbo.apache.org/dubbogo/v3/registry"
 )
 
 func TestEventPublishingServiceDiscovery_DispatchEvent(t *testing.T) {

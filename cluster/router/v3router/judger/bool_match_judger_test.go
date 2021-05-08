@@ -26,7 +26,7 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/config"
+	"dubbo.apache.org/dubbogo/v3/config"
 )
 
 func TestBoolMatchJudger(t *testing.T) {

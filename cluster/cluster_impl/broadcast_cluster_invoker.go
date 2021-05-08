@@ -22,9 +22,9 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/cluster"
-	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/protocol"
+	"dubbo.apache.org/dubbogo/v3/cluster"
+	"dubbo.apache.org/dubbogo/v3/common/logger"
+	"dubbo.apache.org/dubbogo/v3/protocol"
 )
 
 type broadcastClusterInvoker struct {

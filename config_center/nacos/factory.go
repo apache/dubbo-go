@@ -18,10 +18,10 @@
 package nacos
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/config_center"
-	"github.com/apache/dubbo-go/config_center/parser"
+	"dubbo.apache.org/dubbogo/v3/common"
+	"dubbo.apache.org/dubbogo/v3/common/extension"
+	"dubbo.apache.org/dubbogo/v3/config_center"
+	"dubbo.apache.org/dubbogo/v3/config_center/parser"
 )
 
 func init() {

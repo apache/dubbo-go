@@ -26,9 +26,9 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/config"
-	"github.com/apache/dubbo-go/metadata/mapping"
+	"dubbo.apache.org/dubbogo/v3/common/extension"
+	"dubbo.apache.org/dubbogo/v3/config"
+	"dubbo.apache.org/dubbogo/v3/metadata/mapping"
 )
 
 func init() {

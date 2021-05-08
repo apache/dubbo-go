@@ -27,8 +27,8 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/metadata/definition"
+	"dubbo.apache.org/dubbogo/v3/common"
+	"dubbo.apache.org/dubbogo/v3/metadata/definition"
 )
 
 func TestMetadataService(t *testing.T) {

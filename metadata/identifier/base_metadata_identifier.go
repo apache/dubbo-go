@@ -22,7 +22,7 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common/constant"
+	"dubbo.apache.org/dubbogo/v3/common/constant"
 )
 
 // BaseMetadataIdentifier defined for describe the Metadata base identify

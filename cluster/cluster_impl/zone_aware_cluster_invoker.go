@@ -23,9 +23,9 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/cluster"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/protocol"
+	"dubbo.apache.org/dubbogo/v3/cluster"
+	"dubbo.apache.org/dubbogo/v3/common/constant"
+	"dubbo.apache.org/dubbogo/v3/protocol"
 )
 
 // When there're more than one registry for subscription.

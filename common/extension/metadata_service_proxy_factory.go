@@ -22,8 +22,8 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/metadata/service"
+	"dubbo.apache.org/dubbogo/v3/common/constant"
+	"dubbo.apache.org/dubbogo/v3/metadata/service"
 )
 
 var metadataServiceProxyFactoryMap = make(map[string]func() service.MetadataServiceProxyFactory, 2)

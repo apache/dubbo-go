@@ -24,9 +24,9 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/observer"
-	"github.com/apache/dubbo-go/remoting"
+	"dubbo.apache.org/dubbogo/v3/common"
+	"dubbo.apache.org/dubbogo/v3/common/observer"
+	"dubbo.apache.org/dubbogo/v3/remoting"
 )
 
 func init() {

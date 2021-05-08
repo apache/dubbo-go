@@ -23,11 +23,11 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/protocol"
-	"github.com/apache/dubbo-go/protocol/invocation"
+	"dubbo.apache.org/dubbogo/v3/common"
+	"dubbo.apache.org/dubbogo/v3/common/constant"
+	"dubbo.apache.org/dubbogo/v3/common/logger"
+	"dubbo.apache.org/dubbogo/v3/protocol"
+	"dubbo.apache.org/dubbogo/v3/protocol/invocation"
 )
 
 // actually it's RPC stub

@@ -29,12 +29,12 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/cluster/directory"
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/protocol"
-	"github.com/apache/dubbo-go/protocol/invocation"
-	"github.com/apache/dubbo-go/protocol/mock"
+	"dubbo.apache.org/dubbogo/v3/cluster/directory"
+	"dubbo.apache.org/dubbogo/v3/common"
+	"dubbo.apache.org/dubbogo/v3/common/constant"
+	"dubbo.apache.org/dubbogo/v3/protocol"
+	"dubbo.apache.org/dubbogo/v3/protocol/invocation"
+	"dubbo.apache.org/dubbogo/v3/protocol/mock"
 )
 
 func TestZoneWareInvokerWithPreferredSuccess(t *testing.T) {

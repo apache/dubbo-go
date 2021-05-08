@@ -27,10 +27,10 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/config"
-	"github.com/apache/dubbo-go/protocol"
-	"github.com/apache/dubbo-go/protocol/grpc/internal"
+	"dubbo.apache.org/dubbogo/v3/common"
+	"dubbo.apache.org/dubbogo/v3/config"
+	"dubbo.apache.org/dubbogo/v3/protocol"
+	"dubbo.apache.org/dubbogo/v3/protocol/grpc/internal"
 )
 
 func doInitProvider() {

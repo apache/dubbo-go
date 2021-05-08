@@ -24,19 +24,19 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/filter"
-	"github.com/apache/dubbo-go/filter/filter_impl/tps"
-	common2 "github.com/apache/dubbo-go/filter/handler"
+	"dubbo.apache.org/dubbogo/v3/filter"
+	"dubbo.apache.org/dubbogo/v3/filter/filter_impl/tps"
+	common2 "dubbo.apache.org/dubbogo/v3/filter/handler"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/protocol"
-	"github.com/apache/dubbo-go/protocol/invocation"
+	"dubbo.apache.org/dubbogo/v3/common"
+	"dubbo.apache.org/dubbogo/v3/common/constant"
+	"dubbo.apache.org/dubbogo/v3/common/extension"
+	"dubbo.apache.org/dubbogo/v3/protocol"
+	"dubbo.apache.org/dubbogo/v3/protocol/invocation"
 )
 
 func TestTpsLimitFilterInvokeWithNoTpsLimiter(t *testing.T) {

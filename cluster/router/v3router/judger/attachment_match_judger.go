@@ -18,8 +18,8 @@
 package judger
 
 import (
-	"github.com/apache/dubbo-go/config"
-	"github.com/apache/dubbo-go/protocol"
+	"dubbo.apache.org/dubbogo/v3/config"
+	"dubbo.apache.org/dubbogo/v3/protocol"
 )
 
 type AttachmentMatchJudger struct {

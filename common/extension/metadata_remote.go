@@ -26,7 +26,7 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/metadata/service/remote"
+	"dubbo.apache.org/dubbogo/v3/metadata/service/remote"
 )
 
 type remoteMetadataServiceCreator func() (remote.RemoteMetadataService, error)

@@ -34,12 +34,12 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/config"
-	_ "github.com/apache/dubbo-go/metadata/mapping/memory"
-	"github.com/apache/dubbo-go/registry"
+	"dubbo.apache.org/dubbogo/v3/common/constant"
+	"dubbo.apache.org/dubbogo/v3/common/extension"
+	"dubbo.apache.org/dubbogo/v3/common/logger"
+	"dubbo.apache.org/dubbogo/v3/config"
+	_ "dubbo.apache.org/dubbogo/v3/metadata/mapping/memory"
+	"dubbo.apache.org/dubbogo/v3/registry"
 )
 
 const (

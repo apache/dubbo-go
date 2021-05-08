@@ -18,8 +18,8 @@
 package config
 
 import (
-	"github.com/apache/dubbo-go/cluster/router/chain"
-	"github.com/apache/dubbo-go/common/yaml"
+	"dubbo.apache.org/dubbogo/v3/cluster/router/chain"
+	"dubbo.apache.org/dubbogo/v3/common/yaml"
 )
 
 // LocalRouterRules defines the local router config structure

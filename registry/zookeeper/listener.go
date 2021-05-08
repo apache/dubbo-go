@@ -28,11 +28,11 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/config_center"
-	"github.com/apache/dubbo-go/registry"
-	"github.com/apache/dubbo-go/remoting"
+	"dubbo.apache.org/dubbogo/v3/common"
+	"dubbo.apache.org/dubbogo/v3/common/logger"
+	"dubbo.apache.org/dubbogo/v3/config_center"
+	"dubbo.apache.org/dubbogo/v3/registry"
+	"dubbo.apache.org/dubbogo/v3/remoting"
 )
 
 // RegistryDataListener contains all URL information subscribed by zookeeper registry

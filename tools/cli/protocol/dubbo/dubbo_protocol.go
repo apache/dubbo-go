@@ -30,8 +30,8 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/tools/cli/common"
-	"github.com/apache/dubbo-go/tools/cli/protocol"
+	"dubbo.apache.org/dubbogo/v3/tools/cli/common"
+	"dubbo.apache.org/dubbogo/v3/tools/cli/protocol"
 )
 
 func init() {

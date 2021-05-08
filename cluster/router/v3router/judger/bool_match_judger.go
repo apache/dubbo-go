@@ -17,7 +17,7 @@
 
 package judger
 
-import "github.com/apache/dubbo-go/config"
+import "dubbo.apache.org/dubbogo/v3/config"
 
 // nolint
 type BoolMatchJudger struct {

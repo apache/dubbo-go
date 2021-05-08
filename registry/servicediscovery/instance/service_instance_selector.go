@@ -18,8 +18,8 @@
 package instance
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/registry"
+	"dubbo.apache.org/dubbogo/v3/common"
+	"dubbo.apache.org/dubbogo/v3/registry"
 )
 
 type ServiceInstanceSelector interface {

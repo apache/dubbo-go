@@ -18,7 +18,7 @@
 package registry
 
 import (
-	"github.com/apache/dubbo-go/common"
+	"dubbo.apache.org/dubbogo/v3/common"
 )
 
 /*
