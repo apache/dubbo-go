@@ -29,9 +29,9 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common/config"
-	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/common/yaml"
+	"dubbo.apache.org/dubbo-go/v3/common/config"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/common/yaml"
 )
 
 // BaseConfig is the common configuration for provider and consumer
