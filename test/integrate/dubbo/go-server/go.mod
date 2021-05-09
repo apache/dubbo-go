@@ -3,7 +3,7 @@ module github.com/apache/dubbo-go/test/integrate/dubbo/go-server
 go 1.13
 
 require (
-	dubbo.apache.org/dubbo-go/v3 v3.0.0-00010101000000-000000000000
+	dubbo.apache.org/dubbo-go/v3 v3.0.0
 	// useless dubbo-go version number, it will be replaced when run by this Docker file: ../Dockerfile:
 	//```
 	// RUN test ${PR_ORIGIN_REPO} && go mod edit -replace=dubbo.apache.org/dubbo-go/v3=github.com/${PR_ORIGIN_REPO}@${PR_ORIGIN_COMMITID} || go get -u dubbo.apache.org/dubbo-go/v3@develop
