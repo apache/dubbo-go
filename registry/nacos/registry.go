@@ -225,6 +225,7 @@ func (nr *nacosRegistry) IsAvailable() bool {
 
 // nolint
 func (nr *nacosRegistry) Destroy() {
+	// todo 应该手动
 	for _, url := range nr.registryUrls {
 		err := nr.DeRegister(url)
 		logger.Infof("DeRegister Nacos URL:%+v", url)
