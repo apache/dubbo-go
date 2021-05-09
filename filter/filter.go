@@ -22,7 +22,7 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/protocol"
+	"dubbo.apache.org/dubbogo/protocol"
 )
 
 // Filter interface defines the functions of a filter

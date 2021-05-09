@@ -18,8 +18,8 @@
 package factory
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/metadata/report"
+	"dubbo.apache.org/dubbogo/common"
+	"dubbo.apache.org/dubbogo/metadata/report"
 )
 
 // MetadataReportFactory interface will create metadata report

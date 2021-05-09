@@ -27,8 +27,8 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/logger"
+	"dubbo.apache.org/dubbogo/common"
+	"dubbo.apache.org/dubbogo/common/logger"
 )
 
 type ZkClientFacade interface {

@@ -28,12 +28,12 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/protocol"
-	"github.com/apache/dubbo-go/protocol/dubbo/impl"
-	"github.com/apache/dubbo-go/protocol/invocation"
-	"github.com/apache/dubbo-go/remoting"
+	"dubbo.apache.org/dubbogo/common/constant"
+	"dubbo.apache.org/dubbogo/common/logger"
+	"dubbo.apache.org/dubbogo/protocol"
+	"dubbo.apache.org/dubbogo/protocol/dubbo/impl"
+	"dubbo.apache.org/dubbogo/protocol/invocation"
+	"dubbo.apache.org/dubbogo/remoting"
 )
 
 // SerialID serial ID

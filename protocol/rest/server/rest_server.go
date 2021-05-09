@@ -30,11 +30,11 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/protocol"
-	"github.com/apache/dubbo-go/protocol/invocation"
-	rest_config "github.com/apache/dubbo-go/protocol/rest/config"
+	"dubbo.apache.org/dubbogo/common"
+	"dubbo.apache.org/dubbogo/common/logger"
+	"dubbo.apache.org/dubbogo/protocol"
+	"dubbo.apache.org/dubbogo/protocol/invocation"
+	rest_config "dubbo.apache.org/dubbogo/protocol/rest/config"
 )
 
 const parseParameterErrorStr = "An error occurred while parsing parameters on the server"

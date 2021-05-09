@@ -28,9 +28,9 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/remoting"
+	"dubbo.apache.org/dubbogo/common/constant"
+	"dubbo.apache.org/dubbogo/common/logger"
+	"dubbo.apache.org/dubbogo/remoting"
 )
 
 type ProtocolCodec struct {

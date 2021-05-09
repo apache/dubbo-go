@@ -29,11 +29,11 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/config_center"
-	"github.com/apache/dubbo-go/config_center/parser"
+	"dubbo.apache.org/dubbogo/common"
+	"dubbo.apache.org/dubbogo/common/constant"
+	"dubbo.apache.org/dubbogo/common/logger"
+	"dubbo.apache.org/dubbogo/config_center"
+	"dubbo.apache.org/dubbogo/config_center/parser"
 )
 
 const (

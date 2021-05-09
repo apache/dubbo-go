@@ -27,15 +27,15 @@ import (
 
 import (
 	hessian "github.com/apache/dubbo-go-hessian2"
-	_ "github.com/apache/dubbo-go/cluster/cluster_impl"
-	_ "github.com/apache/dubbo-go/cluster/loadbalance"
-	"github.com/apache/dubbo-go/common/logger"
-	_ "github.com/apache/dubbo-go/common/proxy/proxy_factory"
-	"github.com/apache/dubbo-go/config"
-	_ "github.com/apache/dubbo-go/filter/filter_impl"
-	_ "github.com/apache/dubbo-go/protocol/dubbo"
-	_ "github.com/apache/dubbo-go/registry/consul"
-	_ "github.com/apache/dubbo-go/registry/protocol"
+	_ "dubbo.apache.org/dubbogo/cluster/cluster_impl"
+	_ "dubbo.apache.org/dubbogo/cluster/loadbalance"
+	"dubbo.apache.org/dubbogo/common/logger"
+	_ "dubbo.apache.org/dubbogo/common/proxy/proxy_factory"
+	"dubbo.apache.org/dubbogo/config"
+	_ "dubbo.apache.org/dubbogo/filter/filter_impl"
+	_ "dubbo.apache.org/dubbogo/protocol/dubbo"
+	_ "dubbo.apache.org/dubbogo/registry/consul"
+	_ "dubbo.apache.org/dubbogo/registry/protocol"
 )
 
 var survivalTimeout = int(3e9)

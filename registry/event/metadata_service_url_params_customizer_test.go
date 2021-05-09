@@ -27,8 +27,8 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/registry"
+	"dubbo.apache.org/dubbogo/common"
+	"dubbo.apache.org/dubbogo/registry"
 )
 
 func TestMetadataServiceURLParamsMetadataCustomizer(t *testing.T) {

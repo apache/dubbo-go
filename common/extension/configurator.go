@@ -18,8 +18,8 @@
 package extension
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/config_center"
+	"dubbo.apache.org/dubbogo/common"
+	"dubbo.apache.org/dubbogo/config_center"
 )
 
 const (

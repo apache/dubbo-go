@@ -27,9 +27,9 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/config"
-	"github.com/apache/dubbo-go/config_center"
+	"dubbo.apache.org/dubbogo/common/constant"
+	"dubbo.apache.org/dubbogo/config"
+	"dubbo.apache.org/dubbogo/config_center"
 )
 
 func TestDynamicConfigurationServiceNameMapping(t *testing.T) {

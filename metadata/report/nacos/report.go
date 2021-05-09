@@ -28,13 +28,13 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/metadata/identifier"
-	"github.com/apache/dubbo-go/metadata/report"
-	"github.com/apache/dubbo-go/metadata/report/factory"
-	"github.com/apache/dubbo-go/remoting/nacos"
+	"dubbo.apache.org/dubbogo/common"
+	"dubbo.apache.org/dubbogo/common/extension"
+	"dubbo.apache.org/dubbogo/common/logger"
+	"dubbo.apache.org/dubbogo/metadata/identifier"
+	"dubbo.apache.org/dubbogo/metadata/report"
+	"dubbo.apache.org/dubbogo/metadata/report/factory"
+	"dubbo.apache.org/dubbogo/remoting/nacos"
 )
 
 func init() {

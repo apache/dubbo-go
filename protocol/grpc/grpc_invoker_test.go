@@ -28,10 +28,10 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/protocol/grpc/internal"
-	"github.com/apache/dubbo-go/protocol/invocation"
+	"dubbo.apache.org/dubbogo/common"
+	"dubbo.apache.org/dubbogo/common/logger"
+	"dubbo.apache.org/dubbogo/protocol/grpc/internal"
+	"dubbo.apache.org/dubbogo/protocol/invocation"
 )
 
 const (

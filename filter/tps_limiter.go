@@ -18,8 +18,8 @@
 package filter
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/protocol"
+	"dubbo.apache.org/dubbogo/common"
+	"dubbo.apache.org/dubbogo/protocol"
 )
 
 // TpsLimiter defines the Limiter that judge if the TPS overs the threshold

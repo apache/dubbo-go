@@ -23,9 +23,9 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/config_center"
-	"github.com/apache/dubbo-go/remoting"
+	"dubbo.apache.org/dubbogo/common/constant"
+	"dubbo.apache.org/dubbogo/config_center"
+	"dubbo.apache.org/dubbogo/remoting"
 )
 
 // CacheListener defines keyListeners and rootPath

@@ -23,18 +23,18 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/config"
-	"github.com/apache/dubbo-go/protocol"
-	"github.com/apache/dubbo-go/protocol/rest/client"
-	_ "github.com/apache/dubbo-go/protocol/rest/client/client_impl"
-	rest_config "github.com/apache/dubbo-go/protocol/rest/config"
-	_ "github.com/apache/dubbo-go/protocol/rest/config/reader"
-	"github.com/apache/dubbo-go/protocol/rest/server"
-	_ "github.com/apache/dubbo-go/protocol/rest/server/server_impl"
+	"dubbo.apache.org/dubbogo/common"
+	"dubbo.apache.org/dubbogo/common/constant"
+	"dubbo.apache.org/dubbogo/common/extension"
+	"dubbo.apache.org/dubbogo/common/logger"
+	"dubbo.apache.org/dubbogo/config"
+	"dubbo.apache.org/dubbogo/protocol"
+	"dubbo.apache.org/dubbogo/protocol/rest/client"
+	_ "dubbo.apache.org/dubbogo/protocol/rest/client/client_impl"
+	rest_config "dubbo.apache.org/dubbogo/protocol/rest/config"
+	_ "dubbo.apache.org/dubbogo/protocol/rest/config/reader"
+	"dubbo.apache.org/dubbogo/protocol/rest/server"
+	_ "dubbo.apache.org/dubbogo/protocol/rest/server/server_impl"
 )
 
 var restProtocol *RestProtocol

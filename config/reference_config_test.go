@@ -27,12 +27,12 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/cluster/cluster_impl"
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/protocol"
-	"github.com/apache/dubbo-go/registry"
+	"dubbo.apache.org/dubbogo/cluster/cluster_impl"
+	"dubbo.apache.org/dubbogo/common"
+	"dubbo.apache.org/dubbogo/common/constant"
+	"dubbo.apache.org/dubbogo/common/extension"
+	"dubbo.apache.org/dubbogo/protocol"
+	"dubbo.apache.org/dubbogo/registry"
 )
 
 var regProtocol protocol.Protocol

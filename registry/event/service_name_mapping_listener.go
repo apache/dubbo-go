@@ -27,10 +27,10 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/common/observer"
-	"github.com/apache/dubbo-go/metadata/mapping"
+	"dubbo.apache.org/dubbogo/common/constant"
+	"dubbo.apache.org/dubbogo/common/extension"
+	"dubbo.apache.org/dubbogo/common/observer"
+	"dubbo.apache.org/dubbogo/metadata/mapping"
 )
 
 func init() {

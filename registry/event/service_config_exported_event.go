@@ -22,8 +22,8 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common/observer"
-	"github.com/apache/dubbo-go/config"
+	"dubbo.apache.org/dubbogo/common/observer"
+	"dubbo.apache.org/dubbogo/config"
 )
 
 // ServiceConfigExportedEvent represents an service was exported

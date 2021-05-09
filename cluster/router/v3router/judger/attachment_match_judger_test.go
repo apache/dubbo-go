@@ -26,8 +26,8 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/config"
-	"github.com/apache/dubbo-go/protocol/invocation"
+	"dubbo.apache.org/dubbogo/config"
+	"dubbo.apache.org/dubbogo/protocol/invocation"
 )
 
 func TestAttachmentMatchJudger(t *testing.T) {

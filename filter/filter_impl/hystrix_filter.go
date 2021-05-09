@@ -31,11 +31,11 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/config"
-	"github.com/apache/dubbo-go/filter"
-	"github.com/apache/dubbo-go/protocol"
+	"dubbo.apache.org/dubbogo/common/extension"
+	"dubbo.apache.org/dubbogo/common/logger"
+	"dubbo.apache.org/dubbogo/config"
+	"dubbo.apache.org/dubbogo/filter"
+	"dubbo.apache.org/dubbogo/protocol"
 )
 
 const (

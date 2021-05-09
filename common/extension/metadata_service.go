@@ -26,8 +26,8 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/metadata/service"
+	"dubbo.apache.org/dubbogo/common/constant"
+	"dubbo.apache.org/dubbogo/metadata/service"
 )
 
 type localMetadataServiceCreator func() (service.MetadataService, error)

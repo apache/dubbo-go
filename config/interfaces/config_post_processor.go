@@ -18,7 +18,7 @@
 package interfaces
 
 import (
-	"github.com/apache/dubbo-go/common"
+	"dubbo.apache.org/dubbogo/common"
 )
 
 // ConfigPostProcessor is an extension to give users a chance to customize configs against ReferenceConfig and

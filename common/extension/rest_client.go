@@ -18,7 +18,7 @@
 package extension
 
 import (
-	"github.com/apache/dubbo-go/protocol/rest/client"
+	"dubbo.apache.org/dubbogo/protocol/rest/client"
 )
 
 var restClients = make(map[string]func(restOptions *client.RestOptions) client.RestClient, 8)

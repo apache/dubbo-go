@@ -29,20 +29,20 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/cluster"
-	"github.com/apache/dubbo-go/cluster/directory"
-	"github.com/apache/dubbo-go/cluster/router/chain"
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/config"
-	"github.com/apache/dubbo-go/config_center"
-	_ "github.com/apache/dubbo-go/config_center/configurator"
-	"github.com/apache/dubbo-go/protocol"
-	"github.com/apache/dubbo-go/protocol/protocolwrapper"
-	"github.com/apache/dubbo-go/registry"
-	"github.com/apache/dubbo-go/remoting"
+	"dubbo.apache.org/dubbogo/cluster"
+	"dubbo.apache.org/dubbogo/cluster/directory"
+	"dubbo.apache.org/dubbogo/cluster/router/chain"
+	"dubbo.apache.org/dubbogo/common"
+	"dubbo.apache.org/dubbogo/common/constant"
+	"dubbo.apache.org/dubbogo/common/extension"
+	"dubbo.apache.org/dubbogo/common/logger"
+	"dubbo.apache.org/dubbogo/config"
+	"dubbo.apache.org/dubbogo/config_center"
+	_ "dubbo.apache.org/dubbogo/config_center/configurator"
+	"dubbo.apache.org/dubbogo/protocol"
+	"dubbo.apache.org/dubbogo/protocol/protocolwrapper"
+	"dubbo.apache.org/dubbogo/registry"
+	"dubbo.apache.org/dubbogo/remoting"
 )
 
 func init() {

@@ -22,7 +22,7 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/registry/servicediscovery/instance"
+	"dubbo.apache.org/dubbogo/registry/servicediscovery/instance"
 )
 
 var serviceInstanceSelectorMappings = make(map[string]func() instance.ServiceInstanceSelector, 2)

@@ -18,8 +18,8 @@
 package k8s_api
 
 import (
-	"github.com/apache/dubbo-go/cluster/router/v3router/k8s_crd"
-	"github.com/apache/dubbo-go/config_center"
+	"dubbo.apache.org/dubbogo/cluster/router/v3router/k8s_crd"
+	"dubbo.apache.org/dubbogo/config_center"
 )
 
 const (

@@ -30,18 +30,18 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/config"
-	"github.com/apache/dubbo-go/metadata/mapping"
-	"github.com/apache/dubbo-go/metadata/service"
-	"github.com/apache/dubbo-go/metadata/service/exporter/configurable"
-	"github.com/apache/dubbo-go/metadata/service/inmemory"
-	"github.com/apache/dubbo-go/registry"
-	"github.com/apache/dubbo-go/registry/event"
-	"github.com/apache/dubbo-go/registry/servicediscovery/synthesizer"
+	"dubbo.apache.org/dubbogo/common"
+	"dubbo.apache.org/dubbogo/common/constant"
+	"dubbo.apache.org/dubbogo/common/extension"
+	"dubbo.apache.org/dubbogo/common/logger"
+	"dubbo.apache.org/dubbogo/config"
+	"dubbo.apache.org/dubbogo/metadata/mapping"
+	"dubbo.apache.org/dubbogo/metadata/service"
+	"dubbo.apache.org/dubbogo/metadata/service/exporter/configurable"
+	"dubbo.apache.org/dubbogo/metadata/service/inmemory"
+	"dubbo.apache.org/dubbogo/registry"
+	"dubbo.apache.org/dubbogo/registry/event"
+	"dubbo.apache.org/dubbogo/registry/servicediscovery/synthesizer"
 )
 
 const (

@@ -27,8 +27,8 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/protocol"
-	"github.com/apache/dubbo-go/protocol/invocation"
+	"dubbo.apache.org/dubbogo/protocol"
+	"dubbo.apache.org/dubbogo/protocol/invocation"
 )
 
 type testMockSeataInvoker struct {

@@ -18,7 +18,7 @@
 package judger
 
 import (
-	"github.com/apache/dubbo-go/config"
+	"dubbo.apache.org/dubbogo/config"
 )
 
 // nolint

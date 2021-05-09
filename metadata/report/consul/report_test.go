@@ -29,12 +29,12 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/metadata/identifier"
-	"github.com/apache/dubbo-go/metadata/report"
-	"github.com/apache/dubbo-go/remoting/consul"
+	"dubbo.apache.org/dubbogo/common"
+	"dubbo.apache.org/dubbogo/common/constant"
+	"dubbo.apache.org/dubbogo/common/extension"
+	"dubbo.apache.org/dubbogo/metadata/identifier"
+	"dubbo.apache.org/dubbogo/metadata/report"
+	"dubbo.apache.org/dubbogo/remoting/consul"
 )
 
 func newProviderRegistryUrl(host string, port int) *common.URL {
