@@ -96,20 +96,20 @@ func DefaultInit() []LoaderInitOption {
 // setDefaultValue set default value for providerConfig or consumerConfig if it is null
 func setDefaultValue(target interface{}) {
 	registryConfig := &RegistryConfig{
-		Protocol:   "zookeeper",
-		TimeoutStr: "3s",
-		Address:    "127.0.0.1:2181",
+		Protocol:   constant.DEFAULT_REGISTRY_ZK_PROTOCOL,
+		TimeoutStr: constant.DEFAULT_REGISTRY_ZK_TIMEOUT,
+		Address:    constant.DEFAULT_REGISTRY_ZK_ADDRESS,
 	}
 	switch target.(type) {
 	case *ProviderConfig:
 		p := target.(*ProviderConfig)
 		if len(p.Registries) == 0 {
-			p.Registries["demoZK"] = registryConfig
+			p.Registries[constant.DEFAULT_REGISTRY_ZK_ID] = registryConfig
 		}
 		if len(p.Protocols) == 0 {
-			p.Protocols["dubbo"] = &ProtocolConfig{
-				Name: "dubbo",
-				Port: "20000",
+			p.Protocols[constant.DEFAULT_PROTOCOL] = &ProtocolConfig{
+				Name: constant.DEFAULT_PROTOCOL,
+				Port: strconv.Itoa(constant.DEFAULT_PORT),
 			}
 		}
 		if p.ApplicationConfig == nil {
@@ -118,7 +118,7 @@ func setDefaultValue(target interface{}) {
 	default:
 		c := target.(*ConsumerConfig)
 		if len(c.Registries) == 0 {
-			c.Registries["demoZK"] = registryConfig
+			c.Registries[constant.DEFAULT_REGISTRY_ZK_ID] = registryConfig
 		}
 		if c.ApplicationConfig == nil {
 			c.ApplicationConfig = NewDefaultApplicationConfig()

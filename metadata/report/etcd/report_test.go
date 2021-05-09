@@ -25,8 +25,8 @@ import (
 )
 
 import (
-	"github.com/coreos/etcd/embed"
 	"github.com/stretchr/testify/assert"
+	"go.etcd.io/etcd/embed"
 )
 
 import (

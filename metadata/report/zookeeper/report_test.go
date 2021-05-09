@@ -142,7 +142,7 @@ func (suite *zookeeperMetadataReportTestSuite) testGetServiceDefinition() {
 }
 
 func test1(t *testing.T) {
-	testCluster, err := zk.StartTestCluster(1, nil, nil)
+	testCluster, err := zk.StartTestCluster(1, nil, nil, zk.WithRetryTimes(20))
 	assert.NoError(t, err)
 	defer func() {
 		err := testCluster.Stop()
