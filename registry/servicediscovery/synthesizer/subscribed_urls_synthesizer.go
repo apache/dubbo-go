@@ -18,8 +18,8 @@
 package synthesizer
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/registry"
+	"dubbo.apache.org/dubbogo/common"
+	"dubbo.apache.org/dubbogo/registry"
 )
 
 // SubscribedURLsSynthesizer is used to synthesize the subscribed url

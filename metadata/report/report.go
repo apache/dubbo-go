@@ -18,8 +18,8 @@
 package report
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/metadata/identifier"
+	"dubbo.apache.org/dubbogo/common"
+	"dubbo.apache.org/dubbogo/metadata/identifier"
 )
 
 // MetadataReport is an interface of

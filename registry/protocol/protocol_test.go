@@ -28,18 +28,18 @@ import (
 )
 
 import (
-	cluster "github.com/apache/dubbo-go/cluster/cluster_impl"
-	"github.com/apache/dubbo-go/common"
-	common_cfg "github.com/apache/dubbo-go/common/config"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/config"
-	"github.com/apache/dubbo-go/config_center"
-	"github.com/apache/dubbo-go/config_center/configurator"
-	"github.com/apache/dubbo-go/protocol"
-	"github.com/apache/dubbo-go/protocol/protocolwrapper"
-	"github.com/apache/dubbo-go/registry"
-	"github.com/apache/dubbo-go/remoting"
+	cluster "dubbo.apache.org/dubbogo/cluster/cluster_impl"
+	"dubbo.apache.org/dubbogo/common"
+	common_cfg "dubbo.apache.org/dubbogo/common/config"
+	"dubbo.apache.org/dubbogo/common/constant"
+	"dubbo.apache.org/dubbogo/common/extension"
+	"dubbo.apache.org/dubbogo/config"
+	"dubbo.apache.org/dubbogo/config_center"
+	"dubbo.apache.org/dubbogo/config_center/configurator"
+	"dubbo.apache.org/dubbogo/protocol"
+	"dubbo.apache.org/dubbogo/protocol/protocolwrapper"
+	"dubbo.apache.org/dubbogo/registry"
+	"dubbo.apache.org/dubbogo/remoting"
 )
 
 func init() {

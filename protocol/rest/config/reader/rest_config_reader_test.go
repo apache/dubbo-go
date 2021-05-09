@@ -27,8 +27,8 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common/yaml"
-	"github.com/apache/dubbo-go/protocol/rest/config"
+	"dubbo.apache.org/dubbogo/common/yaml"
+	"dubbo.apache.org/dubbogo/protocol/rest/config"
 )
 
 func TestRestConfigReaderReadConsumerConfig(t *testing.T) {

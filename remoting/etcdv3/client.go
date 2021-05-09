@@ -23,7 +23,7 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common/logger"
+	"dubbo.apache.org/dubbogo/common/logger"
 )
 
 // ValidateClient validates client and sets options

@@ -29,9 +29,9 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/config"
-	"github.com/apache/dubbo-go/protocol"
+	"dubbo.apache.org/dubbogo/common"
+	"dubbo.apache.org/dubbogo/config"
+	"dubbo.apache.org/dubbogo/protocol"
 )
 
 func TestJsonrpcProtocolExport(t *testing.T) {

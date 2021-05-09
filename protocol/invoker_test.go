@@ -26,7 +26,7 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
+	"dubbo.apache.org/dubbogo/common"
 )
 
 func TestBaseInvoker(t *testing.T) {

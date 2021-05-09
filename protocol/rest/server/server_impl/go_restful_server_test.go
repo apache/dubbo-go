@@ -26,9 +26,9 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/protocol/rest/config"
-	"github.com/apache/dubbo-go/protocol/rest/server"
+	"dubbo.apache.org/dubbogo/common"
+	"dubbo.apache.org/dubbogo/protocol/rest/config"
+	"dubbo.apache.org/dubbogo/protocol/rest/server"
 )
 
 func TestGoRestfulServerDeploySameUrl(t *testing.T) {

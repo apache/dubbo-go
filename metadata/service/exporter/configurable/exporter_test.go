@@ -26,13 +26,13 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	_ "github.com/apache/dubbo-go/common/proxy/proxy_factory"
-	"github.com/apache/dubbo-go/config"
-	_ "github.com/apache/dubbo-go/filter/filter_impl"
-	"github.com/apache/dubbo-go/metadata/service/inmemory"
-	_ "github.com/apache/dubbo-go/protocol/dubbo"
-	"github.com/apache/dubbo-go/remoting/getty"
+	"dubbo.apache.org/dubbogo/common"
+	_ "dubbo.apache.org/dubbogo/common/proxy/proxy_factory"
+	"dubbo.apache.org/dubbogo/config"
+	_ "dubbo.apache.org/dubbogo/filter/filter_impl"
+	"dubbo.apache.org/dubbogo/metadata/service/inmemory"
+	_ "dubbo.apache.org/dubbogo/protocol/dubbo"
+	"dubbo.apache.org/dubbogo/remoting/getty"
 )
 
 func TestConfigurableExporter(t *testing.T) {

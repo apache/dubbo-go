@@ -27,8 +27,8 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/cluster"
-	"github.com/apache/dubbo-go/protocol"
+	"dubbo.apache.org/dubbogo/cluster"
+	"dubbo.apache.org/dubbogo/protocol"
 )
 
 type availableClusterInvoker struct {

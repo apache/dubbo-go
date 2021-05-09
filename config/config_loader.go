@@ -34,13 +34,13 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/common/logger"
-	_ "github.com/apache/dubbo-go/common/observer/dispatcher"
-	"github.com/apache/dubbo-go/common/yaml"
-	"github.com/apache/dubbo-go/registry"
+	"dubbo.apache.org/dubbogo/common"
+	"dubbo.apache.org/dubbogo/common/constant"
+	"dubbo.apache.org/dubbogo/common/extension"
+	"dubbo.apache.org/dubbogo/common/logger"
+	_ "dubbo.apache.org/dubbogo/common/observer/dispatcher"
+	"dubbo.apache.org/dubbogo/common/yaml"
+	"dubbo.apache.org/dubbogo/registry"
 )
 
 var (

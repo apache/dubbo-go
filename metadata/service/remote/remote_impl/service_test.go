@@ -27,15 +27,15 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/config/instance"
-	"github.com/apache/dubbo-go/metadata/definition"
-	"github.com/apache/dubbo-go/metadata/identifier"
-	"github.com/apache/dubbo-go/metadata/report"
-	"github.com/apache/dubbo-go/metadata/report/factory"
-	"github.com/apache/dubbo-go/metadata/service/inmemory"
+	"dubbo.apache.org/dubbogo/common"
+	"dubbo.apache.org/dubbogo/common/extension"
+	"dubbo.apache.org/dubbogo/common/logger"
+	"dubbo.apache.org/dubbogo/config/instance"
+	"dubbo.apache.org/dubbogo/metadata/definition"
+	"dubbo.apache.org/dubbogo/metadata/identifier"
+	"dubbo.apache.org/dubbogo/metadata/report"
+	"dubbo.apache.org/dubbogo/metadata/report/factory"
+	"dubbo.apache.org/dubbogo/metadata/service/inmemory"
 )
 
 var (

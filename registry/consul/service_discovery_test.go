@@ -18,8 +18,8 @@
 package consul
 
 import (
+	"dubbo.apache.org/dubbogo/registry/event"
 	"fmt"
-	"github.com/apache/dubbo-go/registry/event"
 	gxset "github.com/dubbogo/gost/container/set"
 	"math/rand"
 	"strconv"
@@ -32,13 +32,13 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/common/observer"
-	"github.com/apache/dubbo-go/config"
-	"github.com/apache/dubbo-go/registry"
-	"github.com/apache/dubbo-go/remoting/consul"
+	"dubbo.apache.org/dubbogo/common"
+	"dubbo.apache.org/dubbogo/common/constant"
+	"dubbo.apache.org/dubbogo/common/extension"
+	"dubbo.apache.org/dubbogo/common/observer"
+	"dubbo.apache.org/dubbogo/config"
+	"dubbo.apache.org/dubbogo/registry"
+	"dubbo.apache.org/dubbogo/remoting/consul"
 )
 
 var (

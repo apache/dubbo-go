@@ -29,11 +29,11 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/config/interfaces"
-	"github.com/apache/dubbo-go/protocol/rest/config"
+	"dubbo.apache.org/dubbogo/common/constant"
+	"dubbo.apache.org/dubbogo/common/extension"
+	"dubbo.apache.org/dubbogo/common/logger"
+	"dubbo.apache.org/dubbogo/config/interfaces"
+	"dubbo.apache.org/dubbogo/protocol/rest/config"
 )
 
 const REST = "rest"

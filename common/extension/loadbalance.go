@@ -18,7 +18,7 @@
 package extension
 
 import (
-	"github.com/apache/dubbo-go/cluster"
+	"dubbo.apache.org/dubbogo/cluster"
 )
 
 var loadbalances = make(map[string]func() cluster.LoadBalance)

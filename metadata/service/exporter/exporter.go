@@ -18,7 +18,7 @@
 package exporter
 
 import (
-	"github.com/apache/dubbo-go/common"
+	"dubbo.apache.org/dubbogo/common"
 )
 
 // MetadataServiceExporter will export & unexport the metadata service,  get exported url, and return is exported or not

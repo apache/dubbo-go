@@ -28,9 +28,9 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/cluster/router/chain"
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
+	"dubbo.apache.org/dubbogo/cluster/router/chain"
+	"dubbo.apache.org/dubbogo/common"
+	"dubbo.apache.org/dubbogo/common/constant"
 )
 
 var (

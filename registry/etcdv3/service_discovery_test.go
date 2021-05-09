@@ -26,9 +26,9 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/config"
-	"github.com/apache/dubbo-go/registry"
+	"dubbo.apache.org/dubbogo/common/constant"
+	"dubbo.apache.org/dubbogo/config"
+	"dubbo.apache.org/dubbogo/registry"
 )
 
 var testName = "test"

@@ -26,9 +26,9 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common/config"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/config_center"
+	"dubbo.apache.org/dubbogo/common/config"
+	"dubbo.apache.org/dubbogo/common/extension"
+	"dubbo.apache.org/dubbogo/config_center"
 )
 
 func TestStartConfigCenter(t *testing.T) {

@@ -18,7 +18,7 @@
 package extension
 
 import (
-	"github.com/apache/dubbo-go/config_center"
+	"dubbo.apache.org/dubbogo/config_center"
 )
 
 var configCenterFactories = make(map[string]func() config_center.DynamicConfigurationFactory)

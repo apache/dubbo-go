@@ -18,8 +18,8 @@
 package event
 
 import (
-	"github.com/apache/dubbo-go/common/observer"
-	"github.com/apache/dubbo-go/registry"
+	"dubbo.apache.org/dubbogo/common/observer"
+	"dubbo.apache.org/dubbogo/registry"
 )
 
 // ServiceDiscoveryEvent means that something happens to service discovery instance

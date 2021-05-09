@@ -23,7 +23,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/apache/dubbo-go/common/logger"
+	"dubbo.apache.org/dubbogo/common/logger"
 )
 
 import (

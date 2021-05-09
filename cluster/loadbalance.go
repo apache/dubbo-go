@@ -18,7 +18,7 @@
 package cluster
 
 import (
-	"github.com/apache/dubbo-go/protocol"
+	"dubbo.apache.org/dubbogo/protocol"
 )
 
 // LoadBalance
