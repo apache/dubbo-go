@@ -96,9 +96,9 @@ func (g *dubboGrpc) Generate(file *generator.FileDescriptor) {
 // GenerateImports generates the import declaration for this file.
 func (g *dubboGrpc) GenerateImports(file *generator.FileDescriptor) {
 	g.P("import (")
-	g.P(`dgrpc "github.com/apache/dubbo-go/protocol/grpc"`)
-	g.P(`"github.com/apache/dubbo-go/protocol/invocation"`)
-	g.P(`"github.com/apache/dubbo-go/protocol"`)
+	g.P(`dgrpc "dubbo.apache.org/dubbo-go/v3/protocol/grpc"`)
+	g.P(`"dubbo.apache.org/dubbo-go/v3/protocol/invocation"`)
+	g.P(`"dubbo.apache.org/dubbo-go/v3/protocol"`)
 	g.P(` ) `)
 }
 
