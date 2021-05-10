@@ -19,13 +19,16 @@ package proxy_factory
 
 import (
 	"context"
+	"reflect"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/common/proxy"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/invocation"
-	"reflect"
 )
 
 var (
@@ -42,10 +45,12 @@ func NewResultProxyFactory(_ ...proxy.Option) proxy.ProxyFactory {
 	return &ResultProxyFactory{}
 }
 
+// GetInvoker gets a invoker
 func (f *ResultProxyFactory) GetProxy(invoker protocol.Invoker, url *common.URL) *proxy.Proxy {
 	return f.GetAsyncProxy(invoker, nil, url)
 }
 
+// GetAsyncProxy gets a async proxy
 func (f *ResultProxyFactory) GetAsyncProxy(invoker protocol.Invoker, callBack interface{}, url *common.URL) *proxy.Proxy {
 	attrs := map[string]string{}
 	attrs[constant.ASYNC_KEY] = url.GetParam(constant.ASYNC_KEY, "false")
@@ -60,6 +65,8 @@ func (f *ResultProxyFactory) GetInvoker(url *common.URL) protocol.Invoker {
 	}
 }
 
+// NewResultProxyImplFunc returns a new function with the given attributes,
+// supports only function sign: func Invoke(Context, []{Method, []{Arguments}}) protocol.Result.
 func NewResultProxyImplFunc(attr map[string]string) proxy.ImplementFunc {
 	return func(p *proxy.Proxy, rpc common.RPCService) {
 		serviceValue := reflect.ValueOf(rpc)
@@ -99,7 +106,7 @@ func NewResultProxyImplFunc(attr map[string]string) proxy.ImplementFunc {
 	}
 }
 
-// for: func Invoke(goctx, []interface{}{service.Method, types, values}) protocol.Result;
+// make a function: func Invoke(goctx, []interface{}{service.Method, types, values}) protocol.Result;
 func makeResultProxyFunc(funcName string, proxy *proxy.Proxy, usrAttr map[string]string) func([]reflect.Value) []reflect.Value {
 	return func(funArgs []reflect.Value) []reflect.Value {
 		// Context

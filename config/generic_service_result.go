@@ -19,6 +19,9 @@ package config
 
 import (
 	"context"
+)
+
+import (
 	"github.com/apache/dubbo-go/protocol"
 )
 
