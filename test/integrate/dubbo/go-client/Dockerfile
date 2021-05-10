@@ -22,14 +22,18 @@ WORKDIR /go/src/github.com/apache/dubbo-go/test/integrate/dubbo/go-client
 ENV CONF_CONSUMER_FILE_PATH "client.yml"
 ENV APP_LOG_CONF_FILE "log.yml"
 
-ARG PR_ORIGIN_REPO
-ARG PR_ORIGIN_COMMITID
+# for pull_request, it is pr origin repository
+# for merge int develop/master, it is github.com/apache/dubbo-go
+ARG REPO
+# for pull_request, it is pr origin commit id
+# for merge int develop/master, it is the commit id that trigger the ci workflow
+ARG COMMITID
 
 ADD . /go/src/github.com/apache/dubbo-go/test/integrate/dubbo/go-client
 
 # update dubbo-go to current commit id
-RUN test ${PR_ORIGIN_REPO} && echo "dubbo.apache.org/dubbo-go/v3 will be replace to github.com/${PR_ORIGIN_REPO}/v3@${PR_ORIGIN_COMMITID}" || echo 'go get dubbo.apache.org/dubbo-go/v3@develop'
-RUN test ${PR_ORIGIN_REPO} && go mod edit -replace=dubbo.apache.org/dubbo-go/v3=github.com/${PR_ORIGIN_REPO}/v3@${PR_ORIGIN_COMMITID} || go get dubbo.apache.org/dubbo-go/v3@develop
+RUN test ${REPO} && echo "dubbo.apache.org/dubbo-go/v3 will be replace to github.com/${REPO}/v3@${COMMITID}"
+RUN test ${REPO} && go mod edit -replace=dubbo.apache.org/dubbo-go/v3=github.com/${REPO}/v3@${COMMITID}
 
 ENV GO111MODULE on
 
