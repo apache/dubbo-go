@@ -1,4 +1,4 @@
-module github.com/apache/dubbo-go/test/integrate/dubbo/go-client
+module dubbo.apache.org/dubbo-go/v3/test/integrate/dubbo/go-client
 
 go 1.13
 
