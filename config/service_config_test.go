@@ -20,7 +20,7 @@ package config
 import (
 	"testing"
 
-	"github.com/apache/dubbo-go/common"
+	"dubbo.apache.org/dubbo-go/v3/common"
 )
 
 import (
@@ -29,7 +29,7 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
 )
 
 func doInitProvider() {

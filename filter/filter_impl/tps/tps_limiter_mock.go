@@ -30,8 +30,8 @@ import (
 )
 
 import (
-	common "github.com/apache/dubbo-go/common"
-	protocol "github.com/apache/dubbo-go/protocol"
+	common "dubbo.apache.org/dubbo-go/v3/common"
+	protocol "dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
 // MockTpsLimiter is a mock of TpsLimiter interface
