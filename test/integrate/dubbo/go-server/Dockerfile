@@ -17,7 +17,7 @@
 
 FROM golang
 
-WORKDIR /go/src/github.com/apache/dubbo-go/test/integrate/dubbo/go-server
+WORKDIR /go/src/dubbo.apache.org/dubbo-go/v3/test/integrate/dubbo/go-server
 
 ENV CONF_PROVIDER_FILE_PATH "server.yml"
 ENV APP_LOG_CONF_FILE "log.yml"
@@ -29,13 +29,13 @@ ARG REPO
 # for merge int develop/master, it is the commit id that trigger the ci workflow
 ARG COMMITID
 
-ADD . /go/src/github.com/apache/dubbo-go/test/integrate/dubbo/go-server
+ADD . /go/src/dubbo.apache.org/dubbo-go/v3/test/integrate/dubbo/go-server
 # update dubbo-go to current commit id
 RUN test ${REPO} && echo "dubbo.apache.org/dubbo-go/v3 will be replace to github.com/${REPO}/v3@${COMMITID}"
 RUN test ${REPO} && go mod edit -replace=dubbo.apache.org/dubbo-go/v3=github.com/${REPO}/v3@${COMMITID}
 
 ENV GO111MODULE on
 
-RUN go mod tidy && go install github.com/apache/dubbo-go/test/integrate/dubbo/go-server
+RUN go mod tidy && go install dubbo.apache.org/dubbo-go/v3/test/integrate/dubbo/go-server
 
 CMD go-server
