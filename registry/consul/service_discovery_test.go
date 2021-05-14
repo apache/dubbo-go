@@ -18,9 +18,7 @@
 package consul
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/registry/event"
 	"fmt"
-	gxset "github.com/dubbogo/gost/container/set"
 	"math/rand"
 	"strconv"
 	"testing"
@@ -28,6 +26,7 @@ import (
 )
 
 import (
+	gxset "github.com/dubbogo/gost/container/set"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -36,8 +35,11 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/observer"
+	"dubbo.apache.org/dubbo-go/v3/common/observer/dispatcher"
 	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
 	"dubbo.apache.org/dubbo-go/v3/registry"
+	"dubbo.apache.org/dubbo-go/v3/registry/event"
 	"dubbo.apache.org/dubbo-go/v3/remoting/consul"
 )
 
@@ -92,9 +94,14 @@ func TestConsulServiceDiscovery_CRUD(t *testing.T) {
 	}()
 
 	prepareData()
-	eventDispatcher := MockEventDispatcher{Notify: make(chan struct{}, 1)}
+
+	eventDispatcher := dispatcher.NewMockEventDispatcher()
 	extension.SetEventDispatcher("mock", func() observer.EventDispatcher {
-		return &eventDispatcher
+		return eventDispatcher
+	})
+
+	extension.SetGlobalServiceNameMapping(func() mapping.ServiceNameMapping {
+		return mapping.NewMockServiceNameMapping()
 	})
 
 	extension.SetAndInitGlobalDispatcher("mock")
@@ -199,40 +206,4 @@ func prepareService() (registry.ServiceInstance, *common.URL) {
 		Healthy:     true,
 		Metadata:    nil,
 	}, registryUrl
-}
-
-type MockEventDispatcher struct {
-	Notify chan struct{}
-	Event  observer.Event
-}
-
-// AddEventListener do nothing
-func (m *MockEventDispatcher) AddEventListener(observer.EventListener) {
-}
-
-// AddEventListeners do nothing
-func (m *MockEventDispatcher) AddEventListeners([]observer.EventListener) {
-}
-
-// RemoveEventListener do nothing
-func (m *MockEventDispatcher) RemoveEventListener(observer.EventListener) {
-}
-
-// RemoveEventListeners do nothing
-func (m *MockEventDispatcher) RemoveEventListeners([]observer.EventListener) {
-}
-
-// GetAllEventListeners return empty list
-func (m *MockEventDispatcher) GetAllEventListeners() []observer.EventListener {
-	return make([]observer.EventListener, 0)
-}
-
-// RemoveAllEventListeners do nothing
-func (m *MockEventDispatcher) RemoveAllEventListeners() {
-}
-
-// Dispatch do nothing
-func (m *MockEventDispatcher) Dispatch(event observer.Event) {
-	m.Event = event
-	m.Notify <- struct{}{}
 }

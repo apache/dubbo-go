@@ -1,4 +1,4 @@
-module github.com/apache/dubbo-go/protocol/dubbo3/protoc-gen-dubbo3
+module dubbo.apache.org/dubbo-go/v3/protocol/dubbo3/protoc-gen-dubbo3
 
 go 1.15
 

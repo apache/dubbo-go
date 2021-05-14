@@ -15,23 +15,22 @@
  * limitations under the License.
  */
 
-package common
+package mapping
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/tools/cli/protocol"
+	gxset "github.com/dubbogo/gost/container/set"
 )
 
-var protocols = make(map[string]func() protocol.Protocol, 8)
+type MockServiceNameMapping struct{}
 
-// SetProtocol sets the protocol extension with @name
-func SetProtocol(name string, v func() protocol.Protocol) {
-	protocols[name] = v
+func NewMockServiceNameMapping() *MockServiceNameMapping {
+	return &MockServiceNameMapping{}
 }
 
-// GetProtocol finds the protocol extension with @name
-func GetProtocol(name string) protocol.Protocol {
-	if protocols[name] == nil {
-		panic("protocol for " + name + " is not existing, make sure you have import the package.")
-	}
-	return protocols[name]()
+func (m *MockServiceNameMapping) Map(string, string, string, string) error {
+	return nil
+}
+
+func (m *MockServiceNameMapping) Get(string, string, string, string) (*gxset.HashSet, error) {
+	panic("implement me")
 }
