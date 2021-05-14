@@ -65,17 +65,17 @@ Finished List:
     * JsonRPC V2
     * Hessian V2
     * [json for grpc](https://github.com/apache/dubbo-go/pull/582)
+    * protobuf
 
 - Protocol
     * Dubbo
+    * [Triple](https://github.com/dubbogo/triple)
     * Jsonrpc2.0
     * [gRPC](https://github.com/apache/dubbo-go/pull/311)
     * [RESTful](https://github.com/apache/dubbo-go/pull/352)
 
 - Router
-    * [Condition router](https://github.com/apache/dubbo-go/pull/294)
-    * [Health check router](https://github.com/apache/dubbo-go/pull/389)
-    * [Dynamic_tag_router](https://github.com/apache/dubbo-go/pull/703)
+    * [Dubbo3 router](https://github.com/apache/dubbo-go/pull/1187)
 
 - Registry
     * ZooKeeper
@@ -134,10 +134,7 @@ Finished List:
     * [Consul](https://github.com/apache/dubbo-go/pull/633)
 
 - Service discovery
-    * [Nacos](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/registry/nacos/service_discovery.go)
-    * [Zookeeper](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/registry/zookeeper/service_discovery.go)
-    * [Etcd](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/registry/etcdv3/service_discovery.go)
-    * [File](https://github.com/apache/dubbo-go/pull/732)
+    * [Zookeeper](https://github.com/apache/dubbo-go/pull/1161)
     
 - Tool
     * [Dubbo-go-cli](https://github.com/apache/dubbo-go/pull/818)

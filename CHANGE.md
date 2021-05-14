@@ -2,13 +2,13 @@
 ---
 ## 3.0.0
 ### New Features
-- [Add triple protocol](https://github.com/apache/dubbo-go/pull/1071/files)
+- [Add triple protocol](https://github.com/apache/dubbo-go/pull/1071)
 - [Add dubbo3 router](https://github.com/apache/dubbo-go/pull/1187)
-- [Add app-level remote service discovery](https://github.com/apache/dubbo-go/pull/1161/files)
+- [Add app-level remote service discovery](https://github.com/apache/dubbo-go/pull/1161)
 - [Add default config](https://github.com/apache/dubbo-go/pull/1073)
 - [Add pass through proxy factory](https://github.com/apache/dubbo-go/pull/1081)
 ### Enhancement
-- [Replace default config string with const value](https://github.com/apache/dubbo-go/pull/1182/files)
+- [Replace default config string with const value](https://github.com/apache/dubbo-go/pull/1182)
 - [Add retry times in zookeeper starting](https://github.com/apache/dubbo-go/pull/1179)
 - [Client pool enhance](https://github.com/apache/dubbo-go/pull/1119)
 - [Impl the way of load configure file](https://github.com/apache/dubbo-go/pull/1099)
