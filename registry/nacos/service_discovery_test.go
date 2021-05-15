@@ -37,7 +37,7 @@ import (
 	"github.com/apache/dubbo-go/registry"
 )
 
-testName = "test"
+var testName = "test"
 
 func Test_newNacosServiceDiscovery(t *testing.T) {
 	name := "nacos1"
