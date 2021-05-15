@@ -60,7 +60,7 @@ func TestBuildRouterChain(t *testing.T) {
 	routeURL.AddParam(constant.INTERFACE_KEY, "mock-app")
 	routerURLs := make([]*common.URL, 0)
 	routerURLs = append(routerURLs, routeURL)
-	directory.SetRouters(routerURLs)
+	directory.AddRouters(routerURLs)
 	chain := directory.RouterChain()
 
 	assert.NotNil(t, chain)
