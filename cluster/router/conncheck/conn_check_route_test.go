@@ -102,6 +102,56 @@ func TestRecovery(t *testing.T) {
 	assert.Equal(t, len(protocol.GetBlackListInvokers(16)), 0)
 }
 
+func TestPrintlnConnCheckRouterRoute(t *testing.T) {
+
+	connCheck1001URL2 := "dubbo://192.168.10.1/com.ikurento.user.UserNoProvider"
+	connCheckRouteUrl2Format := "dubbo://%s:20000/com.ikurento.user.UserNoProvider"
+
+	defer protocol.CleanAllStatus()
+	notify := make(chan struct{})
+	go func() {
+		for range notify {
+		}
+	}()
+	consumerURL, _ := common.NewURL(connCheck1001URL2)
+	url1, _ := common.NewURL(fmt.Sprintf(connCheckRouteUrl2Format, connCheckRoute1010IP))
+	url2, _ := common.NewURL(fmt.Sprintf(connCheckRouteUrl2Format, connCheckRoute1011IP))
+	url3, _ := common.NewURL(fmt.Sprintf(connCheckRouteUrl2Format, connCheckRoute1012IP))
+	hcr, _ := NewConnCheckRouter(consumerURL, notify)
+
+	var invokers []protocol.Invoker
+	invoker1 := NewMockInvoker(url1)
+	invoker2 := NewMockInvoker(url2)
+	invoker3 := NewMockInvoker(url3)
+	protocol.SetInvokerUnhealthyStatus(invoker1)
+	protocol.SetInvokerUnhealthyStatus(invoker2)
+	protocol.SetInvokerUnhealthyStatus(invoker3)
+
+	invokers = append(invokers, invoker1, invoker2, invoker3)
+	inv := invocation.NewRPCInvocation(connCheckRouteMethodNameTest, nil, nil)
+	cache := setUpAddrCache(hcr.(*ConnCheckRouter), invokers)
+	res := hcr.Route(utils.ToBitmap(invokers), cache, consumerURL, inv)
+
+	// now  invoker3 is healthy
+	assert.True(t, len(res.ToArray()) == 3)
+	var (
+		router *ConnCheckRouter
+		ok     bool
+	)
+	router, ok = hcr.(*ConnCheckRouter)
+	assert.True(t, ok)
+	assert.Equal(t, router.RouteSnapshot(cache), "conn-check-router -> Count:0 {}")
+
+	// check blacklist remove
+	protocol.RemoveInvokerUnhealthyStatus(invoker1)
+	protocol.RemoveInvokerUnhealthyStatus(invoker3)
+	cache = setUpAddrCache(hcr.(*ConnCheckRouter), invokers)
+	res = hcr.Route(utils.ToBitmap(invokers), cache, consumerURL, inv)
+	// now  invoker3 invoker1 is healthy
+	assert.True(t, len(res.ToArray()) == 2)
+	assert.Equal(t, router.RouteSnapshot(cache), "conn-check-router -> Count:2 {0,2}")
+}
+
 func setUpAddrCache(r router.Poolable, addrs []protocol.Invoker) router.Cache {
 	pool, info := r.Pool(addrs)
 	cache := chain.BuildCache(addrs)

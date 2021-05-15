@@ -56,6 +56,11 @@ type PriorityRouter interface {
 	Priority() int64
 }
 
+// PriorityRouterDetecter detect the router
+type PriorityRouterDetecter interface {
+	RouteSnapshot(cache Cache) string
+}
+
 // Poolable caches address pool and address metadata for a router instance which will be used later in Router's Route.
 type Poolable interface {
 	// Pool created address pool and address metadata from the invokers.
