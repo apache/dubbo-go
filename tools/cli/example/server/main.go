@@ -26,6 +26,10 @@ import (
 )
 
 import (
+	hessian "github.com/apache/dubbo-go-hessian2"
+)
+
+import (
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/cluster_impl"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
@@ -33,9 +37,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config"
 	_ "dubbo.apache.org/dubbo-go/v3/filter/filter_impl"
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/dubbo"
-	_ "dubbo.apache.org/dubbo-go/v3/registry/consul"
 	_ "dubbo.apache.org/dubbo-go/v3/registry/protocol"
-	hessian "github.com/apache/dubbo-go-hessian2"
+	_ "dubbo.apache.org/dubbo-go/v3/registry/zookeeper"
 )
 
 var survivalTimeout = int(3e9)

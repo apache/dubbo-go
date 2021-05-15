@@ -140,7 +140,7 @@ func (r *etcdV3Registry) CreatePath(k string) error {
 	var tmpPath string
 	for _, str := range strings.Split(k, "/")[1:] {
 		tmpPath = path.Join(tmpPath, "/", str)
-		if err := r.client.Create(tmpPath, ""); err != nil {
+		if err := r.client.Put(tmpPath, ""); err != nil {
 			return perrors.WithMessagef(err, "create path %s in etcd", tmpPath)
 		}
 	}

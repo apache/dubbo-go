@@ -1,4 +1,4 @@
-module github.com/apache/dubbo-go/tools/cli
+module dubbo.apache.org/dubbo-go/v3/tools/cli
 
 go 1.13
 
