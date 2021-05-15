@@ -86,6 +86,7 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry) (cluster.
 
 	if routerChain, err := chain.NewRouterChain(dir.consumerURL); err == nil {
 		dir.BaseDirectory.SetRouterChain(routerChain)
+		dir.AddRouters(fileBasedRouterUrls())
 	} else {
 		logger.Warnf("fail to create router chain with url: %s, err is: %v", url.SubURL, err)
 	}
@@ -185,18 +186,21 @@ func (dir *RegistryDirectory) refreshAllInvokers(events []*registry.ServiceEvent
 			}
 		}
 		// loop the updateEvents
+		var routerUrls []*common.URL
 		for _, event := range addEvents {
 			logger.Debugf("registry update, result{%s}", event)
 			if event.Service != nil {
 				logger.Infof("selector add service url{%s}", event.Service.String())
 			}
 			if event != nil && event.Service != nil && constant.ROUTER_PROTOCOL == event.Service.Protocol {
-				dir.configRouters()
+				routerUrls = append(routerUrls, event.Service)
+				continue
 			}
 			if oldInvoker, _ := dir.doCacheInvoker(event.Service); oldInvoker != nil {
 				oldInvokers = append(oldInvokers, oldInvoker)
 			}
 		}
+		dir.AddRouters(append(fileBasedRouterUrls(), routerUrls...))
 	}()
 	dir.setNewInvokers()
 	// destroy unused invokers
@@ -245,7 +249,8 @@ func (dir *RegistryDirectory) cacheInvokerByEvent(event *registry.ServiceEvent) 
 		case remoting.EventTypeAdd, remoting.EventTypeUpdate:
 			logger.Infof("selector add service url{%s}", event.Service)
 			if u != nil && constant.ROUTER_PROTOCOL == u.Protocol {
-				dir.configRouters()
+				dir.AddRouters(append(fileBasedRouterUrls(), u))
+				return nil, nil
 			}
 			return dir.cacheInvoker(u), nil
 		case remoting.EventTypeDel:
@@ -256,18 +261,6 @@ func (dir *RegistryDirectory) cacheInvokerByEvent(event *registry.ServiceEvent) 
 		}
 	}
 	return nil, nil
-}
-
-// configRouters configures dynamic routers into the router chain, but, the current impl is incorrect, see FIXME above.
-func (dir *RegistryDirectory) configRouters() {
-	var urls []*common.URL
-	for _, v := range config.GetRouterURLSet().Values() {
-		urls = append(urls, v.(*common.URL))
-	}
-
-	if len(urls) > 0 {
-		dir.SetRouters(urls)
-	}
 }
 
 // convertUrl processes override:// and router://
@@ -458,6 +451,15 @@ func doOverrideUrl(configurators []config_center.Configurator, targetUrl *common
 	for _, v := range configurators {
 		v.Configure(targetUrl)
 	}
+}
+
+// build static configured router from local router config
+func fileBasedRouterUrls() []*common.URL {
+	var urls []*common.URL
+	for _, v := range config.GetRouterURLSet().Values() {
+		urls = append(urls, v.(*common.URL))
+	}
+	return urls
 }
 
 type referenceConfigurationListener struct {
