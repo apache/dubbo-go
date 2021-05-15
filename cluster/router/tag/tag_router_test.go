@@ -93,7 +93,7 @@ func NewMockInvoker(url *common.URL) *MockInvoker {
 	}
 }
 
-func (bi *MockInvoker) GetUrl() *common.URL {
+func (bi *MockInvoker) GetURL() *common.URL {
 	return bi.url
 }
 
@@ -157,7 +157,7 @@ func TestTagRouterRouteForce(t *testing.T) {
 	inv.SetAttachments(tagRouterTestDubboTag, tagRouterTestHangZhou)
 	invRst1 := tagRouter.Route(utils.ToBitmap(invokers), setUpAddrCache(tagRouter, invokers), u1, inv)
 	assert.Equal(t, 1, len(invRst1.ToArray()))
-	assert.Equal(t, tagRouterTestHangZhou, invokers[invRst1.ToArray()[0]].GetUrl().GetParam(tagRouterTestDubboTag, ""))
+	assert.Equal(t, tagRouterTestHangZhou, invokers[invRst1.ToArray()[0]].GetURL().GetParam(tagRouterTestDubboTag, ""))
 
 	inv.SetAttachments(tagRouterTestDubboTag, tagRouterTestGuangZhou)
 	invRst2 := tagRouter.Route(utils.ToBitmap(invokers), setUpAddrCache(tagRouter, invokers), u1, inv)
@@ -194,7 +194,7 @@ func TestTagRouterRouteNoForce(t *testing.T) {
 	inv.SetAttachments(tagRouterTestDubboTag, tagRouterTestHangZhou)
 	invRst := tagRouter.Route(utils.ToBitmap(invokers), setUpAddrCache(tagRouter, invokers), u1, inv)
 	assert.Equal(t, 1, len(invRst.ToArray()))
-	assert.Equal(t, tagRouterTestHangZhou, invokers[invRst.ToArray()[0]].GetUrl().GetParam(tagRouterTestDubboTag, ""))
+	assert.Equal(t, tagRouterTestHangZhou, invokers[invRst.ToArray()[0]].GetURL().GetParam(tagRouterTestDubboTag, ""))
 
 	inv.SetAttachments(tagRouterTestDubboTag, tagRouterTestGuangZhou)
 	inv.SetAttachments(tagRouterTestDubboForceTag, tagRouterTestTrue)

@@ -90,8 +90,8 @@ func TestRecovery(t *testing.T) {
 	invoker1 := mock.NewMockInvoker(ctrl)
 	invoker2 := mock.NewMockInvoker(ctrl)
 
-	invoker1.EXPECT().GetUrl().Return(&common.URL{Path: "path1"}).AnyTimes()
-	invoker2.EXPECT().GetUrl().Return(&common.URL{Path: "path2"}).AnyTimes()
+	invoker1.EXPECT().GetURL().Return(&common.URL{Path: "path1"}).AnyTimes()
+	invoker2.EXPECT().GetURL().Return(&common.URL{Path: "path2"}).AnyTimes()
 	invoker1.EXPECT().IsAvailable().Return(true).AnyTimes()
 	invoker2.EXPECT().IsAvailable().Return(true).AnyTimes()
 

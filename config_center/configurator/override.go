@@ -44,7 +44,7 @@ type overrideConfigurator struct {
 	configuratorUrl *common.URL
 }
 
-func (c *overrideConfigurator) GetUrl() *common.URL {
+func (c *overrideConfigurator) GetURL() *common.URL {
 	return c.configuratorUrl
 }
 

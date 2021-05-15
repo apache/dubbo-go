@@ -58,16 +58,16 @@ func (m *MockInvoker) EXPECT() *MockInvokerMockRecorder {
 	return m.recorder
 }
 
-// GetUrl mocks base method
-func (m *MockInvoker) GetUrl() *common.URL {
-	ret := m.ctrl.Call(m, "GetUrl")
+// GetURL mocks base method
+func (m *MockInvoker) GetURL() *common.URL {
+	ret := m.ctrl.Call(m, "GetURL")
 	ret0, _ := ret[0].(*common.URL)
 	return ret0
 }
 
-// GetUrl indicates an expected call of GetUrl
-func (mr *MockInvokerMockRecorder) GetUrl() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUrl", reflect.TypeOf((*MockInvoker)(nil).GetUrl))
+// GetURL indicates an expected call of GetURL
+func (mr *MockInvokerMockRecorder) GetURL() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetURL", reflect.TypeOf((*MockInvoker)(nil).GetURL))
 }
 
 // IsAvailable mocks base method

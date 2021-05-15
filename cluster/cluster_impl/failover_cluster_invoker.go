@@ -84,14 +84,14 @@ func (invoker *failoverClusterInvoker) Invoke(ctx context.Context, invocation pr
 		//DO INVOKE
 		result = ivk.Invoke(ctx, invocation)
 		if result.Error() != nil {
-			providers = append(providers, ivk.GetUrl().Key())
+			providers = append(providers, ivk.GetURL().Key())
 			continue
 		}
 		return result
 	}
 	ip := common.GetLocalIp()
-	invokerSvc := invoker.GetUrl().Service()
-	invokerUrl := invoker.directory.GetUrl()
+	invokerSvc := invoker.GetURL().Service()
+	invokerUrl := invoker.directory.GetURL()
 	if ivk == nil {
 		logger.Errorf("Failed to invoke the method %s of the service %s .No provider is available.", methodName, invokerSvc)
 		return &protocol.RPCResult{
@@ -113,7 +113,7 @@ func getRetries(invokers []protocol.Invoker, methodName string) int {
 		return constant.DEFAULT_RETRIES_INT
 	}
 
-	url := invokers[0].GetUrl()
+	url := invokers[0].GetURL()
 	//get reties
 	retriesConfig := url.GetParam(constant.RETRIES_KEY, constant.DEFAULT_RETRIES)
 	//Get the service method loadbalance config if have

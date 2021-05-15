@@ -36,7 +36,7 @@ type ZkClientFacade interface {
 	WaitGroup() *sync.WaitGroup // for wait group control, zk client listener & zk client container
 	Done() chan struct{}        // for registry destroy
 	RestartCallBack() bool
-	GetUrl() *common.URL
+	GetURL() *common.URL
 }
 
 // HandleClientRestart keeps the connection between client and server

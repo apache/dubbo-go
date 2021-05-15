@@ -58,7 +58,7 @@ func (tf *tracingFilter) Invoke(ctx context.Context, invoker protocol.Invoker, i
 		spanCtx context.Context
 		span    opentracing.Span
 	)
-	operationName := invoker.GetUrl().ServiceKey() + "#" + invocation.MethodName()
+	operationName := invoker.GetURL().ServiceKey() + "#" + invocation.MethodName()
 
 	wiredCtx := ctx.Value(constant.TRACING_REMOTE_SPAN_CTX)
 	preSpan := opentracing.SpanFromContext(ctx)

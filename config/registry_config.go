@@ -100,7 +100,7 @@ func loadRegistries(targetRegistries string, registries map[string]*RegistryConf
 			address := addresses[0]
 			address = translateRegistryConf(address, registryConf)
 			url, err := common.NewURL(constant.REGISTRY_PROTOCOL+"://"+address,
-				common.WithParams(registryConf.getUrlMap(roleType)),
+				common.WithParams(registryConf.getURLMap(roleType)),
 				common.WithParamsValue("simplified", strconv.FormatBool(registryConf.Simplified)),
 				common.WithUsername(registryConf.Username),
 				common.WithPassword(registryConf.Password),
@@ -119,7 +119,7 @@ func loadRegistries(targetRegistries string, registries map[string]*RegistryConf
 	return urls
 }
 
-func (c *RegistryConfig) getUrlMap(roleType common.RoleType) url.Values {
+func (c *RegistryConfig) getURLMap(roleType common.RoleType) url.Values {
 	urlMap := url.Values{}
 	urlMap.Set(constant.GROUP_KEY, c.Group)
 	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(int(roleType)))

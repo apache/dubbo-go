@@ -234,7 +234,7 @@ func (c *tagRouter) fetchRuleIfNecessary(invokers []protocol.Invoker) {
 		return
 	}
 
-	url := invokers[0].GetUrl()
+	url := invokers[0].GetURL()
 	providerApplication := url.GetParam(constant.RemoteApplicationKey, "")
 	if len(providerApplication) == 0 {
 		logger.Error("TagRouter must getConfig from or subscribe to a specific application, but the application " +
@@ -298,7 +298,7 @@ func poolWithDynamicTag(invokers []protocol.Invoker, rule *RouterRule, pool rout
 // poolWithStaticTag pools addresses with tags found from incoming URLs, all keys have prefix "static-"
 func poolWithStaticTag(invokers []protocol.Invoker, pool router.AddrPool) {
 	for i, invoker := range invokers {
-		url := invoker.GetUrl()
+		url := invoker.GetURL()
 		tag := url.GetParam(constant.Tagkey, "")
 		if len(tag) > 0 {
 			if _, ok := pool[staticPrefix+tag]; !ok {
@@ -348,7 +348,7 @@ func addrsToBitmap(addrs []string, invokers []protocol.Invoker) *roaring.Bitmap 
 // findIndexWithIp finds index for one particular IP
 func findIndexWithIp(addr string, invokers []protocol.Invoker) int {
 	for i, invoker := range invokers {
-		if gxnet.MatchIP(addr, invoker.GetUrl().Ip, invoker.GetUrl().Port) {
+		if gxnet.MatchIP(addr, invoker.GetURL().Ip, invoker.GetURL().Port) {
 			return i
 		}
 	}

@@ -86,7 +86,7 @@ type PrometheusReporter struct {
 // the role in url must be consumer or provider
 // or it will be ignored
 func (reporter *PrometheusReporter) Report(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation, cost time.Duration, res protocol.Result) {
-	url := invoker.GetUrl()
+	url := invoker.GetURL()
 	var sumVec *prometheus.SummaryVec
 	var hisVec *prometheus.HistogramVec
 	if isProvider(url) {

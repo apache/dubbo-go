@@ -70,7 +70,7 @@ func (r *LocalPriorityRouter) Pool(invokers []protocol.Invoker) (router.AddrPool
 	rb[localPriority] = roaring.NewBitmap()
 	localIpFound := false
 	for i, invoker := range invokers {
-		if invoker.GetUrl().Ip == r.localIP {
+		if invoker.GetURL().Ip == r.localIP {
 			rb[localPriority].Add(uint32(i))
 			localIpFound = true
 		}

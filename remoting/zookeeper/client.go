@@ -48,7 +48,7 @@ var (
 // ValidateZookeeperClient validates client and sets options
 func ValidateZookeeperClient(container ZkClientFacade, zkName string) error {
 	lock := container.ZkClientLock()
-	url := container.GetUrl()
+	url := container.GetURL()
 
 	lock.Lock()
 	defer lock.Unlock()

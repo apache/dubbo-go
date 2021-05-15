@@ -68,7 +68,7 @@ func (lb *leastActiveLoadBalance) Select(invokers []protocol.Invoker, invocation
 	for i := 0; i < count; i++ {
 		invoker := invokers[i]
 		// Active number
-		active := protocol.GetMethodStatus(invoker.GetUrl(), invocation.MethodName()).GetActive()
+		active := protocol.GetMethodStatus(invoker.GetURL(), invocation.MethodName()).GetActive()
 		// current weight (maybe in warmUp)
 		weight := GetWeight(invoker, invocation)
 		// There are smaller active services

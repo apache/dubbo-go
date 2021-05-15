@@ -140,7 +140,7 @@ func Test_MergeProviderUrl(t *testing.T) {
 	time.Sleep(1e9)
 	assert.Len(t, registryDirectory.cacheInvokers, 1)
 	if len(registryDirectory.cacheInvokers) > 0 {
-		assert.Equal(t, "mock", registryDirectory.cacheInvokers[0].GetUrl().GetParam(constant.CLUSTER_KEY, ""))
+		assert.Equal(t, "mock", registryDirectory.cacheInvokers[0].GetURL().GetParam(constant.CLUSTER_KEY, ""))
 	}
 
 }
@@ -163,7 +163,7 @@ Loop1:
 		Loop2:
 			for {
 				if len(registryDirectory.cacheInvokers) > 0 {
-					if "mock1" == registryDirectory.cacheInvokers[0].GetUrl().GetParam(constant.CLUSTER_KEY, "") {
+					if "mock1" == registryDirectory.cacheInvokers[0].GetURL().GetParam(constant.CLUSTER_KEY, "") {
 						assert.Len(t, registryDirectory.cacheInvokers, 1)
 						assert.True(t, true)
 						break Loop2
@@ -183,7 +183,7 @@ func Test_toGroupInvokers(t *testing.T) {
 	defer ctrl.Finish()
 	invoker := mock.NewMockInvoker(ctrl)
 	newUrl, _ := common.NewURL("dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider")
-	invoker.EXPECT().GetUrl().Return(newUrl).AnyTimes()
+	invoker.EXPECT().GetURL().Return(newUrl).AnyTimes()
 
 	registryDirectory.cacheInvokersMap.Store("group1", invoker)
 	registryDirectory.cacheInvokersMap.Store("group2", invoker)
