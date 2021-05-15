@@ -25,14 +25,14 @@ import (
 )
 
 import (
-	"github.com/coreos/etcd/embed"
 	"github.com/stretchr/testify/assert"
+	"go.etcd.io/etcd/embed"
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/metadata/identifier"
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/metadata/identifier"
 )
 
 const defaultEtcdV3WorkDir = "/tmp/default-dubbo-go-registry.etcd"

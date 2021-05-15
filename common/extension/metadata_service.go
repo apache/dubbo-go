@@ -26,8 +26,8 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/metadata/service"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/metadata/service"
 )
 
 type localMetadataServiceCreator func() (service.MetadataService, error)
@@ -49,6 +49,7 @@ func GetLocalMetadataService(key string) (service.MetadataService, error) {
 	if creator, ok := localMetadataServiceInsMap[key]; ok {
 		return creator()
 	}
-	return nil, perrors.New(fmt.Sprintf("could not find the metadata service creator for metadataType: local, please check whether you have imported relative packages, \n" +
-		"local - github.com/apache/dubbo-go/metadata/service/inmemory, "))
+	return nil, perrors.New(fmt.Sprintf("could not find the metadata service creator for metadataType: local, " +
+		"please check whether you have imported relative packages, " +
+		"local - dubbo.apache.org/dubbo-go/v3/metadata/service/inmemory"))
 }

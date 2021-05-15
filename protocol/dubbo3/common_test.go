@@ -27,10 +27,10 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/config"
-	"github.com/apache/dubbo-go/protocol"
-	"github.com/apache/dubbo-go/protocol/dubbo3/internal"
-	"github.com/apache/dubbo-go/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo3/internal"
+	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
 // userd dubbo3 biz service

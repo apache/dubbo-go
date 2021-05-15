@@ -34,13 +34,13 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/common/logger"
-	_ "github.com/apache/dubbo-go/common/observer/dispatcher"
-	"github.com/apache/dubbo-go/common/yaml"
-	"github.com/apache/dubbo-go/registry"
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	_ "dubbo.apache.org/dubbo-go/v3/common/observer/dispatcher"
+	"dubbo.apache.org/dubbo-go/v3/common/yaml"
+	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
 var (
@@ -109,7 +109,7 @@ func setDefaultValue(target interface{}) {
 		if len(p.Protocols) == 0 {
 			p.Protocols[constant.DEFAULT_PROTOCOL] = &ProtocolConfig{
 				Name: constant.DEFAULT_PROTOCOL,
-				Port: string(constant.DEFAULT_PORT),
+				Port: strconv.Itoa(constant.DEFAULT_PORT),
 			}
 		}
 		if p.ApplicationConfig == nil {

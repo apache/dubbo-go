@@ -1,5 +1,36 @@
 # Release Notes
 ---
+
+## 3.0.0
+
+### New Features
+- [Add triple protocol](https://github.com/apache/dubbo-go/pull/1071)
+- [Add dubbo3 router](https://github.com/apache/dubbo-go/pull/1187)
+- [Add app-level remote service discovery](https://github.com/apache/dubbo-go/pull/1161)
+- [Add default config](https://github.com/apache/dubbo-go/pull/1073)
+- [Add pass through proxy factory](https://github.com/apache/dubbo-go/pull/1081)
+
+### Enhancement
+- [Replace default config string with const value](https://github.com/apache/dubbo-go/pull/1182)
+- [Add retry times in zookeeper starting](https://github.com/apache/dubbo-go/pull/1179)
+- [Client pool enhance](https://github.com/apache/dubbo-go/pull/1119)
+- [Impl the way of load configure file](https://github.com/apache/dubbo-go/pull/1099)
+
+### Bugfixes
+- [Fix: get failback error](https://github.com/apache/dubbo-go/pull/1177)
+- [Fix: delete a service provider when using k8s hpa](https://github.com/apache/dubbo-go/pull/1157)
+- [Fix: fix reExporter bug when config-center {applicationName}.configurator data change](https://github.com/apache/dubbo-go/pull/1144)
+- [Fix: stop the provider app panic error](https://github.com/apache/dubbo-go/pull/1129)
+
+### Dependencies
+- [bump github.com/RoaringBitmap/roaring from 0.6.0 to 0.6.1](https://github.com/apache/dubbo-go/pull/1195)
+- [bump github.com/RoaringBitmap/roaring from 0.5.5 to 0.6.0](https://github.com/apache/dubbo-go/pull/1175)
+- [bump github.com/RoaringBitmap/roaring from 0.5.5 to 0.6.0](https://github.com/apache/dubbo-go/pull/1163)
+- [Bump github.com/magiconair/properties from 1.8.4 to 1.8.5](https://github.com/apache/dubbo-go/pull/1115)
+
+Milestone:
+- [https://github.com/apache/dubbo-go/milestone/9](https://github.com/apache/dubbo-go/milestone/9?closed=1)
+
 ## 1.5.6
 
 ### New Features

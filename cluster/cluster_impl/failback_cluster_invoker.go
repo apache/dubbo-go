@@ -29,11 +29,11 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/cluster"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/protocol"
+	"dubbo.apache.org/dubbo-go/v3/cluster"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
 /**
@@ -169,7 +169,7 @@ func (invoker *failbackClusterInvoker) Invoke(ctx context.Context, invocation pr
 		logger.Errorf("Failback to invoke the method %v in the service %v, wait for retry in background. Ignored exception: %v.\n",
 			methodName, url.Service(), result.Error().Error())
 		// ignore
-		return &protocol.RPCResult{Err: result.Error()}
+		return &protocol.RPCResult{}
 	}
 	return result
 }

@@ -18,7 +18,7 @@
 package config_center
 
 import (
-	"github.com/apache/dubbo-go/common"
+	"dubbo.apache.org/dubbo-go/v3/common"
 )
 
 // Configurator supports GetUrl and constructor
