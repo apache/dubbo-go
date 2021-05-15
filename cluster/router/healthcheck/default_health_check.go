@@ -48,9 +48,9 @@ type DefaultHealthChecker struct {
 // IsHealthy evaluates the healthy state on the given Invoker based on the number of successive bad request
 // and the current active request
 func (c *DefaultHealthChecker) IsHealthy(invoker protocol.Invoker) bool {
-	urlStatus := protocol.GetURLStatus(invoker.GetUrl())
+	urlStatus := protocol.GetURLStatus(invoker.GetURL())
 	if c.isCircuitBreakerTripped(urlStatus) || urlStatus.GetActive() > c.GetOutStandingRequestCountLimit() {
-		logger.Debugf("Invoker [%s] is currently in circuitbreaker tripped state", invoker.GetUrl().Key())
+		logger.Debugf("Invoker [%s] is currently in circuitbreaker tripped state", invoker.GetURL().Key())
 		return false
 	}
 	return true

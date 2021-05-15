@@ -47,7 +47,7 @@ type ActiveFilter struct {
 func (ef *ActiveFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	logger.Infof("invoking active filter. %v,%v", invocation.MethodName(), len(invocation.Arguments()))
 	invocation.(*invocation2.RPCInvocation).SetAttachments(dubboInvokeStartTime, strconv.FormatInt(protocol.CurrentTimeMillis(), 10))
-	protocol.BeginCount(invoker.GetUrl(), invocation.MethodName())
+	protocol.BeginCount(invoker.GetURL(), invocation.MethodName())
 	return invoker.Invoke(ctx, invocation)
 }
 
@@ -60,7 +60,7 @@ func (ef *ActiveFilter) OnResponse(ctx context.Context, result protocol.Result, 
 		return result
 	}
 	elapsed := protocol.CurrentTimeMillis() - startTime
-	protocol.EndCount(invoker.GetUrl(), invocation.MethodName(), elapsed, result.Error() == nil)
+	protocol.EndCount(invoker.GetURL(), invocation.MethodName(), elapsed, result.Error() == nil)
 	return result
 }
 

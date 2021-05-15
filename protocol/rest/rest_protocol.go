@@ -68,7 +68,7 @@ func NewRestProtocol() *RestProtocol {
 
 // Export export rest service
 func (rp *RestProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
-	url := invoker.GetUrl()
+	url := invoker.GetURL()
 	serviceKey := url.ServiceKey()
 	exporter := NewRestExporter(serviceKey, invoker, rp.ExporterMap())
 	id := url.GetParam(constant.BEAN_NAME_KEY, "")

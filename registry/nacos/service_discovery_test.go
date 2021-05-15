@@ -70,16 +70,6 @@ func Test_newNacosServiceDiscovery(t *testing.T) {
 
 }
 
-func TestNacosServiceDiscovery_Destroy(t *testing.T) {
-	prepareData()
-	serviceDiscovery, err := extension.GetServiceDiscovery(constant.NACOS_KEY, testName)
-	assert.Nil(t, err)
-	assert.NotNil(t, serviceDiscovery)
-	err = serviceDiscovery.Destroy()
-	assert.Nil(t, err)
-	assert.Nil(t, serviceDiscovery.(*nacosServiceDiscovery).namingClient)
-}
-
 func TestNacosServiceDiscovery_CRUD(t *testing.T) {
 	if !checkNacosServerAlive() {
 		return
@@ -169,6 +159,16 @@ func TestNacosServiceDiscovery_GetDefaultPageSize(t *testing.T) {
 	prepareData()
 	serviceDiscovery, _ := extension.GetServiceDiscovery(constant.NACOS_KEY, testName)
 	assert.Equal(t, registry.DefaultPageSize, serviceDiscovery.GetDefaultPageSize())
+}
+
+func TestNacosServiceDiscovery_Destroy(t *testing.T) {
+	prepareData()
+	serviceDiscovery, err := extension.GetServiceDiscovery(constant.NACOS_KEY, testName)
+	assert.Nil(t, err)
+	assert.NotNil(t, serviceDiscovery)
+	err = serviceDiscovery.Destroy()
+	assert.Nil(t, err)
+	assert.Nil(t, serviceDiscovery.(*nacosServiceDiscovery).namingClient)
 }
 
 func prepareData() {

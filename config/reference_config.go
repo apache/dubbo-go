@@ -47,7 +47,7 @@ type ReferenceConfig struct {
 	id             string
 	InterfaceName  string            `required:"true"  yaml:"interface"  json:"interface,omitempty" property:"interface"`
 	Check          *bool             `yaml:"check"  json:"check,omitempty" property:"check"`
-	Url            string            `yaml:"url"  json:"url,omitempty" property:"url"`
+	URL            string            `yaml:"url"  json:"url,omitempty" property:"url"`
 	Filter         string            `yaml:"filter" json:"filter,omitempty" property:"filter"`
 	Protocol       string            `default:"dubbo"  yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
 	Registry       string            `yaml:"registry"  json:"registry,omitempty"  property:"registry"`
@@ -102,9 +102,9 @@ func (c *ReferenceConfig) Refer(_ interface{}) {
 		cfgURL.AddParam(constant.ForceUseTag, "true")
 	}
 	c.postProcessConfig(cfgURL)
-	if c.Url != "" {
+	if c.URL != "" {
 		// 1. user specified URL, could be peer-to-peer address, or register center's address.
-		urlStrings := gxstrings.RegSplit(c.Url, "\\s*[;]+\\s*")
+		urlStrings := gxstrings.RegSplit(c.URL, "\\s*[;]+\\s*")
 		for _, urlStr := range urlStrings {
 			serviceUrl, err := common.NewURL(urlStr)
 			if err != nil {
@@ -184,7 +184,7 @@ func (c *ReferenceConfig) Refer(_ interface{}) {
 			// not a registry url, must be direct invoke.
 			hitClu = constant.FAILOVER_CLUSTER_NAME
 			if len(invokers) > 0 {
-				u := invokers[0].GetUrl()
+				u := invokers[0].GetURL()
 				if nil != &u {
 					hitClu = u.GetParam(constant.CLUSTER_KEY, constant.ZONEAWARE_CLUSTER_NAME)
 				}

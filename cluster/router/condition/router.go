@@ -181,7 +181,7 @@ func (c *ConditionRouter) Route(invokers *roaring.Bitmap, cache router.Cache, ur
 	for iter := invokers.Iterator(); iter.HasNext(); {
 		index := iter.Next()
 		invoker := cache.GetInvokers()[index]
-		invokerUrl := invoker.GetUrl()
+		invokerUrl := invoker.GetURL()
 		isMatchThen := c.MatchThen(invokerUrl, url)
 		if isMatchThen {
 			result.Add(index)

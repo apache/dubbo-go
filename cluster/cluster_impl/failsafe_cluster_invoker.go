@@ -54,7 +54,7 @@ func (invoker *failsafeClusterInvoker) Invoke(ctx context.Context, invocation pr
 		return &protocol.RPCResult{}
 	}
 
-	url := invokers[0].GetUrl()
+	url := invokers[0].GetURL()
 	methodName := invocation.MethodName()
 	//Get the service loadbalance config
 	lb := url.GetParam(constant.LOADBALANCE_KEY, constant.DEFAULT_LOADBALANCE)
