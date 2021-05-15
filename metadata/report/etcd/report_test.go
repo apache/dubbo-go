@@ -26,7 +26,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
-	"go.etcd.io/etcd/embed"
+	"go.etcd.io/etcd/server/v3/embed"
 )
 
 import (
