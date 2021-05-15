@@ -32,14 +32,14 @@ type mockConfigurator struct {
 	configuratorUrl *common.URL
 }
 
-// GetUrl gets a configuratorUrl
-func (c *mockConfigurator) GetUrl() *common.URL {
+// GetURL gets a configuratorUrl
+func (c *mockConfigurator) GetURL() *common.URL {
 	return c.configuratorUrl
 }
 
 // Configure sets up param CLUSTER_KEY and cluster for url
 func (c *mockConfigurator) Configure(url *common.URL) {
-	if cluster := c.GetUrl().GetParam(constant.CLUSTER_KEY, ""); cluster != "" {
+	if cluster := c.GetURL().GetParam(constant.CLUSTER_KEY, ""); cluster != "" {
 		url.SetParam(constant.CLUSTER_KEY, cluster)
 	}
 }

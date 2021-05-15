@@ -40,7 +40,7 @@ func init() {
 // Invoke retrieves the configured Authenticator to verify the signature in an invocation
 func (paf *ProviderAuthFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	logger.Infof("invoking providerAuth filter.")
-	url := invoker.GetUrl()
+	url := invoker.GetURL()
 
 	err := doAuthWork(url, func(authenticator filter.Authenticator) error {
 		return authenticator.Authenticate(invocation, url)

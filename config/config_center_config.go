@@ -70,8 +70,8 @@ func (c *ConfigCenterConfig) UnmarshalYAML(unmarshal func(interface{}) error) er
 	return unmarshal((*plain)(c))
 }
 
-// GetUrlMap gets url map from ConfigCenterConfig
-func (c *ConfigCenterConfig) GetUrlMap() url.Values {
+// GetURLMap gets url map from ConfigCenterConfig
+func (c *ConfigCenterConfig) GetURLMap() url.Values {
 	urlMap := url.Values{}
 	urlMap.Set(constant.CONFIG_NAMESPACE_KEY, c.Namespace)
 	urlMap.Set(constant.CONFIG_GROUP_KEY, c.Group)
@@ -89,7 +89,7 @@ type configCenter struct {
 func (b *configCenter) toURL(baseConfig BaseConfig) (*common.URL, error) {
 	if len(baseConfig.ConfigCenterConfig.Address) > 0 {
 		return common.NewURL(baseConfig.ConfigCenterConfig.Address,
-			common.WithProtocol(baseConfig.ConfigCenterConfig.Protocol), common.WithParams(baseConfig.ConfigCenterConfig.GetUrlMap()))
+			common.WithProtocol(baseConfig.ConfigCenterConfig.Protocol), common.WithParams(baseConfig.ConfigCenterConfig.GetURLMap()))
 	}
 
 	remoteRef := baseConfig.ConfigCenterConfig.RemoteRef
@@ -101,7 +101,7 @@ func (b *configCenter) toURL(baseConfig BaseConfig) (*common.URL, error) {
 
 	newURL, err := rc.toURL()
 	if err == nil {
-		newURL.SetParams(baseConfig.ConfigCenterConfig.GetUrlMap())
+		newURL.SetParams(baseConfig.ConfigCenterConfig.GetURLMap())
 	}
 	return newURL, err
 }

@@ -63,7 +63,7 @@ func NewMockInvoker(url *common.URL, successCount int) *MockInvoker {
 }
 
 // nolint
-func (bi *MockInvoker) GetUrl() *common.URL {
+func (bi *MockInvoker) GetURL() *common.URL {
 	return bi.url
 }
 
@@ -102,7 +102,7 @@ func (bi *MockInvoker) Invoke(c context.Context, invocation protocol.Invocation)
 
 // nolint
 func (bi *MockInvoker) Destroy() {
-	logger.Infof("Destroy invoker: %v", bi.GetUrl().String())
+	logger.Infof("Destroy invoker: %v", bi.GetURL().String())
 	bi.destroyed = true
 	bi.available = false
 }
