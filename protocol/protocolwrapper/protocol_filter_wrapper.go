@@ -50,7 +50,7 @@ func (pfw *ProtocolFilterWrapper) Export(invoker protocol.Invoker) protocol.Expo
 	if pfw.protocol == nil {
 		pfw.protocol = extension.GetProtocol(invoker.GetUrl().Protocol)
 	}
-	invoker = buildInvokerChain(invoker, constant.SERVICE_FILTER_KEY)
+	invoker = BuildInvokerChain(invoker, constant.SERVICE_FILTER_KEY)
 	return pfw.protocol.Export(invoker)
 }
 
@@ -63,7 +63,7 @@ func (pfw *ProtocolFilterWrapper) Refer(url *common.URL) protocol.Invoker {
 	if invoker == nil {
 		return nil
 	}
-	return buildInvokerChain(invoker, constant.REFERENCE_FILTER_KEY)
+	return BuildInvokerChain(invoker, constant.REFERENCE_FILTER_KEY)
 }
 
 // Destroy will destroy all invoker and exporter.
@@ -71,7 +71,7 @@ func (pfw *ProtocolFilterWrapper) Destroy() {
 	pfw.protocol.Destroy()
 }
 
-func buildInvokerChain(invoker protocol.Invoker, key string) protocol.Invoker {
+func BuildInvokerChain(invoker protocol.Invoker, key string) protocol.Invoker {
 	filterName := invoker.GetUrl().GetParam(key, "")
 	if filterName == "" {
 		return invoker
@@ -104,7 +104,7 @@ type FilterInvoker struct {
 	filter  filter.Filter
 }
 
-// GetUrl is used to get url from FilterInvoker
+// GetURL is used to get url from FilterInvoker
 func (fi *FilterInvoker) GetUrl() *common.URL {
 	return fi.invoker.GetUrl()
 }

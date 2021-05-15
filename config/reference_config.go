@@ -37,6 +37,7 @@ import (
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/proxy"
 	"github.com/apache/dubbo-go/protocol"
+	"github.com/apache/dubbo-go/protocol/protocolwrapper"
 )
 
 // ReferenceConfig is the configuration of service consumer
@@ -133,11 +134,42 @@ func (c *ReferenceConfig) Refer(_ interface{}) {
 
 	if len(c.urls) == 1 {
 		c.invoker = extension.GetProtocol(c.urls[0].Protocol).Refer(c.urls[0])
+		// c.URL != "" is direct call
+		if c.URL != "" {
+			//filter
+			c.invoker = protocolwrapper.BuildInvokerChain(c.invoker, constant.REFERENCE_FILTER_KEY)
+
+			// cluster
+			invokers := make([]protocol.Invoker, 0, len(c.urls))
+			invokers = append(invokers, c.invoker)
+			// TODO(decouple from directory, config should not depend on directory module)
+			var hitClu string
+			// not a registry url, must be direct invoke.
+			hitClu = constant.FAILOVER_CLUSTER_NAME
+			if len(invokers) > 0 {
+				u := invokers[0].GetURL()
+				if nil != &u {
+					hitClu = u.GetParam(constant.CLUSTER_KEY, constant.ZONEAWARE_CLUSTER_NAME)
+				}
+			}
+
+			cluster := extension.GetCluster(hitClu)
+			// If 'zone-aware' policy select, the invoker wrap sequence would be:
+			// ZoneAwareClusterInvoker(StaticDirectory) ->
+			// FailoverClusterInvoker(RegistryDirectory, routing happens here) -> Invoker
+			c.invoker = cluster.Join(directory.NewStaticDirectory(invokers))
+		}
 	} else {
 		invokers := make([]protocol.Invoker, 0, len(c.urls))
 		var regUrl *common.URL
 		for _, u := range c.urls {
-			invokers = append(invokers, extension.GetProtocol(u.Protocol).Refer(u))
+			invoker := extension.GetProtocol(u.Protocol).Refer(u)
+			// c.URL != "" is direct call
+			if c.URL != "" {
+				//filter
+				invoker = protocolwrapper.BuildInvokerChain(invoker, constant.REFERENCE_FILTER_KEY)
+			}
+			invokers = append(invokers, invoker)
 			if u.Protocol == constant.REGISTRY_PROTOCOL {
 				regUrl = u
 			}
