@@ -28,7 +28,7 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
+	"dubbo.apache.org/dubbo-go/v3/common"
 )
 
 func TestNewNacosClient(t *testing.T) {

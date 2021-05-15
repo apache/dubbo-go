@@ -26,8 +26,8 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/config_center/parser"
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/config_center/parser"
 )
 
 // ////////////////////////////////////////

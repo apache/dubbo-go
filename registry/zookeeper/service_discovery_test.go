@@ -31,16 +31,16 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/common/observer"
-	"github.com/apache/dubbo-go/common/observer/dispatcher"
-	"github.com/apache/dubbo-go/config"
-	"github.com/apache/dubbo-go/metadata/mapping"
-	"github.com/apache/dubbo-go/protocol"
-	"github.com/apache/dubbo-go/registry"
-	"github.com/apache/dubbo-go/registry/event"
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/common/observer"
+	"dubbo.apache.org/dubbo-go/v3/common/observer/dispatcher"
+	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/registry"
+	"dubbo.apache.org/dubbo-go/v3/registry/event"
 )
 
 var testName = "test"
@@ -49,7 +49,7 @@ var tc *zk.TestCluster
 
 func prepareData(t *testing.T) *zk.TestCluster {
 	var err error
-	tc, err = zk.StartTestCluster(1, nil, nil)
+	tc, err = zk.StartTestCluster(1, nil, nil, zk.WithRetryTimes(20))
 	assert.NoError(t, err)
 	assert.NotNil(t, tc.Servers[0])
 	address := "127.0.0.1:" + strconv.Itoa(tc.Servers[0].Port)
@@ -87,10 +87,10 @@ func TestNewZookeeperServiceDiscovery(t *testing.T) {
 func TestCURDZookeeperServiceDiscovery(t *testing.T) {
 	prepareData(t)
 	extension.SetEventDispatcher("mock", func() observer.EventDispatcher {
-		return &dispatcher.MockEventDispatcher{}
+		return dispatcher.NewMockEventDispatcher()
 	})
 	extension.SetGlobalServiceNameMapping(func() mapping.ServiceNameMapping {
-		return &mockServiceNameMapping{}
+		return mapping.NewMockServiceNameMapping()
 	})
 
 	extension.SetProtocol("mock", func() protocol.Protocol {
@@ -229,16 +229,6 @@ func (tn *testNotify) Notify(e *registry.ServiceEvent) {
 }
 func (tn *testNotify) NotifyAll([]*registry.ServiceEvent, func()) {
 
-}
-
-type mockServiceNameMapping struct{}
-
-func (m *mockServiceNameMapping) Map(string, string, string, string) error {
-	return nil
-}
-
-func (m *mockServiceNameMapping) Get(string, string, string, string) (*gxset.HashSet, error) {
-	return gxset.NewSet(config.GetApplicationConfig().Name), nil
 }
 
 type mockProtocol struct{}

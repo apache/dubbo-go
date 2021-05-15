@@ -23,8 +23,8 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/tools/cli/client"
-	"github.com/apache/dubbo-go/tools/cli/json_register"
+	"dubbo.apache.org/dubbo-go/v3/tools/cli/client"
+	"dubbo.apache.org/dubbo-go/v3/tools/cli/json_register"
 )
 
 var (

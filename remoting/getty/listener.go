@@ -31,10 +31,10 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/protocol/invocation"
-	"github.com/apache/dubbo-go/remoting"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
 // todo: WritePkg_Timeout will entry *.yml

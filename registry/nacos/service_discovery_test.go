@@ -30,14 +30,14 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/common/observer"
-	"github.com/apache/dubbo-go/common/observer/dispatcher"
-	"github.com/apache/dubbo-go/config"
-	"github.com/apache/dubbo-go/metadata/mapping"
-	"github.com/apache/dubbo-go/registry"
-	"github.com/apache/dubbo-go/registry/event"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/common/observer"
+	"dubbo.apache.org/dubbo-go/v3/common/observer/dispatcher"
+	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
+	"dubbo.apache.org/dubbo-go/v3/registry"
+	"dubbo.apache.org/dubbo-go/v3/registry/event"
 )
 
 var testName = "test"
@@ -76,11 +76,11 @@ func TestNacosServiceDiscovery_CRUD(t *testing.T) {
 	}
 	prepareData()
 	extension.SetEventDispatcher("mock", func() observer.EventDispatcher {
-		return &dispatcher.MockEventDispatcher{}
+		return dispatcher.NewMockEventDispatcher()
 	})
 
 	extension.SetGlobalServiceNameMapping(func() mapping.ServiceNameMapping {
-		return &mockServiceNameMapping{}
+		return mapping.NewMockServiceNameMapping()
 	})
 
 	extension.SetAndInitGlobalDispatcher("mock")
@@ -186,14 +186,4 @@ func prepareData() {
 		Address:    "console.nacos.io:80",
 		TimeoutStr: "10s",
 	}
-}
-
-type mockServiceNameMapping struct{}
-
-func (m *mockServiceNameMapping) Map(string, string, string, string) error {
-	return nil
-}
-
-func (m *mockServiceNameMapping) Get(string, string, string, string) (*gxset.HashSet, error) {
-	panic("implement me")
 }

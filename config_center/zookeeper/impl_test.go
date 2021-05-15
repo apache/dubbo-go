@@ -31,10 +31,10 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/config_center"
-	"github.com/apache/dubbo-go/config_center/parser"
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/config_center"
+	"dubbo.apache.org/dubbo-go/v3/config_center/parser"
 )
 
 const (
@@ -42,7 +42,7 @@ const (
 )
 
 func initZkData(group string, t *testing.T) (*zk.TestCluster, *zookeeperDynamicConfiguration) {
-	ts, err := zk.StartTestCluster(1, nil, nil)
+	ts, err := zk.StartTestCluster(1, nil, nil, zk.WithRetryTimes(20))
 	assert.NoError(t, err)
 	assert.NotNil(t, ts.Servers[0])
 	urlString := "registry://127.0.0.1:" + strconv.Itoa(ts.Servers[0].Port)

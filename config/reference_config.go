@@ -31,13 +31,13 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/cluster/directory"
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/common/proxy"
-	"github.com/apache/dubbo-go/protocol"
-	"github.com/apache/dubbo-go/protocol/protocolwrapper"
+	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/common/proxy"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
 )
 
 // ReferenceConfig is the configuration of service consumer

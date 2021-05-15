@@ -26,7 +26,7 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/metadata/service/remote"
+	"dubbo.apache.org/dubbo-go/v3/metadata/service/remote"
 )
 
 type remoteMetadataServiceCreator func() (remote.RemoteMetadataService, error)
@@ -45,6 +45,7 @@ func GetRemoteMetadataService() (remote.RemoteMetadataService, error) {
 	if creator != nil {
 		return creator()
 	}
-	return nil, perrors.New(fmt.Sprintf("could not find the metadata service creator for metadataType: remote, please check whether you have imported relative packages, \n" +
-		"remote - github.com/apache/dubbo-go/metadata/remote/impl"))
+	return nil, perrors.New(fmt.Sprintf("could not find the metadata service creator for metadataType: remote, " +
+		"please check whether you have imported relative packages, " +
+		"remote - dubbo.apache.org/dubbo-go/v3/metadata/remote/impl"))
 }

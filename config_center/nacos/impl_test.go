@@ -32,9 +32,9 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/config_center"
-	"github.com/apache/dubbo-go/config_center/parser"
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/config_center"
+	"dubbo.apache.org/dubbo-go/v3/config_center/parser"
 )
 
 // run mock config server
