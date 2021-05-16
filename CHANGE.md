@@ -1,5 +1,16 @@
 # Release Notes
 ---
+## 1.5.7
+
+### Enhancement
+
+### Bugfixes
+
+### Dependencies
+
+Milestone:
+- [https://github.com/apache/dubbo-go/milestone/11](https://github.com/apache/dubbo-go/milestone/11?closed=1)
+
 ## 1.5.6
 
 ### New Features
