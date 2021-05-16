@@ -3,9 +3,12 @@
 ## 1.5.7
 
 ### Enhancement
+- [change client_pool](https://github.com/apache/dubbo-go/pull/1171)
+
 
 ### Bugfixes
 - [fix: issue #1151 - router from CONF_ROUTER_FILE_PATH doesn't take affect](https://github.com/apache/dubbo-go/pull/1176)
+- [fix:map iteration order](https://github.com/apache/dubbo-go/pull/1109)
 
 ### Dependencies
 
