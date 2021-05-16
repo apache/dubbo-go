@@ -5,6 +5,7 @@
 ### Enhancement
 
 ### Bugfixes
+- [fix: issue #1151 - router from CONF_ROUTER_FILE_PATH doesn't take affect](https://github.com/apache/dubbo-go/pull/1176)
 
 ### Dependencies
 
