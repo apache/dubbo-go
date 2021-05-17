@@ -303,6 +303,11 @@ dubbogo 社区已经开通微信公众号，可在微信搜索 "dubbogo示土区
            <img width="222px"  src="http://website.ruubypay.com/wifi/image/line5.png">
         </a>
       </td>
+      <td align="center"  valign="middle">
+        <a href="https://www.dingtalk.com" target="_blank">
+           <img width="222px"  src="https://gw.alicdn.com/tfs/TB1HPATMrrpK1RjSZTEXXcWAVXa-260-74.png">
+        </a>
+      </td>
     </tr>
     <tr></tr>
   </tbody>
