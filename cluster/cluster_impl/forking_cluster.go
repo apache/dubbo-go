@@ -41,5 +41,5 @@ func NewForkingCluster() cluster.Cluster {
 
 // Join returns a baseClusterInvoker instance
 func (cluster *forkingCluster) Join(directory cluster.Directory) protocol.Invoker {
-	return newForkingClusterInvoker(directory)
+	return buildInterceptorChain(newForkingClusterInvoker(directory))
 }
