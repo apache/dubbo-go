@@ -65,6 +65,7 @@ require (
 )
 
 replace (
+	github.com/dubbogo/triple => ../triple
 	github.com/envoyproxy/go-control-plane => github.com/envoyproxy/go-control-plane v0.8.0
 	github.com/shirou/gopsutil => github.com/shirou/gopsutil v0.0.0-20181107111621-48177ef5f880
 	google.golang.org/grpc => google.golang.org/grpc v1.29.1

@@ -98,6 +98,23 @@ func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	case constant.HESSIAN2_SERIALIZATION:
 		service = &Dubbo3HessianService{proxyImpl: invoker}
 		triSerializationType = tripleConstant.TripleHessianWrapperSerializerName
+	case constant.MSGPACK_SERIALIZATION:
+		valueOf := reflect.ValueOf(service)
+		valueOfElem := valueOf.Elem()
+		typeOf := valueOfElem.Type()
+		numField := valueOf.NumMethod()
+		tripleService := &Dubbo3HessianService{proxyImpl: invoker}
+		for i := 0; i < numField; i++ {
+			f := valueOfElem.Method(i)
+			ft := typeOf.Method(i)
+			if ft.Type.NumOut() != 2 {
+				continue
+			}
+			typ := f.Type().In(1)
+			tripleService.setReqParamsInterface(ft.Name, typ)
+		}
+		service = tripleService
+		triSerializationType = tripleConstant.MsgPackSerializerName
 	default:
 		panic(fmt.Sprintf("unsupport serialization = %s", serializationType))
 	}
@@ -151,7 +168,21 @@ type Dubbo3GrpcService interface {
 }
 
 type Dubbo3HessianService struct {
-	proxyImpl protocol.Invoker
+	proxyImpl  protocol.Invoker
+	reqTypeMap sync.Map
+}
+
+func (d *Dubbo3HessianService) setReqParamsInterface(methodName string, typ reflect.Type) {
+	d.reqTypeMap.Store(methodName, typ)
+}
+
+func (d *Dubbo3HessianService) GetReqParamsInteface(methodName string) (interface{}, bool) {
+	val, ok := d.reqTypeMap.Load(methodName)
+	if !ok {
+		return nil, false
+	}
+	typ := val.(reflect.Type)
+	return reflect.New(typ).Interface(), true
 }
 
 func (d *Dubbo3HessianService) InvokeWithArgs(ctx context.Context, methodName string, arguments []interface{}) (interface{}, error) {

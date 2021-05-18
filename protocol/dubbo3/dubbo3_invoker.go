@@ -28,7 +28,6 @@ import (
 )
 
 import (
-	hessian2 "github.com/apache/dubbo-go-hessian2"
 	tripleConstant "github.com/dubbogo/triple/pkg/common/constant"
 	triConfig "github.com/dubbogo/triple/pkg/config"
 	"github.com/dubbogo/triple/pkg/triple"
@@ -74,9 +73,10 @@ func NewDubboInvoker(url *common.URL) (*DubboInvoker, error) {
 		triSerializationType = tripleConstant.PBSerializerName
 	case constant.HESSIAN2_SERIALIZATION:
 		triSerializationType = tripleConstant.TripleHessianWrapperSerializerName
+	case constant.MSGPACK_SERIALIZATION:
+		triSerializationType = tripleConstant.MsgPackSerializerName
 	default:
 		panic(fmt.Sprintf("unsupport serialization = %s", dubboSerializaerType))
-
 	}
 	// new triple client
 	triOption := triConfig.NewTripleOption(
@@ -156,16 +156,8 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 
 	methodName := invocation.MethodName()
 
-	res := di.client.Invoke(methodName, in)
-
-	result.Rest = res[0]
-	// check err
-	if res[1].IsValid() && res[1].Interface() != nil {
-		result.Err = res[1].Interface().(error)
-	} else {
-		_ = hessian2.ReflectResponse(res[0], invocation.Reply())
-	}
-
+	result.Err = di.client.Invoke(methodName, in, invocation.Reply())
+	result.Rest = invocation.Reply()
 	return &result
 }
 
