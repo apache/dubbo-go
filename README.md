@@ -303,6 +303,11 @@ If you are using [apache/dubbo-go](https://github.com/apache/dubbo-go) and think
            <img width="222px"  src="http://website.ruubypay.com/wifi/image/line5.png">
         </a>
       </td>
+      <td align="center"  valign="middle">
+          <a href="https://www.dingtalk.com" target="_blank">
+             <img width="222px"  src="https://gw.alicdn.com/tfs/TB1HPATMrrpK1RjSZTEXXcWAVXa-260-74.png">
+          </a>
+      </td>
     </tr>
     <tr></tr>
   </tbody>
