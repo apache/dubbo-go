@@ -132,7 +132,7 @@ Apache License, Version 2.0
     * [Etcd(Local)](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/metadata/report/etcd/report.go)
     * [Consul(Local)](https://github.com/apache/dubbo-go/pull/633)
     * [Zookeeper(Remoting)](https://github.com/apache/dubbo-go/pull/1161)
-    
+
 - 工具箱
     * [Dubbo-go-cli](https://github.com/apache/dubbo-go/pull/818)
 
@@ -311,3 +311,6 @@ dubbogo 社区已经开通微信公众号，可在微信搜索 "dubbogo示土区
   </tbody>
 </table>
 </div>
+
+[更多用户示例](https://github.com/apache/dubbo-go/issues/2)
+
