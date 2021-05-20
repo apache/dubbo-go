@@ -18,27 +18,40 @@
 package cluster_impl
 
 import (
+	"context"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/cluster"
-	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
-type availableCluster struct{}
-
-const available = "available"
-
-func init() {
-	extension.SetCluster(available, NewAvailableCluster)
+type zoneAwareInterceptor struct {
 }
 
-// NewAvailableCluster returns a cluster instance
-//
-// Obtain available service providers
-func NewAvailableCluster() cluster.Cluster {
-	return &availableCluster{}
+func (z *zoneAwareInterceptor) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+	key := constant.REGISTRY_KEY + "." + constant.ZONE_FORCE_KEY
+	force := ctx.Value(key)
+
+	if force != nil {
+		switch value := force.(type) {
+		case bool:
+			if value {
+				invocation.SetAttachments(key, "true")
+			}
+		case string:
+			if "true" == value {
+				invocation.SetAttachments(key, "true")
+			}
+		default:
+			// ignore
+		}
+	}
+
+	return invoker.Invoke(ctx, invocation)
 }
 
-// Join returns a baseClusterInvoker instance
-func (cluster *availableCluster) Join(directory cluster.Directory) protocol.Invoker {
-	return buildInterceptorChain(NewAvailableClusterInvoker(directory))
+func getZoneAwareInterceptor() cluster.Interceptor {
+	return &zoneAwareInterceptor{}
 }

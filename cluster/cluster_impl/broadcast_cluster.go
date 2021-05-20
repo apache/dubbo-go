@@ -41,5 +41,5 @@ func NewBroadcastCluster() cluster.Cluster {
 
 // Join returns a baseClusterInvoker instance
 func (cluster *broadcastCluster) Join(directory cluster.Directory) protocol.Invoker {
-	return newBroadcastClusterInvoker(directory)
+	return buildInterceptorChain(newBroadcastClusterInvoker(directory))
 }

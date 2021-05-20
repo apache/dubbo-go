@@ -41,5 +41,5 @@ func NewFailFastCluster() cluster.Cluster {
 
 // Join returns a baseClusterInvoker instance
 func (cluster *failfastCluster) Join(directory cluster.Directory) protocol.Invoker {
-	return newFailFastClusterInvoker(directory)
+	return buildInterceptorChain(newFailFastClusterInvoker(directory))
 }
