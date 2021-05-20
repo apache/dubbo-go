@@ -19,9 +19,11 @@ package extension
 
 import "github.com/apache/dubbo-go/cluster"
 
-var (
+var interceptors map[string]func() cluster.Interceptor
+
+func init() {
 	interceptors = make(map[string]func() cluster.Interceptor)
-)
+}
 
 // SetClusterInterceptor sets cluster interceptor so that user has chance to inject extra logics before and after
 // cluster invoker
