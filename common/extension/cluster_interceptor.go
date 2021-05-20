@@ -17,22 +17,31 @@
 
 package extension
 
-import "github.com/apache/dubbo-go/cluster"
+import (
+	"sync"
+)
 
-var interceptors map[string]func() cluster.Interceptor
+import (
+	"github.com/apache/dubbo-go/cluster"
+)
 
-func init() {
+var (
+	lock         sync.RWMutex
 	interceptors = make(map[string]func() cluster.Interceptor)
-}
+)
 
 // SetClusterInterceptor sets cluster interceptor so that user has chance to inject extra logics before and after
 // cluster invoker
 func SetClusterInterceptor(name string, fun func() cluster.Interceptor) {
+	lock.Lock()
+	defer lock.Unlock()
 	interceptors[name] = fun
 }
 
 // GetClusterInterceptor returns the cluster interceptor instance with the given name
 func GetClusterInterceptor(name string) cluster.Interceptor {
+	lock.RLock()
+	defer lock.RUnlock()
 	if interceptors[name] == nil {
 		panic("cluster_interceptor for " + name + " doesn't exist, make sure the corresponding package is imported")
 	}
@@ -41,6 +50,8 @@ func GetClusterInterceptor(name string) cluster.Interceptor {
 
 // GetClusterInterceptors returns all instances of registered cluster interceptors
 func GetClusterInterceptors() []cluster.Interceptor {
+	lock.RLock()
+	defer lock.RUnlock()
 	ret := make([]cluster.Interceptor, 0, len(interceptors))
 	for _, f := range interceptors {
 		ret = append(ret, f())
