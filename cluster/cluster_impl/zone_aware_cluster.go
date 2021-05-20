@@ -40,5 +40,5 @@ func NewZoneAwareCluster() cluster.Cluster {
 
 // Join returns a zoneAwareClusterInvoker instance
 func (cluster *zoneAwareCluster) Join(directory cluster.Directory) protocol.Invoker {
-	return newZoneAwareClusterInvoker(directory)
+	return buildInterceptorChain(newZoneAwareClusterInvoker(directory), getZoneAwareInterceptor())
 }
