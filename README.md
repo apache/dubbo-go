@@ -133,7 +133,7 @@ Finished List:
     * [Etcd(Local)](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/metadata/report/etcd/report.go)
     * [Consul(Local)](https://github.com/apache/dubbo-go/pull/633)
     * [Zookeeper(Remoting)](https://github.com/apache/dubbo-go/pull/1161)
-    
+
 - Tool
     * [Dubbo-go-cli](https://github.com/apache/dubbo-go/pull/818)
 
@@ -313,3 +313,6 @@ If you are using [apache/dubbo-go](https://github.com/apache/dubbo-go) and think
   </tbody>
 </table>
 </div>
+
+[MORE USER CASE](https://github.com/apache/dubbo-go/issues/2)
+
