@@ -31,10 +31,10 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/protocol/invocation"
-	"github.com/apache/dubbo-go/remoting"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
 // todo: WritePkg_Timeout will entry *.yml
@@ -144,7 +144,7 @@ func (h *RpcClientHandler) OnCron(session getty.Session) {
 			session.Stat(), perrors.WithStack(err))
 		return
 	}
-	if h.conn.pool.rpcClient.conf.sessionTimeout.Nanoseconds() < time.Since(session.GetActive()).Nanoseconds() {
+	if h.conn.rpcClient.conf.sessionTimeout.Nanoseconds() < time.Since(session.GetActive()).Nanoseconds() {
 		logger.Warnf("session{%s} timeout{%s}, reqNum{%d}",
 			session.Stat(), time.Since(session.GetActive()).String(), rs.reqNum)
 		h.conn.removeSession(session) // -> h.conn.close() -> h.conn.pool.remove(h.conn)
@@ -164,7 +164,7 @@ func (h *RpcClientHandler) OnCron(session getty.Session) {
 		h.timeoutTimes = 0
 	}
 
-	if err := heartbeat(session, h.conn.pool.rpcClient.conf.heartbeatTimeout, heartbeatCallBack); err != nil {
+	if err := heartbeat(session, h.conn.rpcClient.conf.heartbeatTimeout, heartbeatCallBack); err != nil {
 		logger.Warnf("failed to send heartbeat, error{%v}", err)
 	}
 }

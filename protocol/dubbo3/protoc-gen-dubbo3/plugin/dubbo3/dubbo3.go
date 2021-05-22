@@ -104,11 +104,11 @@ func (g *dubboGrpc) Generate(file *generator.FileDescriptor) {
 // GenerateImports generates the import declaration for this file.
 func (g *dubboGrpc) GenerateImports(file *generator.FileDescriptor) {
 	g.P("import (")
-	g.P(`dgrpc "github.com/apache/dubbo-go/protocol/grpc"`)
-	g.P(`"github.com/apache/dubbo-go/protocol/invocation"`)
-	g.P(`"github.com/apache/dubbo-go/protocol"`)
+	g.P(`dgrpc "dubbo.apache.org/dubbo-go/v3/protocol/dubbo3"`)
+	g.P(`"dubbo.apache.org/dubbo-go/v3/protocol/invocation"`)
+	g.P(`"dubbo.apache.org/dubbo-go/v3/protocol"`)
 	g.P(`dubbo3 "github.com/dubbogo/triple/pkg/triple"`)
-	g.P(`dubboConstant "github.com/apache/dubbo-go/common/constant"`)
+	g.P(`tripleConstant "github.com/dubbogo/triple/pkg/common/constant"`)
 	g.P(` ) `)
 }
 
@@ -147,7 +147,7 @@ func (g *dubboGrpc) generateService(file *generator.FileDescriptor, service *pb.
 			//now we only support two way streaming
 			g.P(fmt.Sprintf("func (c *%sDubbo3Client) %s(ctx %s.Context,opt ...grpc.CallOption) (%s, error) {",
 				lowerServName, method.GetName(), contextPkg, servName+"_"+method.GetName()+"Client"))
-			g.P(fmt.Sprintf("interfaceKey := ctx.Value(dubboConstant.DubboCtxKey(dubboConstant.INTERFACE_KEY)).(string)"))
+			g.P(fmt.Sprintf("interfaceKey := ctx.Value(tripleConstant.InterfaceKey).(string)"))
 			g.P(fmt.Sprintf("stream, err := c.cc.NewStream(ctx, \"/\" + interfaceKey + \"/%s\", opt...)", method.GetName()))
 			g.P("if err != nil {")
 			g.P("return nil, err")
@@ -161,7 +161,7 @@ func (g *dubboGrpc) generateService(file *generator.FileDescriptor, service *pb.
 		g.P(fmt.Sprintf("func (c *%sDubbo3Client) %s(ctx %s.Context, in *%s, opt ...grpc.CallOption) (*%s, error) {",
 			lowerServName, method.GetName(), contextPkg, inputTypeName, outputTypeName))
 		g.P(fmt.Sprintf("out := new(%s)", outputTypeName))
-		g.P(fmt.Sprintf("interfaceKey := ctx.Value(dubboConstant.DubboCtxKey(dubboConstant.INTERFACE_KEY)).(string)"))
+		g.P(fmt.Sprintf("interfaceKey := ctx.Value(tripleConstant.InterfaceKey).(string)"))
 		g.P(fmt.Sprintf("err := c.cc.Invoke(ctx, \"/\" + interfaceKey + \"/%s\", in, out)", method.GetName()))
 		g.P("if err != nil {")
 		g.P("return nil, err")
@@ -319,7 +319,7 @@ func (g *dubboGrpc) generateServerMethod(servName, fullServName string, method *
 		g.P("in := new(", inType, ")")
 		g.P("if err := dec(in); err != nil { return nil, err }")
 
-		g.P("base := srv.(dgrpc.DubboGrpcService)")
+		g.P("base := srv.(dgrpc.Dubbo3GrpcService)")
 		g.P("args := []interface{}{}")
 		g.P("args = append(args, in)")
 		g.P(`invo := invocation.NewRPCInvocation("`, methName, `", args, nil)`)
@@ -347,7 +347,7 @@ func (g *dubboGrpc) generateServerMethod(servName, fullServName string, method *
 	// streaming rpc
 	streamType := unexport(servName) + methName + "Server"
 	g.P("func ", hname, "(srv interface{}, stream ", grpcPkg, ".ServerStream) error {")
-	g.P("_, ok := srv.(dgrpc.DubboGrpcService)")
+	g.P("_, ok := srv.(dgrpc.Dubbo3GrpcService)")
 	g.P(`invo := invocation.NewRPCInvocation("`, methName, `", nil, nil)`)
 	g.P("if !ok {")
 	g.P("fmt.Println(invo)")

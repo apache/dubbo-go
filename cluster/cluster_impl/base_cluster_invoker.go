@@ -18,21 +18,17 @@
 package cluster_impl
 
 import (
-	"context"
-)
-
-import (
 	perrors "github.com/pkg/errors"
 	"go.uber.org/atomic"
 )
 
 import (
-	"github.com/apache/dubbo-go/cluster"
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/protocol"
+	"dubbo.apache.org/dubbo-go/v3/cluster"
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
 type baseClusterInvoker struct {
@@ -40,7 +36,6 @@ type baseClusterInvoker struct {
 	availablecheck bool
 	destroyed      *atomic.Bool
 	stickyInvoker  protocol.Invoker
-	interceptor    cluster.ClusterInterceptor
 }
 
 func newBaseClusterInvoker(directory cluster.Directory) baseClusterInvoker {
@@ -162,20 +157,6 @@ func (invoker *baseClusterInvoker) doSelectInvoker(lb cluster.LoadBalance, invoc
 		return selectedInvoker
 	}
 	logger.Errorf("all %d invokers is unavailable for %s.", len(invokers), selectedInvoker.GetURL().String())
-	return nil
-}
-
-func (invoker *baseClusterInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
-	if invoker.interceptor != nil {
-		invoker.interceptor.BeforeInvoker(ctx, invocation)
-
-		result := invoker.interceptor.DoInvoke(ctx, invocation)
-
-		invoker.interceptor.AfterInvoker(ctx, invocation)
-
-		return result
-	}
-
 	return nil
 }
 

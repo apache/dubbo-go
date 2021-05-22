@@ -27,8 +27,8 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/registry"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
 func TestGetCustomizableServiceInstanceListener(t *testing.T) {

@@ -32,9 +32,9 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/protocol"
-	dgrpc "github.com/apache/dubbo-go/protocol/grpc"
-	"github.com/apache/dubbo-go/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
+	dgrpc "dubbo.apache.org/dubbo-go/v3/protocol/grpc"
+	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.

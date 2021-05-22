@@ -17,31 +17,33 @@
 package dubbo3
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"sync"
 )
 
 import (
-	tripleCommon "github.com/dubbogo/triple/pkg/common"
+	tripleConstant "github.com/dubbogo/triple/pkg/common/constant"
 	triConfig "github.com/dubbogo/triple/pkg/config"
 	"github.com/dubbogo/triple/pkg/triple"
 	"google.golang.org/grpc"
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/config"
-	"github.com/apache/dubbo-go/protocol"
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
 var protocolOnce sync.Once
 
 func init() {
-	extension.SetProtocol(tripleCommon.TRIPLE, GetProtocol)
+	extension.SetProtocol(tripleConstant.TRIPLE, GetProtocol)
 	protocolOnce = sync.Once{}
 }
 
@@ -75,10 +77,11 @@ func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	logger.Infof("Export service: %s", url.String())
 
 	key := url.GetParam(constant.BEAN_NAME_KEY, "")
-	service := config.GetProviderService(key)
+	var service interface{}
+	service = config.GetProviderService(key)
 
 	serializationType := url.GetParam(constant.SERIALIZATION_KEY, constant.PROTOBUF_SERIALIZATION)
-	var triSerializationType tripleCommon.TripleSerializerName
+	var triSerializationType tripleConstant.TripleSerializerName
 	switch serializationType {
 	case constant.PROTOBUF_SERIALIZATION:
 		m, ok := reflect.TypeOf(service).MethodByName("SetProxyImpl")
@@ -91,12 +94,10 @@ func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 		in := []reflect.Value{reflect.ValueOf(service)}
 		in = append(in, reflect.ValueOf(invoker))
 		m.Func.Call(in)
-		triSerializationType = tripleCommon.PBSerializerName
+		triSerializationType = tripleConstant.PBSerializerName
 	case constant.HESSIAN2_SERIALIZATION:
-		tripleService := Dubbo3HessianService{}
-		tripleService.SetProxyImpl(invoker)
-		service = &tripleService
-		triSerializationType = tripleCommon.TripleHessianWrapperSerializerName
+		service = &Dubbo3HessianService{proxyImpl: invoker}
+		triSerializationType = tripleConstant.TripleHessianWrapperSerializerName
 	default:
 		panic(fmt.Sprintf("unsupport serialization = %s", serializationType))
 	}
@@ -153,24 +154,13 @@ type Dubbo3HessianService struct {
 	proxyImpl protocol.Invoker
 }
 
-func (d *Dubbo3HessianService) SetProxyImpl(impl protocol.Invoker) {
-	d.proxyImpl = impl
-}
-
-func (d *Dubbo3HessianService) GetProxyImpl() protocol.Invoker {
-	return d.proxyImpl
-}
-
-func (d *Dubbo3HessianService) ServiceDesc() *grpc.ServiceDesc {
-	return nil
-}
-
-func (d *Dubbo3HessianService) Reference() string {
-	return ""
+func (d *Dubbo3HessianService) InvokeWithArgs(ctx context.Context, methodName string, arguments []interface{}) (interface{}, error) {
+	res := d.proxyImpl.Invoke(ctx, invocation.NewRPCInvocation(methodName, arguments, nil))
+	return res.Result(), res.Error()
 }
 
 // openServer open a dubbo3 server, if there is already a service using the same protocol, it returns directly.
-func (dp *DubboProtocol) openServer(url *common.URL, tripleSerializationType tripleCommon.TripleSerializerName) {
+func (dp *DubboProtocol) openServer(url *common.URL, tripleSerializationType tripleConstant.TripleSerializerName) {
 	_, ok := dp.serverMap[url.Location]
 	if ok {
 		return
@@ -189,8 +179,10 @@ func (dp *DubboProtocol) openServer(url *common.URL, tripleSerializationType tri
 
 	triOption := triConfig.NewTripleOption(
 		triConfig.WithSerializerType(tripleSerializationType),
+		triConfig.WithLocation(url.Location),
+		triConfig.WithLogger(logger.GetLogger()),
 	)
-	srv := triple.NewTripleServer(url, dp.serviceMap, triOption)
+	srv := triple.NewTripleServer(dp.serviceMap, triOption)
 	dp.serverMap[url.Location] = srv
 
 	srv.Start()

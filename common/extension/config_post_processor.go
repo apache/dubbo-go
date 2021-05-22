@@ -18,7 +18,7 @@
 package extension
 
 import (
-	"github.com/apache/dubbo-go/config/interfaces"
+	"dubbo.apache.org/dubbo-go/v3/config/interfaces"
 )
 
 var processors = make(map[string]interfaces.ConfigPostProcessor)

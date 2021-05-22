@@ -26,7 +26,7 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/config"
+	"dubbo.apache.org/dubbo-go/v3/config"
 )
 
 type (
@@ -95,10 +95,6 @@ type (
 		SessionTimeout string `default:"60s" yaml:"session_timeout" json:"session_timeout,omitempty"`
 		sessionTimeout time.Duration
 
-		// Connection Pool
-		PoolSize int `default:"2" yaml:"pool_size" json:"pool_size,omitempty"`
-		PoolTTL  int `default:"180" yaml:"pool_ttl" json:"pool_ttl,omitempty"`
-
 		// grpool
 		GrPoolSize  int `default:"0" yaml:"gr_pool_size" json:"gr_pool_size,omitempty"`
 		QueueLen    int `default:"0" yaml:"queue_len" json:"queue_len,omitempty"`
@@ -116,8 +112,6 @@ func GetDefaultClientConfig() ClientConfig {
 		ConnectionNum:     16,
 		HeartbeatPeriod:   "30s",
 		SessionTimeout:    "180s",
-		PoolSize:          4,
-		PoolTTL:           600,
 		GrPoolSize:        200,
 		QueueLen:          64,
 		QueueNumber:       10,

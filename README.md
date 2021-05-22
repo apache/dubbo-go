@@ -65,17 +65,17 @@ Finished List:
     * JsonRPC V2
     * Hessian V2
     * [json for grpc](https://github.com/apache/dubbo-go/pull/582)
+    * protobuf
 
 - Protocol
     * Dubbo
+    * [Triple](https://github.com/dubbogo/triple)
     * Jsonrpc2.0
     * [gRPC](https://github.com/apache/dubbo-go/pull/311)
     * [RESTful](https://github.com/apache/dubbo-go/pull/352)
 
 - Router
-    * [Condition router](https://github.com/apache/dubbo-go/pull/294)
-    * [Health check router](https://github.com/apache/dubbo-go/pull/389)
-    * [Dynamic_tag_router](https://github.com/apache/dubbo-go/pull/703)
+    * [Dubbo3 router](https://github.com/apache/dubbo-go/pull/1187)
 
 - Registry
     * ZooKeeper
@@ -128,17 +128,12 @@ Finished List:
     * [For grpc](https://github.com/apache/dubbo-go/pull/397)
 
 - Metadata Center
-    * [Nacos](https://github.com/apache/dubbo-go/pull/522)
-    * [Zookeeper](https://github.com/apache/dubbo-go/pull/633)
-    * [Etcd](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/metadata/report/etcd/report.go)
-    * [Consul](https://github.com/apache/dubbo-go/pull/633)
+    * [Nacos(Local)](https://github.com/apache/dubbo-go/pull/522)
+    * [Zookeeper(Local)](https://github.com/apache/dubbo-go/pull/633)
+    * [Etcd(Local)](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/metadata/report/etcd/report.go)
+    * [Consul(Local)](https://github.com/apache/dubbo-go/pull/633)
+    * [Zookeeper(Remoting)](https://github.com/apache/dubbo-go/pull/1161)
 
-- Service discovery
-    * [Nacos](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/registry/nacos/service_discovery.go)
-    * [Zookeeper](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/registry/zookeeper/service_discovery.go)
-    * [Etcd](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/registry/etcdv3/service_discovery.go)
-    * [File](https://github.com/apache/dubbo-go/pull/732)
-    
 - Tool
     * [Dubbo-go-cli](https://github.com/apache/dubbo-go/pull/818)
 
@@ -202,7 +197,22 @@ If u want to communicate with our community, pls scan the following dubbobo Ding
 </table>
 </div>
 
-If u want to visit the wechat group, pls add my wechat AlexanderStocks.
+If u want to visit the wechat group, pls add my wechat AlexanderStocks or scan the following wechat picture.
+
+<div>
+<table>
+  <tbody>
+  <tr></tr>
+    <tr>
+      <td align="center"  valign="middle">
+          <img width="80px" height="115px" src="./doc/pic/misc/dubbogo-wechat.png">
+        </a>
+      </td>
+    </tr>
+    <tr></tr>
+  </tbody>
+</table>
+</div>
 
 We welcome the friends who can give us constructing suggestions instead of known-nothing.
 
@@ -288,8 +298,21 @@ If you are using [apache/dubbo-go](https://github.com/apache/dubbo-go) and think
           <img width="222px"  src="https://mosn.io/images/community/duodian.png">
         </a>
       </td>
+      <td align="center"  valign="middle">
+        <a href="http://www.ruubypay.com" target="_blank">
+           <img width="222px"  src="http://website.ruubypay.com/wifi/image/line5.png">
+        </a>
+      </td>
+      <td align="center"  valign="middle">
+          <a href="https://www.dingtalk.com" target="_blank">
+             <img width="222px"  src="https://gw.alicdn.com/tfs/TB1HPATMrrpK1RjSZTEXXcWAVXa-260-74.png">
+          </a>
+      </td>
     </tr>
     <tr></tr>
   </tbody>
 </table>
 </div>
+
+[MORE USER CASE](https://github.com/apache/dubbo-go/issues/2)
+

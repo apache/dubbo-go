@@ -35,7 +35,7 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Cache dependencies
-      uses: actions/cache@v2.1.4
+      uses: actions/cache@v2.1.5
       with:
         # Cache
         path: ~/go/pkg/mod
@@ -71,11 +71,10 @@ jobs:
 
     - name: Integrate Test
       run: |
-        chmod +x integrate_test.sh && ./integrate_test.sh ${{github.event.pull_request.head.repo.full_name}} ${{github.event.pull_request.head.sha}}
+        chmod +x integrate_test.sh && [[ -n "${{github.event.pull_request.head.repo.full_name}}" ]] && [[ -n "${{github.event.pull_request.head.sha}}" ]] && ./integrate_test.sh ${{github.event.pull_request.head.repo.full_name}} ${{github.event.pull_request.head.sha}} || ./integrate_test.sh $GITHUB_REPOSITORY $GITHUB_SHA
 
     - name: Post Coverage
       run: bash <(curl -s https://codecov.io/bash)
 
     - name: Hello world
       run: echo Hello world ${{ secrets.DING_TOKEN }} ${{ secrets.DING_SIGN }}
-

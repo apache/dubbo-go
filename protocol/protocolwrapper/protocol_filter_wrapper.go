@@ -23,11 +23,11 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/filter"
-	"github.com/apache/dubbo-go/protocol"
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/filter"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
 const (
@@ -50,7 +50,7 @@ func (pfw *ProtocolFilterWrapper) Export(invoker protocol.Invoker) protocol.Expo
 	if pfw.protocol == nil {
 		pfw.protocol = extension.GetProtocol(invoker.GetURL().Protocol)
 	}
-	invoker = buildInvokerChain(invoker, constant.SERVICE_FILTER_KEY)
+	invoker = BuildInvokerChain(invoker, constant.SERVICE_FILTER_KEY)
 	return pfw.protocol.Export(invoker)
 }
 
@@ -63,7 +63,7 @@ func (pfw *ProtocolFilterWrapper) Refer(url *common.URL) protocol.Invoker {
 	if invoker == nil {
 		return nil
 	}
-	return buildInvokerChain(invoker, constant.REFERENCE_FILTER_KEY)
+	return BuildInvokerChain(invoker, constant.REFERENCE_FILTER_KEY)
 }
 
 // Destroy will destroy all invoker and exporter.
@@ -71,7 +71,7 @@ func (pfw *ProtocolFilterWrapper) Destroy() {
 	pfw.protocol.Destroy()
 }
 
-func buildInvokerChain(invoker protocol.Invoker, key string) protocol.Invoker {
+func BuildInvokerChain(invoker protocol.Invoker, key string) protocol.Invoker {
 	filterName := invoker.GetURL().GetParam(key, "")
 	if filterName == "" {
 		return invoker

@@ -22,7 +22,7 @@ import (
 )
 
 import (
-	invocation_impl "github.com/apache/dubbo-go/protocol/invocation"
+	invocation_impl "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
 func injectTraceCtx(currentSpan opentracing.Span, inv *invocation_impl.RPCInvocation) error {

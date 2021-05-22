@@ -22,7 +22,7 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/remoting"
+	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
 func (suite *consulRegistryTestSuite) testListener(action remoting.EventType) {

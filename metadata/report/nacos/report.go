@@ -28,13 +28,13 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/metadata/identifier"
-	"github.com/apache/dubbo-go/metadata/report"
-	"github.com/apache/dubbo-go/metadata/report/factory"
-	"github.com/apache/dubbo-go/remoting/nacos"
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/metadata/identifier"
+	"dubbo.apache.org/dubbo-go/v3/metadata/report"
+	"dubbo.apache.org/dubbo-go/v3/metadata/report/factory"
+	"dubbo.apache.org/dubbo-go/v3/remoting/nacos"
 )
 
 func init() {
@@ -109,7 +109,6 @@ func (n *nacosMetadataReport) GetExportedURLs(metadataIdentifier *identifier.Ser
 func (n *nacosMetadataReport) SaveSubscribedData(subscriberMetadataIdentifier *identifier.SubscriberMetadataIdentifier, urls string) error {
 	return n.storeMetadata(vo.ConfigParam{
 		DataId:  subscriberMetadataIdentifier.GetIdentifierKey(),
-		Group:   subscriberMetadataIdentifier.Group,
 		Content: urls,
 	})
 }
@@ -118,7 +117,6 @@ func (n *nacosMetadataReport) SaveSubscribedData(subscriberMetadataIdentifier *i
 func (n *nacosMetadataReport) GetSubscribedURLs(subscriberMetadataIdentifier *identifier.SubscriberMetadataIdentifier) ([]string, error) {
 	return n.getConfigAsArray(vo.ConfigParam{
 		DataId: subscriberMetadataIdentifier.GetIdentifierKey(),
-		Group:  subscriberMetadataIdentifier.Group,
 	})
 }
 

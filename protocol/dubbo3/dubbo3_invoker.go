@@ -29,18 +29,18 @@ import (
 
 import (
 	hessian2 "github.com/apache/dubbo-go-hessian2"
-	tripleCommon "github.com/dubbogo/triple/pkg/common"
+	tripleConstant "github.com/dubbogo/triple/pkg/common/constant"
 	triConfig "github.com/dubbogo/triple/pkg/config"
 	"github.com/dubbogo/triple/pkg/triple"
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/config"
-	"github.com/apache/dubbo-go/protocol"
-	invocation_impl "github.com/apache/dubbo-go/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
+	invocation_impl "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
 // DubboInvoker is implement of protocol.Invoker, a dubboInvoker refer to one service and ip.
@@ -67,13 +67,13 @@ func NewDubboInvoker(url *common.URL) (*DubboInvoker, error) {
 	key := url.GetParam(constant.BEAN_NAME_KEY, "")
 	consumerService := config.GetConsumerService(key)
 
-	var triSerializationType tripleCommon.TripleSerializerName
+	var triSerializationType tripleConstant.TripleSerializerName
 	dubboSerializaerType := url.GetParam(constant.SERIALIZATION_KEY, constant.PROTOBUF_SERIALIZATION)
 	switch dubboSerializaerType {
 	case constant.PROTOBUF_SERIALIZATION:
-		triSerializationType = tripleCommon.PBSerializerName
+		triSerializationType = tripleConstant.PBSerializerName
 	case constant.HESSIAN2_SERIALIZATION:
-		triSerializationType = tripleCommon.TripleHessianWrapperSerializerName
+		triSerializationType = tripleConstant.TripleHessianWrapperSerializerName
 	default:
 		panic(fmt.Sprintf("unsupport serialization = %s", dubboSerializaerType))
 
@@ -82,8 +82,12 @@ func NewDubboInvoker(url *common.URL) (*DubboInvoker, error) {
 	triOption := triConfig.NewTripleOption(
 		triConfig.WithClientTimeout(uint32(requestTimeout.Seconds())),
 		triConfig.WithSerializerType(triSerializationType),
+		triConfig.WithLocation(url.Location),
+		triConfig.WithHeaderAppVersion(url.GetParam(constant.APP_VERSION_KEY, "")),
+		triConfig.WithHeaderGroup(url.GetParam(constant.GROUP_KEY, "")),
+		triConfig.WithLogger(logger.GetLogger()),
 	)
-	client, err := triple.NewTripleClient(url, consumerService, triOption)
+	client, err := triple.NewTripleClient(consumerService, triOption)
 
 	if err != nil {
 		return nil, err
@@ -142,7 +146,7 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 	}
 
 	// append interface id to ctx
-	ctx = context.WithValue(ctx, constant.DubboCtxKey(constant.INTERFACE_KEY), di.BaseInvoker.GetURL().GetParam(constant.INTERFACE_KEY, ""))
+	ctx = context.WithValue(ctx, tripleConstant.InterfaceKey, di.BaseInvoker.GetURL().GetParam(constant.INTERFACE_KEY, ""))
 	in := make([]reflect.Value, 0, 16)
 	in = append(in, reflect.ValueOf(ctx))
 

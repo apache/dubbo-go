@@ -18,7 +18,6 @@
 package nacos
 
 import (
-	"encoding/json"
 	"net/http"
 	"strconv"
 	"testing"
@@ -30,11 +29,11 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/metadata/identifier"
-	"github.com/apache/dubbo-go/metadata/report"
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/metadata/identifier"
+	"dubbo.apache.org/dubbo-go/v3/metadata/report"
 )
 
 func TestNacosMetadataReport_CRUD(t *testing.T) {
@@ -63,25 +62,8 @@ func TestNacosMetadataReport_CRUD(t *testing.T) {
 	assert.Equal(t, 1, len(exportedUrls))
 	assert.Nil(t, err)
 
-	subMi := newSubscribeMetadataIdentifier()
-	urls := []string{serviceUrl.String()}
-	bytes, _ := json.Marshal(urls)
-	err = rpt.SaveSubscribedData(subMi, string(bytes))
-	assert.Nil(t, err)
-
-	subscribeUrl, err := rpt.GetSubscribedURLs(subMi)
-	assert.Equal(t, 1, len(subscribeUrl))
-	assert.Nil(t, err)
-
 	err = rpt.RemoveServiceMetadata(serviceMi)
 	assert.Nil(t, err)
-}
-
-func newSubscribeMetadataIdentifier() *identifier.SubscriberMetadataIdentifier {
-	return &identifier.SubscriberMetadataIdentifier{
-		Revision:           "subscribe",
-		MetadataIdentifier: *newMetadataIdentifier("provider"),
-	}
 }
 
 func newServiceMetadataIdentifier() *identifier.ServiceMetadataIdentifier {

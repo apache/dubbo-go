@@ -31,12 +31,12 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/registry"
-	"github.com/apache/dubbo-go/remoting/etcdv3"
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/registry"
+	"dubbo.apache.org/dubbo-go/v3/remoting/etcdv3"
 )
 
 const (
@@ -140,7 +140,7 @@ func (r *etcdV3Registry) CreatePath(k string) error {
 	var tmpPath string
 	for _, str := range strings.Split(k, "/")[1:] {
 		tmpPath = path.Join(tmpPath, "/", str)
-		if err := r.client.Create(tmpPath, ""); err != nil {
+		if err := r.client.Put(tmpPath, ""); err != nil {
 			return perrors.WithMessagef(err, "create path %s in etcd", tmpPath)
 		}
 	}

@@ -25,14 +25,14 @@ import (
 
 import (
 	"github.com/apache/dubbo-getty"
-	"github.com/coreos/etcd/embed"
 	"github.com/stretchr/testify/suite"
+	"go.etcd.io/etcd/server/v3/embed"
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/config_center"
-	"github.com/apache/dubbo-go/remoting"
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/config_center"
+	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
 type RegistryTestSuite struct {

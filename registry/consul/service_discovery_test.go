@@ -19,8 +19,6 @@ package consul
 
 import (
 	"fmt"
-	"github.com/apache/dubbo-go/registry/event"
-	gxset "github.com/dubbogo/gost/container/set"
 	"math/rand"
 	"strconv"
 	"testing"
@@ -28,17 +26,21 @@ import (
 )
 
 import (
+	gxset "github.com/dubbogo/gost/container/set"
 	"github.com/stretchr/testify/assert"
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/common/observer"
-	"github.com/apache/dubbo-go/config"
-	"github.com/apache/dubbo-go/registry"
-	"github.com/apache/dubbo-go/remoting/consul"
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/common/observer"
+	"dubbo.apache.org/dubbo-go/v3/common/observer/dispatcher"
+	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
+	"dubbo.apache.org/dubbo-go/v3/registry"
+	"dubbo.apache.org/dubbo-go/v3/registry/event"
+	"dubbo.apache.org/dubbo-go/v3/remoting/consul"
 )
 
 var (
@@ -92,9 +94,14 @@ func TestConsulServiceDiscovery_CRUD(t *testing.T) {
 	}()
 
 	prepareData()
-	eventDispatcher := MockEventDispatcher{Notify: make(chan struct{}, 1)}
+
+	eventDispatcher := dispatcher.NewMockEventDispatcher()
 	extension.SetEventDispatcher("mock", func() observer.EventDispatcher {
-		return &eventDispatcher
+		return eventDispatcher
+	})
+
+	extension.SetGlobalServiceNameMapping(func() mapping.ServiceNameMapping {
+		return mapping.NewMockServiceNameMapping()
 	})
 
 	extension.SetAndInitGlobalDispatcher("mock")
@@ -152,7 +159,7 @@ func TestConsulServiceDiscovery_CRUD(t *testing.T) {
 	// assert.Nil(t, err)
 
 	// test AddListener
-	hs := &gxset.HashSet{}
+	hs := gxset.NewSet()
 	hs.Add(instance.GetServiceName())
 	err = serviceDiscovery.AddListener(event.NewServiceInstancesChangedListener(hs))
 	assert.Nil(t, err)
@@ -199,40 +206,4 @@ func prepareService() (registry.ServiceInstance, *common.URL) {
 		Healthy:     true,
 		Metadata:    nil,
 	}, registryUrl
-}
-
-type MockEventDispatcher struct {
-	Notify chan struct{}
-	Event  observer.Event
-}
-
-// AddEventListener do nothing
-func (m *MockEventDispatcher) AddEventListener(observer.EventListener) {
-}
-
-// AddEventListeners do nothing
-func (m *MockEventDispatcher) AddEventListeners([]observer.EventListener) {
-}
-
-// RemoveEventListener do nothing
-func (m *MockEventDispatcher) RemoveEventListener(observer.EventListener) {
-}
-
-// RemoveEventListeners do nothing
-func (m *MockEventDispatcher) RemoveEventListeners([]observer.EventListener) {
-}
-
-// GetAllEventListeners return empty list
-func (m *MockEventDispatcher) GetAllEventListeners() []observer.EventListener {
-	return make([]observer.EventListener, 0)
-}
-
-// RemoveAllEventListeners do nothing
-func (m *MockEventDispatcher) RemoveAllEventListeners() {
-}
-
-// Dispatch do nothing
-func (m *MockEventDispatcher) Dispatch(event observer.Event) {
-	m.Event = event
-	m.Notify <- struct{}{}
 }

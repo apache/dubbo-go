@@ -33,8 +33,8 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/config"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/config"
 )
 
 type gettyRPCClient struct {
@@ -43,28 +43,26 @@ type gettyRPCClient struct {
 	addr   string
 	active int64 // zero, not create or be destroyed
 
-	pool *gettyRPCClientPool
+	rpcClient *Client
 
 	lock        sync.RWMutex
 	gettyClient getty.Client
 	sessions    []*rpcSession
 }
 
-var errClientPoolClosed = perrors.New("client pool closed")
-
-func newGettyRPCClientConn(pool *gettyRPCClientPool, addr string) (*gettyRPCClient, error) {
+func newGettyRPCClientConn(rpcClient *Client, addr string) (*gettyRPCClient, error) {
 	var (
 		gettyClient getty.Client
 		sslEnabled  bool
 	)
-	sslEnabled = pool.sslEnabled
+	sslEnabled = rpcClient.sslEnabled
 	clientOpts := []getty.ClientOption{
 		getty.WithServerAddress(addr),
-		getty.WithConnectionNumber((int)(pool.rpcClient.conf.ConnectionNum)),
-		getty.WithReconnectInterval(pool.rpcClient.conf.ReconnectInterval),
+		getty.WithConnectionNumber((int)(rpcClient.conf.ConnectionNum)),
+		getty.WithReconnectInterval(rpcClient.conf.ReconnectInterval),
 	}
 	if sslEnabled {
-		clientOpts = append(clientOpts, getty.WithClientSslEnabled(pool.sslEnabled), getty.WithClientTlsConfigBuilder(config.GetClientTlsConfigBuilder()))
+		clientOpts = append(clientOpts, getty.WithClientSslEnabled(sslEnabled), getty.WithClientTlsConfigBuilder(config.GetClientTlsConfigBuilder()))
 	}
 
 	if clientGrpool != nil {
@@ -74,14 +72,14 @@ func newGettyRPCClientConn(pool *gettyRPCClientPool, addr string) (*gettyRPCClie
 	gettyClient = getty.NewTCPClient(clientOpts...)
 	c := &gettyRPCClient{
 		addr:        addr,
-		pool:        pool,
+		rpcClient:   rpcClient,
 		gettyClient: gettyClient,
 	}
 	go c.gettyClient.RunEventLoop(c.newSession)
 
 	idx := 1
 	start := time.Now()
-	connectTimeout := pool.rpcClient.opts.ConnectTimeout
+	connectTimeout := rpcClient.opts.ConnectTimeout
 	for {
 		idx++
 		if c.isAvailable() {
@@ -120,8 +118,8 @@ func (c *gettyRPCClient) newSession(session getty.Session) error {
 		conf       ClientConfig
 		sslEnabled bool
 	)
-	conf = c.pool.rpcClient.conf
-	sslEnabled = c.pool.sslEnabled
+	conf = c.rpcClient.conf
+	sslEnabled = c.rpcClient.sslEnabled
 	if conf.GettySessionParam.CompressEncoding {
 		session.SetCompressType(getty.CompressZip)
 	}
@@ -131,7 +129,7 @@ func (c *gettyRPCClient) newSession(session getty.Session) error {
 		}
 		session.SetName(conf.GettySessionParam.SessionName)
 		session.SetMaxMsgLen(conf.GettySessionParam.MaxMsgLen)
-		session.SetPkgHandler(NewRpcClientPackageHandler(c.pool.rpcClient))
+		session.SetPkgHandler(NewRpcClientPackageHandler(c.rpcClient))
 		session.SetEventListener(NewRpcClientHandler(c))
 		session.SetReadTimeout(conf.GettySessionParam.tcpReadTimeout)
 		session.SetWriteTimeout(conf.GettySessionParam.tcpWriteTimeout)
@@ -164,7 +162,7 @@ func (c *gettyRPCClient) newSession(session getty.Session) error {
 
 	session.SetName(conf.GettySessionParam.SessionName)
 	session.SetMaxMsgLen(conf.GettySessionParam.MaxMsgLen)
-	session.SetPkgHandler(NewRpcClientPackageHandler(c.pool.rpcClient))
+	session.SetPkgHandler(NewRpcClientPackageHandler(c.rpcClient))
 	session.SetEventListener(NewRpcClientHandler(c))
 	session.SetReadTimeout(conf.GettySessionParam.tcpReadTimeout)
 	session.SetWriteTimeout(conf.GettySessionParam.tcpWriteTimeout)
@@ -181,7 +179,6 @@ func (c *gettyRPCClient) selectSession() getty.Session {
 	if c.sessions == nil {
 		return nil
 	}
-
 	count := len(c.sessions)
 	if count == 0 {
 		return nil
@@ -229,7 +226,7 @@ func (c *gettyRPCClient) removeSession(session getty.Session) {
 		}
 	}()
 	if removeFlag {
-		c.pool.safeRemove(c)
+		c.rpcClient.resetRpcConn()
 		c.close()
 	}
 }
@@ -321,127 +318,4 @@ func (c *gettyRPCClient) close() error {
 		closeErr = nil
 	})
 	return closeErr
-}
-
-type gettyRPCClientPool struct {
-	rpcClient  *Client
-	size       int   // size of []*gettyRPCClient
-	ttl        int64 // ttl of every gettyRPCClient, it is checked when getConn
-	sslEnabled bool
-
-	sync.Mutex
-	conns []*gettyRPCClient
-}
-
-func newGettyRPCClientConnPool(rpcClient *Client, size int, ttl time.Duration) *gettyRPCClientPool {
-	return &gettyRPCClientPool{
-		rpcClient: rpcClient,
-		size:      size,
-		ttl:       int64(ttl.Seconds()),
-		// init capacity : 2
-		conns: make([]*gettyRPCClient, 0, 2),
-	}
-}
-
-func (p *gettyRPCClientPool) close() {
-	p.Lock()
-	conns := p.conns
-	p.conns = nil
-	p.Unlock()
-	for _, conn := range conns {
-		conn.close()
-	}
-}
-
-func (p *gettyRPCClientPool) getGettyRpcClient(addr string) (*gettyRPCClient, error) {
-	conn, connErr := p.get()
-	if connErr == nil && conn == nil {
-		// create new conn
-		rpcClientConn, rpcErr := newGettyRPCClientConn(p, addr)
-		if rpcErr == nil {
-			p.put(rpcClientConn)
-		}
-		return rpcClientConn, perrors.WithStack(rpcErr)
-	}
-	return conn, perrors.WithStack(connErr)
-}
-
-func (p *gettyRPCClientPool) get() (*gettyRPCClient, error) {
-	now := time.Now().Unix()
-
-	p.Lock()
-	defer p.Unlock()
-	if p.conns == nil {
-		return nil, errClientPoolClosed
-	}
-	for num := len(p.conns); num > 0; {
-		var conn *gettyRPCClient
-		if num != 1 {
-			conn = p.conns[rand.Int31n(int32(num))]
-		} else {
-			conn = p.conns[0]
-		}
-		// This will recreate gettyRpcClient for remove last position
-		// p.conns = p.conns[:len(p.conns)-1]
-
-		if d := now - conn.getActive(); d > p.ttl {
-			p.remove(conn)
-			go conn.close()
-			num = len(p.conns)
-			continue
-		}
-		conn.updateActive(now) // update active time
-		return conn, nil
-	}
-	return nil, nil
-}
-
-func (p *gettyRPCClientPool) put(conn *gettyRPCClient) {
-	if conn == nil || conn.getActive() == 0 {
-		return
-	}
-	p.Lock()
-	defer p.Unlock()
-	if p.conns == nil {
-		return
-	}
-	// check whether @conn has existed in p.conns or not.
-	for i := range p.conns {
-		if p.conns[i] == conn {
-			return
-		}
-	}
-	if len(p.conns) >= p.size {
-		// delete @conn from client pool
-		// p.remove(conn)
-		conn.close()
-		return
-	}
-	p.conns = append(p.conns, conn)
-}
-
-func (p *gettyRPCClientPool) remove(conn *gettyRPCClient) {
-	if conn == nil || conn.getActive() == 0 {
-		return
-	}
-
-	if p.conns == nil {
-		return
-	}
-
-	if len(p.conns) > 0 {
-		for idx, c := range p.conns {
-			if conn == c {
-				p.conns = append(p.conns[:idx], p.conns[idx+1:]...)
-				break
-			}
-		}
-	}
-}
-
-func (p *gettyRPCClientPool) safeRemove(conn *gettyRPCClient) {
-	p.Lock()
-	defer p.Unlock()
-
-	p.remove(conn)
 }
