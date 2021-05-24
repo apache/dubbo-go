@@ -164,6 +164,8 @@ func test1(t *testing.T) {
 	suite.testGetServiceDefinition()
 }
 
+// TestZookeeperMetadataReport is dependent on zookeeper-*-fatjar.jar,
+// please execute `make -f ../../../Makefile prepare` before running unittest.
 func TestZookeeperMetadataReport(t *testing.T) {
 	t.Run("test1", test1)
 }
