@@ -29,6 +29,7 @@ import (
 	"github.com/grpc-ecosystem/grpc-opentracing/go/otgrpc"
 	"github.com/opentracing/opentracing-go"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 )
 
 import (
@@ -92,6 +93,7 @@ func (s *Server) Start(url *common.URL) {
 		// wait all exporter ready , then set proxy impl and grpc registerService
 		waitGrpcExporter(providerServices)
 		registerService(providerServices, server)
+		reflection.Register(server)
 
 		if err = server.Serve(lis); err != nil {
 			logger.Errorf("server serve failed with err: %v", err)
