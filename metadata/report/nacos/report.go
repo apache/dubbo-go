@@ -55,7 +55,7 @@ type nacosMetadataReport struct {
 func (n *nacosMetadataReport) GetAppMetadata(metadataIdentifier *identifier.SubscriberMetadataIdentifier) (*common.MetadataInfo, error) {
 	data, err := n.getConfig(vo.ConfigParam{
 		DataId: metadataIdentifier.GetIdentifierKey(),
-		Group:  "11",
+		Group:  metadataIdentifier.Group,
 	})
 
 	if err != nil {
@@ -78,7 +78,7 @@ func (n *nacosMetadataReport) PublishAppMetadata(metadataIdentifier *identifier.
 	}
 	return n.storeMetadata(vo.ConfigParam{
 		DataId:  metadataIdentifier.GetIdentifierKey(),
-		Group:   "11",
+		Group:   metadataIdentifier.Group,
 		Content: string(data),
 	})
 }
