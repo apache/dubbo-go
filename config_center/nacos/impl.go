@@ -185,8 +185,8 @@ func (n *nacosDynamicConfiguration) GetDone() chan struct{} {
 	return n.done
 }
 
-// GetUrl Get Url
-func (n *nacosDynamicConfiguration) GetUrl() *common.URL {
+// GetURL Get URL
+func (n *nacosDynamicConfiguration) GetURL() *common.URL {
 	return n.url
 }
 

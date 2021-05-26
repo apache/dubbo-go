@@ -56,7 +56,7 @@ func TestRestProtocolRefer(t *testing.T) {
 	invoker := proto.Refer(url)
 
 	// make sure url
-	eq := invoker.GetUrl().URLEqual(url)
+	eq := invoker.GetURL().URLEqual(url)
 	assert.True(t, eq)
 
 	// make sure invokers after 'Destroy'
@@ -104,7 +104,7 @@ func TestRestProtocolExport(t *testing.T) {
 	proxyFactory := extension.GetProxyFactory("default")
 	exporter := proto.Export(proxyFactory.GetInvoker(url))
 	// make sure url
-	eq := exporter.GetInvoker().GetUrl().URLEqual(url)
+	eq := exporter.GetInvoker().GetURL().URLEqual(url)
 	assert.True(t, eq)
 	// make sure exporterMap after 'Unexport'
 	fmt.Println(url.Path)

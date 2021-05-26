@@ -58,11 +58,11 @@ type TpsLimitFilter struct {
 
 // Invoke gets the configured limter to impose TPS limiting
 func (t TpsLimitFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
-	url := invoker.GetUrl()
+	url := invoker.GetURL()
 	tpsLimiter := url.GetParam(constant.TPS_LIMITER_KEY, "")
 	rejectedExeHandler := url.GetParam(constant.TPS_REJECTED_EXECUTION_HANDLER_KEY, constant.DEFAULT_KEY)
 	if len(tpsLimiter) > 0 {
-		allow := extension.GetTpsLimiter(tpsLimiter).IsAllowable(invoker.GetUrl(), invocation)
+		allow := extension.GetTpsLimiter(tpsLimiter).IsAllowable(invoker.GetURL(), invocation)
 		if allow {
 			return invoker.Invoke(ctx, invocation)
 		}

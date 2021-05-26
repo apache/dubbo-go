@@ -15,37 +15,43 @@
  * limitations under the License.
  */
 
-package getty
+package cluster_impl
 
 import (
-	"testing"
-	"time"
+	"context"
 )
 
 import (
-	"github.com/stretchr/testify/assert"
+	"github.com/apache/dubbo-go/cluster"
+	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/protocol"
 )
 
-func TestGetConnFromPool(t *testing.T) {
-	var rpcClient Client
+type zoneAwareInterceptor struct {
+}
 
-	clientPoll := newGettyRPCClientConnPool(&rpcClient, 1, time.Duration(5*time.Second))
+func (z *zoneAwareInterceptor) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+	key := constant.REGISTRY_KEY + "." + constant.ZONE_FORCE_KEY
+	force := ctx.Value(key)
 
-	var conn1 gettyRPCClient
-	conn1.active = time.Now().Unix()
-	clientPoll.put(&conn1)
-	assert.Equal(t, 1, len(clientPoll.conns))
+	if force != nil {
+		switch value := force.(type) {
+		case bool:
+			if value {
+				invocation.SetAttachments(key, "true")
+			}
+		case string:
+			if "true" == value {
+				invocation.SetAttachments(key, "true")
+			}
+		default:
+			// ignore
+		}
+	}
 
-	var conn2 gettyRPCClient
-	conn2.active = time.Now().Unix()
-	clientPoll.put(&conn2)
-	assert.Equal(t, 1, len(clientPoll.conns))
-	conn, err := clientPoll.get()
-	assert.Nil(t, err)
-	assert.Equal(t, &conn1, conn)
-	time.Sleep(6 * time.Second)
-	conn, err = clientPoll.get()
-	assert.Nil(t, conn)
-	assert.Nil(t, err)
-	assert.Equal(t, 0, len(clientPoll.conns))
+	return invoker.Invoke(ctx, invocation)
+}
+
+func getZoneAwareInterceptor() cluster.Interceptor {
+	return &zoneAwareInterceptor{}
 }

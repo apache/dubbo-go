@@ -42,7 +42,7 @@ var (
 
 func TestNewBaseDirectory(t *testing.T) {
 	dir := NewBaseDirectory(url)
-	assert.Equal(t, url, dir.GetUrl())
+	assert.Equal(t, url, dir.GetURL())
 	assert.Equal(t, url, dir.GetDirectoryUrl())
 }
 
@@ -60,7 +60,7 @@ func TestBuildRouterChain(t *testing.T) {
 	routeURL.AddParam(constant.INTERFACE_KEY, "mock-app")
 	routerURLs := make([]*common.URL, 0)
 	routerURLs = append(routerURLs, routeURL)
-	directory.SetRouters(routerURLs)
+	directory.AddRouters(routerURLs)
 	chain := directory.RouterChain()
 
 	assert.NotNil(t, chain)

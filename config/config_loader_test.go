@@ -455,7 +455,7 @@ func (m *mockMetadataService) getAllService(services *sync.Map) []*common.URL {
 type mockServiceDiscoveryRegistry struct {
 }
 
-func (mr *mockServiceDiscoveryRegistry) GetUrl() *common.URL {
+func (mr *mockServiceDiscoveryRegistry) GetURL() *common.URL {
 	panic("implement me")
 }
 

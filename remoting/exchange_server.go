@@ -32,14 +32,14 @@ type Server interface {
 // This is abstraction level. it is like facade.
 type ExchangeServer struct {
 	Server Server
-	Url    *common.URL
+	URL    *common.URL
 }
 
 // Create ExchangeServer
 func NewExchangeServer(url *common.URL, server Server) *ExchangeServer {
 	exchangServer := &ExchangeServer{
 		Server: server,
-		Url:    url,
+		URL:    url,
 	}
 	return exchangServer
 }

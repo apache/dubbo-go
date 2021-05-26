@@ -144,7 +144,7 @@ func (s *serviceDiscoveryRegistry) GetServiceDiscovery() registry.ServiceDiscove
 	return s.serviceDiscovery
 }
 
-func (s *serviceDiscoveryRegistry) GetUrl() *common.URL {
+func (s *serviceDiscoveryRegistry) GetURL() *common.URL {
 	return s.url
 }
 

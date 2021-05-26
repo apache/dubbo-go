@@ -177,8 +177,8 @@ func (r *consulRegistry) getListener(url *common.URL) (registry.Listener, error)
 	return listener, err
 }
 
-// GetUrl get registry URL of consul registry center
-func (r *consulRegistry) GetUrl() *common.URL {
+// GetURL get registry URL of consul registry center
+func (r *consulRegistry) GetURL() *common.URL {
 	return r.URL
 }
 

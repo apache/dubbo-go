@@ -35,5 +35,5 @@ func NewMockCluster() cluster.Cluster {
 
 // nolint
 func (cluster *mockCluster) Join(directory cluster.Directory) protocol.Invoker {
-	return protocol.NewBaseInvoker(directory.GetUrl())
+	return buildInterceptorChain(protocol.NewBaseInvoker(directory.GetURL()))
 }

@@ -184,7 +184,7 @@ func (c *zookeeperDynamicConfiguration) Done() chan struct{} {
 	return c.done
 }
 
-func (c *zookeeperDynamicConfiguration) GetUrl() *common.URL {
+func (c *zookeeperDynamicConfiguration) GetURL() *common.URL {
 	return c.url
 }
 
