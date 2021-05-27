@@ -28,10 +28,16 @@ import (
 var EmptyAddr = roaring.NewBitmap()
 
 func JoinIfNotEqual(left *roaring.Bitmap, right *roaring.Bitmap) *roaring.Bitmap {
-	if !left.Equals(right) {
-		left = left.Clone()
-		left.And(right)
-	}
+	// FIXME: cannot use left.Equals(right) as a shortcut because roaring bitmap has a race issue in its equals impl.
+	// see issue: https://github.com/RoaringBitmap/roaring/issues/305
+	/*
+		if !left.Equals(right) {
+			left = left.Clone()
+			left.And(right)
+		}
+	*/
+	left = left.Clone()
+	left.And(right)
 	return left
 }
 
