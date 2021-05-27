@@ -39,7 +39,6 @@ func JoinIfNotEqual(left *roaring.Bitmap, right *roaring.Bitmap) *roaring.Bitmap
 	left = left.Clone()
 	left.And(right)
 	return left
-	return left
 }
 
 func FallbackIfJoinToEmpty(left *roaring.Bitmap, right *roaring.Bitmap) *roaring.Bitmap {
