@@ -94,7 +94,13 @@ func TestEtcdMetadataReport_CRUD(t *testing.T) {
 	err = metadataReport.SaveSubscribedData(subMi, string(urls))
 	assert.Nil(t, err)
 
+	metadataInfo := common.NewMetadataInfWithApp(subMi.Application)
 	err = metadataReport.RemoveServiceMetadata(serviceMi)
+	assert.Nil(t, err)
+	err = metadataReport.PublishAppMetadata(subMi, metadataInfo)
+	assert.Nil(t, err)
+
+	_, err = metadataReport.GetAppMetadata(subMi)
 	assert.Nil(t, err)
 
 	e.Close()
