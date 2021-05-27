@@ -51,3 +51,15 @@ func TestJoinIfNotEqual(t *testing.T) {
 
 	assert.True(t, l.Equals(JoinIfNotEqual(l, r)))
 }
+
+func BenchmarkJoinIfNotEqual(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		l := roaring.NewBitmap()
+		for j := 0; j <= i; j++ {
+			l.Add(uint32(j))
+		}
+		r := roaring.NewBitmap()
+		r.AddRange(0, uint64(i+1))
+		JoinIfNotEqual(l, r)
+	}
+}
