@@ -160,10 +160,6 @@ func (l *ZkEventListener) handleZkNodeEvent(zkPath string, children []string, li
 		newNode string
 	)
 	for _, n := range newChildren {
-		if contains(children, n) {
-			continue
-		}
-
 		newNode = path.Join(zkPath, n)
 		logger.Infof("add zkNode{%s}", newNode)
 		content, _, connErr := l.client.Conn.Get(newNode)
@@ -323,12 +319,24 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkPath string, listen
 			}
 		}
 		// Periodically update provider information
-		ticker := time.NewTicker(ttl)
+		tickerTTL := ttl
+		if tickerTTL > 20e9 {
+			tickerTTL = 20e9
+		}
+		ticker := time.NewTicker(tickerTTL)
 	WATCH:
 		for {
 			select {
 			case <-ticker.C:
 				l.handleZkNodeEvent(zkPath, children, listener)
+				if tickerTTL < ttl {
+					tickerTTL *= 2
+					if tickerTTL > ttl {
+						tickerTTL = ttl
+					}
+					ticker.Stop()
+					ticker = time.NewTicker(tickerTTL)
+				}
 			case zkEvent = <-childEventCh:
 				logger.Warnf("get a zookeeper childEventCh{type:%s, server:%s, path:%s, state:%d-%s, err:%s}",
 					zkEvent.Type.String(), zkEvent.Server, zkEvent.Path, zkEvent.State, gxzookeeper.StateToString(zkEvent.State), zkEvent.Err)
