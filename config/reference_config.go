@@ -240,7 +240,7 @@ func (c *ReferenceConfig) getURLMap() url.Values {
 	urlMap.Set(constant.VERSION_KEY, c.Version)
 	urlMap.Set(constant.GENERIC_KEY, strconv.FormatBool(c.Generic))
 	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(common.CONSUMER))
-	urlMap.Set(constant.PROVIDER_BY, c.ProvidedBy)
+	urlMap.Set(constant.PROVIDED_BY, c.ProvidedBy)
 	urlMap.Set(constant.SERIALIZATION_KEY, c.Serialization)
 
 	urlMap.Set(constant.RELEASE_KEY, "dubbo-golang-"+constant.Version)
