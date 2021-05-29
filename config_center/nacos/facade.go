@@ -38,8 +38,8 @@ const (
 )
 
 type nacosClientFacade interface {
-	NacosClient() *NacosClient
-	SetNacosClient(*NacosClient)
+	NacosClient() *NacosConfigClient
+	SetNacosClient(*NacosConfigClient)
 	// WaitGroup for wait group control, zk client listener & zk client container
 	WaitGroup() *sync.WaitGroup
 	// GetDone For nacos client control	RestartCallBack() bool

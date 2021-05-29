@@ -53,7 +53,7 @@ type nacosDynamicConfiguration struct {
 	wg           sync.WaitGroup
 	cltLock      sync.Mutex
 	done         chan struct{}
-	client       *NacosClient
+	client       *NacosConfigClient
 	keyListeners sync.Map
 	parser       parser.ConfigurationParser
 }
@@ -115,7 +115,7 @@ func (n *nacosDynamicConfiguration) PublishConfig(key string, group string, valu
 // GetConfigKeysByGroup will return all keys with the group
 func (n *nacosDynamicConfiguration) GetConfigKeysByGroup(group string) (*gxset.HashSet, error) {
 	group = n.resolvedGroup(group)
-	page, err := (*n.client.Client()).SearchConfig(vo.SearchConfigParm{
+	page, err := (*n.client.Client()).SearchConfig(vo.SearchConfigParam{
 		Search: "accurate",
 		Group:  group,
 		PageNo: 1,
@@ -160,13 +160,13 @@ func (n *nacosDynamicConfiguration) SetParser(p parser.ConfigurationParser) {
 	n.parser = p
 }
 
-// NacosClient Get Nacos Client
-func (n *nacosDynamicConfiguration) NacosClient() *NacosClient {
+// NacosConfigClient Get Nacos Client
+func (n *nacosDynamicConfiguration) NacosClient() *NacosConfigClient {
 	return n.client
 }
 
 // SetNacosClient Set Nacos Client
-func (n *nacosDynamicConfiguration) SetNacosClient(client *NacosClient) {
+func (n *nacosDynamicConfiguration) SetNacosClient(client *NacosConfigClient) {
 	n.cltLock.Lock()
 	n.client = client
 	n.cltLock.Unlock()

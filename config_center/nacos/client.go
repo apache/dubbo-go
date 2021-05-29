@@ -18,16 +18,13 @@
 package nacos
 
 import (
-	"strconv"
 	"strings"
 	"sync"
 	"time"
 )
 
 import (
-	"github.com/nacos-group/nacos-sdk-go/clients"
 	"github.com/nacos-group/nacos-sdk-go/clients/config_client"
-	nacosconst "github.com/nacos-group/nacos-sdk-go/common/constant"
 	perrors "github.com/pkg/errors"
 )
 
@@ -35,10 +32,11 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/remoting/nacos"
 )
 
-// NacosClient Nacos client
-type NacosClient struct {
+// NacosConfigClient Nacos client
+type NacosConfigClient struct {
 	name       string
 	NacosAddrs []string
 	sync.Mutex // for Client
@@ -49,13 +47,13 @@ type NacosClient struct {
 	onceClose  func()
 }
 
-// Client Get Client
-func (n *NacosClient) Client() *config_client.IConfigClient {
+// Client Get NacosConfigClient
+func (n *NacosConfigClient) Client() *config_client.IConfigClient {
 	return n.client
 }
 
-// SetClient Set client
-func (n *NacosClient) SetClient(client *config_client.IConfigClient) {
+// SetClient Set NacosConfigClient
+func (n *NacosConfigClient) SetClient(client *config_client.IConfigClient) {
 	n.Lock()
 	n.client = client
 	n.Unlock()
@@ -65,7 +63,7 @@ type option func(*options)
 
 type options struct {
 	nacosName string
-	// client    *NacosClient
+	// client    *NacosConfigClient
 }
 
 // WithNacosName Set nacos name
@@ -105,26 +103,24 @@ func ValidateNacosClient(container nacosClientFacade, opts ...option) error {
 	}
 
 	if container.NacosClient().Client() == nil {
-		configClient, err := initNacosConfigClient(nacosAddresses, timeout, url)
+		configClient, err := nacos.NewNacosConfigClientByUrl(url)
 		if err != nil {
-			logger.Errorf("initNacosConfigClient(addr:%+v,timeout:%v,url:%v) = err %+v",
-				nacosAddresses, timeout.String(), url, err)
+			logger.Errorf("nacos.NewNacosConfigClientByUrl(url:%v) = err %+v", url, err)
 			return perrors.WithMessagef(err, "newNacosClient(address:%+v)", url.Location)
 		}
 		container.NacosClient().SetClient(&configClient)
-
 	}
 
 	return perrors.WithMessagef(nil, "newNacosClient(address:%+v)", url.PrimitiveURL)
 }
 
-func newNacosClient(name string, nacosAddrs []string, timeout time.Duration, url *common.URL) (*NacosClient, error) {
+func newNacosClient(name string, nacosAddrs []string, timeout time.Duration, url *common.URL) (*NacosConfigClient, error) {
 	var (
 		err error
-		n   *NacosClient
+		n   *NacosConfigClient
 	)
 
-	n = &NacosClient{
+	n = &NacosConfigClient{
 		name:       name,
 		NacosAddrs: nacosAddrs,
 		Timeout:    timeout,
@@ -134,7 +130,7 @@ func newNacosClient(name string, nacosAddrs []string, timeout time.Duration, url
 		},
 	}
 
-	configClient, err := initNacosConfigClient(nacosAddrs, timeout, url)
+	configClient, err := nacos.NewNacosConfigClientByUrl(url)
 	if err != nil {
 		logger.Errorf("initNacosConfigClient(addr:%+v,timeout:%v,url:%v) = err %+v",
 			nacosAddrs, timeout.String(), url, err)
@@ -145,44 +141,12 @@ func newNacosClient(name string, nacosAddrs []string, timeout time.Duration, url
 	return n, nil
 }
 
-func initNacosConfigClient(nacosAddrs []string, timeout time.Duration, url *common.URL) (config_client.IConfigClient, error) {
-	var svrConfList []nacosconst.ServerConfig
-	for _, nacosAddr := range nacosAddrs {
-		split := strings.Split(nacosAddr, ":")
-		port, err := strconv.ParseUint(split[1], 10, 64)
-		if err != nil {
-			logger.Errorf("strconv.ParseUint(nacos addr port:%+v) = error %+v", split[1], err)
-			continue
-		}
-		svrconf := nacosconst.ServerConfig{
-			IpAddr: split[0],
-			Port:   port,
-		}
-		svrConfList = append(svrConfList, svrconf)
-	}
-
-	return clients.CreateConfigClient(map[string]interface{}{
-		"serverConfigs": svrConfList,
-		"clientConfig": nacosconst.ClientConfig{
-			TimeoutMs:           uint64(int32(timeout / time.Millisecond)),
-			ListenInterval:      uint64(int32(timeout / time.Millisecond)),
-			NotLoadCacheAtStart: true,
-			LogDir:              url.GetParam(constant.NACOS_LOG_DIR_KEY, ""),
-			CacheDir:            url.GetParam(constant.NACOS_CACHE_DIR_KEY, ""),
-			Endpoint:            url.GetParam(constant.NACOS_ENDPOINT, ""),
-			Username:            url.GetParam(constant.NACOS_USERNAME, ""),
-			Password:            url.GetParam(constant.NACOS_PASSWORD, ""),
-			NamespaceId:         url.GetParam(constant.NACOS_NAMESPACE_ID, ""),
-		},
-	})
-}
-
 // Done Get nacos client exit signal
-func (n *NacosClient) Done() <-chan struct{} {
+func (n *NacosConfigClient) Done() <-chan struct{} {
 	return n.exit
 }
 
-func (n *NacosClient) stop() bool {
+func (n *NacosConfigClient) stop() bool {
 	select {
 	case <-n.exit:
 		return true
@@ -194,7 +158,7 @@ func (n *NacosClient) stop() bool {
 }
 
 // NacosClientValid Get nacos client valid status
-func (n *NacosClient) NacosClientValid() bool {
+func (n *NacosConfigClient) NacosClientValid() bool {
 	select {
 	case <-n.exit:
 		return false
@@ -212,7 +176,7 @@ func (n *NacosClient) NacosClientValid() bool {
 }
 
 // Close Close nacos client , then set null
-func (n *NacosClient) Close() {
+func (n *NacosConfigClient) Close() {
 	if n == nil {
 		return
 	}

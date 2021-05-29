@@ -62,8 +62,8 @@ func TestSetNacosClient(t *testing.T) {
 		url:  registryUrl,
 		done: make(chan struct{}),
 	}
-	var client *NacosClient
-	client = &NacosClient{
+	var client *NacosConfigClient
+	client = &NacosConfigClient{
 		name:       nacosClientName,
 		NacosAddrs: []string{nacosURL},
 		Timeout:    15 * time.Second,
