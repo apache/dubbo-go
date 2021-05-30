@@ -148,7 +148,7 @@ func (suite *zookeeperMetadataReportTestSuite) testPublishAppMetadata() {
 	assert.NoError(suite.t, err)
 }
 
-func (suite *zookeeperMetadataReportTestSuite) testGetAppMetadata(info *common.MetadataInfo) {
+func (suite *zookeeperMetadataReportTestSuite) testGetAppMetadata() {
 	subscribeMi := newSubscribeMetadataIdentifier()
 	info, err := suite.m.GetAppMetadata(subscribeMi)
 	assert.NoError(suite.t, err)
@@ -192,7 +192,7 @@ func testAppMetadata(t *testing.T) {
 
 	suite := newZookeeperMetadataReportTestSuite(t, m)
 	suite.testPublishAppMetadata()
-
+	suite.testGetAppMetadata()
 }
 
 // TestZookeeperMetadataReport is dependent on zookeeper-*-fatjar.jar,
