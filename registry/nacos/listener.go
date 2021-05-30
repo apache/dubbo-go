@@ -51,7 +51,7 @@ type nacosListener struct {
 	subscribeParam *vo.SubscribeParam
 }
 
-// NewRegistryDataListener creates a data listener for nacos
+// NewNacosListener creates a data listener for nacos
 func NewNacosListener(url *common.URL, namingClient naming_client.INamingClient) (*nacosListener, error) {
 	listener := &nacosListener{
 		namingClient: namingClient,
@@ -217,7 +217,6 @@ func (nl *nacosListener) Next() (*registry.ServiceEvent, error) {
 	}
 }
 
-// nolint
 func (nl *nacosListener) Close() {
 	nl.stopListen()
 	close(nl.done)

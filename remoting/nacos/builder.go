@@ -17,7 +17,6 @@
 
 package nacos
 
-
 import (
 	"net"
 	"strconv"
@@ -133,6 +132,7 @@ func NewNacosClient(rc *config.RemoteConfig) (naming_client.INamingClient, error
 
 	return nacosClient.NewNacosNamingClient(config.GetApplicationConfig().Name, true, scs, cc)
 }
+
 // NewNacosClientByUrl created
 func NewNacosClientByUrl(url *common.URL) (naming_client.INamingClient, error) {
 	scs, cc, err := GetNacosConfig(url)
