@@ -94,6 +94,7 @@ func withPathSeparator(path string) string {
 // BaseApplicationMetadataIdentifier is the base implement of BaseApplicationMetadataIdentifier interface
 type BaseApplicationMetadataIdentifier struct {
 	Application string
+	Group       string
 }
 
 // getIdentifierKey returns string that format is application/param

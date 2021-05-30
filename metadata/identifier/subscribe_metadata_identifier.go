@@ -17,6 +17,10 @@
 
 package identifier
 
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+)
+
 // SubscriberMetadataIdentifier is inherit baseMetaIdentifier with service params: Revision
 type SubscriberMetadataIdentifier struct {
 	Revision string
@@ -28,6 +32,7 @@ func NewSubscriberMetadataIdentifier(application string, revision string) *Subsc
 		Revision: revision,
 		BaseApplicationMetadataIdentifier: BaseApplicationMetadataIdentifier{
 			Application: application,
+			Group:       constant.DUBBO,
 		},
 	}
 }
