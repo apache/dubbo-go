@@ -18,12 +18,15 @@
 package extension
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/metadata/service"
 	"fmt"
 )
 
 import (
 	perrors "github.com/pkg/errors"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/metadata/service"
 )
 
 type remotingMetadataServiceCreator func() (service.RemotingMetadataService, error)
