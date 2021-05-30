@@ -57,7 +57,6 @@ func (n *nacosMetadataReport) GetAppMetadata(metadataIdentifier *identifier.Subs
 		DataId: metadataIdentifier.GetIdentifierKey(),
 		Group:  metadataIdentifier.Group,
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -76,6 +75,7 @@ func (n *nacosMetadataReport) PublishAppMetadata(metadataIdentifier *identifier.
 	if err != nil {
 		return err
 	}
+
 	return n.storeMetadata(vo.ConfigParam{
 		DataId:  metadataIdentifier.GetIdentifierKey(),
 		Group:   metadataIdentifier.Group,
