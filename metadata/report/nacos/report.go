@@ -18,6 +18,7 @@
 package nacos
 
 import (
+	"encoding/json"
 	"net/url"
 )
 
@@ -52,14 +53,34 @@ type nacosMetadataReport struct {
 
 // GetAppMetadata get metadata info from nacos
 func (n *nacosMetadataReport) GetAppMetadata(metadataIdentifier *identifier.SubscriberMetadataIdentifier) (*common.MetadataInfo, error) {
-	// TODO will implement
-	panic("implement me")
+	data, err := n.getConfig(vo.ConfigParam{
+		DataId: metadataIdentifier.GetIdentifierKey(),
+		Group:  metadataIdentifier.Group,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var metadataInfo common.MetadataInfo
+	err = json.Unmarshal([]byte(data), &metadataInfo)
+	if err != nil {
+		return nil, err
+	}
+	return &metadataInfo, nil
 }
 
 // PublishAppMetadata publish metadata info to nacos
 func (n *nacosMetadataReport) PublishAppMetadata(metadataIdentifier *identifier.SubscriberMetadataIdentifier, info *common.MetadataInfo) error {
-	// TODO will implement
-	panic("implement me")
+	data, err := json.Marshal(info)
+	if err != nil {
+		return err
+	}
+
+	return n.storeMetadata(vo.ConfigParam{
+		DataId:  metadataIdentifier.GetIdentifierKey(),
+		Group:   metadataIdentifier.Group,
+		Content: string(data),
+	})
 }
 
 // StoreProviderMetadata stores the metadata.
