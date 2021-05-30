@@ -18,6 +18,7 @@
 package extension
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/metadata/service"
 	"fmt"
 )
 
@@ -25,23 +26,19 @@ import (
 	perrors "github.com/pkg/errors"
 )
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/metadata/service/remote"
-)
-
-type remoteMetadataServiceCreator func() (remote.RemoteMetadataService, error)
+type remotingMetadataServiceCreator func() (service.RemotingMetadataService, error)
 
 var (
-	creator remoteMetadataServiceCreator
+	creator remotingMetadataServiceCreator
 )
 
-// SetRemoteMetadataService will store the remote metadata service
-func SetRemoteMetadataService(creatorFunc remoteMetadataServiceCreator) {
+// SetRemotingMetadataService will store the remote metadata service
+func SetRemotingMetadataService(creatorFunc remotingMetadataServiceCreator) {
 	creator = creatorFunc
 }
 
 // GetRemoteMetadataServiceFactory will create a MetadataService instance
-func GetRemoteMetadataService() (remote.RemoteMetadataService, error) {
+func GetRemotingMetadataService() (service.RemotingMetadataService, error) {
 	if creator != nil {
 		return creator()
 	}

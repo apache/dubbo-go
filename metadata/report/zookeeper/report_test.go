@@ -141,7 +141,7 @@ func (suite *zookeeperMetadataReportTestSuite) testGetServiceDefinition() {
 	assert.NoError(suite.t, err)
 }
 
-func test1(t *testing.T) {
+func testInterfaceMetadata(t *testing.T) {
 	testCluster, err := zk.StartTestCluster(1, nil, nil, zk.WithRetryTimes(20))
 	assert.NoError(t, err)
 	defer func() {
@@ -164,8 +164,18 @@ func test1(t *testing.T) {
 	suite.testGetServiceDefinition()
 }
 
+func testAppMetadata(t *testing.T) {
+	testCluster, err := zk.StartTestCluster(1, nil, nil, zk.WithRetryTimes(20))
+	assert.NoError(t, err)
+	defer func() {
+		err := testCluster.Stop()
+		assert.Nil(t, err)
+	}()
+}
+
 // TestZookeeperMetadataReport is dependent on zookeeper-*-fatjar.jar,
 // please execute `make -f ../../../Makefile prepare` before running unittest.
 func TestZookeeperMetadataReport(t *testing.T) {
-	t.Run("test1", test1)
+	t.Run("testInterfaceMetadata", testInterfaceMetadata)
+	t.Run("testAppMetadata", testAppMetadata)
 }

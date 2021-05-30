@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package remote_impl
+package remoting
 
 import (
 	"fmt"

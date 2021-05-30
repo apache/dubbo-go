@@ -296,8 +296,8 @@ func (c *ReferenceConfig) GetInvoker() protocol.Invoker {
 }
 
 func publishConsumerDefinition(url *common.URL) {
-	if remoteMetadataServiceImpl, err := extension.GetRemoteMetadataService(); err == nil && remoteMetadataServiceImpl != nil {
-		remoteMetadataServiceImpl.PublishServiceDefinition(url)
+	if remotingMetadataService, err := extension.GetRemotingMetadataService(); err == nil && remotingMetadataService != nil {
+		remotingMetadataService.PublishServiceDefinition(url)
 	}
 }
 
