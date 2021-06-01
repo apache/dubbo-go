@@ -20,7 +20,6 @@ package grpc
 import (
 	"fmt"
 	"net"
-	"reflect"
 	"sync"
 	"time"
 )
@@ -39,6 +38,16 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
+// DubboGrpcService is gRPC service
+type DubboGrpcService interface {
+	// SetProxyImpl sets proxy.
+	SetProxyImpl(impl protocol.Invoker)
+	// GetProxyImpl gets proxy.
+	GetProxyImpl() protocol.Invoker
+	// ServiceDesc gets an RPC service's specification.
+	ServiceDesc() *grpc.ServiceDesc
+}
+
 // Server is a gRPC server
 type Server struct {
 	grpcServer *grpc.Server
@@ -48,16 +57,6 @@ type Server struct {
 // NewServer creates a new server
 func NewServer() *Server {
 	return &Server{}
-}
-
-// DubboGrpcService is gRPC service
-type DubboGrpcService interface {
-	// SetProxyImpl sets proxy.
-	SetProxyImpl(impl protocol.Invoker)
-	// GetProxyImpl gets proxy.
-	GetProxyImpl() protocol.Invoker
-	// ServiceDesc gets an RPC service's specification.
-	ServiceDesc() *grpc.ServiceDesc
 }
 
 func (s *Server) SetBufferSize(n int) {
@@ -76,12 +75,15 @@ func (s *Server) Start(url *common.URL) {
 		panic(err)
 	}
 
-	// if global trace instance was set, then server tracer instance can be get. If not , will return Nooptracer
+	// If global trace instance was set, then server tracer instance
+	// can be get. If not, will return NoopTracer.
 	tracer := opentracing.GlobalTracer()
 	server := grpc.NewServer(
 		grpc.UnaryInterceptor(otgrpc.OpenTracingServerInterceptor(tracer)),
+		grpc.StreamInterceptor(otgrpc.OpenTracingStreamServerInterceptor(tracer)),
 		grpc.MaxRecvMsgSize(1024*1024*s.bufferSize),
-		grpc.MaxSendMsgSize(1024*1024*s.bufferSize))
+		grpc.MaxSendMsgSize(1024*1024*s.bufferSize),
+	)
 	s.grpcServer = server
 
 	go func() {
@@ -136,18 +138,12 @@ func waitGrpcExporter(providerServices map[string]*config.ServiceConfig) {
 func registerService(providerServices map[string]*config.ServiceConfig, server *grpc.Server) {
 	for key, providerService := range providerServices {
 		service := config.GetProviderService(key)
-
 		ds, ok := service.(DubboGrpcService)
 		if !ok {
 			panic("illegal service type registered")
 		}
 
-		m, ok := reflect.TypeOf(service).MethodByName("SetProxyImpl")
-		if !ok {
-			panic("method SetProxyImpl is necessary for grpc service")
-		}
 		serviceKey := common.ServiceKey(providerService.InterfaceName, providerService.Group, providerService.Version)
-
 		exporter, _ := grpcProtocol.ExporterMap().Load(serviceKey)
 		if exporter == nil {
 			panic(fmt.Sprintf("no exporter found for servicekey: %v", serviceKey))
@@ -156,12 +152,9 @@ func registerService(providerServices map[string]*config.ServiceConfig, server *
 		if invoker == nil {
 			panic(fmt.Sprintf("no invoker found for servicekey: %v", serviceKey))
 		}
-		in := []reflect.Value{reflect.ValueOf(service)}
-		in = append(in, reflect.ValueOf(invoker))
-		m.Func.Call(in)
 
+		ds.SetProxyImpl(invoker)
 		server.RegisterService(ds.ServiceDesc(), service)
-
 	}
 }
 
