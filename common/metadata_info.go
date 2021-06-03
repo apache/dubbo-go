@@ -27,7 +27,6 @@ import (
 
 import (
 	gxset "github.com/dubbogo/gost/container/set"
-	"go.uber.org/atomic"
 )
 
 import (
@@ -51,11 +50,10 @@ var IncludeKeys = gxset.NewSet(
 
 // MetadataInfo the metadata information of instance
 type MetadataInfo struct {
+	Reported bool                    `json:"-"`
 	App      string                  `json:"app,omitempty"`
 	Revision string                  `json:"revision,omitempty"`
 	Services map[string]*ServiceInfo `json:"services,omitempty"`
-
-	Reported *atomic.Bool `json:"-"`
 }
 
 // nolint
@@ -69,7 +67,7 @@ func NewMetadataInfo(app string, revision string, services map[string]*ServiceIn
 		App:      app,
 		Revision: revision,
 		Services: services,
-		Reported: atomic.NewBool(false),
+		Reported: false,
 	}
 }
 
@@ -83,7 +81,7 @@ func (mi *MetadataInfo) JavaClassName() string {
 // in my opinion, it's enough because Dubbo actually ignore the URL params.
 // please refer org.apache.dubbo.common.URL#toParameterString(java.lang.String...)
 func (mi *MetadataInfo) CalAndGetRevision() string {
-	if mi.Revision != "" && mi.Reported.Load() {
+	if mi.Revision != "" && mi.Reported {
 		return mi.Revision
 	}
 	if len(mi.Services) == 0 {
@@ -119,12 +117,12 @@ func (mi *MetadataInfo) CalAndGetRevision() string {
 
 // nolint
 func (mi *MetadataInfo) HasReported() bool {
-	return mi.Reported.Load()
+	return mi.Reported
 }
 
 // nolint
 func (mi *MetadataInfo) MarkReported() {
-	mi.Reported.CAS(false, true)
+	mi.Reported = true
 }
 
 // nolint
