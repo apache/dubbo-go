@@ -25,16 +25,19 @@ import (
 )
 
 import (
+	gxset "github.com/dubbogo/gost/container/set"
 	"github.com/stretchr/testify/assert"
 )
 
 import (
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/common/observer"
-	"github.com/apache/dubbo-go/common/observer/dispatcher"
-	"github.com/apache/dubbo-go/config"
-	"github.com/apache/dubbo-go/registry"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/common/observer"
+	"dubbo.apache.org/dubbo-go/v3/common/observer/dispatcher"
+	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
+	"dubbo.apache.org/dubbo-go/v3/registry"
+	"dubbo.apache.org/dubbo-go/v3/registry/event"
 )
 
 var testName = "test"
@@ -67,23 +70,17 @@ func Test_newNacosServiceDiscovery(t *testing.T) {
 	assert.NotNil(t, res)
 }
 
-func TestNacosServiceDiscovery_Destroy(t *testing.T) {
-	prepareData()
-	serviceDiscovery, err := extension.GetServiceDiscovery(constant.NACOS_KEY, testName)
-	assert.Nil(t, err)
-	assert.NotNil(t, serviceDiscovery)
-	err = serviceDiscovery.Destroy()
-	assert.Nil(t, err)
-	assert.Nil(t, serviceDiscovery.(*nacosServiceDiscovery).namingClient)
-}
-
 func TestNacosServiceDiscovery_CRUD(t *testing.T) {
 	if !checkNacosServerAlive() {
 		return
 	}
 	prepareData()
 	extension.SetEventDispatcher("mock", func() observer.EventDispatcher {
-		return &dispatcher.MockEventDispatcher{}
+		return dispatcher.NewMockEventDispatcher()
+	})
+
+	extension.SetGlobalServiceNameMapping(func() mapping.ServiceNameMapping {
+		return mapping.NewMockServiceNameMapping()
 	})
 
 	extension.SetAndInitGlobalDispatcher("mock")
@@ -156,9 +153,10 @@ func TestNacosServiceDiscovery_CRUD(t *testing.T) {
 	// test dispatcher event
 	err = serviceDiscovery.DispatchEventByServiceName(serviceName)
 	assert.Nil(t, err)
-
+	hs := gxset.NewSet()
+	hs.Add(serviceName)
 	// test AddListener
-	err = serviceDiscovery.AddListener(&registry.ServiceInstancesChangedListener{ServiceName: serviceName})
+	err = serviceDiscovery.AddListener(event.NewServiceInstancesChangedListener(hs))
 	assert.Nil(t, err)
 }
 
@@ -166,6 +164,16 @@ func TestNacosServiceDiscovery_GetDefaultPageSize(t *testing.T) {
 	prepareData()
 	serviceDiscovery, _ := extension.GetServiceDiscovery(constant.NACOS_KEY, testName)
 	assert.Equal(t, registry.DefaultPageSize, serviceDiscovery.GetDefaultPageSize())
+}
+
+func TestNacosServiceDiscovery_Destroy(t *testing.T) {
+	prepareData()
+	serviceDiscovery, err := extension.GetServiceDiscovery(constant.NACOS_KEY, testName)
+	assert.Nil(t, err)
+	assert.NotNil(t, serviceDiscovery)
+	err = serviceDiscovery.Destroy()
+	assert.Nil(t, err)
+	assert.Nil(t, serviceDiscovery.(*nacosServiceDiscovery).namingClient)
 }
 
 func prepareData() {

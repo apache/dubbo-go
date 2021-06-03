@@ -23,11 +23,10 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/registry"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
 func init() {
@@ -35,7 +34,8 @@ func init() {
 }
 
 // ProtocolPortsMetadataCustomizer will update the endpoints
-type ProtocolPortsMetadataCustomizer struct{}
+type ProtocolPortsMetadataCustomizer struct {
+}
 
 // GetPriority will return 0, which means it will be invoked at the beginning
 func (p *ProtocolPortsMetadataCustomizer) GetPriority() int {
@@ -53,16 +53,15 @@ func (p *ProtocolPortsMetadataCustomizer) Customize(instance registry.ServiceIns
 	// 4 is enough... we don't have many protocol
 	protocolMap := make(map[string]int, 4)
 
-	list, err := metadataService.GetExportedURLs(constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE)
-	if err != nil || len(list) == 0 {
+	list := metadataService.GetExportedServiceURLs()
+	if list == nil || len(list) == 0 {
 		logger.Debugf("Could not find exported urls", err)
 		return
 	}
 
-	for _, ui := range list {
-		u, err := common.NewURL(ui.(string))
+	for _, u := range list {
 		if err != nil || len(u.Protocol) == 0 {
-			logger.Errorf("the url string is invalid: %s", ui.(string), err)
+			logger.Errorf("the url string is invalid: %s", u, err)
 			continue
 		}
 
@@ -82,9 +81,9 @@ func endpointsStr(protocolMap map[string]int) string {
 		return ""
 	}
 
-	endpoints := make([]endpoint, 0, len(protocolMap))
+	endpoints := make([]registry.Endpoint, 0, len(protocolMap))
 	for k, v := range protocolMap {
-		endpoints = append(endpoints, endpoint{
+		endpoints = append(endpoints, registry.Endpoint{
 			Port:     v,
 			Protocol: k,
 		})
@@ -96,10 +95,4 @@ func endpointsStr(protocolMap map[string]int) string {
 		return ""
 	}
 	return string(str)
-}
-
-// nolint
-type endpoint struct {
-	Port     int    `json:"port, omitempty"`
-	Protocol string `json:"protocol, omitempty"`
 }

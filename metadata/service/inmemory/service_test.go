@@ -27,12 +27,12 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/metadata/definition"
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/metadata/definition"
 )
 
 func TestMetadataService(t *testing.T) {
-	mts, _ := NewMetadataService()
+	mts, _ := GetInMemoryMetadataService()
 	serviceName := "com.ikurento.user.UserProvider"
 	group := "group1"
 	version := "0.0.1"

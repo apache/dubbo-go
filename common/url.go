@@ -38,8 +38,8 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
 )
 
 // ///////////////////////////////
@@ -64,7 +64,7 @@ var (
 	DubboNodes = [...]string{"consumers", "configurators", "routers", "providers"}
 	// DubboRole Dubbo service role
 	DubboRole = [...]string{"consumer", "", "routers", "provider"}
-	// CompareURLEqualFunc compare two url is equal
+	// CompareURLEqualFunc compare two URL is equal
 	compareURLEqualFunc CompareURLEqualFunc
 )
 
@@ -84,7 +84,7 @@ func (t RoleType) Role() string {
 	return DubboRole[t]
 }
 
-type baseUrl struct {
+type baseURL struct {
 	Protocol string
 	Location string // ip+port
 	Ip       string
@@ -104,7 +104,7 @@ type noCopy struct{}
 func (*noCopy) Lock()   {}
 func (*noCopy) Unlock() {}
 
-// URL thread-safe. but this url should not be copied.
+// URL thread-safe. but this URL should not be copied.
 // we fail to define this struct to be immutable object.
 // but, those method which will update the URL, including SetParam, SetParams
 // are only allowed to be invoked in creating URL instance
@@ -112,7 +112,7 @@ func (*noCopy) Unlock() {}
 type URL struct {
 	noCopy noCopy
 
-	baseUrl
+	baseURL
 	// url.Values is not safe map, add to avoid concurrent map read and map write error
 	paramsLock sync.RWMutex
 	params     url.Values
@@ -125,81 +125,81 @@ type URL struct {
 	SubURL *URL
 }
 
-// Option accepts url
+// Option accepts URL
 // Option will define a function of handling URL
 type Option func(*URL)
 
-// WithUsername sets username for url
+// WithUsername sets username for URL
 func WithUsername(username string) Option {
 	return func(url *URL) {
 		url.Username = username
 	}
 }
 
-// WithPassword sets password for url
+// WithPassword sets password for URL
 func WithPassword(pwd string) Option {
 	return func(url *URL) {
 		url.Password = pwd
 	}
 }
 
-// WithMethods sets methods for url
+// WithMethods sets methods for URL
 func WithMethods(methods []string) Option {
 	return func(url *URL) {
 		url.Methods = methods
 	}
 }
 
-// WithParams sets params for url
+// WithParams sets params for URL
 func WithParams(params url.Values) Option {
 	return func(url *URL) {
 		url.params = params
 	}
 }
 
-// WithParamsValue sets params field for url
+// WithParamsValue sets params field for URL
 func WithParamsValue(key, val string) Option {
 	return func(url *URL) {
 		url.SetParam(key, val)
 	}
 }
 
-// WithProtocol sets protocol for url
+// WithProtocol sets protocol for URL
 func WithProtocol(proto string) Option {
 	return func(url *URL) {
 		url.Protocol = proto
 	}
 }
 
-// WithIp sets ip for url
+// WithIp sets ip for URL
 func WithIp(ip string) Option {
 	return func(url *URL) {
 		url.Ip = ip
 	}
 }
 
-// WithPort sets port for url
+// WithPort sets port for URL
 func WithPort(port string) Option {
 	return func(url *URL) {
 		url.Port = port
 	}
 }
 
-// WithPath sets path for url
+// WithPath sets path for URL
 func WithPath(path string) Option {
 	return func(url *URL) {
 		url.Path = "/" + strings.TrimPrefix(path, "/")
 	}
 }
 
-// WithLocation sets location for url
+// WithLocation sets location for URL
 func WithLocation(location string) Option {
 	return func(url *URL) {
 		url.Location = location
 	}
 }
 
-// WithToken sets token for url
+// WithToken sets token for URL
 func WithToken(token string) Option {
 	return func(url *URL) {
 		if len(token) > 0 {
@@ -217,7 +217,7 @@ func WithToken(token string) Option {
 	}
 }
 
-// NewURLWithOptions will create a new url with options
+// NewURLWithOptions will create a new URL with options
 func NewURLWithOptions(opts ...Option) *URL {
 	newURL := &URL{}
 	for _, opt := range opts {
@@ -227,48 +227,48 @@ func NewURLWithOptions(opts ...Option) *URL {
 	return newURL
 }
 
-// NewURL will create a new url
+// NewURL will create a new URL
 // the urlString should not be empty
 func NewURL(urlString string, opts ...Option) (*URL, error) {
-	s := URL{baseUrl: baseUrl{}}
+	s := URL{baseURL: baseURL{}}
 	if urlString == "" {
 		return &s, nil
 	}
 
-	rawUrlString, err := url.QueryUnescape(urlString)
+	rawURLString, err := url.QueryUnescape(urlString)
 	if err != nil {
-		return &s, perrors.Errorf("url.QueryUnescape(%s),  error{%v}", urlString, err)
+		return &s, perrors.Errorf("URL.QueryUnescape(%s),  error{%v}", urlString, err)
 	}
 
-	// rawUrlString = "//" + rawUrlString
-	if !strings.Contains(rawUrlString, "//") {
-		t := URL{baseUrl: baseUrl{}}
+	// rawURLString = "//" + rawURLString
+	if !strings.Contains(rawURLString, "//") {
+		t := URL{baseURL: baseURL{}}
 		for _, opt := range opts {
 			opt(&t)
 		}
-		rawUrlString = t.Protocol + "://" + rawUrlString
+		rawURLString = t.Protocol + "://" + rawURLString
 	}
 
-	serviceUrl, urlParseErr := url.Parse(rawUrlString)
+	serviceURL, urlParseErr := url.Parse(rawURLString)
 	if urlParseErr != nil {
-		return &s, perrors.Errorf("url.Parse(url string{%s}),  error{%v}", rawUrlString, err)
+		return &s, perrors.Errorf("URL.Parse(URL string{%s}),  error{%v}", rawURLString, err)
 	}
 
-	s.params, err = url.ParseQuery(serviceUrl.RawQuery)
+	s.params, err = url.ParseQuery(serviceURL.RawQuery)
 	if err != nil {
-		return &s, perrors.Errorf("url.ParseQuery(raw url string{%s}),  error{%v}", serviceUrl.RawQuery, err)
+		return &s, perrors.Errorf("URL.ParseQuery(raw URL string{%s}),  error{%v}", serviceURL.RawQuery, err)
 	}
 
 	s.PrimitiveURL = urlString
-	s.Protocol = serviceUrl.Scheme
-	s.Username = serviceUrl.User.Username()
-	s.Password, _ = serviceUrl.User.Password()
-	s.Location = serviceUrl.Host
-	s.Path = serviceUrl.Path
+	s.Protocol = serviceURL.Scheme
+	s.Username = serviceURL.User.Username()
+	s.Password, _ = serviceURL.User.Password()
+	s.Location = serviceURL.Host
+	s.Path = serviceURL.Path
 	if strings.Contains(s.Location, ":") {
 		s.Ip, s.Port, err = net.SplitHostPort(s.Location)
 		if err != nil {
-			return &s, perrors.Errorf("net.SplitHostPort(url.Host{%s}), error{%v}", s.Location, err)
+			return &s, perrors.Errorf("net.SplitHostPort(URL.Host{%s}), error{%v}", s.Location, err)
 		}
 	}
 	for _, opt := range opts {
@@ -277,20 +277,34 @@ func NewURL(urlString string, opts ...Option) (*URL, error) {
 	return &s, nil
 }
 
-// URLEqual judge @url and @c is equal or not.
+func MatchKey(serviceKey string, protocol string) string {
+	return serviceKey + ":" + protocol
+}
+
+// Group get group
+func (c *URL) Group() string {
+	return c.GetParam(constant.GROUP_KEY, "")
+}
+
+// Version get group
+func (c *URL) Version() string {
+	return c.GetParam(constant.VERSION_KEY, "")
+}
+
+// URLEqual judge @URL and @c is equal or not.
 func (c *URL) URLEqual(url *URL) bool {
 	tmpC := c.Clone()
 	tmpC.Ip = ""
 	tmpC.Port = ""
 
-	tmpUrl := url.Clone()
-	tmpUrl.Ip = ""
-	tmpUrl.Port = ""
+	tmpURL := url.Clone()
+	tmpURL.Ip = ""
+	tmpURL.Port = ""
 
 	cGroup := tmpC.GetParam(constant.GROUP_KEY, "")
-	urlGroup := tmpUrl.GetParam(constant.GROUP_KEY, "")
+	urlGroup := tmpURL.GetParam(constant.GROUP_KEY, "")
 	cKey := tmpC.Key()
-	urlKey := tmpUrl.Key()
+	urlKey := tmpURL.Key()
 
 	if cGroup == constant.ANY_VALUE {
 		cKey = strings.Replace(cKey, "group=*", "group="+urlGroup, 1)
@@ -303,13 +317,13 @@ func (c *URL) URLEqual(url *URL) bool {
 		return false
 	}
 
-	// 2. if url contains enabled key, should be true, or *
-	if tmpUrl.GetParam(constant.ENABLED_KEY, "true") != "true" && tmpUrl.GetParam(constant.ENABLED_KEY, "") != constant.ANY_VALUE {
+	// 2. if URL contains enabled key, should be true, or *
+	if tmpURL.GetParam(constant.ENABLED_KEY, "true") != "true" && tmpURL.GetParam(constant.ENABLED_KEY, "") != constant.ANY_VALUE {
 		return false
 	}
 
 	// TODO :may need add interface key any value condition
-	return isMatchCategory(tmpUrl.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY), tmpC.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY))
+	return isMatchCategory(tmpURL.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY), tmpC.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY))
 }
 
 func isMatchCategory(category1 string, category2 string) bool {
@@ -415,7 +429,7 @@ func (c *URL) Service() string {
 		return service
 	} else if c.SubURL != nil {
 		service = c.SubURL.GetParam(constant.INTERFACE_KEY, strings.TrimPrefix(c.Path, "/"))
-		if service != "" { // if url.path is "" then return suburl's path, special for registry url
+		if service != "" { // if URL.path is "" then return suburl's path, special for registry URL
 			return service
 		}
 	}
@@ -442,8 +456,8 @@ func (c *URL) AddParamAvoidNil(key string, value string) {
 	c.params.Add(key, value)
 }
 
-// SetParam will put the key-value pair into url
-// usually it should only be invoked when you want to initialized an url
+// SetParam will put the key-value pair into URL
+// usually it should only be invoked when you want to initialized an URL
 func (c *URL) SetParam(key string, value string) {
 	c.paramsLock.Lock()
 	defer c.paramsLock.Unlock()
@@ -453,7 +467,7 @@ func (c *URL) SetParam(key string, value string) {
 	c.params.Set(key, value)
 }
 
-// DelParam will delete the given key from the url
+// DelParam will delete the given key from the URL
 func (c *URL) DelParam(key string) {
 	c.paramsLock.Lock()
 	defer c.paramsLock.Unlock()
@@ -463,7 +477,7 @@ func (c *URL) DelParam(key string) {
 }
 
 // ReplaceParams will replace the URL.params
-// usually it should only be invoked when you want to modify an url, such as MergeURL
+// usually it should only be invoked when you want to modify an URL, such as MergeURL
 func (c *URL) ReplaceParams(param url.Values) {
 	c.paramsLock.Lock()
 	defer c.paramsLock.Unlock()
@@ -607,7 +621,7 @@ func (c *URL) GetMethodParamBool(method string, key string, d bool) bool {
 	return r
 }
 
-// SetParams will put all key-value pair into url.
+// SetParams will put all key-value pair into URL.
 // 1. if there already has same key, the value will be override
 // 2. it's not thread safe
 // 3. think twice when you want to invoke this method
@@ -658,24 +672,24 @@ func (c *URL) ToMap() map[string]string {
 }
 
 // configuration  > reference config >service config
-//  in this function we should merge the reference local url config into the service url from registry.
+//  in this function we should merge the reference local URL config into the service URL from registry.
 // TODO configuration merge, in the future , the configuration center's config should merge too.
 
-// MergeURL will merge those two url
-// the result is based on serviceUrl, and the key which si only contained in referenceUrl
+// MergeURL will merge those two URL
+// the result is based on serviceURL, and the key which si only contained in referenceURL
 // will be added into result.
-// for example, if serviceUrl contains params (a1->v1, b1->v2) and referenceUrl contains params(a2->v3, b1 -> v4)
+// for example, if serviceURL contains params (a1->v1, b1->v2) and referenceURL contains params(a2->v3, b1 -> v4)
 // the params of result will be (a1->v1, b1->v2, a2->v3).
 // You should notice that the value of b1 is v2, not v4.
 // due to URL is not thread-safe, so this method is not thread-safe
-func MergeURL(serviceUrl *URL, referenceUrl *URL) *URL {
-	// After Clone, it is a new url that there is no thread safe issue.
-	mergedUrl := serviceUrl.Clone()
-	params := mergedUrl.GetParams()
-	// iterator the referenceUrl if serviceUrl not have the key ,merge in
-	// referenceUrl usually will not changed. so change RangeParams to GetParams to avoid the string value copy.
-	for key, value := range referenceUrl.GetParams() {
-		if v := mergedUrl.GetParam(key, ""); len(v) == 0 {
+func MergeURL(serviceURL *URL, referenceURL *URL) *URL {
+	// After Clone, it is a new URL that there is no thread safe issue.
+	mergedURL := serviceURL.Clone()
+	params := mergedURL.GetParams()
+	// iterator the referenceURL if serviceURL not have the key ,merge in
+	// referenceURL usually will not changed. so change RangeParams to GetParams to avoid the string value copy.// Group get group
+	for key, value := range referenceURL.GetParams() {
+		if v := mergedURL.GetParam(key, ""); len(v) == 0 {
 			if len(value) > 0 {
 				params[key] = value
 			}
@@ -683,26 +697,26 @@ func MergeURL(serviceUrl *URL, referenceUrl *URL) *URL {
 	}
 
 	// loadBalance,cluster,retries strategy config
-	methodConfigMergeFcn := mergeNormalParam(params, referenceUrl, []string{constant.LOADBALANCE_KEY, constant.CLUSTER_KEY, constant.RETRIES_KEY, constant.TIMEOUT_KEY})
+	methodConfigMergeFcn := mergeNormalParam(params, referenceURL, []string{constant.LOADBALANCE_KEY, constant.CLUSTER_KEY, constant.RETRIES_KEY, constant.TIMEOUT_KEY})
 
 	// remote timestamp
-	if v := serviceUrl.GetParam(constant.TIMESTAMP_KEY, ""); len(v) > 0 {
+	if v := serviceURL.GetParam(constant.TIMESTAMP_KEY, ""); len(v) > 0 {
 		params[constant.REMOTE_TIMESTAMP_KEY] = []string{v}
-		params[constant.TIMESTAMP_KEY] = []string{referenceUrl.GetParam(constant.TIMESTAMP_KEY, "")}
+		params[constant.TIMESTAMP_KEY] = []string{referenceURL.GetParam(constant.TIMESTAMP_KEY, "")}
 	}
 
 	// finally execute methodConfigMergeFcn
-	for _, method := range referenceUrl.Methods {
+	for _, method := range referenceURL.Methods {
 		for _, fcn := range methodConfigMergeFcn {
 			fcn("methods." + method)
 		}
 	}
 	// In this way, we will raise some performance.
-	mergedUrl.ReplaceParams(params)
-	return mergedUrl
+	mergedURL.ReplaceParams(params)
+	return mergedURL
 }
 
-// Clone will copy the url
+// Clone will copy the URL
 func (c *URL) Clone() *URL {
 	newURL := &URL{}
 	if err := copier.Copy(newURL, c); err != nil {
@@ -747,7 +761,7 @@ func (c *URL) Compare(comp cm.Comparator) int {
 	}
 }
 
-// Copy url based on the reserved parameter's keys.
+// Copy URL based on the reserved parameter's keys.
 func (c *URL) CloneWithParams(reserveParams []string) *URL {
 	params := url.Values{}
 	for _, reserveParam := range reserveParams {
@@ -800,14 +814,14 @@ func IsEquals(left *URL, right *URL, excludes ...string) bool {
 	return true
 }
 
-func mergeNormalParam(params url.Values, referenceUrl *URL, paramKeys []string) []func(method string) {
+func mergeNormalParam(params url.Values, referenceURL *URL, paramKeys []string) []func(method string) {
 	methodConfigMergeFcn := make([]func(method string), 0, len(paramKeys))
 	for _, paramKey := range paramKeys {
-		if v := referenceUrl.GetParam(paramKey, ""); len(v) > 0 {
+		if v := referenceURL.GetParam(paramKey, ""); len(v) > 0 {
 			params[paramKey] = []string{v}
 		}
 		methodConfigMergeFcn = append(methodConfigMergeFcn, func(method string) {
-			if v := referenceUrl.GetParam(method+"."+paramKey, ""); len(v) > 0 {
+			if v := referenceURL.GetParam(method+"."+paramKey, ""); len(v) > 0 {
 				params[method+"."+paramKey] = []string{v}
 			}
 		})

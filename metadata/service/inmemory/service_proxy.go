@@ -23,11 +23,11 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/protocol"
-	"github.com/apache/dubbo-go/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
 // actually it's RPC stub
@@ -37,13 +37,14 @@ import (
 // so in client-side, if we want to get the metadata information,
 // we must call metadata service
 // this is the stub, or proxy
-// for now, only GetExportedURLs need to be implemented
+// for now, only GetMetadataInfo need to be implemented
+// TODO use ProxyFactory to create proxy
 type MetadataServiceProxy struct {
 	invkr protocol.Invoker
-	// golangServer bool
 }
 
-func (m *MetadataServiceProxy) GetExportedURLs(serviceInterface string, group string, version string, protocol string) ([]interface{}, error) {
+// nolint
+func (m *MetadataServiceProxy) GetExportedURLs(serviceInterface string, group string, version string, protocol string) ([]*common.URL, error) {
 	siV := reflect.ValueOf(serviceInterface)
 	gV := reflect.ValueOf(group)
 	vV := reflect.ValueOf(version)
@@ -60,75 +61,129 @@ func (m *MetadataServiceProxy) GetExportedURLs(serviceInterface string, group st
 	res := m.invkr.Invoke(context.Background(), inv)
 	if res.Error() != nil {
 		logger.Errorf("could not get the metadata service from remote provider: %v", res.Error())
-		return []interface{}{}, nil
+		return []*common.URL{}, nil
 	}
 
-	urlStrs := res.Result().(*[]interface{})
-
-	ret := make([]interface{}, 0, len(*urlStrs))
-	return append(ret, *urlStrs...), nil
+	urlStrs := res.Result().([]string)
+	ret := make([]*common.URL, 0, len(urlStrs))
+	for _, v := range urlStrs {
+		tempURL, err := common.NewURL(v)
+		if err != nil {
+			return []*common.URL{}, err
+		}
+		ret = append(ret, tempURL)
+	}
+	return ret, nil
 }
 
+// nolint
+func (m *MetadataServiceProxy) GetExportedServiceURLs() []*common.URL {
+	logger.Error("you should never invoke this implementation")
+	return nil
+}
+
+// nolint
+func (m *MetadataServiceProxy) GetMetadataServiceURL() *common.URL {
+	logger.Error("you should never invoke this implementation")
+	return nil
+}
+
+// nolint
+func (m *MetadataServiceProxy) SetMetadataServiceURL(*common.URL) {
+	logger.Error("you should never invoke this implementation")
+}
+
+// nolint
 func (m *MetadataServiceProxy) MethodMapper() map[string]string {
 	return map[string]string{}
 }
 
+// nolint
 func (m *MetadataServiceProxy) Reference() string {
 	logger.Error("you should never invoke this implementation")
 	return constant.METADATA_SERVICE_NAME
 }
 
+// nolint
 func (m *MetadataServiceProxy) ServiceName() (string, error) {
 	logger.Error("you should never invoke this implementation")
 	return "", nil
 }
 
+// nolint
 func (m *MetadataServiceProxy) ExportURL(url *common.URL) (bool, error) {
 	logger.Error("you should never invoke this implementation")
 	return false, nil
 }
 
+// nolint
 func (m *MetadataServiceProxy) UnexportURL(url *common.URL) error {
 	logger.Error("you should never invoke this implementation")
 	return nil
 }
 
+// nolint
 func (m *MetadataServiceProxy) SubscribeURL(url *common.URL) (bool, error) {
 	logger.Error("you should never invoke this implementation")
 	return false, nil
 }
 
+// nolint
 func (m *MetadataServiceProxy) UnsubscribeURL(url *common.URL) error {
 	logger.Error("you should never invoke this implementation")
 	return nil
 }
 
+// nolint
 func (m *MetadataServiceProxy) PublishServiceDefinition(url *common.URL) error {
 	logger.Error("you should never invoke this implementation")
 	return nil
 }
 
+// nolint
 func (m *MetadataServiceProxy) GetSubscribedURLs() ([]*common.URL, error) {
 	logger.Error("you should never invoke this implementation")
 	return nil, nil
 }
 
+// nolint
 func (m *MetadataServiceProxy) GetServiceDefinition(interfaceName string, group string, version string) (string, error) {
 	logger.Error("you should never invoke this implementation")
 	return "", nil
 }
 
+// nolint
 func (m *MetadataServiceProxy) GetServiceDefinitionByServiceKey(serviceKey string) (string, error) {
 	logger.Error("you should never invoke this implementation")
 	return "", nil
 }
 
+// nolint
 func (m *MetadataServiceProxy) RefreshMetadata(exportedRevision string, subscribedRevision string) (bool, error) {
 	logger.Error("you should never invoke this implementation")
 	return false, nil
 }
 
+// nolint
 func (m *MetadataServiceProxy) Version() (string, error) {
 	logger.Error("you should never invoke this implementation")
 	return "", nil
+}
+
+// nolint
+func (m *MetadataServiceProxy) GetMetadataInfo(revision string) (*common.MetadataInfo, error) {
+	rV := reflect.ValueOf(revision)
+	const methodName = "getMetadataInfo"
+	inv := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName(methodName),
+		invocation.WithArguments([]interface{}{rV.Interface()}),
+		invocation.WithReply(reflect.ValueOf(&common.MetadataInfo{}).Interface()),
+		invocation.WithAttachments(map[string]interface{}{constant.ASYNC_KEY: "false"}),
+		invocation.WithParameterValues([]reflect.Value{rV}))
+	res := m.invkr.Invoke(context.Background(), inv)
+	if res.Error() != nil {
+		logger.Errorf("could not get the metadata info from remote provider: %v", res.Error())
+		return nil, res.Error()
+	}
+	metaDataInfo := res.Result().(*common.MetadataInfo)
+	return metaDataInfo, nil
 }

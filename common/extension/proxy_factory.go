@@ -18,7 +18,7 @@
 package extension
 
 import (
-	"github.com/apache/dubbo-go/common/proxy"
+	"dubbo.apache.org/dubbo-go/v3/common/proxy"
 )
 
 var proxyFactories = make(map[string]func(...proxy.Option) proxy.ProxyFactory)

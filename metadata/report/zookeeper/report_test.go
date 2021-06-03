@@ -30,11 +30,11 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/metadata/identifier"
-	"github.com/apache/dubbo-go/metadata/report"
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/metadata/identifier"
+	"dubbo.apache.org/dubbo-go/v3/metadata/report"
 )
 
 func newProviderRegistryUrl(host string, port int) *common.URL {
@@ -72,8 +72,8 @@ func newServiceMetadataIdentifier(side string) *identifier.ServiceMetadataIdenti
 
 func newSubscribeMetadataIdentifier(side string) *identifier.SubscriberMetadataIdentifier {
 	return &identifier.SubscriberMetadataIdentifier{
-		Revision:           "1.0",
-		MetadataIdentifier: *newMetadataIdentifier(side),
+		Revision:                          "1.0",
+		BaseApplicationMetadataIdentifier: identifier.BaseApplicationMetadataIdentifier{Application: "provider"},
 	}
 }
 
@@ -142,7 +142,7 @@ func (suite *zookeeperMetadataReportTestSuite) testGetServiceDefinition() {
 }
 
 func test1(t *testing.T) {
-	testCluster, err := zk.StartTestCluster(1, nil, nil)
+	testCluster, err := zk.StartTestCluster(1, nil, nil, zk.WithRetryTimes(20))
 	assert.NoError(t, err)
 	defer func() {
 		err := testCluster.Stop()

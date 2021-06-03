@@ -15,37 +15,21 @@
  * limitations under the License.
  */
 
-package getty
+package v3router
 
 import (
-	"testing"
-	"time"
+	"dubbo.apache.org/dubbo-go/v3/cluster/router"
 )
 
-import (
-	"github.com/stretchr/testify/assert"
-)
+// UniformRouteFactory is uniform router's factory
+type UniformRouteFactory struct{}
 
-func TestGetConnFromPool(t *testing.T) {
-	var rpcClient Client
+// NewUniformRouterFactory constructs a new PriorityRouterFactory
+func NewUniformRouterFactory() router.PriorityRouterFactory {
+	return &UniformRouteFactory{}
+}
 
-	clientPoll := newGettyRPCClientConnPool(&rpcClient, 1, time.Duration(5*time.Second))
-
-	var conn1 gettyRPCClient
-	conn1.active = time.Now().Unix()
-	clientPoll.put(&conn1)
-	assert.Equal(t, 1, len(clientPoll.conns))
-
-	var conn2 gettyRPCClient
-	conn2.active = time.Now().Unix()
-	clientPoll.put(&conn2)
-	assert.Equal(t, 1, len(clientPoll.conns))
-	conn, err := clientPoll.get()
-	assert.Nil(t, err)
-	assert.Equal(t, &conn1, conn)
-	time.Sleep(6 * time.Second)
-	conn, err = clientPoll.get()
-	assert.Nil(t, conn)
-	assert.Nil(t, err)
-	assert.Equal(t, 0, len(clientPoll.conns))
+// NewPriorityRouter construct a new UniformRouteFactory as PriorityRouter
+func (f *UniformRouteFactory) NewPriorityRouter(vsConfigBytes, distConfigBytes []byte, notify chan struct{}) (router.PriorityRouter, error) {
+	return NewUniformRouterChain(vsConfigBytes, distConfigBytes, notify)
 }

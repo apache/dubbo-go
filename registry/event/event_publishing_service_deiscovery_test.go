@@ -30,13 +30,13 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/common/observer"
-	dispatcher2 "github.com/apache/dubbo-go/common/observer/dispatcher"
-	"github.com/apache/dubbo-go/config"
-	"github.com/apache/dubbo-go/metadata/mapping"
-	_ "github.com/apache/dubbo-go/metadata/service/inmemory"
-	"github.com/apache/dubbo-go/registry"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/common/observer"
+	"dubbo.apache.org/dubbo-go/v3/common/observer/dispatcher"
+	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
+	_ "dubbo.apache.org/dubbo-go/v3/metadata/service/inmemory"
+	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
 func TestEventPublishingServiceDiscovery_DispatchEvent(t *testing.T) {
@@ -45,7 +45,7 @@ func TestEventPublishingServiceDiscovery_DispatchEvent(t *testing.T) {
 	config.GetApplicationConfig().MetadataType = "local"
 
 	extension.SetGlobalServiceNameMapping(func() mapping.ServiceNameMapping {
-		return &mockServiceNameMapping{}
+		return mapping.NewMockServiceNameMapping()
 	})
 
 	dc := NewEventPublishingServiceDiscovery(&ServiceDiscoveryA{})
@@ -61,7 +61,7 @@ func TestEventPublishingServiceDiscovery_DispatchEvent(t *testing.T) {
 	extension.AddEventListener(func() observer.EventListener {
 		return tsi
 	})
-	extension.SetEventDispatcher("direct", dispatcher2.NewDirectEventDispatcher)
+	extension.SetEventDispatcher("direct", dispatcher.NewDirectEventDispatcher)
 	extension.SetAndInitGlobalDispatcher("direct")
 	err := dc.Destroy()
 	assert.Nil(t, err)
@@ -159,7 +159,7 @@ func (msd *ServiceDiscoveryA) GetRequestInstances(serviceNames []string, offset 
 	return nil
 }
 
-func (msd *ServiceDiscoveryA) AddListener(listener *registry.ServiceInstancesChangedListener) error {
+func (msd *ServiceDiscoveryA) AddListener(listener registry.ServiceInstancesChangedListener) error {
 	return nil
 }
 
@@ -173,14 +173,4 @@ func (msd *ServiceDiscoveryA) DispatchEventForInstances(serviceName string, inst
 
 func (msd *ServiceDiscoveryA) DispatchEvent(event *registry.ServiceInstancesChangedEvent) error {
 	return nil
-}
-
-type mockServiceNameMapping struct{}
-
-func (m *mockServiceNameMapping) Map(serviceInterface string, group string, version string, protocol string) error {
-	return nil
-}
-
-func (m *mockServiceNameMapping) Get(serviceInterface string, group string, version string, protocol string) (*gxset.HashSet, error) {
-	return gxset.NewSet("dubbo"), nil
 }

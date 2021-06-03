@@ -33,16 +33,16 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/cluster/cluster_impl"
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/config"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/common/proxy/proxy_factory"
-	"github.com/apache/dubbo-go/config_center"
-	"github.com/apache/dubbo-go/metadata/service"
-	"github.com/apache/dubbo-go/registry"
+	"dubbo.apache.org/dubbo-go/v3/cluster/cluster_impl"
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/config"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/common/proxy/proxy_factory"
+	"dubbo.apache.org/dubbo-go/v3/config_center"
+	"dubbo.apache.org/dubbo-go/v3/metadata/service"
+	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
 const (
@@ -86,7 +86,7 @@ func TestLoad(t *testing.T) {
 	extension.SetProxyFactory("default", proxy_factory.NewDefaultProxyFactory)
 	GetApplicationConfig().MetadataType = "mock"
 	var mm *mockMetadataService
-	extension.SetMetadataService("mock", func() (metadataService service.MetadataService, err error) {
+	extension.SetLocalMetadataService("mock", func() (metadataService service.MetadataService, err error) {
 		if mm == nil {
 			mm = &mockMetadataService{
 				exportedServiceURLs: new(sync.Map),
@@ -126,7 +126,7 @@ func TestLoadWithSingleReg(t *testing.T) {
 	extension.SetProxyFactory("default", proxy_factory.NewDefaultProxyFactory)
 	var mm *mockMetadataService
 	GetApplicationConfig().MetadataType = "mock"
-	extension.SetMetadataService("mock", func() (metadataService service.MetadataService, err error) {
+	extension.SetLocalMetadataService("mock", func() (metadataService service.MetadataService, err error) {
 		if mm == nil {
 			mm = &mockMetadataService{
 				exportedServiceURLs: new(sync.Map),
@@ -165,7 +165,7 @@ func TestWithNoRegLoad(t *testing.T) {
 	extension.SetProxyFactory("default", proxy_factory.NewDefaultProxyFactory)
 	var mm *mockMetadataService
 	GetApplicationConfig().MetadataType = "mock"
-	extension.SetMetadataService("mock", func() (metadataService service.MetadataService, err error) {
+	extension.SetLocalMetadataService("mock", func() (metadataService service.MetadataService, err error) {
 		if mm == nil {
 			mm = &mockMetadataService{
 				exportedServiceURLs: new(sync.Map),
@@ -373,6 +373,26 @@ type mockMetadataService struct {
 	lock                *sync.RWMutex
 }
 
+func (m *mockMetadataService) GetExportedURLs(serviceInterface string, group string, version string, protocol string) ([]*common.URL, error) {
+	panic("implement me")
+}
+
+func (m *mockMetadataService) GetMetadataInfo(revision string) (*common.MetadataInfo, error) {
+	panic("implement me")
+}
+
+func (m *mockMetadataService) GetExportedServiceURLs() []*common.URL {
+	panic("implement me")
+}
+
+func (m *mockMetadataService) GetMetadataServiceURL() *common.URL {
+	panic("implement me")
+}
+
+func (m *mockMetadataService) SetMetadataServiceURL(url *common.URL) {
+	panic("implement me")
+}
+
 func (m *mockMetadataService) Reference() string {
 	panic("implement me")
 }
@@ -399,10 +419,6 @@ func (m *mockMetadataService) UnsubscribeURL(*common.URL) error {
 
 func (m *mockMetadataService) PublishServiceDefinition(*common.URL) error {
 	return nil
-}
-
-func (m *mockMetadataService) GetExportedURLs(string, string, string, string) ([]interface{}, error) {
-	return ConvertURLArrToIntfArr(m.getAllService(m.exportedServiceURLs)), nil
 }
 
 func (m *mockMetadataService) MethodMapper() map[string]string {
@@ -553,7 +569,7 @@ func (m *mockServiceDiscovery) GetRequestInstances([]string, int, int) map[strin
 	panic("implement me")
 }
 
-func (m *mockServiceDiscovery) AddListener(*registry.ServiceInstancesChangedListener) error {
+func (m *mockServiceDiscovery) AddListener(registry.ServiceInstancesChangedListener) error {
 	panic("implement me")
 }
 

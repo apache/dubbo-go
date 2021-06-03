@@ -24,12 +24,11 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/metadata/service"
-	"github.com/apache/dubbo-go/registry"
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
 const defaultRevision = "N/A"
@@ -86,7 +85,7 @@ func (e *subscribedServicesRevisionMetadataCustomizer) Customize(instance regist
 		logger.Errorf("could not find the subscribed url", err)
 	}
 
-	revision := resolveRevision(service.ConvertURLArrToIntfArr(urls))
+	revision := resolveRevision(urls)
 	if len(revision) == 0 {
 		revision = defaultRevision
 	}
@@ -97,18 +96,13 @@ func (e *subscribedServicesRevisionMetadataCustomizer) Customize(instance regist
 // so that we could use interface + method name as identifier and ignore the method params
 // per my understanding, it's enough because Dubbo actually ignore the url params.
 // please refer org.apache.dubbo.common.URL#toParameterString(java.lang.String...)
-func resolveRevision(urls []interface{}) string {
+func resolveRevision(urls []*common.URL) string {
 	if len(urls) == 0 {
-		return ""
+		return "0"
 	}
 	candidates := make([]string, 0, len(urls))
 
-	for _, ui := range urls {
-		u, err := common.NewURL(ui.(string))
-		if err != nil {
-			logger.Errorf("could not parse the string to URL structure")
-			continue
-		}
+	for _, u := range urls {
 		sk := u.GetParam(constant.INTERFACE_KEY, "")
 
 		if len(u.Methods) == 0 {

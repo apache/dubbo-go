@@ -33,15 +33,15 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/config"
-	"github.com/apache/dubbo-go/registry"
-	"github.com/apache/dubbo-go/remoting"
-	"github.com/apache/dubbo-go/remoting/zookeeper"
-	"github.com/apache/dubbo-go/remoting/zookeeper/curator_discovery"
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/registry"
+	"dubbo.apache.org/dubbo-go/v3/remoting"
+	"dubbo.apache.org/dubbo-go/v3/remoting/zookeeper"
+	"dubbo.apache.org/dubbo-go/v3/remoting/zookeeper/curator_discovery"
 )
 
 const (
@@ -269,11 +269,18 @@ func (zksd *zookeeperServiceDiscovery) GetRequestInstances(serviceNames []string
 }
 
 // AddListener ListenServiceEvent will add a data listener in service
-func (zksd *zookeeperServiceDiscovery) AddListener(listener *registry.ServiceInstancesChangedListener) error {
+func (zksd *zookeeperServiceDiscovery) AddListener(listener registry.ServiceInstancesChangedListener) error {
 	zksd.listenLock.Lock()
 	defer zksd.listenLock.Unlock()
-	zksd.listenNames = append(zksd.listenNames, listener.ServiceName)
-	zksd.csd.ListenServiceEvent(listener.ServiceName, zksd)
+	for _, t := range listener.GetServiceNames().Values() {
+		serviceName, ok := t.(string)
+		if !ok {
+			logger.Errorf("service name error %s", t)
+			continue
+		}
+		zksd.listenNames = append(zksd.listenNames, serviceName)
+		zksd.csd.ListenServiceEvent(serviceName, zksd)
+	}
 	return nil
 }
 
@@ -314,6 +321,7 @@ func (zksd *zookeeperServiceDiscovery) toCuratorInstance(instance registry.Servi
 	pl["id"] = id
 	pl["name"] = instance.GetServiceName()
 	pl["metadata"] = instance.GetMetadata()
+	pl["@class"] = "org.apache.dubbo.registry.zookeeper.ZookeeperInstance"
 	cuis := &curator_discovery.ServiceInstance{
 		Name:                instance.GetServiceName(),
 		ID:                  id,

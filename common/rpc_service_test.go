@@ -28,7 +28,7 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
 const (
@@ -126,7 +126,7 @@ func TestServiceMapUnRegister(t *testing.T) {
 	assert.Equal(t, 1, len(ServiceMap.GetInterface("TestService")))
 
 	err = ServiceMap.UnRegister("", "", ServiceKey("TestService", "", "v1"))
-	assert.EqualError(t, err, "protocol or serviceKey is nil")
+	assert.EqualError(t, err, "protocol or ServiceKey is nil")
 
 	err = ServiceMap.UnRegister("", "protocol", ServiceKey("TestService", "", "v1"))
 	assert.EqualError(t, err, "no services for protocol")

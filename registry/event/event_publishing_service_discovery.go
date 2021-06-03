@@ -23,11 +23,11 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/common/observer"
-	"github.com/apache/dubbo-go/config"
-	"github.com/apache/dubbo-go/metadata/service"
-	"github.com/apache/dubbo-go/registry"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/common/observer"
+	"dubbo.apache.org/dubbo-go/v3/metadata/service"
+	"dubbo.apache.org/dubbo-go/v3/metadata/service/inmemory"
+	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
 // EventPublishingServiceDiscovery will enhance Service Discovery
@@ -114,7 +114,7 @@ func (epsd *EventPublishingServiceDiscovery) GetRequestInstances(serviceNames []
 }
 
 // AddListener add event listener
-func (epsd *EventPublishingServiceDiscovery) AddListener(listener *registry.ServiceInstancesChangedListener) error {
+func (epsd *EventPublishingServiceDiscovery) AddListener(listener registry.ServiceInstancesChangedListener) error {
 	extension.GetGlobalDispatcher().AddEventListener(listener)
 	return epsd.serviceDiscovery.AddListener(listener)
 }
@@ -152,5 +152,5 @@ func (epsd *EventPublishingServiceDiscovery) executeWithEvents(beforeEvent obser
 
 // getMetadataService returns metadata service instance
 func getMetadataService() (service.MetadataService, error) {
-	return extension.GetMetadataService(config.GetApplicationConfig().MetadataType)
+	return inmemory.GetInMemoryMetadataService()
 }

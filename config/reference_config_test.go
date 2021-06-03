@@ -18,6 +18,7 @@
 package config
 
 import (
+	"context"
 	"sync"
 	"testing"
 )
@@ -27,12 +28,13 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/cluster/cluster_impl"
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/protocol"
-	"github.com/apache/dubbo-go/registry"
+	"dubbo.apache.org/dubbo-go/v3/cluster/cluster_impl"
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/filter"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
 var regProtocol protocol.Protocol
@@ -193,7 +195,6 @@ func TestReferMultiReg(t *testing.T) {
 	doInitConsumer()
 	extension.SetProtocol("registry", GetProtocol)
 	extension.SetCluster(constant.ZONEAWARE_CLUSTER_NAME, cluster_impl.NewZoneAwareCluster)
-
 	for _, reference := range consumerConfig.References {
 		reference.Refer(nil)
 		assert.NotNil(t, reference.invoker)
@@ -234,6 +235,7 @@ func TestReferAsync(t *testing.T) {
 func TestReferP2P(t *testing.T) {
 	doInitConsumer()
 	extension.SetProtocol("dubbo", GetProtocol)
+	mockFilter()
 	m := consumerConfig.References["MockService"]
 	m.URL = "dubbo://127.0.0.1:20000"
 
@@ -248,6 +250,7 @@ func TestReferP2P(t *testing.T) {
 func TestReferMultiP2P(t *testing.T) {
 	doInitConsumer()
 	extension.SetProtocol("dubbo", GetProtocol)
+	mockFilter()
 	m := consumerConfig.References["MockService"]
 	m.URL = "dubbo://127.0.0.1:20000;dubbo://127.0.0.2:20000"
 
@@ -263,6 +266,7 @@ func TestReferMultiP2PWithReg(t *testing.T) {
 	doInitConsumer()
 	extension.SetProtocol("dubbo", GetProtocol)
 	extension.SetProtocol("registry", GetProtocol)
+	mockFilter()
 	m := consumerConfig.References["MockService"]
 	m.URL = "dubbo://127.0.0.1:20000;registry://127.0.0.2:20000"
 
@@ -291,6 +295,7 @@ func TestForking(t *testing.T) {
 	doInitConsumer()
 	extension.SetProtocol("dubbo", GetProtocol)
 	extension.SetProtocol("registry", GetProtocol)
+	mockFilter()
 	m := consumerConfig.References["MockService"]
 	m.URL = "dubbo://127.0.0.1:20000;registry://127.0.0.2:20000"
 
@@ -308,6 +313,7 @@ func TestSticky(t *testing.T) {
 	doInitConsumer()
 	extension.SetProtocol("dubbo", GetProtocol)
 	extension.SetProtocol("registry", GetProtocol)
+	mockFilter()
 	m := consumerConfig.References["MockService"]
 	m.URL = "dubbo://127.0.0.1:20000;registry://127.0.0.2:20000"
 
@@ -333,7 +339,8 @@ func newRegistryProtocol() protocol.Protocol {
 	return &mockRegistryProtocol{}
 }
 
-type mockRegistryProtocol struct{}
+type mockRegistryProtocol struct {
+}
 
 func (*mockRegistryProtocol) Refer(url *common.URL) protocol.Invoker {
 	return protocol.NewBaseInvoker(url)
@@ -342,7 +349,7 @@ func (*mockRegistryProtocol) Refer(url *common.URL) protocol.Invoker {
 func (*mockRegistryProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	registryURL := getRegistryURL(invoker)
 	if registryURL.Protocol == "service-discovery" {
-		metaDataService, err := extension.GetMetadataService(GetApplicationConfig().MetadataType)
+		metaDataService, err := extension.GetLocalMetadataService("")
 		if err != nil {
 			panic(err)
 		}
@@ -374,4 +381,24 @@ func getRegistryURL(invoker protocol.Invoker) *common.URL {
 
 func (p *mockRegistryProtocol) GetRegistries() []registry.Registry {
 	return []registry.Registry{&mockServiceDiscoveryRegistry{}}
+}
+
+func mockFilter() {
+	consumerFiler := &mockShutdownFilter{}
+	extension.SetFilter(constant.CONSUMER_SHUTDOWN_FILTER, func() filter.Filter {
+		return consumerFiler
+	})
+}
+
+type mockShutdownFilter struct {
+}
+
+// Invoke adds the requests count and block the new requests if application is closing
+func (gf *mockShutdownFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+	return invoker.Invoke(ctx, invocation)
+}
+
+// OnResponse reduces the number of active processes then return the process result
+func (gf *mockShutdownFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+	return result
 }

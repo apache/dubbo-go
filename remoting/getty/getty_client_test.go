@@ -33,35 +33,34 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	. "github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/proxy/proxy_factory"
-	"github.com/apache/dubbo-go/config"
-	"github.com/apache/dubbo-go/protocol"
-	"github.com/apache/dubbo-go/protocol/invocation"
-	"github.com/apache/dubbo-go/remoting"
+	"dubbo.apache.org/dubbo-go/v3/common"
+	. "dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/proxy/proxy_factory"
+	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
 func TestRunSuite(t *testing.T) {
 	svr, url := InitTest(t)
 	client := getClient(url)
-	testRequestOneWay(t, svr, url, client)
-	testClient_Call(t, svr, url, client)
-	testClient_AsyncCall(t, svr, url, client)
+	assert.NotNil(t, client)
+	testRequestOneWay(t, client)
+	testClient_Call(t, client)
+	testClient_AsyncCall(t, client)
 	svr.Stop()
 }
 
-func testRequestOneWay(t *testing.T, svr *Server, url *common.URL, client *Client) {
+func testRequestOneWay(t *testing.T, client *Client) {
 	request := remoting.NewRequest("2.0.2")
-	up := &UserProvider{}
-	invocation := createInvocation("GetUser", nil, nil, []interface{}{[]interface{}{"1", "username"}, up},
-		[]reflect.Value{reflect.ValueOf([]interface{}{"1", "username"}), reflect.ValueOf(up)})
+	invocation := createInvocation("GetUser", nil, nil, []interface{}{"1", "username"},
+		[]reflect.Value{reflect.ValueOf("1"), reflect.ValueOf("username")})
 	attachment := map[string]string{INTERFACE_KEY: "com.ikurento.user.UserProvider"}
 	setAttachment(invocation, attachment)
 	request.Data = invocation
 	request.Event = false
 	request.TwoWay = false
-	// user := &User{}
 	err := client.Request(request, 3*time.Second, nil)
 	assert.NoError(t, err)
 }
@@ -83,18 +82,13 @@ func getClient(url *common.URL) *Client {
 	client := NewClient(Options{
 		ConnectTimeout: config.GetConsumerConfig().ConnectTimeout,
 	})
-
-	exchangeClient := remoting.NewExchangeClient(url, client, 5*time.Second, false)
-	client.SetExchangeClient(exchangeClient)
 	if err := client.Connect(url); err != nil {
 		return nil
 	}
 	return client
 }
 
-func testClient_Call(t *testing.T, svr *Server, url *common.URL, c *Client) {
-	c.pool = newGettyRPCClientConnPool(c, clientConf.PoolSize, time.Duration(int(time.Second)*clientConf.PoolTTL))
-
+func testClient_Call(t *testing.T, c *Client) {
 	testGetBigPkg(t, c)
 	testGetUser(t, c)
 	testGetUser0(t, c)
@@ -301,7 +295,7 @@ func testGetUser61(t *testing.T, c *Client) {
 	assert.Equal(t, User{ID: "1", Name: ""}, *user)
 }
 
-func testClient_AsyncCall(t *testing.T, svr *Server, url *common.URL, client *Client) {
+func testClient_AsyncCall(t *testing.T, client *Client) {
 	user := &User{}
 	lock := sync.Mutex{}
 	request := remoting.NewRequest("2.0.2")
@@ -342,8 +336,6 @@ func InitTest(t *testing.T) (*Server, *common.URL) {
 		ConnectionNum:   2,
 		HeartbeatPeriod: "5s",
 		SessionTimeout:  "20s",
-		PoolTTL:         600,
-		PoolSize:        64,
 		GettySessionParam: GettySessionParam{
 			CompressEncoding: false,
 			TcpNoDelay:       true,

@@ -36,12 +36,12 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/protocol"
-	"github.com/apache/dubbo-go/protocol/protocolwrapper"
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
 )
 
 // ServiceConfig is the configuration of the service provider
@@ -227,6 +227,13 @@ func (c *ServiceConfig) Export() error {
 				c.exporters = append(c.exporters, exporter)
 			}
 		} else {
+			if ivkURL.GetParam(constant.INTERFACE_KEY, "") == constant.METADATA_SERVICE_NAME {
+				ms, err := extension.GetLocalMetadataService("")
+				if err != nil {
+					return err
+				}
+				ms.SetMetadataServiceURL(ivkURL)
+			}
 			invoker := proxyFactory.GetInvoker(ivkURL)
 			exporter := extension.GetProtocol(protocolwrapper.FILTER).Export(invoker)
 			if exporter == nil {
@@ -349,8 +356,9 @@ func (c *ServiceConfig) GetExportedUrls() []*common.URL {
 }
 
 func publishServiceDefinition(url *common.URL) {
-	if remoteMetadataService, err := extension.GetRemoteMetadataService(); err == nil && remoteMetadataService != nil {
-		remoteMetadataService.PublishServiceDefinition(url)
+	if remoteMetadataServiceImpl, err := extension.GetRemoteMetadataService(); err == nil && remoteMetadataServiceImpl != nil {
+		remoteMetadataServiceImpl.PublishServiceDefinition(url)
+
 	}
 }
 

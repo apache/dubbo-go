@@ -28,11 +28,11 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/protocol"
-	"github.com/apache/dubbo-go/registry"
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
 func TestMetadataService_GetMetadataServiceUrlParams(t *testing.T) {
@@ -54,11 +54,10 @@ func TestCreateProxy(t *testing.T) {
 		Enable:      true,
 		Healthy:     true,
 	}
-
 	pxy := createProxy(ins)
 	assert.Nil(t, pxy)
 
-	ins.Metadata = map[string]string{constant.METADATA_SERVICE_URL_PARAMS_PROPERTY_NAME: `{"mock":{"timeout":"10000","version":"1.0.0","dubbo":"2.0.2","release":"2.7.6","port":"20880"}}`}
+	ins.Metadata = map[string]string{constant.METADATA_SERVICE_URL_PARAMS_PROPERTY_NAME: `{"protocol":"mock","timeout":"10000","version":"1.0.0","dubbo":"2.0.2","release":"2.7.6","port":"20880"}`}
 	pxy = createProxy(ins)
 	assert.NotNil(t, pxy)
 }
@@ -93,6 +92,6 @@ func (m *mockInvoker) Destroy() {
 
 func (m *mockInvoker) Invoke(context.Context, protocol.Invocation) protocol.Result {
 	return &protocol.RPCResult{
-		Rest: &[]interface{}{"dubbo://localhost"},
+		Rest: []string{"dubbo://localhost"},
 	}
 }

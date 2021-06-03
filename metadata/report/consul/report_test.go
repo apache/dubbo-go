@@ -29,12 +29,12 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/metadata/identifier"
-	"github.com/apache/dubbo-go/metadata/report"
-	"github.com/apache/dubbo-go/remoting/consul"
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/metadata/identifier"
+	"dubbo.apache.org/dubbo-go/v3/metadata/report"
+	"dubbo.apache.org/dubbo-go/v3/remoting/consul"
 )
 
 func newProviderRegistryUrl(host string, port int) *common.URL {
@@ -72,8 +72,10 @@ func newServiceMetadataIdentifier(side string) *identifier.ServiceMetadataIdenti
 
 func newSubscribeMetadataIdentifier(side string) *identifier.SubscriberMetadataIdentifier {
 	return &identifier.SubscriberMetadataIdentifier{
-		Revision:           "1.0",
-		MetadataIdentifier: *newMetadataIdentifier(side),
+		Revision: "1.0",
+		BaseApplicationMetadataIdentifier: identifier.BaseApplicationMetadataIdentifier{
+			Application: side,
+		},
 	}
 }
 

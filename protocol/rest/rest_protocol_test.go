@@ -31,11 +31,11 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/extension"
-	_ "github.com/apache/dubbo-go/common/proxy/proxy_factory"
-	"github.com/apache/dubbo-go/config"
-	rest_config "github.com/apache/dubbo-go/protocol/rest/config"
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	_ "dubbo.apache.org/dubbo-go/v3/common/proxy/proxy_factory"
+	"dubbo.apache.org/dubbo-go/v3/config"
+	rest_config "dubbo.apache.org/dubbo-go/v3/protocol/rest/config"
 )
 
 func TestRestProtocolRefer(t *testing.T) {

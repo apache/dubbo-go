@@ -64,17 +64,17 @@ Apache License, Version 2.0
     * JsonRPC V2
     * Hessian V2
     * [json for grpc](https://github.com/apache/dubbo-go/pull/582)
+    * protobuf
 
 - 协议
     * Dubbo
+    * [Triple](https://github.com/dubbogo/triple)
     * Jsonrpc2.0
     * [gRPC](https://github.com/apache/dubbo-go/pull/311)
     * [RESTful](https://github.com/apache/dubbo-go/pull/352)
 
 - 路由器
-    * [Condition router](https://github.com/apache/dubbo-go/pull/294)
-    * [Health check router](https://github.com/apache/dubbo-go/pull/389)
-    * [Dynamic_tag_router](https://github.com/apache/dubbo-go/pull/703)
+    * [Dubbo3统一路由规则](https://github.com/apache/dubbo-go/pull/1187)
 
 - 注册中心
     * ZooKeeper
@@ -127,17 +127,12 @@ Apache License, Version 2.0
     * [For grpc](https://github.com/apache/dubbo-go/pull/397)
 
 - 元数据中心
-    * [Nacos](https://github.com/apache/dubbo-go/pull/522)
-    * [Zookeeper](https://github.com/apache/dubbo-go/pull/633)
-    * [Etcd](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/metadata/report/etcd/report.go)
-    * [Consul](https://github.com/apache/dubbo-go/pull/633)
+    * [Nacos(Local)](https://github.com/apache/dubbo-go/pull/522)
+    * [Zookeeper(Local)](https://github.com/apache/dubbo-go/pull/633)
+    * [Etcd(Local)](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/metadata/report/etcd/report.go)
+    * [Consul(Local)](https://github.com/apache/dubbo-go/pull/633)
+    * [Zookeeper(Remoting)](https://github.com/apache/dubbo-go/pull/1161)
 
-- 服务发现
-    * [Nacos](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/registry/nacos/service_discovery.go)
-    * [Zookeeper](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/registry/zookeeper/service_discovery.go)
-    * [Etcd](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/registry/etcdv3/service_discovery.go)
-    * [File](https://github.com/apache/dubbo-go/pull/732)
-    
 - 工具箱
     * [Dubbo-go-cli](https://github.com/apache/dubbo-go/pull/818)
 
@@ -201,7 +196,7 @@ make test
 </table>
 </div>
 
-dubbogo 社区已经开通微信公众号 "dubbogo大区"，可在微信搜索 "dubbogo大区" 或者扫描如下二维码关注，可通过公众号私信留言加入 dubbogo 微信社区。
+dubbogo 社区已经开通微信公众号，可在微信搜索 "dubbogo示土区" 或者扫描如下二维码关注，可通过公众号私信留言加入 dubbogo 微信社区。
 
 <div>
 <table>
@@ -301,8 +296,21 @@ dubbogo 社区已经开通微信公众号 "dubbogo大区"，可在微信搜索 "
           <img width="222px"  src="https://mosn.io/images/community/duodian.png">
         </a>
       </td>
+      <td align="center"  valign="middle">
+        <a href="http://www.ruubypay.com" target="_blank">
+           <img width="222px"  src="http://website.ruubypay.com/wifi/image/line5.png">
+        </a>
+      </td>
+      <td align="center"  valign="middle">
+        <a href="https://www.dingtalk.com" target="_blank">
+           <img width="222px"  src="https://gw.alicdn.com/tfs/TB1HPATMrrpK1RjSZTEXXcWAVXa-260-74.png">
+        </a>
+      </td>
     </tr>
     <tr></tr>
   </tbody>
 </table>
 </div>
+
+[更多用户示例](https://github.com/apache/dubbo-go/issues/2)
+

@@ -18,7 +18,7 @@
 package extension
 
 import (
-	"github.com/apache/dubbo-go/metadata/mapping"
+	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
 )
 
 type ServiceNameMappingCreator func() mapping.ServiceNameMapping

@@ -31,12 +31,13 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/cluster/directory"
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/common/proxy"
-	"github.com/apache/dubbo-go/protocol"
+	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/common/proxy"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
 )
 
 // ReferenceConfig is the configuration of service consumer
@@ -55,6 +56,7 @@ type ReferenceConfig struct {
 	Retries        string            `yaml:"retries"  json:"retries,omitempty" property:"retries"`
 	Group          string            `yaml:"group"  json:"group,omitempty" property:"group"`
 	Version        string            `yaml:"version"  json:"version,omitempty" property:"version"`
+	Serialization  string            `yaml:"serialization" json:"serialization" property:"serialization"`
 	ProvideBy      string            `yaml:"provide_by"  json:"provide_by,omitempty" property:"provide_by"`
 	Methods        []*MethodConfig   `yaml:"methods"  json:"methods,omitempty" property:"methods"`
 	Async          bool              `yaml:"async"  json:"async,omitempty" property:"async"`
@@ -133,11 +135,42 @@ func (c *ReferenceConfig) Refer(_ interface{}) {
 
 	if len(c.urls) == 1 {
 		c.invoker = extension.GetProtocol(c.urls[0].Protocol).Refer(c.urls[0])
+		// c.URL != "" is direct call
+		if c.URL != "" {
+			//filter
+			c.invoker = protocolwrapper.BuildInvokerChain(c.invoker, constant.REFERENCE_FILTER_KEY)
+
+			// cluster
+			invokers := make([]protocol.Invoker, 0, len(c.urls))
+			invokers = append(invokers, c.invoker)
+			// TODO(decouple from directory, config should not depend on directory module)
+			var hitClu string
+			// not a registry url, must be direct invoke.
+			hitClu = constant.FAILOVER_CLUSTER_NAME
+			if len(invokers) > 0 {
+				u := invokers[0].GetURL()
+				if nil != &u {
+					hitClu = u.GetParam(constant.CLUSTER_KEY, constant.ZONEAWARE_CLUSTER_NAME)
+				}
+			}
+
+			cluster := extension.GetCluster(hitClu)
+			// If 'zone-aware' policy select, the invoker wrap sequence would be:
+			// ZoneAwareClusterInvoker(StaticDirectory) ->
+			// FailoverClusterInvoker(RegistryDirectory, routing happens here) -> Invoker
+			c.invoker = cluster.Join(directory.NewStaticDirectory(invokers))
+		}
 	} else {
 		invokers := make([]protocol.Invoker, 0, len(c.urls))
 		var regURL *common.URL
 		for _, u := range c.urls {
-			invokers = append(invokers, extension.GetProtocol(u.Protocol).Refer(u))
+			invoker := extension.GetProtocol(u.Protocol).Refer(u)
+			// c.URL != "" is direct call
+			if c.URL != "" {
+				//filter
+				invoker = protocolwrapper.BuildInvokerChain(invoker, constant.REFERENCE_FILTER_KEY)
+			}
+			invokers = append(invokers, invoker)
 			if u.Protocol == constant.REGISTRY_PROTOCOL {
 				regURL = u
 			}
@@ -208,6 +241,7 @@ func (c *ReferenceConfig) getURLMap() url.Values {
 	urlMap.Set(constant.GENERIC_KEY, strconv.FormatBool(c.Generic))
 	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(common.CONSUMER))
 	urlMap.Set(constant.PROVIDER_BY, c.ProvideBy)
+	urlMap.Set(constant.SERIALIZATION_KEY, c.Serialization)
 
 	urlMap.Set(constant.RELEASE_KEY, "dubbo-golang-"+constant.Version)
 	urlMap.Set(constant.SIDE_KEY, (common.RoleType(common.CONSUMER)).Role())
@@ -262,8 +296,8 @@ func (c *ReferenceConfig) GetInvoker() protocol.Invoker {
 }
 
 func publishConsumerDefinition(url *common.URL) {
-	if remoteMetadataService, err := extension.GetRemoteMetadataService(); err == nil && remoteMetadataService != nil {
-		remoteMetadataService.PublishServiceDefinition(url)
+	if remoteMetadataServiceImpl, err := extension.GetRemoteMetadataService(); err == nil && remoteMetadataServiceImpl != nil {
+		remoteMetadataServiceImpl.PublishServiceDefinition(url)
 	}
 }
 

@@ -26,24 +26,23 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/config"
-	"github.com/apache/dubbo-go/metadata/definition"
-	"github.com/apache/dubbo-go/metadata/service"
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/metadata/definition"
+	"dubbo.apache.org/dubbo-go/v3/metadata/service"
 )
+
+func init() {
+	extension.SetLocalMetadataService(constant.DEFAULT_KEY, GetInMemoryMetadataService)
+}
 
 // version will be used by Version func
 const (
 	version = "1.0.0"
-	local   = "local"
 )
-
-func init() {
-	extension.SetMetadataService(local, NewMetadataService)
-}
 
 // MetadataService is store and query the metadata info in memory when each service registry
 type MetadataService struct {
@@ -52,6 +51,9 @@ type MetadataService struct {
 	subscribedServiceURLs *sync.Map
 	serviceDefinitions    *sync.Map
 	lock                  *sync.RWMutex
+	mOnce                 *sync.Once
+	metadataInfo          *common.MetadataInfo
+	metadataServiceURL    *common.URL
 }
 
 var (
@@ -61,7 +63,7 @@ var (
 
 // NewMetadataService: initiate a metadata service
 // it should be singleton
-func NewMetadataService() (service.MetadataService, error) {
+func GetInMemoryMetadataService() (service.MetadataService, error) {
 	metadataServiceInitOnce.Do(func() {
 		metadataServiceInstance = &MetadataService{
 			BaseMetadataService:   service.NewBaseMetadataService(config.GetApplicationConfig().Name),
@@ -69,6 +71,8 @@ func NewMetadataService() (service.MetadataService, error) {
 			subscribedServiceURLs: &sync.Map{},
 			serviceDefinitions:    &sync.Map{},
 			lock:                  &sync.RWMutex{},
+			metadataInfo:          nil,
+			mOnce:                 &sync.Once{},
 		}
 	})
 	return metadataServiceInstance, nil
@@ -153,11 +157,26 @@ func (mts *MetadataService) getSpecifiedService(services *sync.Map, serviceKey s
 
 // ExportURL can store the in memory
 func (mts *MetadataService) ExportURL(url *common.URL) (bool, error) {
+	if constant.METADATA_SERVICE_NAME == url.GetParam(constant.INTERFACE_KEY, "") {
+		mts.metadataServiceURL = url
+		return true, nil
+	}
+	mts.mOnce.Do(func() {
+		mts.metadataInfo = common.NewMetadataInfWithApp(config.GetApplicationConfig().Name)
+	})
+	mts.metadataInfo.AddService(common.NewServiceInfoWithURL(url))
 	return mts.addURL(mts.exportedServiceURLs, url), nil
 }
 
 // UnexportURL can remove the url store in memory
 func (mts *MetadataService) UnexportURL(url *common.URL) error {
+	if constant.METADATA_SERVICE_NAME == url.GetParam(constant.INTERFACE_KEY, "") {
+		mts.metadataServiceURL = nil
+		return nil
+	}
+	if mts.metadataInfo != nil {
+		mts.metadataInfo.RemoveService(common.NewServiceInfoWithURL(url))
+	}
 	mts.removeURL(mts.exportedServiceURLs, url)
 	return nil
 }
@@ -193,12 +212,12 @@ func (mts *MetadataService) PublishServiceDefinition(url *common.URL) error {
 }
 
 // GetExportedURLs get all exported urls
-func (mts *MetadataService) GetExportedURLs(serviceInterface string, group string, version string, protocol string) ([]interface{}, error) {
+func (mts *MetadataService) GetExportedURLs(serviceInterface string, group string, version string, protocol string) ([]*common.URL, error) {
 	if serviceInterface == constant.ANY_VALUE {
-		return service.ConvertURLArrToIntfArr(mts.getAllService(mts.exportedServiceURLs)), nil
+		return mts.getAllService(mts.exportedServiceURLs), nil
 	} else {
 		serviceKey := definition.ServiceDescriperBuild(serviceInterface, group, version)
-		return service.ConvertURLArrToIntfArr(mts.getSpecifiedService(mts.exportedServiceURLs, serviceKey, protocol)), nil
+		return mts.getSpecifiedService(mts.exportedServiceURLs, serviceKey, protocol), nil
 	}
 }
 
@@ -220,6 +239,22 @@ func (mts *MetadataService) GetServiceDefinitionByServiceKey(serviceKey string) 
 	return v.(string), nil
 }
 
+// GetMetadataInfo can get metadata in memory
+func (mts *MetadataService) GetMetadataInfo(revision string) (*common.MetadataInfo, error) {
+	if revision == "" {
+		return mts.metadataInfo, nil
+	}
+	if mts.metadataInfo.CalAndGetRevision() != revision {
+		return nil, nil
+	}
+	return mts.metadataInfo, nil
+}
+
+// GetExportedServiceURLs get exported service urls
+func (mts *MetadataService) GetExportedServiceURLs() []*common.URL {
+	return mts.getAllService(mts.exportedServiceURLs)
+}
+
 // RefreshMetadata will always return true because it will be implement by remote service
 func (mts *MetadataService) RefreshMetadata(string, string) (bool, error) {
 	return true, nil
@@ -228,4 +263,14 @@ func (mts *MetadataService) RefreshMetadata(string, string) (bool, error) {
 // Version will return the version of metadata service
 func (mts *MetadataService) Version() (string, error) {
 	return version, nil
+}
+
+// GetMetadataServiceURL get url of MetadataService
+func (mts *MetadataService) GetMetadataServiceURL() *common.URL {
+	return mts.metadataServiceURL
+}
+
+// GetMetadataServiceURL save url of MetadataService
+func (mts *MetadataService) SetMetadataServiceURL(url *common.URL) {
+	mts.metadataServiceURL = url
 }

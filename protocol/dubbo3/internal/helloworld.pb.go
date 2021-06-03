@@ -31,10 +31,10 @@ import (
 )
 
 import (
-	dubboConstant "github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/protocol"
-	dgrpc "github.com/apache/dubbo-go/protocol/grpc"
-	"github.com/apache/dubbo-go/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
+	dgrpc "dubbo.apache.org/dubbo-go/v3/protocol/grpc"
+	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	tripleConstant "github.com/dubbogo/triple/pkg/common/constant"
 	dubbo3 "github.com/dubbogo/triple/pkg/triple"
 )
 
@@ -238,7 +238,7 @@ func NewGreeterDubbo3Client(cc *dubbo3.TripleConn) GreeterClient {
 }
 func (c *greeterDubbo3Client) SayHello(ctx context.Context, in *HelloRequest, opt ...grpc.CallOption) (*HelloReply, error) {
 	out := new(HelloReply)
-	interfaceKey := ctx.Value(dubboConstant.DubboCtxKey(dubboConstant.INTERFACE_KEY)).(string)
+	interfaceKey := ctx.Value(tripleConstant.InterfaceKey).(string)
 	err := c.cc.Invoke(ctx, "/"+interfaceKey+"/SayHello", in, out)
 	if err != nil {
 		return nil, err

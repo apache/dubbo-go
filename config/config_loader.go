@@ -29,17 +29,18 @@ import (
 )
 
 import (
+	hessian "github.com/apache/dubbo-go-hessian2"
 	perrors "github.com/pkg/errors"
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/common/logger"
-	_ "github.com/apache/dubbo-go/common/observer/dispatcher"
-	"github.com/apache/dubbo-go/common/yaml"
-	"github.com/apache/dubbo-go/registry"
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	_ "dubbo.apache.org/dubbo-go/v3/common/observer/dispatcher"
+	"dubbo.apache.org/dubbo-go/v3/common/yaml"
+	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
 var (
@@ -95,20 +96,20 @@ func DefaultInit() []LoaderInitOption {
 // setDefaultValue set default value for providerConfig or consumerConfig if it is null
 func setDefaultValue(target interface{}) {
 	registryConfig := &RegistryConfig{
-		Protocol:   "zookeeper",
-		TimeoutStr: "3s",
-		Address:    "127.0.0.1:2181",
+		Protocol:   constant.DEFAULT_REGISTRY_ZK_PROTOCOL,
+		TimeoutStr: constant.DEFAULT_REGISTRY_ZK_TIMEOUT,
+		Address:    constant.DEFAULT_REGISTRY_ZK_ADDRESS,
 	}
 	switch target.(type) {
 	case *ProviderConfig:
 		p := target.(*ProviderConfig)
 		if len(p.Registries) == 0 {
-			p.Registries["demoZK"] = registryConfig
+			p.Registries[constant.DEFAULT_REGISTRY_ZK_ID] = registryConfig
 		}
 		if len(p.Protocols) == 0 {
-			p.Protocols["dubbo"] = &ProtocolConfig{
-				Name: "dubbo",
-				Port: "20000",
+			p.Protocols[constant.DEFAULT_PROTOCOL] = &ProtocolConfig{
+				Name: constant.DEFAULT_PROTOCOL,
+				Port: strconv.Itoa(constant.DEFAULT_PORT),
 			}
 		}
 		if p.ApplicationConfig == nil {
@@ -117,7 +118,7 @@ func setDefaultValue(target interface{}) {
 	default:
 		c := target.(*ConsumerConfig)
 		if len(c.Registries) == 0 {
-			c.Registries["demoZK"] = registryConfig
+			c.Registries[constant.DEFAULT_REGISTRY_ZK_ID] = registryConfig
 		}
 		if c.ApplicationConfig == nil {
 			c.ApplicationConfig = NewDefaultApplicationConfig()
@@ -298,6 +299,10 @@ func registerServiceInstance() {
 			panic(err)
 		}
 	}
+	// todo publish metadata to remote
+	if remoteMetadataServiceImpl, err := extension.GetRemoteMetadataService(); err == nil {
+		remoteMetadataServiceImpl.PublishMetadata(GetApplicationConfig().Name)
+	}
 }
 
 // nolint
@@ -331,24 +336,19 @@ func createInstance(url *common.URL) (registry.ServiceInstance, error) {
 // selectMetadataServiceExportedURL get already be exported url
 func selectMetadataServiceExportedURL() *common.URL {
 	var selectedUrl *common.URL
-	metaDataService, err := extension.GetMetadataService(GetApplicationConfig().MetadataType)
+	metaDataService, err := extension.GetLocalMetadataService("")
 	if err != nil {
 		logger.Warn(err)
 		return nil
 	}
-	list, err := metaDataService.GetExportedURLs(constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE)
+	urlList, err := metaDataService.GetExportedURLs(constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE)
 	if err != nil {
 		panic(err)
 	}
-	if len(list) == 0 {
+	if len(urlList) == 0 {
 		return nil
 	}
-	for _, urlStr := range list {
-		url, err := common.NewURL(urlStr.(string))
-		if err != nil {
-			logger.Errorf("url format error {%v}", url)
-			continue
-		}
+	for _, url := range urlList {
 		selectedUrl = url
 		// rest first
 		if url.Protocol == "rest" {
@@ -373,6 +373,10 @@ func Load() {
 }
 
 func LoadWithOptions(options ...LoaderInitOption) {
+	// register metadata info and service info
+	hessian.RegisterPOJO(&common.MetadataInfo{})
+	hessian.RegisterPOJO(&common.ServiceInfo{})
+
 	for _, option := range options {
 		option.init()
 	}

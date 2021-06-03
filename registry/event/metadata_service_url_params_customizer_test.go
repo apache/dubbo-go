@@ -27,24 +27,11 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/config"
-	"github.com/apache/dubbo-go/metadata/service"
-	"github.com/apache/dubbo-go/registry"
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
-func prepareMetadataServiceForTest() {
-	config.GetApplicationConfig().MetadataType = "mock"
-	extension.SetMetadataService("mock", func() (service.MetadataService, error) {
-		return &mockMetadataService{
-			urls: []interface{}{"mock://localhost:8080?a=b"},
-		}, nil
-	})
-}
-
 func TestMetadataServiceURLParamsMetadataCustomizer(t *testing.T) {
-	prepareMetadataServiceForTest()
 
 	msup := &metadataServiceURLParamsMetadataCustomizer{exceptKeys: gxset.NewSet()}
 	assert.Equal(t, 0, msup.GetPriority())

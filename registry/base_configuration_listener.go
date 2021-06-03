@@ -22,12 +22,12 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/config"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/config_center"
-	"github.com/apache/dubbo-go/remoting"
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/config"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/config_center"
+	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
 // nolint
@@ -48,7 +48,7 @@ func (bcl *BaseConfigurationListener) InitWith(key string, listener config_cente
 
 	bcl.dynamicConfiguration = config.GetEnvInstance().GetDynamicConfiguration()
 	if bcl.dynamicConfiguration == nil {
-		// set configurators to empty
+		//set configurators to empty
 		bcl.configurators = []config_center.Configurator{}
 		return
 	}
@@ -56,7 +56,7 @@ func (bcl *BaseConfigurationListener) InitWith(key string, listener config_cente
 	bcl.dynamicConfiguration.AddListener(key, listener)
 	if rawConfig, err := bcl.dynamicConfiguration.GetInternalProperty(key,
 		config_center.WithGroup(constant.DUBBO)); err != nil {
-		// set configurators to empty
+		//set configurators to empty
 		bcl.configurators = []config_center.Configurator{}
 		return
 	} else if len(rawConfig) > 0 {
@@ -68,7 +68,7 @@ func (bcl *BaseConfigurationListener) InitWith(key string, listener config_cente
 
 // Process the notification event once there's any change happens on the config.
 func (bcl *BaseConfigurationListener) Process(event *config_center.ConfigChangeEvent) {
-	logger.Infof("Notification of overriding rule, change type is: %v , raw config content is:%v", event.ConfigType, event.Value)
+	logger.Debugf("Notification of overriding rule, change type is: %v , raw config content is:%v", event.ConfigType, event.Value)
 	if event.ConfigType == remoting.EventTypeDel {
 		bcl.configurators = nil
 	} else {

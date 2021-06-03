@@ -18,40 +18,49 @@
 package dispatcher
 
 import (
-	"github.com/apache/dubbo-go/common/observer"
+	"dubbo.apache.org/dubbo-go/v3/common/observer"
 )
 
 // MockEventDispatcher will do nothing.
 // It is only used by tests
 // Now the implementation doing nothing,
 // But you can modify this if needed
-type MockEventDispatcher struct{}
+type MockEventDispatcher struct {
+	Notify chan struct{}
+	Event  observer.Event
+}
+
+func NewMockEventDispatcher() *MockEventDispatcher {
+	return &MockEventDispatcher{Notify: make(chan struct{}, 1)}
+}
 
 // AddEventListener do nothing
-func (m MockEventDispatcher) AddEventListener(listener observer.EventListener) {
+func (m *MockEventDispatcher) AddEventListener(listener observer.EventListener) {
 }
 
 // AddEventListeners do nothing
-func (m MockEventDispatcher) AddEventListeners(listenersSlice []observer.EventListener) {
+func (m *MockEventDispatcher) AddEventListeners(listenersSlice []observer.EventListener) {
 }
 
 // RemoveEventListener do nothing
-func (m MockEventDispatcher) RemoveEventListener(listener observer.EventListener) {
+func (m *MockEventDispatcher) RemoveEventListener(listener observer.EventListener) {
 }
 
 // RemoveEventListeners do nothing
-func (m MockEventDispatcher) RemoveEventListeners(listenersSlice []observer.EventListener) {
+func (m *MockEventDispatcher) RemoveEventListeners(listenersSlice []observer.EventListener) {
 }
 
 // GetAllEventListeners return empty list
-func (m MockEventDispatcher) GetAllEventListeners() []observer.EventListener {
+func (m *MockEventDispatcher) GetAllEventListeners() []observer.EventListener {
 	return make([]observer.EventListener, 0)
 }
 
 // RemoveAllEventListeners do nothing
-func (m MockEventDispatcher) RemoveAllEventListeners() {
+func (m *MockEventDispatcher) RemoveAllEventListeners() {
 }
 
 // Dispatch do nothing
-func (m MockEventDispatcher) Dispatch(event observer.Event) {
+func (m *MockEventDispatcher) Dispatch(event observer.Event) {
+	m.Event = event
+	m.Notify <- struct{}{}
 }

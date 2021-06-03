@@ -18,9 +18,9 @@
 package cluster_impl
 
 import (
-	"github.com/apache/dubbo-go/cluster"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/protocol"
+	"dubbo.apache.org/dubbo-go/v3/cluster"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
 type failbackCluster struct{}
@@ -41,5 +41,5 @@ func NewFailbackCluster() cluster.Cluster {
 
 // Join returns a baseClusterInvoker instance
 func (cluster *failbackCluster) Join(directory cluster.Directory) protocol.Invoker {
-	return newFailbackClusterInvoker(directory)
+	return buildInterceptorChain(newFailbackClusterInvoker(directory))
 }

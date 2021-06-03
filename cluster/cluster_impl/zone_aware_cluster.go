@@ -18,10 +18,10 @@
 package cluster_impl
 
 import (
-	"github.com/apache/dubbo-go/cluster"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/protocol"
+	"dubbo.apache.org/dubbo-go/v3/cluster"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
 type zoneAwareCluster struct{}
@@ -40,5 +40,5 @@ func NewZoneAwareCluster() cluster.Cluster {
 
 // Join returns a zoneAwareClusterInvoker instance
 func (cluster *zoneAwareCluster) Join(directory cluster.Directory) protocol.Invoker {
-	return newZoneAwareClusterInvoker(directory)
+	return buildInterceptorChain(newZoneAwareClusterInvoker(directory), getZoneAwareInterceptor())
 }

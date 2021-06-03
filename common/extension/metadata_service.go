@@ -26,42 +26,30 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/metadata/service"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/metadata/service"
 )
+
+type localMetadataServiceCreator func() (service.MetadataService, error)
 
 var (
-	// there will be two types: local or remote
-	metadataServiceInsMap = make(map[string]func() (service.MetadataService, error), 2)
-	// remoteMetadataService
-	remoteMetadataService service.MetadataService
+	localMetadataServiceInsMap = make(map[string]localMetadataServiceCreator, 2)
 )
 
-// SetMetadataService will store the msType => creator pair
-func SetMetadataService(msType string, creator func() (service.MetadataService, error)) {
-	metadataServiceInsMap[msType] = creator
+// SetLocalMetadataService will store the msType => creator pair
+func SetLocalMetadataService(key string, creator localMetadataServiceCreator) {
+	localMetadataServiceInsMap[key] = creator
 }
 
-// GetMetadataService will create a MetadataService instance
-func GetMetadataService(msType string) (service.MetadataService, error) {
-	if creator, ok := metadataServiceInsMap[msType]; ok {
+// GetMetadataService will create a inmemory MetadataService instance
+func GetLocalMetadataService(key string) (service.MetadataService, error) {
+	if key == "" {
+		key = constant.DEFAULT_KEY
+	}
+	if creator, ok := localMetadataServiceInsMap[key]; ok {
 		return creator()
 	}
-	return nil, perrors.New(fmt.Sprintf("could not find the metadata service creator for metadataType: %s, please check whether you have imported relative packages, \n"+
-		"local - github.com/apache/dubbo-go/metadata/service/inmemory, \n"+
-		"remote - github.com/apache/dubbo-go/metadata/service/remote", msType))
-}
-
-// GetRemoteMetadataService will get a RemoteMetadataService instance
-func GetRemoteMetadataService() (service.MetadataService, error) {
-	if remoteMetadataService != nil {
-		return remoteMetadataService, nil
-	}
-	if creator, ok := metadataServiceInsMap["remote"]; ok {
-		var err error
-		remoteMetadataService, err = creator()
-		return remoteMetadataService, err
-	}
-	logger.Warn("could not find the metadata service creator for metadataType: remote")
-	return nil, perrors.New(fmt.Sprintf("could not find the metadata service creator for metadataType: remote"))
+	return nil, perrors.New(fmt.Sprintf("could not find the metadata service creator for metadataType: local, " +
+		"please check whether you have imported relative packages, " +
+		"local - dubbo.apache.org/dubbo-go/v3/metadata/service/inmemory"))
 }

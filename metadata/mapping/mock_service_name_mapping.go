@@ -15,16 +15,22 @@
  * limitations under the License.
  */
 
-package remote
+package mapping
 
 import (
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/metadata/service"
+	gxset "github.com/dubbogo/gost/container/set"
 )
 
-func init() {
-	factory := service.NewBaseMetadataServiceProxyFactory(newMetadataServiceProxy)
-	extension.SetMetadataServiceProxyFactory(remote, func() service.MetadataServiceProxyFactory {
-		return factory
-	})
+type MockServiceNameMapping struct{}
+
+func NewMockServiceNameMapping() *MockServiceNameMapping {
+	return &MockServiceNameMapping{}
+}
+
+func (m *MockServiceNameMapping) Map(string, string, string, string) error {
+	return nil
+}
+
+func (m *MockServiceNameMapping) Get(string, string, string, string) (*gxset.HashSet, error) {
+	panic("implement me")
 }

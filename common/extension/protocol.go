@@ -18,7 +18,7 @@
 package extension
 
 import (
-	"github.com/apache/dubbo-go/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
 var protocols = make(map[string]func() protocol.Protocol)

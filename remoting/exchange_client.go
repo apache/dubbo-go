@@ -26,9 +26,9 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/protocol"
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
 // It is interface of client for network communication.
@@ -66,7 +66,6 @@ func NewExchangeClient(url *common.URL, client Client, connectTimeout time.Durat
 		address:        url.Location,
 		client:         client,
 	}
-	client.SetExchangeClient(exchangeClient)
 	if !lazyInit {
 		if err := exchangeClient.doInit(url); err != nil {
 			return nil

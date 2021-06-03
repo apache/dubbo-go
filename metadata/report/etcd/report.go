@@ -27,13 +27,13 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/metadata/identifier"
-	"github.com/apache/dubbo-go/metadata/report"
-	"github.com/apache/dubbo-go/metadata/report/factory"
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/metadata/identifier"
+	"dubbo.apache.org/dubbo-go/v3/metadata/report"
+	"dubbo.apache.org/dubbo-go/v3/metadata/report/factory"
 )
 
 const DEFAULT_ROOT = "dubbo"
@@ -50,25 +50,37 @@ type etcdMetadataReport struct {
 	root   string
 }
 
+// GetAppMetadata get metadata info from etcd
+func (e *etcdMetadataReport) GetAppMetadata(metadataIdentifier *identifier.SubscriberMetadataIdentifier) (*common.MetadataInfo, error) {
+	// TODO will implement
+	panic("implement me")
+}
+
+// PublishAppMetadata publish metadata info to etcd
+func (e *etcdMetadataReport) PublishAppMetadata(metadataIdentifier *identifier.SubscriberMetadataIdentifier, info *common.MetadataInfo) error {
+	// TODO will implement
+	panic("implement me")
+}
+
 // StoreProviderMetadata will store the metadata
 // metadata including the basic info of the server, provider info, and other user custom info
 func (e *etcdMetadataReport) StoreProviderMetadata(providerIdentifier *identifier.MetadataIdentifier, serviceDefinitions string) error {
 	key := e.getNodeKey(providerIdentifier)
-	return e.client.Create(key, serviceDefinitions)
+	return e.client.Put(key, serviceDefinitions)
 }
 
 // StoreConsumerMetadata will store the metadata
 // metadata including the basic info of the server, consumer info, and other user custom info
 func (e *etcdMetadataReport) StoreConsumerMetadata(consumerMetadataIdentifier *identifier.MetadataIdentifier, serviceParameterString string) error {
 	key := e.getNodeKey(consumerMetadataIdentifier)
-	return e.client.Create(key, serviceParameterString)
+	return e.client.Put(key, serviceParameterString)
 }
 
 // SaveServiceMetadata will store the metadata
 // metadata including the basic info of the server, service info, and other user custom info
 func (e *etcdMetadataReport) SaveServiceMetadata(metadataIdentifier *identifier.ServiceMetadataIdentifier, url *common.URL) error {
 	key := e.getNodeKey(metadataIdentifier)
-	return e.client.Create(key, url.String())
+	return e.client.Put(key, url.String())
 }
 
 // RemoveServiceMetadata will remove the service metadata
@@ -93,7 +105,7 @@ func (e *etcdMetadataReport) GetExportedURLs(metadataIdentifier *identifier.Serv
 // SaveSubscribedData will convert the urlList to json array and then store it
 func (e *etcdMetadataReport) SaveSubscribedData(subscriberMetadataIdentifier *identifier.SubscriberMetadataIdentifier, urls string) error {
 	key := e.getNodeKey(subscriberMetadataIdentifier)
-	return e.client.Create(key, urls)
+	return e.client.Put(key, urls)
 }
 
 // GetSubscribedURLs will lookup the url

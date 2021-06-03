@@ -22,8 +22,8 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/common/observer"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/common/observer"
 )
 
 var (
@@ -53,7 +53,7 @@ func SetAndInitGlobalDispatcher(name string) {
 
 	if dp, ok := dispatchers[name]; !ok || dp == nil {
 		panic("EventDispatcher for " + name + " is not found, make sure you have import the package, " +
-			"like import _ github.com/apache/dubbo-go/common/observer/dispatcher ")
+			"like import _ dubbo.apache.org/dubbo-go/v3/common/observer/dispatcher.")
 	}
 	globalEventDispatcher = dispatchers[name]()
 }
