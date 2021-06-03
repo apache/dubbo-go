@@ -58,7 +58,8 @@ var (
 	maxWait        = 3
 	confRouterFile string
 
-	Start = atomic.NewBool(false)
+	start   = atomic.NewBool(false)
+	Startup = false
 )
 
 // loaded consumer & provider config from xxx.yml, and log config from xxx.xml
@@ -340,33 +341,30 @@ func initRouter() {
 
 // Load Dubbo Init
 func Load() {
-	if Start.Load() {
-		return
+
+	if start.CAS(false, true) {
+		// init router
+		initRouter()
+
+		// init the global event dispatcher
+		extension.SetAndInitGlobalDispatcher(GetBaseConfig().EventDispatcherType)
+
+		// start the metadata report if config set
+		if err := startMetadataReport(GetApplicationConfig().MetadataType, GetBaseConfig().MetadataReportConfig); err != nil {
+			logger.Errorf("Provider starts metadata report error, and the error is {%#v}", err)
+			return
+		}
+
+		// reference config
+		loadConsumerConfig()
+
+		// service config
+		loadProviderConfig()
+
+		// init the shutdown callback
+		GracefulShutdownInit()
+		Startup = true
 	}
-
-	// init router
-	initRouter()
-
-	// init the global event dispatcher
-	extension.SetAndInitGlobalDispatcher(GetBaseConfig().EventDispatcherType)
-
-	// start the metadata report if config set
-	if err := startMetadataReport(GetApplicationConfig().MetadataType, GetBaseConfig().MetadataReportConfig); err != nil {
-		logger.Errorf("Provider starts metadata report error, and the error is {%#v}", err)
-		return
-	}
-
-	// reference config
-	loadConsumerConfig()
-
-	// service config
-	loadProviderConfig()
-
-	// init the shutdown callback
-	GracefulShutdownInit()
-
-	Start.CAS(false, true)
-
 }
 
 // GetRPCService get rpc service for consumer
