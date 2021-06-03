@@ -20,6 +20,7 @@ package config
 import (
 	"flag"
 	"fmt"
+	"go.uber.org/atomic"
 	"io/ioutil"
 	"log"
 	"os"
@@ -56,6 +57,8 @@ var (
 
 	maxWait        = 3
 	confRouterFile string
+
+	Start = atomic.NewBool(false)
 )
 
 // loaded consumer & provider config from xxx.yml, and log config from xxx.xml
@@ -337,6 +340,9 @@ func initRouter() {
 
 // Load Dubbo Init
 func Load() {
+	if Start.Load() {
+		return
+	}
 
 	// init router
 	initRouter()
@@ -358,6 +364,9 @@ func Load() {
 
 	// init the shutdown callback
 	GracefulShutdownInit()
+
+	Start.CAS(false, true)
+
 }
 
 // GetRPCService get rpc service for consumer

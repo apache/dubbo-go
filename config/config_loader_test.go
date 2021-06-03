@@ -284,6 +284,48 @@ func TestConfigLoaderWithConfigCenterSingleRegistry(t *testing.T) {
 
 }
 
+func TestRepeatLoad(t *testing.T) {
+	doInitConsumer()
+	doInitProvider()
+
+	ms := &MockService{}
+	SetConsumerService(ms)
+	SetProviderService(ms)
+
+	extension.SetProtocol("registry", GetProtocol)
+	extension.SetCluster(constant.ZONEAWARE_CLUSTER_NAME, cluster_impl.NewZoneAwareCluster)
+	extension.SetProxyFactory("default", proxy_factory.NewDefaultProxyFactory)
+	GetApplicationConfig().MetadataType = "mock"
+	var mm *mockMetadataService
+	extension.SetMetadataService("mock", func() (metadataService service.MetadataService, err error) {
+		if mm == nil {
+			mm = &mockMetadataService{
+				exportedServiceURLs: new(sync.Map),
+				lock:                new(sync.RWMutex),
+			}
+		}
+		return mm, nil
+	})
+
+	assert.False(t, Start.Load())
+	Load()
+	assert.True(t, Start.Load())
+	Load()
+
+	assert.Equal(t, ms, GetRPCService(ms.Reference()))
+	ms2 := &struct {
+		MockService
+	}{}
+	RPCService(ms2)
+	assert.NotEqual(t, ms2, GetRPCService(ms2.Reference()))
+
+	conServices = map[string]common.RPCService{}
+	proServices = map[string]common.RPCService{}
+	common.ServiceMap.UnRegister("com.MockService", "mock", common.ServiceKey("com.MockService", "huadong_idc", "1.0.0"))
+	consumerConfig = nil
+	providerConfig = nil
+}
+
 func TestGetBaseConfig(t *testing.T) {
 	bc := GetBaseConfig()
 	assert.NotNil(t, bc)
