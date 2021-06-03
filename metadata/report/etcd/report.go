@@ -54,12 +54,12 @@ type etcdMetadataReport struct {
 // GetAppMetadata get metadata info from etcd
 func (e *etcdMetadataReport) GetAppMetadata(metadataIdentifier *identifier.SubscriberMetadataIdentifier) (*common.MetadataInfo, error) {
 	key := e.getNodeKey(metadataIdentifier)
-	_data, err := e.client.Get(key)
+	data, err := e.client.Get(key)
 	if err != nil {
 		return nil, err
 	}
 	info := &common.MetadataInfo{}
-	err = json.Unmarshal([]byte(_data), info)
+	err = json.Unmarshal([]byte(data), info)
 	if err != nil {
 		return nil, err
 	}
