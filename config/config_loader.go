@@ -20,7 +20,6 @@ package config
 import (
 	"flag"
 	"fmt"
-	"go.uber.org/atomic"
 	"io/ioutil"
 	"log"
 	"os"
@@ -32,6 +31,7 @@ import (
 
 import (
 	perrors "github.com/pkg/errors"
+	"go.uber.org/atomic"
 )
 
 import (
