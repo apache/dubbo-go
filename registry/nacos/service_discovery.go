@@ -24,8 +24,8 @@ import (
 
 import (
 	"github.com/dubbogo/gost/container/set"
+	nacosClient "github.com/dubbogo/gost/database/kv/nacos"
 	"github.com/dubbogo/gost/hash/page"
-	"github.com/nacos-group/nacos-sdk-go/clients/naming_client"
 	"github.com/nacos-group/nacos-sdk-go/model"
 	"github.com/nacos-group/nacos-sdk-go/vo"
 	perrors "github.com/pkg/errors"
@@ -58,8 +58,8 @@ type nacosServiceDiscovery struct {
 	// descriptor is a short string about the basic information of this instance
 	descriptor string
 
-	// namingClient is the Nacos' client
-	namingClient naming_client.INamingClient
+	// client is the Nacos' client
+	client *nacosClient.NacosNamingClient
 	// cache registry instances
 	registryInstances []registry.ServiceInstance
 }
@@ -74,14 +74,14 @@ func (n *nacosServiceDiscovery) Destroy() error {
 			logger.Errorf("Unregister nacos instance:%+v, err:%+v", inst, err)
 		}
 	}
-	n.namingClient = nil
+	n.client.Close()
 	return nil
 }
 
 // Register will register the service to nacos
 func (n *nacosServiceDiscovery) Register(instance registry.ServiceInstance) error {
 	ins := n.toRegisterInstance(instance)
-	ok, err := n.namingClient.RegisterInstance(ins)
+	ok, err := n.client.Client().RegisterInstance(ins)
 	if err != nil || !ok {
 		return perrors.WithMessage(err, "Could not register the instance. "+instance.GetServiceName())
 	}
@@ -91,20 +91,19 @@ func (n *nacosServiceDiscovery) Register(instance registry.ServiceInstance) erro
 
 // Update will update the information
 // However, because nacos client doesn't support the update API,
-// so we should unregister the instance and then register it again.
-// the error handling is hard to implement
+// so we should repetition registration the instance
 func (n *nacosServiceDiscovery) Update(instance registry.ServiceInstance) error {
 	// TODO(wait for nacos support)
-	err := n.Unregister(instance)
-	if err != nil {
-		return perrors.WithStack(err)
-	}
+	//err := n.Unregister(instance)
+	//if err != nil {
+	//	return perrors.WithStack(err)
+	//}
 	return n.Register(instance)
 }
 
 // Unregister will unregister the instance
 func (n *nacosServiceDiscovery) Unregister(instance registry.ServiceInstance) error {
-	ok, err := n.namingClient.DeregisterInstance(n.toDeregisterInstance(instance))
+	ok, err := n.client.Client().DeregisterInstance(n.toDeregisterInstance(instance))
 	if err != nil || !ok {
 		return perrors.WithMessage(err, "Could not unregister the instance. "+instance.GetServiceName())
 	}
@@ -118,7 +117,7 @@ func (n *nacosServiceDiscovery) GetDefaultPageSize() int {
 
 // GetServices will return the all services
 func (n *nacosServiceDiscovery) GetServices() *gxset.HashSet {
-	services, err := n.namingClient.GetAllServicesInfo(vo.GetAllServiceInfoParam{
+	services, err := n.client.Client().GetAllServicesInfo(vo.GetAllServiceInfoParam{
 		GroupName: n.group,
 	})
 
@@ -136,7 +135,7 @@ func (n *nacosServiceDiscovery) GetServices() *gxset.HashSet {
 
 // GetInstances will return the instances of serviceName and the group
 func (n *nacosServiceDiscovery) GetInstances(serviceName string) []registry.ServiceInstance {
-	instances, err := n.namingClient.SelectAllInstances(vo.SelectAllInstancesParam{
+	instances, err := n.client.Client().SelectAllInstances(vo.SelectAllInstancesParam{
 		ServiceName: serviceName,
 		GroupName:   n.group,
 	})
@@ -215,7 +214,7 @@ func (n *nacosServiceDiscovery) GetRequestInstances(serviceNames []string, offse
 func (n *nacosServiceDiscovery) AddListener(listener registry.ServiceInstancesChangedListener) error {
 	for _, t := range listener.GetServiceNames().Values() {
 		serviceName := t.(string)
-		err := n.namingClient.Subscribe(&vo.SubscribeParam{
+		err := n.client.Client().Subscribe(&vo.SubscribeParam{
 			ServiceName: serviceName,
 			SubscribeCallback: func(services []model.SubscribeService, err error) {
 				if err != nil {
@@ -345,7 +344,7 @@ func newNacosServiceDiscovery(name string) (registry.ServiceDiscovery, error) {
 
 	newInstance := &nacosServiceDiscovery{
 		group:             group,
-		namingClient:      client,
+		client:            client,
 		descriptor:        descriptor,
 		registryInstances: []registry.ServiceInstance{},
 	}
