@@ -125,7 +125,6 @@ type URL struct {
 	SubURL *URL
 }
 
-
 // JavaClassName POJO for URL
 func (c *URL) JavaClassName() string {
 	return "org.apache.dubbo.common.URL"
