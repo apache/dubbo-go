@@ -58,8 +58,9 @@ var (
 	maxWait        = 3
 	confRouterFile string
 
-	start   = atomic.NewBool(false)
-	startup = false
+	start    = atomic.NewBool(false)
+	startup  = atomic.NewBool(false)
+	shutdown = atomic.NewBool(false)
 )
 
 // loaded consumer & provider config from xxx.yml, and log config from xxx.xml
@@ -363,7 +364,7 @@ func Load() {
 
 		// init the shutdown callback
 		GracefulShutdownInit()
-		startup = true
+		startup.Store(true)
 	}
 }
 
@@ -462,5 +463,8 @@ func IsProvider() bool {
 	return providerConfig != nil
 }
 func IsStartup() bool {
-	return startup
+	return startup.Load()
+}
+func IsShutdown() bool {
+	return shutdown.Load()
 }

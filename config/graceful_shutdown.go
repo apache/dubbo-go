@@ -84,30 +84,33 @@ func GracefulShutdownInit() {
 // BeforeShutdown provides processing flow before shutdown
 func BeforeShutdown() {
 
-	destroyAllRegistries()
-	// waiting for a short time so that the clients have enough time to get the notification that server shutdowns
-	// The value of configuration depends on how long the clients will get notification.
-	waitAndAcceptNewRequests()
+	if shutdown.CAS(false, true) {
 
-	// reject the new request, but keeping waiting for accepting requests
-	waitForReceivingRequests()
+		destroyAllRegistries()
+		// waiting for a short time so that the clients have enough time to get the notification that server shutdowns
+		// The value of configuration depends on how long the clients will get notification.
+		waitAndAcceptNewRequests()
 
-	// we fetch the protocols from Consumer.References. Consumer.ProtocolConfig doesn't contains all protocol, like jsonrpc
-	consumerProtocols := getConsumerProtocols()
+		// reject the new request, but keeping waiting for accepting requests
+		waitForReceivingRequests()
 
-	// If this application is not the provider, it will do nothing
-	destroyProviderProtocols(consumerProtocols)
+		// we fetch the protocols from Consumer.References. Consumer.ProtocolConfig doesn't contains all protocol, like jsonrpc
+		consumerProtocols := getConsumerProtocols()
 
-	// reject sending the new request, and waiting for response of sending requests
-	waitForSendingRequests()
+		// If this application is not the provider, it will do nothing
+		destroyProviderProtocols(consumerProtocols)
 
-	// If this application is not the consumer, it will do nothing
-	destroyConsumerProtocols(consumerProtocols)
+		// reject sending the new request, and waiting for response of sending requests
+		waitForSendingRequests()
 
-	logger.Info("Graceful shutdown --- Execute the custom callbacks.")
-	customCallbacks := extension.GetAllCustomShutdownCallbacks()
-	for callback := customCallbacks.Front(); callback != nil; callback = callback.Next() {
-		callback.Value.(func())()
+		// If this application is not the consumer, it will do nothing
+		destroyConsumerProtocols(consumerProtocols)
+
+		logger.Info("Graceful shutdown --- Execute the custom callbacks.")
+		customCallbacks := extension.GetAllCustomShutdownCallbacks()
+		for callback := customCallbacks.Front(); callback != nil; callback = callback.Next() {
+			callback.Value.(func())()
+		}
 	}
 }
 
