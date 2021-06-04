@@ -59,7 +59,7 @@ var (
 	confRouterFile string
 
 	start   = atomic.NewBool(false)
-	Startup = false
+	startup = false
 )
 
 // loaded consumer & provider config from xxx.yml, and log config from xxx.xml
@@ -363,7 +363,7 @@ func Load() {
 
 		// init the shutdown callback
 		GracefulShutdownInit()
-		Startup = true
+		startup = true
 	}
 }
 
@@ -460,4 +460,7 @@ func SetSslEnabled(enabled bool) {
 }
 func IsProvider() bool {
 	return providerConfig != nil
+}
+func IsStartup() bool {
+	return startup
 }

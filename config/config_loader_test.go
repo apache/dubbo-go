@@ -307,9 +307,9 @@ func TestRepeatLoad(t *testing.T) {
 		return mm, nil
 	})
 
-	assert.False(t, Startup)
+	assert.False(t, IsStartup())
 	Load()
-	assert.True(t, Startup)
+	assert.True(t, IsStartup())
 	Load()
 
 	assert.Equal(t, ms, GetRPCService(ms.Reference()))
