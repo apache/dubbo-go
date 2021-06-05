@@ -19,16 +19,14 @@ package nacos
 
 import (
 	"bytes"
-	"net"
+	"dubbo.apache.org/dubbo-go/v3/remoting/nacos"
 	"strconv"
 	"strings"
 	"time"
 )
 
 import (
-	"github.com/nacos-group/nacos-sdk-go/clients"
-	"github.com/nacos-group/nacos-sdk-go/clients/naming_client"
-	nacosConstant "github.com/nacos-group/nacos-sdk-go/common/constant"
+	nacosClient "github.com/dubbogo/gost/database/kv/nacos"
 	"github.com/nacos-group/nacos-sdk-go/vo"
 	perrors "github.com/pkg/errors"
 )
@@ -55,7 +53,7 @@ func init() {
 
 type nacosRegistry struct {
 	*common.URL
-	namingClient naming_client.INamingClient
+	namingClient *nacosClient.NacosNamingClient
 	registryUrls []*common.URL
 }
 
@@ -119,7 +117,7 @@ func createRegisterParam(url *common.URL, serviceName string) vo.RegisterInstanc
 func (nr *nacosRegistry) Register(url *common.URL) error {
 	serviceName := getServiceName(url)
 	param := createRegisterParam(url, serviceName)
-	isRegistry, err := nr.namingClient.RegisterInstance(param)
+	isRegistry, err := nr.namingClient.Client().RegisterInstance(param)
 	if err != nil {
 		return err
 	}
@@ -149,7 +147,7 @@ func createDeregisterParam(url *common.URL, serviceName string) vo.DeregisterIns
 func (nr *nacosRegistry) DeRegister(url *common.URL) error {
 	serviceName := getServiceName(url)
 	param := createDeregisterParam(url, serviceName)
-	isDeRegistry, err := nr.namingClient.DeregisterInstance(param)
+	isDeRegistry, err := nr.namingClient.Client().DeregisterInstance(param)
 	if err != nil {
 		return err
 	}
@@ -199,11 +197,9 @@ func (nr *nacosRegistry) Subscribe(url *common.URL, notifyListener registry.Noti
 				listener.Close()
 				return err
 			}
-
 			logger.Infof("update begin, service event: %v", serviceEvent.String())
 			notifyListener.Notify(serviceEvent)
 		}
-
 	}
 }
 
@@ -237,69 +233,14 @@ func (nr *nacosRegistry) Destroy() {
 
 // newNacosRegistry will create new instance
 func newNacosRegistry(url *common.URL) (registry.Registry, error) {
-	nacosConfig, err := getNacosConfig(url)
-	if err != nil {
-		return &nacosRegistry{}, err
-	}
-	client, err := clients.CreateNamingClient(nacosConfig)
+	namingClient, err := nacos.NewNacosClientByUrl(url)
 	if err != nil {
 		return &nacosRegistry{}, err
 	}
 	tmpRegistry := &nacosRegistry{
 		URL:          url,
-		namingClient: client,
+		namingClient: namingClient,
 		registryUrls: []*common.URL{},
 	}
 	return tmpRegistry, nil
-}
-
-// getNacosConfig will return the nacos config
-// TODO support RemoteRef
-func getNacosConfig(url *common.URL) (map[string]interface{}, error) {
-	if url == nil {
-		return nil, perrors.New("url is empty!")
-	}
-	if len(url.Location) == 0 {
-		return nil, perrors.New("url.location is empty!")
-	}
-	configMap := make(map[string]interface{}, 2)
-
-	addresses := strings.Split(url.Location, ",")
-	serverConfigs := make([]nacosConstant.ServerConfig, 0, len(addresses))
-	for _, addr := range addresses {
-		ip, portStr, err := net.SplitHostPort(addr)
-		if err != nil {
-			return nil, perrors.WithMessagef(err, "split [%s] ", addr)
-		}
-		port, _ := strconv.Atoi(portStr)
-		serverConfigs = append(serverConfigs, nacosConstant.ServerConfig{
-			IpAddr: ip,
-			Port:   uint64(port),
-		})
-	}
-	configMap[nacosConstant.KEY_SERVER_CONFIGS] = serverConfigs
-
-	var clientConfig nacosConstant.ClientConfig
-	timeout, err := time.ParseDuration(url.GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT))
-	if err != nil {
-		return nil, err
-	}
-	clientConfig.TimeoutMs = uint64(timeout.Seconds() * 1000)
-	clientConfig.ListenInterval = 2 * clientConfig.TimeoutMs
-	clientConfig.CacheDir = url.GetParam(constant.NACOS_CACHE_DIR_KEY, "")
-	clientConfig.LogDir = url.GetParam(constant.NACOS_LOG_DIR_KEY, "")
-	clientConfig.Endpoint = url.GetParam(constant.NACOS_ENDPOINT, "")
-	clientConfig.NamespaceId = url.GetParam(constant.NACOS_NAMESPACE_ID, "")
-
-	// enable local cache when nacos can not connect.
-	notLoadCache, err := strconv.ParseBool(url.GetParam(constant.NACOS_NOT_LOAD_LOCAL_CACHE, "false"))
-	if err != nil {
-		logger.Errorf("ParseBool - error: %v", err)
-		notLoadCache = false
-	}
-	clientConfig.NotLoadCacheAtStart = notLoadCache
-
-	configMap[nacosConstant.KEY_CLIENT_CONFIG] = clientConfig
-
-	return configMap, nil
 }

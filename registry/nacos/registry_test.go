@@ -37,7 +37,7 @@ import (
 )
 
 func TestNacosRegistry_Register(t *testing.T) {
-	t.Skip()
+	//t.Skip()
 	if !checkNacosServerAlive() {
 		return
 	}
@@ -66,8 +66,9 @@ func TestNacosRegistry_Register(t *testing.T) {
 		t.Errorf("register error:%s \n", err.Error())
 		return
 	}
+	time.Sleep(5 * time.Second)
 	nacosReg := reg.(*nacosRegistry)
-	service, _ := nacosReg.namingClient.GetService(vo.GetServiceParam{ServiceName: "providers:com.ikurento.user.UserProvider:1.0.0:guangzhou-idc"})
+	service, _ := nacosReg.namingClient.Client().GetService(vo.GetServiceParam{ServiceName: "providers:com.ikurento.user.UserProvider:1.0.0:guangzhou-idc"})
 	data, _ := json.Marshal(service)
 	t.Logf(string(data))
 	assert.Equal(t, 1, len(service.Hosts))
@@ -179,7 +180,7 @@ func TestNacosRegistry_Subscribe_del(t *testing.T) {
 
 	nacosReg := reg.(*nacosRegistry)
 	// deregister instance to mock instance offline
-	_, err = nacosReg.namingClient.DeregisterInstance(vo.DeregisterInstanceParam{
+	_, err = nacosReg.namingClient.Client().DeregisterInstance(vo.DeregisterInstanceParam{
 		Ip: "127.0.0.2", Port: 20000,
 		ServiceName: "providers:com.ikurento.user.UserProvider:2.0.0:guangzhou-idc",
 	})

@@ -51,21 +51,21 @@ func init() {
 }
 
 // nacosServiceDiscovery is the implementation of service discovery based on nacos.
-// There is a problem, the go client for nacos does not support the id field.
+// There is a problem, the go namingClient for nacos does not support the id field.
 // we will use the metadata to store the id of ServiceInstance
 type nacosServiceDiscovery struct {
 	group string
 	// descriptor is a short string about the basic information of this instance
 	descriptor string
 
-	// client is the Nacos' client
-	client *nacosClient.NacosNamingClient
+	// namingClient is the Nacos' namingClient
+	namingClient *nacosClient.NacosNamingClient
 	// cache registry instances
 	registryInstances []registry.ServiceInstance
 }
 
 // Destroy will close the service discovery.
-// Actually, it only marks the naming client as null and then return
+// Actually, it only marks the naming namingClient as null and then return
 func (n *nacosServiceDiscovery) Destroy() error {
 	for _, inst := range n.registryInstances {
 		err := n.Unregister(inst)
@@ -74,14 +74,14 @@ func (n *nacosServiceDiscovery) Destroy() error {
 			logger.Errorf("Unregister nacos instance:%+v, err:%+v", inst, err)
 		}
 	}
-	n.client.Close()
+	n.namingClient.Close()
 	return nil
 }
 
 // Register will register the service to nacos
 func (n *nacosServiceDiscovery) Register(instance registry.ServiceInstance) error {
 	ins := n.toRegisterInstance(instance)
-	ok, err := n.client.Client().RegisterInstance(ins)
+	ok, err := n.namingClient.Client().RegisterInstance(ins)
 	if err != nil || !ok {
 		return perrors.WithMessage(err, "Could not register the instance. "+instance.GetServiceName())
 	}
@@ -90,20 +90,15 @@ func (n *nacosServiceDiscovery) Register(instance registry.ServiceInstance) erro
 }
 
 // Update will update the information
-// However, because nacos client doesn't support the update API,
+// However, because nacos namingClient doesn't support the update API,
 // so we should repetition registration the instance
 func (n *nacosServiceDiscovery) Update(instance registry.ServiceInstance) error {
-	// TODO(wait for nacos support)
-	//err := n.Unregister(instance)
-	//if err != nil {
-	//	return perrors.WithStack(err)
-	//}
 	return n.Register(instance)
 }
 
 // Unregister will unregister the instance
 func (n *nacosServiceDiscovery) Unregister(instance registry.ServiceInstance) error {
-	ok, err := n.client.Client().DeregisterInstance(n.toDeregisterInstance(instance))
+	ok, err := n.namingClient.Client().DeregisterInstance(n.toDeregisterInstance(instance))
 	if err != nil || !ok {
 		return perrors.WithMessage(err, "Could not unregister the instance. "+instance.GetServiceName())
 	}
@@ -117,7 +112,7 @@ func (n *nacosServiceDiscovery) GetDefaultPageSize() int {
 
 // GetServices will return the all services
 func (n *nacosServiceDiscovery) GetServices() *gxset.HashSet {
-	services, err := n.client.Client().GetAllServicesInfo(vo.GetAllServiceInfoParam{
+	services, err := n.namingClient.Client().GetAllServicesInfo(vo.GetAllServiceInfoParam{
 		GroupName: n.group,
 	})
 
@@ -135,7 +130,7 @@ func (n *nacosServiceDiscovery) GetServices() *gxset.HashSet {
 
 // GetInstances will return the instances of serviceName and the group
 func (n *nacosServiceDiscovery) GetInstances(serviceName string) []registry.ServiceInstance {
-	instances, err := n.client.Client().SelectAllInstances(vo.SelectAllInstancesParam{
+	instances, err := n.namingClient.Client().SelectAllInstances(vo.SelectAllInstancesParam{
 		ServiceName: serviceName,
 		GroupName:   n.group,
 	})
@@ -161,12 +156,11 @@ func (n *nacosServiceDiscovery) GetInstances(serviceName string) []registry.Serv
 			Metadata:    metadata,
 		})
 	}
-
 	return res
 }
 
 // GetInstancesByPage will return the instances
-// Due to nacos client does not support pagination, so we have to query all instances and then return part of them
+// Due to nacos namingClient does not support pagination, so we have to query all instances and then return part of them
 func (n *nacosServiceDiscovery) GetInstancesByPage(serviceName string, offset int, pageSize int) gxpage.Pager {
 	all := n.GetInstances(serviceName)
 	res := make([]interface{}, 0, pageSize)
@@ -178,7 +172,7 @@ func (n *nacosServiceDiscovery) GetInstancesByPage(serviceName string, offset in
 }
 
 // GetHealthyInstancesByPage will return the instance
-// The nacos client has an API SelectInstances, which has a parameter call HealthyOnly.
+// The nacos namingClient has an API SelectInstances, which has a parameter call HealthyOnly.
 // However, the healthy parameter in this method maybe false. So we can not use that API.
 // Thus, we must query all instances and then do filter
 func (n *nacosServiceDiscovery) GetHealthyInstancesByPage(serviceName string, offset int, pageSize int, healthy bool) gxpage.Pager {
@@ -201,7 +195,7 @@ func (n *nacosServiceDiscovery) GetHealthyInstancesByPage(serviceName string, of
 }
 
 // GetRequestInstances will return the instances
-// The nacos client doesn't have batch API, so we should query those serviceNames one by one.
+// The nacos namingClient doesn't have batch API, so we should query those serviceNames one by one.
 func (n *nacosServiceDiscovery) GetRequestInstances(serviceNames []string, offset int, requestedSize int) map[string]gxpage.Pager {
 	res := make(map[string]gxpage.Pager, len(serviceNames))
 	for _, name := range serviceNames {
@@ -214,7 +208,7 @@ func (n *nacosServiceDiscovery) GetRequestInstances(serviceNames []string, offse
 func (n *nacosServiceDiscovery) AddListener(listener registry.ServiceInstancesChangedListener) error {
 	for _, t := range listener.GetServiceNames().Values() {
 		serviceName := t.(string)
-		err := n.client.Client().Subscribe(&vo.SubscribeParam{
+		err := n.namingClient.Client().Subscribe(&vo.SubscribeParam{
 			ServiceName: serviceName,
 			SubscribeCallback: func(services []model.SubscribeService, err error) {
 				if err != nil {
@@ -282,7 +276,7 @@ func (n *nacosServiceDiscovery) toRegisterInstance(instance registry.ServiceInst
 		Ip:          instance.GetHost(),
 		Port:        uint64(instance.GetPort()),
 		Metadata:    metadata,
-		// We must specify the weight since Java nacos client will ignore the instance whose weight is 0
+		// We must specify the weight since Java nacos namingClient will ignore the instance whose weight is 0
 		Weight:    1,
 		Enable:    instance.IsEnable(),
 		Healthy:   instance.IsHealthy(),
@@ -337,14 +331,14 @@ func newNacosServiceDiscovery(name string) (registry.ServiceDiscovery, error) {
 
 	client, err := nacos.NewNacosClient(remoteConfig)
 	if err != nil {
-		return nil, perrors.WithMessage(err, "create nacos client failed.")
+		return nil, perrors.WithMessage(err, "create nacos namingClient failed.")
 	}
 
 	descriptor := fmt.Sprintf("nacos-service-discovery[%s]", remoteConfig.Address)
 
 	newInstance := &nacosServiceDiscovery{
 		group:             group,
-		client:            client,
+		namingClient:      client,
 		descriptor:        descriptor,
 		registryInstances: []registry.ServiceInstance{},
 	}

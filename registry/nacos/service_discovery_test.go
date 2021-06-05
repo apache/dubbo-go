@@ -175,7 +175,7 @@ func TestNacosServiceDiscovery_Destroy(t *testing.T) {
 	assert.NotNil(t, serviceDiscovery)
 	err = serviceDiscovery.Destroy()
 	assert.Nil(t, err)
-	assert.Nil(t, serviceDiscovery.(*nacosServiceDiscovery).client)
+	assert.Nil(t, serviceDiscovery.(*nacosServiceDiscovery).namingClient)
 }
 
 func prepareData() {
