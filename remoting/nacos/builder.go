@@ -75,7 +75,7 @@ func GetNacosConfig(url *common.URL) ([]nacosConstant.ServerConfig, nacosConstan
 		return []nacosConstant.ServerConfig{}, nacosConstant.ClientConfig{}, err
 	}
 	//enable local cache when nacos can not connect.
-	notLoadCache, err := strconv.ParseBool(url.GetParam(constant.NACOS_NOT_LOAD_LOCAL_CACHE, "false"))
+	notLoadCache, err := strconv.ParseBool(url.GetParam(constant.NACOS_NOT_LOAD_LOCAL_CACHE, "true"))
 	if err != nil {
 		notLoadCache = false
 	}
@@ -114,7 +114,7 @@ func NewNacosClient(rc *config.RemoteConfig) (*nacosClient.NacosNamingClient, er
 	var cc nacosConstant.ClientConfig
 	timeout := rc.Timeout()
 	//enable local cache when nacos can not connect.
-	notLoadCache, err := strconv.ParseBool(rc.GetParam(constant.NACOS_NOT_LOAD_LOCAL_CACHE, "false"))
+	notLoadCache, err := strconv.ParseBool(rc.GetParam(constant.NACOS_NOT_LOAD_LOCAL_CACHE, "true"))
 	if err != nil {
 		notLoadCache = false
 	}
