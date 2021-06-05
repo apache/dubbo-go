@@ -29,9 +29,9 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/protocol/dubbo3/internal"
-	"github.com/apache/dubbo-go/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo3/internal"
+	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
 const (

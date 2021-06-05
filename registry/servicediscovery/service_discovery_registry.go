@@ -30,18 +30,18 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/config"
-	"github.com/apache/dubbo-go/metadata/mapping"
-	"github.com/apache/dubbo-go/metadata/service"
-	"github.com/apache/dubbo-go/metadata/service/exporter/configurable"
-	"github.com/apache/dubbo-go/metadata/service/inmemory"
-	"github.com/apache/dubbo-go/registry"
-	"github.com/apache/dubbo-go/registry/event"
-	"github.com/apache/dubbo-go/registry/servicediscovery/synthesizer"
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
+	"dubbo.apache.org/dubbo-go/v3/metadata/service"
+	"dubbo.apache.org/dubbo-go/v3/metadata/service/exporter/configurable"
+	"dubbo.apache.org/dubbo-go/v3/metadata/service/inmemory"
+	"dubbo.apache.org/dubbo-go/v3/registry"
+	"dubbo.apache.org/dubbo-go/v3/registry/event"
+	"dubbo.apache.org/dubbo-go/v3/registry/servicediscovery/synthesizer"
 )
 
 const (
@@ -295,7 +295,7 @@ func shouldSubscribe(url *common.URL) bool {
 
 func (s *serviceDiscoveryRegistry) getServices(url *common.URL) *gxset.HashSet {
 	services := gxset.NewSet()
-	serviceNames := url.GetParam(constant.PROVIDER_BY, "")
+	serviceNames := url.GetParam(constant.PROVIDED_BY, "")
 	if len(serviceNames) > 0 {
 		services = parseServices(serviceNames)
 	}

@@ -22,7 +22,7 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
 // BaseMetadataIdentifier defined for describe the Metadata base identify
@@ -94,6 +94,7 @@ func withPathSeparator(path string) string {
 // BaseApplicationMetadataIdentifier is the base implement of BaseApplicationMetadataIdentifier interface
 type BaseApplicationMetadataIdentifier struct {
 	Application string
+	Group       string
 }
 
 // getIdentifierKey returns string that format is application/param

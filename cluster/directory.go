@@ -18,13 +18,18 @@
 package cluster
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/protocol"
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
 // Directory
 // Extension - Directory
 type Directory interface {
 	common.Node
+
+	// List candidate invoker list for the current Directory.
+	// NOTICE: The invoker list returned to the caller may be backed by the same data hold by the current Directory
+	// implementation for the sake of performance consideration. This requires the caller of List() shouldn't modify
+	// the return result directly.
 	List(invocation protocol.Invocation) []protocol.Invoker
 }

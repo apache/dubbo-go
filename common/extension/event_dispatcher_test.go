@@ -27,7 +27,7 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common/observer"
+	"dubbo.apache.org/dubbo-go/v3/common/observer"
 )
 
 func TestSetAndInitGlobalDispatcher(t *testing.T) {

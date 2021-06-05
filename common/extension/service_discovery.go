@@ -22,7 +22,7 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/registry"
+	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
 var discoveryCreatorMap = make(map[string]func(name string) (registry.ServiceDiscovery, error), 4)

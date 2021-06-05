@@ -18,8 +18,8 @@
 package cluster_impl
 
 import (
-	"github.com/apache/dubbo-go/cluster"
-	"github.com/apache/dubbo-go/protocol"
+	"dubbo.apache.org/dubbo-go/v3/cluster"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
 type mockCluster struct{}
@@ -35,5 +35,5 @@ func NewMockCluster() cluster.Cluster {
 
 // nolint
 func (cluster *mockCluster) Join(directory cluster.Directory) protocol.Invoker {
-	return protocol.NewBaseInvoker(directory.GetURL())
+	return buildInterceptorChain(protocol.NewBaseInvoker(directory.GetURL()))
 }

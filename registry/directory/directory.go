@@ -29,20 +29,20 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/cluster"
-	"github.com/apache/dubbo-go/cluster/directory"
-	"github.com/apache/dubbo-go/cluster/router/chain"
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/common/logger"
-	"github.com/apache/dubbo-go/config"
-	"github.com/apache/dubbo-go/config_center"
-	_ "github.com/apache/dubbo-go/config_center/configurator"
-	"github.com/apache/dubbo-go/protocol"
-	"github.com/apache/dubbo-go/protocol/protocolwrapper"
-	"github.com/apache/dubbo-go/registry"
-	"github.com/apache/dubbo-go/remoting"
+	"dubbo.apache.org/dubbo-go/v3/cluster"
+	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
+	"dubbo.apache.org/dubbo-go/v3/cluster/router/chain"
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/config_center"
+	_ "dubbo.apache.org/dubbo-go/v3/config_center/configurator"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
+	"dubbo.apache.org/dubbo-go/v3/registry"
+	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
 func init() {
@@ -54,7 +54,7 @@ func init() {
 type RegistryDirectory struct {
 	directory.BaseDirectory
 	cacheInvokers                  []protocol.Invoker
-	listenerLock                   sync.Mutex
+	invokersLock                   sync.RWMutex
 	serviceType                    string
 	registry                       registry.Registry
 	cacheInvokersMap               *sync.Map // use sync.map
@@ -230,8 +230,8 @@ func (dir *RegistryDirectory) invokerCacheKey(event *registry.ServiceEvent) stri
 // setNewInvokers groups the invokers from the cache first, then set the result to both directory and router chain.
 func (dir *RegistryDirectory) setNewInvokers() {
 	newInvokers := dir.toGroupInvokers()
-	dir.listenerLock.Lock()
-	defer dir.listenerLock.Unlock()
+	dir.invokersLock.Lock()
+	defer dir.invokersLock.Unlock()
 	dir.cacheInvokers = newInvokers
 	dir.RouterChain().SetInvokers(newInvokers)
 }
@@ -386,11 +386,12 @@ func (dir *RegistryDirectory) doCacheInvoker(newUrl *common.URL) (protocol.Invok
 
 // List selected protocol invokers from the directory
 func (dir *RegistryDirectory) List(invocation protocol.Invocation) []protocol.Invoker {
-	invokers := dir.cacheInvokers
 	routerChain := dir.RouterChain()
 
 	if routerChain == nil {
-		return invokers
+		dir.invokersLock.RLock()
+		defer dir.invokersLock.RUnlock()
+		return dir.cacheInvokers
 	}
 	return routerChain.Route(dir.consumerURL, invocation)
 }

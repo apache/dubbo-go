@@ -30,11 +30,11 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/metadata/identifier"
-	"github.com/apache/dubbo-go/metadata/report"
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/metadata/identifier"
+	"dubbo.apache.org/dubbo-go/v3/metadata/report"
 )
 
 func newProviderRegistryUrl(host string, port int) *common.URL {
@@ -70,7 +70,7 @@ func newServiceMetadataIdentifier(side string) *identifier.ServiceMetadataIdenti
 	}
 }
 
-func newSubscribeMetadataIdentifier(side string) *identifier.SubscriberMetadataIdentifier {
+func newSubscribeMetadataIdentifier() *identifier.SubscriberMetadataIdentifier {
 	return &identifier.SubscriberMetadataIdentifier{
 		Revision:                          "1.0",
 		BaseApplicationMetadataIdentifier: identifier.BaseApplicationMetadataIdentifier{Application: "provider"},
@@ -120,7 +120,7 @@ func (suite *zookeeperMetadataReportTestSuite) testGetExportedURLs() {
 }
 
 func (suite *zookeeperMetadataReportTestSuite) testSaveSubscribedData(url *common.URL) {
-	subscribeMi := newSubscribeMetadataIdentifier("provider")
+	subscribeMi := newSubscribeMetadataIdentifier()
 	urls := []string{url.String()}
 	bytes, _ := json.Marshal(urls)
 	err := suite.m.SaveSubscribedData(subscribeMi, string(bytes))
@@ -128,7 +128,7 @@ func (suite *zookeeperMetadataReportTestSuite) testSaveSubscribedData(url *commo
 }
 
 func (suite *zookeeperMetadataReportTestSuite) testGetSubscribedURLs() {
-	subscribeMi := newSubscribeMetadataIdentifier("provider")
+	subscribeMi := newSubscribeMetadataIdentifier()
 	urls, err := suite.m.GetSubscribedURLs(subscribeMi)
 	assert.Equal(suite.t, 1, len(urls))
 	assert.NoError(suite.t, err)
@@ -141,29 +141,63 @@ func (suite *zookeeperMetadataReportTestSuite) testGetServiceDefinition() {
 	assert.NoError(suite.t, err)
 }
 
-func test1(t *testing.T) {
-	testCluster, err := zk.StartTestCluster(1, nil, nil)
+func (suite *zookeeperMetadataReportTestSuite) testPublishAppMetadata() {
+	subscribeMi := newSubscribeMetadataIdentifier()
+	info := common.NewMetadataInfWithApp(subscribeMi.Application)
+	err := suite.m.PublishAppMetadata(subscribeMi, info)
+	assert.NoError(suite.t, err)
+}
+
+func (suite *zookeeperMetadataReportTestSuite) testGetAppMetadata() {
+	subscribeMi := newSubscribeMetadataIdentifier()
+	info, err := suite.m.GetAppMetadata(subscribeMi)
+	assert.NoError(suite.t, err)
+	assert.Equal(suite.t, "provider", info.App)
+}
+
+func testInterfaceMetadata(t *testing.T) {
+	testCluster, err := zk.StartTestCluster(1, nil, nil, zk.WithRetryTimes(20))
 	assert.NoError(t, err)
 	defer func() {
 		err := testCluster.Stop()
 		assert.Nil(t, err)
 	}()
 
-	url := newProviderRegistryUrl("127.0.0.1", testCluster.Servers[0].Port)
+	providerRegistryUrl := newProviderRegistryUrl("127.0.0.1", testCluster.Servers[0].Port)
 	mf := extension.GetMetadataReportFactory("zookeeper")
-	m := mf.CreateMetadataReport(url)
+	m := mf.CreateMetadataReport(providerRegistryUrl)
 
 	suite := newZookeeperMetadataReportTestSuite(t, m)
 	suite.testStoreProviderMetadata()
 	suite.testStoreConsumerMetadata()
-	suite.testSaveServiceMetadata(url)
+	suite.testSaveServiceMetadata(providerRegistryUrl)
 	suite.testGetExportedURLs()
 	suite.testRemoveServiceMetadata()
-	suite.testSaveSubscribedData(url)
+	suite.testSaveSubscribedData(providerRegistryUrl)
 	suite.testGetSubscribedURLs()
 	suite.testGetServiceDefinition()
 }
 
+func testAppMetadata(t *testing.T) {
+	testCluster, err := zk.StartTestCluster(1, nil, nil, zk.WithRetryTimes(20))
+	assert.NoError(t, err)
+	defer func() {
+		err := testCluster.Stop()
+		assert.Nil(t, err)
+	}()
+
+	providerRegistryUrl := newProviderRegistryUrl("127.0.0.1", testCluster.Servers[0].Port)
+	mf := extension.GetMetadataReportFactory("zookeeper")
+	m := mf.CreateMetadataReport(providerRegistryUrl)
+
+	suite := newZookeeperMetadataReportTestSuite(t, m)
+	suite.testPublishAppMetadata()
+	suite.testGetAppMetadata()
+}
+
+// TestZookeeperMetadataReport is dependent on zookeeper-*-fatjar.jar,
+// please execute `make -f ../../../Makefile prepare` before running unittest.
 func TestZookeeperMetadataReport(t *testing.T) {
-	t.Run("test1", test1)
+	t.Run("testInterfaceMetadata", testInterfaceMetadata)
+	t.Run("testAppMetadata", testAppMetadata)
 }
