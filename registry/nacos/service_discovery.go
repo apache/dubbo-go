@@ -90,9 +90,15 @@ func (n *nacosServiceDiscovery) Register(instance registry.ServiceInstance) erro
 }
 
 // Update will update the information
-// However, because nacos namingClient doesn't support the update API,
-// so we should repetition registration the instance
+// However, because nacos client doesn't support the update API,
+// so we should unregister the instance and then register it again.
+// the error handling is hard to implement
 func (n *nacosServiceDiscovery) Update(instance registry.ServiceInstance) error {
+	// TODO(wait for nacos support)
+	err := n.Unregister(instance)
+	if err != nil {
+		return perrors.WithStack(err)
+	}
 	return n.Register(instance)
 }
 

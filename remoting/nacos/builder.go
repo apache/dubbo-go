@@ -42,12 +42,11 @@ func NewNacosConfigClientByUrl(url *common.URL) (*nacosClient.NacosConfigClient,
 	if err != nil {
 		return nil, err
 	}
-	return nacosClient.NewNacosConfigClient(config.GetApplicationConfig().Name, true, sc, cc)
+	return nacosClient.NewNacosConfigClient(getNacosClientName(), true, sc, cc)
 }
 
 // GetNacosConfig will return the nacos config
 func GetNacosConfig(url *common.URL) ([]nacosConstant.ServerConfig, nacosConstant.ClientConfig, error) {
-
 	if url == nil {
 		return []nacosConstant.ServerConfig{}, nacosConstant.ClientConfig{}, perrors.New("url is empty!")
 	}
@@ -128,7 +127,7 @@ func NewNacosClient(rc *config.RemoteConfig) (*nacosClient.NacosNamingClient, er
 	cc.Password = rc.Password
 	cc.NotLoadCacheAtStart = notLoadCache
 
-	return nacosClient.NewNacosNamingClient(config.GetApplicationConfig().Name, true, scs, cc)
+	return nacosClient.NewNacosNamingClient(getNacosClientName(), true, scs, cc)
 }
 
 // NewNacosClientByUrl created
@@ -137,5 +136,14 @@ func NewNacosClientByUrl(url *common.URL) (*nacosClient.NacosNamingClient, error
 	if err != nil {
 		return nil, err
 	}
-	return nacosClient.NewNacosNamingClient(config.GetApplicationConfig().Name, true, scs, cc)
+	return nacosClient.NewNacosNamingClient(getNacosClientName(), true, scs, cc)
+}
+
+// getNacosClientName get nacos client name
+func getNacosClientName() string {
+	name := config.GetApplicationConfig().Name
+	if len(name) > 0 {
+		return name
+	}
+	return "nacos-client"
 }
