@@ -19,7 +19,6 @@ package dubbo3
 
 import (
 	"context"
-	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
@@ -66,22 +65,12 @@ func NewDubboInvoker(url *common.URL) (*DubboInvoker, error) {
 	key := url.GetParam(constant.BEAN_NAME_KEY, "")
 	consumerService := config.GetConsumerService(key)
 
-	var triSerializationType tripleConstant.TripleSerializerName
 	dubboSerializaerType := url.GetParam(constant.SERIALIZATION_KEY, constant.PROTOBUF_SERIALIZATION)
-	switch dubboSerializaerType {
-	case constant.PROTOBUF_SERIALIZATION:
-		triSerializationType = tripleConstant.PBSerializerName
-	case constant.HESSIAN2_SERIALIZATION:
-		triSerializationType = tripleConstant.TripleHessianWrapperSerializerName
-	case constant.MSGPACK_SERIALIZATION:
-		triSerializationType = tripleConstant.MsgPackSerializerName
-	default:
-		panic(fmt.Sprintf("unsupport serialization = %s", dubboSerializaerType))
-	}
+	triCodecType := tripleConstant.CodecType(dubboSerializaerType)
 	// new triple client
 	triOption := triConfig.NewTripleOption(
 		triConfig.WithClientTimeout(uint32(requestTimeout.Seconds())),
-		triConfig.WithSerializerType(triSerializationType),
+		triConfig.WithCodecType(triCodecType),
 		triConfig.WithLocation(url.Location),
 		triConfig.WithHeaderAppVersion(url.GetParam(constant.APP_VERSION_KEY, "")),
 		triConfig.WithHeaderGroup(url.GetParam(constant.GROUP_KEY, "")),

@@ -202,6 +202,8 @@ github.com/dubbogo/triple v1.0.1-0.20210518093320-be4ea8823a15 h1:/SMBITdzP8xvDA
 github.com/dubbogo/triple v1.0.1-0.20210518093320-be4ea8823a15/go.mod h1:3CPN7tvEeN4G4zWP7Zhz1VmfEyRU8UvUTVm0aP9CV1g=
 github.com/dubbogo/triple v1.0.1-0.20210524091548-f33ebded31e9 h1:fiydttBAX9SeqqCZWad6VWhqX3jaElJHmKWv7X/kNoM=
 github.com/dubbogo/triple v1.0.1-0.20210524091548-f33ebded31e9/go.mod h1:4b2yRUdaE6oRl9c+0SDm1mQ6rU9j21uVz8O85KEBsdo=
+github.com/dubbogo/triple v1.0.1-0.20210606070217-0815f3a0a013 h1:0AfyedfDk8rQpilySkJOv+OsgJuoqbOCjqQLgV8vX9U=
+github.com/dubbogo/triple v1.0.1-0.20210606070217-0815f3a0a013/go.mod h1:4b2yRUdaE6oRl9c+0SDm1mQ6rU9j21uVz8O85KEBsdo=
 github.com/dustin/go-humanize v0.0.0-20171111073723-bb3d318650d4/go.mod h1:HtrtbFcZ19U5GC7JDqmcUSB87Iq5E25KnS6fMYU6eOk=
 github.com/dustin/go-humanize v1.0.0 h1:VSnTsYCnlFHaM2/igO1h6X3HA71jcobQuxemgkq4zYo=
 github.com/dustin/go-humanize v1.0.0/go.mod h1:HtrtbFcZ19U5GC7JDqmcUSB87Iq5E25KnS6fMYU6eOk=
@@ -833,8 +835,10 @@ github.com/toolkits/concurrent v0.0.0-20150624120057-a4371d70e3e3/go.mod h1:QDlp
 github.com/tv42/httpunix v0.0.0-20150427012821-b75d8614f926 h1:G3dpKMzFDjgEh2q1Z7zUUtKa8ViPtH+ocF0bE0g00O8=
 github.com/tv42/httpunix v0.0.0-20150427012821-b75d8614f926/go.mod h1:9ESjWnEqriFuLhtthL60Sar/7RFoluCcXsuvEwTV5KM=
 github.com/ugorji/go v1.1.4/go.mod h1:uQMGLiO92mf5W77hV/PUCpI3pbzQx3CRekS0kk+RGrc=
+github.com/ugorji/go v1.2.6 h1:tGiWC9HENWE2tqYycIqFTNorMmFRVhNwCpDOpWqnk8E=
 github.com/ugorji/go v1.2.6/go.mod h1:anCg0y61KIhDlPZmnH+so+RQbysYVyDko0IMgJv0Nn0=
 github.com/ugorji/go/codec v0.0.0-20181204163529-d75b2dcb6bc8/go.mod h1:VFNgLljTbGfSG7qAOspJ7OScBnGdDN/yBr0sguwnwf0=
+github.com/ugorji/go/codec v1.2.6 h1:7kbGefxLoDBuYXOms4yD7223OpNMMPNPZxXk5TvFcyQ=
 github.com/ugorji/go/codec v1.2.6/go.mod h1:V6TCNZ4PHqoHGFZuSG1W8nrCzzdgA2DozYxWFFpvxTw=
 github.com/urfave/cli v1.20.0/go.mod h1:70zkFmudgCuE/ngEzBv17Jvp/497gISqfk5gWijbERA=
 github.com/urfave/cli v1.22.1/go.mod h1:Gos4lmkARVdJ6EkW0WaNv/tZAAMe9V7XWyB60NtXRu0=
