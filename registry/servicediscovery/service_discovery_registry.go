@@ -295,7 +295,7 @@ func shouldSubscribe(url *common.URL) bool {
 
 func (s *serviceDiscoveryRegistry) getServices(url *common.URL) *gxset.HashSet {
 	services := gxset.NewSet()
-	serviceNames := url.GetParam(constant.PROVIDER_BY, "")
+	serviceNames := url.GetParam(constant.PROVIDED_BY, "")
 	if len(serviceNames) > 0 {
 		services = parseServices(serviceNames)
 	}

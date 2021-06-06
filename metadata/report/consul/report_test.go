@@ -75,6 +75,7 @@ func newSubscribeMetadataIdentifier(side string) *identifier.SubscriberMetadataI
 		Revision: "1.0",
 		BaseApplicationMetadataIdentifier: identifier.BaseApplicationMetadataIdentifier{
 			Application: side,
+			Group:       "dubbo",
 		},
 	}
 }

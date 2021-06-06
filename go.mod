@@ -6,18 +6,17 @@ require (
 	cloud.google.com/go v0.50.0 // indirect
 	github.com/Microsoft/go-winio v0.4.15-0.20190919025122-fc70bd9a86b5 // indirect
 	github.com/NYTimes/gziphandler v1.1.1 // indirect
-	github.com/RoaringBitmap/roaring v0.6.1
+	github.com/RoaringBitmap/roaring v0.7.1
 	github.com/Workiva/go-datastructures v1.0.52
 	github.com/afex/hystrix-go v0.0.0-20180502004556-fa1af6a1f4f5
 	github.com/alibaba/sentinel-golang v1.0.2
 	github.com/apache/dubbo-getty v1.4.3
-	github.com/apache/dubbo-go-hessian2 v1.9.1
+	github.com/apache/dubbo-go-hessian2 v1.9.2
 	github.com/creasty/defaults v1.5.1
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/dubbogo/go-zookeeper v1.0.3
 	github.com/dubbogo/gost v1.11.9
 	github.com/dubbogo/triple v1.0.1-0.20210606070217-0815f3a0a013
-	github.com/elazarl/go-bindata-assetfs v1.0.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.4.0
 	github.com/frankban/quicktest v1.4.1 // indirect
 	github.com/fsnotify/fsnotify v1.4.9
@@ -50,7 +49,6 @@ require (
 	github.com/satori/go.uuid v1.2.1-0.20181028125025-b2ce2384e17b
 	github.com/stretchr/objx v0.2.0 // indirect
 	github.com/stretchr/testify v1.7.0
-	github.com/vmihailenco/msgpack/v5 v5.3.2 // indirect
 	github.com/zouyx/agollo/v3 v3.4.5
 	go.etcd.io/etcd/api/v3 v3.5.0-alpha.0
 	go.etcd.io/etcd/client/v3 v3.5.0-alpha.0
@@ -67,6 +65,5 @@ require (
 
 replace (
 	github.com/envoyproxy/go-control-plane => github.com/envoyproxy/go-control-plane v0.8.0
-	github.com/shirou/gopsutil => github.com/shirou/gopsutil v0.0.0-20181107111621-48177ef5f880
 	google.golang.org/grpc => google.golang.org/grpc v1.29.1
 )

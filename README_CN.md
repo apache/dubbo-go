@@ -127,14 +127,12 @@ Apache License, Version 2.0
     * [For grpc](https://github.com/apache/dubbo-go/pull/397)
 
 - 元数据中心
-    * [Nacos](https://github.com/apache/dubbo-go/pull/522)
-    * [Zookeeper](https://github.com/apache/dubbo-go/pull/633)
-    * [Etcd](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/metadata/report/etcd/report.go)
-    * [Consul](https://github.com/apache/dubbo-go/pull/633)
+    * [Nacos(Local)](https://github.com/apache/dubbo-go/pull/522)
+    * [Zookeeper(Local)](https://github.com/apache/dubbo-go/pull/633)
+    * [Etcd(Local)](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/metadata/report/etcd/report.go)
+    * [Consul(Local)](https://github.com/apache/dubbo-go/pull/633)
+    * [Zookeeper(Remoting)](https://github.com/apache/dubbo-go/pull/1161)
 
-- 服务发现
-    * [Zookeeper](https://github.com/apache/dubbo-go/pull/1161)
-    
 - 工具箱
     * [Dubbo-go-cli](https://github.com/apache/dubbo-go/pull/818)
 
@@ -303,8 +301,16 @@ dubbogo 社区已经开通微信公众号，可在微信搜索 "dubbogo示土区
            <img width="222px"  src="http://website.ruubypay.com/wifi/image/line5.png">
         </a>
       </td>
+      <td align="center"  valign="middle">
+        <a href="https://www.dingtalk.com" target="_blank">
+           <img width="222px"  src="https://gw.alicdn.com/tfs/TB1HPATMrrpK1RjSZTEXXcWAVXa-260-74.png">
+        </a>
+      </td>
     </tr>
     <tr></tr>
   </tbody>
 </table>
 </div>
+
+[更多用户示例](https://github.com/apache/dubbo-go/issues/2)
+

@@ -57,7 +57,7 @@ type ReferenceConfig struct {
 	Group          string            `yaml:"group"  json:"group,omitempty" property:"group"`
 	Version        string            `yaml:"version"  json:"version,omitempty" property:"version"`
 	Serialization  string            `yaml:"serialization" json:"serialization" property:"serialization"`
-	ProvideBy      string            `yaml:"provide_by"  json:"provide_by,omitempty" property:"provide_by"`
+	ProvidedBy     string            `yaml:"provided_by"  json:"provided_by,omitempty" property:"provided_by"`
 	Methods        []*MethodConfig   `yaml:"methods"  json:"methods,omitempty" property:"methods"`
 	Async          bool              `yaml:"async"  json:"async,omitempty" property:"async"`
 	Params         map[string]string `yaml:"params"  json:"params,omitempty" property:"params"`
@@ -240,7 +240,7 @@ func (c *ReferenceConfig) getURLMap() url.Values {
 	urlMap.Set(constant.VERSION_KEY, c.Version)
 	urlMap.Set(constant.GENERIC_KEY, strconv.FormatBool(c.Generic))
 	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(common.CONSUMER))
-	urlMap.Set(constant.PROVIDER_BY, c.ProvideBy)
+	urlMap.Set(constant.PROVIDED_BY, c.ProvidedBy)
 	urlMap.Set(constant.SERIALIZATION_KEY, c.Serialization)
 
 	urlMap.Set(constant.RELEASE_KEY, "dubbo-golang-"+constant.Version)
