@@ -89,6 +89,7 @@ func (l *ZkEventListener) listenServiceNodeEvent(zkPath string, listener ...remo
 	l.pathMapLock.Lock()
 	a, ok := l.pathMap[zkPath]
 	if !ok || a.Load() > 1 {
+		l.pathMapLock.Unlock()
 		return false
 	}
 	a.Inc()
