@@ -43,7 +43,6 @@ func TestBeforeShutdown(t *testing.T) {
 		return &mockRegistryProtocol{}
 	})
 
-	// protocolConfigs := make(map[interface{}]interface{}, 16)
 	consumerReferences := map[string]*ReferenceConfig{}
 	consumerReferences[constant.DUBBO] = &ReferenceConfig{
 		Protocol: constant.DUBBO,

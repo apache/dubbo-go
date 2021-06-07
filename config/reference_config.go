@@ -18,7 +18,6 @@
 package config
 
 import (
-	"context"
 	"fmt"
 	"net/url"
 	"strconv"
@@ -42,7 +41,6 @@ import (
 
 // ReferenceConfig is the configuration of service consumer
 type ReferenceConfig struct {
-	context        context.Context
 	pxy            *proxy.Proxy
 	id             string
 	InterfaceName  string            `required:"true"  yaml:"interface"  json:"interface,omitempty" property:"interface"`
@@ -75,8 +73,8 @@ func (c *ReferenceConfig) Prefix() string {
 }
 
 // NewReferenceConfig The only way to get a new ReferenceConfig
-func NewReferenceConfig(id string, ctx context.Context) *ReferenceConfig {
-	return &ReferenceConfig{id: id, context: ctx}
+func NewReferenceConfig(id string) *ReferenceConfig {
+	return &ReferenceConfig{id: id}
 }
 
 // UnmarshalYAML unmarshals the ReferenceConfig by @unmarshal function
