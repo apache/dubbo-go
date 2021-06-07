@@ -300,8 +300,8 @@ func registerServiceInstance() {
 		}
 	}
 	// todo publish metadata to remote
-	if remoteMetadataServiceImpl, err := extension.GetRemoteMetadataService(); err == nil {
-		remoteMetadataServiceImpl.PublishMetadata(GetApplicationConfig().Name)
+	if remotingMetadataService, err := extension.GetRemotingMetadataService(); err == nil {
+		remotingMetadataService.PublishMetadata(GetApplicationConfig().Name)
 	}
 }
 
