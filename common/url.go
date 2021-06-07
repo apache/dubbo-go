@@ -125,6 +125,11 @@ type URL struct {
 	SubURL *URL
 }
 
+// JavaClassName POJO for URL
+func (c *URL) JavaClassName() string {
+	return "org.apache.dubbo.common.URL"
+}
+
 // Option accepts URL
 // Option will define a function of handling URL
 type Option func(*URL)
