@@ -37,38 +37,38 @@ var (
 	typeOfError     = reflect.Zero(reflect.TypeOf((*error)(nil)).Elem()).Type()
 )
 
-// ResultProxyFactory proxy factory, return a protocol.Result with attachments
-type ResultProxyFactory struct {
+// GenericProxyFactory proxy factory, return values with attachments
+type GenericProxyFactory struct {
 }
 
-// NewResultProxyFactory returns a proxy factory instance
-func NewResultProxyFactory(_ ...proxy.Option) proxy.ProxyFactory {
-	return &ResultProxyFactory{}
+// NewGenericProxyFactory returns a proxy factory instance
+func NewGenericProxyFactory(_ ...proxy.Option) proxy.ProxyFactory {
+	return &GenericProxyFactory{}
 }
 
 // GetProxy gets a proxy
-func (f *ResultProxyFactory) GetProxy(invoker protocol.Invoker, url *common.URL) *proxy.Proxy {
+func (f *GenericProxyFactory) GetProxy(invoker protocol.Invoker, url *common.URL) *proxy.Proxy {
 	return f.GetAsyncProxy(invoker, nil, url)
 }
 
 // GetAsyncProxy gets a async proxy
-func (f *ResultProxyFactory) GetAsyncProxy(invoker protocol.Invoker, callBack interface{}, url *common.URL) *proxy.Proxy {
+func (f *GenericProxyFactory) GetAsyncProxy(invoker protocol.Invoker, callBack interface{}, url *common.URL) *proxy.Proxy {
 	attrs := map[string]string{}
 	attrs[constant.ASYNC_KEY] = url.GetParam(constant.ASYNC_KEY, "false")
 	return proxy.NewProxyWithOptions(invoker, callBack, attrs,
-		proxy.WithProxyImplementFunc(NewResultProxyImplFunc(attrs)))
+		proxy.WithProxyImplementFunc(NewGenericProxyImplFunc(attrs)))
 }
 
 // GetInvoker gets a invoker
-func (f *ResultProxyFactory) GetInvoker(url *common.URL) protocol.Invoker {
+func (f *GenericProxyFactory) GetInvoker(url *common.URL) protocol.Invoker {
 	return &ProxyInvoker{
 		BaseInvoker: *protocol.NewBaseInvoker(url),
 	}
 }
 
-// NewResultProxyImplFunc returns a new function with the given attributes,
+// NewGenericProxyImplFunc returns a new function with the given attributes,
 // supports only function sign: func Invoke(Context, []{Method, []{Arguments}}) protocol.Result.
-func NewResultProxyImplFunc(attr map[string]string) proxy.ImplementFunc {
+func NewGenericProxyImplFunc(attr map[string]string) proxy.ImplementFunc {
 	return func(p *proxy.Proxy, rpc common.RPCService) {
 		serviceValue := reflect.ValueOf(rpc)
 		serviceElem := serviceValue.Elem()

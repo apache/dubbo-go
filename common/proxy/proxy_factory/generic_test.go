@@ -32,14 +32,14 @@ import (
 )
 
 func TestGetResultProxy(t *testing.T) {
-	proxyFactory := NewResultProxyFactory()
+	proxyFactory := NewGenericProxyFactory()
 	url := common.NewURLWithOptions()
 	proxy := proxyFactory.GetProxy(protocol.NewBaseInvoker(url), url)
 	assert.NotNil(t, proxy)
 }
 
 func TestGetAsyncResultProxy(t *testing.T) {
-	proxyFactory := NewResultProxyFactory()
+	proxyFactory := NewGenericProxyFactory()
 	url := common.NewURLWithOptions()
 	proxy := proxyFactory.GetAsyncProxy(protocol.NewBaseInvoker(url), func(res common.CallbackResponse) {
 		fmt.Println("Test callback res:", res)
@@ -48,7 +48,7 @@ func TestGetAsyncResultProxy(t *testing.T) {
 }
 
 func TestGetResultInvoker(t *testing.T) {
-	proxyFactory := NewResultProxyFactory()
+	proxyFactory := NewGenericProxyFactory()
 	url := common.NewURLWithOptions()
 	invoker := proxyFactory.GetInvoker(url)
 	assert.True(t, invoker.IsAvailable())
