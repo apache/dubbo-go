@@ -237,7 +237,10 @@ func (dir *RegistryDirectory) setNewInvokers() {
 	dir.invokersLock.Lock()
 	defer dir.invokersLock.Unlock()
 	dir.cacheInvokers = newInvokers
-	dir.RouterChain().SetInvokers(newInvokers)
+	routerChain := dir.RouterChain()
+	if routerChain != nil {
+		routerChain.SetInvokers(newInvokers)
+	}
 }
 
 // cacheInvokerByEvent caches invokers from the service event

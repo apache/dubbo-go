@@ -27,7 +27,6 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/cluster/router"
-	"github.com/apache/dubbo-go/cluster/router/chain"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
@@ -46,9 +45,8 @@ type BaseDirectory struct {
 // NewBaseDirectory Create BaseDirectory with URL
 func NewBaseDirectory(url *common.URL) BaseDirectory {
 	return BaseDirectory{
-		url:         url,
-		destroyed:   atomic.NewBool(false),
-		routerChain: &chain.RouterChain{},
+		url:       url,
+		destroyed: atomic.NewBool(false),
 	}
 }
 
