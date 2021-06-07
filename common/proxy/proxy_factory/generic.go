@@ -33,7 +33,8 @@ import (
 
 var (
 	typeOfInterface = reflect.Zero(reflect.TypeOf((*interface{})(nil)).Elem()).Type()
-	typeOfResult    = reflect.Zero(reflect.TypeOf((*protocol.Result)(nil)).Elem()).Type()
+	typeOfStrMap    = reflect.Zero(reflect.TypeOf((*map[string]interface{})(nil)).Elem()).Type()
+	typeOfError     = reflect.Zero(reflect.TypeOf((*error)(nil)).Elem()).Type()
 )
 
 // ResultProxyFactory proxy factory, return a protocol.Result with attachments
@@ -45,7 +46,7 @@ func NewResultProxyFactory(_ ...proxy.Option) proxy.ProxyFactory {
 	return &ResultProxyFactory{}
 }
 
-// GetInvoker gets a invoker
+// GetProxy gets a proxy
 func (f *ResultProxyFactory) GetProxy(invoker protocol.Invoker, url *common.URL) *proxy.Proxy {
 	return f.GetAsyncProxy(invoker, nil, url)
 }
@@ -88,17 +89,23 @@ func NewResultProxyImplFunc(attr map[string]string) proxy.ImplementFunc {
 				continue
 			}
 			// Enforce param types：
-			// Invoke(Context, []{Method, []{Arguments}}) protocol.Result
+			// Invoke(Context, []{Method, []{Arguments}}) (result, attachments, error)
 			inNum := funcField.Type.NumIn()
 			if inNum != 2 {
 				logger.Errorf("Generic func requires 2 in-arg type, func: %s(%s), was: %d",
 					funcField.Name, funcField.Type.String(), inNum)
 				continue
 			}
+			// Enforce return types
+			// Invoke(Context, []{Method, []{Arguments}}) (result, attachments, error)
 			outNum := funcField.Type.NumOut()
-			if outNum != 1 || funcField.Type.Out(0) != typeOfResult {
-				logger.Errorf("Generic func requires 1 out-result type, func: %s(%s), was: %d",
-					funcField.Name, funcField.Type.String(), outNum)
+			if outNum != 3 ||
+				funcField.Type.Out(0) != typeOfInterface ||
+				funcField.Type.Out(1) != typeOfStrMap ||
+				funcField.Type.Out(2) != typeOfError {
+				logger.Errorf("Generic func requires 3 out types, func: %s(%s), "+
+					"require: (result interface{}, attachments map[string]interface{}, err error)",
+					funcField.Name, funcField.Type.String())
 				continue
 			}
 			f.Set(reflect.MakeFunc(f.Type(), makeResultProxyFunc(funcName, p, attr)))
@@ -106,8 +113,9 @@ func NewResultProxyImplFunc(attr map[string]string) proxy.ImplementFunc {
 	}
 }
 
-// make a function: func Invoke(goctx, []interface{}{service.Method, types, values}) protocol.Result;
+// make a function: func Invoke
 func makeResultProxyFunc(funcName string, proxy *proxy.Proxy, usrAttr map[string]string) func([]reflect.Value) []reflect.Value {
+	// Invoke(goctx, []interface{}{service.Method, types, values}) (result, attachments, error);
 	return func(funArgs []reflect.Value) []reflect.Value {
 		// Context
 		invCtx := funArgs[0].Interface().(context.Context)
@@ -146,6 +154,7 @@ func makeResultProxyFunc(funcName string, proxy *proxy.Proxy, usrAttr map[string
 		if nil == result.Error() {
 			result.SetResult(invReply.Elem().Interface())
 		}
-		return []reflect.Value{reflect.ValueOf(&result).Elem()}
+		var ret, att, err = result.Result(), result.Attachments(), result.Error()
+		return []reflect.Value{reflect.ValueOf(&ret).Elem(), reflect.ValueOf(&att).Elem(), reflect.ValueOf(&err).Elem()}
 	}
 }

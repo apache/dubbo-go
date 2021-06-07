@@ -21,24 +21,21 @@ import (
 	"context"
 )
 
-import (
-	"github.com/apache/dubbo-go/protocol"
-)
-
-// ResultGenericService uses for generic invoke for service call,
-// Unlike GenericService, it returns the original <protocol.Result> type object called by DubboRPC,
+// GenericService2 uses for generic invoke for service call,
+// Unlike GenericService, it returns a tuple (interface{}, map[string]interface{}, error) called by DubboRPC,
 // which contains the Attachments data returned by the DubboProvider interface
-type ResultGenericService struct {
-	Invoke       func(ctx context.Context, args []interface{}) protocol.Result `dubbo:"$invoke"`
+type GenericService2 struct {
+	// Invoke this field will inject impl by proxy, returns (result interface{}, attachments map[string]interface{}, err error)
+	Invoke       func(ctx context.Context, args []interface{}) (interface{}, map[string]interface{}, error) `dubbo:"$invoke"`
 	referenceStr string
 }
 
-// NewResultGenericService returns a ResultGenericService instance
-func NewResultGenericService(referenceStr string) *ResultGenericService {
-	return &ResultGenericService{referenceStr: referenceStr}
+// NewGenericService2 returns a GenericService2 instance
+func NewGenericService2(referenceStr string) *GenericService2 {
+	return &GenericService2{referenceStr: referenceStr}
 }
 
-// Reference gets referenceStr from ResultGenericService
-func (u *ResultGenericService) Reference() string {
+// Reference gets referenceStr from GenericService2
+func (u *GenericService2) Reference() string {
 	return u.referenceStr
 }
