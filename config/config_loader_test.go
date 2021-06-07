@@ -445,30 +445,30 @@ func (m *mockMetadataService) Version() (string, error) {
 	panic("implement me")
 }
 
-func (mts *mockMetadataService) addURL(targetMap *sync.Map, url *common.URL) bool {
+func (m *mockMetadataService) addURL(targetMap *sync.Map, url *common.URL) bool {
 	var (
 		urlSet interface{}
 		loaded bool
 	)
 	logger.Debug(url.ServiceKey())
 	if urlSet, loaded = targetMap.LoadOrStore(url.ServiceKey(), skip.New(uint64(0))); loaded {
-		mts.lock.RLock()
+		m.lock.RLock()
 		wantedUrl := urlSet.(*skip.SkipList).Get(url)
 		if len(wantedUrl) > 0 && wantedUrl[0] != nil {
-			mts.lock.RUnlock()
+			m.lock.RUnlock()
 			return false
 		}
-		mts.lock.RUnlock()
+		m.lock.RUnlock()
 	}
-	mts.lock.Lock()
+	m.lock.Lock()
 	// double chk
 	wantedUrl := urlSet.(*skip.SkipList).Get(url)
 	if len(wantedUrl) > 0 && wantedUrl[0] != nil {
-		mts.lock.Unlock()
+		m.lock.Unlock()
 		return false
 	}
 	urlSet.(*skip.SkipList).Insert(url)
-	mts.lock.Unlock()
+	m.lock.Unlock()
 	return true
 }
 
@@ -519,7 +519,7 @@ func (mr *mockServiceDiscoveryRegistry) UnSubscribe(*common.URL, registry.Notify
 	panic("implement me")
 }
 
-func (s *mockServiceDiscoveryRegistry) GetServiceDiscovery() registry.ServiceDiscovery {
+func (mr *mockServiceDiscoveryRegistry) GetServiceDiscovery() registry.ServiceDiscovery {
 	return &mockServiceDiscovery{}
 }
 
