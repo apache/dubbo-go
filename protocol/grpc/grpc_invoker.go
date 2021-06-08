@@ -21,6 +21,7 @@ import (
 	"context"
 	"reflect"
 	"sync"
+	"time"
 )
 
 import (
@@ -31,6 +32,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
@@ -43,6 +45,8 @@ type GrpcInvoker struct {
 	quitOnce    sync.Once
 	clientGuard *sync.RWMutex
 	client      *Client
+	// timeout for service(interface) level.
+	timeout time.Duration
 }
 
 // NewGrpcInvoker returns a Grpc invoker instance
@@ -100,6 +104,11 @@ func (gi *GrpcInvoker) Invoke(ctx context.Context, invocation protocol.Invocatio
 		result.Err = errNoReply
 	}
 
+	// time out
+	timeout := gi.getTimeout(invocation)
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
 	var in []reflect.Value
 	in = append(in, reflect.ValueOf(ctx))
 	in = append(in, invocation.ParameterValues()...)
@@ -149,4 +158,17 @@ func (gi *GrpcInvoker) Destroy() {
 			client.Close()
 		}
 	})
+}
+
+// timeout
+func (gi *GrpcInvoker) getTimeout(invocation protocol.Invocation) time.Duration {
+	var timeout time.Duration
+	timeoutStr := gi.BaseInvoker.GetURL().GetParam(constant.METHODS_KEY+"."+invocation.MethodName()+"."+constant.TIMEOUT_KEY,
+		gi.BaseInvoker.GetURL().GetParam(constant.TIMEOUT_KEY, ""))
+	if timeoutStr != "" {
+		timeout, _ = time.ParseDuration(timeoutStr)
+	} else {
+		timeout = gi.timeout
+	}
+	return timeout
 }
