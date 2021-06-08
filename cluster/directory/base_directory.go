@@ -45,11 +45,14 @@ type BaseDirectory struct {
 
 // NewBaseDirectory Create BaseDirectory with URL
 func NewBaseDirectory(url *common.URL) BaseDirectory {
-	return BaseDirectory{
+	dir := BaseDirectory{
 		url:         url,
 		destroyed:   atomic.NewBool(false),
 		routerChain: &chain.RouterChain{},
 	}
+	// start to listen notify
+	dir.routerChain.Loop()
+	return dir
 }
 
 // RouterChain Return router chain in directory
