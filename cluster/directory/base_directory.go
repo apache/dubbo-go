@@ -51,7 +51,7 @@ func NewBaseDirectory(url *common.URL) BaseDirectory {
 		routerChain: &chain.RouterChain{},
 	}
 	// start to listen notify
-	dir.routerChain.Loop()
+	go dir.routerChain.Loop()
 	return dir
 }
 
