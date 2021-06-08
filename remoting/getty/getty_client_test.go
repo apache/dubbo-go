@@ -310,7 +310,7 @@ func testGetUser61(t *testing.T, c *Client) {
 
 func testClient_AsyncCall(t *testing.T, client *Client) {
 	user := &User{}
-	lock := sync.Mutex{}
+	wg := sync.WaitGroup{}
 	request := remoting.NewRequest("2.0.2")
 	invocation := createInvocation("GetUser0", nil, nil, []interface{}{"4", nil, "username"},
 		[]reflect.Value{reflect.ValueOf("4"), reflect.ValueOf(nil), reflect.ValueOf("username")})
@@ -327,13 +327,14 @@ func testClient_AsyncCall(t *testing.T, client *Client) {
 		r := response.(remoting.AsyncCallbackResponse)
 		rst := *r.Reply.(*remoting.Response).Result.(*protocol.RPCResult)
 		assert.Equal(t, User{Id: "4", Name: "username"}, *(rst.Rest.(*User)))
-		lock.Unlock()
+		wg.Done()
 	}
-	lock.Lock()
+	wg.Add(1)
 	err := client.Request(request, 3*time.Second, rsp)
-	assert.NoError(t, err)
+	// FIXME: If the following assertion is executed after received the response, the test will throw an error, *user == User{Id: "4", Name: "username"}
 	assert.Equal(t, User{}, *user)
-	time.Sleep(1 * time.Second)
+	assert.NoError(t, err)
+	wg.Wait()
 }
 
 func InitTest(t *testing.T) (*Server, *common.URL) {
