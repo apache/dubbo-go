@@ -224,8 +224,6 @@ func setFieldValue(val reflect.Value, id reflect.Value, config *config.InmemoryC
 
 					}
 
-					// iter := f.MapRange()
-
 					for _, k := range f.MapKeys() {
 						v := f.MapIndex(k)
 						switch v.Kind() {
@@ -244,7 +242,6 @@ func setFieldValue(val reflect.Value, id reflect.Value, config *config.InmemoryC
 					}
 				}
 				setBaseValue(f)
-
 			}
 		}
 	}

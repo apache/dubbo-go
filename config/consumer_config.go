@@ -37,10 +37,6 @@ const (
 	MaxWheelTimeSpan = 900e9 // 900s, 15 minute
 )
 
-/////////////////////////
-// consumerConfig
-/////////////////////////
-
 // ConsumerConfig is Consumer default configuration
 type ConsumerConfig struct {
 	BaseConfig   `yaml:",inline"`

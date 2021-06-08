@@ -15,15 +15,14 @@
  * limitations under the License.
  */
 
-package remote
+package service
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
-// RemoteMetadataService for save and get metadata
-type RemoteMetadataService interface {
+type RemotingMetadataService interface {
 	// PublishMetadata publish the medata info of service from report
 	PublishMetadata(service string)
 	// GetMetadata get the medata info of service from report

@@ -31,10 +31,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/yaml"
 )
 
-/////////////////////////
-// providerConfig
-/////////////////////////
-
 // ProviderConfig is the default configuration of service provider
 type ProviderConfig struct {
 	BaseConfig     `yaml:",inline"`

@@ -240,6 +240,12 @@ func (g *dubboGrpc) generateService(file *generator.FileDescriptor, service *pb.
 	g.P("}")
 	g.P()
 
+	// return reference
+	g.P("func (c *", serverType, ") ", " Reference() string ", "{")
+	g.P(`return "`, unexport(servName), `Impl"`)
+	g.P("}")
+	g.P()
+
 	// add handler
 	var handlerNames []string
 	for _, method := range service.Method {

@@ -20,7 +20,6 @@ package logger
 import (
 	"flag"
 	"io/ioutil"
-	"log"
 	"os"
 	"path"
 )
@@ -75,7 +74,7 @@ func init() {
 	}
 	err := InitLog(*logConfFile)
 	if err != nil {
-		log.Printf("[InitLog] warn: %v", err)
+		logger.Warnf("InitLog with error %v", err)
 	}
 }
 

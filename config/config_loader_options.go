@@ -18,9 +18,12 @@
 package config
 
 import (
+	"log"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
-	"log"
 )
 
 type LoaderInitOption interface {
