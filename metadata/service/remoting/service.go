@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package remote_impl
+package remoting
 
 import (
 	"sync"
@@ -33,14 +33,12 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/metadata/definition"
 	"dubbo.apache.org/dubbo-go/v3/metadata/identifier"
 	"dubbo.apache.org/dubbo-go/v3/metadata/report/delegate"
+	"dubbo.apache.org/dubbo-go/v3/metadata/service"
 	"dubbo.apache.org/dubbo-go/v3/metadata/service/inmemory"
-	"dubbo.apache.org/dubbo-go/v3/metadata/service/remote"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
-// MetadataService is a implement of metadata service which will delegate the remote metadata report
-// This is singleton
-type RemoteMetadataServiceImpl struct {
+type MetadataService struct {
 	*inmemory.MetadataService
 	exportedRevision   atomic.String
 	subscribedRevision atomic.String
@@ -48,16 +46,16 @@ type RemoteMetadataServiceImpl struct {
 }
 
 var (
-	metadataServiceOnce               sync.Once
-	remoteMetadataServiceImplInstance remote.RemoteMetadataService
+	metadataServiceOnce             sync.Once
+	remotingMetadataServiceInstance service.RemotingMetadataService
 )
 
 func init() {
-	extension.SetRemoteMetadataService(GetRemoteMetadataService)
+	extension.SetRemotingMetadataService(GetRemotingMetadataService)
 }
 
-// GetRemoteMetadataService will create a new remote MetadataService instance
-func GetRemoteMetadataService() (remote.RemoteMetadataService, error) {
+// GetRemotingMetadataService will create a new remote MetadataService instance
+func GetRemotingMetadataService() (service.RemotingMetadataService, error) {
 	var err error
 	metadataServiceOnce.Do(func() {
 		var mr *delegate.MetadataReport
@@ -67,19 +65,19 @@ func GetRemoteMetadataService() (remote.RemoteMetadataService, error) {
 		}
 		// it will never return error
 		inms, _ := inmemory.GetInMemoryMetadataService()
-		remoteMetadataServiceImplInstance = &RemoteMetadataServiceImpl{
+		remotingMetadataServiceInstance = &MetadataService{
 			// todo serviceName
 			//BaseMetadataService:     service.NewBaseMetadataService(""),
 			MetadataService: inms.(*inmemory.MetadataService),
 			delegateReport:  mr,
 		}
 	})
-	return remoteMetadataServiceImplInstance, err
+	return remotingMetadataServiceInstance, err
 }
 
 // PublishMetadata publishes the metadata info of @service to remote metadata center
-func (mts *RemoteMetadataServiceImpl) PublishMetadata(service string) {
-	info, err := mts.MetadataService.GetMetadataInfo("")
+func (s *MetadataService) PublishMetadata(service string) {
+	info, err := s.MetadataService.GetMetadataInfo("")
 	if err != nil {
 		logger.Errorf("GetMetadataInfo error[%v]", err)
 		return
@@ -88,7 +86,7 @@ func (mts *RemoteMetadataServiceImpl) PublishMetadata(service string) {
 		return
 	}
 	id := identifier.NewSubscriberMetadataIdentifier(service, info.CalAndGetRevision())
-	err = mts.delegateReport.PublishAppMetadata(id, info)
+	err = s.delegateReport.PublishAppMetadata(id, info)
 	if err != nil {
 		logger.Errorf("Publishing metadata to error[%v]", err)
 		return
@@ -97,14 +95,14 @@ func (mts *RemoteMetadataServiceImpl) PublishMetadata(service string) {
 }
 
 // GetMetadata get the medata info of service from report
-func (mts *RemoteMetadataServiceImpl) GetMetadata(instance registry.ServiceInstance) (*common.MetadataInfo, error) {
+func (s *MetadataService) GetMetadata(instance registry.ServiceInstance) (*common.MetadataInfo, error) {
 	revision := instance.GetMetadata()[constant.EXPORTED_SERVICES_REVISION_PROPERTY_NAME]
 	id := identifier.NewSubscriberMetadataIdentifier(instance.GetServiceName(), revision)
-	return mts.delegateReport.GetAppMetadata(id)
+	return s.delegateReport.GetAppMetadata(id)
 }
 
 // PublishServiceDefinition will call remote metadata's StoreProviderMetadata to store url info and service definition
-func (mts *RemoteMetadataServiceImpl) PublishServiceDefinition(url *common.URL) error {
+func (s *MetadataService) PublishServiceDefinition(url *common.URL) error {
 	interfaceName := url.GetParam(constant.INTERFACE_KEY, "")
 	isGeneric := url.GetParamBool(constant.GENERIC_KEY, false)
 	if common.RoleType(common.PROVIDER).Role() == url.GetParam(constant.SIDE_KEY, "") {
@@ -119,7 +117,7 @@ func (mts *RemoteMetadataServiceImpl) PublishServiceDefinition(url *common.URL) 
 					Side:             url.GetParam(constant.SIDE_KEY, constant.PROVIDER_PROTOCOL),
 				},
 			}
-			mts.delegateReport.StoreProviderMetadata(id, sd)
+			s.delegateReport.StoreProviderMetadata(id, sd)
 			return nil
 		}
 		logger.Errorf("publishProvider interfaceName is empty . providerUrl:%v ", url)
@@ -137,7 +135,7 @@ func (mts *RemoteMetadataServiceImpl) PublishServiceDefinition(url *common.URL) 
 				Side:             url.GetParam(constant.SIDE_KEY, "consumer"),
 			},
 		}
-		mts.delegateReport.StoreConsumerMetadata(id, params)
+		s.delegateReport.StoreConsumerMetadata(id, params)
 		return nil
 	}
 

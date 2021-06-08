@@ -19,7 +19,6 @@ package config
 
 import (
 	"container/list"
-	"context"
 	"fmt"
 	"net/url"
 	"strconv"
@@ -46,7 +45,6 @@ import (
 
 // ServiceConfig is the configuration of the service provider
 type ServiceConfig struct {
-	context                     context.Context
 	id                          string
 	Filter                      string            `yaml:"filter" json:"filter,omitempty" property:"filter"`
 	Protocol                    string            `default:"dubbo"  required:"true"  yaml:"protocol"  json:"protocol,omitempty" property:"protocol"` // multi protocol support, split by ','
@@ -108,9 +106,8 @@ func (c *ServiceConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 }
 
 // NewServiceConfig The only way to get a new ServiceConfig
-func NewServiceConfig(id string, context context.Context) *ServiceConfig {
+func NewServiceConfig(id string) *ServiceConfig {
 	return &ServiceConfig{
-		context:    context,
 		id:         id,
 		unexported: atomic.NewBool(false),
 		exported:   atomic.NewBool(false),
@@ -356,8 +353,8 @@ func (c *ServiceConfig) GetExportedUrls() []*common.URL {
 }
 
 func publishServiceDefinition(url *common.URL) {
-	if remoteMetadataServiceImpl, err := extension.GetRemoteMetadataService(); err == nil && remoteMetadataServiceImpl != nil {
-		remoteMetadataServiceImpl.PublishServiceDefinition(url)
+	if remotingMetadataService, err := extension.GetRemotingMetadataService(); err == nil && remotingMetadataService != nil {
+		remotingMetadataService.PublishServiceDefinition(url)
 
 	}
 }
