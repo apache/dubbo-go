@@ -331,9 +331,8 @@ func testClient_AsyncCall(t *testing.T, client *Client) {
 	}
 	wg.Add(1)
 	err := client.Request(request, 3*time.Second, rsp)
-	// FIXME: If the following assertion is executed after received the response, the test will throw an error, *user == User{Id: "4", Name: "username"}
-	assert.Equal(t, User{}, *user)
 	assert.NoError(t, err)
+	assert.Equal(t, User{}, *user)
 	wg.Wait()
 }
 
@@ -451,6 +450,8 @@ func (u *UserProvider) GetUser(ctx context.Context, req []interface{}, rsp *User
 }
 
 func (u *UserProvider) GetUser0(id string, k *User, name string) (User, error) {
+	// fix testClient_AsyncCall assertion
+	time.Sleep(1 * time.Second)
 	return User{Id: id, Name: name}, nil
 }
 
