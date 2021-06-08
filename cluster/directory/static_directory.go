@@ -44,7 +44,6 @@ func NewStaticDirectory(invokers []protocol.Invoker) *staticDirectory {
 		invokers:      invokers,
 	}
 
-	dir.routerChain.SetInvokers(invokers)
 	return dir
 }
 
