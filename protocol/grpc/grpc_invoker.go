@@ -19,6 +19,7 @@ package grpc
 
 import (
 	"context"
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"reflect"
 	"sync"
 	"time"
@@ -51,10 +52,17 @@ type GrpcInvoker struct {
 
 // NewGrpcInvoker returns a Grpc invoker instance
 func NewGrpcInvoker(url *common.URL, client *Client) *GrpcInvoker {
+	requestTimeout := config.GetConsumerConfig().RequestTimeout
+	requestTimeoutStr := url.GetParam(constant.TIMEOUT_KEY, config.GetConsumerConfig().Request_Timeout)
+	if t, err := time.ParseDuration(requestTimeoutStr); err == nil {
+		requestTimeout = t
+	}
+
 	return &GrpcInvoker{
 		BaseInvoker: *protocol.NewBaseInvoker(url),
 		clientGuard: &sync.RWMutex{},
 		client:      client,
+		timeout:     requestTimeout,
 	}
 }
 
