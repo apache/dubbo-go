@@ -19,7 +19,6 @@ package nacos
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -104,7 +103,6 @@ func TestNacosRegistry_Subscribe(t *testing.T) {
 	regurl.SetParam(constant.ROLE_KEY, strconv.Itoa(common.CONSUMER))
 	reg2, _ := newNacosRegistry(regurl)
 	listener, err := reg2.(*nacosRegistry).subscribe(testUrl)
-	fmt.Printf("client:%v \n",reg2.(*nacosRegistry).namingClient)
 	assert.Nil(t, err)
 	if err != nil {
 		t.Errorf("subscribe error:%s \n", err.Error())
