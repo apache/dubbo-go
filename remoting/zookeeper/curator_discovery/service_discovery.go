@@ -278,7 +278,6 @@ func (sd *ServiceDiscovery) pathForName(name string) string {
 }
 
 func (sd *ServiceDiscovery) Close() {
-	logger.Info("curator-x-discovery will be closed.")
 	if sd.listener != nil {
 		sd.listener.Close()
 	}
