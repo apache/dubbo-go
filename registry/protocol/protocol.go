@@ -384,9 +384,7 @@ func getSubscribedOverrideUrl(providerUrl *common.URL) *common.URL {
 
 // Destroy registry protocol
 func (proto *registryProtocol) Destroy() {
-	for _, ivk := range proto.invokers {
-		ivk.Destroy()
-	}
+	// invoker.Destroy() should be performed in config.destroyConsumerProtocols().
 	proto.invokers = []protocol.Invoker{}
 	proto.bounds.Range(func(key, value interface{}) bool {
 		// protocol holds the exporters actually, instead, registry holds them in order to avoid export repeatedly, so
