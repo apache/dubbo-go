@@ -27,6 +27,7 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 )
 
@@ -35,12 +36,17 @@ import (
 // so that other module, like config center, registry could reuse the config
 // but now, only metadata report, metadata service, service discovery use this structure
 type RemoteConfig struct {
-	Protocol   string            `yaml:"protocol"  json:"protocol,omitempty"`
-	Address    string            `yaml:"address" json:"address,omitempty"`
-	TimeoutStr string            `default:"5s" yaml:"timeout" json:"timeout,omitempty"`
+	Protocol   string            `yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
+	Address    string            `yaml:"address" json:"address,omitempty" property:"address"`
+	TimeoutStr string            `default:"5s" yaml:"timeout" json:"timeout,omitempty" property:"timeout"`
 	Username   string            `yaml:"username" json:"username,omitempty" property:"username"`
 	Password   string            `yaml:"password" json:"password,omitempty"  property:"password"`
 	Params     map[string]string `yaml:"params" json:"params,omitempty"`
+}
+
+// Prefix
+func (c *RemoteConfig) Prefix() string {
+	return constant.RemotePrefix
 }
 
 // Timeout return timeout duration.

@@ -37,7 +37,7 @@ import (
 
 // ProviderConfig is the default configuration of service provider
 type ProviderConfig struct {
-	BaseConfig     `yaml:",inline"`
+	BaseConfig     `yaml:",inline" property:"base"`
 	configCenter   `yaml:"-"`
 	Filter         string                     `yaml:"filter" json:"filter,omitempty" property:"filter"`
 	ProxyFactory   string                     `yaml:"proxy_factory" default:"default" json:"proxy_factory,omitempty" property:"proxy_factory"`
