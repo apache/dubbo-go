@@ -17,7 +17,9 @@
 
 package config
 
-import "testing"
+import (
+	"testing"
+)
 
 import (
 	"github.com/stretchr/testify/assert"
@@ -37,8 +39,8 @@ func TestMetadataReportConfig_ToUrl(t *testing.T) {
 			"k": "v",
 		},
 	}
-	url, error := metadataReportConfig.ToUrl()
-	assert.NoError(t, error)
+	url, err := metadataReportConfig.ToUrl()
+	assert.NoError(t, err)
 	assert.Equal(t, "mock", url.Protocol)
 	assert.Equal(t, "127.0.0.1:2181", url.Location)
 	assert.Equal(t, "127.0.0.1", url.Ip)

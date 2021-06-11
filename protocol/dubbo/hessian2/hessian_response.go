@@ -111,30 +111,49 @@ func packResponse(header DubboHeader, ret interface{}) ([]byte, error) {
 			}
 
 			if response.Exception != nil { // throw error
-				_ = encoder.Encode(resWithException)
+				err := encoder.Encode(resWithException)
+				if err != nil {
+					return nil, perrors.Errorf("encoding response failed: %v", err)
+				}
 				if t, ok := response.Exception.(java_exception.Throwabler); ok {
-					_ = encoder.Encode(t)
+					err = encoder.Encode(t)
 				} else {
-					_ = encoder.Encode(java_exception.NewThrowable(response.Exception.Error()))
+					err = encoder.Encode(java_exception.NewThrowable(response.Exception.Error()))
+				}
+				if err != nil {
+					return nil, perrors.Errorf("encoding exception failed: %v", err)
 				}
 			} else {
 				if response.RspObj == nil {
-					_ = encoder.Encode(resNullValue)
+					if err := encoder.Encode(resNullValue); err != nil {
+						return nil, perrors.Errorf("encoding null value failed: %v", err)
+					}
 				} else {
-					_ = encoder.Encode(resValue)
-					_ = encoder.Encode(response.RspObj) // result
+					if err := encoder.Encode(resValue); err != nil {
+						return nil, perrors.Errorf("encoding response value failed: %v", err)
+					}
+					if err := encoder.Encode(response.RspObj); err != nil {
+						return nil, perrors.Errorf("encoding response failed: %v", err)
+					}
 				}
 			}
 
+			// attachments
 			if atta {
-				_ = encoder.Encode(response.Attachments) // attachments
+				if err := encoder.Encode(response.Attachments); err != nil {
+					return nil, perrors.Errorf("encoding response attachements failed: %v", err)
+				}
 			}
 		}
 	} else {
+		var err error
 		if response.Exception != nil { // throw error
-			_ = encoder.Encode(response.Exception.Error())
+			err = encoder.Encode(response.Exception.Error())
 		} else {
-			_ = encoder.Encode(response.RspObj)
+			err = encoder.Encode(response.RspObj)
+		}
+		if err != nil {
+			return nil, perrors.Errorf("encoding error failed: %v", err)
 		}
 	}
 

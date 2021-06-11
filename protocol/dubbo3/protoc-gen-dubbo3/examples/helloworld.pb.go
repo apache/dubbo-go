@@ -279,6 +279,10 @@ func (s *GreeterProviderBase) GetProxyImpl() protocol.Invoker {
 	return s.proxyImpl
 }
 
+func (c *GreeterProviderBase) Reference() string {
+	return "greeterImpl"
+}
+
 func _DUBBO_Greeter_SayHello_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(HelloRequest)
 	if err := dec(in); err != nil {

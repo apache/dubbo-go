@@ -44,7 +44,6 @@ import (
 //
 // ConfigCenter has currently supported Zookeeper, Nacos, Etcd, Consul, Apollo
 type ConfigCenterConfig struct {
-	// context       context.Context
 	Protocol      string `required:"true"  yaml:"protocol"  json:"protocol,omitempty"`
 	Address       string `yaml:"address" json:"address,omitempty"`
 	Cluster       string `yaml:"cluster" json:"cluster,omitempty"`
@@ -58,7 +57,6 @@ type ConfigCenterConfig struct {
 	AppId         string `default:"dubbo" yaml:"app_id"  json:"app_id,omitempty"`
 	TimeoutStr    string `yaml:"timeout"  json:"timeout,omitempty"`
 	RemoteRef     string `required:"false"  yaml:"remote_ref"  json:"remote_ref,omitempty"`
-	// timeout       time.Duration
 }
 
 // UnmarshalYAML unmarshals the ConfigCenterConfig by @unmarshal function
