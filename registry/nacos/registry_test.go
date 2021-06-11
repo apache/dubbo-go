@@ -19,6 +19,7 @@ package nacos
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -86,11 +87,11 @@ func TestNacosRegistry_Subscribe(t *testing.T) {
 	urlMap := url.Values{}
 	urlMap.Set(constant.GROUP_KEY, "guangzhou-idc")
 	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER))
-	urlMap.Set(constant.INTERFACE_KEY, "com.ikurento.user.UserProvider")
+	urlMap.Set(constant.INTERFACE_KEY, "com.dubbo.user.UserProvider")
 	urlMap.Set(constant.VERSION_KEY, "1.0.0")
 	urlMap.Set(constant.CLUSTER_KEY, "mock")
 	urlMap.Set(constant.NACOS_PATH_KEY, "")
-	testUrl, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParams(urlMap), common.WithMethods([]string{"GetUser", "AddUser"}))
+	testUrl, _ := common.NewURL("dubbo://127.0.0.1:20000/com.dubbo.user.UserProvider", common.WithParams(urlMap), common.WithMethods([]string{"GetUser", "AddUser"}))
 
 	reg, _ := newNacosRegistry(regurl)
 	err := reg.Register(testUrl)
@@ -103,6 +104,7 @@ func TestNacosRegistry_Subscribe(t *testing.T) {
 	regurl.SetParam(constant.ROLE_KEY, strconv.Itoa(common.CONSUMER))
 	reg2, _ := newNacosRegistry(regurl)
 	listener, err := reg2.(*nacosRegistry).subscribe(testUrl)
+	fmt.Printf("client:%v \n",reg2.(*nacosRegistry).namingClient)
 	assert.Nil(t, err)
 	if err != nil {
 		t.Errorf("subscribe error:%s \n", err.Error())
