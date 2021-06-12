@@ -163,6 +163,7 @@ func waitForReceivingRequests() {
 		// ignore this step
 		return
 	}
+	providerConfig.ShutdownConfig.GracefulShutdownStarted = true
 	waitingProcessedTimeout(providerConfig.ShutdownConfig)
 }
 
@@ -173,6 +174,7 @@ func waitForSendingRequests() {
 		// ignore this step
 		return
 	}
+	consumerConfig.ShutdownConfig.GracefulShutdownStarted = true
 	waitingProcessedTimeout(consumerConfig.ShutdownConfig)
 }
 

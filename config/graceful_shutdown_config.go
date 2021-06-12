@@ -50,9 +50,10 @@ type ShutdownConfig struct {
 	StepTimeout string `default:"10s" yaml:"step_timeout" json:"step.timeout,omitempty" property:"step.timeout"`
 	// when we try to shutdown the application, we will reject the new requests. In most cases, you don't need to configure this.
 	RejectRequestHandler string `yaml:"reject_handler" json:"reject_handler,omitempty" property:"reject_handler"`
+	// true -> graceful shutdown started
+	GracefulShutdownStarted bool
 	// true -> new request will be rejected.
 	RejectRequest bool
-
 	// true -> all requests had been processed. In provider side it means that all requests are returned response to clients
 	// In consumer side, it means that all requests getting response from servers
 	RequestsFinished bool
