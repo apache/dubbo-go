@@ -18,7 +18,6 @@
 package nacos
 
 import (
-	"strings"
 	"testing"
 	"time"
 )
@@ -32,9 +31,10 @@ import (
 )
 
 func TestNewNacosClient(t *testing.T) {
-	server := mockCommonNacosServer()
-	nacosURL := strings.ReplaceAll(server.URL, "http", "registry")
+
+	nacosURL := "registry://127.0.0.1:8848"
 	registryUrl, _ := common.NewURL(nacosURL)
+
 	c := &nacosDynamicConfiguration{
 		url:  registryUrl,
 		done: make(chan struct{}),
@@ -55,9 +55,9 @@ func TestNewNacosClient(t *testing.T) {
 }
 
 func TestSetNacosClient(t *testing.T) {
-	server := mockCommonNacosServer()
-	nacosURL := "registry://" + server.Listener.Addr().String()
+	nacosURL := "registry://127.0.0.1:8848"
 	registryUrl, _ := common.NewURL(nacosURL)
+
 	c := &nacosDynamicConfiguration{
 		url:  registryUrl,
 		done: make(chan struct{}),
