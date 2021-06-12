@@ -60,6 +60,9 @@ func (gf *gracefulShutdownFilter) Invoke(ctx context.Context, invoker protocol.I
 		return gf.getRejectHandler().RejectedExecution(invoker.GetURL(), invocation)
 	}
 	atomic.AddInt32(&gf.activeCount, 1)
+	if gf.shutdownConfig != nil && gf.activeCount > 0 {
+		gf.shutdownConfig.RequestsFinished = false
+	}
 	return invoker.Invoke(ctx, invocation)
 }
 
@@ -67,7 +70,7 @@ func (gf *gracefulShutdownFilter) Invoke(ctx context.Context, invoker protocol.I
 func (gf *gracefulShutdownFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	atomic.AddInt32(&gf.activeCount, -1)
 	// although this isn't thread safe, it won't be a problem if the gf.rejectNewRequest() is true.
-	if gf.shutdownConfig != nil && gf.shutdownConfig.GracefulShutdownStarted && gf.activeCount <= 0 {
+	if gf.shutdownConfig != nil && gf.activeCount <= 0 {
 		gf.shutdownConfig.RequestsFinished = true
 	}
 	return result
