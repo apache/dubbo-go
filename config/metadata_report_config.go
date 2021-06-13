@@ -34,8 +34,8 @@ import (
 
 // MethodConfig is method level configuration
 type MetadataReportConfig struct {
-	Protocol  string            `required:"true"  yaml:"protocol"  json:"protocol,omitempty"`
-	RemoteRef string            `required:"true"  yaml:"remote_ref"  json:"remote_ref,omitempty"`
+	Protocol  string            `required:"true"  yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
+	RemoteRef string            `required:"true"  yaml:"remote_ref"  json:"remote_ref,omitempty" property:"remote_ref"`
 	Params    map[string]string `yaml:"params" json:"params,omitempty" property:"params"`
 	Group     string            `yaml:"group" json:"group,omitempty" property:"group"`
 }
