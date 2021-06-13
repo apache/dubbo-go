@@ -60,6 +60,9 @@ func (gf *gracefulShutdownFilter) Invoke(ctx context.Context, invoker protocol.I
 		return gf.getRejectHandler().RejectedExecution(invoker.GetURL(), invocation)
 	}
 	atomic.AddInt32(&gf.activeCount, 1)
+	if gf.shutdownConfig != nil && gf.activeCount > 0 {
+		gf.shutdownConfig.RequestsFinished = false
+	}
 	return invoker.Invoke(ctx, invocation)
 }
 
