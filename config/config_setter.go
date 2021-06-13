@@ -17,36 +17,10 @@
 
 package config
 
-import (
-	"testing"
-	"time"
+const (
+	GracefulShutdownFilterShutdownConfig = "GracefulShutdownFilterShutdownConfig"
 )
 
-import (
-	"github.com/stretchr/testify/assert"
-	"go.uber.org/atomic"
-)
-
-func TestShutdownConfigGetTimeout(t *testing.T) {
-	config := ShutdownConfig{
-		RequestsFinished: &atomic.Bool{},
-	}
-	assert.False(t, config.RejectRequest)
-	assert.False(t, config.RequestsFinished.Load())
-
-	config = ShutdownConfig{
-		Timeout:     "60s",
-		StepTimeout: "10s",
-	}
-
-	assert.Equal(t, 60*time.Second, config.GetTimeout())
-	assert.Equal(t, 10*time.Second, config.GetStepTimeout())
-
-	config = ShutdownConfig{
-		Timeout:     "34ms",
-		StepTimeout: "79ms",
-	}
-
-	assert.Equal(t, 34*time.Millisecond, config.GetTimeout())
-	assert.Equal(t, 79*time.Millisecond, config.GetStepTimeout())
+type Setter interface {
+	Set(name string, config interface{})
 }

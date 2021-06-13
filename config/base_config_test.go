@@ -23,6 +23,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/atomic"
 )
 
 import (
@@ -125,7 +126,7 @@ func TestRefresh(t *testing.T) {
 			StepTimeout:          "2s",
 			RejectRequestHandler: "mock",
 			RejectRequest:        false,
-			RequestsFinished:     false,
+			RequestsFinished:     &atomic.Bool{},
 		},
 	}
 

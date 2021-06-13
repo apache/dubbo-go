@@ -32,19 +32,13 @@ import (
 )
 
 func init() {
-	consumerFiler := &gracefulShutdownFilter{
-		shutdownConfig: config.GetConsumerConfig().ShutdownConfig,
-	}
-	providerFilter := &gracefulShutdownFilter{
-		shutdownConfig: config.GetProviderConfig().ShutdownConfig,
-	}
-
+	// `init()` is performed before config.Load(), so shutdownConfig will be retrieved after config was loaded.
 	extension.SetFilter(constant.CONSUMER_SHUTDOWN_FILTER, func() filter.Filter {
-		return consumerFiler
+		return &gracefulShutdownFilter{}
 	})
 
 	extension.SetFilter(constant.PROVIDER_SHUTDOWN_FILTER, func() filter.Filter {
-		return providerFilter
+		return &gracefulShutdownFilter{}
 	})
 }
 
@@ -61,7 +55,7 @@ func (gf *gracefulShutdownFilter) Invoke(ctx context.Context, invoker protocol.I
 	}
 	atomic.AddInt32(&gf.activeCount, 1)
 	if gf.shutdownConfig != nil && gf.activeCount > 0 {
-		gf.shutdownConfig.RequestsFinished = false
+		gf.shutdownConfig.RequestsFinished.Store(false)
 	}
 	return invoker.Invoke(ctx, invocation)
 }
@@ -71,9 +65,15 @@ func (gf *gracefulShutdownFilter) OnResponse(ctx context.Context, result protoco
 	atomic.AddInt32(&gf.activeCount, -1)
 	// although this isn't thread safe, it won't be a problem if the gf.rejectNewRequest() is true.
 	if gf.shutdownConfig != nil && gf.activeCount <= 0 {
-		gf.shutdownConfig.RequestsFinished = true
+		gf.shutdownConfig.RequestsFinished.Store(true)
 	}
 	return result
+}
+
+func (gf *gracefulShutdownFilter) Set(name string, conf interface{}) {
+	if shutdownConfig, ok := conf.(*config.ShutdownConfig); ok && name == config.GracefulShutdownFilterShutdownConfig {
+		gf.shutdownConfig = shutdownConfig
+	}
 }
 
 func (gf *gracefulShutdownFilter) rejectNewRequest() bool {
