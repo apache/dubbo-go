@@ -15,7 +15,7 @@ require (
 	github.com/creasty/defaults v1.5.1
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/dubbogo/go-zookeeper v1.0.3
-	github.com/dubbogo/gost v1.11.9
+	github.com/dubbogo/gost v1.11.11
 	github.com/dubbogo/triple v1.0.1-0.20210606070217-0815f3a0a013
 	github.com/emicklei/go-restful/v3 v3.4.0
 	github.com/frankban/quicktest v1.4.1 // indirect
@@ -41,7 +41,7 @@ require (
 	github.com/mitchellh/hashstructure v1.0.0 // indirect
 	github.com/mitchellh/mapstructure v1.4.1
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
-	github.com/nacos-group/nacos-sdk-go v1.0.7
+	github.com/nacos-group/nacos-sdk-go v1.0.8
 	github.com/opentracing/opentracing-go v1.2.0
 	github.com/pierrec/lz4 v2.2.6+incompatible // indirect
 	github.com/pkg/errors v0.9.1

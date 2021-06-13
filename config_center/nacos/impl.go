@@ -115,7 +115,7 @@ func (n *nacosDynamicConfiguration) PublishConfig(key string, group string, valu
 // GetConfigKeysByGroup will return all keys with the group
 func (n *nacosDynamicConfiguration) GetConfigKeysByGroup(group string) (*gxset.HashSet, error) {
 	group = n.resolvedGroup(group)
-	page, err := (*n.client.Client()).SearchConfig(vo.SearchConfigParm{
+	page, err := (*n.client.Client()).SearchConfig(vo.SearchConfigParam{
 		Search: "accurate",
 		Group:  group,
 		PageNo: 1,
