@@ -71,8 +71,15 @@ func (gf *gracefulShutdownFilter) OnResponse(ctx context.Context, result protoco
 }
 
 func (gf *gracefulShutdownFilter) Set(name string, conf interface{}) {
-	if shutdownConfig, ok := conf.(*config.ShutdownConfig); ok && name == config.GracefulShutdownFilterShutdownConfig {
-		gf.shutdownConfig = shutdownConfig
+	switch name {
+	case config.GracefulShutdownFilterShutdownConfig:
+		if shutdownConfig, ok := conf.(*config.ShutdownConfig); !ok {
+			gf.shutdownConfig = shutdownConfig
+			return
+		}
+		logger.Warnf("the type of config for {%s} should be *config.ShutdownConfig", config.GracefulShutdownFilterShutdownConfig)
+	default:
+		// do nothing
 	}
 }
 
