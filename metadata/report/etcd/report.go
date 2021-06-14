@@ -58,22 +58,19 @@ func (e *etcdMetadataReport) GetAppMetadata(metadataIdentifier *identifier.Subsc
 	if err != nil {
 		return nil, err
 	}
+	
 	info := &common.MetadataInfo{}
-	err = json.Unmarshal([]byte(data), info)
-	if err != nil {
-		return nil, err
-	}
-	return info, nil
+	return info, json.Unmarshal([]byte(data), info)
 }
 
 // PublishAppMetadata publish metadata info to etcd
 func (e *etcdMetadataReport) PublishAppMetadata(metadataIdentifier *identifier.SubscriberMetadataIdentifier, info *common.MetadataInfo) error {
 	key := e.getNodeKey(metadataIdentifier)
 	value, err := json.Marshal(info)
-	if err != nil {
-		return err
+	if err == nil {
+		err = e.client.Put(key, string(value))
 	}
-	err = e.client.Put(key, string(value))
+	
 	return err
 }
 
