@@ -113,11 +113,12 @@ func TestNacosServiceDiscovery_CRUD(t *testing.T) {
 	assert.Nil(t, err)
 
 	err = serviceDiscovery.Register(instance)
+
 	assert.Nil(t, err)
 
 	// sometimes nacos may be failed to push update of instance,
 	// so it need 10s to pull, we sleep 10 second to make sure instance has been update
-	time.Sleep(11 * time.Second)
+	time.Sleep(5 * time.Second)
 	page := serviceDiscovery.GetHealthyInstancesByPage(serviceName, 0, 10, true)
 	assert.NotNil(t, page)
 	assert.Equal(t, 0, page.GetOffset())
@@ -125,6 +126,7 @@ func TestNacosServiceDiscovery_CRUD(t *testing.T) {
 	assert.Equal(t, 1, page.GetDataSize())
 
 	instance = page.GetData()[0].(*registry.DefaultServiceInstance)
+	instance.ServiceName = serviceName
 	assert.NotNil(t, instance)
 	assert.Equal(t, id, instance.GetID())
 	assert.Equal(t, host, instance.GetHost())
@@ -173,7 +175,6 @@ func TestNacosServiceDiscovery_Destroy(t *testing.T) {
 	assert.NotNil(t, serviceDiscovery)
 	err = serviceDiscovery.Destroy()
 	assert.Nil(t, err)
-	assert.Nil(t, serviceDiscovery.(*nacosServiceDiscovery).namingClient)
 }
 
 func prepareData() {
