@@ -48,6 +48,8 @@ func NewBaseDirectory(url *common.URL) BaseDirectory {
 		url:       url,
 		destroyed: atomic.NewBool(false),
 	}
+	// start to listen notify
+
 }
 
 // RouterChain Return router chain in directory

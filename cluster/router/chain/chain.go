@@ -185,7 +185,7 @@ func (c *RouterChain) printRouteSnapshot(cache *InvokerCache, url *common.URL, i
 
 // loop listens on events to update the address cache  when it receives notification
 // from address update,
-func (c *RouterChain) loop() {
+func (c *RouterChain) Loop() {
 	ticker := time.NewTicker(timeInterval)
 	for {
 		select {
@@ -318,7 +318,7 @@ func NewRouterChain(url *common.URL) (*RouterChain, error) {
 		chain.url = url
 	}
 
-	go chain.loop()
+	go chain.Loop()
 	return chain, nil
 }
 
