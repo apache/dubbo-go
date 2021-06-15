@@ -180,6 +180,7 @@ func parseFromConfigToRouters(virtualServiceConfig, destinationRuleConfig []byte
 
 	vsDecoder := yaml.NewDecoder(strings.NewReader(string(virtualServiceConfig)))
 	drDecoder := yaml.NewDecoder(strings.NewReader(string(destinationRuleConfig)))
+	// parse virtual service
 	for {
 		virtualServiceCfg := &config.VirtualServiceConfig{}
 
@@ -195,6 +196,7 @@ func parseFromConfigToRouters(virtualServiceConfig, destinationRuleConfig []byte
 		virtualServiceConfigList = append(virtualServiceConfigList, virtualServiceCfg)
 	}
 
+	// parse destination rule
 	for {
 		destRuleCfg := &config.DestinationRuleConfig{}
 		err := drDecoder.Decode(destRuleCfg)
@@ -205,10 +207,14 @@ func parseFromConfigToRouters(virtualServiceConfig, destinationRuleConfig []byte
 			logger.Error("parseFromConfigTo destination rule err = ", err)
 			return nil, err
 		}
+
+		// name -> labels
 		destRuleCfgMap := make(map[string]map[string]string)
 		for _, v := range destRuleCfg.Spec.SubSets {
 			destRuleCfgMap[v.Name] = v.Labels
 		}
+
+		// host -> name -> labels
 		destRuleConfigsMap[destRuleCfg.Spec.Host] = destRuleCfgMap
 	}
 

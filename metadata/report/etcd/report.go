@@ -58,7 +58,7 @@ func (e *etcdMetadataReport) GetAppMetadata(metadataIdentifier *identifier.Subsc
 	if err != nil {
 		return nil, err
 	}
-	
+
 	info := &common.MetadataInfo{}
 	return info, json.Unmarshal([]byte(data), info)
 }
@@ -70,7 +70,7 @@ func (e *etcdMetadataReport) PublishAppMetadata(metadataIdentifier *identifier.S
 	if err == nil {
 		err = e.client.Put(key, string(value))
 	}
-	
+
 	return err
 }
 
