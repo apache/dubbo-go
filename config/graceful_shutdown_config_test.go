@@ -24,15 +24,12 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/atomic"
 )
 
 func TestShutdownConfigGetTimeout(t *testing.T) {
-	config := ShutdownConfig{
-		RequestsFinished: &atomic.Bool{},
-	}
+	config := ShutdownConfig{}
 	assert.False(t, config.RejectRequest)
-	assert.False(t, config.RequestsFinished.Load())
+	assert.False(t, config.RequestsFinished)
 
 	config = ShutdownConfig{
 		Timeout:     "60s",

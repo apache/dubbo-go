@@ -22,10 +22,6 @@ import (
 )
 
 import (
-	"go.uber.org/atomic"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 )
@@ -58,14 +54,7 @@ type ShutdownConfig struct {
 	RejectRequest bool
 	// true -> all requests had been processed. In provider side it means that all requests are returned response to clients
 	// In consumer side, it means that all requests getting response from servers
-	RequestsFinished *atomic.Bool
-}
-
-func NewShutdownConfig() *ShutdownConfig {
-	return &ShutdownConfig{
-		RejectRequest:    false,
-		RequestsFinished: &atomic.Bool{},
-	}
+	RequestsFinished bool
 }
 
 // nolint

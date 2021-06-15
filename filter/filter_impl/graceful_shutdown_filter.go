@@ -19,7 +19,7 @@ package filter_impl
 
 import (
 	"context"
-	"sync/atomic"
+	"sync"
 )
 
 import (
@@ -43,6 +43,7 @@ func init() {
 }
 
 type gracefulShutdownFilter struct {
+	mutex          sync.Mutex // protect the following variables
 	activeCount    int32
 	shutdownConfig *config.ShutdownConfig
 }
@@ -53,19 +54,23 @@ func (gf *gracefulShutdownFilter) Invoke(ctx context.Context, invoker protocol.I
 		logger.Info("The application is closing, new request will be rejected.")
 		return gf.getRejectHandler().RejectedExecution(invoker.GetURL(), invocation)
 	}
-	atomic.AddInt32(&gf.activeCount, 1)
+	gf.mutex.Lock()
+	gf.activeCount += 1
 	if gf.shutdownConfig != nil && gf.activeCount > 0 {
-		gf.shutdownConfig.RequestsFinished.Store(false)
+		gf.shutdownConfig.RequestsFinished = false
 	}
+	gf.mutex.Unlock()
 	return invoker.Invoke(ctx, invocation)
 }
 
 // OnResponse reduces the number of active processes then return the process result
 func (gf *gracefulShutdownFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
-	atomic.AddInt32(&gf.activeCount, -1)
+	gf.mutex.Lock()
+	gf.activeCount -= 1
 	if gf.shutdownConfig != nil && gf.activeCount <= 0 {
-		gf.shutdownConfig.RequestsFinished.Store(true)
+		gf.shutdownConfig.RequestsFinished = true
 	}
+	gf.mutex.Unlock()
 	return result
 }
 

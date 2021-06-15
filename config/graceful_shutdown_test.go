@@ -22,10 +22,6 @@ import (
 )
 
 import (
-	"go.uber.org/atomic"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
@@ -67,9 +63,8 @@ func TestBeforeShutdown(t *testing.T) {
 	consumerConfig = &ConsumerConfig{
 		References: consumerReferences,
 		ShutdownConfig: &ShutdownConfig{
-			Timeout:          "1",
-			StepTimeout:      "1s",
-			RequestsFinished: &atomic.Bool{},
+			Timeout:     "1",
+			StepTimeout: "1s",
 		},
 	}
 
@@ -84,9 +79,8 @@ func TestBeforeShutdown(t *testing.T) {
 
 	providerConfig = &ProviderConfig{
 		ShutdownConfig: &ShutdownConfig{
-			Timeout:          "1",
-			StepTimeout:      "1s",
-			RequestsFinished: &atomic.Bool{},
+			Timeout:     "1",
+			StepTimeout: "1s",
 		},
 		Protocols: providerProtocols,
 	}
@@ -95,9 +89,8 @@ func TestBeforeShutdown(t *testing.T) {
 
 	providerConfig = &ProviderConfig{
 		ShutdownConfig: &ShutdownConfig{
-			Timeout:          "1",
-			StepTimeout:      "-1s",
-			RequestsFinished: &atomic.Bool{},
+			Timeout:     "1",
+			StepTimeout: "-1s",
 		},
 		Protocols: providerProtocols,
 	}
@@ -105,9 +98,8 @@ func TestBeforeShutdown(t *testing.T) {
 	consumerConfig = &ConsumerConfig{
 		References: consumerReferences,
 		ShutdownConfig: &ShutdownConfig{
-			Timeout:          "1",
-			StepTimeout:      "-1s",
-			RequestsFinished: &atomic.Bool{},
+			Timeout:     "1",
+			StepTimeout: "-1s",
 		},
 	}
 

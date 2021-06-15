@@ -191,7 +191,7 @@ func waitingProcessedTimeout(shutdownConfig *ShutdownConfig) {
 	}
 	deadline := time.Now().Add(timeout)
 
-	for time.Now().Before(deadline) && !shutdownConfig.RequestsFinished.Load() {
+	for time.Now().Before(deadline) && !shutdownConfig.RequestsFinished {
 		// sleep 10 ms and then we check it again
 		time.Sleep(10 * time.Millisecond)
 	}

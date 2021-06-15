@@ -25,7 +25,6 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/atomic"
 )
 
 import (
@@ -60,7 +59,6 @@ func TestGenericFilterInvoke(t *testing.T) {
 	providerConfig.ShutdownConfig = &config.ShutdownConfig{
 		RejectRequest:        true,
 		RejectRequestHandler: "mock",
-		RequestsFinished:     &atomic.Bool{},
 	}
 	shutdownFilter.shutdownConfig = providerConfig.ShutdownConfig
 
@@ -72,6 +70,6 @@ func TestGenericFilterInvoke(t *testing.T) {
 	extension.SetRejectedExecutionHandler("mock", func() filter.RejectedExecutionHandler {
 		return rejectHandler
 	})
-	assert.True(t, providerConfig.ShutdownConfig.RequestsFinished.Load())
+	assert.True(t, providerConfig.ShutdownConfig.RequestsFinished)
 	assert.Equal(t, rejectHandler, shutdownFilter.getRejectHandler())
 }
