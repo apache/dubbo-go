@@ -61,6 +61,13 @@ type ShutdownConfig struct {
 	RequestsFinished *atomic.Bool
 }
 
+func NewShutdownConfig() *ShutdownConfig {
+	return &ShutdownConfig{
+		RejectRequest:    false,
+		RequestsFinished: &atomic.Bool{},
+	}
+}
+
 // nolint
 func (config *ShutdownConfig) Prefix() string {
 	return constant.ShutdownConfigPrefix

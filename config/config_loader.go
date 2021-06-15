@@ -31,6 +31,7 @@ import (
 import (
 	hessian "github.com/apache/dubbo-go-hessian2"
 	perrors "github.com/pkg/errors"
+	"go.uber.org/atomic"
 )
 
 import (
@@ -115,6 +116,9 @@ func setDefaultValue(target interface{}) {
 		if p.ApplicationConfig == nil {
 			p.ApplicationConfig = NewDefaultApplicationConfig()
 		}
+		if p.ShutdownConfig != nil {
+			p.ShutdownConfig.RequestsFinished = &atomic.Bool{}
+		}
 	default:
 		c := target.(*ConsumerConfig)
 		if len(c.Registries) == 0 {
@@ -122,6 +126,9 @@ func setDefaultValue(target interface{}) {
 		}
 		if c.ApplicationConfig == nil {
 			c.ApplicationConfig = NewDefaultApplicationConfig()
+		}
+		if c.ShutdownConfig != nil {
+			c.ShutdownConfig.RequestsFinished = &atomic.Bool{}
 		}
 	}
 }

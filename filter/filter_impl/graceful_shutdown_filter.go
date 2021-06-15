@@ -63,7 +63,6 @@ func (gf *gracefulShutdownFilter) Invoke(ctx context.Context, invoker protocol.I
 // OnResponse reduces the number of active processes then return the process result
 func (gf *gracefulShutdownFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	atomic.AddInt32(&gf.activeCount, -1)
-	// although this isn't thread safe, it won't be a problem if the gf.rejectNewRequest() is true.
 	if gf.shutdownConfig != nil && gf.activeCount <= 0 {
 		gf.shutdownConfig.RequestsFinished.Store(true)
 	}
