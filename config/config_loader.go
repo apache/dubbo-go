@@ -162,6 +162,13 @@ func loadConsumerConfig() {
 	if err := configCenterRefreshConsumer(); err != nil {
 		logger.Errorf("[consumer config center refresh] %#v", err)
 	}
+
+	// start the metadata report if config set
+	if err := startMetadataReport(GetApplicationConfig().MetadataType, GetBaseConfig().MetadataReportConfig); err != nil {
+		logger.Errorf("Provider starts metadata report error, and the error is {%#v}", err)
+		return
+	}
+
 	checkRegistries(consumerConfig.Registries, consumerConfig.Registry)
 	for key, ref := range consumerConfig.References {
 		if ref.Generic {
@@ -243,6 +250,13 @@ func loadProviderConfig() {
 	if err := configCenterRefreshProvider(); err != nil {
 		logger.Errorf("[provider config center refresh] %#v", err)
 	}
+
+	// start the metadata report if config set
+	if err := startMetadataReport(GetApplicationConfig().MetadataType, GetBaseConfig().MetadataReportConfig); err != nil {
+		logger.Errorf("Provider starts metadata report error, and the error is {%#v}", err)
+		return
+	}
+
 	checkRegistries(providerConfig.Registries, providerConfig.Registry)
 
 	// Write the current configuration to cache file.
