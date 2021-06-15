@@ -18,6 +18,7 @@
 package etcd
 
 import (
+	"encoding/json"
 	"strings"
 	"time"
 )
@@ -52,14 +53,25 @@ type etcdMetadataReport struct {
 
 // GetAppMetadata get metadata info from etcd
 func (e *etcdMetadataReport) GetAppMetadata(metadataIdentifier *identifier.SubscriberMetadataIdentifier) (*common.MetadataInfo, error) {
-	// TODO will implement
-	panic("implement me")
+	key := e.getNodeKey(metadataIdentifier)
+	data, err := e.client.Get(key)
+	if err != nil {
+		return nil, err
+	}
+	
+	info := &common.MetadataInfo{}
+	return info, json.Unmarshal([]byte(data), info)
 }
 
 // PublishAppMetadata publish metadata info to etcd
 func (e *etcdMetadataReport) PublishAppMetadata(metadataIdentifier *identifier.SubscriberMetadataIdentifier, info *common.MetadataInfo) error {
-	// TODO will implement
-	panic("implement me")
+	key := e.getNodeKey(metadataIdentifier)
+	value, err := json.Marshal(info)
+	if err == nil {
+		err = e.client.Put(key, string(value))
+	}
+	
+	return err
 }
 
 // StoreProviderMetadata will store the metadata

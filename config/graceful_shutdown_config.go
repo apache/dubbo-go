@@ -52,7 +52,6 @@ type ShutdownConfig struct {
 	RejectRequestHandler string `yaml:"reject_handler" json:"reject_handler,omitempty" property:"reject_handler"`
 	// true -> new request will be rejected.
 	RejectRequest bool
-
 	// true -> all requests had been processed. In provider side it means that all requests are returned response to clients
 	// In consumer side, it means that all requests getting response from servers
 	RequestsFinished bool

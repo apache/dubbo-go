@@ -276,3 +276,12 @@ func (sd *ServiceDiscovery) pathForInstance(name, id string) string {
 func (sd *ServiceDiscovery) pathForName(name string) string {
 	return path.Join(sd.basePath, name)
 }
+
+func (sd *ServiceDiscovery) Close() {
+	if sd.listener != nil {
+		sd.listener.Close()
+	}
+	if sd.client != nil {
+		sd.client.Close()
+	}
+}
