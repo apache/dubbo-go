@@ -7,7 +7,6 @@ on:
     branches: "*"
 
 jobs:
-
   build:
     name: ${{ matrix.os }} - Go ${{ matrix.go_version }}
     runs-on: ${{ matrix.os }}
