@@ -95,7 +95,7 @@ func (r *RouterChain) Process(event *config_center.ConfigChangeEvent) {
 				logger.Error("newVSValue.ObjectMeta.Annotations has no key named kubectl.kubernetes.io/last-applied-configuration")
 				return
 			}
-			logger.Debugf("json file = %v\n", newVSJsonValue)
+			logger.Debugf("new virtual service json value = \n%v\n", newVSJsonValue)
 			newVirtualServiceConfig := &config.VirtualServiceConfig{}
 			if err := json.Unmarshal([]byte(newVSJsonValue), newVirtualServiceConfig); err != nil {
 				logger.Error("on process json data unmarshal error = ", err)
@@ -148,7 +148,7 @@ func (r *RouterChain) Process(event *config_center.ConfigChangeEvent) {
 				return
 			}
 		default:
-			logger.Error("unknow unsupported event key:", event.Key)
+			logger.Error("unknown unsupported event key:", event.Key)
 		}
 	}
 

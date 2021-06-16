@@ -20,6 +20,12 @@ package v3router
 import (
 	"fmt"
 	"testing"
+
+	"dubbo.apache.org/dubbo-go/v3/cluster/router/v3router/k8s_api"
+	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/config_center"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 import (
@@ -205,4 +211,47 @@ func TestRouterChain_Route(t *testing.T) {
 	result := rc.Route(invokerList, newGoodURL, invocation.NewRPCInvocation("GetUser", nil, nil))
 	assert.Equal(t, 0, len(result))
 	//todo test find target invoker
+}
+
+func TestRouterChain_Process(t *testing.T) {
+	vsJson := `{"apiVersion":"service.dubbo.apache.org/v1alpha2", "kind":"VirtualService", "name":"demo-route"}`
+
+	rc := &RouterChain{}
+	mockVirtualServiceConfig := &config.VirtualServiceConfig{
+		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{
+				"kubectl.kubernetes.io/last-applied-configuration": vsJson,
+			},
+		},
+	}
+
+	// test virtual service config chage event
+	mockVirtualServiceChangeEvent := &config_center.ConfigChangeEvent{
+		Key:        k8s_api.VirtualServiceEventKey,
+		Value:      mockVirtualServiceConfig,
+		ConfigType: 0,
+	}
+	rc.Process(mockVirtualServiceChangeEvent)
+
+	// test destination rule config chage event
+	destJson := `{"apiVersion":"service.dubbo.apache.org/v1alpha2", "kind":"VirtualService", "name":"demo-route"}`
+	mockDestinationRuleConfig := &config.DestinationRuleConfig{
+		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{
+				"kubectl.kubernetes.io/last-applied-configuration": destJson,
+			},
+		},
+	}
+	mockDestinationRuleChangeEvent := &config_center.ConfigChangeEvent{
+		Key:        k8s_api.DestinationRuleEventKey,
+		Value:      mockDestinationRuleConfig,
+		ConfigType: 0,
+	}
+	rc.Process(mockDestinationRuleChangeEvent)
+
+	// test unknown event type
+	mockUnsupportedEvent := &config_center.ConfigChangeEvent{
+		Key: "unknown",
+	}
+	rc.Process(mockUnsupportedEvent)
 }
