@@ -118,7 +118,7 @@ func (invoker *baseClusterInvoker) doSelectInvoker(lb cluster.LoadBalance, invoc
 	if len(invokers) == 0 {
 		return nil
 	}
-	go protocol.TryRefreshBlackList()
+	protocol.TryRefreshBlackList()
 	if len(invokers) == 1 {
 		if invokers[0].IsAvailable() {
 			return invokers[0]

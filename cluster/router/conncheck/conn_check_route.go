@@ -34,8 +34,9 @@ import (
 )
 
 const (
-	connHealthy = "conn-healthy"
-	name        = "conn-check-router"
+	connUnHealthy = "conn-unhealthy"
+	connHealthy   = "conn-healthy"
+	name          = "conn-check-router"
 )
 
 // ConnCheckRouter provides a health-first routing mechanism through ConnChecker
@@ -60,7 +61,13 @@ func NewConnCheckRouter(url *common.URL, notify chan struct{}) (router.PriorityR
 func (r *ConnCheckRouter) Route(invokers *roaring.Bitmap, cache router.Cache, url *common.URL, invocation protocol.Invocation) *roaring.Bitmap {
 	addrPool := cache.FindAddrPool(r)
 	// Add healthy invoker to the list
-	healthyInvokers := utils.JoinIfNotEqual(addrPool[connHealthy], invokers)
+	unhealthyBits := addrPool[connUnHealthy]
+	healthyBits := addrPool[connHealthy]
+	// check if empty, return
+	if unhealthyBits == nil || unhealthyBits.IsEmpty() || healthyBits == nil || healthyBits.IsEmpty() {
+		return invokers
+	}
+	healthyInvokers := utils.JoinIfNotEqual(healthyBits, invokers)
 	// If all invokers are considered unhealthy, downgrade to all invoker
 	if healthyInvokers.IsEmpty() {
 		logger.Warnf(" Now all invokers are unhealthy, so downgraded to all! Service: [%s]", url.ServiceKey())
@@ -76,6 +83,10 @@ func (r *ConnCheckRouter) RouteSnapshot(cache router.Cache) string {
 	sb := strings.Builder{}
 	sb.WriteString(r.Name())
 	sb.WriteString(" -> ")
+	if healthBit == nil {
+		sb.WriteString(" No Unhealthy Invoker")
+		return sb.String()
+	}
 	sb.WriteString("Count:")
 	sb.WriteString(strconv.FormatUint(healthBit.GetCardinality(), 10))
 	sb.WriteString(" ")
@@ -86,11 +97,17 @@ func (r *ConnCheckRouter) RouteSnapshot(cache router.Cache) string {
 // Pool separates healthy invokers from others.
 func (r *ConnCheckRouter) Pool(invokers []protocol.Invoker) (router.AddrPool, router.AddrMetadata) {
 	rb := make(router.AddrPool, 8)
-	rb[connHealthy] = roaring.NewBitmap()
+	healthyInvokers := utils.ToBitmap(invokers)
+	unhealthyInvokers := roaring.NewBitmap()
 	for i, invoker := range invokers {
-		if r.checker.IsConnHealthy(invoker) {
-			rb[connHealthy].Add(uint32(i))
+		if !r.checker.IsConnHealthy(invoker) {
+			unhealthyInvokers.Add(uint32(i))
+			healthyInvokers.Remove(uint32(i))
 		}
+	}
+	if !unhealthyInvokers.IsEmpty() {
+		rb[connHealthy] = healthyInvokers
+		rb[connUnHealthy] = unhealthyInvokers
 	}
 	return rb, nil
 }
