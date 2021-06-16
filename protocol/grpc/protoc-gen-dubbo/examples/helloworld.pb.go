@@ -32,7 +32,6 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
-	dgrpc "dubbo.apache.org/dubbo-go/v3/protocol/grpc"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
@@ -248,6 +247,16 @@ func (c *GreeterClientImpl) GetDubboStub(cc *grpc.ClientConn) GreeterClient {
 	return NewGreeterClient(cc)
 }
 
+// DubboGrpcService is gRPC service
+type DubboGrpcService interface {
+	// SetProxyImpl sets proxy.
+	SetProxyImpl(impl protocol.Invoker)
+	// GetProxyImpl gets proxy.
+	GetProxyImpl() protocol.Invoker
+	// ServiceDesc gets an RPC service's specification.
+	ServiceDesc() *grpc.ServiceDesc
+}
+
 type GreeterProviderBase struct {
 	proxyImpl protocol.Invoker
 }
@@ -260,12 +269,16 @@ func (s *GreeterProviderBase) GetProxyImpl() protocol.Invoker {
 	return s.proxyImpl
 }
 
+func (c *GreeterProviderBase) Reference() string {
+	return "greeterImpl"
+}
+
 func _DUBBO_Greeter_SayHello_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(HelloRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	base := srv.(dgrpc.DubboGrpcService)
+	base := srv.(DubboGrpcService)
 	args := []interface{}{}
 	args = append(args, in)
 	invo := invocation.NewRPCInvocation("SayHello", args, nil)
