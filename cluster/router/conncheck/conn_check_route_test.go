@@ -20,6 +20,7 @@ package conncheck
 import (
 	"fmt"
 	"testing"
+	"time"
 )
 
 import (
@@ -99,6 +100,7 @@ func TestRecovery(t *testing.T) {
 	protocol.SetInvokerUnhealthyStatus(invoker2)
 	assert.Equal(t, len(protocol.GetBlackListInvokers(16)), 2)
 	protocol.TryRefreshBlackList()
+	time.Sleep(1 * time.Second)
 	assert.Equal(t, len(protocol.GetBlackListInvokers(16)), 0)
 }
 
