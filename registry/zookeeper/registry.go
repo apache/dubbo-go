@@ -74,7 +74,7 @@ func newZkRegistry(url *common.URL) (registry.Registry, error) {
 	}
 	r.InitBaseRegistry(url, r)
 
-	err = zookeeper.ValidateZookeeperClient(r, RegistryZkClient)
+	err = zookeeper.ValidateZookeeperClient(r, url.Location)
 	if err != nil {
 		return nil, err
 	}
