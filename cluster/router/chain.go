@@ -33,6 +33,8 @@ type Chain interface {
 	GetNotifyChan() chan struct{}
 	// Detect Route State
 	DetectRoute() (RouteSnapshot, error)
+	// listens on events to update the address cache
+	Loop()
 }
 
 // RouteSnapshot is the snapshot of Route

@@ -350,12 +350,6 @@ func Load() {
 		// init the global event dispatcher
 		extension.SetAndInitGlobalDispatcher(GetBaseConfig().EventDispatcherType)
 
-		// start the metadata report if config set
-		if err := startMetadataReport(GetApplicationConfig().MetadataType, GetBaseConfig().MetadataReportConfig); err != nil {
-			logger.Errorf("Provider starts metadata report error, and the error is {%#v}", err)
-			return
-		}
-
 		// reference config
 		loadConsumerConfig()
 
