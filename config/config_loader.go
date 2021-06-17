@@ -20,7 +20,6 @@ package config
 import (
 	"flag"
 	"fmt"
-	"github.com/apache/dubbo-go/metadata/service"
 	"io/ioutil"
 	"log"
 	"os"

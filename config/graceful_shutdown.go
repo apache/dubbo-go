@@ -83,7 +83,6 @@ func GracefulShutdownInit() {
 
 // BeforeShutdown provides processing flow before shutdown
 func BeforeShutdown() {
-
 	if shutdown.CAS(false, true) {
 
 		destroyAllRegistries()
