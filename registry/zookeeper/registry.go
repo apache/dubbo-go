@@ -40,11 +40,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/remoting/zookeeper"
 )
 
-const (
-	// RegistryZkClient zk client name
-	RegistryZkClient = "zk registry"
-)
-
 func init() {
 	extension.SetRegistry("zookeeper", newZkRegistry)
 }
