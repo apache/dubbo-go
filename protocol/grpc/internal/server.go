@@ -27,11 +27,15 @@ import (
 	"google.golang.org/grpc"
 )
 
-var s *grpc.Server
-
 // server is used to implement helloworld.GreeterServer.
 type server struct {
-	UnimplementedGreeterServer
+	*GreeterProviderBase
+}
+
+func NewService() *server {
+	return &server{
+		GreeterProviderBase: &GreeterProviderBase{},
+	}
 }
 
 // SayHello implements helloworld.GreeterServer
@@ -40,25 +44,35 @@ func (s *server) SayHello(ctx context.Context, in *HelloRequest) (*HelloReply, e
 	return &HelloReply{Message: "Hello " + in.GetName()}, nil
 }
 
-// InitGrpcServer creates global gRPC server.
-func InitGrpcServer() {
-	port := ":30000"
+type Server struct {
+	listener net.Listener
+	server   *grpc.Server
+}
 
-	lis, err := net.Listen("tcp", port)
+func NewServer() (*Server, error) {
+	listener, err := net.Listen("tcp", ":30000")
 	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+		return nil, err
 	}
-	s = grpc.NewServer()
-	RegisterGreeterServer(s, &server{})
-	if err := s.Serve(lis); err != nil {
+
+	server := grpc.NewServer()
+	service := NewService()
+	RegisterGreeterServer(server, service)
+	service.Reference()
+
+	s := Server{
+		listener: listener,
+		server:   server,
+	}
+	return &s, nil
+}
+
+func (s *Server) Start() {
+	if err := s.server.Serve(s.listener); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
 }
 
-// ShutdownGrpcServer shuts down gRPC server gracefully
-func ShutdownGrpcServer() {
-	if s == nil {
-		return
-	}
-	s.GracefulStop()
+func (s *Server) Stop() {
+	s.server.GracefulStop()
 }
