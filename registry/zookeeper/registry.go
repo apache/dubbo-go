@@ -40,11 +40,6 @@ import (
 	"github.com/apache/dubbo-go/remoting/zookeeper"
 )
 
-const (
-	// RegistryZkClient zk client name
-	RegistryZkClient = "zk registry"
-)
-
 func init() {
 	extension.SetRegistry("zookeeper", newZkRegistry)
 }
@@ -74,7 +69,7 @@ func newZkRegistry(url *common.URL) (registry.Registry, error) {
 	}
 	r.InitBaseRegistry(url, r)
 
-	err = zookeeper.ValidateZookeeperClient(r, RegistryZkClient)
+	err = zookeeper.ValidateZookeeperClient(r, url.Location)
 	if err != nil {
 		return nil, err
 	}
