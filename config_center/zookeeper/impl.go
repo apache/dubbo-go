@@ -64,7 +64,7 @@ func newZookeeperDynamicConfiguration(url *common.URL) (*zookeeperDynamicConfigu
 		url:      url,
 		rootPath: "/" + url.GetParam(constant.CONFIG_NAMESPACE_KEY, config_center.DEFAULT_GROUP) + "/config",
 	}
-	err := zookeeper.ValidateZookeeperClient(c, ZkClient)
+	err := zookeeper.ValidateZookeeperClient(c, url.Location)
 	if err != nil {
 		logger.Errorf("zookeeper client start error ,error message is %v", err)
 		return nil, err
