@@ -19,7 +19,6 @@ package filter_impl
 
 import (
 	"context"
-	"sync"
 	"sync/atomic"
 )
 
@@ -44,7 +43,6 @@ func init() {
 }
 
 type gracefulShutdownFilter struct {
-	mutex          sync.Mutex // protect the following variables
 	activeCount    int32
 	shutdownConfig *config.ShutdownConfig
 }
