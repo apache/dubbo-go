@@ -20,6 +20,7 @@ package filter_impl
 import (
 	"context"
 	"sync"
+	"sync/atomic"
 )
 
 import (
@@ -54,23 +55,17 @@ func (gf *gracefulShutdownFilter) Invoke(ctx context.Context, invoker protocol.I
 		logger.Info("The application is closing, new request will be rejected.")
 		return gf.getRejectHandler().RejectedExecution(invoker.GetURL(), invocation)
 	}
-	gf.mutex.Lock()
-	gf.activeCount += 1
-	if gf.shutdownConfig != nil && gf.activeCount > 0 {
-		gf.shutdownConfig.RequestsFinished = false
-	}
-	gf.mutex.Unlock()
+	atomic.AddInt32(&gf.activeCount, 1)
 	return invoker.Invoke(ctx, invocation)
 }
 
 // OnResponse reduces the number of active processes then return the process result
 func (gf *gracefulShutdownFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
-	gf.mutex.Lock()
-	gf.activeCount -= 1
-	if gf.shutdownConfig != nil && gf.activeCount <= 0 {
+	atomic.AddInt32(&gf.activeCount, -1)
+	// although this isn't thread safe, it won't be a problem if the gf.rejectNewRequest() is true.
+	if gf.shutdownConfig != nil && gf.shutdownConfig.RejectRequest && gf.activeCount <= 0 {
 		gf.shutdownConfig.RequestsFinished = true
 	}
-	gf.mutex.Unlock()
 	return result
 }
 

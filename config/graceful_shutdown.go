@@ -171,6 +171,7 @@ func waitForReceivingRequests() {
 		// ignore this step
 		return
 	}
+	providerConfig.ShutdownConfig.RejectRequest = true
 	waitingProcessedTimeout(providerConfig.ShutdownConfig)
 }
 
@@ -181,6 +182,7 @@ func waitForSendingRequests() {
 		// ignore this step
 		return
 	}
+	consumerConfig.ShutdownConfig.RejectRequest = true
 	waitingProcessedTimeout(consumerConfig.ShutdownConfig)
 }
 
