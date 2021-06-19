@@ -160,6 +160,6 @@ func (c *consistentHashSelector) selectForKey(hash uint32) protocol.Invoker {
 
 // nolint
 func (c *consistentHashSelector) hash(digest [16]byte, i int) uint32 {
-	return uint32((digest[3+i*4]&0xFF)<<24) | uint32((digest[2+i*4]&0xFF)<<16) |
-		uint32((digest[1+i*4]&0xFF)<<8) | uint32(digest[i*4]&0xFF)&0xFFFFFFF
+	return (uint32(digest[3+i*4]&0xFF) << 24) | (uint32(digest[2+i*4]&0xFF) << 16) |
+		(uint32(digest[1+i*4]&0xFF) << 8) | uint32(digest[i*4]&0xFF)&0xFFFFFFF
 }
