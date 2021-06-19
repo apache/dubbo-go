@@ -19,6 +19,7 @@ package grpc
 
 import (
 	"testing"
+	"time"
 )
 
 import (
@@ -76,6 +77,7 @@ func TestGrpcProtocolExport(t *testing.T) {
 
 	proto := GetProtocol()
 	exporter := proto.Export(protocol.NewBaseInvoker(url))
+	time.Sleep(time.Second)
 
 	// make sure url
 	eq := exporter.GetInvoker().GetURL().URLEqual(url)

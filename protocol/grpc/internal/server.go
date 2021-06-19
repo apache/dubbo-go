@@ -44,6 +44,10 @@ func (s *server) SayHello(ctx context.Context, in *HelloRequest) (*HelloReply, e
 	return &HelloReply{Message: "Hello " + in.GetName()}, nil
 }
 
+func (s *server) Reference() string {
+	return "GrpcGreeterImpl"
+}
+
 type Server struct {
 	listener net.Listener
 	server   *grpc.Server
