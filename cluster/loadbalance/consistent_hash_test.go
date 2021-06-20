@@ -52,7 +52,7 @@ func TestConsistentHashSelectorSuite(t *testing.T) {
 
 type consistentHashSelectorSuite struct {
 	suite.Suite
-	selector *ConsistentHashSelector
+	selector *consistentHashSelector
 }
 
 func (s *consistentHashSelectorSuite) SetupTest() {
