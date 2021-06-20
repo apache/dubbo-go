@@ -38,3 +38,6 @@ config_center/apollo/mockDubbog.properties.json
 .*.sw?
 /license-header-checker-linux/
 /license-header-checker-linux.zip
+
+# macOS
+.DS_Store
