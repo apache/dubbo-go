@@ -38,7 +38,7 @@ func callback(listener config_center.ConfigurationListener, _, _, dataId, data s
 func (n *nacosDynamicConfiguration) addListener(key string, listener config_center.ConfigurationListener) {
 	_, loaded := n.keyListeners.Load(key)
 	if !loaded {
-		err := (*n.client.Client()).ListenConfig(vo.ConfigParam{
+		err := n.client.Client().ListenConfig(vo.ConfigParam{
 			DataId: key,
 			Group:  "dubbo",
 			OnChange: func(namespace, group, dataId, data string) {

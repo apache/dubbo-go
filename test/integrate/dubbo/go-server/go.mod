@@ -8,7 +8,7 @@ require (
 	//```
 	// RUN test ${PR_ORIGIN_REPO} && go mod edit -replace=dubbo.apache.org/dubbo-go/v3=github.com/${PR_ORIGIN_REPO}@${PR_ORIGIN_COMMITID} || go get -u dubbo.apache.org/dubbo-go/v3@develop
 	//```
-	github.com/apache/dubbo-go-hessian2 v1.9.1
+	github.com/apache/dubbo-go-hessian2 v1.9.2
 )
 
 replace dubbo.apache.org/dubbo-go/v3 => ../../../../../dubbo-go

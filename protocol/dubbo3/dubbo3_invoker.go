@@ -19,7 +19,6 @@ package dubbo3
 
 import (
 	"context"
-	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
@@ -28,7 +27,6 @@ import (
 )
 
 import (
-	hessian2 "github.com/apache/dubbo-go-hessian2"
 	tripleConstant "github.com/dubbogo/triple/pkg/common/constant"
 	triConfig "github.com/dubbogo/triple/pkg/config"
 	"github.com/dubbogo/triple/pkg/triple"
@@ -67,21 +65,12 @@ func NewDubboInvoker(url *common.URL) (*DubboInvoker, error) {
 	key := url.GetParam(constant.BEAN_NAME_KEY, "")
 	consumerService := config.GetConsumerService(key)
 
-	var triSerializationType tripleConstant.TripleSerializerName
 	dubboSerializaerType := url.GetParam(constant.SERIALIZATION_KEY, constant.PROTOBUF_SERIALIZATION)
-	switch dubboSerializaerType {
-	case constant.PROTOBUF_SERIALIZATION:
-		triSerializationType = tripleConstant.PBSerializerName
-	case constant.HESSIAN2_SERIALIZATION:
-		triSerializationType = tripleConstant.TripleHessianWrapperSerializerName
-	default:
-		panic(fmt.Sprintf("unsupport serialization = %s", dubboSerializaerType))
-
-	}
+	triCodecType := tripleConstant.CodecType(dubboSerializaerType)
 	// new triple client
 	triOption := triConfig.NewTripleOption(
 		triConfig.WithClientTimeout(uint32(requestTimeout.Seconds())),
-		triConfig.WithSerializerType(triSerializationType),
+		triConfig.WithCodecType(triCodecType),
 		triConfig.WithLocation(url.Location),
 		triConfig.WithHeaderAppVersion(url.GetParam(constant.APP_VERSION_KEY, "")),
 		triConfig.WithHeaderGroup(url.GetParam(constant.GROUP_KEY, "")),
@@ -156,16 +145,8 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 
 	methodName := invocation.MethodName()
 
-	res := di.client.Invoke(methodName, in)
-
-	result.Rest = res[0]
-	// check err
-	if res[1].IsValid() && res[1].Interface() != nil {
-		result.Err = res[1].Interface().(error)
-	} else {
-		_ = hessian2.ReflectResponse(res[0], invocation.Reply())
-	}
-
+	result.Err = di.client.Invoke(methodName, in, invocation.Reply())
+	result.Rest = invocation.Reply()
 	return &result
 }
 

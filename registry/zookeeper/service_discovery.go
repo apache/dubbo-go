@@ -45,7 +45,7 @@ import (
 )
 
 const (
-	// RegistryZkClient zk client name
+	// ServiceDiscoveryZkClient zk client name
 	ServiceDiscoveryZkClient = "zk service discovery"
 )
 
@@ -108,7 +108,7 @@ func newZookeeperServiceDiscovery(name string) (registry.ServiceDiscovery, error
 		url:      url,
 		rootPath: rootPath,
 	}
-	err := zookeeper.ValidateZookeeperClient(zksd, ServiceDiscoveryZkClient)
+	err := zookeeper.ValidateZookeeperClient(zksd, url.Location)
 	if err != nil {
 		return nil, err
 	}
@@ -167,7 +167,7 @@ func (zksd *zookeeperServiceDiscovery) String() string {
 
 // Close client be closed
 func (zksd *zookeeperServiceDiscovery) Destroy() error {
-	zksd.client.Close()
+	zksd.csd.Close()
 	return nil
 }
 

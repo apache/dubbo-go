@@ -54,7 +54,7 @@ func init() {
 type RegistryDirectory struct {
 	directory.BaseDirectory
 	cacheInvokers                  []protocol.Invoker
-	listenerLock                   sync.Mutex
+	invokersLock                   sync.RWMutex
 	serviceType                    string
 	registry                       registry.Registry
 	cacheInvokersMap               *sync.Map // use sync.map
@@ -230,8 +230,8 @@ func (dir *RegistryDirectory) invokerCacheKey(event *registry.ServiceEvent) stri
 // setNewInvokers groups the invokers from the cache first, then set the result to both directory and router chain.
 func (dir *RegistryDirectory) setNewInvokers() {
 	newInvokers := dir.toGroupInvokers()
-	dir.listenerLock.Lock()
-	defer dir.listenerLock.Unlock()
+	dir.invokersLock.Lock()
+	defer dir.invokersLock.Unlock()
 	dir.cacheInvokers = newInvokers
 	dir.RouterChain().SetInvokers(newInvokers)
 }
@@ -386,11 +386,12 @@ func (dir *RegistryDirectory) doCacheInvoker(newUrl *common.URL) (protocol.Invok
 
 // List selected protocol invokers from the directory
 func (dir *RegistryDirectory) List(invocation protocol.Invocation) []protocol.Invoker {
-	invokers := dir.cacheInvokers
 	routerChain := dir.RouterChain()
 
 	if routerChain == nil {
-		return invokers
+		dir.invokersLock.RLock()
+		defer dir.invokersLock.RUnlock()
+		return dir.cacheInvokers
 	}
 	return routerChain.Route(dir.consumerURL, invocation)
 }

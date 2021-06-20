@@ -94,8 +94,21 @@ func TestEtcdMetadataReport_CRUD(t *testing.T) {
 	err = metadataReport.SaveSubscribedData(subMi, string(urls))
 	assert.Nil(t, err)
 
+	serviceUrl, _ = common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0")
+	metadataInfo := common.NewMetadataInfo(subMi.Application, "", map[string]*common.ServiceInfo{
+		"com.ikurento.user.UserProvider": common.NewServiceInfoWithURL(serviceUrl),
+	})
 	err = metadataReport.RemoveServiceMetadata(serviceMi)
 	assert.Nil(t, err)
+	err = metadataReport.PublishAppMetadata(subMi, metadataInfo)
+	assert.Nil(t, err)
+
+	mdInfo, err := metadataReport.GetAppMetadata(subMi)
+	assert.Nil(t, err)
+	assert.Equal(t, metadataInfo.App, mdInfo.App)
+	assert.Equal(t, metadataInfo.Revision, mdInfo.Revision)
+	assert.Equal(t, 1, len(mdInfo.Services))
+	assert.NotNil(t, metadataInfo.Services["com.ikurento.user.UserProvider"])
 
 	e.Close()
 }
