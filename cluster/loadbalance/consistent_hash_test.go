@@ -114,9 +114,9 @@ func (s *consistentHashLoadBalanceSuite) SetupTest() {
 func (s *consistentHashLoadBalanceSuite) TestSelect() {
 	args := []interface{}{"name", "password", "age"}
 	invoker := s.lb.Select(s.invokers, invocation.NewRPCInvocation("echo", args, nil))
-	s.Equal(fmt.Sprintf("%s:%d", ip, port8080), invoker.GetURL().Location)
+	s.Equal(fmt.Sprintf("%s:%d", ip, port8081), invoker.GetURL().Location)
 
 	args = []interface{}{"ok", "abc"}
 	invoker = s.lb.Select(s.invokers, invocation.NewRPCInvocation("echo", args, nil))
-	s.Equal(fmt.Sprintf("%s:%d", ip, port8081), invoker.GetURL().Location)
+	s.Equal(fmt.Sprintf("%s:%d", ip, port8080), invoker.GetURL().Location)
 }
