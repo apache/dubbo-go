@@ -62,7 +62,6 @@ func NewServer() (*Server, error) {
 	server := grpc.NewServer()
 	service := NewService()
 	RegisterGreeterServer(server, service)
-	service.Reference()
 
 	s := Server{
 		listener: listener,
