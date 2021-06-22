@@ -148,3 +148,33 @@ func TestGenericServiceFilterResponseString(t *testing.T) {
 	assert.NotNil(t, r.Result())
 	assert.Equal(t, reflect.ValueOf(r.Result()).Kind(), reflect.String)
 }
+
+func TestJsonRPCGenericServiceFilterInvoke(t *testing.T) {
+	methodName := "$invoke"
+	m := make(map[string]interface{})
+	m["AaAa"] = "nihao"
+	x := make(map[string]interface{})
+	x["xxXX"] = "nihaoxxx"
+	m["XxYy"] = x
+	aurguments := []interface{}{
+		"MethodOne",
+		nil,
+		[]interface{}{
+			m,
+			append(make([]map[string]interface{}, 1), m),
+			"111",
+			append(make([]map[string]interface{}, 1), m),
+			"222",
+		},
+	}
+	s := &TestService{}
+	_, _ = common.ServiceMap.Register("com.test.Path", "testprotocol", "", "", s)
+	rpcInvocation := invocation.NewRPCInvocation(methodName, aurguments, map[string]interface{}{
+		"generic": "jsonrpc",
+	})
+	filter := GetGenericServiceFilter()
+	url, _ := common.NewURL("testprotocol://127.0.0.1:20000/com.test.Path")
+	result := filter.Invoke(context.Background(), &proxy_factory.ProxyInvoker{BaseInvoker: *protocol.NewBaseInvoker(url)}, rpcInvocation)
+	assert.NotNil(t, result)
+	assert.Nil(t, result.Error())
+}
