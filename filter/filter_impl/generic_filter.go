@@ -19,6 +19,7 @@ package filter_impl
 
 import (
 	"context"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"reflect"
 	"strings"
 	"time"
@@ -53,25 +54,41 @@ type GenericFilter struct{}
 
 // Invoke turns the parameters to map for generic method
 func (ef *GenericFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
-	if invocation.MethodName() == constant.GENERIC && len(invocation.Arguments()) == 3 {
-		oldArguments := invocation.Arguments()
+	if invocation.MethodName() != constant.GENERIC || len(invocation.Arguments()) != 3 {
+		return invoker.Invoke(ctx, invocation)
+	}
+	logger.Debugf("[generic filter] Attachments %+v", invocation.Attachments())
 
-		if oldParams, ok := oldArguments[2].([]interface{}); ok {
+	var (
+		ok           bool
+		genericKey   string
+		oldParams    []interface{}
+		newArguments []interface{}
+	)
+	genericKey = invocation.AttachmentsByKey(constant.GENERIC_KEY, constant.GENERIC_SERIALIZATION_DEFAULT)
+	oldArguments := invocation.Arguments()
+
+	if constant.GENERIC_SERIALIZATION_DEFAULT == genericKey {
+		if oldParams, ok = oldArguments[2].([]interface{}); ok {
 			newParams := make([]hessian.Object, 0, len(oldParams))
 			for i := range oldParams {
 				newParams = append(newParams, hessian.Object(struct2MapAll(oldParams[i])))
 			}
-			newArguments := []interface{}{
+			newArguments = []interface{}{
 				oldArguments[0],
 				oldArguments[1],
 				newParams,
 			}
-			newInvocation := invocation2.NewRPCInvocation(invocation.MethodName(), newArguments, invocation.Attachments())
-			newInvocation.SetReply(invocation.Reply())
-			return invoker.Invoke(ctx, newInvocation)
 		}
+	} else if constant.GENERIC_SERIALIZATION_JSONRPC == genericKey {
+		return invoker.Invoke(ctx, invocation)
+	} else {
+		logger.Errorf("[generic filter] Don't support this generic: %s", genericKey)
+		return &protocol.RPCResult{}
 	}
-	return invoker.Invoke(ctx, invocation)
+	newInvocation := invocation2.NewRPCInvocation(invocation.MethodName(), newArguments, invocation.Attachments())
+	newInvocation.SetReply(invocation.Reply())
+	return invoker.Invoke(ctx, newInvocation)
 }
 
 // OnResponse dummy process, returns the result directly

@@ -42,7 +42,6 @@ const (
 	// GENERIC_SERVICE defines the filter name
 	GENERIC_SERVICE = "generic_service"
 	// nolint
-	GENERIC_SERIALIZATION_DEFAULT = "true"
 )
 
 func init() {
@@ -60,39 +59,53 @@ func (ef *GenericServiceFilter) Invoke(ctx context.Context, invoker protocol.Inv
 	if invocation.MethodName() != constant.GENERIC || len(invocation.Arguments()) != 3 {
 		return invoker.Invoke(ctx, invocation)
 	}
+	logger.Debugf("[Generic Service Filter] arguments: %v", invocation.Arguments())
+	logger.Debugf("[Generic Service Filter] attachments: %v", invocation.Attachments())
 
 	var (
-		ok         bool
-		err        error
-		methodName string
-		newParams  []interface{}
-		genericKey string
-		argsType   []reflect.Type
-		oldParams  []hessian.Object
+		isAssignSuccess bool
+		err             error
+		methodName      string
+		genericKey      string
+		newParams       []interface{}
+		argsType        []reflect.Type
+		oldParams       []interface{}
 	)
 
+	genericKey = invocation.AttachmentsByKey(constant.GENERIC_KEY, constant.GENERIC_SERIALIZATION_DEFAULT)
+	if genericKey == constant.GENERIC_SERIALIZATION_DEFAULT {
+		hessianParams, ok := invocation.Arguments()[2].([]hessian.Object)
+		if !ok {
+			logger.Errorf("[Generic Service Filter] wrong serialization")
+			return &protocol.RPCResult{}
+		} else {
+			isAssignSuccess = true
+		}
+		// convert []hessian.Object to []interface{}
+		oldParams = make([]interface{}, len(hessianParams))
+		for i := range hessianParams {
+			oldParams[i] = hessianParams[i]
+		}
+	} else if genericKey == constant.GENERIC_SERIALIZATION_JSONRPC {
+		oldParams, isAssignSuccess = invocation.Arguments()[2].([]interface{})
+	} else {
+		logger.Errorf("[Generic Service Filter] Don't support this generic: %s", genericKey)
+		return &protocol.RPCResult{}
+	}
+	if !isAssignSuccess {
+		logger.Errorf("[Generic Service Filter] wrong serialization")
+		return &protocol.RPCResult{}
+	}
+	// check method and arguments
 	url := invoker.GetURL()
 	methodName = invocation.Arguments()[0].(string)
-	// get service
 	svc := common.ServiceMap.GetServiceByServiceKey(url.Protocol, url.ServiceKey())
-	// get method
 	method := svc.Method()[methodName]
 	if method == nil {
 		logger.Errorf("[Generic Service Filter] Don't have this method: %s", methodName)
 		return &protocol.RPCResult{}
 	}
 	argsType = method.ArgsType()
-	genericKey = invocation.AttachmentsByKey(constant.GENERIC_KEY, GENERIC_SERIALIZATION_DEFAULT)
-	if genericKey == GENERIC_SERIALIZATION_DEFAULT {
-		oldParams, ok = invocation.Arguments()[2].([]hessian.Object)
-	} else {
-		logger.Errorf("[Generic Service Filter] Don't support this generic: %s", genericKey)
-		return &protocol.RPCResult{}
-	}
-	if !ok {
-		logger.Errorf("[Generic Service Filter] wrong serialization")
-		return &protocol.RPCResult{}
-	}
 	if len(oldParams) != len(argsType) {
 		logger.Errorf("[Generic Service Filter] method:%s invocation arguments number was wrong", methodName)
 		return &protocol.RPCResult{}
@@ -109,6 +122,7 @@ func (ef *GenericServiceFilter) Invoke(ctx context.Context, invoker protocol.Inv
 		}
 		newParams[i] = newParam
 	}
+	logger.Debugf("[Generic Service Filter] newParams: %v", newParams)
 	newInvocation := invocation2.NewRPCInvocation(methodName, newParams, invocation.Attachments())
 	newInvocation.SetReply(invocation.Reply())
 	return invoker.Invoke(ctx, newInvocation)

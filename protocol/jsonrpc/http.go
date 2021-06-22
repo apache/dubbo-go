@@ -131,6 +131,12 @@ func (c *HTTPClient) Call(ctx context.Context, service *common.URL, req *Request
 		}
 	}
 
+	if md, ok := ctx.Value(constant.AttachmentKey).(map[string]interface{}); ok {
+		for k := range md {
+			httpHeader.Set(k, md[k].(string))
+		}
+	}
+
 	if span := opentracing.SpanFromContext(ctx); span != nil {
 		err := opentracing.GlobalTracer().Inject(span.Context(), opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(httpHeader))
 		if err != nil {

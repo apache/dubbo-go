@@ -40,6 +40,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
@@ -55,6 +56,8 @@ const (
 	DefaultHTTPRspBufferSize = 1024
 	// PathPrefix ...
 	PathPrefix = byte('/')
+	// Generic Header
+	GenericHeader = "Generic"
 )
 
 // Server is JSON RPC server wrapper
@@ -345,10 +348,21 @@ func serveRequest(ctx context.Context, header map[string]string, body []byte, co
 	exporter, _ := jsonrpcProtocol.ExporterMap().Load(path)
 	invoker := exporter.(*JsonrpcExporter).GetInvoker()
 	if invoker != nil {
-		result := invoker.Invoke(ctx, invocation.NewRPCInvocation(methodName, args, map[string]interface{}{
-			constant.PATH_KEY:    path,
-			constant.VERSION_KEY: codec.req.Version,
-		}))
+		var result protocol.Result
+		// read generic
+		generic, ok := header[GenericHeader]
+		if ok {
+			result = invoker.Invoke(ctx, invocation.NewRPCInvocation(methodName, args, map[string]interface{}{
+				constant.PATH_KEY:    path,
+				constant.VERSION_KEY: codec.req.Version,
+				constant.GENERIC_KEY: generic,
+			}))
+		} else {
+			result = invoker.Invoke(ctx, invocation.NewRPCInvocation(methodName, args, map[string]interface{}{
+				constant.PATH_KEY:    path,
+				constant.VERSION_KEY: codec.req.Version,
+			}))
+		}
 		if err := result.Error(); err != nil {
 			rspStream, codecErr := codec.Write(err.Error(), invalidRequest)
 			if codecErr != nil {

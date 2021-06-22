@@ -55,6 +55,7 @@ func (ji *JsonrpcInvoker) Invoke(ctx context.Context, invocation protocol.Invoca
 		"X-Services": url.Path,
 		"X-Method":   inv.MethodName(),
 	})
+	ctxNew = context.WithValue(ctxNew, constant.AttachmentKey, invocation.Attachments())
 	result.Err = ji.client.Call(ctxNew, url, req, inv.Reply())
 	if result.Err == nil {
 		result.Rest = inv.Reply()
