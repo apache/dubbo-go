@@ -55,7 +55,7 @@ type ConfigCenterConfig struct {
 	ConfigFile    string            `default:"dubbo.properties" yaml:"config_file"  json:"config_file,omitempty"`
 	Namespace     string            `default:"dubbo" yaml:"namespace"  json:"namespace,omitempty"`
 	AppConfigFile string            `default:"dubbo.properties" yaml:"app_config_file"  json:"app_config_file,omitempty"`
-	AppId         string            `default:"dubbo" yaml:"app_id"  json:"app_id,omitempty"`
+	AppID         string            `default:"dubbo" yaml:"app_id"  json:"app_id,omitempty"`
 	TimeoutStr    string            `yaml:"timeout"  json:"timeout,omitempty"`
 	RemoteRef     string            `required:"false"  yaml:"remote_ref"  json:"remote_ref,omitempty"`
 	Parameters    map[string]string `yaml:"parameters"  json:"parameters,omitempty"`
@@ -76,7 +76,7 @@ func (c *ConfigCenterConfig) GetURLMap() url.Values {
 	urlMap.Set(constant.CONFIG_NAMESPACE_KEY, c.Namespace)
 	urlMap.Set(constant.CONFIG_GROUP_KEY, c.Group)
 	urlMap.Set(constant.CONFIG_CLUSTER_KEY, c.Cluster)
-	urlMap.Set(constant.CONFIG_APP_ID_KEY, c.AppId)
+	urlMap.Set(constant.CONFIG_APP_ID_KEY, c.AppID)
 	urlMap.Set(constant.CONFIG_LOG_DIR_KEY, c.LogDir)
 	urlMap.Set(constant.CONFIG_USERNAME_KEY, c.Username)
 	urlMap.Set(constant.CONFIG_PASSWORD_KEY, c.Password)
