@@ -32,7 +32,6 @@ import (
 )
 
 func TestMethodMatchJudger(t *testing.T) {
-
 	methodArgs := make([]*config.DubboMethodArg, 0)
 	methodArgs = append(methodArgs, &config.DubboMethodArg{
 		Index:     1,
