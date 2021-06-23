@@ -307,6 +307,10 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkPath string, listen
 			}
 			logger.Debugf("Get children!{%s}", dubboPath)
 			if !listener.DataChange(remoting.Event{Path: dubboPath, Action: remoting.EventTypeAdd, Content: string(content)}) {
+				logger.Warnf("Send remoting event EventTypeAdd fail, path {%v}", dubboPath)
+				l.pathMapLock.Lock()
+				delete(l.pathMap, zkPath)
+				l.pathMapLock.Unlock()
 				continue
 			}
 			logger.Infof("listen dubbo service key{%s}", dubboPath)
