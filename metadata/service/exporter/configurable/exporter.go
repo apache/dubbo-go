@@ -18,7 +18,6 @@
 package configurable
 
 import (
-	"context"
 	"errors"
 	"sync"
 )
@@ -49,7 +48,7 @@ func NewMetadataServiceExporter(metadataService service.MetadataService) exporte
 // Export will export the metadataService
 func (exporter *MetadataServiceExporter) Export(url *common.URL) error {
 	if !exporter.IsExported() {
-		serviceConfig := config.NewServiceConfig(constant.SIMPLE_METADATA_SERVICE_NAME, context.Background())
+		serviceConfig := config.NewServiceConfig(constant.SIMPLE_METADATA_SERVICE_NAME)
 		serviceConfig.Protocol = constant.DEFAULT_PROTOCOL
 		if url == nil || url.SubURL == nil {
 			return errors.New("metadata server url is nil, pls check your configuration")

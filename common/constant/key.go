@@ -152,6 +152,9 @@ const (
 	SingleRegistryConfigPrefix = "dubbo.registry."
 	ReferenceConfigPrefix      = "dubbo.reference."
 	ServiceConfigPrefix        = "dubbo.service."
+	ConfigBasePrefix           = "dubbo.base."
+	RemotePrefix               = "dubbo.remote."
+	ServiceDiscPrefix          = "dubbo.service-discovery."
 	ProtocolConfigPrefix       = "dubbo.protocols."
 	ProviderConfigPrefix       = "dubbo.provider."
 	ConsumerConfigPrefix       = "dubbo.consumer."
@@ -312,7 +315,7 @@ const (
 // service discovery
 const (
 	SUBSCRIBED_SERVICE_NAMES_KEY               = "subscribed-services"
-	PROVIDER_BY                                = "provided-by"
+	PROVIDED_BY                                = "provided-by"
 	EXPORTED_SERVICES_REVISION_PROPERTY_NAME   = "dubbo.metadata.revision"
 	SUBSCRIBED_SERVICES_REVISION_PROPERTY_NAME = "dubbo.subscribed-services.revision"
 	SERVICE_INSTANCE_SELECTOR                  = "service-instance-selector"

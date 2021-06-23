@@ -37,7 +37,7 @@ import (
 )
 
 func TestNacosRegistry_Register(t *testing.T) {
-	t.Skip()
+	//t.Skip()
 	if !checkNacosServerAlive() {
 		return
 	}
@@ -66,8 +66,9 @@ func TestNacosRegistry_Register(t *testing.T) {
 		t.Errorf("register error:%s \n", err.Error())
 		return
 	}
+	time.Sleep(5 * time.Second)
 	nacosReg := reg.(*nacosRegistry)
-	service, _ := nacosReg.namingClient.GetService(vo.GetServiceParam{ServiceName: "providers:com.ikurento.user.UserProvider:1.0.0:guangzhou-idc"})
+	service, _ := nacosReg.namingClient.Client().GetService(vo.GetServiceParam{ServiceName: "providers:com.ikurento.user.UserProvider:1.0.0:guangzhou-idc"})
 	data, _ := json.Marshal(service)
 	t.Logf(string(data))
 	assert.Equal(t, 1, len(service.Hosts))
@@ -85,11 +86,11 @@ func TestNacosRegistry_Subscribe(t *testing.T) {
 	urlMap := url.Values{}
 	urlMap.Set(constant.GROUP_KEY, "guangzhou-idc")
 	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER))
-	urlMap.Set(constant.INTERFACE_KEY, "com.ikurento.user.UserProvider")
+	urlMap.Set(constant.INTERFACE_KEY, "com.dubbo.user.UserProvider")
 	urlMap.Set(constant.VERSION_KEY, "1.0.0")
 	urlMap.Set(constant.CLUSTER_KEY, "mock")
 	urlMap.Set(constant.NACOS_PATH_KEY, "")
-	testUrl, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParams(urlMap), common.WithMethods([]string{"GetUser", "AddUser"}))
+	testUrl, _ := common.NewURL("dubbo://127.0.0.1:20000/com.dubbo.user.UserProvider", common.WithParams(urlMap), common.WithMethods([]string{"GetUser", "AddUser"}))
 
 	reg, _ := newNacosRegistry(regurl)
 	err := reg.Register(testUrl)
@@ -179,7 +180,7 @@ func TestNacosRegistry_Subscribe_del(t *testing.T) {
 
 	nacosReg := reg.(*nacosRegistry)
 	// deregister instance to mock instance offline
-	_, err = nacosReg.namingClient.DeregisterInstance(vo.DeregisterInstanceParam{
+	_, err = nacosReg.namingClient.Client().DeregisterInstance(vo.DeregisterInstanceParam{
 		Ip: "127.0.0.2", Port: 20000,
 		ServiceName: "providers:com.ikurento.user.UserProvider:2.0.0:guangzhou-idc",
 	})

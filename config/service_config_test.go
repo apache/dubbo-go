@@ -19,8 +19,6 @@ package config
 
 import (
 	"testing"
-
-	"dubbo.apache.org/dubbo-go/v3/common"
 )
 
 import (
@@ -29,6 +27,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 )
 

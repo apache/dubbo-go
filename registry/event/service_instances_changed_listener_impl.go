@@ -151,7 +151,7 @@ func (lstn *ServiceInstancesChangedListenerImpl) getMetadataInfo(instance regist
 		metadataStorageType = instance.GetMetadata()[constant.METADATA_STORAGE_TYPE_PROPERTY_NAME]
 	}
 	if metadataStorageType == constant.REMOTE_METADATA_STORAGE_TYPE {
-		remoteMetadataServiceImpl, err := extension.GetRemoteMetadataService()
+		remoteMetadataServiceImpl, err := extension.GetRemotingMetadataService()
 		if err != nil {
 			return nil, err
 		}

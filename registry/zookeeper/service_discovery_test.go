@@ -43,16 +43,15 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/registry/event"
 )
 
-var testName = "test"
-
-var tc *zk.TestCluster
+const testName = "test"
 
 func prepareData(t *testing.T) *zk.TestCluster {
 	var err error
-	tc, err = zk.StartTestCluster(1, nil, nil, zk.WithRetryTimes(20))
+	tc, err := zk.StartTestCluster(1, nil, nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, tc.Servers[0])
 	address := "127.0.0.1:" + strconv.Itoa(tc.Servers[0].Port)
+	//address := "127.0.0.1:2181"
 
 	config.GetBaseConfig().ServiceDiscoveries[testName] = &config.ServiceDiscoveryConfig{
 		Protocol:  "zookeeper",
@@ -71,6 +70,7 @@ func TestNewZookeeperServiceDiscovery(t *testing.T) {
 	_, err := newZookeeperServiceDiscovery(name)
 
 	// the ServiceDiscoveryConfig not found
+	// err: could not init the instance because the config is invalid
 	assert.NotNil(t, err)
 
 	sdc := &config.ServiceDiscoveryConfig{
@@ -81,10 +81,20 @@ func TestNewZookeeperServiceDiscovery(t *testing.T) {
 	_, err = newZookeeperServiceDiscovery(name)
 
 	// RemoteConfig not found
+	// err: could not find the remote config for name: mock
 	assert.NotNil(t, err)
 }
 
-func TestCURDZookeeperServiceDiscovery(t *testing.T) {
+func TestZookeeperServiceDiscovery_CURDAndListener(t *testing.T) {
+	tc := prepareData(t)
+	defer func() {
+		_ = tc.Stop()
+	}()
+	t.Run("testCURDZookeeperServiceDiscovery", testCURDZookeeperServiceDiscovery)
+	t.Run("testAddListenerZookeeperServiceDiscovery", testAddListenerZookeeperServiceDiscovery)
+}
+
+func testCURDZookeeperServiceDiscovery(t *testing.T) {
 	prepareData(t)
 	extension.SetEventDispatcher("mock", func() observer.EventDispatcher {
 		return dispatcher.NewMockEventDispatcher()
@@ -164,10 +174,7 @@ func TestCURDZookeeperServiceDiscovery(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func TestAddListenerZookeeperServiceDiscovery(t *testing.T) {
-	defer func() {
-		_ = tc.Stop()
-	}()
+func testAddListenerZookeeperServiceDiscovery(t *testing.T) {
 	sd, err := newZookeeperServiceDiscovery(testName)
 	assert.Nil(t, err)
 	defer func() {

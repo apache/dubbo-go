@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package remote_impl
+package remoting
 
 import (
 	"fmt"
@@ -104,7 +104,7 @@ func TestMetadataService(t *testing.T) {
 	u, err := common.NewURL("mock://127.0.0.1:20000/?sync.report=true")
 	assert.NoError(t, err)
 	instance.GetMetadataReportInstance(u)
-	mts, err := GetRemoteMetadataService()
+	mts, err := GetRemotingMetadataService()
 	assert.NoError(t, err)
 	assert.NotNil(t, mts)
 }

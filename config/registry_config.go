@@ -35,8 +35,7 @@ import (
 
 // RegistryConfig is the configuration of the registry center
 type RegistryConfig struct {
-	Protocol string `required:"true" yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
-	// I changed "type" to "protocol" ,the same as "protocol" field in java class RegistryConfig
+	Protocol   string `required:"true" yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
 	TimeoutStr string `yaml:"timeout" default:"5s" json:"timeout,omitempty" property:"timeout"` // unit: second
 	Group      string `yaml:"group" json:"group,omitempty" property:"group"`
 	TTL        string `yaml:"ttl" default:"10m" json:"ttl,omitempty" property:"ttl"` // unit: minute
@@ -49,8 +48,6 @@ type RegistryConfig struct {
 	Preferred bool `yaml:"preferred" json:"preferred,omitempty" property:"preferred"`
 	// The region where the registry belongs, usually used to isolate traffics
 	Zone string `yaml:"zone" json:"zone,omitempty" property:"zone"`
-	//// Force must user the region, property zone is specified.
-	//ZoneForce bool `yaml:"zoneForce" json:"zoneForce,omitempty" property:"zoneForce"`
 	// Affects traffic distribution among registries,
 	// useful when subscribe to multiple registries Take effect only when no preferred registry is specified.
 	Weight int64             `yaml:"weight" json:"weight,omitempty" property:"weight"`
@@ -129,7 +126,6 @@ func (c *RegistryConfig) getUrlMap(roleType common.RoleType) url.Values {
 	urlMap.Set(constant.REGISTRY_KEY+"."+constant.REGISTRY_LABEL_KEY, strconv.FormatBool(true))
 	urlMap.Set(constant.REGISTRY_KEY+"."+constant.PREFERRED_KEY, strconv.FormatBool(c.Preferred))
 	urlMap.Set(constant.REGISTRY_KEY+"."+constant.ZONE_KEY, c.Zone)
-	// urlMap.Set(constant.REGISTRY_KEY+"."+constant.ZONE_FORCE_KEY, strconv.FormatBool(c.ZoneForce))
 	urlMap.Set(constant.REGISTRY_KEY+"."+constant.WEIGHT_KEY, strconv.FormatInt(c.Weight, 10))
 	urlMap.Set(constant.REGISTRY_TTL_KEY, c.TTL)
 	for k, v := range c.Params {

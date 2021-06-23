@@ -15,25 +15,18 @@
  * limitations under the License.
  */
 
-package common
+package service
 
 import (
-	"fmt"
-	"log"
-	"reflect"
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
-// PrintInterface print the interface by level
-func PrintInterface(v interface{}) {
-	val := reflect.ValueOf(v).Elem()
-	typ := reflect.TypeOf(v)
-	log.Printf("%+v\n", v)
-	nums := val.NumField()
-	for i := 0; i < nums; i++ {
-		if typ.Elem().Field(i).Type.Kind() == reflect.Ptr {
-			log.Printf("%s: ", typ.Elem().Field(i).Name)
-			PrintInterface(val.Field(i).Interface())
-		}
-	}
-	fmt.Println("")
+type RemotingMetadataService interface {
+	// PublishMetadata publish the medata info of service from report
+	PublishMetadata(service string)
+	// GetMetadata get the medata info of service from report
+	GetMetadata(instance registry.ServiceInstance) (*common.MetadataInfo, error)
+	// PublishServiceDefinition will call remote metadata's StoreProviderMetadata to store url info and service definition
+	PublishServiceDefinition(url *common.URL) error
 }
