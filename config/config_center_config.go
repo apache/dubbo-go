@@ -78,9 +78,9 @@ func (c *ConfigCenterConfig) GetURLMap() url.Values {
 	urlMap.Set(constant.CONFIG_CLUSTER_KEY, c.Cluster)
 	urlMap.Set(constant.CONFIG_APP_ID_KEY, c.AppId)
 	urlMap.Set(constant.CONFIG_LOG_DIR_KEY, c.LogDir)
-	urlMap.Set(constant.CONFIG_USERNAME_KET, c.Username)
-	urlMap.Set(constant.CONFIG_PASSWORD_KET, c.Password)
-	urlMap.Set(constant.CONFIG_TIMEOUT_KET, c.TimeoutStr)
+	urlMap.Set(constant.CONFIG_USERNAME_KEY, c.Username)
+	urlMap.Set(constant.CONFIG_PASSWORD_KEY, c.Password)
+	urlMap.Set(constant.CONFIG_TIMEOUT_KEY, c.TimeoutStr)
 
 	for key, val := range c.Parameters {
 		urlMap.Set(key, val)

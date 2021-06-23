@@ -86,10 +86,10 @@ func ValidateNacosClient(container nacosClientFacade, opts ...option) error {
 	}
 
 	url := container.GetURL()
-	timeout, err := time.ParseDuration(url.GetParam(constant.CONFIG_TIMEOUT_KET, constant.DEFAULT_REG_TIMEOUT))
+	timeout, err := time.ParseDuration(url.GetParam(constant.CONFIG_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT))
 	if err != nil {
 		logger.Errorf("invalid timeout config %+v,got err %+v",
-			url.GetParam(constant.CONFIG_TIMEOUT_KET, constant.DEFAULT_REG_TIMEOUT), err)
+			url.GetParam(constant.CONFIG_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT), err)
 		return perrors.WithMessagef(err, "newNacosClient(address:%+v)", url.Location)
 	}
 	nacosAddresses := strings.Split(url.Location, ",")
