@@ -55,6 +55,7 @@ func (ji *JsonrpcInvoker) Invoke(ctx context.Context, invocation protocol.Invoca
 		"X-Services": url.Path,
 		"X-Method":   inv.MethodName(),
 	})
+	// When implementing a generalization invoke, need to use attachments to transfer `generic` field
 	ctxNew = context.WithValue(ctxNew, constant.AttachmentKey, invocation.Attachments())
 	result.Err = ji.client.Call(ctxNew, url, req, inv.Reply())
 	if result.Err == nil {

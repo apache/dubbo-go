@@ -349,7 +349,7 @@ func serveRequest(ctx context.Context, header map[string]string, body []byte, co
 	invoker := exporter.(*JsonrpcExporter).GetInvoker()
 	if invoker != nil {
 		var result protocol.Result
-		// read generic
+		// read generic from header
 		generic, ok := header[GenericHeader]
 		if ok {
 			result = invoker.Invoke(ctx, invocation.NewRPCInvocation(methodName, args, map[string]interface{}{
