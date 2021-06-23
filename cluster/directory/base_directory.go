@@ -74,7 +74,7 @@ func (dir *BaseDirectory) GetDirectoryUrl() *common.URL {
 
 // AddRouters Convert url to routers and add them into dir.routerChain
 func (dir *BaseDirectory) AddRouters(urls []*common.URL) {
-	if len(urls) == 0 {
+	if len(urls) == 0 || dir.routerChain == nil {
 		return
 	}
 
