@@ -99,7 +99,7 @@ func TestGrpcProtocolExport(t *testing.T) {
 }
 
 func TestGrpcProtocolRefer(t *testing.T) {
-	server, err := internal.NewServer()
+	server, err := internal.NewServer("127.0.0.1:30000")
 	assert.NoError(t, err)
 	go server.Start()
 	defer server.Stop()

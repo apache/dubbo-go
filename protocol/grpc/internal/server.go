@@ -53,8 +53,8 @@ type Server struct {
 	server   *grpc.Server
 }
 
-func NewServer() (*Server, error) {
-	listener, err := net.Listen("tcp", ":30000")
+func NewServer(address string) (*Server, error) {
+	listener, err := net.Listen("tcp", address)
 	if err != nil {
 		return nil, err
 	}
