@@ -33,11 +33,7 @@ func (amj *AttachmentMatchJudger) Judge(invocation protocol.Invocation) bool {
 		return false
 	}
 
-	if amj.DubboContext != nil && !judge(amj.DubboContext, invAttaMap) {
-		return false
-	}
-
-	return true
+	return amj.DubboContext == nil || judge(amj.DubboContext, invAttaMap)
 }
 
 func judge(condition map[string]*config.StringMatch, invAttaMap map[string]interface{}) bool {

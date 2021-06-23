@@ -18,9 +18,15 @@
 package judger
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common"
-	"github.com/stretchr/testify/assert"
 	"testing"
+)
+
+import (
+	"github.com/stretchr/testify/assert"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 )
 
 func TestJudgeUrlLabel(t *testing.T) {
