@@ -63,36 +63,35 @@ func (ef *GenericServiceFilter) Invoke(ctx context.Context, invoker protocol.Inv
 	logger.Debugf("[Generic Service Filter] attachments: %v", invocation.Attachments())
 
 	var (
-		isAssignSuccess bool
-		err             error
-		methodName      string
-		genericKey      string
-		newParams       []interface{}
-		argsType        []reflect.Type
-		oldParams       []interface{}
+		ok         bool
+		err        error
+		methodName string
+		genericKey string
+		newParams  []interface{}
+		argsType   []reflect.Type
+		oldParams  []interface{}
 	)
 
 	genericKey = invocation.AttachmentsByKey(constant.GENERIC_KEY, constant.GENERIC_SERIALIZATION_DEFAULT)
 	if genericKey == constant.GENERIC_SERIALIZATION_DEFAULT {
-		hessianParams, ok := invocation.Arguments()[2].([]hessian.Object)
+		hessianParams, isAssignSuccess := invocation.Arguments()[2].([]hessian.Object)
 		if !ok {
 			logger.Errorf("[Generic Service Filter] wrong serialization")
 			return &protocol.RPCResult{}
-		} else {
-			isAssignSuccess = true
 		}
+		ok = isAssignSuccess
 		// convert []hessian.Object to []interface{}
 		oldParams = make([]interface{}, len(hessianParams))
 		for i := range hessianParams {
 			oldParams[i] = hessianParams[i]
 		}
 	} else if genericKey == constant.GENERIC_SERIALIZATION_JSONRPC {
-		oldParams, isAssignSuccess = invocation.Arguments()[2].([]interface{})
+		oldParams, ok = invocation.Arguments()[2].([]interface{})
 	} else {
 		logger.Errorf("[Generic Service Filter] Don't support this generic: %s", genericKey)
 		return &protocol.RPCResult{}
 	}
-	if !isAssignSuccess {
+	if !ok {
 		logger.Errorf("[Generic Service Filter] wrong serialization")
 		return &protocol.RPCResult{}
 	}
