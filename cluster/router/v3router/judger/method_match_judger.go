@@ -57,6 +57,7 @@ func (mmj *MethodMatchJudger) Judge(invocation protocol.Invocation) bool {
 				if !newListStringMatchJudger(v.StrValue).Judge(value.String()) {
 					return false
 				}
+				// FIXME int invoke Float may cause panic
 			case "float", "int":
 				// todo now numbers Must not be zero, else it will ignore this match
 				if !newListDoubleMatchJudger(v.NumValue).Judge(value.Float()) {
