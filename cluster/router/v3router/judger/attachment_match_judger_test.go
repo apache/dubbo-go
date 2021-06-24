@@ -31,19 +31,24 @@ import (
 )
 
 func TestAttachmentMatchJudger(t *testing.T) {
-	dubboCtxMap := make(map[string]*config.StringMatch)
+	conditionMap := make(map[string]*config.StringMatch)
 	dubboIvkMap := make(map[string]interface{})
-	dubboCtxMap["test-key"] = &config.StringMatch{
+	conditionMap["test-key"] = &config.StringMatch{
 		Exact: "abc",
 	}
 	dubboIvkMap["test-key"] = "abc"
 	assert.True(t, NewAttachmentMatchJudger(&config.DubboAttachmentMatch{
-		DubboContext: dubboCtxMap,
+		DubboContext: conditionMap,
+	}).Judge(invocation.NewRPCInvocation("method", nil, dubboIvkMap)))
+	assert.True(t, NewAttachmentMatchJudger(&config.DubboAttachmentMatch{
+		EagleeyeContext: conditionMap,
 	}).Judge(invocation.NewRPCInvocation("method", nil, dubboIvkMap)))
 
 	dubboIvkMap["test-key"] = "abd"
 	assert.False(t, NewAttachmentMatchJudger(&config.DubboAttachmentMatch{
-		DubboContext: dubboCtxMap,
+		DubboContext: conditionMap,
 	}).Judge(invocation.NewRPCInvocation("method", nil, dubboIvkMap)))
-
+	assert.False(t, NewAttachmentMatchJudger(&config.DubboAttachmentMatch{
+		EagleeyeContext: conditionMap,
+	}).Judge(invocation.NewRPCInvocation("method", nil, dubboIvkMap)))
 }
