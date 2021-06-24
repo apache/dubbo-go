@@ -101,9 +101,8 @@ func TestGenericFilterInvokeWithDefaultTpsLimiterNotAllow(t *testing.T) {
 	attch := make(map[string]interface{})
 
 	result := tpsFilter.Invoke(context.Background(),
-		protocol.NewBaseInvoker(
-
-			invokeUrl), invocation.NewRPCInvocation("MethodName", []interface{}{"OK"}, attch))
+		protocol.NewBaseInvoker(invokeUrl),
+		invocation.NewRPCInvocation("MethodName", []interface{}{"OK"}, attch))
 	assert.Nil(t, result.Error())
 	assert.Nil(t, result.Result())
 }

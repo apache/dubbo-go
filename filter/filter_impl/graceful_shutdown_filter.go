@@ -32,19 +32,13 @@ import (
 )
 
 func init() {
-	consumerFiler := &gracefulShutdownFilter{
-		shutdownConfig: config.GetConsumerConfig().ShutdownConfig,
-	}
-	providerFilter := &gracefulShutdownFilter{
-		shutdownConfig: config.GetProviderConfig().ShutdownConfig,
-	}
-
+	// `init()` is performed before config.Load(), so shutdownConfig will be retrieved after config was loaded.
 	extension.SetFilter(constant.CONSUMER_SHUTDOWN_FILTER, func() filter.Filter {
-		return consumerFiler
+		return &gracefulShutdownFilter{}
 	})
 
 	extension.SetFilter(constant.PROVIDER_SHUTDOWN_FILTER, func() filter.Filter {
-		return providerFilter
+		return &gracefulShutdownFilter{}
 	})
 }
 
@@ -60,9 +54,6 @@ func (gf *gracefulShutdownFilter) Invoke(ctx context.Context, invoker protocol.I
 		return gf.getRejectHandler().RejectedExecution(invoker.GetURL(), invocation)
 	}
 	atomic.AddInt32(&gf.activeCount, 1)
-	if gf.shutdownConfig != nil && gf.activeCount > 0 {
-		gf.shutdownConfig.RequestsFinished = false
-	}
 	return invoker.Invoke(ctx, invocation)
 }
 
@@ -70,10 +61,23 @@ func (gf *gracefulShutdownFilter) Invoke(ctx context.Context, invoker protocol.I
 func (gf *gracefulShutdownFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	atomic.AddInt32(&gf.activeCount, -1)
 	// although this isn't thread safe, it won't be a problem if the gf.rejectNewRequest() is true.
-	if gf.shutdownConfig != nil && gf.activeCount <= 0 {
+	if gf.shutdownConfig != nil && gf.shutdownConfig.RejectRequest && gf.activeCount <= 0 {
 		gf.shutdownConfig.RequestsFinished = true
 	}
 	return result
+}
+
+func (gf *gracefulShutdownFilter) Set(name string, conf interface{}) {
+	switch name {
+	case config.GracefulShutdownFilterShutdownConfig:
+		if shutdownConfig, ok := conf.(*config.ShutdownConfig); !ok {
+			gf.shutdownConfig = shutdownConfig
+			return
+		}
+		logger.Warnf("the type of config for {%s} should be *config.ShutdownConfig", config.GracefulShutdownFilterShutdownConfig)
+	default:
+		// do nothing
+	}
 }
 
 func (gf *gracefulShutdownFilter) rejectNewRequest() bool {

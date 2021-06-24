@@ -18,6 +18,7 @@
 package config
 
 import (
+	"context"
 	"path/filepath"
 	"sort"
 	"sync"
@@ -41,7 +42,9 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/common/proxy/proxy_factory"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
+	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/metadata/service"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
@@ -74,6 +77,13 @@ func TestConfigLoader(t *testing.T) {
 }
 
 func TestLoad(t *testing.T) {
+	extension.SetFilter(constant.CONSUMER_SHUTDOWN_FILTER, func() filter.Filter {
+		return &mockGracefulShutdownFilter{}
+	})
+	extension.SetFilter(constant.PROVIDER_SHUTDOWN_FILTER, func() filter.Filter {
+		return &mockGracefulShutdownFilter{}
+	})
+
 	doInitConsumer()
 	doInitProvider()
 
@@ -595,4 +605,18 @@ func ConvertURLArrToIntfArr(urls []*common.URL) []interface{} {
 		res = append(res, u.String())
 	}
 	return res
+}
+
+type mockGracefulShutdownFilter struct{}
+
+func (f *mockGracefulShutdownFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+	panic("implement me")
+}
+
+func (f *mockGracefulShutdownFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+	panic("implement me")
+}
+
+func (f *mockGracefulShutdownFilter) Set(name string, config interface{}) {
+	return
 }
