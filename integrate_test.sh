@@ -43,6 +43,7 @@ samples_testing() {
     go mod edit -replace=github.com/apache/dubbo-go=github.com/"$1"@"$2"
 
     # start integrate test
+    chmod +x integrate_test.sh
     ./start_integrate_test.sh
 }
 
