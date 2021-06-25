@@ -103,6 +103,10 @@ func (b *configCenter) toURL(baseConfig BaseConfig) (*common.URL, error) {
 	if !ok {
 		return nil, perrors.New("Could not find out the remote ref config, name: " + remoteRef)
 	}
+	// set protocol if remote not set
+	if len(rc.Protocol) <= 0 {
+		rc.Protocol = baseConfig.ConfigCenterConfig.Protocol
+	}
 	newURL, err := rc.ToURL()
 	return newURL, err
 }
