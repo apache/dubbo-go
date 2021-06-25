@@ -29,7 +29,6 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/protocol/grpc/internal"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
@@ -43,25 +42,29 @@ const (
 )
 
 func TestInvoke(t *testing.T) {
-	go internal.InitGrpcServer()
-	defer internal.ShutdownGrpcServer()
+	server, err := internal.NewServer("127.0.0.1:30000")
+	assert.NoError(t, err)
+	go server.Start()
+	defer server.Stop()
 
 	url, err := common.NewURL(mockGrpcCommonUrl)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	cli, err := NewClient(url)
-	if err != nil {
-		logger.Errorf("grpc new client error %v", err)
-	}
-	invoker := NewGrpcInvoker(url, cli)
+	assert.NoError(t, err)
 
-	args := []reflect.Value{}
+	var args []reflect.Value
 	args = append(args, reflect.ValueOf(&internal.HelloRequest{Name: "request name"}))
 	bizReply := &internal.HelloReply{}
-	invo := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("SayHello"),
-		invocation.WithParameterValues(args), invocation.WithReply(bizReply))
+	invo := invocation.NewRPCInvocationWithOptions(
+		invocation.WithMethodName("SayHello"),
+		invocation.WithParameterValues(args),
+		invocation.WithReply(bizReply),
+	)
+
+	invoker := NewGrpcInvoker(url, cli)
 	res := invoker.Invoke(context.Background(), invo)
-	assert.Nil(t, res.Error())
-	assert.NotNil(t, res.Result())
-	assert.Equal(t, "Hello request name", bizReply.Message)
+	assert.NoError(t, res.Error())
+	assert.Equal(t, &internal.HelloReply{Message: "Hello request name"}, res.Result().(reflect.Value).Interface())
+	assert.Equal(t, &internal.HelloReply{Message: "Hello request name"}, bizReply)
 }

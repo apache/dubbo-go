@@ -18,6 +18,7 @@
 package grpc
 
 import (
+	"context"
 	"reflect"
 	"testing"
 )
@@ -29,7 +30,6 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/protocol/grpc/internal"
 )
 
@@ -44,14 +44,20 @@ func TestGetInvoker(t *testing.T) {
 }
 
 func TestNewClient(t *testing.T) {
-	go internal.InitGrpcServer()
-	defer internal.ShutdownGrpcServer()
+	server, err := internal.NewServer("127.0.0.1:30000")
+	assert.NoError(t, err)
+	go server.Start()
+	defer server.Stop()
 
-	url, err := common.NewURL("grpc://127.0.0.1:30000/GrpcGreeterImpl?accesslog=&anyhost=true&app.version=0.0.1&application=BDTService&async=false&bean.name=GrpcGreeterImpl&category=providers&cluster=failover&dubbo=dubbo-provider-golang-2.6.0&environment=dev&execute.limit=&execute.limit.rejected.handler=&generic=false&group=&interface=io.grpc.examples.helloworld.GreeterGrpc%24IGreeter&ip=192.168.1.106&loadbalance=random&methods.SayHello.loadbalance=random&methods.SayHello.retries=1&methods.SayHello.tps.limit.interval=&methods.SayHello.tps.limit.rate=&methods.SayHello.tps.limit.strategy=&methods.SayHello.weight=0&module=dubbogo+say-hello+client&name=BDTService&organization=ikurento.com&owner=ZX&pid=49427&reference.filter=cshutdown&registry.role=3&remote.timestamp=1576923717&retries=&service.filter=echo%2Ctoken%2Caccesslog%2Ctps%2Cexecute%2Cpshutdown&side=provider&timestamp=1576923740&tps.limit.interval=&tps.limit.rate=&tps.limit.rejected.handler=&tps.limit.strategy=&tps.limiter=&version=&warmup=100!")
-	assert.Nil(t, err)
+	url, err := common.NewURL(mockGrpcCommonUrl)
+	assert.NoError(t, err)
+
 	cli, err := NewClient(url)
-	if err != nil {
-		logger.Errorf("grpc new client error %v", err)
-	}
-	assert.NotNil(t, cli)
+	assert.NoError(t, err)
+
+	impl := &internal.GreeterClientImpl{}
+	client := impl.GetDubboStub(cli.ClientConn)
+	result, err := client.SayHello(context.Background(), &internal.HelloRequest{Name: "request name"})
+	assert.NoError(t, err)
+	assert.Equal(t, &internal.HelloReply{Message: "Hello request name"}, result)
 }
