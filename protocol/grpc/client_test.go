@@ -30,21 +30,21 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/protocol/grpc/internal"
+	"dubbo.apache.org/dubbo-go/v3/protocol/grpc/internal/helloworld"
 )
 
 func TestGetInvoker(t *testing.T) {
 	var conn *grpc.ClientConn
-	var impl *internal.GrpcGreeterImpl
+	var impl *helloworld.GrpcGreeterImpl
 	invoker := getInvoker(impl, conn)
 
 	i := reflect.TypeOf(invoker)
-	expected := reflect.TypeOf(internal.NewGreeterClient(nil))
+	expected := reflect.TypeOf(helloworld.NewGreeterClient(nil))
 	assert.Equal(t, i, expected)
 }
 
 func TestNewClient(t *testing.T) {
-	server, err := internal.NewServer("127.0.0.1:30000")
+	server, err := helloworld.NewServer("127.0.0.1:30000")
 	assert.NoError(t, err)
 	go server.Start()
 	defer server.Stop()
@@ -55,9 +55,9 @@ func TestNewClient(t *testing.T) {
 	cli, err := NewClient(url)
 	assert.NoError(t, err)
 
-	impl := &internal.GreeterClientImpl{}
+	impl := &helloworld.GreeterClientImpl{}
 	client := impl.GetDubboStub(cli.ClientConn)
-	result, err := client.SayHello(context.Background(), &internal.HelloRequest{Name: "request name"})
+	result, err := client.SayHello(context.Background(), &helloworld.HelloRequest{Name: "request name"})
 	assert.NoError(t, err)
-	assert.Equal(t, &internal.HelloReply{Message: "Hello request name"}, result)
+	assert.Equal(t, &helloworld.HelloReply{Message: "Hello request name"}, result)
 }
