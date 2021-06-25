@@ -57,7 +57,7 @@ local_testing() {
     # build go-server image
     cd ./test/integrate/dubbo/go-server
 
-docker build . -t  ci-provider --build-arg PR_ORIGIN_REPO=$1 --build-arg PR_ORIGIN_COMMITID=$2
+    docker build . -t  ci-provider --build-arg PR_ORIGIN_REPO=$1 --build-arg PR_ORIGIN_COMMITID=$2
     cd "${ROOT_DIR}"
     docker run -d --network host ci-provider
 }
