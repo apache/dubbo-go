@@ -68,26 +68,29 @@ func GetNacosConfig(url *common.URL) ([]nacosConstant.ServerConfig, nacosConstan
 		serverConfigs = append(serverConfigs, nacosConstant.ServerConfig{IpAddr: ip, Port: uint64(port)})
 	}
 
-	var clientConfig nacosConstant.ClientConfig
 	timeout, err := time.ParseDuration(url.GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT))
 	if err != nil {
 		return []nacosConstant.ServerConfig{}, nacosConstant.ClientConfig{}, err
 	}
-	//enable local cache when nacos can not connect.
-	notLoadCache, err := strconv.ParseBool(url.GetParam(constant.NACOS_NOT_LOAD_LOCAL_CACHE, "true"))
-	if err != nil {
-		notLoadCache = false
-	}
-	clientConfig.TimeoutMs = uint64(timeout.Seconds() * 1000)
-	// clientConfig.ListenInterval = 2 * clientConfig.TimeoutMs
-	clientConfig.CacheDir = url.GetParam(constant.NACOS_CACHE_DIR_KEY, "")
-	clientConfig.LogDir = url.GetParam(constant.NACOS_LOG_DIR_KEY, "")
-	clientConfig.Endpoint = url.GetParam(constant.NACOS_ENDPOINT, "")
-	clientConfig.NamespaceId = url.GetParam(constant.NACOS_NAMESPACE_ID, "")
-	clientConfig.Username = url.GetParam(constant.NACOS_USERNAME, "")
-	clientConfig.Password = url.GetParam(constant.NACOS_PASSWORD, "")
-	clientConfig.NotLoadCacheAtStart = notLoadCache
 
+	clientConfig := nacosConstant.ClientConfig{
+		TimeoutMs:           uint64(int32(timeout / time.Millisecond)),
+		BeatInterval:        url.GetParamInt(constant.NACOS_BEAT_INTERVAL_KEY, 5000),
+		NamespaceId:         url.GetParam(constant.NACOS_NAMESPACE_ID, ""),
+		AppName:             url.GetParam(constant.NACOS_APP_NAME_KEY, ""),
+		Endpoint:            url.GetParam(constant.NACOS_ENDPOINT, ""),
+		RegionId:            url.GetParam(constant.NACOS_REGION_ID_KEY, ""),
+		AccessKey:           url.GetParam(constant.NACOS_ACCESS_KEY, ""),
+		SecretKey:           url.GetParam(constant.NACOS_SECRET_KEY, ""),
+		OpenKMS:             url.GetParamBool(constant.NACOS_OPEN_KMS_KEY, false),
+		CacheDir:            url.GetParam(constant.NACOS_CACHE_DIR_KEY, ""),
+		UpdateThreadNum:     url.GetParamByIntValue(constant.NACOS_UPDATE_THREAD_NUM_KEY, 20),
+		NotLoadCacheAtStart: url.GetParamBool(constant.NACOS_NOT_LOAD_LOCAL_CACHE, true),
+		Username:            url.GetParam(constant.NACOS_USERNAME, ""),
+		Password:            url.GetParam(constant.NACOS_PASSWORD, ""),
+		LogDir:              url.GetParam(constant.NACOS_LOG_DIR_KEY, ""),
+		LogLevel:            url.GetParam(constant.NACOS_LOG_LEVEL_KEY, "info"),
+	}
 	return serverConfigs, clientConfig, nil
 }
 
@@ -118,7 +121,6 @@ func NewNacosClient(rc *config.RemoteConfig) (*nacosClient.NacosNamingClient, er
 		notLoadCache = false
 	}
 	cc.TimeoutMs = uint64(timeout.Nanoseconds() / constant.MsToNanoRate)
-	// cc.ListenInterval = 2 * cc.TimeoutMs
 	cc.CacheDir = rc.GetParam(constant.NACOS_CACHE_DIR_KEY, "")
 	cc.LogDir = rc.GetParam(constant.NACOS_LOG_DIR_KEY, "")
 	cc.Endpoint = rc.GetParam(constant.NACOS_ENDPOINT, "")
