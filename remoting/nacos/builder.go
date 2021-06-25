@@ -96,39 +96,15 @@ func GetNacosConfig(url *common.URL) ([]nacosConstant.ServerConfig, nacosConstan
 
 // NewNacosClient create an instance with the config
 func NewNacosClient(rc *config.RemoteConfig) (*nacosClient.NacosNamingClient, error) {
-	if len(rc.Address) == 0 {
-		return nil, perrors.New("nacos address is empty!")
-	}
-	addresses := strings.Split(rc.Address, ",")
-	scs := make([]nacosConstant.ServerConfig, 0, len(addresses))
-	for _, addr := range addresses {
-		ip, portStr, err := net.SplitHostPort(addr)
-		if err != nil {
-			return nil, perrors.WithMessagef(err, "split [%s] ", addr)
-		}
-		port, _ := strconv.Atoi(portStr)
-		scs = append(scs, nacosConstant.ServerConfig{
-			IpAddr: ip,
-			Port:   uint64(port),
-		})
-	}
-
-	var cc nacosConstant.ClientConfig
-	timeout := rc.Timeout()
-	//enable local cache when nacos can not connect.
-	notLoadCache, err := strconv.ParseBool(rc.GetParam(constant.NACOS_NOT_LOAD_LOCAL_CACHE, "true"))
+	url, err := rc.ToURL()
 	if err != nil {
-		notLoadCache = false
+		return nil, err
 	}
-	cc.TimeoutMs = uint64(timeout.Nanoseconds() / constant.MsToNanoRate)
-	cc.CacheDir = rc.GetParam(constant.NACOS_CACHE_DIR_KEY, "")
-	cc.LogDir = rc.GetParam(constant.NACOS_LOG_DIR_KEY, "")
-	cc.Endpoint = rc.GetParam(constant.NACOS_ENDPOINT, "")
-	cc.NamespaceId = rc.GetParam(constant.NACOS_NAMESPACE_ID, "")
-	cc.Username = rc.Username
-	cc.Password = rc.Password
-	cc.NotLoadCacheAtStart = notLoadCache
+	scs, cc, err := GetNacosConfig(url)
 
+	if err != nil {
+		return nil, err
+	}
 	return nacosClient.NewNacosNamingClient(getNacosClientName(), true, scs, cc)
 }
 

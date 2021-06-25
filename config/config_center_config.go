@@ -57,7 +57,7 @@ type ConfigCenterConfig struct {
 	AppID         string            `default:"dubbo" yaml:"app_id"  json:"app_id,omitempty"`
 	TimeoutStr    string            `yaml:"timeout"  json:"timeout,omitempty"`
 	RemoteRef     string            `required:"false"  yaml:"remote_ref"  json:"remote_ref,omitempty"`
-	Parameters    map[string]string `yaml:"parameters"  json:"parameters,omitempty"`
+	Params        map[string]string `yaml:"params"  json:"parameters,omitempty"`
 }
 
 // UnmarshalYAML unmarshals the ConfigCenterConfig by @unmarshal function
@@ -81,7 +81,7 @@ func (c *ConfigCenterConfig) GetUrlMap() url.Values {
 	urlMap.Set(constant.CONFIG_PASSWORD_KEY, c.Password)
 	urlMap.Set(constant.CONFIG_TIMEOUT_KEY, c.TimeoutStr)
 
-	for key, val := range c.Parameters {
+	for key, val := range c.Params {
 		urlMap.Set(key, val)
 	}
 	return urlMap
@@ -92,23 +92,18 @@ type configCenter struct{}
 // toURL will compatible with baseConfig.ConfigCenterConfig.Address and baseConfig.ConfigCenterConfig.RemoteRef before 1.6.0
 // After 1.6.0 will not compatible, only baseConfig.ConfigCenterConfig.RemoteRef
 func (b *configCenter) toURL(baseConfig BaseConfig) (*common.URL, error) {
-	if len(baseConfig.ConfigCenterConfig.Address) > 0 {
+	remoteRef := baseConfig.ConfigCenterConfig.RemoteRef
+	// if set remote ref use remote
+	if len(remoteRef) <= 0 {
 		return common.NewURL(baseConfig.ConfigCenterConfig.Address,
 			common.WithProtocol(baseConfig.ConfigCenterConfig.Protocol),
 			common.WithParams(baseConfig.ConfigCenterConfig.GetUrlMap()))
 	}
-
-	remoteRef := baseConfig.ConfigCenterConfig.RemoteRef
 	rc, ok := baseConfig.GetRemoteConfig(remoteRef)
-
 	if !ok {
 		return nil, perrors.New("Could not find out the remote ref config, name: " + remoteRef)
 	}
-
-	newURL, err := rc.toURL()
-	if err == nil {
-		newURL.SetParams(baseConfig.ConfigCenterConfig.GetUrlMap())
-	}
+	newURL, err := rc.ToURL()
 	return newURL, err
 }
 
