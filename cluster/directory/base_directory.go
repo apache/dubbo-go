@@ -27,7 +27,6 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/cluster/router"
-	"github.com/apache/dubbo-go/cluster/router/chain"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
@@ -44,15 +43,11 @@ type BaseDirectory struct {
 }
 
 // NewBaseDirectory Create BaseDirectory with URL
-func NewBaseDirectory(url *common.URL) (dir BaseDirectory) {
-	dir = BaseDirectory{
-		url:         url,
-		destroyed:   atomic.NewBool(false),
-		routerChain: &chain.RouterChain{},
+func NewBaseDirectory(url *common.URL) BaseDirectory {
+	return BaseDirectory{
+		url:       url,
+		destroyed: atomic.NewBool(false),
 	}
-	// start to listen notify
-	go dir.routerChain.Loop()
-	return
 }
 
 // RouterChain Return router chain in directory
@@ -79,7 +74,7 @@ func (dir *BaseDirectory) GetDirectoryUrl() *common.URL {
 
 // AddRouters Convert url to routers and add them into dir.routerChain
 func (dir *BaseDirectory) AddRouters(urls []*common.URL) {
-	if len(urls) == 0 {
+	if len(urls) == 0 || dir.routerChain == nil {
 		return
 	}
 
