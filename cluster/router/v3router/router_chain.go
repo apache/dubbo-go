@@ -234,7 +234,7 @@ func parseFromConfigToRouters(virtualServiceConfig, destinationRuleConfig []byte
 			logger.Error("Parse config to uniform rule err = ", err)
 			return nil, err
 		}
-		rtr, err := NewUniformRouter(newRule, notify)
+		rtr, err := NewUniformRouter(newRule)
 		if err != nil {
 			logger.Error("new uniform router err = ", err)
 			return nil, err
