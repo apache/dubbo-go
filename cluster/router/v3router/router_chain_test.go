@@ -51,7 +51,7 @@ const (
 func TestNewUniformRouterChain(t *testing.T) {
 	vsBytes, _ := yaml.LoadYMLConfig(mockVSConfigPath)
 	drBytes, _ := yaml.LoadYMLConfig(mockDRConfigPath)
-	rc, err := NewUniformRouterChain(vsBytes, drBytes, make(chan struct{}))
+	rc, err := NewUniformRouterChain(vsBytes, drBytes)
 	assert.Nil(t, err)
 	assert.NotNil(t, rc)
 }
@@ -72,7 +72,7 @@ type ruleTestItemStruct struct {
 func TestParseConfigFromFile(t *testing.T) {
 	vsBytes, _ := yaml.LoadYMLConfig(mockVSConfigPath)
 	drBytes, _ := yaml.LoadYMLConfig(mockDRConfigPath)
-	routers, err := parseFromConfigToRouters(vsBytes, drBytes, make(chan struct{}, 1))
+	routers, err := parseFromConfigToRouters(vsBytes, drBytes)
 	fmt.Println(routers, err)
 	assert.Equal(t, len(routers), 1)
 	assert.NotNil(t, routers[0].dubboRouter)
@@ -199,7 +199,7 @@ func TestParseConfigFromFile(t *testing.T) {
 func TestRouterChain_Route(t *testing.T) {
 	vsBytes, _ := yaml.LoadYMLConfig(mockVSConfigPath)
 	drBytes, _ := yaml.LoadYMLConfig(mockDRConfigPath)
-	rc, err := NewUniformRouterChain(vsBytes, drBytes, make(chan struct{}))
+	rc, err := NewUniformRouterChain(vsBytes, drBytes)
 	assert.Nil(t, err)
 	assert.NotNil(t, rc)
 	newGoodURL, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0")

@@ -48,9 +48,9 @@ type RouterChain struct {
 }
 
 // NewUniformRouterChain return
-func NewUniformRouterChain(virtualServiceConfig, destinationRuleConfig []byte, notify chan struct{}) (router.PriorityRouter, error) {
+func NewUniformRouterChain(virtualServiceConfig, destinationRuleConfig []byte) (router.PriorityRouter, error) {
 	fromFileConfig := true
-	uniformRouters, err := parseFromConfigToRouters(virtualServiceConfig, destinationRuleConfig, notify)
+	uniformRouters, err := parseFromConfigToRouters(virtualServiceConfig, destinationRuleConfig)
 	if err != nil {
 		fromFileConfig = false
 		logger.Warnf("parse router config form local file failed, error = %+v", err)
@@ -59,7 +59,6 @@ func NewUniformRouterChain(virtualServiceConfig, destinationRuleConfig []byte, n
 		virtualServiceConfigBytes:  virtualServiceConfig,
 		destinationRuleConfigBytes: destinationRuleConfig,
 		routers:                    uniformRouters,
-		notify:                     notify,
 	}
 	if err := k8s_api.SetK8sEventListener(r); err != nil {
 		logger.Warnf("try listen K8s router config failed, error = %+v", err)
@@ -110,7 +109,7 @@ func (r *RouterChain) Process(event *config_center.ConfigChangeEvent) {
 				logger.Error("Process change of virtual service: event.Value marshal error:", err)
 				return
 			}
-			r.routers, err = parseFromConfigToRouters(data, r.destinationRuleConfigBytes, r.notify)
+			r.routers, err = parseFromConfigToRouters(data, r.destinationRuleConfigBytes)
 			if err != nil {
 				logger.Error("Process change of virtual service: parseFromConfigToRouters:", err)
 				return
@@ -142,7 +141,7 @@ func (r *RouterChain) Process(event *config_center.ConfigChangeEvent) {
 				logger.Error("Process change of dest rule: event.Value marshal error:", err)
 				return
 			}
-			r.routers, err = parseFromConfigToRouters(r.virtualServiceConfigBytes, data, r.notify)
+			r.routers, err = parseFromConfigToRouters(r.virtualServiceConfigBytes, data)
 			if err != nil {
 				logger.Error("Process change of dest rule: parseFromConfigToRouters:", err)
 				return
@@ -174,7 +173,7 @@ func (r *RouterChain) URL() *common.URL {
 }
 
 // parseFromConfigToRouters parse virtualService and destinationRule yaml file bytes to target router list
-func parseFromConfigToRouters(virtualServiceConfig, destinationRuleConfig []byte, notify chan struct{}) ([]*UniformRouter, error) {
+func parseFromConfigToRouters(virtualServiceConfig, destinationRuleConfig []byte) ([]*UniformRouter, error) {
 	var virtualServiceConfigList []*config.VirtualServiceConfig
 	destRuleConfigsMap := make(map[string]map[string]map[string]string)
 
