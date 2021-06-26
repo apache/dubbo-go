@@ -138,11 +138,6 @@ func TestNewProviderConfig(t *testing.T) {
 		WithServiceWarmUpTime("test-warmup"),
 	)
 
-	defaultConsulRegistry := NewDefaultRegistryConfig("consul")
-	assert.Equal(t, defaultConsulRegistry.Address, defaultConsulAddr)
-	assert.Equal(t, defaultConsulRegistry.Protocol, "consul")
-	assert.Equal(t, defaultConsulRegistry.TimeoutStr, defaultRegistryTimeout)
-
 	defaultNacosRegistry := NewDefaultRegistryConfig("nacos")
 	assert.Equal(t, defaultNacosRegistry.Address, defaultNacosAddr)
 	assert.Equal(t, defaultNacosRegistry.Protocol, "nacos")
@@ -151,7 +146,7 @@ func TestNewProviderConfig(t *testing.T) {
 	testProviderConfig := NewProviderConfig(
 		WithProviderServices("UserProvider", serviceConfig),
 		WithProviderProtocol("dubbo", "dubbo", "20000"),
-		WithProviderRegistry("demoConsul", defaultConsulRegistry),
+		WithProviderRegistry("demoNacos", defaultNacosRegistry),
 	)
 
 	assert.NotNil(t, testProviderConfig.Services)
@@ -160,10 +155,6 @@ func TestNewProviderConfig(t *testing.T) {
 		assert.Equal(t, v, serviceConfig)
 	}
 	assert.NotNil(t, testProviderConfig.Registries)
-
-	if registry, ok := testProviderConfig.Registries["demoConsul"]; ok {
-		assert.Equal(t, registry, defaultConsulRegistry)
-	}
 
 	if registry, ok := testProviderConfig.Registries["demoNacos"]; ok {
 		assert.Equal(t, registry, defaultNacosRegistry)
