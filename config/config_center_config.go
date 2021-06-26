@@ -132,7 +132,8 @@ func (b *configCenter) prepareEnvironment(baseConfig BaseConfig, configCenterUrl
 		logger.Errorf("Get dynamic configuration error , error message is %v", err)
 		return perrors.WithStack(err)
 	}
-	config.GetEnvInstance().SetDynamicConfiguration(dynamicConfig)
+	envInstance := config.GetEnvInstance()
+	envInstance.SetDynamicConfiguration(dynamicConfig)
 	content, err := dynamicConfig.GetProperties(baseConfig.ConfigCenterConfig.ConfigFile,
 		config_center.WithGroup(baseConfig.ConfigCenterConfig.Group))
 	if err != nil {
@@ -164,7 +165,7 @@ func (b *configCenter) prepareEnvironment(baseConfig BaseConfig, configCenterUrl
 	if err != nil {
 		return perrors.WithStack(err)
 	}
-	config.GetEnvInstance().UpdateExternalConfigMap(mapContent)
+	envInstance.UpdateExternalConfigMap(mapContent)
 
 	// appGroup config file
 	if len(appContent) != 0 {
@@ -172,7 +173,7 @@ func (b *configCenter) prepareEnvironment(baseConfig BaseConfig, configCenterUrl
 		if err != nil {
 			return perrors.WithStack(err)
 		}
-		config.GetEnvInstance().UpdateAppExternalConfigMap(appMapContent)
+		envInstance.UpdateAppExternalConfigMap(appMapContent)
 	}
 
 	return nil

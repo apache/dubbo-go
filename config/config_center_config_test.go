@@ -59,6 +59,7 @@ func TestStartConfigCenterWithRemoteRef(t *testing.T) {
 	baseConfig := &BaseConfig{
 		Remotes: m,
 		ConfigCenterConfig: &ConfigCenterConfig{
+			Protocol:   "mock",
 			Group:      "dubbo",
 			RemoteRef:  "mock",
 			ConfigFile: "mockDubbo.properties",
@@ -71,25 +72,4 @@ func TestStartConfigCenterWithRemoteRef(t *testing.T) {
 	b, v := config.GetEnvInstance().Configuration().Back().Value.(*config.InmemoryConfiguration).GetProperty("dubbo.application.organization")
 	assert.True(t, b)
 	assert.Equal(t, "ikurento.com", v)
-}
-
-func TestStartConfigCenterWithRemoteRefError(t *testing.T) {
-	extension.SetConfigCenterFactory("mock", func() config_center.DynamicConfigurationFactory {
-		return &config_center.MockDynamicConfigurationFactory{}
-	})
-	m := make(map[string]*RemoteConfig)
-	m["mock"] = &RemoteConfig{Address: "172.0.0.1"}
-	baseConfig := &BaseConfig{
-		Remotes: m,
-		ConfigCenterConfig: &ConfigCenterConfig{
-			Protocol:   "mock",
-			Group:      "dubbo",
-			RemoteRef:  "mock",
-			ConfigFile: "mockDubbo.properties",
-		},
-	}
-
-	c := &configCenter{}
-	err := c.startConfigCenter(*baseConfig)
-	assert.Error(t, err)
 }
