@@ -14,7 +14,7 @@ Apache Dubbo Go 语言实现，架起 Java 和 Golang 之间的桥梁，与 gRPC
 
 ## 架构
 
-![dubbo go extend](https://dubbogo.github.io/img/doc/dubbo-go-arch.png)
+![dubbo go extend](https://dubbogo.github.io/img/doc/dubbo-go3.0-arch.jpg)
 
 Dubbo-go已经实现了Dubbo的大部分层级，包括协议层（protocol layer）、注册层（registry layer)）等等。在Dubbo-go中使用了拓展模块（extension module）以实现更灵活的系统架构，开发者可以根据层接口实现一个自定义的层，并在不改动源代码的前提下通过`extension.Set`方法将它应用到Dubbo-go中。
 

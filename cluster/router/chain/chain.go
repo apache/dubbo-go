@@ -20,7 +20,6 @@ package chain
 import (
 	"sort"
 	"sync"
-	"time"
 )
 
 import (
@@ -31,7 +30,6 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/router"
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
@@ -53,21 +51,6 @@ type RouterChain struct {
 	builtinRouters []router.PriorityRouter
 
 	mutex sync.RWMutex
-
-	url *common.URL
-
-	// The times of address notification since last update for address cache
-	count int64
-	// The timestamp of last update for address cache
-	last time.Time
-	// Channel for notify to update the address cache
-	notify chan struct{}
-	// Address cache
-	cache atomic.Value
-}
-
-func (c *RouterChain) GetNotifyChan() chan struct{} {
-	return c.notify
 }
 
 // Route Loop routers in RouterChain and call Route method to determine the target invokers list.
@@ -91,9 +74,6 @@ func (c *RouterChain) AddRouters(routers []router.PriorityRouter) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	c.routers = newRouters
-	go func() {
-		c.notify <- struct{}{}
-	}()
 }
 
 // SetInvokers receives updated invokers from registry center. If the times of notification exceeds countThreshold and
@@ -102,10 +82,6 @@ func (c *RouterChain) SetInvokers(invokers []protocol.Invoker) {
 	c.mutex.Lock()
 	c.invokers = invokers
 	c.mutex.Unlock()
-
-	go func() {
-		c.notify <- struct{}{}
-	}()
 }
 
 // copyRouters make a snapshot copy from RouterChain's router list.
@@ -142,18 +118,13 @@ func NewRouterChain(url *common.URL) (*RouterChain, error) {
 		return nil, perrors.Errorf("No routerFactory exits , create one please")
 	}
 
-	chain := &RouterChain{
-		last:   time.Now(),
-		notify: make(chan struct{}),
-	}
-
 	routers := make([]router.PriorityRouter, 0, len(routerFactories))
 
 	for key, routerFactory := range routerFactories {
 		if virtualServiceConfigByte == nil || destinationRuleConfigByte == nil {
 			logger.Warnf("virtual Service Config or destinationRule Confi Byte may be empty, pls check your CONF_VIRTUAL_SERVICE_FILE_PATH and CONF_DEST_RULE_FILE_PATH env is correctly point to your yaml file\n")
 		}
-		r, err := routerFactory().NewPriorityRouter(virtualServiceConfigByte, destinationRuleConfigByte, chain.notify)
+		r, err := routerFactory().NewPriorityRouter(virtualServiceConfigByte, destinationRuleConfigByte)
 		if r == nil || err != nil {
 			logger.Errorf("router chain build router fail! routerFactories key:%s  error:%vv", key, err)
 			continue
@@ -168,36 +139,13 @@ func NewRouterChain(url *common.URL) (*RouterChain, error) {
 
 	routerNeedsUpdateInit := atomic.Bool{}
 	routerNeedsUpdateInit.Store(false)
-	chain.routers = newRouters
-	chain.builtinRouters = routers
-	if url != nil {
-		chain.url = url
+
+	chain := &RouterChain{
+		routers:        newRouters,
+		builtinRouters: routers,
 	}
 
 	return chain, nil
-}
-
-// isInvokersChanged compares new invokers on the right changes, compared with the old invokers on the left.
-func isInvokersChanged(left []protocol.Invoker, right []protocol.Invoker) bool {
-	if len(right) != len(left) {
-		return true
-	}
-
-	for _, r := range right {
-		found := false
-		rurl := r.GetURL()
-		for _, l := range left {
-			lurl := l.GetURL()
-			if common.GetCompareURLEqualFunc()(lurl, rurl, constant.TIMESTAMP_KEY, constant.REMOTE_TIMESTAMP_KEY) {
-				found = true
-				break
-			}
-		}
-		if !found {
-			return true
-		}
-	}
-	return false
 }
 
 // sortRouter Sort router instance by priority with stable algorithm
