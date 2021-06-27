@@ -14,7 +14,7 @@ Apache Dubbo-go, a Dubbo implementation written in Golang, is born to bridge the
 
 ## Architecture
 
-![dubbo go extend](https://dubbogo.github.io/img/doc/dubbo-go-arch.png)
+![dubbo go extend](https://dubbogo.github.io/img/doc/dubbo-go3.0-arch.jpg)
 
 Dubbo-go has been implemented most layers of Dubbo, like protocol layer, registry layer, etc. An extension module is applied to Dubbo-go in order to achieve a more flexible architecture. Developers are allowed to implement a customized layer conformed to the layer interface and use then in Dubbo-go via `extension.Set` method without modifying the source code.
 
