@@ -35,6 +35,8 @@ import (
 
 func TestNewNacosClient(t *testing.T) {
 	rc := &config.RemoteConfig{}
+	rc.Protocol = "nacos"
+	rc.Username = "nacos"
 	client, err := NewNacosClient(rc)
 
 	// address is nil
