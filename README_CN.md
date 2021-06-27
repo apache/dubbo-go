@@ -143,6 +143,11 @@ Apache License, Version 2.0
 
 ![feature](./doc/pic/arch/dubbo-go-arch.png)
 
+## 简化 import
+当使用 dubbo-go 提供的服务时，你需要通过 import 引入大量的组件，如注册中心、RPC 协议、配置中心等等。为了简化这一部分工作，我们创建了项目 [imports](https://github.com/dubbogo/imports)，该项目集成了 dubbo-go 的内置组件，能够帮助你更简易使用 dubbo-go 提供的组件集合。  
+比如当你使用 dubbo-go 的服务时，你想要指定使用 zookeeper 注册中心、dubbo 协议、nacos 配置中心，只需在你的代码中加入 `import github.com/dubbogo/imports/dubbo/nacos/zk`。
+如果你需要更多简化 import 相关的内容支持，请访问 [imports](https://github.com/dubbogo/imports)。
+
 ## 文档
 
 请访问 [dubbo官方文档中关于 dubbo-go 的系列文档](http://dubbo.apache.org/zh/blog/) 或 [过往dubbo-go文档列表](http://alexstocks.github.io/html/dubbogo.html)。
