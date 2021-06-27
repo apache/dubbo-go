@@ -75,7 +75,7 @@ func (ef *GenericServiceFilter) Invoke(ctx context.Context, invoker protocol.Inv
 	genericKey = invocation.AttachmentsByKey(constant.GENERIC_KEY, constant.GENERIC_SERIALIZATION_DEFAULT)
 	if genericKey == constant.GENERIC_SERIALIZATION_DEFAULT {
 		hessianParams, isAssignSuccess := invocation.Arguments()[2].([]hessian.Object)
-		if !ok {
+		if !isAssignSuccess {
 			logger.Errorf("[Generic Service Filter] wrong serialization")
 			return &protocol.RPCResult{}
 		}
