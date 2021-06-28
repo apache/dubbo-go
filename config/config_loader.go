@@ -103,7 +103,7 @@ func setDefaultValue(target interface{}) {
 	switch target.(type) {
 	case *ProviderConfig:
 		p := target.(*ProviderConfig)
-		if len(p.Registries) == 0 {
+		if len(p.Registries) == 0 && p.Registry == nil {
 			p.Registries[constant.DEFAULT_REGISTRY_ZK_ID] = registryConfig
 		}
 		if len(p.Protocols) == 0 {
@@ -117,7 +117,7 @@ func setDefaultValue(target interface{}) {
 		}
 	default:
 		c := target.(*ConsumerConfig)
-		if len(c.Registries) == 0 {
+		if len(c.Registries) == 0 && c.Registry == nil {
 			c.Registries[constant.DEFAULT_REGISTRY_ZK_ID] = registryConfig
 		}
 		if c.ApplicationConfig == nil {

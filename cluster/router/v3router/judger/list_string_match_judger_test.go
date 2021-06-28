@@ -15,17 +15,26 @@
  * limitations under the License.
  */
 
-package router
+package judger
 
-// BaseRouterRule
-type BaseRouterRule struct {
-	RawRule  string
-	Runtime  bool
-	Force    bool
-	Valid    bool
-	Enabled  bool
-	Priority int
-	Dynamic  bool
-	Scope    string
-	Key      string
+import (
+	"testing"
+)
+
+import (
+	"github.com/stretchr/testify/assert"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/config"
+)
+
+func TestListStringMatchJudger(t *testing.T) {
+	assert.True(t, newListStringMatchJudger(&config.ListStringMatch{
+		Oneof: []*config.StringMatch{{Exact: "abd"}},
+	}).Judge("abd"))
+
+	assert.False(t, newListStringMatchJudger(&config.ListStringMatch{
+		Oneof: []*config.StringMatch{{Exact: "abc"}},
+	}).Judge("abd"))
 }

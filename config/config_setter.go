@@ -15,18 +15,12 @@
  * limitations under the License.
  */
 
-package router
+package config
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+const (
+	GracefulShutdownFilterShutdownConfig = "GracefulShutdownFilterShutdownConfig"
 )
 
-// Chain
-type Chain interface {
-	Route(*common.URL, protocol.Invocation) []protocol.Invoker
-	// Refresh invokers
-	SetInvokers([]protocol.Invoker)
-	// AddRouters Add routers
-	AddRouters([]PriorityRouter)
+type Setter interface {
+	Set(name string, config interface{})
 }

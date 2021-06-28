@@ -18,7 +18,6 @@
 package nacos
 
 import (
-	"strings"
 	"sync"
 	"time"
 )
@@ -29,7 +28,6 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/remoting/nacos"
 )
@@ -58,57 +56,20 @@ func (n *NacosClient) SetClient(configClient *nacosClient.NacosConfigClient) {
 	n.Unlock()
 }
 
-type option func(*options)
-
-type options struct {
-	nacosName string
-	// configClient    *NacosClient
-}
-
-// WithNacosName Set nacos name
-func WithNacosName(name string) option {
-	return func(opt *options) {
-		opt.nacosName = name
-	}
-}
-
 // ValidateNacosClient Validate nacos configClient , if null then create it
-func ValidateNacosClient(container nacosClientFacade, opts ...option) error {
+func ValidateNacosClient(container nacosClientFacade) error {
 	if container == nil {
 		return perrors.Errorf("container can not be null")
 	}
-	os := &options{}
-	for _, opt := range opts {
-		opt(os)
-	}
-
 	url := container.GetURL()
-	timeout, err := time.ParseDuration(url.GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT))
-	if err != nil {
-		logger.Errorf("invalid timeout config %+v,got err %+v",
-			url.GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT), err)
-		return perrors.WithMessagef(err, "newNacosClient(address:%+v)", url.Location)
-	}
-	nacosAddresses := strings.Split(url.Location, ",")
-	if container.NacosClient() == nil {
+	if container.NacosClient() == nil || container.NacosClient().Client() == nil {
 		// in dubbo ,every registry only connect one node ,so this is []string{r.Address}
 		newClient, err := nacos.NewNacosConfigClientByUrl(url)
 		if err != nil {
-			logger.Errorf("newNacosClient(name{%s}, nacos address{%v}, timeout{%d}) = error{%v}",
-				os.nacosName, url.Location, timeout.String(), err)
+			logger.Errorf("ValidateNacosClient(name{%s}, nacos address{%v} = error{%v}", url.Location, err)
 			return perrors.WithMessagef(err, "newNacosClient(address:%+v)", url.Location)
 		}
 		container.SetNacosClient(newClient)
-	}
-
-	if container.NacosClient().Client() == nil {
-		configClient, err := nacos.NewNacosConfigClientByUrl(url)
-		if err != nil {
-			logger.Errorf("initNacosConfigClient(addr:%+v,timeout:%v,url:%v) = err %+v",
-				nacosAddresses, timeout.String(), url, err)
-			return perrors.WithMessagef(err, "newNacosClient(address:%+v)", url.Location)
-		}
-		container.NacosClient().SetClient(configClient.Client())
 	}
 	return perrors.WithMessagef(nil, "newNacosClient(address:%+v)", url.PrimitiveURL)
 }

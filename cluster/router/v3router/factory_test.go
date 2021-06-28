@@ -29,7 +29,7 @@ import (
 func TestUniformRouterFacotry(t *testing.T) {
 	factory := NewUniformRouterFactory()
 	assert.NotNil(t, factory)
-	router, err := factory.NewPriorityRouter([]byte{}, []byte{}, make(chan struct{}))
+	router, err := factory.NewPriorityRouter([]byte{}, []byte{})
 	assert.Nil(t, err)
 	assert.NotNil(t, router)
 }

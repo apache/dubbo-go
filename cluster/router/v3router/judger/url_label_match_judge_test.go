@@ -15,18 +15,27 @@
  * limitations under the License.
  */
 
-package router
+package judger
+
+import (
+	"testing"
+)
+
+import (
+	"github.com/stretchr/testify/assert"
+)
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
-// Chain
-type Chain interface {
-	Route(*common.URL, protocol.Invocation) []protocol.Invoker
-	// Refresh invokers
-	SetInvokers([]protocol.Invoker)
-	// AddRouters Add routers
-	AddRouters([]PriorityRouter)
+func TestJudgeUrlLabel(t *testing.T) {
+	url := common.NewURLWithOptions(common.WithParamsValue("a", "A"))
+
+	labels := make(map[string]string)
+	labels["a"] = "A"
+	assert.True(t, JudgeUrlLabel(url, labels))
+
+	labels["a"] = "B"
+	assert.False(t, JudgeUrlLabel(url, labels))
 }

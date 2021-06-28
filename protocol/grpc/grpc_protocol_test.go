@@ -69,12 +69,13 @@ func doInitProvider() {
 
 func TestGrpcProtocolExport(t *testing.T) {
 	// Export
-	addService()
+	config.SetProviderService(internal.NewService())
 	doInitProvider()
 
-	proto := GetProtocol()
 	url, err := common.NewURL(mockGrpcCommonUrl)
 	assert.NoError(t, err)
+
+	proto := GetProtocol()
 	exporter := proto.Export(protocol.NewBaseInvoker(url))
 	time.Sleep(time.Second)
 
@@ -98,13 +99,15 @@ func TestGrpcProtocolExport(t *testing.T) {
 }
 
 func TestGrpcProtocolRefer(t *testing.T) {
-	go internal.InitGrpcServer()
-	defer internal.ShutdownGrpcServer()
-	time.Sleep(time.Second)
+	server, err := internal.NewServer("127.0.0.1:30000")
+	assert.NoError(t, err)
+	go server.Start()
+	defer server.Stop()
 
-	proto := GetProtocol()
 	url, err := common.NewURL(mockGrpcCommonUrl)
 	assert.NoError(t, err)
+
+	proto := GetProtocol()
 	invoker := proto.Refer(url)
 
 	// make sure url
