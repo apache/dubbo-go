@@ -23,7 +23,6 @@ import (
 )
 
 import (
-	hessian "github.com/apache/dubbo-go-hessian2"
 	"github.com/mitchellh/mapstructure"
 	perrors "github.com/pkg/errors"
 )
@@ -34,18 +33,18 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/filter"
+	"dubbo.apache.org/dubbo-go/v3/filter/filter_impl/generic"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	invocation2 "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
 const (
-	// GENERIC_SERVICE defines the filter name
-	GENERIC_SERVICE = "generic_service"
-	// nolint
+	// GenericService defines the filter name
+	GenericService = "generic_service"
 )
 
 func init() {
-	extension.SetFilter(GENERIC_SERVICE, GetGenericServiceFilter)
+	extension.SetFilter(GenericService, GetGenericServiceFilter)
 }
 
 // nolint
@@ -59,39 +58,23 @@ func (ef *GenericServiceFilter) Invoke(ctx context.Context, invoker protocol.Inv
 	if invocation.MethodName() != constant.GENERIC || len(invocation.Arguments()) != 3 {
 		return invoker.Invoke(ctx, invocation)
 	}
-	logger.Debugf("[Generic Service Filter] from subUrl: %v", invoker.GetURL().SubURL)
 
 	var (
-		ok         bool
-		err        error
-		methodName string
-		genericKey string
-		newParams  []interface{}
-		argsType   []reflect.Type
-		oldParams  []interface{}
+		methodName     string
+		genericKey     string
+		invocationArgs []interface{}
+		argsType       []reflect.Type
 	)
 
 	genericKey = invocation.AttachmentsByKey(constant.GENERIC_KEY, constant.GENERIC_SERIALIZATION_DEFAULT)
-	if genericKey == constant.GENERIC_SERIALIZATION_DEFAULT {
-		hessianParams, isAssignSuccess := invocation.Arguments()[2].([]hessian.Object)
-		if !isAssignSuccess {
-			logger.Errorf("[Generic Service Filter] wrong serialization")
-			return &protocol.RPCResult{}
-		}
-		ok = isAssignSuccess
-		// convert []hessian.Object to []interface{}
-		oldParams = make([]interface{}, len(hessianParams))
-		for i := range hessianParams {
-			oldParams[i] = hessianParams[i]
-		}
-	} else if genericKey == constant.GENERIC_SERIALIZATION_JSONRPC {
-		oldParams, ok = invocation.Arguments()[2].([]interface{})
-	} else {
+	processor := extension.GetGenericProcessor(genericKey)
+	if processor == nil {
 		logger.Errorf("[Generic Service Filter] Don't support this generic: %s", genericKey)
 		return &protocol.RPCResult{}
 	}
-	if !ok {
-		logger.Errorf("[Generic Service Filter] wrong serialization")
+	newArgs, err := processor.Deserialize(invocation.Arguments()[2])
+	if err != nil {
+		logger.Errorf("[Generic Service Filter] Deserialization error")
 		return &protocol.RPCResult{}
 	}
 	// check method and arguments
@@ -100,28 +83,29 @@ func (ef *GenericServiceFilter) Invoke(ctx context.Context, invoker protocol.Inv
 	svc := common.ServiceMap.GetServiceByServiceKey(url.Protocol, url.ServiceKey())
 	method := svc.Method()[methodName]
 	if method == nil {
-		logger.Errorf("[Generic Service Filter] Don't have this method: %s", methodName)
+		logger.Errorf("[Generic Service Filter] Don't have this method: %s, "+
+			"make sure you have import the package and register it by invoking extension.SetGenericProcessor.", methodName)
 		return &protocol.RPCResult{}
 	}
 	argsType = method.ArgsType()
-	if len(oldParams) != len(argsType) {
+	if len(newArgs) != len(argsType) {
 		logger.Errorf("[Generic Service Filter] method:%s invocation arguments number was wrong", methodName)
 		return &protocol.RPCResult{}
 	}
-	// oldParams convert to newParams
-	newParams = make([]interface{}, len(oldParams))
+	// newArgs convert to invocationArgs
+	invocationArgs = make([]interface{}, len(newArgs))
 	for i := range argsType {
-		newParam := reflect.New(argsType[i]).Interface()
-		err = mapstructure.Decode(oldParams[i], newParam)
-		newParam = reflect.ValueOf(newParam).Elem().Interface()
+		newArgument := reflect.New(argsType[i]).Interface()
+		err = mapstructure.Decode(newArgs[i], newArgument)
+		newArgument = reflect.ValueOf(newArgument).Elem().Interface()
 		if err != nil {
 			logger.Errorf("[Generic Service Filter] decode arguments map to struct wrong: error{%v}", perrors.WithStack(err))
 			return &protocol.RPCResult{}
 		}
-		newParams[i] = newParam
+		invocationArgs[i] = newArgument
 	}
-	logger.Debugf("[Generic Service Filter] newParams: %v", newParams)
-	newInvocation := invocation2.NewRPCInvocation(methodName, newParams, invocation.Attachments())
+	logger.Debugf("[Generic Service Filter] invocationArgs: %v", invocationArgs)
+	newInvocation := invocation2.NewRPCInvocation(methodName, invocationArgs, invocation.Attachments())
 	newInvocation.SetReply(invocation.Reply())
 	return invoker.Invoke(ctx, newInvocation)
 }
@@ -133,7 +117,7 @@ func (ef *GenericServiceFilter) OnResponse(ctx context.Context, result protocol.
 		if v.Kind() == reflect.Ptr {
 			v = v.Elem()
 		}
-		result.SetResult(struct2MapAll(v.Interface()))
+		result.SetResult(generic.Struct2MapAll(v.Interface()))
 	}
 	return result
 }

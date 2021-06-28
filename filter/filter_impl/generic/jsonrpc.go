@@ -18,13 +18,17 @@
 package generic
 
 import (
+	perrors "github.com/pkg/errors"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 )
 
 const (
 	// same with dubbo
-	Jsonrpc = "true"
+	Jsonrpc = "jsonrpc"
 )
 
 func init() {
@@ -37,10 +41,14 @@ func NewJsonrpcGenericProcessor() filter.GenericProcessor {
 	return &jsonrpcGenericProcessor{}
 }
 
-func (jsonrpcGenericProcessor) Serialize(args interface{}) (interface{}, error) {
-	panic("implement me")
+func (jsonrpcGenericProcessor) Serialize(args []interface{}) ([]interface{}, error) {
+	return args, nil
 }
 
-func (jsonrpcGenericProcessor) Deserialize(args interface{}) (interface{}, error) {
-	panic("implement me")
+func (jsonrpcGenericProcessor) Deserialize(args interface{}) ([]interface{}, error) {
+	newArgs, ok := args.([]interface{})
+	if !ok {
+		return nil, perrors.New("Deserialize generic invoke arguments error")
+	}
+	return newArgs, nil
 }

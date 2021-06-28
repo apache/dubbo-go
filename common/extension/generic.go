@@ -23,17 +23,17 @@ import (
 
 var generics = make(map[string]filter.GenericProcessor)
 
-// SetConfigPostProcessor registers a ConfigPostProcessor with the given name.
+// SetGenericProcessor registers a GenericProcessor with the given name.
 func SetGenericProcessor(name string, processor filter.GenericProcessor) {
 	generics[name] = processor
 }
 
-// GetConfigPostProcessor finds a ConfigPostProcessor by name.
+// GetGenericProcessor finds a GenericProcessor by name.
 func GetGenericProcessor(name string) filter.GenericProcessor {
 	return generics[name]
 }
 
-// GetConfigPostProcessors returns all registered instances of ConfigPostProcessor.
+// GetGenericProcessors returns all registered instances of GenericProcessor.
 func GetGenericProcessors() []filter.GenericProcessor {
 	ret := make([]filter.GenericProcessor, 0, len(generics))
 	for _, v := range generics {

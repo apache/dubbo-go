@@ -19,13 +19,6 @@ package filter_impl
 
 import (
 	"context"
-	"reflect"
-	"strings"
-	"time"
-)
-
-import (
-	hessian "github.com/apache/dubbo-go-hessian2"
 )
 
 import (
@@ -59,34 +52,18 @@ func (ef *GenericFilter) Invoke(ctx context.Context, invoker protocol.Invoker, i
 	}
 	logger.Debugf("[generic filter] Attachments %+v", invocation.Attachments())
 
-	var (
-		ok           bool
-		genericKey   string
-		oldParams    []interface{}
-		newArguments []interface{}
-	)
-	genericKey = invocation.AttachmentsByKey(constant.GENERIC_KEY, constant.GENERIC_SERIALIZATION_DEFAULT)
-	oldArguments := invocation.Arguments()
-
-	if constant.GENERIC_SERIALIZATION_DEFAULT == genericKey {
-		if oldParams, ok = oldArguments[2].([]interface{}); ok {
-			newParams := make([]hessian.Object, 0, len(oldParams))
-			for i := range oldParams {
-				newParams = append(newParams, hessian.Object(struct2MapAll(oldParams[i])))
-			}
-			newArguments = []interface{}{
-				oldArguments[0],
-				oldArguments[1],
-				newParams,
-			}
-		}
-	} else if constant.GENERIC_SERIALIZATION_JSONRPC == genericKey {
-		return invoker.Invoke(ctx, invocation)
-	} else {
-		logger.Errorf("[generic filter] Don't support this generic: %s", genericKey)
+	genericKey := invocation.AttachmentsByKey(constant.GENERIC_KEY, constant.GENERIC_SERIALIZATION_DEFAULT)
+	processor := extension.GetGenericProcessor(genericKey)
+	if processor == nil {
+		logger.Errorf("[Generic Filter] Don't support this generic: %s", genericKey)
 		return &protocol.RPCResult{}
 	}
-	newInvocation := invocation2.NewRPCInvocation(invocation.MethodName(), newArguments, invocation.Attachments())
+	newArgs, err := processor.Serialize(invocation.Arguments())
+	if err != nil {
+		logger.Errorf("[Generic Filter] Serialization error", genericKey)
+		return &protocol.RPCResult{}
+	}
+	newInvocation := invocation2.NewRPCInvocation(invocation.MethodName(), newArgs, invocation.Attachments())
 	newInvocation.SetReply(invocation.Reply())
 	return invoker.Invoke(ctx, newInvocation)
 }
@@ -100,85 +77,4 @@ func (ef *GenericFilter) OnResponse(_ context.Context, result protocol.Result, _
 // GetGenericFilter returns GenericFilter instance
 func GetGenericFilter() filter.Filter {
 	return &GenericFilter{}
-}
-
-func struct2MapAll(obj interface{}) interface{} {
-	if obj == nil {
-		return obj
-	}
-	t := reflect.TypeOf(obj)
-	v := reflect.ValueOf(obj)
-	if t.Kind() == reflect.Struct {
-		result := make(map[string]interface{}, t.NumField())
-		for i := 0; i < t.NumField(); i++ {
-			field := t.Field(i)
-			value := v.Field(i)
-			kind := value.Kind()
-			if kind == reflect.Struct || kind == reflect.Slice || kind == reflect.Map {
-				if value.CanInterface() {
-					tmp := value.Interface()
-					if _, ok := tmp.(time.Time); ok {
-						setInMap(result, field, tmp)
-						continue
-					}
-					setInMap(result, field, struct2MapAll(tmp))
-				}
-			} else {
-				if value.CanInterface() {
-					setInMap(result, field, value.Interface())
-				}
-			}
-		}
-		return result
-	} else if t.Kind() == reflect.Slice {
-		value := reflect.ValueOf(obj)
-		newTemps := make([]interface{}, 0, value.Len())
-		for i := 0; i < value.Len(); i++ {
-			newTemp := struct2MapAll(value.Index(i).Interface())
-			newTemps = append(newTemps, newTemp)
-		}
-		return newTemps
-	} else if t.Kind() == reflect.Map {
-		newTempMap := make(map[interface{}]interface{}, v.Len())
-		iter := v.MapRange()
-		for iter.Next() {
-			if !iter.Value().CanInterface() {
-				continue
-			}
-			key := iter.Key()
-			mapV := iter.Value().Interface()
-			newTempMap[convertMapKey(key)] = struct2MapAll(mapV)
-		}
-		return newTempMap
-	} else {
-		return obj
-	}
-}
-
-func convertMapKey(key reflect.Value) interface{} {
-	switch key.Kind() {
-	case reflect.Bool, reflect.Int, reflect.Int8,
-		reflect.Int16, reflect.Int32, reflect.Int64,
-		reflect.Uint, reflect.Uint8, reflect.Uint16,
-		reflect.Uint32, reflect.Uint64, reflect.Float32,
-		reflect.Float64, reflect.String:
-		return key.Interface()
-	default:
-		return key.String()
-	}
-}
-
-func setInMap(m map[string]interface{}, structField reflect.StructField, value interface{}) (result map[string]interface{}) {
-	result = m
-	if tagName := structField.Tag.Get("m"); tagName == "" {
-		result[headerAtoa(structField.Name)] = value
-	} else {
-		result[tagName] = value
-	}
-	return
-}
-
-func headerAtoa(a string) (b string) {
-	b = strings.ToLower(a[:1]) + a[1:]
-	return
 }

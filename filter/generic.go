@@ -21,8 +21,8 @@ package filter
 // during deployment time.
 type GenericProcessor interface {
 	// Serialize will customizes how GenericFilter serializes invocation parameters
-	Serialize(interface{}) (interface{}, error)
+	Serialize([]interface{}) ([]interface{}, error)
 
 	// Deserialize will customizes how GenericServiceFilter deserializes invocation parameters
-	Deserialize(interface{}) (interface{}, error)
+	Deserialize(interface{}) ([]interface{}, error)
 }
