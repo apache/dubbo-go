@@ -59,8 +59,7 @@ func (ef *GenericServiceFilter) Invoke(ctx context.Context, invoker protocol.Inv
 	if invocation.MethodName() != constant.GENERIC || len(invocation.Arguments()) != 3 {
 		return invoker.Invoke(ctx, invocation)
 	}
-	logger.Debugf("[Generic Service Filter] arguments: %v", invocation.Arguments())
-	logger.Debugf("[Generic Service Filter] attachments: %v", invocation.Attachments())
+	logger.Debugf("[Generic Service Filter] from subUrl: %v", invoker.GetURL().SubURL)
 
 	var (
 		ok         bool
