@@ -144,6 +144,11 @@ You can know more about dubbo-go by its [roadmap](https://github.com/apache/dubb
 
 ![feature](./doc/pic/arch/dubbo-go-arch.png)
 
+## Simplified Imports
+When you use the dubbo-go, you may need to import many packages to support some initialization of components like registry, protocol etc. To simplify these imports, we created a project named [imports](https://github.com/dubbogo/imports), it help you integrate the default component that dubbo-go providered.   
+For example, if you want to use dubbo-go with zookeeper registry, dubbo protocoal and nacos config center, you just need to add `import github.com/dubbogo/imports/dubbo/nacos/zk` to your code.  
+You can find more support in the [imports](https://github.com/dubbogo/imports).
+
 ## Document
 
 [dubbo-doc](http://dubbo.apache.org/zh/blog/) or [dubbo-go-doc-list](http://alexstocks.github.io/html/dubbogo.html)
