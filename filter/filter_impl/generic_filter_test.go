@@ -27,6 +27,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+import (
+	"dubbo.apache.org/dubbo-go/v3/filter/filter_impl/generic"
+)
+
 func TestStruct2MapAll(t *testing.T) {
 	var testData struct {
 		AaAa string `m:"aaAa"`
@@ -50,7 +54,7 @@ func TestStruct2MapAll(t *testing.T) {
 	testData.CaCa.XxYy.Xx = "3"
 	testData.DaDa = time.Date(2020, 10, 29, 2, 34, 0, 0, time.Local)
 	testData.EeEe = 100
-	m := struct2MapAll(testData).(map[string]interface{})
+	m := generic.Struct2MapAll(testData).(map[string]interface{})
 	assert.Equal(t, "1", m["aaAa"].(string))
 	assert.Equal(t, "1", m["baBa"].(string))
 	assert.Equal(t, "2", m["caCa"].(map[string]interface{})["aaAa"].(string))
@@ -85,7 +89,7 @@ func TestStruct2MapAllSlice(t *testing.T) {
 	tmp.XxYy.xxXx = "3"
 	tmp.XxYy.Xx = "3"
 	testData.CaCa = append(testData.CaCa, tmp)
-	m := struct2MapAll(testData).(map[string]interface{})
+	m := generic.Struct2MapAll(testData).(map[string]interface{})
 
 	assert.Equal(t, "1", m["aaAa"].(string))
 	assert.Equal(t, "1", m["baBa"].(string))
@@ -120,7 +124,7 @@ func TestStruct2MapAllMap(t *testing.T) {
 	testData.CaCa["k1"] = "v1"
 	testData.CaCa["kv2"] = "v2"
 	testData.IntMap[1] = 1
-	m := struct2MapAll(testData)
+	m := generic.Struct2MapAll(testData)
 
 	assert.Equal(t, reflect.Map, reflect.TypeOf(m).Kind())
 	mappedStruct := m.(map[string]interface{})
