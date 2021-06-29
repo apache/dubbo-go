@@ -45,6 +45,7 @@ type ServiceEvent struct {
 	key string
 	// If the url is updated, such as Merged.
 	updated bool
+	KeyFunc func(*common.URL) string
 }
 
 // String return the description of event
@@ -69,7 +70,11 @@ func (e *ServiceEvent) Key() string {
 	if len(e.key) > 0 {
 		return e.key
 	}
-	e.key = e.Service.GetCacheInvokerMapKey()
+	if e.KeyFunc == nil {
+		e.key = e.Service.GetCacheInvokerMapKey()
+	} else {
+		e.key = e.KeyFunc(e.Service)
+	}
 	return e.key
 }
 
