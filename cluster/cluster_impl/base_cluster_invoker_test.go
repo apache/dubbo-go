@@ -19,7 +19,6 @@ package cluster_impl
 
 import (
 	"fmt"
-	"github.com/apache/dubbo-go/cluster/directory"
 	"testing"
 )
 
@@ -28,6 +27,7 @@ import (
 )
 
 import (
+	"github.com/apache/dubbo-go/cluster/directory"
 	"github.com/apache/dubbo-go/cluster/loadbalance"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/protocol"
