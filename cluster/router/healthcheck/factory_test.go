@@ -44,7 +44,7 @@ func NewMockInvoker(url *common.URL) *MockInvoker {
 }
 
 // nolint
-func (bi *MockInvoker) GetUrl() *common.URL {
+func (bi *MockInvoker) GetURL() *common.URL {
 	return bi.url
 }
 

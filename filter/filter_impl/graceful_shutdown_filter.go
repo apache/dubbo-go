@@ -57,7 +57,7 @@ type gracefulShutdownFilter struct {
 func (gf *gracefulShutdownFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	if gf.rejectNewRequest() {
 		logger.Info("The application is closing, new request will be rejected.")
-		return gf.getRejectHandler().RejectedExecution(invoker.GetUrl(), invocation)
+		return gf.getRejectHandler().RejectedExecution(invoker.GetURL(), invocation)
 	}
 	atomic.AddInt32(&gf.activeCount, 1)
 	return invoker.Invoke(ctx, invocation)

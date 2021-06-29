@@ -214,8 +214,8 @@ func (nr *nacosRegistry) UnSubscribe(url *common.URL, notifyListener registry.No
 	return perrors.New("UnSubscribe not support in nacosRegistry")
 }
 
-// GetUrl gets its registration URL
-func (nr *nacosRegistry) GetUrl() *common.URL {
+// GetURL gets its registration URL
+func (nr *nacosRegistry) GetURL() *common.URL {
 	return nr.URL
 }
 

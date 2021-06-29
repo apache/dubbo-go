@@ -189,13 +189,13 @@ func initMockApollo(t *testing.T) *apolloConfiguration {
 	c := &config.BaseConfig{ConfigCenterConfig: &config.ConfigCenterConfig{
 		Protocol:  "apollo",
 		Address:   "106.12.25.204:8080",
-		AppId:     "testApplication_yang",
+		AppID:     "testApplication_yang",
 		Cluster:   "dev",
 		Namespace: "mockDubbog",
 	}}
 	apollo := initApollo()
 	apolloUrl := strings.ReplaceAll(apollo.URL, "http", "apollo")
-	url, err := common.NewURL(apolloUrl, common.WithParams(c.ConfigCenterConfig.GetUrlMap()))
+	url, err := common.NewURL(apolloUrl, common.WithParams(c.ConfigCenterConfig.GetURLMap()))
 	assert.NoError(t, err)
 	configuration, err := newApolloConfiguration(url)
 	assert.NoError(t, err)

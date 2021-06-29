@@ -306,19 +306,11 @@ var (
 )
 
 // newNacosServiceDiscovery will create new service discovery instance
-// use double-check pattern to reduce race condition
 func newNacosServiceDiscovery(name string) (registry.ServiceDiscovery, error) {
-
-	instance, ok := instanceMap[name]
-	if ok {
-		return instance, nil
-	}
-
 	initLock.Lock()
 	defer initLock.Unlock()
 
-	// double check
-	instance, ok = instanceMap[name]
+	instance, ok := instanceMap[name]
 	if ok {
 		return instance, nil
 	}
@@ -344,10 +336,12 @@ func newNacosServiceDiscovery(name string) (registry.ServiceDiscovery, error) {
 
 	descriptor := fmt.Sprintf("nacos-service-discovery[%s]", remoteConfig.Address)
 
-	return &nacosServiceDiscovery{
+	newInstance := &nacosServiceDiscovery{
 		group:             group,
 		namingClient:      client,
 		descriptor:        descriptor,
 		registryInstances: []registry.ServiceInstance{},
-	}, nil
+	}
+	instanceMap[name] = newInstance
+	return newInstance, nil
 }

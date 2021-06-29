@@ -18,7 +18,10 @@
 package chain
 
 import (
+	"reflect"
 	"sort"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -73,6 +76,7 @@ func (c *RouterChain) GetNotifyChan() chan struct{} {
 func (c *RouterChain) Route(url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
 	cache := c.loadCache()
 	if cache == nil {
+		logger.Warnf("there is no cache invoker.")
 		c.mutex.RLock()
 		defer c.mutex.RUnlock()
 		return c.invokers
@@ -84,6 +88,10 @@ func (c *RouterChain) Route(url *common.URL, invocation protocol.Invocation) []p
 	}
 
 	indexes := bitmap.ToArray()
+	// if the indexes is empty, print the routeSnapshot
+	if len(indexes) == 0 {
+		go c.printRouteSnapshot(cache, url, invocation)
+	}
 	finalInvokers := make([]protocol.Invoker, len(indexes))
 	for i, index := range indexes {
 		finalInvokers[i] = cache.invokers[index]
@@ -121,9 +129,63 @@ func (c *RouterChain) SetInvokers(invokers []protocol.Invoker) {
 	}()
 }
 
+// Detect Route State
+func (c *RouterChain) DetectRoute() (router.RouteSnapshot, error) {
+	defer func() {
+		if err := recover(); err != nil {
+			logger.Warnf("Detect Route fail. %+v", err)
+		}
+	}()
+	cache := c.loadCache()
+	if cache == nil {
+		c.mutex.RLock()
+		defer c.mutex.RUnlock()
+		return router.RouteSnapshot{Invokers: c.invokers}, nil
+	}
+	routers := c.copyRouters()
+	routeSnapshots := make([]string, 0, len(routers))
+	for _, r := range routers {
+		if v, ok := r.(router.PriorityRouterDetecter); ok {
+			routeSnapshots = append(routeSnapshots, v.RouteSnapshot(cache))
+		}
+	}
+
+	return router.RouteSnapshot{Invokers: cache.invokers, RouteSnapshots: routeSnapshots}, nil
+}
+
+// nolint
+func (c *RouterChain) printRouteSnapshot(cache *InvokerCache, url *common.URL, invocation protocol.Invocation) {
+	defer func() {
+		if err := recover(); err != nil {
+			logger.Warnf("print Route Snapshot fail. %+v", err)
+		}
+	}()
+
+	bitmap := cache.bitmap
+
+	logger.Warnf("start:print the route info:%s", url.ServiceKey())
+	for _, r := range c.copyRouters() {
+		bitmap = r.Route(bitmap, cache, url, invocation)
+		routeSnapshotSb := strings.Builder{}
+		routeSnapshotSb.WriteString(reflect.TypeOf(r).String())
+		routeSnapshotSb.WriteString(", count:")
+		routeSnapshotSb.WriteString(strconv.FormatUint(bitmap.GetCardinality(), 10))
+		routeSnapshotSb.WriteString(bitmap.String())
+		logger.Warn(routeSnapshotSb.String())
+	}
+
+	if routerSnapshot, err := c.DetectRoute(); err == nil {
+		logger.Warnf("the size of invokers:%d", len(routerSnapshot.Invokers))
+		for _, item := range routerSnapshot.RouteSnapshots {
+			logger.Warn(item)
+		}
+	}
+	logger.Warnf("end: print the route info:%s", url.ServiceKey())
+}
+
 // loop listens on events to update the address cache  when it receives notification
 // from address update,
-func (c *RouterChain) loop() {
+func (c *RouterChain) Loop() {
 	ticker := time.NewTicker(timeInterval)
 	for {
 		select {
@@ -257,7 +319,7 @@ func NewRouterChain(url *common.URL) (*RouterChain, error) {
 		chain.url = url
 	}
 
-	go chain.loop()
+	go chain.Loop()
 	return chain, nil
 }
 
@@ -293,9 +355,9 @@ func isInvokersChanged(left []protocol.Invoker, right []protocol.Invoker) bool {
 
 	for _, r := range right {
 		found := false
-		rurl := r.GetUrl()
+		rurl := r.GetURL()
 		for _, l := range left {
-			lurl := l.GetUrl()
+			lurl := l.GetURL()
 			if common.GetCompareURLEqualFunc()(lurl, rurl, constant.TIMESTAMP_KEY, constant.REMOTE_TIMESTAMP_KEY) {
 				found = true
 				break

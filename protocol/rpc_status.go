@@ -220,9 +220,9 @@ func (s *invokerState) increateRetryTimes() {
 
 // GetInvokerHealthyStatus get invoker's conn healthy status
 func GetInvokerHealthyStatus(invoker Invoker) bool {
-	if v, ok := serviceStateMap.Load(invoker.GetUrl().ServiceKey()); ok {
+	if v, ok := serviceStateMap.Load(invoker.GetURL().ServiceKey()); ok {
 		if state, ok := v.(*ServiceHealthState); ok {
-			_, found := state.blackList.Load(invoker.GetUrl().Key())
+			_, found := state.blackList.Load(invoker.GetURL().Key())
 			return !found
 		}
 	}
@@ -285,15 +285,15 @@ func (s *ServiceHealthState) needRefresh() bool {
 // SetInvokerUnhealthyStatus add target invoker to black list
 func (s *ServiceHealthState) SetInvokerUnhealthyStatus(invoker Invoker) {
 	s.configNeedRefresh(true)
-	s.blackList.Store(invoker.GetUrl().Key(), newInvokeState(invoker))
-	logger.Infof("Add invoker ip(%s) to black list for service(%s)", invoker.GetUrl().Location, invoker.GetUrl().ServiceKey())
+	s.blackList.Store(invoker.GetURL().Key(), newInvokeState(invoker))
+	logger.Infof("Add invoker ip=%s to black list for service(%s)", invoker.GetURL().Location, invoker.GetURL().ServiceKey())
 	s.activeBlackListCacheDirty()
 }
 
 // RemoveInvokerUnhealthyStatus remove unhealthy status of target invoker from blacklist
 func (s *ServiceHealthState) RemoveInvokerUnhealthyStatus(invoker Invoker) {
-	s.blackList.Delete(invoker.GetUrl().Key())
-	logger.Infof("Remove invoker ip(%s) from black list for service(%s)", invoker.GetUrl().Location, invoker.GetUrl().ServiceKey())
+	s.blackList.Delete(invoker.GetURL().Key())
+	logger.Infof("Remove invoker ip(%s) from black list for service(%s)", invoker.GetURL().Location, invoker.GetURL().ServiceKey())
 	s.activeBlackListCacheDirty()
 }
 

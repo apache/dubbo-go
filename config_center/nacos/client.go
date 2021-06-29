@@ -85,11 +85,11 @@ func ValidateNacosClient(container nacosClientFacade, opts ...option) error {
 		opt(os)
 	}
 
-	url := container.GetUrl()
-	timeout, err := time.ParseDuration(url.GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT))
+	url := container.GetURL()
+	timeout, err := time.ParseDuration(url.GetParam(constant.CONFIG_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT))
 	if err != nil {
 		logger.Errorf("invalid timeout config %+v,got err %+v",
-			url.GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT), err)
+			url.GetParam(constant.CONFIG_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT), err)
 		return perrors.WithMessagef(err, "newNacosClient(address:%+v)", url.Location)
 	}
 	nacosAddresses := strings.Split(url.Location, ",")
@@ -165,14 +165,21 @@ func initNacosConfigClient(nacosAddrs []string, timeout time.Duration, url *comm
 		"serverConfigs": svrConfList,
 		"clientConfig": nacosconst.ClientConfig{
 			TimeoutMs:           uint64(int32(timeout / time.Millisecond)),
-			ListenInterval:      uint64(int32(timeout / time.Millisecond)),
-			NotLoadCacheAtStart: true,
-			LogDir:              url.GetParam(constant.NACOS_LOG_DIR_KEY, ""),
-			CacheDir:            url.GetParam(constant.NACOS_CACHE_DIR_KEY, ""),
+			BeatInterval:        url.GetParamInt(constant.NACOS_BEAT_INTERVAL_KEY, 5000),
+			NamespaceId:         url.GetParam(constant.NACOS_NAMESPACE_ID, ""),
+			AppName:             url.GetParam(constant.NACOS_APP_NAME_KEY, ""),
 			Endpoint:            url.GetParam(constant.NACOS_ENDPOINT, ""),
+			RegionId:            url.GetParam(constant.NACOS_REGION_ID_KEY, ""),
+			AccessKey:           url.GetParam(constant.NACOS_ACCESS_KEY, ""),
+			SecretKey:           url.GetParam(constant.NACOS_SECRET_KEY, ""),
+			OpenKMS:             url.GetParamBool(constant.NACOS_OPEN_KMS_KEY, false),
+			CacheDir:            url.GetParam(constant.NACOS_CACHE_DIR_KEY, ""),
+			UpdateThreadNum:     url.GetParamByIntValue(constant.NACOS_UPDATE_THREAD_NUM_KEY, 20),
+			NotLoadCacheAtStart: url.GetParamBool(constant.NACOS_NOT_LOAD_LOCAL_CACHE, true),
 			Username:            url.GetParam(constant.NACOS_USERNAME, ""),
 			Password:            url.GetParam(constant.NACOS_PASSWORD, ""),
-			NamespaceId:         url.GetParam(constant.NACOS_NAMESPACE_ID, ""),
+			LogDir:              url.GetParam(constant.NACOS_LOG_DIR_KEY, ""),
+			LogLevel:            url.GetParam(constant.NACOS_LOG_LEVEL_KEY, "info"),
 		},
 	})
 }

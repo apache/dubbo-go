@@ -106,8 +106,6 @@ func InitTest(t *testing.T) (protocol.Protocol, *common.URL) {
 		ConnectionNum:   2,
 		HeartbeatPeriod: "5s",
 		SessionTimeout:  "20s",
-		PoolTTL:         600,
-		PoolSize:        64,
 		GettySessionParam: getty.GettySessionParam{
 			CompressEncoding: false,
 			TcpNoDelay:       true,

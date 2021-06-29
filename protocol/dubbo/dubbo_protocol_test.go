@@ -63,8 +63,6 @@ func initDubboInvokerTest() {
 		ConnectionNum:   1,
 		HeartbeatPeriod: "3s",
 		SessionTimeout:  "20s",
-		PoolTTL:         600,
-		PoolSize:        64,
 		GettySessionParam: getty.GettySessionParam{
 			CompressEncoding: false,
 			TcpNoDelay:       true,
@@ -92,7 +90,7 @@ func TestDubboProtocol_Export(t *testing.T) {
 	assert.NoError(t, err)
 	exporter := proto.Export(protocol.NewBaseInvoker(url))
 	// make sure url
-	eq := exporter.GetInvoker().GetUrl().URLEqual(url)
+	eq := exporter.GetInvoker().GetURL().URLEqual(url)
 	assert.True(t, eq)
 
 	// second service: the same path and the different version
@@ -100,7 +98,7 @@ func TestDubboProtocol_Export(t *testing.T) {
 	assert.NoError(t, err)
 	exporter2 := proto.Export(protocol.NewBaseInvoker(url2))
 	// make sure url
-	eq2 := exporter2.GetInvoker().GetUrl().URLEqual(url2)
+	eq2 := exporter2.GetInvoker().GetURL().URLEqual(url2)
 	assert.True(t, eq2)
 
 	// make sure exporterMap after 'Unexport'
@@ -142,7 +140,7 @@ func TestDubboProtocol_Refer(t *testing.T) {
 	assert.NoError(t, err)
 	invoker := proto.Refer(url)
 	// make sure url
-	eq := invoker.GetUrl().URLEqual(url)
+	eq := invoker.GetURL().URLEqual(url)
 	assert.True(t, eq)
 
 	// make sure invokers after 'Destroy'

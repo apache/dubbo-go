@@ -37,6 +37,7 @@ import (
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/proxy"
 	"github.com/apache/dubbo-go/protocol"
+	"github.com/apache/dubbo-go/protocol/protocolwrapper"
 )
 
 // ReferenceConfig is the configuration of service consumer
@@ -46,7 +47,7 @@ type ReferenceConfig struct {
 	id             string
 	InterfaceName  string            `required:"true"  yaml:"interface"  json:"interface,omitempty" property:"interface"`
 	Check          *bool             `yaml:"check"  json:"check,omitempty" property:"check"`
-	Url            string            `yaml:"url"  json:"url,omitempty" property:"url"`
+	URL            string            `yaml:"url"  json:"url,omitempty" property:"url"`
 	Filter         string            `yaml:"filter" json:"filter,omitempty" property:"filter"`
 	Protocol       string            `default:"dubbo"  yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
 	Registry       string            `yaml:"registry"  json:"registry,omitempty"  property:"registry"`
@@ -101,9 +102,9 @@ func (c *ReferenceConfig) Refer(_ interface{}) {
 		cfgURL.AddParam(constant.ForceUseTag, "true")
 	}
 	c.postProcessConfig(cfgURL)
-	if c.Url != "" {
+	if c.URL != "" {
 		// 1. user specified URL, could be peer-to-peer address, or register center's address.
-		urlStrings := gxstrings.RegSplit(c.Url, "\\s*[;]+\\s*")
+		urlStrings := gxstrings.RegSplit(c.URL, "\\s*[;]+\\s*")
 		for _, urlStr := range urlStrings {
 			serviceUrl, err := common.NewURL(urlStr)
 			if err != nil {
@@ -133,11 +134,42 @@ func (c *ReferenceConfig) Refer(_ interface{}) {
 
 	if len(c.urls) == 1 {
 		c.invoker = extension.GetProtocol(c.urls[0].Protocol).Refer(c.urls[0])
+		// c.URL != "" is direct call
+		if c.URL != "" {
+			//filter
+			c.invoker = protocolwrapper.BuildInvokerChain(c.invoker, constant.REFERENCE_FILTER_KEY)
+
+			// cluster
+			invokers := make([]protocol.Invoker, 0, len(c.urls))
+			invokers = append(invokers, c.invoker)
+			// TODO(decouple from directory, config should not depend on directory module)
+			var hitClu string
+			// not a registry url, must be direct invoke.
+			hitClu = constant.FAILOVER_CLUSTER_NAME
+			if len(invokers) > 0 {
+				u := invokers[0].GetURL()
+				if nil != &u {
+					hitClu = u.GetParam(constant.CLUSTER_KEY, constant.ZONEAWARE_CLUSTER_NAME)
+				}
+			}
+
+			cluster := extension.GetCluster(hitClu)
+			// If 'zone-aware' policy select, the invoker wrap sequence would be:
+			// ZoneAwareClusterInvoker(StaticDirectory) ->
+			// FailoverClusterInvoker(RegistryDirectory, routing happens here) -> Invoker
+			c.invoker = cluster.Join(directory.NewStaticDirectory(invokers))
+		}
 	} else {
 		invokers := make([]protocol.Invoker, 0, len(c.urls))
 		var regUrl *common.URL
 		for _, u := range c.urls {
-			invokers = append(invokers, extension.GetProtocol(u.Protocol).Refer(u))
+			invoker := extension.GetProtocol(u.Protocol).Refer(u)
+			// c.URL != "" is direct call
+			if c.URL != "" {
+				//filter
+				invoker = protocolwrapper.BuildInvokerChain(invoker, constant.REFERENCE_FILTER_KEY)
+			}
+			invokers = append(invokers, invoker)
 			if u.Protocol == constant.REGISTRY_PROTOCOL {
 				regUrl = u
 			}
@@ -152,7 +184,7 @@ func (c *ReferenceConfig) Refer(_ interface{}) {
 			// not a registry url, must be direct invoke.
 			hitClu = constant.FAILOVER_CLUSTER_NAME
 			if len(invokers) > 0 {
-				u := invokers[0].GetUrl()
+				u := invokers[0].GetURL()
 				if nil != &u {
 					hitClu = u.GetParam(constant.CLUSTER_KEY, constant.ZONEAWARE_CLUSTER_NAME)
 				}

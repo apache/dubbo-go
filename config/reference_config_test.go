@@ -18,6 +18,7 @@
 package config
 
 import (
+	"context"
 	"sync"
 	"testing"
 )
@@ -31,6 +32,7 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/filter"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/registry"
 )
@@ -192,7 +194,6 @@ func TestReferMultiReg(t *testing.T) {
 	doInitConsumer()
 	extension.SetProtocol("registry", GetProtocol)
 	extension.SetCluster(constant.ZONEAWARE_CLUSTER_NAME, cluster_impl.NewZoneAwareCluster)
-
 	for _, reference := range consumerConfig.References {
 		reference.Refer(nil)
 		assert.NotNil(t, reference.invoker)
@@ -233,8 +234,9 @@ func TestReferAsync(t *testing.T) {
 func TestReferP2P(t *testing.T) {
 	doInitConsumer()
 	extension.SetProtocol("dubbo", GetProtocol)
+	mockFilter()
 	m := consumerConfig.References["MockService"]
-	m.Url = "dubbo://127.0.0.1:20000"
+	m.URL = "dubbo://127.0.0.1:20000"
 
 	for _, reference := range consumerConfig.References {
 		reference.Refer(nil)
@@ -247,8 +249,9 @@ func TestReferP2P(t *testing.T) {
 func TestReferMultiP2P(t *testing.T) {
 	doInitConsumer()
 	extension.SetProtocol("dubbo", GetProtocol)
+	mockFilter()
 	m := consumerConfig.References["MockService"]
-	m.Url = "dubbo://127.0.0.1:20000;dubbo://127.0.0.2:20000"
+	m.URL = "dubbo://127.0.0.1:20000;dubbo://127.0.0.2:20000"
 
 	for _, reference := range consumerConfig.References {
 		reference.Refer(nil)
@@ -262,8 +265,9 @@ func TestReferMultiP2PWithReg(t *testing.T) {
 	doInitConsumer()
 	extension.SetProtocol("dubbo", GetProtocol)
 	extension.SetProtocol("registry", GetProtocol)
+	mockFilter()
 	m := consumerConfig.References["MockService"]
-	m.Url = "dubbo://127.0.0.1:20000;registry://127.0.0.2:20000"
+	m.URL = "dubbo://127.0.0.1:20000;registry://127.0.0.2:20000"
 
 	for _, reference := range consumerConfig.References {
 		reference.Refer(nil)
@@ -290,12 +294,13 @@ func TestForking(t *testing.T) {
 	doInitConsumer()
 	extension.SetProtocol("dubbo", GetProtocol)
 	extension.SetProtocol("registry", GetProtocol)
+	mockFilter()
 	m := consumerConfig.References["MockService"]
-	m.Url = "dubbo://127.0.0.1:20000;registry://127.0.0.2:20000"
+	m.URL = "dubbo://127.0.0.1:20000;registry://127.0.0.2:20000"
 
 	for _, reference := range consumerConfig.References {
 		reference.Refer(nil)
-		forks := int(reference.invoker.GetUrl().GetParamInt(constant.FORKS_KEY, constant.DEFAULT_FORKS))
+		forks := int(reference.invoker.GetURL().GetParamInt(constant.FORKS_KEY, constant.DEFAULT_FORKS))
 		assert.Equal(t, 5, forks)
 		assert.NotNil(t, reference.pxy)
 		assert.NotNil(t, reference.Cluster)
@@ -307,17 +312,18 @@ func TestSticky(t *testing.T) {
 	doInitConsumer()
 	extension.SetProtocol("dubbo", GetProtocol)
 	extension.SetProtocol("registry", GetProtocol)
+	mockFilter()
 	m := consumerConfig.References["MockService"]
-	m.Url = "dubbo://127.0.0.1:20000;registry://127.0.0.2:20000"
+	m.URL = "dubbo://127.0.0.1:20000;registry://127.0.0.2:20000"
 
 	reference := consumerConfig.References["MockService"]
 	reference.Refer(nil)
-	referenceSticky := reference.invoker.GetUrl().GetParam(constant.STICKY_KEY, "false")
+	referenceSticky := reference.invoker.GetURL().GetParam(constant.STICKY_KEY, "false")
 	assert.Equal(t, "false", referenceSticky)
 
-	method0StickKey := reference.invoker.GetUrl().GetMethodParam(reference.Methods[0].Name, constant.STICKY_KEY, "false")
+	method0StickKey := reference.invoker.GetURL().GetMethodParam(reference.Methods[0].Name, constant.STICKY_KEY, "false")
 	assert.Equal(t, "false", method0StickKey)
-	method1StickKey := reference.invoker.GetUrl().GetMethodParam(reference.Methods[1].Name, constant.STICKY_KEY, "false")
+	method1StickKey := reference.invoker.GetURL().GetMethodParam(reference.Methods[1].Name, constant.STICKY_KEY, "false")
 	assert.Equal(t, "true", method1StickKey)
 }
 
@@ -332,7 +338,8 @@ func newRegistryProtocol() protocol.Protocol {
 	return &mockRegistryProtocol{}
 }
 
-type mockRegistryProtocol struct{}
+type mockRegistryProtocol struct {
+}
 
 func (*mockRegistryProtocol) Refer(url *common.URL) protocol.Invoker {
 	return protocol.NewBaseInvoker(url)
@@ -345,7 +352,7 @@ func (*mockRegistryProtocol) Export(invoker protocol.Invoker) protocol.Exporter 
 		if err != nil {
 			panic(err)
 		}
-		ok, err := metaDataService.ExportURL(invoker.GetUrl().SubURL.Clone())
+		ok, err := metaDataService.ExportURL(invoker.GetURL().SubURL.Clone())
 		if err != nil {
 			panic(err)
 		}
@@ -361,7 +368,7 @@ func (*mockRegistryProtocol) Destroy() {
 }
 func getRegistryUrl(invoker protocol.Invoker) *common.URL {
 	// here add * for return a new url
-	url := invoker.GetUrl()
+	url := invoker.GetURL()
 	// if the protocol == registry ,set protocol the registry value in url.params
 	if url.Protocol == constant.REGISTRY_PROTOCOL {
 		protocol := url.GetParam(constant.REGISTRY_KEY, "")
@@ -372,4 +379,24 @@ func getRegistryUrl(invoker protocol.Invoker) *common.URL {
 
 func (p *mockRegistryProtocol) GetRegistries() []registry.Registry {
 	return []registry.Registry{&mockServiceDiscoveryRegistry{}}
+}
+
+func mockFilter() {
+	consumerFiler := &mockShutdownFilter{}
+	extension.SetFilter(constant.CONSUMER_SHUTDOWN_FILTER, func() filter.Filter {
+		return consumerFiler
+	})
+}
+
+type mockShutdownFilter struct {
+}
+
+// Invoke adds the requests count and block the new requests if application is closing
+func (gf *mockShutdownFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+	return invoker.Invoke(ctx, invocation)
+}
+
+// OnResponse reduces the number of active processes then return the process result
+func (gf *mockShutdownFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+	return result
 }

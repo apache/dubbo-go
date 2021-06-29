@@ -1,5 +1,27 @@
 # Release Notes
 ---
+
+## 1.5.7
+
+### Enhancement
+- [Ftr: enable filter and cluster when client consumer provider directly](https://github.com/apache/dubbo-go/pull/1181)
+- [change client_pool](https://github.com/apache/dubbo-go/pull/1171)
+- [nacos for service_discovery support namespace](https://github.com/apache/dubbo-go/pull/1127)
+- [feat: format use gofumpt](https://github.com/apache/dubbo-go/pull/1121)
+- [Feature: Add some log when the router.Route return empty invokers](https://github.com/apache/dubbo-go/pull/1158)
+
+### Bugfixes
+- [modify map use in nacos service_discovery; Fix issue-1165](https://github.com/apache/dubbo-go/pull/1169)
+- [fix: issue #1151 - router from CONF_ROUTER_FILE_PATH doesn't take affect](https://github.com/apache/dubbo-go/pull/1176)
+- [Fix: delete a service provider when using k8s hpa](https://github.com/apache/dubbo-go/pull/1154)
+- [fix panic: sync: negative WaitGroup counter](https://github.com/apache/dubbo-go/pull/1129)
+
+### Dependencies
+- [upgrade nacos version](https://github.com/apache/dubbo-go/pull/1116)
+
+Milestone:
+- [https://github.com/apache/dubbo-go/milestone/11](https://github.com/apache/dubbo-go/milestone/11?closed=1)
+
 ## 1.5.6
 
 ### New Features

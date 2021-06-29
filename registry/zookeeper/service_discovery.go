@@ -44,11 +44,6 @@ import (
 	"github.com/apache/dubbo-go/remoting/zookeeper/curator_discovery"
 )
 
-const (
-	// RegistryZkClient zk client name
-	ServiceDiscoveryZkClient = "zk service discovery"
-)
-
 var (
 	// 16 would be enough. We won't use concurrentMap because in most cases, there are not race condition
 	instanceMap = make(map[string]registry.ServiceDiscovery, 16)
@@ -108,7 +103,7 @@ func newZookeeperServiceDiscovery(name string) (registry.ServiceDiscovery, error
 		url:      url,
 		rootPath: rootPath,
 	}
-	err := zookeeper.ValidateZookeeperClient(zksd, ServiceDiscoveryZkClient)
+	err := zookeeper.ValidateZookeeperClient(zksd, url.Location)
 	if err != nil {
 		return nil, err
 	}
@@ -156,7 +151,7 @@ func (zksd *zookeeperServiceDiscovery) RestartCallBack() bool {
 }
 
 // nolint
-func (zksd *zookeeperServiceDiscovery) GetUrl() *common.URL {
+func (zksd *zookeeperServiceDiscovery) GetURL() *common.URL {
 	return zksd.url
 }
 

@@ -40,16 +40,14 @@ type zoneAwareClusterInvoker struct {
 }
 
 func newZoneAwareClusterInvoker(directory cluster.Directory) protocol.Invoker {
-	invoke := &zoneAwareClusterInvoker{
+	invoker := &zoneAwareClusterInvoker{
 		baseClusterInvoker: newBaseClusterInvoker(directory),
 	}
-	// add local to interceptor
-	invoke.interceptor = invoke
-	return invoke
+	return invoker
 }
 
 // nolint
-func (invoker *zoneAwareClusterInvoker) DoInvoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
+func (invoker *zoneAwareClusterInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 	invokers := invoker.directory.List(invocation)
 
 	err := invoker.checkInvokers(invokers, invocation)
@@ -80,7 +78,7 @@ func (invoker *zoneAwareClusterInvoker) DoInvoke(ctx context.Context, invocation
 			return &protocol.RPCResult{
 				Err: fmt.Errorf("no registry instance in zone or "+
 					"no available providers in the registry, zone: %v, "+
-					" registries: %v", zone, invoker.GetUrl()),
+					" registries: %v", zone, invoker.GetURL()),
 			}
 		}
 	}
@@ -104,30 +102,6 @@ func (invoker *zoneAwareClusterInvoker) DoInvoke(ctx context.Context, invocation
 	}
 }
 
-func (invoker *zoneAwareClusterInvoker) BeforeInvoker(ctx context.Context, invocation protocol.Invocation) {
-	key := constant.REGISTRY_KEY + "." + constant.ZONE_FORCE_KEY
-	force := ctx.Value(key)
-
-	if force != nil {
-		switch value := force.(type) {
-		case bool:
-			if value {
-				invocation.SetAttachments(key, "true")
-			}
-		case string:
-			if "true" == value {
-				invocation.SetAttachments(key, "true")
-			}
-		default:
-			// ignore
-		}
-	}
-}
-
-func (invoker *zoneAwareClusterInvoker) AfterInvoker(ctx context.Context, invocation protocol.Invocation) {
-
-}
-
 func matchParam(target, key, def string, invoker protocol.Invoker) bool {
-	return target == invoker.GetUrl().GetParam(key, def)
+	return target == invoker.GetURL().GetParam(key, def)
 }

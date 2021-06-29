@@ -39,7 +39,7 @@ func NewStaticDirectory(invokers []protocol.Invoker) *staticDirectory {
 	var url *common.URL
 
 	if len(invokers) > 0 {
-		url = invokers[0].GetUrl()
+		url = invokers[0].GetURL()
 	}
 	dir := &staticDirectory{
 		BaseDirectory: NewBaseDirectory(url),
@@ -48,7 +48,6 @@ func NewStaticDirectory(invokers []protocol.Invoker) *staticDirectory {
 		serviceHealthState: protocol.NewServiceState(url.ServiceKey()),
 	}
 
-	dir.routerChain.SetInvokers(invokers)
 	return dir
 }
 
@@ -75,7 +74,7 @@ func (dir *staticDirectory) List(invocation protocol.Invocation) []protocol.Invo
 	if routerChain == nil {
 		return invokers
 	}
-	dirUrl := dir.GetUrl()
+	dirUrl := dir.GetURL()
 	return routerChain.Route(dirUrl, invocation)
 }
 
@@ -99,7 +98,7 @@ func (dir *staticDirectory) BuildRouterChain(invokers []protocol.Invoker) error 
 	if len(invokers) == 0 {
 		return perrors.Errorf("invokers == null")
 	}
-	url := invokers[0].GetUrl()
+	url := invokers[0].GetURL()
 	routerChain, e := chain.NewRouterChain(url)
 	if e != nil {
 		return e

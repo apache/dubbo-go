@@ -19,8 +19,7 @@ package cluster_impl
 
 import (
 	"fmt"
-	mock_cluster "github.com/apache/dubbo-go/cluster/mock"
-	"github.com/golang/mock/gomock"
+	"github.com/apache/dubbo-go/cluster/directory"
 	"testing"
 )
 
@@ -47,14 +46,9 @@ func TestStickyNormal(t *testing.T) {
 		url.SetParam("sticky", "true")
 		invokers = append(invokers, NewMockInvoker(url, 1))
 	}
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	directory := mock_cluster.NewMockDirectory(ctrl)
-	directory.EXPECT().GetUrl().Return(&common.URL{Path: "path1"}).AnyTimes()
-
-	base := &baseClusterInvoker{directory: directory}
-
+	base := &baseClusterInvoker{}
 	base.availablecheck = true
+	base.directory = directory.NewStaticDirectory(invokers)
 	invoked := []protocol.Invoker{}
 
 	tmpRandomBalance := loadbalance.NewRandomLoadBalance()
@@ -71,13 +65,9 @@ func TestStickyNormalWhenError(t *testing.T) {
 		url.SetParam("sticky", "true")
 		invokers = append(invokers, NewMockInvoker(url, 1))
 	}
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	directory := mock_cluster.NewMockDirectory(ctrl)
-	directory.EXPECT().GetUrl().Return(&common.URL{Path: "path1"}).AnyTimes()
-
-	base := &baseClusterInvoker{directory: directory}
+	base := &baseClusterInvoker{}
 	base.availablecheck = true
+	base.directory = directory.NewStaticDirectory(invokers)
 
 	invoked := []protocol.Invoker{}
 	result := base.doSelect(loadbalance.NewRandomLoadBalance(), invocation.NewRPCInvocation(baseClusterInvokerMethodName, nil, nil), invokers, invoked)

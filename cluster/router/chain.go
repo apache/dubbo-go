@@ -31,4 +31,19 @@ type Chain interface {
 	AddRouters([]PriorityRouter)
 	// GetNotifyChan get notify channel of this chain
 	GetNotifyChan() chan struct{}
+	// Detect Route State
+	DetectRoute() (RouteSnapshot, error)
+	// listens on events to update the address cache
+	Loop()
+}
+
+// RouteSnapshot is the snapshot of Route
+type RouteSnapshot struct {
+	Invokers       []protocol.Invoker
+	RouteSnapshots []string
+}
+
+// nolint
+func (rs *RouteSnapshot) AddRouteSnapshot(msg string) {
+	rs.RouteSnapshots = append(rs.RouteSnapshots, msg)
 }

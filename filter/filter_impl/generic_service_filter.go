@@ -71,7 +71,7 @@ func (ef *GenericServiceFilter) Invoke(ctx context.Context, invoker protocol.Inv
 		oldParams  []hessian.Object
 	)
 
-	url := invoker.GetUrl()
+	url := invoker.GetURL()
 	methodName = invocation.Arguments()[0].(string)
 	// get service
 	svc := common.ServiceMap.GetServiceByServiceKey(url.Protocol, url.ServiceKey())
