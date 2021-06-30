@@ -352,6 +352,7 @@ func (dir *RegistryDirectory) cacheInvoker(url *common.URL, event *registry.Serv
 	if url.Protocol == referenceUrl.Protocol || referenceUrl.Protocol == "" {
 		newUrl := common.MergeUrl(url, referenceUrl)
 		dir.overrideUrl(newUrl)
+		event.Update(newUrl)
 		if v, ok := dir.doCacheInvoker(newUrl, event); ok {
 			return v
 		}
