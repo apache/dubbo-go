@@ -390,6 +390,7 @@ func LoadWithOptions(options ...LoaderInitOption) {
 	// register metadata info and service info
 	hessian.RegisterPOJO(&common.MetadataInfo{})
 	hessian.RegisterPOJO(&common.ServiceInfo{})
+	hessian.RegisterPOJO(&common.URL{})
 
 	for _, option := range options {
 		option.init()
