@@ -19,37 +19,26 @@ package grpc
 
 import (
 	"context"
-	"reflect"
 	"testing"
 )
 
 import (
 	"github.com/stretchr/testify/assert"
-	"google.golang.org/grpc"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/protocol/grpc/internal/helloworld"
+	"dubbo.apache.org/dubbo-go/v3/protocol/grpc/internal/routeguide"
 )
 
-func TestGetInvoker(t *testing.T) {
-	var conn *grpc.ClientConn
-	var impl *helloworld.GrpcGreeterImpl
-	invoker := getInvoker(impl, conn)
-
-	i := reflect.TypeOf(invoker)
-	expected := reflect.TypeOf(helloworld.NewGreeterClient(nil))
-	assert.Equal(t, i, expected)
-}
-
-func TestNewClient(t *testing.T) {
+func TestUnaryClient(t *testing.T) {
 	server, err := helloworld.NewServer("127.0.0.1:30000")
 	assert.NoError(t, err)
 	go server.Start()
 	defer server.Stop()
 
-	url, err := common.NewURL(mockGrpcCommonUrl)
+	url, err := common.NewURL(helloworldURL)
 	assert.NoError(t, err)
 
 	cli, err := NewClient(url)
@@ -60,4 +49,42 @@ func TestNewClient(t *testing.T) {
 	result, err := client.SayHello(context.Background(), &helloworld.HelloRequest{Name: "request name"})
 	assert.NoError(t, err)
 	assert.Equal(t, &helloworld.HelloReply{Message: "Hello request name"}, result)
+}
+
+func TestStreamClient(t *testing.T) {
+	server, err := routeguide.NewServer("127.0.0.1:30000")
+	assert.NoError(t, err)
+	go server.Start()
+	defer server.Stop()
+
+	url, err := common.NewURL(routeguideURL)
+	assert.NoError(t, err)
+
+	cli, err := NewClient(url)
+	assert.NoError(t, err)
+
+	impl := &routeguide.RouteGuideClientImpl{}
+	client := impl.GetDubboStub(cli.ClientConn)
+
+	result, err := client.GetFeature(context.Background(), &routeguide.Point{Latitude: 409146138, Longitude: -746188906})
+	assert.NoError(t, err)
+	assert.Equal(t, &routeguide.Feature{
+		Name:     "Berkshire Valley Management Area Trail, Jefferson, NJ, USA",
+		Location: &routeguide.Point{Latitude: 409146138, Longitude: -746188906},
+	}, result)
+
+	listFeaturesStream, err := client.ListFeatures(context.Background(), &routeguide.Rectangle{
+		Lo: &routeguide.Point{Latitude: 400000000, Longitude: -750000000},
+		Hi: &routeguide.Point{Latitude: 420000000, Longitude: -730000000},
+	})
+	assert.NoError(t, err)
+	routeguide.PrintFeatures(listFeaturesStream)
+
+	recordRouteStream, err := client.RecordRoute(context.Background())
+	assert.NoError(t, err)
+	routeguide.RunRecordRoute(recordRouteStream)
+
+	routeChatStream, err := client.RouteChat(context.Background())
+	assert.NoError(t, err)
+	routeguide.RunRouteChat(routeChatStream)
 }

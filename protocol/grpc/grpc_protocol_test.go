@@ -72,7 +72,7 @@ func TestGrpcProtocolExport(t *testing.T) {
 	config.SetProviderService(helloworld.NewService())
 	doInitProvider()
 
-	url, err := common.NewURL(mockGrpcCommonUrl)
+	url, err := common.NewURL(helloworldURL)
 	assert.NoError(t, err)
 
 	proto := GetProtocol()
@@ -104,7 +104,7 @@ func TestGrpcProtocolRefer(t *testing.T) {
 	go server.Start()
 	defer server.Stop()
 
-	url, err := common.NewURL(mockGrpcCommonUrl)
+	url, err := common.NewURL(helloworldURL)
 	assert.NoError(t, err)
 
 	proto := GetProtocol()
