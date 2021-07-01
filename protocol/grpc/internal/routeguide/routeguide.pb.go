@@ -260,7 +260,7 @@ type RouteSummary struct {
 	PointCount int32 `protobuf:"varint,1,opt,name=point_count,json=pointCount,proto3" json:"point_count,omitempty"`
 	// The number of known features passed while traversing the route.
 	FeatureCount int32 `protobuf:"varint,2,opt,name=feature_count,json=featureCount,proto3" json:"feature_count,omitempty"`
-	// The distance covered in metres.
+	// The distance covered in meters.
 	Distance int32 `protobuf:"varint,3,opt,name=distance,proto3" json:"distance,omitempty"`
 	// The duration of the traversal in seconds.
 	ElapsedTime          int32    `protobuf:"varint,4,opt,name=elapsed_time,json=elapsedTime,proto3" json:"elapsed_time,omitempty"`

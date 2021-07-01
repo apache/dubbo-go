@@ -106,7 +106,7 @@ message RouteSummary {
     // The number of known features passed while traversing the route.
     int32 feature_count = 2;
 
-    // The distance covered in metres.
+    // The distance covered in meters.
     int32 distance = 3;
 
     // The duration of the traversal in seconds.
