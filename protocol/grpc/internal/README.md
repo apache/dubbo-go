@@ -9,5 +9,5 @@ This internal package is for test. So don't use internal in production.
 
 ## usage
 
-- [helloworld](./hellowrld): test unary process
+- [helloworld](./helloworld): test unary process
 - [routeguide](./routeguide): test stream process
