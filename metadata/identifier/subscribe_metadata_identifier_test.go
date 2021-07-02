@@ -38,7 +38,7 @@ var subscribeMetadataId = &SubscriberMetadataIdentifier{
 }
 
 func TestSubscribeGetFilePathKey(t *testing.T) {
-	assert.Equal(t, "metadata/1.0.0/Group/provider/1.0", subscribeMetadataId.GetFilePathKey())
+	assert.Equal(t, "metadata/org.apache.pkg.mockService/1.0.0/Group/provider/1.0", subscribeMetadataId.GetFilePathKey())
 }
 
 func TestSubscribeGetIdentifierKey(t *testing.T) {
