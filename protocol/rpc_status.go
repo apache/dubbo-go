@@ -18,8 +18,6 @@
 package protocol
 
 import (
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/logger"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -27,6 +25,8 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/logger"
 )
 
 var (
@@ -358,7 +358,7 @@ func (s *ServiceHealthState) refreshBlackList() {
 			wg.Add(1)
 			go func(ivks []*invokerState, i int) {
 				defer wg.Done()
-				for j, _ := range ivks {
+				for j := range ivks {
 					if j%3-i == 0 && ivks[j].invoker.IsAvailable() {
 						s.RemoveInvokerUnhealthyStatus(ivks[j].invoker)
 					} else {
