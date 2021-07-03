@@ -16,7 +16,7 @@ Apache Dubbo-go, a Dubbo implementation written in Golang, is born to bridge the
 
 ![dubbo go extend](https://dubbogo.github.io/img/doc/dubbo-go3.0-arch.jpg)
 
-Dubbo-go has been implemented most layers of Dubbo, like protocol layer, registry layer, etc. An extension module is applied to Dubbo-go in order to achieve a more flexible architecture. Developers are allowed to implement a customized layer conformed to the layer interface and use then in Dubbo-go via `extension.Set` method without modifying the source code.
+Dubbo-go has been implemented most layers of Dubbo, like protocol layer, registry layer, etc. An extension module is applied to Dubbo-go in order to achieve a more flexible architecture. Developers are allowed to implement a customized layer conformed to the layer interface and use them in Dubbo-go via `extension.Set` method without modifying the source code.
 
 ## Features
 
@@ -35,8 +35,8 @@ The features that are available for Dubbo-go are:
 - **Invoke**: [Generic Invoke](https://github.com/apache/dubbo-go/pull/122)
 - **Monitor**: Opentracing API, [Prometheus](https://github.com/apache/dubbo-go/pull/342)
 - **Tracing**: [For JsonRPC](https://github.com/apache/dubbo-go/pull/335), [For Dubbo](https://github.com/apache/dubbo-go/pull/344), [For gRPC](https://github.com/apache/dubbo-go/pull/397)
-- **Metadata Center**: [Nacos(Local)](https://github.com/apache/dubbo-go/pull/522), [ZooKeeper(Local)](https://github.com/apache/dubbo-go/pull/633), [etcd(Local)](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/metadata/report/etcd/report.go), [Consul(Local)](https://github.com/apache/dubbo-go/pull/633), [ZooKeeper(Remote)](https://github.com/apache/dubbo-go/pull/1161)
-- **Tool**: [Dubbo-go-cli](https://github.com/apache/dubbo-go/pull/818)
+- **Metadata Center**: [Nacos(Local)](https://github.com/apache/dubbo-go/pull/522), [ZooKeeper(Local)](https://github.com/apache/dubbo-go/pull/633), [etcd(Local)](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/metadata/report/etcd/report.go), [Consul(Local)](https://github.com/apache/dubbo-go/pull/633), [ZooKeeper(Remoting)](https://github.com/apache/dubbo-go/pull/1161)
+- **Tool**: [Dubbo-go-cli](https://github.com/dubbogo/tools)
 
 ## Getting started
 
