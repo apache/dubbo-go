@@ -35,7 +35,7 @@ The features that are available for Dubbo-go are:
 - **Invoke**: [Generic Invoke](https://github.com/apache/dubbo-go/pull/122)
 - **Monitor**: Opentracing API, [Prometheus](https://github.com/apache/dubbo-go/pull/342)
 - **Tracing**: [For JsonRPC](https://github.com/apache/dubbo-go/pull/335), [For Dubbo](https://github.com/apache/dubbo-go/pull/344), [For gRPC](https://github.com/apache/dubbo-go/pull/397)
-- **Metadata Center**: [Nacos(Local)](https://github.com/apache/dubbo-go/pull/522), [ZooKeeper(Local)](https://github.com/apache/dubbo-go/pull/633), [etcd(Local)](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/metadata/report/etcd/report.go), [Consul(Local)](https://github.com/apache/dubbo-go/pull/633), [ZooKeeper(Remoting)](https://github.com/apache/dubbo-go/pull/1161)
+- **Metadata Center**: [Nacos(Local)](https://github.com/apache/dubbo-go/pull/522), [ZooKeeper(Local)](https://github.com/apache/dubbo-go/pull/633), [etcd(Local)](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/metadata/report/etcd/report.go), [Consul(Local)](https://github.com/apache/dubbo-go/pull/633), [ZooKeeper(Remote)](https://github.com/apache/dubbo-go/pull/1161)
 - **Tool**: [Dubbo-go-cli](https://github.com/apache/dubbo-go/pull/818)
 
 ## Getting started

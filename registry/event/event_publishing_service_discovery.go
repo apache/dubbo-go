@@ -26,7 +26,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/observer"
 	"dubbo.apache.org/dubbo-go/v3/metadata/service"
-	"dubbo.apache.org/dubbo-go/v3/metadata/service/inmemory"
+	"dubbo.apache.org/dubbo-go/v3/metadata/service/local"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
@@ -152,5 +152,5 @@ func (epsd *EventPublishingServiceDiscovery) executeWithEvents(beforeEvent obser
 
 // getMetadataService returns metadata service instance
 func getMetadataService() (service.MetadataService, error) {
-	return inmemory.GetInMemoryMetadataService()
+	return local.GetLocalMetadataService()
 }

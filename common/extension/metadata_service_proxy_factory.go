@@ -46,5 +46,5 @@ func GetMetadataServiceProxyFactory(name string) service.MetadataServiceProxyFac
 	}
 	panic(fmt.Sprintf("could not find the metadata service factory creator for name: %s, "+
 		"please check whether you have imported relative packages, "+
-		"local - dubbo.apache.org/dubbo-go/v3/metadata/service/inmemory", name))
+		"local - dubbo.apache.org/dubbo-go/v3/metadata/service/local", name))
 }
