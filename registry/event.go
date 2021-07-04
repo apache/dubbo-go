@@ -29,6 +29,8 @@ import (
 	"github.com/apache/dubbo-go/remoting"
 )
 
+type KeyFunc func(*common.URL) string
+
 func init() {
 	rand.Seed(time.Now().UnixNano())
 }
@@ -45,6 +47,7 @@ type ServiceEvent struct {
 	key string
 	// If the url is updated, such as Merged.
 	updated bool
+	KeyFunc KeyFunc
 }
 
 // String return the description of event
@@ -69,7 +72,12 @@ func (e *ServiceEvent) Key() string {
 	if len(e.key) > 0 {
 		return e.key
 	}
-	e.key = e.Service.GetCacheInvokerMapKey()
+	if e.KeyFunc == nil {
+		e.key = e.Service.GetCacheInvokerMapKey()
+	} else {
+		e.key = e.KeyFunc(e.Service)
+	}
+
 	return e.key
 }
 
