@@ -196,7 +196,7 @@ func (dir *RegistryDirectory) refreshAllInvokers(events []*registry.ServiceEvent
 				routerUrls = append(routerUrls, event.Service)
 				continue
 			}
-			if oldInvoker, _ := dir.doCacheInvoker(event.Service); oldInvoker != nil {
+			if oldInvoker, _ := dir.doCacheInvoker(event.Service, event); oldInvoker != nil {
 				oldInvokers = append(oldInvokers, oldInvoker)
 			}
 		}
@@ -228,7 +228,7 @@ func (dir *RegistryDirectory) invokerCacheKey(event *registry.ServiceEvent) stri
 	referenceUrl := dir.GetDirectoryUrl().SubURL
 	newUrl := common.MergeUrl(event.Service, referenceUrl)
 	event.Update(newUrl)
-	return newUrl.GetCacheInvokerMapKey()
+	return event.Key()
 }
 
 // setNewInvokers groups the invokers from the cache first, then set the result to both directory and router chain.
@@ -247,18 +247,18 @@ func (dir *RegistryDirectory) setNewInvokers() {
 func (dir *RegistryDirectory) cacheInvokerByEvent(event *registry.ServiceEvent) (protocol.Invoker, error) {
 	// judge is override or others
 	if event != nil {
-		u := dir.convertUrl(event)
 		switch event.Action {
 		case remoting.EventTypeAdd, remoting.EventTypeUpdate:
+			u := dir.convertUrl(event)
 			logger.Infof("selector add service url{%s}", event.Service)
 			if u != nil && constant.ROUTER_PROTOCOL == u.Protocol {
 				dir.AddRouters(append(fileBasedRouterUrls(), u))
 				return nil, nil
 			}
-			return dir.cacheInvoker(u), nil
+			return dir.cacheInvoker(u, event), nil
 		case remoting.EventTypeDel:
 			logger.Infof("selector delete service url{%s}", event.Service)
-			return dir.uncacheInvoker(u), nil
+			return dir.uncacheInvoker(event), nil
 		default:
 			return nil, fmt.Errorf("illegal event type: %v", event.Action)
 		}
@@ -320,8 +320,8 @@ func (dir *RegistryDirectory) toGroupInvokers() []protocol.Invoker {
 }
 
 // uncacheInvoker will return abandoned Invoker, if no Invoker to be abandoned, return nil
-func (dir *RegistryDirectory) uncacheInvoker(url *common.URL) protocol.Invoker {
-	return dir.uncacheInvokerWithKey(url.GetCacheInvokerMapKey())
+func (dir *RegistryDirectory) uncacheInvoker(event *registry.ServiceEvent) protocol.Invoker {
+	return dir.uncacheInvokerWithKey(event.Key())
 }
 
 func (dir *RegistryDirectory) uncacheInvokerWithKey(key string) protocol.Invoker {
@@ -335,7 +335,7 @@ func (dir *RegistryDirectory) uncacheInvokerWithKey(key string) protocol.Invoker
 }
 
 // cacheInvoker will return abandoned Invoker,if no Invoker to be abandoned,return nil
-func (dir *RegistryDirectory) cacheInvoker(url *common.URL) protocol.Invoker {
+func (dir *RegistryDirectory) cacheInvoker(url *common.URL, event *registry.ServiceEvent) protocol.Invoker {
 	dir.overrideUrl(dir.GetDirectoryUrl())
 	referenceUrl := dir.GetDirectoryUrl().SubURL
 
@@ -352,15 +352,16 @@ func (dir *RegistryDirectory) cacheInvoker(url *common.URL) protocol.Invoker {
 	if url.Protocol == referenceUrl.Protocol || referenceUrl.Protocol == "" {
 		newUrl := common.MergeUrl(url, referenceUrl)
 		dir.overrideUrl(newUrl)
-		if v, ok := dir.doCacheInvoker(newUrl); ok {
+		event.Update(newUrl)
+		if v, ok := dir.doCacheInvoker(newUrl, event); ok {
 			return v
 		}
 	}
 	return nil
 }
 
-func (dir *RegistryDirectory) doCacheInvoker(newUrl *common.URL) (protocol.Invoker, bool) {
-	key := newUrl.GetCacheInvokerMapKey()
+func (dir *RegistryDirectory) doCacheInvoker(newUrl *common.URL, event *registry.ServiceEvent) (protocol.Invoker, bool) {
+	key := event.Key()
 	if cacheInvoker, ok := dir.cacheInvokersMap.Load(key); !ok {
 		logger.Debugf("service will be added in cache invokers: invokers url is  %s!", newUrl)
 		newInvoker := extension.GetProtocol(protocolwrapper.FILTER).Refer(newUrl)
