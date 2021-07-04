@@ -18,9 +18,8 @@
 package handler
 
 import (
-	"sync"
-
 	"dubbo.apache.org/dubbo-go/v3/filter"
+	"sync"
 )
 
 import (
