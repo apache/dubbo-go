@@ -19,17 +19,12 @@ package logger
 
 import (
 	"flag"
-	"io/ioutil"
 	"os"
-	"path"
+	"strings"
 )
 
 import (
 	"github.com/apache/dubbo-getty"
-	perrors "github.com/pkg/errors"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-	"gopkg.in/yaml.v2"
 )
 
 import (
@@ -37,11 +32,14 @@ import (
 )
 
 var logger Logger
+var loggerImpl = []string{"zap", "logrus"}
+var loggerSelect string
 
 // nolint
 type DubboLogger struct {
 	Logger
-	dynamicLevel zap.AtomicLevel
+	dynamicLevel string
+	loggerName   string
 }
 
 // Logger is the interface for Logger types
@@ -64,81 +62,37 @@ func init() {
 	}
 
 	fs := flag.NewFlagSet("log", flag.ContinueOnError)
+	loggerName := fs.String("loggerName", os.Getenv(constant.APP_LOGGER_NAME), "default logger zap or logrus")
 	logConfFile := fs.String("logConf", os.Getenv(constant.APP_LOG_CONF_FILE), "default log config path")
 	fs.Parse(os.Args[1:])
 	for len(fs.Args()) != 0 {
 		fs.Parse(fs.Args()[1:])
 	}
+	if *loggerName == "" {
+		*loggerName = constant.DEFAULT_LOGGER_NAME
+	}
 	if *logConfFile == "" {
 		*logConfFile = constant.DEFAULT_LOG_CONF_FILE_PATH
 	}
-	err := InitLog(*logConfFile)
+
+	err := InitLog(*loggerName, *logConfFile)
+	loggerSelect = *loggerName
 	if err != nil {
 		logger.Warnf("InitLog with error %v", err)
 	}
 }
 
 // InitLog use for init logger by call InitLogger
-func InitLog(logConfFile string) error {
-	if logConfFile == "" {
-		InitLogger(nil)
-		return perrors.New("log configure file name is nil")
+func InitLog(loggerName string, logConfFile string) error {
+	loggerName = strings.ToLower(loggerName)
+	switch loggerName {
+	case "zap":
+		return InitZapLog(logConfFile)
+	case "logrus":
+		return InitLogrusLog(logConfFile)
+	default:
+		return InitZapLog(logConfFile)
 	}
-	if path.Ext(logConfFile) != ".yml" {
-		InitLogger(nil)
-		return perrors.Errorf("log configure file name{%s} suffix must be .yml", logConfFile)
-	}
-
-	confFileStream, err := ioutil.ReadFile(logConfFile)
-	if err != nil {
-		InitLogger(nil)
-		return perrors.Errorf("ioutil.ReadFile(file:%s) = error:%v", logConfFile, err)
-	}
-
-	conf := &zap.Config{}
-	err = yaml.Unmarshal(confFileStream, conf)
-	if err != nil {
-		InitLogger(nil)
-		return perrors.Errorf("[Unmarshal]init logger error: %v", err)
-	}
-
-	InitLogger(conf)
-
-	return nil
-}
-
-// InitLogger use for init logger by @conf
-func InitLogger(conf *zap.Config) {
-	var zapLoggerConfig zap.Config
-	if conf == nil {
-		zapLoggerEncoderConfig := zapcore.EncoderConfig{
-			TimeKey:        "time",
-			LevelKey:       "level",
-			NameKey:        "logger",
-			CallerKey:      "caller",
-			MessageKey:     "message",
-			StacktraceKey:  "stacktrace",
-			EncodeLevel:    zapcore.CapitalColorLevelEncoder,
-			EncodeTime:     zapcore.ISO8601TimeEncoder,
-			EncodeDuration: zapcore.SecondsDurationEncoder,
-			EncodeCaller:   zapcore.ShortCallerEncoder,
-		}
-		zapLoggerConfig = zap.Config{
-			Level:            zap.NewAtomicLevelAt(zap.DebugLevel),
-			Development:      false,
-			Encoding:         "console",
-			EncoderConfig:    zapLoggerEncoderConfig,
-			OutputPaths:      []string{"stderr"},
-			ErrorOutputPaths: []string{"stderr"},
-		}
-	} else {
-		zapLoggerConfig = *conf
-	}
-	zapLogger, _ := zapLoggerConfig.Build(zap.AddCallerSkip(1))
-	logger = &DubboLogger{Logger: zapLogger.Sugar(), dynamicLevel: zapLoggerConfig.Level}
-
-	// set getty log
-	getty.SetLogger(logger)
 }
 
 // SetLogger sets logger for dubbo and getty
@@ -169,8 +123,16 @@ type OpsLogger interface {
 
 // SetLoggerLevel use for set logger level
 func (dl *DubboLogger) SetLoggerLevel(level string) {
-	l := new(zapcore.Level)
-	if err := l.Set(level); err == nil {
-		dl.dynamicLevel.SetLevel(*l)
+	switch loggerSelect {
+	case "zap":
+		SetZapLevel(level)
+		break
+	case "logrus":
+		SetLogrusLevel(level)
+		break
+	default:
+		SetZapLevel(level)
+		break
 	}
+	dl.dynamicLevel = level
 }
