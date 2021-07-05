@@ -76,7 +76,7 @@ func init() {
 	}
 
 	err := InitLog(*loggerName, *logConfFile)
-	loggerSelect = *loggerName
+	loggerSelect = strings.ToLower(*loggerName)
 	if err != nil {
 		logger.Warnf("InitLog with error %v", err)
 	}
