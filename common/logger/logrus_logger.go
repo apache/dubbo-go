@@ -6,10 +6,7 @@ import (
 )
 
 import (
-	getty "github.com/apache/dubbo-getty"
-)
-
-import (
+	"github.com/apache/dubbo-getty"
 	"github.com/sirupsen/logrus"
 )
 
