@@ -143,11 +143,12 @@ func (t *TelnetClient) processSingleRequest(req *protocol.Request, userPkg inter
 	go t.readInputData(string(inputData), requestDataChannel)
 	go t.readServerData(t.conn, responseDataChannel)
 
-	timeAfter := time.After(t.responseTimeout)
+	timeAfter := time.NewTimer(t.responseTimeout)
+	defer timeAfter.Stop()
 
 	for {
 		select {
-		case <-timeAfter:
+		case <-timeAfter.C:
 			log.Println("request timeout to:", t.tcpAddr)
 			return
 		case request := <-requestDataChannel:
