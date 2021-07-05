@@ -95,6 +95,10 @@ const (
 	DEFAULT_ROUTER_CONF_FILE_PATH   = "../profiles/dev/router.yml"
 )
 
+const (
+	DEFAULT_LOGGER_NAME = "zap"
+)
+
 // default config value
 const (
 	DEFAULT_REGISTRY_ZK_ID       = "demoZK"
