@@ -19,6 +19,7 @@ package filter_impl
 
 import (
 	"context"
+	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo/hessian2"
 	"reflect"
 	"strings"
 	"time"
@@ -50,12 +51,18 @@ func (ef *GenericFilter) Invoke(ctx context.Context, invoker protocol.Invoker, i
 		mtdname := invocation.MethodName()
 		oldargs := invocation.Arguments()
 
-		// TODO: get types of args
+		// get types of args
 		types := make([]interface{}, 0, len(oldargs))
-
 		// convert args to map
 		args := make([]interface{}, 0, len(oldargs))
+
 		for _, arg := range oldargs {
+			t, err := hessian2.GetJavaName(args)
+			if err != nil && err != hessian2.NilError {
+				panic(err)
+			}
+			// nil
+			types = append(types, t)
 			args = append(args, objToMap(arg))
 		}
 
@@ -69,7 +76,6 @@ func (ef *GenericFilter) Invoke(ctx context.Context, invoker protocol.Invoker, i
 		newivc.SetReply(invocation.Reply())
 		return invoker.Invoke(ctx, newivc)
 	} else if isMakingAGenericCall(invoker, invocation) { // making a generic call to normal service
-		// TODO: type check
 		invocation.Attachments()[constant.GENERIC_KEY] = invoker.GetURL().GetParam(constant.GENERIC_KEY, "")
 	}
 	return invoker.Invoke(ctx, invocation)
@@ -93,6 +99,8 @@ func objToMap(obj interface{}) interface{} {
 	if obj == nil {
 		return obj
 	}
+
+	// TODO: check pointer type
 	t := reflect.TypeOf(obj)
 	v := reflect.ValueOf(obj)
 	if t.Kind() == reflect.Struct { // for struct
