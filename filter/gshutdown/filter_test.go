@@ -19,7 +19,6 @@ package gshutdown
 
 import (
 	"context"
-	"dubbo.apache.org/dubbo-go/v3/filter"
 	"net/url"
 	"testing"
 )
@@ -33,6 +32,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/filter"
 	common2 "dubbo.apache.org/dubbo-go/v3/filter/handler"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"

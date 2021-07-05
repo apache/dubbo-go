@@ -18,7 +18,6 @@
 package strategy
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/filter"
 	"sync/atomic"
 	"time"
 )
@@ -26,6 +25,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/filter"
 )
 
 const (
