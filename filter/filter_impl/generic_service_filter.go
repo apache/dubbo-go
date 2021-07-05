@@ -41,8 +41,6 @@ import (
 const (
 	// GENERIC_SERVICE defines the filter name
 	GENERIC_SERVICE = "generic_service"
-	// nolint
-	GENERIC_SERIALIZATION_DEFAULT = "true"
 )
 
 func init() {
@@ -82,8 +80,8 @@ func (ef *GenericServiceFilter) Invoke(ctx context.Context, invoker protocol.Inv
 		return &protocol.RPCResult{}
 	}
 	argsType = method.ArgsType()
-	genericKey = invocation.AttachmentsByKey(constant.GENERIC_KEY, GENERIC_SERIALIZATION_DEFAULT)
-	if genericKey == GENERIC_SERIALIZATION_DEFAULT {
+	genericKey = invocation.AttachmentsByKey(constant.GENERIC_KEY, constant.GENERIC_SERIALIZATION_DEFAULT)
+	if genericKey == constant.GENERIC_SERIALIZATION_DEFAULT {
 		oldParams, ok = invocation.Arguments()[2].([]hessian.Object)
 	} else {
 		logger.Errorf("[Generic Service Filter] Don't support this generic: %s", genericKey)
@@ -121,7 +119,7 @@ func (ef *GenericServiceFilter) OnResponse(ctx context.Context, result protocol.
 		if v.Kind() == reflect.Ptr {
 			v = v.Elem()
 		}
-		result.SetResult(struct2MapAll(v.Interface()))
+		result.SetResult(objToMap(v.Interface()))
 	}
 	return result
 }
