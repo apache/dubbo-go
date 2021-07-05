@@ -22,7 +22,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
-type RemotingMetadataService interface {
+type RemoteMetadataService interface {
 	// PublishMetadata publish the medata info of service from report
 	PublishMetadata(service string)
 	// GetMetadata get the medata info of service from report

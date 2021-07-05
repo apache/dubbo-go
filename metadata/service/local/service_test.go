@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package inmemory
+package local
 
 import (
 	"fmt"
@@ -32,7 +32,7 @@ import (
 )
 
 func TestMetadataService(t *testing.T) {
-	mts, _ := GetInMemoryMetadataService()
+	mts, _ := GetLocalMetadataService()
 	serviceName := "com.ikurento.user.UserProvider"
 	group := "group1"
 	version := "0.0.1"
