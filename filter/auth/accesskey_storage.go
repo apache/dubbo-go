@@ -26,7 +26,7 @@ import (
 )
 
 func init() {
-	extension.SetAccessKeyStorages(constant.ACCESS_KEY_STORAGE_KEY, func() filter.AccessKeyStorage {
+	extension.SetAccessKeyStorages(constant.DEFAULT_ACCESS_KEY_STORAGE, func() filter.AccessKeyStorage {
 		return &DefaultAccesskeyStorage{}
 	})
 }

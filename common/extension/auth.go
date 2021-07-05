@@ -45,9 +45,9 @@ func SetAccessKeyStorages(name string, fcn func() filter.AccessKeyStorage) {
 	accessKeyStorages[name] = fcn
 }
 
-// GetAccesskeyStorages finds the storage with the @name.
+// GetAccessKeyStorages finds the storage with the @name.
 // Panic if not found
-func GetAccesskeyStorages(name string) filter.AccessKeyStorage {
+func GetAccessKeyStorages(name string) filter.AccessKeyStorage {
 	if accessKeyStorages[name] == nil {
 		panic("accessKeyStorages for " + name + " is not existing, make sure you have import the package.")
 	}
