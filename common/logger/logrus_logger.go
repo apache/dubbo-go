@@ -43,7 +43,7 @@ func SetLogrusOutput(opt io.Writer) {
 }
 
 func SetLogrusReportCaller(reportCaller bool) {
-	baseLogrusLogger.SetReportCaller(true)
+	baseLogrusLogger.SetReportCaller(reportCaller)
 }
 
 func SetLogrusNoLock() {
