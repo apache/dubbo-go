@@ -451,6 +451,8 @@ func GetApplicationConfig() *ApplicationConfig {
 // if not found, create new one
 func GetProviderConfig() ProviderConfig {
 	if providerConfig == nil {
+		configAccessMutex.Lock()
+		defer configAccessMutex.Unlock()
 		if providerConfig == nil {
 			return ProviderConfig{}
 		}
@@ -465,6 +467,8 @@ func GetProviderConfig() ProviderConfig {
 // So you don't need to worry about the race condition
 func GetConsumerConfig() ConsumerConfig {
 	if consumerConfig == nil {
+		configAccessMutex.Lock()
+		defer configAccessMutex.Unlock()
 		if consumerConfig == nil {
 			return ConsumerConfig{}
 		}
