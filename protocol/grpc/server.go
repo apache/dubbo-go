@@ -119,7 +119,8 @@ func waitGrpcExporter(providerServices map[string]*config.ServiceConfig) {
 	t := time.NewTicker(50 * time.Millisecond)
 	defer t.Stop()
 	pLen := len(providerServices)
-	ta := time.After(10 * time.Second)
+	ta := time.NewTimer(10 * time.Second)
+	defer ta.Stop()
 
 	for {
 		select {
@@ -128,7 +129,7 @@ func waitGrpcExporter(providerServices map[string]*config.ServiceConfig) {
 			if pLen == mLen {
 				return
 			}
-		case <-ta:
+		case <-ta.C:
 			panic("wait grpc exporter timeout when start grpc server")
 		}
 	}
