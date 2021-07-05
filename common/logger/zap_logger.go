@@ -1,13 +1,19 @@
 package logger
 
 import (
-	getty "github.com/apache/dubbo-getty"
+	"io/ioutil"
+	"path"
+)
+
+import (
 	perrors "github.com/pkg/errors"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/yaml.v2"
-	"io/ioutil"
-	"path"
+)
+
+import (
+	getty "github.com/apache/dubbo-getty"
 )
 
 var baseZapLevel zap.AtomicLevel

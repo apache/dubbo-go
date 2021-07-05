@@ -1,10 +1,16 @@
 package logger
 
 import (
-	getty "github.com/apache/dubbo-getty"
-	"github.com/sirupsen/logrus"
 	"io"
 	"os"
+)
+
+import (
+	getty "github.com/apache/dubbo-getty"
+)
+
+import (
+	"github.com/sirupsen/logrus"
 )
 
 var baseLogrusLogger *logrus.Logger
