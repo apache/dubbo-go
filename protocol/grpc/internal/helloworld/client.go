@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package internal
+package helloworld
 
 import (
 	"context"

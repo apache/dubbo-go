@@ -30,7 +30,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
-	"dubbo.apache.org/dubbo-go/v3/protocol/grpc/internal"
+	"dubbo.apache.org/dubbo-go/v3/protocol/grpc/internal/helloworld"
 )
 
 func doInitProvider() {
@@ -69,10 +69,10 @@ func doInitProvider() {
 
 func TestGrpcProtocolExport(t *testing.T) {
 	// Export
-	config.SetProviderService(internal.NewService())
+	config.SetProviderService(helloworld.NewService())
 	doInitProvider()
 
-	url, err := common.NewURL(mockGrpcCommonUrl)
+	url, err := common.NewURL(helloworldURL)
 	assert.NoError(t, err)
 
 	proto := GetProtocol()
@@ -99,12 +99,12 @@ func TestGrpcProtocolExport(t *testing.T) {
 }
 
 func TestGrpcProtocolRefer(t *testing.T) {
-	server, err := internal.NewServer("127.0.0.1:30000")
+	server, err := helloworld.NewServer("127.0.0.1:30000")
 	assert.NoError(t, err)
 	go server.Start()
 	defer server.Stop()
 
-	url, err := common.NewURL(mockGrpcCommonUrl)
+	url, err := common.NewURL(helloworldURL)
 	assert.NoError(t, err)
 
 	proto := GetProtocol()
