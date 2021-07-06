@@ -27,7 +27,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestStruct2MapAll(t *testing.T) {
+func TestObjToMap(t *testing.T) {
 	var testData struct {
 		AaAa string `m:"aaAa"`
 		BaBa string
@@ -71,7 +71,7 @@ type testStruct struct {
 	} `m:"xxYy"`
 }
 
-func TestStruct2MapAllSlice(t *testing.T) {
+func TestObjToMap_Slice(t *testing.T) {
 	var testData struct {
 		AaAa string `m:"aaAa"`
 		BaBa string
@@ -96,7 +96,7 @@ func TestStruct2MapAllSlice(t *testing.T) {
 	assert.Equal(t, reflect.Map, reflect.TypeOf(m["caCa"].([]interface{})[0].(map[string]interface{})["xxYy"]).Kind())
 }
 
-func TestStruct2MapAllMap(t *testing.T) {
+func TestObjToMap_Map(t *testing.T) {
 	var testData struct {
 		AaAa   string
 		Baba   map[string]interface{}

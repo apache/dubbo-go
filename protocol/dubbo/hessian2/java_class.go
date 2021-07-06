@@ -3,6 +3,7 @@ package hessian2
 import (
 	"fmt"
 	"reflect"
+	"strings"
 	"time"
 )
 
@@ -12,8 +13,9 @@ import (
 )
 
 var (
-	NilError = perrors.Errorf("object should not be nil")
-	UndeterminedTypeError = perrors.Errorf("object should be a POJO")
+	NilError            = perrors.Errorf("object should not be nil")
+	UnexpectedTypeError = perrors.Errorf("object should be a POJO")
+	notBasicClassError  = perrors.Errorf("object isn't a basic class")
 )
 
 // GetJavaName returns java name of an object
@@ -23,7 +25,45 @@ func GetJavaName(obj interface{}) (string, error) {
 	}
 
 	t := reflect.TypeOf(obj)
+
+	// basic types, e.g. bool, int, etc.
+	if jtype, err := getBasicJavaName(t); err == nil {
+		return jtype, nil
+	}
+
+	// complicated types, e.g. array, slice, etc.
 	switch t.Kind() {
+	case reflect.Array, reflect.Slice:
+		sb := &strings.Builder{}
+		itemtyp := t
+		for itemtyp.Kind() == reflect.Array || itemtyp.Kind() == reflect.Slice {
+			sb.WriteString("[]")
+			itemtyp = itemtyp.Elem()
+		}
+		var (
+			javaName string
+			err error
+		)
+		if javaName, err = getBasicJavaName(itemtyp); err != nil {
+			if javaName, err = GetJavaName(reflect.New(itemtyp).Elem().Interface()); err != nil {
+				return "", err
+			}
+		}
+		return fmt.Sprintf("%s%s", javaName, sb), nil
+	case reflect.Map:
+		// TODO: tests for map are required.
+		return "java.util.Map", nil
+	default:
+		pojo, ok := obj.(hessian.POJO)
+		if !ok {
+			return "", UnexpectedTypeError
+		}
+		return pojo.JavaClassName(), nil
+	}
+}
+
+func getBasicJavaName(typ reflect.Type) (string, error) {
+	switch typ.Kind() {
 	case reflect.Bool:
 		return "boolean", nil
 	case reflect.Int, reflect.Int64: // in 64-bit processor, Int takes a 64-bit space
@@ -46,24 +86,9 @@ func GetJavaName(obj interface{}) (string, error) {
 		return "double", nil
 	case reflect.String:
 		return "java.lang.String", nil
-	case reflect.Array, reflect.Slice:
-		ret, err := GetJavaName(reflect.ValueOf(obj).Elem().Interface())
-		if err != nil {
-			return "", err
-		}
-		return fmt.Sprintf("%s[]", ret), nil
-	case reflect.Map:
-		// TODO: tests for map are required.
-		return "java.util.Map", nil
-	case reflect.Ptr:
-		return GetJavaName(reflect.ValueOf(obj).Elem())
-	default:
-		pojo, ok := obj.(hessian.POJO)
-		if !ok {
-			return "", UndeterminedTypeError
-		}
-		return pojo.JavaClassName(), nil
 	}
+
+	return "", notBasicClassError
 }
 
 // GetClassDesc get class desc.

@@ -19,10 +19,13 @@ package filter_impl
 
 import (
 	"context"
-	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo/hessian2"
 	"reflect"
 	"strings"
 	"time"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo/hessian2"
 )
 
 import (
@@ -47,35 +50,34 @@ type GenericFilter struct{}
 
 // Invoke turns the parameters to map for generic method
 func (ef *GenericFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
-	if isCallingToGenericService(invoker, invocation) { // call to a generic service
+	if isCallingToGenericService(invoker, invocation) {
 		mtdname := invocation.MethodName()
 		oldargs := invocation.Arguments()
 
-		// get types of args
 		types := make([]interface{}, 0, len(oldargs))
-		// convert args to map
 		args := make([]interface{}, 0, len(oldargs))
 
 		for _, arg := range oldargs {
-			t, err := hessian2.GetJavaName(args)
-			if err != nil && err != hessian2.NilError {
-				panic(err)
+			typ, obj, err := generalize(arg)
+			if err != nil {
+				logger.Errorf("generalization failed, %v", err)
+				return invoker.Invoke(ctx, invocation)
 			}
-			// nil
-			types = append(types, t)
-			args = append(args, objToMap(arg))
+			types = append(types, typ)
+			args = append(args, obj)
 		}
 
-		newargs := []interface{} {
+		// construct a new invocation for generic call
+		newargs := []interface{}{
 			mtdname,
 			types,
 			args,
 		}
-
 		newivc := invocation2.NewRPCInvocation(constant.GENERIC, newargs, invocation.Attachments())
 		newivc.SetReply(invocation.Reply())
+
 		return invoker.Invoke(ctx, newivc)
-	} else if isMakingAGenericCall(invoker, invocation) { // making a generic call to normal service
+	} else if isMakingAGenericCall(invoker, invocation) {
 		invocation.Attachments()[constant.GENERIC_KEY] = invoker.GetURL().GetParam(constant.GENERIC_KEY, "")
 	}
 	return invoker.Invoke(ctx, invocation)
@@ -92,7 +94,17 @@ func GetGenericFilter() filter.Filter {
 	return &GenericFilter{}
 }
 
+func generalize(arg interface{}) (typ string, obj interface{}, err error) {
+	if typ, err = hessian2.GetJavaName(arg); err != nil && err != hessian2.NilError {
+		return
+	}
 
+	// TODO: handle nil
+	if err == hessian2.NilError {}
+
+	obj = objToMap(arg)
+	return
+}
 
 // objToMap converts an object(interface{}) to a map
 func objToMap(obj interface{}) interface{} {
@@ -103,7 +115,9 @@ func objToMap(obj interface{}) interface{} {
 	// TODO: check pointer type
 	t := reflect.TypeOf(obj)
 	v := reflect.ValueOf(obj)
-	if t.Kind() == reflect.Struct { // for struct
+
+	switch t.Kind() {
+	case reflect.Struct:
 		result := make(map[string]interface{}, t.NumField())
 		for i := 0; i < t.NumField(); i++ {
 			field := t.Field(i)
@@ -125,7 +139,7 @@ func objToMap(obj interface{}) interface{} {
 			}
 		}
 		return result
-	} else if t.Kind() == reflect.Slice { // for slice
+	case reflect.Array, reflect.Slice:
 		value := reflect.ValueOf(obj)
 		newTemps := make([]interface{}, 0, value.Len())
 		for i := 0; i < value.Len(); i++ {
@@ -133,7 +147,7 @@ func objToMap(obj interface{}) interface{} {
 			newTemps = append(newTemps, newTemp)
 		}
 		return newTemps
-	} else if t.Kind() == reflect.Map { // for map
+	case reflect.Map:
 		newTempMap := make(map[interface{}]interface{}, v.Len())
 		iter := v.MapRange()
 		for iter.Next() {
@@ -142,16 +156,18 @@ func objToMap(obj interface{}) interface{} {
 			}
 			key := iter.Key()
 			mapV := iter.Value().Interface()
-			newTempMap[mapKeyToIface(key)] = objToMap(mapV)
+			newTempMap[mapKey(key)] = objToMap(mapV)
 		}
 		return newTempMap
-	} else {
+	case reflect.Ptr:
+		return objToMap(v.Elem().Interface())
+	default:
 		return obj
 	}
 }
 
-// mapKeyToIface converts the map key to interface type
-func mapKeyToIface(key reflect.Value) interface{} {
+// mapKey converts the map key to interface type
+func mapKey(key reflect.Value) interface{} {
 	switch key.Kind() {
 	case reflect.Bool, reflect.Int, reflect.Int8,
 		reflect.Int16, reflect.Int32, reflect.Int64,
@@ -181,11 +197,13 @@ func firstLetterToLower(a string) (b string) {
 	return
 }
 
+// isCallingToGenericService check if it calls to a generic service
 func isCallingToGenericService(invoker protocol.Invoker, invocation protocol.Invocation) bool {
 	return isGeneric(invoker.GetURL().GetParam(constant.GENERIC_KEY, "")) &&
 		invocation.MethodName() != constant.GENERIC
 }
 
+// isMakingAGenericCall check if it is making a generic call to a generic service
 func isMakingAGenericCall(invoker protocol.Invoker, invocation protocol.Invocation) bool {
 	return isGeneric(invoker.GetURL().GetParam(constant.GENERIC_KEY, "")) &&
 		invocation.MethodName() == constant.GENERIC &&
@@ -193,9 +211,9 @@ func isMakingAGenericCall(invoker protocol.Invoker, invocation protocol.Invocati
 		len(invocation.Arguments()) == 3
 }
 
+// isGeneric receives a generic field from url of invoker to determine whether the service is generic or not
 func isGeneric(generic string) bool {
 	lowerGeneric := strings.ToLower(generic)
-	return lowerGeneric != "" && (
-		lowerGeneric == constant.GENERIC_SERIALIZATION_DEFAULT ||
-			lowerGeneric == constant.GENERIC_SERIALIZATION_PROTOBUF)
+	return lowerGeneric != "" && (lowerGeneric == constant.GENERIC_SERIALIZATION_DEFAULT ||
+		lowerGeneric == constant.GENERIC_SERIALIZATION_PROTOBUF)
 }
