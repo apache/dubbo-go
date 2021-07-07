@@ -18,23 +18,86 @@
 package filter_impl
 
 import (
+	"context"
+	"net/url"
 	"reflect"
 	"testing"
 	"time"
 )
 
 import (
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
-// TODO: test invoke
-func TestInvoke(t *testing.T) {
+import (
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/protocol/mock"
+)
 
+// test isCallingToGenericService branch
+func TestInvoke(t *testing.T) {
+	invokeUrl := common.NewURLWithOptions(
+		common.WithParams(url.Values{}),
+		common.WithParamsValue(constant.GENERIC_KEY, constant.GENERIC_SERIALIZATION_DEFAULT))
+	filter := GetGenericFilter()
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	normalInvocation := invocation.NewRPCInvocation("hello", []interface{}{"arg1"}, make(map[string]interface{}))
+
+	mockInvoker := mock.NewMockInvoker(ctrl)
+	mockInvoker.EXPECT().GetUrl().Return(invokeUrl).Times(2)
+	mockInvoker.EXPECT().Invoke(gomock.Not(normalInvocation)).DoAndReturn(
+		func(invocation protocol.Invocation) protocol.Result {
+			assert.Equal(t, constant.GENERIC, invocation.MethodName())
+			args := invocation.Arguments()
+			assert.Equal(t, "hello", args[0])
+			assert.Equal(t, "java.lang.String", args[1].([]interface{})[0].(string))
+			assert.Equal(t, "arg1", args[2].([]interface{})[0].(string))
+			assert.Equal(t, constant.GENERIC_SERIALIZATION_DEFAULT, invocation.AttachmentsByKey(constant.GENERIC_KEY, ""))
+			return &protocol.RPCResult{}
+		})
+
+	result := filter.Invoke(context.Background(), mockInvoker, normalInvocation)
+	assert.NotNil(t, result)
 }
 
-// TODO: test invoke with generic call
+// test isMakingAGenericCall branch
 func TestInvokeWithGenericCall(t *testing.T) {
+	invokeUrl := common.NewURLWithOptions(
+		common.WithParams(url.Values{}),
+		common.WithParamsValue(constant.GENERIC_KEY, constant.GENERIC_SERIALIZATION_DEFAULT))
+	filter := GetGenericFilter()
 
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	genericInvocation := invocation.NewRPCInvocation(constant.GENERIC, []interface{}{
+		"hello",
+		[]string{"java.lang.String"},
+		[]string{"arg1"},
+	}, make(map[string]interface{}))
+
+	mockInvoker := mock.NewMockInvoker(ctrl)
+	mockInvoker.EXPECT().GetUrl().Return(invokeUrl).Times(3)
+	mockInvoker.EXPECT().Invoke(gomock.Any()).DoAndReturn(
+		func(invocation protocol.Invocation) protocol.Result {
+			assert.Equal(t, constant.GENERIC, invocation.MethodName())
+			args := invocation.Arguments()
+			assert.Equal(t, "hello", args[0])
+			assert.Equal(t, "java.lang.String", args[1].([]string)[0])
+			assert.Equal(t, "arg1", args[2].([]string)[0])
+			assert.Equal(t, constant.GENERIC_SERIALIZATION_DEFAULT, invocation.AttachmentsByKey(constant.GENERIC_KEY, ""))
+			return &protocol.RPCResult{}
+		})
+
+	result := filter.Invoke(context.Background(), mockInvoker, genericInvocation)
+	assert.NotNil(t, result)
 }
 
 func TestObjToMap(t *testing.T) {

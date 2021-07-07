@@ -25,15 +25,12 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo/hessian2"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo/hessian2"
 	invocation2 "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
@@ -75,6 +72,7 @@ func (ef *GenericFilter) Invoke(ctx context.Context, invoker protocol.Invoker, i
 		}
 		newivc := invocation2.NewRPCInvocation(constant.GENERIC, newargs, invocation.Attachments())
 		newivc.SetReply(invocation.Reply())
+		newivc.Attachments()[constant.GENERIC_KEY] = invoker.GetURL().GetParam(constant.GENERIC_KEY, "")
 
 		return invoker.Invoke(ctx, newivc)
 	} else if isMakingAGenericCall(invoker, invocation) {
