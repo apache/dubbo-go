@@ -46,7 +46,7 @@ func TestMetricsFilterInvoke(t *testing.T) {
 		return mk
 	})
 
-	instance := NewFilter()
+	instance := newFilter()
 
 	url, _ := common.NewURL(
 		"dubbo://:20000/UserProvider?app.version=0.0.1&application=BDTService&bean.name=UserProvider" +

@@ -32,7 +32,7 @@ import (
 
 const (
 	SEATA_XID = constant.DubboCtxKey("SEATA_XID")
-	Seata     = constant.DubboCtxKey("SEATA")
+	Seata     = constant.DubboCtxKey("seata")
 )
 
 func init() {

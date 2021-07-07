@@ -88,7 +88,7 @@ func mockInitHystrixConfig() {
 }
 
 func TestGetHystrixFilter(t *testing.T) {
-	filterGot := NewFilterConsumer()
+	filterGot := newFilterConsumer()
 	assert.NotNil(t, filterGot)
 }
 
@@ -225,13 +225,13 @@ func TestHystricFilterInvokeCircuitBreakOmitException(t *testing.T) {
 }
 
 func TestGetHystrixFilterConsumer(t *testing.T) {
-	get := NewFilterConsumer()
+	get := newFilterConsumer()
 	assert.NotNil(t, get)
 	assert.True(t, get.COrP)
 }
 
 func TestGetHystrixFilterProvider(t *testing.T) {
-	get := NewFilterProvider()
+	get := newFilterProvider()
 	assert.NotNil(t, get)
 	assert.False(t, get.COrP)
 }

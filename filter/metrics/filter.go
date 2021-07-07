@@ -36,9 +36,7 @@ const Metrics = "metrics"
 var metricFilterInstance *Filter
 
 func init() {
-	extension.SetFilter(Metrics, func() filter.Filter {
-		return NewFilter()
-	})
+	extension.SetFilter(Metrics, newFilter)
 }
 
 // Filter will calculate the invocation's duration and the report to the reporters
@@ -72,10 +70,10 @@ func (p *Filter) OnResponse(ctx context.Context, res protocol.Result, invoker pr
 	return res
 }
 
-// NewFilter the Filter is singleton.
+// newFilter the Filter is singleton.
 // it's lazy initialization
 // make sure that the configuration had been loaded before invoking this method.
-func NewFilter() *Filter {
+func newFilter() filter.Filter {
 	if metricFilterInstance == nil {
 		reporterNames := config.GetMetricConfig().Reporters
 		reporters := make([]metrics.Reporter, 0, len(reporterNames))

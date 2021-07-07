@@ -31,10 +31,10 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
-const TPSLimiter = "tps"
+const TpsLimit = "tps"
 
 func init() {
-	extension.SetFilter(TPSLimiter, func() filter.Filter {
+	extension.SetFilter(TpsLimit, func() filter.Filter {
 		return &Filter{}
 	})
 }

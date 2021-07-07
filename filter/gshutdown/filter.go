@@ -34,43 +34,43 @@ import (
 func init() {
 	// `init()` is performed before config.Load(), so shutdownConfig will be retrieved after config was loaded.
 	extension.SetFilter(constant.CONSUMER_SHUTDOWN_FILTER, func() filter.Filter {
-		return &GracefulShutdownFilter{}
+		return &Filter{}
 	})
 	extension.SetFilter(constant.PROVIDER_SHUTDOWN_FILTER, func() filter.Filter {
-		return &GracefulShutdownFilter{}
+		return &Filter{}
 	})
 }
 
-type GracefulShutdownFilter struct {
+type Filter struct {
 	activeCount    int32
 	shutdownConfig *config.ShutdownConfig
 }
 
 // Invoke adds the requests count and block the new requests if application is closing
-func (gf *GracefulShutdownFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
-	if gf.rejectNewRequest() {
+func (f *Filter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+	if f.rejectNewRequest() {
 		logger.Info("The application is closing, new request will be rejected.")
-		return gf.getRejectHandler().RejectedExecution(invoker.GetURL(), invocation)
+		return f.getRejectHandler().RejectedExecution(invoker.GetURL(), invocation)
 	}
-	atomic.AddInt32(&gf.activeCount, 1)
+	atomic.AddInt32(&f.activeCount, 1)
 	return invoker.Invoke(ctx, invocation)
 }
 
 // OnResponse reduces the number of active processes then return the process result
-func (gf *GracefulShutdownFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
-	atomic.AddInt32(&gf.activeCount, -1)
-	// although this isn't thread safe, it won't be a problem if the gf.rejectNewRequest() is true.
-	if gf.shutdownConfig != nil && gf.shutdownConfig.RejectRequest && gf.activeCount <= 0 {
-		gf.shutdownConfig.RequestsFinished = true
+func (f *Filter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+	atomic.AddInt32(&f.activeCount, -1)
+	// although this isn't thread safe, it won't be a problem if the f.rejectNewRequest() is true.
+	if f.shutdownConfig != nil && f.shutdownConfig.RejectRequest && f.activeCount <= 0 {
+		f.shutdownConfig.RequestsFinished = true
 	}
 	return result
 }
 
-func (gf *GracefulShutdownFilter) Set(name string, conf interface{}) {
+func (f *Filter) Set(name string, conf interface{}) {
 	switch name {
 	case config.GracefulShutdownFilterShutdownConfig:
 		if shutdownConfig, ok := conf.(*config.ShutdownConfig); !ok {
-			gf.shutdownConfig = shutdownConfig
+			f.shutdownConfig = shutdownConfig
 			return
 		}
 		logger.Warnf("the type of config for {%s} should be *config.ShutdownConfig", config.GracefulShutdownFilterShutdownConfig)
@@ -79,17 +79,17 @@ func (gf *GracefulShutdownFilter) Set(name string, conf interface{}) {
 	}
 }
 
-func (gf *GracefulShutdownFilter) rejectNewRequest() bool {
-	if gf.shutdownConfig == nil {
+func (f *Filter) rejectNewRequest() bool {
+	if f.shutdownConfig == nil {
 		return false
 	}
-	return gf.shutdownConfig.RejectRequest
+	return f.shutdownConfig.RejectRequest
 }
 
-func (gf *GracefulShutdownFilter) getRejectHandler() filter.RejectedExecutionHandler {
+func (f *Filter) getRejectHandler() filter.RejectedExecutionHandler {
 	handler := constant.DEFAULT_KEY
-	if gf.shutdownConfig != nil && len(gf.shutdownConfig.RejectRequestHandler) > 0 {
-		handler = gf.shutdownConfig.RejectRequestHandler
+	if f.shutdownConfig != nil && len(f.shutdownConfig.RejectRequestHandler) > 0 {
+		handler = f.shutdownConfig.RejectRequestHandler
 	}
 	return extension.GetRejectedExecutionHandler(handler)
 }

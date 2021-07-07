@@ -54,12 +54,8 @@ var (
 )
 
 func init() {
-	extension.SetFilter(HystrixConsumer, func() filter.Filter {
-		return NewFilterConsumer()
-	})
-	extension.SetFilter(HystrixProvider, func() filter.Filter {
-		return NewFilterProvider()
-	})
+	extension.SetFilter(HystrixConsumer, newFilterConsumer)
+	extension.SetFilter(HystrixProvider, newFilterProvider)
 }
 
 // FilterError implements error interface
@@ -199,8 +195,8 @@ func (f *Filter) OnResponse(ctx context.Context, result protocol.Result, invoker
 	return result
 }
 
-// NewFilterConsumer returns Filter instance for consumer
-func NewFilterConsumer() *Filter {
+// newFilterConsumer returns Filter instance for consumer
+func newFilterConsumer() filter.Filter {
 	// When first called, load the config in
 	consumerConfigOnce.Do(func() {
 		if err := initConfigConsumer(); err != nil {
@@ -210,8 +206,8 @@ func NewFilterConsumer() *Filter {
 	return &Filter{COrP: true}
 }
 
-// NewFilterProvider returns Filter instance for provider
-func NewFilterProvider() *Filter {
+// newFilterProvider returns Filter instance for provider
+func newFilterProvider() filter.Filter {
 	providerConfigOnce.Do(func() {
 		if err := initConfigProvider(); err != nil {
 			logger.Warnf("[Hystrix Filter]Config load failed for provider, error is: %v , will use default", err)
