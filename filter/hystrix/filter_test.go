@@ -227,11 +227,11 @@ func TestHystricFilterInvokeCircuitBreakOmitException(t *testing.T) {
 func TestGetHystrixFilterConsumer(t *testing.T) {
 	get := newFilterConsumer()
 	assert.NotNil(t, get)
-	assert.True(t, get.COrP)
+	assert.True(t, get.(*Filter).COrP)
 }
 
 func TestGetHystrixFilterProvider(t *testing.T) {
 	get := newFilterProvider()
 	assert.NotNil(t, get)
-	assert.False(t, get.COrP)
+	assert.False(t, get.(*Filter).COrP)
 }
