@@ -27,6 +27,16 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// TODO: test invoke
+func TestInvoke(t *testing.T) {
+
+}
+
+// TODO: test invoke with generic call
+func TestInvokeWithGenericCall(t *testing.T) {
+
+}
+
 func TestObjToMap(t *testing.T) {
 	var testData struct {
 		AaAa string `m:"aaAa"`
