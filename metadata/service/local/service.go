@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package inmemory
+package local
 
 import (
 	"sort"
@@ -36,7 +36,7 @@ import (
 )
 
 func init() {
-	extension.SetLocalMetadataService(constant.DEFAULT_KEY, GetInMemoryMetadataService)
+	extension.SetLocalMetadataService(constant.DEFAULT_KEY, GetLocalMetadataService)
 }
 
 // version will be used by Version func
@@ -63,7 +63,7 @@ var (
 
 // NewMetadataService: initiate a metadata service
 // it should be singleton
-func GetInMemoryMetadataService() (service.MetadataService, error) {
+func GetLocalMetadataService() (service.MetadataService, error) {
 	metadataServiceInitOnce.Do(func() {
 		metadataServiceInstance = &MetadataService{
 			BaseMetadataService:   service.NewBaseMetadataService(config.GetApplicationConfig().Name),

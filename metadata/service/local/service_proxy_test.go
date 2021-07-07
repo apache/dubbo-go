@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package inmemory
+package local
 
 import (
 	"testing"

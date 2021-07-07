@@ -353,8 +353,8 @@ func (c *ServiceConfig) GetExportedUrls() []*common.URL {
 }
 
 func publishServiceDefinition(url *common.URL) {
-	if remotingMetadataService, err := extension.GetRemotingMetadataService(); err == nil && remotingMetadataService != nil {
-		remotingMetadataService.PublishServiceDefinition(url)
+	if remoteMetadataService, err := extension.GetRemoteMetadataService(); err == nil && remoteMetadataService != nil {
+		remoteMetadataService.PublishServiceDefinition(url)
 
 	}
 }

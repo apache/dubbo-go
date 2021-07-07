@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package remoting
+package remote
 
 import (
 	"sync"
@@ -34,28 +34,28 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/metadata/identifier"
 	"dubbo.apache.org/dubbo-go/v3/metadata/report/delegate"
 	"dubbo.apache.org/dubbo-go/v3/metadata/service"
-	"dubbo.apache.org/dubbo-go/v3/metadata/service/inmemory"
+	"dubbo.apache.org/dubbo-go/v3/metadata/service/local"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
 type MetadataService struct {
-	*inmemory.MetadataService
+	*local.MetadataService
 	exportedRevision   atomic.String
 	subscribedRevision atomic.String
 	delegateReport     *delegate.MetadataReport
 }
 
 var (
-	metadataServiceOnce             sync.Once
-	remotingMetadataServiceInstance service.RemotingMetadataService
+	metadataServiceOnce           sync.Once
+	remoteMetadataServiceInstance service.RemoteMetadataService
 )
 
 func init() {
-	extension.SetRemotingMetadataService(GetRemotingMetadataService)
+	extension.SetRemoteMetadataService(GetRemoteMetadataService)
 }
 
-// GetRemotingMetadataService will create a new remote MetadataService instance
-func GetRemotingMetadataService() (service.RemotingMetadataService, error) {
+// GetRemoteMetadataService will create a new remote MetadataService instance
+func GetRemoteMetadataService() (service.RemoteMetadataService, error) {
 	var err error
 	metadataServiceOnce.Do(func() {
 		var mr *delegate.MetadataReport
@@ -64,15 +64,15 @@ func GetRemotingMetadataService() (service.RemotingMetadataService, error) {
 			return
 		}
 		// it will never return error
-		inms, _ := inmemory.GetInMemoryMetadataService()
-		remotingMetadataServiceInstance = &MetadataService{
+		inms, _ := local.GetLocalMetadataService()
+		remoteMetadataServiceInstance = &MetadataService{
 			// todo serviceName
 			//BaseMetadataService:     service.NewBaseMetadataService(""),
-			MetadataService: inms.(*inmemory.MetadataService),
+			MetadataService: inms.(*local.MetadataService),
 			delegateReport:  mr,
 		}
 	})
-	return remotingMetadataServiceInstance, err
+	return remoteMetadataServiceInstance, err
 }
 
 // PublishMetadata publishes the metadata info of @service to remote metadata center

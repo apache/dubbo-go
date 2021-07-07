@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package remoting
+package remote
 
 import (
 	"fmt"
@@ -35,7 +35,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/metadata/identifier"
 	"dubbo.apache.org/dubbo-go/v3/metadata/report"
 	"dubbo.apache.org/dubbo-go/v3/metadata/report/factory"
-	"dubbo.apache.org/dubbo-go/v3/metadata/service/inmemory"
+	"dubbo.apache.org/dubbo-go/v3/metadata/service/local"
 )
 
 var (
@@ -104,13 +104,13 @@ func TestMetadataService(t *testing.T) {
 	u, err := common.NewURL("mock://127.0.0.1:20000/?sync.report=true")
 	assert.NoError(t, err)
 	instance.GetMetadataReportInstance(u)
-	mts, err := GetRemotingMetadataService()
+	mts, err := GetRemoteMetadataService()
 	assert.NoError(t, err)
 	assert.NotNil(t, mts)
 }
 
 func TestMockInmemoryProc(t *testing.T) {
-	mts, _ := inmemory.GetInMemoryMetadataService()
+	mts, _ := local.GetLocalMetadataService()
 	serviceName := "com.ikurento.user.UserProvider"
 	group := "group1"
 	version := "0.0.1"
