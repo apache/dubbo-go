@@ -19,13 +19,13 @@ package strategy
 
 import (
 	"container/list"
-	"dubbo.apache.org/dubbo-go/v3/filter"
 	"sync"
 	"time"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/filter"
 )
 
 func init() {

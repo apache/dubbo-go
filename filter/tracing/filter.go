@@ -35,9 +35,7 @@ import (
 
 // this should be executed before users set their own Tracer
 func init() {
-	extension.SetFilter(Tracing, func() filter.Filter {
-		return NewTracingFilter()
-	})
+	extension.SetFilter(Tracing, newTracingFilter)
 	opentracing.SetGlobalTracer(opentracing.NoopTracer{})
 }
 
@@ -94,9 +92,9 @@ func (tf *tracingFilter) OnResponse(ctx context.Context, result protocol.Result,
 	return result
 }
 
-var tracingFilterInstance *tracingFilter
+var tracingFilterInstance filter.Filter
 
-func NewTracingFilter() *tracingFilter {
+func newTracingFilter() filter.Filter {
 	if tracingFilterInstance == nil {
 		tracingFilterInstance = &tracingFilter{}
 	}

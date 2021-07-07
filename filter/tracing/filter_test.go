@@ -45,7 +45,7 @@ func TestTracingFilterInvoke(t *testing.T) {
 	attach := make(map[string]interface{}, 10)
 	inv := invocation.NewRPCInvocation("MethodName", []interface{}{"OK", "Hello"}, attach)
 	ctx := context.Background()
-	tf := NewTracingFilter()
+	tf := newTracingFilter()
 
 	// do not has any span
 	tf.Invoke(ctx, invoker, inv)

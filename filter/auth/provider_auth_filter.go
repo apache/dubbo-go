@@ -22,10 +22,16 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
+
+func init() {
+	extension.SetFilter(constant.PROVIDER_AUTH_FILTER, newProviderAuthFilter)
+}
 
 // ProviderAuthFilter verifies the correctness of the signature on provider side
 type ProviderAuthFilter struct{}
@@ -51,4 +57,8 @@ func (paf *ProviderAuthFilter) Invoke(ctx context.Context, invoker protocol.Invo
 // OnResponse dummy process, returns the result directly
 func (paf *ProviderAuthFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	return result
+}
+
+func newProviderAuthFilter() filter.Filter {
+	return &ProviderAuthFilter{}
 }
