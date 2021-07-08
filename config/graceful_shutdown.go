@@ -60,10 +60,10 @@ func GracefulShutdownInit() {
 	signal.Notify(signals, ShutdownSignals...)
 
 	// retrieve ShutdownConfig for gracefulShutdownFilter
-	if filter, ok := extension.GetFilter(constant.CONSUMER_SHUTDOWN_FILTER).(Setter); ok && GetConsumerConfig().ShutdownConfig != nil {
+	if filter, ok := extension.GetFilter(constant.GracefulShutdownConsumerFilterKey).(Setter); ok && GetConsumerConfig().ShutdownConfig != nil {
 		filter.Set(GracefulShutdownFilterShutdownConfig, GetConsumerConfig().ShutdownConfig)
 	}
-	if filter, ok := extension.GetFilter(constant.PROVIDER_SHUTDOWN_FILTER).(Setter); ok && GetProviderConfig().ShutdownConfig != nil {
+	if filter, ok := extension.GetFilter(constant.GracefulShutdownProviderFilterKey).(Setter); ok && GetProviderConfig().ShutdownConfig != nil {
 		filter.Set(GracefulShutdownFilterShutdownConfig, GetProviderConfig().ShutdownConfig)
 	}
 

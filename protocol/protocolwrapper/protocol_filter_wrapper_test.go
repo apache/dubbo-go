@@ -62,12 +62,12 @@ func TestProtocolFilterWrapperRefer(t *testing.T) {
 
 // the same as echo filter, for test
 func init() {
-	extension.SetFilter("echo", GetFilter)
+	extension.SetFilter("echo", newFilter)
 }
 
-type EchoFilterForTest struct{}
+type mockEchoFilter struct{}
 
-func (ef *EchoFilterForTest) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+func (ef *mockEchoFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	logger.Infof("invoking echo filter.")
 	logger.Debugf("%v,%v", invocation.MethodName(), len(invocation.Arguments()))
 	if invocation.MethodName() == constant.ECHO && len(invocation.Arguments()) == 1 {
@@ -79,10 +79,10 @@ func (ef *EchoFilterForTest) Invoke(ctx context.Context, invoker protocol.Invoke
 	return invoker.Invoke(ctx, invocation)
 }
 
-func (ef *EchoFilterForTest) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+func (ef *mockEchoFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	return result
 }
 
-func GetFilter() filter.Filter {
-	return &EchoFilterForTest{}
+func newFilter() filter.Filter {
+	return &mockEchoFilter{}
 }

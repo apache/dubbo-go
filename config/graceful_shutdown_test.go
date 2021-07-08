@@ -29,10 +29,10 @@ import (
 )
 
 func TestGracefulShutdownInit(t *testing.T) {
-	extension.SetFilter(constant.CONSUMER_SHUTDOWN_FILTER, func() filter.Filter {
+	extension.SetFilter(constant.GracefulShutdownConsumerFilterKey, func() filter.Filter {
 		return &mockGracefulShutdownFilter{}
 	})
-	extension.SetFilter(constant.PROVIDER_SHUTDOWN_FILTER, func() filter.Filter {
+	extension.SetFilter(constant.GracefulShutdownProviderFilterKey, func() filter.Filter {
 		return &mockGracefulShutdownFilter{}
 	})
 	GracefulShutdownInit()

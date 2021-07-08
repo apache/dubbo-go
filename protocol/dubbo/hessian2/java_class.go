@@ -42,7 +42,7 @@ func GetJavaName(obj interface{}) (string, error) {
 		}
 		var (
 			javaName string
-			err error
+			err      error
 		)
 		if javaName, err = getBasicJavaName(itemtyp); err != nil {
 			if javaName, err = GetJavaName(reflect.New(itemtyp).Elem().Interface()); err != nil {
