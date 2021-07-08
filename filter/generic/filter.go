@@ -19,7 +19,6 @@ package generic
 
 import (
 	"context"
-	"dubbo.apache.org/dubbo-go/v3/filter/generic/generalizer"
 )
 
 import (
@@ -27,6 +26,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/filter"
+	"dubbo.apache.org/dubbo-go/v3/filter/generic/generalizer"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	invocation2 "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
