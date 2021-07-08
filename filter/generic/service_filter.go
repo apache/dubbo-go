@@ -19,6 +19,7 @@ package generic
 
 import (
 	"context"
+	"dubbo.apache.org/dubbo-go/v3/filter/generic/generalizer"
 	"reflect"
 )
 
@@ -44,7 +45,7 @@ func init() {
 	})
 }
 
-// nolint
+// ServiceFilter is for Server
 type ServiceFilter struct{}
 
 // Invoke is used to call service method by invocation
@@ -77,8 +78,8 @@ func (f *ServiceFilter) Invoke(ctx context.Context, invoker protocol.Invoker, in
 		return &protocol.RPCResult{}
 	}
 	argsType = method.ArgsType()
-	genericKey = invocation.AttachmentsByKey(constant.GENERIC_KEY, constant.GENERIC_SERIALIZATION_DEFAULT)
-	if genericKey == constant.GENERIC_SERIALIZATION_DEFAULT {
+	genericKey = invocation.AttachmentsByKey(constant.GENERIC_KEY, constant.GenericSerializationDefault)
+	if genericKey == constant.GenericSerializationDefault {
 		oldParams, ok = invocation.Arguments()[2].([]hessian.Object)
 	} else {
 		logger.Errorf("[Generic Service Filter] Don't support this generic: %s", genericKey)
@@ -116,7 +117,9 @@ func (f *ServiceFilter) OnResponse(ctx context.Context, result protocol.Result, 
 		if v.Kind() == reflect.Ptr {
 			v = v.Elem()
 		}
-		result.SetResult(objToMap(v.Interface()))
+		g := generalizer.GetMapGeneralizer()
+		obj, _ := g.Generalize(v.Interface())
+		result.SetResult(obj)
 	}
 	return result
 }
