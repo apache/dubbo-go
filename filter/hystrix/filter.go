@@ -41,7 +41,7 @@ import (
 
 const (
 	// nolint
-	HYSTRIX         = "hystrix"
+	HYSTRIX = "hystrix"
 )
 
 var (
