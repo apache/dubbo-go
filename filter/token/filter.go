@@ -33,10 +33,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
-const Token = "token"
-
 func init() {
-	extension.SetFilter(Token, func() filter.Filter {
+	extension.SetFilter(constant.TokenFilterKey, func() filter.Filter {
 		return &Filter{}
 	})
 }

@@ -31,6 +31,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/config"
@@ -41,8 +42,6 @@ import (
 const (
 	// nolint
 	HYSTRIX         = "hystrix"
-	HystrixConsumer = "hystrix_consumer"
-	HystrixProvider = "hystrix_provider"
 )
 
 var (
@@ -54,8 +53,8 @@ var (
 )
 
 func init() {
-	extension.SetFilter(HystrixConsumer, newFilterConsumer)
-	extension.SetFilter(HystrixProvider, newFilterProvider)
+	extension.SetFilter(constant.HystrixConsumerFilterKey, newFilterConsumer)
+	extension.SetFilter(constant.HystrixProviderFilterKey, newFilterProvider)
 }
 
 // FilterError implements error interface

@@ -42,7 +42,7 @@ func TestGenericFilterInvoke(t *testing.T) {
 	invoc := invocation.NewRPCInvocation("GetUser", []interface{}{"OK"}, make(map[string]interface{}))
 	invokeUrl := common.NewURLWithOptions(common.WithParams(url.Values{}))
 
-	shutdownFilter := extension.GetFilter(constant.PROVIDER_SHUTDOWN_FILTER).(*Filter)
+	shutdownFilter := extension.GetFilter(constant.GracefulShutdownProviderFilterKey).(*Filter)
 
 	providerConfig := config.GetProviderConfig()
 

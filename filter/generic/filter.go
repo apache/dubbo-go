@@ -36,12 +36,8 @@ import (
 	invocation2 "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
-const (
-	Generic = "generic"
-)
-
 func init() {
-	extension.SetFilter(Generic, func() filter.Filter {
+	extension.SetFilter(constant.GenericFilterKey, func() filter.Filter {
 		return &Filter{}
 	})
 }

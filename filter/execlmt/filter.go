@@ -37,14 +37,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
-const (
-	ExecuteLimit = "execute"
-)
-
 func init() {
-	extension.SetFilter(ExecuteLimit, func() filter.Filter {
-		return NewFilter()
-	})
+	extension.SetFilter(constant.ExecuteLimitFilterKey, newFilter)
 }
 
 // Filter will limit the number of in-progress request and it's thread-safe.
@@ -141,8 +135,8 @@ var (
 	executeLimitFilter *Filter
 )
 
-// NewFilter returns the singleton Filter instance
-func NewFilter() *Filter {
+// newFilter returns the singleton Filter instance
+func newFilter() filter.Filter {
 	executeLimitOnce.Do(func() {
 		executeLimitFilter = &Filter{
 			executeState: concurrent.NewMap(),

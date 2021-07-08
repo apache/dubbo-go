@@ -23,6 +23,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/filter"
@@ -32,11 +33,10 @@ import (
 
 const (
 	dubboInvokeStartTime = "dubboInvokeStartTime"
-	Active               = "active"
 )
 
 func init() {
-	extension.SetFilter(Active, func() filter.Filter {
+	extension.SetFilter(constant.ActiveFilterKey, func() filter.Filter {
 		return &Filter{}
 	})
 }

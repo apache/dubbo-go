@@ -32,11 +32,10 @@ import (
 
 const (
 	SEATA_XID = constant.DubboCtxKey("SEATA_XID")
-	Seata     = constant.DubboCtxKey("seata")
 )
 
 func init() {
-	extension.SetFilter(string(Seata), func() filter.Filter {
+	extension.SetFilter(constant.SeataFilterKey, func() filter.Filter {
 		return &Filter{}
 	})
 }

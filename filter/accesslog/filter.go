@@ -53,9 +53,7 @@ const (
 )
 
 func init() {
-	extension.SetFilter(constant.ACCESS_LOG_KEY, func() filter.Filter {
-		return NewFilter()
-	})
+	extension.SetFilter(constant.AccessLogFilterKey, newFilter)
 }
 
 // Filter for Access Log
@@ -79,9 +77,9 @@ type Filter struct {
 }
 
 // Invoke will check whether user wants to use this filter.
-// If we find the value of key constant.ACCESS_LOG_KEY, we will log the invocation info
+// If we find the value of key constant.AccessLogFilterKey, we will log the invocation info
 func (f *Filter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
-	accessLog := invoker.GetURL().GetParam(constant.ACCESS_LOG_KEY, "")
+	accessLog := invoker.GetURL().GetParam(constant.AccessLogFilterKey, "")
 
 	// the user do not
 	if len(accessLog) > 0 {
@@ -222,7 +220,7 @@ func isDefault(accessLog string) bool {
 	return strings.EqualFold("true", accessLog) || strings.EqualFold("default", accessLog)
 }
 
-func NewFilter() *Filter {
+func newFilter() filter.Filter {
 	accessLogFilter := &Filter{logChan: make(chan Data, LogMaxBuffer)}
 	go func() {
 		for accessLogData := range accessLogFilter.logChan {

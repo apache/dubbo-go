@@ -39,13 +39,12 @@ import (
 )
 
 const (
-	GenericService = "generic_service"
 	// nolint
 	GENERIC_SERIALIZATION_DEFAULT = "true"
 )
 
 func init() {
-	extension.SetFilter(GenericService, func() filter.Filter {
+	extension.SetFilter(constant.GenericServiceFilterKey, func() filter.Filter {
 		return &ServiceFilter{}
 	})
 }

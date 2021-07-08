@@ -29,12 +29,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
-const (
-	Echo = "echo"
-)
-
 func init() {
-	extension.SetFilter(Echo, func() filter.Filter {
+	extension.SetFilter(constant.EchoFilterKey, func() filter.Filter {
 		return &Filter{}
 	})
 }

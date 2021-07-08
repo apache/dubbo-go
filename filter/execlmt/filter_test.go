@@ -42,7 +42,7 @@ func TestFilterInvokeIgnored(t *testing.T) {
 		common.WithParams(url.Values{}),
 		common.WithParamsValue(constant.INTERFACE_KEY, methodName))
 
-	limitFilter := NewFilter()
+	limitFilter := newFilter()
 
 	result := limitFilter.Invoke(context.Background(), protocol.NewBaseInvoker(invokeUrl), invoc)
 	assert.NotNil(t, result)
@@ -59,7 +59,7 @@ func TestFilterInvokeConfigureError(t *testing.T) {
 		common.WithParamsValue(constant.EXECUTE_LIMIT_KEY, "13a"),
 	)
 
-	limitFilter := NewFilter()
+	limitFilter := newFilter()
 
 	result := limitFilter.Invoke(context.Background(), protocol.NewBaseInvoker(invokeUrl), invoc)
 	assert.NotNil(t, result)
@@ -76,7 +76,7 @@ func TestFilterInvoke(t *testing.T) {
 		common.WithParamsValue(constant.EXECUTE_LIMIT_KEY, "20"),
 	)
 
-	limitFilter := NewFilter()
+	limitFilter := newFilter()
 
 	result := limitFilter.Invoke(context.Background(), protocol.NewBaseInvoker(invokeUrl), invoc)
 	assert.NotNil(t, result)

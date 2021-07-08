@@ -33,10 +33,10 @@ import (
 
 func init() {
 	// `init()` is performed before config.Load(), so shutdownConfig will be retrieved after config was loaded.
-	extension.SetFilter(constant.CONSUMER_SHUTDOWN_FILTER, func() filter.Filter {
+	extension.SetFilter(constant.GracefulShutdownConsumerFilterKey, func() filter.Filter {
 		return &Filter{}
 	})
-	extension.SetFilter(constant.PROVIDER_SHUTDOWN_FILTER, func() filter.Filter {
+	extension.SetFilter(constant.GracefulShutdownProviderFilterKey, func() filter.Filter {
 		return &Filter{}
 	})
 }

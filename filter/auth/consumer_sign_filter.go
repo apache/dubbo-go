@@ -31,10 +31,10 @@ import (
 )
 
 func init() {
-	extension.SetFilter(constant.CONSUMER_SIGN_FILTER, func() filter.Filter {
+	extension.SetFilter(constant.AuthConsumerFilterKey, func() filter.Filter {
 		return &ConsumerSignFilter{}
 	})
-	extension.SetFilter(constant.PROVIDER_AUTH_FILTER, func() filter.Filter {
+	extension.SetFilter(constant.AuthProviderFilterKey, func() filter.Filter {
 		return &ProviderAuthFilter{}
 	})
 }

@@ -38,21 +38,16 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
-const (
-	SentinelProvider = "sentinel-provider"
-	SentinelConsumer = "sentinel-consumer"
-)
-
 // Integrate Sentinel Go MUST HAVE:
 // 1. Must initialize Sentinel Go run environment,
 //     refer to https://github.com/alibaba/sentinel-golang/blob/master/api/init.go
 // 2. Register rules for resources user want to guard
 
 func init() {
-	extension.SetFilter(SentinelConsumer, func() filter.Filter {
+	extension.SetFilter(constant.SentinelConsumerFilterKey, func() filter.Filter {
 		return &ConsumerFilter{}
 	})
-	extension.SetFilter(SentinelProvider, func() filter.Filter {
+	extension.SetFilter(constant.SentinelProviderFilterKey, func() filter.Filter {
 		return &ProviderFilter{}
 	})
 	if err := logging.ResetGlobalLogger(DubboLoggerWrapper{Logger: logger.GetLogger()}); err != nil {

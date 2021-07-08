@@ -23,6 +23,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/filter"
@@ -30,13 +31,11 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
-const Metrics = "metrics"
-
 // must initialized before using the filter and after loading configuration
 var metricFilterInstance *Filter
 
 func init() {
-	extension.SetFilter(Metrics, newFilter)
+	extension.SetFilter(constant.MetricsFilterKey, newFilter)
 }
 
 // Filter will calculate the invocation's duration and the report to the reporters

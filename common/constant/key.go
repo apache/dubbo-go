@@ -60,6 +60,29 @@ const (
 	REFERENCE_FILTER_KEY = "reference.filter"
 )
 
+// Filter Keys
+const (
+	AccessLogFilterKey                = "accesslog"
+	ActiveFilterKey                   = "active"
+	AuthConsumerFilterKey             = "sign"
+	AuthProviderFilterKey             = "auth"
+	EchoFilterKey                     = "echo"
+	ExecuteLimitFilterKey             = "execute"
+	GenericFilterKey                  = "generic"
+	GenericServiceFilterKey           = "generic_service"
+	GracefulShutdownProviderFilterKey = "pshutdown"
+	GracefulShutdownConsumerFilterKey = "cshutdown"
+	HystrixConsumerFilterKey          = "hystrix_consumer"
+	HystrixProviderFilterKey          = "hystrix_provider"
+	MetricsFilterKey                  = "metrics"
+	SeataFilterKey                    = "seata"
+	SentinelProviderFilterKey         = "sentinel-provider"
+	SentinelConsumerFilterKey         = "sentinel-consumer"
+	TokenFilterKey                    = "token"
+	TpsLimitFilterKey                 = "tps"
+	TracingFilterKey                  = "tracing"
+)
+
 const (
 	TIMESTAMP_KEY                          = "timestamp"
 	REMOTE_TIMESTAMP_KEY                   = "remote.timestamp"
@@ -74,7 +97,6 @@ const (
 	FORKS_KEY                              = "forks"
 	DEFAULT_FORKS                          = 2
 	DEFAULT_TIMEOUT                        = 1000
-	ACCESS_LOG_KEY                         = "accesslog"
 	TPS_LIMITER_KEY                        = "tps.limiter"
 	TPS_REJECTED_EXECUTION_HANDLER_KEY     = "tps.limit.rejected.handler"
 	TPS_LIMIT_RATE_KEY                     = "tps.limit.rate"
@@ -85,8 +107,6 @@ const (
 	EXECUTE_LIMIT_KEY                      = "execute.limit"
 	DEFAULT_EXECUTE_LIMIT                  = "-1"
 	EXECUTE_REJECTED_EXECUTION_HANDLER_KEY = "execute.limit.rejected.handler"
-	PROVIDER_SHUTDOWN_FILTER               = "pshutdown"
-	CONSUMER_SHUTDOWN_FILTER               = "cshutdown"
 	SERIALIZATION_KEY                      = "serialization"
 	PID_KEY                                = "pid"
 	SYNC_REPORT_KEY                        = "sync.report"
@@ -251,11 +271,8 @@ const (
 	AttachmentKey = DubboCtxKey("attachment")
 )
 
+// Auth filter
 const (
-	// name of consumer sign filter
-	CONSUMER_SIGN_FILTER = "sign"
-	// name of consumer sign filter
-	PROVIDER_AUTH_FILTER = "auth"
 	// name of service filter
 	SERVICE_AUTH_KEY = "auth"
 	// key of authenticator
