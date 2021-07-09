@@ -88,12 +88,14 @@ type configurationListener struct {
 func NewConfigurationListener(reg *kubernetesRegistry) *configurationListener {
 	// add a new waiter
 	reg.WaitGroup().Add(1)
-	return &configurationListener{registry: reg, events: make(chan *config_center.ConfigChangeEvent, 32)}
+	return &configurationListener{registry: reg, events: make(chan *config_center.ConfigChangeEvent)}
 }
 
 // Process processes the data change event from config center of kubernetes
 func (l *configurationListener) Process(configType *config_center.ConfigChangeEvent) {
-	l.events <- configType
+	go func() {
+		l.events <- configType
+	}()
 }
 
 // Next returns next service event once received

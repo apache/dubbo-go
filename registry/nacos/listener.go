@@ -55,7 +55,7 @@ type nacosListener struct {
 func NewNacosListener(url *common.URL, namingClient naming_client.INamingClient) (*nacosListener, error) {
 	listener := &nacosListener{
 		namingClient: namingClient,
-		listenUrl:    url, events: make(chan *config_center.ConfigChangeEvent, 32),
+		listenUrl:    url, events: make(chan *config_center.ConfigChangeEvent),
 		instanceMap: map[string]model.Instance{},
 		done:        make(chan struct{}),
 	}
@@ -199,7 +199,9 @@ func (nl *nacosListener) stopListen() error {
 }
 
 func (nl *nacosListener) process(configType *config_center.ConfigChangeEvent) {
-	nl.events <- configType
+	go func() {
+		nl.events <- configType
+	}()
 }
 
 // Next returns the service event from nacos.

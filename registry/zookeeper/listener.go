@@ -128,7 +128,7 @@ func NewRegistryConfigurationListener(client *gxzookeeper.ZookeeperClient, reg *
 	return &RegistryConfigurationListener{
 		client:       client,
 		registry:     reg,
-		events:       make(chan *config_center.ConfigChangeEvent, 32),
+		events:       make(chan *config_center.ConfigChangeEvent),
 		isClosed:     false,
 		close:        make(chan struct{}, 1),
 		subscribeURL: conf}
@@ -136,7 +136,9 @@ func NewRegistryConfigurationListener(client *gxzookeeper.ZookeeperClient, reg *
 
 // Process submit the ConfigChangeEvent to the event chan to notify all observer
 func (l *RegistryConfigurationListener) Process(configType *config_center.ConfigChangeEvent) {
-	l.events <- configType
+	go func() {
+		l.events <- configType
+	}()
 }
 
 // Next will observe the registry state and events chan
