@@ -1,11 +1,16 @@
 package generalizer
 
 import (
-	hessian "github.com/apache/dubbo-go-hessian2"
 	"reflect"
 	"strings"
 	"sync"
 	"time"
+)
+
+import (
+	hessian "github.com/apache/dubbo-go-hessian2"
+	"github.com/mitchellh/mapstructure"
+	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -30,6 +35,16 @@ type MapGeneralizer struct{}
 func (g *MapGeneralizer) Generalize(obj interface{}) (gobj interface{}, err error) {
 	gobj = objToMap(obj)
 	return
+}
+
+func (g *MapGeneralizer) Realize(obj interface{}, typ reflect.Type) (interface{}, error) {
+	newobj := reflect.New(typ).Interface()
+	err := mapstructure.Decode(obj, newobj)
+	if err != nil {
+		return nil, perrors.Errorf("realizing map failed, %v", err)
+	}
+
+	return reflect.ValueOf(newobj).Elem().Interface(), nil
 }
 
 func (g *MapGeneralizer) GetType(obj interface{}) (typ string, err error) {

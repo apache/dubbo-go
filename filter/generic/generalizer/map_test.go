@@ -121,10 +121,12 @@ func TestObjToMap_Map(t *testing.T) {
 	assert.Equal(t, 1, intMap.(map[interface{}]interface{})[1])
 }
 
+var mockMapGeneralizer = GetMapGeneralizer()
+
 type mockParent struct {
 	Gender, Email, Name string
-	Age int
-	Child *mockChild
+	Age                 int
+	Child               *mockChild
 }
 
 func (p mockParent) JavaClassName() string {
@@ -133,7 +135,7 @@ func (p mockParent) JavaClassName() string {
 
 type mockChild struct {
 	Gender, Email, Name string
-	Age int
+	Age                 int
 }
 
 func (c *mockChild) JavaClassName() string {
@@ -142,51 +144,89 @@ func (c *mockChild) JavaClassName() string {
 
 func TestPOJOClassName(t *testing.T) {
 	c := &mockChild{
-		Age: 20,
+		Age:    20,
 		Gender: "male",
-		Email: "lmc@example.com",
-		Name: "lmc",
+		Email:  "lmc@example.com",
+		Name:   "lmc",
 	}
 	p := mockParent{
-		Age: 30,
+		Age:    30,
 		Gender: "male",
-		Email: "xavierniu@example.com",
-		Name: "xavierniu",
-		Child: c,
+		Email:  "xavierniu@example.com",
+		Name:   "xavierniu",
+		Child:  c,
 	}
 
-	m := objToMap(p).(map[string]interface{})
-	assert.Equal(t, "org.apache.dubbo.mockParent", m["class"].(string))
-	assert.Equal(t, "org.apache.dubbo.mockChild", m["child"].(map[string]interface{})["class"].(string))
+	m, err := mockMapGeneralizer.Generalize(p)
+	assert.Nil(t, err)
+	// parent
+	assert.Equal(t, "xavierniu", m.(map[string]interface{})["name"].(string))
+	assert.Equal(t, 30, m.(map[string]interface{})["age"].(int))
+	assert.Equal(t, "org.apache.dubbo.mockParent", m.(map[string]interface{})["class"].(string))
+	// child
+	assert.Equal(t, 20, m.(map[string]interface{})["child"].(map[string]interface{})["age"].(int))
+	assert.Equal(t, "lmc", m.(map[string]interface{})["child"].(map[string]interface{})["name"].(string))
+	assert.Equal(t, "org.apache.dubbo.mockChild", m.(map[string]interface{})["child"].(map[string]interface{})["class"].(string))
+
+	r, err := mockMapGeneralizer.Realize(m, reflect.TypeOf(p))
+	assert.Nil(t, err)
+	rMockParent, ok := r.(mockParent)
+	assert.True(t, ok)
+	// parent
+	assert.Equal(t, "xavierniu", rMockParent.Name)
+	assert.Equal(t, 30, rMockParent.Age)
+	// child
+	assert.Equal(t, "lmc", rMockParent.Child.Name)
+	assert.Equal(t, 20, rMockParent.Child.Age)
 }
 
 func TestPOJOArray(t *testing.T) {
 	c1 := &mockChild{
-		Age: 20,
+		Age:    20,
 		Gender: "male",
-		Email: "lmc@example.com",
-		Name: "lmc",
+		Email:  "lmc@example.com",
+		Name:   "lmc",
 	}
 	c2 := &mockChild{
-		Age: 21,
+		Age:    21,
 		Gender: "male",
-		Email: "lmc1@example.com",
-		Name: "lmc1",
+		Email:  "lmc1@example.com",
+		Name:   "lmc1",
 	}
 
-	m := objToMap([]interface{}{c1, c2}).([]interface{})
-	assert.Equal(t, "lmc", m[0].(map[string]interface{})["name"].(string))
-	assert.Equal(t, "lmc1", m[1].(map[string]interface{})["name"].(string))
+	pojoArr := []*mockChild{c1, c2}
+
+	m, err := mockMapGeneralizer.Generalize(pojoArr)
+	assert.Nil(t, err)
+	assert.Equal(t, "lmc", m.([]interface{})[0].(map[string]interface{})["name"].(string))
+	assert.Equal(t, 20, m.([]interface{})[0].(map[string]interface{})["age"].(int))
+	assert.Equal(t, "lmc1", m.([]interface{})[1].(map[string]interface{})["name"].(string))
+	assert.Equal(t, 21, m.([]interface{})[1].(map[string]interface{})["age"].(int))
+
+	r, err := mockMapGeneralizer.Realize(m, reflect.TypeOf(pojoArr))
+	assert.Nil(t, err)
+	rPojoArr, ok := r.([]*mockChild)
+	assert.True(t, ok)
+	assert.Equal(t, "lmc", rPojoArr[0].Name)
+	assert.Equal(t, 20, rPojoArr[0].Age)
+	assert.Equal(t, "lmc1", rPojoArr[1].Name)
+	assert.Equal(t, 21, rPojoArr[1].Age)
 }
 
 func TestNullField(t *testing.T) {
 	p := mockParent{
-		Age: 30,
+		Age:    30,
 		Gender: "male",
-		Email: "xavierniu@example.com",
-		Name: "xavierniu",
+		Email:  "xavierniu@example.com",
+		Name:   "xavierniu",
 	}
 
-	m := objToMap(p).(map[string]interface{})
-	assert.Nil(t, m["child"])
+	m, _ := mockMapGeneralizer.Generalize(p)
+	assert.Nil(t, m.(map[string]interface{})["child"])
+
+	r, err := mockMapGeneralizer.Realize(m, reflect.TypeOf(p))
+	assert.Nil(t, err)
+	rMockParent, ok := r.(mockParent)
+	assert.True(t, ok)
+	assert.Nil(t, rMockParent.Child)
 }

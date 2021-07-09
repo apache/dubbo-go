@@ -19,14 +19,8 @@ package generic
 
 import (
 	"context"
-	"dubbo.apache.org/dubbo-go/v3/filter/generic/generalizer"
 	"reflect"
-)
-
-import (
-	hessian "github.com/apache/dubbo-go-hessian2"
-	"github.com/mitchellh/mapstructure"
-	perrors "github.com/pkg/errors"
+	"strings"
 )
 
 import (
@@ -35,6 +29,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/filter"
+	"dubbo.apache.org/dubbo-go/v3/filter/generic/generalizer"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	invocation2 "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
@@ -50,64 +45,68 @@ type ServiceFilter struct{}
 
 // Invoke is used to call service method by invocation
 func (f *ServiceFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
-	logger.Infof("invoking generic service filter.")
-	logger.Debugf("generic service filter methodName:%v,args:%v", invocation.MethodName(), len(invocation.Arguments()))
-
-	if invocation.MethodName() != constant.GENERIC || len(invocation.Arguments()) != 3 {
+	if invocation.MethodName() != constant.GENERIC ||
+		invocation.Arguments() == nil || len(invocation.Arguments()) != 3 {
 		return invoker.Invoke(ctx, invocation)
 	}
 
-	var (
-		ok         bool
-		err        error
-		methodName string
-		newParams  []interface{}
-		genericKey string
-		argsType   []reflect.Type
-		oldParams  []hessian.Object
-	)
+	// get real invocation info from the generic invocation
+	mtdname := invocation.Arguments()[0].(string)
+	types := invocation.Arguments()[1]
+	args := invocation.Arguments()[2].([]interface{})
 
-	url := invoker.GetURL()
-	methodName = invocation.Arguments()[0].(string)
-	// get service
-	svc := common.ServiceMap.GetServiceByServiceKey(url.Protocol, url.ServiceKey())
-	// get method
-	method := svc.Method()[methodName]
+	logger.Debugf(`received a generic invocation: 
+		MethodName: %s,
+		Types: %s,
+		Args: %s
+	`, mtdname, types, args)
+
+	// get the type of the argument
+	ivkUrl := invoker.GetURL()
+	svc := common.ServiceMap.GetServiceByServiceKey(ivkUrl.Protocol, ivkUrl.ServiceKey())
+	method := svc.Method()[mtdname]
 	if method == nil {
-		logger.Errorf("[Generic Service Filter] Don't have this method: %s", methodName)
+		logger.Errorf("\"%s\" method is not found, service key: %s", mtdname, ivkUrl.ServiceKey())
 		return &protocol.RPCResult{}
 	}
-	argsType = method.ArgsType()
-	genericKey = invocation.AttachmentsByKey(constant.GENERIC_KEY, constant.GenericSerializationDefault)
-	if genericKey == constant.GenericSerializationDefault {
-		oldParams, ok = invocation.Arguments()[2].([]hessian.Object)
-	} else {
-		logger.Errorf("[Generic Service Filter] Don't support this generic: %s", genericKey)
+	argsType := method.ArgsType()
+
+	// get generic info from attachments of invocation, the default value is "true"
+	generic := invocation.AttachmentsByKey(constant.GENERIC_KEY, constant.GenericSerializationDefault)
+
+	// get generalizer according to value in the `generic`
+	var g generalizer.Generalizer
+	switch strings.ToLower(generic) {
+	case constant.GenericSerializationDefault:
+		g = generalizer.GetMapGeneralizer()
+	case constant.GenericSerializationProtobuf:
+		panic("implement me")
+	default:
+		logger.Infof("\"%s\" is not supported, use the default generalizer(MapGeneralizer)", generic)
+		g = generalizer.GetMapGeneralizer()
+	}
+
+	if len(args) != len(argsType) {
+		logger.Errorf("the number of args(=%d) should be equals to argsType(=%d)", len(args), len(argsType))
 		return &protocol.RPCResult{}
 	}
-	if !ok {
-		logger.Errorf("[Generic Service Filter] wrong serialization")
-		return &protocol.RPCResult{}
-	}
-	if len(oldParams) != len(argsType) {
-		logger.Errorf("[Generic Service Filter] method:%s invocation arguments number was wrong", methodName)
-		return &protocol.RPCResult{}
-	}
-	// oldParams convert to newParams
-	newParams = make([]interface{}, len(oldParams))
-	for i := range argsType {
-		newParam := reflect.New(argsType[i]).Interface()
-		err = mapstructure.Decode(oldParams[i], newParam)
-		newParam = reflect.ValueOf(newParam).Elem().Interface()
+
+	// realize
+	newargs := make([]interface{}, len(argsType))
+	for i := 0; i < len(argsType); i++ {
+		newarg, err := g.Realize(args[i], argsType[i])
 		if err != nil {
-			logger.Errorf("[Generic Service Filter] decode arguments map to struct wrong: error{%v}", perrors.WithStack(err))
+			logger.Errorf("realization failed, %v", err)
 			return &protocol.RPCResult{}
 		}
-		newParams[i] = newParam
+		newargs[i] = newarg
 	}
-	newInvocation := invocation2.NewRPCInvocation(methodName, newParams, invocation.Attachments())
-	newInvocation.SetReply(invocation.Reply())
-	return invoker.Invoke(ctx, newInvocation)
+
+	// build a normal invocation
+	newivc := invocation2.NewRPCInvocation(mtdname, newargs, invocation.Attachments())
+	newivc.SetReply(invocation.Reply())
+
+	return invoker.Invoke(ctx, newivc)
 }
 
 // nolint
