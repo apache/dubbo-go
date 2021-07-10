@@ -18,13 +18,13 @@
 package etcdv3
 
 import (
-	"github.com/smallnest/chanx"
 	"strings"
 	"sync"
 )
 
 import (
 	perrors "github.com/pkg/errors"
+	"github.com/smallnest/chanx"
 )
 
 import (
