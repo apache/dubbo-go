@@ -65,7 +65,7 @@ func newNacosDynamicConfiguration(url *common.URL) (*nacosDynamicConfiguration, 
 		url:      url,
 		done:     make(chan struct{}),
 	}
-	err := ValidateNacosClient(c, WithNacosName(nacosClientName))
+	err := ValidateNacosClient(c)
 	if err != nil {
 		logger.Errorf("nacos configClient start error ,error message is %v", err)
 		return nil, err

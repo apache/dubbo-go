@@ -14,9 +14,9 @@ Apache Dubbo-go, a Dubbo implementation written in Golang, is born to bridge the
 
 ## Architecture
 
-![dubbo go extend](https://dubbogo.github.io/img/doc/dubbo-go-arch.png)
+![dubbo go extend](https://dubbogo.github.io/img/doc/dubbo-go3.0-arch.jpg)
 
-Dubbo-go has been implemented most layers of Dubbo, like protocol layer, registry layer, etc. An extension module is applied to Dubbo-go in order to achieve a more flexible architecture. Developers are allowed to implement a customized layer conformed to the layer interface and use then in Dubbo-go via `extension.Set` method without modifying the source code.
+Dubbo-go has been implemented most layers of Dubbo, like protocol layer, registry layer, etc. An extension module is applied to Dubbo-go in order to achieve a more flexible architecture. Developers are allowed to implement a customized layer conformed to the layer interface and use them in Dubbo-go via `extension.Set` method without modifying the source code.
 
 ## Features
 
@@ -31,12 +31,12 @@ The features that are available for Dubbo-go are:
 - **Dynamic Configure Center & Service Management Configurator**: Zookeeper, [Apollo](https://github.com/apache/dubbo-go/pull/250), [Nacos](https://github.com/apache/dubbo-go/pull/357)
 - **Cluster Strategy**: Failover, [Failfast](https://github.com/apache/dubbo-go/pull/140), [Failsafe/Failback](https://github.com/apache/dubbo-go/pull/136), [Available](https://github.com/apache/dubbo-go/pull/155), [Broadcast](https://github.com/apache/dubbo-go/pull/158), [Forking](https://github.com/apache/dubbo-go/pull/161)
 - **Load Balance**: Random, [RoundRobin](https://github.com/apache/dubbo-go/pull/66), [LeastActive](https://github.com/apache/dubbo-go/pull/65), [ConsistentHash](https://github.com/apache/dubbo-go/pull/261)
-- **Filter**: Echo Health Check, [Circuit Break and Service Downgrade](https://github.com/apache/dubbo-go/pull/133), [TokenFilter](https://github.com/apache/dubbo-go/pull/202), [AccessLogFilter](https://github.com/apache/dubbo-go/pull/214), [TpsLimitFilter](https://github.com/apache/dubbo-go/pull/237), [ExecuteLimitFilter](https://github.com/apache/dubbo-go/pull/246), [GenericServiceFilter](https://github.com/apache/dubbo-go/pull/291), [Auth/Sign](https://github.com/apache/dubbo-go/pull/323), [MetricsFilter](https://github.com/apache/dubbo-go/pull/342), [TracingFilter](https://github.com/apache/dubbo-go/pull/335)
+- [**Filter**](./filter): Echo, Hystrix, Token, AccessLog, TpsLimiter, ExecuteLimit, Generic, Auth/Sign, Metrics, Tracing, Active, Seata, Sentinel
 - **Invoke**: [Generic Invoke](https://github.com/apache/dubbo-go/pull/122)
 - **Monitor**: Opentracing API, [Prometheus](https://github.com/apache/dubbo-go/pull/342)
 - **Tracing**: [For JsonRPC](https://github.com/apache/dubbo-go/pull/335), [For Dubbo](https://github.com/apache/dubbo-go/pull/344), [For gRPC](https://github.com/apache/dubbo-go/pull/397)
 - **Metadata Center**: [Nacos(Local)](https://github.com/apache/dubbo-go/pull/522), [ZooKeeper(Local)](https://github.com/apache/dubbo-go/pull/633), [etcd(Local)](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/metadata/report/etcd/report.go), [Consul(Local)](https://github.com/apache/dubbo-go/pull/633), [ZooKeeper(Remoting)](https://github.com/apache/dubbo-go/pull/1161)
-- **Tool**: [Dubbo-go-cli](https://github.com/apache/dubbo-go/pull/818)
+- **Tool**: [Dubbo-go-cli](https://github.com/dubbogo/tools)
 
 ## Getting started
 

@@ -60,6 +60,29 @@ const (
 	REFERENCE_FILTER_KEY = "reference.filter"
 )
 
+// Filter Keys
+const (
+	AccessLogFilterKey                = "accesslog"
+	ActiveFilterKey                   = "active"
+	AuthConsumerFilterKey             = "sign"
+	AuthProviderFilterKey             = "auth"
+	EchoFilterKey                     = "echo"
+	ExecuteLimitFilterKey             = "execute"
+	GenericFilterKey                  = "generic"
+	GenericServiceFilterKey           = "generic_service"
+	GracefulShutdownProviderFilterKey = "pshutdown"
+	GracefulShutdownConsumerFilterKey = "cshutdown"
+	HystrixConsumerFilterKey          = "hystrix_consumer"
+	HystrixProviderFilterKey          = "hystrix_provider"
+	MetricsFilterKey                  = "metrics"
+	SeataFilterKey                    = "seata"
+	SentinelProviderFilterKey         = "sentinel-provider"
+	SentinelConsumerFilterKey         = "sentinel-consumer"
+	TokenFilterKey                    = "token"
+	TpsLimitFilterKey                 = "tps"
+	TracingFilterKey                  = "tracing"
+)
+
 const (
 	TIMESTAMP_KEY                          = "timestamp"
 	REMOTE_TIMESTAMP_KEY                   = "remote.timestamp"
@@ -74,7 +97,6 @@ const (
 	FORKS_KEY                              = "forks"
 	DEFAULT_FORKS                          = 2
 	DEFAULT_TIMEOUT                        = 1000
-	ACCESS_LOG_KEY                         = "accesslog"
 	TPS_LIMITER_KEY                        = "tps.limiter"
 	TPS_REJECTED_EXECUTION_HANDLER_KEY     = "tps.limit.rejected.handler"
 	TPS_LIMIT_RATE_KEY                     = "tps.limit.rate"
@@ -85,8 +107,6 @@ const (
 	EXECUTE_LIMIT_KEY                      = "execute.limit"
 	DEFAULT_EXECUTE_LIMIT                  = "-1"
 	EXECUTE_REJECTED_EXECUTION_HANDLER_KEY = "execute.limit.rejected.handler"
-	PROVIDER_SHUTDOWN_FILTER               = "pshutdown"
-	CONSUMER_SHUTDOWN_FILTER               = "cshutdown"
 	SERIALIZATION_KEY                      = "serialization"
 	PID_KEY                                = "pid"
 	SYNC_REPORT_KEY                        = "sync.report"
@@ -136,13 +156,14 @@ const (
 )
 
 const (
-	CONFIG_NAMESPACE_KEY  = "config.namespace"
-	CONFIG_GROUP_KEY      = "config.group"
-	CONFIG_APP_ID_KEY     = "config.appId"
-	CONFIG_CLUSTER_KEY    = "config.cluster"
-	CONFIG_CHECK_KEY      = "config.check"
-	CONFIG_TIMEOUT_KET    = "config.timeout"
-	CONFIG_LOG_DIR_KEY    = "config.logDir"
+	CONFIG_NAMESPACE_KEY  = "namespace"
+	CONFIG_GROUP_KEY      = "group"
+	CONFIG_APP_ID_KEY     = "appId"
+	CONFIG_CLUSTER_KEY    = "cluster"
+	CONFIG_TIMEOUT_KEY    = "timeout"
+	CONFIG_USERNAME_KEY   = "username"
+	CONFIG_PASSWORD_KEY   = "password"
+	CONFIG_LOG_DIR_KEY    = "logDir"
 	CONFIG_VERSION_KEY    = "configVersion"
 	COMPATIBLE_CONFIG_KEY = "compatible_config"
 )
@@ -172,6 +193,7 @@ const (
 	NACOS_DEFAULT_ROLETYPE       = 3
 	NACOS_CACHE_DIR_KEY          = "cacheDir"
 	NACOS_LOG_DIR_KEY            = "logDir"
+	NACOS_BEAT_INTERVAL_KEY      = "beatInterval"
 	NACOS_ENDPOINT               = "endpoint"
 	NACOS_SERVICE_NAME_SEPARATOR = ":"
 	NACOS_CATEGORY_KEY           = "category"
@@ -181,6 +203,13 @@ const (
 	NACOS_PASSWORD               = "password"
 	NACOS_USERNAME               = "username"
 	NACOS_NOT_LOAD_LOCAL_CACHE   = "nacos.not.load.cache"
+	NACOS_APP_NAME_KEY           = "appName"
+	NACOS_REGION_ID_KEY          = "regionId"
+	NACOS_ACCESS_KEY             = "access"
+	NACOS_SECRET_KEY             = "secret"
+	NACOS_OPEN_KMS_KEY           = "kms"
+	NACOS_UPDATE_THREAD_NUM_KEY  = "updateThreadNum"
+	NACOS_LOG_LEVEL_KEY          = "logLevel"
 )
 
 const (
@@ -217,11 +246,8 @@ const (
 	AttachmentKey = DubboCtxKey("attachment")
 )
 
+// Auth filter
 const (
-	// name of consumer sign filter
-	CONSUMER_SIGN_FILTER = "sign"
-	// name of consumer sign filter
-	PROVIDER_AUTH_FILTER = "auth"
 	// name of service filter
 	SERVICE_AUTH_KEY = "auth"
 	// key of authenticator

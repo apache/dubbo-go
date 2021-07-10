@@ -30,6 +30,6 @@ func NewUniformRouterFactory() router.PriorityRouterFactory {
 }
 
 // NewPriorityRouter construct a new UniformRouteFactory as PriorityRouter
-func (f *UniformRouteFactory) NewPriorityRouter(vsConfigBytes, distConfigBytes []byte, notify chan struct{}) (router.PriorityRouter, error) {
-	return NewUniformRouterChain(vsConfigBytes, distConfigBytes, notify)
+func (f *UniformRouteFactory) NewPriorityRouter(vsConfigBytes, distConfigBytes []byte) (router.PriorityRouter, error) {
+	return NewUniformRouterChain(vsConfigBytes, distConfigBytes)
 }

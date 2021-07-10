@@ -29,19 +29,19 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/metadata/service"
 )
 
-type remotingMetadataServiceCreator func() (service.RemotingMetadataService, error)
+type remoteMetadataServiceCreator func() (service.RemoteMetadataService, error)
 
 var (
-	creator remotingMetadataServiceCreator
+	creator remoteMetadataServiceCreator
 )
 
-// SetRemotingMetadataService will store the remote metadata service
-func SetRemotingMetadataService(creatorFunc remotingMetadataServiceCreator) {
+// SetRemoteMetadataService will store the remote metadata service
+func SetRemoteMetadataService(creatorFunc remoteMetadataServiceCreator) {
 	creator = creatorFunc
 }
 
 // GetRemoteMetadataServiceFactory will create a MetadataService instance
-func GetRemotingMetadataService() (service.RemotingMetadataService, error) {
+func GetRemoteMetadataService() (service.RemoteMetadataService, error) {
 	if creator != nil {
 		return creator()
 	}
