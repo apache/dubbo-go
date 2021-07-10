@@ -23,7 +23,7 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/chanx"
+	"github.com/smallnest/chanx"
 	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
 	perrors "github.com/pkg/errors"
 )
