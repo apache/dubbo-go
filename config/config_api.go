@@ -19,12 +19,6 @@ package config
 
 import (
 	"context"
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/extension"
-	"github.com/apache/dubbo-go/common/logger"
-	"strconv"
-	"strings"
 	"time"
 )
 
@@ -560,29 +554,3 @@ func WithAppEnvironment(env string) ApplicationConfigOpt {
 		return config
 	}
 }
-
-
-func (c *RegistryConfig)RegisterService(roleType common.RoleType, serviceURL *common.URL){
-	addresses := strings.Split(c.Address, ",")
-	address := addresses[0]
-	address = translateRegistryConf(address, c)
-	url, err := common.NewURL(constant.REGISTRY_PROTOCOL+"://"+address,
-		common.WithParams(c.getURLMap(roleType)),
-		common.WithParamsValue("simplified", strconv.FormatBool(c.Simplified)),
-		common.WithUsername(c.Username),
-		common.WithPassword(c.Password),
-		common.WithLocation(c.Address),
-	)
-
-	if err != nil {
-		logger.Errorf("The registry id: %s url is invalid, error: %#v", err)
-		panic(err)
-	}
-
-	url.SubURL = serviceURL
-	proxyFactory := extension.GetProxyFactory("")
-	invoker := proxyFactory.GetInvoker(url)
-	registryProtocol := extension.GetProtocol("registry")
-	registryProtocol.Export(invoker)
-}
-
