@@ -254,22 +254,19 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkPath string, listen
 				return
 			}
 
-			ticker := time.NewTicker(timeSecondDuration(failTimes * ConnDelay))
+			after := time.After(timeSecondDuration(failTimes * ConnDelay))
 			select {
-			case <-ticker.C:
+			case <-after:
 				l.client.UnregisterEvent(zkPath, &event)
-				ticker.Stop()
 				continue
 			case <-l.exit:
 				l.client.UnregisterEvent(zkPath, &event)
 				logger.Warnf("listen(path{%s}) goroutine exit now...", zkPath)
-				ticker.Stop()
 				return
 			case <-event:
 				logger.Infof("get zk.EventNodeDataChange notify event")
 				l.client.UnregisterEvent(zkPath, &event)
 				l.handleZkNodeEvent(zkPath, nil, listener)
-				ticker.Stop()
 				continue
 			}
 		}
