@@ -70,12 +70,14 @@ LOOP:
 			// try to connect to etcd,
 			failTimes = 0
 			for {
-				after := time.After(timeSecondDuration(failTimes * gxetcd.ConnDelay))
+				ticker := time.NewTicker(timeSecondDuration(failTimes * gxetcd.ConnDelay))
 				select {
 				case <-r.Done():
 					logger.Warnf("(ETCDV3ProviderRegistry)reconnectETCDRegistry goroutine exit now...")
+					ticker.Stop()
 					break LOOP
-				case <-after: // avoid connect frequent
+				case <-ticker.C: // avoid connect frequent
+					ticker.Stop()
 				}
 				err = ValidateClient(
 					r,

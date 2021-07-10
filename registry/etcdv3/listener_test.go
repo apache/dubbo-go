@@ -24,6 +24,7 @@ import (
 )
 
 import (
+	getty "github.com/apache/dubbo-getty"
 	"github.com/stretchr/testify/suite"
 	"go.etcd.io/etcd/server/v3/embed"
 )
@@ -52,12 +53,11 @@ func (suite *RegistryTestSuite) SetupSuite() {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ticker := time.NewTicker(60 * time.Second)
-	defer ticker.Stop()
+
 	select {
 	case <-e.Server.ReadyNotify():
 		t.Log("Server is ready!")
-	case <-ticker.C:
+	case <-getty.GetTimeWheel().After(60 * time.Second):
 		e.Server.Stop() // trigger a shutdown
 		t.Logf("Server took too long to start!")
 	}

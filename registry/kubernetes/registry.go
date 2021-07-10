@@ -210,12 +210,14 @@ LOOP:
 			// try to connect to kubernetes,
 			failTimes = 0
 			for {
-				after := time.After(timeSecondDuration(failTimes * ConnDelay))
+				ticker := time.NewTicker(timeSecondDuration(failTimes * ConnDelay))
 				select {
 				case <-r.Done():
+					ticker.Stop()
 					logger.Warnf("(KubernetesProviderRegistry)reconnectKubernetes Registry goroutine exit now...")
 					break LOOP
-				case <-after: // avoid connect frequent
+				case <-ticker.C: // avoid connect frequent
+					ticker.Stop()
 				}
 				err = kubernetes.ValidateClient(r)
 				logger.Infof("Kubernetes ProviderRegistry.validateKubernetesClient = error{%#v}", perrors.WithStack(err))

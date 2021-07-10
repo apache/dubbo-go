@@ -200,10 +200,8 @@ func (c *Client) Request(request *remoting.Request, timeout time.Duration, respo
 		return nil
 	}
 
-	ticker := time.NewTicker(timeout)
-	defer ticker.Stop()
 	select {
-	case <-ticker.C:
+	case <-getty.GetTimeWheel().After(timeout):
 		return perrors.WithStack(errClientReadTimeout)
 	case <-response.Done:
 		err = response.Err

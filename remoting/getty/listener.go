@@ -377,11 +377,8 @@ func heartbeat(session getty.Session, timeout time.Duration, callBack func(err e
 
 	go func() {
 		var err1 error
-		ticker := time.NewTicker(timeout)
-		defer ticker.Stop()
 		select {
-		case <-ticker.C:
-			ticker.Stop()
+		case <-getty.GetTimeWheel().After(timeout):
 			err1 = errHeartbeatReadTimeout
 		case <-resp.Done:
 			err1 = resp.Err
