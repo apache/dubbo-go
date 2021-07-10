@@ -23,8 +23,8 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/chanx"
 	perrors "github.com/pkg/errors"
+	"github.com/smallnest/chanx"
 )
 
 import (
