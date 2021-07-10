@@ -12,7 +12,7 @@ require (
 	github.com/coreos/etcd v3.3.25+incompatible
 	github.com/creasty/defaults v1.5.1
 	github.com/dubbogo/go-zookeeper v1.0.3
-	github.com/dubbogo/gost v1.11.2
+	github.com/dubbogo/gost v1.11.14-0.20210710124731-d6ee0beb7e85
 	github.com/emicklei/go-restful/v3 v3.4.0
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/go-co-op/gocron v0.1.1
@@ -27,18 +27,16 @@ require (
 	github.com/magiconair/properties v1.8.4
 	github.com/mitchellh/mapstructure v1.4.1
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
-	github.com/nacos-group/nacos-sdk-go v1.0.7
+	github.com/nacos-group/nacos-sdk-go v1.0.8
 	github.com/opentracing/opentracing-go v1.2.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.9.0
 	github.com/satori/go.uuid v1.2.1-0.20181028125025-b2ce2384e17b
-	github.com/smallnest/chanx v0.0.0-20210518072510-4dd7a490da42
 	github.com/stretchr/testify v1.7.0
 	github.com/zouyx/agollo/v3 v3.4.5
 	go.uber.org/atomic v1.7.0
 	go.uber.org/zap v1.16.0
-	golang.org/x/sys v0.0.0-20201223074533-0d417f636930 // indirect
-	google.golang.org/grpc v1.33.1
+	google.golang.org/grpc v1.36.0
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.16.9
 	k8s.io/apimachinery v0.16.9
