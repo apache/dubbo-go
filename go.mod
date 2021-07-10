@@ -8,21 +8,17 @@ require (
 	github.com/afex/hystrix-go v0.0.0-20180502004556-fa1af6a1f4f5
 	github.com/alibaba/sentinel-golang v1.0.2
 	github.com/apache/dubbo-getty v1.4.3
-	github.com/apache/dubbo-go-hessian2 v1.9.2
-	github.com/coreos/bbolt v1.3.3 // indirect
+	github.com/apache/dubbo-go-hessian2 v1.9.1
 	github.com/coreos/etcd v3.3.25+incompatible
-	github.com/coreos/go-systemd v0.0.0-20191104093116-d3cd4ed1dbcf // indirect
 	github.com/creasty/defaults v1.5.1
 	github.com/dubbogo/go-zookeeper v1.0.3
-	github.com/dubbogo/gost v1.11.13
+	github.com/dubbogo/gost v1.11.2
 	github.com/emicklei/go-restful/v3 v3.4.0
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/go-co-op/gocron v0.1.1
 	github.com/go-resty/resty/v2 v2.3.0
 	github.com/golang/mock v1.4.4
 	github.com/golang/protobuf v1.4.3
-	github.com/google/uuid v1.2.0 // indirect
-	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect
 	github.com/grpc-ecosystem/grpc-opentracing v0.0.0-20180507213350-8e809c8a8645
 	github.com/hashicorp/consul v1.8.0
 	github.com/hashicorp/consul/api v1.5.0
@@ -31,7 +27,7 @@ require (
 	github.com/magiconair/properties v1.8.4
 	github.com/mitchellh/mapstructure v1.4.1
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
-	github.com/nacos-group/nacos-sdk-go v1.0.8
+	github.com/nacos-group/nacos-sdk-go v1.0.7
 	github.com/opentracing/opentracing-go v1.2.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.9.0
@@ -41,7 +37,8 @@ require (
 	github.com/zouyx/agollo/v3 v3.4.5
 	go.uber.org/atomic v1.7.0
 	go.uber.org/zap v1.16.0
-	google.golang.org/grpc v1.36.0
+	golang.org/x/sys v0.0.0-20201223074533-0d417f636930 // indirect
+	google.golang.org/grpc v1.33.1
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.16.9
 	k8s.io/apimachinery v0.16.9
