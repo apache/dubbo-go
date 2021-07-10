@@ -23,9 +23,9 @@ import (
 )
 
 import (
-	"github.com/smallnest/chanx"
 	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
 	perrors "github.com/pkg/errors"
+	"github.com/smallnest/chanx"
 )
 
 import (

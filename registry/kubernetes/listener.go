@@ -22,8 +22,8 @@ import (
 )
 
 import (
-	"github.com/smallnest/chanx"
 	perrors "github.com/pkg/errors"
+	"github.com/smallnest/chanx"
 )
 
 import (
