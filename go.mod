@@ -48,5 +48,5 @@ replace (
 	github.com/envoyproxy/go-control-plane => github.com/envoyproxy/go-control-plane v0.8.0
 	github.com/golang/protobuf => github.com/golang/protobuf v1.3.2
 	go.etcd.io/bbolt v1.3.4 => github.com/coreos/bbolt v1.3.3
-	google.golang.org/grpc => google.golang.org/grpc v1.26.0
+	google.golang.org/grpc => google.golang.org/grpc v1.28.0
 )
