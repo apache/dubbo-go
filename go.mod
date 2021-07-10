@@ -22,7 +22,6 @@ require (
 	github.com/golang/mock v1.4.4
 	github.com/golang/protobuf v1.5.2
 	github.com/grpc-ecosystem/grpc-opentracing v0.0.0-20180507213350-8e809c8a8645
-	github.com/hashicorp/golang-lru v0.5.3 // indirect
 	github.com/hashicorp/vault/sdk v0.1.14-0.20200519221838-e0cfd64bc267
 	github.com/jinzhu/copier v0.0.0-20190625015134-976e0346caa8
 	github.com/magiconair/properties v1.8.5
