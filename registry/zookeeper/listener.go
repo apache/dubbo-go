@@ -18,13 +18,14 @@
 package zookeeper
 
 import (
-	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
 	"strings"
 	"sync"
 )
 
 import (
+	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
 	perrors "github.com/pkg/errors"
+	"github.com/smallnest/chanx"
 )
 
 import (
@@ -115,7 +116,7 @@ func (l *RegistryDataListener) Close() {
 type RegistryConfigurationListener struct {
 	client       *gxzookeeper.ZookeeperClient
 	registry     *zkRegistry
-	events       chan *config_center.ConfigChangeEvent
+	events       chanx.UnboundedChan // chan *config_center.ConfigChangeEvent
 	isClosed     bool
 	close        chan struct{}
 	closeOnce    sync.Once
@@ -128,7 +129,7 @@ func NewRegistryConfigurationListener(client *gxzookeeper.ZookeeperClient, reg *
 	return &RegistryConfigurationListener{
 		client:       client,
 		registry:     reg,
-		events:       make(chan *config_center.ConfigChangeEvent),
+		events:       chanx.NewUnboundedChan(32),
 		isClosed:     false,
 		close:        make(chan struct{}, 1),
 		subscribeURL: conf}
@@ -136,9 +137,7 @@ func NewRegistryConfigurationListener(client *gxzookeeper.ZookeeperClient, reg *
 
 // Process submit the ConfigChangeEvent to the event chan to notify all observer
 func (l *RegistryConfigurationListener) Process(configType *config_center.ConfigChangeEvent) {
-	go func() {
-		l.events <- configType
-	}()
+	l.events.In <- configType
 }
 
 // Next will observe the registry state and events chan
@@ -150,13 +149,14 @@ func (l *RegistryConfigurationListener) Next() (*registry.ServiceEvent, error) {
 		case <-l.registry.Done():
 			logger.Warnf("zk consumer register has quit, so zk event listener exit now. (registry url {%v}", l.registry.BaseRegistry.URL)
 			return nil, perrors.New("zookeeper registry, (registry url{%v}) stopped")
-		case e := <-l.events:
+		case e := <-l.events.Out:
+			event, _ := e.(*config_center.ConfigChangeEvent)
 			logger.Debugf("got zk event %s", e)
-			if e.ConfigType == remoting.EventTypeDel && !l.valid() {
-				logger.Warnf("update @result{%s}. But its connection to registry is invalid", e.Value)
+			if event.ConfigType == remoting.EventTypeDel && !l.valid() {
+				logger.Warnf("update @result{%s}. But its connection to registry is invalid", event.Value)
 				continue
 			}
-			return &registry.ServiceEvent{Action: e.ConfigType, Service: e.Value.(*common.URL)}, nil
+			return &registry.ServiceEvent{Action: event.ConfigType, Service: event.Value.(*common.URL)}, nil
 		}
 	}
 }

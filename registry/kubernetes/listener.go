@@ -23,6 +23,7 @@ import (
 
 import (
 	perrors "github.com/pkg/errors"
+	"github.com/smallnest/chanx"
 )
 
 import (
@@ -81,21 +82,19 @@ func (l *dataListener) DataChange(eventType remoting.Event) bool {
 
 type configurationListener struct {
 	registry *kubernetesRegistry
-	events   chan *config_center.ConfigChangeEvent
+	events   chanx.UnboundedChan
 }
 
 // NewConfigurationListener for listening the event of kubernetes.
 func NewConfigurationListener(reg *kubernetesRegistry) *configurationListener {
 	// add a new waiter
 	reg.WaitGroup().Add(1)
-	return &configurationListener{registry: reg, events: make(chan *config_center.ConfigChangeEvent)}
+	return &configurationListener{registry: reg, events: chanx.NewUnboundedChan(32)}
 }
 
 // Process processes the data change event from config center of kubernetes
 func (l *configurationListener) Process(configType *config_center.ConfigChangeEvent) {
-	go func() {
-		l.events <- configType
-	}()
+	l.events.In <- configType
 }
 
 // Next returns next service event once received
@@ -106,17 +105,18 @@ func (l *configurationListener) Next() (*registry.ServiceEvent, error) {
 			logger.Warnf("listener's kubernetes client connection is broken, so kubernetes event listener exits now.")
 			return nil, perrors.New("listener stopped")
 
-		case e := <-l.events:
+		case e := <-l.events.Out:
+			event, _ := e.(*config_center.ConfigChangeEvent)
 			logger.Debugf("got kubernetes event %#v", e)
-			if e.ConfigType == remoting.EventTypeDel && !l.registry.client.Valid() {
+			if event.ConfigType == remoting.EventTypeDel && !l.registry.client.Valid() {
 				select {
 				case <-l.registry.Done():
-					logger.Warnf("update @result{%s}. But its connection to registry is invalid", e.Value)
+					logger.Warnf("update @result{%s}. But its connection to registry is invalid", event.Value)
 				default:
 				}
 				continue
 			}
-			return &registry.ServiceEvent{Action: e.ConfigType, Service: e.Value.(*common.URL)}, nil
+			return &registry.ServiceEvent{Action: event.ConfigType, Service: event.Value.(*common.URL)}, nil
 		}
 	}
 }
