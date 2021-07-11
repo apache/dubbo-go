@@ -123,9 +123,9 @@ func objToMap(obj interface{}) interface{} {
 				setInMap(result, field, objToMap(valueIface))
 			case reflect.Struct, reflect.Slice, reflect.Map:
 				if isPrimitive(valueIface) {
-					logger.Warnf("\"%s\" is primitive, they could be transferred between dubbo-go systems properly, " +
-						"but the system will crash if you are trying to transfer them between the different dubbo " +
-						"language implementation, e.g. dubbo-go <-> dubbo-java, so we recommend you use some of the " +
+					logger.Warnf("\"%s\" is primitive, they could be transferred between dubbo-go systems properly, "+
+						"but the system will crash if you are trying to transfer them between the different dubbo "+
+						"language implementation, e.g. dubbo-go <-> dubbo-java, so we recommend you use some of the "+
 						"basic types, like string, to represent these objects.", value.Type())
 					setInMap(result, field, valueIface)
 					continue
