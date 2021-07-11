@@ -61,7 +61,7 @@ type ReferenceConfig struct {
 	Params         map[string]string `yaml:"params"  json:"params,omitempty" property:"params"`
 	invoker        protocol.Invoker
 	urls           []*common.URL
-	Generic        string   `yaml:"generic"  json:"generic,omitempty" property:"generic"`
+	Generic        string `yaml:"generic"  json:"generic,omitempty" property:"generic"`
 	Sticky         bool   `yaml:"sticky"   json:"sticky,omitempty" property:"sticky"`
 	RequestTimeout string `yaml:"timeout"  json:"timeout,omitempty" property:"timeout"`
 	ForceTag       bool   `yaml:"force.tag"  json:"force.tag,omitempty" property:"force.tag"`

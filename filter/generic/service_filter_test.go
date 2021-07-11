@@ -37,7 +37,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/mock"
 )
 
-type MockHelloService struct {}
+type MockHelloService struct{}
 
 func (s *MockHelloService) Hello(who string) (string, error) {
 	return fmt.Sprintf("hello, %s", who), nil
@@ -123,19 +123,19 @@ func TestServiceFilter_Invoke(t *testing.T) {
 		gomock.Not(invocation1),
 		gomock.Not(invocation2),
 		gomock.Not(invocation3),
-		)).DoAndReturn(
-			func(invocation protocol.Invocation) protocol.Result {
-				switch invocation.MethodName() {
-				case "Hello":
-					who := invocation.Arguments()[0].(string)
-					result, _ := service.Hello(who)
-					return &protocol.RPCResult{
-						Rest: result,
-					}
-				default:
-					panic("this branch shouldn't be reached")
+	)).DoAndReturn(
+		func(invocation protocol.Invocation) protocol.Result {
+			switch invocation.MethodName() {
+			case "Hello":
+				who := invocation.Arguments()[0].(string)
+				result, _ := service.Hello(who)
+				return &protocol.RPCResult{
+					Rest: result,
 				}
-	})
+			default:
+				panic("this branch shouldn't be reached")
+			}
+		})
 
 	result := filter.Invoke(context.Background(), mockInvoker, invocation4)
 	assert.Nil(t, result.Error())
