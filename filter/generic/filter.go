@@ -26,7 +26,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/filter"
-	"dubbo.apache.org/dubbo-go/v3/filter/generic/generalizer"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	invocation2 "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
@@ -43,15 +42,20 @@ type Filter struct{}
 // Invoke turns the parameters to map for generic method
 func (f *Filter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	if isCallingToGenericService(invoker, invocation) {
-		mtdname := invocation.MethodName()
+
+		mtdname := toUnexport(invocation.MethodName())
 		oldargs := invocation.Arguments()
 
 		types := make([]interface{}, 0, len(oldargs))
 		args := make([]interface{}, 0, len(oldargs))
 
+		// get generic info from attachments of invocation, the default value is "true"
+		generic := invocation.AttachmentsByKey(constant.GENERIC_KEY, constant.GenericSerializationDefault)
+		// get generalizer according to value in the `generic`
+		g := getGeneralizer(generic)
+
 		for _, arg := range oldargs {
 			// use the default generalizer(MapGeneralizer)
-			g := generalizer.GetMapGeneralizer()
 			typ, err := g.GetType(arg)
 			if err != nil {
 				logger.Errorf("failed to get type, %v", err)

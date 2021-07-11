@@ -37,7 +37,7 @@ import (
 )
 
 // test isCallingToGenericService branch
-func TestInvoke(t *testing.T) {
+func TestFilter_Invoke(t *testing.T) {
 	invokeUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
 		common.WithParamsValue(constant.GENERIC_KEY, constant.GenericSerializationDefault))
@@ -46,7 +46,7 @@ func TestInvoke(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	normalInvocation := invocation.NewRPCInvocation("hello", []interface{}{"arg1"}, make(map[string]interface{}))
+	normalInvocation := invocation.NewRPCInvocation("Hello", []interface{}{"arg1"}, make(map[string]interface{}))
 
 	mockInvoker := mock.NewMockInvoker(ctrl)
 	mockInvoker.EXPECT().GetUrl().Return(invokeUrl).Times(2)
@@ -66,7 +66,7 @@ func TestInvoke(t *testing.T) {
 }
 
 // test isMakingAGenericCall branch
-func TestInvokeWithGenericCall(t *testing.T) {
+func TestFilter_InvokeWithGenericCall(t *testing.T) {
 	invokeUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
 		common.WithParamsValue(constant.GENERIC_KEY, constant.GenericSerializationDefault))

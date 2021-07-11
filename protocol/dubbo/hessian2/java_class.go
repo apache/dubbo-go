@@ -51,7 +51,6 @@ func GetJavaName(obj interface{}) (string, error) {
 		}
 		return fmt.Sprintf("%s%s", javaName, sb), nil
 	case reflect.Map:
-		// TODO: tests for map are required.
 		return "java.util.Map", nil
 	default:
 		pojo, ok := obj.(hessian.POJO)

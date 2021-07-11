@@ -19,8 +19,10 @@ package generic
 
 import (
 	"context"
-	"reflect"
-	"strings"
+)
+
+import (
+	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -29,7 +31,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/filter"
-	"dubbo.apache.org/dubbo-go/v3/filter/generic/generalizer"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	invocation2 "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
@@ -43,15 +44,14 @@ func init() {
 // ServiceFilter is for Server
 type ServiceFilter struct{}
 
-// Invoke is used to call service method by invocation
 func (f *ServiceFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
-	if invocation.MethodName() != constant.GENERIC ||
-		invocation.Arguments() == nil || len(invocation.Arguments()) != 3 {
+	if !isGenericInvocation(invocation) {
 		return invoker.Invoke(ctx, invocation)
 	}
 
 	// get real invocation info from the generic invocation
-	mtdname := invocation.Arguments()[0].(string)
+	mtdname := toExport(invocation.Arguments()[0].(string))
+	// types are not required in dubbo-go, for dubbo-go client to dubbo-go server, types could be nil
 	types := invocation.Arguments()[1]
 	args := invocation.Arguments()[2].([]interface{})
 
@@ -66,29 +66,25 @@ func (f *ServiceFilter) Invoke(ctx context.Context, invoker protocol.Invoker, in
 	svc := common.ServiceMap.GetServiceByServiceKey(ivkUrl.Protocol, ivkUrl.ServiceKey())
 	method := svc.Method()[mtdname]
 	if method == nil {
-		logger.Errorf("\"%s\" method is not found, service key: %s", mtdname, ivkUrl.ServiceKey())
-		return &protocol.RPCResult{}
+		err := perrors.Errorf("\"%s\" method is not found, service key: %s", mtdname, ivkUrl.ServiceKey())
+		logger.Error(err)
+		return &protocol.RPCResult{
+			Err: err,
+		}
 	}
 	argsType := method.ArgsType()
 
 	// get generic info from attachments of invocation, the default value is "true"
 	generic := invocation.AttachmentsByKey(constant.GENERIC_KEY, constant.GenericSerializationDefault)
-
 	// get generalizer according to value in the `generic`
-	var g generalizer.Generalizer
-	switch strings.ToLower(generic) {
-	case constant.GenericSerializationDefault:
-		g = generalizer.GetMapGeneralizer()
-	case constant.GenericSerializationProtobuf:
-		panic("implement me")
-	default:
-		logger.Infof("\"%s\" is not supported, use the default generalizer(MapGeneralizer)", generic)
-		g = generalizer.GetMapGeneralizer()
-	}
+	g := getGeneralizer(generic)
 
 	if len(args) != len(argsType) {
-		logger.Errorf("the number of args(=%d) should be equals to argsType(=%d)", len(args), len(argsType))
-		return &protocol.RPCResult{}
+		err := perrors.Errorf("the number of args(=%d) is not matched with \"%s\" method", len(args), mtdname)
+		logger.Error(err)
+		return &protocol.RPCResult{
+			Err: err,
+		}
 	}
 
 	// realize
@@ -96,8 +92,11 @@ func (f *ServiceFilter) Invoke(ctx context.Context, invoker protocol.Invoker, in
 	for i := 0; i < len(argsType); i++ {
 		newarg, err := g.Realize(args[i], argsType[i])
 		if err != nil {
-			logger.Errorf("realization failed, %v", err)
-			return &protocol.RPCResult{}
+			err = perrors.Errorf("realization failed, %v", err)
+			logger.Error(err)
+			return &protocol.RPCResult{
+				Err: err,
+			}
 		}
 		newargs[i] = newarg
 	}
@@ -109,15 +108,20 @@ func (f *ServiceFilter) Invoke(ctx context.Context, invoker protocol.Invoker, in
 	return invoker.Invoke(ctx, newivc)
 }
 
-// nolint
-func (f *ServiceFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
-	if invocation.MethodName() == constant.GENERIC && len(invocation.Arguments()) == 3 && result.Result() != nil {
-		v := reflect.ValueOf(result.Result())
-		if v.Kind() == reflect.Ptr {
-			v = v.Elem()
+func (f *ServiceFilter) OnResponse(_ context.Context, result protocol.Result, _ protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+	if isGenericInvocation(invocation) && result.Result() != nil {
+		// get generic info from attachments of invocation, the default value is "true"
+		generic := invocation.AttachmentsByKey(constant.GENERIC_KEY, constant.GenericSerializationDefault)
+		// get generalizer according to value in the `generic`
+		g := getGeneralizer(generic)
+
+		obj, err := g.Generalize(result.Result())
+		if err != nil {
+			err = perrors.Errorf("generalizaion failed, %v", err)
+			result.SetError(err)
+			result.SetResult(nil)
+			return result
 		}
-		g := generalizer.GetMapGeneralizer()
-		obj, _ := g.Generalize(v.Interface())
 		result.SetResult(obj)
 	}
 	return result

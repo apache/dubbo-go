@@ -48,14 +48,19 @@ func (g *MapGeneralizer) Realize(obj interface{}, typ reflect.Type) (interface{}
 }
 
 func (g *MapGeneralizer) GetType(obj interface{}) (typ string, err error) {
-	if typ, err = hessian2.GetJavaName(obj); err != nil && err != hessian2.NilError {
+	typ, err = hessian2.GetJavaName(obj)
+	// no error or error is not NilError
+	if err == nil || err != hessian2.NilError {
 		return
 	}
 
-	// TODO: handle nil
+	typ = "java.lang.Object"
 	if err == hessian2.NilError {
+		logger.Debugf("the type of nil object couldn't be inferred, use the default value(\"%s\")", typ)
+		return
 	}
 
+	logger.Debugf("the type of object(=%T) couldn't be recognized as a POJO, use the default value(\"%s\")", obj, typ)
 	return
 }
 
@@ -160,15 +165,14 @@ func mapKey(key reflect.Value) interface{} {
 func setInMap(m map[string]interface{}, structField reflect.StructField, value interface{}) (result map[string]interface{}) {
 	result = m
 	if tagName := structField.Tag.Get("m"); tagName == "" {
-		result[firstLetterToLower(structField.Name)] = value
+		result[toUnexport(structField.Name)] = value
 	} else {
 		result[tagName] = value
 	}
 	return
 }
 
-// firstLetterToLower is to lower the first letter
-func firstLetterToLower(a string) (b string) {
-	b = strings.ToLower(a[:1]) + a[1:]
-	return
+// toUnexport is to lower the first letter
+func toUnexport(a string) string {
+	return strings.ToLower(a[:1]) + a[1:]
 }
