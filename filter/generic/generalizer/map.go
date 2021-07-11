@@ -122,7 +122,11 @@ func objToMap(obj interface{}) interface{} {
 				}
 				setInMap(result, field, objToMap(valueIface))
 			case reflect.Struct, reflect.Slice, reflect.Map:
-				if _, ok := valueIface.(time.Time); ok {
+				if isPrimitive(valueIface) {
+					logger.Warnf("\"%s\" is primitive, they could be transferred between dubbo-go systems properly, " +
+						"but the system will crash if you are trying to transfer them between the different dubbo " +
+						"language implementation, e.g. dubbo-go <-> dubbo-java, so we recommend you use some of the " +
+						"basic types, like string, to represent these objects.", value.Type())
 					setInMap(result, field, valueIface)
 					continue
 				}
@@ -192,4 +196,12 @@ func setInMap(m map[string]interface{}, structField reflect.StructField, value i
 // toUnexport is to lower the first letter
 func toUnexport(a string) string {
 	return strings.ToLower(a[:1]) + a[1:]
+}
+
+// isPrimitive determines if the object is primitive
+func isPrimitive(obj interface{}) bool {
+	if _, ok := obj.(time.Time); ok {
+		return true
+	}
+	return false
 }

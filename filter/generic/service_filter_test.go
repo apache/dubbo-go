@@ -94,7 +94,7 @@ func TestServiceFilter_Invoke(t *testing.T) {
 	// invoke a method without errors
 	invocation4 := invocation.NewRPCInvocation(constant.GENERIC,
 		[]interface{}{
-			"hello",
+			"Hello",
 			[]interface{}{"java.lang.String"},
 			[]interface{}{"world"},
 		}, map[string]interface{}{
@@ -112,7 +112,7 @@ func TestServiceFilter_Invoke(t *testing.T) {
 	// invoke a method with incorrect arguments
 	invocation6 := invocation.NewRPCInvocation(constant.GENERIC,
 		[]interface{}{
-			"hello",
+			"Hello",
 			[]interface{}{"java.lang.String", "java.lang.String"},
 			[]interface{}{"world", "haha"},
 		}, map[string]interface{}{
@@ -143,7 +143,7 @@ func TestServiceFilter_Invoke(t *testing.T) {
 
 	result = filter.Invoke(context.Background(), mockInvoker, invocation5)
 	assert.Equal(t,
-		fmt.Sprintf("\"Hello11\" method is not found, service key: %s", ivkUrl.ServiceKey()),
+		fmt.Sprintf("\"hello11\" method is not found, service key: %s", ivkUrl.ServiceKey()),
 		fmt.Sprintf("%v", result.Error().(error)))
 
 	result = filter.Invoke(context.Background(), mockInvoker, invocation6)

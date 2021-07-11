@@ -50,7 +50,7 @@ func (f *ServiceFilter) Invoke(ctx context.Context, invoker protocol.Invoker, in
 	}
 
 	// get real invocation info from the generic invocation
-	mtdname := toExport(invocation.Arguments()[0].(string))
+	mtdname := invocation.Arguments()[0].(string)
 	// types are not required in dubbo-go, for dubbo-go client to dubbo-go server, types could be nil
 	types := invocation.Arguments()[1]
 	args := invocation.Arguments()[2].([]interface{})

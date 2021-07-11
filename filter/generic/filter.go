@@ -43,7 +43,7 @@ type Filter struct{}
 func (f *Filter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	if isCallingToGenericService(invoker, invocation) {
 
-		mtdname := toUnexport(invocation.MethodName())
+		mtdname := invocation.MethodName()
 		oldargs := invocation.Arguments()
 
 		types := make([]interface{}, 0, len(oldargs))

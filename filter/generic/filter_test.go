@@ -54,7 +54,7 @@ func TestFilter_Invoke(t *testing.T) {
 		func(invocation protocol.Invocation) protocol.Result {
 			assert.Equal(t, constant.GENERIC, invocation.MethodName())
 			args := invocation.Arguments()
-			assert.Equal(t, "hello", args[0])
+			assert.Equal(t, "Hello", args[0])
 			assert.Equal(t, "java.lang.String", args[1].([]interface{})[0].(string))
 			assert.Equal(t, "arg1", args[2].([]interface{})[0].(string))
 			assert.Equal(t, constant.GenericSerializationDefault, invocation.AttachmentsByKey(constant.GENERIC_KEY, ""))
