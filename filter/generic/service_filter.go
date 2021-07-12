@@ -22,6 +22,7 @@ import (
 )
 
 import (
+	hessian "github.com/apache/dubbo-go-hessian2"
 	perrors "github.com/pkg/errors"
 )
 
@@ -53,7 +54,7 @@ func (f *ServiceFilter) Invoke(ctx context.Context, invoker protocol.Invoker, in
 	mtdname := invocation.Arguments()[0].(string)
 	// types are not required in dubbo-go, for dubbo-go client to dubbo-go server, types could be nil
 	types := invocation.Arguments()[1]
-	args := invocation.Arguments()[2].([]interface{})
+	args := invocation.Arguments()[2].([]hessian.Object)
 
 	logger.Debugf(`received a generic invocation: 
 		MethodName: %s,
@@ -66,10 +67,8 @@ func (f *ServiceFilter) Invoke(ctx context.Context, invoker protocol.Invoker, in
 	svc := common.ServiceMap.GetServiceByServiceKey(ivkUrl.Protocol, ivkUrl.ServiceKey())
 	method := svc.Method()[mtdname]
 	if method == nil {
-		err := perrors.Errorf("\"%s\" method is not found, service key: %s", mtdname, ivkUrl.ServiceKey())
-		logger.Error(err)
 		return &protocol.RPCResult{
-			Err: err,
+			Err: perrors.Errorf("\"%s\" method is not found, service key: %s", mtdname, ivkUrl.ServiceKey()),
 		}
 	}
 	argsType := method.ArgsType()
@@ -80,10 +79,8 @@ func (f *ServiceFilter) Invoke(ctx context.Context, invoker protocol.Invoker, in
 	g := getGeneralizer(generic)
 
 	if len(args) != len(argsType) {
-		err := perrors.Errorf("the number of args(=%d) is not matched with \"%s\" method", len(args), mtdname)
-		logger.Error(err)
 		return &protocol.RPCResult{
-			Err: err,
+			Err: perrors.Errorf("the number of args(=%d) is not matched with \"%s\" method", len(args), mtdname),
 		}
 	}
 
@@ -92,10 +89,8 @@ func (f *ServiceFilter) Invoke(ctx context.Context, invoker protocol.Invoker, in
 	for i := 0; i < len(argsType); i++ {
 		newarg, err := g.Realize(args[i], argsType[i])
 		if err != nil {
-			err = perrors.Errorf("realization failed, %v", err)
-			logger.Error(err)
 			return &protocol.RPCResult{
-				Err: err,
+				Err: perrors.Errorf("realization failed, %v", err),
 			}
 		}
 		newargs[i] = newarg

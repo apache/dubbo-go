@@ -24,6 +24,7 @@ import (
 )
 
 import (
+	hessian "github.com/apache/dubbo-go-hessian2"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
@@ -55,8 +56,8 @@ func TestFilter_Invoke(t *testing.T) {
 			assert.Equal(t, constant.GENERIC, invocation.MethodName())
 			args := invocation.Arguments()
 			assert.Equal(t, "Hello", args[0])
-			assert.Equal(t, "java.lang.String", args[1].([]interface{})[0].(string))
-			assert.Equal(t, "arg1", args[2].([]interface{})[0].(string))
+			assert.Equal(t, "java.lang.String", args[1].([]string)[0])
+			assert.Equal(t, "arg1", args[2].([]hessian.Object)[0].(string))
 			assert.Equal(t, constant.GenericSerializationDefault, invocation.AttachmentsByKey(constant.GENERIC_KEY, ""))
 			return &protocol.RPCResult{}
 		})

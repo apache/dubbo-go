@@ -25,6 +25,7 @@ import (
 )
 
 import (
+	hessian "github.com/apache/dubbo-go-hessian2"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
@@ -95,8 +96,8 @@ func TestServiceFilter_Invoke(t *testing.T) {
 	invocation4 := invocation.NewRPCInvocation(constant.GENERIC,
 		[]interface{}{
 			"Hello",
-			[]interface{}{"java.lang.String"},
-			[]interface{}{"world"},
+			[]string{"java.lang.String"},
+			[]hessian.Object{"world"},
 		}, map[string]interface{}{
 			constant.GENERIC_KEY: "true",
 		})
@@ -104,8 +105,8 @@ func TestServiceFilter_Invoke(t *testing.T) {
 	invocation5 := invocation.NewRPCInvocation(constant.GENERIC,
 		[]interface{}{
 			"hello11",
-			[]interface{}{"java.lang.String"},
-			[]interface{}{"world"},
+			[]string{"java.lang.String"},
+			[]hessian.Object{"world"},
 		}, map[string]interface{}{
 			constant.GENERIC_KEY: "true",
 		})
@@ -113,8 +114,8 @@ func TestServiceFilter_Invoke(t *testing.T) {
 	invocation6 := invocation.NewRPCInvocation(constant.GENERIC,
 		[]interface{}{
 			"Hello",
-			[]interface{}{"java.lang.String", "java.lang.String"},
-			[]interface{}{"world", "haha"},
+			[]string{"java.lang.String", "java.lang.String"},
+			[]hessian.Object{"world", "haha"},
 		}, map[string]interface{}{
 			constant.GENERIC_KEY: "true",
 		})

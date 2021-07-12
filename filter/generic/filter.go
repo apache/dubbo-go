@@ -22,6 +22,10 @@ import (
 )
 
 import (
+	hessian "github.com/apache/dubbo-go-hessian2"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
@@ -46,8 +50,8 @@ func (f *Filter) Invoke(ctx context.Context, invoker protocol.Invoker, invocatio
 		mtdname := invocation.MethodName()
 		oldargs := invocation.Arguments()
 
-		types := make([]interface{}, 0, len(oldargs))
-		args := make([]interface{}, 0, len(oldargs))
+		types := make([]string, 0, len(oldargs))
+		args := make([]hessian.Object, 0, len(oldargs))
 
 		// get generic info from attachments of invocation, the default value is "true"
 		generic := invocation.AttachmentsByKey(constant.GENERIC_KEY, constant.GenericSerializationDefault)
