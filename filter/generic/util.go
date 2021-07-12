@@ -71,7 +71,7 @@ func getGeneralizer(generic string) (g generalizer.Generalizer) {
 	case constant.GenericSerializationDefault:
 		g = generalizer.GetMapGeneralizer()
 	case constant.GenericSerializationProtobuf:
-		panic("implement me")
+		g = generalizer.GetProtobufJsonGeneralizer()
 	default:
 		logger.Debugf("\"%s\" is not supported, use the default generalizer(MapGeneralizer)", generic)
 		g = generalizer.GetMapGeneralizer()

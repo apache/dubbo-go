@@ -27,12 +27,14 @@ import (
 import (
 	hessian "github.com/apache/dubbo-go-hessian2"
 	"github.com/golang/mock/gomock"
+	perrors "github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/filter/generic/generalizer"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/mock"
@@ -50,6 +52,18 @@ func (s *MockHelloService) JavaClassName() string {
 
 func (s *MockHelloService) Reference() string {
 	return "org.apache.dubbo.test"
+}
+
+func (s *MockHelloService) HelloPB(req *generalizer.RequestType) (*generalizer.ResponseType, error) {
+	if req.GetId() == 1 {
+		return &generalizer.ResponseType{
+			Code: 200,
+			Id: 1,
+			Name: "xavierniu",
+			Message: "Nice to meet you",
+		}, nil
+	}
+	return nil, perrors.Errorf("people not found")
 }
 
 func TestServiceFilter_Invoke(t *testing.T) {
@@ -90,9 +104,9 @@ func TestServiceFilter_Invoke(t *testing.T) {
 	assert.Nil(t, err)
 
 	// mock
-	mockInvoker.EXPECT().GetUrl().Return(ivkUrl).Times(3)
+	mockInvoker.EXPECT().GetUrl().Return(ivkUrl).Times(4)
 
-	// invoke a method without errors
+	// invoke a method without errors using default generalization
 	invocation4 := invocation.NewRPCInvocation(constant.GENERIC,
 		[]interface{}{
 			"Hello",
@@ -119,6 +133,15 @@ func TestServiceFilter_Invoke(t *testing.T) {
 		}, map[string]interface{}{
 			constant.GENERIC_KEY: "true",
 		})
+	// invoke a method without errors using protobuf-json generalization
+	invocation7 := invocation.NewRPCInvocation(constant.GENERIC,
+		[]interface{}{
+			"HelloPB",
+			[]string{},
+			[]hessian.Object{"{\"id\":1}"},
+		}, map[string]interface{}{
+			constant.GENERIC_KEY: constant.GenericSerializationProtobuf,
+		})
 
 	mockInvoker.EXPECT().Invoke(gomock.All(
 		gomock.Not(invocation1),
@@ -133,10 +156,16 @@ func TestServiceFilter_Invoke(t *testing.T) {
 				return &protocol.RPCResult{
 					Rest: result,
 				}
+			case "HelloPB":
+				req := invocation.Arguments()[0].(*generalizer.RequestType)
+				result, _ := service.HelloPB(req)
+				return &protocol.RPCResult{
+					Rest: result,
+				}
 			default:
 				panic("this branch shouldn't be reached")
 			}
-		})
+		}).AnyTimes()
 
 	result := filter.Invoke(context.Background(), mockInvoker, invocation4)
 	assert.Nil(t, result.Error())
@@ -151,6 +180,13 @@ func TestServiceFilter_Invoke(t *testing.T) {
 	assert.Equal(t,
 		"the number of args(=2) is not matched with \"Hello\" method",
 		fmt.Sprintf("%v", result.Error().(error)))
+
+	result = filter.Invoke(context.Background(), mockInvoker, invocation7)
+	assert.Equal(t, int64(200), result.Result().(*generalizer.ResponseType).GetCode())
+	assert.Equal(t, int64(1), result.Result().(*generalizer.ResponseType).GetId())
+	assert.Equal(t, "xavierniu", result.Result().(*generalizer.ResponseType).GetName())
+	assert.Equal(t, "Nice to meet you", result.Result().(*generalizer.ResponseType).GetMessage())
+
 }
 
 func TestServiceFilter_OnResponse(t *testing.T) {

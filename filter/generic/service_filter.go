@@ -19,6 +19,7 @@ package generic
 
 import (
 	"context"
+	"strings"
 )
 
 import (
@@ -77,6 +78,13 @@ func (f *ServiceFilter) Invoke(ctx context.Context, invoker protocol.Invoker, in
 	generic := invocation.AttachmentsByKey(constant.GENERIC_KEY, constant.GenericSerializationDefault)
 	// get generalizer according to value in the `generic`
 	g := getGeneralizer(generic)
+
+	if strings.ToLower(generic) == constant.GenericSerializationProtobuf {
+		if len(args) > 1 {
+			logger.Warnf("\"%s\" only supports one argument, but we get %d arguments actually",
+				constant.GenericSerializationProtobuf, len(args))
+		}
+	}
 
 	if len(args) != len(argsType) {
 		return &protocol.RPCResult{
