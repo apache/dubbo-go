@@ -14,8 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package consul
+package registry
 
 import (
 	"testing"
@@ -25,8 +24,24 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewConsulAgent(t *testing.T) {
-	consulAgent := NewConsulAgent(t, 8500)
-	err := consulAgent.Shutdown()
-	assert.NoError(t, err)
+import (
+	"dubbo.apache.org/dubbo-go/v3/common"
+)
+
+func TestKey(t *testing.T) {
+	u1, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.0")
+	se := ServiceEvent{
+		Service: u1,
+	}
+	assert.Equal(t, se.Key(), "dubbo://:@127.0.0.1:20000/?interface=com.ikurento.user.UserProvider&group=&version=2.0&timestamp=")
+
+	se2 := ServiceEvent{
+		Service: u1,
+		KeyFunc: defineKey,
+	}
+	assert.Equal(t, se2.Key(), "Hello Key")
+}
+
+func defineKey(url *common.URL) string {
+	return "Hello Key"
 }

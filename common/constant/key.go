@@ -225,15 +225,6 @@ const (
 )
 
 const (
-	CONSUL_KEY          = "consul"
-	CHECK_PASS_INTERVAL = "consul-check-pass-interval"
-	// default time-to-live in millisecond
-	DEFAULT_CHECK_PASS_INTERVAL = 16000
-	QUERY_TAG                   = "consul_query_tag"
-	ACL_TOKEN                   = "acl-token"
-	// default deregister critical server after
-	DEFAULT_DEREGISTER_TIME = "20s"
-	DEREGISTER_AFTER        = "consul-deregister-critical-service-after"
 	// PassThroughProxyFactoryKey is key of proxy factory with raw data input service
 	PassThroughProxyFactoryKey = "dubbo-raw"
 )
@@ -244,29 +235,13 @@ const (
 
 // Use for router module
 const (
-	// UniformRouterName Specifythe name of UniformRouter
-	UniformRouterName = "uniform"
-	// TagRouterName Specify the name of TagRouter
-	TagRouterName = "tag"
 	// TagRouterRuleSuffix Specify tag router suffix
-	TagRouterRuleSuffix  = ".tag-router"
-	RemoteApplicationKey = "remote.application"
+	TagRouterRuleSuffix = ".tag-router"
 	// ConditionRouterRuleSuffix Specify condition router suffix
 	ConditionRouterRuleSuffix = ".condition-router"
-
-	// RouterScope Scope key in router module
-	RouterScope = "scope"
-	// RouterApplicationScope Scope key in router module
-	RouterApplicationScope = "application"
-	// RouterServiceScope Scope key in router module
-	RouterServiceScope = "service"
-	// RouterRuleKey defines the key of the router, service's/application's name
-	RouterRuleKey = "key"
 	// ForceUseTag is the tag in attachment
 	ForceUseTag = "dubbo.force.tag"
 	Tagkey      = "dubbo.tag"
-	// HEALTH_ROUTE_ENABLED_KEY defines if use health router
-	HEALTH_ROUTE_ENABLED_KEY = "health.route.enabled"
 	// AttachmentKey in context in invoker
 	AttachmentKey = DubboCtxKey("attachment")
 )
@@ -312,30 +287,6 @@ const (
 
 	// metadata service
 	METADATA_SERVICE_NAME = "org.apache.dubbo.metadata.MetadataService"
-)
-
-// HealthCheck Router
-const (
-	// The key of HealthCheck SPI
-	HEALTH_CHECKER = "health.checker"
-	// The name of the default implementation of HealthChecker
-	DEFAULT_HEALTH_CHECKER = "default"
-	// The name of the default implementation of C
-	DEFAULT_CONN_CHECKER = "default"
-	// The key of outstanding-request-limit\
-	OUTSTANDING_REQUEST_COUNT_LIMIT_KEY = "outstanding.request.limit"
-	// The key of successive-failed-request's threshold
-	SUCCESSIVE_FAILED_REQUEST_THRESHOLD_KEY = "successive.failed.threshold"
-	// The key of circuit-tripped timeout factor
-	CIRCUIT_TRIPPED_TIMEOUT_FACTOR_KEY = "circuit.tripped.timeout.factor"
-	// The default threshold of  successive-failed-request if not specfied
-	DEFAULT_SUCCESSIVE_FAILED_THRESHOLD = 5
-	// The default maximum diff between successive-failed-request's threshold and actual successive-failed-request's count
-	DEFAULT_SUCCESSIVE_FAILED_REQUEST_MAX_DIFF = 5
-	// The default factor of  circuit-tripped timeout if not specfied
-	DEFAULT_CIRCUIT_TRIPPED_TIMEOUT_FACTOR = 1000
-	// The default time window of circuit-tripped  in millisecond if not specfied
-	MAX_CIRCUIT_TRIPPED_TIMEOUT_IN_MS = 30000
 )
 
 // service discovery
