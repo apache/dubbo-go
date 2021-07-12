@@ -86,4 +86,3 @@ func (g *ProtobufJsonGeneralizer) Realize(obj interface{}, typ reflect.Type) (in
 func (g *ProtobufJsonGeneralizer) GetType(_ interface{}) (string, error) {
 	return "", nil
 }
-

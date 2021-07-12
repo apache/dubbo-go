@@ -41,9 +41,9 @@ func TestProtobufJsonGeneralizer(t *testing.T) {
 	assert.Equal(t, req.Id, reqobj.GetId())
 
 	resp := &ResponseType{
-		Code: 200,
-		Id: 1,
-		Name: "xavierniu",
+		Code:    200,
+		Id:      1,
+		Name:    "xavierniu",
 		Message: "Nice to meet you",
 	}
 	respjson, err := g.Generalize(resp)

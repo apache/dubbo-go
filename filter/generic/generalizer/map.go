@@ -64,7 +64,7 @@ func (g *MapGeneralizer) Realize(obj interface{}, typ reflect.Type) (interface{}
 	return reflect.ValueOf(newobj).Elem().Interface(), nil
 }
 
-func (g *MapGeneralizer) GetType(obj interface{})  (typ string, err error) {
+func (g *MapGeneralizer) GetType(obj interface{}) (typ string, err error) {
 	typ, err = hessian2.GetJavaName(obj)
 	// no error or error is not NilError
 	if err == nil || err != hessian2.NilError {
