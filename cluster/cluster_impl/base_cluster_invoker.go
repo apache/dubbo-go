@@ -36,6 +36,8 @@ type baseClusterInvoker struct {
 	availablecheck bool
 	destroyed      *atomic.Bool
 	stickyInvoker  protocol.Invoker
+	// healthState
+	serviceHealthState *protocol.ServiceHealthState
 }
 
 func newBaseClusterInvoker(directory cluster.Directory) baseClusterInvoker {
@@ -43,7 +45,16 @@ func newBaseClusterInvoker(directory cluster.Directory) baseClusterInvoker {
 		directory:      directory,
 		availablecheck: true,
 		destroyed:      atomic.NewBool(false),
+		// init from directory
+		serviceHealthState: directory.ServiceHealthState(),
 	}
+}
+
+func (invoker *baseClusterInvoker) getServiceHealthState() *protocol.ServiceHealthState {
+	if invoker.serviceHealthState == nil {
+		invoker.serviceHealthState = protocol.NewServiceState(invoker.GetURL().ServiceKey())
+	}
+	return invoker.serviceHealthState
 }
 
 func (invoker *baseClusterInvoker) GetURL() *common.URL {
@@ -118,12 +129,12 @@ func (invoker *baseClusterInvoker) doSelectInvoker(lb cluster.LoadBalance, invoc
 	if len(invokers) == 0 {
 		return nil
 	}
-	protocol.TryRefreshBlackList()
+	invoker.getServiceHealthState().TryRefreshBlackList()
 	if len(invokers) == 1 {
 		if invokers[0].IsAvailable() {
 			return invokers[0]
 		}
-		protocol.SetInvokerUnhealthyStatus(invokers[0])
+		invoker.getServiceHealthState().SetInvokerUnhealthyStatus(invokers[0])
 		logger.Errorf("the invokers of %s is nil. ", invokers[0].GetURL().ServiceKey())
 		return nil
 	}
@@ -132,10 +143,10 @@ func (invoker *baseClusterInvoker) doSelectInvoker(lb cluster.LoadBalance, invoc
 
 	//judge if the selected Invoker is invoked and available
 	if (!selectedInvoker.IsAvailable() && invoker.availablecheck) || isInvoked(selectedInvoker, invoked) {
-		protocol.SetInvokerUnhealthyStatus(selectedInvoker)
+		invoker.getServiceHealthState().SetInvokerUnhealthyStatus(selectedInvoker)
 		otherInvokers := getOtherInvokers(invokers, selectedInvoker)
 		// do reselect
-		for i := 0; i < 3; i++ {
+		for i := 0; i < 5; i++ {
 			if len(otherInvokers) == 0 {
 				// no other ivk to reselect, return to fallback
 				break
@@ -148,7 +159,7 @@ func (invoker *baseClusterInvoker) doSelectInvoker(lb cluster.LoadBalance, invoc
 			if !reselectedInvoker.IsAvailable() {
 				logger.Infof("the invoker of %s is not available, maybe some network error happened or the server is shutdown.",
 					invoker.GetURL().Ip)
-				protocol.SetInvokerUnhealthyStatus(reselectedInvoker)
+				invoker.getServiceHealthState().SetInvokerUnhealthyStatus(reselectedInvoker)
 				otherInvokers = getOtherInvokers(otherInvokers, reselectedInvoker)
 				continue
 			}

@@ -27,6 +27,7 @@ import (
 )
 
 import (
+	"github.com/apache/dubbo-go/cluster/directory"
 	"github.com/apache/dubbo-go/cluster/loadbalance"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/protocol"
@@ -47,6 +48,7 @@ func TestStickyNormal(t *testing.T) {
 	}
 	base := &baseClusterInvoker{}
 	base.availablecheck = true
+	base.directory = directory.NewStaticDirectory(invokers)
 	invoked := []protocol.Invoker{}
 
 	tmpRandomBalance := loadbalance.NewRandomLoadBalance()
@@ -65,6 +67,7 @@ func TestStickyNormalWhenError(t *testing.T) {
 	}
 	base := &baseClusterInvoker{}
 	base.availablecheck = true
+	base.directory = directory.NewStaticDirectory(invokers)
 
 	invoked := []protocol.Invoker{}
 	result := base.doSelect(loadbalance.NewRandomLoadBalance(), invocation.NewRPCInvocation(baseClusterInvokerMethodName, nil, nil), invokers, invoked)

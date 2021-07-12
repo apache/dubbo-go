@@ -30,6 +30,8 @@ import (
 type staticDirectory struct {
 	BaseDirectory
 	invokers []protocol.Invoker
+	// healthState
+	serviceHealthState *protocol.ServiceHealthState
 }
 
 // NewStaticDirectory Create a new staticDirectory with invokers
@@ -42,6 +44,8 @@ func NewStaticDirectory(invokers []protocol.Invoker) *staticDirectory {
 	dir := &staticDirectory{
 		BaseDirectory: NewBaseDirectory(url),
 		invokers:      invokers,
+		// init serviceHealthState
+		serviceHealthState: protocol.NewServiceState(url.ServiceKey()),
 	}
 
 	return dir
@@ -72,6 +76,11 @@ func (dir *staticDirectory) List(invocation protocol.Invocation) []protocol.Invo
 	}
 	dirUrl := dir.GetURL()
 	return routerChain.Route(dirUrl, invocation)
+}
+
+// Fetch ServiceHealthState
+func (dir *staticDirectory) ServiceHealthState() *protocol.ServiceHealthState {
+	return dir.serviceHealthState
 }
 
 // Destroy Destroy

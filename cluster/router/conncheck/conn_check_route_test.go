@@ -64,8 +64,10 @@ func TestConnCheckRouterRoute(t *testing.T) {
 	invoker1 := NewMockInvoker(url1)
 	invoker2 := NewMockInvoker(url2)
 	invoker3 := NewMockInvoker(url3)
-	protocol.SetInvokerUnhealthyStatus(invoker1)
-	protocol.SetInvokerUnhealthyStatus(invoker2)
+	state1 := protocol.NewServiceState(consumerURL.ServiceKey())
+
+	state1.SetInvokerUnhealthyStatus(invoker1)
+	state1.SetInvokerUnhealthyStatus(invoker2)
 
 	invokers = append(invokers, invoker1, invoker2, invoker3)
 	inv := invocation.NewRPCInvocation(connCheckRouteMethodNameTest, nil, nil)
@@ -75,7 +77,7 @@ func TestConnCheckRouterRoute(t *testing.T) {
 	assert.True(t, len(res.ToArray()) == 1)
 
 	// check blacklist remove
-	protocol.RemoveInvokerUnhealthyStatus(invoker1)
+	state1.RemoveInvokerUnhealthyStatus(invoker1)
 	res = hcr.Route(utils.ToBitmap(invokers), setUpAddrCache(hcr.(*ConnCheckRouter), invokers), consumerURL, inv)
 	// now  invoker3 invoker1 is healthy
 	assert.True(t, len(res.ToArray()) == 2)
@@ -96,12 +98,23 @@ func TestRecovery(t *testing.T) {
 	invoker1.EXPECT().IsAvailable().Return(true).AnyTimes()
 	invoker2.EXPECT().IsAvailable().Return(true).AnyTimes()
 
-	protocol.SetInvokerUnhealthyStatus(invoker1)
-	protocol.SetInvokerUnhealthyStatus(invoker2)
-	assert.Equal(t, len(protocol.GetBlackListInvokers(16)), 2)
-	protocol.TryRefreshBlackList()
-	time.Sleep(1 * time.Second)
-	assert.Equal(t, len(protocol.GetBlackListInvokers(16)), 0)
+	state1 := protocol.NewServiceState(invoker1.GetURL().ServiceKey())
+	state2 := protocol.NewServiceState(invoker2.GetURL().ServiceKey())
+	assert.Equal(t, len(state1.GetBlackListInvokers(16)), 0)
+	assert.Equal(t, len(state2.GetBlackListInvokers(16)), 0)
+	state1.SetInvokerUnhealthyStatus(invoker1)
+	state2.SetInvokerUnhealthyStatus(invoker2)
+	assert.Equal(t, len(state1.GetBlackListInvokers(16)), 1)
+	assert.Equal(t, len(state2.GetBlackListInvokers(16)), 1)
+	state1.TryRefreshBlackList()
+	time.Sleep(300 * time.Millisecond)
+	assert.Equal(t, len(state1.GetBlackListInvokers(16)), 0)
+	assert.Equal(t, len(state2.GetBlackListInvokers(16)), 1)
+	state2.TryRefreshBlackList()
+	time.Sleep(300 * time.Millisecond)
+	assert.Equal(t, len(state1.GetBlackListInvokers(16)), 0)
+	assert.Equal(t, len(state2.GetBlackListInvokers(16)), 0)
+
 }
 
 func TestPrintlnConnCheckRouterRoute(t *testing.T) {
@@ -125,9 +138,11 @@ func TestPrintlnConnCheckRouterRoute(t *testing.T) {
 	invoker1 := NewMockInvoker(url1)
 	invoker2 := NewMockInvoker(url2)
 	invoker3 := NewMockInvoker(url3)
-	protocol.SetInvokerUnhealthyStatus(invoker1)
-	protocol.SetInvokerUnhealthyStatus(invoker2)
-	protocol.SetInvokerUnhealthyStatus(invoker3)
+
+	srvState := protocol.NewServiceState(consumerURL.ServiceKey())
+	srvState.SetInvokerUnhealthyStatus(invoker1)
+	srvState.SetInvokerUnhealthyStatus(invoker2)
+	srvState.SetInvokerUnhealthyStatus(invoker3)
 
 	invokers = append(invokers, invoker1, invoker2, invoker3)
 	inv := invocation.NewRPCInvocation(connCheckRouteMethodNameTest, nil, nil)
@@ -145,8 +160,8 @@ func TestPrintlnConnCheckRouterRoute(t *testing.T) {
 	assert.Equal(t, router.RouteSnapshot(cache), "conn-check-router -> Count:0 {}")
 
 	// check blacklist remove
-	protocol.RemoveInvokerUnhealthyStatus(invoker1)
-	protocol.RemoveInvokerUnhealthyStatus(invoker3)
+	srvState.RemoveInvokerUnhealthyStatus(invoker1)
+	srvState.RemoveInvokerUnhealthyStatus(invoker3)
 	cache = setUpAddrCache(hcr.(*ConnCheckRouter), invokers)
 	res = hcr.Route(utils.ToBitmap(invokers), cache, consumerURL, inv)
 	// now  invoker3 invoker1 is healthy

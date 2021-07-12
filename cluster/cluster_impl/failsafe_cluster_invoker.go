@@ -72,7 +72,7 @@ func (invoker *failsafeClusterInvoker) Invoke(ctx context.Context, invocation pr
 	result = ivk.Invoke(ctx, invocation)
 	if result.Error() != nil {
 		// ignore
-		logger.Errorf("Failsafe ignore exception: %v.\n", result.Error().Error())
+		logger.Errorf("Failsafe ignore exception: %v.\n", result.Error())
 		return &protocol.RPCResult{}
 	}
 	return result
