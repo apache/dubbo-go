@@ -57,9 +57,9 @@ func (s *MockHelloService) Reference() string {
 func (s *MockHelloService) HelloPB(req *generalizer.RequestType) (*generalizer.ResponseType, error) {
 	if req.GetId() == 1 {
 		return &generalizer.ResponseType{
-			Code: 200,
-			Id: 1,
-			Name: "xavierniu",
+			Code:    200,
+			Id:      1,
+			Name:    "xavierniu",
 			Message: "Nice to meet you",
 		}, nil
 	}
