@@ -187,7 +187,7 @@ func initMockApollo(t *testing.T) *apolloConfiguration {
 	c := &config.BaseConfig{ConfigCenterConfig: &config.ConfigCenterConfig{
 		Protocol:  "apollo",
 		Address:   "106.12.25.204:8080",
-		AppId:     "testApplication_yang",
+		AppID:     "testApplication_yang",
 		Cluster:   "dev",
 		Namespace: "mockDubbog",
 	}}
