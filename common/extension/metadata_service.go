@@ -41,7 +41,7 @@ func SetLocalMetadataService(key string, creator localMetadataServiceCreator) {
 	localMetadataServiceInsMap[key] = creator
 }
 
-// GetMetadataService will create a inmemory MetadataService instance
+// GetMetadataService will create a local MetadataService instance
 func GetLocalMetadataService(key string) (service.MetadataService, error) {
 	if key == "" {
 		key = constant.DEFAULT_KEY
@@ -51,5 +51,5 @@ func GetLocalMetadataService(key string) (service.MetadataService, error) {
 	}
 	return nil, perrors.New(fmt.Sprintf("could not find the metadata service creator for metadataType: local, " +
 		"please check whether you have imported relative packages, " +
-		"local - dubbo.apache.org/dubbo-go/v3/metadata/service/inmemory"))
+		"local - dubbo.apache.org/dubbo-go/v3/metadata/service/local"))
 }

@@ -36,7 +36,7 @@ var metadataId = &MetadataIdentifier{
 }
 
 func TestGetFilePathKey(t *testing.T) {
-	assert.Equal(t, "metadata/1.0.0/Group/provider/app", metadataId.GetFilePathKey())
+	assert.Equal(t, "metadata/org.apache.pkg.mockService/1.0.0/Group/provider/app", metadataId.GetFilePathKey())
 }
 
 func TestGetIdentifierKey(t *testing.T) {

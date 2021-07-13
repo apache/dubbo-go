@@ -29,45 +29,30 @@ type AttachmentMatchJudger struct {
 // nolint
 func (amj *AttachmentMatchJudger) Judge(invocation protocol.Invocation) bool {
 	invAttaMap := invocation.Attachments()
-	if amj.EagleeyeContext != nil {
-		for k, v := range amj.EagleeyeContext {
-			invAttaValue, ok := invAttaMap[k]
-			if !ok {
-				if v.Empty == "" {
-					return false
-				}
-				continue
-			}
-			// exist this key
-			str, ok := invAttaValue.(string)
-			if !ok {
-				return false
-			}
-			strJudger := NewStringMatchJudger(v)
-			if !strJudger.Judge(str) {
-				return false
-			}
-		}
+	if amj.EagleeyeContext != nil && !judge(amj.EagleeyeContext, invAttaMap) {
+		return false
 	}
 
-	if amj.DubboContext != nil {
-		for k, v := range amj.DubboContext {
-			invAttaValue, ok := invAttaMap[k]
-			if !ok {
-				if v.Empty == "" {
-					return false
-				}
-				continue
-			}
-			// exist this key
-			str, ok := invAttaValue.(string)
-			if !ok {
+	return amj.DubboContext == nil || judge(amj.DubboContext, invAttaMap)
+}
+
+func judge(condition map[string]*config.StringMatch, invAttaMap map[string]interface{}) bool {
+	for k, v := range condition {
+		invAttaValue, ok := invAttaMap[k]
+		if !ok {
+			if v.Empty == "" {
 				return false
 			}
-			strJudger := NewStringMatchJudger(v)
-			if !strJudger.Judge(str) {
-				return false
-			}
+			continue
+		}
+		// exist this key
+		str, ok := invAttaValue.(string)
+		if !ok {
+			return false
+		}
+		strJudger := NewStringMatchJudger(v)
+		if !strJudger.Judge(str) {
+			return false
 		}
 	}
 

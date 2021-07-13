@@ -326,7 +326,7 @@ func newNacosServiceDiscovery(name string) (registry.ServiceDiscovery, error) {
 		return nil, perrors.New("could not init the instance because the config is invalid")
 	}
 
-	remoteConfig, ok := config.GetBaseConfig().GetRemoteConfig(sdc.RemoteRef)
+	rc, ok := config.GetBaseConfig().GetRemoteConfig(sdc.RemoteRef)
 	if !ok {
 		return nil, perrors.New("could not find the remote config for name: " + sdc.RemoteRef)
 	}
@@ -334,13 +334,16 @@ func newNacosServiceDiscovery(name string) (registry.ServiceDiscovery, error) {
 	if len(group) == 0 {
 		group = defaultGroup
 	}
-
-	client, err := nacos.NewNacosClient(remoteConfig)
+	// set protocol if remote not set
+	if len(rc.Protocol) <= 0 {
+		rc.Protocol = sdc.Protocol
+	}
+	client, err := nacos.NewNacosClient(rc)
 	if err != nil {
 		return nil, perrors.WithMessage(err, "create nacos namingClient failed.")
 	}
 
-	descriptor := fmt.Sprintf("nacos-service-discovery[%s]", remoteConfig.Address)
+	descriptor := fmt.Sprintf("nacos-service-discovery[%s]", rc.Address)
 
 	newInstance := &nacosServiceDiscovery{
 		group:             group,

@@ -25,7 +25,7 @@ import (
 
 // nolint
 type MetaDataStruct struct {
-	Name string `yaml:"name"`
+	Name string `yaml:"name" json:"name"`
 }
 
 // VirtualService Config Definition

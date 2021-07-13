@@ -14,7 +14,7 @@ Apache Dubbo Go 语言实现，架起 Java 和 Golang 之间的桥梁，与 gRPC
 
 ## 架构
 
-![dubbo go extend](https://dubbogo.github.io/img/doc/dubbo-go-arch.png)
+![dubbo go extend](https://dubbogo.github.io/img/doc/dubbo-go3.0-arch.jpg)
 
 Dubbo-go已经实现了Dubbo的大部分层级，包括协议层（protocol layer）、注册层（registry layer)）等等。在Dubbo-go中使用了拓展模块（extension module）以实现更灵活的系统架构，开发者可以根据层接口实现一个自定义的层，并在不改动源代码的前提下通过`extension.Set`方法将它应用到Dubbo-go中。
 
@@ -31,12 +31,12 @@ Dubbo-go中已实现的特性：
 - **动态配置中心与服务治理配置器**: Zookeeper, [Apollo](https://github.com/apache/dubbo-go/pull/250), [Nacos](https://github.com/apache/dubbo-go/pull/357)
 - **集群策略**: Failover, [Failfast](https://github.com/apache/dubbo-go/pull/140), [Failsafe/Failback](https://github.com/apache/dubbo-go/pull/136), [Available](https://github.com/apache/dubbo-go/pull/155), [Broadcast](https://github.com/apache/dubbo-go/pull/158), [Forking](https://github.com/apache/dubbo-go/pull/161)
 - **负载均衡策略**: Random, [RoundRobin](https://github.com/apache/dubbo-go/pull/66), [LeastActive](https://github.com/apache/dubbo-go/pull/65), [ConsistentHash](https://github.com/apache/dubbo-go/pull/261)
-- **过滤器**: Echo Health Check, [Circuit Break and Service Downgrade](https://github.com/apache/dubbo-go/pull/133), [TokenFilter](https://github.com/apache/dubbo-go/pull/202), [AccessLogFilter](https://github.com/apache/dubbo-go/pull/214), [TpsLimitFilter](https://github.com/apache/dubbo-go/pull/237), [ExecuteLimitFilter](https://github.com/apache/dubbo-go/pull/246), [GenericServiceFilter](https://github.com/apache/dubbo-go/pull/291), [Auth/Sign](https://github.com/apache/dubbo-go/pull/323), [MetricsFilter](https://github.com/apache/dubbo-go/pull/342), [TracingFilter](https://github.com/apache/dubbo-go/pull/335)
+- [**过滤器**](./filter): Echo, Hystrix, Token, AccessLog, TpsLimiter, ExecuteLimit, Generic, Auth/Sign, Metrics, Tracing, Active, Seata, Sentinel
 - **调用**: [Generic Invoke](https://github.com/apache/dubbo-go/pull/122)
 - **监控**: Opentracing API, [Prometheus](https://github.com/apache/dubbo-go/pull/342)
 - **Tracing**: [For JsonRPC](https://github.com/apache/dubbo-go/pull/335), [For Dubbo](https://github.com/apache/dubbo-go/pull/344), [For gRPC](https://github.com/apache/dubbo-go/pull/397)
 - **元数据中心**: [Nacos(Local)](https://github.com/apache/dubbo-go/pull/522), [ZooKeeper(Local)](https://github.com/apache/dubbo-go/pull/633), [etcd(Local)](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/metadata/report/etcd/report.go), [Consul(Local)](https://github.com/apache/dubbo-go/pull/633), [ZooKeeper(Remoting)](https://github.com/apache/dubbo-go/pull/1161)
-- **工具**: [Dubbo-go-cli](https://github.com/apache/dubbo-go/pull/818)
+- **工具**: [Dubbo-go-cli](https://github.com/dubbogo/tools)
 
 ## 开始
 
