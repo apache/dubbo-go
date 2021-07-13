@@ -99,6 +99,7 @@ func loadRegistries(targetRegistries string, registries map[string]*RegistryConf
 			url, err := common.NewURL(constant.REGISTRY_PROTOCOL+"://"+address,
 				common.WithParams(registryConf.getUrlMap(roleType)),
 				common.WithParamsValue("simplified", strconv.FormatBool(registryConf.Simplified)),
+				common.WithParamsValue(constant.INTERFACE_KEY, constant.REGISTRY_INTERFACE),
 				common.WithUsername(registryConf.Username),
 				common.WithPassword(registryConf.Password),
 				common.WithLocation(registryConf.Address),

@@ -111,6 +111,7 @@ const (
 	ZONE_KEY             = "zone"
 	ZONE_FORCE_KEY       = "zone.force"
 	REGISTRY_TTL_KEY     = "registry.ttl"
+	REGISTRY_INTERFACE   = "dubbogo.registry.service"
 )
 
 const (
