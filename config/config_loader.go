@@ -95,17 +95,9 @@ func DefaultInit() []LoaderInitOption {
 
 // setDefaultValue set default value for providerConfig or consumerConfig if it is null
 func setDefaultValue(target interface{}) {
-	registryConfig := &RegistryConfig{
-		Protocol:   constant.DEFAULT_REGISTRY_ZK_PROTOCOL,
-		TimeoutStr: constant.DEFAULT_REGISTRY_ZK_TIMEOUT,
-		Address:    constant.DEFAULT_REGISTRY_ZK_ADDRESS,
-	}
 	switch target.(type) {
 	case *ProviderConfig:
 		p := target.(*ProviderConfig)
-		if len(p.Registries) == 0 && p.Registry == nil {
-			p.Registries[constant.DEFAULT_REGISTRY_ZK_ID] = registryConfig
-		}
 		if len(p.Protocols) == 0 {
 			p.Protocols[constant.DEFAULT_PROTOCOL] = &ProtocolConfig{
 				Name: constant.DEFAULT_PROTOCOL,
@@ -117,9 +109,6 @@ func setDefaultValue(target interface{}) {
 		}
 	default:
 		c := target.(*ConsumerConfig)
-		if len(c.Registries) == 0 && c.Registry == nil {
-			c.Registries[constant.DEFAULT_REGISTRY_ZK_ID] = registryConfig
-		}
 		if c.ApplicationConfig == nil {
 			c.ApplicationConfig = NewDefaultApplicationConfig()
 		}

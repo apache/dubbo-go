@@ -133,9 +133,9 @@ func (c *ReferenceConfig) Refer(_ interface{}) {
 
 	if len(c.urls) == 1 {
 		c.invoker = extension.GetProtocol(c.urls[0].Protocol).Refer(c.urls[0])
-		// c.URL != "" is direct call
+		// c.URL != "" is direct call, and will overide c.invoker
 		if c.URL != "" {
-			//filter
+			// filter
 			c.invoker = protocolwrapper.BuildInvokerChain(c.invoker, constant.REFERENCE_FILTER_KEY)
 
 			// cluster
