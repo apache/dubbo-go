@@ -116,7 +116,7 @@ func (l *RegistryDataListener) Close() {
 type RegistryConfigurationListener struct {
 	client       *gxzookeeper.ZookeeperClient
 	registry     *zkRegistry
-	events       chanx.UnboundedChan // chan *config_center.ConfigChangeEvent
+	events       *chanx.UnboundedChan // chan *config_center.ConfigChangeEvent
 	isClosed     bool
 	close        chan struct{}
 	closeOnce    sync.Once
@@ -137,7 +137,7 @@ func NewRegistryConfigurationListener(client *gxzookeeper.ZookeeperClient, reg *
 
 // Process submit the ConfigChangeEvent to the event chan to notify all observer
 func (l *RegistryConfigurationListener) Process(configType *config_center.ConfigChangeEvent) {
-	l.events.In <- configType
+	l.events.In() <- configType
 }
 
 // Next will observe the registry state and events chan
@@ -149,7 +149,7 @@ func (l *RegistryConfigurationListener) Next() (*registry.ServiceEvent, error) {
 		case <-l.registry.Done():
 			logger.Warnf("zk consumer register has quit, so zk event listener exit now. (registry url {%v}", l.registry.BaseRegistry.URL)
 			return nil, perrors.New("zookeeper registry, (registry url{%v}) stopped")
-		case e := <-l.events.Out:
+		case e := <-l.events.Out():
 			event, _ := e.(*config_center.ConfigChangeEvent)
 			logger.Debugf("got zk event %s", e)
 			if event.ConfigType == remoting.EventTypeDel && !l.valid() {

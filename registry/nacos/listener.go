@@ -45,7 +45,7 @@ import (
 type nacosListener struct {
 	namingClient   naming_client.INamingClient
 	listenUrl      *common.URL
-	events         chanx.UnboundedChan
+	events         *chanx.UnboundedChan
 	instanceMap    map[string]model.Instance
 	cacheLock      sync.Mutex
 	done           chan struct{}
@@ -201,7 +201,7 @@ func (nl *nacosListener) stopListen() error {
 }
 
 func (nl *nacosListener) process(configType *config_center.ConfigChangeEvent) {
-	nl.events.In <- configType
+	nl.events.In() <- configType
 }
 
 // Next returns the service event from nacos.
@@ -212,7 +212,7 @@ func (nl *nacosListener) Next() (*registry.ServiceEvent, error) {
 			logger.Warnf("nacos listener is close!listenUrl:%+v", nl.listenUrl)
 			return nil, perrors.New("listener stopped")
 
-		case e := <-nl.events.Out:
+		case e := <-nl.events.Out():
 			event, _ := e.(*config_center.ConfigChangeEvent)
 			logger.Debugf("got nacos event %s", e)
 			return &registry.ServiceEvent{Action: event.ConfigType, Service: event.Value.(*common.URL)}, nil

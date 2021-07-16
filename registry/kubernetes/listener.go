@@ -82,7 +82,7 @@ func (l *dataListener) DataChange(eventType remoting.Event) bool {
 
 type configurationListener struct {
 	registry *kubernetesRegistry
-	events   chanx.UnboundedChan
+	events   *chanx.UnboundedChan
 }
 
 // NewConfigurationListener for listening the event of kubernetes.
@@ -94,7 +94,7 @@ func NewConfigurationListener(reg *kubernetesRegistry) *configurationListener {
 
 // Process processes the data change event from config center of kubernetes
 func (l *configurationListener) Process(configType *config_center.ConfigChangeEvent) {
-	l.events.In <- configType
+	l.events.In() <- configType
 }
 
 // Next returns next service event once received
@@ -105,7 +105,7 @@ func (l *configurationListener) Next() (*registry.ServiceEvent, error) {
 			logger.Warnf("listener's kubernetes client connection is broken, so kubernetes event listener exits now.")
 			return nil, perrors.New("listener stopped")
 
-		case e := <-l.events.Out:
+		case e := <-l.events.Out():
 			event, _ := e.(*config_center.ConfigChangeEvent)
 			logger.Debugf("got kubernetes event %#v", e)
 			if event.ConfigType == remoting.EventTypeDel && !l.registry.client.Valid() {

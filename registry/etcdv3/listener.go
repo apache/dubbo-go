@@ -82,7 +82,7 @@ func (l *dataListener) DataChange(eventType remoting.Event) bool {
 
 type configurationListener struct {
 	registry  *etcdV3Registry
-	events    chanx.UnboundedChan
+	events    *chanx.UnboundedChan
 	closeOnce sync.Once
 }
 
@@ -95,7 +95,7 @@ func NewConfigurationListener(reg *etcdV3Registry) *configurationListener {
 
 // Process data change event from config center of etcd
 func (l *configurationListener) Process(configType *config_center.ConfigChangeEvent) {
-	l.events.In <- configType
+	l.events.In() <- configType
 }
 
 // Next returns next service event once received
@@ -106,7 +106,7 @@ func (l *configurationListener) Next() (*registry.ServiceEvent, error) {
 			logger.Warnf("listener's etcd client connection is broken, so etcd event listener exit now.")
 			return nil, perrors.New("listener stopped")
 
-		case e := <-l.events.Out:
+		case e := <-l.events.Out():
 			event, _ := e.(*config_center.ConfigChangeEvent)
 			logger.Infof("got etcd event %#v", e)
 			if event.ConfigType == remoting.EventTypeDel && l.registry.client.Valid() {
