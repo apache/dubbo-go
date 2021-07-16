@@ -23,7 +23,7 @@ import (
 )
 
 import (
-	chanx "github.com/dubbogo/gost/container/chan"
+	gxchan "github.com/dubbogo/gost/container/chan"
 	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
 	perrors "github.com/pkg/errors"
 )
@@ -116,7 +116,7 @@ func (l *RegistryDataListener) Close() {
 type RegistryConfigurationListener struct {
 	client       *gxzookeeper.ZookeeperClient
 	registry     *zkRegistry
-	events       *chanx.UnboundedChan // chan *config_center.ConfigChangeEvent
+	events       *gxchan.UnboundedChan // chan *config_center.ConfigChangeEvent
 	isClosed     bool
 	close        chan struct{}
 	closeOnce    sync.Once
@@ -129,7 +129,7 @@ func NewRegistryConfigurationListener(client *gxzookeeper.ZookeeperClient, reg *
 	return &RegistryConfigurationListener{
 		client:       client,
 		registry:     reg,
-		events:       chanx.NewUnboundedChan(32),
+		events:       gxchan.NewUnboundedChan(32),
 		isClosed:     false,
 		close:        make(chan struct{}, 1),
 		subscribeURL: conf}

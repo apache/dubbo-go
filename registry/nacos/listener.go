@@ -26,7 +26,7 @@ import (
 )
 
 import (
-	chanx "github.com/dubbogo/gost/container/chan"
+	gxchan "github.com/dubbogo/gost/container/chan"
 	"github.com/nacos-group/nacos-sdk-go/clients/naming_client"
 	"github.com/nacos-group/nacos-sdk-go/model"
 	"github.com/nacos-group/nacos-sdk-go/vo"
@@ -45,7 +45,7 @@ import (
 type nacosListener struct {
 	namingClient   naming_client.INamingClient
 	listenUrl      *common.URL
-	events         *chanx.UnboundedChan
+	events         *gxchan.UnboundedChan
 	instanceMap    map[string]model.Instance
 	cacheLock      sync.Mutex
 	done           chan struct{}
@@ -57,7 +57,7 @@ func NewNacosListener(url *common.URL, namingClient naming_client.INamingClient)
 	listener := &nacosListener{
 		namingClient: namingClient,
 		listenUrl:    url,
-		events:       chanx.NewUnboundedChan(32),
+		events:       gxchan.NewUnboundedChan(32),
 		instanceMap:  map[string]model.Instance{},
 		done:         make(chan struct{}),
 	}

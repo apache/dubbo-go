@@ -23,7 +23,7 @@ import (
 )
 
 import (
-	chanx "github.com/dubbogo/gost/container/chan"
+	gxchan "github.com/dubbogo/gost/container/chan"
 	perrors "github.com/pkg/errors"
 )
 
@@ -82,7 +82,7 @@ func (l *dataListener) DataChange(eventType remoting.Event) bool {
 
 type configurationListener struct {
 	registry  *etcdV3Registry
-	events    *chanx.UnboundedChan
+	events    *gxchan.UnboundedChan
 	closeOnce sync.Once
 }
 
@@ -90,7 +90,7 @@ type configurationListener struct {
 func NewConfigurationListener(reg *etcdV3Registry) *configurationListener {
 	// add a new waiter
 	reg.WaitGroup().Add(1)
-	return &configurationListener{registry: reg, events: chanx.NewUnboundedChan(32)}
+	return &configurationListener{registry: reg, events: gxchan.NewUnboundedChan(32)}
 }
 
 // Process data change event from config center of etcd
