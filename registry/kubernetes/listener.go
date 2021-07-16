@@ -22,8 +22,8 @@ import (
 )
 
 import (
+	chanx "github.com/dubbogo/gost/container/chan"
 	perrors "github.com/pkg/errors"
-	"github.com/smallnest/chanx"
 )
 
 import (

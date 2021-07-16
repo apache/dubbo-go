@@ -26,11 +26,11 @@ import (
 )
 
 import (
+	chanx "github.com/dubbogo/gost/container/chan"
 	"github.com/nacos-group/nacos-sdk-go/clients/naming_client"
 	"github.com/nacos-group/nacos-sdk-go/model"
 	"github.com/nacos-group/nacos-sdk-go/vo"
 	perrors "github.com/pkg/errors"
-	"github.com/smallnest/chanx"
 )
 
 import (
