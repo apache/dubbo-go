@@ -102,7 +102,7 @@ func Load(opts ...Option) {
 		panic(err)
 	}
 
-	rootConfig.SetKoanf(k)
+	rootConfig.Koanf = k
 	rootConfig.Validate = validator.New()
 }
 

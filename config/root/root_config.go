@@ -38,7 +38,7 @@ type Config struct {
 	MetricConfig        *metric.MetricConfig `yaml:"metrics" json:"metrics,omitempty"`
 	fileStream          *bytes.Buffer
 
-	koanf *koanf.Koanf
+	Koanf *koanf.Koanf
 	// validate
 	Validate *validator.Validate
 	// cache file used to store the current used configurations.
@@ -48,9 +48,4 @@ type Config struct {
 // Prefix dubbo
 func (Config) Prefix() string {
 	return constant.DUBBO
-}
-
-// SetKoanf set koanf
-func (c *Config) SetKoanf(k *koanf.Koanf) {
-	c.koanf = k
 }
