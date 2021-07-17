@@ -18,13 +18,13 @@
 package judger
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/config/router"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
 // nolint
 type MethodMatchJudger struct {
-	config.DubboMethodMatch
+	router.DubboMethodMatch
 }
 
 // Judge Method Match Judger only judge on
@@ -83,7 +83,7 @@ func (mmj *MethodMatchJudger) Judge(invocation protocol.Invocation) bool {
 }
 
 // nolint
-func NewMethodMatchJudger(matchConf *config.DubboMethodMatch) *MethodMatchJudger {
+func NewMethodMatchJudger(matchConf *router.DubboMethodMatch) *MethodMatchJudger {
 	return &MethodMatchJudger{
 		DubboMethodMatch: *matchConf,
 	}

@@ -18,6 +18,7 @@
 package judger
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/config/router"
 	"reflect"
 	"testing"
 )
@@ -27,36 +28,35 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
 func TestMethodMatchJudger(t *testing.T) {
-	methodArgs := make([]*config.DubboMethodArg, 0)
-	methodArgs = append(methodArgs, &config.DubboMethodArg{
+	methodArgs := make([]*router.DubboMethodArg, 0)
+	methodArgs = append(methodArgs, &router.DubboMethodArg{
 		Index:     1,
 		Type:      "string",
-		StrValue:  &config.ListStringMatch{Oneof: []*config.StringMatch{{Exact: "hello world"}}},
+		StrValue:  &router.ListStringMatch{Oneof: []*router.StringMatch{{Exact: "hello world"}}},
 		NumValue:  nil,
 		BoolValue: nil,
 	})
-	methodArgs = append(methodArgs, &config.DubboMethodArg{
+	methodArgs = append(methodArgs, &router.DubboMethodArg{
 		Index:     2,
 		Type:      "bool",
 		StrValue:  nil,
 		NumValue:  nil,
-		BoolValue: &config.BoolMatch{Exact: true},
+		BoolValue: &router.BoolMatch{Exact: true},
 	})
-	methodArgs = append(methodArgs, &config.DubboMethodArg{
+	methodArgs = append(methodArgs, &router.DubboMethodArg{
 		Index:     3,
 		Type:      "float64",
 		StrValue:  nil,
-		NumValue:  &config.ListDoubleMatch{Oneof: []*config.DoubleMatch{{Exact: 10}}},
+		NumValue:  &router.ListDoubleMatch{Oneof: []*router.DoubleMatch{{Exact: 10}}},
 		BoolValue: nil,
 	})
 
-	methodMatch := &config.DubboMethodMatch{
-		NameMatch: &config.StringMatch{Exact: "Greet"},
+	methodMatch := &router.DubboMethodMatch{
+		NameMatch: &router.StringMatch{Exact: "Greet"},
 		Argc:      3,
 		Args:      methodArgs,
 		Argp:      nil,
@@ -71,7 +71,7 @@ func TestMethodMatchJudger(t *testing.T) {
 		invocation.WithParameterValues([]reflect.Value{stringValue, boolValue, numValue}),
 	)
 
-	assert.False(t, NewMethodMatchJudger(&config.DubboMethodMatch{NameMatch: &config.StringMatch{Exact: "Great"}}).Judge(ivc))
-	assert.False(t, NewMethodMatchJudger(&config.DubboMethodMatch{NameMatch: &config.StringMatch{Exact: "Greet"}, Argc: 1}).Judge(ivc))
+	assert.False(t, NewMethodMatchJudger(&router.DubboMethodMatch{NameMatch: &router.StringMatch{Exact: "Great"}}).Judge(ivc))
+	assert.False(t, NewMethodMatchJudger(&router.DubboMethodMatch{NameMatch: &router.StringMatch{Exact: "Greet"}, Argc: 1}).Judge(ivc))
 	assert.True(t, NewMethodMatchJudger(methodMatch).Judge(ivc))
 }

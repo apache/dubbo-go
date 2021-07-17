@@ -18,6 +18,7 @@
 package etcdv3
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/config/service/discovery"
 	"testing"
 )
 
@@ -34,7 +35,7 @@ import (
 var testName = "test"
 
 func setUp() {
-	config.GetBaseConfig().ServiceDiscoveries[testName] = &config.ServiceDiscoveryConfig{
+	config.GetBaseConfig().ServiceDiscoveries[testName] = &discovery.Config{
 		Protocol:  "etcdv3",
 		RemoteRef: testName,
 	}
@@ -52,7 +53,7 @@ func Test_newEtcdV3ServiceDiscovery(t *testing.T) {
 	// warn: log configure file name is nil
 	assert.NotNil(t, err)
 
-	sdc := &config.ServiceDiscoveryConfig{
+	sdc := &discovery.Config{
 		Protocol:  "etcdv3",
 		RemoteRef: "mock",
 	}

@@ -18,6 +18,7 @@
 package judger
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/config/router"
 	"testing"
 )
 
@@ -25,16 +26,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/config"
-)
-
 func TestListStringMatchJudger(t *testing.T) {
-	assert.True(t, newListStringMatchJudger(&config.ListStringMatch{
-		Oneof: []*config.StringMatch{{Exact: "abd"}},
+	assert.True(t, newListStringMatchJudger(&router.ListStringMatch{
+		Oneof: []*router.StringMatch{{Exact: "abd"}},
 	}).Judge("abd"))
 
-	assert.False(t, newListStringMatchJudger(&config.ListStringMatch{
-		Oneof: []*config.StringMatch{{Exact: "abc"}},
+	assert.False(t, newListStringMatchJudger(&router.ListStringMatch{
+		Oneof: []*router.StringMatch{{Exact: "abc"}},
 	}).Judge("abd"))
 }

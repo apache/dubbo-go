@@ -18,6 +18,7 @@
 package judger
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/config/router"
 	"testing"
 )
 
@@ -26,29 +27,28 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
 func TestAttachmentMatchJudger(t *testing.T) {
-	conditionMap := make(map[string]*config.StringMatch)
+	conditionMap := make(map[string]*router.StringMatch)
 	dubboIvkMap := make(map[string]interface{})
-	conditionMap["test-key"] = &config.StringMatch{
+	conditionMap["test-key"] = &router.StringMatch{
 		Exact: "abc",
 	}
 	dubboIvkMap["test-key"] = "abc"
-	assert.True(t, NewAttachmentMatchJudger(&config.DubboAttachmentMatch{
+	assert.True(t, NewAttachmentMatchJudger(&router.DubboAttachmentMatch{
 		DubboContext: conditionMap,
 	}).Judge(invocation.NewRPCInvocation("method", nil, dubboIvkMap)))
-	assert.True(t, NewAttachmentMatchJudger(&config.DubboAttachmentMatch{
+	assert.True(t, NewAttachmentMatchJudger(&router.DubboAttachmentMatch{
 		EagleeyeContext: conditionMap,
 	}).Judge(invocation.NewRPCInvocation("method", nil, dubboIvkMap)))
 
 	dubboIvkMap["test-key"] = "abd"
-	assert.False(t, NewAttachmentMatchJudger(&config.DubboAttachmentMatch{
+	assert.False(t, NewAttachmentMatchJudger(&router.DubboAttachmentMatch{
 		DubboContext: conditionMap,
 	}).Judge(invocation.NewRPCInvocation("method", nil, dubboIvkMap)))
-	assert.False(t, NewAttachmentMatchJudger(&config.DubboAttachmentMatch{
+	assert.False(t, NewAttachmentMatchJudger(&router.DubboAttachmentMatch{
 		EagleeyeContext: conditionMap,
 	}).Judge(invocation.NewRPCInvocation("method", nil, dubboIvkMap)))
 }

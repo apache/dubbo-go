@@ -18,6 +18,7 @@
 package judger
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/config/router"
 	"testing"
 )
 
@@ -25,24 +26,20 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/config"
-)
-
 func TestBoolMatchJudger(t *testing.T) {
-	assert.True(t, newBoolMatchJudger(&config.BoolMatch{
+	assert.True(t, newBoolMatchJudger(&router.BoolMatch{
 		Exact: true,
 	}).Judge(true))
 
-	assert.True(t, newBoolMatchJudger(&config.BoolMatch{
+	assert.True(t, newBoolMatchJudger(&router.BoolMatch{
 		Exact: false,
 	}).Judge(false))
 
-	assert.False(t, newBoolMatchJudger(&config.BoolMatch{
+	assert.False(t, newBoolMatchJudger(&router.BoolMatch{
 		Exact: true,
 	}).Judge(false))
 
-	assert.False(t, newBoolMatchJudger(&config.BoolMatch{
+	assert.False(t, newBoolMatchJudger(&router.BoolMatch{
 		Exact: false,
 	}).Judge(true))
 }

@@ -19,6 +19,7 @@ package dubbo3
 
 import (
 	"context"
+	"dubbo.apache.org/dubbo-go/v3/config/instance"
 	"fmt"
 )
 
@@ -27,7 +28,6 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo3/internal"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
@@ -35,7 +35,7 @@ import (
 
 // userd dubbo3 biz service
 func addService() {
-	config.SetProviderService(newGreeterProvider())
+	instance.SetProviderService(newGreeterProvider())
 }
 
 type greeterProvider struct {

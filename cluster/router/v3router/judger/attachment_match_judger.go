@@ -18,12 +18,12 @@
 package judger
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/config/router"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
 type AttachmentMatchJudger struct {
-	config.DubboAttachmentMatch
+	router.DubboAttachmentMatch
 }
 
 // nolint
@@ -36,7 +36,7 @@ func (amj *AttachmentMatchJudger) Judge(invocation protocol.Invocation) bool {
 	return amj.DubboContext == nil || judge(amj.DubboContext, invAttaMap)
 }
 
-func judge(condition map[string]*config.StringMatch, invAttaMap map[string]interface{}) bool {
+func judge(condition map[string]*router.StringMatch, invAttaMap map[string]interface{}) bool {
 	for k, v := range condition {
 		invAttaValue, ok := invAttaMap[k]
 		if !ok {
@@ -60,7 +60,7 @@ func judge(condition map[string]*config.StringMatch, invAttaMap map[string]inter
 }
 
 // nolint
-func NewAttachmentMatchJudger(matchConf *config.DubboAttachmentMatch) *AttachmentMatchJudger {
+func NewAttachmentMatchJudger(matchConf *router.DubboAttachmentMatch) *AttachmentMatchJudger {
 	return &AttachmentMatchJudger{
 		DubboAttachmentMatch: *matchConf,
 	}

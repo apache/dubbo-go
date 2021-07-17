@@ -19,6 +19,7 @@ package rest
 
 import (
 	"context"
+	"dubbo.apache.org/dubbo-go/v3/config/provider"
 	"testing"
 	"time"
 )
@@ -31,7 +32,6 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/rest/client"
 	"dubbo.apache.org/dubbo-go/v3/protocol/rest/client/client_impl"
@@ -67,8 +67,8 @@ func TestRestInvokerInvoke(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = common.ServiceMap.Register(url.Service(), url.Protocol, "", "", &UserProvider{})
 	assert.NoError(t, err)
-	con := config.ProviderConfig{}
-	config.SetProviderConfig(con)
+	con := provider.ProviderConfig{}
+	provider.SetProviderConfig(con)
 	configMap := make(map[string]*rest_config.RestServiceConfig)
 	methodConfigMap := make(map[string]*rest_config.RestMethodConfig)
 	queryParamsMap := make(map[int]string)

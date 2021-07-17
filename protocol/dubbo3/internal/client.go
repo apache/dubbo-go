@@ -19,18 +19,15 @@ package internal
 
 import (
 	"context"
+	"dubbo.apache.org/dubbo-go/v3/config/instance"
 )
 
 import (
 	"github.com/dubbogo/triple/pkg/triple"
 )
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/config"
-)
-
 func init() {
-	config.SetConsumerService(&GrpcGreeterImpl{})
+	instance.SetConsumerService(&GrpcGreeterImpl{})
 }
 
 // GrpcGreeterImpl

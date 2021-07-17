@@ -18,6 +18,7 @@
 package judger
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/config/router"
 	"testing"
 )
 
@@ -25,22 +26,18 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/config"
-)
-
 func TestDoubleRangeMatchJudger(t *testing.T) {
-	assert.True(t, newDoubleRangeMatchJudger(&config.DoubleRangeMatch{
+	assert.True(t, newDoubleRangeMatchJudger(&router.DoubleRangeMatch{
 		Start: 1.0,
 		End:   1.5,
 	}).Judge(1.3))
 
-	assert.False(t, newDoubleRangeMatchJudger(&config.DoubleRangeMatch{
+	assert.False(t, newDoubleRangeMatchJudger(&router.DoubleRangeMatch{
 		Start: 1.0,
 		End:   1.5,
 	}).Judge(1.9))
 
-	assert.False(t, newDoubleRangeMatchJudger(&config.DoubleRangeMatch{
+	assert.False(t, newDoubleRangeMatchJudger(&router.DoubleRangeMatch{
 		Start: 1.0,
 		End:   1.5,
 	}).Judge(0.9))

@@ -18,6 +18,7 @@
 package judger
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/config/router"
 	"testing"
 )
 
@@ -25,32 +26,28 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/config"
-)
-
 func TestNewStringMatchJudger(t *testing.T) {
-	assert.True(t, NewStringMatchJudger(&config.StringMatch{
+	assert.True(t, NewStringMatchJudger(&router.StringMatch{
 		Exact: "abc",
 	}).Judge("abc"))
 
-	assert.False(t, NewStringMatchJudger(&config.StringMatch{
+	assert.False(t, NewStringMatchJudger(&router.StringMatch{
 		Exact: "abcd",
 	}).Judge("abc"))
 
-	assert.True(t, NewStringMatchJudger(&config.StringMatch{
+	assert.True(t, NewStringMatchJudger(&router.StringMatch{
 		Prefix: "abc",
 	}).Judge("abcd"))
 
-	assert.False(t, NewStringMatchJudger(&config.StringMatch{
+	assert.False(t, NewStringMatchJudger(&router.StringMatch{
 		Exact: "abcd",
 	}).Judge("abdc"))
 
-	assert.True(t, NewStringMatchJudger(&config.StringMatch{
+	assert.True(t, NewStringMatchJudger(&router.StringMatch{
 		Empty: "true",
 	}).Judge(""))
 
-	assert.False(t, NewStringMatchJudger(&config.StringMatch{
+	assert.False(t, NewStringMatchJudger(&router.StringMatch{
 		NoEmpty: "true",
 	}).Judge(""))
 }

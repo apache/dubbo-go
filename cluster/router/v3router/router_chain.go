@@ -18,6 +18,7 @@
 package v3router
 
 import (
+	router2 "dubbo.apache.org/dubbo-go/v3/config/router"
 	"encoding/json"
 	"io"
 	"strings"
@@ -32,7 +33,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/router/v3router/k8s_api"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
@@ -83,7 +83,7 @@ func (r *RouterChain) Process(event *config_center.ConfigChangeEvent) {
 		switch event.Key {
 		case k8s_api.VirtualServiceEventKey:
 			logger.Debug("virtul service event")
-			newVSValue, ok := event.Value.(*config.VirtualServiceConfig)
+			newVSValue, ok := event.Value.(*router2.VirtualServiceConfig)
 			if !ok {
 				logger.Error("event.Value assertion error")
 				return
@@ -95,7 +95,7 @@ func (r *RouterChain) Process(event *config_center.ConfigChangeEvent) {
 				return
 			}
 			logger.Debugf("new virtual service json value = \n%v\n", newVSJsonValue)
-			newVirtualServiceConfig := &config.VirtualServiceConfig{}
+			newVirtualServiceConfig := &router2.VirtualServiceConfig{}
 			if err := json.Unmarshal([]byte(newVSJsonValue), newVirtualServiceConfig); err != nil {
 				logger.Error("on process json data unmarshal error = ", err)
 				return
@@ -116,7 +116,7 @@ func (r *RouterChain) Process(event *config_center.ConfigChangeEvent) {
 			}
 		case k8s_api.DestinationRuleEventKey:
 			logger.Debug("handling dest rule event")
-			newDRValue, ok := event.Value.(*config.DestinationRuleConfig)
+			newDRValue, ok := event.Value.(*router2.DestinationRuleConfig)
 			if !ok {
 				logger.Error("event.Value assertion error")
 				return
@@ -127,7 +127,7 @@ func (r *RouterChain) Process(event *config_center.ConfigChangeEvent) {
 				logger.Error("newVSValue.ObjectMeta.Annotations has no key named kubectl.kubernetes.io/last-applied-configuration")
 				return
 			}
-			newDestRuleConfig := &config.DestinationRuleConfig{}
+			newDestRuleConfig := &router2.DestinationRuleConfig{}
 			if err := json.Unmarshal([]byte(newDRJsonValue), newDestRuleConfig); err != nil {
 				logger.Error("on process json data unmarshal error = ", err)
 				return
@@ -174,14 +174,14 @@ func (r *RouterChain) URL() *common.URL {
 
 // parseFromConfigToRouters parse virtualService and destinationRule yaml file bytes to target router list
 func parseFromConfigToRouters(virtualServiceConfig, destinationRuleConfig []byte) ([]*UniformRouter, error) {
-	var virtualServiceConfigList []*config.VirtualServiceConfig
+	var virtualServiceConfigList []*router2.VirtualServiceConfig
 	destRuleConfigsMap := make(map[string]map[string]map[string]string)
 
 	vsDecoder := yaml.NewDecoder(strings.NewReader(string(virtualServiceConfig)))
 	drDecoder := yaml.NewDecoder(strings.NewReader(string(destinationRuleConfig)))
 	// parse virtual service
 	for {
-		virtualServiceCfg := &config.VirtualServiceConfig{}
+		virtualServiceCfg := &router2.VirtualServiceConfig{}
 
 		err := vsDecoder.Decode(virtualServiceCfg)
 		if err == io.EOF {
@@ -197,7 +197,7 @@ func parseFromConfigToRouters(virtualServiceConfig, destinationRuleConfig []byte
 
 	// parse destination rule
 	for {
-		destRuleCfg := &config.DestinationRuleConfig{}
+		destRuleCfg := &router2.DestinationRuleConfig{}
 		err := drDecoder.Decode(destRuleCfg)
 		if err == io.EOF {
 			break

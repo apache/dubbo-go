@@ -18,6 +18,12 @@
 package grpc
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/config/application"
+	"dubbo.apache.org/dubbo-go/v3/config/base"
+	"dubbo.apache.org/dubbo-go/v3/config/instance"
+	"dubbo.apache.org/dubbo-go/v3/config/method"
+	"dubbo.apache.org/dubbo-go/v3/config/provider"
+	"dubbo.apache.org/dubbo-go/v3/config/service"
 	"testing"
 	"time"
 )
@@ -28,15 +34,14 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/grpc/internal/helloworld"
 )
 
 func doInitProvider() {
-	providerConfig := config.ProviderConfig{
-		BaseConfig: config.BaseConfig{
-			ApplicationConfig: &config.ApplicationConfig{
+	providerConfig := provider.ProviderConfig{
+		BaseConfig: base.Config{
+			ApplicationConfig: &application.Config{
 				Organization: "dubbo_org",
 				Name:         "BDTService",
 				Module:       "module",
@@ -45,7 +50,7 @@ func doInitProvider() {
 				Environment:  "test",
 			},
 		},
-		Services: map[string]*config.ServiceConfig{
+		Services: map[string]*service.Config{
 			"GrpcGreeterImpl": {
 				InterfaceName: "io.grpc.examples.helloworld.GreeterGrpc$IGreeter",
 				Protocol:      "grpc",
@@ -53,7 +58,7 @@ func doInitProvider() {
 				Cluster:       "failover",
 				Loadbalance:   "random",
 				Retries:       "3",
-				Methods: []*config.MethodConfig{
+				Methods: []*method.MethodConfig{
 					{
 						Name:        "SayHello",
 						Retries:     "2",
@@ -64,12 +69,12 @@ func doInitProvider() {
 			},
 		},
 	}
-	config.SetProviderConfig(providerConfig)
+	provider.SetProviderConfig(providerConfig)
 }
 
 func TestGrpcProtocolExport(t *testing.T) {
 	// Export
-	config.SetProviderService(helloworld.NewService())
+	instance.SetProviderService(helloworld.NewService())
 	doInitProvider()
 
 	url, err := common.NewURL(helloworldURL)

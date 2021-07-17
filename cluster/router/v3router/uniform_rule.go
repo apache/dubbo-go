@@ -18,6 +18,7 @@
 package v3router
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/config/router"
 	"math/rand"
 	"time"
 )
@@ -30,7 +31,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/router/v3router/judger"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
@@ -38,7 +38,7 @@ import (
 // if match, get result destination key, which should be defined in DestinationRule yaml file
 type VirtualServiceRule struct {
 	// routerItem store match router list and destination list of this router
-	routerItem *config.DubboServiceRouterItem
+	routerItem *router.DubboServiceRouterItem
 
 	// uniformRule is the upper struct ptr
 	uniformRule *UniformRule
@@ -79,7 +79,7 @@ func (vsr *VirtualServiceRule) match(url *common.URL, invocation protocol.Invoca
 
 // tryGetSubsetFromRouterOfOneDestination is a recursion function
 // try from destination 's header to final fallback destination, when success, it return result destination, else return error
-func (vsr *VirtualServiceRule) tryGetSubsetFromRouterOfOneDestination(desc *config.DubboDestination, invokers []protocol.Invoker) ([]protocol.Invoker, int, error) {
+func (vsr *VirtualServiceRule) tryGetSubsetFromRouterOfOneDestination(desc *router.DubboDestination, invokers []protocol.Invoker) ([]protocol.Invoker, int, error) {
 	subSet := desc.Destination.Subset
 	labels, ok := vsr.uniformRule.DestinationLabelListMap[subSet]
 	resultInvokers := make([]protocol.Invoker, 0)
@@ -200,13 +200,13 @@ func (vsr *VirtualServiceRule) getRuleTargetInvokers(invokers []protocol.Invoker
 
 // UniformRule
 type UniformRule struct {
-	services                []*config.StringMatch
+	services                []*router.StringMatch
 	virtualServiceRules     []VirtualServiceRule
 	DestinationLabelListMap map[string]map[string]string
 }
 
 // NewDefaultConnChecker constructs a new DefaultConnChecker based on the url
-func newUniformRule(dubboRoute *config.DubboRoute, destinationMap map[string]map[string]string) (*UniformRule, error) {
+func newUniformRule(dubboRoute *router.DubboRoute, destinationMap map[string]map[string]string) (*UniformRule, error) {
 	matchItems := dubboRoute.RouterDetail
 	virtualServiceRules := make([]VirtualServiceRule, 0)
 	newUniformRule := &UniformRule{

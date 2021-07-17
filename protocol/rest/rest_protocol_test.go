@@ -19,6 +19,8 @@ package rest
 
 import (
 	"context"
+	"dubbo.apache.org/dubbo-go/v3/config/consumer"
+	"dubbo.apache.org/dubbo-go/v3/config/provider"
 	"errors"
 	"fmt"
 	"strings"
@@ -34,7 +36,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	_ "dubbo.apache.org/dubbo-go/v3/common/proxy/proxy_factory"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	rest_config "dubbo.apache.org/dubbo-go/v3/protocol/rest/config"
 )
 
@@ -43,11 +44,11 @@ func TestRestProtocolRefer(t *testing.T) {
 	proto := GetRestProtocol()
 	url, err := common.NewURL(mockRestCommonUrl)
 	assert.NoError(t, err)
-	con := config.ConsumerConfig{
+	con := consumer.Config{
 		ConnectTimeout: 5 * time.Second,
 		RequestTimeout: 5 * time.Second,
 	}
-	config.SetConsumerConfig(con)
+	consumer.SetConsumerConfig(con)
 	configMap := make(map[string]*rest_config.RestServiceConfig)
 	configMap["com.ikurento.user.UserProvider"] = &rest_config.RestServiceConfig{
 		Client: "resty",
@@ -74,8 +75,8 @@ func TestRestProtocolExport(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = common.ServiceMap.Register(url.Service(), url.Protocol, "", "", &UserProvider{})
 	assert.NoError(t, err)
-	con := config.ProviderConfig{}
-	config.SetProviderConfig(con)
+	con := provider.ProviderConfig{}
+	provider.SetProviderConfig(con)
 	configMap := make(map[string]*rest_config.RestServiceConfig)
 	methodConfigMap := make(map[string]*rest_config.RestMethodConfig)
 	queryParamsMap := make(map[int]string)

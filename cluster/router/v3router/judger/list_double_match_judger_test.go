@@ -18,6 +18,7 @@
 package judger
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/config/router"
 	"testing"
 )
 
@@ -25,18 +26,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/config"
-)
-
 func TestListDoubleMatchJudger_Judge(t *testing.T) {
-	assert.True(t, newListDoubleMatchJudger(&config.ListDoubleMatch{
-		Oneof: []*config.DoubleMatch{
+	assert.True(t, newListDoubleMatchJudger(&router.ListDoubleMatch{
+		Oneof: []*router.DoubleMatch{
 			{
 				Exact: 3.14,
 			},
 			{
-				Range: &config.DoubleRangeMatch{
+				Range: &router.DoubleRangeMatch{
 					Start: 1.5,
 					End:   1.9,
 				},
@@ -47,13 +44,13 @@ func TestListDoubleMatchJudger_Judge(t *testing.T) {
 		},
 	}).Judge(1.3))
 
-	assert.False(t, newListDoubleMatchJudger(&config.ListDoubleMatch{
-		Oneof: []*config.DoubleMatch{
+	assert.False(t, newListDoubleMatchJudger(&router.ListDoubleMatch{
+		Oneof: []*router.DoubleMatch{
 			{
 				Exact: 3.14,
 			},
 			{
-				Range: &config.DoubleRangeMatch{
+				Range: &router.DoubleRangeMatch{
 					Start: 1.5,
 					End:   1.9,
 				},
@@ -64,13 +61,13 @@ func TestListDoubleMatchJudger_Judge(t *testing.T) {
 		},
 	}).Judge(1.3))
 
-	assert.True(t, newListDoubleMatchJudger(&config.ListDoubleMatch{
-		Oneof: []*config.DoubleMatch{
+	assert.True(t, newListDoubleMatchJudger(&router.ListDoubleMatch{
+		Oneof: []*router.DoubleMatch{
 			{
 				Exact: 3.14,
 			},
 			{
-				Range: &config.DoubleRangeMatch{
+				Range: &router.DoubleRangeMatch{
 					Start: 1.2,
 					End:   1.9,
 				},
@@ -81,13 +78,13 @@ func TestListDoubleMatchJudger_Judge(t *testing.T) {
 		},
 	}).Judge(1.3))
 
-	assert.False(t, newListDoubleMatchJudger(&config.ListDoubleMatch{
-		Oneof: []*config.DoubleMatch{
+	assert.False(t, newListDoubleMatchJudger(&router.ListDoubleMatch{
+		Oneof: []*router.DoubleMatch{
 			{
 				Exact: 3.14,
 			},
 			{
-				Range: &config.DoubleRangeMatch{
+				Range: &router.DoubleRangeMatch{
 					Start: 1.5,
 					End:   1.9,
 				},

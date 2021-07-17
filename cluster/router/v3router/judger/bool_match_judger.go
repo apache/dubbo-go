@@ -17,11 +17,13 @@
 
 package judger
 
-import "dubbo.apache.org/dubbo-go/v3/config"
+import (
+	"dubbo.apache.org/dubbo-go/v3/config/router"
+)
 
 // nolint
 type BoolMatchJudger struct {
-	config.BoolMatch
+	router.BoolMatch
 }
 
 // nolint
@@ -30,7 +32,7 @@ func (lsmj *BoolMatchJudger) Judge(input bool) bool {
 }
 
 // nolint
-func newBoolMatchJudger(matchConf *config.BoolMatch) *BoolMatchJudger {
+func newBoolMatchJudger(matchConf *router.BoolMatch) *BoolMatchJudger {
 	return &BoolMatchJudger{
 		BoolMatch: *matchConf,
 	}

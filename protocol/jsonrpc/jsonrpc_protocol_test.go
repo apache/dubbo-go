@@ -18,6 +18,7 @@
 package jsonrpc
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/config/consumer"
 	"fmt"
 	"strings"
 	"testing"
@@ -30,7 +31,6 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
@@ -74,11 +74,11 @@ func TestJsonrpcProtocolRefer(t *testing.T) {
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
 		"side=provider&timeout=3000&timestamp=1556509797245")
 	assert.NoError(t, err)
-	con := config.ConsumerConfig{
+	con := consumer.Config{
 		ConnectTimeout: 5 * time.Second,
 		RequestTimeout: 5 * time.Second,
 	}
-	config.SetConsumerConfig(con)
+	consumer.SetConsumerConfig(con)
 	invoker := proto.Refer(url)
 
 	// make sure url

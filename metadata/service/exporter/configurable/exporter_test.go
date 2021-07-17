@@ -18,6 +18,13 @@
 package configurable
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/config/application"
+	"dubbo.apache.org/dubbo-go/v3/config/base"
+	"dubbo.apache.org/dubbo-go/v3/config/method"
+	"dubbo.apache.org/dubbo-go/v3/config/protocol"
+	"dubbo.apache.org/dubbo-go/v3/config/provider"
+	"dubbo.apache.org/dubbo-go/v3/config/registry"
+	"dubbo.apache.org/dubbo-go/v3/config/service"
 	"testing"
 )
 
@@ -28,7 +35,6 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	_ "dubbo.apache.org/dubbo-go/v3/common/proxy/proxy_factory"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	_ "dubbo.apache.org/dubbo-go/v3/filter/filter_impl"
 	"dubbo.apache.org/dubbo-go/v3/metadata/service/local"
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/dubbo"
@@ -78,10 +84,10 @@ func TestConfigurableExporter(t *testing.T) {
 
 // mockInitProviderWithSingleRegistry will init a mocked providerConfig
 func mockInitProviderWithSingleRegistry() {
-	providerConfig := &config.ProviderConfig{
+	providerConfig := &provider.ProviderConfig{
 
-		BaseConfig: config.BaseConfig{
-			ApplicationConfig: &config.ApplicationConfig{
+		BaseConfig: base.Config{
+			ApplicationConfig: &application.Config{
 				Organization: "dubbo_org",
 				Name:         "dubbo",
 				Module:       "module",
@@ -91,14 +97,14 @@ func mockInitProviderWithSingleRegistry() {
 			},
 		},
 
-		Registry: &config.RegistryConfig{
+		Registry: &registry.RegistryConfig{
 			Address:  "mock://127.0.0.1:2181",
 			Username: "user1",
 			Password: "pwd1",
 		},
-		Registries: map[string]*config.RegistryConfig{},
+		Registries: map[string]*registry.RegistryConfig{},
 
-		Services: map[string]*config.ServiceConfig{
+		Services: map[string]*service.Config{
 			"MockService": {
 				InterfaceName: "com.MockService",
 				Protocol:      "mock",
@@ -107,7 +113,7 @@ func mockInitProviderWithSingleRegistry() {
 				Retries:       "3",
 				Group:         "huadong_idc",
 				Version:       "1.0.0",
-				Methods: []*config.MethodConfig{
+				Methods: []*method.MethodConfig{
 					{
 						Name:        "GetUser",
 						Retries:     "2",
@@ -123,7 +129,7 @@ func mockInitProviderWithSingleRegistry() {
 				},
 			},
 		},
-		Protocols: map[string]*config.ProtocolConfig{
+		Protocols: map[string]*protocol.ProtocolConfig{
 			"mock": {
 				Name: "mock",
 				Ip:   "127.0.0.1",
@@ -132,5 +138,5 @@ func mockInitProviderWithSingleRegistry() {
 		},
 	}
 	providerConfig.Services["MockService"].InitExported()
-	config.SetProviderConfig(*providerConfig)
+	provider.SetProviderConfig(*providerConfig)
 }

@@ -19,6 +19,7 @@ package gshutdown
 
 import (
 	"context"
+	"dubbo.apache.org/dubbo-go/v3/config/shutdown"
 	"sync/atomic"
 )
 
@@ -43,7 +44,7 @@ func init() {
 
 type Filter struct {
 	activeCount    int32
-	shutdownConfig *config.ShutdownConfig
+	shutdownConfig *shutdown.ShutdownConfig
 }
 
 // Invoke adds the requests count and block the new requests if application is closing
@@ -69,7 +70,7 @@ func (f *Filter) OnResponse(ctx context.Context, result protocol.Result, invoker
 func (f *Filter) Set(name string, conf interface{}) {
 	switch name {
 	case config.GracefulShutdownFilterShutdownConfig:
-		if shutdownConfig, ok := conf.(*config.ShutdownConfig); !ok {
+		if shutdownConfig, ok := conf.(*shutdown.ShutdownConfig); !ok {
 			f.shutdownConfig = shutdownConfig
 			return
 		}

@@ -18,6 +18,7 @@ package dubbo3
 
 import (
 	"context"
+	"dubbo.apache.org/dubbo-go/v3/config/instance"
 	"fmt"
 	"reflect"
 	"sync"
@@ -35,7 +36,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
@@ -78,7 +78,7 @@ func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 
 	key := url.GetParam(constant.BEAN_NAME_KEY, "")
 	var service interface{}
-	service = config.GetProviderService(key)
+	service = instance.GetProviderService(key)
 
 	serializationType := url.GetParam(constant.SERIALIZATION_KEY, constant.PROTOBUF_SERIALIZATION)
 	var triSerializationType tripleConstant.CodecType

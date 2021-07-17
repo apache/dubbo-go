@@ -169,19 +169,19 @@ const (
 )
 
 const (
-	RegistryConfigPrefix       = "dubbo.registries."
-	SingleRegistryConfigPrefix = "dubbo.registry."
-	ReferenceConfigPrefix      = "dubbo.reference."
-	ServiceConfigPrefix        = "dubbo.service."
-	ConfigBasePrefix           = "dubbo.base."
-	RemotePrefix               = "dubbo.remote."
-	ServiceDiscPrefix          = "dubbo.service-discovery."
-	ProtocolConfigPrefix       = "dubbo.protocols."
+	RegistryConfigPrefix       = "dubbo.registries"
+	SingleRegistryConfigPrefix = "dubbo.registry"
+	ReferenceConfigPrefix      = "dubbo.reference"
+	ServiceConfigPrefix        = "dubbo.service"
+	ConfigBasePrefix           = "dubbo.base"
+	RemotePrefix               = "dubbo.remote"
+	ServiceDiscPrefix          = "dubbo.service-discovery"
+	ProtocolConfigPrefix       = "dubbo.protocols"
 	ProviderConfigPrefix       = "dubbo.provider."
-	ConsumerConfigPrefix       = "dubbo.consumer."
-	ShutdownConfigPrefix       = "dubbo.shutdown."
-	MetadataReportPrefix       = "dubbo.metadata-report."
-	RouterConfigPrefix         = "dubbo.router."
+	ConsumerConfigPrefix       = "dubbo.consumer"
+	ShutdownConfigPrefix       = "dubbo.shutdown"
+	MetadataReportPrefix       = "dubbo.metadata-report"
+	RouterConfigPrefix         = "dubbo.router"
 )
 
 const (

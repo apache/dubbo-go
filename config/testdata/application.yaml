@@ -1,0 +1,24 @@
+dubbo:
+  application:
+    name: dubbo-go
+    module: local
+    version: 1.0.0
+    owner: zhaoyunxing
+  registries:
+    nacos:
+      protocol: nacos
+      timeout: 5s
+      group: dev
+      address: 127.0.0.1:8848
+    zk:
+      protocol: zk
+      timeout: 5s
+      group: dev
+      address: 127.0.0.1:2181
+  services:
+    helloService:
+      interface: org.dubbo.service.HelloService
+      registry: nacos,zk
+    orderService:
+      interface: org.dubbo.service.OrderService
+      registry: nacos

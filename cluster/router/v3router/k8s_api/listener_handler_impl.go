@@ -18,6 +18,7 @@
 package k8s_api
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/config/router"
 	metav "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
@@ -27,7 +28,6 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/router/v3router/k8s_crd"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
@@ -47,7 +47,7 @@ type VirtualServiceListenerHandler struct {
 
 // nolint
 func (r *VirtualServiceListenerHandler) AddFunc(obj interface{}) {
-	if vsc, ok := obj.(*config.VirtualServiceConfig); ok {
+	if vsc, ok := obj.(*router.VirtualServiceConfig); ok {
 		event := &config_center.ConfigChangeEvent{
 			Key:        VirtualServiceEventKey,
 			Value:      vsc,
@@ -59,7 +59,7 @@ func (r *VirtualServiceListenerHandler) AddFunc(obj interface{}) {
 
 // nolint
 func (r *VirtualServiceListenerHandler) UpdateFunc(oldObj, newObj interface{}) {
-	if vsc, ok := newObj.(*config.VirtualServiceConfig); ok {
+	if vsc, ok := newObj.(*router.VirtualServiceConfig); ok {
 		event := &config_center.ConfigChangeEvent{
 			Key:        VirtualServiceEventKey,
 			Value:      vsc,
@@ -72,7 +72,7 @@ func (r *VirtualServiceListenerHandler) UpdateFunc(oldObj, newObj interface{}) {
 
 // nolint
 func (r *VirtualServiceListenerHandler) DeleteFunc(obj interface{}) {
-	if vsc, ok := obj.(*config.VirtualServiceConfig); ok {
+	if vsc, ok := obj.(*router.VirtualServiceConfig); ok {
 		event := &config_center.ConfigChangeEvent{
 			Key:        VirtualServiceEventKey,
 			Value:      vsc,
@@ -95,7 +95,7 @@ func (r *VirtualServiceListenerHandler) Watch(opts metav.ListOptions, restClient
 
 // nolint
 func (r *VirtualServiceListenerHandler) List(opts metav.ListOptions, restClient *rest.RESTClient, ns string) (runtime.Object, error) {
-	result := config.VirtualServiceConfigList{}
+	result := router.VirtualServiceConfigList{}
 	err := restClient.
 		Get().
 		Namespace(ns).
@@ -109,7 +109,7 @@ func (r *VirtualServiceListenerHandler) List(opts metav.ListOptions, restClient 
 
 // nolint
 func (r *VirtualServiceListenerHandler) GetObject() runtime.Object {
-	return &config.VirtualServiceConfig{}
+	return &router.VirtualServiceConfig{}
 }
 
 // nolint
@@ -126,7 +126,7 @@ type DestRuleListenerHandler struct {
 
 // nolint
 func (r *DestRuleListenerHandler) AddFunc(obj interface{}) {
-	if drc, ok := obj.(*config.DestinationRuleConfig); ok {
+	if drc, ok := obj.(*router.DestinationRuleConfig); ok {
 		event := &config_center.ConfigChangeEvent{
 			Key:        DestinationRuleEventKey,
 			Value:      drc,
@@ -139,7 +139,7 @@ func (r *DestRuleListenerHandler) AddFunc(obj interface{}) {
 
 // nolint
 func (r *DestRuleListenerHandler) UpdateFunc(oldObj, newObj interface{}) {
-	if drc, ok := newObj.(*config.DestinationRuleConfig); ok {
+	if drc, ok := newObj.(*router.DestinationRuleConfig); ok {
 		event := &config_center.ConfigChangeEvent{
 			Key:        DestinationRuleEventKey,
 			Value:      drc,
@@ -151,7 +151,7 @@ func (r *DestRuleListenerHandler) UpdateFunc(oldObj, newObj interface{}) {
 
 // nolint
 func (r *DestRuleListenerHandler) DeleteFunc(obj interface{}) {
-	if drc, ok := obj.(*config.DestinationRuleConfig); ok {
+	if drc, ok := obj.(*router.DestinationRuleConfig); ok {
 		event := &config_center.ConfigChangeEvent{
 			Key:        DestinationRuleEventKey,
 			Value:      drc,
@@ -174,7 +174,7 @@ func (r *DestRuleListenerHandler) Watch(opts metav.ListOptions, restClient *rest
 
 // nolint
 func (r *DestRuleListenerHandler) List(opts metav.ListOptions, restClient *rest.RESTClient, ns string) (runtime.Object, error) {
-	result := config.DestinationRuleConfigList{}
+	result := router.DestinationRuleConfigList{}
 	err := restClient.
 		Get().
 		Namespace(ns).
@@ -188,7 +188,7 @@ func (r *DestRuleListenerHandler) List(opts metav.ListOptions, restClient *rest.
 
 // nolint
 func (r *DestRuleListenerHandler) GetObject() runtime.Object {
-	return &config.DestinationRuleConfig{}
+	return &router.DestinationRuleConfig{}
 }
 
 func newDestRuleListenerHandler(listener config_center.ConfigurationListener) k8s_crd.ListenerHandler {

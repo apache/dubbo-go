@@ -19,6 +19,7 @@ package protocol
 
 import (
 	"context"
+	"dubbo.apache.org/dubbo-go/v3/config/instance"
 	"strings"
 	"sync"
 )
@@ -248,7 +249,7 @@ func registerServiceMap(invoker protocol.Invoker) error {
 		s := "reExport can not get serviceConfig"
 		return perrors.New(s)
 	}
-	rpcService := config.GetProviderService(id)
+	rpcService := instance.GetProviderService(id)
 	if rpcService == nil {
 		s := "reExport can not get RPCService"
 		return perrors.New(s)

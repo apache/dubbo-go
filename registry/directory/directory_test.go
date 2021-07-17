@@ -18,6 +18,9 @@
 package directory
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/config/application"
+	"dubbo.apache.org/dubbo-go/v3/config/base"
+	"dubbo.apache.org/dubbo-go/v3/config/consumer"
 	"strconv"
 	"testing"
 	"time"
@@ -32,7 +35,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
 	"dubbo.apache.org/dubbo-go/v3/registry"
@@ -40,9 +42,9 @@ import (
 )
 
 func init() {
-	config.SetConsumerConfig(config.ConsumerConfig{
-		BaseConfig: config.BaseConfig{
-			ApplicationConfig: &config.ApplicationConfig{Name: "test-application"},
+	consumer.SetConsumerConfig(consumer.Config{
+		BaseConfig: base.Config{
+			ApplicationConfig: &application.Config{Name: "test-application"},
 		},
 	})
 }

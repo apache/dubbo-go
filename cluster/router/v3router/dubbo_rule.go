@@ -19,7 +19,7 @@ package v3router
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/config/router"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
@@ -28,7 +28,7 @@ type DubboRouterRule struct {
 	uniformRules []*UniformRule
 }
 
-func newDubboRouterRule(dubboRoutes []*config.DubboRoute,
+func newDubboRouterRule(dubboRoutes []*router.DubboRoute,
 	destinationMap map[string]map[string]string) (*DubboRouterRule, error) {
 
 	uniformRules := make([]*UniformRule, 0)

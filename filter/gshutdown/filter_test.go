@@ -19,6 +19,7 @@ package gshutdown
 
 import (
 	"context"
+	"dubbo.apache.org/dubbo-go/v3/config/shutdown"
 	"net/url"
 	"testing"
 )
@@ -56,7 +57,7 @@ func TestGenericFilterInvoke(t *testing.T) {
 	assert.NotNil(t, result)
 	assert.Nil(t, result.Error())
 
-	providerConfig.ShutdownConfig = &config.ShutdownConfig{
+	providerConfig.ShutdownConfig = &shutdown.ShutdownConfig{
 		RejectRequest:        true,
 		RejectRequestHandler: "mock",
 	}
