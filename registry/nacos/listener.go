@@ -26,6 +26,7 @@ import (
 )
 
 import (
+	gxchan "github.com/dubbogo/gost/container/chan"
 	"github.com/nacos-group/nacos-sdk-go/clients/naming_client"
 	"github.com/nacos-group/nacos-sdk-go/model"
 	"github.com/nacos-group/nacos-sdk-go/vo"
@@ -44,7 +45,7 @@ import (
 type nacosListener struct {
 	namingClient   naming_client.INamingClient
 	listenUrl      *common.URL
-	events         chan *config_center.ConfigChangeEvent
+	events         *gxchan.UnboundedChan
 	instanceMap    map[string]model.Instance
 	cacheLock      sync.Mutex
 	done           chan struct{}
@@ -55,9 +56,10 @@ type nacosListener struct {
 func NewNacosListener(url *common.URL, namingClient naming_client.INamingClient) (*nacosListener, error) {
 	listener := &nacosListener{
 		namingClient: namingClient,
-		listenUrl:    url, events: make(chan *config_center.ConfigChangeEvent, 32),
-		instanceMap: map[string]model.Instance{},
-		done:        make(chan struct{}),
+		listenUrl:    url,
+		events:       gxchan.NewUnboundedChan(32),
+		instanceMap:  map[string]model.Instance{},
+		done:         make(chan struct{}),
 	}
 	err := listener.startListen()
 	return listener, err
@@ -199,7 +201,7 @@ func (nl *nacosListener) stopListen() error {
 }
 
 func (nl *nacosListener) process(configType *config_center.ConfigChangeEvent) {
-	nl.events <- configType
+	nl.events.In() <- configType
 }
 
 // Next returns the service event from nacos.
@@ -210,9 +212,10 @@ func (nl *nacosListener) Next() (*registry.ServiceEvent, error) {
 			logger.Warnf("nacos listener is close!listenUrl:%+v", nl.listenUrl)
 			return nil, perrors.New("listener stopped")
 
-		case e := <-nl.events:
+		case e := <-nl.events.Out():
+			event, _ := e.(*config_center.ConfigChangeEvent)
 			logger.Debugf("got nacos event %s", e)
-			return &registry.ServiceEvent{Action: e.ConfigType, Service: e.Value.(*common.URL)}, nil
+			return &registry.ServiceEvent{Action: event.ConfigType, Service: event.Value.(*common.URL)}, nil
 		}
 	}
 }

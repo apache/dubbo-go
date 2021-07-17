@@ -23,6 +23,7 @@ import (
 )
 
 import (
+	gxchan "github.com/dubbogo/gost/container/chan"
 	perrors "github.com/pkg/errors"
 )
 
@@ -81,7 +82,7 @@ func (l *dataListener) DataChange(eventType remoting.Event) bool {
 
 type configurationListener struct {
 	registry  *etcdV3Registry
-	events    chan *config_center.ConfigChangeEvent
+	events    *gxchan.UnboundedChan
 	closeOnce sync.Once
 }
 
@@ -89,12 +90,12 @@ type configurationListener struct {
 func NewConfigurationListener(reg *etcdV3Registry) *configurationListener {
 	// add a new waiter
 	reg.WaitGroup().Add(1)
-	return &configurationListener{registry: reg, events: make(chan *config_center.ConfigChangeEvent, 32)}
+	return &configurationListener{registry: reg, events: gxchan.NewUnboundedChan(32)}
 }
 
 // Process data change event from config center of etcd
 func (l *configurationListener) Process(configType *config_center.ConfigChangeEvent) {
-	l.events <- configType
+	l.events.In() <- configType
 }
 
 // Next returns next service event once received
@@ -105,17 +106,18 @@ func (l *configurationListener) Next() (*registry.ServiceEvent, error) {
 			logger.Warnf("listener's etcd client connection is broken, so etcd event listener exit now.")
 			return nil, perrors.New("listener stopped")
 
-		case e := <-l.events:
+		case e := <-l.events.Out():
+			event, _ := e.(*config_center.ConfigChangeEvent)
 			logger.Infof("got etcd event %#v", e)
-			if e.ConfigType == remoting.EventTypeDel && l.registry.client.Valid() {
+			if event.ConfigType == remoting.EventTypeDel && l.registry.client.Valid() {
 				select {
 				case <-l.registry.Done():
-					logger.Warnf("update @result{%s}. But its connection to registry is invalid", e.Value)
+					logger.Warnf("update @result{%s}. But its connection to registry is invalid", event.Value)
 				default:
 				}
 				continue
 			}
-			return &registry.ServiceEvent{Action: e.ConfigType, Service: e.Value.(*common.URL)}, nil
+			return &registry.ServiceEvent{Action: event.ConfigType, Service: event.Value.(*common.URL)}, nil
 		}
 	}
 }
