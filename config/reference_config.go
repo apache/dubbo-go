@@ -281,6 +281,8 @@ func (c *ReferenceConfig) getUrlMap() url.Values {
 
 // GenericLoad ...
 func (c *ReferenceConfig) GenericLoad(id string) {
+	extension.SetAndInitGlobalDispatcher(GetBaseConfig().EventDispatcherType)
+	configCenterRefreshConsumer()
 	genericService := NewGenericService(c.id)
 	SetConsumerService(genericService)
 	c.id = id

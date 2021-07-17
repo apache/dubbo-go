@@ -121,7 +121,7 @@ func (b *configCenter) startConfigCenter(baseConfig BaseConfig) error {
 		return err
 	}
 	if err = b.prepareEnvironment(baseConfig, newUrl); err != nil {
-		return perrors.WithMessagef(err, "start config center error!")
+		return perrors.WithMessagef(err, "start config center failed!")
 	}
 	// c.fresh()
 	return nil
@@ -135,9 +135,10 @@ func (b *configCenter) prepareEnvironment(baseConfig BaseConfig, configCenterUrl
 		return perrors.WithStack(err)
 	}
 	config.GetEnvInstance().SetDynamicConfiguration(dynamicConfig)
+	logger.Infof("Set Dynamic Configuration %s success!", dynamicConfig)
 	content, err := dynamicConfig.GetProperties(baseConfig.ConfigCenterConfig.ConfigFile, config_center.WithGroup(baseConfig.ConfigCenterConfig.Group))
 	if err != nil {
-		logger.Errorf("Get config content in dynamic configuration error , error message is %v", err)
+		logger.Warnf("Get config content in dynamic configuration failed , message is %v\n", err)
 		return perrors.WithStack(err)
 	}
 	var appGroup string

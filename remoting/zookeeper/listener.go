@@ -306,7 +306,7 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkPath string, listen
 			}
 			logger.Debugf("Get children!{%s}", dubboPath)
 			if !listener.DataChange(remoting.Event{Path: dubboPath, Action: remoting.EventTypeAdd, Content: string(content)}) {
-				logger.Warnf("Send remoting event EventTypeAdd fail, path {%v}", dubboPath)
+				logger.Warnf("Send remoting event EventTypeAdd fail, path {%v}, maybe you don't want to use config center to store config content.", dubboPath)
 				l.pathMapLock.Lock()
 				delete(l.pathMap, zkPath)
 				l.pathMapLock.Unlock()

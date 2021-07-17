@@ -100,7 +100,7 @@ func configCenterRefreshProvider() error {
 	if providerConfig.ConfigCenterConfig != nil {
 		providerConfig.fatherConfig = providerConfig
 		if err := providerConfig.startConfigCenter((*providerConfig).BaseConfig); err != nil {
-			return perrors.Errorf("start config center error , error message is {%v}", perrors.WithStack(err))
+			return perrors.Errorf("start config center failed , message is {%v}", perrors.WithStack(err))
 		}
 		providerConfig.fresh()
 	}
