@@ -279,8 +279,10 @@ func (c *ReferenceConfig) getUrlMap() url.Values {
 	return urlMap
 }
 
-// GenericLoad ...
+// GenericLoad start config center, and create generic service with referenceKey @id
 func (c *ReferenceConfig) GenericLoad(id string) {
+	extension.SetAndInitGlobalDispatcher(GetBaseConfig().EventDispatcherType)
+	configCenterRefreshConsumer()
 	genericService := NewGenericService(c.id)
 	SetConsumerService(genericService)
 	c.id = id

@@ -216,7 +216,7 @@ func loadProviderConfig() {
 
 	checkApplicationName(providerConfig.ApplicationConfig)
 	if err := configCenterRefreshProvider(); err != nil {
-		logger.Errorf("[provider config center refresh] %#v", err)
+		logger.Warnf("[provider config center start failed with message %#v", err)
 	}
 
 	// start the metadata report if config set
