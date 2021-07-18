@@ -104,7 +104,7 @@ func TestServiceFilter_Invoke(t *testing.T) {
 	assert.Nil(t, err)
 
 	// mock
-	mockInvoker.EXPECT().GetUrl().Return(ivkUrl).Times(4)
+	mockInvoker.EXPECT().GetUrl().Return(ivkUrl).Times(3)
 
 	// invoke a method without errors using default generalization
 	invocation4 := invocation.NewRPCInvocation(constant.GENERIC,
@@ -134,14 +134,14 @@ func TestServiceFilter_Invoke(t *testing.T) {
 			constant.GENERIC_KEY: "true",
 		})
 	// invoke a method without errors using protobuf-json generalization
-	invocation7 := invocation.NewRPCInvocation(constant.GENERIC,
-		[]interface{}{
-			"HelloPB",
-			[]string{},
-			[]hessian.Object{"{\"id\":1}"},
-		}, map[string]interface{}{
-			constant.GENERIC_KEY: constant.GenericSerializationProtobuf,
-		})
+	//invocation7 := invocation.NewRPCInvocation(constant.GENERIC,
+	//	[]interface{}{
+	//		"HelloPB",
+	//		[]string{},
+	//		[]hessian.Object{"{\"id\":1}"},
+	//	}, map[string]interface{}{
+	//		constant.GENERIC_KEY: constant.GenericSerializationProtobuf,
+	//	})
 
 	mockInvoker.EXPECT().Invoke(gomock.All(
 		gomock.Not(invocation1),
@@ -181,11 +181,11 @@ func TestServiceFilter_Invoke(t *testing.T) {
 		"the number of args(=2) is not matched with \"Hello\" method",
 		fmt.Sprintf("%v", result.Error().(error)))
 
-	result = filter.Invoke(context.Background(), mockInvoker, invocation7)
-	assert.Equal(t, int64(200), result.Result().(*generalizer.ResponseType).GetCode())
-	assert.Equal(t, int64(1), result.Result().(*generalizer.ResponseType).GetId())
-	assert.Equal(t, "xavierniu", result.Result().(*generalizer.ResponseType).GetName())
-	assert.Equal(t, "Nice to meet you", result.Result().(*generalizer.ResponseType).GetMessage())
+	//result = filter.Invoke(context.Background(), mockInvoker, invocation7)
+	//assert.Equal(t, int64(200), result.Result().(*generalizer.ResponseType).GetCode())
+	//assert.Equal(t, int64(1), result.Result().(*generalizer.ResponseType).GetId())
+	//assert.Equal(t, "xavierniu", result.Result().(*generalizer.ResponseType).GetName())
+	//assert.Equal(t, "Nice to meet you", result.Result().(*generalizer.ResponseType).GetMessage())
 
 }
 

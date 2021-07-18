@@ -309,7 +309,9 @@ const (
 )
 
 // Generic Filter
+
 const (
 	GenericSerializationDefault  = "true"
-	GenericSerializationProtobuf = "protobuf-json"
+	// disable "protobuf-json" temporarily
+	//GenericSerializationProtobuf = "protobuf-json"
 )
