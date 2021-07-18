@@ -19,9 +19,6 @@ package generic
 
 import (
 	"context"
-	"reflect"
-	"strings"
-	"time"
 )
 
 import (
@@ -31,6 +28,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	invocation2 "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
@@ -42,30 +40,52 @@ func init() {
 	})
 }
 
-//  when do a generic invoke, struct need to be map
-
-// nolint
+// Filter ensures the structs are converted to maps, this filter is for consumer
 type Filter struct{}
 
 // Invoke turns the parameters to map for generic method
 func (f *Filter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
-	if invocation.MethodName() == constant.GENERIC && len(invocation.Arguments()) == 3 {
-		oldArguments := invocation.Arguments()
+	if isCallingToGenericService(invoker, invocation) {
 
-		if oldParams, ok := oldArguments[2].([]interface{}); ok {
-			newParams := make([]hessian.Object, 0, len(oldParams))
-			for i := range oldParams {
-				newParams = append(newParams, hessian.Object(struct2MapAll(oldParams[i])))
+		mtdname := invocation.MethodName()
+		oldargs := invocation.Arguments()
+
+		types := make([]string, 0, len(oldargs))
+		args := make([]hessian.Object, 0, len(oldargs))
+
+		// get generic info from attachments of invocation, the default value is "true"
+		generic := invocation.AttachmentsByKey(constant.GENERIC_KEY, constant.GenericSerializationDefault)
+		// get generalizer according to value in the `generic`
+		g := getGeneralizer(generic)
+
+		for _, arg := range oldargs {
+			// use the default generalizer(MapGeneralizer)
+			typ, err := g.GetType(arg)
+			if err != nil {
+				logger.Errorf("failed to get type, %v", err)
 			}
-			newArguments := []interface{}{
-				oldArguments[0],
-				oldArguments[1],
-				newParams,
+			obj, err := g.Generalize(arg)
+			if err != nil {
+				logger.Errorf("generalization failed, %v", err)
+				return invoker.Invoke(ctx, invocation)
 			}
-			newInvocation := invocation2.NewRPCInvocation(invocation.MethodName(), newArguments, invocation.Attachments())
-			newInvocation.SetReply(invocation.Reply())
-			return invoker.Invoke(ctx, newInvocation)
+			types = append(types, typ)
+			args = append(args, obj)
 		}
+
+		// construct a new invocation for generic call
+		newargs := []interface{}{
+			mtdname,
+			types,
+			args,
+		}
+		newivc := invocation2.NewRPCInvocation(constant.GENERIC, newargs, invocation.Attachments())
+		newivc.SetReply(invocation.Reply())
+		newivc.Attachments()[constant.GENERIC_KEY] = invoker.GetURL().GetParam(constant.GENERIC_KEY, "")
+
+		return invoker.Invoke(ctx, newivc)
+	} else if isMakingAGenericCall(invoker, invocation) {
+		invocation.Attachments()[constant.GENERIC_KEY] = invoker.GetURL().GetParam(constant.GENERIC_KEY, "")
 	}
 	return invoker.Invoke(ctx, invocation)
 }
@@ -74,85 +94,4 @@ func (f *Filter) Invoke(ctx context.Context, invoker protocol.Invoker, invocatio
 func (f *Filter) OnResponse(_ context.Context, result protocol.Result, _ protocol.Invoker,
 	_ protocol.Invocation) protocol.Result {
 	return result
-}
-
-func struct2MapAll(obj interface{}) interface{} {
-	if obj == nil {
-		return obj
-	}
-	t := reflect.TypeOf(obj)
-	v := reflect.ValueOf(obj)
-	if t.Kind() == reflect.Struct {
-		result := make(map[string]interface{}, t.NumField())
-		for i := 0; i < t.NumField(); i++ {
-			field := t.Field(i)
-			value := v.Field(i)
-			kind := value.Kind()
-			if kind == reflect.Struct || kind == reflect.Slice || kind == reflect.Map {
-				if value.CanInterface() {
-					tmp := value.Interface()
-					if _, ok := tmp.(time.Time); ok {
-						setInMap(result, field, tmp)
-						continue
-					}
-					setInMap(result, field, struct2MapAll(tmp))
-				}
-			} else {
-				if value.CanInterface() {
-					setInMap(result, field, value.Interface())
-				}
-			}
-		}
-		return result
-	} else if t.Kind() == reflect.Slice {
-		value := reflect.ValueOf(obj)
-		newTemps := make([]interface{}, 0, value.Len())
-		for i := 0; i < value.Len(); i++ {
-			newTemp := struct2MapAll(value.Index(i).Interface())
-			newTemps = append(newTemps, newTemp)
-		}
-		return newTemps
-	} else if t.Kind() == reflect.Map {
-		newTempMap := make(map[interface{}]interface{}, v.Len())
-		iter := v.MapRange()
-		for iter.Next() {
-			if !iter.Value().CanInterface() {
-				continue
-			}
-			key := iter.Key()
-			mapV := iter.Value().Interface()
-			newTempMap[convertMapKey(key)] = struct2MapAll(mapV)
-		}
-		return newTempMap
-	} else {
-		return obj
-	}
-}
-
-func convertMapKey(key reflect.Value) interface{} {
-	switch key.Kind() {
-	case reflect.Bool, reflect.Int, reflect.Int8,
-		reflect.Int16, reflect.Int32, reflect.Int64,
-		reflect.Uint, reflect.Uint8, reflect.Uint16,
-		reflect.Uint32, reflect.Uint64, reflect.Float32,
-		reflect.Float64, reflect.String:
-		return key.Interface()
-	default:
-		return key.String()
-	}
-}
-
-func setInMap(m map[string]interface{}, structField reflect.StructField, value interface{}) (result map[string]interface{}) {
-	result = m
-	if tagName := structField.Tag.Get("m"); tagName == "" {
-		result[headerAtoa(structField.Name)] = value
-	} else {
-		result[tagName] = value
-	}
-	return
-}
-
-func headerAtoa(a string) (b string) {
-	b = strings.ToLower(a[:1]) + a[1:]
-	return
 }
