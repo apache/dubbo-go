@@ -23,6 +23,7 @@ import (
 )
 
 import (
+	gxchan "github.com/dubbogo/gost/container/chan"
 	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
 	perrors "github.com/pkg/errors"
 )
@@ -116,7 +117,7 @@ func (l *RegistryDataListener) Close() {
 type RegistryConfigurationListener struct {
 	client       *gxzookeeper.ZookeeperClient
 	registry     *zkRegistry
-	events       chan *config_center.ConfigChangeEvent
+	events       *gxchan.UnboundedChan
 	isClosed     bool
 	close        chan struct{}
 	closeOnce    sync.Once
@@ -129,7 +130,7 @@ func NewRegistryConfigurationListener(client *gxzookeeper.ZookeeperClient, reg *
 	return &RegistryConfigurationListener{
 		client:       client,
 		registry:     reg,
-		events:       make(chan *config_center.ConfigChangeEvent, 32),
+		events:       gxchan.NewUnboundedChan(32),
 		isClosed:     false,
 		close:        make(chan struct{}, 1),
 		subscribeURL: conf,
@@ -138,7 +139,7 @@ func NewRegistryConfigurationListener(client *gxzookeeper.ZookeeperClient, reg *
 
 // Process submit the ConfigChangeEvent to the event chan to notify all observer
 func (l *RegistryConfigurationListener) Process(configType *config_center.ConfigChangeEvent) {
-	l.events <- configType
+	l.events.In() <- configType
 }
 
 // Next will observe the registry state and events chan
@@ -150,7 +151,8 @@ func (l *RegistryConfigurationListener) Next() (*registry.ServiceEvent, error) {
 		case <-l.registry.Done():
 			logger.Warnf("zk consumer register has quit, so zk event listener exit now. (registry url {%v}", l.registry.BaseRegistry.URL)
 			return nil, perrors.New("zookeeper registry, (registry url{%v}) stopped")
-		case e := <-l.events:
+		case val := <-l.events.Out():
+			e, _ := val.(*config_center.ConfigChangeEvent)
 			logger.Debugf("got zk event %s", e)
 			if e.ConfigType == remoting.EventTypeDel && !l.valid() {
 				logger.Warnf("update @result{%s}. But its connection to registry is invalid", e.Value)
