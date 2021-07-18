@@ -138,7 +138,7 @@ func (b *configCenter) prepareEnvironment(baseConfig BaseConfig, configCenterUrl
 	logger.Infof("Set Dynamic Configuration %s success!", dynamicConfig)
 	content, err := dynamicConfig.GetProperties(baseConfig.ConfigCenterConfig.ConfigFile, config_center.WithGroup(baseConfig.ConfigCenterConfig.Group))
 	if err != nil {
-		logger.Warnf("Get config content in dynamic configuration failed , message is %v\n", err)
+		logger.Warnf("Get config content in dynamic configuration failed , message is %v", err)
 		return perrors.WithStack(err)
 	}
 	var appGroup string
