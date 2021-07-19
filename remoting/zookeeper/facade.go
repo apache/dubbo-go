@@ -43,6 +43,7 @@ type ZkClientFacade interface {
 
 // HandleClientRestart keeps the connection between client and server
 func HandleClientRestart(r ZkClientFacade) {
+	r.WaitGroup().Add(1)
 	defer r.WaitGroup().Done()
 	for {
 		select {
