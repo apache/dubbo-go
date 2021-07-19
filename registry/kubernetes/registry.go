@@ -162,7 +162,6 @@ func newKubernetesRegistry(url *common.URL) (registry.Registry, error) {
 		return nil, perrors.WithStack(err)
 	}
 
-	r.WaitGroup().Add(1)
 	go r.HandleClientRestart()
 	r.InitListeners()
 
@@ -191,12 +190,12 @@ func newMockKubernetesRegistry(
 
 // HandleClientRestart will reconnect to  kubernetes registry center
 func (r *kubernetesRegistry) HandleClientRestart() {
+	r.WaitGroup().Add(1)
+	defer r.WaitGroup().Done()
 	var (
 		err       error
 		failTimes int
 	)
-
-	defer r.WaitGroup().Done()
 LOOP:
 	for {
 		select {

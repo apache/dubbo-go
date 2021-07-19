@@ -41,22 +41,19 @@ type clientFacade interface {
 	common.Node
 }
 
-var restartOnce sync.Once
-
 // HandleClientRestart keeps the connection between client and server
 func HandleClientRestart(r clientFacade) {
-	restartOnce.Do(func() {
-		defer r.WaitGroup().Done()
-		for {
-			select {
-			case <-r.Client().GetCtx().Done():
-				r.RestartCallBack()
-				// re-register all services
-				time.Sleep(10 * time.Microsecond)
-			case <-r.Done():
-				logger.Warnf("(ETCDV3ProviderRegistry)reconnectETCDV3 goroutine exit now...")
-				return
-			}
+	r.WaitGroup().Add(1)
+	defer r.WaitGroup().Done()
+	for {
+		select {
+		case <-r.Client().GetCtx().Done():
+			r.RestartCallBack()
+			// re-register all services
+			time.Sleep(10 * time.Microsecond)
+		case <-r.Done():
+			logger.Warnf("(ETCDV3ProviderRegistry)reconnectETCDV3 goroutine exit now...")
+			return
 		}
-	})
+	}
 }
