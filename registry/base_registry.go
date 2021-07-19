@@ -143,7 +143,7 @@ func (r *BaseRegistry) Register(conf *common.URL) error {
 	if portToRegistry := os.Getenv("DUBBO_PORT_TO_REGISTRY"); portToRegistry != "" {
 		conf.Port = portToRegistry
 	}
-	role, _ := strconv.Atoi(r.URL.GetParam(constant.ROLE_KEY, ""))
+	role, _ := strconv.Atoi(conf.GetParam(constant.ROLE_KEY, ""))
 	// Check if the service has been registered
 	r.cltLock.Lock()
 	_, ok = r.services[conf.Key()]
@@ -268,7 +268,7 @@ func (r *BaseRegistry) processURL(c *common.URL, f func(string, string) error, c
 	params.Add("ip", localIP)
 	// params.Add("timeout", fmt.Sprintf("%d", int64(r.Timeout)/1e6))
 
-	role, _ := strconv.Atoi(r.URL.GetParam(constant.ROLE_KEY, ""))
+	role, _ := strconv.Atoi(c.GetParam(constant.ROLE_KEY, ""))
 	switch role {
 
 	case common.PROVIDER:
