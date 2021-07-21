@@ -21,7 +21,8 @@ import (
 
 // Config is the root config
 type Config struct {
-	ConfigCenterConfig *center.Config `yaml:"config_center" json:"config_center,omitempty"`
+
+	ConfigCenter *center.Config `yaml:"config-center" json:"config-center,omitempty"`
 
 	// since 1.5.0 version
 	//Remotes              map[string]*config.RemoteConfig `yaml:"remote" json:"remote,omitempty" property:"remote"`

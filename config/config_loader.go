@@ -19,6 +19,7 @@ package config
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/config/application"
+	"dubbo.apache.org/dubbo-go/v3/config/center"
 	"dubbo.apache.org/dubbo-go/v3/config/registry"
 	"dubbo.apache.org/dubbo-go/v3/config/root"
 	"fmt"
@@ -41,6 +42,8 @@ var (
 	applicationConfig *application.Config
 	//
 	registriesConfig map[string]*registry.Config
+
+	configCenterConfig *center.Config
 	//consumerConfig *consumer.Config
 	//providerConfig *provider.ProviderConfig
 	//// baseConfig = providerConfig.BaseConfig or consumerConfig
@@ -63,7 +66,7 @@ func Load(opts ...Option) {
 	//parseCommandLine()
 	// conf
 	conf := &config{
-		name:  "application.yaml",
+		name:  "conf_application.yaml",
 		genre: "yaml",
 		path:  "./conf",
 		delim: ".",
@@ -91,29 +94,10 @@ func check() error {
 	return nil
 }
 
-// GetApplicationConfig get application config
-func GetApplicationConfig() (*application.Config, error) {
-	if err := check(); err != nil {
-		return nil, err
-	}
-	if applicationConfig != nil {
-		return applicationConfig, nil
-	}
-	conf := rootConfig.Application
-	if err := conf.SetDefault(); err != nil {
-		return nil, err
-	}
-	if err := conf.Validate(rootConfig.Validate); err != nil {
-		return nil, err
-	}
-	applicationConfig = conf
-	return conf, nil
-}
-
 //parseCommandLine parse command line
 //func parseCommandLine() {
 //	flag.String("delim", ".", "config file delim")
-//	flag.String("name", "application.yaml", "config file name")
+//	flag.String("name", "conf_application.yaml", "config file name")
 //	flag.String("genre", "yaml", "config file type")
 //	flag.String("path", "./conf", "config file path default")
 //
@@ -151,6 +135,25 @@ func getKoanf(conf *config) *koanf.Koanf {
 	return k
 }
 
+// GetApplicationConfig get application config
+func GetApplicationConfig() (*application.Config, error) {
+	if err := check(); err != nil {
+		return nil, err
+	}
+	if applicationConfig != nil {
+		return applicationConfig, nil
+	}
+	conf := rootConfig.Application
+	if err := conf.SetDefault(); err != nil {
+		return nil, err
+	}
+	if err := conf.Validate(rootConfig.Validate); err != nil {
+		return nil, err
+	}
+	applicationConfig = conf
+	return conf, nil
+}
+
 func GetRegistriesConfig() (map[string]*registry.Config, error) {
 	if err := check(); err != nil {
 		return nil, err
@@ -181,6 +184,26 @@ func GetRegistriesConfig() (map[string]*registry.Config, error) {
 	}
 	registriesConfig = registries
 	return registries, nil
+}
+
+func GetConfigCenterConfig() (*center.Config, error) {
+	if err := check(); err != nil {
+		return nil, err
+	}
+	if configCenterConfig != nil {
+		return configCenterConfig, nil
+	}
+	conf := center.GetConfigCenterConfig(rootConfig.ConfigCenter, rootConfig.Koanf)
+
+	if err := conf.SetDefault(); err != nil {
+		return nil, err
+	}
+	conf.TranslateConfigAddress()
+	if err := conf.Validate(rootConfig.Validate); err != nil {
+		return nil, err
+	}
+	configCenterConfig = conf
+	return conf, nil
 }
 
 //

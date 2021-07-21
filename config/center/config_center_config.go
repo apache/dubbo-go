@@ -18,12 +18,16 @@
 package center
 
 import (
-	"google.golang.org/grpc/balancer/base"
+	"errors"
+	"github.com/knadh/koanf"
 	"net/url"
+	"strings"
 )
 
 import (
 	"github.com/creasty/defaults"
+	"github.com/go-playground/validator/v10"
+	"github.com/goinggo/mapstructure"
 	perrors "github.com/pkg/errors"
 )
 
@@ -44,20 +48,67 @@ import (
 //
 // ConfigCenter has currently supported Zookeeper, Nacos, Etcd, Consul, Apollo
 type Config struct {
-	Protocol      string            `required:"true"  yaml:"protocol"  json:"protocol,omitempty"`
-	Address       string            `yaml:"address" json:"address,omitempty"`
-	Cluster       string            `yaml:"cluster" json:"cluster,omitempty"`
-	Group         string            `default:"dubbo" yaml:"group" json:"group,omitempty"`
-	Username      string            `yaml:"username" json:"username,omitempty"`
-	Password      string            `yaml:"password" json:"password,omitempty"`
-	LogDir        string            `yaml:"log_dir" json:"log_dir,omitempty"`
-	ConfigFile    string            `default:"dubbo.properties" yaml:"config_file"  json:"config_file,omitempty"`
-	Namespace     string            `default:"dubbo" yaml:"namespace"  json:"namespace,omitempty"`
-	AppConfigFile string            `default:"dubbo.properties" yaml:"app_config_file"  json:"app_config_file,omitempty"`
-	AppID         string            `default:"dubbo" yaml:"app_id"  json:"app_id,omitempty"`
-	TimeoutStr    string            `yaml:"timeout"  json:"timeout,omitempty"`
-	RemoteRef     string            `required:"false"  yaml:"remote_ref"  json:"remote_ref,omitempty"`
-	Params        map[string]string `yaml:"params"  json:"parameters,omitempty"`
+	Protocol      string `validate:"required"  yaml:"protocol"  json:"protocol,omitempty"`
+	Address       string `yaml:"address" json:"address,omitempty"`
+	Cluster       string `yaml:"cluster" json:"cluster,omitempty"`
+	Group         string `default:"dubbo" yaml:"group" json:"group,omitempty"`
+	Username      string `yaml:"username" json:"username,omitempty"`
+	Password      string `yaml:"password" json:"password,omitempty"`
+	LogDir        string `yaml:"log_dir" json:"log_dir,omitempty"`
+	ConfigFile    string `default:"dubbo.properties" yaml:"config_file"  json:"config_file,omitempty"`
+	Namespace     string `default:"dubbo" yaml:"namespace"  json:"namespace,omitempty"`
+	AppConfigFile string `default:"dubbo.properties" yaml:"app_config_file"  json:"app_config_file,omitempty"`
+	AppID         string `default:"dubbo" yaml:"app_id"  json:"app_id,omitempty"`
+	Timeout       string `default:"10s" yaml:"timeout"  json:"timeout,omitempty"`
+	// Deprecated
+	RemoteRef string            `required:"false"  yaml:"remote_ref"  json:"remote_ref,omitempty"`
+	Params    map[string]string `yaml:"params"  json:"parameters,omitempty"`
+}
+
+// Prefix dubbo.config-center
+func (Config) Prefix() string {
+	return constant.ConfigCenterPrefix
+}
+
+func GetConfigCenterConfig(conf *Config, k *koanf.Koanf) *Config {
+	if conf != nil {
+		return conf
+	}
+	conf = new(Config)
+	key := conf.Prefix()
+
+	value := k.Get(key)
+	if value == nil {
+		key = strings.ReplaceAll(key, "-", "_")
+		value = k.Get(key)
+	}
+
+	if value == nil {
+		return conf
+	}
+
+	if err := mapstructure.Decode(value, conf); err != nil {
+		panic(err)
+	}
+	return conf
+}
+
+// SetDefault set default value
+func (c *Config) SetDefault() error {
+	return defaults.Set(c)
+}
+
+// Validate valida value
+func (c *Config) Validate(valid *validator.Validate) error {
+	if err := valid.Struct(c); err != nil {
+		errs := err.(validator.ValidationErrors)
+		var slice []string
+		for _, msg := range errs {
+			slice = append(slice, msg.Error())
+		}
+		return errors.New(strings.Join(slice, ","))
+	}
+	return nil
 }
 
 // UnmarshalYAML unmarshal the Config by @unmarshal function
@@ -79,7 +130,7 @@ func (c *Config) GetUrlMap() url.Values {
 	urlMap.Set(constant.CONFIG_LOG_DIR_KEY, c.LogDir)
 	urlMap.Set(constant.CONFIG_USERNAME_KEY, c.Username)
 	urlMap.Set(constant.CONFIG_PASSWORD_KEY, c.Password)
-	urlMap.Set(constant.CONFIG_TIMEOUT_KEY, c.TimeoutStr)
+	urlMap.Set(constant.CONFIG_TIMEOUT_KEY, c.Timeout)
 
 	for key, val := range c.Params {
 		urlMap.Set(key, val)
@@ -87,9 +138,24 @@ func (c *Config) GetUrlMap() url.Values {
 	return urlMap
 }
 
+//TranslateConfigAddress translate config address
+//  eg:address=nacos://127.0.0.1:8848 will return 127.0.0.1:8848 and protocol will set nacos
+func (c *Config) TranslateConfigAddress() string {
+	if strings.Contains(c.Address, "://") {
+		translatedUrl, err := url.Parse(c.Address)
+		if err != nil {
+			logger.Errorf("The config address:%s is invalid, error: %#v", c.Address, err)
+			panic(err)
+		}
+		c.Protocol = translatedUrl.Scheme
+		c.Address = strings.Replace(c.Address, translatedUrl.Scheme+"://", "", -1)
+	}
+	return c.Address
+}
+
 // toURL will compatible with baseConfig.Config.Address and baseConfig.Config.RemoteRef before 1.6.0
 // After 1.6.0 will not compatible, only baseConfig.Config.RemoteRef
-func (c *Config) toURL(baseConfig base.Config) (*common.URL, error) {
+func (c *Config) toURL() (*common.URL, error) {
 	//remoteRef := baseConfig.ConfigCenterConfig.RemoteRef
 	//// if set remote ref use remote
 	//if len(remoteRef) <= 0 {
@@ -112,19 +178,19 @@ func (c *Config) toURL(baseConfig base.Config) (*common.URL, error) {
 
 // startConfigCenter will start the config center.
 // it will prepare the environment
-func (c *Config) startConfigCenter(baseConfig base.Config) error {
-	newUrl, err := c.toURL(baseConfig)
+func (c *Config) startConfigCenter() error {
+	newUrl, err := c.toURL()
 	if err != nil {
 		return err
 	}
-	if err = c.prepareEnvironment(baseConfig, newUrl); err != nil {
+	if err = c.prepareEnvironment(newUrl); err != nil {
 		return perrors.WithMessagef(err, "start config center error!")
 	}
 	// c.fresh()
 	return nil
 }
 
-func (c *Config) prepareEnvironment(baseConfig base.Config, configCenterUrl *common.URL) error {
+func (c *Config) prepareEnvironment(configCenterUrl *common.URL) error {
 	factory := extension.GetConfigCenterFactory(configCenterUrl.Protocol)
 	dynamicConfig, err := factory.GetDynamicConfiguration(configCenterUrl)
 	if err != nil {

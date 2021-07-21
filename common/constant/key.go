@@ -170,6 +170,7 @@ const (
 
 const (
 	RegistryConfigPrefix       = "dubbo.registries"
+	ConfigCenterPrefix         = "dubbo.config-center"
 	SingleRegistryConfigPrefix = "dubbo.registry"
 	ReferenceConfigPrefix      = "dubbo.reference"
 	ServiceConfigPrefix        = "dubbo.service"

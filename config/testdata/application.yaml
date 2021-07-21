@@ -4,6 +4,16 @@ dubbo:
     module: local
     version: 1.0.0
     owner: zhaoyunxing
+  config_center:
+    address: nacos://127.0.0.1:8848
+    cluster: dev
+    namespace: dubbo
+    logDir: ./logs
+  protocols:
+    dubbo:
+      name: dubbo
+      ip: 127.0.0.1
+      port: 20000
   registries:
     nacos:
       timeout: 5s
