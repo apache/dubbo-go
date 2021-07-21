@@ -27,11 +27,11 @@ import (
 )
 
 func TestShutdownConfigGetTimeout(t *testing.T) {
-	config := ShutdownConfig{}
+	config := Config{}
 	assert.False(t, config.RejectRequest)
 	assert.False(t, config.RequestsFinished)
 
-	config = ShutdownConfig{
+	config = Config{
 		Timeout:     "60s",
 		StepTimeout: "10s",
 	}
@@ -39,7 +39,7 @@ func TestShutdownConfigGetTimeout(t *testing.T) {
 	assert.Equal(t, 60*time.Second, config.GetTimeout())
 	assert.Equal(t, 10*time.Second, config.GetStepTimeout())
 
-	config = ShutdownConfig{
+	config = Config{
 		Timeout:     "34ms",
 		StepTimeout: "79ms",
 	}

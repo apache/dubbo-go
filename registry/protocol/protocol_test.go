@@ -46,7 +46,7 @@ import (
 )
 
 func init() {
-	provider.SetProviderConfig(provider.ProviderConfig{BaseConfig: base.Config{
+	provider.SetProviderConfig(provider.Config{BaseConfig: base.Config{
 		ApplicationConfig: &application.Config{Name: "test-application"},
 	}})
 }

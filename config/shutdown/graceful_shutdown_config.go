@@ -31,8 +31,8 @@ const (
 	defaultStepTimeout = 10 * time.Second
 )
 
-// ShutdownConfig is used as configuration for graceful shutdown
-type ShutdownConfig struct {
+// Config is used as configuration for graceful shutdown
+type Config struct {
 	/*
 	 * Total timeout. Even though we don't release all resources,
 	 * the application will shutdown if the costing time is over this configuration. The unit is ms.
@@ -57,13 +57,13 @@ type ShutdownConfig struct {
 	RequestsFinished bool
 }
 
-// nolint
-func (config *ShutdownConfig) Prefix() string {
+// Prefix dubbo.shutdown
+func (config *Config) Prefix() string {
 	return constant.ShutdownConfigPrefix
 }
 
 // nolint
-func (config *ShutdownConfig) GetTimeout() time.Duration {
+func (config *Config) GetTimeout() time.Duration {
 	result, err := time.ParseDuration(config.Timeout)
 	if err != nil {
 		logger.Errorf("The Timeout configuration is invalid: %s, and we will use the default value: %s, err: %v",
@@ -74,7 +74,7 @@ func (config *ShutdownConfig) GetTimeout() time.Duration {
 }
 
 // nolint
-func (config *ShutdownConfig) GetStepTimeout() time.Duration {
+func (config *Config) GetStepTimeout() time.Duration {
 	result, err := time.ParseDuration(config.StepTimeout)
 	if err != nil {
 		logger.Errorf("The StepTimeout configuration is invalid: %s, and we will use the default value: %s, err: %v",

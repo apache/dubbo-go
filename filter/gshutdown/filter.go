@@ -44,7 +44,7 @@ func init() {
 
 type Filter struct {
 	activeCount    int32
-	shutdownConfig *shutdown.ShutdownConfig
+	shutdownConfig *shutdown.Config
 }
 
 // Invoke adds the requests count and block the new requests if application is closing
@@ -70,7 +70,7 @@ func (f *Filter) OnResponse(ctx context.Context, result protocol.Result, invoker
 func (f *Filter) Set(name string, conf interface{}) {
 	switch name {
 	case config.GracefulShutdownFilterShutdownConfig:
-		if shutdownConfig, ok := conf.(*shutdown.ShutdownConfig); !ok {
+		if shutdownConfig, ok := conf.(*shutdown.Config); !ok {
 			f.shutdownConfig = shutdownConfig
 			return
 		}

@@ -2,6 +2,7 @@ package root
 
 import (
 	"bytes"
+	"dubbo.apache.org/dubbo-go/v3/config/registry"
 )
 
 import (
@@ -31,6 +32,9 @@ type Config struct {
 
 	// Application application config
 	Application *application.Config `yaml:"application" json:"application,omitempty" property:"application"`
+
+	// Registries registry config
+	Registries map[string]*registry.Config `default:"{}" yaml:"registries" json:"registries" property:"registries"`
 
 	// prefix              string
 	fatherConfig        interface{}

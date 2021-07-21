@@ -25,8 +25,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
-// MethodConfig defines method config
-type MethodConfig struct {
+// Config defines method config
+type Config struct {
 	InterfaceId                 string
 	InterfaceName               string
 	Name                        string `yaml:"name"  json:"name,omitempty" property:"name"`
@@ -43,7 +43,7 @@ type MethodConfig struct {
 }
 
 // nolint
-func (c *MethodConfig) Prefix() string {
+func (c *Config) Prefix() string {
 	if len(c.InterfaceId) != 0 {
 		return constant.DUBBO + "." + c.InterfaceName + "." + c.InterfaceId + "." + c.Name + "."
 	}
@@ -52,10 +52,10 @@ func (c *MethodConfig) Prefix() string {
 }
 
 // UnmarshalYAML unmarshals the MethodConfig by @unmarshal function
-func (c *MethodConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	if err := defaults.Set(c); err != nil {
 		return err
 	}
-	type plain MethodConfig
+	type plain Config
 	return unmarshal((*plain)(c))
 }

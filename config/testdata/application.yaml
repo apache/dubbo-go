@@ -6,13 +6,11 @@ dubbo:
     owner: zhaoyunxing
   registries:
     nacos:
-      protocol: nacos
       timeout: 5s
       group: dev
-      address: 127.0.0.1:8848
+      address: nacos://127.0.0.1:8848
     zk:
-      protocol: zk
-      timeout: 5s
+      protocol: zookeeper
       group: dev
       address: 127.0.0.1:2181
   services:

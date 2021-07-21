@@ -16,6 +16,93 @@
 */
 
 package config
+
+import (
+	"os"
+	"path/filepath"
+	"runtime"
+	"strings"
+)
+
+type config struct {
+	// config file name default application
+	name string
+	// config file type default yaml
+	genre string
+	// config file path default ./conf
+	path string
+	// config file delim default .
+	delim string
+}
+
+type optionFunc func(*config)
+
+func (fn optionFunc) apply(vc *config) {
+	fn(vc)
+}
+
+type Option interface {
+	apply(vc *config)
+}
+
+// WithGenre set config genre
+func WithGenre(genre string) Option {
+	return optionFunc(func(conf *config) {
+		conf.genre = strings.ToLower(genre)
+	})
+}
+
+// WithPath set config path
+func WithPath(path string) Option {
+	return optionFunc(func(conf *config) {
+		conf.path = absolutePath(path)
+	})
+}
+
+// WithName set config name
+func WithName(name string) Option {
+	return optionFunc(func(conf *config) {
+		conf.name = name
+	})
+}
+
+func WithDelim(delim string) Option {
+	return optionFunc(func(conf *config) {
+		conf.delim = delim
+	})
+}
+
+// absolutePath get absolut path
+func absolutePath(inPath string) string {
+
+	if inPath == "$HOME" || strings.HasPrefix(inPath, "$HOME"+string(os.PathSeparator)) {
+		inPath = userHomeDir() + inPath[5:]
+	}
+
+	if filepath.IsAbs(inPath) {
+		return filepath.Clean(inPath)
+	}
+
+	p, err := filepath.Abs(inPath)
+	if err == nil {
+		return filepath.Clean(p)
+	}
+
+	return ""
+}
+
+//userHomeDir get gopath
+func userHomeDir() string {
+	if runtime.GOOS == "windows" {
+		home := os.Getenv("HOMEDRIVE") + os.Getenv("HOMEPATH")
+		if home == "" {
+			home = os.Getenv("USERPROFILE")
+		}
+		return home
+	}
+	return os.Getenv("HOME")
+}
+
 //
 //import (
 //	"dubbo.apache.org/dubbo-go/v3/config/base"

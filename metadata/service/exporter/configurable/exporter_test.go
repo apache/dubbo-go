@@ -84,7 +84,7 @@ func TestConfigurableExporter(t *testing.T) {
 
 // mockInitProviderWithSingleRegistry will init a mocked providerConfig
 func mockInitProviderWithSingleRegistry() {
-	providerConfig := &provider.ProviderConfig{
+	providerConfig := &provider.Config{
 
 		BaseConfig: base.Config{
 			ApplicationConfig: &application.Config{
@@ -97,12 +97,12 @@ func mockInitProviderWithSingleRegistry() {
 			},
 		},
 
-		Registry: &registry.RegistryConfig{
+		Registry: &registry.Config{
 			Address:  "mock://127.0.0.1:2181",
 			Username: "user1",
 			Password: "pwd1",
 		},
-		Registries: map[string]*registry.RegistryConfig{},
+		Registries: map[string]*registry.Config{},
 
 		Services: map[string]*service.Config{
 			"MockService": {
@@ -113,7 +113,7 @@ func mockInitProviderWithSingleRegistry() {
 				Retries:       "3",
 				Group:         "huadong_idc",
 				Version:       "1.0.0",
-				Methods: []*method.MethodConfig{
+				Methods: []*method.Config{
 					{
 						Name:        "GetUser",
 						Retries:     "2",
@@ -129,7 +129,7 @@ func mockInitProviderWithSingleRegistry() {
 				},
 			},
 		},
-		Protocols: map[string]*protocol.ProtocolConfig{
+		Protocols: map[string]*protocol.Config{
 			"mock": {
 				Name: "mock",
 				Ip:   "127.0.0.1",

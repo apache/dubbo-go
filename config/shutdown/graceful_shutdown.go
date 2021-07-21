@@ -183,7 +183,7 @@ func destroyConsumerProtocols(consumerProtocols *gxset.HashSet) {
 //	waitingProcessedTimeout(config.consumerConfig.ShutdownConfig)
 //}
 
-func waitingProcessedTimeout(shutdownConfig *ShutdownConfig) {
+func waitingProcessedTimeout(shutdownConfig *Config) {
 	timeout := shutdownConfig.GetStepTimeout()
 	if timeout <= 0 {
 		return

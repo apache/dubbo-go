@@ -45,8 +45,8 @@ type Config struct {
 	Connect_Timeout string `default:"100ms"  yaml:"connect_timeout" json:"connect_timeout,omitempty" property:"connect_timeout"`
 	ConnectTimeout  time.Duration
 
-	Registry   *registry.RegistryConfig            `yaml:"registry" json:"registry,omitempty" property:"registry"`
-	Registries map[string]*registry.RegistryConfig `default:"{}" yaml:"registries" json:"registries" property:"registries"`
+	Registry   *registry.Config            `yaml:"registry" json:"registry,omitempty" property:"registry"`
+	Registries map[string]*registry.Config `default:"{}" yaml:"registries" json:"registries" property:"registries"`
 
 	Request_Timeout string `yaml:"request_timeout" default:"5s" json:"request_timeout,omitempty" property:"request_timeout"`
 	RequestTimeout  time.Duration
@@ -56,7 +56,7 @@ type Config struct {
 	References     map[string]*reference.ReferenceConfig `yaml:"references" json:"references,omitempty" property:"references"`
 	ProtocolConf   interface{}                           `yaml:"protocol_conf" json:"protocol_conf,omitempty" property:"protocol_conf"`
 	FilterConf     interface{}                           `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf"`
-	ShutdownConfig *shutdown.ShutdownConfig              `yaml:"shutdown_conf" json:"shutdown_conf,omitempty" property:"shutdown_conf"`
+	ShutdownConfig *shutdown.Config                      `yaml:"shutdown_conf" json:"shutdown_conf,omitempty" property:"shutdown_conf"`
 	ConfigType     map[string]string                     `yaml:"config_type" json:"config_type,omitempty" property:"config_type"`
 }
 

@@ -19,6 +19,7 @@ package config
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/config/application"
+	"dubbo.apache.org/dubbo-go/v3/config/registry"
 	"dubbo.apache.org/dubbo-go/v3/config/root"
 	"fmt"
 	"github.com/go-playground/validator/v10"
@@ -28,10 +29,6 @@ import (
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/file"
 	"github.com/pkg/errors"
-	"os"
-	"path/filepath"
-	"runtime"
-	"strings"
 )
 
 import (
@@ -39,9 +36,11 @@ import (
 )
 
 var (
+	rootConfig *root.Config
 	// application config
 	applicationConfig *application.Config
-	rootConfig        *root.Config
+	//
+	registriesConfig map[string]*registry.Config
 	//consumerConfig *consumer.Config
 	//providerConfig *provider.ProviderConfig
 	//// baseConfig = providerConfig.BaseConfig or consumerConfig
@@ -58,27 +57,6 @@ var (
 	//uniformVirtualServiceConfigPath string
 	//uniformDestRuleConfigPath       string
 )
-
-type config struct {
-	// config file name default application
-	name string
-	// config file type default yaml
-	genre string
-	// config file path default ./conf
-	path string
-	// config file delim default .
-	delim string
-}
-
-type optionFunc func(*config)
-
-func (fn optionFunc) apply(vc *config) {
-	fn(vc)
-}
-
-type Option interface {
-	apply(vc *config)
-}
 
 func Load(opts ...Option) {
 	// pares CommandLine
@@ -106,10 +84,17 @@ func Load(opts ...Option) {
 	rootConfig.Validate = validator.New()
 }
 
+func check() error {
+	if rootConfig == nil {
+		return errors.New("execute the config.Load() method first")
+	}
+	return nil
+}
+
 // GetApplicationConfig get application config
 func GetApplicationConfig() (*application.Config, error) {
-	if rootConfig == nil {
-		return nil, nil
+	if err := check(); err != nil {
+		return nil, err
 	}
 	if applicationConfig != nil {
 		return applicationConfig, nil
@@ -140,64 +125,6 @@ func GetApplicationConfig() (*application.Config, error) {
 //	}
 //}
 
-// WithGenre set config genre
-func WithGenre(genre string) Option {
-	return optionFunc(func(conf *config) {
-		conf.genre = strings.ToLower(genre)
-	})
-}
-
-// WithPath set config path
-func WithPath(path string) Option {
-	return optionFunc(func(conf *config) {
-		conf.path = absolutePath(path)
-	})
-}
-
-// WithName set config name
-func WithName(name string) Option {
-	return optionFunc(func(conf *config) {
-		conf.name = name
-	})
-}
-
-func WithDelim(delim string) Option {
-	return optionFunc(func(conf *config) {
-		conf.delim = delim
-	})
-}
-
-// absolutePath get absolut path
-func absolutePath(inPath string) string {
-
-	if inPath == "$HOME" || strings.HasPrefix(inPath, "$HOME"+string(os.PathSeparator)) {
-		inPath = userHomeDir() + inPath[5:]
-	}
-
-	if filepath.IsAbs(inPath) {
-		return filepath.Clean(inPath)
-	}
-
-	p, err := filepath.Abs(inPath)
-	if err == nil {
-		return filepath.Clean(p)
-	}
-
-	return ""
-}
-
-//userHomeDir get gopath
-func userHomeDir() string {
-	if runtime.GOOS == "windows" {
-		home := os.Getenv("HOMEDRIVE") + os.Getenv("HOMEPATH")
-		if home == "" {
-			home = os.Getenv("USERPROFILE")
-		}
-		return home
-	}
-	return os.Getenv("HOME")
-}
-
 func getKoanf(conf *config) *koanf.Koanf {
 	var (
 		k   *koanf.Koanf
@@ -222,6 +149,38 @@ func getKoanf(conf *config) *koanf.Koanf {
 		panic(err)
 	}
 	return k
+}
+
+func GetRegistriesConfig() (map[string]*registry.Config, error) {
+	if err := check(); err != nil {
+		return nil, err
+	}
+	if registriesConfig != nil {
+		return registriesConfig, nil
+	}
+
+	registries := rootConfig.Registries
+
+	if len(registries) <= 0 {
+		reg := new(registry.Config)
+		if err := reg.SetDefault(); err != nil {
+			return nil, err
+		}
+		registries = make(map[string]*registry.Config, 1)
+		registries["default"] = reg
+		return registries, nil
+	}
+	for _, reg := range registries {
+		if err := reg.SetDefault(); err != nil {
+			return nil, err
+		}
+		reg.TranslateRegistryAddress()
+		if err := reg.Validate(rootConfig.Validate); err != nil {
+			return nil, err
+		}
+	}
+	registriesConfig = registries
+	return registries, nil
 }
 
 //

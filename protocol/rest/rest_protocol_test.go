@@ -75,7 +75,7 @@ func TestRestProtocolExport(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = common.ServiceMap.Register(url.Service(), url.Protocol, "", "", &UserProvider{})
 	assert.NoError(t, err)
-	con := provider.ProviderConfig{}
+	con := provider.Config{}
 	provider.SetProviderConfig(con)
 	configMap := make(map[string]*rest_config.RestServiceConfig)
 	methodConfigMap := make(map[string]*rest_config.RestMethodConfig)

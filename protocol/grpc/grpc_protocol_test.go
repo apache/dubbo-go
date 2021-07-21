@@ -39,7 +39,7 @@ import (
 )
 
 func doInitProvider() {
-	providerConfig := provider.ProviderConfig{
+	providerConfig := provider.Config{
 		BaseConfig: base.Config{
 			ApplicationConfig: &application.Config{
 				Organization: "dubbo_org",
@@ -58,7 +58,7 @@ func doInitProvider() {
 				Cluster:       "failover",
 				Loadbalance:   "random",
 				Retries:       "3",
-				Methods: []*method.MethodConfig{
+				Methods: []*method.Config{
 					{
 						Name:        "SayHello",
 						Retries:     "2",

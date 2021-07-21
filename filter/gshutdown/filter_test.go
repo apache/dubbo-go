@@ -57,7 +57,7 @@ func TestGenericFilterInvoke(t *testing.T) {
 	assert.NotNil(t, result)
 	assert.Nil(t, result.Error())
 
-	providerConfig.ShutdownConfig = &shutdown.ShutdownConfig{
+	providerConfig.ShutdownConfig = &shutdown.Config{
 		RejectRequest:        true,
 		RejectRequestHandler: "mock",
 	}

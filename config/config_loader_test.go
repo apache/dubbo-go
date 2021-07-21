@@ -18,7 +18,6 @@
 package config
 
 import (
-	"fmt"
 	"testing"
 )
 import (
@@ -29,20 +28,41 @@ const (
 	configPath = "./testdata/application.yaml"
 )
 
+func TestNoLoad(t *testing.T) {
+
+	application, err := GetApplicationConfig()
+	assert.NotNil(t, err)
+	assert.Nil(t, application)
+}
+
 func TestLoad(t *testing.T) {
 	Load(WithPath(configPath))
 
-	application, err := GetApplicationConfig()
-	fmt.Println(GetApplicationConfig())
-	assert.Nil(t, err)
+	t.Run("application", func(t *testing.T) {
+		application, err := GetApplicationConfig()
+		assert.Nil(t, err)
+		application, err = GetApplicationConfig()
+		assert.Nil(t, err)
 
-	assert.Equal(t, application.Organization, "dubbo.io")
-	assert.Equal(t, application.Name, "dubbo-go")
-	assert.Equal(t, application.Module, "local")
-	assert.Equal(t, application.Version, "1.0.0")
-	assert.Equal(t, application.Owner, "zhaoyunxing")
-	assert.Equal(t, application.Environment, "dev")
-	assert.Equal(t, application.MetadataType, "local")
+		assert.Equal(t, application.Organization, "dubbo.io")
+		assert.Equal(t, application.Name, "dubbo-go")
+		assert.Equal(t, application.Module, "local")
+		assert.Equal(t, application.Version, "1.0.0")
+		assert.Equal(t, application.Owner, "zhaoyunxing")
+		assert.Equal(t, application.Environment, "dev")
+		assert.Equal(t, application.MetadataType, "local")
+	})
+
+	t.Run("registries", func(t *testing.T) {
+		registries, err := GetRegistriesConfig()
+		registries, err = GetRegistriesConfig()
+		assert.Nil(t, err)
+		assert.Equal(t, 2, len(registries))
+		//address= nacos://127.0.0.1:8848 Translate Registry Address
+		assert.Equal(t, "nacos", registries["nacos"].Protocol)
+		assert.Equal(t, "10s", registries["zk"].Timeout)
+	})
+
 }
 
 //

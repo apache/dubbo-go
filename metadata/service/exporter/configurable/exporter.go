@@ -55,7 +55,7 @@ func (exporter *MetadataServiceExporter) Export(url *common.URL) error {
 		if url == nil || url.SubURL == nil {
 			return errors.New("metadata server url is nil, pls check your configuration")
 		}
-		serviceConfig.Protocols = map[string]*protocol.ProtocolConfig{
+		serviceConfig.Protocols = map[string]*protocol.Config{
 			constant.DEFAULT_PROTOCOL: {
 				Name: url.SubURL.Protocol,
 				Port: url.SubURL.Port,

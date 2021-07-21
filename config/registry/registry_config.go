@@ -18,6 +18,8 @@
 package registry
 
 import (
+	"errors"
+	"github.com/go-playground/validator/v10"
 	"net/url"
 	"strconv"
 	"strings"
@@ -33,14 +35,14 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 )
 
-// RegistryConfig is the configuration of the registry center
-type RegistryConfig struct {
-	Protocol   string `required:"true" yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
-	TimeoutStr string `yaml:"timeout" default:"5s" json:"timeout,omitempty" property:"timeout"` // unit: second
-	Group      string `yaml:"group" json:"group,omitempty" property:"group"`
-	TTL        string `yaml:"ttl" default:"10m" json:"ttl,omitempty" property:"ttl"` // unit: minute
+// Config is the configuration of the registry center
+type Config struct {
+	Protocol string `default:"zookeeper" validate:"required" yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
+	Timeout  string `default:"10s" yaml:"timeout" json:"timeout,omitempty" property:"timeout"` // unit: second
+	Group    string `yaml:"group" json:"group,omitempty" property:"group"`
+	TTL      string `default:"10m" yaml:"ttl" json:"ttl,omitempty" property:"ttl"` // unit: minute
 	// for registry
-	Address    string `yaml:"address" json:"address,omitempty" property:"address"`
+	Address    string `default:"127.0.0.1:2181" yaml:"address" json:"address,omitempty" property:"address"`
 	Username   string `yaml:"username" json:"username,omitempty" property:"username"`
 	Password   string `yaml:"password" json:"password,omitempty"  property:"password"`
 	Simplified bool   `yaml:"simplified" json:"simplified,omitempty"  property:"simplified"`
@@ -54,21 +56,39 @@ type RegistryConfig struct {
 	Params map[string]string `yaml:"params" json:"params,omitempty" property:"params"`
 }
 
-// UnmarshalYAML unmarshals the RegistryConfig by @unmarshal function
-func (c *RegistryConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
+// SetDefault set default value
+func (c *Config) SetDefault() error {
+	return defaults.Set(c)
+}
+
+// Validate valida value
+func (c *Config) Validate(valid *validator.Validate) error {
+	if err := valid.Struct(c); err != nil {
+		errs := err.(validator.ValidationErrors)
+		var slice []string
+		for _, msg := range errs {
+			slice = append(slice, msg.Error())
+		}
+		return errors.New(strings.Join(slice, ","))
+	}
+	return nil
+}
+
+// UnmarshalYAML unmarshal the RegistryConfig by @unmarshal function
+func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	if err := defaults.Set(c); err != nil {
 		return err
 	}
-	type plain RegistryConfig
+	type plain Config
 	return unmarshal((*plain)(c))
 }
 
-// nolint
-func (*RegistryConfig) Prefix() string {
-	return constant.RegistryConfigPrefix + "|" + constant.SingleRegistryConfigPrefix
+// Prefix dubbo.registries
+func (Config) Prefix() string {
+	return constant.RegistryConfigPrefix
 }
 
-func loadRegistries(targetRegistries string, registries map[string]*RegistryConfig, roleType common.RoleType) []*common.URL {
+func loadRegistries(targetRegistries string, registries map[string]*Config, roleType common.RoleType) []*common.URL {
 	var urls []*common.URL
 	trSlice := strings.Split(targetRegistries, ",")
 
@@ -95,7 +115,7 @@ func loadRegistries(targetRegistries string, registries map[string]*RegistryConf
 		if target {
 			addresses := strings.Split(registryConf.Address, ",")
 			address := addresses[0]
-			address = translateRegistryConf(address, registryConf)
+			address = registryConf.TranslateRegistryAddress()
 			url, err := common.NewURL(constant.REGISTRY_PROTOCOL+"://"+address,
 				common.WithParams(registryConf.getUrlMap(roleType)),
 				common.WithParamsValue("simplified", strconv.FormatBool(registryConf.Simplified)),
@@ -116,12 +136,12 @@ func loadRegistries(targetRegistries string, registries map[string]*RegistryConf
 	return urls
 }
 
-func (c *RegistryConfig) getUrlMap(roleType common.RoleType) url.Values {
+func (c *Config) getUrlMap(roleType common.RoleType) url.Values {
 	urlMap := url.Values{}
 	urlMap.Set(constant.GROUP_KEY, c.Group)
 	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(int(roleType)))
 	urlMap.Set(constant.REGISTRY_KEY, c.Protocol)
-	urlMap.Set(constant.REGISTRY_TIMEOUT_KEY, c.TimeoutStr)
+	urlMap.Set(constant.REGISTRY_TIMEOUT_KEY, c.Timeout)
 	// multi registry invoker weight label for load balance
 	urlMap.Set(constant.REGISTRY_KEY+"."+constant.REGISTRY_LABEL_KEY, strconv.FormatBool(true))
 	urlMap.Set(constant.REGISTRY_KEY+"."+constant.PREFERRED_KEY, strconv.FormatBool(c.Preferred))
@@ -134,16 +154,17 @@ func (c *RegistryConfig) getUrlMap(roleType common.RoleType) url.Values {
 	return urlMap
 }
 
-func translateRegistryConf(address string, registryConf *RegistryConfig) string {
-	if strings.Contains(address, "://") {
-		translatedUrl, err := url.Parse(address)
+//TranslateRegistryAddress translate registry address
+//  eg:address=nacos://127.0.0.1:8848 will return 127.0.0.1:8848 and protocol will set nacos
+func (c *Config) TranslateRegistryAddress() string {
+	if strings.Contains(c.Address, "://") {
+		translatedUrl, err := url.Parse(c.Address)
 		if err != nil {
 			logger.Errorf("The registry url is invalid, error: %#v", err)
 			panic(err)
 		}
-		address = translatedUrl.Host
-		registryConf.Protocol = translatedUrl.Scheme
-		registryConf.Address = strings.Replace(registryConf.Address, translatedUrl.Scheme+"://", "", -1)
+		c.Protocol = translatedUrl.Scheme
+		c.Address = strings.Replace(c.Address, translatedUrl.Scheme+"://", "", -1)
 	}
-	return address
+	return c.Address
 }

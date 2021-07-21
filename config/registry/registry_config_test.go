@@ -30,15 +30,15 @@ import (
 
 func TestLoadRegistries(t *testing.T) {
 	target := "shanghai1"
-	regs := map[string]*RegistryConfig{
+	regs := map[string]*Config{
 
 		"shanghai1": {
-			Protocol:   "mock",
-			TimeoutStr: "2s",
-			Group:      "shanghai_idc",
-			Address:    "127.0.0.2:2181,128.0.0.1:2181",
-			Username:   "user1",
-			Password:   "pwd1",
+			Protocol: "mock",
+			Timeout:  "2s",
+			Group:    "shanghai_idc",
+			Address:  "127.0.0.2:2181,128.0.0.1:2181",
+			Username: "user1",
+			Password: "pwd1",
 		},
 	}
 	urls := loadRegistries(target, regs, common.CONSUMER)
@@ -48,18 +48,28 @@ func TestLoadRegistries(t *testing.T) {
 
 func TestLoadRegistries1(t *testing.T) {
 	target := "shanghai1"
-	regs := map[string]*RegistryConfig{
+	regs := map[string]*Config{
 
 		"shanghai1": {
-			Protocol:   "mock",
-			TimeoutStr: "2s",
-			Group:      "shanghai_idc",
-			Address:    "127.0.0.2:2181",
-			Username:   "user1",
-			Password:   "pwd1",
+			Protocol: "mock",
+			Timeout:  "2s",
+			Group:    "shanghai_idc",
+			Address:  "127.0.0.2:2181",
+			Username: "user1",
+			Password: "pwd1",
 		},
 	}
 	urls := loadRegistries(target, regs, common.CONSUMER)
 	t.Logf("loadRegistries() = urls:%v", urls)
 	assert.Equal(t, "127.0.0.2:2181", urls[0].Location)
+}
+
+func TestTranslateRegistryAddress(t *testing.T) {
+	reg := new(Config)
+	reg.Address = "nacos://127.0.0.1:8848"
+
+	address := reg.TranslateRegistryAddress()
+
+	assert.Equal(t, "nacos", reg.Protocol)
+	assert.Equal(t, "127.0.0.1:8848", address)
 }
