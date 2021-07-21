@@ -46,8 +46,8 @@ type DubboLogger struct {
 }
 
 type Config struct {
-	LumberjackConfig *lumberjack.Logger	`yaml:"lumberjackConfig"`
-	ZapConfig *zap.Config	`yaml:"zapConfig"`
+	LumberjackConfig *lumberjack.Logger `yaml:"lumberjackConfig"`
+	ZapConfig        *zap.Config        `yaml:"zapConfig"`
 }
 
 // Logger is the interface for Logger types
@@ -117,7 +117,7 @@ func InitLog(logConfFile string) error {
 func InitLogger(conf *Config) {
 	var (
 		zapLogger *zap.Logger
-		config = &Config{}
+		config    = &Config{}
 	)
 	if conf == nil || conf.ZapConfig == nil {
 		zapLoggerEncoderConfig := zapcore.EncoderConfig{
