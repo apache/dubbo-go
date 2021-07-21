@@ -66,7 +66,7 @@ func Load(opts ...Option) {
 	//parseCommandLine()
 	// conf
 	conf := &config{
-		name:  "conf_application.yaml",
+		name:  "application.yaml",
 		genre: "yaml",
 		path:  "./conf",
 		delim: ".",
