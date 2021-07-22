@@ -168,7 +168,11 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 
 // get timeout including methodConfig
 func (di *DubboInvoker) getTimeout(invocation *invocation_impl.RPCInvocation) time.Duration {
-	timeout := di.GetURL().GetParam(strings.Join([]string{constant.METHOD_KEYS, invocation.MethodName(), constant.TIMEOUT_KEY}, "."), "")
+	methodName, ok := invocation.Arguments()[0].(string)
+	if !ok {
+		methodName = invocation.MethodName()
+	}
+	timeout := di.GetURL().GetParam(strings.Join([]string{constant.METHOD_KEYS, methodName, constant.TIMEOUT_KEY}, "."), "")
 	if len(timeout) != 0 {
 		if t, err := time.ParseDuration(timeout); err == nil {
 			// config timeout into attachment
