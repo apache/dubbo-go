@@ -57,7 +57,7 @@ var (
 	maxWait                         = 3
 	confRouterFile                  string
 	confBaseFile                    string
-	uniformVirturlServiceConfigPath string
+	uniformVirtualServiceConfigPath string
 	uniformDestRuleConfigPath       string
 )
 
@@ -73,7 +73,7 @@ func DefaultInit() []LoaderInitOption {
 	fs.StringVar(&confConFile, "conConf", os.Getenv(constant.CONF_CONSUMER_FILE_PATH), "default client config path")
 	fs.StringVar(&confProFile, "proConf", os.Getenv(constant.CONF_PROVIDER_FILE_PATH), "default server config path")
 	fs.StringVar(&confRouterFile, "rouConf", os.Getenv(constant.CONF_ROUTER_FILE_PATH), "default router config path")
-	fs.StringVar(&uniformVirturlServiceConfigPath, "vsConf", os.Getenv(constant.CONF_VIRTUAL_SERVICE_FILE_PATH), "default virtual service of uniform router config path")
+	fs.StringVar(&uniformVirtualServiceConfigPath, "vsConf", os.Getenv(constant.CONF_VIRTUAL_SERVICE_FILE_PATH), "default virtual service of uniform router config path")
 	fs.StringVar(&uniformDestRuleConfigPath, "drConf", os.Getenv(constant.CONF_DEST_RULE_FILE_PATH), "default destination rule of uniform router config path")
 	fs.Parse(os.Args[1:])
 	for len(fs.Args()) != 0 {
@@ -103,7 +103,7 @@ func setDefaultValue(target interface{}) {
 	switch target.(type) {
 	case *ProviderConfig:
 		p := target.(*ProviderConfig)
-		if len(p.Registries) == 0 {
+		if len(p.Registries) == 0 && p.Registry == nil {
 			p.Registries[constant.DEFAULT_REGISTRY_ZK_ID] = registryConfig
 		}
 		if len(p.Protocols) == 0 {
@@ -117,7 +117,7 @@ func setDefaultValue(target interface{}) {
 		}
 	default:
 		c := target.(*ConsumerConfig)
-		if len(c.Registries) == 0 {
+		if len(c.Registries) == 0 && c.Registry == nil {
 			c.Registries[constant.DEFAULT_REGISTRY_ZK_ID] = registryConfig
 		}
 		if c.ApplicationConfig == nil {
@@ -162,6 +162,13 @@ func loadConsumerConfig() {
 	if err := configCenterRefreshConsumer(); err != nil {
 		logger.Errorf("[consumer config center refresh] %#v", err)
 	}
+
+	// start the metadata report if config set
+	if err := startMetadataReport(GetApplicationConfig().MetadataType, GetBaseConfig().MetadataReportConfig); err != nil {
+		logger.Errorf("Provider starts metadata report error, and the error is {%#v}", err)
+		return
+	}
+
 	checkRegistries(consumerConfig.Registries, consumerConfig.Registry)
 	for key, ref := range consumerConfig.References {
 		if ref.Generic {
@@ -243,6 +250,13 @@ func loadProviderConfig() {
 	if err := configCenterRefreshProvider(); err != nil {
 		logger.Errorf("[provider config center refresh] %#v", err)
 	}
+
+	// start the metadata report if config set
+	if err := startMetadataReport(GetApplicationConfig().MetadataType, GetBaseConfig().MetadataReportConfig); err != nil {
+		logger.Errorf("Provider starts metadata report error, and the error is {%#v}", err)
+		return
+	}
+
 	checkRegistries(providerConfig.Registries, providerConfig.Registry)
 
 	// Write the current configuration to cache file.
@@ -300,8 +314,8 @@ func registerServiceInstance() {
 		}
 	}
 	// todo publish metadata to remote
-	if remoteMetadataServiceImpl, err := extension.GetRemoteMetadataService(); err == nil {
-		remoteMetadataServiceImpl.PublishMetadata(GetApplicationConfig().Name)
+	if remoteMetadataService, err := extension.GetRemoteMetadataService(); err == nil {
+		remoteMetadataService.PublishMetadata(GetApplicationConfig().Name)
 	}
 }
 
@@ -359,8 +373,8 @@ func selectMetadataServiceExportedURL() *common.URL {
 }
 
 func initRouter() {
-	if uniformDestRuleConfigPath != "" && uniformVirturlServiceConfigPath != "" {
-		if err := RouterInit(uniformVirturlServiceConfigPath, uniformDestRuleConfigPath); err != nil {
+	if uniformDestRuleConfigPath != "" && uniformVirtualServiceConfigPath != "" {
+		if err := RouterInit(uniformVirtualServiceConfigPath, uniformDestRuleConfigPath); err != nil {
 			logger.Warnf("[routerConfig init] %#v", err)
 		}
 	}
@@ -376,6 +390,7 @@ func LoadWithOptions(options ...LoaderInitOption) {
 	// register metadata info and service info
 	hessian.RegisterPOJO(&common.MetadataInfo{})
 	hessian.RegisterPOJO(&common.ServiceInfo{})
+	hessian.RegisterPOJO(&common.URL{})
 
 	for _, option := range options {
 		option.init()

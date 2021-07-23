@@ -38,7 +38,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
 	"dubbo.apache.org/dubbo-go/v3/metadata/service"
 	"dubbo.apache.org/dubbo-go/v3/metadata/service/exporter/configurable"
-	"dubbo.apache.org/dubbo-go/v3/metadata/service/inmemory"
+	"dubbo.apache.org/dubbo-go/v3/metadata/service/local"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/registry/event"
 	"dubbo.apache.org/dubbo-go/v3/registry/servicediscovery/synthesizer"
@@ -81,7 +81,7 @@ func newServiceDiscoveryRegistry(url *common.URL) (registry.Registry, error) {
 	subscribedServices := parseServices(url.GetParam(constant.SUBSCRIBED_SERVICE_NAMES_KEY, ""))
 	subscribedURLsSynthesizers := synthesizer.GetAllSynthesizer()
 	serviceNameMapping := extension.GetGlobalServiceNameMapping()
-	metaDataService, err := inmemory.GetInMemoryMetadataService()
+	metaDataService, err := local.GetLocalMetadataService()
 	if err != nil {
 		return nil, perrors.WithMessage(err, "could not init metadata service")
 	}
@@ -330,7 +330,7 @@ var (
 // TODO (move to somewhere)
 func tryInitMetadataService(url *common.URL) {
 
-	ms, err := inmemory.GetInMemoryMetadataService()
+	ms, err := local.GetLocalMetadataService()
 	if err != nil {
 		logger.Errorf("could not init metadata service", err)
 	}

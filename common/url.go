@@ -125,6 +125,11 @@ type URL struct {
 	SubURL *URL
 }
 
+// JavaClassName POJO for URL
+func (c *URL) JavaClassName() string {
+	return "org.apache.dubbo.common.URL"
+}
+
 // Option accepts URL
 // Option will define a function of handling URL
 type Option func(*URL)
@@ -265,10 +270,13 @@ func NewURL(urlString string, opts ...Option) (*URL, error) {
 	s.Password, _ = serviceURL.User.Password()
 	s.Location = serviceURL.Host
 	s.Path = serviceURL.Path
-	if strings.Contains(s.Location, ":") {
-		s.Ip, s.Port, err = net.SplitHostPort(s.Location)
-		if err != nil {
-			return &s, perrors.Errorf("net.SplitHostPort(URL.Host{%s}), error{%v}", s.Location, err)
+	for _, location := range strings.Split(s.Location, ",") {
+		if strings.Contains(location, ":") {
+			s.Ip, s.Port, err = net.SplitHostPort(location)
+			if err != nil {
+				return &s, perrors.Errorf("net.SplitHostPort(url.Host{%s}), error{%v}", s.Location, err)
+			}
+			break
 		}
 	}
 	for _, opt := range opts {

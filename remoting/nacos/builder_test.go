@@ -18,6 +18,8 @@
 package nacos
 
 import (
+	"net/url"
+	"strconv"
 	"testing"
 )
 
@@ -26,11 +28,15 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
 )
 
 func TestNewNacosClient(t *testing.T) {
 	rc := &config.RemoteConfig{}
+	rc.Protocol = "nacos"
+	rc.Username = "nacos"
 	client, err := NewNacosClient(rc)
 
 	// address is nil
@@ -48,4 +54,46 @@ func TestNewNacosClient(t *testing.T) {
 	client, err = NewNacosClient(rc)
 	assert.NotNil(t, client)
 	assert.Nil(t, err)
+}
+
+func TestGetNacosConfig(t *testing.T) {
+	regurl := getRegUrl()
+	sc, cc, err := GetNacosConfig(regurl)
+
+	assert.Nil(t, err)
+	assert.NotNil(t, sc)
+	assert.NotNil(t, cc)
+	assert.Equal(t, cc.TimeoutMs, uint64(5000))
+}
+
+func TestNewNacosConfigClient(t *testing.T) {
+
+	regurl := getRegUrl()
+	client, err := NewNacosConfigClientByUrl(regurl)
+
+	assert.Nil(t, err)
+	assert.NotNil(t, client)
+}
+
+func TestNewNacosClientByUrl(t *testing.T) {
+	regurl := getRegUrl()
+	client, err := NewNacosClientByUrl(regurl)
+
+	assert.Nil(t, err)
+	assert.NotNil(t, client)
+}
+
+func getRegUrl() *common.URL {
+
+	regurlMap := url.Values{}
+	regurlMap.Set(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER))
+	regurlMap.Set(constant.NACOS_NOT_LOAD_LOCAL_CACHE, "true")
+	// regurlMap.Set(constant.NACOS_USERNAME, "nacos")
+	// regurlMap.Set(constant.NACOS_PASSWORD, "nacos")
+	regurlMap.Set(constant.NACOS_NAMESPACE_ID, "nacos")
+	regurlMap.Set(constant.REGISTRY_TIMEOUT_KEY, "5s")
+
+	regurl, _ := common.NewURL("registry://console.nacos.io:80", common.WithParams(regurlMap))
+
+	return regurl
 }

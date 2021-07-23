@@ -18,6 +18,7 @@
 package config
 
 import (
+	"net/url"
 	"time"
 )
 
@@ -27,6 +28,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 )
 
@@ -35,12 +37,17 @@ import (
 // so that other module, like config center, registry could reuse the config
 // but now, only metadata report, metadata service, service discovery use this structure
 type RemoteConfig struct {
-	Protocol   string            `yaml:"protocol"  json:"protocol,omitempty"`
-	Address    string            `yaml:"address" json:"address,omitempty"`
-	TimeoutStr string            `default:"5s" yaml:"timeout" json:"timeout,omitempty"`
+	Protocol   string            `yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
+	Address    string            `yaml:"address" json:"address,omitempty" property:"address"`
+	TimeoutStr string            `default:"5s" yaml:"timeout" json:"timeout,omitempty" property:"timeout"`
 	Username   string            `yaml:"username" json:"username,omitempty" property:"username"`
 	Password   string            `yaml:"password" json:"password,omitempty"  property:"password"`
 	Params     map[string]string `yaml:"params" json:"params,omitempty"`
+}
+
+// Prefix
+func (c *RemoteConfig) Prefix() string {
+	return constant.RemotePrefix
 }
 
 // Timeout return timeout duration.
@@ -49,7 +56,8 @@ func (rc *RemoteConfig) Timeout() time.Duration {
 	if res, err := time.ParseDuration(rc.TimeoutStr); err == nil {
 		return res
 	}
-	logger.Errorf("Could not parse the timeout string to Duration: %s, the default value will be returned", rc.TimeoutStr)
+	logger.Errorf("Could not parse the timeout string to Duration: %s, the default value will be returned",
+		rc.TimeoutStr)
 	return 5 * time.Second
 }
 
@@ -63,14 +71,29 @@ func (rc *RemoteConfig) GetParam(key string, def string) string {
 	return param
 }
 
-func (rc *RemoteConfig) toURL() (*common.URL, error) {
+// ToURL config to url
+func (rc *RemoteConfig) ToURL() (*common.URL, error) {
 	if len(rc.Protocol) == 0 {
 		return nil, perrors.Errorf("Must provide protocol in RemoteConfig.")
 	}
 	return common.NewURL(rc.Address,
+		common.WithProtocol(rc.Protocol),
 		common.WithUsername(rc.Username),
 		common.WithPassword(rc.Password),
 		common.WithLocation(rc.Address),
-		common.WithProtocol(rc.Protocol),
+		common.WithParams(rc.getUrlMap()),
 	)
+}
+
+// getUrlMap get url map
+func (rc *RemoteConfig) getUrlMap() url.Values {
+	urlMap := url.Values{}
+	urlMap.Set(constant.CONFIG_USERNAME_KEY, rc.Username)
+	urlMap.Set(constant.CONFIG_PASSWORD_KEY, rc.Password)
+	urlMap.Set(constant.CONFIG_TIMEOUT_KEY, rc.TimeoutStr)
+
+	for key, val := range rc.Params {
+		urlMap.Set(key, val)
+	}
+	return urlMap
 }

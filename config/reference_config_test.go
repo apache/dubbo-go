@@ -385,7 +385,7 @@ func (p *mockRegistryProtocol) GetRegistries() []registry.Registry {
 
 func mockFilter() {
 	consumerFiler := &mockShutdownFilter{}
-	extension.SetFilter(constant.CONSUMER_SHUTDOWN_FILTER, func() filter.Filter {
+	extension.SetFilter(constant.GracefulShutdownConsumerFilterKey, func() filter.Filter {
 		return consumerFiler
 	})
 }

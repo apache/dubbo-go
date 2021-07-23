@@ -30,6 +30,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/config"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/common/yaml"
 )
@@ -39,8 +40,8 @@ type BaseConfig struct {
 	ConfigCenterConfig *ConfigCenterConfig `yaml:"config_center" json:"config_center,omitempty"`
 
 	// since 1.5.0 version
-	Remotes              map[string]*RemoteConfig           `yaml:"remote" json:"remote,omitempty"`
-	ServiceDiscoveries   map[string]*ServiceDiscoveryConfig `yaml:"service_discovery" json:"service_discovery,omitempty"`
+	Remotes              map[string]*RemoteConfig           `yaml:"remote" json:"remote,omitempty" property:"remote"`
+	ServiceDiscoveries   map[string]*ServiceDiscoveryConfig `yaml:"service_discovery" json:"service_discovery,omitempty" property:"service_discovery"`
 	MetadataReportConfig *MetadataReportConfig              `yaml:"metadata_report" json:"metadata_report,omitempty" property:"metadata_report"`
 
 	// application config
@@ -54,6 +55,10 @@ type BaseConfig struct {
 
 	// cache file used to store the current used configurations.
 	CacheFile string `yaml:"cache_file" json:"cache_file,omitempty" property:"cache_file"`
+}
+
+func (c *BaseConfig) Prefix() string {
+	return constant.ConfigBasePrefix
 }
 
 func BaseInit(confBaseFile string) error {
@@ -224,8 +229,6 @@ func setFieldValue(val reflect.Value, id reflect.Value, config *config.InmemoryC
 
 					}
 
-					// iter := f.MapRange()
-
 					for _, k := range f.MapKeys() {
 						v := f.MapIndex(k)
 						switch v.Kind() {
@@ -244,7 +247,6 @@ func setFieldValue(val reflect.Value, id reflect.Value, config *config.InmemoryC
 					}
 				}
 				setBaseValue(f)
-
 			}
 		}
 	}
@@ -297,9 +299,7 @@ func initializeStruct(t reflect.Type, v reflect.Value) {
 				f.Set(reflect.MakeChan(ft.Type, 0))
 			}
 		case reflect.Struct:
-			if f.IsNil() {
-				initializeStruct(ft.Type, f)
-			}
+			initializeStruct(ft.Type, f)
 		case reflect.Ptr:
 			if f.IsNil() {
 				fv := reflect.New(ft.Type.Elem())

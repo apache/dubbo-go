@@ -18,7 +18,6 @@
 package config
 
 import (
-	"context"
 	"time"
 )
 
@@ -26,9 +25,6 @@ import (
 const (
 	// defaultZKAddr is the default registry address of zookeeper
 	defaultZKAddr = "127.0.0.1:2181"
-
-	// defaultConsulAddr is the default registry address of consul
-	defaultConsulAddr = "127.0.0.1:8500"
 
 	// defaultNacosAddr is the default registry address of nacos
 	defaultNacosAddr = "127.0.0.1:8848"
@@ -40,7 +36,6 @@ const (
 // NewDefaultRegistryConfig New default registry config
 // the input @protocol can only be:
 // "zookeeper" with default addr "127.0.0.1:2181"
-// "consul" with default addr "127.0.0.1:8500"
 // "nacos" with default addr "127.0.0.1:8848"
 func NewDefaultRegistryConfig(protocol string) *RegistryConfig {
 	switch protocol {
@@ -48,12 +43,6 @@ func NewDefaultRegistryConfig(protocol string) *RegistryConfig {
 		return &RegistryConfig{
 			Protocol:   protocol,
 			Address:    defaultZKAddr,
-			TimeoutStr: defaultRegistryTimeout,
-		}
-	case "consul":
-		return &RegistryConfig{
-			Protocol:   protocol,
-			Address:    defaultConsulAddr,
 			TimeoutStr: defaultRegistryTimeout,
 		}
 	case "nacos":
@@ -259,7 +248,7 @@ type ReferenceConfigOpt func(config *ReferenceConfig) *ReferenceConfig
 
 // NewDefaultReferenceConfig returns empty ReferenceConfig
 func NewDefaultReferenceConfig() *ReferenceConfig {
-	newReferenceConfig := NewReferenceConfig("", context.Background())
+	newReferenceConfig := NewReferenceConfig("")
 	newReferenceConfig.Methods = make([]*MethodConfig, 0, 8)
 	newReferenceConfig.Params = make(map[string]string, 8)
 	return newReferenceConfig
@@ -267,11 +256,11 @@ func NewDefaultReferenceConfig() *ReferenceConfig {
 
 // NewReferenceConfigByAPI returns ReferenceConfig with given @opts
 func NewReferenceConfigByAPI(opts ...ReferenceConfigOpt) *ReferenceConfig {
-	newreferenceConfig := NewDefaultReferenceConfig()
+	newReferenceConfig := NewDefaultReferenceConfig()
 	for _, v := range opts {
-		v(newreferenceConfig)
+		v(newReferenceConfig)
 	}
-	return newreferenceConfig
+	return newReferenceConfig
 }
 
 // WithReferenceRegistry returns ReferenceConfigOpt with given registryKey: @registry
@@ -349,8 +338,8 @@ func NewProviderConfig(opts ...ProviderConfigOpt) *ProviderConfig {
 	return newConfig
 }
 
-// WithPrividerRegistryConfig returns ProviderConfigOpt with given registry config: @regConfig
-func WithPrividerRegistryConfig(regConfig *RegistryConfig) ProviderConfigOpt {
+// WithProviderRegistryConfig returns ProviderConfigOpt with given registry config: @regConfig
+func WithProviderRegistryConfig(regConfig *RegistryConfig) ProviderConfigOpt {
 	return func(config *ProviderConfig) *ProviderConfig {
 		config.Registries[regConfig.Protocol] = regConfig
 		return config
@@ -398,7 +387,7 @@ type ServiceConfigOpt func(config *ServiceConfig) *ServiceConfig
 
 // NewDefaultServiceConfig returns default ServiceConfig
 func NewDefaultServiceConfig() *ServiceConfig {
-	newServiceConfig := NewServiceConfig("", context.Background())
+	newServiceConfig := NewServiceConfig("")
 	newServiceConfig.Params = make(map[string]string)
 	newServiceConfig.Methods = make([]*MethodConfig, 0, 8)
 	return newServiceConfig
@@ -498,7 +487,7 @@ func NewDefaultApplicationConfig() *ApplicationConfig {
 }
 
 // NewApplicationConfig is named as api, because there is NewServiceConfig func already declared
-// NewApplicationConfig returns ApplicationConfig wigh default application config
+// NewApplicationConfig returns ApplicationConfig with default application config
 func NewApplicationConfig(opts ...ApplicationConfigOpt) *ApplicationConfig {
 	defaultServiceConfig := NewDefaultApplicationConfig()
 	for _, v := range opts {
@@ -547,7 +536,7 @@ func WithAppVersion(version string) ApplicationConfigOpt {
 	}
 }
 
-// WithAppEnvironment returns ApplicationConfigOpt wigh given environment @env
+// WithAppEnvironment returns ApplicationConfigOpt with given environment @env
 func WithAppEnvironment(env string) ApplicationConfigOpt {
 	return func(config *ApplicationConfig) *ApplicationConfig {
 		config.Environment = env

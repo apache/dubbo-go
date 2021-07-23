@@ -25,4 +25,5 @@ const (
 const (
 	HESSIAN2_SERIALIZATION = "hessian2"
 	PROTOBUF_SERIALIZATION = "protobuf"
+	MSGPACK_SERIALIZATION  = "msgpack"
 )

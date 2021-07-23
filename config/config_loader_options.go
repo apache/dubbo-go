@@ -18,9 +18,11 @@
 package config
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"log"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
 )
 
 type LoaderInitOption interface {
@@ -131,12 +133,6 @@ func BaseInitOption(cbf string) LoaderInitOption {
 		func() {
 			// init the global event dispatcher
 			extension.SetAndInitGlobalDispatcher(GetBaseConfig().EventDispatcherType)
-
-			// start the metadata report if config set
-			if err := startMetadataReport(GetApplicationConfig().MetadataType, GetBaseConfig().MetadataReportConfig); err != nil {
-				logger.Errorf("Provider starts metadata report error, and the error is {%#v}", err)
-				return
-			}
 		},
 	}
 }

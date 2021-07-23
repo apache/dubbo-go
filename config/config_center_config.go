@@ -44,21 +44,20 @@ import (
 //
 // ConfigCenter has currently supported Zookeeper, Nacos, Etcd, Consul, Apollo
 type ConfigCenterConfig struct {
-	// context       context.Context
-	Protocol      string `required:"true"  yaml:"protocol"  json:"protocol,omitempty"`
-	Address       string `yaml:"address" json:"address,omitempty"`
-	Cluster       string `yaml:"cluster" json:"cluster,omitempty"`
-	Group         string `default:"dubbo" yaml:"group" json:"group,omitempty"`
-	Username      string `yaml:"username" json:"username,omitempty"`
-	Password      string `yaml:"password" json:"password,omitempty"`
-	LogDir        string `yaml:"log_dir" json:"log_dir,omitempty"`
-	ConfigFile    string `default:"dubbo.properties" yaml:"config_file"  json:"config_file,omitempty"`
-	Namespace     string `default:"dubbo" yaml:"namespace"  json:"namespace,omitempty"`
-	AppConfigFile string `default:"dubbo.properties" yaml:"app_config_file"  json:"app_config_file,omitempty"`
-	AppId         string `default:"dubbo" yaml:"app_id"  json:"app_id,omitempty"`
-	TimeoutStr    string `yaml:"timeout"  json:"timeout,omitempty"`
-	RemoteRef     string `required:"false"  yaml:"remote_ref"  json:"remote_ref,omitempty"`
-	// timeout       time.Duration
+	Protocol      string            `required:"true"  yaml:"protocol"  json:"protocol,omitempty"`
+	Address       string            `yaml:"address" json:"address,omitempty"`
+	Cluster       string            `yaml:"cluster" json:"cluster,omitempty"`
+	Group         string            `default:"dubbo" yaml:"group" json:"group,omitempty"`
+	Username      string            `yaml:"username" json:"username,omitempty"`
+	Password      string            `yaml:"password" json:"password,omitempty"`
+	LogDir        string            `yaml:"log_dir" json:"log_dir,omitempty"`
+	ConfigFile    string            `default:"dubbo.properties" yaml:"config_file"  json:"config_file,omitempty"`
+	Namespace     string            `default:"dubbo" yaml:"namespace"  json:"namespace,omitempty"`
+	AppConfigFile string            `default:"dubbo.properties" yaml:"app_config_file"  json:"app_config_file,omitempty"`
+	AppID         string            `default:"dubbo" yaml:"app_id"  json:"app_id,omitempty"`
+	TimeoutStr    string            `yaml:"timeout"  json:"timeout,omitempty"`
+	RemoteRef     string            `required:"false"  yaml:"remote_ref"  json:"remote_ref,omitempty"`
+	Params        map[string]string `yaml:"params"  json:"parameters,omitempty"`
 }
 
 // UnmarshalYAML unmarshals the ConfigCenterConfig by @unmarshal function
@@ -76,8 +75,15 @@ func (c *ConfigCenterConfig) GetUrlMap() url.Values {
 	urlMap.Set(constant.CONFIG_NAMESPACE_KEY, c.Namespace)
 	urlMap.Set(constant.CONFIG_GROUP_KEY, c.Group)
 	urlMap.Set(constant.CONFIG_CLUSTER_KEY, c.Cluster)
-	urlMap.Set(constant.CONFIG_APP_ID_KEY, c.AppId)
+	urlMap.Set(constant.CONFIG_APP_ID_KEY, c.AppID)
 	urlMap.Set(constant.CONFIG_LOG_DIR_KEY, c.LogDir)
+	urlMap.Set(constant.CONFIG_USERNAME_KEY, c.Username)
+	urlMap.Set(constant.CONFIG_PASSWORD_KEY, c.Password)
+	urlMap.Set(constant.CONFIG_TIMEOUT_KEY, c.TimeoutStr)
+
+	for key, val := range c.Params {
+		urlMap.Set(key, val)
+	}
 	return urlMap
 }
 
@@ -86,22 +92,22 @@ type configCenter struct{}
 // toURL will compatible with baseConfig.ConfigCenterConfig.Address and baseConfig.ConfigCenterConfig.RemoteRef before 1.6.0
 // After 1.6.0 will not compatible, only baseConfig.ConfigCenterConfig.RemoteRef
 func (b *configCenter) toURL(baseConfig BaseConfig) (*common.URL, error) {
-	if len(baseConfig.ConfigCenterConfig.Address) > 0 {
-		return common.NewURL(baseConfig.ConfigCenterConfig.Address,
-			common.WithProtocol(baseConfig.ConfigCenterConfig.Protocol), common.WithParams(baseConfig.ConfigCenterConfig.GetUrlMap()))
-	}
-
 	remoteRef := baseConfig.ConfigCenterConfig.RemoteRef
+	// if set remote ref use remote
+	if len(remoteRef) <= 0 {
+		return common.NewURL(baseConfig.ConfigCenterConfig.Address,
+			common.WithProtocol(baseConfig.ConfigCenterConfig.Protocol),
+			common.WithParams(baseConfig.ConfigCenterConfig.GetUrlMap()))
+	}
 	rc, ok := baseConfig.GetRemoteConfig(remoteRef)
-
 	if !ok {
 		return nil, perrors.New("Could not find out the remote ref config, name: " + remoteRef)
 	}
-
-	newURL, err := rc.toURL()
-	if err == nil {
-		newURL.SetParams(baseConfig.ConfigCenterConfig.GetUrlMap())
+	// set protocol if remote not set
+	if len(rc.Protocol) <= 0 {
+		rc.Protocol = baseConfig.ConfigCenterConfig.Protocol
 	}
+	newURL, err := rc.ToURL()
 	return newURL, err
 }
 
@@ -126,8 +132,10 @@ func (b *configCenter) prepareEnvironment(baseConfig BaseConfig, configCenterUrl
 		logger.Errorf("Get dynamic configuration error , error message is %v", err)
 		return perrors.WithStack(err)
 	}
-	config.GetEnvInstance().SetDynamicConfiguration(dynamicConfig)
-	content, err := dynamicConfig.GetProperties(baseConfig.ConfigCenterConfig.ConfigFile, config_center.WithGroup(baseConfig.ConfigCenterConfig.Group))
+	envInstance := config.GetEnvInstance()
+	envInstance.SetDynamicConfiguration(dynamicConfig)
+	content, err := dynamicConfig.GetProperties(baseConfig.ConfigCenterConfig.ConfigFile,
+		config_center.WithGroup(baseConfig.ConfigCenterConfig.Group))
 	if err != nil {
 		logger.Errorf("Get config content in dynamic configuration error , error message is %v", err)
 		return perrors.WithStack(err)
@@ -157,7 +165,7 @@ func (b *configCenter) prepareEnvironment(baseConfig BaseConfig, configCenterUrl
 	if err != nil {
 		return perrors.WithStack(err)
 	}
-	config.GetEnvInstance().UpdateExternalConfigMap(mapContent)
+	envInstance.UpdateExternalConfigMap(mapContent)
 
 	// appGroup config file
 	if len(appContent) != 0 {
@@ -165,7 +173,7 @@ func (b *configCenter) prepareEnvironment(baseConfig BaseConfig, configCenterUrl
 		if err != nil {
 			return perrors.WithStack(err)
 		}
-		config.GetEnvInstance().UpdateAppExternalConfigMap(appMapContent)
+		envInstance.UpdateAppExternalConfigMap(appMapContent)
 	}
 
 	return nil

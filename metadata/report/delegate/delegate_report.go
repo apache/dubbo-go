@@ -148,13 +148,13 @@ func NewMetadataReport() (*MetadataReport, error) {
 	return bmr, nil
 }
 
-// GetAppMetadata delegate get metadata info
+// PublishAppMetadata delegate publish metadata info
 func (mr *MetadataReport) PublishAppMetadata(identifier *identifier.SubscriberMetadataIdentifier, info *common.MetadataInfo) error {
 	report := instance.GetMetadataReportInstance()
 	return report.PublishAppMetadata(identifier, info)
 }
 
-// PublishAppMetadata delegate publish metadata info
+// GetAppMetadata delegate get metadata info
 func (mr *MetadataReport) GetAppMetadata(identifier *identifier.SubscriberMetadataIdentifier) (*common.MetadataInfo, error) {
 	report := instance.GetMetadataReportInstance()
 	return report.GetAppMetadata(identifier)

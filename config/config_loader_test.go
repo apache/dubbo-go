@@ -18,6 +18,7 @@
 package config
 
 import (
+	"context"
 	"path/filepath"
 	"sort"
 	"sync"
@@ -41,7 +42,9 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/common/proxy/proxy_factory"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
+	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/metadata/service"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
@@ -74,6 +77,13 @@ func TestConfigLoader(t *testing.T) {
 }
 
 func TestLoad(t *testing.T) {
+	extension.SetFilter(constant.GracefulShutdownConsumerFilterKey, func() filter.Filter {
+		return &mockGracefulShutdownFilter{}
+	})
+	extension.SetFilter(constant.GracefulShutdownProviderFilterKey, func() filter.Filter {
+		return &mockGracefulShutdownFilter{}
+	})
+
 	doInitConsumer()
 	doInitProvider()
 
@@ -445,30 +455,30 @@ func (m *mockMetadataService) Version() (string, error) {
 	panic("implement me")
 }
 
-func (mts *mockMetadataService) addURL(targetMap *sync.Map, url *common.URL) bool {
+func (m *mockMetadataService) addURL(targetMap *sync.Map, url *common.URL) bool {
 	var (
 		urlSet interface{}
 		loaded bool
 	)
 	logger.Debug(url.ServiceKey())
 	if urlSet, loaded = targetMap.LoadOrStore(url.ServiceKey(), skip.New(uint64(0))); loaded {
-		mts.lock.RLock()
+		m.lock.RLock()
 		wantedUrl := urlSet.(*skip.SkipList).Get(url)
 		if len(wantedUrl) > 0 && wantedUrl[0] != nil {
-			mts.lock.RUnlock()
+			m.lock.RUnlock()
 			return false
 		}
-		mts.lock.RUnlock()
+		m.lock.RUnlock()
 	}
-	mts.lock.Lock()
+	m.lock.Lock()
 	// double chk
 	wantedUrl := urlSet.(*skip.SkipList).Get(url)
 	if len(wantedUrl) > 0 && wantedUrl[0] != nil {
-		mts.lock.Unlock()
+		m.lock.Unlock()
 		return false
 	}
 	urlSet.(*skip.SkipList).Insert(url)
-	mts.lock.Unlock()
+	m.lock.Unlock()
 	return true
 }
 
@@ -519,7 +529,7 @@ func (mr *mockServiceDiscoveryRegistry) UnSubscribe(*common.URL, registry.Notify
 	panic("implement me")
 }
 
-func (s *mockServiceDiscoveryRegistry) GetServiceDiscovery() registry.ServiceDiscovery {
+func (mr *mockServiceDiscoveryRegistry) GetServiceDiscovery() registry.ServiceDiscovery {
 	return &mockServiceDiscovery{}
 }
 
@@ -595,4 +605,18 @@ func ConvertURLArrToIntfArr(urls []*common.URL) []interface{} {
 		res = append(res, u.String())
 	}
 	return res
+}
+
+type mockGracefulShutdownFilter struct{}
+
+func (f *mockGracefulShutdownFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+	panic("implement me")
+}
+
+func (f *mockGracefulShutdownFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+	panic("implement me")
+}
+
+func (f *mockGracefulShutdownFilter) Set(name string, config interface{}) {
+	return
 }
