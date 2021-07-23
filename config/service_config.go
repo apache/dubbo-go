@@ -20,7 +20,6 @@ package config
 import (
 	"container/list"
 	"dubbo.apache.org/dubbo-go/v3/config/method"
-	protocol2 "dubbo.apache.org/dubbo-go/v3/config/protocol"
 	"fmt"
 	"net/url"
 	"strconv"
@@ -74,7 +73,7 @@ type ServiceConfig struct {
 	Tag                         string                 `yaml:"tag" json:"tag,omitempty" property:"tag"`
 	GrpcMaxMessageSize          int                    `default:"4" yaml:"max_message_size" json:"max_message_size,omitempty"`
 
-	Protocols     map[string]*protocol2.Config
+	Protocols     map[string]*ProtocolConfig
 	unexported    *atomic.Bool
 	exported      *atomic.Bool
 	export        bool // a flag to control whether the current service should export or not
@@ -127,7 +126,7 @@ func (c *ServiceConfig) IsExport() bool {
 }
 
 // Get Random Port
-func getRandomPort(protocolConfigs []*protocol2.Config) *list.List {
+func getRandomPort(protocolConfigs []*ProtocolConfig) *list.List {
 	ports := list.New()
 	for _, proto := range protocolConfigs {
 		if len(proto.Port) > 0 {

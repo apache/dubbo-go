@@ -19,7 +19,6 @@ package configurable
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/config"
-	"dubbo.apache.org/dubbo-go/v3/config/protocol"
 	"errors"
 	"sync"
 )
@@ -54,7 +53,7 @@ func (exporter *MetadataServiceExporter) Export(url *common.URL) error {
 		if url == nil || url.SubURL == nil {
 			return errors.New("metadata server url is nil, pls check your configuration")
 		}
-		serviceConfig.Protocols = map[string]*protocol.Config{
+		serviceConfig.Protocols = map[string]*config.ProtocolConfig{
 			constant.DEFAULT_PROTOCOL: {
 				Name: url.SubURL.Protocol,
 				Port: url.SubURL.Port,

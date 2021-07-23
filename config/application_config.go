@@ -15,12 +15,14 @@
  * limitations under the License.
  */
 
-package application
+package config
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"errors"
 	"github.com/creasty/defaults"
 	"github.com/go-playground/validator/v10"
+	"github.com/mitchellh/mapstructure"
 	"strings"
 )
 
@@ -28,8 +30,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
-// Config is a configuration for current application, whether the application is a provider or a consumer
-type Config struct {
+// ApplicationConfig is a configuration for current application, whether the application is a provider or a consumer
+type ApplicationConfig struct {
 	Organization string `default:"dubbo.io" yaml:"organization" json:"organization,omitempty" property:"organization"`
 	Name         string `default:"dubbo.io" yaml:"name" json:"name,omitempty" property:"name"`
 	Module       string `default:"sample" yaml:"module" json:"module,omitempty" property:"module"`
@@ -41,16 +43,12 @@ type Config struct {
 }
 
 // Prefix dubbo.application
-func (Config) Prefix() string {
+func (ApplicationConfig) Prefix() string {
 	return constant.DUBBO + ".application"
 }
 
-func (c *Config) SetDefault() error {
-	return defaults.Set(c)
-}
-
-func (c *Config) Validate(valid *validator.Validate) error {
-	if err := valid.Struct(c); err != nil {
+func (ac *ApplicationConfig) validate() error {
+	if err := validate.Struct(ac); err != nil {
 		errs := err.(validator.ValidationErrors)
 		var slice []string
 		for _, msg := range errs {
@@ -61,11 +59,47 @@ func (c *Config) Validate(valid *validator.Validate) error {
 	return nil
 }
 
-// UnmarshalYAML unmarshal the Config by @unmarshal function
-func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	if err := defaults.Set(c); err != nil {
+//GetApplicationConfig get application config
+func GetApplicationConfig() *ApplicationConfig {
+	if err := check(); err != nil {
+		return nil
+	}
+
+	application := rootConfig.Application
+	if application != nil {
+		if err := defaults.Set(application); err != nil {
+			logger.Error(err)
+		}
+		if err := application.validate(); err != nil {
+			logger.Error(err)
+		}
+		return application
+	}
+
+	application = new(ApplicationConfig)
+	if value := viper.Get(application.Prefix()); value != nil {
+		// map to struct
+		if err := mapstructure.Decode(value, application); err != nil {
+			logger.Error(err)
+		}
+	}
+
+	// set defaults
+	if err := defaults.Set(application); err != nil {
+		logger.Error(err)
+	}
+	// validate values
+	if err := application.validate(); err != nil {
+		logger.Error(err)
+	}
+	return application
+}
+
+// UnmarshalYAML unmarshal the ApplicationConfig by @unmarshal function
+func (ac *ApplicationConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	if err := defaults.Set(ac); err != nil {
 		return err
 	}
-	type plain Config
-	return unmarshal((*plain)(c))
+	type plain ApplicationConfig
+	return unmarshal((*plain)(ac))
 }

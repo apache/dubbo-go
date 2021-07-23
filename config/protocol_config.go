@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 
-package protocol
+package config
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/config"
-	"github.com/knadh/koanf"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	"github.com/creasty/defaults"
 	"strings"
 )
 
@@ -27,34 +27,36 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
-// Config is protocol configuration
-type Config struct {
-	Name string `required:"true" yaml:"name"  json:"name,omitempty" property:"name"`
-	Ip   string `required:"true" yaml:"ip"  json:"ip,omitempty" property:"ip"`
-	Port string `required:"true" yaml:"port"  json:"port,omitempty" property:"port"`
+// ProtocolConfig is protocol configuration
+type ProtocolConfig struct {
+	Name string `default:"dubbo" yaml:"name"  json:"name,omitempty" property:"name"`
+	Ip   string `default:"127.0.0.1" yaml:"ip"  json:"ip,omitempty" property:"ip"`
+	Port string `default:"20000" yaml:"port"  json:"port,omitempty" property:"port"`
 }
 
 // Prefix dubbo.protocols
-func (Config) Prefix() string {
+func (ProtocolConfig) Prefix() string {
 	return constant.ProtocolConfigPrefix
 }
 
-func GetProtocolsConfig(protocols map[string]*Config, k *koanf.Koanf) map[string]*Config {
-	if protocols != nil {
-		return protocols
-	}
-
-	conf := new(Config)
-	if value := k.Get(conf.Prefix()); value != nil {
-		conf = value.(*Config)
+// GetProtocolsConfig get protocols config
+func GetProtocolsConfig() map[string]*ProtocolConfig {
+	protocols := make(map[string]*ProtocolConfig)
+	conf := new(ProtocolConfig)
+	if value := viper.Get(conf.Prefix()); value != nil {
+		//conf = value.(map[string]*ProtocolConfig)
+		logger.Error("abc")
 	} else {
-
+		if err := defaults.Set(conf); err != nil {
+			panic(err)
+		}
+		protocols["default"] = conf
 	}
-	config.Koanf.Get(conf.Prefix())
-	return nil
+	return protocols
 }
-func loadProtocol(protocolsIds string, protocols map[string]*Config) []*Config {
-	returnProtocols := make([]*Config, 0, len(protocols))
+
+func loadProtocol(protocolsIds string, protocols map[string]*ProtocolConfig) []*ProtocolConfig {
+	returnProtocols := make([]*ProtocolConfig, 0, len(protocols))
 	for _, v := range strings.Split(protocolsIds, ",") {
 		for k, protocol := range protocols {
 			if v == k {

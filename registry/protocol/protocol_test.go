@@ -18,7 +18,7 @@
 package protocol
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/config/application"
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config/base"
 	"dubbo.apache.org/dubbo-go/v3/config/consumer"
 	"dubbo.apache.org/dubbo-go/v3/config/provider"
@@ -47,7 +47,7 @@ import (
 
 func init() {
 	provider.SetProviderConfig(provider.Config{BaseConfig: base.Config{
-		ApplicationConfig: &application.Config{Name: "test-application"},
+		ApplicationConfig: &config.ApplicationConfig{Name: "test-application"},
 	}})
 }
 
@@ -73,7 +73,7 @@ func referNormal(t *testing.T, regProtocol *registryProtocol) {
 func TestRefer(t *testing.T) {
 	consumer.SetConsumerConfig(
 		consumer.Config{BaseConfig: base.Config{
-			ApplicationConfig: &application.Config{Name: "test-application"},
+			ApplicationConfig: &config.ApplicationConfig{Name: "test-application"},
 		}})
 	regProtocol := newRegistryProtocol()
 	referNormal(t, regProtocol)

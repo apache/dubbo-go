@@ -19,10 +19,8 @@ package configurable
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/config"
-	"dubbo.apache.org/dubbo-go/v3/config/application"
 	"dubbo.apache.org/dubbo-go/v3/config/base"
 	"dubbo.apache.org/dubbo-go/v3/config/method"
-	"dubbo.apache.org/dubbo-go/v3/config/protocol"
 	"dubbo.apache.org/dubbo-go/v3/config/provider"
 	"dubbo.apache.org/dubbo-go/v3/config/registry"
 	"testing"
@@ -87,7 +85,7 @@ func mockInitProviderWithSingleRegistry() {
 	providerConfig := &provider.Config{
 
 		BaseConfig: base.Config{
-			ApplicationConfig: &application.Config{
+			ApplicationConfig: &config.ApplicationConfig{
 				Organization: "dubbo_org",
 				Name:         "dubbo",
 				Module:       "module",
@@ -129,7 +127,7 @@ func mockInitProviderWithSingleRegistry() {
 				},
 			},
 		},
-		Protocols: map[string]*protocol.Config{
+		Protocols: map[string]*config.ProtocolConfig{
 			"mock": {
 				Name: "mock",
 				Ip:   "127.0.0.1",

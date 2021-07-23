@@ -18,33 +18,34 @@
 package config
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/config/application"
-	"dubbo.apache.org/dubbo-go/v3/config/center"
-	"dubbo.apache.org/dubbo-go/v3/config/protocol"
-	"dubbo.apache.org/dubbo-go/v3/config/registry"
+	"errors"
 	"fmt"
+)
+import (
 	"github.com/go-playground/validator/v10"
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/json"
 	"github.com/knadh/koanf/parsers/toml"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/file"
-	"github.com/pkg/errors"
 )
 
 import (
 	_ "dubbo.apache.org/dubbo-go/v3/common/observer/dispatcher"
+	"dubbo.apache.org/dubbo-go/v3/config/registry"
 )
 
 var (
-	Koanf      *koanf.Koanf
+	viper    *koanf.Koanf
+	validate *validator.Validate
+
 	rootConfig *RootConfig
 	// application config
-	applicationConfig *application.Config
+	applicationConfig *ApplicationConfig
 	//
 	registriesConfig map[string]*registry.Config
 
-	configCenterConfig *center.Config
+	configCenterConfig *CenterConfig
 	//consumerConfig *consumer.ShutdownConfig
 	//providerConfig *provider.ProviderConfig
 	//// baseConfig = providerConfig.BaseConfig or consumerConfig
@@ -62,6 +63,10 @@ var (
 	//uniformDestRuleConfigPath       string
 )
 
+func init() {
+	validate = validator.New()
+}
+
 func Load(opts ...Option) {
 	// pares CommandLine
 	//parseCommandLine()
@@ -78,19 +83,15 @@ func Load(opts ...Option) {
 	}
 	rootConfig = new(RootConfig)
 
-	k := getKoanf(conf)
+	viper = getKoanf(conf)
 
-	if err := k.Unmarshal(rootConfig.Prefix(), &rootConfig); err != nil {
+	if err := viper.Unmarshal(rootConfig.Prefix(), &rootConfig); err != nil {
 		panic(err)
 	}
-
-	Koanf = k
-	rootConfig.Koanf = k
-	rootConfig.Validate = validator.New()
 }
 
 func check() error {
-	if rootConfig == nil {
+	if viper == nil || rootConfig == nil {
 		return errors.New("execute the config.Load() method first")
 	}
 	return nil
@@ -137,85 +138,57 @@ func getKoanf(conf *config) *koanf.Koanf {
 	return k
 }
 
-// GetApplicationConfig get application config
-func GetApplicationConfig() (*application.Config, error) {
-	if err := check(); err != nil {
-		return nil, err
-	}
-	if applicationConfig != nil {
-		return applicationConfig, nil
-	}
-	conf := rootConfig.Application
-	if err := conf.SetDefault(); err != nil {
-		return nil, err
-	}
-	if err := conf.Validate(rootConfig.Validate); err != nil {
-		return nil, err
-	}
-	applicationConfig = conf
-	return conf, nil
-}
-
-func GetRegistriesConfig() (map[string]*registry.Config, error) {
-	if err := check(); err != nil {
-		return nil, err
-	}
-	if registriesConfig != nil {
-		return registriesConfig, nil
-	}
-
-	registries := rootConfig.Registries
-
-	if len(registries) <= 0 {
-		reg := new(registry.Config)
-		if err := reg.SetDefault(); err != nil {
-			return nil, err
-		}
-		registries = make(map[string]*registry.Config, 1)
-		registries["default"] = reg
-		return registries, nil
-	}
-	for _, reg := range registries {
-		if err := reg.SetDefault(); err != nil {
-			return nil, err
-		}
-		reg.TranslateRegistryAddress()
-		if err := reg.Validate(rootConfig.Validate); err != nil {
-			return nil, err
-		}
-	}
-	registriesConfig = registries
-	return registries, nil
-}
-
-func GetConfigCenterConfig() (*center.Config, error) {
-	if err := check(); err != nil {
-		return nil, err
-	}
-	if configCenterConfig != nil {
-		return configCenterConfig, nil
-	}
-	conf := center.GetConfigCenterConfig(rootConfig.ConfigCenter, rootConfig.Koanf)
-
-	if err := conf.SetDefault(); err != nil {
-		return nil, err
-	}
-	conf.TranslateConfigAddress()
-	if err := conf.Validate(rootConfig.Validate); err != nil {
-		return nil, err
-	}
-	configCenterConfig = conf
-	return conf, nil
-}
-
-func GetProtocolsConfig() (map[string]*protocol.Config, error) {
-	if err := check(); err != nil {
-		return nil, err
-	}
-
-	return protocol.GetProtocolsConfig(nil, rootConfig.Koanf), nil
-}
-
+//func GetRegistriesConfig() (map[string]*registry.ConfigCenterConfig, error) {
+//	if err := check(); err != nil {
+//		return nil, err
+//	}
+//	if registriesConfig != nil {
+//		return registriesConfig, nil
+//	}
+//
+//	registries := rootConfig.Registries
+//
+//	if len(registries) <= 0 {
+//		reg := new(registry.ConfigCenterConfig)
+//		if err := reg.SetDefault(); err != nil {
+//			return nil, err
+//		}
+//		registries = make(map[string]*registry.ConfigCenterConfig, 1)
+//		registries["default"] = reg
+//		return registries, nil
+//	}
+//	for _, reg := range registries {
+//		if err := reg.SetDefault(); err != nil {
+//			return nil, err
+//		}
+//		reg.TranslateRegistryAddress()
+//		if err := reg.Validate(rootConfig.Validate); err != nil {
+//			return nil, err
+//		}
+//	}
+//	registriesConfig = registries
+//	return registries, nil
+//}
+//
+//func GetConfigCenterConfig() (*center.ConfigCenterConfig, error) {
+//	if err := check(); err != nil {
+//		return nil, err
+//	}
+//	if configCenterConfig != nil {
+//		return configCenterConfig, nil
+//	}
+//	conf := center.GetConfigCenterConfig(rootConfig.ConfigCenter, rootConfig.Koanf)
+//
+//	if err := conf.SetDefault(); err != nil {
+//		return nil, err
+//	}
+//	conf.TranslateConfigAddress()
+//	if err := conf.Validate(rootConfig.Validate); err != nil {
+//		return nil, err
+//	}
+//	configCenterConfig = conf
+//	return conf, nil
+//}
 //
 //// loaded consumer & provider config from xxx.yml, and log config from xxx.xml
 //// Namely: dubbo.consumer.xml & dubbo.provider.xml in java dubbo

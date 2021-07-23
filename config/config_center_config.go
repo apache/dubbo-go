@@ -15,39 +15,36 @@
  * limitations under the License.
  */
 
-package center
+package config
 
 import (
-	"errors"
-	"github.com/knadh/koanf"
 	"net/url"
 	"strings"
 )
 
 import (
 	"github.com/creasty/defaults"
-	"github.com/go-playground/validator/v10"
 	"github.com/goinggo/mapstructure"
-	perrors "github.com/pkg/errors"
+	"github.com/pkg/errors"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/common/config"
+	conf "dubbo.apache.org/dubbo-go/v3/common/config"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 )
 
-// Config is configuration for config center
+// CenterConfig is configuration for config center
 //
 // ConfigCenter also introduced concepts of namespace and group to better manage Key-Value pairs by group,
 // those configs are already built-in in many professional third-party configuration centers.
 // In most cases, namespace is used to isolate different tenants, while group is used to divide the key set from one tenant into groups.
 //
-// ConfigCenter has currently supported Zookeeper, Nacos, Etcd, Consul, Apollo
-type Config struct {
+// CenterConfig has currently supported Zookeeper, Nacos, Etcd, Consul, Apollo
+type CenterConfig struct {
 	Protocol      string `validate:"required"  yaml:"protocol"  json:"protocol,omitempty"`
 	Address       string `yaml:"address" json:"address,omitempty"`
 	Cluster       string `yaml:"cluster" json:"cluster,omitempty"`
@@ -66,62 +63,63 @@ type Config struct {
 }
 
 // Prefix dubbo.config-center
-func (Config) Prefix() string {
+func (CenterConfig) Prefix() string {
 	return constant.ConfigCenterPrefix
 }
 
-func GetConfigCenterConfig(conf *Config, k *koanf.Koanf) *Config {
-	if conf != nil {
-		return conf
+// GetConfigCenterConfig get config center config
+func GetConfigCenterConfig() *CenterConfig {
+	if err := check(); err != nil {
+		return nil
 	}
-	conf = new(Config)
-	key := conf.Prefix()
+	center := rootConfig.ConfigCenter
+	if center != nil {
+		if err := defaults.Set(center); err != nil {
+			logger.Error(err)
+		}
+		center.translateConfigAddress()
+		if err := verification(center); err != nil {
+			logger.Error(err)
+		}
+		return center
+	}
 
-	value := k.Get(key)
+	center = new(CenterConfig)
+	key := center.Prefix()
+	value := viper.Get(key)
 	if value == nil {
 		key = strings.ReplaceAll(key, "-", "_")
-		value = k.Get(key)
+		value = viper.Get(key)
 	}
-
 	if value == nil {
-		return conf
+		return nil
 	}
 
-	if err := mapstructure.Decode(value, conf); err != nil {
-		panic(err)
+	if err := mapstructure.Decode(value, center); err != nil {
+		logger.Error(err)
 	}
-	return conf
-}
 
-// SetDefault set default value
-func (c *Config) SetDefault() error {
-	return defaults.Set(c)
-}
-
-// Validate valida value
-func (c *Config) Validate(valid *validator.Validate) error {
-	if err := valid.Struct(c); err != nil {
-		errs := err.(validator.ValidationErrors)
-		var slice []string
-		for _, msg := range errs {
-			slice = append(slice, msg.Error())
-		}
-		return errors.New(strings.Join(slice, ","))
+	if err := defaults.Set(center); err != nil {
+		logger.Error(err)
 	}
-	return nil
+	center.translateConfigAddress()
+	if err := verification(center); err != nil {
+		logger.Error(err)
+	}
+	return center
 }
 
-// UnmarshalYAML unmarshal the Config by @unmarshal function
-func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
+// UnmarshalYAML unmarshal the ConfigCenterConfig by @unmarshal function
+func (c *CenterConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	if err := defaults.Set(c); err != nil {
 		return err
 	}
-	type plain Config
+	type plain CenterConfig
 	return unmarshal((*plain)(c))
 }
 
-// GetUrlMap gets url map from Config
-func (c *Config) GetUrlMap() url.Values {
+// GetUrlMap gets url map from ConfigCenterConfig
+func (c *CenterConfig) GetUrlMap() url.Values {
 	urlMap := url.Values{}
 	urlMap.Set(constant.CONFIG_NAMESPACE_KEY, c.Namespace)
 	urlMap.Set(constant.CONFIG_GROUP_KEY, c.Group)
@@ -138,9 +136,9 @@ func (c *Config) GetUrlMap() url.Values {
 	return urlMap
 }
 
-//TranslateConfigAddress translate config address
+//translateConfigAddress translate config address
 //  eg:address=nacos://127.0.0.1:8848 will return 127.0.0.1:8848 and protocol will set nacos
-func (c *Config) TranslateConfigAddress() string {
+func (c *CenterConfig) translateConfigAddress() string {
 	if strings.Contains(c.Address, "://") {
 		translatedUrl, err := url.Parse(c.Address)
 		if err != nil {
@@ -155,7 +153,7 @@ func (c *Config) TranslateConfigAddress() string {
 
 // toURL will compatible with baseConfig.ShutdownConfig.Address and baseConfig.ShutdownConfig.RemoteRef before 1.6.0
 // After 1.6.0 will not compatible, only baseConfig.ShutdownConfig.RemoteRef
-func (c *Config) toURL() (*common.URL, error) {
+func (c *CenterConfig) toURL() (*common.URL, error) {
 	//remoteRef := baseConfig.ConfigCenterConfig.RemoteRef
 	//// if set remote ref use remote
 	//if len(remoteRef) <= 0 {
@@ -178,32 +176,31 @@ func (c *Config) toURL() (*common.URL, error) {
 
 // startConfigCenter will start the config center.
 // it will prepare the environment
-func (c *Config) startConfigCenter() error {
+func (c *CenterConfig) startConfigCenter() error {
 	newUrl, err := c.toURL()
 	if err != nil {
 		return err
 	}
 	if err = c.prepareEnvironment(newUrl); err != nil {
-		return perrors.WithMessagef(err, "start config center error!")
+		return errors.WithMessagef(err, "start config center error!")
 	}
 	// c.fresh()
 	return nil
 }
 
-func (c *Config) prepareEnvironment(configCenterUrl *common.URL) error {
+func (c *CenterConfig) prepareEnvironment(configCenterUrl *common.URL) error {
 	factory := extension.GetConfigCenterFactory(configCenterUrl.Protocol)
 	dynamicConfig, err := factory.GetDynamicConfiguration(configCenterUrl)
 	if err != nil {
 		logger.Errorf("Get dynamic configuration error , error message is %v", err)
-		return perrors.WithStack(err)
+		return errors.WithStack(err)
 	}
-	envInstance := config.GetEnvInstance()
+	envInstance := conf.GetEnvInstance()
 	envInstance.SetDynamicConfiguration(dynamicConfig)
-	_, err = dynamicConfig.GetProperties(c.ConfigFile,
-		config_center.WithGroup(c.Group))
+	_, err = dynamicConfig.GetProperties(c.ConfigFile, config_center.WithGroup(c.Group))
 	if err != nil {
 		logger.Errorf("Get config content in dynamic configuration error , error message is %v", err)
-		return perrors.WithStack(err)
+		return errors.WithStack(err)
 	}
 	//var appGroup string
 	//var appContent string

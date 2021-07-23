@@ -19,7 +19,6 @@ package grpc
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/config"
-	"dubbo.apache.org/dubbo-go/v3/config/application"
 	"dubbo.apache.org/dubbo-go/v3/config/base"
 	"dubbo.apache.org/dubbo-go/v3/config/instance"
 	"dubbo.apache.org/dubbo-go/v3/config/method"
@@ -41,7 +40,7 @@ import (
 func doInitProvider() {
 	providerConfig := provider.Config{
 		BaseConfig: base.Config{
-			ApplicationConfig: &application.Config{
+			ApplicationConfig: &config.ApplicationConfig{
 				Organization: "dubbo_org",
 				Name:         "BDTService",
 				Module:       "module",
