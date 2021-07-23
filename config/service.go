@@ -18,36 +18,42 @@
 package config
 
 import (
+	"reflect"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 )
 
 var (
-	conServices = map[string]common.RPCService{} // service name -> service
-	proServices = map[string]common.RPCService{} // service name -> service
+	conServices = map[string]interface{}{} // service name -> service
+	proServices = map[string]interface{}{} // service name -> service
 )
 
 // SetConsumerService is called by init() of implement of RPCService
-func SetConsumerService(service common.RPCService) {
-	conServices[service.Reference()] = service
+func SetConsumerService(service interface{}) {
+	ref := reflect.TypeOf(service).Elem().Name()
+	conServices[ref] = service
 }
 
 // SetProviderService is called by init() of implement of RPCService
-func SetProviderService(service common.RPCService) {
-	proServices[service.Reference()] = service
+func SetProviderService(service interface{}) {
+	ref := reflect.TypeOf(service).Elem().Name()
+	proServices[ref] = service
 }
 
 // GetConsumerService gets ConsumerService by @name
-func GetConsumerService(name string) common.RPCService {
+func GetConsumerService(name string) interface{} {
 	return conServices[name]
 }
 
 // GetProviderService gets ProviderService by @name
-func GetProviderService(name string) common.RPCService {
+func GetProviderService(name string) interface{} {
 	return proServices[name]
 }
 
 // GetAllProviderService gets all ProviderService
-func GetAllProviderService() map[string]common.RPCService {
+func GetAllProviderService() map[string]interface{} {
 	return proServices
 }
 

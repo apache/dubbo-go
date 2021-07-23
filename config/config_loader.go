@@ -406,13 +406,14 @@ func LoadWithOptions(options ...LoaderInitOption) {
 }
 
 // GetRPCService get rpc service for consumer
-func GetRPCService(name string) common.RPCService {
+func GetRPCService(name string) interface{} {
 	return consumerConfig.References[name].GetRPCService()
 }
 
 // RPCService create rpc service for consumer
-func RPCService(service common.RPCService) {
-	consumerConfig.References[service.Reference()].Implement(service)
+func RPCService(service interface{}) {
+	ref := reflect.TypeOf(service).Elem().Name()
+	consumerConfig.References[ref].Implement(service)
 }
 
 // GetMetricConfig find the MetricConfig

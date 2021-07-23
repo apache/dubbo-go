@@ -30,7 +30,6 @@ import (
 // MetadataService is used to define meta data related behaviors
 // usually the implementation should be singleton
 type MetadataService interface {
-	common.RPCService
 	// ServiceName will get the service's name in meta service , which is application name
 	ServiceName() (string, error)
 	// ExportURL will store the exported url in metadata

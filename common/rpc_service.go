@@ -34,14 +34,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 )
 
-// RPCService
-// rpc service interface
-type RPCService interface {
-	// Reference:
-	// rpc service id or reference id
-	Reference() string
-}
-
 // AsyncCallbackService callback interface for async
 type AsyncCallbackService interface {
 	// Callback: callback
@@ -186,7 +178,7 @@ func (sm *serviceMap) GetInterface(interfaceName string) []*Service {
 }
 
 // Register registers a service by @interfaceName and @protocol
-func (sm *serviceMap) Register(interfaceName, protocol, group, version string, rcvr RPCService) (string, error) {
+func (sm *serviceMap) Register(interfaceName, protocol, group, version string, rcvr interface{}) (string, error) {
 	if sm.serviceMap[protocol] == nil {
 		sm.serviceMap[protocol] = make(map[string]*Service)
 	}

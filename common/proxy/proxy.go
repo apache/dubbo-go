@@ -29,7 +29,6 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
@@ -38,7 +37,7 @@ import (
 
 // nolint
 type Proxy struct {
-	rpc         common.RPCService
+	rpc         interface{}
 	invoke      protocol.Invoker
 	callback    interface{}
 	attachments map[string]string
@@ -50,7 +49,7 @@ type (
 	// ProxyOption a function to init Proxy with options
 	ProxyOption func(p *Proxy)
 	// ImplementFunc function for proxy impl of RPCService functions
-	ImplementFunc func(p *Proxy, v common.RPCService)
+	ImplementFunc func(p *Proxy, v interface{})
 )
 
 var typError = reflect.Zero(reflect.TypeOf((*error)(nil)).Elem()).Type()
@@ -87,7 +86,7 @@ func WithProxyImplementFunc(f ImplementFunc) ProxyOption {
 // 		type XxxProvider struct {
 //  		Yyy func(ctx context.Context, args []interface{}, rsp *Zzz) error
 // 		}
-func (p *Proxy) Implement(v common.RPCService) {
+func (p *Proxy) Implement(v interface{}) {
 	p.once.Do(func() {
 		p.implement(p, v)
 		p.rpc = v
@@ -95,7 +94,7 @@ func (p *Proxy) Implement(v common.RPCService) {
 }
 
 // Get gets rpc service instance.
-func (p *Proxy) Get() common.RPCService {
+func (p *Proxy) Get() interface{} {
 	return p.rpc
 }
 
@@ -110,7 +109,7 @@ func (p *Proxy) GetInvoker() protocol.Invoker {
 }
 
 // DefaultProxyImplementFunc the default function for proxy impl
-func DefaultProxyImplementFunc(p *Proxy, v common.RPCService) {
+func DefaultProxyImplementFunc(p *Proxy, v interface{}) {
 	// check parameters, incoming interface must be a elem's pointer.
 	valueOf := reflect.ValueOf(v)
 	logger.Debugf("[Implement] reflect.TypeOf: %s", valueOf.String())

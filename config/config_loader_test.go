@@ -108,14 +108,9 @@ func TestLoad(t *testing.T) {
 	Load()
 
 	assert.Equal(t, ms, GetRPCService(ms.Reference()))
-	ms2 := &struct {
-		MockService
-	}{}
-	RPCService(ms2)
-	assert.NotEqual(t, ms2, GetRPCService(ms2.Reference()))
 
-	conServices = map[string]common.RPCService{}
-	proServices = map[string]common.RPCService{}
+	conServices = map[string]interface{}{}
+	proServices = map[string]interface{}{}
 	err := common.ServiceMap.UnRegister("com.MockService", "mock",
 		common.ServiceKey("com.MockService", "huadong_idc", "1.0.0"))
 	assert.Nil(t, err)
@@ -148,14 +143,9 @@ func TestLoadWithSingleReg(t *testing.T) {
 	Load()
 
 	assert.Equal(t, ms, GetRPCService(ms.Reference()))
-	ms2 := &struct {
-		MockService
-	}{}
-	RPCService(ms2)
-	assert.NotEqual(t, ms2, GetRPCService(ms2.Reference()))
 
-	conServices = map[string]common.RPCService{}
-	proServices = map[string]common.RPCService{}
+	conServices = map[string]interface{}{}
+	proServices = map[string]interface{}{}
 	common.ServiceMap.UnRegister("com.MockService", "mock", common.ServiceKey("com.MockService", "huadong_idc", "1.0.0"))
 	consumerConfig = nil
 	providerConfig = nil
@@ -187,14 +177,9 @@ func TestWithNoRegLoad(t *testing.T) {
 	Load()
 
 	assert.Equal(t, ms, GetRPCService(ms.Reference()))
-	ms2 := &struct {
-		MockService
-	}{}
-	RPCService(ms2)
-	assert.NotEqual(t, ms2, GetRPCService(ms2.Reference()))
 
-	conServices = map[string]common.RPCService{}
-	proServices = map[string]common.RPCService{}
+	conServices = map[string]interface{}{}
+	proServices = map[string]interface{}{}
 	err := common.ServiceMap.UnRegister("com.MockService", "mock",
 		common.ServiceKey("com.MockService", "huadong_idc", "1.0.0"))
 	assert.Nil(t, err)

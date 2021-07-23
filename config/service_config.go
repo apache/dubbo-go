@@ -77,7 +77,7 @@ type ServiceConfig struct {
 	unexported    *atomic.Bool
 	exported      *atomic.Bool
 	export        bool // a flag to control whether the current service should export or not
-	rpcService    common.RPCService
+	rpcService    interface{}
 	cacheMutex    sync.Mutex
 	cacheProtocol protocol.Protocol
 
@@ -267,7 +267,7 @@ func (c *ServiceConfig) Unexport() {
 }
 
 // Implement only store the @s and return
-func (c *ServiceConfig) Implement(s common.RPCService) {
+func (c *ServiceConfig) Implement(s interface{}) {
 	c.rpcService = s
 }
 

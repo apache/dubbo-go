@@ -209,12 +209,12 @@ func (c *ReferenceConfig) Refer(_ interface{}) {
 
 // Implement
 // @v is service provider implemented RPCService
-func (c *ReferenceConfig) Implement(v common.RPCService) {
+func (c *ReferenceConfig) Implement(v interface{}) {
 	c.pxy.Implement(v)
 }
 
 // GetRPCService gets RPCService from proxy
-func (c *ReferenceConfig) GetRPCService() common.RPCService {
+func (c *ReferenceConfig) GetRPCService() interface{} {
 	return c.pxy.Get()
 }
 
