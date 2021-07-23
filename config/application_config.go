@@ -19,11 +19,8 @@ package config
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
-	"errors"
 	"github.com/creasty/defaults"
-	"github.com/go-playground/validator/v10"
 	"github.com/mitchellh/mapstructure"
-	"strings"
 )
 
 import (
@@ -47,18 +44,6 @@ func (ApplicationConfig) Prefix() string {
 	return constant.DUBBO + ".application"
 }
 
-func (ac *ApplicationConfig) validate() error {
-	if err := validate.Struct(ac); err != nil {
-		errs := err.(validator.ValidationErrors)
-		var slice []string
-		for _, msg := range errs {
-			slice = append(slice, msg.Error())
-		}
-		return errors.New(strings.Join(slice, ","))
-	}
-	return nil
-}
-
 //GetApplicationConfig get application config
 func GetApplicationConfig() *ApplicationConfig {
 	if err := check(); err != nil {
@@ -70,7 +55,7 @@ func GetApplicationConfig() *ApplicationConfig {
 		if err := defaults.Set(application); err != nil {
 			logger.Error(err)
 		}
-		if err := application.validate(); err != nil {
+		if err := verification(application); err != nil {
 			logger.Error(err)
 		}
 		return application
@@ -89,7 +74,7 @@ func GetApplicationConfig() *ApplicationConfig {
 		logger.Error(err)
 	}
 	// validate values
-	if err := application.validate(); err != nil {
+	if err := verification(application); err != nil {
 		logger.Error(err)
 	}
 	return application

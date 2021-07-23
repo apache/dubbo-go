@@ -2,7 +2,6 @@ package config
 
 import (
 	"bytes"
-	"github.com/creasty/defaults"
 	"github.com/go-playground/validator/v10"
 	"github.com/pkg/errors"
 	"strings"
@@ -49,13 +48,6 @@ type RootConfig struct {
 // Prefix dubbo
 func (RootConfig) Prefix() string {
 	return constant.DUBBO
-}
-
-func setDefaults(s interface{}) error {
-	if err := defaults.Set(s); err != nil {
-		return err
-	}
-	return nil
 }
 
 func verification(s interface{}) error {
