@@ -169,15 +169,15 @@ package config
 //}
 //
 /////////////////////////////////////// consumer config api
-//// ConsumerConfigOpt is the options to init Config
-//type ConsumerConfigOpt func(config *consumer.Config) *consumer.Config
+//// ConsumerConfigOpt is the options to init ShutdownConfig
+//type ConsumerConfigOpt func(config *consumer.ShutdownConfig) *consumer.ShutdownConfig
 //
-//// NewDefaultConsumerConfig returns default Config
+//// NewDefaultConsumerConfig returns default ShutdownConfig
 //// with connection timeout = 3s, request timeout = 3s
-//func NewDefaultConsumerConfig() *consumer.Config {
+//func NewDefaultConsumerConfig() *consumer.ShutdownConfig {
 //	check := true
-//	newConsumerConfig := &consumer.Config{
-//		BaseConfig:     base.Config{},
+//	newConsumerConfig := &consumer.ShutdownConfig{
+//		BaseConfig:     base.ShutdownConfig{},
 //		Registries:     make(map[string]*registry.RegistryConfig, 8),
 //		References:     make(map[string]*reference.ReferenceConfig, 8),
 //		ConnectTimeout: 3 * time.Second,
@@ -187,8 +187,8 @@ package config
 //	return newConsumerConfig
 //}
 //
-//// NewConsumerConfig returns Config with @opts
-//func NewConsumerConfig(opts ...ConsumerConfigOpt) *consumer.Config {
+//// NewConsumerConfig returns ShutdownConfig with @opts
+//func NewConsumerConfig(opts ...ConsumerConfigOpt) *consumer.ShutdownConfig {
 //	newConfig := NewDefaultConsumerConfig()
 //	for _, v := range opts {
 //		v(newConfig)
@@ -197,8 +197,8 @@ package config
 //}
 //
 //// WithConsumerAppConfig returns ConsumerConfigOpt with given @appConfig
-//func WithConsumerAppConfig(appConfig *application.Config) ConsumerConfigOpt {
-//	return func(config *consumer.Config) *consumer.Config {
+//func WithConsumerAppConfig(appConfig *application.ShutdownConfig) ConsumerConfigOpt {
+//	return func(config *consumer.ShutdownConfig) *consumer.ShutdownConfig {
 //		config.ApplicationConfig = appConfig
 //		return config
 //	}
@@ -206,7 +206,7 @@ package config
 //
 //// WithConsumerRegistryConfig returns ConsumerConfigOpt with given @registryKey and @regConfig
 //func WithConsumerRegistryConfig(registryKey string, regConfig *registry.RegistryConfig) ConsumerConfigOpt {
-//	return func(config *consumer.Config) *consumer.Config {
+//	return func(config *consumer.ShutdownConfig) *consumer.ShutdownConfig {
 //		config.Registries[registryKey] = regConfig
 //		return config
 //	}
@@ -214,7 +214,7 @@ package config
 //
 //// WithConsumerReferenceConfig returns ConsumerConfigOpt with
 //func WithConsumerReferenceConfig(referenceKey string, refConfig *reference.ReferenceConfig) ConsumerConfigOpt {
-//	return func(config *consumer.Config) *consumer.Config {
+//	return func(config *consumer.ShutdownConfig) *consumer.ShutdownConfig {
 //		config.References[referenceKey] = refConfig
 //		return config
 //	}
@@ -222,7 +222,7 @@ package config
 //
 //// WithConsumerConnTimeout returns ConsumerConfigOpt with given consumer conn @timeout
 //func WithConsumerConnTimeout(timeout time.Duration) ConsumerConfigOpt {
-//	return func(config *consumer.Config) *consumer.Config {
+//	return func(config *consumer.ShutdownConfig) *consumer.ShutdownConfig {
 //		config.ConnectTimeout = timeout
 //		return config
 //	}
@@ -230,15 +230,15 @@ package config
 //
 //// WithConsumerRequestTimeout returns ConsumerConfigOpt with given consumer request @timeout
 //func WithConsumerRequestTimeout(timeout time.Duration) ConsumerConfigOpt {
-//	return func(config *consumer.Config) *consumer.Config {
+//	return func(config *consumer.ShutdownConfig) *consumer.ShutdownConfig {
 //		config.RequestTimeout = timeout
 //		return config
 //	}
 //}
 //
 //// WithConsumerConfigCenterConfig returns ConsumerConfigOpt with given @configCenterConfig
-//func WithConsumerConfigCenterConfig(configCenterConfig *center.Config) ConsumerConfigOpt {
-//	return func(config *consumer.Config) *consumer.Config {
+//func WithConsumerConfigCenterConfig(configCenterConfig *center.ShutdownConfig) ConsumerConfigOpt {
+//	return func(config *consumer.ShutdownConfig) *consumer.ShutdownConfig {
 //		config.ConfigCenterConfig = configCenterConfig
 //		return config
 //	}
@@ -246,7 +246,7 @@ package config
 //
 //// WithConsumerConfigCheck returns ConsumerConfigOpt with given @check flag
 //func WithConsumerConfigCheck(check bool) ConsumerConfigOpt {
-//	return func(config *consumer.Config) *consumer.Config {
+//	return func(config *consumer.ShutdownConfig) *consumer.ShutdownConfig {
 //		*config.Check = check
 //		return config
 //	}
@@ -321,18 +321,18 @@ package config
 //// ProviderConfigOpt is the
 //type ProviderConfigOpt func(config *provider.ProviderConfig) *provider.ProviderConfig
 //
-//// NewDefaultProviderConfig returns ProviderConfig with default Config
+//// NewDefaultProviderConfig returns ProviderConfig with default ShutdownConfig
 //func NewDefaultProviderConfig() *provider.ProviderConfig {
 //	newConsumerConfig := &provider.ProviderConfig{
-//		BaseConfig: base.Config{
-//			application.Config: &application.Config{
+//		BaseConfig: base.ShutdownConfig{
+//			application.ShutdownConfig: &application.ShutdownConfig{
 //				Name:         "dubbo",
 //				Module:       "module",
 //				Organization: "dubbo_org",
 //				Owner:        "dubbo",
 //			},
 //		},
-//		Services:   make(map[string]*service.Config),
+//		Services:   make(map[string]*service.ShutdownConfig),
 //		Registries: make(map[string]*registry.RegistryConfig, 8),
 //		Protocols:  make(map[string]*protocol.ProtocolConfig, 8),
 //	}
@@ -357,7 +357,7 @@ package config
 //}
 //
 //// WithProviderAppConfig returns ProviderConfigOpt with given @appConfig
-//func WithProviderAppConfig(appConfig *application.Config) ProviderConfigOpt {
+//func WithProviderAppConfig(appConfig *application.ShutdownConfig) ProviderConfigOpt {
 //	return func(config *provider.ProviderConfig) *provider.ProviderConfig {
 //		config.ApplicationConfig = appConfig
 //		return config
@@ -365,7 +365,7 @@ package config
 //}
 //
 //// WithProviderServices returns ProviderConfig with given serviceNameKey @serviceName and @serviceConfig
-//func WithProviderServices(serviceName string, serviceConfig *service.Config) ProviderConfigOpt {
+//func WithProviderServices(serviceName string, serviceConfig *service.ShutdownConfig) ProviderConfigOpt {
 //	return func(config *provider.ProviderConfig) *provider.ProviderConfig {
 //		config.Services[serviceName] = serviceConfig
 //		return config
@@ -392,11 +392,11 @@ package config
 //}
 //
 ///////////////////////////////////////// service config api
-//// ServiceConfigOpt is the option to init Config
-//type ServiceConfigOpt func(config *service.Config) *service.Config
+//// ServiceConfigOpt is the option to init ShutdownConfig
+//type ServiceConfigOpt func(config *service.ShutdownConfig) *service.ShutdownConfig
 //
-//// NewDefaultServiceConfig returns default Config
-//func NewDefaultServiceConfig() *service.Config {
+//// NewDefaultServiceConfig returns default ShutdownConfig
+//func NewDefaultServiceConfig() *service.ShutdownConfig {
 //	newServiceConfig := service.NewServiceConfig("")
 //	newServiceConfig.Params = make(map[string]string)
 //	newServiceConfig.Methods = make([]*method.MethodConfig, 0, 8)
@@ -404,8 +404,8 @@ package config
 //}
 //
 //// NewServiceConfigByAPI is named as api, because there is NewServiceConfig func already declared
-//// NewServiceConfigByAPI returns Config with given @opts
-//func NewServiceConfigByAPI(opts ...ServiceConfigOpt) *service.Config {
+//// NewServiceConfigByAPI returns ShutdownConfig with given @opts
+//func NewServiceConfigByAPI(opts ...ServiceConfigOpt) *service.ShutdownConfig {
 //	defaultServiceConfig := NewDefaultServiceConfig()
 //	for _, v := range opts {
 //		v(defaultServiceConfig)
@@ -415,7 +415,7 @@ package config
 //
 //// WithServiceRegistry returns ServiceConfigOpt with given registryKey @registry
 //func WithServiceRegistry(registry string) ServiceConfigOpt {
-//	return func(config *service.Config) *service.Config {
+//	return func(config *service.ShutdownConfig) *service.ShutdownConfig {
 //		config.Registry = registry
 //		return config
 //	}
@@ -423,7 +423,7 @@ package config
 //
 //// WithServiceProtocol returns ServiceConfigOpt with given protocolKey @protocol
 //func WithServiceProtocol(protocol string) ServiceConfigOpt {
-//	return func(config *service.Config) *service.Config {
+//	return func(config *service.ShutdownConfig) *service.ShutdownConfig {
 //		config.Protocol = protocol
 //		return config
 //	}
@@ -431,7 +431,7 @@ package config
 //
 //// WithServiceInterface returns ServiceConfigOpt with given @interfaceName
 //func WithServiceInterface(interfaceName string) ServiceConfigOpt {
-//	return func(config *service.Config) *service.Config {
+//	return func(config *service.ShutdownConfig) *service.ShutdownConfig {
 //		config.InterfaceName = interfaceName
 //		return config
 //	}
@@ -439,7 +439,7 @@ package config
 //
 //// WithServiceLoadBalance returns ServiceConfigOpt with given load balance @lb
 //func WithServiceLoadBalance(lb string) ServiceConfigOpt {
-//	return func(config *service.Config) *service.Config {
+//	return func(config *service.ShutdownConfig) *service.ShutdownConfig {
 //		config.Loadbalance = lb
 //		return config
 //	}
@@ -447,7 +447,7 @@ package config
 //
 //// WithServiceWarmUpTime returns ServiceConfigOpt with given @warmUp time
 //func WithServiceWarmUpTime(warmUp string) ServiceConfigOpt {
-//	return func(config *service.Config) *service.Config {
+//	return func(config *service.ShutdownConfig) *service.ShutdownConfig {
 //		config.Warmup = warmUp
 //		return config
 //	}
@@ -455,7 +455,7 @@ package config
 //
 //// WithServiceCluster returns ServiceConfigOpt with given cluster name @cluster
 //func WithServiceCluster(cluster string) ServiceConfigOpt {
-//	return func(config *service.Config) *service.Config {
+//	return func(config *service.ShutdownConfig) *service.ShutdownConfig {
 //		config.Cluster = cluster
 //		return config
 //	}
@@ -463,7 +463,7 @@ package config
 //
 //// WithServiceMethod returns ServiceConfigOpt with given @name, @retries and load balance @lb
 //func WithServiceMethod(name, retries, lb string) ServiceConfigOpt {
-//	return func(config *service.Config) *service.Config {
+//	return func(config *service.ShutdownConfig) *service.ShutdownConfig {
 //		config.Methods = append(config.Methods, &method.MethodConfig{
 //			Name:        name,
 //			Retries:     retries,
@@ -474,18 +474,18 @@ package config
 //}
 //
 /////////////////////////////////////////// Application config api
-//// ApplicationConfigOpt is option to init Config
-//type ApplicationConfigOpt func(config *application.Config) *application.Config
+//// ApplicationConfigOpt is option to init ShutdownConfig
+//type ApplicationConfigOpt func(config *application.ShutdownConfig) *application.ShutdownConfig
 //
-//// NewDefaultApplicationConfig returns Config with default
+//// NewDefaultApplicationConfig returns ShutdownConfig with default
 //// name: dubbo.io
 //// module: sample
 //// organization: dubbo.io
 //// owner: dubbogo
 //// version: 0.0.1
 //// environment dev
-//func NewDefaultApplicationConfig() *application.Config {
-//	newAppConfig := &application.Config{
+//func NewDefaultApplicationConfig() *application.ShutdownConfig {
+//	newAppConfig := &application.ShutdownConfig{
 //		Name:         "dubbo.io",
 //		Module:       "sample",
 //		Organization: "dubbo.io",
@@ -497,8 +497,8 @@ package config
 //}
 //
 //// NewApplicationConfig is named as api, because there is NewServiceConfig func already declared
-//// NewApplicationConfig returns Config with default application config
-//func NewApplicationConfig(opts ...ApplicationConfigOpt) *application.Config {
+//// NewApplicationConfig returns ShutdownConfig with default application config
+//func NewApplicationConfig(opts ...ApplicationConfigOpt) *application.ShutdownConfig {
 //	defaultServiceConfig := NewDefaultApplicationConfig()
 //	for _, v := range opts {
 //		v(defaultServiceConfig)
@@ -508,7 +508,7 @@ package config
 //
 //// WithAppName returns ApplicationConfigOpt with given @name
 //func WithAppName(name string) ApplicationConfigOpt {
-//	return func(config *application.Config) *application.Config {
+//	return func(config *application.ShutdownConfig) *application.ShutdownConfig {
 //		config.Name = name
 //		return config
 //	}
@@ -516,7 +516,7 @@ package config
 //
 //// WithAppModule returns ApplicationConfigOpt with given @module
 //func WithAppModule(module string) ApplicationConfigOpt {
-//	return func(config *application.Config) *application.Config {
+//	return func(config *application.ShutdownConfig) *application.ShutdownConfig {
 //		config.Module = module
 //		return config
 //	}
@@ -524,7 +524,7 @@ package config
 //
 //// WithAppOrganization returns ApplicationConfigOpt wight given organization @org
 //func WithAppOrganization(org string) ApplicationConfigOpt {
-//	return func(config *application.Config) *application.Config {
+//	return func(config *application.ShutdownConfig) *application.ShutdownConfig {
 //		config.Organization = org
 //		return config
 //	}
@@ -532,7 +532,7 @@ package config
 //
 //// WithAppOwner returns ApplicationConfigOpt with given @owner
 //func WithAppOwner(owner string) ApplicationConfigOpt {
-//	return func(config *application.Config) *application.Config {
+//	return func(config *application.ShutdownConfig) *application.ShutdownConfig {
 //		config.Owner = owner
 //		return config
 //	}
@@ -540,7 +540,7 @@ package config
 //
 //// WithAppVersion returns ApplicationConfigOpt with given version @version
 //func WithAppVersion(version string) ApplicationConfigOpt {
-//	return func(config *application.Config) *application.Config {
+//	return func(config *application.ShutdownConfig) *application.ShutdownConfig {
 //		config.Version = version
 //		return config
 //	}
@@ -548,7 +548,7 @@ package config
 //
 //// WithAppEnvironment returns ApplicationConfigOpt with given environment @env
 //func WithAppEnvironment(env string) ApplicationConfigOpt {
-//	return func(config *application.Config) *application.Config {
+//	return func(config *application.ShutdownConfig) *application.ShutdownConfig {
 //		config.Environment = env
 //		return config
 //	}

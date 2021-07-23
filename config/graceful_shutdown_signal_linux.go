@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package shutdown
+package config
 
 import (
 	"os"

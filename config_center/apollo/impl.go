@@ -132,7 +132,7 @@ func (c *apolloConfiguration) GetConfigKeysByGroup(group string) (*gxset.HashSet
 
 func (c *apolloConfiguration) GetProperties(key string, opts ...cc.Option) (string, error) {
 	/**
-	 * when group is not null, we are getting startup configs(config file) from Config Center, for example:
+	 * when group is not null, we are getting startup configs(config file) from ShutdownConfig Center, for example:
 	 * key=dubbo.propertie
 	 */
 	tmpConfig := agollo.GetConfig(key)

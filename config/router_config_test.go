@@ -15,35 +15,46 @@
  * limitations under the License.
  */
 
-package shutdown
+package config
 
 import (
+	"strings"
 	"testing"
-	"time"
 )
 
 import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestShutdownConfigGetTimeout(t *testing.T) {
-	config := Config{}
-	assert.False(t, config.RejectRequest)
-	assert.False(t, config.RequestsFinished)
+const (
+	testDestinationRuleYML      = "testdata/router_config_dest_rule.yml"
+	errorTestDestinationRuleYML = "testdata/router_config_destination_rule_error.yml"
+	testVirtualServiceYML       = "testdata/router_config_virtual_service.yml"
+)
 
-	config = Config{
-		Timeout:     "60s",
-		StepTimeout: "10s",
-	}
+func TestString(t *testing.T) {
+	s := "a1=>a2"
+	s1 := "=>a2"
+	s2 := "a1=>"
 
-	assert.Equal(t, 60*time.Second, config.GetTimeout())
-	assert.Equal(t, 10*time.Second, config.GetStepTimeout())
+	n := strings.SplitN(s, "=>", 2)
+	n1 := strings.SplitN(s1, "=>", 2)
+	n2 := strings.SplitN(s2, "=>", 2)
 
-	config = Config{
-		Timeout:     "34ms",
-		StepTimeout: "79ms",
-	}
+	assert.Equal(t, n[0], "a1")
+	assert.Equal(t, n[1], "a2")
 
-	assert.Equal(t, 34*time.Millisecond, config.GetTimeout())
-	assert.Equal(t, 79*time.Millisecond, config.GetStepTimeout())
+	assert.Equal(t, n1[0], "")
+	assert.Equal(t, n1[1], "a2")
+
+	assert.Equal(t, n2[0], "a1")
+	assert.Equal(t, n2[1], "")
+}
+
+func TestRouterInit(t *testing.T) {
+	err := RouterInit(testVirtualServiceYML, testDestinationRuleYML)
+	assert.NoError(t, err)
+
+	err = RouterInit(testVirtualServiceYML, errorTestDestinationRuleYML)
+	assert.Error(t, err)
 }

@@ -67,9 +67,12 @@ func TestLoad(t *testing.T) {
 		conf, err := GetConfigCenterConfig()
 		assert.Nil(t, err)
 		assert.Equal(t, "nacos", conf.Protocol)
-		//address= nacos://127.0.0.1:8848 Translate Registry Address
-		//assert.Equal(t, "nacos", registries["nacos"].Protocol)
-		//assert.Equal(t, "10s", registries["zk"].Timeout)
+	})
+
+	//protocols
+	t.Run("protocols", func(t *testing.T) {
+		_, err := GetProtocolsConfig()
+		assert.Nil(t, err)
 	})
 
 }
@@ -103,6 +106,10 @@ func TestLoadConfigCenter(t *testing.T) {
 		assert.Equal(t, "10s", conf.Timeout)
 		assert.Equal(t, "./logs", conf.LogDir)
 	})
+}
+
+func TestName(t *testing.T) {
+
 }
 
 //
@@ -197,7 +204,7 @@ func TestLoadConfigCenter(t *testing.T) {
 //	assert.Equal(t, proConfig.Protocols["dubbo"].Port, "20000")
 //	assert.NotNil(t, proConfig.ApplicationConfig)
 //
-//	conConfig := &consumer.Config{Registries: make(map[string]*registry2.RegistryConfig)}
+//	conConfig := &consumer.ShutdownConfig{Registries: make(map[string]*registry2.RegistryConfig)}
 //	assert.Nil(t, conConfig.ApplicationConfig)
 //	setDefaultValue(conConfig)
 //	assert.Equal(t, conConfig.Registries["demoZK"].Address, "127.0.0.1:2181")
@@ -217,7 +224,7 @@ func TestLoadConfigCenter(t *testing.T) {
 //	assert.NoError(t, err)
 //
 //	assert.Nil(t, consumerConfig)
-//	assert.Equal(t, consumer.Config{}, GetConsumerConfig())
+//	assert.Equal(t, consumer.ShutdownConfig{}, GetConsumerConfig())
 //	assert.Nil(t, providerConfig)
 //	assert.Equal(t, provider.ProviderConfig{}, GetProviderConfig())
 //
@@ -231,7 +238,7 @@ func TestLoadConfigCenter(t *testing.T) {
 //	assert.NoError(t, err)
 //
 //	assert.NotNil(t, consumerConfig)
-//	assert.NotEqual(t, consumer.Config{}, GetConsumerConfig())
+//	assert.NotEqual(t, consumer.ShutdownConfig{}, GetConsumerConfig())
 //	assert.NotNil(t, providerConfig)
 //	assert.NotEqual(t, provider.ProviderConfig{}, GetProviderConfig())
 //
@@ -271,7 +278,7 @@ func TestLoadConfigCenter(t *testing.T) {
 //	assert.NoError(t, err)
 //
 //	assert.Nil(t, consumerConfig)
-//	assert.Equal(t, consumer.Config{}, GetConsumerConfig())
+//	assert.Equal(t, consumer.ShutdownConfig{}, GetConsumerConfig())
 //	assert.Nil(t, providerConfig)
 //	assert.Equal(t, provider.ProviderConfig{}, GetProviderConfig())
 //
@@ -289,7 +296,7 @@ func TestLoadConfigCenter(t *testing.T) {
 //	assert.NoError(t, err)
 //
 //	assert.NotNil(t, consumerConfig)
-//	assert.NotEqual(t, consumer.Config{}, GetConsumerConfig())
+//	assert.NotEqual(t, consumer.ShutdownConfig{}, GetConsumerConfig())
 //	assert.NotNil(t, providerConfig)
 //	assert.NotEqual(t, provider.ProviderConfig{}, GetProviderConfig())
 //
@@ -307,8 +314,8 @@ func TestLoadConfigCenter(t *testing.T) {
 //// mockInitProviderWithSingleRegistry will init a mocked providerConfig
 //func mockInitProviderWithSingleRegistry() {
 //	providerConfig = &provider.ProviderConfig{
-//		BaseConfig: base.Config{
-//			application.Config: &application.Config{
+//		BaseConfig: base.ShutdownConfig{
+//			application.ShutdownConfig: &application.ShutdownConfig{
 //				Organization: "dubbo_org",
 //				Name:         "dubbo",
 //				Module:       "module",
@@ -325,7 +332,7 @@ func TestLoadConfigCenter(t *testing.T) {
 //		},
 //		Registries: map[string]*registry2.RegistryConfig{},
 //
-//		Services: map[string]*service2.Config{
+//		Services: map[string]*service2.ShutdownConfig{
 //			"MockService": {
 //				InterfaceName: "com.MockService",
 //				Protocol:      "mock",

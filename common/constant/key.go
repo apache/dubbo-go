@@ -178,7 +178,7 @@ const (
 	RemotePrefix               = "dubbo.remote"
 	ServiceDiscPrefix          = "dubbo.service-discovery"
 	ProtocolConfigPrefix       = "dubbo.protocols"
-	ProviderConfigPrefix       = "dubbo.provider."
+	ProviderConfigPrefix       = "dubbo.provider"
 	ConsumerConfigPrefix       = "dubbo.consumer"
 	ShutdownConfigPrefix       = "dubbo.shutdown"
 	MetadataReportPrefix       = "dubbo.metadata-report"

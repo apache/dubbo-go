@@ -18,13 +18,13 @@
 package configurable
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config/application"
 	"dubbo.apache.org/dubbo-go/v3/config/base"
 	"dubbo.apache.org/dubbo-go/v3/config/method"
 	"dubbo.apache.org/dubbo-go/v3/config/protocol"
 	"dubbo.apache.org/dubbo-go/v3/config/provider"
 	"dubbo.apache.org/dubbo-go/v3/config/registry"
-	"dubbo.apache.org/dubbo-go/v3/config/service"
 	"testing"
 )
 
@@ -104,7 +104,7 @@ func mockInitProviderWithSingleRegistry() {
 		},
 		Registries: map[string]*registry.Config{},
 
-		Services: map[string]*service.Config{
+		Services: map[string]*config.ServiceConfig{
 			"MockService": {
 				InterfaceName: "com.MockService",
 				Protocol:      "mock",

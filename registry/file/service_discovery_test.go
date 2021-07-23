@@ -18,7 +18,6 @@
 package file
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/config/service/discovery"
 	"math/rand"
 	"strconv"
 	"testing"
@@ -88,7 +87,7 @@ func TestCURDFileSystemServiceDiscovery(t *testing.T) {
 }
 
 func prepareData() {
-	config.GetBaseConfig().ServiceDiscoveries[testName] = &discovery.Config{
+	config.GetBaseConfig().ServiceDiscoveries[testName] = &config.ServiceConfig{
 		Protocol: "file",
 	}
 }

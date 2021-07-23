@@ -18,9 +18,8 @@
 package provider
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config/protocol"
-	"dubbo.apache.org/dubbo-go/v3/config/service"
-	"dubbo.apache.org/dubbo-go/v3/config/shutdown"
 )
 
 import (
@@ -33,16 +32,16 @@ import (
 
 // Config is the default configuration of service provider
 type Config struct {
-	//base.Config         `yaml:",inline" property:"base"`
+	//base.ShutdownConfig         `yaml:",inline" property:"base"`
 	//center.configCenter `yaml:"-"`
-	Filter              string                      `yaml:"filter" json:"filter,omitempty" property:"filter"`
-	ProxyFactory        string                      `yaml:"proxy_factory" default:"default" json:"proxy_factory,omitempty" property:"proxy_factory"`
-	Services            map[string]*service.Config  `yaml:"services" json:"services,omitempty" property:"services"`
-	Protocols           map[string]*protocol.Config `yaml:"protocols" json:"protocols,omitempty" property:"protocols"`
-	ProtocolConf        interface{}                 `yaml:"protocol_conf" json:"protocol_conf,omitempty" property:"protocol_conf"`
-	FilterConf          interface{}                 `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf"`
-	ShutdownConfig      *shutdown.Config            `yaml:"shutdown_conf" json:"shutdown_conf,omitempty" property:"shutdown_conf"`
-	ConfigType          map[string]string           `yaml:"config_type" json:"config_type,omitempty" property:"config_type"`
+	Filter              string                           `yaml:"filter" json:"filter,omitempty" property:"filter"`
+	ProxyFactory        string                           `yaml:"proxy_factory" default:"default" json:"proxy_factory,omitempty" property:"proxy_factory"`
+	Services            map[string]*config.ServiceConfig `yaml:"services" json:"services,omitempty" property:"services"`
+	Protocols           map[string]*protocol.Config      `yaml:"protocols" json:"protocols,omitempty" property:"protocols"`
+	ProtocolConf        interface{}                      `yaml:"protocol_conf" json:"protocol_conf,omitempty" property:"protocol_conf"`
+	FilterConf          interface{}                      `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf"`
+	ShutdownConfig      *config.ShutdownConfig           `yaml:"shutdown_conf" json:"shutdown_conf,omitempty" property:"shutdown_conf"`
+	ConfigType          map[string]string                `yaml:"config_type" json:"config_type,omitempty" property:"config_type"`
 }
 
 // UnmarshalYAML unmarshals the ProviderConfig by @unmarshal function

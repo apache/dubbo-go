@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package shutdown
+package config
 //
 //import (
 //	"dubbo.apache.org/dubbo-go/v3/config"
@@ -65,7 +65,7 @@ package shutdown
 //	config.providerConfig = nil
 //	BeforeShutdown()
 //
-//	config.consumerConfig = &consumer.Config{
+//	config.consumerConfig = &consumer.ShutdownConfig{
 //		References: consumerReferences,
 //		ShutdownConfig: &ShutdownConfig{
 //			Timeout:     "1",
@@ -100,7 +100,7 @@ package shutdown
 //		Protocols: providerProtocols,
 //	}
 //
-//	config.consumerConfig = &consumer.Config{
+//	config.consumerConfig = &consumer.ShutdownConfig{
 //		References: consumerReferences,
 //		ShutdownConfig: &ShutdownConfig{
 //			Timeout:     "1",

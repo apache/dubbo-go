@@ -18,7 +18,7 @@
 package v3router
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/config/router"
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"fmt"
 	"testing"
 )
@@ -221,7 +221,7 @@ func TestRouterChain_Process(t *testing.T) {
 	vsJson := `{"apiVersion":"service.dubbo.apache.org/v1alpha2", "kind":"VirtualService", "name":"demo-route"}`
 
 	rc := &RouterChain{}
-	mockVirtualServiceConfig := &router.VirtualServiceConfig{
+	mockVirtualServiceConfig := &config.VirtualServiceConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
 				"kubectl.kubernetes.io/last-applied-configuration": vsJson,
@@ -239,7 +239,7 @@ func TestRouterChain_Process(t *testing.T) {
 
 	// test destination rule config chage event
 	destJson := `{"apiVersion":"service.dubbo.apache.org/v1alpha2", "kind":"VirtualService", "name":"demo-route"}`
-	mockDestinationRuleConfig := &router.DestinationRuleConfig{
+	mockDestinationRuleConfig := &config.DestinationRuleConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
 				"kubectl.kubernetes.io/last-applied-configuration": destJson,

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package service
+package config
 
 import (
 	"container/list"
@@ -44,8 +44,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
-// Config is the configuration of the service provider
-type Config struct {
+// ServiceConfig is the configuration of the service provider
+type ServiceConfig struct {
 	id                          string
 	Filter                      string            `yaml:"filter" json:"filter,omitempty" property:"filter"`
 	Protocol                    string            `default:"dubbo"  required:"true"  yaml:"protocol"  json:"protocol,omitempty" property:"protocol"` // multi protocol support, split by ','
@@ -87,16 +87,16 @@ type Config struct {
 }
 
 // Prefix returns dubbo.service.${interface}.
-func (c *Config) Prefix() string {
+func (c *ServiceConfig) Prefix() string {
 	return constant.ServiceConfigPrefix + c.InterfaceName + "."
 }
 
-// UnmarshalYAML unmarshal the Config by @unmarshal function
-func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
+// UnmarshalYAML unmarshal the ServiceConfig by @unmarshal function
+func (c *ServiceConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	if err := defaults.Set(c); err != nil {
 		return err
 	}
-	type plain Config
+	type plain ServiceConfig
 	if err := unmarshal((*plain)(c)); err != nil {
 		return err
 	}
@@ -106,9 +106,9 @@ func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	return nil
 }
 
-// NewServiceConfig The only way to get a new Config
-func NewServiceConfig(id string) *Config {
-	return &Config{
+// NewServiceConfig The only way to get a new ServiceConfig
+func NewServiceConfig(id string) *ServiceConfig {
+	return &ServiceConfig{
 		id:         id,
 		unexported: atomic.NewBool(false),
 		exported:   atomic.NewBool(false),
@@ -117,12 +117,12 @@ func NewServiceConfig(id string) *Config {
 }
 
 // InitExported will set exported as false atom bool
-func (c *Config) InitExported() {
+func (c *ServiceConfig) InitExported() {
 	c.exported = atomic.NewBool(false)
 }
 
 // IsExport will return whether the service config is exported or not
-func (c *Config) IsExport() bool {
+func (c *ServiceConfig) IsExport() bool {
 	return c.exported.Load()
 }
 
@@ -145,7 +145,7 @@ func getRandomPort(protocolConfigs []*protocol2.Config) *list.List {
 }
 
 // Export exports the service
-func (c *Config) Export() error {
+func (c *ServiceConfig) Export() error {
 	// TODO: config center start here
 
 	// TODO: delay export
@@ -246,7 +246,7 @@ func (c *Config) Export() error {
 }
 
 // Unexport will call unexport of all exporters service config exported
-func (c *Config) Unexport() {
+func (c *ServiceConfig) Unexport() {
 	if !c.exported.Load() {
 		return
 	}
@@ -268,11 +268,11 @@ func (c *Config) Unexport() {
 }
 
 // Implement only store the @s and return
-func (c *Config) Implement(s common.RPCService) {
+func (c *ServiceConfig) Implement(s common.RPCService) {
 	c.rpcService = s
 }
 
-func (c *Config) getUrlMap() url.Values {
+func (c *ServiceConfig) getUrlMap() url.Values {
 	urlMap := url.Values{}
 	// first set user params
 	for k, v := range c.Params {
@@ -342,7 +342,7 @@ func (c *Config) getUrlMap() url.Values {
 }
 
 // GetExportedUrls will return the url in service config's exporter
-func (c *Config) GetExportedUrls() []*common.URL {
+func (c *ServiceConfig) GetExportedUrls() []*common.URL {
 	if c.exported.Load() {
 		var urls []*common.URL
 		for _, exporter := range c.exporters {
@@ -360,8 +360,8 @@ func publishServiceDefinition(url *common.URL) {
 	}
 }
 
-// postProcessConfig asks registered ConfigPostProcessor to post-process the current Config.
-func (c *Config) postProcessConfig(url *common.URL) {
+// postProcessConfig asks registered ConfigPostProcessor to post-process the current ServiceConfig.
+func (c *ServiceConfig) postProcessConfig(url *common.URL) {
 	for _, p := range extension.GetConfigPostProcessors() {
 		p.PostProcessServiceConfig(url)
 	}

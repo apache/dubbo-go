@@ -18,14 +18,14 @@
 package judger
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/config/router"
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"regexp"
 	"strings"
 )
 
 // nolint
 type StringMatchJudger struct {
-	router.StringMatch
+	config.StringMatch
 }
 
 // nolint
@@ -50,7 +50,7 @@ func (smj *StringMatchJudger) Judge(input string) bool {
 }
 
 // nolint
-func NewStringMatchJudger(matchConf *router.StringMatch) *StringMatchJudger {
+func NewStringMatchJudger(matchConf *config.StringMatch) *StringMatchJudger {
 	return &StringMatchJudger{
 		StringMatch: *matchConf,
 	}

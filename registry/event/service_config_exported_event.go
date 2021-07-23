@@ -18,7 +18,7 @@
 package event
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/config/service"
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"time"
 )
 
@@ -29,11 +29,11 @@ import (
 // ServiceConfigExportedEvent represents an service was exported
 type ServiceConfigExportedEvent struct {
 	observer.BaseEvent
-	ServiceConfig *service.Config
+	ServiceConfig *config.ServiceConfig
 }
 
 // NewServiceConfigExportedEvent create an instance
-func NewServiceConfigExportedEvent(serviceConfig *service.Config) *ServiceConfigExportedEvent {
+func NewServiceConfigExportedEvent(serviceConfig *config.ServiceConfig) *ServiceConfigExportedEvent {
 	return &ServiceConfigExportedEvent{
 		BaseEvent: observer.BaseEvent{
 			Source:    serviceConfig,

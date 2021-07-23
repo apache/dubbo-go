@@ -18,9 +18,9 @@
 package consumer
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config/reference"
 	"dubbo.apache.org/dubbo-go/v3/config/registry"
-	"dubbo.apache.org/dubbo-go/v3/config/shutdown"
 	"time"
 )
 
@@ -38,7 +38,7 @@ const (
 
 // Config is Consumer default configuration
 type Config struct {
-	//root.Config         `yaml:",inline" property:"base"`
+	//root.RootConfig         `yaml:",inline" property:"base"`
 	//center.Config `yaml:"-"`
 	Filter              string `yaml:"filter" json:"filter,omitempty" property:"filter"`
 	// client
@@ -56,7 +56,7 @@ type Config struct {
 	References     map[string]*reference.ReferenceConfig `yaml:"references" json:"references,omitempty" property:"references"`
 	ProtocolConf   interface{}                           `yaml:"protocol_conf" json:"protocol_conf,omitempty" property:"protocol_conf"`
 	FilterConf     interface{}                           `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf"`
-	ShutdownConfig *shutdown.Config                      `yaml:"shutdown_conf" json:"shutdown_conf,omitempty" property:"shutdown_conf"`
+	ShutdownConfig *config.ShutdownConfig                `yaml:"shutdown_conf" json:"shutdown_conf,omitempty" property:"shutdown_conf"`
 	ConfigType     map[string]string                     `yaml:"config_type" json:"config_type,omitempty" property:"config_type"`
 }
 
@@ -75,7 +75,7 @@ func (Config) Prefix() string {
 }
 
 // SetConsumerConfig sets consumerConfig by @c
-//func SetConsumerConfig(c Config) {
+//func SetConsumerConfig(c ShutdownConfig) {
 //	config.consumerConfig = &c
 //}
 
@@ -84,7 +84,7 @@ func ConsumerInit(confConFile string) error {
 	//if confConFile == "" {
 	//	return perrors.Errorf("application configure(consumer) file name is nil")
 	//}
-	//consumerConfig = &Config{}
+	//consumerConfig = &ShutdownConfig{}
 	//fileStream, err := yaml.UnmarshalYMLConfig(confConFile, consumerConfig)
 	//if err != nil {
 	//	return perrors.Errorf("unmarshalYmlConfig error %v", perrors.WithStack(err))

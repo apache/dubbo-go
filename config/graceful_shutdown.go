@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package shutdown
+package config
 
 import (
 	"time"
@@ -183,7 +183,7 @@ func destroyConsumerProtocols(consumerProtocols *gxset.HashSet) {
 //	waitingProcessedTimeout(config.consumerConfig.ShutdownConfig)
 //}
 
-func waitingProcessedTimeout(shutdownConfig *Config) {
+func waitingProcessedTimeout(shutdownConfig *ShutdownConfig) {
 	timeout := shutdownConfig.GetStepTimeout()
 	if timeout <= 0 {
 		return

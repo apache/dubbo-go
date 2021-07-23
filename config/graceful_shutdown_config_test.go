@@ -15,28 +15,35 @@
  * limitations under the License.
  */
 
-package router
+package config
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/cluster/router/chain"
-	"dubbo.apache.org/dubbo-go/v3/common/yaml"
+	"testing"
+	"time"
 )
 
-// LocalRouterRules defines the local router config structure
-type LocalRouterRules struct {
-	RouterRules []interface{} `yaml:"routerRules"`
-}
+import (
+	"github.com/stretchr/testify/assert"
+)
 
-// RouterInit Set config file to init router config
-func RouterInit(vsConfigPath, drConfigPath string) error {
-	vsBytes, err := yaml.LoadYMLConfig(vsConfigPath)
-	if err != nil {
-		return err
+func TestShutdownConfigGetTimeout(t *testing.T) {
+	config := ShutdownConfig{}
+	assert.False(t, config.RejectRequest)
+	assert.False(t, config.RequestsFinished)
+
+	config = ShutdownConfig{
+		Timeout:     "60s",
+		StepTimeout: "10s",
 	}
-	drBytes, err := yaml.LoadYMLConfig(drConfigPath)
-	if err != nil {
-		return err
+
+	assert.Equal(t, 60*time.Second, config.GetTimeout())
+	assert.Equal(t, 10*time.Second, config.GetStepTimeout())
+
+	config = ShutdownConfig{
+		Timeout:     "34ms",
+		StepTimeout: "79ms",
 	}
-	chain.SetVSAndDRConfigByte(vsBytes, drBytes)
-	return nil
+
+	assert.Equal(t, 34*time.Millisecond, config.GetTimeout())
+	assert.Equal(t, 79*time.Millisecond, config.GetStepTimeout())
 }

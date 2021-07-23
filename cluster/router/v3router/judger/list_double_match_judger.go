@@ -18,12 +18,12 @@
 package judger
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/config/router"
+	"dubbo.apache.org/dubbo-go/v3/config"
 )
 
 // nolint
 type ListDoubleMatchJudger struct {
-	router.ListDoubleMatch
+	config.ListDoubleMatch
 }
 
 // nolint
@@ -37,7 +37,7 @@ func (lsmj *ListDoubleMatchJudger) Judge(input float64) bool {
 }
 
 // nolint
-func newListDoubleMatchJudger(matchConf *router.ListDoubleMatch) *ListDoubleMatchJudger {
+func newListDoubleMatchJudger(matchConf *config.ListDoubleMatch) *ListDoubleMatchJudger {
 	return &ListDoubleMatchJudger{
 		ListDoubleMatch: *matchConf,
 	}

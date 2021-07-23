@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package shutdown
+package config
 
 import (
 	"time"
@@ -31,8 +31,8 @@ const (
 	defaultStepTimeout = 10 * time.Second
 )
 
-// Config is used as configuration for graceful shutdown
-type Config struct {
+// ShutdownConfig is used as configuration for graceful shutdown
+type ShutdownConfig struct {
 	/*
 	 * Total timeout. Even though we don't release all resources,
 	 * the application will shutdown if the costing time is over this configuration. The unit is ms.
@@ -58,12 +58,12 @@ type Config struct {
 }
 
 // Prefix dubbo.shutdown
-func (config *Config) Prefix() string {
+func (config *ShutdownConfig) Prefix() string {
 	return constant.ShutdownConfigPrefix
 }
 
 // nolint
-func (config *Config) GetTimeout() time.Duration {
+func (config *ShutdownConfig) GetTimeout() time.Duration {
 	result, err := time.ParseDuration(config.Timeout)
 	if err != nil {
 		logger.Errorf("The Timeout configuration is invalid: %s, and we will use the default value: %s, err: %v",
@@ -74,7 +74,7 @@ func (config *Config) GetTimeout() time.Duration {
 }
 
 // nolint
-func (config *Config) GetStepTimeout() time.Duration {
+func (config *ShutdownConfig) GetStepTimeout() time.Duration {
 	result, err := time.ParseDuration(config.StepTimeout)
 	if err != nil {
 		logger.Errorf("The StepTimeout configuration is invalid: %s, and we will use the default value: %s, err: %v",

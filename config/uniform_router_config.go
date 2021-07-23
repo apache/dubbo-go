@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package router
+package config
 
 import (
 	"github.com/ghodss/yaml"

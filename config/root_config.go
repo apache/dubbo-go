@@ -1,7 +1,8 @@
-package root
+package config
 
 import (
 	"bytes"
+	"dubbo.apache.org/dubbo-go/v3/config/protocol"
 	"dubbo.apache.org/dubbo-go/v3/config/registry"
 )
 
@@ -16,26 +17,26 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config/center"
 	"dubbo.apache.org/dubbo-go/v3/config/medadata/report"
 	"dubbo.apache.org/dubbo-go/v3/config/metric"
-	"dubbo.apache.org/dubbo-go/v3/config/service/discovery"
 )
 
-// Config is the root config
-type Config struct {
-
+// RootConfig is the root config
+type RootConfig struct {
 	ConfigCenter *center.Config `yaml:"config-center" json:"config-center,omitempty"`
 
 	// since 1.5.0 version
 	//Remotes              map[string]*config.RemoteConfig `yaml:"remote" json:"remote,omitempty" property:"remote"`
 
-	ServiceDiscoveries map[string]*discovery.Config `yaml:"service_discovery" json:"service_discovery,omitempty" property:"service_discovery"`
+	ServiceDiscoveries map[string]*ServiceDiscoveryConfig `yaml:"service-discovery" json:"service-discovery,omitempty" property:"service_discovery"`
 
-	MetadataReportConfig *report.Config `yaml:"metadata_report" json:"metadata_report,omitempty" property:"metadata_report"`
+	MetadataReportConfig *report.Config `yaml:"metadata_report" json:"metadata-report,omitempty" property:"metadata-report"`
 
 	// Application application config
 	Application *application.Config `yaml:"application" json:"application,omitempty" property:"application"`
 
 	// Registries registry config
-	Registries map[string]*registry.Config `default:"{}" yaml:"registries" json:"registries" property:"registries"`
+	Registries map[string]*registry.Config `yaml:"registries" json:"registries" property:"registries"`
+
+	Protocols map[string]*protocol.Config `yaml:"protocols" json:"protocols" property:"protocols"`
 
 	// prefix              string
 	fatherConfig        interface{}
@@ -51,6 +52,6 @@ type Config struct {
 }
 
 // Prefix dubbo
-func (Config) Prefix() string {
+func (RootConfig) Prefix() string {
 	return constant.DUBBO
 }

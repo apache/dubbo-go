@@ -18,8 +18,8 @@
 package configurable
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config/protocol"
-	service2 "dubbo.apache.org/dubbo-go/v3/config/service"
 	"errors"
 	"sync"
 )
@@ -28,14 +28,13 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/metadata/service"
 	"dubbo.apache.org/dubbo-go/v3/metadata/service/exporter"
 )
 
 // MetadataServiceExporter is the ConfigurableMetadataServiceExporter which implement MetadataServiceExporter interface
 type MetadataServiceExporter struct {
-	ServiceConfig   *service2.Config
+	ServiceConfig   *config.ServiceConfig
 	lock            sync.RWMutex
 	metadataService service.MetadataService
 }
@@ -50,7 +49,7 @@ func NewMetadataServiceExporter(metadataService service.MetadataService) exporte
 // Export will export the metadataService
 func (exporter *MetadataServiceExporter) Export(url *common.URL) error {
 	if !exporter.IsExported() {
-		serviceConfig := service2.NewServiceConfig(constant.SIMPLE_METADATA_SERVICE_NAME)
+		serviceConfig := config.NewServiceConfig(constant.SIMPLE_METADATA_SERVICE_NAME)
 		serviceConfig.Protocol = constant.DEFAULT_PROTOCOL
 		if url == nil || url.SubURL == nil {
 			return errors.New("metadata server url is nil, pls check your configuration")

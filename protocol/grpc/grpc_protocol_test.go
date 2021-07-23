@@ -18,12 +18,12 @@
 package grpc
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config/application"
 	"dubbo.apache.org/dubbo-go/v3/config/base"
 	"dubbo.apache.org/dubbo-go/v3/config/instance"
 	"dubbo.apache.org/dubbo-go/v3/config/method"
 	"dubbo.apache.org/dubbo-go/v3/config/provider"
-	"dubbo.apache.org/dubbo-go/v3/config/service"
 	"testing"
 	"time"
 )
@@ -50,7 +50,7 @@ func doInitProvider() {
 				Environment:  "test",
 			},
 		},
-		Services: map[string]*service.Config{
+		Services: map[string]*config.ServiceConfig{
 			"GrpcGreeterImpl": {
 				InterfaceName: "io.grpc.examples.helloworld.GreeterGrpc$IGreeter",
 				Protocol:      "grpc",

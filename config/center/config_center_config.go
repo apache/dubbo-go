@@ -153,8 +153,8 @@ func (c *Config) TranslateConfigAddress() string {
 	return c.Address
 }
 
-// toURL will compatible with baseConfig.Config.Address and baseConfig.Config.RemoteRef before 1.6.0
-// After 1.6.0 will not compatible, only baseConfig.Config.RemoteRef
+// toURL will compatible with baseConfig.ShutdownConfig.Address and baseConfig.ShutdownConfig.RemoteRef before 1.6.0
+// After 1.6.0 will not compatible, only baseConfig.ShutdownConfig.RemoteRef
 func (c *Config) toURL() (*common.URL, error) {
 	//remoteRef := baseConfig.ConfigCenterConfig.RemoteRef
 	//// if set remote ref use remote

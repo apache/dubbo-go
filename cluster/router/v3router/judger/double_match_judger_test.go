@@ -18,7 +18,7 @@
 package judger
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/config/router"
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"testing"
 )
 
@@ -27,30 +27,30 @@ import (
 )
 
 func TestDoubleMatchJudger(t *testing.T) {
-	assert.True(t, newDoubleMatchJudger(&router.DoubleMatch{
+	assert.True(t, newDoubleMatchJudger(&config.DoubleMatch{
 		Exact: 3.14159,
 	}).Judge(3.14159))
 
-	assert.False(t, newDoubleMatchJudger(&router.DoubleMatch{
+	assert.False(t, newDoubleMatchJudger(&config.DoubleMatch{
 		Exact: 3.14159,
 	}).Judge(3.14155927))
 
-	assert.True(t, newDoubleMatchJudger(&router.DoubleMatch{
-		Range: &router.DoubleRangeMatch{
+	assert.True(t, newDoubleMatchJudger(&config.DoubleMatch{
+		Range: &config.DoubleRangeMatch{
 			Start: 1.0,
 			End:   1.5,
 		},
 	}).Judge(1.3))
 
-	assert.False(t, newDoubleMatchJudger(&router.DoubleMatch{
-		Range: &router.DoubleRangeMatch{
+	assert.False(t, newDoubleMatchJudger(&config.DoubleMatch{
+		Range: &config.DoubleRangeMatch{
 			Start: 1.0,
 			End:   1.5,
 		},
 	}).Judge(1.9))
 
-	assert.False(t, newDoubleMatchJudger(&router.DoubleMatch{
-		Range: &router.DoubleRangeMatch{
+	assert.False(t, newDoubleMatchJudger(&config.DoubleMatch{
+		Range: &config.DoubleRangeMatch{
 			Start: 1.0,
 			End:   1.5,
 		},

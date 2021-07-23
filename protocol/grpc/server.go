@@ -19,7 +19,6 @@ package grpc
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/config/instance"
-	service2 "dubbo.apache.org/dubbo-go/v3/config/service"
 	"fmt"
 	"net"
 	"sync"
@@ -117,7 +116,7 @@ func getSyncMapLen(m *sync.Map) int {
 }
 
 // waitGrpcExporter wait until len(providerServices) = len(ExporterMap)
-func waitGrpcExporter(providerServices map[string]*service2.Config) {
+func waitGrpcExporter(providerServices map[string]*config.ServiceConfig) {
 	t := time.NewTicker(50 * time.Millisecond)
 	defer t.Stop()
 	pLen := len(providerServices)
@@ -138,7 +137,7 @@ func waitGrpcExporter(providerServices map[string]*service2.Config) {
 }
 
 // registerService SetProxyImpl invoker and grpc service
-func registerService(providerServices map[string]*service2.Config, server *grpc.Server) {
+func registerService(providerServices map[string]*config.ServiceConfig, server *grpc.Server) {
 	for key, providerService := range providerServices {
 		service := instance.GetProviderService(key)
 		ds, ok := service.(DubboGrpcService)

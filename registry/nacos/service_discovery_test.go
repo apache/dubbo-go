@@ -18,7 +18,6 @@
 package nacos
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/config/service/discovery"
 	"math/rand"
 	"strconv"
 	"testing"
@@ -47,10 +46,10 @@ func Test_newNacosServiceDiscovery(t *testing.T) {
 	name := "nacos1"
 	_, err := newNacosServiceDiscovery(name)
 
-	// the Config not found
+	// the ShutdownConfig not found
 	assert.NotNil(t, err)
 
-	sdc := &discovery.Config{
+	sdc := &config.ServiceConfig{
 		Protocol:  "nacos",
 		RemoteRef: "mock",
 	}
@@ -179,7 +178,7 @@ func TestNacosServiceDiscovery_Destroy(t *testing.T) {
 }
 
 func prepareData() {
-	config.GetBaseConfig().ServiceDiscoveries[testName] = &discovery.Config{
+	config.GetBaseConfig().ServiceDiscoveries[testName] = &config.ServiceConfig{
 		Protocol:  "nacos",
 		RemoteRef: testName,
 	}

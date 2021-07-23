@@ -89,7 +89,7 @@ func initClient(protocol string) {
 	rand.Seed(time.Now().UnixNano())
 }
 
-// Config ClientConf
+// ShutdownConfig ClientConf
 func SetClientConf(c ClientConfig) {
 	clientConf = &c
 	err := clientConf.CheckValidity()

@@ -18,6 +18,8 @@
 package protocol
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/config"
+	"github.com/knadh/koanf"
 	"strings"
 )
 
@@ -32,11 +34,25 @@ type Config struct {
 	Port string `required:"true" yaml:"port"  json:"port,omitempty" property:"port"`
 }
 
-// nolint
-func (c *Config) Prefix() string {
+// Prefix dubbo.protocols
+func (Config) Prefix() string {
 	return constant.ProtocolConfigPrefix
 }
 
+func GetProtocolsConfig(protocols map[string]*Config, k *koanf.Koanf) map[string]*Config {
+	if protocols != nil {
+		return protocols
+	}
+
+	conf := new(Config)
+	if value := k.Get(conf.Prefix()); value != nil {
+		conf = value.(*Config)
+	} else {
+
+	}
+	config.Koanf.Get(conf.Prefix())
+	return nil
+}
 func loadProtocol(protocolsIds string, protocols map[string]*Config) []*Config {
 	returnProtocols := make([]*Config, 0, len(protocols))
 	for _, v := range strings.Split(protocolsIds, ",") {

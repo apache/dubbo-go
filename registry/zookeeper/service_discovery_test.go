@@ -19,7 +19,6 @@ package zookeeper
 
 import (
 	"context"
-	"dubbo.apache.org/dubbo-go/v3/config/service/discovery"
 	"strconv"
 	"sync"
 	"testing"
@@ -54,7 +53,7 @@ func prepareData(t *testing.T) *zk.TestCluster {
 	address := "127.0.0.1:" + strconv.Itoa(tc.Servers[0].Port)
 	//address := "127.0.0.1:2181"
 
-	config.GetBaseConfig().ServiceDiscoveries[testName] = &discovery.Config{
+	config.GetBaseConfig().ServiceDiscoveries[testName] = &config.ServiceConfig{
 		Protocol:  "zookeeper",
 		RemoteRef: "test",
 	}
@@ -70,11 +69,11 @@ func TestNewZookeeperServiceDiscovery(t *testing.T) {
 	name := "zookeeper1"
 	_, err := newZookeeperServiceDiscovery(name)
 
-	// the Config not found
+	// the ShutdownConfig not found
 	// err: could not init the instance because the config is invalid
 	assert.NotNil(t, err)
 
-	sdc := &discovery.Config{
+	sdc := &config.ServiceConfig{
 		Protocol:  "zookeeper",
 		RemoteRef: "mock",
 	}

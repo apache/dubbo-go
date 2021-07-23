@@ -20,8 +20,8 @@ package config
 import (
 	"dubbo.apache.org/dubbo-go/v3/config/application"
 	"dubbo.apache.org/dubbo-go/v3/config/center"
+	"dubbo.apache.org/dubbo-go/v3/config/protocol"
 	"dubbo.apache.org/dubbo-go/v3/config/registry"
-	"dubbo.apache.org/dubbo-go/v3/config/root"
 	"fmt"
 	"github.com/go-playground/validator/v10"
 	"github.com/knadh/koanf"
@@ -37,17 +37,18 @@ import (
 )
 
 var (
-	rootConfig *root.Config
+	Koanf      *koanf.Koanf
+	rootConfig *RootConfig
 	// application config
 	applicationConfig *application.Config
 	//
 	registriesConfig map[string]*registry.Config
 
 	configCenterConfig *center.Config
-	//consumerConfig *consumer.Config
+	//consumerConfig *consumer.ShutdownConfig
 	//providerConfig *provider.ProviderConfig
 	//// baseConfig = providerConfig.BaseConfig or consumerConfig
-	//baseConfig *root.Config
+	//baseConfig *root.ShutdownConfig
 	//sslEnabled = false
 	//
 	//// configAccessMutex is used to make sure that xxxxConfig will only be created once if needed.
@@ -75,7 +76,7 @@ func Load(opts ...Option) {
 	for _, opt := range opts {
 		opt.apply(conf)
 	}
-	rootConfig = new(root.Config)
+	rootConfig = new(RootConfig)
 
 	k := getKoanf(conf)
 
@@ -83,6 +84,7 @@ func Load(opts ...Option) {
 		panic(err)
 	}
 
+	Koanf = k
 	rootConfig.Koanf = k
 	rootConfig.Validate = validator.New()
 }
@@ -206,6 +208,14 @@ func GetConfigCenterConfig() (*center.Config, error) {
 	return conf, nil
 }
 
+func GetProtocolsConfig() (map[string]*protocol.Config, error) {
+	if err := check(); err != nil {
+		return nil, err
+	}
+
+	return protocol.GetProtocolsConfig(nil, rootConfig.Koanf), nil
+}
+
 //
 //// loaded consumer & provider config from xxx.yml, and log config from xxx.xml
 //// Namely: dubbo.consumer.xml & dubbo.provider.xml in java dubbo
@@ -262,7 +272,7 @@ func GetConfigCenterConfig() (*center.Config, error) {
 //			p.ApplicationConfig = NewDefaultApplicationConfig()
 //		}
 //	default:
-//		c := target.(*consumer.Config)
+//		c := target.(*consumer.ShutdownConfig)
 //		if len(c.Registries) == 0 && c.Registry == nil {
 //			c.Registries[constant.DEFAULT_REGISTRY_ZK_ID] = registryConfig
 //		}
@@ -278,7 +288,7 @@ func GetConfigCenterConfig() (*center.Config, error) {
 //	}
 //}
 //
-//func checkApplicationName(config *application.Config) {
+//func checkApplicationName(config *application.ShutdownConfig) {
 //	if config == nil || len(config.Name) == 0 {
 //		errMsg := "application config must not be nil, pls check your configuration"
 //		logger.Errorf(errMsg)
@@ -583,12 +593,12 @@ func GetConfigCenterConfig() (*center.Config, error) {
 //// we use double-check to reduce race condition
 //// In general, it will be locked 0 or 1 time.
 //// So you don't need to worry about the race condition
-//func GetApplicationConfig() *application.Config {
+//func GetApplicationConfig() *application.ShutdownConfig {
 //	if GetBaseConfig().ApplicationConfig == nil {
 //		configAccessMutex.Lock()
 //		defer configAccessMutex.Unlock()
 //		if GetBaseConfig().ApplicationConfig == nil {
-//			GetBaseConfig().ApplicationConfig = &application.Config{}
+//			GetBaseConfig().ApplicationConfig = &application.ShutdownConfig{}
 //		}
 //	}
 //	return GetBaseConfig().ApplicationConfig
@@ -610,26 +620,26 @@ func GetConfigCenterConfig() (*center.Config, error) {
 //// we use double-check to reduce race condition
 //// In general, it will be locked 0 or 1 time.
 //// So you don't need to worry about the race condition
-//func GetConsumerConfig() consumer.Config {
+//func GetConsumerConfig() consumer.ShutdownConfig {
 //	if consumerConfig == nil {
 //		if consumerConfig == nil {
-//			return consumer.Config{}
+//			return consumer.ShutdownConfig{}
 //		}
 //	}
 //	return *consumerConfig
 //}
 //
-//func GetBaseConfig() *base.Config {
+//func GetBaseConfig() *base.ShutdownConfig {
 //	if baseConfig == nil {
 //		configAccessMutex.Lock()
 //		defer configAccessMutex.Unlock()
 //		if baseConfig == nil {
-//			baseConfig = &base.Config{
+//			baseConfig = &base.ShutdownConfig{
 //				metric.MetricConfig: &metric.MetricConfig{},
-//				ConfigCenterConfig:  &center.Config{},
+//				ConfigCenterConfig:  &center.ShutdownConfig{},
 //				Remotes:             make(map[string]*RemoteConfig),
-//				application.Config:  &application.Config{},
-//				ServiceDiscoveries:  make(map[string]*discovery.Config),
+//				application.ShutdownConfig:  &application.ShutdownConfig{},
+//				ServiceDiscoveries:  make(map[string]*discovery.ShutdownConfig),
 //			}
 //		}
 //	}
