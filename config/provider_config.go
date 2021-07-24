@@ -29,14 +29,14 @@ import (
 type ProviderConfig struct {
 	//base.ShutdownConfig         `yaml:",inline" property:"base"`
 	//center.configCenter `yaml:"-"`
-	Filter              string                            `yaml:"filter" json:"filter,omitempty" property:"filter"`
-	ProxyFactory        string                            `yaml:"proxy_factory" default:"default" json:"proxy_factory,omitempty" property:"proxy_factory"`
-	Services            map[string]*ServiceConfig  `yaml:"services" json:"services,omitempty" property:"services"`
-	Protocols           map[string]*ProtocolConfig `yaml:"protocols" json:"protocols,omitempty" property:"protocols"`
-	ProtocolConf        interface{}                       `yaml:"protocol_conf" json:"protocol_conf,omitempty" property:"protocol_conf"`
-	FilterConf          interface{}                       `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf"`
-	ShutdownConfig      *ShutdownConfig            `yaml:"shutdown_conf" json:"shutdown_conf,omitempty" property:"shutdown_conf"`
-	ConfigType          map[string]string                 `yaml:"config_type" json:"config_type,omitempty" property:"config_type"`
+	Filter         string                     `yaml:"filter" json:"filter,omitempty" property:"filter"`
+	ProxyFactory   string                     `yaml:"proxy-factory" default:"default" json:"proxy-factory,omitempty" property:"proxy-factory"`
+	Services       map[string]*ServiceConfig  `yaml:"services" json:"services,omitempty" property:"services"`
+	Protocols      map[string]*ProtocolConfig `yaml:"protocols" json:"protocols,omitempty" property:"protocols"`
+	ProtocolConf   interface{}                `yaml:"protocol_conf" json:"protocol_conf,omitempty" property:"protocol_conf"`
+	FilterConf     interface{}                `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf"`
+	ShutdownConfig *ShutdownConfig            `yaml:"shutdown_conf" json:"shutdown_conf,omitempty" property:"shutdown_conf"`
+	ConfigType     map[string]string          `yaml:"config_type" json:"config_type,omitempty" property:"config_type"`
 }
 
 // UnmarshalYAML unmarshals the ProviderConfig by @unmarshal function
@@ -48,7 +48,7 @@ func (c *ProviderConfig) UnmarshalYAML(unmarshal func(interface{}) error) error 
 	return unmarshal((*plain)(c))
 }
 
-// nolint
+// Prefix dubbo.provider
 func (*ProviderConfig) Prefix() string {
 	return constant.ProviderConfigPrefix
 }

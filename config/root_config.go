@@ -115,3 +115,21 @@ func GetRegistriesConfig() (map[string]*RegistryConfig, error) {
 	}
 	return registries, nil
 }
+
+// GetProtocolsConfig get protocols config default dubbo protocol
+func GetProtocolsConfig() (map[string]*ProtocolConfig, error) {
+	if err := check(); err != nil {
+		return nil, err
+	}
+
+	protocols := getProtocolsConfig(rootConfig.Protocols)
+	for _, protocol := range protocols {
+		if err := defaults.Set(protocol); err != nil {
+			return nil, err
+		}
+		if err := verification(protocol); err != nil {
+			return nil, err
+		}
+	}
+	return protocols, nil
+}

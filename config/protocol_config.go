@@ -18,8 +18,6 @@
 package config
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
-	"github.com/creasty/defaults"
 	"strings"
 )
 
@@ -31,7 +29,7 @@ import (
 type ProtocolConfig struct {
 	Name string `default:"dubbo" yaml:"name"  json:"name,omitempty" property:"name"`
 	Ip   string `default:"127.0.0.1" yaml:"ip"  json:"ip,omitempty" property:"ip"`
-	Port string `default:"20000" yaml:"port"  json:"port,omitempty" property:"port"`
+	Port int    `default:"0" yaml:"port"  json:"port,omitempty" property:"port"`
 }
 
 // Prefix dubbo.protocols
@@ -39,17 +37,11 @@ func (ProtocolConfig) Prefix() string {
 	return constant.ProtocolConfigPrefix
 }
 
-// GetProtocolsConfig get protocols config
-func GetProtocolsConfig() map[string]*ProtocolConfig {
-	protocols := make(map[string]*ProtocolConfig)
-	conf := new(ProtocolConfig)
-	if value := viper.Get(conf.Prefix()); value != nil {
-		//conf = value.(map[string]*ProtocolConfig)
-		logger.Error("abc")
-	} else {
-		if err := defaults.Set(conf); err != nil {
-			panic(err)
-		}
+// getProtocolsConfig get protocols config default protocol
+func getProtocolsConfig(protocols map[string]*ProtocolConfig) map[string]*ProtocolConfig {
+	if protocols == nil || len(protocols) <= 0 {
+		conf := new(ProtocolConfig)
+		protocols = make(map[string]*ProtocolConfig, 1)
 		protocols["default"] = conf
 	}
 	return protocols

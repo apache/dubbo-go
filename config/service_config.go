@@ -128,9 +128,9 @@ func (c *ServiceConfig) IsExport() bool {
 func getRandomPort(protocolConfigs []*ProtocolConfig) *list.List {
 	ports := list.New()
 	for _, proto := range protocolConfigs {
-		if len(proto.Port) > 0 {
-			continue
-		}
+		//if len(proto.Port) > 0 {
+		//	continue
+		//}
 
 		tcp, err := gxnet.ListenOnTCPRandomPort(proto.Ip)
 		if err != nil {
