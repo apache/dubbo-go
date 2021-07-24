@@ -177,5 +177,5 @@ func (r *etcdV3Registry) DoUnsubscribe(conf *common.URL) (registry.Listener, err
 
 func (r *etcdV3Registry) handleClientRestart() {
 	r.WaitGroup().Add(1)
-	etcdv3.HandleClientRestart(r)
+	go etcdv3.HandleClientRestart(r)
 }

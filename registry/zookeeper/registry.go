@@ -316,5 +316,5 @@ func (r *zkRegistry) getCloseListener(conf *common.URL) (*RegistryConfigurationL
 
 func (r *zkRegistry) handleClientRestart() {
 	r.WaitGroup().Add(1)
-	zookeeper.HandleClientRestart(r)
+	go zookeeper.HandleClientRestart(r)
 }
