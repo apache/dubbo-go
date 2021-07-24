@@ -32,7 +32,6 @@ import (
 
 import (
 	_ "dubbo.apache.org/dubbo-go/v3/common/observer/dispatcher"
-	"dubbo.apache.org/dubbo-go/v3/config/registry"
 )
 
 var (
@@ -40,12 +39,7 @@ var (
 	validate *validator.Validate
 
 	rootConfig *RootConfig
-	// application config
-	applicationConfig *ApplicationConfig
-	//
-	registriesConfig map[string]*registry.Config
 
-	configCenterConfig *CenterConfig
 	//consumerConfig *consumer.ShutdownConfig
 	//providerConfig *provider.ProviderConfig
 	//// baseConfig = providerConfig.BaseConfig or consumerConfig
@@ -121,8 +115,7 @@ func getKoanf(conf *config) *koanf.Koanf {
 	k = koanf.New(conf.delim)
 
 	switch conf.genre {
-
-	case "yaml":
+	case "yaml", "yml":
 		err = k.Load(file.Provider(conf.path), yaml.Parser())
 	case "json":
 		err = k.Load(file.Provider(conf.path), json.Parser())

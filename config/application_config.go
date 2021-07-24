@@ -18,7 +18,6 @@
 package config
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"github.com/creasty/defaults"
 	"github.com/mitchellh/mapstructure"
 )
@@ -44,38 +43,17 @@ func (ApplicationConfig) Prefix() string {
 	return constant.DUBBO + ".application"
 }
 
-//GetApplicationConfig get application config
-func GetApplicationConfig() *ApplicationConfig {
-	if err := check(); err != nil {
-		return nil
-	}
-
-	application := rootConfig.Application
+// getApplicationConfig get application config
+func getApplicationConfig(application *ApplicationConfig) *ApplicationConfig {
 	if application != nil {
-		if err := defaults.Set(application); err != nil {
-			logger.Error(err)
-		}
-		if err := verification(application); err != nil {
-			logger.Error(err)
-		}
 		return application
 	}
 
 	application = new(ApplicationConfig)
 	if value := viper.Get(application.Prefix()); value != nil {
-		// map to struct
 		if err := mapstructure.Decode(value, application); err != nil {
-			logger.Error(err)
+			return application
 		}
-	}
-
-	// set defaults
-	if err := defaults.Set(application); err != nil {
-		logger.Error(err)
-	}
-	// validate values
-	if err := verification(application); err != nil {
-		logger.Error(err)
 	}
 	return application
 }

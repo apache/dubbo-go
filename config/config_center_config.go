@@ -18,13 +18,13 @@
 package config
 
 import (
+	"github.com/goinggo/mapstructure"
 	"net/url"
 	"strings"
 )
 
 import (
 	"github.com/creasty/defaults"
-	"github.com/goinggo/mapstructure"
 	"github.com/pkg/errors"
 )
 
@@ -67,25 +67,22 @@ func (CenterConfig) Prefix() string {
 	return constant.ConfigCenterPrefix
 }
 
-// GetConfigCenterConfig get config center config
-func GetConfigCenterConfig() *CenterConfig {
-	if err := check(); err != nil {
+// UnmarshalYAML unmarshal the ConfigCenterConfig by @unmarshal function
+func (c *CenterConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	if err := defaults.Set(c); err != nil {
+		return err
+	}
+	type plain CenterConfig
+	return unmarshal((*plain)(c))
+}
+
+// getConfigCenterConfig get config center config
+func getConfigCenterConfig(c *CenterConfig) *CenterConfig {
+	if c != nil {
 		return nil
 	}
-	center := rootConfig.ConfigCenter
-	if center != nil {
-		if err := defaults.Set(center); err != nil {
-			logger.Error(err)
-		}
-		center.translateConfigAddress()
-		if err := verification(center); err != nil {
-			logger.Error(err)
-		}
-		return center
-	}
-
-	center = new(CenterConfig)
-	key := center.Prefix()
+	c = new(CenterConfig)
+	key := c.Prefix()
 	value := viper.Get(key)
 	if value == nil {
 		key = strings.ReplaceAll(key, "-", "_")
@@ -94,28 +91,10 @@ func GetConfigCenterConfig() *CenterConfig {
 	if value == nil {
 		return nil
 	}
-
-	if err := mapstructure.Decode(value, center); err != nil {
-		logger.Error(err)
+	if err := mapstructure.Decode(value, c); err != nil {
+		return nil
 	}
-
-	if err := defaults.Set(center); err != nil {
-		logger.Error(err)
-	}
-	center.translateConfigAddress()
-	if err := verification(center); err != nil {
-		logger.Error(err)
-	}
-	return center
-}
-
-// UnmarshalYAML unmarshal the ConfigCenterConfig by @unmarshal function
-func (c *CenterConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	if err := defaults.Set(c); err != nil {
-		return err
-	}
-	type plain CenterConfig
-	return unmarshal((*plain)(c))
+	return c
 }
 
 // GetUrlMap gets url map from ConfigCenterConfig

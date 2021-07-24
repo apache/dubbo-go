@@ -2,6 +2,7 @@ package config
 
 import (
 	"bytes"
+	"github.com/creasty/defaults"
 	"github.com/go-playground/validator/v10"
 	"github.com/pkg/errors"
 	"strings"
@@ -51,6 +52,7 @@ func (RootConfig) Prefix() string {
 }
 
 func verification(s interface{}) error {
+
 	if err := validate.Struct(s); err != nil {
 		errs := err.(validator.ValidationErrors)
 		var slice []string
@@ -60,4 +62,40 @@ func verification(s interface{}) error {
 		return errors.New(strings.Join(slice, ","))
 	}
 	return nil
+}
+
+// GetApplicationConfig get application config
+func GetApplicationConfig() (*ApplicationConfig, error) {
+	if err := check(); err != nil {
+		return nil, err
+	}
+	application := getApplicationConfig(rootConfig.Application)
+	if err := defaults.Set(application); err != nil {
+		return nil, err
+	}
+
+	if err := verification(application); err != nil {
+		return nil, err
+	}
+	rootConfig.Application = application
+	return application, nil
+}
+
+// GetConfigCenterConfig get config center config
+func GetConfigCenterConfig() (*CenterConfig, error) {
+	if err := check(); err != nil {
+		return nil, err
+	}
+	centerConfig := getConfigCenterConfig(rootConfig.ConfigCenter)
+	if centerConfig == nil {
+		return nil, errors.New("config center config is null")
+	}
+	if err := defaults.Set(centerConfig); err != nil {
+		return nil, err
+	}
+	centerConfig.translateConfigAddress()
+	if err := verification(centerConfig); err != nil {
+		return nil, err
+	}
+	return centerConfig, nil
 }

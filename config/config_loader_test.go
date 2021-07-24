@@ -30,8 +30,8 @@ const (
 
 func TestNoLoad(t *testing.T) {
 
-	application:= GetApplicationConfig()
-
+	application, err := GetApplicationConfig()
+	assert.NotNil(t, err)
 	assert.Nil(t, application)
 }
 
@@ -39,7 +39,8 @@ func TestLoad(t *testing.T) {
 	Load(WithPath(configPath))
 
 	t.Run("application", func(t *testing.T) {
-		application := GetApplicationConfig()
+		application, err := GetApplicationConfig()
+		assert.Nil(t, err)
 		assert.Equal(t, application.Organization, "dubbo.io")
 		assert.Equal(t, application.Name, "dubbo-go")
 		assert.Equal(t, application.Module, "local")
@@ -60,7 +61,8 @@ func TestLoad(t *testing.T) {
 	//})
 	//config-center
 	t.Run("config-center", func(t *testing.T) {
-		conf := GetConfigCenterConfig()
+		conf, err := GetConfigCenterConfig()
+		assert.NotNil(t, err)
 		assert.Equal(t, "nacos", conf.Protocol)
 	})
 	//
@@ -76,16 +78,18 @@ func TestLoad(t *testing.T) {
 func TestLoadConfigCenter(t *testing.T) {
 
 	t.Run("config_center", func(t *testing.T) {
-		Load(WithPath("./testdata/config/center/conf_application.yaml"))
-		conf := GetConfigCenterConfig()
+		Load(WithGenre("yml"), WithPath("./testdata/config/center/conf_application.yaml"))
+		conf, err := GetConfigCenterConfig()
+		assert.Nil(t, err)
 		assert.Equal(t, "nacos", conf.Protocol)
 		assert.Equal(t, "10s", conf.Timeout)
 		assert.Equal(t, "./logs", conf.LogDir)
 	})
 
 	t.Run("configCenter", func(t *testing.T) {
-		Load(WithPath("./testdata/config/center/confApplication.yaml"))
-		conf := GetConfigCenterConfig()
+		Load(WithGenre("yaml"), WithPath("./testdata/config/center/confApplication.yaml"))
+		conf, err := GetConfigCenterConfig()
+		assert.Nil(t, err)
 		assert.Equal(t, "nacos", conf.Protocol)
 		assert.Equal(t, "10s", conf.Timeout)
 		assert.Equal(t, "./logs", conf.LogDir)
@@ -93,11 +97,21 @@ func TestLoadConfigCenter(t *testing.T) {
 
 	t.Run("config-center", func(t *testing.T) {
 		Load(WithPath("./testdata/config/center/conf-application.yaml"))
-		conf := GetConfigCenterConfig()
+		conf, err := GetConfigCenterConfig()
+		assert.Nil(t, err)
 		assert.Equal(t, "nacos", conf.Protocol)
 		assert.Equal(t, "10s", conf.Timeout)
 		assert.Equal(t, "./logs", conf.LogDir)
 	})
+}
+
+func TestCheckGenre(t *testing.T) {
+
+	err := checkGenre("abc")
+	assert.NotNil(t, err)
+
+	err = checkGenre("json")
+	assert.Nil(t, err)
 }
 
 //

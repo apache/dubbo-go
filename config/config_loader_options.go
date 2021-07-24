@@ -13,15 +13,20 @@
 * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 * See the License for the specific language governing permissions and
 * limitations under the License.
-*/
+ */
 
 package config
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strings"
+)
+import (
+	"github.com/pkg/errors"
 )
 
 type config struct {
@@ -48,7 +53,11 @@ type Option interface {
 // WithGenre set config genre
 func WithGenre(genre string) Option {
 	return optionFunc(func(conf *config) {
-		conf.genre = strings.ToLower(genre)
+		g := strings.ToLower(genre)
+		if err := checkGenre(g); err != nil {
+			panic(err)
+		}
+		conf.genre = g
 	})
 }
 
@@ -101,6 +110,17 @@ func userHomeDir() string {
 		return home
 	}
 	return os.Getenv("HOME")
+}
+
+// checkGenre check genre
+func checkGenre(genre string) error {
+	genres := []string{"json", "toml", "yaml", "yml"}
+	sort.Strings(genres)
+	idx := sort.SearchStrings(genres, genre)
+	if genres[idx] != genre {
+		return errors.New(fmt.Sprintf("no support %s", genre))
+	}
+	return nil
 }
 
 //
