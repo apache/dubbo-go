@@ -18,7 +18,7 @@
 package routeguide
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/config/instance"
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"io"
 	"log"
 	"math/rand"
@@ -26,7 +26,7 @@ import (
 )
 
 func init() {
-	instance.SetConsumerService(&RouteGuideClientImpl{})
+	config.SetConsumerService(&RouteGuideClientImpl{})
 }
 
 // printFeatures lists all the features within the given bounding Rectangle.

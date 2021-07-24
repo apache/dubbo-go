@@ -18,7 +18,6 @@
 package grpc
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/config/instance"
 	"reflect"
 	"strconv"
 )
@@ -118,7 +117,7 @@ func NewClient(url *common.URL) (*Client, error) {
 	}
 
 	key := url.GetParam(constant.BEAN_NAME_KEY, "")
-	impl := instance.GetConsumerService(key)
+	impl := config.GetConsumerService(key)
 	invoker := getInvoker(impl, conn)
 
 	return &Client{

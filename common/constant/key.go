@@ -53,6 +53,7 @@ const (
 	SSL_ENABLED_KEY = "ssl-enabled"
 	// PARAMS_TYPE_Key key used in pass through invoker factory, to define param type
 	PARAMS_TYPE_Key = "parameter-type-names"
+	DEFAULT_Key     = "default"
 )
 
 const (

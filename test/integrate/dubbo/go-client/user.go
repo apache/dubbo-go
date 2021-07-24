@@ -19,7 +19,7 @@ package main
 
 import (
 	"context"
-	"dubbo.apache.org/dubbo-go/v3/config/instance"
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"time"
 )
 
@@ -30,7 +30,7 @@ import (
 var userProvider = new(UserProvider)
 
 func init() {
-	instance.SetConsumerService(userProvider)
+	config.SetConsumerService(userProvider)
 	hessian.RegisterPOJO(&User{})
 }
 

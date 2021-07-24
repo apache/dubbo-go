@@ -1,0 +1,10 @@
+dubbo:
+  provider:
+    register: true
+    registry: nacos,zk
+    services:
+      helloService:
+        interface: org.dubbo.service.HelloService
+        registry: nacos,zk
+      orderService:
+        interface: org.dubbo.service.OrderService

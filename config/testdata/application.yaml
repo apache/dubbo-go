@@ -31,4 +31,5 @@ dubbo:
       interface: org.dubbo.service.OrderService
       registry: nacos
   provider:
-    filter:
+    register: true
+    services:

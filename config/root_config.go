@@ -2,14 +2,24 @@ package config
 
 import (
 	"bytes"
-	"github.com/creasty/defaults"
-	"github.com/go-playground/validator/v10"
-	"github.com/pkg/errors"
 	"strings"
 )
 
 import (
+	"github.com/creasty/defaults"
+	"github.com/go-playground/validator/v10"
+	"github.com/pkg/errors"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+)
+
+var (
+	consumerConfig *ConsumerConfig
+
+	providerConfig *ProviderConfig
 )
 
 // RootConfig is the root config
@@ -31,14 +41,15 @@ type RootConfig struct {
 
 	Protocols map[string]*ProtocolConfig `yaml:"protocols" json:"protocols" property:"protocols"`
 
+	// provider config
+	Provider *ProviderConfig `yaml:"provider" json:"provider" property:"provider"`
+
 	// prefix              string
 	fatherConfig        interface{}
 	EventDispatcherType string        `default:"direct" yaml:"event_dispatcher_type" json:"event_dispatcher_type,omitempty"`
 	MetricConfig        *MetricConfig `yaml:"metrics" json:"metrics,omitempty"`
 	fileStream          *bytes.Buffer
 
-	// validate
-	//Validate *validator.Validate
 	// cache file used to store the current used configurations.
 	CacheFile string `yaml:"cache_file" json:"cache_file,omitempty" property:"cache_file"`
 }
@@ -48,7 +59,7 @@ func (RootConfig) Prefix() string {
 	return constant.DUBBO
 }
 
-func verification(s interface{}) error {
+func verify(s interface{}) error {
 
 	if err := validate.Struct(s); err != nil {
 		errs := err.(validator.ValidationErrors)
@@ -61,6 +72,27 @@ func verification(s interface{}) error {
 	return nil
 }
 
+func removeDuplicateElement(items []string) []string {
+	result := make([]string, 0, len(items))
+	temp := map[string]struct{}{}
+	for _, item := range items {
+		if _, ok := temp[item]; !ok && item != "" {
+			temp[item] = struct{}{}
+			result = append(result, item)
+		}
+	}
+	return result
+}
+
+// translateRegistryIds string "nacos,zk" => ["nacos","zk"]
+func translateRegistryIds(registryIds []string) []string {
+	ids := make([]string, 0)
+	for _, id := range registryIds {
+		ids = append(ids, strings.Split(id, ",")...)
+	}
+	return removeDuplicateElement(ids)
+}
+
 // GetApplicationConfig get application config
 func GetApplicationConfig() (*ApplicationConfig, error) {
 	if err := check(); err != nil {
@@ -71,7 +103,7 @@ func GetApplicationConfig() (*ApplicationConfig, error) {
 		return nil, err
 	}
 
-	if err := verification(application); err != nil {
+	if err := verify(application); err != nil {
 		return nil, err
 	}
 	rootConfig.Application = application
@@ -91,7 +123,7 @@ func GetConfigCenterConfig() (*CenterConfig, error) {
 		return nil, err
 	}
 	centerConfig.translateConfigAddress()
-	if err := verification(centerConfig); err != nil {
+	if err := verify(centerConfig); err != nil {
 		return nil, err
 	}
 	return centerConfig, nil
@@ -108,8 +140,8 @@ func GetRegistriesConfig() (map[string]*RegistryConfig, error) {
 		if err := defaults.Set(reg); err != nil {
 			return nil, err
 		}
-		reg.TranslateRegistryAddress()
-		if err := verification(reg); err != nil {
+		reg.translateRegistryAddress()
+		if err := verify(reg); err != nil {
 			return nil, err
 		}
 	}
@@ -127,9 +159,44 @@ func GetProtocolsConfig() (map[string]*ProtocolConfig, error) {
 		if err := defaults.Set(protocol); err != nil {
 			return nil, err
 		}
-		if err := verification(protocol); err != nil {
+		if err := verify(protocol); err != nil {
 			return nil, err
 		}
 	}
 	return protocols, nil
+}
+
+// GetProviderConfig get provider config
+func GetProviderConfig() (*ProviderConfig, error) {
+	if err := check(); err != nil {
+		return nil, err
+	}
+
+	if providerConfig != nil {
+		return providerConfig, nil
+	}
+	provider := getProviderConfig(rootConfig.Provider)
+	if err := defaults.Set(provider); err != nil {
+		return nil, err
+	}
+	if err := verify(provider); err != nil {
+		return nil, err
+	}
+
+	provider.Services = getRegistryServices(common.PROVIDER, provider.Services, provider.Registry)
+	providerConfig = provider
+	return provider, nil
+}
+
+// getRegistryIds get registry keys
+func getRegistryIds() []string {
+	ids := make([]string, 0)
+	registries, err := GetRegistriesConfig()
+	if err != nil {
+		ids = append(ids, constant.DEFAULT_Key)
+	}
+	for key := range registries {
+		ids = append(ids, key)
+	}
+	return removeDuplicateElement(ids)
 }

@@ -27,9 +27,9 @@ import (
 
 // ProtocolConfig is protocol configuration
 type ProtocolConfig struct {
-	Name string `default:"dubbo" yaml:"name"  json:"name,omitempty" property:"name"`
+	Name string `default:"dubbo" validate:"required" yaml:"name"  json:"name,omitempty" property:"name"`
 	Ip   string `default:"127.0.0.1" yaml:"ip"  json:"ip,omitempty" property:"ip"`
-	Port int    `default:"0" yaml:"port"  json:"port,omitempty" property:"port"`
+	Port int    `default:"0" yaml:"port" json:"port,omitempty" property:"port"`
 }
 
 // Prefix dubbo.protocols
@@ -42,7 +42,7 @@ func getProtocolsConfig(protocols map[string]*ProtocolConfig) map[string]*Protoc
 	if protocols == nil || len(protocols) <= 0 {
 		conf := new(ProtocolConfig)
 		protocols = make(map[string]*ProtocolConfig, 1)
-		protocols["default"] = conf
+		protocols[constant.DEFAULT_Key] = conf
 	}
 	return protocols
 }

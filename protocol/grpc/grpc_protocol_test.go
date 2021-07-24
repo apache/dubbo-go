@@ -20,7 +20,6 @@ package grpc
 import (
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config/base"
-	"dubbo.apache.org/dubbo-go/v3/config/instance"
 	"dubbo.apache.org/dubbo-go/v3/config/provider"
 	"testing"
 	"time"
@@ -72,7 +71,7 @@ func doInitProvider() {
 
 func TestGrpcProtocolExport(t *testing.T) {
 	// Export
-	instance.SetProviderService(helloworld.NewService())
+	config.SetProviderService(helloworld.NewService())
 	doInitProvider()
 
 	url, err := common.NewURL(helloworldURL)

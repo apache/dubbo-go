@@ -68,7 +68,7 @@ func TestTranslateRegistryAddress(t *testing.T) {
 	reg := new(RegistryConfig)
 	reg.Address = "nacos://127.0.0.1:8848"
 
-	address := reg.TranslateRegistryAddress()
+	address := reg.translateRegistryAddress()
 
 	assert.Equal(t, "nacos", reg.Protocol)
 	assert.Equal(t, "127.0.0.1:8848", address)

@@ -18,7 +18,6 @@
 package grpc
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/config/instance"
 	"fmt"
 	"net"
 	"sync"
@@ -139,7 +138,7 @@ func waitGrpcExporter(providerServices map[string]*config.ServiceConfig) {
 // registerService SetProxyImpl invoker and grpc service
 func registerService(providerServices map[string]*config.ServiceConfig, server *grpc.Server) {
 	for key, providerService := range providerServices {
-		service := instance.GetProviderService(key)
+		service := config.GetProviderService(key)
 		ds, ok := service.(DubboGrpcService)
 		if !ok {
 			panic("illegal service type registered")

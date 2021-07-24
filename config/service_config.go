@@ -46,9 +46,9 @@ import (
 type ServiceConfig struct {
 	id                          string
 	Filter                      string            `yaml:"filter" json:"filter,omitempty" property:"filter"`
-	Protocol                    string            `default:"dubbo"  required:"true"  yaml:"protocol"  json:"protocol,omitempty" property:"protocol"` // multi protocol support, split by ','
-	InterfaceName               string            `required:"true"  yaml:"interface"  json:"interface,omitempty" property:"interface"`
-	Registry                    string            `yaml:"registry"  json:"registry,omitempty"  property:"registry"`
+	Protocol                    []string          `default:"[\"dubbo\"]"  validate:"required"  yaml:"protocol"  json:"protocol,omitempty" property:"protocol"` // multi protocol support, split by ','
+	Interface                   string            `validate:"required"  yaml:"interface"  json:"interface,omitempty" property:"interface"`
+	Registry                    []string          `yaml:"registry"  json:"registry,omitempty"  property:"registry"`
 	Cluster                     string            `default:"failover" yaml:"cluster"  json:"cluster,omitempty" property:"cluster"`
 	Loadbalance                 string            `default:"random" yaml:"loadbalance"  json:"loadbalance,omitempty"  property:"loadbalance"`
 	Group                       string            `yaml:"group"  json:"group,omitempty" property:"group"`
@@ -64,13 +64,13 @@ type ServiceConfig struct {
 	TpsLimitInterval            string            `yaml:"tps.limit.interval" json:"tps.limit.interval,omitempty" property:"tps.limit.interval"`
 	TpsLimitRate                string            `yaml:"tps.limit.rate" json:"tps.limit.rate,omitempty" property:"tps.limit.rate"`
 	TpsLimitStrategy            string            `yaml:"tps.limit.strategy" json:"tps.limit.strategy,omitempty" property:"tps.limit.strategy"`
-	TpsLimitRejectedHandler     string                 `yaml:"tps.limit.rejected.handler" json:"tps.limit.rejected.handler,omitempty" property:"tps.limit.rejected.handler"`
-	ExecuteLimit                string                 `yaml:"execute.limit" json:"execute.limit,omitempty" property:"execute.limit"`
-	ExecuteLimitRejectedHandler string                 `yaml:"execute.limit.rejected.handler" json:"execute.limit.rejected.handler,omitempty" property:"execute.limit.rejected.handler"`
-	Auth                        string                 `yaml:"auth" json:"auth,omitempty" property:"auth"`
-	ParamSign                   string                 `yaml:"param.sign" json:"param.sign,omitempty" property:"param.sign"`
-	Tag                         string                 `yaml:"tag" json:"tag,omitempty" property:"tag"`
-	GrpcMaxMessageSize          int                    `default:"4" yaml:"max_message_size" json:"max_message_size,omitempty"`
+	TpsLimitRejectedHandler     string            `yaml:"tps.limit.rejected.handler" json:"tps.limit.rejected.handler,omitempty" property:"tps.limit.rejected.handler"`
+	ExecuteLimit                string            `yaml:"execute.limit" json:"execute.limit,omitempty" property:"execute.limit"`
+	ExecuteLimitRejectedHandler string            `yaml:"execute.limit.rejected.handler" json:"execute.limit.rejected.handler,omitempty" property:"execute.limit.rejected.handler"`
+	Auth                        string            `yaml:"auth" json:"auth,omitempty" property:"auth"`
+	ParamSign                   string            `yaml:"param.sign" json:"param.sign,omitempty" property:"param.sign"`
+	Tag                         string            `yaml:"tag" json:"tag,omitempty" property:"tag"`
+	GrpcMaxMessageSize          int               `default:"4" yaml:"max_message_size" json:"max_message_size,omitempty"`
 
 	Protocols     map[string]*ProtocolConfig
 	unexported    *atomic.Bool
@@ -84,9 +84,9 @@ type ServiceConfig struct {
 	exporters     []protocol.Exporter
 }
 
-// Prefix returns dubbo.service.${interface}.
+// Prefix returns dubbo.service.${InterfaceName}.
 func (c *ServiceConfig) Prefix() string {
-	return constant.ServiceConfigPrefix + c.InterfaceName + "."
+	return constant.ServiceConfigPrefix + c.id
 }
 
 // UnmarshalYAML unmarshal the ServiceConfig by @unmarshal function
@@ -112,6 +112,42 @@ func NewServiceConfig(id string) *ServiceConfig {
 		exported:   atomic.NewBool(false),
 		export:     true,
 	}
+}
+
+//getRegistryServices get registry services
+func getRegistryServices(side int, services map[string]*ServiceConfig, registryIds []string) map[string]*ServiceConfig {
+	var (
+		svc              *ServiceConfig
+		exist            bool
+		initService      map[string]common.RPCService
+		registryServices map[string]*ServiceConfig
+	)
+	if side == common.PROVIDER {
+		initService = proServices
+	} else if side == common.CONSUMER {
+		initService = conServices
+	}
+	registryServices = make(map[string]*ServiceConfig, len(initService))
+	for key := range initService {
+		//存在配置了使用用户的配置
+		if svc, exist = services[key]; !exist {
+			svc = new(ServiceConfig)
+		}
+		defaults.MustSet(svc)
+		if len(svc.Registry) <= 0 {
+			svc.Registry = registryIds
+		}
+		svc.id = key
+		svc.export = true
+		svc.unexported = atomic.NewBool(false)
+		svc.exported = atomic.NewBool(false)
+		svc.Registry = translateRegistryIds(svc.Registry)
+		if err := verify(svc); err != nil {
+			return nil
+		}
+		registryServices[key] = svc
+	}
+	return registryServices
 }
 
 // InitExported will set exported as false atom bool
@@ -148,12 +184,12 @@ func (c *ServiceConfig) Export() error {
 
 	// TODO: delay export
 	if c.unexported != nil && c.unexported.Load() {
-		err := perrors.Errorf("The service %v has already unexported!", c.InterfaceName)
+		err := perrors.Errorf("The service %v has already unexported!", c.Interface)
 		logger.Errorf(err.Error())
 		return err
 	}
 	if c.unexported != nil && c.exported.Load() {
-		logger.Warnf("The service %v has already exported!", c.InterfaceName)
+		logger.Warnf("The service %v has already exported!", c.Interface)
 		return nil
 	}
 
@@ -276,7 +312,7 @@ func (c *ServiceConfig) getUrlMap() url.Values {
 	for k, v := range c.Params {
 		urlMap.Set(k, v)
 	}
-	urlMap.Set(constant.INTERFACE_KEY, c.InterfaceName)
+	urlMap.Set(constant.INTERFACE_KEY, c.Interface)
 	urlMap.Set(constant.TIMESTAMP_KEY, strconv.FormatInt(time.Now().Unix(), 10))
 	urlMap.Set(constant.CLUSTER_KEY, c.Cluster)
 	urlMap.Set(constant.LOADBALANCE_KEY, c.Loadbalance)

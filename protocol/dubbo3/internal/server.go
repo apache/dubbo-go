@@ -19,7 +19,6 @@ package internal
 
 import (
 	"context"
-	"dubbo.apache.org/dubbo-go/v3/config/instance"
 	"dubbo.apache.org/dubbo-go/v3/config/provider"
 	"log"
 )
@@ -60,7 +59,7 @@ func InitDubboServer() {
 	)
 	provider.SetProviderConfig(*providerConfig) // set to providerConfig ptr
 
-	instance.SetProviderService(&Server{
+	config.SetProviderService(&Server{
 		GreeterProviderBase: &GreeterProviderBase{},
 	})
 	config.Load()

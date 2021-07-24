@@ -58,7 +58,7 @@ func getRegistriesConfig(registries map[string]*RegistryConfig) map[string]*Regi
 	if registries == nil || len(registries) <= 0 {
 		registries = make(map[string]*RegistryConfig, 1)
 		reg := new(RegistryConfig)
-		registries["default"] = reg
+		registries[constant.DEFAULT_Key] = reg
 		return registries
 	}
 	return registries
@@ -105,7 +105,7 @@ func loadRegistries(targetRegistries string, registries map[string]*RegistryConf
 		if target {
 			addresses := strings.Split(registryConf.Address, ",")
 			address := addresses[0]
-			address = registryConf.TranslateRegistryAddress()
+			address = registryConf.translateRegistryAddress()
 			url, err := common.NewURL(constant.REGISTRY_PROTOCOL+"://"+address,
 				common.WithParams(registryConf.getUrlMap(roleType)),
 				common.WithParamsValue("simplified", strconv.FormatBool(registryConf.Simplified)),
@@ -144,9 +144,9 @@ func (c *RegistryConfig) getUrlMap(roleType common.RoleType) url.Values {
 	return urlMap
 }
 
-//TranslateRegistryAddress translate registry address
+//translateRegistryAddress translate registry address
 //  eg:address=nacos://127.0.0.1:8848 will return 127.0.0.1:8848 and protocol will set nacos
-func (c *RegistryConfig) TranslateRegistryAddress() string {
+func (c *RegistryConfig) translateRegistryAddress() string {
 	if strings.Contains(c.Address, "://") {
 		translatedUrl, err := url.Parse(c.Address)
 		if err != nil {

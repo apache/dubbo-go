@@ -19,7 +19,7 @@ package helloworld
 
 import (
 	"context"
-	"dubbo.apache.org/dubbo-go/v3/config/instance"
+	"dubbo.apache.org/dubbo-go/v3/config"
 )
 
 import (
@@ -27,7 +27,7 @@ import (
 )
 
 func init() {
-	instance.SetConsumerService(&GrpcGreeterImpl{})
+	config.SetConsumerService(&GrpcGreeterImpl{})
 }
 
 // GrpcGreeterImpl

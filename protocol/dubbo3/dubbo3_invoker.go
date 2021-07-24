@@ -19,7 +19,6 @@ package dubbo3
 
 import (
 	"context"
-	"dubbo.apache.org/dubbo-go/v3/config/instance"
 	"reflect"
 	"strconv"
 	"strings"
@@ -64,7 +63,7 @@ func NewDubboInvoker(url *common.URL) (*DubboInvoker, error) {
 	}
 
 	key := url.GetParam(constant.BEAN_NAME_KEY, "")
-	consumerService := instance.GetConsumerService(key)
+	consumerService := config.GetConsumerService(key)
 
 	dubboSerializaerType := url.GetParam(constant.SERIALIZATION_KEY, constant.PROTOBUF_SERIALIZATION)
 	triCodecType := tripleConstant.CodecType(dubboSerializaerType)

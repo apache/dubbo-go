@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package instance
+package config
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
@@ -49,6 +49,11 @@ func GetProviderService(name string) common.RPCService {
 // GetAllProviderService gets all ProviderService
 func GetAllProviderService() map[string]common.RPCService {
 	return proServices
+}
+
+// GetAllConsumerService gets all ConsumerService
+func GetAllConsumerService() map[string]common.RPCService {
+	return conServices
 }
 
 // GetCallback gets CallbackResponse by @name

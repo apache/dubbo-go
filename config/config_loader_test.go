@@ -18,11 +18,18 @@
 package config
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"testing"
 )
-import (
-	"github.com/stretchr/testify/assert"
-)
+
+import "github.com/stretchr/testify/assert"
+
+import "dubbo.apache.org/dubbo-go/v3/config/testdata/config/service"
+
+func init() {
+	SetProviderService(new(service.OrderService))
+	SetProviderService(new(service.HelloService))
+}
 
 const (
 	configPath = "./testdata/application.yaml"
@@ -170,6 +177,23 @@ func TestGetProtocolsConfig(t *testing.T) {
 		assert.Equal(t, "dubbo", protocols["dubbo"].Name)
 		assert.Equal(t, "127.0.0.1", protocols["dubbo"].Ip)
 		assert.Equal(t, 20000, protocols["dubbo"].Port)
+	})
+}
+
+func TestGetProviderConfig(t *testing.T) {
+	// empty registry
+	t.Run("empty registry", func(t *testing.T) {
+		Load(WithPath("./testdata/config/provider/empty_registry_application.yaml"))
+		provider, err := GetProviderConfig()
+		assert.Nil(t, err)
+		assert.NotNil(t, constant.DEFAULT_Key, provider.Registry[0])
+	})
+
+	t.Run("root registry", func(t *testing.T) {
+		Load(WithPath("./testdata/config/provider/registry_application.yaml"))
+		provider, err := GetProviderConfig()
+		assert.Nil(t, err)
+		assert.NotNil(t, provider)
 	})
 }
 
