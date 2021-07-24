@@ -20,9 +20,7 @@ package configurable
 import (
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config/base"
-	"dubbo.apache.org/dubbo-go/v3/config/method"
 	"dubbo.apache.org/dubbo-go/v3/config/provider"
-	"dubbo.apache.org/dubbo-go/v3/config/registry"
 	"testing"
 )
 
@@ -82,7 +80,7 @@ func TestConfigurableExporter(t *testing.T) {
 
 // mockInitProviderWithSingleRegistry will init a mocked providerConfig
 func mockInitProviderWithSingleRegistry() {
-	providerConfig := &provider.Config{
+	providerConfig := &config.ProviderConfig{
 
 		BaseConfig: base.Config{
 			ApplicationConfig: &config.ApplicationConfig{
@@ -95,12 +93,12 @@ func mockInitProviderWithSingleRegistry() {
 			},
 		},
 
-		Registry: &registry.Config{
+		Registry: &config.RegistryConfig{
 			Address:  "mock://127.0.0.1:2181",
 			Username: "user1",
 			Password: "pwd1",
 		},
-		Registries: map[string]*registry.Config{},
+		Registries: map[string]*config.RegistryConfig{},
 
 		Services: map[string]*config.ServiceConfig{
 			"MockService": {
@@ -111,7 +109,7 @@ func mockInitProviderWithSingleRegistry() {
 				Retries:       "3",
 				Group:         "huadong_idc",
 				Version:       "1.0.0",
-				Methods: []*method.Config{
+				Methods: []*config.MethodConfig{
 					{
 						Name:        "GetUser",
 						Retries:     "2",

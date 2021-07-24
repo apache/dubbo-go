@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package method
+package config
 
 import (
 	"github.com/creasty/defaults"
@@ -25,8 +25,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
-// Config defines method config
-type Config struct {
+// MethodConfig defines method config
+type MethodConfig struct {
 	InterfaceId                 string
 	InterfaceName               string
 	Name                        string `yaml:"name"  json:"name,omitempty" property:"name"`
@@ -43,7 +43,7 @@ type Config struct {
 }
 
 // nolint
-func (c *Config) Prefix() string {
+func (c *MethodConfig) Prefix() string {
 	if len(c.InterfaceId) != 0 {
 		return constant.DUBBO + "." + c.InterfaceName + "." + c.InterfaceId + "." + c.Name + "."
 	}
@@ -52,10 +52,10 @@ func (c *Config) Prefix() string {
 }
 
 // UnmarshalYAML unmarshals the MethodConfig by @unmarshal function
-func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (c *MethodConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	if err := defaults.Set(c); err != nil {
 		return err
 	}
-	type plain Config
+	type plain MethodConfig
 	return unmarshal((*plain)(c))
 }

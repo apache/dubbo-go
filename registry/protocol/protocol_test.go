@@ -46,7 +46,7 @@ import (
 )
 
 func init() {
-	provider.SetProviderConfig(provider.Config{BaseConfig: base.Config{
+	provider.SetProviderConfig(config.ProviderConfig{BaseConfig: base.Config{
 		ApplicationConfig: &config.ApplicationConfig{Name: "test-application"},
 	}})
 }
@@ -72,7 +72,7 @@ func referNormal(t *testing.T, regProtocol *registryProtocol) {
 
 func TestRefer(t *testing.T) {
 	consumer.SetConsumerConfig(
-		consumer.Config{BaseConfig: base.Config{
+		config.ConsumerConfig{BaseConfig: base.Config{
 			ApplicationConfig: &config.ApplicationConfig{Name: "test-application"},
 		}})
 	regProtocol := newRegistryProtocol()

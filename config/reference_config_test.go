@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package reference
+package config
 
 //import (
 //	"context"

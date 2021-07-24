@@ -15,12 +15,9 @@
  * limitations under the License.
  */
 
-package consumer
+package config
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/config"
-	"dubbo.apache.org/dubbo-go/v3/config/reference"
-	"dubbo.apache.org/dubbo-go/v3/config/registry"
 	"time"
 )
 
@@ -36,41 +33,41 @@ const (
 	MaxWheelTimeSpan = 900e9 // 900s, 15 minute
 )
 
-// Config is Consumer default configuration
-type Config struct {
+// ConsumerConfig is Consumer default configuration
+type ConsumerConfig struct {
 	//root.RootConfig         `yaml:",inline" property:"base"`
-	//center.Config `yaml:"-"`
-	Filter              string `yaml:"filter" json:"filter,omitempty" property:"filter"`
+	//center.ConsumerConfig `yaml:"-"`
+	Filter string `yaml:"filter" json:"filter,omitempty" property:"filter"`
 	// client
 	Connect_Timeout string `default:"100ms"  yaml:"connect_timeout" json:"connect_timeout,omitempty" property:"connect_timeout"`
 	ConnectTimeout  time.Duration
 
-	Registry   *registry.Config            `yaml:"registry" json:"registry,omitempty" property:"registry"`
-	Registries map[string]*registry.Config `default:"{}" yaml:"registries" json:"registries" property:"registries"`
+	Registry   *RegistryConfig            `yaml:"registry" json:"registry,omitempty" property:"registry"`
+	Registries map[string]*RegistryConfig `default:"{}" yaml:"registries" json:"registries" property:"registries"`
 
 	Request_Timeout string `yaml:"request_timeout" default:"5s" json:"request_timeout,omitempty" property:"request_timeout"`
 	RequestTimeout  time.Duration
 	ProxyFactory    string `yaml:"proxy_factory" default:"default" json:"proxy_factory,omitempty" property:"proxy_factory"`
 	Check           *bool  `yaml:"check"  json:"check,omitempty" property:"check"`
 
-	References     map[string]*reference.ReferenceConfig `yaml:"references" json:"references,omitempty" property:"references"`
-	ProtocolConf   interface{}                           `yaml:"protocol_conf" json:"protocol_conf,omitempty" property:"protocol_conf"`
-	FilterConf     interface{}                           `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf"`
-	ShutdownConfig *config.ShutdownConfig                `yaml:"shutdown_conf" json:"shutdown_conf,omitempty" property:"shutdown_conf"`
-	ConfigType     map[string]string                     `yaml:"config_type" json:"config_type,omitempty" property:"config_type"`
+	References     map[string]*ReferenceConfig `yaml:"references" json:"references,omitempty" property:"references"`
+	ProtocolConf   interface{}                 `yaml:"protocol_conf" json:"protocol_conf,omitempty" property:"protocol_conf"`
+	FilterConf     interface{}                 `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf"`
+	ShutdownConfig *ShutdownConfig             `yaml:"shutdown_conf" json:"shutdown_conf,omitempty" property:"shutdown_conf"`
+	ConfigType     map[string]string           `yaml:"config_type" json:"config_type,omitempty" property:"config_type"`
 }
 
-// UnmarshalYAML unmarshal the Config by @unmarshal function
-func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
+// UnmarshalYAML unmarshal the ConsumerConfig by @unmarshal function
+func (c *ConsumerConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	if err := defaults.Set(c); err != nil {
 		return err
 	}
-	type plain Config
+	type plain ConsumerConfig
 	return unmarshal((*plain)(c))
 }
 
 // Prefix dubbo.consumer
-func (Config) Prefix() string {
+func (ConsumerConfig) Prefix() string {
 	return constant.ConsumerConfigPrefix
 }
 

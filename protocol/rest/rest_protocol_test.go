@@ -19,6 +19,7 @@ package rest
 
 import (
 	"context"
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config/consumer"
 	"dubbo.apache.org/dubbo-go/v3/config/provider"
 	"errors"
@@ -44,7 +45,7 @@ func TestRestProtocolRefer(t *testing.T) {
 	proto := GetRestProtocol()
 	url, err := common.NewURL(mockRestCommonUrl)
 	assert.NoError(t, err)
-	con := consumer.Config{
+	con := config.ConsumerConfig{
 		ConnectTimeout: 5 * time.Second,
 		RequestTimeout: 5 * time.Second,
 	}
@@ -75,7 +76,7 @@ func TestRestProtocolExport(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = common.ServiceMap.Register(url.Service(), url.Protocol, "", "", &UserProvider{})
 	assert.NoError(t, err)
-	con := provider.Config{}
+	con := config.ProviderConfig{}
 	provider.SetProviderConfig(con)
 	configMap := make(map[string]*rest_config.RestServiceConfig)
 	methodConfigMap := make(map[string]*rest_config.RestMethodConfig)

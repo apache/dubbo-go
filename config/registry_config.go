@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package registry
+package config
 
 import (
 	"errors"
@@ -35,8 +35,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 )
 
-// Config is the configuration of the registry center
-type Config struct {
+// RegistryConfig is the configuration of the registry center
+type RegistryConfig struct {
 	Protocol string `default:"zookeeper" validate:"required" yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
 	Timeout  string `default:"10s" yaml:"timeout" json:"timeout,omitempty" property:"timeout"` // unit: second
 	Group    string `yaml:"group" json:"group,omitempty" property:"group"`
@@ -57,12 +57,12 @@ type Config struct {
 }
 
 // SetDefault set default value
-func (c *Config) SetDefault() error {
+func (c *RegistryConfig) SetDefault() error {
 	return defaults.Set(c)
 }
 
 // Validate valida value
-func (c *Config) Validate(valid *validator.Validate) error {
+func (c *RegistryConfig) Validate(valid *validator.Validate) error {
 	if err := valid.Struct(c); err != nil {
 		errs := err.(validator.ValidationErrors)
 		var slice []string
@@ -75,20 +75,20 @@ func (c *Config) Validate(valid *validator.Validate) error {
 }
 
 // UnmarshalYAML unmarshal the RegistryConfig by @unmarshal function
-func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (c *RegistryConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	if err := defaults.Set(c); err != nil {
 		return err
 	}
-	type plain Config
+	type plain RegistryConfig
 	return unmarshal((*plain)(c))
 }
 
 // Prefix dubbo.registries
-func (Config) Prefix() string {
+func (RegistryConfig) Prefix() string {
 	return constant.RegistryConfigPrefix
 }
 
-func loadRegistries(targetRegistries string, registries map[string]*Config, roleType common.RoleType) []*common.URL {
+func loadRegistries(targetRegistries string, registries map[string]*RegistryConfig, roleType common.RoleType) []*common.URL {
 	var urls []*common.URL
 	trSlice := strings.Split(targetRegistries, ",")
 
@@ -136,7 +136,7 @@ func loadRegistries(targetRegistries string, registries map[string]*Config, role
 	return urls
 }
 
-func (c *Config) getUrlMap(roleType common.RoleType) url.Values {
+func (c *RegistryConfig) getUrlMap(roleType common.RoleType) url.Values {
 	urlMap := url.Values{}
 	urlMap.Set(constant.GROUP_KEY, c.Group)
 	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(int(roleType)))
@@ -156,7 +156,7 @@ func (c *Config) getUrlMap(roleType common.RoleType) url.Values {
 
 //TranslateRegistryAddress translate registry address
 //  eg:address=nacos://127.0.0.1:8848 will return 127.0.0.1:8848 and protocol will set nacos
-func (c *Config) TranslateRegistryAddress() string {
+func (c *RegistryConfig) TranslateRegistryAddress() string {
 	if strings.Contains(c.Address, "://") {
 		translatedUrl, err := url.Parse(c.Address)
 		if err != nil {

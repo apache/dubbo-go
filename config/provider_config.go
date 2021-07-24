@@ -15,11 +15,7 @@
  * limitations under the License.
  */
 
-package provider
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/config"
-)
+package config
 
 import (
 	"github.com/creasty/defaults"
@@ -29,8 +25,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
-// Config is the default configuration of service provider
-type Config struct {
+// ProviderConfig is the default configuration of service provider
+type ProviderConfig struct {
 	//base.ShutdownConfig         `yaml:",inline" property:"base"`
 	//center.configCenter `yaml:"-"`
 	Filter              string                            `yaml:"filter" json:"filter,omitempty" property:"filter"`
@@ -44,16 +40,16 @@ type Config struct {
 }
 
 // UnmarshalYAML unmarshals the ProviderConfig by @unmarshal function
-func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (c *ProviderConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	if err := defaults.Set(c); err != nil {
 		return err
 	}
-	type plain Config
+	type plain ProviderConfig
 	return unmarshal((*plain)(c))
 }
 
 // nolint
-func (*Config) Prefix() string {
+func (*ProviderConfig) Prefix() string {
 	return constant.ProviderConfigPrefix
 }
 

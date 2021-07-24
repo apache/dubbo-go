@@ -19,7 +19,6 @@ package config
 
 import (
 	"container/list"
-	"dubbo.apache.org/dubbo-go/v3/config/method"
 	"fmt"
 	"net/url"
 	"strconv"
@@ -54,7 +53,7 @@ type ServiceConfig struct {
 	Loadbalance                 string            `default:"random" yaml:"loadbalance"  json:"loadbalance,omitempty"  property:"loadbalance"`
 	Group                       string            `yaml:"group"  json:"group,omitempty" property:"group"`
 	Version                     string            `yaml:"version"  json:"version,omitempty" property:"version" `
-	Methods                     []*method.Config  `yaml:"methods"  json:"methods,omitempty" property:"methods"`
+	Methods                     []*MethodConfig   `yaml:"methods"  json:"methods,omitempty" property:"methods"`
 	Warmup                      string            `yaml:"warmup"  json:"warmup,omitempty"  property:"warmup"`
 	Retries                     string            `yaml:"retries"  json:"retries,omitempty" property:"retries"`
 	Serialization               string            `yaml:"serialization" json:"serialization" property:"serialization"`

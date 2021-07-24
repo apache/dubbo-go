@@ -21,7 +21,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config/base"
 	"dubbo.apache.org/dubbo-go/v3/config/instance"
-	"dubbo.apache.org/dubbo-go/v3/config/method"
 	"dubbo.apache.org/dubbo-go/v3/config/provider"
 	"testing"
 	"time"
@@ -38,7 +37,7 @@ import (
 )
 
 func doInitProvider() {
-	providerConfig := provider.Config{
+	providerConfig := config.ProviderConfig{
 		BaseConfig: base.Config{
 			ApplicationConfig: &config.ApplicationConfig{
 				Organization: "dubbo_org",
@@ -57,7 +56,7 @@ func doInitProvider() {
 				Cluster:       "failover",
 				Loadbalance:   "random",
 				Retries:       "3",
-				Methods: []*method.Config{
+				Methods: []*config.MethodConfig{
 					{
 						Name:        "SayHello",
 						Retries:     "2",

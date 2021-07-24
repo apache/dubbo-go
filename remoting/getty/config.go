@@ -18,7 +18,7 @@
 package getty
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/config/consumer"
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"time"
 )
 
@@ -187,9 +187,9 @@ func (c *ClientConfig) CheckValidity() error {
 		return perrors.WithMessagef(err, "time.ParseDuration(HeartbeatPeroid{%#v})", c.HeartbeatPeriod)
 	}
 
-	if c.heartbeatPeriod >= time.Duration(consumer.MaxWheelTimeSpan) {
+	if c.heartbeatPeriod >= time.Duration(config.MaxWheelTimeSpan) {
 		return perrors.WithMessagef(err, "heartbeat_period %s should be less than %s",
-			c.HeartbeatPeriod, time.Duration(consumer.MaxWheelTimeSpan))
+			c.HeartbeatPeriod, time.Duration(config.MaxWheelTimeSpan))
 	}
 
 	if len(c.HeartbeatTimeout) == 0 {
@@ -215,9 +215,9 @@ func (c *ServerConfig) CheckValidity() error {
 		return perrors.WithMessagef(err, "time.ParseDuration(HeartbeatPeroid{%#v})", c.HeartbeatPeriod)
 	}
 
-	if c.heartbeatPeriod >= time.Duration(consumer.MaxWheelTimeSpan) {
+	if c.heartbeatPeriod >= time.Duration(config.MaxWheelTimeSpan) {
 		return perrors.WithMessagef(err, "heartbeat_period %s should be less than %s",
-			c.HeartbeatPeriod, time.Duration(consumer.MaxWheelTimeSpan))
+			c.HeartbeatPeriod, time.Duration(config.MaxWheelTimeSpan))
 	}
 
 	if len(c.HeartbeatTimeout) == 0 {
@@ -230,9 +230,9 @@ func (c *ServerConfig) CheckValidity() error {
 		return perrors.WithMessagef(err, "time.ParseDuration(SessionTimeout{%#v})", c.SessionTimeout)
 	}
 
-	if c.sessionTimeout >= time.Duration(consumer.MaxWheelTimeSpan) {
+	if c.sessionTimeout >= time.Duration(config.MaxWheelTimeSpan) {
 		return perrors.WithMessagef(err, "session_timeout %s should be less than %s",
-			c.SessionTimeout, time.Duration(consumer.MaxWheelTimeSpan))
+			c.SessionTimeout, time.Duration(config.MaxWheelTimeSpan))
 	}
 
 	return perrors.WithStack(c.GettySessionParam.CheckValidity())

@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package registry
+package config
 
 import (
 	"testing"
@@ -30,7 +30,7 @@ import (
 
 func TestLoadRegistries(t *testing.T) {
 	target := "shanghai1"
-	regs := map[string]*Config{
+	regs := map[string]*RegistryConfig{
 
 		"shanghai1": {
 			Protocol: "mock",
@@ -48,7 +48,7 @@ func TestLoadRegistries(t *testing.T) {
 
 func TestLoadRegistries1(t *testing.T) {
 	target := "shanghai1"
-	regs := map[string]*Config{
+	regs := map[string]*RegistryConfig{
 
 		"shanghai1": {
 			Protocol: "mock",
@@ -65,7 +65,7 @@ func TestLoadRegistries1(t *testing.T) {
 }
 
 func TestTranslateRegistryAddress(t *testing.T) {
-	reg := new(Config)
+	reg := new(RegistryConfig)
 	reg.Address = "nacos://127.0.0.1:8848"
 
 	address := reg.TranslateRegistryAddress()

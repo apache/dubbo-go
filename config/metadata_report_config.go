@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package report
+package config
 
 import (
 	"github.com/creasty/defaults"
@@ -28,8 +28,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config/instance"
 )
 
-// Config is method level configuration
-type Config struct {
+// MetadataReportConfig is method level configuration
+type MetadataReportConfig struct {
 	Protocol  string            `required:"true"  yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
 	RemoteRef string            `required:"true"  yaml:"remote_ref"  json:"remote_ref,omitempty" property:"remote_ref"`
 	Params    map[string]string `yaml:"params" json:"params,omitempty" property:"params"`
@@ -37,16 +37,16 @@ type Config struct {
 }
 
 // Prefix dubbo.metadata-report
-func (Config) Prefix() string {
+func (MetadataReportConfig) Prefix() string {
 	return constant.MetadataReportPrefix
 }
 
-// UnmarshalYAML unmarshal the Config by @unmarshal function
-func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
+// UnmarshalYAML unmarshal the MetadataReportConfig by @unmarshal function
+func (c *MetadataReportConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	if err := defaults.Set(c); err != nil {
 		return perrors.WithStack(err)
 	}
-	type plain Config
+	type plain MetadataReportConfig
 	if err := unmarshal((*plain)(c)); err != nil {
 		return perrors.WithStack(err)
 	}
@@ -54,7 +54,7 @@ func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
 }
 
 // nolint
-func (c *Config) ToUrl() (*common.URL, error) {
+func (c *MetadataReportConfig) ToUrl() (*common.URL, error) {
 	//urlMap := make(url.Values)
 
 	//if c.Params != nil {
@@ -77,18 +77,18 @@ func (c *Config) ToUrl() (*common.URL, error) {
 	//	common.WithProtocol(c.Protocol),
 	//)
 	//if err != nil || len(res.Protocol) == 0 {
-	//	return nil, perrors.New("Invalid Config.")
+	//	return nil, perrors.New("Invalid MetadataReportConfig.")
 	//}
 	//res.SetParam("metadata", res.Protocol)
 	return nil, nil
 }
 
-func (c *Config) IsValid() bool {
+func (c *MetadataReportConfig) IsValid() bool {
 	return len(c.Protocol) != 0
 }
 
 // StartMetadataReport: The entry of metadata report start
-func startMetadataReport(metadataType string, metadataReportConfig *Config) error {
+func startMetadataReport(metadataType string, metadataReportConfig *MetadataReportConfig) error {
 	if metadataReportConfig == nil || !metadataReportConfig.IsValid() {
 		return nil
 	}

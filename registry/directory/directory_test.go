@@ -42,7 +42,7 @@ import (
 )
 
 func init() {
-	consumer.SetConsumerConfig(consumer.Config{
+	consumer.SetConsumerConfig(config.ConsumerConfig{
 		BaseConfig: base.Config{
 			ApplicationConfig: &config.ApplicationConfig{Name: "test-application"},
 		},
