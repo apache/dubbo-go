@@ -40,6 +40,8 @@ func GetProtobufJsonGeneralizer() Generalizer {
 	return protobufJsonGeneralizer
 }
 
+// ProtobufJsonGeneralizer generalizes an object to json and realizes an object from json using protobuf.
+// Currently, ProtobufJsonGeneralizer is disabled temporarily until the triple protocol is ready.
 type ProtobufJsonGeneralizer struct{}
 
 func (g *ProtobufJsonGeneralizer) Generalize(obj interface{}) (interface{}, error) {
