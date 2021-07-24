@@ -18,8 +18,6 @@
 package config
 
 import (
-	"errors"
-	"github.com/go-playground/validator/v10"
 	"net/url"
 	"strconv"
 	"strings"
@@ -38,11 +36,11 @@ import (
 // RegistryConfig is the configuration of the registry center
 type RegistryConfig struct {
 	Protocol string `default:"zookeeper" validate:"required" yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
-	Timeout  string `default:"10s" yaml:"timeout" json:"timeout,omitempty" property:"timeout"` // unit: second
+	Timeout  string `default:"10s" validate:"required" yaml:"timeout" json:"timeout,omitempty" property:"timeout"` // unit: second
 	Group    string `yaml:"group" json:"group,omitempty" property:"group"`
 	TTL      string `default:"10m" yaml:"ttl" json:"ttl,omitempty" property:"ttl"` // unit: minute
 	// for registry
-	Address    string `default:"127.0.0.1:2181" yaml:"address" json:"address,omitempty" property:"address"`
+	Address    string `default:"zookeeper://127.0.0.1:2181" validate:"required" yaml:"address" json:"address,omitempty" property:"address"`
 	Username   string `yaml:"username" json:"username,omitempty" property:"username"`
 	Password   string `yaml:"password" json:"password,omitempty"  property:"password"`
 	Simplified bool   `yaml:"simplified" json:"simplified,omitempty"  property:"simplified"`
@@ -56,22 +54,14 @@ type RegistryConfig struct {
 	Params map[string]string `yaml:"params" json:"params,omitempty" property:"params"`
 }
 
-// SetDefault set default value
-func (c *RegistryConfig) SetDefault() error {
-	return defaults.Set(c)
-}
-
-// Validate valida value
-func (c *RegistryConfig) Validate(valid *validator.Validate) error {
-	if err := valid.Struct(c); err != nil {
-		errs := err.(validator.ValidationErrors)
-		var slice []string
-		for _, msg := range errs {
-			slice = append(slice, msg.Error())
-		}
-		return errors.New(strings.Join(slice, ","))
+func getRegistriesConfig(registries map[string]*RegistryConfig) map[string]*RegistryConfig {
+	if registries == nil || len(registries) <= 0 {
+		registries = make(map[string]*RegistryConfig, 1)
+		reg := new(RegistryConfig)
+		registries["default"] = reg
+		return registries
 	}
-	return nil
+	return registries
 }
 
 // UnmarshalYAML unmarshal the RegistryConfig by @unmarshal function

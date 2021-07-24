@@ -131,37 +131,7 @@ func getKoanf(conf *config) *koanf.Koanf {
 	return k
 }
 
-//func GetRegistriesConfig() (map[string]*registry.ConfigCenterConfig, error) {
-//	if err := check(); err != nil {
-//		return nil, err
-//	}
-//	if registriesConfig != nil {
-//		return registriesConfig, nil
-//	}
-//
-//	registries := rootConfig.Registries
-//
-//	if len(registries) <= 0 {
-//		reg := new(registry.ConfigCenterConfig)
-//		if err := reg.SetDefault(); err != nil {
-//			return nil, err
-//		}
-//		registries = make(map[string]*registry.ConfigCenterConfig, 1)
-//		registries["default"] = reg
-//		return registries, nil
-//	}
-//	for _, reg := range registries {
-//		if err := reg.SetDefault(); err != nil {
-//			return nil, err
-//		}
-//		reg.TranslateRegistryAddress()
-//		if err := reg.Validate(rootConfig.Validate); err != nil {
-//			return nil, err
-//		}
-//	}
-//	registriesConfig = registries
-//	return registries, nil
-//}
+
 //
 //func GetConfigCenterConfig() (*center.ConfigCenterConfig, error) {
 //	if err := check(); err != nil {

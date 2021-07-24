@@ -96,3 +96,22 @@ func GetConfigCenterConfig() (*CenterConfig, error) {
 	}
 	return centerConfig, nil
 }
+
+// GetRegistriesConfig get registry config default zookeeper registry
+func GetRegistriesConfig() (map[string]*RegistryConfig, error) {
+	if err := check(); err != nil {
+		return nil, err
+	}
+
+	registries := getRegistriesConfig(rootConfig.Registries)
+	for _, reg := range registries {
+		if err := defaults.Set(reg); err != nil {
+			return nil, err
+		}
+		reg.TranslateRegistryAddress()
+		if err := verification(reg); err != nil {
+			return nil, err
+		}
+	}
+	return registries, nil
+}

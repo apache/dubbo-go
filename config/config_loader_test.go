@@ -50,15 +50,15 @@ func TestLoad(t *testing.T) {
 		assert.Equal(t, application.MetadataType, "local")
 	})
 
-	//t.Run("registries", func(t *testing.T) {
-	//	registries, err := GetRegistriesConfig()
-	//	registries, err = GetRegistriesConfig()
-	//	assert.Nil(t, err)
-	//	assert.Equal(t, 2, len(registries))
-	//	//address= nacos://127.0.0.1:8848 Translate Registry Address
-	//	assert.Equal(t, "nacos", registries["nacos"].Protocol)
-	//	assert.Equal(t, "10s", registries["zk"].Timeout)
-	//})
+	t.Run("registries", func(t *testing.T) {
+		registries, err := GetRegistriesConfig()
+		assert.Nil(t, err)
+		assert.Equal(t, 2, len(registries))
+		//address= nacos://127.0.0.1:8848 Translate Registry Address
+		assert.Equal(t, "nacos", registries["nacos"].Protocol)
+		assert.Equal(t, "10s", registries["zk"].Timeout)
+	})
+
 	//config-center
 	t.Run("config-center", func(t *testing.T) {
 		conf, err := GetConfigCenterConfig()
@@ -112,6 +112,38 @@ func TestCheckGenre(t *testing.T) {
 
 	err = checkGenre("json")
 	assert.Nil(t, err)
+}
+
+func TestGetRegistriesConfig(t *testing.T) {
+
+	t.Run("empty registry", func(t *testing.T) {
+		Load(WithPath("./testdata/config/registry/empty_application.yaml"))
+
+		registries, err := GetRegistriesConfig()
+		assert.Nil(t, err)
+		assert.Equal(t, 1, len(registries))
+		assert.Equal(t, "zookeeper", registries["default"].Protocol)
+		assert.Equal(t, "10s", registries["default"].Timeout)
+		assert.Equal(t, "127.0.0.1:2181", registries["default"].Address)
+	})
+
+	t.Run("registry", func(t *testing.T) {
+		Load(WithPath("./testdata/config/registry/application.yaml"))
+
+		registries, err := GetRegistriesConfig()
+		assert.Nil(t, err)
+		assert.Equal(t, 2, len(registries))
+		// nacos
+		assert.Equal(t, "nacos", registries["nacos"].Protocol)
+		assert.Equal(t, "5s", registries["nacos"].Timeout)
+		assert.Equal(t, "127.0.0.1:8848", registries["nacos"].Address)
+		assert.Equal(t, "dev", registries["nacos"].Group)
+		// zk
+		assert.Equal(t, "zookeeper", registries["zk"].Protocol)
+		assert.Equal(t, "10s", registries["zk"].Timeout)
+		assert.Equal(t, "127.0.0.1:2181", registries["zk"].Address)
+		assert.Equal(t, "test", registries["zk"].Group)
+	})
 }
 
 //
