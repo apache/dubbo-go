@@ -96,8 +96,8 @@ func newETCDV3Registry(url *common.URL) (registry.Registry, error) {
 		return nil, err
 	}
 
-	go etcdv3.HandleClientRestart(r)
 
+	r.handleClientRestart()
 	r.InitListeners()
 
 	return r, nil
@@ -173,4 +173,9 @@ func (r *etcdV3Registry) DoSubscribe(svc *common.URL) (registry.Listener, error)
 
 func (r *etcdV3Registry) DoUnsubscribe(conf *common.URL) (registry.Listener, error) {
 	return nil, perrors.New("DoUnsubscribe is not support in etcdV3Registry")
+}
+
+func (r *etcdV3Registry) handleClientRestart() {
+	r.WaitGroup().Add(1)
+	etcdv3.HandleClientRestart(r)
 }

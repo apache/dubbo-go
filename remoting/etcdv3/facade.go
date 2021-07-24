@@ -42,8 +42,8 @@ type clientFacade interface {
 }
 
 // HandleClientRestart keeps the connection between client and server
+// This method should be used only once. You can use handleClientRestart() in package registry.
 func HandleClientRestart(r clientFacade) {
-	r.WaitGroup().Add(1)
 	defer r.WaitGroup().Done()
 	for {
 		select {

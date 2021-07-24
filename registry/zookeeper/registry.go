@@ -74,6 +74,7 @@ func newZkRegistry(url *common.URL) (registry.Registry, error) {
 		return nil, err
 	}
 
+	r.WaitGroup().Add(1)
 	go zookeeper.HandleClientRestart(r)
 
 	r.listener = zookeeper.NewZkEventListener(r.client)
@@ -311,4 +312,9 @@ func (r *zkRegistry) getCloseListener(conf *common.URL) (*RegistryConfigurationL
 	listener.Close()
 
 	return zkListener, nil
+}
+
+func (r *zkRegistry) handleClientRestart() {
+	r.WaitGroup().Add(1)
+	zookeeper.HandleClientRestart(r)
 }
