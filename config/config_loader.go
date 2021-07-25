@@ -142,7 +142,7 @@ func checkApplicationName(config *ApplicationConfig) {
 
 func loadConsumerConfig() {
 	if consumerConfig == nil {
-		logger.Warnf("consumerConfig is nil!")
+		logger.Debugf("Consumer will not be launched, because consumerConfig is not specified.")
 		return
 	}
 	// init other consumer config
@@ -229,7 +229,7 @@ func loadConsumerConfig() {
 
 func loadProviderConfig() {
 	if providerConfig == nil {
-		logger.Warnf("providerConfig is nil!")
+		logger.Debugf("Provider will not be launched, because providerConfig is not specified.")
 		return
 	}
 
