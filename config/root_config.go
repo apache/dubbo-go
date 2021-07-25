@@ -72,6 +72,7 @@ func verify(s interface{}) error {
 	return nil
 }
 
+// removeDuplicateElement remove duplicate element
 func removeDuplicateElement(items []string) []string {
 	result := make([]string, 0, len(items))
 	temp := map[string]struct{}{}
