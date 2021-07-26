@@ -44,7 +44,7 @@ type RPCService interface {
 
 // GetReference return the reference id of the service.
 // If the service implemented the RPCService interface,
-// it will call the Reference method; if not, it will
+// it will call the Reference method. If not, it will
 // return the struct name as the reference id.
 func GetReference(service interface{}) string {
 	if s, ok := service.(RPCService); ok {
