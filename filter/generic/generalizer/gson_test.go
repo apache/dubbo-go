@@ -54,7 +54,6 @@ func TestGsonGeneralizer(t *testing.T) {
 		Email:  "childName@example.com",
 		Name:   "childName",
 	}
-
 	p := mockGsonParent{
 		Age:    30,
 		Gender: "male",
