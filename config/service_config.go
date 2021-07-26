@@ -19,6 +19,7 @@ package config
 
 import (
 	"container/list"
+	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
 	"fmt"
 	"net/url"
 	"strconv"
@@ -164,9 +165,9 @@ func (c *ServiceConfig) IsExport() bool {
 func getRandomPort(protocolConfigs []*ProtocolConfig) *list.List {
 	ports := list.New()
 	for _, proto := range protocolConfigs {
-		//if len(proto.Port) > 0 {
-		//	continue
-		//}
+		if len(proto.Port) > 0 {
+			continue
+		}
 
 		tcp, err := gxnet.ListenOnTCPRandomPort(proto.Ip)
 		if err != nil {
@@ -193,89 +194,89 @@ func (c *ServiceConfig) Export() error {
 		return nil
 	}
 
-	//regUrls := config.loadRegistries(c.Registry, config.providerConfig.Registries, common.PROVIDER)
-	//urlMap := c.getUrlMap()
-	//protocolConfigs := config.loadProtocol(c.Protocol, c.Protocols)
-	//if len(protocolConfigs) == 0 {
-	//	logger.Warnf("The service %v's '%v' protocols don't has right protocolConfigs", c.InterfaceName, c.Protocol)
-	//	return nil
-	//}
+	regUrls := loadRegistries(c.Registry, registriesConfig, common.PROVIDER)
+	urlMap := c.getUrlMap()
+	protocolConfigs := loadProtocol(c.Protocol, c.Protocols)
+	if len(protocolConfigs) == 0 {
+		logger.Warnf("The service %v's '%v' protocols don't has right protocolConfigs", c.Interface, c.Protocol)
+		return nil
+	}
 
-	//ports := getRandomPort(protocolConfigs)
-	//nextPort := ports.Front()
-	//proxyFactory := extension.GetProxyFactory(config.providerConfig.ProxyFactory)
-	//for _, proto := range protocolConfigs {
-	//	// registry the service reflect
-	//	methods, err := common.ServiceMap.Register(c.InterfaceName, proto.Name, c.Group, c.Version, c.rpcService)
-	//	if err != nil {
-	//		formatErr := perrors.Errorf("The service %v export the protocol %v error! Error message is %v.",
-	//			c.InterfaceName, proto.Name, err.Error())
-	//		logger.Errorf(formatErr.Error())
-	//		return formatErr
-	//	}
-	//
-	//	port := proto.Port
-	//	if len(proto.Port) == 0 {
-	//		port = nextPort.Value.(string)
-	//		nextPort = nextPort.Next()
-	//	}
-	//	ivkURL := common.NewURLWithOptions(
-	//		common.WithPath(c.InterfaceName),
-	//		common.WithProtocol(proto.Name),
-	//		common.WithIp(proto.Ip),
-	//		common.WithPort(port),
-	//		common.WithParams(urlMap),
-	//		common.WithParamsValue(constant.BEAN_NAME_KEY, c.id),
-	//		common.WithParamsValue(constant.SSL_ENABLED_KEY, strconv.FormatBool(config.GetSslEnabled())),
-	//		common.WithMethods(strings.Split(methods, ",")),
-	//		common.WithToken(c.Token),
-	//	)
-	//	if len(c.Tag) > 0 {
-	//		ivkURL.AddParam(constant.Tagkey, c.Tag)
-	//	}
-	//
-	//	// post process the URL to be exported
-	//	c.postProcessConfig(ivkURL)
-	//	// config post processor may set "export" to false
-	//	if !ivkURL.GetParamBool(constant.EXPORT_KEY, true) {
-	//		return nil
-	//	}
-	//
-	//	if len(regUrls) > 0 {
-	//		c.cacheMutex.Lock()
-	//		if c.cacheProtocol == nil {
-	//			logger.Infof(fmt.Sprintf("First load the registry protocol, url is {%v}!", ivkURL))
-	//			c.cacheProtocol = extension.GetProtocol("registry")
-	//		}
-	//		c.cacheMutex.Unlock()
-	//
-	//		for _, regUrl := range regUrls {
-	//			regUrl.SubURL = ivkURL
-	//			invoker := proxyFactory.GetInvoker(regUrl)
-	//			exporter := c.cacheProtocol.Export(invoker)
-	//			if exporter == nil {
-	//				return perrors.New(fmt.Sprintf("Registry protocol new exporter error, registry is {%v}, url is {%v}", regUrl, ivkURL))
-	//			}
-	//			c.exporters = append(c.exporters, exporter)
-	//		}
-	//	} else {
-	//		if ivkURL.GetParam(constant.INTERFACE_KEY, "") == constant.METADATA_SERVICE_NAME {
-	//			ms, err := extension.GetLocalMetadataService("")
-	//			if err != nil {
-	//				return err
-	//			}
-	//			ms.SetMetadataServiceURL(ivkURL)
-	//		}
-	//		invoker := proxyFactory.GetInvoker(ivkURL)
-	//		exporter := extension.GetProtocol(protocolwrapper.FILTER).Export(invoker)
-	//		if exporter == nil {
-	//			return perrors.New(fmt.Sprintf("Filter protocol without registry new exporter error, url is {%v}", ivkURL))
-	//		}
-	//		c.exporters = append(c.exporters, exporter)
-	//	}
-	//	publishServiceDefinition(ivkURL)
-	//}
-	//c.exported.Store(true)
+	ports := getRandomPort(protocolConfigs)
+	nextPort := ports.Front()
+	proxyFactory := extension.GetProxyFactory(providerConfig.ProxyFactory)
+	for _, proto := range protocolConfigs {
+		// registry the service reflect
+		methods, err := common.ServiceMap.Register(c.Interface, proto.Name, c.Group, c.Version, c.rpcService)
+		if err != nil {
+			formatErr := perrors.Errorf("The service %v export the protocol %v error! Error message is %v.",
+				c.Interface, proto.Name, err.Error())
+			logger.Errorf(formatErr.Error())
+			return formatErr
+		}
+
+		port := proto.Port
+		if len(proto.Port) == 0 {
+			port = nextPort.Value.(string)
+			nextPort = nextPort.Next()
+		}
+		ivkURL := common.NewURLWithOptions(
+			common.WithPath(c.Interface),
+			common.WithProtocol(proto.Name),
+			common.WithIp(proto.Ip),
+			common.WithPort(port),
+			common.WithParams(urlMap),
+			common.WithParamsValue(constant.BEAN_NAME_KEY, c.id),
+			//common.WithParamsValue(constant.SSL_ENABLED_KEY, strconv.FormatBool(config.GetSslEnabled())),
+			common.WithMethods(strings.Split(methods, ",")),
+			common.WithToken(c.Token),
+		)
+		if len(c.Tag) > 0 {
+			ivkURL.AddParam(constant.Tagkey, c.Tag)
+		}
+
+		// post process the URL to be exported
+		c.postProcessConfig(ivkURL)
+		// config post processor may set "export" to false
+		if !ivkURL.GetParamBool(constant.EXPORT_KEY, true) {
+			return nil
+		}
+
+		if len(regUrls) > 0 {
+			c.cacheMutex.Lock()
+			if c.cacheProtocol == nil {
+				logger.Infof(fmt.Sprintf("First load the registry protocol, url is {%v}!", ivkURL))
+				c.cacheProtocol = extension.GetProtocol("registry")
+			}
+			c.cacheMutex.Unlock()
+
+			for _, regUrl := range regUrls {
+				regUrl.SubURL = ivkURL
+				invoker := proxyFactory.GetInvoker(regUrl)
+				exporter := c.cacheProtocol.Export(invoker)
+				if exporter == nil {
+					return perrors.New(fmt.Sprintf("Registry protocol new exporter error, registry is {%v}, url is {%v}", regUrl, ivkURL))
+				}
+				c.exporters = append(c.exporters, exporter)
+			}
+		} else {
+			if ivkURL.GetParam(constant.INTERFACE_KEY, "") == constant.METADATA_SERVICE_NAME {
+				ms, err := extension.GetLocalMetadataService("")
+				if err != nil {
+					return err
+				}
+				ms.SetMetadataServiceURL(ivkURL)
+			}
+			invoker := proxyFactory.GetInvoker(ivkURL)
+			exporter := extension.GetProtocol(protocolwrapper.FILTER).Export(invoker)
+			if exporter == nil {
+				return perrors.New(fmt.Sprintf("Filter protocol without registry new exporter error, url is {%v}", ivkURL))
+			}
+			c.exporters = append(c.exporters, exporter)
+		}
+		publishServiceDefinition(ivkURL)
+	}
+	c.exported.Store(true)
 	return nil
 }
 
@@ -326,17 +327,17 @@ func (c *ServiceConfig) getUrlMap() url.Values {
 	urlMap.Set(constant.MESSAGE_SIZE_KEY, strconv.Itoa(c.GrpcMaxMessageSize))
 	// todo: move
 	urlMap.Set(constant.SERIALIZATION_KEY, c.Serialization)
-	// application info
-	//urlMap.Set(constant.APPLICATION_KEY, config.providerConfig.ApplicationConfig.Name)
-	//urlMap.Set(constant.ORGANIZATION_KEY, config.providerConfig.ApplicationConfig.Organization)
-	//urlMap.Set(constant.NAME_KEY, config.providerConfig.ApplicationConfig.Name)
-	//urlMap.Set(constant.MODULE_KEY, config.providerConfig.ApplicationConfig.Module)
-	//urlMap.Set(constant.APP_VERSION_KEY, config.providerConfig.ApplicationConfig.Version)
-	//urlMap.Set(constant.OWNER_KEY, config.root.Application.Owner)
-	//urlMap.Set(constant.ENVIRONMENT_KEY, config.providerConfig.ApplicationConfig.Environment)
+	// application config info
+	urlMap.Set(constant.APPLICATION_KEY, applicationConfig.Name)
+	urlMap.Set(constant.ORGANIZATION_KEY, applicationConfig.Organization)
+	urlMap.Set(constant.NAME_KEY, applicationConfig.Name)
+	urlMap.Set(constant.MODULE_KEY, applicationConfig.Module)
+	urlMap.Set(constant.APP_VERSION_KEY, applicationConfig.Version)
+	urlMap.Set(constant.OWNER_KEY, applicationConfig.Owner)
+	urlMap.Set(constant.ENVIRONMENT_KEY, applicationConfig.Environment)
 
 	// filter
-	//urlMap.Set(constant.SERVICE_FILTER_KEY, config.mergeValue(config.providerConfig.Filter, c.Filter, constant.DEFAULT_SERVICE_FILTERS))
+	urlMap.Set(constant.SERVICE_FILTER_KEY, mergeValue(providerConfig.Filter, c.Filter, constant.DEFAULT_SERVICE_FILTERS))
 
 	// filter special config
 	urlMap.Set(constant.AccessLogFilterKey, c.AccessLog)

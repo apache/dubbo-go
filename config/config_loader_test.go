@@ -19,6 +19,7 @@ package config
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/config/options"
 	"testing"
 )
 
@@ -32,7 +33,7 @@ func init() {
 }
 
 const (
-	configPath = "./testdata/application.yaml"
+	configPath = "./testdata/applicationConfig.yaml"
 )
 
 func TestNoLoad(t *testing.T) {
@@ -43,9 +44,9 @@ func TestNoLoad(t *testing.T) {
 }
 
 func TestLoad(t *testing.T) {
-	Load(WithPath(configPath))
+	Load(options.WithPath(configPath))
 
-	t.Run("application", func(t *testing.T) {
+	t.Run("applicationConfig", func(t *testing.T) {
 		application, err := GetApplicationConfig()
 		assert.Nil(t, err)
 		assert.Equal(t, application.Organization, "dubbo.io")
@@ -57,7 +58,7 @@ func TestLoad(t *testing.T) {
 		assert.Equal(t, application.MetadataType, "local")
 	})
 
-	t.Run("registries", func(t *testing.T) {
+	t.Run("registriesConfig", func(t *testing.T) {
 		registries, err := GetRegistriesConfig()
 		assert.Nil(t, err)
 		assert.Equal(t, 2, len(registries))
@@ -85,7 +86,7 @@ func TestLoad(t *testing.T) {
 func TestLoadConfigCenter(t *testing.T) {
 
 	t.Run("config_center", func(t *testing.T) {
-		Load(WithGenre("yml"), WithPath("./testdata/config/center/conf_application.yaml"))
+		Load(options.WithGenre("yml"), options.WithPath("./testdata/config/center/conf_application.yaml"))
 		conf, err := GetConfigCenterConfig()
 		assert.Nil(t, err)
 		assert.Equal(t, "nacos", conf.Protocol)
@@ -94,7 +95,7 @@ func TestLoadConfigCenter(t *testing.T) {
 	})
 
 	t.Run("configCenter", func(t *testing.T) {
-		Load(WithGenre("yaml"), WithPath("./testdata/config/center/confApplication.yaml"))
+		Load(options.WithGenre("yaml"), options.WithPath("./testdata/config/center/confApplication.yaml"))
 		conf, err := GetConfigCenterConfig()
 		assert.Nil(t, err)
 		assert.Equal(t, "nacos", conf.Protocol)
@@ -103,7 +104,7 @@ func TestLoadConfigCenter(t *testing.T) {
 	})
 
 	t.Run("config-center", func(t *testing.T) {
-		Load(WithPath("./testdata/config/center/conf-application.yaml"))
+		Load(options.WithPath("./testdata/config/center/conf-applicationConfig.yaml"))
 		conf, err := GetConfigCenterConfig()
 		assert.Nil(t, err)
 		assert.Equal(t, "nacos", conf.Protocol)
@@ -114,17 +115,17 @@ func TestLoadConfigCenter(t *testing.T) {
 
 func TestCheckGenre(t *testing.T) {
 
-	err := checkGenre("abc")
+	err := options.checkGenre("abc")
 	assert.NotNil(t, err)
 
-	err = checkGenre("json")
+	err = options.checkGenre("json")
 	assert.Nil(t, err)
 }
 
 func TestGetRegistriesConfig(t *testing.T) {
 
 	t.Run("empty registry", func(t *testing.T) {
-		Load(WithPath("./testdata/config/registry/empty_application.yaml"))
+		Load(options.WithPath("./testdata/config/registry/empty_application.yaml"))
 
 		registries, err := GetRegistriesConfig()
 		assert.Nil(t, err)
@@ -135,7 +136,7 @@ func TestGetRegistriesConfig(t *testing.T) {
 	})
 
 	t.Run("registry", func(t *testing.T) {
-		Load(WithPath("./testdata/config/registry/application.yaml"))
+		Load(options.WithPath("./testdata/config/registry/applicationConfig.yaml"))
 
 		registries, err := GetRegistriesConfig()
 		assert.Nil(t, err)
@@ -156,7 +157,7 @@ func TestGetRegistriesConfig(t *testing.T) {
 func TestGetProtocolsConfig(t *testing.T) {
 
 	t.Run("empty protocols", func(t *testing.T) {
-		Load(WithPath("./testdata/config/protocol/empty_application.yaml"))
+		Load(options.WithPath("./testdata/config/protocol/empty_application.yaml"))
 
 		protocols, err := GetProtocolsConfig()
 		assert.Nil(t, err)
@@ -168,7 +169,7 @@ func TestGetProtocolsConfig(t *testing.T) {
 	})
 
 	t.Run("protocols", func(t *testing.T) {
-		Load(WithPath("./testdata/config/protocol/application.yaml"))
+		Load(options.WithPath("./testdata/config/protocol/applicationConfig.yaml"))
 
 		protocols, err := GetProtocolsConfig()
 		assert.Nil(t, err)
@@ -183,14 +184,14 @@ func TestGetProtocolsConfig(t *testing.T) {
 func TestGetProviderConfig(t *testing.T) {
 	// empty registry
 	t.Run("empty registry", func(t *testing.T) {
-		Load(WithPath("./testdata/config/provider/empty_registry_application.yaml"))
+		Load(options.WithPath("./testdata/config/provider/empty_registry_application.yaml"))
 		provider, err := GetProviderConfig()
 		assert.Nil(t, err)
 		assert.NotNil(t, constant.DEFAULT_Key, provider.Registry[0])
 	})
 
 	t.Run("root registry", func(t *testing.T) {
-		Load(WithPath("./testdata/config/provider/registry_application.yaml"))
+		Load(options.WithPath("./testdata/config/provider/registry_application.yaml"))
 		provider, err := GetProviderConfig()
 		assert.Nil(t, err)
 		assert.NotNil(t, provider)
@@ -339,12 +340,12 @@ func TestGetProviderConfig(t *testing.T) {
 //		return &config_center.MockDynamicConfigurationFactory{Content: `
 //	dubbo.consumer.request_timeout=5s
 //	dubbo.consumer.connect_timeout=5s
-//	dubbo.application.organization=ikurento.com
-//	dubbo.application.name=BDTService
-//	dubbo.application.module=dubbogo user-info server
-//	dubbo.application.version=0.0.1
-//	dubbo.application.owner=ZX
-//	dubbo.application.environment=dev
+//	dubbo.applicationConfig.organization=ikurento.com
+//	dubbo.applicationConfig.name=BDTService
+//	dubbo.applicationConfig.module=dubbogo user-info server
+//	dubbo.applicationConfig.version=0.0.1
+//	dubbo.applicationConfig.owner=ZX
+//	dubbo.applicationConfig.environment=dev
 //	dubbo.registry.address=mock://127.0.0.1:2182
 //	dubbo.service.com.ikurento.user.UserProvider.protocol=dubbo
 //	dubbo.service.com.ikurento.user.UserProvider.interface=com.ikurento.user.UserProvider
@@ -400,7 +401,7 @@ func TestGetProviderConfig(t *testing.T) {
 //func mockInitProviderWithSingleRegistry() {
 //	providerConfig = &provider.ProviderConfig{
 //		BaseConfig: base.ShutdownConfig{
-//			application.ShutdownConfig: &application.ShutdownConfig{
+//			applicationConfig.ShutdownConfig: &applicationConfig.ShutdownConfig{
 //				Organization: "dubbo_org",
 //				Name:         "dubbo",
 //				Module:       "module",

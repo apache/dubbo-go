@@ -43,7 +43,7 @@ type ConsumerConfig struct {
 	ConnectTimeout  time.Duration
 
 	Registry   *RegistryConfig            `yaml:"registry" json:"registry,omitempty" property:"registry"`
-	Registries map[string]*RegistryConfig `default:"{}" yaml:"registries" json:"registries" property:"registries"`
+	Registries map[string]*RegistryConfig `default:"{}" yaml:"registriesConfig" json:"registriesConfig" property:"registriesConfig"`
 
 	Request_Timeout string `yaml:"request_timeout" default:"5s" json:"request_timeout,omitempty" property:"request_timeout"`
 	RequestTimeout  time.Duration
@@ -79,7 +79,7 @@ func (ConsumerConfig) Prefix() string {
 // ConsumerInit loads config file to init consumer config
 func ConsumerInit(confConFile string) error {
 	//if confConFile == "" {
-	//	return perrors.Errorf("application configure(consumer) file name is nil")
+	//	return perrors.Errorf("applicationConfig configure(consumer) file name is nil")
 	//}
 	//consumerConfig = &ShutdownConfig{}
 	//fileStream, err := yaml.UnmarshalYMLConfig(confConFile, consumerConfig)

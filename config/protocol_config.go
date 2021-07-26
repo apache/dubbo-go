@@ -18,10 +18,6 @@
 package config
 
 import (
-	"strings"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
@@ -29,7 +25,7 @@ import (
 type ProtocolConfig struct {
 	Name string `default:"dubbo" validate:"required" yaml:"name"  json:"name,omitempty" property:"name"`
 	Ip   string `default:"127.0.0.1" yaml:"ip"  json:"ip,omitempty" property:"ip"`
-	Port int    `default:"0" yaml:"port" json:"port,omitempty" property:"port"`
+	Port string    `default:"0" yaml:"port" json:"port,omitempty" property:"port"`
 }
 
 // Prefix dubbo.protocols
@@ -42,14 +38,15 @@ func getProtocolsConfig(protocols map[string]*ProtocolConfig) map[string]*Protoc
 	if protocols == nil || len(protocols) <= 0 {
 		conf := new(ProtocolConfig)
 		protocols = make(map[string]*ProtocolConfig, 1)
-		protocols[constant.DEFAULT_Key] = conf
+		protocols[constant.DUBBO] = conf
 	}
 	return protocols
 }
 
-func loadProtocol(protocolsIds string, protocols map[string]*ProtocolConfig) []*ProtocolConfig {
+//loadProtocol filter protocols by ids
+func loadProtocol(protocolIds []string, protocols map[string]*ProtocolConfig) []*ProtocolConfig {
 	returnProtocols := make([]*ProtocolConfig, 0, len(protocols))
-	for _, v := range strings.Split(protocolsIds, ",") {
+	for _, v := range protocolIds {
 		for k, protocol := range protocols {
 			if v == k {
 				returnProtocols = append(returnProtocols, protocol)

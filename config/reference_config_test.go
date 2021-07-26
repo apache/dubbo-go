@@ -20,7 +20,7 @@ package config
 //import (
 //	"context"
 //	"dubbo.apache.org/dubbo-go/v3/config"
-//	"dubbo.apache.org/dubbo-go/v3/config/application"
+//	"dubbo.apache.org/dubbo-go/v3/config/applicationConfig"
 //	"dubbo.apache.org/dubbo-go/v3/config/base"
 //	"dubbo.apache.org/dubbo-go/v3/config/consumer"
 //	"dubbo.apache.org/dubbo-go/v3/config/instance"
@@ -49,7 +49,7 @@ package config
 //func doInitConsumer() {
 //	config.consumerConfig = &consumer.Config{
 //		BaseConfig: base.Config{
-//			application.Config: &application.Config{
+//			applicationConfig.Config: &applicationConfig.Config{
 //				Organization: "dubbo_org",
 //				Name:         "dubbo",
 //				Module:       "module",
@@ -151,7 +151,7 @@ package config
 //func doInitConsumerWithSingleRegistry() {
 //	config.consumerConfig = &consumer.Config{
 //		BaseConfig: base.Config{
-//			application.Config: &application.Config{
+//			applicationConfig.Config: &applicationConfig.Config{
 //				Organization: "dubbo_org",
 //				Name:         "dubbo",
 //				Module:       "module",
@@ -400,7 +400,7 @@ package config
 //type mockShutdownFilter struct {
 //}
 //
-//// Invoke adds the requests count and block the new requests if application is closing
+//// Invoke adds the requests count and block the new requests if applicationConfig is closing
 //func (gf *mockShutdownFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 //	return invoker.Invoke(ctx, invocation)
 //}

@@ -67,10 +67,10 @@ const defaultShutDownTime = time.Second * 60
 //	go func() {
 //		select {
 //		case sig := <-signals:
-//			logger.Infof("get signal %s, application will shutdown.", sig)
+//			logger.Infof("get signal %s, applicationConfig will shutdown.", sig)
 //			// gracefulShutdownOnce.Do(func() {
 //			time.AfterFunc(totalTimeout(), func() {
-//				logger.Warn("Shutdown gracefully timeout, application will shutdown immediately. ")
+//				logger.Warn("Shutdown gracefully timeout, applicationConfig will shutdown immediately. ")
 //				os.Exit(0)
 //			})
 //			BeforeShutdown()
@@ -98,13 +98,13 @@ func BeforeShutdown() {
 	// we fetch the protocols from Consumer.References. Consumer.ProtocolConfig doesn't contains all protocol, like jsonrpc
 	//consumerProtocols := getConsumerProtocols()
 
-	// If this application is not the provider, it will do nothing
+	// If this applicationConfig is not the provider, it will do nothing
 	//destroyProviderProtocols(consumerProtocols)
 
 	// reject sending the new request, and waiting for response of sending requests
 	//waitForSendingRequests()
 
-	// If this application is not the consumer, it will do nothing
+	// If this applicationConfig is not the consumer, it will do nothing
 	//destroyConsumerProtocols(consumerProtocols)
 
 	logger.Info("Graceful shutdown --- Execute the custom callbacks.")
@@ -115,7 +115,7 @@ func BeforeShutdown() {
 }
 
 func destroyAllRegistries() {
-	logger.Info("Graceful shutdown --- Destroy all registries. ")
+	logger.Info("Graceful shutdown --- Destroy all registriesConfig. ")
 	registryProtocol := extension.GetProtocol(constant.REGISTRY_KEY)
 	registryProtocol.Destroy()
 }

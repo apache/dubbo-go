@@ -17,9 +17,13 @@ import (
 )
 
 var (
+	applicationConfig *ApplicationConfig
+
 	consumerConfig *ConsumerConfig
 
 	providerConfig *ProviderConfig
+
+	registriesConfig map[string]*RegistryConfig
 )
 
 // RootConfig is the root config
@@ -33,11 +37,11 @@ type RootConfig struct {
 
 	MetadataReportConfig *MetadataReportConfig `yaml:"metadata_report" json:"metadata-report,omitempty" property:"metadata-report"`
 
-	// Application application config
-	Application *ApplicationConfig `yaml:"application" json:"application,omitempty" property:"application"`
+	// Application applicationConfig config
+	Application *ApplicationConfig `yaml:"applicationConfig" json:"applicationConfig,omitempty" property:"applicationConfig"`
 
 	// Registries registry config
-	Registries map[string]*RegistryConfig `yaml:"registries" json:"registries" property:"registries"`
+	Registries map[string]*RegistryConfig `yaml:"registriesConfig" json:"registriesConfig" property:"registriesConfig"`
 
 	Protocols map[string]*ProtocolConfig `yaml:"protocols" json:"protocols" property:"protocols"`
 
@@ -94,21 +98,24 @@ func translateRegistryIds(registryIds []string) []string {
 	return removeDuplicateElement(ids)
 }
 
-// GetApplicationConfig get application config
+// GetApplicationConfig get applicationConfig config
 func GetApplicationConfig() (*ApplicationConfig, error) {
 	if err := check(); err != nil {
 		return nil, err
 	}
-	application := getApplicationConfig(rootConfig.Application)
-	if err := defaults.Set(application); err != nil {
+	if applicationConfig != nil {
+		return applicationConfig, nil
+	}
+	applicationConfig = getApplicationConfig(rootConfig.Application)
+	if err := defaults.Set(applicationConfig); err != nil {
 		return nil, err
 	}
 
-	if err := verify(application); err != nil {
+	if err := verify(applicationConfig); err != nil {
 		return nil, err
 	}
-	rootConfig.Application = application
-	return application, nil
+
+	return applicationConfig, nil
 }
 
 // GetConfigCenterConfig get config center config
@@ -136,8 +143,11 @@ func GetRegistriesConfig() (map[string]*RegistryConfig, error) {
 		return nil, err
 	}
 
-	registries := getRegistriesConfig(rootConfig.Registries)
-	for _, reg := range registries {
+	if registriesConfig != nil {
+		return registriesConfig, nil
+	}
+	registriesConfig = getRegistriesConfig(rootConfig.Registries)
+	for _, reg := range registriesConfig {
 		if err := defaults.Set(reg); err != nil {
 			return nil, err
 		}
@@ -146,7 +156,8 @@ func GetRegistriesConfig() (map[string]*RegistryConfig, error) {
 			return nil, err
 		}
 	}
-	return registries, nil
+
+	return registriesConfig, nil
 }
 
 // GetProtocolsConfig get protocols config default dubbo protocol

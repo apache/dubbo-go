@@ -36,7 +36,8 @@ type ProviderConfig struct {
 	Registry []string `validate:"required" yaml:"registry" json:"registry" property:"registry"`
 	// Services services
 	Services map[string]*ServiceConfig `yaml:"services" json:"services,omitempty" property:"services"`
-	//ProxyFactory   string                     `yaml:"proxy-factory" default:"default" json:"proxy-factory,omitempty" property:"proxy-factory"`
+
+	ProxyFactory string `default:"default" yaml:"proxy-factory" json:"proxy-factory,omitempty" property:"proxy-factory"`
 	//Protocols      map[string]*ProtocolConfig `yaml:"protocols" json:"protocols,omitempty" property:"protocols"`
 	//ProtocolConf   interface{}                `yaml:"protocol_conf" json:"protocol_conf,omitempty" property:"protocol_conf"`
 	//FilterConf     interface{}                `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf"`
@@ -80,7 +81,7 @@ func getProviderConfig(provider *ProviderConfig) *ProviderConfig {
 //// ProviderInit loads config file to init provider config
 //func ProviderInit(confProFile string) error {
 //	if len(confProFile) == 0 {
-//		return perrors.Errorf("application configure(provider) file name is nil")
+//		return perrors.Errorf("applicationConfig configure(provider) file name is nil")
 //	}
 //	config.providerConfig = &ProviderConfig{}
 //	fileStream, err := yaml.UnmarshalYMLConfig(confProFile, config.providerConfig)

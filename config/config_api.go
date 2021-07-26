@@ -18,7 +18,7 @@
 package config
 //
 //import (
-//	"dubbo.apache.org/dubbo-go/v3/config/application"
+//	"dubbo.apache.org/dubbo-go/v3/config/applicationConfig"
 //	"dubbo.apache.org/dubbo-go/v3/config/center"
 //	"dubbo.apache.org/dubbo-go/v3/config/consumer"
 //	"dubbo.apache.org/dubbo-go/v3/config/method"
@@ -197,7 +197,7 @@ package config
 //}
 //
 //// WithConsumerAppConfig returns ConsumerConfigOpt with given @appConfig
-//func WithConsumerAppConfig(appConfig *application.ShutdownConfig) ConsumerConfigOpt {
+//func WithConsumerAppConfig(appConfig *applicationConfig.ShutdownConfig) ConsumerConfigOpt {
 //	return func(config *consumer.ShutdownConfig) *consumer.ShutdownConfig {
 //		config.ApplicationConfig = appConfig
 //		return config
@@ -325,7 +325,7 @@ package config
 //func NewDefaultProviderConfig() *provider.ProviderConfig {
 //	newConsumerConfig := &provider.ProviderConfig{
 //		BaseConfig: base.ShutdownConfig{
-//			application.ShutdownConfig: &application.ShutdownConfig{
+//			applicationConfig.ShutdownConfig: &applicationConfig.ShutdownConfig{
 //				Name:         "dubbo",
 //				Module:       "module",
 //				Organization: "dubbo_org",
@@ -357,7 +357,7 @@ package config
 //}
 //
 //// WithProviderAppConfig returns ProviderConfigOpt with given @appConfig
-//func WithProviderAppConfig(appConfig *application.ShutdownConfig) ProviderConfigOpt {
+//func WithProviderAppConfig(appConfig *applicationConfig.ShutdownConfig) ProviderConfigOpt {
 //	return func(config *provider.ProviderConfig) *provider.ProviderConfig {
 //		config.ApplicationConfig = appConfig
 //		return config
@@ -475,7 +475,7 @@ package config
 //
 /////////////////////////////////////////// Application config api
 //// ApplicationConfigOpt is option to init ShutdownConfig
-//type ApplicationConfigOpt func(config *application.ShutdownConfig) *application.ShutdownConfig
+//type ApplicationConfigOpt func(config *applicationConfig.ShutdownConfig) *applicationConfig.ShutdownConfig
 //
 //// NewDefaultApplicationConfig returns ShutdownConfig with default
 //// name: dubbo.io
@@ -484,8 +484,8 @@ package config
 //// owner: dubbogo
 //// version: 0.0.1
 //// environment dev
-//func NewDefaultApplicationConfig() *application.ShutdownConfig {
-//	newAppConfig := &application.ShutdownConfig{
+//func NewDefaultApplicationConfig() *applicationConfig.ShutdownConfig {
+//	newAppConfig := &applicationConfig.ShutdownConfig{
 //		Name:         "dubbo.io",
 //		Module:       "sample",
 //		Organization: "dubbo.io",
@@ -497,8 +497,8 @@ package config
 //}
 //
 //// NewApplicationConfig is named as api, because there is NewServiceConfig func already declared
-//// NewApplicationConfig returns ShutdownConfig with default application config
-//func NewApplicationConfig(opts ...ApplicationConfigOpt) *application.ShutdownConfig {
+//// NewApplicationConfig returns ShutdownConfig with default applicationConfig config
+//func NewApplicationConfig(opts ...ApplicationConfigOpt) *applicationConfig.ShutdownConfig {
 //	defaultServiceConfig := NewDefaultApplicationConfig()
 //	for _, v := range opts {
 //		v(defaultServiceConfig)
@@ -508,7 +508,7 @@ package config
 //
 //// WithAppName returns ApplicationConfigOpt with given @name
 //func WithAppName(name string) ApplicationConfigOpt {
-//	return func(config *application.ShutdownConfig) *application.ShutdownConfig {
+//	return func(config *applicationConfig.ShutdownConfig) *applicationConfig.ShutdownConfig {
 //		config.Name = name
 //		return config
 //	}
@@ -516,7 +516,7 @@ package config
 //
 //// WithAppModule returns ApplicationConfigOpt with given @module
 //func WithAppModule(module string) ApplicationConfigOpt {
-//	return func(config *application.ShutdownConfig) *application.ShutdownConfig {
+//	return func(config *applicationConfig.ShutdownConfig) *applicationConfig.ShutdownConfig {
 //		config.Module = module
 //		return config
 //	}
@@ -524,7 +524,7 @@ package config
 //
 //// WithAppOrganization returns ApplicationConfigOpt wight given organization @org
 //func WithAppOrganization(org string) ApplicationConfigOpt {
-//	return func(config *application.ShutdownConfig) *application.ShutdownConfig {
+//	return func(config *applicationConfig.ShutdownConfig) *applicationConfig.ShutdownConfig {
 //		config.Organization = org
 //		return config
 //	}
@@ -532,7 +532,7 @@ package config
 //
 //// WithAppOwner returns ApplicationConfigOpt with given @owner
 //func WithAppOwner(owner string) ApplicationConfigOpt {
-//	return func(config *application.ShutdownConfig) *application.ShutdownConfig {
+//	return func(config *applicationConfig.ShutdownConfig) *applicationConfig.ShutdownConfig {
 //		config.Owner = owner
 //		return config
 //	}
@@ -540,7 +540,7 @@ package config
 //
 //// WithAppVersion returns ApplicationConfigOpt with given version @version
 //func WithAppVersion(version string) ApplicationConfigOpt {
-//	return func(config *application.ShutdownConfig) *application.ShutdownConfig {
+//	return func(config *applicationConfig.ShutdownConfig) *applicationConfig.ShutdownConfig {
 //		config.Version = version
 //		return config
 //	}
@@ -548,7 +548,7 @@ package config
 //
 //// WithAppEnvironment returns ApplicationConfigOpt with given environment @env
 //func WithAppEnvironment(env string) ApplicationConfigOpt {
-//	return func(config *application.ShutdownConfig) *application.ShutdownConfig {
+//	return func(config *applicationConfig.ShutdownConfig) *applicationConfig.ShutdownConfig {
 //		config.Environment = env
 //		return config
 //	}

@@ -26,7 +26,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
-// ApplicationConfig is a configuration for current application, whether the application is a provider or a consumer
+// ApplicationConfig is a configuration for current applicationConfig, whether the applicationConfig is a provider or a consumer
 type ApplicationConfig struct {
 	Organization string `default:"dubbo.io" yaml:"organization" json:"organization,omitempty" property:"organization"`
 	Name         string `default:"dubbo.io" yaml:"name" json:"name,omitempty" property:"name"`
@@ -38,12 +38,12 @@ type ApplicationConfig struct {
 	MetadataType string `default:"local" yaml:"metadataType" json:"metadataType,omitempty" property:"metadataType"`
 }
 
-// Prefix dubbo.application
+// Prefix dubbo.applicationConfig
 func (ApplicationConfig) Prefix() string {
-	return constant.DUBBO + ".application"
+	return constant.DUBBO + ".applicationConfig"
 }
 
-// getApplicationConfig get application config
+// getApplicationConfig get applicationConfig config
 func getApplicationConfig(application *ApplicationConfig) *ApplicationConfig {
 	if application != nil {
 		return application

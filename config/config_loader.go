@@ -18,6 +18,7 @@
 package config
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/config/options"
 	"errors"
 	"fmt"
 )
@@ -61,12 +62,12 @@ func init() {
 	validate = validator.New()
 }
 
-func Load(opts ...Option) {
+func Load(opts ...options.Option) {
 	// pares CommandLine
 	//parseCommandLine()
 	// conf
-	conf := &config{
-		name:  "application.yaml",
+	conf := &options.config{
+		name:  "applicationConfig.yaml",
 		genre: "yaml",
 		path:  "./conf",
 		delim: ".",
@@ -106,7 +107,7 @@ func check() error {
 //	}
 //}
 
-func getKoanf(conf *config) *koanf.Koanf {
+func getKoanf(conf *options.config) *koanf.Koanf {
 	var (
 		k   *koanf.Koanf
 		err error
@@ -218,15 +219,15 @@ func getKoanf(conf *config) *koanf.Koanf {
 //	}
 //}
 //
-//func checkRegistries(registries map[string]*registry2.RegistryConfig, singleRegistry *registry2.RegistryConfig) {
-//	if len(registries) == 0 && singleRegistry != nil {
-//		registries[constant.DEFAULT_KEY] = singleRegistry
+//func checkRegistries(registriesConfig map[string]*registry2.RegistryConfig, singleRegistry *registry2.RegistryConfig) {
+//	if len(registriesConfig) == 0 && singleRegistry != nil {
+//		registriesConfig[constant.DEFAULT_KEY] = singleRegistry
 //	}
 //}
 //
-//func checkApplicationName(config *application.ShutdownConfig) {
+//func checkApplicationName(config *applicationConfig.ShutdownConfig) {
 //	if config == nil || len(config.Name) == 0 {
-//		errMsg := "application config must not be nil, pls check your configuration"
+//		errMsg := "applicationConfig config must not be nil, pls check your configuration"
 //		logger.Errorf(errMsg)
 //		panic(errMsg)
 //	}
@@ -523,18 +524,18 @@ func getKoanf(conf *config) *koanf.Koanf {
 //	return GetBaseConfig().MetricConfig
 //}
 //
-//// GetApplicationConfig find the application config
+//// GetApplicationConfig find the applicationConfig config
 //// if not, we will create one
 //// Usually applicationConfig will be initialized when system start
 //// we use double-check to reduce race condition
 //// In general, it will be locked 0 or 1 time.
 //// So you don't need to worry about the race condition
-//func GetApplicationConfig() *application.ShutdownConfig {
+//func GetApplicationConfig() *applicationConfig.ShutdownConfig {
 //	if GetBaseConfig().ApplicationConfig == nil {
 //		configAccessMutex.Lock()
 //		defer configAccessMutex.Unlock()
 //		if GetBaseConfig().ApplicationConfig == nil {
-//			GetBaseConfig().ApplicationConfig = &application.ShutdownConfig{}
+//			GetBaseConfig().ApplicationConfig = &applicationConfig.ShutdownConfig{}
 //		}
 //	}
 //	return GetBaseConfig().ApplicationConfig
@@ -574,7 +575,7 @@ func getKoanf(conf *config) *koanf.Koanf {
 //				metric.MetricConfig: &metric.MetricConfig{},
 //				ConfigCenterConfig:  &center.ShutdownConfig{},
 //				Remotes:             make(map[string]*RemoteConfig),
-//				application.ShutdownConfig:  &application.ShutdownConfig{},
+//				applicationConfig.ShutdownConfig:  &applicationConfig.ShutdownConfig{},
 //				ServiceDiscoveries:  make(map[string]*discovery.ShutdownConfig),
 //			}
 //		}

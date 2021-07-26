@@ -235,7 +235,7 @@ type ReferenceConfig struct {
 //	urlMap.Set(constant.ASYNC_KEY, strconv.FormatBool(c.Async))
 //	urlMap.Set(constant.STICKY_KEY, strconv.FormatBool(c.Sticky))
 //
-//	// application info
+//	// applicationConfig info
 //	urlMap.Set(constant.APPLICATION_KEY, config.consumerConfig.ApplicationConfig.Name)
 //	urlMap.Set(constant.ORGANIZATION_KEY, config.consumerConfig.ApplicationConfig.Organization)
 //	urlMap.Set(constant.NAME_KEY, config.consumerConfig.ApplicationConfig.Name)

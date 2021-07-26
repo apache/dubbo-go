@@ -2,8 +2,8 @@ dubbo:
   provider:
     register: true
     registry:
-    - nacos
-    - zk
+     - nacos
+     - zk
     services:
       helloService:
         interface: org.dubbo.service.HelloService

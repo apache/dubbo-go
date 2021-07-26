@@ -44,12 +44,12 @@ type RegistryConfig struct {
 	Username   string `yaml:"username" json:"username,omitempty" property:"username"`
 	Password   string `yaml:"password" json:"password,omitempty"  property:"password"`
 	Simplified bool   `yaml:"simplified" json:"simplified,omitempty"  property:"simplified"`
-	// Always use this registry first if set to true, useful when subscribe to multiple registries
+	// Always use this registry first if set to true, useful when subscribe to multiple registriesConfig
 	Preferred bool `yaml:"preferred" json:"preferred,omitempty" property:"preferred"`
 	// The region where the registry belongs, usually used to isolate traffics
 	Zone string `yaml:"zone" json:"zone,omitempty" property:"zone"`
-	// Affects traffic distribution among registries,
-	// useful when subscribe to multiple registries Take effect only when no preferred registry is specified.
+	// Affects traffic distribution among registriesConfig,
+	// useful when subscribe to multiple registriesConfig Take effect only when no preferred registry is specified.
 	Weight int64             `yaml:"weight" json:"weight,omitempty" property:"weight"`
 	Params map[string]string `yaml:"params" json:"params,omitempty" property:"params"`
 }
@@ -73,14 +73,14 @@ func (c *RegistryConfig) UnmarshalYAML(unmarshal func(interface{}) error) error 
 	return unmarshal((*plain)(c))
 }
 
-// Prefix dubbo.registries
+// Prefix dubbo.registriesConfig
 func (RegistryConfig) Prefix() string {
 	return constant.RegistryConfigPrefix
 }
 
-func loadRegistries(targetRegistries string, registries map[string]*RegistryConfig, roleType common.RoleType) []*common.URL {
+func loadRegistries(registryIds []string, registries map[string]*RegistryConfig, roleType common.RoleType) []*common.URL {
 	var urls []*common.URL
-	trSlice := strings.Split(targetRegistries, ",")
+	//trSlice := strings.Split(targetRegistries, ",")
 
 	for k, registryConf := range registries {
 		target := false
@@ -90,11 +90,11 @@ func loadRegistries(targetRegistries string, registries map[string]*RegistryConf
 		// if s does not contain sep and sep is not empty, SplitAfter returns
 		// a slice of length 1 whose only element is s. So we have to add the
 		// condition when targetRegistries string is not set (it will be "" when not set)
-		if len(trSlice) == 0 || (len(trSlice) == 1 && trSlice[0] == "") {
+		if len(registryIds) == 0 || (len(registryIds) == 1 && registryIds[0] == "") {
 			target = true
 		} else {
 			// else if user config targetRegistries
-			for _, tr := range trSlice {
+			for _, tr := range registryIds {
 				if tr == k {
 					target = true
 					break
