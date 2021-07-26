@@ -366,7 +366,7 @@ func suiteMethod(method reflect.Method) *MethodType {
 
 	// The latest return type of the method must be error.
 	if returnType := mtype.Out(outNum - 1); returnType != typeOfError {
-		logger.Warnf("the latest return type %s of method %q is not error", returnType, mname)
+		logger.Debugf(`"%s" method will not be exported because its last return type %v doesn't have error`, mname, returnType)
 		return nil
 	}
 
