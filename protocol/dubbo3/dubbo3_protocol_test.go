@@ -19,13 +19,13 @@ package dubbo3
 
 import (
 	"context"
-	hessian "github.com/apache/dubbo-go-hessian2"
 	"reflect"
 	"testing"
 	"time"
 )
 
 import (
+	hessian "github.com/apache/dubbo-go-hessian2"
 	"github.com/stretchr/testify/assert"
 )
 
