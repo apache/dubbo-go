@@ -108,6 +108,11 @@ func TestLoad(t *testing.T) {
 	Load()
 
 	assert.Equal(t, ms, GetRPCService(ms.Reference()))
+	ms2 := &struct {
+		MockService
+	}{}
+	RPCService(ms2)
+	assert.NotEqual(t, ms2, GetRPCService(ms2.Reference()))
 
 	conServices = map[string]interface{}{}
 	proServices = map[string]interface{}{}
@@ -143,6 +148,11 @@ func TestLoadWithSingleReg(t *testing.T) {
 	Load()
 
 	assert.Equal(t, ms, GetRPCService(ms.Reference()))
+	ms2 := &struct {
+		MockService
+	}{}
+	RPCService(ms2)
+	assert.NotEqual(t, ms2, GetRPCService(ms2.Reference()))
 
 	conServices = map[string]interface{}{}
 	proServices = map[string]interface{}{}
@@ -177,6 +187,11 @@ func TestWithNoRegLoad(t *testing.T) {
 	Load()
 
 	assert.Equal(t, ms, GetRPCService(ms.Reference()))
+	ms2 := &struct {
+		MockService
+	}{}
+	RPCService(ms2)
+	assert.NotEqual(t, ms2, GetRPCService(ms2.Reference()))
 
 	conServices = map[string]interface{}{}
 	proServices = map[string]interface{}{}

@@ -34,6 +34,40 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 )
 
+// RPCService
+// rpc service interface
+type RPCService interface {
+	// Reference:
+	// rpc service id or reference id
+	Reference() string
+}
+
+// GetReference return the reference id of the service.
+// If the service implemented the RPCService interface,
+// it will call the Reference method; if not, it will
+// return the struct name as the reference id.
+func GetReference(service interface{}) string {
+	if s, ok := service.(RPCService); ok {
+		return s.Reference()
+	}
+
+	ref := ""
+	sType := reflect.TypeOf(service)
+	kind := sType.Kind()
+	switch kind {
+	case reflect.Struct:
+		ref = sType.Name()
+	case reflect.Ptr:
+		sName := sType.Elem().Name()
+		if sName != "" {
+			ref = sName
+		} else {
+			ref = sType.Elem().Field(0).Name
+		}
+	}
+	return ref
+}
+
 // AsyncCallbackService callback interface for async
 type AsyncCallbackService interface {
 	// Callback: callback

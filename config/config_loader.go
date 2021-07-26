@@ -412,7 +412,7 @@ func GetRPCService(name string) interface{} {
 
 // RPCService create rpc service for consumer
 func RPCService(service interface{}) {
-	ref := reflect.TypeOf(service).Elem().Name()
+	ref := common.GetReference(service)
 	consumerConfig.References[ref].Implement(service)
 }
 

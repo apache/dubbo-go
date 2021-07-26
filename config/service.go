@@ -18,10 +18,6 @@
 package config
 
 import (
-	"reflect"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 )
 
@@ -32,13 +28,13 @@ var (
 
 // SetConsumerService is called by init() of implement of RPCService
 func SetConsumerService(service interface{}) {
-	ref := reflect.TypeOf(service).Elem().Name()
+	ref := common.GetReference(service)
 	conServices[ref] = service
 }
 
 // SetProviderService is called by init() of implement of RPCService
 func SetProviderService(service interface{}) {
-	ref := reflect.TypeOf(service).Elem().Name()
+	ref := common.GetReference(service)
 	proServices[ref] = service
 }
 
