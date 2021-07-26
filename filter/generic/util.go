@@ -69,6 +69,9 @@ func getGeneralizer(generic string) (g generalizer.Generalizer) {
 	switch strings.ToLower(generic) {
 	case constant.GenericSerializationDefault:
 		g = generalizer.GetMapGeneralizer()
+	case constant.GenericSerializationGson:
+		g = generalizer.GetGsonGeneralizer()
+
 	default:
 		logger.Debugf("\"%s\" is not supported, use the default generalizer(MapGeneralizer)", generic)
 		g = generalizer.GetMapGeneralizer()

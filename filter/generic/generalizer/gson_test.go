@@ -26,27 +26,36 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var mockJsonGeneralizer = GetJsonrpcGeneralizer()
+var mockGsonGeneralizer = GetGsonGeneralizer()
 
-type mockJsonParent struct {
+type mockGsonParent struct {
 	Gender, Email, Name string
 	Age                 int
-	Child               *mockJsonChild
+	Child               *mockGsonChild
 }
 
-type mockJsonChild struct {
+func (p mockGsonParent) JavaClassName() string {
+	return "org.apache.dubbo.mockGsonParent"
+}
+
+type mockGsonChild struct {
 	Gender, Email, Name string
 	Age                 int
 }
 
-func TestJsonGeneralizer(t *testing.T) {
-	c := &mockJsonChild{
+func (p mockGsonChild) JavaClassName() string {
+	return "org.apache.dubbo.mockGsonChild"
+}
+
+func TestGsonGeneralizer(t *testing.T) {
+	c := &mockGsonChild{
 		Age:    20,
 		Gender: "male",
 		Email:  "childName@example.com",
 		Name:   "childName",
 	}
-	p := mockJsonParent{
+
+	p := mockGsonParent{
 		Age:    30,
 		Gender: "male",
 		Email:  "enableasync@example.com",
@@ -54,13 +63,13 @@ func TestJsonGeneralizer(t *testing.T) {
 		Child:  c,
 	}
 
-	m, err := mockJsonGeneralizer.Generalize(p)
+	m, err := mockGsonGeneralizer.Generalize(p)
 	assert.Nil(t, err)
 	assert.Equal(t, "{\"Gender\":\"male\",\"Email\":\"enableasync@example.com\",\"Name\":\"enableasync\",\"Age\":30,\"Child\":{\"Gender\":\"male\",\"Email\":\"childName@example.com\",\"Name\":\"childName\",\"Age\":20}}", m)
 
-	r, err := mockJsonGeneralizer.Realize(m, reflect.TypeOf(p))
+	r, err := mockGsonGeneralizer.Realize(m, reflect.TypeOf(p))
 	assert.Nil(t, err)
-	rMockParent, ok := r.(*mockJsonParent)
+	rMockParent, ok := r.(*mockGsonParent)
 	assert.True(t, ok)
 	// parent
 	assert.Equal(t, "enableasync", rMockParent.Name)
@@ -68,4 +77,22 @@ func TestJsonGeneralizer(t *testing.T) {
 	// child
 	assert.Equal(t, "childName", rMockParent.Child.Name)
 	assert.Equal(t, 20, rMockParent.Child.Age)
+}
+
+func TestGsonPointer(t *testing.T) {
+	c := &mockGsonChild{
+		Age:    20,
+		Gender: "male",
+		Email:  "childName@example.com",
+		Name:   "childName",
+	}
+
+	m, err := mockMapGeneralizer.Generalize(c)
+	assert.Nil(t, err)
+	newC, err := mockMapGeneralizer.Realize(m, reflect.TypeOf(c))
+	assert.Nil(t, err)
+	rMockChild, ok := newC.(*mockGsonChild)
+	assert.True(t, ok)
+	assert.Equal(t, "childName", rMockChild.Name)
+	assert.Equal(t, 20, rMockChild.Age)
 }

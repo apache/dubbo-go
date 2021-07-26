@@ -35,19 +35,19 @@ var (
 	jsonGeneralizerOnce sync.Once
 )
 
-func GetJsonrpcGeneralizer() Generalizer {
+func GetGsonGeneralizer() Generalizer {
 	jsonGeneralizerOnce.Do(func() {
-		jsonGeneralizer = &JsonGeneralizer{}
+		jsonGeneralizer = &GsonGeneralizer{}
 	})
 	return jsonGeneralizer
 }
 
-type JsonGeneralizer struct{}
+type GsonGeneralizer struct{}
 
-func (JsonGeneralizer) Generalize(obj interface{}) (interface{}, error) {
-	newObj, ok := obj.(hessian.Object)
+func (GsonGeneralizer) Generalize(obj interface{}) (interface{}, error) {
+	newObj, ok := obj.(hessian.POJO)
 	if !ok {
-		return nil, perrors.Errorf("unexpected type of obj(=%T), wanted is hessian object", obj)
+		return nil, perrors.Errorf("unexpected type of obj(=%T), wanted is hessian pojo", obj)
 	}
 
 	jsonbytes, err := json.Marshal(newObj)
@@ -58,21 +58,16 @@ func (JsonGeneralizer) Generalize(obj interface{}) (interface{}, error) {
 	return string(jsonbytes), nil
 }
 
-func (JsonGeneralizer) Realize(obj interface{}, typ reflect.Type) (interface{}, error) {
+func (GsonGeneralizer) Realize(obj interface{}, typ reflect.Type) (interface{}, error) {
 	jsonbytes, ok := obj.(string)
 	if !ok {
 		return nil, perrors.Errorf("unexpected type of obj(=%T), wanted is string", obj)
 	}
 
-	// typ represents a struct instead of a pointer
-	for typ.Kind() == reflect.Ptr {
-		typ = typ.Elem()
-	}
-
 	// create the target object
-	ret, ok := reflect.New(typ).Interface().(hessian.Object)
+	ret, ok := reflect.New(typ).Interface().(hessian.POJO)
 	if !ok {
-		return nil, perrors.Errorf("the type of obj(=%s) should be hessian object", typ)
+		return nil, perrors.Errorf("the type of obj(=%s) should be hessian pojo", typ)
 	}
 
 	err := json.Unmarshal([]byte(jsonbytes), ret)
@@ -83,7 +78,7 @@ func (JsonGeneralizer) Realize(obj interface{}, typ reflect.Type) (interface{}, 
 	return ret, nil
 }
 
-func (JsonGeneralizer) GetType(obj interface{}) (typ string, err error) {
+func (GsonGeneralizer) GetType(obj interface{}) (typ string, err error) {
 	typ, err = hessian2.GetJavaName(obj)
 	// no error or error is not NilError
 	if err == nil || err != hessian2.NilError {
