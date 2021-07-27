@@ -19,6 +19,7 @@ package getty
 
 import (
 	"fmt"
+	gxtime "github.com/dubbogo/gost/time"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -378,7 +379,7 @@ func heartbeat(session getty.Session, timeout time.Duration, callBack func(err e
 	go func() {
 		var err1 error
 		select {
-		case <-getty.GetTimeWheel().After(timeout):
+		case <-gxtime.After(timeout):
 			err1 = errHeartbeatReadTimeout
 		case <-resp.Done:
 			err1 = resp.Err

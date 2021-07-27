@@ -87,14 +87,6 @@ func (p *RpcClientPackageHandler) Write(ss getty.Session, pkg interface{}) ([]by
 	return nil, perrors.New("invalid rpc request")
 }
 
-////////////////////////////////////////////
-// RpcServerPackageHandler
-////////////////////////////////////////////
-
-//var (
-//	rpcServerPkgHandler = &RpcServerPackageHandler{}
-//)
-
 // RpcServerPackageHandler Read data from client and Write data to client
 type RpcServerPackageHandler struct {
 	server *Server

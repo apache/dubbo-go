@@ -18,6 +18,7 @@
 package getty
 
 import (
+	gxtime "github.com/dubbogo/gost/time"
 	"math/rand"
 	"sync"
 	"time"
@@ -201,7 +202,7 @@ func (c *Client) Request(request *remoting.Request, timeout time.Duration, respo
 	}
 
 	select {
-	case <-getty.GetTimeWheel().After(timeout):
+	case <-gxtime.After(timeout):
 		return perrors.WithStack(errClientReadTimeout)
 	case <-response.Done:
 		err = response.Err
