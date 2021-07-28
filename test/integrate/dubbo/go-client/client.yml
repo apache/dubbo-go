@@ -52,8 +52,6 @@ protocol_conf:
       keep_alive_period: "120s"
       tcp_r_buf_size: 262144
       tcp_w_buf_size: 65536
-      pkg_rq_size: 1024
-      pkg_wq_size: 512
       tcp_read_timeout: "1s"
       tcp_write_timeout: "5s"
       wait_timeout: "1s"
