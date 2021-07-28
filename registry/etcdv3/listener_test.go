@@ -24,7 +24,7 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-getty"
+	getty "github.com/apache/dubbo-getty"
 	"github.com/stretchr/testify/suite"
 	"go.etcd.io/etcd/server/v3/embed"
 )
@@ -53,6 +53,7 @@ func (suite *RegistryTestSuite) SetupSuite() {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	select {
 	case <-e.Server.ReadyNotify():
 		t.Log("Server is ready!")
