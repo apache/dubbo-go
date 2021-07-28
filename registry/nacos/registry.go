@@ -25,7 +25,6 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/remoting/nacos"
 	nacosClient "github.com/dubbogo/gost/database/kv/nacos"
 	"github.com/nacos-group/nacos-sdk-go/vo"
 	perrors "github.com/pkg/errors"
@@ -37,6 +36,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/registry"
+	"dubbo.apache.org/dubbo-go/v3/remoting/nacos"
 )
 
 var localIP = ""

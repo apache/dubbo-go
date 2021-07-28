@@ -33,10 +33,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 )
 
-/////////////////////////////////////////
-// dubbo
-/////////////////////////////////////////
-
 func getArgType(v interface{}) string {
 	return GetClassDesc(v)
 }

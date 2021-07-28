@@ -23,13 +23,10 @@ import (
 )
 
 import (
+	_ "github.com/apache/dubbo-go/protocol/dubbo3/protoc-gen-dubbo3/plugin/dubbo3"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/protoc-gen-go/generator"
 	_ "github.com/golang/protobuf/protoc-gen-go/grpc"
-)
-
-import (
-	_  "github.com/apache/dubbo-go/protocol/dubbo3/protoc-gen-dubbo3/plugin/dubbo3"
 )
 
 func main() {
