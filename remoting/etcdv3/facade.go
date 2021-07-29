@@ -23,7 +23,6 @@ import (
 )
 
 import (
-	getty "github.com/apache/dubbo-getty"
 	gxetcd "github.com/dubbogo/gost/database/kv/etcd/v3"
 )
 
