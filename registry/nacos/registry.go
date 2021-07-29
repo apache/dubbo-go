@@ -19,6 +19,7 @@ package nacos
 
 import (
 	"bytes"
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"strconv"
 	"strings"
 	"time"
@@ -73,6 +74,22 @@ func getServiceName(url *common.URL) string {
 	return buffer.String()
 }
 
+func getGroupName(url *common.URL) string {
+	// get group_name from service_discovery
+	urlPath := url.Path
+	var referName string
+	if strings.Index(urlPath, "/") == 0 {
+		referName = urlPath[1:]
+	} else {
+		referName = urlPath
+	}
+	sdc, ok := config.GetBaseConfig().GetServiceDiscoveries(referName)
+	if ok && len(sdc.Group) > 0 {
+		return sdc.Group
+	}
+	return defaultGroup
+}
+
 func appendParam(target *bytes.Buffer, url *common.URL, key string) {
 	value := url.GetParam(key, "")
 	if strings.TrimSpace(value) != "" {
@@ -81,7 +98,7 @@ func appendParam(target *bytes.Buffer, url *common.URL, key string) {
 	}
 }
 
-func createRegisterParam(url *common.URL, serviceName string) vo.RegisterInstanceParam {
+func createRegisterParam(url *common.URL, serviceName string, groupName string) vo.RegisterInstanceParam {
 	category := getCategory(url)
 	params := make(map[string]string)
 
@@ -109,6 +126,7 @@ func createRegisterParam(url *common.URL, serviceName string) vo.RegisterInstanc
 		Healthy:     true,
 		Ephemeral:   true,
 		ServiceName: serviceName,
+		GroupName:   groupName,
 	}
 	return instance
 }
@@ -116,7 +134,8 @@ func createRegisterParam(url *common.URL, serviceName string) vo.RegisterInstanc
 // Register will register the service @url to its nacos registry center
 func (nr *nacosRegistry) Register(url *common.URL) error {
 	serviceName := getServiceName(url)
-	param := createRegisterParam(url, serviceName)
+	groupName := getGroupName(url)
+	param := createRegisterParam(url, serviceName, groupName)
 	isRegistry, err := nr.namingClient.Client().RegisterInstance(param)
 	if err != nil {
 		return err
