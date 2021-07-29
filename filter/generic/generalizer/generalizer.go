@@ -17,7 +17,9 @@
 
 package generalizer
 
-import "reflect"
+import (
+	"reflect"
+)
 
 type Generalizer interface {
 

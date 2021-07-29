@@ -18,12 +18,12 @@
 package etcdv3
 
 import (
-	getty "github.com/apache/dubbo-getty"
 	"sync"
 	"time"
 )
 
 import (
+	getty "github.com/apache/dubbo-getty"
 	gxetcd "github.com/dubbogo/gost/database/kv/etcd/v3"
 	perrors "github.com/pkg/errors"
 )

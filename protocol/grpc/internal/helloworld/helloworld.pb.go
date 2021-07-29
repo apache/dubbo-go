@@ -23,11 +23,14 @@ package helloworld
 import (
 	context "context"
 	fmt "fmt"
+	math "math"
+)
+
+import (
 	proto "github.com/golang/protobuf/proto"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	math "math"
 )
 
 import (

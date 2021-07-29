@@ -42,11 +42,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 )
 
-// ///////////////////////////////
-// dubbo role type
-// ///////////////////////////////
-
-// role constant
+// dubbo role type constant
 const (
 	// CONSUMER is consumer role
 	CONSUMER = iota

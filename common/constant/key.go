@@ -314,4 +314,5 @@ const (
 	GenericSerializationDefault = "true"
 	// disable "protobuf-json" temporarily
 	//GenericSerializationProtobuf = "protobuf-json"
+	GenericSerializationGson = "gson"
 )
