@@ -96,7 +96,6 @@ func newETCDV3Registry(url *common.URL) (registry.Registry, error) {
 		return nil, err
 	}
 
-
 	r.handleClientRestart()
 	r.InitListeners()
 
