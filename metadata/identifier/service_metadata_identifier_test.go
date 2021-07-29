@@ -37,7 +37,7 @@ var serviceMetadataId = &ServiceMetadataIdentifier{
 }
 
 func TestServiceGetFilePathKey(t *testing.T) {
-	assert.Equal(t, "metadata/1.0.0/Group/provider/dubbo/revision1.0", serviceMetadataId.GetFilePathKey())
+	assert.Equal(t, "metadata/org.apache.pkg.mockService/1.0.0/Group/provider/dubbo/revision1.0", serviceMetadataId.GetFilePathKey())
 }
 
 func TestServiceGetIdentifierKey(t *testing.T) {

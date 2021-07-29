@@ -304,7 +304,7 @@ func (c *ServiceConfig) getUrlMap() url.Values {
 	urlMap.Set(constant.SERVICE_FILTER_KEY, mergeValue(providerConfig.Filter, c.Filter, constant.DEFAULT_SERVICE_FILTERS))
 
 	// filter special config
-	urlMap.Set(constant.ACCESS_LOG_KEY, c.AccessLog)
+	urlMap.Set(constant.AccessLogFilterKey, c.AccessLog)
 	// tps limiter
 	urlMap.Set(constant.TPS_LIMIT_STRATEGY_KEY, c.TpsLimitStrategy)
 	urlMap.Set(constant.TPS_LIMIT_INTERVAL_KEY, c.TpsLimitInterval)
@@ -353,8 +353,8 @@ func (c *ServiceConfig) GetExportedUrls() []*common.URL {
 }
 
 func publishServiceDefinition(url *common.URL) {
-	if remotingMetadataService, err := extension.GetRemotingMetadataService(); err == nil && remotingMetadataService != nil {
-		remotingMetadataService.PublishServiceDefinition(url)
+	if remoteMetadataService, err := extension.GetRemoteMetadataService(); err == nil && remoteMetadataService != nil {
+		remoteMetadataService.PublishServiceDefinition(url)
 
 	}
 }

@@ -81,9 +81,9 @@ func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	service = config.GetProviderService(key)
 
 	serializationType := url.GetParam(constant.SERIALIZATION_KEY, constant.PROTOBUF_SERIALIZATION)
-	var triSerializationType tripleConstant.TripleSerializerName
-	switch serializationType {
-	case constant.PROTOBUF_SERIALIZATION:
+	var triSerializationType tripleConstant.CodecType
+
+	if serializationType == constant.PROTOBUF_SERIALIZATION {
 		m, ok := reflect.TypeOf(service).MethodByName("SetProxyImpl")
 		if !ok {
 			panic("method SetProxyImpl is necessary for triple service")
@@ -94,12 +94,26 @@ func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 		in := []reflect.Value{reflect.ValueOf(service)}
 		in = append(in, reflect.ValueOf(invoker))
 		m.Func.Call(in)
-		triSerializationType = tripleConstant.PBSerializerName
-	case constant.HESSIAN2_SERIALIZATION:
-		service = &Dubbo3HessianService{proxyImpl: invoker}
-		triSerializationType = tripleConstant.TripleHessianWrapperSerializerName
-	default:
-		panic(fmt.Sprintf("unsupport serialization = %s", serializationType))
+		triSerializationType = tripleConstant.PBCodecName
+	} else {
+		valueOf := reflect.ValueOf(service)
+		typeOf := valueOf.Type()
+		numField := valueOf.NumMethod()
+		tripleService := &Dubbo3HessianService{proxyImpl: invoker}
+		for i := 0; i < numField; i++ {
+			ft := typeOf.Method(i)
+			if ft.Name == "Reference" {
+				continue
+			}
+			// num out is checked in common/rpc_service.go
+			if ft.Type.NumIn() != 3 {
+				panic(fmt.Sprintf("function %s input params num = %d not supported, which should be 2", ft.Name, ft.Type.NumIn()-1))
+			}
+			typ := ft.Type.In(2)
+			tripleService.setReqParamsInterface(ft.Name, typ)
+		}
+		service = tripleService
+		triSerializationType = tripleConstant.CodecType(serializationType)
 	}
 
 	dp.serviceMap.Store(url.GetParam(constant.INTERFACE_KEY, ""), service)
@@ -151,7 +165,21 @@ type Dubbo3GrpcService interface {
 }
 
 type Dubbo3HessianService struct {
-	proxyImpl protocol.Invoker
+	proxyImpl  protocol.Invoker
+	reqTypeMap sync.Map
+}
+
+func (d *Dubbo3HessianService) setReqParamsInterface(methodName string, typ reflect.Type) {
+	d.reqTypeMap.Store(methodName, typ)
+}
+
+func (d *Dubbo3HessianService) GetReqParamsInteface(methodName string) (interface{}, bool) {
+	val, ok := d.reqTypeMap.Load(methodName)
+	if !ok {
+		return nil, false
+	}
+	typ := val.(reflect.Type)
+	return reflect.New(typ).Interface(), true
 }
 
 func (d *Dubbo3HessianService) InvokeWithArgs(ctx context.Context, methodName string, arguments []interface{}) (interface{}, error) {
@@ -160,7 +188,7 @@ func (d *Dubbo3HessianService) InvokeWithArgs(ctx context.Context, methodName st
 }
 
 // openServer open a dubbo3 server, if there is already a service using the same protocol, it returns directly.
-func (dp *DubboProtocol) openServer(url *common.URL, tripleSerializationType tripleConstant.TripleSerializerName) {
+func (dp *DubboProtocol) openServer(url *common.URL, tripleCodecType tripleConstant.CodecType) {
 	_, ok := dp.serverMap[url.Location]
 	if ok {
 		return
@@ -178,7 +206,7 @@ func (dp *DubboProtocol) openServer(url *common.URL, tripleSerializationType tri
 	}
 
 	triOption := triConfig.NewTripleOption(
-		triConfig.WithSerializerType(tripleSerializationType),
+		triConfig.WithCodecType(tripleCodecType),
 		triConfig.WithLocation(url.Location),
 		triConfig.WithLogger(logger.GetLogger()),
 	)

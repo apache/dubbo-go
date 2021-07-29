@@ -19,13 +19,13 @@ package kubernetes
 
 import (
 	"fmt"
+	getty "github.com/apache/dubbo-getty"
 	"path"
 	"sync"
 	"time"
 )
 
 import (
-	getty "github.com/apache/dubbo-getty"
 	perrors "github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 )
@@ -211,11 +211,12 @@ LOOP:
 			// try to connect to kubernetes,
 			failTimes = 0
 			for {
+				after := getty.GetTimeWheel().After(timeSecondDuration(failTimes * ConnDelay))
 				select {
 				case <-r.Done():
 					logger.Warnf("(KubernetesProviderRegistry)reconnectKubernetes Registry goroutine exit now...")
 					break LOOP
-				case <-getty.GetTimeWheel().After(timeSecondDuration(failTimes * ConnDelay)): // avoid connect frequent
+				case <-after: // avoid connect frequent
 				}
 				err = kubernetes.ValidateClient(r)
 				logger.Infof("Kubernetes ProviderRegistry.validateKubernetesClient = error{%#v}", perrors.WithStack(err))

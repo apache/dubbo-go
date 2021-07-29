@@ -35,12 +35,12 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/observer/dispatcher"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
-	_ "dubbo.apache.org/dubbo-go/v3/metadata/service/inmemory"
+	_ "dubbo.apache.org/dubbo-go/v3/metadata/service/local"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
 func TestEventPublishingServiceDiscovery_DispatchEvent(t *testing.T) {
-	// extension.SetMetadataService("local", inmemory.NewMetadataService)
+	// extension.SetMetadataService("local", local.NewMetadataService)
 
 	config.GetApplicationConfig().MetadataType = "local"
 

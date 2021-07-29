@@ -49,7 +49,7 @@ const (
 )
 
 var (
-	selectors = make(map[string]*ConsistentHashSelector)
+	selectors = make(map[string]*consistentHashSelector)
 	re        = regexp.MustCompile(constant.COMMA_SPLIT_PATTERN)
 )
 
@@ -57,18 +57,18 @@ func init() {
 	extension.SetLoadbalance(ConsistentHash, NewConsistentHashLoadBalance)
 }
 
-// ConsistentHashLoadBalance implementation of load balancing: using consistent hashing
-type ConsistentHashLoadBalance struct{}
+// consistentHashLoadBalance implementation of load balancing: using consistent hashing
+type consistentHashLoadBalance struct{}
 
 // NewConsistentHashLoadBalance creates NewConsistentHashLoadBalance
 //
 // The same parameters of the request is always sent to the same provider.
 func NewConsistentHashLoadBalance() cluster.LoadBalance {
-	return &ConsistentHashLoadBalance{}
+	return &consistentHashLoadBalance{}
 }
 
 // Select gets invoker based on load balancing strategy
-func (lb *ConsistentHashLoadBalance) Select(invokers []protocol.Invoker, invocation protocol.Invocation) protocol.Invoker {
+func (lb *consistentHashLoadBalance) Select(invokers []protocol.Invoker, invocation protocol.Invocation) protocol.Invoker {
 	methodName := invocation.MethodName()
 	key := invokers[0].GetURL().ServiceKey() + "." + methodName
 
@@ -90,8 +90,8 @@ func (lb *ConsistentHashLoadBalance) Select(invokers []protocol.Invoker, invocat
 	return selector.Select(invocation)
 }
 
-// ConsistentHashSelector implementation of Selector:get invoker based on load balancing strategy
-type ConsistentHashSelector struct {
+// consistentHashSelector implementation of Selector:get invoker based on load balancing strategy
+type consistentHashSelector struct {
 	hashCode        uint32
 	replicaNum      int
 	virtualInvokers map[uint32]protocol.Invoker
@@ -100,9 +100,9 @@ type ConsistentHashSelector struct {
 }
 
 func newConsistentHashSelector(invokers []protocol.Invoker, methodName string,
-	hashCode uint32) *ConsistentHashSelector {
+	hashCode uint32) *consistentHashSelector {
 
-	selector := &ConsistentHashSelector{}
+	selector := &consistentHashSelector{}
 	selector.virtualInvokers = make(map[uint32]protocol.Invoker)
 	selector.hashCode = hashCode
 	url := invokers[0].GetURL()
@@ -132,13 +132,13 @@ func newConsistentHashSelector(invokers []protocol.Invoker, methodName string,
 }
 
 // Select gets invoker based on load balancing strategy
-func (c *ConsistentHashSelector) Select(invocation protocol.Invocation) protocol.Invoker {
+func (c *consistentHashSelector) Select(invocation protocol.Invocation) protocol.Invoker {
 	key := c.toKey(invocation.Arguments())
 	digest := md5.Sum([]byte(key))
 	return c.selectForKey(c.hash(digest, 0))
 }
 
-func (c *ConsistentHashSelector) toKey(args []interface{}) string {
+func (c *consistentHashSelector) toKey(args []interface{}) string {
 	var sb strings.Builder
 	for i := range c.argumentIndex {
 		if i >= 0 && i < len(args) {
@@ -148,7 +148,7 @@ func (c *ConsistentHashSelector) toKey(args []interface{}) string {
 	return sb.String()
 }
 
-func (c *ConsistentHashSelector) selectForKey(hash uint32) protocol.Invoker {
+func (c *consistentHashSelector) selectForKey(hash uint32) protocol.Invoker {
 	idx := sort.Search(len(c.keys), func(i int) bool {
 		return c.keys[i] >= hash
 	})
@@ -159,7 +159,7 @@ func (c *ConsistentHashSelector) selectForKey(hash uint32) protocol.Invoker {
 }
 
 // nolint
-func (c *ConsistentHashSelector) hash(digest [16]byte, i int) uint32 {
-	return uint32((digest[3+i*4]&0xFF)<<24) | uint32((digest[2+i*4]&0xFF)<<16) |
-		uint32((digest[1+i*4]&0xFF)<<8) | uint32(digest[i*4]&0xFF)&0xFFFFFFF
+func (c *consistentHashSelector) hash(digest [16]byte, i int) uint32 {
+	return (uint32(digest[3+i*4]&0xFF) << 24) | (uint32(digest[2+i*4]&0xFF) << 16) |
+		(uint32(digest[1+i*4]&0xFF) << 8) | uint32(digest[i*4]&0xFF)&0xFFFFFFF
 }

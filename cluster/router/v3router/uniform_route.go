@@ -30,14 +30,12 @@ const (
 // UniformRouter have
 type UniformRouter struct {
 	dubboRouter *DubboRouterRule
-	notify      chan struct{}
 }
 
 // NewUniformRouter construct an NewConnCheckRouter via url
-func NewUniformRouter(dubboRouter *DubboRouterRule, notify chan struct{}) (*UniformRouter, error) {
+func NewUniformRouter(dubboRouter *DubboRouterRule) (*UniformRouter, error) {
 	r := &UniformRouter{
 		dubboRouter: dubboRouter,
-		notify:      notify,
 	}
 	return r, nil
 }

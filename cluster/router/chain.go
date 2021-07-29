@@ -29,6 +29,4 @@ type Chain interface {
 	SetInvokers([]protocol.Invoker)
 	// AddRouters Add routers
 	AddRouters([]PriorityRouter)
-	// GetNotifyChan get notify channel of this chain
-	GetNotifyChan() chan struct{}
 }

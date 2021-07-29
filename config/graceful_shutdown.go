@@ -59,6 +59,14 @@ func GracefulShutdownInit() {
 
 	signal.Notify(signals, ShutdownSignals...)
 
+	// retrieve ShutdownConfig for gracefulShutdownFilter
+	if filter, ok := extension.GetFilter(constant.GracefulShutdownConsumerFilterKey).(Setter); ok && GetConsumerConfig().ShutdownConfig != nil {
+		filter.Set(GracefulShutdownFilterShutdownConfig, GetConsumerConfig().ShutdownConfig)
+	}
+	if filter, ok := extension.GetFilter(constant.GracefulShutdownProviderFilterKey).(Setter); ok && GetProviderConfig().ShutdownConfig != nil {
+		filter.Set(GracefulShutdownFilterShutdownConfig, GetProviderConfig().ShutdownConfig)
+	}
+
 	go func() {
 		select {
 		case sig := <-signals:
@@ -163,6 +171,7 @@ func waitForReceivingRequests() {
 		// ignore this step
 		return
 	}
+	providerConfig.ShutdownConfig.RejectRequest = true
 	waitingProcessedTimeout(providerConfig.ShutdownConfig)
 }
 
@@ -173,6 +182,7 @@ func waitForSendingRequests() {
 		// ignore this step
 		return
 	}
+	consumerConfig.ShutdownConfig.RejectRequest = true
 	waitingProcessedTimeout(consumerConfig.ShutdownConfig)
 }
 
@@ -181,9 +191,9 @@ func waitingProcessedTimeout(shutdownConfig *ShutdownConfig) {
 	if timeout <= 0 {
 		return
 	}
-	start := time.Now()
+	deadline := time.Now().Add(timeout)
 
-	for time.Now().After(start.Add(timeout)) && !shutdownConfig.RequestsFinished {
+	for time.Now().Before(deadline) && !shutdownConfig.RequestsFinished {
 		// sleep 10 ms and then we check it again
 		time.Sleep(10 * time.Millisecond)
 	}
