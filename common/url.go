@@ -39,7 +39,6 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
 )
 
 // dubbo role type constant
@@ -206,11 +205,7 @@ func WithToken(token string) Option {
 		if len(token) > 0 {
 			value := token
 			if strings.ToLower(token) == "true" || strings.ToLower(token) == "default" {
-				u, err := uuid.NewV4()
-				if err != nil {
-					logger.Errorf("could not generator UUID: %v", err)
-					return
-				}
+				u := uuid.NewV4()
 				value = u.String()
 			}
 			url.SetParam(constant.TOKEN_KEY, value)
