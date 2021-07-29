@@ -99,18 +99,18 @@ func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 		valueOf := reflect.ValueOf(service)
 		typeOf := valueOf.Type()
 		numField := valueOf.NumMethod()
-		tripleService := &Dubbo3HessianService{proxyImpl: invoker}
+		tripleService := &UnaryService{proxyImpl: invoker}
 		for i := 0; i < numField; i++ {
 			ft := typeOf.Method(i)
 			if ft.Name == "Reference" {
 				continue
 			}
-			// num out is checked in common/rpc_service.go
-			if ft.Type.NumIn() != 3 {
-				panic(fmt.Sprintf("function %s input params num = %d not supported, which should be 2", ft.Name, ft.Type.NumIn()-1))
+			// get all method params type
+			typs := make([]reflect.Type, 0)
+			for j := 2; j < ft.Type.NumIn(); j++ {
+				typs = append(typs, ft.Type.In(j))
 			}
-			typ := ft.Type.In(2)
-			tripleService.setReqParamsInterface(ft.Name, typ)
+			tripleService.setReqParamsTypes(ft.Name, typs)
 		}
 		service = tripleService
 		triSerializationType = tripleConstant.CodecType(serializationType)
@@ -164,25 +164,29 @@ type Dubbo3GrpcService interface {
 	ServiceDesc() *grpc.ServiceDesc
 }
 
-type Dubbo3HessianService struct {
+type UnaryService struct {
 	proxyImpl  protocol.Invoker
 	reqTypeMap sync.Map
 }
 
-func (d *Dubbo3HessianService) setReqParamsInterface(methodName string, typ reflect.Type) {
+func (d *UnaryService) setReqParamsTypes(methodName string, typ []reflect.Type) {
 	d.reqTypeMap.Store(methodName, typ)
 }
 
-func (d *Dubbo3HessianService) GetReqParamsInteface(methodName string) (interface{}, bool) {
+func (d *UnaryService) GetReqParamsInterfaces(methodName string) ([]interface{}, bool) {
 	val, ok := d.reqTypeMap.Load(methodName)
 	if !ok {
 		return nil, false
 	}
-	typ := val.(reflect.Type)
-	return reflect.New(typ).Interface(), true
+	typs := val.([]reflect.Type)
+	reqParamsInterfaces := make([]interface{}, 0, len(typs))
+	for _, typ := range typs {
+		reqParamsInterfaces = append(reqParamsInterfaces, reflect.New(typ).Interface())
+	}
+	return reqParamsInterfaces, true
 }
 
-func (d *Dubbo3HessianService) InvokeWithArgs(ctx context.Context, methodName string, arguments []interface{}) (interface{}, error) {
+func (d *UnaryService) InvokeWithArgs(ctx context.Context, methodName string, arguments []interface{}) (interface{}, error) {
 	res := d.proxyImpl.Invoke(ctx, invocation.NewRPCInvocation(methodName, arguments, nil))
 	return res.Result(), res.Error()
 }
