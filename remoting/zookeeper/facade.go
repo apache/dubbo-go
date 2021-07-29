@@ -42,6 +42,7 @@ type ZkClientFacade interface {
 }
 
 // HandleClientRestart keeps the connection between client and server
+// This method should be used only once. You can use handleClientRestart() in package registry.
 func HandleClientRestart(r ZkClientFacade) {
 	defer r.WaitGroup().Done()
 	for {
