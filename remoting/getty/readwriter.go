@@ -33,10 +33,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
-////////////////////////////////////////////
-// RpcClientPackageHandler
-////////////////////////////////////////////
-
 // RpcClientPackageHandler Read data from server and Write data to server
 type RpcClientPackageHandler struct {
 	client *Client
