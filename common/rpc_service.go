@@ -34,20 +34,23 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 )
 
-// RPCService
+// RPCService the type alias of interface{}
+type RPCService = interface{}
+
+// ReferencedRPCService
 // rpc service interface
-type RPCService interface {
+type ReferencedRPCService interface {
 	// Reference:
 	// rpc service id or reference id
 	Reference() string
 }
 
 // GetReference return the reference id of the service.
-// If the service implemented the RPCService interface,
+// If the service implemented the ReferencedRPCService interface,
 // it will call the Reference method. If not, it will
 // return the struct name as the reference id.
-func GetReference(service interface{}) string {
-	if s, ok := service.(RPCService); ok {
+func GetReference(service RPCService) string {
+	if s, ok := service.(ReferencedRPCService); ok {
 		return s.Reference()
 	}
 
@@ -212,7 +215,7 @@ func (sm *serviceMap) GetInterface(interfaceName string) []*Service {
 }
 
 // Register registers a service by @interfaceName and @protocol
-func (sm *serviceMap) Register(interfaceName, protocol, group, version string, rcvr interface{}) (string, error) {
+func (sm *serviceMap) Register(interfaceName, protocol, group, version string, rcvr RPCService) (string, error) {
 	if sm.serviceMap[protocol] == nil {
 		sm.serviceMap[protocol] = make(map[string]*Service)
 	}

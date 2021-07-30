@@ -395,12 +395,12 @@ func LoadWithOptions(options ...LoaderInitOption) {
 }
 
 // GetRPCService get rpc service for consumer
-func GetRPCService(name string) interface{} {
+func GetRPCService(name string) common.RPCService {
 	return consumerConfig.References[name].GetRPCService()
 }
 
 // RPCService create rpc service for consumer
-func RPCService(service interface{}) {
+func RPCService(service common.RPCService) {
 	ref := common.GetReference(service)
 	consumerConfig.References[ref].Implement(service)
 }

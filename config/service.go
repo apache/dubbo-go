@@ -22,34 +22,34 @@ import (
 )
 
 var (
-	conServices = map[string]interface{}{} // service name -> service
-	proServices = map[string]interface{}{} // service name -> service
+	conServices = map[string]common.RPCService{} // service name -> service
+	proServices = map[string]common.RPCService{} // service name -> service
 )
 
 // SetConsumerService is called by init() of implement of RPCService
-func SetConsumerService(service interface{}) {
+func SetConsumerService(service common.RPCService) {
 	ref := common.GetReference(service)
 	conServices[ref] = service
 }
 
 // SetProviderService is called by init() of implement of RPCService
-func SetProviderService(service interface{}) {
+func SetProviderService(service common.RPCService) {
 	ref := common.GetReference(service)
 	proServices[ref] = service
 }
 
 // GetConsumerService gets ConsumerService by @name
-func GetConsumerService(name string) interface{} {
+func GetConsumerService(name string) common.RPCService {
 	return conServices[name]
 }
 
 // GetProviderService gets ProviderService by @name
-func GetProviderService(name string) interface{} {
+func GetProviderService(name string) common.RPCService {
 	return proServices[name]
 }
 
 // GetAllProviderService gets all ProviderService
-func GetAllProviderService() map[string]interface{} {
+func GetAllProviderService() map[string]common.RPCService {
 	return proServices
 }
 
