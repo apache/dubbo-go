@@ -108,6 +108,7 @@ func newMockZkRegistry(url *common.URL, opts ...gxzookeeper.Option) (*zk.TestClu
 	if err != nil {
 		return nil, nil, err
 	}
+	r.WaitGroup().Add(1)
 	go zookeeper.HandleClientRestart(r)
 	r.InitListeners()
 	return c, r, nil
