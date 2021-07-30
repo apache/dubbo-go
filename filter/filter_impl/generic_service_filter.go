@@ -121,7 +121,7 @@ func (ef *GenericServiceFilter) OnResponse(ctx context.Context, result protocol.
 		if v.Kind() == reflect.Ptr {
 			v = v.Elem()
 		}
-		result.SetResult(struct2MapAll(v.Interface()))
+		result.SetResult(objToMap(v.Interface()))
 	}
 	return result
 }
