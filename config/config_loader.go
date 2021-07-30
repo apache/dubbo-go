@@ -18,7 +18,6 @@
 package config
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/config/options"
 	"errors"
 	"fmt"
 )
@@ -62,16 +61,11 @@ func init() {
 	validate = validator.New()
 }
 
-func Load(opts ...options.Option) {
+func Load(opts ...LoaderConfOption) {
 	// pares CommandLine
 	//parseCommandLine()
 	// conf
-	conf := &options.config{
-		name:  "applicationConfig.yaml",
-		genre: "yaml",
-		path:  "./conf",
-		delim: ".",
-	}
+	conf := NewLoaderConf(opts...)
 
 	for _, opt := range opts {
 		opt.apply(conf)
@@ -80,7 +74,7 @@ func Load(opts ...options.Option) {
 
 	viper = getKoanf(conf)
 
-	if err := viper.Unmarshal(rootConfig.Prefix(), &rootConfig); err != nil {
+	if err := viper.UnmarshalWithConf(rootConfig.Prefix(), &rootConfig, koanf.UnmarshalConf{Tag: "yaml"}); err != nil {
 		panic(err)
 	}
 }
@@ -107,7 +101,7 @@ func check() error {
 //	}
 //}
 
-func getKoanf(conf *options.config) *koanf.Koanf {
+func getKoanf(conf *loaderConf) *koanf.Koanf {
 	var (
 		k   *koanf.Koanf
 		err error
@@ -131,7 +125,6 @@ func getKoanf(conf *options.config) *koanf.Koanf {
 	}
 	return k
 }
-
 
 //
 //func GetConfigCenterConfig() (*center.ConfigCenterConfig, error) {

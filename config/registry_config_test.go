@@ -29,7 +29,7 @@ import (
 )
 
 func TestLoadRegistries(t *testing.T) {
-	target := "shanghai1"
+	target := []string{"shanghai1"}
 	regs := map[string]*RegistryConfig{
 
 		"shanghai1": {
@@ -47,7 +47,7 @@ func TestLoadRegistries(t *testing.T) {
 }
 
 func TestLoadRegistries1(t *testing.T) {
-	target := "shanghai1"
+	target := []string{"shanghai1"}
 	regs := map[string]*RegistryConfig{
 
 		"shanghai1": {

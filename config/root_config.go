@@ -123,18 +123,18 @@ func GetConfigCenterConfig() (*CenterConfig, error) {
 	if err := check(); err != nil {
 		return nil, err
 	}
-	centerConfig := getConfigCenterConfig(rootConfig.ConfigCenter)
-	if centerConfig == nil {
+	conf := rootConfig.ConfigCenter
+	if conf == nil {
 		return nil, errors.New("config center config is null")
 	}
-	if err := defaults.Set(centerConfig); err != nil {
+	if err := defaults.Set(conf); err != nil {
 		return nil, err
 	}
-	centerConfig.translateConfigAddress()
-	if err := verify(centerConfig); err != nil {
+	conf.translateConfigAddress()
+	if err := verify(conf); err != nil {
 		return nil, err
 	}
-	return centerConfig, nil
+	return conf, nil
 }
 
 // GetRegistriesConfig get registry config default zookeeper registry

@@ -51,14 +51,14 @@ type CenterConfig struct {
 	Group         string `default:"dubbo" yaml:"group" json:"group,omitempty"`
 	Username      string `yaml:"username" json:"username,omitempty"`
 	Password      string `yaml:"password" json:"password,omitempty"`
-	LogDir        string `yaml:"log_dir" json:"log_dir,omitempty"`
-	ConfigFile    string `default:"dubbo.properties" yaml:"config_file"  json:"config_file,omitempty"`
+	LogDir        string `yaml:"log-dir" json:"log-dir,omitempty"`
+	ConfigFile    string `default:"dubbo.properties" yaml:"config-file"  json:"config-file,omitempty"`
 	Namespace     string `default:"dubbo" yaml:"namespace"  json:"namespace,omitempty"`
-	AppConfigFile string `default:"dubbo.properties" yaml:"app_config_file"  json:"app_config_file,omitempty"`
-	AppID         string `default:"dubbo" yaml:"app_id"  json:"app_id,omitempty"`
+	AppConfigFile string `default:"dubbo.properties" yaml:"app-config-file"  json:"app-config-file,omitempty"`
+	AppID         string `default:"dubbo" yaml:"app-id"  json:"app-id,omitempty"`
 	Timeout       string `default:"10s" yaml:"timeout"  json:"timeout,omitempty"`
 	// Deprecated
-	RemoteRef string            `required:"false"  yaml:"remote_ref"  json:"remote_ref,omitempty"`
+	RemoteRef string            `required:"false"  yaml:"remote-ref"  json:"remote-ref,omitempty"`
 	Params    map[string]string `yaml:"params"  json:"parameters,omitempty"`
 }
 
@@ -79,7 +79,7 @@ func (c *CenterConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 // getConfigCenterConfig get config center config
 func getConfigCenterConfig(c *CenterConfig) *CenterConfig {
 	if c != nil {
-		return nil
+		return c
 	}
 	c = new(CenterConfig)
 	key := c.Prefix()

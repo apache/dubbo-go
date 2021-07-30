@@ -15,7 +15,7 @@
 * limitations under the License.
  */
 
-package options
+package config
 
 import (
 	"fmt"
@@ -29,30 +29,41 @@ import (
 	"github.com/pkg/errors"
 )
 
-type config struct {
-	// config file name default application
-	name string
-	// config file type default yaml
+type loaderConf struct {
+	// loaderConf file type default yaml
 	genre string
-	// config file path default ./conf
+	// loaderConf file path default ./conf
 	path string
-	// config file delim default .
+	// loaderConf file delim default .
 	delim string
 }
 
-type optionFunc func(*config)
+func NewLoaderConf(opts ...LoaderConfOption) *loaderConf {
+	conf := &loaderConf{
+		genre: "yaml",
+		path:  "./conf/application.yaml",
+		delim: ".",
+	}
 
-func (fn optionFunc) apply(vc *config) {
+	for _, opt := range opts {
+		opt.apply(conf)
+	}
+	return conf
+}
+
+type LoaderConfOption interface {
+	apply(vc *loaderConf)
+}
+
+type loaderConfigFunc func(*loaderConf)
+
+func (fn loaderConfigFunc) apply(vc *loaderConf) {
 	fn(vc)
 }
 
-type Option interface {
-	apply(vc *config)
-}
-
-// WithGenre set config genre
-func WithGenre(genre string) Option {
-	return optionFunc(func(conf *config) {
+// WithGenre set loaderConf Genre
+func WithGenre(genre string) LoaderConfOption {
+	return loaderConfigFunc(func(conf *loaderConf) {
 		g := strings.ToLower(genre)
 		if err := checkGenre(g); err != nil {
 			panic(err)
@@ -61,22 +72,15 @@ func WithGenre(genre string) Option {
 	})
 }
 
-// WithPath set config path
-func WithPath(path string) Option {
-	return optionFunc(func(conf *config) {
+// WithPath set loaderConf path
+func WithPath(path string) LoaderConfOption {
+	return loaderConfigFunc(func(conf *loaderConf) {
 		conf.path = absolutePath(path)
 	})
 }
 
-// WithName set config name
-func WithName(name string) Option {
-	return optionFunc(func(conf *config) {
-		conf.name = name
-	})
-}
-
-func WithDelim(delim string) Option {
-	return optionFunc(func(conf *config) {
+func WithDelim(delim string) LoaderConfOption {
+	return loaderConfigFunc(func(conf *loaderConf) {
 		conf.delim = delim
 	})
 }
@@ -112,7 +116,7 @@ func userHomeDir() string {
 	return os.Getenv("HOME")
 }
 
-// checkGenre check genre
+// checkGenre check Genre
 func checkGenre(genre string) error {
 	genres := []string{"json", "toml", "yaml", "yml"}
 	sort.Strings(genres)
@@ -125,9 +129,9 @@ func checkGenre(genre string) error {
 
 //
 //import (
-//	"dubbo.apache.org/dubbo-go/v3/config/base"
-//	"dubbo.apache.org/dubbo-go/v3/config/consumer"
-//	"dubbo.apache.org/dubbo-go/v3/config/provider"
+//	"dubbo.apache.org/dubbo-go/v3/loaderConf/base"
+//	"dubbo.apache.org/dubbo-go/v3/loaderConf/consumer"
+//	"dubbo.apache.org/dubbo-go/v3/loaderConf/provider"
 //	"log"
 //)
 //
@@ -140,16 +144,16 @@ func checkGenre(genre string) error {
 //	apply()
 //}
 //
-//type optionFunc struct {
+//type loaderConfigFunc struct {
 //	initFunc  func()
 //	applyFunc func()
 //}
 //
-//func (f *optionFunc) init() {
+//func (f *loaderConfigFunc) init() {
 //	f.initFunc()
 //}
 //
-//func (f *optionFunc) apply() {
+//func (f *loaderConfigFunc) apply() {
 //	f.applyFunc()
 //}
 //
@@ -162,7 +166,7 @@ func checkGenre(genre string) error {
 //}
 //
 //func consumerInitOption(confConFile string, must bool) LoaderInitOption {
-//	return &optionFunc{
+//	return &loaderConfigFunc{
 //		func() {
 //			if consumerConfig != nil && !must {
 //				return
@@ -175,7 +179,7 @@ func checkGenre(genre string) error {
 //				// if so, we set a default value for it
 //				setDefaultValue(consumerConfig)
 //				// Even though baseConfig has been initialized, we override it
-//				// because we think read from config file is correct config
+//				// because we think read from loaderConf file is correct loaderConf
 //				baseConfig = &consumerConfig.BaseConfig
 //			}
 //		},
@@ -194,7 +198,7 @@ func checkGenre(genre string) error {
 //}
 //
 //func providerInitOption(confProFile string, must bool) LoaderInitOption {
-//	return &optionFunc{
+//	return &loaderConfigFunc{
 //		func() {
 //			if providerConfig != nil && !must {
 //				return
@@ -207,7 +211,7 @@ func checkGenre(genre string) error {
 //				// if so, we set a default value for it
 //				setDefaultValue(providerConfig)
 //				// Even though baseConfig has been initialized, we override it
-//				// because we think read from config file is correct config
+//				// because we think read from loaderConf file is correct loaderConf
 //				baseConfig = &providerConfig.BaseConfig
 //			}
 //		},
@@ -218,7 +222,7 @@ func checkGenre(genre string) error {
 //}
 //
 //func RouterInitOption(crf string) LoaderInitOption {
-//	return &optionFunc{
+//	return &loaderConfigFunc{
 //		func() {
 //			confRouterFile = crf
 //		},
@@ -229,7 +233,7 @@ func checkGenre(genre string) error {
 //}
 //
 //func BaseInitOption(cbf string) LoaderInitOption {
-//	return &optionFunc{
+//	return &loaderConfigFunc{
 //		func() {
 //			if cbf == "" {
 //				return

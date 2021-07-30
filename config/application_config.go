@@ -18,7 +18,6 @@
 package config
 
 import (
-	"github.com/creasty/defaults"
 	"github.com/mitchellh/mapstructure"
 )
 
@@ -56,13 +55,4 @@ func getApplicationConfig(application *ApplicationConfig) *ApplicationConfig {
 		}
 	}
 	return application
-}
-
-// UnmarshalYAML unmarshal the ApplicationConfig by @unmarshal function
-func (ac *ApplicationConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	if err := defaults.Set(ac); err != nil {
-		return err
-	}
-	type plain ApplicationConfig
-	return unmarshal((*plain)(ac))
 }

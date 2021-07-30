@@ -3,4 +3,6 @@ dubbo:
     address: nacos://127.0.0.1:8848
     cluster: dev
     namespace: dubbo
-    logDir: ./logs
+    log-dir: ./logs
+    config-file: dubbo.yaml
+    app-id: dubbo

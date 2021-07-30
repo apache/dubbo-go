@@ -19,7 +19,6 @@ package config
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/config/options"
 	"testing"
 )
 
@@ -33,7 +32,7 @@ func init() {
 }
 
 const (
-	configPath = "./testdata/applicationConfig.yaml"
+	configPath = "./testdata/application.yaml"
 )
 
 func TestNoLoad(t *testing.T) {
@@ -44,7 +43,7 @@ func TestNoLoad(t *testing.T) {
 }
 
 func TestLoad(t *testing.T) {
-	Load(options.WithPath(configPath))
+	Load(WithPath(configPath))
 
 	t.Run("applicationConfig", func(t *testing.T) {
 		application, err := GetApplicationConfig()
@@ -86,7 +85,7 @@ func TestLoad(t *testing.T) {
 func TestLoadConfigCenter(t *testing.T) {
 
 	t.Run("config_center", func(t *testing.T) {
-		Load(options.WithGenre("yml"), options.WithPath("./testdata/config/center/conf_application.yaml"))
+		Load(WithGenre("yml"), WithPath("./testdata/config/center/conf_application.yaml"))
 		conf, err := GetConfigCenterConfig()
 		assert.Nil(t, err)
 		assert.Equal(t, "nacos", conf.Protocol)
@@ -95,7 +94,7 @@ func TestLoadConfigCenter(t *testing.T) {
 	})
 
 	t.Run("configCenter", func(t *testing.T) {
-		Load(options.WithGenre("yaml"), options.WithPath("./testdata/config/center/confApplication.yaml"))
+		Load(WithGenre("yaml"), WithPath("./testdata/config/center/confApplication.yaml"))
 		conf, err := GetConfigCenterConfig()
 		assert.Nil(t, err)
 		assert.Equal(t, "nacos", conf.Protocol)
@@ -104,7 +103,7 @@ func TestLoadConfigCenter(t *testing.T) {
 	})
 
 	t.Run("config-center", func(t *testing.T) {
-		Load(options.WithPath("./testdata/config/center/conf-applicationConfig.yaml"))
+		Load(WithPath("./testdata/config/center/conf-application.yaml"))
 		conf, err := GetConfigCenterConfig()
 		assert.Nil(t, err)
 		assert.Equal(t, "nacos", conf.Protocol)
@@ -113,19 +112,10 @@ func TestLoadConfigCenter(t *testing.T) {
 	})
 }
 
-func TestCheckGenre(t *testing.T) {
-
-	err := options.checkGenre("abc")
-	assert.NotNil(t, err)
-
-	err = options.checkGenre("json")
-	assert.Nil(t, err)
-}
-
 func TestGetRegistriesConfig(t *testing.T) {
 
 	t.Run("empty registry", func(t *testing.T) {
-		Load(options.WithPath("./testdata/config/registry/empty_application.yaml"))
+		Load(WithPath("./testdata/config/registry/empty_application.yaml"))
 
 		registries, err := GetRegistriesConfig()
 		assert.Nil(t, err)
@@ -136,7 +126,7 @@ func TestGetRegistriesConfig(t *testing.T) {
 	})
 
 	t.Run("registry", func(t *testing.T) {
-		Load(options.WithPath("./testdata/config/registry/applicationConfig.yaml"))
+		Load(WithPath("./testdata/config/registry/application.yaml"))
 
 		registries, err := GetRegistriesConfig()
 		assert.Nil(t, err)
@@ -157,7 +147,7 @@ func TestGetRegistriesConfig(t *testing.T) {
 func TestGetProtocolsConfig(t *testing.T) {
 
 	t.Run("empty protocols", func(t *testing.T) {
-		Load(options.WithPath("./testdata/config/protocol/empty_application.yaml"))
+		Load(WithPath("./testdata/config/protocol/empty_application.yaml"))
 
 		protocols, err := GetProtocolsConfig()
 		assert.Nil(t, err)
@@ -169,7 +159,7 @@ func TestGetProtocolsConfig(t *testing.T) {
 	})
 
 	t.Run("protocols", func(t *testing.T) {
-		Load(options.WithPath("./testdata/config/protocol/applicationConfig.yaml"))
+		Load(WithPath("./testdata/config/protocol/application.yaml"))
 
 		protocols, err := GetProtocolsConfig()
 		assert.Nil(t, err)
@@ -184,14 +174,14 @@ func TestGetProtocolsConfig(t *testing.T) {
 func TestGetProviderConfig(t *testing.T) {
 	// empty registry
 	t.Run("empty registry", func(t *testing.T) {
-		Load(options.WithPath("./testdata/config/provider/empty_registry_application.yaml"))
+		Load(WithPath("./testdata/config/provider/empty_registry_application.yaml"))
 		provider, err := GetProviderConfig()
 		assert.Nil(t, err)
 		assert.NotNil(t, constant.DEFAULT_Key, provider.Registry[0])
 	})
 
 	t.Run("root registry", func(t *testing.T) {
-		Load(options.WithPath("./testdata/config/provider/registry_application.yaml"))
+		Load(WithPath("./testdata/config/provider/registry_application.yaml"))
 		provider, err := GetProviderConfig()
 		assert.Nil(t, err)
 		assert.NotNil(t, provider)
