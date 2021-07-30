@@ -81,7 +81,7 @@ func appendParam(target *bytes.Buffer, url *common.URL, key string) {
 	}
 }
 
-func createRegisterParam(url *common.URL, serviceName string) vo.RegisterInstanceParam {
+func createRegisterParam(url *common.URL, serviceName string, groupName string) vo.RegisterInstanceParam {
 	category := getCategory(url)
 	params := make(map[string]string)
 
@@ -109,6 +109,7 @@ func createRegisterParam(url *common.URL, serviceName string) vo.RegisterInstanc
 		Healthy:     true,
 		Ephemeral:   true,
 		ServiceName: serviceName,
+		GroupName:   groupName,
 	}
 	return instance
 }
@@ -116,7 +117,8 @@ func createRegisterParam(url *common.URL, serviceName string) vo.RegisterInstanc
 // Register will register the service @url to its nacos registry center
 func (nr *nacosRegistry) Register(url *common.URL) error {
 	serviceName := getServiceName(url)
-	param := createRegisterParam(url, serviceName)
+	groupName := nr.URL.GetParam(constant.GROUP_KEY, "")
+	param := createRegisterParam(url, serviceName, groupName)
 	isRegistry, err := nr.namingClient.Client().RegisterInstance(param)
 	if err != nil {
 		return err
