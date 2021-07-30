@@ -1,6 +1,0 @@
-dubbo:
-  config_center:
-    address: nacos://127.0.0.1:8848
-    cluster: dev
-    namespace: dubbo
-    logDir: ./logs

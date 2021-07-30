@@ -6,7 +6,6 @@ import (
 )
 
 import (
-	"github.com/creasty/defaults"
 	"github.com/go-playground/validator/v10"
 	"github.com/pkg/errors"
 )
@@ -105,43 +104,43 @@ func (rc *RootConfig) Init() {
 }
 
 // GetApplicationConfig get applicationConfig config
-func GetApplicationConfig() (*ApplicationConfig, error) {
-	if err := check(); err != nil {
-		return nil, err
-	}
-	if applicationConfig != nil {
-		return applicationConfig, nil
-	}
-	applicationConfig = getApplicationConfig(rootConfig.Application)
-	if err := defaults.Set(applicationConfig); err != nil {
-		return nil, err
-	}
-
-	if err := verify(applicationConfig); err != nil {
-		return nil, err
-	}
-
-	return applicationConfig, nil
-}
+//func GetApplicationConfig() (*ApplicationConfig, error) {
+//	if err := check(); err != nil {
+//		return nil, err
+//	}
+//	if applicationConfig != nil {
+//		return applicationConfig, nil
+//	}
+//	applicationConfig = getApplicationConfig(rootConfig.Application)
+//	if err := defaults.Set(applicationConfig); err != nil {
+//		return nil, err
+//	}
+//
+//	if err := verify(applicationConfig); err != nil {
+//		return nil, err
+//	}
+//
+//	return applicationConfig, nil
+//}
 
 // GetConfigCenterConfig get config center config
-func GetConfigCenterConfig() (*CenterConfig, error) {
-	if err := check(); err != nil {
-		return nil, err
-	}
-	conf := rootConfig.ConfigCenter
-	if conf == nil {
-		return nil, errors.New("config center config is null")
-	}
-	if err := defaults.Set(conf); err != nil {
-		return nil, err
-	}
-	conf.translateConfigAddress()
-	if err := verify(conf); err != nil {
-		return nil, err
-	}
-	return conf, nil
-}
+//func GetConfigCenterConfig() (*CenterConfig, error) {
+//	if err := check(); err != nil {
+//		return nil, err
+//	}
+//	conf := rootConfig.ConfigCenter
+//	if conf == nil {
+//		return nil, errors.New("config center config is null")
+//	}
+//	if err := defaults.Set(conf); err != nil {
+//		return nil, err
+//	}
+//	conf.translateConfigAddress()
+//	if err := verify(conf); err != nil {
+//		return nil, err
+//	}
+//	return conf, nil
+//}
 
 // GetRegistriesConfig get registry config default zookeeper registry
 //func GetRegistriesConfig() (map[string]*RegistryConfig, error) {

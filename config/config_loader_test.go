@@ -71,28 +71,9 @@ func TestLoad(t *testing.T) {
 //TestLoadConfigCenter test key  config_center、config-center 、configCenter
 func TestLoadConfigCenter(t *testing.T) {
 
-	t.Run("config_center", func(t *testing.T) {
-		Load(WithGenre("yml"), WithPath("./testdata/config/center/conf_application.yaml"))
-		conf, err := GetConfigCenterConfig()
-		assert.Nil(t, err)
-		assert.Equal(t, "nacos", conf.Protocol)
-		assert.Equal(t, "10s", conf.Timeout)
-		assert.Equal(t, "./logs", conf.LogDir)
-	})
-
-	t.Run("configCenter", func(t *testing.T) {
-		Load(WithGenre("yaml"), WithPath("./testdata/config/center/confApplication.yaml"))
-		conf, err := GetConfigCenterConfig()
-		assert.Nil(t, err)
-		assert.Equal(t, "nacos", conf.Protocol)
-		assert.Equal(t, "10s", conf.Timeout)
-		assert.Equal(t, "./logs", conf.LogDir)
-	})
-
 	t.Run("config-center", func(t *testing.T) {
 		Load(WithPath("./testdata/config/center/conf-application.yaml"))
-		conf, err := GetConfigCenterConfig()
-		assert.Nil(t, err)
+		conf := rootConfig.ConfigCenter
 		assert.Equal(t, "nacos", conf.Protocol)
 		assert.Equal(t, "10s", conf.Timeout)
 		assert.Equal(t, "./logs", conf.LogDir)
