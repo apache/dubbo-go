@@ -1,0 +1,6 @@
+dubbo:
+  application:
+    name: dubbo-go
+    module: local
+    version: 1.0.0
+    owner: zhaoyunxing

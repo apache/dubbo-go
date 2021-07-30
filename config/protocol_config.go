@@ -19,6 +19,7 @@ package config
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"github.com/creasty/defaults"
 )
 
 // ProtocolConfig is protocol configuration
@@ -38,6 +39,7 @@ func getProtocolsConfig(protocols map[string]*ProtocolConfig) map[string]*Protoc
 	if protocols == nil || len(protocols) <= 0 {
 		conf := new(ProtocolConfig)
 		protocols = make(map[string]*ProtocolConfig, 1)
+		defaults.MustSet(conf)
 		protocols[constant.DUBBO] = conf
 	}
 	return protocols

@@ -33,7 +33,7 @@ type ProviderConfig struct {
 	// Register whether registration is required
 	Register bool `yaml:"register" json:"register" property:"register"`
 	// Registry registry ids
-	Registry []string `validate:"required" yaml:"registry" json:"registry" property:"registry"`
+	Registry []string `yaml:"registry" json:"registry" property:"registry"`
 	// Services services
 	Services map[string]*ServiceConfig `yaml:"services" json:"services,omitempty" property:"services"`
 

@@ -66,15 +66,21 @@ func Load(opts ...LoaderConfOption) {
 	//parseCommandLine()
 	// conf
 	conf := NewLoaderConf(opts...)
-
 	for _, opt := range opts {
 		opt.apply(conf)
 	}
 	rootConfig = new(RootConfig)
-
 	viper = getKoanf(conf)
 
 	if err := viper.UnmarshalWithConf(rootConfig.Prefix(), &rootConfig, koanf.UnmarshalConf{Tag: "yaml"}); err != nil {
+		panic(err)
+	}
+	if rootConfig.ConfigCenter != nil {
+		//监听远程配置刷新本地指定配置
+	}
+	rootConfig.Init()
+
+	if err := verify(rootConfig); err != nil {
 		panic(err)
 	}
 }

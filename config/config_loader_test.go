@@ -35,19 +35,12 @@ const (
 	configPath = "./testdata/application.yaml"
 )
 
-func TestNoLoad(t *testing.T) {
-
-	application, err := GetApplicationConfig()
-	assert.NotNil(t, err)
-	assert.Nil(t, application)
-}
-
 func TestLoad(t *testing.T) {
 	Load(WithPath(configPath))
 
-	t.Run("applicationConfig", func(t *testing.T) {
-		application, err := GetApplicationConfig()
-		assert.Nil(t, err)
+	t.Run("application", func(t *testing.T) {
+		application := rootConfig.Application
+
 		assert.Equal(t, application.Organization, "dubbo.io")
 		assert.Equal(t, application.Name, "dubbo-go")
 		assert.Equal(t, application.Module, "local")
@@ -57,9 +50,9 @@ func TestLoad(t *testing.T) {
 		assert.Equal(t, application.MetadataType, "local")
 	})
 
-	t.Run("registriesConfig", func(t *testing.T) {
-		registries, err := GetRegistriesConfig()
-		assert.Nil(t, err)
+	t.Run("registries", func(t *testing.T) {
+		registries := rootConfig.Registries
+
 		assert.Equal(t, 2, len(registries))
 		//address= nacos://127.0.0.1:8848 Translate Registry Address
 		assert.Equal(t, "nacos", registries["nacos"].Protocol)
@@ -68,16 +61,10 @@ func TestLoad(t *testing.T) {
 
 	//config-center
 	t.Run("config-center", func(t *testing.T) {
-		conf, err := GetConfigCenterConfig()
-		assert.NotNil(t, err)
+		conf := rootConfig.ConfigCenter
+
 		assert.Equal(t, "nacos", conf.Protocol)
 	})
-	//
-	////protocols
-	//t.Run("protocols", func(t *testing.T) {
-	//	_, err := GetProtocolsConfig()
-	//	assert.Nil(t, err)
-	//})
 
 }
 
@@ -114,22 +101,11 @@ func TestLoadConfigCenter(t *testing.T) {
 
 func TestGetRegistriesConfig(t *testing.T) {
 
-	t.Run("empty registry", func(t *testing.T) {
-		Load(WithPath("./testdata/config/registry/empty_application.yaml"))
-
-		registries, err := GetRegistriesConfig()
-		assert.Nil(t, err)
-		assert.Equal(t, 1, len(registries))
-		assert.Equal(t, "zookeeper", registries["default"].Protocol)
-		assert.Equal(t, "10s", registries["default"].Timeout)
-		assert.Equal(t, "127.0.0.1:2181", registries["default"].Address)
-	})
-
 	t.Run("registry", func(t *testing.T) {
 		Load(WithPath("./testdata/config/registry/application.yaml"))
 
-		registries, err := GetRegistriesConfig()
-		assert.Nil(t, err)
+		registries := rootConfig.Registries
+
 		assert.Equal(t, 2, len(registries))
 		// nacos
 		assert.Equal(t, "nacos", registries["nacos"].Protocol)
@@ -149,8 +125,7 @@ func TestGetProtocolsConfig(t *testing.T) {
 	t.Run("empty protocols", func(t *testing.T) {
 		Load(WithPath("./testdata/config/protocol/empty_application.yaml"))
 
-		protocols, err := GetProtocolsConfig()
-		assert.Nil(t, err)
+		protocols := rootConfig.Protocols
 		assert.NotNil(t, protocols)
 		// default
 		assert.Equal(t, "dubbo", protocols["default"].Name)
@@ -161,8 +136,7 @@ func TestGetProtocolsConfig(t *testing.T) {
 	t.Run("protocols", func(t *testing.T) {
 		Load(WithPath("./testdata/config/protocol/application.yaml"))
 
-		protocols, err := GetProtocolsConfig()
-		assert.Nil(t, err)
+		protocols := rootConfig.Protocols
 		assert.NotNil(t, protocols)
 		// default
 		assert.Equal(t, "dubbo", protocols["dubbo"].Name)
@@ -175,15 +149,13 @@ func TestGetProviderConfig(t *testing.T) {
 	// empty registry
 	t.Run("empty registry", func(t *testing.T) {
 		Load(WithPath("./testdata/config/provider/empty_registry_application.yaml"))
-		provider, err := GetProviderConfig()
-		assert.Nil(t, err)
+		provider := rootConfig.Provider
 		assert.NotNil(t, constant.DEFAULT_Key, provider.Registry[0])
 	})
 
 	t.Run("root registry", func(t *testing.T) {
 		Load(WithPath("./testdata/config/provider/registry_application.yaml"))
-		provider, err := GetProviderConfig()
-		assert.Nil(t, err)
+		provider := rootConfig.Provider
 		assert.NotNil(t, provider)
 	})
 }

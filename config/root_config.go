@@ -12,7 +12,6 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
@@ -33,17 +32,17 @@ type RootConfig struct {
 	// since 1.5.0 version
 	//Remotes              map[string]*config.RemoteConfig `yaml:"remote" json:"remote,omitempty" property:"remote"`
 
-	ServiceDiscoveries map[string]*ServiceDiscoveryConfig `yaml:"service-discovery" json:"service-discovery,omitempty" property:"service_discovery"`
+	ServiceDiscoveries map[string]*ServiceDiscoveryConfig `yaml:"service-discovery" json:"service-discovery,omitempty" property:"service-discovery"`
 
 	MetadataReportConfig *MetadataReportConfig `yaml:"metadata_report" json:"metadata-report,omitempty" property:"metadata-report"`
 
 	// Application applicationConfig config
-	Application *ApplicationConfig `yaml:"applicationConfig" json:"applicationConfig,omitempty" property:"applicationConfig"`
+	Application *ApplicationConfig `validate:"required" yaml:"application" json:"application,omitempty" property:"application"`
 
 	// Registries registry config
-	Registries map[string]*RegistryConfig `yaml:"registriesConfig" json:"registriesConfig" property:"registriesConfig"`
+	Registries map[string]*RegistryConfig `yaml:"registries" json:"registries" property:"registries"`
 
-	Protocols map[string]*ProtocolConfig `yaml:"protocols" json:"protocols" property:"protocols"`
+	Protocols map[string]*ProtocolConfig `validate:"required" yaml:"protocols" json:"protocols" property:"protocols"`
 
 	// provider config
 	Provider *ProviderConfig `yaml:"provider" json:"provider" property:"provider"`
@@ -98,6 +97,13 @@ func translateRegistryIds(registryIds []string) []string {
 	return removeDuplicateElement(ids)
 }
 
+func (rc *RootConfig) Init() {
+	rc.Application = getApplicationConfig(rc.Application)
+	rc.Protocols = getProtocolsConfig(rc.Protocols)
+	rc.Registries = getRegistriesConfig(rc.Registries)
+	rc.ConfigCenter = getConfigCenterConfig(rc.ConfigCenter)
+}
+
 // GetApplicationConfig get applicationConfig config
 func GetApplicationConfig() (*ApplicationConfig, error) {
 	if err := check(); err != nil {
@@ -138,76 +144,72 @@ func GetConfigCenterConfig() (*CenterConfig, error) {
 }
 
 // GetRegistriesConfig get registry config default zookeeper registry
-func GetRegistriesConfig() (map[string]*RegistryConfig, error) {
-	if err := check(); err != nil {
-		return nil, err
-	}
-
-	if registriesConfig != nil {
-		return registriesConfig, nil
-	}
-	registriesConfig = getRegistriesConfig(rootConfig.Registries)
-	for _, reg := range registriesConfig {
-		if err := defaults.Set(reg); err != nil {
-			return nil, err
-		}
-		reg.translateRegistryAddress()
-		if err := verify(reg); err != nil {
-			return nil, err
-		}
-	}
-
-	return registriesConfig, nil
-}
+//func GetRegistriesConfig() (map[string]*RegistryConfig, error) {
+//	if err := check(); err != nil {
+//		return nil, err
+//	}
+//
+//	if registriesConfig != nil {
+//		return registriesConfig, nil
+//	}
+//	registriesConfig = getRegistriesConfig(rootConfig.Registries)
+//	for _, reg := range registriesConfig {
+//		if err := defaults.Set(reg); err != nil {
+//			return nil, err
+//		}
+//		reg.translateRegistryAddress()
+//		if err := verify(reg); err != nil {
+//			return nil, err
+//		}
+//	}
+//
+//	return registriesConfig, nil
+//}
 
 // GetProtocolsConfig get protocols config default dubbo protocol
-func GetProtocolsConfig() (map[string]*ProtocolConfig, error) {
-	if err := check(); err != nil {
-		return nil, err
-	}
-
-	protocols := getProtocolsConfig(rootConfig.Protocols)
-	for _, protocol := range protocols {
-		if err := defaults.Set(protocol); err != nil {
-			return nil, err
-		}
-		if err := verify(protocol); err != nil {
-			return nil, err
-		}
-	}
-	return protocols, nil
-}
+//func GetProtocolsConfig() (map[string]*ProtocolConfig, error) {
+//	if err := check(); err != nil {
+//		return nil, err
+//	}
+//
+//	protocols := getProtocolsConfig(rootConfig.Protocols)
+//	for _, protocol := range protocols {
+//		if err := defaults.Set(protocol); err != nil {
+//			return nil, err
+//		}
+//		if err := verify(protocol); err != nil {
+//			return nil, err
+//		}
+//	}
+//	return protocols, nil
+//}
 
 // GetProviderConfig get provider config
-func GetProviderConfig() (*ProviderConfig, error) {
-	if err := check(); err != nil {
-		return nil, err
-	}
-
-	if providerConfig != nil {
-		return providerConfig, nil
-	}
-	provider := getProviderConfig(rootConfig.Provider)
-	if err := defaults.Set(provider); err != nil {
-		return nil, err
-	}
-	if err := verify(provider); err != nil {
-		return nil, err
-	}
-
-	provider.Services = getRegistryServices(common.PROVIDER, provider.Services, provider.Registry)
-	providerConfig = provider
-	return provider, nil
-}
+//func GetProviderConfig() (*ProviderConfig, error) {
+//	if err := check(); err != nil {
+//		return nil, err
+//	}
+//
+//	if providerConfig != nil {
+//		return providerConfig, nil
+//	}
+//	provider := getProviderConfig(rootConfig.Provider)
+//	if err := defaults.Set(provider); err != nil {
+//		return nil, err
+//	}
+//	if err := verify(provider); err != nil {
+//		return nil, err
+//	}
+//
+//	provider.Services = getRegistryServices(common.PROVIDER, provider.Services, provider.Registry)
+//	providerConfig = provider
+//	return provider, nil
+//}
 
 // getRegistryIds get registry keys
 func getRegistryIds() []string {
 	ids := make([]string, 0)
-	registries, err := GetRegistriesConfig()
-	if err != nil {
-		ids = append(ids, constant.DEFAULT_Key)
-	}
-	for key := range registries {
+	for key := range rootConfig.Registries {
 		ids = append(ids, key)
 	}
 	return removeDuplicateElement(ids)

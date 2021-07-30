@@ -18,7 +18,6 @@
 package config
 
 import (
-	"github.com/goinggo/mapstructure"
 	"net/url"
 	"strings"
 )
@@ -78,21 +77,13 @@ func (c *CenterConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 
 // getConfigCenterConfig get config center config
 func getConfigCenterConfig(c *CenterConfig) *CenterConfig {
-	if c != nil {
+	if c == nil {
 		return c
 	}
-	c = new(CenterConfig)
-	key := c.Prefix()
-	value := viper.Get(key)
-	if value == nil {
-		key = strings.ReplaceAll(key, "-", "_")
-		value = viper.Get(key)
-	}
-	if value == nil {
-		return nil
-	}
-	if err := mapstructure.Decode(value, c); err != nil {
-		return nil
+	defaults.MustSet(c)
+	c.translateConfigAddress()
+	if err := verify(c); err != nil {
+		panic(err)
 	}
 	return c
 }

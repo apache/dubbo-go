@@ -18,11 +18,8 @@
 package config
 
 import (
-	"github.com/mitchellh/mapstructure"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"github.com/creasty/defaults"
 )
 
 // ApplicationConfig is a configuration for current applicationConfig, whether the applicationConfig is a provider or a consumer
@@ -44,15 +41,9 @@ func (ApplicationConfig) Prefix() string {
 
 // getApplicationConfig get applicationConfig config
 func getApplicationConfig(application *ApplicationConfig) *ApplicationConfig {
-	if application != nil {
-		return application
+	if application == nil {
+		application = new(ApplicationConfig)
 	}
-
-	application = new(ApplicationConfig)
-	if value := viper.Get(application.Prefix()); value != nil {
-		if err := mapstructure.Decode(value, application); err != nil {
-			return application
-		}
-	}
+	defaults.MustSet(application)
 	return application
 }

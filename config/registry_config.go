@@ -35,12 +35,12 @@ import (
 
 // RegistryConfig is the configuration of the registry center
 type RegistryConfig struct {
-	Protocol string `default:"zookeeper" validate:"required" yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
+	Protocol string `validate:"required" yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
 	Timeout  string `default:"10s" validate:"required" yaml:"timeout" json:"timeout,omitempty" property:"timeout"` // unit: second
 	Group    string `yaml:"group" json:"group,omitempty" property:"group"`
 	TTL      string `default:"10m" yaml:"ttl" json:"ttl,omitempty" property:"ttl"` // unit: minute
 	// for registry
-	Address    string `default:"zookeeper://127.0.0.1:2181" validate:"required" yaml:"address" json:"address,omitempty" property:"address"`
+	Address    string `validate:"required" yaml:"address" json:"address,omitempty" property:"address"`
 	Username   string `yaml:"username" json:"username,omitempty" property:"username"`
 	Password   string `yaml:"password" json:"password,omitempty"  property:"password"`
 	Simplified bool   `yaml:"simplified" json:"simplified,omitempty"  property:"simplified"`
@@ -55,11 +55,12 @@ type RegistryConfig struct {
 }
 
 func getRegistriesConfig(registries map[string]*RegistryConfig) map[string]*RegistryConfig {
-	if registries == nil || len(registries) <= 0 {
-		registries = make(map[string]*RegistryConfig, 1)
-		reg := new(RegistryConfig)
-		registries[constant.DEFAULT_Key] = reg
-		return registries
+	for _, reg := range registries {
+		defaults.MustSet(reg)
+		reg.translateRegistryAddress()
+		if err := verify(reg); err != nil {
+			panic(err)
+		}
 	}
 	return registries
 }

@@ -4,11 +4,11 @@ dubbo:
     module: local
     version: 1.0.0
     owner: zhaoyunxing
-  config_center:
+  config-center:
     address: nacos://127.0.0.1:8848
     cluster: dev
     namespace: dubbo
-    logDir: ./logs
+    log-dir: ./logs
   protocols:
     dubbo:
       name: dubbo
