@@ -74,8 +74,8 @@ type ServiceInstance interface {
 
 // nolint
 type Endpoint struct {
-	Port     int    `json:"port, omitempty"`
-	Protocol string `json:"protocol, omitempty"`
+	Port     int    `json:"port,omitempty"`
+	Protocol string `json:"protocol,omitempty"`
 }
 
 // DefaultServiceInstance the default implementation of ServiceInstance

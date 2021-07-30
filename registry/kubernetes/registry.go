@@ -19,13 +19,13 @@ package kubernetes
 
 import (
 	"fmt"
-	getty "github.com/apache/dubbo-getty"
 	"path"
 	"sync"
 	"time"
 )
 
 import (
+	getty "github.com/apache/dubbo-getty"
 	perrors "github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 )
@@ -162,7 +162,6 @@ func newKubernetesRegistry(url *common.URL) (registry.Registry, error) {
 		return nil, perrors.WithStack(err)
 	}
 
-	r.WaitGroup().Add(1)
 	go r.HandleClientRestart()
 	r.InitListeners()
 
@@ -191,12 +190,12 @@ func newMockKubernetesRegistry(
 
 // HandleClientRestart will reconnect to  kubernetes registry center
 func (r *kubernetesRegistry) HandleClientRestart() {
+	r.WaitGroup().Add(1)
+	defer r.WaitGroup().Done()
 	var (
 		err       error
 		failTimes int
 	)
-
-	defer r.WaitGroup().Done()
 LOOP:
 	for {
 		select {

@@ -18,11 +18,14 @@
 package dubbo3
 
 import (
+	"context"
+	"reflect"
 	"testing"
 	"time"
 )
 
 import (
+	hessian "github.com/apache/dubbo-go-hessian2"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -84,4 +87,64 @@ func TestDubboProtocolRefer(t *testing.T) {
 	proto.Destroy()
 	invokersLen = len(proto.(*DubboProtocol).Invokers())
 	assert.Equal(t, 0, invokersLen)
+}
+
+type MockUser struct {
+	Name string
+}
+
+func (m *MockUser) JavaClassName() string {
+	return "mockuser"
+}
+
+type MockService struct {
+}
+
+func (m *MockService) GetUser(ctx context.Context, user, user2 *MockUser) (*MockUser, error) {
+	return user, nil
+}
+
+func TestDubbo3UnaryService_GetReqParamsInterfaces(t *testing.T) {
+	hessian.RegisterPOJO(&MockUser{})
+	srv := UnaryService{}
+	valueOf := reflect.ValueOf(&MockService{})
+	typeOf := valueOf.Type()
+	numField := valueOf.NumMethod()
+	for i := 0; i < numField; i++ {
+		ft := typeOf.Method(i)
+		// num in/out is checked in common/rpc_service.go
+		typs := make([]reflect.Type, 0)
+		for j := 2; j < ft.Type.NumIn(); j++ {
+			typs = append(typs, ft.Type.In(j))
+		}
+		srv.setReqParamsTypes("GetUser", typs)
+	}
+	paramsInterfaces, ok := srv.GetReqParamsInterfaces("GetUser")
+	assert.True(t, ok)
+	enc := hessian.NewEncoder()
+	err := enc.Encode(&MockUser{
+		Name: "laurence",
+	})
+	assert.Nil(t, err)
+	data := enc.Buffer()
+	decoder := hessian.NewDecoder(data)
+	val, err := decoder.Decode()
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(paramsInterfaces))
+	subTest(t, val, paramsInterfaces)
+	args := make([]interface{}, 0, 1)
+	for _, v := range paramsInterfaces {
+		tempParamObj := reflect.ValueOf(v).Elem().Interface()
+		args = append(args, tempParamObj)
+	}
+	assert.Equal(t, "laurence", args[0].(*MockUser).Name)
+	assert.Equal(t, "laurence", args[1].(*MockUser).Name)
+}
+
+func subTest(t *testing.T, val, paramsInterfaces interface{}) {
+	list := paramsInterfaces.([]interface{})
+	for k, _ := range list {
+		err := hessian.ReflectResponse(val, list[k])
+		assert.Nil(t, err)
+	}
 }
