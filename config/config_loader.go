@@ -66,9 +66,7 @@ func Load(opts ...LoaderConfOption) {
 	//parseCommandLine()
 	// conf
 	conf := NewLoaderConf(opts...)
-	for _, opt := range opts {
-		opt.apply(conf)
-	}
+
 	rootConfig = new(RootConfig)
 	viper = getKoanf(conf)
 
