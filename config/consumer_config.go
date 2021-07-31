@@ -256,7 +256,7 @@ func WithConsumerReferenceConfig(referenceKey string, refConfig *ReferenceConfig
 }
 
 // WithConsumerConnTimeout returns ConsumerConfigOpt with given consumer conn @timeout
-func WithConsumerConnTimeout(timeout time.Duration) ConsumerConfigOpt {
+func WithConsumerConnTimeout(timeout string) ConsumerConfigOpt {
 	return func(config *ConsumerConfig) *ConsumerConfig {
 		config.ConnectTimeout = timeout
 		return config
@@ -264,7 +264,7 @@ func WithConsumerConnTimeout(timeout time.Duration) ConsumerConfigOpt {
 }
 
 // WithConsumerRequestTimeout returns ConsumerConfigOpt with given consumer request @timeout
-func WithConsumerRequestTimeout(timeout time.Duration) ConsumerConfigOpt {
+func WithConsumerRequestTimeout(timeout string) ConsumerConfigOpt {
 	return func(config *ConsumerConfig) *ConsumerConfig {
 		config.RequestTimeout = timeout
 		return config

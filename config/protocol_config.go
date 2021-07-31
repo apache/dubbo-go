@@ -18,6 +18,7 @@
 package config
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"github.com/creasty/defaults"
 )
 
@@ -26,6 +27,23 @@ type ProtocolConfig struct {
 	Name string `default:"dubbo" validate:"required" yaml:"name"  json:"name,omitempty" property:"name"`
 	Ip   string `default:"127.0.0.1" yaml:"ip"  json:"ip,omitempty" property:"ip"`
 	Port string `default:"0" yaml:"port" json:"port,omitempty" property:"port"`
+}
+
+func getProtocolsConfig(protocols map[string]*ProtocolConfig) map[string]*ProtocolConfig {
+	if len(protocols) <= 0 {
+		protocol := new(ProtocolConfig)
+		protocols = make(map[string]*ProtocolConfig, 1)
+		protocols[constant.DUBBO] = protocol
+		return protocols
+	}
+	for _, protocol := range protocols {
+		//protocol.CheckConfig()
+		//defaults.MustSet(protocol)
+		if err := protocol.CheckConfig(); err != nil {
+			panic(err)
+		}
+	}
+	return protocols
 }
 
 func (p *ProtocolConfig) CheckConfig() error {

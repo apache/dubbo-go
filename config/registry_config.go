@@ -61,6 +61,20 @@ func (c *RegistryConfig) CheckConfig() error {
 	return verify(c)
 }
 
+func getRegistriesConfig(registries map[string]*RegistryConfig) map[string]*RegistryConfig {
+	if len(registries) <= 0 {
+		panic("registries mast set")
+	}
+	for _, registry := range registries {
+		defaults.MustSet(registry)
+		registry.translateRegistryAddress()
+		if err := verify(registry); err != nil {
+			panic(err)
+		}
+	}
+	return registries
+}
+
 func (c *RegistryConfig) Validate() {
 	// todo set default application
 }

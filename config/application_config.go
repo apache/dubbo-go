@@ -34,6 +34,17 @@ type ApplicationConfig struct {
 	MetadataType string `default:"local" yaml:"metadataType" json:"metadataType,omitempty" property:"metadataType"`
 }
 
+func getApplicationConfig(ac *ApplicationConfig) *ApplicationConfig {
+	if ac == nil {
+		ac = new(ApplicationConfig)
+	}
+	defaults.MustSet(ac)
+	if err := verify(ac); err != nil {
+		panic(err)
+	}
+	return ac
+}
+
 func NewApplicationConfig() *ApplicationConfig {
 	return &ApplicationConfig{}
 }

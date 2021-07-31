@@ -31,10 +31,20 @@ type RootConfig struct {
 	// consumer config
 	Consumer *ConsumerConfig `yaml:"consumer" json:"consumer" property:"consumer"`
 
+	MetricConfig *MetricConfig `yaml:"metrics" json:"metrics,omitempty" property:"metrics"`
+
+	// Logger log
+	Logger *LoggerConfig `yaml:"logger" json:"logger,omitempty" property:"logger"`
+
+	// Shutdown config
+	Shutdown *ShutdownConfig `yaml:"shutdown" json:"shutdown,omitempty" property:"shutdown"`
+
+	Network *NetworkConfig `yaml:"network" json:"network,omitempty" property:"network"`
+
+	Router *RouterConfig `yaml:"router" json:"router,omitempty" property:"router"`
 	// prefix              string
 	fatherConfig        interface{}
-	EventDispatcherType string        `default:"direct" yaml:"event_dispatcher_type" json:"event_dispatcher_type,omitempty"`
-	MetricConfig        *MetricConfig `yaml:"metrics" json:"metrics,omitempty"`
+	EventDispatcherType string `default:"direct" yaml:"event_dispatcher_type" json:"event_dispatcher_type,omitempty"`
 	fileStream          *bytes.Buffer
 
 	// cache file used to store the current used configurations.
@@ -63,9 +73,50 @@ func NewRootConfig() *RootConfig {
 	}
 }
 
+type rootConfOption interface {
+	apply(vc *RootConfig)
+}
+
+type rootConfFunc func(*RootConfig)
+
+func (fn rootConfFunc) apply(vc *RootConfig) {
+	fn(vc)
+}
+
 // Prefix dubbo
 func (RootConfig) Prefix() string {
 	return constant.DUBBO
+}
+
+func (rc *RootConfig) Init(opts ...rootConfOption) {
+	if rc.ConfigCenter != nil {
+		//监听远程配置刷新本地指定配置
+		// yaml
+		// 监听文件变化
+	}
+	for _, opt := range opts {
+		opt.apply(rc)
+	}
+	rc.Application = getApplicationConfig(rc.Application)
+	rc.Protocols = getProtocolsConfig(rc.Protocols)
+	rc.Registries = getRegistriesConfig(rc.Registries)
+
+	rc.Provider.Load()
+	rc.Consumer.Load()
+}
+
+//log rout me
+
+func WithApplication(ac *ApplicationConfig) rootConfFunc {
+	return rootConfFunc(func(conf *RootConfig) {
+		conf.Application = ac
+	})
+}
+
+func WithProtocols(protocols map[string]*ProtocolConfig) rootConfFunc {
+	return rootConfFunc(func(conf *RootConfig) {
+		conf.Protocols = protocols
+	})
 }
 
 func (rc *RootConfig) CheckConfig() error {
