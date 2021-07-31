@@ -104,19 +104,31 @@ func (rc *RootConfig) InitConfig(opts ...rootConfOption) error {
 	if err := initProtocolsConfig(rc); err != nil {
 		return err
 	}
-
 	if err := initRegistriesConfig(rc); err != nil {
 		return err
 	}
-
 	if err := initLoggerConfig(rc); err != nil {
 		return err
 	}
-
+	if err := initServiceDiscoveryConfig(rc); err != nil {
+		return err
+	}
+	if err := initMetadataReportConfig(rc); err != nil {
+		return err
+	}
+	if err := initMetricConfig(rc); err != nil {
+		return err
+	}
+	if err := initNetworkConfig(rc); err != nil {
+		return err
+	}
+	if err := initRouterConfig(rc); err != nil {
+		return err
+	}
+	// provider、consumer must last init
 	if err := initProviderConfig(rc); err != nil {
 		return err
 	}
-
 	if err := initConsumerConfig(rc); err != nil {
 		return err
 	}

@@ -23,8 +23,12 @@ import (
 )
 
 type RouterConfig struct {
-	
 }
+
+func initRouterConfig(rc *RootConfig) error {
+	return nil
+}
+
 // LocalRouterRules defines the local router config structure
 type LocalRouterRules struct {
 	RouterRules []interface{} `yaml:"routerRules"`
