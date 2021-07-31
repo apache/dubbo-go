@@ -15,8 +15,8 @@ type RootConfig struct {
 	// Registries registry config
 	Registries map[string]*RegistryConfig `yaml:"registries" json:"registries" property:"registries"`
 
-	// since 1.5.0 version
-	// Remotes map[string]*RemoteConfig `yaml:"remote" json:"remote,omitempty" property:"remote"`
+	// Deprecated since 1.5.0 version
+	Remotes map[string]*RemoteConfig `yaml:"remote" json:"remote,omitempty" property:"remote"`
 
 	ConfigCenter *CenterConfig `yaml:"config-center" json:"config-center,omitempty"`
 
@@ -38,9 +38,11 @@ type RootConfig struct {
 	// Shutdown config
 	Shutdown *ShutdownConfig `yaml:"shutdown" json:"shutdown,omitempty" property:"shutdown"`
 
-	Network *NetworkConfig `yaml:"network" json:"network,omitempty" property:"network"`
+	Network map[interface{}]interface{} `yaml:"network" json:"network,omitempty" property:"network"`
 
 	Router *RouterConfig `yaml:"router" json:"router,omitempty" property:"router"`
+	// is refresh action
+	refresh bool
 	// prefix              string
 	fatherConfig        interface{}
 	EventDispatcherType string `default:"direct" yaml:"event_dispatcher_type" json:"event_dispatcher_type,omitempty"`
@@ -76,9 +78,9 @@ type rootConfOption interface {
 	apply(vc *RootConfig)
 }
 
-type rootConfFunc func(*RootConfig)
+type RootConfFunc func(*RootConfig)
 
-func (fn rootConfFunc) apply(vc *RootConfig) {
+func (fn RootConfFunc) apply(vc *RootConfig) {
 	fn(vc)
 }
 
@@ -92,12 +94,11 @@ func (rc *RootConfig) InitConfig(opts ...rootConfOption) error {
 		opt.apply(rc)
 	}
 	// 这个里面不能panic
-	if rc.ConfigCenter != nil {
+	if rc.ConfigCenter != nil && !rc.refresh {
 		//监听远程配置刷新本地指定配置
 		// yaml
 		// 监听文件变化
 	}
-
 	if err := initApplicationConfig(rc); err != nil {
 		return err
 	}
@@ -139,14 +140,14 @@ func (rc *RootConfig) InitConfig(opts ...rootConfOption) error {
 	return nil
 }
 
-func WithApplication(ac *ApplicationConfig) rootConfFunc {
-	return rootConfFunc(func(conf *RootConfig) {
+func WithApplication(ac *ApplicationConfig) RootConfFunc {
+	return RootConfFunc(func(conf *RootConfig) {
 		conf.Application = ac
 	})
 }
 
-func WithProtocols(protocols map[string]*ProtocolConfig) rootConfFunc {
-	return rootConfFunc(func(conf *RootConfig) {
+func WithProtocols(protocols map[string]*ProtocolConfig) RootConfFunc {
+	return RootConfFunc(func(conf *RootConfig) {
 		conf.Protocols = protocols
 	})
 }
@@ -212,15 +213,6 @@ func WithProtocols(protocols map[string]*ProtocolConfig) rootConfFunc {
 //}
 
 //GetApplicationConfig get applicationConfig config
-func GetApplicationConfig() *ApplicationConfig {
-	if err := check(); err != nil {
-		return NewApplicationConfig()
-	}
-	if rootConfig.Application != nil {
-		return rootConfig.Application
-	}
-	return NewApplicationConfig()
-}
 
 func GetRootConfig() *RootConfig {
 	return rootConfig

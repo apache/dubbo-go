@@ -18,7 +18,6 @@
 package config
 
 import (
-	"github.com/pkg/errors"
 	"net/url"
 	"strconv"
 	"strings"
@@ -26,6 +25,7 @@ import (
 
 import (
 	"github.com/creasty/defaults"
+	"github.com/pkg/errors"
 )
 
 import (

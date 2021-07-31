@@ -58,6 +58,7 @@ func initProviderConfig(rc *RootConfig) error {
 	if provider == nil {
 		provider = new(ProviderConfig)
 	}
+	rc.Provider = provider
 	return nil
 }
 

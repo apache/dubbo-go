@@ -40,6 +40,10 @@ func (ApplicationConfig) Prefix() string {
 }
 
 func initApplicationConfig(rc *RootConfig) error {
+	// ignore refresh action
+	if rc.refresh {
+		return nil
+	}
 	application := rc.Application
 	if application == nil {
 		application = new(ApplicationConfig)
@@ -51,21 +55,8 @@ func initApplicationConfig(rc *RootConfig) error {
 	rc.Application = application
 	return nil
 }
+
 func (ac *ApplicationConfig) check() error {
 	defaults.MustSet(ac)
 	return verify(ac)
-}
-func NewApplicationConfig() *ApplicationConfig {
-	return &ApplicationConfig{}
-}
-
-func (a *ApplicationConfig) CheckConfig() error {
-	// todo check
-	defaults.MustSet(a)
-	return verify(a)
-}
-
-func (a *ApplicationConfig) Validate() {
-	defaults.MustSet(a)
-	// todo set default application
 }
