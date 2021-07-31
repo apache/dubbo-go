@@ -34,12 +34,12 @@ import (
 var testName = "test"
 
 func setUp() {
-	config.GetBaseConfig().ServiceDiscoveries[testName] = &config.ServiceConfig{
+	config.GetRootConfig().ServiceDiscoveries[testName] = &config.ServiceDiscoveryConfig{
 		Protocol:  "etcdv3",
 		RemoteRef: testName,
 	}
 
-	config.GetBaseConfig().Remotes[testName] = &config.RemoteConfig{
+	config.GetRootConfig().Remotes[testName] = &config.RemoteConfig{
 		Address:    "localhost:2379",
 		TimeoutStr: "10s",
 	}
@@ -52,18 +52,18 @@ func Test_newEtcdV3ServiceDiscovery(t *testing.T) {
 	// warn: log configure file name is nil
 	assert.NotNil(t, err)
 
-	sdc := &config.ServiceConfig{
+	sdc := &config.ServiceDiscoveryConfig{
 		Protocol:  "etcdv3",
 		RemoteRef: "mock",
 	}
-	config.GetBaseConfig().ServiceDiscoveries[name] = sdc
+	config.GetRootConfig().ServiceDiscoveries[name] = sdc
 
 	_, err = newEtcdV3ServiceDiscovery(name)
 
 	// RemoteConfig not found
 	assert.NotNil(t, err)
 
-	config.GetBaseConfig().Remotes["mock"] = &config.RemoteConfig{
+	config.GetRootConfig().Remotes["mock"] = &config.RemoteConfig{
 		Address:    "localhost:2379",
 		TimeoutStr: "10s",
 	}

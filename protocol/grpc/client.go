@@ -39,8 +39,8 @@ import (
 var clientConf *ClientConfig
 
 func init() {
-	// load clientconfig from consumer_config
-	consumerConfig := config.GetConsumerConfig()
+	// load rootConfig from runtime
+	rootConfig := config.GetRootConfig()
 
 	clientConfig := GetClientConfig()
 	clientConf = &clientConfig
@@ -56,7 +56,7 @@ func init() {
 		}
 	}()
 
-	if consumerConfig.ApplicationConfig == nil {
+	if rootConfig.Application == nil {
 		return
 	}
 	protocolConf := config.GetConsumerConfig().ProtocolConf

@@ -44,7 +44,7 @@ import (
 //
 // CenterConfig has currently supported Zookeeper, Nacos, Etcd, Consul, Apollo
 type CenterConfig struct {
-	Protocol      string `validate:"required"  yaml:"protocol"  json:"protocol,omitempty"`
+	Protocol      string `yaml:"protocol"  json:"protocol,omitempty"`
 	Address       string `yaml:"address" json:"address,omitempty"`
 	Cluster       string `yaml:"cluster" json:"cluster,omitempty"`
 	Group         string `default:"dubbo" yaml:"group" json:"group,omitempty"`
@@ -61,9 +61,15 @@ type CenterConfig struct {
 	Params    map[string]string `yaml:"params"  json:"parameters,omitempty"`
 }
 
-// Prefix dubbo.config-center
-func (CenterConfig) Prefix() string {
-	return constant.ConfigCenterPrefix
+func (c *CenterConfig) CheckConfig() error {
+	// todo check
+	defaults.MustSet(c)
+	c.translateConfigAddress()
+	return verify(c)
+}
+
+func (c *CenterConfig) Validate() {
+	// todo set default application
 }
 
 // UnmarshalYAML unmarshal the ConfigCenterConfig by @unmarshal function
@@ -73,19 +79,6 @@ func (c *CenterConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	}
 	type plain CenterConfig
 	return unmarshal((*plain)(c))
-}
-
-// getConfigCenterConfig get config center config
-func getConfigCenterConfig(c *CenterConfig) *CenterConfig {
-	if c == nil {
-		return c
-	}
-	defaults.MustSet(c)
-	c.translateConfigAddress()
-	if err := verify(c); err != nil {
-		panic(err)
-	}
-	return c
 }
 
 // GetUrlMap gets url map from ConfigCenterConfig

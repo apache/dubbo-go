@@ -24,21 +24,17 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config/instance"
 )
 
-// MetadataReportConfig is method level configuration
+// MetadataReportConfig is app level configuration
 type MetadataReportConfig struct {
-	Protocol  string            `required:"true"  yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
-	RemoteRef string            `required:"true"  yaml:"remote_ref"  json:"remote_ref,omitempty" property:"remote_ref"`
-	Params    map[string]string `yaml:"params" json:"params,omitempty" property:"params"`
-	Group     string            `yaml:"group" json:"group,omitempty" property:"group"`
-}
-
-// Prefix dubbo.metadata-report
-func (MetadataReportConfig) Prefix() string {
-	return constant.MetadataReportPrefix
+	Protocol string `required:"true"  yaml:"protocol"  json:"protocol,omitempty"`
+	Address  string `required:"true" yaml:"address" json:"address"`
+	Username string `yaml:"username" json:"username,omitempty"`
+	Password string `yaml:"password" json:"password,omitempty"`
+	Timeout  string `yaml:"timeout" json:"timeout,omitempty"`
+	Group    string `yaml:"group" json:"group,omitempty"`
 }
 
 // UnmarshalYAML unmarshal the MetadataReportConfig by @unmarshal function
@@ -51,6 +47,17 @@ func (c *MetadataReportConfig) UnmarshalYAML(unmarshal func(interface{}) error) 
 		return perrors.WithStack(err)
 	}
 	return nil
+}
+
+func (c *MetadataReportConfig) CheckConfig() error {
+	// todo check
+	defaults.MustSet(c)
+	return verify(c)
+}
+
+func (c *MetadataReportConfig) Validate() {
+
+	// todo set default application
 }
 
 // nolint
@@ -88,14 +95,15 @@ func (c *MetadataReportConfig) IsValid() bool {
 }
 
 // StartMetadataReport: The entry of metadata report start
-func startMetadataReport(metadataType string, metadataReportConfig *MetadataReportConfig) error {
+func (c *MetadataReportConfig) StartMetadataReport(metadataType string, metadataReportConfig *MetadataReportConfig) error {
 	if metadataReportConfig == nil || !metadataReportConfig.IsValid() {
 		return nil
 	}
-
-	if metadataType == constant.METACONFIG_REMOTE && len(metadataReportConfig.RemoteRef) == 0 {
-		return perrors.New("MetadataConfig remote ref can not be empty.")
-	}
+	// todo
+	//
+	//if metadataType == constant.METACONFIG_REMOTE && len(metadataReportConfig.RemoteRef) == 0 {
+	//	return perrors.New("MetadataConfig remote ref can not be empty.")
+	//}
 
 	if tmpUrl, err := metadataReportConfig.ToUrl(); err == nil {
 		instance.GetMetadataReportInstance(tmpUrl)

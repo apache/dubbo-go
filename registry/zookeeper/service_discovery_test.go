@@ -53,12 +53,12 @@ func prepareData(t *testing.T) *zk.TestCluster {
 	address := "127.0.0.1:" + strconv.Itoa(tc.Servers[0].Port)
 	//address := "127.0.0.1:2181"
 
-	config.GetBaseConfig().ServiceDiscoveries[testName] = &config.ServiceConfig{
+	config.GetRootConfig().ServiceDiscoveries[testName] = &config.ServiceDiscoveryConfig{
 		Protocol:  "zookeeper",
 		RemoteRef: "test",
 	}
 
-	config.GetBaseConfig().Remotes[testName] = &config.RemoteConfig{
+	config.GetRootConfig().Remotes[testName] = &config.RemoteConfig{
 		Address:    address,
 		TimeoutStr: "10s",
 	}
@@ -73,11 +73,11 @@ func TestNewZookeeperServiceDiscovery(t *testing.T) {
 	// err: could not init the instance because the config is invalid
 	assert.NotNil(t, err)
 
-	sdc := &config.ServiceConfig{
+	sdc := &config.ServiceDiscoveryConfig{
 		Protocol:  "zookeeper",
 		RemoteRef: "mock",
 	}
-	config.GetBaseConfig().ServiceDiscoveries[name] = sdc
+	config.GetRootConfig().ServiceDiscoveries[name] = sdc
 	_, err = newZookeeperServiceDiscovery(name)
 
 	// RemoteConfig not found

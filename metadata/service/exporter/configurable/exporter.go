@@ -49,7 +49,7 @@ func NewMetadataServiceExporter(metadataService service.MetadataService) exporte
 func (exporter *MetadataServiceExporter) Export(url *common.URL) error {
 	if !exporter.IsExported() {
 		serviceConfig := config.NewServiceConfig(constant.SIMPLE_METADATA_SERVICE_NAME)
-		serviceConfig.Protocol = constant.DEFAULT_PROTOCOL
+		serviceConfig.Protocol = []string{constant.DEFAULT_PROTOCOL}
 		if url == nil || url.SubURL == nil {
 			return errors.New("metadata server url is nil, pls check your configuration")
 		}
@@ -59,8 +59,8 @@ func (exporter *MetadataServiceExporter) Export(url *common.URL) error {
 				Port: url.SubURL.Port,
 			},
 		}
-		serviceConfig.Registry = "N/A"
-		serviceConfig.InterfaceName = constant.METADATA_SERVICE_NAME
+		serviceConfig.Registry = []string{"N/A"}
+		serviceConfig.Interface = constant.METADATA_SERVICE_NAME
 		// identify this is a golang server
 		serviceConfig.Params = map[string]string{}
 

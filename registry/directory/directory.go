@@ -486,10 +486,7 @@ type consumerConfigurationListener struct {
 
 func newConsumerConfigurationListener(dir *RegistryDirectory) *consumerConfigurationListener {
 	listener := &consumerConfigurationListener{directory: dir}
-	application, err := config.GetApplicationConfig()
-	if err != nil {
-		panic(err)
-	}
+	application := config.GetApplicationConfig()
 	listener.InitWith(
 		application.Name+constant.CONFIGURATORS_SUFFIX,
 		listener,

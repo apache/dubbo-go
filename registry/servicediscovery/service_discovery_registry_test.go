@@ -63,7 +63,7 @@ func TestServiceDiscoveryRegistry_Register(t *testing.T) {
 	})
 	extension.SetAndInitGlobalDispatcher("mock")
 
-	config.GetBaseConfig().ServiceDiscoveries["mock"] = &config.ServiceConfig{
+	config.GetRootConfig().ServiceDiscoveries["mock"] = &config.ServiceDiscoveryConfig{
 		Protocol: "mock",
 	}
 	registryURL, _ := common.NewURL("service-discovery://localhost:12345",

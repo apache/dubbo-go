@@ -20,8 +20,6 @@ package rest
 import (
 	"context"
 	"dubbo.apache.org/dubbo-go/v3/config"
-	"dubbo.apache.org/dubbo-go/v3/config/consumer"
-	"dubbo.apache.org/dubbo-go/v3/config/provider"
 	"errors"
 	"fmt"
 	"strings"
@@ -49,7 +47,7 @@ func TestRestProtocolRefer(t *testing.T) {
 		ConnectTimeout: 5 * time.Second,
 		RequestTimeout: 5 * time.Second,
 	}
-	consumer.SetConsumerConfig(con)
+	config.SetConsumerConfig(con)
 	configMap := make(map[string]*rest_config.RestServiceConfig)
 	configMap["com.ikurento.user.UserProvider"] = &rest_config.RestServiceConfig{
 		Client: "resty",
@@ -77,7 +75,7 @@ func TestRestProtocolExport(t *testing.T) {
 	_, err = common.ServiceMap.Register(url.Service(), url.Protocol, "", "", &UserProvider{})
 	assert.NoError(t, err)
 	con := config.ProviderConfig{}
-	provider.SetProviderConfig(con)
+	config.SetProviderConfig(con)
 	configMap := make(map[string]*rest_config.RestServiceConfig)
 	methodConfigMap := make(map[string]*rest_config.RestMethodConfig)
 	queryParamsMap := make(map[int]string)
