@@ -18,11 +18,11 @@
 package config
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"errors"
 	"fmt"
 )
 import (
-	"github.com/go-playground/validator/v10"
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/json"
 	"github.com/knadh/koanf/parsers/toml"
@@ -35,9 +35,6 @@ import (
 )
 
 var (
-	viper    *koanf.Koanf
-	validate *validator.Validate
-
 	rootConfig *RootConfig
 
 	//consumerConfig *consumer.ShutdownConfig
@@ -50,16 +47,8 @@ var (
 	//// it should be used combine with double-check to avoid the race condition
 	//configAccessMutex sync.Mutex
 	//
-	//maxWait                         = 3
-	//confRouterFile                  string
-	//confBaseFile                    string
-	//uniformVirtualServiceConfigPath string
-	//uniformDestRuleConfigPath       string
+	maxWait = 3
 )
-
-func init() {
-	validate = validator.New()
-}
 
 func Load(opts ...LoaderConfOption) {
 	// pares CommandLine
@@ -69,8 +58,10 @@ func Load(opts ...LoaderConfOption) {
 	for _, opt := range opts {
 		opt.apply(conf)
 	}
-	rootConfig = new(RootConfig)
-	viper = getKoanf(conf)
+
+	// init config
+	rootConfig = NewRootConfig()
+	viper := getKoanf(conf)
 
 	if err := viper.UnmarshalWithConf(rootConfig.Prefix(), &rootConfig, koanf.UnmarshalConf{Tag: "yaml"}); err != nil {
 		panic(err)
@@ -78,15 +69,20 @@ func Load(opts ...LoaderConfOption) {
 	if rootConfig.ConfigCenter != nil {
 		//监听远程配置刷新本地指定配置
 	}
-	rootConfig.Init()
-
-	if err := verify(rootConfig); err != nil {
+	if err := rootConfig.CheckConfig(); err != nil {
 		panic(err)
 	}
+	rootConfig.Validate()
+	// root config init finish
+
+	// todo why this line
+	//extension.SetAndInitGlobalDispatcher(rootConfig.EventDispatcherType)
+	rootConfig.Provider.Load()
+	rootConfig.Consumer.Load()
 }
 
 func check() error {
-	if viper == nil || rootConfig == nil {
+	if rootConfig == nil {
 		return errors.New("execute the config.Load() method first")
 	}
 	return nil
@@ -497,51 +493,55 @@ func getKoanf(conf *loaderConf) *koanf.Koanf {
 //	shutdown.GracefulShutdownInit()
 //}
 //
-//// GetRPCService get rpc service for consumer
-//func GetRPCService(name string) common.RPCService {
-//	return consumerConfig.References[name].GetRPCService()
+// GetRPCService get rpc service for consumer
+func GetRPCService(name string) common.RPCService {
+	return rootConfig.Consumer.References[name].GetRPCService()
+}
+
+// RPCService create rpc service for consumer
+func RPCService(service common.RPCService) {
+	rootConfig.Consumer.References[service.Reference()].Implement(service)
+}
+
+// GetMetricConfig find the MetricConfig
+// if it is nil, create a new one
+// we use double-check to reduce race condition
+// In general, it will be locked 0 or 1 time.
+// So you don't need to worry about the race condition
+func GetMetricConfig() *MetricConfig {
+	// todo
+	//if GetBaseConfig().MetricConfig == nil {
+	//	configAccessMutex.Lock()
+	//	defer configAccessMutex.Unlock()
+	//	if GetBaseConfig().MetricConfig == nil {
+	//		GetBaseConfig().MetricConfig = &metric.MetricConfig{}
+	//	}
+	//}
+	//return GetBaseConfig().MetricConfig
+	return rootConfig.MetricConfig
+}
+
+// GetApplicationConfig find the applicationConfig config
+// if not, we will create one
+// Usually applicationConfig will be initialized when system start
+// we use double-check to reduce race condition
+// In general, it will be locked 0 or 1 time.
+// So you don't need to worry about the race condition
+//func GetApplicationConfig() *ShutdownConfig {
+//	// todo
+//	//if GetBaseConfig().ApplicationConfig == nil {
+//	//	configAccessMutex.Lock()
+//	//	defer configAccessMutex.Unlock()
+//	//	if GetBaseConfig().ApplicationConfig == nil {
+//	//		GetBaseConfig().ApplicationConfig = &applicationConfig.ShutdownConfig{}
+//	//	}
+//	//}
+//	//return GetBaseConfig().ApplicationConfig
+//	return rootConfig.
 //}
-//
-//// RPCService create rpc service for consumer
-//func RPCService(service common.RPCService) {
-//	consumerConfig.References[service.Reference()].Implement(service)
-//}
-//
-//// GetMetricConfig find the MetricConfig
-//// if it is nil, create a new one
-//// we use double-check to reduce race condition
-//// In general, it will be locked 0 or 1 time.
-//// So you don't need to worry about the race condition
-//func GetMetricConfig() *metric.MetricConfig {
-//	if GetBaseConfig().MetricConfig == nil {
-//		configAccessMutex.Lock()
-//		defer configAccessMutex.Unlock()
-//		if GetBaseConfig().MetricConfig == nil {
-//			GetBaseConfig().MetricConfig = &metric.MetricConfig{}
-//		}
-//	}
-//	return GetBaseConfig().MetricConfig
-//}
-//
-//// GetApplicationConfig find the applicationConfig config
-//// if not, we will create one
-//// Usually applicationConfig will be initialized when system start
-//// we use double-check to reduce race condition
-//// In general, it will be locked 0 or 1 time.
-//// So you don't need to worry about the race condition
-//func GetApplicationConfig() *applicationConfig.ShutdownConfig {
-//	if GetBaseConfig().ApplicationConfig == nil {
-//		configAccessMutex.Lock()
-//		defer configAccessMutex.Unlock()
-//		if GetBaseConfig().ApplicationConfig == nil {
-//			GetBaseConfig().ApplicationConfig = &applicationConfig.ShutdownConfig{}
-//		}
-//	}
-//	return GetBaseConfig().ApplicationConfig
-//}
-//
-//// GetProviderConfig find the provider config
-//// if not found, create new one
+
+// GetProviderConfig find the provider config
+// if not found, create new one
 //func GetProviderConfig() provider.ProviderConfig {
 //	if providerConfig == nil {
 //		if providerConfig == nil {
@@ -550,12 +550,12 @@ func getKoanf(conf *loaderConf) *koanf.Koanf {
 //	}
 //	return *providerConfig
 //}
-//
-//// GetConsumerConfig find the consumer config
-//// if not found, create new one
-//// we use double-check to reduce race condition
-//// In general, it will be locked 0 or 1 time.
-//// So you don't need to worry about the race condition
+
+// GetConsumerConfig find the consumer config
+// if not found, create new one
+// we use double-check to reduce race condition
+// In general, it will be locked 0 or 1 time.
+// So you don't need to worry about the race condition
 //func GetConsumerConfig() consumer.ShutdownConfig {
 //	if consumerConfig == nil {
 //		if consumerConfig == nil {
@@ -564,24 +564,7 @@ func getKoanf(conf *loaderConf) *koanf.Koanf {
 //	}
 //	return *consumerConfig
 //}
-//
-//func GetBaseConfig() *base.ShutdownConfig {
-//	if baseConfig == nil {
-//		configAccessMutex.Lock()
-//		defer configAccessMutex.Unlock()
-//		if baseConfig == nil {
-//			baseConfig = &base.ShutdownConfig{
-//				metric.MetricConfig: &metric.MetricConfig{},
-//				ConfigCenterConfig:  &center.ShutdownConfig{},
-//				Remotes:             make(map[string]*RemoteConfig),
-//				applicationConfig.ShutdownConfig:  &applicationConfig.ShutdownConfig{},
-//				ServiceDiscoveries:  make(map[string]*discovery.ShutdownConfig),
-//			}
-//		}
-//	}
-//	return baseConfig
-//}
-//
+
 //func GetSslEnabled() bool {
 //	return sslEnabled
 //}
@@ -589,7 +572,8 @@ func getKoanf(conf *loaderConf) *koanf.Koanf {
 //func SetSslEnabled(enabled bool) {
 //	sslEnabled = enabled
 //}
-//
-//func IsProvider() bool {
-//	return providerConfig != nil
-//}
+
+func IsProvider() bool {
+	// FixME
+	return rootConfig.Provider != nil
+}

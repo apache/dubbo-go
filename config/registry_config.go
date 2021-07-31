@@ -54,15 +54,15 @@ type RegistryConfig struct {
 	Params map[string]string `yaml:"params" json:"params,omitempty" property:"params"`
 }
 
-func getRegistriesConfig(registries map[string]*RegistryConfig) map[string]*RegistryConfig {
-	for _, reg := range registries {
-		defaults.MustSet(reg)
-		reg.translateRegistryAddress()
-		if err := verify(reg); err != nil {
-			panic(err)
-		}
-	}
-	return registries
+func (c *RegistryConfig) CheckConfig() error {
+	// todo check
+	defaults.MustSet(c)
+	c.translateRegistryAddress()
+	return verify(c)
+}
+
+func (c *RegistryConfig) Validate() {
+	// todo set default application
 }
 
 // UnmarshalYAML unmarshal the RegistryConfig by @unmarshal function
@@ -77,54 +77,6 @@ func (c *RegistryConfig) UnmarshalYAML(unmarshal func(interface{}) error) error 
 // Prefix dubbo.registriesConfig
 func (RegistryConfig) Prefix() string {
 	return constant.RegistryConfigPrefix
-}
-
-func loadRegistries(registryIds []string, registries map[string]*RegistryConfig, roleType common.RoleType) []*common.URL {
-	var urls []*common.URL
-	//trSlice := strings.Split(targetRegistries, ",")
-
-	for k, registryConf := range registries {
-		target := false
-
-		// if user not config targetRegistries, default load all
-		// Notice: in func "func Split(s, sep string) []string" comment:
-		// if s does not contain sep and sep is not empty, SplitAfter returns
-		// a slice of length 1 whose only element is s. So we have to add the
-		// condition when targetRegistries string is not set (it will be "" when not set)
-		if len(registryIds) == 0 || (len(registryIds) == 1 && registryIds[0] == "") {
-			target = true
-		} else {
-			// else if user config targetRegistries
-			for _, tr := range registryIds {
-				if tr == k {
-					target = true
-					break
-				}
-			}
-		}
-
-		if target {
-			addresses := strings.Split(registryConf.Address, ",")
-			address := addresses[0]
-			address = registryConf.translateRegistryAddress()
-			url, err := common.NewURL(constant.REGISTRY_PROTOCOL+"://"+address,
-				common.WithParams(registryConf.getUrlMap(roleType)),
-				common.WithParamsValue("simplified", strconv.FormatBool(registryConf.Simplified)),
-				common.WithUsername(registryConf.Username),
-				common.WithPassword(registryConf.Password),
-				common.WithLocation(registryConf.Address),
-			)
-
-			if err != nil {
-				logger.Errorf("The registry id: %s url is invalid, error: %#v", k, err)
-				panic(err)
-			} else {
-				urls = append(urls, url)
-			}
-		}
-	}
-
-	return urls
 }
 
 func (c *RegistryConfig) getUrlMap(roleType common.RoleType) url.Values {

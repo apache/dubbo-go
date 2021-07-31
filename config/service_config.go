@@ -83,6 +83,8 @@ type ServiceConfig struct {
 
 	exportersLock sync.Mutex
 	exporters     []protocol.Exporter
+
+	rootConfig *RootConfig
 }
 
 // Prefix returns dubbo.service.${InterfaceName}.
@@ -105,14 +107,18 @@ func (c *ServiceConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	return nil
 }
 
-// NewServiceConfig The only way to get a new ServiceConfig
-func NewServiceConfig(id string) *ServiceConfig {
-	return &ServiceConfig{
-		id:         id,
-		unexported: atomic.NewBool(false),
-		exported:   atomic.NewBool(false),
-		export:     true,
-	}
+func (c *ServiceConfig) CheckConfig() error {
+	// todo check
+	defaults.MustSet(c)
+	return verify(c)
+}
+
+func (c *ServiceConfig) Validate(rootConfig *RootConfig) {
+	c.rootConfig = rootConfig
+	c.exported = atomic.NewBool(false)
+	c.unexported = atomic.NewBool(false)
+	c.export = true
+	// todo set default application
 }
 
 //getRegistryServices get registry services
@@ -194,9 +200,9 @@ func (c *ServiceConfig) Export() error {
 		return nil
 	}
 
-	regUrls := loadRegistries(c.Registry, registriesConfig, common.PROVIDER)
+	regUrls := loadRegistries(c.Registry, c.rootConfig.Registries, common.PROVIDER)
 	urlMap := c.getUrlMap()
-	protocolConfigs := loadProtocol(c.Protocol, c.Protocols)
+	protocolConfigs := loadProtocol(c.Protocol, c.rootConfig.Protocols)
 	if len(protocolConfigs) == 0 {
 		logger.Warnf("The service %v's '%v' protocols don't has right protocolConfigs", c.Interface, c.Protocol)
 		return nil
@@ -204,7 +210,7 @@ func (c *ServiceConfig) Export() error {
 
 	ports := getRandomPort(protocolConfigs)
 	nextPort := ports.Front()
-	proxyFactory := extension.GetProxyFactory(providerConfig.ProxyFactory)
+	proxyFactory := extension.GetProxyFactory(c.rootConfig.Provider.ProxyFactory)
 	for _, proto := range protocolConfigs {
 		// registry the service reflect
 		methods, err := common.ServiceMap.Register(c.Interface, proto.Name, c.Group, c.Version, c.rpcService)
@@ -280,6 +286,67 @@ func (c *ServiceConfig) Export() error {
 	return nil
 }
 
+//loadProtocol filter protocols by ids
+func loadProtocol(protocolIds []string, protocols map[string]*ProtocolConfig) []*ProtocolConfig {
+	returnProtocols := make([]*ProtocolConfig, 0, len(protocols))
+	for _, v := range protocolIds {
+		for k, protocol := range protocols {
+			if v == k {
+				returnProtocols = append(returnProtocols, protocol)
+			}
+		}
+	}
+	return returnProtocols
+}
+
+func loadRegistries(registryIds []string, registries map[string]*RegistryConfig, roleType common.RoleType) []*common.URL {
+	var urls []*common.URL
+	//trSlice := strings.Split(targetRegistries, ",")
+
+	for k, registryConf := range registries {
+		target := false
+
+		// if user not config targetRegistries, default load all
+		// Notice: in func "func Split(s, sep string) []string" comment:
+		// if s does not contain sep and sep is not empty, SplitAfter returns
+		// a slice of length 1 whose only element is s. So we have to add the
+		// condition when targetRegistries string is not set (it will be "" when not set)
+		if len(registryIds) == 0 || (len(registryIds) == 1 && registryIds[0] == "") {
+			target = true
+		} else {
+			// else if user config targetRegistries
+			for _, tr := range registryIds {
+				if tr == k {
+					target = true
+					break
+				}
+			}
+		}
+
+		if target {
+			addresses := strings.Split(registryConf.Address, ",")
+			address := addresses[0]
+			address = registryConf.translateRegistryAddress()
+			url, err := common.NewURL(constant.REGISTRY_PROTOCOL+"://"+address,
+				common.WithParams(registryConf.getUrlMap(roleType)),
+				common.WithParamsValue("simplified", strconv.FormatBool(registryConf.Simplified)),
+				common.WithUsername(registryConf.Username),
+				common.WithPassword(registryConf.Password),
+				common.WithLocation(registryConf.Address),
+			)
+
+			if err != nil {
+				logger.Errorf("The registry id: %s url is invalid, error: %#v", k, err)
+				panic(err)
+			} else {
+				urls = append(urls, url)
+			}
+		}
+	}
+
+	return urls
+}
+
 // Unexport will call unexport of all exporters service config exported
 func (c *ServiceConfig) Unexport() {
 	if !c.exported.Load() {
@@ -328,16 +395,16 @@ func (c *ServiceConfig) getUrlMap() url.Values {
 	// todo: move
 	urlMap.Set(constant.SERIALIZATION_KEY, c.Serialization)
 	// application config info
-	urlMap.Set(constant.APPLICATION_KEY, applicationConfig.Name)
-	urlMap.Set(constant.ORGANIZATION_KEY, applicationConfig.Organization)
-	urlMap.Set(constant.NAME_KEY, applicationConfig.Name)
-	urlMap.Set(constant.MODULE_KEY, applicationConfig.Module)
-	urlMap.Set(constant.APP_VERSION_KEY, applicationConfig.Version)
-	urlMap.Set(constant.OWNER_KEY, applicationConfig.Owner)
-	urlMap.Set(constant.ENVIRONMENT_KEY, applicationConfig.Environment)
+	//urlMap.Set(constant.APPLICATION_KEY, applicationConfig.Name)
+	//urlMap.Set(constant.ORGANIZATION_KEY, applicationConfig.Organization)
+	//urlMap.Set(constant.NAME_KEY, applicationConfig.Name)
+	//urlMap.Set(constant.MODULE_KEY, applicationConfig.Module)
+	//urlMap.Set(constant.APP_VERSION_KEY, applicationConfig.Version)
+	//urlMap.Set(constant.OWNER_KEY, applicationConfig.Owner)
+	//urlMap.Set(constant.ENVIRONMENT_KEY, applicationConfig.Environment)
 
 	// filter
-	urlMap.Set(constant.SERVICE_FILTER_KEY, mergeValue(providerConfig.Filter, c.Filter, constant.DEFAULT_SERVICE_FILTERS))
+	urlMap.Set(constant.SERVICE_FILTER_KEY, mergeValue(c.rootConfig.Provider.Filter, c.Filter, constant.DEFAULT_SERVICE_FILTERS))
 
 	// filter special config
 	urlMap.Set(constant.AccessLogFilterKey, c.AccessLog)
@@ -399,5 +466,96 @@ func publishServiceDefinition(url *common.URL) {
 func (c *ServiceConfig) postProcessConfig(url *common.URL) {
 	for _, p := range extension.GetConfigPostProcessors() {
 		p.PostProcessServiceConfig(url)
+	}
+}
+
+// NewServiceConfig The only way to get a new ServiceConfig
+func NewServiceConfig(id string) *ServiceConfig {
+	return &ServiceConfig{
+		id:         id,
+		unexported: atomic.NewBool(false),
+		exported:   atomic.NewBool(false),
+		export:     true,
+	}
+}
+
+// ServiceConfigOpt is the option to init ServiceConfig
+type ServiceConfigOpt func(config *ServiceConfig) *ServiceConfig
+
+// NewDefaultServiceConfig returns default ServiceConfig
+func NewDefaultServiceConfig() *ServiceConfig {
+	newServiceConfig := NewServiceConfig("")
+	newServiceConfig.Params = make(map[string]string)
+	newServiceConfig.Methods = make([]*MethodConfig, 0, 8)
+	return newServiceConfig
+}
+
+// NewServiceConfigByAPI is named as api, because there is NewServiceConfig func already declared
+// NewServiceConfigByAPI returns ServiceConfig with given @opts
+func NewServiceConfigByAPI(opts ...ServiceConfigOpt) *ServiceConfig {
+	defaultServiceConfig := NewDefaultServiceConfig()
+	for _, v := range opts {
+		v(defaultServiceConfig)
+	}
+	return defaultServiceConfig
+}
+
+// WithServiceRegistry returns ServiceConfigOpt with given registryKey @registry
+func WithServiceRegistry(registry string) ServiceConfigOpt {
+	return func(config *ServiceConfig) *ServiceConfig {
+		config.Registry = append(config.Registry, registry)
+		return config
+	}
+}
+
+// WithServiceProtocol returns ServiceConfigOpt with given protocolKey @protocol
+func WithServiceProtocol(protocol string) ServiceConfigOpt {
+	return func(config *ServiceConfig) *ServiceConfig {
+		config.Protocol = append(config.Protocol, protocol)
+		return config
+	}
+}
+
+// WithServiceInterface returns ServiceConfigOpt with given @interfaceName
+func WithServiceInterface(interfaceName string) ServiceConfigOpt {
+	return func(config *ServiceConfig) *ServiceConfig {
+		config.Interface = interfaceName
+		return config
+	}
+}
+
+// WithServiceLoadBalance returns ServiceConfigOpt with given load balance @lb
+func WithServiceLoadBalance(lb string) ServiceConfigOpt {
+	return func(config *ServiceConfig) *ServiceConfig {
+		config.Loadbalance = lb
+		return config
+	}
+}
+
+// WithServiceWarmUpTime returns ServiceConfigOpt with given @warmUp time
+func WithServiceWarmUpTime(warmUp string) ServiceConfigOpt {
+	return func(config *ServiceConfig) *ServiceConfig {
+		config.Warmup = warmUp
+		return config
+	}
+}
+
+// WithServiceCluster returns ServiceConfigOpt with given cluster name @cluster
+func WithServiceCluster(cluster string) ServiceConfigOpt {
+	return func(config *ServiceConfig) *ServiceConfig {
+		config.Cluster = cluster
+		return config
+	}
+}
+
+// WithServiceMethod returns ServiceConfigOpt with given @name, @retries and load balance @lb
+func WithServiceMethod(name, retries, lb string) ServiceConfigOpt {
+	return func(config *ServiceConfig) *ServiceConfig {
+		config.Methods = append(config.Methods, &MethodConfig{
+			Name:        name,
+			Retries:     retries,
+			LoadBalance: lb,
+		})
+		return config
 	}
 }

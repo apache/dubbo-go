@@ -13,9 +13,10 @@
 * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 * See the License for the specific language governing permissions and
 * limitations under the License.
-*/
+ */
 
 package config
+
 //
 //import (
 //	"dubbo.apache.org/dubbo-go/v3/config/applicationConfig"

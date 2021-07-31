@@ -34,16 +34,22 @@ type ApplicationConfig struct {
 	MetadataType string `default:"local" yaml:"metadataType" json:"metadataType,omitempty" property:"metadataType"`
 }
 
+func NewApplicationConfig() *ApplicationConfig {
+	return &ApplicationConfig{}
+}
+
 // Prefix dubbo.applicationConfig
 func (ApplicationConfig) Prefix() string {
 	return constant.DUBBO + ".applicationConfig"
 }
 
-// getApplicationConfig get applicationConfig config
-func getApplicationConfig(application *ApplicationConfig) *ApplicationConfig {
-	if application == nil {
-		application = new(ApplicationConfig)
-	}
-	defaults.MustSet(application)
-	return application
+func (a *ApplicationConfig) CheckConfig() error {
+	// todo check
+	defaults.MustSet(a)
+	return verify(a)
+}
+
+func (a *ApplicationConfig) Validate() {
+	defaults.MustSet(a)
+	// todo set default application
 }

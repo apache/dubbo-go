@@ -2,26 +2,8 @@ package config
 
 import (
 	"bytes"
-	"strings"
-)
-
-import (
-	"github.com/go-playground/validator/v10"
-	"github.com/pkg/errors"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-)
-
-var (
-	applicationConfig *ApplicationConfig
-
-	consumerConfig *ConsumerConfig
-
-	providerConfig *ProviderConfig
-
-	registriesConfig map[string]*RegistryConfig
+	"github.com/creasty/defaults"
 )
 
 // RootConfig is the root config
@@ -29,7 +11,7 @@ type RootConfig struct {
 	ConfigCenter *CenterConfig `yaml:"config-center" json:"config-center,omitempty"`
 
 	// since 1.5.0 version
-	//Remotes              map[string]*config.RemoteConfig `yaml:"remote" json:"remote,omitempty" property:"remote"`
+	Remotes map[string]*RemoteConfig `yaml:"remote" json:"remote,omitempty" property:"remote"`
 
 	ServiceDiscoveries map[string]*ServiceDiscoveryConfig `yaml:"service-discovery" json:"service-discovery,omitempty" property:"service-discovery"`
 
@@ -46,6 +28,9 @@ type RootConfig struct {
 	// provider config
 	Provider *ProviderConfig `yaml:"provider" json:"provider" property:"provider"`
 
+	// consumer config
+	Consumer *ConsumerConfig `yaml:"consumer" json:"consumer" property:"consumer"`
+
 	// prefix              string
 	fatherConfig        interface{}
 	EventDispatcherType string        `default:"direct" yaml:"event_dispatcher_type" json:"event_dispatcher_type,omitempty"`
@@ -56,72 +41,127 @@ type RootConfig struct {
 	CacheFile string `yaml:"cache_file" json:"cache_file,omitempty" property:"cache_file"`
 }
 
+func init() {
+	rootConfig = NewRootConfig()
+}
+
+func SetRootConfig(r RootConfig) {
+	rootConfig = &r
+}
+
+func NewRootConfig() *RootConfig {
+	return &RootConfig{
+		ConfigCenter:         &CenterConfig{},
+		ServiceDiscoveries:   make(map[string]*ServiceDiscoveryConfig),
+		MetadataReportConfig: &MetadataReportConfig{},
+		Application:          &ApplicationConfig{},
+		Registries:           make(map[string]*RegistryConfig),
+		Protocols:            make(map[string]*ProtocolConfig),
+		Provider:             NewProviderConfig(),
+		Consumer:             NewConsumerConfig(),
+		MetricConfig:         &MetricConfig{},
+	}
+}
+
 // Prefix dubbo
 func (RootConfig) Prefix() string {
 	return constant.DUBBO
 }
 
-func verify(s interface{}) error {
+func (rc *RootConfig) CheckConfig() error {
+	defaults.MustSet(rc)
 
-	if err := validate.Struct(s); err != nil {
-		errs := err.(validator.ValidationErrors)
-		var slice []string
-		for _, msg := range errs {
-			slice = append(slice, msg.Error())
-		}
-		return errors.New(strings.Join(slice, ","))
+	if err := rc.Application.CheckConfig(); err != nil {
+		return err
 	}
-	return nil
-}
 
-// removeDuplicateElement remove duplicate element
-func removeDuplicateElement(items []string) []string {
-	result := make([]string, 0, len(items))
-	temp := map[string]struct{}{}
-	for _, item := range items {
-		if _, ok := temp[item]; !ok && item != "" {
-			temp[item] = struct{}{}
-			result = append(result, item)
+	for k, _ := range rc.Registries {
+		if err := rc.Registries[k].CheckConfig(); err != nil {
+			return err
 		}
 	}
-	return result
-}
 
-// translateRegistryIds string "nacos,zk" => ["nacos","zk"]
-func translateRegistryIds(registryIds []string) []string {
-	ids := make([]string, 0)
-	for _, id := range registryIds {
-		ids = append(ids, strings.Split(id, ",")...)
+	for k, _ := range rc.Protocols {
+		if err := rc.Protocols[k].CheckConfig(); err != nil {
+			return err
+		}
 	}
-	return removeDuplicateElement(ids)
+
+	if err := rc.ConfigCenter.CheckConfig(); err != nil {
+		return err
+	}
+
+	if err := rc.MetadataReportConfig.CheckConfig(); err != nil {
+		return err
+	}
+
+	if err := rc.Provider.CheckConfig(); err != nil {
+		return err
+	}
+
+	if err := rc.Consumer.CheckConfig(); err != nil {
+		return err
+	}
+
+	return verify(rootConfig)
 }
 
-func (rc *RootConfig) Init() {
-	rc.Application = getApplicationConfig(rc.Application)
-	rc.Protocols = getProtocolsConfig(rc.Protocols)
-	rc.Registries = getRegistriesConfig(rc.Registries)
-	rc.ConfigCenter = getConfigCenterConfig(rc.ConfigCenter)
+func (rc *RootConfig) Validate() {
+	// 2. validate config
+	rc.Application.Validate()
+
+	for k, _ := range rc.Registries {
+		rc.Registries[k].Validate()
+	}
+
+	for k, _ := range rc.Protocols {
+		rc.Protocols[k].Validate()
+	}
+
+	for k, _ := range rc.Registries {
+		rc.Registries[k].Validate()
+	}
+
+	rc.ConfigCenter.Validate()
+	rc.MetadataReportConfig.Validate()
+	rc.Provider.Validate(rc)
+	rc.Consumer.Validate(rc)
 }
 
-// GetApplicationConfig get applicationConfig config
-//func GetApplicationConfig() (*ApplicationConfig, error) {
-//	if err := check(); err != nil {
-//		return nil, err
-//	}
-//	if applicationConfig != nil {
-//		return applicationConfig, nil
-//	}
-//	applicationConfig = getApplicationConfig(rootConfig.Application)
-//	if err := defaults.Set(applicationConfig); err != nil {
-//		return nil, err
-//	}
-//
-//	if err := verify(applicationConfig); err != nil {
-//		return nil, err
-//	}
-//
-//	return applicationConfig, nil
-//}
+//GetApplicationConfig get applicationConfig config
+func GetApplicationConfig() *ApplicationConfig {
+	if err := check(); err != nil {
+		return NewApplicationConfig()
+	}
+	if rootConfig.Application != nil {
+		return rootConfig.Application
+	}
+	return NewApplicationConfig()
+}
+
+func GetRootConfig() *RootConfig {
+	return rootConfig
+}
+
+func GetProviderConfig() *ProviderConfig {
+	if err := check(); err != nil {
+		return NewProviderConfig()
+	}
+	if rootConfig.Provider != nil {
+		return rootConfig.Provider
+	}
+	return NewProviderConfig()
+}
+
+func GetConsumerConfig() *ConsumerConfig {
+	if err := check(); err != nil {
+		return NewConsumerConfig()
+	}
+	if rootConfig.Consumer != nil {
+		return rootConfig.Consumer
+	}
+	return NewConsumerConfig()
+}
 
 // GetConfigCenterConfig get config center config
 //func GetConfigCenterConfig() (*CenterConfig, error) {
@@ -205,11 +245,11 @@ func (rc *RootConfig) Init() {
 //	return provider, nil
 //}
 
-// getRegistryIds get registry keys
-func getRegistryIds() []string {
-	ids := make([]string, 0)
-	for key := range rootConfig.Registries {
-		ids = append(ids, key)
-	}
-	return removeDuplicateElement(ids)
-}
+//// getRegistryIds get registry keys
+//func getRegistryIds() []string {
+//	ids := make([]string, 0)
+//	for key := range rootConfig.Registries {
+//		ids = append(ids, key)
+//	}
+//	return removeDuplicateElement(ids)
+//}

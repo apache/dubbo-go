@@ -19,7 +19,6 @@ package internal
 
 import (
 	"context"
-	"dubbo.apache.org/dubbo-go/v3/config/provider"
 	"log"
 )
 
@@ -57,7 +56,7 @@ func InitDubboServer() {
 			config.WithServiceCluster("failover"),
 		)),
 	)
-	provider.SetProviderConfig(*providerConfig) // set to providerConfig ptr
+	config.SetProviderConfig(*providerConfig) // set to providerConfig ptr
 
 	config.SetProviderService(&Server{
 		GreeterProviderBase: &GreeterProviderBase{},

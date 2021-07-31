@@ -18,7 +18,6 @@
 package config
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"github.com/creasty/defaults"
 )
 
@@ -26,34 +25,16 @@ import (
 type ProtocolConfig struct {
 	Name string `default:"dubbo" validate:"required" yaml:"name"  json:"name,omitempty" property:"name"`
 	Ip   string `default:"127.0.0.1" yaml:"ip"  json:"ip,omitempty" property:"ip"`
-	Port string    `default:"0" yaml:"port" json:"port,omitempty" property:"port"`
+	Port string `default:"0" yaml:"port" json:"port,omitempty" property:"port"`
 }
 
-// Prefix dubbo.protocols
-func (ProtocolConfig) Prefix() string {
-	return constant.ProtocolConfigPrefix
+func (p *ProtocolConfig) CheckConfig() error {
+	// todo check
+	defaults.MustSet(p)
+	return verify(p)
 }
 
-// getProtocolsConfig get protocols config default protocol
-func getProtocolsConfig(protocols map[string]*ProtocolConfig) map[string]*ProtocolConfig {
-	if protocols == nil || len(protocols) <= 0 {
-		conf := new(ProtocolConfig)
-		protocols = make(map[string]*ProtocolConfig, 1)
-		defaults.MustSet(conf)
-		protocols[constant.DUBBO] = conf
-	}
-	return protocols
-}
+func (p *ProtocolConfig) Validate() {
 
-//loadProtocol filter protocols by ids
-func loadProtocol(protocolIds []string, protocols map[string]*ProtocolConfig) []*ProtocolConfig {
-	returnProtocols := make([]*ProtocolConfig, 0, len(protocols))
-	for _, v := range protocolIds {
-		for k, protocol := range protocols {
-			if v == k {
-				returnProtocols = append(returnProtocols, protocol)
-			}
-		}
-	}
-	return returnProtocols
+	// todo set default application
 }

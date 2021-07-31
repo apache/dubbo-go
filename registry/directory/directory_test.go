@@ -19,8 +19,6 @@ package directory
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/config"
-	"dubbo.apache.org/dubbo-go/v3/config/base"
-	"dubbo.apache.org/dubbo-go/v3/config/consumer"
 	"strconv"
 	"testing"
 	"time"
@@ -42,10 +40,8 @@ import (
 )
 
 func init() {
-	consumer.SetConsumerConfig(config.ConsumerConfig{
-		BaseConfig: base.Config{
-			ApplicationConfig: &config.ApplicationConfig{Name: "test-application"},
-		},
+	config.SetRootConfig(config.RootConfig{
+		Application: &config.ApplicationConfig{Name: "test-application"},
 	})
 }
 

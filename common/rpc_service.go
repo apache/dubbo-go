@@ -37,8 +37,8 @@ import (
 // RPCService
 // rpc service interface
 type RPCService interface {
-	// Name rpc service id
-	Name() string
+	//// Name rpc service id
+	//Name() string
 	// Reference  rpc service reference
 	Reference() string
 }
