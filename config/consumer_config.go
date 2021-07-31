@@ -38,24 +38,20 @@ const (
 
 // ConsumerConfig is Consumer default configuration
 type ConsumerConfig struct {
-	//root.RootConfig         `yaml:",inline" property:"base"`
-	//center.ConsumerConfig `yaml:"-"`
+
 	Filter string `yaml:"filter" json:"filter,omitempty" property:"filter"`
 	// client
-	Connect_Timeout string `default:"100ms"  yaml:"connect_timeout" json:"connect_timeout,omitempty" property:"connect_timeout"`
-	ConnectTimeout  time.Duration
-
+	ConnectTimeout string `default:"3s" yaml:"connect-timeout" json:"connect-timeout,omitempty" property:"connect-timeout"`
+	// support string
 	Registry []string `yaml:"registry" json:"registry,omitempty" property:"registry"`
-	//Registries map[string]*RegistryConfig `default:"{}" yaml:"registriesConfig" json:"registriesConfig" property:"registriesConfig"`
 
-	Request_Timeout string `yaml:"request_timeout" default:"5s" json:"request_timeout,omitempty" property:"request_timeout"`
-	RequestTimeout  time.Duration
-	ProxyFactory    string `yaml:"proxy_factory" default:"default" json:"proxy_factory,omitempty" property:"proxy_factory"`
-	Check           *bool  `yaml:"check"  json:"check,omitempty" property:"check"`
+	RequestTimeout string `default:"3s" yaml:"request-timeout" json:"request-timeout,omitempty" property:"request-timeout"`
+	ProxyFactory   string `default:"default" yaml:"proxy-factory" json:"proxy-factory,omitempty" property:"proxy-factory"`
+	Check          bool   `default:"true" yaml:"check" json:"check,omitempty" property:"check"`
 
-	References   map[string]*ReferenceConfig `yaml:"references" json:"references,omitempty" property:"references"`
-	ProtocolConf interface{}                 `yaml:"protocol_conf" json:"protocol_conf,omitempty" property:"protocol_conf"`
-	FilterConf   interface{}                 `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf"`
+	References map[string]*ReferenceConfig `yaml:"references" json:"references,omitempty" property:"references"`
+	// ProtocolConf interface{}                 `yaml:"protocol_conf" json:"protocol-conf,omitempty" property:"protocol-conf"`
+	// FilterConf   interface{}                 `yaml:"filter-conf" json:"filter-conf,omitempty" property:"filter-conf"`
 	//ShutdownConfig *ShutdownConfig                             `yaml:"shutdown_conf" json:"shutdown_conf,omitempty" property:"shutdown_conf"`
 	ConfigType map[string]string `yaml:"config_type" json:"config_type,omitempty" property:"config_type"`
 
@@ -123,8 +119,8 @@ func (c *ConsumerConfig) Load() {
 		checkok := true
 		for _, refconfig := range c.References {
 			if (refconfig.Check != nil && *refconfig.Check) ||
-				(refconfig.Check == nil && c.Check != nil && *c.Check) ||
-				(refconfig.Check == nil && c.Check == nil) { // default to true
+				(refconfig.Check == nil && c.Check) ||
+				(refconfig.Check == nil) { // default to true
 
 				if refconfig.invoker != nil && !refconfig.invoker.IsAvailable() {
 					checkok = false
@@ -223,13 +219,13 @@ type ConsumerConfigOpt func(config *ConsumerConfig) *ConsumerConfig
 // NewEmptyConsumerConfig returns default ConsumerConfig
 // with connection timeout = 3s, request timeout = 3s
 func NewEmptyConsumerConfig() *ConsumerConfig {
-	check := true
+
 	newConsumerConfig := &ConsumerConfig{
 		//Registries:     make(map[string]*RegistryConfig, 8),
 		References:     make(map[string]*ReferenceConfig, 8),
-		ConnectTimeout: 3 * time.Second,
-		RequestTimeout: 3 * time.Second,
-		Check:          &check,
+		ConnectTimeout: "3s",
+		RequestTimeout: "3s",
+		Check:          true,
 	}
 	return newConsumerConfig
 }
@@ -278,7 +274,7 @@ func WithConsumerRequestTimeout(timeout time.Duration) ConsumerConfigOpt {
 // WithConsumerConfigCheck returns ConsumerConfigOpt with given @check flag
 func WithConsumerConfigCheck(check bool) ConsumerConfigOpt {
 	return func(config *ConsumerConfig) *ConsumerConfig {
-		*config.Check = check
+		config.Check = check
 		return config
 	}
 }

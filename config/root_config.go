@@ -15,7 +15,7 @@ type RootConfig struct {
 
 	ServiceDiscoveries map[string]*ServiceDiscoveryConfig `yaml:"service-discovery" json:"service-discovery,omitempty" property:"service-discovery"`
 
-	MetadataReportConfig *MetadataReportConfig `yaml:"metadata_report" json:"metadata-report,omitempty" property:"metadata-report"`
+	MetadataReportConfig *MetadataReportConfig `yaml:"metadata-report" json:"metadata-report,omitempty" property:"metadata-report"`
 
 	// Application applicationConfig config
 	Application *ApplicationConfig `validate:"required" yaml:"application" json:"application,omitempty" property:"application"`

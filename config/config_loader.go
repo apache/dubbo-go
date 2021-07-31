@@ -70,6 +70,7 @@ func Load(opts ...LoaderConfOption) {
 		panic(err)
 	}
 	rootConfig.Validate()
+
 	// root config init finish
 
 	// todo why this line
