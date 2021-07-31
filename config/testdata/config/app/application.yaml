@@ -1,6 +1,20 @@
 dubbo:
-  application:
-    name: dubbo-go
-    module: local
-    version: 1.0.0
-    owner: zhaoyunxing
+  registries:
+    nacos:
+      timeout: 3s
+      address: zookeeper://127.0.0.1:2182
+  protocols:
+    dubbo:
+      name: dubbo
+      port: 20000
+  consumer:
+    references:
+      helloService:
+        protocol: dubbo
+        interface: org.github.dubbo.HelloService # must be compatible with grpc or dubbo-java
+  provider:
+    register: true
+    services:
+      helloService:
+        protocol: dubbo
+        interface: org.github.dubbo.HelloService # must be compatible with grpc or dubbo-java

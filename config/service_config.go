@@ -290,9 +290,9 @@ func (c *ServiceConfig) Export() error {
 func loadProtocol(protocolIds []string, protocols map[string]*ProtocolConfig) []*ProtocolConfig {
 	returnProtocols := make([]*ProtocolConfig, 0, len(protocols))
 	for _, v := range protocolIds {
-		for k, protocol := range protocols {
+		for k, config := range protocols {
 			if v == k {
-				returnProtocols = append(returnProtocols, protocol)
+				returnProtocols = append(returnProtocols, config)
 			}
 		}
 	}

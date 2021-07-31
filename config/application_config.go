@@ -24,7 +24,7 @@ import (
 
 // ApplicationConfig is a configuration for current applicationConfig, whether the applicationConfig is a provider or a consumer
 type ApplicationConfig struct {
-	Organization string `default:"dubbo.io" yaml:"organization" json:"organization,omitempty" property:"organization"`
+	Organization string `default:"dubbo-go" yaml:"organization" json:"organization,omitempty" property:"organization"`
 	Name         string `default:"dubbo.io" yaml:"name" json:"name,omitempty" property:"name"`
 	Module       string `default:"sample" yaml:"module" json:"module,omitempty" property:"module"`
 	Version      string `default:"0.0.1" yaml:"version" json:"version,omitempty" property:"version"`
@@ -40,7 +40,7 @@ func NewApplicationConfig() *ApplicationConfig {
 
 // Prefix dubbo.applicationConfig
 func (ApplicationConfig) Prefix() string {
-	return constant.DUBBO + ".applicationConfig"
+	return constant.DUBBO + ".application"
 }
 
 func (a *ApplicationConfig) CheckConfig() error {

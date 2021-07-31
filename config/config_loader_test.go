@@ -141,6 +141,10 @@ func TestGetProviderConfig(t *testing.T) {
 	})
 }
 
+func TestRootConfig(t *testing.T) {
+	Load(WithPath("./testdata/config/app/application.yaml"))
+}
+
 //
 //func TestLoadWithSingleReg(t *testing.T) {
 //	reference.doInitConsumerWithSingleRegistry()
