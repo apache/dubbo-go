@@ -38,7 +38,6 @@ const (
 
 // ConsumerConfig is Consumer default configuration
 type ConsumerConfig struct {
-
 	Filter string `yaml:"filter" json:"filter,omitempty" property:"filter"`
 	// client
 	ConnectTimeout string `default:"3s" yaml:"connect-timeout" json:"connect-timeout,omitempty" property:"connect-timeout"`
@@ -63,13 +62,8 @@ func (ConsumerConfig) Prefix() string {
 	return constant.ConsumerConfigPrefix
 }
 
-// UnmarshalYAML unmarshal the ConsumerConfig by @unmarshal function
-func (c *ConsumerConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	if err := defaults.Set(c); err != nil {
-		return err
-	}
-	type plain ConsumerConfig
-	return unmarshal((*plain)(c))
+func initConsumerConfig(rc *RootConfig) error {
+	return nil
 }
 
 func (c *ConsumerConfig) CheckConfig() error {

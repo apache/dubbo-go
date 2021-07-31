@@ -53,6 +53,14 @@ func (c *ProviderConfig) CheckConfig() error {
 	return verify(c)
 }
 
+func initProviderConfig(rc *RootConfig) error {
+	provider := rc.Provider
+	if provider == nil {
+		provider = new(ProviderConfig)
+	}
+	return nil
+}
+
 func (c *ProviderConfig) Validate(r *RootConfig) {
 	ids := make([]string, 0)
 	for key := range r.Registries {

@@ -3,27 +3,26 @@ package config
 import (
 	"bytes"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"github.com/creasty/defaults"
 )
 
 // RootConfig is the root config
 type RootConfig struct {
-	ConfigCenter *CenterConfig `yaml:"config-center" json:"config-center,omitempty"`
-
-	// since 1.5.0 version
-	Remotes map[string]*RemoteConfig `yaml:"remote" json:"remote,omitempty" property:"remote"`
-
-	ServiceDiscoveries map[string]*ServiceDiscoveryConfig `yaml:"service-discovery" json:"service-discovery,omitempty" property:"service-discovery"`
-
-	MetadataReportConfig *MetadataReportConfig `yaml:"metadata-report" json:"metadata-report,omitempty" property:"metadata-report"`
-
 	// Application applicationConfig config
 	Application *ApplicationConfig `validate:"required" yaml:"application" json:"application,omitempty" property:"application"`
+
+	Protocols map[string]*ProtocolConfig `validate:"required" yaml:"protocols" json:"protocols" property:"protocols"`
 
 	// Registries registry config
 	Registries map[string]*RegistryConfig `yaml:"registries" json:"registries" property:"registries"`
 
-	Protocols map[string]*ProtocolConfig `validate:"required" yaml:"protocols" json:"protocols" property:"protocols"`
+	// since 1.5.0 version
+	// Remotes map[string]*RemoteConfig `yaml:"remote" json:"remote,omitempty" property:"remote"`
+
+	ConfigCenter *CenterConfig `yaml:"config-center" json:"config-center,omitempty"`
+
+	ServiceDiscoveries map[string]*ServiceDiscoveryConfig `yaml:"service-discovery" json:"service-discovery,omitempty" property:"service-discovery"`
+
+	MetadataReportConfig *MetadataReportConfig `yaml:"metadata-report" json:"metadata-report,omitempty" property:"metadata-report"`
 
 	// provider config
 	Provider *ProviderConfig `yaml:"provider" json:"provider" property:"provider"`
@@ -88,24 +87,45 @@ func (RootConfig) Prefix() string {
 	return constant.DUBBO
 }
 
-func (rc *RootConfig) Init(opts ...rootConfOption) {
+func (rc *RootConfig) InitConfig(opts ...rootConfOption) error {
+	for _, opt := range opts {
+		opt.apply(rc)
+	}
+	// 这个里面不能panic
 	if rc.ConfigCenter != nil {
 		//监听远程配置刷新本地指定配置
 		// yaml
 		// 监听文件变化
 	}
-	for _, opt := range opts {
-		opt.apply(rc)
+
+	if err := initApplicationConfig(rc); err != nil {
+		return err
 	}
-	rc.Application = getApplicationConfig(rc.Application)
-	rc.Protocols = getProtocolsConfig(rc.Protocols)
-	rc.Registries = getRegistriesConfig(rc.Registries)
+	if err := initProtocolsConfig(rc); err != nil {
+		return err
+	}
+
+	if err := initRegistriesConfig(rc); err != nil {
+		return err
+	}
+
+	if err := initLoggerConfig(rc); err != nil {
+		return err
+	}
+
+	if err := initProviderConfig(rc); err != nil {
+		return err
+	}
+
+	if err := initConsumerConfig(rc); err != nil {
+		return err
+	}
 
 	rc.Provider.Load()
 	rc.Consumer.Load()
-}
 
-//log rout me
+	return nil
+}
 
 func WithApplication(ac *ApplicationConfig) rootConfFunc {
 	return rootConfFunc(func(conf *RootConfig) {
@@ -119,65 +139,65 @@ func WithProtocols(protocols map[string]*ProtocolConfig) rootConfFunc {
 	})
 }
 
-func (rc *RootConfig) CheckConfig() error {
-	defaults.MustSet(rc)
+//func (rc *RootConfig) CheckConfig() error {
+//	defaults.MustSet(rc)
+//
+//	if err := rc.Application.CheckConfig(); err != nil {
+//		return err
+//	}
+//
+//	for k, _ := range rc.Registries {
+//		if err := rc.Registries[k].CheckConfig(); err != nil {
+//			return err
+//		}
+//	}
+//
+//	for k, _ := range rc.Protocols {
+//		if err := rc.Protocols[k].CheckConfig(); err != nil {
+//			return err
+//		}
+//	}
+//
+//	if err := rc.ConfigCenter.CheckConfig(); err != nil {
+//		return err
+//	}
+//
+//	if err := rc.MetadataReportConfig.CheckConfig(); err != nil {
+//		return err
+//	}
+//
+//	if err := rc.Provider.CheckConfig(); err != nil {
+//		return err
+//	}
+//
+//	if err := rc.Consumer.CheckConfig(); err != nil {
+//		return err
+//	}
+//
+//	return verify(rootConfig)
+//}
 
-	if err := rc.Application.CheckConfig(); err != nil {
-		return err
-	}
-
-	for k, _ := range rc.Registries {
-		if err := rc.Registries[k].CheckConfig(); err != nil {
-			return err
-		}
-	}
-
-	for k, _ := range rc.Protocols {
-		if err := rc.Protocols[k].CheckConfig(); err != nil {
-			return err
-		}
-	}
-
-	if err := rc.ConfigCenter.CheckConfig(); err != nil {
-		return err
-	}
-
-	if err := rc.MetadataReportConfig.CheckConfig(); err != nil {
-		return err
-	}
-
-	if err := rc.Provider.CheckConfig(); err != nil {
-		return err
-	}
-
-	if err := rc.Consumer.CheckConfig(); err != nil {
-		return err
-	}
-
-	return verify(rootConfig)
-}
-
-func (rc *RootConfig) Validate() {
-	// 2. validate config
-	rc.Application.Validate()
-
-	for k, _ := range rc.Registries {
-		rc.Registries[k].Validate()
-	}
-
-	for k, _ := range rc.Protocols {
-		rc.Protocols[k].Validate()
-	}
-
-	for k, _ := range rc.Registries {
-		rc.Registries[k].Validate()
-	}
-
-	rc.ConfigCenter.Validate()
-	rc.MetadataReportConfig.Validate()
-	rc.Provider.Validate(rc)
-	rc.Consumer.Validate(rc)
-}
+//func (rc *RootConfig) Validate() {
+//	// 2. validate config
+//	rc.Application.Validate()
+//
+//	for k, _ := range rc.Registries {
+//		rc.Registries[k].Validate()
+//	}
+//
+//	for k, _ := range rc.Protocols {
+//		rc.Protocols[k].Validate()
+//	}
+//
+//	for k, _ := range rc.Registries {
+//		rc.Registries[k].Validate()
+//	}
+//
+//	rc.ConfigCenter.Validate()
+//	rc.MetadataReportConfig.Validate()
+//	rc.Provider.Validate(rc)
+//	rc.Consumer.Validate(rc)
+//}
 
 //GetApplicationConfig get applicationConfig config
 func GetApplicationConfig() *ApplicationConfig {
@@ -242,7 +262,7 @@ func GetConsumerConfig() *ConsumerConfig {
 //	if registriesConfig != nil {
 //		return registriesConfig, nil
 //	}
-//	registriesConfig = getRegistriesConfig(rootConfig.Registries)
+//	registriesConfig = initRegistriesConfig(rootConfig.Registries)
 //	for _, reg := range registriesConfig {
 //		if err := defaults.Set(reg); err != nil {
 //			return nil, err

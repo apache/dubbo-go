@@ -18,6 +18,7 @@
 package config
 
 import (
+	"github.com/pkg/errors"
 	"net/url"
 	"strconv"
 	"strings"
@@ -54,43 +55,31 @@ type RegistryConfig struct {
 	Params map[string]string `yaml:"params" json:"params,omitempty" property:"params"`
 }
 
-func (c *RegistryConfig) CheckConfig() error {
-	// todo check
-	defaults.MustSet(c)
+// Prefix dubbo.registriesConfig
+func (RegistryConfig) Prefix() string {
+	return constant.RegistryConfigPrefix
+}
+
+func (c *RegistryConfig) check() error {
+	if err := defaults.Set(c); err != nil {
+		return err
+	}
 	c.translateRegistryAddress()
 	return verify(c)
 }
 
-func getRegistriesConfig(registries map[string]*RegistryConfig) map[string]*RegistryConfig {
+func initRegistriesConfig(rc *RootConfig) error {
+	registries := rc.Registries
 	if len(registries) <= 0 {
-		panic("registries mast set")
+		return errors.New("dubbo.registries must set")
 	}
 	for _, registry := range registries {
-		defaults.MustSet(registry)
-		registry.translateRegistryAddress()
-		if err := verify(registry); err != nil {
-			panic(err)
+		if err := registry.check(); err != nil {
+			return err
 		}
 	}
-	return registries
-}
-
-func (c *RegistryConfig) Validate() {
-	// todo set default application
-}
-
-// UnmarshalYAML unmarshal the RegistryConfig by @unmarshal function
-func (c *RegistryConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	if err := defaults.Set(c); err != nil {
-		return err
-	}
-	type plain RegistryConfig
-	return unmarshal((*plain)(c))
-}
-
-// Prefix dubbo.registriesConfig
-func (RegistryConfig) Prefix() string {
-	return constant.RegistryConfigPrefix
+	rc.Registries = registries
+	return nil
 }
 
 func (c *RegistryConfig) getUrlMap(roleType common.RoleType) url.Values {
