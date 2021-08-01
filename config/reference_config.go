@@ -70,15 +70,32 @@ func (c *ReferenceConfig) Prefix() string {
 }
 
 // UnmarshalYAML unmarshals the ReferenceConfig by @unmarshal function
-func (c *ReferenceConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	type rf ReferenceConfig
-	raw := rf{} // Put your defaults here
-	if err := unmarshal(&raw); err != nil {
-		return err
-	}
+//func (c *ReferenceConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
+//	type rf ReferenceConfig
+//	raw := rf{} // Put your defaults here
+//	if err := unmarshal(&raw); err != nil {
+//		return err
+//	}
+//
+//	*c = ReferenceConfig(raw)
+//	return defaults.Set(c)
+//}
 
-	*c = ReferenceConfig(raw)
-	return defaults.Set(c)
+func initReferenceConfig(cc *ConsumerConfig) error {
+	references := cc.References
+	if references == nil {
+		references = make(map[string]*ReferenceConfig, 8)
+	}
+	for _, reference := range references {
+		if err := defaults.Set(reference); err != nil {
+			return err
+		}
+		if err := initConsumerMethodConfig(reference); err != nil {
+			return err
+		}
+	}
+	cc.References = references
+	return nil
 }
 
 func (c *ReferenceConfig) CheckConfig() error {

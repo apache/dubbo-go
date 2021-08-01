@@ -40,10 +40,10 @@ type ProviderConfig struct {
 	Services map[string]*ServiceConfig `yaml:"services" json:"services,omitempty" property:"services"`
 
 	ProxyFactory   string                     `default:"default" yaml:"proxy-factory" json:"proxy-factory,omitempty" property:"proxy-factory"`
-	Protocols      map[string]*ProtocolConfig `yaml:"protocols" json:"protocols,omitempty" property:"protocols"`
+	// Protocols      map[string]*ProtocolConfig `yaml:"protocols" json:"protocols,omitempty" property:"protocols"`
 	ProtocolConf   interface{}                `yaml:"protocol_conf" json:"protocol_conf,omitempty" property:"protocol_conf"`
 	FilterConf     interface{}                `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf"`
-	ShutdownConfig *ShutdownConfig            `yaml:"shutdown_conf" json:"shutdown_conf,omitempty" property:"shutdown_conf"`
+	// ShutdownConfig *ShutdownConfig            `yaml:"shutdown_conf" json:"shutdown_conf,omitempty" property:"shutdown_conf"`
 	ConfigType     map[string]string          `yaml:"config_type" json:"config_type,omitempty" property:"config_type"`
 }
 
@@ -57,6 +57,13 @@ func initProviderConfig(rc *RootConfig) error {
 	provider := rc.Provider
 	if provider == nil {
 		provider = new(ProviderConfig)
+	}
+
+	if err := initServiceConfig(provider); err != nil {
+		return err
+	}
+	if err := defaults.Set(provider); err != nil {
+		return err
 	}
 	rc.Provider = provider
 	return nil
@@ -75,13 +82,13 @@ func (c *ProviderConfig) Validate(r *RootConfig) {
 }
 
 // UnmarshalYAML unmarshals the ProviderConfig by @unmarshal function
-func (c *ProviderConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	if err := defaults.Set(c); err != nil {
-		return err
-	}
-	type plain ProviderConfig
-	return unmarshal((*plain)(c))
-}
+//func (c *ProviderConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
+//	if err := defaults.Set(c); err != nil {
+//		return err
+//	}
+//	type plain ProviderConfig
+//	return unmarshal((*plain)(c))
+//}
 
 // Prefix dubbo.provider
 func (c *ProviderConfig) Prefix() string {

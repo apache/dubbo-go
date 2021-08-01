@@ -18,11 +18,8 @@
 package config
 
 import (
-	"github.com/creasty/defaults"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"github.com/creasty/defaults"
 )
 
 // MethodConfig defines method config
@@ -51,11 +48,39 @@ func (c *MethodConfig) Prefix() string {
 	return constant.DUBBO + "." + c.InterfaceName + "." + c.Name + "."
 }
 
-// UnmarshalYAML unmarshals the MethodConfig by @unmarshal function
-func (c *MethodConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	if err := defaults.Set(c); err != nil {
-		return err
+func initConsumerMethodConfig(rc *ReferenceConfig) error {
+	methods := rc.Methods
+	if methods == nil {
+		return nil
 	}
-	type plain MethodConfig
-	return unmarshal((*plain)(c))
+	for _, method := range methods {
+		if err := defaults.Set(method); err != nil {
+			return err
+		}
+	}
+	rc.Methods = methods
+	return nil
 }
+
+func initProviderMethodConfig(sc *ServiceConfig) error {
+	methods := sc.Methods
+	if methods == nil {
+		return nil
+	}
+	for _, method := range methods {
+		if err := defaults.Set(method); err != nil {
+			return err
+		}
+	}
+	sc.Methods = methods
+	return nil
+}
+
+// UnmarshalYAML unmarshals the MethodConfig by @unmarshal function
+//func (c *MethodConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
+//	if err := defaults.Set(c); err != nil {
+//		return err
+//	}
+//	type plain MethodConfig
+//	return unmarshal((*plain)(c))
+//}

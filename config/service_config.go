@@ -92,20 +92,37 @@ func (c *ServiceConfig) Prefix() string {
 	return constant.ServiceConfigPrefix + c.id
 }
 
-// UnmarshalYAML unmarshal the ServiceConfig by @unmarshal function
-func (c *ServiceConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	if err := defaults.Set(c); err != nil {
-		return err
+func initServiceConfig(rc *ProviderConfig) error {
+	services := rc.Services
+	if services == nil {
+		return nil
 	}
-	type plain ServiceConfig
-	if err := unmarshal((*plain)(c)); err != nil {
-		return err
+	for _, service := range services {
+		if err := defaults.Set(service); err != nil {
+			return err
+		}
+		if err := initProviderMethodConfig(service); err != nil {
+			return err
+		}
 	}
-	c.exported = atomic.NewBool(false)
-	c.unexported = atomic.NewBool(false)
-	c.export = true
+	rc.Services = services
 	return nil
 }
+
+// UnmarshalYAML unmarshal the ServiceConfig by @unmarshal function
+//func (c *ServiceConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
+//	if err := defaults.Set(c); err != nil {
+//		return err
+//	}
+//	type plain ServiceConfig
+//	if err := unmarshal((*plain)(c)); err != nil {
+//		return err
+//	}
+//	c.exported = atomic.NewBool(false)
+//	c.unexported = atomic.NewBool(false)
+//	c.export = true
+//	return nil
+//}
 
 func (c *ServiceConfig) CheckConfig() error {
 	// todo check
