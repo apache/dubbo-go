@@ -18,25 +18,20 @@
 package config
 
 import (
-	"fmt"
-	"net/url"
-	"strconv"
-	"time"
-)
-
-import (
-	"github.com/creasty/defaults"
-	gxstrings "github.com/dubbogo/gost/strings"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/proxy"
+	"dubbo.apache.org/dubbo-go/v3/config/generic"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
+	"fmt"
+	"github.com/creasty/defaults"
+	gxstrings "github.com/dubbogo/gost/strings"
+	"net/url"
+	"strconv"
+	"time"
 )
 
 // ReferenceConfig is the configuration of service consumer
@@ -48,7 +43,7 @@ type ReferenceConfig struct {
 	URL            string            `yaml:"url"  json:"url,omitempty" property:"url"`
 	Filter         string            `yaml:"filter" json:"filter,omitempty" property:"filter"`
 	Protocol       string            `default:"dubbo"  yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
-	Registry       string            `yaml:"registry"  json:"registry,omitempty"  property:"registry"`
+	Registry       []string          `yaml:"registry"  json:"registry,omitempty"  property:"registry"`
 	Cluster        string            `yaml:"cluster"  json:"cluster,omitempty" property:"cluster"`
 	Loadbalance    string            `yaml:"loadbalance"  json:"loadbalance,omitempty" property:"loadbalance"`
 	Retries        string            `yaml:"retries"  json:"retries,omitempty" property:"retries"`
@@ -65,16 +60,13 @@ type ReferenceConfig struct {
 	Sticky         bool   `yaml:"sticky"   json:"sticky,omitempty" property:"sticky"`
 	RequestTimeout string `yaml:"timeout"  json:"timeout,omitempty" property:"timeout"`
 	ForceTag       bool   `yaml:"force.tag"  json:"force.tag,omitempty" property:"force.tag"`
+
+	rootConfig *RootConfig
 }
 
 // nolint
 func (c *ReferenceConfig) Prefix() string {
 	return constant.ReferenceConfigPrefix + c.InterfaceName + "."
-}
-
-// NewReferenceConfig The only way to get a new ReferenceConfig
-func NewReferenceConfig(id string) *ReferenceConfig {
-	return &ReferenceConfig{id: id}
 }
 
 // UnmarshalYAML unmarshals the ReferenceConfig by @unmarshal function
@@ -87,6 +79,17 @@ func (c *ReferenceConfig) UnmarshalYAML(unmarshal func(interface{}) error) error
 
 	*c = ReferenceConfig(raw)
 	return defaults.Set(c)
+}
+
+func (c *ReferenceConfig) CheckConfig() error {
+	// todo check
+	defaults.MustSet(c)
+	return verify(c)
+}
+
+func (c *ReferenceConfig) Validate(rootConfig *RootConfig) {
+	c.rootConfig = rootConfig
+	// todo set default application
 }
 
 // Refer ...
@@ -123,7 +126,7 @@ func (c *ReferenceConfig) Refer(_ interface{}) {
 		}
 	} else {
 		// 2. assemble SubURL from register center's configuration mode
-		c.urls = loadRegistries(c.Registry, consumerConfig.Registries, common.CONSUMER)
+		c.urls = loadRegistries(c.Registry, c.rootConfig.Registries, common.CONSUMER)
 
 		// set url to regURLs
 		for _, regURL := range c.urls {
@@ -201,9 +204,9 @@ func (c *ReferenceConfig) Refer(_ interface{}) {
 	// create proxy
 	if c.Async {
 		callback := GetCallback(c.id)
-		c.pxy = extension.GetProxyFactory(consumerConfig.ProxyFactory).GetAsyncProxy(c.invoker, callback, cfgURL)
+		c.pxy = extension.GetProxyFactory(c.rootConfig.Consumer.ProxyFactory).GetAsyncProxy(c.invoker, callback, cfgURL)
 	} else {
-		c.pxy = extension.GetProxyFactory(consumerConfig.ProxyFactory).GetProxy(c.invoker, cfgURL)
+		c.pxy = extension.GetProxyFactory(c.rootConfig.Consumer.ProxyFactory).GetProxy(c.invoker, cfgURL)
 	}
 }
 
@@ -251,21 +254,21 @@ func (c *ReferenceConfig) getURLMap() url.Values {
 	urlMap.Set(constant.ASYNC_KEY, strconv.FormatBool(c.Async))
 	urlMap.Set(constant.STICKY_KEY, strconv.FormatBool(c.Sticky))
 
-	// application info
-	urlMap.Set(constant.APPLICATION_KEY, consumerConfig.ApplicationConfig.Name)
-	urlMap.Set(constant.ORGANIZATION_KEY, consumerConfig.ApplicationConfig.Organization)
-	urlMap.Set(constant.NAME_KEY, consumerConfig.ApplicationConfig.Name)
-	urlMap.Set(constant.MODULE_KEY, consumerConfig.ApplicationConfig.Module)
-	urlMap.Set(constant.APP_VERSION_KEY, consumerConfig.ApplicationConfig.Version)
-	urlMap.Set(constant.OWNER_KEY, consumerConfig.ApplicationConfig.Owner)
-	urlMap.Set(constant.ENVIRONMENT_KEY, consumerConfig.ApplicationConfig.Environment)
+	// applicationConfig info
+	urlMap.Set(constant.APPLICATION_KEY, c.rootConfig.Application.Name)
+	urlMap.Set(constant.ORGANIZATION_KEY, c.rootConfig.Application.Organization)
+	urlMap.Set(constant.NAME_KEY, c.rootConfig.Application.Name)
+	urlMap.Set(constant.MODULE_KEY, c.rootConfig.Application.Module)
+	urlMap.Set(constant.APP_VERSION_KEY, c.rootConfig.Application.Version)
+	urlMap.Set(constant.OWNER_KEY, c.rootConfig.Application.Owner)
+	urlMap.Set(constant.ENVIRONMENT_KEY, c.rootConfig.Application.Environment)
 
 	// filter
 	defaultReferenceFilter := constant.DEFAULT_REFERENCE_FILTERS
 	if c.Generic {
 		defaultReferenceFilter = constant.GENERIC_REFERENCE_FILTERS + "," + defaultReferenceFilter
 	}
-	urlMap.Set(constant.REFERENCE_FILTER_KEY, mergeValue(consumerConfig.Filter, c.Filter, defaultReferenceFilter))
+	//urlMap.Set(constant.REFERENCE_FILTER_KEY, config.mergeValue(config.consumerConfig.Filter, c.Filter, defaultReferenceFilter))
 
 	for _, v := range c.Methods {
 		urlMap.Set("methods."+v.Name+"."+constant.LOADBALANCE_KEY, v.LoadBalance)
@@ -281,7 +284,7 @@ func (c *ReferenceConfig) getURLMap() url.Values {
 
 // GenericLoad ...
 func (c *ReferenceConfig) GenericLoad(id string) {
-	genericService := NewGenericService(c.id)
+	genericService := generic.NewGenericService(c.id)
 	SetConsumerService(genericService)
 	c.id = id
 	c.Refer(genericService)
@@ -303,5 +306,76 @@ func publishConsumerDefinition(url *common.URL) {
 func (c *ReferenceConfig) postProcessConfig(url *common.URL) {
 	for _, p := range extension.GetConfigPostProcessors() {
 		p.PostProcessReferenceConfig(url)
+	}
+}
+
+//////////////////////////////////// reference config api
+
+// ReferenceConfigOpt is consumer's reference config
+type ReferenceConfigOpt func(config *ReferenceConfig) *ReferenceConfig
+
+// NewReferenceConfig The only way to get a new ReferenceConfig
+func NewReferenceConfigWithID(id string) *ReferenceConfig {
+	return &ReferenceConfig{id: id}
+}
+
+// NewEmptyReferenceConfig returns empty ReferenceConfig
+func NewEmptyReferenceConfig() *ReferenceConfig {
+	newReferenceConfig := NewReferenceConfigWithID("")
+	newReferenceConfig.Methods = make([]*MethodConfig, 0, 8)
+	newReferenceConfig.Params = make(map[string]string, 8)
+	return newReferenceConfig
+}
+
+// NewReferenceConfig returns ReferenceConfig with given @opts
+func NewReferenceConfig(opts ...ReferenceConfigOpt) *ReferenceConfig {
+	newReferenceConfig := NewEmptyReferenceConfig()
+	for _, v := range opts {
+		v(newReferenceConfig)
+	}
+	return newReferenceConfig
+}
+
+// WithReferenceRegistry returns ReferenceConfigOpt with given registryKey: @registry
+func WithReferenceRegistry(registry ...string) ReferenceConfigOpt {
+	return func(config *ReferenceConfig) *ReferenceConfig {
+		config.Registry = registry
+		return config
+	}
+}
+
+// WithReferenceProtocol returns ReferenceConfigOpt with given protocolKey: @protocol
+func WithReferenceProtocol(protocol string) ReferenceConfigOpt {
+	return func(config *ReferenceConfig) *ReferenceConfig {
+		config.Protocol = protocol
+		return config
+	}
+}
+
+// WithReferenceInterface returns ReferenceConfigOpt with given @interfaceName
+func WithReferenceInterface(interfaceName string) ReferenceConfigOpt {
+	return func(config *ReferenceConfig) *ReferenceConfig {
+		config.InterfaceName = interfaceName
+		return config
+	}
+}
+
+// WithReferenceCluster returns ReferenceConfigOpt with given cluster name: @cluster
+func WithReferenceCluster(cluster string) ReferenceConfigOpt {
+	return func(config *ReferenceConfig) *ReferenceConfig {
+		config.Cluster = cluster
+		return config
+	}
+}
+
+// WithReferenceMethod returns ReferenceConfigOpt with given @method, @retries, and load balance: @lb
+func WithReferenceMethod(methodName, retries, lb string) ReferenceConfigOpt {
+	return func(config *ReferenceConfig) *ReferenceConfig {
+		config.Methods = append(config.Methods, &MethodConfig{
+			Name:        methodName,
+			Retries:     retries,
+			LoadBalance: lb,
+		})
+		return config
 	}
 }

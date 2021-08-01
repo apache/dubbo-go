@@ -19,11 +19,11 @@ package main
 
 import (
 	"context"
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"time"
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/config"
 	hessian "github.com/apache/dubbo-go-hessian2"
 )
 

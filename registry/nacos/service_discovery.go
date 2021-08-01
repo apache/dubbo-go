@@ -321,12 +321,12 @@ func newNacosServiceDiscovery(name string) (registry.ServiceDiscovery, error) {
 		return instance, nil
 	}
 
-	sdc, ok := config.GetBaseConfig().GetServiceDiscoveries(name)
+	sdc, ok := config.GetRootConfig().ServiceDiscoveries[name]
 	if !ok || len(sdc.RemoteRef) == 0 {
 		return nil, perrors.New("could not init the instance because the config is invalid")
 	}
 
-	rc, ok := config.GetBaseConfig().GetRemoteConfig(sdc.RemoteRef)
+	rc, ok := config.GetRootConfig().Remotes[sdc.RemoteRef]
 	if !ok {
 		return nil, perrors.New("could not find the remote config for name: " + sdc.RemoteRef)
 	}

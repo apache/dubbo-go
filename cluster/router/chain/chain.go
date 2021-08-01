@@ -122,7 +122,7 @@ func NewRouterChain(url *common.URL) (*RouterChain, error) {
 
 	for key, routerFactory := range routerFactories {
 		if virtualServiceConfigByte == nil || destinationRuleConfigByte == nil {
-			logger.Warnf("virtual Service Config or destinationRule Confi Byte may be empty, pls check your CONF_VIRTUAL_SERVICE_FILE_PATH and CONF_DEST_RULE_FILE_PATH env is correctly point to your yaml file\n")
+			logger.Warnf("virtual Service ProtocolConfig or destinationRule Confi Byte may be empty, pls check your CONF_VIRTUAL_SERVICE_FILE_PATH and CONF_DEST_RULE_FILE_PATH env is correctly point to your yaml file\n")
 		}
 		r, err := routerFactory().NewPriorityRouter(virtualServiceConfigByte, destinationRuleConfigByte)
 		if r == nil || err != nil {

@@ -126,7 +126,7 @@ func (s *serviceDiscoveryRegistry) UnSubscribe(url *common.URL, listener registr
 
 func creatServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, error) {
 	sdcName := url.GetParam(constant.SERVICE_DISCOVERY_KEY, "")
-	sdc, ok := config.GetBaseConfig().GetServiceDiscoveries(sdcName)
+	sdc, ok := config.GetRootConfig().ServiceDiscoveries[sdcName]
 	if !ok {
 		return nil, perrors.Errorf("The service discovery with name: %s is not found", sdcName)
 	}

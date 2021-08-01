@@ -18,34 +18,51 @@
 package config
 
 import (
-	"bytes"
-)
-
-import (
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	"fmt"
 	"github.com/creasty/defaults"
-	perrors "github.com/pkg/errors"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/common/yaml"
 )
 
 // ProviderConfig is the default configuration of service provider
 type ProviderConfig struct {
-	BaseConfig     `yaml:",inline" property:"base"`
-	configCenter   `yaml:"-"`
-	Filter         string                     `yaml:"filter" json:"filter,omitempty" property:"filter"`
-	ProxyFactory   string                     `yaml:"proxy_factory" default:"default" json:"proxy_factory,omitempty" property:"proxy_factory"`
-	Services       map[string]*ServiceConfig  `yaml:"services" json:"services,omitempty" property:"services"`
+	//base.ShutdownConfig         `yaml:",inline" property:"base"`
+	//center.configCenter `yaml:"-"`
+	Filter string `yaml:"filter" json:"filter,omitempty" property:"filter"`
+	// Register whether registration is required
+	Register bool `yaml:"register" json:"register" property:"register"`
+	// Registry registry ids
+	Registry []string `yaml:"registry" json:"registry" property:"registry"`
+	// Services services
+	Services map[string]*ServiceConfig `yaml:"services" json:"services,omitempty" property:"services"`
+
+	ProxyFactory   string                     `default:"default" yaml:"proxy-factory" json:"proxy-factory,omitempty" property:"proxy-factory"`
 	Protocols      map[string]*ProtocolConfig `yaml:"protocols" json:"protocols,omitempty" property:"protocols"`
 	ProtocolConf   interface{}                `yaml:"protocol_conf" json:"protocol_conf,omitempty" property:"protocol_conf"`
 	FilterConf     interface{}                `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf"`
 	ShutdownConfig *ShutdownConfig            `yaml:"shutdown_conf" json:"shutdown_conf,omitempty" property:"shutdown_conf"`
 	ConfigType     map[string]string          `yaml:"config_type" json:"config_type,omitempty" property:"config_type"`
+}
 
-	Registry   *RegistryConfig            `yaml:"registry" json:"registry,omitempty" property:"registry"`
-	Registries map[string]*RegistryConfig `default:"{}" yaml:"registries" json:"registries" property:"registries"`
+func (c *ProviderConfig) CheckConfig() error {
+	// todo check
+	defaults.MustSet(c)
+	return verify(c)
+}
+
+func (c *ProviderConfig) Validate(r *RootConfig) {
+	ids := make([]string, 0)
+	for key := range r.Registries {
+		ids = append(ids, key)
+	}
+	c.Registry = removeDuplicateElement(ids)
+	for k, _ := range c.Services {
+		c.Services[k].Validate(r)
+	}
+	// todo set default application
 }
 
 // UnmarshalYAML unmarshals the ProviderConfig by @unmarshal function
@@ -57,48 +74,113 @@ func (c *ProviderConfig) UnmarshalYAML(unmarshal func(interface{}) error) error 
 	return unmarshal((*plain)(c))
 }
 
-// nolint
-func (*ProviderConfig) Prefix() string {
+// Prefix dubbo.provider
+func (c *ProviderConfig) Prefix() string {
 	return constant.ProviderConfigPrefix
+}
+
+func (c *ProviderConfig) Load() {
+	// todo Write the current configuration to cache file.
+	//if c.CacheFile != "" {
+	//	if data, err := yaml.MarshalYML(providerConfig); err != nil {
+	//		logger.Errorf("Marshal provider config err: %s", err.Error())
+	//	} else {
+	//		if err := ioutil.WriteFile(provider  CacheFile, data, 0666); err != nil {
+	//			logger.Errorf("Write provider config cache file err: %s", err.Error())
+	//		}
+	//	}
+	//}
+
+	for key, svs := range c.Services {
+		rpcService := GetProviderService(key)
+		if rpcService == nil {
+			logger.Warnf("%s does not exist!", key)
+			continue
+		}
+		svs.id = key
+		svs.Implement(rpcService)
+		if err := svs.Export(); err != nil {
+			panic(fmt.Sprintf("service %s export failed! err: %#v", key, err))
+		}
+	}
 }
 
 // SetProviderConfig sets provider config by @p
 func SetProviderConfig(p ProviderConfig) {
-	providerConfig = &p
+	rootConfig.Provider = &p
 }
 
-// ProviderInit loads config file to init provider config
-func ProviderInit(confProFile string) error {
-	if len(confProFile) == 0 {
-		return perrors.Errorf("application configure(provider) file name is nil")
-	}
-	providerConfig = &ProviderConfig{}
-	fileStream, err := yaml.UnmarshalYMLConfig(confProFile, providerConfig)
-	if err != nil {
-		return perrors.Errorf("unmarshalYmlConfig error %v", perrors.WithStack(err))
-	}
+//
+//// ProviderInit loads config file to init provider config
+//func ProviderInit(confProFile string) error {
+//	if len(confProFile) == 0 {
+//		return perrors.Errorf("applicationConfig configure(provider) file name is nil")
+//	}
+//	  providerConfig = &ProviderConfig{}
+//	fileStream, err := yaml.UnmarshalYMLConfig(confProFile,   providerConfig)
+//	if err != nil {
+//		return perrors.Errorf("unmarshalYmlConfig error %v", perrors.WithStack(err))
+//	}
+//
+//	  provider  fileStream = bytes.NewBuffer(fileStream)
+//	// set method interfaceId & interfaceName
+//	for k, v := range   provider  Services {
+//		// set id for reference
+//		for _, n := range   provider  Services[k].Methods {
+//			n.InterfaceName = v.InterfaceName
+//			n.InterfaceId = k
+//		}
+//	}
+//
+//	return nil
+//}
+//
+//func configCenterRefreshProvider() error {
+//	// fresh it
+//	if   provider  ConfigCenterConfig != nil {
+//		  provider  fatherConfig =   providerConfig
+//		if err :=   provider  startConfigCenter((*  providerConfig).BaseConfig); err != nil {
+//			return perrors.Errorf("start config center error , error message is {%v}", perrors.WithStack(err))
+//		}
+//		  provider  fresh()
+//	}
+//	return nil
+//}
 
-	providerConfig.fileStream = bytes.NewBuffer(fileStream)
-	// set method interfaceId & interfaceName
-	for k, v := range providerConfig.Services {
-		// set id for reference
-		for _, n := range providerConfig.Services[k].Methods {
-			n.InterfaceName = v.InterfaceName
-			n.InterfaceId = k
-		}
-	}
+///////////////////////////////////// provider config api
+// ProviderConfigOpt is the
+type ProviderConfigOpt func(config *ProviderConfig) *ProviderConfig
 
-	return nil
+// NewEmptyProviderConfig returns ProviderConfig with default ApplicationConfig
+func NewEmptyProviderConfig() *ProviderConfig {
+	newProviderConfig := &ProviderConfig{
+		Services: make(map[string]*ServiceConfig),
+		Registry: make([]string, 8),
+	}
+	return newProviderConfig
 }
 
-func configCenterRefreshProvider() error {
-	// fresh it
-	if providerConfig.ConfigCenterConfig != nil {
-		providerConfig.fatherConfig = providerConfig
-		if err := providerConfig.startConfigCenter((*providerConfig).BaseConfig); err != nil {
-			return perrors.Errorf("start config center error , error message is {%v}", perrors.WithStack(err))
-		}
-		providerConfig.fresh()
+// NewProviderConfig returns ProviderConfig with given @opts
+func NewProviderConfig(opts ...ProviderConfigOpt) *ProviderConfig {
+	newConfig := NewEmptyProviderConfig()
+	for _, v := range opts {
+		v(newConfig)
 	}
-	return nil
+	return newConfig
+}
+
+// WithProviderServices returns ProviderConfig with given serviceNameKey @serviceName and @serviceConfig
+func WithProviderServices(serviceName string, serviceConfig *ServiceConfig) ProviderConfigOpt {
+	return func(config *ProviderConfig) *ProviderConfig {
+		config.Services[serviceName] = serviceConfig
+		return config
+	}
+}
+
+// WithProviderRegistry returns ProviderConfigOpt with given @registryKey and registry @registryConfig
+func WithProviderRegistry(registryKey ...string) ProviderConfigOpt {
+	return func(config *ProviderConfig) *ProviderConfig {
+		config.Registry = append(config.Registry, registryKey...)
+		return config
+	}
 }

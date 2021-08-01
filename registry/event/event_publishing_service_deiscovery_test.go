@@ -18,6 +18,7 @@
 package event
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"reflect"
 	"testing"
 )
@@ -33,7 +34,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/observer"
 	"dubbo.apache.org/dubbo-go/v3/common/observer/dispatcher"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
 	_ "dubbo.apache.org/dubbo-go/v3/metadata/service/local"
 	"dubbo.apache.org/dubbo-go/v3/registry"

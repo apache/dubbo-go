@@ -18,6 +18,7 @@
 package v3router
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"math/rand"
 	"time"
 )
@@ -30,7 +31,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/router/v3router/judger"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 

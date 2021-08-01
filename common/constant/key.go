@@ -53,6 +53,7 @@ const (
 	SSL_ENABLED_KEY = "ssl-enabled"
 	// PARAMS_TYPE_Key key used in pass through invoker factory, to define param type
 	PARAMS_TYPE_Key = "parameter-type-names"
+	DEFAULT_Key     = "default"
 )
 
 const (
@@ -169,19 +170,20 @@ const (
 )
 
 const (
-	RegistryConfigPrefix       = "dubbo.registries."
-	SingleRegistryConfigPrefix = "dubbo.registry."
-	ReferenceConfigPrefix      = "dubbo.reference."
-	ServiceConfigPrefix        = "dubbo.service."
-	ConfigBasePrefix           = "dubbo.base."
-	RemotePrefix               = "dubbo.remote."
-	ServiceDiscPrefix          = "dubbo.service-discovery."
-	ProtocolConfigPrefix       = "dubbo.protocols."
-	ProviderConfigPrefix       = "dubbo.provider."
-	ConsumerConfigPrefix       = "dubbo.consumer."
-	ShutdownConfigPrefix       = "dubbo.shutdown."
-	MetadataReportPrefix       = "dubbo.metadata-report."
-	RouterConfigPrefix         = "dubbo.router."
+	RegistryConfigPrefix       = "dubbo.registries"
+	ConfigCenterPrefix         = "dubbo.config-center"
+	SingleRegistryConfigPrefix = "dubbo.registry"
+	ReferenceConfigPrefix      = "dubbo.reference"
+	ServiceConfigPrefix        = "dubbo.service"
+	ConfigBasePrefix           = "dubbo.base"
+	RemotePrefix               = "dubbo.remote"
+	ServiceDiscPrefix          = "dubbo.service-discovery"
+	ProtocolConfigPrefix       = "dubbo.protocols"
+	ProviderConfigPrefix       = "dubbo.provider"
+	ConsumerConfigPrefix       = "dubbo.consumer"
+	ShutdownConfigPrefix       = "dubbo.shutdown"
+	MetadataReportPrefix       = "dubbo.metadata-report"
+	RouterConfigPrefix         = "dubbo.router"
 )
 
 const (

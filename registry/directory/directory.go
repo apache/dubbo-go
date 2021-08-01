@@ -18,6 +18,7 @@
 package directory
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"fmt"
 	"net/url"
 	"os"
@@ -36,7 +37,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	_ "dubbo.apache.org/dubbo-go/v3/config_center/configurator"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
@@ -486,8 +486,9 @@ type consumerConfigurationListener struct {
 
 func newConsumerConfigurationListener(dir *RegistryDirectory) *consumerConfigurationListener {
 	listener := &consumerConfigurationListener{directory: dir}
+	application := config.GetApplicationConfig()
 	listener.InitWith(
-		config.GetConsumerConfig().ApplicationConfig.Name+constant.CONFIGURATORS_SUFFIX,
+		application.Name+constant.CONFIGURATORS_SUFFIX,
 		listener,
 		extension.GetDefaultConfiguratorFunc(),
 	)

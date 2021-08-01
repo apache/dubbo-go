@@ -87,7 +87,7 @@ func TestCURDFileSystemServiceDiscovery(t *testing.T) {
 }
 
 func prepareData() {
-	config.GetBaseConfig().ServiceDiscoveries[testName] = &config.ServiceDiscoveryConfig{
+	config.GetRootConfig().ServiceDiscoveries[testName] = &config.ServiceDiscoveryConfig{
 		Protocol: "file",
 	}
 }

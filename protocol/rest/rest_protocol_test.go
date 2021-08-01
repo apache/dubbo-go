@@ -19,6 +19,7 @@ package rest
 
 import (
 	"context"
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"errors"
 	"fmt"
 	"strings"
@@ -34,7 +35,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	_ "dubbo.apache.org/dubbo-go/v3/common/proxy/proxy_factory"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	rest_config "dubbo.apache.org/dubbo-go/v3/protocol/rest/config"
 )
 

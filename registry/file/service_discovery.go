@@ -56,7 +56,7 @@ type fileSystemServiceDiscovery struct {
 }
 
 func newFileSystemServiceDiscovery(name string) (registry.ServiceDiscovery, error) {
-	sdc, ok := config.GetBaseConfig().GetServiceDiscoveries(name)
+	sdc, ok := config.GetRootConfig().ServiceDiscoveries[name]
 	if !ok || sdc.Protocol != constant.FILE_KEY {
 		return nil, perrors.New("could not init the instance because the config is invalid")
 	}

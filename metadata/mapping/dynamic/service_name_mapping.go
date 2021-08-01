@@ -18,6 +18,7 @@
 package dynamic
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"strconv"
 	"sync"
 	"time"
@@ -33,7 +34,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
 )

@@ -18,12 +18,12 @@
 package event
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"time"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/observer"
-	"dubbo.apache.org/dubbo-go/v3/config"
 )
 
 // ServiceConfigExportedEvent represents an service was exported

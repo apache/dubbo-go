@@ -46,21 +46,21 @@ func Test_newNacosServiceDiscovery(t *testing.T) {
 	name := "nacos1"
 	_, err := newNacosServiceDiscovery(name)
 
-	// the ServiceDiscoveryConfig not found
+	// the ShutdownConfig not found
 	assert.NotNil(t, err)
 
 	sdc := &config.ServiceDiscoveryConfig{
 		Protocol:  "nacos",
 		RemoteRef: "mock",
 	}
-	config.GetBaseConfig().ServiceDiscoveries[name] = sdc
+	config.GetRootConfig().ServiceDiscoveries[name] = sdc
 
 	_, err = newNacosServiceDiscovery(name)
 
 	// RemoteConfig not found
 	assert.NotNil(t, err)
 
-	config.GetBaseConfig().Remotes["mock"] = &config.RemoteConfig{
+	config.GetRootConfig().Remotes["mock"] = &config.RemoteConfig{
 		Address:    "console.nacos.io:80",
 		TimeoutStr: "10s",
 	}
@@ -178,12 +178,12 @@ func TestNacosServiceDiscovery_Destroy(t *testing.T) {
 }
 
 func prepareData() {
-	config.GetBaseConfig().ServiceDiscoveries[testName] = &config.ServiceDiscoveryConfig{
+	config.GetRootConfig().ServiceDiscoveries[testName] = &config.ServiceDiscoveryConfig{
 		Protocol:  "nacos",
 		RemoteRef: testName,
 	}
 
-	config.GetBaseConfig().Remotes[testName] = &config.RemoteConfig{
+	config.GetRootConfig().Remotes[testName] = &config.RemoteConfig{
 		Address:    "console.nacos.io:80",
 		TimeoutStr: "10s",
 	}

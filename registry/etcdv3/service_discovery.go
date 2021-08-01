@@ -295,12 +295,12 @@ func newEtcdV3ServiceDiscovery(name string) (registry.ServiceDiscovery, error) {
 	initLock.Lock()
 	defer initLock.Unlock()
 
-	sdc, ok := config.GetBaseConfig().GetServiceDiscoveries(name)
+	sdc, ok := config.GetRootConfig().ServiceDiscoveries[name]
 	if !ok || len(sdc.RemoteRef) == 0 {
 		return nil, perrors.New("could not init the etcd service instance because the config is invalid")
 	}
 
-	remoteConfig, ok := config.GetBaseConfig().GetRemoteConfig(sdc.RemoteRef)
+	remoteConfig, ok := config.GetRootConfig().Remotes[sdc.RemoteRef]
 	if !ok {
 		return nil, perrors.New("could not find the remote config for name: " + sdc.RemoteRef)
 	}

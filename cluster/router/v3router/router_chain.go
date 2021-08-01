@@ -18,6 +18,7 @@
 package v3router
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"encoding/json"
 	"io"
 	"strings"
@@ -32,7 +33,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/router/v3router/k8s_api"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/remoting"

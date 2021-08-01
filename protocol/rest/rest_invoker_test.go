@@ -19,6 +19,7 @@ package rest
 
 import (
 	"context"
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"testing"
 	"time"
 )
@@ -31,7 +32,6 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/rest/client"
 	"dubbo.apache.org/dubbo-go/v3/protocol/rest/client/client_impl"

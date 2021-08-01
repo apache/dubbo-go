@@ -18,9 +18,6 @@
 package config
 
 import (
-	"os"
-	"os/signal"
-	"runtime/debug"
 	"time"
 )
 
@@ -54,61 +51,61 @@ import (
 const defaultShutDownTime = time.Second * 60
 
 // nolint
-func GracefulShutdownInit() {
-	signals := make(chan os.Signal, 1)
-
-	signal.Notify(signals, ShutdownSignals...)
-
-	// retrieve ShutdownConfig for gracefulShutdownFilter
-	if filter, ok := extension.GetFilter(constant.GracefulShutdownConsumerFilterKey).(Setter); ok && GetConsumerConfig().ShutdownConfig != nil {
-		filter.Set(GracefulShutdownFilterShutdownConfig, GetConsumerConfig().ShutdownConfig)
-	}
-	if filter, ok := extension.GetFilter(constant.GracefulShutdownProviderFilterKey).(Setter); ok && GetProviderConfig().ShutdownConfig != nil {
-		filter.Set(GracefulShutdownFilterShutdownConfig, GetProviderConfig().ShutdownConfig)
-	}
-
-	go func() {
-		select {
-		case sig := <-signals:
-			logger.Infof("get signal %s, application will shutdown.", sig)
-			// gracefulShutdownOnce.Do(func() {
-			time.AfterFunc(totalTimeout(), func() {
-				logger.Warn("Shutdown gracefully timeout, application will shutdown immediately. ")
-				os.Exit(0)
-			})
-			BeforeShutdown()
-			// those signals' original behavior is exit with dump ths stack, so we try to keep the behavior
-			for _, dumpSignal := range DumpHeapShutdownSignals {
-				if sig == dumpSignal {
-					debug.WriteHeapDump(os.Stdout.Fd())
-				}
-			}
-			os.Exit(0)
-		}
-	}()
-}
+//func GracefulShutdownInit() {
+//	signals := make(chan os.Signal, 1)
+//
+//	signal.Notify(signals, ShutdownSignals...)
+//
+//	// retrieve ShutdownConfig for gracefulShutdownFilter
+//	if filter, ok := extension.GetFilter(constant.GracefulShutdownConsumerFilterKey).(config.Setter); ok && config.GetConsumerConfig().ShutdownConfig != nil {
+//		filter.Set(config.GracefulShutdownFilterShutdownConfig, config.GetConsumerConfig().ShutdownConfig)
+//	}
+//	if filter, ok := extension.GetFilter(constant.GracefulShutdownProviderFilterKey).(config.Setter); ok && config.GetProviderConfig().ShutdownConfig != nil {
+//		filter.Set(config.GracefulShutdownFilterShutdownConfig, config.GetProviderConfig().ShutdownConfig)
+//	}
+//
+//	go func() {
+//		select {
+//		case sig := <-signals:
+//			logger.Infof("get signal %s, applicationConfig will shutdown.", sig)
+//			// gracefulShutdownOnce.Do(func() {
+//			time.AfterFunc(totalTimeout(), func() {
+//				logger.Warn("Shutdown gracefully timeout, applicationConfig will shutdown immediately. ")
+//				os.Exit(0)
+//			})
+//			BeforeShutdown()
+//			// those signals' original behavior is exit with dump ths stack, so we try to keep the behavior
+//			for _, dumpSignal := range DumpHeapShutdownSignals {
+//				if sig == dumpSignal {
+//					debug.WriteHeapDump(os.Stdout.Fd())
+//				}
+//			}
+//			os.Exit(0)
+//		}
+//	}()
+//}
 
 // BeforeShutdown provides processing flow before shutdown
 func BeforeShutdown() {
 	destroyAllRegistries()
 	// waiting for a short time so that the clients have enough time to get the notification that server shutdowns
 	// The value of configuration depends on how long the clients will get notification.
-	waitAndAcceptNewRequests()
+	//waitAndAcceptNewRequests()
 
 	// reject the new request, but keeping waiting for accepting requests
-	waitForReceivingRequests()
+	//waitForReceivingRequests()
 
 	// we fetch the protocols from Consumer.References. Consumer.ProtocolConfig doesn't contains all protocol, like jsonrpc
-	consumerProtocols := getConsumerProtocols()
+	//consumerProtocols := getConsumerProtocols()
 
-	// If this application is not the provider, it will do nothing
-	destroyProviderProtocols(consumerProtocols)
+	// If this applicationConfig is not the provider, it will do nothing
+	//destroyProviderProtocols(consumerProtocols)
 
 	// reject sending the new request, and waiting for response of sending requests
-	waitForSendingRequests()
+	//waitForSendingRequests()
 
-	// If this application is not the consumer, it will do nothing
-	destroyConsumerProtocols(consumerProtocols)
+	// If this applicationConfig is not the consumer, it will do nothing
+	//destroyConsumerProtocols(consumerProtocols)
 
 	logger.Info("Graceful shutdown --- Execute the custom callbacks.")
 	customCallbacks := extension.GetAllCustomShutdownCallbacks()
@@ -118,7 +115,7 @@ func BeforeShutdown() {
 }
 
 func destroyAllRegistries() {
-	logger.Info("Graceful shutdown --- Destroy all registries. ")
+	logger.Info("Graceful shutdown --- Destroy all registriesConfig. ")
 	registryProtocol := extension.GetProtocol(constant.REGISTRY_KEY)
 	registryProtocol.Destroy()
 }
@@ -132,59 +129,59 @@ func destroyConsumerProtocols(consumerProtocols *gxset.HashSet) {
 
 // destroyProviderProtocols destroys the provider's protocol.
 // if the protocol is consumer's protocol too, we will keep it
-func destroyProviderProtocols(consumerProtocols *gxset.HashSet) {
-	logger.Info("Graceful shutdown --- Destroy provider's protocols. ")
+//func destroyProviderProtocols(consumerProtocols *gxset.HashSet) {
+//	logger.Info("Graceful shutdown --- Destroy provider's protocols. ")
+//
+//	if config.providerConfig == nil || config.providerConfig.Protocols == nil {
+//		return
+//	}
+//
+//	for _, protocol := range config.providerConfig.Protocols {
+//
+//		// the protocol is the consumer's protocol too, we can not destroy it.
+//		if consumerProtocols.Contains(protocol.Name) {
+//			continue
+//		}
+//		extension.GetProtocol(protocol.Name).Destroy()
+//	}
+//}
 
-	if providerConfig == nil || providerConfig.Protocols == nil {
-		return
-	}
-
-	for _, protocol := range providerConfig.Protocols {
-
-		// the protocol is the consumer's protocol too, we can not destroy it.
-		if consumerProtocols.Contains(protocol.Name) {
-			continue
-		}
-		extension.GetProtocol(protocol.Name).Destroy()
-	}
-}
-
-func waitAndAcceptNewRequests() {
-	logger.Info("Graceful shutdown --- Keep waiting and accept new requests for a short time. ")
-	if providerConfig == nil || providerConfig.ShutdownConfig == nil {
-		return
-	}
-
-	timeout := providerConfig.ShutdownConfig.GetStepTimeout()
-
-	// ignore this step
-	if timeout < 0 {
-		return
-	}
-	time.Sleep(timeout)
-}
+//func waitAndAcceptNewRequests() {
+//	logger.Info("Graceful shutdown --- Keep waiting and accept new requests for a short time. ")
+//	if config.providerConfig == nil || config.providerConfig.ShutdownConfig == nil {
+//		return
+//	}
+//
+//	timeout := config.providerConfig.ShutdownConfig.GetStepTimeout()
+//
+//	// ignore this step
+//	if timeout < 0 {
+//		return
+//	}
+//	time.Sleep(timeout)
+//}
 
 // for provider. It will wait for processing receiving requests
-func waitForReceivingRequests() {
-	logger.Info("Graceful shutdown --- Keep waiting until accepting requests finish or timeout. ")
-	if providerConfig == nil || providerConfig.ShutdownConfig == nil {
-		// ignore this step
-		return
-	}
-	providerConfig.ShutdownConfig.RejectRequest = true
-	waitingProcessedTimeout(providerConfig.ShutdownConfig)
-}
+//func waitForReceivingRequests() {
+//	logger.Info("Graceful shutdown --- Keep waiting until accepting requests finish or timeout. ")
+//	if config.providerConfig == nil || config.providerConfig.ShutdownConfig == nil {
+//		// ignore this step
+//		return
+//	}
+//	config.providerConfig.ShutdownConfig.RejectRequest = true
+//	waitingProcessedTimeout(config.providerConfig.ShutdownConfig)
+//}
 
 // for consumer. It will wait for the response of sending requests
-func waitForSendingRequests() {
-	logger.Info("Graceful shutdown --- Keep waiting until sending requests getting response or timeout ")
-	if consumerConfig == nil || consumerConfig.ShutdownConfig == nil {
-		// ignore this step
-		return
-	}
-	consumerConfig.ShutdownConfig.RejectRequest = true
-	waitingProcessedTimeout(consumerConfig.ShutdownConfig)
-}
+//func waitForSendingRequests() {
+//	logger.Info("Graceful shutdown --- Keep waiting until sending requests getting response or timeout ")
+//	if config.consumerConfig == nil || config.consumerConfig.ShutdownConfig == nil {
+//		// ignore this step
+//		return
+//	}
+//	config.consumerConfig.ShutdownConfig.RejectRequest = true
+//	waitingProcessedTimeout(config.consumerConfig.ShutdownConfig)
+//}
 
 func waitingProcessedTimeout(shutdownConfig *ShutdownConfig) {
 	timeout := shutdownConfig.GetStepTimeout()
@@ -199,33 +196,33 @@ func waitingProcessedTimeout(shutdownConfig *ShutdownConfig) {
 	}
 }
 
-func totalTimeout() time.Duration {
-	providerShutdown := defaultShutDownTime
-	if providerConfig != nil && providerConfig.ShutdownConfig != nil {
-		providerShutdown = providerConfig.ShutdownConfig.GetTimeout()
-	}
-
-	var consumerShutdown time.Duration
-	if consumerConfig != nil && consumerConfig.ShutdownConfig != nil {
-		consumerShutdown = consumerConfig.ShutdownConfig.GetTimeout()
-	}
-
-	timeout := providerShutdown
-	if consumerShutdown > providerShutdown {
-		timeout = consumerShutdown
-	}
-	return timeout
-}
+//func totalTimeout() time.Duration {
+//	providerShutdown := defaultShutDownTime
+//	if config.providerConfig != nil && config.providerConfig.ShutdownConfig != nil {
+//		providerShutdown = config.providerConfig.ShutdownConfig.GetTimeout()
+//	}
+//
+//	var consumerShutdown time.Duration
+//	if config.consumerConfig != nil && config.consumerConfig.ShutdownConfig != nil {
+//		consumerShutdown = config.consumerConfig.ShutdownConfig.GetTimeout()
+//	}
+//
+//	timeout := providerShutdown
+//	if consumerShutdown > providerShutdown {
+//		timeout = consumerShutdown
+//	}
+//	return timeout
+//}
 
 // we can not get the protocols from consumerConfig because some protocol don't have configuration, like jsonrpc.
-func getConsumerProtocols() *gxset.HashSet {
-	result := gxset.NewSet()
-	if consumerConfig == nil || consumerConfig.References == nil {
-		return result
-	}
-
-	for _, reference := range consumerConfig.References {
-		result.Add(reference.Protocol)
-	}
-	return result
-}
+//func getConsumerProtocols() *gxset.HashSet {
+//	result := gxset.NewSet()
+//	if config.consumerConfig == nil || config.consumerConfig.References == nil {
+//		return result
+//	}
+//
+//	for _, reference := range config.consumerConfig.References {
+//		result.Add(reference.Protocol)
+//	}
+//	return result
+//}

@@ -35,7 +35,7 @@ const (
 type ShutdownConfig struct {
 	/*
 	 * Total timeout. Even though we don't release all resources,
-	 * the application will shutdown if the costing time is over this configuration. The unit is ms.
+	 * the applicationConfig will shutdown if the costing time is over this configuration. The unit is ms.
 	 * default value is 60 * 1000 ms = 1 minutes
 	 * In general, it should be bigger than 3 * StepTimeout.
 	 */
@@ -48,7 +48,7 @@ type ShutdownConfig struct {
 	 * maybe (10 + 2*3) * 1000ms is a good choice.
 	 */
 	StepTimeout string `default:"10s" yaml:"step_timeout" json:"step.timeout,omitempty" property:"step.timeout"`
-	// when we try to shutdown the application, we will reject the new requests. In most cases, you don't need to configure this.
+	// when we try to shutdown the applicationConfig, we will reject the new requests. In most cases, you don't need to configure this.
 	RejectRequestHandler string `yaml:"reject_handler" json:"reject_handler,omitempty" property:"reject_handler"`
 	// true -> new request will be rejected.
 	RejectRequest bool
@@ -57,7 +57,7 @@ type ShutdownConfig struct {
 	RequestsFinished bool
 }
 
-// nolint
+// Prefix dubbo.shutdown
 func (config *ShutdownConfig) Prefix() string {
 	return constant.ShutdownConfigPrefix
 }

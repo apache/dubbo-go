@@ -18,14 +18,11 @@
 package routeguide
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"io"
 	"log"
 	"math/rand"
 	"time"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/config"
 )
 
 func init() {

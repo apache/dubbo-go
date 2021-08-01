@@ -18,31 +18,23 @@
 package config
 
 import (
-	"net/url"
-)
-
-import (
 	"github.com/creasty/defaults"
 	perrors "github.com/pkg/errors"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config/instance"
 )
 
-// MethodConfig is method level configuration
+// MetadataReportConfig is app level configuration
 type MetadataReportConfig struct {
-	Protocol  string            `required:"true"  yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
-	RemoteRef string            `required:"true"  yaml:"remote_ref"  json:"remote_ref,omitempty" property:"remote_ref"`
-	Params    map[string]string `yaml:"params" json:"params,omitempty" property:"params"`
-	Group     string            `yaml:"group" json:"group,omitempty" property:"group"`
-}
-
-// nolint
-func (c *MetadataReportConfig) Prefix() string {
-	return constant.MetadataReportPrefix
+	Protocol string `required:"true"  yaml:"protocol"  json:"protocol,omitempty"`
+	Address  string `required:"true" yaml:"address" json:"address"`
+	Username string `yaml:"username" json:"username,omitempty"`
+	Password string `yaml:"password" json:"password,omitempty"`
+	Timeout  string `yaml:"timeout" json:"timeout,omitempty"`
+	Group    string `yaml:"group" json:"group,omitempty"`
 }
 
 // UnmarshalYAML unmarshal the MetadataReportConfig by @unmarshal function
@@ -57,34 +49,45 @@ func (c *MetadataReportConfig) UnmarshalYAML(unmarshal func(interface{}) error) 
 	return nil
 }
 
+func (c *MetadataReportConfig) CheckConfig() error {
+	// todo check
+	defaults.MustSet(c)
+	return verify(c)
+}
+
+func (c *MetadataReportConfig) Validate() {
+
+	// todo set default application
+}
+
 // nolint
 func (c *MetadataReportConfig) ToUrl() (*common.URL, error) {
-	urlMap := make(url.Values)
+	//urlMap := make(url.Values)
 
-	if c.Params != nil {
-		for k, v := range c.Params {
-			urlMap.Set(k, v)
-		}
-	}
-
-	rc, ok := GetBaseConfig().GetRemoteConfig(c.RemoteRef)
-
-	if !ok {
-		return nil, perrors.New("Could not find out the remote ref config, name: " + c.RemoteRef)
-	}
-
-	res, err := common.NewURL(rc.Address,
-		common.WithParams(urlMap),
-		common.WithUsername(rc.Username),
-		common.WithPassword(rc.Password),
-		common.WithLocation(rc.Address),
-		common.WithProtocol(c.Protocol),
-	)
-	if err != nil || len(res.Protocol) == 0 {
-		return nil, perrors.New("Invalid MetadataReportConfig.")
-	}
-	res.SetParam("metadata", res.Protocol)
-	return res, nil
+	//if c.Params != nil {
+	//	for k, v := range c.Params {
+	//		urlMap.Set(k, v)
+	//	}
+	//}
+	//
+	//rc, ok := config.GetBaseConfig().GetRemoteConfig(c.RemoteRef)
+	//
+	//if !ok {
+	//	return nil, perrors.New("Could not find out the remote ref config, name: " + c.RemoteRef)
+	//}
+	//
+	//res, err := common.NewURL(rc.Address,
+	//	common.WithParams(urlMap),
+	//	common.WithUsername(rc.Username),
+	//	common.WithPassword(rc.Password),
+	//	common.WithLocation(rc.Address),
+	//	common.WithProtocol(c.Protocol),
+	//)
+	//if err != nil || len(res.Protocol) == 0 {
+	//	return nil, perrors.New("Invalid MetadataReportConfig.")
+	//}
+	//res.SetParam("metadata", res.Protocol)
+	return nil, nil
 }
 
 func (c *MetadataReportConfig) IsValid() bool {
@@ -92,14 +95,15 @@ func (c *MetadataReportConfig) IsValid() bool {
 }
 
 // StartMetadataReport: The entry of metadata report start
-func startMetadataReport(metadataType string, metadataReportConfig *MetadataReportConfig) error {
+func (c *MetadataReportConfig) StartMetadataReport(metadataType string, metadataReportConfig *MetadataReportConfig) error {
 	if metadataReportConfig == nil || !metadataReportConfig.IsValid() {
 		return nil
 	}
-
-	if metadataType == constant.METACONFIG_REMOTE && len(metadataReportConfig.RemoteRef) == 0 {
-		return perrors.New("MetadataConfig remote ref can not be empty.")
-	}
+	// todo
+	//
+	//if metadataType == constant.METACONFIG_REMOTE && len(metadataReportConfig.RemoteRef) == 0 {
+	//	return perrors.New("MetadataConfig remote ref can not be empty.")
+	//}
 
 	if tmpUrl, err := metadataReportConfig.ToUrl(); err == nil {
 		instance.GetMetadataReportInstance(tmpUrl)

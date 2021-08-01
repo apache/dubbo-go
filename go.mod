@@ -18,12 +18,14 @@ require (
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-co-op/gocron v0.1.1
+	github.com/go-playground/validator/v10 v10.7.0
 	github.com/go-resty/resty/v2 v2.3.0
 	github.com/golang/mock v1.4.4
 	github.com/golang/protobuf v1.5.2
 	github.com/grpc-ecosystem/grpc-opentracing v0.0.0-20180507213350-8e809c8a8645
 	github.com/hashicorp/vault/sdk v0.1.14-0.20200519221838-e0cfd64bc267
 	github.com/jinzhu/copier v0.0.0-20190625015134-976e0346caa8
+	github.com/knadh/koanf v1.1.1
 	github.com/magiconair/properties v1.8.5
 	github.com/mitchellh/mapstructure v1.4.1
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd

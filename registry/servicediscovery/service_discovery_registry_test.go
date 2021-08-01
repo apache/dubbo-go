@@ -23,7 +23,6 @@ import (
 
 import (
 	gxset "github.com/dubbogo/gost/container/set"
-	"github.com/dubbogo/gost/hash/page"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -64,7 +63,7 @@ func TestServiceDiscoveryRegistry_Register(t *testing.T) {
 	})
 	extension.SetAndInitGlobalDispatcher("mock")
 
-	config.GetBaseConfig().ServiceDiscoveries["mock"] = &config.ServiceDiscoveryConfig{
+	config.GetRootConfig().ServiceDiscoveries["mock"] = &config.ServiceDiscoveryConfig{
 		Protocol: "mock",
 	}
 	registryURL, _ := common.NewURL("service-discovery://localhost:12345",

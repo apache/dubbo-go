@@ -18,6 +18,7 @@
 package judger
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"testing"
 )
 
@@ -26,7 +27,6 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 

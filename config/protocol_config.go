@@ -18,33 +18,23 @@
 package config
 
 import (
-	"strings"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"github.com/creasty/defaults"
 )
 
 // ProtocolConfig is protocol configuration
 type ProtocolConfig struct {
-	Name string `required:"true" yaml:"name"  json:"name,omitempty" property:"name"`
-	Ip   string `required:"true" yaml:"ip"  json:"ip,omitempty" property:"ip"`
-	Port string `required:"true" yaml:"port"  json:"port,omitempty" property:"port"`
+	Name string `default:"dubbo" validate:"required" yaml:"name"  json:"name,omitempty" property:"name"`
+	Ip   string `default:"127.0.0.1" yaml:"ip"  json:"ip,omitempty" property:"ip"`
+	Port string `default:"0" yaml:"port" json:"port,omitempty" property:"port"`
 }
 
-// nolint
-func (c *ProtocolConfig) Prefix() string {
-	return constant.ProtocolConfigPrefix
+func (p *ProtocolConfig) CheckConfig() error {
+	// todo check
+	defaults.MustSet(p)
+	return verify(p)
 }
 
-func loadProtocol(protocolsIds string, protocols map[string]*ProtocolConfig) []*ProtocolConfig {
-	returnProtocols := make([]*ProtocolConfig, 0, len(protocols))
-	for _, v := range strings.Split(protocolsIds, ",") {
-		for k, protocol := range protocols {
-			if v == k {
-				returnProtocols = append(returnProtocols, protocol)
-			}
-		}
-	}
-	return returnProtocols
+func (p *ProtocolConfig) Validate() {
+
+	// todo set default application
 }

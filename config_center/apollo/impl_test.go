@@ -17,6 +17,7 @@
 package apollo
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -33,7 +34,6 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/config_center/parser"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
@@ -184,7 +184,7 @@ func TestGetConfigItem(t *testing.T) {
 }
 
 func initMockApollo(t *testing.T) *apolloConfiguration {
-	c := &config.BaseConfig{ConfigCenterConfig: &config.ConfigCenterConfig{
+	c := &config.RootConfig{ConfigCenter: &config.CenterConfig{
 		Protocol:  "apollo",
 		Address:   "106.12.25.204:8080",
 		AppID:     "testApplication_yang",
@@ -193,7 +193,7 @@ func initMockApollo(t *testing.T) *apolloConfiguration {
 	}}
 	apollo := initApollo()
 	apolloUrl := strings.ReplaceAll(apollo.URL, "http", "apollo")
-	url, err := common.NewURL(apolloUrl, common.WithParams(c.ConfigCenterConfig.GetUrlMap()))
+	url, err := common.NewURL(apolloUrl, common.WithParams(c.ConfigCenter.GetUrlMap()))
 	assert.NoError(t, err)
 	configuration, err := newApolloConfiguration(url)
 	assert.NoError(t, err)

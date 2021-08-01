@@ -19,6 +19,7 @@ package dubbo3
 
 import (
 	"context"
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"fmt"
 )
 
@@ -27,7 +28,6 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo3/internal"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"

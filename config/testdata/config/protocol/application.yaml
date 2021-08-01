@@ -1,0 +1,6 @@
+dubbo:
+  protocols:
+    dubbo:
+      name: dubbo
+      ip: 127.0.0.1
+      port: 20000

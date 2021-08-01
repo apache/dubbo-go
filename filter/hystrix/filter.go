@@ -199,7 +199,7 @@ func newFilterConsumer() filter.Filter {
 	// When first called, load the config in
 	consumerConfigOnce.Do(func() {
 		if err := initConfigConsumer(); err != nil {
-			logger.Warnf("[Hystrix Filter]Config load failed for consumer, error is: %v , will use default", err)
+			logger.Warnf("[Hystrix Filter]ShutdownConfig load failed for consumer, error is: %v , will use default", err)
 		}
 	})
 	return &Filter{COrP: true}
@@ -209,7 +209,7 @@ func newFilterConsumer() filter.Filter {
 func newFilterProvider() filter.Filter {
 	providerConfigOnce.Do(func() {
 		if err := initConfigProvider(); err != nil {
-			logger.Warnf("[Hystrix Filter]Config load failed for provider, error is: %v , will use default", err)
+			logger.Warnf("[Hystrix Filter]ShutdownConfig load failed for provider, error is: %v , will use default", err)
 		}
 	})
 	return &Filter{COrP: false}
@@ -300,7 +300,7 @@ type CommandConfigWithError struct {
 	Error                  []string `yaml:"error_whitelist"`
 }
 
-//Config:
+//ShutdownConfig:
 //- Timeout: how long to wait for command to complete, in milliseconds
 //- MaxConcurrentRequests: how many commands of the same type can run at the same time
 //- RequestVolumeThreshold: the minimum number of requests needed before a circuit can be tripped due to health

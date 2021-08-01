@@ -18,15 +18,12 @@
 package judger
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"testing"
 )
 
 import (
 	"github.com/stretchr/testify/assert"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/config"
 )
 
 func TestListDoubleMatchJudger_Judge(t *testing.T) {

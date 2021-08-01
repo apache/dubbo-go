@@ -18,6 +18,7 @@
 package memory
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"sync"
 )
 
@@ -27,7 +28,6 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
 )
 
