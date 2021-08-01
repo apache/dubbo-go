@@ -58,7 +58,7 @@ func getRule(rawRule string) (*RouterRule, error) {
 
 // parseTags use for flattening tags data to @addressToTagNames and @tagNameToAddresses
 func (t *RouterRule) parseTags() {
-	t.AddressToTagNames = make(map[string][]string, 2*len(t.Tags))
+	t.AddressToTagNames = make(map[string][]string, len(t.Tags))
 	t.TagNameToAddresses = make(map[string][]string, len(t.Tags))
 	for _, tag := range t.Tags {
 		for _, address := range tag.Addresses {
