@@ -40,12 +40,12 @@ type MethodConfig struct {
 }
 
 // nolint
-func (c *MethodConfig) Prefix() string {
-	if len(c.InterfaceId) != 0 {
-		return constant.DUBBO + "." + c.InterfaceName + "." + c.InterfaceId + "." + c.Name + "."
+func (mc *MethodConfig) Prefix() string {
+	if len(mc.InterfaceId) != 0 {
+		return constant.DUBBO + "." + mc.InterfaceName + "." + mc.InterfaceId + "." + mc.Name + "."
 	}
 
-	return constant.DUBBO + "." + c.InterfaceName + "." + c.Name + "."
+	return constant.DUBBO + "." + mc.InterfaceName + "." + mc.Name + "."
 }
 
 func initConsumerMethodConfig(rc *ReferenceConfig) error {
@@ -54,7 +54,7 @@ func initConsumerMethodConfig(rc *ReferenceConfig) error {
 		return nil
 	}
 	for _, method := range methods {
-		if err := defaults.Set(method); err != nil {
+		if err := method.check(); err != nil {
 			return err
 		}
 	}
@@ -68,12 +68,20 @@ func initProviderMethodConfig(sc *ServiceConfig) error {
 		return nil
 	}
 	for _, method := range methods {
-		if err := defaults.Set(method); err != nil {
+		if err := method.check(); err != nil {
 			return err
 		}
 	}
 	sc.Methods = methods
 	return nil
+}
+
+// check set default value and verify
+func (mc *MethodConfig) check() error {
+	if err := defaults.Set(mc); err != nil {
+		return err
+	}
+	return verify(mc)
 }
 
 // UnmarshalYAML unmarshals the MethodConfig by @unmarshal function

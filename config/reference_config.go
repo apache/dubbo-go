@@ -93,7 +93,10 @@ func initReferenceConfig(cc *ConsumerConfig) error {
 		if err := initConsumerMethodConfig(reference); err != nil {
 			return err
 		}
+		// todo root config must ?
+		reference.rootConfig = GetRootConfig()
 	}
+
 	cc.References = references
 	return nil
 }
