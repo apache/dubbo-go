@@ -46,7 +46,7 @@ type ConsumerConfig struct {
 
 	RequestTimeout string `default:"3s" yaml:"request-timeout" json:"request-timeout,omitempty" property:"request-timeout"`
 	ProxyFactory   string `default:"default" yaml:"proxy-factory" json:"proxy-factory,omitempty" property:"proxy-factory"`
-	Check          bool   `default:"true" yaml:"check" json:"check,omitempty" property:"check"`
+	Check          bool   `yaml:"check" json:"check,omitempty" property:"check"`
 
 	References map[string]*ReferenceConfig `yaml:"references" json:"references,omitempty" property:"references"`
 	// ProtocolConf interface{}                 `yaml:"protocol_conf" json:"protocol-conf,omitempty" property:"protocol-conf"`
@@ -72,6 +72,12 @@ func initConsumerConfig(rc *RootConfig) error {
 	}
 	if err := defaults.Set(consumer); err != nil {
 		return err
+	}
+	for {
+		if rc.Provider.ready.Load() {
+			consumer.Load()
+			break
+		}
 	}
 	rc.Consumer = consumer
 	return nil

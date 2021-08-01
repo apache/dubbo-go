@@ -134,8 +134,8 @@ func (rc *RootConfig) InitConfig(opts ...rootConfOption) error {
 		return err
 	}
 
-	rc.Provider.Load()
-	rc.Consumer.Load()
+	//rc.Provider.Load()
+	//rc.Consumer.Load()
 
 	return nil
 }

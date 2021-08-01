@@ -21,6 +21,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"fmt"
 	"github.com/creasty/defaults"
+	"go.uber.org/atomic"
 )
 
 import (
@@ -45,6 +46,8 @@ type ProviderConfig struct {
 	FilterConf   interface{} `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf"`
 	// ShutdownConfig *ShutdownConfig            `yaml:"shutdown_conf" json:"shutdown_conf,omitempty" property:"shutdown_conf"`
 	ConfigType map[string]string `yaml:"config_type" json:"config_type,omitempty" property:"config_type"`
+	// 是否初始化完成
+	ready *atomic.Bool
 }
 
 func (c *ProviderConfig) CheckConfig() error {
@@ -66,6 +69,7 @@ func initProviderConfig(rc *RootConfig) error {
 		return err
 	}
 	provider.Registry = translateRegistryIds(provider.Registry)
+	provider.Load()
 	rc.Provider = provider
 	return nil
 }
@@ -107,7 +111,7 @@ func (c *ProviderConfig) Load() {
 	//		}
 	//	}
 	//}
-
+	c.ready = atomic.NewBool(false)
 	for key, svs := range c.Services {
 		rpcService := GetProviderService(key)
 		if rpcService == nil {
@@ -120,6 +124,7 @@ func (c *ProviderConfig) Load() {
 			panic(fmt.Sprintf("service %s export failed! err: %#v", key, err))
 		}
 	}
+	c.ready = atomic.NewBool(true)
 }
 
 // SetProviderConfig sets provider config by @p
