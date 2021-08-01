@@ -89,11 +89,11 @@ func (RootConfig) Prefix() string {
 	return constant.DUBBO
 }
 
+// InitConfig init config
 func (rc *RootConfig) InitConfig(opts ...rootConfOption) error {
 	for _, opt := range opts {
 		opt.apply(rc)
 	}
-	//
 	if rc.ConfigCenter != nil && !rc.refresh {
 		if err := startConfigCenter(rc); err != nil {
 			return err
