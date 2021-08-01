@@ -93,11 +93,11 @@ func (rc *RootConfig) InitConfig(opts ...rootConfOption) error {
 	for _, opt := range opts {
 		opt.apply(rc)
 	}
-	// 这个里面不能panic
+	//
 	if rc.ConfigCenter != nil && !rc.refresh {
-		//监听远程配置刷新本地指定配置
-		// yaml
-		// 监听文件变化
+		if err := startConfigCenter(rc); err != nil {
+			return err
+		}
 	}
 	if err := initApplicationConfig(rc); err != nil {
 		return err
