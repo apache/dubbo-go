@@ -457,7 +457,7 @@ func newProviderConfigurationListener(overrideListeners *sync.Map) *providerConf
 	listener := &providerConfigurationListener{}
 	listener.overrideListeners = overrideListeners
 	listener.InitWith(
-		config.GetApplicationConfig().Name+constant.CONFIGURATORS_SUFFIX,
+		config.GetRootConfig().Application.Name+constant.CONFIGURATORS_SUFFIX,
 		listener,
 		extension.GetDefaultConfiguratorFunc(),
 	)

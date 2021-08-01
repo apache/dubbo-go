@@ -50,7 +50,7 @@ type ConsumerConfig struct {
 
 	References map[string]*ReferenceConfig `yaml:"references" json:"references,omitempty" property:"references"`
 	// ProtocolConf interface{}                 `yaml:"protocol_conf" json:"protocol-conf,omitempty" property:"protocol-conf"`
-	// FilterConf   interface{}                 `yaml:"filter-conf" json:"filter-conf,omitempty" property:"filter-conf"`
+	FilterConf   interface{}                 `yaml:"filter-conf" json:"filter-conf,omitempty" property:"filter-conf"`
 	//ShutdownConfig *ShutdownConfig                             `yaml:"shutdown_conf" json:"shutdown_conf,omitempty" property:"shutdown_conf"`
 	ConfigType map[string]string `yaml:"config_type" json:"config_type,omitempty" property:"config_type"`
 

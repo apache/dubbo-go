@@ -33,7 +33,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
@@ -195,11 +194,18 @@ func getExchangeClient(url *common.URL) *remoting.ExchangeClient {
 				}
 				return
 			}
+
 			// new ExchangeClient
+			//exchangeClientTmp = remoting.NewExchangeClient(url, getty.NewClient(getty.Options{
+			//	ConnectTimeout: config.GetRootConfig().ConfigCenter.ConnectTimeout,
+			//	RequestTimeout: config.GetConsumerConfig().RequestTimeout,
+			//}), config.GetConsumerConfig().ConnectTimeout, false)
+
+			// todo set by config
 			exchangeClientTmp = remoting.NewExchangeClient(url, getty.NewClient(getty.Options{
-				ConnectTimeout: config.GetConsumerConfig().ConnectTimeout,
-				RequestTimeout: config.GetConsumerConfig().RequestTimeout,
-			}), config.GetConsumerConfig().ConnectTimeout, false)
+				ConnectTimeout: 3*time.Second,
+				RequestTimeout: 3*time.Second,
+			}), 3*time.Second, false)
 			// input store
 			if exchangeClientTmp != nil {
 				exchangeClientMap.Store(url.Location, exchangeClientTmp)
