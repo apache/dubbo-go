@@ -43,10 +43,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 )
 
-// ////////////////////////////////////////////
-// Request
-// ////////////////////////////////////////////
-
 // Request is HTTP protocol request
 type Request struct {
 	ID       int64

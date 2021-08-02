@@ -122,9 +122,9 @@ func (r *BaseRegistry) Destroy() {
 	// first step close registry's all listeners
 	r.facadeBasedRegistry.CloseListener()
 	// then close r.done to notify other program who listen to it
-	close(r.done)
+	close(r.Done())
 	// wait waitgroup done (wait listeners outside close over)
-	r.wg.Wait()
+	r.WaitGroup().Wait()
 
 	// close registry client
 	r.closeRegisters()
@@ -474,7 +474,7 @@ func (r *BaseRegistry) closeRegisters() {
 // IsAvailable judge to is registry not closed by chan r.done
 func (r *BaseRegistry) IsAvailable() bool {
 	select {
-	case <-r.done:
+	case <-r.Done():
 		return false
 	default:
 		return true
