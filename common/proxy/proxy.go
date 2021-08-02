@@ -110,7 +110,7 @@ func (p *Proxy) GetInvoker() protocol.Invoker {
 }
 
 // DefaultProxyImplementFunc the default function for proxy impl
-func DefaultProxyImplementFunc(p *Proxy, v interface{}) {
+func DefaultProxyImplementFunc(p *Proxy, v common.RPCService) {
 	// check parameters, incoming interface must be a elem's pointer.
 	valueOf := reflect.ValueOf(v)
 	logger.Debugf("[Implement] reflect.TypeOf: %s", valueOf.String())
