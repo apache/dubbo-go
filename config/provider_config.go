@@ -40,7 +40,7 @@ type ProviderConfig struct {
 	// Services services
 	Services map[string]*ServiceConfig `yaml:"services" json:"services,omitempty" property:"services"`
 
-	ProxyFactory string `default:"default" yaml:"proxy-factory" json:"proxy-factory,omitempty" property:"proxy-factory"`
+	ProxyFactory string `default:"default" yaml:"proxy" json:"proxy,omitempty" property:"proxy"`
 	// Protocols      map[string]*ProtocolConfig `yaml:"protocols" json:"protocols,omitempty" property:"protocols"`
 	ProtocolConf interface{} `yaml:"protocol_conf" json:"protocol_conf,omitempty" property:"protocol_conf"`
 	FilterConf   interface{} `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf"`

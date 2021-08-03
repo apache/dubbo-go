@@ -105,16 +105,6 @@ func (rc *ReferenceConfig) check() error {
 	rc.rootConfig = rootConfig
 	return verify(rc)
 }
-func (rc *ReferenceConfig) CheckConfig() error {
-	// todo check
-	defaults.MustSet(rc)
-	return verify(rc)
-}
-
-func (rc *ReferenceConfig) Validate(rootConfig *RootConfig) {
-	rc.rootConfig = rootConfig
-	// todo set default application
-}
 
 // Refer ...
 func (rc *ReferenceConfig) Refer(_ interface{}) {
