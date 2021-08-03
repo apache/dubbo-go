@@ -31,6 +31,7 @@ import (
 import (
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
+	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/filter"
 	"github.com/apache/dubbo-go/protocol"
 	invocation2 "github.com/apache/dubbo-go/protocol/invocation"
@@ -59,7 +60,7 @@ func (ef *GenericFilter) Invoke(ctx context.Context, invoker protocol.Invoker, i
 		if oldParams, ok := oldArguments[2].([]interface{}); ok {
 			newParams := make([]hessian.Object, 0, len(oldParams))
 			for i := range oldParams {
-				newParams = append(newParams, hessian.Object(struct2MapAll(oldParams[i])))
+				newParams = append(newParams, hessian.Object(objToMap(oldParams[i])))
 			}
 			newArguments := []interface{}{
 				oldArguments[0],
@@ -85,44 +86,70 @@ func GetGenericFilter() filter.Filter {
 	return &GenericFilter{}
 }
 
-func struct2MapAll(obj interface{}) interface{} {
+func objToMap(obj interface{}) interface{} {
 	if obj == nil {
 		return obj
 	}
+
 	t := reflect.TypeOf(obj)
 	v := reflect.ValueOf(obj)
-	if t.Kind() == reflect.Struct {
+
+	// if obj is a POJO, get the struct from the pointer (if it is a pointer)
+	pojo, isPojo := obj.(hessian.POJO)
+	if isPojo {
+		for t.Kind() == reflect.Ptr {
+			t = t.Elem()
+			v = v.Elem()
+		}
+	}
+
+	switch t.Kind() {
+	case reflect.Struct:
 		result := make(map[string]interface{}, t.NumField())
+		if isPojo {
+			result["class"] = pojo.JavaClassName()
+		}
 		for i := 0; i < t.NumField(); i++ {
 			field := t.Field(i)
 			value := v.Field(i)
 			kind := value.Kind()
-			if kind == reflect.Struct || kind == reflect.Slice || kind == reflect.Map {
-				if value.CanInterface() {
-					tmp := value.Interface()
-					if _, ok := tmp.(time.Time); ok {
-						setInMap(result, field, tmp)
-						continue
-					}
-					setInMap(result, field, struct2MapAll(tmp))
+			if !value.CanInterface() {
+				logger.Debugf("objToMap for %v is skipped because it couldn't be converted to interface", field)
+				continue
+			}
+			valueIface := value.Interface()
+			switch kind {
+			case reflect.Ptr:
+				if value.IsNil() {
+					setInMap(result, field, nil)
+					continue
 				}
-			} else {
-				if value.CanInterface() {
-					setInMap(result, field, value.Interface())
+				setInMap(result, field, objToMap(valueIface))
+			case reflect.Struct, reflect.Slice, reflect.Map:
+				if isPrimitive(valueIface) {
+					logger.Warnf("\"%s\" is primitive. The application may crash if it's transferred between "+
+						"systems implemented by different languages, e.g. dubbo-go <-> dubbo-java. We recommend "+
+						"you represent the object by basic types, like string.", value.Type())
+					setInMap(result, field, valueIface)
+					continue
 				}
+
+				setInMap(result, field, objToMap(valueIface))
+			default:
+				setInMap(result, field, valueIface)
 			}
 		}
 		return result
-	} else if t.Kind() == reflect.Slice {
+	case reflect.Array, reflect.Slice:
 		value := reflect.ValueOf(obj)
-		var newTemps = make([]interface{}, 0, value.Len())
+		newTemps := make([]interface{}, 0, value.Len())
 		for i := 0; i < value.Len(); i++ {
-			newTemp := struct2MapAll(value.Index(i).Interface())
+			newTemp := objToMap(value.Index(i).Interface())
 			newTemps = append(newTemps, newTemp)
 		}
 		return newTemps
-	} else if t.Kind() == reflect.Map {
-		var newTempMap = make(map[interface{}]interface{}, v.Len())
+	case reflect.Map:
+		newTempMap := make(map[interface{}]interface{}, v.Len())
 		iter := v.MapRange()
 		for iter.Next() {
 			if !iter.Value().CanInterface() {
@@ -130,15 +157,18 @@ func struct2MapAll(obj interface{}) interface{} {
 			}
 			key := iter.Key()
 			mapV := iter.Value().Interface()
-			newTempMap[convertMapKey(key)] = struct2MapAll(mapV)
+			newTempMap[mapKey(key)] = objToMap(mapV)
 		}
 		return newTempMap
-	} else {
+	case reflect.Ptr:
+		return objToMap(v.Elem().Interface())
+	default:
 		return obj
 	}
 }
 
-func convertMapKey(key reflect.Value) interface{} {
+// mapKey converts the map key to interface type
+func mapKey(key reflect.Value) interface{} {
 	switch key.Kind() {
 	case reflect.Bool, reflect.Int, reflect.Int8,
 		reflect.Int16, reflect.Int32, reflect.Int64,
@@ -147,21 +177,34 @@ func convertMapKey(key reflect.Value) interface{} {
 		reflect.Float64, reflect.String:
 		return key.Interface()
 	default:
-		return key.String()
+		name := key.String()
+		if name == "class" {
+			panic(`"class" is a reserved keyword`)
+		}
+		return name
 	}
 }
 
+// setInMap sets the struct into the map using the tag or the name of the struct as the key
 func setInMap(m map[string]interface{}, structField reflect.StructField, value interface{}) (result map[string]interface{}) {
 	result = m
 	if tagName := structField.Tag.Get("m"); tagName == "" {
-		result[headerAtoa(structField.Name)] = value
+		result[toUnexport(structField.Name)] = value
 	} else {
 		result[tagName] = value
 	}
 	return
 }
 
-func headerAtoa(a string) (b string) {
-	b = strings.ToLower(a[:1]) + a[1:]
-	return
+// toUnexport is to lower the first letter
+func toUnexport(a string) string {
+	return strings.ToLower(a[:1]) + a[1:]
+}
+
+// isPrimitive determines if the object is primitive
+func isPrimitive(obj interface{}) bool {
+	if _, ok := obj.(time.Time); ok {
+		return true
+	}
+	return false
 }
