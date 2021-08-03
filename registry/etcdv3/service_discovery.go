@@ -63,7 +63,8 @@ type etcdV3ServiceDiscovery struct {
 	// services is when register or update will add service name
 	services *gxset.HashSet
 	// child listener
-	childListenerMap map[string]*etcdv3.EventListener
+	childListenerMap    map[string]*etcdv3.EventListener
+	instanceListenerMap map[string]*gxset.HashSet
 }
 
 // basic information of this instance
@@ -215,28 +216,16 @@ func (e *etcdV3ServiceDiscovery) GetRequestInstances(serviceNames []string, offs
 // see addServiceInstancesChangedListener in Java
 func (e *etcdV3ServiceDiscovery) AddListener(listener registry.ServiceInstancesChangedListener) error {
 	for _, t := range listener.GetServiceNames().Values() {
-		serviceName := t.(string)
-		err := e.registerSreviceWatcher(serviceName)
+		err2 := e.registerServiceInstanceListener(t.(string), listener)
+		if err2 != nil {
+			return err2
+		}
+
+		err := e.registerServiceWatcher(t.(string))
 		if err != nil {
 			return err
 		}
 	}
-	return nil
-}
-
-// DispatchEventByServiceName dispatches the ServiceInstancesChangedEvent to service instance whose name is serviceName
-func (e *etcdV3ServiceDiscovery) DispatchEventByServiceName(serviceName string) error {
-	return e.DispatchEventForInstances(serviceName, e.GetInstances(serviceName))
-}
-
-// DispatchEventForInstances dispatches the ServiceInstancesChangedEvent to target instances
-func (e *etcdV3ServiceDiscovery) DispatchEventForInstances(serviceName string, instances []registry.ServiceInstance) error {
-	return e.DispatchEvent(registry.NewServiceInstancesChangedEvent(serviceName, instances))
-}
-
-// DispatchEvent dispatches the event
-func (e *etcdV3ServiceDiscovery) DispatchEvent(event *registry.ServiceInstancesChangedEvent) error {
-	extension.GetGlobalDispatcher().Dispatch(event)
 	return nil
 }
 
@@ -254,8 +243,21 @@ func toParentPath(serviceName string) string {
 	return ROOT + constant.PATH_SEPARATOR + serviceName
 }
 
+// register service instance listener, instance listener and watcher are matched through serviceName
+func (e *etcdV3ServiceDiscovery) registerServiceInstanceListener(serviceName string, listener registry.ServiceInstancesChangedListener) error {
+	initLock.Lock()
+	defer initLock.Unlock()
+
+	set, found := e.instanceListenerMap[serviceName]
+	if !found {
+		set = gxset.NewSet(listener)
+	}
+	set.Add(listener)
+	return nil
+}
+
 // register service watcher
-func (e *etcdV3ServiceDiscovery) registerSreviceWatcher(serviceName string) error {
+func (e *etcdV3ServiceDiscovery) registerServiceWatcher(serviceName string) error {
 	initLock.Lock()
 	defer initLock.Unlock()
 
@@ -282,7 +284,15 @@ func (e *etcdV3ServiceDiscovery) DataChange(eventType remoting.Event) bool {
 			instance.ServiceName = ""
 		}
 
-		if err := e.DispatchEventByServiceName(instance.ServiceName); err != nil {
+		// notify instance listener instance change
+		name := instance.ServiceName // TODO, seems like ServiceName is not exactly the app name?
+		instances := e.GetInstances(name)
+		for _, lis := range e.instanceListenerMap[instance.ServiceName].Values() {
+			var instanceLis registry.ServiceInstancesChangedListener
+			instanceLis = lis.(registry.ServiceInstancesChangedListener)
+			err = instanceLis.OnEvent(registry.NewServiceInstancesChangedEvent(name, instances))
+		}
+		if err != nil {
 			return false
 		}
 	}
@@ -322,5 +332,11 @@ func newEtcdV3ServiceDiscovery(name string) (registry.ServiceDiscovery, error) {
 
 	descriptor := fmt.Sprintf("etcd-service-discovery[%s]", remoteConfig.Address)
 
-	return &etcdV3ServiceDiscovery{descriptor, client, nil, gxset.NewSet(), make(map[string]*etcdv3.EventListener)}, nil
+	return &etcdV3ServiceDiscovery{
+		descriptor,
+		client,
+		nil,
+		gxset.NewSet(),
+		make(map[string]*etcdv3.EventListener),
+		make(map[string]*gxset.HashSet)}, nil
 }

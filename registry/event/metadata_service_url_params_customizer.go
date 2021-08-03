@@ -18,6 +18,7 @@
 package event
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/metadata/service/local"
 	"encoding/json"
 )
 
@@ -54,7 +55,7 @@ func (m *metadataServiceURLParamsMetadataCustomizer) GetPriority() int {
 }
 
 func (m *metadataServiceURLParamsMetadataCustomizer) Customize(instance registry.ServiceInstance) {
-	ms, err := getMetadataService()
+	ms, err := local.GetLocalMetadataService()
 	if err != nil {
 		logger.Errorf("could not find the metadata service", err)
 		return

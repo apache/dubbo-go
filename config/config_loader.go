@@ -325,7 +325,7 @@ func createInstance(url *common.URL) (registry.ServiceInstance, error) {
 	metadata := make(map[string]string, 8)
 	metadata[constant.METADATA_STORAGE_TYPE_PROPERTY_NAME] = appConfig.MetadataType
 
-	return &registry.DefaultServiceInstance{
+	instance := &registry.DefaultServiceInstance{
 		ServiceName: appConfig.Name,
 		Host:        host,
 		Port:        int(port),
@@ -333,7 +333,13 @@ func createInstance(url *common.URL) (registry.ServiceInstance, error) {
 		Enable:      true,
 		Healthy:     true,
 		Metadata:    metadata,
-	}, nil
+	}
+
+	for _, cus := range extension.GetCustomizers() {
+		cus.Customize(instance)
+	}
+
+	return instance, nil
 }
 
 // selectMetadataServiceExportedURL get already be exported url

@@ -18,6 +18,7 @@
 package event
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/metadata/service/local"
 	"encoding/json"
 	"strconv"
 )
@@ -44,7 +45,7 @@ func (p *ProtocolPortsMetadataCustomizer) GetPriority() int {
 
 // Customize put the the string like [{"protocol": "dubbo", "port": 123}] into instance's metadata
 func (p *ProtocolPortsMetadataCustomizer) Customize(instance registry.ServiceInstance) {
-	metadataService, err := getMetadataService()
+	metadataService, err := local.GetLocalMetadataService()
 	if err != nil {
 		logger.Errorf("Could not init the MetadataService", err)
 		return

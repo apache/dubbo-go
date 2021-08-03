@@ -272,6 +272,7 @@ func (zksd *zookeeperServiceDiscovery) GetRequestInstances(serviceNames []string
 func (zksd *zookeeperServiceDiscovery) AddListener(listener registry.ServiceInstancesChangedListener) error {
 	zksd.listenLock.Lock()
 	defer zksd.listenLock.Unlock()
+
 	for _, t := range listener.GetServiceNames().Values() {
 		serviceName, ok := t.(string)
 		if !ok {
@@ -281,21 +282,6 @@ func (zksd *zookeeperServiceDiscovery) AddListener(listener registry.ServiceInst
 		zksd.listenNames = append(zksd.listenNames, serviceName)
 		zksd.csd.ListenServiceEvent(serviceName, zksd)
 	}
-	return nil
-}
-
-func (zksd *zookeeperServiceDiscovery) DispatchEventByServiceName(serviceName string) error {
-	return zksd.DispatchEventForInstances(serviceName, zksd.GetInstances(serviceName))
-}
-
-// DispatchEventForInstances dispatch ServiceInstancesChangedEvent
-func (zksd *zookeeperServiceDiscovery) DispatchEventForInstances(serviceName string, instances []registry.ServiceInstance) error {
-	return zksd.DispatchEvent(registry.NewServiceInstancesChangedEvent(serviceName, instances))
-}
-
-// nolint
-func (zksd *zookeeperServiceDiscovery) DispatchEvent(event *registry.ServiceInstancesChangedEvent) error {
-	extension.GetGlobalDispatcher().Dispatch(event)
 	return nil
 }
 

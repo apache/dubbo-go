@@ -253,22 +253,6 @@ func (n *nacosServiceDiscovery) AddListener(listener registry.ServiceInstancesCh
 	return nil
 }
 
-// DispatchEventByServiceName will dispatch the event for the service with the service name
-func (n *nacosServiceDiscovery) DispatchEventByServiceName(serviceName string) error {
-	return n.DispatchEventForInstances(serviceName, n.GetInstances(serviceName))
-}
-
-// DispatchEventForInstances will dispatch the event to those instances
-func (n *nacosServiceDiscovery) DispatchEventForInstances(serviceName string, instances []registry.ServiceInstance) error {
-	return n.DispatchEvent(registry.NewServiceInstancesChangedEvent(serviceName, instances))
-}
-
-// DispatchEvent will dispatch the event
-func (n *nacosServiceDiscovery) DispatchEvent(event *registry.ServiceInstancesChangedEvent) error {
-	extension.GetGlobalDispatcher().Dispatch(event)
-	return nil
-}
-
 // toRegisterInstance convert the ServiceInstance to RegisterInstanceParam
 // the Ephemeral will be true
 func (n *nacosServiceDiscovery) toRegisterInstance(instance registry.ServiceInstance) vo.RegisterInstanceParam {
