@@ -133,10 +133,6 @@ func (rc *RootConfig) InitConfig(opts ...rootConfOption) error {
 	if err := initConsumerConfig(rc); err != nil {
 		return err
 	}
-
-	//rc.Provider.Load()
-	//rc.Consumer.Load()
-
 	return nil
 }
 
