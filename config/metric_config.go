@@ -25,6 +25,10 @@ type MetricConfig struct {
 	HistogramBucket []float64 `yaml:"histogram_bucket" json:"histogram_bucket,omitempty"`
 }
 
+func initMetricConfig(rc *RootConfig) error {
+	return nil
+}
+
 // find the histogram bucket
 // if it's empty, the default value will be return
 func (mc *MetricConfig) GetHistogramBucket() []float64 {

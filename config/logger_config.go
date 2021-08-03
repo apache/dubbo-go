@@ -17,33 +17,10 @@
 
 package config
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/cluster/router/chain"
-	"dubbo.apache.org/dubbo-go/v3/common/yaml"
-)
-
-type RouterConfig struct {
+type LoggerConfig struct {
 }
 
-func initRouterConfig(rc *RootConfig) error {
-	return nil
-}
+func initLoggerConfig(rc *RootConfig) error {
 
-// LocalRouterRules defines the local router config structure
-type LocalRouterRules struct {
-	RouterRules []interface{} `yaml:"routerRules"`
-}
-
-// RouterInit Set config file to init router config
-func RouterInit(vsConfigPath, drConfigPath string) error {
-	vsBytes, err := yaml.LoadYMLConfig(vsConfigPath)
-	if err != nil {
-		return err
-	}
-	drBytes, err := yaml.LoadYMLConfig(drConfigPath)
-	if err != nil {
-		return err
-	}
-	chain.SetVSAndDRConfigByte(vsBytes, drBytes)
 	return nil
 }

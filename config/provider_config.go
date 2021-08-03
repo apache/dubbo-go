@@ -21,6 +21,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"fmt"
 	"github.com/creasty/defaults"
+	"go.uber.org/atomic"
 )
 
 import (
@@ -39,18 +40,38 @@ type ProviderConfig struct {
 	// Services services
 	Services map[string]*ServiceConfig `yaml:"services" json:"services,omitempty" property:"services"`
 
-	ProxyFactory   string                     `default:"default" yaml:"proxy-factory" json:"proxy-factory,omitempty" property:"proxy-factory"`
-	Protocols      map[string]*ProtocolConfig `yaml:"protocols" json:"protocols,omitempty" property:"protocols"`
-	ProtocolConf   interface{}                `yaml:"protocol_conf" json:"protocol_conf,omitempty" property:"protocol_conf"`
-	FilterConf     interface{}                `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf"`
-	ShutdownConfig *ShutdownConfig            `yaml:"shutdown_conf" json:"shutdown_conf,omitempty" property:"shutdown_conf"`
-	ConfigType     map[string]string          `yaml:"config_type" json:"config_type,omitempty" property:"config_type"`
+	ProxyFactory string `default:"default" yaml:"proxy-factory" json:"proxy-factory,omitempty" property:"proxy-factory"`
+	// Protocols      map[string]*ProtocolConfig `yaml:"protocols" json:"protocols,omitempty" property:"protocols"`
+	ProtocolConf interface{} `yaml:"protocol_conf" json:"protocol_conf,omitempty" property:"protocol_conf"`
+	FilterConf   interface{} `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf"`
+	// ShutdownConfig *ShutdownConfig            `yaml:"shutdown_conf" json:"shutdown_conf,omitempty" property:"shutdown_conf"`
+	ConfigType map[string]string `yaml:"config_type" json:"config_type,omitempty" property:"config_type"`
+	// 是否初始化完成
+	ready *atomic.Bool
 }
 
 func (c *ProviderConfig) CheckConfig() error {
 	// todo check
 	defaults.MustSet(c)
 	return verify(c)
+}
+
+func initProviderConfig(rc *RootConfig) error {
+	provider := rc.Provider
+	if provider == nil {
+		provider = new(ProviderConfig)
+	}
+
+	if err := initServiceConfig(provider); err != nil {
+		return err
+	}
+	if err := defaults.Set(provider); err != nil {
+		return err
+	}
+	provider.Registry = translateRegistryIds(provider.Registry)
+	provider.Load()
+	rc.Provider = provider
+	return nil
 }
 
 func (c *ProviderConfig) Validate(r *RootConfig) {
@@ -66,13 +87,13 @@ func (c *ProviderConfig) Validate(r *RootConfig) {
 }
 
 // UnmarshalYAML unmarshals the ProviderConfig by @unmarshal function
-func (c *ProviderConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	if err := defaults.Set(c); err != nil {
-		return err
-	}
-	type plain ProviderConfig
-	return unmarshal((*plain)(c))
-}
+//func (c *ProviderConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
+//	if err := defaults.Set(c); err != nil {
+//		return err
+//	}
+//	type plain ProviderConfig
+//	return unmarshal((*plain)(c))
+//}
 
 // Prefix dubbo.provider
 func (c *ProviderConfig) Prefix() string {
@@ -90,7 +111,7 @@ func (c *ProviderConfig) Load() {
 	//		}
 	//	}
 	//}
-
+	c.ready = atomic.NewBool(false)
 	for key, svs := range c.Services {
 		rpcService := GetProviderService(key)
 		if rpcService == nil {
@@ -103,6 +124,7 @@ func (c *ProviderConfig) Load() {
 			panic(fmt.Sprintf("service %s export failed! err: %#v", key, err))
 		}
 	}
+	c.ready = atomic.NewBool(true)
 }
 
 // SetProviderConfig sets provider config by @p

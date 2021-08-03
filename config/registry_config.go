@@ -25,6 +25,7 @@ import (
 
 import (
 	"github.com/creasty/defaults"
+	"github.com/pkg/errors"
 )
 
 import (
@@ -54,29 +55,31 @@ type RegistryConfig struct {
 	Params map[string]string `yaml:"params" json:"params,omitempty" property:"params"`
 }
 
-func (c *RegistryConfig) CheckConfig() error {
-	// todo check
-	defaults.MustSet(c)
+// Prefix dubbo.registriesConfig
+func (RegistryConfig) Prefix() string {
+	return constant.RegistryConfigPrefix
+}
+
+func (c *RegistryConfig) check() error {
+	if err := defaults.Set(c); err != nil {
+		return err
+	}
 	c.translateRegistryAddress()
 	return verify(c)
 }
 
-func (c *RegistryConfig) Validate() {
-	// todo set default application
-}
-
-// UnmarshalYAML unmarshal the RegistryConfig by @unmarshal function
-func (c *RegistryConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	if err := defaults.Set(c); err != nil {
-		return err
+func initRegistriesConfig(rc *RootConfig) error {
+	registries := rc.Registries
+	if len(registries) <= 0 {
+		return errors.New("dubbo.registries must set")
 	}
-	type plain RegistryConfig
-	return unmarshal((*plain)(c))
-}
-
-// Prefix dubbo.registriesConfig
-func (RegistryConfig) Prefix() string {
-	return constant.RegistryConfigPrefix
+	for _, registry := range registries {
+		if err := registry.check(); err != nil {
+			return err
+		}
+	}
+	rc.Registries = registries
+	return nil
 }
 
 func (c *RegistryConfig) getUrlMap(roleType common.RoleType) url.Values {

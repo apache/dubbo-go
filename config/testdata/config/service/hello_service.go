@@ -9,10 +9,6 @@ type HelloService struct {
 	Say func(ctx context.Context, req []interface{}) error
 }
 
-func (HelloService) Name() string {
-	return "helloService"
-}
-
 func (HelloService) Reference() string {
-	return "org.github.dubbo.HelloService"
+	return "helloService"
 }

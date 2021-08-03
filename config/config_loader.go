@@ -50,35 +50,18 @@ var (
 	maxWait = 3
 )
 
-func Load(opts ...LoaderConfOption) {
-	// pares CommandLine
-	//parseCommandLine()
+func Load(opts ...LoaderConfOption) error {
 	// conf
 	conf := NewLoaderConf(opts...)
-	for _, opt := range opts {
-		opt.apply(conf)
-	}
-
 	// init config
-	rootConfig = NewRootConfig()
+	rootConfig = new(RootConfig)
 	viper := getKoanf(conf)
-
-	if err := viper.UnmarshalWithConf(rootConfig.Prefix(), &rootConfig, koanf.UnmarshalConf{Tag: "yaml"}); err != nil {
-		panic(err)
+	if err := viper.UnmarshalWithConf(rootConfig.Prefix(),
+		rootConfig, koanf.UnmarshalConf{Tag: "yaml"}); err != nil {
+		return err
 	}
-	if rootConfig.ConfigCenter != nil {
-		//监听远程配置刷新本地指定配置
-	}
-	if err := rootConfig.CheckConfig(); err != nil {
-		panic(err)
-	}
-	rootConfig.Validate()
-	// root config init finish
-
-	// todo why this line
-	//extension.SetAndInitGlobalDispatcher(rootConfig.EventDispatcherType)
-	rootConfig.Provider.Load()
-	rootConfig.Consumer.Load()
+	rootConfig.refresh = false
+	return rootConfig.InitConfig()
 }
 
 func check() error {
@@ -468,7 +451,7 @@ func getKoanf(conf *loaderConf) *koanf.Koanf {
 //	}
 //}
 //
-//// Load Dubbo Init
+//// Load Dubbo InitConfig
 //func Load() {
 //	options := DefaultInit()
 //	LoadWithOptions(options...)

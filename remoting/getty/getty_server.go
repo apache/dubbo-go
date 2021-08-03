@@ -45,11 +45,11 @@ var srvConf *ServerConfig
 func initServer(protocol string) {
 	// load clientconfig from provider_config
 	// default use dubbo
-	providerConfig := config.GetProviderConfig()
-	if providerConfig.ApplicationConfig == nil {
-		return
-	}
-	protocolConf := providerConfig.ProtocolConf
+	//providerConfig := config.GetProviderConfig()
+	//if providerConfig.ApplicationConfig == nil {
+	//	return
+	//}
+	protocolConf := config.GetRootConfig().Provider.ProtocolConf
 	defaultServerConfig := GetDefaultServerConfig()
 	if protocolConf == nil {
 		logger.Info("protocol_conf default use dubbo config")

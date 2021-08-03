@@ -34,3 +34,7 @@ type ServiceDiscoveryConfig struct {
 func (ServiceDiscoveryConfig) Prefix() string {
 	return constant.ServiceDiscPrefix
 }
+
+func initServiceDiscoveryConfig(rc *RootConfig) error {
+	return nil
+}

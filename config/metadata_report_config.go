@@ -37,15 +37,7 @@ type MetadataReportConfig struct {
 	Group    string `yaml:"group" json:"group,omitempty"`
 }
 
-// UnmarshalYAML unmarshal the MetadataReportConfig by @unmarshal function
-func (c *MetadataReportConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	if err := defaults.Set(c); err != nil {
-		return perrors.WithStack(err)
-	}
-	type plain MetadataReportConfig
-	if err := unmarshal((*plain)(c)); err != nil {
-		return perrors.WithStack(err)
-	}
+func initMetadataReportConfig(rc *RootConfig) error {
 	return nil
 }
 

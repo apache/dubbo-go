@@ -18,6 +18,7 @@
 package config
 
 import (
+	"gopkg.in/yaml.v2"
 	"net/url"
 	"strings"
 )
@@ -44,18 +45,24 @@ import (
 //
 // CenterConfig has currently supported Zookeeper, Nacos, Etcd, Consul, Apollo
 type CenterConfig struct {
-	Protocol      string `yaml:"protocol"  json:"protocol,omitempty"`
-	Address       string `yaml:"address" json:"address,omitempty"`
-	Cluster       string `yaml:"cluster" json:"cluster,omitempty"`
-	Group         string `default:"dubbo" yaml:"group" json:"group,omitempty"`
-	Username      string `yaml:"username" json:"username,omitempty"`
-	Password      string `yaml:"password" json:"password,omitempty"`
-	LogDir        string `yaml:"log-dir" json:"log-dir,omitempty"`
-	ConfigFile    string `default:"dubbo.properties" yaml:"config-file"  json:"config-file,omitempty"`
-	Namespace     string `default:"dubbo" yaml:"namespace"  json:"namespace,omitempty"`
+	Protocol string `yaml:"protocol"  json:"protocol,omitempty"`
+	Address  string `yaml:"address" json:"address,omitempty"`
+	DataId   string `yaml:"data-id" json:"data-id,omitempty"`
+	// Deprecated
+	Cluster  string `yaml:"cluster" json:"cluster,omitempty"`
+	Group    string `default:"dubbo" yaml:"group" json:"group,omitempty"`
+	Username string `yaml:"username" json:"username,omitempty"`
+	Password string `yaml:"password" json:"password,omitempty"`
+	// Deprecated
+	LogDir string `yaml:"log-dir" json:"log-dir,omitempty"`
+	// Deprecated
+	ConfigFile string `default:"dubbo.properties" yaml:"config-file"  json:"config-file,omitempty"`
+	Namespace  string `default:"dubbo" yaml:"namespace"  json:"namespace,omitempty"`
+	// Deprecated
 	AppConfigFile string `default:"dubbo.properties" yaml:"app-config-file"  json:"app-config-file,omitempty"`
-	AppID         string `default:"dubbo" yaml:"app-id"  json:"app-id,omitempty"`
-	Timeout       string `default:"10s" yaml:"timeout"  json:"timeout,omitempty"`
+	// Deprecated
+	AppID   string `default:"dubbo" yaml:"app-id"  json:"app-id,omitempty"`
+	Timeout string `default:"10s" yaml:"timeout"  json:"timeout,omitempty"`
 	// Deprecated
 	RemoteRef string            `required:"false"  yaml:"remote-ref"  json:"remote-ref,omitempty"`
 	Params    map[string]string `yaml:"params"  json:"parameters,omitempty"`
@@ -139,32 +146,41 @@ func (c *CenterConfig) toURL() (*common.URL, error) {
 
 // startConfigCenter will start the config center.
 // it will prepare the environment
-func (c *CenterConfig) startConfigCenter() error {
-	newUrl, err := c.toURL()
+func startConfigCenter(rc *RootConfig) error {
+	cc := rc.ConfigCenter
+
+	newUrl, err := cc.toURL()
 	if err != nil {
 		return err
 	}
-	if err = c.prepareEnvironment(newUrl); err != nil {
+	strConf, err := cc.prepareEnvironment(newUrl)
+	if err != nil {
 		return errors.WithMessagef(err, "start config center error!")
 	}
-	// c.fresh()
-	return nil
+
+	if err = yaml.Unmarshal([]byte(strConf), rc); err != nil {
+		return err
+	}
+	rc.refresh = false
+	rc.ConfigCenter = nil
+	return rc.InitConfig()
 }
 
-func (c *CenterConfig) prepareEnvironment(configCenterUrl *common.URL) error {
+func (c *CenterConfig) prepareEnvironment(configCenterUrl *common.URL) (string, error) {
 	factory := extension.GetConfigCenterFactory(configCenterUrl.Protocol)
 	dynamicConfig, err := factory.GetDynamicConfiguration(configCenterUrl)
 	if err != nil {
 		logger.Errorf("Get dynamic configuration error , error message is %v", err)
-		return errors.WithStack(err)
+		return "", errors.WithStack(err)
 	}
 	envInstance := conf.GetEnvInstance()
 	envInstance.SetDynamicConfiguration(dynamicConfig)
-	_, err = dynamicConfig.GetProperties(c.ConfigFile, config_center.WithGroup(c.Group))
-	if err != nil {
-		logger.Errorf("Get config content in dynamic configuration error , error message is %v", err)
-		return errors.WithStack(err)
-	}
+	return dynamicConfig.GetProperties(c.DataId, config_center.WithGroup(c.Group))
+	//if err != nil {
+	//	logger.Errorf("Get config content in dynamic configuration error , error message is %v", err)
+	//	return errors.WithStack(err)
+	//}
+	//yaml.Unmarshal([]byte(conten),rootConfig)
 	//var appGroup string
 	//var appContent string
 	//if config2.providerConfig != nil && config2.providerConfig.ApplicationConfig != nil &&
@@ -200,6 +216,4 @@ func (c *CenterConfig) prepareEnvironment(configCenterUrl *common.URL) error {
 	//	}
 	//	envInstance.UpdateAppExternalConfigMap(appMapContent)
 	//}
-
-	return nil
 }

@@ -9,10 +9,6 @@ type OrderService struct {
 	GetOrders func(ctx context.Context, req []interface{}) error
 }
 
-func (OrderService) Name() string {
-	return "orderService"
-}
-
 func (OrderService) Reference() string {
-	return "org.github.dubbo.OrderService"
+	return "orderService"
 }

@@ -24,7 +24,7 @@ import (
 
 // ApplicationConfig is a configuration for current applicationConfig, whether the applicationConfig is a provider or a consumer
 type ApplicationConfig struct {
-	Organization string `default:"dubbo.io" yaml:"organization" json:"organization,omitempty" property:"organization"`
+	Organization string `default:"dubbo-go" yaml:"organization" json:"organization,omitempty" property:"organization"`
 	Name         string `default:"dubbo.io" yaml:"name" json:"name,omitempty" property:"name"`
 	Module       string `default:"sample" yaml:"module" json:"module,omitempty" property:"module"`
 	Version      string `default:"0.0.1" yaml:"version" json:"version,omitempty" property:"version"`
@@ -34,22 +34,29 @@ type ApplicationConfig struct {
 	MetadataType string `default:"local" yaml:"metadataType" json:"metadataType,omitempty" property:"metadataType"`
 }
 
-func NewApplicationConfig() *ApplicationConfig {
-	return &ApplicationConfig{}
-}
-
 // Prefix dubbo.applicationConfig
 func (ApplicationConfig) Prefix() string {
-	return constant.DUBBO + ".applicationConfig"
+	return constant.DUBBO + ".application"
 }
 
-func (a *ApplicationConfig) CheckConfig() error {
-	// todo check
-	defaults.MustSet(a)
-	return verify(a)
+func initApplicationConfig(rc *RootConfig) error {
+	// ignore refresh action
+	if rc.refresh {
+		return nil
+	}
+	application := rc.Application
+	if application == nil {
+		application = new(ApplicationConfig)
+	}
+	defaults.MustSet(application)
+	if err := application.check(); err != nil {
+		return err
+	}
+	rc.Application = application
+	return nil
 }
 
-func (a *ApplicationConfig) Validate() {
-	defaults.MustSet(a)
-	// todo set default application
+func (ac *ApplicationConfig) check() error {
+	defaults.MustSet(ac)
+	return verify(ac)
 }
