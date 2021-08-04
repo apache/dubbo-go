@@ -56,12 +56,9 @@ type DubboInvoker struct {
 
 // NewDubboInvoker constructor
 func NewDubboInvoker(url *common.URL) (*DubboInvoker, error) {
-	requestTimeout := config.GetConsumerConfig().RequestTimeout
-	requestTimeoutStr := url.GetParam(constant.TIMEOUT_KEY, config.GetConsumerConfig().Request_Timeout)
-	if t, err := time.ParseDuration(requestTimeoutStr); err == nil {
-		requestTimeout = t
-	}
+	rt := config.GetConsumerConfig().RequestTimeout
 
+	timeout:=url.GetParamDuration(constant.TIMEOUT_KEY,rt)
 	key := url.GetParam(constant.BEAN_NAME_KEY, "")
 	consumerService := config.GetConsumerService(key)
 
@@ -69,7 +66,7 @@ func NewDubboInvoker(url *common.URL) (*DubboInvoker, error) {
 	triCodecType := tripleConstant.CodecType(dubboSerializaerType)
 	// new triple client
 	triOption := triConfig.NewTripleOption(
-		triConfig.WithClientTimeout(uint32(requestTimeout.Seconds())),
+		triConfig.WithClientTimeout(uint32(timeout.Seconds())),
 		triConfig.WithCodecType(triCodecType),
 		triConfig.WithLocation(url.Location),
 		triConfig.WithHeaderAppVersion(url.GetParam(constant.APP_VERSION_KEY, "")),
@@ -85,7 +82,7 @@ func NewDubboInvoker(url *common.URL) (*DubboInvoker, error) {
 	return &DubboInvoker{
 		BaseInvoker: *protocol.NewBaseInvoker(url),
 		client:      client,
-		timeout:     requestTimeout,
+		timeout:     timeout,
 		clientGuard: &sync.RWMutex{},
 	}, nil
 }

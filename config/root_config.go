@@ -38,7 +38,7 @@ type RootConfig struct {
 	// Shutdown config
 	Shutdown *ShutdownConfig `yaml:"shutdown" json:"shutdown,omitempty" property:"shutdown"`
 
-    // Deprecated
+	// Deprecated
 	Network map[interface{}]interface{} `yaml:"network" json:"network,omitempty" property:"network"`
 
 	Router []*RouterConfig `yaml:"router" json:"router,omitempty" property:"router"`
@@ -233,6 +233,10 @@ func GetConsumerConfig() *ConsumerConfig {
 		return rootConfig.Consumer
 	}
 	return NewConsumerConfig()
+}
+
+func GetApplicationConfig() *ApplicationConfig {
+	return rootConfig.Application
 }
 
 // GetConfigCenterConfig get config center config
