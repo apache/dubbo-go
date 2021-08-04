@@ -45,7 +45,7 @@ type ConsumerConfig struct {
 	Registry []string `yaml:"registry" json:"registry,omitempty" property:"registry"`
 
 	RequestTimeout string `default:"3s" yaml:"request-timeout" json:"request-timeout,omitempty" property:"request-timeout"`
-	ProxyFactory   string `default:"default" yaml:"proxy-factory" json:"proxy-factory,omitempty" property:"proxy-factory"`
+	ProxyFactory   string `default:"default" yaml:"proxy" json:"proxy,omitempty" property:"proxy"`
 	Check          bool   `yaml:"check" json:"check,omitempty" property:"check"`
 
 	References map[string]*ReferenceConfig `yaml:"references" json:"references,omitempty" property:"references"`
@@ -70,7 +70,7 @@ func initConsumerConfig(rc *RootConfig) error {
 	if err := initReferenceConfig(consumer); err != nil {
 		return err
 	}
-	if err := defaults.Set(consumer); err != nil {
+	if err := consumer.check(); err != nil {
 		return err
 	}
 	for {
@@ -83,18 +83,11 @@ func initConsumerConfig(rc *RootConfig) error {
 	return nil
 }
 
-func (c *ConsumerConfig) CheckConfig() error {
-	// todo check
-	defaults.MustSet(c)
-	return verify(c)
-}
-
-func (c *ConsumerConfig) Validate(rootConfig *RootConfig) {
-	for k, _ := range c.References {
-		c.References[k].Validate(rootConfig)
+func (c *ConsumerConfig) check() error {
+	if err := defaults.Set(c); err != nil {
+		return err
 	}
-	c.rootConfig = rootConfig
-	// todo set default application
+	return verify(c)
 }
 
 func (c *ConsumerConfig) Load() {

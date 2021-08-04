@@ -57,13 +57,9 @@ type DubboInvoker struct {
 
 // NewDubboInvoker constructor
 func NewDubboInvoker(url *common.URL, client *remoting.ExchangeClient) *DubboInvoker {
-	requestTimeout := config.GetConsumerConfig().RequestTimeout
-	// todo set timeout
-	timeout := 3 * time.Second
-	requestTimeoutStr := url.GetParam(constant.TIMEOUT_KEY, requestTimeout)
-	if t, err := time.ParseDuration(requestTimeoutStr); err == nil {
-		timeout = t
-	}
+	rt := config.GetConsumerConfig().RequestTimeout
+
+	timeout := url.GetParamDuration(constant.TIMEOUT_KEY,rt)
 	di := &DubboInvoker{
 		BaseInvoker: *protocol.NewBaseInvoker(url),
 		clientGuard: &sync.RWMutex{},

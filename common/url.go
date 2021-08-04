@@ -27,6 +27,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 import (
@@ -868,4 +869,13 @@ func SetCompareURLEqualFunc(f CompareURLEqualFunc) {
 
 func GetCompareURLEqualFunc() CompareURLEqualFunc {
 	return compareURLEqualFunc
+}
+
+//GetParamDuration get duration if err return 3s
+func (c *URL) GetParamDuration(s string, d string) time.Duration {
+	timeStr := c.GetParam(s, d)
+	if t, err := time.ParseDuration(timeStr); err == nil {
+		return t
+	}
+	return 3 * time.Second
 }
