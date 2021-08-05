@@ -44,8 +44,8 @@ func TestRestProtocolRefer(t *testing.T) {
 	url, err := common.NewURL(mockRestCommonUrl)
 	assert.NoError(t, err)
 	con := config.ConsumerConfig{
-		ConnectTimeout: 5 * time.Second,
-		RequestTimeout: 5 * time.Second,
+		ConnectTimeout: "5s",
+		RequestTimeout: "5s",
 	}
 	config.SetConsumerConfig(con)
 	configMap := make(map[string]*rest_config.RestServiceConfig)
