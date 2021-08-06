@@ -251,6 +251,9 @@ func (e *etcdV3ServiceDiscovery) registerServiceInstanceListener(serviceName str
 	set, found := e.instanceListenerMap[serviceName]
 	if !found {
 		set = gxset.NewSet(listener)
+		set.Add(listener)
+		e.instanceListenerMap[serviceName] = set
+		return nil
 	}
 	set.Add(listener)
 	return nil
