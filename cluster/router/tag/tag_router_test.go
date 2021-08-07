@@ -19,9 +19,7 @@ package tag
 
 import (
 	"context"
-	"fmt"
 	"testing"
-	"time"
 )
 
 import (
@@ -37,8 +35,6 @@ import (
 	"github.com/apache/dubbo-go/cluster/router/chain"
 	"github.com/apache/dubbo-go/cluster/router/utils"
 	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/config"
-	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/config_center"
 	_ "github.com/apache/dubbo-go/config_center/zookeeper"
 	"github.com/apache/dubbo-go/protocol"
@@ -53,12 +49,6 @@ const (
 	tagRouterTestEnabledBeijingUrl = "dubbo://127.0.0.1:20004/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0&enabled=false&dubbo.tag=beijing&remote.application=test-tag"
 	tagRouterTestUserConsumer      = "dubbo://127.0.0.1:20005/com.ikurento.user.UserConsumer?interface=com.ikurento.user.UserConsumer&group=&version=2.6.0&enabled=true&remote.application=test-tag"
 	tagRouterTestUserConsumerTag   = "dubbo://127.0.0.1:20000/com.ikurento.user.UserConsumer?interface=com.ikurento.user.UserConsumer&group=&version=2.6.0&enabled=true&dubbo.force.tag=true&remote.application=test-tag"
-
-	tagRouterTestDynamicIpv4Provider1 = "dubbo://127.0.0.1:20001/com.ikurento.user.UserConsumer?interface=com.ikurento.user.UserConsumer&group=&version=2.6.0&enabled=true&remote.application=test-tag"
-	tagRouterTestDynamicIpv4Provider2 = "dubbo://127.0.0.1:20002/com.ikurento.user.UserConsumer?interface=com.ikurento.user.UserConsumer&group=&version=2.6.0&enabled=true&remote.application=test-tag"
-	tagRouterTestDynamicIpv4Provider3 = "dubbo://127.0.0.1:20003/com.ikurento.user.UserConsumer?interface=com.ikurento.user.UserConsumer&group=&version=2.6.0&enabled=true&remote.application=test-tag"
-	tagRouterTestDynamicIpv4Provider4 = "dubbo://127.0.0.1:20004/com.ikurento.user.UserConsumer?interface=com.ikurento.user.UserConsumer&group=&version=2.6.0&enabled=true&remote.application=test-tag&dubbo.tag=tag4"
-	tagRouterTestDynamicIpv4Provider5 = "dubbo://127.0.0.1:20005/com.ikurento.user.UserConsumer?interface=com.ikurento.user.UserConsumer&group=&version=2.6.0&enabled=true&remote.application=test-tag&dubbo.tag=tag5"
 
 	tagRouterTestDubboTag      = "dubbo.tag"
 	tagRouterTestDubboForceTag = "dubbo.force.tag"
@@ -264,72 +254,6 @@ type DynamicTagRouter struct {
 	testCluster *zk.TestCluster
 	invokers    []protocol.Invoker
 	url         *common.URL
-}
-
-func TestDynamicTagRouter(t *testing.T) {
-	dtg := &DynamicTagRouter{}
-	u1, _ := common.NewURL(tagRouterTestDynamicIpv4Provider1)
-	u2, _ := common.NewURL(tagRouterTestDynamicIpv4Provider2)
-	u3, _ := common.NewURL(tagRouterTestDynamicIpv4Provider3)
-	u4, _ := common.NewURL(tagRouterTestDynamicIpv4Provider4)
-	u5, _ := common.NewURL(tagRouterTestDynamicIpv4Provider5)
-	inv1 := NewMockInvoker(u1)
-	inv2 := NewMockInvoker(u2)
-	inv3 := NewMockInvoker(u3)
-	inv4 := NewMockInvoker(u4)
-	inv5 := NewMockInvoker(u5)
-	dtg.invokers = append(dtg.invokers, inv1, inv2, inv3, inv4, inv5)
-	suite.Run(t, dtg)
-}
-
-func (suite *DynamicTagRouter) SetupTest() {
-	var err error
-	testYML := `enabled: true
-scope: application
-force: true
-runtime: false
-valid: true
-priority: 1
-key: demo-provider
-tags:
-  - name: tag1
-    addresses: ["127.0.0.1:20001"]
-  - name: tag2
-    addresses: ["127.0.0.1:20002"]
-  - name: tag3
-    addresses: ["127.0.0.1:20003", "127.0.0.1:20004"]
-`
-	ts, z, _, err := gxzookeeper.NewMockZookeeperClient("test", 15*time.Second)
-	suite.NoError(err)
-	err = z.Create(routerPath)
-	suite.NoError(err)
-
-	suite.zkClient = z
-	suite.testCluster = ts
-
-	_, err = z.Conn.Set(routerPath, []byte(testYML), 0)
-	suite.NoError(err)
-
-	zkUrl, _ := common.NewURL(fmt.Sprintf(zkFormat, routerLocalIP, suite.testCluster.Servers[0].Port))
-	configuration, err := extension.GetConfigCenterFactory(routerZk).GetDynamicConfiguration(zkUrl)
-	config.GetEnvInstance().SetDynamicConfiguration(configuration)
-
-	suite.Nil(err)
-	suite.NotNil(configuration)
-
-	url, e1 := common.NewURL(tagRouterTestUserConsumerTag)
-	suite.Nil(e1)
-
-	notify := make(chan struct{})
-	go func() {
-		for range notify {
-		}
-	}()
-	tagRouter, err := NewTagRouter(url, notify)
-	suite.Nil(err)
-	suite.NotNil(tagRouter)
-	suite.route = tagRouter
-	suite.url = url
 }
 
 func (suite *DynamicTagRouter) TearDownTest() {
