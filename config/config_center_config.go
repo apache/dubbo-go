@@ -18,7 +18,9 @@
 package config
 
 import (
-	"gopkg.in/yaml.v2"
+	"github.com/knadh/koanf"
+	"github.com/knadh/koanf/parsers/yaml"
+	"github.com/knadh/koanf/providers/rawbytes"
 	"net/url"
 	"strings"
 )
@@ -68,9 +70,10 @@ type CenterConfig struct {
 	Params    map[string]string `yaml:"params"  json:"parameters,omitempty"`
 }
 
-func (c *CenterConfig) CheckConfig() error {
-	// todo check
-	defaults.MustSet(c)
+func (c *CenterConfig) check() error {
+	if err := defaults.Set(c); err != nil {
+		return err
+	}
 	c.translateConfigAddress()
 	return verify(c)
 }
@@ -79,13 +82,25 @@ func (c *CenterConfig) Validate() {
 	// todo set default application
 }
 
-// UnmarshalYAML unmarshal the ConfigCenterConfig by @unmarshal function
-func (c *CenterConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	if err := defaults.Set(c); err != nil {
+func (c *CenterConfig) Init() error {
+	if c != nil {
+		if err := c.check(); err != nil {
+			return err
+		}
+
+	}
+	return nil
+}
+
+func initConfigCenter(rc *RootConfig) error {
+	center := rc.ConfigCenter
+	if center == nil || rc.refresh {
+		return nil
+	}
+	if err := center.check(); err != nil {
 		return err
 	}
-	type plain CenterConfig
-	return unmarshal((*plain)(c))
+	return startConfigCenter(rc)
 }
 
 // GetUrlMap gets url map from ConfigCenterConfig
@@ -148,17 +163,21 @@ func (c *CenterConfig) toURL() (*common.URL, error) {
 // it will prepare the environment
 func startConfigCenter(rc *RootConfig) error {
 	cc := rc.ConfigCenter
-
-	newUrl, err := cc.toURL()
+	configCenterUrl, err := cc.toURL()
 	if err != nil {
 		return err
 	}
-	strConf, err := cc.prepareEnvironment(newUrl)
+	strConf, err := cc.prepareEnvironment(configCenterUrl)
 	if err != nil {
 		return errors.WithMessagef(err, "start config center error!")
 	}
 
-	if err = yaml.Unmarshal([]byte(strConf), rc); err != nil {
+	koan := koanf.New(".")
+	if err = koan.Load(rawbytes.Provider([]byte(strConf)), yaml.Parser()); err != nil {
+		return err
+	}
+	if err = koan.UnmarshalWithConf(rc.Prefix(),
+		rc, koanf.UnmarshalConf{Tag: "yaml"}); err != nil {
 		return err
 	}
 	rc.refresh = false
