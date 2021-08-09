@@ -74,6 +74,7 @@ func GracefulShutdownInit() {
 			// gracefulShutdownOnce.Do(func() {
 			time.AfterFunc(totalTimeout(), func() {
 				logger.Warn("Shutdown gracefully timeout, application will shutdown immediately. ")
+				emitHook(&beforeShutdownHook{})
 				os.Exit(0)
 			})
 			BeforeShutdown()
@@ -83,6 +84,9 @@ func GracefulShutdownInit() {
 					debug.WriteHeapDump(os.Stdout.Fd())
 				}
 			}
+
+			emitHook(&beforeShutdownHook{})
+
 			os.Exit(0)
 		}
 	}()
