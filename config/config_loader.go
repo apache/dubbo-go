@@ -401,7 +401,8 @@ func GetRPCService(name string) common.RPCService {
 
 // RPCService create rpc service for consumer
 func RPCService(service common.RPCService) {
-	consumerConfig.References[service.Reference()].Implement(service)
+	ref := common.GetReference(service)
+	consumerConfig.References[ref].Implement(service)
 }
 
 // GetMetricConfig find the MetricConfig
