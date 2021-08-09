@@ -30,7 +30,7 @@ import (
 // MetadataService is used to define meta data related behaviors
 // usually the implementation should be singleton
 type MetadataService interface {
-	common.RPCService
+	common.ReferencedRPCService
 	// ServiceName will get the service's name in meta service , which is application name
 	ServiceName() (string, error)
 	// ExportURL will store the exported url in metadata
@@ -94,7 +94,7 @@ func (mts *BaseMetadataService) ServiceName() (string, error) {
 	return mts.serviceName, nil
 }
 
-// Version will return the version of metadata service
+// Reference will return the reference id of metadata service
 func (mts *BaseMetadataService) Reference() string {
 	return constant.SIMPLE_METADATA_SERVICE_NAME
 }
