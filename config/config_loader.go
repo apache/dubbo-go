@@ -344,7 +344,6 @@ func registerServiceInstance() {
 		if sdr, ok = r.(registry.ServiceDiscoveryHolder); !ok {
 			continue
 		}
-		instance.GetMetadata()
 		err := sdr.GetServiceDiscovery().Register(instance)
 		if err != nil {
 			panic(err)
