@@ -56,6 +56,8 @@ var (
 
 	maxWait        = 3
 	confRouterFile string
+
+	loaderHooks map[string][]LoaderHook
 )
 
 // loaded consumer & provider config from xxx.yml, and log config from xxx.xml
@@ -169,6 +171,17 @@ func loadConsumerConfig() {
 	for {
 		checkok := true
 		for _, refconfig := range consumerConfig.References {
+			consumerConnectHookInfo := &ConsumerConnectInfo{
+				id:            refconfig.id,
+				protocol:      refconfig.Protocol,
+				registry:      refconfig.Registry,
+				interfaceName: refconfig.InterfaceName,
+				group:         refconfig.Group,
+				version:       refconfig.Version,
+			}
+			emitHook(&beforeConsumerConnectHook{
+				HookParams: consumerConnectHookInfo,
+			})
 			if (refconfig.Check != nil && *refconfig.Check) ||
 				(refconfig.Check == nil && consumerConfig.Check != nil && *consumerConfig.Check) ||
 				(refconfig.Check == nil && consumerConfig.Check == nil) { // default to true
@@ -179,6 +192,12 @@ func loadConsumerConfig() {
 					if count > maxWait {
 						errMsg := fmt.Sprintf("Failed to check the status of the service %v. No provider available for the service to the consumer use dubbo version %v", refconfig.InterfaceName, constant.Version)
 						logger.Error(errMsg)
+						emitHook(&consumerConnectFailHook{
+							HookParams: &ConsumerConnectFailInfo{
+								ConsumerConnectInfo: *consumerConnectHookInfo,
+								message:             errMsg,
+							},
+						})
 						panic(errMsg)
 					}
 					time.Sleep(time.Second * 1)
@@ -186,13 +205,18 @@ func loadConsumerConfig() {
 				}
 				if refconfig.invoker == nil {
 					logger.Warnf("The interface %s invoker not exist, may you should check your interface config.", refconfig.InterfaceName)
+					continue
 				}
 			}
+			emitHook(&consumerConnectSuccessHook{
+				HookParams: consumerConnectHookInfo,
+			})
 		}
 		if checkok {
 			break
 		}
 	}
+	emitHook(&allConsumersConnectCompleteHook{})
 }
 
 func loadProviderConfig() {
@@ -247,11 +271,34 @@ func loadProviderConfig() {
 		svs.id = key
 		svs.Implement(rpcService)
 		svs.Protocols = providerConfig.Protocols
+		providerConnectHookInfo := &ProviderConnectInfo{
+			id:            svs.id,
+			protocol:      svs.Protocol,
+			registry:      svs.Registry,
+			interfaceName: svs.InterfaceName,
+			group:         svs.Group,
+			version:       svs.Version,
+		}
+		emitHook(&beforeProviderConnectHook{
+			HookParams: providerConnectHookInfo,
+		})
 		if err := svs.Export(); err != nil {
-			panic(fmt.Sprintf("service %s export failed! err: %#v", key, err))
+			errMsg := fmt.Sprintf("service %s export failed! err: %#v", key, err)
+			emitHook(&providerConnectFailHook{
+				HookParams: &ProviderConnectFailInfo{
+					ProviderConnectInfo: *providerConnectHookInfo,
+					message:             errMsg,
+				},
+			})
+			panic(errMsg)
+		} else {
+			emitHook(&providerConnectSuccessHook{
+				HookParams: providerConnectHookInfo,
+			})
 		}
 	}
 	registerServiceInstance()
+	emitHook(&allProvidersConnectCompleteHook{})
 }
 
 // registerServiceInstance register service instance

@@ -111,6 +111,98 @@ func TestLoad(t *testing.T) {
 	providerConfig = nil
 }
 
+func TestLoadWithLoaderHooks(t *testing.T) {
+	doInitConsumer()
+	doInitProvider()
+
+	ms := &MockService{}
+	SetConsumerService(ms)
+	SetProviderService(ms)
+
+	extension.SetProtocol("registry", GetProtocol)
+	extension.SetCluster(constant.ZONEAWARE_CLUSTER_NAME, cluster_impl.NewZoneAwareCluster)
+	extension.SetProxyFactory("default", proxy_factory.NewDefaultProxyFactory)
+	GetApplicationConfig().MetadataType = "mock"
+	var mm *mockMetadataService
+	extension.SetMetadataService("mock", func() (metadataService service.MetadataService, err error) {
+		if mm == nil {
+			mm = &mockMetadataService{
+				exportedServiceURLs: new(sync.Map),
+				lock:                new(sync.RWMutex),
+			}
+		}
+		return mm, nil
+	})
+
+	// create consumer loader hooks
+	beforeConsumerConnectHook := NewBeforeConsumerConnectHook(func(info *ConsumerConnectInfo) {
+		logger.Debug("BeforeConsumerConnectHook", info)
+		assert.NotNil(t, info)
+	})
+	consumerConnectSuccessHook := NewConsumerConnectSuccessHook(func(info *ConsumerConnectInfo) {
+		logger.Debug("ConsumerConnectSuccessHook", info)
+		assert.NotNil(t, info)
+	})
+	consumerConnectFailHook := NewConsumerConnectFailHook(func(info *ConsumerConnectFailInfo) {
+		logger.Debug("ConsumerConnectFailHook", info)
+		assert.NotNil(t, info)
+	})
+	allConsumersConnectCompleteHook := NewAllConsumersConnectCompleteHook(func() {
+		logger.Debug("AllConsumersConnectCompleteHook")
+	})
+	// create provider loader hooks
+	beforeProviderConnectHook := NewBeforeProviderConnectHook(func(info *ProviderConnectInfo) {
+		logger.Debug("BeforeProviderConnectHook", info)
+		assert.NotNil(t, info)
+	})
+	providerConnectSuccessHook := NewProviderConnectSuccessHook(func(info *ProviderConnectInfo) {
+		logger.Debug("ProviderConnectSuccessHook", info)
+		assert.NotNil(t, info)
+	})
+	providerConnectFailHook := NewProviderConnectFailHook(func(info *ProviderConnectFailInfo) {
+		logger.Debug("ProviderConnectFailHook", info)
+		assert.NotNil(t, info)
+	})
+	allProvidersConnectCompleteHook := NewAllProvidersConnectCompleteHook(func() {
+		logger.Debug("AllProvidersConnectCompleteHook")
+	})
+
+	beforeShutdownHook := NewBeforeShutdownHook(func() {
+		logger.Debug("BeforeShutDownHook")
+	})
+	AddLoaderHooks(
+		// Consumer Hooks
+		beforeConsumerConnectHook,
+		consumerConnectSuccessHook,
+		consumerConnectFailHook,
+		allConsumersConnectCompleteHook,
+		// Provider Hooks
+		beforeProviderConnectHook,
+		providerConnectSuccessHook,
+		providerConnectFailHook,
+		allProvidersConnectCompleteHook,
+		// Shut Down hook
+		beforeShutdownHook,
+	)
+
+	Load()
+
+	assert.Equal(t, ms, GetRPCService(ms.Reference()))
+	ms2 := &struct {
+		MockService
+	}{}
+	RPCService(ms2)
+	assert.NotEqual(t, ms2, GetRPCService(ms2.Reference()))
+
+	conServices = map[string]common.RPCService{}
+	proServices = map[string]common.RPCService{}
+	err := common.ServiceMap.UnRegister("com.MockService", "mock",
+		common.ServiceKey("com.MockService", "huadong_idc", "1.0.0"))
+	assert.Nil(t, err)
+	consumerConfig = nil
+	providerConfig = nil
+}
+
 func TestLoadWithSingleReg(t *testing.T) {
 	doInitConsumerWithSingleRegistry()
 	mockInitProviderWithSingleRegistry()
