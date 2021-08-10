@@ -18,20 +18,48 @@
 package config
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"fmt"
 	"reflect"
+)
+
+const (
+	hookParams = constant.HookParams
 )
 
 type LoaderHook interface {
 	emit() bool
+	// if you want to use emitWithParams, you must add HookParams field and make emit return false
 	emitWithParams(params interface{}) bool
 }
 
-func getLoaderHookType(hook LoaderHook) string {
-	return reflect.TypeOf(hook).Elem().String()
+func getLoaderHookType(t LoaderHook) reflect.Type {
+	hookType := reflect.TypeOf(t)
+	if reflect.Ptr == hookType.Kind() {
+		hookType = hookType.Elem()
+	}
+	return hookType
+}
+
+func getLoaderHookTypeString(t LoaderHook) string {
+	return getLoaderHookType(t).String()
+}
+
+func getLoaderHookInfo(v reflect.Value) reflect.Value {
+	if reflect.Ptr == v.Kind() {
+		v = v.Elem()
+	}
+	return v
 }
 
 func getLoaderHookParams(t LoaderHook) interface{} {
-	return reflect.ValueOf(t).Elem().FieldByName("HookParams").Elem().Interface()
+	hookType := getLoaderHookType(t)
+	_, existed := hookType.FieldByName(hookParams)
+	if !existed {
+		panic(fmt.Sprintf("Hook field [%s] not existed for %s", hookParams, hookType.Name()))
+	}
+	hookParams := getLoaderHookInfo(reflect.ValueOf(t)).FieldByName(hookParams)
+	return getLoaderHookInfo(hookParams).Interface()
 }
 
 func AddLoaderHooks(hooks ...LoaderHook) {
@@ -40,7 +68,7 @@ func AddLoaderHooks(hooks ...LoaderHook) {
 			loaderHooks = map[string][]LoaderHook{}
 		}
 		for _, hook := range hooks {
-			hookType := getLoaderHookType(hook)
+			hookType := getLoaderHookTypeString(hook)
 			var hooks []LoaderHook
 			if hs, ok := loaderHooks[hookType]; ok {
 				hooks = hs
@@ -56,7 +84,7 @@ func AddLoaderHooks(hooks ...LoaderHook) {
 func RemoveLoaderHooks(hooks ...LoaderHook) {
 	if loaderHooks != nil && len(loaderHooks) > 0 {
 		for _, rmHook := range hooks {
-			hookType := getLoaderHookType(rmHook)
+			hookType := getLoaderHookTypeString(rmHook)
 			if hooks, ok := loaderHooks[hookType]; ok {
 				for index, targetHook := range hooks {
 					if rmHook == targetHook {
@@ -76,7 +104,7 @@ func RemoveLoaderHooks(hooks ...LoaderHook) {
 
 func emitHook(t LoaderHook) {
 	if loaderHooks != nil && len(loaderHooks) > 0 {
-		hookType := getLoaderHookType(t)
+		hookType := getLoaderHookTypeString(t)
 		if hooks, ok := loaderHooks[hookType]; ok {
 			for _, hook := range hooks {
 				if !hook.emit() {

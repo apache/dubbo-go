@@ -316,3 +316,9 @@ const (
 	//GenericSerializationProtobuf = "protobuf-json"
 	GenericSerializationGson = "gson"
 )
+
+// Loader Hook
+
+const (
+	HookParams = "HookParams"
+)
