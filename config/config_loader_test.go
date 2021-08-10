@@ -168,6 +168,13 @@ func TestLoadWithLoaderHooks(t *testing.T) {
 	})
 	allConsumersConnectCompleteHook := NewAllConsumersConnectCompleteHook(func() {
 		logger.Debug("AllConsumersConnectCompleteHook")
+		RemoveLoaderHooks( // Remove some consumer loader hooks
+			beforeConsumerConnectHook,
+			consumerConnectSuccessHook,
+			consumerConnectFailHook,
+		)
+		logger.Debug("LoaderHooks length = ", len(loaderHooks), " after AllConsumersConnectCompleteHook")
+		assert.Equal(t, len(loaderHooks), 6)
 	})
 	// create provider loader hooks
 	beforeProviderConnectHook := NewBeforeProviderConnectHook(func(info *ProviderConnectInfo) {
@@ -184,10 +191,30 @@ func TestLoadWithLoaderHooks(t *testing.T) {
 	})
 	allProvidersConnectCompleteHook := NewAllProvidersConnectCompleteHook(func() {
 		logger.Debug("AllProvidersConnectCompleteHook")
+		RemoveLoaderHooks( // Remove some provider loader hooks
+			beforeProviderConnectHook,
+			providerConnectSuccessHook,
+			providerConnectFailHook,
+		)
+		logger.Debug("LoaderHooks length = ", len(loaderHooks), " after AllProvidersConnectCompleteHook")
+		assert.Equal(t, len(loaderHooks), 3)
 	})
 
 	beforeShutdownHook := NewBeforeShutdownHook(func() {
 		logger.Debug("BeforeShutDownHook")
+		RemoveLoaderHooks( // Remove some consumer and provider loader hooks
+			// Consumer Hooks
+			beforeConsumerConnectHook,
+			consumerConnectSuccessHook,
+			consumerConnectFailHook,
+			allConsumersConnectCompleteHook,
+			// Provider Hooks
+			beforeProviderConnectHook,
+			providerConnectSuccessHook,
+			providerConnectFailHook,
+			allProvidersConnectCompleteHook,
+		)
+		assert.Equal(t, len(loaderHooks), 1)
 	})
 	AddLoaderHooks(
 		// Consumer Hooks
@@ -203,6 +230,7 @@ func TestLoadWithLoaderHooks(t *testing.T) {
 		// Shut Down hook
 		beforeShutdownHook,
 	)
+	assert.Equal(t, len(loaderHooks), 9)
 
 	Load()
 
