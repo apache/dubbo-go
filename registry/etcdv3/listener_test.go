@@ -18,14 +18,16 @@
 package etcdv3
 
 import (
-	gxtime "github.com/dubbogo/gost/time"
 	"os"
 	"testing"
 	"time"
 )
 
 import (
+	gxtime "github.com/dubbogo/gost/time"
+
 	"github.com/stretchr/testify/suite"
+
 	"go.etcd.io/etcd/server/v3/embed"
 )
 

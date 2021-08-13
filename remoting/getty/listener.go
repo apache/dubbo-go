@@ -19,7 +19,6 @@ package getty
 
 import (
 	"fmt"
-	gxtime "github.com/dubbogo/gost/time"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -27,7 +26,11 @@ import (
 
 import (
 	"github.com/apache/dubbo-getty"
+
 	hessian "github.com/apache/dubbo-go-hessian2"
+
+	gxtime "github.com/dubbogo/gost/time"
+
 	perrors "github.com/pkg/errors"
 )
 

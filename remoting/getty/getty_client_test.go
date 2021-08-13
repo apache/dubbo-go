@@ -28,7 +28,9 @@ import (
 
 import (
 	hessian "github.com/apache/dubbo-go-hessian2"
+
 	perrors "github.com/pkg/errors"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -435,7 +437,7 @@ func (u *UserProvider) GetUser(ctx context.Context, req []interface{}, rsp *User
 
 func (u *UserProvider) GetUser0(id string, k *User, name string) (User, error) {
 	// fix testClient_AsyncCall assertion bug(#1233)
-	//time.Sleep(1 * time.Second)
+	time.Sleep(1 * time.Second)
 	return User{ID: id, Name: name}, nil
 }
 
