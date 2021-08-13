@@ -174,6 +174,7 @@ func NewClient(name string, endpoints []string, timeout time.Duration, heartbeat
 		DialOptions: []grpc.DialOption{grpc.WithBlock()},
 	})
 	if err != nil {
+		cancel()
 		return nil, perrors.WithMessage(err, "new raw client block connect to server")
 	}
 

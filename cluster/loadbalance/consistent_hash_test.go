@@ -36,7 +36,7 @@ import (
 const (
 	ip       = "192.168.1.0"
 	port8080 = 8080
-	port8082 = 8082
+	port8081 = 8081
 
 	url8080Short = "dubbo://192.168.1.0:8080"
 	url8081Short = "dubbo://192.168.1.0:8081"
@@ -52,7 +52,7 @@ func TestConsistentHashSelectorSuite(t *testing.T) {
 
 type consistentHashSelectorSuite struct {
 	suite.Suite
-	selector *ConsistentHashSelector
+	selector *consistentHashSelector
 }
 
 func (s *consistentHashSelectorSuite) SetupTest() {
@@ -114,9 +114,9 @@ func (s *consistentHashLoadBalanceSuite) SetupTest() {
 func (s *consistentHashLoadBalanceSuite) TestSelect() {
 	args := []interface{}{"name", "password", "age"}
 	invoker := s.lb.Select(s.invokers, invocation.NewRPCInvocation("echo", args, nil))
-	s.Equal(invoker.GetURL().Location, fmt.Sprintf("%s:%d", ip, port8080))
+	s.Equal(fmt.Sprintf("%s:%d", ip, port8081), invoker.GetURL().Location)
 
 	args = []interface{}{"ok", "abc"}
 	invoker = s.lb.Select(s.invokers, invocation.NewRPCInvocation("echo", args, nil))
-	s.Equal(invoker.GetURL().Location, fmt.Sprintf("%s:%d", ip, port8082))
+	s.Equal(fmt.Sprintf("%s:%d", ip, port8080), invoker.GetURL().Location)
 }
