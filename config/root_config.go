@@ -19,8 +19,10 @@ package config
 
 import (
 	"bytes"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"fmt"
 )
 
 // RootConfig is the root config
@@ -113,13 +115,11 @@ func (rc *RootConfig) InitConfig(opts ...rootConfOption) error {
 	for _, opt := range opts {
 		opt.apply(rc)
 	}
-	if rc.ConfigCenter != nil && !rc.refresh {
-		if err := startConfigCenter(rc); err != nil {
-			fmt.Println("start config center err = ", err)
-			//return err
-		}
-	}
+
 	if err := initApplicationConfig(rc); err != nil {
+		return err
+	}
+	if err := initConfigCenter(rc); err != nil {
 		return err
 	}
 	if err := initProtocolsConfig(rc); err != nil {

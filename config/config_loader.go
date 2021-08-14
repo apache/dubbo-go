@@ -54,8 +54,8 @@ func Load(opts ...LoaderConfOption) error {
 	conf := NewLoaderConf(opts...)
 	// init config
 	rootConfig = new(RootConfig)
-	viper := getKoanf(conf)
-	if err := viper.UnmarshalWithConf(rootConfig.Prefix(),
+	koan := getKoanf(conf)
+	if err := koan.UnmarshalWithConf(rootConfig.Prefix(),
 		rootConfig, koanf.UnmarshalConf{Tag: "yaml"}); err != nil {
 		return err
 	}

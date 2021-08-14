@@ -109,7 +109,6 @@ func createRegisterParam(url *common.URL, serviceName string) vo.RegisterInstanc
 		Healthy:     true,
 		Ephemeral:   true,
 		ServiceName: serviceName,
-		GroupName:   url.GetParam(constant.GROUP_KEY, defaultGroup),
 	}
 	return instance
 }
