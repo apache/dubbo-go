@@ -24,7 +24,9 @@ import (
 
 import (
 	"github.com/apache/dubbo-getty"
+
 	hessian "github.com/apache/dubbo-go-hessian2"
+
 	perrors "github.com/pkg/errors"
 )
 
@@ -86,14 +88,6 @@ func (p *RpcClientPackageHandler) Write(ss getty.Session, pkg interface{}) ([]by
 	logger.Errorf("illegal pkg:%+v\n", pkg)
 	return nil, perrors.New("invalid rpc request")
 }
-
-////////////////////////////////////////////
-// RpcServerPackageHandler
-////////////////////////////////////////////
-
-//var (
-//	rpcServerPkgHandler = &RpcServerPackageHandler{}
-//)
 
 // RpcServerPackageHandler Read data from client and Write data to client
 type RpcServerPackageHandler struct {

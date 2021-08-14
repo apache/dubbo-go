@@ -23,6 +23,7 @@ import (
 
 import (
 	gxchan "github.com/dubbogo/gost/container/chan"
+
 	perrors "github.com/pkg/errors"
 )
 
