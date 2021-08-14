@@ -11,3 +11,4 @@ This internal package is for test. So don't use internal in production.
 
 - [helloworld](./helloworld): test unary process
 - [routeguide](./routeguide): test stream process
+- [multiprotos](./multiprotos): use multi pb to generate multi pb.go
