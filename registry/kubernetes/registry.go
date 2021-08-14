@@ -25,8 +25,10 @@ import (
 )
 
 import (
-	getty "github.com/apache/dubbo-getty"
+	gxtime "github.com/dubbogo/gost/time"
+
 	perrors "github.com/pkg/errors"
+
 	v1 "k8s.io/api/core/v1"
 )
 
@@ -46,8 +48,6 @@ const (
 )
 
 func init() {
-	//processID = fmt.Sprintf("%d", os.Getpid())
-	//localIP = common.GetLocalIp()
 	extension.SetRegistry(Name, newKubernetesRegistry)
 }
 
@@ -221,7 +221,7 @@ LOOP:
 				case <-r.Done():
 					logger.Warnf("(KubernetesProviderRegistry)reconnectKubernetes Registry goroutine exit now...")
 					break LOOP
-				case <-getty.GetTimeWheel().After(timeSecondDuration(failTimes * ConnDelay)): // avoid connect frequent
+				case <-gxtime.After(timeSecondDuration(failTimes * ConnDelay)): // avoid connect frequent
 				}
 				err = kubernetes.ValidateClient(r)
 				logger.Infof("Kubernetes ProviderRegistry.validateKubernetesClient = error{%#v}", perrors.WithStack(err))

@@ -26,11 +26,14 @@ import (
 
 import (
 	"github.com/apache/dubbo-getty"
-	hessian "github.com/apache/dubbo-go-hessian2"
+
+	gxtime "github.com/dubbogo/gost/time"
+
 	perrors "github.com/pkg/errors"
 )
 
 import (
+	hessian "github.com/apache/dubbo-go-hessian2"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol/invocation"
@@ -379,7 +382,7 @@ func heartbeat(session getty.Session, timeout time.Duration, callBack func(err e
 	go func() {
 		var err1 error
 		select {
-		case <-getty.GetTimeWheel().After(timeout):
+		case <-gxtime.After(timeout):
 			err1 = errHeartbeatReadTimeout
 		case <-resp.Done:
 			err1 = resp.Err
