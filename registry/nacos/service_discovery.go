@@ -18,7 +18,9 @@
 package nacos
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"fmt"
+	"net/url"
 	"sync"
 )
 
@@ -320,31 +322,24 @@ func newNacosServiceDiscovery(name string) (registry.ServiceDiscovery, error) {
 	if ok {
 		return instance, nil
 	}
-
-	sdc, ok := config.GetRootConfig().ServiceDiscoveries[name]
-	if !ok || len(sdc.RemoteRef) == 0 {
-		return nil, perrors.New("could not init the instance because the config is invalid")
-	}
-
-	rc, ok := config.GetRootConfig().Remotes[sdc.RemoteRef]
-	if !ok {
-		return nil, perrors.New("could not find the remote config for name: " + sdc.RemoteRef)
-	}
-	group := sdc.Group
-	if len(group) == 0 {
-		group = defaultGroup
-	}
-	// set protocol if remote not set
-	if len(rc.Protocol) <= 0 {
-		rc.Protocol = sdc.Protocol
-	}
-	client, err := nacos.NewNacosClient(rc)
+	metadataReportConfig := config.GetMetadataReportConfg()
+	url := common.NewURLWithOptions(
+		common.WithParams(make(url.Values)),
+		common.WithPassword(metadataReportConfig.Password),
+		common.WithUsername(metadataReportConfig.Username),
+		common.WithParamsValue(constant.REGISTRY_TIMEOUT_KEY, metadataReportConfig.Timeout))
+	url.Location = metadataReportConfig.Address
+	client, err := nacos.NewNacosClientByUrl(url)
 	if err != nil {
 		return nil, perrors.WithMessage(err, "create nacos namingClient failed.")
 	}
 
-	descriptor := fmt.Sprintf("nacos-service-discovery[%s]", rc.Address)
+	descriptor := fmt.Sprintf("nacos-service-discovery[%s]", metadataReportConfig.Address)
 
+	group := metadataReportConfig.Group
+	if len(group) == 0 {
+		group = defaultGroup
+	}
 	newInstance := &nacosServiceDiscovery{
 		group:             group,
 		namingClient:      client,

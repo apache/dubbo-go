@@ -20,6 +20,7 @@ package config
 import (
 	"bytes"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"fmt"
 )
 
 // RootConfig is the root config
@@ -114,7 +115,8 @@ func (rc *RootConfig) InitConfig(opts ...rootConfOption) error {
 	}
 	if rc.ConfigCenter != nil && !rc.refresh {
 		if err := startConfigCenter(rc); err != nil {
-			return err
+			fmt.Println("start config center err = ", err)
+			//return err
 		}
 	}
 	if err := initApplicationConfig(rc); err != nil {
@@ -132,7 +134,7 @@ func (rc *RootConfig) InitConfig(opts ...rootConfOption) error {
 	if err := initServiceDiscoveryConfig(rc); err != nil {
 		return err
 	}
-	if err := initMetadataReportConfig(rc); err != nil {
+	if err := rc.MetadataReportConfig.Init(rc); err != nil {
 		return err
 	}
 	if err := initMetricConfig(rc); err != nil {
@@ -145,10 +147,10 @@ func (rc *RootConfig) InitConfig(opts ...rootConfOption) error {
 		return err
 	}
 	// provider、consumer must last init
-	if err := initProviderConfig(rc); err != nil {
+	if err := rc.Provider.Init(rc); err != nil {
 		return err
 	}
-	if err := initConsumerConfig(rc); err != nil {
+	if err := rc.Consumer.Init(rc); err != nil {
 		return err
 	}
 	return nil

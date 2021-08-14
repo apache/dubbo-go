@@ -29,7 +29,7 @@ import (
 	gxset "github.com/dubbogo/gost/container/set"
 	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
 	gxpage "github.com/dubbogo/gost/hash/page"
-	perrors "github.com/pkg/errors"
+	//perrors "github.com/pkg/errors"
 )
 
 import (
@@ -42,11 +42,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 	"dubbo.apache.org/dubbo-go/v3/remoting/zookeeper"
 	"dubbo.apache.org/dubbo-go/v3/remoting/zookeeper/curator_discovery"
-)
-
-const (
-	// ServiceDiscoveryZkClient zk client name
-	ServiceDiscoveryZkClient = "zk service discovery"
 )
 
 var (
@@ -89,21 +84,14 @@ func newZookeeperServiceDiscovery(name string) (registry.ServiceDiscovery, error
 		return instance, nil
 	}
 
-	sdc, ok := config.GetRootConfig().ServiceDiscoveries[name]
-	if !ok || len(sdc.RemoteRef) == 0 {
-		return nil, perrors.New("could not init the instance because the config is invalid")
-	}
-	remoteConfig, ok := config.GetRootConfig().Remotes[sdc.RemoteRef]
-	if !ok {
-		return nil, perrors.New("could not find the remote config for name: " + sdc.RemoteRef)
-	}
-	rootPath := remoteConfig.GetParam("rootPath", "/services")
+	metadataReportConfig := config.GetMetadataReportConfg()
+	rootPath := "/services"
 	url := common.NewURLWithOptions(
 		common.WithParams(make(url.Values)),
-		common.WithPassword(remoteConfig.Password),
-		common.WithUsername(remoteConfig.Username),
-		common.WithParamsValue(constant.REGISTRY_TIMEOUT_KEY, remoteConfig.TimeoutStr))
-	url.Location = remoteConfig.Address
+		common.WithPassword(metadataReportConfig.Password),
+		common.WithUsername(metadataReportConfig.Username),
+		common.WithParamsValue(constant.REGISTRY_TIMEOUT_KEY, metadataReportConfig.Timeout))
+	url.Location = metadataReportConfig.Address
 	zksd := &zookeeperServiceDiscovery{
 		url:      url,
 		rootPath: rootPath,

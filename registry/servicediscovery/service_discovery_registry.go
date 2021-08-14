@@ -44,12 +44,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/registry/servicediscovery/synthesizer"
 )
 
-const (
-	protocolName = "service-discovery"
-)
-
 func init() {
-	extension.SetRegistry(protocolName, newServiceDiscoveryRegistry)
+	extension.SetRegistry(constant.SERVICE_REGISTRY_PROTOCOL, newServiceDiscoveryRegistry)
 }
 
 // serviceDiscoveryRegistry is the implementation of application-level registry.
@@ -125,12 +121,8 @@ func (s *serviceDiscoveryRegistry) UnSubscribe(url *common.URL, listener registr
 }
 
 func creatServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, error) {
-	sdcName := url.GetParam(constant.SERVICE_DISCOVERY_KEY, "")
-	sdc, ok := config.GetRootConfig().ServiceDiscoveries[sdcName]
-	if !ok {
-		return nil, perrors.Errorf("The service discovery with name: %s is not found", sdcName)
-	}
-	originServiceDiscovery, err := extension.GetServiceDiscovery(sdc.Protocol, sdcName)
+	sdcName := url.GetParam(constant.REGISTRY_KEY, "")
+	originServiceDiscovery, err := extension.GetServiceDiscovery(sdcName)
 	if err != nil {
 		return nil, perrors.WithMessage(err, "Create service discovery fialed")
 	}

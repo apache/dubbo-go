@@ -62,32 +62,24 @@ func (ConsumerConfig) Prefix() string {
 	return constant.ConsumerConfigPrefix
 }
 
-func initConsumerConfig(rc *RootConfig) error {
-	consumer := rc.Consumer
-	if consumer == nil {
-		consumer = new(ConsumerConfig)
+func (cc *ConsumerConfig) Init(rc *RootConfig) error {
+	if cc == nil {
+		return nil
 	}
-	if err := initReferenceConfig(consumer); err != nil {
-		return err
-	}
-	if err := consumer.check(); err != nil {
-		return err
-	}
-	for {
-		if rc.Provider.ready.Load() {
-			consumer.Load()
-			break
+	for k, _ := range cc.References {
+		if err := cc.References[k].Init(rc); err != nil {
+			return err
 		}
 	}
-	rc.Consumer = consumer
-	return nil
-}
-
-func (c *ConsumerConfig) check() error {
-	if err := defaults.Set(c); err != nil {
+	if err := defaults.Set(cc); err != nil {
 		return err
 	}
-	return verify(c)
+	if err := verify(cc); err != nil {
+		return err
+	}
+	cc.rootConfig = rc
+	cc.Load()
+	return nil
 }
 
 func (c *ConsumerConfig) Load() {
