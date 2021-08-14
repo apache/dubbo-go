@@ -44,12 +44,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/remoting/zookeeper/curator_discovery"
 )
 
-var (
-	// 16 would be enough. We won't use concurrentMap because in most cases, there are not race condition
-	instanceMap = make(map[string]registry.ServiceDiscovery, 16)
-	initLock    sync.Mutex
-)
-
 // init will put the service discovery into extension
 func init() {
 	extension.SetServiceDiscovery(constant.ZOOKEEPER_KEY, newZookeeperServiceDiscovery)
@@ -69,21 +63,7 @@ type zookeeperServiceDiscovery struct {
 }
 
 // newZookeeperServiceDiscovery the constructor of newZookeeperServiceDiscovery
-func newZookeeperServiceDiscovery(name string) (registry.ServiceDiscovery, error) {
-	instance, ok := instanceMap[name]
-	if ok {
-		return instance, nil
-	}
-
-	initLock.Lock()
-	defer initLock.Unlock()
-
-	// double check
-	instance, ok = instanceMap[name]
-	if ok {
-		return instance, nil
-	}
-
+func newZookeeperServiceDiscovery() (registry.ServiceDiscovery, error) {
 	metadataReportConfig := config.GetMetadataReportConfg()
 	rootPath := "/services"
 	url := common.NewURLWithOptions(

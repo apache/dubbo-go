@@ -21,7 +21,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"fmt"
 	"net/url"
-	"sync"
 )
 
 import (
@@ -307,21 +306,8 @@ func (n *nacosServiceDiscovery) String() string {
 	return n.descriptor
 }
 
-var (
-	// 16 would be enough. We won't use concurrentMap because in most cases, there are not race condition
-	instanceMap = make(map[string]registry.ServiceDiscovery, 16)
-	initLock    sync.Mutex
-)
-
 // newNacosServiceDiscovery will create new service discovery instance
-func newNacosServiceDiscovery(name string) (registry.ServiceDiscovery, error) {
-	initLock.Lock()
-	defer initLock.Unlock()
-
-	instance, ok := instanceMap[name]
-	if ok {
-		return instance, nil
-	}
+func newNacosServiceDiscovery() (registry.ServiceDiscovery, error) {
 	metadataReportConfig := config.GetMetadataReportConfg()
 	url := common.NewURLWithOptions(
 		common.WithParams(make(url.Values)),
@@ -346,6 +332,5 @@ func newNacosServiceDiscovery(name string) (registry.ServiceDiscovery, error) {
 		descriptor:        descriptor,
 		registryInstances: []registry.ServiceInstance{},
 	}
-	instanceMap[name] = newInstance
 	return newInstance, nil
 }

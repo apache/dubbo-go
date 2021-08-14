@@ -203,8 +203,8 @@ func getExchangeClient(url *common.URL) *remoting.ExchangeClient {
 
 			// todo set by config
 			exchangeClientTmp = remoting.NewExchangeClient(url, getty.NewClient(getty.Options{
-				ConnectTimeout: 3*time.Second,
-				RequestTimeout: 3*time.Second,
+				ConnectTimeout: 3 * time.Second,
+				RequestTimeout: 3 * time.Second,
 			}), 3*time.Second, false)
 			// input store
 			if exchangeClientTmp != nil {

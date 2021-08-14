@@ -25,12 +25,12 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
-var discoveryCreatorMap = make(map[string]func(name string) (registry.ServiceDiscovery, error), 4)
+var discoveryCreatorMap = make(map[string]func() (registry.ServiceDiscovery, error), 4)
 
 // SetServiceDiscovery will store the @creator and @name
 // protocol indicate the implementation, like nacos
 // the name like nacos-1...
-func SetServiceDiscovery(protocol string, creator func(name string) (registry.ServiceDiscovery, error)) {
+func SetServiceDiscovery(protocol string, creator func() (registry.ServiceDiscovery, error)) {
 	discoveryCreatorMap[protocol] = creator
 }
 
@@ -43,5 +43,5 @@ func GetServiceDiscovery(protocol string) (registry.ServiceDiscovery, error) {
 	if !ok {
 		return nil, perrors.New("Could not find the service discovery with discovery protocol: " + protocol)
 	}
-	return creator(protocol)
+	return creator()
 }
