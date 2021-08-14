@@ -18,8 +18,11 @@
 package config
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"github.com/creasty/defaults"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
 // ProtocolConfig is protocol configuration
@@ -50,4 +53,44 @@ func initProtocolsConfig(rc *RootConfig) error {
 func (p *ProtocolConfig) check() error {
 	defaults.MustSet(p)
 	return verify(p)
+}
+
+func NewDefaultProtocolConfig() *ProtocolConfig {
+	return &ProtocolConfig{
+		Name: constant.DEFAULT_PROTOCOL,
+		Port: "20000",
+		Ip:   "127.0.0.1",
+	}
+}
+
+// NewProtocolConfig returns ProtocolConfig with given @opts
+func NewProtocolConfig(opts ...ProtocolConfigOpt) *ProtocolConfig {
+	newConfig := NewDefaultProtocolConfig()
+	for _, v := range opts {
+		v(newConfig)
+	}
+	return newConfig
+}
+
+type ProtocolConfigOpt func(config *ProtocolConfig) *ProtocolConfig
+
+func WithProtocolIP(ip string) ProtocolConfigOpt {
+	return func(config *ProtocolConfig) *ProtocolConfig {
+		config.Ip = ip
+		return config
+	}
+}
+
+func WithProtocolName(protcolName string) ProtocolConfigOpt {
+	return func(config *ProtocolConfig) *ProtocolConfig {
+		config.Name = protcolName
+		return config
+	}
+}
+
+func WithProtocolPort(port string) ProtocolConfigOpt {
+	return func(config *ProtocolConfig) *ProtocolConfig {
+		config.Port = port
+		return config
+	}
 }

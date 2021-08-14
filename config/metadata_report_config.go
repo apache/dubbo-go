@@ -18,7 +18,9 @@
 package config
 
 import (
-	"github.com/creasty/defaults"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"fmt"
 	perrors "github.com/pkg/errors"
 )
 
@@ -35,51 +37,38 @@ type MetadataReportConfig struct {
 	Password string `yaml:"password" json:"password,omitempty"`
 	Timeout  string `yaml:"timeout" json:"timeout,omitempty"`
 	Group    string `yaml:"group" json:"group,omitempty"`
+
+	MetadataReportType string
 }
 
-func initMetadataReportConfig(rc *RootConfig) error {
-	return nil
+// Prefix dubbo.consumer
+func (MetadataReportConfig) Prefix() string {
+	return constant.MetadataReportPrefix
 }
 
-func (c *MetadataReportConfig) CheckConfig() error {
-	// todo check
-	defaults.MustSet(c)
-	return verify(c)
-}
-
-func (c *MetadataReportConfig) Validate() {
-
-	// todo set default application
+func (m *MetadataReportConfig) Init(rc *RootConfig) error {
+	if m == nil {
+		return nil
+	}
+	m.MetadataReportType = rc.Application.MetadataType
+	return m.StartMetadataReport()
 }
 
 // nolint
 func (c *MetadataReportConfig) ToUrl() (*common.URL, error) {
-	//urlMap := make(url.Values)
-
-	//if c.Params != nil {
-	//	for k, v := range c.Params {
-	//		urlMap.Set(k, v)
-	//	}
-	//}
-	//
-	//rc, ok := config.GetBaseConfig().GetRemoteConfig(c.RemoteRef)
-	//
-	//if !ok {
-	//	return nil, perrors.New("Could not find out the remote ref config, name: " + c.RemoteRef)
-	//}
-	//
-	//res, err := common.NewURL(rc.Address,
-	//	common.WithParams(urlMap),
-	//	common.WithUsername(rc.Username),
-	//	common.WithPassword(rc.Password),
-	//	common.WithLocation(rc.Address),
-	//	common.WithProtocol(c.Protocol),
-	//)
-	//if err != nil || len(res.Protocol) == 0 {
-	//	return nil, perrors.New("Invalid MetadataReportConfig.")
-	//}
-	//res.SetParam("metadata", res.Protocol)
-	return nil, nil
+	res, err := common.NewURL(c.Address,
+		//common.WithParams(urlMap),
+		common.WithUsername(c.Username),
+		common.WithPassword(c.Password),
+		common.WithLocation(c.Address),
+		common.WithProtocol(c.Protocol),
+		common.WithParamsValue(constant.METADATATYPE_KEY, c.MetadataReportType),
+	)
+	if err != nil || len(res.Protocol) == 0 {
+		return nil, perrors.New("Invalid MetadataReportConfig.")
+	}
+	res.SetParam("metadata", res.Protocol)
+	return res, nil
 }
 
 func (c *MetadataReportConfig) IsValid() bool {
@@ -87,21 +76,49 @@ func (c *MetadataReportConfig) IsValid() bool {
 }
 
 // StartMetadataReport: The entry of metadata report start
-func (c *MetadataReportConfig) StartMetadataReport(metadataType string, metadataReportConfig *MetadataReportConfig) error {
-	if metadataReportConfig == nil || !metadataReportConfig.IsValid() {
+func (c *MetadataReportConfig) StartMetadataReport() error {
+	if c == nil || !c.IsValid() {
 		return nil
 	}
-	// todo
-	//
-	//if metadataType == constant.METACONFIG_REMOTE && len(metadataReportConfig.RemoteRef) == 0 {
-	//	return perrors.New("MetadataConfig remote ref can not be empty.")
-	//}
-
-	if tmpUrl, err := metadataReportConfig.ToUrl(); err == nil {
+	if tmpUrl, err := c.ToUrl(); err == nil {
 		instance.GetMetadataReportInstance(tmpUrl)
+		return nil
 	} else {
 		return perrors.Wrap(err, "Start MetadataReport failed.")
 	}
+}
 
-	return nil
+func publishServiceDefinition(url *common.URL) {
+	if url.GetParam(constant.METADATATYPE_KEY, "") != constant.REMOTE_METADATA_STORAGE_TYPE {
+		return
+	}
+	if remoteMetadataService, err := extension.GetRemoteMetadataService(); err == nil && remoteMetadataService != nil {
+		remoteMetadataService.PublishServiceDefinition(url)
+	}
+}
+
+//
+// selectMetadataServiceExportedURL get already be exported url
+func selectMetadataServiceExportedURL() *common.URL {
+	var selectedUrl *common.URL
+	metaDataService, err := extension.GetLocalMetadataService("")
+	if err != nil {
+		fmt.Println("selectMetadataServiceExportedURL err = ", err)
+		return nil
+	}
+	urlList, err := metaDataService.GetExportedURLs(constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE)
+	if err != nil {
+		panic(err)
+	}
+	if len(urlList) == 0 {
+		return nil
+	}
+	for _, url := range urlList {
+		selectedUrl = url
+		// rest first
+		if url.Protocol == "rest" {
+			break
+		}
+	}
+	return selectedUrl
 }
