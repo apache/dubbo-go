@@ -97,16 +97,7 @@ func (c *ProviderConfig) Prefix() string {
 }
 
 func (c *ProviderConfig) Load() {
-	// todo Write the current configuration to cache file.
-	//if c.CacheFile != "" {
-	//	if data, err := yaml.MarshalYML(providerConfig); err != nil {
-	//		logger.Errorf("Marshal provider config err: %s", err.Error())
-	//	} else {
-	//		if err := ioutil.WriteFile(provider  CacheFile, data, 0666); err != nil {
-	//			logger.Errorf("Write provider config cache file err: %s", err.Error())
-	//		}
-	//	}
-	//}
+	
 	for key, svs := range c.Services {
 		rpcService := GetProviderService(key)
 		if rpcService == nil {
