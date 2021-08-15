@@ -19,6 +19,9 @@ package config
 
 import (
 	"bytes"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
@@ -112,6 +115,7 @@ func (rc *RootConfig) InitConfig(opts ...rootConfOption) error {
 	for _, opt := range opts {
 		opt.apply(rc)
 	}
+
 	if err := initApplicationConfig(rc); err != nil {
 		return err
 	}
@@ -130,7 +134,7 @@ func (rc *RootConfig) InitConfig(opts ...rootConfOption) error {
 	if err := initServiceDiscoveryConfig(rc); err != nil {
 		return err
 	}
-	if err := initMetadataReportConfig(rc); err != nil {
+	if err := rc.MetadataReportConfig.Init(rc); err != nil {
 		return err
 	}
 	if err := initMetricConfig(rc); err != nil {
@@ -143,10 +147,10 @@ func (rc *RootConfig) InitConfig(opts ...rootConfOption) error {
 		return err
 	}
 	// provider、consumer must last init
-	if err := initProviderConfig(rc); err != nil {
+	if err := rc.Provider.Init(rc); err != nil {
 		return err
 	}
-	if err := initConsumerConfig(rc); err != nil {
+	if err := rc.Consumer.Init(rc); err != nil {
 		return err
 	}
 	return nil

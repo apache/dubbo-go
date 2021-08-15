@@ -18,6 +18,7 @@
 package config
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -39,9 +40,14 @@ type loaderConf struct {
 }
 
 func NewLoaderConf(opts ...LoaderConfOption) *loaderConf {
+	configFilePath := "../conf/dubbogo.yaml"
+	if configFilePathFromEnv := os.Getenv(constant.CONFIG_FILE_ENV_KEY); configFilePathFromEnv != "" {
+		configFilePath = configFilePathFromEnv
+	}
+
 	conf := &loaderConf{
 		genre: "yaml",
-		path:  "./conf/application.yaml",
+		path:  configFilePath,
 		delim: ".",
 	}
 

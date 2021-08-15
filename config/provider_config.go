@@ -21,7 +21,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"fmt"
 	"github.com/creasty/defaults"
-	"go.uber.org/atomic"
 )
 
 import (
@@ -46,8 +45,6 @@ type ProviderConfig struct {
 	FilterConf   interface{} `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf"`
 	// ShutdownConfig *ShutdownConfig            `yaml:"shutdown_conf" json:"shutdown_conf,omitempty" property:"shutdown_conf"`
 	ConfigType map[string]string `yaml:"config_type" json:"config_type,omitempty" property:"config_type"`
-	// 是否初始化完成
-	ready *atomic.Bool
 }
 
 func (c *ProviderConfig) CheckConfig() error {
@@ -56,21 +53,20 @@ func (c *ProviderConfig) CheckConfig() error {
 	return verify(c)
 }
 
-func initProviderConfig(rc *RootConfig) error {
-	provider := rc.Provider
-	if provider == nil {
-		provider = new(ProviderConfig)
+func (c *ProviderConfig) Init(rc *RootConfig) error {
+	if c == nil {
+		return nil
 	}
-
-	if err := initServiceConfig(provider); err != nil {
+	for k, _ := range c.Services {
+		if err := c.Services[k].Init(rc); err != nil {
+			return err
+		}
+	}
+	if err := defaults.Set(c); err != nil {
 		return err
 	}
-	if err := defaults.Set(provider); err != nil {
-		return err
-	}
-	provider.Registry = translateRegistryIds(provider.Registry)
-	provider.Load()
-	rc.Provider = provider
+	c.Registry = translateRegistryIds(c.Registry)
+	c.Load()
 	return nil
 }
 
@@ -101,17 +97,7 @@ func (c *ProviderConfig) Prefix() string {
 }
 
 func (c *ProviderConfig) Load() {
-	// todo Write the current configuration to cache file.
-	//if c.CacheFile != "" {
-	//	if data, err := yaml.MarshalYML(providerConfig); err != nil {
-	//		logger.Errorf("Marshal provider config err: %s", err.Error())
-	//	} else {
-	//		if err := ioutil.WriteFile(provider  CacheFile, data, 0666); err != nil {
-	//			logger.Errorf("Write provider config cache file err: %s", err.Error())
-	//		}
-	//	}
-	//}
-	c.ready = atomic.NewBool(false)
+	
 	for key, svs := range c.Services {
 		rpcService := GetProviderService(key)
 		if rpcService == nil {
@@ -124,7 +110,6 @@ func (c *ProviderConfig) Load() {
 			panic(fmt.Sprintf("service %s export failed! err: %#v", key, err))
 		}
 	}
-	c.ready = atomic.NewBool(true)
 }
 
 // SetProviderConfig sets provider config by @p

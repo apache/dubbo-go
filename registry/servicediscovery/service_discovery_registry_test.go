@@ -18,6 +18,7 @@
 package servicediscovery
 
 import (
+	gxpage "github.com/dubbogo/gost/hash/page"
 	"testing"
 )
 
@@ -50,7 +51,7 @@ func TestServiceDiscoveryRegistry_Register(t *testing.T) {
 		return
 	})
 
-	extension.SetServiceDiscovery("mock", func(name string) (discovery registry.ServiceDiscovery, err error) {
+	extension.SetServiceDiscovery("mock", func() (discovery registry.ServiceDiscovery, err error) {
 		return &mockServiceDiscovery{}, nil
 	})
 

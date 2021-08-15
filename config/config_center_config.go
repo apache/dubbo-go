@@ -78,20 +78,6 @@ func (c *CenterConfig) check() error {
 	return verify(c)
 }
 
-func (c *CenterConfig) Validate() {
-	// todo set default application
-}
-
-func (c *CenterConfig) Init() error {
-	if c != nil {
-		if err := c.check(); err != nil {
-			return err
-		}
-
-	}
-	return nil
-}
-
 func initConfigCenter(rc *RootConfig) error {
 	center := rc.ConfigCenter
 	if center == nil || rc.refresh {

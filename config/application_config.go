@@ -31,7 +31,7 @@ type ApplicationConfig struct {
 	Owner        string `default:"dubbo-go" yaml:"owner" json:"owner,omitempty" property:"owner"`
 	Environment  string `default:"dev" yaml:"environment" json:"environment,omitempty" property:"environment"`
 	// the metadata type. remote or local
-	MetadataType string `default:"local" yaml:"metadataType" json:"metadataType,omitempty" property:"metadataType"`
+	MetadataType string `default:"local" yaml:"metadata-type" json:"metadataType,omitempty" property:"metadataType"`
 }
 
 // Prefix dubbo.applicationConfig

@@ -58,7 +58,7 @@ type DubboInvoker struct {
 func NewDubboInvoker(url *common.URL) (*DubboInvoker, error) {
 	rt := config.GetConsumerConfig().RequestTimeout
 
-	timeout:=url.GetParamDuration(constant.TIMEOUT_KEY,rt)
+	timeout := url.GetParamDuration(constant.TIMEOUT_KEY, rt)
 	key := url.GetParam(constant.BEAN_NAME_KEY, "")
 	consumerService := config.GetConsumerService(key)
 

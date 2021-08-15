@@ -73,18 +73,19 @@ type ServiceConfig struct {
 	Tag                         string            `yaml:"tag" json:"tag,omitempty" property:"tag"`
 	GrpcMaxMessageSize          int               `default:"4" yaml:"max_message_size" json:"max_message_size,omitempty"`
 
-	Protocols     map[string]*ProtocolConfig
-	unexported    *atomic.Bool
-	exported      *atomic.Bool
-	export        bool // a flag to control whether the current service should export or not
-	rpcService    common.RPCService
-	cacheMutex    sync.Mutex
-	cacheProtocol protocol.Protocol
+	Protocols       map[string]*ProtocolConfig
+	Registries      map[string]*RegistryConfig
+	ProxyFactoryKey string
+	unexported      *atomic.Bool
+	exported        *atomic.Bool
+	export          bool // a flag to control whether the current service should export or not
+	rpcService      common.RPCService
+	cacheMutex      sync.Mutex
+	cacheProtocol   protocol.Protocol
+	exportersLock   sync.Mutex
+	exporters       []protocol.Exporter
 
-	exportersLock sync.Mutex
-	exporters     []protocol.Exporter
-
-	rootConfig *RootConfig
+	metadataType string
 }
 
 // Prefix returns dubbo.service.${InterfaceName}.
@@ -92,22 +93,24 @@ func (svc *ServiceConfig) Prefix() string {
 	return constant.ServiceConfigPrefix + svc.id
 }
 
-func initServiceConfig(rc *ProviderConfig) error {
-	services := rc.Services
-	if services == nil {
-		return nil
+func (svc *ServiceConfig) Init(rc *RootConfig) error {
+	if err := initProviderMethodConfig(svc); err != nil {
+		return err
 	}
-	for _, service := range services {
+	if err := defaults.Set(svc); err != nil {
+		return err
+	}
+	svc.exported = atomic.NewBool(false)
+	svc.metadataType = rc.Application.MetadataType
+	svc.unexported = atomic.NewBool(false)
+	svc.Registries = rc.Registries
+	svc.Protocols = rc.Protocols
+	if rc.Provider != nil {
+		svc.ProxyFactoryKey = rc.Provider.ProxyFactory
+	}
 
-		if err := initProviderMethodConfig(service); err != nil {
-			return err
-		}
-		if err := service.check(); err != nil {
-			return err
-		}
-	}
-	rc.Services = services
-	return nil
+	svc.export = true
+	return verify(svc)
 }
 
 // UnmarshalYAML unmarshal the ServiceConfig by @unmarshal function
@@ -131,21 +134,7 @@ func (svc *ServiceConfig) CheckConfig() error {
 	return verify(svc)
 }
 
-func (svc *ServiceConfig) check() error {
-	if err := defaults.Set(svc); err != nil {
-		return err
-	}
-	// todo root config must ?
-	svc.rootConfig = rootConfig
-	svc.exported = atomic.NewBool(false)
-	svc.unexported = atomic.NewBool(false)
-	// svc.cacheProtocol = rootConfig.Protocols[0]
-	svc.export = true
-	return verify(svc)
-}
-
 func (svc *ServiceConfig) Validate(rootConfig *RootConfig) {
-	svc.rootConfig = rootConfig
 	svc.exported = atomic.NewBool(false)
 	svc.unexported = atomic.NewBool(false)
 	svc.export = true
@@ -218,8 +207,6 @@ func getRandomPort(protocolConfigs []*ProtocolConfig) *list.List {
 
 // Export exports the service
 func (svc *ServiceConfig) Export() error {
-	// TODO: config center start here
-
 	// TODO: delay export
 	if svc.unexported != nil && svc.unexported.Load() {
 		err := perrors.Errorf("The service %v has already unexported!", svc.Interface)
@@ -231,9 +218,9 @@ func (svc *ServiceConfig) Export() error {
 		return nil
 	}
 
-	regUrls := loadRegistries(svc.Registry, svc.rootConfig.Registries, common.PROVIDER)
+	regUrls := loadRegistries(svc.Registry, svc.Registries, common.PROVIDER)
 	urlMap := svc.getUrlMap()
-	protocolConfigs := loadProtocol(svc.Protocol, svc.rootConfig.Protocols)
+	protocolConfigs := loadProtocol(svc.Protocol, svc.Protocols)
 	if len(protocolConfigs) == 0 {
 		logger.Warnf("The service %v's '%v' protocols don't has right protocolConfigs", svc.Interface, svc.Protocol)
 		return nil
@@ -241,7 +228,7 @@ func (svc *ServiceConfig) Export() error {
 
 	ports := getRandomPort(protocolConfigs)
 	nextPort := ports.Front()
-	proxyFactory := extension.GetProxyFactory(svc.rootConfig.Provider.ProxyFactory)
+	proxyFactory := extension.GetProxyFactory(svc.ProxyFactoryKey)
 	for _, proto := range protocolConfigs {
 		// registry the service reflect
 		methods, err := common.ServiceMap.Register(svc.Interface, proto.Name, svc.Group, svc.Version, svc.rpcService)
@@ -267,6 +254,7 @@ func (svc *ServiceConfig) Export() error {
 			//common.WithParamsValue(constant.SSL_ENABLED_KEY, strconv.FormatBool(config.GetSslEnabled())),
 			common.WithMethods(strings.Split(methods, ",")),
 			common.WithToken(svc.Token),
+			common.WithParamsValue(constant.METADATATYPE_KEY, svc.metadataType),
 		)
 		if len(svc.Tag) > 0 {
 			ivkURL.AddParam(constant.Tagkey, svc.Tag)
@@ -331,7 +319,7 @@ func loadProtocol(protocolIds []string, protocols map[string]*ProtocolConfig) []
 }
 
 func loadRegistries(registryIds []string, registries map[string]*RegistryConfig, roleType common.RoleType) []*common.URL {
-	var urls []*common.URL
+	var registryURLs []*common.URL
 	//trSlice := strings.Split(targetRegistries, ",")
 
 	for k, registryConf := range registries {
@@ -358,9 +346,19 @@ func loadRegistries(registryIds []string, registries map[string]*RegistryConfig,
 			addresses := strings.Split(registryConf.Address, ",")
 			address := addresses[0]
 			address = registryConf.translateRegistryAddress()
-			url, err := common.NewURL(constant.REGISTRY_PROTOCOL+"://"+address,
+			var registryURLProtocol string
+			if registryConf.RegistryType == "service" {
+				// service discovery protocol
+				registryURLProtocol = constant.SERVICE_REGISTRY_PROTOCOL
+			} else {
+				registryURLProtocol = constant.REGISTRY_PROTOCOL
+			}
+			registryURL, err := common.NewURL(registryURLProtocol+"://"+address,
 				common.WithParams(registryConf.getUrlMap(roleType)),
-				common.WithParamsValue("simplified", strconv.FormatBool(registryConf.Simplified)),
+				common.WithParamsValue(constant.SIMPLIFIED_KEY, strconv.FormatBool(registryConf.Simplified)),
+				common.WithParamsValue(constant.REGISTRY_KEY, registryConf.Protocol),
+				common.WithParamsValue(constant.GROUP_KEY, registryConf.Group),
+				common.WithParamsValue(constant.NAMESPACE_KEY, registryConf.Namespace),
 				common.WithUsername(registryConf.Username),
 				common.WithPassword(registryConf.Password),
 				common.WithLocation(registryConf.Address),
@@ -370,12 +368,12 @@ func loadRegistries(registryIds []string, registries map[string]*RegistryConfig,
 				logger.Errorf("The registry id: %s url is invalid, error: %#v", k, err)
 				panic(err)
 			} else {
-				urls = append(urls, url)
+				registryURLs = append(registryURLs, registryURL)
 			}
 		}
 	}
 
-	return urls
+	return registryURLs
 }
 
 // Unexport will call unexport of all exporters service config exported
@@ -435,7 +433,11 @@ func (svc *ServiceConfig) getUrlMap() url.Values {
 	//urlMap.Set(constant.ENVIRONMENT_KEY, applicationConfig.Environment)
 
 	// filter
-	urlMap.Set(constant.SERVICE_FILTER_KEY, mergeValue(svc.rootConfig.Provider.Filter, svc.Filter, constant.DEFAULT_SERVICE_FILTERS))
+	if svc.Filter == "" {
+		urlMap.Set(constant.SERVICE_FILTER_KEY, constant.DEFAULT_SERVICE_FILTERS)
+	} else {
+		urlMap.Set(constant.SERVICE_FILTER_KEY, svc.Filter)
+	}
 
 	// filter special config
 	urlMap.Set(constant.AccessLogFilterKey, svc.AccessLog)
@@ -486,10 +488,10 @@ func (svc *ServiceConfig) GetExportedUrls() []*common.URL {
 	return nil
 }
 
-func publishServiceDefinition(url *common.URL) {
+func (svc *ServiceConfig) publishServiceDefinition(url *common.URL) {
+	//svc.rootConfig.MetadataReportConfig.
 	if remoteMetadataService, err := extension.GetRemoteMetadataService(); err == nil && remoteMetadataService != nil {
 		remoteMetadataService.PublishServiceDefinition(url)
-
 	}
 }
 
@@ -500,30 +502,25 @@ func (svc *ServiceConfig) postProcessConfig(url *common.URL) {
 	}
 }
 
-// NewServiceConfig The only way to get a new ServiceConfig
-func NewServiceConfig(id string) *ServiceConfig {
-	return &ServiceConfig{
-		id:         id,
-		unexported: atomic.NewBool(false),
-		exported:   atomic.NewBool(false),
-		export:     true,
-	}
-}
-
 // ServiceConfigOpt is the option to init ServiceConfig
 type ServiceConfigOpt func(config *ServiceConfig) *ServiceConfig
 
 // NewDefaultServiceConfig returns default ServiceConfig
 func NewDefaultServiceConfig() *ServiceConfig {
-	newServiceConfig := NewServiceConfig("")
+	newServiceConfig := &ServiceConfig{
+		unexported: atomic.NewBool(false),
+		exported:   atomic.NewBool(false),
+		export:     true,
+		Protocols:  make(map[string]*ProtocolConfig),
+		Registries: make(map[string]*RegistryConfig),
+	}
 	newServiceConfig.Params = make(map[string]string)
 	newServiceConfig.Methods = make([]*MethodConfig, 0, 8)
 	return newServiceConfig
 }
 
-// NewServiceConfigByAPI is named as api, because there is NewServiceConfig func already declared
-// NewServiceConfigByAPI returns ServiceConfig with given @opts
-func NewServiceConfigByAPI(opts ...ServiceConfigOpt) *ServiceConfig {
+// NewServiceConfig returns ServiceConfig with given @opts
+func NewServiceConfig(opts ...ServiceConfigOpt) *ServiceConfig {
 	defaultServiceConfig := NewDefaultServiceConfig()
 	for _, v := range opts {
 		v(defaultServiceConfig)
@@ -551,6 +548,14 @@ func WithServiceProtocol(protocol string) ServiceConfigOpt {
 func WithServiceInterface(interfaceName string) ServiceConfigOpt {
 	return func(config *ServiceConfig) *ServiceConfig {
 		config.Interface = interfaceName
+		return config
+	}
+}
+
+// WithServiceMetadataType returns ServiceConfigOpt with given @metadataType
+func WithServiceMetadataType(metadataType string) ServiceConfigOpt {
+	return func(config *ServiceConfig) *ServiceConfig {
+		config.metadataType = metadataType
 		return config
 	}
 }
@@ -587,6 +592,55 @@ func WithServiceMethod(name, retries, lb string) ServiceConfigOpt {
 			Retries:     retries,
 			LoadBalance: lb,
 		})
+		return config
+	}
+}
+
+func WithServiceProtocols(protocolName string, protocolConfig *ProtocolConfig) ServiceConfigOpt {
+	return func(config *ServiceConfig) *ServiceConfig {
+		config.Protocols[protocolName] = protocolConfig
+		return config
+	}
+}
+
+func WithServiceRegistries(registryName string, registryConfig *RegistryConfig) ServiceConfigOpt {
+	return func(config *ServiceConfig) *ServiceConfig {
+		config.Registries[registryName] = registryConfig
+		return config
+	}
+}
+
+func WithServiceGroup(group string) ServiceConfigOpt {
+	return func(config *ServiceConfig) *ServiceConfig {
+		config.Group = group
+		return config
+	}
+}
+
+func WithServiceVersion(version string) ServiceConfigOpt {
+	return func(config *ServiceConfig) *ServiceConfig {
+		config.Version = version
+		return config
+	}
+}
+
+func WithProxyFactoryKey(proxyFactoryKey string) ServiceConfigOpt {
+	return func(config *ServiceConfig) *ServiceConfig {
+		config.ProxyFactoryKey = proxyFactoryKey
+		return config
+	}
+}
+
+func WithRPCService(service common.RPCService) ServiceConfigOpt {
+	return func(config *ServiceConfig) *ServiceConfig {
+		config.rpcService = service
+		return config
+	}
+}
+
+func WithServiceID(id string) ServiceConfigOpt {
+	return func(config *ServiceConfig) *ServiceConfig {
+		config.id = id
 		return config
 	}
 }

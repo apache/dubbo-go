@@ -36,10 +36,11 @@ import (
 
 // RegistryConfig is the configuration of the registry center
 type RegistryConfig struct {
-	Protocol string `validate:"required" yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
-	Timeout  string `default:"10s" validate:"required" yaml:"timeout" json:"timeout,omitempty" property:"timeout"` // unit: second
-	Group    string `yaml:"group" json:"group,omitempty" property:"group"`
-	TTL      string `default:"10m" yaml:"ttl" json:"ttl,omitempty" property:"ttl"` // unit: minute
+	Protocol  string `validate:"required" yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
+	Timeout   string `default:"10s" validate:"required" yaml:"timeout" json:"timeout,omitempty" property:"timeout"` // unit: second
+	Group     string `yaml:"group" json:"group,omitempty" property:"group"`
+	Namespace string `yaml:"namespace" json:"namespace,omitempty" property:"namespace"`
+	TTL       string `default:"10m" yaml:"ttl" json:"ttl,omitempty" property:"ttl"` // unit: minute
 	// for registry
 	Address    string `validate:"required" yaml:"address" json:"address,omitempty" property:"address"`
 	Username   string `yaml:"username" json:"username,omitempty" property:"username"`
@@ -51,8 +52,9 @@ type RegistryConfig struct {
 	Zone string `yaml:"zone" json:"zone,omitempty" property:"zone"`
 	// Affects traffic distribution among registriesConfig,
 	// useful when subscribe to multiple registriesConfig Take effect only when no preferred registry is specified.
-	Weight int64             `yaml:"weight" json:"weight,omitempty" property:"weight"`
-	Params map[string]string `yaml:"params" json:"params,omitempty" property:"params"`
+	Weight       int64             `yaml:"weight" json:"weight,omitempty" property:"weight"`
+	Params       map[string]string `yaml:"params" json:"params,omitempty" property:"params"`
+	RegistryType string            `yaml:"registry-type"`
 }
 
 // Prefix dubbo.registriesConfig
