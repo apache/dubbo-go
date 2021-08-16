@@ -36,22 +36,49 @@ import (
 	hessian "github.com/apache/dubbo-go-hessian2"
 	"github.com/apache/dubbo-go/common"
 	. "github.com/apache/dubbo-go/common/constant"
-	"github.com/apache/dubbo-go/common/proxy/proxy_factory"
-	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/invocation"
 	"github.com/apache/dubbo-go/remoting"
 )
 
 func TestRunSuite(t *testing.T) {
-	svr, url := InitTest(t)
-	client := getClient(url)
+	initTestEnvironment(t)
+	userUrl := initUserUrl(t)
+	server := getServer(userUrl)
+	client := getClient(userUrl)
 	assert.NotNil(t, client)
+
 	testRequestOneWay(t, client)
-	testClient_Call(t, client)
-	testClient_AsyncCall(t, client)
-	svr.Stop()
+	testClientCall(t, client)
+	testClientAsyncCall(t, client)
+	server.Stop()
 }
+
+//////////////////////////////////
+// init special url
+//////////////////////////////////
+
+func initUserUrl(t *testing.T) *common.URL {
+	hessian.RegisterPOJO(&User{})
+	remoting.RegistryCodec("dubbo", &DubboTestCodec{})
+
+	methods, err := common.ServiceMap.Register("com.ikurento.user.UserProvider", "dubbo", "", "", &UserProvider{})
+	assert.NoError(t, err)
+	assert.Equal(t, "GetBigPkg,GetUser,GetUser0,GetUser1,GetUser2,GetUser3,GetUser4,GetUser5,GetUser6", methods)
+
+	url, err := common.NewURL("dubbo://127.0.0.1:20060/com.ikurento.user.UserProvider?anyhost=true&" +
+		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
+		"environment=dev&interface=com.ikurento.user.UserProvider&ip=127.0.0.1&methods=GetUser%2C&" +
+		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
+		"side=provider&timeout=3000&timestamp=1556509797245&bean.name=UserProvider")
+	assert.NoError(t, err)
+
+	return url
+}
+
+//////////////////////////////////
+// test cases
+//////////////////////////////////
 
 func testRequestOneWay(t *testing.T, client *Client) {
 
@@ -67,32 +94,7 @@ func testRequestOneWay(t *testing.T, client *Client) {
 	assert.NoError(t, err)
 }
 
-func createInvocation(methodName string, callback interface{}, reply interface{}, arguments []interface{},
-	parameterValues []reflect.Value) *invocation.RPCInvocation {
-	return invocation.NewRPCInvocationWithOptions(invocation.WithMethodName(methodName),
-		invocation.WithArguments(arguments), invocation.WithReply(reply),
-		invocation.WithCallBack(callback), invocation.WithParameterValues(parameterValues))
-}
-
-func setAttachment(invocation *invocation.RPCInvocation, attachments map[string]string) {
-	for key, value := range attachments {
-		invocation.SetAttachments(key, value)
-	}
-}
-
-func getClient(url *common.URL) *Client {
-	client := NewClient(Options{
-		ConnectTimeout: config.GetConsumerConfig().ConnectTimeout,
-	})
-
-	if err := client.Connect(url); err != nil {
-		return nil
-	}
-	return client
-}
-
-func testClient_Call(t *testing.T, c *Client) {
-
+func testClientCall(t *testing.T, c *Client) {
 	testGetBigPkg(t, c)
 	testGetUser(t, c)
 	testGetUser0(t, c)
@@ -309,7 +311,7 @@ func testGetUser61(t *testing.T, c *Client) {
 	assert.Equal(t, User{Id: "1", Name: ""}, *user)
 }
 
-func testClient_AsyncCall(t *testing.T, client *Client) {
+func testClientAsyncCall(t *testing.T, client *Client) {
 	user := &User{}
 	wg := sync.WaitGroup{}
 	request := remoting.NewRequest("2.0.2")
@@ -335,86 +337,6 @@ func testClient_AsyncCall(t *testing.T, client *Client) {
 	assert.NoError(t, err)
 	assert.Equal(t, User{}, *user)
 	wg.Wait()
-}
-
-func InitTest(t *testing.T) (*Server, *common.URL) {
-
-	hessian.RegisterPOJO(&User{})
-	remoting.RegistryCodec("dubbo", &DubboTestCodec{})
-
-	methods, err := common.ServiceMap.Register("com.ikurento.user.UserProvider", "dubbo", "", "", &UserProvider{})
-	assert.NoError(t, err)
-	assert.Equal(t, "GetBigPkg,GetUser,GetUser0,GetUser1,GetUser2,GetUser3,GetUser4,GetUser5,GetUser6", methods)
-
-	// config
-	SetClientConf(ClientConfig{
-		ConnectionNum:   2,
-		HeartbeatPeriod: "5s",
-		SessionTimeout:  "20s",
-		GettySessionParam: GettySessionParam{
-			CompressEncoding: false,
-			TcpNoDelay:       true,
-			TcpKeepAlive:     true,
-			KeepAlivePeriod:  "120s",
-			TcpRBufSize:      262144,
-			TcpWBufSize:      65536,
-			PkgWQSize:        512,
-			TcpReadTimeout:   "4s",
-			TcpWriteTimeout:  "5s",
-			WaitTimeout:      "1s",
-			MaxMsgLen:        10240000000,
-			SessionName:      "client",
-		},
-	})
-	assert.NoError(t, clientConf.CheckValidity())
-	SetServerConfig(ServerConfig{
-		SessionNumber:  700,
-		SessionTimeout: "20s",
-		GettySessionParam: GettySessionParam{
-			CompressEncoding: false,
-			TcpNoDelay:       true,
-			TcpKeepAlive:     true,
-			KeepAlivePeriod:  "120s",
-			TcpRBufSize:      262144,
-			TcpWBufSize:      65536,
-			PkgWQSize:        512,
-			TcpReadTimeout:   "1s",
-			TcpWriteTimeout:  "5s",
-			WaitTimeout:      "1s",
-			MaxMsgLen:        10240000000,
-			SessionName:      "server",
-		}})
-	assert.NoError(t, srvConf.CheckValidity())
-
-	url, err := common.NewURL("dubbo://127.0.0.1:20060/com.ikurento.user.UserProvider?anyhost=true&" +
-		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
-		"environment=dev&interface=com.ikurento.user.UserProvider&ip=127.0.0.1&methods=GetUser%2C&" +
-		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
-		"side=provider&timeout=3000&timestamp=1556509797245&bean.name=UserProvider")
-	assert.NoError(t, err)
-	// init server
-	userProvider := &UserProvider{}
-	_, err = common.ServiceMap.Register("", url.Protocol, "", "0.0.1", userProvider)
-	assert.NoError(t, err)
-	invoker := &proxy_factory.ProxyInvoker{
-		BaseInvoker: *protocol.NewBaseInvoker(url),
-	}
-	handler := func(invocation *invocation.RPCInvocation) protocol.RPCResult {
-		//result := protocol.RPCResult{}
-		r := invoker.Invoke(context.Background(), invocation)
-		result := protocol.RPCResult{
-			Err:   r.Error(),
-			Rest:  r.Result(),
-			Attrs: r.Attachments(),
-		}
-		return result
-	}
-	server := NewServer(url, handler)
-	server.Start()
-
-	time.Sleep(time.Second * 2)
-
-	return server, url
 }
 
 //////////////////////////////////
@@ -451,7 +373,7 @@ func (u *UserProvider) GetUser(ctx context.Context, req []interface{}, rsp *User
 }
 
 func (u *UserProvider) GetUser0(id string, k *User, name string) (User, error) {
-	// fix testClient_AsyncCall assertion
+	// fix testClientAsyncCall assertion
 	time.Sleep(1 * time.Second)
 	return User{Id: id, Name: name}, nil
 }

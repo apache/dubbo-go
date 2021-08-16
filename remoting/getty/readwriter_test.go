@@ -32,6 +32,7 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/proxy/proxy_factory"
+	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/dubbo/impl"
 	"github.com/apache/dubbo-go/protocol/invocation"
@@ -39,54 +40,24 @@ import (
 )
 
 func TestTCPPackageHandle(t *testing.T) {
-	svr, url := getServer(t)
-	client := getClient(url)
-	testDecodeTCPPackage(t, svr, client)
-	svr.Stop()
+	initTestEnvironment(t)
+	adminUrl := initAdminUrl(t)
+	server := getServer(adminUrl)
+	client := getClient(adminUrl)
+
+	testDecodeTCPPackage(t, server, client)
+	server.Stop()
 }
 
-func testDecodeTCPPackage(t *testing.T, svr *Server, client *Client) {
-	request := remoting.NewRequest("2.0.2")
-	ap := &AdminProvider{}
-	rpcInvocation := createInvocation("GetAdmin", nil, nil, []interface{}{[]interface{}{"1", "username"}},
-		[]reflect.Value{reflect.ValueOf([]interface{}{"1", "username"}), reflect.ValueOf(ap)})
-	attachment := map[string]string{
-		constant.INTERFACE_KEY: "com.ikurento.user.AdminProvider",
-		constant.PATH_KEY:      "AdminProvider",
-		constant.VERSION_KEY:   "1.0.0",
-	}
-	setAttachment(rpcInvocation, attachment)
-	request.Data = rpcInvocation
-	request.Event = false
-	request.TwoWay = false
+//////////////////////////////////
+// before execute getty_test
+// 1. init config
+// 2. init url
+// 3. init server
+// 4. init client
+//////////////////////////////////
 
-	pkgWriteHandler := NewRpcClientPackageHandler(client)
-	pkgBytes, err := pkgWriteHandler.Write(nil, request)
-	assert.NoError(t, err)
-	pkgReadHandler := NewRpcServerPackageHandler(svr)
-	_, pkgLen, err := pkgReadHandler.Read(nil, pkgBytes)
-	assert.NoError(t, err)
-	assert.Equal(t, pkgLen, len(pkgBytes))
-
-	// simulate incomplete tcp package
-	incompletePkgLen := len(pkgBytes) - 10
-	assert.True(t, incompletePkgLen >= impl.HEADER_LENGTH, "header buffer too short")
-	incompletePkg := pkgBytes[0 : incompletePkgLen-1]
-	pkg, pkgLen, err := pkgReadHandler.Read(nil, incompletePkg)
-	assert.NoError(t, err)
-	assert.Equal(t, pkg, nil)
-	assert.Equal(t, pkgLen, 0)
-}
-
-func getServer(t *testing.T) (*Server, *common.URL) {
-	hessian.RegisterPOJO(&User{})
-	remoting.RegistryCodec("dubbo", &DubboTestCodec{})
-
-	methods, err := common.ServiceMap.Register("com.ikurento.user.AdminProvider", "dubbo", "", "", &AdminProvider{})
-	assert.NoError(t, err)
-	assert.Equal(t, "GetAdmin", methods)
-
-	// config
+func initTestEnvironment(t *testing.T) {
 	SetClientConf(ClientConfig{
 		ConnectionNum:   2,
 		HeartbeatPeriod: "5s",
@@ -125,17 +96,27 @@ func getServer(t *testing.T) (*Server, *common.URL) {
 			SessionName:      "server",
 		}})
 	assert.NoError(t, srvConf.CheckValidity())
+}
 
-	url, err := common.NewURL("dubbo://127.0.0.1:20061/com.ikurento.user.AdminProvider?anyhost=true&" +
+func initAdminUrl(t *testing.T) *common.URL {
+	hessian.RegisterPOJO(&User{})
+	remoting.RegistryCodec("dubbo", &DubboTestCodec{})
+
+	url, err := common.NewURL("dubbo://127.0.0.1:20061/?anyhost=true&" +
 		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
 		"environment=dev&interface=com.ikurento.user.AdminProvider&ip=127.0.0.1&methods=GetAdmin%2C&" +
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
 		"side=provider&timeout=3000&timestamp=1556509797245&bean.name=AdminProvider")
 	assert.NoError(t, err)
-	// init server
-	adminProvider := &AdminProvider{}
-	_, err = common.ServiceMap.Register("com.ikurento.user.AdminProvider", url.Protocol, "", "0.0.1", adminProvider)
+
+	methods, err := common.ServiceMap.Register("com.ikurento.user.AdminProvider", url.Protocol, "", "", &AdminProvider{})
 	assert.NoError(t, err)
+	assert.Equal(t, "GetAdmin", methods)
+
+	return url
+}
+
+func getServer(url *common.URL) *Server {
 	invoker := &proxy_factory.ProxyInvoker{
 		BaseInvoker: *protocol.NewBaseInvoker(url),
 	}
@@ -154,8 +135,77 @@ func getServer(t *testing.T) (*Server, *common.URL) {
 
 	time.Sleep(time.Second * 2)
 
-	return server, url
+	return server
 }
+
+func getClient(url *common.URL) *Client {
+	client := NewClient(Options{
+		ConnectTimeout: config.GetConsumerConfig().ConnectTimeout,
+	})
+
+	if err := client.Connect(url); err != nil {
+		return nil
+	}
+	return client
+}
+
+//////////////////////////////////
+// test util
+//////////////////////////////////
+
+func createInvocation(methodName string, callback interface{}, reply interface{}, arguments []interface{},
+	parameterValues []reflect.Value) *invocation.RPCInvocation {
+	return invocation.NewRPCInvocationWithOptions(invocation.WithMethodName(methodName),
+		invocation.WithArguments(arguments), invocation.WithReply(reply),
+		invocation.WithCallBack(callback), invocation.WithParameterValues(parameterValues))
+}
+
+func setAttachment(invocation *invocation.RPCInvocation, attachments map[string]string) {
+	for key, value := range attachments {
+		invocation.SetAttachments(key, value)
+	}
+}
+
+//////////////////////////////////
+// test cases
+//////////////////////////////////
+
+func testDecodeTCPPackage(t *testing.T, svr *Server, client *Client) {
+	request := remoting.NewRequest("2.0.2")
+	ap := &AdminProvider{}
+	rpcInvocation := createInvocation("GetAdmin", nil, nil, []interface{}{[]interface{}{"1", "username"}},
+		[]reflect.Value{reflect.ValueOf([]interface{}{"1", "username"}), reflect.ValueOf(ap)})
+	attachment := map[string]string{
+		constant.INTERFACE_KEY: "com.ikurento.user.AdminProvider",
+		constant.PATH_KEY:      "AdminProvider",
+		constant.VERSION_KEY:   "1.0.0",
+	}
+	setAttachment(rpcInvocation, attachment)
+	request.Data = rpcInvocation
+	request.Event = false
+	request.TwoWay = false
+
+	pkgWriteHandler := NewRpcClientPackageHandler(client)
+	pkgBytes, err := pkgWriteHandler.Write(nil, request)
+	assert.NoError(t, err)
+	pkgReadHandler := NewRpcServerPackageHandler(svr)
+	_, pkgLen, err := pkgReadHandler.Read(nil, pkgBytes)
+	assert.NoError(t, err)
+	assert.Equal(t, pkgLen, len(pkgBytes))
+
+	// simulate incomplete tcp package
+	incompletePkgLen := len(pkgBytes) - 10
+	assert.True(t, incompletePkgLen >= impl.HEADER_LENGTH, "header buffer too short")
+	incompletePkg := pkgBytes[0 : incompletePkgLen-1]
+	pkg, pkgLen, err := pkgReadHandler.Read(nil, incompletePkg)
+	assert.NoError(t, err)
+	assert.Equal(t, pkg, nil)
+	assert.Equal(t, pkgLen, 0)
+}
+
+//////////////////////////////////
+// provider
+//////////////////////////////////
 
 type AdminProvider struct {
 }
