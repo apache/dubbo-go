@@ -307,3 +307,12 @@ const (
 	// SERVICE_DISCOVERY_KEY indicate which service discovery instance will be used
 	SERVICE_DISCOVERY_KEY = "service_discovery"
 )
+
+// Generic Filter
+
+const (
+	GenericSerializationDefault = "true"
+	// disable "protobuf-json" temporarily
+	//GenericSerializationProtobuf = "protobuf-json"
+	GenericSerializationGson = "gson"
+)
