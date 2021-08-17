@@ -29,6 +29,11 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config"
 )
 
+const (
+	TCP_READ_TIMEOUT_MIN_VALUE  = time.Second * 1
+	TCP_WRITE_TIMEOUT_MIN_VALUE = time.Second * 5
+)
+
 type (
 	// GettySessionParam is session configuration for getty
 	GettySessionParam struct {
@@ -162,18 +167,13 @@ func (c *GettySessionParam) CheckValidity() error {
 		return perrors.WithMessagef(err, "time.ParseDuration(KeepAlivePeriod{%#v})", c.KeepAlivePeriod)
 	}
 
-	var tcpTimeout *time.Duration
-	tcpTimeoutMinVal := time.Second * 1
-	if tcpTimeout, err = parseTimeDurationByRange(c.TcpReadTimeout, &tcpTimeoutMinVal, nil); err != nil {
+	if c.tcpReadTimeout, err = parseTimeDurationByRange(c.TcpReadTimeout, TCP_READ_TIMEOUT_MIN_VALUE, nil); err != nil {
 		return perrors.WithMessagef(err, "time.ParseDuration(TcpReadTimeout{%#v})", c.TcpReadTimeout)
 	}
-	c.tcpReadTimeout = *tcpTimeout
 
-	tcpTimeoutMinVal = time.Second * 5
-	if tcpTimeout, err = parseTimeDurationByRange(c.TcpWriteTimeout, &tcpTimeoutMinVal, nil); err != nil {
+	if c.tcpWriteTimeout, err = parseTimeDurationByRange(c.TcpWriteTimeout, TCP_WRITE_TIMEOUT_MIN_VALUE, nil); err != nil {
 		return perrors.WithMessagef(err, "time.ParseDuration(TcpWriteTimeout{%#v})", c.TcpWriteTimeout)
 	}
-	c.tcpWriteTimeout = *tcpTimeout
 
 	if c.waitTimeout, err = time.ParseDuration(c.WaitTimeout); err != nil {
 		return perrors.WithMessagef(err, "time.ParseDuration(WaitTimeout{%#v})", c.WaitTimeout)
@@ -182,21 +182,21 @@ func (c *GettySessionParam) CheckValidity() error {
 	return nil
 }
 
-func parseTimeDurationByRange(timeStr string, min *time.Duration, max *time.Duration) (*time.Duration, error) {
+func parseTimeDurationByRange(timeStr string, min time.Duration, max *time.Duration) (time.Duration, error) {
 	result, err := time.ParseDuration(timeStr)
 	if err != nil {
-		return nil, err
+		return min, err
 	}
-	if min != nil && max != nil && *min > *max {
-		min, max = max, min
+	if max != nil && min > *max {
+		min, max = *max, &min
 	}
-	if min != nil && result < *min {
-		result = *min
+	if result < min {
+		result = min
 	}
 	if max != nil && result > *max {
 		result = *max
 	}
-	return &result, nil
+	return result, nil
 }
 
 // CheckValidity confirm client params.
