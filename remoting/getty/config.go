@@ -162,19 +162,41 @@ func (c *GettySessionParam) CheckValidity() error {
 		return perrors.WithMessagef(err, "time.ParseDuration(KeepAlivePeriod{%#v})", c.KeepAlivePeriod)
 	}
 
-	if c.tcpReadTimeout, err = time.ParseDuration(c.TcpReadTimeout); err != nil {
+	var tcpTimeout *time.Duration
+	tcpTimeoutMinVal := time.Second * 1
+	if tcpTimeout, err = parseTimeDurationByRange(c.TcpReadTimeout, &tcpTimeoutMinVal, nil); err != nil {
 		return perrors.WithMessagef(err, "time.ParseDuration(TcpReadTimeout{%#v})", c.TcpReadTimeout)
 	}
+	c.tcpReadTimeout = *tcpTimeout
 
-	if c.tcpWriteTimeout, err = time.ParseDuration(c.TcpWriteTimeout); err != nil {
+	tcpTimeoutMinVal = time.Second * 5
+	if tcpTimeout, err = parseTimeDurationByRange(c.TcpWriteTimeout, &tcpTimeoutMinVal, nil); err != nil {
 		return perrors.WithMessagef(err, "time.ParseDuration(TcpWriteTimeout{%#v})", c.TcpWriteTimeout)
 	}
+	c.tcpWriteTimeout = *tcpTimeout
 
 	if c.waitTimeout, err = time.ParseDuration(c.WaitTimeout); err != nil {
 		return perrors.WithMessagef(err, "time.ParseDuration(WaitTimeout{%#v})", c.WaitTimeout)
 	}
 
 	return nil
+}
+
+func parseTimeDurationByRange(timeStr string, min *time.Duration, max *time.Duration) (*time.Duration, error) {
+	result, err := time.ParseDuration(timeStr)
+	if err != nil {
+		return nil, err
+	}
+	if min != nil && max != nil && *min > *max {
+		min, max = max, min
+	}
+	if min != nil && result < *min {
+		result = *min
+	}
+	if max != nil && result > *max {
+		result = *max
+	}
+	return &result, nil
 }
 
 // CheckValidity confirm client params.
