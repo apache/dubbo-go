@@ -26,9 +26,6 @@ const (
 	// defaultZKAddr is the default registry address of zookeeper
 	defaultZKAddr = "127.0.0.1:2181"
 
-	// defaultConsulAddr is the default registry address of consul
-	defaultConsulAddr = "127.0.0.1:8500"
-
 	// defaultNacosAddr is the default registry address of nacos
 	defaultNacosAddr = "127.0.0.1:8848"
 
@@ -39,7 +36,6 @@ const (
 // NewDefaultRegistryConfig New default registry config
 // the input @protocol can only be:
 // "zookeeper" with default addr "127.0.0.1:2181"
-// "consul" with default addr "127.0.0.1:8500"
 // "nacos" with default addr "127.0.0.1:8848"
 func NewDefaultRegistryConfig(protocol string) *RegistryConfig {
 	switch protocol {
@@ -47,12 +43,6 @@ func NewDefaultRegistryConfig(protocol string) *RegistryConfig {
 		return &RegistryConfig{
 			Protocol:   protocol,
 			Address:    defaultZKAddr,
-			TimeoutStr: defaultRegistryTimeout,
-		}
-	case "consul":
-		return &RegistryConfig{
-			Protocol:   protocol,
-			Address:    defaultConsulAddr,
 			TimeoutStr: defaultRegistryTimeout,
 		}
 	case "nacos":

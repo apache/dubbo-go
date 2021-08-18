@@ -24,8 +24,10 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-getty"
+	gxtime "github.com/dubbogo/gost/time"
+
 	"github.com/stretchr/testify/suite"
+
 	"go.etcd.io/etcd/server/v3/embed"
 )
 
@@ -53,10 +55,11 @@ func (suite *RegistryTestSuite) SetupSuite() {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	select {
 	case <-e.Server.ReadyNotify():
 		t.Log("Server is ready!")
-	case <-getty.GetTimeWheel().After(60 * time.Second):
+	case <-gxtime.After(60 * time.Second):
 		e.Server.Stop() // trigger a shutdown
 		t.Logf("Server took too long to start!")
 	}

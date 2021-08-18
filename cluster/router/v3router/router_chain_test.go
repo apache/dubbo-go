@@ -24,11 +24,15 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/cluster/router/v3router/k8s_api"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/yaml"
+	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
@@ -41,7 +45,7 @@ const (
 func TestNewUniformRouterChain(t *testing.T) {
 	vsBytes, _ := yaml.LoadYMLConfig(mockVSConfigPath)
 	drBytes, _ := yaml.LoadYMLConfig(mockDRConfigPath)
-	rc, err := NewUniformRouterChain(vsBytes, drBytes, make(chan struct{}))
+	rc, err := NewUniformRouterChain(vsBytes, drBytes)
 	assert.Nil(t, err)
 	assert.NotNil(t, rc)
 }
@@ -62,7 +66,7 @@ type ruleTestItemStruct struct {
 func TestParseConfigFromFile(t *testing.T) {
 	vsBytes, _ := yaml.LoadYMLConfig(mockVSConfigPath)
 	drBytes, _ := yaml.LoadYMLConfig(mockDRConfigPath)
-	routers, err := parseFromConfigToRouters(vsBytes, drBytes, make(chan struct{}, 1))
+	routers, err := parseFromConfigToRouters(vsBytes, drBytes)
 	fmt.Println(routers, err)
 	assert.Equal(t, len(routers), 1)
 	assert.NotNil(t, routers[0].dubboRouter)
@@ -189,7 +193,7 @@ func TestParseConfigFromFile(t *testing.T) {
 func TestRouterChain_Route(t *testing.T) {
 	vsBytes, _ := yaml.LoadYMLConfig(mockVSConfigPath)
 	drBytes, _ := yaml.LoadYMLConfig(mockDRConfigPath)
-	rc, err := NewUniformRouterChain(vsBytes, drBytes, make(chan struct{}))
+	rc, err := NewUniformRouterChain(vsBytes, drBytes)
 	assert.Nil(t, err)
 	assert.NotNil(t, rc)
 	newGoodURL, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0")
@@ -205,4 +209,47 @@ func TestRouterChain_Route(t *testing.T) {
 	result := rc.Route(invokerList, newGoodURL, invocation.NewRPCInvocation("GetUser", nil, nil))
 	assert.Equal(t, 0, len(result))
 	//todo test find target invoker
+}
+
+func TestRouterChain_Process(t *testing.T) {
+	vsJson := `{"apiVersion":"service.dubbo.apache.org/v1alpha2", "kind":"VirtualService", "name":"demo-route"}`
+
+	rc := &RouterChain{}
+	mockVirtualServiceConfig := &config.VirtualServiceConfig{
+		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{
+				"kubectl.kubernetes.io/last-applied-configuration": vsJson,
+			},
+		},
+	}
+
+	// test virtual service config chage event
+	mockVirtualServiceChangeEvent := &config_center.ConfigChangeEvent{
+		Key:        k8s_api.VirtualServiceEventKey,
+		Value:      mockVirtualServiceConfig,
+		ConfigType: 0,
+	}
+	rc.Process(mockVirtualServiceChangeEvent)
+
+	// test destination rule config chage event
+	destJson := `{"apiVersion":"service.dubbo.apache.org/v1alpha2", "kind":"VirtualService", "name":"demo-route"}`
+	mockDestinationRuleConfig := &config.DestinationRuleConfig{
+		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{
+				"kubectl.kubernetes.io/last-applied-configuration": destJson,
+			},
+		},
+	}
+	mockDestinationRuleChangeEvent := &config_center.ConfigChangeEvent{
+		Key:        k8s_api.DestinationRuleEventKey,
+		Value:      mockDestinationRuleConfig,
+		ConfigType: 0,
+	}
+	rc.Process(mockDestinationRuleChangeEvent)
+
+	// test unknown event type
+	mockUnsupportedEvent := &config_center.ConfigChangeEvent{
+		Key: "unknown",
+	}
+	rc.Process(mockUnsupportedEvent)
 }

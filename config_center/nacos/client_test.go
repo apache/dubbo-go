@@ -39,7 +39,7 @@ func TestNewNacosClient(t *testing.T) {
 		url:  registryUrl,
 		done: make(chan struct{}),
 	}
-	err := ValidateNacosClient(c, WithNacosName(nacosClientName))
+	err := ValidateNacosClient(c)
 	assert.NoError(t, err)
 	c.wg.Add(1)
 	go HandleClientRestart(c)
@@ -63,7 +63,7 @@ func TestSetNacosClient(t *testing.T) {
 		done: make(chan struct{}),
 	}
 
-	err := ValidateNacosClient(c, WithNacosName(nacosClientName))
+	err := ValidateNacosClient(c)
 	assert.NoError(t, err)
 	c.wg.Add(1)
 	go HandleClientRestart(c)
@@ -85,7 +85,7 @@ func TestNewNacosClient_connectError(t *testing.T) {
 		url:  registryUrl,
 		done: make(chan struct{}),
 	}
-	err = ValidateNacosClient(c, WithNacosName(nacosClientName))
+	err = ValidateNacosClient(c)
 	assert.NoError(t, err)
 	c.wg.Add(1)
 	go HandleClientRestart(c)

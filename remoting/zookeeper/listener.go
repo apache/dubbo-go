@@ -18,7 +18,6 @@
 package zookeeper
 
 import (
-	uatomic "go.uber.org/atomic"
 	"path"
 	"strings"
 	"sync"
@@ -26,10 +25,10 @@ import (
 )
 
 import (
-	getty "github.com/apache/dubbo-getty"
 	"github.com/dubbogo/go-zookeeper/zk"
 	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
 	perrors "github.com/pkg/errors"
+	uatomic "go.uber.org/atomic"
 )
 
 import (
@@ -254,8 +253,10 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkPath string, listen
 				l.client.UnregisterEvent(zkPath, &event)
 				return
 			}
+
+			after := time.After(timeSecondDuration(failTimes * ConnDelay))
 			select {
-			case <-getty.GetTimeWheel().After(timeSecondDuration(failTimes * ConnDelay)):
+			case <-after:
 				l.client.UnregisterEvent(zkPath, &event)
 				continue
 			case <-l.exit:

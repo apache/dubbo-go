@@ -48,9 +48,9 @@ type RouterChain struct {
 }
 
 // NewUniformRouterChain return
-func NewUniformRouterChain(virtualServiceConfig, destinationRuleConfig []byte, notify chan struct{}) (router.PriorityRouter, error) {
+func NewUniformRouterChain(virtualServiceConfig, destinationRuleConfig []byte) (router.PriorityRouter, error) {
 	fromFileConfig := true
-	uniformRouters, err := parseFromConfigToRouters(virtualServiceConfig, destinationRuleConfig, notify)
+	uniformRouters, err := parseFromConfigToRouters(virtualServiceConfig, destinationRuleConfig)
 	if err != nil {
 		fromFileConfig = false
 		logger.Warnf("parse router config form local file failed, error = %+v", err)
@@ -59,7 +59,6 @@ func NewUniformRouterChain(virtualServiceConfig, destinationRuleConfig []byte, n
 		virtualServiceConfigBytes:  virtualServiceConfig,
 		destinationRuleConfigBytes: destinationRuleConfig,
 		routers:                    uniformRouters,
-		notify:                     notify,
 	}
 	if err := k8s_api.SetK8sEventListener(r); err != nil {
 		logger.Warnf("try listen K8s router config failed, error = %+v", err)
@@ -95,7 +94,7 @@ func (r *RouterChain) Process(event *config_center.ConfigChangeEvent) {
 				logger.Error("newVSValue.ObjectMeta.Annotations has no key named kubectl.kubernetes.io/last-applied-configuration")
 				return
 			}
-			logger.Debugf("json file = %v\n", newVSJsonValue)
+			logger.Debugf("new virtual service json value = \n%v\n", newVSJsonValue)
 			newVirtualServiceConfig := &config.VirtualServiceConfig{}
 			if err := json.Unmarshal([]byte(newVSJsonValue), newVirtualServiceConfig); err != nil {
 				logger.Error("on process json data unmarshal error = ", err)
@@ -110,7 +109,7 @@ func (r *RouterChain) Process(event *config_center.ConfigChangeEvent) {
 				logger.Error("Process change of virtual service: event.Value marshal error:", err)
 				return
 			}
-			r.routers, err = parseFromConfigToRouters(data, r.destinationRuleConfigBytes, r.notify)
+			r.routers, err = parseFromConfigToRouters(data, r.destinationRuleConfigBytes)
 			if err != nil {
 				logger.Error("Process change of virtual service: parseFromConfigToRouters:", err)
 				return
@@ -142,13 +141,13 @@ func (r *RouterChain) Process(event *config_center.ConfigChangeEvent) {
 				logger.Error("Process change of dest rule: event.Value marshal error:", err)
 				return
 			}
-			r.routers, err = parseFromConfigToRouters(r.virtualServiceConfigBytes, data, r.notify)
+			r.routers, err = parseFromConfigToRouters(r.virtualServiceConfigBytes, data)
 			if err != nil {
 				logger.Error("Process change of dest rule: parseFromConfigToRouters:", err)
 				return
 			}
 		default:
-			logger.Error("unknow unsupported event key:", event.Key)
+			logger.Error("unknown unsupported event key:", event.Key)
 		}
 	}
 
@@ -174,12 +173,13 @@ func (r *RouterChain) URL() *common.URL {
 }
 
 // parseFromConfigToRouters parse virtualService and destinationRule yaml file bytes to target router list
-func parseFromConfigToRouters(virtualServiceConfig, destinationRuleConfig []byte, notify chan struct{}) ([]*UniformRouter, error) {
+func parseFromConfigToRouters(virtualServiceConfig, destinationRuleConfig []byte) ([]*UniformRouter, error) {
 	var virtualServiceConfigList []*config.VirtualServiceConfig
 	destRuleConfigsMap := make(map[string]map[string]map[string]string)
 
 	vsDecoder := yaml.NewDecoder(strings.NewReader(string(virtualServiceConfig)))
 	drDecoder := yaml.NewDecoder(strings.NewReader(string(destinationRuleConfig)))
+	// parse virtual service
 	for {
 		virtualServiceCfg := &config.VirtualServiceConfig{}
 
@@ -195,6 +195,7 @@ func parseFromConfigToRouters(virtualServiceConfig, destinationRuleConfig []byte
 		virtualServiceConfigList = append(virtualServiceConfigList, virtualServiceCfg)
 	}
 
+	// parse destination rule
 	for {
 		destRuleCfg := &config.DestinationRuleConfig{}
 		err := drDecoder.Decode(destRuleCfg)
@@ -205,10 +206,14 @@ func parseFromConfigToRouters(virtualServiceConfig, destinationRuleConfig []byte
 			logger.Error("parseFromConfigTo destination rule err = ", err)
 			return nil, err
 		}
+
+		// name -> labels
 		destRuleCfgMap := make(map[string]map[string]string)
 		for _, v := range destRuleCfg.Spec.SubSets {
 			destRuleCfgMap[v.Name] = v.Labels
 		}
+
+		// host -> name -> labels
 		destRuleConfigsMap[destRuleCfg.Spec.Host] = destRuleCfgMap
 	}
 
@@ -228,7 +233,7 @@ func parseFromConfigToRouters(virtualServiceConfig, destinationRuleConfig []byte
 			logger.Error("Parse config to uniform rule err = ", err)
 			return nil, err
 		}
-		rtr, err := NewUniformRouter(newRule, notify)
+		rtr, err := NewUniformRouter(newRule)
 		if err != nil {
 			logger.Error("new uniform router err = ", err)
 			return nil, err

@@ -24,10 +24,17 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
 func TestGracefulShutdownInit(t *testing.T) {
+	extension.SetFilter(constant.GracefulShutdownConsumerFilterKey, func() filter.Filter {
+		return &mockGracefulShutdownFilter{}
+	})
+	extension.SetFilter(constant.GracefulShutdownProviderFilterKey, func() filter.Filter {
+		return &mockGracefulShutdownFilter{}
+	})
 	GracefulShutdownInit()
 }
 
@@ -49,6 +56,8 @@ func TestBeforeShutdown(t *testing.T) {
 	}
 
 	// without configuration
+	consumerConfig = nil
+	providerConfig = nil
 	BeforeShutdown()
 
 	consumerConfig = &ConsumerConfig{

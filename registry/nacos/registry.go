@@ -25,7 +25,6 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/remoting/nacos"
 	nacosClient "github.com/dubbogo/gost/database/kv/nacos"
 	"github.com/nacos-group/nacos-sdk-go/vo"
 	perrors "github.com/pkg/errors"
@@ -37,6 +36,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/registry"
+	"dubbo.apache.org/dubbo-go/v3/remoting/nacos"
 )
 
 var localIP = ""
@@ -75,8 +75,8 @@ func getServiceName(url *common.URL) string {
 
 func appendParam(target *bytes.Buffer, url *common.URL, key string) {
 	value := url.GetParam(key, "")
+	target.Write([]byte(constant.NACOS_SERVICE_NAME_SEPARATOR))
 	if strings.TrimSpace(value) != "" {
-		target.Write([]byte(constant.NACOS_SERVICE_NAME_SEPARATOR))
 		target.Write([]byte(value))
 	}
 }

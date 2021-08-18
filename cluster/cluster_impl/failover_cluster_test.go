@@ -40,10 +40,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
-// ///////////////////////////
-// mock invoker
-// ///////////////////////////
-
 // nolint
 type MockInvoker struct {
 	url       *common.URL

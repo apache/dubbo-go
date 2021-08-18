@@ -18,40 +18,73 @@
 package grpc
 
 import (
-	"reflect"
+	"context"
 	"testing"
 )
 
 import (
 	"github.com/stretchr/testify/assert"
-	"google.golang.org/grpc"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
-	"dubbo.apache.org/dubbo-go/v3/protocol/grpc/internal"
+	"dubbo.apache.org/dubbo-go/v3/protocol/grpc/internal/helloworld"
+	"dubbo.apache.org/dubbo-go/v3/protocol/grpc/internal/routeguide"
 )
 
-func TestGetInvoker(t *testing.T) {
-	var conn *grpc.ClientConn
-	var impl *internal.GrpcGreeterImpl
-	invoker := getInvoker(impl, conn)
+func TestUnaryClient(t *testing.T) {
+	server, err := helloworld.NewServer("127.0.0.1:30000")
+	assert.NoError(t, err)
+	go server.Start()
+	defer server.Stop()
 
-	i := reflect.TypeOf(invoker)
-	expected := reflect.TypeOf(internal.NewGreeterClient(nil))
-	assert.Equal(t, i, expected)
+	url, err := common.NewURL(helloworldURL)
+	assert.NoError(t, err)
+
+	cli, err := NewClient(url)
+	assert.NoError(t, err)
+
+	impl := &helloworld.GreeterClientImpl{}
+	client := impl.GetDubboStub(cli.ClientConn)
+	result, err := client.SayHello(context.Background(), &helloworld.HelloRequest{Name: "request name"})
+	assert.NoError(t, err)
+	assert.Equal(t, &helloworld.HelloReply{Message: "Hello request name"}, result)
 }
 
-func TestNewClient(t *testing.T) {
-	go internal.InitGrpcServer()
-	defer internal.ShutdownGrpcServer()
+func TestStreamClient(t *testing.T) {
+	server, err := routeguide.NewServer("127.0.0.1:30000")
+	assert.NoError(t, err)
+	go server.Start()
+	defer server.Stop()
 
-	url, err := common.NewURL("grpc://127.0.0.1:30000/GrpcGreeterImpl?accesslog=&anyhost=true&app.version=0.0.1&application=BDTService&async=false&bean.name=GrpcGreeterImpl&category=providers&cluster=failover&dubbo=dubbo-provider-golang-2.6.0&environment=dev&execute.limit=&execute.limit.rejected.handler=&generic=false&group=&interface=io.grpc.examples.helloworld.GreeterGrpc%24IGreeter&ip=192.168.1.106&loadbalance=random&methods.SayHello.loadbalance=random&methods.SayHello.retries=1&methods.SayHello.tps.limit.interval=&methods.SayHello.tps.limit.rate=&methods.SayHello.tps.limit.strategy=&methods.SayHello.weight=0&module=dubbogo+say-hello+client&name=BDTService&organization=ikurento.com&owner=ZX&pid=49427&reference.filter=cshutdown&registry.role=3&remote.timestamp=1576923717&retries=&service.filter=echo%2Ctoken%2Caccesslog%2Ctps%2Cexecute%2Cpshutdown&side=provider&timestamp=1576923740&tps.limit.interval=&tps.limit.rate=&tps.limit.rejected.handler=&tps.limit.strategy=&tps.limiter=&version=&warmup=100!")
-	assert.Nil(t, err)
+	url, err := common.NewURL(routeguideURL)
+	assert.NoError(t, err)
+
 	cli, err := NewClient(url)
-	if err != nil {
-		logger.Errorf("grpc new client error %v", err)
-	}
-	assert.NotNil(t, cli)
+	assert.NoError(t, err)
+
+	impl := &routeguide.RouteGuideClientImpl{}
+	client := impl.GetDubboStub(cli.ClientConn)
+
+	result, err := client.GetFeature(context.Background(), &routeguide.Point{Latitude: 409146138, Longitude: -746188906})
+	assert.NoError(t, err)
+	assert.Equal(t, &routeguide.Feature{
+		Name:     "Berkshire Valley Management Area Trail, Jefferson, NJ, USA",
+		Location: &routeguide.Point{Latitude: 409146138, Longitude: -746188906},
+	}, result)
+
+	listFeaturesStream, err := client.ListFeatures(context.Background(), &routeguide.Rectangle{
+		Lo: &routeguide.Point{Latitude: 400000000, Longitude: -750000000},
+		Hi: &routeguide.Point{Latitude: 420000000, Longitude: -730000000},
+	})
+	assert.NoError(t, err)
+	routeguide.PrintFeatures(listFeaturesStream)
+
+	recordRouteStream, err := client.RecordRoute(context.Background())
+	assert.NoError(t, err)
+	routeguide.RunRecordRoute(recordRouteStream)
+
+	routeChatStream, err := client.RouteChat(context.Background())
+	assert.NoError(t, err)
+	routeguide.RunRouteChat(routeChatStream)
 }

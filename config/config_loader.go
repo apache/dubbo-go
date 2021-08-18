@@ -95,17 +95,9 @@ func DefaultInit() []LoaderInitOption {
 
 // setDefaultValue set default value for providerConfig or consumerConfig if it is null
 func setDefaultValue(target interface{}) {
-	registryConfig := &RegistryConfig{
-		Protocol:   constant.DEFAULT_REGISTRY_ZK_PROTOCOL,
-		TimeoutStr: constant.DEFAULT_REGISTRY_ZK_TIMEOUT,
-		Address:    constant.DEFAULT_REGISTRY_ZK_ADDRESS,
-	}
 	switch target.(type) {
 	case *ProviderConfig:
 		p := target.(*ProviderConfig)
-		if len(p.Registries) == 0 {
-			p.Registries[constant.DEFAULT_REGISTRY_ZK_ID] = registryConfig
-		}
 		if len(p.Protocols) == 0 {
 			p.Protocols[constant.DEFAULT_PROTOCOL] = &ProtocolConfig{
 				Name: constant.DEFAULT_PROTOCOL,
@@ -117,9 +109,6 @@ func setDefaultValue(target interface{}) {
 		}
 	default:
 		c := target.(*ConsumerConfig)
-		if len(c.Registries) == 0 {
-			c.Registries[constant.DEFAULT_REGISTRY_ZK_ID] = registryConfig
-		}
 		if c.ApplicationConfig == nil {
 			c.ApplicationConfig = NewDefaultApplicationConfig()
 		}
@@ -142,7 +131,7 @@ func checkApplicationName(config *ApplicationConfig) {
 
 func loadConsumerConfig() {
 	if consumerConfig == nil {
-		logger.Warnf("consumerConfig is nil!")
+		logger.Debugf("Consumer will not be launched, because consumerConfig is not specified.")
 		return
 	}
 	// init other consumer config
@@ -171,7 +160,7 @@ func loadConsumerConfig() {
 
 	checkRegistries(consumerConfig.Registries, consumerConfig.Registry)
 	for key, ref := range consumerConfig.References {
-		if ref.Generic {
+		if ref.Generic != "" {
 			genericService := NewGenericService(key)
 			SetConsumerService(genericService)
 		}
@@ -229,7 +218,7 @@ func loadConsumerConfig() {
 
 func loadProviderConfig() {
 	if providerConfig == nil {
-		logger.Warnf("providerConfig is nil!")
+		logger.Debugf("Provider will not be launched, because providerConfig is not specified.")
 		return
 	}
 
@@ -314,8 +303,8 @@ func registerServiceInstance() {
 		}
 	}
 	// todo publish metadata to remote
-	if remotingMetadataService, err := extension.GetRemotingMetadataService(); err == nil {
-		remotingMetadataService.PublishMetadata(GetApplicationConfig().Name)
+	if remoteMetadataService, err := extension.GetRemoteMetadataService(); err == nil {
+		remoteMetadataService.PublishMetadata(GetApplicationConfig().Name)
 	}
 }
 
@@ -390,6 +379,7 @@ func LoadWithOptions(options ...LoaderInitOption) {
 	// register metadata info and service info
 	hessian.RegisterPOJO(&common.MetadataInfo{})
 	hessian.RegisterPOJO(&common.ServiceInfo{})
+	hessian.RegisterPOJO(&common.URL{})
 
 	for _, option := range options {
 		option.init()
@@ -411,7 +401,8 @@ func GetRPCService(name string) common.RPCService {
 
 // RPCService create rpc service for consumer
 func RPCService(service common.RPCService) {
-	consumerConfig.References[service.Reference()].Implement(service)
+	ref := common.GetReference(service)
+	consumerConfig.References[ref].Implement(service)
 }
 
 // GetMetricConfig find the MetricConfig

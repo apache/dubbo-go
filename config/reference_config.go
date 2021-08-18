@@ -61,7 +61,7 @@ type ReferenceConfig struct {
 	Params         map[string]string `yaml:"params"  json:"params,omitempty" property:"params"`
 	invoker        protocol.Invoker
 	urls           []*common.URL
-	Generic        bool   `yaml:"generic"  json:"generic,omitempty" property:"generic"`
+	Generic        string `yaml:"generic"  json:"generic,omitempty" property:"generic"`
 	Sticky         bool   `yaml:"sticky"   json:"sticky,omitempty" property:"sticky"`
 	RequestTimeout string `yaml:"timeout"  json:"timeout,omitempty" property:"timeout"`
 	ForceTag       bool   `yaml:"force.tag"  json:"force.tag,omitempty" property:"force.tag"`
@@ -133,9 +133,9 @@ func (c *ReferenceConfig) Refer(_ interface{}) {
 
 	if len(c.urls) == 1 {
 		c.invoker = extension.GetProtocol(c.urls[0].Protocol).Refer(c.urls[0])
-		// c.URL != "" is direct call
+		// c.URL != "" is direct call, and will overide c.invoker
 		if c.URL != "" {
-			//filter
+			// filter
 			c.invoker = protocolwrapper.BuildInvokerChain(c.invoker, constant.REFERENCE_FILTER_KEY)
 
 			// cluster
@@ -236,7 +236,7 @@ func (c *ReferenceConfig) getURLMap() url.Values {
 	urlMap.Set(constant.RETRIES_KEY, c.Retries)
 	urlMap.Set(constant.GROUP_KEY, c.Group)
 	urlMap.Set(constant.VERSION_KEY, c.Version)
-	urlMap.Set(constant.GENERIC_KEY, strconv.FormatBool(c.Generic))
+	urlMap.Set(constant.GENERIC_KEY, c.Generic)
 	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(common.CONSUMER))
 	urlMap.Set(constant.PROVIDED_BY, c.ProvidedBy)
 	urlMap.Set(constant.SERIALIZATION_KEY, c.Serialization)
@@ -262,7 +262,7 @@ func (c *ReferenceConfig) getURLMap() url.Values {
 
 	// filter
 	defaultReferenceFilter := constant.DEFAULT_REFERENCE_FILTERS
-	if c.Generic {
+	if c.Generic != "" {
 		defaultReferenceFilter = constant.GENERIC_REFERENCE_FILTERS + "," + defaultReferenceFilter
 	}
 	urlMap.Set(constant.REFERENCE_FILTER_KEY, mergeValue(consumerConfig.Filter, c.Filter, defaultReferenceFilter))
@@ -294,8 +294,8 @@ func (c *ReferenceConfig) GetInvoker() protocol.Invoker {
 }
 
 func publishConsumerDefinition(url *common.URL) {
-	if remotingMetadataService, err := extension.GetRemotingMetadataService(); err == nil && remotingMetadataService != nil {
-		remotingMetadataService.PublishServiceDefinition(url)
+	if remoteMetadataService, err := extension.GetRemoteMetadataService(); err == nil && remoteMetadataService != nil {
+		remoteMetadataService.PublishServiceDefinition(url)
 	}
 }
 
