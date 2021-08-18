@@ -19,116 +19,12 @@ package zookeeper
 
 import (
 	"net/url"
-	"sync"
 	"testing"
-	"time"
 )
 
 import (
-	"github.com/dubbogo/go-zookeeper/zk"
-	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
 	"github.com/stretchr/testify/assert"
 )
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
-	"dubbo.apache.org/dubbo-go/v3/remoting"
-)
-
-var dubboPropertiesPath = "/dubbo/dubbo.properties"
-
-func initZkData(t *testing.T) (*zk.TestCluster, *gxzookeeper.ZookeeperClient, <-chan zk.Event) {
-	ts, client, event, err := gxzookeeper.NewMockZookeeperClient("test", 15*time.Second)
-	assert.NoError(t, err)
-
-	data := `
-	dubbo.consumer.request_timeout=5s
-	dubbo.consumer.connect_timeout=5s
-	dubbo.application.organization=ikurento.com
-	dubbo.application.name=BDTService
-	dubbo.application.module=dubbogo user-info server
-	dubbo.application.version=0.0.1
-	dubbo.application.owner=ZX
-	dubbo.application.environment=dev
-	dubbo.registries.hangzhouzk.protocol=zookeeper
-	dubbo.registries.hangzhouzk.timeout=3s
-	dubbo.registries.hangzhouzk.address=127.0.0.1:2181
-	dubbo.registries.shanghaizk.protocol=zookeeper
-	dubbo.registries.shanghaizk.timeout=3s
-	dubbo.registries.shanghaizk.address=127.0.0.1:2182
-	dubbo.service.com.ikurento.user.UserProvider.protocol=dubbo
-	dubbo.service.com.ikurento.user.UserProvider.interface=com.ikurento.user.UserProvider
-	dubbo.service.com.ikurento.user.UserProvider.loadbalance=random
-	dubbo.service.com.ikurento.user.UserProvider.warmup=100
-	dubbo.service.com.ikurento.user.UserProvider.cluster=failover
-`
-
-	err = client.Create(dubboPropertiesPath)
-	assert.NoError(t, err)
-
-	_, err = client.Conn.Set(dubboPropertiesPath, []byte(data), 0)
-	assert.NoError(t, err)
-
-	return ts, client, event
-}
-
-func TestListener(t *testing.T) {
-	changedData := `
-	dubbo.consumer.request_timeout=3s
-	dubbo.consumer.connect_timeout=5s
-	dubbo.application.organization=ikurento.com
-	dubbo.application.name=BDTService
-	dubbo.application.module=dubbogo user-info server
-	dubbo.application.version=0.0.1
-	dubbo.application.owner=ZX
-	dubbo.application.environment=dev
-	dubbo.registries.hangzhouzk.protocol=zookeeper
-	dubbo.registries.hangzhouzk.timeout=3s
-	dubbo.registries.hangzhouzk.address=127.0.0.1:2181
-	dubbo.registries.shanghaizk.protocol=zookeeper
-	dubbo.registries.shanghaizk.timeout=3s
-	dubbo.registries.shanghaizk.address=127.0.0.1:2182
-	dubbo.service.com.ikurento.user.UserProvider.protocol=dubbo
-	dubbo.service.com.ikurento.user.UserProvider.interface=com.ikurento.user.UserProvider
-	dubbo.service.com.ikurento.user.UserProvider.loadbalance=random
-	dubbo.service.com.ikurento.user.UserProvider.warmup=100
-	dubbo.service.com.ikurento.user.UserProvider.cluster=failover
-`
-	var wait sync.WaitGroup
-	ts, client, _ := initZkData(t)
-	defer func() {
-		if err := ts.Stop(); err != nil {
-			t.Errorf("ts.Stop() = error: %v", err)
-		}
-	}()
-	client.Wait.Add(1)
-	wait.Add(1)
-	go client.GetEventHandler().HandleZkEvent(client)
-	listener := NewZkEventListener(client)
-	dataListener := &mockDataListener{client: client, changedData: changedData, wait: &wait}
-	listener.ListenServiceEvent(nil, "/dubbo", dataListener)
-	time.Sleep(1 * time.Second)
-	_, err := client.Conn.Set(dubboPropertiesPath, []byte(changedData), 1)
-	assert.NoError(t, err)
-	wait.Wait()
-	assert.Equal(t, changedData, dataListener.eventList[1].Content)
-}
-
-type mockDataListener struct {
-	eventList   []remoting.Event
-	client      *gxzookeeper.ZookeeperClient
-	changedData string
-	wait        *sync.WaitGroup
-}
-
-func (m *mockDataListener) DataChange(eventType remoting.Event) bool {
-	logger.Info(eventType)
-	m.eventList = append(m.eventList, eventType)
-	if eventType.Content == m.changedData {
-		m.wait.Done()
-	}
-	return true
-}
 
 func TestZkPath(t *testing.T) {
 	zkPath := "io.grpc.examples.helloworld.GreeterGrpc$IGreeter"

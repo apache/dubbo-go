@@ -18,6 +18,7 @@
 package config
 
 import (
+	"context"
 	"path/filepath"
 	"sort"
 	"sync"
@@ -41,7 +42,9 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/common/proxy/proxy_factory"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
+	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/metadata/service"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
@@ -74,6 +77,13 @@ func TestConfigLoader(t *testing.T) {
 }
 
 func TestLoad(t *testing.T) {
+	extension.SetFilter(constant.GracefulShutdownConsumerFilterKey, func() filter.Filter {
+		return &mockGracefulShutdownFilter{}
+	})
+	extension.SetFilter(constant.GracefulShutdownProviderFilterKey, func() filter.Filter {
+		return &mockGracefulShutdownFilter{}
+	})
+
 	doInitConsumer()
 	doInitProvider()
 
@@ -197,9 +207,6 @@ func TestSetDefaultValue(t *testing.T) {
 	proConfig := &ProviderConfig{Registries: make(map[string]*RegistryConfig), Protocols: make(map[string]*ProtocolConfig)}
 	assert.Nil(t, proConfig.ApplicationConfig)
 	setDefaultValue(proConfig)
-	assert.Equal(t, proConfig.Registries["demoZK"].Address, "127.0.0.1:2181")
-	assert.Equal(t, proConfig.Registries["demoZK"].TimeoutStr, "3s")
-	assert.Equal(t, proConfig.Registries["demoZK"].Protocol, "zookeeper")
 	assert.Equal(t, proConfig.Protocols["dubbo"].Name, "dubbo")
 	assert.Equal(t, proConfig.Protocols["dubbo"].Port, "20000")
 	assert.NotNil(t, proConfig.ApplicationConfig)
@@ -207,9 +214,6 @@ func TestSetDefaultValue(t *testing.T) {
 	conConfig := &ConsumerConfig{Registries: make(map[string]*RegistryConfig)}
 	assert.Nil(t, conConfig.ApplicationConfig)
 	setDefaultValue(conConfig)
-	assert.Equal(t, conConfig.Registries["demoZK"].Address, "127.0.0.1:2181")
-	assert.Equal(t, conConfig.Registries["demoZK"].TimeoutStr, "3s")
-	assert.Equal(t, conConfig.Registries["demoZK"].Protocol, "zookeeper")
 	assert.NotNil(t, conConfig.ApplicationConfig)
 
 }
@@ -595,4 +599,18 @@ func ConvertURLArrToIntfArr(urls []*common.URL) []interface{} {
 		res = append(res, u.String())
 	}
 	return res
+}
+
+type mockGracefulShutdownFilter struct{}
+
+func (f *mockGracefulShutdownFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+	panic("implement me")
+}
+
+func (f *mockGracefulShutdownFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+	panic("implement me")
+}
+
+func (f *mockGracefulShutdownFilter) Set(name string, config interface{}) {
+	return
 }

@@ -110,7 +110,6 @@ var mockConfigRes = `{
 		"application.environment": "dev",
 		"services.UserProvider.protocol": "dubbo",
 		"application.organization": "ikurento.com",
-		"protocol_conf.dubbo.getty_session_param.pkg_wq_size": "512",
 		"services.UserProvider.methods[0].loadbalance": "random"
 	},
 	"releaseKey": "20191104105242-0f13805d89f834a4"
@@ -187,7 +186,7 @@ func initMockApollo(t *testing.T) *apolloConfiguration {
 	c := &config.BaseConfig{ConfigCenterConfig: &config.ConfigCenterConfig{
 		Protocol:  "apollo",
 		Address:   "106.12.25.204:8080",
-		AppId:     "testApplication_yang",
+		AppID:     "testApplication_yang",
 		Cluster:   "dev",
 		Namespace: "mockDubbog",
 	}}

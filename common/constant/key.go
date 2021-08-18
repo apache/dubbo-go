@@ -60,6 +60,29 @@ const (
 	REFERENCE_FILTER_KEY = "reference.filter"
 )
 
+// Filter Keys
+const (
+	AccessLogFilterKey                = "accesslog"
+	ActiveFilterKey                   = "active"
+	AuthConsumerFilterKey             = "sign"
+	AuthProviderFilterKey             = "auth"
+	EchoFilterKey                     = "echo"
+	ExecuteLimitFilterKey             = "execute"
+	GenericFilterKey                  = "generic"
+	GenericServiceFilterKey           = "generic_service"
+	GracefulShutdownProviderFilterKey = "pshutdown"
+	GracefulShutdownConsumerFilterKey = "cshutdown"
+	HystrixConsumerFilterKey          = "hystrix_consumer"
+	HystrixProviderFilterKey          = "hystrix_provider"
+	MetricsFilterKey                  = "metrics"
+	SeataFilterKey                    = "seata"
+	SentinelProviderFilterKey         = "sentinel-provider"
+	SentinelConsumerFilterKey         = "sentinel-consumer"
+	TokenFilterKey                    = "token"
+	TpsLimitFilterKey                 = "tps"
+	TracingFilterKey                  = "tracing"
+)
+
 const (
 	TIMESTAMP_KEY                          = "timestamp"
 	REMOTE_TIMESTAMP_KEY                   = "remote.timestamp"
@@ -74,7 +97,6 @@ const (
 	FORKS_KEY                              = "forks"
 	DEFAULT_FORKS                          = 2
 	DEFAULT_TIMEOUT                        = 1000
-	ACCESS_LOG_KEY                         = "accesslog"
 	TPS_LIMITER_KEY                        = "tps.limiter"
 	TPS_REJECTED_EXECUTION_HANDLER_KEY     = "tps.limit.rejected.handler"
 	TPS_LIMIT_RATE_KEY                     = "tps.limit.rate"
@@ -85,8 +107,6 @@ const (
 	EXECUTE_LIMIT_KEY                      = "execute.limit"
 	DEFAULT_EXECUTE_LIMIT                  = "-1"
 	EXECUTE_REJECTED_EXECUTION_HANDLER_KEY = "execute.limit.rejected.handler"
-	PROVIDER_SHUTDOWN_FILTER               = "pshutdown"
-	CONSUMER_SHUTDOWN_FILTER               = "cshutdown"
 	SERIALIZATION_KEY                      = "serialization"
 	PID_KEY                                = "pid"
 	SYNC_REPORT_KEY                        = "sync.report"
@@ -136,13 +156,14 @@ const (
 )
 
 const (
-	CONFIG_NAMESPACE_KEY  = "config.namespace"
-	CONFIG_GROUP_KEY      = "config.group"
-	CONFIG_APP_ID_KEY     = "config.appId"
-	CONFIG_CLUSTER_KEY    = "config.cluster"
-	CONFIG_CHECK_KEY      = "config.check"
-	CONFIG_TIMEOUT_KET    = "config.timeout"
-	CONFIG_LOG_DIR_KEY    = "config.logDir"
+	CONFIG_NAMESPACE_KEY  = "namespace"
+	CONFIG_GROUP_KEY      = "group"
+	CONFIG_APP_ID_KEY     = "appId"
+	CONFIG_CLUSTER_KEY    = "cluster"
+	CONFIG_TIMEOUT_KEY    = "timeout"
+	CONFIG_USERNAME_KEY   = "username"
+	CONFIG_PASSWORD_KEY   = "password"
+	CONFIG_LOG_DIR_KEY    = "logDir"
 	CONFIG_VERSION_KEY    = "configVersion"
 	COMPATIBLE_CONFIG_KEY = "compatible_config"
 )
@@ -172,6 +193,7 @@ const (
 	NACOS_DEFAULT_ROLETYPE       = 3
 	NACOS_CACHE_DIR_KEY          = "cacheDir"
 	NACOS_LOG_DIR_KEY            = "logDir"
+	NACOS_BEAT_INTERVAL_KEY      = "beatInterval"
 	NACOS_ENDPOINT               = "endpoint"
 	NACOS_SERVICE_NAME_SEPARATOR = ":"
 	NACOS_CATEGORY_KEY           = "category"
@@ -181,6 +203,13 @@ const (
 	NACOS_PASSWORD               = "password"
 	NACOS_USERNAME               = "username"
 	NACOS_NOT_LOAD_LOCAL_CACHE   = "nacos.not.load.cache"
+	NACOS_APP_NAME_KEY           = "appName"
+	NACOS_REGION_ID_KEY          = "regionId"
+	NACOS_ACCESS_KEY             = "access"
+	NACOS_SECRET_KEY             = "secret"
+	NACOS_OPEN_KMS_KEY           = "kms"
+	NACOS_UPDATE_THREAD_NUM_KEY  = "updateThreadNum"
+	NACOS_LOG_LEVEL_KEY          = "logLevel"
 )
 
 const (
@@ -196,15 +225,6 @@ const (
 )
 
 const (
-	CONSUL_KEY          = "consul"
-	CHECK_PASS_INTERVAL = "consul-check-pass-interval"
-	// default time-to-live in millisecond
-	DEFAULT_CHECK_PASS_INTERVAL = 16000
-	QUERY_TAG                   = "consul_query_tag"
-	ACL_TOKEN                   = "acl-token"
-	// default deregister critical server after
-	DEFAULT_DEREGISTER_TIME = "20s"
-	DEREGISTER_AFTER        = "consul-deregister-critical-service-after"
 	// PassThroughProxyFactoryKey is key of proxy factory with raw data input service
 	PassThroughProxyFactoryKey = "dubbo-raw"
 )
@@ -215,38 +235,19 @@ const (
 
 // Use for router module
 const (
-	// UniformRouterName Specifythe name of UniformRouter
-	UniformRouterName = "uniform"
-	// TagRouterName Specify the name of TagRouter
-	TagRouterName = "tag"
 	// TagRouterRuleSuffix Specify tag router suffix
-	TagRouterRuleSuffix  = ".tag-router"
-	RemoteApplicationKey = "remote.application"
+	TagRouterRuleSuffix = ".tag-router"
 	// ConditionRouterRuleSuffix Specify condition router suffix
 	ConditionRouterRuleSuffix = ".condition-router"
-
-	// RouterScope Scope key in router module
-	RouterScope = "scope"
-	// RouterApplicationScope Scope key in router module
-	RouterApplicationScope = "application"
-	// RouterServiceScope Scope key in router module
-	RouterServiceScope = "service"
-	// RouterRuleKey defines the key of the router, service's/application's name
-	RouterRuleKey = "key"
 	// ForceUseTag is the tag in attachment
 	ForceUseTag = "dubbo.force.tag"
 	Tagkey      = "dubbo.tag"
-	// HEALTH_ROUTE_ENABLED_KEY defines if use health router
-	HEALTH_ROUTE_ENABLED_KEY = "health.route.enabled"
 	// AttachmentKey in context in invoker
 	AttachmentKey = DubboCtxKey("attachment")
 )
 
+// Auth filter
 const (
-	// name of consumer sign filter
-	CONSUMER_SIGN_FILTER = "sign"
-	// name of consumer sign filter
-	PROVIDER_AUTH_FILTER = "auth"
 	// name of service filter
 	SERVICE_AUTH_KEY = "auth"
 	// key of authenticator
@@ -288,30 +289,6 @@ const (
 	METADATA_SERVICE_NAME = "org.apache.dubbo.metadata.MetadataService"
 )
 
-// HealthCheck Router
-const (
-	// The key of HealthCheck SPI
-	HEALTH_CHECKER = "health.checker"
-	// The name of the default implementation of HealthChecker
-	DEFAULT_HEALTH_CHECKER = "default"
-	// The name of the default implementation of C
-	DEFAULT_CONN_CHECKER = "default"
-	// The key of outstanding-request-limit\
-	OUTSTANDING_REQUEST_COUNT_LIMIT_KEY = "outstanding.request.limit"
-	// The key of successive-failed-request's threshold
-	SUCCESSIVE_FAILED_REQUEST_THRESHOLD_KEY = "successive.failed.threshold"
-	// The key of circuit-tripped timeout factor
-	CIRCUIT_TRIPPED_TIMEOUT_FACTOR_KEY = "circuit.tripped.timeout.factor"
-	// The default threshold of  successive-failed-request if not specfied
-	DEFAULT_SUCCESSIVE_FAILED_THRESHOLD = 5
-	// The default maximum diff between successive-failed-request's threshold and actual successive-failed-request's count
-	DEFAULT_SUCCESSIVE_FAILED_REQUEST_MAX_DIFF = 5
-	// The default factor of  circuit-tripped timeout if not specfied
-	DEFAULT_CIRCUIT_TRIPPED_TIMEOUT_FACTOR = 1000
-	// The default time window of circuit-tripped  in millisecond if not specfied
-	MAX_CIRCUIT_TRIPPED_TIMEOUT_IN_MS = 30000
-)
-
 // service discovery
 const (
 	SUBSCRIBED_SERVICE_NAMES_KEY               = "subscribed-services"
@@ -329,4 +306,13 @@ const (
 
 	// SERVICE_DISCOVERY_KEY indicate which service discovery instance will be used
 	SERVICE_DISCOVERY_KEY = "service_discovery"
+)
+
+// Generic Filter
+
+const (
+	GenericSerializationDefault = "true"
+	// disable "protobuf-json" temporarily
+	//GenericSerializationProtobuf = "protobuf-json"
+	GenericSerializationGson = "gson"
 )

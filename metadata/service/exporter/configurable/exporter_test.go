@@ -30,7 +30,7 @@ import (
 	_ "dubbo.apache.org/dubbo-go/v3/common/proxy/proxy_factory"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	_ "dubbo.apache.org/dubbo-go/v3/filter/filter_impl"
-	"dubbo.apache.org/dubbo-go/v3/metadata/service/inmemory"
+	"dubbo.apache.org/dubbo-go/v3/metadata/service/local"
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/dubbo"
 	"dubbo.apache.org/dubbo-go/v3/remoting/getty"
 )
@@ -46,7 +46,6 @@ func TestConfigurableExporter(t *testing.T) {
 			KeepAlivePeriod:  "120s",
 			TcpRBufSize:      262144,
 			TcpWBufSize:      65536,
-			PkgWQSize:        512,
 			TcpReadTimeout:   "1s",
 			TcpWriteTimeout:  "5s",
 			WaitTimeout:      "1s",
@@ -55,7 +54,7 @@ func TestConfigurableExporter(t *testing.T) {
 		},
 	})
 	mockInitProviderWithSingleRegistry()
-	metadataService, _ := inmemory.GetInMemoryMetadataService()
+	metadataService, _ := local.GetLocalMetadataService()
 	exported := NewMetadataServiceExporter(metadataService)
 
 	t.Run("configurableExporterUrlNil", func(t *testing.T) {

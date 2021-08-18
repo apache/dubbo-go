@@ -33,7 +33,7 @@ var baseId = &BaseMetadataIdentifier{
 }
 
 func TestBaseGetFilePathKey(t *testing.T) {
-	assert.Equal(t, "metadata/1.0.0/Group/provider/a/b/c", baseId.getFilePathKey("a", "b", "c"))
+	assert.Equal(t, "metadata/org.apache.pkg.mockService/1.0.0/Group/provider/a/b/c", baseId.getFilePathKey("a", "b", "c"))
 }
 
 func TestBaseGetIdentifierKey(t *testing.T) {

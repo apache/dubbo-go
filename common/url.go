@@ -39,14 +39,9 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
 )
 
-// ///////////////////////////////
-// dubbo role type
-// ///////////////////////////////
-
-// role constant
+// dubbo role type constant
 const (
 	// CONSUMER is consumer role
 	CONSUMER = iota
@@ -210,11 +205,7 @@ func WithToken(token string) Option {
 		if len(token) > 0 {
 			value := token
 			if strings.ToLower(token) == "true" || strings.ToLower(token) == "default" {
-				u, err := uuid.NewV4()
-				if err != nil {
-					logger.Errorf("could not generator UUID: %v", err)
-					return
-				}
+				u := uuid.NewV4()
 				value = u.String()
 			}
 			url.SetParam(constant.TOKEN_KEY, value)
@@ -270,10 +261,13 @@ func NewURL(urlString string, opts ...Option) (*URL, error) {
 	s.Password, _ = serviceURL.User.Password()
 	s.Location = serviceURL.Host
 	s.Path = serviceURL.Path
-	if strings.Contains(s.Location, ":") {
-		s.Ip, s.Port, err = net.SplitHostPort(s.Location)
-		if err != nil {
-			return &s, perrors.Errorf("net.SplitHostPort(URL.Host{%s}), error{%v}", s.Location, err)
+	for _, location := range strings.Split(s.Location, ",") {
+		if strings.Contains(location, ":") {
+			s.Ip, s.Port, err = net.SplitHostPort(location)
+			if err != nil {
+				return &s, perrors.Errorf("net.SplitHostPort(url.Host{%s}), error{%v}", s.Location, err)
+			}
+			break
 		}
 	}
 	for _, opt := range opts {
