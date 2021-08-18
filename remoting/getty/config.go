@@ -29,6 +29,11 @@ import (
 	"github.com/apache/dubbo-go/config"
 )
 
+const (
+	TCP_READ_TIMEOUT_MIN_VALUE  = time.Second * 1
+	TCP_WRITE_TIMEOUT_MIN_VALUE = time.Second * 5
+)
+
 type (
 	// GettySessionParam is session configuration for getty
 	GettySessionParam struct {
@@ -164,11 +169,11 @@ func (c *GettySessionParam) CheckValidity() error {
 		return perrors.WithMessagef(err, "time.ParseDuration(KeepAlivePeriod{%#v})", c.KeepAlivePeriod)
 	}
 
-	if c.tcpReadTimeout, err = time.ParseDuration(c.TcpReadTimeout); err != nil {
+	if c.tcpReadTimeout, err = parseTimeDurationByRange(c.TcpReadTimeout, TCP_READ_TIMEOUT_MIN_VALUE, nil); err != nil {
 		return perrors.WithMessagef(err, "time.ParseDuration(TcpReadTimeout{%#v})", c.TcpReadTimeout)
 	}
 
-	if c.tcpWriteTimeout, err = time.ParseDuration(c.TcpWriteTimeout); err != nil {
+	if c.tcpWriteTimeout, err = parseTimeDurationByRange(c.TcpWriteTimeout, TCP_WRITE_TIMEOUT_MIN_VALUE, nil); err != nil {
 		return perrors.WithMessagef(err, "time.ParseDuration(TcpWriteTimeout{%#v})", c.TcpWriteTimeout)
 	}
 
@@ -177,6 +182,23 @@ func (c *GettySessionParam) CheckValidity() error {
 	}
 
 	return nil
+}
+
+func parseTimeDurationByRange(timeStr string, min time.Duration, max *time.Duration) (time.Duration, error) {
+	result, err := time.ParseDuration(timeStr)
+	if err != nil {
+		return min, err
+	}
+	if max != nil && min > *max {
+		min, max = *max, &min
+	}
+	if result < min {
+		result = min
+	}
+	if max != nil && result > *max {
+		result = *max
+	}
+	return result, nil
 }
 
 // CheckValidity confirm client params.
