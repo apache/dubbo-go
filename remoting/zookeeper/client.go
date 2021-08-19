@@ -54,7 +54,7 @@ func ValidateZookeeperClient(container ZkClientFacade, zkName string) error {
 
 	if container.ZkClient() == nil {
 		// in dubbo, every registry only connect one node, so this is []string{r.Address}
-		timeout := url.GetParamDuration(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT)
+		timeout := url.GetParamDuration(constant.CONFIG_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT)
 
 		zkAddresses := strings.Split(url.Location, ",")
 		newClient, cltErr := gxzookeeper.NewZookeeperClient(zkName, zkAddresses, true, gxzookeeper.WithZkTimeOut(timeout))

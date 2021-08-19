@@ -87,7 +87,7 @@ func (rc *RemoteConfig) getUrlMap() url.Values {
 	urlMap := url.Values{}
 	urlMap.Set(constant.CONFIG_USERNAME_KEY, rc.Username)
 	urlMap.Set(constant.CONFIG_PASSWORD_KEY, rc.Password)
-	urlMap.Set(constant.REGISTRY_TIMEOUT_KEY, rc.TimeoutStr)
+	urlMap.Set(constant.CONFIG_TIMEOUT_KEY, rc.TimeoutStr)
 
 	for key, val := range rc.Params {
 		urlMap.Set(key, val)
