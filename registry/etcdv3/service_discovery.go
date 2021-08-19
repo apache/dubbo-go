@@ -288,7 +288,7 @@ func (e *etcdV3ServiceDiscovery) DataChange(eventType remoting.Event) bool {
 		}
 
 		// notify instance listener instance change
-		name := instance.ServiceName // TODO, seems like ServiceName is not exactly the app name?
+		name := instance.ServiceName
 		instances := e.GetInstances(name)
 		for _, lis := range e.instanceListenerMap[instance.ServiceName].Values() {
 			var instanceLis registry.ServiceInstancesChangedListener
