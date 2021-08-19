@@ -22,7 +22,6 @@ import (
 	"path"
 	"strings"
 	"sync"
-	"time"
 )
 
 import (
@@ -75,12 +74,7 @@ func (r *etcdV3Registry) ClientLock() *sync.Mutex {
 }
 
 func newETCDV3Registry(url *common.URL) (registry.Registry, error) {
-	timeout, err := time.ParseDuration(url.GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT))
-	if err != nil {
-		logger.Errorf("timeout config %v is invalid ,err is %v",
-			url.GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT), err.Error())
-		return nil, perrors.WithMessagef(err, "new etcd registry(address:%+v)", url.Location)
-	}
+	timeout := url.GetParamDuration(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT)
 
 	logger.Infof("etcd address is: %v, timeout is: %s", url.Location, timeout.String())
 

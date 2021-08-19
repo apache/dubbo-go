@@ -29,7 +29,6 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
 )
 
 // RemoteConfig: usually we need some middleware, including nacos, zookeeper
@@ -45,8 +44,8 @@ type RemoteConfig struct {
 	Params     map[string]string `yaml:"params" json:"params,omitempty"`
 }
 
-// Prefix
-func (c *RemoteConfig) Prefix() string {
+// Prefix dubbo.remote.
+func (rc *RemoteConfig) Prefix() string {
 	return constant.RemotePrefix
 }
 
@@ -56,8 +55,6 @@ func (rc *RemoteConfig) Timeout() time.Duration {
 	if res, err := time.ParseDuration(rc.TimeoutStr); err == nil {
 		return res
 	}
-	logger.Errorf("Could not parse the timeout string to Duration: %s, the default value will be returned",
-		rc.TimeoutStr)
 	return 5 * time.Second
 }
 
@@ -90,7 +87,7 @@ func (rc *RemoteConfig) getUrlMap() url.Values {
 	urlMap := url.Values{}
 	urlMap.Set(constant.CONFIG_USERNAME_KEY, rc.Username)
 	urlMap.Set(constant.CONFIG_PASSWORD_KEY, rc.Password)
-	urlMap.Set(constant.CONFIG_TIMEOUT_KEY, rc.TimeoutStr)
+	urlMap.Set(constant.REGISTRY_TIMEOUT_KEY, rc.TimeoutStr)
 
 	for key, val := range rc.Params {
 		urlMap.Set(key, val)
