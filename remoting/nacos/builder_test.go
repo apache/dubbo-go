@@ -121,8 +121,6 @@ func TestTimeoutConfig(t *testing.T) {
 		assert.Equal(t, cc.TimeoutMs, uint64(int32(3*time.Second/time.Millisecond)))
 	})
 
-
-
 }
 
 func getRegUrl() *common.URL {
