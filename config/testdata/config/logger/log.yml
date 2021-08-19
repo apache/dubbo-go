@@ -1,0 +1,36 @@
+dubbo:
+  registries:
+    nacos:
+      timeout: 5s
+      group: dev
+      address: nacos://127.0.0.1:8848
+    zk:
+      protocol: zookeeper
+      group: test
+      address: 127.0.0.1:2181
+  logger:
+    level: "debug"
+    development: false
+    disableCaller: false
+    disableStacktrace: false
+    sampling:
+    encoding: "console"
+    # encoder
+    encoderConfig:
+      messageKey: "message"
+      levelKey: "level"
+      timeKey: "time"
+      nameKey: "logger"
+      callerKey: "caller"
+      stacktraceKey: "stacktrace"
+      lineEnding: ""
+      levelEncoder: "capitalColor"
+      timeEncoder: "iso8601"
+      durationEncoder: "seconds"
+      callerEncoder: "short"
+      nameEncoder: ""
+    outputPaths:
+      - "stderr"
+    errorOutputPaths:
+      - "stderr"
+    initialFields:
