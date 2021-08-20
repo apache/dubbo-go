@@ -30,8 +30,7 @@ import (
 )
 
 const (
-	TCP_READ_TIMEOUT_MIN_VALUE  = time.Second * 1
-	TCP_WRITE_TIMEOUT_MIN_VALUE = time.Second * 5
+	TCP_READ_WRITE_TIMEOUT_MIN_VALUE = time.Second * 1
 )
 
 type (
@@ -169,12 +168,11 @@ func (c *GettySessionParam) CheckValidity() error {
 		return perrors.WithMessagef(err, "time.ParseDuration(KeepAlivePeriod{%#v})", c.KeepAlivePeriod)
 	}
 
-	var tcpTimeoutMinVal = TCP_READ_TIMEOUT_MIN_VALUE
+	var tcpTimeoutMinVal = TCP_READ_WRITE_TIMEOUT_MIN_VALUE
 	if c.tcpReadTimeout, err = parseTimeDurationByRange(c.TcpReadTimeout, &tcpTimeoutMinVal, nil); err != nil {
 		return perrors.WithMessagef(err, "time.ParseDuration(TcpReadTimeout{%#v})", c.TcpReadTimeout)
 	}
 
-	tcpTimeoutMinVal = TCP_WRITE_TIMEOUT_MIN_VALUE
 	if c.tcpWriteTimeout, err = parseTimeDurationByRange(c.TcpWriteTimeout, &tcpTimeoutMinVal, nil); err != nil {
 		return perrors.WithMessagef(err, "time.ParseDuration(TcpWriteTimeout{%#v})", c.TcpWriteTimeout)
 	}
