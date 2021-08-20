@@ -11,26 +11,26 @@ dubbo:
   logger:
     level: "debug"
     development: false
-    disableCaller: false
-    disableStacktrace: false
+    disable_caller: false
+    disable_stacktrace: false
     sampling:
     encoding: "console"
     # encoder
-    encoderConfig:
-      messageKey: "message"
-      levelKey: "level"
-      timeKey: "time"
-      nameKey: "logger"
-      callerKey: "caller"
-      stacktraceKey: "stacktrace"
-      lineEnding: ""
-      levelEncoder: "capitalColor"
-      timeEncoder: "iso8601"
-      durationEncoder: "seconds"
-      callerEncoder: "short"
-      nameEncoder: ""
-    outputPaths:
+    encoder_config:
+      message_key: "message"
+      level_key: "level"
+      time_key: "time"
+      name_key: "logger"
+      caller_key: "caller"
+      stacktrace_key: "stacktrace"
+      line_ending: ""
+      level_encoder: "capitalColor"
+      time_encoder: "iso8601"
+      duration_encoder: "seconds"
+      caller_encoder: "short"
+      name_encoder: ""
+    output_paths:
       - "stderr"
-    errorOutputPaths:
+    error_output_paths:
       - "stderr"
-    initialFields:
+    initial_fields:

@@ -116,6 +116,9 @@ func (rc *RootConfig) InitConfig(opts ...rootConfOption) error {
 		opt.apply(rc)
 	}
 
+	if err := initLoggerConfig(rc); err != nil {
+		return err
+	}
 	if err := initApplicationConfig(rc); err != nil {
 		return err
 	}
@@ -126,9 +129,6 @@ func (rc *RootConfig) InitConfig(opts ...rootConfOption) error {
 		return err
 	}
 	if err := initRegistriesConfig(rc); err != nil {
-		return err
-	}
-	if err := initLoggerConfig(rc); err != nil {
 		return err
 	}
 	if err := initServiceDiscoveryConfig(rc); err != nil {
