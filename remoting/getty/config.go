@@ -30,8 +30,7 @@ import (
 )
 
 const (
-	TCP_READ_TIMEOUT_MIN_VALUE  = time.Second * 1
-	TCP_WRITE_TIMEOUT_MIN_VALUE = time.Second * 5
+	TCP_READ_WRITE_TIMEOUT_MIN_VALUE = time.Second * 1
 )
 
 type (
@@ -167,11 +166,12 @@ func (c *GettySessionParam) CheckValidity() error {
 		return perrors.WithMessagef(err, "time.ParseDuration(KeepAlivePeriod{%#v})", c.KeepAlivePeriod)
 	}
 
-	if c.tcpReadTimeout, err = parseTimeDurationByRange(c.TcpReadTimeout, TCP_READ_TIMEOUT_MIN_VALUE, nil); err != nil {
+	var tcpTimeoutMinVal = TCP_READ_WRITE_TIMEOUT_MIN_VALUE
+	if c.tcpReadTimeout, err = parseTimeDurationByRange(c.TcpReadTimeout, &tcpTimeoutMinVal, nil); err != nil {
 		return perrors.WithMessagef(err, "time.ParseDuration(TcpReadTimeout{%#v})", c.TcpReadTimeout)
 	}
 
-	if c.tcpWriteTimeout, err = parseTimeDurationByRange(c.TcpWriteTimeout, TCP_WRITE_TIMEOUT_MIN_VALUE, nil); err != nil {
+	if c.tcpWriteTimeout, err = parseTimeDurationByRange(c.TcpWriteTimeout, &tcpTimeoutMinVal, nil); err != nil {
 		return perrors.WithMessagef(err, "time.ParseDuration(TcpWriteTimeout{%#v})", c.TcpWriteTimeout)
 	}
 
@@ -182,16 +182,16 @@ func (c *GettySessionParam) CheckValidity() error {
 	return nil
 }
 
-func parseTimeDurationByRange(timeStr string, min time.Duration, max *time.Duration) (time.Duration, error) {
+func parseTimeDurationByRange(timeStr string, min *time.Duration, max *time.Duration) (time.Duration, error) {
 	result, err := time.ParseDuration(timeStr)
 	if err != nil {
-		return min, err
+		return *min, err
 	}
-	if max != nil && min > *max {
-		min, max = *max, &min
+	if min != nil && max != nil && *min > *max { // swap
+		min, max = max, min
 	}
-	if result < min {
-		result = min
+	if min != nil && result < *min {
+		result = *min
 	}
 	if max != nil && result > *max {
 		result = *max
