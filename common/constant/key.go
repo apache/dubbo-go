@@ -125,6 +125,7 @@ const (
 	REGISTRY_PROTOCOL    = "registry"
 	ROLE_KEY             = "registry.role"
 	REGISTRY_DEFAULT_KEY = "registry.default"
+	// Deprecated use CONFIG_TIMEOUT_KEY key
 	REGISTRY_TIMEOUT_KEY = "registry.timeout"
 	REGISTRY_LABEL_KEY   = "label"
 	PREFERRED_KEY        = "preferred"

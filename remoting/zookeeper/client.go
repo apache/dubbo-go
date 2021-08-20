@@ -19,7 +19,6 @@ package zookeeper
 
 import (
 	"strings"
-	"time"
 )
 
 import (
@@ -55,12 +54,8 @@ func ValidateZookeeperClient(container ZkClientFacade, zkName string) error {
 
 	if container.ZkClient() == nil {
 		// in dubbo, every registry only connect one node, so this is []string{r.Address}
-		timeout, paramErr := time.ParseDuration(url.GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT))
-		if paramErr != nil {
-			logger.Errorf("timeout config %v is invalid, err is %v",
-				url.GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT), paramErr.Error())
-			return perrors.WithMessagef(paramErr, "newZookeeperClient(address:%+v)", url.Location)
-		}
+		timeout := url.GetParamDuration(constant.CONFIG_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT)
+
 		zkAddresses := strings.Split(url.Location, ",")
 		newClient, cltErr := gxzookeeper.NewZookeeperClient(zkName, zkAddresses, true, gxzookeeper.WithZkTimeOut(timeout))
 		if cltErr != nil {
