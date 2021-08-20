@@ -26,6 +26,7 @@ import (
 
 import (
 	hessian "github.com/apache/dubbo-go-hessian2"
+
 	perrors "github.com/pkg/errors"
 )
 
@@ -48,7 +49,7 @@ type DubboTestCodec struct {
 // encode request for transport
 func (c *DubboTestCodec) EncodeRequest(request *remoting.Request) (*bytes.Buffer, error) {
 	if request.Event {
-		return c.encodeHeartbeartReqeust(request)
+		return c.encodeHeartbeatRequest(request)
 	}
 
 	invoc, ok := request.Data.(*invocation.RPCInvocation)
@@ -100,7 +101,7 @@ func (c *DubboTestCodec) EncodeRequest(request *remoting.Request) (*bytes.Buffer
 }
 
 // encode heartbeat request
-func (c *DubboTestCodec) encodeHeartbeartReqeust(request *remoting.Request) (*bytes.Buffer, error) {
+func (c *DubboTestCodec) encodeHeartbeatRequest(request *remoting.Request) (*bytes.Buffer, error) {
 	header := impl.DubboHeader{
 		Type:     impl.PackageHeartbeat,
 		SerialID: constant.S_Hessian2,

@@ -39,7 +39,6 @@ type (
 		keepAlivePeriod  time.Duration
 		TcpRBufSize      int    `default:"262144" yaml:"tcp_r_buf_size" json:"tcp_r_buf_size,omitempty"`
 		TcpWBufSize      int    `default:"65536" yaml:"tcp_w_buf_size" json:"tcp_w_buf_size,omitempty"`
-		PkgWQSize        int    `default:"1024" yaml:"pkg_wq_size" json:"pkg_wq_size,omitempty"`
 		TcpReadTimeout   string `default:"1s" yaml:"tcp_read_timeout" json:"tcp_read_timeout,omitempty"`
 		tcpReadTimeout   time.Duration
 		TcpWriteTimeout  string `default:"5s" yaml:"tcp_write_timeout" json:"tcp_write_timeout,omitempty"`
@@ -67,7 +66,7 @@ type (
 		sessionTimeout time.Duration
 		SessionNumber  int `default:"1000" yaml:"session_number" json:"session_number,omitempty"`
 
-		// grpool
+		// gr pool
 		GrPoolSize  int `default:"0" yaml:"gr_pool_size" json:"gr_pool_size,omitempty"`
 		QueueLen    int `default:"0" yaml:"queue_len" json:"queue_len,omitempty"`
 		QueueNumber int `default:"0" yaml:"queue_number" json:"queue_number,omitempty"`
@@ -95,7 +94,7 @@ type (
 		SessionTimeout string `default:"60s" yaml:"session_timeout" json:"session_timeout,omitempty"`
 		sessionTimeout time.Duration
 
-		// grpool
+		// gr pool
 		GrPoolSize  int `default:"0" yaml:"gr_pool_size" json:"gr_pool_size,omitempty"`
 		QueueLen    int `default:"0" yaml:"queue_len" json:"queue_len,omitempty"`
 		QueueNumber int `default:"0" yaml:"queue_number" json:"queue_number,omitempty"`
@@ -122,7 +121,6 @@ func GetDefaultClientConfig() ClientConfig {
 			KeepAlivePeriod:  "180s",
 			TcpRBufSize:      262144,
 			TcpWBufSize:      65536,
-			PkgWQSize:        512,
 			TcpReadTimeout:   "1s",
 			TcpWriteTimeout:  "5s",
 			WaitTimeout:      "1s",
@@ -146,7 +144,6 @@ func GetDefaultServerConfig() ServerConfig {
 			KeepAlivePeriod:  "180s",
 			TcpRBufSize:      262144,
 			TcpWBufSize:      65536,
-			PkgWQSize:        512,
 			TcpReadTimeout:   "1s",
 			TcpWriteTimeout:  "5s",
 			WaitTimeout:      "1s",
