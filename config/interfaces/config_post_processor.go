@@ -25,8 +25,24 @@ import (
 // ServiceConfig during deployment time.
 type ConfigPostProcessor interface {
 	// PostProcessReferenceConfig customizes ReferenceConfig's params.
+	// PostProcessReferenceConfig emit on refer customer (GetParam(constant.HOOK_EVENT_PARAM_KEY): before-consumer-connect, consumer-connect-success, consumer-connect-fail)
 	PostProcessReferenceConfig(*common.URL)
 
 	// PostProcessServiceConfig customizes ServiceConfig's params.
+	// PostProcessServiceConfig emit on export provider (GetParam(constant.HOOK_EVENT_PARAM_KEY): before-provider-connect, provider-connect-success, provider-connect-fail)
 	PostProcessServiceConfig(*common.URL)
+}
+
+// ConfigLoaderHook is extends ConfigPostProcessor
+type ConfigLoaderHook interface {
+	ConfigPostProcessor
+
+	// AllConsumersConnectComplete emit on all consumers export complete
+	AllConsumersConnectComplete()
+
+	// AllProvidersConnectComplete emit on all providers export complete
+	AllProvidersConnectComplete()
+
+	// BeforeShutdown emit on before shutdown
+	BeforeShutdown()
 }

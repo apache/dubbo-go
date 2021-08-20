@@ -111,6 +111,85 @@ func TestLoad(t *testing.T) {
 	providerConfig = nil
 }
 
+type CustomEvent struct {
+	t *testing.T
+}
+
+// implements interfaces.ConfigPostProcessor's functions
+func (c CustomEvent) PostProcessReferenceConfig(u *common.URL) {
+	logger.Debug("PostProcessReferenceConfig Start")
+	logger.Debug("Event: ", u.GetParam(constant.HOOK_EVENT_PARAM_KEY, ""))
+	logger.Debug("Url: ", u)
+	logger.Debug("Error Message: ", u.GetParam(constant.HOOK_EVENT_ERROR_MESSAGE_PARAM_KEY, ""))
+	logger.Debug("PostProcessReferenceConfig End")
+	assert.Equal(c.t, u.GetParam(constant.SIDE_KEY, ""), "consumer")
+}
+func (c CustomEvent) PostProcessServiceConfig(u *common.URL) {
+	logger.Debug("PostProcessServiceConfig Start")
+	logger.Debug("Event: ", u.GetParam(constant.HOOK_EVENT_PARAM_KEY, ""))
+	logger.Debug("Url: ", u)
+	logger.Debug("Error Message: ", u.GetParam(constant.HOOK_EVENT_ERROR_MESSAGE_PARAM_KEY, ""))
+	logger.Debug("PostProcessServiceConfig End")
+	assert.Equal(c.t, u.GetParam(constant.SIDE_KEY, ""), "provider")
+}
+
+// implements interfaces.ConfigLoaderHook's functions
+func (c CustomEvent) AllConsumersConnectComplete() {
+	logger.Debug("AllConsumersConnectComplete")
+}
+func (c CustomEvent) AllProvidersConnectComplete() {
+	logger.Debug("AllProvidersConnectComplete")
+}
+func (c CustomEvent) BeforeShutdown() {
+	logger.Debug("BeforeShutdown")
+}
+
+func TestLoadWithEventDispatch(t *testing.T) {
+	doInitConsumer()
+	doInitProvider()
+	for _, v := range providerConfig.Services {
+		v.export = true
+	}
+
+	ms := &MockService{}
+	SetConsumerService(ms)
+	SetProviderService(ms)
+
+	extension.SetProtocol("registry", GetProtocol)
+	extension.SetCluster(constant.ZONEAWARE_CLUSTER_NAME, cluster_impl.NewZoneAwareCluster)
+	extension.SetProxyFactory("default", proxy_factory.NewDefaultProxyFactory)
+	GetApplicationConfig().MetadataType = "mock"
+	var mm *mockMetadataService
+	extension.SetMetadataService("mock", func() (metadataService service.MetadataService, err error) {
+		if mm == nil {
+			mm = &mockMetadataService{
+				exportedServiceURLs: new(sync.Map),
+				lock:                new(sync.RWMutex),
+			}
+		}
+		return mm, nil
+	})
+
+	extension.SetConfigPostProcessor("TestLoadWithEventDispatch", CustomEvent{t})
+
+	Load()
+
+	assert.Equal(t, ms, GetRPCService(ms.Reference()))
+	ms2 := &struct {
+		MockService
+	}{}
+	RPCService(ms2)
+	assert.NotEqual(t, ms2, GetRPCService(ms2.Reference()))
+
+	conServices = map[string]common.RPCService{}
+	proServices = map[string]common.RPCService{}
+	err := common.ServiceMap.UnRegister("com.MockService", "mock",
+		common.ServiceKey("com.MockService", "huadong_idc", "1.0.0"))
+	assert.Nil(t, err)
+	consumerConfig = nil
+	providerConfig = nil
+}
+
 func TestLoadWithSingleReg(t *testing.T) {
 	doInitConsumerWithSingleRegistry()
 	mockInitProviderWithSingleRegistry()

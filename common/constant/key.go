@@ -350,3 +350,17 @@ const (
 	// SERVICE_DISCOVERY_KEY indicate which service discovery instance will be used
 	SERVICE_DISCOVERY_KEY = "service_discovery"
 )
+
+// Loader Hook
+const (
+	HOOK_EVENT_PARAM_KEY               = "config-loader-hook-event"
+	HOOK_EVENT_ERROR_MESSAGE_PARAM_KEY = "config-loader-hook-error-message"
+
+	HOOK_EVENT_BEFORE_CONSUMER_CONNECT  = "before-consumer-connect"
+	HOOK_EVENT_CONSUMER_CONNECT_SUCCESS = "consumer-connect-success"
+	HOOK_EVENT_CONSUMER_CONNECT_FAIL    = "consumer-connect-fail"
+
+	HOOK_EVENT_BEFORE_PROVIDER_CONNECT  = "before-provider-connect"
+	HOOK_EVENT_PROVIDER_CONNECT_SUCCESS = "provider-connect-success"
+	HOOK_EVENT_PROVIDER_CONNECT_FAIL    = "provider-connect-fail"
+)

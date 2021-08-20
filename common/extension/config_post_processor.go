@@ -43,3 +43,17 @@ func GetConfigPostProcessors() []interfaces.ConfigPostProcessor {
 	}
 	return ret
 }
+
+func GetConfigLoaderHooks() []interfaces.ConfigLoaderHook {
+	var ret []interfaces.ConfigLoaderHook
+	for _, v := range processors {
+		h, ok := v.(interfaces.ConfigLoaderHook)
+		if ok {
+			ret = append(ret, h)
+		}
+	}
+	if ret == nil {
+		return make([]interfaces.ConfigLoaderHook, 0)
+	}
+	return ret
+}

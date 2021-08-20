@@ -203,7 +203,9 @@ func (c *ServiceConfig) Export() error {
 		}
 
 		// post process the URL to be exported
-		c.postProcessConfig(ivkURL)
+		c.postProcessConfig(ivkURL, &map[string]string{
+			constant.HOOK_EVENT_PARAM_KEY: constant.HOOK_EVENT_BEFORE_PROVIDER_CONNECT,
+		})
 		// config post processor may set "export" to false
 		if !ivkURL.GetParamBool(constant.EXPORT_KEY, true) {
 			return nil
@@ -355,8 +357,36 @@ func publishServiceDefinition(url *common.URL) {
 }
 
 // postProcessConfig asks registered ConfigPostProcessor to post-process the current ServiceConfig.
-func (c *ServiceConfig) postProcessConfig(url *common.URL) {
+func (c *ServiceConfig) postProcessConfig(url *common.URL, params *map[string]string) {
 	for _, p := range extension.GetConfigPostProcessors() {
+		if params != nil && len(*params) > 0 {
+			if url != nil {
+				url = url.Clone()
+			} else {
+				url = &common.URL{}
+			}
+			for k, v := range *params {
+				url.SetParam(k, v)
+			}
+		}
 		p.PostProcessServiceConfig(url)
+	}
+}
+
+func (c *ServiceConfig) getValidUrl() *common.URL {
+	urls := c.GetExportedUrls()
+	var u *common.URL
+	if urls != nil && len(urls) > 0 {
+		u = urls[0]
+	}
+	if u != nil && u.SubURL != nil {
+		return u.SubURL
+	}
+	return u
+}
+
+func postAllProvidersConnectComplete() {
+	for _, h := range extension.GetConfigLoaderHooks() {
+		h.AllProvidersConnectComplete()
 	}
 }

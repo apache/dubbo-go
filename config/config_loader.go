@@ -169,6 +169,7 @@ func loadConsumerConfig() {
 	for {
 		checkok := true
 		for _, refconfig := range consumerConfig.References {
+			consumerUrl := refconfig.getValidUrl()
 			if (refconfig.Check != nil && *refconfig.Check) ||
 				(refconfig.Check == nil && consumerConfig.Check != nil && *consumerConfig.Check) ||
 				(refconfig.Check == nil && consumerConfig.Check == nil) { // default to true
@@ -179,6 +180,10 @@ func loadConsumerConfig() {
 					if count > maxWait {
 						errMsg := fmt.Sprintf("Failed to check the status of the service %v. No provider available for the service to the consumer use dubbo version %v", refconfig.InterfaceName, constant.Version)
 						logger.Error(errMsg)
+						refconfig.postProcessConfig(consumerUrl, &map[string]string{
+							constant.HOOK_EVENT_PARAM_KEY:               constant.HOOK_EVENT_CONSUMER_CONNECT_FAIL,
+							constant.HOOK_EVENT_ERROR_MESSAGE_PARAM_KEY: errMsg,
+						})
 						panic(errMsg)
 					}
 					time.Sleep(time.Second * 1)
@@ -186,13 +191,18 @@ func loadConsumerConfig() {
 				}
 				if refconfig.invoker == nil {
 					logger.Warnf("The interface %s invoker not exist, may you should check your interface config.", refconfig.InterfaceName)
+					continue
 				}
 			}
+			refconfig.postProcessConfig(consumerUrl, &map[string]string{
+				constant.HOOK_EVENT_PARAM_KEY: constant.HOOK_EVENT_CONSUMER_CONNECT_SUCCESS,
+			})
 		}
 		if checkok {
 			break
 		}
 	}
+	postAllConsumersConnectComplete()
 }
 
 func loadProviderConfig() {
@@ -247,11 +257,22 @@ func loadProviderConfig() {
 		svs.id = key
 		svs.Implement(rpcService)
 		svs.Protocols = providerConfig.Protocols
-		if err := svs.Export(); err != nil {
-			panic(fmt.Sprintf("service %s export failed! err: %#v", key, err))
+		err := svs.Export()
+		providerUrl := svs.getValidUrl()
+		if err != nil {
+			errMsg := fmt.Sprintf("service %s export failed! err: %#v", key, err)
+			svs.postProcessConfig(providerUrl, &map[string]string{
+				constant.HOOK_EVENT_PARAM_KEY:               constant.HOOK_EVENT_PROVIDER_CONNECT_FAIL,
+				constant.HOOK_EVENT_ERROR_MESSAGE_PARAM_KEY: errMsg,
+			})
+			panic(errMsg)
 		}
+		svs.postProcessConfig(providerUrl, &map[string]string{
+			constant.HOOK_EVENT_PARAM_KEY: constant.HOOK_EVENT_PROVIDER_CONNECT_SUCCESS,
+		})
 	}
 	registerServiceInstance()
+	postAllProvidersConnectComplete()
 }
 
 // registerServiceInstance register service instance
