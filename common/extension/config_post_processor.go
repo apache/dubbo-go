@@ -35,6 +35,11 @@ func GetConfigPostProcessor(name string) interfaces.ConfigPostProcessor {
 	return processors[name]
 }
 
+// RemoveConfigPostProcessor remove process from processors.
+func RemoveConfigPostProcessor(name string) {
+	delete(processors, name)
+}
+
 // GetConfigPostProcessors returns all registered instances of ConfigPostProcessor.
 func GetConfigPostProcessors() []interfaces.ConfigPostProcessor {
 	ret := make([]interfaces.ConfigPostProcessor, 0, len(processors))

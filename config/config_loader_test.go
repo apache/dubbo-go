@@ -170,7 +170,8 @@ func TestLoadWithEventDispatch(t *testing.T) {
 		return mm, nil
 	})
 
-	extension.SetConfigPostProcessor("TestLoadWithEventDispatch", CustomEvent{t})
+	configPostProcessorName := "TestLoadWithEventDispatch"
+	extension.SetConfigPostProcessor(configPostProcessorName, CustomEvent{t})
 
 	Load()
 
@@ -186,6 +187,7 @@ func TestLoadWithEventDispatch(t *testing.T) {
 	err := common.ServiceMap.UnRegister("com.MockService", "mock",
 		common.ServiceKey("com.MockService", "huadong_idc", "1.0.0"))
 	assert.Nil(t, err)
+	extension.RemoveConfigPostProcessor(configPostProcessorName)
 	consumerConfig = nil
 	providerConfig = nil
 }
