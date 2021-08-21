@@ -20,6 +20,7 @@ package grpc
 import (
 	"reflect"
 	"strconv"
+	"time"
 )
 
 import (
@@ -59,12 +60,12 @@ func init() {
 	if rootConfig.Application == nil {
 		return
 	}
-	protocolConf := config.GetConsumerConfig().ProtocolConf
+	protocolConf := config.GetRootConfig().Protocols
 
 	if protocolConf == nil {
 		logger.Info("protocol_conf default use dubbo config")
 	} else {
-		grpcConf := protocolConf.(map[interface{}]interface{})[GRPC]
+		grpcConf := protocolConf[GRPC]
 		if grpcConf == nil {
 			logger.Warnf("grpcConf is nil")
 			return
@@ -95,12 +96,13 @@ func NewClient(url *common.URL) (*Client, error) {
 	maxMessageSize, _ := strconv.Atoi(url.GetParam(constant.MESSAGE_SIZE_KEY, "4"))
 
 	// consumer config client connectTimeout
-	connectTimeout := config.GetConsumerConfig().ConnectTimeout
+	//connectTimeout := config.GetConsumerConfig().ConnectTimeout
 
 	dialOpts = append(dialOpts,
 		grpc.WithInsecure(),
 		grpc.WithBlock(),
-		grpc.WithTimeout(connectTimeout),
+		// todo config network timeout
+		grpc.WithTimeout(time.Second*3),
 		grpc.WithUnaryInterceptor(otgrpc.OpenTracingClientInterceptor(tracer, otgrpc.LogPayloads())),
 		grpc.WithStreamInterceptor(otgrpc.OpenTracingStreamClientInterceptor(tracer, otgrpc.LogPayloads())),
 		grpc.WithDefaultCallOptions(
