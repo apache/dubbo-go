@@ -28,7 +28,7 @@ import (
 // ProtocolConfig is protocol configuration
 type ProtocolConfig struct {
 	Name string `default:"dubbo" validate:"required" yaml:"name" json:"name,omitempty" property:"name"`
-	Ip   string `default:"127.0.0.1" yaml:"ip"  json:"ip,omitempty" property:"ip"`
+	Ip   string `yaml:"ip"  json:"ip,omitempty" property:"ip"`
 	Port string `default:"2000" yaml:"port" json:"port,omitempty" property:"port"`
 }
 

@@ -97,7 +97,7 @@ func (c *ProviderConfig) Prefix() string {
 }
 
 func (c *ProviderConfig) Load() {
-	
+
 	for key, svs := range c.Services {
 		rpcService := GetProviderService(key)
 		if rpcService == nil {
