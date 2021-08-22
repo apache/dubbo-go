@@ -30,7 +30,7 @@ import (
 )
 
 const (
-	TCP_READ_WRITE_TIMEOUT_MIN_VALUE = time.Second * 1
+	TCPReadWriteTimeoutMinValue = time.Second * 1
 )
 
 type (
@@ -188,8 +188,8 @@ func parseTcpTimeoutDuration(timeStr string) (time.Duration, error) {
 	if err != nil {
 		return 0, err
 	}
-	if result < TCP_READ_WRITE_TIMEOUT_MIN_VALUE {
-		return TCP_READ_WRITE_TIMEOUT_MIN_VALUE, nil
+	if result < TCPReadWriteTimeoutMinValue {
+		return TCPReadWriteTimeoutMinValue, nil
 	}
 	return result, nil
 }
