@@ -39,20 +39,16 @@ func (ApplicationConfig) Prefix() string {
 	return constant.DUBBO + ".application"
 }
 
-func initApplicationConfig(rc *RootConfig) error {
+func (ac *ApplicationConfig) Init(rc *RootConfig) error {
 	// ignore refresh action
-	if rc.refresh {
+	if rc.refresh || ac == nil {
+		rootConfig.Application = new(ApplicationConfig)
 		return nil
 	}
-	application := rc.Application
-	if application == nil {
-		application = new(ApplicationConfig)
-	}
-	defaults.MustSet(application)
-	if err := application.check(); err != nil {
+	defaults.MustSet(ac)
+	if err := ac.check(); err != nil {
 		return err
 	}
-	rc.Application = application
 	return nil
 }
 

@@ -78,12 +78,11 @@ func (c *CenterConfig) check() error {
 	return verify(c)
 }
 
-func initConfigCenter(rc *RootConfig) error {
-	center := rc.ConfigCenter
-	if center == nil || rc.refresh {
+func (c *CenterConfig) Init(rc *RootConfig) error {
+	if rc.refresh || c == nil {
 		return nil
 	}
-	if err := center.check(); err != nil {
+	if err := c.check(); err != nil {
 		return err
 	}
 	return startConfigCenter(rc)
@@ -168,7 +167,7 @@ func startConfigCenter(rc *RootConfig) error {
 	}
 	rc.refresh = false
 	rc.ConfigCenter = nil
-	return rc.InitConfig()
+	return nil
 }
 
 func (c *CenterConfig) prepareEnvironment(configCenterUrl *common.URL) (string, error) {

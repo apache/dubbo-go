@@ -115,11 +115,10 @@ func (rc *RootConfig) InitConfig(opts ...rootConfOption) error {
 	for _, opt := range opts {
 		opt.apply(rc)
 	}
-
-	if err := initApplicationConfig(rc); err != nil {
+	if err := rc.ConfigCenter.Init(rc); err != nil {
 		return err
 	}
-	if err := initConfigCenter(rc); err != nil {
+	if err := rc.Application.Init(rc); err != nil {
 		return err
 	}
 	if err := initProtocolsConfig(rc); err != nil {
