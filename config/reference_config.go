@@ -327,15 +327,15 @@ func NewReferenceConfig(opts ...ReferenceConfigOpt) *ReferenceConfig {
 }
 
 // WithReferenceRegistry returns ReferenceConfigOpt with given registryKey: @registry
-func WithReferenceRegistry(registry ...string) ReferenceConfigOpt {
+func WithReferenceRegistry(registryKeys ...string) ReferenceConfigOpt {
 	return func(config *ReferenceConfig) *ReferenceConfig {
-		config.Registry = registry
+		config.Registry = registryKeys
 		return config
 	}
 }
 
-// WithReferenceProtocol returns ReferenceConfigOpt with given protocolKey: @protocol
-func WithReferenceProtocol(protocol string) ReferenceConfigOpt {
+// WithReferenceProtocolName returns ReferenceConfigOpt with given protocolName: @protocol
+func WithReferenceProtocolName(protocol string) ReferenceConfigOpt {
 	return func(config *ReferenceConfig) *ReferenceConfig {
 		config.Protocol = protocol
 		return config

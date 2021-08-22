@@ -61,7 +61,7 @@ func Load(opts ...LoaderConfOption) error {
 	}
 	rootConfig.refresh = false
 	extension.SetAndInitGlobalDispatcher(rootConfig.EventDispatcherType)
-	if err := rootConfig.InitConfig(); err != nil {
+	if err := rootConfig.Init(); err != nil {
 		return err
 	}
 	registerServiceInstance()
@@ -428,7 +428,7 @@ func createInstance(url *common.URL) (registry.ServiceInstance, error) {
 //	}
 //}
 //
-//// Load Dubbo InitConfig
+//// Load Dubbo Init
 //func Load() {
 //	options := DefaultInit()
 //	LoadWithOptions(options...)

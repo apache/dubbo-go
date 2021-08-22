@@ -18,6 +18,7 @@
 package config
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/registry"
 	"net/url"
 	"strconv"
 	"strings"
@@ -31,6 +32,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 )
 
@@ -115,4 +117,175 @@ func (c *RegistryConfig) translateRegistryAddress() string {
 		c.Address = strings.Replace(c.Address, translatedUrl.Scheme+"://", "", -1)
 	}
 	return c.Address
+}
+
+func (c *RegistryConfig) GetInstance(roleType common.RoleType) (registry.Registry, error) {
+	url, err := c.toURL(roleType)
+	if err != nil {
+		return nil, err
+	}
+	// if the protocol == registry, set protocol the registry value in url.params
+	if url.Protocol == constant.REGISTRY_PROTOCOL {
+		url.Protocol = url.GetParam(constant.REGISTRY_KEY, "")
+	}
+	return extension.GetRegistry(url.Protocol, url)
+}
+
+func (c *RegistryConfig) toURL(roleType common.RoleType) (*common.URL, error) {
+	addresses := strings.Split(c.Address, ",")
+	address := addresses[0]
+	address = c.translateRegistryAddress()
+	var registryURLProtocol string
+	if c.RegistryType == "service" {
+		// service discovery protocol
+		registryURLProtocol = constant.SERVICE_REGISTRY_PROTOCOL
+	} else {
+		registryURLProtocol = constant.REGISTRY_PROTOCOL
+	}
+	return common.NewURL(registryURLProtocol+"://"+address,
+		common.WithParams(c.getUrlMap(roleType)),
+		common.WithParamsValue(constant.SIMPLIFIED_KEY, strconv.FormatBool(c.Simplified)),
+		common.WithParamsValue(constant.REGISTRY_KEY, c.Protocol),
+		common.WithParamsValue(constant.GROUP_KEY, c.Group),
+		common.WithParamsValue(constant.NAMESPACE_KEY, c.Namespace),
+		common.WithUsername(c.Username),
+		common.WithPassword(c.Password),
+		common.WithLocation(c.Address),
+	)
+}
+
+///////////////////////////////////// registry config api
+const (
+	// defaultZKAddr is the default registry address of zookeeper
+	defaultZKAddr = "127.0.0.1:2181"
+
+	// defaultNacosAddr is the default registry address of nacos
+	defaultNacosAddr = "127.0.0.1:8848"
+
+	// defaultRegistryTimeout is the default registry timeout
+	defaultRegistryTimeout = "3s"
+)
+
+type RegistryConfigOpt func(config *RegistryConfig) *RegistryConfig
+
+// NewRegistryConfigWithProtocolDefaultPort New default registry config
+// the input @protocol can only be:
+// "zookeeper" with default addr "127.0.0.1:2181"
+// "nacos" with default addr "127.0.0.1:8848"
+func NewRegistryConfigWithProtocolDefaultPort(protocol string) *RegistryConfig {
+	switch protocol {
+	case "zookeeper":
+		return &RegistryConfig{
+			Protocol: protocol,
+			Address:  defaultZKAddr,
+			Timeout:  defaultRegistryTimeout,
+		}
+	case "nacos":
+		return &RegistryConfig{
+			Protocol: protocol,
+			Address:  defaultNacosAddr,
+			Timeout:  defaultRegistryTimeout,
+		}
+	default:
+		return &RegistryConfig{
+			Protocol: protocol,
+		}
+	}
+}
+
+// NewRegistryConfig creates New RegistryConfig with @opts
+func NewRegistryConfig(opts ...RegistryConfigOpt) *RegistryConfig {
+	newRegistryConfig := NewRegistryConfigWithProtocolDefaultPort("")
+	for _, v := range opts {
+		newRegistryConfig = v(newRegistryConfig)
+	}
+	return newRegistryConfig
+}
+
+// WithRegistryProtocol returns RegistryConfigOpt with given @regProtocol name
+func WithRegistryProtocol(regProtocol string) RegistryConfigOpt {
+	return func(config *RegistryConfig) *RegistryConfig {
+		config.Protocol = regProtocol
+		return config
+	}
+}
+
+// WithRegistryAddress returns RegistryConfigOpt with given @addr registry address
+func WithRegistryAddress(addr string) RegistryConfigOpt {
+	return func(config *RegistryConfig) *RegistryConfig {
+		config.Address = addr
+		return config
+	}
+}
+
+// WithRegistryTimeOut returns RegistryConfigOpt with given @timeout registry config
+func WithRegistryTimeOut(timeout string) RegistryConfigOpt {
+	return func(config *RegistryConfig) *RegistryConfig {
+		config.Timeout = timeout
+		return config
+	}
+}
+
+// WithRegistryGroup returns RegistryConfigOpt with given @group registry group
+func WithRegistryGroup(group string) RegistryConfigOpt {
+	return func(config *RegistryConfig) *RegistryConfig {
+		config.Group = group
+		return config
+	}
+}
+
+// WithRegistryTTL returns RegistryConfigOpt with given @ttl registry ttl
+func WithRegistryTTL(ttl string) RegistryConfigOpt {
+	return func(config *RegistryConfig) *RegistryConfig {
+		config.TTL = ttl
+		return config
+	}
+}
+
+// WithRegistryUserName returns RegistryConfigOpt with given @userName registry userName
+func WithRegistryUserName(userName string) RegistryConfigOpt {
+	return func(config *RegistryConfig) *RegistryConfig {
+		config.Username = userName
+		return config
+	}
+}
+
+// WithRegistryPassword returns RegistryConfigOpt with given @psw registry password
+func WithRegistryPassword(psw string) RegistryConfigOpt {
+	return func(config *RegistryConfig) *RegistryConfig {
+		config.Password = psw
+		return config
+	}
+}
+
+// WithRegistrySimplified returns RegistryConfigOpt with given @simplified registry simplified flag
+func WithRegistrySimplified(simplified bool) RegistryConfigOpt {
+	return func(config *RegistryConfig) *RegistryConfig {
+		config.Simplified = simplified
+		return config
+	}
+}
+
+// WithRegistryPreferred returns RegistryConfig with given @preferred registry preferred flag
+func WithRegistryPreferred(preferred bool) RegistryConfigOpt {
+	return func(config *RegistryConfig) *RegistryConfig {
+		config.Preferred = preferred
+		return config
+	}
+}
+
+// WithRegistryWeight returns RegistryConfigOpt with given @weight registry weight flag
+func WithRegistryWeight(weight int64) RegistryConfigOpt {
+	return func(config *RegistryConfig) *RegistryConfig {
+		config.Weight = weight
+		return config
+	}
+}
+
+// WithRegistryParams returns RegistryConfigOpt with given registry @params
+func WithRegistryParams(params map[string]string) RegistryConfigOpt {
+	return func(config *RegistryConfig) *RegistryConfig {
+		config.Params = params
+		return config
+	}
 }

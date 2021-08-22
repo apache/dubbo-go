@@ -74,6 +74,8 @@ func NewProtocolConfig(opts ...ProtocolConfigOpt) *ProtocolConfig {
 
 type ProtocolConfigOpt func(config *ProtocolConfig) *ProtocolConfig
 
+// WithProtocolIP set ProtocolConfig with given binding @ip
+// Deprecated: the param @ip would be used as service lisener binding and would be registered to registry center
 func WithProtocolIP(ip string) ProtocolConfigOpt {
 	return func(config *ProtocolConfig) *ProtocolConfig {
 		config.Ip = ip

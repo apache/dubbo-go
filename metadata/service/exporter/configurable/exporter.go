@@ -58,8 +58,9 @@ func (exporter *MetadataServiceExporter) Export(url *common.URL) error {
 		defer exporter.lock.Unlock()
 		exporter.ServiceConfig = config.NewServiceConfig(
 			config.WithServiceID(constant.SIMPLE_METADATA_SERVICE_NAME),
-			config.WithServiceProtocol(constant.DEFAULT_PROTOCOL),
-			config.WithServiceProtocols(constant.DEFAULT_PROTOCOL, config.NewProtocolConfig(
+			config.WithServiceProtocolKeys(constant.DEFAULT_PROTOCOL),
+			config.WithServiceProtocol(constant.DEFAULT_PROTOCOL, config.NewProtocolConfig(
+				config.WithProtocolName(constant.DEFAULT_PROTOCOL),
 				config.WithProtocolPort(strconv.Itoa(constant.DEFAULT_METADATAPORT)),
 			)),
 			config.WithServiceRegistry("N/A"),
