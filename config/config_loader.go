@@ -169,7 +169,7 @@ func loadConsumerConfig() {
 	for {
 		checkok := true
 		for _, refconfig := range consumerConfig.References {
-			consumerUrl := refconfig.getValidUrl()
+			referenceURL := refconfig.getValidURL()
 			if (refconfig.Check != nil && *refconfig.Check) ||
 				(refconfig.Check == nil && consumerConfig.Check != nil && *consumerConfig.Check) ||
 				(refconfig.Check == nil && consumerConfig.Check == nil) { // default to true
@@ -180,9 +180,9 @@ func loadConsumerConfig() {
 					if count > maxWait {
 						errMsg := fmt.Sprintf("Failed to check the status of the service %v. No provider available for the service to the consumer use dubbo version %v", refconfig.InterfaceName, constant.Version)
 						logger.Error(errMsg)
-						refconfig.postProcessConfig(consumerUrl, &map[string]string{
-							constant.HOOK_EVENT_PARAM_KEY:               constant.HOOK_EVENT_CONSUMER_CONNECT_FAIL,
-							constant.HOOK_EVENT_ERROR_MESSAGE_PARAM_KEY: errMsg,
+						refconfig.postProcessConfig(referenceURL, &map[string]string{
+							constant.HookEventParamKey:             constant.HookEventReferenceConnectFail,
+							constant.HookEventErrorMessageParamKey: errMsg,
 						})
 						panic(errMsg)
 					}
@@ -194,8 +194,8 @@ func loadConsumerConfig() {
 					continue
 				}
 			}
-			refconfig.postProcessConfig(consumerUrl, &map[string]string{
-				constant.HOOK_EVENT_PARAM_KEY: constant.HOOK_EVENT_CONSUMER_CONNECT_SUCCESS,
+			refconfig.postProcessConfig(referenceURL, &map[string]string{
+				constant.HookEventParamKey: constant.HookEventReferenceConnectSuccess,
 			})
 		}
 		if checkok {
@@ -258,17 +258,17 @@ func loadProviderConfig() {
 		svs.Implement(rpcService)
 		svs.Protocols = providerConfig.Protocols
 		err := svs.Export()
-		providerUrl := svs.getValidUrl()
+		serviceURL := svs.getValidURL()
 		if err != nil {
 			errMsg := fmt.Sprintf("service %s export failed! err: %#v", key, err)
-			svs.postProcessConfig(providerUrl, &map[string]string{
-				constant.HOOK_EVENT_PARAM_KEY:               constant.HOOK_EVENT_PROVIDER_CONNECT_FAIL,
-				constant.HOOK_EVENT_ERROR_MESSAGE_PARAM_KEY: errMsg,
+			svs.postProcessConfig(serviceURL, &map[string]string{
+				constant.HookEventParamKey:             constant.HookEventProviderConnectFail,
+				constant.HookEventErrorMessageParamKey: errMsg,
 			})
 			panic(errMsg)
 		}
-		svs.postProcessConfig(providerUrl, &map[string]string{
-			constant.HOOK_EVENT_PARAM_KEY: constant.HOOK_EVENT_PROVIDER_CONNECT_SUCCESS,
+		svs.postProcessConfig(serviceURL, &map[string]string{
+			constant.HookEventParamKey: constant.HookEventProviderConnectSuccess,
 		})
 	}
 	registerServiceInstance()

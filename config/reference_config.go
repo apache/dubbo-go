@@ -102,7 +102,7 @@ func (c *ReferenceConfig) Refer(_ interface{}) {
 		cfgURL.AddParam(constant.ForceUseTag, "true")
 	}
 	c.postProcessConfig(cfgURL, &map[string]string{
-		constant.HOOK_EVENT_PARAM_KEY: constant.HOOK_EVENT_BEFORE_CONSUMER_CONNECT,
+		constant.HookEventParamKey: constant.HookEventBeforeReferenceConnect,
 	})
 	if c.URL != "" {
 		// 1. user specified URL, could be peer-to-peer address, or register center's address.
@@ -320,7 +320,7 @@ func (c *ReferenceConfig) postProcessConfig(url *common.URL, params *map[string]
 	}
 }
 
-func (c *ReferenceConfig) getValidUrl() *common.URL {
+func (c *ReferenceConfig) getValidURL() *common.URL {
 	urls := c.urls
 	var u *common.URL
 	if urls != nil && len(urls) > 0 {
@@ -334,6 +334,6 @@ func (c *ReferenceConfig) getValidUrl() *common.URL {
 
 func postAllConsumersConnectComplete() {
 	for _, h := range extension.GetConfigLoaderHooks() {
-		h.AllConsumersConnectComplete()
+		h.AllReferencesConnectComplete()
 	}
 }

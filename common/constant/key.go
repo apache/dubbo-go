@@ -353,14 +353,14 @@ const (
 
 // Loader Hook
 const (
-	HOOK_EVENT_PARAM_KEY               = "config-loader-hook-event"
-	HOOK_EVENT_ERROR_MESSAGE_PARAM_KEY = "config-loader-hook-error-message"
+	HookEventParamKey             = "config-loader-hook-event"
+	HookEventErrorMessageParamKey = "config-loader-hook-error-message"
 
-	HOOK_EVENT_BEFORE_CONSUMER_CONNECT  = "before-consumer-connect"
-	HOOK_EVENT_CONSUMER_CONNECT_SUCCESS = "consumer-connect-success"
-	HOOK_EVENT_CONSUMER_CONNECT_FAIL    = "consumer-connect-fail"
+	HookEventBeforeReferenceConnect  = "before-reference-connect"
+	HookEventReferenceConnectSuccess = "reference-connect-success"
+	HookEventReferenceConnectFail    = "reference-connect-fail"
 
-	HOOK_EVENT_BEFORE_PROVIDER_CONNECT  = "before-provider-connect"
-	HOOK_EVENT_PROVIDER_CONNECT_SUCCESS = "provider-connect-success"
-	HOOK_EVENT_PROVIDER_CONNECT_FAIL    = "provider-connect-fail"
+	HookEventBeforeProviderConnect  = "before-service-listen"
+	HookEventProviderConnectSuccess = "service-listen-success"
+	HookEventProviderConnectFail    = "service-listen-fail"
 )

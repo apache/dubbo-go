@@ -118,27 +118,27 @@ type CustomEvent struct {
 // implements interfaces.ConfigPostProcessor's functions
 func (c CustomEvent) PostProcessReferenceConfig(u *common.URL) {
 	logger.Debug("PostProcessReferenceConfig Start")
-	logger.Debug("Event: ", u.GetParam(constant.HOOK_EVENT_PARAM_KEY, ""))
+	logger.Debug("Event: ", u.GetParam(constant.HookEventParamKey, ""))
 	logger.Debug("Url: ", u)
-	logger.Debug("Error Message: ", u.GetParam(constant.HOOK_EVENT_ERROR_MESSAGE_PARAM_KEY, ""))
+	logger.Debug("Error Message: ", u.GetParam(constant.HookEventErrorMessageParamKey, ""))
 	logger.Debug("PostProcessReferenceConfig End")
 	assert.Equal(c.t, u.GetParam(constant.SIDE_KEY, ""), "consumer")
 }
 func (c CustomEvent) PostProcessServiceConfig(u *common.URL) {
 	logger.Debug("PostProcessServiceConfig Start")
-	logger.Debug("Event: ", u.GetParam(constant.HOOK_EVENT_PARAM_KEY, ""))
+	logger.Debug("Event: ", u.GetParam(constant.HookEventParamKey, ""))
 	logger.Debug("Url: ", u)
-	logger.Debug("Error Message: ", u.GetParam(constant.HOOK_EVENT_ERROR_MESSAGE_PARAM_KEY, ""))
+	logger.Debug("Error Message: ", u.GetParam(constant.HookEventErrorMessageParamKey, ""))
 	logger.Debug("PostProcessServiceConfig End")
 	assert.Equal(c.t, u.GetParam(constant.SIDE_KEY, ""), "provider")
 }
 
 // implements interfaces.ConfigLoaderHook's functions
-func (c CustomEvent) AllConsumersConnectComplete() {
+func (c CustomEvent) AllReferencesConnectComplete() {
 	logger.Debug("AllConsumersConnectComplete")
 }
-func (c CustomEvent) AllProvidersConnectComplete() {
-	logger.Debug("AllProvidersConnectComplete")
+func (c CustomEvent) AllServicesListenComplete() {
+	logger.Debug("AllServicesListenComplete")
 }
 func (c CustomEvent) BeforeShutdown() {
 	logger.Debug("BeforeShutdown")
