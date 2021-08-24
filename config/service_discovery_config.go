@@ -17,7 +17,9 @@
 
 package config
 
-import "dubbo.apache.org/dubbo-go/v3/common/constant"
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+)
 
 // ServiceDiscoveryConfig will be used to create
 type ServiceDiscoveryConfig struct {

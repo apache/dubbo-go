@@ -18,9 +18,15 @@
 package registry
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/observer"
-	gxset "github.com/dubbogo/gost/container/set"
 	"reflect"
+)
+
+import (
+	gxset "github.com/dubbogo/gost/container/set"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/observer"
 )
 
 // ServiceInstancesChangedListener The Service Discovery Changed Event Listener

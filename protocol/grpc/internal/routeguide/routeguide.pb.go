@@ -23,11 +23,14 @@ package routeguide
 import (
 	context "context"
 	fmt "fmt"
+	math "math"
+)
+
+import (
 	proto "github.com/golang/protobuf/proto"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	math "math"
 )
 
 import (
@@ -722,16 +725,6 @@ func (c *RouteGuideClientImpl) GetDubboStub(cc *grpc.ClientConn) RouteGuideClien
 	return NewRouteGuideClient(cc)
 }
 
-// DubboGrpcService is gRPC service
-type DubboGrpcService interface {
-	// SetProxyImpl sets proxy.
-	SetProxyImpl(impl protocol.Invoker)
-	// GetProxyImpl gets proxy.
-	GetProxyImpl() protocol.Invoker
-	// ServiceDesc gets an RPC service's specification.
-	ServiceDesc() *grpc.ServiceDesc
-}
-
 type RouteGuideProviderBase struct {
 	proxyImpl protocol.Invoker
 }
@@ -753,6 +746,15 @@ func _DUBBO_RouteGuide_GetFeature_Handler(srv interface{}, ctx context.Context, 
 	if err := dec(in); err != nil {
 		return nil, err
 	}
+	// DubboGrpcService is gRPC service
+	type DubboGrpcService interface {
+		// SetProxyImpl sets proxy.
+		SetProxyImpl(impl protocol.Invoker)
+		// GetProxyImpl gets proxy.
+		GetProxyImpl() protocol.Invoker
+		// ServiceDesc gets an RPC service's specification.
+		ServiceDesc() *grpc.ServiceDesc
+	}
 	base := srv.(DubboGrpcService)
 	args := []interface{}{}
 	args = append(args, in)
@@ -773,6 +775,15 @@ func _DUBBO_RouteGuide_GetFeature_Handler(srv interface{}, ctx context.Context, 
 }
 
 func _DUBBO_RouteGuide_ListFeatures_Handler(srv interface{}, stream grpc.ServerStream) error {
+	// DubboGrpcService is gRPC service
+	type DubboGrpcService interface {
+		// SetProxyImpl sets proxy.
+		SetProxyImpl(impl protocol.Invoker)
+		// GetProxyImpl gets proxy.
+		GetProxyImpl() protocol.Invoker
+		// ServiceDesc gets an RPC service's specification.
+		ServiceDesc() *grpc.ServiceDesc
+	}
 	_, ok := srv.(DubboGrpcService)
 	invo := invocation.NewRPCInvocation("ListFeatures", nil, nil)
 	if !ok {
@@ -786,6 +797,15 @@ func _DUBBO_RouteGuide_ListFeatures_Handler(srv interface{}, stream grpc.ServerS
 }
 
 func _DUBBO_RouteGuide_RecordRoute_Handler(srv interface{}, stream grpc.ServerStream) error {
+	// DubboGrpcService is gRPC service
+	type DubboGrpcService interface {
+		// SetProxyImpl sets proxy.
+		SetProxyImpl(impl protocol.Invoker)
+		// GetProxyImpl gets proxy.
+		GetProxyImpl() protocol.Invoker
+		// ServiceDesc gets an RPC service's specification.
+		ServiceDesc() *grpc.ServiceDesc
+	}
 	_, ok := srv.(DubboGrpcService)
 	invo := invocation.NewRPCInvocation("RecordRoute", nil, nil)
 	if !ok {
@@ -795,6 +815,15 @@ func _DUBBO_RouteGuide_RecordRoute_Handler(srv interface{}, stream grpc.ServerSt
 }
 
 func _DUBBO_RouteGuide_RouteChat_Handler(srv interface{}, stream grpc.ServerStream) error {
+	// DubboGrpcService is gRPC service
+	type DubboGrpcService interface {
+		// SetProxyImpl sets proxy.
+		SetProxyImpl(impl protocol.Invoker)
+		// GetProxyImpl gets proxy.
+		GetProxyImpl() protocol.Invoker
+		// ServiceDesc gets an RPC service's specification.
+		ServiceDesc() *grpc.ServiceDesc
+	}
 	_, ok := srv.(DubboGrpcService)
 	invo := invocation.NewRPCInvocation("RouteChat", nil, nil)
 	if !ok {

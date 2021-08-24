@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [master, develop]
+    branches: [master, develop, "1.5", "3.0"]
   pull_request:
     branches: "*"
 
@@ -59,7 +59,7 @@ jobs:
         # diff -u <(echo -n) <(gofmt -d -s .)
 
     - name: Install go ci lint
-      run: curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.27.0
+      run: curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.41.1
 
     - name: Run Linter
       run: golangci-lint run --timeout=10m -v

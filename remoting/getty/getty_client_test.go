@@ -28,7 +28,9 @@ import (
 
 import (
 	hessian "github.com/apache/dubbo-go-hessian2"
+
 	perrors "github.com/pkg/errors"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -343,7 +345,6 @@ func InitTest(t *testing.T) (*Server, *common.URL) {
 			KeepAlivePeriod:  "120s",
 			TcpRBufSize:      262144,
 			TcpWBufSize:      65536,
-			PkgWQSize:        512,
 			TcpReadTimeout:   "4s",
 			TcpWriteTimeout:  "5s",
 			WaitTimeout:      "1s",
@@ -362,7 +363,6 @@ func InitTest(t *testing.T) (*Server, *common.URL) {
 			KeepAlivePeriod:  "120s",
 			TcpRBufSize:      262144,
 			TcpWBufSize:      65536,
-			PkgWQSize:        512,
 			TcpReadTimeout:   "1s",
 			TcpWriteTimeout:  "5s",
 			WaitTimeout:      "1s",
