@@ -29,6 +29,10 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config"
 )
 
+const (
+	TCPReadWriteTimeoutMinValue = time.Second * 1
+)
+
 type (
 	// GettySessionParam is session configuration for getty
 	GettySessionParam struct {
@@ -162,11 +166,11 @@ func (c *GettySessionParam) CheckValidity() error {
 		return perrors.WithMessagef(err, "time.ParseDuration(KeepAlivePeriod{%#v})", c.KeepAlivePeriod)
 	}
 
-	if c.tcpReadTimeout, err = time.ParseDuration(c.TcpReadTimeout); err != nil {
+	if c.tcpReadTimeout, err = parseTcpTimeoutDuration(c.TcpReadTimeout); err != nil {
 		return perrors.WithMessagef(err, "time.ParseDuration(TcpReadTimeout{%#v})", c.TcpReadTimeout)
 	}
 
-	if c.tcpWriteTimeout, err = time.ParseDuration(c.TcpWriteTimeout); err != nil {
+	if c.tcpWriteTimeout, err = parseTcpTimeoutDuration(c.TcpWriteTimeout); err != nil {
 		return perrors.WithMessagef(err, "time.ParseDuration(TcpWriteTimeout{%#v})", c.TcpWriteTimeout)
 	}
 
@@ -175,6 +179,17 @@ func (c *GettySessionParam) CheckValidity() error {
 	}
 
 	return nil
+}
+
+func parseTcpTimeoutDuration(timeStr string) (time.Duration, error) {
+	result, err := time.ParseDuration(timeStr)
+	if err != nil {
+		return 0, err
+	}
+	if result < TCPReadWriteTimeoutMinValue {
+		return TCPReadWriteTimeoutMinValue, nil
+	}
+	return result, nil
 }
 
 // CheckValidity confirm client params.
