@@ -101,7 +101,7 @@ func (c *apolloConfiguration) RemoveListener(key string, listener cc.Configurati
 }
 
 func getProperties(namespace string) string {
-	return getNamespaceName(namespace, agolloConstant.Properties)
+	return getNamespaceName(namespace, agolloConstant.YAML)
 }
 
 func getNamespaceName(namespace string, configFileFormat agolloConstant.ConfigFileFormat) string {
@@ -135,11 +135,18 @@ func (c *apolloConfiguration) GetProperties(key string, opts ...cc.Option) (stri
 	 * when group is not null, we are getting startup configs(config file) from ShutdownConfig Center, for example:
 	 * key=dubbo.propertie
 	 */
+	if key == "" {
+		key = c.appConf.NamespaceName
+	}
 	tmpConfig := agollo.GetConfig(key)
 	if tmpConfig == nil {
 		return "", perrors.New(fmt.Sprintf("nothing in namespace:%s ", key))
 	}
-	return tmpConfig.GetContent(), nil
+
+	content := tmpConfig.GetContent()
+	b := []byte(content)
+	content = string(b[8:]) //remove defalut content= prefix
+	return content, nil
 }
 
 func (c *apolloConfiguration) getAddressWithProtocolPrefix(url *common.URL) string {
