@@ -25,6 +25,7 @@ import (
 
 import (
 	hessian "github.com/apache/dubbo-go-hessian2"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -32,6 +33,7 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/proxy/proxy_factory"
+	"github.com/apache/dubbo-go/config"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/dubbo/impl"
 	"github.com/apache/dubbo-go/protocol/invocation"
@@ -39,11 +41,133 @@ import (
 )
 
 func TestTCPPackageHandle(t *testing.T) {
-	svr, url := getServer(t)
-	client := getClient(url)
-	testDecodeTCPPackage(t, svr, client)
-	svr.Stop()
+	initTestEnvironment(t)
+	adminUrl := initAdminUrl(t)
+	server := getServer(adminUrl)
+	client := getClient(adminUrl)
+
+	testDecodeTCPPackage(t, server, client)
+	server.Stop()
 }
+
+//////////////////////////////////
+// before execute getty_test
+// 1. init config
+// 2. init url
+// 3. init server
+// 4. init client
+//////////////////////////////////
+
+func initTestEnvironment(t *testing.T) {
+	SetClientConf(ClientConfig{
+		ConnectionNum:   2,
+		HeartbeatPeriod: "5s",
+		SessionTimeout:  "20s",
+		GettySessionParam: GettySessionParam{
+			CompressEncoding: false,
+			TcpNoDelay:       true,
+			TcpKeepAlive:     true,
+			KeepAlivePeriod:  "120s",
+			TcpRBufSize:      262144,
+			TcpWBufSize:      65536,
+			TcpReadTimeout:   "4s",
+			TcpWriteTimeout:  "5s",
+			WaitTimeout:      "1s",
+			MaxMsgLen:        10240000000,
+			SessionName:      "client",
+		},
+	})
+	assert.NoError(t, clientConf.CheckValidity())
+	SetServerConfig(ServerConfig{
+		SessionNumber:  700,
+		SessionTimeout: "20s",
+		GettySessionParam: GettySessionParam{
+			CompressEncoding: false,
+			TcpNoDelay:       true,
+			TcpKeepAlive:     true,
+			KeepAlivePeriod:  "120s",
+			TcpRBufSize:      262144,
+			TcpWBufSize:      65536,
+			TcpReadTimeout:   "1s",
+			TcpWriteTimeout:  "5s",
+			WaitTimeout:      "1s",
+			MaxMsgLen:        10240000000,
+			SessionName:      "server",
+		}})
+	assert.NoError(t, srvConf.CheckValidity())
+}
+
+func initAdminUrl(t *testing.T) *common.URL {
+	hessian.RegisterPOJO(&User{})
+	remoting.RegistryCodec("dubbo", &DubboTestCodec{})
+
+	url, err := common.NewURL("dubbo://127.0.0.1:20061/?anyhost=true&" +
+		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
+		"environment=dev&interface=com.ikurento.user.AdminProvider&ip=127.0.0.1&methods=GetAdmin%2C&" +
+		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
+		"side=provider&timeout=3000&timestamp=1556509797245&bean.name=AdminProvider")
+	assert.NoError(t, err)
+
+	methods, err := common.ServiceMap.Register("com.ikurento.user.AdminProvider", url.Protocol, "", "", &AdminProvider{})
+	assert.NoError(t, err)
+	assert.Equal(t, "GetAdmin", methods)
+
+	return url
+}
+
+func getServer(url *common.URL) *Server {
+	invoker := &proxy_factory.ProxyInvoker{
+		BaseInvoker: *protocol.NewBaseInvoker(url),
+	}
+	handler := func(invocation *invocation.RPCInvocation) protocol.RPCResult {
+		//result := protocol.RPCResult{}
+		r := invoker.Invoke(context.Background(), invocation)
+		result := protocol.RPCResult{
+			Err:   r.Error(),
+			Rest:  r.Result(),
+			Attrs: r.Attachments(),
+		}
+		return result
+	}
+	server := NewServer(url, handler)
+	server.Start()
+
+	time.Sleep(time.Second * 2)
+
+	return server
+}
+
+func getClient(url *common.URL) *Client {
+	client := NewClient(Options{
+		ConnectTimeout: config.GetConsumerConfig().ConnectTimeout,
+	})
+
+	if err := client.Connect(url); err != nil {
+		return nil
+	}
+	return client
+}
+
+//////////////////////////////////
+// test util
+//////////////////////////////////
+
+func createInvocation(methodName string, callback interface{}, reply interface{}, arguments []interface{},
+	parameterValues []reflect.Value) *invocation.RPCInvocation {
+	return invocation.NewRPCInvocationWithOptions(invocation.WithMethodName(methodName),
+		invocation.WithArguments(arguments), invocation.WithReply(reply),
+		invocation.WithCallBack(callback), invocation.WithParameterValues(parameterValues))
+}
+
+func setAttachment(invocation *invocation.RPCInvocation, attachments map[string]string) {
+	for key, value := range attachments {
+		invocation.SetAttachments(key, value)
+	}
+}
+
+//////////////////////////////////
+// test cases
+//////////////////////////////////
 
 func testDecodeTCPPackage(t *testing.T, svr *Server, client *Client) {
 	request := remoting.NewRequest("2.0.2")
@@ -78,84 +202,9 @@ func testDecodeTCPPackage(t *testing.T, svr *Server, client *Client) {
 	assert.Equal(t, pkgLen, 0)
 }
 
-func getServer(t *testing.T) (*Server, *common.URL) {
-	hessian.RegisterPOJO(&User{})
-	remoting.RegistryCodec("dubbo", &DubboTestCodec{})
-
-	methods, err := common.ServiceMap.Register("com.ikurento.user.AdminProvider", "dubbo", "", "", &AdminProvider{})
-	assert.NoError(t, err)
-	assert.Equal(t, "GetAdmin", methods)
-
-	// config
-	SetClientConf(ClientConfig{
-		ConnectionNum:   2,
-		HeartbeatPeriod: "5s",
-		SessionTimeout:  "20s",
-		GettySessionParam: GettySessionParam{
-			CompressEncoding: false,
-			TcpNoDelay:       true,
-			TcpKeepAlive:     true,
-			KeepAlivePeriod:  "120s",
-			TcpRBufSize:      262144,
-			TcpWBufSize:      65536,
-			PkgWQSize:        512,
-			TcpReadTimeout:   "4s",
-			TcpWriteTimeout:  "5s",
-			WaitTimeout:      "1s",
-			MaxMsgLen:        10240000000,
-			SessionName:      "client",
-		},
-	})
-	assert.NoError(t, clientConf.CheckValidity())
-	SetServerConfig(ServerConfig{
-		SessionNumber:  700,
-		SessionTimeout: "20s",
-		GettySessionParam: GettySessionParam{
-			CompressEncoding: false,
-			TcpNoDelay:       true,
-			TcpKeepAlive:     true,
-			KeepAlivePeriod:  "120s",
-			TcpRBufSize:      262144,
-			TcpWBufSize:      65536,
-			PkgWQSize:        512,
-			TcpReadTimeout:   "1s",
-			TcpWriteTimeout:  "5s",
-			WaitTimeout:      "1s",
-			MaxMsgLen:        10240000000,
-			SessionName:      "server",
-		}})
-	assert.NoError(t, srvConf.CheckValidity())
-
-	url, err := common.NewURL("dubbo://127.0.0.1:20061/com.ikurento.user.AdminProvider?anyhost=true&" +
-		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
-		"environment=dev&interface=com.ikurento.user.AdminProvider&ip=127.0.0.1&methods=GetAdmin%2C&" +
-		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
-		"side=provider&timeout=3000&timestamp=1556509797245&bean.name=AdminProvider")
-	assert.NoError(t, err)
-	// init server
-	adminProvider := &AdminProvider{}
-	_, err = common.ServiceMap.Register("com.ikurento.user.AdminProvider", url.Protocol, "", "0.0.1", adminProvider)
-	assert.NoError(t, err)
-	invoker := &proxy_factory.ProxyInvoker{
-		BaseInvoker: *protocol.NewBaseInvoker(url),
-	}
-	handler := func(invocation *invocation.RPCInvocation) protocol.RPCResult {
-		//result := protocol.RPCResult{}
-		r := invoker.Invoke(context.Background(), invocation)
-		result := protocol.RPCResult{
-			Err:   r.Error(),
-			Rest:  r.Result(),
-			Attrs: r.Attachments(),
-		}
-		return result
-	}
-	server := NewServer(url, handler)
-	server.Start()
-
-	time.Sleep(time.Second * 2)
-
-	return server, url
-}
+//////////////////////////////////
+// provider
+//////////////////////////////////
 
 type AdminProvider struct {
 }

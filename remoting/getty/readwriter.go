@@ -24,7 +24,9 @@ import (
 
 import (
 	"github.com/apache/dubbo-getty"
+
 	hessian "github.com/apache/dubbo-go-hessian2"
+
 	perrors "github.com/pkg/errors"
 )
 
@@ -32,10 +34,6 @@ import (
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/remoting"
 )
-
-////////////////////////////////////////////
-// RpcClientPackageHandler
-////////////////////////////////////////////
 
 // RpcClientPackageHandler Read data from server and Write data to server
 type RpcClientPackageHandler struct {

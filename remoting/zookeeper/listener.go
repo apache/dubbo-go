@@ -25,10 +25,13 @@ import (
 )
 
 import (
-	getty "github.com/apache/dubbo-getty"
 	"github.com/dubbogo/go-zookeeper/zk"
+
 	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
+	gxtime "github.com/dubbogo/gost/time"
+
 	perrors "github.com/pkg/errors"
+
 	uatomic "go.uber.org/atomic"
 )
 
@@ -253,7 +256,7 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkPath string, listen
 				return
 			}
 			select {
-			case <-getty.GetTimeWheel().After(timeSecondDuration(failTimes * ConnDelay)):
+			case <-gxtime.After(timeSecondDuration(failTimes * ConnDelay)):
 				l.client.UnregisterEvent(zkPath, &event)
 				continue
 			case <-l.exit:

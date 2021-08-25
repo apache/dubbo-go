@@ -7,7 +7,7 @@ require (
 	github.com/Workiva/go-datastructures v1.0.52
 	github.com/afex/hystrix-go v0.0.0-20180502004556-fa1af6a1f4f5
 	github.com/alibaba/sentinel-golang v1.0.2
-	github.com/apache/dubbo-getty v1.4.3
+	github.com/apache/dubbo-getty v1.4.5
 	github.com/apache/dubbo-go-hessian2 v1.9.1
 	github.com/coreos/etcd v3.3.25+incompatible
 	github.com/creasty/defaults v1.5.1
@@ -46,6 +46,5 @@ require (
 replace (
 	github.com/coreos/bbolt => go.etcd.io/bbolt v1.3.4
 	github.com/envoyproxy/go-control-plane => github.com/envoyproxy/go-control-plane v0.8.0
-	github.com/shirou/gopsutil => github.com/shirou/gopsutil v0.0.0-20181107111621-48177ef5f880
 	google.golang.org/grpc => google.golang.org/grpc v1.26.0
 )

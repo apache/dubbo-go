@@ -79,8 +79,8 @@ func getServiceName(url *common.URL) string {
 
 func appendParam(target *bytes.Buffer, url *common.URL, key string) {
 	value := url.GetParam(key, "")
+	target.Write([]byte(constant.NACOS_SERVICE_NAME_SEPARATOR))
 	if strings.TrimSpace(value) != "" {
-		target.Write([]byte(constant.NACOS_SERVICE_NAME_SEPARATOR))
 		target.Write([]byte(value))
 	}
 }

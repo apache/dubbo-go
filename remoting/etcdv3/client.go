@@ -26,7 +26,9 @@ import (
 import (
 	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/clientv3/concurrency"
+
 	perrors "github.com/pkg/errors"
+
 	"google.golang.org/grpc"
 )
 
@@ -174,6 +176,7 @@ func NewClient(name string, endpoints []string, timeout time.Duration, heartbeat
 		DialOptions: []grpc.DialOption{grpc.WithBlock()},
 	})
 	if err != nil {
+		cancel()
 		return nil, perrors.WithMessage(err, "new raw client block connect to server")
 	}
 

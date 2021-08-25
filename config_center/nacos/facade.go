@@ -22,7 +22,8 @@ import (
 	"time"
 )
 import (
-	"github.com/apache/dubbo-getty"
+	gxtime "github.com/dubbogo/gost/time"
+
 	perrors "github.com/pkg/errors"
 )
 
@@ -74,7 +75,7 @@ LOOP:
 				case <-r.GetDone():
 					logger.Warnf("(NacosProviderRegistry)reconnectZkRegistry goroutine exit now...")
 					break LOOP
-				case <-getty.GetTimeWheel().After(time.Duration(failTimes*connDelay) * time.Second): // Prevent crazy reconnection nacos.
+				case <-gxtime.After(time.Duration(failTimes*connDelay) * time.Second): // Prevent crazy reconnection nacos.
 				}
 				err = ValidateNacosClient(r, WithNacosName(nacosName))
 				logger.Infof("NacosProviderRegistry.validateNacosClient(nacosAddr{%s}) = error{%#v}",
