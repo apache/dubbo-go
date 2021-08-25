@@ -19,12 +19,10 @@ package filter_impl
 
 import (
 	"context"
-	"reflect"
 )
 
 import (
 	hessian "github.com/apache/dubbo-go-hessian2"
-	"github.com/mitchellh/mapstructure"
 	perrors "github.com/pkg/errors"
 )
 
@@ -54,74 +52,79 @@ type GenericServiceFilter struct{}
 
 // Invoke is used to call service method by invocation
 func (ef *GenericServiceFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
-	logger.Infof("invoking generic service filter.")
-	logger.Debugf("generic service filter methodName:%v,args:%v", invocation.MethodName(), len(invocation.Arguments()))
-
 	if invocation.MethodName() != constant.GENERIC || len(invocation.Arguments()) != 3 {
 		return invoker.Invoke(ctx, invocation)
 	}
 
-	var (
-		ok         bool
-		err        error
-		methodName string
-		newParams  []interface{}
-		genericKey string
-		argsType   []reflect.Type
-		oldParams  []hessian.Object
-	)
+	// get real invocation info from the generic invocation
+	mtdname := invocation.Arguments()[0].(string)
+	// types are not required in dubbo-go, for dubbo-go client to dubbo-go server, types could be nil
+	types := invocation.Arguments()[1]
+	args := invocation.Arguments()[2].([]hessian.Object)
 
-	url := invoker.GetURL()
-	methodName = invocation.Arguments()[0].(string)
-	// get service
-	svc := common.ServiceMap.GetServiceByServiceKey(url.Protocol, url.ServiceKey())
-	// get method
-	method := svc.Method()[methodName]
+	logger.Debugf(`received a generic invocation: 
+		MethodName: %s,
+		Types: %s,
+		Args: %s
+	`, mtdname, types, args)
+
+	// get the type of the argument
+	ivkUrl := invoker.GetURL()
+	svc := common.ServiceMap.GetServiceByServiceKey(ivkUrl.Protocol, ivkUrl.ServiceKey())
+	method := svc.Method()[mtdname]
 	if method == nil {
-		logger.Errorf("[Generic Service Filter] Don't have this method: %s", methodName)
-		return &protocol.RPCResult{}
-	}
-	argsType = method.ArgsType()
-	genericKey = invocation.AttachmentsByKey(constant.GENERIC_KEY, GENERIC_SERIALIZATION_DEFAULT)
-	if genericKey == GENERIC_SERIALIZATION_DEFAULT {
-		oldParams, ok = invocation.Arguments()[2].([]hessian.Object)
-	} else {
-		logger.Errorf("[Generic Service Filter] Don't support this generic: %s", genericKey)
-		return &protocol.RPCResult{}
-	}
-	if !ok {
-		logger.Errorf("[Generic Service Filter] wrong serialization")
-		return &protocol.RPCResult{}
-	}
-	if len(oldParams) != len(argsType) {
-		logger.Errorf("[Generic Service Filter] method:%s invocation arguments number was wrong", methodName)
-		return &protocol.RPCResult{}
-	}
-	// oldParams convert to newParams
-	newParams = make([]interface{}, len(oldParams))
-	for i := range argsType {
-		newParam := reflect.New(argsType[i]).Interface()
-		err = mapstructure.Decode(oldParams[i], newParam)
-		newParam = reflect.ValueOf(newParam).Elem().Interface()
-		if err != nil {
-			logger.Errorf("[Generic Service Filter] decode arguments map to struct wrong: error{%v}", perrors.WithStack(err))
-			return &protocol.RPCResult{}
+		return &protocol.RPCResult{
+			Err: perrors.Errorf("\"%s\" method is not found, service key: %s", mtdname, ivkUrl.ServiceKey()),
 		}
-		newParams[i] = newParam
 	}
-	newInvocation := invocation2.NewRPCInvocation(methodName, newParams, invocation.Attachments())
-	newInvocation.SetReply(invocation.Reply())
-	return invoker.Invoke(ctx, newInvocation)
+	argsType := method.ArgsType()
+
+	// get generic info from attachments of invocation, the default value is "true"
+	//generic := invocation.AttachmentsByKey(constant.GENERIC_KEY, GENERIC_SERIALIZATION_DEFAULT)
+	// get generalizer according to value in the `generic`
+	g := GetMapGeneralizer()
+
+	if len(args) != len(argsType) {
+		return &protocol.RPCResult{
+			Err: perrors.Errorf("the number of args(=%d) is not matched with \"%s\" method", len(args), mtdname),
+		}
+	}
+
+	// realize
+	newargs := make([]interface{}, len(argsType))
+	for i := 0; i < len(argsType); i++ {
+		newarg, err := g.Realize(args[i], argsType[i])
+		if err != nil {
+			return &protocol.RPCResult{
+				Err: perrors.Errorf("realization failed, %v", err),
+			}
+		}
+		newargs[i] = newarg
+	}
+
+	// build a normal invocation
+	newivc := invocation2.NewRPCInvocation(mtdname, newargs, invocation.Attachments())
+	newivc.SetReply(invocation.Reply())
+
+	return invoker.Invoke(ctx, newivc)
 }
 
 // nolint
 func (ef *GenericServiceFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	if invocation.MethodName() == constant.GENERIC && len(invocation.Arguments()) == 3 && result.Result() != nil {
-		v := reflect.ValueOf(result.Result())
-		if v.Kind() == reflect.Ptr {
-			v = v.Elem()
+		// get generic info from attachments of invocation, the default value is "true"
+		//generic := invocation.AttachmentsByKey(constant.GENERIC_KEY, constant.GenericSerializationDefault)
+		// get generalizer according to value in the `generic`
+		g := GetMapGeneralizer()
+
+		obj, err := g.Generalize(result.Result())
+		if err != nil {
+			err = perrors.Errorf("generalizaion failed, %v", err)
+			result.SetError(err)
+			result.SetResult(nil)
+			return result
 		}
-		result.SetResult(objToMap(v.Interface()))
+		result.SetResult(obj)
 	}
 	return result
 }
