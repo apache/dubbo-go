@@ -57,7 +57,7 @@ var (
 	maxWait        = 3
 	confRouterFile string
 
-	loaderHooks map[string][]LoaderHook
+	loaderHooks = make(map[string][]LoaderHook)
 )
 
 // loaded consumer & provider config from xxx.yml, and log config from xxx.xml

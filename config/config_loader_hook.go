@@ -67,9 +67,6 @@ func getLoaderHookParams(t LoaderHook) interface{} {
 
 func AddLoaderHooks(hooks ...LoaderHook) {
 	if len(hooks) > 0 {
-		if loaderHooks == nil {
-			loaderHooks = map[string][]LoaderHook{}
-		}
 		for _, hook := range hooks {
 			hookType := getLoaderHookTypeString(hook)
 			var hooks []LoaderHook
@@ -85,20 +82,20 @@ func AddLoaderHooks(hooks ...LoaderHook) {
 }
 
 func RemoveLoaderHooks(hooks ...LoaderHook) {
-	if loaderHooks != nil && len(loaderHooks) > 0 {
-		for _, rmHook := range hooks {
-			hookType := getLoaderHookTypeString(rmHook)
-			if hooks, ok := loaderHooks[hookType]; ok {
-				for index, targetHook := range hooks {
-					if rmHook == targetHook {
-						newHooks := append(hooks[:index], hooks[index+1:]...)
-						if len(newHooks) == 0 {
-							delete(loaderHooks, hookType)
-						} else {
-							loaderHooks[hookType] = newHooks
-						}
-						break
+	if loaderHooks == nil || len(loaderHooks) == 0 {
+		return
+	}
+	for _, rmHook := range hooks {
+		hookType := getLoaderHookTypeString(rmHook)
+		if hooks, ok := loaderHooks[hookType]; ok {
+			for index, targetHook := range hooks {
+				if rmHook == targetHook {
+					if len(hooks) == 1 {
+						delete(loaderHooks, hookType)
+					} else {
+						loaderHooks[hookType] = append(hooks[:index], hooks[index+1:]...)
 					}
+					break
 				}
 			}
 		}
@@ -106,13 +103,14 @@ func RemoveLoaderHooks(hooks ...LoaderHook) {
 }
 
 func emitHook(t LoaderHook) {
-	if loaderHooks != nil && len(loaderHooks) > 0 {
-		hookType := getLoaderHookTypeString(t)
-		if hooks, ok := loaderHooks[hookType]; ok {
-			for _, hook := range hooks {
-				if !hook.emit() {
-					hook.emitWithParams(getLoaderHookParams(t))
-				}
+	if loaderHooks == nil || len(loaderHooks) == 0 {
+		return
+	}
+	hookType := getLoaderHookTypeString(t)
+	if hooks, ok := loaderHooks[hookType]; ok {
+		for _, hook := range hooks {
+			if !hook.emit() {
+				hook.emitWithParams(getLoaderHookParams(t))
 			}
 		}
 	}
