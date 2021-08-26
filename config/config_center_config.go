@@ -170,6 +170,7 @@ func startConfigCenter(rc *RootConfig) error {
 		rc, koanf.UnmarshalConf{Tag: "yaml"}); err != nil {
 		return err
 	}
+
 	rc.refresh = false
 	rc.ConfigCenter = nil
 	return nil
@@ -184,6 +185,7 @@ func (c *CenterConfig) prepareEnvironment(configCenterUrl *common.URL) (string, 
 	}
 	envInstance := conf.GetEnvInstance()
 	envInstance.SetDynamicConfiguration(dynamicConfig)
+
 	return dynamicConfig.GetProperties(c.DataId, config_center.WithGroup(c.Group))
 	//if err != nil {
 	//	logger.Errorf("Get config content in dynamic configuration error , error message is %v", err)
