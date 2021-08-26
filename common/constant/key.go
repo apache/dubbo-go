@@ -353,9 +353,6 @@ const (
 
 // Loader Hook
 const (
-	HookEventParamKey             = "config-loader-hook-event"
-	HookEventErrorMessageParamKey = "config-loader-hook-error-message"
-
 	HookEventBeforeReferenceConnect  = "before-reference-connect"
 	HookEventReferenceConnectSuccess = "reference-connect-success"
 	HookEventReferenceConnectFail    = "reference-connect-fail"
