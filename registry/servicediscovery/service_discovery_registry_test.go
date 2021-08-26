@@ -18,12 +18,13 @@
 package servicediscovery
 
 import (
-	gxpage "github.com/dubbogo/gost/hash/page"
 	"testing"
 )
 
 import (
 	gxset "github.com/dubbogo/gost/container/set"
+	gxpage "github.com/dubbogo/gost/hash/page"
+
 	"github.com/stretchr/testify/assert"
 )
 

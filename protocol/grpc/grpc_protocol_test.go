@@ -18,7 +18,6 @@
 package grpc
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"testing"
 	"time"
 )
@@ -29,6 +28,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/grpc/internal/helloworld"
 )

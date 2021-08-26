@@ -218,3 +218,36 @@ func TestSuiteMethod(t *testing.T) {
 	methodType = suiteMethod(method)
 	assert.Nil(t, methodType)
 }
+
+type ServiceWithoutRef struct{}
+
+func TestGetReference(t *testing.T) {
+	s0 := &TestService{}
+	ref0 := GetReference(s0)
+	assert.Equal(t, referenceTestPath, ref0)
+
+	//s1 := TestService{}
+	//ref1 := GetReference(s1)
+	//assert.Equal(t, referenceTestPath, ref1)
+
+	s2 := &struct {
+		TestService
+	}{}
+	ref2 := GetReference(s2)
+	assert.Equal(t, referenceTestPath, ref2)
+
+	expectedReference := "ServiceWithoutRef"
+	s3 := &ServiceWithoutRef{}
+	ref3 := GetReference(s3)
+	assert.Equal(t, expectedReference, ref3)
+
+	s4 := ServiceWithoutRef{}
+	ref4 := GetReference(s4)
+	assert.Equal(t, expectedReference, ref4)
+
+	s5 := &struct {
+		ServiceWithoutRef
+	}{}
+	ref5 := GetReference(s5)
+	assert.Equal(t, expectedReference, ref5)
+}

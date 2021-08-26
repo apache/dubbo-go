@@ -14,11 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package dubbo3
 
 import (
 	"context"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"fmt"
 	"reflect"
 	"sync"
@@ -28,6 +28,7 @@ import (
 	tripleConstant "github.com/dubbogo/triple/pkg/common/constant"
 	triConfig "github.com/dubbogo/triple/pkg/config"
 	"github.com/dubbogo/triple/pkg/triple"
+
 	"google.golang.org/grpc"
 )
 
@@ -36,6 +37,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
@@ -99,18 +101,18 @@ func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 		valueOf := reflect.ValueOf(service)
 		typeOf := valueOf.Type()
 		numField := valueOf.NumMethod()
-		tripleService := &Dubbo3HessianService{proxyImpl: invoker}
+		tripleService := &UnaryService{proxyImpl: invoker}
 		for i := 0; i < numField; i++ {
 			ft := typeOf.Method(i)
 			if ft.Name == "Reference" {
 				continue
 			}
-			// num out is checked in common/rpc_service.go
-			if ft.Type.NumIn() != 3 {
-				panic(fmt.Sprintf("function %s input params num = %d not supported, which should be 2", ft.Name, ft.Type.NumIn()-1))
+			// get all method params type
+			typs := make([]reflect.Type, 0)
+			for j := 2; j < ft.Type.NumIn(); j++ {
+				typs = append(typs, ft.Type.In(j))
 			}
-			typ := ft.Type.In(2)
-			tripleService.setReqParamsInterface(ft.Name, typ)
+			tripleService.setReqParamsTypes(ft.Name, typs)
 		}
 		service = tripleService
 		triSerializationType = tripleConstant.CodecType(serializationType)
@@ -164,55 +166,56 @@ type Dubbo3GrpcService interface {
 	ServiceDesc() *grpc.ServiceDesc
 }
 
-type Dubbo3HessianService struct {
+type UnaryService struct {
 	proxyImpl  protocol.Invoker
 	reqTypeMap sync.Map
 }
 
-func (d *Dubbo3HessianService) setReqParamsInterface(methodName string, typ reflect.Type) {
+func (d *UnaryService) setReqParamsTypes(methodName string, typ []reflect.Type) {
 	d.reqTypeMap.Store(methodName, typ)
 }
 
-func (d *Dubbo3HessianService) GetReqParamsInteface(methodName string) (interface{}, bool) {
+func (d *UnaryService) GetReqParamsInterfaces(methodName string) ([]interface{}, bool) {
 	val, ok := d.reqTypeMap.Load(methodName)
 	if !ok {
 		return nil, false
 	}
-	typ := val.(reflect.Type)
-	return reflect.New(typ).Interface(), true
+	typs := val.([]reflect.Type)
+	reqParamsInterfaces := make([]interface{}, 0, len(typs))
+	for _, typ := range typs {
+		reqParamsInterfaces = append(reqParamsInterfaces, reflect.New(typ).Interface())
+	}
+	return reqParamsInterfaces, true
 }
 
-func (d *Dubbo3HessianService) InvokeWithArgs(ctx context.Context, methodName string, arguments []interface{}) (interface{}, error) {
+func (d *UnaryService) InvokeWithArgs(ctx context.Context, methodName string, arguments []interface{}) (interface{}, error) {
 	res := d.proxyImpl.Invoke(ctx, invocation.NewRPCInvocation(methodName, arguments, nil))
 	return res.Result(), res.Error()
 }
 
 // openServer open a dubbo3 server, if there is already a service using the same protocol, it returns directly.
 func (dp *DubboProtocol) openServer(url *common.URL, tripleCodecType tripleConstant.CodecType) {
-	_, ok := dp.serverMap[url.Location]
-	if ok {
-		return
-	}
-	_, ok = dp.ExporterMap().Load(url.ServiceKey())
-	if !ok {
-		panic("[DubboProtocol]" + url.Key() + "is not existing")
-	}
-
 	dp.serverLock.Lock()
 	defer dp.serverLock.Unlock()
-	_, ok = dp.serverMap[url.Location]
+	_, ok := dp.serverMap[url.Location]
+
 	if ok {
+		dp.serverMap[url.Location].RefreshService()
 		return
 	}
-
 	triOption := triConfig.NewTripleOption(
 		triConfig.WithCodecType(tripleCodecType),
 		triConfig.WithLocation(url.Location),
 		triConfig.WithLogger(logger.GetLogger()),
 	)
+
+	_, ok = dp.ExporterMap().Load(url.ServiceKey())
+	if !ok {
+		panic("[DubboProtocol]" + url.Key() + "is not existing")
+	}
+
 	srv := triple.NewTripleServer(dp.serviceMap, triOption)
 	dp.serverMap[url.Location] = srv
-
 	srv.Start()
 }
 

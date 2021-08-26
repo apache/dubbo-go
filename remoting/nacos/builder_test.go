@@ -19,8 +19,8 @@ package nacos
 
 import (
 	"net/url"
-	"strconv"
 	"testing"
+	"time"
 )
 
 import (
@@ -83,15 +83,54 @@ func TestNewNacosClientByUrl(t *testing.T) {
 	assert.NotNil(t, client)
 }
 
-func getRegUrl() *common.URL {
-
+func TestTimeoutConfig(t *testing.T) {
 	regurlMap := url.Values{}
-	regurlMap.Set(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER))
 	regurlMap.Set(constant.NACOS_NOT_LOAD_LOCAL_CACHE, "true")
 	// regurlMap.Set(constant.NACOS_USERNAME, "nacos")
 	// regurlMap.Set(constant.NACOS_PASSWORD, "nacos")
 	regurlMap.Set(constant.NACOS_NAMESPACE_ID, "nacos")
-	regurlMap.Set(constant.REGISTRY_TIMEOUT_KEY, "5s")
+
+	t.Run("default timeout", func(t *testing.T) {
+		newURL, _ := common.NewURL("registry://console.nacos.io:80", common.WithParams(regurlMap))
+
+		_, cc, err := GetNacosConfig(newURL)
+		assert.Nil(t, err)
+
+		assert.Equal(t, cc.TimeoutMs, uint64(int32(10*time.Second/time.Millisecond)))
+	})
+
+	t.Run("right timeout", func(t *testing.T) {
+
+		regurlMap.Set(constant.CONFIG_TIMEOUT_KEY, "5s")
+
+		newURL, _ := common.NewURL("registry://console.nacos.io:80", common.WithParams(regurlMap))
+
+		_, cc, err := GetNacosConfig(newURL)
+		assert.Nil(t, err)
+
+		assert.Equal(t, cc.TimeoutMs, uint64(int32(5*time.Second/time.Millisecond)))
+	})
+
+	t.Run("invalid timeout", func(t *testing.T) {
+		regurlMap.Set(constant.CONFIG_TIMEOUT_KEY, "5ab")
+
+		newURL, _ := common.NewURL("registry://console.nacos.io:80", common.WithParams(regurlMap))
+		_, cc, err := GetNacosConfig(newURL)
+		assert.Nil(t, err)
+
+		assert.Equal(t, cc.TimeoutMs, uint64(int32(3*time.Second/time.Millisecond)))
+	})
+
+}
+
+func getRegUrl() *common.URL {
+
+	regurlMap := url.Values{}
+	regurlMap.Set(constant.NACOS_NOT_LOAD_LOCAL_CACHE, "true")
+	// regurlMap.Set(constant.NACOS_USERNAME, "nacos")
+	// regurlMap.Set(constant.NACOS_PASSWORD, "nacos")
+	regurlMap.Set(constant.NACOS_NAMESPACE_ID, "nacos")
+	regurlMap.Set(constant.CONFIG_TIMEOUT_KEY, "5s")
 
 	regurl, _ := common.NewURL("registry://console.nacos.io:80", common.WithParams(regurlMap))
 

@@ -18,17 +18,18 @@
 package dynamic
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"testing"
 )
 
 import (
 	gxset "github.com/dubbogo/gost/container/set"
+
 	"github.com/stretchr/testify/assert"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 )
 

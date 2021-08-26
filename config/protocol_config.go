@@ -28,7 +28,7 @@ import (
 // ProtocolConfig is protocol configuration
 type ProtocolConfig struct {
 	Name string `default:"dubbo" validate:"required" yaml:"name" json:"name,omitempty" property:"name"`
-	Ip   string `default:"127.0.0.1" yaml:"ip"  json:"ip,omitempty" property:"ip"`
+	Ip   string `yaml:"ip"  json:"ip,omitempty" property:"ip"`
 	Port string `default:"2000" yaml:"port" json:"port,omitempty" property:"port"`
 }
 
@@ -74,6 +74,8 @@ func NewProtocolConfig(opts ...ProtocolConfigOpt) *ProtocolConfig {
 
 type ProtocolConfigOpt func(config *ProtocolConfig) *ProtocolConfig
 
+// WithProtocolIP set ProtocolConfig with given binding @ip
+// Deprecated: the param @ip would be used as service lisener binding and would be registered to registry center
 func WithProtocolIP(ip string) ProtocolConfigOpt {
 	return func(config *ProtocolConfig) *ProtocolConfig {
 		config.Ip = ip

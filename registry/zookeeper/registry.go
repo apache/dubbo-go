@@ -27,7 +27,9 @@ import (
 
 import (
 	"github.com/dubbogo/go-zookeeper/zk"
+
 	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
+
 	perrors "github.com/pkg/errors"
 )
 
@@ -74,7 +76,7 @@ func newZkRegistry(url *common.URL) (registry.Registry, error) {
 		return nil, err
 	}
 
-	r.WaitGroup().Add(1) //zk client start successful, then wg +1
+	r.WaitGroup().Add(1)
 	go zookeeper.HandleClientRestart(r)
 
 	r.listener = zookeeper.NewZkEventListener(r.client)
@@ -108,7 +110,7 @@ func newMockZkRegistry(url *common.URL, opts ...gxzookeeper.Option) (*zk.TestClu
 	if err != nil {
 		return nil, nil, err
 	}
-	r.WaitGroup().Add(1) // zk client start successful, then wg +1
+	r.WaitGroup().Add(1)
 	go zookeeper.HandleClientRestart(r)
 	r.InitListeners()
 	return c, r, nil
@@ -313,4 +315,9 @@ func (r *zkRegistry) getCloseListener(conf *common.URL) (*RegistryConfigurationL
 	listener.Close()
 
 	return zkListener, nil
+}
+
+func (r *zkRegistry) handleClientRestart() {
+	r.WaitGroup().Add(1)
+	go zookeeper.HandleClientRestart(r)
 }
