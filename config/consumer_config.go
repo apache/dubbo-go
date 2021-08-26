@@ -18,8 +18,6 @@
 package config
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
-	"dubbo.apache.org/dubbo-go/v3/config/generic"
 	"fmt"
 	"time"
 )
@@ -30,6 +28,8 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/config/generic"
 )
 
 const (
@@ -84,7 +84,7 @@ func (cc *ConsumerConfig) Init(rc *RootConfig) error {
 
 func (cc *ConsumerConfig) Load() {
 	for key, ref := range cc.References {
-		if ref.Generic {
+		if ref.Generic != "" {
 			genericService := generic.NewGenericService(key)
 			SetConsumerService(genericService)
 		}

@@ -19,11 +19,11 @@ package config
 
 import (
 	"bytes"
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
 )
 
 // RootConfig is the root config

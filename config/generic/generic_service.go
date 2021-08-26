@@ -17,7 +17,9 @@
 
 package generic
 
-import "context"
+import (
+	"context"
+)
 
 // GenericService uses for generic invoke for service call
 type GenericService struct {

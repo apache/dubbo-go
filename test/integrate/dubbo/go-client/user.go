@@ -19,12 +19,16 @@ package main
 
 import (
 	"context"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"time"
 )
 
 import (
 	hessian "github.com/apache/dubbo-go-hessian2"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/config"
 )
 
 var userProvider = new(UserProvider)

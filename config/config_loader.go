@@ -18,27 +18,30 @@
 package config
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/registry"
 	"errors"
 	"fmt"
-	hessian "github.com/apache/dubbo-go-hessian2"
-	perrors "github.com/pkg/errors"
 	"reflect"
 	"strconv"
 )
+
 import (
+	hessian "github.com/apache/dubbo-go-hessian2"
+
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/json"
 	"github.com/knadh/koanf/parsers/toml"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/file"
+
+	perrors "github.com/pkg/errors"
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	_ "dubbo.apache.org/dubbo-go/v3/common/observer/dispatcher"
+	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
 var (
@@ -75,27 +78,11 @@ func check() error {
 	return nil
 }
 
-//parseCommandLine parse command line
-//func parseCommandLine() {
-//	flag.String("delim", ".", "config file delim")
-//	flag.String("name", "conf_application.yaml", "config file name")
-//	flag.String("genre", "yaml", "config file type")
-//	flag.String("path", "./conf", "config file path default")
-//
-//	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
-//	pflag.Parse()
-//
-//	if err := viper.BindPFlags(pflag.CommandLine); err != nil {
-//		panic(err)
-//	}
-//}
-
 func getKoanf(conf *loaderConf) *koanf.Koanf {
 	var (
 		k   *koanf.Koanf
 		err error
 	)
-
 	k = koanf.New(conf.delim)
 
 	switch conf.genre {
@@ -460,7 +447,8 @@ func GetRPCService(name string) common.RPCService {
 
 // RPCService create rpc service for consumer
 func RPCService(service common.RPCService) {
-	rootConfig.Consumer.References[service.Reference()].Implement(service)
+	ref := common.GetReference(service)
+	rootConfig.Consumer.References[ref].Implement(service)
 }
 
 // GetMetricConfig find the MetricConfig

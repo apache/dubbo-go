@@ -18,15 +18,17 @@
 package config
 
 import (
-	"github.com/knadh/koanf"
-	"github.com/knadh/koanf/parsers/yaml"
-	"github.com/knadh/koanf/providers/rawbytes"
 	"net/url"
 	"strings"
 )
 
 import (
 	"github.com/creasty/defaults"
+
+	"github.com/knadh/koanf"
+	"github.com/knadh/koanf/parsers/yaml"
+	"github.com/knadh/koanf/providers/rawbytes"
+
 	"github.com/pkg/errors"
 )
 

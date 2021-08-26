@@ -15,5 +15,18 @@
  * limitations under the License.
  */
 
-// Package dubbo plugin for protobuf.
-package dubbo
+syntax = "proto3";
+
+package multiprotos;
+
+message FirstRequest {
+    string message = 1;
+}
+
+message FirstResponse {
+    string message = 1;
+}
+
+service FristService {
+    rpc Service (FirstRequest) returns (FirstResponse) {}
+}

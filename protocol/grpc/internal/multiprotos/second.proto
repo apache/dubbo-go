@@ -14,27 +14,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 syntax = "proto3";
 
-option java_multiple_files = true;
-option java_package = "io.grpc.examples.helloworld";
-option java_outer_classname = "HelloWorldProto";
-option objc_class_prefix = "HLW";
+package multiprotos;
 
-package main;
-
-// The greeting service definition.
-service Greeter {
-  // Sends a greeting
-  rpc SayHello (HelloRequest) returns (HelloReply) {}
+message SecondRequest {
+    string message = 1;
 }
 
-// The request message containing the user's name.
-message HelloRequest {
-  string name = 1;
+message SecondResponse {
+    string message = 1;
 }
 
-// The response message containing the greetings
-message HelloReply {
-  string message = 1;
+service SecondService {
+    rpc Service1 (SecondRequest) returns (SecondResponse) {}
+    rpc Service2 (SecondRequest) returns (stream SecondResponse) {}
+    rpc Service3 (stream SecondRequest) returns (SecondResponse) {}
+    rpc Service4 (stream SecondRequest) returns (stream SecondResponse) {}
 }

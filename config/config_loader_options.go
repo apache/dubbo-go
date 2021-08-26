@@ -18,7 +18,6 @@
 package config
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -26,8 +25,13 @@ import (
 	"sort"
 	"strings"
 )
+
 import (
 	"github.com/pkg/errors"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
 type loaderConf struct {

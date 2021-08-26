@@ -25,8 +25,11 @@ import (
 
 import (
 	"github.com/grpc-ecosystem/grpc-opentracing/go/otgrpc"
+
 	"github.com/opentracing/opentracing-go"
+
 	"google.golang.org/grpc"
+
 	"gopkg.in/yaml.v2"
 )
 
