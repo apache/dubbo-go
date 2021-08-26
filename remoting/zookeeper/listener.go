@@ -18,7 +18,6 @@
 package zookeeper
 
 import (
-	uatomic "go.uber.org/atomic"
 	"path"
 	"strings"
 	"sync"
@@ -27,8 +26,12 @@ import (
 
 import (
 	"github.com/dubbogo/go-zookeeper/zk"
+
 	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
+
 	perrors "github.com/pkg/errors"
+
+	uatomic "go.uber.org/atomic"
 )
 
 import (

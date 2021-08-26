@@ -18,16 +18,18 @@
 package k8s_api
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/config"
 	metav "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
+
 	"k8s.io/client-go/kubernetes/scheme"
+
 	"k8s.io/client-go/rest"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/router/v3router/k8s_crd"
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )

@@ -18,7 +18,6 @@
 package config
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/registry"
 	"net/url"
 	"strconv"
 	"strings"
@@ -26,6 +25,7 @@ import (
 
 import (
 	"github.com/creasty/defaults"
+
 	"github.com/pkg/errors"
 )
 
@@ -34,6 +34,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
 // RegistryConfig is the configuration of the registry center

@@ -18,7 +18,6 @@
 package nacos
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common"
 	"fmt"
 	"net/url"
 )
@@ -27,12 +26,15 @@ import (
 	"github.com/dubbogo/gost/container/set"
 	nacosClient "github.com/dubbogo/gost/database/kv/nacos"
 	"github.com/dubbogo/gost/hash/page"
+
 	"github.com/nacos-group/nacos-sdk-go/model"
 	"github.com/nacos-group/nacos-sdk-go/vo"
+
 	perrors "github.com/pkg/errors"
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
@@ -217,6 +219,7 @@ func (n *nacosServiceDiscovery) AddListener(listener registry.ServiceInstancesCh
 		serviceName := t.(string)
 		err := n.namingClient.Client().Subscribe(&vo.SubscribeParam{
 			ServiceName: serviceName,
+			GroupName:   n.group,
 			SubscribeCallback: func(services []model.SubscribeService, err error) {
 				if err != nil {
 					logger.Errorf("Could not handle the subscribe notification because the err is not nil."+

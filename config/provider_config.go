@@ -18,13 +18,16 @@
 package config
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"fmt"
+)
+
+import (
 	"github.com/creasty/defaults"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
 )
 
 // ProviderConfig is the default configuration of service provider

@@ -17,7 +17,6 @@
 package apollo
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -34,6 +33,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/config_center/parser"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
@@ -110,7 +110,6 @@ var mockConfigRes = `{
 		"application.environment": "dev",
 		"services.UserProvider.protocol": "dubbo",
 		"application.organization": "ikurento.com",
-		"protocol_conf.dubbo.getty_session_param.pkg_wq_size": "512",
 		"services.UserProvider.methods[0].loadbalance": "random"
 	},
 	"releaseKey": "20191104105242-0f13805d89f834a4"

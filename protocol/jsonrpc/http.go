@@ -34,6 +34,7 @@ import (
 
 import (
 	"github.com/opentracing/opentracing-go"
+
 	perrors "github.com/pkg/errors"
 )
 
@@ -42,10 +43,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 )
-
-// ////////////////////////////////////////////
-// Request
-// ////////////////////////////////////////////
 
 // Request is HTTP protocol request
 type Request struct {

@@ -26,7 +26,9 @@ import (
 
 import (
 	gxetcd "github.com/dubbogo/gost/database/kv/etcd/v3"
+
 	"github.com/stretchr/testify/assert"
+
 	"go.etcd.io/etcd/server/v3/embed"
 )
 

@@ -18,7 +18,6 @@
 package configurable
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"testing"
 )
 
@@ -29,6 +28,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	_ "dubbo.apache.org/dubbo-go/v3/common/proxy/proxy_factory"
+	"dubbo.apache.org/dubbo-go/v3/config"
 	_ "dubbo.apache.org/dubbo-go/v3/filter/filter_impl"
 	"dubbo.apache.org/dubbo-go/v3/metadata/service/local"
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/dubbo"
@@ -46,7 +46,6 @@ func TestConfigurableExporter(t *testing.T) {
 			KeepAlivePeriod:  "120s",
 			TcpRBufSize:      262144,
 			TcpWBufSize:      65536,
-			PkgWQSize:        512,
 			TcpReadTimeout:   "1s",
 			TcpWriteTimeout:  "5s",
 			WaitTimeout:      "1s",
