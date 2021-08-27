@@ -67,6 +67,7 @@ func GracefulShutdownInit() {
 			// gracefulShutdownOnce.Do(func() {
 			time.AfterFunc(totalTimeout(), func() {
 				logger.Warn("Shutdown gracefully timeout, application will shutdown immediately. ")
+				postBeforeShutdown()
 				os.Exit(0)
 			})
 			BeforeShutdown()
@@ -76,6 +77,7 @@ func GracefulShutdownInit() {
 					debug.WriteHeapDump(os.Stdout.Fd())
 				}
 			}
+			postBeforeShutdown()
 			os.Exit(0)
 		}
 	}()
@@ -222,4 +224,10 @@ func getConsumerProtocols() *gxset.HashSet {
 		result.Add(reference.Protocol)
 	}
 	return result
+}
+
+func postBeforeShutdown() {
+	for _, p := range extension.GetConfigPostProcessors() {
+		p.BeforeShutdown()
+	}
 }

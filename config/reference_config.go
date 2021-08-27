@@ -101,7 +101,7 @@ func (c *ReferenceConfig) Refer(_ interface{}) {
 	if c.ForceTag {
 		cfgURL.AddParam(constant.ForceUseTag, "true")
 	}
-	c.postProcessConfig(cfgURL)
+	c.postProcessConfig(cfgURL, constant.HookEventBeforeReferenceConnect, nil)
 	if c.URL != "" {
 		// 1. user specified URL, could be peer-to-peer address, or register center's address.
 		urlStrings := gxstrings.RegSplit(c.URL, "\\s*[;]+\\s*")
@@ -302,8 +302,26 @@ func publishConsumerDefinition(url *common.URL) {
 }
 
 // postProcessConfig asks registered ConfigPostProcessor to post-process the current ReferenceConfig.
-func (c *ReferenceConfig) postProcessConfig(url *common.URL) {
+func (c *ReferenceConfig) postProcessConfig(url *common.URL, event string, errMsg *string) {
 	for _, p := range extension.GetConfigPostProcessors() {
-		p.PostProcessReferenceConfig(url)
+		p.PostProcessReferenceConfig(url, event, errMsg)
+	}
+}
+
+func (c *ReferenceConfig) getValidURL() *common.URL {
+	urls := c.urls
+	var u *common.URL
+	if urls != nil && len(urls) > 0 {
+		u = urls[0]
+	}
+	if u != nil && u.SubURL != nil {
+		return u.SubURL
+	}
+	return u
+}
+
+func postAllConsumersConnectComplete() {
+	for _, p := range extension.GetConfigPostProcessors() {
+		p.AllReferencesConnectComplete()
 	}
 }

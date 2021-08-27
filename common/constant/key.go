@@ -350,3 +350,14 @@ const (
 	// SERVICE_DISCOVERY_KEY indicate which service discovery instance will be used
 	SERVICE_DISCOVERY_KEY = "service_discovery"
 )
+
+// Loader Hook
+const (
+	HookEventBeforeReferenceConnect  = "before-reference-connect"
+	HookEventReferenceConnectSuccess = "reference-connect-success"
+	HookEventReferenceConnectFail    = "reference-connect-fail"
+
+	HookEventBeforeProviderConnect  = "before-service-listen"
+	HookEventProviderConnectSuccess = "service-listen-success"
+	HookEventProviderConnectFail    = "service-listen-fail"
+)

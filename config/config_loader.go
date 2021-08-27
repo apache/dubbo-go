@@ -169,6 +169,7 @@ func loadConsumerConfig() {
 	for {
 		checkok := true
 		for _, refconfig := range consumerConfig.References {
+			referenceURL := refconfig.getValidURL()
 			if (refconfig.Check != nil && *refconfig.Check) ||
 				(refconfig.Check == nil && consumerConfig.Check != nil && *consumerConfig.Check) ||
 				(refconfig.Check == nil && consumerConfig.Check == nil) { // default to true
@@ -179,6 +180,7 @@ func loadConsumerConfig() {
 					if count > maxWait {
 						errMsg := fmt.Sprintf("Failed to check the status of the service %v. No provider available for the service to the consumer use dubbo version %v", refconfig.InterfaceName, constant.Version)
 						logger.Error(errMsg)
+						refconfig.postProcessConfig(referenceURL, constant.HookEventReferenceConnectFail, &errMsg)
 						panic(errMsg)
 					}
 					time.Sleep(time.Second * 1)
@@ -186,13 +188,16 @@ func loadConsumerConfig() {
 				}
 				if refconfig.invoker == nil {
 					logger.Warnf("The interface %s invoker not exist, may you should check your interface config.", refconfig.InterfaceName)
+					continue
 				}
 			}
+			refconfig.postProcessConfig(referenceURL, constant.HookEventReferenceConnectSuccess, nil)
 		}
 		if checkok {
 			break
 		}
 	}
+	postAllConsumersConnectComplete()
 }
 
 func loadProviderConfig() {
@@ -247,11 +252,17 @@ func loadProviderConfig() {
 		svs.id = key
 		svs.Implement(rpcService)
 		svs.Protocols = providerConfig.Protocols
-		if err := svs.Export(); err != nil {
-			panic(fmt.Sprintf("service %s export failed! err: %#v", key, err))
+		err := svs.Export()
+		serviceURL := svs.getValidURL()
+		if err != nil {
+			errMsg := fmt.Sprintf("service %s export failed! err: %#v", key, err)
+			svs.postProcessConfig(serviceURL, constant.HookEventProviderConnectFail, &errMsg)
+			panic(errMsg)
 		}
+		svs.postProcessConfig(serviceURL, constant.HookEventProviderConnectSuccess, nil)
 	}
 	registerServiceInstance()
+	postAllProvidersConnectComplete()
 }
 
 // registerServiceInstance register service instance

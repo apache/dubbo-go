@@ -25,8 +25,19 @@ import (
 // ServiceConfig during deployment time.
 type ConfigPostProcessor interface {
 	// PostProcessReferenceConfig customizes ReferenceConfig's params.
-	PostProcessReferenceConfig(*common.URL)
+	// PostProcessReferenceConfig emit on refer reference (event: before-reference-connect, reference-connect-success, reference-connect-fail)
+	PostProcessReferenceConfig(url *common.URL, event string, errMsg *string)
 
 	// PostProcessServiceConfig customizes ServiceConfig's params.
-	PostProcessServiceConfig(*common.URL)
+	// PostProcessServiceConfig emit on export service (event: before-service-listen, service-listen-success, service-listen-fail)
+	PostProcessServiceConfig(url *common.URL, event string, errMsg *string)
+
+	// AllReferencesConnectComplete emit on all references export complete
+	AllReferencesConnectComplete()
+
+	// AllServicesListenComplete emit on all services export complete
+	AllServicesListenComplete()
+
+	// BeforeShutdown emit on before shutdown
+	BeforeShutdown()
 }
