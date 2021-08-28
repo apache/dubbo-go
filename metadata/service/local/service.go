@@ -17,7 +17,6 @@
 package local
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"sort"
 	"sync"
 )
@@ -31,6 +30,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/metadata/definition"
 	"dubbo.apache.org/dubbo-go/v3/metadata/service"
 )

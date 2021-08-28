@@ -19,7 +19,6 @@ package config
 
 import (
 	"container/list"
-	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
 	"fmt"
 	"net/url"
 	"strconv"
@@ -30,8 +29,11 @@ import (
 
 import (
 	"github.com/creasty/defaults"
+
 	gxnet "github.com/dubbogo/gost/net"
+
 	perrors "github.com/pkg/errors"
+
 	"go.uber.org/atomic"
 )
 
@@ -41,6 +43,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
 )
 
 // ServiceConfig is the configuration of the service provider
@@ -343,28 +346,7 @@ func loadRegistries(registryIds []string, registries map[string]*RegistryConfig,
 		}
 
 		if target {
-			addresses := strings.Split(registryConf.Address, ",")
-			address := addresses[0]
-			address = registryConf.translateRegistryAddress()
-			var registryURLProtocol string
-			if registryConf.RegistryType == "service" {
-				// service discovery protocol
-				registryURLProtocol = constant.SERVICE_REGISTRY_PROTOCOL
-			} else {
-				registryURLProtocol = constant.REGISTRY_PROTOCOL
-			}
-			registryURL, err := common.NewURL(registryURLProtocol+"://"+address,
-				common.WithParams(registryConf.getUrlMap(roleType)),
-				common.WithParamsValue(constant.SIMPLIFIED_KEY, strconv.FormatBool(registryConf.Simplified)),
-				common.WithParamsValue(constant.REGISTRY_KEY, registryConf.Protocol),
-				common.WithParamsValue(constant.GROUP_KEY, registryConf.Group),
-				common.WithParamsValue(constant.NAMESPACE_KEY, registryConf.Namespace),
-				common.WithUsername(registryConf.Username),
-				common.WithPassword(registryConf.Password),
-				common.WithLocation(registryConf.Address),
-			)
-
-			if err != nil {
+			if registryURL, err := registryConf.toURL(roleType); err != nil {
 				logger.Errorf("The registry id: %s url is invalid, error: %#v", k, err)
 				panic(err)
 			} else {
@@ -536,10 +518,10 @@ func WithServiceRegistry(registry string) ServiceConfigOpt {
 	}
 }
 
-// WithServiceProtocol returns ServiceConfigOpt with given protocolKey @protocol
-func WithServiceProtocol(protocol string) ServiceConfigOpt {
+// WithServiceProtocolKeys returns ServiceConfigOpt with given protocolKey @protocol
+func WithServiceProtocolKeys(protocolKeys ...string) ServiceConfigOpt {
 	return func(config *ServiceConfig) *ServiceConfig {
-		config.Protocol = append(config.Protocol, protocol)
+		config.Protocol = protocolKeys
 		return config
 	}
 }
@@ -596,7 +578,7 @@ func WithServiceMethod(name, retries, lb string) ServiceConfigOpt {
 	}
 }
 
-func WithServiceProtocols(protocolName string, protocolConfig *ProtocolConfig) ServiceConfigOpt {
+func WithServiceProtocol(protocolName string, protocolConfig *ProtocolConfig) ServiceConfigOpt {
 	return func(config *ServiceConfig) *ServiceConfig {
 		config.Protocols[protocolName] = protocolConfig
 		return config

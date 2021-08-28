@@ -17,7 +17,9 @@
 
 package interfaces
 
-import "bytes"
+import (
+	"bytes"
+)
 
 // ConfigReader is used to read config from consumer or provider
 type ConfigReader interface {

@@ -44,11 +44,11 @@ package config
 //	defaultRegistryTimeout = "3s"
 //)
 //
-//// NewDefaultRegistryConfig New default registry config
+//// NewRegistryConfigWithProtocolDefaultPort New default registry config
 //// the input @protocol can only be:
 //// "zookeeper" with default addr "127.0.0.1:2181"
 //// "nacos" with default addr "127.0.0.1:8848"
-//func NewDefaultRegistryConfig(protocol string) *registry.RegistryConfig {
+//func NewRegistryConfigWithProtocolDefaultPort(protocol string) *registry.RegistryConfig {
 //	switch protocol {
 //	case "zookeeper":
 //		return &registry.RegistryConfig{
@@ -74,7 +74,7 @@ package config
 //
 //// NewRegistryConfig creates New RegistryConfig with @opts
 //func NewRegistryConfig(opts ...RegistryConfigOpt) *registry.RegistryConfig {
-//	newRegistryConfig := NewDefaultRegistryConfig("")
+//	newRegistryConfig := NewRegistryConfigWithProtocolDefaultPort("")
 //	for _, v := range opts {
 //		newRegistryConfig = v(newRegistryConfig)
 //	}

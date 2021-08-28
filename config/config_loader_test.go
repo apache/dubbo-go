@@ -18,13 +18,17 @@
 package config
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"testing"
 )
 
-import "github.com/stretchr/testify/assert"
+import (
+	"github.com/stretchr/testify/assert"
+)
 
-import "dubbo.apache.org/dubbo-go/v3/config/testdata/config/service"
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/config/testdata/config/service"
+)
 
 func init() {
 	SetProviderService(new(service.OrderService))
@@ -81,7 +85,6 @@ func TestLoadConfigCenter(t *testing.T) {
 }
 
 func TestGetRegistriesConfig(t *testing.T) {
-
 	t.Run("registry", func(t *testing.T) {
 		Load(WithPath("./testdata/config/registry/application.yaml"))
 

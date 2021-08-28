@@ -18,15 +18,17 @@
 package config
 
 import (
-	"github.com/knadh/koanf"
-	"github.com/knadh/koanf/parsers/yaml"
-	"github.com/knadh/koanf/providers/rawbytes"
 	"net/url"
 	"strings"
 )
 
 import (
 	"github.com/creasty/defaults"
+
+	"github.com/knadh/koanf"
+	"github.com/knadh/koanf/parsers/yaml"
+	"github.com/knadh/koanf/providers/rawbytes"
+
 	"github.com/pkg/errors"
 )
 
@@ -75,15 +77,17 @@ func (c *CenterConfig) check() error {
 		return err
 	}
 	c.translateConfigAddress()
+	if c.Address == "" || c.Protocol == "" {
+		return errors.Errorf("invalid config center config %+v", c)
+	}
 	return verify(c)
 }
 
-func initConfigCenter(rc *RootConfig) error {
-	center := rc.ConfigCenter
-	if center == nil || rc.refresh {
+func (c *CenterConfig) Init(rc *RootConfig) error {
+	if rc.refresh || c == nil {
 		return nil
 	}
-	if err := center.check(); err != nil {
+	if err := c.check(); err != nil {
 		return err
 	}
 	return startConfigCenter(rc)
@@ -166,9 +170,10 @@ func startConfigCenter(rc *RootConfig) error {
 		rc, koanf.UnmarshalConf{Tag: "yaml"}); err != nil {
 		return err
 	}
+
 	rc.refresh = false
 	rc.ConfigCenter = nil
-	return rc.InitConfig()
+	return nil
 }
 
 func (c *CenterConfig) prepareEnvironment(configCenterUrl *common.URL) (string, error) {
@@ -180,6 +185,7 @@ func (c *CenterConfig) prepareEnvironment(configCenterUrl *common.URL) (string, 
 	}
 	envInstance := conf.GetEnvInstance()
 	envInstance.SetDynamicConfiguration(dynamicConfig)
+
 	return dynamicConfig.GetProperties(c.DataId, config_center.WithGroup(c.Group))
 	//if err != nil {
 	//	logger.Errorf("Get config content in dynamic configuration error , error message is %v", err)
@@ -221,4 +227,65 @@ func (c *CenterConfig) prepareEnvironment(configCenterUrl *common.URL) (string, 
 	//	}
 	//	envInstance.UpdateAppExternalConfigMap(appMapContent)
 	//}
+}
+
+type CenterConfigOpt func(config *CenterConfig)
+
+func NewConfigCenterConfig(opts ...CenterConfigOpt) *CenterConfig {
+	centerConfig := &CenterConfig{
+		Params: make(map[string]string),
+	}
+	for _, o := range opts {
+		o(centerConfig)
+	}
+	return centerConfig
+}
+
+// WithConfigCenterProtocol set ProtocolConfig with given protocolName protocol
+func WithConfigCenterProtocol(protocol string) CenterConfigOpt {
+	return func(config *CenterConfig) {
+		config.Protocol = protocol
+	}
+}
+
+// WithConfigCenterAddress set ProtocolConfig with given @addr
+func WithConfigCenterAddress(addr string) CenterConfigOpt {
+	return func(config *CenterConfig) {
+		config.Address = addr
+	}
+}
+
+// WithConfigCenterDataID set ProtocolConfig with given @dataID
+func WithConfigCenterDataID(dataID string) CenterConfigOpt {
+	return func(config *CenterConfig) {
+		config.DataId = dataID
+	}
+}
+
+// WithConfigCenterGroup set ProtocolConfig with given @group
+func WithConfigCenterGroup(group string) CenterConfigOpt {
+	return func(config *CenterConfig) {
+		config.Group = group
+	}
+}
+
+// WithConfigCenterUsername set ProtocolConfig with given @username
+func WithConfigCenterUsername(username string) CenterConfigOpt {
+	return func(config *CenterConfig) {
+		config.Username = username
+	}
+}
+
+// WithConfigCenterPassword set ProtocolConfig with given @password
+func WithConfigCenterPassword(password string) CenterConfigOpt {
+	return func(config *CenterConfig) {
+		config.Password = password
+	}
+}
+
+// WithConfigCenterNamespace set ProtocolConfig with given @namespace
+func WithConfigCenterNamespace(namespace string) CenterConfigOpt {
+	return func(config *CenterConfig) {
+		config.Namespace = namespace
+	}
 }

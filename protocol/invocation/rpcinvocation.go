@@ -29,10 +29,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
-// ///////////////////////////
-// Invocation Implement of RPC
-// ///////////////////////////
-
 // todo: is it necessary to separate fields of consumer(provider) from RPCInvocation
 // nolint
 type RPCInvocation struct {

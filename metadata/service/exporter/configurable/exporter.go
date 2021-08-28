@@ -27,11 +27,9 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/config"
+	_ "dubbo.apache.org/dubbo-go/v3/metadata/mapping/dynamic"
 	"dubbo.apache.org/dubbo-go/v3/metadata/service"
 	"dubbo.apache.org/dubbo-go/v3/metadata/service/exporter"
-
-	// these three import is necessary for inmemory metadata service, export or refer.
-	_ "dubbo.apache.org/dubbo-go/v3/metadata/mapping/dynamic"
 	_ "dubbo.apache.org/dubbo-go/v3/metadata/service/remote"
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/dubbo"
 )
@@ -58,8 +56,9 @@ func (exporter *MetadataServiceExporter) Export(url *common.URL) error {
 		defer exporter.lock.Unlock()
 		exporter.ServiceConfig = config.NewServiceConfig(
 			config.WithServiceID(constant.SIMPLE_METADATA_SERVICE_NAME),
-			config.WithServiceProtocol(constant.DEFAULT_PROTOCOL),
-			config.WithServiceProtocols(constant.DEFAULT_PROTOCOL, config.NewProtocolConfig(
+			config.WithServiceProtocolKeys(constant.DEFAULT_PROTOCOL),
+			config.WithServiceProtocol(constant.DEFAULT_PROTOCOL, config.NewProtocolConfig(
+				config.WithProtocolName(constant.DEFAULT_PROTOCOL),
 				config.WithProtocolPort(strconv.Itoa(constant.DEFAULT_METADATAPORT)),
 			)),
 			config.WithServiceRegistry("N/A"),

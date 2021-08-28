@@ -26,6 +26,7 @@ import (
 
 import (
 	perrors "github.com/pkg/errors"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -39,10 +40,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
-
-// ///////////////////////////
-// mock invoker
-// ///////////////////////////
 
 // nolint
 type MockInvoker struct {

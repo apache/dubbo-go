@@ -18,13 +18,16 @@
 package config
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"fmt"
+)
+
+import (
 	"github.com/creasty/defaults"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
 )
 
 // ProviderConfig is the default configuration of service provider
@@ -97,7 +100,7 @@ func (c *ProviderConfig) Prefix() string {
 }
 
 func (c *ProviderConfig) Load() {
-	
+
 	for key, svs := range c.Services {
 		rpcService := GetProviderService(key)
 		if rpcService == nil {
@@ -177,15 +180,15 @@ func NewProviderConfig(opts ...ProviderConfigOpt) *ProviderConfig {
 }
 
 // WithProviderServices returns ProviderConfig with given serviceNameKey @serviceName and @serviceConfig
-func WithProviderServices(serviceName string, serviceConfig *ServiceConfig) ProviderConfigOpt {
+func WithProviderService(serviceName string, serviceConfig *ServiceConfig) ProviderConfigOpt {
 	return func(config *ProviderConfig) *ProviderConfig {
 		config.Services[serviceName] = serviceConfig
 		return config
 	}
 }
 
-// WithProviderRegistry returns ProviderConfigOpt with given @registryKey and registry @registryConfig
-func WithProviderRegistry(registryKey ...string) ProviderConfigOpt {
+// WithProviderRegistryKeys returns ProviderConfigOpt with given @registryKey and registry @registryConfig
+func WithProviderRegistryKeys(registryKey ...string) ProviderConfigOpt {
 	return func(config *ProviderConfig) *ProviderConfig {
 		config.Registry = append(config.Registry, registryKey...)
 		return config

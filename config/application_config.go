@@ -18,8 +18,11 @@
 package config
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"github.com/creasty/defaults"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
 // ApplicationConfig is a configuration for current applicationConfig, whether the applicationConfig is a provider or a consumer
@@ -39,20 +42,16 @@ func (ApplicationConfig) Prefix() string {
 	return constant.DUBBO + ".application"
 }
 
-func initApplicationConfig(rc *RootConfig) error {
+func (ac *ApplicationConfig) Init(rc *RootConfig) error {
 	// ignore refresh action
-	if rc.refresh {
+	if rc.refresh || ac == nil {
+		rootConfig.Application = new(ApplicationConfig)
 		return nil
 	}
-	application := rc.Application
-	if application == nil {
-		application = new(ApplicationConfig)
-	}
-	defaults.MustSet(application)
-	if err := application.check(); err != nil {
+	defaults.MustSet(ac)
+	if err := ac.check(); err != nil {
 		return err
 	}
-	rc.Application = application
 	return nil
 }
 
