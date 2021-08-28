@@ -71,7 +71,7 @@ func initLoggerConfig(rc *RootConfig) error {
 	if err != nil {
 		return err
 	}
-	logger.InitLogger(zapConfig)
+	logger.InitLogger(&logger.Config{ZapConfig: zapConfig})
 	return nil
 }
 

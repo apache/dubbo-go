@@ -20,6 +20,7 @@ package grpc
 import (
 	"reflect"
 	"strconv"
+	"sync"
 	"time"
 )
 
@@ -41,6 +42,7 @@ import (
 )
 
 var clientConf *ClientConfig
+var clientConfInitOnce sync.Once
 
 // Client is gRPC client include client connection and invoker
 type Client struct {
@@ -50,7 +52,7 @@ type Client struct {
 
 // NewClient creates a new gRPC client.
 func NewClient(url *common.URL) (*Client, error) {
-	clientInit()
+	clientConfInitOnce.Do(clientInit)
 
 	// If global trace instance was set, it means trace function enabled.
 	// If not, will return NoopTracer.
