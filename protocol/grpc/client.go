@@ -42,7 +42,56 @@ import (
 
 var clientConf *ClientConfig
 
-func init() {
+// Client is gRPC client include client connection and invoker
+type Client struct {
+	*grpc.ClientConn
+	invoker reflect.Value
+}
+
+// NewClient creates a new gRPC client.
+func NewClient(url *common.URL) (*Client, error) {
+	clientInit()
+
+	// If global trace instance was set, it means trace function enabled.
+	// If not, will return NoopTracer.
+	tracer := opentracing.GlobalTracer()
+	dialOpts := make([]grpc.DialOption, 0, 4)
+	maxMessageSize, _ := strconv.Atoi(url.GetParam(constant.MESSAGE_SIZE_KEY, "4"))
+
+	// consumer config client connectTimeout
+	//connectTimeout := config.GetConsumerConfig().ConnectTimeout
+
+	dialOpts = append(dialOpts,
+		grpc.WithInsecure(),
+		grpc.WithBlock(),
+		// todo config network timeout
+		grpc.WithTimeout(time.Second*3),
+		grpc.WithUnaryInterceptor(otgrpc.OpenTracingClientInterceptor(tracer, otgrpc.LogPayloads())),
+		grpc.WithStreamInterceptor(otgrpc.OpenTracingStreamClientInterceptor(tracer, otgrpc.LogPayloads())),
+		grpc.WithDefaultCallOptions(
+			grpc.CallContentSubtype(clientConf.ContentSubType),
+			grpc.MaxCallRecvMsgSize(1024*1024*maxMessageSize),
+			grpc.MaxCallSendMsgSize(1024*1024*maxMessageSize),
+		),
+	)
+
+	conn, err := grpc.Dial(url.Location, dialOpts...)
+	if err != nil {
+		logger.Errorf("grpc dial error: %v", err)
+		return nil, err
+	}
+
+	key := url.GetParam(constant.BEAN_NAME_KEY, "")
+	impl := config.GetConsumerService(key)
+	invoker := getInvoker(impl, conn)
+
+	return &Client{
+		ClientConn: conn,
+		invoker:    reflect.ValueOf(invoker),
+	}, nil
+}
+
+func clientInit() {
 	// load rootConfig from runtime
 	rootConfig := config.GetRootConfig()
 
@@ -82,53 +131,6 @@ func init() {
 			panic(err)
 		}
 	}
-}
-
-// Client is gRPC client include client connection and invoker
-type Client struct {
-	*grpc.ClientConn
-	invoker reflect.Value
-}
-
-// NewClient creates a new gRPC client.
-func NewClient(url *common.URL) (*Client, error) {
-	// If global trace instance was set, it means trace function enabled.
-	// If not, will return NoopTracer.
-	tracer := opentracing.GlobalTracer()
-	dialOpts := make([]grpc.DialOption, 0, 4)
-	maxMessageSize, _ := strconv.Atoi(url.GetParam(constant.MESSAGE_SIZE_KEY, "4"))
-
-	// consumer config client connectTimeout
-	//connectTimeout := config.GetConsumerConfig().ConnectTimeout
-
-	dialOpts = append(dialOpts,
-		grpc.WithInsecure(),
-		grpc.WithBlock(),
-		// todo config network timeout
-		grpc.WithTimeout(time.Second*3),
-		grpc.WithUnaryInterceptor(otgrpc.OpenTracingClientInterceptor(tracer, otgrpc.LogPayloads())),
-		grpc.WithStreamInterceptor(otgrpc.OpenTracingStreamClientInterceptor(tracer, otgrpc.LogPayloads())),
-		grpc.WithDefaultCallOptions(
-			grpc.CallContentSubtype(clientConf.ContentSubType),
-			grpc.MaxCallRecvMsgSize(1024*1024*maxMessageSize),
-			grpc.MaxCallSendMsgSize(1024*1024*maxMessageSize),
-		),
-	)
-
-	conn, err := grpc.Dial(url.Location, dialOpts...)
-	if err != nil {
-		logger.Errorf("grpc dial error: %v", err)
-		return nil, err
-	}
-
-	key := url.GetParam(constant.BEAN_NAME_KEY, "")
-	impl := config.GetConsumerService(key)
-	invoker := getInvoker(impl, conn)
-
-	return &Client{
-		ClientConn: conn,
-		invoker:    reflect.ValueOf(invoker),
-	}, nil
 }
 
 func getInvoker(impl interface{}, conn *grpc.ClientConn) interface{} {
