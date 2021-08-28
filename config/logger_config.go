@@ -23,7 +23,7 @@ import (
 
 import (
 	"github.com/creasty/defaults"
-	"go.uber.org/zap"
+	"github.com/natefinch/lumberjack"
 )
 
 import (
@@ -31,7 +31,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/yaml"
 )
 
-type LoggerConfig struct {
+type ZapConfig struct {
 	Level             string                 `default:"debug" json:"level" yaml:"level" property:"level"`
 	Development       bool                   `default:"false" json:"development" yaml:"development" property:"development"`
 	DisableCaller     bool                   `default:"false" json:"disable_caller" yaml:"disable_caller" property:"disable_caller"`
@@ -41,6 +41,11 @@ type LoggerConfig struct {
 	OutputPaths       []string               `default:"[\"stderr\"]" json:"output_paths" yaml:"output_paths" property:"output_paths"`
 	ErrorOutputPaths  []string               `default:"[\"stderr\"]" json:"error_output_paths" yaml:"error_output_paths" property:"error_output_paths"`
 	InitialFields     map[string]interface{} `default:"" json:"initial_fields" yaml:"initial_fields" property:"initial_fields"`
+}
+
+type LoggerConfig struct {
+	LumberjackConfig *lumberjack.Logger `yaml:"lumberjackConfig"`
+	ZapConfig        ZapConfig          `yaml:"zapConfig"`
 }
 
 type EncoderConfig struct {
@@ -71,12 +76,13 @@ func initLoggerConfig(rc *RootConfig) error {
 	if err != nil {
 		return err
 	}
-	zapConfig := &zap.Config{}
-	err = yaml.UnmarshalYML(byte, zapConfig)
-	if err != nil {
+
+	loggerConfig := &logger.Config{}
+	if err = yaml.UnmarshalYML(byte, loggerConfig); err != nil {
 		return err
 	}
-	logger.InitLogger(zapConfig)
+
+	logger.InitLogger(loggerConfig)
 	return nil
 }
 
@@ -89,8 +95,7 @@ func (l *LoggerConfig) check() error {
 
 func (l *LoggerConfig) getUrlMap() url.Values {
 	urlMap := url.Values{}
-
-	for key, val := range l.EncoderConfig.Params {
+	for key, val := range l.ZapConfig.EncoderConfig.Params {
 		urlMap.Set(key, val)
 	}
 	return urlMap

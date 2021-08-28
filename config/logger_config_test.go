@@ -29,9 +29,9 @@ func TestLoggerInit(t *testing.T) {
 		loggerConfig := rootConfig.Logger
 		assert.NotNil(t, loggerConfig)
 		// default
-		assert.Equal(t, "debug", loggerConfig.Level)
-		assert.Equal(t, "message", loggerConfig.EncoderConfig.MessageKey)
-		assert.Equal(t, "stacktrace", loggerConfig.EncoderConfig.StacktraceKey)
+		assert.Equal(t, "debug", loggerConfig.ZapConfig.Level)
+		assert.Equal(t, "message", loggerConfig.ZapConfig.EncoderConfig.MessageKey)
+		assert.Equal(t, "stacktrace", loggerConfig.ZapConfig.EncoderConfig.StacktraceKey)
 		logger.Info("hello")
 	})
 }

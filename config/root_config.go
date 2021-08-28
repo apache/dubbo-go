@@ -96,10 +96,10 @@ func (rc *RootConfig) Init() error {
 	if err := initLoggerConfig(rc); err != nil {
 		return err
 	}
-	if err := initApplicationConfig(rc); err != nil {
-		return err
+	if err := rc.ConfigCenter.Init(rc); err != nil {
+		logger.Info("config center doesn't start.")
 	}
-	if err := initConfigCenter(rc); err != nil {
+	if err := rc.Application.Init(rc); err != nil {
 		return err
 	}
 	if err := initProtocolsConfig(rc); err != nil {

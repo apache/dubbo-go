@@ -19,14 +19,47 @@ package logger
 
 import (
 	"fmt"
+	"io/ioutil"
+	"path"
 	"path/filepath"
 	"runtime"
 	"testing"
 )
 
 import (
+	perrors "github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
+	"gopkg.in/yaml.v2"
 )
+
+// initLog use for init logger by call InitLogger
+func initLog(logConfFile string) error {
+	if logConfFile == "" {
+		InitLogger(nil)
+		return perrors.New("log configure file name is nil")
+	}
+	if path.Ext(logConfFile) != ".yml" {
+		InitLogger(nil)
+		return perrors.Errorf("log configure file name{%s} suffix must be .yml", logConfFile)
+	}
+
+	confFileStream, err := ioutil.ReadFile(logConfFile)
+	if err != nil {
+		InitLogger(nil)
+		return perrors.Errorf("ioutil.ReadFile(file:%s) = error:%v", logConfFile, err)
+	}
+
+	conf := &Config{}
+	err = yaml.Unmarshal(confFileStream, conf)
+	if err != nil {
+		InitLogger(nil)
+		return perrors.Errorf("[Unmarshal]init logger error: %v", err)
+	}
+
+	InitLogger(conf)
+
+	return nil
+}
 
 func TestInitLog(t *testing.T) {
 	var (
@@ -34,17 +67,17 @@ func TestInitLog(t *testing.T) {
 		path string
 	)
 
-	err = InitLog("")
+	err = initLog("")
 	assert.EqualError(t, err, "log configure file name is nil")
 
 	path, err = filepath.Abs("./log.xml")
 	assert.NoError(t, err)
-	err = InitLog(path)
+	err = initLog(path)
 	assert.EqualError(t, err, "log configure file name{"+path+"} suffix must be .yml")
 
 	path, err = filepath.Abs("./logger.yml")
 	assert.NoError(t, err)
-	err = InitLog(path)
+	err = initLog(path)
 	var errMsg string
 	if runtime.GOOS == "windows" {
 		errMsg = fmt.Sprintf("open %s: The system cannot find the file specified.", path)
@@ -53,7 +86,7 @@ func TestInitLog(t *testing.T) {
 	}
 	assert.EqualError(t, err, fmt.Sprintf("ioutil.ReadFile(file:%s) = error:%s", path, errMsg))
 
-	err = InitLog("./log.yml")
+	err = initLog("./log.yml")
 	assert.NoError(t, err)
 
 	Debug("debug")
@@ -67,7 +100,7 @@ func TestInitLog(t *testing.T) {
 }
 
 func TestSetLevel(t *testing.T) {
-	err := InitLog("./log.yml")
+	err := initLog("./log.yml")
 	assert.NoError(t, err)
 	Debug("debug")
 	Info("info")
@@ -88,17 +121,17 @@ func TestInitLogWidthFile(t *testing.T) {
 		path string
 	)
 
-	err = InitLog("")
+	err = initLog("")
 	assert.EqualError(t, err, "log configure file name is nil")
 
 	path, err = filepath.Abs("./file_log.xml")
 	assert.NoError(t, err)
-	err = InitLog(path)
+	err = initLog(path)
 	assert.EqualError(t, err, "log configure file name{"+path+"} suffix must be .yml")
 
 	path, err = filepath.Abs("./logger.yml")
 	assert.NoError(t, err)
-	err = InitLog(path)
+	err = initLog(path)
 	var errMsg string
 	if runtime.GOOS == "windows" {
 		errMsg = fmt.Sprintf("open %s: The system cannot find the file specified.", path)
@@ -107,7 +140,7 @@ func TestInitLogWidthFile(t *testing.T) {
 	}
 	assert.EqualError(t, err, fmt.Sprintf("ioutil.ReadFile(file:%s) = error:%s", path, errMsg))
 
-	err = InitLog("./file_log.yml")
+	err = initLog("./file_log.yml")
 	assert.NoError(t, err)
 
 	Debug("debug")
@@ -121,7 +154,7 @@ func TestInitLogWidthFile(t *testing.T) {
 }
 
 func TestSetLevelWidthFile(t *testing.T) {
-	err := InitLog("./file_log.yml")
+	err := initLog("./file_log.yml")
 	assert.NoError(t, err)
 	Debug("debug")
 	Info("info")
