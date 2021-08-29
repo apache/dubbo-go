@@ -10,7 +10,7 @@ dubbo:
       address: 127.0.0.1:2181
   logger:
     lumberjack-config:
-      filename: "logs.log"
+      filename: logs.log
       maxSize: 1
       maxAge: 3
       maxBackups: 5
