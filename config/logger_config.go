@@ -24,6 +24,7 @@ import (
 import (
 	"github.com/creasty/defaults"
 	"github.com/natefinch/lumberjack"
+	"go.uber.org/zap/zapcore"
 )
 
 import (
@@ -32,33 +33,33 @@ import (
 )
 
 type ZapConfig struct {
-	Level             string                 `default:"debug" json:"level" yaml:"level" property:"level"`
-	Development       bool                   `default:"false" json:"development" yaml:"development" property:"development"`
-	DisableCaller     bool                   `default:"false" json:"disable_caller" yaml:"disable_caller" property:"disable_caller"`
-	DisableStacktrace bool                   `default:"false" json:"disable_stacktrace" yaml:"disable_stacktrace" property:"disable_stacktrace"`
-	Encoding          string                 `default:"console" json:"encoding" yaml:"encoding" property:"encoding"`
-	EncoderConfig     EncoderConfig          `default:"" json:"encoder_config" yaml:"encoder_config" property:"encoder_config"`
-	OutputPaths       []string               `default:"[\"stderr\"]" json:"output_paths" yaml:"output_paths" property:"output_paths"`
-	ErrorOutputPaths  []string               `default:"[\"stderr\"]" json:"error_output_paths" yaml:"error_output_paths" property:"error_output_paths"`
-	InitialFields     map[string]interface{} `default:"" json:"initial_fields" yaml:"initial_fields" property:"initial_fields"`
+	Level             string                 `default:"debug" json:"level,omitempty" yaml:"level" property:"level"`
+	Development       bool                   `default:"false" json:"development,omitempty" yaml:"development" property:"development"`
+	DisableCaller     bool                   `default:"false" json:"disable-caller,omitempty" yaml:"disable-caller" property:"disable-caller"`
+	DisableStacktrace bool                   `default:"false" json:"disable-stacktrace,omitempty" yaml:"disable-stacktrace" property:"disable-stacktrace"`
+	Encoding          string                 `default:"console" json:"encoding,omitempty" yaml:"encoding" property:"encoding"`
+	EncoderConfig     EncoderConfig          `default:"" json:"encoder-config,omitempty" yaml:"encoder-config" property:"encoder-config"`
+	OutputPaths       []string               `default:"[\"stderr\"]" json:"output-paths,omitempty" yaml:"output-paths" property:"output-paths"`
+	ErrorOutputPaths  []string               `default:"[\"stderr\"]" json:"error-output-paths,omitempty" yaml:"error-output-paths" property:"error-output-paths"`
+	InitialFields     map[string]interface{} `default:"" json:"initial-fields,omitempty" yaml:"initial-fields" property:"initial-fields"`
 }
 
 type LoggerConfig struct {
-	LumberjackConfig *lumberjack.Logger `yaml:"lumberjackConfig"`
-	ZapConfig        ZapConfig          `yaml:"zapConfig"`
+	LumberjackConfig *lumberjack.Logger `yaml:"lumberjack-config" json:"lumberjack-config,omitempty" property:"lumberjack-config"`
+	ZapConfig        ZapConfig          `yaml:"zap-config" json:"zap-config,omitempty" property:"zap-config"`
 }
 
 type EncoderConfig struct {
-	MessageKey     string            `default:"message" json:"message_key" yaml:"message_key" property:"message_key"`
-	LevelKey       string            `default:"level" json:"level_key" yaml:"level_key" property:"level_key"`
-	TimeKey        string            `default:"time" json:"time_key" yaml:"time_key" property:"time_key"`
-	NameKey        string            `default:"logger" json:"name_key" yaml:"name_key" property:"name_key"`
-	CallerKey      string            `default:"caller" json:"caller_key" yaml:"caller_key" property:"caller_key"`
-	StacktraceKey  string            `default:"stacktrace" json:"stacktrace_key" yaml:"stacktrace_key" property:"stacktrace_key"`
-	EncodeLevel    string            `default:"capitalColor" json:"level_encoder" yaml:"level_encoder" property:"level_encoder"`
-	EncodeTime     string            `default:"iso8601" json:"time_encoder" yaml:"time_encoder" property:"time_encoder"`
-	EncodeDuration string            `default:"seconds" json:"duration_encoder" yaml:"duration_encoder" property:"duration_encoder"`
-	EncodeCaller   string            `default:"short" json:"caller_encoder" yaml:"caller_encoder" property:"caller_encoder"`
+	MessageKey     string            `default:"message" json:"message-key,omitempty" yaml:"message-key" property:"message-key"`
+	LevelKey       string            `default:"level" json:"level-key,omitempty" yaml:"level-key" property:"level-key"`
+	TimeKey        string            `default:"time" json:"time-key,omitempty" yaml:"time-key" property:"time-key"`
+	NameKey        string            `default:"logger" json:"name-key,omitempty" yaml:"name-key" property:"name-key"`
+	CallerKey      string            `default:"caller" json:"caller-key,omitempty" yaml:"caller-key" property:"caller-key"`
+	StacktraceKey  string            `default:"stacktrace" json:"stacktrace-key,omitempty" yaml:"stacktrace-key" property:"stacktrace-key"`
+	EncodeLevel    string            `default:"capitalColor" json:"level-encoder" yaml:"level-encoder" property:"level-encoder"`
+	EncodeTime     string            `default:"iso8601" json:"time-encoder" yaml:"time-encoder" property:"time-encoder"`
+	EncodeDuration string            `default:"seconds" json:"duration-encoder" yaml:"duration-encoder" property:"duration-encoder"`
+	EncodeCaller   string            `default:"short" json:"caller-encoder" yaml:"calle-encoder" property:"caller-encoder"`
 	Params         map[string]string `yaml:"params" json:"params,omitempty"`
 }
 
@@ -77,12 +78,15 @@ func initLoggerConfig(rc *RootConfig) error {
 		return err
 	}
 
-	loggerConfig := &logger.Config{}
-	if err = yaml.UnmarshalYML(byte, loggerConfig); err != nil {
+	logConf := &logger.Config{}
+	if err = yaml.UnmarshalYML(byte, logConf); err != nil {
 		return err
 	}
-
-	logger.InitLogger(loggerConfig)
+	err = logConfig.ZapConfig.EncoderConfig.setEncoderConfig(&(logConf.ZapConfig.EncoderConfig))
+	if err != nil {
+		return err
+	}
+	logger.InitLogger(logConf)
 	return nil
 }
 
@@ -91,6 +95,32 @@ func (l *LoggerConfig) check() error {
 		return err
 	}
 	return verify(l)
+}
+
+func (e *EncoderConfig) setEncoderConfig(encoderConfig *zapcore.EncoderConfig) error {
+	encoderConfig.MessageKey = e.MessageKey
+	encoderConfig.LevelKey = e.LevelKey
+	encoderConfig.TimeKey = e.TimeKey
+	encoderConfig.NameKey = e.NameKey
+	encoderConfig.CallerKey = e.CallerKey
+	encoderConfig.StacktraceKey = e.StacktraceKey
+
+	if err := encoderConfig.EncodeLevel.UnmarshalText([]byte(e.EncodeLevel)); err != nil {
+		return err
+	}
+
+	if err := encoderConfig.EncodeTime.UnmarshalText([]byte(e.EncodeTime)); err != nil {
+		return err
+	}
+
+	if err := encoderConfig.EncodeDuration.UnmarshalText([]byte(e.EncodeDuration)); err != nil {
+		return err
+	}
+
+	if err := encoderConfig.EncodeCaller.UnmarshalText([]byte(e.EncodeCaller)); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (l *LoggerConfig) getUrlMap() url.Values {
