@@ -387,6 +387,13 @@ func suiteMethod(method reflect.Method) *MethodType {
 		return nil
 	}
 
+	if outNum != 1 && outNum != 2 {
+		// todo 1.5/3.0's complicated logger
+		logger.Warnf("method %s of mtype %v has wrong number of in out parameters %d; needs exactly 1/2",
+			mname, mtype.String(), outNum)
+		return nil
+	}
+
 	// The latest return type of the method must be error.
 	if returnType := mtype.Out(outNum - 1); returnType != typeOfError {
 		if mname != METHOD_MAPPER {
