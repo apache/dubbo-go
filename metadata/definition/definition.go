@@ -21,7 +21,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"strings"
+	"time"
+)
+
+import (
+	hessian "github.com/apache/dubbo-go-hessian2"
 )
 
 import (
@@ -36,10 +42,10 @@ type ServiceDefiner interface {
 
 // ServiceDefinition is the describer of service definition
 type ServiceDefinition struct {
-	CanonicalName string
-	CodeSource    string
-	Methods       []MethodDefinition
-	Types         []TypeDefinition
+	CanonicalName string             `json:"canonicalName"`
+	CodeSource    string             `json:"codeSource"`
+	Methods       []MethodDefinition `json:"methods"`
+	Types         []TypeDefinition   `json:"types"`
 }
 
 // ToBytes convert ServiceDefinition to json string
@@ -76,20 +82,20 @@ type FullServiceDefinition struct {
 
 // MethodDefinition is the describer of method definition
 type MethodDefinition struct {
-	Name           string
-	ParameterTypes []string
-	ReturnType     string
-	Parameters     []TypeDefinition
+	Name           string           `json:"name"`
+	ParameterTypes []string         `json:"parameterTypes"`
+	ReturnType     string           `json:"returnType"`
+	Parameters     []TypeDefinition `json:"parameters"`
 }
 
 // TypeDefinition is the describer of type definition
 type TypeDefinition struct {
-	Id              string
-	Type            string
-	Items           []TypeDefinition
-	Enums           []string
-	Properties      map[string]TypeDefinition
-	TypeBuilderName string
+	Id              string                    `json:"id"`
+	Type            string                    `json:"type"`
+	Items           []TypeDefinition          `json:"items"`
+	Enums           []string                  `json:"enums"`
+	Properties      map[string]TypeDefinition `json:"properties"`
+	TypeBuilderName string                    `json:"typeBuilderName"`
 }
 
 // BuildServiceDefinition can build service definition which will be used to describe a service
@@ -99,15 +105,26 @@ func BuildServiceDefinition(service common.Service, url *common.URL) *ServiceDef
 
 	for k, m := range service.Method() {
 		var paramTypes []string
+		var param string
 		if len(m.ArgsType()) > 0 {
 			for _, t := range m.ArgsType() {
-				paramTypes = append(paramTypes, t.Kind().String())
+				if t.Kind() == reflect.Ptr {
+					param = getArgType(reflect.New(t).Interface())
+				} else {
+					param = t.Kind().String()
+				}
+				paramTypes = append(paramTypes, param)
 			}
 		}
 
 		var returnType string
+
 		if m.ReplyType() != nil {
-			returnType = m.ReplyType().Kind().String()
+			if m.ReplyType().Kind() == reflect.Ptr {
+				returnType = getArgType(reflect.New(m.ReplyType()).Interface())
+			} else {
+				returnType = m.ReplyType().Kind().String()
+			}
 		}
 
 		methodD := MethodDefinition{
@@ -134,4 +151,102 @@ func ServiceDescriperBuild(serviceName string, group string, version string) str
 		buf.WriteString(version)
 	}
 	return buf.String()
+}
+
+func getArgType(v interface{}) string {
+	if v == nil {
+		return "V"
+	}
+
+	v = reflect.ValueOf(v).Elem().Interface()
+
+	switch v.(type) {
+	// Serialized tags for base types
+	case nil:
+		return "V"
+	case bool:
+		return "Z"
+	case []bool:
+		return "[Z"
+	case byte:
+		return "B"
+	case []byte:
+		return "[B"
+	case int8:
+		return "B"
+	case []int8:
+		return "[B"
+	case int16:
+		return "S"
+	case []int16:
+		return "[S"
+	case uint16: // Equivalent to Char of Java
+		return "C"
+	case []uint16:
+		return "[C"
+	// case rune:
+	//	return "C"
+	case int:
+		return "J"
+	case []int:
+		return "[J"
+	case int32:
+		return "I"
+	case []int32:
+		return "[I"
+	case int64:
+		return "J"
+	case []int64:
+		return "[J"
+	case time.Time:
+		return "java.util.Date"
+	case []time.Time:
+		return "[Ljava.util.Date"
+	case float32:
+		return "F"
+	case []float32:
+		return "[F"
+	case float64:
+		return "D"
+	case []float64:
+		return "[D"
+	case string:
+		return "java.lang.String"
+	case []string:
+		return "[Ljava.lang.String;"
+	case []hessian.Object:
+		return "[Ljava.lang.Object;"
+	case map[interface{}]interface{}:
+		// return  "java.util.HashMap"
+		return "java.util.Map"
+	case hessian.POJO:
+		return v.(hessian.POJO).JavaClassName()
+	//  Serialized tags for complex types
+	default:
+		t := reflect.TypeOf(v)
+		if reflect.Ptr == t.Kind() {
+			t = reflect.TypeOf(reflect.ValueOf(v).Elem())
+		}
+		switch t.Kind() {
+		case reflect.Struct:
+			v, ok := v.(hessian.POJO)
+			if ok {
+				return v.JavaClassName()
+			}
+			return "java.lang.Object"
+		case reflect.Slice, reflect.Array:
+			if t.Elem().Kind() == reflect.Struct {
+				return "[Ljava.lang.Object;"
+			}
+			// return "java.util.ArrayList"
+			return "java.util.List"
+		case reflect.Map: // Enter here, map may be map[string]int
+			return "java.util.Map"
+		default:
+			return ""
+		}
+	}
+
+	// unreachable
+	// return "java.lang.RuntimeException"
 }

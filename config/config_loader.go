@@ -132,7 +132,7 @@ func loadConsumerConfig() {
 	}
 
 	// start the metadata report if config set
-	if err := startMetadataReport(GetApplicationConfig().MetadataType, GetBaseConfig().MetadataReportConfig); err != nil {
+	if err := StartMetadataReport(GetApplicationConfig().MetadataType, GetBaseConfig().MetadataReportConfig); err != nil {
 		logger.Errorf("Provider starts metadata report error, and the error is {%#v}", err)
 		return
 	}
@@ -220,7 +220,7 @@ func loadProviderConfig() {
 	}
 
 	// start the metadata report if config set
-	if err := startMetadataReport(GetApplicationConfig().MetadataType, GetBaseConfig().MetadataReportConfig); err != nil {
+	if err := StartMetadataReport(GetApplicationConfig().MetadataType, GetBaseConfig().MetadataReportConfig); err != nil {
 		logger.Errorf("Provider starts metadata report error, and the error is {%#v}", err)
 		return
 	}
@@ -375,7 +375,8 @@ func GetRPCService(name string) common.RPCService {
 
 // RPCService create rpc service for consumer
 func RPCService(service common.RPCService) {
-	consumerConfig.References[service.Reference()].Implement(service)
+	ref := common.GetReference(service)
+	consumerConfig.References[ref].Implement(service)
 }
 
 // GetMetricConfig find the MetricConfig

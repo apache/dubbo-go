@@ -34,12 +34,41 @@ import (
 	"github.com/apache/dubbo-go/common/logger"
 )
 
-// RPCService
+// RPCService the type alias of interface{}
+type RPCService = interface{}
+
+// ReferencedRPCService
 // rpc service interface
-type RPCService interface {
+type ReferencedRPCService interface {
 	// Reference:
 	// rpc service id or reference id
 	Reference() string
+}
+
+// GetReference return the reference id of the service.
+// If the service implemented the ReferencedRPCService interface,
+// it will call the Reference method. If not, it will
+// return the struct name as the reference id.
+func GetReference(service RPCService) string {
+	if s, ok := service.(ReferencedRPCService); ok {
+		return s.Reference()
+	}
+
+	ref := ""
+	sType := reflect.TypeOf(service)
+	kind := sType.Kind()
+	switch kind {
+	case reflect.Struct:
+		ref = sType.Name()
+	case reflect.Ptr:
+		sName := sType.Elem().Name()
+		if sName != "" {
+			ref = sName
+		} else {
+			ref = sType.Elem().Field(0).Name
+		}
+	}
+	return ref
 }
 
 // AsyncCallbackService callback interface for async
@@ -358,12 +387,6 @@ func suiteMethod(method reflect.Method) *MethodType {
 		return nil
 	}
 
-	if outNum != 1 && outNum != 2 {
-		logger.Warnf("method %s of mtype %v has wrong number of in out parameters %d; needs exactly 1/2",
-			mname, mtype.String(), outNum)
-		return nil
-	}
-
 	// The latest return type of the method must be error.
 	if returnType := mtype.Out(outNum - 1); returnType != typeOfError {
 		if mname != METHOD_MAPPER {
@@ -372,7 +395,7 @@ func suiteMethod(method reflect.Method) *MethodType {
 		return nil
 	}
 
-	// replyType
+	// todo, for multi reply condition, replyType is empty
 	if outNum == 2 {
 		replyType = mtype.Out(0)
 		if !isExportedOrBuiltinType(replyType) {

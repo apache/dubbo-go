@@ -132,22 +132,6 @@ func (mts *MetadataService) PublishServiceDefinition(url *common.URL) error {
 			return nil
 		}
 		logger.Errorf("publishProvider interfaceName is empty . providerUrl:%v ", url)
-	} else {
-		params := make(map[string]string, len(url.GetParams()))
-		url.RangeParams(func(key, value string) bool {
-			params[key] = value
-			return true
-		})
-		id := &identifier.MetadataIdentifier{
-			BaseMetadataIdentifier: identifier.BaseMetadataIdentifier{
-				ServiceInterface: interfaceName,
-				Version:          url.GetParam(constant.VERSION_KEY, ""),
-				Group:            url.GetParam(constant.GROUP_KEY, constant.DUBBO),
-				Side:             url.GetParam(constant.SIDE_KEY, "consumer"),
-			},
-		}
-		mts.delegateReport.StoreConsumerMetadata(id, params)
-		return nil
 	}
 
 	return nil

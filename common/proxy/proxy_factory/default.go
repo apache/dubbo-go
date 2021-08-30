@@ -137,10 +137,10 @@ func (pi *ProxyInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 
 	// prepare replyv
 	var replyv reflect.Value
-	if method.ReplyType() == nil && len(method.ArgsType()) > 0 {
-		replyv = reflect.New(method.ArgsType()[len(method.ArgsType())-1].Elem())
-		in = append(in, replyv)
-	}
+	//if method.ReplyType() == nil && len(method.ArgsType()) > 0 {
+	//	replyv = reflect.New(method.ArgsType()[len(method.ArgsType())-1].Elem())
+	//	in = append(in, replyv)
+	//}
 
 	returnValues := method.Method().Func.Call(in)
 

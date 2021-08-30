@@ -129,24 +129,25 @@ func DefaultProxyImplementFunc(p *Proxy, v common.RPCService) {
 	makeDubboCallProxy := func(methodName string, outs []reflect.Type) func(in []reflect.Value) []reflect.Value {
 		return func(in []reflect.Value) []reflect.Value {
 			var (
-				err    error
-				inv    *invocation_impl.RPCInvocation
-				inIArr []interface{}
-				inVArr []reflect.Value
-				reply  reflect.Value
+				err            error
+				inv            *invocation_impl.RPCInvocation
+				inIArr         []interface{}
+				inVArr         []reflect.Value
+				reply          reflect.Value
+				replyEmptyFlag bool
 			)
 			if methodName == "Echo" {
 				methodName = "$echo"
 			}
 
-			if len(outs) == 2 {
+			if len(outs) == 2 { // return (reply, error)
 				if outs[0].Kind() == reflect.Ptr {
 					reply = reflect.New(outs[0].Elem())
 				} else {
 					reply = reflect.New(outs[0])
 				}
-			} else {
-				reply = valueOf
+			} else { // only return error
+				replyEmptyFlag = true
 			}
 
 			start := 0
@@ -159,10 +160,6 @@ func DefaultProxyImplementFunc(p *Proxy, v common.RPCService) {
 						invCtx = in[0].Interface().(context.Context)
 					}
 					start += 1
-				}
-				if len(outs) == 1 && in[end-1].Type().Kind() == reflect.Ptr {
-					end -= 1
-					reply = in[len(in)-1]
 				}
 			}
 
@@ -184,8 +181,11 @@ func DefaultProxyImplementFunc(p *Proxy, v common.RPCService) {
 			}
 
 			inv = invocation_impl.NewRPCInvocationWithOptions(invocation_impl.WithMethodName(methodName),
-				invocation_impl.WithArguments(inIArr), invocation_impl.WithReply(reply.Interface()),
+				invocation_impl.WithArguments(inIArr),
 				invocation_impl.WithCallBack(p.callback), invocation_impl.WithParameterValues(inVArr))
+			if !replyEmptyFlag {
+				inv.SetReply(reply.Interface())
+			}
 
 			for k, value := range p.attachments {
 				inv.SetAttachments(k, value)
@@ -215,8 +215,6 @@ func DefaultProxyImplementFunc(p *Proxy, v common.RPCService) {
 				} else {
 					logger.Warnf("result err: %v", err)
 				}
-			} else {
-				logger.Debugf("[makeDubboCallProxy] result: %v, err: %v", result.Result(), err)
 			}
 			if len(outs) == 1 {
 				return []reflect.Value{reflect.ValueOf(&err).Elem()}
@@ -251,7 +249,7 @@ func DefaultProxyImplementFunc(p *Proxy, v common.RPCService) {
 				continue
 			}
 
-			var funcOuts = make([]reflect.Type, outNum)
+			funcOuts := make([]reflect.Type, outNum)
 			for i := 0; i < outNum; i++ {
 				funcOuts[i] = t.Type.Out(i)
 			}
