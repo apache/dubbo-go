@@ -462,6 +462,14 @@ func WithServiceCluster(cluster string) ServiceConfigOpt {
 	}
 }
 
+// WithServiceParams returns ServiceConfigOpt with given params map @params
+func WithServiceParams(params map[string]string) ServiceConfigOpt {
+	return func(config *ServiceConfig) *ServiceConfig {
+		config.Params = params
+		return config
+	}
+}
+
 // WithServiceMethod returns ServiceConfigOpt with given @name, @retries and load balance @lb
 func WithServiceMethod(name, retries, lb string) ServiceConfigOpt {
 	return func(config *ServiceConfig) *ServiceConfig {
