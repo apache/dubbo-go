@@ -46,27 +46,35 @@ import (
 var srvConf *ServerConfig
 
 func initServer(protocol string) {
-	// load clientconfig from provider_config
+	if protocol == "" {
+		return
+	}
+
+	// load server config from rootConfig.Protocols
 	// default use dubbo
 	if config.GetApplicationConfig() == nil {
 		return
 	}
-	protocolConf := config.GetProviderConfig().ProtocolConf
+	if config.GetRootConfig().Protocols == nil {
+		return
+	}
+
+	protocolConf := config.GetRootConfig().Protocols[protocol]
 	defaultServerConfig := GetDefaultServerConfig()
 	if protocolConf == nil {
-		logger.Info("protocol_conf default use dubbo config")
+		logger.Info("use default getty server config")
 	} else {
-		dubboConf := protocolConf.(map[interface{}]interface{})[protocol]
-		if dubboConf == nil {
-			logger.Warnf("dubboConf is nil")
+		gettyServerConfig := protocolConf.Params
+		if gettyServerConfig == nil {
+			logger.Warnf("gettyServerConfig is nil")
 			return
 		}
 
-		dubboConfByte, err := yaml.Marshal(dubboConf)
+		gettyServerConfigBytes, err := yaml.Marshal(gettyServerConfig)
 		if err != nil {
 			panic(err)
 		}
-		err = yaml.Unmarshal(dubboConfByte, &defaultServerConfig)
+		err = yaml.Unmarshal(gettyServerConfigBytes, &defaultServerConfig)
 		if err != nil {
 			panic(err)
 		}
