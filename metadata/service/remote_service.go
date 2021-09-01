@@ -23,6 +23,7 @@ import (
 )
 
 type RemoteMetadataService interface {
+	MetadataService
 	// PublishMetadata publish the medata info of service from report
 	PublishMetadata(service string)
 	// GetMetadata get the medata info of service from report

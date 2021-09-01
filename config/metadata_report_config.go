@@ -30,6 +30,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/config/instance"
+	"dubbo.apache.org/dubbo-go/v3/metadata/service"
 )
 
 // MetadataReportConfig is app level configuration
@@ -49,12 +50,12 @@ func (MetadataReportConfig) Prefix() string {
 	return constant.MetadataReportPrefix
 }
 
-func (m *MetadataReportConfig) Init(rc *RootConfig) error {
-	if m == nil {
+func (c *MetadataReportConfig) Init(rc *RootConfig) error {
+	if c == nil {
 		return nil
 	}
-	m.MetadataReportType = rc.Application.MetadataType
-	return m.StartMetadataReport()
+	c.MetadataReportType = rc.Application.MetadataType
+	return c.StartMetadataReport()
 }
 
 // nolint
@@ -104,12 +105,19 @@ func publishServiceDefinition(url *common.URL) {
 // selectMetadataServiceExportedURL get already be exported url
 func selectMetadataServiceExportedURL() *common.URL {
 	var selectedUrl *common.URL
-	metaDataService, err := extension.GetLocalMetadataService("")
+	var mds service.MetadataService
+	var err error
+	if GetApplicationConfig().MetadataType == constant.DEFAULT_METADATA_STORAGE_TYPE {
+		mds, err = extension.GetLocalMetadataService("")
+	} else {
+		mds, err = extension.GetRemoteMetadataService()
+	}
 	if err != nil {
 		fmt.Println("selectMetadataServiceExportedURL err = ", err)
 		return nil
 	}
-	urlList, err := metaDataService.GetExportedURLs(constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE)
+
+	urlList, err := mds.GetExportedURLs(constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE)
 	if err != nil {
 		panic(err)
 	}
