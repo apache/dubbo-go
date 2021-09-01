@@ -98,8 +98,10 @@ func (rc *RootConfig) Init() error {
 	if err := initProtocolsConfig(rc); err != nil {
 		return err
 	}
-	if err := initRegistriesConfig(rc); err != nil {
-		return err
+	for i, _ := range rc.Registries {
+		if err := rc.Registries[i].Init(); err != nil {
+			return err
+		}
 	}
 	if err := initLoggerConfig(rc); err != nil {
 		return err

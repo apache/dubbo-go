@@ -137,8 +137,7 @@ func (rc *ReferenceConfig) Refer(_ interface{}) {
 	}
 
 	if len(rc.urls) == 1 {
-
-		rc.invoker = extension.GetProtocol("registry").Refer(rc.urls[0])
+		rc.invoker = extension.GetProtocol(rc.urls[0].Protocol).Refer(rc.urls[0])
 		// c.URL != "" is direct call
 		if rc.URL != "" {
 			//filter
