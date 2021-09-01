@@ -187,20 +187,21 @@ func (proto *registryProtocol) Export(invoker protocol.Invoker) protocol.Exporte
 	serviceConfigurationListener.OverrideUrl(providerUrl)
 
 	var reg registry.Registry
-	if regI, loaded := proto.registries.Load(registryUrl.Key()); !loaded {
-		reg = getRegistry(registryUrl)
-		proto.registries.Store(registryUrl.Key(), reg)
-		logger.Infof("Export proto:%p registries address:%p", proto, proto.registries)
-	} else {
-		reg = regI.(registry.Registry)
-	}
-
-	registeredProviderUrl := getUrlToRegistry(providerUrl, registryUrl)
-	err := reg.Register(registeredProviderUrl)
-	if err != nil {
-		logger.Errorf("provider service %v register registry %v error, error message is %s",
-			providerUrl.Key(), registryUrl.Key(), err.Error())
-		return nil
+	if registryUrl.Protocol != "" {
+		if regI, loaded := proto.registries.Load(registryUrl.Key()); !loaded {
+			reg = getRegistry(registryUrl)
+			proto.registries.Store(registryUrl.Key(), reg)
+			logger.Infof("Export proto:%p registries address:%p", proto, proto.registries)
+		} else {
+			reg = regI.(registry.Registry)
+		}
+		registeredProviderUrl := getUrlToRegistry(providerUrl, registryUrl)
+		err := reg.Register(registeredProviderUrl)
+		if err != nil {
+			logger.Errorf("provider service %v register registry %v error, error message is %s",
+				providerUrl.Key(), registryUrl.Key(), err.Error())
+			return nil
+		}
 	}
 
 	key := getCacheKey(invoker)
@@ -215,11 +216,13 @@ func (proto *registryProtocol) Export(invoker protocol.Invoker) protocol.Exporte
 		logger.Infof("The exporter has not been cached, and will return a new exporter!")
 	}
 
-	go func() {
-		if err = reg.Subscribe(overriderUrl, overrideSubscribeListener); err != nil {
-			logger.Warnf("reg.subscribe(overriderUrl:%v) = error:%v", overriderUrl, err)
-		}
-	}()
+	if registryUrl.Protocol != "" {
+		go func() {
+			if err := reg.Subscribe(overriderUrl, overrideSubscribeListener); err != nil {
+				logger.Warnf("reg.subscribe(overriderUrl:%v) = error:%v", overriderUrl, err)
+			}
+		}()
+	}
 	return cachedExporter.(protocol.Exporter)
 }
 
