@@ -36,21 +36,21 @@ const (
 type (
 	// GettySessionParam is session configuration for getty
 	GettySessionParam struct {
-		CompressEncoding bool   `default:"false" yaml:"compress_encoding" json:"compress_encoding,omitempty"`
-		TcpNoDelay       bool   `default:"true" yaml:"tcp_no_delay" json:"tcp_no_delay,omitempty"`
-		TcpKeepAlive     bool   `default:"true" yaml:"tcp_keep_alive" json:"tcp_keep_alive,omitempty"`
-		KeepAlivePeriod  string `default:"180s" yaml:"keep_alive_period" json:"keep_alive_period,omitempty"`
+		CompressEncoding bool   `default:"false" yaml:"compress-encoding" json:"compress-encoding,omitempty"`
+		TcpNoDelay       bool   `default:"true" yaml:"tcp-no-delay" json:"tcp-no-delay,omitempty"`
+		TcpKeepAlive     bool   `default:"true" yaml:"tcp-keep-alive" json:"tcp-keep-alive,omitempty"`
+		KeepAlivePeriod  string `default:"180s" yaml:"keep-alive-period" json:"keep-alive-period,omitempty"`
 		keepAlivePeriod  time.Duration
-		TcpRBufSize      int    `default:"262144" yaml:"tcp_r_buf_size" json:"tcp_r_buf_size,omitempty"`
-		TcpWBufSize      int    `default:"65536" yaml:"tcp_w_buf_size" json:"tcp_w_buf_size,omitempty"`
-		TcpReadTimeout   string `default:"1s" yaml:"tcp_read_timeout" json:"tcp_read_timeout,omitempty"`
+		TcpRBufSize      int    `default:"262144" yaml:"tcp-r-buf-size" json:"tcp-r-buf-size,omitempty"`
+		TcpWBufSize      int    `default:"65536" yaml:"tcp-w-buf-size" json:"tcp-w-buf-size,omitempty"`
+		TcpReadTimeout   string `default:"1s" yaml:"tcp-read-timeout" json:"tcp-read-timeout,omitempty"`
 		tcpReadTimeout   time.Duration
-		TcpWriteTimeout  string `default:"5s" yaml:"tcp_write_timeout" json:"tcp_write_timeout,omitempty"`
+		TcpWriteTimeout  string `default:"5s" yaml:"tcp-write-timeout" json:"tcp-write-timeout,omitempty"`
 		tcpWriteTimeout  time.Duration
-		WaitTimeout      string `default:"7s" yaml:"wait_timeout" json:"wait_timeout,omitempty"`
+		WaitTimeout      string `default:"7s" yaml:"wait-timeout" json:"wait-timeout,omitempty"`
 		waitTimeout      time.Duration
-		MaxMsgLen        int    `default:"1024" yaml:"max_msg_len" json:"max_msg_len,omitempty"`
-		SessionName      string `default:"rpc" yaml:"session_name" json:"session_name,omitempty"`
+		MaxMsgLen        int    `default:"1024" yaml:"max-msg-len" json:"max-msg-len,omitempty"`
+		SessionName      string `default:"rpc" yaml:"session-name" json:"session-name,omitempty"`
 	}
 
 	// ServerConfig holds supported types by the multiconfig package
@@ -58,50 +58,50 @@ type (
 		SSLEnabled bool
 
 		// heartbeat
-		HeartbeatPeriod string `default:"60s" yaml:"heartbeat_period" json:"heartbeat_period,omitempty"`
+		HeartbeatPeriod string `default:"60s" yaml:"heartbeat-period" json:"heartbeat-period,omitempty"`
 		heartbeatPeriod time.Duration
 
 		// heartbeat timeout
-		HeartbeatTimeout string `default:"5s" yaml:"heartbeat_timeout" json:"heartbeat_timeout,omitempty"`
+		HeartbeatTimeout string `default:"5s" yaml:"heartbeat-timeout" json:"heartbeat-timeout,omitempty"`
 		heartbeatTimeout time.Duration
 
 		// session
-		SessionTimeout string `default:"60s" yaml:"session_timeout" json:"session_timeout,omitempty"`
+		SessionTimeout string `default:"60s" yaml:"session-timeout" json:"session-timeout,omitempty"`
 		sessionTimeout time.Duration
-		SessionNumber  int `default:"1000" yaml:"session_number" json:"session_number,omitempty"`
+		SessionNumber  int `default:"1000" yaml:"session-number" json:"session-number,omitempty"`
 
-		// grpool
-		GrPoolSize  int `default:"0" yaml:"gr_pool_size" json:"gr_pool_size,omitempty"`
-		QueueLen    int `default:"0" yaml:"queue_len" json:"queue_len,omitempty"`
-		QueueNumber int `default:"0" yaml:"queue_number" json:"queue_number,omitempty"`
+		// gr pool
+		GrPoolSize  int `default:"0" yaml:"gr-pool-size" json:"gr-pool-size,omitempty"`
+		QueueLen    int `default:"0" yaml:"queue-len" json:"queue-len,omitempty"`
+		QueueNumber int `default:"0" yaml:"queue-number" json:"queue-number,omitempty"`
 
 		// session tcp parameters
 		GettySessionParam GettySessionParam `required:"true" yaml:",inline" json:",inline"`
 	}
 
-	// ClientConfig holds supported types by the multiconfig package
+	// ClientConfig holds supported types by the multi config package
 	ClientConfig struct {
-		ReconnectInterval int `default:"0" yaml:"reconnect_interval" json:"reconnect_interval,omitempty"`
+		ReconnectInterval int `default:"0" yaml:"reconnect-interval" json:"reconnect-interval,omitempty"`
 
 		// session pool
-		ConnectionNum int `default:"16" yaml:"connection_number" json:"connection_number,omitempty"`
+		ConnectionNum int `default:"16" yaml:"connection-number" json:"connection-number,omitempty"`
 
 		// heartbeat
-		HeartbeatPeriod string `default:"60s" yaml:"heartbeat_period" json:"heartbeat_period,omitempty"`
+		HeartbeatPeriod string `default:"60s" yaml:"heartbeat-period" json:"heartbeat-period,omitempty"`
 		heartbeatPeriod time.Duration
 
 		// heartbeat timeout
-		HeartbeatTimeout string `default:"5s" yaml:"heartbeat_timeout" json:"heartbeat_timeout,omitempty"`
+		HeartbeatTimeout string `default:"5s" yaml:"heartbeat-timeout" json:"heartbeat-timeout,omitempty"`
 		heartbeatTimeout time.Duration
 
 		// session
-		SessionTimeout string `default:"60s" yaml:"session_timeout" json:"session_timeout,omitempty"`
+		SessionTimeout string `default:"60s" yaml:"session-timeout" json:"session-timeout,omitempty"`
 		sessionTimeout time.Duration
 
-		// grpool
-		GrPoolSize  int `default:"0" yaml:"gr_pool_size" json:"gr_pool_size,omitempty"`
-		QueueLen    int `default:"0" yaml:"queue_len" json:"queue_len,omitempty"`
-		QueueNumber int `default:"0" yaml:"queue_number" json:"queue_number,omitempty"`
+		// gr pool
+		GrPoolSize  int `default:"0" yaml:"gr-pool-size" json:"gr-pool-size,omitempty"`
+		QueueLen    int `default:"0" yaml:"queue-len" json:"queue-len,omitempty"`
+		QueueNumber int `default:"0" yaml:"queue-number" json:"queue-number,omitempty"`
 
 		// session tcp parameters
 		GettySessionParam GettySessionParam `required:"true" yaml:",inline" json:",inline"`
@@ -158,7 +158,7 @@ func GetDefaultServerConfig() ServerConfig {
 	}
 }
 
-// CheckValidity confirm getty sessian params
+// CheckValidity confirm getty session params
 func (c *GettySessionParam) CheckValidity() error {
 	var err error
 
@@ -203,7 +203,7 @@ func (c *ClientConfig) CheckValidity() error {
 	}
 
 	if c.heartbeatPeriod >= time.Duration(config.MaxWheelTimeSpan) {
-		return perrors.WithMessagef(err, "heartbeat_period %s should be less than %s",
+		return perrors.WithMessagef(err, "heartbeat-period %s should be less than %s",
 			c.HeartbeatPeriod, time.Duration(config.MaxWheelTimeSpan))
 	}
 
@@ -231,7 +231,7 @@ func (c *ServerConfig) CheckValidity() error {
 	}
 
 	if c.heartbeatPeriod >= time.Duration(config.MaxWheelTimeSpan) {
-		return perrors.WithMessagef(err, "heartbeat_period %s should be less than %s",
+		return perrors.WithMessagef(err, "heartbeat-period %s should be less than %s",
 			c.HeartbeatPeriod, time.Duration(config.MaxWheelTimeSpan))
 	}
 
@@ -246,7 +246,7 @@ func (c *ServerConfig) CheckValidity() error {
 	}
 
 	if c.sessionTimeout >= time.Duration(config.MaxWheelTimeSpan) {
-		return perrors.WithMessagef(err, "session_timeout %s should be less than %s",
+		return perrors.WithMessagef(err, "session-timeout %s should be less than %s",
 			c.SessionTimeout, time.Duration(config.MaxWheelTimeSpan))
 	}
 
