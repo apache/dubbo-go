@@ -89,6 +89,9 @@ func (RootConfig) Prefix() string {
 
 // Init init config
 func (rc *RootConfig) Init() error {
+	if err := initLoggerConfig(rc); err != nil {
+		return err
+	}
 	if err := rc.ConfigCenter.Init(rc); err != nil {
 		logger.Info("config center doesn't start.")
 	}
@@ -102,9 +105,6 @@ func (rc *RootConfig) Init() error {
 		if err := rc.Registries[i].Init(); err != nil {
 			return err
 		}
-	}
-	if err := initLoggerConfig(rc); err != nil {
-		return err
 	}
 	if err := initServiceDiscoveryConfig(rc); err != nil {
 		return err

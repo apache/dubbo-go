@@ -18,27 +18,12 @@
 package logger
 
 import (
-	"flag"
-	"io/ioutil"
-	"os"
-	"path"
-)
-
-import (
 	"github.com/apache/dubbo-getty"
 
 	"github.com/natefinch/lumberjack"
 
-	perrors "github.com/pkg/errors"
-
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-
-	"gopkg.in/yaml.v2"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
 var logger Logger
@@ -50,8 +35,8 @@ type DubboLogger struct {
 }
 
 type Config struct {
-	LumberjackConfig *lumberjack.Logger `yaml:"lumberjackConfig"`
-	ZapConfig        *zap.Config        `yaml:"zapConfig"`
+	LumberjackConfig *lumberjack.Logger `yaml:"lumberjack-config"`
+	ZapConfig        *zap.Config        `yaml:"zap-config"`
 }
 
 // Logger is the interface for Logger types
@@ -65,56 +50,6 @@ type Logger interface {
 	Warnf(fmt string, args ...interface{})
 	Errorf(fmt string, args ...interface{})
 	Debugf(fmt string, args ...interface{})
-}
-
-func init() {
-	// forbidden to executing twice.
-	if logger != nil {
-		return
-	}
-
-	fs := flag.NewFlagSet("log", flag.ContinueOnError)
-	logConfFile := fs.String("logConf", os.Getenv(constant.APP_LOG_CONF_FILE), "default log config path")
-	fs.Parse(os.Args[1:])
-	for len(fs.Args()) != 0 {
-		fs.Parse(fs.Args()[1:])
-	}
-	if *logConfFile == "" {
-		*logConfFile = constant.DEFAULT_LOG_CONF_FILE_PATH
-	}
-	err := InitLog(*logConfFile)
-	if err != nil {
-		logger.Warnf("InitLog with error %v", err)
-	}
-}
-
-// InitLog use for init logger by call InitLogger
-func InitLog(logConfFile string) error {
-	if logConfFile == "" {
-		InitLogger(nil)
-		return perrors.New("log configure file name is nil")
-	}
-	if path.Ext(logConfFile) != ".yml" {
-		InitLogger(nil)
-		return perrors.Errorf("log configure file name{%s} suffix must be .yml", logConfFile)
-	}
-
-	confFileStream, err := ioutil.ReadFile(logConfFile)
-	if err != nil {
-		InitLogger(nil)
-		return perrors.Errorf("ioutil.ReadFile(file:%s) = error:%v", logConfFile, err)
-	}
-
-	conf := &Config{}
-	err = yaml.Unmarshal(confFileStream, conf)
-	if err != nil {
-		InitLogger(nil)
-		return perrors.Errorf("[Unmarshal]init logger error: %v", err)
-	}
-
-	InitLogger(conf)
-
-	return nil
 }
 
 // InitLogger use for init logger by @conf
