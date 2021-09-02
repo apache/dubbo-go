@@ -22,7 +22,7 @@ import (
 )
 
 import (
-	hessian "github.com/apache/dubbo-go-hessian2"
+	//hessian "github.com/apache/dubbo-go-hessian2"
 	perrors "github.com/pkg/errors"
 )
 
@@ -54,7 +54,7 @@ func (f *ServiceFilter) Invoke(ctx context.Context, invoker protocol.Invoker, in
 	mtdname := invocation.Arguments()[0].(string)
 	// types are not required in dubbo-go, for dubbo-go client to dubbo-go server, types could be nil
 	types := invocation.Arguments()[1]
-	args := invocation.Arguments()[2].([]hessian.Object)
+	args := invocation.Arguments()[2].([]string)
 
 	logger.Debugf(`received a generic invocation: 
 		MethodName: %s,
