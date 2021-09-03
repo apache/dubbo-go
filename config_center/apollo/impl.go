@@ -147,6 +147,10 @@ func (c *apolloConfiguration) GetProperties(key string, opts ...cc.Option) (stri
 
 	content := tmpConfig.GetContent()
 	b := []byte(content)
+	if len(b) == 0 {
+		return "", perrors.New(fmt.Sprintf("nothing in namespace:%s ", key))
+	}
+
 	content = string(b[8:]) //remove defalut content= prefix
 	return content, nil
 }

@@ -17,17 +17,19 @@
 package apollo
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"strings"
 	"sync"
 	"testing"
-	"time"
 )
 
 import (
+	"github.com/knadh/koanf"
+	"github.com/knadh/koanf/parsers/yaml"
+	"github.com/knadh/koanf/providers/rawbytes"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -42,13 +44,13 @@ import (
 const (
 	mockAppId     = "testApplication_yang"
 	mockCluster   = "dev"
-	mockNamespace = "mockDubbogo.properties"
+	mockNamespace = "mockDubbogo.yaml"
 	mockNotifyRes = `[{
-	"namespaceName": "mockDubbogo.properties",
+	"namespaceName": "mockDubbogo.yaml",
 	"notificationId": 53050,
 	"messages": {
 		"details": {
-			"testApplication_yang+default+mockDubbog": 53050
+			"testApplication_yang+default+mockDubbogo": 53050
 		}
 	}
 }]`
@@ -62,56 +64,10 @@ const (
 var mockConfigRes = `{
 	"appId": "testApplication_yang",
 	"cluster": "default",
-	"namespaceName": "mockDubbogo.properties",
-	"configurations": {
-		"registries.hangzhouzk.username": "",
-		"application.owner": "ZX",
-		"registries.shanghaizk.username": "",
-		"protocols.dubbo.ip": "127.0.0.1",
-		"protocol_conf.dubbo.getty_session_param.tcp_write_timeout": "5s",
-		"services.UserProvider.cluster": "failover",
-		"application.module": "dubbogo user-info server",
-		"services.UserProvider.interface": "com.ikurento.user.UserProvider",
-		"protocol_conf.dubbo.getty_session_param.compress_encoding": "false",
-		"registries.shanghaizk.address": "127.0.0.1:2182",
-		"protocol_conf.dubbo.session_timeout": "20s",
-		"registries.shanghaizk.timeout": "3s",
-		"protocol_conf.dubbo.getty_session_param.keep_alive_period": "120s",
-		"services.UserProvider.warmup": "100",
-		"application.version": "0.0.1",
-		"registries.hangzhouzk.protocol": "zookeeper",
-		"registries.hangzhouzk.password": "",
-		"protocols.dubbo.name": "dubbo",
-		"protocol_conf.dubbo.getty_session_param.wait_timeout": "1s",
-		"protocols.dubbo.port": "20000",
-		"application_config.owner": "demo",
-		"application_config.name": "demo",
-		"application_config.version": "0.0.1",
-		"application_config.environment": "dev",
-		"protocol_conf.dubbo.getty_session_param.session_name": "server",
-		"application.name": "BDTService",
-		"registries.hangzhouzk.timeout": "3s",
-		"protocol_conf.dubbo.getty_session_param.tcp_read_timeout": "1s",
-		"services.UserProvider.loadbalance": "random",
-		"protocol_conf.dubbo.session_number": "700",
-		"protocol_conf.dubbo.getty_session_param.max_msg_len": "1024",
-		"services.UserProvider.registry": "hangzhouzk",
-		"application_config.module": "demo",
-		"services.UserProvider.methods[0].name": "GetUser",
-		"protocol_conf.dubbo.getty_session_param.tcp_no_delay": "true",
-		"services.UserProvider.methods[0].retries": "1",
-		"protocol_conf.dubbo.getty_session_param.tcp_w_buf_size": "65536",
-		"protocol_conf.dubbo.getty_session_param.tcp_r_buf_size": "262144",
-		"registries.shanghaizk.password": "",
-		"application_config.organization": "demo",
-		"registries.shanghaizk.protocol": "zookeeper",
-		"protocol_conf.dubbo.getty_session_param.tcp_keep_alive": "true",
-		"registries.hangzhouzk.address": "127.0.0.1:2181",
-		"application.environment": "dev",
-		"services.UserProvider.protocol": "dubbo",
-		"application.organization": "ikurento.com",
-		"services.UserProvider.methods[0].loadbalance": "random"
-	},
+	"namespaceName": "mockDubbogo.yaml",
+	"configurations":{
+		"content":"dubbo:\n  application:\n     name: \"demo-server\"\n     version: \"2.0\"\n"
+    },
 	"releaseKey": "20191104105242-0f13805d89f834a4"
 }`
 
@@ -165,23 +121,32 @@ func TestGetConfig(t *testing.T) {
 	configuration := initMockApollo(t)
 	configs, err := configuration.GetProperties(mockNamespace, config_center.WithGroup("dubbo"))
 	assert.NoError(t, err)
-	configuration.SetParser(&parser.DefaultConfigurationParser{})
-	mapContent, err := configuration.Parser().Parse(configs)
+	koan := koanf.New(".")
+	err = koan.Load(rawbytes.Provider([]byte(configs)), yaml.Parser())
 	assert.NoError(t, err)
-	assert.Equal(t, "ikurento.com", mapContent["application.organization"])
-	deleteMockJson(t)
+	rc := &config.RootConfig{}
+	err = koan.UnmarshalWithConf(rc.Prefix(), rc, koanf.UnmarshalConf{Tag: "yaml"})
+	assert.NoError(t, err)
+
+	assert.Equal(t, "demo-server", rc.Application.Name)
 }
 
-// todo fix this bug
-//func TestGetConfigItem(t *testing.T) {
-//	configuration := initMockApollo(t)
-//	configs, err := configuration.GetInternalProperty("application.organization")
-//	assert.NoError(t, err)
-//	configuration.SetParser(&parser.DefaultConfigurationParser{})
-//	assert.NoError(t, err)
-//	assert.Equal(t, "ikurento.com", configs)
-//	deleteMockJson(t)
-//}
+func TestGetConfigItem(t *testing.T) {
+	configuration := initMockApollo(t)
+	configs, err := configuration.GetInternalProperty("content")
+	assert.NoError(t, err)
+	configuration.SetParser(&parser.DefaultConfigurationParser{})
+	assert.NoError(t, err)
+	type MockRes struct {
+		Configurations struct {
+			Content string
+		}
+	}
+	mockRes := &MockRes{}
+	err = json.Unmarshal([]byte(mockConfigRes), mockRes)
+	assert.NoError(t, err)
+	assert.Equal(t, mockRes.Configurations.Content, configs)
+}
 
 func initMockApollo(t *testing.T) *apolloConfiguration {
 	c := &config.RootConfig{ConfigCenter: &config.CenterConfig{
@@ -189,7 +154,7 @@ func initMockApollo(t *testing.T) *apolloConfiguration {
 		Address:   "106.12.25.204:8080",
 		AppID:     "testApplication_yang",
 		Cluster:   "dev",
-		Namespace: mockNamespace,
+		Namespace: "mockDubbogo",
 	}}
 	apollo := initApollo()
 	apolloUrl := strings.ReplaceAll(apollo.URL, "http", "apollo")
@@ -207,7 +172,7 @@ func TestListener(t *testing.T) {
 	mockConfigRes = `{
 	"appId": "testApplication_yang",
 	"cluster": "default",
-	"namespaceName": "mockDubbogo.properties",
+	"namespaceName": "mockDubbogo.yaml",
 	"configurations": {
 		"registries.hangzhouzk.username": "11111"
 	},
@@ -216,7 +181,7 @@ func TestListener(t *testing.T) {
 	// test add
 	apollo.AddListener(mockNamespace, listener)
 	listener.wg.Wait()
-	assert.Equal(t, "mockDubbogo.properties", listener.event)
+	assert.Equal(t, "mockDubbogo.yaml", listener.event)
 	assert.Greater(t, listener.count, 0)
 
 	// test remove
@@ -231,7 +196,6 @@ func TestListener(t *testing.T) {
 		return true
 	})
 	assert.Equal(t, listenerCount, 0)
-	deleteMockJson(t)
 }
 
 type apolloDataListener struct {
@@ -247,11 +211,4 @@ func (l *apolloDataListener) Process(configType *config_center.ConfigChangeEvent
 	l.wg.Done()
 	l.count++
 	l.event = configType.Key
-}
-
-func deleteMockJson(t *testing.T) {
-	// because the file write in another goroutine,so have a break ...
-	time.Sleep(100 * time.Millisecond)
-	remove := os.Remove("mockDubbogo.properties.json")
-	t.Log("remove result:", remove)
 }
