@@ -28,7 +28,6 @@ remoting/zookeeper/zookeeper-4unittest/
 config_center/zookeeper/zookeeper-4unittest/
 registry/zookeeper/zookeeper-4unittest/
 metadata/report/zookeeper/zookeeper-4unittest/
-config_center/apollo/mockDubbog.properties.json
 
 # vim stuff
 *~
