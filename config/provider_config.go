@@ -99,7 +99,6 @@ func (c *ProviderConfig) Prefix() string {
 }
 
 func (c *ProviderConfig) Load() {
-
 	for key, svs := range c.Services {
 		rpcService := GetProviderService(key)
 		if rpcService == nil {
@@ -109,7 +108,7 @@ func (c *ProviderConfig) Load() {
 		svs.id = key
 		svs.Implement(rpcService)
 		if err := svs.Export(); err != nil {
-			panic(fmt.Sprintf("service %s export failed! err: %#v", key, err))
+			logger.Errorf(fmt.Sprintf("service %s export failed! err: %#v", key, err))
 		}
 	}
 }

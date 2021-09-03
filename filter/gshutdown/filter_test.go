@@ -44,10 +44,10 @@ func TestGenericFilterInvoke(t *testing.T) {
 
 	shutdownFilter := extension.GetFilter(constant.GracefulShutdownProviderFilterKey).(*Filter)
 
-	providerConfig := config.GetProviderConfig()
+	rootConfig := config.GetRootConfig()
 
 	assert.False(t, shutdownFilter.rejectNewRequest())
-	assert.Nil(t, providerConfig.ShutdownConfig)
+	assert.Nil(t, rootConfig.Shutdown)
 
 	assert.Equal(t, extension.GetRejectedExecutionHandler(constant.DEFAULT_KEY),
 		shutdownFilter.getRejectHandler())
@@ -56,11 +56,11 @@ func TestGenericFilterInvoke(t *testing.T) {
 	assert.NotNil(t, result)
 	assert.Nil(t, result.Error())
 
-	providerConfig.ShutdownConfig = &config.ShutdownConfig{
+	rootConfig.Shutdown = &config.ShutdownConfig{
 		RejectRequest:        true,
 		RejectRequestHandler: "mock",
 	}
-	shutdownFilter.shutdownConfig = providerConfig.ShutdownConfig
+	shutdownFilter.shutdownConfig = rootConfig.Shutdown
 
 	assert.True(t, shutdownFilter.rejectNewRequest())
 	result = shutdownFilter.OnResponse(context.Background(), nil, protocol.NewBaseInvoker(invokeUrl), invoc)
@@ -70,6 +70,6 @@ func TestGenericFilterInvoke(t *testing.T) {
 	extension.SetRejectedExecutionHandler("mock", func() filter.RejectedExecutionHandler {
 		return rejectHandler
 	})
-	assert.True(t, providerConfig.ShutdownConfig.RequestsFinished)
+	assert.True(t, rootConfig.Shutdown.RequestsFinished)
 	assert.Equal(t, rejectHandler, shutdownFilter.getRejectHandler())
 }

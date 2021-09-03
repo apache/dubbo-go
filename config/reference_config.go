@@ -270,7 +270,7 @@ func (rc *ReferenceConfig) getURLMap() url.Values {
 	if rc.Generic != "" {
 		defaultReferenceFilter = constant.GENERIC_REFERENCE_FILTERS + "," + defaultReferenceFilter
 	}
-	//urlMap.Set(constant.REFERENCE_FILTER_KEY, config.mergeValue(config.consumerConfig.Filter, c.Filter, defaultReferenceFilter))
+	urlMap.Set(constant.REFERENCE_FILTER_KEY, mergeValue(rc.rootConfig.Consumer.Filter, "", defaultReferenceFilter))
 
 	for _, v := range rc.Methods {
 		urlMap.Set("methods."+v.Name+"."+constant.LOADBALANCE_KEY, v.LoadBalance)

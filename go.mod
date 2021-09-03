@@ -12,7 +12,7 @@ require (
 	github.com/creasty/defaults v1.5.1
 	github.com/dubbogo/go-zookeeper v1.0.3
 	github.com/dubbogo/gost v1.11.16
-	github.com/dubbogo/triple v1.0.6-0.20210826093718-8b877016f3bf
+	github.com/dubbogo/triple v1.0.6-0.20210829063429-3fc89d0b1771
 	github.com/emicklei/go-restful/v3 v3.5.2
 	github.com/fsnotify/fsnotify v1.5.0
 	github.com/ghodss/yaml v1.0.0
