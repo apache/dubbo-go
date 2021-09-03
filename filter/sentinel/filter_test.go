@@ -22,6 +22,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+	"time"
 )
 
 import (
@@ -80,6 +81,7 @@ func TestSentinelFilter_QPS(t *testing.T) {
 		}()
 	}
 	wg.Wait()
+	time.Sleep(time.Second)
 	assert.True(t, atomic.LoadInt64(&pass) == 100)
 	assert.True(t, atomic.LoadInt64(&block) == 200)
 }

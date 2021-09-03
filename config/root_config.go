@@ -36,11 +36,12 @@ type RootConfig struct {
 	// Registries registry config
 	Registries map[string]*RegistryConfig `yaml:"registries" json:"registries" property:"registries"`
 
-	// Deprecated since 1.5.0 version
+	// Remotes to be remove in 3.0 config-enhance
 	Remotes map[string]*RemoteConfig `yaml:"remote" json:"remote,omitempty" property:"remote"`
 
 	ConfigCenter *CenterConfig `yaml:"config-center" json:"config-center,omitempty"`
 
+	// ServiceDiscoveries to be remove in 3.0 config-enhance
 	ServiceDiscoveries map[string]*ServiceDiscoveryConfig `yaml:"service-discovery" json:"service-discovery,omitempty" property:"service-discovery"`
 
 	MetadataReportConfig *MetadataReportConfig `yaml:"metadata-report" json:"metadata-report,omitempty" property:"metadata-report"`

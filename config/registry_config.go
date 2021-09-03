@@ -121,9 +121,7 @@ func (c *RegistryConfig) GetInstance(roleType common.RoleType) (registry.Registr
 }
 
 func (c *RegistryConfig) toURL(roleType common.RoleType) (*common.URL, error) {
-	addresses := strings.Split(c.Address, ",")
-	address := addresses[0]
-	address = c.translateRegistryAddress()
+	address := c.translateRegistryAddress()
 	var registryURLProtocol string
 	if c.RegistryType == "service" {
 		// service discovery protocol
