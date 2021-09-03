@@ -48,7 +48,7 @@ func TestRunSuite(t *testing.T) {
 	client := getClient(url)
 	assert.NotNil(t, client)
 	testRequestOneWay(t, client)
-	testClient_Call(t, client)
+	//testClient_Call(t, client)
 	testClient_AsyncCall(t, client)
 	svr.Stop()
 }
