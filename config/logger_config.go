@@ -18,13 +18,13 @@
 package config
 
 import (
-	"go.uber.org/zap"
 	"net/url"
 )
 
 import (
 	"github.com/creasty/defaults"
 	"github.com/natefinch/lumberjack"
+	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
