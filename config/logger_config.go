@@ -18,6 +18,7 @@
 package config
 
 import (
+	"go.uber.org/zap"
 	"net/url"
 )
 
@@ -86,6 +87,7 @@ func initLoggerConfig(rc *RootConfig) error {
 	if err != nil {
 		return err
 	}
+	logConfig.ZapConfig.setZapConfig(logConf.ZapConfig)
 	logger.InitLogger(logConf)
 	return nil
 }
@@ -95,6 +97,14 @@ func (l *LoggerConfig) check() error {
 		return err
 	}
 	return verify(l)
+}
+
+func (e *ZapConfig) setZapConfig(config *zap.Config) {
+	config.OutputPaths = e.OutputPaths
+	config.ErrorOutputPaths = e.ErrorOutputPaths
+	config.DisableStacktrace = e.DisableStacktrace
+	config.DisableCaller = e.DisableCaller
+	config.InitialFields = e.InitialFields
 }
 
 func (e *EncoderConfig) setEncoderConfig(encoderConfig *zapcore.EncoderConfig) error {
