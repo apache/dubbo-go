@@ -44,19 +44,18 @@ import (
 var testName = "test"
 
 func Test_newNacosServiceDiscovery(t *testing.T) {
-	name := "nacos1"
-	_, err := newNacosServiceDiscovery(name)
+	_, err := newNacosServiceDiscovery()
 
 	// the ShutdownConfig not found
 	assert.NotNil(t, err)
 
-	sdc := &config.ServiceDiscoveryConfig{
-		Protocol:  "nacos",
-		RemoteRef: "mock",
-	}
-	config.GetRootConfig().ServiceDiscoveries[name] = sdc
+	//sdc := &config.ServiceDiscoveryConfig{
+	//	Protocol:  "nacos",
+	//	RemoteRef: "mock",
+	//}
+	//config.GetRootConfig().ServiceDiscoveries[name] = sdc
 
-	_, err = newNacosServiceDiscovery(name)
+	_, err = newNacosServiceDiscovery()
 
 	// RemoteConfig not found
 	assert.NotNil(t, err)
@@ -66,7 +65,7 @@ func Test_newNacosServiceDiscovery(t *testing.T) {
 		TimeoutStr: "10s",
 	}
 
-	res, err := newNacosServiceDiscovery(name)
+	res, err := newNacosServiceDiscovery()
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
 }
@@ -101,7 +100,7 @@ func TestNacosServiceDiscovery_CRUD(t *testing.T) {
 	}
 
 	// clean data
-	serviceDiscovery, err := extension.GetServiceDiscovery(constant.NACOS_KEY, testName)
+	serviceDiscovery, err := extension.GetServiceDiscovery(constant.NACOS_KEY)
 	assert.Nil(t, err)
 
 	// clean data for local test
@@ -165,13 +164,13 @@ func TestNacosServiceDiscovery_CRUD(t *testing.T) {
 
 func TestNacosServiceDiscovery_GetDefaultPageSize(t *testing.T) {
 	prepareData()
-	serviceDiscovery, _ := extension.GetServiceDiscovery(constant.NACOS_KEY, testName)
+	serviceDiscovery, _ := extension.GetServiceDiscovery(constant.NACOS_KEY)
 	assert.Equal(t, registry.DefaultPageSize, serviceDiscovery.GetDefaultPageSize())
 }
 
 func TestNacosServiceDiscovery_Destroy(t *testing.T) {
 	prepareData()
-	serviceDiscovery, err := extension.GetServiceDiscovery(constant.NACOS_KEY, testName)
+	serviceDiscovery, err := extension.GetServiceDiscovery(constant.NACOS_KEY)
 	assert.Nil(t, err)
 	assert.NotNil(t, serviceDiscovery)
 	err = serviceDiscovery.Destroy()

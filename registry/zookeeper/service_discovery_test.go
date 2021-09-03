@@ -68,19 +68,18 @@ func prepareData(t *testing.T) *zk.TestCluster {
 }
 
 func TestNewZookeeperServiceDiscovery(t *testing.T) {
-	name := "zookeeper1"
-	_, err := newZookeeperServiceDiscovery(name)
+	_, err := newZookeeperServiceDiscovery()
 
 	// the ShutdownConfig not found
 	// err: could not init the instance because the config is invalid
 	assert.NotNil(t, err)
 
-	sdc := &config.ServiceDiscoveryConfig{
-		Protocol:  "zookeeper",
-		RemoteRef: "mock",
-	}
-	config.GetRootConfig().ServiceDiscoveries[name] = sdc
-	_, err = newZookeeperServiceDiscovery(name)
+	//sdc := &config.ServiceDiscoveryConfig{
+	//	Protocol:  "zookeeper",
+	//	RemoteRef: "mock",
+	//}
+	//config.GetRootConfig().ServiceDiscoveries[name] = sdc
+	_, err = newZookeeperServiceDiscovery()
 
 	// RemoteConfig not found
 	// err: could not find the remote config for name: mock
@@ -109,7 +108,7 @@ func testCURDZookeeperServiceDiscovery(t *testing.T) {
 		return &mockProtocol{}
 	})
 
-	sd, err := newZookeeperServiceDiscovery(testName)
+	sd, err := newZookeeperServiceDiscovery()
 	assert.Nil(t, err)
 	defer func() {
 		_ = sd.Destroy()
@@ -177,7 +176,7 @@ func testCURDZookeeperServiceDiscovery(t *testing.T) {
 }
 
 func testAddListenerZookeeperServiceDiscovery(t *testing.T) {
-	sd, err := newZookeeperServiceDiscovery(testName)
+	sd, err := newZookeeperServiceDiscovery()
 	assert.Nil(t, err)
 	defer func() {
 		_ = sd.Destroy()

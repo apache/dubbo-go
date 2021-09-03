@@ -38,14 +38,14 @@ func TestNewLoaderConf(t *testing.T) {
 	conf := NewLoaderConf()
 	assert.Equal(t, ".", conf.delim)
 	assert.Equal(t, "yaml", conf.genre)
-	assert.Equal(t, "./conf/application.yaml", conf.path)
+	assert.Equal(t, "../conf/dubbogo.yaml", conf.path)
 }
 
 func TestWithDelim(t *testing.T) {
 	conf := NewLoaderConf(WithDelim(":"))
 	assert.Equal(t, ":", conf.delim)
 	assert.Equal(t, "yaml", conf.genre)
-	assert.Equal(t, "./conf/application.yaml", conf.path)
+	assert.Equal(t, "../conf/dubbogo.yaml", conf.path)
 }
 
 func TestWithPath(t *testing.T) {
@@ -59,5 +59,5 @@ func TestWithGenre(t *testing.T) {
 	conf := NewLoaderConf(WithGenre("json"))
 	assert.Equal(t, ".", conf.delim)
 	assert.Equal(t, "json", conf.genre)
-	assert.Equal(t, "./conf/application.yaml", conf.path)
+	assert.Equal(t, "../conf/dubbogo.yaml", conf.path)
 }

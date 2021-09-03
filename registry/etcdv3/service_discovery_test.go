@@ -47,7 +47,7 @@ func setUp() {
 
 func Test_newEtcdV3ServiceDiscovery(t *testing.T) {
 	name := constant.ETCDV3_KEY
-	_, err := newEtcdV3ServiceDiscovery(name)
+	_, err := newEtcdV3ServiceDiscovery()
 
 	// warn: log configure file name is nil
 	assert.NotNil(t, err)
@@ -58,7 +58,7 @@ func Test_newEtcdV3ServiceDiscovery(t *testing.T) {
 	}
 	config.GetRootConfig().ServiceDiscoveries[name] = sdc
 
-	_, err = newEtcdV3ServiceDiscovery(name)
+	_, err = newEtcdV3ServiceDiscovery()
 
 	// RemoteConfig not found
 	assert.NotNil(t, err)
@@ -68,7 +68,7 @@ func Test_newEtcdV3ServiceDiscovery(t *testing.T) {
 		TimeoutStr: "10s",
 	}
 
-	res, err := newEtcdV3ServiceDiscovery(name)
+	res, err := newEtcdV3ServiceDiscovery()
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
 }

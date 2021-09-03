@@ -31,15 +31,12 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
-var testName = "test"
-
 func TestNewFileSystemServiceDiscoveryAndDestroy(t *testing.T) {
 	prepareData()
-	serviceDiscovery, err := newFileSystemServiceDiscovery(testName)
+	serviceDiscovery, err := newFileSystemServiceDiscovery()
 	assert.NoError(t, err)
 	assert.NotNil(t, serviceDiscovery)
 	defer func() {
@@ -50,7 +47,7 @@ func TestNewFileSystemServiceDiscoveryAndDestroy(t *testing.T) {
 
 func TestCURDFileSystemServiceDiscovery(t *testing.T) {
 	prepareData()
-	serviceDiscovery, err := extension.GetServiceDiscovery(constant.FILE_KEY, testName)
+	serviceDiscovery, err := extension.GetServiceDiscovery(constant.FILE_KEY)
 	assert.NoError(t, err)
 	md := make(map[string]string)
 
@@ -87,7 +84,7 @@ func TestCURDFileSystemServiceDiscovery(t *testing.T) {
 }
 
 func prepareData() {
-	config.GetRootConfig().ServiceDiscoveries[testName] = &config.ServiceDiscoveryConfig{
-		Protocol: "file",
-	}
+	//config.GetRootConfig().ServiceDiscoveries[testName] = &config.ServiceDiscoveryConfig{
+	//	Protocol: "file",
+	//}
 }
