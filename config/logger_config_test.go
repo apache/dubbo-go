@@ -37,6 +37,7 @@ func TestLoggerInit(t *testing.T) {
 		assert.NotNil(t, rootConfig)
 		loggerConfig := rootConfig.Logger
 		assert.NotNil(t, loggerConfig)
+		assert.Equal(t, []string{"stderr"}, loggerConfig.ZapConfig.OutputPaths)
 		logger.Info("hello")
 	})
 
