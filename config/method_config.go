@@ -18,8 +18,11 @@
 package config
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"github.com/creasty/defaults"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
 // MethodConfig defines method config

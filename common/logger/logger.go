@@ -18,30 +18,30 @@
 package logger
 
 import (
-	"flag"
-	"io/ioutil"
-	"os"
-	"path"
-)
-
-import (
 	"github.com/apache/dubbo-getty"
-	perrors "github.com/pkg/errors"
+
+	"github.com/natefinch/lumberjack"
+
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"gopkg.in/yaml.v2"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
 var logger Logger
+
+// init a default logger
+func init() {
+	InitLogger(nil)
+}
 
 // nolint
 type DubboLogger struct {
 	Logger
 	dynamicLevel zap.AtomicLevel
+}
+
+type Config struct {
+	LumberjackConfig *lumberjack.Logger `yaml:"lumberjack-config"`
+	ZapConfig        *zap.Config        `yaml:"zap-config"`
 }
 
 // Logger is the interface for Logger types
@@ -57,60 +57,13 @@ type Logger interface {
 	Debugf(fmt string, args ...interface{})
 }
 
-func init() {
-	// forbidden to executing twice.
-	if logger != nil {
-		return
-	}
-
-	fs := flag.NewFlagSet("log", flag.ContinueOnError)
-	logConfFile := fs.String("logConf", os.Getenv(constant.APP_LOG_CONF_FILE), "default log config path")
-	fs.Parse(os.Args[1:])
-	for len(fs.Args()) != 0 {
-		fs.Parse(fs.Args()[1:])
-	}
-	if *logConfFile == "" {
-		*logConfFile = constant.DEFAULT_LOG_CONF_FILE_PATH
-	}
-	err := InitLog(*logConfFile)
-	if err != nil {
-		logger.Warnf("InitLog with error %v", err)
-	}
-}
-
-// InitLog use for init logger by call InitLogger
-func InitLog(logConfFile string) error {
-	if logConfFile == "" {
-		InitLogger(nil)
-		return perrors.New("log configure file name is nil")
-	}
-	if path.Ext(logConfFile) != ".yml" {
-		InitLogger(nil)
-		return perrors.Errorf("log configure file name{%s} suffix must be .yml", logConfFile)
-	}
-
-	confFileStream, err := ioutil.ReadFile(logConfFile)
-	if err != nil {
-		InitLogger(nil)
-		return perrors.Errorf("ioutil.ReadFile(file:%s) = error:%v", logConfFile, err)
-	}
-
-	conf := &zap.Config{}
-	err = yaml.Unmarshal(confFileStream, conf)
-	if err != nil {
-		InitLogger(nil)
-		return perrors.Errorf("[Unmarshal]init logger error: %v", err)
-	}
-
-	InitLogger(conf)
-
-	return nil
-}
-
 // InitLogger use for init logger by @conf
-func InitLogger(conf *zap.Config) {
-	var zapLoggerConfig zap.Config
-	if conf == nil {
+func InitLogger(conf *Config) {
+	var (
+		zapLogger *zap.Logger
+		config    = &Config{}
+	)
+	if conf == nil || conf.ZapConfig == nil {
 		zapLoggerEncoderConfig := zapcore.EncoderConfig{
 			TimeKey:        "time",
 			LevelKey:       "level",
@@ -123,7 +76,7 @@ func InitLogger(conf *zap.Config) {
 			EncodeDuration: zapcore.SecondsDurationEncoder,
 			EncodeCaller:   zapcore.ShortCallerEncoder,
 		}
-		zapLoggerConfig = zap.Config{
+		config.ZapConfig = &zap.Config{
 			Level:            zap.NewAtomicLevelAt(zap.DebugLevel),
 			Development:      false,
 			Encoding:         "console",
@@ -132,10 +85,17 @@ func InitLogger(conf *zap.Config) {
 			ErrorOutputPaths: []string{"stderr"},
 		}
 	} else {
-		zapLoggerConfig = *conf
+		config.ZapConfig = conf.ZapConfig
 	}
-	zapLogger, _ := zapLoggerConfig.Build(zap.AddCallerSkip(1))
-	logger = &DubboLogger{Logger: zapLogger.Sugar(), dynamicLevel: zapLoggerConfig.Level}
+
+	if conf == nil || conf.LumberjackConfig == nil {
+		zapLogger, _ = config.ZapConfig.Build(zap.AddCallerSkip(1))
+	} else {
+		config.LumberjackConfig = conf.LumberjackConfig
+		zapLogger = initZapLoggerWithSyncer(config)
+	}
+
+	logger = &DubboLogger{Logger: zapLogger.Sugar(), dynamicLevel: config.ZapConfig.Level}
 
 	// set getty log
 	getty.SetLogger(logger)
@@ -173,4 +133,30 @@ func (dl *DubboLogger) SetLoggerLevel(level string) {
 	if err := l.Set(level); err == nil {
 		dl.dynamicLevel.SetLevel(*l)
 	}
+}
+
+// initZapLoggerWithSyncer init zap Logger with syncer
+func initZapLoggerWithSyncer(conf *Config) *zap.Logger {
+	core := zapcore.NewCore(
+		conf.getEncoder(),
+		conf.getLogWriter(),
+		zap.NewAtomicLevelAt(zap.DebugLevel),
+	)
+
+	return zap.New(core, zap.AddCallerSkip(1))
+}
+
+// getEncoder get encoder by config, zapcore support json and console encoder
+func (c *Config) getEncoder() zapcore.Encoder {
+	if c.ZapConfig.Encoding == "json" {
+		return zapcore.NewJSONEncoder(c.ZapConfig.EncoderConfig)
+	} else if c.ZapConfig.Encoding == "console" {
+		return zapcore.NewConsoleEncoder(c.ZapConfig.EncoderConfig)
+	}
+	return nil
+}
+
+// getLogWriter get Lumberjack writer by LumberjackConfig
+func (c *Config) getLogWriter() zapcore.WriteSyncer {
+	return zapcore.AddSync(c.LumberjackConfig)
 }

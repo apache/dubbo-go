@@ -18,7 +18,7 @@
 package configurable
 
 import (
-	"strconv"
+	"github.com/pkg/errors"
 	"sync"
 )
 
@@ -27,11 +27,9 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/config"
+	_ "dubbo.apache.org/dubbo-go/v3/metadata/mapping/dynamic"
 	"dubbo.apache.org/dubbo-go/v3/metadata/service"
 	"dubbo.apache.org/dubbo-go/v3/metadata/service/exporter"
-
-	// these three import is necessary for inmemory metadata service, export or refer.
-	_ "dubbo.apache.org/dubbo-go/v3/metadata/mapping/dynamic"
 	_ "dubbo.apache.org/dubbo-go/v3/metadata/service/remote"
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/dubbo"
 )
@@ -53,6 +51,9 @@ func NewMetadataServiceExporter(metadataService service.MetadataService) exporte
 // Export will export the metadataService
 func (exporter *MetadataServiceExporter) Export(url *common.URL) error {
 	if !exporter.IsExported() {
+		if url == nil || url.SubURL == nil {
+			return errors.New("metadata server url is nil, pls check your configuration")
+		}
 		version, _ := exporter.metadataService.Version()
 		exporter.lock.Lock()
 		defer exporter.lock.Unlock()
@@ -60,8 +61,8 @@ func (exporter *MetadataServiceExporter) Export(url *common.URL) error {
 			config.WithServiceID(constant.SIMPLE_METADATA_SERVICE_NAME),
 			config.WithServiceProtocolKeys(constant.DEFAULT_PROTOCOL),
 			config.WithServiceProtocol(constant.DEFAULT_PROTOCOL, config.NewProtocolConfig(
-				config.WithProtocolName(constant.DEFAULT_PROTOCOL),
-				config.WithProtocolPort(strconv.Itoa(constant.DEFAULT_METADATAPORT)),
+				config.WithProtocolName(url.SubURL.Protocol),
+				config.WithProtocolPort(url.SubURL.Port),
 			)),
 			config.WithServiceRegistry("N/A"),
 			config.WithServiceInterface(constant.METADATA_SERVICE_NAME),

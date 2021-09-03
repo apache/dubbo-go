@@ -17,7 +17,9 @@
 
 package common
 
-import gxnet "github.com/dubbogo/gost/net"
+import (
+	gxnet "github.com/dubbogo/gost/net"
+)
 
 var localIp string
 

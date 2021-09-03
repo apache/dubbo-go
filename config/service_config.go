@@ -19,7 +19,6 @@ package config
 
 import (
 	"container/list"
-	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
 	"fmt"
 	"net/url"
 	"strconv"
@@ -30,8 +29,11 @@ import (
 
 import (
 	"github.com/creasty/defaults"
+
 	gxnet "github.com/dubbogo/gost/net"
+
 	perrors "github.com/pkg/errors"
+
 	"go.uber.org/atomic"
 )
 
@@ -41,6 +43,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
 )
 
 // ServiceConfig is the configuration of the service provider

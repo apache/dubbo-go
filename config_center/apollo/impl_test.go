@@ -172,7 +172,7 @@ func TestListener(t *testing.T) {
 	mockConfigRes = `{
 	"appId": "testApplication_yang",
 	"cluster": "default",
-	"namespaceName": "mockDubbogo.properties",
+	"namespaceName": "mockDubbogo.yaml",
 	"configurations": {
 		"registries.hangzhouzk.username": "11111"
 	},
@@ -181,7 +181,7 @@ func TestListener(t *testing.T) {
 	// test add
 	apollo.AddListener(mockNamespace, listener)
 	listener.wg.Wait()
-	assert.Equal(t, "mockDubbogo.properties", listener.event)
+	assert.Equal(t, "mockDubbogo.yaml", listener.event)
 	assert.Greater(t, listener.count, 0)
 
 	// test remove

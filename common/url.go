@@ -32,22 +32,21 @@ import (
 
 import (
 	cm "github.com/Workiva/go-datastructures/common"
+
 	gxset "github.com/dubbogo/gost/container/set"
+
 	"github.com/jinzhu/copier"
+
 	perrors "github.com/pkg/errors"
+
 	"github.com/satori/go.uuid"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
 )
 
-// ///////////////////////////////
-// dubbo role type
-// ///////////////////////////////
-
-// role constant
+// dubbo role type constant
 const (
 	// CONSUMER is consumer role
 	CONSUMER = iota
@@ -211,11 +210,7 @@ func WithToken(token string) Option {
 		if len(token) > 0 {
 			value := token
 			if strings.ToLower(token) == "true" || strings.ToLower(token) == "default" {
-				u, err := uuid.NewV4()
-				if err != nil {
-					logger.Errorf("could not generator UUID: %v", err)
-					return
-				}
+				u := uuid.NewV4()
 				value = u.String()
 			}
 			url.SetParam(constant.TOKEN_KEY, value)
@@ -871,10 +866,9 @@ func GetCompareURLEqualFunc() CompareURLEqualFunc {
 	return compareURLEqualFunc
 }
 
-//GetParamDuration get duration if err return 3s
+//GetParamDuration get duration if param is invalid or missing will return 3s
 func (c *URL) GetParamDuration(s string, d string) time.Duration {
-	timeStr := c.GetParam(s, d)
-	if t, err := time.ParseDuration(timeStr); err == nil {
+	if t, err := time.ParseDuration(c.GetParam(s, d)); err == nil {
 		return t
 	}
 	return 3 * time.Second

@@ -18,15 +18,17 @@
 package config
 
 import (
-	"github.com/knadh/koanf"
-	"github.com/knadh/koanf/parsers/yaml"
-	"github.com/knadh/koanf/providers/rawbytes"
 	"net/url"
 	"strings"
 )
 
 import (
 	"github.com/creasty/defaults"
+
+	"github.com/knadh/koanf"
+	"github.com/knadh/koanf/parsers/yaml"
+	"github.com/knadh/koanf/providers/rawbytes"
+
 	"github.com/pkg/errors"
 )
 
@@ -176,6 +178,9 @@ func startConfigCenter(rc *RootConfig) error {
 
 func (c *CenterConfig) prepareEnvironment(configCenterUrl *common.URL) (string, error) {
 	factory := extension.GetConfigCenterFactory(configCenterUrl.Protocol)
+	if factory == nil {
+		return "", errors.New("get config center factory failed")
+	}
 	dynamicConfig, err := factory.GetDynamicConfiguration(configCenterUrl)
 	if err != nil {
 		logger.Errorf("Get dynamic configuration error , error message is %v", err)

@@ -18,6 +18,19 @@
 package config
 
 import (
+	"fmt"
+	"net/url"
+	"strconv"
+	"time"
+)
+
+import (
+	"github.com/creasty/defaults"
+
+	gxstrings "github.com/dubbogo/gost/strings"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
@@ -26,12 +39,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config/generic"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
-	"fmt"
-	"github.com/creasty/defaults"
-	gxstrings "github.com/dubbogo/gost/strings"
-	"net/url"
-	"strconv"
-	"time"
 )
 
 // ReferenceConfig is the configuration of service consumer
@@ -56,7 +63,7 @@ type ReferenceConfig struct {
 	Params         map[string]string `yaml:"params"  json:"params,omitempty" property:"params"`
 	invoker        protocol.Invoker
 	urls           []*common.URL
-	Generic        bool   `yaml:"generic"  json:"generic,omitempty" property:"generic"`
+	Generic        string `yaml:"generic"  json:"generic,omitempty" property:"generic"`
 	Sticky         bool   `yaml:"sticky"   json:"sticky,omitempty" property:"sticky"`
 	RequestTimeout string `yaml:"timeout"  json:"timeout,omitempty" property:"timeout"`
 	ForceTag       bool   `yaml:"force.tag"  json:"force.tag,omitempty" property:"force.tag"`
@@ -130,8 +137,7 @@ func (rc *ReferenceConfig) Refer(_ interface{}) {
 	}
 
 	if len(rc.urls) == 1 {
-
-		rc.invoker = extension.GetProtocol("registry").Refer(rc.urls[0])
+		rc.invoker = extension.GetProtocol(rc.urls[0].Protocol).Refer(rc.urls[0])
 		// c.URL != "" is direct call
 		if rc.URL != "" {
 			//filter
@@ -235,7 +241,7 @@ func (rc *ReferenceConfig) getURLMap() url.Values {
 	urlMap.Set(constant.RETRIES_KEY, rc.Retries)
 	urlMap.Set(constant.GROUP_KEY, rc.Group)
 	urlMap.Set(constant.VERSION_KEY, rc.Version)
-	urlMap.Set(constant.GENERIC_KEY, strconv.FormatBool(rc.Generic))
+	urlMap.Set(constant.GENERIC_KEY, rc.Generic)
 	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(common.CONSUMER))
 	urlMap.Set(constant.PROVIDED_BY, rc.ProvidedBy)
 	urlMap.Set(constant.SERIALIZATION_KEY, rc.Serialization)
@@ -261,10 +267,10 @@ func (rc *ReferenceConfig) getURLMap() url.Values {
 
 	// filter
 	defaultReferenceFilter := constant.DEFAULT_REFERENCE_FILTERS
-	if rc.Generic {
+	if rc.Generic != "" {
 		defaultReferenceFilter = constant.GENERIC_REFERENCE_FILTERS + "," + defaultReferenceFilter
 	}
-	//urlMap.Set(constant.REFERENCE_FILTER_KEY, config.mergeValue(config.consumerConfig.Filter, c.Filter, defaultReferenceFilter))
+	urlMap.Set(constant.REFERENCE_FILTER_KEY, mergeValue(rc.rootConfig.Consumer.Filter, "", defaultReferenceFilter))
 
 	for _, v := range rc.Methods {
 		urlMap.Set("methods."+v.Name+"."+constant.LOADBALANCE_KEY, v.LoadBalance)
