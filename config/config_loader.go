@@ -376,6 +376,10 @@ func registerServiceInstance() {
 			panic(err)
 		}
 	}
+	// publish metadata to remote
+	if remoteMetadataService, err := extension.GetRemoteMetadataService(); err == nil {
+		remoteMetadataService.PublishMetadata(GetApplicationConfig().Name)
+	}
 }
 
 //
