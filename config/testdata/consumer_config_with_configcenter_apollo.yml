@@ -12,7 +12,7 @@ config_center:
 #  namespace: governance.properties
   # 'config_file' is not necessary ,default : dubbo.properties
   # but if you want to change config file ,just open this item
-#  config_file: mockDubbog.yaml
+#  config_file: mockDubbog.properties
 
 # application config required
 application:
