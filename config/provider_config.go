@@ -43,9 +43,8 @@ type ProviderConfig struct {
 	Services map[string]*ServiceConfig `yaml:"services" json:"services,omitempty" property:"services"`
 
 	ProxyFactory string `default:"default" yaml:"proxy" json:"proxy,omitempty" property:"proxy"`
-	// Protocols      map[string]*ProtocolConfig `yaml:"protocols" json:"protocols,omitempty" property:"protocols"`
-	ProtocolConf interface{} `yaml:"protocol_conf" json:"protocol_conf,omitempty" property:"protocol_conf"`
-	FilterConf   interface{} `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf"`
+
+	FilterConf interface{} `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf"`
 	// ShutdownConfig *ShutdownConfig            `yaml:"shutdown_conf" json:"shutdown_conf,omitempty" property:"shutdown_conf"`
 	ConfigType map[string]string `yaml:"config_type" json:"config_type,omitempty" property:"config_type"`
 }
@@ -100,7 +99,6 @@ func (c *ProviderConfig) Prefix() string {
 }
 
 func (c *ProviderConfig) Load() {
-
 	for key, svs := range c.Services {
 		rpcService := GetProviderService(key)
 		if rpcService == nil {
@@ -110,7 +108,7 @@ func (c *ProviderConfig) Load() {
 		svs.id = key
 		svs.Implement(rpcService)
 		if err := svs.Export(); err != nil {
-			panic(fmt.Sprintf("service %s export failed! err: %#v", key, err))
+			logger.Errorf(fmt.Sprintf("service %s export failed! err: %#v", key, err))
 		}
 	}
 }
