@@ -49,12 +49,14 @@ var (
 	errClientClosed      = perrors.New("client closed")
 	errClientReadTimeout = perrors.New("maybe the client read timeout or fail to decode tcp stream in Writer.Write")
 
-	clientConf   *ClientConfig
+	clientConf *ClientConfig
+
 	clientGrPool gxsync.GenericTaskPool
 )
 
 // it is init client for single protocol.
 func initClient(protocol string) {
+	clientConf = GetDefaultClientConfig()
 	if protocol == "" {
 		return
 	}
@@ -69,9 +71,9 @@ func initClient(protocol string) {
 	}
 
 	protocolConf := config.GetRootConfig().Protocols[protocol]
-	defaultClientConfig := GetDefaultClientConfig()
 	if protocolConf == nil {
 		logger.Info("use default getty client config")
+		return
 	} else {
 		gettyClientConfig := protocolConf.Params
 		if gettyClientConfig == nil {
@@ -82,12 +84,11 @@ func initClient(protocol string) {
 		if err != nil {
 			panic(err)
 		}
-		err = yaml.Unmarshal(gettyClientConfigBytes, &defaultClientConfig)
+		err = yaml.Unmarshal(gettyClientConfigBytes, clientConf)
 		if err != nil {
 			panic(err)
 		}
 	}
-	clientConf = &defaultClientConfig
 	if err := clientConf.CheckValidity(); err != nil {
 		logger.Warnf("[CheckValidity] error: %v", err)
 		return

@@ -38,6 +38,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	. "dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/proxy/proxy_factory"
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
@@ -475,4 +476,21 @@ func (u *UserProvider) Reference() string {
 
 func (u User) JavaClassName() string {
 	return "com.ikurento.user.User"
+}
+
+func TestInitClient(t *testing.T) {
+	originRootConf := config.GetRootConfig()
+	rootConf := config.RootConfig{
+		Protocols: map[string]*config.ProtocolConfig{
+			"dubbo": {
+				Name: "dubbo",
+				Ip:   "127.0.0.1",
+				Port: "20003",
+			},
+		},
+	}
+	config.SetRootConfig(rootConf)
+	initServer("dubbo")
+	config.SetRootConfig(*originRootConf)
+	assert.NotNil(t, srvConf)
 }

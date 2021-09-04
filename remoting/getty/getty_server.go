@@ -43,9 +43,12 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
-var srvConf *ServerConfig
+var (
+	srvConf *ServerConfig
+)
 
 func initServer(protocol string) {
+	srvConf = GetDefaultServerConfig()
 	if protocol == "" {
 		return
 	}
@@ -60,9 +63,9 @@ func initServer(protocol string) {
 	}
 
 	protocolConf := config.GetRootConfig().Protocols[protocol]
-	defaultServerConfig := GetDefaultServerConfig()
 	if protocolConf == nil {
 		logger.Info("use default getty server config")
+		return
 	} else {
 		gettyServerConfig := protocolConf.Params
 		if gettyServerConfig == nil {
@@ -74,12 +77,11 @@ func initServer(protocol string) {
 		if err != nil {
 			panic(err)
 		}
-		err = yaml.Unmarshal(gettyServerConfigBytes, &defaultServerConfig)
+		err = yaml.Unmarshal(gettyServerConfigBytes, srvConf)
 		if err != nil {
 			panic(err)
 		}
 	}
-	srvConf = &defaultServerConfig
 	if err := srvConf.CheckValidity(); err != nil {
 		panic(err)
 	}
