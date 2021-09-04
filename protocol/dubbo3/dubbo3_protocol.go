@@ -25,6 +25,7 @@ import (
 )
 
 import (
+	tripleCommon "github.com/dubbogo/triple/pkg/common"
 	tripleConstant "github.com/dubbogo/triple/pkg/common/constant"
 	triConfig "github.com/dubbogo/triple/pkg/config"
 	"github.com/dubbogo/triple/pkg/triple"
@@ -189,8 +190,15 @@ func (d *UnaryService) GetReqParamsInterfaces(methodName string) ([]interface{},
 }
 
 func (d *UnaryService) InvokeWithArgs(ctx context.Context, methodName string, arguments []interface{}) (interface{}, error) {
-	res := d.proxyImpl.Invoke(ctx, invocation.NewRPCInvocation(methodName, arguments, nil))
-	return res.Result(), res.Error()
+	dubboAttachment := make(map[string]interface{})
+	tripleAttachment, ok := ctx.Value(tripleConstant.TripleAttachement).(tripleCommon.TripleAttachment)
+	if ok {
+		for k, v := range tripleAttachment {
+			dubboAttachment[k] = v
+		}
+	}
+	res := d.proxyImpl.Invoke(ctx, invocation.NewRPCInvocation(methodName, arguments, dubboAttachment))
+	return res, res.Error()
 }
 
 // openServer open a dubbo3 server, if there is already a service using the same protocol, it returns directly.

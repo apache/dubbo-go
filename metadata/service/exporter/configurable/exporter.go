@@ -18,8 +18,11 @@
 package configurable
 
 import (
-	"github.com/pkg/errors"
 	"sync"
+)
+
+import (
+	"github.com/pkg/errors"
 )
 
 import (

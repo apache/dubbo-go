@@ -153,12 +153,10 @@ github.com/dubbogo/gost v1.11.12/go.mod h1:vIcP9rqz2KsXHPjsAwIUtfJIJjppQLQDcYaZT
 github.com/dubbogo/gost v1.11.16 h1:fvOw8aKQ0BuUYuD+MaXAYFvT7tg2l7WAS5SL5gZJpFs=
 github.com/dubbogo/gost v1.11.16/go.mod h1:vIcP9rqz2KsXHPjsAwIUtfJIJjppQLQDcYaZTy/61jI=
 github.com/dubbogo/jsonparser v1.0.1/go.mod h1:tYAtpctvSP/tWw4MeelsowSPgXQRVHHWbqL6ynps8jU=
-github.com/dubbogo/net v0.0.3 h1:2k53mh+1U8h1gFjJ8ykzyP4wNdAdgjc5moD+xVHI/AE=
-github.com/dubbogo/net v0.0.3/go.mod h1:B6/ka3g8VzcyrmdCH4VkHP1K0aHeI37FmclS+TCwIBU=
-github.com/dubbogo/triple v1.0.6-0.20210826093718-8b877016f3bf h1:lj0hNwbjk7UpqyEYo6Kz4poTH4w5UfyqI4Gl6x3HEqo=
-github.com/dubbogo/triple v1.0.6-0.20210826093718-8b877016f3bf/go.mod h1:tCl0mV54+V8Br9z71sFbS1IQUG41QKZUrW6FGaLheM0=
-github.com/dubbogo/triple v1.0.6-0.20210829063429-3fc89d0b1771 h1:tJqD3Utmjnla5goePEWYfU77AlESStc8EGNzmGwF9lE=
-github.com/dubbogo/triple v1.0.6-0.20210829063429-3fc89d0b1771/go.mod h1:tCl0mV54+V8Br9z71sFbS1IQUG41QKZUrW6FGaLheM0=
+github.com/dubbogo/net v0.0.4 h1:Rn9aMPZwOiRE22YhtxmDEE3H0Q3cfVRNhuEjNMelJ/8=
+github.com/dubbogo/net v0.0.4/go.mod h1:1CGOnM7X3he+qgGNqjeADuE5vKZQx/eMSeUkpU3ujIc=
+github.com/dubbogo/triple v1.0.6-0.20210904050749-5721796f3fd6 h1:ZrCFQ/a0rgK5EBF9FiiSYvCmtC2sLzOoFAbqBVmsA94=
+github.com/dubbogo/triple v1.0.6-0.20210904050749-5721796f3fd6/go.mod h1:KbfU/uZDv+fJEqXYK3qI8m1iuBQ309QxiC0tvTf2pog=
 github.com/dustin/go-humanize v0.0.0-20171111073723-bb3d318650d4/go.mod h1:HtrtbFcZ19U5GC7JDqmcUSB87Iq5E25KnS6fMYU6eOk=
 github.com/dustin/go-humanize v1.0.0 h1:VSnTsYCnlFHaM2/igO1h6X3HA71jcobQuxemgkq4zYo=
 github.com/dustin/go-humanize v1.0.0/go.mod h1:HtrtbFcZ19U5GC7JDqmcUSB87Iq5E25KnS6fMYU6eOk=
@@ -194,8 +192,8 @@ github.com/frankban/quicktest v1.10.0 h1:Gfh+GAJZOAoKZsIZeZbdn2JF10kN1XHNvjsvQK8
 github.com/frankban/quicktest v1.10.0/go.mod h1:ui7WezCLWMWxVWr1GETZY3smRy0G4KWq9vcPtJmFl7Y=
 github.com/fsnotify/fsnotify v1.4.7/go.mod h1:jwhsz4b93w/PPRr/qN1Yymfu8t87LnFCMoQvtojpjFo=
 github.com/fsnotify/fsnotify v1.4.9/go.mod h1:znqG4EE+3YCdAaPaxE2ZRY/06pZUdp0tY4IgpuI1SZQ=
-github.com/fsnotify/fsnotify v1.5.0 h1:NO5hkcB+srp1x6QmwvNZLeaOgbM8cmBTN32THzjvu2k=
-github.com/fsnotify/fsnotify v1.5.0/go.mod h1:BX0DCEr5pT4jm2CnQdVP1lFV521fcCNcyEeNp4DQQDk=
+github.com/fsnotify/fsnotify v1.5.1 h1:mZcQUHVQUQWoPXXtuf9yuEXKudkV2sx1E06UadKWpgI=
+github.com/fsnotify/fsnotify v1.5.1/go.mod h1:T3375wBYaZdLLcVNkcVbzGHY7f1l/uK5T5Ai1i3InKU=
 github.com/getsentry/raven-go v0.2.0 h1:no+xWJRb5ZI7eE8TWgIq1jLulQiIoLG0IfYxv5JYMGs=
 github.com/getsentry/raven-go v0.2.0/go.mod h1:KungGk8q33+aIAZUIVWZDr2OfAEBsO49PX4NzFV5kcQ=
 github.com/ghodss/yaml v0.0.0-20150909031657-73d445a93680/go.mod h1:4dBDuWmgqj2HViK6kFavaiC9ZROes6MMH2rRYeMEF04=
