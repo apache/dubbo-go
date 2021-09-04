@@ -23,6 +23,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 	_ "dubbo.apache.org/dubbo-go/v3/common/proxy/proxy_factory"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	_ "dubbo.apache.org/dubbo-go/v3/filter/filter_impl"
@@ -47,7 +48,7 @@ func InitDubboServer() {
 	)
 
 	providerConfig := config.NewProviderConfig(
-		config.WithProviderService("Server", serviceConfig),
+		config.WithProviderService(common.GetReference(&Server{}), serviceConfig),
 	)
 
 	protocolConfig := config.NewProtocolConfig(
