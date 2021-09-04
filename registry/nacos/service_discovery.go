@@ -220,7 +220,6 @@ func (n *nacosServiceDiscovery) AddListener(listener registry.ServiceInstancesCh
 		err := n.namingClient.Client().Subscribe(&vo.SubscribeParam{
 			GroupName:   n.group,
 			ServiceName: serviceName,
-			GroupName:   n.group,
 			SubscribeCallback: func(services []model.SubscribeService, err error) {
 				if err != nil {
 					logger.Errorf("Could not handle the subscribe notification because the err is not nil."+

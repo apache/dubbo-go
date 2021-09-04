@@ -30,8 +30,6 @@ import (
 	gxpage "github.com/dubbogo/gost/hash/page"
 
 	"github.com/hashicorp/vault/sdk/helper/jsonutil"
-
-	perrors "github.com/pkg/errors"
 )
 
 import (
