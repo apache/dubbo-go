@@ -14,7 +14,7 @@ func TestInitServer(t *testing.T) {
 				Name: "dubbo",
 				Ip:   "127.0.0.1",
 				Port: "20003",
-						},
+			},
 		},
 	}
 	config.SetRootConfig(rootConf)
