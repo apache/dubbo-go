@@ -109,8 +109,8 @@ type (
 )
 
 // GetDefaultClientConfig gets client default configuration
-func GetDefaultClientConfig() ClientConfig {
-	return ClientConfig{
+func GetDefaultClientConfig() *ClientConfig {
+	defaultClientConfig := &ClientConfig{
 		ReconnectInterval: 0,
 		ConnectionNum:     16,
 		HeartbeatPeriod:   "30s",
@@ -132,11 +132,13 @@ func GetDefaultClientConfig() ClientConfig {
 			SessionName:      "client",
 		},
 	}
+	_ = defaultClientConfig.CheckValidity()
+	return defaultClientConfig
 }
 
 // GetDefaultServerConfig gets server default configuration
-func GetDefaultServerConfig() ServerConfig {
-	return ServerConfig{
+func GetDefaultServerConfig() *ServerConfig {
+	defaultServerConfig := &ServerConfig{
 		SessionTimeout: "180s",
 		SessionNumber:  700,
 		GrPoolSize:     120,
@@ -156,6 +158,8 @@ func GetDefaultServerConfig() ServerConfig {
 			SessionName:      "server",
 		},
 	}
+	_ = defaultServerConfig.CheckValidity()
+	return defaultServerConfig
 }
 
 // CheckValidity confirm getty session params
