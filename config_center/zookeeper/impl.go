@@ -18,6 +18,7 @@
 package zookeeper
 
 import (
+	"encoding/base64"
 	"strings"
 	"sync"
 )
@@ -114,8 +115,11 @@ func (c *zookeeperDynamicConfiguration) GetProperties(key string, opts ...config
 	if err != nil {
 		return "", perrors.WithStack(err)
 	}
-
-	return string(content), nil
+	decoded, err := base64.StdEncoding.DecodeString(string(content))
+	if err != nil {
+		return "", perrors.WithStack(err)
+	}
+	return string(decoded), nil
 }
 
 // GetInternalProperty For zookeeper, getConfig and getConfigs have the same meaning.
@@ -126,7 +130,9 @@ func (c *zookeeperDynamicConfiguration) GetInternalProperty(key string, opts ...
 // PublishConfig will put the value into Zk with specific path
 func (c *zookeeperDynamicConfiguration) PublishConfig(key string, group string, value string) error {
 	path := c.getPath(key, group)
-	err := c.client.CreateWithValue(path, []byte(value))
+	strbytes := []byte(value)
+	encoded := base64.StdEncoding.EncodeToString(strbytes)
+	err := c.client.CreateWithValue(path, []byte(encoded))
 	if err != nil {
 		return perrors.WithStack(err)
 	}
