@@ -94,7 +94,7 @@ func (rc *RootConfig) Init() error {
 		return err
 	}
 	if err := rc.ConfigCenter.Init(rc); err != nil {
-		logger.Info("config center doesn't start.")
+		logger.Infof("config center doesn't start. error is %s", err)
 	}
 	if err := rc.Application.Init(rc); err != nil {
 		return err
