@@ -26,7 +26,6 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config/testdata/config/service"
 )
 
@@ -45,13 +44,13 @@ func TestLoad(t *testing.T) {
 	t.Run("application", func(t *testing.T) {
 		application := rootConfig.Application
 
-		assert.Equal(t, application.Organization, "dubbo.io")
-		assert.Equal(t, application.Name, "dubbo-go")
-		assert.Equal(t, application.Module, "local")
-		assert.Equal(t, application.Version, "1.0.0")
-		assert.Equal(t, application.Owner, "zhaoyunxing")
-		assert.Equal(t, application.Environment, "dev")
-		assert.Equal(t, application.MetadataType, "local")
+		assert.Equal(t, "dubbo-go", application.Organization)
+		assert.Equal(t, "dubbo-go", application.Name)
+		assert.Equal(t, "local", application.Module)
+		assert.Equal(t, "1.0.0", application.Version)
+		assert.Equal(t, "zhaoyunxing", application.Owner)
+		assert.Equal(t, "dev", application.Environment)
+		assert.Equal(t, "local", application.MetadataType)
 	})
 
 	t.Run("registries", func(t *testing.T) {
@@ -107,9 +106,9 @@ func TestGetRegistriesConfig(t *testing.T) {
 func TestGetProviderConfig(t *testing.T) {
 	// empty registry
 	t.Run("empty registry", func(t *testing.T) {
-		Load(WithPath("./testdata/config/provider/empty_registry_application.yaml"))
+		assert.Nil(t, Load(WithPath("./testdata/config/provider/empty_registry_application.yaml")))
 		provider := rootConfig.Provider
-		assert.NotNil(t, constant.DEFAULT_Key, provider.Registry[0])
+		assert.Equal(t, 0, len(provider.Registry))
 	})
 
 	t.Run("root registry", func(t *testing.T) {

@@ -25,8 +25,6 @@ import (
 
 import (
 	"github.com/creasty/defaults"
-
-	"github.com/pkg/errors"
 )
 
 import (
@@ -73,18 +71,8 @@ func (c *RegistryConfig) check() error {
 	return verify(c)
 }
 
-func initRegistriesConfig(rc *RootConfig) error {
-	registries := rc.Registries
-	if len(registries) <= 0 {
-		return errors.New("dubbo.registries must set")
-	}
-	for _, registry := range registries {
-		if err := registry.check(); err != nil {
-			return err
-		}
-	}
-	rc.Registries = registries
-	return nil
+func (c *RegistryConfig) Init() error {
+	return c.check()
 }
 
 func (c *RegistryConfig) getUrlMap(roleType common.RoleType) url.Values {
@@ -133,9 +121,7 @@ func (c *RegistryConfig) GetInstance(roleType common.RoleType) (registry.Registr
 }
 
 func (c *RegistryConfig) toURL(roleType common.RoleType) (*common.URL, error) {
-	addresses := strings.Split(c.Address, ",")
-	address := addresses[0]
-	address = c.translateRegistryAddress()
+	address := c.translateRegistryAddress()
 	var registryURLProtocol string
 	if c.RegistryType == "service" {
 		// service discovery protocol

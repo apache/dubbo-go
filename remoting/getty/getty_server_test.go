@@ -15,25 +15,27 @@
  * limitations under the License.
  */
 
-package extension
+package getty
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
-	"dubbo.apache.org/dubbo-go/v3/config_center"
+	"dubbo.apache.org/dubbo-go/v3/config"
+	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
-var configCenterFactories = make(map[string]func() config_center.DynamicConfigurationFactory)
-
-// SetConfigCenterFactory sets the DynamicConfigurationFactory with @name
-func SetConfigCenterFactory(name string, v func() config_center.DynamicConfigurationFactory) {
-	configCenterFactories[name] = v
-}
-
-// GetConfigCenterFactory finds the DynamicConfigurationFactory with @name
-func GetConfigCenterFactory(name string) config_center.DynamicConfigurationFactory {
-	if configCenterFactories[name] == nil {
-		logger.Warn("config center for " + name + " is not existing, make sure you have import the package.")
-		return nil
+func TestInitServer(t *testing.T) {
+	originRootConf := config.GetRootConfig()
+	rootConf := config.RootConfig{
+		Protocols: map[string]*config.ProtocolConfig{
+			"dubbo": {
+				Name: "dubbo",
+				Ip:   "127.0.0.1",
+				Port: "20003",
+			},
+		},
 	}
-	return configCenterFactories[name]()
+	config.SetRootConfig(rootConf)
+	initServer("dubbo")
+	config.SetRootConfig(*originRootConf)
+	assert.NotNil(t, srvConf)
 }

@@ -23,6 +23,10 @@ import (
 )
 
 import (
+	"github.com/pkg/errors"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
@@ -51,6 +55,9 @@ func NewMetadataServiceExporter(metadataService service.MetadataService) exporte
 // Export will export the metadataService
 func (exporter *MetadataServiceExporter) Export(url *common.URL) error {
 	if !exporter.IsExported() {
+		if url == nil || url.SubURL == nil {
+			return errors.New("metadata server url is nil, pls check your configuration")
+		}
 		version, _ := exporter.metadataService.Version()
 		exporter.lock.Lock()
 		defer exporter.lock.Unlock()

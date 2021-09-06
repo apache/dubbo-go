@@ -36,11 +36,12 @@ type RootConfig struct {
 	// Registries registry config
 	Registries map[string]*RegistryConfig `yaml:"registries" json:"registries" property:"registries"`
 
-	// Deprecated since 1.5.0 version
+	// Remotes to be remove in 3.0 config-enhance
 	Remotes map[string]*RemoteConfig `yaml:"remote" json:"remote,omitempty" property:"remote"`
 
 	ConfigCenter *CenterConfig `yaml:"config-center" json:"config-center,omitempty"`
 
+	// ServiceDiscoveries to be remove in 3.0 config-enhance
 	ServiceDiscoveries map[string]*ServiceDiscoveryConfig `yaml:"service-discovery" json:"service-discovery,omitempty" property:"service-discovery"`
 
 	MetadataReportConfig *MetadataReportConfig `yaml:"metadata-report" json:"metadata-report,omitempty" property:"metadata-report"`
@@ -89,8 +90,11 @@ func (RootConfig) Prefix() string {
 
 // Init init config
 func (rc *RootConfig) Init() error {
+	if err := initLoggerConfig(rc); err != nil {
+		return err
+	}
 	if err := rc.ConfigCenter.Init(rc); err != nil {
-		logger.Info("config center doesn't start.")
+		logger.Infof("config center doesn't start. error is %s", err)
 	}
 	if err := rc.Application.Init(rc); err != nil {
 		return err
@@ -98,11 +102,10 @@ func (rc *RootConfig) Init() error {
 	if err := initProtocolsConfig(rc); err != nil {
 		return err
 	}
-	if err := initRegistriesConfig(rc); err != nil {
-		return err
-	}
-	if err := initLoggerConfig(rc); err != nil {
-		return err
+	for i, _ := range rc.Registries {
+		if err := rc.Registries[i].Init(); err != nil {
+			return err
+		}
 	}
 	if err := initServiceDiscoveryConfig(rc); err != nil {
 		return err

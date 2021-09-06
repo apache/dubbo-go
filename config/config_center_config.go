@@ -176,8 +176,23 @@ func startConfigCenter(rc *RootConfig) error {
 	return nil
 }
 
+func (c *CenterConfig) GetDynamicConfiguration() (config_center.DynamicConfiguration, error) {
+	configCenterUrl, err := c.toURL()
+	if err != nil {
+		return nil, err
+	}
+	factory := extension.GetConfigCenterFactory(configCenterUrl.Protocol)
+	if factory == nil {
+		return nil, errors.New("get config center factory failed")
+	}
+	return factory.GetDynamicConfiguration(configCenterUrl)
+}
+
 func (c *CenterConfig) prepareEnvironment(configCenterUrl *common.URL) (string, error) {
 	factory := extension.GetConfigCenterFactory(configCenterUrl.Protocol)
+	if factory == nil {
+		return "", errors.New("get config center factory failed")
+	}
 	dynamicConfig, err := factory.GetDynamicConfiguration(configCenterUrl)
 	if err != nil {
 		logger.Errorf("Get dynamic configuration error , error message is %v", err)

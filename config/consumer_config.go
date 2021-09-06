@@ -39,7 +39,7 @@ const (
 // ConsumerConfig is Consumer default configuration
 type ConsumerConfig struct {
 	Filter string `yaml:"filter" json:"filter,omitempty" property:"filter"`
-	// client
+	// ConnectTimeout will be remove in 3.0 config-enhance
 	ConnectTimeout string `default:"3s" yaml:"connect-timeout" json:"connect-timeout,omitempty" property:"connect-timeout"`
 	// support string
 	Registry []string `yaml:"registry" json:"registry,omitempty" property:"registry"`

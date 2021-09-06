@@ -132,6 +132,7 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 	}
 
 	// append interface id to ctx
+	ctx = context.WithValue(ctx, tripleConstant.CtxAttachmentKey, invocation.Attachments())
 	ctx = context.WithValue(ctx, tripleConstant.InterfaceKey, di.BaseInvoker.GetURL().GetParam(constant.INTERFACE_KEY, ""))
 	in := make([]reflect.Value, 0, 16)
 	in = append(in, reflect.ValueOf(ctx))
@@ -141,8 +142,11 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 	}
 
 	methodName := invocation.MethodName()
-
-	result.Err = di.client.Invoke(methodName, in, invocation.Reply())
+	triAttachmentWithErr := di.client.Invoke(methodName, in, invocation.Reply())
+	result.Err = triAttachmentWithErr.GetError()
+	for k, v := range triAttachmentWithErr.GetAttachments() {
+		result.Attachment(k, v)
+	}
 	result.Rest = invocation.Reply()
 	return &result
 }

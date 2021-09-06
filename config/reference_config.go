@@ -137,8 +137,12 @@ func (rc *ReferenceConfig) Refer(_ interface{}) {
 	}
 
 	if len(rc.urls) == 1 {
+		if rc.urls[0].Protocol == constant.SERVICE_REGISTRY_PROTOCOL {
+			rc.invoker = extension.GetProtocol("registry").Refer(rc.urls[0])
+		} else {
+			rc.invoker = extension.GetProtocol(rc.urls[0].Protocol).Refer(rc.urls[0])
+		}
 
-		rc.invoker = extension.GetProtocol("registry").Refer(rc.urls[0])
 		// c.URL != "" is direct call
 		if rc.URL != "" {
 			//filter
@@ -168,7 +172,13 @@ func (rc *ReferenceConfig) Refer(_ interface{}) {
 		invokers := make([]protocol.Invoker, 0, len(rc.urls))
 		var regURL *common.URL
 		for _, u := range rc.urls {
-			invoker := extension.GetProtocol(u.Protocol).Refer(u)
+			var invoker protocol.Invoker
+			if u.Protocol == constant.SERVICE_REGISTRY_PROTOCOL {
+				invoker = extension.GetProtocol("registry").Refer(u)
+			} else {
+				invoker = extension.GetProtocol(u.Protocol).Refer(u)
+			}
+
 			// c.URL != "" is direct call
 			if rc.URL != "" {
 				//filter
@@ -271,7 +281,7 @@ func (rc *ReferenceConfig) getURLMap() url.Values {
 	if rc.Generic != "" {
 		defaultReferenceFilter = constant.GENERIC_REFERENCE_FILTERS + "," + defaultReferenceFilter
 	}
-	//urlMap.Set(constant.REFERENCE_FILTER_KEY, config.mergeValue(config.consumerConfig.Filter, c.Filter, defaultReferenceFilter))
+	urlMap.Set(constant.REFERENCE_FILTER_KEY, mergeValue(rc.rootConfig.Consumer.Filter, "", defaultReferenceFilter))
 
 	for _, v := range rc.Methods {
 		urlMap.Set("methods."+v.Name+"."+constant.LOADBALANCE_KEY, v.LoadBalance)
