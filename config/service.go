@@ -22,8 +22,9 @@ import (
 )
 
 var (
-	conServices = map[string]common.RPCService{} // service name -> service
-	proServices = map[string]common.RPCService{} // service name -> service
+	conServices              = map[string]common.RPCService{} // service name -> service
+	proServices              = map[string]common.RPCService{} // service name -> service
+	interfaceNameConServices = map[string]common.RPCService{} // interfaceName -> service
 )
 
 // SetConsumerService is called by init() of implement of RPCService
@@ -41,6 +42,16 @@ func SetProviderService(service common.RPCService) {
 // GetConsumerService gets ConsumerService by @name
 func GetConsumerService(name string) common.RPCService {
 	return conServices[name]
+}
+
+// SetConsumerServiceByInterfaceName is used by pb serialization
+func SetConsumerServiceByInterfaceName(interfaceName string, srv common.RPCService) {
+	interfaceNameConServices[interfaceName] = srv
+}
+
+// GetConsumerServiceByInterfaceName is used by pb serialization
+func GetConsumerServiceByInterfaceName(interfaceName string) common.RPCService {
+	return interfaceNameConServices[interfaceName]
 }
 
 // GetProviderService gets ProviderService by @name

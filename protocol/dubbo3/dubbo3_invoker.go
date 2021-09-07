@@ -59,8 +59,8 @@ func NewDubboInvoker(url *common.URL) (*DubboInvoker, error) {
 	rt := config.GetConsumerConfig().RequestTimeout
 
 	timeout := url.GetParamDuration(constant.TIMEOUT_KEY, rt)
-	key := url.GetParam(constant.BEAN_NAME_KEY, "")
-	consumerService := config.GetConsumerService(key)
+	interfaceKey := url.GetParam(constant.INTERFACE_KEY, "")
+	consumerService := config.GetConsumerServiceByInterfaceName(interfaceKey)
 
 	dubboSerializaerType := url.GetParam(constant.SERIALIZATION_KEY, constant.PROTOBUF_SERIALIZATION)
 	triCodecType := tripleConstant.CodecType(dubboSerializaerType)
