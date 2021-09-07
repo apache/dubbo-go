@@ -23,15 +23,15 @@ import (
 )
 
 var (
-	// conServicesLock is to guard conServices map.
+	// conServicesLock is used to guard conServices map.
 	conServicesLock = sync.Mutex{}
 	conServices     = map[string]common.RPCService{} // service name -> service
 
-	// proServicesLock is to guard proServices map
+	// proServicesLock is used to guard proServices map
 	proServicesLock = sync.Mutex{}
 	proServices     = map[string]common.RPCService{} // service name -> service
 
-	// interfaceNameConServicesLock is to guard interfaceNameConServices map
+	// interfaceNameConServicesLock is used to guard interfaceNameConServices map
 	interfaceNameConServicesLock = sync.Mutex{}
 	interfaceNameConServices     = map[string]common.RPCService{} // interfaceName -> service
 )

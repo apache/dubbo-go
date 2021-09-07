@@ -59,6 +59,8 @@ func NewDubboInvoker(url *common.URL) (*DubboInvoker, error) {
 	rt := config.GetConsumerConfig().RequestTimeout
 
 	timeout := url.GetParamDuration(constant.TIMEOUT_KEY, rt)
+	// for triple pb serialization. The bean name from provider is the provider reference key,
+	// which can't locate the target consumer stub, so we use interface key..
 	interfaceKey := url.GetParam(constant.INTERFACE_KEY, "")
 	consumerService := config.GetConsumerServiceByInterfaceName(interfaceKey)
 
