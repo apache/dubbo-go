@@ -19,54 +19,60 @@ package config
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"sync"
 )
 
 var (
-	conServices              = map[string]common.RPCService{} // service name -> service
-	proServices              = map[string]common.RPCService{} // service name -> service
-	interfaceNameConServices = map[string]common.RPCService{} // interfaceName -> service
+	conServices                  = map[string]common.RPCService{} // service name -> service
+	conServicesLock              = sync.Mutex{}
+	proServices                  = map[string]common.RPCService{} // service name -> service
+	proServicesLock              = sync.Mutex{}
+	interfaceNameConServices     = map[string]common.RPCService{} // interfaceName -> service
+	interfaceNameConServicesLock = sync.Mutex{}
 )
 
 // SetConsumerService is called by init() of implement of RPCService
 func SetConsumerService(service common.RPCService) {
 	ref := common.GetReference(service)
+	conServicesLock.Lock()
+	defer conServicesLock.Unlock()
 	conServices[ref] = service
 }
 
 // SetProviderService is called by init() of implement of RPCService
 func SetProviderService(service common.RPCService) {
 	ref := common.GetReference(service)
+	proServicesLock.Lock()
+	defer proServicesLock.Unlock()
 	proServices[ref] = service
 }
 
 // GetConsumerService gets ConsumerService by @name
 func GetConsumerService(name string) common.RPCService {
+	conServicesLock.Lock()
+	defer conServicesLock.Unlock()
 	return conServices[name]
+}
+
+// GetProviderService gets ProviderService by @name
+func GetProviderService(name string) common.RPCService {
+	proServicesLock.Lock()
+	defer proServicesLock.Unlock()
+	return proServices[name]
 }
 
 // SetConsumerServiceByInterfaceName is used by pb serialization
 func SetConsumerServiceByInterfaceName(interfaceName string, srv common.RPCService) {
+	interfaceNameConServicesLock.Lock()
+	defer interfaceNameConServicesLock.Unlock()
 	interfaceNameConServices[interfaceName] = srv
 }
 
 // GetConsumerServiceByInterfaceName is used by pb serialization
 func GetConsumerServiceByInterfaceName(interfaceName string) common.RPCService {
+	interfaceNameConServicesLock.Lock()
+	defer interfaceNameConServicesLock.Unlock()
 	return interfaceNameConServices[interfaceName]
-}
-
-// GetProviderService gets ProviderService by @name
-func GetProviderService(name string) common.RPCService {
-	return proServices[name]
-}
-
-// GetAllProviderService gets all ProviderService
-func GetAllProviderService() map[string]common.RPCService {
-	return proServices
-}
-
-// GetAllConsumerService gets all ConsumerService
-func GetAllConsumerService() map[string]common.RPCService {
-	return conServices
 }
 
 // GetCallback gets CallbackResponse by @name
