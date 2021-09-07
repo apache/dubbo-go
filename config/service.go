@@ -23,12 +23,17 @@ import (
 )
 
 var (
-	conServices                  = map[string]common.RPCService{} // service name -> service
-	conServicesLock              = sync.Mutex{}
-	proServices                  = map[string]common.RPCService{} // service name -> service
-	proServicesLock              = sync.Mutex{}
-	interfaceNameConServices     = map[string]common.RPCService{} // interfaceName -> service
+	// conServicesLock is to guard conServices map.
+	conServicesLock = sync.Mutex{}
+	conServices     = map[string]common.RPCService{} // service name -> service
+
+	// proServicesLock is to guard proServices map
+	proServicesLock = sync.Mutex{}
+	proServices     = map[string]common.RPCService{} // service name -> service
+
+	// interfaceNameConServicesLock is to guard interfaceNameConServices map
 	interfaceNameConServicesLock = sync.Mutex{}
+	interfaceNameConServices     = map[string]common.RPCService{} // interfaceName -> service
 )
 
 // SetConsumerService is called by init() of implement of RPCService
