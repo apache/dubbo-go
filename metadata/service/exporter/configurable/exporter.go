@@ -18,6 +18,7 @@
 package configurable
 
 import (
+	"strconv"
 	"sync"
 )
 
@@ -64,8 +65,8 @@ func (exporter *MetadataServiceExporter) Export(url *common.URL) error {
 			config.WithServiceID(constant.SIMPLE_METADATA_SERVICE_NAME),
 			config.WithServiceProtocolKeys(constant.DEFAULT_PROTOCOL),
 			config.WithServiceProtocol(constant.DEFAULT_PROTOCOL, config.NewProtocolConfig(
-				config.WithProtocolName(url.SubURL.Protocol),
-				config.WithProtocolPort(url.SubURL.Port),
+				config.WithProtocolName(constant.DEFAULT_PROTOCOL),
+				config.WithProtocolPort(strconv.Itoa(constant.DEFAULT_METADATAPORT)),
 			)),
 			config.WithServiceRegistry("N/A"),
 			config.WithServiceInterface(constant.METADATA_SERVICE_NAME),
