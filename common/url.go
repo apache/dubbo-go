@@ -260,14 +260,14 @@ func NewURL(urlString string, opts ...Option) (*URL, error) {
 	}
 
 	// compatible "default." prefix
-	//for key, value := range s.params {
-	//	if strings.Index(key, constant.DEFAULT_KEY_PREFIX) == 0 && len(value) > 0 {
-	//		key = key[len(constant.DEFAULT_KEY_PREFIX):]
-	//		if s.params.Get(key) == "" {
-	//			s.params.Set(key, value[0])
-	//		}
-	//	}
-	//}
+	for key, value := range s.params {
+		if strings.Index(key, constant.DEFAULT_KEY_PREFIX) == 0 && len(value) > 0 {
+			key = key[len(constant.DEFAULT_KEY_PREFIX):]
+			if s.params.Get(key) == "" {
+				s.params.Set(key, value[0])
+			}
+		}
+	}
 
 	s.PrimitiveURL = urlString
 	s.Protocol = serviceUrl.Scheme

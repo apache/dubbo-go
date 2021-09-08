@@ -166,12 +166,12 @@ func (r *RPCInvocation) SetAttachments(key string, value interface{}) {
 		r.attachments = make(map[string]interface{})
 	}
 	// compatible "default." prefix
-	//if strings.Index(key, constant.DEFAULT_KEY_PREFIX) == 0 {
-	//	key = key[len(constant.DEFAULT_KEY_PREFIX):]
-	//	if _, ok := r.attachments[key]; ok { // ignore common key when key existed
-	//		return
-	//	}
-	//}
+	if strings.Index(key, constant.DEFAULT_KEY_PREFIX) == 0 {
+		key = key[len(constant.DEFAULT_KEY_PREFIX):]
+		if _, ok := r.attachments[key]; ok { // ignore common key when key existed
+			return
+		}
+	}
 	r.attachments[key] = value
 }
 
