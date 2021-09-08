@@ -259,6 +259,16 @@ func NewURL(urlString string, opts ...Option) (*URL, error) {
 		return &s, perrors.Errorf("url.ParseQuery(raw url string{%s}),  error{%v}", serviceUrl.RawQuery, err)
 	}
 
+	// compatible "default." prefix
+	for key, value := range s.params {
+		if strings.Index(key, constant.DEFAULT_KEY_PREFIX) == 0 && len(value) > 0 {
+			key = key[len(constant.DEFAULT_KEY_PREFIX):]
+			if s.params.Get(key) == "" {
+				s.params.Set(key, value[0])
+			}
+		}
+	}
+
 	s.PrimitiveURL = urlString
 	s.Protocol = serviceUrl.Scheme
 	s.Username = serviceUrl.User.Username()

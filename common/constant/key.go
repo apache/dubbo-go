@@ -50,7 +50,8 @@ const (
 	PROTOCOL_KEY             = "protocol"
 	PATH_SEPARATOR           = "/"
 	//DUBBO_KEY                = "dubbo"
-	SSL_ENABLED_KEY = "ssl-enabled"
+	SSL_ENABLED_KEY    = "ssl-enabled"
+	DEFAULT_KEY_PREFIX = "default."
 )
 
 const (
