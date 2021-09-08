@@ -83,8 +83,8 @@ func NewClient(url *common.URL) (*Client, error) {
 		return nil, err
 	}
 
-	key := url.GetParam(constant.BEAN_NAME_KEY, "")
-	impl := config.GetConsumerService(key)
+	key := url.GetParam(constant.INTERFACE_KEY, "")
+	impl := config.GetConsumerServiceByInterfaceName(key)
 	invoker := getInvoker(impl, conn)
 
 	return &Client{

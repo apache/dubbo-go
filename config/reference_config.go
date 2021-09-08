@@ -94,7 +94,7 @@ func (cc *ReferenceConfig) Init(rc *RootConfig) error {
 }
 
 // Refer ...
-func (rc *ReferenceConfig) Refer(_ interface{}) {
+func (rc *ReferenceConfig) Refer(srv interface{}) {
 	cfgURL := common.NewURLWithOptions(
 		common.WithPath(rc.InterfaceName),
 		common.WithProtocol(rc.Protocol),
@@ -102,6 +102,7 @@ func (rc *ReferenceConfig) Refer(_ interface{}) {
 		common.WithParamsValue(constant.BEAN_NAME_KEY, rc.id),
 		common.WithParamsValue(constant.METADATATYPE_KEY, rc.metaDataType),
 	)
+	SetConsumerServiceByInterfaceName(rc.InterfaceName, srv)
 	if rc.ForceTag {
 		cfgURL.AddParam(constant.ForceUseTag, "true")
 	}
