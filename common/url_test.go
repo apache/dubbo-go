@@ -422,10 +422,10 @@ func CustomCompareURLEqual(l *URL, r *URL, execludeParam ...string) bool {
 	return l.PrimitiveURL == r.PrimitiveURL
 }
 
-func TestURLWithLowerVersion(t *testing.T) {
-	url1, _ := NewURL("dubbo://127.0.0.1:20880/com.xxx.XxxService?default.version=1.0.0&default.group=test")
-	url2, _ := NewURL("dubbo://127.0.0.1:20880/com.xxx.XxxService?version=1.0.0&group=test")
-	assert.Equal(t, url1.GetParam(constant.VERSION_KEY, ""), "1.0.0")
-	assert.Equal(t, url1.GetParam(constant.GROUP_KEY, ""), "test")
-	assert.True(t, url1.URLEqual(url2))
-}
+//func TestURLWithLowerVersion(t *testing.T) {
+//	url1, _ := NewURL("dubbo://127.0.0.1:20880/com.xxx.XxxService?default.version=1.0.0&default.group=test")
+//	url2, _ := NewURL("dubbo://127.0.0.1:20880/com.xxx.XxxService?version=1.0.0&group=test")
+//	assert.Equal(t, url1.GetParam(constant.VERSION_KEY, ""), "1.0.0")
+//	assert.Equal(t, url1.GetParam(constant.GROUP_KEY, ""), "test")
+//	assert.True(t, url1.URLEqual(url2))
+//}
