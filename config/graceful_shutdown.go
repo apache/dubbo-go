@@ -54,7 +54,7 @@ import (
 const defaultShutDownTime = time.Second * 60
 
 // nolint
-func GracefulShutdownInit() {
+func GracefulShutdownInit(callBack func()) {
 
 	signals := make(chan os.Signal, 1)
 
@@ -70,6 +70,7 @@ func GracefulShutdownInit() {
 				os.Exit(0)
 			})
 			BeforeShutdown()
+			callBack()
 			// those signals' original behavior is exit with dump ths stack, so we try to keep the behavior
 			for _, dumpSignal := range DumpHeapShutdownSignals {
 				if sig == dumpSignal {
