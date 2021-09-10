@@ -365,7 +365,7 @@ func Load() {
 	loadProviderConfig()
 
 	// init the shutdown callback
-	GracefulShutdownInit()
+	GracefulShutdownInit(func() {})
 }
 
 // GetRPCService get rpc service for consumer

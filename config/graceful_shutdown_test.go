@@ -28,7 +28,7 @@ import (
 )
 
 func TestGracefulShutdownInit(t *testing.T) {
-	GracefulShutdownInit()
+	GracefulShutdownInit(func() {})
 }
 
 func TestBeforeShutdown(t *testing.T) {
