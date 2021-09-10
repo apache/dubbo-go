@@ -86,7 +86,7 @@ func InitLog(logConfFile string) error {
 	}
 	if path.Ext(logConfFile) != ".yml" {
 		InitLogger(nil)
-		return perrors.Errorf("log configure file name{%s} suffix must be .yml", logConfFile)
+		return perrors.Errorf("log configure file name{%s} suffix must be .yml,Please check if your format conforms to the .yml format", logConfFile)
 	}
 
 	confFileStream, err := ioutil.ReadFile(logConfFile)

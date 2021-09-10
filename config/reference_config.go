@@ -124,7 +124,7 @@ func (rc *ReferenceConfig) Refer(_ interface{}) {
 		for _, urlStr := range urlStrings {
 			serviceURL, err := common.NewURL(urlStr)
 			if err != nil {
-				panic(fmt.Sprintf("user specified URL %v refer error, error message is %v ", urlStr, err.Error()))
+				panic(fmt.Sprintf("url configuration error please check your configuration,user specified URL %v refer error, error message is %v ", urlStr, err.Error()))
 			}
 			if serviceURL.Protocol == constant.REGISTRY_PROTOCOL {
 				serviceURL.SubURL = cfgURL
