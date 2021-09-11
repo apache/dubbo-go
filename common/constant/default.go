@@ -45,6 +45,7 @@ const (
 	DEFAULT_REST_CLIENT        = "resty"
 	DEFAULT_REST_SERVER        = "go-restful"
 	DEFAULT_PORT               = 20000
+	DEFAULT_METADATAPORT       = 20005
 	DEFAULT_SERIALIZATION      = HESSIAN2_SERIALIZATION
 )
 
@@ -93,12 +94,4 @@ const (
 	DEFAULT_CONSUMER_CONF_FILE_PATH = "../profiles/dev/client.yml"
 	DEFAULT_LOG_CONF_FILE_PATH      = "../profiles/dev/log.yml"
 	DEFAULT_ROUTER_CONF_FILE_PATH   = "../profiles/dev/router.yml"
-)
-
-// default config value
-const (
-	DEFAULT_REGISTRY_ZK_ID       = "demoZK"
-	DEFAULT_REGISTRY_ZK_PROTOCOL = ZOOKEEPER_KEY
-	DEFAULT_REGISTRY_ZK_TIMEOUT  = "3s"
-	DEFAULT_REGISTRY_ZK_ADDRESS  = "127.0.0.1:2181"
 )

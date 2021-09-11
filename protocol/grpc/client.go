@@ -20,12 +20,17 @@ package grpc
 import (
 	"reflect"
 	"strconv"
+	"sync"
+	"time"
 )
 
 import (
 	"github.com/grpc-ecosystem/grpc-opentracing/go/otgrpc"
+
 	"github.com/opentracing/opentracing-go"
+
 	"google.golang.org/grpc"
+
 	"gopkg.in/yaml.v2"
 )
 
@@ -37,8 +42,58 @@ import (
 )
 
 var clientConf *ClientConfig
+var clientConfInitOnce sync.Once
 
-func init() {
+// Client is gRPC client include client connection and invoker
+type Client struct {
+	*grpc.ClientConn
+	invoker reflect.Value
+}
+
+// NewClient creates a new gRPC client.
+func NewClient(url *common.URL) (*Client, error) {
+	clientConfInitOnce.Do(clientInit)
+
+	// If global trace instance was set, it means trace function enabled.
+	// If not, will return NoopTracer.
+	tracer := opentracing.GlobalTracer()
+	dialOpts := make([]grpc.DialOption, 0, 4)
+	maxMessageSize, _ := strconv.Atoi(url.GetParam(constant.MESSAGE_SIZE_KEY, "4"))
+
+	// consumer config client connectTimeout
+	//connectTimeout := config.GetConsumerConfig().ConnectTimeout
+
+	dialOpts = append(dialOpts,
+		grpc.WithInsecure(),
+		grpc.WithBlock(),
+		// todo config network timeout
+		grpc.WithTimeout(time.Second*3),
+		grpc.WithUnaryInterceptor(otgrpc.OpenTracingClientInterceptor(tracer, otgrpc.LogPayloads())),
+		grpc.WithStreamInterceptor(otgrpc.OpenTracingStreamClientInterceptor(tracer, otgrpc.LogPayloads())),
+		grpc.WithDefaultCallOptions(
+			grpc.CallContentSubtype(clientConf.ContentSubType),
+			grpc.MaxCallRecvMsgSize(1024*1024*maxMessageSize),
+			grpc.MaxCallSendMsgSize(1024*1024*maxMessageSize),
+		),
+	)
+
+	conn, err := grpc.Dial(url.Location, dialOpts...)
+	if err != nil {
+		logger.Errorf("grpc dial error: %v", err)
+		return nil, err
+	}
+
+	key := url.GetParam(constant.INTERFACE_KEY, "")
+	impl := config.GetConsumerServiceByInterfaceName(key)
+	invoker := getInvoker(impl, conn)
+
+	return &Client{
+		ClientConn: conn,
+		invoker:    reflect.ValueOf(invoker),
+	}, nil
+}
+
+func clientInit() {
 	// load rootConfig from runtime
 	rootConfig := config.GetRootConfig()
 
@@ -59,12 +114,12 @@ func init() {
 	if rootConfig.Application == nil {
 		return
 	}
-	protocolConf := config.GetConsumerConfig().ProtocolConf
+	protocolConf := config.GetRootConfig().Protocols
 
 	if protocolConf == nil {
 		logger.Info("protocol_conf default use dubbo config")
 	} else {
-		grpcConf := protocolConf.(map[interface{}]interface{})[GRPC]
+		grpcConf := protocolConf[GRPC]
 		if grpcConf == nil {
 			logger.Warnf("grpcConf is nil")
 			return
@@ -78,52 +133,6 @@ func init() {
 			panic(err)
 		}
 	}
-}
-
-// Client is gRPC client include client connection and invoker
-type Client struct {
-	*grpc.ClientConn
-	invoker reflect.Value
-}
-
-// NewClient creates a new gRPC client.
-func NewClient(url *common.URL) (*Client, error) {
-	// If global trace instance was set, it means trace function enabled.
-	// If not, will return NoopTracer.
-	tracer := opentracing.GlobalTracer()
-	dialOpts := make([]grpc.DialOption, 0, 4)
-	maxMessageSize, _ := strconv.Atoi(url.GetParam(constant.MESSAGE_SIZE_KEY, "4"))
-
-	// consumer config client connectTimeout
-	connectTimeout := config.GetConsumerConfig().ConnectTimeout
-
-	dialOpts = append(dialOpts,
-		grpc.WithInsecure(),
-		grpc.WithBlock(),
-		grpc.WithTimeout(connectTimeout),
-		grpc.WithUnaryInterceptor(otgrpc.OpenTracingClientInterceptor(tracer, otgrpc.LogPayloads())),
-		grpc.WithStreamInterceptor(otgrpc.OpenTracingStreamClientInterceptor(tracer, otgrpc.LogPayloads())),
-		grpc.WithDefaultCallOptions(
-			grpc.CallContentSubtype(clientConf.ContentSubType),
-			grpc.MaxCallRecvMsgSize(1024*1024*maxMessageSize),
-			grpc.MaxCallSendMsgSize(1024*1024*maxMessageSize),
-		),
-	)
-
-	conn, err := grpc.Dial(url.Location, dialOpts...)
-	if err != nil {
-		logger.Errorf("grpc dial error: %v", err)
-		return nil, err
-	}
-
-	key := url.GetParam(constant.BEAN_NAME_KEY, "")
-	impl := config.GetConsumerService(key)
-	invoker := getInvoker(impl, conn)
-
-	return &Client{
-		ClientConn: conn,
-		invoker:    reflect.ValueOf(invoker),
-	}, nil
 }
 
 func getInvoker(impl interface{}, conn *grpc.ClientConn) interface{} {

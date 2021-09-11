@@ -25,8 +25,11 @@ import (
 
 import (
 	"github.com/apache/dubbo-getty"
+
 	gxsync "github.com/dubbogo/gost/sync"
+
 	perrors "github.com/pkg/errors"
+
 	"gopkg.in/yaml.v2"
 )
 
@@ -40,36 +43,45 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
-var srvConf *ServerConfig
+var (
+	srvConf *ServerConfig
+)
 
 func initServer(protocol string) {
-	// load clientconfig from provider_config
+	srvConf = GetDefaultServerConfig()
+	if protocol == "" {
+		return
+	}
+
+	// load server config from rootConfig.Protocols
 	// default use dubbo
-	//providerConfig := config.GetProviderConfig()
-	//if providerConfig.ApplicationConfig == nil {
-	//	return
-	//}
-	protocolConf := config.GetRootConfig().Provider.ProtocolConf
-	defaultServerConfig := GetDefaultServerConfig()
+	if config.GetApplicationConfig() == nil {
+		return
+	}
+	if config.GetRootConfig().Protocols == nil {
+		return
+	}
+
+	protocolConf := config.GetRootConfig().Protocols[protocol]
 	if protocolConf == nil {
-		logger.Info("protocol_conf default use dubbo config")
+		logger.Info("use default getty server config")
+		return
 	} else {
-		dubboConf := protocolConf.(map[interface{}]interface{})[protocol]
-		if dubboConf == nil {
-			logger.Warnf("dubboConf is nil")
+		gettyServerConfig := protocolConf.Params
+		if gettyServerConfig == nil {
+			logger.Warnf("gettyServerConfig is nil")
 			return
 		}
 
-		dubboConfByte, err := yaml.Marshal(dubboConf)
+		gettyServerConfigBytes, err := yaml.Marshal(gettyServerConfig)
 		if err != nil {
 			panic(err)
 		}
-		err = yaml.Unmarshal(dubboConfByte, &defaultServerConfig)
+		err = yaml.Unmarshal(gettyServerConfigBytes, srvConf)
 		if err != nil {
 			panic(err)
 		}
 	}
-	srvConf = &defaultServerConfig
 	if err := srvConf.CheckValidity(); err != nil {
 		panic(err)
 	}

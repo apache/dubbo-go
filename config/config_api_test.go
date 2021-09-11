@@ -95,7 +95,7 @@ package config
 //		WithReferenceProtocol("test-protocol"),
 //		WithReferenceRegistry("test-registry"),
 //	)
-//	defaultZKRegistry := NewDefaultRegistryConfig("zookeeper")
+//	defaultZKRegistry := NewRegistryConfigWithProtocolDefaultPort("zookeeper")
 //	assert.Equal(t, defaultZKRegistry.Address, defaultZKAddr)
 //	assert.Equal(t, defaultZKRegistry.Protocol, "zookeeper")
 //	assert.Equal(t, defaultZKRegistry.TimeoutStr, defaultRegistryTimeout)
@@ -129,7 +129,7 @@ package config
 //		WithServiceWarmUpTime("test-warmup"),
 //	)
 //
-//	defaultNacosRegistry := NewDefaultRegistryConfig("nacos")
+//	defaultNacosRegistry := NewRegistryConfigWithProtocolDefaultPort("nacos")
 //	assert.Equal(t, defaultNacosRegistry.Address, defaultNacosAddr)
 //	assert.Equal(t, defaultNacosRegistry.Protocol, "nacos")
 //	assert.Equal(t, defaultNacosRegistry.TimeoutStr, defaultRegistryTimeout)

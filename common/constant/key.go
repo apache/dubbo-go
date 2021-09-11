@@ -52,8 +52,9 @@ const (
 	// DUBBO_KEY                = "dubbo"
 	SSL_ENABLED_KEY = "ssl-enabled"
 	// PARAMS_TYPE_Key key used in pass through invoker factory, to define param type
-	PARAMS_TYPE_Key = "parameter-type-names"
-	DEFAULT_Key     = "default"
+	PARAMS_TYPE_Key  = "parameter-type-names"
+	DEFAULT_Key      = "default"
+	METADATATYPE_KEY = "metadata-type"
 )
 
 const (
@@ -122,16 +123,19 @@ const (
 )
 
 const (
-	REGISTRY_KEY         = "registry"
-	REGISTRY_PROTOCOL    = "registry"
-	ROLE_KEY             = "registry.role"
-	REGISTRY_DEFAULT_KEY = "registry.default"
-	REGISTRY_TIMEOUT_KEY = "registry.timeout"
-	REGISTRY_LABEL_KEY   = "label"
-	PREFERRED_KEY        = "preferred"
-	ZONE_KEY             = "zone"
-	ZONE_FORCE_KEY       = "zone.force"
-	REGISTRY_TTL_KEY     = "registry.ttl"
+	REGISTRY_KEY              = "registry"
+	REGISTRY_PROTOCOL         = "registry"
+	SERVICE_REGISTRY_PROTOCOL = "service-discovery-registry"
+	ROLE_KEY                  = "registry.role"
+	REGISTRY_DEFAULT_KEY      = "registry.default"
+	REGISTRY_TIMEOUT_KEY      = "registry.timeout"
+	REGISTRY_LABEL_KEY        = "label"
+	PREFERRED_KEY             = "preferred"
+	ZONE_KEY                  = "zone"
+	ZONE_FORCE_KEY            = "zone.force"
+	REGISTRY_TTL_KEY          = "registry.ttl"
+	SIMPLIFIED_KEY            = "simplified"
+	NAMESPACE_KEY             = "namespace"
 )
 
 const (
@@ -308,4 +312,13 @@ const (
 
 	// SERVICE_DISCOVERY_KEY indicate which service discovery instance will be used
 	SERVICE_DISCOVERY_KEY = "service_discovery"
+)
+
+// Generic Filter
+
+const (
+	GenericSerializationDefault = "true"
+	// disable "protobuf-json" temporarily
+	//GenericSerializationProtobuf = "protobuf-json"
+	GenericSerializationGson = "gson"
 )

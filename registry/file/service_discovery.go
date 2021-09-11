@@ -29,6 +29,7 @@ import (
 import (
 	gxset "github.com/dubbogo/gost/container/set"
 	gxpage "github.com/dubbogo/gost/hash/page"
+
 	perrors "github.com/pkg/errors"
 )
 
@@ -55,8 +56,9 @@ type fileSystemServiceDiscovery struct {
 	fileMap              map[string]string
 }
 
-func newFileSystemServiceDiscovery(name string) (registry.ServiceDiscovery, error) {
-	sdc, ok := config.GetRootConfig().ServiceDiscoveries[name]
+func newFileSystemServiceDiscovery() (registry.ServiceDiscovery, error) {
+	// todo fix
+	sdc, ok := config.GetRootConfig().ServiceDiscoveries[""]
 	if !ok || sdc.Protocol != constant.FILE_KEY {
 		return nil, perrors.New("could not init the instance because the config is invalid")
 	}

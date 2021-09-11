@@ -18,6 +18,19 @@
 package config
 
 import (
+	"fmt"
+	"net/url"
+	"strconv"
+	"time"
+)
+
+import (
+	"github.com/creasty/defaults"
+
+	gxstrings "github.com/dubbogo/gost/strings"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
@@ -26,12 +39,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config/generic"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
-	"fmt"
-	"github.com/creasty/defaults"
-	gxstrings "github.com/dubbogo/gost/strings"
-	"net/url"
-	"strconv"
-	"time"
 )
 
 // ReferenceConfig is the configuration of service consumer
@@ -56,12 +63,13 @@ type ReferenceConfig struct {
 	Params         map[string]string `yaml:"params"  json:"params,omitempty" property:"params"`
 	invoker        protocol.Invoker
 	urls           []*common.URL
-	Generic        bool   `yaml:"generic"  json:"generic,omitempty" property:"generic"`
+	Generic        string `yaml:"generic"  json:"generic,omitempty" property:"generic"`
 	Sticky         bool   `yaml:"sticky"   json:"sticky,omitempty" property:"sticky"`
 	RequestTimeout string `yaml:"timeout"  json:"timeout,omitempty" property:"timeout"`
 	ForceTag       bool   `yaml:"force.tag"  json:"force.tag,omitempty" property:"force.tag"`
 
-	rootConfig *RootConfig
+	rootConfig   *RootConfig
+	metaDataType string
 }
 
 // nolint
@@ -69,51 +77,32 @@ func (rc *ReferenceConfig) Prefix() string {
 	return constant.ReferenceConfigPrefix + rc.InterfaceName + "."
 }
 
-// UnmarshalYAML unmarshals the ReferenceConfig by @unmarshal function
-//func (c *ReferenceConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
-//	type rf ReferenceConfig
-//	raw := rf{} // Put your defaults here
-//	if err := unmarshal(&raw); err != nil {
-//		return err
-//	}
-//
-//	*c = ReferenceConfig(raw)
-//	return defaults.Set(c)
-//}
-
-func initReferenceConfig(cc *ConsumerConfig) error {
-	references := cc.References
-	if references == nil {
-		references = make(map[string]*ReferenceConfig, 8)
-	}
-	for _, reference := range references {
-		if err := initConsumerMethodConfig(reference); err != nil {
-			return err
-		}
-		if err := reference.check(); err != nil {
+func (cc *ReferenceConfig) Init(rc *RootConfig) error {
+	for k, _ := range cc.Methods {
+		if err := cc.Methods[k].Init(); err != nil {
 			return err
 		}
 	}
-	cc.References = references
-	return nil
-}
-
-func (rc *ReferenceConfig) check() error {
 	if err := defaults.Set(rc); err != nil {
 		return err
 	}
-	rc.rootConfig = rootConfig
-	return verify(rc)
+	cc.rootConfig = rc
+	if rc.Application != nil {
+		cc.metaDataType = rc.Application.MetadataType
+	}
+	return verify(cc)
 }
 
 // Refer ...
-func (rc *ReferenceConfig) Refer(_ interface{}) {
+func (rc *ReferenceConfig) Refer(srv interface{}) {
 	cfgURL := common.NewURLWithOptions(
 		common.WithPath(rc.InterfaceName),
 		common.WithProtocol(rc.Protocol),
 		common.WithParams(rc.getURLMap()),
 		common.WithParamsValue(constant.BEAN_NAME_KEY, rc.id),
+		common.WithParamsValue(constant.METADATATYPE_KEY, rc.metaDataType),
 	)
+	SetConsumerServiceByInterfaceName(rc.InterfaceName, srv)
 	if rc.ForceTag {
 		cfgURL.AddParam(constant.ForceUseTag, "true")
 	}
@@ -149,7 +138,12 @@ func (rc *ReferenceConfig) Refer(_ interface{}) {
 	}
 
 	if len(rc.urls) == 1 {
-		rc.invoker = extension.GetProtocol(rc.urls[0].Protocol).Refer(rc.urls[0])
+		if rc.urls[0].Protocol == constant.SERVICE_REGISTRY_PROTOCOL {
+			rc.invoker = extension.GetProtocol("registry").Refer(rc.urls[0])
+		} else {
+			rc.invoker = extension.GetProtocol(rc.urls[0].Protocol).Refer(rc.urls[0])
+		}
+
 		// c.URL != "" is direct call
 		if rc.URL != "" {
 			//filter
@@ -179,7 +173,13 @@ func (rc *ReferenceConfig) Refer(_ interface{}) {
 		invokers := make([]protocol.Invoker, 0, len(rc.urls))
 		var regURL *common.URL
 		for _, u := range rc.urls {
-			invoker := extension.GetProtocol(u.Protocol).Refer(u)
+			var invoker protocol.Invoker
+			if u.Protocol == constant.SERVICE_REGISTRY_PROTOCOL {
+				invoker = extension.GetProtocol("registry").Refer(u)
+			} else {
+				invoker = extension.GetProtocol(u.Protocol).Refer(u)
+			}
+
 			// c.URL != "" is direct call
 			if rc.URL != "" {
 				//filter
@@ -213,8 +213,8 @@ func (rc *ReferenceConfig) Refer(_ interface{}) {
 		// FailoverClusterInvoker(RegistryDirectory, routing happens here) -> Invoker
 		rc.invoker = cluster.Join(directory.NewStaticDirectory(invokers))
 	}
-	// publish consumer metadata
-	publishConsumerDefinition(cfgURL)
+	// publish consumer's metadata
+	publishServiceDefinition(cfgURL)
 	// create proxy
 	if rc.Async {
 		callback := GetCallback(rc.id)
@@ -253,7 +253,7 @@ func (rc *ReferenceConfig) getURLMap() url.Values {
 	urlMap.Set(constant.RETRIES_KEY, rc.Retries)
 	urlMap.Set(constant.GROUP_KEY, rc.Group)
 	urlMap.Set(constant.VERSION_KEY, rc.Version)
-	urlMap.Set(constant.GENERIC_KEY, strconv.FormatBool(rc.Generic))
+	urlMap.Set(constant.GENERIC_KEY, rc.Generic)
 	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(common.CONSUMER))
 	urlMap.Set(constant.PROVIDED_BY, rc.ProvidedBy)
 	urlMap.Set(constant.SERIALIZATION_KEY, rc.Serialization)
@@ -279,10 +279,10 @@ func (rc *ReferenceConfig) getURLMap() url.Values {
 
 	// filter
 	defaultReferenceFilter := constant.DEFAULT_REFERENCE_FILTERS
-	if rc.Generic {
+	if rc.Generic != "" {
 		defaultReferenceFilter = constant.GENERIC_REFERENCE_FILTERS + "," + defaultReferenceFilter
 	}
-	//urlMap.Set(constant.REFERENCE_FILTER_KEY, config.mergeValue(config.consumerConfig.Filter, c.Filter, defaultReferenceFilter))
+	urlMap.Set(constant.REFERENCE_FILTER_KEY, mergeValue(rc.rootConfig.Consumer.Filter, "", defaultReferenceFilter))
 
 	for _, v := range rc.Methods {
 		urlMap.Set("methods."+v.Name+"."+constant.LOADBALANCE_KEY, v.LoadBalance)
@@ -308,12 +308,6 @@ func (rc *ReferenceConfig) GenericLoad(id string) {
 // GetInvoker get invoker from ReferenceConfig
 func (rc *ReferenceConfig) GetInvoker() protocol.Invoker {
 	return rc.invoker
-}
-
-func publishConsumerDefinition(url *common.URL) {
-	if remoteMetadataService, err := extension.GetRemoteMetadataService(); err == nil && remoteMetadataService != nil {
-		remoteMetadataService.PublishServiceDefinition(url)
-	}
 }
 
 // postProcessConfig asks registered ConfigPostProcessor to post-process the current ReferenceConfig.
@@ -351,15 +345,15 @@ func NewReferenceConfig(opts ...ReferenceConfigOpt) *ReferenceConfig {
 }
 
 // WithReferenceRegistry returns ReferenceConfigOpt with given registryKey: @registry
-func WithReferenceRegistry(registry ...string) ReferenceConfigOpt {
+func WithReferenceRegistry(registryKeys ...string) ReferenceConfigOpt {
 	return func(config *ReferenceConfig) *ReferenceConfig {
-		config.Registry = registry
+		config.Registry = registryKeys
 		return config
 	}
 }
 
-// WithReferenceProtocol returns ReferenceConfigOpt with given protocolKey: @protocol
-func WithReferenceProtocol(protocol string) ReferenceConfigOpt {
+// WithReferenceProtocolName returns ReferenceConfigOpt with given protocolName: @protocol
+func WithReferenceProtocolName(protocol string) ReferenceConfigOpt {
 	return func(config *ReferenceConfig) *ReferenceConfig {
 		config.Protocol = protocol
 		return config

@@ -19,14 +19,18 @@ package helloworld
 
 import (
 	"context"
-	"dubbo.apache.org/dubbo-go/v3/config"
 )
 
 import (
 	"google.golang.org/grpc"
 )
 
+import (
+	"dubbo.apache.org/dubbo-go/v3/config"
+)
+
 func init() {
+	config.SetConsumerServiceByInterfaceName("io.grpc.examples.helloworld.GreeterGrpc$IGreeter", &GrpcGreeterImpl{})
 	config.SetConsumerService(&GrpcGreeterImpl{})
 }
 

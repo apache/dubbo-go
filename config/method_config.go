@@ -18,8 +18,11 @@
 package config
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"github.com/creasty/defaults"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
 // MethodConfig defines method config
@@ -48,18 +51,8 @@ func (mc *MethodConfig) Prefix() string {
 	return constant.DUBBO + "." + mc.InterfaceName + "." + mc.Name + "."
 }
 
-func initConsumerMethodConfig(rc *ReferenceConfig) error {
-	methods := rc.Methods
-	if methods == nil {
-		return nil
-	}
-	for _, method := range methods {
-		if err := method.check(); err != nil {
-			return err
-		}
-	}
-	rc.Methods = methods
-	return nil
+func (mc *MethodConfig) Init() error {
+	return mc.check()
 }
 
 func initProviderMethodConfig(sc *ServiceConfig) error {

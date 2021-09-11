@@ -18,9 +18,12 @@
 package judger
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"regexp"
 	"strings"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/config"
 )
 
 // nolint

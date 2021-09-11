@@ -25,9 +25,14 @@ import (
 
 import (
 	"github.com/apache/dubbo-getty"
+
 	gxsync "github.com/dubbogo/gost/sync"
+	gxtime "github.com/dubbogo/gost/time"
+
 	perrors "github.com/pkg/errors"
+
 	"go.uber.org/atomic"
+
 	"gopkg.in/yaml.v2"
 )
 
@@ -44,53 +49,56 @@ var (
 	errClientClosed      = perrors.New("client closed")
 	errClientReadTimeout = perrors.New("maybe the client read timeout or fail to decode tcp stream in Writer.Write")
 
-	clientConf   *ClientConfig
-	clientGrpool gxsync.GenericTaskPool
+	clientConf *ClientConfig
+
+	clientGrPool gxsync.GenericTaskPool
 )
 
 // it is init client for single protocol.
 func initClient(protocol string) {
+	clientConf = GetDefaultClientConfig()
 	if protocol == "" {
 		return
 	}
 
-	// load clientconfig from consumer_config
+	// load client config from rootConfig.Protocols
 	// default use dubbo
-	//consumerConfig := config.GetConsumerConfig()
-	//if consumerConfig.ApplicationConfig == nil {
-	//	return
-	//}
-	protocolConf := config.GetRootConfig().Network
-	defaultClientConfig := GetDefaultClientConfig()
+	if config.GetApplicationConfig() == nil {
+		return
+	}
+	if config.GetRootConfig().Protocols == nil {
+		return
+	}
+
+	protocolConf := config.GetRootConfig().Protocols[protocol]
 	if protocolConf == nil {
-		logger.Info("protocol_conf default use dubbo config")
+		logger.Info("use default getty client config")
+		return
 	} else {
-		//dubboConf := protocolConf.(map[interface{}]interface{})[protocol]
-		dubboConf := protocolConf[protocol]
-		if dubboConf == nil {
-			logger.Warnf("dubboConf is nil")
+		gettyClientConfig := protocolConf.Params
+		if gettyClientConfig == nil {
+			logger.Warnf("gettyClientConfig is nil")
 			return
 		}
-		dubboConfByte, err := yaml.Marshal(dubboConf)
+		gettyClientConfigBytes, err := yaml.Marshal(gettyClientConfig)
 		if err != nil {
 			panic(err)
 		}
-		err = yaml.Unmarshal(dubboConfByte, &defaultClientConfig)
+		err = yaml.Unmarshal(gettyClientConfigBytes, clientConf)
 		if err != nil {
 			panic(err)
 		}
 	}
-	clientConf = &defaultClientConfig
 	if err := clientConf.CheckValidity(); err != nil {
 		logger.Warnf("[CheckValidity] error: %v", err)
 		return
 	}
-	setClientGrpool()
+	setClientGrPool()
 
 	rand.Seed(time.Now().UnixNano())
 }
 
-// ShutdownConfig ClientConf
+// SetClientConf ClientConf
 func SetClientConf(c ClientConfig) {
 	clientConf = &c
 	err := clientConf.CheckValidity()
@@ -98,11 +106,11 @@ func SetClientConf(c ClientConfig) {
 		logger.Warnf("[ClientConfig CheckValidity] error: %v", err)
 		return
 	}
-	setClientGrpool()
+	setClientGrPool()
 }
 
-func setClientGrpool() {
-	clientGrpool = gxsync.NewTaskPoolSimple(clientConf.GrPoolSize)
+func setClientGrPool() {
+	clientGrPool = gxsync.NewTaskPoolSimple(clientConf.GrPoolSize)
 }
 
 // Options : param config
@@ -128,7 +136,7 @@ type Client struct {
 	codec              remoting.Codec
 }
 
-// create client
+// NewClient create client
 func NewClient(opt Options) *Client {
 	switch {
 	case opt.ConnectTimeout == 0:
@@ -149,7 +157,7 @@ func NewClient(opt Options) *Client {
 func (c *Client) SetExchangeClient(client *remoting.ExchangeClient) {
 }
 
-// init client and try to connection.
+// Connect init client and try to connection.
 func (c *Client) Connect(url *common.URL) error {
 	initClient(url.Protocol)
 	c.conf = *clientConf
@@ -164,7 +172,7 @@ func (c *Client) Connect(url *common.URL) error {
 	return err
 }
 
-// close network connection
+// Close close network connection
 func (c *Client) Close() {
 	c.mux.Lock()
 	client := c.gettyClient
@@ -176,7 +184,7 @@ func (c *Client) Close() {
 	}
 }
 
-// send request
+// Request send request
 func (c *Client) Request(request *remoting.Request, timeout time.Duration, response *remoting.PendingResponse) error {
 	_, session, err := c.selectSession(c.addr)
 	if err != nil {
@@ -202,7 +210,7 @@ func (c *Client) Request(request *remoting.Request, timeout time.Duration, respo
 	}
 
 	select {
-	case <-getty.GetTimeWheel().After(timeout):
+	case <-gxtime.After(timeout):
 		return perrors.WithStack(errClientReadTimeout)
 	case <-response.Done:
 		err = response.Err
@@ -211,7 +219,7 @@ func (c *Client) Request(request *remoting.Request, timeout time.Duration, respo
 	return perrors.WithStack(err)
 }
 
-// isAvailable returns true if the connection is available, or it can be re-established.
+// IsAvailable returns true if the connection is available, or it can be re-established.
 func (c *Client) IsAvailable() bool {
 	client, _, err := c.selectSession(c.addr)
 	return err == nil &&

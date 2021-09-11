@@ -18,7 +18,6 @@
 package configurable
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"testing"
 )
 
@@ -29,6 +28,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	_ "dubbo.apache.org/dubbo-go/v3/common/proxy/proxy_factory"
+	"dubbo.apache.org/dubbo-go/v3/config"
 	_ "dubbo.apache.org/dubbo-go/v3/filter/filter_impl"
 	"dubbo.apache.org/dubbo-go/v3/metadata/service/local"
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/dubbo"
@@ -46,7 +46,6 @@ func TestConfigurableExporter(t *testing.T) {
 			KeepAlivePeriod:  "120s",
 			TcpRBufSize:      262144,
 			TcpWBufSize:      65536,
-			PkgWQSize:        512,
 			TcpReadTimeout:   "1s",
 			TcpWriteTimeout:  "5s",
 			WaitTimeout:      "1s",
@@ -70,7 +69,7 @@ func TestConfigurableExporter(t *testing.T) {
 		assert.Equal(t, false, exported.IsExported())
 		assert.NoError(t, exported.Export(registryURL))
 		assert.Equal(t, true, exported.IsExported())
-		assert.Regexp(t, "dubbo://:20003/org.apache.dubbo.metadata.MetadataService*", exported.GetExportedURLs()[0].String())
+		assert.Regexp(t, "dubbo://127.0.0.1:20005/org.apache.dubbo.metadata.MetadataService*", exported.GetExportedURLs()[0].String())
 		exported.Unexport()
 		assert.Equal(t, false, exported.IsExported())
 	})
@@ -78,7 +77,8 @@ func TestConfigurableExporter(t *testing.T) {
 
 // mockInitProviderWithSingleRegistry will init a mocked providerConfig
 func mockInitProviderWithSingleRegistry() {
-	providerConfig := &config.ProviderConfig{}
+	providerConfig := config.NewProviderConfig(
+		config.WithProviderService("MockService", config.NewServiceConfig()))
 	providerConfig.Services["MockService"].InitExported()
 	config.SetRootConfig(config.RootConfig{
 		Application: &config.ApplicationConfig{

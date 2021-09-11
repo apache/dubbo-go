@@ -58,9 +58,11 @@ type DubboInvoker struct {
 func NewDubboInvoker(url *common.URL) (*DubboInvoker, error) {
 	rt := config.GetConsumerConfig().RequestTimeout
 
-	timeout:=url.GetParamDuration(constant.TIMEOUT_KEY,rt)
-	key := url.GetParam(constant.BEAN_NAME_KEY, "")
-	consumerService := config.GetConsumerService(key)
+	timeout := url.GetParamDuration(constant.TIMEOUT_KEY, rt)
+	// for triple pb serialization. The bean name from provider is the provider reference key,
+	// which can't locate the target consumer stub, so we use interface key..
+	interfaceKey := url.GetParam(constant.INTERFACE_KEY, "")
+	consumerService := config.GetConsumerServiceByInterfaceName(interfaceKey)
 
 	dubboSerializaerType := url.GetParam(constant.SERIALIZATION_KEY, constant.PROTOBUF_SERIALIZATION)
 	triCodecType := tripleConstant.CodecType(dubboSerializaerType)
@@ -132,6 +134,7 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 	}
 
 	// append interface id to ctx
+	ctx = context.WithValue(ctx, tripleConstant.CtxAttachmentKey, invocation.Attachments())
 	ctx = context.WithValue(ctx, tripleConstant.InterfaceKey, di.BaseInvoker.GetURL().GetParam(constant.INTERFACE_KEY, ""))
 	in := make([]reflect.Value, 0, 16)
 	in = append(in, reflect.ValueOf(ctx))
@@ -141,8 +144,11 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 	}
 
 	methodName := invocation.MethodName()
-
-	result.Err = di.client.Invoke(methodName, in, invocation.Reply())
+	triAttachmentWithErr := di.client.Invoke(methodName, in, invocation.Reply())
+	result.Err = triAttachmentWithErr.GetError()
+	for k, v := range triAttachmentWithErr.GetAttachments() {
+		result.Attachment(k, v)
+	}
 	result.Rest = invocation.Reply()
 	return &result
 }

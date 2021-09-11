@@ -18,14 +18,16 @@
 package config
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"fmt"
+)
+
+import (
 	"github.com/creasty/defaults"
-	"go.uber.org/atomic"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
 )
 
 // ProviderConfig is the default configuration of service provider
@@ -41,13 +43,10 @@ type ProviderConfig struct {
 	Services map[string]*ServiceConfig `yaml:"services" json:"services,omitempty" property:"services"`
 
 	ProxyFactory string `default:"default" yaml:"proxy" json:"proxy,omitempty" property:"proxy"`
-	// Protocols      map[string]*ProtocolConfig `yaml:"protocols" json:"protocols,omitempty" property:"protocols"`
-	ProtocolConf interface{} `yaml:"protocol_conf" json:"protocol_conf,omitempty" property:"protocol_conf"`
-	FilterConf   interface{} `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf"`
+
+	FilterConf interface{} `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf"`
 	// ShutdownConfig *ShutdownConfig            `yaml:"shutdown_conf" json:"shutdown_conf,omitempty" property:"shutdown_conf"`
 	ConfigType map[string]string `yaml:"config_type" json:"config_type,omitempty" property:"config_type"`
-	// 是否初始化完成
-	ready *atomic.Bool
 }
 
 func (c *ProviderConfig) CheckConfig() error {
@@ -56,21 +55,20 @@ func (c *ProviderConfig) CheckConfig() error {
 	return verify(c)
 }
 
-func initProviderConfig(rc *RootConfig) error {
-	provider := rc.Provider
-	if provider == nil {
-		provider = new(ProviderConfig)
+func (c *ProviderConfig) Init(rc *RootConfig) error {
+	if c == nil {
+		return nil
 	}
-
-	if err := initServiceConfig(provider); err != nil {
+	for k, _ := range c.Services {
+		if err := c.Services[k].Init(rc); err != nil {
+			return err
+		}
+	}
+	if err := defaults.Set(c); err != nil {
 		return err
 	}
-	if err := defaults.Set(provider); err != nil {
-		return err
-	}
-	provider.Registry = translateRegistryIds(provider.Registry)
-	provider.Load()
-	rc.Provider = provider
+	c.Registry = translateRegistryIds(c.Registry)
+	c.Load()
 	return nil
 }
 
@@ -101,17 +99,6 @@ func (c *ProviderConfig) Prefix() string {
 }
 
 func (c *ProviderConfig) Load() {
-	// todo Write the current configuration to cache file.
-	//if c.CacheFile != "" {
-	//	if data, err := yaml.MarshalYML(providerConfig); err != nil {
-	//		logger.Errorf("Marshal provider config err: %s", err.Error())
-	//	} else {
-	//		if err := ioutil.WriteFile(provider  CacheFile, data, 0666); err != nil {
-	//			logger.Errorf("Write provider config cache file err: %s", err.Error())
-	//		}
-	//	}
-	//}
-	c.ready = atomic.NewBool(false)
 	for key, svs := range c.Services {
 		rpcService := GetProviderService(key)
 		if rpcService == nil {
@@ -121,10 +108,9 @@ func (c *ProviderConfig) Load() {
 		svs.id = key
 		svs.Implement(rpcService)
 		if err := svs.Export(); err != nil {
-			panic(fmt.Sprintf("service %s export failed! err: %#v", key, err))
+			logger.Errorf(fmt.Sprintf("service %s export failed! err: %#v", key, err))
 		}
 	}
-	c.ready = atomic.NewBool(true)
 }
 
 // SetProviderConfig sets provider config by @p
@@ -192,15 +178,15 @@ func NewProviderConfig(opts ...ProviderConfigOpt) *ProviderConfig {
 }
 
 // WithProviderServices returns ProviderConfig with given serviceNameKey @serviceName and @serviceConfig
-func WithProviderServices(serviceName string, serviceConfig *ServiceConfig) ProviderConfigOpt {
+func WithProviderService(serviceName string, serviceConfig *ServiceConfig) ProviderConfigOpt {
 	return func(config *ProviderConfig) *ProviderConfig {
 		config.Services[serviceName] = serviceConfig
 		return config
 	}
 }
 
-// WithProviderRegistry returns ProviderConfigOpt with given @registryKey and registry @registryConfig
-func WithProviderRegistry(registryKey ...string) ProviderConfigOpt {
+// WithProviderRegistryKeys returns ProviderConfigOpt with given @registryKey and registry @registryConfig
+func WithProviderRegistryKeys(registryKey ...string) ProviderConfigOpt {
 	return func(config *ProviderConfig) *ProviderConfig {
 		config.Registry = append(config.Registry, registryKey...)
 		return config

@@ -22,6 +22,8 @@ import (
 )
 
 import (
+	gxchan "github.com/dubbogo/gost/container/chan"
+
 	perrors "github.com/pkg/errors"
 )
 
@@ -80,19 +82,19 @@ func (l *dataListener) DataChange(eventType remoting.Event) bool {
 
 type configurationListener struct {
 	registry *kubernetesRegistry
-	events   chan *config_center.ConfigChangeEvent
+	events   *gxchan.UnboundedChan
 }
 
 // NewConfigurationListener for listening the event of kubernetes.
 func NewConfigurationListener(reg *kubernetesRegistry) *configurationListener {
 	// add a new waiter
 	reg.WaitGroup().Add(1)
-	return &configurationListener{registry: reg, events: make(chan *config_center.ConfigChangeEvent, 32)}
+	return &configurationListener{registry: reg, events: gxchan.NewUnboundedChan(32)}
 }
 
 // Process processes the data change event from config center of kubernetes
 func (l *configurationListener) Process(configType *config_center.ConfigChangeEvent) {
-	l.events <- configType
+	l.events.In() <- configType
 }
 
 // Next returns next service event once received
@@ -103,7 +105,8 @@ func (l *configurationListener) Next() (*registry.ServiceEvent, error) {
 			logger.Warnf("listener's kubernetes client connection is broken, so kubernetes event listener exits now.")
 			return nil, perrors.New("listener stopped")
 
-		case e := <-l.events:
+		case val := <-l.events.Out():
+			e, _ := val.(*config_center.ConfigChangeEvent)
 			logger.Debugf("got kubernetes event %#v", e)
 			if e.ConfigType == remoting.EventTypeDel && !l.registry.client.Valid() {
 				select {

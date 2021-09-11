@@ -18,30 +18,11 @@
 package internal
 
 import (
-	"context"
 	"dubbo.apache.org/dubbo-go/v3/config"
 )
 
-import (
-	"github.com/dubbogo/triple/pkg/triple"
-)
-
 func init() {
-	config.SetConsumerService(&GrpcGreeterImpl{})
-}
-
-// GrpcGreeterImpl
-//used for dubbo3 biz client
-type GrpcGreeterImpl struct {
-	SayHello func(ctx context.Context, in *HelloRequest, out *HelloReply) error
-}
-
-// Reference ...
-func (u *GrpcGreeterImpl) Reference() string {
-	return "DubboGreeterImpl"
-}
-
-// GetDubboStub ...
-func (u *GrpcGreeterImpl) GetDubboStub(cc *triple.TripleConn) GreeterClient {
-	return NewGreeterDubbo3Client(cc)
+	// for pb client
+	config.SetConsumerServiceByInterfaceName("org.apache.dubbo.DubboGreeterImpl", &GreeterClientImpl{})
+	config.SetConsumerService(&GreeterClientImpl{})
 }

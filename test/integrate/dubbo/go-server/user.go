@@ -19,13 +19,16 @@ package main
 
 import (
 	"context"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"fmt"
 	"time"
 )
 
 import (
 	hessian "github.com/apache/dubbo-go-hessian2"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/config"
 )
 
 func init() {

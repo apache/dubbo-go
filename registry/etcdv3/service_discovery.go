@@ -28,7 +28,9 @@ import (
 	gxset "github.com/dubbogo/gost/container/set"
 	gxetcd "github.com/dubbogo/gost/database/kv/etcd/v3"
 	gxpage "github.com/dubbogo/gost/hash/page"
+
 	"github.com/hashicorp/vault/sdk/helper/jsonutil"
+
 	perrors "github.com/pkg/errors"
 )
 
@@ -291,11 +293,12 @@ func (e *etcdV3ServiceDiscovery) DataChange(eventType remoting.Event) bool {
 }
 
 // netEcdv3ServiceDiscovery
-func newEtcdV3ServiceDiscovery(name string) (registry.ServiceDiscovery, error) {
+func newEtcdV3ServiceDiscovery() (registry.ServiceDiscovery, error) {
 	initLock.Lock()
 	defer initLock.Unlock()
 
-	sdc, ok := config.GetRootConfig().ServiceDiscoveries[name]
+	// todo fix
+	sdc, ok := config.GetRootConfig().ServiceDiscoveries[""]
 	if !ok || len(sdc.RemoteRef) == 0 {
 		return nil, perrors.New("could not init the etcd service instance because the config is invalid")
 	}

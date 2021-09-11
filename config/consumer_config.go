@@ -18,8 +18,6 @@
 package config
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
-	"dubbo.apache.org/dubbo-go/v3/config/generic"
 	"fmt"
 	"time"
 )
@@ -30,6 +28,8 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/config/generic"
 )
 
 const (
@@ -39,7 +39,7 @@ const (
 // ConsumerConfig is Consumer default configuration
 type ConsumerConfig struct {
 	Filter string `yaml:"filter" json:"filter,omitempty" property:"filter"`
-	// client
+	// ConnectTimeout will be remove in 3.0 config-enhance
 	ConnectTimeout string `default:"3s" yaml:"connect-timeout" json:"connect-timeout,omitempty" property:"connect-timeout"`
 	// support string
 	Registry []string `yaml:"registry" json:"registry,omitempty" property:"registry"`
@@ -62,37 +62,29 @@ func (ConsumerConfig) Prefix() string {
 	return constant.ConsumerConfigPrefix
 }
 
-func initConsumerConfig(rc *RootConfig) error {
-	consumer := rc.Consumer
-	if consumer == nil {
-		consumer = new(ConsumerConfig)
+func (cc *ConsumerConfig) Init(rc *RootConfig) error {
+	if cc == nil {
+		return nil
 	}
-	if err := initReferenceConfig(consumer); err != nil {
-		return err
-	}
-	if err := consumer.check(); err != nil {
-		return err
-	}
-	for {
-		if rc.Provider.ready.Load() {
-			consumer.Load()
-			break
+	for k, _ := range cc.References {
+		if err := cc.References[k].Init(rc); err != nil {
+			return err
 		}
 	}
-	rc.Consumer = consumer
+	if err := defaults.Set(cc); err != nil {
+		return err
+	}
+	if err := verify(cc); err != nil {
+		return err
+	}
+	cc.rootConfig = rc
+	cc.Load()
 	return nil
 }
 
-func (c *ConsumerConfig) check() error {
-	if err := defaults.Set(c); err != nil {
-		return err
-	}
-	return verify(c)
-}
-
-func (c *ConsumerConfig) Load() {
-	for key, ref := range c.References {
-		if ref.Generic {
+func (cc *ConsumerConfig) Load() {
+	for key, ref := range cc.References {
+		if ref.Generic != "" {
 			genericService := generic.NewGenericService(key)
 			SetConsumerService(genericService)
 		}
@@ -106,24 +98,13 @@ func (c *ConsumerConfig) Load() {
 		ref.Implement(rpcService)
 	}
 
-	// todo Write current configuration to cache file.
-	//if c.CacheFile != "" {
-	//	if data, err := yaml.MarshalYML(c); err != nil {
-	//		logger.Errorf("Marshal consumer config err: %s", err.Error())
-	//	} else {
-	//		if err := ioutil.WriteFile(c.CacheFile, data, 0666); err != nil {
-	//			logger.Errorf("Write consumer config cache file err: %s", err.Error())
-	//		}
-	//	}
-	//}
-
 	// wait for invoker is available, if wait over default 3s, then panic
 	var count int
 	for {
 		checkok := true
-		for _, refconfig := range c.References {
+		for _, refconfig := range cc.References {
 			if (refconfig.Check != nil && *refconfig.Check) ||
-				(refconfig.Check == nil && c.Check) ||
+				(refconfig.Check == nil && cc.Check) ||
 				(refconfig.Check == nil) { // default to true
 
 				if refconfig.invoker != nil && !refconfig.invoker.IsAvailable() {

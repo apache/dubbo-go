@@ -19,7 +19,11 @@ package config
 
 import (
 	"bytes"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
 )
 
 // RootConfig is the root config
@@ -32,11 +36,12 @@ type RootConfig struct {
 	// Registries registry config
 	Registries map[string]*RegistryConfig `yaml:"registries" json:"registries" property:"registries"`
 
-	// Deprecated since 1.5.0 version
+	// Remotes to be remove in 3.0 config-enhance
 	Remotes map[string]*RemoteConfig `yaml:"remote" json:"remote,omitempty" property:"remote"`
 
 	ConfigCenter *CenterConfig `yaml:"config-center" json:"config-center,omitempty"`
 
+	// ServiceDiscoveries to be remove in 3.0 config-enhance
 	ServiceDiscoveries map[string]*ServiceDiscoveryConfig `yaml:"service-discovery" json:"service-discovery,omitempty" property:"service-discovery"`
 
 	MetadataReportConfig *MetadataReportConfig `yaml:"metadata-report" json:"metadata-report,omitempty" property:"metadata-report"`
@@ -78,59 +83,34 @@ func SetRootConfig(r RootConfig) {
 	rootConfig = &r
 }
 
-func NewRootConfig() *RootConfig {
-	return &RootConfig{
-		ConfigCenter:         &CenterConfig{},
-		ServiceDiscoveries:   make(map[string]*ServiceDiscoveryConfig),
-		MetadataReportConfig: &MetadataReportConfig{},
-		Application:          &ApplicationConfig{},
-		Registries:           make(map[string]*RegistryConfig),
-		Protocols:            make(map[string]*ProtocolConfig),
-		Provider:             NewProviderConfig(),
-		Consumer:             NewConsumerConfig(),
-		MetricConfig:         &MetricConfig{},
-	}
-}
-
-type rootConfOption interface {
-	apply(vc *RootConfig)
-}
-
-type RootConfFunc func(*RootConfig)
-
-func (fn RootConfFunc) apply(vc *RootConfig) {
-	fn(vc)
-}
-
 // Prefix dubbo
 func (RootConfig) Prefix() string {
 	return constant.DUBBO
 }
 
-// InitConfig init config
-func (rc *RootConfig) InitConfig(opts ...rootConfOption) error {
-	for _, opt := range opts {
-		opt.apply(rc)
-	}
-	if err := initApplicationConfig(rc); err != nil {
+// Init init config
+func (rc *RootConfig) Init() error {
+	if err := initLoggerConfig(rc); err != nil {
 		return err
 	}
-	if err := initConfigCenter(rc); err != nil {
+	if err := rc.ConfigCenter.Init(rc); err != nil {
+		logger.Infof("config center doesn't start. error is %s", err)
+	}
+	if err := rc.Application.Init(rc); err != nil {
 		return err
 	}
 	if err := initProtocolsConfig(rc); err != nil {
 		return err
 	}
-	if err := initRegistriesConfig(rc); err != nil {
-		return err
-	}
-	if err := initLoggerConfig(rc); err != nil {
-		return err
+	for i, _ := range rc.Registries {
+		if err := rc.Registries[i].Init(); err != nil {
+			return err
+		}
 	}
 	if err := initServiceDiscoveryConfig(rc); err != nil {
 		return err
 	}
-	if err := initMetadataReportConfig(rc); err != nil {
+	if err := rc.MetadataReportConfig.Init(rc); err != nil {
 		return err
 	}
 	if err := initMetricConfig(rc); err != nil {
@@ -143,25 +123,13 @@ func (rc *RootConfig) InitConfig(opts ...rootConfOption) error {
 		return err
 	}
 	// provider、consumer must last init
-	if err := initProviderConfig(rc); err != nil {
+	if err := rc.Provider.Init(rc); err != nil {
 		return err
 	}
-	if err := initConsumerConfig(rc); err != nil {
+	if err := rc.Consumer.Init(rc); err != nil {
 		return err
 	}
 	return nil
-}
-
-func WithApplication(ac *ApplicationConfig) RootConfFunc {
-	return RootConfFunc(func(conf *RootConfig) {
-		conf.Application = ac
-	})
-}
-
-func WithProtocols(protocols map[string]*ProtocolConfig) RootConfFunc {
-	return RootConfFunc(func(conf *RootConfig) {
-		conf.Protocols = protocols
-	})
 }
 
 //func (rc *RootConfig) CheckConfig() error {
@@ -344,3 +312,86 @@ func GetApplicationConfig() *ApplicationConfig {
 //	}
 //	return removeDuplicateElement(ids)
 //}
+
+func NewRootConfig(opts ...RootConfigOpt) *RootConfig {
+	newRootConfig := &RootConfig{
+		ConfigCenter:         &CenterConfig{},
+		ServiceDiscoveries:   make(map[string]*ServiceDiscoveryConfig),
+		MetadataReportConfig: &MetadataReportConfig{},
+		Application:          &ApplicationConfig{},
+		Registries:           make(map[string]*RegistryConfig),
+		Protocols:            make(map[string]*ProtocolConfig),
+		Provider:             NewProviderConfig(),
+		Consumer:             NewConsumerConfig(),
+		MetricConfig:         &MetricConfig{},
+	}
+	for _, o := range opts {
+		o(newRootConfig)
+	}
+	return newRootConfig
+}
+
+type RootConfigOpt func(config *RootConfig)
+
+// WithMetricsConfig set root config with given @metricsConfig
+func WithMetricsConfig(metricsConfig *MetricConfig) RootConfigOpt {
+	return func(rc *RootConfig) {
+		rc.MetricConfig = metricsConfig
+	}
+}
+
+// WithRootConsumerConfig set root config with given @consumerConfig
+func WithRootConsumerConfig(consumerConfig *ConsumerConfig) RootConfigOpt {
+	return func(rc *RootConfig) {
+		rc.Consumer = consumerConfig
+	}
+}
+
+// WithRootProviderConfig set root config with given @providerConfig
+func WithRootProviderConfig(providerConfig *ProviderConfig) RootConfigOpt {
+	return func(rc *RootConfig) {
+		rc.Provider = providerConfig
+	}
+}
+
+// WithRootProtocolConfig set root config with key @protocolName and given @protocolConfig
+func WithRootProtocolConfig(protocolName string, protocolConfig *ProtocolConfig) RootConfigOpt {
+	return func(rc *RootConfig) {
+		rc.Protocols[protocolName] = protocolConfig
+	}
+}
+
+// WithRootRegistryConfig set root config with key @registryKey and given @regConfig
+func WithRootRegistryConfig(registryKey string, regConfig *RegistryConfig) RootConfigOpt {
+	return func(rc *RootConfig) {
+		rc.Registries[registryKey] = regConfig
+	}
+}
+
+// WithRootApplicationConfig set root config with given @appConfig
+func WithRootApplicationConfig(appConfig *ApplicationConfig) RootConfigOpt {
+	return func(rc *RootConfig) {
+		rc.Application = appConfig
+	}
+}
+
+// WithRootMetadataReportConfig set root config with given @metadataReportConfig
+func WithRootMetadataReportConfig(metadataReportConfig *MetadataReportConfig) RootConfigOpt {
+	return func(rc *RootConfig) {
+		rc.MetadataReportConfig = metadataReportConfig
+	}
+}
+
+// WithRootServiceDiscoverConfig set root config with given @serviceDiscConfig and key @name
+func WithRootServiceDiscoverConfig(name string, serviceDiscConfig *ServiceDiscoveryConfig) RootConfigOpt {
+	return func(rc *RootConfig) {
+		rc.ServiceDiscoveries[name] = serviceDiscConfig
+	}
+}
+
+// WithRootCenterConfig set root config with given centerConfig
+func WithRootCenterConfig(centerConfig *CenterConfig) RootConfigOpt {
+	return func(rc *RootConfig) {
+		rc.ConfigCenter = centerConfig
+	}
+}

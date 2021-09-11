@@ -17,7 +17,9 @@
 
 package file
 
-import "dubbo.apache.org/dubbo-go/v3/config_center"
+import (
+	"dubbo.apache.org/dubbo-go/v3/config_center"
+)
 
 // RegistryConfigurationListener represent the processor of flie watcher
 type RegistryConfigurationListener struct{}

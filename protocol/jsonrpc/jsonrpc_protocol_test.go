@@ -18,11 +18,9 @@
 package jsonrpc
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"fmt"
 	"strings"
 	"testing"
-	"time"
 )
 
 import (
@@ -31,6 +29,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
@@ -75,8 +74,8 @@ func TestJsonrpcProtocolRefer(t *testing.T) {
 		"side=provider&timeout=3000&timestamp=1556509797245")
 	assert.NoError(t, err)
 	con := config.ConsumerConfig{
-		ConnectTimeout: 5 * time.Second,
-		RequestTimeout: 5 * time.Second,
+		ConnectTimeout: "5s",
+		RequestTimeout: "5s",
 	}
 	config.SetConsumerConfig(con)
 	invoker := proto.Refer(url)

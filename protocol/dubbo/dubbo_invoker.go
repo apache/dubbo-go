@@ -59,7 +59,7 @@ type DubboInvoker struct {
 func NewDubboInvoker(url *common.URL, client *remoting.ExchangeClient) *DubboInvoker {
 	rt := config.GetConsumerConfig().RequestTimeout
 
-	timeout := url.GetParamDuration(constant.TIMEOUT_KEY,rt)
+	timeout := url.GetParamDuration(constant.TIMEOUT_KEY, rt)
 	di := &DubboInvoker{
 		BaseInvoker: *protocol.NewBaseInvoker(url),
 		clientGuard: &sync.RWMutex{},
@@ -165,7 +165,11 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 
 // get timeout including methodConfig
 func (di *DubboInvoker) getTimeout(invocation *invocation_impl.RPCInvocation) time.Duration {
-	timeout := di.GetURL().GetParam(strings.Join([]string{constant.METHOD_KEYS, invocation.MethodName(), constant.TIMEOUT_KEY}, "."), "")
+	methodName := invocation.MethodName()
+	if di.GetURL().GetParamBool(constant.GENERIC_KEY, false) {
+		methodName = invocation.Arguments()[0].(string)
+	}
+	timeout := di.GetURL().GetParam(strings.Join([]string{constant.METHOD_KEYS, methodName, constant.TIMEOUT_KEY}, "."), "")
 	if len(timeout) != 0 {
 		if t, err := time.ParseDuration(timeout); err == nil {
 			// config timeout into attachment
