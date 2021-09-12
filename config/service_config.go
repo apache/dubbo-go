@@ -225,7 +225,7 @@ func (svc *ServiceConfig) Export() error {
 	urlMap := svc.getUrlMap()
 	protocolConfigs := loadProtocol(svc.Protocol, svc.Protocols)
 	if len(protocolConfigs) == 0 {
-		logger.Warnf("The service %v's '%v' protocols don't has right protocolConfigs,Please check your configuration center and transfer protocol", svc.Interface, svc.Protocol)
+		logger.Warnf("The service %v's '%v' protocols don't has right protocolConfigs, Please check your configuration center and transfer protocol ", svc.Interface, svc.Protocol)
 		return nil
 	}
 
