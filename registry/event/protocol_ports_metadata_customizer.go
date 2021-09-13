@@ -18,7 +18,6 @@
 package event
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/metadata/service/local"
 	"encoding/json"
 	"strconv"
 )
@@ -27,6 +26,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/metadata/service/local"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 

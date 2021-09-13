@@ -216,12 +216,12 @@ func (e *etcdV3ServiceDiscovery) GetRequestInstances(serviceNames []string, offs
 // see addServiceInstancesChangedListener in Java
 func (e *etcdV3ServiceDiscovery) AddListener(listener registry.ServiceInstancesChangedListener) error {
 	for _, t := range listener.GetServiceNames().Values() {
-		err2 := e.registerServiceInstanceListener(t.(string), listener)
-		if err2 != nil {
-			return err2
+		err := e.registerServiceInstanceListener(t.(string), listener)
+		if err != nil {
+			return err
 		}
 
-		err := e.registerServiceWatcher(t.(string))
+		err = e.registerServiceWatcher(t.(string))
 		if err != nil {
 			return err
 		}
