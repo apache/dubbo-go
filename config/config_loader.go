@@ -259,7 +259,9 @@ func loadProviderConfig() {
 			svs.loadProcessConfig(serviceURL, constant.HookEventProviderConnectFail, &errMsg)
 			panic(errMsg)
 		}
-		svs.loadProcessConfig(serviceURL, constant.HookEventProviderConnectSuccess, nil)
+		if serviceURL != nil {
+			svs.loadProcessConfig(serviceURL, constant.HookEventProviderConnectSuccess, nil)
+		}
 	}
 	registerServiceInstance()
 	extension.AllServicesListenComplete()

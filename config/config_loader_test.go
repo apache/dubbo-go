@@ -118,7 +118,7 @@ type CustomEvent struct {
 
 // implements interfaces.ConfigLoadProcessor's functions
 func (c CustomEvent) LoadProcessReferenceConfig(u *common.URL, event string, errMsg *string) {
-	logger.Debug("PostProcessReferenceConfig Start")
+	logger.Debug("LoadProcessReferenceConfig Start")
 	logger.Debug("Event: ", event)
 	logger.Debug("Url: ", u)
 	if errMsg != nil {
@@ -128,7 +128,7 @@ func (c CustomEvent) LoadProcessReferenceConfig(u *common.URL, event string, err
 	assert.Equal(c.t, u.GetParam(constant.SIDE_KEY, ""), "consumer")
 }
 func (c CustomEvent) LoadProcessServiceConfig(u *common.URL, event string, errMsg *string) {
-	logger.Debug("PostProcessServiceConfig Start")
+	logger.Debug("LoadProcessServiceConfig Start")
 	logger.Debug("Event: ", event)
 	logger.Debug("Url: ", u)
 	if errMsg != nil {
@@ -138,7 +138,7 @@ func (c CustomEvent) LoadProcessServiceConfig(u *common.URL, event string, errMs
 	assert.Equal(c.t, u.GetParam(constant.SIDE_KEY, ""), "provider")
 }
 func (c CustomEvent) AllReferencesConnectComplete(urls interfaces.ConfigLoadProcessorURLBinder) {
-	logger.Debug("AllConsumersConnectComplete")
+	logger.Debug("AllReferencesConnectComplete")
 	logger.Debug("Success Url: ", urls.Success)
 	logger.Debug("Fail Url: ", urls.Fail)
 }
