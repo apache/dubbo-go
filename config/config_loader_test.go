@@ -195,6 +195,7 @@ func TestLoadWithEventDispatch(t *testing.T) {
 		common.ServiceKey("com.MockService", "huadong_idc", "1.0.0"))
 	assert.Nil(t, err)
 	extension.RemoveConfigPostProcessor(configPostProcessorName)
+	extension.ResetURL()
 	consumerConfig = nil
 	providerConfig = nil
 }

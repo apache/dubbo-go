@@ -54,6 +54,19 @@ func GetConfigLoadProcessors() []interfaces.ConfigLoadProcessor {
 	return ret
 }
 
+// ResetURL remove all URL
+func ResetURL() {
+	for k := range referenceURL {
+		referenceURL[k] = nil
+		delete(referenceURL, k)
+	}
+	for k := range serviceURL {
+		serviceURL[k] = nil
+		delete(serviceURL, k)
+	}
+}
+
+// LoadProcessReferenceConfig emit reference config load event
 func LoadProcessReferenceConfig(url *common.URL, event string, errMsg *string) {
 	referenceURL[event] = append(referenceURL[event], url)
 	for _, p := range GetConfigLoadProcessors() {
@@ -61,6 +74,7 @@ func LoadProcessReferenceConfig(url *common.URL, event string, errMsg *string) {
 	}
 }
 
+// LoadProcessServiceConfig emit service config load event
 func LoadProcessServiceConfig(url *common.URL, event string, errMsg *string) {
 	serviceURL[event] = append(serviceURL[event], url)
 	for _, p := range GetConfigLoadProcessors() {
@@ -68,6 +82,7 @@ func LoadProcessServiceConfig(url *common.URL, event string, errMsg *string) {
 	}
 }
 
+// AllReferencesConnectComplete emit all references config load complete event
 func AllReferencesConnectComplete() {
 	binder := interfaces.ConfigLoadProcessorURLBinder{
 		Success: referenceURL[constant.HookEventReferenceConnectSuccess],
@@ -76,9 +91,9 @@ func AllReferencesConnectComplete() {
 	for _, p := range GetConfigLoadProcessors() {
 		p.AllReferencesConnectComplete(binder)
 	}
-	referenceURL = nil // release
 }
 
+// AllServicesListenComplete emit all services config load complete event
 func AllServicesListenComplete() {
 	binder := interfaces.ConfigLoadProcessorURLBinder{
 		Success: serviceURL[constant.HookEventProviderConnectSuccess],
@@ -87,5 +102,4 @@ func AllServicesListenComplete() {
 	for _, p := range GetConfigLoadProcessors() {
 		p.AllServicesListenComplete(binder)
 	}
-	serviceURL = nil // release
 }
