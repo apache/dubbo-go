@@ -77,8 +77,9 @@ func ResetURL() {
 
 // emit
 func emit(funcName string, val []reflect.Value) {
+	var values []reflect.Value
 	for _, p := range GetConfigLoadProcessors() {
-		values := []reflect.Value{reflect.ValueOf(p)}
+		values = []reflect.Value{reflect.ValueOf(p)}
 		method := values[0].MethodByName(funcName)
 		values = append(values, val...)
 		method.Call(val)
