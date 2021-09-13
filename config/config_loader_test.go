@@ -18,7 +18,6 @@
 package config
 
 import (
-	"github.com/apache/dubbo-go/config/interfaces"
 	"path/filepath"
 	"sort"
 	"sync"
@@ -41,6 +40,7 @@ import (
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/common/proxy/proxy_factory"
+	"github.com/apache/dubbo-go/config/interfaces"
 	"github.com/apache/dubbo-go/config_center"
 	"github.com/apache/dubbo-go/metadata/service"
 	"github.com/apache/dubbo-go/registry"
