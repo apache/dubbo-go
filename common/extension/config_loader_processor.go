@@ -76,38 +76,27 @@ func ResetURL() {
 }
 
 // emit
-func emit(funcName string, val []reflect.Value) {
+func emit(funcName string, val ...interface{}) {
 	var values []reflect.Value
+	for _, arg := range val {
+		values = append(values, reflect.ValueOf(arg))
+	}
 	for _, p := range GetConfigLoadProcessors() {
-		values = []reflect.Value{reflect.ValueOf(p)}
-		method := values[0].MethodByName(funcName)
-		values = append(values, val...)
-		method.Call(val)
+		reflect.ValueOf(p).MethodByName(funcName).Call(values)
 	}
 }
 
 // LoadProcessReferenceConfig emit reference config load event
 func LoadProcessReferenceConfig(url *common.URL, event string, errMsg *string) {
 	referenceURL[event] = append(referenceURL[event], url)
-	emit(LoadProcessReferenceConfigFunctionName,
-		[]reflect.Value{
-			reflect.ValueOf(url),
-			reflect.ValueOf(event),
-			reflect.ValueOf(errMsg),
-		},
-	)
+	emit(LoadProcessReferenceConfigFunctionName, url, event, errMsg)
 }
 
 // LoadProcessServiceConfig emit service config load event
 func LoadProcessServiceConfig(url *common.URL, event string, errMsg *string) {
 	serviceURL[event] = append(serviceURL[event], url)
-	emit(LoadProcessServiceConfigFunctionName,
-		[]reflect.Value{
-			reflect.ValueOf(url),
-			reflect.ValueOf(event),
-			reflect.ValueOf(errMsg),
-		},
-	)
+	emit(LoadProcessServiceConfigFunctionName, url, event, errMsg)
+
 }
 
 // AllReferencesConnectComplete emit all references config load complete event
@@ -116,11 +105,8 @@ func AllReferencesConnectComplete() {
 		Success: referenceURL[constant.HookEventReferenceConnectSuccess],
 		Fail:    referenceURL[constant.HookEventReferenceConnectFail],
 	}
-	emit(AllReferencesConnectCompleteFunctionName,
-		[]reflect.Value{
-			reflect.ValueOf(binder),
-		},
-	)
+	emit(AllReferencesConnectCompleteFunctionName, binder)
+
 }
 
 // AllServicesListenComplete emit all services config load complete event
@@ -129,16 +115,12 @@ func AllServicesListenComplete() {
 		Success: serviceURL[constant.HookEventProviderConnectSuccess],
 		Fail:    serviceURL[constant.HookEventProviderConnectFail],
 	}
-	emit(AllServicesListenCompleteFunctionName,
-		[]reflect.Value{
-			reflect.ValueOf(binder),
-		},
-	)
+	emit(AllServicesListenCompleteFunctionName, binder)
+
 }
 
 // BeforeShutdown emit before os.Exit(0)
 func BeforeShutdown() {
-	emit(BeforeShutdownFunctionName,
-		[]reflect.Value{},
-	)
+	emit(BeforeShutdownFunctionName)
+
 }
