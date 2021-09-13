@@ -61,8 +61,10 @@ type nacosServiceDiscovery struct {
 	// namingClient is the Nacos' namingClient
 	namingClient *nacosClient.NacosNamingClient
 	// cache registry instances
-	registryInstances   []registry.ServiceInstance
+	registryInstances []registry.ServiceInstance
+
 	instanceListenerMap map[string]*gxset.HashSet
+	listenerLock        sync.Mutex
 }
 
 // Destroy will close the service discovery.
@@ -212,6 +214,9 @@ func (n *nacosServiceDiscovery) GetRequestInstances(serviceNames []string, offse
 }
 
 func (n *nacosServiceDiscovery) registerInstanceListener(listener registry.ServiceInstancesChangedListener) {
+	n.listenerLock.Lock()
+	defer n.listenerLock.Unlock()
+
 	for _, t := range listener.GetServiceNames().Values() {
 		serviceName, ok := t.(string)
 		if !ok {
