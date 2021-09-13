@@ -114,14 +114,13 @@ func (p *Proxy) GetInvoker() protocol.Invoker {
 func DefaultProxyImplementFunc(p *Proxy, v common.RPCService) {
 	// check parameters, incoming interface must be a elem's pointer.
 	valueOf := reflect.ValueOf(v)
-	logger.Debugf("[Implement] reflect.TypeOf: %s", valueOf.String())
 
 	valueOfElem := valueOf.Elem()
 	typeOf := valueOfElem.Type()
 
 	// check incoming interface, incoming interface's elem must be a struct.
 	if typeOf.Kind() != reflect.Struct {
-		logger.Errorf("%s must be a struct ptr", valueOf.String())
+		logger.Errorf("The type of RPCService(=\"%T\") must be a pointer of a struct.", v)
 		return
 	}
 
@@ -152,6 +151,7 @@ func DefaultProxyImplementFunc(p *Proxy, v common.RPCService) {
 			start := 0
 			end := len(in)
 			invCtx := context.Background()
+			// retrieve the context from the first argument if existed
 			if end > 0 {
 				if in[0].Type().String() == "context.Context" {
 					if !in[0].IsNil() {
