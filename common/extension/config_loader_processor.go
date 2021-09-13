@@ -21,6 +21,15 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/config/interfaces"
+	"reflect"
+)
+
+const (
+	LoadProcessReferenceConfigFunctionName   = "LoadProcessReferenceConfig"
+	LoadProcessServiceConfigFunctionName     = "LoadProcessServiceConfig"
+	AllReferencesConnectCompleteFunctionName = "AllReferencesConnectComplete"
+	AllServicesListenCompleteFunctionName    = "AllServicesListenComplete"
+	BeforeShutdownFunctionName               = "BeforeShutdown"
 )
 
 var (
@@ -66,20 +75,38 @@ func ResetURL() {
 	}
 }
 
+// emit
+func emit(funcName string, val []reflect.Value) {
+	for _, p := range GetConfigLoadProcessors() {
+		values := []reflect.Value{reflect.ValueOf(p)}
+		method := values[0].MethodByName(funcName)
+		values = append(values, val...)
+		method.Call(val)
+	}
+}
+
 // LoadProcessReferenceConfig emit reference config load event
 func LoadProcessReferenceConfig(url *common.URL, event string, errMsg *string) {
 	referenceURL[event] = append(referenceURL[event], url)
-	for _, p := range GetConfigLoadProcessors() {
-		p.LoadProcessReferenceConfig(url, event, errMsg)
-	}
+	emit(LoadProcessReferenceConfigFunctionName,
+		[]reflect.Value{
+			reflect.ValueOf(url),
+			reflect.ValueOf(event),
+			reflect.ValueOf(errMsg),
+		},
+	)
 }
 
 // LoadProcessServiceConfig emit service config load event
 func LoadProcessServiceConfig(url *common.URL, event string, errMsg *string) {
 	serviceURL[event] = append(serviceURL[event], url)
-	for _, p := range GetConfigLoadProcessors() {
-		p.LoadProcessServiceConfig(url, event, errMsg)
-	}
+	emit(LoadProcessServiceConfigFunctionName,
+		[]reflect.Value{
+			reflect.ValueOf(url),
+			reflect.ValueOf(event),
+			reflect.ValueOf(errMsg),
+		},
+	)
 }
 
 // AllReferencesConnectComplete emit all references config load complete event
@@ -88,9 +115,11 @@ func AllReferencesConnectComplete() {
 		Success: referenceURL[constant.HookEventReferenceConnectSuccess],
 		Fail:    referenceURL[constant.HookEventReferenceConnectFail],
 	}
-	for _, p := range GetConfigLoadProcessors() {
-		p.AllReferencesConnectComplete(binder)
-	}
+	emit(AllReferencesConnectCompleteFunctionName,
+		[]reflect.Value{
+			reflect.ValueOf(binder),
+		},
+	)
 }
 
 // AllServicesListenComplete emit all services config load complete event
@@ -99,7 +128,16 @@ func AllServicesListenComplete() {
 		Success: serviceURL[constant.HookEventProviderConnectSuccess],
 		Fail:    serviceURL[constant.HookEventProviderConnectFail],
 	}
-	for _, p := range GetConfigLoadProcessors() {
-		p.AllServicesListenComplete(binder)
-	}
+	emit(AllServicesListenCompleteFunctionName,
+		[]reflect.Value{
+			reflect.ValueOf(binder),
+		},
+	)
+}
+
+// BeforeShutdown emit before os.Exit(0)
+func BeforeShutdown() {
+	emit(BeforeShutdownFunctionName,
+		[]reflect.Value{},
+	)
 }
