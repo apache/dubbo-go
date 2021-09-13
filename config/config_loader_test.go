@@ -18,6 +18,7 @@
 package config
 
 import (
+	"github.com/apache/dubbo-go/config/interfaces"
 	"path/filepath"
 	"sort"
 	"sync"
@@ -115,8 +116,8 @@ type CustomEvent struct {
 	t *testing.T
 }
 
-// implements interfaces.ConfigPostProcessor's functions
-func (c CustomEvent) PostProcessReferenceConfig(u *common.URL, event string, errMsg *string) {
+// implements interfaces.ConfigLoadProcessor's functions
+func (c CustomEvent) LoadProcessReferenceConfig(u *common.URL, event string, errMsg *string) {
 	logger.Debug("PostProcessReferenceConfig Start")
 	logger.Debug("Event: ", event)
 	logger.Debug("Url: ", u)
@@ -126,7 +127,7 @@ func (c CustomEvent) PostProcessReferenceConfig(u *common.URL, event string, err
 	logger.Debug("PostProcessReferenceConfig End")
 	assert.Equal(c.t, u.GetParam(constant.SIDE_KEY, ""), "consumer")
 }
-func (c CustomEvent) PostProcessServiceConfig(u *common.URL, event string, errMsg *string) {
+func (c CustomEvent) LoadProcessServiceConfig(u *common.URL, event string, errMsg *string) {
 	logger.Debug("PostProcessServiceConfig Start")
 	logger.Debug("Event: ", event)
 	logger.Debug("Url: ", u)
@@ -136,11 +137,15 @@ func (c CustomEvent) PostProcessServiceConfig(u *common.URL, event string, errMs
 	logger.Debug("PostProcessServiceConfig End")
 	assert.Equal(c.t, u.GetParam(constant.SIDE_KEY, ""), "provider")
 }
-func (c CustomEvent) AllReferencesConnectComplete() {
+func (c CustomEvent) AllReferencesConnectComplete(urls interfaces.ConfigLoadProcessorURLBinder) {
 	logger.Debug("AllConsumersConnectComplete")
+	logger.Debug("Success Url: ", urls.Success)
+	logger.Debug("Fail Url: ", urls.Fail)
 }
-func (c CustomEvent) AllServicesListenComplete() {
+func (c CustomEvent) AllServicesListenComplete(urls interfaces.ConfigLoadProcessorURLBinder) {
 	logger.Debug("AllServicesListenComplete")
+	logger.Debug("Success Url: ", urls.Success)
+	logger.Debug("Fail Url: ", urls.Fail)
 }
 func (c CustomEvent) BeforeShutdown() {
 	logger.Debug("BeforeShutdown")
@@ -173,7 +178,7 @@ func TestLoadWithEventDispatch(t *testing.T) {
 	})
 
 	configPostProcessorName := "TestLoadWithEventDispatch"
-	extension.SetConfigPostProcessor(configPostProcessorName, CustomEvent{t})
+	extension.SetConfigLoadProcessor(configPostProcessorName, CustomEvent{t})
 
 	Load()
 

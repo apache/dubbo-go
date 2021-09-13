@@ -227,7 +227,7 @@ func getConsumerProtocols() *gxset.HashSet {
 }
 
 func postBeforeShutdown() {
-	for _, p := range extension.GetConfigPostProcessors() {
+	for _, p := range extension.GetConfigLoadProcessors() {
 		p.BeforeShutdown()
 	}
 }
