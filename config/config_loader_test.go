@@ -141,11 +141,17 @@ func (c CustomEvent) AllReferencesConnectComplete(urls interfaces.ConfigLoadProc
 	logger.Debug("AllReferencesConnectComplete")
 	logger.Debug("Success Url: ", urls.Success)
 	logger.Debug("Fail Url: ", urls.Fail)
+	assert.NotNil(c.t, urls)
+	assert.NotNil(c.t, urls.Success)
+	assert.Nil(c.t, urls.Fail)
 }
 func (c CustomEvent) AllServicesListenComplete(urls interfaces.ConfigLoadProcessorURLBinder) {
 	logger.Debug("AllServicesListenComplete")
 	logger.Debug("Success Url: ", urls.Success)
 	logger.Debug("Fail Url: ", urls.Fail)
+	assert.NotNil(c.t, urls)
+	assert.NotNil(c.t, urls.Success)
+	assert.Nil(c.t, urls.Fail)
 }
 func (c CustomEvent) BeforeShutdown() {
 	logger.Debug("BeforeShutdown")
@@ -177,8 +183,8 @@ func TestLoadWithEventDispatch(t *testing.T) {
 		return mm, nil
 	})
 
-	configPostProcessorName := "TestLoadWithEventDispatch"
-	extension.SetConfigLoadProcessor(configPostProcessorName, CustomEvent{t})
+	configLoadProcessorName := "TestLoadWithEventDispatch"
+	extension.SetConfigLoadProcessor(configLoadProcessorName, CustomEvent{t})
 
 	Load()
 
@@ -194,8 +200,10 @@ func TestLoadWithEventDispatch(t *testing.T) {
 	err := common.ServiceMap.UnRegister("com.MockService", "mock",
 		common.ServiceKey("com.MockService", "huadong_idc", "1.0.0"))
 	assert.Nil(t, err)
-	extension.RemoveConfigPostProcessor(configPostProcessorName)
+	extension.RemoveConfigLoadProcessor(configLoadProcessorName)
 	extension.ResetURL()
+	assert.Equal(t, len(extension.GetReferenceURL()), 0)
+	assert.Equal(t, len(extension.GetServiceURL()), 0)
 	consumerConfig = nil
 	providerConfig = nil
 }
