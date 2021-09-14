@@ -137,16 +137,16 @@ func (c CustomEvent) LoadProcessServiceConfig(u *common.URL, event string, errMs
 	logger.Debug("PostProcessServiceConfig End")
 	assert.Equal(c.t, u.GetParam(constant.SIDE_KEY, ""), "provider")
 }
-func (c CustomEvent) AllReferencesConnectComplete(urls interfaces.ConfigLoadProcessorURLBinder) {
-	logger.Debug("AllReferencesConnectComplete")
+func (c CustomEvent) AfterAllReferencesConnectComplete(urls interfaces.ConfigLoadProcessorURLBinder) {
+	logger.Debug("AfterAllReferencesConnectComplete")
 	logger.Debug("Success Url: ", urls.Success)
 	logger.Debug("Fail Url: ", urls.Fail)
 	assert.NotNil(c.t, urls)
 	assert.NotNil(c.t, urls.Success)
 	assert.Nil(c.t, urls.Fail)
 }
-func (c CustomEvent) AllServicesListenComplete(urls interfaces.ConfigLoadProcessorURLBinder) {
-	logger.Debug("AllServicesListenComplete")
+func (c CustomEvent) AfterAllServicesListenComplete(urls interfaces.ConfigLoadProcessorURLBinder) {
+	logger.Debug("AfterAllServicesListenComplete")
 	logger.Debug("Success Url: ", urls.Success)
 	logger.Debug("Fail Url: ", urls.Fail)
 	assert.NotNil(c.t, urls)

@@ -25,11 +25,11 @@ import (
 )
 
 const (
-	LoadProcessReferenceConfigFunctionName   = "LoadProcessReferenceConfig"
-	LoadProcessServiceConfigFunctionName     = "LoadProcessServiceConfig"
-	AllReferencesConnectCompleteFunctionName = "AllReferencesConnectComplete"
-	AllServicesListenCompleteFunctionName    = "AllServicesListenComplete"
-	BeforeShutdownFunctionName               = "BeforeShutdown"
+	LoadProcessReferenceConfigFunctionName        = "LoadProcessReferenceConfig"
+	LoadProcessServiceConfigFunctionName          = "LoadProcessServiceConfig"
+	AfterAllReferencesConnectCompleteFunctionName = "AfterAllReferencesConnectComplete"
+	AfterAllServicesListenCompleteFunctionName    = "AfterAllServicesListenComplete"
+	BeforeShutdownFunctionName                    = "BeforeShutdown"
 )
 
 var (
@@ -117,7 +117,7 @@ func AllReferencesConnectComplete() {
 		Success: referenceURL[constant.HookEventReferenceConnectSuccess],
 		Fail:    referenceURL[constant.HookEventReferenceConnectFail],
 	}
-	emit(AllReferencesConnectCompleteFunctionName, binder)
+	emit(AfterAllReferencesConnectCompleteFunctionName, binder)
 }
 
 // AllServicesListenComplete emit all services config load complete event
@@ -126,7 +126,7 @@ func AllServicesListenComplete() {
 		Success: serviceURL[constant.HookEventProviderConnectSuccess],
 		Fail:    serviceURL[constant.HookEventProviderConnectFail],
 	}
-	emit(AllServicesListenCompleteFunctionName, binder)
+	emit(AfterAllServicesListenCompleteFunctionName, binder)
 }
 
 // BeforeShutdown emit before os.Exit(0)

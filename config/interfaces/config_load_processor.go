@@ -32,11 +32,11 @@ type ConfigLoadProcessor interface {
 	// LoadProcessServiceConfig emit on export service (event: before-service-listen, service-listen-success, service-listen-fail)
 	LoadProcessServiceConfig(url *common.URL, event string, errMsg *string)
 
-	// AllReferencesConnectComplete emit on all references export complete
-	AllReferencesConnectComplete(urls ConfigLoadProcessorURLBinder)
+	// AfterAllReferencesConnectComplete emit on all references export complete
+	AfterAllReferencesConnectComplete(urls ConfigLoadProcessorURLBinder)
 
-	// AllServicesListenComplete emit on all services export complete
-	AllServicesListenComplete(urls ConfigLoadProcessorURLBinder)
+	// AfterAllServicesListenComplete emit on all services export complete
+	AfterAllServicesListenComplete(urls ConfigLoadProcessorURLBinder)
 
 	// BeforeShutdown emit on before shutdown
 	BeforeShutdown()
