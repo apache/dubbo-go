@@ -18,8 +18,11 @@
 package config
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common"
 	"sync"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 )
 
 var (

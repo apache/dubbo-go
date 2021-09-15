@@ -22,6 +22,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
@@ -201,9 +202,13 @@ func (c *dubboRegistryController) readConfig() error {
 	if len(c.name) == 0 {
 		return perrors.New("read value from env by key (HOSTNAME)")
 	}
-	c.namespace = os.Getenv(nameSpaceKey)
+	namespace, err := ioutil.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
+	if err != nil {
+		return perrors.Errorf("get namesapce from file /var/run/secrets/kubernetes.io/serviceaccount/namespace error = %s", err)
+	}
+	c.namespace = string(namespace)
 	if len(c.namespace) == 0 {
-		return perrors.New("read value from env by key (NAMESPACE)")
+		return perrors.New("get empty namesapce")
 	}
 	return nil
 }
@@ -455,6 +460,36 @@ func (c *dubboRegistryController) patchCurrentPod(patch []byte) (*v1.Pod, error)
 		return nil, perrors.WithMessage(err, "patch in kubernetes pod ")
 	}
 	return updatedPod, nil
+}
+
+func (c *dubboRegistryController) assembleLabel(k, v string) error {
+	var (
+		oldPod = &v1.Pod{}
+		newPod = &v1.Pod{}
+	)
+	oldPod.Labels = make(map[string]string, 8)
+	newPod.Labels = make(map[string]string, 8)
+	currentPod, err := c.readCurrentPod()
+	if err != nil {
+		return err
+	}
+	// copy current pod labels to oldPod && newPod
+	for k, v := range currentPod.GetLabels() {
+		oldPod.Labels[k] = v
+		newPod.Labels[k] = v
+	}
+	newPod.Labels[k] = v
+
+	p, err := c.getPatch(oldPod, newPod)
+	if err != nil {
+		return perrors.WithMessage(err, "get patch")
+	}
+
+	_, err = c.patchCurrentPod(p)
+	if err != nil {
+		return perrors.WithMessage(err, "patch to current pod")
+	}
+	return nil
 }
 
 // assembleDUBBOLabel assembles the dubbo kubernetes label
