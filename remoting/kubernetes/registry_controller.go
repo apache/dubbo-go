@@ -63,6 +63,7 @@ const (
 	// kubernetes inject env var
 	podNameKey              = "HOSTNAME"
 	nameSpaceKey            = "NAMESPACE"
+	nameSpaceFilePath       = "/var/run/secrets/kubernetes.io/serviceaccount/namespace"
 	needWatchedNameSpaceKey = "DUBBO_NAMESPACE"
 
 	// all pod annotation key
@@ -200,17 +201,20 @@ func (c *dubboRegistryController) readConfig() error {
 	// read current pod name && namespace
 	c.name = os.Getenv(podNameKey)
 	if len(c.name) == 0 {
-		return perrors.New("read value from env by key (HOSTNAME)")
+		return perrors.Errorf("read pod name from env %s failed", podNameKey)
 	}
-	namespace, err := ioutil.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
-	if err != nil {
-		return perrors.Errorf("get namesapce from file /var/run/secrets/kubernetes.io/serviceaccount/namespace error = %s", err)
+	namespace, err := ioutil.ReadFile(nameSpaceFilePath)
+	if err == nil && len(namespace) != 0 {
+		c.namespace = string(namespace)
+		return nil
 	}
-	c.namespace = string(namespace)
-	if len(c.namespace) == 0 {
-		return perrors.New("get empty namesapce")
+	c.namespace = os.Getenv(nameSpaceKey)
+	if len(c.namespace) != 0 {
+		return nil
 	}
-	return nil
+	return perrors.Errorf("get empty namesapce, please check if namespace file at %s exist, or environment %s"+
+		" is set", nameSpaceFilePath, nameSpaceKey)
+
 }
 
 func (c *dubboRegistryController) initNamespacedPodInformer(ns string) error {
