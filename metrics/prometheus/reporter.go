@@ -51,6 +51,10 @@ const (
 	methodKey    = constant.METHOD_KEY
 	timeoutKey   = constant.TIMEOUT_KEY
 
+	// to identify side
+	providerPrefix = "provider_"
+	consumerPrefix = "consumer_"
+
 	// to identify the metric's type
 	histogramSuffix = "_histogram"
 	// to identify the metric's type
@@ -208,11 +212,11 @@ func newPrometheusReporter() metrics.Reporter {
 	if reporterInstance == nil {
 		reporterInitOnce.Do(func() {
 			reporterInstance = &PrometheusReporter{
-				consumerSummaryVec: newSummaryVec(serviceKey+summarySuffix, labelNames),
-				providerSummaryVec: newSummaryVec(serviceKey+summarySuffix, labelNames),
+				consumerSummaryVec: newSummaryVec(consumerPrefix+serviceKey+summarySuffix, labelNames),
+				providerSummaryVec: newSummaryVec(providerPrefix+serviceKey+summarySuffix, labelNames),
 
-				consumerHistogramVec: newHistogramVec(serviceKey+histogramSuffix, labelNames),
-				providerHistogramVec: newHistogramVec(serviceKey+histogramSuffix, labelNames),
+				consumerHistogramVec: newHistogramVec(consumerPrefix+serviceKey+histogramSuffix, labelNames),
+				providerHistogramVec: newHistogramVec(providerPrefix+serviceKey+histogramSuffix, labelNames),
 			}
 
 			prom.DefaultRegisterer.MustRegister(reporterInstance.consumerSummaryVec, reporterInstance.providerSummaryVec,
