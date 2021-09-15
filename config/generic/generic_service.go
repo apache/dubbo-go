@@ -21,9 +21,13 @@ import (
 	"context"
 )
 
+import (
+	hessian "github.com/apache/dubbo-go-hessian2"
+)
+
 // GenericService uses for generic invoke for service call
 type GenericService struct {
-	Invoke       func(ctx context.Context, req []interface{}) (interface{}, error) `dubbo:"$invoke"`
+	Invoke       func(ctx context.Context, methodName string, types []string, args []hessian.Object) (interface{}, error) `dubbo:"$invoke"`
 	referenceStr string
 }
 
