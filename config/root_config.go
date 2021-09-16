@@ -19,6 +19,8 @@ package config
 
 import (
 	"bytes"
+	"net/http"
+	_ "net/http/pprof"
 )
 
 import (
@@ -129,6 +131,9 @@ func (rc *RootConfig) Init() error {
 	if err := rc.Consumer.Init(rc); err != nil {
 		return err
 	}
+	go func() {
+		_ = http.ListenAndServe("0.0.0.0:6060", nil)
+	}()
 	return nil
 }
 

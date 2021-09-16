@@ -31,6 +31,7 @@ import (
 	_ "dubbo.apache.org/dubbo-go/v3/metadata/report/zookeeper"
 	_ "dubbo.apache.org/dubbo-go/v3/metadata/service/local"
 	_ "dubbo.apache.org/dubbo-go/v3/metadata/service/remote"
+	_ "dubbo.apache.org/dubbo-go/v3/metrics/prometheus"
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/dubbo"
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/dubbo3"
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/grpc"
