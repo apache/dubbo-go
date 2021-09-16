@@ -94,7 +94,7 @@ func (cc *ReferenceConfig) Init(rc *RootConfig) error {
 }
 
 // Refer ...
-func (rc *ReferenceConfig) Refer(_ interface{}) {
+func (rc *ReferenceConfig) Refer(srv interface{}) {
 	cfgURL := common.NewURLWithOptions(
 		common.WithPath(rc.InterfaceName),
 		common.WithProtocol(rc.Protocol),
@@ -102,6 +102,7 @@ func (rc *ReferenceConfig) Refer(_ interface{}) {
 		common.WithParamsValue(constant.BEAN_NAME_KEY, rc.id),
 		common.WithParamsValue(constant.METADATATYPE_KEY, rc.metaDataType),
 	)
+	SetConsumerServiceByInterfaceName(rc.InterfaceName, srv)
 	if rc.ForceTag {
 		cfgURL.AddParam(constant.ForceUseTag, "true")
 	}
@@ -112,7 +113,7 @@ func (rc *ReferenceConfig) Refer(_ interface{}) {
 		for _, urlStr := range urlStrings {
 			serviceURL, err := common.NewURL(urlStr)
 			if err != nil {
-				panic(fmt.Sprintf("user specified URL %v refer error, error message is %v ", urlStr, err.Error()))
+				panic(fmt.Sprintf("url configuration error,  please check your configuration, user specified URL %v refer error, error message is %v ", urlStr, err.Error()))
 			}
 			if serviceURL.Protocol == constant.REGISTRY_PROTOCOL {
 				serviceURL.SubURL = cfgURL
@@ -137,7 +138,12 @@ func (rc *ReferenceConfig) Refer(_ interface{}) {
 	}
 
 	if len(rc.urls) == 1 {
-		rc.invoker = extension.GetProtocol(rc.urls[0].Protocol).Refer(rc.urls[0])
+		if rc.urls[0].Protocol == constant.SERVICE_REGISTRY_PROTOCOL {
+			rc.invoker = extension.GetProtocol("registry").Refer(rc.urls[0])
+		} else {
+			rc.invoker = extension.GetProtocol(rc.urls[0].Protocol).Refer(rc.urls[0])
+		}
+
 		// c.URL != "" is direct call
 		if rc.URL != "" {
 			//filter
@@ -167,7 +173,13 @@ func (rc *ReferenceConfig) Refer(_ interface{}) {
 		invokers := make([]protocol.Invoker, 0, len(rc.urls))
 		var regURL *common.URL
 		for _, u := range rc.urls {
-			invoker := extension.GetProtocol(u.Protocol).Refer(u)
+			var invoker protocol.Invoker
+			if u.Protocol == constant.SERVICE_REGISTRY_PROTOCOL {
+				invoker = extension.GetProtocol("registry").Refer(u)
+			} else {
+				invoker = extension.GetProtocol(u.Protocol).Refer(u)
+			}
+
 			// c.URL != "" is direct call
 			if rc.URL != "" {
 				//filter

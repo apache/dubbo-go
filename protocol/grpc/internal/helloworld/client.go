@@ -30,6 +30,7 @@ import (
 )
 
 func init() {
+	config.SetConsumerServiceByInterfaceName("io.grpc.examples.helloworld.GreeterGrpc$IGreeter", &GrpcGreeterImpl{})
 	config.SetConsumerService(&GrpcGreeterImpl{})
 }
 

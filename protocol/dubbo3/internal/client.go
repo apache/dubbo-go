@@ -22,5 +22,7 @@ import (
 )
 
 func init() {
+	// for pb client
+	config.SetConsumerServiceByInterfaceName("org.apache.dubbo.DubboGreeterImpl", &GreeterClientImpl{})
 	config.SetConsumerService(&GreeterClientImpl{})
 }

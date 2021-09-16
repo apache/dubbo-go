@@ -29,6 +29,7 @@ import (
 )
 
 func init() {
+	config.SetConsumerServiceByInterfaceName("io.grpc.examples.helloworld.GreeterGrpc$RouteGuide", &RouteGuideClientImpl{})
 	config.SetConsumerService(&RouteGuideClientImpl{})
 }
 
