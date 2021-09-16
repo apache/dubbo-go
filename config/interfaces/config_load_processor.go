@@ -18,6 +18,10 @@
 package interfaces
 
 import (
+	"sync"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
 )
 
@@ -40,6 +44,10 @@ type ConfigLoadProcessor interface {
 
 	// BeforeShutdown emit on before shutdown
 	BeforeShutdown()
+}
+
+type ConfigLoadProcessorHolder struct {
+	sync.Mutex
 }
 
 type ConfigLoadProcessorURLBinder struct {
