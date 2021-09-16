@@ -25,7 +25,7 @@ import (
 
 import (
 	"github.com/dubbogo/go-zookeeper/zk"
-
+	gxset "github.com/dubbogo/gost/container/set"
 	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
 )
 
@@ -140,6 +140,35 @@ func (m *zookeeperMetadataReport) GetServiceDefinition(metadataIdentifier *ident
 	k := m.rootDir + metadataIdentifier.GetFilePathKey()
 	v, _, err := m.client.GetContent(k)
 	return string(v), err
+}
+
+func (m *zookeeperMetadataReport) RegisterServiceAppMapping(key string, value string) error {
+	path := m.rootDir + key
+	data, state, err := m.client.GetContent(path)
+	if err == zk.ErrNoNode {
+		return m.client.CreateWithValue(path, []byte(value))
+	}
+	oldValue := string(data)
+	if strings.Contains(oldValue, value) {
+		return nil
+	}
+	value = oldValue + constant.COMMA_SEPARATOR + value
+	_, err = m.client.SetContent(path, []byte(value), state.Version)
+	return err
+}
+
+func (m *zookeeperMetadataReport) GetServiceAppMapping(key string) (*gxset.HashSet, error) {
+	path := m.rootDir + key
+	data, _, err := m.client.GetContent(path)
+	if err != nil {
+		return nil, err
+	}
+	appNames := strings.Split(string(data), constant.COMMA_SEPARATOR)
+	set := gxset.NewSet()
+	for _, e := range appNames {
+		set.Add(e)
+	}
+	return set, nil
 }
 
 type zookeeperMetadataReportFactory struct{}

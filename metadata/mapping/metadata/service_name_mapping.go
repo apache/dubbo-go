@@ -15,12 +15,11 @@
  * limitations under the License.
  */
 
-package dynamic
+package metadata
 
 import (
-	"strconv"
+	"dubbo.apache.org/dubbo-go/v3/config/instance"
 	"sync"
-	"time"
 )
 
 import (
@@ -30,12 +29,11 @@ import (
 )
 
 import (
-	commonCfg "dubbo.apache.org/dubbo-go/v3/common/config"
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/config"
-	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
 )
 
@@ -48,14 +46,14 @@ func init() {
 	extension.SetGlobalServiceNameMapping(GetNameMappingInstance)
 }
 
-// DynamicConfigurationServiceNameMapping is the implementation based on config center
+// MetadataServiceNameMapping is the implementation based on config center
 // it's a singleton
-type DynamicConfigurationServiceNameMapping struct {
-	dc config_center.DynamicConfiguration
+type MetadataServiceNameMapping struct {
 }
 
 // Map will map the service to this application-level service
-func (d *DynamicConfigurationServiceNameMapping) Map(serviceInterface string, group string, version string, protocol string) error {
+func (d *MetadataServiceNameMapping) Map(url *common.URL) error {
+	serviceInterface := url.GetParam(constant.INTERFACE_KEY, "")
 	// metadata service is admin service, should not be mapped
 	if constant.METADATA_SERVICE_NAME == serviceInterface {
 		logger.Info("try to map the metadata service, will be ignored")
@@ -63,11 +61,8 @@ func (d *DynamicConfigurationServiceNameMapping) Map(serviceInterface string, gr
 	}
 
 	appName := config.GetApplicationConfig().Name
-	value := time.Now().UnixNano()
-
-	err := d.dc.PublishConfig(appName,
-		d.buildGroup(serviceInterface),
-		strconv.FormatInt(value, 10))
+	metadataReport := instance.GetMetadataReportInstance()
+	err := metadataReport.RegisterServiceAppMapping(d.buildMappingKey(serviceInterface), appName)
 	if err != nil {
 		return perrors.WithStack(err)
 	}
@@ -75,28 +70,28 @@ func (d *DynamicConfigurationServiceNameMapping) Map(serviceInterface string, gr
 }
 
 // Get will return the application-level services. If not found, the empty set will be returned.
-// if the dynamic configuration got error, the error will return
-func (d *DynamicConfigurationServiceNameMapping) Get(serviceInterface string, group string, version string, protocol string) (*gxset.HashSet, error) {
-	return d.dc.GetConfigKeysByGroup(d.buildGroup(serviceInterface))
+func (d *MetadataServiceNameMapping) Get(url *common.URL) (*gxset.HashSet, error) {
+	serviceInterface := url.GetParam(constant.INTERFACE_KEY, "")
+	metadataReport := instance.GetMetadataReportInstance()
+	return metadataReport.GetServiceAppMapping(d.buildMappingKey(serviceInterface))
 }
 
-// buildGroup will return group, now it looks like defaultGroup/serviceInterface
-func (d *DynamicConfigurationServiceNameMapping) buildGroup(serviceInterface string) string {
+// buildMappingKey will return mapping key, it looks like defaultGroup/serviceInterface
+func (d *MetadataServiceNameMapping) buildMappingKey(serviceInterface string) string {
 	// the issue : https://github.com/apache/dubbo/issues/4671
 	// so other params are ignored and remove, including group string, version string, protocol string
 	return defaultGroup + slash + serviceInterface
 }
 
 var (
-	serviceNameMappingInstance *DynamicConfigurationServiceNameMapping
+	serviceNameMappingInstance *MetadataServiceNameMapping
 	serviceNameMappingOnce     sync.Once
 )
 
 // GetNameMappingInstance return an instance, if not found, it creates one
 func GetNameMappingInstance() mapping.ServiceNameMapping {
 	serviceNameMappingOnce.Do(func() {
-		dc := commonCfg.GetEnvInstance().GetDynamicConfiguration()
-		serviceNameMappingInstance = &DynamicConfigurationServiceNameMapping{dc: dc}
+		serviceNameMappingInstance = &MetadataServiceNameMapping{}
 	})
 	return serviceNameMappingInstance
 }

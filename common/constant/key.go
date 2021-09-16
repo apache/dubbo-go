@@ -49,6 +49,7 @@ const (
 	PORT_KEY                 = "port"
 	PROTOCOL_KEY             = "protocol"
 	PATH_SEPARATOR           = "/"
+	COMMA_SEPARATOR          = ","
 	// DUBBO_KEY                = "dubbo"
 	SSL_ENABLED_KEY = "ssl-enabled"
 	// PARAMS_TYPE_Key key used in pass through invoker factory, to define param type

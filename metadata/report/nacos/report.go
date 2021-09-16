@@ -23,6 +23,7 @@ import (
 )
 
 import (
+	gxset "github.com/dubbogo/gost/container/set"
 	nacosClient "github.com/dubbogo/gost/database/kv/nacos"
 
 	"github.com/nacos-group/nacos-sdk-go/vo"
@@ -204,6 +205,14 @@ func (n *nacosMetadataReport) getConfig(param vo.ConfigParam) (string, error) {
 		return "", err
 	}
 	return cfg, nil
+}
+
+func (n *nacosMetadataReport) RegisterServiceAppMapping(s string, s2 string) error {
+	panic("implement me")
+}
+
+func (n *nacosMetadataReport) GetServiceAppMapping(s string) (*gxset.HashSet, error) {
+	panic("implement me")
 }
 
 type nacosMetadataReportFactory struct{}

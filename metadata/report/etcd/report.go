@@ -23,6 +23,7 @@ import (
 )
 
 import (
+	gxset "github.com/dubbogo/gost/container/set"
 	gxetcd "github.com/dubbogo/gost/database/kv/etcd/v3"
 )
 
@@ -139,6 +140,14 @@ func (e *etcdMetadataReport) GetServiceDefinition(metadataIdentifier *identifier
 		return "", err
 	}
 	return content, nil
+}
+
+func (e *etcdMetadataReport) RegisterServiceAppMapping(s string, s2 string) error {
+	panic("implement me")
+}
+
+func (e *etcdMetadataReport) GetServiceAppMapping(s string) (*gxset.HashSet, error) {
+	panic("implement me")
 }
 
 type etcdMetadataReportFactory struct{}

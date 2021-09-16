@@ -18,6 +18,10 @@
 package report
 
 import (
+	gxset "github.com/dubbogo/gost/container/set"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/metadata/identifier"
 )
@@ -63,4 +67,8 @@ type MetadataReport interface {
 
 	// PublishAppMetadata publish metadata info to reportss
 	PublishAppMetadata(*identifier.SubscriberMetadataIdentifier, *common.MetadataInfo) error
+
+	RegisterServiceAppMapping(string, string) error
+
+	GetServiceAppMapping(string) (*gxset.HashSet, error)
 }

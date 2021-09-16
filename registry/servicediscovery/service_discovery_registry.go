@@ -181,10 +181,7 @@ func (s *serviceDiscoveryRegistry) Register(url *common.URL) error {
 		logger.Warnf("The URL[%s] has been registry!", url.String())
 	}
 
-	return s.serviceNameMapping.Map(url.GetParam(constant.INTERFACE_KEY, ""),
-		url.GetParam(constant.GROUP_KEY, ""),
-		url.GetParam(constant.Version, ""),
-		url.Protocol)
+	return s.serviceNameMapping.Map(url)
 }
 
 func shouldRegister(url *common.URL) bool {
@@ -303,11 +300,7 @@ func (s *serviceDiscoveryRegistry) getServices(url *common.URL) *gxset.HashSet {
 }
 
 func (s *serviceDiscoveryRegistry) findMappedServices(url *common.URL) *gxset.HashSet {
-	serviceInterface := url.GetParam(constant.INTERFACE_KEY, url.Path)
-	group := url.GetParam(constant.GROUP_KEY, "")
-	version := url.GetParam(constant.VERSION_KEY, "")
-	protocol := url.Protocol
-	serviceNames, err := s.serviceNameMapping.Get(serviceInterface, group, version, protocol)
+	serviceNames, err := s.serviceNameMapping.Get(url)
 	if err != nil {
 		logger.Errorf("get serviceInterface:[%s] group:[%s] version:[%s] protocol:[%s] from "+
 			"serviceNameMap error:%s", err.Error())
