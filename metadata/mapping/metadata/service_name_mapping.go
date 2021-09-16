@@ -18,7 +18,6 @@
 package metadata
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/config/instance"
 	"sync"
 )
 
@@ -34,6 +33,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/config/instance"
 	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
 )
 
@@ -46,7 +46,7 @@ func init() {
 	extension.SetGlobalServiceNameMapping(GetNameMappingInstance)
 }
 
-// MetadataServiceNameMapping is the implementation based on config center
+// MetadataServiceNameMapping is the implementation based on metadata report
 // it's a singleton
 type MetadataServiceNameMapping struct {
 }
