@@ -198,7 +198,7 @@ func (c *ReferenceConfig) Refer(_ interface{}) {
 		c.invoker = cluster.Join(directory.NewStaticDirectory(invokers))
 	}
 	// publish consumer metadata
-	publishConsumerDefinition(cfgURL)
+	//publishConsumerDefinition(cfgURL)
 	// create proxy
 	if c.Async {
 		callback := GetCallback(c.id)
