@@ -203,7 +203,7 @@ func (c *ServiceConfig) Export() error {
 		}
 
 		// post process the URL to be exported
-		c.loadProcessConfig(ivkURL, constant.HookEventBeforeProviderConnect, nil)
+		c.loadProcessConfig(ivkURL, constant.HookEventBeforeServiceListen, nil)
 		c.postProcessConfig(ivkURL)
 		// config post processor may set "export" to false
 		if !ivkURL.GetParamBool(constant.EXPORT_KEY, true) {

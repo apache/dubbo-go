@@ -27,14 +27,6 @@ import (
 	"github.com/apache/dubbo-go/config/interfaces"
 )
 
-const (
-	LoadProcessReferenceConfigFunctionName        = "LoadProcessReferenceConfig"
-	LoadProcessServiceConfigFunctionName          = "LoadProcessServiceConfig"
-	AfterAllReferencesConnectCompleteFunctionName = "AfterAllReferencesConnectComplete"
-	AfterAllServicesListenCompleteFunctionName    = "AfterAllServicesListenComplete"
-	BeforeShutdownFunctionName                    = "BeforeShutdown"
-)
-
 var (
 	configLoadProcessorHolder *interfaces.ConfigLoadProcessorHolder
 
@@ -52,48 +44,55 @@ func init() {
 // SetConfigLoadProcessor registers a ConfigLoadProcessor with the given name.
 func SetConfigLoadProcessor(name string, processor interfaces.ConfigLoadProcessor) {
 	configLoadProcessorHolder.Lock()
+	defer configLoadProcessorHolder.Unlock()
 	loadProcessors[name] = processor
 	loadProcessorValues[name] = reflect.ValueOf(processor)
-	configLoadProcessorHolder.Unlock()
 }
 
 // GetConfigLoadProcessor finds a ConfigLoadProcessor by name.
 func GetConfigLoadProcessor(name string) interfaces.ConfigLoadProcessor {
+	configLoadProcessorHolder.Lock()
+	defer configLoadProcessorHolder.Unlock()
 	return loadProcessors[name]
 }
 
 // RemoveConfigLoadProcessor remove process from processors.
 func RemoveConfigLoadProcessor(name string) {
 	configLoadProcessorHolder.Lock()
+	defer configLoadProcessorHolder.Unlock()
 	delete(loadProcessors, name)
 	delete(loadProcessorValues, name)
-	configLoadProcessorHolder.Unlock()
 }
 
 // GetConfigLoadProcessors returns all registered instances of ConfigLoadProcessor.
 func GetConfigLoadProcessors() []interfaces.ConfigLoadProcessor {
-	configLoadProcessorHolder.Lock()
 	ret := make([]interfaces.ConfigLoadProcessor, 0, len(loadProcessors))
+	configLoadProcessorHolder.Lock()
+	defer configLoadProcessorHolder.Unlock()
 	for _, v := range loadProcessors {
 		ret = append(ret, v)
 	}
-	configLoadProcessorHolder.Unlock()
 	return ret
 }
 
-// GetReferenceURL returns all reference URL
+// GetReferenceURL returns the URL of all clones of references
 func GetReferenceURL() map[string][]*common.URL {
+	configLoadProcessorHolder.Lock()
+	defer configLoadProcessorHolder.Unlock()
 	return referenceURL
 }
 
-// GetServiceURL returns all service URL
+// GetServiceURL returns the URL of all clones of services
 func GetServiceURL() map[string][]*common.URL {
+	configLoadProcessorHolder.Lock()
+	defer configLoadProcessorHolder.Unlock()
 	return serviceURL
 }
 
 // ResetURL remove all URL
 func ResetURL() {
 	configLoadProcessorHolder.Lock()
+	defer configLoadProcessorHolder.Unlock()
 	for k := range referenceURL {
 		referenceURL[k] = nil
 		delete(referenceURL, k)
@@ -102,36 +101,45 @@ func ResetURL() {
 		serviceURL[k] = nil
 		delete(serviceURL, k)
 	}
-	configLoadProcessorHolder.Unlock()
 }
 
 // emit
 func emit(funcName string, val ...interface{}) {
-	configLoadProcessorHolder.Lock()
 	var values []reflect.Value
 	for _, arg := range val {
 		values = append(values, reflect.ValueOf(arg))
 	}
+	configLoadProcessorHolder.Lock()
+	defer configLoadProcessorHolder.Unlock()
 	for _, p := range loadProcessorValues {
 		p.MethodByName(funcName).Call(values)
 	}
-	configLoadProcessorHolder.Unlock()
 }
 
 // LoadProcessReferenceConfig emit reference config load event
 func LoadProcessReferenceConfig(url *common.URL, event string, errMsg *string) {
 	configLoadProcessorHolder.Lock()
-	referenceURL[event] = append(referenceURL[event], url)
+	if event != constant.HookEventBeforeReferenceConnect && url != nil {
+		url = url.Clone()
+	}
 	configLoadProcessorHolder.Unlock()
-	emit(LoadProcessReferenceConfigFunctionName, url, event, errMsg)
+	defer func() {
+		referenceURL[event] = append(referenceURL[event], url)
+	}()
+	emit(constant.LoadProcessReferenceConfigFunctionName, url, event, errMsg)
 }
 
 // LoadProcessServiceConfig emit service config load event
 func LoadProcessServiceConfig(url *common.URL, event string, errMsg *string) {
 	configLoadProcessorHolder.Lock()
-	serviceURL[event] = append(serviceURL[event], url)
+	if event != constant.HookEventBeforeServiceListen && url != nil {
+		url = url.Clone()
+	}
 	configLoadProcessorHolder.Unlock()
-	emit(LoadProcessServiceConfigFunctionName, url, event, errMsg)
+	defer func() {
+		serviceURL[event] = append(serviceURL[event], url)
+	}()
+	emit(constant.LoadProcessServiceConfigFunctionName, url, event, errMsg)
 }
 
 // AllReferencesConnectComplete emit all references config load complete event
@@ -142,21 +150,21 @@ func AllReferencesConnectComplete() {
 		Fail:    referenceURL[constant.HookEventReferenceConnectFail],
 	}
 	configLoadProcessorHolder.Unlock()
-	emit(AfterAllReferencesConnectCompleteFunctionName, binder)
+	emit(constant.AfterAllReferencesConnectCompleteFunctionName, binder)
 }
 
 // AllServicesListenComplete emit all services config load complete event
 func AllServicesListenComplete() {
 	configLoadProcessorHolder.Lock()
 	binder := interfaces.ConfigLoadProcessorURLBinder{
-		Success: serviceURL[constant.HookEventProviderConnectSuccess],
-		Fail:    serviceURL[constant.HookEventProviderConnectFail],
+		Success: serviceURL[constant.HookEventServiceListenSuccess],
+		Fail:    serviceURL[constant.HookEventServiceListenFail],
 	}
 	configLoadProcessorHolder.Unlock()
-	emit(AfterAllServicesListenCompleteFunctionName, binder)
+	emit(constant.AfterAllServicesListenCompleteFunctionName, binder)
 }
 
 // BeforeShutdown emit before os.Exit(0)
 func BeforeShutdown() {
-	emit(BeforeShutdownFunctionName)
+	emit(constant.BeforeShutdownFunctionName)
 }

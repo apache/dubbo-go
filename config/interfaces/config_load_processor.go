@@ -29,20 +29,20 @@ import (
 // ServiceConfig during deployment time.
 type ConfigLoadProcessor interface {
 	// LoadProcessReferenceConfig customizes ReferenceConfig's params.
-	// LoadProcessReferenceConfig emit on refer reference (event: before-reference-connect, reference-connect-success, reference-connect-fail)
+	// LoadProcessReferenceConfig emits on refer reference (event: before-reference-connect, reference-connect-success, reference-connect-fail)
 	LoadProcessReferenceConfig(url *common.URL, event string, errMsg *string)
 
 	// LoadProcessServiceConfig customizes ServiceConfig's params.
-	// LoadProcessServiceConfig emit on export service (event: before-service-listen, service-listen-success, service-listen-fail)
+	// LoadProcessServiceConfig emits on export service (event: before-service-listen, service-listen-success, service-listen-fail)
 	LoadProcessServiceConfig(url *common.URL, event string, errMsg *string)
 
-	// AfterAllReferencesConnectComplete emit on all references export complete
+	// AfterAllReferencesConnectComplete emits on all references export complete
 	AfterAllReferencesConnectComplete(urls ConfigLoadProcessorURLBinder)
 
-	// AfterAllServicesListenComplete emit on all services export complete
+	// AfterAllServicesListenComplete emits on all services export complete
 	AfterAllServicesListenComplete(urls ConfigLoadProcessorURLBinder)
 
-	// BeforeShutdown emit on before shutdown
+	// BeforeShutdown emits on before shutdown
 	BeforeShutdown()
 }
 

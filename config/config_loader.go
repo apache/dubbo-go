@@ -256,11 +256,11 @@ func loadProviderConfig() {
 		serviceURL := svs.getValidURL()
 		if err != nil {
 			errMsg := fmt.Sprintf("service %s export failed! err: %#v", key, err)
-			svs.loadProcessConfig(serviceURL, constant.HookEventProviderConnectFail, &errMsg)
+			svs.loadProcessConfig(serviceURL, constant.HookEventServiceListenFail, &errMsg)
 			panic(errMsg)
 		}
 		if serviceURL != nil {
-			svs.loadProcessConfig(serviceURL, constant.HookEventProviderConnectSuccess, nil)
+			svs.loadProcessConfig(serviceURL, constant.HookEventServiceListenSuccess, nil)
 		}
 	}
 	registerServiceInstance()
