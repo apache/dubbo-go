@@ -32,10 +32,8 @@ import (
 
 // ProviderConfig is the default configuration of service provider
 type ProviderConfig struct {
-	//base.ShutdownConfig         `yaml:",inline" property:"base"`
-	//center.configCenter `yaml:"-"`
 	Filter string `yaml:"filter" json:"filter,omitempty" property:"filter"`
-	// Register whether registration is required
+	// Deprecated Register whether registration is required
 	Register bool `yaml:"register" json:"register" property:"register"`
 	// Registry registry ids
 	Registry []string `yaml:"registry" json:"registry" property:"registry"`
@@ -64,6 +62,10 @@ func (c *ProviderConfig) Init(rc *RootConfig) error {
 	if c == nil {
 		return nil
 	}
+	c.Registry = translateRegistryIds(c.Registry)
+	if len(c.Registry) <= 0 {
+		c.Registry = rc.getRegistryIds()
+	}
 	for _, service := range c.Services {
 		if err := service.Init(rc); err != nil {
 			return err
@@ -71,10 +73,6 @@ func (c *ProviderConfig) Init(rc *RootConfig) error {
 	}
 	if err := defaults.Set(c); err != nil {
 		return err
-	}
-	c.Registry = translateRegistryIds(c.Registry)
-	if len(c.Registry) <= 0 {
-		c.Registry = rc.getRegistryIds()
 	}
 	c.Load()
 	return nil
@@ -99,43 +97,6 @@ func (c *ProviderConfig) Load() {
 func SetProviderConfig(p ProviderConfig) {
 	rootConfig.Provider = &p
 }
-
-//
-//// ProviderInit loads config file to init provider config
-//func ProviderInit(confProFile string) error {
-//	if len(confProFile) == 0 {
-//		return perrors.Errorf("applicationConfig configure(provider) file name is nil")
-//	}
-//	  providerConfig = &ProviderConfig{}
-//	fileStream, err := yaml.UnmarshalYMLConfig(confProFile,   providerConfig)
-//	if err != nil {
-//		return perrors.Errorf("unmarshalYmlConfig error %v", perrors.WithStack(err))
-//	}
-//
-//	  provider  fileStream = bytes.NewBuffer(fileStream)
-//	// set method interfaceId & interfaceName
-//	for k, v := range   provider  Services {
-//		// set id for reference
-//		for _, n := range   provider  Services[k].Methods {
-//			n.InterfaceName = v.InterfaceName
-//			n.InterfaceId = k
-//		}
-//	}
-//
-//	return nil
-//}
-//
-//func configCenterRefreshProvider() error {
-//	// fresh it
-//	if   provider  ConfigCenterConfig != nil {
-//		  provider  fatherConfig =   providerConfig
-//		if err :=   provider  startConfigCenter((*  providerConfig).BaseConfig); err != nil {
-//			return perrors.Errorf("start config center error , error message is {%v}", perrors.WithStack(err))
-//		}
-//		  provider  fresh()
-//	}
-//	return nil
-//}
 
 ///////////////////////////////////// provider config api
 // ProviderConfigOpt is the

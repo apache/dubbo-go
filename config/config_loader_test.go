@@ -109,21 +109,25 @@ func TestGetRegistriesConfig(t *testing.T) {
 	})
 }
 
-func TestGetProviderConfig(t *testing.T) {
+func TestProviderConfig(t *testing.T) {
 	// empty registry
 	t.Run("empty registry", func(t *testing.T) {
-		err :=Load(WithPath("./testdata/config/provider/empty_registry_application.yaml"))
+		err := Load(WithPath("./testdata/config/provider/empty_registry_application.yaml"))
 		assert.NotNil(t, err)
-		assert.Nil(t, Load(WithPath("./testdata/config/provider/empty_registry_application.yaml")))
 		provider := rootConfig.Provider
-		assert.Equal(t, 0, len(provider.Registry))
+		assert.Equal(t, 1, len(provider.Registry))
+		assert.Equal(t, "nacos", provider.Registry[0])
 	})
 
 	t.Run("root registry", func(t *testing.T) {
 		err := Load(WithPath("./testdata/config/provider/registry_application.yaml"))
-		assert.NotNil(t, err)
+		assert.Nil(t, err)
 		provider := rootConfig.Provider
 		assert.NotNil(t, provider)
+		assert.Equal(t, 2, len(provider.Services))
+
+		assert.Equal(t, 2, len(provider.Services["HelloService"].Registry))
+		assert.Equal(t, 1, len(provider.Services["OrderService"].Registry))
 	})
 }
 

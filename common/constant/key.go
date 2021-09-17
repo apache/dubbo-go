@@ -179,7 +179,7 @@ const (
 	ConfigCenterPrefix         = "dubbo.config-center"
 	SingleRegistryConfigPrefix = "dubbo.registry"
 	ReferenceConfigPrefix      = "dubbo.reference"
-	ServiceConfigPrefix        = "dubbo.service"
+	ServiceConfigPrefix        = "dubbo.service."
 	ConfigBasePrefix           = "dubbo.base"
 	RemotePrefix               = "dubbo.remote"
 	ServiceDiscPrefix          = "dubbo.service-discovery"
