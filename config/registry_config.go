@@ -18,6 +18,7 @@
 package config
 
 import (
+	"github.com/pkg/errors"
 	"net/url"
 	"strconv"
 	"strings"
@@ -38,10 +39,10 @@ import (
 // RegistryConfig is the configuration of the registry center
 type RegistryConfig struct {
 	Protocol  string `validate:"required" yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
-	Timeout   string `default:"10s" validate:"required" yaml:"timeout" json:"timeout,omitempty" property:"timeout"` // unit: second
+	Timeout   string `default:"5s" validate:"required" yaml:"timeout" json:"timeout,omitempty" property:"timeout"` // unit: second
 	Group     string `yaml:"group" json:"group,omitempty" property:"group"`
 	Namespace string `yaml:"namespace" json:"namespace,omitempty" property:"namespace"`
-	TTL       string `default:"10m" yaml:"ttl" json:"ttl,omitempty" property:"ttl"` // unit: minute
+	TTL       string `default:"10s" yaml:"ttl" json:"ttl,omitempty" property:"ttl"` // unit: minute
 	// for registry
 	Address    string `validate:"required" yaml:"address" json:"address,omitempty" property:"address"`
 	Username   string `yaml:"username" json:"username,omitempty" property:"username"`
@@ -58,7 +59,7 @@ type RegistryConfig struct {
 	RegistryType string            `yaml:"registry-type"`
 }
 
-// Prefix dubbo.registriesConfig
+// Prefix dubbo.registries
 func (RegistryConfig) Prefix() string {
 	return constant.RegistryConfigPrefix
 }
@@ -71,8 +72,19 @@ func (c *RegistryConfig) check() error {
 	return verify(c)
 }
 
-func (c *RegistryConfig) Init() error {
-	return c.check()
+// initRegistryConfig init registry config
+func initRegistryConfig(rc *RootConfig) error {
+	registries := rc.Registries
+	if len(registries) <= 0 {
+		return errors.New("config check err,dubbo.registries must set")
+	}
+	for key, reg := range registries {
+		if err := reg.check(); err != nil {
+			return err
+		}
+		registries[key] = reg
+	}
+	return nil
 }
 
 func (c *RegistryConfig) getUrlMap(roleType common.RoleType) url.Values {
@@ -97,27 +109,27 @@ func (c *RegistryConfig) getUrlMap(roleType common.RoleType) url.Values {
 //  eg:address=nacos://127.0.0.1:8848 will return 127.0.0.1:8848 and protocol will set nacos
 func (c *RegistryConfig) translateRegistryAddress() string {
 	if strings.Contains(c.Address, "://") {
-		translatedUrl, err := url.Parse(c.Address)
+		u, err := url.Parse(c.Address)
 		if err != nil {
 			logger.Errorf("The registry url is invalid, error: %#v", err)
 			panic(err)
 		}
-		c.Protocol = translatedUrl.Scheme
-		c.Address = strings.Replace(c.Address, translatedUrl.Scheme+"://", "", -1)
+		c.Protocol = u.Scheme
+		c.Address = strings.Join([]string{u.Host, u.Path}, "")
 	}
 	return c.Address
 }
 
 func (c *RegistryConfig) GetInstance(roleType common.RoleType) (registry.Registry, error) {
-	url, err := c.toURL(roleType)
+	u, err := c.toURL(roleType)
 	if err != nil {
 		return nil, err
 	}
 	// if the protocol == registry, set protocol the registry value in url.params
-	if url.Protocol == constant.REGISTRY_PROTOCOL {
-		url.Protocol = url.GetParam(constant.REGISTRY_KEY, "")
+	if u.Protocol == constant.REGISTRY_PROTOCOL {
+		u.Protocol = u.GetParam(constant.REGISTRY_KEY, "")
 	}
-	return extension.GetRegistry(url.Protocol, url)
+	return extension.GetRegistry(u.Protocol, u)
 }
 
 func (c *RegistryConfig) toURL(roleType common.RoleType) (*common.URL, error) {

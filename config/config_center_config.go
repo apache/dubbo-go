@@ -83,13 +83,15 @@ func (c *CenterConfig) check() error {
 	return verify(c)
 }
 
-func (c *CenterConfig) Init(rc *RootConfig) error {
-	if rc.refresh || c == nil {
+func initCenterConfig(rc *RootConfig) error {
+	center := rc.ConfigCenter
+	if center == nil {
 		return nil
 	}
-	if err := c.check(); err != nil {
+	if err := center.check(); err != nil {
 		return err
 	}
+	rc.ConfigCenter= center
 	return startConfigCenter(rc)
 }
 
@@ -170,9 +172,6 @@ func startConfigCenter(rc *RootConfig) error {
 		rc, koanf.UnmarshalConf{Tag: "yaml"}); err != nil {
 		return err
 	}
-
-	rc.refresh = false
-	rc.ConfigCenter = nil
 	return nil
 }
 

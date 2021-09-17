@@ -18,6 +18,7 @@
 package config
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"fmt"
 )
 
@@ -26,7 +27,6 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 )
 
@@ -49,9 +49,14 @@ type ProviderConfig struct {
 	ConfigType map[string]string `yaml:"config_type" json:"config_type,omitempty" property:"config_type"`
 }
 
+func (ProviderConfig) Prefix() string {
+	return constant.ProviderConfigPrefix
+}
+
 func (c *ProviderConfig) CheckConfig() error {
-	// todo check
-	defaults.MustSet(c)
+	if err := defaults.Set(c); err != nil {
+		return err
+	}
 	return verify(c)
 }
 
@@ -59,8 +64,8 @@ func (c *ProviderConfig) Init(rc *RootConfig) error {
 	if c == nil {
 		return nil
 	}
-	for k, _ := range c.Services {
-		if err := c.Services[k].Init(rc); err != nil {
+	for _, service := range c.Services {
+		if err := service.Init(rc); err != nil {
 			return err
 		}
 	}
@@ -68,34 +73,11 @@ func (c *ProviderConfig) Init(rc *RootConfig) error {
 		return err
 	}
 	c.Registry = translateRegistryIds(c.Registry)
+	if len(c.Registry) <= 0 {
+		c.Registry = rc.getRegistryIds()
+	}
 	c.Load()
 	return nil
-}
-
-func (c *ProviderConfig) Validate(r *RootConfig) {
-	ids := make([]string, 0)
-	for key := range r.Registries {
-		ids = append(ids, key)
-	}
-	c.Registry = removeDuplicateElement(ids)
-	for k, _ := range c.Services {
-		c.Services[k].Validate(r)
-	}
-	// todo set default application
-}
-
-// UnmarshalYAML unmarshals the ProviderConfig by @unmarshal function
-//func (c *ProviderConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
-//	if err := defaults.Set(c); err != nil {
-//		return err
-//	}
-//	type plain ProviderConfig
-//	return unmarshal((*plain)(c))
-//}
-
-// Prefix dubbo.provider
-func (c *ProviderConfig) Prefix() string {
-	return constant.ProviderConfigPrefix
 }
 
 func (c *ProviderConfig) Load() {

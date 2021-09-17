@@ -159,7 +159,6 @@ func getRegistryServices(side int, services map[string]*ServiceConfig, registryI
 	}
 	registryServices = make(map[string]*ServiceConfig, len(initService))
 	for key := range initService {
-		//存在配置了使用用户的配置
 		if svc, exist = services[key]; !exist {
 			svc = new(ServiceConfig)
 		}

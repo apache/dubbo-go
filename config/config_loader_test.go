@@ -84,9 +84,15 @@ func TestLoadConfigCenter(t *testing.T) {
 }
 
 func TestGetRegistriesConfig(t *testing.T) {
-	t.Run("registry", func(t *testing.T) {
-		Load(WithPath("./testdata/config/registry/application.yaml"))
+	t.Run("empty registry", func(t *testing.T) {
+		err := Load(WithPath("./testdata/config/registry/empty_application.yaml"))
+		assert.NotNil(t, err)
+	})
 
+	t.Run("registry", func(t *testing.T) {
+		err := Load(WithPath("./testdata/config/registry/application.yaml"))
+
+		assert.Nil(t, err)
 		registries := rootConfig.Registries
 
 		assert.Equal(t, 2, len(registries))
@@ -97,7 +103,7 @@ func TestGetRegistriesConfig(t *testing.T) {
 		assert.Equal(t, "dev", registries["nacos"].Group)
 		// zk
 		assert.Equal(t, "zookeeper", registries["zk"].Protocol)
-		assert.Equal(t, "10s", registries["zk"].Timeout)
+		assert.Equal(t, "5s", registries["zk"].Timeout)
 		assert.Equal(t, "127.0.0.1:2181", registries["zk"].Address)
 		assert.Equal(t, "test", registries["zk"].Group)
 	})
@@ -106,13 +112,16 @@ func TestGetRegistriesConfig(t *testing.T) {
 func TestGetProviderConfig(t *testing.T) {
 	// empty registry
 	t.Run("empty registry", func(t *testing.T) {
+		err :=Load(WithPath("./testdata/config/provider/empty_registry_application.yaml"))
+		assert.NotNil(t, err)
 		assert.Nil(t, Load(WithPath("./testdata/config/provider/empty_registry_application.yaml")))
 		provider := rootConfig.Provider
 		assert.Equal(t, 0, len(provider.Registry))
 	})
 
 	t.Run("root registry", func(t *testing.T) {
-		Load(WithPath("./testdata/config/provider/registry_application.yaml"))
+		err := Load(WithPath("./testdata/config/provider/registry_application.yaml"))
+		assert.NotNil(t, err)
 		provider := rootConfig.Provider
 		assert.NotNil(t, provider)
 	})
@@ -120,6 +129,10 @@ func TestGetProviderConfig(t *testing.T) {
 
 func TestRootConfig(t *testing.T) {
 	Load(WithPath("./testdata/config/app/application.yaml"))
+}
+
+func TestApplication(t *testing.T) {
+	Load(WithPath("./testdata/config/application/application.yaml"))
 }
 
 //

@@ -34,14 +34,13 @@ import (
 
 // MetadataReportConfig is app level configuration
 type MetadataReportConfig struct {
-	Protocol string `required:"true"  yaml:"protocol"  json:"protocol,omitempty"`
-	Address  string `required:"true" yaml:"address" json:"address"`
-	Username string `yaml:"username" json:"username,omitempty"`
-	Password string `yaml:"password" json:"password,omitempty"`
-	Timeout  string `yaml:"timeout" json:"timeout,omitempty"`
-	Group    string `yaml:"group" json:"group,omitempty"`
-
-	MetadataReportType string
+	Protocol     string `required:"true"  yaml:"protocol"  json:"protocol,omitempty"`
+	Address      string `required:"true" yaml:"address" json:"address"`
+	Username     string `yaml:"username" json:"username,omitempty"`
+	Password     string `yaml:"password" json:"password,omitempty"`
+	Timeout      string `yaml:"timeout" json:"timeout,omitempty"`
+	Group        string `yaml:"group" json:"group,omitempty"`
+	MetadataType string `default:"local" yaml:"metadata-type" json:"metadata-type"`
 }
 
 // Prefix dubbo.consumer
@@ -49,23 +48,21 @@ func (MetadataReportConfig) Prefix() string {
 	return constant.MetadataReportPrefix
 }
 
-func (m *MetadataReportConfig) Init(rc *RootConfig) error {
-	if m == nil {
+func (mc *MetadataReportConfig) Init(rc *RootConfig) error {
+	if mc == nil {
 		return nil
 	}
-	m.MetadataReportType = rc.Application.MetadataType
-	return m.StartMetadataReport()
+	mc.MetadataType = rc.Application.MetadataType
+	return mc.StartMetadataReport()
 }
 
-// nolint
-func (c *MetadataReportConfig) ToUrl() (*common.URL, error) {
-	res, err := common.NewURL(c.Address,
-		//common.WithParams(urlMap),
-		common.WithUsername(c.Username),
-		common.WithPassword(c.Password),
-		common.WithLocation(c.Address),
-		common.WithProtocol(c.Protocol),
-		common.WithParamsValue(constant.METADATATYPE_KEY, c.MetadataReportType),
+func (mc *MetadataReportConfig) ToUrl() (*common.URL, error) {
+	res, err := common.NewURL(mc.Address,
+		common.WithUsername(mc.Username),
+		common.WithPassword(mc.Password),
+		common.WithLocation(mc.Address),
+		common.WithProtocol(mc.Protocol),
+		common.WithParamsValue(constant.METADATATYPE_KEY, mc.MetadataType),
 	)
 	if err != nil || len(res.Protocol) == 0 {
 		return nil, perrors.New("Invalid MetadataReportConfig.")
@@ -74,16 +71,16 @@ func (c *MetadataReportConfig) ToUrl() (*common.URL, error) {
 	return res, nil
 }
 
-func (c *MetadataReportConfig) IsValid() bool {
-	return len(c.Protocol) != 0
+func (mc *MetadataReportConfig) IsValid() bool {
+	return len(mc.Protocol) != 0
 }
 
 // StartMetadataReport: The entry of metadata report start
-func (c *MetadataReportConfig) StartMetadataReport() error {
-	if c == nil || !c.IsValid() {
+func (mc *MetadataReportConfig) StartMetadataReport() error {
+	if mc == nil || !mc.IsValid() {
 		return nil
 	}
-	if tmpUrl, err := c.ToUrl(); err == nil {
+	if tmpUrl, err := mc.ToUrl(); err == nil {
 		instance.GetMetadataReportInstance(tmpUrl)
 		return nil
 	} else {

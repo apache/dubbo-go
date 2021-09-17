@@ -1,10 +1,14 @@
 dubbo:
+  registries:
+    nacos:
+      timeout: 3s
+      address: zookeeper://127.0.0.1:2182
   provider:
     register: true
     registry: nacos,zk
     services:
-      helloService:
+      HelloService:
         interface: org.dubbo.service.HelloService
         registry: nacos,zk
-      orderService:
+      OrderService:
         interface: org.dubbo.service.OrderService

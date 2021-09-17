@@ -37,25 +37,27 @@ type ApplicationConfig struct {
 	MetadataType string `default:"local" yaml:"metadata-type" json:"metadataType,omitempty" property:"metadataType"`
 }
 
-// Prefix dubbo.applicationConfig
+// Prefix dubbo.application
 func (ApplicationConfig) Prefix() string {
-	return constant.DUBBO + ".application"
+	return constant.ApplicationConfigPrefix
 }
 
-func (ac *ApplicationConfig) Init(rc *RootConfig) error {
-	// ignore refresh action
-	if rc.refresh || ac == nil {
-		rootConfig.Application = new(ApplicationConfig)
-		return nil
+// initApplicationConfig init application config
+func initApplicationConfig(rc *RootConfig) error {
+	application := rc.Application
+	if application == nil {
+		application = new(ApplicationConfig)
 	}
-	defaults.MustSet(ac)
-	if err := ac.check(); err != nil {
+	if err := application.check(); err != nil {
 		return err
 	}
+	rc.Application = application
 	return nil
 }
 
 func (ac *ApplicationConfig) check() error {
-	defaults.MustSet(ac)
+	if err := defaults.Set(ac); err != nil {
+		return err
+	}
 	return verify(ac)
 }

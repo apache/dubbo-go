@@ -66,11 +66,9 @@ type RootConfig struct {
 	Network map[interface{}]interface{} `yaml:"network" json:"network,omitempty" property:"network"`
 
 	Router []*RouterConfig `yaml:"router" json:"router,omitempty" property:"router"`
-	// is refresh action
-	refresh bool
 	// prefix              string
 	fatherConfig        interface{}
-	EventDispatcherType string `default:"direct" yaml:"event_dispatcher_type" json:"event_dispatcher_type,omitempty"`
+	EventDispatcherType string `default:"direct" yaml:"event-dispatcher-type" json:"event-dispatcher-type,omitempty"`
 	fileStream          *bytes.Buffer
 
 	// cache file used to store the current used configurations.
@@ -95,19 +93,17 @@ func (rc *RootConfig) Init() error {
 	if err := initLoggerConfig(rc); err != nil {
 		return err
 	}
-	if err := rc.ConfigCenter.Init(rc); err != nil {
+	if err := initCenterConfig(rc); err != nil {
 		logger.Infof("config center doesn't start. error is %s", err)
 	}
-	if err := rc.Application.Init(rc); err != nil {
+	if err := initApplicationConfig(rc); err != nil {
 		return err
 	}
 	if err := initProtocolsConfig(rc); err != nil {
 		return err
 	}
-	for i, _ := range rc.Registries {
-		if err := rc.Registries[i].Init(); err != nil {
-			return err
-		}
+	if err := initRegistryConfig(rc); err != nil {
+		return err
 	}
 	if err := initServiceDiscoveryConfig(rc); err != nil {
 		return err
@@ -136,68 +132,6 @@ func (rc *RootConfig) Init() error {
 	}()
 	return nil
 }
-
-//func (rc *RootConfig) CheckConfig() error {
-//	defaults.MustSet(rc)
-//
-//	if err := rc.Application.CheckConfig(); err != nil {
-//		return err
-//	}
-//
-//	for k, _ := range rc.Registries {
-//		if err := rc.Registries[k].CheckConfig(); err != nil {
-//			return err
-//		}
-//	}
-//
-//	for k, _ := range rc.Protocols {
-//		if err := rc.Protocols[k].CheckConfig(); err != nil {
-//			return err
-//		}
-//	}
-//
-//	if err := rc.ConfigCenter.CheckConfig(); err != nil {
-//		return err
-//	}
-//
-//	if err := rc.MetadataReportConfig.CheckConfig(); err != nil {
-//		return err
-//	}
-//
-//	if err := rc.Provider.CheckConfig(); err != nil {
-//		return err
-//	}
-//
-//	if err := rc.Consumer.CheckConfig(); err != nil {
-//		return err
-//	}
-//
-//	return verify(rootConfig)
-//}
-
-//func (rc *RootConfig) Validate() {
-//	// 2. validate config
-//	rc.Application.Validate()
-//
-//	for k, _ := range rc.Registries {
-//		rc.Registries[k].Validate()
-//	}
-//
-//	for k, _ := range rc.Protocols {
-//		rc.Protocols[k].Validate()
-//	}
-//
-//	for k, _ := range rc.Registries {
-//		rc.Registries[k].Validate()
-//	}
-//
-//	rc.ConfigCenter.Validate()
-//	rc.MetadataReportConfig.Validate()
-//	rc.Provider.Validate(rc)
-//	rc.Consumer.Validate(rc)
-//}
-
-//GetApplicationConfig get applicationConfig config
 
 func GetRootConfig() *RootConfig {
 	return rootConfig
@@ -309,14 +243,14 @@ func GetApplicationConfig() *ApplicationConfig {
 //	return provider, nil
 //}
 
-//// getRegistryIds get registry keys
-//func getRegistryIds() []string {
-//	ids := make([]string, 0)
-//	for key := range rootConfig.Registries {
-//		ids = append(ids, key)
-//	}
-//	return removeDuplicateElement(ids)
-//}
+// getRegistryIds get registry ids
+func (rc *RootConfig) getRegistryIds() []string {
+	ids := make([]string, 0)
+	for key := range rc.Registries {
+		ids = append(ids, key)
+	}
+	return removeDuplicateElement(ids)
+}
 
 func NewRootConfig(opts ...RootConfigOpt) *RootConfig {
 	newRootConfig := &RootConfig{

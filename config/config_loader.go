@@ -62,11 +62,10 @@ func Load(opts ...LoaderConfOption) error {
 		rootConfig, koanf.UnmarshalConf{Tag: "yaml"}); err != nil {
 		return err
 	}
-	rootConfig.refresh = false
-	extension.SetAndInitGlobalDispatcher(rootConfig.EventDispatcherType)
 	if err := rootConfig.Init(); err != nil {
 		return err
 	}
+	extension.SetAndInitGlobalDispatcher(rootConfig.EventDispatcherType)
 	registerServiceInstance()
 	return nil
 }
