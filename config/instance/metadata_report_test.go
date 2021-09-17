@@ -18,6 +18,7 @@
 package instance
 
 import (
+	gxset "github.com/dubbogo/gost/container/set"
 	"testing"
 )
 
@@ -49,6 +50,14 @@ func (m *mockMetadataReportFactory) CreateMetadataReport(*common.URL) report.Met
 }
 
 type mockMetadataReport struct{}
+
+func (m mockMetadataReport) RegisterServiceAppMapping(s string, s2 string) error {
+	panic("implement me")
+}
+
+func (m mockMetadataReport) GetServiceAppMapping(s string) (*gxset.HashSet, error) {
+	panic("implement me")
+}
 
 func (m mockMetadataReport) GetAppMetadata(metadataIdentifier *identifier.SubscriberMetadataIdentifier) (*common.MetadataInfo, error) {
 	panic("implement me")
