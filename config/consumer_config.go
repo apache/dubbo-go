@@ -66,8 +66,12 @@ func (cc *ConsumerConfig) Init(rc *RootConfig) error {
 	if cc == nil {
 		return nil
 	}
-	for k, _ := range cc.References {
-		if err := cc.References[k].Init(rc); err != nil {
+	cc.Registry = translateRegistryIds(cc.Registry)
+	if len(cc.Registry) <= 0 {
+		cc.Registry = rc.getRegistryIds()
+	}
+	for _, reference := range cc.References {
+		if err := reference.Init(rc); err != nil {
 			return err
 		}
 	}

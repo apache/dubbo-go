@@ -25,15 +25,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/config/testdata/config/service"
-)
-
-func init() {
-	SetProviderService(new(service.OrderService))
-	SetProviderService(new(service.HelloService))
-}
-
 const (
 	configPath = "./testdata/application.yaml"
 )
@@ -129,14 +120,6 @@ func TestProviderConfig(t *testing.T) {
 		assert.Equal(t, 2, len(provider.Services["HelloService"].Registry))
 		assert.Equal(t, 1, len(provider.Services["OrderService"].Registry))
 	})
-}
-
-func TestRootConfig(t *testing.T) {
-	Load(WithPath("./testdata/config/app/application.yaml"))
-}
-
-func TestApplication(t *testing.T) {
-	Load(WithPath("./testdata/config/application/application.yaml"))
 }
 
 //
