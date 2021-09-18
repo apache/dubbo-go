@@ -50,7 +50,7 @@ func TestLoad(t *testing.T) {
 		assert.Equal(t, 2, len(registries))
 		//address= nacos://127.0.0.1:8848 Translate Registry Address
 		assert.Equal(t, "nacos", registries["nacos"].Protocol)
-		assert.Equal(t, "10s", registries["zk"].Timeout)
+		assert.Equal(t, "5s", registries["zk"].Timeout)
 	})
 
 	//config-center
@@ -75,10 +75,6 @@ func TestLoadConfigCenter(t *testing.T) {
 }
 
 func TestGetRegistriesConfig(t *testing.T) {
-	t.Run("empty registry", func(t *testing.T) {
-		err := Load(WithPath("./testdata/config/registry/empty_application.yaml"))
-		assert.NotNil(t, err)
-	})
 
 	t.Run("registry", func(t *testing.T) {
 		err := Load(WithPath("./testdata/config/registry/application.yaml"))
@@ -104,7 +100,7 @@ func TestProviderConfig(t *testing.T) {
 	// empty registry
 	t.Run("empty registry", func(t *testing.T) {
 		err := Load(WithPath("./testdata/config/provider/empty_registry_application.yaml"))
-		assert.NotNil(t, err)
+		assert.Nil(t, err)
 		provider := rootConfig.Provider
 		assert.Equal(t, 1, len(provider.Registry))
 		assert.Equal(t, "nacos", provider.Registry[0])

@@ -18,7 +18,6 @@
 package config
 
 import (
-	"github.com/pkg/errors"
 	"net/url"
 	"strconv"
 	"strings"
@@ -75,9 +74,6 @@ func (c *RegistryConfig) check() error {
 // initRegistryConfig init registry config
 func initRegistryConfig(rc *RootConfig) error {
 	registries := rc.Registries
-	if len(registries) <= 0 {
-		return errors.New("config check err,dubbo.registries must set")
-	}
 	for key, reg := range registries {
 		if err := reg.check(); err != nil {
 			return err
