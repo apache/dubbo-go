@@ -18,11 +18,8 @@
 package config
 
 import (
-	"go.uber.org/atomic"
-)
-
-import (
 	hessian "github.com/apache/dubbo-go-hessian2"
+	"go.uber.org/atomic"
 )
 
 import (
