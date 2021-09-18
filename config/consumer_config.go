@@ -49,10 +49,8 @@ type ConsumerConfig struct {
 	Check          bool   `yaml:"check" json:"check,omitempty" property:"check"`
 
 	References map[string]*ReferenceConfig `yaml:"references" json:"references,omitempty" property:"references"`
-	// ProtocolConf interface{}                 `yaml:"protocol_conf" json:"protocol-conf,omitempty" property:"protocol-conf"`
+
 	FilterConf interface{} `yaml:"filter-conf" json:"filter-conf,omitempty" property:"filter-conf"`
-	// ShutdownConfig *ShutdownConfig                             `yaml:"shutdown_conf" json:"shutdown_conf,omitempty" property:"shutdown_conf"`
-	ConfigType map[string]string `yaml:"config_type" json:"config_type,omitempty" property:"config_type"`
 
 	rootConfig *RootConfig
 }
@@ -130,7 +128,6 @@ func (cc *ConsumerConfig) Load() {
 			break
 		}
 	}
-
 }
 
 // SetConsumerConfig sets consumerConfig by @c
@@ -207,8 +204,8 @@ type ConsumerConfigOpt func(config *ConsumerConfig) *ConsumerConfig
 // GetConsumerInstance returns ConsumerConfig with @opts
 func GetConsumerInstance(opts ...ConsumerConfigOpt) *ConsumerConfig {
 	cc := &ConsumerConfig{
-		References:     make(map[string]*ReferenceConfig, 8),
-		Check:          true,
+		References: make(map[string]*ReferenceConfig, 8),
+		Check:      true,
 	}
 	for _, opt := range opts {
 		opt(cc)

@@ -39,8 +39,9 @@ func (ProtocolConfig) Prefix() string {
 }
 
 func GetProtocolsInstance() map[string]*ProtocolConfig {
-	return nil
+	return make(map[string]*ProtocolConfig, 1)
 }
+
 func initProtocolsConfig(rc *RootConfig) error {
 	protocols := rc.Protocols
 	if len(protocols) <= 0 {

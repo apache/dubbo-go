@@ -19,7 +19,6 @@ package prometheus
 
 import (
 	"context"
-	"net/http"
 	"strconv"
 	"strings"
 	"sync"
@@ -27,8 +26,6 @@ import (
 )
 
 import (
-	ocprom "contrib.go.opencensus.io/exporter/prometheus"
-
 	"github.com/prometheus/client_golang/prometheus"
 	prom "github.com/prometheus/client_golang/prometheus"
 )
@@ -71,7 +68,7 @@ var (
 
 // should initialize after loading configuration
 func init() {
-	newPrometheusReporter()
+	//newPrometheusReporter()
 	extension.SetMetricReporter(reporterName, newPrometheusReporter)
 }
 
@@ -221,20 +218,20 @@ func newPrometheusReporter() metrics.Reporter {
 
 			prom.DefaultRegisterer.MustRegister(reporterInstance.consumerSummaryVec, reporterInstance.providerSummaryVec,
 				reporterInstance.consumerHistogramVec, reporterInstance.providerHistogramVec)
-			metricsExporter, err := ocprom.NewExporter(ocprom.Options{
-				Registry: prom.DefaultRegisterer.(*prom.Registry),
-			})
-			if err != nil {
-				logger.Errorf("new prometheus reporter with error = %s", err)
-				return
-			}
-			go func() {
-				mux := http.NewServeMux()
-				mux.Handle("/metrics", metricsExporter)
-				if err := http.ListenAndServe(":9090", mux); err != nil {
-					logger.Errorf("new prometheus reporter with error = %s", err)
-				}
-			}()
+			//metricsExporter, err := ocprom.NewExporter(ocprom.Options{
+			//	Registry: prom.DefaultRegisterer.(*prom.Registry),
+			//})
+			//if err != nil {
+			//	logger.Errorf("new prometheus reporter with error = %s", err)
+			//	return
+			//}
+			//go func() {
+			//	mux := http.NewServeMux()
+			//	mux.Handle("/metrics", metricsExporter)
+			//	if err := http.ListenAndServe(":9090", mux); err != nil {
+			//		logger.Errorf("new prometheus reporter with error = %s", err)
+			//	}
+			//}()
 		})
 	}
 	return reporterInstance

@@ -18,7 +18,6 @@
 package config
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"fmt"
 )
 
@@ -27,6 +26,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 )
 
@@ -51,7 +51,7 @@ func (ProviderConfig) Prefix() string {
 	return constant.ProviderConfigPrefix
 }
 
-func (c *ProviderConfig) CheckConfig() error {
+func (c *ProviderConfig) check() error {
 	if err := defaults.Set(c); err != nil {
 		return err
 	}
@@ -71,7 +71,7 @@ func (c *ProviderConfig) Init(rc *RootConfig) error {
 			return err
 		}
 	}
-	if err := defaults.Set(c); err != nil {
+	if err := c.check(); err != nil {
 		return err
 	}
 	return nil
@@ -90,6 +90,7 @@ func (c *ProviderConfig) Load() {
 			logger.Errorf(fmt.Sprintf("service %s export failed! err: %#v", key, err))
 		}
 	}
+
 }
 
 // SetProviderConfig sets provider config by @p
@@ -112,7 +113,10 @@ func NewEmptyProviderConfig() *ProviderConfig {
 
 // GetProviderInstance returns ProviderConfig with given @opts
 func GetProviderInstance(opts ...ProviderConfigOpt) *ProviderConfig {
-	newConfig := NewEmptyProviderConfig()
+	newConfig := &ProviderConfig{
+		Services: make(map[string]*ServiceConfig),
+		Registry: make([]string, 8),
+	}
 	for _, opt := range opts {
 		opt(newConfig)
 	}

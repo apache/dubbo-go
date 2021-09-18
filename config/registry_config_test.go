@@ -47,7 +47,7 @@ func TestLoadRegistries(t *testing.T) {
 }
 
 func TestLoadRegistries1(t *testing.T) {
-	target := []string{"shanghai1"}
+	target := []string{"shanghai"}
 	regs := map[string]*RegistryConfig{
 
 		"shanghai1": {
@@ -68,8 +68,8 @@ func TestTranslateRegistryAddress(t *testing.T) {
 	reg := new(RegistryConfig)
 	reg.Address = "nacos://127.0.0.1:8848"
 
-	address := reg.translateRegistryAddress()
+	reg.translateRegistryAddress()
 
 	assert.Equal(t, "nacos", reg.Protocol)
-	assert.Equal(t, "127.0.0.1:8848", address)
+	assert.Equal(t, "127.0.0.1:8848", reg.Address)
 }

@@ -18,14 +18,11 @@
 package config
 
 import (
-	"net/http"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	hessian "github.com/apache/dubbo-go-hessian2"
+	"go.uber.org/atomic"
 )
 
 func GetInstance(opts ...RootConfigOpt) *RootConfig {
@@ -36,11 +33,12 @@ func GetInstance(opts ...RootConfigOpt) *RootConfig {
 		MetadataReportConfig: &MetadataReportConfig{},
 		Application:          GetApplicationInstance(),
 		Registries:           make(map[string]*RegistryConfig),
-		Protocols:            make(map[string]*ProtocolConfig),
+		Protocols:            GetProtocolsInstance(),
 		Provider:             GetProviderInstance(),
 		Consumer:             GetConsumerInstance(),
 		MetricConfig:         &MetricConfig{},
 		Logger:               GetLoggerConfigInstance(),
+		started:              atomic.NewBool(false),
 	}
 	for _, opt := range opts {
 		opt(rc)
@@ -80,9 +78,6 @@ func (rc *RootConfig) Init() error {
 	if err := initMetricConfig(rc); err != nil {
 		return err
 	}
-	if err := initNetworkConfig(rc); err != nil {
-		return err
-	}
 	if err := initRouterConfig(rc); err != nil {
 		return err
 	}
@@ -93,15 +88,18 @@ func (rc *RootConfig) Init() error {
 	if err := rc.Consumer.Init(rc); err != nil {
 		return err
 	}
-	go func() {
-		_ = http.ListenAndServe("0.0.0.0:6060", nil)
-	}()
+
 	return nil
 }
 
 func (rc *RootConfig) Start() {
-	rc.Provider.Load()
-	rc.Consumer.Load()
-	extension.SetAndInitGlobalDispatcher(rootConfig.EventDispatcherType)
-	registerServiceInstance()
+	if rc.started.CAS(false, true) {
+		rc.Provider.Load()
+		rc.Consumer.Load()
+		extension.SetAndInitGlobalDispatcher(rootConfig.EventDispatcherType)
+		registerServiceInstance()
+		//go func() {
+		//	_ = http.ListenAndServe("0.0.0.0:6060", nil)
+		//}()
+	}
 }
