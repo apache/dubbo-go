@@ -91,7 +91,7 @@ func initCenterConfig(rc *RootConfig) error {
 	if err := center.check(); err != nil {
 		return err
 	}
-	rc.ConfigCenter= center
+	rc.ConfigCenter = center
 	return startConfigCenter(rc)
 }
 
