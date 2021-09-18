@@ -30,7 +30,6 @@ import (
 )
 
 func TestLoggerInit(t *testing.T) {
-
 	t.Run("empty use default", func(t *testing.T) {
 		err := Load(WithPath("./testdata/config/logger/empty_log.yaml"))
 		assert.Nil(t, err)

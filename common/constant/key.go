@@ -189,6 +189,7 @@ const (
 	ShutdownConfigPrefix       = "dubbo.shutdown"
 	MetadataReportPrefix       = "dubbo.metadata-report"
 	RouterConfigPrefix         = "dubbo.router"
+	LoggerConfigPrefix         = "dubbo.logger"
 )
 
 const (

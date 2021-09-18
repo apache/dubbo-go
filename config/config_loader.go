@@ -45,7 +45,7 @@ import (
 )
 
 var (
-	rootConfig *RootConfig
+	rootConfig = GetInstance()
 	maxWait    = 3
 )
 
@@ -55,8 +55,6 @@ func Load(opts ...LoaderConfOption) error {
 	hessian.RegisterPOJO(&common.URL{})
 	// conf
 	conf := NewLoaderConf(opts...)
-	// init config
-	rootConfig = new(RootConfig)
 	koan := getKoanf(conf)
 	if err := koan.UnmarshalWithConf(rootConfig.Prefix(),
 		rootConfig, koanf.UnmarshalConf{Tag: "yaml"}); err != nil {

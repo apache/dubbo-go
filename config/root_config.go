@@ -18,7 +18,6 @@
 package config
 
 import (
-	"bytes"
 	"net/http"
 	_ "net/http/pprof"
 )
@@ -62,21 +61,12 @@ type RootConfig struct {
 	// Shutdown config
 	Shutdown *ShutdownConfig `yaml:"shutdown" json:"shutdown,omitempty" property:"shutdown"`
 
-	// Deprecated
-	Network map[interface{}]interface{} `yaml:"network" json:"network,omitempty" property:"network"`
-
 	Router []*RouterConfig `yaml:"router" json:"router,omitempty" property:"router"`
-	// prefix              string
-	fatherConfig        interface{}
+
 	EventDispatcherType string `default:"direct" yaml:"event-dispatcher-type" json:"event-dispatcher-type,omitempty"`
-	fileStream          *bytes.Buffer
 
 	// cache file used to store the current used configurations.
 	CacheFile string `yaml:"cache_file" json:"cache_file,omitempty" property:"cache_file"`
-}
-
-func init() {
-	rootConfig = NewRootConfig()
 }
 
 func SetRootConfig(r RootConfig) {
@@ -90,13 +80,13 @@ func (RootConfig) Prefix() string {
 
 // Init init config
 func (rc *RootConfig) Init() error {
-	if err := initLoggerConfig(rc); err != nil {
+	if err := rc.Logger.Init(); err != nil {
 		return err
 	}
 	if err := initCenterConfig(rc); err != nil {
 		logger.Infof("config center doesn't start. error is %s", err)
 	}
-	if err := initApplicationConfig(rc); err != nil {
+	if err := rc.Application.Init(); err != nil {
 		return err
 	}
 	if err := initProtocolsConfig(rc); err != nil {
@@ -250,24 +240,6 @@ func (rc *RootConfig) getRegistryIds() []string {
 		ids = append(ids, key)
 	}
 	return removeDuplicateElement(ids)
-}
-
-func NewRootConfig(opts ...RootConfigOpt) *RootConfig {
-	newRootConfig := &RootConfig{
-		ConfigCenter:         &CenterConfig{},
-		ServiceDiscoveries:   make(map[string]*ServiceDiscoveryConfig),
-		MetadataReportConfig: &MetadataReportConfig{},
-		Application:          &ApplicationConfig{},
-		Registries:           make(map[string]*RegistryConfig),
-		Protocols:            make(map[string]*ProtocolConfig),
-		Provider:             NewProviderConfig(),
-		Consumer:             NewConsumerConfig(),
-		MetricConfig:         &MetricConfig{},
-	}
-	for _, o := range opts {
-		o(newRootConfig)
-	}
-	return newRootConfig
 }
 
 type RootConfigOpt func(config *RootConfig)

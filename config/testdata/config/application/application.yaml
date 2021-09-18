@@ -1,5 +1,4 @@
 dubbo:
   registries:
-    nacos:
-      timeout: 3s
-      address: zookeeper://127.0.0.1:2182
+    zk:
+      address: zookeeper://127.0.0.1:2181

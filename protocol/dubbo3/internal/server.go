@@ -57,7 +57,7 @@ func InitDubboServer() {
 		config.WithProtocolPort("20003"),
 	)
 
-	rootConfig := config.NewRootConfig(
+	rootConfig := config.GetInstance(
 		config.WithRootProviderConfig(providerConfig),
 		config.WithRootProtocolConfig("tripleKey", protocolConfig),
 	)

@@ -19,6 +19,7 @@ package config
 
 import (
 	"github.com/creasty/defaults"
+	"github.com/pkg/errors"
 )
 
 import (
@@ -42,17 +43,23 @@ func (ApplicationConfig) Prefix() string {
 	return constant.ApplicationConfigPrefix
 }
 
-// initApplicationConfig init application config
-func initApplicationConfig(rc *RootConfig) error {
-	application := rc.Application
-	if application == nil {
-		application = new(ApplicationConfig)
+// Init  application config and set default value
+func (ac *ApplicationConfig) Init() error {
+	if ac == nil {
+		return errors.New("application is null")
 	}
-	if err := application.check(); err != nil {
+	if err := ac.check(); err != nil {
 		return err
 	}
-	rc.Application = application
 	return nil
+}
+
+func GetApplicationInstance(opts ...ApplicationConfigOpt) *ApplicationConfig {
+	ac := new(ApplicationConfig)
+	for _, opt := range opts {
+		opt(ac)
+	}
+	return ac
 }
 
 func (ac *ApplicationConfig) check() error {
@@ -60,4 +67,48 @@ func (ac *ApplicationConfig) check() error {
 		return err
 	}
 	return verify(ac)
+}
+
+type ApplicationConfigOpt func(config *ApplicationConfig)
+
+func WithOrganization(organization string) ApplicationConfigOpt {
+	return func(ac *ApplicationConfig) {
+		ac.Organization = organization
+	}
+}
+
+func WithName(name string) ApplicationConfigOpt {
+	return func(ac *ApplicationConfig) {
+		ac.Name = name
+	}
+}
+
+func WithModule(module string) ApplicationConfigOpt {
+	return func(ac *ApplicationConfig) {
+		ac.Module = module
+	}
+}
+
+func WithVersion(version string) ApplicationConfigOpt {
+	return func(ac *ApplicationConfig) {
+		ac.Version = version
+	}
+}
+
+func WithOwner(owner string) ApplicationConfigOpt {
+	return func(ac *ApplicationConfig) {
+		ac.Owner = owner
+	}
+}
+
+func WithEnvironment(env string) ApplicationConfigOpt {
+	return func(ac *ApplicationConfig) {
+		ac.Environment = env
+	}
+}
+
+func WithMetadataType(metadataType string) ApplicationConfigOpt {
+	return func(ac *ApplicationConfig) {
+		ac.MetadataType = metadataType
+	}
 }
