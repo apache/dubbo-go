@@ -125,7 +125,7 @@ func (c CustomEvent) LoadProcessReferenceConfig(u *common.URL, event string, err
 		logger.Debug("Error Message: ", *errMsg)
 	}
 	logger.Debug("PostProcessReferenceConfig End")
-	assert.Equal(c.t, u.GetParam(constant.SIDE_KEY, ""), "consumer")
+	assert.Equal(c.t, "consumer", u.GetParam(constant.SIDE_KEY, ""))
 }
 func (c CustomEvent) LoadProcessServiceConfig(u *common.URL, event string, errMsg *string) {
 	logger.Debug("LoadProcessServiceConfig Start")
@@ -135,7 +135,7 @@ func (c CustomEvent) LoadProcessServiceConfig(u *common.URL, event string, errMs
 		logger.Debug("Error Message: ", *errMsg)
 	}
 	logger.Debug("PostProcessServiceConfig End")
-	assert.Equal(c.t, u.GetParam(constant.SIDE_KEY, ""), "provider")
+	assert.Equal(c.t, "provider", u.GetParam(constant.SIDE_KEY, ""))
 }
 func (c CustomEvent) AfterAllReferencesConnectComplete(urls interfaces.ConfigLoadProcessorURLBinder) {
 	logger.Debug("AfterAllReferencesConnectComplete")
@@ -201,9 +201,11 @@ func TestLoadWithEventDispatch(t *testing.T) {
 		common.ServiceKey("com.MockService", "huadong_idc", "1.0.0"))
 	assert.Nil(t, err)
 	extension.RemoveConfigLoadProcessor(configLoadProcessorName)
+	assert.Less(t, 0, len(extension.GetReferenceURL()))
+	assert.Less(t, 0, len(extension.GetServiceURL()))
 	extension.ResetURL()
-	assert.Equal(t, len(extension.GetReferenceURL()), 0)
-	assert.Equal(t, len(extension.GetServiceURL()), 0)
+	assert.Equal(t, 0, len(extension.GetReferenceURL()))
+	assert.Equal(t, 0, len(extension.GetServiceURL()))
 	consumerConfig = nil
 	providerConfig = nil
 }
