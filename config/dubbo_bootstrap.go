@@ -17,23 +17,28 @@
 
 package config
 
-import "net/http"
+import (
+	"net/http"
+)
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	hessian "github.com/apache/dubbo-go-hessian2"
 )
 
 func GetInstance(opts ...RootConfigOpt) *RootConfig {
-
+	registerPOJO()
 	rc := &RootConfig{
-		ConfigCenter:         &CenterConfig{},
+		ConfigCenter:         GetConfigCenterInstance(),
 		ServiceDiscoveries:   make(map[string]*ServiceDiscoveryConfig),
 		MetadataReportConfig: &MetadataReportConfig{},
 		Application:          GetApplicationInstance(),
 		Registries:           make(map[string]*RegistryConfig),
 		Protocols:            make(map[string]*ProtocolConfig),
-		Provider:             NewProviderConfig(),
-		Consumer:             NewConsumerConfig(),
+		Provider:             GetProviderInstance(),
+		Consumer:             GetConsumerInstance(),
 		MetricConfig:         &MetricConfig{},
 		Logger:               GetLoggerConfigInstance(),
 	}
@@ -43,11 +48,18 @@ func GetInstance(opts ...RootConfigOpt) *RootConfig {
 	return rc
 }
 
-func (rc *RootConfig) Initialize() error {
+func registerPOJO() {
+	hessian.RegisterPOJO(&common.MetadataInfo{})
+	hessian.RegisterPOJO(&common.ServiceInfo{})
+	hessian.RegisterPOJO(&common.URL{})
+}
+
+func (rc *RootConfig) Init() error {
+
 	if err := rc.Logger.Init(); err != nil {
 		return err
 	}
-	if err := initCenterConfig(rc); err != nil {
+	if err := rc.ConfigCenter.Init(rc); err != nil {
 		logger.Infof("config center doesn't start. error is %s", err)
 	}
 	if err := rc.Application.Init(); err != nil {
@@ -85,4 +97,11 @@ func (rc *RootConfig) Initialize() error {
 		_ = http.ListenAndServe("0.0.0.0:6060", nil)
 	}()
 	return nil
+}
+
+func (rc *RootConfig) Start() {
+	rc.Provider.Load()
+	rc.Consumer.Load()
+	extension.SetAndInitGlobalDispatcher(rootConfig.EventDispatcherType)
+	registerServiceInstance()
 }

@@ -33,6 +33,14 @@ type ProtocolConfig struct {
 	Params interface{} `yaml:"params" json:"params,omitempty" property:"params"`
 }
 
+// Prefix dubbo.config-center
+func (ProtocolConfig) Prefix() string {
+	return constant.ConfigCenterPrefix
+}
+
+func GetProtocolsInstance() map[string]*ProtocolConfig {
+	return nil
+}
 func initProtocolsConfig(rc *RootConfig) error {
 	protocols := rc.Protocols
 	if len(protocols) <= 0 {

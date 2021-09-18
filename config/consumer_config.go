@@ -82,7 +82,6 @@ func (cc *ConsumerConfig) Init(rc *RootConfig) error {
 		return err
 	}
 	cc.rootConfig = rc
-	cc.Load()
 	return nil
 }
 
@@ -205,27 +204,16 @@ func configCenterRefreshConsumer() error {
 // ConsumerConfigOpt is the options to init ConsumerConfig
 type ConsumerConfigOpt func(config *ConsumerConfig) *ConsumerConfig
 
-// NewEmptyConsumerConfig returns default ConsumerConfig
-// with connection timeout = 3s, request timeout = 3s
-func NewEmptyConsumerConfig() *ConsumerConfig {
-
-	newConsumerConfig := &ConsumerConfig{
-		//Registries:     make(map[string]*RegistryConfig, 8),
+// GetConsumerInstance returns ConsumerConfig with @opts
+func GetConsumerInstance(opts ...ConsumerConfigOpt) *ConsumerConfig {
+	cc := &ConsumerConfig{
 		References:     make(map[string]*ReferenceConfig, 8),
-		ConnectTimeout: "3s",
-		RequestTimeout: "3s",
 		Check:          true,
 	}
-	return newConsumerConfig
-}
-
-// NewConsumerConfig returns ConsumerConfig with @opts
-func NewConsumerConfig(opts ...ConsumerConfigOpt) *ConsumerConfig {
-	newConfig := NewEmptyConsumerConfig()
-	for _, v := range opts {
-		v(newConfig)
+	for _, opt := range opts {
+		opt(cc)
 	}
-	return newConfig
+	return cc
 }
 
 // WithRootConfig returns ConsumerConfigOpt with given @rootConfig

@@ -74,7 +74,6 @@ func (c *ProviderConfig) Init(rc *RootConfig) error {
 	if err := defaults.Set(c); err != nil {
 		return err
 	}
-	c.Load()
 	return nil
 }
 
@@ -111,11 +110,11 @@ func NewEmptyProviderConfig() *ProviderConfig {
 	return newProviderConfig
 }
 
-// NewProviderConfig returns ProviderConfig with given @opts
-func NewProviderConfig(opts ...ProviderConfigOpt) *ProviderConfig {
+// GetProviderInstance returns ProviderConfig with given @opts
+func GetProviderInstance(opts ...ProviderConfigOpt) *ProviderConfig {
 	newConfig := NewEmptyProviderConfig()
-	for _, v := range opts {
-		v(newConfig)
+	for _, opt := range opts {
+		opt(newConfig)
 	}
 	return newConfig
 }

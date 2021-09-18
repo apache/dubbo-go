@@ -93,7 +93,7 @@ type ServiceConfig struct {
 
 // Prefix returns dubbo.service.${InterfaceName}.
 func (svc *ServiceConfig) Prefix() string {
-	return constant.ServiceConfigPrefix + svc.id
+	return strings.Join([]string{constant.ServiceConfigPrefix, svc.id}, ".")
 }
 
 func (svc *ServiceConfig) Init(rc *RootConfig) error {

@@ -18,13 +18,11 @@
 package config
 
 import (
-	"net/http"
 	_ "net/http/pprof"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
 )
 
 // RootConfig is the root config
@@ -78,73 +76,28 @@ func (RootConfig) Prefix() string {
 	return constant.DUBBO
 }
 
-// Init init config
-func (rc *RootConfig) Init() error {
-	if err := rc.Logger.Init(); err != nil {
-		return err
-	}
-	if err := initCenterConfig(rc); err != nil {
-		logger.Infof("config center doesn't start. error is %s", err)
-	}
-	if err := rc.Application.Init(); err != nil {
-		return err
-	}
-	if err := initProtocolsConfig(rc); err != nil {
-		return err
-	}
-	if err := initRegistryConfig(rc); err != nil {
-		return err
-	}
-	if err := initServiceDiscoveryConfig(rc); err != nil {
-		return err
-	}
-	if err := rc.MetadataReportConfig.Init(rc); err != nil {
-		return err
-	}
-	if err := initMetricConfig(rc); err != nil {
-		return err
-	}
-	if err := initNetworkConfig(rc); err != nil {
-		return err
-	}
-	if err := initRouterConfig(rc); err != nil {
-		return err
-	}
-	// provider、consumer must last init
-	if err := rc.Provider.Init(rc); err != nil {
-		return err
-	}
-	if err := rc.Consumer.Init(rc); err != nil {
-		return err
-	}
-	go func() {
-		_ = http.ListenAndServe("0.0.0.0:6060", nil)
-	}()
-	return nil
-}
-
 func GetRootConfig() *RootConfig {
 	return rootConfig
 }
 
 func GetProviderConfig() *ProviderConfig {
 	if err := check(); err != nil {
-		return NewProviderConfig()
+		return GetProviderInstance()
 	}
 	if rootConfig.Provider != nil {
 		return rootConfig.Provider
 	}
-	return NewProviderConfig()
+	return GetProviderInstance()
 }
 
 func GetConsumerConfig() *ConsumerConfig {
 	if err := check(); err != nil {
-		return NewConsumerConfig()
+		return GetConsumerInstance()
 	}
 	if rootConfig.Consumer != nil {
 		return rootConfig.Consumer
 	}
-	return NewConsumerConfig()
+	return GetConsumerInstance()
 }
 
 func GetApplicationConfig() *ApplicationConfig {
