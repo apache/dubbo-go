@@ -48,7 +48,7 @@ func InitDubboServer() {
 		config.WithServiceProtocolKeys("tripleKey"),
 	)
 
-	providerConfig := config.NewProviderConfig(
+	providerConfig := config.GetProviderInstance(
 		config.WithProviderService(common.GetReference(&Server{}), serviceConfig),
 	)
 
