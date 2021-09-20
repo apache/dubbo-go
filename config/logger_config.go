@@ -75,7 +75,7 @@ func (LoggerConfig) Prefix() string {
 }
 
 func GetLoggerConfigInstance() *LoggerConfig {
-	lc := new(LoggerConfig)
+	lc := &LoggerConfig{}
 	return lc
 }
 

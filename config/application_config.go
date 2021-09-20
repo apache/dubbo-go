@@ -55,7 +55,7 @@ func (ac *ApplicationConfig) Init() error {
 }
 
 func GetApplicationInstance(opts ...ApplicationConfigOpt) *ApplicationConfig {
-	ac := new(ApplicationConfig)
+	ac := &ApplicationConfig{}
 	for _, opt := range opts {
 		opt(ac)
 	}
