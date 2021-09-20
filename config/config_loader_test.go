@@ -30,8 +30,8 @@ const (
 )
 
 func TestLoad(t *testing.T) {
-	Load(WithPath(configPath))
-
+	err := Load(WithPath(configPath))
+	assert.Nil(t, err)
 	t.Run("application", func(t *testing.T) {
 		application := rootConfig.Application
 
@@ -65,57 +65,32 @@ func TestLoad(t *testing.T) {
 //TestLoadConfigCenter test key  config_center、config-center 、configCenter
 func TestLoadConfigCenter(t *testing.T) {
 
-	t.Run("config-center", func(t *testing.T) {
-		Load(WithPath("./testdata/config/center/conf-application.yaml"))
-		conf := rootConfig.ConfigCenter
-		assert.Equal(t, "nacos", conf.Protocol)
-		assert.Equal(t, "10s", conf.Timeout)
-		assert.Equal(t, "./logs", conf.LogDir)
-	})
+	err := Load(WithPath("./testdata/config/center/conf-application.yaml"))
+	assert.Nil(t, err)
+	conf := rootConfig.ConfigCenter
+	assert.Equal(t, "nacos", conf.Protocol)
+	assert.Equal(t, "10s", conf.Timeout)
+	assert.Equal(t, "./logs", conf.LogDir)
 }
 
 func TestGetRegistriesConfig(t *testing.T) {
 
-	t.Run("registry", func(t *testing.T) {
-		err := Load(WithPath("./testdata/config/registry/application.yaml"))
+	err := Load(WithPath("./testdata/config/registry/application.yaml"))
 
-		assert.Nil(t, err)
-		registries := rootConfig.Registries
+	assert.Nil(t, err)
+	registries := rootConfig.Registries
 
-		assert.Equal(t, 2, len(registries))
-		// nacos
-		assert.Equal(t, "nacos", registries["nacos"].Protocol)
-		assert.Equal(t, "5s", registries["nacos"].Timeout)
-		assert.Equal(t, "127.0.0.1:8848", registries["nacos"].Address)
-		assert.Equal(t, "dev", registries["nacos"].Group)
-		// zk
-		assert.Equal(t, "zookeeper", registries["zk"].Protocol)
-		assert.Equal(t, "5s", registries["zk"].Timeout)
-		assert.Equal(t, "127.0.0.1:2181", registries["zk"].Address)
-		assert.Equal(t, "test", registries["zk"].Group)
-	})
-}
-
-func TestProviderConfig(t *testing.T) {
-	// empty registry
-	t.Run("empty registry", func(t *testing.T) {
-		err := Load(WithPath("./testdata/config/provider/empty_registry_application.yaml"))
-		assert.Nil(t, err)
-		provider := rootConfig.Provider
-		assert.Equal(t, 1, len(provider.Registry))
-		assert.Equal(t, "nacos", provider.Registry[0])
-	})
-
-	t.Run("root registry", func(t *testing.T) {
-		err := Load(WithPath("./testdata/config/provider/registry_application.yaml"))
-		assert.Nil(t, err)
-		provider := rootConfig.Provider
-		assert.NotNil(t, provider)
-		assert.Equal(t, 2, len(provider.Services))
-
-		assert.Equal(t, 2, len(provider.Services["HelloService"].Registry))
-		assert.Equal(t, 1, len(provider.Services["OrderService"].Registry))
-	})
+	assert.Equal(t, 2, len(registries))
+	// nacos
+	assert.Equal(t, "nacos", registries["nacos"].Protocol)
+	assert.Equal(t, "5s", registries["nacos"].Timeout)
+	assert.Equal(t, "127.0.0.1:8848", registries["nacos"].Address)
+	assert.Equal(t, "dev", registries["nacos"].Group)
+	// zk
+	assert.Equal(t, "zookeeper", registries["zk"].Protocol)
+	assert.Equal(t, "5s", registries["zk"].Timeout)
+	assert.Equal(t, "127.0.0.1:2181", registries["zk"].Address)
+	assert.Equal(t, "test", registries["zk"].Group)
 }
 
 //

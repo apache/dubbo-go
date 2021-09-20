@@ -47,7 +47,7 @@ func TestLoadRegistries(t *testing.T) {
 }
 
 func TestLoadRegistries1(t *testing.T) {
-	target := []string{"shanghai"}
+	target := []string{"shanghai1"}
 	regs := map[string]*RegistryConfig{
 
 		"shanghai1": {

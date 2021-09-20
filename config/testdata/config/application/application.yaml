@@ -1,4 +1,4 @@
 dubbo:
   registries:
-    zk:
-      address: zookeeper://127.0.0.1:2181
+    nacos:
+      address: nacos://127.0.0.1:8848

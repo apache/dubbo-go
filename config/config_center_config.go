@@ -52,7 +52,6 @@ type CenterConfig struct {
 	Protocol string `validate:"required" yaml:"protocol"  json:"protocol,omitempty"`
 	Address  string `validate:"required" yaml:"address" json:"address,omitempty"`
 	DataId   string `validate:"required" yaml:"data-id" json:"data-id,omitempty"`
-	// Deprecated
 	Cluster  string `yaml:"cluster" json:"cluster,omitempty"`
 	Group    string `default:"dubbo" yaml:"group" json:"group,omitempty"`
 	Username string `yaml:"username" json:"username,omitempty"`
