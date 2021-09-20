@@ -43,8 +43,7 @@ func init() {
 // Filter when use seata-golang, use this filter to transfer xid
 type Filter struct{}
 
-// When use Seata, transfer xid by attachments
-// Invoke Get Xid by attachment key `SEATA_XID`
+// Invoke Get Xid by attachment key `SEATA_XID`. When use Seata, transfer xid by attachments
 func (f *Filter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	logger.Infof("invoking seata filter.")
 	xid := invocation.AttachmentsByKey(string(SEATA_XID), "")
