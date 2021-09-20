@@ -24,7 +24,7 @@ require (
 	github.com/hashicorp/vault/sdk v0.2.1
 	github.com/jinzhu/copier v0.3.2
 	github.com/magiconair/properties v1.8.5
-	github.com/mitchellh/mapstructure v1.4.1
+	github.com/mitchellh/mapstructure v1.4.2
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
 	github.com/nacos-group/nacos-sdk-go v1.0.9
 	github.com/natefinch/lumberjack v2.0.0+incompatible
