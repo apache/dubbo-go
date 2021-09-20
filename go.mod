@@ -13,7 +13,7 @@ require (
 	github.com/dubbogo/go-zookeeper v1.0.3
 	github.com/dubbogo/gost v1.11.17
 	github.com/dubbogo/triple v1.0.5
-	github.com/emicklei/go-restful/v3 v3.5.2
+	github.com/emicklei/go-restful/v3 v3.6.0
 	github.com/fsnotify/fsnotify v1.5.1
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-co-op/gocron v0.1.1
