@@ -34,7 +34,7 @@ func TestGetProtocolsConfig(t *testing.T) {
 		assert.NotNil(t, protocols)
 		// default
 		assert.Equal(t, "dubbo", protocols["dubbo"].Name)
-		assert.Equal(t, string("2000"), protocols["dubbo"].Port)
+		assert.Equal(t, string("20000"), protocols["dubbo"].Port)
 	})
 
 	t.Run("use config", func(t *testing.T) {
@@ -44,6 +44,6 @@ func TestGetProtocolsConfig(t *testing.T) {
 		assert.NotNil(t, protocols)
 		// default
 		assert.Equal(t, "dubbo", protocols["dubbo"].Name)
-		assert.Equal(t, string("2000"), protocols["dubbo"].Port)
+		assert.Equal(t, string("20000"), protocols["dubbo"].Port)
 	})
 }
