@@ -67,7 +67,6 @@ type RootConfig struct {
 	// cache file used to store the current used configurations.
 	CacheFile string `yaml:"cache_file" json:"cache_file,omitempty" property:"cache_file"`
 
-	started *atomic.Bool
 }
 
 func SetRootConfig(r RootConfig) {

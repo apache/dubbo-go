@@ -19,13 +19,17 @@ package config
 
 import (
 	hessian "github.com/apache/dubbo-go-hessian2"
-	"go.uber.org/atomic"
+	"sync"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
+)
+
+var (
+	startOnce sync.Once
 )
 
 func GetInstance(opts ...RootConfigOpt) *RootConfig {
@@ -41,7 +45,6 @@ func GetInstance(opts ...RootConfigOpt) *RootConfig {
 		Consumer:             GetConsumerInstance(),
 		MetricConfig:         &MetricConfig{},
 		Logger:               GetLoggerConfigInstance(),
-		started:              atomic.NewBool(false),
 	}
 	for _, opt := range opts {
 		opt(rc)
@@ -96,13 +99,10 @@ func (rc *RootConfig) Init() error {
 }
 
 func (rc *RootConfig) Start() {
-	if rc.started.CAS(false, true) {
+	startOnce.Do(func() {
 		rc.Provider.Load()
 		rc.Consumer.Load()
 		extension.SetAndInitGlobalDispatcher(rootConfig.EventDispatcherType)
 		registerServiceInstance()
-		//go func() {
-		//	_ = http.ListenAndServe("0.0.0.0:6060", nil)
-		//}()
-	}
+	})
 }
