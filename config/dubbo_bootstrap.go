@@ -64,7 +64,7 @@ func (rc *RootConfig) Init() error {
 		return err
 	}
 	if err := rc.ConfigCenter.Init(rc); err != nil {
-		logger.Infof("config center doesn't start. error is %s", err)
+		logger.Warnf("config center doesn't start. error is %s", err)
 	}
 	if err := rc.Application.Init(); err != nil {
 		return err

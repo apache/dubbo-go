@@ -61,8 +61,8 @@ func InitDubboServer() {
 		config.WithRootProviderConfig(providerConfig),
 		config.WithRootProtocolConfig("tripleKey", protocolConfig),
 	)
-	config.SetProviderConfig(*providerConfig) // set to providerConfig ptr
 
 	config.SetProviderService(&Server{})
 	rootConfig.Init()
+	rootConfig.Start()
 }
