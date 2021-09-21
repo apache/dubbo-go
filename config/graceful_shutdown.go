@@ -95,13 +95,8 @@ func BeforeShutdown() {
 	// reject sending/receiving the new request, but keeping waiting for accepting requests
 	waitForSendingAndReceivingRequests()
 
-	// we fetch the protocols from Consumer.References. Consumer.ProtocolConfig doesn't contains all protocol, like jsonrpc
-	// If this applicationConfig is not the provider, it will do nothing
-	consumerProtocols := getConsumerProtocols()
-	destroyProviderProtocols(consumerProtocols)
-
-	// If this applicationConfig is not the consumer, it will do nothing
-	destroyConsumerProtocols(consumerProtocols)
+	// destroy all protocols
+	destroyProtocols()
 
 	logger.Info("Graceful shutdown --- Execute the custom callbacks.")
 	customCallbacks := extension.GetAllCustomShutdownCallbacks()
@@ -116,29 +111,28 @@ func destroyAllRegistries() {
 	registryProtocol.Destroy()
 }
 
-func destroyConsumerProtocols(consumerProtocols *gxset.HashSet) {
-	logger.Info("Graceful shutdown --- Destroy consumer's protocols. ")
-	for name := range consumerProtocols.Items {
-		extension.GetProtocol(name.(string)).Destroy()
-	}
-}
+// destroyProtocols destroys protocols.
+// First we destroy provider's protocols, and then we destroy the consumer protocols.
+func destroyProtocols() {
+	logger.Info("Graceful shutdown --- Destroy protocols. ")
+	logger.Info("Graceful shutdown --- First destroy provider's protocols. ")
 
-//destroyProviderProtocols destroys the provider's protocol.
-//if the protocol is consumer's protocol too, we will keep it
-func destroyProviderProtocols(consumerProtocols *gxset.HashSet) {
-	logger.Info("Graceful shutdown --- Destroy provider's protocols. ")
-
+	consumerProtocols := getConsumerProtocols()
 	if rootConfig.Protocols == nil {
 		return
 	}
 
 	for _, protocol := range rootConfig.Protocols {
-
 		// the protocol is the consumer's protocol too, we can not destroy it.
 		if consumerProtocols.Contains(protocol.Name) {
 			continue
 		}
 		extension.GetProtocol(protocol.Name).Destroy()
+	}
+
+	logger.Info("Graceful shutdown --- Second destroy consumer's protocols. ")
+	for name := range consumerProtocols.Items {
+		extension.GetProtocol(name.(string)).Destroy()
 	}
 }
 
