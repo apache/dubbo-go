@@ -3,24 +3,33 @@
 
 ## 1.5.7
 
-### Enhancement
-- [Ftr: enable filter and cluster when client consumer provider directly](https://github.com/apache/dubbo-go/pull/1181)
-- [change client_pool](https://github.com/apache/dubbo-go/pull/1171)
-- [nacos for service_discovery support namespace](https://github.com/apache/dubbo-go/pull/1127)
-- [feat: format use gofumpt](https://github.com/apache/dubbo-go/pull/1121)
+### New Features
+- [Feature: Enable filter and cluster when client consumer provider directly](https://github.com/apache/dubbo-go/pull/1181)
+- [Feature: Change client_pool](https://github.com/apache/dubbo-go/pull/1171)
+- [Feature: Nacos for service_discovery support namespace](https://github.com/apache/dubbo-go/pull/1127)
+- [Feature: Format use gofumpt](https://github.com/apache/dubbo-go/pull/1121)
 - [Feature: Add some log when the router.Route return empty invokers](https://github.com/apache/dubbo-go/pull/1158)
+- [Feature: Added more event distribution types and improved event distribution mechanism for 1.5](https://github.com/apache/dubbo-go/pull/1405)
+
+### Enhancement
+- [Enhancement: remove zk test in 1.5](https://github.com/apache/dubbo-go/pull/1363)
+- [Enhancement: Change ServiceName like Java Style on Nacos for 1.5](https://github.com/apache/dubbo-go/pull/1377)
+- [Enhancement: feat(getty): upgrade getty version to 1.4.5 for dubbo-go 1.5](https://github.com/apache/dubbo-go/pull/1378)
 
 ### Bugfixes
-- [modify map use in nacos service_discovery; Fix issue-1165](https://github.com/apache/dubbo-go/pull/1169)
-- [fix: issue #1151 - router from CONF_ROUTER_FILE_PATH doesn't take affect](https://github.com/apache/dubbo-go/pull/1176)
+- [Fix: modify map use in nacos service_discovery; Fix issue-1165](https://github.com/apache/dubbo-go/pull/1169)
+- [Fix: issue #1151 - router from CONF_ROUTER_FILE_PATH doesn't take affect](https://github.com/apache/dubbo-go/pull/1176)
 - [Fix: delete a service provider when using k8s hpa](https://github.com/apache/dubbo-go/pull/1154)
-- [fix panic: sync: negative WaitGroup counter](https://github.com/apache/dubbo-go/pull/1129)
+- [Fix: panic: sync: negative WaitGroup counter](https://github.com/apache/dubbo-go/pull/1129)
+- [Fix: the black list bug and make ConnCheckRouter work well](https://github.com/apache/dubbo-go/pull/1287)
+- [Fix: deadlock](https://github.com/apache/dubbo-go/pull/1314)
+- [Fix: struct2MapAll logics](https://github.com/apache/dubbo-go/pull/1356)
+- [Fix: nacos unit test runs incorrectly in some cases](https://github.com/apache/dubbo-go/pull/1374)
+- [Fix: ut, replace, hash problem](https://github.com/apache/dubbo-go/pull/1376)
+- [Fix: the exception when tcp timeout is less than 1s for 1.5](https://github.com/apache/dubbo-go/pull/1388)
 
-### Dependencies
-- [upgrade nacos version](https://github.com/apache/dubbo-go/pull/1116)
-
-Milestone:
-- [https://github.com/apache/dubbo-go/milestone/11](https://github.com/apache/dubbo-go/milestone/11?closed=1)
+### Milestone:
+- [https://github.com/apache/dubbo-go/milestone/15?closed=1](https://github.com/apache/dubbo-go/milestone/15?closed=1)
 
 ## 1.5.6
 
@@ -62,7 +71,7 @@ Milestone:
 - [Bump dubbo-go-hessian2 from v1.9.0-rc1 to v1.9.1](https://github.com/apache/dubbo-go/pull/1088/files)
 - [Bump github.com/nacos-group/nacos-sdk-go from 1.0.5 to v1.0.7](https://github.com/apache/dubbo-go/pull/1106)
 
-Milestone: 
+### Milestone: 
 - [https://github.com/apache/dubbo-go/milestone/7](https://github.com/apache/dubbo-go/milestone/7?closed=1)
 - [https://github.com/apache/dubbo-go/milestone/10](https://github.com/apache/dubbo-go/milestone/10?closed=1)
 
