@@ -302,8 +302,7 @@ func (s *serviceDiscoveryRegistry) getServices(url *common.URL) *gxset.HashSet {
 func (s *serviceDiscoveryRegistry) findMappedServices(url *common.URL) *gxset.HashSet {
 	serviceNames, err := s.serviceNameMapping.Get(url)
 	if err != nil {
-		logger.Errorf("get serviceInterface:[%s] group:[%s] version:[%s] protocol:[%s] from "+
-			"serviceNameMap error:%s", err.Error())
+		logger.Errorf("get service names catch error, url:%s, err:%s ", url.String(), err.Error())
 		return gxset.NewSet()
 	}
 	return serviceNames

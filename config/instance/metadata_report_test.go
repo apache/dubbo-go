@@ -51,11 +51,11 @@ func (m *mockMetadataReportFactory) CreateMetadataReport(*common.URL) report.Met
 
 type mockMetadataReport struct{}
 
-func (m mockMetadataReport) RegisterServiceAppMapping(string, string) error {
+func (m mockMetadataReport) RegisterServiceAppMapping(string, string, string) error {
 	panic("implement me")
 }
 
-func (m mockMetadataReport) GetServiceAppMapping(string) (*gxset.HashSet, error) {
+func (m mockMetadataReport) GetServiceAppMapping(string, string) (*gxset.HashSet, error) {
 	panic("implement me")
 }
 

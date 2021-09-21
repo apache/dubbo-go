@@ -56,11 +56,11 @@ func (mrf *metadataReportFactory) CreateMetadataReport(*common.URL) report.Metad
 
 type metadataReport struct{}
 
-func (mr metadataReport) RegisterServiceAppMapping(string, string) error {
+func (mr metadataReport) RegisterServiceAppMapping(string, string, string) error {
 	panic("implement me")
 }
 
-func (mr metadataReport) GetServiceAppMapping(string) (*gxset.HashSet, error) {
+func (mr metadataReport) GetServiceAppMapping(string, string) (*gxset.HashSet, error) {
 	panic("implement me")
 }
 

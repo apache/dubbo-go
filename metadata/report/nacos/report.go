@@ -20,6 +20,7 @@ package nacos
 import (
 	"encoding/json"
 	"net/url"
+	"strings"
 )
 
 import (
@@ -33,6 +34,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/metadata/identifier"
@@ -207,12 +209,44 @@ func (n *nacosMetadataReport) getConfig(param vo.ConfigParam) (string, error) {
 	return cfg, nil
 }
 
-func (n *nacosMetadataReport) RegisterServiceAppMapping(s string, s2 string) error {
-	panic("implement me")
+func (n *nacosMetadataReport) RegisterServiceAppMapping(key string, group string, value string) error {
+	data, err := n.getConfig(vo.ConfigParam{
+		DataId: key,
+		Group:  group,
+	})
+	if err != nil {
+		return err
+	}
+	if strings.Contains(data, value) {
+		return nil
+	}
+	if data != "" {
+		value = data + constant.COMMA_SEPARATOR + value
+	}
+	return n.storeMetadata(vo.ConfigParam{
+		DataId:  key,
+		Group:   group,
+		Content: value,
+	})
 }
 
-func (n *nacosMetadataReport) GetServiceAppMapping(s string) (*gxset.HashSet, error) {
-	panic("implement me")
+func (n *nacosMetadataReport) GetServiceAppMapping(key string, group string) (*gxset.HashSet, error) {
+	data, err := n.getConfig(vo.ConfigParam{
+		DataId: key,
+		Group:  group,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if data == "" {
+		return nil, perrors.New("There is no service app mapping data.")
+	}
+	appNames := strings.Split(data, constant.COMMA_SEPARATOR)
+	set := gxset.NewSet()
+	for _, e := range appNames {
+		set.Add(e)
+	}
+	return set, nil
 }
 
 type nacosMetadataReportFactory struct{}

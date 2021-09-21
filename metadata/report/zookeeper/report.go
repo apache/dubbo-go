@@ -142,11 +142,13 @@ func (m *zookeeperMetadataReport) GetServiceDefinition(metadataIdentifier *ident
 	return string(v), err
 }
 
-func (m *zookeeperMetadataReport) RegisterServiceAppMapping(key string, value string) error {
-	path := m.rootDir + key
+func (m *zookeeperMetadataReport) RegisterServiceAppMapping(key string, group string, value string) error {
+	path := m.rootDir + group + constant.PATH_SEPARATOR + key
 	data, state, err := m.client.GetContent(path)
 	if err == zk.ErrNoNode {
 		return m.client.CreateWithValue(path, []byte(value))
+	} else if err != nil {
+		return err
 	}
 	oldValue := string(data)
 	if strings.Contains(oldValue, value) {
@@ -157,8 +159,8 @@ func (m *zookeeperMetadataReport) RegisterServiceAppMapping(key string, value st
 	return err
 }
 
-func (m *zookeeperMetadataReport) GetServiceAppMapping(key string) (*gxset.HashSet, error) {
-	path := m.rootDir + key
+func (m *zookeeperMetadataReport) GetServiceAppMapping(key string, group string) (*gxset.HashSet, error) {
+	path := m.rootDir + group + constant.PATH_SEPARATOR + key
 	data, _, err := m.client.GetContent(path)
 	if err != nil {
 		return nil, err

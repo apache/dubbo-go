@@ -142,11 +142,11 @@ func (e *etcdMetadataReport) GetServiceDefinition(metadataIdentifier *identifier
 	return content, nil
 }
 
-func (e *etcdMetadataReport) RegisterServiceAppMapping(s string, s2 string) error {
+func (e *etcdMetadataReport) RegisterServiceAppMapping(key string, group string, value string) error {
 	panic("implement me")
 }
 
-func (e *etcdMetadataReport) GetServiceAppMapping(s string) (*gxset.HashSet, error) {
+func (e *etcdMetadataReport) GetServiceAppMapping(key string, group string) (*gxset.HashSet, error) {
 	panic("implement me")
 }
 

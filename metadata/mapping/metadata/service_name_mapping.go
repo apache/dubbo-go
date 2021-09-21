@@ -22,8 +22,7 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/container/set"
-
+	gxset "github.com/dubbogo/gost/container/set"
 	perrors "github.com/pkg/errors"
 )
 
@@ -62,7 +61,7 @@ func (d *MetadataServiceNameMapping) Map(url *common.URL) error {
 
 	appName := config.GetApplicationConfig().Name
 	metadataReport := instance.GetMetadataReportInstance()
-	err := metadataReport.RegisterServiceAppMapping(d.buildMappingKey(serviceInterface), appName)
+	err := metadataReport.RegisterServiceAppMapping(serviceInterface, defaultGroup, appName)
 	if err != nil {
 		return perrors.WithStack(err)
 	}
@@ -73,7 +72,7 @@ func (d *MetadataServiceNameMapping) Map(url *common.URL) error {
 func (d *MetadataServiceNameMapping) Get(url *common.URL) (*gxset.HashSet, error) {
 	serviceInterface := url.GetParam(constant.INTERFACE_KEY, "")
 	metadataReport := instance.GetMetadataReportInstance()
-	return metadataReport.GetServiceAppMapping(d.buildMappingKey(serviceInterface))
+	return metadataReport.GetServiceAppMapping(serviceInterface, defaultGroup)
 }
 
 // buildMappingKey will return mapping key, it looks like defaultGroup/serviceInterface

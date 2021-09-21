@@ -68,7 +68,7 @@ type MetadataReport interface {
 	// PublishAppMetadata publish metadata info to reportss
 	PublishAppMetadata(*identifier.SubscriberMetadataIdentifier, *common.MetadataInfo) error
 
-	RegisterServiceAppMapping(string, string) error
+	RegisterServiceAppMapping(string, string, string) error
 
-	GetServiceAppMapping(string) (*gxset.HashSet, error)
+	GetServiceAppMapping(string, string) (*gxset.HashSet, error)
 }
