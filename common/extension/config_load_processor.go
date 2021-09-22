@@ -28,7 +28,7 @@ import (
 )
 
 var (
-	configLoadProcessorHolder = new(interfaces.ConfigLoadProcessorHolder)
+	configLoadProcessorHolder = &interfaces.ConfigLoadProcessorHolder{}
 
 	loadProcessors      = make(map[string]interfaces.ConfigLoadProcessor)
 	loadProcessorValues = make(map[string]reflect.Value)
