@@ -121,7 +121,7 @@ func (c *RegistryConfig) getUrlMap(roleType common.RoleType) url.Values {
 	urlMap.Set(constant.GROUP_KEY, c.Group)
 	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(int(roleType)))
 	urlMap.Set(constant.REGISTRY_KEY, c.Protocol)
-	urlMap.Set(constant.REGISTRY_TIMEOUT_KEY, c.TimeoutStr)
+	urlMap.Set(constant.CONFIG_TIMEOUT_KEY, c.TimeoutStr)
 	// multi registry invoker weight label for load balance
 	urlMap.Set(constant.REGISTRY_KEY+"."+constant.REGISTRY_LABEL_KEY, strconv.FormatBool(true))
 	urlMap.Set(constant.REGISTRY_KEY+"."+constant.PREFERRED_KEY, strconv.FormatBool(c.Preferred))

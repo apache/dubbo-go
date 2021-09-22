@@ -102,7 +102,7 @@ func newZookeeperServiceDiscovery(name string) (registry.ServiceDiscovery, error
 		common.WithParams(make(url.Values)),
 		common.WithPassword(remoteConfig.Password),
 		common.WithUsername(remoteConfig.Username),
-		common.WithParamsValue(constant.REGISTRY_TIMEOUT_KEY, remoteConfig.TimeoutStr))
+		common.WithParamsValue(constant.CONFIG_TIMEOUT_KEY, remoteConfig.TimeoutStr))
 	url.Location = remoteConfig.Address
 	zksd := &zookeeperServiceDiscovery{
 		url:      url,
