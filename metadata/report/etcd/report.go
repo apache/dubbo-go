@@ -142,12 +142,31 @@ func (e *etcdMetadataReport) GetServiceDefinition(metadataIdentifier *identifier
 	return content, nil
 }
 
-func (e *etcdMetadataReport) RegisterServiceAppMapping(key string, group string, value string) error {
-	panic("implement me")
+func (e *etcdMetadataReport) RegisterServiceAppMapping(key string, value string) error {
+	path := e.root + constant.PATH_SEPARATOR + key
+	oldVal, err := e.client.Get(path)
+	if err != nil {
+		return err
+	}
+	if strings.Contains(oldVal, value) {
+		return nil
+	}
+	newVal := oldVal + constant.COMMA_SEPARATOR + value
+	return e.client.Put(path, newVal)
 }
 
-func (e *etcdMetadataReport) GetServiceAppMapping(key string, group string) (*gxset.HashSet, error) {
-	panic("implement me")
+func (e *etcdMetadataReport) GetServiceAppMapping(key string) (*gxset.HashSet, error) {
+	path := e.root + constant.PATH_SEPARATOR + key
+	val, err := e.client.Get(path)
+	if err != nil {
+		return nil, err
+	}
+	appNames := strings.Split(val, constant.COMMA_SEPARATOR)
+	set := gxset.NewSet()
+	for _, app := range appNames {
+		set.Add(app)
+	}
+	return set, nil
 }
 
 type etcdMetadataReportFactory struct{}
