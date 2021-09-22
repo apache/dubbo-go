@@ -195,6 +195,25 @@ func (rc *RootConfig) getRegistryIds() []string {
 	return removeDuplicateElement(ids)
 }
 
+// NewRootConfig get root config
+func NewRootConfig(opts ...RootConfigOpt) *RootConfig {
+	newRootConfig := &RootConfig{
+		ConfigCenter:         &CenterConfig{},
+		ServiceDiscoveries:   make(map[string]*ServiceDiscoveryConfig),
+		MetadataReportConfig: &MetadataReportConfig{},
+		Application:          &ApplicationConfig{},
+		Registries:           make(map[string]*RegistryConfig),
+		Protocols:            make(map[string]*ProtocolConfig),
+		Provider:             GetProviderInstance(),
+		Consumer:             GetConsumerInstance(),
+		MetricConfig:         &MetricConfig{},
+	}
+	for _, o := range opts {
+		o(newRootConfig)
+	}
+	return newRootConfig
+}
+
 type RootConfigOpt func(config *RootConfig)
 
 // WithMetricsConfig set root config with given @metricsConfig
