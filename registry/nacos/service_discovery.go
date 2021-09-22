@@ -24,8 +24,8 @@ import (
 
 import (
 	"github.com/dubbogo/gost/container/set"
+	nacosClient "github.com/dubbogo/gost/database/kv/nacos"
 	"github.com/dubbogo/gost/hash/page"
-	"github.com/nacos-group/nacos-sdk-go/clients/naming_client"
 	"github.com/nacos-group/nacos-sdk-go/model"
 	"github.com/nacos-group/nacos-sdk-go/vo"
 	perrors "github.com/pkg/errors"
@@ -58,8 +58,8 @@ type nacosServiceDiscovery struct {
 	// descriptor is a short string about the basic information of this instance
 	descriptor string
 
-	// namingClient is the Nacos' client
-	namingClient naming_client.INamingClient
+	// namingClient is the Nacos' namingClient
+	namingClient *nacosClient.NacosNamingClient
 	// cache registry instances
 	registryInstances []registry.ServiceInstance
 }
@@ -81,7 +81,7 @@ func (n *nacosServiceDiscovery) Destroy() error {
 // Register will register the service to nacos
 func (n *nacosServiceDiscovery) Register(instance registry.ServiceInstance) error {
 	ins := n.toRegisterInstance(instance)
-	ok, err := n.namingClient.RegisterInstance(ins)
+	ok, err := n.namingClient.Client().RegisterInstance(ins)
 	if err != nil || !ok {
 		return perrors.WithMessage(err, "Could not register the instance. "+instance.GetServiceName())
 	}
@@ -104,7 +104,7 @@ func (n *nacosServiceDiscovery) Update(instance registry.ServiceInstance) error 
 
 // Unregister will unregister the instance
 func (n *nacosServiceDiscovery) Unregister(instance registry.ServiceInstance) error {
-	ok, err := n.namingClient.DeregisterInstance(n.toDeregisterInstance(instance))
+	ok, err := n.namingClient.Client().DeregisterInstance(n.toDeregisterInstance(instance))
 	if err != nil || !ok {
 		return perrors.WithMessage(err, "Could not unregister the instance. "+instance.GetServiceName())
 	}
@@ -118,7 +118,7 @@ func (n *nacosServiceDiscovery) GetDefaultPageSize() int {
 
 // GetServices will return the all services
 func (n *nacosServiceDiscovery) GetServices() *gxset.HashSet {
-	services, err := n.namingClient.GetAllServicesInfo(vo.GetAllServiceInfoParam{
+	services, err := n.namingClient.Client().GetAllServicesInfo(vo.GetAllServiceInfoParam{
 		GroupName: n.group,
 	})
 
@@ -136,7 +136,7 @@ func (n *nacosServiceDiscovery) GetServices() *gxset.HashSet {
 
 // GetInstances will return the instances of serviceName and the group
 func (n *nacosServiceDiscovery) GetInstances(serviceName string) []registry.ServiceInstance {
-	instances, err := n.namingClient.SelectAllInstances(vo.SelectAllInstancesParam{
+	instances, err := n.namingClient.Client().SelectAllInstances(vo.SelectAllInstancesParam{
 		ServiceName: serviceName,
 		GroupName:   n.group,
 	})
@@ -213,7 +213,7 @@ func (n *nacosServiceDiscovery) GetRequestInstances(serviceNames []string, offse
 
 // AddListener will add a listener
 func (n *nacosServiceDiscovery) AddListener(listener *registry.ServiceInstancesChangedListener) error {
-	return n.namingClient.Subscribe(&vo.SubscribeParam{
+	return n.namingClient.Client().Subscribe(&vo.SubscribeParam{
 		ServiceName: listener.ServiceName,
 		SubscribeCallback: func(services []model.SubscribeService, err error) {
 			if err != nil {
@@ -320,7 +320,7 @@ func newNacosServiceDiscovery(name string) (registry.ServiceDiscovery, error) {
 		return nil, perrors.New("could not init the instance because the config is invalid")
 	}
 
-	remoteConfig, ok := config.GetBaseConfig().GetRemoteConfig(sdc.RemoteRef)
+	rc, ok := config.GetBaseConfig().GetRemoteConfig(sdc.RemoteRef)
 	if !ok {
 		return nil, perrors.New("could not find the remote config for name: " + sdc.RemoteRef)
 	}
@@ -328,13 +328,17 @@ func newNacosServiceDiscovery(name string) (registry.ServiceDiscovery, error) {
 	if len(group) == 0 {
 		group = defaultGroup
 	}
+	// set protocol if remote not set
+	if len(rc.Protocol) <= 0 {
+		rc.Protocol = sdc.Protocol
+	}
 
-	client, err := nacos.NewNacosClient(remoteConfig)
+	client, err := nacos.NewNacosClient(rc)
 	if err != nil {
 		return nil, perrors.WithMessage(err, "create nacos client failed.")
 	}
 
-	descriptor := fmt.Sprintf("nacos-service-discovery[%s]", remoteConfig.Address)
+	descriptor := fmt.Sprintf("nacos-service-discovery[%s]", rc.Address)
 
 	newInstance := &nacosServiceDiscovery{
 		group:             group,
