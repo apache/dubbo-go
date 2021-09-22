@@ -95,6 +95,7 @@ func (rc *RootConfig) Init() error {
 		return err
 	}
 
+	rc.Start()
 	return nil
 }
 
