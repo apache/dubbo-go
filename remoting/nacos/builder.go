@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package nacos
 
 import (
@@ -35,15 +36,13 @@ import (
 	"github.com/apache/dubbo-go/config"
 )
 
-var clientName = "nacos-client"
-
 // NewNacosConfigClientByUrl read the config from url and build an instance
 func NewNacosConfigClientByUrl(url *common.URL) (*nacosClient.NacosConfigClient, error) {
 	sc, cc, err := GetNacosConfig(url)
 	if err != nil {
 		return nil, err
 	}
-	return nacosClient.NewNacosConfigClient(clientName, true, sc, cc)
+	return nacosClient.NewNacosConfigClient(getNacosClientName(), true, sc, cc)
 }
 
 // GetNacosConfig will return the nacos config
@@ -106,7 +105,7 @@ func NewNacosClient(rc *config.RemoteConfig) (*nacosClient.NacosNamingClient, er
 	if err != nil {
 		return nil, err
 	}
-	return nacosClient.NewNacosNamingClient(clientName, true, scs, cc)
+	return nacosClient.NewNacosNamingClient(getNacosClientName(), true, scs, cc)
 }
 
 // NewNacosClientByUrl created
@@ -115,5 +114,14 @@ func NewNacosClientByUrl(url *common.URL) (*nacosClient.NacosNamingClient, error
 	if err != nil {
 		return nil, err
 	}
-	return nacosClient.NewNacosNamingClient(clientName, true, scs, cc)
+	return nacosClient.NewNacosNamingClient(getNacosClientName(), true, scs, cc)
+}
+
+// getNacosClientName get nacos client name
+func getNacosClientName() string {
+	name := config.GetApplicationConfig().Name
+	if len(name) > 0 {
+		return name
+	}
+	return "nacos-client"
 }

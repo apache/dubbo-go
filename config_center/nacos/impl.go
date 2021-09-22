@@ -217,11 +217,7 @@ func (n *nacosDynamicConfiguration) IsAvailable() bool {
 }
 
 func (n *nacosDynamicConfiguration) closeConfigs() {
-	n.cltLock.Lock()
-	client := n.client
-	n.client = nil
-	n.cltLock.Unlock()
-	// Close the old client first to close the tmp node
-	client.Close()
-	logger.Infof("begin to close provider n client")
+	// Close the old configClient first to close the tmp node
+	n.client.Close()
+	logger.Infof("begin to close provider n configClient")
 }

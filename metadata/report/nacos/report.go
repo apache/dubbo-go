@@ -22,7 +22,7 @@ import (
 )
 
 import (
-	"github.com/nacos-group/nacos-sdk-go/clients/config_client"
+	nacosClient "github.com/dubbogo/gost/database/kv/nacos"
 	"github.com/nacos-group/nacos-sdk-go/vo"
 	perrors "github.com/pkg/errors"
 )
@@ -47,7 +47,7 @@ func init() {
 // nacosMetadataReport is the implementation
 // of MetadataReport based on nacos.
 type nacosMetadataReport struct {
-	client config_client.IConfigClient
+	client *nacosClient.NacosConfigClient
 }
 
 // StoreProviderMetadata stores the metadata.
@@ -121,7 +121,7 @@ func (n *nacosMetadataReport) GetServiceDefinition(metadataIdentifier *identifie
 // storeMetadata will publish the metadata to Nacos
 // if failed or error is not nil, error will be returned
 func (n *nacosMetadataReport) storeMetadata(param vo.ConfigParam) error {
-	res, err := n.client.PublishConfig(param)
+	res, err := n.client.Client().PublishConfig(param)
 	if err != nil {
 		return perrors.WithMessage(err, "Could not publish the metadata")
 	}
@@ -133,7 +133,7 @@ func (n *nacosMetadataReport) storeMetadata(param vo.ConfigParam) error {
 
 // deleteMetadata will delete the metadata
 func (n *nacosMetadataReport) deleteMetadata(param vo.ConfigParam) error {
-	res, err := n.client.DeleteConfig(param)
+	res, err := n.client.Client().DeleteConfig(param)
 	if err != nil {
 		return perrors.WithMessage(err, "Could not delete the metadata")
 	}
@@ -165,7 +165,7 @@ func (n *nacosMetadataReport) getConfigAsArray(param vo.ConfigParam) ([]string, 
 
 // getConfig will read the config
 func (n *nacosMetadataReport) getConfig(param vo.ConfigParam) (string, error) {
-	cfg, err := n.client.GetConfig(param)
+	cfg, err := n.client.Client().GetConfig(param)
 	if err != nil {
 		logger.Errorf("Finding the configuration failed: %v", param)
 		return "", err
@@ -178,7 +178,7 @@ type nacosMetadataReportFactory struct {
 
 // nolint
 func (n *nacosMetadataReportFactory) CreateMetadataReport(url *common.URL) report.MetadataReport {
-	client, err := nacos.NewNacosConfigClient(url)
+	client, err := nacos.NewNacosConfigClientByUrl(url)
 	if err != nil {
 		logger.Errorf("Could not create nacos metadata report. URL: %s", url.String())
 		return nil
