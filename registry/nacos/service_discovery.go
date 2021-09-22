@@ -226,7 +226,6 @@ func (n *nacosServiceDiscovery) AddListener(listener registry.ServiceInstancesCh
 						" service name: %s, err: %v", serviceName, err)
 				}
 				instances := make([]registry.ServiceInstance, 0, len(services))
-				logger.Infof("%v", services)
 				for _, service := range services {
 					// we won't use the nacos instance id here but use our instance id
 					metadata := service.Metadata
