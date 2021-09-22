@@ -854,5 +854,5 @@ func (c *URL) GetParamDuration(s string, d string) time.Duration {
 	if t, err := time.ParseDuration(c.GetParam(s, d)); err == nil {
 		return t
 	}
-	return 3 * time.Second
+	return constant.DEFAULT_PARAM_TIME
 }
