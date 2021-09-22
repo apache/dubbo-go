@@ -36,7 +36,7 @@ import (
 	"github.com/apache/dubbo-go/config"
 )
 
-// NewNacosConfigClientByUrl read the config from url and build an instance
+// NewNacosConfigClientByUrl reads the config from url and builds an instance
 func NewNacosConfigClientByUrl(url *common.URL) (*nacosClient.NacosConfigClient, error) {
 	sc, cc, err := GetNacosConfig(url)
 	if err != nil {
