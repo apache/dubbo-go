@@ -851,7 +851,6 @@ func GetCompareURLEqualFunc() CompareURLEqualFunc {
 
 //GetParamDuration get duration if param is invalid or missing will return 3s
 func (c *URL) GetParamDuration(s string, d string) time.Duration {
-
 	if t, err := time.ParseDuration(c.GetParam(s, d)); err == nil {
 		return t
 	}

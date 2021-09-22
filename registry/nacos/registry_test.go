@@ -37,7 +37,6 @@ import (
 )
 
 func TestNacosRegistry_Register(t *testing.T) {
-	//t.Skip()
 	if !checkNacosServerAlive() {
 		return
 	}
