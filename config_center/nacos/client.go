@@ -46,6 +46,8 @@ type NacosClient struct {
 
 // Client Get Client
 func (n *NacosClient) Client() *nacosClient.NacosConfigClient {
+	n.Lock()
+	defer n.Unlock()
 	return n.configClient
 }
 
