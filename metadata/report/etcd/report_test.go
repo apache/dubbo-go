@@ -124,12 +124,12 @@ func TestEtcdMetadataReport_ServiceAppMapping(t *testing.T) {
 	metadataReport := metadataReportFactory.CreateMetadataReport(url)
 	assert.NotNil(t, metadataReport)
 
-	set, err := metadataReport.GetServiceAppMapping("com.apache.dubbo.sample.basic.IGreeter", "mapping")
+	_, err = metadataReport.GetServiceAppMapping("com.apache.dubbo.sample.basic.IGreeter", "mapping")
 	assert.NotNil(t, err)
 
 	err = metadataReport.RegisterServiceAppMapping("com.apache.dubbo.sample.basic.IGreeter", "mapping", "demo_provider")
 	assert.Nil(t, err)
-	set, err = metadataReport.GetServiceAppMapping("com.apache.dubbo.sample.basic.IGreeter", "mapping")
+	set, err := metadataReport.GetServiceAppMapping("com.apache.dubbo.sample.basic.IGreeter", "mapping")
 	assert.Nil(t, err)
 	assert.Equal(t, 1, set.Size())
 
