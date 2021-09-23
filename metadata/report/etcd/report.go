@@ -25,6 +25,7 @@ import (
 import (
 	gxset "github.com/dubbogo/gost/container/set"
 	gxetcd "github.com/dubbogo/gost/database/kv/etcd/v3"
+	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -142,26 +143,30 @@ func (e *etcdMetadataReport) GetServiceDefinition(metadataIdentifier *identifier
 	return content, nil
 }
 
-func (e *etcdMetadataReport) RegisterServiceAppMapping(key string, value string) error {
-	path := e.root + constant.PATH_SEPARATOR + key
+// RegisterServiceAppMapping map the specified Dubbo service interface to current Dubbo app name
+func (e *etcdMetadataReport) RegisterServiceAppMapping(key string, group string, value string) error {
+	path := e.root + constant.PATH_SEPARATOR + group + constant.PATH_SEPARATOR + key
 	oldVal, err := e.client.Get(path)
-	if err != nil {
+	if perrors.Cause(err) == gxetcd.ErrKVPairNotFound {
+		return e.client.Put(path, value)
+	} else if err != nil {
 		return err
 	}
 	if strings.Contains(oldVal, value) {
 		return nil
 	}
-	newVal := oldVal + constant.COMMA_SEPARATOR + value
-	return e.client.Put(path, newVal)
+	value = oldVal + constant.COMMA_SEPARATOR + value
+	return e.client.Put(path, value)
 }
 
-func (e *etcdMetadataReport) GetServiceAppMapping(key string) (*gxset.HashSet, error) {
-	path := e.root + constant.PATH_SEPARATOR + key
-	val, err := e.client.Get(path)
+// GetServiceAppMapping get the app names from the specified Dubbo service interface
+func (e *etcdMetadataReport) GetServiceAppMapping(key string, group string) (*gxset.HashSet, error) {
+	path := e.root + constant.PATH_SEPARATOR + group + constant.PATH_SEPARATOR + key
+	v, err := e.client.Get(path)
 	if err != nil {
 		return nil, err
 	}
-	appNames := strings.Split(val, constant.COMMA_SEPARATOR)
+	appNames := strings.Split(v, constant.COMMA_SEPARATOR)
 	set := gxset.NewSet()
 	for _, app := range appNames {
 		set.Add(app)

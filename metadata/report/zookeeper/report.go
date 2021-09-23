@@ -142,15 +142,16 @@ func (m *zookeeperMetadataReport) GetServiceDefinition(metadataIdentifier *ident
 	return string(v), err
 }
 
+// RegisterServiceAppMapping map the specified Dubbo service interface to current Dubbo app name
 func (m *zookeeperMetadataReport) RegisterServiceAppMapping(key string, group string, value string) error {
 	path := m.rootDir + group + constant.PATH_SEPARATOR + key
-	data, state, err := m.client.GetContent(path)
+	v, state, err := m.client.GetContent(path)
 	if err == zk.ErrNoNode {
 		return m.client.CreateWithValue(path, []byte(value))
 	} else if err != nil {
 		return err
 	}
-	oldValue := string(data)
+	oldValue := string(v)
 	if strings.Contains(oldValue, value) {
 		return nil
 	}
@@ -159,13 +160,14 @@ func (m *zookeeperMetadataReport) RegisterServiceAppMapping(key string, group st
 	return err
 }
 
+// GetServiceAppMapping get the app names from the specified Dubbo service interface
 func (m *zookeeperMetadataReport) GetServiceAppMapping(key string, group string) (*gxset.HashSet, error) {
 	path := m.rootDir + group + constant.PATH_SEPARATOR + key
-	data, _, err := m.client.GetContent(path)
+	v, _, err := m.client.GetContent(path)
 	if err != nil {
 		return nil, err
 	}
-	appNames := strings.Split(string(data), constant.COMMA_SEPARATOR)
+	appNames := strings.Split(string(v), constant.COMMA_SEPARATOR)
 	set := gxset.NewSet()
 	for _, e := range appNames {
 		set.Add(e)
