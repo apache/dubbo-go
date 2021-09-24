@@ -83,12 +83,12 @@ func GetNacosConfig(url *common.URL) ([]nacosConstant.ServerConfig, nacosConstan
 		CacheDir:             url.GetParam(constant.NACOS_CACHE_DIR_KEY, ""),
 		UpdateThreadNum:      url.GetParamByIntValue(constant.NACOS_UPDATE_THREAD_NUM_KEY, 20),
 		NotLoadCacheAtStart:  url.GetParamBool(constant.NACOS_NOT_LOAD_LOCAL_CACHE, true),
-		UpdateCacheWhenEmpty: url.GetParamBool(constant.NACOS_Update_Cache_When_Empty, false),
+		UpdateCacheWhenEmpty: url.GetParamBool(constant.NACOS_Update_Cache_When_Empty_KEY, false),
 		Username:             url.GetParam(constant.NACOS_USERNAME, ""),
 		Password:             url.GetParam(constant.NACOS_PASSWORD, ""),
 		LogDir:               url.GetParam(constant.NACOS_LOG_DIR_KEY, ""),
-		RotateTime:           url.GetParam(constant.NACOS_LOG_Rotate_Time, "24h"),
-		MaxAge:               url.GetParamInt(constant.NACOS_LOG_MAX_AGE, 3),
+		RotateTime:           url.GetParam(constant.NACOS_LOG_Rotate_Time_KEY, "24h"),
+		MaxAge:               url.GetParamInt(constant.NACOS_LOG_MAX_AGE_KEY, 3),
 		LogLevel:             url.GetParam(constant.NACOS_LOG_LEVEL_KEY, "info"),
 	}
 	return serverConfigs, clientConfig, nil
