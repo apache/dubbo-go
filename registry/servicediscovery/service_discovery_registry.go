@@ -134,7 +134,7 @@ func creatServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, error) {
 	if err != nil {
 		return nil, perrors.WithMessage(err, "Create service discovery fialed")
 	}
-	return event.NewEventPublishingServiceDiscovery(originServiceDiscovery), nil
+	return originServiceDiscovery, nil
 }
 
 func parseServices(literalServices string) *gxset.HashSet {
@@ -235,20 +235,12 @@ func (s *serviceDiscoveryRegistry) Subscribe(url *common.URL, notify registry.No
 	}
 	s.serviceListeners[serviceNamesKey] = listener
 	listener.AddListenerAndNotify(protocolServiceKey, notify)
-	s.registerServiceInstancesChangedListener(url, listener)
-	return nil
-}
 
-func (s *serviceDiscoveryRegistry) registerServiceInstancesChangedListener(url *common.URL, listener registry.ServiceInstancesChangedListener) {
-	// FIXME ServiceNames.String() is not good
-	listenerId := listener.GetServiceNames().String() + ":" + getUrlKey(url)
-	if !s.subscribedServices.Contains(listenerId) {
-		err := s.serviceDiscovery.AddListener(listener)
-		if err != nil {
-			logger.Errorf("add listener[%s] catch error,url:%s err:%s", listenerId, url.String(), err.Error())
-		}
+	err = s.serviceDiscovery.AddListener(listener)
+	if err != nil {
+		logger.Errorf("add instance listener catch error,url:%s err:%s", url.String(), err.Error())
 	}
-
+	return nil
 }
 
 func getUrlKey(url *common.URL) string {
@@ -352,5 +344,26 @@ func tryInitMetadataService(url *common.URL) {
 	if err != nil {
 		logger.Errorf("could not export the metadata service", err)
 	}
-	extension.GetGlobalDispatcher().Dispatch(event.NewServiceConfigExportedEvent(expt.(*configurable.MetadataServiceExporter).ServiceConfig))
+
+	// report interface-app mapping
+	err = publishMapping(expt.(*configurable.MetadataServiceExporter).ServiceConfig)
+	if err != nil {
+		logger.Errorf("Publish interface-application mapping failed", err)
+	}
+}
+
+// OnEvent only handle ServiceConfigExportedEvent
+func publishMapping(sc *config.ServiceConfig) error {
+	urls := sc.GetExportedUrls()
+
+	for _, u := range urls {
+		err := extension.GetGlobalServiceNameMapping().Map(u.GetParam(constant.INTERFACE_KEY, ""),
+			u.GetParam(constant.GROUP_KEY, ""),
+			u.GetParam(constant.Version, ""),
+			u.Protocol)
+		if err != nil {
+			return perrors.WithMessage(err, "could not map the service: "+u.String())
+		}
+	}
+	return nil
 }

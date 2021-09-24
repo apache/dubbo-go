@@ -62,6 +62,9 @@ type nacosServiceDiscovery struct {
 	namingClient *nacosClient.NacosNamingClient
 	// cache registry instances
 	registryInstances []registry.ServiceInstance
+
+	instanceListenerMap map[string]*gxset.HashSet
+	listenerLock        sync.Mutex
 }
 
 // Destroy will close the service discovery.
@@ -210,8 +213,30 @@ func (n *nacosServiceDiscovery) GetRequestInstances(serviceNames []string, offse
 	return res
 }
 
+func (n *nacosServiceDiscovery) registerInstanceListener(listener registry.ServiceInstancesChangedListener) {
+	n.listenerLock.Lock()
+	defer n.listenerLock.Unlock()
+
+	for _, t := range listener.GetServiceNames().Values() {
+		serviceName, ok := t.(string)
+		if !ok {
+			logger.Errorf("service name error %s", t)
+			continue
+		}
+		listenerSet, found := n.instanceListenerMap[serviceName]
+		if !found {
+			listenerSet = gxset.NewSet(listener)
+			listenerSet.Add(listener)
+			n.instanceListenerMap[serviceName] = listenerSet
+		} else {
+			listenerSet.Add(listener)
+		}
+	}
+}
+
 // AddListener will add a listener
 func (n *nacosServiceDiscovery) AddListener(listener registry.ServiceInstancesChangedListener) error {
+	n.registerInstanceListener(listener)
 	for _, t := range listener.GetServiceNames().Values() {
 		serviceName := t.(string)
 		err := n.namingClient.Client().Subscribe(&vo.SubscribeParam{
@@ -241,7 +266,13 @@ func (n *nacosServiceDiscovery) AddListener(listener registry.ServiceInstancesCh
 					})
 				}
 
-				e := n.DispatchEventForInstances(serviceName, instances)
+				var e error
+				for _, lis := range n.instanceListenerMap[serviceName].Values() {
+					var instanceListener registry.ServiceInstancesChangedListener
+					instanceListener = lis.(registry.ServiceInstancesChangedListener)
+					e = instanceListener.OnEvent(registry.NewServiceInstancesChangedEvent(serviceName, instances))
+				}
+
 				if e != nil {
 					logger.Errorf("Dispatching event got exception, service name: %s, err: %v", serviceName, err)
 				}
@@ -251,22 +282,6 @@ func (n *nacosServiceDiscovery) AddListener(listener registry.ServiceInstancesCh
 			return err
 		}
 	}
-	return nil
-}
-
-// DispatchEventByServiceName will dispatch the event for the service with the service name
-func (n *nacosServiceDiscovery) DispatchEventByServiceName(serviceName string) error {
-	return n.DispatchEventForInstances(serviceName, n.GetInstances(serviceName))
-}
-
-// DispatchEventForInstances will dispatch the event to those instances
-func (n *nacosServiceDiscovery) DispatchEventForInstances(serviceName string, instances []registry.ServiceInstance) error {
-	return n.DispatchEvent(registry.NewServiceInstancesChangedEvent(serviceName, instances))
-}
-
-// DispatchEvent will dispatch the event
-func (n *nacosServiceDiscovery) DispatchEvent(event *registry.ServiceInstancesChangedEvent) error {
-	extension.GetGlobalDispatcher().Dispatch(event)
 	return nil
 }
 
@@ -347,10 +362,11 @@ func newNacosServiceDiscovery(name string) (registry.ServiceDiscovery, error) {
 	descriptor := fmt.Sprintf("nacos-service-discovery[%s]", rc.Address)
 
 	newInstance := &nacosServiceDiscovery{
-		group:             group,
-		namingClient:      client,
-		descriptor:        descriptor,
-		registryInstances: []registry.ServiceInstance{},
+		group:               group,
+		namingClient:        client,
+		descriptor:          descriptor,
+		registryInstances:   []registry.ServiceInstance{},
+		instanceListenerMap: make(map[string]*gxset.HashSet),
 	}
 	instanceMap[name] = newInstance
 	return newInstance, nil

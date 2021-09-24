@@ -21,10 +21,6 @@ import (
 	"log"
 )
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/common/extension"
-)
-
 type LoaderInitOption interface {
 	init()
 	apply()
@@ -114,25 +110,6 @@ func RouterInitOption(crf string) LoaderInitOption {
 		},
 		func() {
 			initRouter()
-		},
-	}
-}
-
-func BaseInitOption(cbf string) LoaderInitOption {
-	return &optionFunc{
-		func() {
-			if cbf == "" {
-				return
-			}
-			confBaseFile = cbf
-			if err := BaseInit(cbf); err != nil {
-				log.Printf("[BaseInit] %#v", err)
-				baseConfig = nil
-			}
-		},
-		func() {
-			// init the global event dispatcher
-			extension.SetAndInitGlobalDispatcher(GetBaseConfig().EventDispatcherType)
 		},
 	}
 }

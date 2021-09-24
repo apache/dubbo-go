@@ -32,8 +32,6 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/common/observer"
-	"dubbo.apache.org/dubbo-go/v3/common/observer/dispatcher"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
 	"dubbo.apache.org/dubbo-go/v3/registry"
@@ -75,15 +73,11 @@ func TestNacosServiceDiscovery_CRUD(t *testing.T) {
 		return
 	}
 	prepareData()
-	extension.SetEventDispatcher("mock", func() observer.EventDispatcher {
-		return dispatcher.NewMockEventDispatcher()
-	})
 
 	extension.SetGlobalServiceNameMapping(func() mapping.ServiceNameMapping {
 		return mapping.NewMockServiceNameMapping()
 	})
 
-	extension.SetAndInitGlobalDispatcher("mock")
 	rand.Seed(time.Now().Unix())
 	serviceName := "service-name" + strconv.Itoa(rand.Intn(10000))
 	id := "id"
@@ -153,8 +147,6 @@ func TestNacosServiceDiscovery_CRUD(t *testing.T) {
 	assert.Equal(t, "b", v)
 
 	// test dispatcher event
-	err = serviceDiscovery.DispatchEventByServiceName(serviceName)
-	assert.Nil(t, err)
 	hs := gxset.NewSet()
 	hs.Add(serviceName)
 	// test AddListener
