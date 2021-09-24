@@ -27,7 +27,6 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/observer"
 	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
@@ -55,13 +54,10 @@ func (s *serviceNameMappingListener) OnEvent(e observer.Event) error {
 		sc := ex.ServiceConfig
 		urls := sc.GetExportedUrls()
 
-		for _, u := range urls {
-			err := s.nameMapping.Map(u.GetParam(constant.INTERFACE_KEY, ""),
-				u.GetParam(constant.GROUP_KEY, ""),
-				u.GetParam(constant.Version, ""),
-				u.Protocol)
+		for _, url := range urls {
+			err := s.nameMapping.Map(url)
 			if err != nil {
-				return perrors.WithMessage(err, "could not map the service: "+u.String())
+				return perrors.WithMessage(err, "could not map the service: "+url.String())
 			}
 		}
 	}

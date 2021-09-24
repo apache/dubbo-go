@@ -114,6 +114,36 @@ func TestEtcdMetadataReport_CRUD(t *testing.T) {
 	e.Close()
 }
 
+func TestEtcdMetadataReport_ServiceAppMapping(t *testing.T) {
+	e := initEtcd(t)
+	url, err := common.NewURL("registry://127.0.0.1:2379", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	metadataReportFactory := &etcdMetadataReportFactory{}
+	metadataReport := metadataReportFactory.CreateMetadataReport(url)
+	assert.NotNil(t, metadataReport)
+
+	_, err = metadataReport.GetServiceAppMapping("com.apache.dubbo.sample.basic.IGreeter", "mapping")
+	assert.NotNil(t, err)
+
+	err = metadataReport.RegisterServiceAppMapping("com.apache.dubbo.sample.basic.IGreeter", "mapping", "demo_provider")
+	assert.Nil(t, err)
+	set, err := metadataReport.GetServiceAppMapping("com.apache.dubbo.sample.basic.IGreeter", "mapping")
+	assert.Nil(t, err)
+	assert.Equal(t, 1, set.Size())
+
+	err = metadataReport.RegisterServiceAppMapping("com.apache.dubbo.sample.basic.IGreeter", "mapping", "demo_provider2")
+	assert.Nil(t, err)
+	err = metadataReport.RegisterServiceAppMapping("com.apache.dubbo.sample.basic.IGreeter", "mapping", "demo_provider")
+	assert.Nil(t, err)
+	set, err = metadataReport.GetServiceAppMapping("com.apache.dubbo.sample.basic.IGreeter", "mapping")
+	assert.Nil(t, err)
+	assert.Equal(t, 2, set.Size())
+
+	e.Close()
+}
+
 func newSubscribeMetadataIdentifier() *identifier.SubscriberMetadataIdentifier {
 	return &identifier.SubscriberMetadataIdentifier{
 		Revision: "subscribe",

@@ -31,7 +31,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/config"
-	_ "dubbo.apache.org/dubbo-go/v3/metadata/mapping/dynamic"
+	_ "dubbo.apache.org/dubbo-go/v3/metadata/mapping/metadata"
 	"dubbo.apache.org/dubbo-go/v3/metadata/service"
 	"dubbo.apache.org/dubbo-go/v3/metadata/service/exporter"
 	_ "dubbo.apache.org/dubbo-go/v3/metadata/service/remote"
