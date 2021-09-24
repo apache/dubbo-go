@@ -216,6 +216,7 @@ func NewConsumerConfig(opts ...ConsumerConfigOpt) *ConsumerConfig {
 	}
 	return newConfig
 }
+
 ///////////////////////////////////// consumer config api
 // ConsumerConfigOpt is the options to init ConsumerConfig
 type ConsumerConfigOpt func(config *ConsumerConfig) *ConsumerConfig

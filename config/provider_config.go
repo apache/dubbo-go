@@ -119,6 +119,7 @@ func NewProviderConfig(opts ...ProviderConfigOpt) *ProviderConfig {
 	}
 	return newConfig
 }
+
 // GetProviderInstance returns ProviderConfig with given @opts
 func GetProviderInstance(opts ...ProviderConfigOpt) *ProviderConfig {
 	newConfig := &ProviderConfig{
