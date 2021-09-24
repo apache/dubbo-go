@@ -111,6 +111,14 @@ func NewEmptyProviderConfig() *ProviderConfig {
 	return newProviderConfig
 }
 
+// NewProviderConfig returns ProviderConfig with given @opts
+func NewProviderConfig(opts ...ProviderConfigOpt) *ProviderConfig {
+	newConfig := NewEmptyProviderConfig()
+	for _, v := range opts {
+		v(newConfig)
+	}
+	return newConfig
+}
 // GetProviderInstance returns ProviderConfig with given @opts
 func GetProviderInstance(opts ...ProviderConfigOpt) *ProviderConfig {
 	newConfig := &ProviderConfig{

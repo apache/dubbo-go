@@ -19,8 +19,6 @@ package config
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"fmt"
-	"github.com/pkg/errors"
 	"net/url"
 )
 
@@ -82,7 +80,7 @@ func GetLoggerConfigInstance() *LoggerConfig {
 func (lc *LoggerConfig) Init() error {
 
 	if lc == nil {
-		return errors.New(fmt.Sprintf("%s is nil,pls execute the config.GetInstance() method first", constant.LoggerConfigPrefix))
+		lc = GetLoggerConfigInstance()
 	}
 	err := lc.check()
 	if err != nil {

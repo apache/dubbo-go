@@ -61,7 +61,9 @@ func initProtocolsConfig(rc *RootConfig) error {
 }
 
 func (p *ProtocolConfig) check() error {
-	defaults.MustSet(p)
+	if err := defaults.Set(p); err != nil {
+		return err
+	}
 	return verify(p)
 }
 

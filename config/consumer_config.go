@@ -196,7 +196,26 @@ func configCenterRefreshConsumer() error {
 	//}
 	return nil
 }
+func NewEmptyConsumerConfig() *ConsumerConfig {
 
+	newConsumerConfig := &ConsumerConfig{
+		//Registries:     make(map[string]*RegistryConfig, 8),
+		References:     make(map[string]*ReferenceConfig, 8),
+		ConnectTimeout: "3s",
+		RequestTimeout: "3s",
+		Check:          true,
+	}
+	return newConsumerConfig
+}
+
+// NewConsumerConfig returns ConsumerConfig with @opts
+func NewConsumerConfig(opts ...ConsumerConfigOpt) *ConsumerConfig {
+	newConfig := NewEmptyConsumerConfig()
+	for _, v := range opts {
+		v(newConfig)
+	}
+	return newConfig
+}
 ///////////////////////////////////// consumer config api
 // ConsumerConfigOpt is the options to init ConsumerConfig
 type ConsumerConfigOpt func(config *ConsumerConfig) *ConsumerConfig
