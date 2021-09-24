@@ -18,8 +18,11 @@
 package config
 
 import (
-	hessian "github.com/apache/dubbo-go-hessian2"
 	"sync"
+)
+
+import (
+	hessian "github.com/apache/dubbo-go-hessian2"
 )
 
 import (
