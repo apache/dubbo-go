@@ -35,6 +35,6 @@ func LoadSerializer(p *DubboPackage) error {
 	if err != nil {
 		panic(err)
 	}
-	p.SetSerializer(serializer.(Serializer))
+	p.SetSerializer(serializer)
 	return nil
 }

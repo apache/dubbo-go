@@ -38,7 +38,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
-	_ "dubbo.apache.org/dubbo-go/v3/common/observer/dispatcher"
 	"dubbo.apache.org/dubbo-go/v3/common/yaml"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
@@ -90,7 +89,7 @@ func DefaultInit() []LoaderInitOption {
 	if confRouterFile == "" {
 		confRouterFile = constant.DEFAULT_ROUTER_CONF_FILE_PATH
 	}
-	return []LoaderInitOption{RouterInitOption(confRouterFile), BaseInitOption(""), ConsumerInitOption(confConFile), ProviderInitOption(confProFile)}
+	return []LoaderInitOption{RouterInitOption(confRouterFile), ConsumerInitOption(confConFile), ProviderInitOption(confProFile)}
 }
 
 // setDefaultValue set default value for providerConfig or consumerConfig if it is null
@@ -325,7 +324,7 @@ func createInstance(url *common.URL) (registry.ServiceInstance, error) {
 	metadata := make(map[string]string, 8)
 	metadata[constant.METADATA_STORAGE_TYPE_PROPERTY_NAME] = appConfig.MetadataType
 
-	return &registry.DefaultServiceInstance{
+	instance := &registry.DefaultServiceInstance{
 		ServiceName: appConfig.Name,
 		Host:        host,
 		Port:        int(port),
@@ -333,7 +332,13 @@ func createInstance(url *common.URL) (registry.ServiceInstance, error) {
 		Enable:      true,
 		Healthy:     true,
 		Metadata:    metadata,
-	}, nil
+	}
+
+	for _, cus := range extension.GetCustomizers() {
+		cus.Customize(instance)
+	}
+
+	return instance, nil
 }
 
 // selectMetadataServiceExportedURL get already be exported url

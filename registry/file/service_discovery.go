@@ -268,20 +268,3 @@ func (fssd *fileSystemServiceDiscovery) AddListener(listener registry.ServiceIns
 	// fssd.dynamicConfiguration.AddListener(listener.ServiceName)
 	return nil
 }
-
-// DispatchEventByServiceName dispatches the ServiceInstancesChangedEvent to service instance whose name is serviceName
-func (fssd *fileSystemServiceDiscovery) DispatchEventByServiceName(serviceName string) error {
-	return fssd.DispatchEvent(registry.NewServiceInstancesChangedEvent(serviceName, fssd.GetInstances(serviceName)))
-}
-
-// DispatchEventForInstances dispatches the ServiceInstancesChangedEvent to target instances
-func (fssd *fileSystemServiceDiscovery) DispatchEventForInstances(serviceName string,
-	instances []registry.ServiceInstance) error {
-	return fssd.DispatchEvent(registry.NewServiceInstancesChangedEvent(serviceName, instances))
-}
-
-// DispatchEvent dispatches the event
-func (fssd *fileSystemServiceDiscovery) DispatchEvent(event *registry.ServiceInstancesChangedEvent) error {
-	extension.GetGlobalDispatcher().Dispatch(event)
-	return nil
-}
