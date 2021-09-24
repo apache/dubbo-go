@@ -250,6 +250,7 @@ func (dir *RegistryDirectory) setNewInvokers() {
 // cacheInvokerByEvent caches invokers from the service event
 func (dir *RegistryDirectory) cacheInvokerByEvent(event *registry.ServiceEvent) (protocol.Invoker, error) {
 	// judge is override or others
+	logger.Infof("get service update event %+v", *event)
 	if event != nil {
 		switch event.Action {
 		case remoting.EventTypeAdd, remoting.EventTypeUpdate:
@@ -262,7 +263,8 @@ func (dir *RegistryDirectory) cacheInvokerByEvent(event *registry.ServiceEvent) 
 			return dir.cacheInvoker(u, event), nil
 		case remoting.EventTypeDel:
 			logger.Infof("selector delete service url{%s}", event.Service)
-			return dir.uncacheInvoker(event), nil
+			u := dir.convertUrl(event)
+			return dir.uncacheInvoker(u, event), nil
 		default:
 			return nil, fmt.Errorf("illegal event type: %v", event.Action)
 		}
@@ -324,7 +326,16 @@ func (dir *RegistryDirectory) toGroupInvokers() []protocol.Invoker {
 }
 
 // uncacheInvoker will return abandoned Invoker, if no Invoker to be abandoned, return nil
-func (dir *RegistryDirectory) uncacheInvoker(event *registry.ServiceEvent) protocol.Invoker {
+func (dir *RegistryDirectory) uncacheInvoker(url *common.URL, event *registry.ServiceEvent) protocol.Invoker {
+	dir.overrideUrl(dir.GetDirectoryUrl())
+	referenceUrl := dir.GetDirectoryUrl().SubURL
+	if url == nil {
+		logger.Error("URL is nil ,pls check if event %v is uncached successfully!", *event)
+		return nil
+	}
+	newUrl := common.MergeUrl(url, referenceUrl)
+	dir.overrideUrl(newUrl)
+	event.Update(newUrl)
 	return dir.uncacheInvokerWithKey(event.Key())
 }
 
@@ -367,7 +378,7 @@ func (dir *RegistryDirectory) cacheInvoker(url *common.URL, event *registry.Serv
 func (dir *RegistryDirectory) doCacheInvoker(newUrl *common.URL, event *registry.ServiceEvent) (protocol.Invoker, bool) {
 	key := event.Key()
 	if cacheInvoker, ok := dir.cacheInvokersMap.Load(key); !ok {
-		logger.Debugf("service will be added in cache invokers: invokers url is  %s!", newUrl)
+		logger.Debugf("service will be added in cache invokers: invokers url is  %s!, cache map key is %s", newUrl, key)
 		newInvoker := extension.GetProtocol(protocolwrapper.FILTER).Refer(newUrl)
 		if newInvoker != nil {
 			dir.cacheInvokersMap.Store(key, newInvoker)
