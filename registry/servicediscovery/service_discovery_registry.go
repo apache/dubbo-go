@@ -348,7 +348,7 @@ func tryInitMetadataService(url *common.URL) {
 	// report interface-app mapping
 	err = publishMapping(expt.(*configurable.MetadataServiceExporter).ServiceConfig)
 	if err != nil {
-		logger.Errorf("Publish interface-application mapping failed", err)
+		logger.Errorf("Publish interface-application mapping failed, got error %#v", err)
 	}
 }
 
