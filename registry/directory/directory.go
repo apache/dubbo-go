@@ -346,6 +346,13 @@ func (dir *RegistryDirectory) uncacheInvokerWithKey(key string) protocol.Invoker
 		dir.cacheInvokersMap.Delete(key)
 		return cacheInvoker.(protocol.Invoker)
 	}
+	allExistKey := make([]string, 0)
+	dir.cacheInvokersMap.Range(func(key, value interface{}) bool {
+		allExistKey = append(allExistKey, key.(string))
+		return true
+	})
+	logger.Warnf("unexpected invoker key = %s, the exist keys are %s, which would result in invoking not exist provider, "+
+		"no exists provider, and the tcp conn timeout would occurs in the future", key, allExistKey)
 	return nil
 }
 
