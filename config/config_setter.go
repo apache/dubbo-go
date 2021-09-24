@@ -17,10 +17,6 @@
 
 package config
 
-const (
-	GracefulShutdownFilterShutdownConfig = "GracefulShutdownFilterShutdownConfig"
-)
-
 type Setter interface {
 	Set(name string, config interface{})
 }
