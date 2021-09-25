@@ -43,7 +43,7 @@ func TestInitLog(t *testing.T) {
 	err = InitLog("")
 	assert.EqualError(t, err, "log configure file name is nil")
 
-	path, err = filepath.Abs("./log.yml")
+	path, err = filepath.Abs("./log.xml")
 	assert.NoError(t, err)
 	err = InitLog(path)
 	assert.EqualError(t, err, "log configure file name{"+path+"} suffix must be .yml")
