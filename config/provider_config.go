@@ -32,10 +32,8 @@ import (
 
 // ProviderConfig is the default configuration of service provider
 type ProviderConfig struct {
-	//base.ShutdownConfig         `yaml:",inline" property:"base"`
-	//center.configCenter `yaml:"-"`
 	Filter string `yaml:"filter" json:"filter,omitempty" property:"filter"`
-	// Register whether registration is required
+	// Deprecated Register whether registration is required
 	Register bool `yaml:"register" json:"register" property:"register"`
 	// Registry registry ids
 	Registry []string `yaml:"registry" json:"registry" property:"registry"`
@@ -49,9 +47,14 @@ type ProviderConfig struct {
 	ConfigType map[string]string `yaml:"config_type" json:"config_type,omitempty" property:"config_type"`
 }
 
-func (c *ProviderConfig) CheckConfig() error {
-	// todo check
-	defaults.MustSet(c)
+func (ProviderConfig) Prefix() string {
+	return constant.ProviderConfigPrefix
+}
+
+func (c *ProviderConfig) check() error {
+	if err := defaults.Set(c); err != nil {
+		return err
+	}
 	return verify(c)
 }
 
@@ -59,43 +62,19 @@ func (c *ProviderConfig) Init(rc *RootConfig) error {
 	if c == nil {
 		return nil
 	}
-	for k, _ := range c.Services {
-		if err := c.Services[k].Init(rc); err != nil {
+	c.Registry = translateRegistryIds(c.Registry)
+	if len(c.Registry) <= 0 {
+		c.Registry = rc.getRegistryIds()
+	}
+	for _, service := range c.Services {
+		if err := service.Init(rc); err != nil {
 			return err
 		}
 	}
-	if err := defaults.Set(c); err != nil {
+	if err := c.check(); err != nil {
 		return err
 	}
-	c.Registry = translateRegistryIds(c.Registry)
-	c.Load()
 	return nil
-}
-
-func (c *ProviderConfig) Validate(r *RootConfig) {
-	ids := make([]string, 0)
-	for key := range r.Registries {
-		ids = append(ids, key)
-	}
-	c.Registry = removeDuplicateElement(ids)
-	for k, _ := range c.Services {
-		c.Services[k].Validate(r)
-	}
-	// todo set default application
-}
-
-// UnmarshalYAML unmarshals the ProviderConfig by @unmarshal function
-//func (c *ProviderConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
-//	if err := defaults.Set(c); err != nil {
-//		return err
-//	}
-//	type plain ProviderConfig
-//	return unmarshal((*plain)(c))
-//}
-
-// Prefix dubbo.provider
-func (c *ProviderConfig) Prefix() string {
-	return constant.ProviderConfigPrefix
 }
 
 func (c *ProviderConfig) Load() {
@@ -111,49 +90,13 @@ func (c *ProviderConfig) Load() {
 			logger.Errorf(fmt.Sprintf("service %s export failed! err: %#v", key, err))
 		}
 	}
+
 }
 
 // SetProviderConfig sets provider config by @p
 func SetProviderConfig(p ProviderConfig) {
 	rootConfig.Provider = &p
 }
-
-//
-//// ProviderInit loads config file to init provider config
-//func ProviderInit(confProFile string) error {
-//	if len(confProFile) == 0 {
-//		return perrors.Errorf("applicationConfig configure(provider) file name is nil")
-//	}
-//	  providerConfig = &ProviderConfig{}
-//	fileStream, err := yaml.UnmarshalYMLConfig(confProFile,   providerConfig)
-//	if err != nil {
-//		return perrors.Errorf("unmarshalYmlConfig error %v", perrors.WithStack(err))
-//	}
-//
-//	  provider  fileStream = bytes.NewBuffer(fileStream)
-//	// set method interfaceId & interfaceName
-//	for k, v := range   provider  Services {
-//		// set id for reference
-//		for _, n := range   provider  Services[k].Methods {
-//			n.InterfaceName = v.InterfaceName
-//			n.InterfaceId = k
-//		}
-//	}
-//
-//	return nil
-//}
-//
-//func configCenterRefreshProvider() error {
-//	// fresh it
-//	if   provider  ConfigCenterConfig != nil {
-//		  provider  fatherConfig =   providerConfig
-//		if err :=   provider  startConfigCenter((*  providerConfig).BaseConfig); err != nil {
-//			return perrors.Errorf("start config center error , error message is {%v}", perrors.WithStack(err))
-//		}
-//		  provider  fresh()
-//	}
-//	return nil
-//}
 
 ///////////////////////////////////// provider config api
 // ProviderConfigOpt is the
@@ -173,6 +116,18 @@ func NewProviderConfig(opts ...ProviderConfigOpt) *ProviderConfig {
 	newConfig := NewEmptyProviderConfig()
 	for _, v := range opts {
 		v(newConfig)
+	}
+	return newConfig
+}
+
+// GetProviderInstance returns ProviderConfig with given @opts
+func GetProviderInstance(opts ...ProviderConfigOpt) *ProviderConfig {
+	newConfig := &ProviderConfig{
+		Services: make(map[string]*ServiceConfig),
+		Registry: make([]string, 8),
+	}
+	for _, opt := range opts {
+		opt(newConfig)
 	}
 	return newConfig
 }

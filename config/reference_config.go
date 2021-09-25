@@ -77,20 +77,24 @@ func (rc *ReferenceConfig) Prefix() string {
 	return constant.ReferenceConfigPrefix + rc.InterfaceName + "."
 }
 
-func (cc *ReferenceConfig) Init(rc *RootConfig) error {
-	for k, _ := range cc.Methods {
-		if err := cc.Methods[k].Init(); err != nil {
+func (rc *ReferenceConfig) Init(root *RootConfig) error {
+	for _, method := range rc.Methods {
+		if err := method.Init(); err != nil {
 			return err
 		}
 	}
 	if err := defaults.Set(rc); err != nil {
 		return err
 	}
-	cc.rootConfig = rc
-	if rc.Application != nil {
-		cc.metaDataType = rc.Application.MetadataType
+	rc.rootConfig = root
+	if root.Application != nil {
+		rc.metaDataType = root.Application.MetadataType
 	}
-	return verify(cc)
+	rc.Registry = translateRegistryIds(rc.Registry)
+	if len(rc.Registry) <= 0 {
+		rc.Registry = root.Consumer.Registry
+	}
+	return verify(rc)
 }
 
 // Refer ...

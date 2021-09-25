@@ -49,10 +49,9 @@ import (
 //
 // CenterConfig has currently supported Zookeeper, Nacos, Etcd, Consul, Apollo
 type CenterConfig struct {
-	Protocol string `yaml:"protocol"  json:"protocol,omitempty"`
-	Address  string `yaml:"address" json:"address,omitempty"`
-	DataId   string `yaml:"data-id" json:"data-id,omitempty"`
-	// Deprecated
+	Protocol string `validate:"required" yaml:"protocol"  json:"protocol,omitempty"`
+	Address  string `validate:"required" yaml:"address" json:"address,omitempty"`
+	DataId   string `validate:"required" yaml:"data-id" json:"data-id,omitempty"`
 	Cluster  string `yaml:"cluster" json:"cluster,omitempty"`
 	Group    string `default:"dubbo" yaml:"group" json:"group,omitempty"`
 	Username string `yaml:"username" json:"username,omitempty"`
@@ -72,19 +71,31 @@ type CenterConfig struct {
 	Params    map[string]string `yaml:"params"  json:"parameters,omitempty"`
 }
 
+// Prefix dubbo.config-center
+func (CenterConfig) Prefix() string {
+	return constant.ConfigCenterPrefix
+}
+
+func GetConfigCenterInstance(opts ...CenterConfigOpt) *CenterConfig {
+	cc := &CenterConfig{
+		Params: make(map[string]string, 1),
+	}
+	for _, opt := range opts {
+		opt(cc)
+	}
+	return cc
+}
+
 func (c *CenterConfig) check() error {
 	if err := defaults.Set(c); err != nil {
 		return err
 	}
 	c.translateConfigAddress()
-	if c.Address == "" || c.Protocol == "" {
-		return errors.Errorf("invalid config center config %+v", c)
-	}
 	return verify(c)
 }
 
 func (c *CenterConfig) Init(rc *RootConfig) error {
-	if rc.refresh || c == nil {
+	if c == nil {
 		return nil
 	}
 	if err := c.check(); err != nil {
@@ -171,8 +182,6 @@ func startConfigCenter(rc *RootConfig) error {
 		return err
 	}
 
-	rc.refresh = false
-	rc.ConfigCenter = nil
 	return nil
 }
 

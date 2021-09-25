@@ -29,8 +29,17 @@ import (
 type ProtocolConfig struct {
 	Name   string      `default:"dubbo" validate:"required" yaml:"name" json:"name,omitempty" property:"name"`
 	Ip     string      `yaml:"ip"  json:"ip,omitempty" property:"ip"`
-	Port   string      `default:"2000" yaml:"port" json:"port,omitempty" property:"port"`
+	Port   string      `default:"20000" yaml:"port" json:"port,omitempty" property:"port"`
 	Params interface{} `yaml:"params" json:"params,omitempty" property:"params"`
+}
+
+// Prefix dubbo.config-center
+func (ProtocolConfig) Prefix() string {
+	return constant.ConfigCenterPrefix
+}
+
+func GetProtocolsInstance() map[string]*ProtocolConfig {
+	return make(map[string]*ProtocolConfig, 1)
 }
 
 func initProtocolsConfig(rc *RootConfig) error {
@@ -52,7 +61,9 @@ func initProtocolsConfig(rc *RootConfig) error {
 }
 
 func (p *ProtocolConfig) check() error {
-	defaults.MustSet(p)
+	if err := defaults.Set(p); err != nil {
+		return err
+	}
 	return verify(p)
 }
 

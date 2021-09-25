@@ -17,25 +17,33 @@
 
 package config
 
-//import (
-//	"dubbo.apache.org/dubbo-go/v3/config"
-//	"dubbo.apache.org/dubbo-go/v3/config/consumer"
-//	"path/filepath"
-//	"testing"
-//)
-//
-//import (
-//	"github.com/stretchr/testify/assert"
-//)
-//
-//func TestConsumerInit(t *testing.T) {
-//	conPath, err := filepath.Abs("./testdata/consumer_config_with_configcenter.yml")
-//	assert.NoError(t, err)
-//	assert.NoError(t, consumer.ConsumerInit(conPath))
-//	assert.Equal(t, "default", config.consumerConfig.ProxyFactory)
-//	assert.Equal(t, "dubbo.properties", config.consumerConfig.ConfigCenterConfig.ConfigFile)
-//	assert.Equal(t, "100ms", config.consumerConfig.Connect_Timeout)
-//}
+import (
+	"testing"
+)
+
+import (
+	"github.com/stretchr/testify/assert"
+)
+
+func TestProviderConfigEmptyRegistry(t *testing.T) {
+	err := Load(WithPath("./testdata/config/provider/empty_registry_application.yaml"))
+	assert.Nil(t, err)
+	provider := rootConfig.Provider
+	assert.Equal(t, 1, len(provider.Registry))
+	assert.Equal(t, "nacos", provider.Registry[0])
+}
+
+func TestProviderConfigRootRegistry(t *testing.T) {
+	err := Load(WithPath("./testdata/config/provider/registry_application.yaml"))
+	assert.Nil(t, err)
+	provider := rootConfig.Provider
+	assert.NotNil(t, provider)
+	assert.Equal(t, 2, len(provider.Services))
+
+	assert.Equal(t, 2, len(provider.Services["HelloService"].Registry))
+	assert.Equal(t, 1, len(provider.Services["OrderService"].Registry))
+}
+
 //
 //func TestConsumerInitWithDefaultProtocol(t *testing.T) {
 //	conPath, err := filepath.Abs("./testdata/consumer_config_withoutProtocol.yml")

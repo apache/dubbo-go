@@ -49,10 +49,8 @@ type ConsumerConfig struct {
 	Check          bool   `yaml:"check" json:"check,omitempty" property:"check"`
 
 	References map[string]*ReferenceConfig `yaml:"references" json:"references,omitempty" property:"references"`
-	// ProtocolConf interface{}                 `yaml:"protocol_conf" json:"protocol-conf,omitempty" property:"protocol-conf"`
+
 	FilterConf interface{} `yaml:"filter-conf" json:"filter-conf,omitempty" property:"filter-conf"`
-	// ShutdownConfig *ShutdownConfig                             `yaml:"shutdown_conf" json:"shutdown_conf,omitempty" property:"shutdown_conf"`
-	ConfigType map[string]string `yaml:"config_type" json:"config_type,omitempty" property:"config_type"`
 
 	rootConfig *RootConfig
 }
@@ -66,8 +64,12 @@ func (cc *ConsumerConfig) Init(rc *RootConfig) error {
 	if cc == nil {
 		return nil
 	}
-	for k, _ := range cc.References {
-		if err := cc.References[k].Init(rc); err != nil {
+	cc.Registry = translateRegistryIds(cc.Registry)
+	if len(cc.Registry) <= 0 {
+		cc.Registry = rc.getRegistryIds()
+	}
+	for _, reference := range cc.References {
+		if err := reference.Init(rc); err != nil {
 			return err
 		}
 	}
@@ -78,7 +80,6 @@ func (cc *ConsumerConfig) Init(rc *RootConfig) error {
 		return err
 	}
 	cc.rootConfig = rc
-	cc.Load()
 	return nil
 }
 
@@ -127,7 +128,6 @@ func (cc *ConsumerConfig) Load() {
 			break
 		}
 	}
-
 }
 
 // SetConsumerConfig sets consumerConfig by @c
@@ -196,13 +196,6 @@ func configCenterRefreshConsumer() error {
 	//}
 	return nil
 }
-
-///////////////////////////////////// consumer config api
-// ConsumerConfigOpt is the options to init ConsumerConfig
-type ConsumerConfigOpt func(config *ConsumerConfig) *ConsumerConfig
-
-// NewEmptyConsumerConfig returns default ConsumerConfig
-// with connection timeout = 3s, request timeout = 3s
 func NewEmptyConsumerConfig() *ConsumerConfig {
 
 	newConsumerConfig := &ConsumerConfig{
@@ -222,6 +215,22 @@ func NewConsumerConfig(opts ...ConsumerConfigOpt) *ConsumerConfig {
 		v(newConfig)
 	}
 	return newConfig
+}
+
+///////////////////////////////////// consumer config api
+// ConsumerConfigOpt is the options to init ConsumerConfig
+type ConsumerConfigOpt func(config *ConsumerConfig) *ConsumerConfig
+
+// GetConsumerInstance returns ConsumerConfig with @opts
+func GetConsumerInstance(opts ...ConsumerConfigOpt) *ConsumerConfig {
+	cc := &ConsumerConfig{
+		References: make(map[string]*ReferenceConfig, 8),
+		Check:      true,
+	}
+	for _, opt := range opts {
+		opt(cc)
+	}
+	return cc
 }
 
 // WithRootConfig returns ConsumerConfigOpt with given @rootConfig

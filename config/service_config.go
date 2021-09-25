@@ -93,7 +93,7 @@ type ServiceConfig struct {
 
 // Prefix returns dubbo.service.${InterfaceName}.
 func (svc *ServiceConfig) Prefix() string {
-	return constant.ServiceConfigPrefix + svc.id
+	return strings.Join([]string{constant.ServiceConfigPrefix, svc.id}, ".")
 }
 
 func (svc *ServiceConfig) Init(rc *RootConfig) error {
@@ -111,73 +111,12 @@ func (svc *ServiceConfig) Init(rc *RootConfig) error {
 	if rc.Provider != nil {
 		svc.ProxyFactoryKey = rc.Provider.ProxyFactory
 	}
-
+	svc.Registry = translateRegistryIds(svc.Registry)
+	if len(svc.Registry) <= 0 {
+		svc.Registry = rc.Provider.Registry
+	}
 	svc.export = true
 	return verify(svc)
-}
-
-// UnmarshalYAML unmarshal the ServiceConfig by @unmarshal function
-//func (c *ServiceConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
-//	if err := defaults.Set(c); err != nil {
-//		return err
-//	}
-//	type plain ServiceConfig
-//	if err := unmarshal((*plain)(c)); err != nil {
-//		return err
-//	}
-//	c.exported = atomic.NewBool(false)
-//	c.unexported = atomic.NewBool(false)
-//	c.export = true
-//	return nil
-//}
-
-func (svc *ServiceConfig) CheckConfig() error {
-	// todo check
-	defaults.MustSet(svc)
-	return verify(svc)
-}
-
-func (svc *ServiceConfig) Validate(rootConfig *RootConfig) {
-	svc.exported = atomic.NewBool(false)
-	svc.unexported = atomic.NewBool(false)
-	svc.export = true
-	// todo set default application
-}
-
-//getRegistryServices get registry services
-func getRegistryServices(side int, services map[string]*ServiceConfig, registryIds []string) map[string]*ServiceConfig {
-	var (
-		svc              *ServiceConfig
-		exist            bool
-		initService      map[string]common.RPCService
-		registryServices map[string]*ServiceConfig
-	)
-	if side == common.PROVIDER {
-		initService = proServices
-	} else if side == common.CONSUMER {
-		initService = conServices
-	}
-	registryServices = make(map[string]*ServiceConfig, len(initService))
-	for key := range initService {
-		//存在配置了使用用户的配置
-		if svc, exist = services[key]; !exist {
-			svc = new(ServiceConfig)
-		}
-		defaults.MustSet(svc)
-		if len(svc.Registry) <= 0 {
-			svc.Registry = registryIds
-		}
-		svc.id = key
-		svc.export = true
-		svc.unexported = atomic.NewBool(false)
-		svc.exported = atomic.NewBool(false)
-		svc.Registry = translateRegistryIds(svc.Registry)
-		if err := verify(svc); err != nil {
-			return nil
-		}
-		registryServices[key] = svc
-	}
-	return registryServices
 }
 
 // InitExported will set exported as false atom bool

@@ -177,6 +177,7 @@ const (
 
 const (
 	RegistryConfigPrefix       = "dubbo.registries"
+	ApplicationConfigPrefix    = "dubbo.application"
 	ConfigCenterPrefix         = "dubbo.config-center"
 	SingleRegistryConfigPrefix = "dubbo.registry"
 	ReferenceConfigPrefix      = "dubbo.reference"
@@ -190,6 +191,7 @@ const (
 	ShutdownConfigPrefix       = "dubbo.shutdown"
 	MetadataReportPrefix       = "dubbo.metadata-report"
 	RouterConfigPrefix         = "dubbo.router"
+	LoggerConfigPrefix         = "dubbo.logger"
 )
 
 const (

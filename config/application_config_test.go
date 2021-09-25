@@ -15,17 +15,21 @@
  * limitations under the License.
  */
 
-package service
+package config
 
 import (
-	"context"
+	"testing"
 )
 
-type OrderService struct {
-	// GetOrders
-	GetOrders func(ctx context.Context, req []interface{}) error
-}
+import (
+	"github.com/stretchr/testify/assert"
+)
 
-func (OrderService) Reference() string {
-	return "orderService"
+func TestApplicationConfig(t *testing.T) {
+
+	err := Load(WithPath("./testdata/config/application/application.yaml"))
+	assert.Nil(t, err)
+
+	center := rootConfig.Registries
+	assert.NotNil(t, center)
 }

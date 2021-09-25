@@ -31,6 +31,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/common/yaml"
 )
@@ -66,39 +67,49 @@ type EncoderConfig struct {
 	Params         map[string]string `yaml:"params" json:"params,omitempty"`
 }
 
-func initLoggerConfig(rc *RootConfig) error {
-	logConfig := rc.Logger
-	if logConfig == nil {
-		logConfig = new(LoggerConfig)
+// Prefix dubbo.logger
+func (LoggerConfig) Prefix() string {
+	return constant.LoggerConfigPrefix
+}
+
+func GetLoggerConfigInstance() *LoggerConfig {
+	lc := &LoggerConfig{}
+	return lc
+}
+
+func (lc *LoggerConfig) Init() error {
+
+	if lc == nil {
+		lc = GetLoggerConfigInstance()
 	}
-	err := logConfig.check()
+	err := lc.check()
 	if err != nil {
 		return err
 	}
-	rc.Logger = logConfig
-	byte, err := yaml.MarshalYML(logConfig)
+
+	bytes, err := yaml.MarshalYML(lc)
 	if err != nil {
 		return err
 	}
 
 	logConf := &logger.Config{}
-	if err = yaml.UnmarshalYML(byte, logConf); err != nil {
+	if err = yaml.UnmarshalYML(bytes, logConf); err != nil {
 		return err
 	}
-	err = logConfig.ZapConfig.EncoderConfig.setEncoderConfig(&(logConf.ZapConfig.EncoderConfig))
+	err = lc.ZapConfig.EncoderConfig.setEncoderConfig(&(logConf.ZapConfig.EncoderConfig))
 	if err != nil {
 		return err
 	}
-	logConfig.ZapConfig.setZapConfig(logConf.ZapConfig)
+	lc.ZapConfig.setZapConfig(logConf.ZapConfig)
 	logger.InitLogger(logConf)
 	return nil
 }
 
-func (l *LoggerConfig) check() error {
-	if err := defaults.Set(l); err != nil {
+func (lc *LoggerConfig) check() error {
+	if err := defaults.Set(lc); err != nil {
 		return err
 	}
-	return verify(l)
+	return verify(lc)
 }
 
 func (e *ZapConfig) setZapConfig(config *zap.Config) {
@@ -135,9 +146,9 @@ func (e *EncoderConfig) setEncoderConfig(encoderConfig *zapcore.EncoderConfig) e
 	return nil
 }
 
-func (l *LoggerConfig) getUrlMap() url.Values {
+func (lc *LoggerConfig) getUrlMap() url.Values {
 	urlMap := url.Values{}
-	for key, val := range l.ZapConfig.EncoderConfig.Params {
+	for key, val := range lc.ZapConfig.EncoderConfig.Params {
 		urlMap.Set(key, val)
 	}
 	return urlMap

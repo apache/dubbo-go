@@ -19,6 +19,8 @@ package config
 
 import (
 	"github.com/creasty/defaults"
+
+	"github.com/pkg/errors"
 )
 
 import (
@@ -37,25 +39,77 @@ type ApplicationConfig struct {
 	MetadataType string `default:"local" yaml:"metadata-type" json:"metadataType,omitempty" property:"metadataType"`
 }
 
-// Prefix dubbo.applicationConfig
+// Prefix dubbo.application
 func (ApplicationConfig) Prefix() string {
-	return constant.DUBBO + ".application"
+	return constant.ApplicationConfigPrefix
 }
 
-func (ac *ApplicationConfig) Init(rc *RootConfig) error {
-	// ignore refresh action
-	if rc.refresh || ac == nil {
-		rootConfig.Application = new(ApplicationConfig)
-		return nil
+// Init  application config and set default value
+func (ac *ApplicationConfig) Init() error {
+	if ac == nil {
+		return errors.New("application is null")
 	}
-	defaults.MustSet(ac)
 	if err := ac.check(); err != nil {
 		return err
 	}
 	return nil
 }
 
+func GetApplicationInstance(opts ...ApplicationConfigOpt) *ApplicationConfig {
+	ac := &ApplicationConfig{}
+	for _, opt := range opts {
+		opt(ac)
+	}
+	return ac
+}
+
 func (ac *ApplicationConfig) check() error {
-	defaults.MustSet(ac)
+	if err := defaults.Set(ac); err != nil {
+		return err
+	}
 	return verify(ac)
+}
+
+type ApplicationConfigOpt func(config *ApplicationConfig)
+
+func WithOrganization(organization string) ApplicationConfigOpt {
+	return func(ac *ApplicationConfig) {
+		ac.Organization = organization
+	}
+}
+
+func WithName(name string) ApplicationConfigOpt {
+	return func(ac *ApplicationConfig) {
+		ac.Name = name
+	}
+}
+
+func WithModule(module string) ApplicationConfigOpt {
+	return func(ac *ApplicationConfig) {
+		ac.Module = module
+	}
+}
+
+func WithVersion(version string) ApplicationConfigOpt {
+	return func(ac *ApplicationConfig) {
+		ac.Version = version
+	}
+}
+
+func WithOwner(owner string) ApplicationConfigOpt {
+	return func(ac *ApplicationConfig) {
+		ac.Owner = owner
+	}
+}
+
+func WithEnvironment(env string) ApplicationConfigOpt {
+	return func(ac *ApplicationConfig) {
+		ac.Environment = env
+	}
+}
+
+func WithMetadataType(metadataType string) ApplicationConfigOpt {
+	return func(ac *ApplicationConfig) {
+		ac.MetadataType = metadataType
+	}
 }

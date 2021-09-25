@@ -25,8 +25,6 @@ import (
 )
 
 import (
-	hessian "github.com/apache/dubbo-go-hessian2"
-
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/json"
 	"github.com/knadh/koanf/parsers/toml"
@@ -45,29 +43,22 @@ import (
 )
 
 var (
-	rootConfig *RootConfig
+	rootConfig = GetInstance()
 	maxWait    = 3
 )
 
 func Load(opts ...LoaderConfOption) error {
-	hessian.RegisterPOJO(&common.MetadataInfo{})
-	hessian.RegisterPOJO(&common.ServiceInfo{})
-	hessian.RegisterPOJO(&common.URL{})
 	// conf
 	conf := NewLoaderConf(opts...)
-	// init config
-	rootConfig = new(RootConfig)
 	koan := getKoanf(conf)
 	if err := koan.UnmarshalWithConf(rootConfig.Prefix(),
 		rootConfig, koanf.UnmarshalConf{Tag: "yaml"}); err != nil {
 		return err
 	}
-	rootConfig.refresh = false
-	extension.SetAndInitGlobalDispatcher(rootConfig.EventDispatcherType)
 	if err := rootConfig.Init(); err != nil {
 		return err
 	}
-	registerServiceInstance()
+	rootConfig.Start()
 	return nil
 }
 

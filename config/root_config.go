@@ -18,14 +18,11 @@
 package config
 
 import (
-	"bytes"
-	"net/http"
 	_ "net/http/pprof"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
 )
 
 // RootConfig is the root config
@@ -62,23 +59,12 @@ type RootConfig struct {
 	// Shutdown config
 	Shutdown *ShutdownConfig `yaml:"shutdown" json:"shutdown,omitempty" property:"shutdown"`
 
-	// Deprecated
-	Network map[interface{}]interface{} `yaml:"network" json:"network,omitempty" property:"network"`
-
 	Router []*RouterConfig `yaml:"router" json:"router,omitempty" property:"router"`
-	// is refresh action
-	refresh bool
-	// prefix              string
-	fatherConfig        interface{}
-	EventDispatcherType string `default:"direct" yaml:"event_dispatcher_type" json:"event_dispatcher_type,omitempty"`
-	fileStream          *bytes.Buffer
+
+	EventDispatcherType string `default:"direct" yaml:"event-dispatcher-type" json:"event-dispatcher-type,omitempty"`
 
 	// cache file used to store the current used configurations.
 	CacheFile string `yaml:"cache_file" json:"cache_file,omitempty" property:"cache_file"`
-}
-
-func init() {
-	rootConfig = NewRootConfig()
 }
 
 func SetRootConfig(r RootConfig) {
@@ -90,137 +76,28 @@ func (RootConfig) Prefix() string {
 	return constant.DUBBO
 }
 
-// Init init config
-func (rc *RootConfig) Init() error {
-	if err := initLoggerConfig(rc); err != nil {
-		return err
-	}
-	if err := rc.ConfigCenter.Init(rc); err != nil {
-		logger.Infof("config center doesn't start. error is %s", err)
-	}
-	if err := rc.Application.Init(rc); err != nil {
-		return err
-	}
-	if err := initProtocolsConfig(rc); err != nil {
-		return err
-	}
-	for i, _ := range rc.Registries {
-		if err := rc.Registries[i].Init(); err != nil {
-			return err
-		}
-	}
-	if err := initServiceDiscoveryConfig(rc); err != nil {
-		return err
-	}
-	if err := rc.MetadataReportConfig.Init(rc); err != nil {
-		return err
-	}
-	if err := initMetricConfig(rc); err != nil {
-		return err
-	}
-	if err := initNetworkConfig(rc); err != nil {
-		return err
-	}
-	if err := initRouterConfig(rc); err != nil {
-		return err
-	}
-	// provider、consumer must last init
-	if err := rc.Provider.Init(rc); err != nil {
-		return err
-	}
-	if err := rc.Consumer.Init(rc); err != nil {
-		return err
-	}
-	go func() {
-		_ = http.ListenAndServe("0.0.0.0:6060", nil)
-	}()
-	return nil
-}
-
-//func (rc *RootConfig) CheckConfig() error {
-//	defaults.MustSet(rc)
-//
-//	if err := rc.Application.CheckConfig(); err != nil {
-//		return err
-//	}
-//
-//	for k, _ := range rc.Registries {
-//		if err := rc.Registries[k].CheckConfig(); err != nil {
-//			return err
-//		}
-//	}
-//
-//	for k, _ := range rc.Protocols {
-//		if err := rc.Protocols[k].CheckConfig(); err != nil {
-//			return err
-//		}
-//	}
-//
-//	if err := rc.ConfigCenter.CheckConfig(); err != nil {
-//		return err
-//	}
-//
-//	if err := rc.MetadataReportConfig.CheckConfig(); err != nil {
-//		return err
-//	}
-//
-//	if err := rc.Provider.CheckConfig(); err != nil {
-//		return err
-//	}
-//
-//	if err := rc.Consumer.CheckConfig(); err != nil {
-//		return err
-//	}
-//
-//	return verify(rootConfig)
-//}
-
-//func (rc *RootConfig) Validate() {
-//	// 2. validate config
-//	rc.Application.Validate()
-//
-//	for k, _ := range rc.Registries {
-//		rc.Registries[k].Validate()
-//	}
-//
-//	for k, _ := range rc.Protocols {
-//		rc.Protocols[k].Validate()
-//	}
-//
-//	for k, _ := range rc.Registries {
-//		rc.Registries[k].Validate()
-//	}
-//
-//	rc.ConfigCenter.Validate()
-//	rc.MetadataReportConfig.Validate()
-//	rc.Provider.Validate(rc)
-//	rc.Consumer.Validate(rc)
-//}
-
-//GetApplicationConfig get applicationConfig config
-
 func GetRootConfig() *RootConfig {
 	return rootConfig
 }
 
 func GetProviderConfig() *ProviderConfig {
 	if err := check(); err != nil {
-		return NewProviderConfig()
+		return GetProviderInstance()
 	}
 	if rootConfig.Provider != nil {
 		return rootConfig.Provider
 	}
-	return NewProviderConfig()
+	return GetProviderInstance()
 }
 
 func GetConsumerConfig() *ConsumerConfig {
 	if err := check(); err != nil {
-		return NewConsumerConfig()
+		return GetConsumerInstance()
 	}
 	if rootConfig.Consumer != nil {
 		return rootConfig.Consumer
 	}
-	return NewConsumerConfig()
+	return GetConsumerInstance()
 }
 
 func GetApplicationConfig() *ApplicationConfig {
@@ -309,15 +186,16 @@ func GetApplicationConfig() *ApplicationConfig {
 //	return provider, nil
 //}
 
-//// getRegistryIds get registry keys
-//func getRegistryIds() []string {
-//	ids := make([]string, 0)
-//	for key := range rootConfig.Registries {
-//		ids = append(ids, key)
-//	}
-//	return removeDuplicateElement(ids)
-//}
+// getRegistryIds get registry ids
+func (rc *RootConfig) getRegistryIds() []string {
+	ids := make([]string, 0)
+	for key := range rc.Registries {
+		ids = append(ids, key)
+	}
+	return removeDuplicateElement(ids)
+}
 
+// NewRootConfig get root config
 func NewRootConfig(opts ...RootConfigOpt) *RootConfig {
 	newRootConfig := &RootConfig{
 		ConfigCenter:         &CenterConfig{},
@@ -326,8 +204,8 @@ func NewRootConfig(opts ...RootConfigOpt) *RootConfig {
 		Application:          &ApplicationConfig{},
 		Registries:           make(map[string]*RegistryConfig),
 		Protocols:            make(map[string]*ProtocolConfig),
-		Provider:             NewProviderConfig(),
-		Consumer:             NewConsumerConfig(),
+		Provider:             GetProviderInstance(),
+		Consumer:             GetConsumerInstance(),
 		MetricConfig:         &MetricConfig{},
 	}
 	for _, o := range opts {

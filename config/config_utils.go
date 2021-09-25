@@ -93,6 +93,7 @@ func removeDuplicateElement(items []string) []string {
 func translateRegistryIds(registryIds []string) []string {
 	ids := make([]string, 0)
 	for _, id := range registryIds {
+
 		ids = append(ids, strings.Split(id, ",")...)
 	}
 	return removeDuplicateElement(ids)
