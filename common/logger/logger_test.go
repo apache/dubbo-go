@@ -19,14 +19,20 @@ package logger
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
 )
 
 import (
+	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
 )
+
+func fakeExit(int) {
+	panic("os.Exit called")
+}
 
 func TestInitLog(t *testing.T) {
 	var (
@@ -37,7 +43,7 @@ func TestInitLog(t *testing.T) {
 	err = InitLog("")
 	assert.EqualError(t, err, "log configure file name is nil")
 
-	path, err = filepath.Abs("./log.xml")
+	path, err = filepath.Abs("./log.yml")
 	assert.NoError(t, err)
 	err = InitLog(path)
 	assert.EqualError(t, err, "log configure file name{"+path+"} suffix must be .yml")
@@ -64,6 +70,15 @@ func TestInitLog(t *testing.T) {
 	Infof("%s", "info")
 	Warnf("%s", "warn")
 	Errorf("%s", "error")
+
+	patch := monkey.Patch(os.Exit, fakeExit)
+	defer patch.Unpatch()
+	assert.PanicsWithValue(t, "os.Exit called", func() {
+		Fatalf("%s", "error")
+	}, "os.Exit was not called")
+	assert.PanicsWithValue(t, "os.Exit called", func() {
+		Fatal("error")
+	}, "os.Exit was not called")
 }
 
 func TestSetLevel(t *testing.T) {
