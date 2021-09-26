@@ -40,6 +40,7 @@ import (
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/common/proxy/proxy_factory"
+	"github.com/apache/dubbo-go/config/interfaces"
 	"github.com/apache/dubbo-go/config_center"
 	"github.com/apache/dubbo-go/metadata/service"
 	"github.com/apache/dubbo-go/registry"
@@ -115,32 +116,42 @@ type CustomEvent struct {
 	t *testing.T
 }
 
-// implements interfaces.ConfigPostProcessor's functions
-func (c CustomEvent) PostProcessReferenceConfig(u *common.URL, event string, errMsg *string) {
-	logger.Debug("PostProcessReferenceConfig Start")
+// implements interfaces.ConfigLoadProcessor's functions
+func (c CustomEvent) LoadProcessReferenceConfig(u *common.URL, event string, errMsg *string) {
+	logger.Debug("LoadProcessReferenceConfig Start")
 	logger.Debug("Event: ", event)
 	logger.Debug("Url: ", u)
 	if errMsg != nil {
 		logger.Debug("Error Message: ", *errMsg)
 	}
 	logger.Debug("PostProcessReferenceConfig End")
-	assert.Equal(c.t, u.GetParam(constant.SIDE_KEY, ""), "consumer")
+	assert.Equal(c.t, "consumer", u.GetParam(constant.SIDE_KEY, ""))
 }
-func (c CustomEvent) PostProcessServiceConfig(u *common.URL, event string, errMsg *string) {
-	logger.Debug("PostProcessServiceConfig Start")
+func (c CustomEvent) LoadProcessServiceConfig(u *common.URL, event string, errMsg *string) {
+	logger.Debug("LoadProcessServiceConfig Start")
 	logger.Debug("Event: ", event)
 	logger.Debug("Url: ", u)
 	if errMsg != nil {
 		logger.Debug("Error Message: ", *errMsg)
 	}
 	logger.Debug("PostProcessServiceConfig End")
-	assert.Equal(c.t, u.GetParam(constant.SIDE_KEY, ""), "provider")
+	assert.Equal(c.t, "provider", u.GetParam(constant.SIDE_KEY, ""))
 }
-func (c CustomEvent) AllReferencesConnectComplete() {
-	logger.Debug("AllConsumersConnectComplete")
+func (c CustomEvent) AfterAllReferencesConnectComplete(urls interfaces.ConfigLoadProcessorURLBinder) {
+	logger.Debug("AfterAllReferencesConnectComplete")
+	logger.Debug("Success Url: ", urls.Success)
+	logger.Debug("Fail Url: ", urls.Fail)
+	assert.NotNil(c.t, urls)
+	assert.NotNil(c.t, urls.Success)
+	assert.Nil(c.t, urls.Fail)
 }
-func (c CustomEvent) AllServicesListenComplete() {
-	logger.Debug("AllServicesListenComplete")
+func (c CustomEvent) AfterAllServicesListenComplete(urls interfaces.ConfigLoadProcessorURLBinder) {
+	logger.Debug("AfterAllServicesListenComplete")
+	logger.Debug("Success Url: ", urls.Success)
+	logger.Debug("Fail Url: ", urls.Fail)
+	assert.NotNil(c.t, urls)
+	assert.NotNil(c.t, urls.Success)
+	assert.Nil(c.t, urls.Fail)
 }
 func (c CustomEvent) BeforeShutdown() {
 	logger.Debug("BeforeShutdown")
@@ -172,8 +183,8 @@ func TestLoadWithEventDispatch(t *testing.T) {
 		return mm, nil
 	})
 
-	configPostProcessorName := "TestLoadWithEventDispatch"
-	extension.SetConfigPostProcessor(configPostProcessorName, CustomEvent{t})
+	configLoadProcessorName := "TestLoadWithEventDispatch"
+	extension.SetConfigLoadProcessor(configLoadProcessorName, CustomEvent{t})
 
 	Load()
 
@@ -189,7 +200,12 @@ func TestLoadWithEventDispatch(t *testing.T) {
 	err := common.ServiceMap.UnRegister("com.MockService", "mock",
 		common.ServiceKey("com.MockService", "huadong_idc", "1.0.0"))
 	assert.Nil(t, err)
-	extension.RemoveConfigPostProcessor(configPostProcessorName)
+	extension.RemoveConfigLoadProcessor(configLoadProcessorName)
+	assert.Less(t, 0, len(extension.GetReferenceURL()))
+	assert.Less(t, 0, len(extension.GetServiceURL()))
+	extension.ResetURL()
+	assert.Equal(t, 0, len(extension.GetReferenceURL()))
+	assert.Equal(t, 0, len(extension.GetServiceURL()))
 	consumerConfig = nil
 	providerConfig = nil
 }
