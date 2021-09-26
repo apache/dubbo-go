@@ -47,17 +47,10 @@ prepareLic:
 	$(GO_LICENSE_CHECKER) -version || (wget https://github.com/lsm-dev/license-header-checker/releases/download/v1.2.0/$(GO_LICENSE_CHECKER_DIR).zip -O $(GO_LICENSE_CHECKER_DIR).zip && unzip -o $(GO_LICENSE_CHECKER_DIR).zip && mkdir -p $(GO_PATH)/bin/ && cp $(GO_LICENSE_CHECKER_DIR)/64bit/license-header-checker $(GO_PATH)/bin/)
 	ls /tmp/tools/license/license.txt || wget -P $(LICENSE_DIR) https://github.com/dubbogo/resources/raw/master/tools/license/license.txt
 
-prepareZk:
-	ls $(ZK_JAR) || (mkdir -p $(ZK_JAR_PATH)&&  wget -P $(ZK_JAR_PATH) https://github.com/dubbogo/resources/raw/master/zookeeper-4unitest/contrib/fatjar/${ZK_JAR_NAME})
-	@for i in $(ZK_TEST_LIST); do \
-		mkdir -p $$i$(ZK_FATJAR_BASE);\
-		cp ${ZK_JAR} $$i$(ZK_FATJAR_BASE);\
-	done
-
-prepare: prepareZk prepareLic
+prepare: prepareLic
 
 .PHONE: test
-test: clean prepareZk
+test: clean
 	$(GO_TEST) ./... -coverprofile=coverage.txt -covermode=atomic
 
 deps: prepare
