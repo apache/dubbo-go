@@ -180,7 +180,7 @@ func loadConsumerConfig() {
 					if count > maxWait {
 						errMsg := fmt.Sprintf("Failed to check the status of the service %v. No provider available for the service to the consumer use dubbo version %v", refconfig.InterfaceName, constant.Version)
 						logger.Error(errMsg)
-						refconfig.postProcessConfig(referenceURL, constant.HookEventReferenceConnectFail, &errMsg)
+						refconfig.loadProcessConfig(referenceURL, constant.HookEventReferenceConnectFail, &errMsg)
 						panic(errMsg)
 					}
 					time.Sleep(time.Second * 1)
@@ -191,13 +191,13 @@ func loadConsumerConfig() {
 					continue
 				}
 			}
-			refconfig.postProcessConfig(referenceURL, constant.HookEventReferenceConnectSuccess, nil)
+			refconfig.loadProcessConfig(referenceURL, constant.HookEventReferenceConnectSuccess, nil)
 		}
 		if checkok {
 			break
 		}
 	}
-	postAllConsumersConnectComplete()
+	extension.AllReferencesConnectComplete()
 }
 
 func loadProviderConfig() {
@@ -256,13 +256,15 @@ func loadProviderConfig() {
 		serviceURL := svs.getValidURL()
 		if err != nil {
 			errMsg := fmt.Sprintf("service %s export failed! err: %#v", key, err)
-			svs.postProcessConfig(serviceURL, constant.HookEventProviderConnectFail, &errMsg)
+			svs.loadProcessConfig(serviceURL, constant.HookEventServiceListenFail, &errMsg)
 			panic(errMsg)
 		}
-		svs.postProcessConfig(serviceURL, constant.HookEventProviderConnectSuccess, nil)
+		if serviceURL != nil {
+			svs.loadProcessConfig(serviceURL, constant.HookEventServiceListenSuccess, nil)
+		}
 	}
 	registerServiceInstance()
-	postAllProvidersConnectComplete()
+	extension.AllServicesListenComplete()
 }
 
 // registerServiceInstance register service instance
