@@ -360,7 +360,13 @@ const (
 	HookEventReferenceConnectSuccess = "reference-connect-success"
 	HookEventReferenceConnectFail    = "reference-connect-fail"
 
-	HookEventBeforeProviderConnect  = "before-service-listen"
-	HookEventProviderConnectSuccess = "service-listen-success"
-	HookEventProviderConnectFail    = "service-listen-fail"
+	HookEventBeforeServiceListen  = "before-service-listen"
+	HookEventServiceListenSuccess = "service-listen-success"
+	HookEventServiceListenFail    = "service-listen-fail"
+
+	LoadProcessReferenceConfigFunctionName        = "LoadProcessReferenceConfig"
+	LoadProcessServiceConfigFunctionName          = "LoadProcessServiceConfig"
+	AfterAllReferencesConnectCompleteFunctionName = "AfterAllReferencesConnectComplete"
+	AfterAllServicesListenCompleteFunctionName    = "AfterAllServicesListenComplete"
+	BeforeShutdownFunctionName                    = "BeforeShutdown"
 )
