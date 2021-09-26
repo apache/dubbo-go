@@ -73,7 +73,7 @@ func ValidateNacosClient(container nacosClientFacade) error {
 		}
 		container.SetNacosClient(newClient)
 	}
-	return perrors.WithMessagef(nil, "newNacosClient(address:%+v)", url.PrimitiveURL)
+	return nil
 }
 
 // Done Get nacos configClient exit signal
