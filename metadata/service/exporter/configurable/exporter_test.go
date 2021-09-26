@@ -31,6 +31,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config"
 	_ "dubbo.apache.org/dubbo-go/v3/filter/filter_impl"
 	"dubbo.apache.org/dubbo-go/v3/metadata/service/local"
+	_ "dubbo.apache.org/dubbo-go/v3/metrics/prometheus"
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/dubbo"
 	"dubbo.apache.org/dubbo-go/v3/remoting/getty"
 )
@@ -69,7 +70,7 @@ func TestConfigurableExporter(t *testing.T) {
 		assert.Equal(t, false, exported.IsExported())
 		assert.NoError(t, exported.Export(registryURL))
 		assert.Equal(t, true, exported.IsExported())
-		assert.Regexp(t, "dubbo://:20003/org.apache.dubbo.metadata.MetadataService*", exported.GetExportedURLs()[0].String())
+		assert.Regexp(t, "dubbo://127.0.0.1:20005/org.apache.dubbo.metadata.MetadataService*", exported.GetExportedURLs()[0].String())
 		exported.Unexport()
 		assert.Equal(t, false, exported.IsExported())
 	})
@@ -77,49 +78,23 @@ func TestConfigurableExporter(t *testing.T) {
 
 // mockInitProviderWithSingleRegistry will init a mocked providerConfig
 func mockInitProviderWithSingleRegistry() {
-	providerConfig := &config.ProviderConfig{
-
-		BaseConfig: config.BaseConfig{
-			ApplicationConfig: &config.ApplicationConfig{
-				Organization: "dubbo_org",
-				Name:         "dubbo",
-				Module:       "module",
-				Version:      "1.0.0",
-				Owner:        "dubbo",
-				Environment:  "test",
-			},
+	providerConfig := config.GetProviderInstance(
+		config.WithProviderService("MockService", config.NewServiceConfig()))
+	providerConfig.Services["MockService"].InitExported()
+	config.SetRootConfig(config.RootConfig{
+		Application: &config.ApplicationConfig{
+			Organization: "dubbo_org",
+			Name:         "dubbo",
+			Module:       "module",
+			Version:      "1.0.0",
+			Owner:        "dubbo",
+			Environment:  "test",
 		},
-
-		Registry: &config.RegistryConfig{
-			Address:  "mock://127.0.0.1:2181",
-			Username: "user1",
-			Password: "pwd1",
-		},
-		Registries: map[string]*config.RegistryConfig{},
-
-		Services: map[string]*config.ServiceConfig{
-			"MockService": {
-				InterfaceName: "com.MockService",
-				Protocol:      "mock",
-				Cluster:       "failover",
-				Loadbalance:   "random",
-				Retries:       "3",
-				Group:         "huadong_idc",
-				Version:       "1.0.0",
-				Methods: []*config.MethodConfig{
-					{
-						Name:        "GetUser",
-						Retries:     "2",
-						LoadBalance: "random",
-						Weight:      200,
-					},
-					{
-						Name:        "GetUser1",
-						Retries:     "2",
-						LoadBalance: "random",
-						Weight:      200,
-					},
-				},
+		Registries: map[string]*config.RegistryConfig{
+			"mock": {
+				Address:  "mock://127.0.0.1:2181",
+				Username: "user1",
+				Password: "pwd1",
 			},
 		},
 		Protocols: map[string]*config.ProtocolConfig{
@@ -129,7 +104,33 @@ func mockInitProviderWithSingleRegistry() {
 				Port: "20000",
 			},
 		},
-	}
-	providerConfig.Services["MockService"].InitExported()
-	config.SetProviderConfig(*providerConfig)
+
+		Provider: &config.ProviderConfig{
+			Services: map[string]*config.ServiceConfig{
+				"MockService": {
+					Interface:   "com.MockService",
+					Protocol:    []string{"mock"},
+					Cluster:     "failover",
+					Loadbalance: "random",
+					Retries:     "3",
+					Group:       "huadong_idc",
+					Version:     "1.0.0",
+					Methods: []*config.MethodConfig{
+						{
+							Name:        "GetUser",
+							Retries:     "2",
+							LoadBalance: "random",
+							Weight:      200,
+						},
+						{
+							Name:        "GetUser1",
+							Retries:     "2",
+							LoadBalance: "random",
+							Weight:      200,
+						},
+					},
+				},
+			},
+		},
+	})
 }

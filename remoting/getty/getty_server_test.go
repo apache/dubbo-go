@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package config
+package getty
 
 import (
 	"testing"
@@ -25,28 +25,23 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestMetadataReportConfig_ToUrl(t *testing.T) {
-	GetBaseConfig().Remotes["mock"] = &RemoteConfig{
-		Address:    "127.0.0.1:2181",
-		Username:   "test",
-		Password:   "test",
-		TimeoutStr: "3s",
-	}
-	metadataReportConfig := MetadataReportConfig{
-		Protocol:  "mock",
-		RemoteRef: "mock",
-		Params: map[string]string{
-			"k": "v",
+import (
+	"dubbo.apache.org/dubbo-go/v3/config"
+)
+
+func TestInitServer(t *testing.T) {
+	originRootConf := config.GetRootConfig()
+	rootConf := config.RootConfig{
+		Protocols: map[string]*config.ProtocolConfig{
+			"dubbo": {
+				Name: "dubbo",
+				Ip:   "127.0.0.1",
+				Port: "20003",
+			},
 		},
 	}
-	url, err := metadataReportConfig.ToUrl()
-	assert.NoError(t, err)
-	assert.Equal(t, "mock", url.Protocol)
-	assert.Equal(t, "127.0.0.1:2181", url.Location)
-	assert.Equal(t, "127.0.0.1", url.Ip)
-	assert.Equal(t, "2181", url.Port)
-	assert.Equal(t, "test", url.Username)
-	assert.Equal(t, "test", url.Password)
-	assert.Equal(t, "v", url.GetParam("k", ""))
-	assert.Equal(t, "mock", url.GetParam("metadata", ""))
+	config.SetRootConfig(rootConf)
+	initServer("dubbo")
+	config.SetRootConfig(*originRootConf)
+	assert.NotNil(t, srvConf)
 }

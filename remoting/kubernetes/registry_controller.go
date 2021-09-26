@@ -22,6 +22,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
@@ -31,18 +32,25 @@ import (
 
 import (
 	perrors "github.com/pkg/errors"
+
 	v1 "k8s.io/api/core/v1"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/apimachinery/pkg/watch"
+
 	"k8s.io/client-go/informers"
 	informerscorev1 "k8s.io/client-go/informers/core/v1"
+
 	"k8s.io/client-go/kubernetes"
+
 	"k8s.io/client-go/rest"
+
 	"k8s.io/client-go/tools/cache"
+
 	"k8s.io/client-go/util/workqueue"
 )
 
@@ -55,6 +63,7 @@ const (
 	// kubernetes inject env var
 	podNameKey              = "HOSTNAME"
 	nameSpaceKey            = "NAMESPACE"
+	nameSpaceFilePath       = "/var/run/secrets/kubernetes.io/serviceaccount/namespace"
 	needWatchedNameSpaceKey = "DUBBO_NAMESPACE"
 
 	// all pod annotation key
@@ -192,13 +201,20 @@ func (c *dubboRegistryController) readConfig() error {
 	// read current pod name && namespace
 	c.name = os.Getenv(podNameKey)
 	if len(c.name) == 0 {
-		return perrors.New("read value from env by key (HOSTNAME)")
+		return perrors.Errorf("read pod name from env %s failed", podNameKey)
+	}
+	namespace, err := ioutil.ReadFile(nameSpaceFilePath)
+	if err == nil && len(namespace) != 0 {
+		c.namespace = string(namespace)
+		return nil
 	}
 	c.namespace = os.Getenv(nameSpaceKey)
-	if len(c.namespace) == 0 {
-		return perrors.New("read value from env by key (NAMESPACE)")
+	if len(c.namespace) != 0 {
+		return nil
 	}
-	return nil
+	return perrors.Errorf("get empty namesapce, please check if namespace file at %s exist, or environment %s"+
+		" is set", nameSpaceFilePath, nameSpaceKey)
+
 }
 
 func (c *dubboRegistryController) initNamespacedPodInformer(ns string) error {
@@ -448,6 +464,36 @@ func (c *dubboRegistryController) patchCurrentPod(patch []byte) (*v1.Pod, error)
 		return nil, perrors.WithMessage(err, "patch in kubernetes pod ")
 	}
 	return updatedPod, nil
+}
+
+func (c *dubboRegistryController) assembleLabel(k, v string) error {
+	var (
+		oldPod = &v1.Pod{}
+		newPod = &v1.Pod{}
+	)
+	oldPod.Labels = make(map[string]string, 8)
+	newPod.Labels = make(map[string]string, 8)
+	currentPod, err := c.readCurrentPod()
+	if err != nil {
+		return err
+	}
+	// copy current pod labels to oldPod && newPod
+	for k, v := range currentPod.GetLabels() {
+		oldPod.Labels[k] = v
+		newPod.Labels[k] = v
+	}
+	newPod.Labels[k] = v
+
+	p, err := c.getPatch(oldPod, newPod)
+	if err != nil {
+		return perrors.WithMessage(err, "get patch")
+	}
+
+	_, err = c.patchCurrentPod(p)
+	if err != nil {
+		return perrors.WithMessage(err, "patch to current pod")
+	}
+	return nil
 }
 
 // assembleDUBBOLabel assembles the dubbo kubernetes label

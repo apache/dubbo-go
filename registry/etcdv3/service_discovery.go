@@ -30,8 +30,6 @@ import (
 	gxpage "github.com/dubbogo/gost/hash/page"
 
 	"github.com/hashicorp/vault/sdk/helper/jsonutil"
-
-	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -305,37 +303,27 @@ func (e *etcdV3ServiceDiscovery) DataChange(eventType remoting.Event) bool {
 	return true
 }
 
-// netEcdv3ServiceDiscovery
-func newEtcdV3ServiceDiscovery(name string) (registry.ServiceDiscovery, error) {
+// newEtcdv3ServiceDiscovery
+func newEtcdV3ServiceDiscovery() (registry.ServiceDiscovery, error) {
 	initLock.Lock()
 	defer initLock.Unlock()
 
-	sdc, ok := config.GetBaseConfig().GetServiceDiscoveries(name)
-	if !ok || len(sdc.RemoteRef) == 0 {
-		return nil, perrors.New("could not init the etcd service instance because the config is invalid")
-	}
+	metadataReportConfig := config.GetMetadataReportConfg()
 
-	remoteConfig, ok := config.GetBaseConfig().GetRemoteConfig(sdc.RemoteRef)
-	if !ok {
-		return nil, perrors.New("could not find the remote config for name: " + sdc.RemoteRef)
-	}
-
-	// init etcdv3 client
-	timeout, err := time.ParseDuration(remoteConfig.TimeoutStr)
+	to, err := time.ParseDuration(metadataReportConfig.Timeout)
 	if err != nil {
-		logger.Errorf("timeout config %v is invalid,err is %v", remoteConfig.TimeoutStr, err.Error())
-		return nil, perrors.WithMessagef(err, "new etcd service discovery(address:%v)", remoteConfig.Address)
+		logger.Errorf("timeout config %v is invalid,err is %v", metadataReportConfig.Timeout, err.Error())
+		return nil, err
 	}
-
-	logger.Infof("etcd address is: %v,timeout is:%s", remoteConfig.Address, timeout.String())
+	logger.Infof("etcd address is: %v,timeout is:%s", metadataReportConfig.Timeout, to.String())
 
 	client := etcdv3.NewServiceDiscoveryClient(
 		gxetcd.WithName(gxetcd.RegistryETCDV3Client),
-		gxetcd.WithTimeout(timeout),
-		gxetcd.WithEndpoints(strings.Split(remoteConfig.Address, ",")...),
+		gxetcd.WithTimeout(to),
+		gxetcd.WithEndpoints(strings.Split(metadataReportConfig.Address, ",")...),
 	)
 
-	descriptor := fmt.Sprintf("etcd-service-discovery[%s]", remoteConfig.Address)
+	descriptor := fmt.Sprintf("etcd-service-discovery[%s]", metadataReportConfig.Address)
 
 	return &etcdV3ServiceDiscovery{
 		descriptor,
