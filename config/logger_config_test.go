@@ -18,16 +18,22 @@
 package config
 
 import (
+	"os"
 	"testing"
 )
 
 import (
+	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 )
+
+func fakeExit(int) {
+	panic("os.Exit called")
+}
 
 func TestLoggerInit(t *testing.T) {
 	t.Run("empty use default", func(t *testing.T) {
@@ -38,6 +44,14 @@ func TestLoggerInit(t *testing.T) {
 		assert.NotNil(t, loggerConfig)
 		assert.Equal(t, []string{"stderr"}, loggerConfig.ZapConfig.OutputPaths)
 		logger.Info("hello")
+		patch := monkey.Patch(os.Exit, fakeExit)
+		defer patch.Unpatch()
+		assert.PanicsWithValue(t, "os.Exit called", func() {
+			logger.Fatalf("%s", "error")
+		}, "os.Exit was not called")
+		assert.PanicsWithValue(t, "os.Exit called", func() {
+			logger.Fatal("error")
+		}, "os.Exit was not called")
 	})
 
 	t.Run("use config", func(t *testing.T) {
