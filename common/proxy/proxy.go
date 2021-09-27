@@ -25,6 +25,7 @@ import (
 
 import (
 	"github.com/apache/dubbo-go-hessian2/java_exception"
+
 	perrors "github.com/pkg/errors"
 )
 
@@ -113,43 +114,44 @@ func (p *Proxy) GetInvoker() protocol.Invoker {
 func DefaultProxyImplementFunc(p *Proxy, v common.RPCService) {
 	// check parameters, incoming interface must be a elem's pointer.
 	valueOf := reflect.ValueOf(v)
-	logger.Debugf("[Implement] reflect.TypeOf: %s", valueOf.String())
 
 	valueOfElem := valueOf.Elem()
 	typeOf := valueOfElem.Type()
 
 	// check incoming interface, incoming interface's elem must be a struct.
 	if typeOf.Kind() != reflect.Struct {
-		logger.Errorf("%s must be a struct ptr", valueOf.String())
+		logger.Errorf("The type of RPCService(=\"%T\") must be a pointer of a struct.", v)
 		return
 	}
 
 	makeDubboCallProxy := func(methodName string, outs []reflect.Type) func(in []reflect.Value) []reflect.Value {
 		return func(in []reflect.Value) []reflect.Value {
 			var (
-				err    error
-				inv    *invocation_impl.RPCInvocation
-				inIArr []interface{}
-				inVArr []reflect.Value
-				reply  reflect.Value
+				err            error
+				inv            *invocation_impl.RPCInvocation
+				inIArr         []interface{}
+				inVArr         []reflect.Value
+				reply          reflect.Value
+				replyEmptyFlag bool
 			)
 			if methodName == "Echo" {
 				methodName = "$echo"
 			}
 
-			if len(outs) == 2 {
+			if len(outs) == 2 { // return (reply, error)
 				if outs[0].Kind() == reflect.Ptr {
 					reply = reflect.New(outs[0].Elem())
 				} else {
 					reply = reflect.New(outs[0])
 				}
-			} else {
-				reply = valueOf
+			} else { // only return error
+				replyEmptyFlag = true
 			}
 
 			start := 0
 			end := len(in)
 			invCtx := context.Background()
+			// retrieve the context from the first argument if existed
 			if end > 0 {
 				if in[0].Type().String() == "context.Context" {
 					if !in[0].IsNil() {
@@ -157,10 +159,6 @@ func DefaultProxyImplementFunc(p *Proxy, v common.RPCService) {
 						invCtx = in[0].Interface().(context.Context)
 					}
 					start += 1
-				}
-				if len(outs) == 1 && in[end-1].Type().Kind() == reflect.Ptr {
-					end -= 1
-					reply = in[len(in)-1]
 				}
 			}
 
@@ -182,8 +180,11 @@ func DefaultProxyImplementFunc(p *Proxy, v common.RPCService) {
 			}
 
 			inv = invocation_impl.NewRPCInvocationWithOptions(invocation_impl.WithMethodName(methodName),
-				invocation_impl.WithArguments(inIArr), invocation_impl.WithReply(reply.Interface()),
+				invocation_impl.WithArguments(inIArr),
 				invocation_impl.WithCallBack(p.callback), invocation_impl.WithParameterValues(inVArr))
+			if !replyEmptyFlag {
+				inv.SetReply(reply.Interface())
+			}
 
 			for k, value := range p.attachments {
 				inv.SetAttachments(k, value)

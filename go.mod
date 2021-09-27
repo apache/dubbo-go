@@ -8,21 +8,24 @@ require (
 	github.com/afex/hystrix-go v0.0.0-20180502004556-fa1af6a1f4f5
 	github.com/alibaba/sentinel-golang v1.0.2
 	github.com/apache/dubbo-getty v1.4.5
-	github.com/apache/dubbo-go-hessian2 v1.9.3
-	github.com/creasty/defaults v1.5.2
+	github.com/apache/dubbo-go-hessian2 v1.9.2
+	github.com/creasty/defaults v1.5.1
 	github.com/dubbogo/go-zookeeper v1.0.3
-	github.com/dubbogo/gost v1.11.17
-	github.com/dubbogo/triple v1.0.5
-	github.com/emicklei/go-restful/v3 v3.6.0
+	github.com/dubbogo/gost v1.11.16
+	github.com/dubbogo/triple v1.0.6-0.20210909153707-3620c8d2d97c
+	github.com/emicklei/go-restful/v3 v3.5.2
 	github.com/fsnotify/fsnotify v1.5.1
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-co-op/gocron v0.1.1
+	github.com/go-playground/validator/v10 v10.7.0
 	github.com/go-resty/resty/v2 v2.3.0
+	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/mock v1.4.4
 	github.com/golang/protobuf v1.5.2
 	github.com/grpc-ecosystem/grpc-opentracing v0.0.0-20180507213350-8e809c8a8645
 	github.com/hashicorp/vault/sdk v0.2.1
 	github.com/jinzhu/copier v0.3.2
+	github.com/knadh/koanf v1.1.1
 	github.com/magiconair/properties v1.8.5
 	github.com/mitchellh/mapstructure v1.4.2
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
@@ -31,6 +34,7 @@ require (
 	github.com/opentracing/opentracing-go v1.2.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.11.0
+	github.com/prometheus/common v0.28.0 // indirect
 	github.com/satori/go.uuid v1.2.0
 	github.com/stretchr/testify v1.7.0
 	github.com/zouyx/agollo/v3 v3.4.5

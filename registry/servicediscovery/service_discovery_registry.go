@@ -25,7 +25,9 @@ import (
 
 import (
 	gxset "github.com/dubbogo/gost/container/set"
+
 	perrors "github.com/pkg/errors"
+
 	"go.uber.org/atomic"
 )
 
@@ -44,12 +46,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/registry/servicediscovery/synthesizer"
 )
 
-const (
-	protocolName = "service-discovery"
-)
-
 func init() {
-	extension.SetRegistry(protocolName, newServiceDiscoveryRegistry)
+	extension.SetRegistry(constant.SERVICE_REGISTRY_PROTOCOL, newServiceDiscoveryRegistry)
 }
 
 // serviceDiscoveryRegistry is the implementation of application-level registry.
@@ -125,12 +123,8 @@ func (s *serviceDiscoveryRegistry) UnSubscribe(url *common.URL, listener registr
 }
 
 func creatServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, error) {
-	sdcName := url.GetParam(constant.SERVICE_DISCOVERY_KEY, "")
-	sdc, ok := config.GetBaseConfig().GetServiceDiscoveries(sdcName)
-	if !ok {
-		return nil, perrors.Errorf("The service discovery with name: %s is not found", sdcName)
-	}
-	originServiceDiscovery, err := extension.GetServiceDiscovery(sdc.Protocol, sdcName)
+	sdcName := url.GetParam(constant.REGISTRY_KEY, "")
+	originServiceDiscovery, err := extension.GetServiceDiscovery(sdcName)
 	if err != nil {
 		return nil, perrors.WithMessage(err, "Create service discovery fialed")
 	}
@@ -187,10 +181,7 @@ func (s *serviceDiscoveryRegistry) Register(url *common.URL) error {
 		logger.Warnf("The URL[%s] has been registry!", url.String())
 	}
 
-	return s.serviceNameMapping.Map(url.GetParam(constant.INTERFACE_KEY, ""),
-		url.GetParam(constant.GROUP_KEY, ""),
-		url.GetParam(constant.Version, ""),
-		url.Protocol)
+	return s.serviceNameMapping.Map(url)
 }
 
 func shouldRegister(url *common.URL) bool {
@@ -301,14 +292,9 @@ func (s *serviceDiscoveryRegistry) getServices(url *common.URL) *gxset.HashSet {
 }
 
 func (s *serviceDiscoveryRegistry) findMappedServices(url *common.URL) *gxset.HashSet {
-	serviceInterface := url.GetParam(constant.INTERFACE_KEY, url.Path)
-	group := url.GetParam(constant.GROUP_KEY, "")
-	version := url.GetParam(constant.VERSION_KEY, "")
-	protocol := url.Protocol
-	serviceNames, err := s.serviceNameMapping.Get(serviceInterface, group, version, protocol)
+	serviceNames, err := s.serviceNameMapping.Get(url)
 	if err != nil {
-		logger.Errorf("get serviceInterface:[%s] group:[%s] version:[%s] protocol:[%s] from "+
-			"serviceNameMap error:%s", err.Error())
+		logger.Errorf("get service names catch error, url:%s, err:%s ", url.String(), err.Error())
 		return gxset.NewSet()
 	}
 	return serviceNames
@@ -357,10 +343,7 @@ func publishMapping(sc *config.ServiceConfig) error {
 	urls := sc.GetExportedUrls()
 
 	for _, u := range urls {
-		err := extension.GetGlobalServiceNameMapping().Map(u.GetParam(constant.INTERFACE_KEY, ""),
-			u.GetParam(constant.GROUP_KEY, ""),
-			u.GetParam(constant.Version, ""),
-			u.Protocol)
+		err := extension.GetGlobalServiceNameMapping().Map(u)
 		if err != nil {
 			return perrors.WithMessage(err, "could not map the service: "+u.String())
 		}

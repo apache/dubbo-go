@@ -18,7 +18,7 @@
 package config
 
 import (
-	"strings"
+	"github.com/creasty/defaults"
 )
 
 import (
@@ -27,24 +27,84 @@ import (
 
 // ProtocolConfig is protocol configuration
 type ProtocolConfig struct {
-	Name string `required:"true" yaml:"name"  json:"name,omitempty" property:"name"`
-	Ip   string `required:"true" yaml:"ip"  json:"ip,omitempty" property:"ip"`
-	Port string `required:"true" yaml:"port"  json:"port,omitempty" property:"port"`
+	Name   string      `default:"dubbo" validate:"required" yaml:"name" json:"name,omitempty" property:"name"`
+	Ip     string      `yaml:"ip"  json:"ip,omitempty" property:"ip"`
+	Port   string      `default:"20000" yaml:"port" json:"port,omitempty" property:"port"`
+	Params interface{} `yaml:"params" json:"params,omitempty" property:"params"`
 }
 
-// nolint
-func (c *ProtocolConfig) Prefix() string {
-	return constant.ProtocolConfigPrefix
+// Prefix dubbo.config-center
+func (ProtocolConfig) Prefix() string {
+	return constant.ConfigCenterPrefix
 }
 
-func loadProtocol(protocolsIds string, protocols map[string]*ProtocolConfig) []*ProtocolConfig {
-	returnProtocols := make([]*ProtocolConfig, 0, len(protocols))
-	for _, v := range strings.Split(protocolsIds, ",") {
-		for k, protocol := range protocols {
-			if v == k {
-				returnProtocols = append(returnProtocols, protocol)
-			}
+func GetProtocolsInstance() map[string]*ProtocolConfig {
+	return make(map[string]*ProtocolConfig, 1)
+}
+
+func initProtocolsConfig(rc *RootConfig) error {
+	protocols := rc.Protocols
+	if len(protocols) <= 0 {
+		protocol := new(ProtocolConfig)
+		protocols = make(map[string]*ProtocolConfig, 1)
+		protocols[constant.DUBBO] = protocol
+		rc.Protocols = protocols
+		return protocol.check()
+	}
+	for _, protocol := range protocols {
+		if err := protocol.check(); err != nil {
+			return err
 		}
 	}
-	return returnProtocols
+	rc.Protocols = protocols
+	return nil
+}
+
+func (p *ProtocolConfig) check() error {
+	if err := defaults.Set(p); err != nil {
+		return err
+	}
+	return verify(p)
+}
+
+func NewDefaultProtocolConfig() *ProtocolConfig {
+	return &ProtocolConfig{
+		Name: constant.DEFAULT_PROTOCOL,
+		Port: "20000",
+		Ip:   "127.0.0.1",
+	}
+}
+
+// NewProtocolConfig returns ProtocolConfig with given @opts
+func NewProtocolConfig(opts ...ProtocolConfigOpt) *ProtocolConfig {
+	newConfig := NewDefaultProtocolConfig()
+	for _, v := range opts {
+		v(newConfig)
+	}
+	return newConfig
+}
+
+type ProtocolConfigOpt func(config *ProtocolConfig) *ProtocolConfig
+
+// WithProtocolIP set ProtocolConfig with given binding @ip
+// Deprecated: the param @ip would be used as service lisener binding and would be registered to registry center
+func WithProtocolIP(ip string) ProtocolConfigOpt {
+	return func(config *ProtocolConfig) *ProtocolConfig {
+		config.Ip = ip
+		return config
+	}
+}
+
+func WithProtocolName(protcolName string) ProtocolConfigOpt {
+	return func(config *ProtocolConfig) *ProtocolConfig {
+		config.Name = protcolName
+		return config
+	}
+}
+
+func WithProtocolPort(port string) ProtocolConfigOpt {
+	return func(config *ProtocolConfig) *ProtocolConfig {
+		config.Port = port
+		return config
+	}
 }

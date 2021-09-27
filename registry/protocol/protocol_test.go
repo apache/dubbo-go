@@ -24,6 +24,7 @@ import (
 
 import (
 	gxset "github.com/dubbogo/gost/container/set"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -43,9 +44,9 @@ import (
 )
 
 func init() {
-	config.SetProviderConfig(config.ProviderConfig{BaseConfig: config.BaseConfig{
-		ApplicationConfig: &config.ApplicationConfig{Name: "test-application"},
-	}})
+	config.SetRootConfig(config.RootConfig{
+		Application: &config.ApplicationConfig{Name: "test-application"},
+	})
 }
 
 func referNormal(t *testing.T, regProtocol *registryProtocol) {
@@ -68,10 +69,9 @@ func referNormal(t *testing.T, regProtocol *registryProtocol) {
 }
 
 func TestRefer(t *testing.T) {
-	config.SetConsumerConfig(
-		config.ConsumerConfig{BaseConfig: config.BaseConfig{
-			ApplicationConfig: &config.ApplicationConfig{Name: "test-application"},
-		}})
+	config.SetRootConfig(config.RootConfig{
+		Application: &config.ApplicationConfig{Name: "test-application"},
+	})
 	regProtocol := newRegistryProtocol()
 	referNormal(t, regProtocol)
 }

@@ -43,7 +43,6 @@ type Filter struct{}
 
 // Invoke response to the callers with its first argument.
 func (f *Filter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
-	logger.Infof("invoking echo filter.")
 	logger.Debugf("%v,%v", invocation.MethodName(), len(invocation.Arguments()))
 	if invocation.MethodName() == constant.ECHO && len(invocation.Arguments()) == 1 {
 		return &protocol.RPCResult{

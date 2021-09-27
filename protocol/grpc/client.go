@@ -20,12 +20,17 @@ package grpc
 import (
 	"reflect"
 	"strconv"
+	"sync"
+	"time"
 )
 
 import (
 	"github.com/grpc-ecosystem/grpc-opentracing/go/otgrpc"
+
 	"github.com/opentracing/opentracing-go"
+
 	"google.golang.org/grpc"
+
 	"gopkg.in/yaml.v2"
 )
 
@@ -37,48 +42,7 @@ import (
 )
 
 var clientConf *ClientConfig
-
-func init() {
-	// load clientconfig from consumer_config
-	consumerConfig := config.GetConsumerConfig()
-
-	clientConfig := GetClientConfig()
-	clientConf = &clientConfig
-
-	// check client config and decide whether to use the default config
-	defer func() {
-		if clientConf == nil || len(clientConf.ContentSubType) == 0 {
-			defaultClientConfig := GetDefaultClientConfig()
-			clientConf = &defaultClientConfig
-		}
-		if err := clientConf.Validate(); err != nil {
-			panic(err)
-		}
-	}()
-
-	if consumerConfig.ApplicationConfig == nil {
-		return
-	}
-	protocolConf := config.GetConsumerConfig().ProtocolConf
-
-	if protocolConf == nil {
-		logger.Info("protocol_conf default use dubbo config")
-	} else {
-		grpcConf := protocolConf.(map[interface{}]interface{})[GRPC]
-		if grpcConf == nil {
-			logger.Warnf("grpcConf is nil")
-			return
-		}
-		grpcConfByte, err := yaml.Marshal(grpcConf)
-		if err != nil {
-			panic(err)
-		}
-		err = yaml.Unmarshal(grpcConfByte, clientConf)
-		if err != nil {
-			panic(err)
-		}
-	}
-}
+var clientConfInitOnce sync.Once
 
 // Client is gRPC client include client connection and invoker
 type Client struct {
@@ -88,6 +52,8 @@ type Client struct {
 
 // NewClient creates a new gRPC client.
 func NewClient(url *common.URL) (*Client, error) {
+	clientConfInitOnce.Do(clientInit)
+
 	// If global trace instance was set, it means trace function enabled.
 	// If not, will return NoopTracer.
 	tracer := opentracing.GlobalTracer()
@@ -95,12 +61,13 @@ func NewClient(url *common.URL) (*Client, error) {
 	maxMessageSize, _ := strconv.Atoi(url.GetParam(constant.MESSAGE_SIZE_KEY, "4"))
 
 	// consumer config client connectTimeout
-	connectTimeout := config.GetConsumerConfig().ConnectTimeout
+	//connectTimeout := config.GetConsumerConfig().ConnectTimeout
 
 	dialOpts = append(dialOpts,
 		grpc.WithInsecure(),
 		grpc.WithBlock(),
-		grpc.WithTimeout(connectTimeout),
+		// todo config network timeout
+		grpc.WithTimeout(time.Second*3),
 		grpc.WithUnaryInterceptor(otgrpc.OpenTracingClientInterceptor(tracer, otgrpc.LogPayloads())),
 		grpc.WithStreamInterceptor(otgrpc.OpenTracingStreamClientInterceptor(tracer, otgrpc.LogPayloads())),
 		grpc.WithDefaultCallOptions(
@@ -116,14 +83,56 @@ func NewClient(url *common.URL) (*Client, error) {
 		return nil, err
 	}
 
-	key := url.GetParam(constant.BEAN_NAME_KEY, "")
-	impl := config.GetConsumerService(key)
+	key := url.GetParam(constant.INTERFACE_KEY, "")
+	impl := config.GetConsumerServiceByInterfaceName(key)
 	invoker := getInvoker(impl, conn)
 
 	return &Client{
 		ClientConn: conn,
 		invoker:    reflect.ValueOf(invoker),
 	}, nil
+}
+
+func clientInit() {
+	// load rootConfig from runtime
+	rootConfig := config.GetRootConfig()
+
+	clientConfig := GetClientConfig()
+	clientConf = &clientConfig
+
+	// check client config and decide whether to use the default config
+	defer func() {
+		if clientConf == nil || len(clientConf.ContentSubType) == 0 {
+			defaultClientConfig := GetDefaultClientConfig()
+			clientConf = &defaultClientConfig
+		}
+		if err := clientConf.Validate(); err != nil {
+			panic(err)
+		}
+	}()
+
+	if rootConfig.Application == nil {
+		return
+	}
+	protocolConf := config.GetRootConfig().Protocols
+
+	if protocolConf == nil {
+		logger.Info("protocol_conf default use dubbo config")
+	} else {
+		grpcConf := protocolConf[GRPC]
+		if grpcConf == nil {
+			logger.Warnf("grpcConf is nil")
+			return
+		}
+		grpcConfByte, err := yaml.Marshal(grpcConf)
+		if err != nil {
+			panic(err)
+		}
+		err = yaml.Unmarshal(grpcConfByte, clientConf)
+		if err != nil {
+			panic(err)
+		}
+	}
 }
 
 func getInvoker(impl interface{}, conn *grpc.ClientConn) interface{} {

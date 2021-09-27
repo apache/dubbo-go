@@ -486,8 +486,9 @@ type consumerConfigurationListener struct {
 
 func newConsumerConfigurationListener(dir *RegistryDirectory) *consumerConfigurationListener {
 	listener := &consumerConfigurationListener{directory: dir}
+	application := config.GetRootConfig().Application
 	listener.InitWith(
-		config.GetConsumerConfig().ApplicationConfig.Name+constant.CONFIGURATORS_SUFFIX,
+		application.Name+constant.CONFIGURATORS_SUFFIX,
 		listener,
 		extension.GetDefaultConfiguratorFunc(),
 	)

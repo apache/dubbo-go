@@ -18,67 +18,51 @@
 package config
 
 import (
-	"net/url"
+	"fmt"
 )
 
 import (
-	"github.com/creasty/defaults"
 	perrors "github.com/pkg/errors"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/config/instance"
 )
 
-// MethodConfig is method level configuration
+// MetadataReportConfig is app level configuration
 type MetadataReportConfig struct {
-	Protocol  string            `required:"true"  yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
-	RemoteRef string            `required:"true"  yaml:"remote_ref"  json:"remote_ref,omitempty" property:"remote_ref"`
-	Params    map[string]string `yaml:"params" json:"params,omitempty" property:"params"`
-	Group     string            `yaml:"group" json:"group,omitempty" property:"group"`
+	Protocol     string `required:"true"  yaml:"protocol"  json:"protocol,omitempty"`
+	Address      string `required:"true" yaml:"address" json:"address"`
+	Username     string `yaml:"username" json:"username,omitempty"`
+	Password     string `yaml:"password" json:"password,omitempty"`
+	Timeout      string `yaml:"timeout" json:"timeout,omitempty"`
+	Group        string `yaml:"group" json:"group,omitempty"`
+	MetadataType string `default:"local" yaml:"metadata-type" json:"metadata-type"`
 }
 
-// nolint
-func (c *MetadataReportConfig) Prefix() string {
+// Prefix dubbo.consumer
+func (MetadataReportConfig) Prefix() string {
 	return constant.MetadataReportPrefix
 }
 
-// UnmarshalYAML unmarshal the MetadataReportConfig by @unmarshal function
-func (c *MetadataReportConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	if err := defaults.Set(c); err != nil {
-		return perrors.WithStack(err)
+func (mc *MetadataReportConfig) Init(rc *RootConfig) error {
+	if mc == nil {
+		return nil
 	}
-	type plain MetadataReportConfig
-	if err := unmarshal((*plain)(c)); err != nil {
-		return perrors.WithStack(err)
-	}
-	return nil
+	mc.MetadataType = rc.Application.MetadataType
+	return mc.StartMetadataReport()
 }
 
-// nolint
-func (c *MetadataReportConfig) ToUrl() (*common.URL, error) {
-	urlMap := make(url.Values)
-
-	if c.Params != nil {
-		for k, v := range c.Params {
-			urlMap.Set(k, v)
-		}
-	}
-
-	rc, ok := GetBaseConfig().GetRemoteConfig(c.RemoteRef)
-
-	if !ok {
-		return nil, perrors.New("Could not find out the remote ref config, name: " + c.RemoteRef)
-	}
-
-	res, err := common.NewURL(rc.Address,
-		common.WithParams(urlMap),
-		common.WithUsername(rc.Username),
-		common.WithPassword(rc.Password),
-		common.WithLocation(rc.Address),
-		common.WithProtocol(c.Protocol),
+func (mc *MetadataReportConfig) ToUrl() (*common.URL, error) {
+	res, err := common.NewURL(mc.Address,
+		common.WithUsername(mc.Username),
+		common.WithPassword(mc.Password),
+		common.WithLocation(mc.Address),
+		common.WithProtocol(mc.Protocol),
+		common.WithParamsValue(constant.METADATATYPE_KEY, mc.MetadataType),
 	)
 	if err != nil || len(res.Protocol) == 0 {
 		return nil, perrors.New("Invalid MetadataReportConfig.")
@@ -87,25 +71,54 @@ func (c *MetadataReportConfig) ToUrl() (*common.URL, error) {
 	return res, nil
 }
 
-func (c *MetadataReportConfig) IsValid() bool {
-	return len(c.Protocol) != 0
+func (mc *MetadataReportConfig) IsValid() bool {
+	return len(mc.Protocol) != 0
 }
 
 // StartMetadataReport: The entry of metadata report start
-func startMetadataReport(metadataType string, metadataReportConfig *MetadataReportConfig) error {
-	if metadataReportConfig == nil || !metadataReportConfig.IsValid() {
+func (mc *MetadataReportConfig) StartMetadataReport() error {
+	if mc == nil || !mc.IsValid() {
 		return nil
 	}
-
-	if metadataType == constant.METACONFIG_REMOTE && len(metadataReportConfig.RemoteRef) == 0 {
-		return perrors.New("MetadataConfig remote ref can not be empty.")
-	}
-
-	if tmpUrl, err := metadataReportConfig.ToUrl(); err == nil {
+	if tmpUrl, err := mc.ToUrl(); err == nil {
 		instance.GetMetadataReportInstance(tmpUrl)
+		return nil
 	} else {
 		return perrors.Wrap(err, "Start MetadataReport failed.")
 	}
+}
 
-	return nil
+func publishServiceDefinition(url *common.URL) {
+	if url.GetParam(constant.METADATATYPE_KEY, "") != constant.REMOTE_METADATA_STORAGE_TYPE {
+		return
+	}
+	if remoteMetadataService, err := extension.GetRemoteMetadataService(); err == nil && remoteMetadataService != nil {
+		remoteMetadataService.PublishServiceDefinition(url)
+	}
+}
+
+//
+// selectMetadataServiceExportedURL get already be exported url
+func selectMetadataServiceExportedURL() *common.URL {
+	var selectedUrl *common.URL
+	metaDataService, err := extension.GetLocalMetadataService("")
+	if err != nil {
+		fmt.Println("selectMetadataServiceExportedURL err = ", err)
+		return nil
+	}
+	urlList, err := metaDataService.GetExportedURLs(constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE)
+	if err != nil {
+		panic(err)
+	}
+	if len(urlList) == 0 {
+		return nil
+	}
+	for _, url := range urlList {
+		selectedUrl = url
+		// rest first
+		if url.Protocol == "rest" {
+			break
+		}
+	}
+	return selectedUrl
 }
