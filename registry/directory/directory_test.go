@@ -40,10 +40,8 @@ import (
 )
 
 func init() {
-	config.SetConsumerConfig(config.ConsumerConfig{
-		BaseConfig: config.BaseConfig{
-			ApplicationConfig: &config.ApplicationConfig{Name: "test-application"},
-		},
+	config.SetRootConfig(config.RootConfig{
+		Application: &config.ApplicationConfig{Name: "test-application"},
 	})
 }
 

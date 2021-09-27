@@ -27,7 +27,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/rest/client"
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/rest/client/client_impl"
@@ -86,9 +85,12 @@ func (rp *RestProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 // Refer create rest service reference
 func (rp *RestProtocol) Refer(url *common.URL) protocol.Invoker {
 	// create rest_invoker
-	requestTimeout := config.GetConsumerConfig().RequestTimeout
-	requestTimeoutStr := url.GetParam(constant.TIMEOUT_KEY, config.GetConsumerConfig().Request_Timeout)
-	connectTimeout := config.GetConsumerConfig().ConnectTimeout
+	// todo fix timeout config
+	// start
+	requestTimeout := time.Duration(3 * time.Second)
+	requestTimeoutStr := url.GetParam(constant.TIMEOUT_KEY, "3s")
+	connectTimeout := requestTimeout // config.GetConsumerConfig().ConnectTimeout
+	// end
 	if t, err := time.ParseDuration(requestTimeoutStr); err == nil {
 		requestTimeout = t
 	}

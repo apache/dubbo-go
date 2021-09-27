@@ -21,12 +21,16 @@ import (
 	gxset "github.com/dubbogo/gost/container/set"
 )
 
+import (
+	"dubbo.apache.org/dubbo-go/v3/common"
+)
+
 // ServiceNameMapping try to build the mapping between application-level service and interface-level service.
 type ServiceNameMapping interface {
 
 	// Map will map the service to this application-level service
-	Map(serviceInterface string, group string, version string, protocol string) error
+	Map(url *common.URL) error
 
 	// Get will return the application-level services
-	Get(serviceInterface string, group string, version string, protocol string) (*gxset.HashSet, error)
+	Get(url *common.URL) (*gxset.HashSet, error)
 }

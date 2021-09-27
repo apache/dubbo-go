@@ -45,13 +45,14 @@ const (
 	DEFAULT_REST_CLIENT        = "resty"
 	DEFAULT_REST_SERVER        = "go-restful"
 	DEFAULT_PORT               = 20000
+	DEFAULT_METADATAPORT       = 20005
 	DEFAULT_SERIALIZATION      = HESSIAN2_SERIALIZATION
 )
 
 const (
 	DEFAULT_KEY               = "default"
 	PREFIX_DEFAULT_KEY        = "default."
-	DEFAULT_SERVICE_FILTERS   = EchoFilterKey + "," + TokenFilterKey + "," + AccessLogFilterKey + "," + TpsLimitFilterKey + "," + GenericServiceFilterKey + "," + ExecuteLimitFilterKey + "," + GracefulShutdownProviderFilterKey
+	DEFAULT_SERVICE_FILTERS   = EchoFilterKey + "," + MetricsFilterKey + "," + TokenFilterKey + "," + AccessLogFilterKey + "," + TpsLimitFilterKey + "," + GenericServiceFilterKey + "," + ExecuteLimitFilterKey + "," + GracefulShutdownProviderFilterKey
 	DEFAULT_REFERENCE_FILTERS = GracefulShutdownConsumerFilterKey
 	GENERIC_REFERENCE_FILTERS = GenericFilterKey
 	GENERIC                   = "$invoke"

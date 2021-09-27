@@ -26,7 +26,9 @@ import (
 
 import (
 	nacosClient "github.com/dubbogo/gost/database/kv/nacos"
+
 	"github.com/nacos-group/nacos-sdk-go/vo"
+
 	perrors "github.com/pkg/errors"
 )
 
@@ -168,7 +170,9 @@ func (nr *nacosRegistry) subscribe(conf *common.URL) (registry.Listener, error) 
 
 // subscribe from registry
 func (nr *nacosRegistry) Subscribe(url *common.URL, notifyListener registry.NotifyListener) error {
-	role, _ := strconv.Atoi(nr.URL.GetParam(constant.ROLE_KEY, ""))
+	// TODO
+	// role, _ := strconv.Atoi(nr.URL.GetParam(constant.ROLE_KEY, ""))
+	role, _ := strconv.Atoi(url.GetParam(constant.ROLE_KEY, ""))
 	if role != common.CONSUMER {
 		return nil
 	}

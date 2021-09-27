@@ -14,102 +14,124 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package config
 
 import (
-	"log"
+	"fmt"
+	"os"
+	"path/filepath"
+	"runtime"
+	"sort"
+	"strings"
 )
 
-type LoaderInitOption interface {
-	init()
-	apply()
+import (
+	"github.com/pkg/errors"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+)
+
+type loaderConf struct {
+	// loaderConf file type default yaml
+	genre string
+	// loaderConf file path default ./conf
+	path string
+	// loaderConf file delim default .
+	delim string
 }
 
-type optionFunc struct {
-	initFunc  func()
-	applyFunc func()
-}
-
-func (f *optionFunc) init() {
-	f.initFunc()
-}
-
-func (f *optionFunc) apply() {
-	f.applyFunc()
-}
-
-func ConsumerInitOption(confConFile string) LoaderInitOption {
-	return consumerInitOption(confConFile, false)
-}
-
-func ConsumerMustInitOption(confConFile string) LoaderInitOption {
-	return consumerInitOption(confConFile, true)
-}
-
-func consumerInitOption(confConFile string, must bool) LoaderInitOption {
-	return &optionFunc{
-		func() {
-			if consumerConfig != nil && !must {
-				return
-			}
-			if errCon := ConsumerInit(confConFile); errCon != nil {
-				log.Printf("[consumerInit] %#v", errCon)
-				consumerConfig = nil
-			} else if confBaseFile == "" {
-				// Check if there are some important key fields missing,
-				// if so, we set a default value for it
-				setDefaultValue(consumerConfig)
-				// Even though baseConfig has been initialized, we override it
-				// because we think read from config file is correct config
-				baseConfig = &consumerConfig.BaseConfig
-			}
-		},
-		func() {
-			loadConsumerConfig()
-		},
+func NewLoaderConf(opts ...LoaderConfOption) *loaderConf {
+	configFilePath := "../conf/dubbogo.yaml"
+	if configFilePathFromEnv := os.Getenv(constant.CONFIG_FILE_ENV_KEY); configFilePathFromEnv != "" {
+		configFilePath = configFilePathFromEnv
 	}
-}
 
-func ProviderInitOption(confProFile string) LoaderInitOption {
-	return providerInitOption(confProFile, false)
-}
-
-func ProviderMustInitOption(confProFile string) LoaderInitOption {
-	return providerInitOption(confProFile, true)
-}
-
-func providerInitOption(confProFile string, must bool) LoaderInitOption {
-	return &optionFunc{
-		func() {
-			if providerConfig != nil && !must {
-				return
-			}
-			if errPro := ProviderInit(confProFile); errPro != nil {
-				log.Printf("[providerInit] %#v", errPro)
-				providerConfig = nil
-			} else if confBaseFile == "" {
-				// Check if there are some important key fields missing,
-				// if so, we set a default value for it
-				setDefaultValue(providerConfig)
-				// Even though baseConfig has been initialized, we override it
-				// because we think read from config file is correct config
-				baseConfig = &providerConfig.BaseConfig
-			}
-		},
-		func() {
-			loadProviderConfig()
-		},
+	conf := &loaderConf{
+		genre: "yaml",
+		path:  configFilePath,
+		delim: ".",
 	}
+
+	for _, opt := range opts {
+		opt.apply(conf)
+	}
+	return conf
 }
 
-func RouterInitOption(crf string) LoaderInitOption {
-	return &optionFunc{
-		func() {
-			confRouterFile = crf
-		},
-		func() {
-			initRouter()
-		},
+type LoaderConfOption interface {
+	apply(vc *loaderConf)
+}
+
+type loaderConfigFunc func(*loaderConf)
+
+func (fn loaderConfigFunc) apply(vc *loaderConf) {
+	fn(vc)
+}
+
+// WithGenre set loaderConf Genre
+func WithGenre(genre string) LoaderConfOption {
+	return loaderConfigFunc(func(conf *loaderConf) {
+		g := strings.ToLower(genre)
+		if err := checkGenre(g); err != nil {
+			panic(err)
+		}
+		conf.genre = g
+	})
+}
+
+// WithPath set loaderConf path
+func WithPath(path string) LoaderConfOption {
+	return loaderConfigFunc(func(conf *loaderConf) {
+		conf.path = absolutePath(path)
+	})
+}
+
+func WithDelim(delim string) LoaderConfOption {
+	return loaderConfigFunc(func(conf *loaderConf) {
+		conf.delim = delim
+	})
+}
+
+// absolutePath get absolut path
+func absolutePath(inPath string) string {
+
+	if inPath == "$HOME" || strings.HasPrefix(inPath, "$HOME"+string(os.PathSeparator)) {
+		inPath = userHomeDir() + inPath[5:]
 	}
+
+	if filepath.IsAbs(inPath) {
+		return filepath.Clean(inPath)
+	}
+
+	p, err := filepath.Abs(inPath)
+	if err == nil {
+		return filepath.Clean(p)
+	}
+
+	return ""
+}
+
+//userHomeDir get gopath
+func userHomeDir() string {
+	if runtime.GOOS == "windows" {
+		home := os.Getenv("HOMEDRIVE") + os.Getenv("HOMEPATH")
+		if home == "" {
+			home = os.Getenv("USERPROFILE")
+		}
+		return home
+	}
+	return os.Getenv("HOME")
+}
+
+// checkGenre check Genre
+func checkGenre(genre string) error {
+	genres := []string{"json", "toml", "yaml", "yml"}
+	sort.Strings(genres)
+	idx := sort.SearchStrings(genres, genre)
+	if genres[idx] != genre {
+		return errors.New(fmt.Sprintf("no support %s", genre))
+	}
+	return nil
 }

@@ -24,7 +24,9 @@ import (
 
 import (
 	"github.com/magiconair/properties"
+
 	perrors "github.com/pkg/errors"
+
 	"gopkg.in/yaml.v2"
 )
 

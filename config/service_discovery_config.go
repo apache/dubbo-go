@@ -33,6 +33,10 @@ type ServiceDiscoveryConfig struct {
 	RemoteRef string `yaml:"remote_ref" json:"remote_ref,omitempty" property:"remote_ref"`
 }
 
-func (c *ServiceDiscoveryConfig) Prefix() string {
+func (ServiceDiscoveryConfig) Prefix() string {
 	return constant.ServiceDiscPrefix
+}
+
+func initServiceDiscoveryConfig(rc *RootConfig) error {
+	return nil
 }
