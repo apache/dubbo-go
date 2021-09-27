@@ -23,6 +23,8 @@ classes
 vendor/
 logs/
 .vscode/
+cache
+log/
 
 # unit test
 remoting/zookeeper/zookeeper-4unittest/
