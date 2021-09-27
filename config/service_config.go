@@ -410,7 +410,7 @@ func (svc *ServiceConfig) GetExportedUrls() []*common.URL {
 }
 
 func (svc *ServiceConfig) publishServiceDefinition(url *common.URL) {
-	//svc.rootConfig.MetadataReportConfig.
+	//svc.rootConfig.MetadataReport.
 	if remoteMetadataService, err := extension.GetRemoteMetadataService(); err == nil && remoteMetadataService != nil {
 		remoteMetadataService.PublishServiceDefinition(url)
 	}

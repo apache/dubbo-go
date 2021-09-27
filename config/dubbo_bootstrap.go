@@ -37,16 +37,16 @@ var (
 func GetInstance(opts ...RootConfigOpt) *RootConfig {
 	registerPOJO()
 	rc := &RootConfig{
-		ConfigCenter:         GetConfigCenterInstance(),
-		ServiceDiscoveries:   make(map[string]*ServiceDiscoveryConfig),
-		MetadataReportConfig: &MetadataReportConfig{},
-		Application:          GetApplicationInstance(),
-		Registries:           make(map[string]*RegistryConfig),
-		Protocols:            GetProtocolsInstance(),
-		Provider:             GetProviderInstance(),
-		Consumer:             GetConsumerInstance(),
-		MetricConfig:         &MetricConfig{},
-		Logger:               GetLoggerConfigInstance(),
+		ConfigCenter:       GetConfigCenterInstance(),
+		ServiceDiscoveries: make(map[string]*ServiceDiscoveryConfig),
+		MetadataReport:     &MetadataReportConfig{},
+		Application:        GetApplicationInstance(),
+		Registries:         make(map[string]*RegistryConfig),
+		Protocols:          GetProtocolsInstance(),
+		Provider:           GetProviderInstance(),
+		Consumer:           GetConsumerInstance(),
+		Metric:             &MetricConfig{},
+		Logger:             GetLoggerConfigInstance(),
 	}
 	for _, opt := range opts {
 		opt(rc)
@@ -80,7 +80,7 @@ func (rc *RootConfig) Init() error {
 	if err := initServiceDiscoveryConfig(rc); err != nil {
 		return err
 	}
-	if err := rc.MetadataReportConfig.Init(rc); err != nil {
+	if err := rc.MetadataReport.Init(rc); err != nil {
 		return err
 	}
 	if err := initMetricConfig(rc); err != nil {

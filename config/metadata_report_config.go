@@ -65,7 +65,7 @@ func (mc *MetadataReportConfig) ToUrl() (*common.URL, error) {
 		common.WithParamsValue(constant.METADATATYPE_KEY, mc.MetadataType),
 	)
 	if err != nil || len(res.Protocol) == 0 {
-		return nil, perrors.New("Invalid MetadataReportConfig.")
+		return nil, perrors.New("Invalid MetadataReport Config.")
 	}
 	res.SetParam("metadata", res.Protocol)
 	return res, nil
