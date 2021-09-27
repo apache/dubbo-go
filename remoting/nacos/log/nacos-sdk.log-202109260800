@@ -1,9 +1,0 @@
-2021-09-26T17:54:01.705+0800	[31mERROR[0m	login has error unknown user!
-2021-09-26T17:54:01.705+0800	[34mINFO[0m	udp server start, port: 55385
-2021-09-26T17:54:01.705+0800	[34mINFO[0m	logDir:</Users/laurence/Desktop/workplace/dubbogo/dubbo-go/remoting/nacos/log>   cacheDir:</Users/laurence/Desktop/workplace/dubbogo/dubbo-go/remoting/nacos/cache>
-2021-09-26T18:05:24.602+0800	[31mERROR[0m	login has error unknown user!
-2021-09-26T18:05:24.604+0800	[34mINFO[0m	udp server start, port: 54988
-2021-09-26T18:05:24.605+0800	[34mINFO[0m	logDir:</Users/laurence/Desktop/workplace/dubbogo/dubbo-go/remoting/nacos/log>   cacheDir:</Users/laurence/Desktop/workplace/dubbogo/dubbo-go/remoting/nacos/cache>
-2021-09-26T18:10:35.126+0800	[31mERROR[0m	login has error unknown user!
-2021-09-26T18:10:35.129+0800	[34mINFO[0m	udp server start, port: 55071
-2021-09-26T18:10:35.130+0800	[34mINFO[0m	logDir:</Users/laurence/Desktop/workplace/dubbogo/dubbo-go/remoting/nacos/log>   cacheDir:</Users/laurence/Desktop/workplace/dubbogo/dubbo-go/remoting/nacos/cache>
