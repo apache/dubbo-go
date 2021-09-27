@@ -25,9 +25,7 @@ import (
 )
 
 import (
-	"github.com/nacos-group/nacos-sdk-go/clients"
-	"github.com/nacos-group/nacos-sdk-go/clients/config_client"
-	"github.com/nacos-group/nacos-sdk-go/clients/naming_client"
+	nacosClient "github.com/dubbogo/gost/database/kv/nacos"
 	nacosConstant "github.com/nacos-group/nacos-sdk-go/common/constant"
 	perrors "github.com/pkg/errors"
 )
@@ -38,94 +36,92 @@ import (
 	"github.com/apache/dubbo-go/config"
 )
 
-// NewNacosConfigClient read the config from url and build an instance
-func NewNacosConfigClient(url *common.URL) (config_client.IConfigClient, error) {
-	nacosConfig, err := getNacosConfig(url)
+// NewNacosConfigClientByUrl reads the config from url and builds an instance
+func NewNacosConfigClientByUrl(url *common.URL) (*nacosClient.NacosConfigClient, error) {
+	sc, cc, err := GetNacosConfig(url)
 	if err != nil {
 		return nil, err
 	}
-	return clients.CreateConfigClient(nacosConfig)
+	return nacosClient.NewNacosConfigClient(getNacosClientName(), true, sc, cc)
 }
 
-// getNacosConfig will return the nacos config
-func getNacosConfig(url *common.URL) (map[string]interface{}, error) {
+// GetNacosConfig will return the nacos config
+func GetNacosConfig(url *common.URL) ([]nacosConstant.ServerConfig, nacosConstant.ClientConfig, error) {
 	if url == nil {
-		return nil, perrors.New("url is empty!")
+		return []nacosConstant.ServerConfig{}, nacosConstant.ClientConfig{}, perrors.New("url is empty!")
 	}
+
 	if len(url.Location) == 0 {
-		return nil, perrors.New("url.location is empty!")
+		return []nacosConstant.ServerConfig{}, nacosConstant.ClientConfig{},
+			perrors.New("url.location is empty!")
 	}
-	configMap := make(map[string]interface{}, 2)
 
 	addresses := strings.Split(url.Location, ",")
 	serverConfigs := make([]nacosConstant.ServerConfig, 0, len(addresses))
 	for _, addr := range addresses {
 		ip, portStr, err := net.SplitHostPort(addr)
 		if err != nil {
-			return nil, perrors.WithMessagef(err, "split [%s] ", addr)
+			return []nacosConstant.ServerConfig{}, nacosConstant.ClientConfig{},
+				perrors.WithMessagef(err, "split [%s] ", addr)
 		}
 		port, _ := strconv.Atoi(portStr)
-		serverConfigs = append(serverConfigs, nacosConstant.ServerConfig{
-			IpAddr: ip,
-			Port:   uint64(port),
-		})
+		serverConfigs = append(serverConfigs, nacosConstant.ServerConfig{IpAddr: ip, Port: uint64(port)})
 	}
-	configMap["serverConfigs"] = serverConfigs
 
-	var clientConfig nacosConstant.ClientConfig
-	timeout, err := time.ParseDuration(url.GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT))
+	timeout := url.GetParamDuration(constant.CONFIG_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT)
+
+	clientConfig := nacosConstant.ClientConfig{
+		TimeoutMs:            uint64(int32(timeout / time.Millisecond)),
+		BeatInterval:         url.GetParamInt(constant.NACOS_BEAT_INTERVAL_KEY, 5000),
+		NamespaceId:          url.GetParam(constant.NACOS_NAMESPACE_ID, ""),
+		AppName:              url.GetParam(constant.NACOS_APP_NAME_KEY, ""),
+		Endpoint:             url.GetParam(constant.NACOS_ENDPOINT, ""),
+		RegionId:             url.GetParam(constant.NACOS_REGION_ID_KEY, ""),
+		AccessKey:            url.GetParam(constant.NACOS_ACCESS_KEY, ""),
+		SecretKey:            url.GetParam(constant.NACOS_SECRET_KEY, ""),
+		OpenKMS:              url.GetParamBool(constant.NACOS_OPEN_KMS_KEY, false),
+		CacheDir:             url.GetParam(constant.NACOS_CACHE_DIR_KEY, ""),
+		UpdateThreadNum:      url.GetParamByIntValue(constant.NACOS_UPDATE_THREAD_NUM_KEY, 20),
+		NotLoadCacheAtStart:  url.GetParamBool(constant.NACOS_NOT_LOAD_LOCAL_CACHE, true),
+		UpdateCacheWhenEmpty: url.GetParamBool(constant.NACOS_Update_Cache_When_Empty_KEY, false),
+		Username:             url.GetParam(constant.NACOS_USERNAME, ""),
+		Password:             url.GetParam(constant.NACOS_PASSWORD, ""),
+		LogDir:               url.GetParam(constant.NACOS_LOG_DIR_KEY, ""),
+		RotateTime:           url.GetParam(constant.NACOS_LOG_Rotate_Time_KEY, "24h"),
+		MaxAge:               url.GetParamInt(constant.NACOS_LOG_MAX_AGE_KEY, 3),
+		LogLevel:             url.GetParam(constant.NACOS_LOG_LEVEL_KEY, "info"),
+	}
+	return serverConfigs, clientConfig, nil
+}
+
+// NewNacosClient create an instance with the config
+func NewNacosClient(rc *config.RemoteConfig) (*nacosClient.NacosNamingClient, error) {
+	url, err := rc.ToURL()
 	if err != nil {
 		return nil, err
 	}
-	clientConfig.TimeoutMs = uint64(timeout.Seconds() * 1000)
-	clientConfig.ListenInterval = 2 * clientConfig.TimeoutMs
-	clientConfig.CacheDir = url.GetParam(constant.NACOS_CACHE_DIR_KEY, "")
-	clientConfig.LogDir = url.GetParam(constant.NACOS_LOG_DIR_KEY, "")
-	clientConfig.Endpoint = url.GetParam(constant.NACOS_ENDPOINT, "")
-	clientConfig.NamespaceId = url.GetParam(constant.NACOS_NAMESPACE_ID, "")
-	clientConfig.Username = url.GetParam(constant.NACOS_USERNAME, "")
-	clientConfig.Password = url.GetParam(constant.NACOS_PASSWORD, "")
-	clientConfig.NamespaceId = url.GetParam(constant.NACOS_NAMESPACE_ID, "")
-	clientConfig.NotLoadCacheAtStart = true
-	configMap["clientConfig"] = clientConfig
+	scs, cc, err := GetNacosConfig(url)
 
-	return configMap, nil
+	if err != nil {
+		return nil, err
+	}
+	return nacosClient.NewNacosNamingClient(getNacosClientName(), true, scs, cc)
 }
 
-// NewNacosClient creates an instance with the config
-func NewNacosClient(rc *config.RemoteConfig) (naming_client.INamingClient, error) {
-	if len(rc.Address) == 0 {
-		return nil, perrors.New("nacos address is empty!")
+// NewNacosClientByUrl created
+func NewNacosClientByUrl(url *common.URL) (*nacosClient.NacosNamingClient, error) {
+	scs, cc, err := GetNacosConfig(url)
+	if err != nil {
+		return nil, err
 	}
-	configMap := make(map[string]interface{}, 2)
+	return nacosClient.NewNacosNamingClient(getNacosClientName(), true, scs, cc)
+}
 
-	addresses := strings.Split(rc.Address, ",")
-	serverConfigs := make([]nacosConstant.ServerConfig, 0, len(addresses))
-	for _, addr := range addresses {
-		ip, portStr, err := net.SplitHostPort(addr)
-		if err != nil {
-			return nil, perrors.WithMessagef(err, "split [%s] ", addr)
-		}
-		port, _ := strconv.Atoi(portStr)
-		serverConfigs = append(serverConfigs, nacosConstant.ServerConfig{
-			IpAddr: ip,
-			Port:   uint64(port),
-		})
+// getNacosClientName get nacos client name
+func getNacosClientName() string {
+	name := config.GetApplicationConfig().Name
+	if len(name) > 0 {
+		return name
 	}
-	configMap["serverConfigs"] = serverConfigs
-
-	var clientConfig nacosConstant.ClientConfig
-	timeout := rc.Timeout()
-	clientConfig.TimeoutMs = uint64(timeout.Nanoseconds() / constant.MsToNanoRate)
-	clientConfig.ListenInterval = 2 * clientConfig.TimeoutMs
-	clientConfig.CacheDir = rc.GetParam(constant.NACOS_CACHE_DIR_KEY, "")
-	clientConfig.LogDir = rc.GetParam(constant.NACOS_LOG_DIR_KEY, "")
-	clientConfig.Endpoint = rc.Address
-	clientConfig.Username = rc.Username
-	clientConfig.Password = rc.Password
-	clientConfig.NotLoadCacheAtStart = true
-	clientConfig.NamespaceId = rc.GetParam(constant.NACOS_NAMESPACE_ID, "")
-	configMap["clientConfig"] = clientConfig
-
-	return clients.CreateNamingClient(configMap)
+	return "nacos-client"
 }

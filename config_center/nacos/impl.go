@@ -24,6 +24,7 @@ import (
 
 import (
 	gxset "github.com/dubbogo/gost/container/set"
+	nacosClient "github.com/dubbogo/gost/database/kv/nacos"
 	"github.com/nacos-group/nacos-sdk-go/vo"
 	perrors "github.com/pkg/errors"
 )
@@ -37,7 +38,6 @@ import (
 )
 
 const (
-	nacosClientName = "nacos config_center"
 	// the number is a little big tricky
 	// it will be used in query which looks up all keys with the target group
 	// now, one key represents one application
@@ -53,7 +53,7 @@ type nacosDynamicConfiguration struct {
 	wg           sync.WaitGroup
 	cltLock      sync.Mutex
 	done         chan struct{}
-	client       *NacosClient
+	client       *nacosClient.NacosConfigClient
 	keyListeners sync.Map
 	parser       parser.ConfigurationParser
 }
@@ -64,7 +64,7 @@ func newNacosDynamicConfiguration(url *common.URL) (*nacosDynamicConfiguration, 
 		url:      url,
 		done:     make(chan struct{}),
 	}
-	err := ValidateNacosClient(c, WithNacosName(nacosClientName))
+	err := ValidateNacosClient(c)
 	if err != nil {
 		logger.Errorf("nacos client start error ,error message is %v", err)
 		return nil, err
@@ -100,7 +100,7 @@ func (n *nacosDynamicConfiguration) PublishConfig(key string, group string, valu
 
 	group = n.resolvedGroup(group)
 
-	ok, err := (*n.client.Client()).PublishConfig(vo.ConfigParam{
+	ok, err := n.client.Client().PublishConfig(vo.ConfigParam{
 		DataId:  key,
 		Group:   group,
 		Content: value,
@@ -118,7 +118,7 @@ func (n *nacosDynamicConfiguration) PublishConfig(key string, group string, valu
 // GetConfigKeysByGroup will return all keys with the group
 func (n *nacosDynamicConfiguration) GetConfigKeysByGroup(group string) (*gxset.HashSet, error) {
 	group = n.resolvedGroup(group)
-	page, err := (*n.client.Client()).SearchConfig(vo.SearchConfigParam{
+	page, err := n.client.Client().SearchConfig(vo.SearchConfigParam{
 		Search: "accurate",
 		Group:  group,
 		PageNo: 1,
@@ -142,7 +142,7 @@ func (n *nacosDynamicConfiguration) GetRule(key string, opts ...config_center.Op
 	for _, opt := range opts {
 		opt(tmpOpts)
 	}
-	content, err := (*n.client.Client()).GetConfig(vo.ConfigParam{
+	content, err := n.client.Client().GetConfig(vo.ConfigParam{
 		DataId: key,
 		Group:  n.resolvedGroup(tmpOpts.Group),
 	})
@@ -164,12 +164,12 @@ func (n *nacosDynamicConfiguration) SetParser(p parser.ConfigurationParser) {
 }
 
 // NacosClient Get Nacos Client
-func (n *nacosDynamicConfiguration) NacosClient() *NacosClient {
+func (n *nacosDynamicConfiguration) NacosClient() *nacosClient.NacosConfigClient {
 	return n.client
 }
 
 // SetNacosClient Set Nacos Client
-func (n *nacosDynamicConfiguration) SetNacosClient(client *NacosClient) {
+func (n *nacosDynamicConfiguration) SetNacosClient(client *nacosClient.NacosConfigClient) {
 	n.cltLock.Lock()
 	n.client = client
 	n.cltLock.Unlock()
@@ -217,11 +217,7 @@ func (n *nacosDynamicConfiguration) IsAvailable() bool {
 }
 
 func (n *nacosDynamicConfiguration) closeConfigs() {
-	n.cltLock.Lock()
-	client := n.client
-	n.client = nil
-	n.cltLock.Unlock()
-	// Close the old client first to close the tmp node
-	client.Close()
-	logger.Infof("begin to close provider n client")
+	// Close the old configClient first to close the tmp node
+	n.client.Close()
+	logger.Infof("begin to close provider n configClient")
 }

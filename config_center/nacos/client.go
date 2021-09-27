@@ -18,173 +18,65 @@
 package nacos
 
 import (
-	"strconv"
-	"strings"
 	"sync"
 	"time"
 )
 
 import (
-	"github.com/nacos-group/nacos-sdk-go/clients"
-	"github.com/nacos-group/nacos-sdk-go/clients/config_client"
-	nacosconst "github.com/nacos-group/nacos-sdk-go/common/constant"
+	nacosClient "github.com/dubbogo/gost/database/kv/nacos"
 	perrors "github.com/pkg/errors"
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
+	"github.com/apache/dubbo-go/remoting/nacos"
 )
 
-// NacosClient Nacos client
+// NacosClient Nacos configClient
 type NacosClient struct {
-	name       string
-	NacosAddrs []string
-	sync.Mutex // for Client
-	client     *config_client.IConfigClient
-	exit       chan struct{}
-	Timeout    time.Duration
-	once       sync.Once
-	onceClose  func()
+	name         string
+	NacosAddrs   []string
+	sync.Mutex   // for Client
+	configClient *nacosClient.NacosConfigClient
+	exit         chan struct{}
+	Timeout      time.Duration
+	once         sync.Once
+	onceClose    func()
 }
 
 // Client Get Client
-func (n *NacosClient) Client() *config_client.IConfigClient {
-	return n.client
+func (n *NacosClient) Client() *nacosClient.NacosConfigClient {
+	n.Lock()
+	defer n.Unlock()
+	return n.configClient
 }
 
-// SetClient Set client
-func (n *NacosClient) SetClient(client *config_client.IConfigClient) {
+// SetClient Set configClient
+func (n *NacosClient) SetClient(configClient *nacosClient.NacosConfigClient) {
 	n.Lock()
-	n.client = client
+	n.configClient = configClient
 	n.Unlock()
 }
 
-type option func(*options)
-
-type options struct {
-	nacosName string
-	//client    *NacosClient
-}
-
-// WithNacosName Set nacos name
-func WithNacosName(name string) option {
-	return func(opt *options) {
-		opt.nacosName = name
-	}
-}
-
-// ValidateNacosClient Validate nacos client , if null then create it
-func ValidateNacosClient(container nacosClientFacade, opts ...option) error {
+// ValidateNacosClient Validate nacos configClient , if null then create it
+func ValidateNacosClient(container nacosClientFacade) error {
 	if container == nil {
 		return perrors.Errorf("container can not be null")
 	}
-	os := &options{}
-	for _, opt := range opts {
-		opt(os)
-	}
-
 	url := container.GetURL()
-	timeout, err := time.ParseDuration(url.GetParam(constant.CONFIG_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT))
-	if err != nil {
-		logger.Errorf("invalid timeout config %+v,got err %+v",
-			url.GetParam(constant.CONFIG_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT), err)
-		return perrors.WithMessagef(err, "newNacosClient(address:%+v)", url.Location)
-	}
-	nacosAddresses := strings.Split(url.Location, ",")
-	if container.NacosClient() == nil {
-		//in dubbo ,every registry only connect one node ,so this is []string{r.Address}
-		newClient, err := newNacosClient(os.nacosName, nacosAddresses, timeout, url)
+	if container.NacosClient() == nil || container.NacosClient().Client() == nil {
+		// in dubbo ,every registry only connect one node ,so this is []string{r.Address}
+		newClient, err := nacos.NewNacosConfigClientByUrl(url)
 		if err != nil {
-			logger.Errorf("newNacosClient(name{%s}, nacos address{%v}, timeout{%d}) = error{%v}",
-				os.nacosName, url.Location, timeout.String(), err)
+			logger.Errorf("ValidateNacosClient(name{%s}, nacos address{%v} = error{%v}", url.Location, err)
 			return perrors.WithMessagef(err, "newNacosClient(address:%+v)", url.Location)
 		}
 		container.SetNacosClient(newClient)
 	}
-
-	if container.NacosClient().Client() == nil {
-		configClient, err := initNacosConfigClient(nacosAddresses, timeout, url)
-		if err != nil {
-			logger.Errorf("initNacosConfigClient(addr:%+v,timeout:%v,url:%v) = err %+v",
-				nacosAddresses, timeout.String(), url, err)
-			return perrors.WithMessagef(err, "newNacosClient(address:%+v)", url.Location)
-		}
-		container.NacosClient().SetClient(&configClient)
-
-	}
-
-	return perrors.WithMessagef(nil, "newNacosClient(address:%+v)", url.PrimitiveURL)
+	return nil
 }
 
-func newNacosClient(name string, nacosAddrs []string, timeout time.Duration, url *common.URL) (*NacosClient, error) {
-	var (
-		err error
-		n   *NacosClient
-	)
-
-	n = &NacosClient{
-		name:       name,
-		NacosAddrs: nacosAddrs,
-		Timeout:    timeout,
-		exit:       make(chan struct{}),
-		onceClose: func() {
-			close(n.exit)
-		},
-	}
-
-	configClient, err := initNacosConfigClient(nacosAddrs, timeout, url)
-	if err != nil {
-		logger.Errorf("initNacosConfigClient(addr:%+v,timeout:%v,url:%v) = err %+v",
-			nacosAddrs, timeout.String(), url, err)
-		return n, perrors.WithMessagef(err, "newNacosClient(address:%+v)", url.Location)
-	}
-	n.SetClient(&configClient)
-
-	return n, nil
-}
-
-func initNacosConfigClient(nacosAddrs []string, timeout time.Duration, url *common.URL) (config_client.IConfigClient, error) {
-	var svrConfList []nacosconst.ServerConfig
-	for _, nacosAddr := range nacosAddrs {
-		split := strings.Split(nacosAddr, ":")
-		port, err := strconv.ParseUint(split[1], 10, 64)
-		if err != nil {
-			logger.Errorf("strconv.ParseUint(nacos addr port:%+v) = error %+v", split[1], err)
-			continue
-		}
-		svrconf := nacosconst.ServerConfig{
-			IpAddr: split[0],
-			Port:   port,
-		}
-		svrConfList = append(svrConfList, svrconf)
-	}
-
-	return clients.CreateConfigClient(map[string]interface{}{
-		"serverConfigs": svrConfList,
-		"clientConfig": nacosconst.ClientConfig{
-			TimeoutMs:           uint64(int32(timeout / time.Millisecond)),
-			BeatInterval:        url.GetParamInt(constant.NACOS_BEAT_INTERVAL_KEY, 5000),
-			NamespaceId:         url.GetParam(constant.NACOS_NAMESPACE_ID, ""),
-			AppName:             url.GetParam(constant.NACOS_APP_NAME_KEY, ""),
-			Endpoint:            url.GetParam(constant.NACOS_ENDPOINT, ""),
-			RegionId:            url.GetParam(constant.NACOS_REGION_ID_KEY, ""),
-			AccessKey:           url.GetParam(constant.NACOS_ACCESS_KEY, ""),
-			SecretKey:           url.GetParam(constant.NACOS_SECRET_KEY, ""),
-			OpenKMS:             url.GetParamBool(constant.NACOS_OPEN_KMS_KEY, false),
-			CacheDir:            url.GetParam(constant.NACOS_CACHE_DIR_KEY, ""),
-			UpdateThreadNum:     url.GetParamByIntValue(constant.NACOS_UPDATE_THREAD_NUM_KEY, 20),
-			NotLoadCacheAtStart: url.GetParamBool(constant.NACOS_NOT_LOAD_LOCAL_CACHE, true),
-			Username:            url.GetParam(constant.NACOS_USERNAME, ""),
-			Password:            url.GetParam(constant.NACOS_PASSWORD, ""),
-			LogDir:              url.GetParam(constant.NACOS_LOG_DIR_KEY, ""),
-			LogLevel:            url.GetParam(constant.NACOS_LOG_LEVEL_KEY, "info"),
-		},
-	})
-}
-
-// Done Get nacos client exit signal
+// Done Get nacos configClient exit signal
 func (n *NacosClient) Done() <-chan struct{} {
 	return n.exit
 }
@@ -200,7 +92,7 @@ func (n *NacosClient) stop() bool {
 	return false
 }
 
-// NacosClientValid Get nacos client valid status
+// NacosClientValid Get nacos configClient valid status
 func (n *NacosClient) NacosClientValid() bool {
 	select {
 	case <-n.exit:
@@ -218,7 +110,7 @@ func (n *NacosClient) NacosClientValid() bool {
 	return valid
 }
 
-// Close Close nacos client , then set null
+// Close Close nacos configClient , then set null
 func (n *NacosClient) Close() {
 	if n == nil {
 		return

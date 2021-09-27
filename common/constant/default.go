@@ -17,6 +17,8 @@
 
 package constant
 
+import "time"
+
 const (
 	DUBBO             = "dubbo"
 	PROVIDER_PROTOCOL = "provider"
@@ -46,6 +48,7 @@ const (
 	DEFAULT_REST_SERVER        = "go-restful"
 	DEFAULT_PORT               = 20000
 	DEFAULT_SERIALIZATION      = HESSIAN2_SERIALIZATION
+	DEFAULT_PARAM_TIME         = 3 * time.Second
 )
 
 const (

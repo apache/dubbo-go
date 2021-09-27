@@ -106,7 +106,7 @@ func (b *configCenter) toURL(baseConfig BaseConfig) (*common.URL, error) {
 		return nil, perrors.New("Could not find out the remote ref config, name: " + remoteRef)
 	}
 
-	newURL, err := rc.toURL()
+	newURL, err := rc.ToURL()
 	if err == nil {
 		newURL.SetParams(baseConfig.ConfigCenterConfig.GetURLMap())
 	}
