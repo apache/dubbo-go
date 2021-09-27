@@ -27,6 +27,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 )
 
@@ -71,8 +72,19 @@ func (rc *RootConfig) Init() error {
 	if err := rc.Application.Init(); err != nil {
 		return err
 	}
-	if err := initProtocolsConfig(rc); err != nil {
-		return err
+
+	// init protocol
+	protocols := rc.Protocols
+	if len(protocols) <= 0 {
+		protocol := new(ProtocolConfig)
+		protocols = make(map[string]*ProtocolConfig, 1)
+		protocols[constant.DUBBO] = protocol
+		rc.Protocols = protocols
+	}
+	for _, protocol := range protocols {
+		if err := protocol.Init(); err != nil {
+			return err
+		}
 	}
 	if err := initRegistryConfig(rc); err != nil {
 		return err
