@@ -17,7 +17,7 @@ require (
 	github.com/fsnotify/fsnotify v1.5.1
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-co-op/gocron v0.1.1
-	github.com/go-playground/validator/v10 v10.7.0
+	github.com/go-playground/validator/v10 v10.9.0
 	github.com/go-resty/resty/v2 v2.3.0
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/mock v1.4.4
