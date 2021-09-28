@@ -86,9 +86,17 @@ func (rc *RootConfig) Init() error {
 			return err
 		}
 	}
-	if err := initRegistryConfig(rc); err != nil {
-		return err
+
+	// init registry
+	registries := rc.Registries
+	if registries != nil {
+		for _, reg := range registries {
+			if err := reg.Init(); err != nil {
+				return err
+			}
+		}
 	}
+
 	if err := initServiceDiscoveryConfig(rc); err != nil {
 		return err
 	}

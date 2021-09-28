@@ -63,24 +63,12 @@ func (RegistryConfig) Prefix() string {
 	return constant.RegistryConfigPrefix
 }
 
-func (c *RegistryConfig) check() error {
+func (c *RegistryConfig) Init() error {
 	if err := defaults.Set(c); err != nil {
 		return err
 	}
 	c.translateRegistryAddress()
 	return verify(c)
-}
-
-// initRegistryConfig init registry config
-func initRegistryConfig(rc *RootConfig) error {
-	registries := rc.Registries
-	for key, reg := range registries {
-		if err := reg.check(); err != nil {
-			return err
-		}
-		registries[key] = reg
-	}
-	return nil
 }
 
 func (c *RegistryConfig) getUrlMap(roleType common.RoleType) url.Values {
@@ -283,4 +271,93 @@ func WithRegistryParams(params map[string]string) RegistryConfigOpt {
 		config.Params = params
 		return config
 	}
+}
+
+type RegistryConfigBuilder struct {
+	registryConfig *RegistryConfig
+}
+
+func (rcb *RegistryConfigBuilder) Protocol(protocol string) *RegistryConfigBuilder {
+	rcb.registryConfig.Protocol = protocol
+	return rcb
+}
+
+func (rcb *RegistryConfigBuilder) Timeout(timeout string) *RegistryConfigBuilder {
+	rcb.registryConfig.Timeout = timeout
+	return rcb
+}
+
+func (rcb *RegistryConfigBuilder) Group(group string) *RegistryConfigBuilder {
+	rcb.registryConfig.Group = group
+	return rcb
+}
+
+func (rcb *RegistryConfigBuilder) Namespace(namespace string) *RegistryConfigBuilder {
+	rcb.registryConfig.Namespace = namespace
+	return rcb
+}
+
+func (rcb *RegistryConfigBuilder) TTL(ttl string) *RegistryConfigBuilder {
+	rcb.registryConfig.TTL = ttl
+	return rcb
+}
+
+func (rcb *RegistryConfigBuilder) Address(address string) *RegistryConfigBuilder {
+	rcb.registryConfig.Address = address
+	return rcb
+}
+
+func (rcb *RegistryConfigBuilder) Username(username string) *RegistryConfigBuilder {
+	rcb.registryConfig.Username = username
+	return rcb
+}
+
+func (rcb *RegistryConfigBuilder) Password(password string) *RegistryConfigBuilder {
+	rcb.registryConfig.Password = password
+	return rcb
+}
+
+func (rcb *RegistryConfigBuilder) Simplified(simplified bool) *RegistryConfigBuilder {
+	rcb.registryConfig.Simplified = simplified
+	return rcb
+}
+
+func (rcb *RegistryConfigBuilder) Preferred(preferred bool) *RegistryConfigBuilder {
+	rcb.registryConfig.Preferred = preferred
+	return rcb
+}
+
+func (rcb *RegistryConfigBuilder) Zone(zone string) *RegistryConfigBuilder {
+	rcb.registryConfig.Zone = zone
+	return rcb
+}
+
+func (rcb *RegistryConfigBuilder) Weight(weight int64) *RegistryConfigBuilder {
+	rcb.registryConfig.Weight = weight
+	return rcb
+}
+
+func (rcb *RegistryConfigBuilder) Params(params map[string]string) *RegistryConfigBuilder {
+	rcb.registryConfig.Params = params
+	return rcb
+}
+
+func (rcb *RegistryConfigBuilder) addParam(key, value string) *RegistryConfigBuilder {
+	if rcb.registryConfig.Params == nil {
+		rcb.registryConfig.Params = make(map[string]string)
+	}
+	rcb.registryConfig.Params[key] = value
+	return rcb
+}
+
+func (rcb *RegistryConfigBuilder) RegistryType(registryType string) *RegistryConfigBuilder {
+	rcb.registryConfig.RegistryType = registryType
+	return rcb
+}
+
+func (rcb *RegistryConfigBuilder) Build() *RegistryConfig {
+	if err := rcb.registryConfig.Init(); err != nil {
+		panic(err)
+	}
+	return rcb.registryConfig
 }
