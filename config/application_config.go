@@ -114,48 +114,52 @@ func WithMetadataType(metadataType string) ApplicationConfigOpt {
 	}
 }
 
+func NewApplicationConfigBuilder() *ApplicationConfigBuilder {
+	return &ApplicationConfigBuilder{application: &ApplicationConfig{}}
+}
+
 type ApplicationConfigBuilder struct {
-	*ApplicationConfig
+	application *ApplicationConfig
 }
 
 func (acb *ApplicationConfigBuilder) Organization(organization string) *ApplicationConfigBuilder {
-	acb.ApplicationConfig.Organization = organization
+	acb.application.Organization = organization
 	return acb
 }
 
 func (acb *ApplicationConfigBuilder) Name(name string) *ApplicationConfigBuilder {
-	acb.ApplicationConfig.Name = name
+	acb.application.Name = name
 	return acb
 }
 
 func (acb *ApplicationConfigBuilder) Module(module string) *ApplicationConfigBuilder {
-	acb.ApplicationConfig.Module = module
+	acb.application.Module = module
 	return acb
 }
 
 func (acb *ApplicationConfigBuilder) Version(version string) *ApplicationConfigBuilder {
-	acb.ApplicationConfig.Version = version
+	acb.application.Version = version
 	return acb
 }
 
 func (acb *ApplicationConfigBuilder) Owner(owner string) *ApplicationConfigBuilder {
-	acb.ApplicationConfig.Owner = owner
+	acb.application.Owner = owner
 	return acb
 }
 
 func (acb *ApplicationConfigBuilder) Environment(environment string) *ApplicationConfigBuilder {
-	acb.ApplicationConfig.Environment = environment
+	acb.application.Environment = environment
 	return acb
 }
 
 func (acb *ApplicationConfigBuilder) MetadataType(metadataType string) *ApplicationConfigBuilder {
-	acb.ApplicationConfig.MetadataType = metadataType
+	acb.application.MetadataType = metadataType
 	return acb
 }
 
 func (acb *ApplicationConfigBuilder) Build() *ApplicationConfig {
-	if err := acb.Init(); err != nil {
+	if err := acb.application.Init(); err != nil {
 		panic(err)
 	}
-	return acb.ApplicationConfig
+	return acb.application
 }

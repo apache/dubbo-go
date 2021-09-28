@@ -67,87 +67,6 @@ type RootConfig struct {
 	CacheFile string `yaml:"cache_file" json:"cache_file,omitempty" property:"cache_file"`
 }
 
-type RootConfigBuilder struct {
-	*RootConfig
-}
-
-func (rb *RootConfigBuilder) Application(application *ApplicationConfig) *RootConfigBuilder {
-	rb.RootConfig.Application = application
-	return rb
-}
-
-func (rb *RootConfigBuilder) Protocols(protocols map[string]*ProtocolConfig) *RootConfigBuilder {
-	rb.RootConfig.Protocols = protocols
-	return rb
-}
-
-func (rb *RootConfigBuilder) Registries(registries map[string]*RegistryConfig) *RootConfigBuilder {
-	rb.RootConfig.Registries = registries
-	return rb
-}
-
-func (rb *RootConfigBuilder) Remotes(remotes map[string]*RemoteConfig) *RootConfigBuilder {
-	rb.RootConfig.Remotes = remotes
-	return rb
-}
-
-func (rb *RootConfigBuilder) ServiceDiscoveries(serviceDiscoveries map[string]*ServiceDiscoveryConfig) *RootConfigBuilder {
-	rb.RootConfig.ServiceDiscoveries = serviceDiscoveries
-	return rb
-}
-
-func (rb *RootConfigBuilder) MetadataReport(metadataReport *MetadataReportConfig) *RootConfigBuilder {
-	rb.RootConfig.MetadataReport = metadataReport
-	return rb
-}
-
-func (rb *RootConfigBuilder) Provider(provider *ProviderConfig) *RootConfigBuilder {
-	rb.RootConfig.Provider = provider
-	return rb
-}
-
-func (rb *RootConfigBuilder) Consumer(consumer *ConsumerConfig) *RootConfigBuilder {
-	rb.RootConfig.Consumer = consumer
-	return rb
-}
-
-func (rb *RootConfigBuilder) Metric(metric *MetricConfig) *RootConfigBuilder {
-	rb.RootConfig.Metric = metric
-	return rb
-}
-
-func (rb *RootConfigBuilder) Logger(logger *LoggerConfig) *RootConfigBuilder {
-	rb.RootConfig.Logger = logger
-	return rb
-}
-
-func (rb *RootConfigBuilder) Shutdown(shutdown *ShutdownConfig) *RootConfigBuilder {
-	rb.RootConfig.Shutdown = shutdown
-	return rb
-}
-
-func (rb *RootConfigBuilder) Router(router []*RouterConfig) *RootConfigBuilder {
-	rb.RootConfig.Router = router
-	return rb
-}
-
-func (rb *RootConfigBuilder) EventDispatcherType(eventDispatcherType string) *RootConfigBuilder {
-	rb.RootConfig.EventDispatcherType = eventDispatcherType
-	return rb
-}
-
-func (rb *RootConfigBuilder) CacheFile(cacheFile string) *RootConfigBuilder {
-	rb.RootConfig.CacheFile = cacheFile
-	return rb
-}
-
-func (rb *RootConfigBuilder) Build() *RootConfig {
-	if err := rb.RootConfig.Init(); err != nil {
-		panic(err)
-	}
-	return rb.RootConfig
-}
-
 func SetRootConfig(r RootConfig) {
 	rootConfig = &r
 }
@@ -358,4 +277,89 @@ func WithRootCenterConfig(centerConfig *CenterConfig) RootConfigOpt {
 	return func(rc *RootConfig) {
 		rc.ConfigCenter = centerConfig
 	}
+}
+
+func NewRootConfigBuilder() *RootConfigBuilder {
+	return &RootConfigBuilder{rootConfig: &RootConfig{}}
+}
+
+type RootConfigBuilder struct {
+	rootConfig *RootConfig
+}
+
+func (rb *RootConfigBuilder) Application(application *ApplicationConfig) *RootConfigBuilder {
+	rb.rootConfig.Application = application
+	return rb
+}
+
+func (rb *RootConfigBuilder) Protocols(protocols map[string]*ProtocolConfig) *RootConfigBuilder {
+	rb.rootConfig.Protocols = protocols
+	return rb
+}
+
+func (rb *RootConfigBuilder) Registries(registries map[string]*RegistryConfig) *RootConfigBuilder {
+	rb.rootConfig.Registries = registries
+	return rb
+}
+
+func (rb *RootConfigBuilder) Remotes(remotes map[string]*RemoteConfig) *RootConfigBuilder {
+	rb.rootConfig.Remotes = remotes
+	return rb
+}
+
+func (rb *RootConfigBuilder) ServiceDiscoveries(serviceDiscoveries map[string]*ServiceDiscoveryConfig) *RootConfigBuilder {
+	rb.rootConfig.ServiceDiscoveries = serviceDiscoveries
+	return rb
+}
+
+func (rb *RootConfigBuilder) MetadataReport(metadataReport *MetadataReportConfig) *RootConfigBuilder {
+	rb.rootConfig.MetadataReport = metadataReport
+	return rb
+}
+
+func (rb *RootConfigBuilder) Provider(provider *ProviderConfig) *RootConfigBuilder {
+	rb.rootConfig.Provider = provider
+	return rb
+}
+
+func (rb *RootConfigBuilder) Consumer(consumer *ConsumerConfig) *RootConfigBuilder {
+	rb.rootConfig.Consumer = consumer
+	return rb
+}
+
+func (rb *RootConfigBuilder) Metric(metric *MetricConfig) *RootConfigBuilder {
+	rb.rootConfig.Metric = metric
+	return rb
+}
+
+func (rb *RootConfigBuilder) Logger(logger *LoggerConfig) *RootConfigBuilder {
+	rb.rootConfig.Logger = logger
+	return rb
+}
+
+func (rb *RootConfigBuilder) Shutdown(shutdown *ShutdownConfig) *RootConfigBuilder {
+	rb.rootConfig.Shutdown = shutdown
+	return rb
+}
+
+func (rb *RootConfigBuilder) Router(router []*RouterConfig) *RootConfigBuilder {
+	rb.rootConfig.Router = router
+	return rb
+}
+
+func (rb *RootConfigBuilder) EventDispatcherType(eventDispatcherType string) *RootConfigBuilder {
+	rb.rootConfig.EventDispatcherType = eventDispatcherType
+	return rb
+}
+
+func (rb *RootConfigBuilder) CacheFile(cacheFile string) *RootConfigBuilder {
+	rb.rootConfig.CacheFile = cacheFile
+	return rb
+}
+
+func (rb *RootConfigBuilder) Build() *RootConfig {
+	if err := rb.rootConfig.Init(); err != nil {
+		panic(err)
+	}
+	return rb.rootConfig
 }

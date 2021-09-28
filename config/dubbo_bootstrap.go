@@ -76,7 +76,7 @@ func (rc *RootConfig) Init() error {
 	// init protocol
 	protocols := rc.Protocols
 	if len(protocols) <= 0 {
-		protocol := new(ProtocolConfig)
+		protocol := &ProtocolConfig{}
 		protocols = make(map[string]*ProtocolConfig, 1)
 		protocols[constant.DUBBO] = protocol
 		rc.Protocols = protocols

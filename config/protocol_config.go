@@ -91,33 +91,37 @@ func WithProtocolPort(port string) ProtocolConfigOpt {
 	}
 }
 
+func NewProtocolConfigBuilder() *ProtocolConfigBuilder {
+	return &ProtocolConfigBuilder{protocolConfig: &ProtocolConfig{}}
+}
+
 type ProtocolConfigBuilder struct {
-	*ProtocolConfig
+	protocolConfig *ProtocolConfig
 }
 
 func (pcb *ProtocolConfigBuilder) Name(name string) *ProtocolConfigBuilder {
-	pcb.ProtocolConfig.Name = name
+	pcb.protocolConfig.Name = name
 	return pcb
 }
 
 func (pcb *ProtocolConfigBuilder) Ip(ip string) *ProtocolConfigBuilder {
-	pcb.ProtocolConfig.Ip = ip
+	pcb.protocolConfig.Ip = ip
 	return pcb
 }
 
 func (pcb *ProtocolConfigBuilder) Port(port string) *ProtocolConfigBuilder {
-	pcb.ProtocolConfig.Port = port
+	pcb.protocolConfig.Port = port
 	return pcb
 }
 
 func (pcb *ProtocolConfigBuilder) Params(params interface{}) *ProtocolConfigBuilder {
-	pcb.ProtocolConfig.Params = params
+	pcb.protocolConfig.Params = params
 	return pcb
 }
 
 func (pcb *ProtocolConfigBuilder) Build() *ProtocolConfig {
-	if err := pcb.Init(); err != nil {
+	if err := pcb.protocolConfig.Init(); err != nil {
 		panic(err)
 	}
-	return pcb.ProtocolConfig
+	return pcb.protocolConfig
 }
