@@ -37,6 +37,38 @@ func (ServiceDiscoveryConfig) Prefix() string {
 	return constant.ServiceDiscPrefix
 }
 
-func initServiceDiscoveryConfig(rc *RootConfig) error {
+func (ServiceDiscoveryConfig) Init() error {
 	return nil
+}
+
+func NewServiceDiscoveryConfigBuilder() *ServiceDiscoveryConfigBuilder {
+	return &ServiceDiscoveryConfigBuilder{
+		serviceDiscoveryConfig: &ServiceDiscoveryConfig{},
+	}
+}
+
+type ServiceDiscoveryConfigBuilder struct {
+	serviceDiscoveryConfig *ServiceDiscoveryConfig
+}
+
+func (sdcb *ServiceDiscoveryConfigBuilder) Protocol(protocol string) *ServiceDiscoveryConfigBuilder {
+	sdcb.serviceDiscoveryConfig.Protocol = protocol
+	return sdcb
+}
+
+func (sdcb *ServiceDiscoveryConfigBuilder) Group(group string) *ServiceDiscoveryConfigBuilder {
+	sdcb.serviceDiscoveryConfig.Group = group
+	return sdcb
+}
+
+func (sdcb *ServiceDiscoveryConfigBuilder) RemoteRef(remoteRef string) *ServiceDiscoveryConfigBuilder {
+	sdcb.serviceDiscoveryConfig.RemoteRef = remoteRef
+	return sdcb
+}
+
+func (sdcb *ServiceDiscoveryConfigBuilder) Build() *ServiceDiscoveryConfig {
+	if err := sdcb.serviceDiscoveryConfig.Init(); err != nil {
+		panic(err)
+	}
+	return sdcb.serviceDiscoveryConfig
 }

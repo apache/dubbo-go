@@ -273,6 +273,12 @@ func WithRegistryParams(params map[string]string) RegistryConfigOpt {
 	}
 }
 
+func NewRegistryConfigBuilder() *RegistryConfigBuilder {
+	return &RegistryConfigBuilder{
+		registryConfig: &RegistryConfig{},
+	}
+}
+
 type RegistryConfigBuilder struct {
 	registryConfig *RegistryConfig
 }

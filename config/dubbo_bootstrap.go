@@ -97,9 +97,16 @@ func (rc *RootConfig) Init() error {
 		}
 	}
 
-	if err := initServiceDiscoveryConfig(rc); err != nil {
-		return err
+	// init serviceDiscoveries
+	serviceDiscoveries := rc.ServiceDiscoveries
+	if serviceDiscoveries != nil {
+		for _, sd := range serviceDiscoveries {
+			if err := sd.Init(); err != nil {
+				return err
+			}
+		}
 	}
+
 	if err := rc.MetadataReport.Init(rc); err != nil {
 		return err
 	}
