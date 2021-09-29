@@ -345,13 +345,14 @@ func (svc *ServiceConfig) getUrlMap() url.Values {
 	// todo: move
 	urlMap.Set(constant.SERIALIZATION_KEY, svc.Serialization)
 	// application config info
-	urlMap.Set(constant.APPLICATION_KEY, GetRootConfig().Application.Name)
-	urlMap.Set(constant.ORGANIZATION_KEY, GetRootConfig().Application.Organization)
-	urlMap.Set(constant.NAME_KEY, GetRootConfig().Application.Name)
-	urlMap.Set(constant.MODULE_KEY, GetRootConfig().Application.Module)
-	urlMap.Set(constant.APP_VERSION_KEY, GetRootConfig().Application.Version)
-	urlMap.Set(constant.OWNER_KEY, GetRootConfig().Application.Owner)
-	urlMap.Set(constant.ENVIRONMENT_KEY, GetRootConfig().Application.Environment)
+	ac := GetApplicationConfig()
+	urlMap.Set(constant.APPLICATION_KEY, ac.Name)
+	urlMap.Set(constant.ORGANIZATION_KEY, ac.Organization)
+	urlMap.Set(constant.NAME_KEY, ac.Name)
+	urlMap.Set(constant.MODULE_KEY, ac.Module)
+	urlMap.Set(constant.APP_VERSION_KEY, ac.Version)
+	urlMap.Set(constant.OWNER_KEY, ac.Owner)
+	urlMap.Set(constant.ENVIRONMENT_KEY, ac.Environment)
 
 	// filter
 	if svc.Filter == "" {
