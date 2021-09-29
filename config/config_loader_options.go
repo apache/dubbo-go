@@ -40,6 +40,8 @@ type loaderConf struct {
 	path string
 	// loaderConf file delim default .
 	delim string
+	// config
+	b []byte
 }
 
 func NewLoaderConf(opts ...LoaderConfOption) *loaderConf {
