@@ -89,6 +89,7 @@ type ServiceConfig struct {
 	exporters       []protocol.Exporter
 
 	metadataType string
+	rootConfig   *RootConfig
 }
 
 // Prefix returns dubbo.service.${InterfaceName}.
@@ -104,6 +105,7 @@ func (svc *ServiceConfig) Init(rc *RootConfig) error {
 		return err
 	}
 	svc.exported = atomic.NewBool(false)
+	svc.rootConfig=rc
 	svc.metadataType = rc.Application.MetadataType
 	svc.unexported = atomic.NewBool(false)
 	svc.Registries = rc.Registries
@@ -345,13 +347,13 @@ func (svc *ServiceConfig) getUrlMap() url.Values {
 	// todo: move
 	urlMap.Set(constant.SERIALIZATION_KEY, svc.Serialization)
 	// application config info
-	//urlMap.Set(constant.APPLICATION_KEY, applicationConfig.Name)
-	//urlMap.Set(constant.ORGANIZATION_KEY, applicationConfig.Organization)
-	//urlMap.Set(constant.NAME_KEY, applicationConfig.Name)
-	//urlMap.Set(constant.MODULE_KEY, applicationConfig.Module)
-	//urlMap.Set(constant.APP_VERSION_KEY, applicationConfig.Version)
-	//urlMap.Set(constant.OWNER_KEY, applicationConfig.Owner)
-	//urlMap.Set(constant.ENVIRONMENT_KEY, applicationConfig.Environment)
+	urlMap.Set(constant.APPLICATION_KEY, svc.rootConfig.Application.Name)
+	urlMap.Set(constant.ORGANIZATION_KEY, svc.rootConfig.Application.Organization)
+	urlMap.Set(constant.NAME_KEY, svc.rootConfig.Application.Name)
+	urlMap.Set(constant.MODULE_KEY, svc.rootConfig.Application.Module)
+	urlMap.Set(constant.APP_VERSION_KEY, svc.rootConfig.Application.Version)
+	urlMap.Set(constant.OWNER_KEY, svc.rootConfig.Application.Owner)
+	urlMap.Set(constant.ENVIRONMENT_KEY, svc.rootConfig.Application.Environment)
 
 	// filter
 	if svc.Filter == "" {
