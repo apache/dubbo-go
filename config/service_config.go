@@ -105,7 +105,7 @@ func (svc *ServiceConfig) Init(rc *RootConfig) error {
 		return err
 	}
 	svc.exported = atomic.NewBool(false)
-	svc.rootConfig=rc
+	svc.rootConfig = rc
 	svc.metadataType = rc.Application.MetadataType
 	svc.unexported = atomic.NewBool(false)
 	svc.Registries = rc.Registries
