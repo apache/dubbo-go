@@ -34,30 +34,7 @@ func TestCheckGenre(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func TestNewLoaderConf(t *testing.T) {
-	conf := NewLoaderConf()
-	assert.Equal(t, ".", conf.delim)
-	assert.Equal(t, "yaml", conf.genre)
-	assert.Equal(t, "../conf/dubbogo.yaml", conf.path)
-}
-
-func TestWithDelim(t *testing.T) {
-	conf := NewLoaderConf(WithDelim(":"))
-	assert.Equal(t, ":", conf.delim)
-	assert.Equal(t, "yaml", conf.genre)
-	assert.Equal(t, "../conf/dubbogo.yaml", conf.path)
-}
-
-func TestWithPath(t *testing.T) {
-	conf := NewLoaderConf(WithPath("./conf/app.yaml"))
-	assert.Equal(t, ".", conf.delim)
-	assert.Equal(t, "yaml", conf.genre)
-	assert.Equal(t, absolutePath("./conf/app.yaml"), conf.path)
-}
-
-func TestWithGenre(t *testing.T) {
-	conf := NewLoaderConf(WithGenre("json"))
-	assert.Equal(t, ".", conf.delim)
-	assert.Equal(t, "json", conf.genre)
-	assert.Equal(t, "../conf/dubbogo.yaml", conf.path)
+func TestFileGenre(t *testing.T) {
+	conf := NewLoaderConf(WithPath("../config/testdata/config/properties/application.properties"))
+	assert.Equal(t, conf.genre, "properties")
 }
