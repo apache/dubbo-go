@@ -22,7 +22,7 @@ import (
 	"github.com/knadh/koanf/parsers/json"
 	"github.com/knadh/koanf/parsers/toml"
 	"github.com/knadh/koanf/parsers/yaml"
-	"github.com/knadh/koanf/providers/file"
+	"github.com/knadh/koanf/providers/rawbytes"
 	"github.com/pkg/errors"
 )
 
@@ -36,17 +36,27 @@ func GetConfigResolver(conf *loaderConf) *koanf.Koanf {
 		k   *koanf.Koanf
 		err error
 	)
+	if len(conf.genre) <= 0 {
+		conf.genre = "yaml"
+	}
+	if len(conf.delim) <= 0 {
+		conf.delim = "."
+	}
+	bytes := conf.bytes
+	if len(bytes) <= 0 {
+		panic(errors.New("bytes is nil,please set bytes or file path"))
+	}
 	k = koanf.New(conf.delim)
 
 	switch conf.genre {
 	case "yaml", "yml":
-		err = k.Load(file.Provider(conf.path), yaml.Parser())
+		err = k.Load(rawbytes.Provider(bytes), yaml.Parser())
 	case "json":
-		err = k.Load(file.Provider(conf.path), json.Parser())
+		err = k.Load(rawbytes.Provider(bytes), json.Parser())
 	case "toml":
-		err = k.Load(file.Provider(conf.path), toml.Parser())
+		err = k.Load(rawbytes.Provider(bytes), toml.Parser())
 	case "properties":
-		err = k.Load(file.Provider(conf.path), properties.Parser())
+		err = k.Load(rawbytes.Provider(bytes), properties.Parser())
 	default:
 		err = errors.Errorf("no support %s file type", conf.genre)
 	}

@@ -19,18 +19,12 @@ package config
 
 import (
 	"errors"
-	"fmt"
 	"reflect"
 	"strconv"
 )
 
 import (
 	"github.com/knadh/koanf"
-	"github.com/knadh/koanf/parsers/json"
-	"github.com/knadh/koanf/parsers/toml"
-	yaml "github.com/knadh/koanf/parsers/yaml"
-	"github.com/knadh/koanf/providers/file"
-
 	perrors "github.com/pkg/errors"
 )
 
@@ -49,7 +43,7 @@ var (
 func Load(opts ...LoaderConfOption) error {
 	// conf
 	conf := NewLoaderConf(opts...)
-	koan := getKoanf(conf)
+	koan := GetConfigResolver(conf)
 	if err := koan.UnmarshalWithConf(rootConfig.Prefix(),
 		rootConfig, koanf.UnmarshalConf{Tag: "yaml"}); err != nil {
 		return err
@@ -66,30 +60,6 @@ func check() error {
 		return errors.New("execute the config.Load() method first")
 	}
 	return nil
-}
-
-func getKoanf(conf *loaderConf) *koanf.Koanf {
-	var (
-		k   *koanf.Koanf
-		err error
-	)
-	k = koanf.New(conf.delim)
-
-	switch conf.genre {
-	case "yaml", "yml":
-		err = k.Load(file.Provider(conf.path), yaml.Parser())
-	case "json":
-		err = k.Load(file.Provider(conf.path), json.Parser())
-	case "toml":
-		err = k.Load(file.Provider(conf.path), toml.Parser())
-	default:
-		err = errors.New(fmt.Sprintf("Unsupported %s file type", conf.genre))
-	}
-
-	if err != nil {
-		panic(err)
-	}
-	return k
 }
 
 // registerServiceInstance register service instance
