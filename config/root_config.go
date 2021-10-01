@@ -38,6 +38,7 @@ type RootConfig struct {
 	// Remotes to be remove in 3.0 config-enhance
 	Remotes map[string]*RemoteConfig `yaml:"remote" json:"remote,omitempty" property:"remote"`
 
+	// TODO ConfigCenter and CenterConfig?
 	ConfigCenter *CenterConfig `yaml:"config-center" json:"config-center,omitempty"`
 
 	// ServiceDiscoveries to be remove in 3.0 config-enhance

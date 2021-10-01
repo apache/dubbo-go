@@ -110,7 +110,7 @@ func (rc *RootConfig) Init() error {
 	if err := rc.MetadataReport.Init(rc); err != nil {
 		return err
 	}
-	if err := initMetricConfig(rc); err != nil {
+	if err := rc.Metric.Init(); err != nil {
 		return err
 	}
 	if err := initRouterConfig(rc); err != nil {

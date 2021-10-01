@@ -272,3 +272,58 @@ func WithConsumerConfigCheck(check bool) ConsumerConfigOpt {
 		return config
 	}
 }
+
+type ConsumerConfigBuilder struct {
+	consumerConfig *ConsumerConfig
+}
+
+func NewConsumerConfigBuilder() *ConsumerConfigBuilder {
+	return &ConsumerConfigBuilder{consumerConfig: &ConsumerConfig{}}
+}
+
+func (ccb *ConsumerConfigBuilder) SetFilter(filter string) *ConsumerConfigBuilder {
+	ccb.consumerConfig.Filter = filter
+	return ccb
+}
+
+func (ccb *ConsumerConfigBuilder) SetRegistry(registry []string) *ConsumerConfigBuilder {
+	ccb.consumerConfig.Registry = registry
+	return ccb
+}
+
+func (ccb *ConsumerConfigBuilder) SetRequestTimeout(requestTimeout string) *ConsumerConfigBuilder {
+	ccb.consumerConfig.RequestTimeout = requestTimeout
+	return ccb
+}
+
+func (ccb *ConsumerConfigBuilder) SetProxyFactory(proxyFactory string) *ConsumerConfigBuilder {
+	ccb.consumerConfig.ProxyFactory = proxyFactory
+	return ccb
+}
+
+func (ccb *ConsumerConfigBuilder) SetCheck(check bool) *ConsumerConfigBuilder {
+	ccb.consumerConfig.Check = check
+	return ccb
+}
+
+func (ccb *ConsumerConfigBuilder) SetReferences(references map[string]*ReferenceConfig) *ConsumerConfigBuilder {
+	ccb.consumerConfig.References = references
+	return ccb
+}
+
+func (ccb *ConsumerConfigBuilder) SetFilterConf(filterConf interface{}) *ConsumerConfigBuilder {
+	ccb.consumerConfig.FilterConf = filterConf
+	return ccb
+}
+
+func (ccb *ConsumerConfigBuilder) SetRootConfig(rootConfig *RootConfig) *ConsumerConfigBuilder {
+	ccb.consumerConfig.rootConfig = rootConfig
+	return ccb
+}
+
+func (ccb *ConsumerConfigBuilder) Build() *ConsumerConfig {
+	if err := ccb.consumerConfig.Init(ccb.consumerConfig.rootConfig); err != nil {
+		panic(err)
+	}
+	return ccb.consumerConfig
+}

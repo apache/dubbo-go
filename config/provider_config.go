@@ -35,16 +35,17 @@ type ProviderConfig struct {
 	Filter string `yaml:"filter" json:"filter,omitempty" property:"filter"`
 	// Deprecated Register whether registration is required
 	Register bool `yaml:"register" json:"register" property:"register"`
-	// Registry registry ids
+	// Registry registry ids TODO Registries?
 	Registry []string `yaml:"registry" json:"registry" property:"registry"`
 	// Services services
 	Services map[string]*ServiceConfig `yaml:"services" json:"services,omitempty" property:"services"`
 
 	ProxyFactory string `default:"default" yaml:"proxy" json:"proxy,omitempty" property:"proxy"`
 
-	FilterConf interface{} `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf"`
-	// ShutdownConfig *ShutdownConfig            `yaml:"shutdown_conf" json:"shutdown_conf,omitempty" property:"shutdown_conf"`
+	FilterConf interface{}       `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf"`
 	ConfigType map[string]string `yaml:"config_type" json:"config_type,omitempty" property:"config_type"`
+
+	rootConfig *RootConfig
 }
 
 func (ProviderConfig) Prefix() string {
@@ -98,8 +99,7 @@ func SetProviderConfig(p ProviderConfig) {
 	rootConfig.Provider = &p
 }
 
-///////////////////////////////////// provider config api
-// ProviderConfigOpt is the
+// nolint
 type ProviderConfigOpt func(config *ProviderConfig) *ProviderConfig
 
 // NewEmptyProviderConfig returns ProviderConfig with default ApplicationConfig
@@ -132,7 +132,7 @@ func GetProviderInstance(opts ...ProviderConfigOpt) *ProviderConfig {
 	return newConfig
 }
 
-// WithProviderServices returns ProviderConfig with given serviceNameKey @serviceName and @serviceConfig
+// WithProviderService returns ProviderConfig with given serviceNameKey @serviceName and @serviceConfig
 func WithProviderService(serviceName string, serviceConfig *ServiceConfig) ProviderConfigOpt {
 	return func(config *ProviderConfig) *ProviderConfig {
 		config.Services[serviceName] = serviceConfig
@@ -146,4 +146,87 @@ func WithProviderRegistryKeys(registryKey ...string) ProviderConfigOpt {
 		config.Registry = append(config.Registry, registryKey...)
 		return config
 	}
+}
+
+type ProviderConfigBuilder struct {
+	providerConfig *ProviderConfig
+}
+
+// nolint
+func NewProviderConfigBuilder() *ProviderConfigBuilder {
+	return &ProviderConfigBuilder{providerConfig: &ProviderConfig{}}
+}
+
+// nolint
+func (pcb *ProviderConfigBuilder) SetFilter(filter string) *ProviderConfigBuilder {
+	pcb.providerConfig.Filter = filter
+	return pcb
+}
+
+// nolint
+func (pcb *ProviderConfigBuilder) SetRegister(register bool) *ProviderConfigBuilder {
+	pcb.providerConfig.Register = register
+	return pcb
+}
+
+// nolint
+func (pcb *ProviderConfigBuilder) SetRegistry(registry []string) *ProviderConfigBuilder {
+	pcb.providerConfig.Registry = registry
+	return pcb
+}
+
+// nolint
+func (pcb *ProviderConfigBuilder) SetServices(services map[string]*ServiceConfig) *ProviderConfigBuilder {
+	pcb.providerConfig.Services = services
+	return pcb
+}
+
+// nolint
+func (pcb *ProviderConfigBuilder) AddService(serviceName string, serviceConfig *ServiceConfig) *ProviderConfigBuilder {
+	if pcb.providerConfig.Services == nil {
+		pcb.providerConfig.Services = make(map[string]*ServiceConfig)
+	}
+	pcb.providerConfig.Services[serviceName] = serviceConfig
+	return pcb
+}
+
+// nolint
+func (pcb *ProviderConfigBuilder) SetProxyFactory(proxyFactory string) *ProviderConfigBuilder {
+	pcb.providerConfig.ProxyFactory = proxyFactory
+	return pcb
+}
+
+// nolint
+func (pcb *ProviderConfigBuilder) SetFilterConf(filterConf interface{}) *ProviderConfigBuilder {
+	pcb.providerConfig.FilterConf = filterConf
+	return pcb
+}
+
+// nolint
+func (pcb *ProviderConfigBuilder) SetConfigType(configType map[string]string) *ProviderConfigBuilder {
+	pcb.providerConfig.ConfigType = configType
+	return pcb
+}
+
+// nolint
+func (pcb *ProviderConfigBuilder) AddConfigType(key, value string) *ProviderConfigBuilder {
+	if pcb.providerConfig.ConfigType == nil {
+		pcb.providerConfig.ConfigType = make(map[string]string)
+	}
+	pcb.providerConfig.ConfigType[key] = value
+	return pcb
+}
+
+// nolint
+func (pcb *ProviderConfigBuilder) SetRootConfig(rootConfig *RootConfig) *ProviderConfigBuilder {
+	pcb.providerConfig.rootConfig = rootConfig
+	return pcb
+}
+
+// nolint
+func (pcb *ProviderConfigBuilder) Build() *ProviderConfig {
+	if err := pcb.providerConfig.Init(pcb.providerConfig.rootConfig); err != nil {
+		panic(err)
+	}
+	return pcb.providerConfig
 }
