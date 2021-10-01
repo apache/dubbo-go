@@ -51,17 +51,17 @@ type ServiceDiscoveryConfigBuilder struct {
 	serviceDiscoveryConfig *ServiceDiscoveryConfig
 }
 
-func (sdcb *ServiceDiscoveryConfigBuilder) Protocol(protocol string) *ServiceDiscoveryConfigBuilder {
+func (sdcb *ServiceDiscoveryConfigBuilder) SetProtocol(protocol string) *ServiceDiscoveryConfigBuilder {
 	sdcb.serviceDiscoveryConfig.Protocol = protocol
 	return sdcb
 }
 
-func (sdcb *ServiceDiscoveryConfigBuilder) Group(group string) *ServiceDiscoveryConfigBuilder {
+func (sdcb *ServiceDiscoveryConfigBuilder) SetGroup(group string) *ServiceDiscoveryConfigBuilder {
 	sdcb.serviceDiscoveryConfig.Group = group
 	return sdcb
 }
 
-func (sdcb *ServiceDiscoveryConfigBuilder) RemoteRef(remoteRef string) *ServiceDiscoveryConfigBuilder {
+func (sdcb *ServiceDiscoveryConfigBuilder) SetRemoteRef(remoteRef string) *ServiceDiscoveryConfigBuilder {
 	sdcb.serviceDiscoveryConfig.RemoteRef = remoteRef
 	return sdcb
 }

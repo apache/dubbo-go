@@ -287,72 +287,72 @@ type RootConfigBuilder struct {
 	rootConfig *RootConfig
 }
 
-func (rb *RootConfigBuilder) Application(application *ApplicationConfig) *RootConfigBuilder {
+func (rb *RootConfigBuilder) SetApplication(application *ApplicationConfig) *RootConfigBuilder {
 	rb.rootConfig.Application = application
 	return rb
 }
 
-func (rb *RootConfigBuilder) Protocols(protocols map[string]*ProtocolConfig) *RootConfigBuilder {
+func (rb *RootConfigBuilder) SetProtocols(protocols map[string]*ProtocolConfig) *RootConfigBuilder {
 	rb.rootConfig.Protocols = protocols
 	return rb
 }
 
-func (rb *RootConfigBuilder) Registries(registries map[string]*RegistryConfig) *RootConfigBuilder {
+func (rb *RootConfigBuilder) SetRegistries(registries map[string]*RegistryConfig) *RootConfigBuilder {
 	rb.rootConfig.Registries = registries
 	return rb
 }
 
-func (rb *RootConfigBuilder) Remotes(remotes map[string]*RemoteConfig) *RootConfigBuilder {
+func (rb *RootConfigBuilder) SetRemotes(remotes map[string]*RemoteConfig) *RootConfigBuilder {
 	rb.rootConfig.Remotes = remotes
 	return rb
 }
 
-func (rb *RootConfigBuilder) ServiceDiscoveries(serviceDiscoveries map[string]*ServiceDiscoveryConfig) *RootConfigBuilder {
+func (rb *RootConfigBuilder) SetServiceDiscoveries(serviceDiscoveries map[string]*ServiceDiscoveryConfig) *RootConfigBuilder {
 	rb.rootConfig.ServiceDiscoveries = serviceDiscoveries
 	return rb
 }
 
-func (rb *RootConfigBuilder) MetadataReport(metadataReport *MetadataReportConfig) *RootConfigBuilder {
+func (rb *RootConfigBuilder) SetMetadataReport(metadataReport *MetadataReportConfig) *RootConfigBuilder {
 	rb.rootConfig.MetadataReport = metadataReport
 	return rb
 }
 
-func (rb *RootConfigBuilder) Provider(provider *ProviderConfig) *RootConfigBuilder {
+func (rb *RootConfigBuilder) SetProvider(provider *ProviderConfig) *RootConfigBuilder {
 	rb.rootConfig.Provider = provider
 	return rb
 }
 
-func (rb *RootConfigBuilder) Consumer(consumer *ConsumerConfig) *RootConfigBuilder {
+func (rb *RootConfigBuilder) SetConsumer(consumer *ConsumerConfig) *RootConfigBuilder {
 	rb.rootConfig.Consumer = consumer
 	return rb
 }
 
-func (rb *RootConfigBuilder) Metric(metric *MetricConfig) *RootConfigBuilder {
+func (rb *RootConfigBuilder) SetMetric(metric *MetricConfig) *RootConfigBuilder {
 	rb.rootConfig.Metric = metric
 	return rb
 }
 
-func (rb *RootConfigBuilder) Logger(logger *LoggerConfig) *RootConfigBuilder {
+func (rb *RootConfigBuilder) SetLogger(logger *LoggerConfig) *RootConfigBuilder {
 	rb.rootConfig.Logger = logger
 	return rb
 }
 
-func (rb *RootConfigBuilder) Shutdown(shutdown *ShutdownConfig) *RootConfigBuilder {
+func (rb *RootConfigBuilder) SetShutdown(shutdown *ShutdownConfig) *RootConfigBuilder {
 	rb.rootConfig.Shutdown = shutdown
 	return rb
 }
 
-func (rb *RootConfigBuilder) Router(router []*RouterConfig) *RootConfigBuilder {
+func (rb *RootConfigBuilder) SetRouter(router []*RouterConfig) *RootConfigBuilder {
 	rb.rootConfig.Router = router
 	return rb
 }
 
-func (rb *RootConfigBuilder) EventDispatcherType(eventDispatcherType string) *RootConfigBuilder {
+func (rb *RootConfigBuilder) SetEventDispatcherType(eventDispatcherType string) *RootConfigBuilder {
 	rb.rootConfig.EventDispatcherType = eventDispatcherType
 	return rb
 }
 
-func (rb *RootConfigBuilder) CacheFile(cacheFile string) *RootConfigBuilder {
+func (rb *RootConfigBuilder) SetCacheFile(cacheFile string) *RootConfigBuilder {
 	rb.rootConfig.CacheFile = cacheFile
 	return rb
 }

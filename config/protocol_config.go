@@ -99,22 +99,22 @@ type ProtocolConfigBuilder struct {
 	protocolConfig *ProtocolConfig
 }
 
-func (pcb *ProtocolConfigBuilder) Name(name string) *ProtocolConfigBuilder {
+func (pcb *ProtocolConfigBuilder) SetName(name string) *ProtocolConfigBuilder {
 	pcb.protocolConfig.Name = name
 	return pcb
 }
 
-func (pcb *ProtocolConfigBuilder) Ip(ip string) *ProtocolConfigBuilder {
+func (pcb *ProtocolConfigBuilder) SetIp(ip string) *ProtocolConfigBuilder {
 	pcb.protocolConfig.Ip = ip
 	return pcb
 }
 
-func (pcb *ProtocolConfigBuilder) Port(port string) *ProtocolConfigBuilder {
+func (pcb *ProtocolConfigBuilder) SetPort(port string) *ProtocolConfigBuilder {
 	pcb.protocolConfig.Port = port
 	return pcb
 }
 
-func (pcb *ProtocolConfigBuilder) Params(params interface{}) *ProtocolConfigBuilder {
+func (pcb *ProtocolConfigBuilder) SetParams(params interface{}) *ProtocolConfigBuilder {
 	pcb.protocolConfig.Params = params
 	return pcb
 }

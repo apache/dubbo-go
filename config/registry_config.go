@@ -283,67 +283,67 @@ type RegistryConfigBuilder struct {
 	registryConfig *RegistryConfig
 }
 
-func (rcb *RegistryConfigBuilder) Protocol(protocol string) *RegistryConfigBuilder {
+func (rcb *RegistryConfigBuilder) SetProtocol(protocol string) *RegistryConfigBuilder {
 	rcb.registryConfig.Protocol = protocol
 	return rcb
 }
 
-func (rcb *RegistryConfigBuilder) Timeout(timeout string) *RegistryConfigBuilder {
+func (rcb *RegistryConfigBuilder) SetTimeout(timeout string) *RegistryConfigBuilder {
 	rcb.registryConfig.Timeout = timeout
 	return rcb
 }
 
-func (rcb *RegistryConfigBuilder) Group(group string) *RegistryConfigBuilder {
+func (rcb *RegistryConfigBuilder) SetGroup(group string) *RegistryConfigBuilder {
 	rcb.registryConfig.Group = group
 	return rcb
 }
 
-func (rcb *RegistryConfigBuilder) Namespace(namespace string) *RegistryConfigBuilder {
+func (rcb *RegistryConfigBuilder) SetNamespace(namespace string) *RegistryConfigBuilder {
 	rcb.registryConfig.Namespace = namespace
 	return rcb
 }
 
-func (rcb *RegistryConfigBuilder) TTL(ttl string) *RegistryConfigBuilder {
+func (rcb *RegistryConfigBuilder) SetTTL(ttl string) *RegistryConfigBuilder {
 	rcb.registryConfig.TTL = ttl
 	return rcb
 }
 
-func (rcb *RegistryConfigBuilder) Address(address string) *RegistryConfigBuilder {
+func (rcb *RegistryConfigBuilder) SetAddress(address string) *RegistryConfigBuilder {
 	rcb.registryConfig.Address = address
 	return rcb
 }
 
-func (rcb *RegistryConfigBuilder) Username(username string) *RegistryConfigBuilder {
+func (rcb *RegistryConfigBuilder) SetUsername(username string) *RegistryConfigBuilder {
 	rcb.registryConfig.Username = username
 	return rcb
 }
 
-func (rcb *RegistryConfigBuilder) Password(password string) *RegistryConfigBuilder {
+func (rcb *RegistryConfigBuilder) SetPassword(password string) *RegistryConfigBuilder {
 	rcb.registryConfig.Password = password
 	return rcb
 }
 
-func (rcb *RegistryConfigBuilder) Simplified(simplified bool) *RegistryConfigBuilder {
+func (rcb *RegistryConfigBuilder) SetSimplified(simplified bool) *RegistryConfigBuilder {
 	rcb.registryConfig.Simplified = simplified
 	return rcb
 }
 
-func (rcb *RegistryConfigBuilder) Preferred(preferred bool) *RegistryConfigBuilder {
+func (rcb *RegistryConfigBuilder) SetPreferred(preferred bool) *RegistryConfigBuilder {
 	rcb.registryConfig.Preferred = preferred
 	return rcb
 }
 
-func (rcb *RegistryConfigBuilder) Zone(zone string) *RegistryConfigBuilder {
+func (rcb *RegistryConfigBuilder) SetZone(zone string) *RegistryConfigBuilder {
 	rcb.registryConfig.Zone = zone
 	return rcb
 }
 
-func (rcb *RegistryConfigBuilder) Weight(weight int64) *RegistryConfigBuilder {
+func (rcb *RegistryConfigBuilder) SetWeight(weight int64) *RegistryConfigBuilder {
 	rcb.registryConfig.Weight = weight
 	return rcb
 }
 
-func (rcb *RegistryConfigBuilder) Params(params map[string]string) *RegistryConfigBuilder {
+func (rcb *RegistryConfigBuilder) SetParams(params map[string]string) *RegistryConfigBuilder {
 	rcb.registryConfig.Params = params
 	return rcb
 }
@@ -356,7 +356,7 @@ func (rcb *RegistryConfigBuilder) addParam(key, value string) *RegistryConfigBui
 	return rcb
 }
 
-func (rcb *RegistryConfigBuilder) RegistryType(registryType string) *RegistryConfigBuilder {
+func (rcb *RegistryConfigBuilder) SetRegistryType(registryType string) *RegistryConfigBuilder {
 	rcb.registryConfig.RegistryType = registryType
 	return rcb
 }

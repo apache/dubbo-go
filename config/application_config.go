@@ -122,37 +122,37 @@ type ApplicationConfigBuilder struct {
 	application *ApplicationConfig
 }
 
-func (acb *ApplicationConfigBuilder) Organization(organization string) *ApplicationConfigBuilder {
+func (acb *ApplicationConfigBuilder) SetOrganization(organization string) *ApplicationConfigBuilder {
 	acb.application.Organization = organization
 	return acb
 }
 
-func (acb *ApplicationConfigBuilder) Name(name string) *ApplicationConfigBuilder {
+func (acb *ApplicationConfigBuilder) SetName(name string) *ApplicationConfigBuilder {
 	acb.application.Name = name
 	return acb
 }
 
-func (acb *ApplicationConfigBuilder) Module(module string) *ApplicationConfigBuilder {
+func (acb *ApplicationConfigBuilder) SetModule(module string) *ApplicationConfigBuilder {
 	acb.application.Module = module
 	return acb
 }
 
-func (acb *ApplicationConfigBuilder) Version(version string) *ApplicationConfigBuilder {
+func (acb *ApplicationConfigBuilder) SetVersion(version string) *ApplicationConfigBuilder {
 	acb.application.Version = version
 	return acb
 }
 
-func (acb *ApplicationConfigBuilder) Owner(owner string) *ApplicationConfigBuilder {
+func (acb *ApplicationConfigBuilder) SetOwner(owner string) *ApplicationConfigBuilder {
 	acb.application.Owner = owner
 	return acb
 }
 
-func (acb *ApplicationConfigBuilder) Environment(environment string) *ApplicationConfigBuilder {
+func (acb *ApplicationConfigBuilder) SetEnvironment(environment string) *ApplicationConfigBuilder {
 	acb.application.Environment = environment
 	return acb
 }
 
-func (acb *ApplicationConfigBuilder) MetadataType(metadataType string) *ApplicationConfigBuilder {
+func (acb *ApplicationConfigBuilder) SetMetadataType(metadataType string) *ApplicationConfigBuilder {
 	acb.application.MetadataType = metadataType
 	return acb
 }
