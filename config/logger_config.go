@@ -72,16 +72,7 @@ func (LoggerConfig) Prefix() string {
 	return constant.LoggerConfigPrefix
 }
 
-func GetLoggerConfigInstance() *LoggerConfig {
-	lc := &LoggerConfig{}
-	return lc
-}
-
 func (lc *LoggerConfig) Init() error {
-
-	if lc == nil {
-		lc = GetLoggerConfigInstance()
-	}
 	err := lc.check()
 	if err != nil {
 		return err

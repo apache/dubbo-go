@@ -33,7 +33,7 @@ registries :
 
 references:
   "UserProvider":
-    registry: "hangzhouzk,shanghaizk"
+    registries: "hangzhouzk,shanghaizk"
     filter: ""
     protocol : "dubbo"
     version: "1.0"

@@ -19,10 +19,21 @@ package config
 
 import (
 	_ "net/http/pprof"
+	"sync"
 )
 
 import (
+	hessian "github.com/apache/dubbo-go-hessian2"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
+)
+
+var (
+	startOnce sync.Once
 )
 
 // RootConfig is the root config
@@ -113,6 +124,86 @@ func (rc *RootConfig) getRegistryIds() []string {
 	}
 	return removeDuplicateElement(ids)
 }
+func registerPOJO() {
+	hessian.RegisterPOJO(&common.MetadataInfo{})
+	hessian.RegisterPOJO(&common.ServiceInfo{})
+	hessian.RegisterPOJO(&common.URL{})
+}
+
+func (rc *RootConfig) Init() error {
+	registerPOJO()
+	if err := rc.Logger.Init(); err != nil {
+		return err
+	}
+	if err := rc.ConfigCenter.Init(rc); err != nil {
+		logger.Warnf("config center doesn't start. error is %s", err)
+	}
+	if err := rc.Application.Init(); err != nil {
+		return err
+	}
+
+	// init protocol
+	protocols := rc.Protocols
+	if len(protocols) <= 0 {
+		protocol := &ProtocolConfig{}
+		protocols = make(map[string]*ProtocolConfig, 1)
+		protocols[constant.DUBBO] = protocol
+		rc.Protocols = protocols
+	}
+	for _, protocol := range protocols {
+		if err := protocol.Init(); err != nil {
+			return err
+		}
+	}
+
+	// init registry
+	registries := rc.Registries
+	if registries != nil {
+		for _, reg := range registries {
+			if err := reg.Init(); err != nil {
+				return err
+			}
+		}
+	}
+
+	// init serviceDiscoveries
+	serviceDiscoveries := rc.ServiceDiscoveries
+	if serviceDiscoveries != nil {
+		for _, sd := range serviceDiscoveries {
+			if err := sd.Init(); err != nil {
+				return err
+			}
+		}
+	}
+
+	if err := rc.MetadataReport.Init(rc); err != nil {
+		return err
+	}
+	if err := rc.Metric.Init(); err != nil {
+		return err
+	}
+	if err := initRouterConfig(rc); err != nil {
+		return err
+	}
+	// provider、consumer must last init
+	if err := rc.Provider.Init(rc); err != nil {
+		return err
+	}
+	if err := rc.Consumer.Init(rc); err != nil {
+		return err
+	}
+
+	rc.Start()
+	return nil
+}
+
+func (rc *RootConfig) Start() {
+	startOnce.Do(func() {
+		rc.Provider.Load()
+		rc.Consumer.Load()
+		registerServiceInstance()
+	})
+}
 
 // newEmptyRootConfig get empty root config
 func newEmptyRootConfig() *RootConfig {
@@ -126,6 +217,7 @@ func newEmptyRootConfig() *RootConfig {
 		Provider:           NewProviderConfigBuilder().Build(),
 		Consumer:           NewConsumerConfigBuilder().Build(),
 		Metric:             NewMetricConfigBuilder().Build(),
+		Logger:             NewLoggerConfigBuilder().Build(),
 	}
 	return newRootConfig
 }

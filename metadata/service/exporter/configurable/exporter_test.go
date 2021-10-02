@@ -70,7 +70,7 @@ func TestConfigurableExporter(t *testing.T) {
 		assert.Equal(t, false, exported.IsExported())
 		assert.NoError(t, exported.Export(registryURL))
 		assert.Equal(t, true, exported.IsExported())
-		assert.Regexp(t, "dubbo://127.0.0.1:20005/org.apache.dubbo.metadata.MetadataService*", exported.GetExportedURLs()[0].String())
+		assert.Regexp(t, "dubbo://:20005/org.apache.dubbo.metadata.MetadataService*", exported.GetExportedURLs()[0].String())
 		exported.Unexport()
 		assert.Equal(t, false, exported.IsExported())
 	})

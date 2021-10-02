@@ -27,7 +27,7 @@ registries :
 
 services:
   "UserProvider":
-    registry: "hangzhouzk,shanghaizk"
+    registries: "hangzhouzk,shanghaizk"
     filter: ""
     # equivalent to interface of dubbo.xml
     interface : "com.ikurento.user.UserProvider"
