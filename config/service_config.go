@@ -50,9 +50,9 @@ import (
 type ServiceConfig struct {
 	id                          string
 	Filter                      string            `yaml:"filter" json:"filter,omitempty" property:"filter"`
-	Protocol                    []string          `default:"[\"dubbo\"]"  validate:"required"  yaml:"protocol"  json:"protocol,omitempty" property:"protocol"` // multi protocol support, split by ','
+	Protocols                   []string          `default:"[\"dubbo\"]"  validate:"required"  yaml:"protocol"  json:"protocol,omitempty" property:"protocol"` // multi protocol support, split by ','
 	Interface                   string            `validate:"required"  yaml:"interface"  json:"interface,omitempty" property:"interface"`
-	Registry                    []string          `yaml:"registry"  json:"registry,omitempty"  property:"registry"`
+	Registries                  []string          `yaml:"registries"  json:"registry,omitempty"  property:"registry"`
 	Cluster                     string            `default:"failover" yaml:"cluster"  json:"cluster,omitempty" property:"cluster"`
 	Loadbalance                 string            `default:"random" yaml:"loadbalance"  json:"loadbalance,omitempty"  property:"loadbalance"`
 	Group                       string            `yaml:"group"  json:"group,omitempty" property:"group"`
@@ -76,8 +76,8 @@ type ServiceConfig struct {
 	Tag                         string            `yaml:"tag" json:"tag,omitempty" property:"tag"`
 	GrpcMaxMessageSize          int               `default:"4" yaml:"max_message_size" json:"max_message_size,omitempty"`
 
-	Protocols       map[string]*ProtocolConfig
-	Registries      map[string]*RegistryConfig
+	RCProtocols     map[string]*ProtocolConfig
+	RCRegistries    map[string]*RegistryConfig
 	ProxyFactoryKey string
 	unexported      *atomic.Bool
 	exported        *atomic.Bool
@@ -106,14 +106,14 @@ func (svc *ServiceConfig) Init(rc *RootConfig) error {
 	svc.exported = atomic.NewBool(false)
 	svc.metadataType = rc.Application.MetadataType
 	svc.unexported = atomic.NewBool(false)
-	svc.Registries = rc.Registries
-	svc.Protocols = rc.Protocols
+	svc.RCRegistries = rc.Registries
+	svc.RCProtocols = rc.Protocols
 	if rc.Provider != nil {
 		svc.ProxyFactoryKey = rc.Provider.ProxyFactory
 	}
-	svc.Registry = translateRegistryIds(svc.Registry)
-	if len(svc.Registry) <= 0 {
-		svc.Registry = rc.Provider.Registry
+	svc.Registries = translateRegistryIds(svc.Registries)
+	if len(svc.Registries) <= 0 {
+		svc.Registries = rc.Provider.Registries
 	}
 	svc.export = true
 	return verify(svc)
@@ -160,11 +160,11 @@ func (svc *ServiceConfig) Export() error {
 		return nil
 	}
 
-	regUrls := loadRegistries(svc.Registry, svc.Registries, common.PROVIDER)
+	regUrls := loadRegistries(svc.Registries, svc.RCRegistries, common.PROVIDER)
 	urlMap := svc.getUrlMap()
-	protocolConfigs := loadProtocol(svc.Protocol, svc.Protocols)
+	protocolConfigs := loadProtocol(svc.Protocols, svc.RCProtocols)
 	if len(protocolConfigs) == 0 {
-		logger.Warnf("The service %v's '%v' protocols don't has right protocolConfigs, Please check your configuration center and transfer protocol ", svc.Interface, svc.Protocol)
+		logger.Warnf("The service %v's '%v' protocols don't has right protocolConfigs, Please check your configuration center and transfer protocol ", svc.Interface, svc.Protocols)
 		return nil
 	}
 
@@ -423,145 +423,97 @@ func (svc *ServiceConfig) postProcessConfig(url *common.URL) {
 	}
 }
 
-// ServiceConfigOpt is the option to init ServiceConfig
-type ServiceConfigOpt func(config *ServiceConfig) *ServiceConfig
-
-// NewDefaultServiceConfig returns default ServiceConfig
-func NewDefaultServiceConfig() *ServiceConfig {
+// newEmptyServiceConfig returns default ServiceConfig
+func newEmptyServiceConfig() *ServiceConfig {
 	newServiceConfig := &ServiceConfig{
-		unexported: atomic.NewBool(false),
-		exported:   atomic.NewBool(false),
-		export:     true,
-		Protocols:  make(map[string]*ProtocolConfig),
-		Registries: make(map[string]*RegistryConfig),
+		unexported:   atomic.NewBool(false),
+		exported:     atomic.NewBool(false),
+		export:       true,
+		RCProtocols:  make(map[string]*ProtocolConfig),
+		RCRegistries: make(map[string]*RegistryConfig),
 	}
 	newServiceConfig.Params = make(map[string]string)
 	newServiceConfig.Methods = make([]*MethodConfig, 0, 8)
 	return newServiceConfig
 }
 
-// NewServiceConfig returns ServiceConfig with given @opts
-func NewServiceConfig(opts ...ServiceConfigOpt) *ServiceConfig {
-	defaultServiceConfig := NewDefaultServiceConfig()
-	for _, v := range opts {
-		v(defaultServiceConfig)
-	}
-	return defaultServiceConfig
+type ServiceConfigBuilder struct {
+	serviceConfig *ServiceConfig
 }
 
-// WithServiceRegistry returns ServiceConfigOpt with given registryKey @registry
-func WithServiceRegistry(registry string) ServiceConfigOpt {
-	return func(config *ServiceConfig) *ServiceConfig {
-		config.Registry = append(config.Registry, registry)
-		return config
-	}
+func NewServiceConfigBuilder() *ServiceConfigBuilder {
+	return &ServiceConfigBuilder{serviceConfig: newEmptyServiceConfig()}
 }
 
-// WithServiceProtocolKeys returns ServiceConfigOpt with given protocolKey @protocol
-func WithServiceProtocolKeys(protocolKeys ...string) ServiceConfigOpt {
-	return func(config *ServiceConfig) *ServiceConfig {
-		config.Protocol = protocolKeys
-		return config
-	}
+func (pcb *ServiceConfigBuilder) SetRegistries(registries ...string) *ServiceConfigBuilder {
+	pcb.serviceConfig.Registries = registries
+	return pcb
 }
 
-// WithServiceInterface returns ServiceConfigOpt with given @interfaceName
-func WithServiceInterface(interfaceName string) ServiceConfigOpt {
-	return func(config *ServiceConfig) *ServiceConfig {
-		config.Interface = interfaceName
-		return config
-	}
+func (pcb *ServiceConfigBuilder) SetProtocols(protocols ...string) *ServiceConfigBuilder {
+	pcb.serviceConfig.Protocols = protocols
+	return pcb
 }
 
-// WithServiceMetadataType returns ServiceConfigOpt with given @metadataType
-func WithServiceMetadataType(metadataType string) ServiceConfigOpt {
-	return func(config *ServiceConfig) *ServiceConfig {
-		config.metadataType = metadataType
-		return config
-	}
+func (pcb *ServiceConfigBuilder) SetInterface(interfaceName string) *ServiceConfigBuilder {
+	pcb.serviceConfig.Interface = interfaceName
+	return pcb
 }
 
-// WithServiceLoadBalance returns ServiceConfigOpt with given load balance @lb
-func WithServiceLoadBalance(lb string) ServiceConfigOpt {
-	return func(config *ServiceConfig) *ServiceConfig {
-		config.Loadbalance = lb
-		return config
-	}
+func (pcb *ServiceConfigBuilder) SetMetadataType(setMetadataType string) *ServiceConfigBuilder {
+	pcb.serviceConfig.metadataType = setMetadataType
+	return pcb
 }
 
-// WithServiceWarmUpTime returns ServiceConfigOpt with given @warmUp time
-func WithServiceWarmUpTime(warmUp string) ServiceConfigOpt {
-	return func(config *ServiceConfig) *ServiceConfig {
-		config.Warmup = warmUp
-		return config
-	}
+func (pcb *ServiceConfigBuilder) SetLoadBalancce(lb string) *ServiceConfigBuilder {
+	pcb.serviceConfig.Loadbalance = lb
+	return pcb
 }
 
-// WithServiceCluster returns ServiceConfigOpt with given cluster name @cluster
-func WithServiceCluster(cluster string) ServiceConfigOpt {
-	return func(config *ServiceConfig) *ServiceConfig {
-		config.Cluster = cluster
-		return config
-	}
+func (pcb *ServiceConfigBuilder) SetWarmUpTie(warmUp string) *ServiceConfigBuilder {
+	pcb.serviceConfig.Warmup = warmUp
+	return pcb
 }
 
-// WithServiceMethod returns ServiceConfigOpt with given @name, @retries and load balance @lb
-func WithServiceMethod(name, retries, lb string) ServiceConfigOpt {
-	return func(config *ServiceConfig) *ServiceConfig {
-		config.Methods = append(config.Methods, &MethodConfig{
-			Name:        name,
-			Retries:     retries,
-			LoadBalance: lb,
-		})
-		return config
-	}
+func (pcb *ServiceConfigBuilder) SetCluster(cluster string) *ServiceConfigBuilder {
+	pcb.serviceConfig.Cluster = cluster
+	return pcb
 }
 
-func WithServiceProtocol(protocolName string, protocolConfig *ProtocolConfig) ServiceConfigOpt {
-	return func(config *ServiceConfig) *ServiceConfig {
-		config.Protocols[protocolName] = protocolConfig
-		return config
-	}
+func (pcb *ServiceConfigBuilder) AddRCProtocol(protocolName string, protocolConfig *ProtocolConfig) *ServiceConfigBuilder {
+	pcb.serviceConfig.RCProtocols[protocolName] = protocolConfig
+	return pcb
 }
 
-func WithServiceRegistries(registryName string, registryConfig *RegistryConfig) ServiceConfigOpt {
-	return func(config *ServiceConfig) *ServiceConfig {
-		config.Registries[registryName] = registryConfig
-		return config
-	}
+func (pcb *ServiceConfigBuilder) AddRCRegistry(registryName string, registryConfig *RegistryConfig) *ServiceConfigBuilder {
+	pcb.serviceConfig.RCRegistries[registryName] = registryConfig
+	return pcb
 }
 
-func WithServiceGroup(group string) ServiceConfigOpt {
-	return func(config *ServiceConfig) *ServiceConfig {
-		config.Group = group
-		return config
-	}
+func (pcb *ServiceConfigBuilder) SetGroup(group string) *ServiceConfigBuilder {
+	pcb.serviceConfig.Group = group
+	return pcb
+}
+func (pcb *ServiceConfigBuilder) SetVersion(version string) *ServiceConfigBuilder {
+	pcb.serviceConfig.Version = version
+	return pcb
 }
 
-func WithServiceVersion(version string) ServiceConfigOpt {
-	return func(config *ServiceConfig) *ServiceConfig {
-		config.Version = version
-		return config
-	}
+func (pcb *ServiceConfigBuilder) SetProxyFactoryKey(proxyFactoryKey string) *ServiceConfigBuilder {
+	pcb.serviceConfig.ProxyFactoryKey = proxyFactoryKey
+	return pcb
 }
 
-func WithProxyFactoryKey(proxyFactoryKey string) ServiceConfigOpt {
-	return func(config *ServiceConfig) *ServiceConfig {
-		config.ProxyFactoryKey = proxyFactoryKey
-		return config
-	}
+func (pcb *ServiceConfigBuilder) SetRPCService(service common.RPCService) *ServiceConfigBuilder {
+	pcb.serviceConfig.rpcService = service
+	return pcb
 }
 
-func WithRPCService(service common.RPCService) ServiceConfigOpt {
-	return func(config *ServiceConfig) *ServiceConfig {
-		config.rpcService = service
-		return config
-	}
+func (pcb *ServiceConfigBuilder) SetServiceID(id string) *ServiceConfigBuilder {
+	pcb.serviceConfig.id = id
+	return pcb
 }
 
-func WithServiceID(id string) ServiceConfigOpt {
-	return func(config *ServiceConfig) *ServiceConfig {
-		config.id = id
-		return config
-	}
+func (pcb *ServiceConfigBuilder) Build() *ServiceConfig {
+	return pcb.serviceConfig
 }

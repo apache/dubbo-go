@@ -78,8 +78,7 @@ func TestConfigurableExporter(t *testing.T) {
 
 // mockInitProviderWithSingleRegistry will init a mocked providerConfig
 func mockInitProviderWithSingleRegistry() {
-	providerConfig := config.GetProviderInstance(
-		config.WithProviderService("MockService", config.NewServiceConfig()))
+	providerConfig := config.NewProviderConfigBuilder().AddService("MockService", config.NewServiceConfigBuilder().Build()).Build()
 	providerConfig.Services["MockService"].InitExported()
 	config.SetRootConfig(config.RootConfig{
 		Application: &config.ApplicationConfig{
@@ -109,7 +108,7 @@ func mockInitProviderWithSingleRegistry() {
 			Services: map[string]*config.ServiceConfig{
 				"MockService": {
 					Interface:   "com.MockService",
-					Protocol:    []string{"mock"},
+					Protocols:   []string{"mock"},
 					Cluster:     "failover",
 					Loadbalance: "random",
 					Retries:     "3",

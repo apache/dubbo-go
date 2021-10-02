@@ -35,8 +35,8 @@ type ProviderConfig struct {
 	Filter string `yaml:"filter" json:"filter,omitempty" property:"filter"`
 	// Deprecated Register whether registration is required
 	Register bool `yaml:"register" json:"register" property:"register"`
-	// Registry registry ids TODO Registries?
-	Registry []string `yaml:"registry" json:"registry" property:"registry"`
+	// Registries registry ids TODO Registries?
+	Registries []string `yaml:"registries" json:"registries" property:"registries"`
 	// Services services
 	Services map[string]*ServiceConfig `yaml:"services" json:"services,omitempty" property:"services"`
 
@@ -63,9 +63,9 @@ func (c *ProviderConfig) Init(rc *RootConfig) error {
 	if c == nil {
 		return nil
 	}
-	c.Registry = translateRegistryIds(c.Registry)
-	if len(c.Registry) <= 0 {
-		c.Registry = rc.getRegistryIds()
+	c.Registries = translateRegistryIds(c.Registries)
+	if len(c.Registries) <= 0 {
+		c.Registries = rc.getRegistryIds()
 	}
 	for _, service := range c.Services {
 		if err := service.Init(rc); err != nil {
@@ -94,70 +94,23 @@ func (c *ProviderConfig) Load() {
 
 }
 
-// SetProviderConfig sets provider config by @p
-func SetProviderConfig(p ProviderConfig) {
-	rootConfig.Provider = &p
-}
-
-// nolint
-type ProviderConfigOpt func(config *ProviderConfig) *ProviderConfig
-
-// NewEmptyProviderConfig returns ProviderConfig with default ApplicationConfig
-func NewEmptyProviderConfig() *ProviderConfig {
+// newEmptyProviderConfig returns ProviderConfig with default ApplicationConfig
+func newEmptyProviderConfig() *ProviderConfig {
 	newProviderConfig := &ProviderConfig{
-		Services: make(map[string]*ServiceConfig),
-		Registry: make([]string, 8),
+		Services:   make(map[string]*ServiceConfig),
+		Registries: make([]string, 8),
 	}
 	return newProviderConfig
-}
-
-// NewProviderConfig returns ProviderConfig with given @opts
-func NewProviderConfig(opts ...ProviderConfigOpt) *ProviderConfig {
-	newConfig := NewEmptyProviderConfig()
-	for _, v := range opts {
-		v(newConfig)
-	}
-	return newConfig
-}
-
-// GetProviderInstance returns ProviderConfig with given @opts
-func GetProviderInstance(opts ...ProviderConfigOpt) *ProviderConfig {
-	newConfig := &ProviderConfig{
-		Services: make(map[string]*ServiceConfig),
-		Registry: make([]string, 8),
-	}
-	for _, opt := range opts {
-		opt(newConfig)
-	}
-	return newConfig
-}
-
-// WithProviderService returns ProviderConfig with given serviceNameKey @serviceName and @serviceConfig
-func WithProviderService(serviceName string, serviceConfig *ServiceConfig) ProviderConfigOpt {
-	return func(config *ProviderConfig) *ProviderConfig {
-		config.Services[serviceName] = serviceConfig
-		return config
-	}
-}
-
-// WithProviderRegistryKeys returns ProviderConfigOpt with given @registryKey and registry @registryConfig
-func WithProviderRegistryKeys(registryKey ...string) ProviderConfigOpt {
-	return func(config *ProviderConfig) *ProviderConfig {
-		config.Registry = append(config.Registry, registryKey...)
-		return config
-	}
 }
 
 type ProviderConfigBuilder struct {
 	providerConfig *ProviderConfig
 }
 
-// nolint
 func NewProviderConfigBuilder() *ProviderConfigBuilder {
-	return &ProviderConfigBuilder{providerConfig: &ProviderConfig{}}
+	return &ProviderConfigBuilder{providerConfig: newEmptyProviderConfig()}
 }
 
-// nolint
 func (pcb *ProviderConfigBuilder) SetFilter(filter string) *ProviderConfigBuilder {
 	pcb.providerConfig.Filter = filter
 	return pcb
@@ -170,8 +123,8 @@ func (pcb *ProviderConfigBuilder) SetRegister(register bool) *ProviderConfigBuil
 }
 
 // nolint
-func (pcb *ProviderConfigBuilder) SetRegistry(registry []string) *ProviderConfigBuilder {
-	pcb.providerConfig.Registry = registry
+func (pcb *ProviderConfigBuilder) SetRegistries(registryKeys ...string) *ProviderConfigBuilder {
+	pcb.providerConfig.Registries = registryKeys
 	return pcb
 }
 
@@ -225,8 +178,5 @@ func (pcb *ProviderConfigBuilder) SetRootConfig(rootConfig *RootConfig) *Provide
 
 // nolint
 func (pcb *ProviderConfigBuilder) Build() *ProviderConfig {
-	if err := pcb.providerConfig.Init(pcb.providerConfig.rootConfig); err != nil {
-		panic(err)
-	}
 	return pcb.providerConfig
 }

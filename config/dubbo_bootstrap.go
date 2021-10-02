@@ -35,26 +35,6 @@ var (
 	startOnce sync.Once
 )
 
-func GetInstance(opts ...RootConfigOpt) *RootConfig {
-	registerPOJO()
-	rc := &RootConfig{
-		ConfigCenter:       GetConfigCenterInstance(),
-		ServiceDiscoveries: make(map[string]*ServiceDiscoveryConfig),
-		MetadataReport:     &MetadataReportConfig{},
-		Application:        GetApplicationInstance(),
-		Registries:         make(map[string]*RegistryConfig),
-		Protocols:          GetProtocolsInstance(),
-		Provider:           GetProviderInstance(),
-		Consumer:           GetConsumerInstance(),
-		Metric:             &MetricConfig{},
-		Logger:             GetLoggerConfigInstance(),
-	}
-	for _, opt := range opts {
-		opt(rc)
-	}
-	return rc
-}
-
 func registerPOJO() {
 	hessian.RegisterPOJO(&common.MetadataInfo{})
 	hessian.RegisterPOJO(&common.ServiceInfo{})
@@ -62,7 +42,7 @@ func registerPOJO() {
 }
 
 func (rc *RootConfig) Init() error {
-
+	registerPOJO()
 	if err := rc.Logger.Init(); err != nil {
 		return err
 	}

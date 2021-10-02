@@ -29,8 +29,8 @@ func TestProviderConfigEmptyRegistry(t *testing.T) {
 	err := Load(WithPath("./testdata/config/provider/empty_registry_application.yaml"))
 	assert.Nil(t, err)
 	provider := rootConfig.Provider
-	assert.Equal(t, 1, len(provider.Registry))
-	assert.Equal(t, "nacos", provider.Registry[0])
+	assert.Equal(t, 1, len(provider.Registries))
+	assert.Equal(t, "nacos", provider.Registries[0])
 }
 
 func TestProviderConfigRootRegistry(t *testing.T) {
@@ -40,8 +40,8 @@ func TestProviderConfigRootRegistry(t *testing.T) {
 	assert.NotNil(t, provider)
 	assert.Equal(t, 2, len(provider.Services))
 
-	assert.Equal(t, 2, len(provider.Services["HelloService"].Registry))
-	assert.Equal(t, 1, len(provider.Services["OrderService"].Registry))
+	assert.Equal(t, 2, len(provider.Services["HelloService"].Registries))
+	assert.Equal(t, 1, len(provider.Services["OrderService"].Registries))
 }
 
 //
@@ -56,5 +56,5 @@ func TestProviderConfigRootRegistry(t *testing.T) {
 //	conPath, err := filepath.Abs("./testdata/provider_config_withoutProtocol.yml")
 //	assert.NoError(t, err)
 //	assert.NoError(t, ProviderInit(conPath))
-//	assert.Equal(t, "dubbo", config.providerConfig.Services["UserProvider"].Protocol)
+//	assert.Equal(t, "dubbo", config.referenceConfig.Services["UserProvider"].Protocol)
 //}

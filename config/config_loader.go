@@ -42,7 +42,7 @@ import (
 )
 
 var (
-	rootConfig = GetInstance()
+	rootConfig = NewRootConfigBuilder().Build()
 	maxWait    = 3
 )
 

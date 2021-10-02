@@ -49,48 +49,6 @@ func (p *ProtocolConfig) Init() error {
 	return verify(p)
 }
 
-func NewDefaultProtocolConfig() *ProtocolConfig {
-	return &ProtocolConfig{
-		Name: constant.DEFAULT_PROTOCOL,
-		Port: "20000",
-		Ip:   "127.0.0.1",
-	}
-}
-
-// NewProtocolConfig returns ProtocolConfig with given @opts
-func NewProtocolConfig(opts ...ProtocolConfigOpt) *ProtocolConfig {
-	newConfig := NewDefaultProtocolConfig()
-	for _, v := range opts {
-		v(newConfig)
-	}
-	return newConfig
-}
-
-type ProtocolConfigOpt func(config *ProtocolConfig) *ProtocolConfig
-
-// WithProtocolIP set ProtocolConfig with given binding @ip
-// Deprecated: the param @ip would be used as service listener binding and would be registered to registry center
-func WithProtocolIP(ip string) ProtocolConfigOpt {
-	return func(config *ProtocolConfig) *ProtocolConfig {
-		config.Ip = ip
-		return config
-	}
-}
-
-func WithProtocolName(protcolName string) ProtocolConfigOpt {
-	return func(config *ProtocolConfig) *ProtocolConfig {
-		config.Name = protcolName
-		return config
-	}
-}
-
-func WithProtocolPort(port string) ProtocolConfigOpt {
-	return func(config *ProtocolConfig) *ProtocolConfig {
-		config.Port = port
-		return config
-	}
-}
-
 func NewProtocolConfigBuilder() *ProtocolConfigBuilder {
 	return &ProtocolConfigBuilder{protocolConfig: &ProtocolConfig{}}
 }
@@ -120,8 +78,5 @@ func (pcb *ProtocolConfigBuilder) SetParams(params interface{}) *ProtocolConfigB
 }
 
 func (pcb *ProtocolConfigBuilder) Build() *ProtocolConfig {
-	if err := pcb.protocolConfig.Init(); err != nil {
-		panic(err)
-	}
 	return pcb.protocolConfig
 }

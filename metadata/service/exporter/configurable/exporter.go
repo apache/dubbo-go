@@ -61,21 +61,20 @@ func (exporter *MetadataServiceExporter) Export(url *common.URL) error {
 		version, _ := exporter.metadataService.Version()
 		exporter.lock.Lock()
 		defer exporter.lock.Unlock()
-		exporter.ServiceConfig = config.NewServiceConfig(
-			config.WithServiceID(constant.SIMPLE_METADATA_SERVICE_NAME),
-			config.WithServiceProtocolKeys(constant.DEFAULT_PROTOCOL),
-			config.WithServiceProtocol(constant.DEFAULT_PROTOCOL, config.NewProtocolConfig(
-				config.WithProtocolName(constant.DEFAULT_PROTOCOL),
-				config.WithProtocolPort(strconv.Itoa(constant.DEFAULT_METADATAPORT)),
-			)),
-			config.WithServiceRegistry("N/A"),
-			config.WithServiceInterface(constant.METADATA_SERVICE_NAME),
-			config.WithServiceGroup(config.GetApplicationConfig().Name),
-			config.WithServiceVersion(version),
-			config.WithProxyFactoryKey(constant.DEFAULT_Key),
-			config.WithServiceInterface(constant.METADATA_SERVICE_NAME),
-			config.WithServiceMetadataType(constant.REMOTE_METADATA_STORAGE_TYPE),
-		)
+		exporter.ServiceConfig = config.NewServiceConfigBuilder().
+			SetServiceID(constant.SIMPLE_METADATA_SERVICE_NAME).
+			SetProtocols(constant.DEFAULT_PROTOCOL).
+			AddRCProtocol(constant.DEFAULT_PROTOCOL, config.NewProtocolConfigBuilder().
+				SetName(constant.DEFAULT_PROTOCOL).
+				SetPort(strconv.Itoa(constant.DEFAULT_METADATAPORT)).
+				Build()).
+			SetRegistries("N/A").
+			SetInterface(constant.METADATA_SERVICE_NAME).
+			SetGroup(config.GetApplicationConfig().Name).
+			SetVersion(version).
+			SetProxyFactoryKey(constant.DEFAULT_Key).
+			SetMetadataType(constant.REMOTE_METADATA_STORAGE_TYPE).
+			Build()
 		exporter.ServiceConfig.Implement(exporter.metadataService)
 		err := exporter.ServiceConfig.Export()
 

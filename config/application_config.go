@@ -55,63 +55,11 @@ func (ac *ApplicationConfig) Init() error {
 	return nil
 }
 
-func GetApplicationInstance(opts ...ApplicationConfigOpt) *ApplicationConfig {
-	ac := &ApplicationConfig{}
-	for _, opt := range opts {
-		opt(ac)
-	}
-	return ac
-}
-
 func (ac *ApplicationConfig) check() error {
 	if err := defaults.Set(ac); err != nil {
 		return err
 	}
 	return verify(ac)
-}
-
-type ApplicationConfigOpt func(config *ApplicationConfig)
-
-func WithOrganization(organization string) ApplicationConfigOpt {
-	return func(ac *ApplicationConfig) {
-		ac.Organization = organization
-	}
-}
-
-func WithName(name string) ApplicationConfigOpt {
-	return func(ac *ApplicationConfig) {
-		ac.Name = name
-	}
-}
-
-func WithModule(module string) ApplicationConfigOpt {
-	return func(ac *ApplicationConfig) {
-		ac.Module = module
-	}
-}
-
-func WithVersion(version string) ApplicationConfigOpt {
-	return func(ac *ApplicationConfig) {
-		ac.Version = version
-	}
-}
-
-func WithOwner(owner string) ApplicationConfigOpt {
-	return func(ac *ApplicationConfig) {
-		ac.Owner = owner
-	}
-}
-
-func WithEnvironment(env string) ApplicationConfigOpt {
-	return func(ac *ApplicationConfig) {
-		ac.Environment = env
-	}
-}
-
-func WithMetadataType(metadataType string) ApplicationConfigOpt {
-	return func(ac *ApplicationConfig) {
-		ac.MetadataType = metadataType
-	}
 }
 
 func NewApplicationConfigBuilder() *ApplicationConfigBuilder {
@@ -158,8 +106,5 @@ func (acb *ApplicationConfigBuilder) SetMetadataType(metadataType string) *Appli
 }
 
 func (acb *ApplicationConfigBuilder) Build() *ApplicationConfig {
-	if err := acb.application.Init(); err != nil {
-		panic(err)
-	}
 	return acb.application
 }

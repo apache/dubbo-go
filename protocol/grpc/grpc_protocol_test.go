@@ -47,8 +47,8 @@ func doInitProvider() {
 			Services: map[string]*config.ServiceConfig{
 				"GrpcGreeterImpl": {
 					Interface:   "io.grpc.examples.helloworld.GreeterGrpc$IGreeter",
-					Protocol:    []string{"grpc"},
-					Registry:    []string{"shanghai_reg1,shanghai_reg2,hangzhou_reg1,hangzhou_reg2,hangzhou_service_discovery_reg"},
+					Protocols:   []string{"grpc"},
+					Registries:  []string{"shanghai_reg1,shanghai_reg2,hangzhou_reg1,hangzhou_reg2,hangzhou_service_discovery_reg"},
 					Cluster:     "failover",
 					Loadbalance: "random",
 					Retries:     "3",

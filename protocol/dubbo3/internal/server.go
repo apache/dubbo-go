@@ -43,24 +43,19 @@ func (s *Server) SayHello(ctx context.Context, in *HelloRequest) (*HelloReply, e
 
 // InitDubboServer creates global gRPC server.
 func InitDubboServer() {
-	serviceConfig := config.NewServiceConfig(
-		config.WithServiceInterface("org.apache.dubbo.DubboGreeterImpl"),
-		config.WithServiceProtocolKeys("tripleKey"),
-	)
+	serviceConfig := config.NewServiceConfigBuilder().
+		SetInterface("org.apache.dubbo.DubboGreeterImpl").
+		SetProtocols("tripleKey").Build()
 
-	providerConfig := config.GetProviderInstance(
-		config.WithProviderService(common.GetReference(&Server{}), serviceConfig),
-	)
+	providerConfig := config.NewProviderConfigBuilder().SetServices(map[string]*config.ServiceConfig{
+		common.GetReference(&Server{}): serviceConfig,
+	}).Build()
 
-	protocolConfig := config.NewProtocolConfig(
-		config.WithProtocolName("tri"),
-		config.WithProtocolPort("20003"),
-	)
+	protocolConfig := config.NewProtocolConfigBuilder().SetName("tri").SetPort("20003").Build()
 
-	rootConfig := config.GetInstance(
-		config.WithRootProviderConfig(providerConfig),
-		config.WithRootProtocolConfig("tripleKey", protocolConfig),
-	)
+	rootConfig := config.NewRootConfigBuilder().SetProvider(providerConfig).SetProtocols(map[string]*config.ProtocolConfig{
+		"tripleKey": protocolConfig,
+	}).Build()
 
 	config.SetProviderService(&Server{})
 	rootConfig.Init()

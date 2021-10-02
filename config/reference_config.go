@@ -50,7 +50,7 @@ type ReferenceConfig struct {
 	URL            string            `yaml:"url"  json:"url,omitempty" property:"url"`
 	Filter         string            `yaml:"filter" json:"filter,omitempty" property:"filter"`
 	Protocol       string            `default:"dubbo"  yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
-	Registry       []string          `yaml:"registry"  json:"registry,omitempty"  property:"registry"`
+	Registries     []string          `yaml:"registries"  json:"registries,omitempty"  property:"registries"`
 	Cluster        string            `yaml:"cluster"  json:"cluster,omitempty" property:"cluster"`
 	Loadbalance    string            `yaml:"loadbalance"  json:"loadbalance,omitempty" property:"loadbalance"`
 	Retries        string            `yaml:"retries"  json:"retries,omitempty" property:"retries"`
@@ -90,9 +90,9 @@ func (rc *ReferenceConfig) Init(root *RootConfig) error {
 	if root.Application != nil {
 		rc.metaDataType = root.Application.MetadataType
 	}
-	rc.Registry = translateRegistryIds(rc.Registry)
-	if len(rc.Registry) <= 0 {
-		rc.Registry = root.Consumer.Registry
+	rc.Registries = translateRegistryIds(rc.Registries)
+	if len(rc.Registries) <= 0 {
+		rc.Registries = root.Consumer.Registries
 	}
 	return verify(rc)
 }
@@ -133,7 +133,7 @@ func (rc *ReferenceConfig) Refer(srv interface{}) {
 		}
 	} else {
 		// 2. assemble SubURL from register center's configuration mode
-		rc.urls = loadRegistries(rc.Registry, rc.rootConfig.Registries, common.CONSUMER)
+		rc.urls = loadRegistries(rc.Registries, rc.rootConfig.Registries, common.CONSUMER)
 
 		// set url to regURLs
 		for _, regURL := range rc.urls {
@@ -323,71 +323,37 @@ func (rc *ReferenceConfig) postProcessConfig(url *common.URL) {
 
 //////////////////////////////////// reference config api
 
-// ReferenceConfigOpt is consumer's reference config
-type ReferenceConfigOpt func(config *ReferenceConfig) *ReferenceConfig
-
-// NewReferenceConfig The only way to get a new ReferenceConfig
-func NewReferenceConfigWithID(id string) *ReferenceConfig {
-	return &ReferenceConfig{id: id}
-}
-
-// NewEmptyReferenceConfig returns empty ReferenceConfig
-func NewEmptyReferenceConfig() *ReferenceConfig {
-	newReferenceConfig := NewReferenceConfigWithID("")
+// newEmptyReferenceConfig returns empty ReferenceConfig
+func newEmptyReferenceConfig() *ReferenceConfig {
+	newReferenceConfig := &ReferenceConfig{}
 	newReferenceConfig.Methods = make([]*MethodConfig, 0, 8)
 	newReferenceConfig.Params = make(map[string]string, 8)
 	return newReferenceConfig
 }
 
-// NewReferenceConfig returns ReferenceConfig with given @opts
-func NewReferenceConfig(opts ...ReferenceConfigOpt) *ReferenceConfig {
-	newReferenceConfig := NewEmptyReferenceConfig()
-	for _, v := range opts {
-		v(newReferenceConfig)
-	}
-	return newReferenceConfig
+type ReferenceConfigBuilder struct {
+	referenceConfig *ReferenceConfig
 }
 
-// WithReferenceRegistry returns ReferenceConfigOpt with given registryKey: @registry
-func WithReferenceRegistry(registryKeys ...string) ReferenceConfigOpt {
-	return func(config *ReferenceConfig) *ReferenceConfig {
-		config.Registry = registryKeys
-		return config
-	}
+func NewReferenceConfigBuilder() *ReferenceConfigBuilder {
+	return &ReferenceConfigBuilder{referenceConfig: newEmptyReferenceConfig()}
 }
 
-// WithReferenceProtocolName returns ReferenceConfigOpt with given protocolName: @protocol
-func WithReferenceProtocolName(protocol string) ReferenceConfigOpt {
-	return func(config *ReferenceConfig) *ReferenceConfig {
-		config.Protocol = protocol
-		return config
-	}
+func (pcb *ReferenceConfigBuilder) SetInterface(interfaceName string) *ReferenceConfigBuilder {
+	pcb.referenceConfig.InterfaceName = interfaceName
+	return pcb
 }
 
-// WithReferenceInterface returns ReferenceConfigOpt with given @interfaceName
-func WithReferenceInterface(interfaceName string) ReferenceConfigOpt {
-	return func(config *ReferenceConfig) *ReferenceConfig {
-		config.InterfaceName = interfaceName
-		return config
-	}
+func (pcb *ReferenceConfigBuilder) SetRegistries(registryKeys ...string) *ReferenceConfigBuilder {
+	pcb.referenceConfig.Registries = registryKeys
+	return pcb
 }
 
-// WithReferenceCluster returns ReferenceConfigOpt with given cluster name: @cluster
-func WithReferenceCluster(cluster string) ReferenceConfigOpt {
-	return func(config *ReferenceConfig) *ReferenceConfig {
-		config.Cluster = cluster
-		return config
-	}
+func (pcb *ReferenceConfigBuilder) SetProtocol(protocolName string) *ReferenceConfigBuilder {
+	pcb.referenceConfig.Protocol = protocolName
+	return pcb
 }
 
-// WithReferenceMethod returns ReferenceConfigOpt with given @method, @retries, and load balance: @lb
-func WithReferenceMethod(methodName, retries, lb string) ReferenceConfigOpt {
-	return func(config *ReferenceConfig) *ReferenceConfig {
-		config.Methods = append(config.Methods, &MethodConfig{
-			Name:        methodName,
-			Retries:     retries,
-			LoadBalance: lb,
-		})
-		return config
-	}
+func (pcb *ReferenceConfigBuilder) Build() *ReferenceConfig {
+	return pcb.referenceConfig
 }

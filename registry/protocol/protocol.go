@@ -260,7 +260,7 @@ func registerServiceMap(invoker protocol.Invoker) error {
 
 	_, err := common.ServiceMap.Register(serviceConfig.Interface,
 		// FIXME
-		serviceConfig.Protocol[0], serviceConfig.Group,
+		serviceConfig.Protocols[0], serviceConfig.Group,
 		serviceConfig.Version, rpcService)
 	if err != nil {
 		s := "reExport can not re register ServiceMap. Error message is " + err.Error()
