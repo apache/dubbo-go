@@ -165,6 +165,13 @@ func (r *RPCInvocation) SetAttachments(key string, value interface{}) {
 	if r.attachments == nil {
 		r.attachments = make(map[string]interface{})
 	}
+	// compatible "default." prefix
+	if strings.HasPrefix(key, constant.DEFAULT_KEY_PREFIX) {
+		key = key[len(constant.DEFAULT_KEY_PREFIX):]
+		if _, ok := r.attachments[key]; ok { // ignore common key when key existed
+			return
+		}
+	}
 	r.attachments[key] = value
 }
 

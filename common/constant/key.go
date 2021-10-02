@@ -49,8 +49,9 @@ const (
 	PORT_KEY                 = "port"
 	PROTOCOL_KEY             = "protocol"
 	PATH_SEPARATOR           = "/"
+	SSL_ENABLED_KEY          = "ssl-enabled"
+	DEFAULT_KEY_PREFIX       = "default."
 	//DUBBO_KEY                = "dubbo"
-	SSL_ENABLED_KEY = "ssl-enabled"
 )
 
 const (
