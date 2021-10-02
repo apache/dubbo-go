@@ -96,6 +96,32 @@ func TestNacosMetadataReportFactory_CreateMetadataReport(t *testing.T) {
 	assert.NotNil(t, res)
 }
 
+func TestZookeeperMetadataReportFactory_CreateMetadataReport(t *testing.T) {
+	address := "registry://127.0.0.1:8848"
+	url, err := common.NewURL(address, common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	metadataReportFactory := &nacosMetadataReportFactory{}
+	metadataReport := metadataReportFactory.CreateMetadataReport(url)
+	assert.NotNil(t, metadataReport)
+
+	set, err := metadataReport.GetServiceAppMapping("com.apache.dubbo.sample.basic.IGreeter", "mapping")
+	assert.NotNil(t, err)
+
+	err = metadataReport.RegisterServiceAppMapping("com.apache.dubbo.sample.basic.IGreeter", "mapping", "demo_provider")
+	assert.Nil(t, err)
+	time.Sleep(1 * time.Second)
+	err = metadataReport.RegisterServiceAppMapping("com.apache.dubbo.sample.basic.IGreeter", "mapping", "demo_provider2")
+	assert.Nil(t, err)
+	time.Sleep(1 * time.Second)
+	err = metadataReport.RegisterServiceAppMapping("com.apache.dubbo.sample.basic.IGreeter", "mapping", "demo_provider")
+	assert.Nil(t, err)
+
+	set, err = metadataReport.GetServiceAppMapping("com.apache.dubbo.sample.basic.IGreeter", "mapping")
+	t.Log(set)
+}
+
 func newTestReport() report.MetadataReport {
 	regurl, _ := common.NewURL("registry://console.nacos.io:80", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)))
 	res := extension.GetMetadataReportFactory("nacos").CreateMetadataReport(regurl)
