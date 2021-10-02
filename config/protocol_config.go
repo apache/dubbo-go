@@ -42,25 +42,7 @@ func GetProtocolsInstance() map[string]*ProtocolConfig {
 	return make(map[string]*ProtocolConfig, 1)
 }
 
-func initProtocolsConfig(rc *RootConfig) error {
-	protocols := rc.Protocols
-	if len(protocols) <= 0 {
-		protocol := new(ProtocolConfig)
-		protocols = make(map[string]*ProtocolConfig, 1)
-		protocols[constant.DUBBO] = protocol
-		rc.Protocols = protocols
-		return protocol.check()
-	}
-	for _, protocol := range protocols {
-		if err := protocol.check(); err != nil {
-			return err
-		}
-	}
-	rc.Protocols = protocols
-	return nil
-}
-
-func (p *ProtocolConfig) check() error {
+func (p *ProtocolConfig) Init() error {
 	if err := defaults.Set(p); err != nil {
 		return err
 	}
@@ -87,7 +69,7 @@ func NewProtocolConfig(opts ...ProtocolConfigOpt) *ProtocolConfig {
 type ProtocolConfigOpt func(config *ProtocolConfig) *ProtocolConfig
 
 // WithProtocolIP set ProtocolConfig with given binding @ip
-// Deprecated: the param @ip would be used as service lisener binding and would be registered to registry center
+// Deprecated: the param @ip would be used as service listener binding and would be registered to registry center
 func WithProtocolIP(ip string) ProtocolConfigOpt {
 	return func(config *ProtocolConfig) *ProtocolConfig {
 		config.Ip = ip
@@ -107,4 +89,39 @@ func WithProtocolPort(port string) ProtocolConfigOpt {
 		config.Port = port
 		return config
 	}
+}
+
+func NewProtocolConfigBuilder() *ProtocolConfigBuilder {
+	return &ProtocolConfigBuilder{protocolConfig: &ProtocolConfig{}}
+}
+
+type ProtocolConfigBuilder struct {
+	protocolConfig *ProtocolConfig
+}
+
+func (pcb *ProtocolConfigBuilder) SetName(name string) *ProtocolConfigBuilder {
+	pcb.protocolConfig.Name = name
+	return pcb
+}
+
+func (pcb *ProtocolConfigBuilder) SetIp(ip string) *ProtocolConfigBuilder {
+	pcb.protocolConfig.Ip = ip
+	return pcb
+}
+
+func (pcb *ProtocolConfigBuilder) SetPort(port string) *ProtocolConfigBuilder {
+	pcb.protocolConfig.Port = port
+	return pcb
+}
+
+func (pcb *ProtocolConfigBuilder) SetParams(params interface{}) *ProtocolConfigBuilder {
+	pcb.protocolConfig.Params = params
+	return pcb
+}
+
+func (pcb *ProtocolConfigBuilder) Build() *ProtocolConfig {
+	if err := pcb.protocolConfig.Init(); err != nil {
+		panic(err)
+	}
+	return pcb.protocolConfig
 }

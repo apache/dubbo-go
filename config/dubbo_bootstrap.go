@@ -27,6 +27,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 )
 
@@ -37,16 +38,16 @@ var (
 func GetInstance(opts ...RootConfigOpt) *RootConfig {
 	registerPOJO()
 	rc := &RootConfig{
-		ConfigCenter:         GetConfigCenterInstance(),
-		ServiceDiscoveries:   make(map[string]*ServiceDiscoveryConfig),
-		MetadataReportConfig: &MetadataReportConfig{},
-		Application:          GetApplicationInstance(),
-		Registries:           make(map[string]*RegistryConfig),
-		Protocols:            GetProtocolsInstance(),
-		Provider:             GetProviderInstance(),
-		Consumer:             GetConsumerInstance(),
-		MetricConfig:         &MetricConfig{},
-		Logger:               GetLoggerConfigInstance(),
+		ConfigCenter:       GetConfigCenterInstance(),
+		ServiceDiscoveries: make(map[string]*ServiceDiscoveryConfig),
+		MetadataReport:     &MetadataReportConfig{},
+		Application:        GetApplicationInstance(),
+		Registries:         make(map[string]*RegistryConfig),
+		Protocols:          GetProtocolsInstance(),
+		Provider:           GetProviderInstance(),
+		Consumer:           GetConsumerInstance(),
+		Metric:             &MetricConfig{},
+		Logger:             GetLoggerConfigInstance(),
 	}
 	for _, opt := range opts {
 		opt(rc)
@@ -71,19 +72,45 @@ func (rc *RootConfig) Init() error {
 	if err := rc.Application.Init(); err != nil {
 		return err
 	}
-	if err := initProtocolsConfig(rc); err != nil {
+
+	// init protocol
+	protocols := rc.Protocols
+	if len(protocols) <= 0 {
+		protocol := &ProtocolConfig{}
+		protocols = make(map[string]*ProtocolConfig, 1)
+		protocols[constant.DUBBO] = protocol
+		rc.Protocols = protocols
+	}
+	for _, protocol := range protocols {
+		if err := protocol.Init(); err != nil {
+			return err
+		}
+	}
+
+	// init registry
+	registries := rc.Registries
+	if registries != nil {
+		for _, reg := range registries {
+			if err := reg.Init(); err != nil {
+				return err
+			}
+		}
+	}
+
+	// init serviceDiscoveries
+	serviceDiscoveries := rc.ServiceDiscoveries
+	if serviceDiscoveries != nil {
+		for _, sd := range serviceDiscoveries {
+			if err := sd.Init(); err != nil {
+				return err
+			}
+		}
+	}
+
+	if err := rc.MetadataReport.Init(rc); err != nil {
 		return err
 	}
-	if err := initRegistryConfig(rc); err != nil {
-		return err
-	}
-	if err := initServiceDiscoveryConfig(rc); err != nil {
-		return err
-	}
-	if err := rc.MetadataReportConfig.Init(rc); err != nil {
-		return err
-	}
-	if err := initMetricConfig(rc); err != nil {
+	if err := rc.Metric.Init(); err != nil {
 		return err
 	}
 	if err := initRouterConfig(rc); err != nil {

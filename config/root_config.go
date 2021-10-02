@@ -38,12 +38,13 @@ type RootConfig struct {
 	// Remotes to be remove in 3.0 config-enhance
 	Remotes map[string]*RemoteConfig `yaml:"remote" json:"remote,omitempty" property:"remote"`
 
+	// TODO ConfigCenter and CenterConfig?
 	ConfigCenter *CenterConfig `yaml:"config-center" json:"config-center,omitempty"`
 
 	// ServiceDiscoveries to be remove in 3.0 config-enhance
 	ServiceDiscoveries map[string]*ServiceDiscoveryConfig `yaml:"service-discovery" json:"service-discovery,omitempty" property:"service-discovery"`
 
-	MetadataReportConfig *MetadataReportConfig `yaml:"metadata-report" json:"metadata-report,omitempty" property:"metadata-report"`
+	MetadataReport *MetadataReportConfig `yaml:"metadata-report" json:"metadata-report,omitempty" property:"metadata-report"`
 
 	// provider config
 	Provider *ProviderConfig `yaml:"provider" json:"provider" property:"provider"`
@@ -51,7 +52,7 @@ type RootConfig struct {
 	// consumer config
 	Consumer *ConsumerConfig `yaml:"consumer" json:"consumer" property:"consumer"`
 
-	MetricConfig *MetricConfig `yaml:"metrics" json:"metrics,omitempty" property:"metrics"`
+	Metric *MetricConfig `yaml:"metrics" json:"metrics,omitempty" property:"metrics"`
 
 	// Logger log
 	Logger *LoggerConfig `yaml:"logger" json:"logger,omitempty" property:"logger"`
@@ -198,15 +199,15 @@ func (rc *RootConfig) getRegistryIds() []string {
 // NewRootConfig get root config
 func NewRootConfig(opts ...RootConfigOpt) *RootConfig {
 	newRootConfig := &RootConfig{
-		ConfigCenter:         &CenterConfig{},
-		ServiceDiscoveries:   make(map[string]*ServiceDiscoveryConfig),
-		MetadataReportConfig: &MetadataReportConfig{},
-		Application:          &ApplicationConfig{},
-		Registries:           make(map[string]*RegistryConfig),
-		Protocols:            make(map[string]*ProtocolConfig),
-		Provider:             GetProviderInstance(),
-		Consumer:             GetConsumerInstance(),
-		MetricConfig:         &MetricConfig{},
+		ConfigCenter:       &CenterConfig{},
+		ServiceDiscoveries: make(map[string]*ServiceDiscoveryConfig),
+		MetadataReport:     &MetadataReportConfig{},
+		Application:        &ApplicationConfig{},
+		Registries:         make(map[string]*RegistryConfig),
+		Protocols:          make(map[string]*ProtocolConfig),
+		Provider:           GetProviderInstance(),
+		Consumer:           GetConsumerInstance(),
+		Metric:             &MetricConfig{},
 	}
 	for _, o := range opts {
 		o(newRootConfig)
@@ -219,7 +220,7 @@ type RootConfigOpt func(config *RootConfig)
 // WithMetricsConfig set root config with given @metricsConfig
 func WithMetricsConfig(metricsConfig *MetricConfig) RootConfigOpt {
 	return func(rc *RootConfig) {
-		rc.MetricConfig = metricsConfig
+		rc.Metric = metricsConfig
 	}
 }
 
@@ -261,7 +262,7 @@ func WithRootApplicationConfig(appConfig *ApplicationConfig) RootConfigOpt {
 // WithRootMetadataReportConfig set root config with given @metadataReportConfig
 func WithRootMetadataReportConfig(metadataReportConfig *MetadataReportConfig) RootConfigOpt {
 	return func(rc *RootConfig) {
-		rc.MetadataReportConfig = metadataReportConfig
+		rc.MetadataReport = metadataReportConfig
 	}
 }
 
@@ -277,4 +278,89 @@ func WithRootCenterConfig(centerConfig *CenterConfig) RootConfigOpt {
 	return func(rc *RootConfig) {
 		rc.ConfigCenter = centerConfig
 	}
+}
+
+func NewRootConfigBuilder() *RootConfigBuilder {
+	return &RootConfigBuilder{rootConfig: &RootConfig{}}
+}
+
+type RootConfigBuilder struct {
+	rootConfig *RootConfig
+}
+
+func (rb *RootConfigBuilder) SetApplication(application *ApplicationConfig) *RootConfigBuilder {
+	rb.rootConfig.Application = application
+	return rb
+}
+
+func (rb *RootConfigBuilder) SetProtocols(protocols map[string]*ProtocolConfig) *RootConfigBuilder {
+	rb.rootConfig.Protocols = protocols
+	return rb
+}
+
+func (rb *RootConfigBuilder) SetRegistries(registries map[string]*RegistryConfig) *RootConfigBuilder {
+	rb.rootConfig.Registries = registries
+	return rb
+}
+
+func (rb *RootConfigBuilder) SetRemotes(remotes map[string]*RemoteConfig) *RootConfigBuilder {
+	rb.rootConfig.Remotes = remotes
+	return rb
+}
+
+func (rb *RootConfigBuilder) SetServiceDiscoveries(serviceDiscoveries map[string]*ServiceDiscoveryConfig) *RootConfigBuilder {
+	rb.rootConfig.ServiceDiscoveries = serviceDiscoveries
+	return rb
+}
+
+func (rb *RootConfigBuilder) SetMetadataReport(metadataReport *MetadataReportConfig) *RootConfigBuilder {
+	rb.rootConfig.MetadataReport = metadataReport
+	return rb
+}
+
+func (rb *RootConfigBuilder) SetProvider(provider *ProviderConfig) *RootConfigBuilder {
+	rb.rootConfig.Provider = provider
+	return rb
+}
+
+func (rb *RootConfigBuilder) SetConsumer(consumer *ConsumerConfig) *RootConfigBuilder {
+	rb.rootConfig.Consumer = consumer
+	return rb
+}
+
+func (rb *RootConfigBuilder) SetMetric(metric *MetricConfig) *RootConfigBuilder {
+	rb.rootConfig.Metric = metric
+	return rb
+}
+
+func (rb *RootConfigBuilder) SetLogger(logger *LoggerConfig) *RootConfigBuilder {
+	rb.rootConfig.Logger = logger
+	return rb
+}
+
+func (rb *RootConfigBuilder) SetShutdown(shutdown *ShutdownConfig) *RootConfigBuilder {
+	rb.rootConfig.Shutdown = shutdown
+	return rb
+}
+
+func (rb *RootConfigBuilder) SetRouter(router []*RouterConfig) *RootConfigBuilder {
+	rb.rootConfig.Router = router
+	return rb
+}
+
+func (rb *RootConfigBuilder) SetEventDispatcherType(eventDispatcherType string) *RootConfigBuilder {
+	rb.rootConfig.EventDispatcherType = eventDispatcherType
+	return rb
+}
+
+func (rb *RootConfigBuilder) SetCacheFile(cacheFile string) *RootConfigBuilder {
+	rb.rootConfig.CacheFile = cacheFile
+	return rb
+}
+
+func (rb *RootConfigBuilder) Build() *RootConfig {
+	if err := rb.rootConfig.Init(); err != nil {
+		panic(err)
+	}
+	return rb.rootConfig
 }

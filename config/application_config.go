@@ -113,3 +113,53 @@ func WithMetadataType(metadataType string) ApplicationConfigOpt {
 		ac.MetadataType = metadataType
 	}
 }
+
+func NewApplicationConfigBuilder() *ApplicationConfigBuilder {
+	return &ApplicationConfigBuilder{application: &ApplicationConfig{}}
+}
+
+type ApplicationConfigBuilder struct {
+	application *ApplicationConfig
+}
+
+func (acb *ApplicationConfigBuilder) SetOrganization(organization string) *ApplicationConfigBuilder {
+	acb.application.Organization = organization
+	return acb
+}
+
+func (acb *ApplicationConfigBuilder) SetName(name string) *ApplicationConfigBuilder {
+	acb.application.Name = name
+	return acb
+}
+
+func (acb *ApplicationConfigBuilder) SetModule(module string) *ApplicationConfigBuilder {
+	acb.application.Module = module
+	return acb
+}
+
+func (acb *ApplicationConfigBuilder) SetVersion(version string) *ApplicationConfigBuilder {
+	acb.application.Version = version
+	return acb
+}
+
+func (acb *ApplicationConfigBuilder) SetOwner(owner string) *ApplicationConfigBuilder {
+	acb.application.Owner = owner
+	return acb
+}
+
+func (acb *ApplicationConfigBuilder) SetEnvironment(environment string) *ApplicationConfigBuilder {
+	acb.application.Environment = environment
+	return acb
+}
+
+func (acb *ApplicationConfigBuilder) SetMetadataType(metadataType string) *ApplicationConfigBuilder {
+	acb.application.MetadataType = metadataType
+	return acb
+}
+
+func (acb *ApplicationConfigBuilder) Build() *ApplicationConfig {
+	if err := acb.application.Init(); err != nil {
+		panic(err)
+	}
+	return acb.application
+}
