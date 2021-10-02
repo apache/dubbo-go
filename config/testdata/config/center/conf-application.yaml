@@ -1,0 +1,13 @@
+dubbo:
+  registries:
+    nacos:
+      timeout: 5s
+      group: dev
+      address: nacos://127.0.0.1:8848
+  config-center:
+    address: nacos://127.0.0.1:8848
+    cluster: dev
+    namespace: dubbo
+    log-dir: ./logs
+    config-file: dubbo.yaml
+    app-id: dubbo

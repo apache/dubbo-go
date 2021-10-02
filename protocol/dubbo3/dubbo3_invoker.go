@@ -56,20 +56,19 @@ type DubboInvoker struct {
 
 // NewDubboInvoker constructor
 func NewDubboInvoker(url *common.URL) (*DubboInvoker, error) {
-	requestTimeout := config.GetConsumerConfig().RequestTimeout
-	requestTimeoutStr := url.GetParam(constant.TIMEOUT_KEY, config.GetConsumerConfig().Request_Timeout)
-	if t, err := time.ParseDuration(requestTimeoutStr); err == nil {
-		requestTimeout = t
-	}
+	rt := config.GetConsumerConfig().RequestTimeout
 
-	key := url.GetParam(constant.BEAN_NAME_KEY, "")
-	consumerService := config.GetConsumerService(key)
+	timeout := url.GetParamDuration(constant.TIMEOUT_KEY, rt)
+	// for triple pb serialization. The bean name from provider is the provider reference key,
+	// which can't locate the target consumer stub, so we use interface key..
+	interfaceKey := url.GetParam(constant.INTERFACE_KEY, "")
+	consumerService := config.GetConsumerServiceByInterfaceName(interfaceKey)
 
 	dubboSerializaerType := url.GetParam(constant.SERIALIZATION_KEY, constant.PROTOBUF_SERIALIZATION)
 	triCodecType := tripleConstant.CodecType(dubboSerializaerType)
 	// new triple client
 	triOption := triConfig.NewTripleOption(
-		triConfig.WithClientTimeout(uint32(requestTimeout.Seconds())),
+		triConfig.WithClientTimeout(uint32(timeout.Seconds())),
 		triConfig.WithCodecType(triCodecType),
 		triConfig.WithLocation(url.Location),
 		triConfig.WithHeaderAppVersion(url.GetParam(constant.APP_VERSION_KEY, "")),
@@ -85,7 +84,7 @@ func NewDubboInvoker(url *common.URL) (*DubboInvoker, error) {
 	return &DubboInvoker{
 		BaseInvoker: *protocol.NewBaseInvoker(url),
 		client:      client,
-		timeout:     requestTimeout,
+		timeout:     timeout,
 		clientGuard: &sync.RWMutex{},
 	}, nil
 }
@@ -135,6 +134,7 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 	}
 
 	// append interface id to ctx
+	ctx = context.WithValue(ctx, tripleConstant.CtxAttachmentKey, invocation.Attachments())
 	ctx = context.WithValue(ctx, tripleConstant.InterfaceKey, di.BaseInvoker.GetURL().GetParam(constant.INTERFACE_KEY, ""))
 	in := make([]reflect.Value, 0, 16)
 	in = append(in, reflect.ValueOf(ctx))
@@ -144,8 +144,11 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 	}
 
 	methodName := invocation.MethodName()
-
-	result.Err = di.client.Invoke(methodName, in, invocation.Reply())
+	triAttachmentWithErr := di.client.Invoke(methodName, in, invocation.Reply())
+	result.Err = triAttachmentWithErr.GetError()
+	for k, v := range triAttachmentWithErr.GetAttachments() {
+		result.Attachment(k, v)
+	}
 	result.Rest = invocation.Reply()
 	return &result
 }

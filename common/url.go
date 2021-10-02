@@ -27,13 +27,18 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 import (
 	cm "github.com/Workiva/go-datastructures/common"
+
 	gxset "github.com/dubbogo/gost/container/set"
+
 	"github.com/jinzhu/copier"
+
 	perrors "github.com/pkg/errors"
+
 	"github.com/satori/go.uuid"
 )
 
@@ -859,4 +864,12 @@ func SetCompareURLEqualFunc(f CompareURLEqualFunc) {
 
 func GetCompareURLEqualFunc() CompareURLEqualFunc {
 	return compareURLEqualFunc
+}
+
+//GetParamDuration get duration if param is invalid or missing will return 3s
+func (c *URL) GetParamDuration(s string, d string) time.Duration {
+	if t, err := time.ParseDuration(c.GetParam(s, d)); err == nil {
+		return t
+	}
+	return 3 * time.Second
 }

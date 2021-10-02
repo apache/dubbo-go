@@ -187,7 +187,7 @@ func NewServiceInfo(name, group, version, protocol, path string, params map[stri
 		Group:      group,
 		Version:    version,
 		Protocol:   protocol,
-		Path:       path,
+		Path:       strings.TrimPrefix(path, "/"),
 		Params:     params,
 		ServiceKey: serviceKey,
 		MatchKey:   matchKey,

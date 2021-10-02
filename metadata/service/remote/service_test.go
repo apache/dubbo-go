@@ -23,6 +23,8 @@ import (
 )
 
 import (
+	gxset "github.com/dubbogo/gost/container/set"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -55,11 +57,19 @@ func (mrf *metadataReportFactory) CreateMetadataReport(*common.URL) report.Metad
 
 type metadataReport struct{}
 
-func (mr metadataReport) GetAppMetadata(metadataIdentifier *identifier.SubscriberMetadataIdentifier) (*common.MetadataInfo, error) {
+func (mr metadataReport) RegisterServiceAppMapping(string, string, string) error {
 	panic("implement me")
 }
 
-func (mr metadataReport) PublishAppMetadata(metadataIdentifier *identifier.SubscriberMetadataIdentifier, info *common.MetadataInfo) error {
+func (mr metadataReport) GetServiceAppMapping(string, string) (*gxset.HashSet, error) {
+	panic("implement me")
+}
+
+func (mr metadataReport) GetAppMetadata(*identifier.SubscriberMetadataIdentifier) (*common.MetadataInfo, error) {
+	panic("implement me")
+}
+
+func (mr metadataReport) PublishAppMetadata(*identifier.SubscriberMetadataIdentifier, *common.MetadataInfo) error {
 	panic("implement me")
 }
 

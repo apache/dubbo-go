@@ -26,7 +26,7 @@ import (
 )
 
 var (
-	serializers = make(map[string]interface{})
+	serializers = make(map[string]Serializer)
 	nameMaps    = make(map[byte]string)
 )
 
@@ -37,11 +37,11 @@ func init() {
 	}
 }
 
-func SetSerializer(name string, serializer interface{}) {
+func SetSerializer(name string, serializer Serializer) {
 	serializers[name] = serializer
 }
 
-func GetSerializerById(id byte) (interface{}, error) {
+func GetSerializerById(id byte) (Serializer, error) {
 	name, ok := nameMaps[id]
 	if !ok {
 		panic(fmt.Sprintf("serialId %d not found", id))

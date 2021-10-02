@@ -23,14 +23,16 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 	_ "dubbo.apache.org/dubbo-go/v3/common/proxy/proxy_factory"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	_ "dubbo.apache.org/dubbo-go/v3/filter/filter_impl"
+	_ "dubbo.apache.org/dubbo-go/v3/metrics/prometheus"
 )
 
 // server is used to implement helloworld.GreeterServer.
 type Server struct {
-	*GreeterProviderBase
+	GreeterProviderBase
 }
 
 // SayHello implements helloworld.GreeterServer
@@ -39,27 +41,28 @@ func (s *Server) SayHello(ctx context.Context, in *HelloRequest) (*HelloReply, e
 	return &HelloReply{Message: "Hello " + in.GetName()}, nil
 }
 
-func (s *Server) Reference() string {
-	return "DubboGreeterImpl"
-}
-
 // InitDubboServer creates global gRPC server.
 func InitDubboServer() {
-	providerConfig := config.NewProviderConfig(
-		config.WithProviderAppConfig(config.NewDefaultApplicationConfig()),
-		config.WithProviderProtocol("tri", "tri", "20003"), // protocol and port
-		config.WithProviderServices("DubboGreeterImpl", config.NewServiceConfigByAPI(
-			config.WithServiceProtocol("tri"),                                // export protocol
-			config.WithServiceInterface("org.apache.dubbo.DubboGreeterImpl"), // interface id
-			config.WithServiceLoadBalance("random"),                          // lb
-			config.WithServiceWarmUpTime("100"),
-			config.WithServiceCluster("failover"),
-		)),
+	serviceConfig := config.NewServiceConfig(
+		config.WithServiceInterface("org.apache.dubbo.DubboGreeterImpl"),
+		config.WithServiceProtocolKeys("tripleKey"),
 	)
-	config.SetProviderConfig(*providerConfig) // set to providerConfig ptr
 
-	config.SetProviderService(&Server{
-		GreeterProviderBase: &GreeterProviderBase{},
-	})
-	config.Load()
+	providerConfig := config.GetProviderInstance(
+		config.WithProviderService(common.GetReference(&Server{}), serviceConfig),
+	)
+
+	protocolConfig := config.NewProtocolConfig(
+		config.WithProtocolName("tri"),
+		config.WithProtocolPort("20003"),
+	)
+
+	rootConfig := config.GetInstance(
+		config.WithRootProviderConfig(providerConfig),
+		config.WithRootProtocolConfig("tripleKey", protocolConfig),
+	)
+
+	config.SetProviderService(&Server{})
+	rootConfig.Init()
+	rootConfig.Start()
 }

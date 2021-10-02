@@ -21,16 +21,20 @@ import (
 	gxset "github.com/dubbogo/gost/container/set"
 )
 
+import (
+	"dubbo.apache.org/dubbo-go/v3/common"
+)
+
 type MockServiceNameMapping struct{}
 
 func NewMockServiceNameMapping() *MockServiceNameMapping {
 	return &MockServiceNameMapping{}
 }
 
-func (m *MockServiceNameMapping) Map(string, string, string, string) error {
+func (m *MockServiceNameMapping) Map(*common.URL) error {
 	return nil
 }
 
-func (m *MockServiceNameMapping) Get(string, string, string, string) (*gxset.HashSet, error) {
+func (m *MockServiceNameMapping) Get(*common.URL) (*gxset.HashSet, error) {
 	panic("implement me")
 }
