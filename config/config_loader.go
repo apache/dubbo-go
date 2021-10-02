@@ -174,6 +174,5 @@ func GetMetadataReportConfg() *MetadataReportConfig {
 }
 
 func IsProvider() bool {
-	// FixME
-	return rootConfig.Provider != nil
+	return len(rootConfig.Provider.Services) > 0
 }
