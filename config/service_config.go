@@ -450,8 +450,8 @@ func (pcb *ServiceConfigBuilder) SetRegistries(registries ...string) *ServiceCon
 	return pcb
 }
 
-func (pcb *ServiceConfigBuilder) SetProtocols(protocols ...string) *ServiceConfigBuilder {
-	pcb.serviceConfig.Protocols = protocols
+func (pcb *ServiceConfigBuilder) SetProtocols(protocolNames ...string) *ServiceConfigBuilder {
+	pcb.serviceConfig.Protocols = protocolNames
 	return pcb
 }
 
