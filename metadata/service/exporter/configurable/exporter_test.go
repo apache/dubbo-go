@@ -108,7 +108,7 @@ func mockInitProviderWithSingleRegistry() {
 			Services: map[string]*config.ServiceConfig{
 				"MockService": {
 					Interface:   "com.MockService",
-					Protocols:   []string{"mock"},
+					ProtocolIDs: []string{"mock"},
 					Cluster:     "failover",
 					Loadbalance: "random",
 					Retries:     "3",

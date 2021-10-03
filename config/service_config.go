@@ -50,9 +50,9 @@ import (
 type ServiceConfig struct {
 	id                          string
 	Filter                      string            `yaml:"filter" json:"filter,omitempty" property:"filter"`
-	Protocols                   []string          `default:"[\"dubbo\"]"  validate:"required"  yaml:"protocol"  json:"protocol,omitempty" property:"protocol"` // multi protocol support, split by ','
+	ProtocolIDs                 []string          `default:"[\"dubbo\"]"  validate:"required"  yaml:"protocolIDs"  json:"protocolIDs,omitempty" property:"protocolIDs"` // multi protocolIDs support, split by ','
 	Interface                   string            `validate:"required"  yaml:"interface"  json:"interface,omitempty" property:"interface"`
-	Registries                  []string          `yaml:"registries"  json:"registry,omitempty"  property:"registry"`
+	RegistryIDs                 []string          `yaml:"registryIDs"  json:"registryIDs,omitempty"  property:"registryIDs"`
 	Cluster                     string            `default:"failover" yaml:"cluster"  json:"cluster,omitempty" property:"cluster"`
 	Loadbalance                 string            `default:"random" yaml:"loadbalance"  json:"loadbalance,omitempty"  property:"loadbalance"`
 	Group                       string            `yaml:"group"  json:"group,omitempty" property:"group"`
@@ -76,8 +76,8 @@ type ServiceConfig struct {
 	Tag                         string            `yaml:"tag" json:"tag,omitempty" property:"tag"`
 	GrpcMaxMessageSize          int               `default:"4" yaml:"max_message_size" json:"max_message_size,omitempty"`
 
-	RCProtocols     map[string]*ProtocolConfig
-	RCRegistries    map[string]*RegistryConfig
+	RCProtocolsMap  map[string]*ProtocolConfig
+	RCRegistriesMap map[string]*RegistryConfig
 	ProxyFactoryKey string
 	unexported      *atomic.Bool
 	exported        *atomic.Bool
@@ -106,14 +106,14 @@ func (svc *ServiceConfig) Init(rc *RootConfig) error {
 	svc.exported = atomic.NewBool(false)
 	svc.metadataType = rc.Application.MetadataType
 	svc.unexported = atomic.NewBool(false)
-	svc.RCRegistries = rc.Registries
-	svc.RCProtocols = rc.Protocols
+	svc.RCRegistriesMap = rc.Registries
+	svc.RCProtocolsMap = rc.Protocols
 	if rc.Provider != nil {
 		svc.ProxyFactoryKey = rc.Provider.ProxyFactory
 	}
-	svc.Registries = translateRegistryIds(svc.Registries)
-	if len(svc.Registries) <= 0 {
-		svc.Registries = rc.Provider.Registries
+	svc.RegistryIDs = translateRegistryIds(svc.RegistryIDs)
+	if len(svc.RegistryIDs) <= 0 {
+		svc.RegistryIDs = rc.Provider.RegistryIDs
 	}
 	svc.export = true
 	return verify(svc)
@@ -160,11 +160,11 @@ func (svc *ServiceConfig) Export() error {
 		return nil
 	}
 
-	regUrls := loadRegistries(svc.Registries, svc.RCRegistries, common.PROVIDER)
+	regUrls := loadRegistries(svc.RegistryIDs, svc.RCRegistriesMap, common.PROVIDER)
 	urlMap := svc.getUrlMap()
-	protocolConfigs := loadProtocol(svc.Protocols, svc.RCProtocols)
+	protocolConfigs := loadProtocol(svc.ProtocolIDs, svc.RCProtocolsMap)
 	if len(protocolConfigs) == 0 {
-		logger.Warnf("The service %v's '%v' protocols don't has right protocolConfigs, Please check your configuration center and transfer protocol ", svc.Interface, svc.Protocols)
+		logger.Warnf("The service %v's '%v' protocols don't has right protocolConfigs, Please check your configuration center and transfer protocol ", svc.Interface, svc.ProtocolIDs)
 		return nil
 	}
 
@@ -426,11 +426,11 @@ func (svc *ServiceConfig) postProcessConfig(url *common.URL) {
 // newEmptyServiceConfig returns default ServiceConfig
 func newEmptyServiceConfig() *ServiceConfig {
 	newServiceConfig := &ServiceConfig{
-		unexported:   atomic.NewBool(false),
-		exported:     atomic.NewBool(false),
-		export:       true,
-		RCProtocols:  make(map[string]*ProtocolConfig),
-		RCRegistries: make(map[string]*RegistryConfig),
+		unexported:      atomic.NewBool(false),
+		exported:        atomic.NewBool(false),
+		export:          true,
+		RCProtocolsMap:  make(map[string]*ProtocolConfig),
+		RCRegistriesMap: make(map[string]*RegistryConfig),
 	}
 	newServiceConfig.Params = make(map[string]string)
 	newServiceConfig.Methods = make([]*MethodConfig, 0, 8)
@@ -445,13 +445,13 @@ func NewServiceConfigBuilder() *ServiceConfigBuilder {
 	return &ServiceConfigBuilder{serviceConfig: newEmptyServiceConfig()}
 }
 
-func (pcb *ServiceConfigBuilder) SetRegistries(registries ...string) *ServiceConfigBuilder {
-	pcb.serviceConfig.Registries = registries
+func (pcb *ServiceConfigBuilder) SetRegistries(registryIDs ...string) *ServiceConfigBuilder {
+	pcb.serviceConfig.RegistryIDs = registryIDs
 	return pcb
 }
 
-func (pcb *ServiceConfigBuilder) SetProtocols(protocolNames ...string) *ServiceConfigBuilder {
-	pcb.serviceConfig.Protocols = protocolNames
+func (pcb *ServiceConfigBuilder) SetProtocols(protocolIDs ...string) *ServiceConfigBuilder {
+	pcb.serviceConfig.ProtocolIDs = protocolIDs
 	return pcb
 }
 
@@ -481,12 +481,12 @@ func (pcb *ServiceConfigBuilder) SetCluster(cluster string) *ServiceConfigBuilde
 }
 
 func (pcb *ServiceConfigBuilder) AddRCProtocol(protocolName string, protocolConfig *ProtocolConfig) *ServiceConfigBuilder {
-	pcb.serviceConfig.RCProtocols[protocolName] = protocolConfig
+	pcb.serviceConfig.RCProtocolsMap[protocolName] = protocolConfig
 	return pcb
 }
 
 func (pcb *ServiceConfigBuilder) AddRCRegistry(registryName string, registryConfig *RegistryConfig) *ServiceConfigBuilder {
-	pcb.serviceConfig.RCRegistries[registryName] = registryConfig
+	pcb.serviceConfig.RCRegistriesMap[registryName] = registryConfig
 	return pcb
 }
 

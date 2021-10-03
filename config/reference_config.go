@@ -50,7 +50,7 @@ type ReferenceConfig struct {
 	URL            string            `yaml:"url"  json:"url,omitempty" property:"url"`
 	Filter         string            `yaml:"filter" json:"filter,omitempty" property:"filter"`
 	Protocol       string            `default:"dubbo"  yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
-	Registries     []string          `yaml:"registries"  json:"registries,omitempty"  property:"registries"`
+	RegistryIDs    []string          `yaml:"registryIDs"  json:"registryIDs,omitempty"  property:"registryIDs"`
 	Cluster        string            `yaml:"cluster"  json:"cluster,omitempty" property:"cluster"`
 	Loadbalance    string            `yaml:"loadbalance"  json:"loadbalance,omitempty" property:"loadbalance"`
 	Retries        string            `yaml:"retries"  json:"retries,omitempty" property:"retries"`
@@ -90,9 +90,9 @@ func (rc *ReferenceConfig) Init(root *RootConfig) error {
 	if root.Application != nil {
 		rc.metaDataType = root.Application.MetadataType
 	}
-	rc.Registries = translateRegistryIds(rc.Registries)
-	if len(rc.Registries) <= 0 {
-		rc.Registries = root.Consumer.Registries
+	rc.RegistryIDs = translateRegistryIds(rc.RegistryIDs)
+	if len(rc.RegistryIDs) <= 0 {
+		rc.RegistryIDs = root.Consumer.RegistryIDs
 	}
 	return verify(rc)
 }
@@ -133,7 +133,7 @@ func (rc *ReferenceConfig) Refer(srv interface{}) {
 		}
 	} else {
 		// 2. assemble SubURL from register center's configuration mode
-		rc.urls = loadRegistries(rc.Registries, rc.rootConfig.Registries, common.CONSUMER)
+		rc.urls = loadRegistries(rc.RegistryIDs, rc.rootConfig.Registries, common.CONSUMER)
 
 		// set url to regURLs
 		for _, regURL := range rc.urls {
@@ -344,8 +344,8 @@ func (pcb *ReferenceConfigBuilder) SetInterface(interfaceName string) *Reference
 	return pcb
 }
 
-func (pcb *ReferenceConfigBuilder) SetRegistries(registryKeys ...string) *ReferenceConfigBuilder {
-	pcb.referenceConfig.Registries = registryKeys
+func (pcb *ReferenceConfigBuilder) SetRegistryIDs(registryIDs ...string) *ReferenceConfigBuilder {
+	pcb.referenceConfig.RegistryIDs = registryIDs
 	return pcb
 }
 

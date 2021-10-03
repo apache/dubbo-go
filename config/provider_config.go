@@ -35,8 +35,8 @@ type ProviderConfig struct {
 	Filter string `yaml:"filter" json:"filter,omitempty" property:"filter"`
 	// Deprecated Register whether registration is required
 	Register bool `yaml:"register" json:"register" property:"register"`
-	// Registries registry ids TODO Registries?
-	Registries []string `yaml:"registries" json:"registries" property:"registries"`
+	// RegistryIDs is registry ids list
+	RegistryIDs []string `yaml:"registryIDs" json:"registryIDs" property:"registryIDs"`
 	// Services services
 	Services map[string]*ServiceConfig `yaml:"services" json:"services,omitempty" property:"services"`
 
@@ -63,9 +63,9 @@ func (c *ProviderConfig) Init(rc *RootConfig) error {
 	if c == nil {
 		return nil
 	}
-	c.Registries = translateRegistryIds(c.Registries)
-	if len(c.Registries) <= 0 {
-		c.Registries = rc.getRegistryIds()
+	c.RegistryIDs = translateRegistryIds(c.RegistryIDs)
+	if len(c.RegistryIDs) <= 0 {
+		c.RegistryIDs = rc.getRegistryIds()
 	}
 	for _, service := range c.Services {
 		if err := service.Init(rc); err != nil {
@@ -97,8 +97,8 @@ func (c *ProviderConfig) Load() {
 // newEmptyProviderConfig returns ProviderConfig with default ApplicationConfig
 func newEmptyProviderConfig() *ProviderConfig {
 	newProviderConfig := &ProviderConfig{
-		Services:   make(map[string]*ServiceConfig),
-		Registries: make([]string, 8),
+		Services:    make(map[string]*ServiceConfig),
+		RegistryIDs: make([]string, 8),
 	}
 	return newProviderConfig
 }
@@ -123,8 +123,8 @@ func (pcb *ProviderConfigBuilder) SetRegister(register bool) *ProviderConfigBuil
 }
 
 // nolint
-func (pcb *ProviderConfigBuilder) SetRegistries(registryKeys ...string) *ProviderConfigBuilder {
-	pcb.providerConfig.Registries = registryKeys
+func (pcb *ProviderConfigBuilder) SetRegistryIDs(RegistryIDs ...string) *ProviderConfigBuilder {
+	pcb.providerConfig.RegistryIDs = RegistryIDs
 	return pcb
 }
 
@@ -135,11 +135,11 @@ func (pcb *ProviderConfigBuilder) SetServices(services map[string]*ServiceConfig
 }
 
 // nolint
-func (pcb *ProviderConfigBuilder) AddService(serviceName string, serviceConfig *ServiceConfig) *ProviderConfigBuilder {
+func (pcb *ProviderConfigBuilder) AddService(serviceID string, serviceConfig *ServiceConfig) *ProviderConfigBuilder {
 	if pcb.providerConfig.Services == nil {
 		pcb.providerConfig.Services = make(map[string]*ServiceConfig)
 	}
-	pcb.providerConfig.Services[serviceName] = serviceConfig
+	pcb.providerConfig.Services[serviceID] = serviceConfig
 	return pcb
 }
 

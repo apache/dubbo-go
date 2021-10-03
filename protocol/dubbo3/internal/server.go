@@ -58,6 +58,8 @@ func InitDubboServer() {
 	}).Build()
 
 	config.SetProviderService(&Server{})
-	rootConfig.Init()
+	if err := rootConfig.Init(); err != nil {
+		panic(err)
+	}
 	rootConfig.Start()
 }

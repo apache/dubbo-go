@@ -29,8 +29,8 @@ func TestProviderConfigEmptyRegistry(t *testing.T) {
 	err := Load(WithPath("./testdata/config/provider/empty_registry_application.yaml"))
 	assert.Nil(t, err)
 	provider := rootConfig.Provider
-	assert.Equal(t, 1, len(provider.Registries))
-	assert.Equal(t, "nacos", provider.Registries[0])
+	assert.Equal(t, 1, len(provider.RegistryIDs))
+	assert.Equal(t, "nacos", provider.RegistryIDs[0])
 }
 
 func TestProviderConfigRootRegistry(t *testing.T) {
@@ -40,8 +40,8 @@ func TestProviderConfigRootRegistry(t *testing.T) {
 	assert.NotNil(t, provider)
 	assert.Equal(t, 2, len(provider.Services))
 
-	assert.Equal(t, 2, len(provider.Services["HelloService"].Registries))
-	assert.Equal(t, 1, len(provider.Services["OrderService"].Registries))
+	assert.Equal(t, 2, len(provider.Services["HelloService"].RegistryIDs))
+	assert.Equal(t, 1, len(provider.Services["OrderService"].RegistryIDs))
 }
 
 //

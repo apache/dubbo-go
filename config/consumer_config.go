@@ -42,7 +42,7 @@ type ConsumerConfig struct {
 	// ConnectTimeout will be remove in 3.0 config-enhance
 	ConnectTimeout string `default:"3s" yaml:"connect-timeout" json:"connect-timeout,omitempty" property:"connect-timeout"`
 	// support string
-	Registries []string `yaml:"registries" json:"registries,omitempty" property:"registries"`
+	RegistryIDs []string `yaml:"registryIDs" json:"registryIDs,omitempty" property:"registryIDs"`
 
 	RequestTimeout string `default:"3s" yaml:"request-timeout" json:"request-timeout,omitempty" property:"request-timeout"`
 	ProxyFactory   string `default:"default" yaml:"proxy" json:"proxy,omitempty" property:"proxy"`
@@ -64,9 +64,9 @@ func (cc *ConsumerConfig) Init(rc *RootConfig) error {
 	if cc == nil {
 		return nil
 	}
-	cc.Registries = translateRegistryIds(cc.Registries)
-	if len(cc.Registries) <= 0 {
-		cc.Registries = rc.getRegistryIds()
+	cc.RegistryIDs = translateRegistryIds(cc.RegistryIDs)
+	if len(cc.RegistryIDs) <= 0 {
+		cc.RegistryIDs = rc.getRegistryIds()
 	}
 	for _, reference := range cc.References {
 		if err := reference.Init(rc); err != nil {
@@ -158,8 +158,8 @@ func (ccb *ConsumerConfigBuilder) SetFilter(filter string) *ConsumerConfigBuilde
 	return ccb
 }
 
-func (ccb *ConsumerConfigBuilder) SetRegistries(registryKeys ...string) *ConsumerConfigBuilder {
-	ccb.consumerConfig.Registries = registryKeys
+func (ccb *ConsumerConfigBuilder) SetRegistryIDs(RegistryIDs ...string) *ConsumerConfigBuilder {
+	ccb.consumerConfig.RegistryIDs = RegistryIDs
 	return ccb
 }
 
