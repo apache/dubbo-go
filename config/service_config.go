@@ -445,12 +445,12 @@ func NewServiceConfigBuilder() *ServiceConfigBuilder {
 	return &ServiceConfigBuilder{serviceConfig: newEmptyServiceConfig()}
 }
 
-func (pcb *ServiceConfigBuilder) SetRegistries(registryIDs ...string) *ServiceConfigBuilder {
+func (pcb *ServiceConfigBuilder) SetRegistryIDs(registryIDs ...string) *ServiceConfigBuilder {
 	pcb.serviceConfig.RegistryIDs = registryIDs
 	return pcb
 }
 
-func (pcb *ServiceConfigBuilder) SetProtocols(protocolIDs ...string) *ServiceConfigBuilder {
+func (pcb *ServiceConfigBuilder) SetProtocolIDs(protocolIDs ...string) *ServiceConfigBuilder {
 	pcb.serviceConfig.ProtocolIDs = protocolIDs
 	return pcb
 }

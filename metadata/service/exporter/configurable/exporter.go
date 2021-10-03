@@ -63,12 +63,12 @@ func (exporter *MetadataServiceExporter) Export(url *common.URL) error {
 		defer exporter.lock.Unlock()
 		exporter.ServiceConfig = config.NewServiceConfigBuilder().
 			SetServiceID(constant.SIMPLE_METADATA_SERVICE_NAME).
-			SetProtocols(constant.DEFAULT_PROTOCOL).
+			SetProtocolIDs(constant.DEFAULT_PROTOCOL).
 			AddRCProtocol(constant.DEFAULT_PROTOCOL, config.NewProtocolConfigBuilder().
 				SetName(constant.DEFAULT_PROTOCOL).
 				SetPort(strconv.Itoa(constant.DEFAULT_METADATAPORT)).
 				Build()).
-			SetRegistries("N/A").
+			SetRegistryIDs("N/A").
 			SetInterface(constant.METADATA_SERVICE_NAME).
 			SetGroup(config.GetApplicationConfig().Name).
 			SetVersion(version).

@@ -45,7 +45,7 @@ func (s *Server) SayHello(ctx context.Context, in *HelloRequest) (*HelloReply, e
 func InitDubboServer() {
 	serviceConfig := config.NewServiceConfigBuilder().
 		SetInterface("org.apache.dubbo.DubboGreeterImpl").
-		SetProtocols("tripleKey").Build()
+		SetProtocolIDs("tripleKey").Build()
 
 	providerConfig := config.NewProviderConfigBuilder().SetServices(map[string]*config.ServiceConfig{
 		common.GetReference(&Server{}): serviceConfig,
