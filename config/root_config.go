@@ -235,13 +235,13 @@ func (rb *RootConfigBuilder) SetApplication(application *ApplicationConfig) *Roo
 	return rb
 }
 
-func (rb *RootConfigBuilder) AddProtocol(protocolKey string, protocolConfig *ProtocolConfig) *RootConfigBuilder {
-	rb.rootConfig.Protocols[protocolKey] = protocolConfig
+func (rb *RootConfigBuilder) AddProtocol(protocolID string, protocolConfig *ProtocolConfig) *RootConfigBuilder {
+	rb.rootConfig.Protocols[protocolID] = protocolConfig
 	return rb
 }
 
-func (rb *RootConfigBuilder) AddRegistry(registryKey string, registryConfig *RegistryConfig) *RootConfigBuilder {
-	rb.rootConfig.Registries[registryKey] = registryConfig
+func (rb *RootConfigBuilder) AddRegistry(registryID string, registryConfig *RegistryConfig) *RootConfigBuilder {
+	rb.rootConfig.Registries[registryID] = registryConfig
 	return rb
 }
 

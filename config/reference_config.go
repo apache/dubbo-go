@@ -90,6 +90,9 @@ func (rc *ReferenceConfig) Init(root *RootConfig) error {
 	if root.Application != nil {
 		rc.metaDataType = root.Application.MetadataType
 	}
+	if rc.Cluster == "" {
+		rc.Cluster = "failover"
+	}
 	rc.RegistryIDs = translateRegistryIds(rc.RegistryIDs)
 	if len(rc.RegistryIDs) <= 0 {
 		rc.RegistryIDs = root.Consumer.RegistryIDs
@@ -346,6 +349,20 @@ func (pcb *ReferenceConfigBuilder) SetInterface(interfaceName string) *Reference
 
 func (pcb *ReferenceConfigBuilder) SetRegistryIDs(registryIDs ...string) *ReferenceConfigBuilder {
 	pcb.referenceConfig.RegistryIDs = registryIDs
+	return pcb
+}
+
+func (pcb *ReferenceConfigBuilder) SetGeneric(generic bool) *ReferenceConfigBuilder {
+	if generic {
+		pcb.referenceConfig.Generic = "true"
+	} else {
+		pcb.referenceConfig.Generic = "false"
+	}
+	return pcb
+}
+
+func (pcb *ReferenceConfigBuilder) SetCluster(cluster string) *ReferenceConfigBuilder {
+	pcb.referenceConfig.Cluster = cluster
 	return pcb
 }
 
