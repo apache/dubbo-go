@@ -36,7 +36,7 @@ import (
 )
 
 var (
-	rootConfig = GetInstance()
+	rootConfig = NewRootConfigBuilder().Build()
 	maxWait    = 3
 )
 
@@ -158,19 +158,19 @@ func RPCService(service common.RPCService) {
 // So you don't need to worry about the race condition
 func GetMetricConfig() *MetricConfig {
 	// todo
-	//if GetBaseConfig().MetricConfig == nil {
+	//if GetBaseConfig().Metric == nil {
 	//	configAccessMutex.Lock()
 	//	defer configAccessMutex.Unlock()
-	//	if GetBaseConfig().MetricConfig == nil {
-	//		GetBaseConfig().MetricConfig = &metric.MetricConfig{}
+	//	if GetBaseConfig().Metric == nil {
+	//		GetBaseConfig().Metric = &metric.Metric{}
 	//	}
 	//}
-	//return GetBaseConfig().MetricConfig
-	return rootConfig.MetricConfig
+	//return GetBaseConfig().Metric
+	return rootConfig.Metric
 }
 
 func GetMetadataReportConfg() *MetadataReportConfig {
-	return rootConfig.MetadataReportConfig
+	return rootConfig.MetadataReport
 }
 
 func IsProvider() bool {

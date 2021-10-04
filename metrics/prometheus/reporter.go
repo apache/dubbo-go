@@ -218,6 +218,7 @@ func newPrometheusReporter() metrics.Reporter {
 
 			prom.DefaultRegisterer.MustRegister(reporterInstance.consumerSummaryVec, reporterInstance.providerSummaryVec,
 				reporterInstance.consumerHistogramVec, reporterInstance.providerHistogramVec)
+			// todo open prometheus metrics service
 			//metricsExporter, err := ocprom.NewExporter(ocprom.Options{
 			//	Registry: prom.DefaultRegisterer.(*prom.Registry),
 			//})
