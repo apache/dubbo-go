@@ -509,6 +509,11 @@ func (pcb *ServiceConfigBuilder) SetRPCService(service common.RPCService) *Servi
 	return pcb
 }
 
+func (pcb *ServiceConfigBuilder) SetSerialization(serialization string) *ServiceConfigBuilder {
+	pcb.serviceConfig.Serialization = serialization
+	return pcb
+}
+
 func (pcb *ServiceConfigBuilder) SetServiceID(id string) *ServiceConfigBuilder {
 	pcb.serviceConfig.id = id
 	return pcb

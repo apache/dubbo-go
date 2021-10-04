@@ -349,6 +349,11 @@ func (pcb *ReferenceConfigBuilder) SetRegistryIDs(registryIDs ...string) *Refere
 	return pcb
 }
 
+func (pcb *ReferenceConfigBuilder) SetSerialization(serialization string) *ReferenceConfigBuilder {
+	pcb.referenceConfig.Serialization = serialization
+	return pcb
+}
+
 func (pcb *ReferenceConfigBuilder) SetProtocol(protocol string) *ReferenceConfigBuilder {
 	pcb.referenceConfig.Protocol = protocol
 	return pcb
