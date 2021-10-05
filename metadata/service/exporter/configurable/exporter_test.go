@@ -70,7 +70,7 @@ func TestConfigurableExporter(t *testing.T) {
 		assert.Equal(t, false, exported.IsExported())
 		assert.NoError(t, exported.Export(registryURL))
 		assert.Equal(t, true, exported.IsExported())
-		assert.Regexp(t, "dubbo://127.0.0.1:20005/org.apache.dubbo.metadata.MetadataService*", exported.GetExportedURLs()[0].String())
+		assert.Regexp(t, "dubbo://:20005/org.apache.dubbo.metadata.MetadataService*", exported.GetExportedURLs()[0].String())
 		exported.Unexport()
 		assert.Equal(t, false, exported.IsExported())
 	})
@@ -78,8 +78,7 @@ func TestConfigurableExporter(t *testing.T) {
 
 // mockInitProviderWithSingleRegistry will init a mocked providerConfig
 func mockInitProviderWithSingleRegistry() {
-	providerConfig := config.GetProviderInstance(
-		config.WithProviderService("MockService", config.NewServiceConfig()))
+	providerConfig := config.NewProviderConfigBuilder().AddService("MockService", config.NewServiceConfigBuilder().Build()).Build()
 	providerConfig.Services["MockService"].InitExported()
 	config.SetRootConfig(config.RootConfig{
 		Application: &config.ApplicationConfig{
@@ -109,7 +108,7 @@ func mockInitProviderWithSingleRegistry() {
 			Services: map[string]*config.ServiceConfig{
 				"MockService": {
 					Interface:   "com.MockService",
-					Protocol:    []string{"mock"},
+					ProtocolIDs: []string{"mock"},
 					Cluster:     "failover",
 					Loadbalance: "random",
 					Retries:     "3",

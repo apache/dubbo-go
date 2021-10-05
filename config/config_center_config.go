@@ -76,16 +76,6 @@ func (CenterConfig) Prefix() string {
 	return constant.ConfigCenterPrefix
 }
 
-func GetConfigCenterInstance(opts ...CenterConfigOpt) *CenterConfig {
-	cc := &CenterConfig{
-		Params: make(map[string]string, 1),
-	}
-	for _, opt := range opts {
-		opt(cc)
-	}
-	return cc
-}
-
 func (c *CenterConfig) check() error {
 	if err := defaults.Set(c); err != nil {
 		return err
@@ -140,21 +130,6 @@ func (c *CenterConfig) translateConfigAddress() string {
 // toURL will compatible with baseConfig.ShutdownConfig.Address and baseConfig.ShutdownConfig.RemoteRef before 1.6.0
 // After 1.6.0 will not compatible, only baseConfig.ShutdownConfig.RemoteRef
 func (c *CenterConfig) toURL() (*common.URL, error) {
-	//remoteRef := baseConfig.ConfigCenterConfig.RemoteRef
-	//// if set remote ref use remote
-	//if len(remoteRef) <= 0 {
-	//	return common.NewURL(baseConfig.ConfigCenterConfig.Address,
-	//		common.WithProtocol(baseConfig.ConfigCenterConfig.Protocol),
-	//		common.WithParams(baseConfig.ConfigCenterConfig.GetUrlMap()))
-	//}
-	//rc, ok := baseConfig.GetRemoteConfig(remoteRef)
-	//if !ok {
-	//	return nil, perrors.New("Could not find out the remote ref config, name: " + remoteRef)
-	//}
-	//// set protocol if remote not set
-	//if len(rc.Protocol) <= 0 {
-	//	rc.Protocol = baseConfig.ConfigCenterConfig.Protocol
-	//}
 	return common.NewURL(c.Address,
 		common.WithProtocol(c.Protocol),
 		common.WithParams(c.GetUrlMap()))
@@ -211,105 +186,57 @@ func (c *CenterConfig) prepareEnvironment(configCenterUrl *common.URL) (string, 
 	envInstance.SetDynamicConfiguration(dynamicConfig)
 
 	return dynamicConfig.GetProperties(c.DataId, config_center.WithGroup(c.Group))
-	//if err != nil {
-	//	logger.Errorf("Get config content in dynamic configuration error , error message is %v", err)
-	//	return errors.WithStack(err)
-	//}
-	//yaml.Unmarshal([]byte(conten),rootConfig)
-	//var appGroup string
-	//var appContent string
-	//if config2.providerConfig != nil && config2.providerConfig.ApplicationConfig != nil &&
-	//	reflect.ValueOf(baseConfig.fatherConfig).Elem().Type().Name() == "ProviderConfig" {
-	//	appGroup = config2.providerConfig.ApplicationConfig.Name
-	//} else if config2.consumerConfig != nil && config2.consumerConfig.ApplicationConfig != nil &&
-	//	reflect.ValueOf(baseConfig.fatherConfig).Elem().Type().Name() == "ConsumerConfig" {
-	//	appGroup = config2.consumerConfig.ApplicationConfig.Name
-	//}
-	//
-	//if len(appGroup) != 0 {
-	//	configFile := baseConfig.ConfigCenterConfig.AppConfigFile
-	//	if len(configFile) == 0 {
-	//		configFile = baseConfig.ConfigCenterConfig.ConfigFile
-	//	}
-	//	appContent, err = dynamicConfig.GetProperties(configFile, config_center.WithGroup(appGroup))
-	//	if err != nil {
-	//		return perrors.WithStack(err)
-	//	}
-	//}
-	//// global config file
-	//mapContent, err := dynamicConfig.Parser().Parse(content)
-	//if err != nil {
-	//	return perrors.WithStack(err)
-	//}
-	//envInstance.UpdateExternalConfigMap(mapContent)
-	//
-	//// appGroup config file
-	//if len(appContent) != 0 {
-	//	appMapContent, err := dynamicConfig.Parser().Parse(appContent)
-	//	if err != nil {
-	//		return perrors.WithStack(err)
-	//	}
-	//	envInstance.UpdateAppExternalConfigMap(appMapContent)
-	//}
 }
 
-type CenterConfigOpt func(config *CenterConfig)
+func NewConfigCenterConfigBuilder() *ConfigCenterConfigBuilder {
+	return &ConfigCenterConfigBuilder{configCenterConfig: newEmptyConfigCenterConfig()}
+}
 
-func NewConfigCenterConfig(opts ...CenterConfigOpt) *CenterConfig {
-	centerConfig := &CenterConfig{
+type ConfigCenterConfigBuilder struct {
+	configCenterConfig *CenterConfig
+}
+
+func (ccb *ConfigCenterConfigBuilder) SetProtocol(protocol string) *ConfigCenterConfigBuilder {
+	ccb.configCenterConfig.Protocol = protocol
+	return ccb
+}
+
+func (ccb *ConfigCenterConfigBuilder) SetUserName(userName string) *ConfigCenterConfigBuilder {
+	ccb.configCenterConfig.Username = userName
+	return ccb
+}
+
+func (ccb *ConfigCenterConfigBuilder) SetAddress(address string) *ConfigCenterConfigBuilder {
+	ccb.configCenterConfig.Address = address
+	return ccb
+}
+
+func (ccb *ConfigCenterConfigBuilder) SetPassword(password string) *ConfigCenterConfigBuilder {
+	ccb.configCenterConfig.Password = password
+	return ccb
+}
+
+func (ccb *ConfigCenterConfigBuilder) SetNamespace(namespace string) *ConfigCenterConfigBuilder {
+	ccb.configCenterConfig.Namespace = namespace
+	return ccb
+}
+
+func (ccb *ConfigCenterConfigBuilder) SetDataID(dataID string) *ConfigCenterConfigBuilder {
+	ccb.configCenterConfig.DataId = dataID
+	return ccb
+}
+
+func (ccb *ConfigCenterConfigBuilder) SetGroup(group string) *ConfigCenterConfigBuilder {
+	ccb.configCenterConfig.Group = group
+	return ccb
+}
+
+func (ccb *ConfigCenterConfigBuilder) Build() *CenterConfig {
+	return ccb.configCenterConfig
+}
+
+func newEmptyConfigCenterConfig() *CenterConfig {
+	return &CenterConfig{
 		Params: make(map[string]string),
-	}
-	for _, o := range opts {
-		o(centerConfig)
-	}
-	return centerConfig
-}
-
-// WithConfigCenterProtocol set ProtocolConfig with given protocolName protocol
-func WithConfigCenterProtocol(protocol string) CenterConfigOpt {
-	return func(config *CenterConfig) {
-		config.Protocol = protocol
-	}
-}
-
-// WithConfigCenterAddress set ProtocolConfig with given @addr
-func WithConfigCenterAddress(addr string) CenterConfigOpt {
-	return func(config *CenterConfig) {
-		config.Address = addr
-	}
-}
-
-// WithConfigCenterDataID set ProtocolConfig with given @dataID
-func WithConfigCenterDataID(dataID string) CenterConfigOpt {
-	return func(config *CenterConfig) {
-		config.DataId = dataID
-	}
-}
-
-// WithConfigCenterGroup set ProtocolConfig with given @group
-func WithConfigCenterGroup(group string) CenterConfigOpt {
-	return func(config *CenterConfig) {
-		config.Group = group
-	}
-}
-
-// WithConfigCenterUsername set ProtocolConfig with given @username
-func WithConfigCenterUsername(username string) CenterConfigOpt {
-	return func(config *CenterConfig) {
-		config.Username = username
-	}
-}
-
-// WithConfigCenterPassword set ProtocolConfig with given @password
-func WithConfigCenterPassword(password string) CenterConfigOpt {
-	return func(config *CenterConfig) {
-		config.Password = password
-	}
-}
-
-// WithConfigCenterNamespace set ProtocolConfig with given @namespace
-func WithConfigCenterNamespace(namespace string) CenterConfigOpt {
-	return func(config *CenterConfig) {
-		config.Namespace = namespace
 	}
 }

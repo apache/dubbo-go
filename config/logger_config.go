@@ -72,16 +72,7 @@ func (LoggerConfig) Prefix() string {
 	return constant.LoggerConfigPrefix
 }
 
-func GetLoggerConfigInstance() *LoggerConfig {
-	lc := &LoggerConfig{}
-	return lc
-}
-
 func (lc *LoggerConfig) Init() error {
-
-	if lc == nil {
-		lc = GetLoggerConfigInstance()
-	}
 	err := lc.check()
 	if err != nil {
 		return err
@@ -152,4 +143,30 @@ func (lc *LoggerConfig) getUrlMap() url.Values {
 		urlMap.Set(key, val)
 	}
 	return urlMap
+}
+
+type LoggerConfigBuilder struct {
+	loggerConfig *LoggerConfig
+}
+
+// nolint
+func NewLoggerConfigBuilder() *LoggerConfigBuilder {
+	return &LoggerConfigBuilder{loggerConfig: &LoggerConfig{}}
+}
+
+// nolint
+func (lcb *LoggerConfigBuilder) SetLumberjackConfig(lumberjackConfig *lumberjack.Logger) *LoggerConfigBuilder {
+	lcb.loggerConfig.LumberjackConfig = lumberjackConfig
+	return lcb
+}
+
+// nolint
+func (lcb *LoggerConfigBuilder) SetZapConfig(zapConfig ZapConfig) *LoggerConfigBuilder {
+	lcb.loggerConfig.ZapConfig = zapConfig
+	return lcb
+}
+
+// nolint
+func (lcb *LoggerConfigBuilder) Build() *LoggerConfig {
+	return lcb.loggerConfig
 }

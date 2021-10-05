@@ -83,3 +83,40 @@ func (config *ShutdownConfig) GetStepTimeout() time.Duration {
 	}
 	return result
 }
+
+type ShutdownConfigBuilder struct {
+	shutdownConfig *ShutdownConfig
+}
+
+func NewShutDownConfigBuilder() *ShutdownConfigBuilder {
+	return &ShutdownConfigBuilder{shutdownConfig: &ShutdownConfig{}}
+}
+
+func (scb *ShutdownConfigBuilder) SetTimeout(timeout string) *ShutdownConfigBuilder {
+	scb.shutdownConfig.Timeout = timeout
+	return scb
+}
+
+func (scb *ShutdownConfigBuilder) SetStepTimeout(stepTimeout string) *ShutdownConfigBuilder {
+	scb.shutdownConfig.StepTimeout = stepTimeout
+	return scb
+}
+
+func (scb *ShutdownConfigBuilder) SetRejectRequestHandler(rejectRequestHandler string) *ShutdownConfigBuilder {
+	scb.shutdownConfig.RejectRequestHandler = rejectRequestHandler
+	return scb
+}
+
+func (scb *ShutdownConfigBuilder) SetRequestsFinished(requestsFinished bool) *ShutdownConfigBuilder {
+	scb.shutdownConfig.RequestsFinished = requestsFinished
+	return scb
+}
+
+func (scb *ShutdownConfigBuilder) SetRejectRequest(rejectRequest bool) *ShutdownConfigBuilder {
+	scb.shutdownConfig.RejectRequest = rejectRequest
+	return scb
+}
+
+func (scb *ShutdownConfigBuilder) Build() *ShutdownConfig {
+	return scb.shutdownConfig
+}
