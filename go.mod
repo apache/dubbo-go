@@ -3,7 +3,6 @@ module github.com/apache/dubbo-go
 go 1.15
 
 require (
-	bou.ke/monkey v1.0.2
 	github.com/RoaringBitmap/roaring v0.6.1
 	github.com/Workiva/go-datastructures v1.0.52
 	github.com/afex/hystrix-go v0.0.0-20180502004556-fa1af6a1f4f5
