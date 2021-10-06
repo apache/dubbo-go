@@ -62,7 +62,6 @@ type ReferenceConfig struct {
 	Async         bool              `yaml:"async"  json:"async,omitempty" property:"async"`
 	Params        map[string]string `yaml:"params"  json:"params,omitempty" property:"params"`
 	invoker       protocol.Invoker
-	// Each url in urls is a registry url with a sub-url pointed to config url.
 	urls           []*common.URL
 	Generic        string `yaml:"generic"  json:"generic,omitempty" property:"generic"`
 	Sticky         bool   `yaml:"sticky"   json:"sticky,omitempty" property:"sticky"`
@@ -176,8 +175,6 @@ func (rc *ReferenceConfig) Refer(srv interface{}) {
 	// TODO(hxmhlt): decouple from directory, config should not depend on directory module
 	if len(invokers) == 1 {
 		rc.invoker = invokers[0]
-		// TODO(justxuewei): Is the code correct?
-		// It seems that using cluster is unnecessary in this case, cuz the number of invokers is only one.
 		if rc.URL != "" {
 			hitClu := constant.FAILOVER_CLUSTER_NAME
 			if u := rc.invoker.GetURL(); u != nil {
