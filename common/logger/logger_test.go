@@ -19,6 +19,8 @@ package logger
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -80,4 +82,36 @@ func TestSetLevel(t *testing.T) {
 	assert.False(t, SetLoggerLevel("debug"))
 	Debug("debug")
 	Info("info")
+}
+
+func TestFatal(t *testing.T) {
+	err := InitLog("./log.yml")
+	assert.NoError(t, err)
+	if os.Getenv("BE_Fatal") == "1" {
+		Fatal("fool")
+		return
+	}
+	cmd := exec.Command(os.Args[0], "-test.run=TestFatal")
+	cmd.Env = append(os.Environ(), "BE_Fatal=1")
+	err = cmd.Run()
+	if e, ok := err.(*exec.ExitError); ok && !e.Success() {
+		return
+	}
+	t.Fatalf("process ran with err %v, want exit status 1", err)
+}
+
+func TestFatalf(t *testing.T) {
+	err := InitLog("./log.yml")
+	assert.NoError(t, err)
+	if os.Getenv("BE_Fatalf") == "1" {
+		Fatalf("%s", "foolf")
+		return
+	}
+	cmd := exec.Command(os.Args[0], "-test.run=TestFatalf")
+	cmd.Env = append(os.Environ(), "BE_Fatalf=1")
+	err = cmd.Run()
+	if e, ok := err.(*exec.ExitError); ok && !e.Success() {
+		return
+	}
+	t.Fatalf("process ran with err %v, want exit status 1", err)
 }
