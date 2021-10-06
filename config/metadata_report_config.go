@@ -86,7 +86,11 @@ func (mc *MetadataReportConfig) StartMetadataReport() error {
 }
 
 func publishServiceDefinition(url *common.URL) {
-	localService, _ := extension.GetLocalMetadataService(constant.DEFAULT_Key)
+	localService, err := extension.GetLocalMetadataService(constant.DEFAULT_Key)
+	if err != nil {
+		logger.Warnf("get local metadata service failed, please check if you have imported _ \"dubbo.apache.org/dubbo-go/v3/metadata/service/local\"")
+		return
+	}
 	localService.PublishServiceDefinition(url)
 	if url.GetParam(constant.METADATATYPE_KEY, "") != constant.REMOTE_METADATA_STORAGE_TYPE {
 		return

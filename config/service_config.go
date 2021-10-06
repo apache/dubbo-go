@@ -230,7 +230,8 @@ func (svc *ServiceConfig) Export() error {
 			if ivkURL.GetParam(constant.INTERFACE_KEY, "") == constant.METADATA_SERVICE_NAME {
 				ms, err := extension.GetLocalMetadataService("")
 				if err != nil {
-					return err
+					logger.Warnf("export org.apache.dubbo.metadata.MetadataService failed beacause of %s ! pls check if you import _ \"dubbo.apache.org/dubbo-go/v3/metadata/service/local\"", err)
+					return nil
 				}
 				ms.SetMetadataServiceURL(ivkURL)
 			}
