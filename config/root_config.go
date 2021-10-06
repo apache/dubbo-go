@@ -305,7 +305,8 @@ func (rb *RootConfigBuilder) Build() *RootConfig {
 func exportMetadataService() {
 	ms, err := extension.GetLocalMetadataService(constant.DEFAULT_Key)
 	if err != nil {
-		logger.Errorf("could not init metadata service", err)
+		logger.Warnf("could not init metadata service", err)
+		return
 	}
 
 	if !IsProvider() || exporting.Load() {
