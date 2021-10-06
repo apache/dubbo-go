@@ -43,25 +43,25 @@ import (
 
 // ReferenceConfig is the configuration of service consumer
 type ReferenceConfig struct {
-	pxy           *proxy.Proxy
-	id            string
-	InterfaceName string            `required:"true"  yaml:"interface"  json:"interface,omitempty" property:"interface"`
-	Check         *bool             `default:"false" yaml:"check"  json:"check,omitempty" property:"check"`
-	URL           string            `yaml:"url"  json:"url,omitempty" property:"url"`
-	Filter        string            `yaml:"filter" json:"filter,omitempty" property:"filter"`
-	Protocol      string            `default:"dubbo"  yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
-	RegistryIDs   []string          `yaml:"registryIDs"  json:"registryIDs,omitempty"  property:"registryIDs"`
-	Cluster       string            `yaml:"cluster"  json:"cluster,omitempty" property:"cluster"`
-	Loadbalance   string            `yaml:"loadbalance"  json:"loadbalance,omitempty" property:"loadbalance"`
-	Retries       string            `yaml:"retries"  json:"retries,omitempty" property:"retries"`
-	Group         string            `yaml:"group"  json:"group,omitempty" property:"group"`
-	Version       string            `yaml:"version"  json:"version,omitempty" property:"version"`
-	Serialization string            `yaml:"serialization" json:"serialization" property:"serialization"`
-	ProvidedBy    string            `yaml:"provided_by"  json:"provided_by,omitempty" property:"provided_by"`
-	Methods       []*MethodConfig   `yaml:"methods"  json:"methods,omitempty" property:"methods"`
-	Async         bool              `yaml:"async"  json:"async,omitempty" property:"async"`
-	Params        map[string]string `yaml:"params"  json:"params,omitempty" property:"params"`
-	invoker       protocol.Invoker
+	pxy            *proxy.Proxy
+	id             string
+	InterfaceName  string            `required:"true"  yaml:"interface"  json:"interface,omitempty" property:"interface"`
+	Check          *bool             `default:"false" yaml:"check"  json:"check,omitempty" property:"check"`
+	URL            string            `yaml:"url"  json:"url,omitempty" property:"url"`
+	Filter         string            `yaml:"filter" json:"filter,omitempty" property:"filter"`
+	Protocol       string            `default:"dubbo"  yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
+	RegistryIDs    []string          `yaml:"registryIDs"  json:"registryIDs,omitempty"  property:"registryIDs"`
+	Cluster        string            `yaml:"cluster"  json:"cluster,omitempty" property:"cluster"`
+	Loadbalance    string            `yaml:"loadbalance"  json:"loadbalance,omitempty" property:"loadbalance"`
+	Retries        string            `yaml:"retries"  json:"retries,omitempty" property:"retries"`
+	Group          string            `yaml:"group"  json:"group,omitempty" property:"group"`
+	Version        string            `yaml:"version"  json:"version,omitempty" property:"version"`
+	Serialization  string            `yaml:"serialization" json:"serialization" property:"serialization"`
+	ProvidedBy     string            `yaml:"provided_by"  json:"provided_by,omitempty" property:"provided_by"`
+	Methods        []*MethodConfig   `yaml:"methods"  json:"methods,omitempty" property:"methods"`
+	Async          bool              `yaml:"async"  json:"async,omitempty" property:"async"`
+	Params         map[string]string `yaml:"params"  json:"params,omitempty" property:"params"`
+	invoker        protocol.Invoker
 	urls           []*common.URL
 	Generic        string `yaml:"generic"  json:"generic,omitempty" property:"generic"`
 	Sticky         bool   `yaml:"sticky"   json:"sticky,omitempty" property:"sticky"`
@@ -115,7 +115,7 @@ func (rc *ReferenceConfig) Refer(srv interface{}) {
 	}
 	rc.postProcessConfig(cfgURL)
 
-	// Urls is retrieved from config, and append them to rc.urls
+	// retrieving urls from config, and appending the urls to rc.urls
 	if rc.URL != "" { // use user-specific urls
 		/*
 		 Two types of URL are allowed for rc.URL: direct url and registry url, they will be handled in different ways.
