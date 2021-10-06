@@ -43,25 +43,25 @@ import (
 
 // ReferenceConfig is the configuration of service consumer
 type ReferenceConfig struct {
-	pxy            *proxy.Proxy
-	id             string
-	InterfaceName  string            `required:"true"  yaml:"interface"  json:"interface,omitempty" property:"interface"`
-	Check          *bool             `default:"false" yaml:"check"  json:"check,omitempty" property:"check"`
-	URL            string            `yaml:"url"  json:"url,omitempty" property:"url"`
-	Filter         string            `yaml:"filter" json:"filter,omitempty" property:"filter"`
-	Protocol       string            `default:"dubbo"  yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
-	RegistryIDs    []string          `yaml:"registryIDs"  json:"registryIDs,omitempty"  property:"registryIDs"`
-	Cluster        string            `yaml:"cluster"  json:"cluster,omitempty" property:"cluster"`
-	Loadbalance    string            `yaml:"loadbalance"  json:"loadbalance,omitempty" property:"loadbalance"`
-	Retries        string            `yaml:"retries"  json:"retries,omitempty" property:"retries"`
-	Group          string            `yaml:"group"  json:"group,omitempty" property:"group"`
-	Version        string            `yaml:"version"  json:"version,omitempty" property:"version"`
-	Serialization  string            `yaml:"serialization" json:"serialization" property:"serialization"`
-	ProvidedBy     string            `yaml:"provided_by"  json:"provided_by,omitempty" property:"provided_by"`
-	Methods        []*MethodConfig   `yaml:"methods"  json:"methods,omitempty" property:"methods"`
-	Async          bool              `yaml:"async"  json:"async,omitempty" property:"async"`
-	Params         map[string]string `yaml:"params"  json:"params,omitempty" property:"params"`
-	invoker        protocol.Invoker
+	pxy           *proxy.Proxy
+	id            string
+	InterfaceName string            `required:"true"  yaml:"interface"  json:"interface,omitempty" property:"interface"`
+	Check         *bool             `default:"false" yaml:"check"  json:"check,omitempty" property:"check"`
+	URL           string            `yaml:"url"  json:"url,omitempty" property:"url"`
+	Filter        string            `yaml:"filter" json:"filter,omitempty" property:"filter"`
+	Protocol      string            `default:"dubbo"  yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
+	RegistryIDs   []string          `yaml:"registryIDs"  json:"registryIDs,omitempty"  property:"registryIDs"`
+	Cluster       string            `yaml:"cluster"  json:"cluster,omitempty" property:"cluster"`
+	Loadbalance   string            `yaml:"loadbalance"  json:"loadbalance,omitempty" property:"loadbalance"`
+	Retries       string            `yaml:"retries"  json:"retries,omitempty" property:"retries"`
+	Group         string            `yaml:"group"  json:"group,omitempty" property:"group"`
+	Version       string            `yaml:"version"  json:"version,omitempty" property:"version"`
+	Serialization string            `yaml:"serialization" json:"serialization" property:"serialization"`
+	ProvidedBy    string            `yaml:"provided_by"  json:"provided_by,omitempty" property:"provided_by"`
+	Methods       []*MethodConfig   `yaml:"methods"  json:"methods,omitempty" property:"methods"`
+	Async         bool              `yaml:"async"  json:"async,omitempty" property:"async"`
+	Params        map[string]string `yaml:"params"  json:"params,omitempty" property:"params"`
+	invoker       protocol.Invoker
 	// Each url in urls is a registry url with a sub-url pointed to config url.
 	urls           []*common.URL
 	Generic        string `yaml:"generic"  json:"generic,omitempty" property:"generic"`
@@ -123,7 +123,7 @@ func (rc *ReferenceConfig) Refer(srv interface{}) {
 		 For example, "tri://localhost:10000" is a direct url, and "registry://localhost:2181" is a registry url.
 		 rc.URL: "tri://localhost:10000;tri://localhost:10001;registry://localhost:2181",
 		 urlStrings = []string{"tri://localhost:10000", "tri://localhost:10001", "registry://localhost:2181"}.
-		 */
+		*/
 		urlStrings := gxstrings.RegSplit(rc.URL, "\\s*[;]+\\s*")
 		for _, urlStr := range urlStrings {
 			serviceURL, err := common.NewURL(urlStr)
@@ -153,12 +153,12 @@ func (rc *ReferenceConfig) Refer(srv interface{}) {
 	// Get invokers according to rc.urls
 	var (
 		invoker protocol.Invoker
-		regURL *common.URL
+		regURL  *common.URL
 	)
 	invokers := make([]protocol.Invoker, len(rc.urls))
 	for _, u := range rc.urls {
 		if u.Protocol == constant.SERVICE_REGISTRY_PROTOCOL {
-			invoker =  extension.GetProtocol("registry").Refer(u)
+			invoker = extension.GetProtocol("registry").Refer(u)
 		} else {
 			invoker = extension.GetProtocol(u.Protocol).Refer(u)
 		}
@@ -176,6 +176,8 @@ func (rc *ReferenceConfig) Refer(srv interface{}) {
 	// TODO(hxmhlt): decouple from directory, config should not depend on directory module
 	if len(invokers) == 1 {
 		rc.invoker = invokers[0]
+		// TODO(justxuewei): Is the code correct?
+		// It seems that using cluster is unnecessary in this case, cuz the number of invokers is only one.
 		if rc.URL != "" {
 			hitClu := constant.FAILOVER_CLUSTER_NAME
 			if u := rc.invoker.GetURL(); u != nil {
@@ -197,7 +199,7 @@ func (rc *ReferenceConfig) Refer(srv interface{}) {
 		}
 		rc.invoker = extension.GetCluster(hitClu).Join(directory.NewStaticDirectory(invokers))
 	}
-	
+
 	// publish consumer's metadata
 	publishServiceDefinition(cfgURL)
 	// create proxy
