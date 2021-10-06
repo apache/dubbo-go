@@ -410,13 +410,6 @@ func (svc *ServiceConfig) GetExportedUrls() []*common.URL {
 	return nil
 }
 
-func (svc *ServiceConfig) publishServiceDefinition(url *common.URL) {
-	//svc.rootConfig.MetadataReport.
-	if remoteMetadataService, err := extension.GetRemoteMetadataService(); err == nil && remoteMetadataService != nil {
-		remoteMetadataService.PublishServiceDefinition(url)
-	}
-}
-
 // postProcessConfig asks registered ConfigPostProcessor to post-process the current ServiceConfig.
 func (svc *ServiceConfig) postProcessConfig(url *common.URL) {
 	for _, p := range extension.GetConfigPostProcessors() {

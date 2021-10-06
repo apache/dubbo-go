@@ -29,6 +29,7 @@ import (
 	_ "dubbo.apache.org/dubbo-go/v3/metadata/report/etcd"
 	_ "dubbo.apache.org/dubbo-go/v3/metadata/report/nacos"
 	_ "dubbo.apache.org/dubbo-go/v3/metadata/report/zookeeper"
+	_ "dubbo.apache.org/dubbo-go/v3/metadata/service/exporter/configurable"
 	_ "dubbo.apache.org/dubbo-go/v3/metadata/service/local"
 	_ "dubbo.apache.org/dubbo-go/v3/metadata/service/remote"
 	_ "dubbo.apache.org/dubbo-go/v3/metrics/prometheus"
