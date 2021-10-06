@@ -183,6 +183,8 @@ func (rc *RootConfig) Init() error {
 	if err := rc.Consumer.Init(rc); err != nil {
 		return err
 	}
+	// todo if we can remove this from Init in the future?
+	rc.Start()
 	return nil
 }
 

@@ -52,7 +52,6 @@ func Load(opts ...LoaderConfOption) error {
 	if err := rootConfig.Init(); err != nil {
 		return err
 	}
-	rootConfig.Start()
 	return nil
 }
 
