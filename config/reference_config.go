@@ -114,91 +114,75 @@ func (rc *ReferenceConfig) Refer(srv interface{}) {
 		cfgURL.AddParam(constant.ForceUseTag, "true")
 	}
 	rc.postProcessConfig(cfgURL)
-	if rc.URL != "" {
-		// 1. user specified URL, could be peer-to-peer address, or register center's address.
+
+	// retrieving urls from config, and appending the urls to rc.urls
+	if rc.URL != "" { // use user-specific urls
+		/*
+		 Two types of URL are allowed for rc.URL: direct url and registry url, they will be handled in different ways.
+		 For example, "tri://localhost:10000" is a direct url, and "registry://localhost:2181" is a registry url.
+		 rc.URL: "tri://localhost:10000;tri://localhost:10001;registry://localhost:2181",
+		 urlStrings = []string{"tri://localhost:10000", "tri://localhost:10001", "registry://localhost:2181"}.
+		*/
 		urlStrings := gxstrings.RegSplit(rc.URL, "\\s*[;]+\\s*")
 		for _, urlStr := range urlStrings {
 			serviceURL, err := common.NewURL(urlStr)
 			if err != nil {
 				panic(fmt.Sprintf("url configuration error,  please check your configuration, user specified URL %v refer error, error message is %v ", urlStr, err.Error()))
 			}
-			if serviceURL.Protocol == constant.REGISTRY_PROTOCOL {
+			if serviceURL.Protocol == constant.REGISTRY_PROTOCOL { // URL stands for a registry protocol
 				serviceURL.SubURL = cfgURL
 				rc.urls = append(rc.urls, serviceURL)
-			} else {
+			} else { // URL stands for a direct address
 				if serviceURL.Path == "" {
 					serviceURL.Path = "/" + rc.InterfaceName
 				}
-				// merge url need to do
+				// merge URL param with cfgURL, others are same as serviceURL
 				newURL := common.MergeURL(serviceURL, cfgURL)
 				rc.urls = append(rc.urls, newURL)
 			}
 		}
-	} else {
-		// 2. assemble SubURL from register center's configuration mode
+	} else { // use registry configs
 		rc.urls = loadRegistries(rc.RegistryIDs, rc.rootConfig.Registries, common.CONSUMER)
-
 		// set url to regURLs
 		for _, regURL := range rc.urls {
 			regURL.SubURL = cfgURL
 		}
 	}
 
-	if len(rc.urls) == 1 {
-		if rc.urls[0].Protocol == constant.SERVICE_REGISTRY_PROTOCOL {
-			rc.invoker = extension.GetProtocol("registry").Refer(rc.urls[0])
+	// Get invokers according to rc.urls
+	var (
+		invoker protocol.Invoker
+		regURL  *common.URL
+	)
+	invokers := make([]protocol.Invoker, len(rc.urls))
+	for i, u := range rc.urls {
+		if u.Protocol == constant.SERVICE_REGISTRY_PROTOCOL {
+			invoker = extension.GetProtocol("registry").Refer(u)
 		} else {
-			rc.invoker = extension.GetProtocol(rc.urls[0].Protocol).Refer(rc.urls[0])
+			invoker = extension.GetProtocol(u.Protocol).Refer(u)
 		}
 
-		// c.URL != "" is direct call
 		if rc.URL != "" {
-			//filter
-			rc.invoker = protocolwrapper.BuildInvokerChain(rc.invoker, constant.REFERENCE_FILTER_KEY)
+			invoker = protocolwrapper.BuildInvokerChain(invoker, constant.REFERENCE_FILTER_KEY)
+		}
 
-			// cluster
-			invokers := make([]protocol.Invoker, 0, len(rc.urls))
-			invokers = append(invokers, rc.invoker)
-			// TODO(decouple from directory, config should not depend on directory module)
-			var hitClu string
-			// not a registry url, must be direct invoke.
-			hitClu = constant.FAILOVER_CLUSTER_NAME
-			if len(invokers) > 0 {
-				u := invokers[0].GetURL()
-				if nil != &u {
-					hitClu = u.GetParam(constant.CLUSTER_KEY, constant.ZONEAWARE_CLUSTER_NAME)
-				}
+		invokers[i] = invoker
+		if u.Protocol == constant.REGISTRY_PROTOCOL {
+			regURL = u
+		}
+	}
+
+	// TODO(hxmhlt): decouple from directory, config should not depend on directory module
+	if len(invokers) == 1 {
+		rc.invoker = invokers[0]
+		if rc.URL != "" {
+			hitClu := constant.FAILOVER_CLUSTER_NAME
+			if u := rc.invoker.GetURL(); u != nil {
+				hitClu = u.GetParam(constant.CLUSTER_KEY, constant.ZONEAWARE_CLUSTER_NAME)
 			}
-
-			cluster := extension.GetCluster(hitClu)
-			// If 'zone-aware' policy select, the invoker wrap sequence would be:
-			// ZoneAwareClusterInvoker(StaticDirectory) ->
-			// FailoverClusterInvoker(RegistryDirectory, routing happens here) -> Invoker
-			rc.invoker = cluster.Join(directory.NewStaticDirectory(invokers))
+			rc.invoker = extension.GetCluster(hitClu).Join(directory.NewStaticDirectory(invokers))
 		}
 	} else {
-		invokers := make([]protocol.Invoker, 0, len(rc.urls))
-		var regURL *common.URL
-		for _, u := range rc.urls {
-			var invoker protocol.Invoker
-			if u.Protocol == constant.SERVICE_REGISTRY_PROTOCOL {
-				invoker = extension.GetProtocol("registry").Refer(u)
-			} else {
-				invoker = extension.GetProtocol(u.Protocol).Refer(u)
-			}
-
-			// c.URL != "" is direct call
-			if rc.URL != "" {
-				//filter
-				invoker = protocolwrapper.BuildInvokerChain(invoker, constant.REFERENCE_FILTER_KEY)
-			}
-			invokers = append(invokers, invoker)
-			if u.Protocol == constant.REGISTRY_PROTOCOL {
-				regURL = u
-			}
-		}
-
-		// TODO(decouple from directory, config should not depend on directory module)
 		var hitClu string
 		if regURL != nil {
 			// for multi-subscription scenario, use 'zone-aware' policy by default
@@ -206,20 +190,13 @@ func (rc *ReferenceConfig) Refer(srv interface{}) {
 		} else {
 			// not a registry url, must be direct invoke.
 			hitClu = constant.FAILOVER_CLUSTER_NAME
-			if len(invokers) > 0 {
-				u := invokers[0].GetURL()
-				if nil != &u {
-					hitClu = u.GetParam(constant.CLUSTER_KEY, constant.ZONEAWARE_CLUSTER_NAME)
-				}
+			if u := invokers[0].GetURL(); u != nil {
+				hitClu = u.GetParam(constant.CLUSTER_KEY, constant.ZONEAWARE_CLUSTER_NAME)
 			}
 		}
-
-		cluster := extension.GetCluster(hitClu)
-		// If 'zone-aware' policy select, the invoker wrap sequence would be:
-		// ZoneAwareClusterInvoker(StaticDirectory) ->
-		// FailoverClusterInvoker(RegistryDirectory, routing happens here) -> Invoker
-		rc.invoker = cluster.Join(directory.NewStaticDirectory(invokers))
+		rc.invoker = extension.GetCluster(hitClu).Join(directory.NewStaticDirectory(invokers))
 	}
+
 	// publish consumer's metadata
 	publishServiceDefinition(cfgURL)
 	// create proxy
