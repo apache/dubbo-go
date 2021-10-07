@@ -25,6 +25,7 @@ import (
 
 import (
 	"github.com/knadh/koanf"
+
 	perrors "github.com/pkg/errors"
 )
 
@@ -51,7 +52,6 @@ func Load(opts ...LoaderConfOption) error {
 	if err := rootConfig.Init(); err != nil {
 		return err
 	}
-	rootConfig.Start()
 	return nil
 }
 
@@ -92,13 +92,6 @@ func registerServiceInstance() {
 	}
 	// publish metadata to remote
 	if GetApplicationConfig().MetadataType == constant.REMOTE_METADATA_STORAGE_TYPE {
-		if remoteMetadataService, err := extension.GetRemoteMetadataService(); err == nil {
-			remoteMetadataService.PublishMetadata(GetApplicationConfig().Name)
-		}
-	}
-
-	if GetApplicationConfig().MetadataType == constant.REMOTE_METADATA_STORAGE_TYPE {
-		// publish metadata to remote
 		if remoteMetadataService, err := extension.GetRemoteMetadataService(); err == nil {
 			remoteMetadataService.PublishMetadata(GetApplicationConfig().Name)
 		}

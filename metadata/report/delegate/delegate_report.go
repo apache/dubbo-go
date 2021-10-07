@@ -179,7 +179,7 @@ func (mr *MetadataReport) StoreProviderMetadata(identifier *identifier.MetadataI
 
 // storeMetadataTask will delegate to call remote metadata's sdk to store
 func (mr *MetadataReport) storeMetadataTask(role int, identifier *identifier.MetadataIdentifier, definer interface{}) {
-	logger.Infof("store provider metadata. Identifier :%v ; definition: %v .", identifier, definer)
+	logger.Infof("publish provider identifier and definition:  Identifier :%v ; definition: %v .", identifier, definer)
 	mr.allMetadataReportsLock.Lock()
 	mr.allMetadataReports[identifier] = definer
 	mr.allMetadataReportsLock.Unlock()

@@ -82,7 +82,9 @@ func (c *ProviderConfig) Load() {
 	for key, svs := range c.Services {
 		rpcService := GetProviderService(key)
 		if rpcService == nil {
-			logger.Warnf("%s does not exist!", key)
+			logger.Warnf("Service reference key %s does not exist, please check if this key "+
+				"matches your provider struct type name, or matches the returned valued of your provider struct's Reference() function."+
+				"View https://www.yuque.com/u772707/eqpff0/pqfgz3#zxdw0 for details", key)
 			continue
 		}
 		svs.id = key

@@ -18,17 +18,13 @@
 package configurable
 
 import (
-	"strconv"
 	"sync"
-)
-
-import (
-	"github.com/pkg/errors"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	_ "dubbo.apache.org/dubbo-go/v3/metadata/mapping/metadata"
@@ -45,6 +41,10 @@ type MetadataServiceExporter struct {
 	metadataService service.MetadataService
 }
 
+func init() {
+	extension.SetMetadataServiceExporter(constant.DEFAULT_Key, NewMetadataServiceExporter)
+}
+
 // NewMetadataServiceExporter will return a service_exporter.MetadataServiceExporter with the specified  metadata service
 func NewMetadataServiceExporter(metadataService service.MetadataService) exporter.MetadataServiceExporter {
 	return &MetadataServiceExporter{
@@ -55,9 +55,6 @@ func NewMetadataServiceExporter(metadataService service.MetadataService) exporte
 // Export will export the metadataService
 func (exporter *MetadataServiceExporter) Export(url *common.URL) error {
 	if !exporter.IsExported() {
-		if url == nil || url.SubURL == nil {
-			return errors.New("metadata server url is nil, pls check your configuration")
-		}
 		version, _ := exporter.metadataService.Version()
 		exporter.lock.Lock()
 		defer exporter.lock.Unlock()
@@ -66,7 +63,6 @@ func (exporter *MetadataServiceExporter) Export(url *common.URL) error {
 			SetProtocolIDs(constant.DEFAULT_PROTOCOL).
 			AddRCProtocol(constant.DEFAULT_PROTOCOL, config.NewProtocolConfigBuilder().
 				SetName(constant.DEFAULT_PROTOCOL).
-				SetPort(strconv.Itoa(constant.DEFAULT_METADATAPORT)).
 				Build()).
 			SetRegistryIDs("N/A").
 			SetInterface(constant.METADATA_SERVICE_NAME).

@@ -230,7 +230,8 @@ func (svc *ServiceConfig) Export() error {
 			if ivkURL.GetParam(constant.INTERFACE_KEY, "") == constant.METADATA_SERVICE_NAME {
 				ms, err := extension.GetLocalMetadataService("")
 				if err != nil {
-					return err
+					logger.Warnf("export org.apache.dubbo.metadata.MetadataService failed beacause of %s ! pls check if you import _ \"dubbo.apache.org/dubbo-go/v3/metadata/service/local\"", err)
+					return nil
 				}
 				ms.SetMetadataServiceURL(ivkURL)
 			}
@@ -408,13 +409,6 @@ func (svc *ServiceConfig) GetExportedUrls() []*common.URL {
 		return urls
 	}
 	return nil
-}
-
-func (svc *ServiceConfig) publishServiceDefinition(url *common.URL) {
-	//svc.rootConfig.MetadataReport.
-	if remoteMetadataService, err := extension.GetRemoteMetadataService(); err == nil && remoteMetadataService != nil {
-		remoteMetadataService.PublishServiceDefinition(url)
-	}
 }
 
 // postProcessConfig asks registered ConfigPostProcessor to post-process the current ServiceConfig.

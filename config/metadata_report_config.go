@@ -18,10 +18,6 @@
 package config
 
 import (
-	"fmt"
-)
-
-import (
 	perrors "github.com/pkg/errors"
 )
 
@@ -29,6 +25,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/config/instance"
 )
 
@@ -89,6 +86,12 @@ func (mc *MetadataReportConfig) StartMetadataReport() error {
 }
 
 func publishServiceDefinition(url *common.URL) {
+	localService, err := extension.GetLocalMetadataService(constant.DEFAULT_Key)
+	if err != nil {
+		logger.Warnf("get local metadata service failed, please check if you have imported _ \"dubbo.apache.org/dubbo-go/v3/metadata/service/local\"")
+		return
+	}
+	localService.PublishServiceDefinition(url)
 	if url.GetParam(constant.METADATATYPE_KEY, "") != constant.REMOTE_METADATA_STORAGE_TYPE {
 		return
 	}
@@ -101,9 +104,9 @@ func publishServiceDefinition(url *common.URL) {
 // selectMetadataServiceExportedURL get already be exported url
 func selectMetadataServiceExportedURL() *common.URL {
 	var selectedUrl *common.URL
-	metaDataService, err := extension.GetLocalMetadataService("")
+	metaDataService, err := extension.GetLocalMetadataService(constant.DEFAULT_Key)
 	if err != nil {
-		fmt.Println("selectMetadataServiceExportedURL err = ", err)
+		logger.Warnf("get metadata service exporter failed, pls check if you import _ \"dubbo.apache.org/dubbo-go/v3/metadata/service/local\"")
 		return nil
 	}
 	urlList, err := metaDataService.GetExportedURLs(constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE)
