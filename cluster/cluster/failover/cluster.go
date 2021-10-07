@@ -15,25 +15,33 @@
  * limitations under the License.
  */
 
-package extension
+package failover
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
+	clusterpkg "dubbo.apache.org/dubbo-go/v3/cluster/cluster"
+	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
-var loadbalances = make(map[string]func() loadbalance.LoadBalance)
+const Key = "failover"
 
-// SetLoadbalance sets the loadbalance extension with @name
-// For example: random/round_robin/consistent_hash/least_active/...
-func SetLoadbalance(name string, fcn func() loadbalance.LoadBalance) {
-	loadbalances[name] = fcn
+func init() {
+	extension.SetCluster(Key, newCluster)
 }
 
-// GetLoadbalance finds the loadbalance extension with @name
-func GetLoadbalance(name string) loadbalance.LoadBalance {
-	if loadbalances[name] == nil {
-		panic("loadbalance for " + name + " is not existing, make sure you have import the package.")
-	}
+type cluster struct{}
 
-	return loadbalances[name]()
+// newCluster returns a failover cluster instance
+//
+// Failure automatically switch, when there is a failure,
+// retry the other server (default). Usually used for read operations,
+// but retries can result in longer delays.
+func newCluster() clusterpkg.Cluster {
+	return &cluster{}
+}
+
+// Join returns a baseClusterInvoker instance
+func (cluster *cluster) Join(directory directory.Directory) protocol.Invoker {
+	return clusterpkg.BuildInterceptorChain(newClusterInvoker(directory))
 }

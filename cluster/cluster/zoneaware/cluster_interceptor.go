@@ -15,25 +15,43 @@
  * limitations under the License.
  */
 
-package extension
+package zoneaware
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
+	"context"
+	clusterpkg "dubbo.apache.org/dubbo-go/v3/cluster/cluster"
 )
 
-var loadbalances = make(map[string]func() loadbalance.LoadBalance)
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
+)
 
-// SetLoadbalance sets the loadbalance extension with @name
-// For example: random/round_robin/consistent_hash/least_active/...
-func SetLoadbalance(name string, fcn func() loadbalance.LoadBalance) {
-	loadbalances[name] = fcn
+type interceptor struct {
 }
 
-// GetLoadbalance finds the loadbalance extension with @name
-func GetLoadbalance(name string) loadbalance.LoadBalance {
-	if loadbalances[name] == nil {
-		panic("loadbalance for " + name + " is not existing, make sure you have import the package.")
+func (z *interceptor) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+	key := constant.REGISTRY_KEY + "." + constant.ZONE_FORCE_KEY
+	force := ctx.Value(key)
+
+	if force != nil {
+		switch value := force.(type) {
+		case bool:
+			if value {
+				invocation.SetAttachments(key, "true")
+			}
+		case string:
+			if "true" == value {
+				invocation.SetAttachments(key, "true")
+			}
+		default:
+			// ignore
+		}
 	}
 
-	return loadbalances[name]()
+	return invoker.Invoke(ctx, invocation)
+}
+
+func newInterceptor() clusterpkg.Interceptor {
+	return &interceptor{}
 }

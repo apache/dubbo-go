@@ -22,7 +22,6 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/cluster"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
@@ -41,7 +40,7 @@ type leastActiveLoadBalance struct{}
 // NewLeastActiveLoadBalance returns a least active load balance.
 //
 // A random mechanism based on actives, actives means the number of a consumer's requests have been sent to provider but not yet got response.
-func NewLeastActiveLoadBalance() cluster.LoadBalance {
+func NewLeastActiveLoadBalance() LoadBalance {
 	return &leastActiveLoadBalance{}
 }
 

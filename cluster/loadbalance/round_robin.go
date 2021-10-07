@@ -25,7 +25,6 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/cluster"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
@@ -55,7 +54,7 @@ type roundRobinLoadBalance struct{}
 // NewRoundRobinLoadBalance returns a round robin load balance
 //
 // Use the weight's common advisory to determine round robin ratio
-func NewRoundRobinLoadBalance() cluster.LoadBalance {
+func NewRoundRobinLoadBalance() LoadBalance {
 	return &roundRobinLoadBalance{}
 }
 

@@ -33,7 +33,6 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/cluster"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
@@ -63,7 +62,7 @@ type consistentHashLoadBalance struct{}
 // NewConsistentHashLoadBalance creates NewConsistentHashLoadBalance
 //
 // The same parameters of the request is always sent to the same provider.
-func NewConsistentHashLoadBalance() cluster.LoadBalance {
+func NewConsistentHashLoadBalance() LoadBalance {
 	return &consistentHashLoadBalance{}
 }
 

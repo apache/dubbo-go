@@ -29,7 +29,6 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/cluster"
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
 	"dubbo.apache.org/dubbo-go/v3/cluster/router/chain"
 	"dubbo.apache.org/dubbo-go/v3/common"
@@ -69,7 +68,7 @@ type RegistryDirectory struct {
 }
 
 // NewRegistryDirectory will create a new RegistryDirectory
-func NewRegistryDirectory(url *common.URL, registry registry.Registry) (cluster.Directory, error) {
+func NewRegistryDirectory(url *common.URL, registry registry.Registry) (directory.Directory, error) {
 	if url.SubURL == nil {
 		return nil, perrors.Errorf("url is invalid, suburl can not be nil")
 	}

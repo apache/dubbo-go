@@ -27,7 +27,6 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/cluster"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
@@ -91,7 +90,7 @@ type consistentHashLoadBalanceSuite struct {
 	invoker1 protocol.Invoker
 	invoker2 protocol.Invoker
 	invoker3 protocol.Invoker
-	lb       cluster.LoadBalance
+	lb       LoadBalance
 }
 
 func (s *consistentHashLoadBalanceSuite) SetupTest() {

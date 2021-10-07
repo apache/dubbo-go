@@ -15,25 +15,20 @@
  * limitations under the License.
  */
 
-package extension
+package cluster_impl
+
+// This package is for being compatible with older dubbo-go, please use `imports` package.
+// This package may be DEPRECATED OR REMOVED in the future.
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
+	_ "dubbo.apache.org/dubbo-go/v3/cluster/cluster/available"
+	_ "dubbo.apache.org/dubbo-go/v3/cluster/cluster/broadcast"
+	_ "dubbo.apache.org/dubbo-go/v3/cluster/cluster/failback"
+	_ "dubbo.apache.org/dubbo-go/v3/cluster/cluster/failfast"
+	_ "dubbo.apache.org/dubbo-go/v3/cluster/cluster/failover"
+	_ "dubbo.apache.org/dubbo-go/v3/cluster/cluster/failsafe"
+	_ "dubbo.apache.org/dubbo-go/v3/cluster/cluster/forking"
+	_ "dubbo.apache.org/dubbo-go/v3/cluster/cluster/zoneaware"
 )
 
-var loadbalances = make(map[string]func() loadbalance.LoadBalance)
-
-// SetLoadbalance sets the loadbalance extension with @name
-// For example: random/round_robin/consistent_hash/least_active/...
-func SetLoadbalance(name string, fcn func() loadbalance.LoadBalance) {
-	loadbalances[name] = fcn
-}
-
-// GetLoadbalance finds the loadbalance extension with @name
-func GetLoadbalance(name string) loadbalance.LoadBalance {
-	if loadbalances[name] == nil {
-		panic("loadbalance for " + name + " is not existing, make sure you have import the package.")
-	}
-
-	return loadbalances[name]()
-}
+func init() {}

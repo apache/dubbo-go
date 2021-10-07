@@ -15,25 +15,31 @@
  * limitations under the License.
  */
 
-package extension
+package broadcast
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
+	clusterpkg "dubbo.apache.org/dubbo-go/v3/cluster/cluster"
+	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
+const Key = "broadcast"
 
-var loadbalances = make(map[string]func() loadbalance.LoadBalance)
-
-// SetLoadbalance sets the loadbalance extension with @name
-// For example: random/round_robin/consistent_hash/least_active/...
-func SetLoadbalance(name string, fcn func() loadbalance.LoadBalance) {
-	loadbalances[name] = fcn
+func init() {
+	extension.SetCluster(Key, NewCluster)
 }
 
-// GetLoadbalance finds the loadbalance extension with @name
-func GetLoadbalance(name string) loadbalance.LoadBalance {
-	if loadbalances[name] == nil {
-		panic("loadbalance for " + name + " is not existing, make sure you have import the package.")
-	}
+type cluster struct{}
 
-	return loadbalances[name]()
+// NewCluster returns a broadcast cluster instance.
+//
+// Calling all providers' broadcast one by one. All errors will be reported.
+// It is usually used to notify all providers to update local resource information such as caches or logs.
+func NewCluster() clusterpkg.Cluster {
+	return &cluster{}
+}
+
+// Join returns a baseClusterInvoker instance
+func (cluster *cluster) Join(directory directory.Directory) protocol.Invoker {
+	return clusterpkg.BuildInterceptorChain(newClusterInvoker(directory))
 }

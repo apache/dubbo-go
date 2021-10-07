@@ -18,11 +18,8 @@
 package extension
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/cluster/cluster"
 	"sync"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/cluster"
 )
 
 var (
