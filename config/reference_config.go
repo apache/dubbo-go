@@ -155,7 +155,7 @@ func (rc *ReferenceConfig) Refer(srv interface{}) {
 		regURL  *common.URL
 	)
 	invokers := make([]protocol.Invoker, len(rc.urls))
-	for _, u := range rc.urls {
+	for i, u := range rc.urls {
 		if u.Protocol == constant.SERVICE_REGISTRY_PROTOCOL {
 			invoker = extension.GetProtocol("registry").Refer(u)
 		} else {
@@ -166,7 +166,7 @@ func (rc *ReferenceConfig) Refer(srv interface{}) {
 			invoker = protocolwrapper.BuildInvokerChain(invoker, constant.REFERENCE_FILTER_KEY)
 		}
 
-		invokers = append(invokers, invoker)
+		invokers[i] = invoker
 		if u.Protocol == constant.REGISTRY_PROTOCOL {
 			regURL = u
 		}
