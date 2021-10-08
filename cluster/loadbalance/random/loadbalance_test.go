@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package loadbalance
+package random
 
 import (
 	"fmt"
@@ -43,29 +43,29 @@ const (
 )
 
 func TestRandomlbSelect(t *testing.T) {
-	randomlb := NewRandomLoadBalance()
+	randomlb := NewLoadBalance()
 
-	invokers := []protocol.Invoker{}
+	var invokers []protocol.Invoker
 
-	url, _ := common.NewURL(fmt.Sprintf(tmpUrlFormat, 0))
-	invokers = append(invokers, protocol.NewBaseInvoker(url))
+	u, _ := common.NewURL(fmt.Sprintf(tmpUrlFormat, 0))
+	invokers = append(invokers, protocol.NewBaseInvoker(u))
 	i := randomlb.Select(invokers, &invocation.RPCInvocation{})
-	assert.True(t, i.GetURL().URLEqual(url))
+	assert.True(t, i.GetURL().URLEqual(u))
 
 	for i := 1; i < 10; i++ {
-		url, _ := common.NewURL(fmt.Sprintf(tmpUrlFormat, i))
-		invokers = append(invokers, protocol.NewBaseInvoker(url))
+		u, _ := common.NewURL(fmt.Sprintf(tmpUrlFormat, i))
+		invokers = append(invokers, protocol.NewBaseInvoker(u))
 	}
 	randomlb.Select(invokers, &invocation.RPCInvocation{})
 }
 
 func TestRandomlbSelectWeight(t *testing.T) {
-	randomlb := NewRandomLoadBalance()
+	randomlb := NewLoadBalance()
 
 	invokers := []protocol.Invoker{}
 	for i := 0; i < 10; i++ {
-		url, _ := common.NewURL(fmt.Sprintf(tmpUrlFormat, i))
-		invokers = append(invokers, protocol.NewBaseInvoker(url))
+		u, _ := common.NewURL(fmt.Sprintf(tmpUrlFormat, i))
+		invokers = append(invokers, protocol.NewBaseInvoker(u))
 	}
 
 	urlParams := url.Values{}
@@ -92,12 +92,12 @@ func TestRandomlbSelectWeight(t *testing.T) {
 }
 
 func TestRandomlbSelectWarmup(t *testing.T) {
-	randomlb := NewRandomLoadBalance()
+	randomlb := NewLoadBalance()
 
 	invokers := []protocol.Invoker{}
 	for i := 0; i < 10; i++ {
-		url, _ := common.NewURL(fmt.Sprintf(tmpUrlFormat, i))
-		invokers = append(invokers, protocol.NewBaseInvoker(url))
+		u, _ := common.NewURL(fmt.Sprintf(tmpUrlFormat, i))
+		invokers = append(invokers, protocol.NewBaseInvoker(u))
 	}
 
 	urlParams := url.Values{}

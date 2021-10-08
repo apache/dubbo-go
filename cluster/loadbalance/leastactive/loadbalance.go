@@ -15,9 +15,10 @@
  * limitations under the License.
  */
 
-package loadbalance
+package leastactive
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
 	"math/rand"
 )
 
@@ -27,25 +28,25 @@ import (
 )
 
 const (
-	// LeastActive is used to set the load balance extension
-	LeastActive = "leastactive"
+	// Key is used to set the load balance extension
+	Key = "leastactive"
 )
 
 func init() {
-	extension.SetLoadbalance(LeastActive, NewLeastActiveLoadBalance)
+	extension.SetLoadbalance(Key, newLoadBalance)
 }
 
-type leastActiveLoadBalance struct{}
+type loadBalance struct{}
 
-// NewLeastActiveLoadBalance returns a least active load balance.
+// newLoadBalance returns a least active load balance.
 //
 // A random mechanism based on actives, actives means the number of a consumer's requests have been sent to provider but not yet got response.
-func NewLeastActiveLoadBalance() LoadBalance {
-	return &leastActiveLoadBalance{}
+func newLoadBalance() loadbalance.LoadBalance {
+	return &loadBalance{}
 }
 
 // Select gets invoker based on least active load balancing strategy
-func (lb *leastActiveLoadBalance) Select(invokers []protocol.Invoker, invocation protocol.Invocation) protocol.Invoker {
+func (lb *loadBalance) Select(invokers []protocol.Invoker, invocation protocol.Invocation) protocol.Invoker {
 	count := len(invokers)
 	if count == 0 {
 		return nil
@@ -68,7 +69,7 @@ func (lb *leastActiveLoadBalance) Select(invokers []protocol.Invoker, invocation
 		// Active number
 		active := protocol.GetMethodStatus(invoker.GetURL(), invocation.MethodName()).GetActive()
 		// current weight (maybe in warmUp)
-		weight := GetWeight(invoker, invocation)
+		weight := loadbalance.GetWeight(invoker, invocation)
 		// There are smaller active services
 		if leastActive == -1 || active < leastActive {
 			leastActive = active
@@ -96,7 +97,7 @@ func (lb *leastActiveLoadBalance) Select(invokers []protocol.Invoker, invocation
 		offsetWeight := rand.Int63n(totalWeight) + 1
 		for i := 0; i < leastCount; i++ {
 			leastIndex := leastIndexes[i]
-			offsetWeight -= GetWeight(invokers[i], invocation)
+			offsetWeight -= loadbalance.GetWeight(invokers[i], invocation)
 			if offsetWeight <= 0 {
 				return invokers[leastIndex]
 			}

@@ -15,10 +15,11 @@
  * limitations under the License.
  */
 
-package loadbalance
+package roundrobin
 
 import (
 	"fmt"
+	"strconv"
 	"testing"
 )
 
@@ -33,12 +34,13 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
-func TestLeastActiveSelect(t *testing.T) {
-	loadBalance := NewLeastActiveLoadBalance()
+func TestRoundRobinSelect(t *testing.T) {
+	loadBalance := NewLoadBalance()
 
 	var invokers []protocol.Invoker
 
-	url, _ := common.NewURL(fmt.Sprintf("dubbo://%s:%d/org.apache.demo.HelloService", constant.LOCAL_HOST_VALUE, constant.DEFAULT_PORT))
+	url, _ := common.NewURL(fmt.Sprintf("dubbo://%s:%d/org.apache.demo.HelloService",
+		constant.LOCAL_HOST_VALUE, constant.DEFAULT_PORT))
 	invokers = append(invokers, protocol.NewBaseInvoker(url))
 	i := loadBalance.Select(invokers, &invocation.RPCInvocation{})
 	assert.True(t, i.GetURL().URLEqual(url))
@@ -50,34 +52,26 @@ func TestLeastActiveSelect(t *testing.T) {
 	loadBalance.Select(invokers, &invocation.RPCInvocation{})
 }
 
-func TestLeastActiveByWeight(t *testing.T) {
-	loadBalance := NewLeastActiveLoadBalance()
+func TestRoundRobinByWeight(t *testing.T) {
+	loadBalance := NewLoadBalance()
 
 	var invokers []protocol.Invoker
-	loop := 3
+	loop := 10
 	for i := 1; i <= loop; i++ {
-		url, _ := common.NewURL(fmt.Sprintf("test%v://192.168.1.%v:20000/org.apache.demo.HelloService?weight=%v", i, i, i))
+		url, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%v:20000/org.apache.demo.HelloService?weight=%v", i, i))
 		invokers = append(invokers, protocol.NewBaseInvoker(url))
 	}
 
-	inv := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("test"))
-	protocol.BeginCount(invokers[2].GetURL(), inv.MethodName())
-
-	loop = 10000
-
-	var (
-		firstCount  int
-		secondCount int
-	)
+	loop = (1 + loop) * loop / 2
+	selected := make(map[protocol.Invoker]int)
 
 	for i := 1; i <= loop; i++ {
-		invoker := loadBalance.Select(invokers, inv)
-		if invoker.GetURL().Protocol == "test1" {
-			firstCount++
-		} else if invoker.GetURL().Protocol == "test2" {
-			secondCount++
-		}
+		invoker := loadBalance.Select(invokers, &invocation.RPCInvocation{})
+		selected[invoker]++
 	}
 
-	assert.Equal(t, firstCount+secondCount, loop)
+	for _, i := range invokers {
+		w, _ := strconv.Atoi(i.GetURL().GetParam("weight", "-1"))
+		assert.True(t, selected[i] == w)
+	}
 }

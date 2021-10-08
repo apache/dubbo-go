@@ -23,6 +23,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
+
 const Key = "broadcast"
 
 func init() {

@@ -15,9 +15,10 @@
  * limitations under the License.
  */
 
-package loadbalance
+package random
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
 	"math/rand"
 )
 
@@ -27,23 +28,23 @@ import (
 )
 
 const (
-	name = "random"
+	Key = "random"
 )
 
 func init() {
-	extension.SetLoadbalance(name, NewRandomLoadBalance)
+	extension.SetLoadbalance(Key, NewLoadBalance)
 }
 
-type randomLoadBalance struct{}
+type loadBalance struct{}
 
-// NewRandomLoadBalance returns a random load balance instance.
+// NewLoadBalance returns a random load balance instance.
 //
 // Set random probabilities by weight, and the request will be sent to provider randomly.
-func NewRandomLoadBalance() LoadBalance {
-	return &randomLoadBalance{}
+func NewLoadBalance() loadbalance.LoadBalance {
+	return &loadBalance{}
 }
 
-func (lb *randomLoadBalance) Select(invokers []protocol.Invoker, invocation protocol.Invocation) protocol.Invoker {
+func (lb *loadBalance) Select(invokers []protocol.Invoker, invocation protocol.Invocation) protocol.Invoker {
 	var length int
 	if length = len(invokers); length == 1 {
 		return invokers[0]
@@ -51,12 +52,12 @@ func (lb *randomLoadBalance) Select(invokers []protocol.Invoker, invocation prot
 	sameWeight := true
 	weights := make([]int64, length)
 
-	firstWeight := GetWeight(invokers[0], invocation)
+	firstWeight := loadbalance.GetWeight(invokers[0], invocation)
 	totalWeight := firstWeight
 	weights[0] = firstWeight
 
 	for i := 1; i < length; i++ {
-		weight := GetWeight(invokers[i], invocation)
+		weight := loadbalance.GetWeight(invokers[i], invocation)
 		weights[i] = weight
 
 		totalWeight += weight

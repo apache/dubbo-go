@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package directory
+package static
 
 import (
 	"fmt"
@@ -39,7 +39,7 @@ func TestStaticDirList(t *testing.T) {
 		invokers = append(invokers, protocol.NewBaseInvoker(url))
 	}
 
-	staticDir := NewStaticDirectory(invokers)
+	staticDir := NewDirectory(invokers)
 	list := staticDir.List(&invocation.RPCInvocation{})
 
 	assert.Len(t, list, 10)
@@ -52,7 +52,7 @@ func TestStaticDirDestroy(t *testing.T) {
 		invokers = append(invokers, protocol.NewBaseInvoker(url))
 	}
 
-	staticDir := NewStaticDirectory(invokers)
+	staticDir := NewDirectory(invokers)
 	assert.Equal(t, true, staticDir.IsAvailable())
 	staticDir.Destroy()
 	assert.Equal(t, false, staticDir.IsAvailable())

@@ -19,6 +19,7 @@ package base
 
 import (
 	clusterpkg "dubbo.apache.org/dubbo-go/v3/cluster/cluster"
+	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/random"
 	"fmt"
 	"testing"
 )
@@ -28,7 +29,6 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
@@ -50,7 +50,7 @@ func TestStickyNormal(t *testing.T) {
 	base.AvailableCheck = true
 	var invoked []protocol.Invoker
 
-	tmpRandomBalance := loadbalance.NewRandomLoadBalance()
+	tmpRandomBalance := random.NewLoadBalance()
 	tmpInvocation := invocation.NewRPCInvocation(baseClusterInvokerMethodName, nil, nil)
 	result := base.DoSelect(tmpRandomBalance, tmpInvocation, invokers, invoked)
 	result1 := base.DoSelect(tmpRandomBalance, tmpInvocation, invokers, invoked)
@@ -68,8 +68,8 @@ func TestStickyNormalWhenError(t *testing.T) {
 	base.AvailableCheck = true
 
 	var invoked []protocol.Invoker
-	result := base.DoSelect(loadbalance.NewRandomLoadBalance(), invocation.NewRPCInvocation(baseClusterInvokerMethodName, nil, nil), invokers, invoked)
+	result := base.DoSelect(random.NewLoadBalance(), invocation.NewRPCInvocation(baseClusterInvokerMethodName, nil, nil), invokers, invoked)
 	invoked = append(invoked, result)
-	result1 := base.DoSelect(loadbalance.NewRandomLoadBalance(), invocation.NewRPCInvocation(baseClusterInvokerMethodName, nil, nil), invokers, invoked)
+	result1 := base.DoSelect(random.NewLoadBalance(), invocation.NewRPCInvocation(baseClusterInvokerMethodName, nil, nil), invokers, invoked)
 	assert.NotEqual(t, result, result1)
 }

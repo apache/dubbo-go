@@ -18,6 +18,9 @@
 package config
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/cluster/cluster/failover"
+	"dubbo.apache.org/dubbo-go/v3/cluster/cluster/zoneaware"
+	"dubbo.apache.org/dubbo-go/v3/cluster/directory/static"
 	"fmt"
 	"net/url"
 	"strconv"
@@ -31,7 +34,6 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
@@ -176,25 +178,25 @@ func (rc *ReferenceConfig) Refer(srv interface{}) {
 	if len(invokers) == 1 {
 		rc.invoker = invokers[0]
 		if rc.URL != "" {
-			hitClu := constant.FAILOVER_CLUSTER_NAME
+			hitClu := failover.Key
 			if u := rc.invoker.GetURL(); u != nil {
-				hitClu = u.GetParam(constant.CLUSTER_KEY, constant.ZONEAWARE_CLUSTER_NAME)
+				hitClu = u.GetParam(constant.CLUSTER_KEY, zoneaware.Key)
 			}
-			rc.invoker = extension.GetCluster(hitClu).Join(directory.NewStaticDirectory(invokers))
+			rc.invoker = extension.GetCluster(hitClu).Join(static.NewDirectory(invokers))
 		}
 	} else {
 		var hitClu string
 		if regURL != nil {
 			// for multi-subscription scenario, use 'zone-aware' policy by default
-			hitClu = constant.ZONEAWARE_CLUSTER_NAME
+			hitClu = zoneaware.Key
 		} else {
 			// not a registry url, must be direct invoke.
-			hitClu = constant.FAILOVER_CLUSTER_NAME
+			hitClu = failover.Key
 			if u := invokers[0].GetURL(); u != nil {
-				hitClu = u.GetParam(constant.CLUSTER_KEY, constant.ZONEAWARE_CLUSTER_NAME)
+				hitClu = u.GetParam(constant.CLUSTER_KEY, zoneaware.Key)
 			}
 		}
-		rc.invoker = extension.GetCluster(hitClu).Join(directory.NewStaticDirectory(invokers))
+		rc.invoker = extension.GetCluster(hitClu).Join(static.NewDirectory(invokers))
 	}
 
 	// publish consumer's metadata

@@ -20,6 +20,8 @@ package forking
 import (
 	"context"
 	clusterpkg "dubbo.apache.org/dubbo-go/v3/cluster/cluster"
+	"dubbo.apache.org/dubbo-go/v3/cluster/directory/static"
+	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/roundrobin"
 	"fmt"
 	"strconv"
 	"sync"
@@ -34,8 +36,6 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
-	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
@@ -48,16 +48,16 @@ var forkingUrl, _ = common.NewURL(
 	fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LOCAL_HOST_VALUE, constant.DEFAULT_PORT))
 
 func registerForking(mockInvokers ...*mock.MockInvoker) protocol.Invoker {
-	extension.SetLoadbalance(loadbalance.RoundRobin, loadbalance.NewRoundRobinLoadBalance)
+	extension.SetLoadbalance(roundrobin.Key, roundrobin.NewLoadBalance)
 
-	invokers := []protocol.Invoker{}
+	var invokers []protocol.Invoker
 	for i, ivk := range mockInvokers {
 		invokers = append(invokers, ivk)
 		if i == 0 {
 			ivk.EXPECT().GetUrl().Return(forkingUrl)
 		}
 	}
-	staticDir := directory.NewStaticDirectory(invokers)
+	staticDir := static.NewDirectory(invokers)
 
 	forkingCluster := newCluster()
 	clusterInvoker := forkingCluster.Join(staticDir)

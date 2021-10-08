@@ -20,6 +20,9 @@ package zoneaware
 import (
 	"context"
 	clusterpkg "dubbo.apache.org/dubbo-go/v3/cluster/cluster"
+	"dubbo.apache.org/dubbo-go/v3/cluster/directory/static"
+	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/random"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"fmt"
 	"testing"
 )
@@ -31,7 +34,6 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
@@ -73,7 +75,7 @@ func TestZoneWareInvokerWithPreferredSuccess(t *testing.T) {
 	}
 
 	zoneAwareCluster := newCluster()
-	staticDir := directory.NewStaticDirectory(invokers)
+	staticDir := static.NewDirectory(invokers)
 	clusterInvoker := zoneAwareCluster.Join(staticDir)
 
 	result := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
@@ -82,6 +84,8 @@ func TestZoneWareInvokerWithPreferredSuccess(t *testing.T) {
 }
 
 func TestZoneWareInvokerWithWeightSuccess(t *testing.T) {
+	extension.SetLoadbalance(random.Key, random.NewLoadBalance)
+
 	ctrl := gomock.NewController(t)
 	// In Go versions 1.14+, if you pass a *testing.T
 	// into gomock.NewController(t) you no longer need to call ctrl.Finish().
@@ -120,7 +124,7 @@ func TestZoneWareInvokerWithWeightSuccess(t *testing.T) {
 	}
 
 	zoneAwareCluster := newCluster()
-	staticDir := directory.NewStaticDirectory(invokers)
+	staticDir := static.NewDirectory(invokers)
 	clusterInvoker := zoneAwareCluster.Join(staticDir)
 
 	var w2Count, w1Count int
@@ -167,7 +171,7 @@ func TestZoneWareInvokerWithZoneSuccess(t *testing.T) {
 	}
 
 	zoneAwareCluster := newCluster()
-	staticDir := directory.NewStaticDirectory(invokers)
+	staticDir := static.NewDirectory(invokers)
 	clusterInvoker := zoneAwareCluster.Join(staticDir)
 
 	inv := &invocation.RPCInvocation{}
@@ -197,7 +201,7 @@ func TestZoneWareInvokerWithZoneForceFail(t *testing.T) {
 	}
 
 	zoneAwareCluster := newCluster()
-	staticDir := directory.NewStaticDirectory(invokers)
+	staticDir := static.NewDirectory(invokers)
 	clusterInvoker := zoneAwareCluster.Join(staticDir)
 
 	inv := &invocation.RPCInvocation{}

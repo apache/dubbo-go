@@ -20,6 +20,8 @@ package failfast
 import (
 	"context"
 	clusterpkg "dubbo.apache.org/dubbo-go/v3/cluster/cluster"
+	"dubbo.apache.org/dubbo-go/v3/cluster/directory/static"
+	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/random"
 	"fmt"
 	"testing"
 )
@@ -33,8 +35,6 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
-	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
@@ -48,7 +48,7 @@ var failfastUrl, _ = common.NewURL(
 
 // registerFailfast register failfastCluster to cluster extension.
 func registerFailfast(invoker *mock.MockInvoker) protocol.Invoker {
-	extension.SetLoadbalance("random", loadbalance.NewRandomLoadBalance)
+	extension.SetLoadbalance("random", random.NewLoadBalance)
 	failfastCluster := NewCluster()
 
 	var invokers []protocol.Invoker
@@ -57,7 +57,7 @@ func registerFailfast(invoker *mock.MockInvoker) protocol.Invoker {
 	invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
 	invoker.EXPECT().GetUrl().Return(failfastUrl)
 
-	staticDir := directory.NewStaticDirectory(invokers)
+	staticDir := static.NewDirectory(invokers)
 	clusterInvoker := failfastCluster.Join(staticDir)
 	return clusterInvoker
 }

@@ -19,13 +19,47 @@ package cluster
 
 import (
 	"context"
+	"sync"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
+
+var (
+	lock         sync.RWMutex
+	interceptors = make(map[string]func() Interceptor)
+)
+
+// SetClusterInterceptor sets cluster interceptor so that user has chance to inject extra logics before and after
+// cluster invoker
+func SetClusterInterceptor(name string, fun func() Interceptor) {
+	lock.Lock()
+	defer lock.Unlock()
+	interceptors[name] = fun
+}
+
+// GetClusterInterceptor returns the cluster interceptor instance with the given name
+func GetClusterInterceptor(name string) Interceptor {
+	lock.RLock()
+	defer lock.RUnlock()
+	if interceptors[name] == nil {
+		panic("cluster_interceptor for " + name + " doesn't exist, make sure the corresponding package is imported")
+	}
+	return interceptors[name]()
+}
+
+// GetClusterInterceptors returns all instances of registered cluster interceptors
+func GetClusterInterceptors() []Interceptor {
+	lock.RLock()
+	defer lock.RUnlock()
+	ret := make([]Interceptor, 0, len(interceptors))
+	for _, f := range interceptors {
+		ret = append(ret, f())
+	}
+	return ret
+}
 
 // InterceptorInvoker mocks cluster interceptor as an invoker
 type InterceptorInvoker struct {
@@ -56,7 +90,7 @@ func (i *InterceptorInvoker) Destroy() {
 func BuildInterceptorChain(invoker protocol.Invoker, builtins ...Interceptor) protocol.Invoker {
 	// The order of interceptors is from left to right, so loading from right to left
 	next := invoker
-	interceptors := extension.GetClusterInterceptors()
+	interceptors := GetClusterInterceptors()
 	if len(interceptors) != 0 {
 		for i := len(interceptors) - 1; i >= 0; i-- {
 			v := &InterceptorInvoker{next: next, interceptor: interceptors[i]}

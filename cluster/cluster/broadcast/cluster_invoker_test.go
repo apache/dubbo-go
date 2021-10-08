@@ -20,6 +20,8 @@ package broadcast
 import (
 	"context"
 	clusterpkg "dubbo.apache.org/dubbo-go/v3/cluster/cluster"
+	"dubbo.apache.org/dubbo-go/v3/cluster/directory/static"
+	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/random"
 	"errors"
 	"fmt"
 	"testing"
@@ -32,8 +34,6 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
-	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
@@ -46,7 +46,7 @@ var broadcastUrl, _ = common.NewURL(
 	fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LOCAL_HOST_VALUE, constant.DEFAULT_PORT))
 
 func registerBroadcast(mockInvokers ...*mock.MockInvoker) protocol.Invoker {
-	extension.SetLoadbalance("random", loadbalance.NewRandomLoadBalance)
+	extension.SetLoadbalance("random", random.NewLoadBalance)
 
 	invokers := []protocol.Invoker{}
 	for i, ivk := range mockInvokers {
@@ -55,7 +55,7 @@ func registerBroadcast(mockInvokers ...*mock.MockInvoker) protocol.Invoker {
 			ivk.EXPECT().GetUrl().Return(broadcastUrl)
 		}
 	}
-	staticDir := directory.NewStaticDirectory(invokers)
+	staticDir := static.NewDirectory(invokers)
 
 	broadcastCluster := NewCluster()
 	clusterInvoker := broadcastCluster.Join(staticDir)

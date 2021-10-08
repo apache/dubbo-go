@@ -20,6 +20,8 @@ package available
 import (
 	"context"
 	clusterpkg "dubbo.apache.org/dubbo-go/v3/cluster/cluster"
+	"dubbo.apache.org/dubbo-go/v3/cluster/directory/static"
+	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/random"
 	"fmt"
 	"strings"
 	"testing"
@@ -32,8 +34,6 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
-	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
@@ -46,14 +46,14 @@ var availableUrl, _ = common.NewURL(fmt.Sprintf("dubbo://%s:%d/com.ikurento.user
 	constant.LOCAL_HOST_VALUE, constant.DEFAULT_PORT))
 
 func registerAvailable(invoker *mock.MockInvoker) protocol.Invoker {
-	extension.SetLoadbalance("random", loadbalance.NewRandomLoadBalance)
+	extension.SetLoadbalance("random", random.NewLoadBalance)
 	availableCluster := NewAvailableCluster()
 
 	invokers := []protocol.Invoker{}
 	invokers = append(invokers, invoker)
 	invoker.EXPECT().GetUrl().Return(availableUrl)
 
-	staticDir := directory.NewStaticDirectory(invokers)
+	staticDir := static.NewDirectory(invokers)
 	clusterInvoker := availableCluster.Join(staticDir)
 	return clusterInvoker
 }

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package directory
+package base
 
 import (
 	"sync"
@@ -32,8 +32,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
-// BaseDirectory Abstract implementation of Directory: Invoker list returned from this Directory's list method have been filtered by Routers
-type BaseDirectory struct {
+// Directory Abstract implementation of Directory: Invoker list returned from this Directory's list method have been filtered by Routers
+type Directory struct {
 	url       *common.URL
 	destroyed *atomic.Bool
 	// this mutex for change the properties in BaseDirectory, like routerChain , destroyed etc
@@ -41,9 +41,9 @@ type BaseDirectory struct {
 	routerChain router.Chain
 }
 
-// NewBaseDirectory Create BaseDirectory with URL
-func NewBaseDirectory(url *common.URL) BaseDirectory {
-	return BaseDirectory{
+// NewDirectory Create BaseDirectory with URL
+func NewDirectory(url *common.URL) Directory {
+	return Directory{
 		url:         url,
 		destroyed:   atomic.NewBool(false),
 		routerChain: &chain.RouterChain{},
@@ -51,28 +51,28 @@ func NewBaseDirectory(url *common.URL) BaseDirectory {
 }
 
 // RouterChain Return router chain in directory
-func (dir *BaseDirectory) RouterChain() router.Chain {
+func (dir *Directory) RouterChain() router.Chain {
 	return dir.routerChain
 }
 
 // SetRouterChain Set router chain in directory
-func (dir *BaseDirectory) SetRouterChain(routerChain router.Chain) {
+func (dir *Directory) SetRouterChain(routerChain router.Chain) {
 	dir.mutex.Lock()
 	defer dir.mutex.Unlock()
 	dir.routerChain = routerChain
 }
 
 // GetURL Get URL
-func (dir *BaseDirectory) GetURL() *common.URL {
+func (dir *Directory) GetURL() *common.URL {
 	return dir.url
 }
 
 // GetDirectoryUrl Get URL instance
-func (dir *BaseDirectory) GetDirectoryUrl() *common.URL {
+func (dir *Directory) GetDirectoryUrl() *common.URL {
 	return dir.url
 }
 
-func (dir *BaseDirectory) isProperRouter(url *common.URL) bool {
+func (dir *Directory) isProperRouter(url *common.URL) bool {
 	app := url.GetParam(constant.APPLICATION_KEY, "")
 	dirApp := dir.GetURL().GetParam(constant.APPLICATION_KEY, "")
 	if len(dirApp) == 0 && dir.GetURL().SubURL != nil {
@@ -92,7 +92,7 @@ func (dir *BaseDirectory) isProperRouter(url *common.URL) bool {
 }
 
 // Destroy Destroy
-func (dir *BaseDirectory) Destroy(doDestroy func()) {
+func (dir *Directory) Destroy(doDestroy func()) {
 	if dir.destroyed.CAS(false, true) {
 		dir.mutex.Lock()
 		doDestroy()
@@ -101,6 +101,6 @@ func (dir *BaseDirectory) Destroy(doDestroy func()) {
 }
 
 // IsAvailable Once directory init finish, it will change to true
-func (dir *BaseDirectory) IsAvailable() bool {
+func (dir *Directory) IsAvailable() bool {
 	return !dir.destroyed.Load()
 }

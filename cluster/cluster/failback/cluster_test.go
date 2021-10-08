@@ -20,6 +20,8 @@ package failback
 import (
 	"context"
 	clusterpkg "dubbo.apache.org/dubbo-go/v3/cluster/cluster"
+	"dubbo.apache.org/dubbo-go/v3/cluster/directory/static"
+	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/random"
 	"fmt"
 	"sync"
 	"testing"
@@ -35,8 +37,6 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
-	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
@@ -50,7 +50,7 @@ var failbackUrl, _ = common.NewURL(
 
 // registerFailback register failbackCluster to cluster extension.
 func registerFailback(invoker *mock.MockInvoker) protocol.Invoker {
-	extension.SetLoadbalance("random", loadbalance.NewRandomLoadBalance)
+	extension.SetLoadbalance("random", random.NewLoadBalance)
 	failbackCluster := NewCluster()
 
 	var invokers []protocol.Invoker
@@ -58,7 +58,7 @@ func registerFailback(invoker *mock.MockInvoker) protocol.Invoker {
 
 	invoker.EXPECT().GetUrl().Return(failbackUrl)
 
-	staticDir := directory.NewStaticDirectory(invokers)
+	staticDir := static.NewDirectory(invokers)
 	clusterInvoker := failbackCluster.Join(staticDir)
 	return clusterInvoker
 }

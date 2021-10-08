@@ -15,9 +15,10 @@
  * limitations under the License.
  */
 
-package directory
+package static
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/cluster/directory/base"
 	perrors "github.com/pkg/errors"
 )
 
@@ -27,29 +28,29 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
-type staticDirectory struct {
-	BaseDirectory
+type directory struct {
+	base.Directory
 	invokers []protocol.Invoker
 }
 
-// NewStaticDirectory Create a new staticDirectory with invokers
-func NewStaticDirectory(invokers []protocol.Invoker) *staticDirectory {
+// NewDirectory Create a new staticDirectory with invokers
+func NewDirectory(invokers []protocol.Invoker) *directory {
 	var url *common.URL
 
 	if len(invokers) > 0 {
 		url = invokers[0].GetURL()
 	}
-	dir := &staticDirectory{
-		BaseDirectory: NewBaseDirectory(url),
-		invokers:      invokers,
+	dir := &directory{
+		Directory: base.NewDirectory(url),
+		invokers:  invokers,
 	}
 
-	dir.routerChain.SetInvokers(invokers)
+	dir.RouterChain().SetInvokers(invokers)
 	return dir
 }
 
 // for-loop invokers ,if all invokers is available ,then it means directory is available
-func (dir *staticDirectory) IsAvailable() bool {
+func (dir *directory) IsAvailable() bool {
 	if len(dir.invokers) == 0 {
 		return false
 	}
@@ -62,7 +63,7 @@ func (dir *staticDirectory) IsAvailable() bool {
 }
 
 // List List invokers
-func (dir *staticDirectory) List(invocation protocol.Invocation) []protocol.Invoker {
+func (dir *directory) List(invocation protocol.Invocation) []protocol.Invoker {
 	l := len(dir.invokers)
 	invokers := make([]protocol.Invoker, l)
 	copy(invokers, dir.invokers)
@@ -76,8 +77,8 @@ func (dir *staticDirectory) List(invocation protocol.Invocation) []protocol.Invo
 }
 
 // Destroy Destroy
-func (dir *staticDirectory) Destroy() {
-	dir.BaseDirectory.Destroy(func() {
+func (dir *directory) Destroy() {
+	dir.Directory.Destroy(func() {
 		for _, ivk := range dir.invokers {
 			ivk.Destroy()
 		}
@@ -86,7 +87,7 @@ func (dir *staticDirectory) Destroy() {
 }
 
 // BuildRouterChain build router chain by invokers
-func (dir *staticDirectory) BuildRouterChain(invokers []protocol.Invoker) error {
+func (dir *directory) BuildRouterChain(invokers []protocol.Invoker) error {
 	if len(invokers) == 0 {
 		return perrors.Errorf("invokers == null")
 	}

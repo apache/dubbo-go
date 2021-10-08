@@ -20,6 +20,8 @@ package failover
 import (
 	"context"
 	clusterpkg "dubbo.apache.org/dubbo-go/v3/cluster/cluster"
+	"dubbo.apache.org/dubbo-go/v3/cluster/directory/static"
+	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/random"
 	"fmt"
 	"net/url"
 	"testing"
@@ -30,8 +32,6 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
-	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
@@ -41,7 +41,7 @@ import (
 
 // nolint
 func normalInvoke(successCount int, urlParam url.Values, invocations ...*invocation.RPCInvocation) protocol.Result {
-	extension.SetLoadbalance("random", loadbalance.NewRandomLoadBalance)
+	extension.SetLoadbalance("random", random.NewLoadBalance)
 	failoverCluster := newCluster()
 
 	var invokers []protocol.Invoker
@@ -50,7 +50,7 @@ func normalInvoke(successCount int, urlParam url.Values, invocations ...*invocat
 		invokers = append(invokers, clusterpkg.NewMockInvoker(newUrl, successCount))
 	}
 
-	staticDir := directory.NewStaticDirectory(invokers)
+	staticDir := static.NewDirectory(invokers)
 	clusterInvoker := failoverCluster.Join(staticDir)
 	if len(invocations) > 0 {
 		return clusterInvoker.Invoke(context.Background(), invocations[0])
@@ -97,16 +97,16 @@ func TestFailoverInvoke2(t *testing.T) {
 
 // nolint
 func TestFailoverDestroy(t *testing.T) {
-	extension.SetLoadbalance("random", loadbalance.NewRandomLoadBalance)
+	extension.SetLoadbalance("random", random.NewLoadBalance)
 	failoverCluster := newCluster()
 
 	invokers := []protocol.Invoker{}
 	for i := 0; i < 10; i++ {
-		url, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i))
-		invokers = append(invokers, clusterpkg.NewMockInvoker(url, 1))
+		u, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i))
+		invokers = append(invokers, clusterpkg.NewMockInvoker(u, 1))
 	}
 
-	staticDir := directory.NewStaticDirectory(invokers)
+	staticDir := static.NewDirectory(invokers)
 	clusterInvoker := failoverCluster.Join(staticDir)
 	assert.Equal(t, true, clusterInvoker.IsAvailable())
 	result := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})

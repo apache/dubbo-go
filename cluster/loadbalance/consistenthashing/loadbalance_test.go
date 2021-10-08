@@ -15,9 +15,10 @@
  * limitations under the License.
  */
 
-package loadbalance
+package consistenthashing
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
 	"fmt"
 	"testing"
 )
@@ -51,14 +52,14 @@ func TestConsistentHashSelectorSuite(t *testing.T) {
 
 type consistentHashSelectorSuite struct {
 	suite.Suite
-	selector *consistentHashSelector
+	selector *selector
 }
 
 func (s *consistentHashSelectorSuite) SetupTest() {
 	var invokers []protocol.Invoker
 	url, _ := common.NewURL(url20000)
 	invokers = append(invokers, protocol.NewBaseInvoker(url))
-	s.selector = newConsistentHashSelector(invokers, "echo", 999944)
+	s.selector = newSelector(invokers, "echo", 999944)
 }
 
 func (s *consistentHashSelectorSuite) TestToKey() {
@@ -90,7 +91,7 @@ type consistentHashLoadBalanceSuite struct {
 	invoker1 protocol.Invoker
 	invoker2 protocol.Invoker
 	invoker3 protocol.Invoker
-	lb       LoadBalance
+	lb       loadbalance.LoadBalance
 }
 
 func (s *consistentHashLoadBalanceSuite) SetupTest() {
@@ -107,7 +108,7 @@ func (s *consistentHashLoadBalanceSuite) SetupTest() {
 	s.invoker3 = protocol.NewBaseInvoker(s.url3)
 
 	s.invokers = append(s.invokers, s.invoker1, s.invoker2, s.invoker3)
-	s.lb = NewConsistentHashLoadBalance()
+	s.lb = newLoadBalance()
 }
 
 func (s *consistentHashLoadBalanceSuite) TestSelect() {
