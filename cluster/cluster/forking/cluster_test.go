@@ -48,7 +48,7 @@ var forkingUrl, _ = common.NewURL(
 	fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LOCAL_HOST_VALUE, constant.DEFAULT_PORT))
 
 func registerForking(mockInvokers ...*mock.MockInvoker) protocol.Invoker {
-	extension.SetLoadbalance(roundrobin.Key, roundrobin.NewLoadBalance)
+	extension.SetLoadbalance(constant.LoadBalanceKeyRoundRobin, roundrobin.NewLoadBalance)
 
 	var invokers []protocol.Invoker
 	for i, ivk := range mockInvokers {

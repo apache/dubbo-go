@@ -84,7 +84,7 @@ func TestZoneWareInvokerWithPreferredSuccess(t *testing.T) {
 }
 
 func TestZoneWareInvokerWithWeightSuccess(t *testing.T) {
-	extension.SetLoadbalance(random.Key, random.NewLoadBalance)
+	extension.SetLoadbalance(constant.LoadBalanceKeyRandom, random.NewLoadBalance)
 
 	ctrl := gomock.NewController(t)
 	// In Go versions 1.14+, if you pass a *testing.T
