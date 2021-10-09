@@ -19,8 +19,6 @@ package forking
 
 import (
 	"context"
-	"dubbo.apache.org/dubbo-go/v3/cluster/cluster/base"
-	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
 	"fmt"
 	"time"
 )
@@ -30,6 +28,8 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/cluster/cluster/base"
+	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/protocol"

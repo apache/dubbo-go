@@ -18,7 +18,6 @@
 package protocol
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/cluster/cluster"
 	"testing"
 	"time"
 )
@@ -30,6 +29,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/cluster/cluster"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	common_cfg "dubbo.apache.org/dubbo-go/v3/common/config"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"

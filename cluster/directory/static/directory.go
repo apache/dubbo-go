@@ -18,11 +18,11 @@
 package static
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/cluster/directory/base"
 	perrors "github.com/pkg/errors"
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/cluster/directory/base"
 	"dubbo.apache.org/dubbo-go/v3/cluster/router/chain"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/protocol"

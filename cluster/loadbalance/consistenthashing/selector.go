@@ -2,12 +2,18 @@ package consistenthashing
 
 import (
 	"crypto/md5"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"fmt"
-	gxsort "github.com/dubbogo/gost/sort"
 	"sort"
 	"strconv"
 	"strings"
+)
+
+import (
+	gxsort "github.com/dubbogo/gost/sort"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
 // selector implementation of Selector:get invoker based on load balancing strategy

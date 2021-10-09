@@ -18,7 +18,6 @@
 package config
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/cluster/directory/static"
 	"fmt"
 	"net/url"
 	"strconv"
@@ -32,6 +31,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/cluster/directory/static"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"

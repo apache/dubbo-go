@@ -18,12 +18,12 @@
 package leastactive
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"math/rand"
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )

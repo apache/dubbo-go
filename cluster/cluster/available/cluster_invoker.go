@@ -19,8 +19,6 @@ package available
 
 import (
 	"context"
-	"dubbo.apache.org/dubbo-go/v3/cluster/cluster/base"
-	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
 	"fmt"
 )
 
@@ -29,6 +27,8 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/cluster/cluster/base"
+	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 

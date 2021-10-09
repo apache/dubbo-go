@@ -19,9 +19,6 @@ package broadcast
 
 import (
 	"context"
-	clusterpkg "dubbo.apache.org/dubbo-go/v3/cluster/cluster"
-	"dubbo.apache.org/dubbo-go/v3/cluster/directory/static"
-	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/random"
 	"errors"
 	"fmt"
 	"testing"
@@ -34,6 +31,9 @@ import (
 )
 
 import (
+	clusterpkg "dubbo.apache.org/dubbo-go/v3/cluster/cluster"
+	"dubbo.apache.org/dubbo-go/v3/cluster/directory/static"
+	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/random"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"

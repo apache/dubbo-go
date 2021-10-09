@@ -18,8 +18,6 @@
 package directory
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/cluster/directory/base"
-	"dubbo.apache.org/dubbo-go/v3/cluster/directory/static"
 	"fmt"
 	"net/url"
 	"os"
@@ -32,6 +30,8 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
+	"dubbo.apache.org/dubbo-go/v3/cluster/directory/base"
+	"dubbo.apache.org/dubbo-go/v3/cluster/directory/static"
 	"dubbo.apache.org/dubbo-go/v3/cluster/router/chain"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"

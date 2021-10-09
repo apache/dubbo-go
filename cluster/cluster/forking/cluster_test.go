@@ -19,9 +19,6 @@ package forking
 
 import (
 	"context"
-	clusterpkg "dubbo.apache.org/dubbo-go/v3/cluster/cluster"
-	"dubbo.apache.org/dubbo-go/v3/cluster/directory/static"
-	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/roundrobin"
 	"fmt"
 	"strconv"
 	"sync"
@@ -36,6 +33,9 @@ import (
 )
 
 import (
+	clusterpkg "dubbo.apache.org/dubbo-go/v3/cluster/cluster"
+	"dubbo.apache.org/dubbo-go/v3/cluster/directory/static"
+	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/roundrobin"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
