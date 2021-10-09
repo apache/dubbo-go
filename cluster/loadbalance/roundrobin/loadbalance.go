@@ -19,6 +19,7 @@ package roundrobin
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"math"
 	"sync"
 	"sync/atomic"
@@ -31,8 +32,6 @@ import (
 )
 
 const (
-	Key = "roundrobin"
-
 	Complete = 0
 	Updating = 1
 )
@@ -44,7 +43,7 @@ var (
 )
 
 func init() {
-	extension.SetLoadbalance(Key, NewLoadBalance)
+	extension.SetLoadbalance(constant.LoadBalanceKeyRoundRobin, NewLoadBalance)
 }
 
 type loadBalance struct{}

@@ -19,6 +19,7 @@ package leastactive
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"math/rand"
 )
 
@@ -33,7 +34,7 @@ const (
 )
 
 func init() {
-	extension.SetLoadbalance(Key, newLoadBalance)
+	extension.SetLoadbalance(constant.LoadBalanceKeyLeastActive, newLoadBalance)
 }
 
 type loadBalance struct{}

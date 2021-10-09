@@ -19,6 +19,7 @@ package random
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"math/rand"
 )
 
@@ -27,12 +28,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
-const (
-	Key = "random"
-)
-
 func init() {
-	extension.SetLoadbalance(Key, NewLoadBalance)
+	extension.SetLoadbalance(constant.LoadBalanceKeyRandom, NewLoadBalance)
 }
 
 type loadBalance struct{}

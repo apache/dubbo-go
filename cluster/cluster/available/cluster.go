@@ -20,14 +20,13 @@ package available
 import (
 	clusterpkg "dubbo.apache.org/dubbo-go/v3/cluster/cluster"
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
-const Key = "available"
-
 func init() {
-	extension.SetCluster(Key, NewAvailableCluster)
+	extension.SetCluster(constant.ClusterKeyAvailable, NewAvailableCluster)
 }
 
 type cluster struct{}

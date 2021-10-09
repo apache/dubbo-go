@@ -31,7 +31,6 @@ import (
 )
 
 const (
-	Key = "consistenthashing"
 	// HashNodes hash nodes
 	HashNodes = "hash.nodes"
 	// HashArguments key of hash arguments in url
@@ -44,7 +43,7 @@ var (
 )
 
 func init() {
-	extension.SetLoadbalance(Key, newLoadBalance)
+	extension.SetLoadbalance(constant.LoadBalanceKeyConsistentHashing, newLoadBalance)
 }
 
 // loadBalance implementation of load balancing: using consistent hashing

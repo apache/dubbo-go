@@ -20,14 +20,13 @@ package zoneaware
 import (
 	clusterpkg "dubbo.apache.org/dubbo-go/v3/cluster/cluster"
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
-const Key = "zoneAware"
-
 func init() {
-	extension.SetCluster(Key, newCluster)
+	extension.SetCluster(constant.ClusterKeyZoneAware, newCluster)
 }
 
 type cluster struct{}

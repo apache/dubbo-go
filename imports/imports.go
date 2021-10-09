@@ -18,11 +18,15 @@
 package imports
 
 import (
-	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
 	_ "dubbo.apache.org/dubbo-go/v3/common/proxy/proxy_factory"
+
+	// config centers
+
 	_ "dubbo.apache.org/dubbo-go/v3/config_center/apollo"
 	_ "dubbo.apache.org/dubbo-go/v3/config_center/nacos"
 	_ "dubbo.apache.org/dubbo-go/v3/config_center/zookeeper"
+
+	// metadata
 	_ "dubbo.apache.org/dubbo-go/v3/metadata/mapping/metadata"
 	_ "dubbo.apache.org/dubbo-go/v3/metadata/report/etcd"
 	_ "dubbo.apache.org/dubbo-go/v3/metadata/report/nacos"
@@ -30,12 +34,18 @@ import (
 	_ "dubbo.apache.org/dubbo-go/v3/metadata/service/exporter/configurable"
 	_ "dubbo.apache.org/dubbo-go/v3/metadata/service/local"
 	_ "dubbo.apache.org/dubbo-go/v3/metadata/service/remote"
+
+	// metrics
 	_ "dubbo.apache.org/dubbo-go/v3/metrics/prometheus"
+
+	// protocols
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/dubbo"
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/dubbo3"
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/grpc"
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/jsonrpc"
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/rest"
+
+	// registries
 	_ "dubbo.apache.org/dubbo-go/v3/registry/etcdv3"
 	_ "dubbo.apache.org/dubbo-go/v3/registry/nacos"
 	_ "dubbo.apache.org/dubbo-go/v3/registry/protocol"
@@ -67,4 +77,10 @@ import (
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/cluster/failsafe"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/cluster/forking"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/cluster/zoneaware"
+
+	// loadbalances
+	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/consistenthashing"
+	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/leastactive"
+	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/random"
+	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/roundrobin"
 )

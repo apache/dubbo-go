@@ -20,14 +20,13 @@ package failfast
 import (
 	clusterpkg "dubbo.apache.org/dubbo-go/v3/cluster/cluster"
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
-const Key = "failfast"
-
 func init() {
-	extension.SetCluster(Key, NewCluster)
+	extension.SetCluster(constant.ClusterKeyFailFast, NewCluster)
 }
 
 type cluster struct{}

@@ -77,7 +77,7 @@ func (invoker *ClusterInvoker) CheckInvokers(invokers []protocol.Invoker, invoca
 	return nil
 }
 
-// CheckWhetherDestroyed checks if cluster invoker was destoryed or not
+// CheckWhetherDestroyed checks if cluster invoker was destroyed or not
 func (invoker *ClusterInvoker) CheckWhetherDestroyed() error {
 	if invoker.Destroyed.Load() {
 		ip := common.GetLocalIp()

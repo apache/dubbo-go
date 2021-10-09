@@ -20,14 +20,13 @@ package forking
 import (
 	clusterpkg "dubbo.apache.org/dubbo-go/v3/cluster/cluster"
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
-const Key = "forking"
-
 func init() {
-	extension.SetCluster(Key, newCluster)
+	extension.SetCluster(constant.ClusterKeyForking, newCluster)
 }
 
 type cluster struct{}
