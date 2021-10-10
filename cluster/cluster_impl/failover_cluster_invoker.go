@@ -45,6 +45,17 @@ func newFailoverClusterInvoker(directory cluster.Directory) protocol.Invoker {
 	}
 }
 
+func getMethodName(invocation protocol.Invocation) string {
+	var methodName = invocation.MethodName()
+	if methodName == constant.GENERIC && len(invocation.Arguments()) > 0 {
+		var mName, ok = invocation.Arguments()[0].(string)
+		if ok {
+			methodName = mName
+		}
+	}
+	return methodName
+}
+
 // nolint
 func (invoker *failoverClusterInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 	var (
@@ -59,7 +70,7 @@ func (invoker *failoverClusterInvoker) Invoke(ctx context.Context, invocation pr
 		return &protocol.RPCResult{Err: err}
 	}
 
-	methodName := invocation.MethodName()
+	methodName := getMethodName(invocation)
 	retries := getRetries(invokers, methodName)
 	loadBalance := getLoadBalance(invokers[0], invocation)
 
