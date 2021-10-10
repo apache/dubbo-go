@@ -62,7 +62,7 @@ func (lb *loadBalance) Select(invokers []protocol.Invoker, invocation protocol.I
 	key := invokers[0].GetURL().ServiceKey() + "." + methodName
 
 	// hash the invokers
-	bs := make([]byte, 0)
+	var bs []byte
 	for _, invoker := range invokers {
 		b, err := json.Marshal(invoker)
 		if err != nil {

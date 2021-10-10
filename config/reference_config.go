@@ -176,7 +176,7 @@ func (rc *ReferenceConfig) Refer(srv interface{}) {
 	if len(invokers) == 1 {
 		rc.invoker = invokers[0]
 		if rc.URL != "" {
-			hitClu := constant.ClusterKeyFailOver
+			hitClu := constant.ClusterKeyFailover
 			if u := rc.invoker.GetURL(); u != nil {
 				hitClu = u.GetParam(constant.CLUSTER_KEY, constant.ClusterKeyZoneAware)
 			}
@@ -189,7 +189,7 @@ func (rc *ReferenceConfig) Refer(srv interface{}) {
 			hitClu = constant.ClusterKeyZoneAware
 		} else {
 			// not a registry url, must be direct invoke.
-			hitClu = constant.ClusterKeyFailOver
+			hitClu = constant.ClusterKeyFailover
 			if u := invokers[0].GetURL(); u != nil {
 				hitClu = u.GetParam(constant.CLUSTER_KEY, constant.ClusterKeyZoneAware)
 			}

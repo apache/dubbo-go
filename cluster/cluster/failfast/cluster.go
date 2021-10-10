@@ -26,7 +26,7 @@ import (
 )
 
 func init() {
-	extension.SetCluster(constant.ClusterKeyFailFast, NewCluster)
+	extension.SetCluster(constant.ClusterKeyFailfast, NewCluster)
 }
 
 type cluster struct{}
