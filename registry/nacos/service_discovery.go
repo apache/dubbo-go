@@ -160,6 +160,7 @@ func (n *nacosServiceDiscovery) GetInstances(serviceName string) []registry.Serv
 			Enable:      ins.Enable,
 			Healthy:     ins.Healthy,
 			Metadata:    metadata,
+			GroupName:   n.group,
 		})
 	}
 
@@ -215,6 +216,7 @@ func (n *nacosServiceDiscovery) GetRequestInstances(serviceNames []string, offse
 func (n *nacosServiceDiscovery) AddListener(listener *registry.ServiceInstancesChangedListener) error {
 	return n.namingClient.Client().Subscribe(&vo.SubscribeParam{
 		ServiceName: listener.ServiceName,
+		GroupName:   n.group,
 		SubscribeCallback: func(services []model.SubscribeService, err error) {
 			if err != nil {
 				logger.Errorf("Could not handle the subscribe notification because the err is not nil."+
@@ -236,6 +238,7 @@ func (n *nacosServiceDiscovery) AddListener(listener *registry.ServiceInstancesC
 					Enable:      service.Enable,
 					Healthy:     true,
 					Metadata:    metadata,
+					GroupName:   n.group,
 				})
 			}
 

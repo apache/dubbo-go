@@ -132,7 +132,7 @@ func (nr *nacosRegistry) Register(url *common.URL) error {
 	return nil
 }
 
-func createDeregisterParam(url *common.URL, serviceName string) vo.DeregisterInstanceParam {
+func createDeregisterParam(url *common.URL, serviceName string, groupName string) vo.DeregisterInstanceParam {
 	if len(url.Ip) == 0 {
 		url.Ip = localIP
 	}
@@ -144,13 +144,15 @@ func createDeregisterParam(url *common.URL, serviceName string) vo.DeregisterIns
 		Ip:          url.Ip,
 		Port:        uint64(port),
 		ServiceName: serviceName,
+		GroupName:   groupName,
 		Ephemeral:   true,
 	}
 }
 
 func (nr *nacosRegistry) DeRegister(url *common.URL) error {
 	serviceName := getServiceName(url)
-	param := createDeregisterParam(url, serviceName)
+	groupName := nr.URL.GetParam(constant.GROUP_KEY, defaultGroup)
+	param := createDeregisterParam(url, serviceName, groupName)
 	isDeRegistry, err := nr.namingClient.Client().DeregisterInstance(param)
 	if err != nil {
 		return err
