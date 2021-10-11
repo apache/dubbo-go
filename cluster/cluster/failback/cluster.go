@@ -15,27 +15,31 @@
  * limitations under the License.
  */
 
-package extension
+package failback
 
 import (
+	clusterpkg "dubbo.apache.org/dubbo-go/v3/cluster/cluster"
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
-	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/registry"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
-type registryDirectory func(url *common.URL, registry registry.Registry) (directory.Directory, error)
-
-var defaultRegistry registryDirectory
-
-// SetDefaultRegistryDirectory sets the default registryDirectory
-func SetDefaultRegistryDirectory(v registryDirectory) {
-	defaultRegistry = v
+func init() {
+	extension.SetCluster(constant.ClusterKeyFailback, NewCluster)
 }
 
-// GetDefaultRegistryDirectory finds the registryDirectory with url and registry
-func GetDefaultRegistryDirectory(config *common.URL, registry registry.Registry) (directory.Directory, error) {
-	if defaultRegistry == nil {
-		panic("registry directory is not existing, make sure you have import the package.")
-	}
-	return defaultRegistry(config, registry)
+type cluster struct{}
+
+// NewCluster returns a failback cluster instance
+//
+// Failure automatically restored, failed to record the background request,
+// regular retransmission. Usually used for message notification operations.
+func NewCluster() clusterpkg.Cluster {
+	return &cluster{}
+}
+
+// Join returns a baseClusterInvoker instance
+func (cluster *cluster) Join(directory directory.Directory) protocol.Invoker {
+	return clusterpkg.BuildInterceptorChain(newClusterInvoker(directory))
 }

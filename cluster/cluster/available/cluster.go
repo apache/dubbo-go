@@ -15,15 +15,30 @@
  * limitations under the License.
  */
 
-package constant
+package available
 
-const (
-	ClusterKeyAvailable = "available"
-	ClusterKeyBroadcast = "broadcast"
-	ClusterKeyFailback  = "failback"
-	ClusterKeyFailfast  = "failfast"
-	ClusterKeyFailover  = "failover"
-	ClusterKeyFailsafe  = "failsafe"
-	ClusterKeyForking   = "forking"
-	ClusterKeyZoneAware = "zoneAware"
+import (
+	clusterpkg "dubbo.apache.org/dubbo-go/v3/cluster/cluster"
+	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
+
+func init() {
+	extension.SetCluster(constant.ClusterKeyAvailable, NewAvailableCluster)
+}
+
+type cluster struct{}
+
+// NewAvailableCluster returns a cluster instance
+//
+// Obtain available service providers
+func NewAvailableCluster() clusterpkg.Cluster {
+	return &cluster{}
+}
+
+// Join returns a baseClusterInvoker instance
+func (cluster *cluster) Join(directory directory.Directory) protocol.Invoker {
+	return clusterpkg.BuildInterceptorChain(NewClusterInvoker(directory))
+}

@@ -18,12 +18,8 @@
 package constant
 
 const (
-	ClusterKeyAvailable = "available"
-	ClusterKeyBroadcast = "broadcast"
-	ClusterKeyFailback  = "failback"
-	ClusterKeyFailfast  = "failfast"
-	ClusterKeyFailover  = "failover"
-	ClusterKeyFailsafe  = "failsafe"
-	ClusterKeyForking   = "forking"
-	ClusterKeyZoneAware = "zoneAware"
+	LoadBalanceKeyConsistentHashing = "consistenthashing"
+	LoadBalanceKeyLeastActive       = "leastactive"
+	LoadBalanceKeyRandom            = "random"
+	LoadBalanceKeyRoundRobin        = "roundrobin"
 )

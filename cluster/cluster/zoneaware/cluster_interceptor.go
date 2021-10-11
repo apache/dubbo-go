@@ -15,15 +15,43 @@
  * limitations under the License.
  */
 
-package constant
+package zoneaware
 
-const (
-	ClusterKeyAvailable = "available"
-	ClusterKeyBroadcast = "broadcast"
-	ClusterKeyFailback  = "failback"
-	ClusterKeyFailfast  = "failfast"
-	ClusterKeyFailover  = "failover"
-	ClusterKeyFailsafe  = "failsafe"
-	ClusterKeyForking   = "forking"
-	ClusterKeyZoneAware = "zoneAware"
+import (
+	"context"
 )
+
+import (
+	clusterpkg "dubbo.apache.org/dubbo-go/v3/cluster/cluster"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
+)
+
+type interceptor struct {
+}
+
+func (z *interceptor) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+	key := constant.REGISTRY_KEY + "." + constant.ZONE_FORCE_KEY
+	force := ctx.Value(key)
+
+	if force != nil {
+		switch value := force.(type) {
+		case bool:
+			if value {
+				invocation.SetAttachments(key, "true")
+			}
+		case string:
+			if "true" == value {
+				invocation.SetAttachments(key, "true")
+			}
+		default:
+			// ignore
+		}
+	}
+
+	return invoker.Invoke(ctx, invocation)
+}
+
+func newInterceptor() clusterpkg.Interceptor {
+	return &interceptor{}
+}

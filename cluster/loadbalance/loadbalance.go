@@ -15,15 +15,14 @@
  * limitations under the License.
  */
 
-package constant
+package loadbalance
 
-const (
-	ClusterKeyAvailable = "available"
-	ClusterKeyBroadcast = "broadcast"
-	ClusterKeyFailback  = "failback"
-	ClusterKeyFailfast  = "failfast"
-	ClusterKeyFailover  = "failover"
-	ClusterKeyFailsafe  = "failsafe"
-	ClusterKeyForking   = "forking"
-	ClusterKeyZoneAware = "zoneAware"
+import (
+	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
+
+// LoadBalance
+// Extension - LoadBalance
+type LoadBalance interface {
+	Select([]protocol.Invoker, protocol.Invocation) protocol.Invoker
+}
