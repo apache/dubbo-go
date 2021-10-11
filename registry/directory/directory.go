@@ -97,6 +97,11 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry) (cluster.
 
 	dir.consumerConfigurationListener = newConsumerConfigurationListener(dir)
 
+	// exchange data
+	subUrl := url.Clone()
+	subUrl.SubURL = nil
+	url.SubURL.SubURL = subUrl
+
 	go dir.subscribe(url.SubURL)
 	return dir, nil
 }

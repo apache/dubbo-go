@@ -183,12 +183,24 @@ func getSubscribeName(url *common.URL) string {
 	return buffer.String()
 }
 
+func getSubscribeGroupName(url *common.URL) string {
+	if url.SubURL != nil {
+		return url.SubURL.GetParam(constant.GROUP_KEY, defaultGroup)
+	}
+	return defaultGroup
+}
+
 func (nl *nacosListener) startListen() error {
 	if nl.namingClient == nil {
 		return perrors.New("nacos naming namingClient stopped")
 	}
 	serviceName := getSubscribeName(nl.listenUrl)
-	nl.subscribeParam = &vo.SubscribeParam{ServiceName: serviceName, SubscribeCallback: nl.Callback}
+	groupName := getSubscribeGroupName(nl.listenUrl)
+	nl.subscribeParam = &vo.SubscribeParam{
+		ServiceName:       serviceName,
+		SubscribeCallback: nl.Callback,
+		GroupName:         groupName,
+	}
 	go func() {
 		_ = nl.namingClient.Client().Subscribe(nl.subscribeParam)
 	}()
