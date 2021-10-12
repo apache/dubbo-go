@@ -1,4 +1,4 @@
-module dubbo.apache.org/dubbo-go/v3
+module knownaccount/dubbo-go/v3
 
 go 1.15
 
