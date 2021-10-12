@@ -175,6 +175,11 @@ func (ccb *ConsumerConfigBuilder) SetRequestTimeout(requestTimeout string) *Cons
 	return ccb
 }
 
+func (ccb *ConsumerConfigBuilder) SetMaxWaitTimeForServiceDiscovery(maxWaitTimeForServiceDiscovery string) *ConsumerConfigBuilder {
+	ccb.consumerConfig.MaxWaitTimeForServiceDiscovery = maxWaitTimeForServiceDiscovery
+	return ccb
+}
+
 func (ccb *ConsumerConfigBuilder) SetProxyFactory(proxyFactory string) *ConsumerConfigBuilder {
 	ccb.consumerConfig.ProxyFactory = proxyFactory
 	return ccb
