@@ -73,7 +73,7 @@ func newMetadataReportRetry(retryPeriod int64, retryLimit int64, retryFunc func(
 		retryTimesIfNonFail: 600,
 	}
 
-	newJob, err := mrr.scheduler.Every(uint64(mrr.retryPeriod)).Seconds().Do(
+	newJob, err := mrr.scheduler.Every(int(mrr.retryPeriod)).Seconds().Do(
 		func() {
 			mrr.retryCounter.Inc()
 			logger.Infof("start to retry task for metadata report. retry times: %v", mrr.retryCounter.Load())
