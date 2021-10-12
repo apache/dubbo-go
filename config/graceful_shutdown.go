@@ -80,7 +80,7 @@ func GracefulShutdownInit() {
 					debug.WriteHeapDump(os.Stdout.Fd())
 				}
 			}
-			os.Exit(0)
+			// os.Exit(0)
 		}
 	}()
 }
