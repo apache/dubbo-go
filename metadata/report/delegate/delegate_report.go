@@ -91,7 +91,7 @@ func newMetadataReportRetry(retryPeriod int64, retryLimit int64, retryFunc func(
 // startRetryTask will make scheduler with retry task run
 func (mrr *metadataReportRetry) startRetryTask() {
 	mrr.scheduler.StartAt(time.Now().Add(500 * time.Millisecond))
-	mrr.scheduler.Start()
+	mrr.scheduler.StartAsync()
 }
 
 // MetadataReport is a absolute delegate for MetadataReport
@@ -145,7 +145,7 @@ func NewMetadataReport() (*MetadataReport, error) {
 			return nil, err
 		}
 		scheduler.StartAt(time.Now().Add(500 * time.Millisecond))
-		scheduler.Start()
+		scheduler.StartAsync()
 	}
 	return bmr, nil
 }

@@ -39,8 +39,6 @@ const (
 // ConsumerConfig is Consumer default configuration
 type ConsumerConfig struct {
 	Filter string `yaml:"filter" json:"filter,omitempty" property:"filter"`
-	// ConnectTimeout will be remove in 3.0 config-enhance
-	ConnectTimeout string `default:"3s" yaml:"connect-timeout" json:"connect-timeout,omitempty" property:"connect-timeout"`
 	// support string
 	RegistryIDs []string `yaml:"registryIDs" json:"registryIDs,omitempty" property:"registryIDs"`
 
@@ -50,7 +48,8 @@ type ConsumerConfig struct {
 
 	References map[string]*ReferenceConfig `yaml:"references" json:"references,omitempty" property:"references"`
 
-	FilterConf interface{} `yaml:"filter-conf" json:"filter-conf,omitempty" property:"filter-conf"`
+	FilterConf                     interface{} `yaml:"filter-conf" json:"filter-conf,omitempty" property:"filter-conf"`
+	MaxWaitTimeForServiceDiscovery string      `default:"3s" yaml:"max_wait_time_for_service_discovery" json:"request-max_wait_time_for_service_discovery,omitempty" property:"max_wait_time_for_service_discovery"`
 
 	rootConfig *RootConfig
 }
@@ -99,6 +98,15 @@ func (cc *ConsumerConfig) Load() {
 		ref.Implement(rpcService)
 	}
 
+	var maxWait int
+
+	if maxWaitDuration, err := time.ParseDuration(cc.MaxWaitTimeForServiceDiscovery); err != nil {
+		logger.Warnf("Invalid consumer max wait time for service discovery: %s, fallback to 3s", cc.MaxWaitTimeForServiceDiscovery)
+		maxWait = 3
+	} else {
+		maxWait = int(maxWaitDuration.Seconds())
+	}
+
 	// wait for invoker is available, if wait over default 3s, then panic
 	var count int
 	for {
@@ -138,7 +146,6 @@ func SetConsumerConfig(c ConsumerConfig) {
 func newEmptyConsumerConfig() *ConsumerConfig {
 	newConsumerConfig := &ConsumerConfig{
 		References:     make(map[string]*ReferenceConfig, 8),
-		ConnectTimeout: "3s",
 		RequestTimeout: "3s",
 		Check:          true,
 	}
