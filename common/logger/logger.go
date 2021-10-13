@@ -94,7 +94,7 @@ func InitLogger(conf *Config) {
 		zapLogger, _ = config.ZapConfig.Build(zap.AddCallerSkip(1))
 	} else {
 		config.LumberjackConfig = conf.LumberjackConfig
-		zapLogger = initZapLoggerWithSyncer(config)
+		zapLogger = initZapLoggerWithSyncer(config, config.ZapConfig.Level.Level())
 	}
 
 	logger = &DubboLogger{Logger: zapLogger.Sugar(), dynamicLevel: config.ZapConfig.Level}
@@ -138,11 +138,11 @@ func (dl *DubboLogger) SetLoggerLevel(level string) {
 }
 
 // initZapLoggerWithSyncer init zap Logger with syncer
-func initZapLoggerWithSyncer(conf *Config) *zap.Logger {
+func initZapLoggerWithSyncer(conf *Config, level zapcore.Level) *zap.Logger {
 	core := zapcore.NewCore(
 		conf.getEncoder(),
 		conf.getLogWriter(),
-		zap.NewAtomicLevelAt(zap.DebugLevel),
+		zap.NewAtomicLevelAt(level),
 	)
 
 	return zap.New(core, zap.AddCallerSkip(1))
