@@ -49,7 +49,7 @@ type ConsumerConfig struct {
 	References map[string]*ReferenceConfig `yaml:"references" json:"references,omitempty" property:"references"`
 
 	FilterConf                     interface{} `yaml:"filter-conf" json:"filter-conf,omitempty" property:"filter-conf"`
-	MaxWaitTimeForServiceDiscovery string      `default:"3s" yaml:"max_wait_time_for_service_discovery" json:"request-max_wait_time_for_service_discovery,omitempty" property:"max_wait_time_for_service_discovery"`
+	MaxWaitTimeForServiceDiscovery string      `default:"3s" yaml:"max-wait-time-for-service-discovery" json:"max-wait-time-for-service-discovery,omitempty" property:"max-wait-time-for-service-discovery"`
 
 	rootConfig *RootConfig
 }

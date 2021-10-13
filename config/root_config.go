@@ -133,12 +133,17 @@ func registerPOJO() {
 
 func (rc *RootConfig) Init() error {
 	registerPOJO()
-	if err := rc.Logger.Init(); err != nil {
+	if err := rc.Logger.Init(); err != nil { // init default logger
 		return err
 	}
 	if err := rc.ConfigCenter.Init(rc); err != nil {
 		logger.Infof("config center doesn't start， because %s", err)
+	} else {
+		if err := rc.Logger.Init(); err != nil { // init logger using config from config center again
+			return err
+		}
 	}
+
 	if err := rc.Application.Init(); err != nil {
 		return err
 	}
