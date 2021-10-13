@@ -185,6 +185,9 @@ func (nr *nacosRegistry) Subscribe(url *common.URL, notifyListener registry.Noti
 			return perrors.New("nacosRegistry is not available.")
 		}
 
+		groupName := nr.GetParam(constant.GROUP_KEY, defaultGroup)
+		url.SetParam(constant.REGISTRY_GROUP_KEY, groupName) // update to registry.group
+
 		listener, err := nr.subscribe(url)
 		if err != nil {
 			if !nr.IsAvailable() {
