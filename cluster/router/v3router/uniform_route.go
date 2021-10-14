@@ -19,6 +19,7 @@ package v3router
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
@@ -29,20 +30,37 @@ const (
 
 // UniformRouter have
 type UniformRouter struct {
-	dubboRouter *DubboRouterRule
+	uniformRules []*UniformRule
 }
 
 // NewUniformRouter construct an NewConnCheckRouter via url
-func NewUniformRouter(dubboRouter *DubboRouterRule) (*UniformRouter, error) {
-	r := &UniformRouter{
-		dubboRouter: dubboRouter,
+func NewUniformRouter(dubboRoutes []*config.DubboRoute, destinationMap map[string]map[string]string) (*UniformRouter, error) {
+	uniformRules := make([]*UniformRule, 0)
+	for _, v := range dubboRoutes {
+		uniformRule, err := newUniformRule(v, destinationMap)
+		if err != nil {
+			return nil, err
+		}
+		uniformRules = append(uniformRules, uniformRule)
 	}
-	return r, nil
+
+	return &UniformRouter{
+		uniformRules: uniformRules,
+	}, nil
 }
 
 // Route gets a list of routed invoker
 func (r *UniformRouter) Route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
-	return r.dubboRouter.route(invokers, url, invocation)
+	resultInvokers := make([]protocol.Invoker, 0)
+	for _, v := range r.uniformRules {
+		if resultInvokers = v.route(invokers, url, invocation); len(resultInvokers) == 0 {
+			continue
+		}
+		// once there is a uniformRule successfully get target invoker lists, return it
+		return resultInvokers
+	}
+	// return s empty invoker list
+	return resultInvokers
 }
 
 // Process there is no process needs for uniform Router, as it upper struct RouterChain has done it

@@ -82,7 +82,7 @@ func (r *RouterChain) Process(event *config_center.ConfigChangeEvent) {
 	if event.ConfigType == remoting.EventTypeAdd || event.ConfigType == remoting.EventTypeUpdate {
 		switch event.Key {
 		case k8s_api.VirtualServiceEventKey:
-			logger.Debug("virtul service event")
+			logger.Debug("virtual service event")
 			newVSValue, ok := event.Value.(*config.VirtualServiceConfig)
 			if !ok {
 				logger.Error("event.Value assertion error")
@@ -103,7 +103,7 @@ func (r *RouterChain) Process(event *config_center.ConfigChangeEvent) {
 			newVirtualServiceConfig.YamlAPIVersion = newVirtualServiceConfig.APIVersion
 			newVirtualServiceConfig.YamlKind = newVirtualServiceConfig.Kind
 			newVirtualServiceConfig.MetaData.Name = newVirtualServiceConfig.ObjectMeta.Name
-			logger.Debugf("get event after asseration = %+v\n", newVirtualServiceConfig)
+			logger.Debugf("get event after assertion = %+v\n", newVirtualServiceConfig)
 			data, err := yaml.Marshal(newVirtualServiceConfig)
 			if err != nil {
 				logger.Error("Process change of virtual service: event.Value marshal error:", err)
@@ -179,7 +179,7 @@ func parseFromConfigToRouters(virtualServiceConfig, destinationRuleConfig []byte
 
 	vsDecoder := yaml.NewDecoder(strings.NewReader(string(virtualServiceConfig)))
 	drDecoder := yaml.NewDecoder(strings.NewReader(string(destinationRuleConfig)))
-	// parse virtual service
+	// 1. parse virtual service config
 	for {
 		virtualServiceCfg := &config.VirtualServiceConfig{}
 
@@ -195,7 +195,7 @@ func parseFromConfigToRouters(virtualServiceConfig, destinationRuleConfig []byte
 		virtualServiceConfigList = append(virtualServiceConfigList, virtualServiceCfg)
 	}
 
-	// parse destination rule
+	// 2. parse destination rule config
 	for {
 		destRuleCfg := &config.DestinationRuleConfig{}
 		err := drDecoder.Decode(destRuleCfg)
@@ -220,32 +220,28 @@ func parseFromConfigToRouters(virtualServiceConfig, destinationRuleConfig []byte
 	routers := make([]*UniformRouter, 0)
 
 	for _, v := range virtualServiceConfigList {
-		tempSerivceNeedsDescMap := make(map[string]map[string]string)
+		tempServiceNeedsDescMap := make(map[string]map[string]string)
 		for _, host := range v.Spec.Hosts {
+			// name -> labels
 			targetDestMap := destRuleConfigsMap[host]
 
-			// copy to new Map
-			mapCombine(tempSerivceNeedsDescMap, targetDestMap)
+			// copy to new Map, FIXME name collision
+			mapCopy(tempServiceNeedsDescMap, targetDestMap)
 		}
-		// change single config to one rule
-		newRule, err := newDubboRouterRule(v.Spec.Dubbo, tempSerivceNeedsDescMap)
-		if err != nil {
-			logger.Error("Parse config to uniform rule err = ", err)
-			return nil, err
-		}
-		rtr, err := NewUniformRouter(newRule)
+		// transform single config to one rule
+		rtr, err := NewUniformRouter(v.Spec.Dubbo, tempServiceNeedsDescMap)
 		if err != nil {
 			logger.Error("new uniform router err = ", err)
 			return nil, err
 		}
 		routers = append(routers, rtr)
 	}
-	logger.Debug("parsed successed! with router size = ", len(routers))
+	logger.Debug("parsed successfully with router size = ", len(routers))
 	return routers, nil
 }
 
-func mapCombine(dist map[string]map[string]string, from map[string]map[string]string) {
-	for k, v := range from {
+func mapCopy(dist map[string]map[string]string, source map[string]map[string]string) {
+	for k, v := range source {
 		dist[k] = v
 	}
 }

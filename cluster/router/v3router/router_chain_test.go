@@ -70,9 +70,9 @@ func TestParseConfigFromFile(t *testing.T) {
 	routers, err := parseFromConfigToRouters(vsBytes, drBytes)
 	fmt.Println(routers, err)
 	assert.Equal(t, len(routers), 1)
-	assert.NotNil(t, routers[0].dubboRouter)
-	assert.Equal(t, len(routers[0].dubboRouter.uniformRules), 2)
-	for i, v := range routers[0].dubboRouter.uniformRules {
+	assert.NotNil(t, routers[0].uniformRules)
+	assert.Equal(t, len(routers[0].uniformRules), 2)
+	for i, v := range routers[0].uniformRules {
 		if i == 0 {
 			assert.Equal(t, len(v.services), 2)
 			assert.Equal(t, "com.taobao.hsf.demoService:1.0.0", v.services[0].Exact)

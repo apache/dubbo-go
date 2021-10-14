@@ -44,7 +44,7 @@ type VirtualServiceRule struct {
 	uniformRule *UniformRule
 }
 
-// match read from vsr's Match config
+// match read from VirtualServiceRule's Match config
 // it judges if this invocation matches the router rule request defined in config one by one
 func (vsr *VirtualServiceRule) match(url *common.URL, invocation protocol.Invocation) bool {
 	for _, v := range vsr.routerItem.Match {
@@ -198,7 +198,7 @@ func (vsr *VirtualServiceRule) getRuleTargetInvokers(invokers []protocol.Invoker
 	return weightInvokerPairResult.getTargetInvokers(), nil
 }
 
-// UniformRule
+// UniformRule uniform rule
 type UniformRule struct {
 	services                []*config.StringMatch
 	virtualServiceRules     []VirtualServiceRule

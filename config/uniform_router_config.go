@@ -29,7 +29,7 @@ type MetaDataStruct struct {
 	Name string `yaml:"name" json:"name"`
 }
 
-// VirtualService Config Definition
+// VirtualServiceConfig Config Definition
 type VirtualServiceConfig struct {
 	YamlAPIVersion    string `yaml:"apiVersion"`
 	YamlKind          string `yaml:"kind"`
@@ -47,6 +47,7 @@ type UniformRouterConfigSpec struct {
 
 // nolint
 type DubboRoute struct {
+	Name         string                    `yaml:"name" json:"name"`
 	Services     []*StringMatch            `yaml:"services" json:"service"`
 	RouterDetail []*DubboServiceRouterItem `yaml:"routedetail" json:"routedetail"`
 }

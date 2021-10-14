@@ -249,6 +249,8 @@ const (
 	TagRouterRuleSuffix = ".tag-router"
 	// ConditionRouterRuleSuffix Specify condition router suffix
 	ConditionRouterRuleSuffix = ".condition-router"
+	// MeshRouteSuffix Specify mesh router suffix
+	MeshRouteSuffix = ".MESHAPPRULE"
 	// ForceUseTag is the tag in attachment
 	ForceUseTag = "dubbo.force.tag"
 	Tagkey      = "dubbo.tag"

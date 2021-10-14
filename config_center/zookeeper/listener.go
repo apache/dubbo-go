@@ -80,7 +80,8 @@ func (l *CacheListener) pathToKey(path string) string {
 	key := strings.Replace(strings.Replace(path, l.rootPath+"/", "", -1), "/", ".", -1)
 	if strings.HasSuffix(key, constant.CONFIGURATORS_SUFFIX) ||
 		strings.HasSuffix(key, constant.TagRouterRuleSuffix) ||
-		strings.HasSuffix(key, constant.ConditionRouterRuleSuffix) {
+		strings.HasSuffix(key, constant.ConditionRouterRuleSuffix) ||
+		strings.HasSuffix(key, constant.MeshRouteSuffix) {
 		// governance config, so we remove the "dubbo." prefix
 		return key[strings.Index(key, ".")+1:]
 	}
