@@ -219,6 +219,7 @@ func parseFromConfigToRouters(virtualServiceConfig, destinationRuleConfig []byte
 
 	routers := make([]*UniformRouter, 0)
 
+	// 3. construct virtual service host to destination mapping
 	for _, v := range virtualServiceConfigList {
 		tempServiceNeedsDescMap := make(map[string]map[string]string)
 		for _, host := range v.Spec.Hosts {
@@ -229,12 +230,7 @@ func parseFromConfigToRouters(virtualServiceConfig, destinationRuleConfig []byte
 			mapCopy(tempServiceNeedsDescMap, targetDestMap)
 		}
 		// transform single config to one rule
-		rtr, err := NewUniformRouter(v.Spec.Dubbo, tempServiceNeedsDescMap)
-		if err != nil {
-			logger.Error("new uniform router err = ", err)
-			return nil, err
-		}
-		routers = append(routers, rtr)
+		routers = append(routers, NewUniformRouter(v.Spec.Dubbo, tempServiceNeedsDescMap))
 	}
 	logger.Debug("parsed successfully with router size = ", len(routers))
 	return routers, nil

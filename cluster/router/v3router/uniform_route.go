@@ -34,19 +34,15 @@ type UniformRouter struct {
 }
 
 // NewUniformRouter construct an NewConnCheckRouter via url
-func NewUniformRouter(dubboRoutes []*config.DubboRoute, destinationMap map[string]map[string]string) (*UniformRouter, error) {
+func NewUniformRouter(dubboRoutes []*config.DubboRoute, destinationMap map[string]map[string]string) *UniformRouter {
 	uniformRules := make([]*UniformRule, 0)
 	for _, v := range dubboRoutes {
-		uniformRule, err := newUniformRule(v, destinationMap)
-		if err != nil {
-			return nil, err
-		}
-		uniformRules = append(uniformRules, uniformRule)
+		uniformRules = append(uniformRules, newUniformRule(v, destinationMap))
 	}
 
 	return &UniformRouter{
 		uniformRules: uniformRules,
-	}, nil
+	}
 }
 
 // Route gets a list of routed invoker

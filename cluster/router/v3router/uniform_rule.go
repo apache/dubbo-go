@@ -206,21 +206,22 @@ type UniformRule struct {
 }
 
 // NewDefaultConnChecker constructs a new DefaultConnChecker based on the url
-func newUniformRule(dubboRoute *config.DubboRoute, destinationMap map[string]map[string]string) (*UniformRule, error) {
-	matchItems := dubboRoute.RouterDetail
-	virtualServiceRules := make([]VirtualServiceRule, 0)
-	newUniformRule := &UniformRule{
-		DestinationLabelListMap: destinationMap,
+func newUniformRule(dubboRoute *config.DubboRoute, destinationMap map[string]map[string]string) *UniformRule {
+	uniformRule := &UniformRule{
 		services:                dubboRoute.Services,
+		DestinationLabelListMap: destinationMap,
 	}
-	for _, v := range matchItems {
+
+	routeDetail := dubboRoute.RouterDetail
+	virtualServiceRules := make([]VirtualServiceRule, 0)
+	for _, v := range routeDetail {
 		virtualServiceRules = append(virtualServiceRules, VirtualServiceRule{
 			routerItem:  v,
-			uniformRule: newUniformRule,
+			uniformRule: uniformRule,
 		})
 	}
-	newUniformRule.virtualServiceRules = virtualServiceRules
-	return newUniformRule, nil
+	uniformRule.virtualServiceRules = virtualServiceRules
+	return uniformRule
 }
 
 func (u *UniformRule) route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
