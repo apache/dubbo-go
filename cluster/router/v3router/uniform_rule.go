@@ -38,7 +38,7 @@ import (
 // if match, get result destination key, which should be defined in DestinationRule yaml file
 type VirtualServiceRule struct {
 	// routerItem store match router list and destination list of this router
-	routerItem *config.DubboServiceRouterItem
+	routerItem *config.DubboRouteDetail
 
 	// uniformRule is the upper struct ptr
 	uniformRule *UniformRule
@@ -61,7 +61,7 @@ func (vsr *VirtualServiceRule) match(url *common.URL, invocation protocol.Invoca
 			return false
 		}
 
-		// atta match judge
+		// attachment match judge
 		if v.Attachment != nil {
 			attachmentMatchJudger := judger.NewAttachmentMatchJudger(v.Attachment)
 			if attachmentMatchJudger.Judge(invocation) {

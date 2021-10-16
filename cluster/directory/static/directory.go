@@ -91,8 +91,7 @@ func (dir *directory) BuildRouterChain(invokers []protocol.Invoker) error {
 	if len(invokers) == 0 {
 		return perrors.Errorf("invokers == null")
 	}
-	url := invokers[0].GetURL()
-	routerChain, e := chain.NewRouterChain(url)
+	routerChain, e := chain.NewRouterChain()
 	if e != nil {
 		return e
 	}

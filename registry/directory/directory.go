@@ -85,7 +85,7 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry) (director
 
 	dir.consumerURL = dir.getConsumerUrl(url.SubURL)
 
-	if routerChain, err := chain.NewRouterChain(dir.consumerURL); err == nil {
+	if routerChain, err := chain.NewRouterChain(); err == nil {
 		dir.Directory.SetRouterChain(routerChain)
 	} else {
 		logger.Warnf("fail to create router chain with url: %s, err is: %v", url.SubURL, err)

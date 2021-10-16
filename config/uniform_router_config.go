@@ -47,13 +47,13 @@ type UniformRouterConfigSpec struct {
 
 // nolint
 type DubboRoute struct {
-	Name         string                    `yaml:"name" json:"name"`
-	Services     []*StringMatch            `yaml:"services" json:"service"`
-	RouterDetail []*DubboServiceRouterItem `yaml:"routedetail" json:"routedetail"`
+	Name         string              `yaml:"name" json:"name"`
+	Services     []*StringMatch      `yaml:"services" json:"service"`
+	RouterDetail []*DubboRouteDetail `yaml:"routedetail" json:"routedetail"`
 }
 
 // nolint
-type DubboServiceRouterItem struct {
+type DubboRouteDetail struct {
 	Name   string               `yaml:"name" json:"name"`
 	Match  []*DubboMatchRequest `yaml:"match" json:"match"`
 	Router []*DubboDestination  `yaml:"route" json:"route"`

@@ -26,7 +26,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
-// Extension - Router
 // PriorityRouterFactory creates creates priority router with url
 type PriorityRouterFactory interface {
 	// NewPriorityRouter creates router instance with URL
@@ -42,7 +41,7 @@ type router interface {
 	URL() *common.URL
 }
 
-// Router
+// PriorityRouter routes with priority
 type PriorityRouter interface {
 	router
 	// Priority Return Priority in router
@@ -66,7 +65,7 @@ type Poolable interface {
 // AddrPool is an address pool, backed by a snapshot of address list, divided into categories.
 type AddrPool map[string]*roaring.Bitmap
 
-// AddrMetadta is address metadata, collected from a snapshot of address list by a router, if it implements Poolable.
+// AddrMetadata is address metadata, collected from a snapshot of address list by a router, if it implements Poolable.
 type AddrMetadata interface {
 	// Source indicates where the metadata comes from.
 	Source() string

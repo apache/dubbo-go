@@ -111,9 +111,9 @@ func SetVSAndDRConfigByte(vs, dr []byte) {
 	destinationRuleConfigByte = dr
 }
 
-// NewRouterChain Use url to init router chain
+// NewRouterChain init router chain
 // Loop routerFactories and call NewRouter method
-func NewRouterChain(url *common.URL) (*RouterChain, error) {
+func NewRouterChain() (*RouterChain, error) {
 	routerFactories := extension.GetRouterFactories()
 	if len(routerFactories) == 0 {
 		return nil, perrors.Errorf("No routerFactory exits , create one please")
