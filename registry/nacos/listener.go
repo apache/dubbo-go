@@ -188,7 +188,12 @@ func (nl *nacosListener) startListen() error {
 		return perrors.New("nacos naming namingClient stopped")
 	}
 	serviceName := getSubscribeName(nl.listenUrl)
-	nl.subscribeParam = &vo.SubscribeParam{ServiceName: serviceName, SubscribeCallback: nl.Callback}
+	groupName := nl.listenUrl.GetParam(constant.REGISTRY_GROUP_KEY, defaultGroup)
+	nl.subscribeParam = &vo.SubscribeParam{
+		ServiceName:       serviceName,
+		SubscribeCallback: nl.Callback,
+		GroupName:         groupName,
+	}
 	go func() {
 		_ = nl.namingClient.Client().Subscribe(nl.subscribeParam)
 	}()

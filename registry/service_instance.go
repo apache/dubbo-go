@@ -56,6 +56,7 @@ type DefaultServiceInstance struct {
 	Enable      bool
 	Healthy     bool
 	Metadata    map[string]string
+	GroupName   string
 }
 
 // GetId will return this instance's id. It should be unique.
