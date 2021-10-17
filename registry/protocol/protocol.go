@@ -461,7 +461,7 @@ func newProviderConfigurationListener(overrideListeners *sync.Map) *providerConf
 	listener := &providerConfigurationListener{}
 	listener.overrideListeners = overrideListeners
 	listener.InitWith(
-		config.GetRootConfig().Application.Name+constant.CONFIGURATORS_SUFFIX,
+		config.GetRootConfig().Application.Name+constant.ConfiguratorSuffix,
 		listener,
 		extension.GetDefaultConfiguratorFunc(),
 	)
@@ -486,7 +486,7 @@ type serviceConfigurationListener struct {
 func newServiceConfigurationListener(overrideListener *overrideSubscribeListener, providerUrl *common.URL) *serviceConfigurationListener {
 	listener := &serviceConfigurationListener{overrideListener: overrideListener, providerUrl: providerUrl}
 	listener.InitWith(
-		providerUrl.EncodedServiceKey()+constant.CONFIGURATORS_SUFFIX,
+		providerUrl.EncodedServiceKey()+constant.ConfiguratorSuffix,
 		listener,
 		extension.GetDefaultConfiguratorFunc(),
 	)

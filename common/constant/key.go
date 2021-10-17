@@ -195,7 +195,7 @@ const (
 )
 
 const (
-	CONFIGURATORS_SUFFIX = ".configurators"
+	ConfiguratorSuffix = ".configurators"
 )
 
 const (

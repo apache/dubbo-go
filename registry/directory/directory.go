@@ -465,7 +465,7 @@ type referenceConfigurationListener struct {
 func newReferenceConfigurationListener(dir *RegistryDirectory, url *common.URL) *referenceConfigurationListener {
 	listener := &referenceConfigurationListener{directory: dir, url: url}
 	listener.InitWith(
-		url.EncodedServiceKey()+constant.CONFIGURATORS_SUFFIX,
+		url.EncodedServiceKey()+constant.ConfiguratorSuffix,
 		listener,
 		extension.GetDefaultConfiguratorFunc(),
 	)
@@ -489,7 +489,7 @@ func newConsumerConfigurationListener(dir *RegistryDirectory) *consumerConfigura
 	listener := &consumerConfigurationListener{directory: dir}
 	application := config.GetRootConfig().Application
 	listener.InitWith(
-		application.Name+constant.CONFIGURATORS_SUFFIX,
+		application.Name+constant.ConfiguratorSuffix,
 		listener,
 		extension.GetDefaultConfiguratorFunc(),
 	)

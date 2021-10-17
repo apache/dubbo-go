@@ -105,7 +105,7 @@ func NewK8sCRDClient(groupName, groupVersion, namespace string, handlers ...List
 	return newClient, nil
 }
 
-// func (c *Client) WatchResources() []cache.Store { can only be called once
+// WatchResources can only be called once
 func (c *Client) WatchResources() []cache.Store {
 	stores := make([]cache.Store, 0)
 	c.once.Do(

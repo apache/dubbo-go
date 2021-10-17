@@ -152,6 +152,7 @@ func (l *ZkEventListener) handleZkNodeEvent(zkPath string, children []string, li
 
 	newChildren, err := l.client.GetChildren(zkPath)
 	if err != nil {
+		// FIXME always false
 		if err == errNilChildren {
 			content, _, connErr := l.client.Conn.Get(zkPath)
 			if connErr != nil {
@@ -240,7 +241,7 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkPath string, listen
 			if MaxFailTimes <= failTimes {
 				failTimes = MaxFailTimes
 			}
-			logger.Infof("listenDirEvent(path{%s}) = error{%v}", zkPath, err)
+			logger.Debugf("listenDirEvent(path{%s}) = error{%v}", zkPath, err)
 			// clear the event channel
 		CLEAR:
 			for {
@@ -264,10 +265,10 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkPath string, listen
 				continue
 			case <-l.exit:
 				l.client.UnregisterEvent(zkPath, &event)
-				logger.Warnf("listen(path{%s}) goroutine exit now...", zkPath)
+				logger.Debugf("listen(path{%s}) goroutine exit now...", zkPath)
 				return
 			case <-event:
-				logger.Infof("get zk.EventNodeDataChange notify event")
+				logger.Debugf("get zk.EventNodeDataChange notify event")
 				l.client.UnregisterEvent(zkPath, &event)
 				l.handleZkNodeEvent(zkPath, nil, listener)
 				continue
@@ -358,7 +359,7 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkPath string, listen
 					ticker = time.NewTicker(tickerTTL)
 				}
 			case zkEvent = <-childEventCh:
-				logger.Warnf("get a zookeeper childEventCh{type:%s, server:%s, path:%s, state:%d-%s, err:%s}",
+				logger.Warnf("get a zookeeper childEventCh{type:%s, server:%s, path:%s, state:%d-%s, err:%v}",
 					zkEvent.Type.String(), zkEvent.Server, zkEvent.Path, zkEvent.State, gxzookeeper.StateToString(zkEvent.State), zkEvent.Err)
 				ticker.Stop()
 				if zkEvent.Type != zk.EventNodeChildrenChanged {

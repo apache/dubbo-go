@@ -24,6 +24,16 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
+type MeshRouteMetadata struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	YamlAPIVersion string         `yaml:"apiVersion" `
+	YamlKind       string         `yaml:"kind" `
+	MetaData       MetaDataStruct `yaml:"metadata"`
+	Spec           interface{}
+}
+
 // nolint
 type MetaDataStruct struct {
 	Name string `yaml:"name" json:"name"`
@@ -147,7 +157,7 @@ type RouterDest struct {
 	// todo port
 }
 
-// DestinationRule Definition
+// DestinationRuleConfig Definition
 type DestinationRuleConfig struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
