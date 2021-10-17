@@ -142,7 +142,7 @@ func initZapLoggerWithSyncer(conf *Config) *zap.Logger {
 	core := zapcore.NewCore(
 		conf.getEncoder(),
 		conf.getLogWriter(),
-		zap.NewAtomicLevelAt(zap.DebugLevel),
+		zap.NewAtomicLevelAt(conf.ZapConfig.Level.Level()),
 	)
 
 	return zap.New(core, zap.AddCallerSkip(1))

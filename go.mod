@@ -11,12 +11,12 @@ require (
 	github.com/apache/dubbo-go-hessian2 v1.9.3
 	github.com/creasty/defaults v1.5.2
 	github.com/dubbogo/go-zookeeper v1.0.3
-	github.com/dubbogo/gost v1.11.17
-	github.com/dubbogo/triple v1.0.6-0.20210909153707-3620c8d2d97c
+	github.com/dubbogo/gost v1.11.18
+	github.com/dubbogo/triple v1.0.7
 	github.com/emicklei/go-restful/v3 v3.7.1
 	github.com/fsnotify/fsnotify v1.5.1
 	github.com/ghodss/yaml v1.0.0
-	github.com/go-co-op/gocron v0.1.1
+	github.com/go-co-op/gocron v1.9.0
 	github.com/go-playground/validator/v10 v10.9.0
 	github.com/go-resty/resty/v2 v2.3.0
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect

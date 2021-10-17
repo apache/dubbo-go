@@ -38,7 +38,6 @@ import (
 
 var (
 	rootConfig = NewRootConfigBuilder().Build()
-	maxWait    = 3
 )
 
 func Load(opts ...LoaderConfOption) error {
