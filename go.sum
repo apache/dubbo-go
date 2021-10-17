@@ -177,13 +177,13 @@ github.com/dubbogo/go-zookeeper v1.0.3 h1:UkuY+rBsxdT7Bs63QAzp9z7XqQ53W1j8E5rwl8
 github.com/dubbogo/go-zookeeper v1.0.3/go.mod h1:fn6n2CAEer3novYgk9ULLwAjuV8/g4DdC2ENwRb6E+c=
 github.com/dubbogo/gost v1.9.0/go.mod h1:pPTjVyoJan3aPxBPNUX0ADkXjPibLo+/Ib0/fADXSG8=
 github.com/dubbogo/gost v1.11.12/go.mod h1:vIcP9rqz2KsXHPjsAwIUtfJIJjppQLQDcYaZTy/61jI=
-github.com/dubbogo/gost v1.11.18-0.20211011142005-8a95129ef6e2 h1:UU3dQZo/NE6VUf6ib5lyAjDfxuI6qX+aq8OZZx649JE=
-github.com/dubbogo/gost v1.11.18-0.20211011142005-8a95129ef6e2/go.mod h1:vIcP9rqz2KsXHPjsAwIUtfJIJjppQLQDcYaZTy/61jI=
+github.com/dubbogo/gost v1.11.18 h1:e9WRvDQut6cePYcQEOUC15vGSfftO7q9G2+Vw2s4CHE=
+github.com/dubbogo/gost v1.11.18/go.mod h1:vIcP9rqz2KsXHPjsAwIUtfJIJjppQLQDcYaZTy/61jI=
 github.com/dubbogo/jsonparser v1.0.1/go.mod h1:tYAtpctvSP/tWw4MeelsowSPgXQRVHHWbqL6ynps8jU=
 github.com/dubbogo/net v0.0.4 h1:Rn9aMPZwOiRE22YhtxmDEE3H0Q3cfVRNhuEjNMelJ/8=
 github.com/dubbogo/net v0.0.4/go.mod h1:1CGOnM7X3he+qgGNqjeADuE5vKZQx/eMSeUkpU3ujIc=
-github.com/dubbogo/triple v1.0.7-0.20211012074236-faf8a9baedd6 h1:B12KPtEPS9aJWQTYZT8GcgN0EB9gr+6oRw3dL0+EX+k=
-github.com/dubbogo/triple v1.0.7-0.20211012074236-faf8a9baedd6/go.mod h1:wqPNrNh0NP0pbEac1Y3UP+Vko+q7XgW/rkO91x8CInk=
+github.com/dubbogo/triple v1.0.7 h1:rPRtf5QNQO2FqXckMugn8KmQyhXQPZyImrEJ/OKAB7o=
+github.com/dubbogo/triple v1.0.7/go.mod h1:1t9me4j4CTvNDcsMZy6/OGarbRyAUSY0tFXGXHCp7Iw=
 github.com/dustin/go-humanize v0.0.0-20171111073723-bb3d318650d4/go.mod h1:HtrtbFcZ19U5GC7JDqmcUSB87Iq5E25KnS6fMYU6eOk=
 github.com/dustin/go-humanize v1.0.0 h1:VSnTsYCnlFHaM2/igO1h6X3HA71jcobQuxemgkq4zYo=
 github.com/dustin/go-humanize v1.0.0/go.mod h1:HtrtbFcZ19U5GC7JDqmcUSB87Iq5E25KnS6fMYU6eOk=
