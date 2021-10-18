@@ -28,6 +28,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/metadata/service/local"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
@@ -47,7 +48,7 @@ func (e *exportedServicesRevisionMetadataCustomizer) GetPriority() int {
 
 // Customize calculate the revision for exported urls and then put it into instance metadata
 func (e *exportedServicesRevisionMetadataCustomizer) Customize(instance registry.ServiceInstance) {
-	ms, err := getMetadataService()
+	ms, err := local.GetLocalMetadataService()
 	if err != nil {
 		logger.Errorf("could not get metadata service", err)
 		return
@@ -74,7 +75,7 @@ func (e *subscribedServicesRevisionMetadataCustomizer) GetPriority() int {
 
 // Customize calculate the revision for subscribed urls and then put it into instance metadata
 func (e *subscribedServicesRevisionMetadataCustomizer) Customize(instance registry.ServiceInstance) {
-	ms, err := getMetadataService()
+	ms, err := local.GetLocalMetadataService()
 	if err != nil {
 		logger.Errorf("could not get metadata service", err)
 		return

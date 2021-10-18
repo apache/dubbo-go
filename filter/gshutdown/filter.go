@@ -68,12 +68,12 @@ func (f *Filter) OnResponse(ctx context.Context, result protocol.Result, invoker
 
 func (f *Filter) Set(name string, conf interface{}) {
 	switch name {
-	case config.GracefulShutdownFilterShutdownConfig:
+	case constant.GracefulShutdownFilterShutdownConfig:
 		if shutdownConfig, ok := conf.(*config.ShutdownConfig); !ok {
 			f.shutdownConfig = shutdownConfig
 			return
 		}
-		logger.Warnf("the type of config for {%s} should be *config.ShutdownConfig", config.GracefulShutdownFilterShutdownConfig)
+		logger.Warnf("the type of config for {%s} should be *config.ShutdownConfig", constant.GracefulShutdownFilterShutdownConfig)
 	default:
 		// do nothing
 	}

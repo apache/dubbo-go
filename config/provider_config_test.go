@@ -18,7 +18,6 @@
 package config
 
 import (
-	"path/filepath"
 	"testing"
 )
 
@@ -26,25 +25,36 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestConsumerInit(t *testing.T) {
-	conPath, err := filepath.Abs("./testdata/consumer_config_with_configcenter.yml")
-	assert.NoError(t, err)
-	assert.NoError(t, ConsumerInit(conPath))
-	assert.Equal(t, "default", consumerConfig.ProxyFactory)
-	assert.Equal(t, "dubbo.properties", consumerConfig.ConfigCenterConfig.ConfigFile)
-	assert.Equal(t, "100ms", consumerConfig.Connect_Timeout)
+func TestProviderConfigEmptyRegistry(t *testing.T) {
+	err := Load(WithPath("./testdata/config/provider/empty_registry_application.yaml"))
+	assert.Nil(t, err)
+	provider := rootConfig.Provider
+	assert.Equal(t, 1, len(provider.RegistryIDs))
+	assert.Equal(t, "nacos", provider.RegistryIDs[0])
 }
 
-func TestConsumerInitWithDefaultProtocol(t *testing.T) {
-	conPath, err := filepath.Abs("./testdata/consumer_config_withoutProtocol.yml")
-	assert.NoError(t, err)
-	assert.NoError(t, ConsumerInit(conPath))
-	assert.Equal(t, "dubbo", consumerConfig.References["UserProvider"].Protocol)
+func TestProviderConfigRootRegistry(t *testing.T) {
+	err := Load(WithPath("./testdata/config/provider/registry_application.yaml"))
+	assert.Nil(t, err)
+	provider := rootConfig.Provider
+	assert.NotNil(t, provider)
+	assert.Equal(t, 2, len(provider.Services))
+
+	assert.Equal(t, 2, len(provider.Services["HelloService"].RegistryIDs))
+	assert.Equal(t, 1, len(provider.Services["OrderService"].RegistryIDs))
 }
 
-func TestProviderInitWithDefaultProtocol(t *testing.T) {
-	conPath, err := filepath.Abs("./testdata/provider_config_withoutProtocol.yml")
-	assert.NoError(t, err)
-	assert.NoError(t, ProviderInit(conPath))
-	assert.Equal(t, "dubbo", providerConfig.Services["UserProvider"].Protocol)
-}
+//
+//func TestConsumerInitWithDefaultProtocol(t *testing.T) {
+//	conPath, err := filepath.Abs("./testdata/consumer_config_withoutProtocol.yml")
+//	assert.NoError(t, err)
+//	assert.NoError(t, consumer.ConsumerInit(conPath))
+//	assert.Equal(t, "dubbo", config.consumerConfig.References["UserProvider"].Protocol)
+//}
+//
+//func TestProviderInitWithDefaultProtocol(t *testing.T) {
+//	conPath, err := filepath.Abs("./testdata/provider_config_withoutProtocol.yml")
+//	assert.NoError(t, err)
+//	assert.NoError(t, ProviderInit(conPath))
+//	assert.Equal(t, "dubbo", config.referenceConfig.Services["UserProvider"].Protocol)
+//}

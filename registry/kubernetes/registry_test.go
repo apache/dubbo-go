@@ -21,13 +21,13 @@ import (
 	"encoding/json"
 	"os"
 	"strconv"
-	"sync"
 	"testing"
 	"time"
 )
 
 import (
 	"github.com/stretchr/testify/assert"
+
 	v1 "k8s.io/api/core/v1"
 )
 
@@ -256,38 +256,39 @@ func TestRegister(t *testing.T) {
 	}
 }
 
-func TestSubscribe(t *testing.T) {
-	r := getTestRegistry(t)
-	defer r.Destroy()
-
-	url, err := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParamsValue(constant.CLUSTER_KEY, "mock"), common.WithMethods([]string{"GetUser", "AddUser"}))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	listener, err := r.DoSubscribe(url)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		registerErr := r.Register(url)
-		if registerErr != nil {
-			t.Error(registerErr)
-		}
-	}()
-
-	wg.Wait()
-
-	serviceEvent, err := listener.Next()
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Logf("get service event %s", serviceEvent)
-}
+//
+//func TestSubscribe(t *testing.T) {
+//	r := getTestRegistry(t)
+//	defer r.Destroy()
+//
+//	url, err := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParamsValue(constant.CLUSTER_KEY, "mock"), common.WithMethods([]string{"GetUser", "AddUser"}))
+//	if err != nil {
+//		t.Fatal(err)
+//	}
+//
+//	listener, err := r.DoSubscribe(url)
+//	if err != nil {
+//		t.Fatal(err)
+//	}
+//
+//	wg := sync.WaitGroup{}
+//	wg.Add(1)
+//	go func() {
+//		defer wg.Done()
+//		registerErr := r.Register(url)
+//		if registerErr != nil {
+//			t.Error(registerErr)
+//		}
+//	}()
+//
+//	wg.Wait()
+//
+//	serviceEvent, err := listener.Next()
+//	if err != nil {
+//		t.Fatal(err)
+//	}
+//	t.Logf("get service event %s", serviceEvent)
+//}
 
 func TestConsumerDestroy(t *testing.T) {
 	r := getTestRegistry(t)

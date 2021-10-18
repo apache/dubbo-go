@@ -29,6 +29,7 @@ import (
 import (
 	gxset "github.com/dubbogo/gost/container/set"
 	gxpage "github.com/dubbogo/gost/hash/page"
+
 	perrors "github.com/pkg/errors"
 )
 
@@ -55,9 +56,8 @@ type fileSystemServiceDiscovery struct {
 	fileMap              map[string]string
 }
 
-func newFileSystemServiceDiscovery(name string) (registry.ServiceDiscovery, error) {
-	sdc, ok := config.GetBaseConfig().GetServiceDiscoveries(name)
-	if !ok || sdc.Protocol != constant.FILE_KEY {
+func newFileSystemServiceDiscovery() (registry.ServiceDiscovery, error) {
+	if config.GetMetadataReportConfg().Protocol != constant.FILE_KEY {
 		return nil, perrors.New("could not init the instance because the config is invalid")
 	}
 
@@ -266,22 +266,5 @@ func (fssd *fileSystemServiceDiscovery) GetRequestInstances(serviceNames []strin
 // client
 func (fssd *fileSystemServiceDiscovery) AddListener(listener registry.ServiceInstancesChangedListener) error {
 	// fssd.dynamicConfiguration.AddListener(listener.ServiceName)
-	return nil
-}
-
-// DispatchEventByServiceName dispatches the ServiceInstancesChangedEvent to service instance whose name is serviceName
-func (fssd *fileSystemServiceDiscovery) DispatchEventByServiceName(serviceName string) error {
-	return fssd.DispatchEvent(registry.NewServiceInstancesChangedEvent(serviceName, fssd.GetInstances(serviceName)))
-}
-
-// DispatchEventForInstances dispatches the ServiceInstancesChangedEvent to target instances
-func (fssd *fileSystemServiceDiscovery) DispatchEventForInstances(serviceName string,
-	instances []registry.ServiceInstance) error {
-	return fssd.DispatchEvent(registry.NewServiceInstancesChangedEvent(serviceName, instances))
-}
-
-// DispatchEvent dispatches the event
-func (fssd *fileSystemServiceDiscovery) DispatchEvent(event *registry.ServiceInstancesChangedEvent) error {
-	extension.GetGlobalDispatcher().Dispatch(event)
 	return nil
 }

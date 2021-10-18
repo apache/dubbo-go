@@ -28,6 +28,7 @@ import (
 
 import (
 	proto "github.com/golang/protobuf/proto"
+
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -250,16 +251,6 @@ func (c *GreeterClientImpl) GetDubboStub(cc *grpc.ClientConn) GreeterClient {
 	return NewGreeterClient(cc)
 }
 
-// DubboGrpcService is gRPC service
-type DubboGrpcService interface {
-	// SetProxyImpl sets proxy.
-	SetProxyImpl(impl protocol.Invoker)
-	// GetProxyImpl gets proxy.
-	GetProxyImpl() protocol.Invoker
-	// ServiceDesc gets an RPC service's specification.
-	ServiceDesc() *grpc.ServiceDesc
-}
-
 type GreeterProviderBase struct {
 	proxyImpl protocol.Invoker
 }
@@ -280,6 +271,15 @@ func _DUBBO_Greeter_SayHello_Handler(srv interface{}, ctx context.Context, dec f
 	in := new(HelloRequest)
 	if err := dec(in); err != nil {
 		return nil, err
+	}
+	// DubboGrpcService is gRPC service
+	type DubboGrpcService interface {
+		// SetProxyImpl sets proxy.
+		SetProxyImpl(impl protocol.Invoker)
+		// GetProxyImpl gets proxy.
+		GetProxyImpl() protocol.Invoker
+		// ServiceDesc gets an RPC service's specification.
+		ServiceDesc() *grpc.ServiceDesc
 	}
 	base := srv.(DubboGrpcService)
 	args := []interface{}{}

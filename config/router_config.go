@@ -18,25 +18,165 @@
 package config
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/cluster/router/chain"
-	"dubbo.apache.org/dubbo-go/v3/common/yaml"
+	"github.com/creasty/defaults"
 )
 
-// LocalRouterRules defines the local router config structure
-type LocalRouterRules struct {
-	RouterRules []interface{} `yaml:"routerRules"`
+import (
+	_ "dubbo.apache.org/dubbo-go/v3/cluster/router/chain"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+)
+
+// RouterConfig is the configuration of the router.
+type RouterConfig struct {
+	// Scope must be chosen from `service` and `application`.
+	Scope string `validate:"required" yaml:"scope" json:"scope,omitempty" property:"scope"`
+	// Key specifies which service or application the rule body acts on.
+	Key        string   `validate:"required" yaml:"key" json:"key,omitempty" property:"key"`
+	Force      bool     `default:"false" yaml:"force" json:"force,omitempty" property:"force"`
+	Runtime    bool     `default:"false" yaml:"runtime" json:"runtime,omitempty" property:"runtime"`
+	Enable     bool     `default:"true" yaml:"enable" json:"enable,omitempty" property:"enable"`
+	Valid      bool     `default:"true" yaml:"valid" json:"valid,omitempty" property:"valid"`
+	Priority   int      `default:"0" yaml:"priority" json:"priority,omitempty" property:"priority"`
+	Conditions []string `yaml:"conditions" json:"conditions,omitempty" property:"conditions"`
+	Tags       []Tag    `yaml:"tags" json:"tags,omitempty" property:"tags"`
 }
 
-// RouterInit Set config file to init router config
-func RouterInit(vsConfigPath, drConfigPath string) error {
-	vsBytes, err := yaml.LoadYMLConfig(vsConfigPath)
-	if err != nil {
+type Tag struct {
+	Name      string   `yaml:"name" json:"name,omitempty" property:"name"`
+	Addresses []string `yaml:"addresses" json:"addresses,omitempty" property:"addresses"`
+}
+
+// Prefix dubbo.router
+func (RouterConfig) Prefix() string {
+	return constant.RouterConfigPrefix
+}
+
+func (c *RouterConfig) Init() error {
+	if err := defaults.Set(c); err != nil {
 		return err
 	}
-	drBytes, err := yaml.LoadYMLConfig(drConfigPath)
-	if err != nil {
-		return err
+	return verify(c)
+}
+
+func initRouterConfig(rc *RootConfig) error {
+	routers := rc.Router
+	if len(routers) > 0 {
+		for _, r := range routers {
+			if err := r.Init(); err != nil {
+				return err
+			}
+		}
+		rc.Router = routers
 	}
-	chain.SetVSAndDRConfigByte(vsBytes, drBytes)
+
+	//chain.SetVSAndDRConfigByte(vsBytes, drBytes)
 	return nil
+}
+
+//// LocalRouterRules defines the local router config structure
+//type LocalRouterRules struct {
+//	RouterRules []interface{} `yaml:"routerRules"`
+//}
+//
+//// RouterInit Set config file to init router config
+//func RouterInit(vsConfigPath, drConfigPath string) error {
+//	vsBytes, err := yaml.LoadYMLConfig(vsConfigPath)
+//	if err != nil {
+//		return err
+//	}
+//	drBytes, err := yaml.LoadYMLConfig(drConfigPath)
+//	if err != nil {
+//		return err
+//	}
+//	chain.SetVSAndDRConfigByte(vsBytes, drBytes)
+//	return nil
+//}
+
+type RouterConfigBuilder struct {
+	routerConfig *RouterConfig
+}
+
+// nolint
+func NewRouterConfigBuilder() *RouterConfigBuilder {
+	return &RouterConfigBuilder{routerConfig: &RouterConfig{}}
+}
+
+// nolint
+func (rcb *RouterConfigBuilder) SetScope(scope string) *RouterConfigBuilder {
+	rcb.routerConfig.Scope = scope
+	return rcb
+}
+
+// nolint
+func (rcb *RouterConfigBuilder) SetKey(key string) *RouterConfigBuilder {
+	rcb.routerConfig.Key = key
+	return rcb
+}
+
+// nolint
+func (rcb *RouterConfigBuilder) SetForce(force bool) *RouterConfigBuilder {
+	rcb.routerConfig.Force = force
+	return rcb
+}
+
+// nolint
+func (rcb *RouterConfigBuilder) SetRuntime(runtime bool) *RouterConfigBuilder {
+	rcb.routerConfig.Runtime = runtime
+	return rcb
+}
+
+// nolint
+func (rcb *RouterConfigBuilder) SetEnable(enable bool) *RouterConfigBuilder {
+	rcb.routerConfig.Enable = enable
+	return rcb
+}
+
+// nolint
+func (rcb *RouterConfigBuilder) SetValid(valid bool) *RouterConfigBuilder {
+	rcb.routerConfig.Valid = valid
+	return rcb
+}
+
+// nolint
+func (rcb *RouterConfigBuilder) SetPriority(priority int) *RouterConfigBuilder {
+	rcb.routerConfig.Priority = priority
+	return rcb
+}
+
+// nolint
+func (rcb *RouterConfigBuilder) SetConditions(conditions []string) *RouterConfigBuilder {
+	rcb.routerConfig.Conditions = conditions
+	return rcb
+}
+
+// nolint
+func (rcb *RouterConfigBuilder) AddCondition(condition string) *RouterConfigBuilder {
+	if rcb.routerConfig.Conditions == nil {
+		rcb.routerConfig.Conditions = make([]string, 0)
+	}
+	rcb.routerConfig.Conditions = append(rcb.routerConfig.Conditions, condition)
+	return rcb
+}
+
+// nolint
+func (rcb *RouterConfigBuilder) SetTags(tags []Tag) *RouterConfigBuilder {
+	rcb.routerConfig.Tags = tags
+	return rcb
+}
+
+// nolint
+func (rcb *RouterConfigBuilder) AddTag(tag Tag) *RouterConfigBuilder {
+	if rcb.routerConfig.Tags == nil {
+		rcb.routerConfig.Tags = make([]Tag, 0)
+	}
+	rcb.routerConfig.Tags = append(rcb.routerConfig.Tags, tag)
+	return rcb
+}
+
+// nolint
+func (rcb *RouterConfigBuilder) Build() *RouterConfig {
+	if err := rcb.routerConfig.Init(); err != nil {
+		panic(err)
+	}
+	return rcb.routerConfig
 }

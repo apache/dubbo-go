@@ -17,8 +17,7 @@
 
 package filter_impl
 
-// This package is for being compatible with older dubbo-go, please refer to https://github.com/dubbogo/imports to see
-// the recommended import ways.
+// This package is for being compatible with older dubbo-go, please use `imports` package.
 // This package may be DEPRECATED OR REMOVED in the future.
 
 import (

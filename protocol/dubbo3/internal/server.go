@@ -23,14 +23,16 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 	_ "dubbo.apache.org/dubbo-go/v3/common/proxy/proxy_factory"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	_ "dubbo.apache.org/dubbo-go/v3/filter/filter_impl"
+	_ "dubbo.apache.org/dubbo-go/v3/metrics/prometheus"
 )
 
 // server is used to implement helloworld.GreeterServer.
 type Server struct {
-	*GreeterProviderBase
+	GreeterProviderBase
 }
 
 // SayHello implements helloworld.GreeterServer
@@ -39,27 +41,25 @@ func (s *Server) SayHello(ctx context.Context, in *HelloRequest) (*HelloReply, e
 	return &HelloReply{Message: "Hello " + in.GetName()}, nil
 }
 
-func (s *Server) Reference() string {
-	return "DubboGreeterImpl"
-}
-
 // InitDubboServer creates global gRPC server.
 func InitDubboServer() {
-	providerConfig := config.NewProviderConfig(
-		config.WithProviderAppConfig(config.NewDefaultApplicationConfig()),
-		config.WithProviderProtocol("tri", "tri", "20003"), // protocol and port
-		config.WithProviderServices("DubboGreeterImpl", config.NewServiceConfigByAPI(
-			config.WithServiceProtocol("tri"),                                // export protocol
-			config.WithServiceInterface("org.apache.dubbo.DubboGreeterImpl"), // interface id
-			config.WithServiceLoadBalance("random"),                          // lb
-			config.WithServiceWarmUpTime("100"),
-			config.WithServiceCluster("failover"),
-		)),
-	)
-	config.SetProviderConfig(*providerConfig) // set to providerConfig ptr
+	serviceConfig := config.NewServiceConfigBuilder().
+		SetInterface("org.apache.dubbo.DubboGreeterImpl").
+		SetProtocolIDs("tripleKey").Build()
 
-	config.SetProviderService(&Server{
-		GreeterProviderBase: &GreeterProviderBase{},
-	})
-	config.Load()
+	providerConfig := config.NewProviderConfigBuilder().SetServices(map[string]*config.ServiceConfig{
+		common.GetReference(&Server{}): serviceConfig,
+	}).Build()
+
+	protocolConfig := config.NewProtocolConfigBuilder().SetName("tri").SetPort("20003").Build()
+
+	rootConfig := config.NewRootConfigBuilder().SetProvider(providerConfig).SetProtocols(map[string]*config.ProtocolConfig{
+		"tripleKey": protocolConfig,
+	}).Build()
+
+	config.SetProviderService(&Server{})
+	if err := rootConfig.Init(); err != nil {
+		panic(err)
+	}
+	rootConfig.Start()
 }

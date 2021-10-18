@@ -29,7 +29,6 @@ import (
 	gxset "github.com/dubbogo/gost/container/set"
 	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
 	gxpage "github.com/dubbogo/gost/hash/page"
-	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -44,17 +43,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/remoting/zookeeper/curator_discovery"
 )
 
-const (
-	// ServiceDiscoveryZkClient zk client name
-	ServiceDiscoveryZkClient = "zk service discovery"
-)
-
-var (
-	// 16 would be enough. We won't use concurrentMap because in most cases, there are not race condition
-	instanceMap = make(map[string]registry.ServiceDiscovery, 16)
-	initLock    sync.Mutex
-)
-
 // init will put the service discovery into extension
 func init() {
 	extension.SetServiceDiscovery(constant.ZOOKEEPER_KEY, newZookeeperServiceDiscovery)
@@ -64,49 +52,30 @@ type zookeeperServiceDiscovery struct {
 	client *gxzookeeper.ZookeeperClient
 	csd    *curator_discovery.ServiceDiscovery
 	// listener    *zookeeper.ZkEventListener
-	url         *common.URL
-	wg          sync.WaitGroup
-	cltLock     sync.Mutex
-	listenLock  sync.Mutex
-	done        chan struct{}
-	rootPath    string
-	listenNames []string
+	url                 *common.URL
+	wg                  sync.WaitGroup
+	cltLock             sync.Mutex
+	listenLock          sync.Mutex
+	done                chan struct{}
+	rootPath            string
+	listenNames         []string
+	instanceListenerMap map[string]*gxset.HashSet
 }
 
 // newZookeeperServiceDiscovery the constructor of newZookeeperServiceDiscovery
-func newZookeeperServiceDiscovery(name string) (registry.ServiceDiscovery, error) {
-	instance, ok := instanceMap[name]
-	if ok {
-		return instance, nil
-	}
-
-	initLock.Lock()
-	defer initLock.Unlock()
-
-	// double check
-	instance, ok = instanceMap[name]
-	if ok {
-		return instance, nil
-	}
-
-	sdc, ok := config.GetBaseConfig().GetServiceDiscoveries(name)
-	if !ok || len(sdc.RemoteRef) == 0 {
-		return nil, perrors.New("could not init the instance because the config is invalid")
-	}
-	remoteConfig, ok := config.GetBaseConfig().GetRemoteConfig(sdc.RemoteRef)
-	if !ok {
-		return nil, perrors.New("could not find the remote config for name: " + sdc.RemoteRef)
-	}
-	rootPath := remoteConfig.GetParam("rootPath", "/services")
+func newZookeeperServiceDiscovery() (registry.ServiceDiscovery, error) {
+	metadataReportConfig := config.GetMetadataReportConfg()
+	rootPath := "/services"
 	url := common.NewURLWithOptions(
 		common.WithParams(make(url.Values)),
-		common.WithPassword(remoteConfig.Password),
-		common.WithUsername(remoteConfig.Username),
-		common.WithParamsValue(constant.REGISTRY_TIMEOUT_KEY, remoteConfig.TimeoutStr))
-	url.Location = remoteConfig.Address
+		common.WithPassword(metadataReportConfig.Password),
+		common.WithUsername(metadataReportConfig.Username),
+		common.WithParamsValue(constant.REGISTRY_TIMEOUT_KEY, metadataReportConfig.Timeout))
+	url.Location = metadataReportConfig.Address
 	zksd := &zookeeperServiceDiscovery{
-		url:      url,
-		rootPath: rootPath,
+		url:                 url,
+		rootPath:            rootPath,
+		instanceListenerMap: make(map[string]*gxset.HashSet),
 	}
 	err := zookeeper.ValidateZookeeperClient(zksd, url.Location)
 	if err != nil {
@@ -272,6 +241,7 @@ func (zksd *zookeeperServiceDiscovery) GetRequestInstances(serviceNames []string
 func (zksd *zookeeperServiceDiscovery) AddListener(listener registry.ServiceInstancesChangedListener) error {
 	zksd.listenLock.Lock()
 	defer zksd.listenLock.Unlock()
+
 	for _, t := range listener.GetServiceNames().Values() {
 		serviceName, ok := t.(string)
 		if !ok {
@@ -279,23 +249,24 @@ func (zksd *zookeeperServiceDiscovery) AddListener(listener registry.ServiceInst
 			continue
 		}
 		zksd.listenNames = append(zksd.listenNames, serviceName)
+		listenerSet, found := zksd.instanceListenerMap[serviceName]
+		if !found {
+			listenerSet = gxset.NewSet(listener)
+			listenerSet.Add(listener)
+			zksd.instanceListenerMap[serviceName] = listenerSet
+		} else {
+			listenerSet.Add(listener)
+		}
+	}
+
+	for _, t := range listener.GetServiceNames().Values() {
+		serviceName, ok := t.(string)
+		if !ok {
+			logger.Errorf("service name error %s", t)
+			continue
+		}
 		zksd.csd.ListenServiceEvent(serviceName, zksd)
 	}
-	return nil
-}
-
-func (zksd *zookeeperServiceDiscovery) DispatchEventByServiceName(serviceName string) error {
-	return zksd.DispatchEventForInstances(serviceName, zksd.GetInstances(serviceName))
-}
-
-// DispatchEventForInstances dispatch ServiceInstancesChangedEvent
-func (zksd *zookeeperServiceDiscovery) DispatchEventForInstances(serviceName string, instances []registry.ServiceInstance) error {
-	return zksd.DispatchEvent(registry.NewServiceInstancesChangedEvent(serviceName, instances))
-}
-
-// nolint
-func (zksd *zookeeperServiceDiscovery) DispatchEvent(event *registry.ServiceInstancesChangedEvent) error {
-	extension.GetGlobalDispatcher().Dispatch(event)
 	return nil
 }
 
@@ -306,7 +277,15 @@ func (zksd *zookeeperServiceDiscovery) DataChange(eventType remoting.Event) bool
 	path = strings.TrimPrefix(path, constant.PATH_SEPARATOR)
 	// get service name in zk path
 	serviceName := strings.Split(path, constant.PATH_SEPARATOR)[0]
-	err := zksd.DispatchEventByServiceName(serviceName)
+
+	var err error
+	instances := zksd.GetInstances(serviceName)
+	for _, lis := range zksd.instanceListenerMap[serviceName].Values() {
+		var instanceListener registry.ServiceInstancesChangedListener
+		instanceListener = lis.(registry.ServiceInstancesChangedListener)
+		err = instanceListener.OnEvent(registry.NewServiceInstancesChangedEvent(serviceName, instances))
+	}
+
 	if err != nil {
 		logger.Errorf("[zkServiceDiscovery] DispatchEventByServiceName{%s} error = err{%v}", serviceName, err)
 		return false

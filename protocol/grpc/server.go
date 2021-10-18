@@ -26,7 +26,9 @@ import (
 
 import (
 	"github.com/grpc-ecosystem/grpc-opentracing/go/otgrpc"
+
 	"github.com/opentracing/opentracing-go"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
@@ -144,7 +146,7 @@ func registerService(providerServices map[string]*config.ServiceConfig, server *
 			panic("illegal service type registered")
 		}
 
-		serviceKey := common.ServiceKey(providerService.InterfaceName, providerService.Group, providerService.Version)
+		serviceKey := common.ServiceKey(providerService.Interface, providerService.Group, providerService.Version)
 		exporter, _ := grpcProtocol.ExporterMap().Load(serviceKey)
 		if exporter == nil {
 			panic(fmt.Sprintf("no exporter found for servicekey: %v", serviceKey))

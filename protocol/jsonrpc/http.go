@@ -34,6 +34,7 @@ import (
 
 import (
 	"github.com/opentracing/opentracing-go"
+
 	perrors "github.com/pkg/errors"
 )
 

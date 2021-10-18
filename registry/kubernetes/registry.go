@@ -25,8 +25,10 @@ import (
 )
 
 import (
-	getty "github.com/apache/dubbo-getty"
+	gxtime "github.com/dubbogo/gost/time"
+
 	perrors "github.com/pkg/errors"
+
 	v1 "k8s.io/api/core/v1"
 )
 
@@ -210,7 +212,7 @@ LOOP:
 			// try to connect to kubernetes,
 			failTimes = 0
 			for {
-				after := getty.GetTimeWheel().After(timeSecondDuration(failTimes * ConnDelay))
+				after := gxtime.After(timeSecondDuration(failTimes * ConnDelay))
 				select {
 				case <-r.Done():
 					logger.Warnf("(KubernetesProviderRegistry)reconnectKubernetes Registry goroutine exit now...")
