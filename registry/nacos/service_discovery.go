@@ -169,6 +169,7 @@ func (n *nacosServiceDiscovery) GetInstances(serviceName string) []registry.Serv
 			Enable:      ins.Enable,
 			Healthy:     ins.Healthy,
 			Metadata:    metadata,
+			GroupName:   n.group,
 		})
 	}
 	return res
@@ -269,6 +270,7 @@ func (n *nacosServiceDiscovery) AddListener(listener registry.ServiceInstancesCh
 						Enable:      service.Enable,
 						Healthy:     true,
 						Metadata:    metadata,
+						GroupName:   n.group,
 					})
 				}
 

@@ -138,6 +138,7 @@ const (
 	REGISTRY_TTL_KEY          = "registry.ttl"
 	SIMPLIFIED_KEY            = "simplified"
 	NAMESPACE_KEY             = "namespace"
+	REGISTRY_GROUP_KEY        = "registry.group"
 )
 
 const (
