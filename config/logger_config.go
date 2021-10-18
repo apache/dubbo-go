@@ -113,6 +113,13 @@ func (lc *LoggerConfig) check() error {
 }
 
 func (e *ZapConfig) setZapConfig(config *zap.Config) {
+	ll := zap.NewAtomicLevel()
+
+	if e := ll.UnmarshalText([]byte(e.Level)); e != nil {
+		ll.SetLevel(zap.DebugLevel)
+	}
+
+	config.Level = ll
 	config.OutputPaths = e.OutputPaths
 	config.ErrorOutputPaths = e.ErrorOutputPaths
 	config.DisableStacktrace = e.DisableStacktrace
