@@ -139,6 +139,7 @@ func loadConsumerConfig() {
 
 	checkRegistries(consumerConfig.Registries, consumerConfig.Registry)
 	for key, ref := range consumerConfig.References {
+		ref.Protocols = consumerConfig.Protocols
 		if ref.Generic {
 			genericService := NewGenericService(key)
 			SetConsumerService(genericService)
