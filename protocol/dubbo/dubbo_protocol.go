@@ -20,6 +20,7 @@ package dubbo
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -198,9 +199,11 @@ func getExchangeClient(url *common.URL) *remoting.ExchangeClient {
 				return
 			}
 			// new ExchangeClient
+			payload, _ := strconv.Atoi(url.GetParam(constant.ProtocolPayload, constant.DefaultProtocolPayloadStr))
 			exchangeClientTmp = remoting.NewExchangeClient(url, getty.NewClient(getty.Options{
 				ConnectTimeout: config.GetConsumerConfig().ConnectTimeout,
 				RequestTimeout: config.GetConsumerConfig().RequestTimeout,
+				Payload:        payload,
 			}), config.GetConsumerConfig().ConnectTimeout, false)
 			// input store
 			if exchangeClientTmp != nil {

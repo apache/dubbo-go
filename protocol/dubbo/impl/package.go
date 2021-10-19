@@ -65,6 +65,7 @@ type DubboPackage struct {
 	Body    interface{}
 	Err     error
 	Codec   *ProtocolCodec
+	Payload int
 }
 
 func (p DubboPackage) String() string {

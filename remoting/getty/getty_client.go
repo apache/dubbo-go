@@ -119,6 +119,7 @@ type Options struct {
 	ConnectTimeout time.Duration
 	// request timeout
 	RequestTimeout time.Duration
+	Payload        int
 }
 
 // Client : some configuration for network communication.
@@ -257,6 +258,7 @@ func (c *Client) selectSession(addr string) (*gettyRPCClient, getty.Session, err
 }
 
 func (c *Client) transfer(session getty.Session, request *remoting.Request, timeout time.Duration) (int, int, error) {
+	request.Payload = c.opts.Payload
 	totalLen, sendLen, err := session.WritePkg(request, timeout)
 	return totalLen, sendLen, perrors.WithStack(err)
 }

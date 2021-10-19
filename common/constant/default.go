@@ -90,3 +90,8 @@ const (
 const (
 	SERVICE_DISCOVERY_DEFAULT_GROUP = "DEFAULT_GROUP"
 )
+
+const (
+	DefaultProtocolPayload = 8388608
+	DefaultProtocolPayloadStr = "8388608"
+)

@@ -105,7 +105,13 @@ func (c *ReferenceConfig) Refer(_ interface{}) {
 	c.loadProcessConfig(cfgURL, constant.HookEventBeforeReferenceConnect, nil)
 	c.postProcessConfig(cfgURL)
 	protocolConfigs := loadProtocol(c.Protocol, c.Protocols)
-	fmt.Println(protocolConfigs)
+	payload := constant.DefaultProtocolPayload
+	if len(protocolConfigs) > 0 {
+		if pl := protocolConfigs[0].Payload; pl > 0 {
+			payload = pl
+		}
+	}
+	cfgURL.AddParam(constant.ProtocolPayload, strconv.Itoa(payload))
 	if c.URL != "" {
 		// 1. user specified URL, could be peer-to-peer address, or register center's address.
 		urlStrings := gxstrings.RegSplit(c.URL, "\\s*[;]+\\s*")

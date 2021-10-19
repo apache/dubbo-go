@@ -219,6 +219,10 @@ func packRequest(p DubboPackage, serializer Serializer) ([]byte, error) {
 	//////////////////////////////////////////
 	// body
 	//////////////////////////////////////////
+	payload := DEFAULT_LEN
+	if p.Payload > 0 {
+		payload = p.Payload
+	}
 	if p.IsHeartBeat() {
 		byteArray = append(byteArray, byte('N'))
 		pkgLen = 1
@@ -228,8 +232,8 @@ func packRequest(p DubboPackage, serializer Serializer) ([]byte, error) {
 			return nil, err
 		}
 		pkgLen = len(body)
-		if pkgLen > int(DEFAULT_LEN) { // 8M
-			return nil, perrors.Errorf("Data length %d too large, max payload %d", pkgLen, DEFAULT_LEN)
+		if pkgLen > payload { // 8M
+			return nil, perrors.Errorf("Data length %d too large, max payload %d", pkgLen, payload)
 		}
 		byteArray = append(byteArray, body...)
 	}
