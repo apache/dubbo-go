@@ -92,6 +92,6 @@ const (
 )
 
 const (
-	DefaultProtocolPayload = 8388608
+	DefaultProtocolPayload    = 8388608
 	DefaultProtocolPayloadStr = "8388608"
 )
