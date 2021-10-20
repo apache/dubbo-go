@@ -123,7 +123,7 @@ func mockInitProviderWithSingleRegistry() {
 		Protocols: map[string]*config.ProtocolConfig{
 			"mock": {
 				Name: "mock",
-				Ip:   "127.0.0.1",
+				IP:   "127.0.0.1",
 				Port: "20000",
 			},
 		},

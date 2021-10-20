@@ -161,7 +161,7 @@ func doInitProvider() {
 		Protocols: map[string]*ProtocolConfig{
 			"mock": {
 				Name: "mock",
-				Ip:   "127.0.0.1",
+				IP:   "127.0.0.1",
 				Port: "20000",
 			},
 		},
@@ -187,13 +187,13 @@ func TestGetRandomPort(t *testing.T) {
 
 	ip := common.GetLocalIp()
 	protocolConfigs = append(protocolConfigs, &ProtocolConfig{
-		Ip: ip,
+		IP: ip,
 	})
 	protocolConfigs = append(protocolConfigs, &ProtocolConfig{
-		Ip: ip,
+		IP: ip,
 	})
 	protocolConfigs = append(protocolConfigs, &ProtocolConfig{
-		Ip: ip,
+		IP: ip,
 	})
 	//assert.NoError(t, err)
 	ports := getRandomPort(protocolConfigs)
