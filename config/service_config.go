@@ -136,7 +136,7 @@ func getRandomPort(protocolConfigs []*ProtocolConfig) *list.List {
 			continue
 		}
 
-		tcp, err := gxnet.ListenOnTCPRandomPort(proto.IP)
+		tcp, err := gxnet.ListenOnTCPRandomPort(proto.Ip)
 		if err != nil {
 			panic(perrors.New(fmt.Sprintf("Get tcp port error, err is {%v}", err)))
 		}
@@ -190,7 +190,7 @@ func (c *ServiceConfig) Export() error {
 		ivkURL := common.NewURLWithOptions(
 			common.WithPath(c.InterfaceName),
 			common.WithProtocol(proto.Name),
-			common.WithIp(proto.IP),
+			common.WithIp(proto.Ip),
 			common.WithPort(port),
 			common.WithParams(urlMap),
 			common.WithParamsValue(constant.BEAN_NAME_KEY, c.id),
