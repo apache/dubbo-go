@@ -15,16 +15,27 @@
  * limitations under the License.
  */
 
-package constant
+package adasvc
 
-const (
-	ClusterKeyAvailable       = "available"
-	ClusterKeyBroadcast       = "broadcast"
-	ClusterKeyFailback        = "failback"
-	ClusterKeyFailfast        = "failfast"
-	ClusterKeyFailover        = "failover"
-	ClusterKeyFailsafe        = "failsafe"
-	ClusterKeyForking         = "forking"
-	ClusterKeyZoneAware       = "zoneAware"
-	ClusterKeyAdaptiveService = "adaptiveService"
+import (
+	clusterpkg "dubbo.apache.org/dubbo-go/v3/cluster/cluster"
+	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
+
+func init() {
+	extension.SetCluster(constant.ClusterKeyAdaptiveService, newCluster)
+}
+
+// cluster is a cluster for adaptive service.
+type cluster struct {}
+
+func newCluster() clusterpkg.Cluster {
+	return &cluster{}
+}
+
+func (c *cluster) Join(directory directory.Directory) protocol.Invoker {
+
+}
