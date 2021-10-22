@@ -17,7 +17,10 @@
 
 package constant
 
-import "time"
+import (
+	"strconv"
+	"time"
+)
 
 const (
 	DUBBO             = "dubbo"
@@ -89,4 +92,12 @@ const (
 
 const (
 	SERVICE_DISCOVERY_DEFAULT_GROUP = "DEFAULT_GROUP"
+)
+
+const (
+	DefaultProtocolPayload = 8388608
+)
+
+var (
+	DefaultProtocolPayloadStr = strconv.Itoa(DefaultProtocolPayload)
 )

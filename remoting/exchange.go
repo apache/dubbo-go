@@ -59,9 +59,10 @@ type Request struct {
 	// serial ID (ignore)
 	SerialID byte
 	// Data
-	Data   interface{}
-	TwoWay bool
-	Event  bool
+	Data    interface{}
+	TwoWay  bool
+	Event   bool
+	Payload int
 }
 
 // NewRequest aims to create Request.

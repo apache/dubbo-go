@@ -372,3 +372,8 @@ const (
 	AfterAllServicesListenCompleteFunctionName    = "AfterAllServicesListenComplete"
 	BeforeShutdownFunctionName                    = "BeforeShutdown"
 )
+
+// protocol config
+const (
+	ProtocolPayload = "protocol.payload"
+)

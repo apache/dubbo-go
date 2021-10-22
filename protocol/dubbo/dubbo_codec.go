@@ -96,6 +96,7 @@ func (c *DubboCodec) EncodeRequest(request *remoting.Request) (*bytes.Buffer, er
 		Body:    impl.NewRequestPayload(invocation.Arguments(), invocation.Attachments()),
 		Err:     nil,
 		Codec:   impl.NewDubboCodec(nil),
+		Payload: request.Payload,
 	}
 
 	if err := impl.LoadSerializer(pkg); err != nil {
