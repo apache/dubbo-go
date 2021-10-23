@@ -30,7 +30,6 @@ import (
 	perrors "github.com/pkg/errors"
 
 	"github.com/zouyx/agollo/v3"
-	agolloConstant "github.com/zouyx/agollo/v3/constant"
 	"github.com/zouyx/agollo/v3/env/config"
 )
 
@@ -43,7 +42,6 @@ import (
 
 const (
 	apolloProtocolPrefix = "http://"
-	apolloConfigFormat   = "%s%s"
 )
 
 type apolloConfiguration struct {
@@ -59,22 +57,18 @@ func newApolloConfiguration(url *common.URL) (*apolloConfiguration, error) {
 	c := &apolloConfiguration{
 		url: url,
 	}
-	configAddr := c.getAddressWithProtocolPrefix(url)
-	configCluster := url.GetParam(constant.CONFIG_CLUSTER_KEY, "")
-
-	appId := url.GetParam(constant.CONFIG_APP_ID_KEY, "")
-	namespaces := getProperties(url.GetParam(constant.CONFIG_NAMESPACE_KEY, cc.DEFAULT_GROUP))
 	c.appConf = &config.AppConfig{
-		AppID:         appId,
-		Cluster:       configCluster,
-		NamespaceName: namespaces,
-		IP:            configAddr,
+		AppID:            url.GetParam(constant.CONFIG_APP_ID_KEY, ""),
+		Cluster:          url.GetParam(constant.CONFIG_CLUSTER_KEY, ""),
+		NamespaceName:    url.GetParam(constant.CONFIG_NAMESPACE_KEY, cc.DEFAULT_GROUP),
+		IP:               c.getAddressWithProtocolPrefix(url),
+		Secret:           url.GetParam(constant.CONFIG_SECRET_KEY, ""),
+		IsBackupConfig:   url.GetParamBool(constant.CONFIG_BACKUP_CONFIG_KEY, true),
+		BackupConfigPath: url.GetParam(constant.CONFIG_BACKUP_CONFIG_PATH_KEY, ""),
 	}
-
 	agollo.InitCustomConfig(func() (*config.AppConfig, error) {
 		return c.appConf, nil
 	})
-
 	return c, agollo.Start()
 }
 
@@ -100,14 +94,6 @@ func (c *apolloConfiguration) RemoveListener(key string, listener cc.Configurati
 	if ok {
 		l.(*apolloListener).RemoveListener(listener)
 	}
-}
-
-func getProperties(namespace string) string {
-	return getNamespaceName(namespace, agolloConstant.YAML)
-}
-
-func getNamespaceName(namespace string, configFileFormat agolloConstant.ConfigFileFormat) string {
-	return fmt.Sprintf(apolloConfigFormat, namespace, configFileFormat)
 }
 
 func (c *apolloConfiguration) GetInternalProperty(key string, opts ...cc.Option) (string, error) {

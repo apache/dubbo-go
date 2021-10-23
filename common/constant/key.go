@@ -174,6 +174,9 @@ const (
 	CONFIG_LOG_DIR_KEY    = "logDir"
 	CONFIG_VERSION_KEY    = "configVersion"
 	COMPATIBLE_CONFIG_KEY = "compatible_config"
+	CONFIG_SECRET_KEY = "secret"
+	CONFIG_BACKUP_CONFIG_KEY = "isBackupConfig"
+	CONFIG_BACKUP_CONFIG_PATH_KEY = "backupConfigPath"
 )
 
 const (
