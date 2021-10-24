@@ -164,18 +164,18 @@ const (
 )
 
 const (
-	CONFIG_NAMESPACE_KEY  = "namespace"
-	CONFIG_GROUP_KEY      = "group"
-	CONFIG_APP_ID_KEY     = "appId"
-	CONFIG_CLUSTER_KEY    = "cluster"
-	CONFIG_TIMEOUT_KEY    = "timeout"
-	CONFIG_USERNAME_KEY   = "username"
-	CONFIG_PASSWORD_KEY   = "password"
-	CONFIG_LOG_DIR_KEY    = "logDir"
-	CONFIG_VERSION_KEY    = "configVersion"
-	COMPATIBLE_CONFIG_KEY = "compatible_config"
-	CONFIG_SECRET_KEY = "secret"
-	CONFIG_BACKUP_CONFIG_KEY = "isBackupConfig"
+	CONFIG_NAMESPACE_KEY          = "namespace"
+	CONFIG_GROUP_KEY              = "group"
+	CONFIG_APP_ID_KEY             = "appId"
+	CONFIG_CLUSTER_KEY            = "cluster"
+	CONFIG_TIMEOUT_KEY            = "timeout"
+	CONFIG_USERNAME_KEY           = "username"
+	CONFIG_PASSWORD_KEY           = "password"
+	CONFIG_LOG_DIR_KEY            = "logDir"
+	CONFIG_VERSION_KEY            = "configVersion"
+	COMPATIBLE_CONFIG_KEY         = "compatible_config"
+	CONFIG_SECRET_KEY             = "secret"
+	CONFIG_BACKUP_CONFIG_KEY      = "isBackupConfig"
 	CONFIG_BACKUP_CONFIG_PATH_KEY = "backupConfigPath"
 )
 
