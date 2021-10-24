@@ -31,4 +31,3 @@ func TestApolloConfigCenterConfig(t *testing.T) {
 	registries := rootConfig.Registries
 	assert.NotNil(t, registries)
 }
-
