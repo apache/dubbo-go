@@ -18,9 +18,13 @@
 package config
 
 import (
-	_ "dubbo.apache.org/dubbo-go/v3/config_center/apollo"
-	"github.com/stretchr/testify/assert"
 	"testing"
+)
+import (
+	"github.com/stretchr/testify/assert"
+)
+import (
+	_ "dubbo.apache.org/dubbo-go/v3/config_center/apollo"
 )
 
 func TestApolloConfigCenterConfig(t *testing.T) {

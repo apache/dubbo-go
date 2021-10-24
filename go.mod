@@ -51,6 +51,3 @@ require (
 	k8s.io/apimachinery v0.16.9
 	k8s.io/client-go v0.16.9
 )
-replace (
-	//github.com/zouyx/agollo/v3 v3.4.5 => github.com/apolloconfig/agollo/v4 latest
-)
