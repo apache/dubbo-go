@@ -29,8 +29,9 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/cluster"
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
+	"dubbo.apache.org/dubbo-go/v3/cluster/directory/base"
+	"dubbo.apache.org/dubbo-go/v3/cluster/directory/static"
 	"dubbo.apache.org/dubbo-go/v3/cluster/router/chain"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
@@ -52,7 +53,7 @@ func init() {
 // RegistryDirectory implementation of Directory:
 // Invoker list returned from this Directory's list method have been filtered by Routers
 type RegistryDirectory struct {
-	directory.BaseDirectory
+	base.Directory
 	cacheInvokers                  []protocol.Invoker
 	invokersLock                   sync.RWMutex
 	serviceType                    string
@@ -69,13 +70,13 @@ type RegistryDirectory struct {
 }
 
 // NewRegistryDirectory will create a new RegistryDirectory
-func NewRegistryDirectory(url *common.URL, registry registry.Registry) (cluster.Directory, error) {
+func NewRegistryDirectory(url *common.URL, registry registry.Registry) (directory.Directory, error) {
 	if url.SubURL == nil {
 		return nil, perrors.Errorf("url is invalid, suburl can not be nil")
 	}
 	logger.Debugf("new RegistryDirectory for service :%s.", url.Key())
 	dir := &RegistryDirectory{
-		BaseDirectory:    directory.NewBaseDirectory(url),
+		Directory:        base.NewDirectory(url),
 		cacheInvokers:    []protocol.Invoker{},
 		cacheInvokersMap: &sync.Map{},
 		serviceType:      url.SubURL.Service(),
@@ -85,7 +86,7 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry) (cluster.
 	dir.consumerURL = dir.getConsumerUrl(url.SubURL)
 
 	if routerChain, err := chain.NewRouterChain(dir.consumerURL); err == nil {
-		dir.BaseDirectory.SetRouterChain(routerChain)
+		dir.Directory.SetRouterChain(routerChain)
 	} else {
 		logger.Warnf("fail to create router chain with url: %s, err is: %v", url.SubURL, err)
 	}
@@ -302,7 +303,7 @@ func (dir *RegistryDirectory) toGroupInvokers() []protocol.Invoker {
 		}
 	} else {
 		for _, invokers := range groupInvokersMap {
-			staticDir := directory.NewStaticDirectory(invokers)
+			staticDir := static.NewDirectory(invokers)
 			cst := extension.GetCluster(dir.GetURL().SubURL.GetParam(constant.CLUSTER_KEY, constant.DEFAULT_CLUSTER))
 			err = staticDir.BuildRouterChain(invokers)
 			if err != nil {
@@ -400,8 +401,8 @@ func (dir *RegistryDirectory) List(invocation protocol.Invocation) []protocol.In
 
 // IsAvailable  whether the directory is available
 func (dir *RegistryDirectory) IsAvailable() bool {
-	if !dir.BaseDirectory.IsAvailable() {
-		return dir.BaseDirectory.IsAvailable()
+	if !dir.Directory.IsAvailable() {
+		return dir.Directory.IsAvailable()
 	}
 
 	for _, ivk := range dir.cacheInvokers {
@@ -416,7 +417,7 @@ func (dir *RegistryDirectory) IsAvailable() bool {
 // Destroy method
 func (dir *RegistryDirectory) Destroy() {
 	// TODO:unregister & unsubscribe
-	dir.BaseDirectory.Destroy(func() {
+	dir.Directory.Destroy(func() {
 		invokers := dir.cacheInvokers
 		dir.cacheInvokers = []protocol.Invoker{}
 		for _, ivk := range invokers {
@@ -486,8 +487,9 @@ type consumerConfigurationListener struct {
 
 func newConsumerConfigurationListener(dir *RegistryDirectory) *consumerConfigurationListener {
 	listener := &consumerConfigurationListener{directory: dir}
+	application := config.GetRootConfig().Application
 	listener.InitWith(
-		config.GetConsumerConfig().ApplicationConfig.Name+constant.CONFIGURATORS_SUFFIX,
+		application.Name+constant.CONFIGURATORS_SUFFIX,
 		listener,
 		extension.GetDefaultConfiguratorFunc(),
 	)

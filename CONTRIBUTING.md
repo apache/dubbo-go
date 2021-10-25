@@ -26,9 +26,9 @@ The title format of the pull request `MUST` follow the following rules:
 
 ## 3. Code Style
 
-Please add an blank line at the end of every file.
+Please add a blank line at the end of every file.
 
-Please add an blank line at the sub-title and its content.
+Please add a blank line at the sub-title and its content.
 
 Please add s space between the Engilsh word/digit number and the Chinese character.
 

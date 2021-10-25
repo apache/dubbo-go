@@ -18,12 +18,12 @@
 package extension
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/cluster"
+	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
-type registryDirectory func(url *common.URL, registry registry.Registry) (cluster.Directory, error)
+type registryDirectory func(url *common.URL, registry registry.Registry) (directory.Directory, error)
 
 var defaultRegistry registryDirectory
 
@@ -33,7 +33,7 @@ func SetDefaultRegistryDirectory(v registryDirectory) {
 }
 
 // GetDefaultRegistryDirectory finds the registryDirectory with url and registry
-func GetDefaultRegistryDirectory(config *common.URL, registry registry.Registry) (cluster.Directory, error) {
+func GetDefaultRegistryDirectory(config *common.URL, registry registry.Registry) (directory.Directory, error) {
 	if defaultRegistry == nil {
 		panic("registry directory is not existing, make sure you have import the package.")
 	}

@@ -18,87 +18,167 @@
 package config
 
 import (
-	"bytes"
+	"fmt"
 )
 
 import (
 	"github.com/creasty/defaults"
-	perrors "github.com/pkg/errors"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/common/yaml"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
 )
 
 // ProviderConfig is the default configuration of service provider
 type ProviderConfig struct {
-	BaseConfig     `yaml:",inline" property:"base"`
-	configCenter   `yaml:"-"`
-	Filter         string                     `yaml:"filter" json:"filter,omitempty" property:"filter"`
-	ProxyFactory   string                     `yaml:"proxy_factory" default:"default" json:"proxy_factory,omitempty" property:"proxy_factory"`
-	Services       map[string]*ServiceConfig  `yaml:"services" json:"services,omitempty" property:"services"`
-	Protocols      map[string]*ProtocolConfig `yaml:"protocols" json:"protocols,omitempty" property:"protocols"`
-	ProtocolConf   interface{}                `yaml:"protocol_conf" json:"protocol_conf,omitempty" property:"protocol_conf"`
-	FilterConf     interface{}                `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf"`
-	ShutdownConfig *ShutdownConfig            `yaml:"shutdown_conf" json:"shutdown_conf,omitempty" property:"shutdown_conf"`
-	ConfigType     map[string]string          `yaml:"config_type" json:"config_type,omitempty" property:"config_type"`
+	Filter string `yaml:"filter" json:"filter,omitempty" property:"filter"`
+	// Deprecated Register whether registration is required
+	Register bool `yaml:"register" json:"register" property:"register"`
+	// RegistryIDs is registry ids list
+	RegistryIDs []string `yaml:"registryIDs" json:"registryIDs" property:"registryIDs"`
+	// Services services
+	Services map[string]*ServiceConfig `yaml:"services" json:"services,omitempty" property:"services"`
 
-	Registry   *RegistryConfig            `yaml:"registry" json:"registry,omitempty" property:"registry"`
-	Registries map[string]*RegistryConfig `default:"{}" yaml:"registries" json:"registries" property:"registries"`
+	ProxyFactory string `default:"default" yaml:"proxy" json:"proxy,omitempty" property:"proxy"`
+
+	FilterConf interface{}       `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf"`
+	ConfigType map[string]string `yaml:"config_type" json:"config_type,omitempty" property:"config_type"`
+
+	rootConfig *RootConfig
 }
 
-// UnmarshalYAML unmarshals the ProviderConfig by @unmarshal function
-func (c *ProviderConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	if err := defaults.Set(c); err != nil {
-		return err
-	}
-	type plain ProviderConfig
-	return unmarshal((*plain)(c))
-}
-
-// nolint
-func (*ProviderConfig) Prefix() string {
+func (ProviderConfig) Prefix() string {
 	return constant.ProviderConfigPrefix
 }
 
-// SetProviderConfig sets provider config by @p
-func SetProviderConfig(p ProviderConfig) {
-	providerConfig = &p
+func (c *ProviderConfig) check() error {
+	if err := defaults.Set(c); err != nil {
+		return err
+	}
+	return verify(c)
 }
 
-// ProviderInit loads config file to init provider config
-func ProviderInit(confProFile string) error {
-	if len(confProFile) == 0 {
-		return perrors.Errorf("application configure(provider) file name is nil")
+func (c *ProviderConfig) Init(rc *RootConfig) error {
+	if c == nil {
+		return nil
 	}
-	providerConfig = &ProviderConfig{}
-	fileStream, err := yaml.UnmarshalYMLConfig(confProFile, providerConfig)
-	if err != nil {
-		return perrors.Errorf("unmarshalYmlConfig error %v", perrors.WithStack(err))
+	c.RegistryIDs = translateRegistryIds(c.RegistryIDs)
+	if len(c.RegistryIDs) <= 0 {
+		c.RegistryIDs = rc.getRegistryIds()
 	}
-
-	providerConfig.fileStream = bytes.NewBuffer(fileStream)
-	// set method interfaceId & interfaceName
-	for k, v := range providerConfig.Services {
-		// set id for reference
-		for _, n := range providerConfig.Services[k].Methods {
-			n.InterfaceName = v.InterfaceName
-			n.InterfaceId = k
+	for _, service := range c.Services {
+		if err := service.Init(rc); err != nil {
+			return err
 		}
 	}
-
+	if err := c.check(); err != nil {
+		return err
+	}
 	return nil
 }
 
-func configCenterRefreshProvider() error {
-	// fresh it
-	if providerConfig.ConfigCenterConfig != nil {
-		providerConfig.fatherConfig = providerConfig
-		if err := providerConfig.startConfigCenter((*providerConfig).BaseConfig); err != nil {
-			return perrors.Errorf("start config center error , error message is {%v}", perrors.WithStack(err))
+func (c *ProviderConfig) Load() {
+	for key, svs := range c.Services {
+		rpcService := GetProviderService(key)
+		if rpcService == nil {
+			logger.Warnf("Service reference key %s does not exist, please check if this key "+
+				"matches your provider struct type name, or matches the returned valued of your provider struct's Reference() function."+
+				"View https://www.yuque.com/u772707/eqpff0/pqfgz3#zxdw0 for details", key)
+			continue
 		}
-		providerConfig.fresh()
+		svs.id = key
+		svs.Implement(rpcService)
+		if err := svs.Export(); err != nil {
+			logger.Errorf(fmt.Sprintf("service %s export failed! err: %#v", key, err))
+		}
 	}
-	return nil
+
+}
+
+// newEmptyProviderConfig returns ProviderConfig with default ApplicationConfig
+func newEmptyProviderConfig() *ProviderConfig {
+	newProviderConfig := &ProviderConfig{
+		Services:    make(map[string]*ServiceConfig),
+		RegistryIDs: make([]string, 8),
+	}
+	return newProviderConfig
+}
+
+type ProviderConfigBuilder struct {
+	providerConfig *ProviderConfig
+}
+
+func NewProviderConfigBuilder() *ProviderConfigBuilder {
+	return &ProviderConfigBuilder{providerConfig: newEmptyProviderConfig()}
+}
+
+func (pcb *ProviderConfigBuilder) SetFilter(filter string) *ProviderConfigBuilder {
+	pcb.providerConfig.Filter = filter
+	return pcb
+}
+
+// nolint
+func (pcb *ProviderConfigBuilder) SetRegister(register bool) *ProviderConfigBuilder {
+	pcb.providerConfig.Register = register
+	return pcb
+}
+
+// nolint
+func (pcb *ProviderConfigBuilder) SetRegistryIDs(RegistryIDs ...string) *ProviderConfigBuilder {
+	pcb.providerConfig.RegistryIDs = RegistryIDs
+	return pcb
+}
+
+// nolint
+func (pcb *ProviderConfigBuilder) SetServices(services map[string]*ServiceConfig) *ProviderConfigBuilder {
+	pcb.providerConfig.Services = services
+	return pcb
+}
+
+// nolint
+func (pcb *ProviderConfigBuilder) AddService(serviceID string, serviceConfig *ServiceConfig) *ProviderConfigBuilder {
+	if pcb.providerConfig.Services == nil {
+		pcb.providerConfig.Services = make(map[string]*ServiceConfig)
+	}
+	pcb.providerConfig.Services[serviceID] = serviceConfig
+	return pcb
+}
+
+// nolint
+func (pcb *ProviderConfigBuilder) SetProxyFactory(proxyFactory string) *ProviderConfigBuilder {
+	pcb.providerConfig.ProxyFactory = proxyFactory
+	return pcb
+}
+
+// nolint
+func (pcb *ProviderConfigBuilder) SetFilterConf(filterConf interface{}) *ProviderConfigBuilder {
+	pcb.providerConfig.FilterConf = filterConf
+	return pcb
+}
+
+// nolint
+func (pcb *ProviderConfigBuilder) SetConfigType(configType map[string]string) *ProviderConfigBuilder {
+	pcb.providerConfig.ConfigType = configType
+	return pcb
+}
+
+// nolint
+func (pcb *ProviderConfigBuilder) AddConfigType(key, value string) *ProviderConfigBuilder {
+	if pcb.providerConfig.ConfigType == nil {
+		pcb.providerConfig.ConfigType = make(map[string]string)
+	}
+	pcb.providerConfig.ConfigType[key] = value
+	return pcb
+}
+
+// nolint
+func (pcb *ProviderConfigBuilder) SetRootConfig(rootConfig *RootConfig) *ProviderConfigBuilder {
+	pcb.providerConfig.rootConfig = rootConfig
+	return pcb
+}
+
+// nolint
+func (pcb *ProviderConfigBuilder) Build() *ProviderConfig {
+	return pcb.providerConfig
 }

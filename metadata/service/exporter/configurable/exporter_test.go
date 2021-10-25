@@ -31,6 +31,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config"
 	_ "dubbo.apache.org/dubbo-go/v3/filter/filter_impl"
 	"dubbo.apache.org/dubbo-go/v3/metadata/service/local"
+	_ "dubbo.apache.org/dubbo-go/v3/metrics/prometheus"
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/dubbo"
 	"dubbo.apache.org/dubbo-go/v3/remoting/getty"
 )
@@ -57,11 +58,6 @@ func TestConfigurableExporter(t *testing.T) {
 	metadataService, _ := local.GetLocalMetadataService()
 	exported := NewMetadataServiceExporter(metadataService)
 
-	t.Run("configurableExporterUrlNil", func(t *testing.T) {
-		assert.Equal(t, false, exported.IsExported())
-		assert.Error(t, exported.Export(nil), "metadata server url is nil, pls check your configuration")
-	})
-
 	t.Run("configurableExporter", func(t *testing.T) {
 		registryURL, _ := common.NewURL("service-discovery://localhost:12345")
 		subURL, _ := common.NewURL("dubbo://localhost:20003")
@@ -69,7 +65,7 @@ func TestConfigurableExporter(t *testing.T) {
 		assert.Equal(t, false, exported.IsExported())
 		assert.NoError(t, exported.Export(registryURL))
 		assert.Equal(t, true, exported.IsExported())
-		assert.Regexp(t, "dubbo://:20003/org.apache.dubbo.metadata.MetadataService*", exported.GetExportedURLs()[0].String())
+		assert.Regexp(t, "dubbo://:[0-9]{1,}/org.apache.dubbo.metadata.MetadataService*", exported.GetExportedURLs()[0].String())
 		exported.Unexport()
 		assert.Equal(t, false, exported.IsExported())
 	})
@@ -77,49 +73,22 @@ func TestConfigurableExporter(t *testing.T) {
 
 // mockInitProviderWithSingleRegistry will init a mocked providerConfig
 func mockInitProviderWithSingleRegistry() {
-	providerConfig := &config.ProviderConfig{
-
-		BaseConfig: config.BaseConfig{
-			ApplicationConfig: &config.ApplicationConfig{
-				Organization: "dubbo_org",
-				Name:         "dubbo",
-				Module:       "module",
-				Version:      "1.0.0",
-				Owner:        "dubbo",
-				Environment:  "test",
-			},
+	providerConfig := config.NewProviderConfigBuilder().AddService("MockService", config.NewServiceConfigBuilder().Build()).Build()
+	providerConfig.Services["MockService"].InitExported()
+	config.SetRootConfig(config.RootConfig{
+		Application: &config.ApplicationConfig{
+			Organization: "dubbo_org",
+			Name:         "dubbo",
+			Module:       "module",
+			Version:      "1.0.0",
+			Owner:        "dubbo",
+			Environment:  "test",
 		},
-
-		Registry: &config.RegistryConfig{
-			Address:  "mock://127.0.0.1:2181",
-			Username: "user1",
-			Password: "pwd1",
-		},
-		Registries: map[string]*config.RegistryConfig{},
-
-		Services: map[string]*config.ServiceConfig{
-			"MockService": {
-				InterfaceName: "com.MockService",
-				Protocol:      "mock",
-				Cluster:       "failover",
-				Loadbalance:   "random",
-				Retries:       "3",
-				Group:         "huadong_idc",
-				Version:       "1.0.0",
-				Methods: []*config.MethodConfig{
-					{
-						Name:        "GetUser",
-						Retries:     "2",
-						LoadBalance: "random",
-						Weight:      200,
-					},
-					{
-						Name:        "GetUser1",
-						Retries:     "2",
-						LoadBalance: "random",
-						Weight:      200,
-					},
-				},
+		Registries: map[string]*config.RegistryConfig{
+			"mock": {
+				Address:  "mock://127.0.0.1:2181",
+				Username: "user1",
+				Password: "pwd1",
 			},
 		},
 		Protocols: map[string]*config.ProtocolConfig{
@@ -129,7 +98,33 @@ func mockInitProviderWithSingleRegistry() {
 				Port: "20000",
 			},
 		},
-	}
-	providerConfig.Services["MockService"].InitExported()
-	config.SetProviderConfig(*providerConfig)
+
+		Provider: &config.ProviderConfig{
+			Services: map[string]*config.ServiceConfig{
+				"MockService": {
+					Interface:   "com.MockService",
+					ProtocolIDs: []string{"mock"},
+					Cluster:     "failover",
+					Loadbalance: "random",
+					Retries:     "3",
+					Group:       "huadong_idc",
+					Version:     "1.0.0",
+					Methods: []*config.MethodConfig{
+						{
+							Name:        "GetUser",
+							Retries:     "2",
+							LoadBalance: "random",
+							Weight:      200,
+						},
+						{
+							Name:        "GetUser1",
+							Retries:     "2",
+							LoadBalance: "random",
+							Weight:      200,
+						},
+					},
+				},
+			},
+		},
+	})
 }

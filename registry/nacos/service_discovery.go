@@ -19,6 +19,7 @@ package nacos
 
 import (
 	"fmt"
+	"net/url"
 	"sync"
 )
 
@@ -26,12 +27,15 @@ import (
 	"github.com/dubbogo/gost/container/set"
 	nacosClient "github.com/dubbogo/gost/database/kv/nacos"
 	"github.com/dubbogo/gost/hash/page"
+
 	"github.com/nacos-group/nacos-sdk-go/model"
 	"github.com/nacos-group/nacos-sdk-go/vo"
+
 	perrors "github.com/pkg/errors"
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
@@ -156,13 +160,16 @@ func (n *nacosServiceDiscovery) GetInstances(serviceName string) []registry.Serv
 		delete(metadata, idKey)
 
 		res = append(res, &registry.DefaultServiceInstance{
-			ID:          id,
-			ServiceName: ins.ServiceName,
+			ID: id,
+			// ins.ServiceName is nacos service name like 'DEFAULT_GROUP@@MyAppName",
+			// which is not the service name we wanted, so we use serviceName directly.
+			ServiceName: serviceName,
 			Host:        ins.Ip,
 			Port:        int(ins.Port),
 			Enable:      ins.Enable,
 			Healthy:     ins.Healthy,
 			Metadata:    metadata,
+			GroupName:   n.group,
 		})
 	}
 	return res
@@ -263,6 +270,7 @@ func (n *nacosServiceDiscovery) AddListener(listener registry.ServiceInstancesCh
 						Enable:      service.Enable,
 						Healthy:     true,
 						Metadata:    metadata,
+						GroupName:   n.group,
 					})
 				}
 
@@ -321,46 +329,26 @@ func (n *nacosServiceDiscovery) String() string {
 	return n.descriptor
 }
 
-var (
-	// 16 would be enough. We won't use concurrentMap because in most cases, there are not race condition
-	instanceMap = make(map[string]registry.ServiceDiscovery, 16)
-	initLock    sync.Mutex
-)
-
 // newNacosServiceDiscovery will create new service discovery instance
-func newNacosServiceDiscovery(name string) (registry.ServiceDiscovery, error) {
-	initLock.Lock()
-	defer initLock.Unlock()
-
-	instance, ok := instanceMap[name]
-	if ok {
-		return instance, nil
-	}
-
-	sdc, ok := config.GetBaseConfig().GetServiceDiscoveries(name)
-	if !ok || len(sdc.RemoteRef) == 0 {
-		return nil, perrors.New("could not init the instance because the config is invalid")
-	}
-
-	rc, ok := config.GetBaseConfig().GetRemoteConfig(sdc.RemoteRef)
-	if !ok {
-		return nil, perrors.New("could not find the remote config for name: " + sdc.RemoteRef)
-	}
-	group := sdc.Group
-	if len(group) == 0 {
-		group = defaultGroup
-	}
-	// set protocol if remote not set
-	if len(rc.Protocol) <= 0 {
-		rc.Protocol = sdc.Protocol
-	}
-	client, err := nacos.NewNacosClient(rc)
+func newNacosServiceDiscovery() (registry.ServiceDiscovery, error) {
+	metadataReportConfig := config.GetMetadataReportConfg()
+	url := common.NewURLWithOptions(
+		common.WithParams(make(url.Values)),
+		common.WithPassword(metadataReportConfig.Password),
+		common.WithUsername(metadataReportConfig.Username),
+		common.WithParamsValue(constant.REGISTRY_TIMEOUT_KEY, metadataReportConfig.Timeout))
+	url.Location = metadataReportConfig.Address
+	client, err := nacos.NewNacosClientByUrl(url)
 	if err != nil {
 		return nil, perrors.WithMessage(err, "create nacos namingClient failed.")
 	}
 
-	descriptor := fmt.Sprintf("nacos-service-discovery[%s]", rc.Address)
+	descriptor := fmt.Sprintf("nacos-service-discovery[%s]", metadataReportConfig.Address)
 
+	group := metadataReportConfig.Group
+	if len(group) == 0 {
+		group = defaultGroup
+	}
 	newInstance := &nacosServiceDiscovery{
 		group:               group,
 		namingClient:        client,
@@ -368,6 +356,5 @@ func newNacosServiceDiscovery(name string) (registry.ServiceDiscovery, error) {
 		registryInstances:   []registry.ServiceInstance{},
 		instanceListenerMap: make(map[string]*gxset.HashSet),
 	}
-	instanceMap[name] = newInstance
 	return newInstance, nil
 }

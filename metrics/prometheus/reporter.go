@@ -27,6 +27,7 @@ import (
 
 import (
 	"github.com/prometheus/client_golang/prometheus"
+	prom "github.com/prometheus/client_golang/prometheus"
 )
 
 import (
@@ -47,8 +48,9 @@ const (
 	methodKey    = constant.METHOD_KEY
 	timeoutKey   = constant.TIMEOUT_KEY
 
-	providerKey = "provider"
-	consumerKey = "consumer"
+	// to identify side
+	providerPrefix = "provider_"
+	consumerPrefix = "consumer_"
 
 	// to identify the metric's type
 	histogramSuffix = "_histogram"
@@ -57,14 +59,16 @@ const (
 )
 
 var (
-	labelNames       = []string{serviceKey, groupKey, versionKey, methodKey, timeoutKey}
-	namespace        = config.GetApplicationConfig().Name
-	reporterInstance *PrometheusReporter
-	reporterInitOnce sync.Once
+	labelNames             = []string{serviceKey, groupKey, versionKey, methodKey, timeoutKey}
+	namespace              = config.GetApplicationConfig().Name
+	reporterInstance       *PrometheusReporter
+	reporterInitOnce       sync.Once
+	defaultHistogramBucket = []float64{10, 50, 100, 200, 500, 1000, 10000}
 )
 
 // should initialize after loading configuration
 func init() {
+	//newPrometheusReporter()
 	extension.SetMetricReporter(reporterName, newPrometheusReporter)
 }
 
@@ -80,6 +84,13 @@ type PrometheusReporter struct {
 	providerHistogramVec *prometheus.HistogramVec
 	// report the consumer-side's histogram data
 	consumerHistogramVec *prometheus.HistogramVec
+
+	userGauge      sync.Map
+	userSummary    sync.Map
+	userCounter    sync.Map
+	userCounterVec sync.Map
+	userGaugeVec   sync.Map
+	userSummaryVec sync.Map
 }
 
 // Report reports the duration to Prometheus
@@ -108,46 +119,65 @@ func (reporter *PrometheusReporter) Report(ctx context.Context, invoker protocol
 		methodKey:  invocation.MethodName(),
 		timeoutKey: url.GetParam(timeoutKey, ""),
 	}
-
 	costMs := float64(cost.Nanoseconds() / constant.MsToNanoRate)
 	sumVec.With(labels).Observe(costMs)
 	hisVec.With(labels).Observe(costMs)
 }
 
-func newHistogramVec(side string) *prometheus.HistogramVec {
-	mc := config.GetMetricConfig()
+func newHistogramVec(name string, labels []string) *prometheus.HistogramVec {
 	return prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Namespace: namespace,
-			Subsystem: side,
-			Name:      serviceKey + histogramSuffix,
+			Name:      name,
 			Help:      "This is the dubbo's histogram metrics",
-			Buckets:   mc.GetHistogramBucket(),
+			Buckets:   defaultHistogramBucket,
 		},
-		labelNames)
+		labels)
 }
 
-// whether this url represents the application received the request as server
-func isProvider(url *common.URL) bool {
-	role := url.GetParam(constant.ROLE_KEY, "")
-	return strings.EqualFold(role, strconv.Itoa(common.PROVIDER))
+func newCounter(name string) prometheus.Counter {
+	return prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Name: name,
+		})
 }
 
-// whether this url represents the application sent then request as client
-func isConsumer(url *common.URL) bool {
-	role := url.GetParam(constant.ROLE_KEY, "")
-	return strings.EqualFold(role, strconv.Itoa(common.CONSUMER))
+func newCounterVec(name string, labels []string) *prometheus.CounterVec {
+	return prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: name,
+		}, labels)
+}
+
+func newGauge(name string) prometheus.Gauge {
+	return prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Name: name,
+		})
+}
+
+func newGaugeVec(name string, labels []string) *prometheus.GaugeVec {
+	return prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: name,
+		}, labels)
+}
+
+func newSummary(name string) prometheus.Summary {
+	return prometheus.NewSummary(
+		prometheus.SummaryOpts{
+			Name: name,
+		})
 }
 
 // newSummaryVec create SummaryVec, the Namespace is dubbo
 // the objectives is from my experience.
-func newSummaryVec(side string) *prometheus.SummaryVec {
+func newSummaryVec(name string, labels []string) *prometheus.SummaryVec {
 	return prometheus.NewSummaryVec(
 		prometheus.SummaryOpts{
 			Namespace: namespace,
 			Help:      "This is the dubbo's summary metrics",
-			Subsystem: side,
-			Name:      serviceKey + summarySuffix,
+			Name:      name,
 			Objectives: map[float64]float64{
 				0.5:   0.01,
 				0.75:  0.01,
@@ -157,8 +187,20 @@ func newSummaryVec(side string) *prometheus.SummaryVec {
 				0.999: 0.0001,
 			},
 		},
-		labelNames,
+		labels,
 	)
+}
+
+// isProvider shows whether this url represents the application received the request as server
+func isProvider(url *common.URL) bool {
+	role := url.GetParam(constant.ROLE_KEY, "")
+	return strings.EqualFold(role, strconv.Itoa(common.PROVIDER))
+}
+
+// isConsumer shows whether this url represents the application sent then request as client
+func isConsumer(url *common.URL) bool {
+	role := url.GetParam(constant.ROLE_KEY, "")
+	return strings.EqualFold(role, strconv.Itoa(common.CONSUMER))
 }
 
 // newPrometheusReporter create new prometheusReporter
@@ -167,15 +209,149 @@ func newPrometheusReporter() metrics.Reporter {
 	if reporterInstance == nil {
 		reporterInitOnce.Do(func() {
 			reporterInstance = &PrometheusReporter{
-				consumerSummaryVec: newSummaryVec(consumerKey),
-				providerSummaryVec: newSummaryVec(providerKey),
+				consumerSummaryVec: newSummaryVec(consumerPrefix+serviceKey+summarySuffix, labelNames),
+				providerSummaryVec: newSummaryVec(providerPrefix+serviceKey+summarySuffix, labelNames),
 
-				consumerHistogramVec: newHistogramVec(consumerKey),
-				providerHistogramVec: newHistogramVec(providerKey),
+				consumerHistogramVec: newHistogramVec(consumerPrefix+serviceKey+histogramSuffix, labelNames),
+				providerHistogramVec: newHistogramVec(providerPrefix+serviceKey+histogramSuffix, labelNames),
 			}
-			prometheus.MustRegister(reporterInstance.consumerSummaryVec, reporterInstance.providerSummaryVec,
+
+			prom.DefaultRegisterer.MustRegister(reporterInstance.consumerSummaryVec, reporterInstance.providerSummaryVec,
 				reporterInstance.consumerHistogramVec, reporterInstance.providerHistogramVec)
+			// todo open prometheus metrics service
+			//metricsExporter, err := ocprom.NewExporter(ocprom.Options{
+			//	Registry: prom.DefaultRegisterer.(*prom.Registry),
+			//})
+			//if err != nil {
+			//	logger.Errorf("new prometheus reporter with error = %s", err)
+			//	return
+			//}
+			//go func() {
+			//	mux := http.NewServeMux()
+			//	mux.Handle("/metrics", metricsExporter)
+			//	if err := http.ListenAndServe(":9090", mux); err != nil {
+			//		logger.Errorf("new prometheus reporter with error = %s", err)
+			//	}
+			//}()
 		})
 	}
 	return reporterInstance
+}
+
+// setGauge set gauge to target value with given label, if label is not empty, set gauge vec
+// if target gauge/gaugevec not exist, just create new gauge and set the value
+func (reporter *PrometheusReporter) setGauge(gaugeName string, toSetValue float64, labelMap prometheus.Labels) {
+	if len(labelMap) == 0 {
+		// gauge
+		if val, exist := reporter.userGauge.Load(gaugeName); !exist {
+			newGauge := newGauge(gaugeName)
+			_ = prom.DefaultRegisterer.Register(newGauge)
+
+			reporter.userGauge.Store(gaugeName, newGauge)
+			newGauge.Set(toSetValue)
+		} else {
+			val.(prometheus.Gauge).Set(toSetValue)
+		}
+		return
+	}
+
+	// gauge vec
+	if val, exist := reporter.userGaugeVec.Load(gaugeName); !exist {
+		keyList := make([]string, 0)
+		for k, _ := range labelMap {
+			keyList = append(keyList, k)
+		}
+		newGaugeVec := newGaugeVec(gaugeName, keyList)
+		_ = prom.DefaultRegisterer.Register(newGaugeVec)
+		reporter.userGaugeVec.Store(gaugeName, newGaugeVec)
+		newGaugeVec.With(labelMap).Set(toSetValue)
+	} else {
+		val.(*prometheus.GaugeVec).With(labelMap).Set(toSetValue)
+	}
+}
+
+// incCounter inc counter to inc if label is not empty, set counter vec
+// if target counter/counterVec not exist, just create new counter and inc the value
+func (reporter *PrometheusReporter) incCounter(counterName string, labelMap prometheus.Labels) {
+	if len(labelMap) == 0 {
+		// counter
+		if val, exist := reporter.userCounter.Load(counterName); !exist {
+			newCounter := newCounter(counterName)
+			_ = prom.DefaultRegisterer.Register(newCounter)
+			reporter.userCounter.Store(counterName, newCounter)
+			newCounter.Inc()
+		} else {
+			val.(prometheus.Counter).Inc()
+		}
+		return
+	}
+
+	// counter vec inc
+	if val, exist := reporter.userCounterVec.Load(counterName); !exist {
+		keyList := make([]string, 0)
+		for k, _ := range labelMap {
+			keyList = append(keyList, k)
+		}
+		newCounterVec := newCounterVec(counterName, keyList)
+		_ = prom.DefaultRegisterer.Register(newCounterVec)
+		reporter.userSummaryVec.Store(counterName, newCounterVec)
+		newCounterVec.With(labelMap).Inc()
+	} else {
+		val.(*prometheus.CounterVec).With(labelMap).Inc()
+	}
+}
+
+// incSummary inc summary to target value with given label, if label is not empty, set summary vec
+// if target summary/summaryVec not exist, just create new summary and set the value
+func (reporter *PrometheusReporter) incSummary(summaryName string, toSetValue float64, labelMap prometheus.Labels) {
+	if len(labelMap) == 0 {
+		// summary
+		if val, exist := reporter.userSummary.Load(summaryName); !exist {
+			newSummary := newSummary(summaryName)
+			_ = prom.DefaultRegisterer.Register(newSummary)
+			reporter.userSummary.Store(summaryName, newSummary)
+			newSummary.Observe(toSetValue)
+		} else {
+			val.(prometheus.Summary).Observe(toSetValue)
+		}
+		return
+	}
+
+	// summary vec
+	if val, exist := reporter.userSummaryVec.Load(summaryName); !exist {
+		keyList := make([]string, 0)
+		for k, _ := range labelMap {
+			keyList = append(keyList, k)
+		}
+		newSummaryVec := newSummaryVec(summaryName, keyList)
+		_ = prom.DefaultRegisterer.Register(newSummaryVec)
+		reporter.userSummaryVec.Store(summaryName, newSummaryVec)
+		newSummaryVec.With(labelMap).Observe(toSetValue)
+	} else {
+		val.(*prometheus.SummaryVec).With(labelMap).Observe(toSetValue)
+	}
+}
+
+func SetGaugeWithLabel(gaugeName string, val float64, label prometheus.Labels) {
+	reporterInstance.setGauge(gaugeName, val, label)
+}
+
+func SetGauge(gaugeName string, val float64) {
+	reporterInstance.setGauge(gaugeName, val, make(prometheus.Labels))
+}
+
+func IncCounterWithLabel(counterName string, label prometheus.Labels) {
+	reporterInstance.incCounter(counterName, label)
+}
+
+func IncCounter(summaryName string) {
+	reporterInstance.incCounter(summaryName, make(prometheus.Labels))
+}
+
+func IncSummaryWithLabel(counterName string, val float64, label prometheus.Labels) {
+	reporterInstance.incSummary(counterName, val, label)
+}
+
+func IncSummary(summaryName string, val float64) {
+	reporterInstance.incSummary(summaryName, val, make(prometheus.Labels))
 }

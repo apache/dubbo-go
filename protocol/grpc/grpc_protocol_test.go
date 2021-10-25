@@ -34,37 +34,37 @@ import (
 )
 
 func doInitProvider() {
-	providerConfig := config.ProviderConfig{
-		BaseConfig: config.BaseConfig{
-			ApplicationConfig: &config.ApplicationConfig{
-				Organization: "dubbo_org",
-				Name:         "BDTService",
-				Module:       "module",
-				Version:      "0.0.1",
-				Owner:        "dubbo",
-				Environment:  "test",
-			},
+	rootConfig := config.RootConfig{
+		Application: &config.ApplicationConfig{
+			Organization: "dubbo_org",
+			Name:         "BDTService",
+			Module:       "module",
+			Version:      "0.0.1",
+			Owner:        "dubbo",
+			Environment:  "test",
 		},
-		Services: map[string]*config.ServiceConfig{
-			"GrpcGreeterImpl": {
-				InterfaceName: "io.grpc.examples.helloworld.GreeterGrpc$IGreeter",
-				Protocol:      "grpc",
-				Registry:      "shanghai_reg1,shanghai_reg2,hangzhou_reg1,hangzhou_reg2,hangzhou_service_discovery_reg",
-				Cluster:       "failover",
-				Loadbalance:   "random",
-				Retries:       "3",
-				Methods: []*config.MethodConfig{
-					{
-						Name:        "SayHello",
-						Retries:     "2",
-						LoadBalance: "random",
-						Weight:      200,
+		Provider: &config.ProviderConfig{
+			Services: map[string]*config.ServiceConfig{
+				"GrpcGreeterImpl": {
+					Interface:   "io.grpc.examples.helloworld.GreeterGrpc$IGreeter",
+					ProtocolIDs: []string{"grpc"},
+					RegistryIDs: []string{"shanghai_reg1,shanghai_reg2,hangzhou_reg1,hangzhou_reg2,hangzhou_service_discovery_reg"},
+					Cluster:     "failover",
+					Loadbalance: "random",
+					Retries:     "3",
+					Methods: []*config.MethodConfig{
+						{
+							Name:        "SayHello",
+							Retries:     "2",
+							LoadBalance: "random",
+							Weight:      200,
+						},
 					},
 				},
 			},
 		},
 	}
-	config.SetProviderConfig(providerConfig)
+	config.SetRootConfig(rootConfig)
 }
 
 func TestGrpcProtocolExport(t *testing.T) {

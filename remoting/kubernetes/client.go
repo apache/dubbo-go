@@ -25,7 +25,9 @@ import (
 
 import (
 	perrors "github.com/pkg/errors"
+
 	v1 "k8s.io/api/core/v1"
+
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 )
@@ -46,8 +48,8 @@ type Client struct {
 	controller *dubboRegistryController
 }
 
-// newClient returns Client instance for registry
-func newClient(url *common.URL) (*Client, error) {
+// NewClient returns Client instance for registry
+func NewClient(url *common.URL) (*Client, error) {
 	// read type
 	r, err := strconv.Atoi(url.GetParams().Get(constant.ROLE_KEY))
 	if err != nil {
@@ -72,6 +74,18 @@ func newClient(url *common.URL) (*Client, error) {
 		c.controller.startALLInformers()
 	}
 	return c, nil
+}
+
+func (c *Client) SetLabel(k, v string) error {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	if err := c.controller.assembleLabel(k, v); err != nil {
+		return perrors.WithMessagef(err, "add annotation @key = %s @value = %s", k, v)
+	}
+
+	logger.Debugf("put the @key = %s @value = %s success", k, v)
+	return nil
 }
 
 // Create creates k/v pair in watcher-set
@@ -166,7 +180,7 @@ func ValidateClient(container clientFacade) error {
 	// new Client
 	if client == nil || client.Valid() {
 
-		newClient, err := newClient(container.GetURL())
+		newClient, err := NewClient(container.GetURL())
 		if err != nil {
 			logger.Warnf("new kubernetes client: %v)", err)
 			return perrors.WithMessage(err, "new kubernetes client")

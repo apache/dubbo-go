@@ -28,8 +28,10 @@ import (
 import (
 	gxchan "github.com/dubbogo/gost/container/chan"
 	nacosClient "github.com/dubbogo/gost/database/kv/nacos"
+
 	"github.com/nacos-group/nacos-sdk-go/model"
 	"github.com/nacos-group/nacos-sdk-go/vo"
+
 	perrors "github.com/pkg/errors"
 )
 
@@ -188,7 +190,12 @@ func (nl *nacosListener) startListen() error {
 		return perrors.New("nacos naming namingClient stopped")
 	}
 	serviceName := getSubscribeName(nl.listenUrl)
-	nl.subscribeParam = &vo.SubscribeParam{ServiceName: serviceName, SubscribeCallback: nl.Callback}
+	groupName := nl.listenUrl.GetParam(constant.REGISTRY_GROUP_KEY, defaultGroup)
+	nl.subscribeParam = &vo.SubscribeParam{
+		ServiceName:       serviceName,
+		SubscribeCallback: nl.Callback,
+		GroupName:         groupName,
+	}
 	go func() {
 		_ = nl.namingClient.Client().Subscribe(nl.subscribeParam)
 	}()

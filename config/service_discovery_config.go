@@ -33,6 +33,42 @@ type ServiceDiscoveryConfig struct {
 	RemoteRef string `yaml:"remote_ref" json:"remote_ref,omitempty" property:"remote_ref"`
 }
 
-func (c *ServiceDiscoveryConfig) Prefix() string {
+func (ServiceDiscoveryConfig) Prefix() string {
 	return constant.ServiceDiscPrefix
+}
+
+func (ServiceDiscoveryConfig) Init() error {
+	return nil
+}
+
+func NewServiceDiscoveryConfigBuilder() *ServiceDiscoveryConfigBuilder {
+	return &ServiceDiscoveryConfigBuilder{
+		serviceDiscoveryConfig: &ServiceDiscoveryConfig{},
+	}
+}
+
+type ServiceDiscoveryConfigBuilder struct {
+	serviceDiscoveryConfig *ServiceDiscoveryConfig
+}
+
+func (sdcb *ServiceDiscoveryConfigBuilder) SetProtocol(protocol string) *ServiceDiscoveryConfigBuilder {
+	sdcb.serviceDiscoveryConfig.Protocol = protocol
+	return sdcb
+}
+
+func (sdcb *ServiceDiscoveryConfigBuilder) SetGroup(group string) *ServiceDiscoveryConfigBuilder {
+	sdcb.serviceDiscoveryConfig.Group = group
+	return sdcb
+}
+
+func (sdcb *ServiceDiscoveryConfigBuilder) SetRemoteRef(remoteRef string) *ServiceDiscoveryConfigBuilder {
+	sdcb.serviceDiscoveryConfig.RemoteRef = remoteRef
+	return sdcb
+}
+
+func (sdcb *ServiceDiscoveryConfigBuilder) Build() *ServiceDiscoveryConfig {
+	if err := sdcb.serviceDiscoveryConfig.Init(); err != nil {
+		panic(err)
+	}
+	return sdcb.serviceDiscoveryConfig
 }

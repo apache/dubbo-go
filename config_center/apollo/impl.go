@@ -26,9 +26,10 @@ import (
 
 import (
 	gxset "github.com/dubbogo/gost/container/set"
+
 	perrors "github.com/pkg/errors"
+
 	"github.com/zouyx/agollo/v3"
-	agolloConstant "github.com/zouyx/agollo/v3/constant"
 	"github.com/zouyx/agollo/v3/env/config"
 )
 
@@ -41,7 +42,6 @@ import (
 
 const (
 	apolloProtocolPrefix = "http://"
-	apolloConfigFormat   = "%s%s"
 )
 
 type apolloConfiguration struct {
@@ -57,22 +57,18 @@ func newApolloConfiguration(url *common.URL) (*apolloConfiguration, error) {
 	c := &apolloConfiguration{
 		url: url,
 	}
-	configAddr := c.getAddressWithProtocolPrefix(url)
-	configCluster := url.GetParam(constant.CONFIG_CLUSTER_KEY, "")
-
-	appId := url.GetParam(constant.CONFIG_APP_ID_KEY, "")
-	namespaces := getProperties(url.GetParam(constant.CONFIG_NAMESPACE_KEY, cc.DEFAULT_GROUP))
 	c.appConf = &config.AppConfig{
-		AppID:         appId,
-		Cluster:       configCluster,
-		NamespaceName: namespaces,
-		IP:            configAddr,
+		AppID:            url.GetParam(constant.CONFIG_APP_ID_KEY, ""),
+		Cluster:          url.GetParam(constant.CONFIG_CLUSTER_KEY, ""),
+		NamespaceName:    url.GetParam(constant.CONFIG_NAMESPACE_KEY, cc.DEFAULT_GROUP),
+		IP:               c.getAddressWithProtocolPrefix(url),
+		Secret:           url.GetParam(constant.CONFIG_SECRET_KEY, ""),
+		IsBackupConfig:   url.GetParamBool(constant.CONFIG_BACKUP_CONFIG_KEY, true),
+		BackupConfigPath: url.GetParam(constant.CONFIG_BACKUP_CONFIG_PATH_KEY, ""),
 	}
-
 	agollo.InitCustomConfig(func() (*config.AppConfig, error) {
 		return c.appConf, nil
 	})
-
 	return c, agollo.Start()
 }
 
@@ -100,14 +96,6 @@ func (c *apolloConfiguration) RemoveListener(key string, listener cc.Configurati
 	}
 }
 
-func getProperties(namespace string) string {
-	return getNamespaceName(namespace, agolloConstant.Properties)
-}
-
-func getNamespaceName(namespace string, configFileFormat agolloConstant.ConfigFileFormat) string {
-	return fmt.Sprintf(apolloConfigFormat, namespace, configFileFormat)
-}
-
 func (c *apolloConfiguration) GetInternalProperty(key string, opts ...cc.Option) (string, error) {
 	newConfig := agollo.GetConfig(c.appConf.NamespaceName)
 	if newConfig == nil {
@@ -132,14 +120,25 @@ func (c *apolloConfiguration) GetConfigKeysByGroup(group string) (*gxset.HashSet
 
 func (c *apolloConfiguration) GetProperties(key string, opts ...cc.Option) (string, error) {
 	/**
-	 * when group is not null, we are getting startup configs(config file) from Config Center, for example:
+	 * when group is not null, we are getting startup configs(config file) from ShutdownConfig Center, for example:
 	 * key=dubbo.propertie
 	 */
+	if key == "" {
+		key = c.appConf.NamespaceName
+	}
 	tmpConfig := agollo.GetConfig(key)
 	if tmpConfig == nil {
 		return "", perrors.New(fmt.Sprintf("nothing in namespace:%s ", key))
 	}
-	return tmpConfig.GetContent(), nil
+
+	content := tmpConfig.GetContent()
+	b := []byte(content)
+	if len(b) == 0 {
+		return "", perrors.New(fmt.Sprintf("nothing in namespace:%s ", key))
+	}
+
+	content = string(b[8:]) //remove defalut content= prefix
+	return content, nil
 }
 
 func (c *apolloConfiguration) getAddressWithProtocolPrefix(url *common.URL) string {
