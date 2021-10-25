@@ -72,7 +72,7 @@ type RootConfig struct {
 	// Shutdown config
 	Shutdown *ShutdownConfig `yaml:"shutdown" json:"shutdown,omitempty" property:"shutdown"`
 
-	Router []*RouterConfig `yaml:"router" json:"router,omitempty" property:"router"`
+	Routers []*RouterConfig `yaml:"routers" json:"router,omitempty" property:"router"`
 
 	EventDispatcherType string `default:"direct" yaml:"event-dispatcher-type" json:"event-dispatcher-type,omitempty"`
 
@@ -279,7 +279,7 @@ func (rb *RootConfigBuilder) SetShutdown(shutdown *ShutdownConfig) *RootConfigBu
 }
 
 func (rb *RootConfigBuilder) SetRouter(router []*RouterConfig) *RootConfigBuilder {
-	rb.rootConfig.Router = router
+	rb.rootConfig.Routers = router
 	return rb
 }
 

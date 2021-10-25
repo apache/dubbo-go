@@ -59,14 +59,14 @@ func (c *RouterConfig) Init() error {
 }
 
 func initRouterConfig(rc *RootConfig) error {
-	routers := rc.Router
+	routers := rc.Routers
 	if len(routers) > 0 {
 		for _, r := range routers {
 			if err := r.Init(); err != nil {
 				return err
 			}
 		}
-		rc.Router = routers
+		rc.Routers = routers
 	}
 
 	//chain.SetVSAndDRConfigByte(vsBytes, drBytes)

@@ -38,7 +38,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/metadata/identifier"
 )
 
-func TestMetadataReport_MetadataReportRetry(t *testing.T) {
+func TestMetadataReportRetry(t *testing.T) {
 	counter := atomic.NewInt64(1)
 
 	retry, err := newMetadataReportRetry(1, 10, func() bool {
@@ -49,11 +49,11 @@ func TestMetadataReport_MetadataReportRetry(t *testing.T) {
 	retry.startRetryTask()
 	<-time.After(2500 * time.Millisecond)
 	retry.scheduler.Clear()
-	assert.Equal(t, counter.Load(), int64(3))
+	assert.Equal(t, int64(3), counter.Load())
 	logger.Info("over")
 }
 
-func TestMetadataReport_MetadataReportRetryWithLimit(t *testing.T) {
+func TestMetadataReportRetryWithLimit(t *testing.T) {
 	counter := atomic.NewInt64(1)
 
 	retry, err := newMetadataReportRetry(1, 1, func() bool {
@@ -64,7 +64,7 @@ func TestMetadataReport_MetadataReportRetryWithLimit(t *testing.T) {
 	retry.startRetryTask()
 	<-time.After(2500 * time.Millisecond)
 	retry.scheduler.Clear()
-	assert.Equal(t, counter.Load(), int64(2))
+	assert.Equal(t, int64(2), counter.Load())
 	logger.Info("over")
 }
 
