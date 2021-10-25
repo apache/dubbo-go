@@ -18,7 +18,6 @@
 package v3router
 
 import (
-	"encoding/json"
 	"io"
 	"strings"
 )
@@ -29,43 +28,47 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/router"
-	"dubbo.apache.org/dubbo-go/v3/cluster/router/v3router/k8s_api"
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
-	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
 // RouterChain contains all uniform router logic
 // it has UniformRouter list,
 type RouterChain struct {
-	routers                    []*UniformRouter
-	virtualServiceConfigBytes  []byte
-	destinationRuleConfigBytes []byte
-	notify                     chan struct{}
+	routers []*UniformRouter
+	notify  chan struct{}
 }
 
-// NewUniformRouterChain return
-func NewUniformRouterChain(virtualServiceConfig, destinationRuleConfig []byte) (router.PriorityRouter, error) {
-	fromFileConfig := true
-	uniformRouters, err := parseFromConfigToRouters(virtualServiceConfig, destinationRuleConfig)
+// nolint
+func NewUniformRouterChain() (router.PriorityRouter, error) {
+	// 1. add mesh route listener
+	r := &RouterChain{}
+	rootConfig := config.GetRootConfig()
+	dynamicConfiguration, err := rootConfig.ConfigCenter.GetDynamicConfiguration()
 	if err != nil {
-		fromFileConfig = false
-		logger.Warnf("parse router config form local file failed, error = %+v", err)
+		return nil, err
 	}
-	r := &RouterChain{
-		virtualServiceConfigBytes:  virtualServiceConfig,
-		destinationRuleConfigBytes: destinationRuleConfig,
-		routers:                    uniformRouters,
+	dynamicConfiguration.AddListener(rootConfig.Application.Name, r)
+
+	// 2. try to get mesh route configuration, default key is "dubbo.io.MESHAPPRULE" with group "dubbo"
+	key := rootConfig.Application.Name + constant.MeshRouteSuffix
+	meshRouteValue, err := dynamicConfiguration.GetProperties(key, config_center.WithGroup(rootConfig.ConfigCenter.Group))
+	if err != nil {
+		// the mesh route may not be initialized now
+		logger.Warnf("Can not get mesh route for key=%s, error=%v", key, err)
+		return r, nil
 	}
-	if err := k8s_api.SetK8sEventListener(r); err != nil {
-		logger.Warnf("try listen K8s router config failed, error = %+v", err)
-		if !fromFileConfig {
-			panic("No config file from both local file and k8s")
-		}
+	logger.Debugf("Successfully get mesh route:%s", meshRouteValue)
+	routes, err := parseRoute(meshRouteValue)
+	if err != nil {
+		logger.Warnf("Parse mesh route failed, error=%v", err)
+		return nil, err
 	}
+	r.routers = routes
 	return r, nil
 }
 
@@ -77,84 +80,15 @@ func (r *RouterChain) Route(invokers []protocol.Invoker, url *common.URL, invoca
 	return invokers
 }
 
+// Process process route config change event
 func (r *RouterChain) Process(event *config_center.ConfigChangeEvent) {
-	logger.Debugf("on processed event = %+v\n", *event)
-	if event.ConfigType == remoting.EventTypeAdd || event.ConfigType == remoting.EventTypeUpdate {
-		switch event.Key {
-		case k8s_api.VirtualServiceEventKey:
-			logger.Debug("virtul service event")
-			newVSValue, ok := event.Value.(*config.VirtualServiceConfig)
-			if !ok {
-				logger.Error("event.Value assertion error")
-				return
-			}
-
-			newVSJsonValue, ok := newVSValue.ObjectMeta.Annotations["kubectl.kubernetes.io/last-applied-configuration"]
-			if !ok {
-				logger.Error("newVSValue.ObjectMeta.Annotations has no key named kubectl.kubernetes.io/last-applied-configuration")
-				return
-			}
-			logger.Debugf("new virtual service json value = \n%v\n", newVSJsonValue)
-			newVirtualServiceConfig := &config.VirtualServiceConfig{}
-			if err := json.Unmarshal([]byte(newVSJsonValue), newVirtualServiceConfig); err != nil {
-				logger.Error("on process json data unmarshal error = ", err)
-				return
-			}
-			newVirtualServiceConfig.YamlAPIVersion = newVirtualServiceConfig.APIVersion
-			newVirtualServiceConfig.YamlKind = newVirtualServiceConfig.Kind
-			newVirtualServiceConfig.MetaData.Name = newVirtualServiceConfig.ObjectMeta.Name
-			logger.Debugf("get event after asseration = %+v\n", newVirtualServiceConfig)
-			data, err := yaml.Marshal(newVirtualServiceConfig)
-			if err != nil {
-				logger.Error("Process change of virtual service: event.Value marshal error:", err)
-				return
-			}
-			r.routers, err = parseFromConfigToRouters(data, r.destinationRuleConfigBytes)
-			if err != nil {
-				logger.Error("Process change of virtual service: parseFromConfigToRouters:", err)
-				return
-			}
-		case k8s_api.DestinationRuleEventKey:
-			logger.Debug("handling dest rule event")
-			newDRValue, ok := event.Value.(*config.DestinationRuleConfig)
-			if !ok {
-				logger.Error("event.Value assertion error")
-				return
-			}
-
-			newDRJsonValue, ok := newDRValue.ObjectMeta.Annotations["kubectl.kubernetes.io/last-applied-configuration"]
-			if !ok {
-				logger.Error("newVSValue.ObjectMeta.Annotations has no key named kubectl.kubernetes.io/last-applied-configuration")
-				return
-			}
-			newDestRuleConfig := &config.DestinationRuleConfig{}
-			if err := json.Unmarshal([]byte(newDRJsonValue), newDestRuleConfig); err != nil {
-				logger.Error("on process json data unmarshal error = ", err)
-				return
-			}
-			newDestRuleConfig.YamlAPIVersion = newDestRuleConfig.APIVersion
-			newDestRuleConfig.YamlKind = newDestRuleConfig.Kind
-			newDestRuleConfig.MetaData.Name = newDestRuleConfig.ObjectMeta.Name
-			logger.Debugf("get event after asseration = %+v\n", newDestRuleConfig)
-			data, err := yaml.Marshal(newDestRuleConfig)
-			if err != nil {
-				logger.Error("Process change of dest rule: event.Value marshal error:", err)
-				return
-			}
-			r.routers, err = parseFromConfigToRouters(r.virtualServiceConfigBytes, data)
-			if err != nil {
-				logger.Error("Process change of dest rule: parseFromConfigToRouters:", err)
-				return
-			}
-		default:
-			logger.Error("unknown unsupported event key:", event.Key)
-		}
+	logger.Debugf("RouteChain process event:\n%+v", event)
+	routers, err := parseRoute(event.Value.(string))
+	if err != nil {
+		return
 	}
-
+	r.routers = routers
 	// todo delete router
-	//if event.ConfigType == remoting.EventTypeDel {
-	//
-	//}
 }
 
 // Name get name of ConnCheckerRouter
@@ -179,7 +113,7 @@ func parseFromConfigToRouters(virtualServiceConfig, destinationRuleConfig []byte
 
 	vsDecoder := yaml.NewDecoder(strings.NewReader(string(virtualServiceConfig)))
 	drDecoder := yaml.NewDecoder(strings.NewReader(string(destinationRuleConfig)))
-	// parse virtual service
+	// 1. parse virtual service config
 	for {
 		virtualServiceCfg := &config.VirtualServiceConfig{}
 
@@ -195,7 +129,7 @@ func parseFromConfigToRouters(virtualServiceConfig, destinationRuleConfig []byte
 		virtualServiceConfigList = append(virtualServiceConfigList, virtualServiceCfg)
 	}
 
-	// parse destination rule
+	// 2. parse destination rule config
 	for {
 		destRuleCfg := &config.DestinationRuleConfig{}
 		err := drDecoder.Decode(destRuleCfg)
@@ -219,33 +153,89 @@ func parseFromConfigToRouters(virtualServiceConfig, destinationRuleConfig []byte
 
 	routers := make([]*UniformRouter, 0)
 
+	// 3. construct virtual service host to destination mapping
 	for _, v := range virtualServiceConfigList {
-		tempSerivceNeedsDescMap := make(map[string]map[string]string)
+		tempServiceNeedsDescMap := make(map[string]map[string]string)
 		for _, host := range v.Spec.Hosts {
+			// name -> labels
 			targetDestMap := destRuleConfigsMap[host]
 
-			// copy to new Map
-			mapCombine(tempSerivceNeedsDescMap, targetDestMap)
+			// copy to new Map, FIXME name collision
+			mapCopy(tempServiceNeedsDescMap, targetDestMap)
 		}
-		// change single config to one rule
-		newRule, err := newDubboRouterRule(v.Spec.Dubbo, tempSerivceNeedsDescMap)
-		if err != nil {
-			logger.Error("Parse config to uniform rule err = ", err)
-			return nil, err
-		}
-		rtr, err := NewUniformRouter(newRule)
-		if err != nil {
-			logger.Error("new uniform router err = ", err)
-			return nil, err
-		}
-		routers = append(routers, rtr)
+		// transform single config to one rule
+		routers = append(routers, NewUniformRouter(v.Spec.Dubbo, tempServiceNeedsDescMap))
 	}
-	logger.Debug("parsed successed! with router size = ", len(routers))
+	logger.Debug("parsed successfully with router size = ", len(routers))
 	return routers, nil
 }
 
-func mapCombine(dist map[string]map[string]string, from map[string]map[string]string) {
-	for k, v := range from {
+func parseRoute(routeContent string) ([]*UniformRouter, error) {
+	var virtualServiceConfigList []*config.VirtualServiceConfig
+	destRuleConfigsMap := make(map[string]map[string]map[string]string)
+
+	meshRouteDecoder := yaml.NewDecoder(strings.NewReader(routeContent))
+	for {
+		meshRouteMetadata := &config.MeshRouteMetadata{}
+		err := meshRouteDecoder.Decode(meshRouteMetadata)
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			logger.Error("parseRoute route metadata err = ", err)
+			return nil, err
+		}
+
+		bytes, err := yaml.Marshal(meshRouteMetadata.Spec)
+		if err != nil {
+			return nil, err
+		}
+		specDecoder := yaml.NewDecoder(strings.NewReader(string(bytes)))
+		switch meshRouteMetadata.YamlKind {
+		case "VirtualService":
+			meshRouteConfigSpec := &config.UniformRouterConfigSpec{}
+			err := specDecoder.Decode(meshRouteConfigSpec)
+			if err != nil {
+				return nil, err
+			}
+			virtualServiceConfigList = append(virtualServiceConfigList, &config.VirtualServiceConfig{
+				YamlAPIVersion: meshRouteMetadata.YamlAPIVersion,
+				YamlKind:       meshRouteMetadata.YamlKind,
+				TypeMeta:       meshRouteMetadata.TypeMeta,
+				ObjectMeta:     meshRouteMetadata.ObjectMeta,
+				MetaData:       meshRouteMetadata.MetaData,
+				Spec:           *meshRouteConfigSpec,
+			})
+		case "DestinationRule":
+			meshRouteDestinationRuleSpec := &config.DestinationRuleSpec{}
+			err := specDecoder.Decode(meshRouteDestinationRuleSpec)
+			if err != nil {
+				return nil, err
+			}
+			destRuleCfgMap := make(map[string]map[string]string)
+			for _, v := range meshRouteDestinationRuleSpec.SubSets {
+				destRuleCfgMap[v.Name] = v.Labels
+			}
+
+			destRuleConfigsMap[meshRouteDestinationRuleSpec.Host] = destRuleCfgMap
+		}
+	}
+
+	routers := make([]*UniformRouter, 0)
+
+	for _, v := range virtualServiceConfigList {
+		tempServiceNeedsDescMap := make(map[string]map[string]string)
+		for _, host := range v.Spec.Hosts {
+			targetDestMap := destRuleConfigsMap[host]
+			mapCopy(tempServiceNeedsDescMap, targetDestMap)
+		}
+		routers = append(routers, NewUniformRouter(v.Spec.Dubbo, tempServiceNeedsDescMap))
+	}
+	logger.Debug("parsed successfully with router size = ", len(routers))
+	return routers, nil
+}
+
+func mapCopy(dist map[string]map[string]string, source map[string]map[string]string) {
+	for k, v := range source {
 		dist[k] = v
 	}
 }

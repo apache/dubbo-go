@@ -18,16 +18,11 @@
 package extension
 
 import (
-	"sync"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/router"
 )
 
 var (
-	routers               = make(map[string]func() router.PriorityRouterFactory)
-	fileRouterFactoryOnce sync.Once
+	routers = make(map[string]func() router.PriorityRouterFactory)
 )
 
 // SetRouterFactory sets create router factory function with @name

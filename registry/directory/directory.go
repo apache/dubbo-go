@@ -85,7 +85,7 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry) (director
 
 	dir.consumerURL = dir.getConsumerUrl(url.SubURL)
 
-	if routerChain, err := chain.NewRouterChain(dir.consumerURL); err == nil {
+	if routerChain, err := chain.NewRouterChain(); err == nil {
 		dir.Directory.SetRouterChain(routerChain)
 	} else {
 		logger.Warnf("fail to create router chain with url: %s, err is: %v", url.SubURL, err)
@@ -465,7 +465,7 @@ type referenceConfigurationListener struct {
 func newReferenceConfigurationListener(dir *RegistryDirectory, url *common.URL) *referenceConfigurationListener {
 	listener := &referenceConfigurationListener{directory: dir, url: url}
 	listener.InitWith(
-		url.EncodedServiceKey()+constant.CONFIGURATORS_SUFFIX,
+		url.EncodedServiceKey()+constant.ConfiguratorSuffix,
 		listener,
 		extension.GetDefaultConfiguratorFunc(),
 	)
@@ -489,7 +489,7 @@ func newConsumerConfigurationListener(dir *RegistryDirectory) *consumerConfigura
 	listener := &consumerConfigurationListener{directory: dir}
 	application := config.GetRootConfig().Application
 	listener.InitWith(
-		application.Name+constant.CONFIGURATORS_SUFFIX,
+		application.Name+constant.ConfiguratorSuffix,
 		listener,
 		extension.GetDefaultConfiguratorFunc(),
 	)

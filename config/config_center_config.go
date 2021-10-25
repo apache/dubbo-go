@@ -60,6 +60,8 @@ type CenterConfig struct {
 	AppID     string            `default:"dubbo" yaml:"app-id"  json:"app-id,omitempty"`
 	Timeout   string            `default:"10s" yaml:"timeout"  json:"timeout,omitempty"`
 	Params    map[string]string `yaml:"params"  json:"parameters,omitempty"`
+
+	DynamicConfiguration config_center.DynamicConfiguration
 }
 
 // Prefix dubbo.config-center
@@ -129,11 +131,7 @@ func (c *CenterConfig) toURL() (*common.URL, error) {
 // it will prepare the environment
 func startConfigCenter(rc *RootConfig) error {
 	cc := rc.ConfigCenter
-	configCenterUrl, err := cc.toURL()
-	if err != nil {
-		return err
-	}
-	strConf, err := cc.prepareEnvironment(configCenterUrl)
+	strConf, err := cc.prepareEnvironment()
 	if err != nil {
 		return errors.WithMessagef(err, "start config center error!")
 	}
@@ -150,7 +148,7 @@ func startConfigCenter(rc *RootConfig) error {
 	return nil
 }
 
-func (c *CenterConfig) GetDynamicConfiguration() (config_center.DynamicConfiguration, error) {
+func (c *CenterConfig) CreateDynamicConfiguration() (config_center.DynamicConfiguration, error) {
 	configCenterUrl, err := c.toURL()
 	if err != nil {
 		return nil, err
@@ -162,14 +160,23 @@ func (c *CenterConfig) GetDynamicConfiguration() (config_center.DynamicConfigura
 	return factory.GetDynamicConfiguration(configCenterUrl)
 }
 
-func (c *CenterConfig) prepareEnvironment(configCenterUrl *common.URL) (string, error) {
-	factory := extension.GetConfigCenterFactory(configCenterUrl.Protocol)
-	if factory == nil {
-		return "", errors.New("get config center factory failed")
+func (c *CenterConfig) GetDynamicConfiguration() (config_center.DynamicConfiguration, error) {
+	if c.DynamicConfiguration != nil {
+		return c.DynamicConfiguration, nil
 	}
-	dynamicConfig, err := factory.GetDynamicConfiguration(configCenterUrl)
+	dynamicConfig, err := c.CreateDynamicConfiguration()
 	if err != nil {
-		logger.Errorf("Get dynamic configuration error , error message is %v", err)
+		logger.Errorf("Create dynamic configuration error , error message is %v", err)
+		return nil, errors.WithStack(err)
+	}
+	c.DynamicConfiguration = dynamicConfig
+	return dynamicConfig, nil
+}
+
+func (c *CenterConfig) prepareEnvironment() (string, error) {
+	dynamicConfig, err := c.GetDynamicConfiguration()
+	if err != nil {
+		logger.Errorf("Create dynamic configuration error , error message is %v", err)
 		return "", errors.WithStack(err)
 	}
 	envInstance := conf.GetEnvInstance()
