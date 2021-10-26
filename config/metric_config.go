@@ -17,27 +17,56 @@
 
 package config
 
-var defaultHistogramBucket = []float64{10, 50, 100, 200, 500, 1000, 10000}
+import (
+	"github.com/creasty/defaults"
+
+	"github.com/pkg/errors"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/metrics"
+)
 
 // MetricConfig This is the config struct for all metrics implementation
 type MetricConfig struct {
-	Reporters []string `yaml:"reporters" json:"reporters,omitempty"`
-	// TODO s?
-	HistogramBucket []float64 `yaml:"histogram_bucket" json:"histogram_bucket,omitempty"`
+	Mode               string `default:"pull" yaml:"mode" json:"mode,omitempty" property:"mode"` // push or pull,
+	Namespace          string `default:"dubbo" yaml:"namespace" json:"namespace,omitempty" property:"namespace"`
+	Enable             string `default:"true" yaml:"enable" json:"enable,omitempty" property:"enable"`
+	Port               string `default:"9090" yaml:"port" json:"port,omitempty" property:"port"`
+	Path               string `default:"/metrics" yaml:"path" json:"path,omitempty" property:"path"`
+	PushGatewayAddress string `default:"" yaml:"push-gateway-address" json:"push-gateway-address,omitempty" property:"push-gateway-address"`
+}
+
+func (m *MetricConfig) ToReporterConfig() *metrics.ReporterConfig {
+	defaultMetricsReportConfig := metrics.NewReporterConfig()
+	if m.Mode == metrics.ReportModePush {
+		defaultMetricsReportConfig.Mode = metrics.ReportModePush
+	}
+	if m.Namespace != "" {
+		defaultMetricsReportConfig.Namespace = m.Namespace
+	}
+
+	defaultMetricsReportConfig.Enable = m.Enable == "1"
+	defaultMetricsReportConfig.Port = m.Port
+	defaultMetricsReportConfig.Path = m.Path
+	defaultMetricsReportConfig.PushGatewayAddress = m.PushGatewayAddress
+	return defaultMetricsReportConfig
 }
 
 // nolint
 func (mc *MetricConfig) Init() error {
-	return nil
-}
-
-// GetHistogramBucket find the histogram bucket
-// if it's empty, the default value will be return
-func (mc *MetricConfig) GetHistogramBucket() []float64 {
-	if len(mc.HistogramBucket) == 0 {
-		mc.HistogramBucket = defaultHistogramBucket
+	if mc == nil {
+		return errors.New("metrics config is null")
 	}
-	return mc.HistogramBucket
+	if err := defaults.Set(mc); err != nil {
+		return err
+	}
+	if err := verify(mc); err != nil {
+		return err
+	}
+	extension.GetMetricReporter("prometheus", mc.ToReporterConfig())
+	return nil
 }
 
 type MetricConfigBuilder struct {
@@ -50,39 +79,6 @@ func NewMetricConfigBuilder() *MetricConfigBuilder {
 }
 
 // nolint
-func (mcb *MetricConfigBuilder) SetReporters(reporters []string) *MetricConfigBuilder {
-	mcb.metricConfig.Reporters = reporters
-	return mcb
-}
-
-// nolint
-func (mcb *MetricConfigBuilder) AddReporter(reporter string) *MetricConfigBuilder {
-	if mcb.metricConfig.Reporters == nil {
-		mcb.metricConfig.Reporters = make([]string, 0)
-	}
-	mcb.metricConfig.Reporters = append(mcb.metricConfig.Reporters, reporter)
-	return mcb
-}
-
-// nolint
-func (mcb *MetricConfigBuilder) SetHistogramBucket(histogramBucket []float64) *MetricConfigBuilder {
-	mcb.metricConfig.HistogramBucket = histogramBucket
-	return mcb
-}
-
-// nolint
-func (mcb *MetricConfigBuilder) AddBucket(bucket float64) *MetricConfigBuilder {
-	if mcb.metricConfig.HistogramBucket == nil {
-		mcb.metricConfig.HistogramBucket = make([]float64, 0)
-	}
-	mcb.metricConfig.HistogramBucket = append(mcb.metricConfig.HistogramBucket, bucket)
-	return mcb
-}
-
-// nolint
 func (mcb *MetricConfigBuilder) Build() *MetricConfig {
-	if err := mcb.metricConfig.Init(); err != nil {
-		panic(err)
-	}
 	return mcb.metricConfig
 }
