@@ -74,7 +74,7 @@ func (p *Filter) OnResponse(ctx context.Context, res protocol.Result, invoker pr
 func newFilter() filter.Filter {
 	if metricFilterInstance == nil {
 		reporters := make([]metrics.Reporter, 0, 1)
-		reporters = append(reporters, extension.GetMetricReporter("prometheus"))
+		reporters = append(reporters, extension.GetMetricReporter("prometheus", metrics.NewReporterConfig()))
 		metricFilterInstance = &Filter{
 			reporters: reporters,
 		}
