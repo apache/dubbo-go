@@ -40,7 +40,7 @@ const (
 type ConsumerConfig struct {
 	Filter string `yaml:"filter" json:"filter,omitempty" property:"filter"`
 	// support string
-	RegistryIDs []string `yaml:"registryIDs" json:"registryIDs,omitempty" property:"registryIDs"`
+	RegistryIDs []string `yaml:"registry-ids" json:"registry-ids,omitempty" property:"registry-ids"`
 
 	RequestTimeout string `default:"3s" yaml:"request-timeout" json:"request-timeout,omitempty" property:"request-timeout"`
 	ProxyFactory   string `default:"default" yaml:"proxy" json:"proxy,omitempty" property:"proxy"`
