@@ -49,26 +49,19 @@ import (
 //
 // CenterConfig has currently supported Zookeeper, Nacos, Etcd, Consul, Apollo
 type CenterConfig struct {
-	Protocol string `validate:"required" yaml:"protocol"  json:"protocol,omitempty"`
-	Address  string `validate:"required" yaml:"address" json:"address,omitempty"`
-	DataId   string `validate:"required" yaml:"data-id" json:"data-id,omitempty"`
-	Cluster  string `yaml:"cluster" json:"cluster,omitempty"`
-	Group    string `default:"dubbo" yaml:"group" json:"group,omitempty"`
-	Username string `yaml:"username" json:"username,omitempty"`
-	Password string `yaml:"password" json:"password,omitempty"`
-	// Deprecated
-	LogDir string `yaml:"log-dir" json:"log-dir,omitempty"`
-	// Deprecated
-	ConfigFile string `default:"dubbo.properties" yaml:"config-file"  json:"config-file,omitempty"`
-	Namespace  string `default:"dubbo" yaml:"namespace"  json:"namespace,omitempty"`
-	// Deprecated
-	AppConfigFile string `default:"dubbo.properties" yaml:"app-config-file"  json:"app-config-file,omitempty"`
-	// Deprecated
-	AppID   string `default:"dubbo" yaml:"app-id"  json:"app-id,omitempty"`
-	Timeout string `default:"10s" yaml:"timeout"  json:"timeout,omitempty"`
-	// Deprecated
-	RemoteRef string            `required:"false"  yaml:"remote-ref"  json:"remote-ref,omitempty"`
+	Protocol  string            `validate:"required" yaml:"protocol"  json:"protocol,omitempty"`
+	Address   string            `validate:"required" yaml:"address" json:"address,omitempty"`
+	DataId    string            `yaml:"data-id" json:"data-id,omitempty"`
+	Cluster   string            `yaml:"cluster" json:"cluster,omitempty"`
+	Group     string            `default:"dubbo" yaml:"group" json:"group,omitempty"`
+	Username  string            `yaml:"username" json:"username,omitempty"`
+	Password  string            `yaml:"password" json:"password,omitempty"`
+	Namespace string            `default:"dubbo" yaml:"namespace"  json:"namespace,omitempty"`
+	AppID     string            `default:"dubbo" yaml:"app-id"  json:"app-id,omitempty"`
+	Timeout   string            `default:"10s" yaml:"timeout"  json:"timeout,omitempty"`
 	Params    map[string]string `yaml:"params"  json:"parameters,omitempty"`
+
+	DynamicConfiguration config_center.DynamicConfiguration
 }
 
 // Prefix dubbo.config-center
@@ -101,7 +94,6 @@ func (c *CenterConfig) GetUrlMap() url.Values {
 	urlMap.Set(constant.CONFIG_GROUP_KEY, c.Group)
 	urlMap.Set(constant.CONFIG_CLUSTER_KEY, c.Cluster)
 	urlMap.Set(constant.CONFIG_APP_ID_KEY, c.AppID)
-	urlMap.Set(constant.CONFIG_LOG_DIR_KEY, c.LogDir)
 	urlMap.Set(constant.CONFIG_USERNAME_KEY, c.Username)
 	urlMap.Set(constant.CONFIG_PASSWORD_KEY, c.Password)
 	urlMap.Set(constant.CONFIG_TIMEOUT_KEY, c.Timeout)
@@ -139,11 +131,7 @@ func (c *CenterConfig) toURL() (*common.URL, error) {
 // it will prepare the environment
 func startConfigCenter(rc *RootConfig) error {
 	cc := rc.ConfigCenter
-	configCenterUrl, err := cc.toURL()
-	if err != nil {
-		return err
-	}
-	strConf, err := cc.prepareEnvironment(configCenterUrl)
+	strConf, err := cc.prepareEnvironment()
 	if err != nil {
 		return errors.WithMessagef(err, "start config center error!")
 	}
@@ -160,7 +148,7 @@ func startConfigCenter(rc *RootConfig) error {
 	return nil
 }
 
-func (c *CenterConfig) GetDynamicConfiguration() (config_center.DynamicConfiguration, error) {
+func (c *CenterConfig) CreateDynamicConfiguration() (config_center.DynamicConfiguration, error) {
 	configCenterUrl, err := c.toURL()
 	if err != nil {
 		return nil, err
@@ -172,14 +160,23 @@ func (c *CenterConfig) GetDynamicConfiguration() (config_center.DynamicConfigura
 	return factory.GetDynamicConfiguration(configCenterUrl)
 }
 
-func (c *CenterConfig) prepareEnvironment(configCenterUrl *common.URL) (string, error) {
-	factory := extension.GetConfigCenterFactory(configCenterUrl.Protocol)
-	if factory == nil {
-		return "", errors.New("get config center factory failed")
+func (c *CenterConfig) GetDynamicConfiguration() (config_center.DynamicConfiguration, error) {
+	if c.DynamicConfiguration != nil {
+		return c.DynamicConfiguration, nil
 	}
-	dynamicConfig, err := factory.GetDynamicConfiguration(configCenterUrl)
+	dynamicConfig, err := c.CreateDynamicConfiguration()
 	if err != nil {
-		logger.Errorf("Get dynamic configuration error , error message is %v", err)
+		logger.Errorf("Create dynamic configuration error , error message is %v", err)
+		return nil, errors.WithStack(err)
+	}
+	c.DynamicConfiguration = dynamicConfig
+	return dynamicConfig, nil
+}
+
+func (c *CenterConfig) prepareEnvironment() (string, error) {
+	dynamicConfig, err := c.GetDynamicConfiguration()
+	if err != nil {
+		logger.Errorf("Create dynamic configuration error , error message is %v", err)
 		return "", errors.WithStack(err)
 	}
 	envInstance := conf.GetEnvInstance()

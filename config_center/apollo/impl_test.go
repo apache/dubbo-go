@@ -155,7 +155,7 @@ func initMockApollo(t *testing.T) *apolloConfiguration {
 		Address:   "106.12.25.204:8080",
 		AppID:     "testApplication_yang",
 		Cluster:   "dev",
-		Namespace: "mockDubbogo",
+		Namespace: "mockDubbogo.yaml",
 	}}
 	apollo := initApollo()
 	apolloUrl := strings.ReplaceAll(apollo.URL, "http", "apollo")

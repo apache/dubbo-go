@@ -24,6 +24,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
@@ -65,6 +66,10 @@ func (l *CacheListener) DataChange(event remoting.Event) bool {
 		return true
 	}
 	key := l.pathToKey(event.Path)
+	// TODO use common way
+	if strings.HasSuffix(key, constant.MeshRouteSuffix) {
+		key = key[:strings.Index(key, constant.MeshRouteSuffix)]
+	}
 	if key != "" {
 		if listeners, ok := l.keyListeners.Load(key); ok {
 			for listener := range listeners.(map[config_center.ConfigurationListener]struct{}) {
@@ -78,11 +83,13 @@ func (l *CacheListener) DataChange(event remoting.Event) bool {
 
 func (l *CacheListener) pathToKey(path string) string {
 	key := strings.Replace(strings.Replace(path, l.rootPath+"/", "", -1), "/", ".", -1)
-	if strings.HasSuffix(key, constant.CONFIGURATORS_SUFFIX) ||
+	if strings.HasSuffix(key, constant.ConfiguratorSuffix) ||
 		strings.HasSuffix(key, constant.TagRouterRuleSuffix) ||
-		strings.HasSuffix(key, constant.ConditionRouterRuleSuffix) {
+		strings.HasSuffix(key, constant.ConditionRouterRuleSuffix) ||
+		strings.HasSuffix(key, constant.MeshRouteSuffix) {
 		// governance config, so we remove the "dubbo." prefix
-		return key[strings.Index(key, ".")+1:]
+		key = key[strings.Index(key, ".")+1:]
 	}
+	logger.Debugf("pathToKey path:%s, key:%s\n", path, key)
 	return key
 }

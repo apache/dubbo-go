@@ -19,6 +19,7 @@ package zookeeper
 
 import (
 	"encoding/base64"
+	"strconv"
 	"strings"
 	"sync"
 )
@@ -34,15 +35,13 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/config_center/parser"
 	"dubbo.apache.org/dubbo-go/v3/remoting/zookeeper"
 )
 
 const (
-	// ZkClient
-	// zookeeper client name
-	ZkClient      = "zk config_center"
 	pathSeparator = "/"
 )
 
@@ -59,6 +58,8 @@ type zookeeperDynamicConfiguration struct {
 	listener      *zookeeper.ZkEventListener
 	cacheListener *CacheListener
 	parser        parser.ConfigurationParser
+
+	base64Enabled bool
 }
 
 func newZookeeperDynamicConfiguration(url *common.URL) (*zookeeperDynamicConfiguration, error) {
@@ -66,6 +67,14 @@ func newZookeeperDynamicConfiguration(url *common.URL) (*zookeeperDynamicConfigu
 		url:      url,
 		rootPath: "/" + url.GetParam(constant.CONFIG_NAMESPACE_KEY, config_center.DEFAULT_GROUP) + "/config",
 	}
+	if v, ok := config.GetRootConfig().ConfigCenter.Params["base64"]; ok {
+		base64Enabled, err := strconv.ParseBool(v)
+		if err != nil {
+			panic("value of base64 must be bool, error=" + err.Error())
+		}
+		c.base64Enabled = base64Enabled
+	}
+
 	err := zookeeper.ValidateZookeeperClient(c, url.Location)
 	if err != nil {
 		logger.Errorf("zookeeper client start error ,error message is %v", err)
@@ -102,7 +111,6 @@ func (c *zookeeperDynamicConfiguration) GetProperties(key string, opts ...config
 	if len(tmpOpts.Group) != 0 {
 		key = tmpOpts.Group + "/" + key
 	} else {
-
 		/**
 		 * when group is null, we are fetching governance rules, for example:
 		 * 1. key=org.apache.dubbo.DemoService.configurators
@@ -115,6 +123,10 @@ func (c *zookeeperDynamicConfiguration) GetProperties(key string, opts ...config
 	if err != nil {
 		return "", perrors.WithStack(err)
 	}
+	if !c.base64Enabled {
+		return string(content), nil
+	}
+
 	decoded, err := base64.StdEncoding.DecodeString(string(content))
 	if err != nil {
 		return "", perrors.WithStack(err)
@@ -130,9 +142,11 @@ func (c *zookeeperDynamicConfiguration) GetInternalProperty(key string, opts ...
 // PublishConfig will put the value into Zk with specific path
 func (c *zookeeperDynamicConfiguration) PublishConfig(key string, group string, value string) error {
 	path := c.getPath(key, group)
-	strbytes := []byte(value)
-	encoded := base64.StdEncoding.EncodeToString(strbytes)
-	err := c.client.CreateWithValue(path, []byte(encoded))
+	valueBytes := []byte(value)
+	if c.base64Enabled {
+		valueBytes = []byte(base64.StdEncoding.EncodeToString(valueBytes))
+	}
+	err := c.client.CreateWithValue(path, valueBytes)
 	if err != nil {
 		return perrors.WithStack(err)
 	}

@@ -15,21 +15,23 @@
  * limitations under the License.
  */
 
-package v3router
+package config
 
 import (
 	"testing"
 )
-
 import (
 	"github.com/stretchr/testify/assert"
 )
+import (
+	_ "dubbo.apache.org/dubbo-go/v3/config_center/apollo"
+)
 
-// TestUniformRouterFacotry created a new factory that can new uniform router
-func TestUniformRouterFacotry(t *testing.T) {
-	factory := NewUniformRouterFactory()
-	assert.NotNil(t, factory)
-	router, err := factory.NewPriorityRouter([]byte{}, []byte{})
+func TestApolloConfigCenterConfig(t *testing.T) {
+
+	err := Load(WithPath("./testdata/config/center/apollo.yaml"))
 	assert.Nil(t, err)
-	assert.NotNil(t, router)
+
+	registries := rootConfig.Registries
+	assert.NotNil(t, registries)
 }
