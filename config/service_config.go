@@ -50,9 +50,9 @@ import (
 type ServiceConfig struct {
 	id                          string
 	Filter                      string            `yaml:"filter" json:"filter,omitempty" property:"filter"`
-	ProtocolIDs                 []string          `default:"[\"dubbo\"]"  validate:"required"  yaml:"protocolIDs"  json:"protocolIDs,omitempty" property:"protocolIDs"` // multi protocolIDs support, split by ','
+	ProtocolIDs                 []string          `default:"[\"dubbo\"]"  validate:"required"  yaml:"protocol-ids"  json:"protocol-ids,omitempty" property:"protocol-ids"` // multi protocolIDs support, split by ','
 	Interface                   string            `validate:"required"  yaml:"interface"  json:"interface,omitempty" property:"interface"`
-	RegistryIDs                 []string          `yaml:"registryIDs"  json:"registryIDs,omitempty"  property:"registryIDs"`
+	RegistryIDs                 []string          `yaml:"registry-ids"  json:"registry-ids,omitempty"  property:"registry-ids"`
 	Cluster                     string            `default:"failover" yaml:"cluster"  json:"cluster,omitempty" property:"cluster"`
 	Loadbalance                 string            `default:"random" yaml:"loadbalance"  json:"loadbalance,omitempty"  property:"loadbalance"`
 	Group                       string            `yaml:"group"  json:"group,omitempty" property:"group"`

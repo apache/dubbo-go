@@ -6,12 +6,12 @@ dubbo:
       address: nacos://127.0.0.1:8848
   provider:
     register: true
-    registryIDs:
+    registry-ids:
      - nacos
      - zk
     services:
       helloService:
         interface: org.dubbo.service.HelloService
-        registryIDs: nacos,zk
+        registry-ids: nacos,zk
       orderService:
         interface: org.dubbo.service.OrderService
