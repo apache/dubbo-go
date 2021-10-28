@@ -118,12 +118,10 @@ func (invoker *baseClusterInvoker) doSelectInvoker(lb cluster.LoadBalance, invoc
 	if len(invokers) == 0 {
 		return nil
 	}
-	go protocol.TryRefreshBlackList()
 	if len(invokers) == 1 {
 		if invokers[0].IsAvailable() {
 			return invokers[0]
 		}
-		protocol.SetInvokerUnhealthyStatus(invokers[0])
 		logger.Errorf("the invokers of %s is nil. ", invokers[0].GetURL().ServiceKey())
 		return nil
 	}
@@ -132,7 +130,6 @@ func (invoker *baseClusterInvoker) doSelectInvoker(lb cluster.LoadBalance, invoc
 
 	//judge if the selected Invoker is invoked and available
 	if (!selectedInvoker.IsAvailable() && invoker.availablecheck) || isInvoked(selectedInvoker, invoked) {
-		protocol.SetInvokerUnhealthyStatus(selectedInvoker)
 		otherInvokers := getOtherInvokers(invokers, selectedInvoker)
 		// do reselect
 		for i := 0; i < 3; i++ {
@@ -148,7 +145,6 @@ func (invoker *baseClusterInvoker) doSelectInvoker(lb cluster.LoadBalance, invoc
 			if !reselectedInvoker.IsAvailable() {
 				logger.Infof("the invoker of %s is not available, maybe some network error happened or the server is shutdown.",
 					invoker.GetURL().Ip)
-				protocol.SetInvokerUnhealthyStatus(reselectedInvoker)
 				otherInvokers = getOtherInvokers(otherInvokers, reselectedInvoker)
 				continue
 			}
