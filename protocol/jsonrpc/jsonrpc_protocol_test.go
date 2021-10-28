@@ -74,7 +74,6 @@ func TestJsonrpcProtocolRefer(t *testing.T) {
 		"side=provider&timeout=3000&timestamp=1556509797245")
 	assert.NoError(t, err)
 	con := config.ConsumerConfig{
-		ConnectTimeout: "5s",
 		RequestTimeout: "5s",
 	}
 	config.SetConsumerConfig(con)

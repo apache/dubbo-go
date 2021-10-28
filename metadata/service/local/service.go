@@ -194,6 +194,9 @@ func (mts *MetadataService) UnsubscribeURL(url *common.URL) error {
 
 // PublishServiceDefinition: publish url's service metadata info, and write into memory
 func (mts *MetadataService) PublishServiceDefinition(url *common.URL) error {
+	if common.RoleType(common.CONSUMER).Role() == url.GetParam(constant.SIDE_KEY, "") {
+		return nil
+	}
 	interfaceName := url.GetParam(constant.INTERFACE_KEY, "")
 	isGeneric := url.GetParamBool(constant.GENERIC_KEY, false)
 	if len(interfaceName) > 0 && !isGeneric {

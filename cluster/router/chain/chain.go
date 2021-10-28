@@ -36,11 +36,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
-var (
-	virtualServiceConfigByte  []byte
-	destinationRuleConfigByte []byte
-)
-
 // RouterChain Router chain
 type RouterChain struct {
 	// Full list of addresses from registry, classified by method name.
@@ -106,14 +101,9 @@ func (c *RouterChain) copyInvokers() []protocol.Invoker {
 	return ret
 }
 
-func SetVSAndDRConfigByte(vs, dr []byte) {
-	virtualServiceConfigByte = vs
-	destinationRuleConfigByte = dr
-}
-
-// NewRouterChain Use url to init router chain
+// NewRouterChain init router chain
 // Loop routerFactories and call NewRouter method
-func NewRouterChain(url *common.URL) (*RouterChain, error) {
+func NewRouterChain() (*RouterChain, error) {
 	routerFactories := extension.GetRouterFactories()
 	if len(routerFactories) == 0 {
 		return nil, perrors.Errorf("No routerFactory exits , create one please")
@@ -122,12 +112,9 @@ func NewRouterChain(url *common.URL) (*RouterChain, error) {
 	routers := make([]router.PriorityRouter, 0, len(routerFactories))
 
 	for key, routerFactory := range routerFactories {
-		if virtualServiceConfigByte == nil || destinationRuleConfigByte == nil {
-			logger.Warnf("virtual Service ProtocolConfig or destinationRule Confi Byte may be empty, pls check your CONF_VIRTUAL_SERVICE_FILE_PATH and CONF_DEST_RULE_FILE_PATH env is correctly point to your yaml file\n")
-		}
-		r, err := routerFactory().NewPriorityRouter(virtualServiceConfigByte, destinationRuleConfigByte)
+		r, err := routerFactory().NewPriorityRouter()
 		if r == nil || err != nil {
-			logger.Errorf("router chain build router fail! routerFactories key:%s  error:%vv", key, err)
+			logger.Errorf("router chain build router fail! routerFactories key:%s  error:%v", key, err)
 			continue
 		}
 		routers = append(routers, r)

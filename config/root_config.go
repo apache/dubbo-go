@@ -19,10 +19,28 @@ package config
 
 import (
 	_ "net/http/pprof"
+	"sync"
 )
 
 import (
+	hessian "github.com/apache/dubbo-go-hessian2"
+
+	perrors "github.com/pkg/errors"
+
+	"go.uber.org/atomic"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/metadata/service/exporter"
+)
+
+var (
+	startOnce sync.Once
+	exporting = &atomic.Bool{}
 )
 
 // RootConfig is the root config
@@ -35,15 +53,10 @@ type RootConfig struct {
 	// Registries registry config
 	Registries map[string]*RegistryConfig `yaml:"registries" json:"registries" property:"registries"`
 
-	// Remotes to be remove in 3.0 config-enhance
-	Remotes map[string]*RemoteConfig `yaml:"remote" json:"remote,omitempty" property:"remote"`
-
+	// TODO ConfigCenter and CenterConfig?
 	ConfigCenter *CenterConfig `yaml:"config-center" json:"config-center,omitempty"`
 
-	// ServiceDiscoveries to be remove in 3.0 config-enhance
-	ServiceDiscoveries map[string]*ServiceDiscoveryConfig `yaml:"service-discovery" json:"service-discovery,omitempty" property:"service-discovery"`
-
-	MetadataReportConfig *MetadataReportConfig `yaml:"metadata-report" json:"metadata-report,omitempty" property:"metadata-report"`
+	MetadataReport *MetadataReportConfig `yaml:"metadata-report" json:"metadata-report,omitempty" property:"metadata-report"`
 
 	// provider config
 	Provider *ProviderConfig `yaml:"provider" json:"provider" property:"provider"`
@@ -51,7 +64,7 @@ type RootConfig struct {
 	// consumer config
 	Consumer *ConsumerConfig `yaml:"consumer" json:"consumer" property:"consumer"`
 
-	MetricConfig *MetricConfig `yaml:"metrics" json:"metrics,omitempty" property:"metrics"`
+	Metric *MetricConfig `yaml:"metrics" json:"metrics,omitempty" property:"metrics"`
 
 	// Logger log
 	Logger *LoggerConfig `yaml:"logger" json:"logger,omitempty" property:"logger"`
@@ -82,109 +95,27 @@ func GetRootConfig() *RootConfig {
 
 func GetProviderConfig() *ProviderConfig {
 	if err := check(); err != nil {
-		return GetProviderInstance()
+		return NewProviderConfigBuilder().Build()
 	}
 	if rootConfig.Provider != nil {
 		return rootConfig.Provider
 	}
-	return GetProviderInstance()
+	return NewProviderConfigBuilder().Build()
 }
 
 func GetConsumerConfig() *ConsumerConfig {
 	if err := check(); err != nil {
-		return GetConsumerInstance()
+		return NewConsumerConfigBuilder().Build()
 	}
 	if rootConfig.Consumer != nil {
 		return rootConfig.Consumer
 	}
-	return GetConsumerInstance()
+	return NewConsumerConfigBuilder().Build()
 }
 
 func GetApplicationConfig() *ApplicationConfig {
 	return rootConfig.Application
 }
-
-// GetConfigCenterConfig get config center config
-//func GetConfigCenterConfig() (*CenterConfig, error) {
-//	if err := check(); err != nil {
-//		return nil, err
-//	}
-//	conf := rootConfig.ConfigCenter
-//	if conf == nil {
-//		return nil, errors.New("config center config is null")
-//	}
-//	if err := defaults.Set(conf); err != nil {
-//		return nil, err
-//	}
-//	conf.translateConfigAddress()
-//	if err := verify(conf); err != nil {
-//		return nil, err
-//	}
-//	return conf, nil
-//}
-
-// GetRegistriesConfig get registry config default zookeeper registry
-//func GetRegistriesConfig() (map[string]*RegistryConfig, error) {
-//	if err := check(); err != nil {
-//		return nil, err
-//	}
-//
-//	if registriesConfig != nil {
-//		return registriesConfig, nil
-//	}
-//	registriesConfig = initRegistriesConfig(rootConfig.Registries)
-//	for _, reg := range registriesConfig {
-//		if err := defaults.Set(reg); err != nil {
-//			return nil, err
-//		}
-//		reg.translateRegistryAddress()
-//		if err := verify(reg); err != nil {
-//			return nil, err
-//		}
-//	}
-//
-//	return registriesConfig, nil
-//}
-
-// GetProtocolsConfig get protocols config default dubbo protocol
-//func GetProtocolsConfig() (map[string]*ProtocolConfig, error) {
-//	if err := check(); err != nil {
-//		return nil, err
-//	}
-//
-//	protocols := getProtocolsConfig(rootConfig.Protocols)
-//	for _, protocol := range protocols {
-//		if err := defaults.Set(protocol); err != nil {
-//			return nil, err
-//		}
-//		if err := verify(protocol); err != nil {
-//			return nil, err
-//		}
-//	}
-//	return protocols, nil
-//}
-
-// GetProviderConfig get provider config
-//func GetProviderConfig() (*ProviderConfig, error) {
-//	if err := check(); err != nil {
-//		return nil, err
-//	}
-//
-//	if providerConfig != nil {
-//		return providerConfig, nil
-//	}
-//	provider := getProviderConfig(rootConfig.Provider)
-//	if err := defaults.Set(provider); err != nil {
-//		return nil, err
-//	}
-//	if err := verify(provider); err != nil {
-//		return nil, err
-//	}
-//
-//	provider.Services = getRegistryServices(common.PROVIDER, provider.Services, provider.Registry)
-//	providerConfig = provider
-//	return provider, nil
-//}
 
 // getRegistryIds get registry ids
 func (rc *RootConfig) getRegistryIds() []string {
@@ -194,87 +125,234 @@ func (rc *RootConfig) getRegistryIds() []string {
 	}
 	return removeDuplicateElement(ids)
 }
+func registerPOJO() {
+	hessian.RegisterPOJO(&common.MetadataInfo{})
+	hessian.RegisterPOJO(&common.ServiceInfo{})
+	hessian.RegisterPOJO(&common.URL{})
+}
 
-// NewRootConfig get root config
-func NewRootConfig(opts ...RootConfigOpt) *RootConfig {
-	newRootConfig := &RootConfig{
-		ConfigCenter:         &CenterConfig{},
-		ServiceDiscoveries:   make(map[string]*ServiceDiscoveryConfig),
-		MetadataReportConfig: &MetadataReportConfig{},
-		Application:          &ApplicationConfig{},
-		Registries:           make(map[string]*RegistryConfig),
-		Protocols:            make(map[string]*ProtocolConfig),
-		Provider:             GetProviderInstance(),
-		Consumer:             GetConsumerInstance(),
-		MetricConfig:         &MetricConfig{},
+func (rc *RootConfig) Init() error {
+	registerPOJO()
+	if err := rc.Logger.Init(); err != nil { // init default logger
+		return err
 	}
-	for _, o := range opts {
-		o(newRootConfig)
+	if err := rc.ConfigCenter.Init(rc); err != nil {
+		logger.Infof("config center doesn't start， because %s", err)
+	} else {
+		if err := rc.Logger.Init(); err != nil { // init logger using config from config center again
+			return err
+		}
+	}
+
+	if err := rc.Application.Init(); err != nil {
+		return err
+	}
+
+	// init protocol
+	protocols := rc.Protocols
+	if len(protocols) <= 0 {
+		protocol := &ProtocolConfig{}
+		protocols = make(map[string]*ProtocolConfig, 1)
+		protocols[constant.DUBBO] = protocol
+		rc.Protocols = protocols
+	}
+	for _, protocol := range protocols {
+		if err := protocol.Init(); err != nil {
+			return err
+		}
+	}
+
+	// init registry
+	registries := rc.Registries
+	if registries != nil {
+		for _, reg := range registries {
+			if err := reg.Init(); err != nil {
+				return err
+			}
+		}
+	}
+
+	if err := rc.MetadataReport.Init(rc); err != nil {
+		return err
+	}
+	if err := rc.Metric.Init(); err != nil {
+		return err
+	}
+	if err := initRouterConfig(rc); err != nil {
+		return err
+	}
+	// provider、consumer must last init
+	if err := rc.Provider.Init(rc); err != nil {
+		return err
+	}
+	if err := rc.Consumer.Init(rc); err != nil {
+		return err
+	}
+	// todo if we can remove this from Init in the future?
+	rc.Start()
+	return nil
+}
+
+func (rc *RootConfig) Start() {
+	startOnce.Do(func() {
+		rc.Provider.Load()
+		// todo if register consumer instance or has exported services
+		exportMetadataService()
+		registerServiceInstance()
+
+		rc.Consumer.Load()
+	})
+}
+
+// newEmptyRootConfig get empty root config
+func newEmptyRootConfig() *RootConfig {
+	newRootConfig := &RootConfig{
+		ConfigCenter:   NewConfigCenterConfigBuilder().Build(),
+		MetadataReport: NewMetadataReportConfigBuilder().Build(),
+		Application:    NewApplicationConfigBuilder().Build(),
+		Registries:     make(map[string]*RegistryConfig),
+		Protocols:      make(map[string]*ProtocolConfig),
+		Provider:       NewProviderConfigBuilder().Build(),
+		Consumer:       NewConsumerConfigBuilder().Build(),
+		Metric:         NewMetricConfigBuilder().Build(),
+		Logger:         NewLoggerConfigBuilder().Build(),
 	}
 	return newRootConfig
 }
 
-type RootConfigOpt func(config *RootConfig)
+func NewRootConfigBuilder() *RootConfigBuilder {
+	return &RootConfigBuilder{rootConfig: newEmptyRootConfig()}
+}
 
-// WithMetricsConfig set root config with given @metricsConfig
-func WithMetricsConfig(metricsConfig *MetricConfig) RootConfigOpt {
-	return func(rc *RootConfig) {
-		rc.MetricConfig = metricsConfig
+type RootConfigBuilder struct {
+	rootConfig *RootConfig
+}
+
+func (rb *RootConfigBuilder) SetApplication(application *ApplicationConfig) *RootConfigBuilder {
+	rb.rootConfig.Application = application
+	return rb
+}
+
+func (rb *RootConfigBuilder) AddProtocol(protocolID string, protocolConfig *ProtocolConfig) *RootConfigBuilder {
+	rb.rootConfig.Protocols[protocolID] = protocolConfig
+	return rb
+}
+
+func (rb *RootConfigBuilder) AddRegistry(registryID string, registryConfig *RegistryConfig) *RootConfigBuilder {
+	rb.rootConfig.Registries[registryID] = registryConfig
+	return rb
+}
+
+func (rb *RootConfigBuilder) SetProtocols(protocols map[string]*ProtocolConfig) *RootConfigBuilder {
+	rb.rootConfig.Protocols = protocols
+	return rb
+}
+
+func (rb *RootConfigBuilder) SetRegistries(registries map[string]*RegistryConfig) *RootConfigBuilder {
+	rb.rootConfig.Registries = registries
+	return rb
+}
+
+func (rb *RootConfigBuilder) SetMetadataReport(metadataReport *MetadataReportConfig) *RootConfigBuilder {
+	rb.rootConfig.MetadataReport = metadataReport
+	return rb
+}
+
+func (rb *RootConfigBuilder) SetProvider(provider *ProviderConfig) *RootConfigBuilder {
+	rb.rootConfig.Provider = provider
+	return rb
+}
+
+func (rb *RootConfigBuilder) SetConsumer(consumer *ConsumerConfig) *RootConfigBuilder {
+	rb.rootConfig.Consumer = consumer
+	return rb
+}
+
+func (rb *RootConfigBuilder) SetMetric(metric *MetricConfig) *RootConfigBuilder {
+	rb.rootConfig.Metric = metric
+	return rb
+}
+
+func (rb *RootConfigBuilder) SetLogger(logger *LoggerConfig) *RootConfigBuilder {
+	rb.rootConfig.Logger = logger
+	return rb
+}
+
+func (rb *RootConfigBuilder) SetShutdown(shutdown *ShutdownConfig) *RootConfigBuilder {
+	rb.rootConfig.Shutdown = shutdown
+	return rb
+}
+
+func (rb *RootConfigBuilder) SetRouter(router []*RouterConfig) *RootConfigBuilder {
+	rb.rootConfig.Router = router
+	return rb
+}
+
+func (rb *RootConfigBuilder) SetEventDispatcherType(eventDispatcherType string) *RootConfigBuilder {
+	rb.rootConfig.EventDispatcherType = eventDispatcherType
+	return rb
+}
+
+func (rb *RootConfigBuilder) SetCacheFile(cacheFile string) *RootConfigBuilder {
+	rb.rootConfig.CacheFile = cacheFile
+	return rb
+}
+
+func (rb *RootConfigBuilder) SetConfigCenter(configCenterConfig *CenterConfig) *RootConfigBuilder {
+	rb.rootConfig.ConfigCenter = configCenterConfig
+	return rb
+}
+
+func (rb *RootConfigBuilder) Build() *RootConfig {
+	return rb.rootConfig
+}
+
+func exportMetadataService() {
+	ms, err := extension.GetLocalMetadataService(constant.DEFAULT_Key)
+	if err != nil {
+		logger.Warnf("could not init metadata service", err)
+		return
+	}
+
+	if !IsProvider() || exporting.Load() {
+		return
+	}
+
+	// In theory, we can use sync.Once
+	// But sync.Once is not reentrant.
+	// Now the invocation chain is createRegistry -> tryInitMetadataService -> metadataServiceExporter.export
+	// -> createRegistry -> initMetadataService...
+	// So using sync.Once will result in dead lock
+	exporting.Store(true)
+
+	expt := extension.GetMetadataServiceExporter(constant.DEFAULT_Key, ms)
+	if expt == nil {
+		logger.Warnf("get metadata service exporter failed, pls check if you import _ \"dubbo.apache.org/dubbo-go/v3/metadata/service/exporter/configurable\"")
+		return
+	}
+
+	err = expt.Export(nil)
+	if err != nil {
+		logger.Errorf("could not export the metadata service, err = %s", err.Error())
+		return
+	}
+
+	// report interface-app mapping
+	err = publishMapping(expt)
+	if err != nil {
+		logger.Errorf("Publish interface-application mapping failed, got error %#v", err)
 	}
 }
 
-// WithRootConsumerConfig set root config with given @consumerConfig
-func WithRootConsumerConfig(consumerConfig *ConsumerConfig) RootConfigOpt {
-	return func(rc *RootConfig) {
-		rc.Consumer = consumerConfig
-	}
-}
+// OnEvent only handle ServiceConfigExportedEvent
+func publishMapping(sc exporter.MetadataServiceExporter) error {
+	urls := sc.GetExportedURLs()
 
-// WithRootProviderConfig set root config with given @providerConfig
-func WithRootProviderConfig(providerConfig *ProviderConfig) RootConfigOpt {
-	return func(rc *RootConfig) {
-		rc.Provider = providerConfig
+	for _, u := range urls {
+		err := extension.GetGlobalServiceNameMapping().Map(u)
+		if err != nil {
+			return perrors.WithMessage(err, "could not map the service: "+u.String())
+		}
 	}
-}
-
-// WithRootProtocolConfig set root config with key @protocolName and given @protocolConfig
-func WithRootProtocolConfig(protocolName string, protocolConfig *ProtocolConfig) RootConfigOpt {
-	return func(rc *RootConfig) {
-		rc.Protocols[protocolName] = protocolConfig
-	}
-}
-
-// WithRootRegistryConfig set root config with key @registryKey and given @regConfig
-func WithRootRegistryConfig(registryKey string, regConfig *RegistryConfig) RootConfigOpt {
-	return func(rc *RootConfig) {
-		rc.Registries[registryKey] = regConfig
-	}
-}
-
-// WithRootApplicationConfig set root config with given @appConfig
-func WithRootApplicationConfig(appConfig *ApplicationConfig) RootConfigOpt {
-	return func(rc *RootConfig) {
-		rc.Application = appConfig
-	}
-}
-
-// WithRootMetadataReportConfig set root config with given @metadataReportConfig
-func WithRootMetadataReportConfig(metadataReportConfig *MetadataReportConfig) RootConfigOpt {
-	return func(rc *RootConfig) {
-		rc.MetadataReportConfig = metadataReportConfig
-	}
-}
-
-// WithRootServiceDiscoverConfig set root config with given @serviceDiscConfig and key @name
-func WithRootServiceDiscoverConfig(name string, serviceDiscConfig *ServiceDiscoveryConfig) RootConfigOpt {
-	return func(rc *RootConfig) {
-		rc.ServiceDiscoveries[name] = serviceDiscConfig
-	}
-}
-
-// WithRootCenterConfig set root config with given centerConfig
-func WithRootCenterConfig(centerConfig *CenterConfig) RootConfigOpt {
-	return func(rc *RootConfig) {
-		rc.ConfigCenter = centerConfig
-	}
+	return nil
 }

@@ -18,10 +18,6 @@
 package config
 
 import (
-	"fmt"
-)
-
-import (
 	perrors "github.com/pkg/errors"
 )
 
@@ -29,6 +25,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/config/instance"
 )
 
@@ -65,7 +62,7 @@ func (mc *MetadataReportConfig) ToUrl() (*common.URL, error) {
 		common.WithParamsValue(constant.METADATATYPE_KEY, mc.MetadataType),
 	)
 	if err != nil || len(res.Protocol) == 0 {
-		return nil, perrors.New("Invalid MetadataReportConfig.")
+		return nil, perrors.New("Invalid MetadataReport Config.")
 	}
 	res.SetParam("metadata", res.Protocol)
 	return res, nil
@@ -89,6 +86,12 @@ func (mc *MetadataReportConfig) StartMetadataReport() error {
 }
 
 func publishServiceDefinition(url *common.URL) {
+	localService, err := extension.GetLocalMetadataService(constant.DEFAULT_Key)
+	if err != nil {
+		logger.Warnf("get local metadata service failed, please check if you have imported _ \"dubbo.apache.org/dubbo-go/v3/metadata/service/local\"")
+		return
+	}
+	localService.PublishServiceDefinition(url)
 	if url.GetParam(constant.METADATATYPE_KEY, "") != constant.REMOTE_METADATA_STORAGE_TYPE {
 		return
 	}
@@ -101,9 +104,9 @@ func publishServiceDefinition(url *common.URL) {
 // selectMetadataServiceExportedURL get already be exported url
 func selectMetadataServiceExportedURL() *common.URL {
 	var selectedUrl *common.URL
-	metaDataService, err := extension.GetLocalMetadataService("")
+	metaDataService, err := extension.GetLocalMetadataService(constant.DEFAULT_Key)
 	if err != nil {
-		fmt.Println("selectMetadataServiceExportedURL err = ", err)
+		logger.Warnf("get metadata service exporter failed, pls check if you import _ \"dubbo.apache.org/dubbo-go/v3/metadata/service/local\"")
 		return nil
 	}
 	urlList, err := metaDataService.GetExportedURLs(constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE)
@@ -121,4 +124,61 @@ func selectMetadataServiceExportedURL() *common.URL {
 		}
 	}
 	return selectedUrl
+}
+
+type MetadataReportConfigBuilder struct {
+	metadataReportConfig *MetadataReportConfig
+}
+
+// nolint
+func NewMetadataReportConfigBuilder() *MetadataReportConfigBuilder {
+	return &MetadataReportConfigBuilder{metadataReportConfig: &MetadataReportConfig{}}
+}
+
+// nolint
+func (mrcb *MetadataReportConfigBuilder) SetProtocol(protocol string) *MetadataReportConfigBuilder {
+	mrcb.metadataReportConfig.Protocol = protocol
+	return mrcb
+}
+
+// nolint
+func (mrcb *MetadataReportConfigBuilder) SetAddress(address string) *MetadataReportConfigBuilder {
+	mrcb.metadataReportConfig.Address = address
+	return mrcb
+}
+
+// nolint
+func (mrcb *MetadataReportConfigBuilder) SetUsername(username string) *MetadataReportConfigBuilder {
+	mrcb.metadataReportConfig.Username = username
+	return mrcb
+}
+
+// nolint
+func (mrcb *MetadataReportConfigBuilder) SetPassword(password string) *MetadataReportConfigBuilder {
+	mrcb.metadataReportConfig.Password = password
+	return mrcb
+}
+
+// nolint
+func (mrcb *MetadataReportConfigBuilder) SetTimeout(timeout string) *MetadataReportConfigBuilder {
+	mrcb.metadataReportConfig.Timeout = timeout
+	return mrcb
+}
+
+// nolint
+func (mrcb *MetadataReportConfigBuilder) SetGroup(group string) *MetadataReportConfigBuilder {
+	mrcb.metadataReportConfig.Group = group
+	return mrcb
+}
+
+// nolint
+func (mrcb *MetadataReportConfigBuilder) SetMetadataType(metadataType string) *MetadataReportConfigBuilder {
+	mrcb.metadataReportConfig.MetadataType = metadataType
+	return mrcb
+}
+
+// nolint
+func (mrcb *MetadataReportConfigBuilder) Build() *MetadataReportConfig {
+	// TODO Init
+	return mrcb.metadataReportConfig
 }

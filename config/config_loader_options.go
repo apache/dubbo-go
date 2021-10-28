@@ -14,10 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package config
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -40,6 +42,8 @@ type loaderConf struct {
 	path string
 	// loaderConf file delim default .
 	delim string
+	// config bytes
+	bytes []byte
 }
 
 func NewLoaderConf(opts ...LoaderConfOption) *loaderConf {
@@ -47,15 +51,21 @@ func NewLoaderConf(opts ...LoaderConfOption) *loaderConf {
 	if configFilePathFromEnv := os.Getenv(constant.CONFIG_FILE_ENV_KEY); configFilePathFromEnv != "" {
 		configFilePath = configFilePathFromEnv
 	}
-
+	genre := strings.Split(configFilePath, ".")
 	conf := &loaderConf{
-		genre: "yaml",
-		path:  configFilePath,
+		genre: genre[len(genre)-1],
+		path:  absolutePath(configFilePath),
 		delim: ".",
 	}
-
 	for _, opt := range opts {
 		opt.apply(conf)
+	}
+	if len(conf.bytes) <= 0 {
+		bytes, err := ioutil.ReadFile(conf.path)
+		if err != nil {
+			panic(err)
+		}
+		conf.bytes = bytes
 	}
 	return conf
 }
@@ -70,7 +80,7 @@ func (fn loaderConfigFunc) apply(vc *loaderConf) {
 	fn(vc)
 }
 
-// WithGenre set loaderConf Genre
+// WithGenre set load config  genre
 func WithGenre(genre string) LoaderConfOption {
 	return loaderConfigFunc(func(conf *loaderConf) {
 		g := strings.ToLower(genre)
@@ -81,10 +91,17 @@ func WithGenre(genre string) LoaderConfOption {
 	})
 }
 
-// WithPath set loaderConf path
+// WithPath set load config path
 func WithPath(path string) LoaderConfOption {
 	return loaderConfigFunc(func(conf *loaderConf) {
 		conf.path = absolutePath(path)
+		bytes, err := ioutil.ReadFile(path)
+		if err != nil {
+			panic(err)
+		}
+		conf.bytes = bytes
+		genre := strings.Split(path, ".")
+		conf.genre = genre[len(genre)-1]
 	})
 }
 
