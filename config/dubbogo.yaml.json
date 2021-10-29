@@ -1,1 +1,0 @@
-{"appId":"dubbo-go","cluster":"default","namespaceName":"dubbogo.yaml","releaseKey":"20211024004732-b3c4b7517738ccda","configurations":{"content":"dubbo:\r\n  registries:\r\n    nacos:\r\n      timeout: 20s\r\n      group: dev\r\n      address: nacos://127.0.0.1:8848"}}
