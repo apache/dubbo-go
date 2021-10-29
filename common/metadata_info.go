@@ -34,19 +34,19 @@ import (
 )
 
 var IncludeKeys = gxset.NewSet(
-	constant.APPLICATION_KEY,
-	constant.GROUP_KEY,
-	constant.TIMESTAMP_KEY,
-	constant.SERIALIZATION_KEY,
-	constant.CLUSTER_KEY,
-	constant.LOADBALANCE_KEY,
+	constant.ApplicationKey,
+	constant.GroupKey,
+	constant.TimestampKey,
+	constant.SerializationKey,
+	constant.ClusterKey,
+	constant.LoadbalanceKey,
 	constant.PATH_KEY,
-	constant.TIMEOUT_KEY,
+	constant.TimeoutKey,
 	constant.TOKEN_KEY,
-	constant.VERSION_KEY,
+	constant.VersionKey,
 	constant.WARMUP_KEY,
 	constant.WEIGHT_KEY,
-	constant.RELEASE_KEY)
+	constant.ReleaseKey)
 
 // MetadataInfo the metadata information of instance
 type MetadataInfo struct {

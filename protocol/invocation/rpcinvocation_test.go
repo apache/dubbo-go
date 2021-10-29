@@ -54,10 +54,10 @@ func TestRPCInvocation_ServiceKey(t *testing.T) {
 	sameInfPathConsumerUrl, err := common.NewURL(sameInfPathConsumerURL)
 	assert.NoError(t, err)
 	invocation := NewRPCInvocationWithOptions(WithAttachments(map[string]interface{}{
-		constant.INTERFACE_KEY: sameInfPathConsumerUrl.GetParam(constant.INTERFACE_KEY, ""),
-		constant.PATH_KEY:      sameInfPathConsumerUrl.Path,
-		constant.GROUP_KEY:     sameInfPathConsumerUrl.GetParam(constant.GROUP_KEY, ""),
-		constant.VERSION_KEY:   sameInfPathConsumerUrl.GetParam(constant.VERSION_KEY, ""),
+		constant.InterfaceKey: sameInfPathConsumerUrl.GetParam(constant.InterfaceKey, ""),
+		constant.PATH_KEY:     sameInfPathConsumerUrl.Path,
+		constant.GroupKey:     sameInfPathConsumerUrl.GetParam(constant.GroupKey, ""),
+		constant.VersionKey:   sameInfPathConsumerUrl.GetParam(constant.VersionKey, ""),
 	}))
 	assert.Equal(t, providerUrl.ServiceKey(), invocation.ServiceKey())
 
@@ -65,10 +65,10 @@ func TestRPCInvocation_ServiceKey(t *testing.T) {
 	diffInfPathConsumerUrl, err := common.NewURL(diffInfPathConsumerURL)
 	assert.NoError(t, err)
 	invocation = NewRPCInvocationWithOptions(WithAttachments(map[string]interface{}{
-		constant.INTERFACE_KEY: diffInfPathConsumerUrl.GetParam(constant.INTERFACE_KEY, ""),
-		constant.PATH_KEY:      diffInfPathConsumerUrl.Path,
-		constant.GROUP_KEY:     diffInfPathConsumerUrl.GetParam(constant.GROUP_KEY, ""),
-		constant.VERSION_KEY:   diffInfPathConsumerUrl.GetParam(constant.VERSION_KEY, ""),
+		constant.InterfaceKey: diffInfPathConsumerUrl.GetParam(constant.InterfaceKey, ""),
+		constant.PATH_KEY:     diffInfPathConsumerUrl.Path,
+		constant.GroupKey:     diffInfPathConsumerUrl.GetParam(constant.GroupKey, ""),
+		constant.VersionKey:   diffInfPathConsumerUrl.GetParam(constant.VersionKey, ""),
 	}))
 	assert.Equal(t, providerUrl.ServiceKey(), invocation.ServiceKey())
 }

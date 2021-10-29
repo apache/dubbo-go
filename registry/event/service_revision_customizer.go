@@ -104,7 +104,7 @@ func resolveRevision(urls []*common.URL) string {
 	candidates := make([]string, 0, len(urls))
 
 	for _, u := range urls {
-		sk := u.GetParam(constant.INTERFACE_KEY, "")
+		sk := u.GetParam(constant.InterfaceKey, "")
 
 		if len(u.Methods) == 0 {
 			candidates = append(candidates, sk)

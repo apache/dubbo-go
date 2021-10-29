@@ -20,31 +20,31 @@ package constant
 type DubboCtxKey string
 
 const (
-	ASYNC_KEY = "async" // it's value should be "true" or "false" of string type
+	AsyncKey = "async" // it's value should be "true" or "false" of string type
 )
 
 const (
-	GROUP_KEY                = "group"
-	VERSION_KEY              = "version"
-	INTERFACE_KEY            = "interface"
-	MESSAGE_SIZE_KEY         = "message_size"
+	GroupKey     = "group"
+	VersionKey   = "version"
+	InterfaceKey = "interface"
+	MESSAGE_SIZE_KEY = "message_size"
 	PATH_KEY                 = "path"
 	SERVICE_KEY              = "service"
-	METHODS_KEY              = "methods"
-	TIMEOUT_KEY              = "timeout"
-	CATEGORY_KEY             = "category"
+	METHODS_KEY  = "methods"
+	TimeoutKey   = "timeout"
+	CATEGORY_KEY = "category"
 	CHECK_KEY                = "check"
-	ENABLED_KEY              = "enabled"
-	SIDE_KEY                 = "side"
-	OVERRIDE_PROVIDERS_KEY   = "providerAddresses"
-	BEAN_NAME_KEY            = "bean.name"
-	GENERIC_KEY              = "generic"
-	CLASSIFIER_KEY           = "classifier"
+	ENABLED_KEY            = "enabled"
+	SideKey                = "side"
+	OVERRIDE_PROVIDERS_KEY = "providerAddresses"
+	BeanNameKey            = "bean.name"
+	GenericKey             = "generic"
+	CLASSIFIER_KEY = "classifier"
 	TOKEN_KEY                = "token"
 	LOCAL_ADDR               = "local-addr"
 	REMOTE_ADDR              = "remote-addr"
 	DEFAULT_REMOTING_TIMEOUT = 3000
-	RELEASE_KEY              = "release"
+	ReleaseKey               = "release"
 	ANYHOST_KEY              = "anyhost"
 	PORT_KEY                 = "port"
 	PROTOCOL_KEY             = "protocol"
@@ -54,13 +54,13 @@ const (
 	SSL_ENABLED_KEY = "ssl-enabled"
 	// PARAMS_TYPE_Key key used in pass through invoker factory, to define param type
 	PARAMS_TYPE_Key  = "parameter-type-names"
-	DEFAULT_Key      = "default"
-	METADATATYPE_KEY = "metadata-type"
+	DEFAULT_Key     = "default"
+	MetadatatypeKey = "metadata-type"
 )
 
 const (
-	SERVICE_FILTER_KEY   = "service.filter"
-	REFERENCE_FILTER_KEY = "reference.filter"
+	SERVICE_FILTER_KEY = "service.filter"
+	ReferenceFilterKey = "reference.filter"
 )
 
 // Filter Keys
@@ -88,15 +88,15 @@ const (
 )
 
 const (
-	TIMESTAMP_KEY                          = "timestamp"
-	REMOTE_TIMESTAMP_KEY                   = "remote.timestamp"
-	CLUSTER_KEY                            = "cluster"
-	LOADBALANCE_KEY                        = "loadbalance"
-	WEIGHT_KEY                             = "weight"
-	WARMUP_KEY                             = "warmup"
-	RETRIES_KEY                            = "retries"
-	STICKY_KEY                             = "sticky"
-	BEAN_NAME                              = "bean.name"
+	TimestampKey         = "timestamp"
+	REMOTE_TIMESTAMP_KEY = "remote.timestamp"
+	ClusterKey     = "cluster"
+	LoadbalanceKey = "loadbalance"
+	WEIGHT_KEY     = "weight"
+	WARMUP_KEY = "warmup"
+	RetriesKey = "retries"
+	StickyKey  = "sticky"
+	BEAN_NAME  = "bean.name"
 	FAIL_BACK_TASKS_KEY                    = "failbacktasks"
 	FORKS_KEY                              = "forks"
 	DEFAULT_FORKS                          = 2
@@ -111,7 +111,7 @@ const (
 	EXECUTE_LIMIT_KEY                      = "execute.limit"
 	DEFAULT_EXECUTE_LIMIT                  = "-1"
 	EXECUTE_REJECTED_EXECUTION_HANDLER_KEY = "execute.limit.rejected.handler"
-	SERIALIZATION_KEY                      = "serialization"
+	SerializationKey                       = "serialization"
 	PID_KEY                                = "pid"
 	SYNC_REPORT_KEY                        = "sync.report"
 	RETRY_PERIOD_KEY                       = "retry.period"
@@ -126,9 +126,9 @@ const (
 
 const (
 	REGISTRY_KEY              = "registry"
-	REGISTRY_PROTOCOL         = "registry"
-	SERVICE_REGISTRY_PROTOCOL = "service-discovery-registry"
-	ROLE_KEY                  = "registry.role"
+	RegistryProtocol        = "registry"
+	ServiceRegistryProtocol = "service-discovery-registry"
+	RoleKey                 = "registry.role"
 	REGISTRY_DEFAULT_KEY      = "registry.default"
 	REGISTRY_TIMEOUT_KEY      = "registry.timeout"
 	REGISTRY_LABEL_KEY        = "label"
@@ -142,14 +142,14 @@ const (
 )
 
 const (
-	APPLICATION_KEY          = "application"
-	ORGANIZATION_KEY         = "organization"
-	NAME_KEY                 = "name"
-	MODULE_KEY               = "module"
-	APP_VERSION_KEY          = "app.version"
-	OWNER_KEY                = "owner"
-	ENVIRONMENT_KEY          = "environment"
-	METHOD_KEY               = "method"
+	ApplicationKey  = "application"
+	OrganizationKey = "organization"
+	NameKey         = "name"
+	ModuleKey     = "module"
+	AppVersionKey   = "app.version"
+	OwnerKey       = "owner"
+	EnvironmentKey = "environment"
+	METHOD_KEY     = "method"
 	METHOD_KEYS              = "methods"
 	RULE_KEY                 = "rule"
 	RUNTIME_KEY              = "runtime"
@@ -307,9 +307,9 @@ const (
 
 // service discovery
 const (
-	SUBSCRIBED_SERVICE_NAMES_KEY               = "subscribed-services"
-	PROVIDED_BY                                = "provided-by"
-	EXPORTED_SERVICES_REVISION_PROPERTY_NAME   = "dubbo.metadata.revision"
+	SUBSCRIBED_SERVICE_NAMES_KEY             = "subscribed-services"
+	ProvidedBy                               = "provided-by"
+	EXPORTED_SERVICES_REVISION_PROPERTY_NAME = "dubbo.metadata.revision"
 	SUBSCRIBED_SERVICES_REVISION_PROPERTY_NAME = "dubbo.subscribed-services.revision"
 	SERVICE_INSTANCE_SELECTOR                  = "service-instance-selector"
 	METADATA_STORAGE_TYPE_PROPERTY_NAME        = "dubbo.metadata.storage-type"

@@ -87,8 +87,8 @@ func buildStandardMetadataServiceURL(ins registry.ServiceInstance) []*common.URL
 		common.WithProtocol(ps[constant.PROTOCOL_KEY]),
 		common.WithPort(ps[constant.PORT_KEY]),
 		common.WithParams(convertedParams),
-		common.WithParamsValue(constant.GROUP_KEY, sn),
-		common.WithParamsValue(constant.INTERFACE_KEY, constant.METADATA_SERVICE_NAME))
+		common.WithParamsValue(constant.GroupKey, sn),
+		common.WithParamsValue(constant.InterfaceKey, constant.METADATA_SERVICE_NAME))
 	res = append(res, u)
 
 	return res

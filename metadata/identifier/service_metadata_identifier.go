@@ -36,9 +36,9 @@ func NewServiceMetadataIdentifier(url *common.URL) *ServiceMetadataIdentifier {
 	return &ServiceMetadataIdentifier{
 		BaseMetadataIdentifier: BaseMetadataIdentifier{
 			ServiceInterface: url.Service(),
-			Version:          url.GetParam(constant.VERSION_KEY, ""),
-			Group:            url.GetParam(constant.GROUP_KEY, ""),
-			Side:             url.GetParam(constant.SIDE_KEY, ""),
+			Version:          url.GetParam(constant.VersionKey, ""),
+			Group:            url.GetParam(constant.GroupKey, ""),
+			Side:             url.GetParam(constant.SideKey, ""),
 		},
 		Protocol: url.Protocol,
 	}

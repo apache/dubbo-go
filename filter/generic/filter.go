@@ -54,7 +54,7 @@ func (f *Filter) Invoke(ctx context.Context, invoker protocol.Invoker, invocatio
 		args := make([]hessian.Object, 0, len(oldargs))
 
 		// get generic info from attachments of invocation, the default value is "true"
-		generic := invocation.AttachmentsByKey(constant.GENERIC_KEY, constant.GenericSerializationDefault)
+		generic := invocation.AttachmentsByKey(constant.GenericKey, constant.GenericSerializationDefault)
 		// get generalizer according to value in the `generic`
 		g := getGeneralizer(generic)
 
@@ -81,11 +81,11 @@ func (f *Filter) Invoke(ctx context.Context, invoker protocol.Invoker, invocatio
 		}
 		newivc := invocation2.NewRPCInvocation(constant.GENERIC, newargs, invocation.Attachments())
 		newivc.SetReply(invocation.Reply())
-		newivc.Attachments()[constant.GENERIC_KEY] = invoker.GetURL().GetParam(constant.GENERIC_KEY, "")
+		newivc.Attachments()[constant.GenericKey] = invoker.GetURL().GetParam(constant.GenericKey, "")
 
 		return invoker.Invoke(ctx, newivc)
 	} else if isMakingAGenericCall(invoker, invocation) {
-		invocation.Attachments()[constant.GENERIC_KEY] = invoker.GetURL().GetParam(constant.GENERIC_KEY, "")
+		invocation.Attachments()[constant.GenericKey] = invoker.GetURL().GetParam(constant.GenericKey, "")
 	}
 	return invoker.Invoke(ctx, invocation)
 }

@@ -45,10 +45,10 @@ import (
 const (
 	reporterName = "prometheus"
 	serviceKey   = constant.SERVICE_KEY
-	groupKey     = constant.GROUP_KEY
-	versionKey   = constant.VERSION_KEY
+	groupKey     = constant.GroupKey
+	versionKey   = constant.VersionKey
 	methodKey    = constant.METHOD_KEY
-	timeoutKey   = constant.TIMEOUT_KEY
+	timeoutKey   = constant.TimeoutKey
 
 	// to identify side
 	providerPrefix = "provider_"
@@ -199,14 +199,14 @@ func newSummaryVec(name, namespace string, labels []string) *prometheus.SummaryV
 
 // isProvider shows whether this url represents the application received the request as server
 func isProvider(url *common.URL) bool {
-	role := url.GetParam(constant.ROLE_KEY, "")
+	role := url.GetParam(constant.RoleKey, "")
 	return strings.EqualFold(role, strconv.Itoa(common.PROVIDER))
 }
 
 // isConsumer shows whether this url represents the application sent then request as client
 func isConsumer(url *common.URL) bool {
-	role := url.GetParam(constant.ROLE_KEY, "")
-	return strings.EqualFold(role, strconv.Itoa(common.CONSUMER))
+	role := url.GetParam(constant.RoleKey, "")
+	return strings.EqualFold(role, strconv.Itoa(common.Consumer))
 }
 
 // newPrometheusReporter create new prometheusReporter

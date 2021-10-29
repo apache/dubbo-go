@@ -59,7 +59,7 @@ func (mc *MetadataReportConfig) ToUrl() (*common.URL, error) {
 		common.WithPassword(mc.Password),
 		common.WithLocation(mc.Address),
 		common.WithProtocol(mc.Protocol),
-		common.WithParamsValue(constant.METADATATYPE_KEY, mc.MetadataType),
+		common.WithParamsValue(constant.MetadatatypeKey, mc.MetadataType),
 	)
 	if err != nil || len(res.Protocol) == 0 {
 		return nil, perrors.New("Invalid MetadataReport Config.")
@@ -92,7 +92,7 @@ func publishServiceDefinition(url *common.URL) {
 		return
 	}
 	localService.PublishServiceDefinition(url)
-	if url.GetParam(constant.METADATATYPE_KEY, "") != constant.REMOTE_METADATA_STORAGE_TYPE {
+	if url.GetParam(constant.MetadatatypeKey, "") != constant.REMOTE_METADATA_STORAGE_TYPE {
 		return
 	}
 	if remoteMetadataService, err := extension.GetRemoteMetadataService(); err == nil && remoteMetadataService != nil {

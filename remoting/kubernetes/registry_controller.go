@@ -521,7 +521,7 @@ func (c *dubboRegistryController) assembleDUBBOLabel(p *v1.Pod) (*v1.Pod, *v1.Po
 
 	// assign new label for current pod
 	switch c.role {
-	case common.CONSUMER:
+	case common.Consumer:
 		newPod.Labels[DubboIOLabelKey] = DubboIOConsumerLabelValue
 	case common.PROVIDER:
 		newPod.Labels[DubboIOLabelKey] = DubboIOProviderLabelValue

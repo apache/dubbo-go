@@ -51,7 +51,7 @@ type Client struct {
 // NewClient returns Client instance for registry
 func NewClient(url *common.URL) (*Client, error) {
 	// read type
-	r, err := strconv.Atoi(url.GetParams().Get(constant.ROLE_KEY))
+	r, err := strconv.Atoi(url.GetParams().Get(constant.RoleKey))
 	if err != nil {
 		return nil, perrors.WithMessage(err, "atoi role")
 	}
@@ -69,7 +69,7 @@ func NewClient(url *common.URL) (*Client, error) {
 		controller: controller,
 	}
 
-	if r == common.CONSUMER {
+	if r == common.Consumer {
 		// only consumer have to start informer factory
 		c.controller.startALLInformers()
 	}
@@ -194,7 +194,7 @@ func ValidateClient(container clientFacade) error {
 // NewMockClient exports for registry package test
 func NewMockClient(podList *v1.PodList) (*Client, error) {
 	ctx, cancel := context.WithCancel(context.Background())
-	controller, err := newDubboRegistryController(ctx, common.CONSUMER, func() (kubernetes.Interface, error) {
+	controller, err := newDubboRegistryController(ctx, common.Consumer, func() (kubernetes.Interface, error) {
 		return fake.NewSimpleClientset(podList), nil
 	})
 	if err != nil {

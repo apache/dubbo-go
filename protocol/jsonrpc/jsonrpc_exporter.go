@@ -42,7 +42,7 @@ func NewJsonrpcExporter(key string, invoker protocol.Invoker, exporterMap *sync.
 
 // Unexport exported JSON RPC service.
 func (je *JsonrpcExporter) Unexport() {
-	interfaceName := je.GetInvoker().GetURL().GetParam(constant.INTERFACE_KEY, "")
+	interfaceName := je.GetInvoker().GetURL().GetParam(constant.InterfaceKey, "")
 	je.BaseExporter.Unexport()
 	err := common.ServiceMap.UnRegister(interfaceName, JSONRPC, je.GetInvoker().GetURL().ServiceKey())
 	if err != nil {

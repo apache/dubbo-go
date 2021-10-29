@@ -212,7 +212,7 @@ func (mr *MetadataReport) storeMetadataTask(role int, identifier *identifier.Met
 	report := instance.GetMetadataReportInstance()
 	if role == common.PROVIDER {
 		err = report.StoreProviderMetadata(identifier, string(data))
-	} else if role == common.CONSUMER {
+	} else if role == common.Consumer {
 		err = report.StoreConsumerMetadata(identifier, string(data))
 	}
 
@@ -224,9 +224,9 @@ func (mr *MetadataReport) storeMetadataTask(role int, identifier *identifier.Met
 // StoreConsumerMetadata will delegate to call remote metadata's sdk to store consumer side service definition
 func (mr *MetadataReport) StoreConsumerMetadata(identifier *identifier.MetadataIdentifier, definer map[string]string) {
 	if mr.syncReport {
-		mr.storeMetadataTask(common.CONSUMER, identifier, definer)
+		mr.storeMetadataTask(common.Consumer, identifier, definer)
 	}
-	go mr.storeMetadataTask(common.CONSUMER, identifier, definer)
+	go mr.storeMetadataTask(common.Consumer, identifier, definer)
 }
 
 // SaveServiceMetadata will delegate to call remote metadata's sdk to save service metadata
@@ -307,7 +307,7 @@ func (mr *MetadataReport) doHandlerMetadataCollection(metadataMap map[*identifie
 	for e := range metadataMap {
 		if common.RoleType(common.PROVIDER).Role() == e.Side {
 			mr.StoreProviderMetadata(e, metadataMap[e].(*definition.ServiceDefinition))
-		} else if common.RoleType(common.CONSUMER).Role() == e.Side {
+		} else if common.RoleType(common.Consumer).Role() == e.Side {
 			mr.StoreConsumerMetadata(e, metadataMap[e].(map[string]string))
 		}
 	}

@@ -144,8 +144,8 @@ func (r *BaseRegistry) Register(conf *common.URL) error {
 		conf.Port = portToRegistry
 	}
 	// todo bug when provider、consumer simultaneous initialization
-	//role, _ := strconv.Atoi(r.URL.GetParam(constant.ROLE_KEY, ""))
-	role, _ := strconv.Atoi(conf.GetParam(constant.ROLE_KEY, ""))
+	//role, _ := strconv.Atoi(r.URL.GetParam(constant.RoleKey, ""))
+	role, _ := strconv.Atoi(conf.GetParam(constant.RoleKey, ""))
 	// Check if the service has been registered
 	r.cltLock.Lock()
 	_, ok = r.services[conf.Key()]
@@ -270,13 +270,13 @@ func (r *BaseRegistry) processURL(c *common.URL, f func(string, string) error, c
 	params.Add("ip", localIP)
 	// params.Add("timeout", fmt.Sprintf("%d", int64(r.Timeout)/1e6))
 
-	role, _ := strconv.Atoi(c.GetParam(constant.ROLE_KEY, ""))
-	//role, _ := strconv.Atoi(r.URL.GetParam(constant.ROLE_KEY, ""))
+	role, _ := strconv.Atoi(c.GetParam(constant.RoleKey, ""))
+	//role, _ := strconv.Atoi(r.URL.GetParam(constant.RoleKey, ""))
 	switch role {
 
 	case common.PROVIDER:
 		dubboPath, rawURL, err = r.providerRegistry(c, params, cpf)
-	case common.CONSUMER:
+	case common.Consumer:
 		dubboPath, rawURL, err = r.consumerRegistry(c, params, cpf)
 	default:
 		return perrors.Errorf("@c{%v} type is not referencer or provider", c)
@@ -360,7 +360,7 @@ func (r *BaseRegistry) consumerRegistry(c *common.URL, params url.Values, f crea
 		rawURL    string
 		err       error
 	)
-	dubboPath = fmt.Sprintf("/dubbo/%s/%s", r.service(c), common.DubboNodes[common.CONSUMER])
+	dubboPath = fmt.Sprintf("/dubbo/%s/%s", r.service(c), common.DubboNodes[common.Consumer])
 
 	if f != nil {
 		err = f(dubboPath)
@@ -383,7 +383,7 @@ func (r *BaseRegistry) consumerRegistry(c *common.URL, params url.Values, f crea
 	params.Add("protocol", c.Protocol)
 	s, _ := url.QueryUnescape(params.Encode())
 	rawURL = fmt.Sprintf("consumer://%s%s?%s", localIP, c.Path, s)
-	dubboPath = fmt.Sprintf("/dubbo/%s/%s", r.service(c), (common.RoleType(common.CONSUMER)).String())
+	dubboPath = fmt.Sprintf("/dubbo/%s/%s", r.service(c), (common.RoleType(common.Consumer)).String())
 
 	logger.Debugf("consumer path:%s, url:%s", dubboPath, rawURL)
 	return dubboPath, rawURL, nil

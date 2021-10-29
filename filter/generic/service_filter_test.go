@@ -96,10 +96,10 @@ func TestServiceFilter_Invoke(t *testing.T) {
 	ivkUrl := common.NewURLWithOptions(
 		common.WithProtocol("test"),
 		common.WithParams(url.Values{}),
-		common.WithParamsValue(constant.INTERFACE_KEY, service.Reference()),
-		common.WithParamsValue(constant.GENERIC_KEY, constant.GenericSerializationDefault))
+		common.WithParamsValue(constant.InterfaceKey, service.Reference()),
+		common.WithParamsValue(constant.GenericKey, constant.GenericSerializationDefault))
 	// registry RPC service
-	_, err := common.ServiceMap.Register(ivkUrl.GetParam(constant.INTERFACE_KEY, ""),
+	_, err := common.ServiceMap.Register(ivkUrl.GetParam(constant.InterfaceKey, ""),
 		ivkUrl.Protocol,
 		"",
 		"",
@@ -116,7 +116,7 @@ func TestServiceFilter_Invoke(t *testing.T) {
 			[]string{"java.lang.String"},
 			[]hessian.Object{"world"},
 		}, map[string]interface{}{
-			constant.GENERIC_KEY: "true",
+			constant.GenericKey: "true",
 		})
 	// invoke a non-existed method
 	invocation5 := invocation.NewRPCInvocation(constant.GENERIC,
@@ -125,7 +125,7 @@ func TestServiceFilter_Invoke(t *testing.T) {
 			[]string{"java.lang.String"},
 			[]hessian.Object{"world"},
 		}, map[string]interface{}{
-			constant.GENERIC_KEY: "true",
+			constant.GenericKey: "true",
 		})
 	// invoke a method with incorrect arguments
 	invocation6 := invocation.NewRPCInvocation(constant.GENERIC,
@@ -134,7 +134,7 @@ func TestServiceFilter_Invoke(t *testing.T) {
 			[]string{"java.lang.String", "java.lang.String"},
 			[]hessian.Object{"world", "haha"},
 		}, map[string]interface{}{
-			constant.GENERIC_KEY: "true",
+			constant.GenericKey: "true",
 		})
 	// invoke a method without errors using protobuf-json generalization
 	//invocation7 := invocation.NewRPCInvocation(constant.GENERIC,
@@ -143,7 +143,7 @@ func TestServiceFilter_Invoke(t *testing.T) {
 	//		[]string{},
 	//		[]hessian.Object{"{\"id\":1}"},
 	//	}, map[string]interface{}{
-	//		constant.GENERIC_KEY: constant.GenericSerializationProtobuf,
+	//		constant.GenericKey: constant.GenericSerializationProtobuf,
 	//	})
 
 	mockInvoker.EXPECT().Invoke(gomock.All(
@@ -202,7 +202,7 @@ func TestServiceFilter_OnResponse(t *testing.T) {
 			[]interface{}{"java.lang.String"},
 			[]interface{}{"world"},
 		}, map[string]interface{}{
-			constant.GENERIC_KEY: "true",
+			constant.GenericKey: "true",
 		})
 
 	rpcResult := &protocol.RPCResult{

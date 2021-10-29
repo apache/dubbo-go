@@ -101,9 +101,9 @@ func NewHTTPClient(opt *HTTPOptions) *HTTPClient {
 func (c *HTTPClient) NewRequest(service *common.URL, method string, args interface{}) *Request {
 	return &Request{
 		ID:       atomic.AddInt64(&c.ID, 1),
-		group:    service.GetParam(constant.GROUP_KEY, ""),
+		group:    service.GetParam(constant.GroupKey, ""),
 		protocol: service.Protocol,
-		version:  service.GetParam(constant.VERSION_KEY, ""),
+		version:  service.GetParam(constant.VersionKey, ""),
 		service:  service.Path,
 		method:   method,
 		args:     args,

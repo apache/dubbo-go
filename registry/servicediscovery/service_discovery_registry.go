@@ -45,7 +45,7 @@ import (
 )
 
 func init() {
-	extension.SetRegistry(constant.SERVICE_REGISTRY_PROTOCOL, newServiceDiscoveryRegistry)
+	extension.SetRegistry(constant.ServiceRegistryProtocol, newServiceDiscoveryRegistry)
 }
 
 // serviceDiscoveryRegistry is the implementation of application-level registry.
@@ -180,7 +180,7 @@ func (s *serviceDiscoveryRegistry) Register(url *common.URL) error {
 }
 
 func shouldRegister(url *common.URL) bool {
-	side := url.GetParam(constant.SIDE_KEY, "")
+	side := url.GetParam(constant.SideKey, "")
 	if side == constant.PROVIDER_PROTOCOL {
 		return true
 	}
@@ -245,8 +245,8 @@ func getUrlKey(url *common.URL) string {
 		bf.WriteString(url.Path)
 	}
 	bf.WriteString("?")
-	appendParam(bf, constant.VERSION_KEY, url)
-	appendParam(bf, constant.GROUP_KEY, url)
+	appendParam(bf, constant.VersionKey, url)
+	appendParam(bf, constant.GroupKey, url)
 	appendParam(bf, constant.NACOS_PROTOCOL_KEY, url)
 	return bf.String()
 }
@@ -273,7 +273,7 @@ func shouldSubscribe(url *common.URL) bool {
 
 func (s *serviceDiscoveryRegistry) getServices(url *common.URL) *gxset.HashSet {
 	services := gxset.NewSet()
-	serviceNames := url.GetParam(constant.PROVIDED_BY, "")
+	serviceNames := url.GetParam(constant.ProvidedBy, "")
 	if len(serviceNames) > 0 {
 		services = parseServices(serviceNames)
 	}

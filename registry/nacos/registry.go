@@ -60,7 +60,7 @@ type nacosRegistry struct {
 }
 
 func getCategory(url *common.URL) string {
-	role, _ := strconv.Atoi(url.GetParam(constant.ROLE_KEY, strconv.Itoa(constant.NACOS_DEFAULT_ROLETYPE)))
+	role, _ := strconv.Atoi(url.GetParam(constant.RoleKey, strconv.Itoa(constant.NACOS_DEFAULT_ROLETYPE)))
 	category := common.DubboNodes[role]
 	return category
 }
@@ -69,9 +69,9 @@ func getServiceName(url *common.URL) string {
 	var buffer bytes.Buffer
 
 	buffer.Write([]byte(getCategory(url)))
-	appendParam(&buffer, url, constant.INTERFACE_KEY)
-	appendParam(&buffer, url, constant.VERSION_KEY)
-	appendParam(&buffer, url, constant.GROUP_KEY)
+	appendParam(&buffer, url, constant.InterfaceKey)
+	appendParam(&buffer, url, constant.VersionKey)
+	appendParam(&buffer, url, constant.GroupKey)
 	return buffer.String()
 }
 
@@ -119,7 +119,7 @@ func createRegisterParam(url *common.URL, serviceName string, groupName string) 
 // Register will register the service @url to its nacos registry center
 func (nr *nacosRegistry) Register(url *common.URL) error {
 	serviceName := getServiceName(url)
-	groupName := nr.URL.GetParam(constant.GROUP_KEY, defaultGroup)
+	groupName := nr.URL.GetParam(constant.GroupKey, defaultGroup)
 	param := createRegisterParam(url, serviceName, groupName)
 	isRegistry, err := nr.namingClient.Client().RegisterInstance(param)
 	if err != nil {
@@ -151,7 +151,7 @@ func createDeregisterParam(url *common.URL, serviceName string, groupName string
 
 func (nr *nacosRegistry) DeRegister(url *common.URL) error {
 	serviceName := getServiceName(url)
-	groupName := nr.URL.GetParam(constant.GROUP_KEY, defaultGroup)
+	groupName := nr.URL.GetParam(constant.GroupKey, defaultGroup)
 	param := createDeregisterParam(url, serviceName, groupName)
 	isDeRegistry, err := nr.namingClient.Client().DeregisterInstance(param)
 	if err != nil {
@@ -175,9 +175,9 @@ func (nr *nacosRegistry) subscribe(conf *common.URL) (registry.Listener, error) 
 // subscribe from registry
 func (nr *nacosRegistry) Subscribe(url *common.URL, notifyListener registry.NotifyListener) error {
 	// TODO
-	// role, _ := strconv.Atoi(nr.URL.GetParam(constant.ROLE_KEY, ""))
-	role, _ := strconv.Atoi(url.GetParam(constant.ROLE_KEY, ""))
-	if role != common.CONSUMER {
+	// role, _ := strconv.Atoi(nr.URL.GetParam(constant.RoleKey, ""))
+	role, _ := strconv.Atoi(url.GetParam(constant.RoleKey, ""))
+	if role != common.Consumer {
 		return nil
 	}
 
@@ -187,7 +187,7 @@ func (nr *nacosRegistry) Subscribe(url *common.URL, notifyListener registry.Noti
 			return perrors.New("nacosRegistry is not available.")
 		}
 
-		groupName := nr.GetParam(constant.GROUP_KEY, defaultGroup)
+		groupName := nr.GetParam(constant.GroupKey, defaultGroup)
 		url.SetParam(constant.REGISTRY_GROUP_KEY, groupName) // update to registry.group
 
 		listener, err := nr.subscribe(url)

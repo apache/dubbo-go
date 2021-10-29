@@ -53,7 +53,7 @@ type MetadataServiceNameMapping struct {
 
 // Map will map the service to this application-level service
 func (d *MetadataServiceNameMapping) Map(url *common.URL) error {
-	serviceInterface := url.GetParam(constant.INTERFACE_KEY, "")
+	serviceInterface := url.GetParam(constant.InterfaceKey, "")
 	// metadata service is admin service, should not be mapped
 	if constant.METADATA_SERVICE_NAME == serviceInterface {
 		logger.Info("try to map the metadata service, will be ignored")
@@ -71,7 +71,7 @@ func (d *MetadataServiceNameMapping) Map(url *common.URL) error {
 
 // Get will return the application-level services. If not found, the empty set will be returned.
 func (d *MetadataServiceNameMapping) Get(url *common.URL) (*gxset.HashSet, error) {
-	serviceInterface := url.GetParam(constant.INTERFACE_KEY, "")
+	serviceInterface := url.GetParam(constant.InterfaceKey, "")
 	metadataReport := instance.GetMetadataReportInstance()
 	return metadataReport.GetServiceAppMapping(serviceInterface, defaultGroup)
 }

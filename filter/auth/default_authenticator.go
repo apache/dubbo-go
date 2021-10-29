@@ -46,7 +46,7 @@ type DefaultAuthenticator struct{}
 func (authenticator *DefaultAuthenticator) Sign(invocation protocol.Invocation, url *common.URL) error {
 	currentTimeMillis := strconv.Itoa(int(time.Now().Unix() * 1000))
 
-	consumer := url.GetParam(constant.APPLICATION_KEY, "")
+	consumer := url.GetParam(constant.ApplicationKey, "")
 	accessKeyPair, err := getAccessKeyPair(invocation, url)
 	if err != nil {
 		return errors.New("get accesskey pair failed, cause: " + err.Error())

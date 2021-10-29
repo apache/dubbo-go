@@ -41,7 +41,7 @@ func TestLoadRegistries(t *testing.T) {
 			Password: "pwd1",
 		},
 	}
-	urls := loadRegistries(target, regs, common.CONSUMER)
+	urls := loadRegistries(target, regs, common.Consumer)
 	t.Logf("loadRegistries() = urls:%v", urls)
 	assert.Equal(t, "127.0.0.2:2181,128.0.0.1:2181", urls[0].Location)
 }
@@ -59,7 +59,7 @@ func TestLoadRegistries1(t *testing.T) {
 			Password: "pwd1",
 		},
 	}
-	urls := loadRegistries(target, regs, common.CONSUMER)
+	urls := loadRegistries(target, regs, common.Consumer)
 	t.Logf("loadRegistries() = urls:%v", urls)
 	assert.Equal(t, "127.0.0.2:2181", urls[0].Location)
 }

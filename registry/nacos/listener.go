@@ -179,9 +179,9 @@ func getSubscribeName(url *common.URL) string {
 	var buffer bytes.Buffer
 
 	buffer.Write([]byte(common.DubboNodes[common.PROVIDER]))
-	appendParam(&buffer, url, constant.INTERFACE_KEY)
-	appendParam(&buffer, url, constant.VERSION_KEY)
-	appendParam(&buffer, url, constant.GROUP_KEY)
+	appendParam(&buffer, url, constant.InterfaceKey)
+	appendParam(&buffer, url, constant.VersionKey)
+	appendParam(&buffer, url, constant.GroupKey)
 	return buffer.String()
 }
 

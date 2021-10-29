@@ -157,7 +157,7 @@ func (mts *MetadataService) getSpecifiedService(services *sync.Map, serviceKey s
 
 // ExportURL can store the in memory
 func (mts *MetadataService) ExportURL(url *common.URL) (bool, error) {
-	if constant.METADATA_SERVICE_NAME == url.GetParam(constant.INTERFACE_KEY, "") {
+	if constant.METADATA_SERVICE_NAME == url.GetParam(constant.InterfaceKey, "") {
 		mts.metadataServiceURL = url
 		return true, nil
 	}
@@ -170,7 +170,7 @@ func (mts *MetadataService) ExportURL(url *common.URL) (bool, error) {
 
 // UnexportURL can remove the url store in memory
 func (mts *MetadataService) UnexportURL(url *common.URL) error {
-	if constant.METADATA_SERVICE_NAME == url.GetParam(constant.INTERFACE_KEY, "") {
+	if constant.METADATA_SERVICE_NAME == url.GetParam(constant.InterfaceKey, "") {
 		mts.metadataServiceURL = nil
 		return nil
 	}
@@ -194,11 +194,11 @@ func (mts *MetadataService) UnsubscribeURL(url *common.URL) error {
 
 // PublishServiceDefinition: publish url's service metadata info, and write into memory
 func (mts *MetadataService) PublishServiceDefinition(url *common.URL) error {
-	if common.RoleType(common.CONSUMER).Role() == url.GetParam(constant.SIDE_KEY, "") {
+	if common.RoleType(common.Consumer).Role() == url.GetParam(constant.SideKey, "") {
 		return nil
 	}
-	interfaceName := url.GetParam(constant.INTERFACE_KEY, "")
-	isGeneric := url.GetParamBool(constant.GENERIC_KEY, false)
+	interfaceName := url.GetParam(constant.InterfaceKey, "")
+	isGeneric := url.GetParamBool(constant.GenericKey, false)
 	if len(interfaceName) > 0 && !isGeneric {
 		tmpService := common.ServiceMap.GetServiceByServiceKey(url.Protocol, url.ServiceKey())
 		sd := definition.BuildServiceDefinition(*tmpService, url)

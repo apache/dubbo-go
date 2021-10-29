@@ -136,7 +136,7 @@ func (proto *registryProtocol) GetRegistries() []registry.Registry {
 func (proto *registryProtocol) Refer(url *common.URL) protocol.Invoker {
 	registryUrl := url
 	serviceUrl := registryUrl.SubURL
-	if registryUrl.Protocol == constant.REGISTRY_PROTOCOL {
+	if registryUrl.Protocol == constant.RegistryProtocol {
 		registryUrl.Protocol = registryUrl.GetParam(constant.REGISTRY_KEY, "")
 	}
 
@@ -163,7 +163,7 @@ func (proto *registryProtocol) Refer(url *common.URL) protocol.Invoker {
 	}
 
 	// new cluster invoker
-	cluster := extension.GetCluster(serviceUrl.GetParam(constant.CLUSTER_KEY, constant.DEFAULT_CLUSTER))
+	cluster := extension.GetCluster(serviceUrl.GetParam(constant.ClusterKey, constant.DEFAULT_CLUSTER))
 	invoker := cluster.Join(directory)
 	proto.invokers = append(proto.invokers, invoker)
 	return invoker
@@ -245,7 +245,7 @@ func registerServiceMap(invoker protocol.Invoker) error {
 	providerUrl := getProviderUrl(invoker)
 	// the bean.name param of providerUrl is the ServiceConfig id property
 	// such as dubbo://:20000/org.apache.dubbo.UserProvider?bean.name=UserProvider&cluster=failfast...
-	id := providerUrl.GetParam(constant.BEAN_NAME_KEY, "")
+	id := providerUrl.GetParam(constant.BeanNameKey, "")
 
 	serviceConfig := config.GetProviderConfig().Services[id]
 	if serviceConfig == nil {
@@ -333,8 +333,8 @@ func isMatched(providerUrl *common.URL, consumerUrl *common.URL) bool {
 		providerUrl.Protocol == constant.OVERRIDE_PROTOCOL {
 		providerUrl.AddParam(constant.CATEGORY_KEY, constant.CONFIGURATORS_CATEGORY)
 	}
-	consumerInterface := consumerUrl.GetParam(constant.INTERFACE_KEY, consumerUrl.Path)
-	providerInterface := providerUrl.GetParam(constant.INTERFACE_KEY, providerUrl.Path)
+	consumerInterface := consumerUrl.GetParam(constant.InterfaceKey, consumerUrl.Path)
+	providerInterface := providerUrl.GetParam(constant.InterfaceKey, providerUrl.Path)
 
 	if !(constant.ANY_VALUE == consumerInterface ||
 		constant.ANY_VALUE == providerInterface ||
@@ -351,12 +351,12 @@ func isMatched(providerUrl *common.URL, consumerUrl *common.URL) bool {
 		consumerUrl.GetParam(constant.ENABLED_KEY, "") != constant.ANY_VALUE {
 		return false
 	}
-	consumerGroup := consumerUrl.GetParam(constant.GROUP_KEY, "")
-	consumerVersion := consumerUrl.GetParam(constant.VERSION_KEY, "")
+	consumerGroup := consumerUrl.GetParam(constant.GroupKey, "")
+	consumerVersion := consumerUrl.GetParam(constant.VersionKey, "")
 	consumerClassifier := consumerUrl.GetParam(constant.CLASSIFIER_KEY, "")
 
-	providerGroup := providerUrl.GetParam(constant.GROUP_KEY, "")
-	providerVersion := providerUrl.GetParam(constant.VERSION_KEY, "")
+	providerGroup := providerUrl.GetParam(constant.GroupKey, "")
+	providerVersion := providerUrl.GetParam(constant.VersionKey, "")
 	providerClassifier := providerUrl.GetParam(constant.CLASSIFIER_KEY, "")
 	// todo: public static boolean isContains(String values, String value) {
 	//        return isNotEmpty(values) && isContains(COMMA_SPLIT_PATTERN.split(values), value);
@@ -411,7 +411,7 @@ func getRegistryUrl(invoker protocol.Invoker) *common.URL {
 	// here add * for return a new url
 	url := invoker.GetURL()
 	// if the protocol == registry, set protocol the registry value in url.params
-	if url.Protocol == constant.REGISTRY_PROTOCOL {
+	if url.Protocol == constant.RegistryProtocol {
 		url.Protocol = url.GetParam(constant.REGISTRY_KEY, "")
 	}
 	return url

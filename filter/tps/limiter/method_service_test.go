@@ -46,7 +46,7 @@ func TestMethodServiceTpsLimiterImplIsAllowableOnlyServiceLevel(t *testing.T) {
 
 	invokeUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
-		common.WithParamsValue(constant.INTERFACE_KEY, methodName),
+		common.WithParamsValue(constant.InterfaceKey, methodName),
 		common.WithParamsValue(constant.TPS_LIMIT_RATE_KEY, "20"))
 
 	mockStrategyImpl := strategy.NewMockTpsLimitStrategy(ctrl)
@@ -72,7 +72,7 @@ func TestMethodServiceTpsLimiterImplIsAllowableNoConfig(t *testing.T) {
 
 	invokeUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
-		common.WithParamsValue(constant.INTERFACE_KEY, methodName),
+		common.WithParamsValue(constant.InterfaceKey, methodName),
 		common.WithParamsValue(constant.TPS_LIMIT_RATE_KEY, ""))
 
 	limiter := GetMethodServiceTpsLimiter()
@@ -89,7 +89,7 @@ func TestMethodServiceTpsLimiterImplIsAllowableMethodLevelOverride(t *testing.T)
 
 	invokeUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
-		common.WithParamsValue(constant.INTERFACE_KEY, methodName),
+		common.WithParamsValue(constant.InterfaceKey, methodName),
 		common.WithParamsValue(constant.TPS_LIMIT_RATE_KEY, "20"),
 		common.WithParamsValue(constant.TPS_LIMIT_INTERVAL_KEY, "3000"),
 		common.WithParamsValue(constant.TPS_LIMIT_STRATEGY_KEY, "invalid"),
@@ -122,7 +122,7 @@ func TestMethodServiceTpsLimiterImplIsAllowableBothMethodAndService(t *testing.T
 
 	invokeUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
-		common.WithParamsValue(constant.INTERFACE_KEY, methodName),
+		common.WithParamsValue(constant.InterfaceKey, methodName),
 		common.WithParamsValue(constant.TPS_LIMIT_RATE_KEY, "20"),
 		common.WithParamsValue(constant.TPS_LIMIT_INTERVAL_KEY, "3000"),
 		common.WithParamsValue(methodConfigPrefix+constant.TPS_LIMIT_RATE_KEY, "40"),

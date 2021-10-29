@@ -73,8 +73,8 @@ func (c *RegistryConfig) Init() error {
 
 func (c *RegistryConfig) getUrlMap(roleType common.RoleType) url.Values {
 	urlMap := url.Values{}
-	urlMap.Set(constant.GROUP_KEY, c.Group)
-	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(int(roleType)))
+	urlMap.Set(constant.GroupKey, c.Group)
+	urlMap.Set(constant.RoleKey, strconv.Itoa(int(roleType)))
 	urlMap.Set(constant.REGISTRY_KEY, c.Protocol)
 	urlMap.Set(constant.REGISTRY_TIMEOUT_KEY, c.Timeout)
 	// multi registry invoker weight label for load balance
@@ -110,7 +110,7 @@ func (c *RegistryConfig) GetInstance(roleType common.RoleType) (registry.Registr
 		return nil, err
 	}
 	// if the protocol == registry, set protocol the registry value in url.params
-	if u.Protocol == constant.REGISTRY_PROTOCOL {
+	if u.Protocol == constant.RegistryProtocol {
 		u.Protocol = u.GetParam(constant.REGISTRY_KEY, "")
 	}
 	return extension.GetRegistry(u.Protocol, u)
@@ -121,15 +121,15 @@ func (c *RegistryConfig) toURL(roleType common.RoleType) (*common.URL, error) {
 	var registryURLProtocol string
 	if c.RegistryType == "service" {
 		// service discovery protocol
-		registryURLProtocol = constant.SERVICE_REGISTRY_PROTOCOL
+		registryURLProtocol = constant.ServiceRegistryProtocol
 	} else {
-		registryURLProtocol = constant.REGISTRY_PROTOCOL
+		registryURLProtocol = constant.RegistryProtocol
 	}
 	return common.NewURL(registryURLProtocol+"://"+address,
 		common.WithParams(c.getUrlMap(roleType)),
 		common.WithParamsValue(constant.SIMPLIFIED_KEY, strconv.FormatBool(c.Simplified)),
 		common.WithParamsValue(constant.REGISTRY_KEY, c.Protocol),
-		common.WithParamsValue(constant.GROUP_KEY, c.Group),
+		common.WithParamsValue(constant.GroupKey, c.Group),
 		common.WithParamsValue(constant.NAMESPACE_KEY, c.Namespace),
 		common.WithUsername(c.Username),
 		common.WithPassword(c.Password),

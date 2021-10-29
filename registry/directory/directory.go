@@ -291,7 +291,7 @@ func (dir *RegistryDirectory) toGroupInvokers() []protocol.Invoker {
 	})
 
 	for _, invoker := range newInvokersList {
-		group := invoker.GetURL().GetParam(constant.GROUP_KEY, "")
+		group := invoker.GetURL().GetParam(constant.GroupKey, "")
 
 		groupInvokersMap[group] = append(groupInvokersMap[group], invoker)
 	}
@@ -304,7 +304,7 @@ func (dir *RegistryDirectory) toGroupInvokers() []protocol.Invoker {
 	} else {
 		for _, invokers := range groupInvokersMap {
 			staticDir := static.NewDirectory(invokers)
-			cst := extension.GetCluster(dir.GetURL().SubURL.GetParam(constant.CLUSTER_KEY, constant.DEFAULT_CLUSTER))
+			cst := extension.GetCluster(dir.GetURL().SubURL.GetParam(constant.ClusterKey, constant.DEFAULT_CLUSTER))
 			err = staticDir.BuildRouterChain(invokers)
 			if err != nil {
 				logger.Error(err)

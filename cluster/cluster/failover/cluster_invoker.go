@@ -116,9 +116,9 @@ func getRetries(invokers []protocol.Invoker, methodName string) int {
 
 	url := invokers[0].GetURL()
 	// get reties
-	retriesConfig := url.GetParam(constant.RETRIES_KEY, constant.DEFAULT_RETRIES)
+	retriesConfig := url.GetParam(constant.RetriesKey, constant.DEFAULT_RETRIES)
 	// Get the service method loadbalance config if have
-	if v := url.GetMethodParam(methodName, constant.RETRIES_KEY, ""); len(v) != 0 {
+	if v := url.GetMethodParam(methodName, constant.RetriesKey, ""); len(v) != 0 {
 		retriesConfig = v
 	}
 

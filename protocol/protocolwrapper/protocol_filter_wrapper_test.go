@@ -56,7 +56,7 @@ func TestProtocolFilterWrapperRefer(t *testing.T) {
 
 	u := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
-		common.WithParamsValue(constant.REFERENCE_FILTER_KEY, mockFilterKey))
+		common.WithParamsValue(constant.ReferenceFilterKey, mockFilterKey))
 	invoker := filtProto.Refer(u)
 	_, ok := invoker.(*FilterInvoker)
 	assert.True(t, ok)

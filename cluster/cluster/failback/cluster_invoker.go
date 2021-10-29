@@ -58,7 +58,7 @@ func newClusterInvoker(directory directory.Directory) protocol.Invoker {
 	invoker := &clusterInvoker{
 		ClusterInvoker: base.NewClusterInvoker(directory),
 	}
-	retriesConfig := invoker.GetURL().GetParam(constant.RETRIES_KEY, constant.DEFAULT_FAILBACK_TIMES)
+	retriesConfig := invoker.GetURL().GetParam(constant.RetriesKey, constant.DEFAULT_FAILBACK_TIMES)
 	retries, err := strconv.Atoi(retriesConfig)
 	if err != nil || retries < 0 {
 		logger.Error("Your retries config is invalid,pls do a check. And will use the default fail back times configuration instead.")
@@ -141,10 +141,10 @@ func (invoker *clusterInvoker) Invoke(ctx context.Context, invocation protocol.I
 
 	// Get the service loadbalance config
 	url := invokers[0].GetURL()
-	lb := url.GetParam(constant.LOADBALANCE_KEY, constant.DEFAULT_LOADBALANCE)
+	lb := url.GetParam(constant.LoadbalanceKey, constant.DEFAULT_LOADBALANCE)
 	// Get the service method loadbalance config if have
 	methodName := invocation.MethodName()
-	if v := url.GetMethodParam(methodName, constant.LOADBALANCE_KEY, ""); v != "" {
+	if v := url.GetMethodParam(methodName, constant.LoadbalanceKey, ""); v != "" {
 		lb = v
 	}
 

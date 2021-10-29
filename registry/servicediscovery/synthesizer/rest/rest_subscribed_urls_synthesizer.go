@@ -45,10 +45,10 @@ func (r RestSubscribedURLsSynthesizer) Synthesize(subscribedURL *common.URL, ser
 	for i, s := range serviceInstances {
 		splitHost := strings.Split(s.GetHost(), ":")
 		u := common.NewURLWithOptions(common.WithProtocol(subscribedURL.Protocol), common.WithIp(splitHost[0]),
-			common.WithPort(splitHost[1]), common.WithPath(subscribedURL.GetParam(constant.INTERFACE_KEY, subscribedURL.Path)),
+			common.WithPort(splitHost[1]), common.WithPath(subscribedURL.GetParam(constant.InterfaceKey, subscribedURL.Path)),
 			common.WithParams(url.Values{}),
-			common.WithParamsValue(constant.SIDE_KEY, constant.PROVIDER_PROTOCOL),
-			common.WithParamsValue(constant.APPLICATION_KEY, s.GetServiceName()),
+			common.WithParamsValue(constant.SideKey, constant.PROVIDER_PROTOCOL),
+			common.WithParamsValue(constant.ApplicationKey, s.GetServiceName()),
 			common.WithParamsValue(constant.REGISTRY_KEY, "true"),
 		)
 		urls[i] = u

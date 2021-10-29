@@ -79,11 +79,11 @@ func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	dp.SetExporterMap(serviceKey, exporter)
 	logger.Infof("Export service: %s", url.String())
 
-	key := url.GetParam(constant.BEAN_NAME_KEY, "")
+	key := url.GetParam(constant.BeanNameKey, "")
 	var service interface{}
 	service = config.GetProviderService(key)
 
-	serializationType := url.GetParam(constant.SERIALIZATION_KEY, constant.PROTOBUF_SERIALIZATION)
+	serializationType := url.GetParam(constant.SerializationKey, constant.PROTOBUF_SERIALIZATION)
 	var triSerializationType tripleConstant.CodecType
 
 	if serializationType == constant.PROTOBUF_SERIALIZATION {
@@ -119,7 +119,7 @@ func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 		triSerializationType = tripleConstant.CodecType(serializationType)
 	}
 
-	dp.serviceMap.Store(url.GetParam(constant.INTERFACE_KEY, ""), service)
+	dp.serviceMap.Store(url.GetParam(constant.InterfaceKey, ""), service)
 
 	// try start server
 	dp.openServer(url, triSerializationType)

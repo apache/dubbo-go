@@ -103,18 +103,18 @@ func (s *MetadataService) GetMetadata(instance registry.ServiceInstance) (*commo
 
 // PublishServiceDefinition will call remote metadata's StoreProviderMetadata to store url info and service definition
 func (s *MetadataService) PublishServiceDefinition(url *common.URL) error {
-	interfaceName := url.GetParam(constant.INTERFACE_KEY, "")
-	isGeneric := url.GetParamBool(constant.GENERIC_KEY, false)
-	if common.RoleType(common.PROVIDER).Role() == url.GetParam(constant.SIDE_KEY, "") {
+	interfaceName := url.GetParam(constant.InterfaceKey, "")
+	isGeneric := url.GetParamBool(constant.GenericKey, false)
+	if common.RoleType(common.PROVIDER).Role() == url.GetParam(constant.SideKey, "") {
 		if len(interfaceName) > 0 && !isGeneric {
 			sv := common.ServiceMap.GetServiceByServiceKey(url.Protocol, url.ServiceKey())
 			sd := definition.BuildServiceDefinition(*sv, url)
 			id := &identifier.MetadataIdentifier{
 				BaseMetadataIdentifier: identifier.BaseMetadataIdentifier{
 					ServiceInterface: interfaceName,
-					Version:          url.GetParam(constant.VERSION_KEY, ""),
-					Group:            url.GetParam(constant.GROUP_KEY, constant.DUBBO),
-					Side:             url.GetParam(constant.SIDE_KEY, constant.PROVIDER_PROTOCOL),
+					Version:          url.GetParam(constant.VersionKey, ""),
+					Group:            url.GetParam(constant.GroupKey, constant.DUBBO),
+					Side:             url.GetParam(constant.SideKey, constant.PROVIDER_PROTOCOL),
 				},
 			}
 			s.delegateReport.StoreProviderMetadata(id, sd)
@@ -130,9 +130,9 @@ func (s *MetadataService) PublishServiceDefinition(url *common.URL) error {
 		id := &identifier.MetadataIdentifier{
 			BaseMetadataIdentifier: identifier.BaseMetadataIdentifier{
 				ServiceInterface: interfaceName,
-				Version:          url.GetParam(constant.VERSION_KEY, ""),
-				Group:            url.GetParam(constant.GROUP_KEY, constant.DUBBO),
-				Side:             url.GetParam(constant.SIDE_KEY, "consumer"),
+				Version:          url.GetParam(constant.VersionKey, ""),
+				Group:            url.GetParam(constant.GroupKey, constant.DUBBO),
+				Side:             url.GetParam(constant.SideKey, "consumer"),
 			},
 		}
 		s.delegateReport.StoreConsumerMetadata(id, params)

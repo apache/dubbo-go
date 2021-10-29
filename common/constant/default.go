@@ -53,9 +53,9 @@ const (
 	DEFAULT_KEY               = "default"
 	PREFIX_DEFAULT_KEY        = "default."
 	DEFAULT_SERVICE_FILTERS   = EchoFilterKey + "," + MetricsFilterKey + "," + TokenFilterKey + "," + AccessLogFilterKey + "," + TpsLimitFilterKey + "," + GenericServiceFilterKey + "," + ExecuteLimitFilterKey + "," + GracefulShutdownProviderFilterKey
-	DEFAULT_REFERENCE_FILTERS = GracefulShutdownConsumerFilterKey
-	GENERIC_REFERENCE_FILTERS = GenericFilterKey
-	GENERIC                   = "$invoke"
+	DefaultReferenceFilters = GracefulShutdownConsumerFilterKey
+	GenericReferenceFilters = GenericFilterKey
+	GENERIC                 = "$invoke"
 	ECHO                      = "$echo"
 )
 

@@ -33,7 +33,7 @@ import (
 )
 
 func initRegistry(t *testing.T) *etcdV3Registry {
-	regurl, err := common.NewURL("registry://127.0.0.1:2379", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)))
+	regurl, err := common.NewURL("registry://127.0.0.1:2379", common.WithParamsValue(constant.RoleKey, strconv.Itoa(common.PROVIDER)))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -53,7 +53,7 @@ func initRegistry(t *testing.T) *etcdV3Registry {
 //func (suite *RegistryTestSuite) TestRegister() {
 //	t := suite.T()
 //
-//	url, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParamsValue(constant.CLUSTER_KEY, "mock"), common.WithMethods([]string{"GetUser", "AddUser"}))
+//	url, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParamsValue(constant.ClusterKey, "mock"), common.WithMethods([]string{"GetUser", "AddUser"}))
 //
 //	reg := initRegistry(t)
 //	err := reg.Register(url)
@@ -68,8 +68,8 @@ func initRegistry(t *testing.T) *etcdV3Registry {
 //
 //func (suite *RegistryTestSuite) TestSubscribe() {
 //	t := suite.T()
-//	regurl, _ := common.NewURL("registry://127.0.0.1:1111", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)))
-//	url, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParamsValue(constant.CLUSTER_KEY, "mock"), common.WithMethods([]string{"GetUser", "AddUser"}))
+//	regurl, _ := common.NewURL("registry://127.0.0.1:1111", common.WithParamsValue(constant.RoleKey, strconv.Itoa(common.PROVIDER)))
+//	url, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParamsValue(constant.ClusterKey, "mock"), common.WithMethods([]string{"GetUser", "AddUser"}))
 //
 //	reg := initRegistry(t)
 //	// provider register
@@ -79,7 +79,7 @@ func initRegistry(t *testing.T) *etcdV3Registry {
 //	}
 //
 //	// consumer register
-//	regurl.SetParam(constant.ROLE_KEY, strconv.Itoa(common.CONSUMER))
+//	regurl.SetParam(constant.RoleKey, strconv.Itoa(common.Consumer))
 //	reg2 := initRegistry(t)
 //
 //	err = reg2.Register(url)
@@ -98,7 +98,7 @@ func initRegistry(t *testing.T) *etcdV3Registry {
 
 func (suite *RegistryTestSuite) TestConsumerDestroy() {
 	t := suite.T()
-	url, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParamsValue(constant.CLUSTER_KEY, "mock"), common.WithMethods([]string{"GetUser", "AddUser"}))
+	url, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParamsValue(constant.ClusterKey, "mock"), common.WithMethods([]string{"GetUser", "AddUser"}))
 
 	reg := initRegistry(t)
 	_, err := reg.DoSubscribe(url)
@@ -116,7 +116,7 @@ func (suite *RegistryTestSuite) TestConsumerDestroy() {
 func (suite *RegistryTestSuite) TestProviderDestroy() {
 	t := suite.T()
 	reg := initRegistry(t)
-	url, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParamsValue(constant.CLUSTER_KEY, "mock"), common.WithMethods([]string{"GetUser", "AddUser"}))
+	url, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParamsValue(constant.ClusterKey, "mock"), common.WithMethods([]string{"GetUser", "AddUser"}))
 	err := reg.Register(url)
 	assert.NoError(t, err)
 

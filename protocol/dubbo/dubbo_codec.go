@@ -65,11 +65,11 @@ func (c *DubboCodec) EncodeRequest(request *remoting.Request) (*bytes.Buffer, er
 
 	svc := impl.Service{}
 	svc.Path = invocation.AttachmentsByKey(constant.PATH_KEY, "")
-	svc.Interface = invocation.AttachmentsByKey(constant.INTERFACE_KEY, "")
-	svc.Version = invocation.AttachmentsByKey(constant.VERSION_KEY, "")
-	svc.Group = invocation.AttachmentsByKey(constant.GROUP_KEY, "")
+	svc.Interface = invocation.AttachmentsByKey(constant.InterfaceKey, "")
+	svc.Version = invocation.AttachmentsByKey(constant.VersionKey, "")
+	svc.Group = invocation.AttachmentsByKey(constant.GroupKey, "")
 	svc.Method = invocation.MethodName()
-	timeout, err := strconv.Atoi(invocation.AttachmentsByKey(constant.TIMEOUT_KEY, strconv.Itoa(constant.DEFAULT_REMOTING_TIMEOUT)))
+	timeout, err := strconv.Atoi(invocation.AttachmentsByKey(constant.TimeoutKey, strconv.Itoa(constant.DEFAULT_REMOTING_TIMEOUT)))
 	if err != nil {
 		// it will be wrapped in readwrite.Write .
 		return nil, perrors.WithStack(err)
@@ -77,7 +77,7 @@ func (c *DubboCodec) EncodeRequest(request *remoting.Request) (*bytes.Buffer, er
 	svc.Timeout = time.Duration(timeout)
 
 	header := impl.DubboHeader{}
-	serialization := invocation.AttachmentsByKey(constant.SERIALIZATION_KEY, constant.HESSIAN2_SERIALIZATION)
+	serialization := invocation.AttachmentsByKey(constant.SerializationKey, constant.HESSIAN2_SERIALIZATION)
 	if serialization == constant.PROTOBUF_SERIALIZATION {
 		header.SerialID = constant.S_Proto
 	} else {
@@ -218,7 +218,7 @@ func (c *DubboCodec) decodeRequest(data []byte) (*remoting.Request, int, error) 
 		// path
 		attachments[constant.PATH_KEY] = pkg.Service.Path
 		// version
-		attachments[constant.VERSION_KEY] = pkg.Service.Version
+		attachments[constant.VersionKey] = pkg.Service.Version
 		// method
 		methodName = pkg.Service.Method
 		args = req[impl.ArgsKey].([]interface{})

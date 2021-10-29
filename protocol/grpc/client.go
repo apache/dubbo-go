@@ -83,7 +83,7 @@ func NewClient(url *common.URL) (*Client, error) {
 		return nil, err
 	}
 
-	key := url.GetParam(constant.INTERFACE_KEY, "")
+	key := url.GetParam(constant.InterfaceKey, "")
 	impl := config.GetConsumerServiceByInterfaceName(key)
 	invoker := getInvoker(impl, conn)
 

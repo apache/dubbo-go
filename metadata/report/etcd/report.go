@@ -186,7 +186,7 @@ func (e *etcdMetadataReportFactory) CreateMetadataReport(url *common.URL) report
 		logger.Errorf("Could not create etcd metadata report. URL: %s,error:{%v}", url.String(), err)
 		return nil
 	}
-	group := url.GetParam(constant.GROUP_KEY, DEFAULT_ROOT)
+	group := url.GetParam(constant.GroupKey, DEFAULT_ROOT)
 	group = constant.PATH_SEPARATOR + strings.TrimPrefix(group, constant.PATH_SEPARATOR)
 	return &etcdMetadataReport{client: client, root: group}
 }

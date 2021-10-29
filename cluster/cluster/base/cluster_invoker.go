@@ -94,9 +94,9 @@ func (invoker *ClusterInvoker) DoSelect(lb loadbalance.LoadBalance, invocation p
 	}
 
 	url := invokers[0].GetURL()
-	sticky := url.GetParamBool(constant.STICKY_KEY, false)
+	sticky := url.GetParamBool(constant.StickyKey, false)
 	// Get the service method sticky config if have
-	sticky = url.GetMethodParamBool(invocation.MethodName(), constant.STICKY_KEY, sticky)
+	sticky = url.GetMethodParamBool(invocation.MethodName(), constant.StickyKey, sticky)
 
 	if invoker.StickyInvoker != nil && !isInvoked(invoker.StickyInvoker, invokers) {
 		invoker.StickyInvoker = nil
@@ -176,10 +176,10 @@ func GetLoadBalance(invoker protocol.Invoker, invocation protocol.Invocation) lo
 
 	methodName := invocation.MethodName()
 	// Get the service loadbalance config
-	lb := url.GetParam(constant.LOADBALANCE_KEY, constant.DEFAULT_LOADBALANCE)
+	lb := url.GetParam(constant.LoadbalanceKey, constant.DEFAULT_LOADBALANCE)
 
 	// Get the service method loadbalance config if have
-	if v := url.GetMethodParam(methodName, constant.LOADBALANCE_KEY, ""); len(v) > 0 {
+	if v := url.GetMethodParam(methodName, constant.LoadbalanceKey, ""); len(v) > 0 {
 		lb = v
 	}
 	return extension.GetLoadbalance(lb)

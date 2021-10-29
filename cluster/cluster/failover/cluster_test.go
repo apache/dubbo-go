@@ -77,7 +77,7 @@ func TestFailoverInvokeFail(t *testing.T) {
 // nolint
 func TestFailoverInvoke1(t *testing.T) {
 	urlParams := url.Values{}
-	urlParams.Set(constant.RETRIES_KEY, "3")
+	urlParams.Set(constant.RetriesKey, "3")
 	result := normalInvoke(4, urlParams)
 	assert.NoError(t, result.Error())
 	clusterpkg.Count = 0
@@ -86,8 +86,8 @@ func TestFailoverInvoke1(t *testing.T) {
 // nolint
 func TestFailoverInvoke2(t *testing.T) {
 	urlParams := url.Values{}
-	urlParams.Set(constant.RETRIES_KEY, "2")
-	urlParams.Set("methods.test."+constant.RETRIES_KEY, "3")
+	urlParams.Set(constant.RetriesKey, "2")
+	urlParams.Set("methods.test."+constant.RetriesKey, "3")
 
 	ivc := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("test"))
 	result := normalInvoke(4, urlParams, ivc)

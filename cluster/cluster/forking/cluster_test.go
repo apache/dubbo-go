@@ -72,7 +72,7 @@ func TestForkingInvokeSuccess(t *testing.T) {
 
 	mockResult := &protocol.RPCResult{Rest: clusterpkg.Rest{Tried: 0, Success: true}}
 	forkingUrl.AddParam(constant.FORKS_KEY, strconv.Itoa(3))
-	// forkingUrl.AddParam(constant.TIMEOUT_KEY, strconv.Itoa(constant.DEFAULT_TIMEOUT))
+	// forkingUrl.AddParam(constant.TimeoutKey, strconv.Itoa(constant.DEFAULT_TIMEOUT))
 
 	var wg sync.WaitGroup
 	wg.Add(2)

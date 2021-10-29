@@ -38,8 +38,8 @@ import (
 func TestRebuildCtx(t *testing.T) {
 	opentracing.SetGlobalTracer(mocktracer.New())
 	attach := make(map[string]interface{}, 10)
-	attach[constant.VERSION_KEY] = "1.0"
-	attach[constant.GROUP_KEY] = "MyGroup"
+	attach[constant.VersionKey] = "1.0"
+	attach[constant.GroupKey] = "MyGroup"
 	inv := invocation.NewRPCInvocation("MethodName", []interface{}{"OK", "Hello"}, attach)
 
 	// attachment doesn't contains any tracing key-value pair,

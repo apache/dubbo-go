@@ -63,7 +63,7 @@ func (pfw *ProtocolFilterWrapper) Refer(url *common.URL) protocol.Invoker {
 	if invoker == nil {
 		return nil
 	}
-	return BuildInvokerChain(invoker, constant.REFERENCE_FILTER_KEY)
+	return BuildInvokerChain(invoker, constant.ReferenceFilterKey)
 }
 
 // Destroy will destroy all invoker and exporter.

@@ -36,12 +36,12 @@ import (
 
 func init() {
 	exceptKeys := gxset.NewSet(
-		// remove APPLICATION_KEY because service name must be present
-		constant.APPLICATION_KEY,
-		// remove GROUP_KEY, always uses service name.
-		constant.GROUP_KEY,
-		// remove TIMESTAMP_KEY because it's nonsense
-		constant.TIMESTAMP_KEY)
+		// remove ApplicationKey because service name must be present
+		constant.ApplicationKey,
+		// remove GroupKey, always uses service name.
+		constant.GroupKey,
+		// remove TimestampKey because it's nonsense
+		constant.TimestampKey)
 	extension.AddCustomizers(&metadataServiceURLParamsMetadataCustomizer{exceptKeys: exceptKeys})
 }
 

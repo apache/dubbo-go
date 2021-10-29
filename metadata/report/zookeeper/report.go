@@ -190,7 +190,7 @@ func (mf *zookeeperMetadataReportFactory) CreateMetadataReport(url *common.URL) 
 		panic(err)
 	}
 
-	rootDir := url.GetParam(constant.GROUP_KEY, "dubbo")
+	rootDir := url.GetParam(constant.GroupKey, "dubbo")
 	if !strings.HasPrefix(rootDir, constant.PATH_SEPARATOR) {
 		rootDir = constant.PATH_SEPARATOR + rootDir
 	}

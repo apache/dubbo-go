@@ -59,11 +59,11 @@ func (c *DubboTestCodec) EncodeRequest(request *remoting.Request) (*bytes.Buffer
 
 	svc := impl.Service{}
 	svc.Path = tmpInvocation.AttachmentsByKey(constant.PATH_KEY, "")
-	svc.Interface = tmpInvocation.AttachmentsByKey(constant.INTERFACE_KEY, "")
-	svc.Version = tmpInvocation.AttachmentsByKey(constant.VERSION_KEY, "")
-	svc.Group = tmpInvocation.AttachmentsByKey(constant.GROUP_KEY, "")
+	svc.Interface = tmpInvocation.AttachmentsByKey(constant.InterfaceKey, "")
+	svc.Version = tmpInvocation.AttachmentsByKey(constant.VersionKey, "")
+	svc.Group = tmpInvocation.AttachmentsByKey(constant.GroupKey, "")
 	svc.Method = tmpInvocation.MethodName()
-	timeout, err := strconv.Atoi(tmpInvocation.AttachmentsByKey(constant.TIMEOUT_KEY, strconv.Itoa(constant.DEFAULT_REMOTING_TIMEOUT)))
+	timeout, err := strconv.Atoi(tmpInvocation.AttachmentsByKey(constant.TimeoutKey, strconv.Itoa(constant.DEFAULT_REMOTING_TIMEOUT)))
 	if err != nil {
 		// it will be wrapped in readwrite.Write .
 		return nil, perrors.WithStack(err)
@@ -71,7 +71,7 @@ func (c *DubboTestCodec) EncodeRequest(request *remoting.Request) (*bytes.Buffer
 	svc.Timeout = time.Duration(timeout)
 
 	header := impl.DubboHeader{}
-	serialization := tmpInvocation.AttachmentsByKey(constant.SERIALIZATION_KEY, constant.HESSIAN2_SERIALIZATION)
+	serialization := tmpInvocation.AttachmentsByKey(constant.SerializationKey, constant.HESSIAN2_SERIALIZATION)
 	if serialization == constant.PROTOBUF_SERIALIZATION {
 		header.SerialID = constant.S_Proto
 	} else {
@@ -210,7 +210,7 @@ func (c *DubboTestCodec) decodeRequest(data []byte) (*remoting.Request, int, err
 		// path
 		attachments[constant.PATH_KEY] = pkg.Service.Path
 		// version
-		attachments[constant.VERSION_KEY] = pkg.Service.Version
+		attachments[constant.VersionKey] = pkg.Service.Version
 		// method
 		methodName = pkg.Service.Method
 		args = req[impl.ArgsKey].([]interface{})

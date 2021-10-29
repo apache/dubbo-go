@@ -255,7 +255,7 @@ func unmarshalRequestBody(body []byte, p *DubboPackage) error {
 	}
 
 	if attachments == nil {
-		attachments = map[interface{}]interface{}{constant.INTERFACE_KEY: target}
+		attachments = map[interface{}]interface{}{constant.InterfaceKey: target}
 	}
 
 	if v, ok := attachments.(map[interface{}]interface{}); ok {
@@ -373,13 +373,13 @@ func buildServerSidePackageBody(pkg *DubboPackage) {
 		if svc.Path == "" && attachments[constant.PATH_KEY] != nil && len(attachments[constant.PATH_KEY].(string)) > 0 {
 			svc.Path = attachments[constant.PATH_KEY].(string)
 		}
-		if _, ok := attachments[constant.INTERFACE_KEY]; ok {
-			svc.Interface = attachments[constant.INTERFACE_KEY].(string)
+		if _, ok := attachments[constant.InterfaceKey]; ok {
+			svc.Interface = attachments[constant.InterfaceKey].(string)
 		} else {
 			svc.Interface = svc.Path
 		}
-		if _, ok := attachments[constant.GROUP_KEY]; ok {
-			svc.Group = attachments[constant.GROUP_KEY].(string)
+		if _, ok := attachments[constant.GroupKey]; ok {
+			svc.Group = attachments[constant.GroupKey].(string)
 		}
 		pkg.SetService(svc)
 		pkg.SetBody(map[string]interface{}{
