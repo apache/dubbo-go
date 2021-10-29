@@ -34,6 +34,7 @@ func NewClusterInvoker(directory directory.Directory) protocol.Invoker {
 	}
 }
 
-func (ivk *clusterInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
-
+func (ivk *clusterInvoker) Invoke(_ context.Context, invocation protocol.Invocation) protocol.Result {
+	// invokers for the invocation
+	ivks := ivk.Directory.List(invocation)
 }

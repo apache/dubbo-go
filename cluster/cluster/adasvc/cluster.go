@@ -37,5 +37,5 @@ func newCluster() clusterpkg.Cluster {
 }
 
 func (c *cluster) Join(directory directory.Directory) protocol.Invoker {
-
+	return clusterpkg.BuildInterceptorChain(NewClusterInvoker(directory))
 }
