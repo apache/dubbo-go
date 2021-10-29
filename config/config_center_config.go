@@ -166,7 +166,7 @@ func (c *CenterConfig) GetDynamicConfiguration() (config_center.DynamicConfigura
 	}
 	dynamicConfig, err := c.CreateDynamicConfiguration()
 	if err != nil {
-		logger.Errorf("Create dynamic configuration error , error message is %v", err)
+		logger.Warnf("Create dynamic configuration error , error message is %v", err)
 		return nil, errors.WithStack(err)
 	}
 	c.DynamicConfiguration = dynamicConfig

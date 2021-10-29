@@ -20,9 +20,11 @@ package config
 import (
 	"testing"
 )
+
 import (
 	"github.com/stretchr/testify/assert"
 )
+
 import (
 	_ "dubbo.apache.org/dubbo-go/v3/config_center/apollo"
 )

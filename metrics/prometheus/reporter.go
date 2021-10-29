@@ -236,7 +236,7 @@ func newPrometheusReporter(reporterConfig *metrics.ReporterConfig) metrics.Repor
 				mux := http.NewServeMux()
 				mux.Handle(reporterConfig.Path, metricsExporter)
 				if err := http.ListenAndServe(":"+reporterConfig.Port, mux); err != nil {
-					logger.Errorf("new prometheus reporter with error = %s", err)
+					logger.Warnf("new prometheus reporter with error = %s", err)
 				}
 			}()
 		})

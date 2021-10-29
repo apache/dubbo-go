@@ -32,7 +32,7 @@ import (
 
 // server is used to implement helloworld.GreeterServer.
 type Server struct {
-	GreeterProviderBase
+	UnimplementedGreeterServer
 }
 
 // SayHello implements helloworld.GreeterServer
