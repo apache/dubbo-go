@@ -15,12 +15,15 @@ type Metrics interface {
 	// methodName is the method name.
 	// key is the key of the metrics.
 	GetMethodMetrics(url *common.URL, methodName, key string) (interface{}, error)
+	SetMethodMetrics(url *common.URL, methodName, key string, value interface{}) error
 
 	// GetInvokerMetrics returns invoker-level metrics, the format of key is "{instance key}.{invoker key}.{key}"
 	// DO NOT IMPLEMENT FOR EARLIER VERSION
 	GetInvokerMetrics(url *common.URL, key string) (interface{}, error)
+	SetInvokerMetrics(url *common.URL, key string, value interface{}) error
 
 	// GetInstanceMetrics returns instance-level metrics, the format of key is "{instance key}.{key}"
 	// DO NOT IMPLEMENT FOR EARLIER VERSION
 	GetInstanceMetrics(url *common.URL, key string) (interface{}, error)
+	SetInstanceMetrics(url *common.URL, key string, value interface{}) error
 }
