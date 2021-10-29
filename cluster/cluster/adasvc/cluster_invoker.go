@@ -15,16 +15,26 @@
  * limitations under the License.
  */
 
-package constant
+package adasvc
 
-const (
-	ClusterKeyAvailable       = "available"
-	ClusterKeyBroadcast       = "broadcast"
-	ClusterKeyFailback        = "failback"
-	ClusterKeyFailfast        = "failfast"
-	ClusterKeyFailover        = "failover"
-	ClusterKeyFailsafe        = "failsafe"
-	ClusterKeyForking         = "forking"
-	ClusterKeyZoneAware       = "zoneAware"
-	ClusterKeyAdaptiveService = "adaptiveService"
+import (
+	"context"
+	"dubbo.apache.org/dubbo-go/v3/cluster/cluster/base"
+	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
+
+type clusterInvoker struct {
+	base.ClusterInvoker
+}
+
+func NewClusterInvoker(directory directory.Directory) protocol.Invoker {
+	return &clusterInvoker{
+		ClusterInvoker: base.NewClusterInvoker(directory),
+	}
+}
+
+func (ivk *clusterInvoker) Invoke(_ context.Context, invocation protocol.Invocation) protocol.Result {
+	// invokers for the invocation
+	ivks := ivk.Directory.List(invocation)
+}

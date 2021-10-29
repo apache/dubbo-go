@@ -102,6 +102,7 @@ func (rc *ReferenceConfig) Init(root *RootConfig) error {
 
 // Refer ...
 func (rc *ReferenceConfig) Refer(srv interface{}) {
+	// cfgURL is an interface-level invoker url, in the other words, it represents an interface.
 	cfgURL := common.NewURLWithOptions(
 		common.WithPath(rc.InterfaceName),
 		common.WithProtocol(rc.Protocol),
@@ -118,10 +119,15 @@ func (rc *ReferenceConfig) Refer(srv interface{}) {
 	// retrieving urls from config, and appending the urls to rc.urls
 	if rc.URL != "" { // use user-specific urls
 		/*
-		 Two types of URL are allowed for rc.URL: direct url and registry url, they will be handled in different ways.
-		 For example, "tri://localhost:10000" is a direct url, and "registry://localhost:2181" is a registry url.
-		 rc.URL: "tri://localhost:10000;tri://localhost:10001;registry://localhost:2181",
-		 urlStrings = []string{"tri://localhost:10000", "tri://localhost:10001", "registry://localhost:2181"}.
+		 Two types of URL are allowed for rc.URL:
+			1. direct url: server IP, that is, no need for a registry anymore
+			2. registry url
+		 They will be handled in different ways:
+		 For example, we have a direct url and a registry url:
+			1. "tri://localhost:10000" is a direct url
+			2. "registry://localhost:2181" is a registry url.
+		 Then, rc.URL looks like a string seperated by semicolon: "tri://localhost:10000;registry://localhost:2181".
+		 The result of urlStrings is a string array: []string{"tri://localhost:10000", "registry://localhost:2181"}.
 		*/
 		urlStrings := gxstrings.RegSplit(rc.URL, "\\s*[;]+\\s*")
 		for _, urlStr := range urlStrings {
@@ -129,14 +135,15 @@ func (rc *ReferenceConfig) Refer(srv interface{}) {
 			if err != nil {
 				panic(fmt.Sprintf("url configuration error,  please check your configuration, user specified URL %v refer error, error message is %v ", urlStr, err.Error()))
 			}
-			if serviceURL.Protocol == constant.REGISTRY_PROTOCOL { // URL stands for a registry protocol
+			if serviceURL.Protocol == constant.REGISTRY_PROTOCOL { // serviceURL in this branch is a registry protocol
 				serviceURL.SubURL = cfgURL
 				rc.urls = append(rc.urls, serviceURL)
-			} else { // URL stands for a direct address
+			} else { // serviceURL in this branch is the target endpoint IP address
 				if serviceURL.Path == "" {
 					serviceURL.Path = "/" + rc.InterfaceName
 				}
-				// merge URL param with cfgURL, others are same as serviceURL
+				// replace params of serviceURL with params of cfgUrl
+				// other stuff, e.g. IP, port, etc., are same as serviceURL
 				newURL := common.MergeURL(serviceURL, cfgURL)
 				rc.urls = append(rc.urls, newURL)
 			}
