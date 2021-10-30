@@ -79,7 +79,7 @@ func InitLogger(conf *Config) {
 			EncodeCaller:   zapcore.ShortCallerEncoder,
 		}
 		config.ZapConfig = &zap.Config{
-			Level:            zap.NewAtomicLevelAt(zap.DebugLevel),
+			Level:            zap.NewAtomicLevelAt(zap.InfoLevel),
 			Development:      false,
 			Encoding:         "console",
 			EncoderConfig:    zapLoggerEncoderConfig,
