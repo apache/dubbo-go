@@ -18,6 +18,7 @@
 package config
 
 import (
+	"fmt"
 	"net/url"
 	"strings"
 )
@@ -155,7 +156,7 @@ func (c *CenterConfig) CreateDynamicConfiguration() (config_center.DynamicConfig
 	}
 	factory := extension.GetConfigCenterFactory(configCenterUrl.Protocol)
 	if factory == nil {
-		return nil, errors.New("get config center factory failed")
+		return nil, errors.New(fmt.Sprintf("Get config center factory of %s failed", configCenterUrl.Protocol))
 	}
 	return factory.GetDynamicConfiguration(configCenterUrl)
 }

@@ -48,10 +48,11 @@ func NewUniformRouterChain() (router.PriorityRouter, error) {
 	// 1. add mesh route listener
 	r := &RouterChain{}
 	rootConfig := config.GetRootConfig()
-	dynamicConfiguration, err := rootConfig.ConfigCenter.GetDynamicConfiguration()
-	if err != nil {
-		return nil, err
+	if rootConfig.ConfigCenter.DynamicConfiguration == nil {
+		logger.Infof("Config center does not start, please check if the configuration center has been properly configured in dubbogo.yml")
+		return nil, nil
 	}
+	dynamicConfiguration := rootConfig.ConfigCenter.DynamicConfiguration
 	dynamicConfiguration.AddListener(rootConfig.Application.Name, r)
 
 	// 2. try to get mesh route configuration, default key is "dubbo.io.MESHAPPRULE" with group "dubbo"
