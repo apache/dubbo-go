@@ -31,13 +31,14 @@ import (
 
 // MetadataReportConfig is app level configuration
 type MetadataReportConfig struct {
-	Protocol     string `required:"true"  yaml:"protocol"  json:"protocol,omitempty"`
-	Address      string `required:"true" yaml:"address" json:"address"`
-	Username     string `yaml:"username" json:"username,omitempty"`
-	Password     string `yaml:"password" json:"password,omitempty"`
-	Timeout      string `yaml:"timeout" json:"timeout,omitempty"`
-	Group        string `yaml:"group" json:"group,omitempty"`
-	MetadataType string `default:"local" yaml:"metadata-type" json:"metadata-type"`
+	Protocol string `required:"true"  yaml:"protocol"  json:"protocol,omitempty"`
+	Address  string `required:"true" yaml:"address" json:"address"`
+	Username string `yaml:"username" json:"username,omitempty"`
+	Password string `yaml:"password" json:"password,omitempty"`
+	Timeout  string `yaml:"timeout" json:"timeout,omitempty"`
+	Group    string `yaml:"group" json:"group,omitempty"`
+	// metadataType of this application is defined by application config, local or remote
+	metadataType string
 }
 
 // Prefix dubbo.consumer
@@ -49,7 +50,7 @@ func (mc *MetadataReportConfig) Init(rc *RootConfig) error {
 	if mc == nil {
 		return nil
 	}
-	mc.MetadataType = rc.Application.MetadataType
+	mc.metadataType = rc.Application.MetadataType
 	return mc.StartMetadataReport()
 }
 
@@ -59,7 +60,7 @@ func (mc *MetadataReportConfig) ToUrl() (*common.URL, error) {
 		common.WithPassword(mc.Password),
 		common.WithLocation(mc.Address),
 		common.WithProtocol(mc.Protocol),
-		common.WithParamsValue(constant.METADATATYPE_KEY, mc.MetadataType),
+		common.WithParamsValue(constant.METADATATYPE_KEY, mc.metadataType),
 	)
 	if err != nil || len(res.Protocol) == 0 {
 		return nil, perrors.New("Invalid MetadataReport Config.")
@@ -168,12 +169,6 @@ func (mrcb *MetadataReportConfigBuilder) SetTimeout(timeout string) *MetadataRep
 // nolint
 func (mrcb *MetadataReportConfigBuilder) SetGroup(group string) *MetadataReportConfigBuilder {
 	mrcb.metadataReportConfig.Group = group
-	return mrcb
-}
-
-// nolint
-func (mrcb *MetadataReportConfigBuilder) SetMetadataType(metadataType string) *MetadataReportConfigBuilder {
-	mrcb.metadataReportConfig.MetadataType = metadataType
 	return mrcb
 }
 
