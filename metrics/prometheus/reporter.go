@@ -235,10 +235,8 @@ func newPrometheusReporter(reporterConfig *metrics.ReporterConfig) metrics.Repor
 							logger.Warnf("new prometheus reporter with error = %s", err)
 						}
 					}()
-				} else if reporterConfig.Mode == metrics.ReportModePush {
-					// todo pushgateway support
-
 				}
+				// todo pushgateway support
 			}
 		})
 	}
