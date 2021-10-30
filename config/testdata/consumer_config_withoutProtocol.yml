@@ -33,7 +33,7 @@ registries :
 
 references:
   "UserProvider":
-    registryIDs: "hangzhouzk,shanghaizk"
+    registry-ids: "hangzhouzk,shanghaizk"
     filter: ""
     version: "1.0"
     group: "as"

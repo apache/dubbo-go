@@ -36,7 +36,7 @@ type ProviderConfig struct {
 	// Deprecated Register whether registration is required
 	Register bool `yaml:"register" json:"register" property:"register"`
 	// RegistryIDs is registry ids list
-	RegistryIDs []string `yaml:"registryIDs" json:"registryIDs" property:"registryIDs"`
+	RegistryIDs []string `yaml:"registry-ids" json:"registry-ids" property:"registry-ids"`
 	// Services services
 	Services map[string]*ServiceConfig `yaml:"services" json:"services,omitempty" property:"services"`
 
