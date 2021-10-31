@@ -168,7 +168,7 @@ func (c *MockDynamicConfiguration) MockServiceConfigEvent() {
 		},
 	}
 	value, _ := yaml.Marshal(config)
-	key := "group*" + mockServiceName + ":1.0.0" + constant.CONFIGURATORS_SUFFIX
+	key := "group*" + mockServiceName + ":1.0.0" + constant.ConfiguratorSuffix
 	c.listener[key].Process(&ConfigChangeEvent{Key: key, Value: string(value), ConfigType: remoting.EventTypeAdd})
 }
 
@@ -191,6 +191,6 @@ func (c *MockDynamicConfiguration) MockApplicationConfigEvent() {
 		},
 	}
 	value, _ := yaml.Marshal(config)
-	key := "test-application" + constant.CONFIGURATORS_SUFFIX
+	key := "test-application" + constant.ConfiguratorSuffix
 	c.listener[key].Process(&ConfigChangeEvent{Key: key, Value: string(value), ConfigType: remoting.EventTypeAdd})
 }

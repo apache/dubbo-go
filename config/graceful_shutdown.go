@@ -53,7 +53,7 @@ import (
  */
 const defaultShutDownTime = time.Second * 60
 
-// nolint
+// GracefulShutdownInit todo GracefulShutdownInit in 3.0 should be discusesed.
 func GracefulShutdownInit() {
 	signals := make(chan os.Signal, 1)
 

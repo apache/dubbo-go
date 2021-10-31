@@ -36,7 +36,7 @@ import (
 
 const (
 	VirtualServiceEventKey  = "virtualServiceEventKey"
-	DestinationRuleEventKey = "destinationRuleEventKe3y"
+	DestinationRuleEventKey = "destinationRuleEventKey"
 
 	VirtualServiceResource = "virtualservices"
 	DestRuleResource       = "destinationrules"

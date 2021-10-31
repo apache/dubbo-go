@@ -76,12 +76,3 @@ func (mc *MethodConfig) check() error {
 	}
 	return verify(mc)
 }
-
-// UnmarshalYAML unmarshals the MethodConfig by @unmarshal function
-//func (c *MethodConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
-//	if err := defaults.Set(c); err != nil {
-//		return err
-//	}
-//	type plain MethodConfig
-//	return unmarshal((*plain)(c))
-//}

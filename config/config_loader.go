@@ -19,17 +19,12 @@ package config
 
 import (
 	"errors"
-	"fmt"
 	"reflect"
 	"strconv"
 )
 
 import (
 	"github.com/knadh/koanf"
-	"github.com/knadh/koanf/parsers/json"
-	"github.com/knadh/koanf/parsers/toml"
-	yaml "github.com/knadh/koanf/parsers/yaml"
-	"github.com/knadh/koanf/providers/file"
 
 	perrors "github.com/pkg/errors"
 )
@@ -42,14 +37,13 @@ import (
 )
 
 var (
-	rootConfig = GetInstance()
-	maxWait    = 3
+	rootConfig = NewRootConfigBuilder().Build()
 )
 
 func Load(opts ...LoaderConfOption) error {
 	// conf
 	conf := NewLoaderConf(opts...)
-	koan := getKoanf(conf)
+	koan := GetConfigResolver(conf)
 	if err := koan.UnmarshalWithConf(rootConfig.Prefix(),
 		rootConfig, koanf.UnmarshalConf{Tag: "yaml"}); err != nil {
 		return err
@@ -57,7 +51,6 @@ func Load(opts ...LoaderConfOption) error {
 	if err := rootConfig.Init(); err != nil {
 		return err
 	}
-	rootConfig.Start()
 	return nil
 }
 
@@ -66,30 +59,6 @@ func check() error {
 		return errors.New("execute the config.Load() method first")
 	}
 	return nil
-}
-
-func getKoanf(conf *loaderConf) *koanf.Koanf {
-	var (
-		k   *koanf.Koanf
-		err error
-	)
-	k = koanf.New(conf.delim)
-
-	switch conf.genre {
-	case "yaml", "yml":
-		err = k.Load(file.Provider(conf.path), yaml.Parser())
-	case "json":
-		err = k.Load(file.Provider(conf.path), json.Parser())
-	case "toml":
-		err = k.Load(file.Provider(conf.path), toml.Parser())
-	default:
-		err = errors.New(fmt.Sprintf("Unsupported %s file type", conf.genre))
-	}
-
-	if err != nil {
-		panic(err)
-	}
-	return k
 }
 
 // registerServiceInstance register service instance
@@ -122,13 +91,6 @@ func registerServiceInstance() {
 	}
 	// publish metadata to remote
 	if GetApplicationConfig().MetadataType == constant.REMOTE_METADATA_STORAGE_TYPE {
-		if remoteMetadataService, err := extension.GetRemoteMetadataService(); err == nil {
-			remoteMetadataService.PublishMetadata(GetApplicationConfig().Name)
-		}
-	}
-
-	if GetApplicationConfig().MetadataType == constant.REMOTE_METADATA_STORAGE_TYPE {
-		// publish metadata to remote
 		if remoteMetadataService, err := extension.GetRemoteMetadataService(); err == nil {
 			remoteMetadataService.PublishMetadata(GetApplicationConfig().Name)
 		}
@@ -188,22 +150,21 @@ func RPCService(service common.RPCService) {
 // So you don't need to worry about the race condition
 func GetMetricConfig() *MetricConfig {
 	// todo
-	//if GetBaseConfig().MetricConfig == nil {
+	//if GetBaseConfig().Metric == nil {
 	//	configAccessMutex.Lock()
 	//	defer configAccessMutex.Unlock()
-	//	if GetBaseConfig().MetricConfig == nil {
-	//		GetBaseConfig().MetricConfig = &metric.MetricConfig{}
+	//	if GetBaseConfig().Metric == nil {
+	//		GetBaseConfig().Metric = &metric.Metric{}
 	//	}
 	//}
-	//return GetBaseConfig().MetricConfig
-	return rootConfig.MetricConfig
+	//return GetBaseConfig().Metric
+	return rootConfig.Metric
 }
 
 func GetMetadataReportConfg() *MetadataReportConfig {
-	return rootConfig.MetadataReportConfig
+	return rootConfig.MetadataReport
 }
 
 func IsProvider() bool {
-	// FixME
-	return rootConfig.Provider != nil
+	return len(rootConfig.Provider.Services) > 0
 }

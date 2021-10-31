@@ -87,9 +87,9 @@ func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	var triSerializationType tripleConstant.CodecType
 
 	if serializationType == constant.PROTOBUF_SERIALIZATION {
-		m, ok := reflect.TypeOf(service).MethodByName("SetProxyImpl")
+		m, ok := reflect.TypeOf(service).MethodByName("XXX_SetProxyImpl")
 		if !ok {
-			panic("method SetProxyImpl is necessary for triple service")
+			panic("method XXX_SetProxyImpl is necessary for triple service")
 		}
 		if invoker == nil {
 			panic(fmt.Sprintf("no invoker found for servicekey: %v", url.ServiceKey()))
@@ -160,11 +160,11 @@ func (dp *DubboProtocol) Destroy() {
 // Dubbo3GrpcService is gRPC service
 type Dubbo3GrpcService interface {
 	// SetProxyImpl sets proxy.
-	SetProxyImpl(impl protocol.Invoker)
+	XXX_SetProxyImpl(impl protocol.Invoker)
 	// GetProxyImpl gets proxy.
-	GetProxyImpl() protocol.Invoker
+	XXX_GetProxyImpl() protocol.Invoker
 	// ServiceDesc gets an RPC service's specification.
-	ServiceDesc() *grpc.ServiceDesc
+	XXX_ServiceDesc() *grpc.ServiceDesc
 }
 
 type UnaryService struct {

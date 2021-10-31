@@ -38,13 +38,13 @@ import (
 // if match, get result destination key, which should be defined in DestinationRule yaml file
 type VirtualServiceRule struct {
 	// routerItem store match router list and destination list of this router
-	routerItem *config.DubboServiceRouterItem
+	routerItem *config.DubboRouteDetail
 
 	// uniformRule is the upper struct ptr
 	uniformRule *UniformRule
 }
 
-// match read from vsr's Match config
+// match read from VirtualServiceRule's Match config
 // it judges if this invocation matches the router rule request defined in config one by one
 func (vsr *VirtualServiceRule) match(url *common.URL, invocation protocol.Invocation) bool {
 	for _, v := range vsr.routerItem.Match {
@@ -61,7 +61,7 @@ func (vsr *VirtualServiceRule) match(url *common.URL, invocation protocol.Invoca
 			return false
 		}
 
-		// atta match judge
+		// attachment match judge
 		if v.Attachment != nil {
 			attachmentMatchJudger := judger.NewAttachmentMatchJudger(v.Attachment)
 			if attachmentMatchJudger.Judge(invocation) {
@@ -198,7 +198,7 @@ func (vsr *VirtualServiceRule) getRuleTargetInvokers(invokers []protocol.Invoker
 	return weightInvokerPairResult.getTargetInvokers(), nil
 }
 
-// UniformRule
+// UniformRule uniform rule
 type UniformRule struct {
 	services                []*config.StringMatch
 	virtualServiceRules     []VirtualServiceRule
@@ -206,21 +206,22 @@ type UniformRule struct {
 }
 
 // NewDefaultConnChecker constructs a new DefaultConnChecker based on the url
-func newUniformRule(dubboRoute *config.DubboRoute, destinationMap map[string]map[string]string) (*UniformRule, error) {
-	matchItems := dubboRoute.RouterDetail
-	virtualServiceRules := make([]VirtualServiceRule, 0)
-	newUniformRule := &UniformRule{
-		DestinationLabelListMap: destinationMap,
+func newUniformRule(dubboRoute *config.DubboRoute, destinationMap map[string]map[string]string) *UniformRule {
+	uniformRule := &UniformRule{
 		services:                dubboRoute.Services,
+		DestinationLabelListMap: destinationMap,
 	}
-	for _, v := range matchItems {
+
+	routeDetail := dubboRoute.RouterDetail
+	virtualServiceRules := make([]VirtualServiceRule, 0)
+	for _, v := range routeDetail {
 		virtualServiceRules = append(virtualServiceRules, VirtualServiceRule{
 			routerItem:  v,
-			uniformRule: newUniformRule,
+			uniformRule: uniformRule,
 		})
 	}
-	newUniformRule.virtualServiceRules = virtualServiceRules
-	return newUniformRule, nil
+	uniformRule.virtualServiceRules = virtualServiceRules
+	return uniformRule
 }
 
 func (u *UniformRule) route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {

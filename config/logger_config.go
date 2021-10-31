@@ -37,7 +37,7 @@ import (
 )
 
 type ZapConfig struct {
-	Level             string                 `default:"debug" json:"level,omitempty" yaml:"level" property:"level"`
+	Level             string                 `default:"info" json:"level,omitempty" yaml:"level" property:"level"`
 	Development       bool                   `default:"false" json:"development,omitempty" yaml:"development" property:"development"`
 	DisableCaller     bool                   `default:"false" json:"disable-caller,omitempty" yaml:"disable-caller" property:"disable-caller"`
 	DisableStacktrace bool                   `default:"false" json:"disable-stacktrace,omitempty" yaml:"disable-stacktrace" property:"disable-stacktrace"`
@@ -72,16 +72,7 @@ func (LoggerConfig) Prefix() string {
 	return constant.LoggerConfigPrefix
 }
 
-func GetLoggerConfigInstance() *LoggerConfig {
-	lc := &LoggerConfig{}
-	return lc
-}
-
 func (lc *LoggerConfig) Init() error {
-
-	if lc == nil {
-		lc = GetLoggerConfigInstance()
-	}
 	err := lc.check()
 	if err != nil {
 		return err
@@ -152,4 +143,30 @@ func (lc *LoggerConfig) getUrlMap() url.Values {
 		urlMap.Set(key, val)
 	}
 	return urlMap
+}
+
+type LoggerConfigBuilder struct {
+	loggerConfig *LoggerConfig
+}
+
+// nolint
+func NewLoggerConfigBuilder() *LoggerConfigBuilder {
+	return &LoggerConfigBuilder{loggerConfig: &LoggerConfig{}}
+}
+
+// nolint
+func (lcb *LoggerConfigBuilder) SetLumberjackConfig(lumberjackConfig *lumberjack.Logger) *LoggerConfigBuilder {
+	lcb.loggerConfig.LumberjackConfig = lumberjackConfig
+	return lcb
+}
+
+// nolint
+func (lcb *LoggerConfigBuilder) SetZapConfig(zapConfig ZapConfig) *LoggerConfigBuilder {
+	lcb.loggerConfig.ZapConfig = zapConfig
+	return lcb
+}
+
+// nolint
+func (lcb *LoggerConfigBuilder) Build() *LoggerConfig {
+	return lcb.loggerConfig
 }
