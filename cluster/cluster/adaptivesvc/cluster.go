@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package adasvc
+package adaptivesvc
 
 import (
 	clusterpkg "dubbo.apache.org/dubbo-go/v3/cluster/cluster"

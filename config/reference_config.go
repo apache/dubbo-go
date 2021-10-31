@@ -102,7 +102,7 @@ func (rc *ReferenceConfig) Init(root *RootConfig) error {
 // Refer retrieves invokers from urls.
 func (rc *ReferenceConfig) Refer(srv interface{}) {
 	// If adaptive service is enabled,
-	// the cluster and load balance should be overridden to "adasvc" and "p2c" respectively.
+	// the cluster and load balance should be overridden to "adaptivesvc" and "p2c" respectively.
 	if rc.rootConfig.Consumer.AdaptiveService {
 		rc.Cluster = constant.ClusterKeyAdaptiveService
 		rc.Loadbalance = constant.LoadBalanceKeyP2C
