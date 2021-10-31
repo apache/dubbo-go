@@ -26,9 +26,32 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
+type ReporterConfig struct {
+	Enable             bool
+	Namespace          string
+	Mode               ReportMode
+	Port               string
+	Path               string
+	PushGatewayAddress string
+}
+
+type ReportMode string
+
 const (
-	NameSpace = "dubbo"
+	ReportModePull = "pull"
+	ReportModePush = "push"
 )
+
+func NewReporterConfig() *ReporterConfig {
+	return &ReporterConfig{
+		Enable:             true,
+		Namespace:          "dubbo",
+		Port:               "9090",
+		Path:               "/metrics",
+		Mode:               ReportModePull,
+		PushGatewayAddress: "",
+	}
+}
 
 // Reporter will be used to report the invocation's duration
 type Reporter interface {

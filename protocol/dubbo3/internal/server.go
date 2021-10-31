@@ -32,7 +32,7 @@ import (
 
 // server is used to implement helloworld.GreeterServer.
 type Server struct {
-	GreeterProviderBase
+	UnimplementedGreeterServer
 }
 
 // SayHello implements helloworld.GreeterServer
@@ -43,26 +43,23 @@ func (s *Server) SayHello(ctx context.Context, in *HelloRequest) (*HelloReply, e
 
 // InitDubboServer creates global gRPC server.
 func InitDubboServer() {
-	serviceConfig := config.NewServiceConfig(
-		config.WithServiceInterface("org.apache.dubbo.DubboGreeterImpl"),
-		config.WithServiceProtocolKeys("tripleKey"),
-	)
+	serviceConfig := config.NewServiceConfigBuilder().
+		SetInterface("org.apache.dubbo.DubboGreeterImpl").
+		SetProtocolIDs("tripleKey").Build()
 
-	providerConfig := config.GetProviderInstance(
-		config.WithProviderService(common.GetReference(&Server{}), serviceConfig),
-	)
+	providerConfig := config.NewProviderConfigBuilder().SetServices(map[string]*config.ServiceConfig{
+		common.GetReference(&Server{}): serviceConfig,
+	}).Build()
 
-	protocolConfig := config.NewProtocolConfig(
-		config.WithProtocolName("tri"),
-		config.WithProtocolPort("20003"),
-	)
+	protocolConfig := config.NewProtocolConfigBuilder().SetName("tri").SetPort("20003").Build()
 
-	rootConfig := config.GetInstance(
-		config.WithRootProviderConfig(providerConfig),
-		config.WithRootProtocolConfig("tripleKey", protocolConfig),
-	)
+	rootConfig := config.NewRootConfigBuilder().SetProvider(providerConfig).SetProtocols(map[string]*config.ProtocolConfig{
+		"tripleKey": protocolConfig,
+	}).Build()
 
 	config.SetProviderService(&Server{})
-	rootConfig.Init()
+	if err := rootConfig.Init(); err != nil {
+		panic(err)
+	}
 	rootConfig.Start()
 }

@@ -160,13 +160,16 @@ func (n *nacosServiceDiscovery) GetInstances(serviceName string) []registry.Serv
 		delete(metadata, idKey)
 
 		res = append(res, &registry.DefaultServiceInstance{
-			ID:          id,
-			ServiceName: ins.ServiceName,
+			ID: id,
+			// ins.ServiceName is nacos service name like 'DEFAULT_GROUP@@MyAppName",
+			// which is not the service name we wanted, so we use serviceName directly.
+			ServiceName: serviceName,
 			Host:        ins.Ip,
 			Port:        int(ins.Port),
 			Enable:      ins.Enable,
 			Healthy:     ins.Healthy,
 			Metadata:    metadata,
+			GroupName:   n.group,
 		})
 	}
 	return res
@@ -267,6 +270,7 @@ func (n *nacosServiceDiscovery) AddListener(listener registry.ServiceInstancesCh
 						Enable:      service.Enable,
 						Healthy:     true,
 						Metadata:    metadata,
+						GroupName:   n.group,
 					})
 				}
 

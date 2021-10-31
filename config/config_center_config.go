@@ -18,6 +18,7 @@
 package config
 
 import (
+	"fmt"
 	"net/url"
 	"strings"
 )
@@ -49,41 +50,24 @@ import (
 //
 // CenterConfig has currently supported Zookeeper, Nacos, Etcd, Consul, Apollo
 type CenterConfig struct {
-	Protocol string `validate:"required" yaml:"protocol"  json:"protocol,omitempty"`
-	Address  string `validate:"required" yaml:"address" json:"address,omitempty"`
-	DataId   string `validate:"required" yaml:"data-id" json:"data-id,omitempty"`
-	Cluster  string `yaml:"cluster" json:"cluster,omitempty"`
-	Group    string `default:"dubbo" yaml:"group" json:"group,omitempty"`
-	Username string `yaml:"username" json:"username,omitempty"`
-	Password string `yaml:"password" json:"password,omitempty"`
-	// Deprecated
-	LogDir string `yaml:"log-dir" json:"log-dir,omitempty"`
-	// Deprecated
-	ConfigFile string `default:"dubbo.properties" yaml:"config-file"  json:"config-file,omitempty"`
-	Namespace  string `default:"dubbo" yaml:"namespace"  json:"namespace,omitempty"`
-	// Deprecated
-	AppConfigFile string `default:"dubbo.properties" yaml:"app-config-file"  json:"app-config-file,omitempty"`
-	// Deprecated
-	AppID   string `default:"dubbo" yaml:"app-id"  json:"app-id,omitempty"`
-	Timeout string `default:"10s" yaml:"timeout"  json:"timeout,omitempty"`
-	// Deprecated
-	RemoteRef string            `required:"false"  yaml:"remote-ref"  json:"remote-ref,omitempty"`
+	Protocol  string            `validate:"required" yaml:"protocol"  json:"protocol,omitempty"`
+	Address   string            `validate:"required" yaml:"address" json:"address,omitempty"`
+	DataId    string            `yaml:"data-id" json:"data-id,omitempty"`
+	Cluster   string            `yaml:"cluster" json:"cluster,omitempty"`
+	Group     string            `default:"dubbo" yaml:"group" json:"group,omitempty"`
+	Username  string            `yaml:"username" json:"username,omitempty"`
+	Password  string            `yaml:"password" json:"password,omitempty"`
+	Namespace string            `default:"dubbo" yaml:"namespace"  json:"namespace,omitempty"`
+	AppID     string            `default:"dubbo" yaml:"app-id"  json:"app-id,omitempty"`
+	Timeout   string            `default:"10s" yaml:"timeout"  json:"timeout,omitempty"`
 	Params    map[string]string `yaml:"params"  json:"parameters,omitempty"`
+
+	DynamicConfiguration config_center.DynamicConfiguration
 }
 
 // Prefix dubbo.config-center
 func (CenterConfig) Prefix() string {
 	return constant.ConfigCenterPrefix
-}
-
-func GetConfigCenterInstance(opts ...CenterConfigOpt) *CenterConfig {
-	cc := &CenterConfig{
-		Params: make(map[string]string, 1),
-	}
-	for _, opt := range opts {
-		opt(cc)
-	}
-	return cc
 }
 
 func (c *CenterConfig) check() error {
@@ -111,7 +95,6 @@ func (c *CenterConfig) GetUrlMap() url.Values {
 	urlMap.Set(constant.CONFIG_GROUP_KEY, c.Group)
 	urlMap.Set(constant.CONFIG_CLUSTER_KEY, c.Cluster)
 	urlMap.Set(constant.CONFIG_APP_ID_KEY, c.AppID)
-	urlMap.Set(constant.CONFIG_LOG_DIR_KEY, c.LogDir)
 	urlMap.Set(constant.CONFIG_USERNAME_KEY, c.Username)
 	urlMap.Set(constant.CONFIG_PASSWORD_KEY, c.Password)
 	urlMap.Set(constant.CONFIG_TIMEOUT_KEY, c.Timeout)
@@ -140,21 +123,6 @@ func (c *CenterConfig) translateConfigAddress() string {
 // toURL will compatible with baseConfig.ShutdownConfig.Address and baseConfig.ShutdownConfig.RemoteRef before 1.6.0
 // After 1.6.0 will not compatible, only baseConfig.ShutdownConfig.RemoteRef
 func (c *CenterConfig) toURL() (*common.URL, error) {
-	//remoteRef := baseConfig.ConfigCenterConfig.RemoteRef
-	//// if set remote ref use remote
-	//if len(remoteRef) <= 0 {
-	//	return common.NewURL(baseConfig.ConfigCenterConfig.Address,
-	//		common.WithProtocol(baseConfig.ConfigCenterConfig.Protocol),
-	//		common.WithParams(baseConfig.ConfigCenterConfig.GetUrlMap()))
-	//}
-	//rc, ok := baseConfig.GetRemoteConfig(remoteRef)
-	//if !ok {
-	//	return nil, perrors.New("Could not find out the remote ref config, name: " + remoteRef)
-	//}
-	//// set protocol if remote not set
-	//if len(rc.Protocol) <= 0 {
-	//	rc.Protocol = baseConfig.ConfigCenterConfig.Protocol
-	//}
 	return common.NewURL(c.Address,
 		common.WithProtocol(c.Protocol),
 		common.WithParams(c.GetUrlMap()))
@@ -164,11 +132,7 @@ func (c *CenterConfig) toURL() (*common.URL, error) {
 // it will prepare the environment
 func startConfigCenter(rc *RootConfig) error {
 	cc := rc.ConfigCenter
-	configCenterUrl, err := cc.toURL()
-	if err != nil {
-		return err
-	}
-	strConf, err := cc.prepareEnvironment(configCenterUrl)
+	strConf, err := cc.prepareEnvironment()
 	if err != nil {
 		return errors.WithMessagef(err, "start config center error!")
 	}
@@ -185,131 +149,92 @@ func startConfigCenter(rc *RootConfig) error {
 	return nil
 }
 
-func (c *CenterConfig) GetDynamicConfiguration() (config_center.DynamicConfiguration, error) {
+func (c *CenterConfig) CreateDynamicConfiguration() (config_center.DynamicConfiguration, error) {
 	configCenterUrl, err := c.toURL()
 	if err != nil {
 		return nil, err
 	}
 	factory := extension.GetConfigCenterFactory(configCenterUrl.Protocol)
 	if factory == nil {
-		return nil, errors.New("get config center factory failed")
+		return nil, errors.New(fmt.Sprintf("Get config center factory of %s failed", configCenterUrl.Protocol))
 	}
 	return factory.GetDynamicConfiguration(configCenterUrl)
 }
 
-func (c *CenterConfig) prepareEnvironment(configCenterUrl *common.URL) (string, error) {
-	factory := extension.GetConfigCenterFactory(configCenterUrl.Protocol)
-	if factory == nil {
-		return "", errors.New("get config center factory failed")
+func (c *CenterConfig) GetDynamicConfiguration() (config_center.DynamicConfiguration, error) {
+	if c.DynamicConfiguration != nil {
+		return c.DynamicConfiguration, nil
 	}
-	dynamicConfig, err := factory.GetDynamicConfiguration(configCenterUrl)
+	dynamicConfig, err := c.CreateDynamicConfiguration()
 	if err != nil {
-		logger.Errorf("Get dynamic configuration error , error message is %v", err)
+		logger.Warnf("Create dynamic configuration error , error message is %v", err)
+		return nil, errors.WithStack(err)
+	}
+	c.DynamicConfiguration = dynamicConfig
+	return dynamicConfig, nil
+}
+
+func (c *CenterConfig) prepareEnvironment() (string, error) {
+	dynamicConfig, err := c.GetDynamicConfiguration()
+	if err != nil {
+		logger.Errorf("Create dynamic configuration error , error message is %v", err)
 		return "", errors.WithStack(err)
 	}
 	envInstance := conf.GetEnvInstance()
 	envInstance.SetDynamicConfiguration(dynamicConfig)
 
 	return dynamicConfig.GetProperties(c.DataId, config_center.WithGroup(c.Group))
-	//if err != nil {
-	//	logger.Errorf("Get config content in dynamic configuration error , error message is %v", err)
-	//	return errors.WithStack(err)
-	//}
-	//yaml.Unmarshal([]byte(conten),rootConfig)
-	//var appGroup string
-	//var appContent string
-	//if config2.providerConfig != nil && config2.providerConfig.ApplicationConfig != nil &&
-	//	reflect.ValueOf(baseConfig.fatherConfig).Elem().Type().Name() == "ProviderConfig" {
-	//	appGroup = config2.providerConfig.ApplicationConfig.Name
-	//} else if config2.consumerConfig != nil && config2.consumerConfig.ApplicationConfig != nil &&
-	//	reflect.ValueOf(baseConfig.fatherConfig).Elem().Type().Name() == "ConsumerConfig" {
-	//	appGroup = config2.consumerConfig.ApplicationConfig.Name
-	//}
-	//
-	//if len(appGroup) != 0 {
-	//	configFile := baseConfig.ConfigCenterConfig.AppConfigFile
-	//	if len(configFile) == 0 {
-	//		configFile = baseConfig.ConfigCenterConfig.ConfigFile
-	//	}
-	//	appContent, err = dynamicConfig.GetProperties(configFile, config_center.WithGroup(appGroup))
-	//	if err != nil {
-	//		return perrors.WithStack(err)
-	//	}
-	//}
-	//// global config file
-	//mapContent, err := dynamicConfig.Parser().Parse(content)
-	//if err != nil {
-	//	return perrors.WithStack(err)
-	//}
-	//envInstance.UpdateExternalConfigMap(mapContent)
-	//
-	//// appGroup config file
-	//if len(appContent) != 0 {
-	//	appMapContent, err := dynamicConfig.Parser().Parse(appContent)
-	//	if err != nil {
-	//		return perrors.WithStack(err)
-	//	}
-	//	envInstance.UpdateAppExternalConfigMap(appMapContent)
-	//}
 }
 
-type CenterConfigOpt func(config *CenterConfig)
+func NewConfigCenterConfigBuilder() *ConfigCenterConfigBuilder {
+	return &ConfigCenterConfigBuilder{configCenterConfig: newEmptyConfigCenterConfig()}
+}
 
-func NewConfigCenterConfig(opts ...CenterConfigOpt) *CenterConfig {
-	centerConfig := &CenterConfig{
+type ConfigCenterConfigBuilder struct {
+	configCenterConfig *CenterConfig
+}
+
+func (ccb *ConfigCenterConfigBuilder) SetProtocol(protocol string) *ConfigCenterConfigBuilder {
+	ccb.configCenterConfig.Protocol = protocol
+	return ccb
+}
+
+func (ccb *ConfigCenterConfigBuilder) SetUserName(userName string) *ConfigCenterConfigBuilder {
+	ccb.configCenterConfig.Username = userName
+	return ccb
+}
+
+func (ccb *ConfigCenterConfigBuilder) SetAddress(address string) *ConfigCenterConfigBuilder {
+	ccb.configCenterConfig.Address = address
+	return ccb
+}
+
+func (ccb *ConfigCenterConfigBuilder) SetPassword(password string) *ConfigCenterConfigBuilder {
+	ccb.configCenterConfig.Password = password
+	return ccb
+}
+
+func (ccb *ConfigCenterConfigBuilder) SetNamespace(namespace string) *ConfigCenterConfigBuilder {
+	ccb.configCenterConfig.Namespace = namespace
+	return ccb
+}
+
+func (ccb *ConfigCenterConfigBuilder) SetDataID(dataID string) *ConfigCenterConfigBuilder {
+	ccb.configCenterConfig.DataId = dataID
+	return ccb
+}
+
+func (ccb *ConfigCenterConfigBuilder) SetGroup(group string) *ConfigCenterConfigBuilder {
+	ccb.configCenterConfig.Group = group
+	return ccb
+}
+
+func (ccb *ConfigCenterConfigBuilder) Build() *CenterConfig {
+	return ccb.configCenterConfig
+}
+
+func newEmptyConfigCenterConfig() *CenterConfig {
+	return &CenterConfig{
 		Params: make(map[string]string),
-	}
-	for _, o := range opts {
-		o(centerConfig)
-	}
-	return centerConfig
-}
-
-// WithConfigCenterProtocol set ProtocolConfig with given protocolName protocol
-func WithConfigCenterProtocol(protocol string) CenterConfigOpt {
-	return func(config *CenterConfig) {
-		config.Protocol = protocol
-	}
-}
-
-// WithConfigCenterAddress set ProtocolConfig with given @addr
-func WithConfigCenterAddress(addr string) CenterConfigOpt {
-	return func(config *CenterConfig) {
-		config.Address = addr
-	}
-}
-
-// WithConfigCenterDataID set ProtocolConfig with given @dataID
-func WithConfigCenterDataID(dataID string) CenterConfigOpt {
-	return func(config *CenterConfig) {
-		config.DataId = dataID
-	}
-}
-
-// WithConfigCenterGroup set ProtocolConfig with given @group
-func WithConfigCenterGroup(group string) CenterConfigOpt {
-	return func(config *CenterConfig) {
-		config.Group = group
-	}
-}
-
-// WithConfigCenterUsername set ProtocolConfig with given @username
-func WithConfigCenterUsername(username string) CenterConfigOpt {
-	return func(config *CenterConfig) {
-		config.Username = username
-	}
-}
-
-// WithConfigCenterPassword set ProtocolConfig with given @password
-func WithConfigCenterPassword(password string) CenterConfigOpt {
-	return func(config *CenterConfig) {
-		config.Password = password
-	}
-}
-
-// WithConfigCenterNamespace set ProtocolConfig with given @namespace
-func WithConfigCenterNamespace(namespace string) CenterConfigOpt {
-	return func(config *CenterConfig) {
-		config.Namespace = namespace
 	}
 }

@@ -50,7 +50,7 @@ func TestNewNacosClient(t *testing.T) {
 	assert.NotNil(t, err)
 
 	rc.Address = "console.nacos.io:80"
-	rc.TimeoutStr = "10s"
+	rc.Timeout = "10s"
 	client, err = NewNacosClient(rc)
 	assert.NotNil(t, client)
 	assert.Nil(t, err)

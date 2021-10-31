@@ -138,6 +138,7 @@ const (
 	REGISTRY_TTL_KEY          = "registry.ttl"
 	SIMPLIFIED_KEY            = "simplified"
 	NAMESPACE_KEY             = "namespace"
+	REGISTRY_GROUP_KEY        = "registry.group"
 )
 
 const (
@@ -163,16 +164,19 @@ const (
 )
 
 const (
-	CONFIG_NAMESPACE_KEY  = "namespace"
-	CONFIG_GROUP_KEY      = "group"
-	CONFIG_APP_ID_KEY     = "appId"
-	CONFIG_CLUSTER_KEY    = "cluster"
-	CONFIG_TIMEOUT_KEY    = "timeout"
-	CONFIG_USERNAME_KEY   = "username"
-	CONFIG_PASSWORD_KEY   = "password"
-	CONFIG_LOG_DIR_KEY    = "logDir"
-	CONFIG_VERSION_KEY    = "configVersion"
-	COMPATIBLE_CONFIG_KEY = "compatible_config"
+	CONFIG_NAMESPACE_KEY          = "namespace"
+	CONFIG_GROUP_KEY              = "group"
+	CONFIG_APP_ID_KEY             = "appId"
+	CONFIG_CLUSTER_KEY            = "cluster"
+	CONFIG_TIMEOUT_KEY            = "timeout"
+	CONFIG_USERNAME_KEY           = "username"
+	CONFIG_PASSWORD_KEY           = "password"
+	CONFIG_LOG_DIR_KEY            = "logDir"
+	CONFIG_VERSION_KEY            = "configVersion"
+	COMPATIBLE_CONFIG_KEY         = "compatible_config"
+	CONFIG_SECRET_KEY             = "secret"
+	CONFIG_BACKUP_CONFIG_KEY      = "isBackupConfig"
+	CONFIG_BACKUP_CONFIG_PATH_KEY = "backupConfigPath"
 )
 
 const (
@@ -195,7 +199,7 @@ const (
 )
 
 const (
-	CONFIGURATORS_SUFFIX = ".configurators"
+	ConfiguratorSuffix = ".configurators"
 )
 
 const (
@@ -249,6 +253,8 @@ const (
 	TagRouterRuleSuffix = ".tag-router"
 	// ConditionRouterRuleSuffix Specify condition router suffix
 	ConditionRouterRuleSuffix = ".condition-router"
+	// MeshRouteSuffix Specify mesh router suffix
+	MeshRouteSuffix = ".MESHAPPRULE"
 	// ForceUseTag is the tag in attachment
 	ForceUseTag = "dubbo.force.tag"
 	Tagkey      = "dubbo.tag"

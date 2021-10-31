@@ -63,7 +63,7 @@ package config
 //
 //	// without configuration
 //	config.consumerConfig = nil
-//	config.providerConfig = nil
+//	config.referenceConfig = nil
 //	BeforeShutdown()
 //
 //	config.consumerConfig = &consumer.ShutdownConfig{
@@ -83,7 +83,7 @@ package config
 //		Name: "mock",
 //	}
 //
-//	config.providerConfig = &provider.ProviderConfig{
+//	config.referenceConfig = &provider.ProviderConfig{
 //		ShutdownConfig: &ShutdownConfig{
 //			Timeout:     "1",
 //			StepTimeout: "1s",
@@ -93,7 +93,7 @@ package config
 //	// test destroy protocol
 //	BeforeShutdown()
 //
-//	config.providerConfig = &provider.ProviderConfig{
+//	config.referenceConfig = &provider.ProviderConfig{
 //		ShutdownConfig: &ShutdownConfig{
 //			Timeout:     "1",
 //			StepTimeout: "-1s",

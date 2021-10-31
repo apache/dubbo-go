@@ -31,7 +31,7 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
+	"dubbo.apache.org/dubbo-go/v3/cluster/directory/static"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
@@ -46,11 +46,11 @@ type ReferenceConfig struct {
 	pxy            *proxy.Proxy
 	id             string
 	InterfaceName  string            `required:"true"  yaml:"interface"  json:"interface,omitempty" property:"interface"`
-	Check          *bool             `default:"false" yaml:"check"  json:"check,omitempty" property:"check"`
+	Check          *bool             `default:"true" yaml:"check"  json:"check,omitempty" property:"check"`
 	URL            string            `yaml:"url"  json:"url,omitempty" property:"url"`
 	Filter         string            `yaml:"filter" json:"filter,omitempty" property:"filter"`
 	Protocol       string            `default:"dubbo"  yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
-	Registry       []string          `yaml:"registry"  json:"registry,omitempty"  property:"registry"`
+	RegistryIDs    []string          `yaml:"registry-ids"  json:"registry-ids,omitempty"  property:"registry-ids"`
 	Cluster        string            `yaml:"cluster"  json:"cluster,omitempty" property:"cluster"`
 	Loadbalance    string            `yaml:"loadbalance"  json:"loadbalance,omitempty" property:"loadbalance"`
 	Retries        string            `yaml:"retries"  json:"retries,omitempty" property:"retries"`
@@ -90,9 +90,12 @@ func (rc *ReferenceConfig) Init(root *RootConfig) error {
 	if root.Application != nil {
 		rc.metaDataType = root.Application.MetadataType
 	}
-	rc.Registry = translateRegistryIds(rc.Registry)
-	if len(rc.Registry) <= 0 {
-		rc.Registry = root.Consumer.Registry
+	if rc.Cluster == "" {
+		rc.Cluster = "failover"
+	}
+	rc.RegistryIDs = translateRegistryIds(rc.RegistryIDs)
+	if len(rc.RegistryIDs) <= 0 {
+		rc.RegistryIDs = root.Consumer.RegistryIDs
 	}
 	return verify(rc)
 }
@@ -111,112 +114,89 @@ func (rc *ReferenceConfig) Refer(srv interface{}) {
 		cfgURL.AddParam(constant.ForceUseTag, "true")
 	}
 	rc.postProcessConfig(cfgURL)
-	if rc.URL != "" {
-		// 1. user specified URL, could be peer-to-peer address, or register center's address.
+
+	// retrieving urls from config, and appending the urls to rc.urls
+	if rc.URL != "" { // use user-specific urls
+		/*
+		 Two types of URL are allowed for rc.URL: direct url and registry url, they will be handled in different ways.
+		 For example, "tri://localhost:10000" is a direct url, and "registry://localhost:2181" is a registry url.
+		 rc.URL: "tri://localhost:10000;tri://localhost:10001;registry://localhost:2181",
+		 urlStrings = []string{"tri://localhost:10000", "tri://localhost:10001", "registry://localhost:2181"}.
+		*/
 		urlStrings := gxstrings.RegSplit(rc.URL, "\\s*[;]+\\s*")
 		for _, urlStr := range urlStrings {
 			serviceURL, err := common.NewURL(urlStr)
 			if err != nil {
 				panic(fmt.Sprintf("url configuration error,  please check your configuration, user specified URL %v refer error, error message is %v ", urlStr, err.Error()))
 			}
-			if serviceURL.Protocol == constant.REGISTRY_PROTOCOL {
+			if serviceURL.Protocol == constant.REGISTRY_PROTOCOL { // URL stands for a registry protocol
 				serviceURL.SubURL = cfgURL
 				rc.urls = append(rc.urls, serviceURL)
-			} else {
+			} else { // URL stands for a direct address
 				if serviceURL.Path == "" {
 					serviceURL.Path = "/" + rc.InterfaceName
 				}
-				// merge url need to do
+				// merge URL param with cfgURL, others are same as serviceURL
 				newURL := common.MergeURL(serviceURL, cfgURL)
 				rc.urls = append(rc.urls, newURL)
 			}
 		}
-	} else {
-		// 2. assemble SubURL from register center's configuration mode
-		rc.urls = loadRegistries(rc.Registry, rc.rootConfig.Registries, common.CONSUMER)
-
+	} else { // use registry configs
+		rc.urls = loadRegistries(rc.RegistryIDs, rc.rootConfig.Registries, common.CONSUMER)
 		// set url to regURLs
 		for _, regURL := range rc.urls {
 			regURL.SubURL = cfgURL
 		}
 	}
 
-	if len(rc.urls) == 1 {
-		if rc.urls[0].Protocol == constant.SERVICE_REGISTRY_PROTOCOL {
-			rc.invoker = extension.GetProtocol("registry").Refer(rc.urls[0])
+	// Get invokers according to rc.urls
+	var (
+		invoker protocol.Invoker
+		regURL  *common.URL
+	)
+	invokers := make([]protocol.Invoker, len(rc.urls))
+	for i, u := range rc.urls {
+		if u.Protocol == constant.SERVICE_REGISTRY_PROTOCOL {
+			invoker = extension.GetProtocol("registry").Refer(u)
 		} else {
-			rc.invoker = extension.GetProtocol(rc.urls[0].Protocol).Refer(rc.urls[0])
+			invoker = extension.GetProtocol(u.Protocol).Refer(u)
 		}
 
-		// c.URL != "" is direct call
 		if rc.URL != "" {
-			//filter
-			rc.invoker = protocolwrapper.BuildInvokerChain(rc.invoker, constant.REFERENCE_FILTER_KEY)
+			invoker = protocolwrapper.BuildInvokerChain(invoker, constant.REFERENCE_FILTER_KEY)
+		}
 
-			// cluster
-			invokers := make([]protocol.Invoker, 0, len(rc.urls))
-			invokers = append(invokers, rc.invoker)
-			// TODO(decouple from directory, config should not depend on directory module)
-			var hitClu string
-			// not a registry url, must be direct invoke.
-			hitClu = constant.FAILOVER_CLUSTER_NAME
-			if len(invokers) > 0 {
-				u := invokers[0].GetURL()
-				if nil != &u {
-					hitClu = u.GetParam(constant.CLUSTER_KEY, constant.ZONEAWARE_CLUSTER_NAME)
-				}
+		invokers[i] = invoker
+		if u.Protocol == constant.REGISTRY_PROTOCOL {
+			regURL = u
+		}
+	}
+
+	// TODO(hxmhlt): decouple from directory, config should not depend on directory module
+	if len(invokers) == 1 {
+		rc.invoker = invokers[0]
+		if rc.URL != "" {
+			hitClu := constant.ClusterKeyFailover
+			if u := rc.invoker.GetURL(); u != nil {
+				hitClu = u.GetParam(constant.CLUSTER_KEY, constant.ClusterKeyZoneAware)
 			}
-
-			cluster := extension.GetCluster(hitClu)
-			// If 'zone-aware' policy select, the invoker wrap sequence would be:
-			// ZoneAwareClusterInvoker(StaticDirectory) ->
-			// FailoverClusterInvoker(RegistryDirectory, routing happens here) -> Invoker
-			rc.invoker = cluster.Join(directory.NewStaticDirectory(invokers))
+			rc.invoker = extension.GetCluster(hitClu).Join(static.NewDirectory(invokers))
 		}
 	} else {
-		invokers := make([]protocol.Invoker, 0, len(rc.urls))
-		var regURL *common.URL
-		for _, u := range rc.urls {
-			var invoker protocol.Invoker
-			if u.Protocol == constant.SERVICE_REGISTRY_PROTOCOL {
-				invoker = extension.GetProtocol("registry").Refer(u)
-			} else {
-				invoker = extension.GetProtocol(u.Protocol).Refer(u)
-			}
-
-			// c.URL != "" is direct call
-			if rc.URL != "" {
-				//filter
-				invoker = protocolwrapper.BuildInvokerChain(invoker, constant.REFERENCE_FILTER_KEY)
-			}
-			invokers = append(invokers, invoker)
-			if u.Protocol == constant.REGISTRY_PROTOCOL {
-				regURL = u
-			}
-		}
-
-		// TODO(decouple from directory, config should not depend on directory module)
 		var hitClu string
 		if regURL != nil {
 			// for multi-subscription scenario, use 'zone-aware' policy by default
-			hitClu = constant.ZONEAWARE_CLUSTER_NAME
+			hitClu = constant.ClusterKeyZoneAware
 		} else {
 			// not a registry url, must be direct invoke.
-			hitClu = constant.FAILOVER_CLUSTER_NAME
-			if len(invokers) > 0 {
-				u := invokers[0].GetURL()
-				if nil != &u {
-					hitClu = u.GetParam(constant.CLUSTER_KEY, constant.ZONEAWARE_CLUSTER_NAME)
-				}
+			hitClu = constant.ClusterKeyFailover
+			if u := invokers[0].GetURL(); u != nil {
+				hitClu = u.GetParam(constant.CLUSTER_KEY, constant.ClusterKeyZoneAware)
 			}
 		}
-
-		cluster := extension.GetCluster(hitClu)
-		// If 'zone-aware' policy select, the invoker wrap sequence would be:
-		// ZoneAwareClusterInvoker(StaticDirectory) ->
-		// FailoverClusterInvoker(RegistryDirectory, routing happens here) -> Invoker
-		rc.invoker = cluster.Join(directory.NewStaticDirectory(invokers))
+		rc.invoker = extension.GetCluster(hitClu).Join(static.NewDirectory(invokers))
 	}
+
 	// publish consumer's metadata
 	publishServiceDefinition(cfgURL)
 	// create proxy
@@ -323,71 +303,56 @@ func (rc *ReferenceConfig) postProcessConfig(url *common.URL) {
 
 //////////////////////////////////// reference config api
 
-// ReferenceConfigOpt is consumer's reference config
-type ReferenceConfigOpt func(config *ReferenceConfig) *ReferenceConfig
-
-// NewReferenceConfig The only way to get a new ReferenceConfig
-func NewReferenceConfigWithID(id string) *ReferenceConfig {
-	return &ReferenceConfig{id: id}
-}
-
-// NewEmptyReferenceConfig returns empty ReferenceConfig
-func NewEmptyReferenceConfig() *ReferenceConfig {
-	newReferenceConfig := NewReferenceConfigWithID("")
+// newEmptyReferenceConfig returns empty ReferenceConfig
+func newEmptyReferenceConfig() *ReferenceConfig {
+	newReferenceConfig := &ReferenceConfig{}
 	newReferenceConfig.Methods = make([]*MethodConfig, 0, 8)
 	newReferenceConfig.Params = make(map[string]string, 8)
 	return newReferenceConfig
 }
 
-// NewReferenceConfig returns ReferenceConfig with given @opts
-func NewReferenceConfig(opts ...ReferenceConfigOpt) *ReferenceConfig {
-	newReferenceConfig := NewEmptyReferenceConfig()
-	for _, v := range opts {
-		v(newReferenceConfig)
-	}
-	return newReferenceConfig
+type ReferenceConfigBuilder struct {
+	referenceConfig *ReferenceConfig
 }
 
-// WithReferenceRegistry returns ReferenceConfigOpt with given registryKey: @registry
-func WithReferenceRegistry(registryKeys ...string) ReferenceConfigOpt {
-	return func(config *ReferenceConfig) *ReferenceConfig {
-		config.Registry = registryKeys
-		return config
-	}
+func NewReferenceConfigBuilder() *ReferenceConfigBuilder {
+	return &ReferenceConfigBuilder{referenceConfig: newEmptyReferenceConfig()}
 }
 
-// WithReferenceProtocolName returns ReferenceConfigOpt with given protocolName: @protocol
-func WithReferenceProtocolName(protocol string) ReferenceConfigOpt {
-	return func(config *ReferenceConfig) *ReferenceConfig {
-		config.Protocol = protocol
-		return config
-	}
+func (pcb *ReferenceConfigBuilder) SetInterface(interfaceName string) *ReferenceConfigBuilder {
+	pcb.referenceConfig.InterfaceName = interfaceName
+	return pcb
 }
 
-// WithReferenceInterface returns ReferenceConfigOpt with given @interfaceName
-func WithReferenceInterface(interfaceName string) ReferenceConfigOpt {
-	return func(config *ReferenceConfig) *ReferenceConfig {
-		config.InterfaceName = interfaceName
-		return config
-	}
+func (pcb *ReferenceConfigBuilder) SetRegistryIDs(registryIDs ...string) *ReferenceConfigBuilder {
+	pcb.referenceConfig.RegistryIDs = registryIDs
+	return pcb
 }
 
-// WithReferenceCluster returns ReferenceConfigOpt with given cluster name: @cluster
-func WithReferenceCluster(cluster string) ReferenceConfigOpt {
-	return func(config *ReferenceConfig) *ReferenceConfig {
-		config.Cluster = cluster
-		return config
+func (pcb *ReferenceConfigBuilder) SetGeneric(generic bool) *ReferenceConfigBuilder {
+	if generic {
+		pcb.referenceConfig.Generic = "true"
+	} else {
+		pcb.referenceConfig.Generic = "false"
 	}
+	return pcb
 }
 
-// WithReferenceMethod returns ReferenceConfigOpt with given @method, @retries, and load balance: @lb
-func WithReferenceMethod(methodName, retries, lb string) ReferenceConfigOpt {
-	return func(config *ReferenceConfig) *ReferenceConfig {
-		config.Methods = append(config.Methods, &MethodConfig{
-			Name:        methodName,
-			Retries:     retries,
-			LoadBalance: lb,
-		})
-		return config
-	}
+func (pcb *ReferenceConfigBuilder) SetCluster(cluster string) *ReferenceConfigBuilder {
+	pcb.referenceConfig.Cluster = cluster
+	return pcb
+}
+
+func (pcb *ReferenceConfigBuilder) SetSerialization(serialization string) *ReferenceConfigBuilder {
+	pcb.referenceConfig.Serialization = serialization
+	return pcb
+}
+
+func (pcb *ReferenceConfigBuilder) SetProtocol(protocol string) *ReferenceConfigBuilder {
+	pcb.referenceConfig.Protocol = protocol
+	return pcb
+}
+
+func (pcb *ReferenceConfigBuilder) Build() *ReferenceConfig {
+	return pcb.referenceConfig
 }

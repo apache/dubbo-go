@@ -17,8 +17,13 @@
 
 package constant
 
-// nolint
 const (
-	FAILOVER_CLUSTER_NAME  = "failover"
-	ZONEAWARE_CLUSTER_NAME = "zoneAware"
+	ClusterKeyAvailable = "available"
+	ClusterKeyBroadcast = "broadcast"
+	ClusterKeyFailback  = "failback"
+	ClusterKeyFailfast  = "failfast"
+	ClusterKeyFailover  = "failover"
+	ClusterKeyFailsafe  = "failsafe"
+	ClusterKeyForking   = "forking"
+	ClusterKeyZoneAware = "zoneAware"
 )

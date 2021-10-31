@@ -26,6 +26,12 @@ The title format of the pull request `MUST` follow the following rules:
 
 ## 3. Code Style
 
+Please add a blank line at the end of every file.
+
+Please add a blank line at the sub-title and its content.
+
+Please add s space between the Engilsh word/digit number and the Chinese character.
+
 ### 3.1 log
 
 >- 1 when logging the function's input parameter, you should add '@' before input parameter name.
@@ -62,3 +68,11 @@ import (
   "dubbo.apache.org/dubbo-go/v3/common"
 )
 ```
+
+### 3.5 package
+
+There should be a blank line between the license and the package name.
+
+The package name should not have "xxx_impl".
+
+

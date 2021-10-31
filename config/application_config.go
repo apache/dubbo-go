@@ -32,7 +32,7 @@ type ApplicationConfig struct {
 	Organization string `default:"dubbo-go" yaml:"organization" json:"organization,omitempty" property:"organization"`
 	Name         string `default:"dubbo.io" yaml:"name" json:"name,omitempty" property:"name"`
 	Module       string `default:"sample" yaml:"module" json:"module,omitempty" property:"module"`
-	Version      string `default:"0.0.1" yaml:"version" json:"version,omitempty" property:"version"`
+	Version      string `default:"3.0.0" yaml:"version" json:"version,omitempty" property:"version"`
 	Owner        string `default:"dubbo-go" yaml:"owner" json:"owner,omitempty" property:"owner"`
 	Environment  string `default:"dev" yaml:"environment" json:"environment,omitempty" property:"environment"`
 	// the metadata type. remote or local
@@ -55,14 +55,6 @@ func (ac *ApplicationConfig) Init() error {
 	return nil
 }
 
-func GetApplicationInstance(opts ...ApplicationConfigOpt) *ApplicationConfig {
-	ac := &ApplicationConfig{}
-	for _, opt := range opts {
-		opt(ac)
-	}
-	return ac
-}
-
 func (ac *ApplicationConfig) check() error {
 	if err := defaults.Set(ac); err != nil {
 		return err
@@ -70,46 +62,49 @@ func (ac *ApplicationConfig) check() error {
 	return verify(ac)
 }
 
-type ApplicationConfigOpt func(config *ApplicationConfig)
-
-func WithOrganization(organization string) ApplicationConfigOpt {
-	return func(ac *ApplicationConfig) {
-		ac.Organization = organization
-	}
+func NewApplicationConfigBuilder() *ApplicationConfigBuilder {
+	return &ApplicationConfigBuilder{application: &ApplicationConfig{}}
 }
 
-func WithName(name string) ApplicationConfigOpt {
-	return func(ac *ApplicationConfig) {
-		ac.Name = name
-	}
+type ApplicationConfigBuilder struct {
+	application *ApplicationConfig
 }
 
-func WithModule(module string) ApplicationConfigOpt {
-	return func(ac *ApplicationConfig) {
-		ac.Module = module
-	}
+func (acb *ApplicationConfigBuilder) SetOrganization(organization string) *ApplicationConfigBuilder {
+	acb.application.Organization = organization
+	return acb
 }
 
-func WithVersion(version string) ApplicationConfigOpt {
-	return func(ac *ApplicationConfig) {
-		ac.Version = version
-	}
+func (acb *ApplicationConfigBuilder) SetName(name string) *ApplicationConfigBuilder {
+	acb.application.Name = name
+	return acb
 }
 
-func WithOwner(owner string) ApplicationConfigOpt {
-	return func(ac *ApplicationConfig) {
-		ac.Owner = owner
-	}
+func (acb *ApplicationConfigBuilder) SetModule(module string) *ApplicationConfigBuilder {
+	acb.application.Module = module
+	return acb
 }
 
-func WithEnvironment(env string) ApplicationConfigOpt {
-	return func(ac *ApplicationConfig) {
-		ac.Environment = env
-	}
+func (acb *ApplicationConfigBuilder) SetVersion(version string) *ApplicationConfigBuilder {
+	acb.application.Version = version
+	return acb
 }
 
-func WithMetadataType(metadataType string) ApplicationConfigOpt {
-	return func(ac *ApplicationConfig) {
-		ac.MetadataType = metadataType
-	}
+func (acb *ApplicationConfigBuilder) SetOwner(owner string) *ApplicationConfigBuilder {
+	acb.application.Owner = owner
+	return acb
+}
+
+func (acb *ApplicationConfigBuilder) SetEnvironment(environment string) *ApplicationConfigBuilder {
+	acb.application.Environment = environment
+	return acb
+}
+
+func (acb *ApplicationConfigBuilder) SetMetadataType(metadataType string) *ApplicationConfigBuilder {
+	acb.application.MetadataType = metadataType
+	return acb
+}
+
+func (acb *ApplicationConfigBuilder) Build() *ApplicationConfig {
+	return acb.application
 }

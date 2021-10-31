@@ -30,12 +30,13 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/metrics"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
 func TestPrometheusReporter_Report(t *testing.T) {
-	reporter := extension.GetMetricReporter(reporterName)
+	reporter := extension.GetMetricReporter(reporterName, metrics.NewReporterConfig())
 	url, _ := common.NewURL(
 		"dubbo://:20000/UserProvider?app.version=0.0.1&application=BDTService&bean.name=UserProvider" +
 			"&cluster=failover&environment=dev&group=&interface=com.ikurento.user.UserProvider&loadbalance=random&methods.GetUser." +
