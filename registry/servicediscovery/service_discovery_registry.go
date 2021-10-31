@@ -36,10 +36,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
 	"dubbo.apache.org/dubbo-go/v3/metadata/service"
-	"dubbo.apache.org/dubbo-go/v3/metadata/service/exporter/configurable"
 	"dubbo.apache.org/dubbo-go/v3/metadata/service/local"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/registry/event"
@@ -69,9 +67,6 @@ type serviceDiscoveryRegistry struct {
 }
 
 func newServiceDiscoveryRegistry(url *common.URL) (registry.Registry, error) {
-
-	tryInitMetadataService(url)
-
 	serviceDiscovery, err := creatServiceDiscovery(url)
 	if err != nil {
 		return nil, err
@@ -303,50 +298,3 @@ func (s *serviceDiscoveryRegistry) findMappedServices(url *common.URL) *gxset.Ha
 var (
 	exporting = &atomic.Bool{}
 )
-
-// tryInitMetadataService will try to initialize metadata service
-// TODO (move to somewhere)
-func tryInitMetadataService(url *common.URL) {
-
-	ms, err := local.GetLocalMetadataService()
-	if err != nil {
-		logger.Errorf("could not init metadata service", err)
-	}
-
-	if !config.IsProvider() || exporting.Load() {
-		return
-	}
-
-	// In theory, we can use sync.Once
-	// But sync.Once is not reentrant.
-	// Now the invocation chain is createRegistry -> tryInitMetadataService -> metadataServiceExporter.export
-	// -> createRegistry -> initMetadataService...
-	// So using sync.Once will result in dead lock
-	exporting.Store(true)
-
-	expt := configurable.NewMetadataServiceExporter(ms)
-
-	err = expt.Export(url)
-	if err != nil {
-		logger.Errorf("could not export the metadata service", err)
-	}
-
-	// report interface-app mapping
-	err = publishMapping(expt.(*configurable.MetadataServiceExporter).ServiceConfig)
-	if err != nil {
-		logger.Errorf("Publish interface-application mapping failed, got error %#v", err)
-	}
-}
-
-// OnEvent only handle ServiceConfigExportedEvent
-func publishMapping(sc *config.ServiceConfig) error {
-	urls := sc.GetExportedUrls()
-
-	for _, u := range urls {
-		err := extension.GetGlobalServiceNameMapping().Map(u)
-		if err != nil {
-			return perrors.WithMessage(err, "could not map the service: "+u.String())
-		}
-	}
-	return nil
-}

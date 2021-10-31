@@ -18,7 +18,7 @@
 package extension
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/cluster"
+	"dubbo.apache.org/dubbo-go/v3/cluster/cluster"
 )
 
 var clusters = make(map[string]func() cluster.Cluster)

@@ -38,12 +38,6 @@ func init() {
 }
 
 // Filter will calculate the invocation's duration and the report to the reporters
-// If you want to use this filter to collect the metrics,
-// Adding this into your configuration file, like:
-// filter: "metrics"
-// metrics:
-//   reporter:
-//     - "your reporter" # here you should specify the reporter, for example 'prometheus'
 // more info please take a look at dubbo-samples projects
 type Filter struct {
 	reporters []metrics.Reporter
@@ -74,7 +68,7 @@ func (p *Filter) OnResponse(ctx context.Context, res protocol.Result, invoker pr
 func newFilter() filter.Filter {
 	if metricFilterInstance == nil {
 		reporters := make([]metrics.Reporter, 0, 1)
-		reporters = append(reporters, extension.GetMetricReporter("prometheus"))
+		reporters = append(reporters, extension.GetMetricReporter("prometheus", metrics.NewReporterConfig()))
 		metricFilterInstance = &Filter{
 			reporters: reporters,
 		}

@@ -32,7 +32,6 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 	_ "dubbo.apache.org/dubbo-go/v3/metrics/prometheus"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
@@ -41,9 +40,8 @@ import (
 
 func TestMetricsFilterInvoke(t *testing.T) {
 	// prepare the mock reporter
-	config.GetMetricConfig().Reporters = []string{"mock"}
 	mk := &mockReporter{}
-	extension.SetMetricReporter("mock", func() metrics.Reporter {
+	extension.SetMetricReporter("mock", func(config *metrics.ReporterConfig) metrics.Reporter {
 		return mk
 	})
 

@@ -27,7 +27,7 @@ registries :
 
 services:
   "UserProvider":
-    registry: "hangzhouzk,shanghaizk"
+    registry-ids: "hangzhouzk,shanghaizk"
     filter: ""
     # the name of limiter
     tps.limiter: "default"

@@ -18,17 +18,13 @@
 package configurable
 
 import (
-	"strconv"
 	"sync"
-)
-
-import (
-	"github.com/pkg/errors"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	_ "dubbo.apache.org/dubbo-go/v3/metadata/mapping/metadata"
@@ -45,6 +41,10 @@ type MetadataServiceExporter struct {
 	metadataService service.MetadataService
 }
 
+func init() {
+	extension.SetMetadataServiceExporter(constant.DEFAULT_Key, NewMetadataServiceExporter)
+}
+
 // NewMetadataServiceExporter will return a service_exporter.MetadataServiceExporter with the specified  metadata service
 func NewMetadataServiceExporter(metadataService service.MetadataService) exporter.MetadataServiceExporter {
 	return &MetadataServiceExporter{
@@ -55,27 +55,22 @@ func NewMetadataServiceExporter(metadataService service.MetadataService) exporte
 // Export will export the metadataService
 func (exporter *MetadataServiceExporter) Export(url *common.URL) error {
 	if !exporter.IsExported() {
-		if url == nil || url.SubURL == nil {
-			return errors.New("metadata server url is nil, pls check your configuration")
-		}
 		version, _ := exporter.metadataService.Version()
 		exporter.lock.Lock()
 		defer exporter.lock.Unlock()
-		exporter.ServiceConfig = config.NewServiceConfig(
-			config.WithServiceID(constant.SIMPLE_METADATA_SERVICE_NAME),
-			config.WithServiceProtocolKeys(constant.DEFAULT_PROTOCOL),
-			config.WithServiceProtocol(constant.DEFAULT_PROTOCOL, config.NewProtocolConfig(
-				config.WithProtocolName(constant.DEFAULT_PROTOCOL),
-				config.WithProtocolPort(strconv.Itoa(constant.DEFAULT_METADATAPORT)),
-			)),
-			config.WithServiceRegistry("N/A"),
-			config.WithServiceInterface(constant.METADATA_SERVICE_NAME),
-			config.WithServiceGroup(config.GetApplicationConfig().Name),
-			config.WithServiceVersion(version),
-			config.WithProxyFactoryKey(constant.DEFAULT_Key),
-			config.WithServiceInterface(constant.METADATA_SERVICE_NAME),
-			config.WithServiceMetadataType(constant.REMOTE_METADATA_STORAGE_TYPE),
-		)
+		exporter.ServiceConfig = config.NewServiceConfigBuilder().
+			SetServiceID(constant.SIMPLE_METADATA_SERVICE_NAME).
+			SetProtocolIDs(constant.DEFAULT_PROTOCOL).
+			AddRCProtocol(constant.DEFAULT_PROTOCOL, config.NewProtocolConfigBuilder().
+				SetName(constant.DEFAULT_PROTOCOL).
+				Build()).
+			SetRegistryIDs("N/A").
+			SetInterface(constant.METADATA_SERVICE_NAME).
+			SetGroup(config.GetApplicationConfig().Name).
+			SetVersion(version).
+			SetProxyFactoryKey(constant.DEFAULT_Key).
+			SetMetadataType(constant.REMOTE_METADATA_STORAGE_TYPE).
+			Build()
 		exporter.ServiceConfig.Implement(exporter.metadataService)
 		err := exporter.ServiceConfig.Export()
 

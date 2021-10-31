@@ -90,6 +90,7 @@ type DefaultServiceInstance struct {
 	Metadata        map[string]string
 	ServiceMetadata *common.MetadataInfo
 	Address         string
+	GroupName       string
 }
 
 // GetID will return this instance's id. It should be unique.

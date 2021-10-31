@@ -26,10 +26,10 @@ dubbo:
   services:
     helloService:
       interface: org.dubbo.service.HelloService
-      registry: nacos,zk
+      registry-ids: nacos,zk
     orderService:
       interface: org.dubbo.service.OrderService
-      registry: nacos
+      registry-ids: nacos
   provider:
     register: true
     services:

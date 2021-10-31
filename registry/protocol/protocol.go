@@ -260,7 +260,7 @@ func registerServiceMap(invoker protocol.Invoker) error {
 
 	_, err := common.ServiceMap.Register(serviceConfig.Interface,
 		// FIXME
-		serviceConfig.Protocol[0], serviceConfig.Group,
+		serviceConfig.ProtocolIDs[0], serviceConfig.Group,
 		serviceConfig.Version, rpcService)
 	if err != nil {
 		s := "reExport can not re register ServiceMap. Error message is " + err.Error()
@@ -461,7 +461,7 @@ func newProviderConfigurationListener(overrideListeners *sync.Map) *providerConf
 	listener := &providerConfigurationListener{}
 	listener.overrideListeners = overrideListeners
 	listener.InitWith(
-		config.GetRootConfig().Application.Name+constant.CONFIGURATORS_SUFFIX,
+		config.GetRootConfig().Application.Name+constant.ConfiguratorSuffix,
 		listener,
 		extension.GetDefaultConfiguratorFunc(),
 	)
@@ -486,7 +486,7 @@ type serviceConfigurationListener struct {
 func newServiceConfigurationListener(overrideListener *overrideSubscribeListener, providerUrl *common.URL) *serviceConfigurationListener {
 	listener := &serviceConfigurationListener{overrideListener: overrideListener, providerUrl: providerUrl}
 	listener.InitWith(
-		providerUrl.EncodedServiceKey()+constant.CONFIGURATORS_SUFFIX,
+		providerUrl.EncodedServiceKey()+constant.ConfiguratorSuffix,
 		listener,
 		extension.GetDefaultConfiguratorFunc(),
 	)

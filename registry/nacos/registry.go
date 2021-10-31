@@ -83,7 +83,7 @@ func appendParam(target *bytes.Buffer, url *common.URL, key string) {
 	}
 }
 
-func createRegisterParam(url *common.URL, serviceName string) vo.RegisterInstanceParam {
+func createRegisterParam(url *common.URL, serviceName string, groupName string) vo.RegisterInstanceParam {
 	category := getCategory(url)
 	params := make(map[string]string)
 
@@ -111,6 +111,7 @@ func createRegisterParam(url *common.URL, serviceName string) vo.RegisterInstanc
 		Healthy:     true,
 		Ephemeral:   true,
 		ServiceName: serviceName,
+		GroupName:   groupName,
 	}
 	return instance
 }
@@ -118,7 +119,8 @@ func createRegisterParam(url *common.URL, serviceName string) vo.RegisterInstanc
 // Register will register the service @url to its nacos registry center
 func (nr *nacosRegistry) Register(url *common.URL) error {
 	serviceName := getServiceName(url)
-	param := createRegisterParam(url, serviceName)
+	groupName := nr.URL.GetParam(constant.GROUP_KEY, defaultGroup)
+	param := createRegisterParam(url, serviceName, groupName)
 	isRegistry, err := nr.namingClient.Client().RegisterInstance(param)
 	if err != nil {
 		return err
@@ -130,7 +132,7 @@ func (nr *nacosRegistry) Register(url *common.URL) error {
 	return nil
 }
 
-func createDeregisterParam(url *common.URL, serviceName string) vo.DeregisterInstanceParam {
+func createDeregisterParam(url *common.URL, serviceName string, groupName string) vo.DeregisterInstanceParam {
 	if len(url.Ip) == 0 {
 		url.Ip = localIP
 	}
@@ -142,13 +144,15 @@ func createDeregisterParam(url *common.URL, serviceName string) vo.DeregisterIns
 		Ip:          url.Ip,
 		Port:        uint64(port),
 		ServiceName: serviceName,
+		GroupName:   groupName,
 		Ephemeral:   true,
 	}
 }
 
 func (nr *nacosRegistry) DeRegister(url *common.URL) error {
 	serviceName := getServiceName(url)
-	param := createDeregisterParam(url, serviceName)
+	groupName := nr.URL.GetParam(constant.GROUP_KEY, defaultGroup)
+	param := createDeregisterParam(url, serviceName, groupName)
 	isDeRegistry, err := nr.namingClient.Client().DeregisterInstance(param)
 	if err != nil {
 		return err
@@ -182,6 +186,9 @@ func (nr *nacosRegistry) Subscribe(url *common.URL, notifyListener registry.Noti
 			logger.Warnf("event listener game over.")
 			return perrors.New("nacosRegistry is not available.")
 		}
+
+		groupName := nr.GetParam(constant.GROUP_KEY, defaultGroup)
+		url.SetParam(constant.REGISTRY_GROUP_KEY, groupName) // update to registry.group
 
 		listener, err := nr.subscribe(url)
 		if err != nil {
