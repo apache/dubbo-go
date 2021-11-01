@@ -5,19 +5,19 @@ import "sync"
 type Vegas struct {
 	*baseCapacityEvaluator
 
-	// mutex protects invocationMetricsMap
+	// mutex protects vegasDataMap
 	mutex *sync.Mutex
-	invocationMetricsMap map[string]*vegasInvocationMetrics
+	vegasDataMap map[string]*vegasData
 }
 
 func NewVegas() *Vegas {
 	return &Vegas{
 		baseCapacityEvaluator: newBaseCapacityEvaluator(),
 		mutex: &sync.Mutex{},
-		invocationMetricsMap: make(map[string]*vegasInvocationMetrics),
+		vegasDataMap: make(map[string]*vegasData),
 	}
 }
 
-type vegasInvocationMetrics struct {
+type vegasData struct {
 
 }

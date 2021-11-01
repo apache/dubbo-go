@@ -1,11 +1,9 @@
 package capeva
 
 import (
-	"errors"
+	"dubbo.apache.org/dubbo-go/v3/filter/adaptivesvc/capupd"
 	"go.uber.org/atomic"
 )
-
-var ErrInvalidActualValue = errors.New("invalid actual value")
 
 type baseCapacityEvaluator struct {
 	estimated, actual *atomic.Int64
@@ -26,16 +24,15 @@ func (ce *baseCapacityEvaluator) Actual() int64 {
 	return ce.actual.Load()
 }
 
-func (ce *baseCapacityEvaluator) UpdateEstimated(value int64) error {
+func (ce *baseCapacityEvaluator) UpdateEstimated(value int64) {
 	ce.actual.Store(value)
-	return nil
 }
 
-func (ce *baseCapacityEvaluator) UpdateActual(value int64) error {
-	if ce.actual.Load() > ce.estimated.Load() {
-		return ErrInvalidActualValue
-	}
-	ce.actual.Store(value)
-	return nil
+func (ce *baseCapacityEvaluator) UpdateActual(delta int64) {
+	ce.actual.Add(delta)
+}
+
+func (ce *baseCapacityEvaluator) NewCapacityUpdater() capupd.CapacityUpdater {
+	panic("implement me!")
 }
 
