@@ -155,11 +155,9 @@ func (invoker *ClusterInvoker) doSelectInvoker(lb loadbalance.LoadBalance, invoc
 			}
 			return reselectedInvoker
 		}
-	} else {
-		return selectedInvoker
 	}
-	logger.Errorf("all %d invokers is unavailable for %s.", len(invokers), selectedInvoker.GetURL().String())
-	return nil
+
+	return selectedInvoker
 }
 
 func isInvoked(selectedInvoker protocol.Invoker, invoked []protocol.Invoker) bool {
