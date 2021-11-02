@@ -23,7 +23,7 @@ require (
 	github.com/golang/mock v1.4.4
 	github.com/golang/protobuf v1.5.2
 	github.com/grpc-ecosystem/grpc-opentracing v0.0.0-20180507213350-8e809c8a8645
-	github.com/hashicorp/vault/sdk v0.2.1
+	github.com/hashicorp/vault/sdk v0.3.0
 	github.com/jinzhu/copier v0.3.2
 	github.com/knadh/koanf v1.3.0
 	github.com/magiconair/properties v1.8.5
@@ -31,6 +31,8 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
 	github.com/nacos-group/nacos-sdk-go v1.0.9
 	github.com/natefinch/lumberjack v2.0.0+incompatible
+	github.com/onsi/ginkgo v1.10.1 // indirect
+	github.com/onsi/gomega v1.7.0 // indirect
 	github.com/opentracing/opentracing-go v1.2.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.11.0
@@ -40,7 +42,7 @@ require (
 	go.etcd.io/etcd/api/v3 v3.5.1
 	go.etcd.io/etcd/client/v3 v3.5.0
 	go.etcd.io/etcd/server/v3 v3.5.0-alpha.0
-	go.uber.org/atomic v1.7.0
+	go.uber.org/atomic v1.9.0
 	go.uber.org/zap v1.19.1
 	google.golang.org/grpc v1.41.0
 	google.golang.org/protobuf v1.27.1
