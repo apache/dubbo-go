@@ -30,7 +30,7 @@ func init() {
 }
 
 // cluster is a cluster for adaptive service.
-type cluster struct {}
+type cluster struct{}
 
 func newCluster() clusterpkg.Cluster {
 	return &cluster{}

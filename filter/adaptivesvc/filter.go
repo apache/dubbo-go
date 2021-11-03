@@ -6,7 +6,7 @@ import (
 )
 
 // Filter for adaptive service on server side.
-type Filter struct {}
+type Filter struct{}
 
 func (f *Filter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	panic("implement me")
@@ -16,4 +16,3 @@ func (f *Filter) OnResponse(ctx context.Context, result protocol.Result, invoker
 	invocation protocol.Invocation) protocol.Result {
 	panic("implement me")
 }
-

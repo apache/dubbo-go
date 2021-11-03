@@ -1,14 +1,20 @@
 package capupd
 
-import "dubbo.apache.org/dubbo-go/v3/filter/adaptivesvc/capeva"
+import (
+	"dubbo.apache.org/dubbo-go/v3/filter/adaptivesvc/capeva"
+	"time"
+)
 
 type Vegas struct {
 	*baseCapacityUpdater
+
+	startedTime time.Time
 }
 
 func NewVegas(eva capeva.CapacityEvaluator) *Vegas {
 	return &Vegas{
 		baseCapacityUpdater: newBaseCapacityUpdater(eva),
+		startedTime:         time.Now(),
 	}
 }
 

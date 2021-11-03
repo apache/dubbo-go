@@ -35,7 +35,6 @@ func init() {
 }
 
 type loadBalance struct {
-
 }
 
 func newLoadBalance() loadbalance.LoadBalance {

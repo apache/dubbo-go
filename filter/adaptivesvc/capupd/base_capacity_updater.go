@@ -21,4 +21,3 @@ func (b *baseCapacityUpdater) Succeed() {
 func (b *baseCapacityUpdater) Failed() {
 	panic("implement me")
 }
-

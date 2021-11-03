@@ -126,15 +126,15 @@ func (rc *ReferenceConfig) Refer(srv interface{}) {
 	// retrieving urls from config, and appending the urls to rc.urls
 	if rc.URL != "" { // use user-specific urls
 		/*
-		 Two types of URL are allowed for rc.URL:
-			1. direct url: server IP, that is, no need for a registry anymore
-			2. registry url
-		 They will be handled in different ways:
-		 For example, we have a direct url and a registry url:
-			1. "tri://localhost:10000" is a direct url
-			2. "registry://localhost:2181" is a registry url.
-		 Then, rc.URL looks like a string seperated by semicolon: "tri://localhost:10000;registry://localhost:2181".
-		 The result of urlStrings is a string array: []string{"tri://localhost:10000", "registry://localhost:2181"}.
+			 Two types of URL are allowed for rc.URL:
+				1. direct url: server IP, that is, no need for a registry anymore
+				2. registry url
+			 They will be handled in different ways:
+			 For example, we have a direct url and a registry url:
+				1. "tri://localhost:10000" is a direct url
+				2. "registry://localhost:2181" is a registry url.
+			 Then, rc.URL looks like a string seperated by semicolon: "tri://localhost:10000;registry://localhost:2181".
+			 The result of urlStrings is a string array: []string{"tri://localhost:10000", "registry://localhost:2181"}.
 		*/
 		urlStrings := gxstrings.RegSplit(rc.URL, "\\s*[;]+\\s*")
 		for _, urlStr := range urlStrings {

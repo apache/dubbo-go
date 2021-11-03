@@ -1,23 +1,22 @@
 package capeva
 
-import "sync"
+import (
+	"dubbo.apache.org/dubbo-go/v3/filter/adaptivesvc/capupd"
+	"go.uber.org/atomic"
+)
 
 type Vegas struct {
 	*baseCapacityEvaluator
 
-	// mutex protects vegasDataMap
-	mutex *sync.Mutex
-	vegasDataMap map[string]*vegasData
+	cntRTT *atomic.Uint32
 }
 
 func NewVegas() *Vegas {
 	return &Vegas{
 		baseCapacityEvaluator: newBaseCapacityEvaluator(),
-		mutex: &sync.Mutex{},
-		vegasDataMap: make(map[string]*vegasData),
 	}
 }
 
-type vegasData struct {
-
+func (v *Vegas) NewCapacityUpdater() capupd.CapacityUpdater {
+	return capupd.NewVegas(v)
 }

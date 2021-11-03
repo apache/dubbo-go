@@ -14,13 +14,13 @@ func init() {
 
 type localMetrics struct {
 	// protect metrics
-	lock *sync.Mutex
+	lock    *sync.Mutex
 	metrics map[string]interface{}
 }
 
 func newLocalMetrics() *localMetrics {
 	return &localMetrics{
-		lock: &sync.Mutex{},
+		lock:    &sync.Mutex{},
 		metrics: make(map[string]interface{}),
 	}
 }
