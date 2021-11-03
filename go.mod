@@ -3,7 +3,6 @@ module dubbo.apache.org/dubbo-go/v3
 go 1.15
 
 require (
-	contrib.go.opencensus.io/exporter/prometheus v0.4.0
 	github.com/RoaringBitmap/roaring v0.7.1
 	github.com/Workiva/go-datastructures v1.0.52
 	github.com/afex/hystrix-go v0.0.0-20180502004556-fa1af6a1f4f5
@@ -15,6 +14,7 @@ require (
 	github.com/dubbogo/gost v1.11.19
 	github.com/dubbogo/triple v1.0.9
 	github.com/emicklei/go-restful/v3 v3.7.1
+	github.com/emirpasic/gods v1.12.0
 	github.com/fsnotify/fsnotify v1.5.1
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-co-op/gocron v1.9.0

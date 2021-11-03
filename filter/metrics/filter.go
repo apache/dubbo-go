@@ -49,11 +49,9 @@ func (p *Filter) Invoke(ctx context.Context, invoker protocol.Invoker, invocatio
 	res := invoker.Invoke(ctx, invocation)
 	end := time.Now()
 	duration := end.Sub(start)
-	go func() {
-		for _, reporter := range p.reporters {
-			reporter.Report(ctx, invoker, invocation, duration, res)
-		}
-	}()
+	for _, reporter := range p.reporters {
+		reporter.Report(ctx, invoker, invocation, duration, res)
+	}
 	return res
 }
 
