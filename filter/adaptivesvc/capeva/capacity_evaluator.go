@@ -1,7 +1,5 @@
 package capeva
 
-import "dubbo.apache.org/dubbo-go/v3/filter/adaptivesvc/capupd"
-
 type CapacityEvaluator interface {
 	// Estimated is estimated capacity, which reflects the maximum requests handled by the provider.
 	Estimated() int64
@@ -13,5 +11,14 @@ type CapacityEvaluator interface {
 	UpdateActual(delta int64)
 
 	// NewCapacityUpdater returns a capacity updater
-	NewCapacityUpdater() capupd.CapacityUpdater
+	NewCapacityUpdater() CapacityUpdater
+}
+
+// CapacityUpdater updates capacity evaluator.
+// Each method has a stand-alone updater instance, it could be passed by the invocation.
+type CapacityUpdater interface {
+	// Succeed updates capacity evaluator if the invocation finish successfully.
+	Succeed()
+	// Failed updates capacity evaluator if the invocation finish unsuccessfully.
+	Failed()
 }

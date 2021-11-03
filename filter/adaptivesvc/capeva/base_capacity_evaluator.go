@@ -1,7 +1,6 @@
 package capeva
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/filter/adaptivesvc/capupd"
 	"go.uber.org/atomic"
 )
 
@@ -32,7 +31,26 @@ func (ce *baseCapacityEvaluator) UpdateActual(delta int64) {
 	ce.actual.Add(delta)
 }
 
-func (ce *baseCapacityEvaluator) NewCapacityUpdater() capupd.CapacityUpdater {
+func (ce *baseCapacityEvaluator) NewCapacityUpdater() CapacityUpdater {
 	panic("implement me!")
 }
 
+type baseCapacityUpdater struct {
+	capacityEvaluator CapacityEvaluator
+}
+
+func newBaseCapacityUpdater(eva CapacityEvaluator) *baseCapacityUpdater {
+	cu := &baseCapacityUpdater{
+		capacityEvaluator: eva,
+	}
+	cu.capacityEvaluator.UpdateActual(1)
+	return cu
+}
+
+func (b *baseCapacityUpdater) Succeed() {
+	panic("implement me")
+}
+
+func (b *baseCapacityUpdater) Failed() {
+	panic("implement me")
+}
