@@ -63,7 +63,7 @@ type nacosDynamicConfiguration struct {
 
 func newNacosDynamicConfiguration(url *common.URL) (*nacosDynamicConfiguration, error) {
 	c := &nacosDynamicConfiguration{
-		rootPath: "/" + url.GetParam(constant.CONFIG_NAMESPACE_KEY, config_center.DEFAULT_GROUP) + "/config",
+		rootPath: "/" + url.GetParam(constant.CONFIG_NAMESPACE_KEY, config_center.DefaultGroup) + "/config",
 		url:      url,
 		done:     make(chan struct{}),
 	}

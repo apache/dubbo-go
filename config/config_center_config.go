@@ -132,11 +132,19 @@ func (c *CenterConfig) toURL() (*common.URL, error) {
 // it will prepare the environment
 func startConfigCenter(rc *RootConfig) error {
 	cc := rc.ConfigCenter
-	strConf, err := cc.prepareEnvironment()
+	dynamicConfig, err := cc.GetDynamicConfiguration()
 	if err != nil {
-		return errors.WithMessagef(err, "start config center error!")
+		logger.Errorf("Start dynamic configuration center error, error message is %v", err)
+		return err
 	}
+	envInstance := conf.GetEnvInstance()
+	envInstance.SetDynamicConfiguration(dynamicConfig)
 
+	strConf, err := dynamicConfig.GetProperties(cc.DataId, config_center.WithGroup(cc.Group))
+	if err != nil {
+		logger.Warnf("Dynamic onfig center has started, but config may not be initialized, because %s", err)
+		return nil
+	}
 	koan := koanf.New(".")
 	if err = koan.Load(rawbytes.Provider([]byte(strConf)), yaml.Parser()); err != nil {
 		return err
@@ -167,23 +175,10 @@ func (c *CenterConfig) GetDynamicConfiguration() (config_center.DynamicConfigura
 	}
 	dynamicConfig, err := c.CreateDynamicConfiguration()
 	if err != nil {
-		logger.Warnf("Create dynamic configuration error , error message is %v", err)
 		return nil, errors.WithStack(err)
 	}
 	c.DynamicConfiguration = dynamicConfig
 	return dynamicConfig, nil
-}
-
-func (c *CenterConfig) prepareEnvironment() (string, error) {
-	dynamicConfig, err := c.GetDynamicConfiguration()
-	if err != nil {
-		logger.Errorf("Create dynamic configuration error , error message is %v", err)
-		return "", errors.WithStack(err)
-	}
-	envInstance := conf.GetEnvInstance()
-	envInstance.SetDynamicConfiguration(dynamicConfig)
-
-	return dynamicConfig.GetProperties(c.DataId, config_center.WithGroup(c.Group))
 }
 
 func NewConfigCenterConfigBuilder() *ConfigCenterConfigBuilder {
