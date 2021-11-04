@@ -1,6 +1,10 @@
 package capeva
 
-import "time"
+import (
+	"go.uber.org/atomic"
+	"math"
+	"time"
+)
 
 type vegasUpdater struct {
 	eva *Vegas
@@ -15,28 +19,52 @@ func newVegasUpdater(eva *Vegas) CapacityUpdater {
 	}
 }
 
-func (v *vegasUpdater) Succeed() {
-	v.updateAfterReturn()
+func (u *vegasUpdater) Succeed() {
+	u.updateAfterReturn()
 }
 
-func (v *vegasUpdater) Failed() {
-	v.updateAfterReturn()
+func (u *vegasUpdater) Failed() {
+	u.updateAfterReturn()
 }
 
-func (v *vegasUpdater) updateAfterReturn() {
-	v.eva.Actual.Add(-1)
-	v.updateRTTs()
+func (u *vegasUpdater) updateAfterReturn() {
+	u.eva.Actual.Add(-1)
+	u.updateRTTs()
+
+	u.reevaEstCap()
 }
 
-func (v *vegasUpdater) updateRTTs() {
+func (u *vegasUpdater) updateRTTs() {
 	// update BaseRTT
-	curRTT := uint64(time.Now().Sub(v.startedTime))
-	oldBaseRTT := v.eva.BaseRTT.Load()
-	for oldBaseRTT > curRTT {
-		if !v.eva.BaseRTT.CAS(oldBaseRTT, curRTT) {
-			oldBaseRTT = v.eva.BaseRTT.Load()
-		}
-	}
+	curRTT := uint64(time.Now().Sub(u.startedTime))
+	setValueIfLess(u.eva.BaseRTT, curRTT)
 	// update MinRTT
+	setValueIfLess(u.eva.MinRTT, curRTT)
 	// update CntRTT
+	u.eva.CntRTT.Add(1)
+}
+
+// reevaEstCap reevaluates estimated capacity if the round
+func (u *vegasUpdater) reevaEstCap() {
+	if after(u.eva.Seq, u.eva.NextRoundLeftBound) {
+		// update next round
+		u.eva.NextRoundLeftBound.Add(u.eva.RoundSize)
+
+		rtt := u.eva.MinRTT.Load()
+		baseRTT := u.eva.BaseRTT.Load()
+
+		thresh := u.eva.Threshold.Load()
+		estCap := u.eva.EstimatedCapacity()
+
+		targetEstCap := estCap * baseRTT / rtt
+		diff := estCap * (rtt - baseRTT) / baseRTT
+
+		if diff > u.eva.Gamma && estCap <= thresh {
+
+		}
+
+		// reset MinRTT & CntRTT
+		u.eva.MinRTT.Store(math.MaxUint64)
+		u.eva.CntRTT.Store(0)
+	}
 }
