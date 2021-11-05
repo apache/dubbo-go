@@ -1,4 +1,4 @@
-package capeva
+package capevaulator
 
 type CapacityEvaluator interface {
 	// EstimatedCapacity is estimated capacity, which reflects the maximum requests handled by the provider.

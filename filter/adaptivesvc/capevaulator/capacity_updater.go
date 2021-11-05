@@ -1,4 +1,4 @@
-package capeva
+package capevaulator
 
 // CapacityUpdater updates capacity evaluator.
 // Each method has a stand-alone updater instance, it could be passed by the invocation.

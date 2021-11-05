@@ -1,4 +1,4 @@
-package capeva
+package capevaulator
 
 import (
 	"go.uber.org/atomic"

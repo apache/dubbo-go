@@ -1,4 +1,4 @@
-package capeva
+package capevaulator
 
 import "go.uber.org/atomic"
 
@@ -16,20 +16,14 @@ func setValueIfLess(v *atomic.Uint64, newValue uint64) {
 	}
 }
 
-func slowStart(est, thresh *atomic.Uint64) {
-	var estValue, threshValue, newEst uint64
+func slowStart(est *atomic.Uint64, estValue, threshValue uint64) bool {
+	newEst := minUint64(estValue*2, threshValue)
+	return est.CAS(estValue, newEst)
+}
 
-	for {
-		estValue = est.Load()
-		threshValue = thresh.Load()
-
-		newEst = estValue * 2
-		if threshValue < newEst {
-			newEst = threshValue
-		}
-
-		if est.CAS(estValue, newEst) {
-			break
-		}
+func minUint64(lhs, rhs uint64) uint64 {
+	if lhs < rhs {
+		return lhs
 	}
+	return rhs
 }
