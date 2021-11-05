@@ -60,7 +60,7 @@ func newApolloConfiguration(url *common.URL) (*apolloConfiguration, error) {
 	c.appConf = &config.AppConfig{
 		AppID:            url.GetParam(constant.CONFIG_APP_ID_KEY, ""),
 		Cluster:          url.GetParam(constant.CONFIG_CLUSTER_KEY, ""),
-		NamespaceName:    url.GetParam(constant.CONFIG_NAMESPACE_KEY, cc.DEFAULT_GROUP),
+		NamespaceName:    url.GetParam(constant.CONFIG_NAMESPACE_KEY, cc.DefaultGroup),
 		IP:               c.getAddressWithProtocolPrefix(url),
 		Secret:           url.GetParam(constant.CONFIG_SECRET_KEY, ""),
 		IsBackupConfig:   url.GetParamBool(constant.CONFIG_BACKUP_CONFIG_KEY, true),

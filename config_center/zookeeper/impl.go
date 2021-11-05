@@ -65,7 +65,7 @@ type zookeeperDynamicConfiguration struct {
 func newZookeeperDynamicConfiguration(url *common.URL) (*zookeeperDynamicConfiguration, error) {
 	c := &zookeeperDynamicConfiguration{
 		url:      url,
-		rootPath: "/" + url.GetParam(constant.CONFIG_NAMESPACE_KEY, config_center.DEFAULT_GROUP) + "/config",
+		rootPath: "/" + url.GetParam(constant.CONFIG_NAMESPACE_KEY, config_center.DefaultGroup) + "/config",
 	}
 	if v, ok := config.GetRootConfig().ConfigCenter.Params["base64"]; ok {
 		base64Enabled, err := strconv.ParseBool(v)
@@ -146,6 +146,8 @@ func (c *zookeeperDynamicConfiguration) PublishConfig(key string, group string, 
 	if c.base64Enabled {
 		valueBytes = []byte(base64.StdEncoding.EncodeToString(valueBytes))
 	}
+	// FIXME this method need to be fixed, because it will recursively
+	// create every node in the path with given value which we may not expected.
 	err := c.client.CreateWithValue(path, valueBytes)
 	if err != nil {
 		return perrors.WithStack(err)
@@ -246,7 +248,7 @@ func (c *zookeeperDynamicConfiguration) getPath(key string, group string) string
 
 func (c *zookeeperDynamicConfiguration) buildPath(group string) string {
 	if len(group) == 0 {
-		group = config_center.DEFAULT_GROUP
+		group = config_center.DefaultGroup
 	}
 	return c.rootPath + pathSeparator + group
 }
