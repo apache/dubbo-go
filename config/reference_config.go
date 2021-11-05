@@ -261,12 +261,19 @@ func (rc *ReferenceConfig) getURLMap() url.Values {
 	urlMap.Set(constant.OWNER_KEY, rc.rootConfig.Application.Owner)
 	urlMap.Set(constant.ENVIRONMENT_KEY, rc.rootConfig.Application.Environment)
 
-	// filter
-	defaultReferenceFilter := constant.DEFAULT_REFERENCE_FILTERS
-	if rc.Generic != "" {
-		defaultReferenceFilter = constant.GENERIC_REFERENCE_FILTERS + "," + defaultReferenceFilter
+	// filter reference filter > application filter level
+	filter := GetConsumerConfig().Filter
+	if len(rc.Filter) > 0 {
+		filter = rc.Filter
 	}
-	urlMap.Set(constant.REFERENCE_FILTER_KEY, mergeValue(rc.rootConfig.Consumer.Filter, "", defaultReferenceFilter))
+
+	if rc.Generic != "" {
+		filter = mergeValue(filter, constant.GENERIC_REFERENCE_FILTERS, "")
+	}
+	if GetMetricConfig().Enable {
+		filter = mergeValue(filter, constant.MetricsFilterKey, "")
+	}
+	urlMap.Set(constant.REFERENCE_FILTER_KEY, mergeValue(filter, "", constant.DEFAULT_REFERENCE_FILTERS))
 
 	for _, v := range rc.Methods {
 		urlMap.Set("methods."+v.Name+"."+constant.LOADBALANCE_KEY, v.LoadBalance)

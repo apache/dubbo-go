@@ -22,9 +22,7 @@ import (
 )
 
 import (
-	_ "dubbo.apache.org/dubbo-go/v3/cluster/router/chain"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	_ "dubbo.apache.org/dubbo-go/v3/metrics/prometheus"
 )
 
 // RouterConfig is the configuration of the router.

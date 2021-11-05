@@ -23,36 +23,49 @@ import (
 	"github.com/pkg/errors"
 )
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/metrics"
-)
-
 // MetricConfig This is the config struct for all metrics implementation
 type MetricConfig struct {
-	Mode               string `default:"pull" yaml:"mode" json:"mode,omitempty" property:"mode"` // push or pull,
-	Namespace          string `default:"dubbo" yaml:"namespace" json:"namespace,omitempty" property:"namespace"`
-	Enable             string `default:"true" yaml:"enable" json:"enable,omitempty" property:"enable"`
-	Port               string `default:"9090" yaml:"port" json:"port,omitempty" property:"port"`
-	Path               string `default:"/metrics" yaml:"path" json:"path,omitempty" property:"path"`
-	PushGatewayAddress string `default:"" yaml:"push-gateway-address" json:"push-gateway-address,omitempty" property:"push-gateway-address"`
+	Mode        string             `default:"pull" yaml:"mode" json:"mode,omitempty" property:"mode"` // push or pull,
+	Namespace   string             `default:"dubbo" yaml:"namespace" json:"namespace,omitempty" property:"namespace"`
+	Enable      bool               `default:"false" yaml:"enable" json:"enable,omitempty" property:"enable"`
+	Port        string             `default:"9090" yaml:"port" json:"port,omitempty" property:"port"`
+	Path        string             `default:"/metrics" yaml:"path" json:"path,omitempty" property:"path"`
+	Pushgateway *PushGateWayConfig `yaml:"pushgateway" json:"pushgateway,omitempty"`
 }
 
-func (m *MetricConfig) ToReporterConfig() *metrics.ReporterConfig {
-	defaultMetricsReportConfig := metrics.NewReporterConfig()
-	if m.Mode == metrics.ReportModePush {
-		defaultMetricsReportConfig.Mode = metrics.ReportModePush
-	}
-	if m.Namespace != "" {
-		defaultMetricsReportConfig.Namespace = m.Namespace
-	}
-
-	defaultMetricsReportConfig.Enable = m.Enable == "1"
-	defaultMetricsReportConfig.Port = m.Port
-	defaultMetricsReportConfig.Path = m.Path
-	defaultMetricsReportConfig.PushGatewayAddress = m.PushGatewayAddress
-	return defaultMetricsReportConfig
+type PushGateWayConfig struct {
+	Enabled     bool              `default:"false" yaml:"enabled",json:"enabled,omitempty"`
+	BaseUrl     string            `yaml:"base-url" json:"base-url,omitempty"`
+	PushRate    string            `default:"60s" yaml:"push-rate" json:"push-rate,omitempty"`
+	GroupingKey map[string]string `yaml:"grouping-key" json:"grouping-key,omitempty"`
+	Job         string            `yaml:"job" json:"job,omitempty"`
+	BasicAuth   bool              `yaml:"basicAuth" json:"basicAuth,omitempty"`
+	Username    string            `yaml:"username" json:"username,omitempty"`
+	Password    string            `yaml:"password" json:"password,omitempty"`
 }
+
+func (c *PushGateWayConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	if err := defaults.Set(c); err != nil {
+		return err
+	}
+	type plain PushGateWayConfig
+	return unmarshal((*plain)(c))
+}
+
+//func (m *MetricConfig) ToReporterConfig() *metrics.ReporterConfig {
+//	defaultMetricsReportConfig := metrics.NewReporterConfig()
+//	if m.Mode == metrics.ReportModePush {
+//		defaultMetricsReportConfig.Mode = metrics.ReportModePush
+//	}
+//	if m.Namespace != "" {
+//		defaultMetricsReportConfig.Namespace = m.Namespace
+//	}
+//
+//	defaultMetricsReportConfig.Enable = m.Enable
+//	defaultMetricsReportConfig.Port = m.Port
+//	defaultMetricsReportConfig.Path = m.Path
+//	return defaultMetricsReportConfig
+//}
 
 // nolint
 func (mc *MetricConfig) Init() error {
@@ -65,7 +78,7 @@ func (mc *MetricConfig) Init() error {
 	if err := verify(mc); err != nil {
 		return err
 	}
-	extension.GetMetricReporter("prometheus", mc.ToReporterConfig())
+	//extension.GetMetricReporter("prometheus")
 	return nil
 }
 

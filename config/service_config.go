@@ -88,6 +88,7 @@ type ServiceConfig struct {
 	exportersLock   sync.Mutex
 	exporters       []protocol.Exporter
 
+	rootConfig   *RootConfig
 	metadataType string
 }
 
@@ -96,7 +97,7 @@ func (svc *ServiceConfig) Prefix() string {
 	return strings.Join([]string{constant.ServiceConfigPrefix, svc.id}, ".")
 }
 
-func (svc *ServiceConfig) Init(rc *RootConfig) error {
+func (svc *ServiceConfig) Init(root *RootConfig) error {
 	if err := initProviderMethodConfig(svc); err != nil {
 		return err
 	}
@@ -104,17 +105,18 @@ func (svc *ServiceConfig) Init(rc *RootConfig) error {
 		return err
 	}
 	svc.exported = atomic.NewBool(false)
-	svc.metadataType = rc.Application.MetadataType
+	svc.metadataType = root.Application.MetadataType
 	svc.unexported = atomic.NewBool(false)
-	svc.RCRegistriesMap = rc.Registries
-	svc.RCProtocolsMap = rc.Protocols
-	if rc.Provider != nil {
-		svc.ProxyFactoryKey = rc.Provider.ProxyFactory
+	svc.RCRegistriesMap = root.Registries
+	svc.RCProtocolsMap = root.Protocols
+	if root.Provider != nil {
+		svc.ProxyFactoryKey = root.Provider.ProxyFactory
 	}
 	svc.RegistryIDs = translateRegistryIds(svc.RegistryIDs)
 	if len(svc.RegistryIDs) <= 0 {
-		svc.RegistryIDs = rc.Provider.RegistryIDs
+		svc.RegistryIDs = root.Provider.RegistryIDs
 	}
+	svc.rootConfig = root
 	svc.export = true
 	return verify(svc)
 }
@@ -355,15 +357,16 @@ func (svc *ServiceConfig) getUrlMap() url.Values {
 	urlMap.Set(constant.OWNER_KEY, ac.Owner)
 	urlMap.Set(constant.ENVIRONMENT_KEY, ac.Environment)
 
-	// filter
-	if svc.Filter == "" {
-		urlMap.Set(constant.SERVICE_FILTER_KEY, constant.DEFAULT_SERVICE_FILTERS)
-	} else {
-		urlMap.Set(constant.SERVICE_FILTER_KEY, svc.Filter)
+	// filter service filter > application filter level
+	filter := GetProviderConfig().Filter
+	if len(svc.Filter) > 0 {
+		filter = svc.Filter
 	}
+	if GetMetricConfig().Enable {
+		filter = mergeValue(filter, constant.MetricsFilterKey, "")
+	}
+	urlMap.Set(constant.REFERENCE_FILTER_KEY, mergeValue(filter, "", constant.DEFAULT_SERVICE_FILTERS))
 
-	// filter special config
-	urlMap.Set(constant.AccessLogFilterKey, svc.AccessLog)
 	// tps limiter
 	urlMap.Set(constant.TPS_LIMIT_STRATEGY_KEY, svc.TpsLimitStrategy)
 	urlMap.Set(constant.TPS_LIMIT_INTERVAL_KEY, svc.TpsLimitInterval)
