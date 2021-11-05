@@ -61,8 +61,6 @@ type CenterConfig struct {
 	AppID     string            `default:"dubbo" yaml:"app-id"  json:"app-id,omitempty"`
 	Timeout   string            `default:"10s" yaml:"timeout"  json:"timeout,omitempty"`
 	Params    map[string]string `yaml:"params"  json:"parameters,omitempty"`
-
-	DynamicConfiguration config_center.DynamicConfiguration
 }
 
 // Prefix dubbo.config-center
@@ -137,8 +135,6 @@ func startConfigCenter(rc *RootConfig) error {
 		logger.Errorf("Start dynamic configuration center error, error message is %v", err)
 		return err
 	}
-	envInstance := conf.GetEnvInstance()
-	envInstance.SetDynamicConfiguration(dynamicConfig)
 
 	strConf, err := dynamicConfig.GetProperties(cc.DataId, config_center.WithGroup(cc.Group))
 	if err != nil {
@@ -170,14 +166,15 @@ func (c *CenterConfig) CreateDynamicConfiguration() (config_center.DynamicConfig
 }
 
 func (c *CenterConfig) GetDynamicConfiguration() (config_center.DynamicConfiguration, error) {
-	if c.DynamicConfiguration != nil {
-		return c.DynamicConfiguration, nil
+	envInstance := conf.GetEnvInstance()
+	if envInstance.GetDynamicConfiguration() != nil {
+		return envInstance.GetDynamicConfiguration(), nil
 	}
 	dynamicConfig, err := c.CreateDynamicConfiguration()
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-	c.DynamicConfiguration = dynamicConfig
+	envInstance.SetDynamicConfiguration(dynamicConfig)
 	return dynamicConfig, nil
 }
 
