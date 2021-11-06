@@ -191,7 +191,7 @@ func (dir *RegistryDirectory) refreshAllInvokers(events []*registry.ServiceEvent
 			if event != nil && event.Service != nil {
 				logger.Infof("selector add service url{%s}", event.Service.String())
 			}
-			if event != nil && event.Service != nil && constant.ROUTER_PROTOCOL == event.Service.Protocol {
+			if event != nil && event.Service != nil && constant.RouterProtocol == event.Service.Protocol {
 				dir.configRouters()
 			}
 			if oldInvoker, _ := dir.doCacheInvoker(event.Service, event); oldInvoker != nil {
@@ -246,7 +246,7 @@ func (dir *RegistryDirectory) cacheInvokerByEvent(event *registry.ServiceEvent) 
 		case remoting.EventTypeAdd, remoting.EventTypeUpdate:
 			u := dir.convertUrl(event)
 			logger.Infof("selector add service url{%s}", event.Service)
-			if u != nil && constant.ROUTER_PROTOCOL == u.Protocol {
+			if u != nil && constant.RouterProtocol == u.Protocol {
 				dir.configRouters()
 			}
 			return dir.cacheInvoker(u, event), nil
@@ -267,12 +267,12 @@ func (dir *RegistryDirectory) configRouters() {
 // convertUrl processes override:// and router://
 func (dir *RegistryDirectory) convertUrl(res *registry.ServiceEvent) *common.URL {
 	ret := res.Service
-	if ret.Protocol == constant.OVERRIDE_PROTOCOL || // 1.for override url in 2.6.x
-		ret.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY) == constant.CONFIGURATORS_CATEGORY {
+	if ret.Protocol == constant.OverrideProtocol || // 1.for override url in 2.6.x
+		ret.GetParam(constant.CategoryKey, constant.DefaultCategory) == constant.ConfiguratorsCategory {
 		dir.configurators = append(dir.configurators, extension.GetDefaultConfigurator(ret))
 		ret = nil
-	} else if ret.Protocol == constant.ROUTER_PROTOCOL || // 2.for router
-		ret.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY) == constant.ROUTER_CATEGORY {
+	} else if ret.Protocol == constant.RouterProtocol || // 2.for router
+		ret.GetParam(constant.CategoryKey, constant.DefaultCategory) == constant.RouterCategory {
 		ret = nil
 	}
 	return ret
@@ -304,7 +304,7 @@ func (dir *RegistryDirectory) toGroupInvokers() []protocol.Invoker {
 	} else {
 		for _, invokers := range groupInvokersMap {
 			staticDir := static.NewDirectory(invokers)
-			cst := extension.GetCluster(dir.GetURL().SubURL.GetParam(constant.ClusterKey, constant.DEFAULT_CLUSTER))
+			cst := extension.GetCluster(dir.GetURL().SubURL.GetParam(constant.ClusterKey, constant.DefaultCluster))
 			err = staticDir.BuildRouterChain(invokers)
 			if err != nil {
 				logger.Error(err)

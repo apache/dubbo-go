@@ -370,8 +370,8 @@ func buildServerSidePackageBody(pkg *DubboPackage) {
 		if req[6] != nil {
 			attachments = req[6].(map[string]interface{})
 		}
-		if svc.Path == "" && attachments[constant.PATH_KEY] != nil && len(attachments[constant.PATH_KEY].(string)) > 0 {
-			svc.Path = attachments[constant.PATH_KEY].(string)
+		if svc.Path == "" && attachments[constant.PathKey] != nil && len(attachments[constant.PathKey].(string)) > 0 {
+			svc.Path = attachments[constant.PathKey].(string)
 		}
 		if _, ok := attachments[constant.InterfaceKey]; ok {
 			svc.Interface = attachments[constant.InterfaceKey].(string)

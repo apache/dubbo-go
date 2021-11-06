@@ -71,7 +71,7 @@ func newServiceDiscoveryRegistry(url *common.URL) (registry.Registry, error) {
 	if err != nil {
 		return nil, err
 	}
-	subscribedServices := parseServices(url.GetParam(constant.SUBSCRIBED_SERVICE_NAMES_KEY, ""))
+	subscribedServices := parseServices(url.GetParam(constant.SubscribedServiceNamesKey, ""))
 	subscribedURLsSynthesizers := synthesizer.GetAllSynthesizer()
 	serviceNameMapping := extension.GetGlobalServiceNameMapping()
 	metaDataService, err := local.GetLocalMetadataService()
@@ -118,7 +118,7 @@ func (s *serviceDiscoveryRegistry) UnSubscribe(url *common.URL, listener registr
 }
 
 func creatServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, error) {
-	sdcName := url.GetParam(constant.REGISTRY_KEY, "")
+	sdcName := url.GetParam(constant.RegistryKey, "")
 	originServiceDiscovery, err := extension.GetServiceDiscovery(sdcName)
 	if err != nil {
 		return nil, perrors.WithMessage(err, "Create service discovery fialed")
@@ -181,7 +181,7 @@ func (s *serviceDiscoveryRegistry) Register(url *common.URL) error {
 
 func shouldRegister(url *common.URL) bool {
 	side := url.GetParam(constant.SideKey, "")
-	if side == constant.PROVIDER_PROTOCOL {
+	if side == constant.ProviderProtocol {
 		return true
 	}
 	logger.Debugf("The URL should not be register.", url.String())
@@ -247,7 +247,7 @@ func getUrlKey(url *common.URL) string {
 	bf.WriteString("?")
 	appendParam(bf, constant.VersionKey, url)
 	appendParam(bf, constant.GroupKey, url)
-	appendParam(bf, constant.NACOS_PROTOCOL_KEY, url)
+	appendParam(bf, constant.NacosProtocolKey, url)
 	return bf.String()
 }
 

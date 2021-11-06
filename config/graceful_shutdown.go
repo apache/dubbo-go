@@ -53,7 +53,7 @@ import (
  */
 const defaultShutDownTime = time.Second * 60
 
-// nolint
+// GracefulShutdownInit todo GracefulShutdownInit in 3.0 should be discusesed.
 func GracefulShutdownInit() {
 	signals := make(chan os.Signal, 1)
 
@@ -107,7 +107,7 @@ func BeforeShutdown() {
 
 func destroyAllRegistries() {
 	logger.Info("Graceful shutdown --- Destroy all registriesConfig. ")
-	registryProtocol := extension.GetProtocol(constant.REGISTRY_KEY)
+	registryProtocol := extension.GetProtocol(constant.RegistryKey)
 	registryProtocol.Destroy()
 }
 

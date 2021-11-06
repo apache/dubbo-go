@@ -44,7 +44,7 @@ func TestTpsLimitFilterInvokeWithNoTpsLimiter(t *testing.T) {
 	tpsFilter := &Filter{}
 	invokeUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
-		common.WithParamsValue(constant.TPS_LIMITER_KEY, ""))
+		common.WithParamsValue(constant.TPSLimiterKey, ""))
 	attch := make(map[string]interface{})
 
 	result := tpsFilter.Invoke(context.Background(),
@@ -60,14 +60,14 @@ func TestGenericFilterInvokeWithDefaultTpsLimiter(t *testing.T) {
 	defer ctrl.Finish()
 	mockLimiter := limiter.NewMockTpsLimiter(ctrl)
 	mockLimiter.EXPECT().IsAllowable(gomock.Any(), gomock.Any()).Return(true).Times(1)
-	extension.SetTpsLimiter(constant.DEFAULT_KEY, func() filter.TpsLimiter {
+	extension.SetTpsLimiter(constant.DefaultKey, func() filter.TpsLimiter {
 		return mockLimiter
 	})
 
 	tpsFilter := &Filter{}
 	invokeUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
-		common.WithParamsValue(constant.TPS_LIMITER_KEY, constant.DEFAULT_KEY))
+		common.WithParamsValue(constant.TPSLimiterKey, constant.DefaultKey))
 	attch := make(map[string]interface{})
 
 	result := tpsFilter.Invoke(context.Background(),
@@ -83,7 +83,7 @@ func TestGenericFilterInvokeWithDefaultTpsLimiterNotAllow(t *testing.T) {
 	defer ctrl.Finish()
 	mockLimiter := limiter.NewMockTpsLimiter(ctrl)
 	mockLimiter.EXPECT().IsAllowable(gomock.Any(), gomock.Any()).Return(false).Times(1)
-	extension.SetTpsLimiter(constant.DEFAULT_KEY, func() filter.TpsLimiter {
+	extension.SetTpsLimiter(constant.DefaultKey, func() filter.TpsLimiter {
 		return mockLimiter
 	})
 
@@ -91,14 +91,14 @@ func TestGenericFilterInvokeWithDefaultTpsLimiterNotAllow(t *testing.T) {
 	mockRejectedHandler := handler.NewMockRejectedExecutionHandler(ctrl)
 	mockRejectedHandler.EXPECT().RejectedExecution(gomock.Any(), gomock.Any()).Return(mockResult).Times(1)
 
-	extension.SetRejectedExecutionHandler(constant.DEFAULT_KEY, func() filter.RejectedExecutionHandler {
+	extension.SetRejectedExecutionHandler(constant.DefaultKey, func() filter.RejectedExecutionHandler {
 		return mockRejectedHandler
 	})
 
 	tpsFilter := &Filter{}
 	invokeUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
-		common.WithParamsValue(constant.TPS_LIMITER_KEY, constant.DEFAULT_KEY))
+		common.WithParamsValue(constant.TPSLimiterKey, constant.DefaultKey))
 	attch := make(map[string]interface{})
 
 	result := tpsFilter.Invoke(context.Background(),

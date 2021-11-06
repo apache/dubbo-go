@@ -50,7 +50,7 @@ const (
 
 func init() {
 	localIP = common.GetLocalIp()
-	extension.SetRegistry(constant.NACOS_KEY, newNacosRegistry)
+	extension.SetRegistry(constant.NacosKey, newNacosRegistry)
 }
 
 type nacosRegistry struct {
@@ -60,7 +60,7 @@ type nacosRegistry struct {
 }
 
 func getCategory(url *common.URL) string {
-	role, _ := strconv.Atoi(url.GetParam(constant.RoleKey, strconv.Itoa(constant.NACOS_DEFAULT_ROLETYPE)))
+	role, _ := strconv.Atoi(url.GetParam(constant.RoleKey, strconv.Itoa(constant.NacosDefaultRoleType)))
 	category := common.DubboNodes[role]
 	return category
 }
@@ -77,7 +77,7 @@ func getServiceName(url *common.URL) string {
 
 func appendParam(target *bytes.Buffer, url *common.URL, key string) {
 	value := url.GetParam(key, "")
-	target.Write([]byte(constant.NACOS_SERVICE_NAME_SEPARATOR))
+	target.Write([]byte(constant.NacosServiceNameSeparator))
 	if strings.TrimSpace(value) != "" {
 		target.Write([]byte(value))
 	}
@@ -92,9 +92,9 @@ func createRegisterParam(url *common.URL, serviceName string, groupName string) 
 		return true
 	})
 
-	params[constant.NACOS_CATEGORY_KEY] = category
-	params[constant.NACOS_PROTOCOL_KEY] = url.Protocol
-	params[constant.NACOS_PATH_KEY] = url.Path
+	params[constant.NacosCategoryKey] = category
+	params[constant.NacosProtocolKey] = url.Protocol
+	params[constant.NacosPathKey] = url.Path
 	if len(url.Ip) == 0 {
 		url.Ip = localIP
 	}
@@ -177,7 +177,7 @@ func (nr *nacosRegistry) Subscribe(url *common.URL, notifyListener registry.Noti
 	// TODO
 	// role, _ := strconv.Atoi(nr.URL.GetParam(constant.RoleKey, ""))
 	role, _ := strconv.Atoi(url.GetParam(constant.RoleKey, ""))
-	if role != common.Consumer {
+	if role != common.CONSUMER {
 		return nil
 	}
 
@@ -188,7 +188,7 @@ func (nr *nacosRegistry) Subscribe(url *common.URL, notifyListener registry.Noti
 		}
 
 		groupName := nr.GetParam(constant.GroupKey, defaultGroup)
-		url.SetParam(constant.REGISTRY_GROUP_KEY, groupName) // update to registry.group
+		url.SetParam(constant.RegistryGroupKey, groupName) // update to registry.group
 
 		listener, err := nr.subscribe(url)
 		if err != nil {

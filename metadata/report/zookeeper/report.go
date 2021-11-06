@@ -145,7 +145,7 @@ func (m *zookeeperMetadataReport) GetServiceDefinition(metadataIdentifier *ident
 
 // RegisterServiceAppMapping map the specified Dubbo service interface to current Dubbo app name
 func (m *zookeeperMetadataReport) RegisterServiceAppMapping(key string, group string, value string) error {
-	path := m.rootDir + group + constant.PATH_SEPARATOR + key
+	path := m.rootDir + group + constant.PathSeparator + key
 	v, state, err := m.client.GetContent(path)
 	if err == zk.ErrNoNode {
 		return m.client.CreateWithValue(path, []byte(value))
@@ -156,19 +156,19 @@ func (m *zookeeperMetadataReport) RegisterServiceAppMapping(key string, group st
 	if strings.Contains(oldValue, value) {
 		return nil
 	}
-	value = oldValue + constant.COMMA_SEPARATOR + value
+	value = oldValue + constant.CommaSeparator + value
 	_, err = m.client.SetContent(path, []byte(value), state.Version)
 	return err
 }
 
 // GetServiceAppMapping get the app names from the specified Dubbo service interface
 func (m *zookeeperMetadataReport) GetServiceAppMapping(key string, group string) (*gxset.HashSet, error) {
-	path := m.rootDir + group + constant.PATH_SEPARATOR + key
+	path := m.rootDir + group + constant.PathSeparator + key
 	v, _, err := m.client.GetContent(path)
 	if err != nil {
 		return nil, err
 	}
-	appNames := strings.Split(string(v), constant.COMMA_SEPARATOR)
+	appNames := strings.Split(string(v), constant.CommaSeparator)
 	set := gxset.NewSet()
 	for _, e := range appNames {
 		set.Add(e)
@@ -191,11 +191,11 @@ func (mf *zookeeperMetadataReportFactory) CreateMetadataReport(url *common.URL) 
 	}
 
 	rootDir := url.GetParam(constant.GroupKey, "dubbo")
-	if !strings.HasPrefix(rootDir, constant.PATH_SEPARATOR) {
-		rootDir = constant.PATH_SEPARATOR + rootDir
+	if !strings.HasPrefix(rootDir, constant.PathSeparator) {
+		rootDir = constant.PathSeparator + rootDir
 	}
-	if rootDir != constant.PATH_SEPARATOR {
-		rootDir = rootDir + constant.PATH_SEPARATOR
+	if rootDir != constant.PathSeparator {
+		rootDir = rootDir + constant.PathSeparator
 	}
 
 	return &zookeeperMetadataReport{client: client, rootDir: rootDir}

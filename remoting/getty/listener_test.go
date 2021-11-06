@@ -45,7 +45,7 @@ func TestRebuildCtx(t *testing.T) {
 	// attachment doesn't contains any tracing key-value pair,
 	ctx := rebuildCtx(inv)
 	assert.NotNil(t, ctx)
-	assert.Nil(t, ctx.Value(constant.TRACING_REMOTE_SPAN_CTX))
+	assert.Nil(t, ctx.Value(constant.TracingRemoteSpanCtx))
 
 	span, ctx := opentracing.StartSpanFromContext(ctx, "Test-Client")
 	assert.NotNil(t, ctx)
@@ -57,7 +57,7 @@ func TestRebuildCtx(t *testing.T) {
 	ctx = rebuildCtx(inv)
 	span.Finish()
 	assert.NotNil(t, ctx)
-	assert.NotNil(t, ctx.Value(constant.TRACING_REMOTE_SPAN_CTX))
+	assert.NotNil(t, ctx.Value(constant.TracingRemoteSpanCtx))
 }
 
 // rebuildCtx rebuild the context by attachment.
@@ -70,7 +70,7 @@ func rebuildCtx(inv *invocation.RPCInvocation) context.Context {
 	spanCtx, err := opentracing.GlobalTracer().Extract(opentracing.TextMap,
 		opentracing.TextMapCarrier(filterContext(inv.Attachments())))
 	if err == nil {
-		ctx = context.WithValue(ctx, constant.TRACING_REMOTE_SPAN_CTX, spanCtx)
+		ctx = context.WithValue(ctx, constant.TracingRemoteSpanCtx, spanCtx)
 	}
 	return ctx
 }

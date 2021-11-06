@@ -79,7 +79,7 @@ func (f *Filter) Invoke(ctx context.Context, invoker protocol.Invoker, invocatio
 			types,
 			args,
 		}
-		newivc := invocation2.NewRPCInvocation(constant.GENERIC, newargs, invocation.Attachments())
+		newivc := invocation2.NewRPCInvocation(constant.Generic, newargs, invocation.Attachments())
 		newivc.SetReply(invocation.Reply())
 		newivc.Attachments()[constant.GenericKey] = invoker.GetURL().GetParam(constant.GenericKey, "")
 

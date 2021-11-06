@@ -48,7 +48,7 @@ type loaderConf struct {
 
 func NewLoaderConf(opts ...LoaderConfOption) *loaderConf {
 	configFilePath := "../conf/dubbogo.yaml"
-	if configFilePathFromEnv := os.Getenv(constant.CONFIG_FILE_ENV_KEY); configFilePathFromEnv != "" {
+	if configFilePathFromEnv := os.Getenv(constant.ConfigFileEnvKey); configFilePathFromEnv != "" {
 		configFilePath = configFilePathFromEnv
 	}
 	genre := strings.Split(configFilePath, ".")

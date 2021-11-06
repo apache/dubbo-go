@@ -27,8 +27,8 @@ type ListStringMatchJudger struct {
 }
 
 // nolint
-func (lsmj *ListStringMatchJudger) Judge(input string) bool {
-	for _, v := range lsmj.Oneof {
+func (j *ListStringMatchJudger) Judge(input string) bool {
+	for _, v := range j.Oneof {
 		if NewStringMatchJudger(v).Judge(input) {
 			return true
 		}

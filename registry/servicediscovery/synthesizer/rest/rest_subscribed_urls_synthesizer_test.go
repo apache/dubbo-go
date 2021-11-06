@@ -60,15 +60,15 @@ func TestRestSubscribedURLsSynthesizer_Synthesize(t *testing.T) {
 	u1 := common.NewURLWithOptions(common.WithProtocol("rest"), common.WithIp("127.0.0.1"),
 		common.WithPort("80"), common.WithPath("org.apache.dubbo-go.mockService"),
 		common.WithParams(url.Values{}),
-		common.WithParamsValue(constant.SideKey, constant.PROVIDER_PROTOCOL),
+		common.WithParamsValue(constant.SideKey, constant.ProviderProtocol),
 		common.WithParamsValue(constant.ApplicationKey, "test1"),
-		common.WithParamsValue(constant.REGISTRY_KEY, "true"))
+		common.WithParamsValue(constant.RegistryKey, "true"))
 	u2 := common.NewURLWithOptions(common.WithProtocol("rest"), common.WithIp("127.0.0.2"),
 		common.WithPort("8081"), common.WithPath("org.apache.dubbo-go.mockService"),
 		common.WithParams(url.Values{}),
-		common.WithParamsValue(constant.SideKey, constant.PROVIDER_PROTOCOL),
+		common.WithParamsValue(constant.SideKey, constant.ProviderProtocol),
 		common.WithParamsValue(constant.ApplicationKey, "test2"),
-		common.WithParamsValue(constant.REGISTRY_KEY, "true"))
+		common.WithParamsValue(constant.RegistryKey, "true"))
 	expectUrls = append(expectUrls, u1, u2)
 	result := syn.Synthesize(subUrl, instances)
 	assert.Equal(t, expectUrls, result)

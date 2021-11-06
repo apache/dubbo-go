@@ -64,7 +64,7 @@ func NewDubboInvoker(url *common.URL) (*DubboInvoker, error) {
 	interfaceKey := url.GetParam(constant.InterfaceKey, "")
 	consumerService := config.GetConsumerServiceByInterfaceName(interfaceKey)
 
-	dubboSerializaerType := url.GetParam(constant.SerializationKey, constant.PROTOBUF_SERIALIZATION)
+	dubboSerializaerType := url.GetParam(constant.SerializationKey, constant.ProtobufSerialization)
 	triCodecType := tripleConstant.CodecType(dubboSerializaerType)
 	// new triple client
 	triOption := triConfig.NewTripleOption(
@@ -155,7 +155,7 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 
 // get timeout including methodConfig
 func (di *DubboInvoker) getTimeout(invocation *invocation_impl.RPCInvocation) time.Duration {
-	timeout := di.GetURL().GetParam(strings.Join([]string{constant.METHOD_KEYS, invocation.MethodName(), constant.TimeoutKey}, "."), "")
+	timeout := di.GetURL().GetParam(strings.Join([]string{constant.MethodKeys, invocation.MethodName(), constant.TimeoutKey}, "."), "")
 	if len(timeout) != 0 {
 		if t, err := time.ParseDuration(timeout); err == nil {
 			// config timeout into attachment

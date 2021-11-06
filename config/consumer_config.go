@@ -122,7 +122,7 @@ func (cc *ConsumerConfig) Load() {
 					checkok = false
 					count++
 					if count > maxWait {
-						errMsg := fmt.Sprintf("Request timed out, please check configuration, Failed to check the status of the service %v. No provider available for the service to the consumer use dubbo version %v", refconfig.InterfaceName, constant.Version)
+						errMsg := fmt.Sprintf("No provider available of the service %v.please check configuration.", refconfig.InterfaceName)
 						logger.Error(errMsg)
 						panic(errMsg)
 					}

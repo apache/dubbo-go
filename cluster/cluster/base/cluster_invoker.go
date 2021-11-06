@@ -155,11 +155,9 @@ func (invoker *ClusterInvoker) doSelectInvoker(lb loadbalance.LoadBalance, invoc
 			}
 			return reselectedInvoker
 		}
-	} else {
-		return selectedInvoker
 	}
-	logger.Errorf("all %d invokers is unavailable for %s.", len(invokers), selectedInvoker.GetURL().String())
-	return nil
+
+	return selectedInvoker
 }
 
 func isInvoked(selectedInvoker protocol.Invoker, invoked []protocol.Invoker) bool {
@@ -176,7 +174,7 @@ func GetLoadBalance(invoker protocol.Invoker, invocation protocol.Invocation) lo
 
 	methodName := invocation.MethodName()
 	// Get the service loadbalance config
-	lb := url.GetParam(constant.LoadbalanceKey, constant.DEFAULT_LOADBALANCE)
+	lb := url.GetParam(constant.LoadbalanceKey, constant.DefaultLoadbalance)
 
 	// Get the service method loadbalance config if have
 	if v := url.GetMethodParam(methodName, constant.LoadbalanceKey, ""); len(v) > 0 {

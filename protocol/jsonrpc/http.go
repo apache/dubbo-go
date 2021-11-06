@@ -122,7 +122,7 @@ func (c *HTTPClient) Call(ctx context.Context, service *common.URL, req *Request
 		reqTimeout = 100 * time.Millisecond
 	}
 	httpHeader.Set("Timeout", reqTimeout.String())
-	if md, ok := ctx.Value(constant.DUBBOGO_CTX_KEY).(map[string]string); ok {
+	if md, ok := ctx.Value(constant.DubboGoCtxKey).(map[string]string); ok {
 		for k := range md {
 			httpHeader.Set(k, md[k])
 		}

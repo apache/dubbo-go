@@ -44,10 +44,10 @@ import (
 
 const (
 	reporterName = "prometheus"
-	serviceKey   = constant.SERVICE_KEY
+	serviceKey   = constant.ServiceKey
 	groupKey     = constant.GroupKey
 	versionKey   = constant.VersionKey
-	methodKey    = constant.METHOD_KEY
+	methodKey    = constant.MethodKey
 	timeoutKey   = constant.TimeoutKey
 
 	// to identify side
@@ -55,9 +55,9 @@ const (
 	consumerPrefix = "consumer_"
 
 	// to identify the metric's type
-	histogramSuffix = "_histogram"
+	rtSuffix = "_rt"
 	// to identify the metric's type
-	summarySuffix = "_summary"
+	tpsSuffix = "_tps"
 )
 
 var (
@@ -77,14 +77,15 @@ func init() {
 // if you want to use this feature, you need to initialize your prometheus.
 // https://prometheus.io/docs/guides/go-application/
 type PrometheusReporter struct {
-	// report the consumer-side's summary data
-	consumerSummaryVec *prometheus.SummaryVec
-	// report the provider-side's summary data
-	providerSummaryVec *prometheus.SummaryVec
-	// report the provider-side's histogram data
-	providerHistogramVec *prometheus.HistogramVec
-	// report the consumer-side's histogram data
-	consumerHistogramVec *prometheus.HistogramVec
+	// report the consumer-side's rt gauge data
+	consumerRTGaugeVec *prometheus.GaugeVec
+	// report the provider-side's rt gauge data
+	providerRTGaugeVec *prometheus.GaugeVec
+	// todo tps support
+	// report the consumer-side's tps gauge data
+	consumerTPSGaugeVec *prometheus.GaugeVec
+	// report the provider-side's tps gauge data
+	providerTPSGaugeVec *prometheus.GaugeVec
 
 	userGauge      sync.Map
 	userSummary    sync.Map
@@ -101,14 +102,11 @@ type PrometheusReporter struct {
 // or it will be ignored
 func (reporter *PrometheusReporter) Report(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation, cost time.Duration, res protocol.Result) {
 	url := invoker.GetURL()
-	var sumVec *prometheus.SummaryVec
-	var hisVec *prometheus.HistogramVec
+	var rtVec *prometheus.GaugeVec
 	if isProvider(url) {
-		sumVec = reporter.providerSummaryVec
-		hisVec = reporter.providerHistogramVec
+		rtVec = reporter.providerRTGaugeVec
 	} else if isConsumer(url) {
-		sumVec = reporter.consumerSummaryVec
-		hisVec = reporter.consumerHistogramVec
+		rtVec = reporter.consumerRTGaugeVec
 	} else {
 		logger.Warnf("The url belongs neither the consumer nor the provider, "+
 			"so the invocation will be ignored. url: %s", url.String())
@@ -118,13 +116,12 @@ func (reporter *PrometheusReporter) Report(ctx context.Context, invoker protocol
 	labels := prometheus.Labels{
 		serviceKey: url.Service(),
 		groupKey:   url.GetParam(groupKey, ""),
-		versionKey: url.GetParam(versionKey, ""),
+		versionKey: url.GetParam(constant.AppVersionKey, ""),
 		methodKey:  invocation.MethodName(),
 		timeoutKey: url.GetParam(timeoutKey, ""),
 	}
-	costMs := float64(cost.Nanoseconds() / constant.MsToNanoRate)
-	sumVec.With(labels).Observe(costMs)
-	hisVec.With(labels).Observe(costMs)
+	costMs := cost.Nanoseconds()
+	rtVec.With(labels).Set(float64(costMs))
 }
 
 func newHistogramVec(name, namespace string, labels []string) *prometheus.HistogramVec {
@@ -206,7 +203,7 @@ func isProvider(url *common.URL) bool {
 // isConsumer shows whether this url represents the application sent then request as client
 func isConsumer(url *common.URL) bool {
 	role := url.GetParam(constant.RoleKey, "")
-	return strings.EqualFold(role, strconv.Itoa(common.Consumer))
+	return strings.EqualFold(role, strconv.Itoa(common.CONSUMER))
 }
 
 // newPrometheusReporter create new prometheusReporter
@@ -215,16 +212,12 @@ func newPrometheusReporter(reporterConfig *metrics.ReporterConfig) metrics.Repor
 	if reporterInstance == nil {
 		reporterInitOnce.Do(func() {
 			reporterInstance = &PrometheusReporter{
-				consumerSummaryVec:   newSummaryVec(consumerPrefix+serviceKey+summarySuffix, reporterConfig.Namespace, labelNames),
-				providerSummaryVec:   newSummaryVec(providerPrefix+serviceKey+summarySuffix, reporterConfig.Namespace, labelNames),
-				namespace:            reporterConfig.Namespace,
-				consumerHistogramVec: newHistogramVec(consumerPrefix+serviceKey+histogramSuffix, reporterConfig.Namespace, labelNames),
-				providerHistogramVec: newHistogramVec(providerPrefix+serviceKey+histogramSuffix, reporterConfig.Namespace, labelNames),
+				namespace:          reporterConfig.Namespace,
+				consumerRTGaugeVec: newGaugeVec(consumerPrefix+serviceKey+rtSuffix, reporterConfig.Namespace, labelNames),
+				providerRTGaugeVec: newGaugeVec(providerPrefix+serviceKey+rtSuffix, reporterConfig.Namespace, labelNames),
 			}
 
-			prom.DefaultRegisterer.MustRegister(reporterInstance.consumerSummaryVec, reporterInstance.providerSummaryVec,
-				reporterInstance.consumerHistogramVec, reporterInstance.providerHistogramVec)
-
+			prom.DefaultRegisterer.MustRegister(reporterInstance.consumerRTGaugeVec, reporterInstance.providerRTGaugeVec)
 			metricsExporter, err := ocprom.NewExporter(ocprom.Options{
 				Registry: prom.DefaultRegisterer.(*prom.Registry),
 			})
@@ -232,13 +225,19 @@ func newPrometheusReporter(reporterConfig *metrics.ReporterConfig) metrics.Repor
 				logger.Errorf("new prometheus reporter with error = %s", err)
 				return
 			}
-			go func() {
-				mux := http.NewServeMux()
-				mux.Handle(reporterConfig.Path, metricsExporter)
-				if err := http.ListenAndServe(":"+reporterConfig.Port, mux); err != nil {
-					logger.Errorf("new prometheus reporter with error = %s", err)
+
+			if reporterConfig.Enable {
+				if reporterConfig.Mode == metrics.ReportModePull {
+					go func() {
+						mux := http.NewServeMux()
+						mux.Handle(reporterConfig.Path, metricsExporter)
+						if err := http.ListenAndServe(":"+reporterConfig.Port, mux); err != nil {
+							logger.Warnf("new prometheus reporter with error = %s", err)
+						}
+					}()
 				}
-			}()
+				// todo pushgateway support
+			}
 		})
 	}
 	return reporterInstance

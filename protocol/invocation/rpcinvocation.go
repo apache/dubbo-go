@@ -194,7 +194,7 @@ func (r *RPCInvocation) SetCallBack(c interface{}) {
 }
 
 func (r *RPCInvocation) ServiceKey() string {
-	return common.ServiceKey(strings.TrimPrefix(r.AttachmentsByKey(constant.PATH_KEY, r.AttachmentsByKey(constant.InterfaceKey, "")), "/"),
+	return common.ServiceKey(strings.TrimPrefix(r.AttachmentsByKey(constant.PathKey, r.AttachmentsByKey(constant.InterfaceKey, "")), "/"),
 		r.AttachmentsByKey(constant.GroupKey, ""), r.AttachmentsByKey(constant.VersionKey, ""))
 }
 

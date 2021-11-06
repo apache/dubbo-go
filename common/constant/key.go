@@ -24,42 +24,40 @@ const (
 )
 
 const (
-	GroupKey                 = "group"
-	VersionKey               = "version"
-	InterfaceKey             = "interface"
-	MESSAGE_SIZE_KEY         = "message_size"
-	PATH_KEY                 = "path"
-	SERVICE_KEY              = "service"
-	METHODS_KEY              = "methods"
-	TimeoutKey               = "timeout"
-	CATEGORY_KEY             = "category"
-	CHECK_KEY                = "check"
-	ENABLED_KEY              = "enabled"
-	SideKey                  = "side"
-	OVERRIDE_PROVIDERS_KEY   = "providerAddresses"
-	BeanNameKey              = "bean.name"
-	GenericKey               = "generic"
-	CLASSIFIER_KEY           = "classifier"
-	TOKEN_KEY                = "token"
-	LOCAL_ADDR               = "local-addr"
-	REMOTE_ADDR              = "remote-addr"
-	DEFAULT_REMOTING_TIMEOUT = 3000
-	ReleaseKey               = "release"
-	ANYHOST_KEY              = "anyhost"
-	PORT_KEY                 = "port"
-	PROTOCOL_KEY             = "protocol"
-	PATH_SEPARATOR           = "/"
-	COMMA_SEPARATOR          = ","
-	// DUBBO_KEY                = "dubbo"
-	SSL_ENABLED_KEY = "ssl-enabled"
-	// PARAMS_TYPE_Key key used in pass through invoker factory, to define param type
-	PARAMS_TYPE_Key = "parameter-type-names"
-	DEFAULT_Key     = "default"
-	MetadatatypeKey = "metadata-type"
+	GroupKey               = "group"
+	VersionKey             = "version"
+	InterfaceKey           = "interface"
+	MessageSizeKey         = "message_size"
+	PathKey                = "path"
+	ServiceKey             = "service"
+	MethodsKey             = "methods"
+	TimeoutKey             = "timeout"
+	CategoryKey            = "category"
+	CheckKey               = "check"
+	EnabledKey             = "enabled"
+	SideKey                = "side"
+	OverrideProvidersKey   = "providerAddresses"
+	BeanNameKey            = "bean.name"
+	GenericKey             = "generic"
+	ClassifierKey          = "classifier"
+	TokenKey               = "token"
+	LocalAddr              = "local-addr"
+	RemoteAddr             = "remote-addr"
+	DefaultRemotingTimeout = 3000
+	ReleaseKey             = "release"
+	AnyhostKey             = "anyhost"
+	PortKey                = "port"
+	ProtocolKey            = "protocol"
+	PathSeparator          = "/"
+	CommaSeparator         = ","
+	SslEnabledKey          = "ssl-enabled"
+	// ParamsTypeKey key used in pass through invoker factory, to define param type
+	ParamsTypeKey   = "parameter-type-names"
+	MetadataTypeKey = "metadata-type"
 )
 
 const (
-	SERVICE_FILTER_KEY = "service.filter"
+	ServiceFilterKey   = "service.filter"
 	ReferenceFilterKey = "reference.filter"
 )
 
@@ -88,95 +86,95 @@ const (
 )
 
 const (
-	TimestampKey                           = "timestamp"
-	REMOTE_TIMESTAMP_KEY                   = "remote.timestamp"
-	ClusterKey                             = "cluster"
-	LoadbalanceKey                         = "loadbalance"
-	WEIGHT_KEY                             = "weight"
-	WARMUP_KEY                             = "warmup"
-	RetriesKey                             = "retries"
-	StickyKey                              = "sticky"
-	BEAN_NAME                              = "bean.name"
-	FAIL_BACK_TASKS_KEY                    = "failbacktasks"
-	FORKS_KEY                              = "forks"
-	DEFAULT_FORKS                          = 2
-	DEFAULT_TIMEOUT                        = 1000
-	TPS_LIMITER_KEY                        = "tps.limiter"
-	TPS_REJECTED_EXECUTION_HANDLER_KEY     = "tps.limit.rejected.handler"
-	TPS_LIMIT_RATE_KEY                     = "tps.limit.rate"
-	DEFAULT_TPS_LIMIT_RATE                 = "-1"
-	TPS_LIMIT_INTERVAL_KEY                 = "tps.limit.interval"
-	DEFAULT_TPS_LIMIT_INTERVAL             = "60000"
-	TPS_LIMIT_STRATEGY_KEY                 = "tps.limit.strategy"
-	EXECUTE_LIMIT_KEY                      = "execute.limit"
-	DEFAULT_EXECUTE_LIMIT                  = "-1"
-	EXECUTE_REJECTED_EXECUTION_HANDLER_KEY = "execute.limit.rejected.handler"
-	SerializationKey                       = "serialization"
-	PID_KEY                                = "pid"
-	SYNC_REPORT_KEY                        = "sync.report"
-	RETRY_PERIOD_KEY                       = "retry.period"
-	RETRY_TIMES_KEY                        = "retry.times"
-	CYCLE_REPORT_KEY                       = "cycle.report"
-	DEFAULT_BLACK_LIST_RECOVER_BLOCK       = 16
+	TimestampKey                       = "timestamp"
+	RemoteTimestampKey                 = "remote.timestamp"
+	ClusterKey                         = "cluster"
+	LoadbalanceKey                     = "loadbalance"
+	WeightKey                          = "weight"
+	WarmupKey                          = "warmup"
+	RetriesKey                         = "retries"
+	StickyKey                          = "sticky"
+	BeanName                           = "bean.name"
+	FailBackTasksKey                   = "failbacktasks"
+	ForksKey                           = "forks"
+	DefaultForks                       = 2
+	DefaultTimeout                     = 1000
+	TPSLimiterKey                      = "tps.limiter"
+	TPSRejectedExecutionHandlerKey     = "tps.limit.rejected.handler"
+	TPSLimitRateKey                    = "tps.limit.rate"
+	DefaultTPSLimitRate                = "-1"
+	TPSLimitIntervalKey                = "tps.limit.interval"
+	DefaultTPSLimitInterval            = "60000"
+	TPSLimitStrategyKey                = "tps.limit.strategy"
+	ExecuteLimitKey                    = "execute.limit"
+	DefaultExecuteLimit                = "-1"
+	ExecuteRejectedExecutionHandlerKey = "execute.limit.rejected.handler"
+	SerializationKey                   = "serialization"
+	PIDKey                             = "pid"
+	SyncReportKey                      = "sync.report"
+	RetryPeriodKey                     = "retry.period"
+	RetryTimesKey                      = "retry.times"
+	CycleReportKey                     = "cycle.report"
+	DefaultBlackListRecoverBlock       = 16
 )
 
 const (
-	DUBBOGO_CTX_KEY = DubboCtxKey("dubbogo-ctx")
+	DubboGoCtxKey = DubboCtxKey("dubbogo-ctx")
 )
 
 const (
-	REGISTRY_KEY            = "registry"
+	RegistryKey             = "registry"
 	RegistryProtocol        = "registry"
 	ServiceRegistryProtocol = "service-discovery-registry"
 	RoleKey                 = "registry.role"
-	REGISTRY_DEFAULT_KEY    = "registry.default"
-	REGISTRY_TIMEOUT_KEY    = "registry.timeout"
-	REGISTRY_LABEL_KEY      = "label"
-	PREFERRED_KEY           = "preferred"
-	ZONE_KEY                = "zone"
-	ZONE_FORCE_KEY          = "zone.force"
-	REGISTRY_TTL_KEY        = "registry.ttl"
-	SIMPLIFIED_KEY          = "simplified"
-	NAMESPACE_KEY           = "namespace"
-	REGISTRY_GROUP_KEY      = "registry.group"
+	RegistryDefaultKey      = "registry.default"
+	RegistryTimeoutKey      = "registry.timeout"
+	RegistryLabelKey        = "label"
+	PreferredKey            = "preferred"
+	ZoneKey                 = "zone"
+	ZoneForceKey            = "zone.force"
+	RegistryTTLKey          = "registry.ttl"
+	SimplifiedKey           = "simplified"
+	NamespaceKey            = "namespace"
+	RegistryGroupKey        = "registry.group"
 )
 
 const (
-	ApplicationKey           = "application"
-	OrganizationKey          = "organization"
-	NameKey                  = "name"
-	ModuleKey                = "module"
-	AppVersionKey            = "app.version"
-	OwnerKey                 = "owner"
-	EnvironmentKey           = "environment"
-	METHOD_KEY               = "method"
-	METHOD_KEYS              = "methods"
-	RULE_KEY                 = "rule"
-	RUNTIME_KEY              = "runtime"
-	BACKUP_KEY               = "backup"
-	ROUTERS_CATEGORY         = "routers"
-	ROUTE_PROTOCOL           = "route"
-	CONDITION_ROUTE_PROTOCOL = "condition"
-	TAG_ROUTE_PROTOCOL       = "tag"
-	PROVIDERS_CATEGORY       = "providers"
-	ROUTER_KEY               = "router"
-	EXPORT_KEY               = "export"
+	ApplicationKey         = "application"
+	OrganizationKey        = "organization"
+	NameKey                = "name"
+	ModuleKey              = "module"
+	AppVersionKey          = "app.version"
+	OwnerKey               = "owner"
+	EnvironmentKey         = "environment"
+	MethodKey              = "method"
+	MethodKeys             = "methods"
+	RuleKey                = "rule"
+	RuntimeKey             = "runtime"
+	BackupKey              = "backup"
+	RoutersCategory        = "routers"
+	RouteProtocol          = "route"
+	ConditionRouteProtocol = "condition"
+	TagRouteProtocol       = "tag"
+	ProvidersCategory      = "providers"
+	RouterKey              = "router"
+	ExportKey              = "export"
 )
 
 const (
-	CONFIG_NAMESPACE_KEY          = "namespace"
-	CONFIG_GROUP_KEY              = "group"
-	CONFIG_APP_ID_KEY             = "appId"
-	CONFIG_CLUSTER_KEY            = "cluster"
-	CONFIG_TIMEOUT_KEY            = "timeout"
-	CONFIG_USERNAME_KEY           = "username"
-	CONFIG_PASSWORD_KEY           = "password"
-	CONFIG_LOG_DIR_KEY            = "logDir"
-	CONFIG_VERSION_KEY            = "configVersion"
-	COMPATIBLE_CONFIG_KEY         = "compatible_config"
-	CONFIG_SECRET_KEY             = "secret"
-	CONFIG_BACKUP_CONFIG_KEY      = "isBackupConfig"
-	CONFIG_BACKUP_CONFIG_PATH_KEY = "backupConfigPath"
+	ConfigNamespaceKey        = "namespace"
+	ConfigGroupKey            = "group"
+	ConfigAppIDKey            = "appId"
+	ConfigClusterKey          = "cluster"
+	ConfigTimeoutKey          = "timeout"
+	ConfigUsernameKey         = "username"
+	ConfigPasswordKey         = "password"
+	ConfigLogDirKey           = "logDir"
+	ConfigVersionKey          = "configVersion"
+	CompatibleConfigKey       = "compatible_config"
+	ConfigSecretKey           = "secret"
+	ConfigBackupConfigKey     = "isBackupConfig"
+	ConfigBackupConfigPathKey = "backupConfigPath"
 )
 
 const (
@@ -203,39 +201,39 @@ const (
 )
 
 const (
-	NACOS_KEY                    = "nacos"
-	NACOS_DEFAULT_ROLETYPE       = 3
-	NACOS_CACHE_DIR_KEY          = "cacheDir"
-	NACOS_LOG_DIR_KEY            = "logDir"
-	NACOS_BEAT_INTERVAL_KEY      = "beatInterval"
-	NACOS_ENDPOINT               = "endpoint"
-	NACOS_SERVICE_NAME_SEPARATOR = ":"
-	NACOS_CATEGORY_KEY           = "category"
-	NACOS_PROTOCOL_KEY           = "protocol"
-	NACOS_PATH_KEY               = "path"
-	NACOS_NAMESPACE_ID           = "namespaceId"
-	NACOS_PASSWORD               = "password"
-	NACOS_USERNAME               = "username"
-	NACOS_NOT_LOAD_LOCAL_CACHE   = "nacos.not.load.cache"
-	NACOS_APP_NAME_KEY           = "appName"
-	NACOS_REGION_ID_KEY          = "regionId"
-	NACOS_ACCESS_KEY             = "access"
-	NACOS_SECRET_KEY             = "secret"
-	NACOS_OPEN_KMS_KEY           = "kms"
-	NACOS_UPDATE_THREAD_NUM_KEY  = "updateThreadNum"
-	NACOS_LOG_LEVEL_KEY          = "logLevel"
+	NacosKey                  = "nacos"
+	NacosDefaultRoleType      = 3
+	NacosCacheDirKey          = "cacheDir"
+	NacosLogDirKey            = "logDir"
+	NacosBeatIntervalKey      = "beatInterval"
+	NacosEndpoint             = "endpoint"
+	NacosServiceNameSeparator = ":"
+	NacosCategoryKey          = "category"
+	NacosProtocolKey          = "protocol"
+	NacosPathKey              = "path"
+	NacosNamespaceID          = "namespaceId"
+	NacosPassword             = "password"
+	NacosUsername             = "username"
+	NacosNotLoadLocalCache    = "nacos.not.load.cache"
+	NacosAppNameKey           = "appName"
+	NacosRegionIDKey          = "regionId"
+	NacosAccessKey            = "access"
+	NacosSecretKey            = "secret"
+	NacosOpenKmsKey           = "kms"
+	NacosUpdateThreadNumKey   = "updateThreadNum"
+	NacosLogLevelKey          = "logLevel"
 )
 
 const (
-	FILE_KEY = "file"
+	FileKey = "file"
 )
 
 const (
-	ZOOKEEPER_KEY = "zookeeper"
+	ZookeeperKey = "zookeeper"
 )
 
 const (
-	ETCDV3_KEY = "etcdv3"
+	EtcdV3Key = "etcdv3"
 )
 
 const (
@@ -244,7 +242,7 @@ const (
 )
 
 const (
-	TRACING_REMOTE_SPAN_CTX = DubboCtxKey("tracing.remote.span.ctx")
+	TracingRemoteSpanCtx = DubboCtxKey("tracing.remote.span.ctx")
 )
 
 // Use for router module
@@ -265,63 +263,63 @@ const (
 // Auth filter
 const (
 	// name of service filter
-	SERVICE_AUTH_KEY = "auth"
+	ServiceAuthKey = "auth"
 	// key of authenticator
-	AUTHENTICATOR_KEY = "authenticator"
+	AuthenticatorKey = "authenticator"
 	// name of default authenticator
-	DEFAULT_AUTHENTICATOR = "accesskeys"
+	DefaultAuthenticator = "accesskeys"
 	// name of default url storage
-	DEFAULT_ACCESS_KEY_STORAGE = "urlstorage"
+	DefaultAccessKeyStorage = "urlstorage"
 	// key of storage
-	ACCESS_KEY_STORAGE_KEY = "accessKey.storage"
+	AccessKeyStorageKey = "accessKey.storage"
 	// key of request timestamp
-	REQUEST_TIMESTAMP_KEY = "timestamp"
+	RequestTimestampKey = "timestamp"
 	// key of request signature
-	REQUEST_SIGNATURE_KEY = "signature"
+	RequestSignatureKey = "signature"
 	// AK key
-	AK_KEY = "ak"
+	AKKey = "ak"
 	// signature format
-	SIGNATURE_STRING_FORMAT = "%s#%s#%s#%s"
+	SignatureStringFormat = "%s#%s#%s#%s"
 	// key whether enable signature
-	PARAMETER_SIGNATURE_ENABLE_KEY = "param.sign"
+	ParameterSignatureEnableKey = "param.sign"
 	// consumer
-	CONSUMER = "consumer"
+	Consumer = "consumer"
 	// key of access key id
-	ACCESS_KEY_ID_KEY = ".accessKeyId"
+	AccessKeyIDKey = ".accessKeyId"
 	// key of secret access key
-	SECRET_ACCESS_KEY_KEY = ".secretAccessKey"
+	SecretAccessKeyKey = ".secretAccessKey"
 )
 
 // metadata report
 
 const (
-	METACONFIG_REMOTE  = "remote"
-	METACONFIG_LOCAL   = "local"
-	KEY_SEPARATOR      = ":"
-	DEFAULT_PATH_TAG   = "metadata"
-	KEY_REVISON_PREFIX = "revision"
+	MetaConfigRemote  = "remote"
+	MetaConfigLocal   = "local"
+	KeySeparator      = ":"
+	DefaultPathTag    = "metadata"
+	KeyRevisionPrefix = "revision"
 
 	// metadata service
-	METADATA_SERVICE_NAME = "org.apache.dubbo.metadata.MetadataService"
+	MetadataServiceName = "org.apache.dubbo.metadata.MetadataService"
 )
 
 // service discovery
 const (
-	SUBSCRIBED_SERVICE_NAMES_KEY               = "subscribed-services"
-	ProvidedBy                                 = "provided-by"
-	EXPORTED_SERVICES_REVISION_PROPERTY_NAME   = "dubbo.metadata.revision"
-	SUBSCRIBED_SERVICES_REVISION_PROPERTY_NAME = "dubbo.subscribed-services.revision"
-	SERVICE_INSTANCE_SELECTOR                  = "service-instance-selector"
-	METADATA_STORAGE_TYPE_PROPERTY_NAME        = "dubbo.metadata.storage-type"
-	DEFAULT_METADATA_STORAGE_TYPE              = "local"
-	REMOTE_METADATA_STORAGE_TYPE               = "remote"
-	SERVICE_INSTANCE_ENDPOINTS                 = "dubbo.endpoints"
-	METADATA_SERVICE_PREFIX                    = "dubbo.metadata-service."
-	METADATA_SERVICE_URL_PARAMS_PROPERTY_NAME  = METADATA_SERVICE_PREFIX + "url-params"
-	METADATA_SERVICE_URLS_PROPERTY_NAME        = METADATA_SERVICE_PREFIX + "urls"
+	SubscribedServiceNamesKey              = "subscribed-services"
+	ProvidedBy                             = "provided-by"
+	ExportedServicesRevisionPropertyName   = "dubbo.metadata.revision"
+	SubscribedServicesRevisionPropertyName = "dubbo.subscribed-services.revision"
+	ServiceInstanceSelector                = "service-instance-selector"
+	MetadataStorageTypePropertyName        = "dubbo.metadata.storage-type"
+	DefaultMetadataStorageType             = "local"
+	RemoteMetadataStorageType              = "remote"
+	ServiceInstanceEndpoints               = "dubbo.endpoints"
+	MetadataServicePrefix                  = "dubbo.metadata-service."
+	MetadataServiceURLParamsPropertyName   = MetadataServicePrefix + "url-params"
+	MetadataServiceURLsPropertyName        = MetadataServicePrefix + "urls"
 
-	// SERVICE_DISCOVERY_KEY indicate which service discovery instance will be used
-	SERVICE_DISCOVERY_KEY = "service_discovery"
+	// ServiceDiscoveryKey indicate which service discovery instance will be used
+	ServiceDiscoveryKey = "service_discovery"
 )
 
 // Generic Filter

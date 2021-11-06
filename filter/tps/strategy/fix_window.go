@@ -36,7 +36,7 @@ const (
 func init() {
 	creator := &fixedWindowStrategyCreator{}
 	extension.SetTpsLimitStrategy(FixedWindowKey, creator)
-	extension.SetTpsLimitStrategy(constant.DEFAULT_KEY, creator)
+	extension.SetTpsLimitStrategy(constant.DefaultKey, creator)
 }
 
 // FixedWindowTpsLimitStrategy implements the TPS limit strategy base on requests count during the interval

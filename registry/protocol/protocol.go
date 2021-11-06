@@ -137,7 +137,7 @@ func (proto *registryProtocol) Refer(url *common.URL) protocol.Invoker {
 	registryUrl := url
 	serviceUrl := registryUrl.SubURL
 	if registryUrl.Protocol == constant.RegistryProtocol {
-		registryUrl.Protocol = registryUrl.GetParam(constant.REGISTRY_KEY, "")
+		registryUrl.Protocol = registryUrl.GetParam(constant.RegistryKey, "")
 	}
 
 	var reg registry.Registry
@@ -163,7 +163,7 @@ func (proto *registryProtocol) Refer(url *common.URL) protocol.Invoker {
 	}
 
 	// new cluster invoker
-	cluster := extension.GetCluster(serviceUrl.GetParam(constant.ClusterKey, constant.DEFAULT_CLUSTER))
+	cluster := extension.GetCluster(serviceUrl.GetParam(constant.ClusterKey, constant.DefaultCluster))
 	invoker := cluster.Join(directory)
 	proto.invokers = append(proto.invokers, invoker)
 	return invoker
@@ -329,51 +329,51 @@ func (nl *overrideSubscribeListener) doOverrideIfNecessary() {
 
 func isMatched(providerUrl *common.URL, consumerUrl *common.URL) bool {
 	// Compatible with the 2.6.x
-	if len(providerUrl.GetParam(constant.CATEGORY_KEY, "")) == 0 &&
-		providerUrl.Protocol == constant.OVERRIDE_PROTOCOL {
-		providerUrl.AddParam(constant.CATEGORY_KEY, constant.CONFIGURATORS_CATEGORY)
+	if len(providerUrl.GetParam(constant.CategoryKey, "")) == 0 &&
+		providerUrl.Protocol == constant.OverrideProtocol {
+		providerUrl.AddParam(constant.CategoryKey, constant.ConfiguratorsCategory)
 	}
 	consumerInterface := consumerUrl.GetParam(constant.InterfaceKey, consumerUrl.Path)
 	providerInterface := providerUrl.GetParam(constant.InterfaceKey, providerUrl.Path)
 
-	if !(constant.ANY_VALUE == consumerInterface ||
-		constant.ANY_VALUE == providerInterface ||
+	if !(constant.AnyValue == consumerInterface ||
+		constant.AnyValue == providerInterface ||
 		providerInterface == consumerInterface) {
 		return false
 	}
 
-	if !isMatchCategory(providerUrl.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY),
-		consumerUrl.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY)) {
+	if !isMatchCategory(providerUrl.GetParam(constant.CategoryKey, constant.DefaultCategory),
+		consumerUrl.GetParam(constant.CategoryKey, constant.DefaultCategory)) {
 		return false
 	}
 
-	if !providerUrl.GetParamBool(constant.ENABLED_KEY, true) &&
-		consumerUrl.GetParam(constant.ENABLED_KEY, "") != constant.ANY_VALUE {
+	if !providerUrl.GetParamBool(constant.EnabledKey, true) &&
+		consumerUrl.GetParam(constant.EnabledKey, "") != constant.AnyValue {
 		return false
 	}
 	consumerGroup := consumerUrl.GetParam(constant.GroupKey, "")
 	consumerVersion := consumerUrl.GetParam(constant.VersionKey, "")
-	consumerClassifier := consumerUrl.GetParam(constant.CLASSIFIER_KEY, "")
+	consumerClassifier := consumerUrl.GetParam(constant.ClassifierKey, "")
 
 	providerGroup := providerUrl.GetParam(constant.GroupKey, "")
 	providerVersion := providerUrl.GetParam(constant.VersionKey, "")
-	providerClassifier := providerUrl.GetParam(constant.CLASSIFIER_KEY, "")
+	providerClassifier := providerUrl.GetParam(constant.ClassifierKey, "")
 	// todo: public static boolean isContains(String values, String value) {
-	//        return isNotEmpty(values) && isContains(COMMA_SPLIT_PATTERN.split(values), value);
+	//        return isNotEmpty(values) && isContains(CommaSplitPattern.split(values), value);
 	//    }
-	return (consumerGroup == constant.ANY_VALUE || consumerGroup == providerGroup ||
-		strings.Contains(consumerGroup, providerGroup)) && (consumerVersion == constant.ANY_VALUE ||
+	return (consumerGroup == constant.AnyValue || consumerGroup == providerGroup ||
+		strings.Contains(consumerGroup, providerGroup)) && (consumerVersion == constant.AnyValue ||
 		consumerVersion == providerVersion) && (len(consumerClassifier) == 0 ||
-		consumerClassifier == constant.ANY_VALUE || consumerClassifier == providerClassifier)
+		consumerClassifier == constant.AnyValue || consumerClassifier == providerClassifier)
 }
 
 func isMatchCategory(category string, categories string) bool {
 	if len(categories) == 0 {
-		return category == constant.DEFAULT_CATEGORY
-	} else if strings.Contains(categories, constant.ANY_VALUE) {
+		return category == constant.DefaultCategory
+	} else if strings.Contains(categories, constant.AnyValue) {
 		return true
-	} else if strings.Contains(categories, constant.REMOVE_VALUE_PREFIX) {
-		return !strings.Contains(categories, constant.REMOVE_VALUE_PREFIX+category)
+	} else if strings.Contains(categories, constant.RemoveValuePrefix) {
+		return !strings.Contains(categories, constant.RemoveValuePrefix+category)
 	} else {
 		return strings.Contains(categories, category)
 	}
@@ -381,9 +381,9 @@ func isMatchCategory(category string, categories string) bool {
 
 func getSubscribedOverrideUrl(providerUrl *common.URL) *common.URL {
 	newUrl := providerUrl.Clone()
-	newUrl.Protocol = constant.PROVIDER_PROTOCOL
-	newUrl.SetParam(constant.CATEGORY_KEY, constant.CONFIGURATORS_CATEGORY)
-	newUrl.SetParam(constant.CHECK_KEY, "false")
+	newUrl.Protocol = constant.ProviderProtocol
+	newUrl.SetParam(constant.CategoryKey, constant.ConfiguratorsCategory)
+	newUrl.SetParam(constant.CheckKey, "false")
 	return newUrl
 }
 
@@ -412,7 +412,7 @@ func getRegistryUrl(invoker protocol.Invoker) *common.URL {
 	url := invoker.GetURL()
 	// if the protocol == registry, set protocol the registry value in url.params
 	if url.Protocol == constant.RegistryProtocol {
-		url.Protocol = url.GetParam(constant.REGISTRY_KEY, "")
+		url.Protocol = url.GetParam(constant.RegistryKey, "")
 	}
 	return url
 }

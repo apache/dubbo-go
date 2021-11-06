@@ -320,13 +320,13 @@ func (r *BaseRegistry) providerRegistry(c *common.URL, params url.Values, f crea
 		logger.Errorf("facadeBasedRegistry.CreatePath(path{%s}) = error{%#v}", dubboPath, perrors.WithStack(err))
 		return "", "", perrors.WithMessagef(err, "facadeBasedRegistry.CreatePath(path:%s)", dubboPath)
 	}
-	params.Add(constant.ANYHOST_KEY, "true")
+	params.Add(constant.AnyhostKey, "true")
 
 	// Dubbo java consumer to start looking for the provider url,because the category does not match,
 	// the provider will not find, causing the consumer can not start, so we use consumers.
 
 	if len(c.Methods) != 0 {
-		params.Add(constant.METHODS_KEY, strings.Join(c.Methods, ","))
+		params.Add(constant.MethodsKey, strings.Join(c.Methods, ","))
 	}
 	logger.Debugf("provider url params:%#v", params)
 	var host string

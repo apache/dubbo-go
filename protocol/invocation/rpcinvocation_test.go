@@ -55,7 +55,7 @@ func TestRPCInvocation_ServiceKey(t *testing.T) {
 	assert.NoError(t, err)
 	invocation := NewRPCInvocationWithOptions(WithAttachments(map[string]interface{}{
 		constant.InterfaceKey: sameInfPathConsumerUrl.GetParam(constant.InterfaceKey, ""),
-		constant.PATH_KEY:     sameInfPathConsumerUrl.Path,
+		constant.PathKey:      sameInfPathConsumerUrl.Path,
 		constant.GroupKey:     sameInfPathConsumerUrl.GetParam(constant.GroupKey, ""),
 		constant.VersionKey:   sameInfPathConsumerUrl.GetParam(constant.VersionKey, ""),
 	}))
@@ -66,7 +66,7 @@ func TestRPCInvocation_ServiceKey(t *testing.T) {
 	assert.NoError(t, err)
 	invocation = NewRPCInvocationWithOptions(WithAttachments(map[string]interface{}{
 		constant.InterfaceKey: diffInfPathConsumerUrl.GetParam(constant.InterfaceKey, ""),
-		constant.PATH_KEY:     diffInfPathConsumerUrl.Path,
+		constant.PathKey:      diffInfPathConsumerUrl.Path,
 		constant.GroupKey:     diffInfPathConsumerUrl.GetParam(constant.GroupKey, ""),
 		constant.VersionKey:   diffInfPathConsumerUrl.GetParam(constant.VersionKey, ""),
 	}))

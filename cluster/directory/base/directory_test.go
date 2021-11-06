@@ -35,8 +35,8 @@ import (
 
 var (
 	url, _ = common.NewURL(
-		fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LOCAL_HOST_VALUE, constant.DEFAULT_PORT))
-	anyURL, _ = common.NewURL(fmt.Sprintf("condition://%s/com.foo.BarService", constant.ANYHOST_VALUE))
+		fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LocalHostValue, constant.DefaultPort))
+	anyURL, _ = common.NewURL(fmt.Sprintf("condition://%s/com.foo.BarService", constant.AnyhostValue))
 )
 
 func TestNewBaseDirectory(t *testing.T) {
@@ -58,7 +58,7 @@ func getRouteURL(rule string, u *common.URL) *common.URL {
 	ru := u
 	ru.AddParam("rule", rule)
 	ru.AddParam("force", "true")
-	ru.AddParam(constant.ROUTER_KEY, "router")
+	ru.AddParam(constant.RouterKey, "router")
 	return ru
 }
 

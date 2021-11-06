@@ -55,7 +55,7 @@ type MetadataServiceNameMapping struct {
 func (d *MetadataServiceNameMapping) Map(url *common.URL) error {
 	serviceInterface := url.GetParam(constant.InterfaceKey, "")
 	// metadata service is admin service, should not be mapped
-	if constant.METADATA_SERVICE_NAME == serviceInterface {
+	if constant.MetadataServiceName == serviceInterface {
 		logger.Info("try to map the metadata service, will be ignored")
 		return nil
 	}

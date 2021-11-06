@@ -193,10 +193,10 @@ func (svc *ServiceConfig) Export() error {
 			common.WithPort(port),
 			common.WithParams(urlMap),
 			common.WithParamsValue(constant.BeanNameKey, svc.id),
-			//common.WithParamsValue(constant.SSL_ENABLED_KEY, strconv.FormatBool(config.GetSslEnabled())),
+			//common.WithParamsValue(constant.SslEnabledKey, strconv.FormatBool(config.GetSslEnabled())),
 			common.WithMethods(strings.Split(methods, ",")),
 			common.WithToken(svc.Token),
-			common.WithParamsValue(constant.MetadatatypeKey, svc.metadataType),
+			common.WithParamsValue(constant.MetadataTypeKey, svc.metadataType),
 		)
 		if len(svc.Tag) > 0 {
 			ivkURL.AddParam(constant.Tagkey, svc.Tag)
@@ -205,7 +205,7 @@ func (svc *ServiceConfig) Export() error {
 		// post process the URL to be exported
 		svc.postProcessConfig(ivkURL)
 		// config post processor may set "export" to false
-		if !ivkURL.GetParamBool(constant.EXPORT_KEY, true) {
+		if !ivkURL.GetParamBool(constant.ExportKey, true) {
 			return nil
 		}
 
@@ -227,7 +227,7 @@ func (svc *ServiceConfig) Export() error {
 				svc.exporters = append(svc.exporters, exporter)
 			}
 		} else {
-			if ivkURL.GetParam(constant.InterfaceKey, "") == constant.METADATA_SERVICE_NAME {
+			if ivkURL.GetParam(constant.InterfaceKey, "") == constant.MetadataServiceName {
 				ms, err := extension.GetLocalMetadataService("")
 				if err != nil {
 					logger.Warnf("export org.apache.dubbo.metadata.MetadataService failed beacause of %s ! pls check if you import _ \"dubbo.apache.org/dubbo-go/v3/metadata/service/local\"", err)
@@ -335,14 +335,14 @@ func (svc *ServiceConfig) getUrlMap() url.Values {
 	urlMap.Set(constant.TimestampKey, strconv.FormatInt(time.Now().Unix(), 10))
 	urlMap.Set(constant.ClusterKey, svc.Cluster)
 	urlMap.Set(constant.LoadbalanceKey, svc.Loadbalance)
-	urlMap.Set(constant.WARMUP_KEY, svc.Warmup)
+	urlMap.Set(constant.WarmupKey, svc.Warmup)
 	urlMap.Set(constant.RetriesKey, svc.Retries)
 	urlMap.Set(constant.GroupKey, svc.Group)
 	urlMap.Set(constant.VersionKey, svc.Version)
 	urlMap.Set(constant.RoleKey, strconv.Itoa(common.PROVIDER))
 	urlMap.Set(constant.ReleaseKey, "dubbo-golang-"+constant.Version)
 	urlMap.Set(constant.SideKey, (common.RoleType(common.PROVIDER)).Role())
-	urlMap.Set(constant.MESSAGE_SIZE_KEY, strconv.Itoa(svc.GrpcMaxMessageSize))
+	urlMap.Set(constant.MessageSizeKey, strconv.Itoa(svc.GrpcMaxMessageSize))
 	// todo: move
 	urlMap.Set(constant.SerializationKey, svc.Serialization)
 	// application config info
@@ -357,43 +357,43 @@ func (svc *ServiceConfig) getUrlMap() url.Values {
 
 	// filter
 	if svc.Filter == "" {
-		urlMap.Set(constant.SERVICE_FILTER_KEY, constant.DEFAULT_SERVICE_FILTERS)
+		urlMap.Set(constant.ServiceFilterKey, constant.DefaultServiceFilters)
 	} else {
-		urlMap.Set(constant.SERVICE_FILTER_KEY, svc.Filter)
+		urlMap.Set(constant.ServiceFilterKey, svc.Filter)
 	}
 
 	// filter special config
 	urlMap.Set(constant.AccessLogFilterKey, svc.AccessLog)
 	// tps limiter
-	urlMap.Set(constant.TPS_LIMIT_STRATEGY_KEY, svc.TpsLimitStrategy)
-	urlMap.Set(constant.TPS_LIMIT_INTERVAL_KEY, svc.TpsLimitInterval)
-	urlMap.Set(constant.TPS_LIMIT_RATE_KEY, svc.TpsLimitRate)
-	urlMap.Set(constant.TPS_LIMITER_KEY, svc.TpsLimiter)
-	urlMap.Set(constant.TPS_REJECTED_EXECUTION_HANDLER_KEY, svc.TpsLimitRejectedHandler)
+	urlMap.Set(constant.TPSLimitStrategyKey, svc.TpsLimitStrategy)
+	urlMap.Set(constant.TPSLimitIntervalKey, svc.TpsLimitInterval)
+	urlMap.Set(constant.TPSLimitRateKey, svc.TpsLimitRate)
+	urlMap.Set(constant.TPSLimiterKey, svc.TpsLimiter)
+	urlMap.Set(constant.TPSRejectedExecutionHandlerKey, svc.TpsLimitRejectedHandler)
 
 	// execute limit filter
-	urlMap.Set(constant.EXECUTE_LIMIT_KEY, svc.ExecuteLimit)
-	urlMap.Set(constant.EXECUTE_REJECTED_EXECUTION_HANDLER_KEY, svc.ExecuteLimitRejectedHandler)
+	urlMap.Set(constant.ExecuteLimitKey, svc.ExecuteLimit)
+	urlMap.Set(constant.ExecuteRejectedExecutionHandlerKey, svc.ExecuteLimitRejectedHandler)
 
 	// auth filter
-	urlMap.Set(constant.SERVICE_AUTH_KEY, svc.Auth)
-	urlMap.Set(constant.PARAMETER_SIGNATURE_ENABLE_KEY, svc.ParamSign)
+	urlMap.Set(constant.ServiceAuthKey, svc.Auth)
+	urlMap.Set(constant.ParameterSignatureEnableKey, svc.ParamSign)
 
 	// whether to export or not
-	urlMap.Set(constant.EXPORT_KEY, strconv.FormatBool(svc.export))
+	urlMap.Set(constant.ExportKey, strconv.FormatBool(svc.export))
 
 	for _, v := range svc.Methods {
 		prefix := "methods." + v.Name + "."
 		urlMap.Set(prefix+constant.LoadbalanceKey, v.LoadBalance)
 		urlMap.Set(prefix+constant.RetriesKey, v.Retries)
-		urlMap.Set(prefix+constant.WEIGHT_KEY, strconv.FormatInt(v.Weight, 10))
+		urlMap.Set(prefix+constant.WeightKey, strconv.FormatInt(v.Weight, 10))
 
-		urlMap.Set(prefix+constant.TPS_LIMIT_STRATEGY_KEY, v.TpsLimitStrategy)
-		urlMap.Set(prefix+constant.TPS_LIMIT_INTERVAL_KEY, v.TpsLimitInterval)
-		urlMap.Set(prefix+constant.TPS_LIMIT_RATE_KEY, v.TpsLimitRate)
+		urlMap.Set(prefix+constant.TPSLimitStrategyKey, v.TpsLimitStrategy)
+		urlMap.Set(prefix+constant.TPSLimitIntervalKey, v.TpsLimitInterval)
+		urlMap.Set(prefix+constant.TPSLimitRateKey, v.TpsLimitRate)
 
-		urlMap.Set(constant.EXECUTE_LIMIT_KEY, v.ExecuteLimit)
-		urlMap.Set(constant.EXECUTE_REJECTED_EXECUTION_HANDLER_KEY, v.ExecuteLimitRejectedHandler)
+		urlMap.Set(constant.ExecuteLimitKey, v.ExecuteLimit)
+		urlMap.Set(constant.ExecuteRejectedExecutionHandlerKey, v.ExecuteLimitRejectedHandler)
 	}
 
 	return urlMap

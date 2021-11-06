@@ -45,10 +45,10 @@ type MethodConfig struct {
 // nolint
 func (mc *MethodConfig) Prefix() string {
 	if len(mc.InterfaceId) != 0 {
-		return constant.DUBBO + "." + mc.InterfaceName + "." + mc.InterfaceId + "." + mc.Name + "."
+		return constant.Dubbo + "." + mc.InterfaceName + "." + mc.InterfaceId + "." + mc.Name + "."
 	}
 
-	return constant.DUBBO + "." + mc.InterfaceName + "." + mc.Name + "."
+	return constant.Dubbo + "." + mc.InterfaceName + "." + mc.Name + "."
 }
 
 func (mc *MethodConfig) Init() error {
@@ -76,12 +76,3 @@ func (mc *MethodConfig) check() error {
 	}
 	return verify(mc)
 }
-
-// UnmarshalYAML unmarshals the MethodConfig by @unmarshal function
-//func (c *MethodConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
-//	if err := defaults.Set(c); err != nil {
-//		return err
-//	}
-//	type plain MethodConfig
-//	return unmarshal((*plain)(c))
-//}

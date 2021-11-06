@@ -96,7 +96,7 @@ func (s *MetadataService) PublishMetadata(service string) {
 
 // GetMetadata get the medata info of service from report
 func (s *MetadataService) GetMetadata(instance registry.ServiceInstance) (*common.MetadataInfo, error) {
-	revision := instance.GetMetadata()[constant.EXPORTED_SERVICES_REVISION_PROPERTY_NAME]
+	revision := instance.GetMetadata()[constant.ExportedServicesRevisionPropertyName]
 	id := identifier.NewSubscriberMetadataIdentifier(instance.GetServiceName(), revision)
 	return s.delegateReport.GetAppMetadata(id)
 }
@@ -113,8 +113,8 @@ func (s *MetadataService) PublishServiceDefinition(url *common.URL) error {
 				BaseMetadataIdentifier: identifier.BaseMetadataIdentifier{
 					ServiceInterface: interfaceName,
 					Version:          url.GetParam(constant.VersionKey, ""),
-					Group:            url.GetParam(constant.GroupKey, constant.DUBBO),
-					Side:             url.GetParam(constant.SideKey, constant.PROVIDER_PROTOCOL),
+					Group:            url.GetParam(constant.GroupKey, constant.Dubbo),
+					Side:             url.GetParam(constant.SideKey, constant.ProviderProtocol),
 				},
 			}
 			s.delegateReport.StoreProviderMetadata(id, sd)
@@ -131,7 +131,7 @@ func (s *MetadataService) PublishServiceDefinition(url *common.URL) error {
 			BaseMetadataIdentifier: identifier.BaseMetadataIdentifier{
 				ServiceInterface: interfaceName,
 				Version:          url.GetParam(constant.VersionKey, ""),
-				Group:            url.GetParam(constant.GroupKey, constant.DUBBO),
+				Group:            url.GetParam(constant.GroupKey, constant.Dubbo),
 				Side:             url.GetParam(constant.SideKey, "consumer"),
 			},
 		}

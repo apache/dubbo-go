@@ -37,7 +37,7 @@ import (
 )
 
 type ZapConfig struct {
-	Level             string                 `default:"debug" json:"level,omitempty" yaml:"level" property:"level"`
+	Level             string                 `default:"info" json:"level,omitempty" yaml:"level" property:"level"`
 	Development       bool                   `default:"false" json:"development,omitempty" yaml:"development" property:"development"`
 	DisableCaller     bool                   `default:"false" json:"disable-caller,omitempty" yaml:"disable-caller" property:"disable-caller"`
 	DisableStacktrace bool                   `default:"false" json:"disable-stacktrace,omitempty" yaml:"disable-stacktrace" property:"disable-stacktrace"`

@@ -48,8 +48,8 @@ import (
 
 // dubbo role type constant
 const (
-	// Consumer is consumer role
-	Consumer = iota
+	// CONSUMER is consumer role
+	CONSUMER = iota
 	// CONFIGURATOR is configurator role
 	CONFIGURATOR
 	// ROUTER is router role
@@ -213,7 +213,7 @@ func WithToken(token string) Option {
 				u, _ := uuid.NewV4()
 				value = u.String()
 			}
-			url.SetParam(constant.TOKEN_KEY, value)
+			url.SetParam(constant.TokenKey, value)
 		}
 	}
 }
@@ -310,9 +310,9 @@ func (c *URL) URLEqual(url *URL) bool {
 	cKey := tmpC.Key()
 	urlKey := tmpURL.Key()
 
-	if cGroup == constant.ANY_VALUE {
+	if cGroup == constant.AnyValue {
 		cKey = strings.Replace(cKey, "group=*", "group="+urlGroup, 1)
-	} else if urlGroup == constant.ANY_VALUE {
+	} else if urlGroup == constant.AnyValue {
 		urlKey = strings.Replace(urlKey, "group=*", "group="+cGroup, 1)
 	}
 
@@ -322,21 +322,21 @@ func (c *URL) URLEqual(url *URL) bool {
 	}
 
 	// 2. if URL contains enabled key, should be true, or *
-	if tmpURL.GetParam(constant.ENABLED_KEY, "true") != "true" && tmpURL.GetParam(constant.ENABLED_KEY, "") != constant.ANY_VALUE {
+	if tmpURL.GetParam(constant.EnabledKey, "true") != "true" && tmpURL.GetParam(constant.EnabledKey, "") != constant.AnyValue {
 		return false
 	}
 
 	// TODO :may need add interface key any value condition
-	return isMatchCategory(tmpURL.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY), tmpC.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY))
+	return isMatchCategory(tmpURL.GetParam(constant.CategoryKey, constant.DefaultCategory), tmpC.GetParam(constant.CategoryKey, constant.DefaultCategory))
 }
 
 func isMatchCategory(category1 string, category2 string) bool {
 	if len(category2) == 0 {
-		return category1 == constant.DEFAULT_CATEGORY
-	} else if strings.Contains(category2, constant.ANY_VALUE) {
+		return category1 == constant.DefaultCategory
+	} else if strings.Contains(category2, constant.AnyValue) {
 		return true
-	} else if strings.Contains(category2, constant.REMOVE_VALUE_PREFIX) {
-		return !strings.Contains(category2, constant.REMOVE_VALUE_PREFIX+category1)
+	} else if strings.Contains(category2, constant.RemoveValuePrefix) {
+		return !strings.Contains(category2, constant.RemoveValuePrefix+category1)
 	} else {
 		return strings.Contains(category2, category1)
 	}
@@ -705,7 +705,7 @@ func MergeURL(serviceURL *URL, referenceURL *URL) *URL {
 
 	// remote timestamp
 	if v := serviceURL.GetParam(constant.TimestampKey, ""); len(v) > 0 {
-		params[constant.REMOTE_TIMESTAMP_KEY] = []string{v}
+		params[constant.RemoteTimestampKey] = []string{v}
 		params[constant.TimestampKey] = []string{referenceURL.GetParam(constant.TimestampKey, "")}
 	}
 

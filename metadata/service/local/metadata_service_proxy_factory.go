@@ -33,7 +33,7 @@ import (
 
 func init() {
 	factory := service.NewBaseMetadataServiceProxyFactory(createProxy)
-	extension.SetMetadataServiceProxyFactory(constant.DEFAULT_KEY, func() service.MetadataServiceProxyFactory {
+	extension.SetMetadataServiceProxyFactory(constant.DefaultKey, func() service.MetadataServiceProxyFactory {
 		return factory
 	})
 }
@@ -72,7 +72,7 @@ func createProxy(ins registry.ServiceInstance) service.MetadataService {
 // buildStandardMetadataServiceURL will use standard format to build the metadata service url.
 func buildStandardMetadataServiceURL(ins registry.ServiceInstance) []*common.URL {
 	ps := getMetadataServiceUrlParams(ins)
-	if ps[constant.PROTOCOL_KEY] == "" {
+	if ps[constant.ProtocolKey] == "" {
 		return nil
 	}
 	res := make([]*common.URL, 0, len(ps))
@@ -83,12 +83,12 @@ func buildStandardMetadataServiceURL(ins registry.ServiceInstance) []*common.URL
 		convertedParams[k] = []string{v}
 	}
 	u := common.NewURLWithOptions(common.WithIp(host),
-		common.WithPath(constant.METADATA_SERVICE_NAME),
-		common.WithProtocol(ps[constant.PROTOCOL_KEY]),
-		common.WithPort(ps[constant.PORT_KEY]),
+		common.WithPath(constant.MetadataServiceName),
+		common.WithProtocol(ps[constant.ProtocolKey]),
+		common.WithPort(ps[constant.PortKey]),
 		common.WithParams(convertedParams),
 		common.WithParamsValue(constant.GroupKey, sn),
-		common.WithParamsValue(constant.InterfaceKey, constant.METADATA_SERVICE_NAME))
+		common.WithParamsValue(constant.InterfaceKey, constant.MetadataServiceName))
 	res = append(res, u)
 
 	return res
@@ -100,7 +100,7 @@ func buildStandardMetadataServiceURL(ins registry.ServiceInstance) []*common.URL
 func getMetadataServiceUrlParams(ins registry.ServiceInstance) map[string]string {
 	ps := ins.GetMetadata()
 	res := make(map[string]string, 2)
-	if str, ok := ps[constant.METADATA_SERVICE_URL_PARAMS_PROPERTY_NAME]; ok && len(str) > 0 {
+	if str, ok := ps[constant.MetadataServiceURLParamsPropertyName]; ok && len(str) > 0 {
 
 		err := json.Unmarshal([]byte(str), &res)
 		if err != nil {

@@ -1,7 +1,152 @@
 # Release Notes
 ---
 
-## 3.0.0
+## 3.0.0-rc3
+
+### Feature: 
+
+- Triple features
+
+  - [New triple pb generation tool](https://github.com/dubbogo/tools/pull/17)
+
+    Refer to [QuickStart of dubbo-go 3.0](https://dubbogo.github.io/zh-cn/docs/user/quickstart/3.0/quickstart.html), and [Dubbo-go-samples](https://github.com/apache/dubbo-go-samples) to try protoc-gen-go-triple pb generator plugin. 
+
+  - [Response exception from client](https://github.com/dubbogo/triple/pull/30)
+
+    Triple client can get the error stacks from server, pointing to real error occurs position.
+
+  - [Multi params support](https://github.com/apache/dubbo-go/pull/1344)
+
+- [New metrics support](https://github.com/apache/dubbo-go/pull/1540)
+
+  Refer to [Docs of dubbo-go 3.0 Metrics](https://dubbogo.github.io/zh-cn/docs/user/samples/metrics.html), and [dubbo-go-samples/metrics](https://github.com/apache/dubbo-go-samples/tree/master/metrics)] to try new metrics support.
+
+- [Remove sleep to wait for service discovery logic](https://github.com/apache/dubbo-go/pull/1531)
+
+  Set reference check default to true and remove extra time.Sleep logic in client side during service-discovery [remove time.Sleep](https://github.com/apache/dubbo-go-samples/pull/276/files)
+
+  - [Registry Waittime configurable](https://github.com/apache/dubbo-go/pull/1516/files)
+
+- [Dynamic Route Config](https://github.com/apache/dubbo-go/pull/1519)
+
+  Refer to [Docs of dubbo-go 3.0 Router](https://dubbogo.github.io/zh-cn/docs/user/samples/mesh_router.html), and [dubbo-go-samples/meshrouter](https://github.com/apache/dubbo-go-samples/tree/master/route/meshroute) to try dynamic mesh router support.
+
+- [New config API support](https://github.com/apache/dubbo-go/pull/1499) [New root config API builder](https://github.com/apache/dubbo-go/pull/1491)
+
+  Refer to [Docs of dubbo-go 3.0 Configuration](https://dubbogo.github.io/zh-cn/docs/user/concept/configuration.html), and [dubbo-go-samples/config-api](https://github.com/apache/dubbo-go-samples/tree/master/config-api) to try new config API.
+
+- [Support custom registry group name on Nacos](https://github.com/apache/dubbo-go/pull/1353)
+
+- [GRPC supports multi pb](https://github.com/apache/dubbo-go/pull/1361)
+
+- [New logger support](https://github.com/apache/dubbo-go/pull/1335)
+
+  Refer to [Docs of dubbo-go 3.0 logger](https://dubbogo.github.io/zh-cn/docs/user/samples/custom-logger.html), and [dubbo-go-samples/logger](https://github.com/apache/dubbo-go-samples/tree/master/logger) to try new logger support.
+
+- [Generic invocation supports](https://github.com/apache/dubbo-go/pull/1315)
+
+  Refer to [Docs of dubbo-go 3.0 generic](https://dubbogo.github.io/zh-cn/docs/user/samples/generic.html), and [dubbo-go-samples/generic](https://github.com/apache/dubbo-go-samples/tree/master/generic) to try new generic support.
+
+- [Support key generate function in service event](https://github.com/apache/dubbo-go/pull/1286)
+
+  
+
+### Enhancement:
+
+- [Configuration Enhancement](https://github.com/apache/dubbo-go/commit/1397e8bba97f14b7656a5afc9bc92530bb693092)
+
+  One of the biggest update in this release is the configuration optimization. We discarded the old configuration and introduced a new one. Currently, the new configuration has been updated to [the master branch of samples](https://github.com/apache/dubbo-go-samples) (corresponding to latest dubbo-go 3.0), and there are introductions and detailed examples on the our website [dubbogo.github](https://dubbogo.github.io).
+
+- Triple: 
+
+  - [Triple CPU usage optimization](https://github.com/dubbogo/triple/pull/32/files)
+
+     Set default tcp read buffer to 4k to decrease gc, and descrease CPU usage by 60% of 3.0.0-rc2
+
+  - [Add Triple Debug Log](https://github.com/dubbogo/triple/pull/29)
+
+- [Support Apollo secret](https://github.com/apache/dubbo-go/pull/1533)
+
+- [Use class Name as the default reference name ](https://github.com/apache/dubbo-go/pull/1339)
+
+  You can set service/refernce key to provider/consumer's struct name: [Config samples](https://github.com/apache/dubbo-go-samples/blob/master/helloworld/go-server/conf/dubbogo.yml#L15) & [Target provider struct](https://github.com/apache/dubbo-go-samples/blob/master/helloworld/go-server/cmd/server.go#L45), 
+
+  And there is no needs to define (p*Provider) Reference() method from now on.
+
+- [Set default logger level to info](https://github.com/apache/dubbo-go/pull/1549/files#diff-d5ab135265094924568957f56eaef061c7948d2664daa995fbe0de4c7ab2d272R82)
+- [Refactor of filter package sturcture](https://github.com/apache/dubbo-go/pull/1299)
+- [Refactor of cluster package structure](https://github.com/apache/dubbo-go/pull/1507)
+
+
+
+### Bugfix:
+
+- [Heartbeat's timeout will modify consumer's timeout](https://github.com/apache/dubbo-go/pull/1532)
+
+- [Remove zk test to ensure ut could be run locally](https://github.com/apache/dubbo-go/pull/1357)
+
+- [Add Application Registry](https://github.com/apache/dubbo-go/pull/1493)
+
+- [Change serviceName like java style on nacos](https://github.com/apache/dubbo-go/pull/1352)
+
+- [Url serialization bug](https://github.com/apache/dubbo-go/pull/1292)
+
+- [Change the key of a mock echo filter](https://github.com/apache/dubbo-go/pull/1381)
+
+- [Fix: fix the exception when tcp timeout is less than 1s for 3.0 #1362](https://github.com/apache/dubbo-go/pull/1380)
+
+- [Registry timeout not pars](https://github.com/apache/dubbo-go/pull/1392)
+
+- [Fix Isprovider check](https://github.com/apache/dubbo-go/pull/1500)
+
+- [Delete zk registry when set defualt consumer/provider config](https://github.com/apache/dubbo-go/pull/1324/files)
+
+  
+## 3.0.0-rc2
+
+### New Features
+
+- [Add Triple Msgpack Codec](https://github.com/apache/dubbo-go/pull/1242)
+- [Add Triple user defined serializer support](https://github.com/apache/dubbo-go/pull/1242)
+- [Add gRPC provider reference in codes generated by protoc-gen-dubbo3](https://github.com/apache/dubbo-go/pull/1240)
+- [Add integration tests using dubbo-go-samples](https://github.com/apache/dubbo-go/pull/1223)
+- [Add service discovery support etcd remote reporter](https://github.com/apache/dubbo-go/pull/1221)
+- [Add service discovery support nacos remote reporter](https://github.com/apache/dubbo-go/pull/1218)
+- [Add grpc server reflection register logic](https://github.com/apache/dubbo-go/pull/1216)
+
+### Enhancement
+
+- [Make remote metadata center configurable](https://github.com/apache/dubbo-go/pull/1258)
+- [Enhance nacos connection](https://github.com/apache/dubbo-go/pull/1255)
+- [Add unit tests for zk metadata report](https://github.com/apache/dubbo-go/pull/1229)
+- [Restructuring remoting metadata service](https://github.com/apache/dubbo-go/pull/1227)
+- [Dependency prompting for unit tests](https://github.com/apache/dubbo-go/pull/1212)
+- [Make cluster interceptor a chain](https://github.com/apache/dubbo-go/pull/1211)
+- [Improve etcd version and change create to put](https://github.com/apache/dubbo-go/pull/1203)
+- [Remove reflect in grpc server](https://github.com/apache/dubbo-go/pull/1200)
+- [Change lb hash logic](https://github.com/apache/dubbo-go/pull/1267)
+
+### Bugfixes
+
+- [Fix: zk invoker refer check fail,and service will be added in cache invokers fail problem](https://github.com/apache/dubbo-go/pull/1249)
+- [Fix: app level service discovery local mod URL serialize fail problem](https://github.com/apache/dubbo-go/pull/1238)
+- [Fix: m1 cpu exec fail problem](https://github.com/apache/dubbo-go/pull/1236)
+- [Fix: metadata info struct contains unsupported field](https://github.com/apache/dubbo-go/pull/1234)
+- [Fix: go race in directory](https://github.com/apache/dubbo-go/pull/1222)
+- [Fix: zk name changes from default to conn location](https://github.com/apache/dubbo-go/pull/1263)
+
+### Dependencies
+
+- [bump actions/cache from 2.1.5 to 2.1.6](https://github.com/apache/dubbo-go/pull/1230)
+
+Milestone:
+
+- [https://github.com/apache/dubbo-go/milestone/12](https://github.com/apache/dubbo-go/milestone/12?closed=1)
+
+
+
+
+## 3.0.0-rc1
 
 ### New Features
 - [Add triple protocol](https://github.com/apache/dubbo-go/pull/1071)

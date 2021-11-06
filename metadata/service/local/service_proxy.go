@@ -101,7 +101,7 @@ func (m *MetadataServiceProxy) MethodMapper() map[string]string {
 // nolint
 func (m *MetadataServiceProxy) Reference() string {
 	logger.Error("you should never invoke this implementation")
-	return constant.METADATA_SERVICE_NAME
+	return constant.MetadataServiceName
 }
 
 // nolint

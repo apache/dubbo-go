@@ -71,7 +71,7 @@ func (m *metadataServiceURLParamsMetadataCustomizer) Customize(instance registry
 		logger.Errorf("could not transfer the map to json", err)
 		return
 	}
-	instance.GetMetadata()[constant.METADATA_SERVICE_URL_PARAMS_PROPERTY_NAME] = string(str)
+	instance.GetMetadata()[constant.MetadataServiceURLParamsPropertyName] = string(str)
 }
 
 func (m *metadataServiceURLParamsMetadataCustomizer) convertToParams(url *common.URL) map[string]string {
@@ -84,7 +84,7 @@ func (m *metadataServiceURLParamsMetadataCustomizer) convertToParams(url *common
 		}
 		p[k] = v[0]
 	}
-	p[constant.PORT_KEY] = url.Port
-	p[constant.PROTOCOL_KEY] = url.Protocol
+	p[constant.PortKey] = url.Port
+	p[constant.ProtocolKey] = url.Protocol
 	return p
 }

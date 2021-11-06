@@ -40,7 +40,7 @@ import (
 )
 
 var attachmentKey = []string{
-	constant.InterfaceKey, constant.GroupKey, constant.TOKEN_KEY, constant.TimeoutKey,
+	constant.InterfaceKey, constant.GroupKey, constant.TokenKey, constant.TimeoutKey,
 	constant.VersionKey,
 }
 
@@ -117,7 +117,7 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 
 	inv := invocation.(*invocation_impl.RPCInvocation)
 	// init param
-	inv.SetAttachments(constant.PATH_KEY, di.GetURL().GetParam(constant.InterfaceKey, ""))
+	inv.SetAttachments(constant.PathKey, di.GetURL().GetParam(constant.InterfaceKey, ""))
 	for _, k := range attachmentKey {
 		if v := di.GetURL().GetParam(k, ""); len(v) > 0 {
 			inv.SetAttachments(k, v)
@@ -130,7 +130,7 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 	url := di.GetURL()
 	// default hessian2 serialization, compatible
 	if url.GetParam(constant.SerializationKey, "") == "" {
-		url.SetParam(constant.SerializationKey, constant.HESSIAN2_SERIALIZATION)
+		url.SetParam(constant.SerializationKey, constant.Hessian2Serialization)
 	}
 	// async
 	async, err := strconv.ParseBool(inv.AttachmentsByKey(constant.AsyncKey, "false"))
@@ -169,7 +169,7 @@ func (di *DubboInvoker) getTimeout(invocation *invocation_impl.RPCInvocation) ti
 	if di.GetURL().GetParamBool(constant.GenericKey, false) {
 		methodName = invocation.Arguments()[0].(string)
 	}
-	timeout := di.GetURL().GetParam(strings.Join([]string{constant.METHOD_KEYS, methodName, constant.TimeoutKey}, "."), "")
+	timeout := di.GetURL().GetParam(strings.Join([]string{constant.MethodKeys, methodName, constant.TimeoutKey}, "."), "")
 	if len(timeout) != 0 {
 		if t, err := time.ParseDuration(timeout); err == nil {
 			// config timeout into attachment

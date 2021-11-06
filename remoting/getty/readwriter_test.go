@@ -53,7 +53,7 @@ func testDecodeTCPPackage(t *testing.T, svr *Server, client *Client) {
 		[]reflect.Value{reflect.ValueOf([]interface{}{"1", "username"}), reflect.ValueOf(ap)})
 	attachment := map[string]string{
 		constant.InterfaceKey: "com.ikurento.user.AdminProvider",
-		constant.PATH_KEY:     "AdminProvider",
+		constant.PathKey:      "AdminProvider",
 		constant.VersionKey:   "1.0.0",
 	}
 	setAttachment(rpcInvocation, attachment)

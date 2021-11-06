@@ -31,13 +31,13 @@ import (
 // isCallingToGenericService check if it calls to a generic service
 func isCallingToGenericService(invoker protocol.Invoker, invocation protocol.Invocation) bool {
 	return isGeneric(invoker.GetURL().GetParam(constant.GenericKey, "")) &&
-		invocation.MethodName() != constant.GENERIC
+		invocation.MethodName() != constant.Generic
 }
 
 // isMakingAGenericCall check if it is making a generic call to a generic service
 func isMakingAGenericCall(invoker protocol.Invoker, invocation protocol.Invocation) bool {
 	return isGeneric(invoker.GetURL().GetParam(constant.GenericKey, "")) &&
-		invocation.MethodName() == constant.GENERIC &&
+		invocation.MethodName() == constant.Generic &&
 		invocation.Arguments() != nil &&
 		len(invocation.Arguments()) == 3
 }
@@ -50,7 +50,7 @@ func isGeneric(generic string) bool {
 
 // isGenericInvocation determines if the invocation has generic format
 func isGenericInvocation(invocation protocol.Invocation) bool {
-	return invocation.MethodName() == constant.GENERIC &&
+	return invocation.MethodName() == constant.Generic &&
 		invocation.Arguments() != nil &&
 		len(invocation.Arguments()) == 3
 }

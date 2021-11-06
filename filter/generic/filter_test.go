@@ -55,7 +55,7 @@ func TestFilter_Invoke(t *testing.T) {
 	mockInvoker.EXPECT().GetUrl().Return(invokeUrl).Times(2)
 	mockInvoker.EXPECT().Invoke(gomock.Not(normalInvocation)).DoAndReturn(
 		func(invocation protocol.Invocation) protocol.Result {
-			assert.Equal(t, constant.GENERIC, invocation.MethodName())
+			assert.Equal(t, constant.Generic, invocation.MethodName())
 			args := invocation.Arguments()
 			assert.Equal(t, "Hello", args[0])
 			assert.Equal(t, "java.lang.String", args[1].([]string)[0])
@@ -78,7 +78,7 @@ func TestFilter_InvokeWithGenericCall(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	genericInvocation := invocation.NewRPCInvocation(constant.GENERIC, []interface{}{
+	genericInvocation := invocation.NewRPCInvocation(constant.Generic, []interface{}{
 		"hello",
 		[]string{"java.lang.String"},
 		[]string{"arg1"},
@@ -88,7 +88,7 @@ func TestFilter_InvokeWithGenericCall(t *testing.T) {
 	mockInvoker.EXPECT().GetUrl().Return(invokeUrl).Times(3)
 	mockInvoker.EXPECT().Invoke(gomock.Any()).DoAndReturn(
 		func(invocation protocol.Invocation) protocol.Result {
-			assert.Equal(t, constant.GENERIC, invocation.MethodName())
+			assert.Equal(t, constant.Generic, invocation.MethodName())
 			args := invocation.Arguments()
 			assert.Equal(t, "hello", args[0])
 			assert.Equal(t, "java.lang.String", args[1].([]string)[0])

@@ -43,7 +43,7 @@ import (
 )
 
 var broadcastUrl, _ = common.NewURL(
-	fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LOCAL_HOST_VALUE, constant.DEFAULT_PORT))
+	fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LocalHostValue, constant.DefaultPort))
 
 func registerBroadcast(mockInvokers ...*mock.MockInvoker) protocol.Invoker {
 	extension.SetLoadbalance("random", random.NewLoadBalance)

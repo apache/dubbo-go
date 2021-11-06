@@ -82,11 +82,11 @@ func TestServiceFilter_Invoke(t *testing.T) {
 	mockInvoker.EXPECT().Invoke(gomock.Eq(invocation1))
 	_ = filter.Invoke(context.Background(), mockInvoker, invocation1)
 	// arguments are nil
-	invocation2 := invocation.NewRPCInvocation(constant.GENERIC, nil, nil)
+	invocation2 := invocation.NewRPCInvocation(constant.Generic, nil, nil)
 	mockInvoker.EXPECT().Invoke(gomock.Eq(invocation2))
 	_ = filter.Invoke(context.Background(), mockInvoker, invocation2)
 	// the number of arguments is not 3
-	invocation3 := invocation.NewRPCInvocation(constant.GENERIC, []interface{}{"hello"}, nil)
+	invocation3 := invocation.NewRPCInvocation(constant.Generic, []interface{}{"hello"}, nil)
 	mockInvoker.EXPECT().Invoke(gomock.Eq(invocation3))
 	_ = filter.Invoke(context.Background(), mockInvoker, invocation3)
 
@@ -110,7 +110,7 @@ func TestServiceFilter_Invoke(t *testing.T) {
 	mockInvoker.EXPECT().GetUrl().Return(ivkUrl).Times(3)
 
 	// invoke a method without errors using default generalization
-	invocation4 := invocation.NewRPCInvocation(constant.GENERIC,
+	invocation4 := invocation.NewRPCInvocation(constant.Generic,
 		[]interface{}{
 			"Hello",
 			[]string{"java.lang.String"},
@@ -119,7 +119,7 @@ func TestServiceFilter_Invoke(t *testing.T) {
 			constant.GenericKey: "true",
 		})
 	// invoke a non-existed method
-	invocation5 := invocation.NewRPCInvocation(constant.GENERIC,
+	invocation5 := invocation.NewRPCInvocation(constant.Generic,
 		[]interface{}{
 			"hello11",
 			[]string{"java.lang.String"},
@@ -128,7 +128,7 @@ func TestServiceFilter_Invoke(t *testing.T) {
 			constant.GenericKey: "true",
 		})
 	// invoke a method with incorrect arguments
-	invocation6 := invocation.NewRPCInvocation(constant.GENERIC,
+	invocation6 := invocation.NewRPCInvocation(constant.Generic,
 		[]interface{}{
 			"Hello",
 			[]string{"java.lang.String", "java.lang.String"},
@@ -137,7 +137,7 @@ func TestServiceFilter_Invoke(t *testing.T) {
 			constant.GenericKey: "true",
 		})
 	// invoke a method without errors using protobuf-json generalization
-	//invocation7 := invocation.NewRPCInvocation(constant.GENERIC,
+	//invocation7 := invocation.NewRPCInvocation(constant.Generic,
 	//	[]interface{}{
 	//		"HelloPB",
 	//		[]string{},
@@ -196,7 +196,7 @@ func TestServiceFilter_OnResponse(t *testing.T) {
 	filter := &ServiceFilter{}
 
 	// invoke a method without errors
-	invocation1 := invocation.NewRPCInvocation(constant.GENERIC,
+	invocation1 := invocation.NewRPCInvocation(constant.Generic,
 		[]interface{}{
 			"hello",
 			[]interface{}{"java.lang.String"},

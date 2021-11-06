@@ -50,7 +50,7 @@ func (pfw *ProtocolFilterWrapper) Export(invoker protocol.Invoker) protocol.Expo
 	if pfw.protocol == nil {
 		pfw.protocol = extension.GetProtocol(invoker.GetURL().Protocol)
 	}
-	invoker = BuildInvokerChain(invoker, constant.SERVICE_FILTER_KEY)
+	invoker = BuildInvokerChain(invoker, constant.ServiceFilterKey)
 	return pfw.protocol.Export(invoker)
 }
 

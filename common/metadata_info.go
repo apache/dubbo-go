@@ -40,12 +40,12 @@ var IncludeKeys = gxset.NewSet(
 	constant.SerializationKey,
 	constant.ClusterKey,
 	constant.LoadbalanceKey,
-	constant.PATH_KEY,
+	constant.PathKey,
 	constant.TimeoutKey,
-	constant.TOKEN_KEY,
+	constant.TokenKey,
 	constant.VersionKey,
-	constant.WARMUP_KEY,
-	constant.WEIGHT_KEY,
+	constant.WarmupKey,
+	constant.WeightKey,
 	constant.ReleaseKey)
 
 // MetadataInfo the metadata information of instance
@@ -97,7 +97,7 @@ func (mi *MetadataInfo) CalAndGetRevision() string {
 		} else {
 			for _, m := range ms {
 				// methods are part of candidates
-				candidates = append(candidates, sk+constant.KEY_SEPARATOR+m)
+				candidates = append(candidates, sk+constant.KeySeparator+m)
 			}
 		}
 
@@ -201,8 +201,8 @@ func (si *ServiceInfo) JavaClassName() string {
 
 // nolint
 func (si *ServiceInfo) GetMethods() []string {
-	if si.Params[constant.METHODS_KEY] != "" {
-		s := si.Params[constant.METHODS_KEY]
+	if si.Params[constant.MethodsKey] != "" {
+		s := si.Params[constant.MethodsKey]
 		return strings.Split(s, ",")
 	}
 	methods := make([]string, 8)

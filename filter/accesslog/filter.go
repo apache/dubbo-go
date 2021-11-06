@@ -106,13 +106,13 @@ func (f *Filter) buildAccessLogData(_ protocol.Invoker, invocation protocol.Invo
 	attachments := invocation.Attachments()
 	itf := attachments[constant.InterfaceKey]
 	if itf == nil || len(itf.(string)) == 0 {
-		itf = attachments[constant.PATH_KEY]
+		itf = attachments[constant.PathKey]
 	}
 	if itf != nil {
 		dataMap[constant.InterfaceKey] = itf.(string)
 	}
-	if v, ok := attachments[constant.METHOD_KEY]; ok && v != nil {
-		dataMap[constant.METHOD_KEY] = v.(string)
+	if v, ok := attachments[constant.MethodKey]; ok && v != nil {
+		dataMap[constant.MethodKey] = v.(string)
 	}
 	if v, ok := attachments[constant.VersionKey]; ok && v != nil {
 		dataMap[constant.VersionKey] = v.(string)
@@ -123,11 +123,11 @@ func (f *Filter) buildAccessLogData(_ protocol.Invoker, invocation protocol.Invo
 	if v, ok := attachments[constant.TimestampKey]; ok && v != nil {
 		dataMap[constant.TimestampKey] = v.(string)
 	}
-	if v, ok := attachments[constant.LOCAL_ADDR]; ok && v != nil {
-		dataMap[constant.LOCAL_ADDR] = v.(string)
+	if v, ok := attachments[constant.LocalAddr]; ok && v != nil {
+		dataMap[constant.LocalAddr] = v.(string)
 	}
-	if v, ok := attachments[constant.REMOTE_ADDR]; ok && v != nil {
-		dataMap[constant.REMOTE_ADDR] = v.(string)
+	if v, ok := attachments[constant.RemoteAddr]; ok && v != nil {
+		dataMap[constant.RemoteAddr] = v.(string)
 	}
 
 	if len(invocation.Arguments()) > 0 {
@@ -242,9 +242,9 @@ func (d *Data) toLogMessage() string {
 	builder.WriteString("[")
 	builder.WriteString(d.data[constant.TimestampKey])
 	builder.WriteString("] ")
-	builder.WriteString(d.data[constant.REMOTE_ADDR])
+	builder.WriteString(d.data[constant.RemoteAddr])
 	builder.WriteString(" -> ")
-	builder.WriteString(d.data[constant.LOCAL_ADDR])
+	builder.WriteString(d.data[constant.LocalAddr])
 	builder.WriteString(" - ")
 	if len(d.data[constant.GroupKey]) > 0 {
 		builder.WriteString(d.data[constant.GroupKey])
@@ -259,7 +259,7 @@ func (d *Data) toLogMessage() string {
 	}
 
 	builder.WriteString(" ")
-	builder.WriteString(d.data[constant.METHOD_KEY])
+	builder.WriteString(d.data[constant.MethodKey])
 	builder.WriteString("(")
 	if len(d.data[Types]) > 0 {
 		builder.WriteString(d.data[Types])
