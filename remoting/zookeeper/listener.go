@@ -224,7 +224,7 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkRootPath string, li
 	event = make(chan struct{}, 4)
 	ttl = defaultTTL
 	if conf != nil {
-		timeout, err := time.ParseDuration(conf.GetParam(constant.RegistryTTLKey, constant.DefaultRegTtl))
+		timeout, err := time.ParseDuration(conf.GetParam(constant.RegistryTTLKey, constant.DefaultRegTTL))
 		if err == nil {
 			ttl = timeout
 		} else {

@@ -244,7 +244,7 @@ func (r *zkRegistry) registerTempZookeeperNode(root string, node string) error {
 func (r *zkRegistry) getListener(conf *common.URL) (*RegistryConfigurationListener, error) {
 	var zkListener *RegistryConfigurationListener
 	dataListener := r.dataListener
-	ttl := r.GetParam(constant.RegistryTTLKey, constant.DefaultRegTtl)
+	ttl := r.GetParam(constant.RegistryTTLKey, constant.DefaultRegTTL)
 	conf.SetParam(constant.RegistryTTLKey, ttl)
 	dataListener.mutex.Lock()
 	defer dataListener.mutex.Unlock()
