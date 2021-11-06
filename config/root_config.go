@@ -132,8 +132,7 @@ func registerPOJO() {
 }
 
 // Init is to start dubbo-go framework, load local configuration, or read configuration from config-center if necessary.
-// finally, for using config-builder to build root config, it would set this root config to global root config pointer,
-// allowing global call like GetMetadataConfig works.
+// It's deprecated for user to call rootConfig.Init() manually, try config.Load(config.WithRootConfig(rootConfig)) instead.
 func (rc *RootConfig) Init() error {
 	registerPOJO()
 	if err := rc.Logger.Init(); err != nil { // init default logger
@@ -191,7 +190,6 @@ func (rc *RootConfig) Init() error {
 	if err := rc.Consumer.Init(rc); err != nil {
 		return err
 	}
-	rootConfig = rc
 	// todo if we can remove this from Init in the future?
 	rc.Start()
 	return nil
