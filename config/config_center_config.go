@@ -57,7 +57,7 @@ type CenterConfig struct {
 	Group     string            `default:"dubbo" yaml:"group" json:"group,omitempty"`
 	Username  string            `yaml:"username" json:"username,omitempty"`
 	Password  string            `yaml:"password" json:"password,omitempty"`
-	Namespace string            `default:"dubbo" yaml:"namespace"  json:"namespace,omitempty"`
+	Namespace string            `yaml:"namespace"  json:"namespace,omitempty"`
 	AppID     string            `default:"dubbo" yaml:"app-id"  json:"app-id,omitempty"`
 	Timeout   string            `default:"10s" yaml:"timeout"  json:"timeout,omitempty"`
 	Params    map[string]string `yaml:"params"  json:"parameters,omitempty"`

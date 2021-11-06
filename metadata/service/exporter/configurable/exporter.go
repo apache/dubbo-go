@@ -69,7 +69,7 @@ func (exporter *MetadataServiceExporter) Export(url *common.URL) error {
 			SetGroup(config.GetApplicationConfig().Name).
 			SetVersion(version).
 			SetProxyFactoryKey(constant.DefaultKey).
-			SetMetadataType(constant.RemoteMetadataStorageType).
+			SetMetadataType(config.GetApplicationConfig().MetadataType).
 			Build()
 		exporter.ServiceConfig.Implement(exporter.metadataService)
 		err := exporter.ServiceConfig.Export()

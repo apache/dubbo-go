@@ -63,10 +63,10 @@ type nacosDynamicConfiguration struct {
 
 func newNacosDynamicConfiguration(url *common.URL) (*nacosDynamicConfiguration, error) {
 	c := &nacosDynamicConfiguration{
-		rootPath: "/" + url.GetParam(constant.ConfigNamespaceKey, config_center.DefaultGroup) + "/config",
-		url:      url,
-		done:     make(chan struct{}),
+		url:  url,
+		done: make(chan struct{}),
 	}
+	c.GetURL().SetParam(constant.NacosNamespaceID, url.GetParam(constant.ConfigNamespaceKey, ""))
 	err := ValidateNacosClient(c)
 	if err != nil {
 		logger.Errorf("nacos configClient start error ,error message is %v", err)
