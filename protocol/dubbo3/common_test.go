@@ -23,7 +23,7 @@ import (
 )
 
 import (
-	native_grpc "google.golang.org/grpc"
+	native_grpc "github.com/dubbogo/triple/pkg/grpc"
 )
 
 import (
