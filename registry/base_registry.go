@@ -276,7 +276,7 @@ func (r *BaseRegistry) processURL(c *common.URL, f func(string, string) error, c
 
 	case common.PROVIDER:
 		dubboPath, rawURL, err = r.providerRegistry(c, params, cpf)
-	case common.Consumer:
+	case common.CONSUMER:
 		dubboPath, rawURL, err = r.consumerRegistry(c, params, cpf)
 	default:
 		return perrors.Errorf("@c{%v} type is not referencer or provider", c)
@@ -360,7 +360,7 @@ func (r *BaseRegistry) consumerRegistry(c *common.URL, params url.Values, f crea
 		rawURL    string
 		err       error
 	)
-	dubboPath = fmt.Sprintf("/dubbo/%s/%s", r.service(c), common.DubboNodes[common.Consumer])
+	dubboPath = fmt.Sprintf("/dubbo/%s/%s", r.service(c), common.DubboNodes[common.CONSUMER])
 
 	if f != nil {
 		err = f(dubboPath)
@@ -383,7 +383,7 @@ func (r *BaseRegistry) consumerRegistry(c *common.URL, params url.Values, f crea
 	params.Add("protocol", c.Protocol)
 	s, _ := url.QueryUnescape(params.Encode())
 	rawURL = fmt.Sprintf("consumer://%s%s?%s", localIP, c.Path, s)
-	dubboPath = fmt.Sprintf("/dubbo/%s/%s", r.service(c), (common.RoleType(common.Consumer)).String())
+	dubboPath = fmt.Sprintf("/dubbo/%s/%s", r.service(c), (common.RoleType(common.CONSUMER)).String())
 
 	logger.Debugf("consumer path:%s, url:%s", dubboPath, rawURL)
 	return dubboPath, rawURL, nil

@@ -114,7 +114,7 @@ func (rc *ReferenceConfig) Refer(srv interface{}) {
 		common.WithProtocol(rc.Protocol),
 		common.WithParams(rc.getURLMap()),
 		common.WithParamsValue(constant.BeanNameKey, rc.id),
-		common.WithParamsValue(constant.MetadatatypeKey, rc.metaDataType),
+		common.WithParamsValue(constant.MetadataTypeKey, rc.metaDataType),
 	)
 
 	SetConsumerServiceByInterfaceName(rc.InterfaceName, srv)
@@ -156,7 +156,7 @@ func (rc *ReferenceConfig) Refer(srv interface{}) {
 			}
 		}
 	} else { // use registry configs
-		rc.urls = loadRegistries(rc.RegistryIDs, rc.rootConfig.Registries, common.Consumer)
+		rc.urls = loadRegistries(rc.RegistryIDs, rc.rootConfig.Registries, common.CONSUMER)
 		// set url to regURLs
 		for _, regURL := range rc.urls {
 			regURL.SubURL = cfgURL
@@ -252,12 +252,12 @@ func (rc *ReferenceConfig) getURLMap() url.Values {
 	urlMap.Set(constant.GroupKey, rc.Group)
 	urlMap.Set(constant.VersionKey, rc.Version)
 	urlMap.Set(constant.GenericKey, rc.Generic)
-	urlMap.Set(constant.RoleKey, strconv.Itoa(common.Consumer))
+	urlMap.Set(constant.RoleKey, strconv.Itoa(common.CONSUMER))
 	urlMap.Set(constant.ProvidedBy, rc.ProvidedBy)
 	urlMap.Set(constant.SerializationKey, rc.Serialization)
 
 	urlMap.Set(constant.ReleaseKey, "dubbo-golang-"+constant.Version)
-	urlMap.Set(constant.SideKey, (common.RoleType(common.Consumer)).Role())
+	urlMap.Set(constant.SideKey, (common.RoleType(common.CONSUMER)).Role())
 
 	if len(rc.RequestTimeout) != 0 {
 		urlMap.Set(constant.TimeoutKey, rc.RequestTimeout)
