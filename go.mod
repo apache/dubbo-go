@@ -52,5 +52,3 @@ require (
 	k8s.io/apimachinery v0.16.9
 	k8s.io/client-go v0.16.9
 )
-
-replace github.com/dubbogo/triple => ../triple
