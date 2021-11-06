@@ -139,7 +139,7 @@ func (r *zkRegistry) InitListeners() {
 					regConfigListener.Close()
 				}
 				newDataListener.SubscribeURL(regConfigListener.subscribeURL, NewRegistryConfigurationListener(r.client, r, regConfigListener.subscribeURL))
-				go r.listener.ListenServiceEvent(regConfigListener.subscribeURL, fmt.Sprintf("/dubbo/%s/"+constant.DEFAULT_CATEGORY, url.QueryEscape(regConfigListener.subscribeURL.Service())), newDataListener)
+				go r.listener.ListenServiceEvent(regConfigListener.subscribeURL, fmt.Sprintf("/dubbo/%s/"+constant.DefaultCategory, url.QueryEscape(regConfigListener.subscribeURL.Service())), newDataListener)
 
 			}
 		}
@@ -244,8 +244,8 @@ func (r *zkRegistry) registerTempZookeeperNode(root string, node string) error {
 func (r *zkRegistry) getListener(conf *common.URL) (*RegistryConfigurationListener, error) {
 	var zkListener *RegistryConfigurationListener
 	dataListener := r.dataListener
-	ttl := r.GetParam(constant.REGISTRY_TTL_KEY, constant.DEFAULT_REG_TTL)
-	conf.SetParam(constant.REGISTRY_TTL_KEY, ttl)
+	ttl := r.GetParam(constant.RegistryTTLKey, constant.DefaultRegTtl)
+	conf.SetParam(constant.RegistryTTLKey, ttl)
 	dataListener.mutex.Lock()
 	defer dataListener.mutex.Unlock()
 	if r.dataListener.subscribed[conf.ServiceKey()] != nil {
@@ -281,7 +281,7 @@ func (r *zkRegistry) getListener(conf *common.URL) (*RegistryConfigurationListen
 	// Interested register to dataconfig.
 	r.dataListener.SubscribeURL(conf, zkListener)
 
-	go r.listener.ListenServiceEvent(conf, fmt.Sprintf("/dubbo/%s/"+constant.DEFAULT_CATEGORY, url.QueryEscape(conf.Service())), r.dataListener)
+	go r.listener.ListenServiceEvent(conf, fmt.Sprintf("/dubbo/%s/"+constant.DefaultCategory, url.QueryEscape(conf.Service())), r.dataListener)
 
 	return zkListener, nil
 }

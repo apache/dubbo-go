@@ -160,7 +160,7 @@ func (s *Server) handlePkg(conn net.Conn) {
 		spanCtx, err := opentracing.GlobalTracer().Extract(opentracing.HTTPHeaders,
 			opentracing.HTTPHeadersCarrier(r.Header))
 		if err == nil {
-			ctx = context.WithValue(ctx, constant.TRACING_REMOTE_SPAN_CTX, spanCtx)
+			ctx = context.WithValue(ctx, constant.TracingRemoteSpanCtx, spanCtx)
 		}
 
 		if len(reqHeader["Timeout"]) > 0 {
@@ -347,8 +347,8 @@ func serveRequest(ctx context.Context, header map[string]string, body []byte, co
 	invoker := exporter.(*JsonrpcExporter).GetInvoker()
 	if invoker != nil {
 		result := invoker.Invoke(ctx, invocation.NewRPCInvocation(methodName, args, map[string]interface{}{
-			constant.PATH_KEY:    path,
-			constant.VERSION_KEY: codec.req.Version,
+			constant.PathKey:    path,
+			constant.VersionKey: codec.req.Version,
 		}))
 		if err := result.Error(); err != nil {
 			rspStream, codecErr := codec.Write(err.Error(), invalidRequest)

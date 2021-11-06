@@ -224,7 +224,7 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkRootPath string, li
 	event = make(chan struct{}, 4)
 	ttl = defaultTTL
 	if conf != nil {
-		timeout, err := time.ParseDuration(conf.GetParam(constant.REGISTRY_TTL_KEY, constant.DEFAULT_REG_TTL))
+		timeout, err := time.ParseDuration(conf.GetParam(constant.RegistryTTLKey, constant.DefaultRegTtl))
 		if err == nil {
 			ttl = timeout
 		} else {
@@ -276,7 +276,7 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkRootPath string, li
 		failTimes = 0
 		for _, c := range children {
 			// Only need to compare Path when subscribing to provider
-			if strings.LastIndex(zkRootPath, constant.PROVIDER_CATEGORY) != -1 {
+			if strings.LastIndex(zkRootPath, constant.ProviderCategory) != -1 {
 				provider, _ := common.NewURL(c)
 				if provider.ServiceKey() != conf.ServiceKey() {
 					continue
@@ -329,8 +329,8 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkRootPath string, li
 
 			// listen sub path recursive
 			// if zkPath is end of "providers/ & consumers/" we do not listen children dir
-			if strings.LastIndex(zkRootPath, constant.PROVIDER_CATEGORY) == -1 &&
-				strings.LastIndex(zkRootPath, constant.CONSUMER_CATEGORY) == -1 {
+			if strings.LastIndex(zkRootPath, constant.ProviderCategory) == -1 &&
+				strings.LastIndex(zkRootPath, constant.ConsumerCategory) == -1 {
 				l.wg.Add(1)
 				go func(zkPath string, listener remoting.DataListener) {
 					l.listenDirEvent(conf, zkPath, listener)

@@ -40,7 +40,7 @@ const (
 )
 
 func init() {
-	extension.SetTpsLimiter(constant.DEFAULT_KEY, GetMethodServiceTpsLimiter)
+	extension.SetTpsLimiter(constant.DefaultKey, GetMethodServiceTpsLimiter)
 	extension.SetTpsLimiter(name, GetMethodServiceTpsLimiter)
 }
 
@@ -123,8 +123,8 @@ type MethodServiceTpsLimiter struct {
 func (limiter MethodServiceTpsLimiter) IsAllowable(url *common.URL, invocation protocol.Invocation) bool {
 	methodConfigPrefix := "methods." + invocation.MethodName() + "."
 
-	methodLimitRateConfig := url.GetParam(methodConfigPrefix+constant.TPS_LIMIT_RATE_KEY, "")
-	methodIntervalConfig := url.GetParam(methodConfigPrefix+constant.TPS_LIMIT_INTERVAL_KEY, "")
+	methodLimitRateConfig := url.GetParam(methodConfigPrefix+constant.TPSLimitRateKey, "")
+	methodIntervalConfig := url.GetParam(methodConfigPrefix+constant.TPSLimitIntervalKey, "")
 
 	// service-level tps limit
 	limitTarget := url.ServiceKey()
@@ -145,8 +145,8 @@ func (limiter MethodServiceTpsLimiter) IsAllowable(url *common.URL, invocation p
 	// we could not find the limiter, and try to create one.
 
 	limitRate := getLimitConfig(methodLimitRateConfig, url, invocation,
-		constant.TPS_LIMIT_RATE_KEY,
-		constant.DEFAULT_TPS_LIMIT_RATE)
+		constant.TPSLimitRateKey,
+		constant.DefaultTPSLimitRate)
 
 	if limitRate < 0 {
 		// the limitTarget is not necessary to be limited.
@@ -154,15 +154,15 @@ func (limiter MethodServiceTpsLimiter) IsAllowable(url *common.URL, invocation p
 	}
 
 	limitInterval := getLimitConfig(methodIntervalConfig, url, invocation,
-		constant.TPS_LIMIT_INTERVAL_KEY,
-		constant.DEFAULT_TPS_LIMIT_INTERVAL)
+		constant.TPSLimitIntervalKey,
+		constant.DefaultTPSLimitInterval)
 	if limitInterval <= 0 {
 		panic(fmt.Sprintf("The interval must be positive, please check your configuration! url: %s", url.String()))
 	}
 
 	// find the strategy config and then create one
-	limitStrategyConfig := url.GetParam(methodConfigPrefix+constant.TPS_LIMIT_STRATEGY_KEY,
-		url.GetParam(constant.TPS_LIMIT_STRATEGY_KEY, constant.DEFAULT_KEY))
+	limitStrategyConfig := url.GetParam(methodConfigPrefix+constant.TPSLimitStrategyKey,
+		url.GetParam(constant.TPSLimitStrategyKey, constant.DefaultKey))
 	limitStateCreator := extension.GetTpsLimitStrategyCreator(limitStrategyConfig)
 
 	// we using loadOrStore to ensure thread-safe

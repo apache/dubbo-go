@@ -46,13 +46,13 @@ func TestMethodServiceTpsLimiterImplIsAllowableOnlyServiceLevel(t *testing.T) {
 
 	invokeUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
-		common.WithParamsValue(constant.INTERFACE_KEY, methodName),
-		common.WithParamsValue(constant.TPS_LIMIT_RATE_KEY, "20"))
+		common.WithParamsValue(constant.InterfaceKey, methodName),
+		common.WithParamsValue(constant.TPSLimitRateKey, "20"))
 
 	mockStrategyImpl := strategy.NewMockTpsLimitStrategy(ctrl)
 	mockStrategyImpl.EXPECT().IsAllowable().Return(true).Times(1)
 
-	extension.SetTpsLimitStrategy(constant.DEFAULT_KEY, &mockStrategyCreator{
+	extension.SetTpsLimitStrategy(constant.DefaultKey, &mockStrategyCreator{
 		rate:     20,
 		interval: 60000,
 		t:        t,
@@ -72,8 +72,8 @@ func TestMethodServiceTpsLimiterImplIsAllowableNoConfig(t *testing.T) {
 
 	invokeUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
-		common.WithParamsValue(constant.INTERFACE_KEY, methodName),
-		common.WithParamsValue(constant.TPS_LIMIT_RATE_KEY, ""))
+		common.WithParamsValue(constant.InterfaceKey, methodName),
+		common.WithParamsValue(constant.TPSLimitRateKey, ""))
 
 	limiter := GetMethodServiceTpsLimiter()
 	result := limiter.IsAllowable(invokeUrl, invoc)
@@ -89,19 +89,19 @@ func TestMethodServiceTpsLimiterImplIsAllowableMethodLevelOverride(t *testing.T)
 
 	invokeUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
-		common.WithParamsValue(constant.INTERFACE_KEY, methodName),
-		common.WithParamsValue(constant.TPS_LIMIT_RATE_KEY, "20"),
-		common.WithParamsValue(constant.TPS_LIMIT_INTERVAL_KEY, "3000"),
-		common.WithParamsValue(constant.TPS_LIMIT_STRATEGY_KEY, "invalid"),
-		common.WithParamsValue(methodConfigPrefix+constant.TPS_LIMIT_RATE_KEY, "40"),
-		common.WithParamsValue(methodConfigPrefix+constant.TPS_LIMIT_INTERVAL_KEY, "7000"),
-		common.WithParamsValue(methodConfigPrefix+constant.TPS_LIMIT_STRATEGY_KEY, "default"),
+		common.WithParamsValue(constant.InterfaceKey, methodName),
+		common.WithParamsValue(constant.TPSLimitRateKey, "20"),
+		common.WithParamsValue(constant.TPSLimitIntervalKey, "3000"),
+		common.WithParamsValue(constant.TPSLimitStrategyKey, "invalid"),
+		common.WithParamsValue(methodConfigPrefix+constant.TPSLimitRateKey, "40"),
+		common.WithParamsValue(methodConfigPrefix+constant.TPSLimitIntervalKey, "7000"),
+		common.WithParamsValue(methodConfigPrefix+constant.TPSLimitStrategyKey, "default"),
 	)
 
 	mockStrategyImpl := strategy.NewMockTpsLimitStrategy(ctrl)
 	mockStrategyImpl.EXPECT().IsAllowable().Return(true).Times(1)
 
-	extension.SetTpsLimitStrategy(constant.DEFAULT_KEY, &mockStrategyCreator{
+	extension.SetTpsLimitStrategy(constant.DefaultKey, &mockStrategyCreator{
 		rate:     40,
 		interval: 7000,
 		t:        t,
@@ -122,16 +122,16 @@ func TestMethodServiceTpsLimiterImplIsAllowableBothMethodAndService(t *testing.T
 
 	invokeUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
-		common.WithParamsValue(constant.INTERFACE_KEY, methodName),
-		common.WithParamsValue(constant.TPS_LIMIT_RATE_KEY, "20"),
-		common.WithParamsValue(constant.TPS_LIMIT_INTERVAL_KEY, "3000"),
-		common.WithParamsValue(methodConfigPrefix+constant.TPS_LIMIT_RATE_KEY, "40"),
+		common.WithParamsValue(constant.InterfaceKey, methodName),
+		common.WithParamsValue(constant.TPSLimitRateKey, "20"),
+		common.WithParamsValue(constant.TPSLimitIntervalKey, "3000"),
+		common.WithParamsValue(methodConfigPrefix+constant.TPSLimitRateKey, "40"),
 	)
 
 	mockStrategyImpl := strategy.NewMockTpsLimitStrategy(ctrl)
 	mockStrategyImpl.EXPECT().IsAllowable().Return(true).Times(1)
 
-	extension.SetTpsLimitStrategy(constant.DEFAULT_KEY, &mockStrategyCreator{
+	extension.SetTpsLimitStrategy(constant.DefaultKey, &mockStrategyCreator{
 		rate:     40,
 		interval: 3000,
 		t:        t,

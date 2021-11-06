@@ -42,7 +42,7 @@ type MetadataServiceExporter struct {
 }
 
 func init() {
-	extension.SetMetadataServiceExporter(constant.DEFAULT_Key, NewMetadataServiceExporter)
+	extension.SetMetadataServiceExporter(constant.DefaultKey, NewMetadataServiceExporter)
 }
 
 // NewMetadataServiceExporter will return a service_exporter.MetadataServiceExporter with the specified  metadata service
@@ -59,17 +59,17 @@ func (exporter *MetadataServiceExporter) Export(url *common.URL) error {
 		exporter.lock.Lock()
 		defer exporter.lock.Unlock()
 		exporter.ServiceConfig = config.NewServiceConfigBuilder().
-			SetServiceID(constant.SIMPLE_METADATA_SERVICE_NAME).
-			SetProtocolIDs(constant.DEFAULT_PROTOCOL).
-			AddRCProtocol(constant.DEFAULT_PROTOCOL, config.NewProtocolConfigBuilder().
-				SetName(constant.DEFAULT_PROTOCOL).
+			SetServiceID(constant.SimpleMetadataServiceName).
+			SetProtocolIDs(constant.DefaultProtocol).
+			AddRCProtocol(constant.DefaultProtocol, config.NewProtocolConfigBuilder().
+				SetName(constant.DefaultProtocol).
 				Build()).
 			SetRegistryIDs("N/A").
-			SetInterface(constant.METADATA_SERVICE_NAME).
+			SetInterface(constant.MetadataServiceName).
 			SetGroup(config.GetApplicationConfig().Name).
 			SetVersion(version).
-			SetProxyFactoryKey(constant.DEFAULT_Key).
-			SetMetadataType(constant.REMOTE_METADATA_STORAGE_TYPE).
+			SetProxyFactoryKey(constant.DefaultKey).
+			SetMetadataType(constant.RemoteMetadataStorageType).
 			Build()
 		exporter.ServiceConfig.Implement(exporter.metadataService)
 		err := exporter.ServiceConfig.Export()

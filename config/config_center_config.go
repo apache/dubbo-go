@@ -89,13 +89,13 @@ func (c *CenterConfig) Init(rc *RootConfig) error {
 // GetUrlMap gets url map from ConfigCenterConfig
 func (c *CenterConfig) GetUrlMap() url.Values {
 	urlMap := url.Values{}
-	urlMap.Set(constant.CONFIG_NAMESPACE_KEY, c.Namespace)
-	urlMap.Set(constant.CONFIG_GROUP_KEY, c.Group)
-	urlMap.Set(constant.CONFIG_CLUSTER_KEY, c.Cluster)
-	urlMap.Set(constant.CONFIG_APP_ID_KEY, c.AppID)
-	urlMap.Set(constant.CONFIG_USERNAME_KEY, c.Username)
-	urlMap.Set(constant.CONFIG_PASSWORD_KEY, c.Password)
-	urlMap.Set(constant.CONFIG_TIMEOUT_KEY, c.Timeout)
+	urlMap.Set(constant.ConfigNamespaceKey, c.Namespace)
+	urlMap.Set(constant.ConfigGroupKey, c.Group)
+	urlMap.Set(constant.ConfigClusterKey, c.Cluster)
+	urlMap.Set(constant.ConfigAppIDKey, c.AppID)
+	urlMap.Set(constant.ConfigUsernameKey, c.Username)
+	urlMap.Set(constant.ConfigPasswordKey, c.Password)
+	urlMap.Set(constant.ConfigTimeoutKey, c.Timeout)
 
 	for key, val := range c.Params {
 		urlMap.Set(key, val)

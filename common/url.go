@@ -213,7 +213,7 @@ func WithToken(token string) Option {
 				u, _ := uuid.NewV4()
 				value = u.String()
 			}
-			url.SetParam(constant.TOKEN_KEY, value)
+			url.SetParam(constant.TokenKey, value)
 		}
 	}
 }
@@ -287,12 +287,12 @@ func MatchKey(serviceKey string, protocol string) string {
 
 // Group get group
 func (c *URL) Group() string {
-	return c.GetParam(constant.GROUP_KEY, "")
+	return c.GetParam(constant.GroupKey, "")
 }
 
 // Version get group
 func (c *URL) Version() string {
-	return c.GetParam(constant.VERSION_KEY, "")
+	return c.GetParam(constant.VersionKey, "")
 }
 
 // URLEqual judge @URL and @c is equal or not.
@@ -305,14 +305,14 @@ func (c *URL) URLEqual(url *URL) bool {
 	tmpURL.Ip = ""
 	tmpURL.Port = ""
 
-	cGroup := tmpC.GetParam(constant.GROUP_KEY, "")
-	urlGroup := tmpURL.GetParam(constant.GROUP_KEY, "")
+	cGroup := tmpC.GetParam(constant.GroupKey, "")
+	urlGroup := tmpURL.GetParam(constant.GroupKey, "")
 	cKey := tmpC.Key()
 	urlKey := tmpURL.Key()
 
-	if cGroup == constant.ANY_VALUE {
+	if cGroup == constant.AnyValue {
 		cKey = strings.Replace(cKey, "group=*", "group="+urlGroup, 1)
-	} else if urlGroup == constant.ANY_VALUE {
+	} else if urlGroup == constant.AnyValue {
 		urlKey = strings.Replace(urlKey, "group=*", "group="+cGroup, 1)
 	}
 
@@ -322,21 +322,21 @@ func (c *URL) URLEqual(url *URL) bool {
 	}
 
 	// 2. if URL contains enabled key, should be true, or *
-	if tmpURL.GetParam(constant.ENABLED_KEY, "true") != "true" && tmpURL.GetParam(constant.ENABLED_KEY, "") != constant.ANY_VALUE {
+	if tmpURL.GetParam(constant.EnabledKey, "true") != "true" && tmpURL.GetParam(constant.EnabledKey, "") != constant.AnyValue {
 		return false
 	}
 
 	// TODO :may need add interface key any value condition
-	return isMatchCategory(tmpURL.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY), tmpC.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY))
+	return isMatchCategory(tmpURL.GetParam(constant.CategoryKey, constant.DefaultCategory), tmpC.GetParam(constant.CategoryKey, constant.DefaultCategory))
 }
 
 func isMatchCategory(category1 string, category2 string) bool {
 	if len(category2) == 0 {
-		return category1 == constant.DEFAULT_CATEGORY
-	} else if strings.Contains(category2, constant.ANY_VALUE) {
+		return category1 == constant.DefaultCategory
+	} else if strings.Contains(category2, constant.AnyValue) {
 		return true
-	} else if strings.Contains(category2, constant.REMOVE_VALUE_PREFIX) {
-		return !strings.Contains(category2, constant.REMOVE_VALUE_PREFIX+category1)
+	} else if strings.Contains(category2, constant.RemoveValuePrefix) {
+		return !strings.Contains(category2, constant.RemoveValuePrefix+category1)
 	} else {
 		return strings.Contains(category2, category1)
 	}
@@ -358,7 +358,7 @@ func (c *URL) String() string {
 // Key gets key
 func (c *URL) Key() string {
 	buildString := fmt.Sprintf("%s://%s:%s@%s:%s/?interface=%s&group=%s&version=%s",
-		c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Service(), c.GetParam(constant.GROUP_KEY, ""), c.GetParam(constant.VERSION_KEY, ""))
+		c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Service(), c.GetParam(constant.GroupKey, ""), c.GetParam(constant.VersionKey, ""))
 	return buildString
 }
 
@@ -367,15 +367,15 @@ func (c *URL) GetCacheInvokerMapKey() string {
 	urlNew, _ := NewURL(c.PrimitiveURL)
 
 	buildString := fmt.Sprintf("%s://%s:%s@%s:%s/?interface=%s&group=%s&version=%s&timestamp=%s",
-		c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Service(), c.GetParam(constant.GROUP_KEY, ""),
-		c.GetParam(constant.VERSION_KEY, ""), urlNew.GetParam(constant.TIMESTAMP_KEY, ""))
+		c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Service(), c.GetParam(constant.GroupKey, ""),
+		c.GetParam(constant.VersionKey, ""), urlNew.GetParam(constant.TimestampKey, ""))
 	return buildString
 }
 
 // ServiceKey gets a unique key of a service.
 func (c *URL) ServiceKey() string {
-	return ServiceKey(c.GetParam(constant.INTERFACE_KEY, strings.TrimPrefix(c.Path, "/")),
-		c.GetParam(constant.GROUP_KEY, ""), c.GetParam(constant.VERSION_KEY, ""))
+	return ServiceKey(c.GetParam(constant.InterfaceKey, strings.TrimPrefix(c.Path, "/")),
+		c.GetParam(constant.GroupKey, ""), c.GetParam(constant.VersionKey, ""))
 }
 
 func ServiceKey(intf string, group string, version string) string {
@@ -401,18 +401,18 @@ func ServiceKey(intf string, group string, version string) string {
 // ColonSeparatedKey
 // The format is "{interface}:[version]:[group]"
 func (c *URL) ColonSeparatedKey() string {
-	intf := c.GetParam(constant.INTERFACE_KEY, strings.TrimPrefix(c.Path, "/"))
+	intf := c.GetParam(constant.InterfaceKey, strings.TrimPrefix(c.Path, "/"))
 	if intf == "" {
 		return ""
 	}
 	var buf strings.Builder
 	buf.WriteString(intf)
 	buf.WriteString(":")
-	version := c.GetParam(constant.VERSION_KEY, "")
+	version := c.GetParam(constant.VersionKey, "")
 	if version != "" && version != "0.0.0" {
 		buf.WriteString(version)
 	}
-	group := c.GetParam(constant.GROUP_KEY, "")
+	group := c.GetParam(constant.GroupKey, "")
 	buf.WriteString(":")
 	if group != "" {
 		buf.WriteString(group)
@@ -428,11 +428,11 @@ func (c *URL) EncodedServiceKey() string {
 
 // Service gets service
 func (c *URL) Service() string {
-	service := c.GetParam(constant.INTERFACE_KEY, strings.TrimPrefix(c.Path, "/"))
+	service := c.GetParam(constant.InterfaceKey, strings.TrimPrefix(c.Path, "/"))
 	if service != "" {
 		return service
 	} else if c.SubURL != nil {
-		service = c.SubURL.GetParam(constant.INTERFACE_KEY, strings.TrimPrefix(c.Path, "/"))
+		service = c.SubURL.GetParam(constant.InterfaceKey, strings.TrimPrefix(c.Path, "/"))
 		if service != "" { // if URL.path is "" then return suburl's path, special for registry URL
 			return service
 		}
@@ -701,12 +701,12 @@ func MergeURL(serviceURL *URL, referenceURL *URL) *URL {
 	}
 
 	// loadBalance,cluster,retries strategy config
-	methodConfigMergeFcn := mergeNormalParam(params, referenceURL, []string{constant.LOADBALANCE_KEY, constant.CLUSTER_KEY, constant.RETRIES_KEY, constant.TIMEOUT_KEY})
+	methodConfigMergeFcn := mergeNormalParam(params, referenceURL, []string{constant.LoadbalanceKey, constant.ClusterKey, constant.RetriesKey, constant.TimeoutKey})
 
 	// remote timestamp
-	if v := serviceURL.GetParam(constant.TIMESTAMP_KEY, ""); len(v) > 0 {
-		params[constant.REMOTE_TIMESTAMP_KEY] = []string{v}
-		params[constant.TIMESTAMP_KEY] = []string{referenceURL.GetParam(constant.TIMESTAMP_KEY, "")}
+	if v := serviceURL.GetParam(constant.TimestampKey, ""); len(v) > 0 {
+		params[constant.RemoteTimestampKey] = []string{v}
+		params[constant.TimestampKey] = []string{referenceURL.GetParam(constant.TimestampKey, "")}
 	}
 
 	// finally execute methodConfigMergeFcn

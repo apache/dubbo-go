@@ -44,11 +44,11 @@ import (
 
 const (
 	reporterName = "prometheus"
-	serviceKey   = constant.SERVICE_KEY
-	groupKey     = constant.GROUP_KEY
-	versionKey   = constant.VERSION_KEY
-	methodKey    = constant.METHOD_KEY
-	timeoutKey   = constant.TIMEOUT_KEY
+	serviceKey   = constant.ServiceKey
+	groupKey     = constant.GroupKey
+	versionKey   = constant.VersionKey
+	methodKey    = constant.MethodKey
+	timeoutKey   = constant.TimeoutKey
 
 	// to identify side
 	providerPrefix = "provider_"
@@ -116,7 +116,7 @@ func (reporter *PrometheusReporter) Report(ctx context.Context, invoker protocol
 	labels := prometheus.Labels{
 		serviceKey: url.Service(),
 		groupKey:   url.GetParam(groupKey, ""),
-		versionKey: url.GetParam(constant.APP_VERSION_KEY, ""),
+		versionKey: url.GetParam(constant.AppVersionKey, ""),
 		methodKey:  invocation.MethodName(),
 		timeoutKey: url.GetParam(timeoutKey, ""),
 	}
@@ -196,13 +196,13 @@ func newSummaryVec(name, namespace string, labels []string) *prometheus.SummaryV
 
 // isProvider shows whether this url represents the application received the request as server
 func isProvider(url *common.URL) bool {
-	role := url.GetParam(constant.ROLE_KEY, "")
+	role := url.GetParam(constant.RoleKey, "")
 	return strings.EqualFold(role, strconv.Itoa(common.PROVIDER))
 }
 
 // isConsumer shows whether this url represents the application sent then request as client
 func isConsumer(url *common.URL) bool {
-	role := url.GetParam(constant.ROLE_KEY, "")
+	role := url.GetParam(constant.RoleKey, "")
 	return strings.EqualFold(role, strconv.Itoa(common.CONSUMER))
 }
 

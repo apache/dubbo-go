@@ -51,7 +51,7 @@ type Client struct {
 // NewClient returns Client instance for registry
 func NewClient(url *common.URL) (*Client, error) {
 	// read type
-	r, err := strconv.Atoi(url.GetParams().Get(constant.ROLE_KEY))
+	r, err := strconv.Atoi(url.GetParams().Get(constant.RoleKey))
 	if err != nil {
 		return nil, perrors.WithMessage(err, "atoi role")
 	}

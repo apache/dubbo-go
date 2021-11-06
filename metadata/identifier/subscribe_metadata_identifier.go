@@ -32,7 +32,7 @@ func NewSubscriberMetadataIdentifier(application string, revision string) *Subsc
 		Revision: revision,
 		BaseApplicationMetadataIdentifier: BaseApplicationMetadataIdentifier{
 			Application: application,
-			Group:       constant.DUBBO,
+			Group:       constant.Dubbo,
 		},
 	}
 }

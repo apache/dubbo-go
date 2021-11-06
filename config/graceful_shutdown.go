@@ -107,7 +107,7 @@ func BeforeShutdown() {
 
 func destroyAllRegistries() {
 	logger.Info("Graceful shutdown --- Destroy all registriesConfig. ")
-	registryProtocol := extension.GetProtocol(constant.REGISTRY_KEY)
+	registryProtocol := extension.GetProtocol(constant.RegistryKey)
 	registryProtocol.Destroy()
 }
 

@@ -68,7 +68,7 @@ func (rp *RestProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	url := invoker.GetURL()
 	serviceKey := url.ServiceKey()
 	exporter := NewRestExporter(serviceKey, invoker, rp.ExporterMap())
-	id := url.GetParam(constant.BEAN_NAME_KEY, "")
+	id := url.GetParam(constant.BeanNameKey, "")
 	restServiceConfig := rest_config.GetRestProviderServiceConfig(id)
 	if restServiceConfig == nil {
 		logger.Errorf("%s service doesn't has provider config", url.Path)
@@ -88,13 +88,13 @@ func (rp *RestProtocol) Refer(url *common.URL) protocol.Invoker {
 	// todo fix timeout config
 	// start
 	requestTimeout := time.Duration(3 * time.Second)
-	requestTimeoutStr := url.GetParam(constant.TIMEOUT_KEY, "3s")
+	requestTimeoutStr := url.GetParam(constant.TimeoutKey, "3s")
 	connectTimeout := requestTimeout // config.GetConsumerConfig().ConnectTimeout
 	// end
 	if t, err := time.ParseDuration(requestTimeoutStr); err == nil {
 		requestTimeout = t
 	}
-	id := url.GetParam(constant.BEAN_NAME_KEY, "")
+	id := url.GetParam(constant.BeanNameKey, "")
 	restServiceConfig := rest_config.GetRestConsumerServiceConfig(id)
 	if restServiceConfig == nil {
 		logger.Errorf("%s service doesn't has consumer config", url.Path)

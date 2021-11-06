@@ -71,7 +71,7 @@ func registerServiceInstance() {
 	if err != nil {
 		panic(err)
 	}
-	p := extension.GetProtocol(constant.REGISTRY_KEY)
+	p := extension.GetProtocol(constant.RegistryKey)
 	var rp registry.RegistryFactory
 	var ok bool
 	if rp, ok = p.(registry.RegistryFactory); !ok {
@@ -90,7 +90,7 @@ func registerServiceInstance() {
 		}
 	}
 	// publish metadata to remote
-	if GetApplicationConfig().MetadataType == constant.REMOTE_METADATA_STORAGE_TYPE {
+	if GetApplicationConfig().MetadataType == constant.RemoteMetadataStorageType {
 		if remoteMetadataService, err := extension.GetRemoteMetadataService(); err == nil {
 			remoteMetadataService.PublishMetadata(GetApplicationConfig().Name)
 		}
@@ -113,13 +113,13 @@ func createInstance(url *common.URL) (registry.ServiceInstance, error) {
 
 	// usually we will add more metadata
 	metadata := make(map[string]string, 8)
-	metadata[constant.METADATA_STORAGE_TYPE_PROPERTY_NAME] = appConfig.MetadataType
+	metadata[constant.MetadataStorageTypePropertyName] = appConfig.MetadataType
 
 	instance := &registry.DefaultServiceInstance{
 		ServiceName: appConfig.Name,
 		Host:        host,
 		Port:        int(port),
-		ID:          host + constant.KEY_SEPARATOR + url.Port,
+		ID:          host + constant.KeySeparator + url.Port,
 		Enable:      true,
 		Healthy:     true,
 		Metadata:    metadata,
