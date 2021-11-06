@@ -54,7 +54,7 @@ func (e *exportedServicesRevisionMetadataCustomizer) Customize(instance registry
 		return
 	}
 
-	urls, err := ms.GetExportedURLs(constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE)
+	urls, err := ms.GetExportedURLs(constant.AnyValue, constant.AnyValue, constant.AnyValue, constant.AnyValue)
 	if err != nil {
 		logger.Errorf("could not find the exported url", err)
 	}
@@ -63,7 +63,7 @@ func (e *exportedServicesRevisionMetadataCustomizer) Customize(instance registry
 	if len(revision) == 0 {
 		revision = defaultRevision
 	}
-	instance.GetMetadata()[constant.EXPORTED_SERVICES_REVISION_PROPERTY_NAME] = revision
+	instance.GetMetadata()[constant.ExportedServicesRevisionPropertyName] = revision
 }
 
 type subscribedServicesRevisionMetadataCustomizer struct{}
@@ -90,7 +90,7 @@ func (e *subscribedServicesRevisionMetadataCustomizer) Customize(instance regist
 	if len(revision) == 0 {
 		revision = defaultRevision
 	}
-	instance.GetMetadata()[constant.SUBSCRIBED_SERVICES_REVISION_PROPERTY_NAME] = revision
+	instance.GetMetadata()[constant.SubscribedServicesRevisionPropertyName] = revision
 }
 
 // resolveRevision is different from Dubbo because golang doesn't support overload
@@ -104,14 +104,14 @@ func resolveRevision(urls []*common.URL) string {
 	candidates := make([]string, 0, len(urls))
 
 	for _, u := range urls {
-		sk := u.GetParam(constant.INTERFACE_KEY, "")
+		sk := u.GetParam(constant.InterfaceKey, "")
 
 		if len(u.Methods) == 0 {
 			candidates = append(candidates, sk)
 		} else {
 			for _, m := range u.Methods {
 				// methods are part of candidates
-				candidates = append(candidates, sk+constant.KEY_SEPARATOR+m)
+				candidates = append(candidates, sk+constant.KeySeparator+m)
 			}
 		}
 

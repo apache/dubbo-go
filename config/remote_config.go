@@ -90,9 +90,9 @@ func (rc *RemoteConfig) ToURL() (*common.URL, error) {
 // getUrlMap get url map
 func (rc *RemoteConfig) getUrlMap() url.Values {
 	urlMap := url.Values{}
-	urlMap.Set(constant.CONFIG_USERNAME_KEY, rc.Username)
-	urlMap.Set(constant.CONFIG_PASSWORD_KEY, rc.Password)
-	urlMap.Set(constant.CONFIG_TIMEOUT_KEY, rc.Timeout)
+	urlMap.Set(constant.ConfigUsernameKey, rc.Username)
+	urlMap.Set(constant.ConfigPasswordKey, rc.Password)
+	urlMap.Set(constant.ConfigTimeoutKey, rc.Timeout)
 
 	for key, val := range rc.Params {
 		urlMap.Set(key, val)

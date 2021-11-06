@@ -58,21 +58,21 @@ type DubboInvoker struct {
 func NewDubboInvoker(url *common.URL) (*DubboInvoker, error) {
 	rt := config.GetConsumerConfig().RequestTimeout
 
-	timeout := url.GetParamDuration(constant.TIMEOUT_KEY, rt)
+	timeout := url.GetParamDuration(constant.TimeoutKey, rt)
 	// for triple pb serialization. The bean name from provider is the provider reference key,
 	// which can't locate the target consumer stub, so we use interface key..
-	interfaceKey := url.GetParam(constant.INTERFACE_KEY, "")
+	interfaceKey := url.GetParam(constant.InterfaceKey, "")
 	consumerService := config.GetConsumerServiceByInterfaceName(interfaceKey)
 
-	dubboSerializaerType := url.GetParam(constant.SERIALIZATION_KEY, constant.PROTOBUF_SERIALIZATION)
+	dubboSerializaerType := url.GetParam(constant.SerializationKey, constant.ProtobufSerialization)
 	triCodecType := tripleConstant.CodecType(dubboSerializaerType)
 	// new triple client
 	triOption := triConfig.NewTripleOption(
 		triConfig.WithClientTimeout(uint32(timeout.Seconds())),
 		triConfig.WithCodecType(triCodecType),
 		triConfig.WithLocation(url.Location),
-		triConfig.WithHeaderAppVersion(url.GetParam(constant.APP_VERSION_KEY, "")),
-		triConfig.WithHeaderGroup(url.GetParam(constant.GROUP_KEY, "")),
+		triConfig.WithHeaderAppVersion(url.GetParam(constant.AppVersionKey, "")),
+		triConfig.WithHeaderGroup(url.GetParam(constant.GroupKey, "")),
 		triConfig.WithLogger(logger.GetLogger()),
 	)
 	client, err := triple.NewTripleClient(consumerService, triOption)
@@ -135,7 +135,7 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 
 	// append interface id to ctx
 	ctx = context.WithValue(ctx, tripleConstant.CtxAttachmentKey, invocation.Attachments())
-	ctx = context.WithValue(ctx, tripleConstant.InterfaceKey, di.BaseInvoker.GetURL().GetParam(constant.INTERFACE_KEY, ""))
+	ctx = context.WithValue(ctx, tripleConstant.InterfaceKey, di.BaseInvoker.GetURL().GetParam(constant.InterfaceKey, ""))
 	in := make([]reflect.Value, 0, 16)
 	in = append(in, reflect.ValueOf(ctx))
 
@@ -155,16 +155,16 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 
 // get timeout including methodConfig
 func (di *DubboInvoker) getTimeout(invocation *invocation_impl.RPCInvocation) time.Duration {
-	timeout := di.GetURL().GetParam(strings.Join([]string{constant.METHOD_KEYS, invocation.MethodName(), constant.TIMEOUT_KEY}, "."), "")
+	timeout := di.GetURL().GetParam(strings.Join([]string{constant.MethodKeys, invocation.MethodName(), constant.TimeoutKey}, "."), "")
 	if len(timeout) != 0 {
 		if t, err := time.ParseDuration(timeout); err == nil {
 			// config timeout into attachment
-			invocation.SetAttachments(constant.TIMEOUT_KEY, strconv.Itoa(int(t.Milliseconds())))
+			invocation.SetAttachments(constant.TimeoutKey, strconv.Itoa(int(t.Milliseconds())))
 			return t
 		}
 	}
 	// set timeout into invocation at method level
-	invocation.SetAttachments(constant.TIMEOUT_KEY, strconv.Itoa(int(di.timeout.Milliseconds())))
+	invocation.SetAttachments(constant.TimeoutKey, strconv.Itoa(int(di.timeout.Milliseconds())))
 	return di.timeout
 }
 

@@ -82,36 +82,36 @@ func Test_List(t *testing.T) {
 func Test_MergeProviderUrl(t *testing.T) {
 	registryDirectory, mockRegistry := normalRegistryDir(true)
 	providerUrl, _ := common.NewURL("dubbo://0.0.0.0:20000/org.apache.dubbo-go.mockService",
-		common.WithParamsValue(constant.CLUSTER_KEY, "mock1"),
-		common.WithParamsValue(constant.GROUP_KEY, "group"),
-		common.WithParamsValue(constant.VERSION_KEY, "1.0.0"))
+		common.WithParamsValue(constant.ClusterKey, "mock1"),
+		common.WithParamsValue(constant.GroupKey, "group"),
+		common.WithParamsValue(constant.VersionKey, "1.0.0"))
 	mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: providerUrl})
 	time.Sleep(1e9)
 	assert.Len(t, registryDirectory.cacheInvokers, 1)
 	if len(registryDirectory.cacheInvokers) > 0 {
-		assert.Equal(t, "mock", registryDirectory.cacheInvokers[0].GetURL().GetParam(constant.CLUSTER_KEY, ""))
+		assert.Equal(t, "mock", registryDirectory.cacheInvokers[0].GetURL().GetParam(constant.ClusterKey, ""))
 	}
 }
 
 func Test_MergeOverrideUrl(t *testing.T) {
 	registryDirectory, mockRegistry := normalRegistryDir(true)
 	providerUrl, _ := common.NewURL("dubbo://0.0.0.0:20000/org.apache.dubbo-go.mockService",
-		common.WithParamsValue(constant.CLUSTER_KEY, "mock"),
-		common.WithParamsValue(constant.GROUP_KEY, "group"),
-		common.WithParamsValue(constant.VERSION_KEY, "1.0.0"))
+		common.WithParamsValue(constant.ClusterKey, "mock"),
+		common.WithParamsValue(constant.GroupKey, "group"),
+		common.WithParamsValue(constant.VersionKey, "1.0.0"))
 	mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: providerUrl})
 Loop1:
 	for {
 		if len(registryDirectory.cacheInvokers) > 0 {
 			overrideUrl, _ := common.NewURL("override://0.0.0.0:20000/org.apache.dubbo-go.mockService",
-				common.WithParamsValue(constant.CLUSTER_KEY, "mock1"),
-				common.WithParamsValue(constant.GROUP_KEY, "group"),
-				common.WithParamsValue(constant.VERSION_KEY, "1.0.0"))
+				common.WithParamsValue(constant.ClusterKey, "mock1"),
+				common.WithParamsValue(constant.GroupKey, "group"),
+				common.WithParamsValue(constant.VersionKey, "1.0.0"))
 			mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: overrideUrl})
 		Loop2:
 			for {
 				if len(registryDirectory.cacheInvokers) > 0 {
-					if "mock1" == registryDirectory.cacheInvokers[0].GetURL().GetParam(constant.CLUSTER_KEY, "") {
+					if "mock1" == registryDirectory.cacheInvokers[0].GetURL().GetParam(constant.ClusterKey, "") {
 						assert.Len(t, registryDirectory.cacheInvokers, 1)
 						assert.True(t, true)
 						break Loop2
@@ -128,13 +128,13 @@ Loop1:
 func Test_RefreshUrl(t *testing.T) {
 	registryDirectory, mockRegistry := normalRegistryDir()
 	providerUrl, _ := common.NewURL("dubbo://0.0.0.0:20011/org.apache.dubbo-go.mockService",
-		common.WithParamsValue(constant.CLUSTER_KEY, "mock1"),
-		common.WithParamsValue(constant.GROUP_KEY, "group"),
-		common.WithParamsValue(constant.VERSION_KEY, "1.0.0"))
+		common.WithParamsValue(constant.ClusterKey, "mock1"),
+		common.WithParamsValue(constant.GroupKey, "group"),
+		common.WithParamsValue(constant.VersionKey, "1.0.0"))
 	providerUrl2, _ := common.NewURL("dubbo://0.0.0.0:20012/org.apache.dubbo-go.mockService",
-		common.WithParamsValue(constant.CLUSTER_KEY, "mock1"),
-		common.WithParamsValue(constant.GROUP_KEY, "group"),
-		common.WithParamsValue(constant.VERSION_KEY, "1.0.0"))
+		common.WithParamsValue(constant.ClusterKey, "mock1"),
+		common.WithParamsValue(constant.GroupKey, "group"),
+		common.WithParamsValue(constant.VersionKey, "1.0.0"))
 	time.Sleep(1e9)
 	assert.Len(t, registryDirectory.cacheInvokers, 3)
 	mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: providerUrl})
@@ -161,9 +161,9 @@ func normalRegistryDir(noMockEvent ...bool) (*RegistryDirectory, *registry.MockR
 	url, _ := common.NewURL("mock://127.0.0.1:1111")
 	suburl, _ := common.NewURL(
 		"dubbo://127.0.0.1:20000/org.apache.dubbo-go.mockService",
-		common.WithParamsValue(constant.CLUSTER_KEY, "mock"),
-		common.WithParamsValue(constant.GROUP_KEY, "group"),
-		common.WithParamsValue(constant.VERSION_KEY, "1.0.0"),
+		common.WithParamsValue(constant.ClusterKey, "mock"),
+		common.WithParamsValue(constant.GroupKey, "group"),
+		common.WithParamsValue(constant.VersionKey, "1.0.0"),
 	)
 	url.SubURL = suburl
 	mockRegistry, _ := registry.NewMockRegistry(&common.URL{})

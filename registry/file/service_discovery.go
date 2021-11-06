@@ -46,7 +46,7 @@ import (
 
 // init will put the service discovery into extension
 func init() {
-	extension.SetServiceDiscovery(constant.FILE_KEY, newFileSystemServiceDiscovery)
+	extension.SetServiceDiscovery(constant.FileKey, newFileSystemServiceDiscovery)
 }
 
 // fileServiceDiscovery is the implementation of service discovery based on file.
@@ -57,7 +57,7 @@ type fileSystemServiceDiscovery struct {
 }
 
 func newFileSystemServiceDiscovery() (registry.ServiceDiscovery, error) {
-	if config.GetMetadataReportConfg().Protocol != constant.FILE_KEY {
+	if config.GetMetadataReportConfg().Protocol != constant.FileKey {
 		return nil, perrors.New("could not init the instance because the config is invalid")
 	}
 
@@ -66,8 +66,8 @@ func newFileSystemServiceDiscovery() (registry.ServiceDiscovery, error) {
 		return nil, perrors.WithStack(err)
 	}
 
-	fdcf := extension.GetConfigCenterFactory(constant.FILE_KEY)
-	p := path.Join(rp, ".dubbo", constant.REGISTRY_KEY)
+	fdcf := extension.GetConfigCenterFactory(constant.FileKey)
+	p := path.Join(rp, ".dubbo", constant.RegistryKey)
 	url, _ := common.NewURL("")
 	url.AddParamAvoidNil(file.ConfigCenterDirParamName, p)
 	c, err := fdcf.GetDynamicConfiguration(url)

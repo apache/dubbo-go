@@ -40,7 +40,7 @@ func TestFilterInvokeIgnored(t *testing.T) {
 
 	invokeUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
-		common.WithParamsValue(constant.INTERFACE_KEY, methodName))
+		common.WithParamsValue(constant.InterfaceKey, methodName))
 
 	limitFilter := newFilter()
 
@@ -55,8 +55,8 @@ func TestFilterInvokeConfigureError(t *testing.T) {
 
 	invokeUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
-		common.WithParamsValue(constant.INTERFACE_KEY, methodName),
-		common.WithParamsValue(constant.EXECUTE_LIMIT_KEY, "13a"),
+		common.WithParamsValue(constant.InterfaceKey, methodName),
+		common.WithParamsValue(constant.ExecuteLimitKey, "13a"),
 	)
 
 	limitFilter := newFilter()
@@ -72,8 +72,8 @@ func TestFilterInvoke(t *testing.T) {
 
 	invokeUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
-		common.WithParamsValue(constant.INTERFACE_KEY, methodName),
-		common.WithParamsValue(constant.EXECUTE_LIMIT_KEY, "20"),
+		common.WithParamsValue(constant.InterfaceKey, methodName),
+		common.WithParamsValue(constant.ExecuteLimitKey, "20"),
 	)
 
 	limitFilter := newFilter()

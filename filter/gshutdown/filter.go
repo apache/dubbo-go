@@ -87,7 +87,7 @@ func (f *Filter) rejectNewRequest() bool {
 }
 
 func (f *Filter) getRejectHandler() filter.RejectedExecutionHandler {
-	handler := constant.DEFAULT_KEY
+	handler := constant.DefaultKey
 	if f.shutdownConfig != nil && len(f.shutdownConfig.RejectRequestHandler) > 0 {
 		handler = f.shutdownConfig.RejectRequestHandler
 	}

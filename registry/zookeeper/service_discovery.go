@@ -45,7 +45,7 @@ import (
 
 // init will put the service discovery into extension
 func init() {
-	extension.SetServiceDiscovery(constant.ZOOKEEPER_KEY, newZookeeperServiceDiscovery)
+	extension.SetServiceDiscovery(constant.ZookeeperKey, newZookeeperServiceDiscovery)
 }
 
 type zookeeperServiceDiscovery struct {
@@ -70,7 +70,7 @@ func newZookeeperServiceDiscovery() (registry.ServiceDiscovery, error) {
 		common.WithParams(make(url.Values)),
 		common.WithPassword(metadataReportConfig.Password),
 		common.WithUsername(metadataReportConfig.Username),
-		common.WithParamsValue(constant.REGISTRY_TIMEOUT_KEY, metadataReportConfig.Timeout))
+		common.WithParamsValue(constant.RegistryTimeoutKey, metadataReportConfig.Timeout))
 	url.Location = metadataReportConfig.Address
 	zksd := &zookeeperServiceDiscovery{
 		url:                 url,
@@ -274,9 +274,9 @@ func (zksd *zookeeperServiceDiscovery) AddListener(listener registry.ServiceInst
 // to resolve event to do DispatchEventByServiceName
 func (zksd *zookeeperServiceDiscovery) DataChange(eventType remoting.Event) bool {
 	path := strings.TrimPrefix(eventType.Path, zksd.rootPath)
-	path = strings.TrimPrefix(path, constant.PATH_SEPARATOR)
+	path = strings.TrimPrefix(path, constant.PathSeparator)
 	// get service name in zk path
-	serviceName := strings.Split(path, constant.PATH_SEPARATOR)[0]
+	serviceName := strings.Split(path, constant.PathSeparator)[0]
 
 	var err error
 	instances := zksd.GetInstances(serviceName)

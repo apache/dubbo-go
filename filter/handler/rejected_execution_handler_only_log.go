@@ -38,7 +38,7 @@ const (
 func init() {
 	// this implementation is the the default implementation of RejectedExecutionHandler
 	extension.SetRejectedExecutionHandler(HandlerName, GetOnlyLogRejectedExecutionHandler)
-	extension.SetRejectedExecutionHandler(constant.DEFAULT_KEY, GetOnlyLogRejectedExecutionHandler)
+	extension.SetRejectedExecutionHandler(constant.DefaultKey, GetOnlyLogRejectedExecutionHandler)
 }
 
 var (

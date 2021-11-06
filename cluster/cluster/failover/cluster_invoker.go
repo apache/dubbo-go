@@ -111,21 +111,21 @@ func (invoker *clusterInvoker) Invoke(ctx context.Context, invocation protocol.I
 
 func getRetries(invokers []protocol.Invoker, methodName string) int {
 	if len(invokers) <= 0 {
-		return constant.DEFAULT_RETRIES_INT
+		return constant.DefaultRetriesInt
 	}
 
 	url := invokers[0].GetURL()
 	// get reties
-	retriesConfig := url.GetParam(constant.RETRIES_KEY, constant.DEFAULT_RETRIES)
+	retriesConfig := url.GetParam(constant.RetriesKey, constant.DefaultRetries)
 	// Get the service method loadbalance config if have
-	if v := url.GetMethodParam(methodName, constant.RETRIES_KEY, ""); len(v) != 0 {
+	if v := url.GetMethodParam(methodName, constant.RetriesKey, ""); len(v) != 0 {
 		retriesConfig = v
 	}
 
 	retries, err := strconv.Atoi(retriesConfig)
 	if err != nil || retries < 0 {
 		logger.Error("Your retries config is invalid,pls do a check. And will use the default retries configuration instead.")
-		retries = constant.DEFAULT_RETRIES_INT
+		retries = constant.DefaultRetriesInt
 	}
 
 	if retries > len(invokers) {

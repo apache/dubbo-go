@@ -79,7 +79,7 @@ func (gp *GrpcProtocol) openServer(url *common.URL) {
 		panic("[GrpcProtocol]" + url.Key() + "is not existing")
 	}
 
-	grpcMessageSize, _ := strconv.Atoi(url.GetParam(constant.MESSAGE_SIZE_KEY, "4"))
+	grpcMessageSize, _ := strconv.Atoi(url.GetParam(constant.MessageSizeKey, "4"))
 	srv := NewServer()
 	srv.SetBufferSize(grpcMessageSize)
 	gp.serverMap[url.Location] = srv

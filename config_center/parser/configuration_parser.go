@@ -116,11 +116,11 @@ func (parser *DefaultConfigurationParser) ParseToUrls(content string) ([]*common
 func serviceItemToUrls(item ConfigItem, config ConfiguratorConfig) ([]*common.URL, error) {
 	addresses := item.Addresses
 	if len(addresses) == 0 {
-		addresses = append(addresses, constant.ANYHOST_VALUE)
+		addresses = append(addresses, constant.AnyhostValue)
 	}
 	var urls []*common.URL
 	for _, v := range addresses {
-		urlStr := constant.OVERRIDE_PROTOCOL + "://" + v + "/"
+		urlStr := constant.OverrideProtocol + "://" + v + "/"
 		serviceStr, err := getServiceString(config.Key)
 		if err != nil {
 			return nil, perrors.WithStack(err)
@@ -133,7 +133,7 @@ func serviceItemToUrls(item ConfigItem, config ConfiguratorConfig) ([]*common.UR
 		urlStr = urlStr + paramStr
 		urlStr = urlStr + getEnabledString(item, config)
 		urlStr = urlStr + "&category="
-		urlStr = urlStr + constant.DYNAMIC_CONFIGURATORS_CATEGORY
+		urlStr = urlStr + constant.DynamicConfiguratorsCategory
 		urlStr = urlStr + "&configVersion="
 		urlStr = urlStr + config.ConfigVersion
 		apps := item.Applications
@@ -163,14 +163,14 @@ func serviceItemToUrls(item ConfigItem, config ConfiguratorConfig) ([]*common.UR
 func appItemToUrls(item ConfigItem, config ConfiguratorConfig) ([]*common.URL, error) {
 	addresses := item.Addresses
 	if len(addresses) == 0 {
-		addresses = append(addresses, constant.ANYHOST_VALUE)
+		addresses = append(addresses, constant.AnyhostValue)
 	}
 	var urls []*common.URL
 	for _, v := range addresses {
-		urlStr := constant.OVERRIDE_PROTOCOL + "://" + v + "/"
+		urlStr := constant.OverrideProtocol + "://" + v + "/"
 		services := item.Services
 		if len(services) == 0 {
-			services = append(services, constant.ANY_VALUE)
+			services = append(services, constant.AnyValue)
 		}
 		for _, vs := range services {
 			serviceStr, err := getServiceString(vs)
@@ -187,7 +187,7 @@ func appItemToUrls(item ConfigItem, config ConfiguratorConfig) ([]*common.URL, e
 			urlStr = urlStr + config.Key
 			urlStr = urlStr + getEnabledString(item, config)
 			urlStr = urlStr + "&category="
-			urlStr = urlStr + constant.APP_DYNAMIC_CONFIGURATORS_CATEGORY
+			urlStr = urlStr + constant.AppDynamicConfiguratorsCategory
 			urlStr = urlStr + "&configVersion="
 			urlStr = urlStr + config.ConfigVersion
 			url, err := common.NewURL(urlStr)
@@ -228,7 +228,7 @@ func getServiceString(service string) (string, error) {
 func getParamString(item ConfigItem) (string, error) {
 	var retStr string
 	retStr = retStr + "category="
-	retStr = retStr + constant.DYNAMIC_CONFIGURATORS_CATEGORY
+	retStr = retStr + constant.DynamicConfiguratorsCategory
 	if len(item.Side) > 0 {
 		retStr = retStr + "&side="
 		retStr = retStr + item.Side
@@ -242,7 +242,7 @@ func getParamString(item ConfigItem) (string, error) {
 		retStr += "&" + k + "=" + v
 	}
 
-	retStr += "&" + constant.OVERRIDE_PROVIDERS_KEY + "=" + strings.Join(item.ProviderAddresses, ",")
+	retStr += "&" + constant.OverrideProvidersKey + "=" + strings.Join(item.ProviderAddresses, ",")
 
 	return retStr, nil
 }

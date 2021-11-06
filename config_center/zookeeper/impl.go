@@ -65,7 +65,7 @@ type zookeeperDynamicConfiguration struct {
 func newZookeeperDynamicConfiguration(url *common.URL) (*zookeeperDynamicConfiguration, error) {
 	c := &zookeeperDynamicConfiguration{
 		url:      url,
-		rootPath: "/" + url.GetParam(constant.CONFIG_NAMESPACE_KEY, config_center.DefaultGroup) + "/config",
+		rootPath: "/" + url.GetParam(constant.ConfigNamespaceKey, config_center.DefaultGroup) + "/config",
 	}
 	if v, ok := config.GetRootConfig().ConfigCenter.Params["base64"]; ok {
 		base64Enabled, err := strconv.ParseBool(v)

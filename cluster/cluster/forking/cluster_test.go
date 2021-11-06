@@ -45,7 +45,7 @@ import (
 )
 
 var forkingUrl, _ = common.NewURL(
-	fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LOCAL_HOST_VALUE, constant.DEFAULT_PORT))
+	fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LocalHostValue, constant.DefaultPort))
 
 func registerForking(mockInvokers ...*mock.MockInvoker) protocol.Invoker {
 	extension.SetLoadbalance(constant.LoadBalanceKeyRoundRobin, roundrobin.NewLoadBalance)
@@ -71,8 +71,8 @@ func TestForkingInvokeSuccess(t *testing.T) {
 	invokers := make([]*mock.MockInvoker, 0)
 
 	mockResult := &protocol.RPCResult{Rest: clusterpkg.Rest{Tried: 0, Success: true}}
-	forkingUrl.AddParam(constant.FORKS_KEY, strconv.Itoa(3))
-	// forkingUrl.AddParam(constant.TIMEOUT_KEY, strconv.Itoa(constant.DEFAULT_TIMEOUT))
+	forkingUrl.AddParam(constant.ForksKey, strconv.Itoa(3))
+	// forkingUrl.AddParam(constant.TimeoutKey, strconv.Itoa(constant.DefaultTimeout))
 
 	var wg sync.WaitGroup
 	wg.Add(2)
@@ -101,7 +101,7 @@ func TestForkingInvokeTimeout(t *testing.T) {
 	invokers := make([]*mock.MockInvoker, 0)
 
 	mockResult := &protocol.RPCResult{Rest: clusterpkg.Rest{Tried: 0, Success: true}}
-	forkingUrl.AddParam(constant.FORKS_KEY, strconv.Itoa(3))
+	forkingUrl.AddParam(constant.ForksKey, strconv.Itoa(3))
 
 	var wg sync.WaitGroup
 	wg.Add(2)
@@ -132,7 +132,7 @@ func TestForkingInvokeHalfTimeout(t *testing.T) {
 	invokers := make([]*mock.MockInvoker, 0)
 
 	mockResult := &protocol.RPCResult{Rest: clusterpkg.Rest{Tried: 0, Success: true}}
-	forkingUrl.AddParam(constant.FORKS_KEY, strconv.Itoa(3))
+	forkingUrl.AddParam(constant.ForksKey, strconv.Itoa(3))
 
 	var wg sync.WaitGroup
 	wg.Add(2)
