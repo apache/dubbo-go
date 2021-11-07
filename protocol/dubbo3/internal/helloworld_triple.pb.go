@@ -32,9 +32,9 @@ import (
 	constant "github.com/dubbogo/triple/pkg/common/constant"
 	triple "github.com/dubbogo/triple/pkg/triple"
 
-	grpc "github.com/dubbogo/triple/pkg/grpc"
-	codes "github.com/dubbogo/triple/pkg/grpc/codes"
-	status "github.com/dubbogo/triple/pkg/grpc/status"
+	grpc "github.com/dubbogo/grpc-go"
+	codes "github.com/dubbogo/grpc-go/codes"
+	status "github.com/dubbogo/grpc-go/status"
 )
 
 import (

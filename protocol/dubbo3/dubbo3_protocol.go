@@ -30,7 +30,7 @@ import (
 	triConfig "github.com/dubbogo/triple/pkg/config"
 	"github.com/dubbogo/triple/pkg/triple"
 
-	"github.com/dubbogo/triple/pkg/grpc"
+	"github.com/dubbogo/grpc-go"
 )
 
 import (
