@@ -35,10 +35,10 @@ import (
 func TestGetMetricReporter(t *testing.T) {
 	reporter := &mockReporter{}
 	name := "mock"
-	SetMetricReporter(name, func(config *metrics.ReporterConfig) metrics.Reporter {
+	SetMetricReporter(name, func() metrics.Reporter {
 		return reporter
 	})
-	res := GetMetricReporter(name, metrics.NewReporterConfig())
+	res := GetMetricReporter(name)
 	assert.Equal(t, reporter, res)
 }
 

@@ -41,7 +41,7 @@ import (
 func TestMetricsFilterInvoke(t *testing.T) {
 	// prepare the mock reporter
 	mk := &mockReporter{}
-	extension.SetMetricReporter("mock", func(config *metrics.ReporterConfig) metrics.Reporter {
+	extension.SetMetricReporter("mock", func() metrics.Reporter {
 		return mk
 	})
 

@@ -19,12 +19,12 @@ package config
 
 import (
 	"github.com/creasty/defaults"
-
 	"github.com/pkg/errors"
 )
 
 // MetricConfig This is the config struct for all metrics implementation
 type MetricConfig struct {
+	Reporters   []string           `default:"[\"prometheus\"]" yaml:"reporters" json:"reporters,omitempty"`
 	Mode        string             `default:"pull" yaml:"mode" json:"mode,omitempty" property:"mode"` // push or pull,
 	Namespace   string             `default:"dubbo" yaml:"namespace" json:"namespace,omitempty" property:"namespace"`
 	Enable      bool               `default:"false" yaml:"enable" json:"enable,omitempty" property:"enable"`
@@ -51,21 +51,6 @@ func (c *PushGateWayConfig) UnmarshalYAML(unmarshal func(interface{}) error) err
 	type plain PushGateWayConfig
 	return unmarshal((*plain)(c))
 }
-
-//func (m *MetricConfig) ToReporterConfig() *metrics.ReporterConfig {
-//	defaultMetricsReportConfig := metrics.NewReporterConfig()
-//	if m.Mode == metrics.ReportModePush {
-//		defaultMetricsReportConfig.Mode = metrics.ReportModePush
-//	}
-//	if m.Namespace != "" {
-//		defaultMetricsReportConfig.Namespace = m.Namespace
-//	}
-//
-//	defaultMetricsReportConfig.Enable = m.Enable
-//	defaultMetricsReportConfig.Port = m.Port
-//	defaultMetricsReportConfig.Path = m.Path
-//	return defaultMetricsReportConfig
-//}
 
 // nolint
 func (mc *MetricConfig) Init() error {

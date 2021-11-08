@@ -25,6 +25,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
@@ -65,8 +66,12 @@ func (p *Filter) OnResponse(ctx context.Context, res protocol.Result, invoker pr
 // make sure that the configuration had been loaded before invoking this method.
 func newFilter() filter.Filter {
 	if metricFilterInstance == nil {
-		reporters := make([]metrics.Reporter, 0, 1)
-		reporters = append(reporters, extension.GetMetricReporter("prometheus", metrics.NewReporterConfig()))
+		reporterNames := config.GetMetricConfig().Reporters
+		reporters := make([]metrics.Reporter, 0, len(reporterNames))
+		for _, name := range reporterNames {
+			reporters = append(reporters, extension.GetMetricReporter(name))
+		}
+
 		metricFilterInstance = &Filter{
 			reporters: reporters,
 		}
