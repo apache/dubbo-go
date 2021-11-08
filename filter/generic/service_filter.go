@@ -75,7 +75,7 @@ func (f *ServiceFilter) Invoke(ctx context.Context, invoker protocol.Invoker, in
 	argsType := method.ArgsType()
 
 	// get generic info from attachments of invocation, the default value is "true"
-	generic := invocation.AttachmentsByKey(constant.GENERIC_KEY, constant.GenericSerializationDefault)
+	generic := invocation.AttachmentsByKey(constant.GenericKey, constant.GenericSerializationDefault)
 	// get generalizer according to value in the `generic`
 	g := getGeneralizer(generic)
 
@@ -114,7 +114,7 @@ func (f *ServiceFilter) Invoke(ctx context.Context, invoker protocol.Invoker, in
 func (f *ServiceFilter) OnResponse(_ context.Context, result protocol.Result, _ protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	if isGenericInvocation(invocation) && result.Result() != nil {
 		// get generic info from attachments of invocation, the default value is "true"
-		generic := invocation.AttachmentsByKey(constant.GENERIC_KEY, constant.GenericSerializationDefault)
+		generic := invocation.AttachmentsByKey(constant.GenericKey, constant.GenericSerializationDefault)
 		// get generalizer according to value in the `generic`
 		g := getGeneralizer(generic)
 

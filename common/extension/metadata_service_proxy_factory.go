@@ -39,7 +39,7 @@ func SetMetadataServiceProxyFactory(name string, creator MetadataServiceProxyFac
 // it will panic if the factory with name not found
 func GetMetadataServiceProxyFactory(name string) service.MetadataServiceProxyFactory {
 	if name == "" {
-		name = constant.DEFAULT_KEY
+		name = constant.DefaultKey
 	}
 	if f, ok := metadataServiceProxyFactoryMap[name]; ok {
 		return f()

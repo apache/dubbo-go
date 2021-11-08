@@ -96,25 +96,25 @@ func (s *MetadataService) PublishMetadata(service string) {
 
 // GetMetadata get the medata info of service from report
 func (s *MetadataService) GetMetadata(instance registry.ServiceInstance) (*common.MetadataInfo, error) {
-	revision := instance.GetMetadata()[constant.EXPORTED_SERVICES_REVISION_PROPERTY_NAME]
+	revision := instance.GetMetadata()[constant.ExportedServicesRevisionPropertyName]
 	id := identifier.NewSubscriberMetadataIdentifier(instance.GetServiceName(), revision)
 	return s.delegateReport.GetAppMetadata(id)
 }
 
 // PublishServiceDefinition will call remote metadata's StoreProviderMetadata to store url info and service definition
 func (s *MetadataService) PublishServiceDefinition(url *common.URL) error {
-	interfaceName := url.GetParam(constant.INTERFACE_KEY, "")
-	isGeneric := url.GetParamBool(constant.GENERIC_KEY, false)
-	if common.RoleType(common.PROVIDER).Role() == url.GetParam(constant.SIDE_KEY, "") {
+	interfaceName := url.GetParam(constant.InterfaceKey, "")
+	isGeneric := url.GetParamBool(constant.GenericKey, false)
+	if common.RoleType(common.PROVIDER).Role() == url.GetParam(constant.SideKey, "") {
 		if len(interfaceName) > 0 && !isGeneric {
 			sv := common.ServiceMap.GetServiceByServiceKey(url.Protocol, url.ServiceKey())
 			sd := definition.BuildServiceDefinition(*sv, url)
 			id := &identifier.MetadataIdentifier{
 				BaseMetadataIdentifier: identifier.BaseMetadataIdentifier{
 					ServiceInterface: interfaceName,
-					Version:          url.GetParam(constant.VERSION_KEY, ""),
-					Group:            url.GetParam(constant.GROUP_KEY, constant.DUBBO),
-					Side:             url.GetParam(constant.SIDE_KEY, constant.PROVIDER_PROTOCOL),
+					Version:          url.GetParam(constant.VersionKey, ""),
+					Group:            url.GetParam(constant.GroupKey, constant.Dubbo),
+					Side:             url.GetParam(constant.SideKey, constant.ProviderProtocol),
 				},
 			}
 			s.delegateReport.StoreProviderMetadata(id, sd)
@@ -130,9 +130,9 @@ func (s *MetadataService) PublishServiceDefinition(url *common.URL) error {
 		id := &identifier.MetadataIdentifier{
 			BaseMetadataIdentifier: identifier.BaseMetadataIdentifier{
 				ServiceInterface: interfaceName,
-				Version:          url.GetParam(constant.VERSION_KEY, ""),
-				Group:            url.GetParam(constant.GROUP_KEY, constant.DUBBO),
-				Side:             url.GetParam(constant.SIDE_KEY, "consumer"),
+				Version:          url.GetParam(constant.VersionKey, ""),
+				Group:            url.GetParam(constant.GroupKey, constant.Dubbo),
+				Side:             url.GetParam(constant.SideKey, "consumer"),
 			},
 		}
 		s.delegateReport.StoreConsumerMetadata(id, params)

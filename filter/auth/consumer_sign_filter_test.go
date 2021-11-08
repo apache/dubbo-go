@@ -38,8 +38,8 @@ import (
 
 func TestConsumerSignFilter_Invoke(t *testing.T) {
 	url, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=gg&version=2.6.0")
-	url.SetParam(constant.SECRET_ACCESS_KEY_KEY, "sk")
-	url.SetParam(constant.ACCESS_KEY_ID_KEY, "ak")
+	url.SetParam(constant.SecretAccessKeyKey, "sk")
+	url.SetParam(constant.AccessKeyIDKey, "ak")
 	inv := invocation.NewRPCInvocation("test", []interface{}{"OK"}, nil)
 	filter := &ConsumerSignFilter{}
 	ctrl := gomock.NewController(t)
@@ -50,6 +50,6 @@ func TestConsumerSignFilter_Invoke(t *testing.T) {
 	invoker.EXPECT().GetUrl().Return(url).Times(2)
 	assert.Equal(t, result, filter.Invoke(context.Background(), invoker, inv))
 
-	url.SetParam(constant.SERVICE_AUTH_KEY, "true")
+	url.SetParam(constant.ServiceAuthKey, "true")
 	assert.Equal(t, result, filter.Invoke(context.Background(), invoker, inv))
 }

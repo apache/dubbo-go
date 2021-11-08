@@ -48,7 +48,7 @@ func TestZoneWareInvokerWithPreferredSuccess(t *testing.T) {
 	// defer ctrl.Finish()
 
 	mockResult := &protocol.RPCResult{
-		Attrs: map[string]interface{}{constant.PREFERRED_KEY: "true"},
+		Attrs: map[string]interface{}{constant.PreferredKey: "true"},
 		Rest:  clusterpkg.Rest{Tried: 0, Success: true},
 	}
 
@@ -59,7 +59,7 @@ func TestZoneWareInvokerWithPreferredSuccess(t *testing.T) {
 		invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
 		invoker.EXPECT().GetUrl().Return(url).AnyTimes()
 		if 0 == i {
-			url.SetParam(constant.REGISTRY_KEY+"."+constant.PREFERRED_KEY, "true")
+			url.SetParam(constant.RegistryKey+"."+constant.PreferredKey, "true")
 			invoker.EXPECT().Invoke(gomock.Any()).DoAndReturn(
 				func(invocation protocol.Invocation) protocol.Result {
 					return mockResult
@@ -100,22 +100,22 @@ func TestZoneWareInvokerWithWeightSuccess(t *testing.T) {
 		invoker := mock.NewMockInvoker(ctrl)
 		invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
 		invoker.EXPECT().GetUrl().Return(url).AnyTimes()
-		url.SetParam(constant.REGISTRY_KEY+"."+constant.REGISTRY_LABEL_KEY, "true")
+		url.SetParam(constant.RegistryKey+"."+constant.RegistryLabelKey, "true")
 		if 1 == i {
-			url.SetParam(constant.REGISTRY_KEY+"."+constant.WEIGHT_KEY, w1)
+			url.SetParam(constant.RegistryKey+"."+constant.WeightKey, w1)
 			invoker.EXPECT().Invoke(gomock.Any()).DoAndReturn(
 				func(invocation protocol.Invocation) protocol.Result {
 					return &protocol.RPCResult{
-						Attrs: map[string]interface{}{constant.WEIGHT_KEY: w1},
+						Attrs: map[string]interface{}{constant.WeightKey: w1},
 						Rest:  clusterpkg.Rest{Tried: 0, Success: true},
 					}
 				}).MaxTimes(100)
 		} else {
-			url.SetParam(constant.REGISTRY_KEY+"."+constant.WEIGHT_KEY, w2)
+			url.SetParam(constant.RegistryKey+"."+constant.WeightKey, w2)
 			invoker.EXPECT().Invoke(gomock.Any()).DoAndReturn(
 				func(invocation protocol.Invocation) protocol.Result {
 					return &protocol.RPCResult{
-						Attrs: map[string]interface{}{constant.WEIGHT_KEY: w2},
+						Attrs: map[string]interface{}{constant.WeightKey: w2},
 						Rest:  clusterpkg.Rest{Tried: 0, Success: true},
 					}
 				}).MaxTimes(100)
@@ -131,10 +131,10 @@ func TestZoneWareInvokerWithWeightSuccess(t *testing.T) {
 	loop := 50
 	for i := 0; i < loop; i++ {
 		result := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
-		if w2 == result.Attachment(constant.WEIGHT_KEY, "0") {
+		if w2 == result.Attachment(constant.WeightKey, "0") {
 			w2Count++
 		}
-		if w1 == result.Attachment(constant.WEIGHT_KEY, "0") {
+		if w1 == result.Attachment(constant.WeightKey, "0") {
 			w1Count++
 		}
 		assert.NoError(t, result.Error())
@@ -155,7 +155,7 @@ func TestZoneWareInvokerWithZoneSuccess(t *testing.T) {
 	for i := 0; i < 2; i++ {
 		zoneValue := zoneArray[i]
 		url, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i))
-		url.SetParam(constant.REGISTRY_KEY+"."+constant.ZONE_KEY, zoneValue)
+		url.SetParam(constant.RegistryKey+"."+constant.ZoneKey, zoneValue)
 
 		invoker := mock.NewMockInvoker(ctrl)
 		invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
@@ -163,7 +163,7 @@ func TestZoneWareInvokerWithZoneSuccess(t *testing.T) {
 		invoker.EXPECT().Invoke(gomock.Any()).DoAndReturn(
 			func(invocation protocol.Invocation) protocol.Result {
 				return &protocol.RPCResult{
-					Attrs: map[string]interface{}{constant.ZONE_KEY: zoneValue},
+					Attrs: map[string]interface{}{constant.ZoneKey: zoneValue},
 					Rest:  clusterpkg.Rest{Tried: 0, Success: true},
 				}
 			})
@@ -177,11 +177,11 @@ func TestZoneWareInvokerWithZoneSuccess(t *testing.T) {
 	inv := &invocation.RPCInvocation{}
 	// zone hangzhou
 	hz := zoneArray[0]
-	inv.SetAttachments(constant.REGISTRY_KEY+"."+constant.ZONE_KEY, hz)
+	inv.SetAttachments(constant.RegistryKey+"."+constant.ZoneKey, hz)
 
 	result := clusterInvoker.Invoke(context.Background(), inv)
 
-	assert.Equal(t, hz, result.Attachment(constant.ZONE_KEY, ""))
+	assert.Equal(t, hz, result.Attachment(constant.ZoneKey, ""))
 }
 
 func TestZoneWareInvokerWithZoneForceFail(t *testing.T) {
@@ -206,9 +206,9 @@ func TestZoneWareInvokerWithZoneForceFail(t *testing.T) {
 
 	inv := &invocation.RPCInvocation{}
 	// zone hangzhou
-	inv.SetAttachments(constant.REGISTRY_KEY+"."+constant.ZONE_KEY, "hangzhou")
+	inv.SetAttachments(constant.RegistryKey+"."+constant.ZoneKey, "hangzhou")
 	// zone force
-	inv.SetAttachments(constant.REGISTRY_KEY+"."+constant.ZONE_FORCE_KEY, "true")
+	inv.SetAttachments(constant.RegistryKey+"."+constant.ZoneForceKey, "true")
 
 	result := clusterInvoker.Invoke(context.Background(), inv)
 

@@ -36,9 +36,9 @@ func NewServiceMetadataIdentifier(url *common.URL) *ServiceMetadataIdentifier {
 	return &ServiceMetadataIdentifier{
 		BaseMetadataIdentifier: BaseMetadataIdentifier{
 			ServiceInterface: url.Service(),
-			Version:          url.GetParam(constant.VERSION_KEY, ""),
-			Group:            url.GetParam(constant.GROUP_KEY, ""),
-			Side:             url.GetParam(constant.SIDE_KEY, ""),
+			Version:          url.GetParam(constant.VersionKey, ""),
+			Group:            url.GetParam(constant.GroupKey, ""),
+			Side:             url.GetParam(constant.SideKey, ""),
 		},
 		Protocol: url.Protocol,
 	}
@@ -46,10 +46,10 @@ func NewServiceMetadataIdentifier(url *common.URL) *ServiceMetadataIdentifier {
 
 // GetIdentifierKey returns string that format is service:Version:Group:Side:Protocol:"revision"+Revision
 func (mdi *ServiceMetadataIdentifier) GetIdentifierKey() string {
-	return mdi.BaseMetadataIdentifier.getIdentifierKey(mdi.Protocol, constant.KEY_REVISON_PREFIX+mdi.Revision)
+	return mdi.BaseMetadataIdentifier.getIdentifierKey(mdi.Protocol, constant.KeyRevisionPrefix+mdi.Revision)
 }
 
 // GetFilePathKey returns string that format is metadata/path/Version/Group/Side/Protocol/"revision"+Revision
 func (mdi *ServiceMetadataIdentifier) GetFilePathKey() string {
-	return mdi.BaseMetadataIdentifier.getFilePathKey(mdi.Protocol, constant.KEY_REVISON_PREFIX+mdi.Revision)
+	return mdi.BaseMetadataIdentifier.getFilePathKey(mdi.Protocol, constant.KeyRevisionPrefix+mdi.Revision)
 }

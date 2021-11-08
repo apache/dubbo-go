@@ -86,7 +86,7 @@ func SetRootConfig(r RootConfig) {
 
 // Prefix dubbo
 func (RootConfig) Prefix() string {
-	return constant.DUBBO
+	return constant.Dubbo
 }
 
 func GetRootConfig() *RootConfig {
@@ -131,6 +131,8 @@ func registerPOJO() {
 	hessian.RegisterPOJO(&common.URL{})
 }
 
+// Init is to start dubbo-go framework, load local configuration, or read configuration from config-center if necessary.
+// It's deprecated for user to call rootConfig.Init() manually, try config.Load(config.WithRootConfig(rootConfig)) instead.
 func (rc *RootConfig) Init() error {
 	registerPOJO()
 	if err := rc.Logger.Init(); err != nil { // init default logger
@@ -153,7 +155,7 @@ func (rc *RootConfig) Init() error {
 	if len(protocols) <= 0 {
 		protocol := &ProtocolConfig{}
 		protocols = make(map[string]*ProtocolConfig, 1)
-		protocols[constant.DUBBO] = protocol
+		protocols[constant.Dubbo] = protocol
 		rc.Protocols = protocols
 	}
 	for _, protocol := range protocols {
@@ -308,7 +310,7 @@ func (rb *RootConfigBuilder) Build() *RootConfig {
 }
 
 func exportMetadataService() {
-	ms, err := extension.GetLocalMetadataService(constant.DEFAULT_Key)
+	ms, err := extension.GetLocalMetadataService(constant.DefaultKey)
 	if err != nil {
 		logger.Warnf("could not init metadata service", err)
 		return
@@ -325,7 +327,7 @@ func exportMetadataService() {
 	// So using sync.Once will result in dead lock
 	exporting.Store(true)
 
-	expt := extension.GetMetadataServiceExporter(constant.DEFAULT_Key, ms)
+	expt := extension.GetMetadataServiceExporter(constant.DefaultKey, ms)
 	if expt == nil {
 		logger.Warnf("get metadata service exporter failed, pls check if you import _ \"dubbo.apache.org/dubbo-go/v3/metadata/service/exporter/configurable\"")
 		return

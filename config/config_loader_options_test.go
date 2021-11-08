@@ -38,3 +38,9 @@ func TestFileGenre(t *testing.T) {
 	conf := NewLoaderConf(WithPath("../config/testdata/config/properties/application.properties"))
 	assert.Equal(t, conf.genre, "properties")
 }
+
+func TestRootConfig(t *testing.T) {
+	rc := NewRootConfigBuilder().SetApplication(NewApplicationConfigBuilder().SetName("test-app").Build()).Build()
+	conf := NewLoaderConf(WithRootConfig(rc))
+	assert.Equal(t, conf.rc.Application.Name, "test-app")
+}

@@ -49,7 +49,7 @@ func TestGenericFilterInvoke(t *testing.T) {
 	assert.False(t, shutdownFilter.rejectNewRequest())
 	assert.Nil(t, rootConfig.Shutdown)
 
-	assert.Equal(t, extension.GetRejectedExecutionHandler(constant.DEFAULT_KEY),
+	assert.Equal(t, extension.GetRejectedExecutionHandler(constant.DefaultKey),
 		shutdownFilter.getRejectHandler())
 
 	result := shutdownFilter.Invoke(context.Background(), protocol.NewBaseInvoker(invokeUrl), invoc)

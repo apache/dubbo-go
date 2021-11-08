@@ -195,7 +195,7 @@ func (fsdc *FileSystemDynamicConfiguration) GetPath(key string, group string) st
 	}
 
 	if len(group) == 0 {
-		group = config_center.DEFAULT_GROUP
+		group = config_center.DefaultGroup
 	}
 
 	return filepath.Join(fsdc.rootPath, group, adapterKey(key))
