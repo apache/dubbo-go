@@ -256,7 +256,7 @@ func TryRefreshBlackList() {
 			atomic.CompareAndSwapInt32(&blackListRefreshing, 1, 0)
 		}()
 
-		ivks := GetBlackListInvokers(constant.DEFAULT_BLACK_LIST_RECOVER_BLOCK)
+		ivks := GetBlackListInvokers(constant.DefaultBlackListRecoverBlock)
 		logger.Debug("blackList len = ", len(ivks))
 
 		for i := 0; i < 3; i++ {

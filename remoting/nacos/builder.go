@@ -72,25 +72,25 @@ func GetNacosConfig(url *common.URL) ([]nacosConstant.ServerConfig, nacosConstan
 		serverConfigs = append(serverConfigs, nacosConstant.ServerConfig{IpAddr: ip, Port: uint64(port)})
 	}
 
-	timeout := url.GetParamDuration(constant.CONFIG_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT)
+	timeout := url.GetParamDuration(constant.ConfigTimeoutKey, constant.DefaultRegTimeout)
 
 	clientConfig := nacosConstant.ClientConfig{
 		TimeoutMs:           uint64(int32(timeout / time.Millisecond)),
-		BeatInterval:        url.GetParamInt(constant.NACOS_BEAT_INTERVAL_KEY, 5000),
-		NamespaceId:         url.GetParam(constant.NACOS_NAMESPACE_ID, ""),
-		AppName:             url.GetParam(constant.NACOS_APP_NAME_KEY, ""),
-		Endpoint:            url.GetParam(constant.NACOS_ENDPOINT, ""),
-		RegionId:            url.GetParam(constant.NACOS_REGION_ID_KEY, ""),
-		AccessKey:           url.GetParam(constant.NACOS_ACCESS_KEY, ""),
-		SecretKey:           url.GetParam(constant.NACOS_SECRET_KEY, ""),
-		OpenKMS:             url.GetParamBool(constant.NACOS_OPEN_KMS_KEY, false),
-		CacheDir:            url.GetParam(constant.NACOS_CACHE_DIR_KEY, ""),
-		UpdateThreadNum:     url.GetParamByIntValue(constant.NACOS_UPDATE_THREAD_NUM_KEY, 20),
-		NotLoadCacheAtStart: url.GetParamBool(constant.NACOS_NOT_LOAD_LOCAL_CACHE, true),
-		Username:            url.GetParam(constant.NACOS_USERNAME, ""),
-		Password:            url.GetParam(constant.NACOS_PASSWORD, ""),
-		LogDir:              url.GetParam(constant.NACOS_LOG_DIR_KEY, ""),
-		LogLevel:            url.GetParam(constant.NACOS_LOG_LEVEL_KEY, "info"),
+		BeatInterval:        url.GetParamInt(constant.NacosBeatIntervalKey, 5000),
+		NamespaceId:         url.GetParam(constant.NacosNamespaceID, ""),
+		AppName:             url.GetParam(constant.NacosAppNameKey, ""),
+		Endpoint:            url.GetParam(constant.NacosEndpoint, ""),
+		RegionId:            url.GetParam(constant.NacosRegionIDKey, ""),
+		AccessKey:           url.GetParam(constant.NacosAccessKey, ""),
+		SecretKey:           url.GetParam(constant.NacosSecretKey, ""),
+		OpenKMS:             url.GetParamBool(constant.NacosOpenKmsKey, false),
+		CacheDir:            url.GetParam(constant.NacosCacheDirKey, ""),
+		UpdateThreadNum:     url.GetParamByIntValue(constant.NacosUpdateThreadNumKey, 20),
+		NotLoadCacheAtStart: url.GetParamBool(constant.NacosNotLoadLocalCache, true),
+		Username:            url.GetParam(constant.NacosUsername, ""),
+		Password:            url.GetParam(constant.NacosPassword, ""),
+		LogDir:              url.GetParam(constant.NacosLogDirKey, ""),
+		LogLevel:            url.GetParam(constant.NacosLogLevelKey, "info"),
 	}
 	return serverConfigs, clientConfig, nil
 }

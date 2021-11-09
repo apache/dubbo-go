@@ -38,7 +38,7 @@ import (
 )
 
 func init() {
-	extension.SetRestClient(constant.DEFAULT_REST_CLIENT, NewRestyClient)
+	extension.SetRestClient(constant.DefaultRestClient, NewRestyClient)
 }
 
 // RestyClient a rest client implement by Resty

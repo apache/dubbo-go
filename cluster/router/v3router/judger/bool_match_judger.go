@@ -27,8 +27,8 @@ type BoolMatchJudger struct {
 }
 
 // nolint
-func (lsmj *BoolMatchJudger) Judge(input bool) bool {
-	return input == lsmj.Exact
+func (j *BoolMatchJudger) Judge(input bool) bool {
+	return input == j.Exact
 }
 
 // nolint

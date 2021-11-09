@@ -74,7 +74,7 @@ func (lstn *ServiceInstancesChangedListenerImpl) OnEvent(e observer.Event) error
 				logger.Warnf("Instance metadata is nil: %s", instance.GetHost())
 				continue
 			}
-			revision := instance.GetMetadata()[constant.EXPORTED_SERVICES_REVISION_PROPERTY_NAME]
+			revision := instance.GetMetadata()[constant.ExportedServicesRevisionPropertyName]
 			if "0" == revision {
 				logger.Infof("Find instance without valid service metadata: %s", instance.GetHost())
 				continue
@@ -141,16 +141,16 @@ func (lstn *ServiceInstancesChangedListenerImpl) OnEvent(e observer.Event) error
 	return nil
 }
 
-// getMetadataInfo get metadata info when METADATA_STORAGE_TYPE_PROPERTY_NAME is null
+// getMetadataInfo get metadata info when MetadataStorageTypePropertyName is null
 func (lstn *ServiceInstancesChangedListenerImpl) getMetadataInfo(instance registry.ServiceInstance, revision string) (*common.MetadataInfo, error) {
 	var metadataStorageType string
 	var metadataInfo *common.MetadataInfo
 	if instance.GetMetadata() == nil {
-		metadataStorageType = constant.DEFAULT_METADATA_STORAGE_TYPE
+		metadataStorageType = constant.DefaultMetadataStorageType
 	} else {
-		metadataStorageType = instance.GetMetadata()[constant.METADATA_STORAGE_TYPE_PROPERTY_NAME]
+		metadataStorageType = instance.GetMetadata()[constant.MetadataStorageTypePropertyName]
 	}
-	if metadataStorageType == constant.REMOTE_METADATA_STORAGE_TYPE {
+	if metadataStorageType == constant.RemoteMetadataStorageType {
 		remoteMetadataServiceImpl, err := extension.GetRemoteMetadataService()
 		if err != nil {
 			return nil, err
@@ -161,7 +161,7 @@ func (lstn *ServiceInstancesChangedListenerImpl) getMetadataInfo(instance regist
 		}
 	} else {
 		var err error
-		proxyFactory := extension.GetMetadataServiceProxyFactory(constant.DEFAULT_KEY)
+		proxyFactory := extension.GetMetadataServiceProxyFactory(constant.DefaultKey)
 		metadataService := proxyFactory.GetProxy(instance)
 		metadataInfo, err = metadataService.GetMetadataInfo(revision)
 		if err != nil {

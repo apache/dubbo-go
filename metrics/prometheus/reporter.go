@@ -49,15 +49,13 @@ const (
 	reporterName = "prometheus"
 
 	pullModel = "pull"
-	pushModel = "push"
 
-	applicationKey = constant.APPLICATION_KEY
-	serviceKey     = constant.SERVICE_KEY
-	groupKey       = constant.GROUP_KEY
-	versionKey     = constant.VERSION_KEY
-	timeoutKey     = constant.TIMEOUT_KEY
-	instanceKey    = constant.INSTANCE_KEY
-	categoryKey    = constant.CATEGORY_KEY
+	applicationKey = constant.ApplicationKey
+	instanceKey    = constant.InstanceKey
+	serviceKey     = constant.ServiceKey
+	groupKey       = constant.GroupKey
+	versionKey     = constant.VersionKey
+	categoryKey    = constant.CategoryKey
 
 	// to identify side
 	providerKey = "provider"
@@ -126,7 +124,7 @@ func (reporter *PrometheusReporter) Report(ctx context.Context, invoker protocol
 		applicationKey: url.GetParam(applicationKey, ""),
 		serviceKey:     url.Service(),
 		groupKey:       url.GetParam(groupKey, ""),
-		versionKey:     url.GetParam(constant.APP_VERSION_KEY, ""),
+		versionKey:     url.GetParam(versionKey, ""),
 		categoryKey:    category,
 	}
 
@@ -149,13 +147,14 @@ func newHistogramVec(namespace, side, name string) *prometheus.HistogramVec {
 
 // isProvider shows whether this url represents the application received the request as server
 func isProvider(url *common.URL) bool {
-	side := url.GetParam(constant.SIDE_KEY, "")
+	side := url.GetParam(constant.SideKey, "")
 	return strings.EqualFold(side, providerKey)
+
 }
 
 // isConsumer shows whether this url represents the application sent then request as client
 func isConsumer(url *common.URL) bool {
-	side := url.GetParam(constant.SIDE_KEY, "")
+	side := url.GetParam(constant.SideKey, "")
 	return strings.EqualFold(side, consumerKey)
 }
 

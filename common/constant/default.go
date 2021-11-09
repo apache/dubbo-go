@@ -18,80 +18,79 @@
 package constant
 
 const (
-	DUBBO             = "dubbo"
-	PROVIDER_PROTOCOL = "provider"
-	// compatible with 2.6.x
-	OVERRIDE_PROTOCOL = "override"
-	EMPTY_PROTOCOL    = "empty"
-	ROUTER_PROTOCOL   = "router"
+	Dubbo            = "dubbo"
+	ProviderProtocol = "provider"
+	// OverrideProtocol is compatible with 2.6.x
+	OverrideProtocol = "override"
+	EmptyProtocol    = "empty"
+	RouterProtocol   = "router"
 )
 
 const (
-	DEFAULT_WEIGHT = 100     //
-	DEFAULT_WARMUP = 10 * 60 // in java here is 10*60*1000 because of System.currentTimeMillis() is measured in milliseconds & in go time.Unix() is second
+	DefaultWeight = 100     //
+	DefaultWarmup = 10 * 60 // in java here is 10*60*1000 because of System.currentTimeMillis() is measured in milliseconds & in go time.Unix() is second
 )
 
 const (
-	DEFAULT_LOADBALANCE        = "random"
-	DEFAULT_RETRIES            = "2"
-	DEFAULT_RETRIES_INT        = 2
-	DEFAULT_PROTOCOL           = "dubbo"
-	DEFAULT_REG_TIMEOUT        = "10s"
-	DEFAULT_REG_TTL            = "15m"
-	DEFAULT_CLUSTER            = "failover"
-	DEFAULT_FAILBACK_TIMES     = "3"
-	DEFAULT_FAILBACK_TIMES_INT = 3
-	DEFAULT_FAILBACK_TASKS     = 100
-	DEFAULT_REST_CLIENT        = "resty"
-	DEFAULT_REST_SERVER        = "go-restful"
-	DEFAULT_PORT               = 20000
-	DEFAULT_METADATAPORT       = 20005
-	DEFAULT_SERIALIZATION      = HESSIAN2_SERIALIZATION
+	DefaultLoadbalance      = "random"
+	DefaultRetries          = "2"
+	DefaultRetriesInt       = 2
+	DefaultProtocol         = "dubbo"
+	DefaultRegTimeout       = "10s"
+	DefaultRegTTL           = "15m"
+	DefaultCluster          = "failover"
+	DefaultFailbackTimes    = "3"
+	DefaultFailbackTimesInt = 3
+	DefaultFailbackTasks    = 100
+	DefaultRestClient       = "resty"
+	DefaultRestServer       = "go-restful"
+	DefaultPort             = 20000
+	DefaultMetadataport     = 20005
 )
 
 const (
-	DEFAULT_KEY               = "default"
-	PREFIX_DEFAULT_KEY        = "default."
-	DEFAULT_SERVICE_FILTERS   = EchoFilterKey + "," + TokenFilterKey + "," + AccessLogFilterKey + "," + TpsLimitFilterKey + "," + GenericServiceFilterKey + "," + ExecuteLimitFilterKey + "," + GracefulShutdownProviderFilterKey
-	DEFAULT_REFERENCE_FILTERS = GracefulShutdownConsumerFilterKey
-	GENERIC_REFERENCE_FILTERS = GenericFilterKey
-	GENERIC                   = "$invoke"
-	ECHO                      = "$echo"
+	DefaultKey              = "default"
+	PrefixDefaultKey        = "default."
+	DefaultServiceFilters   = EchoFilterKey + "," + TokenFilterKey + "," + AccessLogFilterKey + "," + TpsLimitFilterKey + "," + GenericServiceFilterKey + "," + ExecuteLimitFilterKey + "," + GracefulShutdownProviderFilterKey
+	DefaultReferenceFilters = GracefulShutdownConsumerFilterKey
+	GenericReferenceFilters = GenericFilterKey
+	Generic                 = "$invoke"
+	Echo                    = "$echo"
 )
 
 const (
-	ANY_VALUE           = "*"
-	ANYHOST_VALUE       = "0.0.0.0"
-	LOCAL_HOST_VALUE    = "192.168.1.1"
-	REMOVE_VALUE_PREFIX = "-"
+	AnyValue          = "*"
+	AnyhostValue      = "0.0.0.0"
+	LocalHostValue    = "192.168.1.1"
+	RemoveValuePrefix = "-"
 )
 
 const (
-	CONFIGURATORS_CATEGORY             = "configurators"
-	ROUTER_CATEGORY                    = "category"
-	DEFAULT_CATEGORY                   = PROVIDER_CATEGORY
-	DYNAMIC_CONFIGURATORS_CATEGORY     = "dynamicconfigurators"
-	APP_DYNAMIC_CONFIGURATORS_CATEGORY = "appdynamicconfigurators"
-	PROVIDER_CATEGORY                  = "providers"
-	CONSUMER_CATEGORY                  = "consumers"
+	ConfiguratorsCategory           = "configurators"
+	RouterCategory                  = "category"
+	DefaultCategory                 = ProviderCategory
+	DynamicConfiguratorsCategory    = "dynamicconfigurators"
+	AppDynamicConfiguratorsCategory = "appdynamicconfigurators"
+	ProviderCategory                = "providers"
+	ConsumerCategory                = "consumers"
 )
 
 const (
-	COMMA_SPLIT_PATTERN = "\\s*[,]+\\s*"
+	CommaSplitPattern = "\\s*[,]+\\s*"
 )
 
 const (
-	SIMPLE_METADATA_SERVICE_NAME = "MetadataService"
-	DEFAULT_REVISION             = "N/A"
+	SimpleMetadataServiceName = "MetadataService"
+	DefaultRevision           = "N/A"
 )
 
 const (
-	SERVICE_DISCOVERY_DEFAULT_GROUP = "DEFAULT_GROUP"
+	ServiceDiscoveryDefaultGroup = "DEFAULT_GROUP"
 )
 
 const (
-	DEFAULT_PROVIDER_CONF_FILE_PATH = "../profiles/dev/server.yml"
-	DEFAULT_CONSUMER_CONF_FILE_PATH = "../profiles/dev/client.yml"
-	DEFAULT_LOG_CONF_FILE_PATH      = "../profiles/dev/log.yml"
-	DEFAULT_ROUTER_CONF_FILE_PATH   = "../profiles/dev/router.yml"
+	DefaultProviderConfFilePath = "../profiles/dev/server.yml"
+	DefaultConsumerConfFilePath = "../profiles/dev/client.yml"
+	DefaultLogConfFilePath      = "../profiles/dev/log.yml"
+	DefaultRouterConfFilePath   = "../profiles/dev/router.yml"
 )

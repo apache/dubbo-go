@@ -306,24 +306,24 @@ func TestURLGetMethodParamBool(t *testing.T) {
 
 func TestMergeUrl(t *testing.T) {
 	referenceUrlParams := url.Values{}
-	referenceUrlParams.Set(constant.CLUSTER_KEY, "random")
-	referenceUrlParams.Set(constant.RETRIES_KEY, "1")
+	referenceUrlParams.Set(constant.ClusterKey, "random")
+	referenceUrlParams.Set(constant.RetriesKey, "1")
 	referenceUrlParams.Set("test3", "1")
-	referenceUrlParams.Set("methods.testMethod."+constant.RETRIES_KEY, "1")
+	referenceUrlParams.Set("methods.testMethod."+constant.RetriesKey, "1")
 	serviceUrlParams := url.Values{}
 	serviceUrlParams.Set("test2", "1")
-	serviceUrlParams.Set(constant.CLUSTER_KEY, "roundrobin")
-	serviceUrlParams.Set(constant.RETRIES_KEY, "2")
-	serviceUrlParams.Set(constant.METHOD_KEYS+".testMethod."+constant.RETRIES_KEY, "2")
+	serviceUrlParams.Set(constant.ClusterKey, "roundrobin")
+	serviceUrlParams.Set(constant.RetriesKey, "2")
+	serviceUrlParams.Set(constant.MethodKeys+".testMethod."+constant.RetriesKey, "2")
 	referenceUrl, _ := NewURL("mock1://127.0.0.1:1111", WithParams(referenceUrlParams), WithMethods([]string{"testMethod"}))
 	serviceUrl, _ := NewURL("mock2://127.0.0.1:20000", WithParams(serviceUrlParams))
 
 	mergedUrl := MergeURL(serviceUrl, referenceUrl)
-	assert.Equal(t, "random", mergedUrl.GetParam(constant.CLUSTER_KEY, ""))
+	assert.Equal(t, "random", mergedUrl.GetParam(constant.ClusterKey, ""))
 	assert.Equal(t, "1", mergedUrl.GetParam("test2", ""))
 	assert.Equal(t, "1", mergedUrl.GetParam("test3", ""))
-	assert.Equal(t, "1", mergedUrl.GetParam(constant.RETRIES_KEY, ""))
-	assert.Equal(t, "2", mergedUrl.GetParam(constant.METHOD_KEYS+".testMethod."+constant.RETRIES_KEY, ""))
+	assert.Equal(t, "1", mergedUrl.GetParam(constant.RetriesKey, ""))
+	assert.Equal(t, "2", mergedUrl.GetParam(constant.MethodKeys+".testMethod."+constant.RetriesKey, ""))
 }
 
 func TestURLSetParams(t *testing.T) {
@@ -359,15 +359,15 @@ func TestClone(t *testing.T) {
 
 func TestColonSeparatedKey(t *testing.T) {
 	u1, _ := NewURL("dubbo://127.0.0.1:20000")
-	u1.AddParam(constant.INTERFACE_KEY, "com.ikurento.user.UserProvider")
+	u1.AddParam(constant.InterfaceKey, "com.ikurento.user.UserProvider")
 
-	assert.Equal(t, u1.ColonSeparatedKey(), u1.GetParam(constant.INTERFACE_KEY, "")+"::")
-	u1.AddParam(constant.VERSION_KEY, "version1")
-	assert.Equal(t, u1.ColonSeparatedKey(), u1.GetParam(constant.INTERFACE_KEY, "")+":version1:")
-	u1.AddParam(constant.GROUP_KEY, "group1")
-	assert.Equal(t, u1.ColonSeparatedKey(), u1.GetParam(constant.INTERFACE_KEY, "")+":version1:group1")
-	u1.SetParam(constant.VERSION_KEY, "")
-	assert.Equal(t, u1.ColonSeparatedKey(), u1.GetParam(constant.INTERFACE_KEY, "")+"::group1")
+	assert.Equal(t, u1.ColonSeparatedKey(), u1.GetParam(constant.InterfaceKey, "")+"::")
+	u1.AddParam(constant.VersionKey, "version1")
+	assert.Equal(t, u1.ColonSeparatedKey(), u1.GetParam(constant.InterfaceKey, "")+":version1:")
+	u1.AddParam(constant.GroupKey, "group1")
+	assert.Equal(t, u1.ColonSeparatedKey(), u1.GetParam(constant.InterfaceKey, "")+":version1:group1")
+	u1.SetParam(constant.VersionKey, "")
+	assert.Equal(t, u1.ColonSeparatedKey(), u1.GetParam(constant.InterfaceKey, "")+"::group1")
 }
 
 func TestCompareURLEqualFunc(t *testing.T) {
@@ -383,7 +383,7 @@ func TestCompareURLEqualFunc(t *testing.T) {
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
 		"side=provider&timeout=3000&timestamp=155650979798")
 	assert.False(t, GetCompareURLEqualFunc()(url1, url2))
-	assert.True(t, GetCompareURLEqualFunc()(url1, url2, constant.TIMESTAMP_KEY, constant.REMOTE_TIMESTAMP_KEY))
+	assert.True(t, GetCompareURLEqualFunc()(url1, url2, constant.TimestampKey, constant.RemoteTimestampKey))
 
 	// test custom
 	url1, _ = NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?anyhost=true&" +
@@ -396,10 +396,10 @@ func TestCompareURLEqualFunc(t *testing.T) {
 		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
 		"side=provider&timeout=3000&timestamp=155650979798")
-	assert.True(t, GetCompareURLEqualFunc()(url1, url2, constant.TIMESTAMP_KEY, constant.REMOTE_TIMESTAMP_KEY))
+	assert.True(t, GetCompareURLEqualFunc()(url1, url2, constant.TimestampKey, constant.RemoteTimestampKey))
 	SetCompareURLEqualFunc(CustomCompareURLEqual)
 	assert.False(t, GetCompareURLEqualFunc()(url1, url2))
-	assert.False(t, GetCompareURLEqualFunc()(url1, url2, constant.TIMESTAMP_KEY, constant.REMOTE_TIMESTAMP_KEY))
+	assert.False(t, GetCompareURLEqualFunc()(url1, url2, constant.TimestampKey, constant.RemoteTimestampKey))
 
 	url1, _ = NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?anyhost=true&" +
 		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
@@ -412,10 +412,10 @@ func TestCompareURLEqualFunc(t *testing.T) {
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
 		"side=provider&timeout=3000")
 	assert.True(t, GetCompareURLEqualFunc()(url1, url2))
-	assert.True(t, GetCompareURLEqualFunc()(url1, url2, constant.TIMESTAMP_KEY, constant.REMOTE_TIMESTAMP_KEY))
+	assert.True(t, GetCompareURLEqualFunc()(url1, url2, constant.TimestampKey, constant.RemoteTimestampKey))
 	SetCompareURLEqualFunc(CustomCompareURLEqual)
 	assert.True(t, GetCompareURLEqualFunc()(url1, url2))
-	assert.True(t, GetCompareURLEqualFunc()(url1, url2, constant.TIMESTAMP_KEY, constant.REMOTE_TIMESTAMP_KEY))
+	assert.True(t, GetCompareURLEqualFunc()(url1, url2, constant.TimestampKey, constant.RemoteTimestampKey))
 }
 
 func CustomCompareURLEqual(l *URL, r *URL, execludeParam ...string) bool {

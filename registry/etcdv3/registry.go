@@ -74,7 +74,7 @@ func (r *etcdV3Registry) ClientLock() *sync.Mutex {
 }
 
 func newETCDV3Registry(url *common.URL) (registry.Registry, error) {
-	timeout := url.GetParamDuration(constant.CONFIG_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT)
+	timeout := url.GetParamDuration(constant.ConfigTimeoutKey, constant.DefaultRegTimeout)
 
 	logger.Infof("etcd address is: %v, timeout is: %s", url.Location, timeout.String())
 
@@ -160,7 +160,7 @@ func (r *etcdV3Registry) DoSubscribe(svc *common.URL) (registry.Listener, error)
 
 	// register the svc to dataListener
 	r.dataListener.AddInterestedURL(svc)
-	go r.listener.ListenServiceEvent(fmt.Sprintf("/dubbo/%s/"+constant.DEFAULT_CATEGORY, svc.Service()), r.dataListener)
+	go r.listener.ListenServiceEvent(fmt.Sprintf("/dubbo/%s/"+constant.DefaultCategory, svc.Service()), r.dataListener)
 
 	return configListener, nil
 }

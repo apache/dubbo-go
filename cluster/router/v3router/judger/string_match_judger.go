@@ -32,21 +32,21 @@ type StringMatchJudger struct {
 }
 
 // nolint
-func (smj *StringMatchJudger) Judge(input string) bool {
-	if smj.Exact != "" {
-		return input == smj.Exact
+func (j *StringMatchJudger) Judge(input string) bool {
+	if j.Exact != "" {
+		return input == j.Exact
 	}
-	if smj.Prefix != "" {
-		return strings.HasPrefix(input, smj.Prefix)
+	if j.Prefix != "" {
+		return strings.HasPrefix(input, j.Prefix)
 	}
-	if smj.Regex != "" {
-		ok, err := regexp.MatchString(smj.Regex, input)
+	if j.Regex != "" {
+		ok, err := regexp.MatchString(j.Regex, input)
 		return ok && err == nil
 	}
-	if smj.NoEmpty != "" {
+	if j.NoEmpty != "" {
 		return input != ""
 	}
-	if smj.Empty != "" {
+	if j.Empty != "" {
 		return input == ""
 	}
 	return true

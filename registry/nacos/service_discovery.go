@@ -45,13 +45,13 @@ import (
 )
 
 const (
-	defaultGroup = constant.SERVICE_DISCOVERY_DEFAULT_GROUP
+	defaultGroup = constant.ServiceDiscoveryDefaultGroup
 	idKey        = "id"
 )
 
 // init will put the service discovery into extension
 func init() {
-	extension.SetServiceDiscovery(constant.NACOS_KEY, newNacosServiceDiscovery)
+	extension.SetServiceDiscovery(constant.NacosKey, newNacosServiceDiscovery)
 }
 
 // nacosServiceDiscovery is the implementation of service discovery based on nacos.
@@ -336,7 +336,7 @@ func newNacosServiceDiscovery() (registry.ServiceDiscovery, error) {
 		common.WithParams(make(url.Values)),
 		common.WithPassword(metadataReportConfig.Password),
 		common.WithUsername(metadataReportConfig.Username),
-		common.WithParamsValue(constant.REGISTRY_TIMEOUT_KEY, metadataReportConfig.Timeout))
+		common.WithParamsValue(constant.RegistryTimeoutKey, metadataReportConfig.Timeout))
 	url.Location = metadataReportConfig.Address
 	client, err := nacos.NewNacosClientByUrl(url)
 	if err != nil {
