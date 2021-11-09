@@ -46,7 +46,7 @@ type ReferenceConfig struct {
 	pxy            *proxy.Proxy
 	id             string
 	InterfaceName  string            `required:"true"  yaml:"interface"  json:"interface,omitempty" property:"interface"`
-	Check          *bool             `default:"true" yaml:"check"  json:"check,omitempty" property:"check"`
+	Check          *bool             `yaml:"check"  json:"check,omitempty" property:"check"`
 	URL            string            `yaml:"url"  json:"url,omitempty" property:"url"`
 	Filter         string            `yaml:"filter" json:"filter,omitempty" property:"filter"`
 	Protocol       string            `default:"tri" yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
@@ -96,6 +96,9 @@ func (rc *ReferenceConfig) Init(root *RootConfig) error {
 	rc.RegistryIDs = translateRegistryIds(rc.RegistryIDs)
 	if len(rc.RegistryIDs) <= 0 {
 		rc.RegistryIDs = root.Consumer.RegistryIDs
+	}
+	if rc.Check == nil {
+		rc.Check = &root.Consumer.Check
 	}
 	return verify(rc)
 }

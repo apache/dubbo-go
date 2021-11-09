@@ -43,11 +43,16 @@ var (
 func Load(opts ...LoaderConfOption) error {
 	// conf
 	conf := NewLoaderConf(opts...)
-	koan := GetConfigResolver(conf)
-	if err := koan.UnmarshalWithConf(rootConfig.Prefix(),
-		rootConfig, koanf.UnmarshalConf{Tag: "yaml"}); err != nil {
-		return err
+	if conf.rc == nil {
+		koan := GetConfigResolver(conf)
+		if err := koan.UnmarshalWithConf(rootConfig.Prefix(),
+			rootConfig, koanf.UnmarshalConf{Tag: "yaml"}); err != nil {
+			return err
+		}
+	} else {
+		rootConfig = conf.rc
 	}
+
 	if err := rootConfig.Init(); err != nil {
 		return err
 	}
