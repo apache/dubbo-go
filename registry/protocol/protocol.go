@@ -85,12 +85,20 @@ func newRegistryProtocol() *registryProtocol {
 	}
 }
 
-func getRegistry(regUrl *common.URL) registry.Registry {
-	reg, err := extension.GetRegistry(regUrl.Protocol, regUrl)
-	if err != nil {
-		logger.Errorf("Registry can not connect success, program is going to panic.Error message is %s", err.Error())
-		panic(err.Error())
+func (proto *registryProtocol) getRegistry(registryUrl *common.URL) registry.Registry {
+	var reg registry.Registry
+
+	if regI, loaded := proto.registries.Load(registryUrl.Location); !loaded {
+		reg, err := extension.GetRegistry(registryUrl.Protocol, registryUrl)
+		if err != nil {
+			logger.Errorf("Registry can not connect success, program is going to panic.Error message is %s", err.Error())
+			panic(err.Error())
+		}
+		proto.registries.Store(registryUrl.Key(), reg)
+	} else {
+		reg = regI.(registry.Registry)
 	}
+
 	return reg
 }
 
@@ -140,13 +148,7 @@ func (proto *registryProtocol) Refer(url *common.URL) protocol.Invoker {
 		registryUrl.Protocol = registryUrl.GetParam(constant.RegistryKey, "")
 	}
 
-	var reg registry.Registry
-	if regI, loaded := proto.registries.Load(registryUrl.Key()); !loaded {
-		reg = getRegistry(registryUrl)
-		proto.registries.Store(registryUrl.Key(), reg)
-	} else {
-		reg = regI.(registry.Registry)
-	}
+	reg := proto.getRegistry(url)
 
 	// new registry directory for store service url from registry
 	directory, err := extension.GetDefaultRegistryDirectory(registryUrl, reg)
@@ -170,66 +172,73 @@ func (proto *registryProtocol) Refer(url *common.URL) protocol.Invoker {
 }
 
 // Export provider service to registry center
-func (proto *registryProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
+func (proto *registryProtocol) Export(originInvoker protocol.Invoker) protocol.Exporter {
 	proto.once.Do(func() {
 		proto.initConfigurationListeners()
 	})
-	registryUrl := getRegistryUrl(invoker)
-	providerUrl := getProviderUrl(invoker)
+	registryUrl := getRegistryUrl(originInvoker)
+	providerUrl := getProviderUrl(originInvoker)
 
 	overriderUrl := getSubscribedOverrideUrl(providerUrl)
 	// Deprecated! subscribe to override rules in 2.6.x or before.
-	overrideSubscribeListener := newOverrideSubscribeListener(overriderUrl, invoker, proto)
+	overrideSubscribeListener := newOverrideSubscribeListener(overriderUrl, originInvoker, proto)
 	proto.overrideListeners.Store(overriderUrl, overrideSubscribeListener)
 	proto.providerConfigurationListener.OverrideUrl(providerUrl)
 	serviceConfigurationListener := newServiceConfigurationListener(overrideSubscribeListener, providerUrl)
 	proto.serviceConfigurationListeners.Store(providerUrl.ServiceKey(), serviceConfigurationListener)
 	serviceConfigurationListener.OverrideUrl(providerUrl)
 
-	var reg registry.Registry
-	if registryUrl.Protocol != "" {
-		if regI, loaded := proto.registries.Load(registryUrl.Key()); !loaded {
-			reg = getRegistry(registryUrl)
-			proto.registries.Store(registryUrl.Key(), reg)
-			logger.Infof("Export proto:%p registries address:%p", proto, proto.registries)
-		} else {
-			reg = regI.(registry.Registry)
-		}
-		registeredProviderUrl := getUrlToRegistry(providerUrl, registryUrl)
+	// export invoker
+	exporter := proto.doLocalExport(originInvoker, providerUrl)
+
+	// url to registry
+	reg := proto.getRegistry(registryUrl)
+	registeredProviderUrl := getUrlToRegistry(providerUrl, registryUrl)
+
+	// if registry set register value is false, do not register
+	register := registryUrl.GetParamBool(constant.RegistryKey+"."+constant.RegistryKey, true)
+	if register {
 		err := reg.Register(registeredProviderUrl)
 		if err != nil {
 			logger.Errorf("provider service %v register registry %v error, error message is %s",
 				providerUrl.Key(), registryUrl.Key(), err.Error())
 			return nil
 		}
-	}
-
-	key := getCacheKey(invoker)
-	logger.Infof("The cached exporter keys is %v!", key)
-	cachedExporter, loaded := proto.bounds.Load(key)
-	if loaded {
-		logger.Infof("The exporter has been cached, and will return cached exporter!")
 	} else {
-		wrappedInvoker := newWrappedInvoker(invoker, providerUrl)
-		cachedExporter = extension.GetProtocol(protocolwrapper.FILTER).Export(wrappedInvoker)
-		proto.bounds.Store(key, cachedExporter)
-		logger.Infof("The exporter has not been cached, and will return a new exporter!")
+		logger.Warnf("provider service %v do not regist to registry %v. possible direct connection provider",
+			providerUrl.Key(), registryUrl.Key())
 	}
 
-	if registryUrl.Protocol != "" {
-		go func() {
-			if err := reg.Subscribe(overriderUrl, overrideSubscribeListener); err != nil {
-				logger.Warnf("reg.subscribe(overriderUrl:%v) = error:%v", overriderUrl, err)
-			}
-		}()
+	go func() {
+		if err := reg.Subscribe(overriderUrl, overrideSubscribeListener); err != nil {
+			logger.Warnf("reg.subscribe(overriderUrl:%v) = error:%v", overriderUrl, err)
+		}
+	}()
+
+	exporter.SetRegisterUrl(registryUrl)
+	exporter.SetSubscribeUrl(overriderUrl)
+
+	return exporter
+}
+
+func (proto *registryProtocol) doLocalExport(originInvoker protocol.Invoker, providerUrl *common.URL) exporterChangeableWrapper {
+	key := getCacheKey(originInvoker)
+
+	cachedExporter, loaded := proto.bounds.Load(key)
+	if !loaded {
+		// new Exporter
+		invokerDelegate := newInvokerDelegate(originInvoker, providerUrl)
+		cachedExporter = newExporterChangeableWrapper(invokerDelegate,
+			extension.GetProtocol(protocolwrapper.FILTER).Export(invokerDelegate))
+		proto.bounds.Store(key, cachedExporter)
 	}
-	return cachedExporter.(protocol.Exporter)
+	return cachedExporter.(exporterChangeableWrapper)
 }
 
 func (proto *registryProtocol) reExport(invoker protocol.Invoker, newUrl *common.URL) {
 	key := getCacheKey(invoker)
 	if oldExporter, loaded := proto.bounds.Load(key); loaded {
-		wrappedNewInvoker := newWrappedInvoker(invoker, newUrl)
+		wrappedNewInvoker := newInvokerDelegate(invoker, newUrl)
 		oldExporter.(protocol.Exporter).Unexport()
 		proto.bounds.Delete(key)
 		// oldExporter Unexport function unRegister rpcService from the serviceMap, so need register it again as far as possible
@@ -435,21 +444,44 @@ func GetProtocol() protocol.Protocol {
 	return regProtocol
 }
 
-type wrappedInvoker struct {
+type invokerDelegate struct {
 	invoker protocol.Invoker
 	protocol.BaseInvoker
 }
 
-func newWrappedInvoker(invoker protocol.Invoker, url *common.URL) *wrappedInvoker {
-	return &wrappedInvoker{
+func newInvokerDelegate(invoker protocol.Invoker, url *common.URL) *invokerDelegate {
+	return &invokerDelegate{
 		invoker:     invoker,
 		BaseInvoker: *protocol.NewBaseInvoker(url),
 	}
 }
 
 // Invoke remote service base on URL of wrappedInvoker
-func (ivk *wrappedInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
+func (ivk *invokerDelegate) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 	return ivk.invoker.Invoke(ctx, invocation)
+}
+
+type exporterChangeableWrapper struct {
+	protocol.Exporter
+	originInvoker protocol.Invoker
+	exporter      protocol.Exporter
+	registerUrl   *common.URL
+	subscribeUrl  *common.URL
+}
+
+func (e *exporterChangeableWrapper) SetRegisterUrl(registerUrl *common.URL) {
+	e.registerUrl = registerUrl
+}
+
+func (e *exporterChangeableWrapper) SetSubscribeUrl(subscribeUrl *common.URL) {
+	e.registerUrl = subscribeUrl
+}
+
+func newExporterChangeableWrapper(originInvoker protocol.Invoker, exporter protocol.Exporter) *exporterChangeableWrapper {
+	return &exporterChangeableWrapper{
+		originInvoker: originInvoker,
+		exporter:      exporter,
+	}
 }
 
 type providerConfigurationListener struct {
