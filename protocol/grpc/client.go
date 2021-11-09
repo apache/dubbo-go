@@ -58,7 +58,7 @@ func NewClient(url *common.URL) (*Client, error) {
 	// If not, will return NoopTracer.
 	tracer := opentracing.GlobalTracer()
 	dialOpts := make([]grpc.DialOption, 0, 4)
-	maxMessageSize, _ := strconv.Atoi(url.GetParam(constant.MESSAGE_SIZE_KEY, "4"))
+	maxMessageSize, _ := strconv.Atoi(url.GetParam(constant.MessageSizeKey, "4"))
 
 	// consumer config client connectTimeout
 	//connectTimeout := config.GetConsumerConfig().ConnectTimeout
@@ -83,7 +83,7 @@ func NewClient(url *common.URL) (*Client, error) {
 		return nil, err
 	}
 
-	key := url.GetParam(constant.INTERFACE_KEY, "")
+	key := url.GetParam(constant.InterfaceKey, "")
 	impl := config.GetConsumerServiceByInterfaceName(key)
 	invoker := getInvoker(impl, conn)
 

@@ -29,7 +29,7 @@ func LoadSerializer(p *DubboPackage) error {
 	// NOTE: default serialID is S_Hessian
 	serialID := p.Header.SerialID
 	if serialID == 0 {
-		serialID = constant.S_Hessian2
+		serialID = constant.SHessian2
 	}
 	serializer, err := GetSerializerById(serialID)
 	if err != nil {

@@ -49,7 +49,7 @@ const (
 var initLock sync.Mutex
 
 func init() {
-	extension.SetServiceDiscovery(constant.ETCDV3_KEY, newEtcdV3ServiceDiscovery)
+	extension.SetServiceDiscovery(constant.EtcdV3Key, newEtcdV3ServiceDiscovery)
 }
 
 // new etcd service discovery struct
@@ -235,12 +235,12 @@ func toPath(instance registry.ServiceInstance) string {
 		return ""
 	}
 	// like: /services/servicename1/host(127.0.0.1)/8080
-	return fmt.Sprintf("%s%d", ROOT+constant.PATH_SEPARATOR+instance.GetServiceName()+constant.PATH_SEPARATOR+instance.GetHost()+constant.KEY_SEPARATOR, instance.GetPort())
+	return fmt.Sprintf("%s%d", ROOT+constant.PathSeparator+instance.GetServiceName()+constant.PathSeparator+instance.GetHost()+constant.KeySeparator, instance.GetPort())
 }
 
 // to dubbo service path
 func toParentPath(serviceName string) string {
-	return ROOT + constant.PATH_SEPARATOR + serviceName
+	return ROOT + constant.PathSeparator + serviceName
 }
 
 // register service instance listener, instance listener and watcher are matched through serviceName

@@ -144,8 +144,8 @@ func (r *BaseRegistry) Register(conf *common.URL) error {
 		conf.Port = portToRegistry
 	}
 	// todo bug when provider、consumer simultaneous initialization
-	//role, _ := strconv.Atoi(r.URL.GetParam(constant.ROLE_KEY, ""))
-	role, _ := strconv.Atoi(conf.GetParam(constant.ROLE_KEY, ""))
+	//role, _ := strconv.Atoi(r.URL.GetParam(constant.RoleKey, ""))
+	role, _ := strconv.Atoi(conf.GetParam(constant.RoleKey, ""))
 	// Check if the service has been registered
 	r.cltLock.Lock()
 	_, ok = r.services[conf.Key()]
@@ -270,8 +270,8 @@ func (r *BaseRegistry) processURL(c *common.URL, f func(string, string) error, c
 	params.Add("ip", localIP)
 	// params.Add("timeout", fmt.Sprintf("%d", int64(r.Timeout)/1e6))
 
-	role, _ := strconv.Atoi(c.GetParam(constant.ROLE_KEY, ""))
-	//role, _ := strconv.Atoi(r.URL.GetParam(constant.ROLE_KEY, ""))
+	role, _ := strconv.Atoi(c.GetParam(constant.RoleKey, ""))
+	//role, _ := strconv.Atoi(r.URL.GetParam(constant.RoleKey, ""))
 	switch role {
 
 	case common.PROVIDER:
@@ -320,13 +320,13 @@ func (r *BaseRegistry) providerRegistry(c *common.URL, params url.Values, f crea
 		logger.Errorf("facadeBasedRegistry.CreatePath(path{%s}) = error{%#v}", dubboPath, perrors.WithStack(err))
 		return "", "", perrors.WithMessagef(err, "facadeBasedRegistry.CreatePath(path:%s)", dubboPath)
 	}
-	params.Add(constant.ANYHOST_KEY, "true")
+	params.Add(constant.AnyhostKey, "true")
 
 	// Dubbo java consumer to start looking for the provider url,because the category does not match,
 	// the provider will not find, causing the consumer can not start, so we use consumers.
 
 	if len(c.Methods) != 0 {
-		params.Add(constant.METHODS_KEY, strings.Join(c.Methods, ","))
+		params.Add(constant.MethodsKey, strings.Join(c.Methods, ","))
 	}
 	logger.Debugf("provider url params:%#v", params)
 	var host string

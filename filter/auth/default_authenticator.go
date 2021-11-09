@@ -34,7 +34,7 @@ import (
 )
 
 func init() {
-	extension.SetAuthenticator(constant.DEFAULT_AUTHENTICATOR, func() filter.Authenticator {
+	extension.SetAuthenticator(constant.DefaultAuthenticator, func() filter.Authenticator {
 		return &DefaultAuthenticator{}
 	})
 }
@@ -46,7 +46,7 @@ type DefaultAuthenticator struct{}
 func (authenticator *DefaultAuthenticator) Sign(invocation protocol.Invocation, url *common.URL) error {
 	currentTimeMillis := strconv.Itoa(int(time.Now().Unix() * 1000))
 
-	consumer := url.GetParam(constant.APPLICATION_KEY, "")
+	consumer := url.GetParam(constant.ApplicationKey, "")
 	accessKeyPair, err := getAccessKeyPair(invocation, url)
 	if err != nil {
 		return errors.New("get accesskey pair failed, cause: " + err.Error())
@@ -56,20 +56,20 @@ func (authenticator *DefaultAuthenticator) Sign(invocation protocol.Invocation, 
 	if err != nil {
 		return err
 	}
-	inv.SetAttachments(constant.REQUEST_SIGNATURE_KEY, signature)
-	inv.SetAttachments(constant.REQUEST_TIMESTAMP_KEY, currentTimeMillis)
-	inv.SetAttachments(constant.AK_KEY, accessKeyPair.AccessKey)
-	inv.SetAttachments(constant.CONSUMER, consumer)
+	inv.SetAttachments(constant.RequestSignatureKey, signature)
+	inv.SetAttachments(constant.RequestTimestampKey, currentTimeMillis)
+	inv.SetAttachments(constant.AKKey, accessKeyPair.AccessKey)
+	inv.SetAttachments(constant.Consumer, consumer)
 	return nil
 }
 
 // getSignature
 // get signature by the metadata and params of the invocation
 func getSignature(url *common.URL, invocation protocol.Invocation, secrectKey string, currentTime string) (string, error) {
-	requestString := fmt.Sprintf(constant.SIGNATURE_STRING_FORMAT,
+	requestString := fmt.Sprintf(constant.SignatureStringFormat,
 		url.ColonSeparatedKey(), invocation.MethodName(), secrectKey, currentTime)
 	var signature string
-	if parameterEncrypt := url.GetParamBool(constant.PARAMETER_SIGNATURE_ENABLE_KEY, false); parameterEncrypt {
+	if parameterEncrypt := url.GetParamBool(constant.ParameterSignatureEnableKey, false); parameterEncrypt {
 		var err error
 		if signature, err = SignWithParams(invocation.Arguments(), requestString, secrectKey); err != nil {
 			// TODO
@@ -84,11 +84,11 @@ func getSignature(url *common.URL, invocation protocol.Invocation, secrectKey st
 
 // Authenticate verifies whether the signature sent by the requester is correct
 func (authenticator *DefaultAuthenticator) Authenticate(invocation protocol.Invocation, url *common.URL) error {
-	accessKeyId := invocation.AttachmentsByKey(constant.AK_KEY, "")
+	accessKeyId := invocation.AttachmentsByKey(constant.AKKey, "")
 
-	requestTimestamp := invocation.AttachmentsByKey(constant.REQUEST_TIMESTAMP_KEY, "")
-	originSignature := invocation.AttachmentsByKey(constant.REQUEST_SIGNATURE_KEY, "")
-	consumer := invocation.AttachmentsByKey(constant.CONSUMER, "")
+	requestTimestamp := invocation.AttachmentsByKey(constant.RequestTimestampKey, "")
+	originSignature := invocation.AttachmentsByKey(constant.RequestSignatureKey, "")
+	consumer := invocation.AttachmentsByKey(constant.Consumer, "")
 	if IsEmpty(accessKeyId, false) || IsEmpty(consumer, false) ||
 		IsEmpty(requestTimestamp, false) || IsEmpty(originSignature, false) {
 		return errors.New("failed to authenticate your ak/sk, maybe the consumer has not enabled the auth")
@@ -110,7 +110,7 @@ func (authenticator *DefaultAuthenticator) Authenticate(invocation protocol.Invo
 }
 
 func getAccessKeyPair(invocation protocol.Invocation, url *common.URL) (*filter.AccessKeyPair, error) {
-	accesskeyStorage := extension.GetAccessKeyStorages(url.GetParam(constant.ACCESS_KEY_STORAGE_KEY, constant.DEFAULT_ACCESS_KEY_STORAGE))
+	accesskeyStorage := extension.GetAccessKeyStorages(url.GetParam(constant.AccessKeyStorageKey, constant.DefaultAccessKeyStorage))
 	accessKeyPair := accesskeyStorage.GetAccessKeyPair(invocation, url)
 	if accessKeyPair == nil || IsEmpty(accessKeyPair.AccessKey, false) || IsEmpty(accessKeyPair.SecretKey, true) {
 		return nil, errors.New("accessKeyId or secretAccessKey not found")
@@ -120,9 +120,9 @@ func getAccessKeyPair(invocation protocol.Invocation, url *common.URL) (*filter.
 }
 
 func doAuthWork(url *common.URL, do func(filter.Authenticator) error) error {
-	shouldAuth := url.GetParamBool(constant.SERVICE_AUTH_KEY, false)
+	shouldAuth := url.GetParamBool(constant.ServiceAuthKey, false)
 	if shouldAuth {
-		authenticator := extension.GetAuthenticator(url.GetParam(constant.AUTHENTICATOR_KEY, constant.DEFAULT_AUTHENTICATOR))
+		authenticator := extension.GetAuthenticator(url.GetParam(constant.AuthenticatorKey, constant.DefaultAuthenticator))
 		return do(authenticator)
 	}
 	return nil

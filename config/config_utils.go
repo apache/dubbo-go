@@ -46,11 +46,11 @@ func mergeValue(str1, str2, def string) string {
 	s1 := strings.Split(str1, ",")
 	s2 := strings.Split(str2, ",")
 	str := "," + strings.Join(append(s1, s2...), ",")
-	defKey := strings.Contains(str, ","+constant.DEFAULT_KEY)
+	defKey := strings.Contains(str, ","+constant.DefaultKey)
 	if !defKey {
-		str = "," + constant.DEFAULT_KEY + str
+		str = "," + constant.DefaultKey + str
 	}
-	str = strings.TrimPrefix(strings.Replace(str, ","+constant.DEFAULT_KEY, ","+def, -1), ",")
+	str = strings.TrimPrefix(strings.Replace(str, ","+constant.DefaultKey, ","+def, -1), ",")
 	return removeMinus(strings.Split(str, ","))
 }
 

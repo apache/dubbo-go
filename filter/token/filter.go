@@ -44,10 +44,10 @@ type Filter struct{}
 
 // Invoke verifies the incoming token with the service configured token
 func (f *Filter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
-	invokerTkn := invoker.GetURL().GetParam(constant.TOKEN_KEY, "")
+	invokerTkn := invoker.GetURL().GetParam(constant.TokenKey, "")
 	if len(invokerTkn) > 0 {
 		attachs := invocation.Attachments()
-		remoteTkn, exist := attachs[constant.TOKEN_KEY]
+		remoteTkn, exist := attachs[constant.TokenKey]
 		if exist && remoteTkn != nil && strings.EqualFold(invokerTkn, remoteTkn.(string)) {
 			return invoker.Invoke(ctx, invocation)
 		}

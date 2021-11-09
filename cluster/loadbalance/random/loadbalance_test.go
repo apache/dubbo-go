@@ -69,7 +69,7 @@ func TestRandomlbSelectWeight(t *testing.T) {
 	}
 
 	urlParams := url.Values{}
-	urlParams.Set("methods.test."+constant.WEIGHT_KEY, "10000000000000")
+	urlParams.Set("methods.test."+constant.WeightKey, "10000000000000")
 	urll, _ := common.NewURL(tmpUrl, common.WithParams(urlParams))
 	invokers = append(invokers, protocol.NewBaseInvoker(urll))
 	ivc := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("test"))
@@ -101,7 +101,7 @@ func TestRandomlbSelectWarmup(t *testing.T) {
 	}
 
 	urlParams := url.Values{}
-	urlParams.Set(constant.REMOTE_TIMESTAMP_KEY, strconv.FormatInt(time.Now().Add(time.Minute*(-9)).Unix(), 10))
+	urlParams.Set(constant.RemoteTimestampKey, strconv.FormatInt(time.Now().Add(time.Minute*(-9)).Unix(), 10))
 	urll, _ := common.NewURL(tmpUrl, common.WithParams(urlParams))
 	invokers = append(invokers, protocol.NewBaseInvoker(urll))
 	ivc := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("test"))

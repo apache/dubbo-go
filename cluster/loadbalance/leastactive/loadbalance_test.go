@@ -38,7 +38,7 @@ func TestLeastActiveSelect(t *testing.T) {
 
 	var invokers []protocol.Invoker
 
-	url, _ := common.NewURL(fmt.Sprintf("dubbo://%s:%d/org.apache.demo.HelloService", constant.LOCAL_HOST_VALUE, constant.DEFAULT_PORT))
+	url, _ := common.NewURL(fmt.Sprintf("dubbo://%s:%d/org.apache.demo.HelloService", constant.LocalHostValue, constant.DefaultPort))
 	invokers = append(invokers, protocol.NewBaseInvoker(url))
 	i := loadBalance.Select(invokers, &invocation.RPCInvocation{})
 	assert.True(t, i.GetURL().URLEqual(url))

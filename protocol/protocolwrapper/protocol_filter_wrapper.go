@@ -50,7 +50,7 @@ func (pfw *ProtocolFilterWrapper) Export(invoker protocol.Invoker) protocol.Expo
 	if pfw.protocol == nil {
 		pfw.protocol = extension.GetProtocol(invoker.GetURL().Protocol)
 	}
-	invoker = BuildInvokerChain(invoker, constant.SERVICE_FILTER_KEY)
+	invoker = BuildInvokerChain(invoker, constant.ServiceFilterKey)
 	return pfw.protocol.Export(invoker)
 }
 
@@ -63,7 +63,7 @@ func (pfw *ProtocolFilterWrapper) Refer(url *common.URL) protocol.Invoker {
 	if invoker == nil {
 		return nil
 	}
-	return BuildInvokerChain(invoker, constant.REFERENCE_FILTER_KEY)
+	return BuildInvokerChain(invoker, constant.ReferenceFilterKey)
 }
 
 // Destroy will destroy all invoker and exporter.

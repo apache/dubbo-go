@@ -82,13 +82,13 @@ func (f *Filter) Invoke(ctx context.Context, invoker protocol.Invoker, invocatio
 	limitTarget := ivkURL.ServiceKey()
 	var limitRateConfig string
 
-	methodLevelConfig := ivkURL.GetParam(methodConfigPrefix+constant.EXECUTE_LIMIT_KEY, "")
+	methodLevelConfig := ivkURL.GetParam(methodConfigPrefix+constant.ExecuteLimitKey, "")
 	if len(methodLevelConfig) > 0 {
 		// we have the method-level configuration
 		limitTarget = limitTarget + "#" + invocation.MethodName()
 		limitRateConfig = methodLevelConfig
 	} else {
-		limitRateConfig = ivkURL.GetParam(constant.EXECUTE_LIMIT_KEY, constant.DEFAULT_EXECUTE_LIMIT)
+		limitRateConfig = ivkURL.GetParam(constant.ExecuteLimitKey, constant.DefaultExecuteLimit)
 	}
 
 	limitRate, err := strconv.ParseInt(limitRateConfig, 0, 0)
@@ -109,8 +109,8 @@ func (f *Filter) Invoke(ctx context.Context, invoker protocol.Invoker, invocatio
 	defer state.(*ExecuteState).decrease()
 	if concurrentCount > limitRate {
 		logger.Errorf("The invocation was rejected due to over the execute limitation, url: %s ", ivkURL.String())
-		rejectedHandlerConfig := ivkURL.GetParam(methodConfigPrefix+constant.EXECUTE_REJECTED_EXECUTION_HANDLER_KEY,
-			ivkURL.GetParam(constant.EXECUTE_REJECTED_EXECUTION_HANDLER_KEY, constant.DEFAULT_KEY))
+		rejectedHandlerConfig := ivkURL.GetParam(methodConfigPrefix+constant.ExecuteRejectedExecutionHandlerKey,
+			ivkURL.GetParam(constant.ExecuteRejectedExecutionHandlerKey, constant.DefaultKey))
 		return extension.GetRejectedExecutionHandler(rejectedHandlerConfig).RejectedExecution(ivkURL, invocation)
 	}
 

@@ -126,11 +126,11 @@ func ServiceDescriperBuild(serviceName string, group string, version string) str
 	buf := &bytes.Buffer{}
 	if group != "" {
 		buf.WriteString(group)
-		buf.WriteString(constant.PATH_SEPARATOR)
+		buf.WriteString(constant.PathSeparator)
 	}
 	buf.WriteString(serviceName)
 	if version != "" && version != "0.0.0" {
-		buf.WriteString(constant.KEY_SEPARATOR)
+		buf.WriteString(constant.KeySeparator)
 		buf.WriteString(version)
 	}
 	return buf.String()
