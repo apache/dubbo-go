@@ -234,7 +234,7 @@ func rebuildCtx(inv *invocation.RPCInvocation) context.Context {
 	spanCtx, err := opentracing.GlobalTracer().Extract(opentracing.TextMap,
 		opentracing.TextMapCarrier(filterContext(inv.Attachments())))
 	if err == nil {
-		ctx = context.WithValue(ctx, constant.DubboCtxKey(constant.TRACING_REMOTE_SPAN_CTX), spanCtx)
+		ctx = context.WithValue(ctx, constant.DubboCtxKey(constant.TracingRemoteSpanCtx), spanCtx)
 	}
 	return ctx
 }

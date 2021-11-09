@@ -179,9 +179,9 @@ func getSubscribeName(url *common.URL) string {
 	var buffer bytes.Buffer
 
 	buffer.Write([]byte(common.DubboNodes[common.PROVIDER]))
-	appendParam(&buffer, url, constant.INTERFACE_KEY)
-	appendParam(&buffer, url, constant.VERSION_KEY)
-	appendParam(&buffer, url, constant.GROUP_KEY)
+	appendParam(&buffer, url, constant.InterfaceKey)
+	appendParam(&buffer, url, constant.VersionKey)
+	appendParam(&buffer, url, constant.GroupKey)
 	return buffer.String()
 }
 
@@ -190,7 +190,7 @@ func (nl *nacosListener) startListen() error {
 		return perrors.New("nacos naming namingClient stopped")
 	}
 	serviceName := getSubscribeName(nl.listenUrl)
-	groupName := nl.listenUrl.GetParam(constant.REGISTRY_GROUP_KEY, defaultGroup)
+	groupName := nl.listenUrl.GetParam(constant.RegistryGroupKey, defaultGroup)
 	nl.subscribeParam = &vo.SubscribeParam{
 		ServiceName:       serviceName,
 		SubscribeCallback: nl.Callback,

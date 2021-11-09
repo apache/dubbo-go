@@ -66,8 +66,8 @@ func TestFilterInvokeDefaultConfig(t *testing.T) {
 	invoker := protocol.NewBaseInvoker(url)
 
 	attach := make(map[string]interface{}, 10)
-	attach[constant.VERSION_KEY] = "1.0"
-	attach[constant.GROUP_KEY] = "MyGroup"
+	attach[constant.VersionKey] = "1.0"
+	attach[constant.GroupKey] = "MyGroup"
 	inv := invocation.NewRPCInvocation("MethodName", []interface{}{"OK", "Hello"}, attach)
 
 	accessLogFilter := &Filter{}

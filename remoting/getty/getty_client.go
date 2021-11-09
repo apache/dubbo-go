@@ -161,7 +161,7 @@ func (c *Client) SetExchangeClient(client *remoting.ExchangeClient) {
 func (c *Client) Connect(url *common.URL) error {
 	initClient(url.Protocol)
 	c.conf = *clientConf
-	c.sslEnabled = url.GetParamBool(constant.SSL_ENABLED_KEY, false)
+	c.sslEnabled = url.GetParamBool(constant.SslEnabledKey, false)
 	// codec
 	c.codec = remoting.GetCodec(url.Protocol)
 	c.addr = url.Location

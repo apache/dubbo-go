@@ -222,7 +222,7 @@ func (n *nacosMetadataReport) RegisterServiceAppMapping(key string, group string
 		return nil
 	}
 	if oldVal != "" {
-		value = oldVal + constant.COMMA_SEPARATOR + value
+		value = oldVal + constant.CommaSeparator + value
 	}
 	return n.storeMetadata(vo.ConfigParam{
 		DataId:  key,
@@ -243,7 +243,7 @@ func (n *nacosMetadataReport) GetServiceAppMapping(key string, group string) (*g
 	if v == "" {
 		return nil, perrors.New("There is no service app mapping data.")
 	}
-	appNames := strings.Split(v, constant.COMMA_SEPARATOR)
+	appNames := strings.Split(v, constant.CommaSeparator)
 	set := gxset.NewSet()
 	for _, e := range appNames {
 		set.Add(e)

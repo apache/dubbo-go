@@ -155,7 +155,7 @@ func (d *DefaultServiceInstance) ToURLs() []*common.URL {
 
 // GetEndPoints get end points from metadata
 func (d *DefaultServiceInstance) GetEndPoints() []*Endpoint {
-	rawEndpoints := d.Metadata[constant.SERVICE_INSTANCE_ENDPOINTS]
+	rawEndpoints := d.Metadata[constant.ServiceInstanceEndpoints]
 	if len(rawEndpoints) == 0 {
 		return nil
 	}

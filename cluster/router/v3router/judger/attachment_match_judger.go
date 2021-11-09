@@ -27,13 +27,13 @@ type AttachmentMatchJudger struct {
 }
 
 // nolint
-func (amj *AttachmentMatchJudger) Judge(invocation protocol.Invocation) bool {
+func (j *AttachmentMatchJudger) Judge(invocation protocol.Invocation) bool {
 	invAttaMap := invocation.Attachments()
-	if amj.EagleeyeContext != nil && !judge(amj.EagleeyeContext, invAttaMap) {
+	if j.EagleeyeContext != nil && !judge(j.EagleeyeContext, invAttaMap) {
 		return false
 	}
 
-	return amj.DubboContext == nil || judge(amj.DubboContext, invAttaMap)
+	return j.DubboContext == nil || judge(j.DubboContext, invAttaMap)
 }
 
 func judge(condition map[string]*config.StringMatch, invAttaMap map[string]interface{}) bool {

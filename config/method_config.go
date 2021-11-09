@@ -45,10 +45,10 @@ type MethodConfig struct {
 // nolint
 func (mc *MethodConfig) Prefix() string {
 	if len(mc.InterfaceId) != 0 {
-		return constant.DUBBO + "." + mc.InterfaceName + "." + mc.InterfaceId + "." + mc.Name + "."
+		return constant.Dubbo + "." + mc.InterfaceName + "." + mc.InterfaceId + "." + mc.Name + "."
 	}
 
-	return constant.DUBBO + "." + mc.InterfaceName + "." + mc.Name + "."
+	return constant.Dubbo + "." + mc.InterfaceName + "." + mc.Name + "."
 }
 
 func (mc *MethodConfig) Init() error {
