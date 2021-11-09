@@ -50,7 +50,7 @@ import (
 type ServiceConfig struct {
 	id                          string
 	Filter                      string            `yaml:"filter" json:"filter,omitempty" property:"filter"`
-	ProtocolIDs                 []string          `default:"[\"dubbo\"]"  validate:"required"  yaml:"protocol-ids"  json:"protocol-ids,omitempty" property:"protocol-ids"` // multi protocolIDs support, split by ','
+	ProtocolIDs                 []string          `yaml:"protocol-ids"  json:"protocol-ids,omitempty" property:"protocol-ids"` // multi protocolIDs support, split by ','
 	Interface                   string            `validate:"required"  yaml:"interface"  json:"interface,omitempty" property:"interface"`
 	RegistryIDs                 []string          `yaml:"registry-ids"  json:"registry-ids,omitempty"  property:"registry-ids"`
 	Cluster                     string            `default:"failover" yaml:"cluster"  json:"cluster,omitempty" property:"cluster"`
@@ -114,6 +114,11 @@ func (svc *ServiceConfig) Init(rc *RootConfig) error {
 	svc.RegistryIDs = translateRegistryIds(svc.RegistryIDs)
 	if len(svc.RegistryIDs) <= 0 {
 		svc.RegistryIDs = rc.Provider.RegistryIDs
+	}
+	if len(svc.ProtocolIDs) <= 0 {
+		for k, _ := range rc.Protocols {
+			svc.ProtocolIDs = append(svc.ProtocolIDs, k)
+		}
 	}
 	svc.export = true
 	return verify(svc)
@@ -339,7 +344,7 @@ func (svc *ServiceConfig) getUrlMap() url.Values {
 	urlMap.Set(constant.RetriesKey, svc.Retries)
 	urlMap.Set(constant.GroupKey, svc.Group)
 	urlMap.Set(constant.VersionKey, svc.Version)
-	urlMap.Set(constant.RoleKey, strconv.Itoa(common.PROVIDER))
+	urlMap.Set(constant.RegistryRoleKey, strconv.Itoa(common.PROVIDER))
 	urlMap.Set(constant.ReleaseKey, "dubbo-golang-"+constant.Version)
 	urlMap.Set(constant.SideKey, (common.RoleType(common.PROVIDER)).Role())
 	urlMap.Set(constant.MessageSizeKey, strconv.Itoa(svc.GrpcMaxMessageSize))

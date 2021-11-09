@@ -332,9 +332,9 @@ func newNacosServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, error
 	discoveryUrl := common.NewURLWithOptions(
 		common.WithParams(url.GetParams()),
 		common.WithParamsValue(constant.TimeoutKey, url.GetParam(constant.RegistryTimeoutKey, constant.DefaultRegTimeout)),
-		common.WithParamsValue(constant.NacosUsername, url.Username),
-		common.WithParamsValue(constant.NacosPassword, url.Password),
-		common.WithParamsValue(constant.NacosNamespaceID, url.GetParam(constant.NamespaceKey, "")))
+		common.WithParamsValue(constant.RegistryUsernameKey, url.GetParam(constant.RegistryUsernameKey, "")),
+		common.WithParamsValue(constant.RegistryPasswordKey, url.GetParam(constant.RegistryPasswordKey, "")),
+		common.WithParamsValue(constant.NacosNamespaceID, url.GetParam(constant.RegistryNamespaceKey, "")))
 	discoveryUrl.Location = url.Location
 	client, err := nacos.NewNacosClientByUrl(discoveryUrl)
 	if err != nil {

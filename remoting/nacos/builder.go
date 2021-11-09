@@ -75,9 +75,12 @@ func GetNacosConfig(url *common.URL) ([]nacosConstant.ServerConfig, nacosConstan
 	timeout := url.GetParamDuration(constant.TimeoutKey, constant.DefaultRegTimeout)
 
 	clientConfig := nacosConstant.ClientConfig{
-		TimeoutMs:           uint64(int32(timeout / time.Millisecond)),
+		TimeoutMs:   uint64(int32(timeout / time.Millisecond)),
+		NamespaceId: url.GetParam(constant.RegistryNamespaceKey, ""),
+		Username:    url.GetParam(constant.RegistryUsernameKey, ""),
+		Password:    url.GetParam(constant.RegistryPasswordKey, ""),
+
 		BeatInterval:        url.GetParamInt(constant.NacosBeatIntervalKey, 5000),
-		NamespaceId:         url.GetParam(constant.NacosNamespaceID, ""),
 		AppName:             url.GetParam(constant.NacosAppNameKey, ""),
 		Endpoint:            url.GetParam(constant.NacosEndpoint, ""),
 		RegionId:            url.GetParam(constant.NacosRegionIDKey, ""),
@@ -87,8 +90,6 @@ func GetNacosConfig(url *common.URL) ([]nacosConstant.ServerConfig, nacosConstan
 		CacheDir:            url.GetParam(constant.NacosCacheDirKey, ""),
 		UpdateThreadNum:     url.GetParamByIntValue(constant.NacosUpdateThreadNumKey, 20),
 		NotLoadCacheAtStart: url.GetParamBool(constant.NacosNotLoadLocalCache, true),
-		Username:            url.GetParam(constant.NacosUsername, ""),
-		Password:            url.GetParam(constant.NacosPassword, ""),
 		LogDir:              url.GetParam(constant.NacosLogDirKey, ""),
 		LogLevel:            url.GetParam(constant.NacosLogLevelKey, "info"),
 	}

@@ -122,20 +122,32 @@ const (
 	DubboGoCtxKey = DubboCtxKey("dubbogo-ctx")
 )
 
+// metadata report keys
+const (
+	MetadataReportNamespaceKey = "metadata-report.namespace"
+	MetadataReportGroupKey     = "metadata-report.group"
+	MetadataReportUsernameKey  = "metadata-report.username"
+	MetadataReportPasswordKey  = "metadata-report.password"
+	MetadataReportProtocolKey  = "metadata-report.protocol"
+)
+
+// registry keys
 const (
 	RegistryKey             = "registry"
 	RegistryProtocol        = "registry"
 	ServiceRegistryProtocol = "service-discovery-registry"
-	RoleKey                 = "registry.role"
+	RegistryRoleKey         = "registry.role"
 	RegistryDefaultKey      = "registry.default"
+	RegistryUsernameKey     = "registry.username"
+	RegistryPasswordKey     = "registry.password"
 	RegistryTimeoutKey      = "registry.timeout"
 	RegistryLabelKey        = "label"
 	PreferredKey            = "preferred"
-	ZoneKey                 = "zone"
-	ZoneForceKey            = "zone.force"
+	RegistryZoneKey         = "zone"
+	RegistryZoneForceKey    = "zone.force"
 	RegistryTTLKey          = "registry.ttl"
-	SimplifiedKey           = "simplified"
-	NamespaceKey            = "namespace"
+	RegistrySimplifiedKey   = "simplified"
+	RegistryNamespaceKey    = "regsitry.namespace"
 	RegistryGroupKey        = "registry.group"
 )
 
@@ -161,20 +173,21 @@ const (
 	ExportKey              = "export"
 )
 
+// config center keys
 const (
-	ConfigNamespaceKey        = "namespace"
-	ConfigGroupKey            = "group"
-	ConfigAppIDKey            = "appId"
-	ConfigClusterKey          = "cluster"
-	ConfigTimeoutKey          = "timeout"
-	ConfigUsernameKey         = "username"
-	ConfigPasswordKey         = "password"
-	ConfigLogDirKey           = "logDir"
-	ConfigVersionKey          = "configVersion"
-	CompatibleConfigKey       = "compatible_config"
-	ConfigSecretKey           = "secret"
-	ConfigBackupConfigKey     = "isBackupConfig"
-	ConfigBackupConfigPathKey = "backupConfigPath"
+	ConfigNamespaceKey        = "config-center.namespace"
+	ConfigGroupKey            = "config-center.group"
+	ConfigAppIDKey            = "config-center.appId"
+	ConfigClusterKey          = "config-center.cluster"
+	ConfigTimeoutKey          = "config-center.timeout"
+	ConfigUsernameKey         = "config-center.username"
+	ConfigPasswordKey         = "config-center.password"
+	ConfigLogDirKey           = "config-center.logDir"
+	ConfigVersionKey          = "config-center.configVersion"
+	CompatibleConfigKey       = "config-center.compatible_config"
+	ConfigSecretKey           = "config-center.secret"
+	ConfigBackupConfigKey     = "config-center.isBackupConfig"
+	ConfigBackupConfigPathKey = "config-center.backupConfigPath"
 )
 
 const (
@@ -212,8 +225,6 @@ const (
 	NacosProtocolKey          = "protocol"
 	NacosPathKey              = "path"
 	NacosNamespaceID          = "namespaceId"
-	NacosPassword             = "password"
-	NacosUsername             = "username"
 	NacosNotLoadLocalCache    = "nacos.not.load.cache"
 	NacosAppNameKey           = "appName"
 	NacosRegionIDKey          = "regionId"

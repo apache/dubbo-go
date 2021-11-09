@@ -226,7 +226,7 @@ func getTestRegistry(t *testing.T) *kubernetesRegistry {
 		}
 	}
 
-	regurl, err := common.NewURL("registry://127.0.0.1:443", common.WithParamsValue(constant.RoleKey, strconv.Itoa(common.PROVIDER)))
+	regurl, err := common.NewURL("registry://127.0.0.1:443", common.WithParamsValue(constant.RegistryRoleKey, strconv.Itoa(common.PROVIDER)))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -325,7 +325,7 @@ func TestProviderDestroy(t *testing.T) {
 
 func TestNewRegistry(t *testing.T) {
 	regUrl, err := common.NewURL("registry://127.0.0.1:443",
-		common.WithParamsValue(constant.RoleKey, strconv.Itoa(common.PROVIDER)))
+		common.WithParamsValue(constant.RegistryRoleKey, strconv.Itoa(common.PROVIDER)))
 	if err != nil {
 		t.Fatal(err)
 	}
