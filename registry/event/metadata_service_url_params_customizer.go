@@ -60,8 +60,8 @@ func (m *metadataServiceURLParamsMetadataCustomizer) Customize(instance registry
 		logger.Errorf("could not find the metadata service", err)
 		return
 	}
-	url := ms.GetMetadataServiceURL()
-	if url == nil {
+	url, err := ms.GetMetadataServiceURL()
+	if url == nil || err != nil {
 		logger.Errorf("the metadata service url is nil")
 		return
 	}

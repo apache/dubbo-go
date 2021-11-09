@@ -119,8 +119,9 @@ func createRegisterParam(url *common.URL, serviceName string, groupName string) 
 // Register will register the service @url to its nacos registry center
 func (nr *nacosRegistry) Register(url *common.URL) error {
 	serviceName := getServiceName(url)
-	groupName := nr.URL.GetParam(constant.RegistryGroupKey, defaultGroup)
+	groupName := nr.URL.GetParam(constant.NacosGroupKey, defaultGroup)
 	param := createRegisterParam(url, serviceName, groupName)
+	logger.Infof("[Nacos Registry] Registry instance with param = %+v", param)
 	isRegistry, err := nr.namingClient.Client().RegisterInstance(param)
 	if err != nil {
 		return err
@@ -151,7 +152,7 @@ func createDeregisterParam(url *common.URL, serviceName string, groupName string
 
 func (nr *nacosRegistry) DeRegister(url *common.URL) error {
 	serviceName := getServiceName(url)
-	groupName := nr.URL.GetParam(constant.RegistryGroupKey, defaultGroup)
+	groupName := nr.URL.GetParam(constant.NacosGroupKey, defaultGroup)
 	param := createDeregisterParam(url, serviceName, groupName)
 	isDeRegistry, err := nr.namingClient.Client().DeregisterInstance(param)
 	if err != nil {
@@ -204,7 +205,7 @@ func (nr *nacosRegistry) Subscribe(url *common.URL, notifyListener registry.Noti
 				listener.Close()
 				return err
 			}
-			logger.Infof("update begin, service event: %v", serviceEvent.String())
+			logger.Infof("[Nacos Registry] Update begin, service event: %v", serviceEvent.String())
 			notifyListener.Notify(serviceEvent)
 		}
 	}
@@ -240,12 +241,20 @@ func (nr *nacosRegistry) Destroy() {
 
 // newNacosRegistry will create new instance
 func newNacosRegistry(url *common.URL) (registry.Registry, error) {
+	logger.Infof("[Nacos Registry] New nacos registry with url = %+v", url.ToMap())
+	// key transfer: registry -> nacos
+	url.SetParam(constant.NacosNamespaceID, url.GetParam(constant.RegistryNamespaceKey, ""))
+	url.SetParam(constant.NacosUsername, url.GetParam(constant.RegistryUsernameKey, ""))
+	url.SetParam(constant.NacosAccessKey, url.GetParam(constant.RegistryAccessKey, ""))
+	url.SetParam(constant.NacosSecretKey, url.GetParam(constant.RegistrySecretKey, ""))
+	url.SetParam(constant.TimeoutKey, url.GetParam(constant.RegistryTimeoutKey, ""))
+	url.SetParam(constant.NacosGroupKey, url.GetParam(constant.RegistryGroupKey, defaultGroup))
 	namingClient, err := nacos.NewNacosClientByUrl(url)
 	if err != nil {
 		return &nacosRegistry{}, err
 	}
 	tmpRegistry := &nacosRegistry{
-		URL:          url,
+		URL:          url, // registry.group is recorded at this url
 		namingClient: namingClient,
 		registryUrls: []*common.URL{},
 	}

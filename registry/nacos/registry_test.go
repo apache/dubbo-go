@@ -48,7 +48,7 @@ func TestNacosRegistry_Register(t *testing.T) {
 	regurl, _ := common.NewURL("registry://console.nacos.io:80", common.WithParams(regurlMap))
 
 	urlMap := url.Values{}
-	urlMap.Set(constant.RegistryGroupKey, "guangzhou-idc")
+	urlMap.Set(constant.GroupKey, "guangzhou-idc")
 	urlMap.Set(constant.RegistryRoleKey, strconv.Itoa(common.PROVIDER))
 	urlMap.Set(constant.InterfaceKey, "com.ikurento.user.UserProvider")
 	urlMap.Set(constant.VersionKey, "1.0.0")
@@ -85,7 +85,7 @@ func TestNacosRegistry_Subscribe(t *testing.T) {
 	regurl, _ := common.NewURL("registry://console.nacos.io:80", common.WithParams(regurlMap))
 
 	urlMap := url.Values{}
-	urlMap.Set(constant.RegistryGroupKey, "guangzhou-idc")
+	urlMap.Set(constant.GroupKey, "guangzhou-idc")
 	urlMap.Set(constant.RegistryRoleKey, strconv.Itoa(common.PROVIDER))
 	urlMap.Set(constant.InterfaceKey, "com.dubbo.user.UserProvider")
 	urlMap.Set(constant.VersionKey, "1.0.0")
@@ -129,7 +129,7 @@ func TestNacosRegistry_Subscribe_del(t *testing.T) {
 	regurl, _ := common.NewURL("registry://console.nacos.io:80", common.WithParams(regurlMap))
 
 	urlMap := url.Values{}
-	urlMap.Set(constant.RegistryGroupKey, "guangzhou-idc")
+	urlMap.Set(constant.GroupKey, "guangzhou-idc")
 	urlMap.Set(constant.RegistryRoleKey, strconv.Itoa(common.PROVIDER))
 	urlMap.Set(constant.InterfaceKey, "com.ikurento.user.UserProvider")
 	urlMap.Set(constant.VersionKey, "2.0.0")

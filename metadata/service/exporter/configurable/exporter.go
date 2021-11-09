@@ -74,10 +74,10 @@ func (exporter *MetadataServiceExporter) Export(url *common.URL) error {
 		exporter.ServiceConfig.Implement(exporter.metadataService)
 		err := exporter.ServiceConfig.Export()
 
-		logger.Infof("The MetadataService exports urls : %v ", exporter.ServiceConfig.GetExportedUrls())
+		logger.Infof("[Metadata Service] The MetadataService exports urls : %v ", exporter.ServiceConfig.GetExportedUrls())
 		return err
 	}
-	logger.Warnf("The MetadataService has been exported : %v ", exporter.ServiceConfig.GetExportedUrls())
+	logger.Warnf("[Metadata Service] The MetadataService has been exported : %v ", exporter.ServiceConfig.GetExportedUrls())
 	return nil
 }
 

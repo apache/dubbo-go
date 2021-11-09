@@ -140,6 +140,8 @@ const (
 	RegistryDefaultKey      = "registry.default"
 	RegistryUsernameKey     = "registry.username"
 	RegistryPasswordKey     = "registry.password"
+	RegistryAccessKey       = "registry.accesskey"
+	RegistrySecretKey       = "registry.secretkey"
 	RegistryTimeoutKey      = "registry.timeout"
 	RegistryLabelKey        = "label"
 	PreferredKey            = "preferred"
@@ -147,7 +149,7 @@ const (
 	RegistryZoneForceKey    = "zone.force"
 	RegistryTTLKey          = "registry.ttl"
 	RegistrySimplifiedKey   = "simplified"
-	RegistryNamespaceKey    = "regsitry.namespace"
+	RegistryNamespaceKey    = "registry.namespace"
 	RegistryGroupKey        = "registry.group"
 )
 
@@ -181,6 +183,7 @@ const (
 	ConfigClusterKey          = "config-center.cluster"
 	ConfigTimeoutKey          = "config-center.timeout"
 	ConfigUsernameKey         = "config-center.username"
+	ConfigAccessKey           = "config-center.access"
 	ConfigPasswordKey         = "config-center.password"
 	ConfigLogDirKey           = "config-center.logDir"
 	ConfigVersionKey          = "config-center.configVersion"
@@ -215,24 +218,27 @@ const (
 
 const (
 	NacosKey                  = "nacos"
+	NacosGroupKey             = "nacos.group"
 	NacosDefaultRoleType      = 3
-	NacosCacheDirKey          = "cacheDir"
-	NacosLogDirKey            = "logDir"
-	NacosBeatIntervalKey      = "beatInterval"
+	NacosCacheDirKey          = "nacos.cacheDir"
+	NacosLogDirKey            = "nacos.logDir"
+	NacosBeatIntervalKey      = "nacos.beatInterval"
 	NacosEndpoint             = "endpoint"
 	NacosServiceNameSeparator = ":"
-	NacosCategoryKey          = "category"
+	NacosCategoryKey          = "nacos.category"
 	NacosProtocolKey          = "protocol"
 	NacosPathKey              = "path"
-	NacosNamespaceID          = "namespaceId"
+	NacosNamespaceID          = "nacos.namespaceId"
 	NacosNotLoadLocalCache    = "nacos.not.load.cache"
 	NacosAppNameKey           = "appName"
-	NacosRegionIDKey          = "regionId"
-	NacosAccessKey            = "access"
-	NacosSecretKey            = "secret"
+	NacosRegionIDKey          = "nacos.regionId"
+	NacosAccessKey            = "nacos.access"
+	NacosSecretKey            = "nacos.secret"
 	NacosOpenKmsKey           = "kms"
 	NacosUpdateThreadNumKey   = "updateThreadNum"
-	NacosLogLevelKey          = "logLevel"
+	NacosLogLevelKey          = "nacos.logLevel"
+	NacosUsername             = "nacos.username"
+	NacosPassword             = "nacos.password"
 )
 
 const (

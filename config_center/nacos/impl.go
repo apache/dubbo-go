@@ -26,6 +26,7 @@ import (
 	gxset "github.com/dubbogo/gost/container/set"
 	nacosClient "github.com/dubbogo/gost/database/kv/nacos"
 
+	constant2 "github.com/nacos-group/nacos-sdk-go/common/constant"
 	"github.com/nacos-group/nacos-sdk-go/vo"
 
 	perrors "github.com/pkg/errors"
@@ -62,11 +63,19 @@ type nacosDynamicConfiguration struct {
 }
 
 func newNacosDynamicConfiguration(url *common.URL) (*nacosDynamicConfiguration, error) {
+	url.SetParam(constant.NacosNamespaceID, url.GetParam(constant.ConfigNamespaceKey, ""))
+	url.SetParam(constant.NacosUsername, url.GetParam(constant.ConfigUsernameKey, ""))
+	url.SetParam(constant.NacosAccessKey, url.GetParam(constant.ConfigAccessKey, ""))
+	url.SetParam(constant.NacosSecretKey, url.GetParam(constant.ConfigSecretKey, ""))
+	url.SetParam(constant.TimeoutKey, url.GetParam(constant.ConfigTimeoutKey, ""))
+	url.SetParam(constant.NacosGroupKey, url.GetParam(constant.ConfigGroupKey, constant2.DEFAULT_GROUP))
+	url.SetParam(constant.NacosNamespaceID, url.GetParam(constant.ConfigNamespaceKey, ""))
 	c := &nacosDynamicConfiguration{
 		url:  url,
 		done: make(chan struct{}),
 	}
-	c.GetURL().SetParam(constant.NacosNamespaceID, url.GetParam(constant.ConfigNamespaceKey, ""))
+	c.GetURL()
+	logger.Infof("[Nacos ConfigCenter] New Nacos ConfigCenter with Configuration: %+v, url = %+v", c, c.GetURL())
 	err := ValidateNacosClient(c)
 	if err != nil {
 		logger.Errorf("nacos configClient start error ,error message is %v", err)
@@ -142,9 +151,13 @@ func (n *nacosDynamicConfiguration) GetRule(key string, opts ...config_center.Op
 	for _, opt := range opts {
 		opt(tmpOpts)
 	}
+	resolvedGroup := n.resolvedGroup(tmpOpts.Group)
+	if resolvedGroup == "" {
+		resolvedGroup = n.url.GetParam(constant.NacosGroupKey, constant2.DEFAULT_GROUP)
+	}
 	content, err := n.client.Client().GetConfig(vo.ConfigParam{
 		DataId: key,
-		Group:  n.resolvedGroup(tmpOpts.Group),
+		Group:  resolvedGroup,
 	})
 	if err != nil {
 		return "", perrors.WithStack(err)

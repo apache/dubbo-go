@@ -64,11 +64,11 @@ type MetadataService interface {
 	// GetMetadataInfo will return metadata info
 	GetMetadataInfo(revision string) (*common.MetadataInfo, error)
 	// GetExportedServiceURLs will return exported service urls
-	GetExportedServiceURLs() []*common.URL
+	GetExportedServiceURLs() ([]*common.URL, error)
 	// GetMetadataServiceURL will return the url of metadata service
-	GetMetadataServiceURL() *common.URL
+	GetMetadataServiceURL() (*common.URL, error)
 	// SetMetadataServiceURL will save the url of metadata service
-	SetMetadataServiceURL(*common.URL)
+	SetMetadataServiceURL(*common.URL) error
 }
 
 // BaseMetadataService is used for the event logic for struct who will implement interface MetadataService

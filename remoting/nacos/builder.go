@@ -35,6 +35,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/config"
 )
 
@@ -75,11 +76,10 @@ func GetNacosConfig(url *common.URL) ([]nacosConstant.ServerConfig, nacosConstan
 	timeout := url.GetParamDuration(constant.TimeoutKey, constant.DefaultRegTimeout)
 
 	clientConfig := nacosConstant.ClientConfig{
-		TimeoutMs:   uint64(int32(timeout / time.Millisecond)),
-		NamespaceId: url.GetParam(constant.RegistryNamespaceKey, ""),
-		Username:    url.GetParam(constant.RegistryUsernameKey, ""),
-		Password:    url.GetParam(constant.RegistryPasswordKey, ""),
-
+		TimeoutMs:           uint64(int32(timeout / time.Millisecond)),
+		NamespaceId:         url.GetParam(constant.NacosNamespaceID, ""),
+		Username:            url.GetParam(constant.NacosUsername, ""),
+		Password:            url.GetParam(constant.NacosPassword, ""),
 		BeatInterval:        url.GetParamInt(constant.NacosBeatIntervalKey, 5000),
 		AppName:             url.GetParam(constant.NacosAppNameKey, ""),
 		Endpoint:            url.GetParam(constant.NacosEndpoint, ""),
@@ -116,5 +116,6 @@ func NewNacosClientByUrl(url *common.URL) (*nacosClient.NacosNamingClient, error
 	if err != nil {
 		return nil, err
 	}
+	logger.Infof("[Nacos Client] New nacos client with config = %+v", scs)
 	return nacosClient.NewNacosNamingClient(nacosClientName, true, scs, cc)
 }

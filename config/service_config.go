@@ -217,7 +217,7 @@ func (svc *ServiceConfig) Export() error {
 		if len(regUrls) > 0 {
 			svc.cacheMutex.Lock()
 			if svc.cacheProtocol == nil {
-				logger.Infof(fmt.Sprintf("First load the registry protocol, url is {%v}!", ivkURL))
+				logger.Debugf(fmt.Sprintf("First load the registry protocol, url is {%v}!", ivkURL))
 				svc.cacheProtocol = extension.GetProtocol("registry")
 			}
 			svc.cacheMutex.Unlock()
@@ -238,7 +238,9 @@ func (svc *ServiceConfig) Export() error {
 					logger.Warnf("export org.apache.dubbo.metadata.MetadataService failed beacause of %s ! pls check if you import _ \"dubbo.apache.org/dubbo-go/v3/metadata/service/local\"", err)
 					return nil
 				}
-				ms.SetMetadataServiceURL(ivkURL)
+				if err := ms.SetMetadataServiceURL(ivkURL); err != nil {
+					logger.Warnf("SetMetadataServiceURL error = %s", err)
+				}
 			}
 			invoker := proxyFactory.GetInvoker(ivkURL)
 			exporter := extension.GetProtocol(protocolwrapper.FILTER).Export(invoker)
