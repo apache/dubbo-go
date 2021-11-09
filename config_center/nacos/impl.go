@@ -109,7 +109,6 @@ func (n *nacosDynamicConfiguration) GetInternalProperty(key string, opts ...conf
 // PublishConfig will publish the config with the (key, group, value) pair
 func (n *nacosDynamicConfiguration) PublishConfig(key string, group string, value string) error {
 	group = n.resolvedGroup(group)
-
 	ok, err := n.client.Client().PublishConfig(vo.ConfigParam{
 		DataId:  key,
 		Group:   group,
@@ -152,9 +151,6 @@ func (n *nacosDynamicConfiguration) GetRule(key string, opts ...config_center.Op
 		opt(tmpOpts)
 	}
 	resolvedGroup := n.resolvedGroup(tmpOpts.Group)
-	if resolvedGroup == "" {
-		resolvedGroup = n.url.GetParam(constant.NacosGroupKey, constant2.DEFAULT_GROUP)
-	}
 	content, err := n.client.Client().GetConfig(vo.ConfigParam{
 		DataId: key,
 		Group:  resolvedGroup,
@@ -214,6 +210,7 @@ func (n *nacosDynamicConfiguration) Destroy() {
 // '/' is a special character for nacos
 func (n *nacosDynamicConfiguration) resolvedGroup(group string) string {
 	if len(group) <= 0 {
+		group = n.url.GetParam(constant.NacosGroupKey, constant2.DEFAULT_GROUP)
 		return group
 	}
 	return strings.ReplaceAll(group, "/", "-")
