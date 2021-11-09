@@ -62,11 +62,11 @@ type zookeeperDynamicConfiguration struct {
 func newZookeeperDynamicConfiguration(url *common.URL) (*zookeeperDynamicConfiguration, error) {
 	c := &zookeeperDynamicConfiguration{
 		url:      url,
-		rootPath: "/" + url.GetParam(constant.CONFIG_NAMESPACE_KEY, config_center.DEFAULT_GROUP) + "/config",
+		rootPath: "/" + url.GetParam(constant.CONFIG_NAMESPACE_KEY, config_center.ZK_DEFAULT_GROUP) + "/config",
 	}
 	err := zookeeper.ValidateZookeeperClient(c, ZkClient)
 	if err != nil {
-		logger.Errorf("zookeeper client start error ,error message is %v", err)
+		logger.Errorf("zookeeper client start error, error message is %v", err)
 		return nil, err
 	}
 	c.wg.Add(1)
@@ -227,7 +227,7 @@ func (c *zookeeperDynamicConfiguration) getPath(key string, group string) string
 
 func (c *zookeeperDynamicConfiguration) buildPath(group string) string {
 	if len(group) == 0 {
-		group = config_center.DEFAULT_GROUP
+		group = config_center.ZK_DEFAULT_GROUP
 	}
 	return c.rootPath + pathSeparator + group
 }

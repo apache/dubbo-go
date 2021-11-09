@@ -34,10 +34,10 @@ import (
 // DynamicConfiguration
 // ////////////////////////////////////////
 const (
-	// DEFAULT_GROUP: default group
+	// DEFAULT_GROUP default group
 	DEFAULT_GROUP = "dubbo"
-	// DEFAULT_CONFIG_TIMEOUT: default config timeout
-	DEFAULT_CONFIG_TIMEOUT = "10s"
+	// ZK_DEFAULT_GROUP default group of zk
+	ZK_DEFAULT_GROUP = "dubbo"
 )
 
 // DynamicConfiguration for modify listener and get properties file

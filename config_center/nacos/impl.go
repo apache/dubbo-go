@@ -31,7 +31,6 @@ import (
 
 import (
 	"github.com/apache/dubbo-go/common"
-	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config_center"
 	"github.com/apache/dubbo-go/config_center/parser"
@@ -49,7 +48,6 @@ const (
 type nacosDynamicConfiguration struct {
 	config_center.BaseDynamicConfiguration
 	url          *common.URL
-	rootPath     string
 	wg           sync.WaitGroup
 	cltLock      sync.Mutex
 	done         chan struct{}
@@ -60,13 +58,12 @@ type nacosDynamicConfiguration struct {
 
 func newNacosDynamicConfiguration(url *common.URL) (*nacosDynamicConfiguration, error) {
 	c := &nacosDynamicConfiguration{
-		rootPath: "/" + url.GetParam(constant.CONFIG_NAMESPACE_KEY, config_center.DEFAULT_GROUP) + "/config",
-		url:      url,
-		done:     make(chan struct{}),
+		url:  url,
+		done: make(chan struct{}),
 	}
 	err := ValidateNacosClient(c)
 	if err != nil {
-		logger.Errorf("nacos client start error ,error message is %v", err)
+		logger.Errorf("nacos client start error, error message is %v", err)
 		return nil, err
 	}
 	c.wg.Add(1)
