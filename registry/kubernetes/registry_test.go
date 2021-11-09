@@ -226,7 +226,7 @@ func getTestRegistry(t *testing.T) *kubernetesRegistry {
 		}
 	}
 
-	regurl, err := common.NewURL("registry://127.0.0.1:443", common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)))
+	regurl, err := common.NewURL("registry://127.0.0.1:443", common.WithParamsValue(constant.RoleKey, strconv.Itoa(common.PROVIDER)))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -244,7 +244,7 @@ func TestRegister(t *testing.T) {
 
 	url, _ := common.NewURL(
 		"dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider",
-		common.WithParamsValue(constant.CLUSTER_KEY, "mock"),
+		common.WithParamsValue(constant.ClusterKey, "mock"),
 		common.WithMethods([]string{"GetUser", "AddUser"}),
 	)
 
@@ -261,7 +261,7 @@ func TestRegister(t *testing.T) {
 //	r := getTestRegistry(t)
 //	defer r.Destroy()
 //
-//	url, err := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParamsValue(constant.CLUSTER_KEY, "mock"), common.WithMethods([]string{"GetUser", "AddUser"}))
+//	url, err := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParamsValue(constant.ClusterKey, "mock"), common.WithMethods([]string{"GetUser", "AddUser"}))
 //	if err != nil {
 //		t.Fatal(err)
 //	}
@@ -294,7 +294,7 @@ func TestConsumerDestroy(t *testing.T) {
 	r := getTestRegistry(t)
 
 	url, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider",
-		common.WithParamsValue(constant.CLUSTER_KEY, "mock"),
+		common.WithParamsValue(constant.ClusterKey, "mock"),
 		common.WithMethods([]string{"GetUser", "AddUser"}))
 
 	_, err := r.DoSubscribe(url)
@@ -313,7 +313,7 @@ func TestProviderDestroy(t *testing.T) {
 	r := getTestRegistry(t)
 
 	url, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider",
-		common.WithParamsValue(constant.CLUSTER_KEY, "mock"),
+		common.WithParamsValue(constant.ClusterKey, "mock"),
 		common.WithMethods([]string{"GetUser", "AddUser"}))
 	err := r.Register(url)
 	assert.NoError(t, err)
@@ -325,7 +325,7 @@ func TestProviderDestroy(t *testing.T) {
 
 func TestNewRegistry(t *testing.T) {
 	regUrl, err := common.NewURL("registry://127.0.0.1:443",
-		common.WithParamsValue(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER)))
+		common.WithParamsValue(constant.RoleKey, strconv.Itoa(common.PROVIDER)))
 	if err != nil {
 		t.Fatal(err)
 	}

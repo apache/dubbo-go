@@ -73,10 +73,10 @@ func (dir *Directory) GetDirectoryUrl() *common.URL {
 }
 
 func (dir *Directory) isProperRouter(url *common.URL) bool {
-	app := url.GetParam(constant.APPLICATION_KEY, "")
-	dirApp := dir.GetURL().GetParam(constant.APPLICATION_KEY, "")
+	app := url.GetParam(constant.ApplicationKey, "")
+	dirApp := dir.GetURL().GetParam(constant.ApplicationKey, "")
 	if len(dirApp) == 0 && dir.GetURL().SubURL != nil {
-		dirApp = dir.GetURL().SubURL.GetParam(constant.APPLICATION_KEY, "")
+		dirApp = dir.GetURL().SubURL.GetParam(constant.ApplicationKey, "")
 	}
 	serviceKey := dir.GetURL().ServiceKey()
 	if len(serviceKey) == 0 {

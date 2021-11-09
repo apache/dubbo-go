@@ -85,10 +85,10 @@ func TestNewNacosClientByUrl(t *testing.T) {
 
 func TestTimeoutConfig(t *testing.T) {
 	regurlMap := url.Values{}
-	regurlMap.Set(constant.NACOS_NOT_LOAD_LOCAL_CACHE, "true")
-	// regurlMap.Set(constant.NACOS_USERNAME, "nacos")
-	// regurlMap.Set(constant.NACOS_PASSWORD, "nacos")
-	regurlMap.Set(constant.NACOS_NAMESPACE_ID, "nacos")
+	regurlMap.Set(constant.NacosNotLoadLocalCache, "true")
+	// regurlMap.Set(constant.NacosUsername, "nacos")
+	// regurlMap.Set(constant.NacosPassword, "nacos")
+	regurlMap.Set(constant.NacosNamespaceID, "nacos")
 
 	t.Run("default timeout", func(t *testing.T) {
 		newURL, _ := common.NewURL("registry://console.nacos.io:80", common.WithParams(regurlMap))
@@ -101,7 +101,7 @@ func TestTimeoutConfig(t *testing.T) {
 
 	t.Run("right timeout", func(t *testing.T) {
 
-		regurlMap.Set(constant.CONFIG_TIMEOUT_KEY, "5s")
+		regurlMap.Set(constant.ConfigTimeoutKey, "5s")
 
 		newURL, _ := common.NewURL("registry://console.nacos.io:80", common.WithParams(regurlMap))
 
@@ -112,7 +112,7 @@ func TestTimeoutConfig(t *testing.T) {
 	})
 
 	t.Run("invalid timeout", func(t *testing.T) {
-		regurlMap.Set(constant.CONFIG_TIMEOUT_KEY, "5ab")
+		regurlMap.Set(constant.ConfigTimeoutKey, "5ab")
 
 		newURL, _ := common.NewURL("registry://console.nacos.io:80", common.WithParams(regurlMap))
 		_, cc, err := GetNacosConfig(newURL)
@@ -126,11 +126,11 @@ func TestTimeoutConfig(t *testing.T) {
 func getRegUrl() *common.URL {
 
 	regurlMap := url.Values{}
-	regurlMap.Set(constant.NACOS_NOT_LOAD_LOCAL_CACHE, "true")
-	// regurlMap.Set(constant.NACOS_USERNAME, "nacos")
-	// regurlMap.Set(constant.NACOS_PASSWORD, "nacos")
-	regurlMap.Set(constant.NACOS_NAMESPACE_ID, "nacos")
-	regurlMap.Set(constant.CONFIG_TIMEOUT_KEY, "5s")
+	regurlMap.Set(constant.NacosNotLoadLocalCache, "true")
+	// regurlMap.Set(constant.NacosUsername, "nacos")
+	// regurlMap.Set(constant.NacosPassword, "nacos")
+	regurlMap.Set(constant.NacosNamespaceID, "nacos")
+	regurlMap.Set(constant.ConfigTimeoutKey, "5s")
 
 	regurl, _ := common.NewURL("registry://console.nacos.io:80", common.WithParams(regurlMap))
 

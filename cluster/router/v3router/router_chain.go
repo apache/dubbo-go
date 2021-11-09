@@ -29,6 +29,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/router"
 	"dubbo.apache.org/dubbo-go/v3/common"
+	conf "dubbo.apache.org/dubbo-go/v3/common/config"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/config"
@@ -48,11 +49,11 @@ func NewUniformRouterChain() (router.PriorityRouter, error) {
 	// 1. add mesh route listener
 	r := &RouterChain{}
 	rootConfig := config.GetRootConfig()
-	if rootConfig.ConfigCenter.DynamicConfiguration == nil {
+	dynamicConfiguration := conf.GetEnvInstance().GetDynamicConfiguration()
+	if dynamicConfiguration == nil {
 		logger.Infof("Config center does not start, please check if the configuration center has been properly configured in dubbogo.yml")
 		return nil, nil
 	}
-	dynamicConfiguration := rootConfig.ConfigCenter.DynamicConfiguration
 	dynamicConfiguration.AddListener(rootConfig.Application.Name, r)
 
 	// 2. try to get mesh route configuration, default key is "dubbo.io.MESHAPPRULE" with group "dubbo"

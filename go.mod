@@ -13,19 +13,20 @@ require (
 	github.com/creasty/defaults v1.5.2
 	github.com/dubbogo/go-zookeeper v1.0.3
 	github.com/dubbogo/gost v1.11.19
-	github.com/dubbogo/triple v1.0.9
+	github.com/dubbogo/grpc-go v1.42.4-triple
+	github.com/dubbogo/triple v1.1.2
 	github.com/emicklei/go-restful/v3 v3.7.1
 	github.com/fsnotify/fsnotify v1.5.1
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-co-op/gocron v1.9.0
 	github.com/go-playground/validator/v10 v10.9.0
-	github.com/go-resty/resty/v2 v2.3.0
+	github.com/go-resty/resty/v2 v2.7.0
 	github.com/golang/mock v1.4.4
 	github.com/golang/protobuf v1.5.2
 	github.com/grpc-ecosystem/grpc-opentracing v0.0.0-20180507213350-8e809c8a8645
 	github.com/hashicorp/vault/sdk v0.3.0
 	github.com/jinzhu/copier v0.3.2
-	github.com/knadh/koanf v1.3.0
+	github.com/knadh/koanf v1.3.2
 	github.com/magiconair/properties v1.8.5
 	github.com/mitchellh/mapstructure v1.4.2
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
@@ -44,7 +45,7 @@ require (
 	go.etcd.io/etcd/server/v3 v3.5.0-alpha.0
 	go.uber.org/atomic v1.9.0
 	go.uber.org/zap v1.19.1
-	google.golang.org/grpc v1.41.0
+	google.golang.org/grpc v1.42.0
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0

@@ -117,14 +117,14 @@ func NewMetadataReport() (*MetadataReport, error) {
 	}
 	bmr := &MetadataReport{
 		reportUrl:          url,
-		syncReport:         url.GetParamBool(constant.SYNC_REPORT_KEY, false),
+		syncReport:         url.GetParamBool(constant.SyncReportKey, false),
 		failedReports:      make(map[*identifier.MetadataIdentifier]interface{}, 4),
 		allMetadataReports: make(map[*identifier.MetadataIdentifier]interface{}, 4),
 	}
 
 	mrr, err := newMetadataReportRetry(
-		url.GetParamInt(constant.RETRY_PERIOD_KEY, defaultMetadataReportRetryPeriod),
-		url.GetParamInt(constant.RETRY_TIMES_KEY, defaultMetadataReportRetryTimes),
+		url.GetParamInt(constant.RetryPeriodKey, defaultMetadataReportRetryPeriod),
+		url.GetParamInt(constant.RetryTimesKey, defaultMetadataReportRetryTimes),
 		bmr.retry,
 	)
 	if err != nil {
@@ -132,7 +132,7 @@ func NewMetadataReport() (*MetadataReport, error) {
 	}
 
 	bmr.metadataReportRetry = mrr
-	if url.GetParamBool(constant.CYCLE_REPORT_KEY, defaultMetadataReportCycleReport) {
+	if url.GetParamBool(constant.CycleReportKey, defaultMetadataReportCycleReport) {
 		scheduler := gocron.NewScheduler(time.UTC)
 		_, err := scheduler.Every(1).Day().Do(
 			func() {

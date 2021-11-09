@@ -117,7 +117,7 @@ func NewServer(url *common.URL, handlers func(*invocation.RPCInvocation) protoco
 	// init
 	initServer(url.Protocol)
 
-	srvConf.SSLEnabled = url.GetParamBool(constant.SSL_ENABLED_KEY, false)
+	srvConf.SSLEnabled = url.GetParamBool(constant.SslEnabledKey, false)
 
 	s := &Server{
 		conf:           *srvConf,

@@ -96,7 +96,7 @@ func (mts *BaseMetadataService) ServiceName() (string, error) {
 
 // Reference will return the reference id of metadata service
 func (mts *BaseMetadataService) Reference() string {
-	return constant.SIMPLE_METADATA_SERVICE_NAME
+	return constant.SimpleMetadataServiceName
 }
 
 type MetadataServiceProxyFactory interface {
@@ -127,7 +127,7 @@ func (b *BaseMetadataServiceProxyFactory) GetProxy(ins registry.ServiceInstance)
 
 func getExportedServicesRevision(serviceInstance registry.ServiceInstance) string {
 	metaData := serviceInstance.GetMetadata()
-	return metaData[constant.EXPORTED_SERVICES_REVISION_PROPERTY_NAME]
+	return metaData[constant.ExportedServicesRevisionPropertyName]
 }
 
 func ConvertURLArrToIntfArr(urls []*common.URL) []interface{} {

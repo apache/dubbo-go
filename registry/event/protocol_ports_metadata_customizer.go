@@ -73,7 +73,7 @@ func (p *ProtocolPortsMetadataCustomizer) Customize(instance registry.ServiceIns
 		protocolMap[u.Protocol] = port
 	}
 
-	instance.GetMetadata()[constant.SERVICE_INSTANCE_ENDPOINTS] = endpointsStr(protocolMap)
+	instance.GetMetadata()[constant.ServiceInstanceEndpoints] = endpointsStr(protocolMap)
 }
 
 // endpointsStr convert the map to json like [{"protocol": "dubbo", "port": 123}]

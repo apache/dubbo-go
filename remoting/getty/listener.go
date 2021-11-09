@@ -300,8 +300,8 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 		panic("create invocation occur some exception for the type is not suitable one.")
 	}
 	attachments := invoc.Attachments()
-	attachments[constant.LOCAL_ADDR] = session.LocalAddr()
-	attachments[constant.REMOTE_ADDR] = session.RemoteAddr()
+	attachments[constant.LocalAddr] = session.LocalAddr()
+	attachments[constant.RemoteAddr] = session.RemoteAddr()
 
 	result := h.server.requestHandler(invoc)
 	if !req.TwoWay {

@@ -45,7 +45,7 @@ import (
 )
 
 func init() {
-	extension.SetRegistry(constant.SERVICE_REGISTRY_PROTOCOL, newServiceDiscoveryRegistry)
+	extension.SetRegistry(constant.ServiceRegistryProtocol, newServiceDiscoveryRegistry)
 }
 
 // serviceDiscoveryRegistry is the implementation of application-level registry.
@@ -71,7 +71,7 @@ func newServiceDiscoveryRegistry(url *common.URL) (registry.Registry, error) {
 	if err != nil {
 		return nil, err
 	}
-	subscribedServices := parseServices(url.GetParam(constant.SUBSCRIBED_SERVICE_NAMES_KEY, ""))
+	subscribedServices := parseServices(url.GetParam(constant.SubscribedServiceNamesKey, ""))
 	subscribedURLsSynthesizers := synthesizer.GetAllSynthesizer()
 	serviceNameMapping := extension.GetGlobalServiceNameMapping()
 	metaDataService, err := local.GetLocalMetadataService()
@@ -118,7 +118,7 @@ func (s *serviceDiscoveryRegistry) UnSubscribe(url *common.URL, listener registr
 }
 
 func creatServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, error) {
-	sdcName := url.GetParam(constant.REGISTRY_KEY, "")
+	sdcName := url.GetParam(constant.RegistryKey, "")
 	originServiceDiscovery, err := extension.GetServiceDiscovery(sdcName)
 	if err != nil {
 		return nil, perrors.WithMessage(err, "Create service discovery fialed")
@@ -180,8 +180,8 @@ func (s *serviceDiscoveryRegistry) Register(url *common.URL) error {
 }
 
 func shouldRegister(url *common.URL) bool {
-	side := url.GetParam(constant.SIDE_KEY, "")
-	if side == constant.PROVIDER_PROTOCOL {
+	side := url.GetParam(constant.SideKey, "")
+	if side == constant.ProviderProtocol {
 		return true
 	}
 	logger.Debugf("The URL should not be register.", url.String())
@@ -245,9 +245,9 @@ func getUrlKey(url *common.URL) string {
 		bf.WriteString(url.Path)
 	}
 	bf.WriteString("?")
-	appendParam(bf, constant.VERSION_KEY, url)
-	appendParam(bf, constant.GROUP_KEY, url)
-	appendParam(bf, constant.NACOS_PROTOCOL_KEY, url)
+	appendParam(bf, constant.VersionKey, url)
+	appendParam(bf, constant.GroupKey, url)
+	appendParam(bf, constant.NacosProtocolKey, url)
 	return bf.String()
 }
 
@@ -273,7 +273,7 @@ func shouldSubscribe(url *common.URL) bool {
 
 func (s *serviceDiscoveryRegistry) getServices(url *common.URL) *gxset.HashSet {
 	services := gxset.NewSet()
-	serviceNames := url.GetParam(constant.PROVIDED_BY, "")
+	serviceNames := url.GetParam(constant.ProvidedBy, "")
 	if len(serviceNames) > 0 {
 		services = parseServices(serviceNames)
 	}

@@ -60,7 +60,7 @@ func (cr *RestConfigReader) ReadConsumerConfig(reader *bytes.Buffer) error {
 
 	restConsumerServiceConfigMap := make(map[string]*config.RestServiceConfig, len(restConsumerConfig.RestServiceConfigsMap))
 	for key, rc := range restConsumerConfig.RestServiceConfigsMap {
-		rc.Client = getNotEmptyStr(rc.Client, restConsumerConfig.Client, constant.DEFAULT_REST_CLIENT)
+		rc.Client = getNotEmptyStr(rc.Client, restConsumerConfig.Client, constant.DefaultRestClient)
 		rc.RestMethodConfigsMap = initMethodConfigMap(rc, restConsumerConfig.Consumes, restConsumerConfig.Produces)
 		restConsumerServiceConfigMap[key] = rc
 	}
@@ -77,7 +77,7 @@ func (cr *RestConfigReader) ReadProviderConfig(reader *bytes.Buffer) error {
 	}
 	restProviderServiceConfigMap := make(map[string]*config.RestServiceConfig, len(restProviderConfig.RestServiceConfigsMap))
 	for key, rc := range restProviderConfig.RestServiceConfigsMap {
-		rc.Server = getNotEmptyStr(rc.Server, restProviderConfig.Server, constant.DEFAULT_REST_SERVER)
+		rc.Server = getNotEmptyStr(rc.Server, restProviderConfig.Server, constant.DefaultRestServer)
 		rc.RestMethodConfigsMap = initMethodConfigMap(rc, restProviderConfig.Consumes, restProviderConfig.Produces)
 		restProviderServiceConfigMap[key] = rc
 	}

@@ -31,6 +31,6 @@ func TestOnlyLogRejectedExecutionHandler_RejectedExecution(t *testing.T) {
 	handler := GetOnlyLogRejectedExecutionHandler()
 	invokeUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
-		common.WithParamsValue(constant.INTERFACE_KEY, "methodName"))
+		common.WithParamsValue(constant.InterfaceKey, "methodName"))
 	handler.RejectedExecution(invokeUrl, nil)
 }
