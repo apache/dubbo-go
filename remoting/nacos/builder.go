@@ -73,7 +73,7 @@ func GetNacosConfig(url *common.URL) ([]nacosConstant.ServerConfig, nacosConstan
 	clientConfig := nacosConstant.ClientConfig{
 		TimeoutMs:            uint64(int32(timeout / time.Millisecond)),
 		BeatInterval:         url.GetParamInt(constant.NACOS_BEAT_INTERVAL_KEY, 5000),
-		NamespaceId:          url.GetParam(constant.NACOS_NAMESPACE_ID, ""),
+		NamespaceId:          url.GetParam(constant.CONFIG_NAMESPACE_KEY, ""),
 		AppName:              url.GetParam(constant.NACOS_APP_NAME_KEY, ""),
 		Endpoint:             url.GetParam(constant.NACOS_ENDPOINT, ""),
 		RegionId:             url.GetParam(constant.NACOS_REGION_ID_KEY, ""),
