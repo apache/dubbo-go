@@ -80,7 +80,7 @@ func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	serviceKey := url.ServiceKey()
 	exporter := NewDubboExporter(serviceKey, invoker, dp.ExporterMap())
 	dp.SetExporterMap(serviceKey, exporter)
-	logger.Infof("Export service: %s", url.String())
+	logger.Infof("[DUBBO Protocol] Export service: %s", url.String())
 	// start server
 	dp.openServer(url)
 	return exporter
@@ -95,7 +95,7 @@ func (dp *DubboProtocol) Refer(url *common.URL) protocol.Invoker {
 	}
 	invoker := NewDubboInvoker(url, exchangeClient)
 	dp.SetInvokers(invoker)
-	logger.Infof("Refer service: %s", url.String())
+	logger.Infof("[DUBBO Protocol] Refer service: %s", url.String())
 	return invoker
 }
 

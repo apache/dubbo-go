@@ -122,20 +122,34 @@ const (
 	DubboGoCtxKey = DubboCtxKey("dubbogo-ctx")
 )
 
+// metadata report keys
+const (
+	MetadataReportNamespaceKey = "metadata-report.namespace"
+	MetadataReportGroupKey     = "metadata-report.group"
+	MetadataReportUsernameKey  = "metadata-report.username"
+	MetadataReportPasswordKey  = "metadata-report.password"
+	MetadataReportProtocolKey  = "metadata-report.protocol"
+)
+
+// registry keys
 const (
 	RegistryKey             = "registry"
 	RegistryProtocol        = "registry"
 	ServiceRegistryProtocol = "service-discovery-registry"
-	RoleKey                 = "registry.role"
+	RegistryRoleKey         = "registry.role"
 	RegistryDefaultKey      = "registry.default"
+	RegistryUsernameKey     = "registry.username"
+	RegistryPasswordKey     = "registry.password"
+	RegistryAccessKey       = "registry.accesskey"
+	RegistrySecretKey       = "registry.secretkey"
 	RegistryTimeoutKey      = "registry.timeout"
 	RegistryLabelKey        = "label"
 	PreferredKey            = "preferred"
-	ZoneKey                 = "zone"
-	ZoneForceKey            = "zone.force"
+	RegistryZoneKey         = "zone"
+	RegistryZoneForceKey    = "zone.force"
 	RegistryTTLKey          = "registry.ttl"
-	SimplifiedKey           = "simplified"
-	NamespaceKey            = "namespace"
+	RegistrySimplifiedKey   = "simplified"
+	RegistryNamespaceKey    = "registry.namespace"
 	RegistryGroupKey        = "registry.group"
 )
 
@@ -161,20 +175,22 @@ const (
 	ExportKey              = "export"
 )
 
+// config center keys
 const (
-	ConfigNamespaceKey        = "namespace"
-	ConfigGroupKey            = "group"
-	ConfigAppIDKey            = "appId"
-	ConfigClusterKey          = "cluster"
-	ConfigTimeoutKey          = "timeout"
-	ConfigUsernameKey         = "username"
-	ConfigPasswordKey         = "password"
-	ConfigLogDirKey           = "logDir"
-	ConfigVersionKey          = "configVersion"
-	CompatibleConfigKey       = "compatible_config"
-	ConfigSecretKey           = "secret"
-	ConfigBackupConfigKey     = "isBackupConfig"
-	ConfigBackupConfigPathKey = "backupConfigPath"
+	ConfigNamespaceKey        = "config-center.namespace"
+	ConfigGroupKey            = "config-center.group"
+	ConfigAppIDKey            = "config-center.appId"
+	ConfigClusterKey          = "config-center.cluster"
+	ConfigTimeoutKey          = "config-center.timeout"
+	ConfigUsernameKey         = "config-center.username"
+	ConfigAccessKey           = "config-center.access"
+	ConfigPasswordKey         = "config-center.password"
+	ConfigLogDirKey           = "config-center.logDir"
+	ConfigVersionKey          = "config-center.configVersion"
+	CompatibleConfigKey       = "config-center.compatible_config"
+	ConfigSecretKey           = "config-center.secret"
+	ConfigBackupConfigKey     = "config-center.isBackupConfig"
+	ConfigBackupConfigPathKey = "config-center.backupConfigPath"
 )
 
 const (
@@ -202,26 +218,27 @@ const (
 
 const (
 	NacosKey                  = "nacos"
+	NacosGroupKey             = "nacos.group"
 	NacosDefaultRoleType      = 3
-	NacosCacheDirKey          = "cacheDir"
-	NacosLogDirKey            = "logDir"
-	NacosBeatIntervalKey      = "beatInterval"
+	NacosCacheDirKey          = "nacos.cacheDir"
+	NacosLogDirKey            = "nacos.logDir"
+	NacosBeatIntervalKey      = "nacos.beatInterval"
 	NacosEndpoint             = "endpoint"
 	NacosServiceNameSeparator = ":"
-	NacosCategoryKey          = "category"
+	NacosCategoryKey          = "nacos.category"
 	NacosProtocolKey          = "protocol"
 	NacosPathKey              = "path"
-	NacosNamespaceID          = "namespaceId"
-	NacosPassword             = "password"
-	NacosUsername             = "username"
+	NacosNamespaceID          = "nacos.namespaceId"
 	NacosNotLoadLocalCache    = "nacos.not.load.cache"
 	NacosAppNameKey           = "appName"
-	NacosRegionIDKey          = "regionId"
-	NacosAccessKey            = "access"
-	NacosSecretKey            = "secret"
+	NacosRegionIDKey          = "nacos.regionId"
+	NacosAccessKey            = "nacos.access"
+	NacosSecretKey            = "nacos.secret"
 	NacosOpenKmsKey           = "kms"
 	NacosUpdateThreadNumKey   = "updateThreadNum"
-	NacosLogLevelKey          = "logLevel"
+	NacosLogLevelKey          = "nacos.logLevel"
+	NacosUsername             = "nacos.username"
+	NacosPassword             = "nacos.password"
 )
 
 const (

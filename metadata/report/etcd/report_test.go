@@ -56,7 +56,7 @@ func initEtcd(t *testing.T) *embed.Etcd {
 
 func TestEtcdMetadataReportFactory_CreateMetadataReport(t *testing.T) {
 	e := initEtcd(t)
-	url, err := common.NewURL("registry://127.0.0.1:2379", common.WithParamsValue(constant.RoleKey, strconv.Itoa(common.PROVIDER)))
+	url, err := common.NewURL("registry://127.0.0.1:2379", common.WithParamsValue(constant.RegistryRoleKey, strconv.Itoa(common.PROVIDER)))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -68,7 +68,7 @@ func TestEtcdMetadataReportFactory_CreateMetadataReport(t *testing.T) {
 
 func TestEtcdMetadataReport_CRUD(t *testing.T) {
 	e := initEtcd(t)
-	url, err := common.NewURL("registry://127.0.0.1:2379", common.WithParamsValue(constant.RoleKey, strconv.Itoa(common.PROVIDER)))
+	url, err := common.NewURL("registry://127.0.0.1:2379", common.WithParamsValue(constant.RegistryRoleKey, strconv.Itoa(common.PROVIDER)))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -83,7 +83,7 @@ func TestEtcdMetadataReport_CRUD(t *testing.T) {
 	assert.Nil(t, err)
 
 	serviceMi := newServiceMetadataIdentifier()
-	serviceUrl, err := common.NewURL("registry://localhost:8848", common.WithParamsValue(constant.RoleKey, strconv.Itoa(common.PROVIDER)))
+	serviceUrl, err := common.NewURL("registry://localhost:8848", common.WithParamsValue(constant.RegistryRoleKey, strconv.Itoa(common.PROVIDER)))
 	assert.Nil(t, err)
 	err = metadataReport.SaveServiceMetadata(serviceMi, serviceUrl)
 	assert.Nil(t, err)
@@ -116,7 +116,7 @@ func TestEtcdMetadataReport_CRUD(t *testing.T) {
 
 func TestEtcdMetadataReport_ServiceAppMapping(t *testing.T) {
 	e := initEtcd(t)
-	url, err := common.NewURL("registry://127.0.0.1:2379", common.WithParamsValue(constant.RoleKey, strconv.Itoa(common.PROVIDER)))
+	url, err := common.NewURL("registry://127.0.0.1:2379", common.WithParamsValue(constant.RegistryRoleKey, strconv.Itoa(common.PROVIDER)))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -25,12 +25,12 @@ import (
 )
 
 import (
+	"github.com/dubbogo/grpc-go"
+
 	tripleCommon "github.com/dubbogo/triple/pkg/common"
 	tripleConstant "github.com/dubbogo/triple/pkg/common/constant"
 	triConfig "github.com/dubbogo/triple/pkg/config"
 	"github.com/dubbogo/triple/pkg/triple"
-
-	"github.com/dubbogo/grpc-go"
 )
 
 import (
@@ -77,7 +77,7 @@ func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	serviceKey := url.ServiceKey()
 	exporter := NewDubboExporter(serviceKey, invoker, dp.ExporterMap(), dp.serviceMap)
 	dp.SetExporterMap(serviceKey, exporter)
-	logger.Infof("Export service: %s", url.String())
+	logger.Infof("[Triple Protocol] Export service: %s", url.String())
 
 	key := url.GetParam(constant.BeanNameKey, "")
 	var service interface{}
@@ -134,7 +134,7 @@ func (dp *DubboProtocol) Refer(url *common.URL) protocol.Invoker {
 		return nil
 	}
 	dp.SetInvokers(invoker)
-	logger.Infof("Refer service: %s", url.String())
+	logger.Infof("[Triple Protocol] Refer service: %s", url.String())
 	return invoker
 }
 

@@ -118,8 +118,7 @@ func (s *serviceDiscoveryRegistry) UnSubscribe(url *common.URL, listener registr
 }
 
 func creatServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, error) {
-	sdcName := url.GetParam(constant.RegistryKey, "")
-	originServiceDiscovery, err := extension.GetServiceDiscovery(sdcName)
+	originServiceDiscovery, err := extension.GetServiceDiscovery(url)
 	if err != nil {
 		return nil, perrors.WithMessage(err, "Create service discovery fialed")
 	}

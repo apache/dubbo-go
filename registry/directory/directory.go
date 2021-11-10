@@ -187,9 +187,9 @@ func (dir *RegistryDirectory) refreshAllInvokers(events []*registry.ServiceEvent
 		}
 		// loop the updateEvents
 		for _, event := range addEvents {
-			logger.Debugf("registry update, result{%s}", event)
+			logger.Debugf("[Registry Directory] registry update, result{%s}", event)
 			if event != nil && event.Service != nil {
-				logger.Infof("selector add service url{%s}", event.Service.String())
+				logger.Infof("[Registry Directory] selector add service url{%s}", event.Service.String())
 			}
 			if event != nil && event.Service != nil && constant.RouterProtocol == event.Service.Protocol {
 				dir.configRouters()
@@ -245,13 +245,13 @@ func (dir *RegistryDirectory) cacheInvokerByEvent(event *registry.ServiceEvent) 
 		switch event.Action {
 		case remoting.EventTypeAdd, remoting.EventTypeUpdate:
 			u := dir.convertUrl(event)
-			logger.Infof("selector add service url{%s}", event.Service)
+			logger.Infof("[Registry Directory] selector add service url{%s}", event.Service)
 			if u != nil && constant.RouterProtocol == u.Protocol {
 				dir.configRouters()
 			}
 			return dir.cacheInvoker(u, event), nil
 		case remoting.EventTypeDel:
-			logger.Infof("selector delete service url{%s}", event.Service)
+			logger.Infof("[Registry Directory] selector delete service url{%s}", event.Service)
 			return dir.uncacheInvoker(event), nil
 		default:
 			return nil, fmt.Errorf("illegal event type: %v", event.Action)

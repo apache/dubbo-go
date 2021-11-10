@@ -31,7 +31,7 @@ type interceptor struct {
 }
 
 func (z *interceptor) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
-	key := constant.RegistryKey + "." + constant.ZoneForceKey
+	key := constant.RegistryKey + "." + constant.RegistryZoneForceKey
 	force := ctx.Value(key)
 
 	if force != nil {

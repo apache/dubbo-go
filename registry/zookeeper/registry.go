@@ -69,6 +69,7 @@ func newZkRegistry(url *common.URL) (registry.Registry, error) {
 	r = &zkRegistry{
 		zkPath: make(map[string]int),
 	}
+	logger.Infof("[Zookeeper Registry] New zookeeper registry with url %+v", url.ToMap())
 	r.InitBaseRegistry(url, r)
 
 	err = zookeeper.ValidateZookeeperClient(r, url.Location)
@@ -215,6 +216,7 @@ func (r *zkRegistry) registerTempZookeeperNode(root string, node string) error {
 	if r.client == nil {
 		return perrors.WithStack(perrors.New("zk client already been closed"))
 	}
+	logger.Infof("[Zookeeper Registry] Registry instance with root = %s, node = %s", root, node)
 	err = r.client.Create(root)
 	if err != nil {
 		logger.Errorf("zk.Create(root{%s}) = err{%v}", root, perrors.WithStack(err))
