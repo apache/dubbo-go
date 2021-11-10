@@ -64,7 +64,7 @@ func (jp *JsonrpcProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 
 	exporter := NewJsonrpcExporter(serviceKey, invoker, jp.ExporterMap())
 	jp.SetExporterMap(serviceKey, exporter)
-	logger.Infof("Export service: %s", url.String())
+	logger.Infof("[JSONRPC protocol] Export service: %s", url.String())
 
 	// start server
 	jp.openServer(url)
@@ -89,7 +89,7 @@ func (jp *JsonrpcProtocol) Refer(url *common.URL) protocol.Invoker {
 		HTTPTimeout:      requestTimeout,
 	}))
 	jp.SetInvokers(invoker)
-	logger.Infof("Refer service: %s", url.String())
+	logger.Infof("[JSONRPC Protocol] Refer service: %s", url.String())
 	return invoker
 }
 

@@ -20,7 +20,6 @@ package zookeeper
 import (
 	"encoding/base64"
 	"strconv"
-	"strings"
 	"sync"
 )
 
@@ -67,6 +66,7 @@ func newZookeeperDynamicConfiguration(url *common.URL) (*zookeeperDynamicConfigu
 		url:      url,
 		rootPath: "/" + url.GetParam(constant.ConfigNamespaceKey, config_center.DefaultGroup) + "/config",
 	}
+	logger.Infof("[Zookeeper ConfigCenter] New Zookeeper ConfigCenter with Configuration: %+v, url = %+v", c, c.GetURL())
 	if v, ok := config.GetRootConfig().ConfigCenter.Params["base64"]; ok {
 		base64Enabled, err := strconv.ParseBool(v)
 		if err != nil {
@@ -111,13 +111,7 @@ func (c *zookeeperDynamicConfiguration) GetProperties(key string, opts ...config
 	if len(tmpOpts.Group) != 0 {
 		key = tmpOpts.Group + "/" + key
 	} else {
-		/**
-		 * when group is null, we are fetching governance rules, for example:
-		 * 1. key=org.apache.dubbo.DemoService.configurators
-		 * 2. key = org.apache.dubbo.DemoService.condition-router
-		 */
-		i := strings.LastIndex(key, ".")
-		key = key[0:i] + "/" + key[i+1:]
+		key = c.GetURL().GetParam(constant.ConfigNamespaceKey, config_center.DefaultGroup)
 	}
 	content, _, err := c.client.GetContent(c.rootPath + "/" + key)
 	if err != nil {

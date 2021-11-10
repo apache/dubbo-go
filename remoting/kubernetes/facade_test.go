@@ -60,7 +60,7 @@ func (r *mockFacade) IsAvailable() bool {
 
 func Test_Facade(t *testing.T) {
 	regUrl, err := common.NewURL("registry://127.0.0.1:443",
-		common.WithParamsValue(constant.RoleKey, strconv.Itoa(common.CONSUMER)))
+		common.WithParamsValue(constant.RegistryRoleKey, strconv.Itoa(common.CONSUMER)))
 	if err != nil {
 		t.Fatal(err)
 	}

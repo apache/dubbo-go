@@ -196,13 +196,13 @@ func newSummaryVec(name, namespace string, labels []string) *prometheus.SummaryV
 
 // isProvider shows whether this url represents the application received the request as server
 func isProvider(url *common.URL) bool {
-	role := url.GetParam(constant.RoleKey, "")
+	role := url.GetParam(constant.RegistryRoleKey, "")
 	return strings.EqualFold(role, strconv.Itoa(common.PROVIDER))
 }
 
 // isConsumer shows whether this url represents the application sent then request as client
 func isConsumer(url *common.URL) bool {
-	role := url.GetParam(constant.RoleKey, "")
+	role := url.GetParam(constant.RegistryRoleKey, "")
 	return strings.EqualFold(role, strconv.Itoa(common.CONSUMER))
 }
 

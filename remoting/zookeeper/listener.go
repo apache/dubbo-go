@@ -175,7 +175,7 @@ func (l *ZkEventListener) handleZkNodeEvent(zkPath string, children []string, li
 	for _, n := range newChildren {
 
 		newNode = path.Join(zkPath, n)
-		logger.Infof("add zkNode{%s}", newNode)
+		logger.Infof("[Zookeeper Listener] add zkNode{%s}", newNode)
 		content, _, connErr := l.client.Conn.Get(newNode)
 		if connErr != nil {
 			logger.Errorf("Get new node path {%v} 's content error,message is  {%v}",
@@ -196,7 +196,7 @@ func (l *ZkEventListener) handleZkNodeEvent(zkPath string, children []string, li
 				delete(l.pathMap, zkPath)
 				l.pathMapLock.Unlock()
 			}
-			logger.Warnf("handleZkNodeEvent->listenSelf(zk path{%s}) goroutine exit now", node)
+			logger.Debugf("handleZkNodeEvent->listenSelf(zk path{%s}) goroutine exit now", node)
 		}(newNode, listener)
 	}
 
@@ -314,7 +314,7 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkRootPath string, li
 			if !listener.DataChange(remoting.Event{Path: zkNodePath, Action: remoting.EventTypeAdd, Content: string(content)}) {
 				continue
 			}
-			logger.Infof("listen dubbo service key{%s}", zkNodePath)
+			logger.Infof("[Zookeeper Listener] listen dubbo service key{%s}", zkNodePath)
 			l.wg.Add(1)
 			go func(zkPath string, listener remoting.DataListener) {
 				// invoker l.wg.Done() in l.listenServiceNodeEvent
@@ -390,7 +390,7 @@ func timeSecondDuration(sec int) time.Duration {
 //                            |
 //                            --------> listenServiceNodeEvent
 func (l *ZkEventListener) ListenServiceEvent(conf *common.URL, zkPath string, listener remoting.DataListener) {
-	logger.Infof("listen dubbo path{%s}", zkPath)
+	logger.Infof("[Zookeeper Listener] listen dubbo path{%s}", zkPath)
 	l.wg.Add(1)
 	go func(zkPath string, listener remoting.DataListener) {
 		l.listenDirEvent(conf, zkPath, listener)

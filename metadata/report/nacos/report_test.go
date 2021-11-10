@@ -54,7 +54,7 @@ func TestNacosMetadataReport_CRUD(t *testing.T) {
 	assert.Nil(t, err)
 
 	serviceMi := newServiceMetadataIdentifier()
-	serviceUrl, _ := common.NewURL("registry://console.nacos.io:80", common.WithParamsValue(constant.RoleKey, strconv.Itoa(common.PROVIDER)))
+	serviceUrl, _ := common.NewURL("registry://console.nacos.io:80", common.WithParamsValue(constant.RegistryRoleKey, strconv.Itoa(common.PROVIDER)))
 	err = rpt.SaveServiceMetadata(serviceMi, serviceUrl)
 	assert.Nil(t, err)
 
@@ -97,7 +97,7 @@ func TestNacosMetadataReportFactory_CreateMetadataReport(t *testing.T) {
 }
 
 func newTestReport() report.MetadataReport {
-	regurl, _ := common.NewURL("registry://console.nacos.io:80", common.WithParamsValue(constant.RoleKey, strconv.Itoa(common.PROVIDER)))
+	regurl, _ := common.NewURL("registry://console.nacos.io:80", common.WithParamsValue(constant.RegistryRoleKey, strconv.Itoa(common.PROVIDER)))
 	res := extension.GetMetadataReportFactory("nacos").CreateMetadataReport(regurl)
 	return res
 }

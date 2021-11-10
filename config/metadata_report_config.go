@@ -31,12 +31,13 @@ import (
 
 // MetadataReportConfig is app level configuration
 type MetadataReportConfig struct {
-	Protocol string `required:"true"  yaml:"protocol"  json:"protocol,omitempty"`
-	Address  string `required:"true" yaml:"address" json:"address"`
-	Username string `yaml:"username" json:"username,omitempty"`
-	Password string `yaml:"password" json:"password,omitempty"`
-	Timeout  string `yaml:"timeout" json:"timeout,omitempty"`
-	Group    string `yaml:"group" json:"group,omitempty"`
+	Protocol  string `required:"true"  yaml:"protocol"  json:"protocol,omitempty"`
+	Address   string `required:"true" yaml:"address" json:"address"`
+	Username  string `yaml:"username" json:"username,omitempty"`
+	Password  string `yaml:"password" json:"password,omitempty"`
+	Timeout   string `yaml:"timeout" json:"timeout,omitempty"`
+	Group     string `yaml:"group" json:"group,omitempty"`
+	Namespace string `yaml:"namespace" json:"namespace,omitempty"`
 	// metadataType of this application is defined by application config, local or remote
 	metadataType string
 }
@@ -60,6 +61,8 @@ func (mc *MetadataReportConfig) ToUrl() (*common.URL, error) {
 		common.WithPassword(mc.Password),
 		common.WithLocation(mc.Address),
 		common.WithProtocol(mc.Protocol),
+		common.WithParamsValue(constant.MetadataReportGroupKey, mc.Group),
+		common.WithParamsValue(constant.MetadataReportNamespaceKey, mc.Namespace),
 		common.WithParamsValue(constant.MetadataTypeKey, mc.metadataType),
 	)
 	if err != nil || len(res.Protocol) == 0 {

@@ -144,8 +144,8 @@ func (r *BaseRegistry) Register(conf *common.URL) error {
 		conf.Port = portToRegistry
 	}
 	// todo bug when provider、consumer simultaneous initialization
-	//role, _ := strconv.Atoi(r.URL.GetParam(constant.RoleKey, ""))
-	role, _ := strconv.Atoi(conf.GetParam(constant.RoleKey, ""))
+	//role, _ := strconv.Atoi(r.URL.GetParam(constant.RegistryRoleKey, ""))
+	role, _ := strconv.Atoi(conf.GetParam(constant.RegistryRoleKey, ""))
 	// Check if the service has been registered
 	r.cltLock.Lock()
 	_, ok = r.services[conf.Key()]
@@ -270,8 +270,8 @@ func (r *BaseRegistry) processURL(c *common.URL, f func(string, string) error, c
 	params.Add("ip", localIP)
 	// params.Add("timeout", fmt.Sprintf("%d", int64(r.Timeout)/1e6))
 
-	role, _ := strconv.Atoi(c.GetParam(constant.RoleKey, ""))
-	//role, _ := strconv.Atoi(r.URL.GetParam(constant.RoleKey, ""))
+	role, _ := strconv.Atoi(c.GetParam(constant.RegistryRoleKey, ""))
+	//role, _ := strconv.Atoi(r.URL.GetParam(constant.RegistryRoleKey, ""))
 	switch role {
 
 	case common.PROVIDER:
@@ -425,7 +425,7 @@ func (r *BaseRegistry) Subscribe(url *common.URL, notifyListener NotifyListener)
 				listener.Close()
 				break
 			} else {
-				logger.Infof("update begin, service event: %v", serviceEvent.String())
+				logger.Infof("[Zookeeper Registry] update begin, service event: %v", serviceEvent.String())
 				notifyListener.Notify(serviceEvent)
 			}
 		}
@@ -456,7 +456,7 @@ func (r *BaseRegistry) UnSubscribe(url *common.URL, notifyListener NotifyListene
 			listener.Close()
 			break
 		} else {
-			logger.Infof("update begin, service event: %v", serviceEvent.String())
+			logger.Infof("[Zookeeper Registry] update begin, service event: %v", serviceEvent.String())
 			notifyListener.Notify(serviceEvent)
 		}
 	}

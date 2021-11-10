@@ -155,7 +155,7 @@ func TestZoneWareInvokerWithZoneSuccess(t *testing.T) {
 	for i := 0; i < 2; i++ {
 		zoneValue := zoneArray[i]
 		url, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i))
-		url.SetParam(constant.RegistryKey+"."+constant.ZoneKey, zoneValue)
+		url.SetParam(constant.RegistryKey+"."+constant.RegistryZoneKey, zoneValue)
 
 		invoker := mock.NewMockInvoker(ctrl)
 		invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
@@ -163,7 +163,7 @@ func TestZoneWareInvokerWithZoneSuccess(t *testing.T) {
 		invoker.EXPECT().Invoke(gomock.Any()).DoAndReturn(
 			func(invocation protocol.Invocation) protocol.Result {
 				return &protocol.RPCResult{
-					Attrs: map[string]interface{}{constant.ZoneKey: zoneValue},
+					Attrs: map[string]interface{}{constant.RegistryZoneKey: zoneValue},
 					Rest:  clusterpkg.Rest{Tried: 0, Success: true},
 				}
 			})
@@ -177,11 +177,11 @@ func TestZoneWareInvokerWithZoneSuccess(t *testing.T) {
 	inv := &invocation.RPCInvocation{}
 	// zone hangzhou
 	hz := zoneArray[0]
-	inv.SetAttachments(constant.RegistryKey+"."+constant.ZoneKey, hz)
+	inv.SetAttachments(constant.RegistryKey+"."+constant.RegistryZoneKey, hz)
 
 	result := clusterInvoker.Invoke(context.Background(), inv)
 
-	assert.Equal(t, hz, result.Attachment(constant.ZoneKey, ""))
+	assert.Equal(t, hz, result.Attachment(constant.RegistryZoneKey, ""))
 }
 
 func TestZoneWareInvokerWithZoneForceFail(t *testing.T) {
@@ -206,9 +206,9 @@ func TestZoneWareInvokerWithZoneForceFail(t *testing.T) {
 
 	inv := &invocation.RPCInvocation{}
 	// zone hangzhou
-	inv.SetAttachments(constant.RegistryKey+"."+constant.ZoneKey, "hangzhou")
+	inv.SetAttachments(constant.RegistryKey+"."+constant.RegistryZoneKey, "hangzhou")
 	// zone force
-	inv.SetAttachments(constant.RegistryKey+"."+constant.ZoneForceKey, "true")
+	inv.SetAttachments(constant.RegistryKey+"."+constant.RegistryZoneForceKey, "true")
 
 	result := clusterInvoker.Invoke(context.Background(), inv)
 

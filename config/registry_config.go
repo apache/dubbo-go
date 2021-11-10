@@ -73,14 +73,14 @@ func (c *RegistryConfig) Init() error {
 
 func (c *RegistryConfig) getUrlMap(roleType common.RoleType) url.Values {
 	urlMap := url.Values{}
-	urlMap.Set(constant.GroupKey, c.Group)
-	urlMap.Set(constant.RoleKey, strconv.Itoa(int(roleType)))
+	urlMap.Set(constant.RegistryGroupKey, c.Group)
+	urlMap.Set(constant.RegistryRoleKey, strconv.Itoa(int(roleType)))
 	urlMap.Set(constant.RegistryKey, c.Protocol)
 	urlMap.Set(constant.RegistryTimeoutKey, c.Timeout)
 	// multi registry invoker weight label for load balance
 	urlMap.Set(constant.RegistryKey+"."+constant.RegistryLabelKey, strconv.FormatBool(true))
 	urlMap.Set(constant.RegistryKey+"."+constant.PreferredKey, strconv.FormatBool(c.Preferred))
-	urlMap.Set(constant.RegistryKey+"."+constant.ZoneKey, c.Zone)
+	urlMap.Set(constant.RegistryKey+"."+constant.RegistryZoneKey, c.Zone)
 	urlMap.Set(constant.RegistryKey+"."+constant.WeightKey, strconv.FormatInt(c.Weight, 10))
 	urlMap.Set(constant.RegistryTTLKey, c.TTL)
 	for k, v := range c.Params {
@@ -127,10 +127,9 @@ func (c *RegistryConfig) toURL(roleType common.RoleType) (*common.URL, error) {
 	}
 	return common.NewURL(registryURLProtocol+"://"+address,
 		common.WithParams(c.getUrlMap(roleType)),
-		common.WithParamsValue(constant.SimplifiedKey, strconv.FormatBool(c.Simplified)),
+		common.WithParamsValue(constant.RegistrySimplifiedKey, strconv.FormatBool(c.Simplified)),
 		common.WithParamsValue(constant.RegistryKey, c.Protocol),
-		common.WithParamsValue(constant.GroupKey, c.Group),
-		common.WithParamsValue(constant.NamespaceKey, c.Namespace),
+		common.WithParamsValue(constant.RegistryNamespaceKey, c.Namespace),
 		common.WithUsername(c.Username),
 		common.WithPassword(c.Password),
 		common.WithLocation(c.Address),

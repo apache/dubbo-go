@@ -54,8 +54,8 @@ func (p *ProtocolPortsMetadataCustomizer) Customize(instance registry.ServiceIns
 	// 4 is enough... we don't have many protocol
 	protocolMap := make(map[string]int, 4)
 
-	list := metadataService.GetExportedServiceURLs()
-	if list == nil || len(list) == 0 {
+	list, err := metadataService.GetExportedServiceURLs()
+	if list == nil || len(list) == 0 || err != nil {
 		logger.Debugf("Could not find exported urls", err)
 		return
 	}

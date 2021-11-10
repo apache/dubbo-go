@@ -77,20 +77,21 @@ func (m *MetadataServiceProxy) GetExportedURLs(serviceInterface string, group st
 }
 
 // nolint
-func (m *MetadataServiceProxy) GetExportedServiceURLs() []*common.URL {
+func (m *MetadataServiceProxy) GetExportedServiceURLs() ([]*common.URL, error) {
 	logger.Error("you should never invoke this implementation")
-	return nil
+	return nil, nil
 }
 
 // nolint
-func (m *MetadataServiceProxy) GetMetadataServiceURL() *common.URL {
+func (m *MetadataServiceProxy) GetMetadataServiceURL() (*common.URL, error) {
 	logger.Error("you should never invoke this implementation")
-	return nil
+	return nil, nil
 }
 
 // nolint
-func (m *MetadataServiceProxy) SetMetadataServiceURL(*common.URL) {
+func (m *MetadataServiceProxy) SetMetadataServiceURL(*common.URL) error {
 	logger.Error("you should never invoke this implementation")
+	return nil
 }
 
 // nolint
