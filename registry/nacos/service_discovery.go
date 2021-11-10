@@ -329,21 +329,21 @@ func (n *nacosServiceDiscovery) String() string {
 
 // newNacosServiceDiscovery will create new service discovery instance
 func newNacosServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, error) {
-	discoveryUrl := common.NewURLWithOptions(
+	discoveryURL := common.NewURLWithOptions(
 		common.WithParams(url.GetParams()),
 		common.WithParamsValue(constant.TimeoutKey, url.GetParam(constant.RegistryTimeoutKey, constant.DefaultRegTimeout)),
 		common.WithParamsValue(constant.RegistryUsernameKey, url.GetParam(constant.RegistryUsernameKey, "")),
 		common.WithParamsValue(constant.RegistryPasswordKey, url.GetParam(constant.RegistryPasswordKey, "")),
 		common.WithParamsValue(constant.NacosNamespaceID, url.GetParam(constant.RegistryNamespaceKey, "")))
-	discoveryUrl.Location = url.Location
-	client, err := nacos.NewNacosClientByUrl(discoveryUrl)
+	discoveryURL.Location = url.Location
+	client, err := nacos.NewNacosClientByURL(discoveryURL)
 	if err != nil {
 		return nil, perrors.WithMessage(err, "create nacos namingClient failed.")
 	}
 
-	descriptor := fmt.Sprintf("nacos-service-discovery[%s]", discoveryUrl.Location)
+	descriptor := fmt.Sprintf("nacos-service-discovery[%s]", discoveryURL.Location)
 
-	group := discoveryUrl.Group()
+	group := discoveryURL.Group()
 	if len(group) == 0 {
 		group = defaultGroup
 	}

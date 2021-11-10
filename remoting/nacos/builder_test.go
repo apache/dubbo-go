@@ -75,9 +75,9 @@ func TestNewNacosConfigClient(t *testing.T) {
 	assert.NotNil(t, client)
 }
 
-func TestNewNacosClientByUrl(t *testing.T) {
+func TestNewNacosClientByURL(t *testing.T) {
 	regurl := getRegUrl()
-	client, err := NewNacosClientByUrl(regurl)
+	client, err := NewNacosClientByURL(regurl)
 
 	assert.Nil(t, err)
 	assert.NotNil(t, client)

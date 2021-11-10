@@ -110,8 +110,8 @@ func NewNacosClient(rc *config.RemoteConfig) (*nacosClient.NacosNamingClient, er
 	return nacosClient.NewNacosNamingClient(nacosClientName, true, scs, cc)
 }
 
-// NewNacosClientByUrl created
-func NewNacosClientByUrl(url *common.URL) (*nacosClient.NacosNamingClient, error) {
+// NewNacosClientByURL created
+func NewNacosClientByURL(url *common.URL) (*nacosClient.NacosNamingClient, error) {
 	scs, cc, err := GetNacosConfig(url)
 	if err != nil {
 		return nil, err
