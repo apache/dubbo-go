@@ -244,7 +244,8 @@ func newNacosRegistry(url *common.URL) (registry.Registry, error) {
 	logger.Infof("[Nacos Registry] New nacos registry with url = %+v", url.ToMap())
 	// key transfer: registry -> nacos
 	url.SetParam(constant.NacosNamespaceID, url.GetParam(constant.RegistryNamespaceKey, ""))
-	url.SetParam(constant.NacosUsername, url.GetParam(constant.RegistryUsernameKey, ""))
+	url.SetParam(constant.NacosUsername, url.Username)
+	url.SetParam(constant.NacosPassword, url.Password)
 	url.SetParam(constant.NacosAccessKey, url.GetParam(constant.RegistryAccessKey, ""))
 	url.SetParam(constant.NacosSecretKey, url.GetParam(constant.RegistrySecretKey, ""))
 	url.SetParam(constant.TimeoutKey, url.GetParam(constant.RegistryTimeoutKey, ""))

@@ -42,6 +42,8 @@ type RegistryConfig struct {
 	Group     string `yaml:"group" json:"group,omitempty" property:"group"`
 	Namespace string `yaml:"namespace" json:"namespace,omitempty" property:"namespace"`
 	TTL       string `default:"10s" yaml:"ttl" json:"ttl,omitempty" property:"ttl"` // unit: minute
+	AccessKey string `yaml:"access-key" json:"access-key,omitempty" property:"access-key"`
+	SecretKey string `yaml:"secret-key" json:"secret-key,omitempty" property:"secret-key"`
 	// for registry
 	Address    string `validate:"required" yaml:"address" json:"address,omitempty" property:"address"`
 	Username   string `yaml:"username" json:"username,omitempty" property:"username"`
@@ -130,6 +132,9 @@ func (c *RegistryConfig) toURL(roleType common.RoleType) (*common.URL, error) {
 		common.WithParamsValue(constant.RegistrySimplifiedKey, strconv.FormatBool(c.Simplified)),
 		common.WithParamsValue(constant.RegistryKey, c.Protocol),
 		common.WithParamsValue(constant.RegistryNamespaceKey, c.Namespace),
+		common.WithParamsValue(constant.RegistryAccessKey, c.AccessKey),
+		common.WithParamsValue(constant.RegistrySecretKey, c.SecretKey),
+		common.WithParamsValue(constant.RegistrySecretKey, c.SecretKey),
 		common.WithUsername(c.Username),
 		common.WithPassword(c.Password),
 		common.WithLocation(c.Address),

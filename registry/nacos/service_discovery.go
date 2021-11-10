@@ -332,10 +332,15 @@ func newNacosServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, error
 	discoveryURL := common.NewURLWithOptions(
 		common.WithParams(url.GetParams()),
 		common.WithParamsValue(constant.TimeoutKey, url.GetParam(constant.RegistryTimeoutKey, constant.DefaultRegTimeout)),
-		common.WithParamsValue(constant.RegistryUsernameKey, url.GetParam(constant.RegistryUsernameKey, "")),
-		common.WithParamsValue(constant.RegistryPasswordKey, url.GetParam(constant.RegistryPasswordKey, "")),
+		common.WithParamsValue(constant.NacosGroupKey, url.GetParam(constant.RegistryGroupKey, defaultGroup)),
+		common.WithParamsValue(constant.NacosUsername, url.Username),
+		common.WithParamsValue(constant.NacosPassword, url.Password),
+		common.WithParamsValue(constant.NacosAccessKey, url.GetParam(constant.RegistryAccessKey, "")),
+		common.WithParamsValue(constant.NacosSecretKey, url.GetParam(constant.RegistrySecretKey, "")),
 		common.WithParamsValue(constant.NacosNamespaceID, url.GetParam(constant.RegistryNamespaceKey, "")))
 	discoveryURL.Location = url.Location
+	discoveryURL.Username = url.Username
+	discoveryURL.Password = url.Password
 	client, err := nacos.NewNacosClientByURL(discoveryURL)
 	if err != nil {
 		return nil, perrors.WithMessage(err, "create nacos namingClient failed.")
@@ -343,10 +348,7 @@ func newNacosServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, error
 
 	descriptor := fmt.Sprintf("nacos-service-discovery[%s]", discoveryURL.Location)
 
-	group := discoveryURL.Group()
-	if len(group) == 0 {
-		group = defaultGroup
-	}
+	group := url.GetParam(constant.RegistryGroupKey, defaultGroup)
 	newInstance := &nacosServiceDiscovery{
 		group:               group,
 		namingClient:        client,

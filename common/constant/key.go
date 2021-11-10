@@ -138,8 +138,6 @@ const (
 	ServiceRegistryProtocol = "service-discovery-registry"
 	RegistryRoleKey         = "registry.role"
 	RegistryDefaultKey      = "registry.default"
-	RegistryUsernameKey     = "registry.username"
-	RegistryPasswordKey     = "registry.password"
 	RegistryAccessKey       = "registry.accesskey"
 	RegistrySecretKey       = "registry.secretkey"
 	RegistryTimeoutKey      = "registry.timeout"
