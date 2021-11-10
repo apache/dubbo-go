@@ -38,7 +38,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/config_center/file"
 	"dubbo.apache.org/dubbo-go/v3/registry"
@@ -56,8 +55,8 @@ type fileSystemServiceDiscovery struct {
 	fileMap              map[string]string
 }
 
-func newFileSystemServiceDiscovery() (registry.ServiceDiscovery, error) {
-	if config.GetMetadataReportConfg().Protocol != constant.FileKey {
+func newFileSystemServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, error) {
+	if url.Protocol != constant.FileKey {
 		return nil, perrors.New("could not init the instance because the config is invalid")
 	}
 
@@ -65,10 +64,8 @@ func newFileSystemServiceDiscovery() (registry.ServiceDiscovery, error) {
 	if err != nil {
 		return nil, perrors.WithStack(err)
 	}
-
 	fdcf := extension.GetConfigCenterFactory(constant.FileKey)
 	p := path.Join(rp, ".dubbo", constant.RegistryKey)
-	url, _ := common.NewURL("")
 	url.AddParamAvoidNil(file.ConfigCenterDirParamName, p)
 	c, err := fdcf.GetDynamicConfiguration(url)
 	if err != nil {

@@ -77,7 +77,7 @@ func initClient(protocol string) {
 	} else {
 		gettyClientConfig := protocolConf.Params
 		if gettyClientConfig == nil {
-			logger.Warnf("gettyClientConfig is nil")
+			logger.Debugf("gettyClientConfig is nil")
 			return
 		}
 		gettyClientConfigBytes, err := yaml.Marshal(gettyClientConfig)

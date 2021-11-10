@@ -64,12 +64,12 @@ func initServer(protocol string) {
 
 	protocolConf := config.GetRootConfig().Protocols[protocol]
 	if protocolConf == nil {
-		logger.Info("use default getty server config")
+		logger.Debug("use default getty server config")
 		return
 	} else {
 		gettyServerConfig := protocolConf.Params
 		if gettyServerConfig == nil {
-			logger.Warnf("gettyServerConfig is nil")
+			logger.Debug("gettyServerConfig is nil")
 			return
 		}
 
