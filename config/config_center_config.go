@@ -60,8 +60,6 @@ type CenterConfig struct {
 	Namespace string            `yaml:"namespace"  json:"namespace,omitempty"`
 	AppID     string            `default:"dubbo" yaml:"app-id"  json:"app-id,omitempty"`
 	Timeout   string            `default:"10s" yaml:"timeout"  json:"timeout,omitempty"`
-	AccessKey string            `yaml:"access-key" json:"access-key,omitempty" property:"access-key"`
-	SecretKey string            `yaml:"secret-key" json:"secret-key,omitempty" property:"secret-key"`
 	Params    map[string]string `yaml:"params"  json:"parameters,omitempty"`
 }
 
@@ -96,8 +94,6 @@ func (c *CenterConfig) GetUrlMap() url.Values {
 	urlMap.Set(constant.ConfigClusterKey, c.Cluster)
 	urlMap.Set(constant.ConfigAppIDKey, c.AppID)
 	urlMap.Set(constant.ConfigUsernameKey, c.Username)
-	urlMap.Set(constant.ConfigAccessKey, c.AccessKey)
-	urlMap.Set(constant.ConfigSecretKey, c.SecretKey)
 	urlMap.Set(constant.ConfigPasswordKey, c.Password)
 	urlMap.Set(constant.ConfigTimeoutKey, c.Timeout)
 

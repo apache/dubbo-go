@@ -335,8 +335,6 @@ func newNacosServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, error
 		common.WithParamsValue(constant.NacosGroupKey, url.GetParam(constant.RegistryGroupKey, defaultGroup)),
 		common.WithParamsValue(constant.NacosUsername, url.Username),
 		common.WithParamsValue(constant.NacosPassword, url.Password),
-		common.WithParamsValue(constant.NacosAccessKey, url.GetParam(constant.RegistryAccessKey, "")),
-		common.WithParamsValue(constant.NacosSecretKey, url.GetParam(constant.RegistrySecretKey, "")),
 		common.WithParamsValue(constant.NacosNamespaceID, url.GetParam(constant.RegistryNamespaceKey, "")))
 	discoveryURL.Location = url.Location
 	discoveryURL.Username = url.Username
