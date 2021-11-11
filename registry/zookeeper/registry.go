@@ -140,7 +140,7 @@ func (r *zkRegistry) InitListeners() {
 					regConfigListener.Close()
 				}
 				newDataListener.SubscribeURL(regConfigListener.subscribeURL, NewRegistryConfigurationListener(r.client, r, regConfigListener.subscribeURL))
-				go r.listener.ListenServiceEvent(regConfigListener.subscribeURL, fmt.Sprintf("/dubbo/%s/"+constant.DefaultCategory, url.QueryEscape(regConfigListener.subscribeURL.Service())), newDataListener)
+				go r.listener.ListenServiceEvent(regConfigListener.subscribeURL, fmt.Sprintf("/%s/%s/"+constant.DefaultCategory, r.URL.GetParam(constant.RegistryGroupKey, "dubbo"), url.QueryEscape(regConfigListener.subscribeURL.Service())), newDataListener)
 
 			}
 		}
@@ -283,7 +283,7 @@ func (r *zkRegistry) getListener(conf *common.URL) (*RegistryConfigurationListen
 	// Interested register to dataconfig.
 	r.dataListener.SubscribeURL(conf, zkListener)
 
-	go r.listener.ListenServiceEvent(conf, fmt.Sprintf("/dubbo/%s/"+constant.DefaultCategory, url.QueryEscape(conf.Service())), r.dataListener)
+	go r.listener.ListenServiceEvent(conf, fmt.Sprintf("/%s/%s/"+constant.DefaultCategory, r.URL.GetParam(constant.RegistryGroupKey, "dubbo"), url.QueryEscape(conf.Service())), r.dataListener)
 
 	return zkListener, nil
 }
