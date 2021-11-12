@@ -22,6 +22,7 @@ import (
 )
 
 import (
+	constant2 "github.com/nacos-group/nacos-sdk-go/common/constant"
 	"github.com/nacos-group/nacos-sdk-go/vo"
 )
 
@@ -30,7 +31,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
-	constant2 "github.com/nacos-group/nacos-sdk-go/common/constant"
 )
 
 func callback(listener config_center.ConfigurationListener, _, _, dataId, data string) {
