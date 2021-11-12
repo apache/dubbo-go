@@ -175,7 +175,7 @@ func (l *ZkEventListener) handleZkNodeEvent(zkPath string, children []string, li
 	for _, n := range newChildren {
 
 		newNode = path.Join(zkPath, n)
-		logger.Infof("[Zookeeper Listener] add zkNode{%s}", newNode)
+		logger.Debugf("[Zookeeper Listener] add zkNode{%s}", newNode)
 		content, _, connErr := l.client.Conn.Get(newNode)
 		if connErr != nil {
 			logger.Errorf("Get new node path {%v} 's content error,message is  {%v}",

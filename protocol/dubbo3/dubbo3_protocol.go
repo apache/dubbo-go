@@ -190,13 +190,7 @@ func (d *UnaryService) GetReqParamsInterfaces(methodName string) ([]interface{},
 }
 
 func (d *UnaryService) InvokeWithArgs(ctx context.Context, methodName string, arguments []interface{}) (interface{}, error) {
-	dubboAttachment := make(map[string]interface{})
-	tripleAttachment, ok := ctx.Value(tripleConstant.TripleAttachement).(tripleCommon.TripleAttachment)
-	if ok {
-		for k, v := range tripleAttachment {
-			dubboAttachment[k] = v
-		}
-	}
+	dubboAttachment, _ := ctx.Value(tripleConstant.TripleAttachement).(tripleCommon.DubboAttachment)
 	res := d.proxyImpl.Invoke(ctx, invocation.NewRPCInvocation(methodName, arguments, dubboAttachment))
 	return res, res.Error()
 }

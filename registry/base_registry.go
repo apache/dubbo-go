@@ -358,7 +358,7 @@ func (r *BaseRegistry) consumerRegistry(c *common.URL, params url.Values, f crea
 		rawURL    string
 		err       error
 	)
-	dubboPath = fmt.Sprintf("/%s/%s/%s", r.URL.GetParam(constant.RegistryGroupKey, "dubbo"), r.service(c), common.DubboNodes[common.PROVIDER])
+	dubboPath = fmt.Sprintf("/%s/%s/%s", r.URL.GetParam(constant.RegistryGroupKey, "dubbo"), r.service(c), common.DubboNodes[common.CONSUMER])
 
 	if f != nil {
 		err = f(dubboPath)
@@ -412,7 +412,7 @@ func (r *BaseRegistry) Subscribe(url *common.URL, notifyListener NotifyListener)
 				listener.Close()
 				break
 			} else {
-				logger.Infof("[Zookeeper Registry] update begin, service event: %v", serviceEvent.String())
+				logger.Debugf("[Zookeeper Registry] update begin, service event: %v", serviceEvent.String())
 				notifyListener.Notify(serviceEvent)
 			}
 		}
@@ -443,7 +443,7 @@ func (r *BaseRegistry) UnSubscribe(url *common.URL, notifyListener NotifyListene
 			listener.Close()
 			break
 		} else {
-			logger.Infof("[Zookeeper Registry] update begin, service event: %v", serviceEvent.String())
+			logger.Debugf("[Zookeeper Registry] update begin, service event: %v", serviceEvent.String())
 			notifyListener.Notify(serviceEvent)
 		}
 	}
