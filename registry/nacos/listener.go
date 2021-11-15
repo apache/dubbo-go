@@ -46,7 +46,8 @@ import (
 
 type nacosListener struct {
 	namingClient   *nacosClient.NacosNamingClient
-	listenUrl      *common.URL
+	listenURL      *common.URL
+	regURL         *common.URL
 	events         *gxchan.UnboundedChan
 	instanceMap    map[string]model.Instance
 	cacheLock      sync.Mutex
@@ -55,10 +56,11 @@ type nacosListener struct {
 }
 
 // NewNacosListener creates a data listener for nacos
-func NewNacosListener(url *common.URL, namingClient *nacosClient.NacosNamingClient) (*nacosListener, error) {
+func NewNacosListener(url, regURL *common.URL, namingClient *nacosClient.NacosNamingClient) (*nacosListener, error) {
 	listener := &nacosListener{
 		namingClient: namingClient,
-		listenUrl:    url,
+		listenURL:    url,
+		regURL:       regURL,
 		events:       gxchan.NewUnboundedChan(32),
 		instanceMap:  map[string]model.Instance{},
 		done:         make(chan struct{}),
@@ -189,8 +191,8 @@ func (nl *nacosListener) startListen() error {
 	if nl.namingClient == nil {
 		return perrors.New("nacos naming namingClient stopped")
 	}
-	serviceName := getSubscribeName(nl.listenUrl)
-	groupName := nl.listenUrl.GetParam(constant.RegistryGroupKey, defaultGroup)
+	serviceName := getSubscribeName(nl.listenURL)
+	groupName := nl.regURL.GetParam(constant.RegistryGroupKey, defaultGroup)
 	nl.subscribeParam = &vo.SubscribeParam{
 		ServiceName:       serviceName,
 		SubscribeCallback: nl.Callback,
@@ -215,7 +217,7 @@ func (nl *nacosListener) Next() (*registry.ServiceEvent, error) {
 	for {
 		select {
 		case <-nl.done:
-			logger.Warnf("nacos listener is close!listenUrl:%+v", nl.listenUrl)
+			logger.Warnf("nacos listener is close!listenUrl:%+v", nl.listenURL)
 			return nil, perrors.New("listener stopped")
 
 		case val := <-nl.events.Out():

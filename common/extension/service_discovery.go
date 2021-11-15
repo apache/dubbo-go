@@ -22,15 +22,17 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
-var discoveryCreatorMap = make(map[string]func() (registry.ServiceDiscovery, error), 4)
+var discoveryCreatorMap = make(map[string]func(url *common.URL) (registry.ServiceDiscovery, error), 4)
 
 // SetServiceDiscovery will store the @creator and @name
 // protocol indicate the implementation, like nacos
 // the name like nacos-1...
-func SetServiceDiscovery(protocol string, creator func() (registry.ServiceDiscovery, error)) {
+func SetServiceDiscovery(protocol string, creator func(url *common.URL) (registry.ServiceDiscovery, error)) {
 	discoveryCreatorMap[protocol] = creator
 }
 
@@ -38,10 +40,11 @@ func SetServiceDiscovery(protocol string, creator func() (registry.ServiceDiscov
 // protocol indicate the implementation, like nacos
 // the name like nacos-1...
 // if not found, or initialize instance failed, it will return error.
-func GetServiceDiscovery(protocol string) (registry.ServiceDiscovery, error) {
+func GetServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, error) {
+	protocol := url.GetParam(constant.RegistryKey, "")
 	creator, ok := discoveryCreatorMap[protocol]
 	if !ok {
 		return nil, perrors.New("Could not find the service discovery with discovery protocol: " + protocol)
 	}
-	return creator()
+	return creator(url)
 }

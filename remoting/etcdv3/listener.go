@@ -200,7 +200,7 @@ func (l *EventListener) ListenServiceEvent(key string, listener remoting.DataLis
 		logger.Warnf("Get new node path {%v} 's content error,message is  {%v}", key, perrors.WithMessage(err, "get children"))
 	}
 
-	logger.Infof("get key children list %s, keys %v values %v", key, keyList, valueList)
+	logger.Debugf("get key children list %s, keys %v values %v", key, keyList, valueList)
 
 	for i, k := range keyList {
 		logger.Infof("got children list key -> %s", k)
@@ -211,14 +211,14 @@ func (l *EventListener) ListenServiceEvent(key string, listener remoting.DataLis
 		})
 	}
 
-	logger.Infof("listen dubbo provider key{%s} event and wait to get all provider etcdv3 nodes", key)
+	logger.Debugf("[ETCD Listener] listen dubbo provider key{%s} event and wait to get all provider etcdv3 nodes", key)
 	l.wg.Add(1)
 	go func(key string, listener remoting.DataListener) {
 		l.ListenServiceNodeEventWithPrefix(key, listener)
 		logger.Warnf("listenDirEvent(key{%s}) goroutine exit now", key)
 	}(key, listener)
 
-	logger.Infof("listen dubbo service key{%s}", key)
+	logger.Infof("[ETCD Listener] listen dubbo service key{%s}", key)
 	l.wg.Add(1)
 	go func(key string) {
 		if l.ListenServiceNodeEvent(key) {

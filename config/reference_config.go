@@ -46,10 +46,10 @@ type ReferenceConfig struct {
 	pxy            *proxy.Proxy
 	id             string
 	InterfaceName  string            `required:"true"  yaml:"interface"  json:"interface,omitempty" property:"interface"`
-	Check          *bool             `default:"true" yaml:"check"  json:"check,omitempty" property:"check"`
+	Check          *bool             `yaml:"check"  json:"check,omitempty" property:"check"`
 	URL            string            `yaml:"url"  json:"url,omitempty" property:"url"`
 	Filter         string            `yaml:"filter" json:"filter,omitempty" property:"filter"`
-	Protocol       string            `default:"dubbo"  yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
+	Protocol       string            `default:"tri" yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
 	RegistryIDs    []string          `yaml:"registry-ids"  json:"registry-ids,omitempty"  property:"registry-ids"`
 	Cluster        string            `yaml:"cluster"  json:"cluster,omitempty" property:"cluster"`
 	Loadbalance    string            `yaml:"loadbalance"  json:"loadbalance,omitempty" property:"loadbalance"`
@@ -95,6 +95,9 @@ func (rc *ReferenceConfig) Init(root *RootConfig) error {
 	rc.RegistryIDs = translateRegistryIds(rc.RegistryIDs)
 	if len(rc.RegistryIDs) <= 0 {
 		rc.RegistryIDs = root.Consumer.RegistryIDs
+	}
+	if rc.Check == nil {
+		rc.Check = &root.Consumer.Check
 	}
 	return verify(rc)
 }
@@ -252,7 +255,7 @@ func (rc *ReferenceConfig) getURLMap() url.Values {
 	urlMap.Set(constant.GroupKey, rc.Group)
 	urlMap.Set(constant.VersionKey, rc.Version)
 	urlMap.Set(constant.GenericKey, rc.Generic)
-	urlMap.Set(constant.RoleKey, strconv.Itoa(common.CONSUMER))
+	urlMap.Set(constant.RegistryRoleKey, strconv.Itoa(common.CONSUMER))
 	urlMap.Set(constant.ProvidedBy, rc.ProvidedBy)
 	urlMap.Set(constant.SerializationKey, rc.Serialization)
 

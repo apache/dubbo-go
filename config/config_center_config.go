@@ -54,10 +54,10 @@ type CenterConfig struct {
 	Address   string            `validate:"required" yaml:"address" json:"address,omitempty"`
 	DataId    string            `yaml:"data-id" json:"data-id,omitempty"`
 	Cluster   string            `yaml:"cluster" json:"cluster,omitempty"`
-	Group     string            `default:"dubbo" yaml:"group" json:"group,omitempty"`
+	Group     string            `yaml:"group" json:"group,omitempty"`
 	Username  string            `yaml:"username" json:"username,omitempty"`
 	Password  string            `yaml:"password" json:"password,omitempty"`
-	Namespace string            `default:"dubbo" yaml:"namespace"  json:"namespace,omitempty"`
+	Namespace string            `yaml:"namespace"  json:"namespace,omitempty"`
 	AppID     string            `default:"dubbo" yaml:"app-id"  json:"app-id,omitempty"`
 	Timeout   string            `default:"10s" yaml:"timeout"  json:"timeout,omitempty"`
 	Params    map[string]string `yaml:"params"  json:"parameters,omitempty"`
@@ -132,13 +132,18 @@ func startConfigCenter(rc *RootConfig) error {
 	cc := rc.ConfigCenter
 	dynamicConfig, err := cc.GetDynamicConfiguration()
 	if err != nil {
-		logger.Errorf("Start dynamic configuration center error, error message is %v", err)
+		logger.Errorf("[Config Center] Start dynamic configuration center error, error message is %v", err)
 		return err
 	}
 
 	strConf, err := dynamicConfig.GetProperties(cc.DataId, config_center.WithGroup(cc.Group))
 	if err != nil {
-		logger.Warnf("Dynamic onfig center has started, but config may not be initialized, because %s", err)
+		logger.Warnf("[Config Center] Dynamic config center has started, but config may not be initialized, because: %s", err)
+		return nil
+	}
+	if len(strConf) == 0 {
+		logger.Warnf("[Config Center] Dynamic config center has started, but got empty config with config-center configuration %+v\n"+
+			"Please check if your config-center config is correct.", cc)
 		return nil
 	}
 	koan := koanf.New(".")

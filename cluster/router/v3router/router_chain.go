@@ -51,7 +51,7 @@ func NewUniformRouterChain() (router.PriorityRouter, error) {
 	rootConfig := config.GetRootConfig()
 	dynamicConfiguration := conf.GetEnvInstance().GetDynamicConfiguration()
 	if dynamicConfiguration == nil {
-		logger.Infof("Config center does not start, please check if the configuration center has been properly configured in dubbogo.yml")
+		logger.Infof("[Mesh Router] Config center does not start, please check if the configuration center has been properly configured in dubbogo.yml")
 		return nil, nil
 	}
 	dynamicConfiguration.AddListener(rootConfig.Application.Name, r)

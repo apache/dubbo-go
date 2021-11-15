@@ -27,6 +27,8 @@ import (
 )
 
 import (
+	"github.com/dubbogo/grpc-go/metadata"
+
 	tripleConstant "github.com/dubbogo/triple/pkg/common/constant"
 	triConfig "github.com/dubbogo/triple/pkg/config"
 	"github.com/dubbogo/triple/pkg/triple"
@@ -134,7 +136,19 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 	}
 
 	// append interface id to ctx
-	ctx = context.WithValue(ctx, tripleConstant.CtxAttachmentKey, invocation.Attachments())
+	gRPCMD := make(metadata.MD, 0)
+	for k, v := range invocation.Attachments() {
+		if str, ok := v.(string); ok {
+			gRPCMD.Set(k, str)
+			continue
+		}
+		if str, ok := v.([]string); ok {
+			gRPCMD.Set(k, str...)
+			continue
+		}
+		logger.Warnf("triple attachment value with key = %s is invalid, which should be string or []string", k)
+	}
+	ctx = metadata.NewOutgoingContext(ctx, gRPCMD)
 	ctx = context.WithValue(ctx, tripleConstant.InterfaceKey, di.BaseInvoker.GetURL().GetParam(constant.InterfaceKey, ""))
 	in := make([]reflect.Value, 0, 16)
 	in = append(in, reflect.ValueOf(ctx))
@@ -146,8 +160,9 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 	methodName := invocation.MethodName()
 	triAttachmentWithErr := di.client.Invoke(methodName, in, invocation.Reply())
 	result.Err = triAttachmentWithErr.GetError()
+	result.Attrs = make(map[string]interface{})
 	for k, v := range triAttachmentWithErr.GetAttachments() {
-		result.Attachment(k, v)
+		result.Attrs[k] = v
 	}
 	result.Rest = invocation.Reply()
 	return &result

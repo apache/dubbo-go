@@ -254,8 +254,8 @@ func (mts *MetadataService) GetMetadataInfo(revision string) (*common.MetadataIn
 }
 
 // GetExportedServiceURLs get exported service urls
-func (mts *MetadataService) GetExportedServiceURLs() []*common.URL {
-	return mts.getAllService(mts.exportedServiceURLs)
+func (mts *MetadataService) GetExportedServiceURLs() ([]*common.URL, error) {
+	return mts.getAllService(mts.exportedServiceURLs), nil
 }
 
 // RefreshMetadata will always return true because it will be implement by remote service
@@ -269,11 +269,12 @@ func (mts *MetadataService) Version() (string, error) {
 }
 
 // GetMetadataServiceURL get url of MetadataService
-func (mts *MetadataService) GetMetadataServiceURL() *common.URL {
-	return mts.metadataServiceURL
+func (mts *MetadataService) GetMetadataServiceURL() (*common.URL, error) {
+	return mts.metadataServiceURL, nil
 }
 
 // GetMetadataServiceURL save url of MetadataService
-func (mts *MetadataService) SetMetadataServiceURL(url *common.URL) {
+func (mts *MetadataService) SetMetadataServiceURL(url *common.URL) error {
 	mts.metadataServiceURL = url
+	return nil
 }

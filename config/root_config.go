@@ -131,13 +131,16 @@ func registerPOJO() {
 	hessian.RegisterPOJO(&common.URL{})
 }
 
+// Init is to start dubbo-go framework, load local configuration, or read configuration from config-center if necessary.
+// It's deprecated for user to call rootConfig.Init() manually, try config.Load(config.WithRootConfig(rootConfig)) instead.
 func (rc *RootConfig) Init() error {
 	registerPOJO()
 	if err := rc.Logger.Init(); err != nil { // init default logger
 		return err
 	}
 	if err := rc.ConfigCenter.Init(rc); err != nil {
-		logger.Infof("Config center doesn't start，because %s", err)
+		logger.Infof("[Config Center] Config center doesn't start")
+		logger.Debugf("config center doesn't start because %s", err)
 	} else {
 		if err := rc.Logger.Init(); err != nil { // init logger using config from config center again
 			return err
@@ -195,12 +198,11 @@ func (rc *RootConfig) Init() error {
 
 func (rc *RootConfig) Start() {
 	startOnce.Do(func() {
+		rc.Consumer.Load()
 		rc.Provider.Load()
 		// todo if register consumer instance or has exported services
 		exportMetadataService()
 		registerServiceInstance()
-
-		rc.Consumer.Load()
 	})
 }
 

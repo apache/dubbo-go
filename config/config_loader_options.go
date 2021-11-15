@@ -44,6 +44,8 @@ type loaderConf struct {
 	delim string
 	// config bytes
 	bytes []byte
+	// user provide rootConfig built by config api
+	rc *RootConfig
 }
 
 func NewLoaderConf(opts ...LoaderConfOption) *loaderConf {
@@ -59,6 +61,9 @@ func NewLoaderConf(opts ...LoaderConfOption) *loaderConf {
 	}
 	for _, opt := range opts {
 		opt.apply(conf)
+	}
+	if conf.rc != nil {
+		return conf
 	}
 	if len(conf.bytes) <= 0 {
 		bytes, err := ioutil.ReadFile(conf.path)
@@ -102,6 +107,12 @@ func WithPath(path string) LoaderConfOption {
 		conf.bytes = bytes
 		genre := strings.Split(path, ".")
 		conf.genre = genre[len(genre)-1]
+	})
+}
+
+func WithRootConfig(rc *RootConfig) LoaderConfOption {
+	return loaderConfigFunc(func(conf *loaderConf) {
+		conf.rc = rc
 	})
 }
 
