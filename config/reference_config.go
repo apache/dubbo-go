@@ -133,7 +133,7 @@ func (rc *ReferenceConfig) Refer(srv interface{}) {
 			 For example, we have a direct url and a registry url:
 				1. "tri://localhost:10000" is a direct url
 				2. "registry://localhost:2181" is a registry url.
-			 Then, rc.URL looks like a string seperated by semicolon: "tri://localhost:10000;registry://localhost:2181".
+			 Then, rc.URL looks like a string separated by semicolon: "tri://localhost:10000;registry://localhost:2181".
 			 The result of urlStrings is a string array: []string{"tri://localhost:10000", "registry://localhost:2181"}.
 		*/
 		urlStrings := gxstrings.RegSplit(rc.URL, "\\s*[;]+\\s*")

@@ -26,6 +26,7 @@ import (
 type Filter struct{}
 
 func (f *Filter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+	//eva, err := capacityEvaluatorMapperSingleton.getMethodCapacityEvaluator(invoker.GetURL(), invocation.MethodName(), )
 	panic("implement me")
 }
 
