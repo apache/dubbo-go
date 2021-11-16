@@ -34,7 +34,7 @@ type MetricConfig struct {
 }
 
 type PushGateWayConfig struct {
-	Enabled     bool              `default:"false" yaml:"enabled",json:"enabled,omitempty"`
+	Enabled     bool              `default:"false" yaml:"enabled" json:"enabled,omitempty"`
 	BaseUrl     string            `yaml:"base-url" json:"base-url,omitempty"`
 	PushRate    string            `default:"60s" yaml:"push-rate" json:"push-rate,omitempty"`
 	GroupingKey map[string]string `yaml:"grouping-key" json:"grouping-key,omitempty"`
