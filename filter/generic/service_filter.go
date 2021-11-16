@@ -40,7 +40,7 @@ import (
 
 var (
 	serviceGenericOnce sync.Once
-	serviceGeneric     *genericFilter
+	serviceGeneric     *genericServiceFilter
 )
 
 func init() {
@@ -53,7 +53,7 @@ type genericServiceFilter struct{}
 func newGenericServiceFilter() filter.Filter {
 	if serviceGeneric == nil {
 		serviceGenericOnce.Do(func() {
-			serviceGeneric = &genericFilter{}
+			serviceGeneric = &genericServiceFilter{}
 		})
 	}
 	return serviceGeneric
