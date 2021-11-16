@@ -26,8 +26,6 @@ type HillClimbing struct {
 
 	inflight   *atomic.Uint64
 	limitation *atomic.Uint64
-
-	cpu uint64
 }
 
 func NewHillClimbing() Limiter {
@@ -37,14 +35,7 @@ func NewHillClimbing() Limiter {
 		limitation: new(atomic.Uint64),
 	}
 
-	// get cpu usage statistics regularly
-	go l.cpuStat()
-
 	return l
-}
-
-func (l *HillClimbing) cpuStat() {
-
 }
 
 func (l *HillClimbing) Inflight() uint64 {
@@ -71,6 +62,10 @@ type HillClimbingUpdater struct {
 	startTime time.Time
 	seq       uint64
 	limiter   *HillClimbing
+
+	updateInterval  *atomic.Uint64
+	lastUpdatedTime time.Time
+	successCounter *atomic.Uint64
 }
 
 func NewHillClimbingUpdater(limiter *HillClimbing) *HillClimbingUpdater {
