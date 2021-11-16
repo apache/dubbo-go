@@ -62,7 +62,7 @@ func TestProviderAuthFilter_Invoke(t *testing.T) {
 		constant.AKKey:               access,
 	})
 	ctrl := gomock.NewController(t)
-	filter := &ProviderAuthFilter{}
+	filter := &authFilter{}
 	defer ctrl.Finish()
 	invoker := mock.NewMockInvoker(ctrl)
 	result := &protocol.RPCResult{}
