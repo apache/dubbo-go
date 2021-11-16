@@ -149,7 +149,6 @@ func newHistogramVec(namespace, side, name string) *prometheus.HistogramVec {
 func isProvider(url *common.URL) bool {
 	side := url.GetParam(constant.SideKey, "")
 	return strings.EqualFold(side, providerKey)
-
 }
 
 // isConsumer shows whether this url represents the application sent then request as client

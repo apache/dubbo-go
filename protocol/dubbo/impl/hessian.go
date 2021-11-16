@@ -150,8 +150,8 @@ func marshalRequest(encoder *hessian.Encoder, p DubboPackage) ([]byte, error) {
 		request.Attachments[TIMEOUT_KEY] = strconv.Itoa(int(service.Timeout / time.Millisecond))
 	}
 
-	_ = encoder.Encode(request.Attachments)
-	return encoder.Buffer(), nil
+	err = encoder.Encode(request.Attachments)
+	return encoder.Buffer(), err
 }
 
 var versionInt = make(map[string]int)

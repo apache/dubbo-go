@@ -19,6 +19,7 @@ package proxy
 
 import (
 	"context"
+	"errors"
 	"reflect"
 	"sync"
 )
@@ -116,13 +117,6 @@ func DefaultProxyImplementFunc(p *Proxy, v common.RPCService) {
 	valueOf := reflect.ValueOf(v)
 
 	valueOfElem := valueOf.Elem()
-	typeOf := valueOfElem.Type()
-
-	// check incoming interface, incoming interface's elem must be a struct.
-	if typeOf.Kind() != reflect.Struct {
-		logger.Errorf("The type of RPCService(=\"%T\") must be a pointer of a struct.", v)
-		return
-	}
 
 	makeDubboCallProxy := func(methodName string, outs []reflect.Type) func(in []reflect.Value) []reflect.Value {
 		return func(in []reflect.Value) []reflect.Value {
@@ -227,6 +221,18 @@ func DefaultProxyImplementFunc(p *Proxy, v common.RPCService) {
 		}
 	}
 
+	if err := refectAndMakeObjectFunc(valueOfElem, makeDubboCallProxy); err != nil {
+		logger.Errorf("The type or combination type of RPCService %T must be a pointer of a struct. error is %s", v, err)
+		return
+	}
+}
+
+func refectAndMakeObjectFunc(valueOfElem reflect.Value, makeDubboCallProxy func(methodName string, outs []reflect.Type) func(in []reflect.Value) []reflect.Value) error {
+	typeOf := valueOfElem.Type()
+	// check incoming interface, incoming interface's elem must be a struct.
+	if typeOf.Kind() != reflect.Struct {
+		return errors.New("invalid type kind")
+	}
 	numField := valueOfElem.NumField()
 	for i := 0; i < numField; i++ {
 		t := typeOf.Field(i)
@@ -258,6 +264,17 @@ func DefaultProxyImplementFunc(p *Proxy, v common.RPCService) {
 			// do method proxy here:
 			f.Set(reflect.MakeFunc(f.Type(), makeDubboCallProxy(methodName, funcOuts)))
 			logger.Debugf("set method [%s]", methodName)
+		} else if f.IsValid() && f.CanSet() {
+			// for struct combination
+			valueOfSub := reflect.New(t.Type)
+			valueOfElemInterface := valueOfSub.Elem()
+			if valueOfElemInterface.Type().Kind() == reflect.Struct {
+				if err := refectAndMakeObjectFunc(valueOfElemInterface, makeDubboCallProxy); err != nil {
+					return err
+				}
+				f.Set(valueOfElemInterface)
+			}
 		}
 	}
+	return nil
 }

@@ -13,8 +13,8 @@ require (
 	github.com/creasty/defaults v1.5.2
 	github.com/dubbogo/go-zookeeper v1.0.3
 	github.com/dubbogo/gost v1.11.19
-	github.com/dubbogo/grpc-go v1.42.4-triple
-	github.com/dubbogo/triple v1.1.2
+	github.com/dubbogo/grpc-go v1.42.5-triple
+	github.com/dubbogo/triple v1.1.3
 	github.com/emicklei/go-restful/v3 v3.7.1
 	github.com/emirpasic/gods v1.12.0
 	github.com/fsnotify/fsnotify v1.5.1
@@ -33,8 +33,6 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
 	github.com/nacos-group/nacos-sdk-go v1.0.9
 	github.com/natefinch/lumberjack v2.0.0+incompatible
-	github.com/onsi/ginkgo v1.10.1 // indirect
-	github.com/onsi/gomega v1.7.0 // indirect
 	github.com/opentracing/opentracing-go v1.2.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.11.0
@@ -50,7 +48,6 @@ require (
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0
-	k8s.io/api v0.16.9
 	k8s.io/apimachinery v0.16.9
 	k8s.io/client-go v0.16.9
 )

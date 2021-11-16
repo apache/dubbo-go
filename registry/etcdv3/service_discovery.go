@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"strings"
 	"sync"
-	"time"
 )
 
 import (
@@ -33,10 +32,10 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 	"dubbo.apache.org/dubbo-go/v3/remoting/etcdv3"
@@ -202,7 +201,7 @@ func (e *etcdV3ServiceDiscovery) GetHealthyInstancesByPage(serviceName string, o
 	return gxpage.NewPage(offset, pageSize, res, len(all))
 }
 
-// Batch get all instances by the specified service names
+// GetRequestInstances Batch get all instances by the specified service names
 func (e *etcdV3ServiceDiscovery) GetRequestInstances(serviceNames []string, offset int, requestedSize int) map[string]gxpage.Pager {
 	res := make(map[string]gxpage.Pager, len(serviceNames))
 	for _, name := range serviceNames {
@@ -278,7 +277,7 @@ func (e *etcdV3ServiceDiscovery) registerServiceWatcher(serviceName string) erro
 	return nil
 }
 
-// when child data change should DispatchEventByServiceName
+// DataChange when child data change should DispatchEventByServiceName
 func (e *etcdV3ServiceDiscovery) DataChange(eventType remoting.Event) bool {
 	if eventType.Action == remoting.EventTypeUpdate {
 		instance := &registry.DefaultServiceInstance{}
@@ -304,32 +303,27 @@ func (e *etcdV3ServiceDiscovery) DataChange(eventType remoting.Event) bool {
 }
 
 // newEtcdv3ServiceDiscovery
-func newEtcdV3ServiceDiscovery() (registry.ServiceDiscovery, error) {
+func newEtcdV3ServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, error) {
 	initLock.Lock()
 	defer initLock.Unlock()
 
-	metadataReportConfig := config.GetMetadataReportConfg()
+	timeout := url.GetParamDuration(constant.RegistryTimeoutKey, constant.DefaultRegTimeout)
 
-	to, err := time.ParseDuration(metadataReportConfig.Timeout)
-	if err != nil {
-		logger.Errorf("timeout config %v is invalid,err is %v", metadataReportConfig.Timeout, err.Error())
-		return nil, err
-	}
-	logger.Infof("etcd address is: %v,timeout is:%s", metadataReportConfig.Timeout, to.String())
+	logger.Infof("etcd address is: %v,timeout is:%s", url.Location, timeout.String())
 
 	client := etcdv3.NewServiceDiscoveryClient(
 		gxetcd.WithName(gxetcd.RegistryETCDV3Client),
-		gxetcd.WithTimeout(to),
-		gxetcd.WithEndpoints(strings.Split(metadataReportConfig.Address, ",")...),
+		gxetcd.WithTimeout(timeout),
+		gxetcd.WithEndpoints(strings.Split(url.Location, ",")...),
 	)
 
-	descriptor := fmt.Sprintf("etcd-service-discovery[%s]", metadataReportConfig.Address)
+	descriptor := fmt.Sprintf("etcd-service-discovery[%s]", url.Location)
 
 	return &etcdV3ServiceDiscovery{
-		descriptor,
-		client,
-		nil,
-		gxset.NewSet(),
-		make(map[string]*etcdv3.EventListener),
-		make(map[string]*gxset.HashSet)}, nil
+		descriptor:          descriptor,
+		client:              client,
+		serviceInstance:     nil,
+		services:            gxset.NewSet(),
+		childListenerMap:    make(map[string]*etcdv3.EventListener),
+		instanceListenerMap: make(map[string]*gxset.HashSet)}, nil
 }

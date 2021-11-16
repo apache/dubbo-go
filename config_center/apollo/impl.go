@@ -36,6 +36,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	cc "dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/config_center/parser"
 )
@@ -66,6 +67,7 @@ func newApolloConfiguration(url *common.URL) (*apolloConfiguration, error) {
 		IsBackupConfig:   url.GetParamBool(constant.ConfigBackupConfigKey, true),
 		BackupConfigPath: url.GetParam(constant.ConfigBackupConfigPathKey, ""),
 	}
+	logger.Infof("[Apollo ConfigCenter] New Apollo ConfigCenter with Configuration: %+v, url = %+v", c.appConf, c.url)
 	agollo.InitCustomConfig(func() (*config.AppConfig, error) {
 		return c.appConf, nil
 	})

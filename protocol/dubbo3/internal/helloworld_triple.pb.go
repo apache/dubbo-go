@@ -28,13 +28,13 @@ import (
 )
 
 import (
-	common "github.com/dubbogo/triple/pkg/common"
-	constant "github.com/dubbogo/triple/pkg/common/constant"
-	triple "github.com/dubbogo/triple/pkg/triple"
-
 	grpc "github.com/dubbogo/grpc-go"
 	codes "github.com/dubbogo/grpc-go/codes"
 	status "github.com/dubbogo/grpc-go/status"
+
+	common "github.com/dubbogo/triple/pkg/common"
+	constant "github.com/dubbogo/triple/pkg/common/constant"
+	triple "github.com/dubbogo/triple/pkg/triple"
 )
 
 import (

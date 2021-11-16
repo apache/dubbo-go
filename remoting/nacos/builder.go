@@ -35,6 +35,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/config"
 )
 
@@ -72,12 +73,14 @@ func GetNacosConfig(url *common.URL) ([]nacosConstant.ServerConfig, nacosConstan
 		serverConfigs = append(serverConfigs, nacosConstant.ServerConfig{IpAddr: ip, Port: uint64(port)})
 	}
 
-	timeout := url.GetParamDuration(constant.ConfigTimeoutKey, constant.DefaultRegTimeout)
+	timeout := url.GetParamDuration(constant.TimeoutKey, constant.DefaultRegTimeout)
 
 	clientConfig := nacosConstant.ClientConfig{
 		TimeoutMs:           uint64(int32(timeout / time.Millisecond)),
-		BeatInterval:        url.GetParamInt(constant.NacosBeatIntervalKey, 5000),
 		NamespaceId:         url.GetParam(constant.NacosNamespaceID, ""),
+		Username:            url.GetParam(constant.NacosUsername, ""),
+		Password:            url.GetParam(constant.NacosPassword, ""),
+		BeatInterval:        url.GetParamInt(constant.NacosBeatIntervalKey, 5000),
 		AppName:             url.GetParam(constant.NacosAppNameKey, ""),
 		Endpoint:            url.GetParam(constant.NacosEndpoint, ""),
 		RegionId:            url.GetParam(constant.NacosRegionIDKey, ""),
@@ -87,8 +90,6 @@ func GetNacosConfig(url *common.URL) ([]nacosConstant.ServerConfig, nacosConstan
 		CacheDir:            url.GetParam(constant.NacosCacheDirKey, ""),
 		UpdateThreadNum:     url.GetParamByIntValue(constant.NacosUpdateThreadNumKey, 20),
 		NotLoadCacheAtStart: url.GetParamBool(constant.NacosNotLoadLocalCache, true),
-		Username:            url.GetParam(constant.NacosUsername, ""),
-		Password:            url.GetParam(constant.NacosPassword, ""),
 		LogDir:              url.GetParam(constant.NacosLogDirKey, ""),
 		LogLevel:            url.GetParam(constant.NacosLogLevelKey, "info"),
 	}
@@ -109,11 +110,12 @@ func NewNacosClient(rc *config.RemoteConfig) (*nacosClient.NacosNamingClient, er
 	return nacosClient.NewNacosNamingClient(nacosClientName, true, scs, cc)
 }
 
-// NewNacosClientByUrl created
-func NewNacosClientByUrl(url *common.URL) (*nacosClient.NacosNamingClient, error) {
+// NewNacosClientByURL created
+func NewNacosClientByURL(url *common.URL) (*nacosClient.NacosNamingClient, error) {
 	scs, cc, err := GetNacosConfig(url)
 	if err != nil {
 		return nil, err
 	}
+	logger.Infof("[Nacos Client] New nacos client with config = %+v", scs)
 	return nacosClient.NewNacosNamingClient(nacosClientName, true, scs, cc)
 }

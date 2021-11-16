@@ -75,9 +75,9 @@ func TestNewNacosConfigClient(t *testing.T) {
 	assert.NotNil(t, client)
 }
 
-func TestNewNacosClientByUrl(t *testing.T) {
+func TestNewNacosClientByURL(t *testing.T) {
 	regurl := getRegUrl()
-	client, err := NewNacosClientByUrl(regurl)
+	client, err := NewNacosClientByURL(regurl)
 
 	assert.Nil(t, err)
 	assert.NotNil(t, client)
@@ -101,7 +101,7 @@ func TestTimeoutConfig(t *testing.T) {
 
 	t.Run("right timeout", func(t *testing.T) {
 
-		regurlMap.Set(constant.ConfigTimeoutKey, "5s")
+		regurlMap.Set(constant.TimeoutKey, "5s")
 
 		newURL, _ := common.NewURL("registry://console.nacos.io:80", common.WithParams(regurlMap))
 
@@ -112,7 +112,7 @@ func TestTimeoutConfig(t *testing.T) {
 	})
 
 	t.Run("invalid timeout", func(t *testing.T) {
-		regurlMap.Set(constant.ConfigTimeoutKey, "5ab")
+		regurlMap.Set(constant.TimeoutKey, "5ab")
 
 		newURL, _ := common.NewURL("registry://console.nacos.io:80", common.WithParams(regurlMap))
 		_, cc, err := GetNacosConfig(newURL)
@@ -130,7 +130,7 @@ func getRegUrl() *common.URL {
 	// regurlMap.Set(constant.NacosUsername, "nacos")
 	// regurlMap.Set(constant.NacosPassword, "nacos")
 	regurlMap.Set(constant.NacosNamespaceID, "nacos")
-	regurlMap.Set(constant.ConfigTimeoutKey, "5s")
+	regurlMap.Set(constant.TimeoutKey, "5s")
 
 	regurl, _ := common.NewURL("registry://console.nacos.io:80", common.WithParams(regurlMap))
 

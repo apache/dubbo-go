@@ -191,7 +191,7 @@ func (proto *registryProtocol) Export(invoker protocol.Invoker) protocol.Exporte
 		if regI, loaded := proto.registries.Load(registryUrl.Key()); !loaded {
 			reg = getRegistry(registryUrl)
 			proto.registries.Store(registryUrl.Key(), reg)
-			logger.Infof("Export proto:%p registries address:%p", proto, proto.registries)
+			logger.Debugf("Export proto:%p registries address:%p", proto, proto.registries)
 		} else {
 			reg = regI.(registry.Registry)
 		}
@@ -205,15 +205,15 @@ func (proto *registryProtocol) Export(invoker protocol.Invoker) protocol.Exporte
 	}
 
 	key := getCacheKey(invoker)
-	logger.Infof("The cached exporter keys is %v!", key)
+	logger.Debugf("The cached exporter keys is %v!", key)
 	cachedExporter, loaded := proto.bounds.Load(key)
 	if loaded {
-		logger.Infof("The exporter has been cached, and will return cached exporter!")
+		logger.Debugf("The exporter has been cached, and will return cached exporter!")
 	} else {
 		wrappedInvoker := newWrappedInvoker(invoker, providerUrl)
 		cachedExporter = extension.GetProtocol(protocolwrapper.FILTER).Export(wrappedInvoker)
 		proto.bounds.Store(key, cachedExporter)
-		logger.Infof("The exporter has not been cached, and will return a new exporter!")
+		logger.Debugf("The exporter has not been cached, and will return a new exporter!")
 	}
 
 	if registryUrl.Protocol != "" {
