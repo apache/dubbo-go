@@ -24,9 +24,10 @@ import (
 
 import (
 	hessian "github.com/apache/dubbo-go-hessian2"
-
+	"github.com/knadh/koanf"
+	"github.com/knadh/koanf/parsers/yaml"
+	"github.com/knadh/koanf/providers/rawbytes"
 	perrors "github.com/pkg/errors"
-
 	"go.uber.org/atomic"
 )
 
@@ -35,6 +36,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/metadata/service/exporter"
 )
 
@@ -357,4 +359,30 @@ func publishMapping(sc exporter.MetadataServiceExporter) error {
 		}
 	}
 	return nil
+}
+
+// Process receive changing listener's event, dynamic update config
+func (rc *RootConfig) Process(event *config_center.ConfigChangeEvent) {
+	logger.Info("CenterConfig process event:\n%+v", event)
+	koan := koanf.New(".")
+	if err := koan.Load(rawbytes.Provider([]byte(event.Value.(string))), yaml.Parser()); err != nil {
+		logger.Errorf("CenterConfig process load failed, got error %#v", err)
+		return
+	}
+	tempRootConfig := &RootConfig{}
+	if err := koan.UnmarshalWithConf(rc.Prefix(),
+		tempRootConfig, koanf.UnmarshalConf{Tag: "yaml"}); err != nil {
+		logger.Errorf("CenterConfig process unmarshalConf failed, got error %#v", err)
+		return
+	}
+	// update registries timeout, rang each registryId(eg: demoZK) ,
+	// if nacos's registry timeout not equal local root config's registry timeout , update.
+	for _, registryId := range tempRootConfig.getRegistryIds() {
+		tempRegistry := tempRootConfig.Registries[registryId]
+		rcRegistry := rc.Registries[registryId]
+		if tempRegistry != nil && rcRegistry != nil && tempRegistry.Timeout != rcRegistry.Timeout {
+			rc.Registries[registryId].Timeout = tempRegistry.Timeout
+			logger.Infof("CenterConfig process update %s timeout, new value:%s", registryId, rc.Registries[registryId].Timeout)
+		}
+	}
 }

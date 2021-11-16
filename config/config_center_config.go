@@ -155,6 +155,7 @@ func startConfigCenter(rc *RootConfig) error {
 		return err
 	}
 
+	dynamicConfig.AddListener(cc.DataId, rc, config_center.WithGroup(cc.Group))
 	return nil
 }
 
