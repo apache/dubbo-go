@@ -6,7 +6,7 @@ dubbo:
       address: 127.0.0.1:2181
   protocols:
     triple:
-      name: "tri"
+      name: tri
       port: 20000
   provider:
     registry-ids:
