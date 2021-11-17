@@ -346,7 +346,7 @@ func (l *ZkEventListener) startScheduleWatchTask(
 				ticker = time.NewTicker(tickerTTL)
 			}
 		case zkEvent := <-childEventCh:
-			logger.Debugf("get a zookeeper childEventCh{type:%s, server:%s, path:%s, state:%d-%s, err:%v}",
+			logger.Debugf("Get a zookeeper childEventCh{type:%s, server:%s, path:%s, state:%d-%s, err:%v}",
 				zkEvent.Type.String(), zkEvent.Server, zkEvent.Path, zkEvent.State, gxzookeeper.StateToString(zkEvent.State), zkEvent.Err)
 			ticker.Stop()
 			if zkEvent.Type == zk.EventNodeChildrenChanged {
