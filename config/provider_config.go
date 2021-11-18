@@ -37,6 +37,8 @@ type ProviderConfig struct {
 	Register bool `yaml:"register" json:"register" property:"register"`
 	// RegistryIDs is registry ids list
 	RegistryIDs []string `yaml:"registry-ids" json:"registry-ids" property:"registry-ids"`
+	// TracingKey is tracing ids list
+	TracingKey string `yaml:"tracing-key" json:"tracing-key" property:"tracing-key"`
 	// Services services
 	Services map[string]*ServiceConfig `yaml:"services" json:"services,omitempty" property:"services"`
 
@@ -66,6 +68,12 @@ func (c *ProviderConfig) Init(rc *RootConfig) error {
 	c.RegistryIDs = translateRegistryIds(c.RegistryIDs)
 	if len(c.RegistryIDs) <= 0 {
 		c.RegistryIDs = rc.getRegistryIds()
+	}
+	if c.TracingKey == "" && len(rc.Tracing) > 0 {
+		for k, _ := range rc.Tracing {
+			c.TracingKey = k
+			break
+		}
 	}
 	for _, service := range c.Services {
 		if err := service.Init(rc); err != nil {

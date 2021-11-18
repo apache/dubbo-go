@@ -205,11 +205,32 @@ func (dp *DubboProtocol) openServer(url *common.URL, tripleCodecType tripleConst
 		dp.serverMap[url.Location].RefreshService()
 		return
 	}
-	triOption := triConfig.NewTripleOption(
+
+	opts := []triConfig.OptionFunction{
 		triConfig.WithCodecType(tripleCodecType),
 		triConfig.WithLocation(url.Location),
 		triConfig.WithLogger(logger.GetLogger()),
-	)
+	}
+	tracingKey := url.GetParam(constant.TracingConfigKey, "")
+	if tracingKey != "" {
+		tracingConfig := config.GetTracingConfig(tracingKey)
+		if tracingConfig != nil {
+			if tracingConfig.Name == "jaeger" {
+				if tracingConfig.ServiceName == "" {
+					tracingConfig.ServiceName = config.GetApplicationConfig().Name
+				}
+				opts = append(opts, triConfig.WithJaegerConfig(
+					tracingConfig.Address,
+					tracingConfig.ServiceName,
+					tracingConfig.UseAgent,
+				))
+			} else {
+				logger.Warnf("unsupported tracing name %s, now triple only support jaeger", tracingConfig.Name)
+			}
+		}
+	}
+
+	triOption := triConfig.NewTripleOption(opts...)
 
 	_, ok = dp.ExporterMap().Load(url.ServiceKey())
 	if !ok {
