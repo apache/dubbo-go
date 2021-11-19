@@ -23,9 +23,12 @@ import (
 
 import (
 	"github.com/creasty/defaults"
+
+	tripleConstant "github.com/dubbogo/triple/pkg/common/constant"
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 )
@@ -75,11 +78,40 @@ func (c *ProviderConfig) Init(rc *RootConfig) error {
 			break
 		}
 	}
-	for _, service := range c.Services {
-		if err := service.Init(rc); err != nil {
+	for key, serviceConfig := range c.Services {
+		if serviceConfig.Interface == "" {
+			service := GetProviderService(key)
+			// try to use interface name defined by pb
+			supportPBPackagerNameSerivce, ok := service.(common.TriplePBService)
+			if !ok {
+				logger.Errorf("Service with reference = %s is not support read interface name from it."+
+					"Please run go install github.com/dubbogo/tools/cmd/protoc-gen-go-triple@latest to update your "+
+					"protoc-gen-go-triple and re-generate your pb file again."+
+					"If you are not using pb serialization, please set 'interface' field in service config.", key)
+				continue
+			} else {
+				// use interface name defined by pb
+				serviceConfig.Interface = supportPBPackagerNameSerivce.XXX_InterfaceName()
+			}
+		}
+		if err := serviceConfig.Init(rc); err != nil {
 			return err
 		}
 	}
+
+	for k, v := range rc.Protocols {
+		if v.Name == tripleConstant.TRIPLE {
+			tripleReflectionService := NewServiceConfigBuilder().
+				SetProtocolIDs(k).
+				SetInterface("grpc.reflection.v1alpha.ServerReflection").
+				Build()
+			if err := tripleReflectionService.Init(rc); err != nil {
+				return err
+			}
+			c.Services["XXX_serverReflectionServer"] = tripleReflectionService
+		}
+	}
+
 	if err := c.check(); err != nil {
 		return err
 	}

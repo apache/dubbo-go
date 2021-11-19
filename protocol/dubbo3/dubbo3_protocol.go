@@ -89,7 +89,10 @@ func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	if serializationType == constant.ProtobufSerialization {
 		m, ok := reflect.TypeOf(service).MethodByName("XXX_SetProxyImpl")
 		if !ok {
-			panic("method XXX_SetProxyImpl is necessary for triple service")
+			logger.Errorf("PB service with key = %s is not support XXX_SetProxyImpl to pb."+
+				"Please run go install github.com/dubbogo/tools/cmd/protoc-gen-go-triple@latest to update your "+
+				"protoc-gen-go-triple and re-generate your pb file again.", key)
+			return nil
 		}
 		if invoker == nil {
 			panic(fmt.Sprintf("no invoker found for servicekey: %v", url.ServiceKey()))

@@ -59,6 +59,7 @@ import (
 	_ "dubbo.apache.org/dubbo-go/v3/metrics/prometheus"
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/dubbo"
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/dubbo3"
+	_ "dubbo.apache.org/dubbo-go/v3/protocol/dubbo3/reflection"
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/grpc"
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/jsonrpc"
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/rest"
