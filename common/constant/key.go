@@ -227,6 +227,17 @@ const (
 )
 
 const (
+	POLARIS_KEY                    = "polaris"
+	POLARIS_DEFAULT_ROLETYPE       = 3
+	POLARIS_CONFIG_FILE_PATH       = "configPath"
+	POLARIS_NAMESPACE              = "namespace"
+	POLARIS_SERVICE_TOKEN          = "token"
+	POLARIS_SERVICE_NAME_SEPARATOR = ":"
+	POLARIS_DUBBO_PATH             = "DUBBOPATH"
+	POLARIS_INSTANCE_ID            = "polaris.instanceID"
+)
+
+const (
 	FILE_KEY = "file"
 )
 
