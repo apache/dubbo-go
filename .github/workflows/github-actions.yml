@@ -53,6 +53,14 @@ jobs:
             go get -v -t -d ./...
         fi
 
+    - name: Check improts
+      run: |
+        export GO111MODULE=on
+        cd ~
+        go get -u github.com/dubbogo/tools/cmd/imports-formatter@v1.0.3
+        imports-formatter -path .
+        git status && [[ -z `git status -s` ]]
+
     - name: gofmt
       run: |
         go fmt ./... && git status && [[ -z `git status -s` ]]
