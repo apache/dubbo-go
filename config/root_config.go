@@ -184,7 +184,9 @@ func (rc *RootConfig) Init() error {
 		return err
 	}
 	for _, t := range rc.Tracing {
-		t.Init()
+		if err := t.Init(); err != nil {
+			return err
+		}
 	}
 	if err := initRouterConfig(rc); err != nil {
 		return err
