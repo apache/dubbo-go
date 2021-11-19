@@ -75,6 +75,7 @@ type ServiceConfig struct {
 	ParamSign                   string            `yaml:"param.sign" json:"param.sign,omitempty" property:"param.sign"`
 	Tag                         string            `yaml:"tag" json:"tag,omitempty" property:"tag"`
 	GrpcMaxMessageSize          int               `default:"4" yaml:"max_message_size" json:"max_message_size,omitempty"`
+	TracingKey                  string            `yaml:"tracing-key" json:"tracing-key,omitempty" propertiy:"tracing-key"`
 
 	RCProtocolsMap  map[string]*ProtocolConfig
 	RCRegistriesMap map[string]*RegistryConfig
@@ -119,6 +120,9 @@ func (svc *ServiceConfig) Init(rc *RootConfig) error {
 		for k, _ := range rc.Protocols {
 			svc.ProtocolIDs = append(svc.ProtocolIDs, k)
 		}
+	}
+	if svc.TracingKey == "" {
+		svc.TracingKey = rc.Provider.TracingKey
 	}
 	svc.export = true
 	return verify(svc)
@@ -377,6 +381,7 @@ func (svc *ServiceConfig) getUrlMap() url.Values {
 	urlMap.Set(constant.TPSLimitRateKey, svc.TpsLimitRate)
 	urlMap.Set(constant.TPSLimiterKey, svc.TpsLimiter)
 	urlMap.Set(constant.TPSRejectedExecutionHandlerKey, svc.TpsLimitRejectedHandler)
+	urlMap.Set(constant.TracingConfigKey, svc.TracingKey)
 
 	// execute limit filter
 	urlMap.Set(constant.ExecuteLimitKey, svc.ExecuteLimit)

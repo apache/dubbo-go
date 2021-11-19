@@ -166,6 +166,10 @@ func GetMetricConfig() *MetricConfig {
 	return rootConfig.Metric
 }
 
+func GetTracingConfig(tracingKey string) *TracingConfig {
+	return rootConfig.Tracing[tracingKey]
+}
+
 func GetMetadataReportConfg() *MetadataReportConfig {
 	return rootConfig.MetadataReport
 }
