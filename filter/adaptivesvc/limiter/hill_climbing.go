@@ -2,6 +2,7 @@ package limiter
 
 import (
 	"go.uber.org/atomic"
+	"math"
 	"sync"
 	"time"
 )
@@ -30,12 +31,13 @@ var (
 
 // HillClimbing is a limiter using HillClimbing algorithm
 type HillClimbing struct {
-	seq *atomic.Uint64
+	seq   *atomic.Uint64
+	round *atomic.Uint64
 
 	inflight   *atomic.Uint64
 	limitation *atomic.Uint64
 
-	lastUpdatedTimeMutex *sync.Mutex
+	mutex *sync.Mutex
 	// nextUpdateTime = lastUpdatedTime + updateInterval
 	updateInterval  *atomic.Uint64
 	lastUpdatedTime *atomic.Time
@@ -44,7 +46,6 @@ type HillClimbing struct {
 	successCounter *atomic.Uint64
 	rttAvg         *atomic.Float64
 
-	bestMutex *sync.Mutex
 	// indicators of history
 	bestConcurrency *atomic.Uint64
 	bestRTTAvg      *atomic.Float64
@@ -54,19 +55,19 @@ type HillClimbing struct {
 
 func NewHillClimbing() Limiter {
 	l := &HillClimbing{
-		seq:                  new(atomic.Uint64),
-		inflight:             new(atomic.Uint64),
-		limitation:           new(atomic.Uint64),
-		lastUpdatedTimeMutex: new(sync.Mutex),
-		updateInterval:       atomic.NewUint64(radicalPeriod),
-		lastUpdatedTime:      atomic.NewTime(time.Now()),
-		successCounter:       new(atomic.Uint64),
-		rttAvg:               new(atomic.Float64),
-		bestMutex:            new(sync.Mutex),
-		bestConcurrency:      new(atomic.Uint64),
-		bestRTTAvg:           new(atomic.Float64),
-		bestLimitation:       new(atomic.Uint64),
-		bestSuccessRate:      new(atomic.Uint64),
+		seq:             new(atomic.Uint64),
+		round:           new(atomic.Uint64),
+		inflight:        new(atomic.Uint64),
+		limitation:      new(atomic.Uint64),
+		mutex:           new(sync.Mutex),
+		updateInterval:  atomic.NewUint64(radicalPeriod),
+		lastUpdatedTime: atomic.NewTime(time.Now()),
+		successCounter:  new(atomic.Uint64),
+		rttAvg:          new(atomic.Float64),
+		bestConcurrency: new(atomic.Uint64),
+		bestRTTAvg:      new(atomic.Float64),
+		bestLimitation:  new(atomic.Uint64),
+		bestSuccessRate: new(atomic.Uint64),
 	}
 
 	return l
@@ -118,26 +119,20 @@ func (u *HillClimbingUpdater) DoUpdate(rtt, inflight uint64) error {
 	}()
 	VerboseDebugf("[HillClimbingUpdater] A request finished, the limiter will be updated, seq: %d.", u.seq)
 
-	u.limiter.lastUpdatedTimeMutex.Lock()
-	// if lastUpdatedTime is updated, terminate DoUpdate immediately
-	lastUpdatedTime := u.limiter.lastUpdatedTime.Load()
-	u.limiter.lastUpdatedTimeMutex.Unlock()
-
 	option, err := u.getOption(rtt, inflight)
 	if err != nil {
 		return err
 	}
-	if u.shouldDrop(lastUpdatedTime) {
-		return nil
-	}
-
 	if err = u.adjustLimitation(option); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (u *HillClimbingUpdater) getOption(rtt, inflight uint64) (HillClimbingOption, error) {
+func (u *HillClimbingUpdater) getOption(rtt, _ uint64) (HillClimbingOption, error) {
+	u.limiter.mutex.Lock()
+	defer u.limiter.mutex.Unlock()
+
 	now := time.Now()
 	option := HillClimbingOptionDoNothing
 
@@ -169,56 +164,121 @@ func (u *HillClimbingUpdater) getOption(rtt, inflight uint64) (HillClimbingOptio
 
 		successRate := uint64(1000.0 * float64(successCounter) / float64(updateInterval))
 
-		// Wrap the code into an anonymous function due to
-		// use defer to ensure the bestMutex is unlocked
-		// once the best-indicators is updated.
-		isUpdated := func() bool {
-			u.limiter.bestMutex.Lock()
-			defer u.limiter.bestMutex.Unlock()
-			if successRate > u.limiter.bestSuccessRate.Load() {
-				// successRate is the best in the history, update
-				// all best-indicators.
-				u.limiter.bestSuccessRate.Store(successRate)
-				u.limiter.bestRTTAvg.Store(rttAvg)
-				u.limiter.bestConcurrency.Store(uint64(concurrency))
-				u.limiter.bestLimitation.Store(u.limiter.limitation.Load())
-				VerboseDebugf("[HillClimbingUpdater] Best-indicators are up-to-date, " +
-					"seq: %d, bestSuccessRate: %d, bestRTTAvg: %.4f, bestConcurrency: %d," +
-					" bestLimitation: %d.", u.seq, u.limiter.bestSuccessRate.Load(),
-					u.limiter.bestRTTAvg.Load(), u.limiter.bestConcurrency.Load(),
-					u.limiter.bestLimitation.Load())
-				return true
+		if successRate > u.limiter.bestSuccessRate.Load() {
+			// successRate is the best in the history, update
+			// all best-indicators.
+			u.limiter.bestSuccessRate.Store(successRate)
+			u.limiter.bestRTTAvg.Store(rttAvg)
+			u.limiter.bestConcurrency.Store(uint64(concurrency))
+			u.limiter.bestLimitation.Store(u.limiter.limitation.Load())
+			VerboseDebugf("[HillClimbingUpdater] Best-indicators are up-to-date, "+
+				"seq: %d, bestSuccessRate: %d, bestRTTAvg: %.4f, bestConcurrency: %d,"+
+				" bestLimitation: %d.", u.seq, u.limiter.bestSuccessRate.Load(),
+				u.limiter.bestRTTAvg.Load(), u.limiter.bestConcurrency.Load(),
+				u.limiter.bestLimitation.Load())
+		} else {
+			if u.shouldShrink(successCounter, uint64(concurrency), successRate, rttAvg) {
+				if updateInterval == radicalPeriod {
+					option = HillClimbingOptionShrinkPlus
+				} else {
+					option = HillClimbingOptionShrink
+				}
+				// shrinking limitation means the process of adjusting
+				// limitation goes to stable, so extends the update
+				// interval to avoid adjusting frequently.
+				u.limiter.updateInterval.Store(minUint64(updateInterval*2, stablePeriod))
 			}
-			return false
-		}()
-
-		if !isUpdated && u.shouldShrink(successCounter, rttAvg) {
-
 		}
 
-		// reset data for the last round
+		// reset indicators for the new round
 		u.limiter.successCounter.Store(0)
 		u.limiter.rttAvg.Store(float64(rtt))
+		u.limiter.lastUpdatedTime.Store(time.Now())
+		VerboseDebugf("[HillClimbingUpdater] A new round is applied, all indicators are reset.")
 	} else {
 		// still in the current round
-		// TODO(justxuewei): [TBD] if needs to protect here using mutex??
+
 		u.limiter.successCounter.Add(1)
+		// ra = (ra * c  + r) / (c + 1), where ra denotes rttAvg,
+		// c denotes successCounter, r denotes rtt.
+		u.limiter.rttAvg.Store((rttAvg*float64(successCounter) + float64(rtt)) / float64(successCounter+1))
+		option = HillClimbingOptionDoNothing
 	}
 
 	return option, nil
 }
 
-func (u *HillClimbingUpdater) shouldShrink(counter uint64, rttAvg float64) bool {
+func (u *HillClimbingUpdater) shouldShrink(counter, concurrency, successRate uint64, rttAvg float64) bool {
+	bestSuccessRate := u.limiter.bestSuccessRate.Load()
+	bestRTTAvg := u.limiter.bestRTTAvg.Load()
 
+	diff := bestSuccessRate - successRate
+	diffPct := uint64(100.0 * float64(successRate) / float64(bestSuccessRate))
+
+	if diff <= 300 && diffPct <= 10 {
+		// diff is acceptable, shouldn't shrink
+		return false
+	}
+
+	if concurrency > bestSuccessRate || rttAvg > bestRTTAvg {
+		// The unacceptable diff dues to too large
+		// concurrency or rttAvg.
+		concDiff := concurrency - bestSuccessRate
+		concDiffPct := uint64(100.0 * float64(concurrency) / float64(bestSuccessRate))
+		rttAvgDiff := rttAvg - bestRTTAvg
+		rttAvgPctDiff := uint64(100.0 * rttAvg / bestRTTAvg)
+
+		// TODO(justxuewei): Hard-coding here is not proper, but
+		// 	it should refactor after testing.
+		var (
+			rttAvgDiffThreshold    uint64
+			rttAvgPctDiffThreshold uint64
+		)
+		if bestRTTAvg < 5 {
+			rttAvgDiffThreshold = 3
+			rttAvgPctDiffThreshold = 80
+		} else if bestRTTAvg < 10 {
+			rttAvgDiffThreshold = 2
+			rttAvgPctDiffThreshold = 30
+		} else if bestRTTAvg < 50 {
+			rttAvgDiffThreshold = 5
+			rttAvgPctDiffThreshold = 20
+		} else if bestRTTAvg < 100 {
+			rttAvgDiffThreshold = 10
+			rttAvgPctDiffThreshold = 10
+		} else {
+			rttAvgDiffThreshold = 20
+			rttAvgPctDiffThreshold = 5
+		}
+
+		return (concDiffPct > 10 && concDiff > 5) && (uint64(rttAvgDiff) > rttAvgDiffThreshold || rttAvgPctDiff >= rttAvgPctDiffThreshold)
+	}
 
 	return false
 }
 
-// TODO(justxuewei): update lastUpdatedTime
 func (u *HillClimbingUpdater) adjustLimitation(option HillClimbingOption) error {
-	u.limiter.lastUpdatedTimeMutex.Lock()
-	defer u.limiter.lastUpdatedTimeMutex.Unlock()
+	limitation := float64(u.limiter.limitation.Load())
+	oldLimitation := limitation
+	bestLimitation := float64(u.limiter.bestLimitation.Load())
+	alpha := 1.5 * math.Log(limitation)
+	beta := 0.8 * math.Log(limitation)
+	logUpdateInterval := math.Log2(float64(u.limiter.updateInterval.Load()) / 1000.0)
 
+	switch option {
+	case HillClimbingOptionExtendPlus:
+		limitation += alpha / logUpdateInterval
+	case HillClimbingOptionExtend:
+		limitation += beta / logUpdateInterval
+	case HillClimbingOptionShrinkPlus:
+		limitation = bestLimitation - alpha/logUpdateInterval
+	case HillClimbingOptionShrink:
+		limitation = bestLimitation - beta/logUpdateInterval
+	}
+
+	limitation = math.Max(1.0, math.Min(limitation, float64(maxLimitation)))
+	u.limiter.limitation.Store(uint64(limitation))
+	VerboseDebugf("[HillClimbingUpdater] The limitation is update from %d to %d.", oldLimitation, uint64(limitation))
 	return nil
 }
 

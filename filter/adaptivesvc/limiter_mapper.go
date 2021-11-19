@@ -19,47 +19,47 @@ package adaptivesvc
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/filter/adaptivesvc/capevaulator"
+	"dubbo.apache.org/dubbo-go/v3/filter/adaptivesvc/limiter"
 	"fmt"
 	"sync"
 )
 
 var (
-	capacityEvaluatorMapperSingleton *capacityEvaluatorMapper
+	limiterMapperSingleton *limiterMapper
 
 	ErrCapEvaluatorNotFound = fmt.Errorf("capacity evaluator not found")
 )
 
 func init() {
-	capacityEvaluatorMapperSingleton = newCapacityEvaluatorMapper()
+	limiterMapperSingleton = newLimiterMapper()
 }
 
-type capacityEvaluatorMapper struct {
+type limiterMapper struct {
 	mutex  *sync.Mutex
-	mapper map[string]capevaulator.CapacityEvaluator
+	mapper map[string]limiter.Limiter
 }
 
-func newCapacityEvaluatorMapper() *capacityEvaluatorMapper {
-	return &capacityEvaluatorMapper{
+func newLimiterMapper() *limiterMapper {
+	return &limiterMapper{
 		mutex:  new(sync.Mutex),
-		mapper: make(map[string]capevaulator.CapacityEvaluator),
+		mapper: make(map[string]limiter.Limiter),
 	}
 }
 
-func (m *capacityEvaluatorMapper) setMethodCapacityEvaluator(url *common.URL, methodName string,
-	eva capevaulator.CapacityEvaluator) error {
+func (m *limiterMapper) setMethodCapacityEvaluator(url *common.URL, methodName string,
+	eva limiter.Limiter) error {
 	key := fmt.Sprintf("%s%s", url.Path, methodName)
 	m.mutex.Lock()
-	capacityEvaluatorMapperSingleton.mapper[key] = eva
+	limiterMapperSingleton.mapper[key] = eva
 	m.mutex.Unlock()
 	return nil
 }
 
-func (m *capacityEvaluatorMapper) getMethodCapacityEvaluator(url *common.URL, methodName string) (
-	capevaulator.CapacityEvaluator, error) {
+func (m *limiterMapper) getMethodCapacityEvaluator(url *common.URL, methodName string) (
+	limiter.Limiter, error) {
 	key := fmt.Sprintf("%s%s", url.Path, methodName)
 	m.mutex.Lock()
-	eva, ok := capacityEvaluatorMapperSingleton.mapper[key]
+	eva, ok := limiterMapperSingleton.mapper[key]
 	m.mutex.Unlock()
 	if !ok {
 		return nil, ErrCapEvaluatorNotFound
