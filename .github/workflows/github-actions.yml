@@ -24,7 +24,7 @@ jobs:
 
     steps:
 
-    - name: Set up Go 1.x
+    - name: Set up Go ${{ matrix.go_version }}
       uses: actions/setup-go@v2
       with:
         go-version: ${{ matrix.go_version }}
@@ -57,7 +57,7 @@ jobs:
       run: |
         export GO111MODULE=on
         cd ~
-        go get -u github.com/dubbogo/tools/cmd/imports-formatter@v1.0.3
+        go get -u github.com/dubbogo/tools/cmd/imports-formatter
         imports-formatter -path .
         git status && [[ -z `git status -s` ]]
 
