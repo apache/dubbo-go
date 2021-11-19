@@ -55,6 +55,7 @@ jobs:
 
     - name: Check improts
       run: |
+        export PATH=$PATH:$(go env GOPATH)/bin
         export GO111MODULE=on
         cd ~
         go get -u github.com/dubbogo/tools/cmd/imports-formatter
