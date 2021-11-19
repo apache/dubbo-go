@@ -35,7 +35,7 @@ import (
 )
 
 func TestTokenFilterInvoke(t *testing.T) {
-	filter := &Filter{}
+	filter := &tokenFilter{}
 
 	url := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
@@ -51,7 +51,7 @@ func TestTokenFilterInvoke(t *testing.T) {
 }
 
 func TestTokenFilterInvokeEmptyToken(t *testing.T) {
-	filter := &Filter{}
+	filter := &tokenFilter{}
 
 	testUrl := common.URL{}
 	attch := make(map[string]interface{})
@@ -62,7 +62,7 @@ func TestTokenFilterInvokeEmptyToken(t *testing.T) {
 }
 
 func TestTokenFilterInvokeEmptyAttach(t *testing.T) {
-	filter := &Filter{}
+	filter := &tokenFilter{}
 
 	testUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
@@ -73,7 +73,7 @@ func TestTokenFilterInvokeEmptyAttach(t *testing.T) {
 }
 
 func TestTokenFilterInvokeNotEqual(t *testing.T) {
-	filter := &Filter{}
+	filter := &tokenFilter{}
 
 	testUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),

@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"sync"
 	"time"
 )
 
@@ -33,17 +34,29 @@ import (
 	invocation_impl "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
+var (
+	authenticatorOnce sync.Once
+	authenticator     *defaultAuthenticator
+)
+
 func init() {
-	extension.SetAuthenticator(constant.DefaultAuthenticator, func() filter.Authenticator {
-		return &DefaultAuthenticator{}
-	})
+	extension.SetAuthenticator(constant.DefaultAuthenticator, newDefaultAuthenticator)
 }
 
-// DefaultAuthenticator is the default implementation of Authenticator
-type DefaultAuthenticator struct{}
+// defaultAuthenticator is the default implementation of Authenticator
+type defaultAuthenticator struct{}
+
+func newDefaultAuthenticator() filter.Authenticator {
+	if authenticator == nil {
+		authenticatorOnce.Do(func() {
+			authenticator = &defaultAuthenticator{}
+		})
+	}
+	return authenticator
+}
 
 // Sign adds the signature to the invocation
-func (authenticator *DefaultAuthenticator) Sign(invocation protocol.Invocation, url *common.URL) error {
+func (authenticator *defaultAuthenticator) Sign(invocation protocol.Invocation, url *common.URL) error {
 	currentTimeMillis := strconv.Itoa(int(time.Now().Unix() * 1000))
 
 	consumer := url.GetParam(constant.ApplicationKey, "")
@@ -83,7 +96,7 @@ func getSignature(url *common.URL, invocation protocol.Invocation, secrectKey st
 }
 
 // Authenticate verifies whether the signature sent by the requester is correct
-func (authenticator *DefaultAuthenticator) Authenticate(invocation protocol.Invocation, url *common.URL) error {
+func (authenticator *defaultAuthenticator) Authenticate(invocation protocol.Invocation, url *common.URL) error {
 	accessKeyId := invocation.AttachmentsByKey(constant.AKKey, "")
 
 	requestTimestamp := invocation.AttachmentsByKey(constant.RequestTimestampKey, "")

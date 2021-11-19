@@ -19,6 +19,7 @@ package generic
 
 import (
 	"context"
+	"sync"
 )
 
 import (
@@ -34,17 +35,29 @@ import (
 	invocation2 "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
+var (
+	genericOnce sync.Once
+	instance    *genericFilter
+)
+
 func init() {
-	extension.SetFilter(constant.GenericFilterKey, func() filter.Filter {
-		return &Filter{}
-	})
+	extension.SetFilter(constant.GenericFilterKey, newGenericFilter)
 }
 
-// Filter ensures the structs are converted to maps, this filter is for consumer
-type Filter struct{}
+// genericFilter ensures the structs are converted to maps, this filter is for consumer
+type genericFilter struct{}
+
+func newGenericFilter() filter.Filter {
+	if instance == nil {
+		genericOnce.Do(func() {
+			instance = &genericFilter{}
+		})
+	}
+	return instance
+}
 
 // Invoke turns the parameters to map for generic method
-func (f *Filter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+func (f *genericFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	if isCallingToGenericService(invoker, invocation) {
 
 		mtdname := invocation.MethodName()
@@ -91,7 +104,7 @@ func (f *Filter) Invoke(ctx context.Context, invoker protocol.Invoker, invocatio
 }
 
 // OnResponse dummy process, returns the result directly
-func (f *Filter) OnResponse(_ context.Context, result protocol.Result, _ protocol.Invoker,
+func (f *genericFilter) OnResponse(_ context.Context, result protocol.Result, _ protocol.Invoker,
 	_ protocol.Invocation) protocol.Result {
 	return result
 }

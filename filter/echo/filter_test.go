@@ -33,7 +33,7 @@ import (
 )
 
 func TestFilterInvoke(t *testing.T) {
-	filter := &Filter{}
+	filter := &echoFilter{}
 	result := filter.Invoke(context.Background(), protocol.NewBaseInvoker(&common.URL{}), invocation.NewRPCInvocation("$echo", []interface{}{"OK"}, nil))
 	assert.Equal(t, "OK", result.Result())
 

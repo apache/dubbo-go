@@ -47,7 +47,7 @@ func (iv *testMockSeataInvoker) Invoke(ctx context.Context, _ protocol.Invocatio
 }
 
 func TestSeataFilter_Invoke(t *testing.T) {
-	filter := &Filter{}
+	filter := &seataFilter{}
 	result := filter.Invoke(context.Background(), &testMockSeataInvoker{}, invocation.NewRPCInvocation("$echo",
 		[]interface{}{"OK"}, map[string]interface{}{
 			string(SEATA_XID): "10.30.21.227:8091:2000047792",

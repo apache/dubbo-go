@@ -50,7 +50,7 @@ func TestDefaultAuthenticator_Authenticate(t *testing.T) {
 	requestTime := strconv.Itoa(int(time.Now().Unix() * 1000))
 	signature, _ := getSignature(testurl, inv, secret, requestTime)
 
-	authenticator := &DefaultAuthenticator{}
+	authenticator = &defaultAuthenticator{}
 
 	invcation := invocation.NewRPCInvocation("test", parmas, map[string]interface{}{
 		constant.RequestSignatureKey: signature,
@@ -72,7 +72,7 @@ func TestDefaultAuthenticator_Authenticate(t *testing.T) {
 }
 
 func TestDefaultAuthenticator_Sign(t *testing.T) {
-	authenticator := &DefaultAuthenticator{}
+	authenticator = &defaultAuthenticator{}
 	testurl, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?application=test&interface=com.ikurento.user.UserProvider&group=gg&version=2.6.0")
 	testurl.SetParam(constant.AccessKeyIDKey, "akey")
 	testurl.SetParam(constant.SecretAccessKeyKey, "skey")

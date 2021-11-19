@@ -19,6 +19,7 @@ package tps
 
 import (
 	"context"
+	"sync"
 )
 
 import (
@@ -31,10 +32,13 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
+var (
+	once     sync.Once
+	tpsLimit *tpsLimitFilter
+)
+
 func init() {
-	extension.SetFilter(constant.TpsLimitFilterKey, func() filter.Filter {
-		return &Filter{}
-	})
+	extension.SetFilter(constant.TpsLimitFilterKey, newTpsLimitFilter)
 }
 
 // Filter filters the requests by TPS
@@ -51,10 +55,19 @@ func init() {
  *   tps.limit.rejected.handler: "default", # optional, or the name of the implementation
  *   if the value of 'tps.limiter' is nil or empty string, the tps filter will do nothing
  */
-type Filter struct{}
+type tpsLimitFilter struct{}
+
+func newTpsLimitFilter() filter.Filter {
+	if tpsLimit == nil {
+		once.Do(func() {
+			tpsLimit = &tpsLimitFilter{}
+		})
+	}
+	return tpsLimit
+}
 
 // Invoke gets the configured limter to impose TPS limiting
-func (t *Filter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+func (t *tpsLimitFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	url := invoker.GetURL()
 	tpsLimiter := url.GetParam(constant.TPSLimiterKey, "")
 	rejectedExeHandler := url.GetParam(constant.TPSRejectedExecutionHandlerKey, constant.DefaultKey)
@@ -70,7 +83,7 @@ func (t *Filter) Invoke(ctx context.Context, invoker protocol.Invoker, invocatio
 }
 
 // OnResponse dummy process, returns the result directly
-func (t *Filter) OnResponse(_ context.Context, result protocol.Result, _ protocol.Invoker,
+func (t *tpsLimitFilter) OnResponse(_ context.Context, result protocol.Result, _ protocol.Invoker,
 	_ protocol.Invocation) protocol.Result {
 	return result
 }
