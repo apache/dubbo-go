@@ -24,6 +24,7 @@ import (
 )
 
 import (
+	"github.com/dubbogo/go-zookeeper/zk"
 	gxset "github.com/dubbogo/gost/container/set"
 	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
 
@@ -80,15 +81,20 @@ func newZookeeperDynamicConfiguration(url *common.URL) (*zookeeperDynamicConfigu
 		logger.Errorf("zookeeper client start error ,error message is %v", err)
 		return nil, err
 	}
+	err = c.client.Create(c.rootPath)
+	if err != nil && err != zk.ErrNodeExists {
+		return nil, err
+	}
+
+	// Before handle client restart, we need to ensure that the zk dynamic configuration successfully start and create the configuration directory
 	c.wg.Add(1)
 	go zookeeper.HandleClientRestart(c)
 
+	// Start listener
 	c.listener = zookeeper.NewZkEventListener(c.client)
 	c.cacheListener = NewCacheListener(c.rootPath)
-
-	err = c.client.Create(c.rootPath)
 	c.listener.ListenServiceEvent(url, c.rootPath, c.cacheListener)
-	return c, err
+	return c, nil
 }
 
 func (c *zookeeperDynamicConfiguration) AddListener(key string, listener config_center.ConfigurationListener, opions ...config_center.Option) {
