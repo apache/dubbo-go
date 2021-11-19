@@ -49,6 +49,7 @@ type ConsumerConfig struct {
 	AdaptiveService bool `default:"false" yaml:"adaptive-service" json:"adaptive-service" property:"adaptive-service"`
 
 	References map[string]*ReferenceConfig `yaml:"references" json:"references,omitempty" property:"references"`
+	TracingKey string                      `yaml:"tracing-key" json:"tracing-key" property:"tracing-key"`
 
 	FilterConf                     interface{} `yaml:"filter-conf" json:"filter-conf,omitempty" property:"filter-conf"`
 	MaxWaitTimeForServiceDiscovery string      `default:"3s" yaml:"max-wait-time-for-service-discovery" json:"max-wait-time-for-service-discovery,omitempty" property:"max-wait-time-for-service-discovery"`
@@ -69,6 +70,12 @@ func (cc *ConsumerConfig) Init(rc *RootConfig) error {
 	if len(cc.RegistryIDs) <= 0 {
 		cc.RegistryIDs = rc.getRegistryIds()
 	}
+	if cc.TracingKey == "" && len(rc.Tracing) > 0 {
+		for k, _ := range rc.Tracing {
+			cc.TracingKey = k
+			break
+		}
+	}
 	for _, reference := range cc.References {
 		if err := reference.Init(rc); err != nil {
 			return err
@@ -80,6 +87,7 @@ func (cc *ConsumerConfig) Init(rc *RootConfig) error {
 	if err := verify(cc); err != nil {
 		return err
 	}
+
 	cc.rootConfig = rc
 	return nil
 }

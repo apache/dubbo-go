@@ -66,6 +66,8 @@ type RootConfig struct {
 
 	Metric *MetricConfig `yaml:"metrics" json:"metrics,omitempty" property:"metrics"`
 
+	Tracing map[string]*TracingConfig `yaml:"tracing" json:"tracing,omitempty" property:"tracing"`
+
 	// Logger log
 	Logger *LoggerConfig `yaml:"logger" json:"logger,omitempty" property:"logger"`
 
@@ -181,6 +183,11 @@ func (rc *RootConfig) Init() error {
 	if err := rc.Metric.Init(); err != nil {
 		return err
 	}
+	for _, t := range rc.Tracing {
+		if err := t.Init(); err != nil {
+			return err
+		}
+	}
 	if err := initRouterConfig(rc); err != nil {
 		return err
 	}
@@ -214,6 +221,7 @@ func newEmptyRootConfig() *RootConfig {
 		Application:    NewApplicationConfigBuilder().Build(),
 		Registries:     make(map[string]*RegistryConfig),
 		Protocols:      make(map[string]*ProtocolConfig),
+		Tracing:        make(map[string]*TracingConfig),
 		Provider:       NewProviderConfigBuilder().Build(),
 		Consumer:       NewConsumerConfigBuilder().Build(),
 		Metric:         NewMetricConfigBuilder().Build(),

@@ -207,6 +207,7 @@ const (
 	ShutdownConfigPrefix       = "dubbo.shutdown"
 	MetadataReportPrefix       = "dubbo.metadata-report"
 	RouterConfigPrefix         = "dubbo.router"
+	TracingConfigPrefix        = "dubbo.tracing"
 	LoggerConfigPrefix         = "dubbo.logger"
 )
 
@@ -258,6 +259,7 @@ const (
 
 const (
 	TracingRemoteSpanCtx = DubboCtxKey("tracing.remote.span.ctx")
+	TracingConfigKey     = "config.tracing"
 )
 
 // Use for router module
