@@ -62,7 +62,7 @@ jobs:
 
     - name: Check improts
       run: |
-        imports-formatter
+        imports-formatter -path .
         git status && [[ -z `git status -s` ]]
 
     - name: gofmt
