@@ -215,16 +215,17 @@ func (dp *DubboProtocol) openServer(url *common.URL, tripleCodecType tripleConst
 	if tracingKey != "" {
 		tracingConfig := config.GetTracingConfig(tracingKey)
 		if tracingConfig != nil {
-			if tracingConfig.Name == "jaeger" {
-				if tracingConfig.ServiceName == "" {
-					tracingConfig.ServiceName = config.GetApplicationConfig().Name
-				}
+			if tracingConfig.ServiceName == "" {
+				tracingConfig.ServiceName = config.GetApplicationConfig().Name
+			}
+			switch tracingConfig.Name {
+			case "jaeger":
 				opts = append(opts, triConfig.WithJaegerConfig(
 					tracingConfig.Address,
 					tracingConfig.ServiceName,
 					tracingConfig.UseAgent,
 				))
-			} else {
+			default:
 				logger.Warnf("unsupported tracing name %s, now triple only support jaeger", tracingConfig.Name)
 			}
 		}
