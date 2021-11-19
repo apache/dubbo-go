@@ -33,16 +33,16 @@ jobs:
     - name: Check out code into the Go module directory
       uses: actions/checkout@v2
 
-#    - name: Cache dependencies
-#      uses: actions/cache@v2.1.6
-#      with:
-#        # Cache
-#        path: ~/go/pkg/mod
-#        # Cache key
-#        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-#        # An ordered list of keys to use for restoring the cache if no cache hit occurred for key
-#        restore-keys: |
-#          ${{ runner.os }}-go-
+    - name: Cache dependencies
+      uses: actions/cache@v2.1.6
+      with:
+        # Cache
+        path: ~/go/pkg/mod
+        # Cache key
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        # An ordered list of keys to use for restoring the cache if no cache hit occurred for key
+        restore-keys: |
+          ${{ runner.os }}-go-
 
     - name: Get dependencies
       run: |
@@ -53,13 +53,16 @@ jobs:
             go get -v -t -d ./...
         fi
 
-    - name: Check improts
+    - name: Install imports-formatter
       run: |
         export PATH=$PATH:$(go env GOPATH)/bin
         export GO111MODULE=on
         cd ~
         go get -u github.com/dubbogo/tools/cmd/imports-formatter@v1.0.3
-        imports-formatter -path .
+
+    - name: Check improts
+      run: |
+        imports-formatter
         git status && [[ -z `git status -s` ]]
 
     - name: gofmt
