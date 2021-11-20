@@ -195,7 +195,7 @@ func waitForSendingAndReceivingRequests() {
 		// ignore this step
 		return
 	}
-	rootConfig.Shutdown.RejectRequest = true
+	rootConfig.Shutdown.RejectRequest.Store(true)
 	waitingConsumerProcessedTimeout(rootConfig.Shutdown)
 }
 
