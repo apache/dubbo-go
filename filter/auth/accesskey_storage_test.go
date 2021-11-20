@@ -38,7 +38,7 @@ func TestDefaultAccesskeyStorage_GetAccesskeyPair(t *testing.T) {
 		common.WithParamsValue(constant.SecretAccessKeyKey, "skey"),
 		common.WithParamsValue(constant.AccessKeyIDKey, "akey"))
 	invocation := &invocation2.RPCInvocation{}
-	storage := &DefaultAccesskeyStorage{}
+	storage = &defaultAccesskeyStorage{}
 	accesskeyPair := storage.GetAccessKeyPair(invocation, url)
 	assert.Equal(t, "skey", accesskeyPair.SecretKey)
 	assert.Equal(t, "akey", accesskeyPair.AccessKey)

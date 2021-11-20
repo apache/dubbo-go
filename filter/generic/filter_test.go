@@ -44,7 +44,7 @@ func TestFilter_Invoke(t *testing.T) {
 	invokeUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
 		common.WithParamsValue(constant.GenericKey, constant.GenericSerializationDefault))
-	filter := &Filter{}
+	filter := &genericFilter{}
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -73,7 +73,7 @@ func TestFilter_InvokeWithGenericCall(t *testing.T) {
 	invokeUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
 		common.WithParamsValue(constant.GenericKey, constant.GenericSerializationDefault))
-	filter := &Filter{}
+	filter := &genericFilter{}
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
