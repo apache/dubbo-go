@@ -132,7 +132,7 @@ func NewHillClimbingUpdater(limiter *HillClimbing) *HillClimbingUpdater {
 
 func (u *HillClimbingUpdater) DoUpdate() error {
 	defer func() {
-		u.limiter.inflight.Add(-1)
+		u.limiter.inflight.Dec()
 	}()
 	VerboseDebugf("[HillClimbingUpdater] A request finished, the limiter will be updated, seq: %d.", u.seq)
 
