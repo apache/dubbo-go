@@ -58,7 +58,7 @@ func NewHillClimbing() Limiter {
 		seq:             new(atomic.Uint64),
 		round:           new(atomic.Uint64),
 		inflight:        new(atomic.Uint64),
-		limitation:      new(atomic.Uint64),
+		limitation:      atomic.NewUint64(initialLimitation),
 		mutex:           new(sync.Mutex),
 		updateInterval:  atomic.NewUint64(radicalPeriod),
 		lastUpdatedTime: atomic.NewTime(time.Now()),
