@@ -28,6 +28,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	aslimiter "dubbo.apache.org/dubbo-go/v3/filter/adaptivesvc/limiter"
 )
 
 // ProviderConfig is the default configuration of service provider
@@ -40,14 +41,13 @@ type ProviderConfig struct {
 	// TracingKey is tracing ids list
 	TracingKey string `yaml:"tracing-key" json:"tracing-key" property:"tracing-key"`
 	// Services services
-	Services map[string]*ServiceConfig `yaml:"services" json:"services,omitempty" property:"services"`
-
-	ProxyFactory string `default:"default" yaml:"proxy" json:"proxy,omitempty" property:"proxy"`
-
-	FilterConf interface{}       `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf"`
-	ConfigType map[string]string `yaml:"config_type" json:"config_type,omitempty" property:"config_type"`
-
-	rootConfig *RootConfig
+	Services     map[string]*ServiceConfig `yaml:"services" json:"services,omitempty" property:"services"`
+	ProxyFactory string                    `default:"default" yaml:"proxy" json:"proxy,omitempty" property:"proxy"`
+	FilterConf   interface{}               `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf"`
+	ConfigType   map[string]string         `yaml:"config_type" json:"config_type,omitempty" property:"config_type"`
+	// adaptive service
+	AdaptiveServiceVerbose bool `default:"false" yaml:"adaptive-service-verbose" json:"adaptive-service-verbose" property:"adaptive-service-verbose"`
+	rootConfig             *RootConfig
 }
 
 func (ProviderConfig) Prefix() string {
@@ -82,6 +82,10 @@ func (c *ProviderConfig) Init(rc *RootConfig) error {
 	}
 	if err := c.check(); err != nil {
 		return err
+	}
+	// enable adaptive service verbose
+	if c.AdaptiveServiceVerbose {
+		aslimiter.Verbose = true
 	}
 	return nil
 }

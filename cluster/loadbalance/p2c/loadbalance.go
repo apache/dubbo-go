@@ -27,6 +27,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"sync"
 	"time"
 )
 
@@ -34,11 +35,20 @@ func init() {
 	extension.SetLoadbalance(constant.LoadBalanceKeyP2C, newLoadBalance)
 }
 
-type loadBalance struct {
-}
+var (
+	once     sync.Once
+	instance loadbalance.LoadBalance
+)
+
+type loadBalance struct{}
 
 func newLoadBalance() loadbalance.LoadBalance {
-	return &loadBalance{}
+	if instance == nil {
+		once.Do(func() {
+			instance = &loadBalance{}
+		})
+	}
+	return instance
 }
 
 func (l *loadBalance) Select(invokers []protocol.Invoker, invocation protocol.Invocation) protocol.Invoker {
@@ -66,9 +76,9 @@ func (l *loadBalance) Select(invokers []protocol.Invoker, invocation protocol.In
 	// TODO(justxuewei): please consider how to get the real method name from $invoke,
 	// 	see also [#1511](https://github.com/apache/dubbo-go/issues/1511)
 	methodName := invocation.MethodName()
-	// viInterface, vjInterface means vegas latency of node i and node j
+	// remainingIIface, remainingJIface means remaining capacity of node i and node j.
 	// If one of the metrics is empty, invoke the invocation to that node directly.
-	viInterface, err := m.GetMethodMetrics(invokers[i].GetURL(), methodName, metrics.Vegas)
+	remainingIIface, err := m.GetMethodMetrics(invokers[i].GetURL(), methodName, metrics.HillClimbing)
 	if err != nil {
 		if errors.Is(err, metrics.ErrMetricsNotFound) {
 			return invokers[i]
@@ -77,7 +87,7 @@ func (l *loadBalance) Select(invokers []protocol.Invoker, invocation protocol.In
 		return nil
 	}
 
-	vjInterface, err := m.GetMethodMetrics(invokers[j].GetURL(), methodName, metrics.Vegas)
+	remainingJIface, err := m.GetMethodMetrics(invokers[j].GetURL(), methodName, metrics.HillClimbing)
 	if err != nil {
 		if errors.Is(err, metrics.ErrMetricsNotFound) {
 			return invokers[j]
@@ -87,18 +97,18 @@ func (l *loadBalance) Select(invokers []protocol.Invoker, invocation protocol.In
 	}
 
 	// Convert interface to int, if the type is unexpected, panic immediately
-	vi, ok := viInterface.(int)
+	remainingI, ok := remainingIIface.(uint64)
 	if !ok {
-		panic(fmt.Sprintf("the type of %s expects to be int, but gets %T", metrics.Vegas, viInterface))
+		panic(fmt.Sprintf("the type of %s expects to be uint64, but gets %T", metrics.HillClimbing, remainingIIface))
 	}
 
-	vj, ok := vjInterface.(int)
+	remainingJ, ok := remainingJIface.(uint64)
 	if !ok {
-		panic(fmt.Sprintf("the type of %s expects to be int, but gets %T", metrics.Vegas, viInterface))
+		panic(fmt.Sprintf("the type of %s expects to be uint64, but gets %T", metrics.HillClimbing, remainingJIface))
 	}
 
-	// For the latency time, the smaller, the better.
-	if vi < vj {
+	// For the remaining capacity, the bigger, the better.
+	if remainingI > remainingJ {
 		return invokers[i]
 	}
 

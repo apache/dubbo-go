@@ -18,5 +18,5 @@
 package metrics
 
 const (
-	Vegas = "vegas"
+	HillClimbing = "hill-climbing"
 )

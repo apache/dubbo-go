@@ -23,19 +23,30 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"sync"
+)
+
+var (
+	once     sync.Once
+	instance clusterpkg.Cluster
 )
 
 func init() {
-	extension.SetCluster(constant.ClusterKeyAdaptiveService, newCluster)
+	extension.SetCluster(constant.ClusterKeyAdaptiveService, newAdaptiveServiceCluster)
 }
 
-// cluster is a cluster for adaptive service.
-type cluster struct{}
+// adaptiveServiceCluster is a cluster for adaptive service.
+type adaptiveServiceCluster struct{}
 
-func newCluster() clusterpkg.Cluster {
-	return &cluster{}
+func newAdaptiveServiceCluster() clusterpkg.Cluster {
+	if instance == nil {
+		once.Do(func() {
+			instance = &adaptiveServiceCluster{}
+		})
+	}
+	return instance
 }
 
-func (c *cluster) Join(directory directory.Directory) protocol.Invoker {
-	return clusterpkg.BuildInterceptorChain(NewClusterInvoker(directory))
+func (c *adaptiveServiceCluster) Join(directory directory.Directory) protocol.Invoker {
+	return clusterpkg.BuildInterceptorChain(newAdaptiveServiceClusterInvoker(directory))
 }

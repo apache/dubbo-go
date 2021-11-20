@@ -27,7 +27,8 @@ import (
 var (
 	limiterMapperSingleton *limiterMapper
 
-	ErrCapEvaluatorNotFound = fmt.Errorf("capacity evaluator not found")
+	ErrLimiterNotFoundOnMapper = fmt.Errorf("limiter not found on mapper")
+	ErrLimiterTypeNotFound     = fmt.Errorf("limiter type not found")
 )
 
 func init() {
@@ -35,34 +36,47 @@ func init() {
 }
 
 type limiterMapper struct {
-	mutex  *sync.Mutex
-	mapper map[string]limiter.Limiter
+	rwMutex *sync.RWMutex
+	mapper  map[string]limiter.Limiter
 }
 
 func newLimiterMapper() *limiterMapper {
 	return &limiterMapper{
-		mutex:  new(sync.Mutex),
-		mapper: make(map[string]limiter.Limiter),
+		rwMutex: new(sync.RWMutex),
+		mapper:  make(map[string]limiter.Limiter),
 	}
 }
 
-func (m *limiterMapper) setMethodCapacityEvaluator(url *common.URL, methodName string,
-	eva limiter.Limiter) error {
+func (m *limiterMapper) newAndSetMethodLimiter(url *common.URL, methodName string, limiterType int) (limiter.Limiter, error) {
 	key := fmt.Sprintf("%s%s", url.Path, methodName)
-	m.mutex.Lock()
-	limiterMapperSingleton.mapper[key] = eva
-	m.mutex.Unlock()
-	return nil
+
+	var (
+		l  limiter.Limiter
+		ok bool
+	)
+	m.rwMutex.Lock()
+	if l, ok = limiterMapperSingleton.mapper[key]; ok {
+		return l, nil
+	}
+	switch limiterType {
+	case limiter.HillClimbingLimiter:
+		l = limiter.NewHillClimbing()
+	default:
+		return nil, ErrLimiterTypeNotFound
+	}
+	limiterMapperSingleton.mapper[key] = l
+	m.rwMutex.Unlock()
+	return l, nil
 }
 
-func (m *limiterMapper) getMethodCapacityEvaluator(url *common.URL, methodName string) (
+func (m *limiterMapper) getMethodLimiter(url *common.URL, methodName string) (
 	limiter.Limiter, error) {
 	key := fmt.Sprintf("%s%s", url.Path, methodName)
-	m.mutex.Lock()
-	eva, ok := limiterMapperSingleton.mapper[key]
-	m.mutex.Unlock()
+	m.rwMutex.RLock()
+	l, ok := limiterMapperSingleton.mapper[key]
+	m.rwMutex.RUnlock()
 	if !ok {
-		return nil, ErrCapEvaluatorNotFound
+		return nil, ErrLimiterNotFoundOnMapper
 	}
-	return eva, nil
+	return l, nil
 }
