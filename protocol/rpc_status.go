@@ -222,7 +222,6 @@ type ServiceHealthState struct {
 	refreshState *int32
 	refresh      atomic.Value
 	rebuildRoute *int32
-	//blackList    sync.Map // store unhealthy url blackList
 }
 
 func NewServiceState(serviceKey string) *ServiceHealthState {
@@ -237,15 +236,6 @@ func NewServiceState(serviceKey string) *ServiceHealthState {
 	serviceStateMap.Store(serviceKey, serviceState)
 	return serviceState
 }
-
-//func (s *ServiceHealthState) reset() {
-//	s.refresh.Store(false)
-//	atomic.StoreInt32(s.rebuildRoute, 0)
-//	s.blackList.Range(func(key, value interface{}) bool {
-//		s.blackList.Delete(key)
-//		return true
-//	})
-//}
 
 func (s *ServiceHealthState) configNeedRefresh(needRefresh bool) {
 	s.refresh.Store(needRefresh)
