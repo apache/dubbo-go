@@ -286,7 +286,7 @@ func (rc *ReferenceConfig) getURLMap() url.Values {
 	// filter
 	defaultReferenceFilter := constant.DefaultReferenceFilters
 	if rc.Generic != "" {
-		defaultReferenceFilter = constant.GenericReferenceFilters + "," + defaultReferenceFilter
+		defaultReferenceFilter = constant.GenericFilterKey + "," + defaultReferenceFilter
 	}
 	urlMap.Set(constant.ReferenceFilterKey, mergeValue(rc.rootConfig.Consumer.Filter, "", defaultReferenceFilter))
 
