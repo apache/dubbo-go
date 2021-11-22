@@ -45,6 +45,11 @@ type ReferencedRPCService interface {
 	Reference() string
 }
 
+// RPCService the type alias of interface{}
+type TriplePBService interface {
+	XXX_InterfaceName() string
+}
+
 // GetReference return the reference id of the service.
 // If the service implemented the ReferencedRPCService interface,
 // it will call the Reference method. If not, it will
