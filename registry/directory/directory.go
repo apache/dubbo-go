@@ -330,7 +330,6 @@ func (dir *RegistryDirectory) uncacheInvoker(event *registry.ServiceEvent) proto
 
 func (dir *RegistryDirectory) uncacheInvokerWithKey(key string) protocol.Invoker {
 	logger.Debugf("service will be deleted in cache invokers: invokers key is  %s!", key)
-	dir.serviceHealthState.RemoveUrlKeyUnhealthyStatus(key)
 	if cacheInvoker, ok := dir.cacheInvokersMap.Load(key); ok {
 		dir.cacheInvokersMap.Delete(key)
 		return cacheInvoker.(protocol.Invoker)
