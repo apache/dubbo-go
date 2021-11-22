@@ -37,7 +37,7 @@ func SetMetadataServiceExporter(key string, creator MetadataServiceExporterCreat
 // GetMetadataServiceExporter will create a MetadataServiceExporter instance
 func GetMetadataServiceExporter(key string, s service.MetadataService) exporter.MetadataServiceExporter {
 	if key == "" {
-		key = constant.DEFAULT_KEY
+		key = constant.DefaultKey
 	}
 	if creator, ok := metadataServiceExporterInsMap[key]; ok {
 		return creator(s)

@@ -32,8 +32,8 @@ var (
 
 func init() {
 	nameMaps = map[byte]string{
-		constant.S_Hessian2: constant.HESSIAN2_SERIALIZATION,
-		constant.S_Proto:    constant.PROTOBUF_SERIALIZATION,
+		constant.SHessian2: constant.Hessian2Serialization,
+		constant.SProto:    constant.ProtobufSerialization,
 	}
 }
 

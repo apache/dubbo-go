@@ -276,7 +276,7 @@ func packResponse(p DubboPackage, serializer Serializer) ([]byte, error) {
 }
 
 func NewDubboCodec(reader *bufio.Reader) *ProtocolCodec {
-	s, _ := GetSerializerById(constant.S_Hessian2)
+	s, _ := GetSerializerById(constant.SHessian2)
 	return &ProtocolCodec{
 		reader:     reader,
 		pkgType:    0,

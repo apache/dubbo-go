@@ -46,7 +46,7 @@ import (
 )
 
 var failbackUrl, _ = common.NewURL(
-	fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LOCAL_HOST_VALUE, constant.DEFAULT_PORT))
+	fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LocalHostValue, constant.DefaultPort))
 
 // registerFailback register failbackCluster to cluster extension.
 func registerFailback(invoker *mock.MockInvoker) protocol.Invoker {

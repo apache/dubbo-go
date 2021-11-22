@@ -58,7 +58,7 @@ func testRequestOneWay(t *testing.T, client *Client) {
 	request := remoting.NewRequest("2.0.2")
 	invocation := createInvocation("GetUser", nil, nil, []interface{}{"1", "username"},
 		[]reflect.Value{reflect.ValueOf("1"), reflect.ValueOf("username")})
-	attachment := map[string]string{INTERFACE_KEY: "com.ikurento.user.UserProvider"}
+	attachment := map[string]string{InterfaceKey: "com.ikurento.user.UserProvider"}
 	setAttachment(invocation, attachment)
 	request.Data = invocation
 	request.Event = false
@@ -109,7 +109,7 @@ func testGetBigPkg(t *testing.T, c *Client) {
 	request := remoting.NewRequest("2.0.2")
 	invocation := createInvocation("GetBigPkg", nil, nil, []interface{}{[]interface{}{nil}, user},
 		[]reflect.Value{reflect.ValueOf([]interface{}{nil}), reflect.ValueOf(user)})
-	attachment := map[string]string{INTERFACE_KEY: "com.ikurento.user.UserProvider"}
+	attachment := map[string]string{InterfaceKey: "com.ikurento.user.UserProvider"}
 	setAttachment(invocation, attachment)
 	request.Data = invocation
 	request.Event = false
@@ -128,7 +128,7 @@ func testGetUser(t *testing.T, c *Client) {
 	request := remoting.NewRequest("2.0.2")
 	invocation := createInvocation("GetUser", nil, nil, []interface{}{"1", "username"},
 		[]reflect.Value{reflect.ValueOf("1"), reflect.ValueOf("username")})
-	attachment := map[string]string{INTERFACE_KEY: "com.ikurento.user.UserProvider"}
+	attachment := map[string]string{InterfaceKey: "com.ikurento.user.UserProvider"}
 	setAttachment(invocation, attachment)
 	request.Data = invocation
 	request.Event = false
@@ -150,7 +150,7 @@ func testGetUser0(t *testing.T, c *Client) {
 	request := remoting.NewRequest("2.0.2")
 	invocation := createInvocation("GetUser0", nil, nil, []interface{}{"1", nil, "username"},
 		[]reflect.Value{reflect.ValueOf("1"), reflect.ValueOf(nil), reflect.ValueOf("username")})
-	attachment := map[string]string{INTERFACE_KEY: "com.ikurento.user.UserProvider"}
+	attachment := map[string]string{InterfaceKey: "com.ikurento.user.UserProvider"}
 	setAttachment(invocation, attachment)
 	request.Data = invocation
 	request.Event = false
@@ -169,7 +169,7 @@ func testGetUser1(t *testing.T, c *Client) {
 	request := remoting.NewRequest("2.0.2")
 	invocation := createInvocation("GetUser1", nil, nil, []interface{}{},
 		[]reflect.Value{})
-	attachment := map[string]string{INTERFACE_KEY: "com.ikurento.user.UserProvider"}
+	attachment := map[string]string{InterfaceKey: "com.ikurento.user.UserProvider"}
 	setAttachment(invocation, attachment)
 	request.Data = invocation
 	request.Event = false
@@ -187,7 +187,7 @@ func testGetUser2(t *testing.T, c *Client) {
 	request := remoting.NewRequest("2.0.2")
 	invocation := createInvocation("GetUser2", nil, nil, []interface{}{},
 		[]reflect.Value{})
-	attachment := map[string]string{INTERFACE_KEY: "com.ikurento.user.UserProvider"}
+	attachment := map[string]string{InterfaceKey: "com.ikurento.user.UserProvider"}
 	setAttachment(invocation, attachment)
 	request.Data = invocation
 	request.Event = false
@@ -204,7 +204,7 @@ func testGetUser3(t *testing.T, c *Client) {
 	invocation := createInvocation("GetUser3", nil, nil, []interface{}{},
 		[]reflect.Value{})
 	attachment := map[string]string{
-		INTERFACE_KEY: "com.ikurento.user.UserProvider",
+		InterfaceKey: "com.ikurento.user.UserProvider",
 	}
 	setAttachment(invocation, attachment)
 	request.Data = invocation
@@ -223,7 +223,7 @@ func testGetUser4(t *testing.T, c *Client) {
 	var err error
 	request := remoting.NewRequest("2.0.2")
 	invocation := invocation.NewRPCInvocation("GetUser4", []interface{}{[]interface{}{"1", "username"}}, nil)
-	attachment := map[string]string{INTERFACE_KEY: "com.ikurento.user.UserProvider"}
+	attachment := map[string]string{InterfaceKey: "com.ikurento.user.UserProvider"}
 	setAttachment(invocation, attachment)
 	request.Data = invocation
 	request.Event = false
@@ -241,7 +241,7 @@ func testGetUser5(t *testing.T, c *Client) {
 	var err error
 	request := remoting.NewRequest("2.0.2")
 	invocation := invocation.NewRPCInvocation("GetUser5", []interface{}{map[interface{}]interface{}{"id": "1", "name": "username"}}, nil)
-	attachment := map[string]string{INTERFACE_KEY: "com.ikurento.user.UserProvider"}
+	attachment := map[string]string{InterfaceKey: "com.ikurento.user.UserProvider"}
 	setAttachment(invocation, attachment)
 	request.Data = invocation
 	request.Event = false
@@ -264,7 +264,7 @@ func testGetUser6(t *testing.T, c *Client) {
 	user = &User{}
 	request := remoting.NewRequest("2.0.2")
 	invocation := invocation.NewRPCInvocation("GetUser6", []interface{}{0}, nil)
-	attachment := map[string]string{INTERFACE_KEY: "com.ikurento.user.UserProvider"}
+	attachment := map[string]string{InterfaceKey: "com.ikurento.user.UserProvider"}
 	setAttachment(invocation, attachment)
 	request.Data = invocation
 	request.Event = false
@@ -285,7 +285,7 @@ func testGetUser61(t *testing.T, c *Client) {
 	user = &User{}
 	request := remoting.NewRequest("2.0.2")
 	invocation := invocation.NewRPCInvocation("GetUser6", []interface{}{1}, nil)
-	attachment := map[string]string{INTERFACE_KEY: "com.ikurento.user.UserProvider"}
+	attachment := map[string]string{InterfaceKey: "com.ikurento.user.UserProvider"}
 	setAttachment(invocation, attachment)
 	request.Data = invocation
 	request.Event = false
@@ -304,7 +304,7 @@ func testClient_AsyncCall(t *testing.T, client *Client) {
 	request := remoting.NewRequest("2.0.2")
 	invocation := createInvocation("GetUser0", nil, nil, []interface{}{"4", nil, "username"},
 		[]reflect.Value{reflect.ValueOf("4"), reflect.ValueOf(nil), reflect.ValueOf("username")})
-	attachment := map[string]string{INTERFACE_KEY: "com.ikurento.user.UserProvider"}
+	attachment := map[string]string{InterfaceKey: "com.ikurento.user.UserProvider"}
 	setAttachment(invocation, attachment)
 	request.Data = invocation
 	request.Event = false

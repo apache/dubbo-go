@@ -39,7 +39,7 @@ const (
 
 var (
 	selectors = make(map[string]*selector)
-	re        = regexp.MustCompile(constant.COMMA_SPLIT_PATTERN)
+	re        = regexp.MustCompile(constant.CommaSplitPattern)
 )
 
 func init() {

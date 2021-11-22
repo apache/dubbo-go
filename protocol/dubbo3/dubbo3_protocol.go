@@ -25,12 +25,12 @@ import (
 )
 
 import (
+	"github.com/dubbogo/grpc-go"
+
 	tripleCommon "github.com/dubbogo/triple/pkg/common"
 	tripleConstant "github.com/dubbogo/triple/pkg/common/constant"
 	triConfig "github.com/dubbogo/triple/pkg/config"
 	"github.com/dubbogo/triple/pkg/triple"
-
-	"google.golang.org/grpc"
 )
 
 import (
@@ -77,19 +77,22 @@ func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	serviceKey := url.ServiceKey()
 	exporter := NewDubboExporter(serviceKey, invoker, dp.ExporterMap(), dp.serviceMap)
 	dp.SetExporterMap(serviceKey, exporter)
-	logger.Infof("Export service: %s", url.String())
+	logger.Infof("[Triple Protocol] Export service: %s", url.String())
 
-	key := url.GetParam(constant.BEAN_NAME_KEY, "")
+	key := url.GetParam(constant.BeanNameKey, "")
 	var service interface{}
 	service = config.GetProviderService(key)
 
-	serializationType := url.GetParam(constant.SERIALIZATION_KEY, constant.PROTOBUF_SERIALIZATION)
+	serializationType := url.GetParam(constant.SerializationKey, constant.ProtobufSerialization)
 	var triSerializationType tripleConstant.CodecType
 
-	if serializationType == constant.PROTOBUF_SERIALIZATION {
+	if serializationType == constant.ProtobufSerialization {
 		m, ok := reflect.TypeOf(service).MethodByName("XXX_SetProxyImpl")
 		if !ok {
-			panic("method XXX_SetProxyImpl is necessary for triple service")
+			logger.Errorf("PB service with key = %s is not support XXX_SetProxyImpl to pb."+
+				"Please run go install github.com/dubbogo/tools/cmd/protoc-gen-go-triple@latest to update your "+
+				"protoc-gen-go-triple and re-generate your pb file again.", key)
+			return nil
 		}
 		if invoker == nil {
 			panic(fmt.Sprintf("no invoker found for servicekey: %v", url.ServiceKey()))
@@ -119,7 +122,7 @@ func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 		triSerializationType = tripleConstant.CodecType(serializationType)
 	}
 
-	dp.serviceMap.Store(url.GetParam(constant.INTERFACE_KEY, ""), service)
+	dp.serviceMap.Store(url.GetParam(constant.InterfaceKey, ""), service)
 
 	// try start server
 	dp.openServer(url, triSerializationType)
@@ -134,7 +137,7 @@ func (dp *DubboProtocol) Refer(url *common.URL) protocol.Invoker {
 		return nil
 	}
 	dp.SetInvokers(invoker)
-	logger.Infof("Refer service: %s", url.String())
+	logger.Infof("[Triple Protocol] Refer service: %s", url.String())
 	return invoker
 }
 
@@ -190,13 +193,7 @@ func (d *UnaryService) GetReqParamsInterfaces(methodName string) ([]interface{},
 }
 
 func (d *UnaryService) InvokeWithArgs(ctx context.Context, methodName string, arguments []interface{}) (interface{}, error) {
-	dubboAttachment := make(map[string]interface{})
-	tripleAttachment, ok := ctx.Value(tripleConstant.TripleAttachement).(tripleCommon.TripleAttachment)
-	if ok {
-		for k, v := range tripleAttachment {
-			dubboAttachment[k] = v
-		}
-	}
+	dubboAttachment, _ := ctx.Value(tripleConstant.TripleAttachement).(tripleCommon.DubboAttachment)
 	res := d.proxyImpl.Invoke(ctx, invocation.NewRPCInvocation(methodName, arguments, dubboAttachment))
 	return res, res.Error()
 }
@@ -211,11 +208,33 @@ func (dp *DubboProtocol) openServer(url *common.URL, tripleCodecType tripleConst
 		dp.serverMap[url.Location].RefreshService()
 		return
 	}
-	triOption := triConfig.NewTripleOption(
+
+	opts := []triConfig.OptionFunction{
 		triConfig.WithCodecType(tripleCodecType),
 		triConfig.WithLocation(url.Location),
 		triConfig.WithLogger(logger.GetLogger()),
-	)
+	}
+	tracingKey := url.GetParam(constant.TracingConfigKey, "")
+	if tracingKey != "" {
+		tracingConfig := config.GetTracingConfig(tracingKey)
+		if tracingConfig != nil {
+			if tracingConfig.ServiceName == "" {
+				tracingConfig.ServiceName = config.GetApplicationConfig().Name
+			}
+			switch tracingConfig.Name {
+			case "jaeger":
+				opts = append(opts, triConfig.WithJaegerConfig(
+					tracingConfig.Address,
+					tracingConfig.ServiceName,
+					tracingConfig.UseAgent,
+				))
+			default:
+				logger.Warnf("unsupported tracing name %s, now triple only support jaeger", tracingConfig.Name)
+			}
+		}
+	}
+
+	triOption := triConfig.NewTripleOption(opts...)
 
 	_, ok = dp.ExporterMap().Load(url.ServiceKey())
 	if !ok {

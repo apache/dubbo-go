@@ -20,11 +20,12 @@ package zookeeper
 import (
 	"encoding/base64"
 	"strconv"
-	"strings"
 	"sync"
 )
 
 import (
+	"github.com/dubbogo/go-zookeeper/zk"
+
 	gxset "github.com/dubbogo/gost/container/set"
 	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
 
@@ -65,8 +66,9 @@ type zookeeperDynamicConfiguration struct {
 func newZookeeperDynamicConfiguration(url *common.URL) (*zookeeperDynamicConfiguration, error) {
 	c := &zookeeperDynamicConfiguration{
 		url:      url,
-		rootPath: "/" + url.GetParam(constant.CONFIG_NAMESPACE_KEY, config_center.DEFAULT_GROUP) + "/config",
+		rootPath: "/" + url.GetParam(constant.ConfigNamespaceKey, config_center.DefaultGroup) + "/config",
 	}
+	logger.Infof("[Zookeeper ConfigCenter] New Zookeeper ConfigCenter with Configuration: %+v, url = %+v", c, c.GetURL())
 	if v, ok := config.GetRootConfig().ConfigCenter.Params["base64"]; ok {
 		base64Enabled, err := strconv.ParseBool(v)
 		if err != nil {
@@ -80,15 +82,20 @@ func newZookeeperDynamicConfiguration(url *common.URL) (*zookeeperDynamicConfigu
 		logger.Errorf("zookeeper client start error ,error message is %v", err)
 		return nil, err
 	}
+	err = c.client.Create(c.rootPath)
+	if err != nil && err != zk.ErrNodeExists {
+		return nil, err
+	}
+
+	// Before handle client restart, we need to ensure that the zk dynamic configuration successfully start and create the configuration directory
 	c.wg.Add(1)
 	go zookeeper.HandleClientRestart(c)
 
+	// Start listener
 	c.listener = zookeeper.NewZkEventListener(c.client)
 	c.cacheListener = NewCacheListener(c.rootPath)
-
-	err = c.client.Create(c.rootPath)
 	c.listener.ListenServiceEvent(url, c.rootPath, c.cacheListener)
-	return c, err
+	return c, nil
 }
 
 func (c *zookeeperDynamicConfiguration) AddListener(key string, listener config_center.ConfigurationListener, opions ...config_center.Option) {
@@ -111,13 +118,7 @@ func (c *zookeeperDynamicConfiguration) GetProperties(key string, opts ...config
 	if len(tmpOpts.Group) != 0 {
 		key = tmpOpts.Group + "/" + key
 	} else {
-		/**
-		 * when group is null, we are fetching governance rules, for example:
-		 * 1. key=org.apache.dubbo.DemoService.configurators
-		 * 2. key = org.apache.dubbo.DemoService.condition-router
-		 */
-		i := strings.LastIndex(key, ".")
-		key = key[0:i] + "/" + key[i+1:]
+		key = c.GetURL().GetParam(constant.ConfigNamespaceKey, config_center.DefaultGroup)
 	}
 	content, _, err := c.client.GetContent(c.rootPath + "/" + key)
 	if err != nil {
@@ -146,6 +147,8 @@ func (c *zookeeperDynamicConfiguration) PublishConfig(key string, group string, 
 	if c.base64Enabled {
 		valueBytes = []byte(base64.StdEncoding.EncodeToString(valueBytes))
 	}
+	// FIXME this method need to be fixed, because it will recursively
+	// create every node in the path with given value which we may not expected.
 	err := c.client.CreateWithValue(path, valueBytes)
 	if err != nil {
 		return perrors.WithStack(err)
@@ -246,7 +249,7 @@ func (c *zookeeperDynamicConfiguration) getPath(key string, group string) string
 
 func (c *zookeeperDynamicConfiguration) buildPath(group string) string {
 	if len(group) == 0 {
-		group = config_center.DEFAULT_GROUP
+		group = config_center.DefaultGroup
 	}
 	return c.rootPath + pathSeparator + group
 }

@@ -27,15 +27,15 @@ type DoubleMatchJudger struct {
 }
 
 // nolint
-func (dmj *DoubleMatchJudger) Judge(input float64) bool {
-	if dmj.Exact != 0 {
-		return input == dmj.Exact
+func (j *DoubleMatchJudger) Judge(input float64) bool {
+	if j.Exact != 0 {
+		return input == j.Exact
 	}
-	if dmj.Range != nil {
-		return newDoubleRangeMatchJudger(dmj.Range).Judge(input)
+	if j.Range != nil {
+		return newDoubleRangeMatchJudger(j.Range).Judge(input)
 	}
 	// todo  mod  match ??
-	//if dmj.Mode != 0 {
+	//if j.Mode != 0 {
 	//
 	//}
 	return true

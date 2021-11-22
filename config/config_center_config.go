@@ -54,15 +54,13 @@ type CenterConfig struct {
 	Address   string            `validate:"required" yaml:"address" json:"address,omitempty"`
 	DataId    string            `yaml:"data-id" json:"data-id,omitempty"`
 	Cluster   string            `yaml:"cluster" json:"cluster,omitempty"`
-	Group     string            `default:"dubbo" yaml:"group" json:"group,omitempty"`
+	Group     string            `yaml:"group" json:"group,omitempty"`
 	Username  string            `yaml:"username" json:"username,omitempty"`
 	Password  string            `yaml:"password" json:"password,omitempty"`
-	Namespace string            `default:"dubbo" yaml:"namespace"  json:"namespace,omitempty"`
+	Namespace string            `yaml:"namespace"  json:"namespace,omitempty"`
 	AppID     string            `default:"dubbo" yaml:"app-id"  json:"app-id,omitempty"`
 	Timeout   string            `default:"10s" yaml:"timeout"  json:"timeout,omitempty"`
 	Params    map[string]string `yaml:"params"  json:"parameters,omitempty"`
-
-	DynamicConfiguration config_center.DynamicConfiguration
 }
 
 // Prefix dubbo.config-center
@@ -91,13 +89,13 @@ func (c *CenterConfig) Init(rc *RootConfig) error {
 // GetUrlMap gets url map from ConfigCenterConfig
 func (c *CenterConfig) GetUrlMap() url.Values {
 	urlMap := url.Values{}
-	urlMap.Set(constant.CONFIG_NAMESPACE_KEY, c.Namespace)
-	urlMap.Set(constant.CONFIG_GROUP_KEY, c.Group)
-	urlMap.Set(constant.CONFIG_CLUSTER_KEY, c.Cluster)
-	urlMap.Set(constant.CONFIG_APP_ID_KEY, c.AppID)
-	urlMap.Set(constant.CONFIG_USERNAME_KEY, c.Username)
-	urlMap.Set(constant.CONFIG_PASSWORD_KEY, c.Password)
-	urlMap.Set(constant.CONFIG_TIMEOUT_KEY, c.Timeout)
+	urlMap.Set(constant.ConfigNamespaceKey, c.Namespace)
+	urlMap.Set(constant.ConfigGroupKey, c.Group)
+	urlMap.Set(constant.ConfigClusterKey, c.Cluster)
+	urlMap.Set(constant.ConfigAppIDKey, c.AppID)
+	urlMap.Set(constant.ConfigUsernameKey, c.Username)
+	urlMap.Set(constant.ConfigPasswordKey, c.Password)
+	urlMap.Set(constant.ConfigTimeoutKey, c.Timeout)
 
 	for key, val := range c.Params {
 		urlMap.Set(key, val)
@@ -132,11 +130,22 @@ func (c *CenterConfig) toURL() (*common.URL, error) {
 // it will prepare the environment
 func startConfigCenter(rc *RootConfig) error {
 	cc := rc.ConfigCenter
-	strConf, err := cc.prepareEnvironment()
+	dynamicConfig, err := cc.GetDynamicConfiguration()
 	if err != nil {
-		return errors.WithMessagef(err, "start config center error!")
+		logger.Errorf("[Config Center] Start dynamic configuration center error, error message is %v", err)
+		return err
 	}
 
+	strConf, err := dynamicConfig.GetProperties(cc.DataId, config_center.WithGroup(cc.Group))
+	if err != nil {
+		logger.Warnf("[Config Center] Dynamic config center has started, but config may not be initialized, because: %s", err)
+		return nil
+	}
+	if len(strConf) == 0 {
+		logger.Warnf("[Config Center] Dynamic config center has started, but got empty config with config-center configuration %+v\n"+
+			"Please check if your config-center config is correct.", cc)
+		return nil
+	}
 	koan := koanf.New(".")
 	if err = koan.Load(rawbytes.Provider([]byte(strConf)), yaml.Parser()); err != nil {
 		return err
@@ -162,28 +171,16 @@ func (c *CenterConfig) CreateDynamicConfiguration() (config_center.DynamicConfig
 }
 
 func (c *CenterConfig) GetDynamicConfiguration() (config_center.DynamicConfiguration, error) {
-	if c.DynamicConfiguration != nil {
-		return c.DynamicConfiguration, nil
+	envInstance := conf.GetEnvInstance()
+	if envInstance.GetDynamicConfiguration() != nil {
+		return envInstance.GetDynamicConfiguration(), nil
 	}
 	dynamicConfig, err := c.CreateDynamicConfiguration()
 	if err != nil {
-		logger.Warnf("Create dynamic configuration error , error message is %v", err)
 		return nil, errors.WithStack(err)
 	}
-	c.DynamicConfiguration = dynamicConfig
-	return dynamicConfig, nil
-}
-
-func (c *CenterConfig) prepareEnvironment() (string, error) {
-	dynamicConfig, err := c.GetDynamicConfiguration()
-	if err != nil {
-		logger.Errorf("Create dynamic configuration error , error message is %v", err)
-		return "", errors.WithStack(err)
-	}
-	envInstance := conf.GetEnvInstance()
 	envInstance.SetDynamicConfiguration(dynamicConfig)
-
-	return dynamicConfig.GetProperties(c.DataId, config_center.WithGroup(c.Group))
+	return dynamicConfig, nil
 }
 
 func NewConfigCenterConfigBuilder() *ConfigCenterConfigBuilder {

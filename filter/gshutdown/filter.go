@@ -33,11 +33,13 @@ import (
 
 func init() {
 	// `init()` is performed before config.Load(), so shutdownConfig will be retrieved after config was loaded.
+	var csf = &Filter{}
+	var psf = &Filter{}
 	extension.SetFilter(constant.GracefulShutdownConsumerFilterKey, func() filter.Filter {
-		return &Filter{}
+		return csf
 	})
 	extension.SetFilter(constant.GracefulShutdownProviderFilterKey, func() filter.Filter {
-		return &Filter{}
+		return psf
 	})
 }
 
@@ -69,7 +71,7 @@ func (f *Filter) OnResponse(ctx context.Context, result protocol.Result, invoker
 func (f *Filter) Set(name string, conf interface{}) {
 	switch name {
 	case constant.GracefulShutdownFilterShutdownConfig:
-		if shutdownConfig, ok := conf.(*config.ShutdownConfig); !ok {
+		if shutdownConfig, ok := conf.(*config.ShutdownConfig); ok {
 			f.shutdownConfig = shutdownConfig
 			return
 		}
@@ -87,7 +89,7 @@ func (f *Filter) rejectNewRequest() bool {
 }
 
 func (f *Filter) getRejectHandler() filter.RejectedExecutionHandler {
-	handler := constant.DEFAULT_KEY
+	handler := constant.DefaultKey
 	if f.shutdownConfig != nil && len(f.shutdownConfig.RejectRequestHandler) > 0 {
 		handler = f.shutdownConfig.RejectRequestHandler
 	}

@@ -36,6 +36,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	cc "dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/config_center/parser"
 )
@@ -58,14 +59,15 @@ func newApolloConfiguration(url *common.URL) (*apolloConfiguration, error) {
 		url: url,
 	}
 	c.appConf = &config.AppConfig{
-		AppID:            url.GetParam(constant.CONFIG_APP_ID_KEY, ""),
-		Cluster:          url.GetParam(constant.CONFIG_CLUSTER_KEY, ""),
-		NamespaceName:    url.GetParam(constant.CONFIG_NAMESPACE_KEY, cc.DEFAULT_GROUP),
+		AppID:            url.GetParam(constant.ConfigAppIDKey, ""),
+		Cluster:          url.GetParam(constant.ConfigClusterKey, ""),
+		NamespaceName:    url.GetParam(constant.ConfigNamespaceKey, cc.DefaultGroup),
 		IP:               c.getAddressWithProtocolPrefix(url),
-		Secret:           url.GetParam(constant.CONFIG_SECRET_KEY, ""),
-		IsBackupConfig:   url.GetParamBool(constant.CONFIG_BACKUP_CONFIG_KEY, true),
-		BackupConfigPath: url.GetParam(constant.CONFIG_BACKUP_CONFIG_PATH_KEY, ""),
+		Secret:           url.GetParam(constant.ConfigSecretKey, ""),
+		IsBackupConfig:   url.GetParamBool(constant.ConfigBackupConfigKey, true),
+		BackupConfigPath: url.GetParam(constant.ConfigBackupConfigPathKey, ""),
 	}
+	logger.Infof("[Apollo ConfigCenter] New Apollo ConfigCenter with Configuration: %+v, url = %+v", c.appConf, c.url)
 	agollo.InitCustomConfig(func() (*config.AppConfig, error) {
 		return c.appConf, nil
 	})

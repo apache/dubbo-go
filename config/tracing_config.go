@@ -15,15 +15,32 @@
  * limitations under the License.
  */
 
-package file
+package config
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/config_center"
+	"github.com/creasty/defaults"
 )
 
-// RegistryConfigurationListener represent the processor of flie watcher
-type RegistryConfigurationListener struct{}
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+)
 
-// Process submit the ConfigChangeEvent to the event chan to notify all observer
-func (l *RegistryConfigurationListener) Process(configType *config_center.ConfigChangeEvent) {
+// TracingConfig is the configuration of the tracing.
+type TracingConfig struct {
+	Name        string `default:"jaeger" yaml:"name" json:"name,omitempty" property:"name"` // jaeger or zipkin(todo)
+	ServiceName string `yaml:"serviceName" json:"serviceName,omitempty" property:"serviceName"`
+	Address     string `yaml:"address" json:"address,omitempty" property:"address"`
+	UseAgent    bool   `default:"false" yaml:"use-agent" json:"use-agent,omitempty" property:"use-agent"`
+}
+
+// Prefix dubbo.router
+func (TracingConfig) Prefix() string {
+	return constant.TracingConfigPrefix
+}
+
+func (c *TracingConfig) Init() error {
+	if err := defaults.Set(c); err != nil {
+		return err
+	}
+	return verify(c)
 }

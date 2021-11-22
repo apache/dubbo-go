@@ -97,7 +97,7 @@ func (r *MockRegistry) Subscribe(url *common.URL, notifyListener NotifyListener)
 					return
 				}
 
-				logger.Infof("update begin, service event: %v", serviceEvent.String())
+				logger.Infof("[Mock Registry] update begin, service event: %v", serviceEvent.String())
 				notifyListener.Notify(serviceEvent)
 			}
 		}

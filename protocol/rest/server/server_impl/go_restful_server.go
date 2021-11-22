@@ -42,7 +42,7 @@ import (
 )
 
 func init() {
-	extension.SetRestServer(constant.DEFAULT_REST_SERVER, NewGoRestfulServer)
+	extension.SetRestServer(constant.DefaultRestServer, NewGoRestfulServer)
 }
 
 var filterSlice []restful.FilterFunction

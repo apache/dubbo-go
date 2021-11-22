@@ -22,6 +22,7 @@ import (
 	"os"
 	"reflect"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -52,6 +53,11 @@ const (
 	Arguments = "arguments"
 )
 
+var (
+	once            sync.Once
+	accessLogFilter *Filter
+)
+
 func init() {
 	extension.SetFilter(constant.AccessLogFilterKey, newFilter)
 }
@@ -74,6 +80,20 @@ func init() {
  */
 type Filter struct {
 	logChan chan Data
+}
+
+func newFilter() filter.Filter {
+	if accessLogFilter == nil {
+		once.Do(func() {
+			accessLogFilter = &Filter{logChan: make(chan Data, LogMaxBuffer)}
+			go func() {
+				for accessLogData := range accessLogFilter.logChan {
+					accessLogFilter.writeLogToFile(accessLogData)
+				}
+			}()
+		})
+	}
+	return accessLogFilter
 }
 
 // Invoke will check whether user wants to use this filter.
@@ -104,30 +124,30 @@ func (f *Filter) logIntoChannel(accessLogData Data) {
 func (f *Filter) buildAccessLogData(_ protocol.Invoker, invocation protocol.Invocation) map[string]string {
 	dataMap := make(map[string]string, 16)
 	attachments := invocation.Attachments()
-	itf := attachments[constant.INTERFACE_KEY]
+	itf := attachments[constant.InterfaceKey]
 	if itf == nil || len(itf.(string)) == 0 {
-		itf = attachments[constant.PATH_KEY]
+		itf = attachments[constant.PathKey]
 	}
 	if itf != nil {
-		dataMap[constant.INTERFACE_KEY] = itf.(string)
+		dataMap[constant.InterfaceKey] = itf.(string)
 	}
-	if v, ok := attachments[constant.METHOD_KEY]; ok && v != nil {
-		dataMap[constant.METHOD_KEY] = v.(string)
+	if v, ok := attachments[constant.MethodKey]; ok && v != nil {
+		dataMap[constant.MethodKey] = v.(string)
 	}
-	if v, ok := attachments[constant.VERSION_KEY]; ok && v != nil {
-		dataMap[constant.VERSION_KEY] = v.(string)
+	if v, ok := attachments[constant.VersionKey]; ok && v != nil {
+		dataMap[constant.VersionKey] = v.(string)
 	}
-	if v, ok := attachments[constant.GROUP_KEY]; ok && v != nil {
-		dataMap[constant.GROUP_KEY] = v.(string)
+	if v, ok := attachments[constant.GroupKey]; ok && v != nil {
+		dataMap[constant.GroupKey] = v.(string)
 	}
-	if v, ok := attachments[constant.TIMESTAMP_KEY]; ok && v != nil {
-		dataMap[constant.TIMESTAMP_KEY] = v.(string)
+	if v, ok := attachments[constant.TimestampKey]; ok && v != nil {
+		dataMap[constant.TimestampKey] = v.(string)
 	}
-	if v, ok := attachments[constant.LOCAL_ADDR]; ok && v != nil {
-		dataMap[constant.LOCAL_ADDR] = v.(string)
+	if v, ok := attachments[constant.LocalAddr]; ok && v != nil {
+		dataMap[constant.LocalAddr] = v.(string)
 	}
-	if v, ok := attachments[constant.REMOTE_ADDR]; ok && v != nil {
-		dataMap[constant.REMOTE_ADDR] = v.(string)
+	if v, ok := attachments[constant.RemoteAddr]; ok && v != nil {
+		dataMap[constant.RemoteAddr] = v.(string)
 	}
 
 	if len(invocation.Arguments()) > 0 {
@@ -220,16 +240,6 @@ func isDefault(accessLog string) bool {
 	return strings.EqualFold("true", accessLog) || strings.EqualFold("default", accessLog)
 }
 
-func newFilter() filter.Filter {
-	accessLogFilter := &Filter{logChan: make(chan Data, LogMaxBuffer)}
-	go func() {
-		for accessLogData := range accessLogFilter.logChan {
-			accessLogFilter.writeLogToFile(accessLogData)
-		}
-	}()
-	return accessLogFilter
-}
-
 // Data defines the data that will be log into file
 type Data struct {
 	accessLog string
@@ -240,26 +250,26 @@ type Data struct {
 func (d *Data) toLogMessage() string {
 	builder := strings.Builder{}
 	builder.WriteString("[")
-	builder.WriteString(d.data[constant.TIMESTAMP_KEY])
+	builder.WriteString(d.data[constant.TimestampKey])
 	builder.WriteString("] ")
-	builder.WriteString(d.data[constant.REMOTE_ADDR])
+	builder.WriteString(d.data[constant.RemoteAddr])
 	builder.WriteString(" -> ")
-	builder.WriteString(d.data[constant.LOCAL_ADDR])
+	builder.WriteString(d.data[constant.LocalAddr])
 	builder.WriteString(" - ")
-	if len(d.data[constant.GROUP_KEY]) > 0 {
-		builder.WriteString(d.data[constant.GROUP_KEY])
+	if len(d.data[constant.GroupKey]) > 0 {
+		builder.WriteString(d.data[constant.GroupKey])
 		builder.WriteString("/")
 	}
 
-	builder.WriteString(d.data[constant.INTERFACE_KEY])
+	builder.WriteString(d.data[constant.InterfaceKey])
 
-	if len(d.data[constant.VERSION_KEY]) > 0 {
+	if len(d.data[constant.VersionKey]) > 0 {
 		builder.WriteString(":")
-		builder.WriteString(d.data[constant.VERSION_KEY])
+		builder.WriteString(d.data[constant.VersionKey])
 	}
 
 	builder.WriteString(" ")
-	builder.WriteString(d.data[constant.METHOD_KEY])
+	builder.WriteString(d.data[constant.MethodKey])
 	builder.WriteString("(")
 	if len(d.data[Types]) > 0 {
 		builder.WriteString(d.data[Types])

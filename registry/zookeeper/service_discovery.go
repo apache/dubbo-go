@@ -19,7 +19,6 @@ package zookeeper
 
 import (
 	"fmt"
-	"net/url"
 	"strconv"
 	"strings"
 	"sync"
@@ -36,16 +35,19 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 	"dubbo.apache.org/dubbo-go/v3/remoting/zookeeper"
 	"dubbo.apache.org/dubbo-go/v3/remoting/zookeeper/curator_discovery"
 )
 
+const (
+	rootPath = "/services"
+)
+
 // init will put the service discovery into extension
 func init() {
-	extension.SetServiceDiscovery(constant.ZOOKEEPER_KEY, newZookeeperServiceDiscovery)
+	extension.SetServiceDiscovery(constant.ZookeeperKey, newZookeeperServiceDiscovery)
 }
 
 type zookeeperServiceDiscovery struct {
@@ -63,22 +65,13 @@ type zookeeperServiceDiscovery struct {
 }
 
 // newZookeeperServiceDiscovery the constructor of newZookeeperServiceDiscovery
-func newZookeeperServiceDiscovery() (registry.ServiceDiscovery, error) {
-	metadataReportConfig := config.GetMetadataReportConfg()
-	rootPath := "/services"
-	url := common.NewURLWithOptions(
-		common.WithParams(make(url.Values)),
-		common.WithPassword(metadataReportConfig.Password),
-		common.WithUsername(metadataReportConfig.Username),
-		common.WithParamsValue(constant.REGISTRY_TIMEOUT_KEY, metadataReportConfig.Timeout))
-	url.Location = metadataReportConfig.Address
+func newZookeeperServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, error) {
 	zksd := &zookeeperServiceDiscovery{
 		url:                 url,
 		rootPath:            rootPath,
 		instanceListenerMap: make(map[string]*gxset.HashSet),
 	}
-	err := zookeeper.ValidateZookeeperClient(zksd, url.Location)
-	if err != nil {
+	if err := zookeeper.ValidateZookeeperClient(zksd, url.Location); err != nil {
 		return nil, err
 	}
 	zksd.WaitGroup().Add(1) // zk client start successful, then wg +1
@@ -274,9 +267,9 @@ func (zksd *zookeeperServiceDiscovery) AddListener(listener registry.ServiceInst
 // to resolve event to do DispatchEventByServiceName
 func (zksd *zookeeperServiceDiscovery) DataChange(eventType remoting.Event) bool {
 	path := strings.TrimPrefix(eventType.Path, zksd.rootPath)
-	path = strings.TrimPrefix(path, constant.PATH_SEPARATOR)
+	path = strings.TrimPrefix(path, constant.PathSeparator)
 	// get service name in zk path
-	serviceName := strings.Split(path, constant.PATH_SEPARATOR)[0]
+	serviceName := strings.Split(path, constant.PathSeparator)[0]
 
 	var err error
 	instances := zksd.GetInstances(serviceName)
