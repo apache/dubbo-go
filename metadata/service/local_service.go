@@ -64,11 +64,11 @@ type MetadataService interface {
 	// GetMetadataInfo will return metadata info
 	GetMetadataInfo(revision string) (*common.MetadataInfo, error)
 	// GetExportedServiceURLs will return exported service urls
-	GetExportedServiceURLs() []*common.URL
+	GetExportedServiceURLs() ([]*common.URL, error)
 	// GetMetadataServiceURL will return the url of metadata service
-	GetMetadataServiceURL() *common.URL
+	GetMetadataServiceURL() (*common.URL, error)
 	// SetMetadataServiceURL will save the url of metadata service
-	SetMetadataServiceURL(*common.URL)
+	SetMetadataServiceURL(*common.URL) error
 }
 
 // BaseMetadataService is used for the event logic for struct who will implement interface MetadataService
@@ -96,7 +96,7 @@ func (mts *BaseMetadataService) ServiceName() (string, error) {
 
 // Reference will return the reference id of metadata service
 func (mts *BaseMetadataService) Reference() string {
-	return constant.SIMPLE_METADATA_SERVICE_NAME
+	return constant.SimpleMetadataServiceName
 }
 
 type MetadataServiceProxyFactory interface {
@@ -127,7 +127,7 @@ func (b *BaseMetadataServiceProxyFactory) GetProxy(ins registry.ServiceInstance)
 
 func getExportedServicesRevision(serviceInstance registry.ServiceInstance) string {
 	metaData := serviceInstance.GetMetadata()
-	return metaData[constant.EXPORTED_SERVICES_REVISION_PROPERTY_NAME]
+	return metaData[constant.ExportedServicesRevisionPropertyName]
 }
 
 func ConvertURLArrToIntfArr(urls []*common.URL) []interface{} {

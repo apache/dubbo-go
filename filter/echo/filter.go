@@ -19,32 +19,43 @@ package echo
 
 import (
 	"context"
+	"sync"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
+var (
+	once sync.Once
+	echo *echoFilter
+)
+
 func init() {
-	extension.SetFilter(constant.EchoFilterKey, func() filter.Filter {
-		return &Filter{}
-	})
+	extension.SetFilter(constant.EchoFilterKey, newEchoFilter)
 }
 
 // Filter health check
 // RPCService need a Echo method in consumer, if you want to use Filter
 // eg:
 //		Echo func(ctx context.Context, arg interface{}, rsp *Xxx) error
-type Filter struct{}
+type echoFilter struct{}
+
+func newEchoFilter() filter.Filter {
+	if echo == nil {
+		once.Do(func() {
+			echo = &echoFilter{}
+		})
+	}
+	return echo
+}
 
 // Invoke response to the callers with its first argument.
-func (f *Filter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
-	logger.Debugf("%v,%v", invocation.MethodName(), len(invocation.Arguments()))
-	if invocation.MethodName() == constant.ECHO && len(invocation.Arguments()) == 1 {
+func (f *echoFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+	if invocation.MethodName() == constant.Echo && len(invocation.Arguments()) == 1 {
 		return &protocol.RPCResult{
 			Rest:  invocation.Arguments()[0],
 			Attrs: invocation.Attachments(),
@@ -55,7 +66,7 @@ func (f *Filter) Invoke(ctx context.Context, invoker protocol.Invoker, invocatio
 }
 
 // OnResponse dummy process, returns the result directly
-func (f *Filter) OnResponse(_ context.Context, result protocol.Result, _ protocol.Invoker,
+func (f *echoFilter) OnResponse(_ context.Context, result protocol.Result, _ protocol.Invoker,
 	_ protocol.Invocation) protocol.Result {
 
 	return result

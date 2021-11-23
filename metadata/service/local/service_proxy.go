@@ -55,7 +55,7 @@ func (m *MetadataServiceProxy) GetExportedURLs(serviceInterface string, group st
 	inv := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName(methodName),
 		invocation.WithArguments([]interface{}{siV.Interface(), gV.Interface(), vV.Interface(), pV.Interface()}),
 		invocation.WithReply(reflect.ValueOf(&[]interface{}{}).Interface()),
-		invocation.WithAttachments(map[string]interface{}{constant.ASYNC_KEY: "false"}),
+		invocation.WithAttachments(map[string]interface{}{constant.AsyncKey: "false"}),
 		invocation.WithParameterValues([]reflect.Value{siV, gV, vV, pV}))
 
 	res := m.invkr.Invoke(context.Background(), inv)
@@ -77,20 +77,21 @@ func (m *MetadataServiceProxy) GetExportedURLs(serviceInterface string, group st
 }
 
 // nolint
-func (m *MetadataServiceProxy) GetExportedServiceURLs() []*common.URL {
+func (m *MetadataServiceProxy) GetExportedServiceURLs() ([]*common.URL, error) {
 	logger.Error("you should never invoke this implementation")
-	return nil
+	return nil, nil
 }
 
 // nolint
-func (m *MetadataServiceProxy) GetMetadataServiceURL() *common.URL {
+func (m *MetadataServiceProxy) GetMetadataServiceURL() (*common.URL, error) {
 	logger.Error("you should never invoke this implementation")
-	return nil
+	return nil, nil
 }
 
 // nolint
-func (m *MetadataServiceProxy) SetMetadataServiceURL(*common.URL) {
+func (m *MetadataServiceProxy) SetMetadataServiceURL(*common.URL) error {
 	logger.Error("you should never invoke this implementation")
+	return nil
 }
 
 // nolint
@@ -101,7 +102,7 @@ func (m *MetadataServiceProxy) MethodMapper() map[string]string {
 // nolint
 func (m *MetadataServiceProxy) Reference() string {
 	logger.Error("you should never invoke this implementation")
-	return constant.METADATA_SERVICE_NAME
+	return constant.MetadataServiceName
 }
 
 // nolint
@@ -177,7 +178,7 @@ func (m *MetadataServiceProxy) GetMetadataInfo(revision string) (*common.Metadat
 	inv := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName(methodName),
 		invocation.WithArguments([]interface{}{rV.Interface()}),
 		invocation.WithReply(reflect.ValueOf(&common.MetadataInfo{}).Interface()),
-		invocation.WithAttachments(map[string]interface{}{constant.ASYNC_KEY: "false"}),
+		invocation.WithAttachments(map[string]interface{}{constant.AsyncKey: "false"}),
 		invocation.WithParameterValues([]reflect.Value{rV}))
 	res := m.invkr.Invoke(context.Background(), inv)
 	if res.Error() != nil {

@@ -64,7 +64,7 @@ func TestSentinelFilter_QPS(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 	wg.Add(10)
-	f := &ProviderFilter{}
+	f := &sentinelProviderFilter{}
 	pass := int64(0)
 	block := int64(0)
 	for i := 0; i < 10; i++ {
@@ -87,7 +87,7 @@ func TestSentinelFilter_QPS(t *testing.T) {
 }
 
 func TestConsumerFilter_Invoke(t *testing.T) {
-	f := &ConsumerFilter{}
+	f := &sentinelConsumerFilter{}
 	url, err := common.NewURL("dubbo://127.0.0.1:20000/UserProvider?anyhost=true&" +
 		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
 		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
@@ -101,7 +101,7 @@ func TestConsumerFilter_Invoke(t *testing.T) {
 }
 
 func TestProviderFilter_Invoke(t *testing.T) {
-	f := &ProviderFilter{}
+	f := &sentinelProviderFilter{}
 	url, err := common.NewURL("dubbo://127.0.0.1:20000/UserProvider?anyhost=true&" +
 		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
 		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +

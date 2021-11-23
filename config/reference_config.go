@@ -45,11 +45,11 @@ import (
 type ReferenceConfig struct {
 	pxy            *proxy.Proxy
 	id             string
-	InterfaceName  string            `required:"true"  yaml:"interface"  json:"interface,omitempty" property:"interface"`
-	Check          *bool             `default:"true" yaml:"check"  json:"check,omitempty" property:"check"`
+	InterfaceName  string            `yaml:"interface"  json:"interface,omitempty" property:"interface"`
+	Check          *bool             `yaml:"check"  json:"check,omitempty" property:"check"`
 	URL            string            `yaml:"url"  json:"url,omitempty" property:"url"`
 	Filter         string            `yaml:"filter" json:"filter,omitempty" property:"filter"`
-	Protocol       string            `default:"dubbo"  yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
+	Protocol       string            `default:"tri" yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
 	RegistryIDs    []string          `yaml:"registry-ids"  json:"registry-ids,omitempty"  property:"registry-ids"`
 	Cluster        string            `yaml:"cluster"  json:"cluster,omitempty" property:"cluster"`
 	Loadbalance    string            `yaml:"loadbalance"  json:"loadbalance,omitempty" property:"loadbalance"`
@@ -67,6 +67,7 @@ type ReferenceConfig struct {
 	Sticky         bool   `yaml:"sticky"   json:"sticky,omitempty" property:"sticky"`
 	RequestTimeout string `yaml:"timeout"  json:"timeout,omitempty" property:"timeout"`
 	ForceTag       bool   `yaml:"force.tag"  json:"force.tag,omitempty" property:"force.tag"`
+	TracingKey     string `yaml:"tracing-key" json:"tracing-key,omitempty" propertiy:"tracing-key"`
 
 	rootConfig   *RootConfig
 	metaDataType string
@@ -97,6 +98,12 @@ func (rc *ReferenceConfig) Init(root *RootConfig) error {
 	if len(rc.RegistryIDs) <= 0 {
 		rc.RegistryIDs = root.Consumer.RegistryIDs
 	}
+	if rc.TracingKey == "" {
+		rc.TracingKey = root.Consumer.TracingKey
+	}
+	if rc.Check == nil {
+		rc.Check = &root.Consumer.Check
+	}
 	return verify(rc)
 }
 
@@ -106,8 +113,8 @@ func (rc *ReferenceConfig) Refer(srv interface{}) {
 		common.WithPath(rc.InterfaceName),
 		common.WithProtocol(rc.Protocol),
 		common.WithParams(rc.getURLMap()),
-		common.WithParamsValue(constant.BEAN_NAME_KEY, rc.id),
-		common.WithParamsValue(constant.METADATATYPE_KEY, rc.metaDataType),
+		common.WithParamsValue(constant.BeanNameKey, rc.id),
+		common.WithParamsValue(constant.MetadataTypeKey, rc.metaDataType),
 	)
 	SetConsumerServiceByInterfaceName(rc.InterfaceName, srv)
 	if rc.ForceTag {
@@ -129,7 +136,7 @@ func (rc *ReferenceConfig) Refer(srv interface{}) {
 			if err != nil {
 				panic(fmt.Sprintf("url configuration error,  please check your configuration, user specified URL %v refer error, error message is %v ", urlStr, err.Error()))
 			}
-			if serviceURL.Protocol == constant.REGISTRY_PROTOCOL { // URL stands for a registry protocol
+			if serviceURL.Protocol == constant.RegistryProtocol { // URL stands for a registry protocol
 				serviceURL.SubURL = cfgURL
 				rc.urls = append(rc.urls, serviceURL)
 			} else { // URL stands for a direct address
@@ -156,18 +163,18 @@ func (rc *ReferenceConfig) Refer(srv interface{}) {
 	)
 	invokers := make([]protocol.Invoker, len(rc.urls))
 	for i, u := range rc.urls {
-		if u.Protocol == constant.SERVICE_REGISTRY_PROTOCOL {
+		if u.Protocol == constant.ServiceRegistryProtocol {
 			invoker = extension.GetProtocol("registry").Refer(u)
 		} else {
 			invoker = extension.GetProtocol(u.Protocol).Refer(u)
 		}
 
 		if rc.URL != "" {
-			invoker = protocolwrapper.BuildInvokerChain(invoker, constant.REFERENCE_FILTER_KEY)
+			invoker = protocolwrapper.BuildInvokerChain(invoker, constant.ReferenceFilterKey)
 		}
 
 		invokers[i] = invoker
-		if u.Protocol == constant.REGISTRY_PROTOCOL {
+		if u.Protocol == constant.RegistryProtocol {
 			regURL = u
 		}
 	}
@@ -178,7 +185,7 @@ func (rc *ReferenceConfig) Refer(srv interface{}) {
 		if rc.URL != "" {
 			hitClu := constant.ClusterKeyFailover
 			if u := rc.invoker.GetURL(); u != nil {
-				hitClu = u.GetParam(constant.CLUSTER_KEY, constant.ClusterKeyZoneAware)
+				hitClu = u.GetParam(constant.ClusterKey, constant.ClusterKeyZoneAware)
 			}
 			rc.invoker = extension.GetCluster(hitClu).Join(static.NewDirectory(invokers))
 		}
@@ -191,7 +198,7 @@ func (rc *ReferenceConfig) Refer(srv interface{}) {
 			// not a registry url, must be direct invoke.
 			hitClu = constant.ClusterKeyFailover
 			if u := invokers[0].GetURL(); u != nil {
-				hitClu = u.GetParam(constant.CLUSTER_KEY, constant.ClusterKeyZoneAware)
+				hitClu = u.GetParam(constant.ClusterKey, constant.ClusterKeyZoneAware)
 			}
 		}
 		rc.invoker = extension.GetCluster(hitClu).Join(static.NewDirectory(invokers))
@@ -230,50 +237,51 @@ func (rc *ReferenceConfig) getURLMap() url.Values {
 	for k, v := range rc.Params {
 		urlMap.Set(k, v)
 	}
-	urlMap.Set(constant.INTERFACE_KEY, rc.InterfaceName)
-	urlMap.Set(constant.TIMESTAMP_KEY, strconv.FormatInt(time.Now().Unix(), 10))
-	urlMap.Set(constant.CLUSTER_KEY, rc.Cluster)
-	urlMap.Set(constant.LOADBALANCE_KEY, rc.Loadbalance)
-	urlMap.Set(constant.RETRIES_KEY, rc.Retries)
-	urlMap.Set(constant.GROUP_KEY, rc.Group)
-	urlMap.Set(constant.VERSION_KEY, rc.Version)
-	urlMap.Set(constant.GENERIC_KEY, rc.Generic)
-	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(common.CONSUMER))
-	urlMap.Set(constant.PROVIDED_BY, rc.ProvidedBy)
-	urlMap.Set(constant.SERIALIZATION_KEY, rc.Serialization)
+	urlMap.Set(constant.InterfaceKey, rc.InterfaceName)
+	urlMap.Set(constant.TimestampKey, strconv.FormatInt(time.Now().Unix(), 10))
+	urlMap.Set(constant.ClusterKey, rc.Cluster)
+	urlMap.Set(constant.LoadbalanceKey, rc.Loadbalance)
+	urlMap.Set(constant.RetriesKey, rc.Retries)
+	urlMap.Set(constant.GroupKey, rc.Group)
+	urlMap.Set(constant.VersionKey, rc.Version)
+	urlMap.Set(constant.GenericKey, rc.Generic)
+	urlMap.Set(constant.RegistryRoleKey, strconv.Itoa(common.CONSUMER))
+	urlMap.Set(constant.ProvidedBy, rc.ProvidedBy)
+	urlMap.Set(constant.SerializationKey, rc.Serialization)
+	urlMap.Set(constant.TracingConfigKey, rc.TracingKey)
 
-	urlMap.Set(constant.RELEASE_KEY, "dubbo-golang-"+constant.Version)
-	urlMap.Set(constant.SIDE_KEY, (common.RoleType(common.CONSUMER)).Role())
+	urlMap.Set(constant.ReleaseKey, "dubbo-golang-"+constant.Version)
+	urlMap.Set(constant.SideKey, (common.RoleType(common.CONSUMER)).Role())
 
 	if len(rc.RequestTimeout) != 0 {
-		urlMap.Set(constant.TIMEOUT_KEY, rc.RequestTimeout)
+		urlMap.Set(constant.TimeoutKey, rc.RequestTimeout)
 	}
 	// getty invoke async or sync
-	urlMap.Set(constant.ASYNC_KEY, strconv.FormatBool(rc.Async))
-	urlMap.Set(constant.STICKY_KEY, strconv.FormatBool(rc.Sticky))
+	urlMap.Set(constant.AsyncKey, strconv.FormatBool(rc.Async))
+	urlMap.Set(constant.StickyKey, strconv.FormatBool(rc.Sticky))
 
 	// applicationConfig info
-	urlMap.Set(constant.APPLICATION_KEY, rc.rootConfig.Application.Name)
-	urlMap.Set(constant.ORGANIZATION_KEY, rc.rootConfig.Application.Organization)
-	urlMap.Set(constant.NAME_KEY, rc.rootConfig.Application.Name)
-	urlMap.Set(constant.MODULE_KEY, rc.rootConfig.Application.Module)
-	urlMap.Set(constant.APP_VERSION_KEY, rc.rootConfig.Application.Version)
-	urlMap.Set(constant.OWNER_KEY, rc.rootConfig.Application.Owner)
-	urlMap.Set(constant.ENVIRONMENT_KEY, rc.rootConfig.Application.Environment)
+	urlMap.Set(constant.ApplicationKey, rc.rootConfig.Application.Name)
+	urlMap.Set(constant.OrganizationKey, rc.rootConfig.Application.Organization)
+	urlMap.Set(constant.NameKey, rc.rootConfig.Application.Name)
+	urlMap.Set(constant.ModuleKey, rc.rootConfig.Application.Module)
+	urlMap.Set(constant.AppVersionKey, rc.rootConfig.Application.Version)
+	urlMap.Set(constant.OwnerKey, rc.rootConfig.Application.Owner)
+	urlMap.Set(constant.EnvironmentKey, rc.rootConfig.Application.Environment)
 
 	// filter
-	defaultReferenceFilter := constant.DEFAULT_REFERENCE_FILTERS
+	defaultReferenceFilter := constant.DefaultReferenceFilters
 	if rc.Generic != "" {
-		defaultReferenceFilter = constant.GENERIC_REFERENCE_FILTERS + "," + defaultReferenceFilter
+		defaultReferenceFilter = constant.GenericReferenceFilters + "," + defaultReferenceFilter
 	}
-	urlMap.Set(constant.REFERENCE_FILTER_KEY, mergeValue(rc.rootConfig.Consumer.Filter, "", defaultReferenceFilter))
+	urlMap.Set(constant.ReferenceFilterKey, mergeValue(rc.rootConfig.Consumer.Filter, "", defaultReferenceFilter))
 
 	for _, v := range rc.Methods {
-		urlMap.Set("methods."+v.Name+"."+constant.LOADBALANCE_KEY, v.LoadBalance)
-		urlMap.Set("methods."+v.Name+"."+constant.RETRIES_KEY, v.Retries)
-		urlMap.Set("methods."+v.Name+"."+constant.STICKY_KEY, strconv.FormatBool(v.Sticky))
+		urlMap.Set("methods."+v.Name+"."+constant.LoadbalanceKey, v.LoadBalance)
+		urlMap.Set("methods."+v.Name+"."+constant.RetriesKey, v.Retries)
+		urlMap.Set("methods."+v.Name+"."+constant.StickyKey, strconv.FormatBool(v.Sticky))
 		if len(v.RequestTimeout) != 0 {
-			urlMap.Set("methods."+v.Name+"."+constant.TIMEOUT_KEY, v.RequestTimeout)
+			urlMap.Set("methods."+v.Name+"."+constant.TimeoutKey, v.RequestTimeout)
 		}
 	}
 

@@ -50,7 +50,7 @@ const (
 
 func init() {
 	localIP = common.GetLocalIp()
-	extension.SetRegistry(constant.NACOS_KEY, newNacosRegistry)
+	extension.SetRegistry(constant.NacosKey, newNacosRegistry)
 }
 
 type nacosRegistry struct {
@@ -60,7 +60,7 @@ type nacosRegistry struct {
 }
 
 func getCategory(url *common.URL) string {
-	role, _ := strconv.Atoi(url.GetParam(constant.ROLE_KEY, strconv.Itoa(constant.NACOS_DEFAULT_ROLETYPE)))
+	role, _ := strconv.Atoi(url.GetParam(constant.RegistryRoleKey, strconv.Itoa(constant.NacosDefaultRoleType)))
 	category := common.DubboNodes[role]
 	return category
 }
@@ -69,15 +69,15 @@ func getServiceName(url *common.URL) string {
 	var buffer bytes.Buffer
 
 	buffer.Write([]byte(getCategory(url)))
-	appendParam(&buffer, url, constant.INTERFACE_KEY)
-	appendParam(&buffer, url, constant.VERSION_KEY)
-	appendParam(&buffer, url, constant.GROUP_KEY)
+	appendParam(&buffer, url, constant.InterfaceKey)
+	appendParam(&buffer, url, constant.VersionKey)
+	appendParam(&buffer, url, constant.GroupKey)
 	return buffer.String()
 }
 
 func appendParam(target *bytes.Buffer, url *common.URL, key string) {
 	value := url.GetParam(key, "")
-	target.Write([]byte(constant.NACOS_SERVICE_NAME_SEPARATOR))
+	target.Write([]byte(constant.NacosServiceNameSeparator))
 	if strings.TrimSpace(value) != "" {
 		target.Write([]byte(value))
 	}
@@ -92,9 +92,9 @@ func createRegisterParam(url *common.URL, serviceName string, groupName string) 
 		return true
 	})
 
-	params[constant.NACOS_CATEGORY_KEY] = category
-	params[constant.NACOS_PROTOCOL_KEY] = url.Protocol
-	params[constant.NACOS_PATH_KEY] = url.Path
+	params[constant.NacosCategoryKey] = category
+	params[constant.NacosProtocolKey] = url.Protocol
+	params[constant.NacosPathKey] = url.Path
 	if len(url.Ip) == 0 {
 		url.Ip = localIP
 	}
@@ -119,8 +119,9 @@ func createRegisterParam(url *common.URL, serviceName string, groupName string) 
 // Register will register the service @url to its nacos registry center
 func (nr *nacosRegistry) Register(url *common.URL) error {
 	serviceName := getServiceName(url)
-	groupName := nr.URL.GetParam(constant.GROUP_KEY, defaultGroup)
+	groupName := nr.URL.GetParam(constant.NacosGroupKey, defaultGroup)
 	param := createRegisterParam(url, serviceName, groupName)
+	logger.Infof("[Nacos Registry] Registry instance with param = %+v", param)
 	isRegistry, err := nr.namingClient.Client().RegisterInstance(param)
 	if err != nil {
 		return err
@@ -151,7 +152,7 @@ func createDeregisterParam(url *common.URL, serviceName string, groupName string
 
 func (nr *nacosRegistry) DeRegister(url *common.URL) error {
 	serviceName := getServiceName(url)
-	groupName := nr.URL.GetParam(constant.GROUP_KEY, defaultGroup)
+	groupName := nr.URL.GetParam(constant.NacosGroupKey, defaultGroup)
 	param := createDeregisterParam(url, serviceName, groupName)
 	isDeRegistry, err := nr.namingClient.Client().DeregisterInstance(param)
 	if err != nil {
@@ -169,14 +170,13 @@ func (nr *nacosRegistry) UnRegister(conf *common.URL) error {
 }
 
 func (nr *nacosRegistry) subscribe(conf *common.URL) (registry.Listener, error) {
-	return NewNacosListener(conf, nr.namingClient)
+	return NewNacosListener(conf, nr.URL, nr.namingClient)
 }
 
 // subscribe from registry
 func (nr *nacosRegistry) Subscribe(url *common.URL, notifyListener registry.NotifyListener) error {
 	// TODO
-	// role, _ := strconv.Atoi(nr.URL.GetParam(constant.ROLE_KEY, ""))
-	role, _ := strconv.Atoi(url.GetParam(constant.ROLE_KEY, ""))
+	role, _ := strconv.Atoi(url.GetParam(constant.RegistryRoleKey, ""))
 	if role != common.CONSUMER {
 		return nil
 	}
@@ -186,9 +186,6 @@ func (nr *nacosRegistry) Subscribe(url *common.URL, notifyListener registry.Noti
 			logger.Warnf("event listener game over.")
 			return perrors.New("nacosRegistry is not available.")
 		}
-
-		groupName := nr.GetParam(constant.GROUP_KEY, defaultGroup)
-		url.SetParam(constant.REGISTRY_GROUP_KEY, groupName) // update to registry.group
 
 		listener, err := nr.subscribe(url)
 		if err != nil {
@@ -208,7 +205,7 @@ func (nr *nacosRegistry) Subscribe(url *common.URL, notifyListener registry.Noti
 				listener.Close()
 				return err
 			}
-			logger.Infof("update begin, service event: %v", serviceEvent.String())
+			logger.Infof("[Nacos Registry] Update begin, service event: %v", serviceEvent.String())
 			notifyListener.Notify(serviceEvent)
 		}
 	}
@@ -244,12 +241,21 @@ func (nr *nacosRegistry) Destroy() {
 
 // newNacosRegistry will create new instance
 func newNacosRegistry(url *common.URL) (registry.Registry, error) {
-	namingClient, err := nacos.NewNacosClientByUrl(url)
+	logger.Infof("[Nacos Registry] New nacos registry with url = %+v", url.ToMap())
+	// key transfer: registry -> nacos
+	url.SetParam(constant.NacosNamespaceID, url.GetParam(constant.RegistryNamespaceKey, ""))
+	url.SetParam(constant.NacosUsername, url.Username)
+	url.SetParam(constant.NacosPassword, url.Password)
+	url.SetParam(constant.NacosAccessKey, url.GetParam(constant.RegistryAccessKey, ""))
+	url.SetParam(constant.NacosSecretKey, url.GetParam(constant.RegistrySecretKey, ""))
+	url.SetParam(constant.TimeoutKey, url.GetParam(constant.RegistryTimeoutKey, ""))
+	url.SetParam(constant.NacosGroupKey, url.GetParam(constant.RegistryGroupKey, defaultGroup))
+	namingClient, err := nacos.NewNacosClientByURL(url)
 	if err != nil {
 		return &nacosRegistry{}, err
 	}
 	tmpRegistry := &nacosRegistry{
-		URL:          url,
+		URL:          url, // registry.group is recorded at this url
 		namingClient: namingClient,
 		registryUrls: []*common.URL{},
 	}

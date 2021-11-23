@@ -19,7 +19,6 @@ package nacos
 
 import (
 	"fmt"
-	"net/url"
 	"sync"
 )
 
@@ -39,19 +38,18 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/remoting/nacos"
 )
 
 const (
-	defaultGroup = constant.SERVICE_DISCOVERY_DEFAULT_GROUP
+	defaultGroup = constant.ServiceDiscoveryDefaultGroup
 	idKey        = "id"
 )
 
 // init will put the service discovery into extension
 func init() {
-	extension.SetServiceDiscovery(constant.NACOS_KEY, newNacosServiceDiscovery)
+	extension.SetServiceDiscovery(constant.NacosKey, newNacosServiceDiscovery)
 }
 
 // nacosServiceDiscovery is the implementation of service discovery based on nacos.
@@ -330,25 +328,25 @@ func (n *nacosServiceDiscovery) String() string {
 }
 
 // newNacosServiceDiscovery will create new service discovery instance
-func newNacosServiceDiscovery() (registry.ServiceDiscovery, error) {
-	metadataReportConfig := config.GetMetadataReportConfg()
-	url := common.NewURLWithOptions(
-		common.WithParams(make(url.Values)),
-		common.WithPassword(metadataReportConfig.Password),
-		common.WithUsername(metadataReportConfig.Username),
-		common.WithParamsValue(constant.REGISTRY_TIMEOUT_KEY, metadataReportConfig.Timeout))
-	url.Location = metadataReportConfig.Address
-	client, err := nacos.NewNacosClientByUrl(url)
+func newNacosServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, error) {
+	discoveryURL := common.NewURLWithOptions(
+		common.WithParams(url.GetParams()),
+		common.WithParamsValue(constant.TimeoutKey, url.GetParam(constant.RegistryTimeoutKey, constant.DefaultRegTimeout)),
+		common.WithParamsValue(constant.NacosGroupKey, url.GetParam(constant.RegistryGroupKey, defaultGroup)),
+		common.WithParamsValue(constant.NacosUsername, url.Username),
+		common.WithParamsValue(constant.NacosPassword, url.Password),
+		common.WithParamsValue(constant.NacosNamespaceID, url.GetParam(constant.RegistryNamespaceKey, "")))
+	discoveryURL.Location = url.Location
+	discoveryURL.Username = url.Username
+	discoveryURL.Password = url.Password
+	client, err := nacos.NewNacosClientByURL(discoveryURL)
 	if err != nil {
 		return nil, perrors.WithMessage(err, "create nacos namingClient failed.")
 	}
 
-	descriptor := fmt.Sprintf("nacos-service-discovery[%s]", metadataReportConfig.Address)
+	descriptor := fmt.Sprintf("nacos-service-discovery[%s]", discoveryURL.Location)
 
-	group := metadataReportConfig.Group
-	if len(group) == 0 {
-		group = defaultGroup
-	}
+	group := url.GetParam(constant.RegistryGroupKey, defaultGroup)
 	newInstance := &nacosServiceDiscovery{
 		group:               group,
 		namingClient:        client,
