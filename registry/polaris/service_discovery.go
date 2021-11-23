@@ -22,9 +22,11 @@
 package polaris
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 	"sync"
+	"time"
 
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
@@ -57,10 +59,11 @@ func newPolarisServiceDiscovery() (registry.ServiceDiscovery, error) {
 
 	newInstance := &polarisServiceDiscovery{
 		namespace:           namespace,
+		descriptor:          descriptor,
+		lock:                &sync.RWMutex{},
 		consumer:            api.NewConsumerAPIByContext(sdkCtx),
 		provider:            api.NewProviderAPIByContext(sdkCtx),
-		descriptor:          descriptor,
-		registryInstances:   []registry.ServiceInstance{},
+		registryInstances:   make(map[string]*heartbeatJob),
 		instanceListenerMap: make(map[string]*gxset.HashSet),
 	}
 	return newInstance, nil
@@ -68,10 +71,11 @@ func newPolarisServiceDiscovery() (registry.ServiceDiscovery, error) {
 
 type polarisServiceDiscovery struct {
 	namespace           string
+	descriptor          string
 	provider            api.ProviderAPI
 	consumer            api.ConsumerAPI
-	registryInstances   []registry.ServiceInstance
-	descriptor          string
+	lock                *sync.RWMutex
+	registryInstances   map[string]*heartbeatJob
 	instanceListenerMap map[string]*gxset.HashSet
 	services            *gxset.HashSet
 	listenerLock        *sync.RWMutex
@@ -82,7 +86,10 @@ type polarisServiceDiscovery struct {
 //  @return error
 func (polaris *polarisServiceDiscovery) Destroy() error {
 	for _, inst := range polaris.registryInstances {
-		err := polaris.Unregister(inst)
+
+		inst.cancel()
+
+		err := polaris.Unregister(inst.instance)
 		logger.Infof("Unregister nacos instance:%+v", inst)
 		if err != nil {
 			logger.Errorf("Unregister nacos instance:%+v, err:%+v", inst, err)
@@ -98,12 +105,28 @@ func (polaris *polarisServiceDiscovery) Destroy() error {
 //  @param instance
 //  @return error
 func (polaris *polarisServiceDiscovery) Register(instance registry.ServiceInstance) error {
-	ins := convertToRegisterInstance(instance)
-	_, err := polaris.provider.Register(ins)
+
+	ins := convertToRegisterInstance(polaris.namespace, instance)
+	resp, err := polaris.provider.Register(ins)
 	if err != nil {
-		return perrors.WithMessage(err, "Could not register the instance. "+instance.GetServiceName())
+		return perrors.WithMessage(err, "could not register the instance. "+instance.GetServiceName())
 	}
-	polaris.registryInstances = append(polaris.registryInstances, instance)
+
+	if resp.Existed {
+		return fmt.Errorf("instance already regist, namespace:%+v, service:%+v, host:%+v, port:%+v",
+			polaris.namespace, instance.GetServiceName(), instance.GetHost(), instance.GetPort())
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	go polaris.doHeartbeat(ctx, ins)
+
+	polaris.lock.Lock()
+	defer polaris.lock.Unlock()
+	polaris.registryInstances[getInstanceKey(polaris.namespace, instance)] = &heartbeatJob{
+		cancel:   cancel,
+		instance: instance,
+	}
+
 	polaris.services.Add(instance.GetServiceName())
 	return nil
 }
@@ -126,10 +149,24 @@ func (polaris *polarisServiceDiscovery) Update(instance registry.ServiceInstance
 //  @param instance
 //  @return error
 func (polaris *polarisServiceDiscovery) Unregister(instance registry.ServiceInstance) error {
-	err := polaris.provider.Deregister(convertToDeregisterInstance(instance))
+
+	func() {
+		polaris.lock.Lock()
+		defer polaris.lock.Unlock()
+
+		key := getInstanceKey(polaris.namespace, instance)
+		if heartbeat, ok := polaris.registryInstances[key]; ok {
+			heartbeat.cancel()
+			delete(polaris.registryInstances, key)
+		}
+	}()
+
+	err := polaris.provider.Deregister(convertToDeregisterInstance(polaris.namespace, instance))
 	if err != nil {
 		return perrors.WithMessage(err, "Could not unregister the instance. "+instance.GetServiceName())
 	}
+
+	polaris.services.Remove(instance.GetServiceName())
 	return nil
 }
 
@@ -154,7 +191,6 @@ func (polaris *polarisServiceDiscovery) GetServices() *gxset.HashSet {
 func (polaris *polarisServiceDiscovery) GetInstances(serviceName string) []registry.ServiceInstance {
 	resp, err := polaris.consumer.GetInstances(&api.GetInstancesRequest{
 		GetInstancesRequest: model.GetInstancesRequest{
-			FlowID:    0,
 			Service:   serviceName,
 			Namespace: polaris.namespace,
 		},
@@ -249,10 +285,63 @@ func (polaris *polarisServiceDiscovery) String() string {
 	return polaris.descriptor
 }
 
-func convertToRegisterInstance(instance registry.ServiceInstance) *api.InstanceRegisterRequest {
-	return nil
+func convertToRegisterInstance(namespace string, instance registry.ServiceInstance) *api.InstanceRegisterRequest {
+
+	health := instance.IsHealthy()
+	isolate := instance.IsEnable()
+	ttl := 5
+
+	return &api.InstanceRegisterRequest{
+		InstanceRegisterRequest: model.InstanceRegisterRequest{
+			Service:   instance.GetServiceName(),
+			Namespace: namespace,
+			Host:      instance.GetHost(),
+			Port:      instance.GetPort(),
+			Protocol:  &protocolForDubboGO,
+			Metadata:  instance.GetMetadata(),
+			Healthy:   &health,
+			Isolate:   &isolate,
+			TTL:       &ttl,
+		},
+	}
 }
 
-func convertToDeregisterInstance(instance registry.ServiceInstance) *api.InstanceDeRegisterRequest {
-	return nil
+func convertToDeregisterInstance(namespace string, instance registry.ServiceInstance) *api.InstanceDeRegisterRequest {
+	return &api.InstanceDeRegisterRequest{
+		InstanceDeRegisterRequest: model.InstanceDeRegisterRequest{
+			Service:   instance.GetServiceName(),
+			Namespace: namespace,
+			Host:      instance.GetHost(),
+			Port:      instance.GetPort(),
+		},
+	}
+}
+
+// doHeartbeat Since polaris does not support automatic reporting of instance heartbeats, separate logic is
+//  needed to implement it
+func (polaris *polarisServiceDiscovery) doHeartbeat(ctx context.Context, ins *api.InstanceRegisterRequest) {
+	ticker := time.NewTicker(time.Duration(4) * time.Second)
+
+	heartbeat := &api.InstanceHeartbeatRequest{
+		InstanceHeartbeatRequest: model.InstanceHeartbeatRequest{
+			Service:   ins.Service,
+			Namespace: ins.Namespace,
+			Host:      ins.Host,
+			Port:      ins.Port,
+		},
+	}
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			polaris.provider.Heartbeat(heartbeat)
+		}
+	}
+}
+
+type heartbeatJob struct {
+	cancel   context.CancelFunc
+	instance registry.ServiceInstance
 }

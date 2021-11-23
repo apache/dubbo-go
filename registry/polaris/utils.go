@@ -23,25 +23,36 @@ package polaris
 
 import (
 	"bytes"
+	"fmt"
 	"strconv"
 	"strings"
 
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
 const (
-
 	// defaultNamespace polaris default namespce value
 	defaultNamespace = "default"
 )
 
+var (
+	protocolForDubboGO string = "dubbo"
+)
+
+func getInstanceKey(namespace string, instance registry.ServiceInstance) string {
+	return fmt.Sprintf("%s-%s-%s-%d", namespace, instance.GetServiceName(), instance.GetHost(), instance.GetPort())
+}
+
+// just copy from dubbo-go for nacos
 func getCategory(url *common.URL) string {
 	role, _ := strconv.Atoi(url.GetParam(constant.ROLE_KEY, strconv.Itoa(constant.POLARIS_DEFAULT_ROLETYPE)))
 	category := common.DubboNodes[role]
 	return category
 }
 
+// just copy from dubbo-go for nacos
 func getServiceName(url *common.URL) string {
 	var buffer bytes.Buffer
 
@@ -50,9 +61,10 @@ func getServiceName(url *common.URL) string {
 	return buffer.String()
 }
 
+// just copy from dubbo-go for nacos
 func appendParam(target *bytes.Buffer, url *common.URL, key string) {
 	value := url.GetParam(key, "")
-	target.Write([]byte(constant.NACOS_SERVICE_NAME_SEPARATOR))
+	target.Write([]byte(constant.POLARIS_SERVICE_NAME_SEPARATOR))
 	if strings.TrimSpace(value) != "" {
 		target.Write([]byte(value))
 	}
