@@ -27,6 +27,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/config/generic"
@@ -74,8 +75,23 @@ func (cc *ConsumerConfig) Init(rc *RootConfig) error {
 			break
 		}
 	}
-	for _, reference := range cc.References {
-		if err := reference.Init(rc); err != nil {
+	for key, referenceConfig := range cc.References {
+		if referenceConfig.InterfaceName == "" {
+			reference := GetConsumerService(key)
+			// try to use interface name defined by pb
+			triplePBService, ok := reference.(common.TriplePBService)
+			if !ok {
+				logger.Errorf("Dubbogo cannot get interface name with reference = %s."+
+					"Please run the command 'go install github.com/dubbogo/tools/cmd/protoc-gen-go-triple@latest' to get the latest "+
+					"protoc-gen-go-triple,  and then re-generate your pb file again by this tool."+
+					"If you are not using pb serialization, please set 'interfaceName' field in reference config to let dubbogo get the interface name.", key)
+				continue
+			} else {
+				// use interface name defined by pb
+				referenceConfig.InterfaceName = triplePBService.XXX_InterfaceName()
+			}
+		}
+		if err := referenceConfig.Init(rc); err != nil {
 			return err
 		}
 	}

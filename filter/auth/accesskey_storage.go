@@ -23,19 +23,32 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"sync"
+)
+
+var (
+	storageOnce sync.Once
+	storage     *defaultAccesskeyStorage
 )
 
 func init() {
-	extension.SetAccessKeyStorages(constant.DefaultAccessKeyStorage, func() filter.AccessKeyStorage {
-		return &DefaultAccesskeyStorage{}
-	})
+	extension.SetAccessKeyStorages(constant.DefaultAccessKeyStorage, newDefaultAccesskeyStorage)
 }
 
-// DefaultAccesskeyStorage is the default implementation of AccesskeyStorage
-type DefaultAccesskeyStorage struct{}
+// defaultAccesskeyStorage is the default implementation of AccesskeyStorage
+type defaultAccesskeyStorage struct{}
+
+func newDefaultAccesskeyStorage() filter.AccessKeyStorage {
+	if storage == nil {
+		storageOnce.Do(func() {
+			storage = &defaultAccesskeyStorage{}
+		})
+	}
+	return storage
+}
 
 // GetAccessKeyPair retrieves AccessKeyPair from url by the key "accessKeyId" and "secretAccessKey"
-func (storage *DefaultAccesskeyStorage) GetAccessKeyPair(invocation protocol.Invocation, url *common.URL) *filter.AccessKeyPair {
+func (storage *defaultAccesskeyStorage) GetAccessKeyPair(invocation protocol.Invocation, url *common.URL) *filter.AccessKeyPair {
 	return &filter.AccessKeyPair{
 		AccessKey: url.GetParam(constant.AccessKeyIDKey, ""),
 		SecretKey: url.GetParam(constant.SecretAccessKeyKey, ""),
