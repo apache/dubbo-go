@@ -348,8 +348,12 @@ func (svc *ServiceConfig) getUrlMap() url.Values {
 	urlMap.Set(constant.LoadbalanceKey, svc.Loadbalance)
 	urlMap.Set(constant.WarmupKey, svc.Warmup)
 	urlMap.Set(constant.RetriesKey, svc.Retries)
-	urlMap.Set(constant.GroupKey, svc.Group)
-	urlMap.Set(constant.VersionKey, svc.Version)
+	if svc.Group != "" {
+		urlMap.Set(constant.GroupKey, svc.Group)
+	}
+	if svc.Version != "" {
+		urlMap.Set(constant.VersionKey, svc.Version)
+	}
 	urlMap.Set(constant.RegistryRoleKey, strconv.Itoa(common.PROVIDER))
 	urlMap.Set(constant.ReleaseKey, "dubbo-golang-"+constant.Version)
 	urlMap.Set(constant.SideKey, (common.RoleType(common.PROVIDER)).Role())
