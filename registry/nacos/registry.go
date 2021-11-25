@@ -95,6 +95,7 @@ func createRegisterParam(url *common.URL, serviceName string, groupName string) 
 	params[constant.NacosCategoryKey] = category
 	params[constant.NacosProtocolKey] = url.Protocol
 	params[constant.NacosPathKey] = url.Path
+	params[constant.MethodsKey] = strings.Join(url.Methods, ",")
 	if len(url.Ip) == 0 {
 		url.Ip = localIP
 	}
