@@ -19,12 +19,15 @@ package helloworld
 
 import (
 	"context"
-	"log"
 	"net"
 )
 
 import (
 	"google.golang.org/grpc"
+)
+
+import (
+	log "dubbo.apache.org/dubbo-go/v3/common/logger"
 )
 
 // server is used to implement helloworld.GreeterServer.
@@ -40,7 +43,7 @@ func NewService() *server {
 
 // SayHello implements helloworld.GreeterServer
 func (s *server) SayHello(ctx context.Context, in *HelloRequest) (*HelloReply, error) {
-	log.Printf("Received: %v", in.GetName())
+	log.Infof("Received: %v", in.GetName())
 	return &HelloReply{Message: "Hello " + in.GetName()}, nil
 }
 
