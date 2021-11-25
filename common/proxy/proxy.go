@@ -207,10 +207,10 @@ func DefaultProxyImplementFunc(p *Proxy, v common.RPCService) {
 			err = result.Error()
 			if err != nil {
 				// the cause reason
-				cause := perrors.Cause(err)
+				reason := perrors.Cause(err)
 				// if some error happened, it should be log some info in the separate file.
 				if throwabler, ok := err.(java_exception.Throwabler); ok {
-					logger.Warnf("invoke service throw exception: %v , stackTraceElements: %v", cause.Error(), throwabler.GetStackTrace())
+					logger.Warnf("invoke service throw exception: %v , stackTraceElements: %v", reason.Error(), throwabler.GetStackTrace())
 				} else {
 					logger.Warnf("result err: %v", err)
 				}
