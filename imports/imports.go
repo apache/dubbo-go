@@ -65,6 +65,7 @@ import (
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/rest"
 	_ "dubbo.apache.org/dubbo-go/v3/registry/etcdv3"
 	_ "dubbo.apache.org/dubbo-go/v3/registry/nacos"
+	_ "dubbo.apache.org/dubbo-go/v3/registry/polaris"
 	_ "dubbo.apache.org/dubbo-go/v3/registry/protocol"
 	_ "dubbo.apache.org/dubbo-go/v3/registry/servicediscovery"
 	_ "dubbo.apache.org/dubbo-go/v3/registry/zookeeper"

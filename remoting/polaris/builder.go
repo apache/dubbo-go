@@ -61,7 +61,7 @@ func GetPolarisConfig(url *common.URL) (api.SDKContext, string, error) {
 
 	polarisConf := config.NewDefaultConfiguration(serverConfigs)
 
-	confPath := url.GetParam(constant.POLARIS_CONFIG_FILE_PATH, "")
+	confPath := url.GetParam(constant.PolarisConfigFilePath, "")
 	if confPath != "" && model.IsFile(confPath) {
 		complexConf, err := config.LoadConfigurationByFile(confPath)
 		if err != nil {
@@ -77,7 +77,7 @@ func GetPolarisConfig(url *common.URL) (api.SDKContext, string, error) {
 		return nil, "", err
 	}
 
-	return sdkCtx, url.GetParam(constant.POLARIS_NAMESPACE, "default"), nil
+	return sdkCtx, url.GetParam(constant.PolarisNamespace, constant.PolarisDefaultNamespace), nil
 }
 
 // mergePolarisConfiguration

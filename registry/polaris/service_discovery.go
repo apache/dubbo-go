@@ -33,6 +33,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/registry"
+	"dubbo.apache.org/dubbo-go/v3/remoting"
 	"dubbo.apache.org/dubbo-go/v3/remoting/polaris"
 	gxset "github.com/dubbogo/gost/container/set"
 	gxpage "github.com/dubbogo/gost/hash/page"
@@ -46,7 +47,7 @@ func newPolarisServiceDiscovery() (registry.ServiceDiscovery, error) {
 	metadataReportConfig := config.GetMetadataReportConfg()
 	url := common.NewURLWithOptions(
 		common.WithParams(make(url.Values)),
-		common.WithParamsValue(constant.REGISTRY_TIMEOUT_KEY, metadataReportConfig.Timeout))
+		common.WithParamsValue(constant.RegistryTimeoutKey, metadataReportConfig.Timeout))
 	url.Location = metadataReportConfig.Address
 
 	sdkCtx, namespace, err := polaris.GetPolarisConfig(url)
@@ -58,32 +59,32 @@ func newPolarisServiceDiscovery() (registry.ServiceDiscovery, error) {
 	descriptor := fmt.Sprintf("polaris-service-discovery[%s]", metadataReportConfig.Address)
 
 	newInstance := &polarisServiceDiscovery{
-		namespace:           namespace,
-		descriptor:          descriptor,
-		lock:                &sync.RWMutex{},
-		consumer:            api.NewConsumerAPIByContext(sdkCtx),
-		provider:            api.NewProviderAPIByContext(sdkCtx),
-		registryInstances:   make(map[string]*heartbeatJob),
-		instanceListenerMap: make(map[string]*gxset.HashSet),
+		namespace:         namespace,
+		descriptor:        descriptor,
+		instanceLock:      &sync.RWMutex{},
+		consumer:          api.NewConsumerAPIByContext(sdkCtx),
+		provider:          api.NewProviderAPIByContext(sdkCtx),
+		registryInstances: make(map[string]*PolarisHeartbeat),
+		listenerLock:      &sync.RWMutex{},
+		watchers:          make(map[string]*PolarisServiceWatcher),
 	}
 	return newInstance, nil
 }
 
 type polarisServiceDiscovery struct {
-	namespace           string
-	descriptor          string
-	provider            api.ProviderAPI
-	consumer            api.ConsumerAPI
-	lock                *sync.RWMutex
-	registryInstances   map[string]*heartbeatJob
-	instanceListenerMap map[string]*gxset.HashSet
-	services            *gxset.HashSet
-	listenerLock        *sync.RWMutex
+	namespace         string
+	descriptor        string
+	provider          api.ProviderAPI
+	consumer          api.ConsumerAPI
+	services          *gxset.HashSet
+	instanceLock      *sync.RWMutex
+	registryInstances map[string]*PolarisHeartbeat
+	watchers          map[string]*PolarisServiceWatcher
+	listenerLock      *sync.RWMutex
 }
 
-// Destroy
-//  @receiver polaris
-//  @return error
+// Destroy destroy polarisServiceDiscovery, will do unregister all ServiceInstance
+// and close polaris.ConsumerAPI and polaris.ProviderAPI
 func (polaris *polarisServiceDiscovery) Destroy() error {
 	for _, inst := range polaris.registryInstances {
 
@@ -100,10 +101,7 @@ func (polaris *polarisServiceDiscovery) Destroy() error {
 	return nil
 }
 
-// Register
-//  @receiver polaris
-//  @param instance
-//  @return error
+// Register do register for ServiceInstance
 func (polaris *polarisServiceDiscovery) Register(instance registry.ServiceInstance) error {
 
 	ins := convertToRegisterInstance(polaris.namespace, instance)
@@ -113,16 +111,16 @@ func (polaris *polarisServiceDiscovery) Register(instance registry.ServiceInstan
 	}
 
 	if resp.Existed {
-		return fmt.Errorf("instance already regist, namespace:%+v, service:%+v, host:%+v, port:%+v",
+		logger.Warnf("instance already regist, namespace:%+v, service:%+v, host:%+v, port:%+v",
 			polaris.namespace, instance.GetServiceName(), instance.GetHost(), instance.GetPort())
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	go polaris.doHeartbeat(ctx, ins)
 
-	polaris.lock.Lock()
-	defer polaris.lock.Unlock()
-	polaris.registryInstances[getInstanceKey(polaris.namespace, instance)] = &heartbeatJob{
+	polaris.instanceLock.Lock()
+	defer polaris.instanceLock.Unlock()
+	polaris.registryInstances[getInstanceKey(polaris.namespace, instance)] = &PolarisHeartbeat{
 		cancel:   cancel,
 		instance: instance,
 	}
@@ -131,10 +129,7 @@ func (polaris *polarisServiceDiscovery) Register(instance registry.ServiceInstan
 	return nil
 }
 
-// Update
-//  @receiver polaris
-//  @param instance
-//  @return error
+// Update update ServiceInstance info
 func (polaris *polarisServiceDiscovery) Update(instance registry.ServiceInstance) error {
 	err := polaris.Unregister(instance)
 	if err != nil {
@@ -144,15 +139,12 @@ func (polaris *polarisServiceDiscovery) Update(instance registry.ServiceInstance
 	return polaris.Register(instance)
 }
 
-// Unregister
-//  @receiver polaris
-//  @param instance
-//  @return error
+// Unregister do Unregister for ServiceInstance
 func (polaris *polarisServiceDiscovery) Unregister(instance registry.ServiceInstance) error {
 
 	func() {
-		polaris.lock.Lock()
-		defer polaris.lock.Unlock()
+		polaris.instanceLock.Lock()
+		defer polaris.instanceLock.Unlock()
 
 		key := getInstanceKey(polaris.namespace, instance)
 		if heartbeat, ok := polaris.registryInstances[key]; ok {
@@ -171,23 +163,16 @@ func (polaris *polarisServiceDiscovery) Unregister(instance registry.ServiceInst
 }
 
 // GetDefaultPageSize
-//  @receiver polaris
-//  @return int
 func (polaris *polarisServiceDiscovery) GetDefaultPageSize() int {
 	return registry.DefaultPageSize
 }
 
 // GetServices
-//  @receiver polaris
-//  @return *gxset.HashSet
 func (polaris *polarisServiceDiscovery) GetServices() *gxset.HashSet {
 	return polaris.services
 }
 
-// GetInstances
-//  @receiver polaris
-//  @param serviceName
-//  @return []registry.ServiceInstance
+// GetInstances will return all service instances with serviceName
 func (polaris *polarisServiceDiscovery) GetInstances(serviceName string) []registry.ServiceInstance {
 	resp, err := polaris.consumer.GetInstances(&api.GetInstancesRequest{
 		GetInstancesRequest: model.GetInstancesRequest{
@@ -195,6 +180,9 @@ func (polaris *polarisServiceDiscovery) GetInstances(serviceName string) []regis
 			Namespace: polaris.namespace,
 		},
 	})
+
+	fmt.Printf("GetInstances(serviceName string)")
+
 	if err != nil {
 		logger.Errorf("Could not query the instances for service: %+v . It happened err %+v", serviceName, err)
 		return make([]registry.ServiceInstance, 0)
@@ -215,12 +203,8 @@ func (polaris *polarisServiceDiscovery) GetInstances(serviceName string) []regis
 	return res
 }
 
-// GetInstancesByPage
-//  @receiver polaris
-//  @param serviceName
-//  @param offset
-//  @param pageSize
-//  @return gxpage.Pager
+// GetInstancesByPage will return a page containing instances of ServiceInstance with the serviceName
+// the page will start at offset
 func (polaris *polarisServiceDiscovery) GetInstancesByPage(serviceName string, offset int, pageSize int) gxpage.Pager {
 	all := polaris.GetInstances(serviceName)
 	res := make([]interface{}, 0, pageSize)
@@ -230,13 +214,9 @@ func (polaris *polarisServiceDiscovery) GetInstancesByPage(serviceName string, o
 	return gxpage.NewPage(offset, pageSize, res, len(all))
 }
 
-// GetHealthyInstancesByPage
-//  @receiver polaris
-//  @param serviceName
-//  @param offset
-//  @param pageSize
-//  @param healthy
-//  @return gxpage.Pager
+// GetHealthyInstancesByPage will return a page containing instances of ServiceInstance.
+// The param healthy indices that the instance should be healthy or not.
+// The page will start at offset
 func (polaris *polarisServiceDiscovery) GetHealthyInstancesByPage(serviceName string, offset int, pageSize int, healthy bool) gxpage.Pager {
 	all := polaris.GetInstances(serviceName)
 	res := make([]interface{}, 0, pageSize)
@@ -256,12 +236,7 @@ func (polaris *polarisServiceDiscovery) GetHealthyInstancesByPage(serviceName st
 	return gxpage.NewPage(offset, pageSize, res, len(all))
 }
 
-// GetRequestInstances
-//  @receiver polaris
-//  @param serviceNames
-//  @param offset
-//  @param requestedSize
-//  @return map
+// Batch get all instances by the specified service names
 func (polaris *polarisServiceDiscovery) GetRequestInstances(serviceNames []string, offset int, requestedSize int) map[string]gxpage.Pager {
 	res := make(map[string]gxpage.Pager, len(serviceNames))
 	for _, name := range serviceNames {
@@ -270,17 +245,66 @@ func (polaris *polarisServiceDiscovery) GetRequestInstances(serviceNames []strin
 	return res
 }
 
-// AddListener
-//  @receiver polaris
-//  @param listener
-//  @return error
+// AddListener add listener for ServiceInstancesChangedListener
 func (polaris *polarisServiceDiscovery) AddListener(listener registry.ServiceInstancesChangedListener) error {
+
+	for _, val := range listener.GetServiceNames().Values() {
+		serviceName := val.(string)
+		watcher, err := polaris.createPolarisWatcherIfAbsent(serviceName)
+		if err != nil {
+			return err
+		}
+
+		watcher.AddSubscriber(func(et remoting.EventType, instances []model.Instance) {
+			dubboInstances := make([]registry.ServiceInstance, 0, len(instances))
+			for _, instance := range instances {
+				dubboInstances = append(dubboInstances, &registry.DefaultServiceInstance{
+					ID:          instance.GetId(),
+					ServiceName: instance.GetService(),
+					Host:        instance.GetHost(),
+					Port:        int(instance.GetPort()),
+					Enable:      !instance.IsIsolated(),
+					Healthy:     instance.IsHealthy(),
+					Metadata:    instance.GetMetadata(),
+					GroupName:   instance.GetMetadata()[constant.PolarisDubboGroup],
+				})
+			}
+
+			listener.OnEvent(registry.NewServiceInstancesChangedEvent(serviceName, dubboInstances))
+		})
+	}
+
 	return nil
 }
 
-// String
-//  @receiver n
-//  @return string
+// createPolarisWatcherIfAbsent Calculate whether the corresponding PolarisWatcher needs to be created,
+// if it does not exist, create one, otherwise return the existing one
+func (polaris *polarisServiceDiscovery) createPolarisWatcherIfAbsent(serviceName string) (*PolarisServiceWatcher, error) {
+
+	polaris.listenerLock.Lock()
+	defer polaris.listenerLock.Unlock()
+
+	if _, exist := polaris.watchers[serviceName]; !exist {
+		subscribeParam := &api.WatchServiceRequest{
+			WatchServiceRequest: model.WatchServiceRequest{
+				Key: model.ServiceKey{
+					Namespace: polaris.namespace,
+					Service:   serviceName,
+				},
+			},
+		}
+
+		watcher, err := newPolarisWatcher(subscribeParam, polaris.consumer)
+		if err != nil {
+			return nil, err
+		}
+		polaris.watchers[serviceName] = watcher
+	}
+
+	return polaris.watchers[serviceName], nil
+}
+
+// String retuen descriptor
 func (polaris *polarisServiceDiscovery) String() string {
 	return polaris.descriptor
 }
@@ -339,9 +363,4 @@ func (polaris *polarisServiceDiscovery) doHeartbeat(ctx context.Context, ins *ap
 			polaris.provider.Heartbeat(heartbeat)
 		}
 	}
-}
-
-type heartbeatJob struct {
-	cancel   context.CancelFunc
-	instance registry.ServiceInstance
 }

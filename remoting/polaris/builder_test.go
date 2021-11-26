@@ -39,7 +39,7 @@ func TestGetPolarisConfig(t *testing.T) {
 	rc.Protocol = "polaris"
 	rc.Address = "127.0.0.1:8091"
 
-	rc.Params[constant.POLARIS_NAMESPACE] = "default"
+	rc.Params[constant.PolarisNamespace] = "default"
 
 	url, err := rc.ToURL()
 	if err != nil {
@@ -65,8 +65,8 @@ func TestGetPolarisConfigWithExternalFile(t *testing.T) {
 	rc.Protocol = "polaris"
 	rc.Address = "127.0.0.1:8091"
 
-	rc.Params[constant.POLARIS_NAMESPACE] = "default"
-	rc.Params[constant.POLARIS_CONFIG_FILE_PATH] = "./polaris.yaml"
+	rc.Params[constant.PolarisNamespace] = "default"
+	rc.Params[constant.PolarisConfigFilePath] = "./polaris.yaml"
 
 	url, err := rc.ToURL()
 	if err != nil {
@@ -96,8 +96,8 @@ func TestGetPolarisConfigByUrl(t *testing.T) {
 func getRegUrl() *common.URL {
 
 	regurlMap := url.Values{}
-	regurlMap.Set(constant.POLARIS_NAMESPACE, "default")
-	regurlMap.Set(constant.POLARIS_CONFIG_FILE_PATH, "./polaris.yaml")
+	regurlMap.Set(constant.PolarisNamespace, "default")
+	regurlMap.Set(constant.PolarisConfigFilePath, "./polaris.yaml")
 
 	regurl, _ := common.NewURL("registry://127.0.0.1:8091", common.WithParams(regurlMap))
 

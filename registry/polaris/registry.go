@@ -22,6 +22,7 @@
 package polaris
 
 import (
+	"context"
 	"strconv"
 	"sync"
 	"time"
@@ -30,7 +31,9 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/registry"
+	"dubbo.apache.org/dubbo-go/v3/remoting"
 	"dubbo.apache.org/dubbo-go/v3/remoting/polaris"
 	perrors "github.com/pkg/errors"
 	"github.com/polarismesh/polaris-go/api"
@@ -46,7 +49,7 @@ const (
 
 func init() {
 	localIP = common.GetLocalIp()
-	extension.SetRegistry(constant.NACOS_KEY, newPolarisRegistry)
+	extension.SetRegistry(constant.PolarisKey, newPolarisRegistry)
 }
 
 // newPolarisRegistry will create new instance
@@ -59,7 +62,9 @@ func newPolarisRegistry(url *common.URL) (registry.Registry, error) {
 		consumer:     api.NewConsumerAPIByContext(sdkCtx),
 		provider:     api.NewProviderAPIByContext(sdkCtx),
 		lock:         &sync.RWMutex{},
-		registryUrls: make(map[string]*common.URL),
+		registryUrls: make(map[string]*PolarisHeartbeat),
+		listenerLock: &sync.RWMutex{},
+		watchers:     make(map[string]*PolarisServiceWatcher),
 	}
 
 	return pRegistry, nil
@@ -70,7 +75,10 @@ type polarisRegistry struct {
 	consumer     api.ConsumerAPI
 	provider     api.ProviderAPI
 	lock         *sync.RWMutex
-	registryUrls map[string]*common.URL
+	registryUrls map[string]*PolarisHeartbeat
+
+	listenerLock *sync.RWMutex
+	watchers     map[string]*PolarisServiceWatcher
 }
 
 // Register
@@ -85,10 +93,23 @@ func (pr *polarisRegistry) Register(url *common.URL) error {
 		return err
 	}
 
+	if resp.Existed {
+		logger.Warnf("instance already regist, namespace:%+v, service:%+v, host:%+v, port:%+v",
+			param.Namespace, param.Service, param.Host, param.Port)
+	}
+
 	pr.lock.Lock()
 	defer pr.lock.Unlock()
-	url.SetParam(constant.POLARIS_INSTANCE_ID, resp.InstanceID)
-	pr.registryUrls[url.Key()] = url
+
+	url.SetParam(constant.PolarisInstanceID, resp.InstanceID)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	go pr.doHeartbeat(ctx, param)
+
+	pr.registryUrls[url.Key()] = &PolarisHeartbeat{
+		url:    url,
+		cancel: cancel,
+	}
 	return nil
 }
 
@@ -100,19 +121,21 @@ func (pr *polarisRegistry) UnRegister(conf *common.URL) error {
 	var (
 		ok     bool
 		err    error
-		oldURL *common.URL
+		oldVal *PolarisHeartbeat
 	)
 
 	func() {
 		pr.lock.Lock()
 		defer pr.lock.Unlock()
 
-		oldURL, ok = pr.registryUrls[conf.Key()]
+		oldVal, ok = pr.registryUrls[conf.Key()]
 
 		if !ok {
 			err = perrors.Errorf("Path{%s} has not registered", conf.Key())
 		}
-		delete(pr.registryUrls, oldURL.Key())
+
+		oldVal.cancel()
+		delete(pr.registryUrls, oldVal.url.Key())
 	}()
 
 	if err != nil {
@@ -126,7 +149,7 @@ func (pr *polarisRegistry) UnRegister(conf *common.URL) error {
 		func() {
 			pr.lock.Lock()
 			defer pr.lock.Unlock()
-			pr.registryUrls[conf.Key()] = oldURL
+			pr.registryUrls[conf.Key()] = oldVal
 		}()
 		return perrors.WithMessagef(err, "register(conf:%+v)", conf)
 	}
@@ -135,18 +158,31 @@ func (pr *polarisRegistry) UnRegister(conf *common.URL) error {
 
 // Subscribe
 func (pr *polarisRegistry) Subscribe(url *common.URL, notifyListener registry.NotifyListener) error {
-	role, _ := strconv.Atoi(url.GetParam(constant.ROLE_KEY, ""))
+	role, _ := strconv.Atoi(url.GetParam(constant.RegistryRoleKey, ""))
 	if role != common.CONSUMER {
 		return nil
 	}
 
+	watcher, err := pr.createPolarisWatcherIfAbsent(url)
+
+	if err != nil {
+		return err
+	}
+
 	for {
-		listener, err := NewPolarisListener(url, pr.consumer)
+		listener, err := NewPolarisListener(url)
 		if err != nil {
 			logger.Warnf("getListener() = err:%v", perrors.WithStack(err))
 			time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
 			continue
 		}
+
+		watcher.AddSubscriber(func(et remoting.EventType, instances []model.Instance) {
+			for i := range instances {
+				instance := instances[i]
+				listener.events.In() <- &config_center.ConfigChangeEvent{ConfigType: et, Value: instance}
+			}
+		})
 
 		for {
 			serviceEvent, err := listener.Next()
@@ -159,6 +195,33 @@ func (pr *polarisRegistry) Subscribe(url *common.URL, notifyListener registry.No
 			notifyListener.Notify(serviceEvent)
 		}
 	}
+}
+
+func (pr *polarisRegistry) createPolarisWatcherIfAbsent(url *common.URL) (*PolarisServiceWatcher, error) {
+
+	pr.listenerLock.Lock()
+	defer pr.listenerLock.Unlock()
+
+	serviceName := getSubscribeName(url)
+
+	if _, exist := pr.watchers[serviceName]; !exist {
+		subscribeParam := &api.WatchServiceRequest{
+			WatchServiceRequest: model.WatchServiceRequest{
+				Key: model.ServiceKey{
+					Namespace: url.GetParam(constant.PolarisNamespace, constant.PolarisDefaultNamespace),
+					Service:   serviceName,
+				},
+			},
+		}
+
+		watcher, err := newPolarisWatcher(subscribeParam, pr.consumer)
+		if err != nil {
+			return nil, err
+		}
+		pr.watchers[serviceName] = watcher
+	}
+
+	return pr.watchers[serviceName], nil
 }
 
 // UnSubscribe
@@ -174,11 +237,12 @@ func (pr *polarisRegistry) GetURL() *common.URL {
 
 // Destroy
 func (pr *polarisRegistry) Destroy() {
-	for _, url := range pr.registryUrls {
-		err := pr.UnRegister(url)
-		logger.Infof("DeRegister Polaris URL:%+v", url)
+	for _, val := range pr.registryUrls {
+		val.cancel()
+		err := pr.UnRegister(val.url)
+		logger.Infof("DeRegister Polaris URL:%+v", val.url)
 		if err != nil {
-			logger.Errorf("Deregister URL:%+v err:%v", url, err.Error())
+			logger.Errorf("Deregister URL:%+v err:%v", val.url, err.Error())
 		}
 	}
 	return
@@ -187,6 +251,30 @@ func (pr *polarisRegistry) Destroy() {
 // IsAvailable always return true when use polaris
 func (pr *polarisRegistry) IsAvailable() bool {
 	return true
+}
+
+// doHeartbeat Since polaris does not support automatic reporting of instance heartbeats, separate logic is
+//  needed to implement it
+func (pr *polarisRegistry) doHeartbeat(ctx context.Context, ins *api.InstanceRegisterRequest) {
+	ticker := time.NewTicker(time.Duration(4) * time.Second)
+
+	heartbeat := &api.InstanceHeartbeatRequest{
+		InstanceHeartbeatRequest: model.InstanceHeartbeatRequest{
+			Service:   ins.Service,
+			Namespace: ins.Namespace,
+			Host:      ins.Host,
+			Port:      ins.Port,
+		},
+	}
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			pr.provider.Heartbeat(heartbeat)
+		}
+	}
 }
 
 // createRegisterParam convert dubbo url to polaris instance register request
@@ -204,16 +292,16 @@ func createRegisterParam(url *common.URL, serviceName string) *api.InstanceRegis
 		metadata[key] = value
 		return true
 	})
-	metadata[constant.POLARIS_DUBBO_PATH] = url.Path
+	metadata[constant.PolarisDubboPath] = url.Path
 
 	return &api.InstanceRegisterRequest{
 		InstanceRegisterRequest: model.InstanceRegisterRequest{
-			Service:      serviceName,
-			ServiceToken: url.GetParam(constant.POLARIS_SERVICE_TOKEN, ""),
-			Namespace:    url.GetParam(constant.POLARIS_NAMESPACE, defaultNamespace),
-			Host:         url.Ip,
-			Port:         port,
-			Metadata:     metadata,
+			Service:   serviceName,
+			Namespace: url.GetParam(constant.PolarisNamespace, constant.PolarisDefaultNamespace),
+			Host:      url.Ip,
+			Port:      port,
+			Protocol:  &protocolForDubboGO,
+			Metadata:  metadata,
 		},
 	}
 }
@@ -229,11 +317,10 @@ func createDeregisterParam(url *common.URL, serviceName string) *api.InstanceDeR
 	port, _ := strconv.Atoi(url.Port)
 	return &api.InstanceDeRegisterRequest{
 		InstanceDeRegisterRequest: model.InstanceDeRegisterRequest{
-			Service:      serviceName,
-			ServiceToken: url.GetParam(constant.POLARIS_SERVICE_TOKEN, ""),
-			Namespace:    url.GetParam(constant.POLARIS_NAMESPACE, defaultNamespace),
-			Host:         url.Ip,
-			Port:         port,
+			Service:   serviceName,
+			Namespace: url.GetParam(constant.PolarisNamespace, constant.PolarisDefaultNamespace),
+			Host:      url.Ip,
+			Port:      port,
 		},
 	}
 }
