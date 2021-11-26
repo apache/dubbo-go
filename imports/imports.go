@@ -18,6 +18,7 @@
 package imports
 
 import (
+	_ "dubbo.apache.org/dubbo-go/v3/cluster/cluster/adaptivesvc"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/cluster/available"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/cluster/broadcast"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/cluster/failback"
@@ -28,6 +29,7 @@ import (
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/cluster/zoneaware"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/consistenthashing"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/leastactive"
+	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/p2c"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/random"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/roundrobin"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/router/v3router"
