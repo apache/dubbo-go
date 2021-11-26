@@ -227,7 +227,7 @@ func (svc *ServiceConfig) Export() error {
 			svc.cacheMutex.Unlock()
 
 			for _, regUrl := range regUrls {
-				regUrl.SubURL = ivkURL
+				setRegistrySubURL(ivkURL, regUrl)
 				invoker := proxyFactory.GetInvoker(regUrl)
 				exporter := svc.cacheProtocol.Export(invoker)
 				if exporter == nil {
@@ -257,6 +257,12 @@ func (svc *ServiceConfig) Export() error {
 	}
 	svc.exported.Store(true)
 	return nil
+}
+
+//setRegistrySubURL set registry sub url is ivkURl
+func setRegistrySubURL(ivkURL *common.URL, regUrl *common.URL) {
+	ivkURL.AddParam(constant.RegistryKey, regUrl.GetParam(constant.RegistryKey, ""))
+	regUrl.SubURL = ivkURL
 }
 
 //loadProtocol filter protocols by ids

@@ -35,6 +35,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config/instance"
 	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
+	"dubbo.apache.org/dubbo-go/v3/metadata/report"
 )
 
 const (
@@ -61,7 +62,11 @@ func (d *MetadataServiceNameMapping) Map(url *common.URL) error {
 	}
 
 	appName := config.GetApplicationConfig().Name
-	metadataReport := instance.GetMetadataReportInstance()
+
+	metadataReport := getMetaDataReport(url.GetParam(constant.RegistryKey, ""))
+	if metadataReport == nil {
+		return perrors.New("get metadata report instance is nil")
+	}
 	err := metadataReport.RegisterServiceAppMapping(serviceInterface, defaultGroup, appName)
 	if err != nil {
 		return perrors.WithStack(err)
@@ -94,4 +99,15 @@ func GetNameMappingInstance() mapping.ServiceNameMapping {
 		serviceNameMappingInstance = &MetadataServiceNameMapping{}
 	})
 	return serviceNameMappingInstance
+}
+
+// getMetaDataReport obtain metadata reporting instances through registration protocol
+// if the metadata type is remote, obtain the instance from the metadata report configuration
+func getMetaDataReport(protocol string) report.MetadataReport {
+	var metadataReport report.MetadataReport
+	if config.GetApplicationConfig().MetadataType == constant.RemoteMetadataStorageType {
+		metadataReport = instance.GetMetadataReportInstance()
+		return metadataReport
+	}
+	return instance.GetMetadataReportByRegistryProtocol(protocol)
 }

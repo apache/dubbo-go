@@ -20,7 +20,6 @@ package zookeeper
 import (
 	"encoding/json"
 	"strings"
-	"time"
 )
 
 import (
@@ -184,13 +183,13 @@ func (mf *zookeeperMetadataReportFactory) CreateMetadataReport(url *common.URL) 
 		"zookeeperMetadataReport",
 		strings.Split(url.Location, ","),
 		false,
-		gxzookeeper.WithZkTimeOut(15*time.Second),
+		gxzookeeper.WithZkTimeOut(url.GetParamDuration(constant.TimeoutKey, "15s")),
 	)
 	if err != nil {
 		panic(err)
 	}
 
-	rootDir := url.GetParam(constant.GroupKey, "dubbo")
+	rootDir := url.GetParam(constant.MetadataReportGroupKey, "dubbo")
 	if !strings.HasPrefix(rootDir, constant.PathSeparator) {
 		rootDir = constant.PathSeparator + rootDir
 	}
