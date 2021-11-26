@@ -117,8 +117,8 @@ func (c *ProviderConfig) Init(rc *RootConfig) error {
 	}
 	// enable adaptive service verbose
 	if c.AdaptiveServiceVerbose {
-		logger.Infof("adaptive service verbose is enabled, the current logging level is %s.",
-			c.rootConfig.Logger.ZapConfig.Level)
+		logger.Infof("adaptive service verbose is enabled.")
+		logger.Debugf("debug-level info could be shown.")
 		aslimiter.Verbose = true
 	}
 	return nil
