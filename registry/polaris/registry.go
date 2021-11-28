@@ -82,9 +82,6 @@ type polarisRegistry struct {
 }
 
 // Register
-//  @receiver pr
-//  @param url
-//  @return error
 func (pr *polarisRegistry) Register(url *common.URL) error {
 	serviceName := getServiceName(url)
 	param := createRegisterParam(url, serviceName)
@@ -114,9 +111,6 @@ func (pr *polarisRegistry) Register(url *common.URL) error {
 }
 
 // UnRegister
-//  @receiver pr
-//  @param conf
-//  @return error
 func (pr *polarisRegistry) UnRegister(conf *common.URL) error {
 	var (
 		ok     bool

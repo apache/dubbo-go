@@ -120,12 +120,13 @@ func (polaris *polarisServiceDiscovery) Register(instance registry.ServiceInstan
 
 	polaris.instanceLock.Lock()
 	defer polaris.instanceLock.Unlock()
+
 	polaris.registryInstances[getInstanceKey(polaris.namespace, instance)] = &PolarisHeartbeat{
 		cancel:   cancel,
 		instance: instance,
 	}
-
 	polaris.services.Add(instance.GetServiceName())
+
 	return nil
 }
 
@@ -147,7 +148,7 @@ func (polaris *polarisServiceDiscovery) Unregister(instance registry.ServiceInst
 		defer polaris.instanceLock.Unlock()
 
 		key := getInstanceKey(polaris.namespace, instance)
-		if heartbeat, ok := polaris.registryInstances[key]; ok {
+		if heartbeat, exist := polaris.registryInstances[key]; exist {
 			heartbeat.cancel()
 			delete(polaris.registryInstances, key)
 		}

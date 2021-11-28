@@ -1,301 +1,92 @@
-#描述:全局配置项
 global:
-  #描述系统相关配置
   system:
-    #描述:SDK运行模式
-    #类型:enum
-    #范围:0（直连模式，SDK直接对接server）; 1（代理模式，SDK只对接agent, 通过agent进行server的对接）
-    #默认值:0
     mode: 0
-    #服务发现集群
     discoverCluster:
       namespace: Polaris
       service: polaris.discover
-      #可选：服务刷新间隔
       refreshInterval: 10m
-    #健康检查集群
     healthCheckCluster:
       namespace: Polaris
       service: polaris.healthcheck
-      #可选：服务刷新间隔
       refreshInterval: 10m
-    #监控上报集群
     monitorCluster:
       namespace: Polaris
       service: polaris.monitor
-      #可选：服务刷新间隔
       refreshInterval: 10m
   api:
-    #描述:api超时时间
-    #类型:string
-    #格式：^\d+(ms|s|m|h)$
-    #范围:[1ms:...]
-    #默认值:1s
     timeout: 1s
-    #描述:上报间隔
-    #类型:string
-    #格式:^\d+(ms|s|m|h)$
-    #范围:[1ms:...]
-    #默认值:10m
     reportInterval: 10m
-    #描述:API因为网络原因调用失败后的重试次数
-    #类型:int
-    #范围:[0:...]
-    #默认值:5
     maxRetryTimes: 5
-    #描述:重试间隔
-    #类型:string
-    #格式:^\d+(ms|s|m|h)$
-    #范围:[1s:...]
-    #默认值:1s
     retryInterval: 1s
-  #描述:对接polaris server的相关配置
   serverConnector:
     addresses:
       - 127.0.0.2:8091
-    #描述:访问server的连接协议，SDK会根据协议名称会加载对应的插件
-    #类型:string
-    #范围:已注册的连接器插件名
-    #默认值:grpc
     protocol: grpc
-    #描述:发起连接后的连接超时时间
-    #类型:string
-    #格式:^\d+(ms|s|m|h)$
-    #范围:[1ms:...]
-    #默认值:200ms
     connectTimeout: 500ms
-    #描述:远程请求超时时间
-    #类型:string
-    #格式:^\d+(ms|s|m|h)$
-    #范围:[1ms:...]
-    #默认值:1s
     messageTimeout: 1s
-    #描述:连接空闲时间，长连接模式下，当连接空闲超过一定时间后，SDK会主动释放连接
-    #类型:string
-    #格式:^\d+(ms|s|m|h)$
-    #范围:[1ms:...]
-    #默认值:1s
     connectionIdleTimeout: 1s
-    #描述:首次请求的任务队列长度，当用户发起首次服务访问请求时，SDK会对任务进行队列调度并连接server，当积压的任务数超过队列长度后，SDK会直接拒绝首次请求的发起。
-    #类型:int
-    #范围:[0:...]
-    #默认值:1000
     requestQueueSize: 1000
-    #描述:server节点的切换周期，为了使得server的压力能够均衡，SDK会定期针对最新的节点列表进行重新计算自己当前应该连接的节点，假如和当前不一致，则进行切换
-    #类型:string
-    #格式:^\d+(ms|s|m|h)$
-    #范围:[1m:...]
-    #默认值:10m
     serverSwitchInterval: 10m
     plugin:
       grpc:
-        #描述:GRPC客户端单次最大链路接收报文
-        #类型:int
-        #范围:(0:524288000]
         maxCallRecvMsgSize: 52428800
-  #统计上报设置
   statReporter:
-    #描述：是否将统计信息上报至monitor
-    #类型：bool
-    #默认值：true
     enable: true
-    #描述：启用的统计上报插件类型
-    #类型：list
-    #范围：已经注册的统计上报插件的名字
-    #默认值：stat2Monitor(将信息上报至monitor服务)
     chain:
       - stat2Monitor
       - serviceCache
-    #描述：统计上报插件配置
     plugin:
       stat2Monitor:
-        #描述:每次上报多长一段时间的统计信息
-        #类型:string
-        #格式:^\d+(ms|s|m|h)$
-        #范围:[1m:...]
         metricsReportWindow: 1m
-        #描述:将一段时间内的统计信息分为多少个基本单元收集
-        #类型:int
-        #范围:[1:...]
-        #默认值:12
         metricsNumBuckets: 12
       serviceCache:
-        #描述：上报缓存信息的周期
         reportInterval: 3m
-#描述:主调端配置
 consumer:
-  #描述:本地缓存相关配置
   localCache:
-    #描述:缓存类型
-    #类型:string
-    #范围:已注册的本地缓存插件名
-    #默认值:inmemory（基于本机内存的缓存策略）
     type: inmemory
-    #描述:服务过期淘汰时间
-    #类型:string
-    #格式:^\d+(ms|s|m|h)$
-    #范围:[1m:...]
-    #默认值:24h
     serviceExpireTime: 24h
-    #描述:服务定期刷新周期
-    #类型:string
-    #格式:^\d+(ms|s|m|h)$
-    #范围:[1s:...]
-    #默认值:2s
     serviceRefreshInterval: 2s
-    #描述:服务缓存持久化目录，SDK在实例数据更新后，按照服务维度将数据持久化到磁盘
-    #类型:string
-    #格式:本机磁盘目录路径，支持$HOME变量
-    #默认值:$HOME/polaris/backup
     persistDir: $HOME/polaris/backup
-    #描述:缓存写盘失败的最大重试次数
-    #类型:int
-    #范围:[1:...]
-    #默认值:5
     persistMaxWriteRetry: 5
-    #描述:缓存从磁盘读取失败的最大重试次数
-    #类型:int
-    #范围:[1:...]
-    #默认值:1
     persistMaxReadRetry: 1
-    #描述:缓存读写磁盘的重试间隔
-    #类型:string
-    #格式:^\d+(ms|s|m|h)$
-    #范围:[1ms:...]
-    #默认值:1s
     persistRetryInterval: 1s
-    #描述:缓存文件有效时间差值
-    #类型:string
-    #格式:^\d+(ms|s|m|h)$
-    #范围:[1ms:...]
-    #默认值:1s
     persistAvailableInterval: 60s
-    #描述:启动后，首次名字服务是否可以使用缓存文件
-    #类型:string
-    #格式:^\d+(ms|s|m|h)$
-    #范围:[1ms:...]
-    #默认值:1s
     startUseFileCache: true
-  #描述:服务路由相关配置
   serviceRouter:
-    # 服务路由链
     chain:
-      # 基于主调和被调服务规则的路由策略(默认的路由策略)
       - ruleBasedRouter
-      # 就近路由策略
       - nearbyBasedRouter
-    #描述：服务路由插件的配置
     plugin:
       nearbyBasedRouter:
-        #描述:就近路由的最小匹配级别
-        #类型:string
-        #范围:region(大区)、zone(区域)、campus(园区)
-        #默认值:zone
         matchLevel: zone
       ruleBasedRouter: {}
-    #至少应该返回多少比率的实例，如果不填，默认0%，即全死全活
     percentOfMinInstances: 0
-    #是否开启全死全活，默认开启
     enableRecoverAll: true
-  #描述:负载均衡相关配置
   loadbalancer:
-    #描述:负载均衡类型
-    #范围:已注册的负载均衡插件名
-    #默认值：权重随机负载均衡
     type: weightedRandom
     plugin:
-      #描述:虚拟节点的数量
-      #类型:int
-      #默认值:500
       ringHash:
         vnodeCount: 500
-  #描述:节点熔断相关配置
   circuitBreaker:
-    #描述:是否启用节点熔断功能
-    #类型:bool
-    #默认值:true
     enable: true
-    #描述:实例定时熔断检测周期
-    #类型:string
-    #格式:^\d+(ms|s|m|h)$
-    #范围:[100ms:...]
-    #默认值:30s
     checkPeriod: 30s
-    #描述:熔断器半开后最大允许的请求数
-    #类型:int
-    #范围:[3:...]
-    #默认值:10
     requestCountAfterHalfOpen: 10
-    #描述:熔断器打开后，多久后转换为半开状态
-    #类型:string
-    #格式:^\d+(ms|s|m|h)$
-    #范围:[1s:...]
-    #默认值:30s
     sleepWindow: 30s
-    #描述:熔断器半开到关闭所必须的最少成功请求数
-    #类型:int
-    #范围:[1:requestCountAfterHalfOpen]
-    #默认值:8
     successCountAfterHalfOpen: 8
-    #描述:熔断器半开到关闭的统计周期
-    #类型:string
-    #范围:[10s:...]
-    #默认值:60s
     recoverWindow: 60s
-    #描述:熔断器半开到关闭的统计滑桶数
-    #类型:int
-    #范围:[1:...]
-    #默认值:10
     recoverNumBuckets: 10
-    #描述:熔断策略，SDK会根据策略名称加载对应的熔断器插件
-    #类型:list
-    #范围:已注册的熔断器插件名
-    #默认值：基于周期连续错误数熔断（errorCount）、以及基于周期错误率的熔断策略（errorRate）
     chain:
       - errorCount
       - errorRate
-    #描述:熔断插件配置
     plugin:
-      #描述:基于周期连续错误数熔断策略配置
       errorCount:
-        #描述:触发连续错误熔断的阈值
-        #类型:int
-        #范围:[1:...]
-        #默认值:10
         continuousErrorThreshold: 10
-        #描述:连续错误数的最小统计单元数量
-        #类型:int
-        #范围:[1:...]
-        #默认值:10
         metricNumBuckets: 10
-        #描述:连续失败的统计周期
-        #类型:string
-        #格式:^\d+(ms|s|m|h)$
-        #范围:[10ms:...]
-        #默认值:1m
         metricStatTimeWindow: 1m0s
-      #描述:基于周期错误率的熔断策略配置
       errorRate:
-        #描述:触发错误率熔断的阈值
-        #类型:double
-        #范围:(0:1]
-        #默认值:0.5
         errorRateThreshold: 0.5
-        #描述:错误率熔断的最小统计单元数量
-        #类型:int
-        #范围:[1:...]
-        #默认值:5
         metricNumBuckets: 5
-        #描述:错误率熔断的统计周期
-        #类型:string
-        #格式:^\d+(ms|s|m|h)$
-        #范围:[1s:...]
-        #默认值:1m
         metricStatTimeWindow: 1m0s
-        #描述:触发错误率熔断的最低请求阈值
-        #类型:int
-        #范围:(0:...]
-        #默认值:10
         requestVolumeThreshold: 10
   subscribe:
     type: subscribeLocalChannel
