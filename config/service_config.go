@@ -227,7 +227,7 @@ func (svc *ServiceConfig) Export() error {
 			svc.cacheMutex.Unlock()
 
 			for _, regUrl := range regUrls {
-				regUrl.SubURL = ivkURL
+				setRegistrySubURL(ivkURL, regUrl)
 				invoker := proxyFactory.GetInvoker(regUrl)
 				exporter := svc.cacheProtocol.Export(invoker)
 				if exporter == nil {
@@ -257,6 +257,12 @@ func (svc *ServiceConfig) Export() error {
 	}
 	svc.exported.Store(true)
 	return nil
+}
+
+//setRegistrySubURL set registry sub url is ivkURl
+func setRegistrySubURL(ivkURL *common.URL, regUrl *common.URL) {
+	ivkURL.AddParam(constant.RegistryKey, regUrl.GetParam(constant.RegistryKey, ""))
+	regUrl.SubURL = ivkURL
 }
 
 //loadProtocol filter protocols by ids
@@ -348,8 +354,12 @@ func (svc *ServiceConfig) getUrlMap() url.Values {
 	urlMap.Set(constant.LoadbalanceKey, svc.Loadbalance)
 	urlMap.Set(constant.WarmupKey, svc.Warmup)
 	urlMap.Set(constant.RetriesKey, svc.Retries)
-	urlMap.Set(constant.GroupKey, svc.Group)
-	urlMap.Set(constant.VersionKey, svc.Version)
+	if svc.Group != "" {
+		urlMap.Set(constant.GroupKey, svc.Group)
+	}
+	if svc.Version != "" {
+		urlMap.Set(constant.VersionKey, svc.Version)
+	}
 	urlMap.Set(constant.RegistryRoleKey, strconv.Itoa(common.PROVIDER))
 	urlMap.Set(constant.ReleaseKey, "dubbo-golang-"+constant.Version)
 	urlMap.Set(constant.SideKey, (common.RoleType(common.PROVIDER)).Role())

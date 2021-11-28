@@ -19,12 +19,12 @@ package routeguide
 
 import (
 	"io"
-	"log"
 	"math/rand"
 	"time"
 )
 
 import (
+	log "dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/config"
 )
 
@@ -43,7 +43,7 @@ func PrintFeatures(stream RouteGuide_ListFeaturesClient) {
 		if err != nil {
 			log.Fatalf("Fait to receive a feature: %v", err)
 		}
-		log.Printf("Feature: name: %q, point:(%v, %v)", feature.GetName(),
+		log.Infof("Feature: name: %q, point:(%v, %v)", feature.GetName(),
 			feature.GetLocation().GetLatitude(), feature.GetLocation().GetLongitude())
 	}
 }
@@ -57,7 +57,7 @@ func RunRecordRoute(stream RouteGuide_RecordRouteClient) {
 	for i := 0; i < pointCount; i++ {
 		points = append(points, randomPoint(r))
 	}
-	log.Printf("Traversing %d points.", len(points))
+	log.Infof("Traversing %d points.", len(points))
 	for _, point := range points {
 		if err := stream.Send(point); err != nil {
 			log.Fatalf("%v.Send(%v) = %v", stream, point, err)
@@ -67,7 +67,7 @@ func RunRecordRoute(stream RouteGuide_RecordRouteClient) {
 	if err != nil {
 		log.Fatalf("%v.CloseAndRecv() got error %v, want %v", stream, err, nil)
 	}
-	log.Printf("Route summary: %v", reply)
+	log.Infof("Route summary: %v", reply)
 }
 
 // runRouteChat receives a sequence of route notes, while sending notes for various locations.
@@ -92,7 +92,7 @@ func RunRouteChat(stream RouteGuide_RouteChatClient) {
 			if err != nil {
 				log.Fatalf("Failed to receive a note : %v", err)
 			}
-			log.Printf("Got message %s at point(%d, %d)", in.Message, in.Location.Latitude, in.Location.Longitude)
+			log.Infof("Got message %s at point(%d, %d)", in.Message, in.Location.Latitude, in.Location.Longitude)
 		}
 	}()
 	for _, note := range notes {
