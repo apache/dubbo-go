@@ -155,14 +155,9 @@ func RPCService(service common.RPCService) {
 // So you don't need to worry about the race condition
 func GetMetricConfig() *MetricConfig {
 	// todo
-	//if GetBaseConfig().Metric == nil {
-	//	configAccessMutex.Lock()
-	//	defer configAccessMutex.Unlock()
-	//	if GetBaseConfig().Metric == nil {
-	//		GetBaseConfig().Metric = &metric.Metric{}
-	//	}
-	//}
-	//return GetBaseConfig().Metric
+	if rootConfig.Metric == nil {
+		return NewMetricConfigBuilder().Build()
+	}
 	return rootConfig.Metric
 }
 

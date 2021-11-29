@@ -88,7 +88,6 @@ type ServiceConfig struct {
 	exportersLock   sync.Mutex
 	exporters       []protocol.Exporter
 
-	rootConfig   *RootConfig
 	metadataType string
 }
 
@@ -116,7 +115,6 @@ func (svc *ServiceConfig) Init(root *RootConfig) error {
 	if len(svc.RegistryIDs) <= 0 {
 		svc.RegistryIDs = root.Provider.RegistryIDs
 	}
-	svc.rootConfig = root
 	if len(svc.ProtocolIDs) <= 0 {
 		for k, _ := range root.Protocols {
 			svc.ProtocolIDs = append(svc.ProtocolIDs, k)
