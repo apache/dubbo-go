@@ -19,8 +19,6 @@ package prometheus
 
 import (
 	"context"
-	"dubbo.apache.org/dubbo-go/v3/config"
-	"github.com/prometheus/client_golang/prometheus/push"
 	"math/rand"
 	"net/http"
 	"strconv"
@@ -31,9 +29,12 @@ import (
 
 import (
 	ocprom "contrib.go.opencensus.io/exporter/prometheus"
+
 	"github.com/emirpasic/gods/sets/treeset"
 	"github.com/emirpasic/gods/utils"
+
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/push"
 )
 
 import (
@@ -41,6 +42,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )

@@ -19,13 +19,19 @@ package prometheus
 
 import (
 	"context"
+	"testing"
+	"time"
+)
+
+import (
+	"github.com/stretchr/testify/assert"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
-	"github.com/stretchr/testify/assert"
-	"testing"
-	"time"
 )
 
 func TestPrometheusReporter_Report(t *testing.T) {
