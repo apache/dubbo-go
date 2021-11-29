@@ -175,14 +175,12 @@ func (polaris *polarisServiceDiscovery) GetServices() *gxset.HashSet {
 
 // GetInstances will return all service instances with serviceName
 func (polaris *polarisServiceDiscovery) GetInstances(serviceName string) []registry.ServiceInstance {
-	resp, err := polaris.consumer.GetInstances(&api.GetInstancesRequest{
-		GetInstancesRequest: model.GetInstancesRequest{
+	resp, err := polaris.consumer.GetAllInstances(&api.GetAllInstancesRequest{
+		GetAllInstancesRequest: model.GetAllInstancesRequest{
 			Service:   serviceName,
 			Namespace: polaris.namespace,
 		},
 	})
-
-	fmt.Printf("GetInstances(serviceName string)")
 
 	if err != nil {
 		logger.Errorf("Could not query the instances for service: %+v . It happened err %+v", serviceName, err)
