@@ -25,12 +25,18 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+)
 
-	"dubbo.apache.org/dubbo-go/v3/config_center"
-	"dubbo.apache.org/dubbo-go/v3/remoting"
+import (
 	gxchan "github.com/dubbogo/gost/container/chan"
+
 	"github.com/polarismesh/polaris-go/api"
 	"github.com/polarismesh/polaris-go/pkg/model"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/config_center"
+	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
 // PolarisServiceWatcher

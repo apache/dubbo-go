@@ -19,6 +19,7 @@ package auth
 
 import (
 	"sync"
+	"sync"
 )
 
 import (
@@ -27,7 +28,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
-	"sync"
 )
 
 var (
