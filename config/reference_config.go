@@ -45,7 +45,7 @@ import (
 type ReferenceConfig struct {
 	pxy            *proxy.Proxy
 	id             string
-	InterfaceName  string            `required:"true"  yaml:"interface"  json:"interface,omitempty" property:"interface"`
+	InterfaceName  string            `yaml:"interface"  json:"interface,omitempty" property:"interface"`
 	Check          *bool             `yaml:"check"  json:"check,omitempty" property:"check"`
 	URL            string            `yaml:"url"  json:"url,omitempty" property:"url"`
 	Filter         string            `yaml:"filter" json:"filter,omitempty" property:"filter"`
@@ -67,6 +67,7 @@ type ReferenceConfig struct {
 	Sticky         bool   `yaml:"sticky"   json:"sticky,omitempty" property:"sticky"`
 	RequestTimeout string `yaml:"timeout"  json:"timeout,omitempty" property:"timeout"`
 	ForceTag       bool   `yaml:"force.tag"  json:"force.tag,omitempty" property:"force.tag"`
+	TracingKey     string `yaml:"tracing-key" json:"tracing-key,omitempty" propertiy:"tracing-key"`
 
 	rootConfig   *RootConfig
 	metaDataType string
@@ -96,6 +97,9 @@ func (rc *ReferenceConfig) Init(root *RootConfig) error {
 	rc.RegistryIDs = translateRegistryIds(rc.RegistryIDs)
 	if len(rc.RegistryIDs) <= 0 {
 		rc.RegistryIDs = root.Consumer.RegistryIDs
+	}
+	if rc.TracingKey == "" {
+		rc.TracingKey = root.Consumer.TracingKey
 	}
 	if rc.Check == nil {
 		rc.Check = &root.Consumer.Check
@@ -244,6 +248,7 @@ func (rc *ReferenceConfig) getURLMap() url.Values {
 	urlMap.Set(constant.RegistryRoleKey, strconv.Itoa(common.CONSUMER))
 	urlMap.Set(constant.ProvidedBy, rc.ProvidedBy)
 	urlMap.Set(constant.SerializationKey, rc.Serialization)
+	urlMap.Set(constant.TracingConfigKey, rc.TracingKey)
 
 	urlMap.Set(constant.ReleaseKey, "dubbo-golang-"+constant.Version)
 	urlMap.Set(constant.SideKey, (common.RoleType(common.CONSUMER)).Role())

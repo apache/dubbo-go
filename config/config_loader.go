@@ -96,7 +96,7 @@ func registerServiceInstance() {
 	}
 	// publish metadata to remote
 	if GetApplicationConfig().MetadataType == constant.RemoteMetadataStorageType {
-		if remoteMetadataService, err := extension.GetRemoteMetadataService(); err == nil {
+		if remoteMetadataService, err := extension.GetRemoteMetadataService(); err == nil && remoteMetadataService != nil {
 			remoteMetadataService.PublishMetadata(GetApplicationConfig().Name)
 		}
 	}
@@ -159,6 +159,10 @@ func GetMetricConfig() *MetricConfig {
 		return NewMetricConfigBuilder().Build()
 	}
 	return rootConfig.Metric
+}
+
+func GetTracingConfig(tracingKey string) *TracingConfig {
+	return rootConfig.Tracing[tracingKey]
 }
 
 func GetMetadataReportConfg() *MetadataReportConfig {

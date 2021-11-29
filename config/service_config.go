@@ -51,7 +51,7 @@ type ServiceConfig struct {
 	id                          string
 	Filter                      string            `yaml:"filter" json:"filter,omitempty" property:"filter"`
 	ProtocolIDs                 []string          `yaml:"protocol-ids"  json:"protocol-ids,omitempty" property:"protocol-ids"` // multi protocolIDs support, split by ','
-	Interface                   string            `validate:"required"  yaml:"interface"  json:"interface,omitempty" property:"interface"`
+	Interface                   string            `yaml:"interface"  json:"interface,omitempty" property:"interface"`
 	RegistryIDs                 []string          `yaml:"registry-ids"  json:"registry-ids,omitempty"  property:"registry-ids"`
 	Cluster                     string            `default:"failover" yaml:"cluster"  json:"cluster,omitempty" property:"cluster"`
 	Loadbalance                 string            `default:"random" yaml:"loadbalance"  json:"loadbalance,omitempty"  property:"loadbalance"`
@@ -75,6 +75,7 @@ type ServiceConfig struct {
 	ParamSign                   string            `yaml:"param.sign" json:"param.sign,omitempty" property:"param.sign"`
 	Tag                         string            `yaml:"tag" json:"tag,omitempty" property:"tag"`
 	GrpcMaxMessageSize          int               `default:"4" yaml:"max_message_size" json:"max_message_size,omitempty"`
+	TracingKey                  string            `yaml:"tracing-key" json:"tracing-key,omitempty" propertiy:"tracing-key"`
 
 	RCProtocolsMap  map[string]*ProtocolConfig
 	RCRegistriesMap map[string]*RegistryConfig
@@ -119,6 +120,9 @@ func (svc *ServiceConfig) Init(root *RootConfig) error {
 		for k, _ := range root.Protocols {
 			svc.ProtocolIDs = append(svc.ProtocolIDs, k)
 		}
+	}
+	if svc.TracingKey == "" {
+		svc.TracingKey = rc.Provider.TracingKey
 	}
 	svc.export = true
 	return verify(svc)
@@ -223,7 +227,7 @@ func (svc *ServiceConfig) Export() error {
 			svc.cacheMutex.Unlock()
 
 			for _, regUrl := range regUrls {
-				regUrl.SubURL = ivkURL
+				setRegistrySubURL(ivkURL, regUrl)
 				invoker := proxyFactory.GetInvoker(regUrl)
 				exporter := svc.cacheProtocol.Export(invoker)
 				if exporter == nil {
@@ -253,6 +257,12 @@ func (svc *ServiceConfig) Export() error {
 	}
 	svc.exported.Store(true)
 	return nil
+}
+
+//setRegistrySubURL set registry sub url is ivkURl
+func setRegistrySubURL(ivkURL *common.URL, regUrl *common.URL) {
+	ivkURL.AddParam(constant.RegistryKey, regUrl.GetParam(constant.RegistryKey, ""))
+	regUrl.SubURL = ivkURL
 }
 
 //loadProtocol filter protocols by ids
@@ -344,8 +354,12 @@ func (svc *ServiceConfig) getUrlMap() url.Values {
 	urlMap.Set(constant.LoadbalanceKey, svc.Loadbalance)
 	urlMap.Set(constant.WarmupKey, svc.Warmup)
 	urlMap.Set(constant.RetriesKey, svc.Retries)
-	urlMap.Set(constant.GroupKey, svc.Group)
-	urlMap.Set(constant.VersionKey, svc.Version)
+	if svc.Group != "" {
+		urlMap.Set(constant.GroupKey, svc.Group)
+	}
+	if svc.Version != "" {
+		urlMap.Set(constant.VersionKey, svc.Version)
+	}
 	urlMap.Set(constant.RegistryRoleKey, strconv.Itoa(common.PROVIDER))
 	urlMap.Set(constant.ReleaseKey, "dubbo-golang-"+constant.Version)
 	urlMap.Set(constant.SideKey, (common.RoleType(common.PROVIDER)).Role())
@@ -378,6 +392,7 @@ func (svc *ServiceConfig) getUrlMap() url.Values {
 	urlMap.Set(constant.TPSLimitRateKey, svc.TpsLimitRate)
 	urlMap.Set(constant.TPSLimiterKey, svc.TpsLimiter)
 	urlMap.Set(constant.TPSRejectedExecutionHandlerKey, svc.TpsLimitRejectedHandler)
+	urlMap.Set(constant.TracingConfigKey, svc.TracingKey)
 
 	// execute limit filter
 	urlMap.Set(constant.ExecuteLimitKey, svc.ExecuteLimit)

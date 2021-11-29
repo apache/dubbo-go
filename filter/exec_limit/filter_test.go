@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package execlmt
+package exec_limit
 
 import (
 	"context"

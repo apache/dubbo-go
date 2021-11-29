@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package execlmt
+package exec_limit
 
 import (
 	"context"
@@ -35,6 +35,11 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	_ "dubbo.apache.org/dubbo-go/v3/filter/handler"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
+)
+
+var (
+	once         sync.Once
+	executeLimit *executeLimitFilter
 )
 
 func init() {
@@ -66,7 +71,7 @@ func init() {
  * Sometimes we want to do something, like log the request or return default value when the request is over limitation.
  * Then you can implement the RejectedExecutionHandler interface and register it by invoking SetRejectedExecutionHandler.
  */
-type Filter struct {
+type executeLimitFilter struct {
 	executeState *concurrent.Map
 }
 
@@ -75,8 +80,20 @@ type ExecuteState struct {
 	concurrentCount int64
 }
 
+// newFilter returns the singleton Filter instance
+func newFilter() filter.Filter {
+	if executeLimit == nil {
+		once.Do(func() {
+			executeLimit = &executeLimitFilter{
+				executeState: concurrent.NewMap(),
+			}
+		})
+	}
+	return executeLimit
+}
+
 // Invoke judges whether the current processing requests over the threshold
-func (f *Filter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+func (f *executeLimitFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	methodConfigPrefix := "methods." + invocation.MethodName() + "."
 	ivkURL := invoker.GetURL()
 	limitTarget := ivkURL.ServiceKey()
@@ -118,7 +135,7 @@ func (f *Filter) Invoke(ctx context.Context, invoker protocol.Invoker, invocatio
 }
 
 // OnResponse dummy process, returns the result directly
-func (f *Filter) OnResponse(_ context.Context, result protocol.Result, _ protocol.Invoker, _ protocol.Invocation) protocol.Result {
+func (f *executeLimitFilter) OnResponse(_ context.Context, result protocol.Result, _ protocol.Invoker, _ protocol.Invocation) protocol.Result {
 	return result
 }
 
@@ -128,19 +145,4 @@ func (state *ExecuteState) increase() int64 {
 
 func (state *ExecuteState) decrease() {
 	atomic.AddInt64(&state.concurrentCount, -1)
-}
-
-var (
-	executeLimitOnce   sync.Once
-	executeLimitFilter *Filter
-)
-
-// newFilter returns the singleton Filter instance
-func newFilter() filter.Filter {
-	executeLimitOnce.Do(func() {
-		executeLimitFilter = &Filter{
-			executeState: concurrent.NewMap(),
-		}
-	})
-	return executeLimitFilter
 }

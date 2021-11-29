@@ -70,7 +70,7 @@ func (s *MockHelloService) HelloPB(req *generalizer.RequestType) (*generalizer.R
 }
 
 func TestServiceFilter_Invoke(t *testing.T) {
-	filter := &ServiceFilter{}
+	filter := &genericServiceFilter{}
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -193,7 +193,7 @@ func TestServiceFilter_Invoke(t *testing.T) {
 }
 
 func TestServiceFilter_OnResponse(t *testing.T) {
-	filter := &ServiceFilter{}
+	filter := &genericServiceFilter{}
 
 	// invoke a method without errors
 	invocation1 := invocation.NewRPCInvocation(constant.Generic,

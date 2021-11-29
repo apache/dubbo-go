@@ -15,29 +15,32 @@
  * limitations under the License.
  */
 
-package echo
+package config
 
 import (
-	"context"
-	"testing"
+	"github.com/creasty/defaults"
 )
 
 import (
-	"github.com/stretchr/testify/assert"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
-	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
-)
+// TracingConfig is the configuration of the tracing.
+type TracingConfig struct {
+	Name        string `default:"jaeger" yaml:"name" json:"name,omitempty" property:"name"` // jaeger or zipkin(todo)
+	ServiceName string `yaml:"serviceName" json:"serviceName,omitempty" property:"serviceName"`
+	Address     string `yaml:"address" json:"address,omitempty" property:"address"`
+	UseAgent    bool   `default:"false" yaml:"use-agent" json:"use-agent,omitempty" property:"use-agent"`
+}
 
-func TestFilterInvoke(t *testing.T) {
-	filter := &echoFilter{}
-	result := filter.Invoke(context.Background(), protocol.NewBaseInvoker(&common.URL{}), invocation.NewRPCInvocation("$echo", []interface{}{"OK"}, nil))
-	assert.Equal(t, "OK", result.Result())
+// Prefix dubbo.router
+func (TracingConfig) Prefix() string {
+	return constant.TracingConfigPrefix
+}
 
-	result = filter.Invoke(context.Background(), protocol.NewBaseInvoker(&common.URL{}), invocation.NewRPCInvocation("MethodName", []interface{}{"OK"}, nil))
-	assert.Nil(t, result.Error())
-	assert.Nil(t, result.Result())
+func (c *TracingConfig) Init() error {
+	if err := defaults.Set(c); err != nil {
+		return err
+	}
+	return verify(c)
 }

@@ -19,6 +19,7 @@ package auth
 
 import (
 	"context"
+	"sync"
 )
 
 import (
@@ -29,23 +30,36 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
+var (
+	authOnce sync.Once
+	auth     *authFilter
+)
+
 func init() {
-	extension.SetFilter(constant.AuthProviderFilterKey, newProviderAuthFilter)
+	extension.SetFilter(constant.AuthProviderFilterKey, newAuthFilter)
 }
 
-// ProviderAuthFilter verifies the correctness of the signature on provider side
-type ProviderAuthFilter struct{}
+// authFilter verifies the correctness of the signature on provider side
+type authFilter struct{}
+
+func newAuthFilter() filter.Filter {
+	if auth == nil {
+		authOnce.Do(func() {
+			auth = &authFilter{}
+		})
+	}
+	return auth
+}
 
 // Invoke retrieves the configured Authenticator to verify the signature in an invocation
-func (paf *ProviderAuthFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
-	logger.Infof("invoking providerAuth filter.")
+func (paf *authFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	url := invoker.GetURL()
 
 	err := doAuthWork(url, func(authenticator filter.Authenticator) error {
 		return authenticator.Authenticate(invocation, url)
 	})
 	if err != nil {
-		logger.Infof("auth the request: %v occur exception, cause: %s", invocation, err.Error())
+		logger.Errorf("auth the request: %v occur exception, cause: %s", invocation, err.Error())
 		return &protocol.RPCResult{
 			Err: err,
 		}
@@ -55,10 +69,10 @@ func (paf *ProviderAuthFilter) Invoke(ctx context.Context, invoker protocol.Invo
 }
 
 // OnResponse dummy process, returns the result directly
-func (paf *ProviderAuthFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+func (paf *authFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	return result
 }
 
 func newProviderAuthFilter() filter.Filter {
-	return &ProviderAuthFilter{}
+	return &authFilter{}
 }
