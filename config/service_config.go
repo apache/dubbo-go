@@ -122,7 +122,7 @@ func (svc *ServiceConfig) Init(root *RootConfig) error {
 		}
 	}
 	if svc.TracingKey == "" {
-		svc.TracingKey = rc.Provider.TracingKey
+		svc.TracingKey = root.Provider.TracingKey
 	}
 	svc.export = true
 	return verify(svc)
