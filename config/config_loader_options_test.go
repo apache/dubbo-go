@@ -44,3 +44,14 @@ func TestRootConfig(t *testing.T) {
 	conf := NewLoaderConf(WithRootConfig(rc))
 	assert.Equal(t, conf.rc.Application.Name, "test-app")
 }
+
+func TestNewLoaderConf_WithBytes(t *testing.T) {
+	str := `dubbo.application.name=dubbo-go
+dubbo.application.module=local
+dubbo.services.HelloService.registry=nacos,zk`
+
+	conf := NewLoaderConf(WithBytes([]byte(str)), WithGenre("properties"))
+
+	assert.NotNil(t, conf)
+	assert.NotNil(t, conf.bytes)
+}

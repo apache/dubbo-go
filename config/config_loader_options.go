@@ -18,7 +18,6 @@
 package config
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -122,6 +121,13 @@ func WithDelim(delim string) LoaderConfOption {
 	})
 }
 
+// WithBytes set load config  bytes
+func WithBytes(bytes []byte) LoaderConfOption {
+	return loaderConfigFunc(func(conf *loaderConf) {
+		conf.bytes = bytes
+	})
+}
+
 // absolutePath get absolut path
 func absolutePath(inPath string) string {
 
@@ -155,11 +161,11 @@ func userHomeDir() string {
 
 // checkGenre check Genre
 func checkGenre(genre string) error {
-	genres := []string{"json", "toml", "yaml", "yml"}
+	genres := []string{"json", "toml", "yaml", "yml", "properties"}
 	sort.Strings(genres)
 	idx := sort.SearchStrings(genres, genre)
 	if genres[idx] != genre {
-		return errors.New(fmt.Sprintf("no support %s", genre))
+		return errors.Errorf("no support file extension: %s", genre)
 	}
 	return nil
 }
