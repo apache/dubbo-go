@@ -24,6 +24,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/metrics"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	perrors "github.com/pkg/errors"
 )
@@ -61,6 +62,8 @@ func (ivk *adaptiveServiceClusterInvoker) Invoke(ctx context.Context, invocation
 
 	// update metrics
 	remaining := invocation.Attachments()[constant.AdaptiveServiceRemainingKey]
+	logger.Debugf("[adasvc cluster] The server status was received successfully, %s: %#v",
+		constant.AdaptiveServiceRemainingKey, remaining)
 	err := metrics.LocalMetrics.SetMethodMetrics(invoker.GetURL(),
 		invocation.MethodName(), metrics.HillClimbing, remaining)
 	if err != nil {

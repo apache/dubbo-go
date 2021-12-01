@@ -21,6 +21,7 @@ import (
 	"context"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/filter/adaptivesvc/limiter"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
@@ -93,7 +94,10 @@ func (f *adaptiveServiceProviderFilter) OnResponse(_ context.Context, result pro
 
 	err := updater.DoUpdate()
 	if err != nil {
-		return &protocol.RPCResult{Err: err}
+		// DoUpdate was failed, but the invocation is not failed.
+		// Printing the error to logs is better than returning a
+		// result with an error.
+		logger.Errorf("[adasvc filter] The DoUpdate method was failed, err: %s.", err)
 	}
 
 	// get limiter for the mapper
@@ -105,6 +109,9 @@ func (f *adaptiveServiceProviderFilter) OnResponse(_ context.Context, result pro
 	// set attachments to inform consumer of provider status
 	invocation.SetAttachments(constant.AdaptiveServiceRemainingKey, l.Remaining())
 	invocation.SetAttachments(constant.AdaptiveServiceInflightKey, l.Inflight())
+	logger.Debugf("[adasvc filter] The attachments are set, %s: %d, %s: %d.",
+		constant.AdaptiveServiceRemainingKey, l.Remaining(),
+		constant.AdaptiveServiceInflightKey, l.Inflight())
 
 	return result
 }
