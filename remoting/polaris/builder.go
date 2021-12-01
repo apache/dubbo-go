@@ -15,10 +15,6 @@
  * limitations under the License.
  */
 
-//@Author: chuntaojun <liaochuntao@live.com>
-//@Description:
-//@Time: 2021/11/19 02:56
-
 package polaris
 
 import (
@@ -42,10 +38,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
-// GetPolarisConfig
-//  @param url
-//  @return api.SDKContext
-//  @return error
+// GetPolarisConfig get polaris config from dubbo url
 func GetPolarisConfig(url *common.URL) (api.SDKContext, string, error) {
 	if url == nil {
 		return nil, "", errors.New("url is empty!")

@@ -15,10 +15,6 @@
  * limitations under the License.
  */
 
-//@Author: chuntaojun <liaochuntao@live.com>
-//@Description:
-//@Time: 2021/11/26 00:28
-
 package polaris
 
 import (
@@ -27,8 +23,6 @@ import (
 )
 
 import (
-	gxchan "github.com/dubbogo/gost/container/chan"
-
 	"github.com/polarismesh/polaris-go/api"
 	"github.com/polarismesh/polaris-go/pkg/model"
 )
@@ -38,13 +32,14 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
+type subscriber func(remoting.EventType, []model.Instance)
+
 // PolarisServiceWatcher
 type PolarisServiceWatcher struct {
 	consumer       api.ConsumerAPI
 	subscribeParam *api.WatchServiceRequest
-	events         *gxchan.UnboundedChan
 	lock           *sync.RWMutex
-	subscribers    []func(remoting.EventType, []model.Instance)
+	subscribers    []subscriber
 	execOnce       *sync.Once
 }
 
@@ -53,9 +48,8 @@ func newPolarisWatcher(param *api.WatchServiceRequest, consumer api.ConsumerAPI)
 	watcher := &PolarisServiceWatcher{
 		subscribeParam: param,
 		consumer:       consumer,
-		events:         gxchan.NewUnboundedChan(1024),
 		lock:           &sync.RWMutex{},
-		subscribers:    make([]func(remoting.EventType, []model.Instance), 0),
+		subscribers:    make([]subscriber, 0),
 		execOnce:       &sync.Once{},
 	}
 	return watcher, nil
@@ -75,35 +69,12 @@ func (watcher *PolarisServiceWatcher) AddSubscriber(subscriber func(remoting.Eve
 // lazyRun Delayed execution, only triggered when AddSubscriber is called, and will only be executed once
 func (watcher *PolarisServiceWatcher) lazyRun() {
 	watcher.execOnce.Do(func() {
-		go watcher.startWatcher()
-		go watcher.startDispatcher()
+		go watcher.startWatch()
 	})
 }
 
-// startDispatcher dispatch polaris naming event
-func (watcher *PolarisServiceWatcher) startDispatcher() {
-	for {
-		select {
-		case val := <-watcher.events.Out():
-			event := val.(*config_center.ConfigChangeEvent)
-
-			func(event *config_center.ConfigChangeEvent) {
-
-				watcher.lock.RLock()
-				defer watcher.lock.RUnlock()
-
-				for i := 0; i < len(watcher.subscribers); i++ {
-					subscriber := watcher.subscribers[i]
-					subscriber(event.ConfigType, event.Value.([]model.Instance))
-				}
-
-			}(event)
-		}
-	}
-}
-
-// startWatcher start run work to watch target service by polaris
-func (watcher *PolarisServiceWatcher) startWatcher() {
+// startWatch start run work to watch target service by polaris
+func (watcher *PolarisServiceWatcher) startWatch() {
 
 	for {
 		resp, err := watcher.consumer.WatchService(watcher.subscribeParam)
@@ -112,18 +83,19 @@ func (watcher *PolarisServiceWatcher) startWatcher() {
 			continue
 		}
 
-		watcher.events.In() <- &config_center.ConfigChangeEvent{
+		watcher.notifyAllSubscriber(&config_center.ConfigChangeEvent{
 			Value:      resp.GetAllInstancesResp.Instances,
 			ConfigType: remoting.EventTypeAdd,
-		}
+		})
 
 		select {
 		case event := <-resp.EventChannel:
+			var changeEvent *config_center.ConfigChangeEvent
 			eType := event.GetSubScribeEventType()
 			if eType == api.EventInstance {
 				insEvent := event.(*model.InstanceEvent)
 				if insEvent.AddEvent != nil {
-					watcher.events.In() <- &config_center.ConfigChangeEvent{
+					changeEvent = &config_center.ConfigChangeEvent{
 						Value:      insEvent.AddEvent.Instances,
 						ConfigType: remoting.EventTypeAdd,
 					}
@@ -133,19 +105,31 @@ func (watcher *PolarisServiceWatcher) startWatcher() {
 					for i := range insEvent.UpdateEvent.UpdateList {
 						instances[i] = insEvent.UpdateEvent.UpdateList[i].After
 					}
-
-					watcher.events.In() <- &config_center.ConfigChangeEvent{
+					changeEvent = &config_center.ConfigChangeEvent{
 						Value:      instances,
 						ConfigType: remoting.EventTypeUpdate,
 					}
 				}
 				if insEvent.DeleteEvent != nil {
-					watcher.events.In() <- &config_center.ConfigChangeEvent{
+					changeEvent = &config_center.ConfigChangeEvent{
 						Value:      insEvent.DeleteEvent.Instances,
 						ConfigType: remoting.EventTypeDel,
 					}
 				}
 			}
+			watcher.notifyAllSubscriber(changeEvent)
 		}
 	}
+}
+
+// notifyAllSubscriber notify config_center.ConfigChangeEvent to all subscriber
+func (watcher *PolarisServiceWatcher) notifyAllSubscriber(event *config_center.ConfigChangeEvent) {
+	watcher.lock.RLock()
+	defer watcher.lock.RUnlock()
+
+	for i := 0; i < len(watcher.subscribers); i++ {
+		subscriber := watcher.subscribers[i]
+		subscriber(event.ConfigType, event.Value.([]model.Instance))
+	}
+
 }

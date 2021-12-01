@@ -15,10 +15,6 @@
  * limitations under the License.
  */
 
-//@Author: chuntaojun <liaochuntao@live.com>
-//@Description:
-//@Time: 2021/11/19 13:27
-
 package polaris
 
 import (
