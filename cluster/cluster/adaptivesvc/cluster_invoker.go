@@ -27,6 +27,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	perrors "github.com/pkg/errors"
+	"strconv"
 )
 
 type adaptiveServiceClusterInvoker struct {
@@ -61,12 +62,18 @@ func (ivk *adaptiveServiceClusterInvoker) Invoke(ctx context.Context, invocation
 	result := invoker.Invoke(ctx, invocation)
 
 	// update metrics
-	remaining := invocation.Attachments()[constant.AdaptiveServiceRemainingKey]
+	remainingStr := invocation.AttachmentsByKey(constant.AdaptiveServiceRemainingKey, "")
+	remaining, err := strconv.Atoi(remainingStr)
+	if err != nil {
+		logger.Warnf("the remaining is unexpected, we need a int type, but we got %d, err: %v.", remainingStr, err)
+		return result
+	}
 	logger.Debugf("[adasvc cluster] The server status was received successfully, %s: %#v",
-		constant.AdaptiveServiceRemainingKey, remaining)
-	err := metrics.LocalMetrics.SetMethodMetrics(invoker.GetURL(),
+		constant.AdaptiveServiceRemainingKey, remainingStr)
+	err = metrics.LocalMetrics.SetMethodMetrics(invoker.GetURL(),
 		invocation.MethodName(), metrics.HillClimbing, remaining)
 	if err != nil {
+		logger.Warnf("adaptive service metrics update is failed, err: %v", err)
 		return &protocol.RPCResult{Err: err}
 	}
 

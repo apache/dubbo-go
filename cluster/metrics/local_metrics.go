@@ -31,18 +31,20 @@ func init() {
 
 type localMetrics struct {
 	// protect metrics
-	lock    *sync.Mutex
+	lock    *sync.RWMutex
 	metrics map[string]interface{}
 }
 
 func newLocalMetrics() *localMetrics {
 	return &localMetrics{
-		lock:    &sync.Mutex{},
+		lock:    new(sync.RWMutex),
 		metrics: make(map[string]interface{}),
 	}
 }
 
 func (m *localMetrics) GetMethodMetrics(url *common.URL, methodName, key string) (interface{}, error) {
+	m.lock.RLock()
+	defer m.lock.RUnlock()
 	metricsKey := fmt.Sprintf("%s.%s.%s.%s", getInstanceKey(url), getInvokerKey(url), methodName, key)
 	if metrics, ok := m.metrics[metricsKey]; ok {
 		return metrics, nil
@@ -51,6 +53,8 @@ func (m *localMetrics) GetMethodMetrics(url *common.URL, methodName, key string)
 }
 
 func (m *localMetrics) SetMethodMetrics(url *common.URL, methodName, key string, value interface{}) error {
+	m.lock.Lock()
+	defer m.lock.Unlock()
 	metricsKey := fmt.Sprintf("%s.%s.%s.%s", getInstanceKey(url), getInvokerKey(url), methodName, key)
 	m.metrics[metricsKey] = value
 	return nil
