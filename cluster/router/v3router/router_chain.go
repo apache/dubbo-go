@@ -35,6 +35,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
 // RouterChain contains all uniform router logic
@@ -46,31 +47,36 @@ type RouterChain struct {
 
 // nolint
 func NewUniformRouterChain() (router.PriorityRouter, error) {
-	// 1. add mesh route listener
+	// 1. Add mesh route listener
 	r := &RouterChain{}
 	rootConfig := config.GetRootConfig()
 	dynamicConfiguration := conf.GetEnvInstance().GetDynamicConfiguration()
 	if dynamicConfiguration == nil {
-		logger.Infof("[Mesh Router] Config center does not start, please check if the configuration center has been properly configured in dubbogo.yml")
+		logger.Infof("[NewUniformRouterChain] Config center does not start, please check if the configuration center has been properly configured in dubbogo.yml")
 		return nil, nil
 	}
-	dynamicConfiguration.AddListener(rootConfig.Application.Name, r)
 
-	// 2. try to get mesh route configuration, default key is "dubbo.io.MESHAPPRULE" with group "dubbo"
+	// 2. Try to get mesh rules configuration, default key is "dubbo.io.MESHAPPRULE" with group "dubbo"
 	key := rootConfig.Application.Name + constant.MeshRouteSuffix
+	group := rootConfig.ConfigCenter.Group
+	if group == "" {
+		group = constant.Dubbo
+	}
+	dynamicConfiguration.AddListener(group+constant.PathSeparator+key, r)
 	meshRouteValue, err := dynamicConfiguration.GetProperties(key, config_center.WithGroup(rootConfig.ConfigCenter.Group))
 	if err != nil {
-		// the mesh route may not be initialized now
-		logger.Warnf("Can not get mesh route for key=%s, error=%v", key, err)
+		// The mesh rules may not be initialized now
+		logger.Warnf("[NewUniformRouterChain]Can not get mesh rules for group=%s, key=%s, error=%+v", rootConfig.ConfigCenter.Group, key, err)
 		return r, nil
 	}
-	logger.Debugf("Successfully get mesh route:%s", meshRouteValue)
+	logger.Debugf("[NewUniformRouterChain]Successfully get mesh rules:%s", meshRouteValue)
 	routes, err := parseRoute(meshRouteValue)
 	if err != nil {
-		logger.Warnf("Parse mesh route failed, error=%v", err)
+		logger.Warnf("[NewUniformRouterChain]Parse mesh rules failed, error=%+v", err)
 		return nil, err
 	}
 	r.routers = routes
+	logger.Infof("[NewUniformRouterChain]Successfully init mesh rules with:\n%s", meshRouteValue)
 	return r, nil
 }
 
@@ -84,13 +90,19 @@ func (r *RouterChain) Route(invokers []protocol.Invoker, url *common.URL, invoca
 
 // Process process route config change event
 func (r *RouterChain) Process(event *config_center.ConfigChangeEvent) {
-	logger.Debugf("RouteChain process event:\n%+v", event)
+	logger.Infof("[RouteChain]Process config change event:%+v", event)
+	if event.ConfigType == remoting.EventTypeDel {
+		r.routers = nil
+		return
+	}
 	routers, err := parseRoute(event.Value.(string))
 	if err != nil {
+		logger.Warnf("[RouteChain]Parse new mesh route config error, %+v "+
+			"and we will use the original mesh rule configuration.", err)
 		return
 	}
 	r.routers = routers
-	// todo delete router
+	logger.Infof("[RouteChain]Parse Mesh Rule Success.")
 }
 
 // Name get name of ConnCheckerRouter
@@ -108,7 +120,7 @@ func (r *RouterChain) URL() *common.URL {
 	return nil
 }
 
-// parseFromConfigToRouters parse virtualService and destinationRule yaml file bytes to target router list
+// Deprecated parseFromConfigToRouters parse virtualService and destinationRule yaml file bytes to target router list
 func parseFromConfigToRouters(virtualServiceConfig, destinationRuleConfig []byte) ([]*UniformRouter, error) {
 	var virtualServiceConfigList []*config.VirtualServiceConfig
 	destRuleConfigsMap := make(map[string]map[string]map[string]string)
