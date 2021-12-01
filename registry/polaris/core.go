@@ -20,11 +20,16 @@ package polaris
 import (
 	"sync"
 	"time"
+)
 
-	"dubbo.apache.org/dubbo-go/v3/config_center"
-	"dubbo.apache.org/dubbo-go/v3/remoting"
+import (
 	"github.com/polarismesh/polaris-go/api"
 	"github.com/polarismesh/polaris-go/pkg/model"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/config_center"
+	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
 type subscriber func(remoting.EventType, []model.Instance)
