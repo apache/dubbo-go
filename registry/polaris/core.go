@@ -85,35 +85,31 @@ func (watcher *PolarisServiceWatcher) startWatch() {
 
 		select {
 		case event := <-resp.EventChannel:
-			var changeEvent *config_center.ConfigChangeEvent
 			eType := event.GetSubScribeEventType()
 			if eType == api.EventInstance {
 				insEvent := event.(*model.InstanceEvent)
 				if insEvent.AddEvent != nil {
-					changeEvent = &config_center.ConfigChangeEvent{
+					watcher.notifyAllSubscriber(&config_center.ConfigChangeEvent{
 						Value:      insEvent.AddEvent.Instances,
 						ConfigType: remoting.EventTypeAdd,
-					}
+					})
 				}
 				if insEvent.UpdateEvent != nil {
 					instances := make([]model.Instance, len(insEvent.UpdateEvent.UpdateList))
 					for i := range insEvent.UpdateEvent.UpdateList {
 						instances[i] = insEvent.UpdateEvent.UpdateList[i].After
 					}
-					changeEvent = &config_center.ConfigChangeEvent{
+					watcher.notifyAllSubscriber(&config_center.ConfigChangeEvent{
 						Value:      instances,
 						ConfigType: remoting.EventTypeUpdate,
-					}
+					})
 				}
 				if insEvent.DeleteEvent != nil {
-					changeEvent = &config_center.ConfigChangeEvent{
+					watcher.notifyAllSubscriber(&config_center.ConfigChangeEvent{
 						Value:      insEvent.DeleteEvent.Instances,
 						ConfigType: remoting.EventTypeDel,
-					}
+					})
 				}
-			}
-			if changeEvent != nil {
-				watcher.notifyAllSubscriber(changeEvent)
 			}
 		}
 	}
