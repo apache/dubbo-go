@@ -251,6 +251,7 @@ const (
 	PolarisInstanceID           = "polaris.instanceID"
 	PolarisDefaultNamespace     = "default"
 	PolarisDubboGroup           = "dubbo.group"
+	PolarisClientName           = "polaris-client"
 )
 
 const (

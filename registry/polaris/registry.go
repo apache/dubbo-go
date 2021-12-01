@@ -26,16 +26,7 @@ import (
 	"strconv"
 	"sync"
 	"time"
-)
 
-import (
-	perrors "github.com/pkg/errors"
-
-	"github.com/polarismesh/polaris-go/api"
-	"github.com/polarismesh/polaris-go/pkg/model"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
@@ -44,6 +35,9 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 	"dubbo.apache.org/dubbo-go/v3/remoting/polaris"
+	perrors "github.com/pkg/errors"
+	"github.com/polarismesh/polaris-go/api"
+	"github.com/polarismesh/polaris-go/pkg/model"
 )
 
 var localIP = ""
@@ -132,6 +126,7 @@ func (pr *polarisRegistry) UnRegister(conf *common.URL) error {
 
 		if !ok {
 			err = perrors.Errorf("Path{%s} has not registered", conf.Key())
+			return
 		}
 
 		oldVal.cancel()
@@ -173,7 +168,7 @@ func (pr *polarisRegistry) Subscribe(url *common.URL, notifyListener registry.No
 		listener, err := NewPolarisListener(url)
 		if err != nil {
 			logger.Warnf("getListener() = err:%v", perrors.WithStack(err))
-			time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
+			<-time.After(time.Duration(RegistryConnDelay) * time.Second)
 			continue
 		}
 
@@ -287,7 +282,7 @@ func createRegisterParam(url *common.URL, serviceName string) *api.InstanceRegis
 	}
 	port, _ := strconv.Atoi(url.Port)
 
-	metadata := make(map[string]string)
+	metadata := make(map[string]string, len(url.GetParams()))
 	url.RangeParams(func(key, value string) bool {
 		metadata[key] = value
 		return true

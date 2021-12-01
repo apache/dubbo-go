@@ -23,20 +23,13 @@ package polaris
 
 import (
 	"sync"
-	"sync/atomic"
 	"time"
-)
 
-import (
-	gxchan "github.com/dubbogo/gost/container/chan"
-
-	"github.com/polarismesh/polaris-go/api"
-	"github.com/polarismesh/polaris-go/pkg/model"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
+	gxchan "github.com/dubbogo/gost/container/chan"
+	"github.com/polarismesh/polaris-go/api"
+	"github.com/polarismesh/polaris-go/pkg/model"
 )
 
 // PolarisServiceWatcher
@@ -46,7 +39,7 @@ type PolarisServiceWatcher struct {
 	events         *gxchan.UnboundedChan
 	lock           *sync.RWMutex
 	subscribers    []func(remoting.EventType, []model.Instance)
-	isRun          int32
+	execOnce       *sync.Once
 }
 
 // newPolarisWatcher create PolarisServiceWatcher to do watch service action
@@ -57,6 +50,7 @@ func newPolarisWatcher(param *api.WatchServiceRequest, consumer api.ConsumerAPI)
 		events:         gxchan.NewUnboundedChan(1024),
 		lock:           &sync.RWMutex{},
 		subscribers:    make([]func(remoting.EventType, []model.Instance), 0),
+		execOnce:       &sync.Once{},
 	}
 	return watcher, nil
 }
@@ -74,10 +68,10 @@ func (watcher *PolarisServiceWatcher) AddSubscriber(subscriber func(remoting.Eve
 
 // lazyRun Delayed execution, only triggered when AddSubscriber is called, and will only be executed once
 func (watcher *PolarisServiceWatcher) lazyRun() {
-	if atomic.CompareAndSwapInt32(&watcher.isRun, 0, 1) {
+	watcher.execOnce.Do(func() {
 		go watcher.startWatcher()
 		go watcher.startDispatcher()
-	}
+	})
 }
 
 // startDispatcher dispatch polaris naming event

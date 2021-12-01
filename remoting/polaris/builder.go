@@ -42,7 +42,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
-const polarisClientName = "polaris-client"
 
 // GetPolarisConfig
 //  @param url
