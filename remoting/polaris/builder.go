@@ -42,7 +42,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
-
 // GetPolarisConfig
 //  @param url
 //  @return api.SDKContext
