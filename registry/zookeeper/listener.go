@@ -71,17 +71,18 @@ func (l *RegistryDataListener) UnSubscribeURL(url *common.URL) config_center.Con
 }
 
 // DataChange accepts all events sent from the zookeeper server and trigger the corresponding listener for processing
-func (l *RegistryDataListener) DataChange(eventType remoting.Event) bool {
+func (l *RegistryDataListener) DataChange(event remoting.Event) bool {
 	// Intercept the last bit
-	index := strings.Index(eventType.Path, "/providers/")
+	index := strings.Index(event.Path, "/providers/")
 	if index == -1 {
-		logger.Warnf("Listen with no url, event.path={%v}", eventType.Path)
+		logger.Warnf("[RegistryDataListener][DataChange]Listen error zk node path {%s}, "+
+			"this listener is used to listen services which under the directory of providers/", event.Path)
 		return false
 	}
-	url := eventType.Path[index+len("/providers/"):]
+	url := event.Path[index+len("/providers/"):]
 	serviceURL, err := common.NewURL(url)
 	if err != nil {
-		logger.Errorf("Listen NewURL(r{%s}) = error{%v} eventType.Path={%v}", url, err, eventType.Path)
+		logger.Errorf("[RegistryDataListener][DataChange]Listen NewURL({%s}) = error{%+v} event.Path={%s}", url, err, event.Path)
 		return false
 	}
 	l.mutex.Lock()
@@ -93,9 +94,9 @@ func (l *RegistryDataListener) DataChange(eventType remoting.Event) bool {
 		if serviceURL.ServiceKey() == serviceKey {
 			listener.Process(
 				&config_center.ConfigChangeEvent{
-					Key:        eventType.Path,
+					Key:        event.Path,
 					Value:      serviceURL,
-					ConfigType: eventType.Action,
+					ConfigType: event.Action,
 				},
 			)
 			return true
