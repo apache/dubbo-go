@@ -19,6 +19,7 @@ package protocolwrapper
 
 import (
 	"context"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"strings"
 )
 
@@ -84,6 +85,12 @@ func BuildInvokerChain(invoker protocol.Invoker, key string) protocol.Invoker {
 		flt := extension.GetFilter(strings.TrimSpace(filterNames[i]))
 		fi := &FilterInvoker{next: next, invoker: invoker, filter: flt}
 		next = fi
+	}
+
+	if key == constant.ServiceFilterKey {
+		logger.Debugf("[BuildInvokerChain] The provider filters are %s, invoker: %s", filterNames, invoker)
+	} else if key == constant.ReferenceFilterKey {
+		logger.Debugf("[BuildInvokerChain] The consumer filters are %s, invoker: %s", filterNames, invoker)
 	}
 	return next
 }
