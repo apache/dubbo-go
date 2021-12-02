@@ -27,8 +27,6 @@ import (
 	"github.com/creasty/defaults"
 
 	"github.com/knadh/koanf"
-	"github.com/knadh/koanf/parsers/yaml"
-	"github.com/knadh/koanf/providers/rawbytes"
 
 	"github.com/pkg/errors"
 )
@@ -61,6 +59,9 @@ type CenterConfig struct {
 	AppID     string            `default:"dubbo" yaml:"app-id"  json:"app-id,omitempty"`
 	Timeout   string            `default:"10s" yaml:"timeout"  json:"timeout,omitempty"`
 	Params    map[string]string `yaml:"params"  json:"parameters,omitempty"`
+
+	//FileExtension the suffix of config dataId, also the file extension of config content
+	FileExtension string `default:"yaml" yaml:"file-extension" json:"file-extension" `
 }
 
 // Prefix dubbo.config-center
@@ -146,15 +147,11 @@ func startConfigCenter(rc *RootConfig) error {
 			"Please check if your config-center config is correct.", cc)
 		return nil
 	}
-	koan := koanf.New(".")
-	if err = koan.Load(rawbytes.Provider([]byte(strConf)), yaml.Parser()); err != nil {
+	config := NewLoaderConf(WithDelim("."), WithGenre(cc.FileExtension), WithBytes([]byte(strConf)))
+	koan := GetConfigResolver(config)
+	if err = koan.UnmarshalWithConf(rc.Prefix(), rc, koanf.UnmarshalConf{Tag: "yaml"}); err != nil {
 		return err
 	}
-	if err = koan.UnmarshalWithConf(rc.Prefix(),
-		rc, koanf.UnmarshalConf{Tag: "yaml"}); err != nil {
-		return err
-	}
-
 	return nil
 }
 
