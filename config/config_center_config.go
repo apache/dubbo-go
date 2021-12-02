@@ -69,6 +69,11 @@ func (CenterConfig) Prefix() string {
 	return constant.ConfigCenterPrefix
 }
 
+// NameId unique identifier id for client
+func (c *CenterConfig) NameId() string {
+	return strings.Join([]string{c.Prefix(), c.Protocol, c.Address}, "-")
+}
+
 func (c *CenterConfig) check() error {
 	if err := defaults.Set(c); err != nil {
 		return err
@@ -97,6 +102,7 @@ func (c *CenterConfig) GetUrlMap() url.Values {
 	urlMap.Set(constant.ConfigUsernameKey, c.Username)
 	urlMap.Set(constant.ConfigPasswordKey, c.Password)
 	urlMap.Set(constant.ConfigTimeoutKey, c.Timeout)
+	urlMap.Set(constant.ClientNameKey, c.NameId())
 
 	for key, val := range c.Params {
 		urlMap.Set(key, val)

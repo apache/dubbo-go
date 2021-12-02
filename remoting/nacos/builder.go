@@ -47,7 +47,11 @@ func NewNacosConfigClientByUrl(url *common.URL) (*nacosClient.NacosConfigClient,
 	if err != nil {
 		return nil, err
 	}
-	return nacosClient.NewNacosConfigClient(nacosClientName, true, sc, cc)
+	clientName := url.GetParam(constant.ClientNameKey, "")
+	if len(clientName) <= 0 {
+		return nil, perrors.New("nacos client name must set")
+	}
+	return nacosClient.NewNacosConfigClient(clientName, true, sc, cc)
 }
 
 // GetNacosConfig will return the nacos config

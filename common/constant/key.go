@@ -24,6 +24,10 @@ const (
 )
 
 const (
+	ClientNameKey = "remote-client-name"
+)
+
+const (
 	GroupKey               = "group"
 	VersionKey             = "version"
 	InterfaceKey           = "interface"
