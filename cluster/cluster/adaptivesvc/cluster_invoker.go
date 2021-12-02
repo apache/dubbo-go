@@ -61,11 +61,14 @@ func (ivk *adaptiveServiceClusterInvoker) Invoke(ctx context.Context, invocation
 	// invoke
 	result := invoker.Invoke(ctx, invocation)
 
+	// TODO(justxuewei): remove after test
+	logger.Debugf("%#v", result.Result())
+
 	// update metrics
 	remainingStr := invocation.AttachmentsByKey(constant.AdaptiveServiceRemainingKey, "")
 	remaining, err := strconv.Atoi(remainingStr)
 	if err != nil {
-		logger.Warnf("the remaining is unexpected, we need a int type, but we got %d, err: %v.", remainingStr, err)
+		logger.Warnf("the remaining is unexpected, we need a int type, but we got %s, err: %v.", remainingStr, err)
 		return result
 	}
 	logger.Debugf("[adasvc cluster] The server status was received successfully, %s: %#v",
