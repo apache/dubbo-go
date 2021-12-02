@@ -31,11 +31,12 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/file"
 )
 
 type loaderConf struct {
 	// loaderConf file extension default yaml
-	genre string
+	suffix string
 
 	// loaderConf file path default ./conf
 	path string
@@ -55,11 +56,11 @@ func NewLoaderConf(opts ...LoaderConfOption) *loaderConf {
 	if configFilePathFromEnv := os.Getenv(constant.ConfigFileEnvKey); configFilePathFromEnv != "" {
 		configFilePath = configFilePathFromEnv
 	}
-	genre := strings.Split(configFilePath, ".")
+	suffix := strings.Split(configFilePath, ".")
 	conf := &loaderConf{
-		genre: genre[len(genre)-1],
-		path:  absolutePath(configFilePath),
-		delim: ".",
+		suffix: suffix[len(suffix)-1],
+		path:   absolutePath(configFilePath),
+		delim:  ".",
 	}
 	for _, opt := range opts {
 		opt.apply(conf)
@@ -87,14 +88,22 @@ func (fn loaderConfigFunc) apply(vc *loaderConf) {
 	fn(vc)
 }
 
-// WithGenre set load config  genre
-func WithGenre(genre string) LoaderConfOption {
+// WithGenre set load config file suffix
+//Deprecated: replaced by WithSuffix
+func WithGenre(suffix string) LoaderConfOption {
 	return loaderConfigFunc(func(conf *loaderConf) {
-		g := strings.ToLower(genre)
-		if err := checkFileType(g); err != nil {
+		g := strings.ToLower(suffix)
+		if err := checkFileSuffix(g); err != nil {
 			panic(err)
 		}
-		conf.genre = g
+		conf.suffix = g
+	})
+}
+
+// WithSuffix set load config file suffix
+func WithSuffix(suffix file.Suffix) LoaderConfOption {
+	return loaderConfigFunc(func(conf *loaderConf) {
+		conf.suffix = string(suffix)
 	})
 }
 
@@ -108,7 +117,7 @@ func WithPath(path string) LoaderConfOption {
 		}
 		conf.bytes = bytes
 		genre := strings.Split(path, ".")
-		conf.genre = genre[len(genre)-1]
+		conf.suffix = genre[len(genre)-1]
 	})
 }
 
@@ -162,13 +171,12 @@ func userHomeDir() string {
 	return os.Getenv("HOME")
 }
 
-// checkFileType check file extension
-func checkFileType(genre string) error {
-	genres := []string{"json", "toml", "yaml", "yml", "properties"}
-	for _, g := range genres {
-		if g == genre {
+// checkFileSuffix check file suffix
+func checkFileSuffix(suffix string) error {
+	for _, g := range []string{"json", "toml", "yaml", "yml", "properties"} {
+		if g == suffix {
 			return nil
 		}
 	}
-	return errors.Errorf("no support file extension: %s", genre)
+	return errors.Errorf("no support file suffix: %s", suffix)
 }

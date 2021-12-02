@@ -25,21 +25,25 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/file"
+)
+
 func TestCheckGenre(t *testing.T) {
 
-	err := checkFileType("abc")
+	err := checkFileSuffix("abc")
 	assert.NotNil(t, err)
 
-	err = checkFileType("zc")
+	err = checkFileSuffix("zc")
 	assert.NotNil(t, err)
 
-	err = checkFileType("json")
+	err = checkFileSuffix("json")
 	assert.Nil(t, err)
 }
 
 func TestFileGenre(t *testing.T) {
 	conf := NewLoaderConf(WithPath("../config/testdata/config/properties/application.properties"))
-	assert.Equal(t, conf.genre, "properties")
+	assert.Equal(t, conf.suffix, "properties")
 }
 
 func TestRootConfig(t *testing.T) {
@@ -57,4 +61,13 @@ dubbo.services.HelloService.registry=nacos,zk`
 
 	assert.NotNil(t, conf)
 	assert.NotNil(t, conf.bytes)
+}
+
+func TestNewLoaderConf_WithSuffix(t *testing.T) {
+	conf := NewLoaderConf(
+		WithSuffix(file.JSON),
+		WithPath("../config/testdata/config/properties/application.properties"),
+	)
+
+	assert.Equal(t, conf.suffix, string(file.PROPERTIES))
 }
