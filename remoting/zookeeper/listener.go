@@ -244,6 +244,8 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkRootPath string, li
 			select {
 			case <-after:
 				continue
+			case <-l.exit:
+				return
 			}
 		}
 		failTimes = 0
