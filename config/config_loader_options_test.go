@@ -30,6 +30,9 @@ func TestCheckGenre(t *testing.T) {
 	err := checkGenre("abc")
 	assert.NotNil(t, err)
 
+	err = checkGenre("zc")
+	assert.NotNil(t, err)
+
 	err = checkGenre("json")
 	assert.Nil(t, err)
 }

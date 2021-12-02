@@ -22,7 +22,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"sort"
 	"strings"
 )
 
@@ -162,10 +161,10 @@ func userHomeDir() string {
 // checkGenre check Genre
 func checkGenre(genre string) error {
 	genres := []string{"json", "toml", "yaml", "yml", "properties"}
-	sort.Strings(genres)
-	idx := sort.SearchStrings(genres, genre)
-	if genres[idx] != genre {
-		return errors.Errorf("no support file extension: %s", genre)
+	for _, g := range genres {
+		if g == genre {
+			return nil
+		}
 	}
-	return nil
+	return errors.Errorf("no support file extension: %s", genre)
 }
