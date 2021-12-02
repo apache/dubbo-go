@@ -31,6 +31,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/registry"
@@ -72,14 +73,15 @@ func (l *RegistryDataListener) UnSubscribeURL(url *common.URL) config_center.Con
 
 // DataChange accepts all events sent from the zookeeper server and trigger the corresponding listener for processing
 func (l *RegistryDataListener) DataChange(event remoting.Event) bool {
+	providersPath := constant.PathSeparator + constant.ProviderCategory + constant.PathSeparator
 	// Intercept the last bit
-	index := strings.Index(event.Path, "/providers/")
+	index := strings.Index(event.Path, providersPath)
 	if index == -1 {
 		logger.Warnf("[RegistryDataListener][DataChange]Listen error zk node path {%s}, "+
 			"this listener is used to listen services which under the directory of providers/", event.Path)
 		return false
 	}
-	url := event.Path[index+len("/providers/"):]
+	url := event.Path[index+len(providersPath):]
 	serviceURL, err := common.NewURL(url)
 	if err != nil {
 		logger.Errorf("[RegistryDataListener][DataChange]Listen NewURL({%s}) = error{%+v} event.Path={%s}", url, err, event.Path)
