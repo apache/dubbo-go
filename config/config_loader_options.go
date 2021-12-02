@@ -34,14 +34,18 @@ import (
 )
 
 type loaderConf struct {
-	// loaderConf file type default yaml
+	// loaderConf file extension default yaml
 	genre string
+
 	// loaderConf file path default ./conf
 	path string
+
 	// loaderConf file delim default .
 	delim string
+
 	// config bytes
 	bytes []byte
+
 	// user provide rootConfig built by config api
 	rc *RootConfig
 }
@@ -87,7 +91,7 @@ func (fn loaderConfigFunc) apply(vc *loaderConf) {
 func WithGenre(genre string) LoaderConfOption {
 	return loaderConfigFunc(func(conf *loaderConf) {
 		g := strings.ToLower(genre)
-		if err := checkGenre(g); err != nil {
+		if err := checkFileType(g); err != nil {
 			panic(err)
 		}
 		conf.genre = g
@@ -158,8 +162,8 @@ func userHomeDir() string {
 	return os.Getenv("HOME")
 }
 
-// checkGenre check Genre
-func checkGenre(genre string) error {
+// checkFileType check file extension
+func checkFileType(genre string) error {
 	genres := []string{"json", "toml", "yaml", "yml", "properties"}
 	for _, g := range genres {
 		if g == genre {

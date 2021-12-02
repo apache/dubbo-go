@@ -27,13 +27,13 @@ import (
 
 func TestCheckGenre(t *testing.T) {
 
-	err := checkGenre("abc")
+	err := checkFileType("abc")
 	assert.NotNil(t, err)
 
-	err = checkGenre("zc")
+	err = checkFileType("zc")
 	assert.NotNil(t, err)
 
-	err = checkGenre("json")
+	err = checkFileType("json")
 	assert.Nil(t, err)
 }
 
