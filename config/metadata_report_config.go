@@ -18,8 +18,11 @@
 package config
 
 import (
-	perrors "github.com/pkg/errors"
 	"strings"
+)
+
+import (
+	perrors "github.com/pkg/errors"
 )
 
 import (
