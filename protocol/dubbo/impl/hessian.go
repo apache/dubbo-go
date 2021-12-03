@@ -254,7 +254,7 @@ func unmarshalRequestBody(body []byte, p *DubboPackage) error {
 		return perrors.WithStack(err)
 	}
 
-	if attachments == nil {
+	if attachments == nil || attachments == "" {
 		attachments = map[interface{}]interface{}{constant.InterfaceKey: target}
 	}
 
