@@ -164,7 +164,7 @@ func (svc *ServiceConfig) Export() error {
 		logger.Errorf(err.Error())
 		return err
 	}
-	if svc.exported != nil && svc.exported.Load() {
+	if svc.unexported != nil && svc.exported.Load() {
 		logger.Warnf("The service %v has already exported!", svc.Interface)
 		return nil
 	}
