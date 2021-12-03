@@ -375,14 +375,9 @@ func (rc *RootConfig) Process(event *config_center.ConfigChangeEvent) {
 		logger.Errorf("CenterConfig process unmarshalConf failed, got error %#v", err)
 		return
 	}
-	// update registries timeout, rang each registryId(eg: demoZK) ,
-	// if nacos's registry timeout not equal local root config's registry timeout , update.
-	for _, registryId := range tempRootConfig.getRegistryIds() {
-		tempRegistry := tempRootConfig.Registries[registryId]
-		rcRegistry := rc.Registries[registryId]
-		if tempRegistry != nil && rcRegistry != nil && tempRegistry.Timeout != rcRegistry.Timeout {
-			rc.Registries[registryId].Timeout = tempRegistry.Timeout
-			logger.Infof("CenterConfig process update %s timeout, new value:%s", registryId, rc.Registries[registryId].Timeout)
-		}
+
+	// update Registries
+	for registryId, r := range rc.Registries {
+		r.UpdateProperties(registryId, tempRootConfig)
 	}
 }

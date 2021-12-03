@@ -366,3 +366,13 @@ func (rcb *RegistryConfigBuilder) Build() *RegistryConfig {
 	}
 	return rcb.registryConfig
 }
+
+// UpdateProperties update registries timeout, rang each registryId(eg: demoZK) ,
+// if nacos's registry timeout not equal local root config's registry timeout , update.
+func (c *RegistryConfig) UpdateProperties(registryId string, tempRootConfig *RootConfig) {
+	tempRegistry := tempRootConfig.Registries[registryId]
+	if tempRegistry != nil && tempRegistry.Timeout != c.Timeout {
+		c.Timeout = tempRegistry.Timeout
+		logger.Infof("CenterConfig process update %s timeout, new value:%s", registryId, c.Timeout)
+	}
+}
