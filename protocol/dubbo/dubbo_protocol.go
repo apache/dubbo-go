@@ -167,6 +167,7 @@ func doHandleRequest(rpcInvocation *invocation.RPCInvocation) protocol.RPCResult
 			// p.Header.ResponseStatus = hessian.Response_OK
 			// p.Body = hessian.NewResponse(res, nil, result.Attachments())
 		}
+		result.Attrs = invokeResult.Attachments()
 	} else {
 		result.Err = fmt.Errorf("don't have the invoker, key: %s", rpcInvocation.ServiceKey())
 	}
