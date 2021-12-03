@@ -363,7 +363,7 @@ func publishMapping(sc exporter.MetadataServiceExporter) error {
 
 // Process receive changing listener's event, dynamic update config
 func (rc *RootConfig) Process(event *config_center.ConfigChangeEvent) {
-	logger.Info("CenterConfig process event:\n%+v", event)
+	logger.Infof("CenterConfig process event:\n%+v", event)
 	koan := koanf.New(".")
 	if err := koan.Load(rawbytes.Provider([]byte(event.Value.(string))), yaml.Parser()); err != nil {
 		logger.Errorf("CenterConfig process load failed, got error %#v", err)
