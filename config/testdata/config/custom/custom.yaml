@@ -1,5 +1,4 @@
 dubbo:
-  user-define:
   registries:
     nacos:
       timeout: 5s
@@ -9,3 +8,8 @@ dubbo:
       protocol: zookeeper
       group: test
       address: 127.0.0.1:2181
+  custom:
+      name: test
+      version: v2.0
+      define-config:
+        test-config: true

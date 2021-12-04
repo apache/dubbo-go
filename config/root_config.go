@@ -81,7 +81,7 @@ type RootConfig struct {
 	// cache file used to store the current used configurations.
 	CacheFile string `yaml:"cache_file" json:"cache_file,omitempty" property:"cache_file"`
 
-	UserDefine *UserDefineConfig `yaml:"user-define" json:"user-define,omitempty" property:"user-define"`
+	Custom *CustomConfig `yaml:"custom" json:"custom,omitempty" property:"custom"`
 }
 
 func SetRootConfig(r RootConfig) {
@@ -156,7 +156,7 @@ func (rc *RootConfig) Init() error {
 	}
 
 	// init user define
-	if err := rc.UserDefine.Init(); err != nil {
+	if err := rc.Custom.Init(); err != nil {
 		return err
 	}
 
@@ -233,7 +233,7 @@ func newEmptyRootConfig() *RootConfig {
 		Consumer:       NewConsumerConfigBuilder().Build(),
 		Metric:         NewMetricConfigBuilder().Build(),
 		Logger:         NewLoggerConfigBuilder().Build(),
-		UserDefine:	NewUserDefineConfigBuilder().Build(),
+		Custom:         NewCustomConfigBuilder().Build(),
 	}
 	return newRootConfig
 }
@@ -321,8 +321,8 @@ func (rb *RootConfigBuilder) SetConfigCenter(configCenterConfig *CenterConfig) *
 	return rb
 }
 
-func (rb *RootConfigBuilder) SetUserDefine(userDefineConfig *UserDefineConfig) *RootConfigBuilder {
-	rb.rootConfig.UserDefine = userDefineConfig
+func (rb *RootConfigBuilder) SetCustom(customConfig *CustomConfig) *RootConfigBuilder {
+	rb.rootConfig.Custom = customConfig
 	return rb
 }
 

@@ -25,57 +25,60 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
-type UserDefineConfig struct {
+type CustomConfig struct {
 	Name         string                 `default:"user-config" yaml:"name" json:"name,omitempty" property:"name"`
 	Version      string                 `default:"v1.0" yaml:"version" json:"version,omitempty" property:"version"`
 	DefineConfig map[string]interface{} `yaml:"define-config" json:"define-config,omitempty" property:"define-config"`
 }
 
-func (*UserDefineConfig) Prefix() string {
-	return constant.UserDefineConfigPrefix
+func (*CustomConfig) Prefix() string {
+	return constant.CustomConfigPrefix
 }
 
-func (udc *UserDefineConfig) Init() error {
+func (udc *CustomConfig) Init() error {
 	return udc.check()
 }
 
-func (udc *UserDefineConfig) check() error {
+func (udc *CustomConfig) check() error {
 	if err := defaults.Set(udc); err != nil {
 		return err
 	}
 	return verify(udc)
 }
 
-func (udc *UserDefineConfig) GetDefineValue(key string, default_value interface{}) interface{} {
+func (udc *CustomConfig) GetDefineValue(key string, default_value interface{}) interface{} {
 	if define_value, ok := udc.DefineConfig[key]; ok {
 		return define_value
 	}
 	return default_value
 }
 
-type UserDefineConfigBuilder struct {
-	userDefineConfig *UserDefineConfig
+type CustomConfigBuilder struct {
+	customConfig *CustomConfig
 }
 
-func NewUserDefineConfigBuilder() *UserDefineConfigBuilder {
-	return &UserDefineConfigBuilder{userDefineConfig: &UserDefineConfig{}}
+func NewCustomConfigBuilder() *CustomConfigBuilder {
+	return &CustomConfigBuilder{customConfig: &CustomConfig{}}
 }
 
-func (udcb *UserDefineConfigBuilder) SetName(name string) *UserDefineConfigBuilder {
-	udcb.userDefineConfig.Name = name
-	return udcb
+func (ccb *CustomConfigBuilder) SetName(name string) *CustomConfigBuilder {
+	ccb.customConfig.Name = name
+	return ccb
 }
 
-func (udcb *UserDefineConfigBuilder) SetVersion(version string) *UserDefineConfigBuilder {
-	udcb.userDefineConfig.Version = version
-	return udcb
+func (ccb *CustomConfigBuilder) SetVersion(version string) *CustomConfigBuilder {
+	ccb.customConfig.Version = version
+	return ccb
 }
 
-func (udcb *UserDefineConfigBuilder) SetDefineConfig(key string, val interface{}) *UserDefineConfigBuilder {
-	udcb.userDefineConfig.DefineConfig[key] = val
-	return udcb
+func (ccb *CustomConfigBuilder) SetDefineConfig(key string, val interface{}) *CustomConfigBuilder {
+	if ccb.customConfig.DefineConfig == nil {
+		ccb.customConfig.DefineConfig = make(map[string]interface{})
+	}
+	ccb.customConfig.DefineConfig[key] = val
+	return ccb
 }
 
-func (udcb *UserDefineConfigBuilder) Build() *UserDefineConfig {
-	return udcb.userDefineConfig
+func (ccb *CustomConfigBuilder) Build() *CustomConfig {
+	return ccb.customConfig
 }
