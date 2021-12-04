@@ -152,16 +152,16 @@ func (l *ZkEventListener) handleZkNodeEvent(zkPath string, children []string, li
 
 	newChildren, err := l.client.GetChildren(zkPath)
 	if err != nil {
-		// FIXME always false
-		if err == errNilChildren {
+		// TODO need to ignore this error in gost
+		if err == gxzookeeper.ErrNilChildren {
 			content, _, connErr := l.client.Conn.Get(zkPath)
 			if connErr != nil {
 				logger.Errorf("Get new node path {%v} 's content error,message is  {%v}",
 					zkPath, perrors.WithStack(connErr))
 			} else {
+				// TODO this if for config center listener, and will be removed when we refactor config center listener
 				listener.DataChange(remoting.Event{Path: zkPath, Action: remoting.EventTypeUpdate, Content: string(content)})
 			}
-
 		} else {
 			logger.Errorf("path{%s} child nodes changed, zk.Children() = error{%v}", zkPath, perrors.WithStack(err))
 		}
@@ -219,9 +219,7 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkRootPath string, li
 	var (
 		failTimes int
 		ttl       time.Duration
-		event     chan struct{}
 	)
-	event = make(chan struct{}, 4)
 	ttl = defaultTTL
 	if conf != nil {
 		timeout, err := time.ParseDuration(conf.GetParam(constant.RegistryTTLKey, constant.DefaultRegTTL))
@@ -231,7 +229,6 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkRootPath string, li
 			logger.Warnf("[Zookeeper EventListener][listenDirEvent] Wrong configuration for registry.ttl, error=%+v, using default value %v instead", err, defaultTTL)
 		}
 	}
-	defer close(event)
 	for {
 		// Get current children with watcher for the zkRootPath
 		children, childEventCh, err := l.client.GetChildrenW(zkRootPath)
@@ -247,12 +244,13 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkRootPath string, li
 			select {
 			case <-after:
 				continue
+			case <-l.exit:
+				return
 			}
 		}
 		failTimes = 0
 		if len(children) == 0 {
-			logger.Warnf("[Zookeeper EventListener][listenDirEvent] Can not gey any children for the path {%s}, please check if the provider does ready.", zkRootPath)
-			continue
+			logger.Debugf("[Zookeeper EventListener][listenDirEvent] Can not gey any children for the path {%s}, please check if the provider does ready.", zkRootPath)
 		}
 		for _, c := range children {
 			// Only need to compare Path when subscribing to provider
@@ -324,10 +322,10 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkRootPath string, li
 	}
 }
 
+// startScheduleWatchTask periodically update provider information, return true when receive exit signal
 func (l *ZkEventListener) startScheduleWatchTask(
 	zkRootPath string, children []string, ttl time.Duration,
 	listener remoting.DataListener, childEventCh <-chan zk.Event) bool {
-	// Periodically update provider information
 	tickerTTL := ttl
 	if tickerTTL > 20e9 {
 		tickerTTL = 20e9
