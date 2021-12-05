@@ -62,10 +62,10 @@ func (ivk *adaptiveServiceClusterInvoker) Invoke(ctx context.Context, invocation
 	result := invoker.Invoke(ctx, invocation)
 
 	// TODO(justxuewei): remove after test
-	logger.Debugf("%#v", result.Result())
+	logger.Debugf("result: Result: %#v", result.Attachments())
 
 	// update metrics
-	remainingStr := invocation.AttachmentsByKey(constant.AdaptiveServiceRemainingKey, "")
+	remainingStr := result.Attachment(constant.AdaptiveServiceRemainingKey, "").(string)
 	remaining, err := strconv.Atoi(remainingStr)
 	if err != nil {
 		logger.Warnf("the remaining is unexpected, we need a int type, but we got %s, err: %v.", remainingStr, err)

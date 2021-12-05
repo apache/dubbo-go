@@ -298,7 +298,7 @@ func (u *HillClimbingUpdater) adjustLimitation(option HillClimbingOption) error 
 
 	limitation = math.Max(1.0, math.Min(limitation, float64(maxLimitation)))
 	u.limiter.limitation.Store(uint64(limitation))
-	VerboseDebugf("[HillClimbingUpdater] The limitation is update from %d to %d.", oldLimitation, uint64(limitation))
+	VerboseDebugf("[HillClimbingUpdater] The limitation is update from %d to %d.", uint64(oldLimitation), uint64(limitation))
 	return nil
 }
 

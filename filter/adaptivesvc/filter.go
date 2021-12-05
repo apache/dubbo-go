@@ -116,8 +116,8 @@ func (f *adaptiveServiceProviderFilter) OnResponse(_ context.Context, result pro
 	}
 
 	// set attachments to inform consumer of provider status
-	invocation.SetAttachments(constant.AdaptiveServiceRemainingKey, fmt.Sprintf("%d", l.Remaining()))
-	invocation.SetAttachments(constant.AdaptiveServiceInflightKey, fmt.Sprintf("%d", l.Inflight()))
+	result.AddAttachment(constant.AdaptiveServiceRemainingKey, fmt.Sprintf("%d", l.Remaining()))
+	result.AddAttachment(constant.AdaptiveServiceInflightKey, fmt.Sprintf("%d", l.Inflight()))
 	logger.Debugf("[adasvc filter] The attachments are set, %s: %d, %s: %d.",
 		constant.AdaptiveServiceRemainingKey, l.Remaining(),
 		constant.AdaptiveServiceInflightKey, l.Inflight())

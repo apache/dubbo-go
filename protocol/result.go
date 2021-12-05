@@ -17,6 +17,8 @@
 
 package protocol
 
+import "fmt"
+
 // Result is a RPC result
 type Result interface {
 	// SetError sets error.
@@ -91,4 +93,8 @@ func (r *RPCResult) Attachment(key string, defaultValue interface{}) interface{}
 		v = defaultValue
 	}
 	return v
+}
+
+func (r *RPCResult) String() string {
+	return fmt.Sprintf("&RPCResult{Rest: %v, Attrs: %v, Err: %v}", r.Rest, r.Attrs, r.Err)
 }

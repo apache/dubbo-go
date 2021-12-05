@@ -73,6 +73,9 @@ func (l *loadBalance) Select(invokers []protocol.Invoker, invocation protocol.In
 			j = rand.Intn(len(invokers))
 		}
 	}
+	logger.Debugf("[P2C select] Two invokers were selected, i: %d, j: %d, invoker[i]: %s, invoker[j]: %s.",
+		i, j, invokers[i], invokers[j])
+
 	// TODO(justxuewei): please consider how to get the real method name from $invoke,
 	// 	see also [#1511](https://github.com/apache/dubbo-go/issues/1511)
 	methodName := invocation.MethodName()
@@ -81,6 +84,7 @@ func (l *loadBalance) Select(invokers []protocol.Invoker, invocation protocol.In
 	remainingIIface, err := m.GetMethodMetrics(invokers[i].GetURL(), methodName, metrics.HillClimbing)
 	if err != nil {
 		if errors.Is(err, metrics.ErrMetricsNotFound) {
+			logger.Debugf("[P2C select] The invoker[i] was selected, because it hasn't been selected before.")
 			return invokers[i]
 		}
 		logger.Warnf("get method metrics err: %v", err)
@@ -90,6 +94,7 @@ func (l *loadBalance) Select(invokers []protocol.Invoker, invocation protocol.In
 	remainingJIface, err := m.GetMethodMetrics(invokers[j].GetURL(), methodName, metrics.HillClimbing)
 	if err != nil {
 		if errors.Is(err, metrics.ErrMetricsNotFound) {
+			logger.Debugf("[P2C select] The invoker[j] was selected, because it hasn't been selected before.")
 			return invokers[j]
 		}
 		logger.Warnf("get method metrics err: %v", err)
@@ -99,7 +104,8 @@ func (l *loadBalance) Select(invokers []protocol.Invoker, invocation protocol.In
 	// Convert interface to int, if the type is unexpected, panic immediately
 	remainingI, ok := remainingIIface.(uint64)
 	if !ok {
-		panic(fmt.Sprintf("the type of %s expects to be uint64, but gets %T", metrics.HillClimbing, remainingIIface))
+		panic(fmt.Sprintf("[P2C select] the type of %s expects to be uint64, but gets %T",
+			metrics.HillClimbing, remainingIIface))
 	}
 
 	remainingJ, ok := remainingJIface.(uint64)
@@ -107,10 +113,14 @@ func (l *loadBalance) Select(invokers []protocol.Invoker, invocation protocol.In
 		panic(fmt.Sprintf("the type of %s expects to be uint64, but gets %T", metrics.HillClimbing, remainingJIface))
 	}
 
+	logger.Debugf("[P2C select] The invoker[i] remaining is %d, and the invoker[j] is %d.", remainingI, remainingJ)
+
 	// For the remaining capacity, the bigger, the better.
 	if remainingI > remainingJ {
+		logger.Debugf("[P2C select] The invoker[i] was selected.")
 		return invokers[i]
 	}
 
+	logger.Debugf("[P2C select] The invoker[j] was selected.")
 	return invokers[j]
 }

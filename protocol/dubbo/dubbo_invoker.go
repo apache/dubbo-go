@@ -158,7 +158,8 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 		result.Rest = inv.Reply()
 		result.Attrs = rest.Attrs
 	}
-	logger.Debugf("result.Err: %v, result.Rest: %v", result.Err, result.Rest)
+
+	logger.Debugf("[DubboInvoker.Invoke] received rpc result form server: %s", result)
 
 	return &result
 }

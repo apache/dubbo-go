@@ -65,7 +65,7 @@ const (
 const (
 	AccessLogFilterKey                   = "accesslog"
 	ActiveFilterKey                      = "active"
-	AdaptiveServiceProviderFilterKey     = "adaptive-service-provider"
+	AdaptiveServiceProviderFilterKey     = "padasvc"
 	AuthConsumerFilterKey                = "sign"
 	AuthProviderFilterKey                = "auth"
 	EchoFilterKey                        = "echo"

@@ -88,9 +88,11 @@ func BuildInvokerChain(invoker protocol.Invoker, key string) protocol.Invoker {
 	}
 
 	if key == constant.ServiceFilterKey {
-		logger.Debugf("[BuildInvokerChain] The provider filters are %s, invoker: %s", filterNames, invoker)
+		logger.Debugf("[BuildInvokerChain] The provider invocation link is %s, invoker: %s",
+			strings.Join(append(filterNames, "proxyInvoker"), " -> "), invoker)
 	} else if key == constant.ReferenceFilterKey {
-		logger.Debugf("[BuildInvokerChain] The consumer filters are %s, invoker: %s", filterNames, invoker)
+		logger.Debugf("[BuildInvokerChain] The consumer filters are %s, invoker: %s",
+			strings.Join(append(filterNames, "proxyInvoker"), " -> "), invoker)
 	}
 	return next
 }
