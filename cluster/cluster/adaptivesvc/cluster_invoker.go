@@ -61,9 +61,6 @@ func (ivk *adaptiveServiceClusterInvoker) Invoke(ctx context.Context, invocation
 	// invoke
 	result := invoker.Invoke(ctx, invocation)
 
-	// TODO(justxuewei): remove after test
-	logger.Debugf("result: Result: %#v", result.Attachments())
-
 	// update metrics
 	remainingStr := result.Attachment(constant.AdaptiveServiceRemainingKey, "").(string)
 	remaining, err := strconv.Atoi(remainingStr)
@@ -74,7 +71,7 @@ func (ivk *adaptiveServiceClusterInvoker) Invoke(ctx context.Context, invocation
 	logger.Debugf("[adasvc cluster] The server status was received successfully, %s: %#v",
 		constant.AdaptiveServiceRemainingKey, remainingStr)
 	err = metrics.LocalMetrics.SetMethodMetrics(invoker.GetURL(),
-		invocation.MethodName(), metrics.HillClimbing, remaining)
+		invocation.MethodName(), metrics.HillClimbing, uint64(remaining))
 	if err != nil {
 		logger.Warnf("adaptive service metrics update is failed, err: %v", err)
 		return &protocol.RPCResult{Err: err}
