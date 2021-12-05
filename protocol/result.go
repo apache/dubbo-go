@@ -17,7 +17,9 @@
 
 package protocol
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // Result is a RPC result
 type Result interface {

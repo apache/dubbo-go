@@ -18,8 +18,11 @@
 package metrics
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common"
 	"fmt"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 )
 
 func getInvokerKey(url *common.URL) string {

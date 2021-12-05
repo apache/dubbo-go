@@ -18,17 +18,20 @@
 package p2c
 
 import (
+	"errors"
+	"fmt"
+	"math/rand"
+	"sync"
+	"time"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
 	"dubbo.apache.org/dubbo-go/v3/cluster/metrics"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
-	"errors"
-	"fmt"
-	"math/rand"
-	"sync"
-	"time"
 )
 
 func init() {

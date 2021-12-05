@@ -18,10 +18,13 @@
 package adaptivesvc
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/filter/adaptivesvc/limiter"
 	"fmt"
 	"sync"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/filter/adaptivesvc/limiter"
 )
 
 var (

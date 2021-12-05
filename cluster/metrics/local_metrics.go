@@ -18,9 +18,12 @@
 package metrics
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common"
 	"fmt"
 	"sync"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 )
 
 var LocalMetrics Metrics

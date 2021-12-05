@@ -18,10 +18,13 @@
 package limiter
 
 import (
-	"go.uber.org/atomic"
 	"math"
 	"sync"
 	"time"
+)
+
+import (
+	"go.uber.org/atomic"
 )
 
 var (
