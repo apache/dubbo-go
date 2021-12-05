@@ -53,6 +53,14 @@ type RPCResult struct {
 	Rest  interface{}
 }
 
+func NewRPCResult(result interface{}, err error) *RPCResult {
+	return &RPCResult{
+		Rest:  result,
+		Err:   err,
+		Attrs: make(map[string]interface{}),
+	}
+}
+
 // SetError sets error.
 func (r *RPCResult) SetError(err error) {
 	r.Err = err
