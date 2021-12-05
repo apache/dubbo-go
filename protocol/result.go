@@ -88,16 +88,26 @@ func (r *RPCResult) SetAttachments(attr map[string]interface{}) {
 
 // Attachments gets all attachments
 func (r *RPCResult) Attachments() map[string]interface{} {
+	if r.Attrs == nil {
+		r.Attrs = make(map[string]interface{})
+	}
 	return r.Attrs
 }
 
 // AddAttachment adds the specified map to existing attachments in this instance.
 func (r *RPCResult) AddAttachment(key string, value interface{}) {
+	if r.Attrs == nil {
+		r.Attrs = make(map[string]interface{})
+	}
 	r.Attrs[key] = value
 }
 
 // Attachment gets attachment by key with default value.
 func (r *RPCResult) Attachment(key string, defaultValue interface{}) interface{} {
+	if r.Attrs == nil {
+		r.Attrs = make(map[string]interface{})
+		return nil
+	}
 	v, ok := r.Attrs[key]
 	if !ok {
 		v = defaultValue
