@@ -56,9 +56,6 @@ func newAdaptiveServiceProviderFilter() filter.Filter {
 
 func (f *adaptiveServiceProviderFilter) Invoke(ctx context.Context, invoker protocol.Invoker,
 	invocation protocol.Invocation) protocol.Result {
-	// TODO(justxuewei): remove after test
-	logger.Debugf("adaptiveServiceProviderFilter.Invoker is called, invoker: %s, methodName: %s",
-		invoker, invocation.MethodName())
 
 	l, err := limiterMapperSingleton.getMethodLimiter(invoker.GetURL(), invocation.MethodName())
 	if err != nil {
@@ -87,10 +84,6 @@ func (f *adaptiveServiceProviderFilter) Invoke(ctx context.Context, invoker prot
 
 func (f *adaptiveServiceProviderFilter) OnResponse(_ context.Context, result protocol.Result, invoker protocol.Invoker,
 	invocation protocol.Invocation) protocol.Result {
-	// TODO(justxuewei): remove after test
-	logger.Debugf("adaptiveServiceProviderFilter.Invoker is called, invoker: %s, methodName: %s, result: %s",
-		invoker, invocation.MethodName(), result)
-
 	// get updater from the attributes
 	updaterIface := invocation.AttributeByKey(constant.AdaptiveServiceUpdaterKey, nil)
 	if updaterIface == nil {

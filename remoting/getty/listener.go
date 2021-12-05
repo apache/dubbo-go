@@ -304,15 +304,11 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 	attachments[constant.LocalAddr] = session.LocalAddr()
 	attachments[constant.RemoteAddr] = session.RemoteAddr()
 
-	logger.Debugf("[RpcServerHandler.OnMessage] invoc.Attrs: %v, invoc.MethodName: %s",
-		invoc.Attachments(), invoc.MethodName())
-
 	result := h.server.requestHandler(invoc)
 	if !req.TwoWay {
 		return
 	}
 	resp.Result = result
-	logger.Debugf("[RpcServerHandler.OnMessage] result attrs: %v, req: %v", result.Attrs, req)
 	reply(session, resp)
 }
 
