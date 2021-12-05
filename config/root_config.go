@@ -369,15 +369,16 @@ func (rc *RootConfig) Process(event *config_center.ConfigChangeEvent) {
 		logger.Errorf("CenterConfig process load failed, got error %#v", err)
 		return
 	}
-	tempRootConfig := &RootConfig{}
+	updateRootConfig := &RootConfig{}
 	if err := koan.UnmarshalWithConf(rc.Prefix(),
-		tempRootConfig, koanf.UnmarshalConf{Tag: "yaml"}); err != nil {
+		updateRootConfig, koanf.UnmarshalConf{Tag: "yaml"}); err != nil {
 		logger.Errorf("CenterConfig process unmarshalConf failed, got error %#v", err)
 		return
 	}
 
-	// update Registries
-	for registryId, r := range rc.Registries {
-		r.UpdateProperties(registryId, tempRootConfig)
+	// update register
+	for registerId, updateRegister := range updateRootConfig.Registries {
+		register := rc.Registries[registerId]
+		register.UpdateProperties(updateRegister)
 	}
 }
