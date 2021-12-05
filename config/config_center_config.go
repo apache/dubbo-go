@@ -94,8 +94,6 @@ func (c *CenterConfig) GetUrlMap() url.Values {
 	urlMap.Set(constant.ConfigGroupKey, c.Group)
 	urlMap.Set(constant.ConfigClusterKey, c.Cluster)
 	urlMap.Set(constant.ConfigAppIDKey, c.AppID)
-	urlMap.Set(constant.ConfigUsernameKey, c.Username)
-	urlMap.Set(constant.ConfigPasswordKey, c.Password)
 	urlMap.Set(constant.ConfigTimeoutKey, c.Timeout)
 
 	for key, val := range c.Params {
@@ -124,7 +122,11 @@ func (c *CenterConfig) translateConfigAddress() string {
 func (c *CenterConfig) toURL() (*common.URL, error) {
 	return common.NewURL(c.Address,
 		common.WithProtocol(c.Protocol),
-		common.WithParams(c.GetUrlMap()))
+		common.WithParams(c.GetUrlMap()),
+		common.WithUsername(c.Username),
+		common.WithPassword(c.Password),
+	)
+
 }
 
 // startConfigCenter will start the config center.
