@@ -61,6 +61,7 @@ func (mc *MetadataReportConfig) ToUrl() (*common.URL, error) {
 		common.WithPassword(mc.Password),
 		common.WithLocation(mc.Address),
 		common.WithProtocol(mc.Protocol),
+		common.WithParamsValue(constant.TimeoutKey, mc.Timeout),
 		common.WithParamsValue(constant.MetadataReportGroupKey, mc.Group),
 		common.WithParamsValue(constant.MetadataReportNamespaceKey, mc.Namespace),
 		common.WithParamsValue(constant.MetadataTypeKey, mc.metadataType),

@@ -179,7 +179,7 @@ type etcdMetadataReportFactory struct{}
 
 // CreateMetadataReport get the MetadataReport instance of etcd
 func (e *etcdMetadataReportFactory) CreateMetadataReport(url *common.URL) report.MetadataReport {
-	timeout := url.GetParamDuration(constant.ConfigTimeoutKey, constant.DefaultRegTimeout)
+	timeout := url.GetParamDuration(constant.TimeoutKey, constant.DefaultRegTimeout)
 	addresses := strings.Split(url.Location, ",")
 	client, err := gxetcd.NewClient(gxetcd.MetadataETCDV3Client, addresses, timeout, 1)
 	if err != nil {

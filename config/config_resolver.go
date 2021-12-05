@@ -28,6 +28,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/file"
 	"dubbo.apache.org/dubbo-go/v3/config/parsers/properties"
 )
 
@@ -37,8 +38,8 @@ func GetConfigResolver(conf *loaderConf) *koanf.Koanf {
 		k   *koanf.Koanf
 		err error
 	)
-	if len(conf.genre) <= 0 {
-		conf.genre = "yaml"
+	if len(conf.suffix) <= 0 {
+		conf.suffix = string(file.YAML)
 	}
 	if len(conf.delim) <= 0 {
 		conf.delim = "."
@@ -49,7 +50,7 @@ func GetConfigResolver(conf *loaderConf) *koanf.Koanf {
 	}
 	k = koanf.New(conf.delim)
 
-	switch conf.genre {
+	switch conf.suffix {
 	case "yaml", "yml":
 		err = k.Load(rawbytes.Provider(bytes), yaml.Parser())
 	case "json":
@@ -59,7 +60,7 @@ func GetConfigResolver(conf *loaderConf) *koanf.Koanf {
 	case "properties":
 		err = k.Load(rawbytes.Provider(bytes), properties.Parser())
 	default:
-		err = errors.Errorf("no support %s file type", conf.genre)
+		err = errors.Errorf("no support %s file suffix", conf.suffix)
 	}
 
 	if err != nil {

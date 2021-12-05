@@ -32,7 +32,7 @@ const (
 )
 
 const (
-	DefaultLoadbalance      = "random"
+	DefaultLoadBalance      = "random"
 	DefaultRetries          = "2"
 	DefaultRetriesInt       = 2
 	DefaultProtocol         = "dubbo"
@@ -45,7 +45,6 @@ const (
 	DefaultRestClient       = "resty"
 	DefaultRestServer       = "go-restful"
 	DefaultPort             = 20000
-	DefaultMetadataport     = 20005
 )
 
 const (
@@ -68,7 +67,7 @@ const (
 
 const (
 	AnyValue          = "*"
-	AnyhostValue      = "0.0.0.0"
+	AnyHostValue      = "0.0.0.0"
 	LocalHostValue    = "192.168.1.1"
 	RemoveValuePrefix = "-"
 )
@@ -94,11 +93,4 @@ const (
 
 const (
 	ServiceDiscoveryDefaultGroup = "DEFAULT_GROUP"
-)
-
-const (
-	DefaultProviderConfFilePath = "../profiles/dev/server.yml"
-	DefaultConsumerConfFilePath = "../profiles/dev/client.yml"
-	DefaultLogConfFilePath      = "../profiles/dev/log.yml"
-	DefaultRouterConfFilePath   = "../profiles/dev/router.yml"
 )
