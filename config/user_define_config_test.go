@@ -36,6 +36,7 @@ func TestCustomInit(t *testing.T) {
 		assert.Equal(t, CustomConfig.Version, "v1.0")
 		assert.Equal(t, CustomConfig.DefineConfig, map[string]interface{}(nil))
 		assert.Equal(t, CustomConfig.GetDefineValue("test", "test"), "test")
+		assert.Equal(t, GetDefineValue("test", "test"), "test")
 	})
 
 	t.Run("use config", func(t *testing.T) {
@@ -49,6 +50,8 @@ func TestCustomInit(t *testing.T) {
 		assert.Equal(t, CustomConfig.DefineConfig, map[string]interface{}{"test-config": true})
 		assert.Equal(t, CustomConfig.GetDefineValue("test-config", false), true)
 		assert.Equal(t, CustomConfig.GetDefineValue("test-no-config", false), false)
+		assert.Equal(t, GetDefineValue("test-config", false), true)
+		assert.Equal(t, GetDefineValue("test-no-config", false), false)
 	})
 
 	t.Run("config builder", func(t *testing.T) {

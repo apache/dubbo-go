@@ -17,7 +17,7 @@
 
 package config
 
-import(
+import (
 	"github.com/creasty/defaults"
 )
 
@@ -35,22 +35,30 @@ func (*CustomConfig) Prefix() string {
 	return constant.CustomConfigPrefix
 }
 
-func (udc *CustomConfig) Init() error {
-	return udc.check()
+func (c *CustomConfig) Init() error {
+	return c.check()
 }
 
-func (udc *CustomConfig) check() error {
-	if err := defaults.Set(udc); err != nil {
+func (c *CustomConfig) check() error {
+	if err := defaults.Set(c); err != nil {
 		return err
 	}
-	return verify(udc)
+	return verify(c)
 }
 
-func (udc *CustomConfig) GetDefineValue(key string, default_value interface{}) interface{} {
-	if define_value, ok := udc.DefineConfig[key]; ok {
+func (c *CustomConfig) GetDefineValue(key string, default_value interface{}) interface{} {
+	if define_value, ok := c.DefineConfig[key]; ok {
 		return define_value
 	}
 	return default_value
+}
+
+func GetDefineValue(key string, default_value interface{}) interface{} {
+	rt := GetRootConfig()
+	if rt.Custom == nil {
+		return default_value
+	}
+	return rt.Custom.GetDefineValue(key, default_value)
 }
 
 type CustomConfigBuilder struct {
