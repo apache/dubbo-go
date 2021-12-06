@@ -490,6 +490,10 @@ func getArgType(v interface{}) string {
 		}
 		switch t.Kind() {
 		case reflect.Struct:
+			p, ok := v.(hessian.Param)
+			if ok {
+				return p.JavaParamName()
+			}
 			v, ok := v.(hessian.POJO)
 			if ok {
 				return v.JavaClassName()
