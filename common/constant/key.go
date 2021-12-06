@@ -209,6 +209,7 @@ const (
 	RouterConfigPrefix         = "dubbo.router"
 	TracingConfigPrefix        = "dubbo.tracing"
 	LoggerConfigPrefix         = "dubbo.logger"
+	CustomConfigPrefix         = "dubbo.custom"
 )
 
 const (
