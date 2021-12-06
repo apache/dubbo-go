@@ -32,7 +32,6 @@ func TestCustomInit(t *testing.T) {
 		assert.NotNil(t, rootConfig)
 		CustomConfig := rootConfig.Custom
 		assert.NotNil(t, CustomConfig)
-		assert.Equal(t, CustomConfig.Name, "user-config")
 		assert.Equal(t, CustomConfig.Version, "v1.0")
 		assert.Equal(t, CustomConfig.DefineConfig, map[string]interface{}(nil))
 		assert.Equal(t, CustomConfig.GetDefineValue("test", "test"), "test")
@@ -45,7 +44,6 @@ func TestCustomInit(t *testing.T) {
 		assert.NotNil(t, rootConfig)
 		CustomConfig := rootConfig.Custom
 		assert.NotNil(t, CustomConfig)
-		assert.Equal(t, CustomConfig.Name, "test")
 		assert.Equal(t, CustomConfig.Version, "v2.0")
 		assert.Equal(t, CustomConfig.DefineConfig, map[string]interface{}{"test-config": true})
 		assert.Equal(t, CustomConfig.GetDefineValue("test-config", false), true)
@@ -56,21 +54,17 @@ func TestCustomInit(t *testing.T) {
 
 	t.Run("config builder", func(t *testing.T) {
 		CustomConfigBuilder := NewCustomConfigBuilder()
-		CustomConfigBuilder.SetName("builder")
 		CustomConfigBuilder.SetVersion("v3.0")
 		CustomConfigBuilder.SetDefineConfig("test-build", true)
 		CustomConfig := CustomConfigBuilder.Build()
 		assert.NotNil(t, CustomConfig)
-		assert.Equal(t, CustomConfig.Name, "builder")
 		assert.Equal(t, CustomConfig.Version, "v3.0")
 		assert.Equal(t, CustomConfig.GetDefineValue("test-build", false), true)
 		assert.Equal(t, CustomConfig.GetDefineValue("test-no-build", false), false)
 		rt := NewRootConfigBuilder().Build()
-		assert.Equal(t, rt.Custom.Name, "")
 		assert.Equal(t, rt.Custom.Version, "")
 		rt = NewRootConfigBuilder().SetCustom(CustomConfig).Build()
 		rt.Init()
-		assert.Equal(t, rt.Custom.Name, "builder")
 		assert.Equal(t, rt.Custom.Version, "v3.0")
 	})
 }

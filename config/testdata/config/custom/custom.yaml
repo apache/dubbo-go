@@ -9,7 +9,6 @@ dubbo:
       group: test
       address: 127.0.0.1:2181
   custom:
-      name: test
       version: v2.0
       define-config:
         test-config: true

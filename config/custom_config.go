@@ -26,7 +26,6 @@ import (
 )
 
 type CustomConfig struct {
-	Name         string                 `default:"user-config" yaml:"name" json:"name,omitempty" property:"name"`
 	Version      string                 `default:"v1.0" yaml:"version" json:"version,omitempty" property:"version"`
 	DefineConfig map[string]interface{} `yaml:"define-config" json:"define-config,omitempty" property:"define-config"`
 }
@@ -67,11 +66,6 @@ type CustomConfigBuilder struct {
 
 func NewCustomConfigBuilder() *CustomConfigBuilder {
 	return &CustomConfigBuilder{customConfig: &CustomConfig{}}
-}
-
-func (ccb *CustomConfigBuilder) SetName(name string) *CustomConfigBuilder {
-	ccb.customConfig.Name = name
-	return ccb
 }
 
 func (ccb *CustomConfigBuilder) SetVersion(version string) *CustomConfigBuilder {
