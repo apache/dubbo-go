@@ -26,8 +26,7 @@ import (
 )
 
 type CustomConfig struct {
-	Version      string                 `default:"v1.0" yaml:"version" json:"version,omitempty" property:"version"`
-	DefineConfig map[string]interface{} `yaml:"define-config" json:"define-config,omitempty" property:"define-config"`
+	ConfigMap map[string]interface{} `yaml:"config-map" json:"config-map,omitempty" property:"config-map"`
 }
 
 func (*CustomConfig) Prefix() string {
@@ -46,7 +45,7 @@ func (c *CustomConfig) check() error {
 }
 
 func (c *CustomConfig) GetDefineValue(key string, default_value interface{}) interface{} {
-	if define_value, ok := c.DefineConfig[key]; ok {
+	if define_value, ok := c.ConfigMap[key]; ok {
 		return define_value
 	}
 	return default_value
@@ -68,16 +67,11 @@ func NewCustomConfigBuilder() *CustomConfigBuilder {
 	return &CustomConfigBuilder{customConfig: &CustomConfig{}}
 }
 
-func (ccb *CustomConfigBuilder) SetVersion(version string) *CustomConfigBuilder {
-	ccb.customConfig.Version = version
-	return ccb
-}
-
 func (ccb *CustomConfigBuilder) SetDefineConfig(key string, val interface{}) *CustomConfigBuilder {
-	if ccb.customConfig.DefineConfig == nil {
-		ccb.customConfig.DefineConfig = make(map[string]interface{})
+	if ccb.customConfig.ConfigMap == nil {
+		ccb.customConfig.ConfigMap = make(map[string]interface{})
 	}
-	ccb.customConfig.DefineConfig[key] = val
+	ccb.customConfig.ConfigMap[key] = val
 	return ccb
 }
 
