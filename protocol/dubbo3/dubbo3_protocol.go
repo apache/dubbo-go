@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"strconv"
 	"sync"
 )
 
@@ -231,6 +232,17 @@ func (dp *DubboProtocol) openServer(url *common.URL, tripleCodecType tripleConst
 			default:
 				logger.Warnf("unsupported tracing name %s, now triple only support jaeger", tracingConfig.Name)
 			}
+		}
+	}
+
+	if maxCall := url.GetParam(constant.MaxServerRecvMsgSize, ""); maxCall != "" {
+		if size, err := strconv.Atoi(maxCall); err == nil && size != 0 {
+			opts = append(opts, triConfig.WithGRPCMaxServerRecvMessageSize(size))
+		}
+	}
+	if maxCall := url.GetParam(constant.MaxServerSendMsgSize, ""); maxCall != "" {
+		if size, err := strconv.Atoi(maxCall); err == nil && size != 0 {
+			opts = append(opts, triConfig.WithGRPCMaxServerSendMessageSize(size))
 		}
 	}
 

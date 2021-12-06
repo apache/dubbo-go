@@ -52,8 +52,12 @@ const (
 	CommaSeparator         = ","
 	SslEnabledKey          = "ssl-enabled"
 	// ParamsTypeKey key used in pass through invoker factory, to define param type
-	ParamsTypeKey   = "parameter-type-names"
-	MetadataTypeKey = "metadata-type"
+	ParamsTypeKey        = "parameter-type-names"
+	MetadataTypeKey      = "metadata-type"
+	MaxCallSendMsgSize   = "max-call-send-msg-size"
+	MaxServerSendMsgSize = "max-server-send-msg-size"
+	MaxCallRecvMsgSize   = "max-call-recv-msg-size"
+	MaxServerRecvMsgSize = "max-server-recv-msg-size"
 )
 
 const (

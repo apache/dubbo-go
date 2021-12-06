@@ -14,7 +14,7 @@ require (
 	github.com/dubbogo/go-zookeeper v1.0.3
 	github.com/dubbogo/gost v1.11.20-0.20211116110728-26777ca61b4a
 	github.com/dubbogo/grpc-go v1.42.6-triple
-	github.com/dubbogo/triple v1.1.6-0.20211119123944-4ad68a0d048e
+	github.com/dubbogo/triple v1.1.6
 	github.com/emicklei/go-restful/v3 v3.7.2
 	github.com/fsnotify/fsnotify v1.5.1
 	github.com/ghodss/yaml v1.0.0
