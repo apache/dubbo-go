@@ -57,9 +57,12 @@ func TestCustomInit(t *testing.T) {
 		assert.NotNil(t, CustomConfig)
 		assert.Equal(t, CustomConfig.GetDefineValue("test-build", false), true)
 		assert.Equal(t, CustomConfig.GetDefineValue("test-no-build", false), false)
+		// todo @(laurence) now we should guarantee rootConfig ptr can't be changed during test
+		tempRootConfig := rootConfig
 		rt := NewRootConfigBuilder().SetCustom(CustomConfig).Build()
 		SetRootConfig(*rt)
 		assert.Equal(t, GetDefineValue("test-build", false), true)
 		assert.Equal(t, GetDefineValue("test-no-build", false), false)
+		SetRootConfig(*tempRootConfig)
 	})
 }
