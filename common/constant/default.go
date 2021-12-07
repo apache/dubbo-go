@@ -48,13 +48,21 @@ const (
 )
 
 const (
-	DefaultKey              = "default"
-	PrefixDefaultKey        = "default."
-	DefaultServiceFilters   = EchoFilterKey + "," + MetricsFilterKey + "," + TokenFilterKey + "," + AccessLogFilterKey + "," + TpsLimitFilterKey + "," + GenericServiceFilterKey + "," + ExecuteLimitFilterKey + "," + GracefulShutdownProviderFilterKey
+	DefaultKey = "default"
+	Generic    = "$invoke"
+	Echo       = "$echo"
+)
+
+// default filters
+const (
+	// DefaultServiceFilters defines default service filters, it is highly recommended
+	// that put the AdaptiveServiceProviderFilterKey at the end.
+	DefaultServiceFilters = EchoFilterKey + "," +
+		MetricsFilterKey + "," + TokenFilterKey + "," + AccessLogFilterKey + "," + TpsLimitFilterKey + "," +
+		GenericServiceFilterKey + "," + ExecuteLimitFilterKey + "," + GracefulShutdownProviderFilterKey + "," +
+		AdaptiveServiceProviderFilterKey
+
 	DefaultReferenceFilters = GracefulShutdownConsumerFilterKey
-	GenericReferenceFilters = GenericFilterKey
-	Generic                 = "$invoke"
-	Echo                    = "$echo"
 )
 
 const (

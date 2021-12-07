@@ -91,7 +91,5 @@ func (m *mockInvoker) Destroy() {
 }
 
 func (m *mockInvoker) Invoke(context.Context, protocol.Invocation) protocol.Result {
-	return &protocol.RPCResult{
-		Rest: []string{"dubbo://localhost"},
-	}
+	return protocol.NewRPCResult([]string{"dubbo://localhost"}, nil)
 }

@@ -15,16 +15,20 @@
  * limitations under the License.
  */
 
-package constant
+package metrics
 
-const (
-	ClusterKeyAvailable       = "available"
-	ClusterKeyBroadcast       = "broadcast"
-	ClusterKeyFailback        = "failback"
-	ClusterKeyFailfast        = "failfast"
-	ClusterKeyFailover        = "failover"
-	ClusterKeyFailsafe        = "failsafe"
-	ClusterKeyForking         = "forking"
-	ClusterKeyZoneAware       = "zoneAware"
-	ClusterKeyAdaptiveService = "adaptiveService"
+import (
+	"fmt"
 )
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common"
+)
+
+func getInvokerKey(url *common.URL) string {
+	return url.Path
+}
+
+func getInstanceKey(url *common.URL) string {
+	return fmt.Sprintf("%s:%s", url.Ip, url.Port)
+}

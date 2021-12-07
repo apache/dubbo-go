@@ -15,16 +15,28 @@
  * limitations under the License.
  */
 
-package constant
+package limiter
+
+import (
+	"fmt"
+)
+
+var ErrReachLimitation = fmt.Errorf("reach limitation")
+
+var (
+	Verbose = false
+)
 
 const (
-	ClusterKeyAvailable       = "available"
-	ClusterKeyBroadcast       = "broadcast"
-	ClusterKeyFailback        = "failback"
-	ClusterKeyFailfast        = "failfast"
-	ClusterKeyFailover        = "failover"
-	ClusterKeyFailsafe        = "failsafe"
-	ClusterKeyForking         = "forking"
-	ClusterKeyZoneAware       = "zoneAware"
-	ClusterKeyAdaptiveService = "adaptiveService"
+	HillClimbingLimiter = iota
 )
+
+type Limiter interface {
+	Inflight() uint64
+	Remaining() uint64
+	Acquire() (Updater, error)
+}
+
+type Updater interface {
+	DoUpdate() error
+}

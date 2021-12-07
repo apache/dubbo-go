@@ -15,16 +15,8 @@
  * limitations under the License.
  */
 
-package constant
+package metrics
 
 const (
-	ClusterKeyAvailable       = "available"
-	ClusterKeyBroadcast       = "broadcast"
-	ClusterKeyFailback        = "failback"
-	ClusterKeyFailfast        = "failfast"
-	ClusterKeyFailover        = "failover"
-	ClusterKeyFailsafe        = "failsafe"
-	ClusterKeyForking         = "forking"
-	ClusterKeyZoneAware       = "zoneAware"
-	ClusterKeyAdaptiveService = "adaptiveService"
+	HillClimbing = "hill-climbing"
 )

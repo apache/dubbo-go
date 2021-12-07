@@ -65,6 +65,7 @@ const (
 const (
 	AccessLogFilterKey                   = "accesslog"
 	ActiveFilterKey                      = "active"
+	AdaptiveServiceProviderFilterKey     = "padasvc"
 	AuthConsumerFilterKey                = "sign"
 	AuthProviderFilterKey                = "auth"
 	EchoFilterKey                        = "echo"
@@ -355,10 +356,19 @@ const (
 )
 
 // Generic Filter
-
 const (
 	GenericSerializationDefault = "true"
 	// disable "protobuf-json" temporarily
 	//GenericSerializationProtobuf = "protobuf-json"
 	GenericSerializationGson = "gson"
+)
+
+// AdaptiveService Filter
+// goland:noinspection ALL
+const (
+	// attribute keys
+	AdaptiveServiceUpdaterKey = "adaptive-service.updater"
+	// attachment keys
+	AdaptiveServiceRemainingKey = "adaptive-service.remaining"
+	AdaptiveServiceInflightKey  = "adaptive-service.inflight"
 )
