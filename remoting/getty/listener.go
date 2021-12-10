@@ -102,14 +102,14 @@ func (h *RpcClientHandler) OnClose(session getty.Session) {
 func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
 	result, ok := pkg.(remoting.DecodeResult)
 	if !ok {
-		logger.Errorf("illegal package")
+		logger.Errorf("[RpcClientHandler.OnMessage] getty client gets an unexpected rpc result: %#v", result)
 		return
 	}
 	// get heartbeat request from server
 	if result.IsRequest {
 		req := result.Result.(*remoting.Request)
 		if req.Event {
-			logger.Debugf("get rpc heartbeat request{%#v}", req)
+			logger.Debugf("[RpcClientHandler.OnMessage] getty client gets a heartbeat request: %#v", req)
 			resp := remoting.NewResponse(req.ID, req.Version)
 			resp.Status = hessian.Response_OK
 			resp.Event = req.Event
@@ -118,22 +118,23 @@ func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
 			reply(session, resp)
 			return
 		}
-		logger.Errorf("illegal request but not heartbeat. {%#v}", req)
+		logger.Errorf("[RpcClientHandler.OnMessage] unexpected heartbeat request: %#v", req)
 		return
 	}
 	h.timeoutTimes = 0
 	p := result.Result.(*remoting.Response)
 	// get heartbeat
 	if p.Event {
-		logger.Debugf("get rpc heartbeat response{%#v}", p)
+		logger.Debugf("[RpcClientHandler.OnMessage] getty client received a heartbeat response: %s", p)
 		if p.Error != nil {
-			logger.Errorf("rpc heartbeat response{error: %#v}", p.Error)
+			logger.Errorf("[RpcClientHandler.OnMessage] a heartbeat response received by the getty client "+
+				"encounters an error: %v", p.Error)
 		}
 		p.Handle()
 		return
 	}
 
-	logger.Debugf("get rpc response{%#v}", p)
+	logger.Debugf("[RpcClientHandler.OnMessage] getty client received a response: %s", p)
 
 	h.conn.updateSession(session)
 

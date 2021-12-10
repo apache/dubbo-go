@@ -25,6 +25,8 @@ import (
 
 import (
 	"github.com/creasty/defaults"
+
+	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -32,6 +34,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/config/instance"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
@@ -67,8 +70,7 @@ func (c *RegistryConfig) Init() error {
 	if err := defaults.Set(c); err != nil {
 		return err
 	}
-	c.translateRegistryAddress()
-	return verify(c)
+	return c.startRegistryConfig()
 }
 
 func (c *RegistryConfig) getUrlMap(roleType common.RoleType) url.Values {
@@ -87,6 +89,35 @@ func (c *RegistryConfig) getUrlMap(roleType common.RoleType) url.Values {
 		urlMap.Set(k, v)
 	}
 	return urlMap
+}
+
+func (c *RegistryConfig) startRegistryConfig() error {
+	c.translateRegistryAddress()
+	if GetApplicationConfig().MetadataType == constant.DefaultMetadataStorageType && c.RegistryType == constant.ServiceKey {
+		if tmpUrl, err := c.toMetadataReportUrl(); err == nil {
+			instance.SetMetadataReportInstanceByReg(tmpUrl)
+		} else {
+			return perrors.Wrap(err, "Start RegistryConfig failed.")
+		}
+	}
+	return verify(c)
+}
+
+// toMetadataReportUrl translate the registry configuration to the metadata reporting url
+func (c *RegistryConfig) toMetadataReportUrl() (*common.URL, error) {
+	res, err := common.NewURL(c.Address,
+		common.WithLocation(c.Address),
+		common.WithProtocol(c.Protocol),
+		common.WithUsername(c.Username),
+		common.WithPassword(c.Password),
+		common.WithParamsValue(constant.TimeoutKey, c.Timeout),
+		common.WithParamsValue(constant.MetadataReportGroupKey, c.Group),
+		common.WithParamsValue(constant.MetadataReportNamespaceKey, c.Namespace),
+	)
+	if err != nil || len(res.Protocol) == 0 {
+		return nil, perrors.New("Invalid Registry Config.")
+	}
+	return res, nil
 }
 
 //translateRegistryAddress translate registry address

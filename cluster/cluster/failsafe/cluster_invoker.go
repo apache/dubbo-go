@@ -58,7 +58,7 @@ func (invoker *clusterInvoker) Invoke(ctx context.Context, invocation protocol.I
 	url := invokers[0].GetURL()
 	methodName := invocation.MethodName()
 	// Get the service loadbalance config
-	lb := url.GetParam(constant.LoadbalanceKey, constant.DefaultLoadbalance)
+	lb := url.GetParam(constant.LoadbalanceKey, constant.DefaultLoadBalance)
 	// Get the service method loadbalance config if have
 	if v := url.GetMethodParam(methodName, constant.LoadbalanceKey, ""); v != "" {
 		lb = v

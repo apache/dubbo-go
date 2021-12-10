@@ -20,31 +20,39 @@ package auth
 import (
 	"context"
 	"fmt"
+	"sync"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
+var (
+	signOnce sync.Once
+	sign     *signFilter
+)
+
 func init() {
-	extension.SetFilter(constant.AuthConsumerFilterKey, func() filter.Filter {
-		return &ConsumerSignFilter{}
-	})
-	extension.SetFilter(constant.AuthProviderFilterKey, func() filter.Filter {
-		return &ProviderAuthFilter{}
-	})
+	extension.SetFilter(constant.AuthConsumerFilterKey, newSignFilter)
 }
 
-// ConsumerSignFilter signs the request on consumer side
-type ConsumerSignFilter struct{}
+// signFilter signs the request on consumer side
+type signFilter struct{}
+
+func newSignFilter() filter.Filter {
+	if sign == nil {
+		signOnce.Do(func() {
+			sign = &signFilter{}
+		})
+	}
+	return sign
+}
 
 // Invoke retrieves the configured Authenticator to add signature to invocation
-func (csf *ConsumerSignFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
-	logger.Infof("invoking ConsumerSign filter.")
+func (sf *signFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	url := invoker.GetURL()
 
 	err := doAuthWork(url, func(authenticator filter.Authenticator) error {
@@ -57,6 +65,6 @@ func (csf *ConsumerSignFilter) Invoke(ctx context.Context, invoker protocol.Invo
 }
 
 // OnResponse dummy process, returns the result directly
-func (csf *ConsumerSignFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+func (sf *signFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	return result
 }

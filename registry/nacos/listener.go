@@ -44,6 +44,12 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
+var (
+	listenerCache sync.Map
+)
+
+type callback func(services []model.SubscribeService, err error)
+
 type nacosListener struct {
 	namingClient   *nacosClient.NacosNamingClient
 	listenURL      *common.URL
@@ -191,15 +197,15 @@ func (nl *nacosListener) startListen() error {
 	if nl.namingClient == nil {
 		return perrors.New("nacos naming namingClient stopped")
 	}
-	serviceName := getSubscribeName(nl.listenURL)
-	groupName := nl.regURL.GetParam(constant.RegistryGroupKey, defaultGroup)
-	nl.subscribeParam = &vo.SubscribeParam{
-		ServiceName:       serviceName,
-		SubscribeCallback: nl.Callback,
-		GroupName:         groupName,
+	nl.subscribeParam = createSubscribeParam(nl.listenURL, nl.regURL, nl.Callback)
+	if nl.subscribeParam == nil {
+		return perrors.New("create nacos subscribeParam failed")
 	}
 	go func() {
-		_ = nl.namingClient.Client().Subscribe(nl.subscribeParam)
+		err := nl.namingClient.Client().Subscribe(nl.subscribeParam)
+		if err == nil {
+			listenerCache.Store(nl.subscribeParam.ServiceName+nl.subscribeParam.GroupName, nl)
+		}
 	}()
 	return nil
 }

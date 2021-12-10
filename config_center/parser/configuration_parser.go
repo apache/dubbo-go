@@ -116,7 +116,7 @@ func (parser *DefaultConfigurationParser) ParseToUrls(content string) ([]*common
 func serviceItemToUrls(item ConfigItem, config ConfiguratorConfig) ([]*common.URL, error) {
 	addresses := item.Addresses
 	if len(addresses) == 0 {
-		addresses = append(addresses, constant.AnyhostValue)
+		addresses = append(addresses, constant.AnyHostValue)
 	}
 	var urls []*common.URL
 	for _, v := range addresses {
@@ -163,7 +163,7 @@ func serviceItemToUrls(item ConfigItem, config ConfiguratorConfig) ([]*common.UR
 func appItemToUrls(item ConfigItem, config ConfiguratorConfig) ([]*common.URL, error) {
 	addresses := item.Addresses
 	if len(addresses) == 0 {
-		addresses = append(addresses, constant.AnyhostValue)
+		addresses = append(addresses, constant.AnyHostValue)
 	}
 	var urls []*common.URL
 	for _, v := range addresses {

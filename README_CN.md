@@ -10,7 +10,7 @@
 
 [English 🇺🇸](./README.md)
 
-Apache Dubbo Go 语言实现，架起 Java 和 Golang 之间的桥梁，与 gRPC/Spring Cloud 生态互联互通，带领 Java 生态享受云原生时代的技术红利。请访问我们的[官方网站](https://dubbogo.github.io)查看快速开始和文档。
+Apache Dubbo Go 语言实现，架起 Java 和 Golang 之间的桥梁，与 gRPC/Spring Cloud 生态互联互通，带领 Java 生态享受云原生时代的技术红利。请访问我们的[官方网站](https://dubbo.apache.org/zh/docs/languages/golang/)查看快速开始和文档。
 
 ## 架构
 
@@ -162,6 +162,16 @@ go get dubbo.apache.org/dubbo-go/v3
 </div>
 
 [查看更多用户示例](https://github.com/apache/dubbo-go/issues/2)
+
+## 生态
+
+* [Dubbo Ecosystem Entry](https://github.com/apache?utf8=%E2%9C%93&q=dubbo&type=&language=) - Apache Dubbo 群组的相关开源项目
+* [dubbo-go-pixiu](https://github.com/apache/dubbo-go-pixiu) - 动态高性能 API 网关，支持 Dubbo 和 Http 等多种协议
+* [dubbo-go-samples](https://github.com/apache/dubbo-go-samples) - Dubbo-go 项目案例
+* [dubbo-getty](https://github.com/apache/dubbo-getty) - Netty 风格的异步网络 IO 库，支持 tcp、udp 和 websocket 等协议
+* [triple](https://github.com/dubbogo/triple) - 基于 HTTP2 的 Dubbo-go 3.0 协议网络库
+* [dubbo-go-hessian2](https://github.com/apache/dubbo-go-hessian2) - 供 Dubbo-go 使用的 hessian2 库
+* [gost](https://github.com/dubbogo/gost) - 供 Dubbo-go 使用的基础代码库
 
 ## 许可证
 

@@ -174,7 +174,7 @@ func GetLoadBalance(invoker protocol.Invoker, invocation protocol.Invocation) lo
 
 	methodName := invocation.MethodName()
 	// Get the service loadbalance config
-	lb := url.GetParam(constant.LoadbalanceKey, constant.DefaultLoadbalance)
+	lb := url.GetParam(constant.LoadbalanceKey, constant.DefaultLoadBalance)
 
 	// Get the service method loadbalance config if have
 	if v := url.GetMethodParam(methodName, constant.LoadbalanceKey, ""); len(v) > 0 {

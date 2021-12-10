@@ -20,6 +20,7 @@ package seata
 import (
 	"context"
 	"strings"
+	"sync"
 )
 
 import (
@@ -34,20 +35,31 @@ const (
 	SEATA_XID = constant.DubboCtxKey("SEATA_XID")
 )
 
+var (
+	once  sync.Once
+	seata *seataFilter
+)
+
 func init() {
-	extension.SetFilter(constant.SeataFilterKey, func() filter.Filter {
-		return &Filter{}
-	})
+	extension.SetFilter(constant.SeataFilterKey, newSeataFilter)
 }
 
-// Filter when use seata-golang, use this filter to transfer xid
-type Filter struct{}
+// seataFilter when use seata-golang, use this filter to transfer xid
+type seataFilter struct{}
+
+func newSeataFilter() filter.Filter {
+	if seata == nil {
+		once.Do(func() {
+			seata = &seataFilter{}
+		})
+	}
+	return seata
+}
 
 // Invoke Get Xid by attachment key `SEATA_XID`. When use Seata, transfer xid by attachments
-func (f *Filter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
-	logger.Infof("invoking seata filter.")
+func (f *seataFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	xid := invocation.AttachmentsByKey(string(SEATA_XID), "")
-	if strings.TrimSpace(xid) != "" {
+	if len(strings.TrimSpace(xid)) > 0 {
 		logger.Debugf("Method: %v,Xid: %v", invocation.MethodName(), xid)
 		return invoker.Invoke(context.WithValue(ctx, SEATA_XID, xid), invocation)
 	}
@@ -55,6 +67,6 @@ func (f *Filter) Invoke(ctx context.Context, invoker protocol.Invoker, invocatio
 }
 
 // OnResponse dummy process, returns the result directly
-func (f *Filter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+func (f *seataFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	return result
 }

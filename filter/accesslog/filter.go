@@ -22,6 +22,7 @@ import (
 	"os"
 	"reflect"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -52,6 +53,11 @@ const (
 	Arguments = "arguments"
 )
 
+var (
+	once            sync.Once
+	accessLogFilter *Filter
+)
+
 func init() {
 	extension.SetFilter(constant.AccessLogFilterKey, newFilter)
 }
@@ -74,6 +80,20 @@ func init() {
  */
 type Filter struct {
 	logChan chan Data
+}
+
+func newFilter() filter.Filter {
+	if accessLogFilter == nil {
+		once.Do(func() {
+			accessLogFilter = &Filter{logChan: make(chan Data, LogMaxBuffer)}
+			go func() {
+				for accessLogData := range accessLogFilter.logChan {
+					accessLogFilter.writeLogToFile(accessLogData)
+				}
+			}()
+		})
+	}
+	return accessLogFilter
 }
 
 // Invoke will check whether user wants to use this filter.
@@ -218,16 +238,6 @@ func (f *Filter) openLogFile(accessLog string) (*os.File, error) {
 // isDefault check whether accessLog == true or accessLog == default
 func isDefault(accessLog string) bool {
 	return strings.EqualFold("true", accessLog) || strings.EqualFold("default", accessLog)
-}
-
-func newFilter() filter.Filter {
-	accessLogFilter := &Filter{logChan: make(chan Data, LogMaxBuffer)}
-	go func() {
-		for accessLogData := range accessLogFilter.logChan {
-			accessLogFilter.writeLogToFile(accessLogData)
-		}
-	}()
-	return accessLogFilter
 }
 
 // Data defines the data that will be log into file

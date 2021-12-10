@@ -69,14 +69,45 @@ func NewDubboInvoker(url *common.URL) (*DubboInvoker, error) {
 	dubboSerializaerType := url.GetParam(constant.SerializationKey, constant.ProtobufSerialization)
 	triCodecType := tripleConstant.CodecType(dubboSerializaerType)
 	// new triple client
-	triOption := triConfig.NewTripleOption(
+	opts := []triConfig.OptionFunction{
 		triConfig.WithClientTimeout(uint32(timeout.Seconds())),
 		triConfig.WithCodecType(triCodecType),
 		triConfig.WithLocation(url.Location),
 		triConfig.WithHeaderAppVersion(url.GetParam(constant.AppVersionKey, "")),
 		triConfig.WithHeaderGroup(url.GetParam(constant.GroupKey, "")),
 		triConfig.WithLogger(logger.GetLogger()),
-	)
+	}
+	if maxCall := url.GetParam(constant.MaxCallRecvMsgSize, ""); maxCall != "" {
+		if size, err := strconv.Atoi(maxCall); err == nil && size != 0 {
+			opts = append(opts, triConfig.WithGRPCMaxCallRecvMessageSize(size))
+		}
+	}
+	if maxCall := url.GetParam(constant.MaxCallSendMsgSize, ""); maxCall != "" {
+		if size, err := strconv.Atoi(maxCall); err == nil && size != 0 {
+			opts = append(opts, triConfig.WithGRPCMaxCallSendMessageSize(size))
+		}
+	}
+
+	tracingKey := url.GetParam(constant.TracingConfigKey, "")
+	if tracingKey != "" {
+		tracingConfig := config.GetTracingConfig(tracingKey)
+		if tracingConfig != nil {
+			if tracingConfig.Name == "jaeger" {
+				if tracingConfig.ServiceName == "" {
+					tracingConfig.ServiceName = config.GetApplicationConfig().Name
+				}
+				opts = append(opts, triConfig.WithJaegerConfig(
+					tracingConfig.Address,
+					tracingConfig.ServiceName,
+					tracingConfig.UseAgent,
+				))
+			} else {
+				logger.Warnf("unsupported tracing name %s, now triple only support jaeger", tracingConfig.Name)
+			}
+		}
+	}
+
+	triOption := triConfig.NewTripleOption(opts...)
 	client, err := triple.NewTripleClient(consumerService, triOption)
 
 	if err != nil {

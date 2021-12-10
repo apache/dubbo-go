@@ -152,16 +152,16 @@ func (l *ZkEventListener) handleZkNodeEvent(zkPath string, children []string, li
 
 	newChildren, err := l.client.GetChildren(zkPath)
 	if err != nil {
-		// FIXME always false
-		if err == errNilChildren {
+		// TODO need to ignore this error in gost
+		if err == gxzookeeper.ErrNilChildren {
 			content, _, connErr := l.client.Conn.Get(zkPath)
 			if connErr != nil {
 				logger.Errorf("Get new node path {%v} 's content error,message is  {%v}",
 					zkPath, perrors.WithStack(connErr))
 			} else {
+				// TODO this if for config center listener, and will be removed when we refactor config center listener
 				listener.DataChange(remoting.Event{Path: zkPath, Action: remoting.EventTypeUpdate, Content: string(content)})
 			}
-
 		} else {
 			logger.Errorf("path{%s} child nodes changed, zk.Children() = error{%v}", zkPath, perrors.WithStack(err))
 		}
@@ -219,61 +219,39 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkRootPath string, li
 	var (
 		failTimes int
 		ttl       time.Duration
-		event     chan struct{}
 	)
-	event = make(chan struct{}, 4)
 	ttl = defaultTTL
 	if conf != nil {
 		timeout, err := time.ParseDuration(conf.GetParam(constant.RegistryTTLKey, constant.DefaultRegTTL))
 		if err == nil {
 			ttl = timeout
 		} else {
-			logger.Warnf("wrong configuration for registry ttl, error:=%+v, using default value %v instead", err, defaultTTL)
+			logger.Warnf("[Zookeeper EventListener][listenDirEvent] Wrong configuration for registry.ttl, error=%+v, using default value %v instead", err, defaultTTL)
 		}
 	}
-	defer close(event)
 	for {
-		// get current children for a zkPath
+		// Get current children with watcher for the zkRootPath
 		children, childEventCh, err := l.client.GetChildrenW(zkRootPath)
 		if err != nil {
 			failTimes++
 			if MaxFailTimes <= failTimes {
 				failTimes = MaxFailTimes
 			}
-			logger.Debugf("listenDirEvent(path{%s}) = error{%v}", zkRootPath, err)
-			// clear the event channel
-		CLEAR:
-			for {
-				select {
-				case <-event:
-				default:
-					break CLEAR
-				}
-			}
-			l.client.RegisterEvent(zkRootPath, &event)
-			if err == errNilNode {
-				logger.Warnf("listenDirEvent(path{%s}) got errNilNode,so exit listen", zkRootPath)
-				l.client.UnregisterEvent(zkRootPath, &event)
-				return
-			}
+			logger.Errorf("[Zookeeper EventListener][listenDirEvent] Get children of path {%s} with watcher failed, the error is %+v", zkRootPath, err)
 
+			// May be the provider does not ready yet, sleep failTimes * ConnDelay senconds to wait
 			after := time.After(timeSecondDuration(failTimes * ConnDelay))
 			select {
 			case <-after:
-				l.client.UnregisterEvent(zkRootPath, &event)
 				continue
 			case <-l.exit:
-				l.client.UnregisterEvent(zkRootPath, &event)
-				logger.Debugf("listen(path{%s}) goroutine exit now...", zkRootPath)
 				return
-			case <-event:
-				logger.Debugf("get zk.EventNodeDataChange notify event")
-				l.client.UnregisterEvent(zkRootPath, &event)
-				l.handleZkNodeEvent(zkRootPath, nil, listener)
-				continue
 			}
 		}
 		failTimes = 0
+		if len(children) == 0 {
+			logger.Debugf("[Zookeeper EventListener][listenDirEvent] Can not gey any children for the path {%s}, please check if the provider does ready.", zkRootPath)
+		}
 		for _, c := range children {
 			// Only need to compare Path when subscribing to provider
 			if strings.LastIndex(zkRootPath, constant.ProviderCategory) != -1 {
@@ -283,7 +261,7 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkRootPath string, li
 				}
 			}
 
-			// listen l service node
+			// Build the children path
 			zkNodePath := path.Join(zkRootPath, c)
 
 			// Save the path to avoid listen repeatedly
@@ -294,7 +272,7 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkRootPath string, li
 			}
 			l.pathMapLock.Unlock()
 			if ok {
-				logger.Warnf("@zkPath %s has already been listened.", zkNodePath)
+				logger.Warnf("[Zookeeper EventListener][listenDirEvent] The child with zk path {%s} has already been listened.", zkNodePath)
 				continue
 			}
 
@@ -308,13 +286,13 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkRootPath string, li
 
 			l.client.RUnlock()
 			if err != nil {
-				logger.Errorf("Get new node path {%v} 's content error,message is  {%v}", zkNodePath, perrors.WithStack(err))
+				logger.Errorf("[Zookeeper EventListener][listenDirEvent] Get content of the child node {%v} failed, the error is %+v", zkNodePath, perrors.WithStack(err))
 			}
-			logger.Debugf("Get children!{%s}", zkNodePath)
+			logger.Debugf("[Zookeeper EventListener][listenDirEvent] Get children!{%s}", zkNodePath)
 			if !listener.DataChange(remoting.Event{Path: zkNodePath, Action: remoting.EventTypeAdd, Content: string(content)}) {
 				continue
 			}
-			logger.Infof("[Zookeeper Listener] listen dubbo service key{%s}", zkNodePath)
+			logger.Debugf("[Zookeeper EventListener][listenDirEvent] listen dubbo service key{%s}", zkNodePath)
 			l.wg.Add(1)
 			go func(zkPath string, listener remoting.DataListener) {
 				// invoker l.wg.Done() in l.listenServiceNodeEvent
@@ -344,10 +322,10 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkRootPath string, li
 	}
 }
 
+// startScheduleWatchTask periodically update provider information, return true when receive exit signal
 func (l *ZkEventListener) startScheduleWatchTask(
 	zkRootPath string, children []string, ttl time.Duration,
 	listener remoting.DataListener, childEventCh <-chan zk.Event) bool {
-	// Periodically update provider information
 	tickerTTL := ttl
 	if tickerTTL > 20e9 {
 		tickerTTL = 20e9
@@ -366,7 +344,7 @@ func (l *ZkEventListener) startScheduleWatchTask(
 				ticker = time.NewTicker(tickerTTL)
 			}
 		case zkEvent := <-childEventCh:
-			logger.Warnf("get a zookeeper childEventCh{type:%s, server:%s, path:%s, state:%d-%s, err:%v}",
+			logger.Debugf("Get a zookeeper childEventCh{type:%s, server:%s, path:%s, state:%d-%s, err:%v}",
 				zkEvent.Type.String(), zkEvent.Server, zkEvent.Path, zkEvent.State, gxzookeeper.StateToString(zkEvent.State), zkEvent.Err)
 			ticker.Stop()
 			if zkEvent.Type == zk.EventNodeChildrenChanged {
