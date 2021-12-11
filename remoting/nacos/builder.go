@@ -64,8 +64,17 @@ func GetNacosConfig(url *common.URL) ([]nacosConstant.ServerConfig, nacosConstan
 			return []nacosConstant.ServerConfig{}, nacosConstant.ClientConfig{},
 				perrors.WithMessagef(err, "split [%s] ", addr)
 		}
-		port, _ := strconv.Atoi(portStr)
-		serverConfigs = append(serverConfigs, nacosConstant.ServerConfig{IpAddr: ip, Port: uint64(port)})
+		portContextPath := strings.Split(portStr, constant.PATH_SEPARATOR)
+		port, err := strconv.Atoi(portContextPath[0])
+		if err != nil {
+			return []nacosConstant.ServerConfig{}, nacosConstant.ClientConfig{},
+				perrors.WithMessagef(err, "port [%s] ", portContextPath[0])
+		}
+		var contextPath string
+		if len(portContextPath) > 1 {
+			contextPath = constant.PATH_SEPARATOR + strings.Join(portContextPath[1:], constant.PATH_SEPARATOR)
+		}
+		serverConfigs = append(serverConfigs, nacosConstant.ServerConfig{IpAddr: ip, Port: uint64(port), ContextPath: contextPath})
 	}
 
 	timeout := url.GetParamDuration(constant.CONFIG_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT)

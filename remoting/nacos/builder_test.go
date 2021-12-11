@@ -34,26 +34,44 @@ import (
 )
 
 func TestNewNacosClient(t *testing.T) {
-	rc := &config.RemoteConfig{}
-	rc.Protocol = "nacos"
-	rc.Username = "nacos"
-	client, err := NewNacosClient(rc)
+	t.Run("AddressIsNil", func(t *testing.T) {
+		rc := &config.RemoteConfig{}
+		rc.Protocol = "nacos"
+		rc.Username = "nacos"
+		client, err := NewNacosClient(rc)
 
-	// address is nil
-	assert.Nil(t, client)
-	assert.NotNil(t, err)
+		// address is nil
+		assert.Nil(t, client)
+		assert.NotNil(t, err)
+	})
 
-	rc.Address = "console.nacos.io:80:123"
-	client, err = NewNacosClient(rc)
-	// invalid address
-	assert.Nil(t, client)
-	assert.NotNil(t, err)
+	t.Run("InvalidAddress", func(t *testing.T) {
+		rc := &config.RemoteConfig{}
+		rc.Address = "console.nacos.io:80:123"
+		client, err := NewNacosClient(rc)
+		// invalid address
+		assert.Nil(t, client)
+		assert.NotNil(t, err)
+	})
 
-	rc.Address = "console.nacos.io:80"
-	rc.TimeoutStr = "10s"
-	client, err = NewNacosClient(rc)
-	assert.NotNil(t, client)
-	assert.Nil(t, err)
+	t.Run("Normal", func(t *testing.T) {
+		rc := &config.RemoteConfig{}
+		rc.Address = "console.nacos.io:80"
+		rc.Protocol = "nacos"
+		rc.TimeoutStr = "10s"
+		client, err := NewNacosClient(rc)
+		assert.NotNil(t, client)
+		assert.Nil(t, err)
+	})
+
+	t.Run("NormalHasContextPath", func(t *testing.T) {
+		rc := &config.RemoteConfig{}
+		rc.Address = "console.nacos.io:80/nacos"
+		rc.Protocol = "nacos"
+		client, err := NewNacosClient(rc)
+		assert.NotNil(t, client)
+		assert.Nil(t, err)
+	})
 }
 
 func TestGetNacosConfig(t *testing.T) {
