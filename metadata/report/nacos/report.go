@@ -256,6 +256,10 @@ type nacosMetadataReportFactory struct{}
 // nolint
 func (n *nacosMetadataReportFactory) CreateMetadataReport(url *common.URL) report.MetadataReport {
 	url.SetParam(constant.NacosNamespaceID, url.GetParam(constant.MetadataReportNamespaceKey, ""))
+	url.SetParam(constant.TimeoutKey, url.GetParam(constant.TimeoutKey, constant.DefaultRegTimeout))
+	url.SetParam(constant.NacosGroupKey, url.GetParam(constant.MetadataReportGroupKey, constant.ServiceDiscoveryDefaultGroup))
+	url.SetParam(constant.NacosUsername, url.Username)
+	url.SetParam(constant.NacosPassword, url.Password)
 	client, err := nacos.NewNacosConfigClientByUrl(url)
 	if err != nil {
 		logger.Errorf("Could not create nacos metadata report. URL: %s", url.String())

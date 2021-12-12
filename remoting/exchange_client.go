@@ -134,6 +134,9 @@ func (client *ExchangeClient) Request(invocation *protocol.Invocation, url *comm
 		result.Rest = resultTmp.Rest
 		result.Attrs = resultTmp.Attrs
 		result.Err = resultTmp.Err
+	} else {
+		logger.Warnf("[ExchangeClient.Request] The type of result is unexpected, we want *protocol.RPCResult, "+
+			"but we got %T", rsp.response.Result)
 	}
 	return nil
 }

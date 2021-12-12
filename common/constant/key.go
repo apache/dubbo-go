@@ -56,8 +56,12 @@ const (
 	CommaSeparator         = ","
 	SslEnabledKey          = "ssl-enabled"
 	// ParamsTypeKey key used in pass through invoker factory, to define param type
-	ParamsTypeKey   = "parameter-type-names"
-	MetadataTypeKey = "metadata-type"
+	ParamsTypeKey        = "parameter-type-names"
+	MetadataTypeKey      = "metadata-type"
+	MaxCallSendMsgSize   = "max-call-send-msg-size"
+	MaxServerSendMsgSize = "max-server-send-msg-size"
+	MaxCallRecvMsgSize   = "max-call-recv-msg-size"
+	MaxServerRecvMsgSize = "max-server-recv-msg-size"
 )
 
 const (
@@ -69,6 +73,7 @@ const (
 const (
 	AccessLogFilterKey                   = "accesslog"
 	ActiveFilterKey                      = "active"
+	AdaptiveServiceProviderFilterKey     = "padasvc"
 	AuthConsumerFilterKey                = "sign"
 	AuthProviderFilterKey                = "auth"
 	EchoFilterKey                        = "echo"
@@ -213,6 +218,7 @@ const (
 	RouterConfigPrefix         = "dubbo.router"
 	TracingConfigPrefix        = "dubbo.tracing"
 	LoggerConfigPrefix         = "dubbo.logger"
+	CustomConfigPrefix         = "dubbo.custom"
 )
 
 const (
@@ -358,10 +364,19 @@ const (
 )
 
 // Generic Filter
-
 const (
 	GenericSerializationDefault = "true"
 	// disable "protobuf-json" temporarily
 	//GenericSerializationProtobuf = "protobuf-json"
 	GenericSerializationGson = "gson"
+)
+
+// AdaptiveService Filter
+// goland:noinspection ALL
+const (
+	// attribute keys
+	AdaptiveServiceUpdaterKey = "adaptive-service.updater"
+	// attachment keys
+	AdaptiveServiceRemainingKey = "adaptive-service.remaining"
+	AdaptiveServiceInflightKey  = "adaptive-service.inflight"
 )

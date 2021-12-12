@@ -46,6 +46,8 @@ type ConsumerConfig struct {
 	RequestTimeout string `default:"3s" yaml:"request-timeout" json:"request-timeout,omitempty" property:"request-timeout"`
 	ProxyFactory   string `default:"default" yaml:"proxy" json:"proxy,omitempty" property:"proxy"`
 	Check          bool   `yaml:"check" json:"check,omitempty" property:"check"`
+	// adaptive service
+	AdaptiveService bool `default:"false" yaml:"adaptive-service" json:"adaptive-service" property:"adaptive-service"`
 
 	References map[string]*ReferenceConfig `yaml:"references" json:"references,omitempty" property:"references"`
 	TracingKey string                      `yaml:"tracing-key" json:"tracing-key" property:"tracing-key"`

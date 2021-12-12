@@ -29,6 +29,7 @@ type Codec interface {
 }
 
 type DecodeResult struct {
+	// IsRequest indicates whether the current request is a heartbeat request
 	IsRequest bool
 	Result    interface{}
 }

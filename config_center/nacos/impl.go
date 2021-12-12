@@ -64,12 +64,12 @@ type nacosDynamicConfiguration struct {
 
 func newNacosDynamicConfiguration(url *common.URL) (*nacosDynamicConfiguration, error) {
 	url.SetParam(constant.NacosNamespaceID, url.GetParam(constant.ConfigNamespaceKey, ""))
-	url.SetParam(constant.NacosUsername, url.GetParam(constant.ConfigUsernameKey, ""))
+	url.SetParam(constant.NacosUsername, url.Username)
+	url.SetParam(constant.NacosPassword, url.Password)
 	url.SetParam(constant.NacosAccessKey, url.GetParam(constant.ConfigAccessKey, ""))
 	url.SetParam(constant.NacosSecretKey, url.GetParam(constant.ConfigSecretKey, ""))
 	url.SetParam(constant.TimeoutKey, url.GetParam(constant.ConfigTimeoutKey, ""))
 	url.SetParam(constant.NacosGroupKey, url.GetParam(constant.ConfigGroupKey, constant2.DEFAULT_GROUP))
-	url.SetParam(constant.NacosNamespaceID, url.GetParam(constant.ConfigNamespaceKey, ""))
 	c := &nacosDynamicConfiguration{
 		url:  url,
 		done: make(chan struct{}),
