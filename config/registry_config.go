@@ -403,6 +403,6 @@ func (c *RegistryConfig) UpdateProperties(updateRegistryConfig *RegistryConfig) 
 	// if nacos's registry timeout not equal local root config's registry timeout , update.
 	if updateRegistryConfig != nil && updateRegistryConfig.Timeout != c.Timeout {
 		c.Timeout = updateRegistryConfig.Timeout
-		logger.Infof("CenterConfig process update timeout, new value:%s", c.Timeout)
+		logger.Infof("CenterConfig process update timeout, new value:%v", c.Timeout)
 	}
 }

@@ -25,8 +25,6 @@ import (
 import (
 	hessian "github.com/apache/dubbo-go-hessian2"
 	"github.com/knadh/koanf"
-	"github.com/knadh/koanf/parsers/yaml"
-	"github.com/knadh/koanf/providers/rawbytes"
 	perrors "github.com/pkg/errors"
 	"go.uber.org/atomic"
 )
@@ -385,11 +383,9 @@ func publishMapping(sc exporter.MetadataServiceExporter) error {
 // Process receive changing listener's event, dynamic update config
 func (rc *RootConfig) Process(event *config_center.ConfigChangeEvent) {
 	logger.Infof("CenterConfig process event:\n%+v", event)
-	koan := koanf.New(".")
-	if err := koan.Load(rawbytes.Provider([]byte(event.Value.(string))), yaml.Parser()); err != nil {
-		logger.Errorf("CenterConfig process load failed, got error %#v", err)
-		return
-	}
+	config := NewLoaderConf(WithBytes([]byte(event.Value.(string))))
+	koan := GetConfigResolver(config)
+
 	updateRootConfig := &RootConfig{}
 	if err := koan.UnmarshalWithConf(rc.Prefix(),
 		updateRootConfig, koanf.UnmarshalConf{Tag: "yaml"}); err != nil {

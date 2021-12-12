@@ -35,11 +35,6 @@ func TestGoConfigProcess(t *testing.T) {
 	r := &RegistryConfig{Protocol: "zookeeper", Timeout: "10s", Address: "127.0.0.1:2181"}
 	rc.AddRegistry("demoZK", r)
 
-	// test koan.Load error
-	c := &config_center.ConfigChangeEvent{Key: "test", Value: "a"}
-	rc.rootConfig.Process(c)
-	assert.Equal(t, rc.rootConfig.Registries["demoZK"].Timeout, "10s")
-
 	// test koan.UnmarshalWithConf error
 	b := "dubbo:\n  registries:\n    demoZK:\n      protocol: zookeeper\n      timeout: 11s\n      address: 127.0.0.1:2181\n      simplified: abc123"
 	c2 := &config_center.ConfigChangeEvent{Key: "test", Value: b}
@@ -48,7 +43,7 @@ func TestGoConfigProcess(t *testing.T) {
 
 	// test update registry time out
 	bs, _ := yaml.LoadYMLConfig("./testdata/root_config_test.yml")
-	c = &config_center.ConfigChangeEvent{Key: "test", Value: string(bs)}
+	c := &config_center.ConfigChangeEvent{Key: "test", Value: string(bs)}
 	rc.rootConfig.Process(c)
 	assert.Equal(t, rc.rootConfig.Registries["demoZK"].Timeout, "11s")
 
