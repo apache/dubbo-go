@@ -132,6 +132,7 @@ const (
 	CONDITION_ROUTE_PROTOCOL = "condition"
 	TAG_ROUTE_PROTOCOL       = "tag"
 	PROVIDERS_CATEGORY       = "providers"
+	CONSUMERS_CATEGORY       = "consumers"
 	ROUTER_KEY               = "router"
 	EXPORT_KEY               = "export"
 )
