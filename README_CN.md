@@ -10,47 +10,48 @@
 
 [English 🇺🇸](./README.md)
 
-Apache Dubbo Go 语言实现，架起 Java 和 Golang 之间的桥梁，与 gRPC/Spring Cloud 生态互联互通，带领 Java 生态享受云原生时代的技术红利。请访问我们的[官方网站](https://dubbo.apache.org/zh/docs/languages/golang/)查看快速开始和文档。
+Apache Dubbo Go 语言实现，架起 Java 和 Golang 之间的桥梁，与 gRPC/Dubbo 生态互联互通，带领 Java 生态享受云原生时代的技术红利。请访问[Dubbo 官网](https://dubbo.apache.org/zh/docs/languages/golang/)查看快速开始和文档。
 
-## 架构
+## RPC 调用
 
-![dubbo go extend](https://dubbogo.github.io/img/doc/dubbo-go3.0-arch.jpg)
+![](https://dubbogo.github.io/img/dubbogo-3.0-invocation.png)
 
-Dubbo-go已经实现了Dubbo的大部分层级，包括协议层（protocol layer）、注册层（registry layer)）等等。在Dubbo-go中使用了拓展模块（extension module）以实现更灵活的系统架构，开发者可以根据层接口实现一个自定义的层，并在不改动源代码的前提下通过`extension.Set`方法将它应用到Dubbo-go中。
+Dubbo-go 生态覆盖多种网络协议：Triple、Dubbo、JSONRPC、gRPC、HTTP、HTTP2 等。
 
-## 特性
+- Triple 协议是 Dubbo3 生态主推的协议，是基于 gRPC 的扩展协议，底层为HTTP2，可与 gRPC 服务互通。**相当于在 gRPC 可靠的传输基础上，增加了 Dubbo 的服务治理能力。**
+- Dubbo 协议是 Dubbo 生态的传统协议，dubbo-go 支持的 dubbo 协议与dubbo2.x 版本兼容，是Go 语言和旧版本 Dubbo 服务互通的不错选择。
+- 我们支持通过[貔貅](https://github.com/apache/dubbo-go-pixiu)网关暴露 Triple/Dubbo 协议到集群外部，调用者可以直接通过HTTP 协议调用 Dubbo-go 服务。
 
-Dubbo-go中已实现的特性：
+## 服务治理
 
-- **角色**: Consumer, Provider
-- **传输协议**: HTTP, TCP
-- **序列化协议**: JsonRPC V2, Hessian V2, [Json for gRPC](https://github.com/apache/dubbo-go/pull/582), Protocol Buffers
-- **协议**: Dubbo, [Triple](https://github.com/dubbogo/triple), JsonRPC V2, [gRPC](https://github.com/apache/dubbo-go/pull/311), [RESTful](https://github.com/apache/dubbo-go/pull/352)
+![](https://dubbogo.github.io/img/devops.png)
+
+- **注册中心**: 
+
+  支持 Nacos（阿里开源） 、Zookeeper、ETCD、Consul、Polaris-mesh（腾讯开源） 等服务注册中间件，并拥有可扩展能力。我们也会根据用户使用情况，进一步扩展出用户需要的实现。
+
+- **配置中心**
+
+  开发者可以使用Nacos、Apollo（携程开源）、Zookeeper 进行框架/用户的配置的发布和拉取。
+
+- **集群策略**: Failover, [Failfast](https://github.com/apache/dubbo-go/pull/140), [Failsafe/Failback](https://github.com/apache/dubbo-go/pull/136), [Available](https://github.com/apache/dubbo-go/pull/155), [Broadcast](https://github.com/apache/dubbo-go/pull/158), [Forking](https://github.com/apache/dubbo-go/pull/161) 等
+
+- **负载均衡策略**: [柔性服务](https://github.com/apache/dubbo-go/pull/1649), Random, [RoundRobin](https://github.com/apache/dubbo-go/pull/66), [LeastActive](https://github.com/apache/dubbo-go/pull/65), [ConsistentHash](https://github.com/apache/dubbo-go/pull/261) 等
+
+- [**过滤器**](./filter): Echo, Hystrix, Token, AccessLog, TpsLimiter, ExecuteLimit, Generic, Auth/Sign, Metrics, Tracing, Active, Seata, Sentinel 等
+
+- **泛化调用**
+
+- **监控**: [Prometheus](https://github.com/apache/dubbo-go/pull/342)
+
+- **链路追踪**: Jaeger, Zipkin
+
 - **路由器**: [Dubbo3 Router](https://github.com/apache/dubbo-go/pull/1187)
-- **注册中心**: ZooKeeper, [etcd](https://github.com/apache/dubbo-go/pull/148), [Nacos](https://github.com/apache/dubbo-go/pull/151), [Consul](https://github.com/apache/dubbo-go/pull/121), [K8s](https://github.com/apache/dubbo-go/pull/400)
-- **动态配置中心与服务治理配置器**: Zookeeper, [Apollo](https://github.com/apache/dubbo-go/pull/250), [Nacos](https://github.com/apache/dubbo-go/pull/357)
-- **集群策略**: Failover, [Failfast](https://github.com/apache/dubbo-go/pull/140), [Failsafe/Failback](https://github.com/apache/dubbo-go/pull/136), [Available](https://github.com/apache/dubbo-go/pull/155), [Broadcast](https://github.com/apache/dubbo-go/pull/158), [Forking](https://github.com/apache/dubbo-go/pull/161)
-- **负载均衡策略**: Random, [RoundRobin](https://github.com/apache/dubbo-go/pull/66), [LeastActive](https://github.com/apache/dubbo-go/pull/65), [ConsistentHash](https://github.com/apache/dubbo-go/pull/261)
-- [**过滤器**](./filter): Echo, Hystrix, Token, AccessLog, TpsLimiter, ExecuteLimit, Generic, Auth/Sign, Metrics, Tracing, Active, Seata, Sentinel
-- **调用**: [Generic Invoke](https://github.com/apache/dubbo-go/pull/122)
-- **监控**: Opentracing API, [Prometheus](https://github.com/apache/dubbo-go/pull/342)
-- **Tracing**: [For JsonRPC](https://github.com/apache/dubbo-go/pull/335), [For Dubbo](https://github.com/apache/dubbo-go/pull/344), [For gRPC](https://github.com/apache/dubbo-go/pull/397)
-- **元数据中心**: [Nacos(Local)](https://github.com/apache/dubbo-go/pull/522), [ZooKeeper(Local)](https://github.com/apache/dubbo-go/pull/633), [etcd(Local)](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/metadata/report/etcd/report.go), [Consul(Local)](https://github.com/apache/dubbo-go/pull/633), [ZooKeeper(Remoting)](https://github.com/apache/dubbo-go/pull/1161)
-- **工具**: [Dubbo-go-cli](https://github.com/dubbogo/tools)
 
-## 开始
+## 快速开始
 
-### 安装 Dubbo-go v3
-
-```
-go get dubbo.apache.org/dubbo-go/v3
-```
-
-### 下一步
-
+- Dubbo-go 快速开始: [中文 🇨🇳](https://dubbogo.github.io/zh-cn/docs/user/quickstart/3.0/quickstart_triple.html), [English 🇺🇸](https://dubbogo.github.io/en-us/docs/user/quickstart/3.0/quickstart_triple.html)
 - [Dubbo-go 样例](https://github.com/apache/dubbo-go-samples): 该项目提供了一系列的样例，以展示Dubbo-go的每一项特性以及帮助你将Dubbo-go集成到你的系统中。
-- Dubbo-go 快速开始: [中文 🇨🇳](https://dubbogo.github.io/zh-cn/docs/user/quickstart/3.0/quickstart.html), [English 🇺🇸](https://dubbogo.github.io/en-us/docs/user/quick-start.html)
-- [Dubbo-go 基准测试](https://github.com/dubbogo/dubbo-go-benchmark)
 - [Dubbo-go 百科](https://github.com/apache/dubbo-go/wiki)
 
 ## 如何贡献
@@ -160,7 +161,6 @@ go get dubbo.apache.org/dubbo-go/v3
   </tbody>
 </table>
 </div>
-
 [查看更多用户示例](https://github.com/apache/dubbo-go/issues/2)
 
 ## 生态

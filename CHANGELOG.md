@@ -1,6 +1,46 @@
 # Release Notes
 ---
 
+## 3.0.0
+
+### Features
+
+- [Adaptive service support](https://github.com/apache/dubbo-go/pull/1649)
+- [User defined configuration of dubbogo.yml](https://github.com/apache/dubbo-go/pull/1640)
+- [Extend configuration file format](https://github.com/apache/dubbo-go/pull/1626)
+- [Polaris-Mesh reigstry support](https://github.com/apache/dubbo-go/pull/1620)
+- [Triple proto reflection support](https://github.com/apache/dubbo-go/pull/1603)
+- [Triple pb with jaeger tracing support](https://github.com/apache/dubbo-go/pull/1596)
+
+### Bugfixs
+
+- [Validate nacos's user and password configuration](https://github.com/apache/dubbo-go/pull/1645)
+- [Fix bug of service configuration exported field](https://github.com/apache/dubbo-go/pull/1639/files)
+- [Fix bug of attachments' nil or empty string](https://github.com/apache/dubbo-go/pull/1631)
+- [Fix bug of zookeeper cpu idling](https://github.com/apache/dubbo-go/pull/1629)
+- [Fix bug of  register url without group/version key if value is empty, instead of "" value.](https://github.com/apache/dubbo-go/pull/1612)
+- [Fix Hessian encode attachments return error](https://github.com/apache/dubbo-go/pull/1588)
+- [Fix consumer zk registry path bug](https://github.com/apache/dubbo-go/pull/1586)
+- [Fix bug of graceful shutdown filter](https://github.com/apache/dubbo-go/pull/1585)
+- [Validate nacos service-discovery's group and namespace](https://github.com/apache/dubbo-go/pull/1581)
+- [Validate consumer config's 'check' key](https://github.com/apache/dubbo-go/pull/1568)
+- [Set rootConfig to global rootConfig pointer in init function](https://github.com/apache/dubbo-go/pull/1564)
+- [Fix bug of register of app-level-service-discovery not use metadata's configuration](https://github.com/apache/dubbo-go/pull/1565)
+
+### Enhancements
+
+- [Add triple max size configuration](https://github.com/apache/dubbo-go/pull/1654)
+- [Hessian2 supports setting the type of Java method parameters](https://github.com/apache/dubbo-go/pull/1625)
+- [Logger of dubbo-go internal codes are changed to the framework's logger](https://github.com/apache/dubbo-go/pull/1617)
+- [Nacos suppports unregister and unsubscribe](https://github.com/apache/dubbo-go/pull/1616)
+- [Register service mapping using registry config's address](https://github.com/apache/dubbo-go/pull/1611)
+- [Add nacos registry url's 'methods' key](https://github.com/apache/dubbo-go/pull/1608)
+- [Filter with single instance](https://github.com/apache/dubbo-go/pull/1591)
+- [Refactor of listen dir event](https://github.com/apache/dubbo-go/pull/1589)
+- [Load reference before service](https://github.com/apache/dubbo-go/pull/1571)
+- [Change triple's http2 implementation from net/http to grpc](https://github.com/apache/dubbo-go/pull/1566)
+- [Adjuest the startup process of configcenter](https://github.com/apache/dubbo-go/pull/1560)
+
 ## 3.0.0-rc3
 
 ### Feature: 
