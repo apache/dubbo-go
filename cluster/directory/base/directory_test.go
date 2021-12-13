@@ -36,7 +36,7 @@ import (
 var (
 	url, _ = common.NewURL(
 		fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LocalHostValue, constant.DefaultPort))
-	anyURL, _ = common.NewURL(fmt.Sprintf("condition://%s/com.foo.BarService", constant.AnyhostValue))
+	anyURL, _ = common.NewURL(fmt.Sprintf("condition://%s/com.foo.BarService", constant.AnyHostValue))
 )
 
 func TestNewBaseDirectory(t *testing.T) {

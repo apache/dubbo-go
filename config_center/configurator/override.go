@@ -107,9 +107,9 @@ func (c *overrideConfigurator) configureIfMatchInternal(url *common.URL) {
 
 // configureIfMatch translate from java, compatible rules in java
 func (c *overrideConfigurator) configureIfMatch(host string, url *common.URL) {
-	if constant.AnyhostValue == c.configuratorUrl.Ip || host == c.configuratorUrl.Ip {
+	if constant.AnyHostValue == c.configuratorUrl.Ip || host == c.configuratorUrl.Ip {
 		providers := c.configuratorUrl.GetParam(constant.OverrideProvidersKey, "")
-		if len(providers) == 0 || strings.Contains(providers, url.Location) || strings.Contains(providers, constant.AnyhostValue) {
+		if len(providers) == 0 || strings.Contains(providers, url.Location) || strings.Contains(providers, constant.AnyHostValue) {
 			c.configureIfMatchInternal(url)
 		}
 	}
@@ -129,7 +129,7 @@ func (c *overrideConfigurator) configureDeprecated(url *common.URL) {
 			localIP := common.GetLocalIp()
 			c.configureIfMatch(localIP, url)
 		} else {
-			c.configureIfMatch(constant.AnyhostValue, url)
+			c.configureIfMatch(constant.AnyHostValue, url)
 		}
 	}
 }

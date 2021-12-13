@@ -39,12 +39,6 @@ const (
 	MaxFailTimes = 3
 )
 
-var (
-	errNilZkClientConn = perrors.New("zookeeper client{conn} is nil")
-	errNilChildren     = perrors.Errorf("has none children")
-	errNilNode         = perrors.Errorf("node does not exist")
-)
-
 // ValidateZookeeperClient validates client and sets options
 func ValidateZookeeperClient(container ZkClientFacade, zkName string) error {
 	lock := container.ZkClientLock()
