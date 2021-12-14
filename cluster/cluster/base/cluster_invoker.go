@@ -33,33 +33,33 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
-type ClusterInvoker struct {
+type BaseClusterInvoker struct {
 	Directory      directory.Directory
 	AvailableCheck bool
 	Destroyed      *atomic.Bool
 	StickyInvoker  protocol.Invoker
 }
 
-func NewClusterInvoker(directory directory.Directory) ClusterInvoker {
-	return ClusterInvoker{
+func NewBaseClusterInvoker(directory directory.Directory) BaseClusterInvoker {
+	return BaseClusterInvoker{
 		Directory:      directory,
 		AvailableCheck: true,
 		Destroyed:      atomic.NewBool(false),
 	}
 }
 
-func (invoker *ClusterInvoker) GetURL() *common.URL {
+func (invoker *BaseClusterInvoker) GetURL() *common.URL {
 	return invoker.Directory.GetURL()
 }
 
-func (invoker *ClusterInvoker) Destroy() {
+func (invoker *BaseClusterInvoker) Destroy() {
 	// this is must atom operation
 	if invoker.Destroyed.CAS(false, true) {
 		invoker.Directory.Destroy()
 	}
 }
 
-func (invoker *ClusterInvoker) IsAvailable() bool {
+func (invoker *BaseClusterInvoker) IsAvailable() bool {
 	if invoker.StickyInvoker != nil {
 		return invoker.StickyInvoker.IsAvailable()
 	}
@@ -67,7 +67,7 @@ func (invoker *ClusterInvoker) IsAvailable() bool {
 }
 
 // CheckInvokers checks invokers' status if is available or not
-func (invoker *ClusterInvoker) CheckInvokers(invokers []protocol.Invoker, invocation protocol.Invocation) error {
+func (invoker *BaseClusterInvoker) CheckInvokers(invokers []protocol.Invoker, invocation protocol.Invocation) error {
 	if len(invokers) == 0 {
 		ip := common.GetLocalIp()
 		return perrors.Errorf("Failed to invoke the method %v. No provider available for the service %v from "+
@@ -78,7 +78,7 @@ func (invoker *ClusterInvoker) CheckInvokers(invokers []protocol.Invoker, invoca
 }
 
 // CheckWhetherDestroyed checks if cluster invoker was destroyed or not
-func (invoker *ClusterInvoker) CheckWhetherDestroyed() error {
+func (invoker *BaseClusterInvoker) CheckWhetherDestroyed() error {
 	if invoker.Destroyed.Load() {
 		ip := common.GetLocalIp()
 		return perrors.Errorf("Rpc cluster invoker for %v on consumer %v use dubbo version %v is now destroyed! can not invoke any more. ",
@@ -87,7 +87,7 @@ func (invoker *ClusterInvoker) CheckWhetherDestroyed() error {
 	return nil
 }
 
-func (invoker *ClusterInvoker) DoSelect(lb loadbalance.LoadBalance, invocation protocol.Invocation, invokers []protocol.Invoker, invoked []protocol.Invoker) protocol.Invoker {
+func (invoker *BaseClusterInvoker) DoSelect(lb loadbalance.LoadBalance, invocation protocol.Invocation, invokers []protocol.Invoker, invoked []protocol.Invoker) protocol.Invoker {
 	var selectedInvoker protocol.Invoker
 	if len(invokers) <= 0 {
 		return selectedInvoker
@@ -115,7 +115,7 @@ func (invoker *ClusterInvoker) DoSelect(lb loadbalance.LoadBalance, invocation p
 	return selectedInvoker
 }
 
-func (invoker *ClusterInvoker) doSelectInvoker(lb loadbalance.LoadBalance, invocation protocol.Invocation, invokers []protocol.Invoker, invoked []protocol.Invoker) protocol.Invoker {
+func (invoker *BaseClusterInvoker) doSelectInvoker(lb loadbalance.LoadBalance, invocation protocol.Invocation, invokers []protocol.Invoker, invoked []protocol.Invoker) protocol.Invoker {
 	if len(invokers) == 0 {
 		return nil
 	}

@@ -35,7 +35,7 @@ import (
 )
 
 func init() {
-	extension.SetLoadbalance(constant.LoadBalanceKeyP2C, newLoadBalance)
+	extension.SetLoadbalance(constant.LoadBalanceKeyP2C, newP2CLoadBalance)
 }
 
 var (
@@ -43,18 +43,18 @@ var (
 	instance loadbalance.LoadBalance
 )
 
-type loadBalance struct{}
+type p2cLoadBalance struct{}
 
-func newLoadBalance() loadbalance.LoadBalance {
+func newP2CLoadBalance() loadbalance.LoadBalance {
 	if instance == nil {
 		once.Do(func() {
-			instance = &loadBalance{}
+			instance = &p2cLoadBalance{}
 		})
 	}
 	return instance
 }
 
-func (l *loadBalance) Select(invokers []protocol.Invoker, invocation protocol.Invocation) protocol.Invoker {
+func (l *p2cLoadBalance) Select(invokers []protocol.Invoker, invocation protocol.Invocation) protocol.Invoker {
 	if len(invokers) == 0 {
 		return nil
 	}

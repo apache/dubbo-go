@@ -26,20 +26,20 @@ import (
 )
 
 func init() {
-	extension.SetCluster(constant.ClusterKeyBroadcast, NewCluster)
+	extension.SetCluster(constant.ClusterKeyBroadcast, newBroadcastCluster)
 }
 
-type cluster struct{}
+type broadcastCluster struct{}
 
-// NewCluster returns a broadcast cluster instance.
+// newBroadcastCluster returns a broadcastCluster instance.
 //
 // Calling all providers' broadcast one by one. All errors will be reported.
 // It is usually used to notify all providers to update local resource information such as caches or logs.
-func NewCluster() clusterpkg.Cluster {
-	return &cluster{}
+func newBroadcastCluster() clusterpkg.Cluster {
+	return &broadcastCluster{}
 }
 
 // Join returns a baseClusterInvoker instance
-func (cluster *cluster) Join(directory directory.Directory) protocol.Invoker {
-	return clusterpkg.BuildInterceptorChain(newClusterInvoker(directory))
+func (cluster *broadcastCluster) Join(directory directory.Directory) protocol.Invoker {
+	return clusterpkg.BuildInterceptorChain(newBroadcastClusterInvoker(directory))
 }

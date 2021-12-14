@@ -35,7 +35,7 @@ import (
 )
 
 func TestRoundRobinSelect(t *testing.T) {
-	loadBalance := NewLoadBalance()
+	loadBalance := NewRRLoadBalance()
 
 	var invokers []protocol.Invoker
 
@@ -53,7 +53,7 @@ func TestRoundRobinSelect(t *testing.T) {
 }
 
 func TestRoundRobinByWeight(t *testing.T) {
-	loadBalance := NewLoadBalance()
+	loadBalance := NewRRLoadBalance()
 
 	var invokers []protocol.Invoker
 	loop := 10
