@@ -276,10 +276,13 @@ func NewURL(urlString string, opts ...Option) (*URL, error) {
 	s.Password, _ = serviceUrl.User.Password()
 	s.Location = serviceUrl.Host
 	s.Path = serviceUrl.Path
-	if strings.Contains(s.Location, ":") {
-		s.Ip, s.Port, err = net.SplitHostPort(s.Location)
-		if err != nil {
-			return &s, perrors.Errorf("net.SplitHostPort(url.Host{%s}), error{%v}", s.Location, err)
+	for _, location := range strings.Split(s.Location, ",") {
+		if strings.Contains(strings.Trim(location, " "), ":") {
+			s.Ip, s.Port, err = net.SplitHostPort(location)
+			if err != nil {
+				return &s, perrors.Errorf("net.SplitHostPort(url.Host{%s}), error{%v}", s.Location, err)
+			}
+			break
 		}
 	}
 	for _, opt := range opts {
