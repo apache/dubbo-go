@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package impl
 
 import (
@@ -29,12 +30,12 @@ func LoadSerializer(p *DubboPackage) error {
 	// NOTE: default serialID is S_Hessian
 	serialID := p.Header.SerialID
 	if serialID == 0 {
-		serialID = constant.S_Hessian2
+		serialID = constant.SHessian2
 	}
 	serializer, err := GetSerializerById(serialID)
 	if err != nil {
 		panic(err)
 	}
-	p.SetSerializer(serializer.(Serializer))
+	p.SetSerializer(serializer)
 	return nil
 }

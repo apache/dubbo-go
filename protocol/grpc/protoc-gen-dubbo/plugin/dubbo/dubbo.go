@@ -96,7 +96,6 @@ func (g *dubboGrpc) Generate(file *generator.FileDescriptor) {
 // GenerateImports generates the import declaration for this file.
 func (g *dubboGrpc) GenerateImports(file *generator.FileDescriptor) {
 	g.P("import (")
-	g.P(`dgrpc "dubbo.apache.org/dubbo-go/v3/protocol/grpc"`)
 	g.P(`"dubbo.apache.org/dubbo-go/v3/protocol/invocation"`)
 	g.P(`"dubbo.apache.org/dubbo-go/v3/protocol"`)
 	g.P(` ) `)
@@ -188,6 +187,12 @@ func (g *dubboGrpc) generateService(file *generator.FileDescriptor, service *pb.
 	g.P("}")
 	g.P()
 
+	// return reference
+	g.P("func (c *", serverType, ") ", " Reference() string ", "{")
+	g.P(`return "`, unexport(servName), `Impl"`)
+	g.P("}")
+	g.P()
+
 	// add handler
 	var handlerNames []string
 	for _, method := range service.Method {
@@ -254,9 +259,6 @@ func (g *dubboGrpc) generateClientSignature(servName string, method *pb.MethodDe
 	return fmt.Sprintf("%s func(ctx %s.Context%s, %s) error", methName, contextPkg, reqArg, respName)
 }
 
-//func (g *dubboGrpc) generateClientMethod(servName, fullServName, serviceDescVar string, method *pb.MethodDescriptorProto, descExpr string) {
-//}
-
 func (g *dubboGrpc) generateServerMethod(servName, fullServName string, method *pb.MethodDescriptorProto) string {
 	methName := generator.CamelCase(method.GetName())
 	hname := fmt.Sprintf("_DUBBO_%s_%s_Handler", servName, methName)
@@ -266,8 +268,16 @@ func (g *dubboGrpc) generateServerMethod(servName, fullServName string, method *
 		g.P("func ", hname, "(srv interface{}, ctx ", contextPkg, ".Context, dec func(interface{}) error, interceptor ", grpcPkg, ".UnaryServerInterceptor) (interface{}, error) {")
 		g.P("in := new(", inType, ")")
 		g.P("if err := dec(in); err != nil { return nil, err }")
-
-		g.P("base := srv.(dgrpc.DubboGrpcService)")
+		g.P(`// DubboGrpcService is gRPC service
+type DubboGrpcService interface {
+	// SetProxyImpl sets proxy.
+	SetProxyImpl(impl protocol.Invoker)
+	// GetProxyImpl gets proxy.
+	GetProxyImpl() protocol.Invoker
+	// ServiceDesc gets an RPC service's specification.
+	ServiceDesc() *grpc.ServiceDesc
+}`)
+		g.P("base := srv.(DubboGrpcService)")
 		g.P("args := []interface{}{}")
 		g.P("args = append(args, in)")
 		g.P(`invo := invocation.NewRPCInvocation("`, methName, `", args, nil)`)
@@ -294,7 +304,16 @@ func (g *dubboGrpc) generateServerMethod(servName, fullServName string, method *
 	}
 	streamType := unexport(servName) + methName + "Server"
 	g.P("func ", hname, "(srv interface{}, stream ", grpcPkg, ".ServerStream) error {")
-	g.P("_, ok := srv.(dgrpc.DubboGrpcService)")
+	g.P(`// DubboGrpcService is gRPC service
+type DubboGrpcService interface {
+	// SetProxyImpl sets proxy.
+	SetProxyImpl(impl protocol.Invoker)
+	// GetProxyImpl gets proxy.
+	GetProxyImpl() protocol.Invoker
+	// ServiceDesc gets an RPC service's specification.
+	ServiceDesc() *grpc.ServiceDesc
+}`)
+	g.P("_, ok := srv.(DubboGrpcService)")
 	g.P(`invo := invocation.NewRPCInvocation("`, methName, `", nil, nil)`)
 	g.P("if !ok {")
 	g.P("fmt.Println(invo)")

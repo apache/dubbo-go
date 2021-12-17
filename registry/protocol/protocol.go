@@ -25,6 +25,7 @@ import (
 
 import (
 	gxset "github.com/dubbogo/gost/container/set"
+
 	perrors "github.com/pkg/errors"
 )
 
@@ -135,8 +136,8 @@ func (proto *registryProtocol) GetRegistries() []registry.Registry {
 func (proto *registryProtocol) Refer(url *common.URL) protocol.Invoker {
 	registryUrl := url
 	serviceUrl := registryUrl.SubURL
-	if registryUrl.Protocol == constant.REGISTRY_PROTOCOL {
-		registryUrl.Protocol = registryUrl.GetParam(constant.REGISTRY_KEY, "")
+	if registryUrl.Protocol == constant.RegistryProtocol {
+		registryUrl.Protocol = registryUrl.GetParam(constant.RegistryKey, "")
 	}
 
 	var reg registry.Registry
@@ -162,7 +163,7 @@ func (proto *registryProtocol) Refer(url *common.URL) protocol.Invoker {
 	}
 
 	// new cluster invoker
-	cluster := extension.GetCluster(serviceUrl.GetParam(constant.CLUSTER_KEY, constant.DEFAULT_CLUSTER))
+	cluster := extension.GetCluster(serviceUrl.GetParam(constant.ClusterKey, constant.DefaultCluster))
 	invoker := cluster.Join(directory)
 	proto.invokers = append(proto.invokers, invoker)
 	return invoker
@@ -186,39 +187,42 @@ func (proto *registryProtocol) Export(invoker protocol.Invoker) protocol.Exporte
 	serviceConfigurationListener.OverrideUrl(providerUrl)
 
 	var reg registry.Registry
-	if regI, loaded := proto.registries.Load(registryUrl.Key()); !loaded {
-		reg = getRegistry(registryUrl)
-		proto.registries.Store(registryUrl.Key(), reg)
-		logger.Infof("Export proto:%p registries address:%p", proto, proto.registries)
-	} else {
-		reg = regI.(registry.Registry)
-	}
-
-	registeredProviderUrl := getUrlToRegistry(providerUrl, registryUrl)
-	err := reg.Register(registeredProviderUrl)
-	if err != nil {
-		logger.Errorf("provider service %v register registry %v error, error message is %s",
-			providerUrl.Key(), registryUrl.Key(), err.Error())
-		return nil
+	if registryUrl.Protocol != "" {
+		if regI, loaded := proto.registries.Load(registryUrl.Key()); !loaded {
+			reg = getRegistry(registryUrl)
+			proto.registries.Store(registryUrl.Key(), reg)
+			logger.Debugf("Export proto:%p registries address:%p", proto, proto.registries)
+		} else {
+			reg = regI.(registry.Registry)
+		}
+		registeredProviderUrl := getUrlToRegistry(providerUrl, registryUrl)
+		err := reg.Register(registeredProviderUrl)
+		if err != nil {
+			logger.Errorf("provider service %v register registry %v error, error message is %s",
+				providerUrl.Key(), registryUrl.Key(), err.Error())
+			return nil
+		}
 	}
 
 	key := getCacheKey(invoker)
-	logger.Infof("The cached exporter keys is %v!", key)
+	logger.Debugf("The cached exporter keys is %v!", key)
 	cachedExporter, loaded := proto.bounds.Load(key)
 	if loaded {
-		logger.Infof("The exporter has been cached, and will return cached exporter!")
+		logger.Debugf("The exporter has been cached, and will return cached exporter!")
 	} else {
 		wrappedInvoker := newWrappedInvoker(invoker, providerUrl)
 		cachedExporter = extension.GetProtocol(protocolwrapper.FILTER).Export(wrappedInvoker)
 		proto.bounds.Store(key, cachedExporter)
-		logger.Infof("The exporter has not been cached, and will return a new exporter!")
+		logger.Debugf("The exporter has not been cached, and will return a new exporter!")
 	}
 
-	go func() {
-		if err = reg.Subscribe(overriderUrl, overrideSubscribeListener); err != nil {
-			logger.Warnf("reg.subscribe(overriderUrl:%v) = error:%v", overriderUrl, err)
-		}
-	}()
+	if registryUrl.Protocol != "" {
+		go func() {
+			if err := reg.Subscribe(overriderUrl, overrideSubscribeListener); err != nil {
+				logger.Warnf("reg.subscribe(overriderUrl:%v) = error:%v", overriderUrl, err)
+			}
+		}()
+	}
 	return cachedExporter.(protocol.Exporter)
 }
 
@@ -241,7 +245,7 @@ func registerServiceMap(invoker protocol.Invoker) error {
 	providerUrl := getProviderUrl(invoker)
 	// the bean.name param of providerUrl is the ServiceConfig id property
 	// such as dubbo://:20000/org.apache.dubbo.UserProvider?bean.name=UserProvider&cluster=failfast...
-	id := providerUrl.GetParam(constant.BEAN_NAME_KEY, "")
+	id := providerUrl.GetParam(constant.BeanNameKey, "")
 
 	serviceConfig := config.GetProviderConfig().Services[id]
 	if serviceConfig == nil {
@@ -254,8 +258,9 @@ func registerServiceMap(invoker protocol.Invoker) error {
 		return perrors.New(s)
 	}
 
-	_, err := common.ServiceMap.Register(serviceConfig.InterfaceName,
-		serviceConfig.Protocol, serviceConfig.Group,
+	_, err := common.ServiceMap.Register(serviceConfig.Interface,
+		// FIXME
+		serviceConfig.ProtocolIDs[0], serviceConfig.Group,
 		serviceConfig.Version, rpcService)
 	if err != nil {
 		s := "reExport can not re register ServiceMap. Error message is " + err.Error()
@@ -324,51 +329,51 @@ func (nl *overrideSubscribeListener) doOverrideIfNecessary() {
 
 func isMatched(providerUrl *common.URL, consumerUrl *common.URL) bool {
 	// Compatible with the 2.6.x
-	if len(providerUrl.GetParam(constant.CATEGORY_KEY, "")) == 0 &&
-		providerUrl.Protocol == constant.OVERRIDE_PROTOCOL {
-		providerUrl.AddParam(constant.CATEGORY_KEY, constant.CONFIGURATORS_CATEGORY)
+	if len(providerUrl.GetParam(constant.CategoryKey, "")) == 0 &&
+		providerUrl.Protocol == constant.OverrideProtocol {
+		providerUrl.AddParam(constant.CategoryKey, constant.ConfiguratorsCategory)
 	}
-	consumerInterface := consumerUrl.GetParam(constant.INTERFACE_KEY, consumerUrl.Path)
-	providerInterface := providerUrl.GetParam(constant.INTERFACE_KEY, providerUrl.Path)
+	consumerInterface := consumerUrl.GetParam(constant.InterfaceKey, consumerUrl.Path)
+	providerInterface := providerUrl.GetParam(constant.InterfaceKey, providerUrl.Path)
 
-	if !(constant.ANY_VALUE == consumerInterface ||
-		constant.ANY_VALUE == providerInterface ||
+	if !(constant.AnyValue == consumerInterface ||
+		constant.AnyValue == providerInterface ||
 		providerInterface == consumerInterface) {
 		return false
 	}
 
-	if !isMatchCategory(providerUrl.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY),
-		consumerUrl.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY)) {
+	if !isMatchCategory(providerUrl.GetParam(constant.CategoryKey, constant.DefaultCategory),
+		consumerUrl.GetParam(constant.CategoryKey, constant.DefaultCategory)) {
 		return false
 	}
 
-	if !providerUrl.GetParamBool(constant.ENABLED_KEY, true) &&
-		consumerUrl.GetParam(constant.ENABLED_KEY, "") != constant.ANY_VALUE {
+	if !providerUrl.GetParamBool(constant.EnabledKey, true) &&
+		consumerUrl.GetParam(constant.EnabledKey, "") != constant.AnyValue {
 		return false
 	}
-	consumerGroup := consumerUrl.GetParam(constant.GROUP_KEY, "")
-	consumerVersion := consumerUrl.GetParam(constant.VERSION_KEY, "")
-	consumerClassifier := consumerUrl.GetParam(constant.CLASSIFIER_KEY, "")
+	consumerGroup := consumerUrl.GetParam(constant.GroupKey, "")
+	consumerVersion := consumerUrl.GetParam(constant.VersionKey, "")
+	consumerClassifier := consumerUrl.GetParam(constant.ClassifierKey, "")
 
-	providerGroup := providerUrl.GetParam(constant.GROUP_KEY, "")
-	providerVersion := providerUrl.GetParam(constant.VERSION_KEY, "")
-	providerClassifier := providerUrl.GetParam(constant.CLASSIFIER_KEY, "")
+	providerGroup := providerUrl.GetParam(constant.GroupKey, "")
+	providerVersion := providerUrl.GetParam(constant.VersionKey, "")
+	providerClassifier := providerUrl.GetParam(constant.ClassifierKey, "")
 	// todo: public static boolean isContains(String values, String value) {
-	//        return isNotEmpty(values) && isContains(COMMA_SPLIT_PATTERN.split(values), value);
+	//        return isNotEmpty(values) && isContains(CommaSplitPattern.split(values), value);
 	//    }
-	return (consumerGroup == constant.ANY_VALUE || consumerGroup == providerGroup ||
-		strings.Contains(consumerGroup, providerGroup)) && (consumerVersion == constant.ANY_VALUE ||
+	return (consumerGroup == constant.AnyValue || consumerGroup == providerGroup ||
+		strings.Contains(consumerGroup, providerGroup)) && (consumerVersion == constant.AnyValue ||
 		consumerVersion == providerVersion) && (len(consumerClassifier) == 0 ||
-		consumerClassifier == constant.ANY_VALUE || consumerClassifier == providerClassifier)
+		consumerClassifier == constant.AnyValue || consumerClassifier == providerClassifier)
 }
 
 func isMatchCategory(category string, categories string) bool {
 	if len(categories) == 0 {
-		return category == constant.DEFAULT_CATEGORY
-	} else if strings.Contains(categories, constant.ANY_VALUE) {
+		return category == constant.DefaultCategory
+	} else if strings.Contains(categories, constant.AnyValue) {
 		return true
-	} else if strings.Contains(categories, constant.REMOVE_VALUE_PREFIX) {
-		return !strings.Contains(categories, constant.REMOVE_VALUE_PREFIX+category)
+	} else if strings.Contains(categories, constant.RemoveValuePrefix) {
+		return !strings.Contains(categories, constant.RemoveValuePrefix+category)
 	} else {
 		return strings.Contains(categories, category)
 	}
@@ -376,21 +381,19 @@ func isMatchCategory(category string, categories string) bool {
 
 func getSubscribedOverrideUrl(providerUrl *common.URL) *common.URL {
 	newUrl := providerUrl.Clone()
-	newUrl.Protocol = constant.PROVIDER_PROTOCOL
-	newUrl.SetParam(constant.CATEGORY_KEY, constant.CONFIGURATORS_CATEGORY)
-	newUrl.SetParam(constant.CHECK_KEY, "false")
+	newUrl.Protocol = constant.ProviderProtocol
+	newUrl.SetParam(constant.CategoryKey, constant.ConfiguratorsCategory)
+	newUrl.SetParam(constant.CheckKey, "false")
 	return newUrl
 }
 
 // Destroy registry protocol
 func (proto *registryProtocol) Destroy() {
-	for _, ivk := range proto.invokers {
-		ivk.Destroy()
-	}
+	// invoker.Destroy() should be performed in config.destroyConsumerProtocols().
 	proto.invokers = []protocol.Invoker{}
 	proto.bounds.Range(func(key, value interface{}) bool {
-		exporter := value.(protocol.Exporter)
-		exporter.Unexport()
+		// protocol holds the exporters actually, instead, registry holds them in order to avoid export repeatedly, so
+		// the work for unexport should be finished in protocol.Unexport(), see also config.destroyProviderProtocols().
 		proto.bounds.Delete(key)
 		return true
 	})
@@ -408,8 +411,8 @@ func getRegistryUrl(invoker protocol.Invoker) *common.URL {
 	// here add * for return a new url
 	url := invoker.GetURL()
 	// if the protocol == registry, set protocol the registry value in url.params
-	if url.Protocol == constant.REGISTRY_PROTOCOL {
-		url.Protocol = url.GetParam(constant.REGISTRY_KEY, "")
+	if url.Protocol == constant.RegistryProtocol {
+		url.Protocol = url.GetParam(constant.RegistryKey, "")
 	}
 	return url
 }
@@ -458,7 +461,7 @@ func newProviderConfigurationListener(overrideListeners *sync.Map) *providerConf
 	listener := &providerConfigurationListener{}
 	listener.overrideListeners = overrideListeners
 	listener.InitWith(
-		config.GetProviderConfig().ApplicationConfig.Name+constant.CONFIGURATORS_SUFFIX,
+		config.GetRootConfig().Application.Name+constant.ConfiguratorSuffix,
 		listener,
 		extension.GetDefaultConfiguratorFunc(),
 	)
@@ -483,7 +486,7 @@ type serviceConfigurationListener struct {
 func newServiceConfigurationListener(overrideListener *overrideSubscribeListener, providerUrl *common.URL) *serviceConfigurationListener {
 	listener := &serviceConfigurationListener{overrideListener: overrideListener, providerUrl: providerUrl}
 	listener.InitWith(
-		providerUrl.EncodedServiceKey()+constant.CONFIGURATORS_SUFFIX,
+		providerUrl.EncodedServiceKey()+constant.ConfiguratorSuffix,
 		listener,
 		extension.GetDefaultConfiguratorFunc(),
 	)

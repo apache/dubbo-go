@@ -66,7 +66,7 @@ func (factory *DefaultProxyFactory) GetProxy(invoker protocol.Invoker, url *comm
 func (factory *DefaultProxyFactory) GetAsyncProxy(invoker protocol.Invoker, callBack interface{}, url *common.URL) *proxy.Proxy {
 	// create proxy
 	attachments := map[string]string{}
-	attachments[constant.ASYNC_KEY] = url.GetParam(constant.ASYNC_KEY, "false")
+	attachments[constant.AsyncKey] = url.GetParam(constant.AsyncKey, "false")
 	return proxy.NewProxy(invoker, callBack, attachments)
 }
 
@@ -136,10 +136,11 @@ func (pi *ProxyInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 
 	// prepare replyv
 	var replyv reflect.Value
-	if method.ReplyType() == nil && len(method.ArgsType()) > 0 {
-		replyv = reflect.New(method.ArgsType()[len(method.ArgsType())-1].Elem())
-		in = append(in, replyv)
-	}
+	//if method.ReplyType() == nil && len(method.ArgsType()) > 0 {
+	//
+	//	replyv = reflect.New(method.ArgsType()[len(method.ArgsType())-1].Elem())
+	//	in = append(in, replyv)
+	//}
 
 	returnValues := method.Method().Func.Call(in)
 

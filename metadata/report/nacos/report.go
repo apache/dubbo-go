@@ -18,17 +18,23 @@
 package nacos
 
 import (
+	"encoding/json"
 	"net/url"
+	"strings"
 )
 
 import (
-	"github.com/nacos-group/nacos-sdk-go/clients/config_client"
+	gxset "github.com/dubbogo/gost/container/set"
+	nacosClient "github.com/dubbogo/gost/database/kv/nacos"
+
 	"github.com/nacos-group/nacos-sdk-go/vo"
+
 	perrors "github.com/pkg/errors"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/metadata/identifier"
@@ -47,19 +53,39 @@ func init() {
 // nacosMetadataReport is the implementation
 // of MetadataReport based on nacos.
 type nacosMetadataReport struct {
-	client config_client.IConfigClient
+	client *nacosClient.NacosConfigClient
 }
 
 // GetAppMetadata get metadata info from nacos
 func (n *nacosMetadataReport) GetAppMetadata(metadataIdentifier *identifier.SubscriberMetadataIdentifier) (*common.MetadataInfo, error) {
-	// TODO will implement
-	panic("implement me")
+	data, err := n.getConfig(vo.ConfigParam{
+		DataId: metadataIdentifier.GetIdentifierKey(),
+		Group:  metadataIdentifier.Group,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var metadataInfo common.MetadataInfo
+	err = json.Unmarshal([]byte(data), &metadataInfo)
+	if err != nil {
+		return nil, err
+	}
+	return &metadataInfo, nil
 }
 
 // PublishAppMetadata publish metadata info to nacos
 func (n *nacosMetadataReport) PublishAppMetadata(metadataIdentifier *identifier.SubscriberMetadataIdentifier, info *common.MetadataInfo) error {
-	// TODO will implement
-	panic("implement me")
+	data, err := json.Marshal(info)
+	if err != nil {
+		return err
+	}
+
+	return n.storeMetadata(vo.ConfigParam{
+		DataId:  metadataIdentifier.GetIdentifierKey(),
+		Group:   metadataIdentifier.Group,
+		Content: string(data),
+	})
 }
 
 // StoreProviderMetadata stores the metadata.
@@ -131,7 +157,7 @@ func (n *nacosMetadataReport) GetServiceDefinition(metadataIdentifier *identifie
 // storeMetadata will publish the metadata to Nacos
 // if failed or error is not nil, error will be returned
 func (n *nacosMetadataReport) storeMetadata(param vo.ConfigParam) error {
-	res, err := n.client.PublishConfig(param)
+	res, err := n.client.Client().PublishConfig(param)
 	if err != nil {
 		return perrors.WithMessage(err, "Could not publish the metadata")
 	}
@@ -143,7 +169,7 @@ func (n *nacosMetadataReport) storeMetadata(param vo.ConfigParam) error {
 
 // deleteMetadata will delete the metadata
 func (n *nacosMetadataReport) deleteMetadata(param vo.ConfigParam) error {
-	res, err := n.client.DeleteConfig(param)
+	res, err := n.client.Client().DeleteConfig(param)
 	if err != nil {
 		return perrors.WithMessage(err, "Could not delete the metadata")
 	}
@@ -175,7 +201,7 @@ func (n *nacosMetadataReport) getConfigAsArray(param vo.ConfigParam) ([]string, 
 
 // getConfig will read the config
 func (n *nacosMetadataReport) getConfig(param vo.ConfigParam) (string, error) {
-	cfg, err := n.client.GetConfig(param)
+	cfg, err := n.client.Client().GetConfig(param)
 	if err != nil {
 		logger.Errorf("Finding the configuration failed: %v", param)
 		return "", err
@@ -183,11 +209,58 @@ func (n *nacosMetadataReport) getConfig(param vo.ConfigParam) (string, error) {
 	return cfg, nil
 }
 
+// RegisterServiceAppMapping map the specified Dubbo service interface to current Dubbo app name
+func (n *nacosMetadataReport) RegisterServiceAppMapping(key string, group string, value string) error {
+	oldVal, err := n.getConfig(vo.ConfigParam{
+		DataId: key,
+		Group:  group,
+	})
+	if err != nil {
+		return err
+	}
+	if strings.Contains(oldVal, value) {
+		return nil
+	}
+	if oldVal != "" {
+		value = oldVal + constant.CommaSeparator + value
+	}
+	return n.storeMetadata(vo.ConfigParam{
+		DataId:  key,
+		Group:   group,
+		Content: value,
+	})
+}
+
+// GetServiceAppMapping get the app names from the specified Dubbo service interface
+func (n *nacosMetadataReport) GetServiceAppMapping(key string, group string) (*gxset.HashSet, error) {
+	v, err := n.getConfig(vo.ConfigParam{
+		DataId: key,
+		Group:  group,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if v == "" {
+		return nil, perrors.New("There is no service app mapping data.")
+	}
+	appNames := strings.Split(v, constant.CommaSeparator)
+	set := gxset.NewSet()
+	for _, e := range appNames {
+		set.Add(e)
+	}
+	return set, nil
+}
+
 type nacosMetadataReportFactory struct{}
 
 // nolint
 func (n *nacosMetadataReportFactory) CreateMetadataReport(url *common.URL) report.MetadataReport {
-	client, err := nacos.NewNacosConfigClient(url)
+	url.SetParam(constant.NacosNamespaceID, url.GetParam(constant.MetadataReportNamespaceKey, ""))
+	url.SetParam(constant.TimeoutKey, url.GetParam(constant.TimeoutKey, constant.DefaultRegTimeout))
+	url.SetParam(constant.NacosGroupKey, url.GetParam(constant.MetadataReportGroupKey, constant.ServiceDiscoveryDefaultGroup))
+	url.SetParam(constant.NacosUsername, url.Username)
+	url.SetParam(constant.NacosPassword, url.Password)
+	client, err := nacos.NewNacosConfigClientByUrl(url)
 	if err != nil {
 		logger.Errorf("Could not create nacos metadata report. URL: %s", url.String())
 		return nil

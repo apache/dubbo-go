@@ -26,70 +26,14 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/config"
-	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/config_center"
+	_ "dubbo.apache.org/dubbo-go/v3/config_center/apollo"
 )
 
-func TestStartConfigCenter(t *testing.T) {
-	extension.SetConfigCenterFactory("mock", func() config_center.DynamicConfigurationFactory {
-		return &config_center.MockDynamicConfigurationFactory{}
-	})
-	baseConfig := &BaseConfig{ConfigCenterConfig: &ConfigCenterConfig{
-		Protocol:   "mock",
-		Address:    "172.0.0.1",
-		Group:      "dubbo",
-		ConfigFile: "mockDubbo.properties",
-	}}
+func TestApolloConfigCenterConfig(t *testing.T) {
 
-	c := &configCenter{}
-	err := c.startConfigCenter(*baseConfig)
-	assert.NoError(t, err)
-	b, v := config.GetEnvInstance().Configuration().Back().Value.(*config.InmemoryConfiguration).GetProperty("dubbo.application.organization")
-	assert.True(t, b)
-	assert.Equal(t, "ikurento.com", v)
-}
+	err := Load(WithPath("./testdata/config/center/apollo.yaml"))
+	assert.Nil(t, err)
 
-func TestStartConfigCenterWithRemoteRef(t *testing.T) {
-	extension.SetConfigCenterFactory("mock", func() config_center.DynamicConfigurationFactory {
-		return &config_center.MockDynamicConfigurationFactory{}
-	})
-	m := make(map[string]*RemoteConfig)
-	m["mock"] = &RemoteConfig{Protocol: "mock", Address: "172.0.0.1"}
-	baseConfig := &BaseConfig{
-		Remotes: m,
-		ConfigCenterConfig: &ConfigCenterConfig{
-			Group:      "dubbo",
-			RemoteRef:  "mock",
-			ConfigFile: "mockDubbo.properties",
-		},
-	}
-
-	c := &configCenter{}
-	err := c.startConfigCenter(*baseConfig)
-	assert.NoError(t, err)
-	b, v := config.GetEnvInstance().Configuration().Back().Value.(*config.InmemoryConfiguration).GetProperty("dubbo.application.organization")
-	assert.True(t, b)
-	assert.Equal(t, "ikurento.com", v)
-}
-
-func TestStartConfigCenterWithRemoteRefError(t *testing.T) {
-	extension.SetConfigCenterFactory("mock", func() config_center.DynamicConfigurationFactory {
-		return &config_center.MockDynamicConfigurationFactory{}
-	})
-	m := make(map[string]*RemoteConfig)
-	m["mock"] = &RemoteConfig{Address: "172.0.0.1"}
-	baseConfig := &BaseConfig{
-		Remotes: m,
-		ConfigCenterConfig: &ConfigCenterConfig{
-			Protocol:   "mock",
-			Group:      "dubbo",
-			RemoteRef:  "mock",
-			ConfigFile: "mockDubbo.properties",
-		},
-	}
-
-	c := &configCenter{}
-	err := c.startConfigCenter(*baseConfig)
-	assert.Error(t, err)
+	registries := rootConfig.Registries
+	assert.NotNil(t, registries)
 }

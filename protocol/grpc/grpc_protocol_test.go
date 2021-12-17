@@ -30,51 +30,52 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
-	"dubbo.apache.org/dubbo-go/v3/protocol/grpc/internal"
+	"dubbo.apache.org/dubbo-go/v3/protocol/grpc/internal/helloworld"
 )
 
 func doInitProvider() {
-	providerConfig := config.ProviderConfig{
-		BaseConfig: config.BaseConfig{
-			ApplicationConfig: &config.ApplicationConfig{
-				Organization: "dubbo_org",
-				Name:         "BDTService",
-				Module:       "module",
-				Version:      "0.0.1",
-				Owner:        "dubbo",
-				Environment:  "test",
-			},
+	rootConfig := config.RootConfig{
+		Application: &config.ApplicationConfig{
+			Organization: "dubbo_org",
+			Name:         "BDTService",
+			Module:       "module",
+			Version:      "0.0.1",
+			Owner:        "dubbo",
+			Environment:  "test",
 		},
-		Services: map[string]*config.ServiceConfig{
-			"GrpcGreeterImpl": {
-				InterfaceName: "io.grpc.examples.helloworld.GreeterGrpc$IGreeter",
-				Protocol:      "grpc",
-				Registry:      "shanghai_reg1,shanghai_reg2,hangzhou_reg1,hangzhou_reg2,hangzhou_service_discovery_reg",
-				Cluster:       "failover",
-				Loadbalance:   "random",
-				Retries:       "3",
-				Methods: []*config.MethodConfig{
-					{
-						Name:        "SayHello",
-						Retries:     "2",
-						LoadBalance: "random",
-						Weight:      200,
+		Provider: &config.ProviderConfig{
+			Services: map[string]*config.ServiceConfig{
+				"GrpcGreeterImpl": {
+					Interface:   "io.grpc.examples.helloworld.GreeterGrpc$IGreeter",
+					ProtocolIDs: []string{"grpc"},
+					RegistryIDs: []string{"shanghai_reg1,shanghai_reg2,hangzhou_reg1,hangzhou_reg2,hangzhou_service_discovery_reg"},
+					Cluster:     "failover",
+					Loadbalance: "random",
+					Retries:     "3",
+					Methods: []*config.MethodConfig{
+						{
+							Name:        "SayHello",
+							Retries:     "2",
+							LoadBalance: "random",
+							Weight:      200,
+						},
 					},
 				},
 			},
 		},
 	}
-	config.SetProviderConfig(providerConfig)
+	config.SetRootConfig(rootConfig)
 }
 
 func TestGrpcProtocolExport(t *testing.T) {
 	// Export
-	addService()
+	config.SetProviderService(helloworld.NewService())
 	doInitProvider()
 
-	proto := GetProtocol()
-	url, err := common.NewURL(mockGrpcCommonUrl)
+	url, err := common.NewURL(helloworldURL)
 	assert.NoError(t, err)
+
+	proto := GetProtocol()
 	exporter := proto.Export(protocol.NewBaseInvoker(url))
 	time.Sleep(time.Second)
 
@@ -98,13 +99,15 @@ func TestGrpcProtocolExport(t *testing.T) {
 }
 
 func TestGrpcProtocolRefer(t *testing.T) {
-	go internal.InitGrpcServer()
-	defer internal.ShutdownGrpcServer()
-	time.Sleep(time.Second)
+	server, err := helloworld.NewServer("127.0.0.1:30000")
+	assert.NoError(t, err)
+	go server.Start()
+	defer server.Stop()
+
+	url, err := common.NewURL(helloworldURL)
+	assert.NoError(t, err)
 
 	proto := GetProtocol()
-	url, err := common.NewURL(mockGrpcCommonUrl)
-	assert.NoError(t, err)
 	invoker := proto.Refer(url)
 
 	// make sure url

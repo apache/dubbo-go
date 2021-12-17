@@ -19,10 +19,12 @@ package protocol
 
 import (
 	"context"
+	"fmt"
 )
 
 import (
 	perrors "github.com/pkg/errors"
+
 	uatomic "go.uber.org/atomic"
 )
 
@@ -96,4 +98,12 @@ func (bi *BaseInvoker) Destroy() {
 	logger.Infof("Destroy invoker: %s", bi.GetURL())
 	bi.destroyed.Store(true)
 	bi.available.Store(false)
+}
+
+func (bi *BaseInvoker) String() string {
+	if bi.url != nil {
+		return fmt.Sprintf("invoker{protocol: %s, host: %s:%s, path: %s}",
+			bi.url.Protocol, bi.url.Ip, bi.url.Port, bi.url.Path)
+	}
+	return fmt.Sprintf("%#v", bi)
 }

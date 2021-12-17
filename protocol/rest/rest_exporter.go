@@ -42,7 +42,7 @@ func NewRestExporter(key string, invoker protocol.Invoker, exporterMap *sync.Map
 
 // Unexport unexport the RestExporter
 func (re *RestExporter) Unexport() {
-	interfaceName := re.GetInvoker().GetURL().GetParam(constant.INTERFACE_KEY, "")
+	interfaceName := re.GetInvoker().GetURL().GetParam(constant.InterfaceKey, "")
 	re.BaseExporter.Unexport()
 	err := common.ServiceMap.UnRegister(interfaceName, REST, re.GetInvoker().GetURL().ServiceKey())
 	if err != nil {

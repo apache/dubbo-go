@@ -30,7 +30,7 @@ import (
 )
 
 func init() {
-	extension.SetConfigCenterFactory(constant.FILE_KEY, func() config_center.DynamicConfigurationFactory {
+	extension.SetConfigCenterFactory(constant.FileKey, func() config_center.DynamicConfigurationFactory {
 		return &fileDynamicConfigurationFactory{}
 	})
 }

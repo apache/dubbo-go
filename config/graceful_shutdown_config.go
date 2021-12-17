@@ -35,7 +35,7 @@ const (
 type ShutdownConfig struct {
 	/*
 	 * Total timeout. Even though we don't release all resources,
-	 * the application will shutdown if the costing time is over this configuration. The unit is ms.
+	 * the applicationConfig will shutdown if the costing time is over this configuration. The unit is ms.
 	 * default value is 60 * 1000 ms = 1 minutes
 	 * In general, it should be bigger than 3 * StepTimeout.
 	 */
@@ -48,17 +48,16 @@ type ShutdownConfig struct {
 	 * maybe (10 + 2*3) * 1000ms is a good choice.
 	 */
 	StepTimeout string `default:"10s" yaml:"step_timeout" json:"step.timeout,omitempty" property:"step.timeout"`
-	// when we try to shutdown the application, we will reject the new requests. In most cases, you don't need to configure this.
+	// when we try to shutdown the applicationConfig, we will reject the new requests. In most cases, you don't need to configure this.
 	RejectRequestHandler string `yaml:"reject_handler" json:"reject_handler,omitempty" property:"reject_handler"`
 	// true -> new request will be rejected.
 	RejectRequest bool
-
 	// true -> all requests had been processed. In provider side it means that all requests are returned response to clients
 	// In consumer side, it means that all requests getting response from servers
 	RequestsFinished bool
 }
 
-// nolint
+// Prefix dubbo.shutdown
 func (config *ShutdownConfig) Prefix() string {
 	return constant.ShutdownConfigPrefix
 }
@@ -83,4 +82,41 @@ func (config *ShutdownConfig) GetStepTimeout() time.Duration {
 		return defaultStepTimeout
 	}
 	return result
+}
+
+type ShutdownConfigBuilder struct {
+	shutdownConfig *ShutdownConfig
+}
+
+func NewShutDownConfigBuilder() *ShutdownConfigBuilder {
+	return &ShutdownConfigBuilder{shutdownConfig: &ShutdownConfig{}}
+}
+
+func (scb *ShutdownConfigBuilder) SetTimeout(timeout string) *ShutdownConfigBuilder {
+	scb.shutdownConfig.Timeout = timeout
+	return scb
+}
+
+func (scb *ShutdownConfigBuilder) SetStepTimeout(stepTimeout string) *ShutdownConfigBuilder {
+	scb.shutdownConfig.StepTimeout = stepTimeout
+	return scb
+}
+
+func (scb *ShutdownConfigBuilder) SetRejectRequestHandler(rejectRequestHandler string) *ShutdownConfigBuilder {
+	scb.shutdownConfig.RejectRequestHandler = rejectRequestHandler
+	return scb
+}
+
+func (scb *ShutdownConfigBuilder) SetRequestsFinished(requestsFinished bool) *ShutdownConfigBuilder {
+	scb.shutdownConfig.RequestsFinished = requestsFinished
+	return scb
+}
+
+func (scb *ShutdownConfigBuilder) SetRejectRequest(rejectRequest bool) *ShutdownConfigBuilder {
+	scb.shutdownConfig.RejectRequest = rejectRequest
+	return scb
+}
+
+func (scb *ShutdownConfigBuilder) Build() *ShutdownConfig {
+	return scb.shutdownConfig
 }

@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package getty
 
 import (
@@ -25,6 +26,7 @@ import (
 
 import (
 	hessian "github.com/apache/dubbo-go-hessian2"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -51,9 +53,9 @@ func testDecodeTCPPackage(t *testing.T, svr *Server, client *Client) {
 	rpcInvocation := createInvocation("GetAdmin", nil, nil, []interface{}{[]interface{}{"1", "username"}},
 		[]reflect.Value{reflect.ValueOf([]interface{}{"1", "username"}), reflect.ValueOf(ap)})
 	attachment := map[string]string{
-		constant.INTERFACE_KEY: "com.ikurento.user.AdminProvider",
-		constant.PATH_KEY:      "AdminProvider",
-		constant.VERSION_KEY:   "1.0.0",
+		constant.InterfaceKey: "com.ikurento.user.AdminProvider",
+		constant.PathKey:      "AdminProvider",
+		constant.VersionKey:   "1.0.0",
 	}
 	setAttachment(rpcInvocation, attachment)
 	request.Data = rpcInvocation
@@ -98,7 +100,6 @@ func getServer(t *testing.T) (*Server, *common.URL) {
 			KeepAlivePeriod:  "120s",
 			TcpRBufSize:      262144,
 			TcpWBufSize:      65536,
-			PkgWQSize:        512,
 			TcpReadTimeout:   "4s",
 			TcpWriteTimeout:  "5s",
 			WaitTimeout:      "1s",
@@ -117,7 +118,6 @@ func getServer(t *testing.T) (*Server, *common.URL) {
 			KeepAlivePeriod:  "120s",
 			TcpRBufSize:      262144,
 			TcpWBufSize:      65536,
-			PkgWQSize:        512,
 			TcpReadTimeout:   "1s",
 			TcpWriteTimeout:  "5s",
 			WaitTimeout:      "1s",

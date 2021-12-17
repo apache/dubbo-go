@@ -24,11 +24,12 @@ import (
 
 import (
 	gxset "github.com/dubbogo/gost/container/set"
+
 	"github.com/stretchr/testify/assert"
 )
 
 import (
-	cluster "dubbo.apache.org/dubbo-go/v3/cluster/cluster_impl"
+	"dubbo.apache.org/dubbo-go/v3/cluster/cluster"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	common_cfg "dubbo.apache.org/dubbo-go/v3/common/config"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
@@ -43,9 +44,9 @@ import (
 )
 
 func init() {
-	config.SetProviderConfig(config.ProviderConfig{BaseConfig: config.BaseConfig{
-		ApplicationConfig: &config.ApplicationConfig{Name: "test-application"},
-	}})
+	config.SetRootConfig(config.RootConfig{
+		Application: &config.ApplicationConfig{Name: "test-application"},
+	})
 }
 
 func referNormal(t *testing.T, regProtocol *registryProtocol) {
@@ -57,7 +58,7 @@ func referNormal(t *testing.T, regProtocol *registryProtocol) {
 	url, _ := common.NewURL("mock://127.0.0.1:1111")
 	suburl, _ := common.NewURL(
 		"dubbo://127.0.0.1:20000//",
-		common.WithParamsValue(constant.CLUSTER_KEY, "mock"),
+		common.WithParamsValue(constant.ClusterKey, "mock"),
 	)
 
 	url.SubURL = suburl
@@ -68,10 +69,9 @@ func referNormal(t *testing.T, regProtocol *registryProtocol) {
 }
 
 func TestRefer(t *testing.T) {
-	config.SetConsumerConfig(
-		config.ConsumerConfig{BaseConfig: config.BaseConfig{
-			ApplicationConfig: &config.ApplicationConfig{Name: "test-application"},
-		}})
+	config.SetRootConfig(config.RootConfig{
+		Application: &config.ApplicationConfig{Name: "test-application"},
+	})
 	regProtocol := newRegistryProtocol()
 	referNormal(t, regProtocol)
 }
@@ -82,7 +82,7 @@ func TestMultiRegRefer(t *testing.T) {
 	url2, _ := common.NewURL("mock://127.0.0.1:2222")
 	suburl2, _ := common.NewURL(
 		"dubbo://127.0.0.1:20000//",
-		common.WithParamsValue(constant.CLUSTER_KEY, "mock"),
+		common.WithParamsValue(constant.ClusterKey, "mock"),
 	)
 
 	url2.SubURL = suburl2
@@ -103,7 +103,7 @@ func TestOneRegRefer(t *testing.T) {
 	url2, _ := common.NewURL("mock://127.0.0.1:1111")
 	suburl2, _ := common.NewURL(
 		"dubbo://127.0.0.1:20000//",
-		common.WithParamsValue(constant.CLUSTER_KEY, "mock"),
+		common.WithParamsValue(constant.ClusterKey, "mock"),
 	)
 
 	url2.SubURL = suburl2
@@ -124,9 +124,9 @@ func exporterNormal(t *testing.T, regProtocol *registryProtocol) *common.URL {
 	url, _ := common.NewURL("mock://127.0.0.1:1111")
 	suburl, _ := common.NewURL(
 		"dubbo://127.0.0.1:20000/org.apache.dubbo-go.mockService",
-		common.WithParamsValue(constant.CLUSTER_KEY, "mock"),
-		common.WithParamsValue(constant.GROUP_KEY, "group"),
-		common.WithParamsValue(constant.VERSION_KEY, "1.0.0"),
+		common.WithParamsValue(constant.ClusterKey, "mock"),
+		common.WithParamsValue(constant.GroupKey, "group"),
+		common.WithParamsValue(constant.VersionKey, "1.0.0"),
 	)
 
 	url.SubURL = suburl
@@ -150,7 +150,7 @@ func TestMultiRegAndMultiProtoExporter(t *testing.T) {
 	url2, _ := common.NewURL("mock://127.0.0.1:2222")
 	suburl2, _ := common.NewURL(
 		"jsonrpc://127.0.0.1:20000//",
-		common.WithParamsValue(constant.CLUSTER_KEY, "mock"),
+		common.WithParamsValue(constant.ClusterKey, "mock"),
 	)
 
 	url2.SubURL = suburl2
@@ -179,9 +179,9 @@ func TestOneRegAndProtoExporter(t *testing.T) {
 	url2, _ := common.NewURL("mock://127.0.0.1:1111")
 	suburl2, _ := common.NewURL(
 		"dubbo://127.0.0.1:20000/org.apache.dubbo-go.mockService",
-		common.WithParamsValue(constant.CLUSTER_KEY, "mock"),
-		common.WithParamsValue(constant.GROUP_KEY, "group"),
-		common.WithParamsValue(constant.VERSION_KEY, "1.0.0"),
+		common.WithParamsValue(constant.ClusterKey, "mock"),
+		common.WithParamsValue(constant.GroupKey, "group"),
+		common.WithParamsValue(constant.VersionKey, "1.0.0"),
 	)
 
 	url2.SubURL = suburl2
@@ -245,7 +245,7 @@ func TestExportWithOverrideListener(t *testing.T) {
 	reg.MockEvent(event)
 	time.Sleep(1e9)
 	newUrl := url.SubURL.Clone()
-	newUrl.SetParam(constant.CLUSTER_KEY, "mock1")
+	newUrl.SetParam(constant.ClusterKey, "mock1")
 	delKeys := gxset.NewSet("dynamic", "enabled")
 	key := newUrl.CloneExceptParams(delKeys).String()
 	v2, _ := regProtocol.bounds.Load(key)
@@ -266,7 +266,7 @@ func TestExportWithServiceConfig(t *testing.T) {
 	dc.(*config_center.MockDynamicConfiguration).MockServiceConfigEvent()
 
 	newUrl := url.SubURL.Clone()
-	newUrl.SetParam(constant.CLUSTER_KEY, "mock1")
+	newUrl.SetParam(constant.ClusterKey, "mock1")
 
 	delKeys := gxset.NewSet("dynamic", "enabled")
 	key := newUrl.CloneExceptParams(delKeys).String()
@@ -289,7 +289,7 @@ func TestExportWithApplicationConfig(t *testing.T) {
 	dc.(*config_center.MockDynamicConfiguration).MockApplicationConfigEvent()
 
 	newUrl := url.SubURL.Clone()
-	newUrl.SetParam(constant.CLUSTER_KEY, "mock1")
+	newUrl.SetParam(constant.ClusterKey, "mock1")
 	delKeys := gxset.NewSet("dynamic", "enabled")
 	key := newUrl.CloneExceptParams(delKeys).String()
 	v2, _ := regProtocol.bounds.Load(key)

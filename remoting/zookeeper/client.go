@@ -19,11 +19,11 @@ package zookeeper
 
 import (
 	"strings"
-	"time"
 )
 
 import (
 	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
+
 	perrors "github.com/pkg/errors"
 )
 
@@ -39,12 +39,6 @@ const (
 	MaxFailTimes = 3
 )
 
-var (
-	errNilZkClientConn = perrors.New("zookeeper client{conn} is nil")
-	errNilChildren     = perrors.Errorf("has none children")
-	errNilNode         = perrors.Errorf("node does not exist")
-)
-
 // ValidateZookeeperClient validates client and sets options
 func ValidateZookeeperClient(container ZkClientFacade, zkName string) error {
 	lock := container.ZkClientLock()
@@ -55,13 +49,10 @@ func ValidateZookeeperClient(container ZkClientFacade, zkName string) error {
 
 	if container.ZkClient() == nil {
 		// in dubbo, every registry only connect one node, so this is []string{r.Address}
-		timeout, paramErr := time.ParseDuration(url.GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT))
-		if paramErr != nil {
-			logger.Errorf("timeout config %v is invalid, err is %v",
-				url.GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT), paramErr.Error())
-			return perrors.WithMessagef(paramErr, "newZookeeperClient(address:%+v)", url.Location)
-		}
+		timeout := url.GetParamDuration(constant.ConfigTimeoutKey, constant.DefaultRegTimeout)
+
 		zkAddresses := strings.Split(url.Location, ",")
+		logger.Infof("[Zookeeper Client] New zookeeper client with name = %s, zkAddress = %s, timeout = %d", zkName, url.Location, timeout.String())
 		newClient, cltErr := gxzookeeper.NewZookeeperClient(zkName, zkAddresses, true, gxzookeeper.WithZkTimeOut(timeout))
 		if cltErr != nil {
 			logger.Warnf("newZookeeperClient(name{%s}, zk address{%v}, timeout{%d}) = error{%v}",

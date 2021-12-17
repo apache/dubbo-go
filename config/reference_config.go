@@ -18,7 +18,6 @@
 package config
 
 import (
-	"context"
 	"fmt"
 	"net/url"
 	"strconv"
@@ -27,254 +26,276 @@ import (
 
 import (
 	"github.com/creasty/defaults"
+
 	gxstrings "github.com/dubbogo/gost/strings"
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
+	"dubbo.apache.org/dubbo-go/v3/cluster/directory/static"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/proxy"
+	"dubbo.apache.org/dubbo-go/v3/config/generic"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
 )
 
 // ReferenceConfig is the configuration of service consumer
 type ReferenceConfig struct {
-	context        context.Context
 	pxy            *proxy.Proxy
 	id             string
-	InterfaceName  string            `required:"true"  yaml:"interface"  json:"interface,omitempty" property:"interface"`
+	InterfaceName  string            `yaml:"interface"  json:"interface,omitempty" property:"interface"`
 	Check          *bool             `yaml:"check"  json:"check,omitempty" property:"check"`
 	URL            string            `yaml:"url"  json:"url,omitempty" property:"url"`
 	Filter         string            `yaml:"filter" json:"filter,omitempty" property:"filter"`
-	Protocol       string            `default:"dubbo"  yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
-	Registry       string            `yaml:"registry"  json:"registry,omitempty"  property:"registry"`
+	Protocol       string            `default:"tri" yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
+	RegistryIDs    []string          `yaml:"registry-ids"  json:"registry-ids,omitempty"  property:"registry-ids"`
 	Cluster        string            `yaml:"cluster"  json:"cluster,omitempty" property:"cluster"`
 	Loadbalance    string            `yaml:"loadbalance"  json:"loadbalance,omitempty" property:"loadbalance"`
 	Retries        string            `yaml:"retries"  json:"retries,omitempty" property:"retries"`
 	Group          string            `yaml:"group"  json:"group,omitempty" property:"group"`
 	Version        string            `yaml:"version"  json:"version,omitempty" property:"version"`
 	Serialization  string            `yaml:"serialization" json:"serialization" property:"serialization"`
-	ProvideBy      string            `yaml:"provide_by"  json:"provide_by,omitempty" property:"provide_by"`
+	ProvidedBy     string            `yaml:"provided_by"  json:"provided_by,omitempty" property:"provided_by"`
 	Methods        []*MethodConfig   `yaml:"methods"  json:"methods,omitempty" property:"methods"`
 	Async          bool              `yaml:"async"  json:"async,omitempty" property:"async"`
 	Params         map[string]string `yaml:"params"  json:"params,omitempty" property:"params"`
 	invoker        protocol.Invoker
 	urls           []*common.URL
-	Generic        bool   `yaml:"generic"  json:"generic,omitempty" property:"generic"`
+	Generic        string `yaml:"generic"  json:"generic,omitempty" property:"generic"`
 	Sticky         bool   `yaml:"sticky"   json:"sticky,omitempty" property:"sticky"`
 	RequestTimeout string `yaml:"timeout"  json:"timeout,omitempty" property:"timeout"`
 	ForceTag       bool   `yaml:"force.tag"  json:"force.tag,omitempty" property:"force.tag"`
+	TracingKey     string `yaml:"tracing-key" json:"tracing-key,omitempty" propertiy:"tracing-key"`
+
+	rootConfig   *RootConfig
+	metaDataType string
 }
 
-// nolint
-func (c *ReferenceConfig) Prefix() string {
-	return constant.ReferenceConfigPrefix + c.InterfaceName + "."
+func (rc *ReferenceConfig) Prefix() string {
+	return constant.ReferenceConfigPrefix + rc.InterfaceName + "."
 }
 
-// NewReferenceConfig The only way to get a new ReferenceConfig
-func NewReferenceConfig(id string, ctx context.Context) *ReferenceConfig {
-	return &ReferenceConfig{id: id, context: ctx}
-}
-
-// UnmarshalYAML unmarshals the ReferenceConfig by @unmarshal function
-func (c *ReferenceConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	type rf ReferenceConfig
-	raw := rf{} // Put your defaults here
-	if err := unmarshal(&raw); err != nil {
+func (rc *ReferenceConfig) Init(root *RootConfig) error {
+	for _, method := range rc.Methods {
+		if err := method.Init(); err != nil {
+			return err
+		}
+	}
+	if err := defaults.Set(rc); err != nil {
 		return err
 	}
-
-	*c = ReferenceConfig(raw)
-	return defaults.Set(c)
+	rc.rootConfig = root
+	if root.Application != nil {
+		rc.metaDataType = root.Application.MetadataType
+	}
+	if rc.Cluster == "" {
+		rc.Cluster = "failover"
+	}
+	rc.RegistryIDs = translateRegistryIds(rc.RegistryIDs)
+	if len(rc.RegistryIDs) <= 0 {
+		rc.RegistryIDs = root.Consumer.RegistryIDs
+	}
+	if rc.TracingKey == "" {
+		rc.TracingKey = root.Consumer.TracingKey
+	}
+	if rc.Check == nil {
+		rc.Check = &root.Consumer.Check
+	}
+	return verify(rc)
 }
 
-// Refer ...
-func (c *ReferenceConfig) Refer(_ interface{}) {
+// Refer retrieves invokers from urls.
+func (rc *ReferenceConfig) Refer(srv interface{}) {
+	// If adaptive service is enabled,
+	// the cluster and load balance should be overridden to "adaptivesvc" and "p2c" respectively.
+	if rc.rootConfig.Consumer.AdaptiveService {
+		rc.Cluster = constant.ClusterKeyAdaptiveService
+		rc.Loadbalance = constant.LoadBalanceKeyP2C
+	}
+
+	// cfgURL is an interface-level invoker url, in the other words, it represents an interface.
 	cfgURL := common.NewURLWithOptions(
-		common.WithPath(c.InterfaceName),
-		common.WithProtocol(c.Protocol),
-		common.WithParams(c.getURLMap()),
-		common.WithParamsValue(constant.BEAN_NAME_KEY, c.id),
+		common.WithPath(rc.InterfaceName),
+		common.WithProtocol(rc.Protocol),
+		common.WithParams(rc.getURLMap()),
+		common.WithParamsValue(constant.BeanNameKey, rc.id),
+		common.WithParamsValue(constant.MetadataTypeKey, rc.metaDataType),
 	)
-	if c.ForceTag {
+
+	SetConsumerServiceByInterfaceName(rc.InterfaceName, srv)
+	if rc.ForceTag {
 		cfgURL.AddParam(constant.ForceUseTag, "true")
 	}
-	c.postProcessConfig(cfgURL)
-	if c.URL != "" {
-		// 1. user specified URL, could be peer-to-peer address, or register center's address.
-		urlStrings := gxstrings.RegSplit(c.URL, "\\s*[;]+\\s*")
+	rc.postProcessConfig(cfgURL)
+
+	// retrieving urls from config, and appending the urls to rc.urls
+	if rc.URL != "" { // use user-specific urls
+		/*
+			 Two types of URL are allowed for rc.URL:
+				1. direct url: server IP, that is, no need for a registry anymore
+				2. registry url
+			 They will be handled in different ways:
+			 For example, we have a direct url and a registry url:
+				1. "tri://localhost:10000" is a direct url
+				2. "registry://localhost:2181" is a registry url.
+			 Then, rc.URL looks like a string separated by semicolon: "tri://localhost:10000;registry://localhost:2181".
+			 The result of urlStrings is a string array: []string{"tri://localhost:10000", "registry://localhost:2181"}.
+		*/
+		urlStrings := gxstrings.RegSplit(rc.URL, "\\s*[;]+\\s*")
 		for _, urlStr := range urlStrings {
 			serviceURL, err := common.NewURL(urlStr)
 			if err != nil {
-				panic(fmt.Sprintf("user specified URL %v refer error, error message is %v ", urlStr, err.Error()))
+				panic(fmt.Sprintf("url configuration error,  please check your configuration, user specified URL %v refer error, error message is %v ", urlStr, err.Error()))
 			}
-			if serviceURL.Protocol == constant.REGISTRY_PROTOCOL {
+			if serviceURL.Protocol == constant.RegistryProtocol { // serviceURL in this branch is a registry protocol
 				serviceURL.SubURL = cfgURL
-				c.urls = append(c.urls, serviceURL)
-			} else {
+				rc.urls = append(rc.urls, serviceURL)
+			} else { // serviceURL in this branch is the target endpoint IP address
 				if serviceURL.Path == "" {
-					serviceURL.Path = "/" + c.InterfaceName
+					serviceURL.Path = "/" + rc.InterfaceName
 				}
-				// merge url need to do
+				// replace params of serviceURL with params of cfgUrl
+				// other stuff, e.g. IP, port, etc., are same as serviceURL
 				newURL := common.MergeURL(serviceURL, cfgURL)
-				c.urls = append(c.urls, newURL)
+				rc.urls = append(rc.urls, newURL)
 			}
 		}
-	} else {
-		// 2. assemble SubURL from register center's configuration mode
-		c.urls = loadRegistries(c.Registry, consumerConfig.Registries, common.CONSUMER)
-
+	} else { // use registry configs
+		rc.urls = loadRegistries(rc.RegistryIDs, rc.rootConfig.Registries, common.CONSUMER)
 		// set url to regURLs
-		for _, regURL := range c.urls {
+		for _, regURL := range rc.urls {
 			regURL.SubURL = cfgURL
 		}
 	}
 
-	if len(c.urls) == 1 {
-		c.invoker = extension.GetProtocol(c.urls[0].Protocol).Refer(c.urls[0])
-		// c.URL != "" is direct call
-		if c.URL != "" {
-			//filter
-			c.invoker = protocolwrapper.BuildInvokerChain(c.invoker, constant.REFERENCE_FILTER_KEY)
+	// Get invokers according to rc.urls
+	var (
+		invoker protocol.Invoker
+		regURL  *common.URL
+	)
+	invokers := make([]protocol.Invoker, len(rc.urls))
+	for i, u := range rc.urls {
+		if u.Protocol == constant.ServiceRegistryProtocol {
+			invoker = extension.GetProtocol("registry").Refer(u)
+		} else {
+			invoker = extension.GetProtocol(u.Protocol).Refer(u)
+		}
 
-			// cluster
-			invokers := make([]protocol.Invoker, 0, len(c.urls))
-			invokers = append(invokers, c.invoker)
-			// TODO(decouple from directory, config should not depend on directory module)
-			var hitClu string
-			// not a registry url, must be direct invoke.
-			hitClu = constant.FAILOVER_CLUSTER_NAME
-			if len(invokers) > 0 {
-				u := invokers[0].GetURL()
-				if nil != &u {
-					hitClu = u.GetParam(constant.CLUSTER_KEY, constant.ZONEAWARE_CLUSTER_NAME)
-				}
+		if rc.URL != "" {
+			invoker = protocolwrapper.BuildInvokerChain(invoker, constant.ReferenceFilterKey)
+		}
+
+		invokers[i] = invoker
+		if u.Protocol == constant.RegistryProtocol {
+			regURL = u
+		}
+	}
+
+	// TODO(hxmhlt): decouple from directory, config should not depend on directory module
+	if len(invokers) == 1 {
+		rc.invoker = invokers[0]
+		if rc.URL != "" {
+			hitClu := constant.ClusterKeyFailover
+			if u := rc.invoker.GetURL(); u != nil {
+				hitClu = u.GetParam(constant.ClusterKey, constant.ClusterKeyZoneAware)
 			}
-
-			cluster := extension.GetCluster(hitClu)
-			// If 'zone-aware' policy select, the invoker wrap sequence would be:
-			// ZoneAwareClusterInvoker(StaticDirectory) ->
-			// FailoverClusterInvoker(RegistryDirectory, routing happens here) -> Invoker
-			c.invoker = cluster.Join(directory.NewStaticDirectory(invokers))
+			rc.invoker = extension.GetCluster(hitClu).Join(static.NewDirectory(invokers))
 		}
 	} else {
-		invokers := make([]protocol.Invoker, 0, len(c.urls))
-		var regURL *common.URL
-		for _, u := range c.urls {
-			invoker := extension.GetProtocol(u.Protocol).Refer(u)
-			// c.URL != "" is direct call
-			if c.URL != "" {
-				//filter
-				invoker = protocolwrapper.BuildInvokerChain(invoker, constant.REFERENCE_FILTER_KEY)
-			}
-			invokers = append(invokers, invoker)
-			if u.Protocol == constant.REGISTRY_PROTOCOL {
-				regURL = u
-			}
-		}
-
-		// TODO(decouple from directory, config should not depend on directory module)
 		var hitClu string
 		if regURL != nil {
 			// for multi-subscription scenario, use 'zone-aware' policy by default
-			hitClu = constant.ZONEAWARE_CLUSTER_NAME
+			hitClu = constant.ClusterKeyZoneAware
 		} else {
 			// not a registry url, must be direct invoke.
-			hitClu = constant.FAILOVER_CLUSTER_NAME
-			if len(invokers) > 0 {
-				u := invokers[0].GetURL()
-				if nil != &u {
-					hitClu = u.GetParam(constant.CLUSTER_KEY, constant.ZONEAWARE_CLUSTER_NAME)
-				}
+			hitClu = constant.ClusterKeyFailover
+			if u := invokers[0].GetURL(); u != nil {
+				hitClu = u.GetParam(constant.ClusterKey, constant.ClusterKeyZoneAware)
 			}
 		}
-
-		cluster := extension.GetCluster(hitClu)
-		// If 'zone-aware' policy select, the invoker wrap sequence would be:
-		// ZoneAwareClusterInvoker(StaticDirectory) ->
-		// FailoverClusterInvoker(RegistryDirectory, routing happens here) -> Invoker
-		c.invoker = cluster.Join(directory.NewStaticDirectory(invokers))
+		rc.invoker = extension.GetCluster(hitClu).Join(static.NewDirectory(invokers))
 	}
-	// publish consumer metadata
-	publishConsumerDefinition(cfgURL)
+
+	// publish consumer's metadata
+	publishServiceDefinition(cfgURL)
 	// create proxy
-	if c.Async {
-		callback := GetCallback(c.id)
-		c.pxy = extension.GetProxyFactory(consumerConfig.ProxyFactory).GetAsyncProxy(c.invoker, callback, cfgURL)
+	if rc.Async {
+		callback := GetCallback(rc.id)
+		rc.pxy = extension.GetProxyFactory(rc.rootConfig.Consumer.ProxyFactory).GetAsyncProxy(rc.invoker, callback, cfgURL)
 	} else {
-		c.pxy = extension.GetProxyFactory(consumerConfig.ProxyFactory).GetProxy(c.invoker, cfgURL)
+		rc.pxy = extension.GetProxyFactory(rc.rootConfig.Consumer.ProxyFactory).GetProxy(rc.invoker, cfgURL)
 	}
 }
 
 // Implement
 // @v is service provider implemented RPCService
-func (c *ReferenceConfig) Implement(v common.RPCService) {
-	c.pxy.Implement(v)
+func (rc *ReferenceConfig) Implement(v common.RPCService) {
+	rc.pxy.Implement(v)
 }
 
 // GetRPCService gets RPCService from proxy
-func (c *ReferenceConfig) GetRPCService() common.RPCService {
-	return c.pxy.Get()
+func (rc *ReferenceConfig) GetRPCService() common.RPCService {
+	return rc.pxy.Get()
 }
 
 // GetProxy gets proxy
-func (c *ReferenceConfig) GetProxy() *proxy.Proxy {
-	return c.pxy
+func (rc *ReferenceConfig) GetProxy() *proxy.Proxy {
+	return rc.pxy
 }
 
-func (c *ReferenceConfig) getURLMap() url.Values {
+func (rc *ReferenceConfig) getURLMap() url.Values {
 	urlMap := url.Values{}
 	// first set user params
-	for k, v := range c.Params {
+	for k, v := range rc.Params {
 		urlMap.Set(k, v)
 	}
-	urlMap.Set(constant.INTERFACE_KEY, c.InterfaceName)
-	urlMap.Set(constant.TIMESTAMP_KEY, strconv.FormatInt(time.Now().Unix(), 10))
-	urlMap.Set(constant.CLUSTER_KEY, c.Cluster)
-	urlMap.Set(constant.LOADBALANCE_KEY, c.Loadbalance)
-	urlMap.Set(constant.RETRIES_KEY, c.Retries)
-	urlMap.Set(constant.GROUP_KEY, c.Group)
-	urlMap.Set(constant.VERSION_KEY, c.Version)
-	urlMap.Set(constant.GENERIC_KEY, strconv.FormatBool(c.Generic))
-	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(common.CONSUMER))
-	urlMap.Set(constant.PROVIDER_BY, c.ProvideBy)
-	urlMap.Set(constant.SERIALIZATION_KEY, c.Serialization)
+	urlMap.Set(constant.InterfaceKey, rc.InterfaceName)
+	urlMap.Set(constant.TimestampKey, strconv.FormatInt(time.Now().Unix(), 10))
+	urlMap.Set(constant.ClusterKey, rc.Cluster)
+	urlMap.Set(constant.LoadbalanceKey, rc.Loadbalance)
+	urlMap.Set(constant.RetriesKey, rc.Retries)
+	urlMap.Set(constant.GroupKey, rc.Group)
+	urlMap.Set(constant.VersionKey, rc.Version)
+	urlMap.Set(constant.GenericKey, rc.Generic)
+	urlMap.Set(constant.RegistryRoleKey, strconv.Itoa(common.CONSUMER))
+	urlMap.Set(constant.ProvidedBy, rc.ProvidedBy)
+	urlMap.Set(constant.SerializationKey, rc.Serialization)
+	urlMap.Set(constant.TracingConfigKey, rc.TracingKey)
 
-	urlMap.Set(constant.RELEASE_KEY, "dubbo-golang-"+constant.Version)
-	urlMap.Set(constant.SIDE_KEY, (common.RoleType(common.CONSUMER)).Role())
+	urlMap.Set(constant.ReleaseKey, "dubbo-golang-"+constant.Version)
+	urlMap.Set(constant.SideKey, (common.RoleType(common.CONSUMER)).Role())
 
-	if len(c.RequestTimeout) != 0 {
-		urlMap.Set(constant.TIMEOUT_KEY, c.RequestTimeout)
+	if len(rc.RequestTimeout) != 0 {
+		urlMap.Set(constant.TimeoutKey, rc.RequestTimeout)
 	}
 	// getty invoke async or sync
-	urlMap.Set(constant.ASYNC_KEY, strconv.FormatBool(c.Async))
-	urlMap.Set(constant.STICKY_KEY, strconv.FormatBool(c.Sticky))
+	urlMap.Set(constant.AsyncKey, strconv.FormatBool(rc.Async))
+	urlMap.Set(constant.StickyKey, strconv.FormatBool(rc.Sticky))
 
-	// application info
-	urlMap.Set(constant.APPLICATION_KEY, consumerConfig.ApplicationConfig.Name)
-	urlMap.Set(constant.ORGANIZATION_KEY, consumerConfig.ApplicationConfig.Organization)
-	urlMap.Set(constant.NAME_KEY, consumerConfig.ApplicationConfig.Name)
-	urlMap.Set(constant.MODULE_KEY, consumerConfig.ApplicationConfig.Module)
-	urlMap.Set(constant.APP_VERSION_KEY, consumerConfig.ApplicationConfig.Version)
-	urlMap.Set(constant.OWNER_KEY, consumerConfig.ApplicationConfig.Owner)
-	urlMap.Set(constant.ENVIRONMENT_KEY, consumerConfig.ApplicationConfig.Environment)
+	// applicationConfig info
+	urlMap.Set(constant.ApplicationKey, rc.rootConfig.Application.Name)
+	urlMap.Set(constant.OrganizationKey, rc.rootConfig.Application.Organization)
+	urlMap.Set(constant.NameKey, rc.rootConfig.Application.Name)
+	urlMap.Set(constant.ModuleKey, rc.rootConfig.Application.Module)
+	urlMap.Set(constant.AppVersionKey, rc.rootConfig.Application.Version)
+	urlMap.Set(constant.OwnerKey, rc.rootConfig.Application.Owner)
+	urlMap.Set(constant.EnvironmentKey, rc.rootConfig.Application.Environment)
 
 	// filter
-	defaultReferenceFilter := constant.DEFAULT_REFERENCE_FILTERS
-	if c.Generic {
-		defaultReferenceFilter = constant.GENERIC_REFERENCE_FILTERS + "," + defaultReferenceFilter
+	defaultReferenceFilter := constant.DefaultReferenceFilters
+	if rc.Generic != "" {
+		defaultReferenceFilter = constant.GenericFilterKey + "," + defaultReferenceFilter
 	}
-	urlMap.Set(constant.REFERENCE_FILTER_KEY, mergeValue(consumerConfig.Filter, c.Filter, defaultReferenceFilter))
+	urlMap.Set(constant.ReferenceFilterKey, mergeValue(rc.rootConfig.Consumer.Filter, "", defaultReferenceFilter))
 
-	for _, v := range c.Methods {
-		urlMap.Set("methods."+v.Name+"."+constant.LOADBALANCE_KEY, v.LoadBalance)
-		urlMap.Set("methods."+v.Name+"."+constant.RETRIES_KEY, v.Retries)
-		urlMap.Set("methods."+v.Name+"."+constant.STICKY_KEY, strconv.FormatBool(v.Sticky))
+	for _, v := range rc.Methods {
+		urlMap.Set("methods."+v.Name+"."+constant.LoadbalanceKey, v.LoadBalance)
+		urlMap.Set("methods."+v.Name+"."+constant.RetriesKey, v.Retries)
+		urlMap.Set("methods."+v.Name+"."+constant.StickyKey, strconv.FormatBool(v.Sticky))
 		if len(v.RequestTimeout) != 0 {
-			urlMap.Set("methods."+v.Name+"."+constant.TIMEOUT_KEY, v.RequestTimeout)
+			urlMap.Set("methods."+v.Name+"."+constant.TimeoutKey, v.RequestTimeout)
 		}
 	}
 
@@ -282,28 +303,78 @@ func (c *ReferenceConfig) getURLMap() url.Values {
 }
 
 // GenericLoad ...
-func (c *ReferenceConfig) GenericLoad(id string) {
-	genericService := NewGenericService(c.id)
+func (rc *ReferenceConfig) GenericLoad(id string) {
+	genericService := generic.NewGenericService(rc.id)
 	SetConsumerService(genericService)
-	c.id = id
-	c.Refer(genericService)
-	c.Implement(genericService)
+	rc.id = id
+	rc.Refer(genericService)
+	rc.Implement(genericService)
 }
 
 // GetInvoker get invoker from ReferenceConfig
-func (c *ReferenceConfig) GetInvoker() protocol.Invoker {
-	return c.invoker
-}
-
-func publishConsumerDefinition(url *common.URL) {
-	if remoteMetadataServiceImpl, err := extension.GetRemoteMetadataService(); err == nil && remoteMetadataServiceImpl != nil {
-		remoteMetadataServiceImpl.PublishServiceDefinition(url)
-	}
+func (rc *ReferenceConfig) GetInvoker() protocol.Invoker {
+	return rc.invoker
 }
 
 // postProcessConfig asks registered ConfigPostProcessor to post-process the current ReferenceConfig.
-func (c *ReferenceConfig) postProcessConfig(url *common.URL) {
+func (rc *ReferenceConfig) postProcessConfig(url *common.URL) {
 	for _, p := range extension.GetConfigPostProcessors() {
 		p.PostProcessReferenceConfig(url)
 	}
+}
+
+//////////////////////////////////// reference config api
+
+// newEmptyReferenceConfig returns empty ReferenceConfig
+func newEmptyReferenceConfig() *ReferenceConfig {
+	newReferenceConfig := &ReferenceConfig{}
+	newReferenceConfig.Methods = make([]*MethodConfig, 0, 8)
+	newReferenceConfig.Params = make(map[string]string, 8)
+	return newReferenceConfig
+}
+
+type ReferenceConfigBuilder struct {
+	referenceConfig *ReferenceConfig
+}
+
+func NewReferenceConfigBuilder() *ReferenceConfigBuilder {
+	return &ReferenceConfigBuilder{referenceConfig: newEmptyReferenceConfig()}
+}
+
+func (pcb *ReferenceConfigBuilder) SetInterface(interfaceName string) *ReferenceConfigBuilder {
+	pcb.referenceConfig.InterfaceName = interfaceName
+	return pcb
+}
+
+func (pcb *ReferenceConfigBuilder) SetRegistryIDs(registryIDs ...string) *ReferenceConfigBuilder {
+	pcb.referenceConfig.RegistryIDs = registryIDs
+	return pcb
+}
+
+func (pcb *ReferenceConfigBuilder) SetGeneric(generic bool) *ReferenceConfigBuilder {
+	if generic {
+		pcb.referenceConfig.Generic = "true"
+	} else {
+		pcb.referenceConfig.Generic = "false"
+	}
+	return pcb
+}
+
+func (pcb *ReferenceConfigBuilder) SetCluster(cluster string) *ReferenceConfigBuilder {
+	pcb.referenceConfig.Cluster = cluster
+	return pcb
+}
+
+func (pcb *ReferenceConfigBuilder) SetSerialization(serialization string) *ReferenceConfigBuilder {
+	pcb.referenceConfig.Serialization = serialization
+	return pcb
+}
+
+func (pcb *ReferenceConfigBuilder) SetProtocol(protocol string) *ReferenceConfigBuilder {
+	pcb.referenceConfig.Protocol = protocol
+	return pcb
+}
+
+func (pcb *ReferenceConfigBuilder) Build() *ReferenceConfig {
+	return pcb.referenceConfig
 }

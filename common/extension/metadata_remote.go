@@ -26,10 +26,10 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/metadata/service/remote"
+	"dubbo.apache.org/dubbo-go/v3/metadata/service"
 )
 
-type remoteMetadataServiceCreator func() (remote.RemoteMetadataService, error)
+type remoteMetadataServiceCreator func() (service.RemoteMetadataService, error)
 
 var (
 	creator remoteMetadataServiceCreator
@@ -41,7 +41,7 @@ func SetRemoteMetadataService(creatorFunc remoteMetadataServiceCreator) {
 }
 
 // GetRemoteMetadataServiceFactory will create a MetadataService instance
-func GetRemoteMetadataService() (remote.RemoteMetadataService, error) {
+func GetRemoteMetadataService() (service.RemoteMetadataService, error) {
 	if creator != nil {
 		return creator()
 	}

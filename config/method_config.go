@@ -43,19 +43,36 @@ type MethodConfig struct {
 }
 
 // nolint
-func (c *MethodConfig) Prefix() string {
-	if len(c.InterfaceId) != 0 {
-		return constant.DUBBO + "." + c.InterfaceName + "." + c.InterfaceId + "." + c.Name + "."
+func (mc *MethodConfig) Prefix() string {
+	if len(mc.InterfaceId) != 0 {
+		return constant.Dubbo + "." + mc.InterfaceName + "." + mc.InterfaceId + "." + mc.Name + "."
 	}
 
-	return constant.DUBBO + "." + c.InterfaceName + "." + c.Name + "."
+	return constant.Dubbo + "." + mc.InterfaceName + "." + mc.Name + "."
 }
 
-// UnmarshalYAML unmarshals the MethodConfig by @unmarshal function
-func (c *MethodConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	if err := defaults.Set(c); err != nil {
+func (mc *MethodConfig) Init() error {
+	return mc.check()
+}
+
+func initProviderMethodConfig(sc *ServiceConfig) error {
+	methods := sc.Methods
+	if methods == nil {
+		return nil
+	}
+	for _, method := range methods {
+		if err := method.check(); err != nil {
+			return err
+		}
+	}
+	sc.Methods = methods
+	return nil
+}
+
+// check set default value and verify
+func (mc *MethodConfig) check() error {
+	if err := defaults.Set(mc); err != nil {
 		return err
 	}
-	type plain MethodConfig
-	return unmarshal((*plain)(c))
+	return verify(mc)
 }

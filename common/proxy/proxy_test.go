@@ -26,6 +26,7 @@ import (
 
 import (
 	perrors "github.com/pkg/errors"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -59,7 +60,7 @@ func (s *TestServiceInt) Reference() string {
 
 func TestProxyImplement(t *testing.T) {
 	invoker := protocol.NewBaseInvoker(&common.URL{})
-	p := NewProxy(invoker, nil, map[string]string{constant.ASYNC_KEY: "false"})
+	p := NewProxy(invoker, nil, map[string]string{constant.AsyncKey: "false"})
 	s := &TestService{}
 	p.Implement(s)
 
@@ -127,7 +128,7 @@ func TestProxyImplementForContext(t *testing.T) {
 	invoker := &TestProxyInvoker{
 		BaseInvoker: *protocol.NewBaseInvoker(&common.URL{}),
 	}
-	p := NewProxy(invoker, nil, map[string]string{constant.ASYNC_KEY: "false"})
+	p := NewProxy(invoker, nil, map[string]string{constant.AsyncKey: "false"})
 	s := &TestService{}
 	p.Implement(s)
 	attachments1 := make(map[string]interface{}, 4)

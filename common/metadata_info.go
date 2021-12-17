@@ -27,7 +27,6 @@ import (
 
 import (
 	gxset "github.com/dubbogo/gost/container/set"
-	"go.uber.org/atomic"
 )
 
 import (
@@ -35,27 +34,26 @@ import (
 )
 
 var IncludeKeys = gxset.NewSet(
-	constant.APPLICATION_KEY,
-	constant.GROUP_KEY,
-	constant.TIMESTAMP_KEY,
-	constant.SERIALIZATION_KEY,
-	constant.CLUSTER_KEY,
-	constant.LOADBALANCE_KEY,
-	constant.PATH_KEY,
-	constant.TIMEOUT_KEY,
-	constant.TOKEN_KEY,
-	constant.VERSION_KEY,
-	constant.WARMUP_KEY,
-	constant.WEIGHT_KEY,
-	constant.RELEASE_KEY)
+	constant.ApplicationKey,
+	constant.GroupKey,
+	constant.TimestampKey,
+	constant.SerializationKey,
+	constant.ClusterKey,
+	constant.LoadbalanceKey,
+	constant.PathKey,
+	constant.TimeoutKey,
+	constant.TokenKey,
+	constant.VersionKey,
+	constant.WarmupKey,
+	constant.WeightKey,
+	constant.ReleaseKey)
 
 // MetadataInfo the metadata information of instance
 type MetadataInfo struct {
+	Reported bool                    `json:"-"`
 	App      string                  `json:"app,omitempty"`
 	Revision string                  `json:"revision,omitempty"`
 	Services map[string]*ServiceInfo `json:"services,omitempty"`
-
-	Reported *atomic.Bool `json:"-"`
 }
 
 // nolint
@@ -69,7 +67,7 @@ func NewMetadataInfo(app string, revision string, services map[string]*ServiceIn
 		App:      app,
 		Revision: revision,
 		Services: services,
-		Reported: atomic.NewBool(false),
+		Reported: false,
 	}
 }
 
@@ -83,7 +81,7 @@ func (mi *MetadataInfo) JavaClassName() string {
 // in my opinion, it's enough because Dubbo actually ignore the URL params.
 // please refer org.apache.dubbo.common.URL#toParameterString(java.lang.String...)
 func (mi *MetadataInfo) CalAndGetRevision() string {
-	if mi.Revision != "" && mi.Reported.Load() {
+	if mi.Revision != "" && mi.Reported {
 		return mi.Revision
 	}
 	if len(mi.Services) == 0 {
@@ -99,7 +97,7 @@ func (mi *MetadataInfo) CalAndGetRevision() string {
 		} else {
 			for _, m := range ms {
 				// methods are part of candidates
-				candidates = append(candidates, sk+constant.KEY_SEPARATOR+m)
+				candidates = append(candidates, sk+constant.KeySeparator+m)
 			}
 		}
 
@@ -119,12 +117,12 @@ func (mi *MetadataInfo) CalAndGetRevision() string {
 
 // nolint
 func (mi *MetadataInfo) HasReported() bool {
-	return mi.Reported.Load()
+	return mi.Reported
 }
 
 // nolint
 func (mi *MetadataInfo) MarkReported() {
-	mi.Reported.CAS(false, true)
+	mi.Reported = true
 }
 
 // nolint
@@ -189,7 +187,7 @@ func NewServiceInfo(name, group, version, protocol, path string, params map[stri
 		Group:      group,
 		Version:    version,
 		Protocol:   protocol,
-		Path:       path,
+		Path:       strings.TrimPrefix(path, "/"),
 		Params:     params,
 		ServiceKey: serviceKey,
 		MatchKey:   matchKey,
@@ -203,8 +201,8 @@ func (si *ServiceInfo) JavaClassName() string {
 
 // nolint
 func (si *ServiceInfo) GetMethods() []string {
-	if si.Params[constant.METHODS_KEY] != "" {
-		s := si.Params[constant.METHODS_KEY]
+	if si.Params[constant.MethodsKey] != "" {
+		s := si.Params[constant.MethodsKey]
 		return strings.Split(s, ",")
 	}
 	methods := make([]string, 8)

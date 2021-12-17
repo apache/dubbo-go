@@ -26,22 +26,22 @@ import (
 )
 
 var (
-	serializers = make(map[string]interface{})
+	serializers = make(map[string]Serializer)
 	nameMaps    = make(map[byte]string)
 )
 
 func init() {
 	nameMaps = map[byte]string{
-		constant.S_Hessian2: constant.HESSIAN2_SERIALIZATION,
-		constant.S_Proto:    constant.PROTOBUF_SERIALIZATION,
+		constant.SHessian2: constant.Hessian2Serialization,
+		constant.SProto:    constant.ProtobufSerialization,
 	}
 }
 
-func SetSerializer(name string, serializer interface{}) {
+func SetSerializer(name string, serializer Serializer) {
 	serializers[name] = serializer
 }
 
-func GetSerializerById(id byte) (interface{}, error) {
+func GetSerializerById(id byte) (Serializer, error) {
 	name, ok := nameMaps[id]
 	if !ok {
 		panic(fmt.Sprintf("serialId %d not found", id))

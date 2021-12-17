@@ -18,125 +18,165 @@
 package config
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
-	"log"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+	"runtime"
+	"strings"
 )
 
-type LoaderInitOption interface {
-	init()
-	apply()
+import (
+	"github.com/pkg/errors"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/file"
+)
+
+type loaderConf struct {
+	// loaderConf file extension default yaml
+	suffix string
+
+	// loaderConf file path default ./conf
+	path string
+
+	// loaderConf file delim default .
+	delim string
+
+	// config bytes
+	bytes []byte
+
+	// user provide rootConfig built by config api
+	rc *RootConfig
 }
 
-type optionFunc struct {
-	initFunc  func()
-	applyFunc func()
-}
-
-func (f *optionFunc) init() {
-	f.initFunc()
-}
-
-func (f *optionFunc) apply() {
-	f.applyFunc()
-}
-
-func ConsumerInitOption(confConFile string) LoaderInitOption {
-	return consumerInitOption(confConFile, false)
-}
-
-func ConsumerMustInitOption(confConFile string) LoaderInitOption {
-	return consumerInitOption(confConFile, true)
-}
-
-func consumerInitOption(confConFile string, must bool) LoaderInitOption {
-	return &optionFunc{
-		func() {
-			if consumerConfig != nil && !must {
-				return
-			}
-			if errCon := ConsumerInit(confConFile); errCon != nil {
-				log.Printf("[consumerInit] %#v", errCon)
-				consumerConfig = nil
-			} else if confBaseFile == "" {
-				// Check if there are some important key fields missing,
-				// if so, we set a default value for it
-				setDefaultValue(consumerConfig)
-				// Even though baseConfig has been initialized, we override it
-				// because we think read from config file is correct config
-				baseConfig = &consumerConfig.BaseConfig
-			}
-		},
-		func() {
-			loadConsumerConfig()
-		},
+func NewLoaderConf(opts ...LoaderConfOption) *loaderConf {
+	configFilePath := "../conf/dubbogo.yaml"
+	if configFilePathFromEnv := os.Getenv(constant.ConfigFileEnvKey); configFilePathFromEnv != "" {
+		configFilePath = configFilePathFromEnv
 	}
-}
-
-func ProviderInitOption(confProFile string) LoaderInitOption {
-	return providerInitOption(confProFile, false)
-}
-
-func ProviderMustInitOption(confProFile string) LoaderInitOption {
-	return providerInitOption(confProFile, true)
-}
-
-func providerInitOption(confProFile string, must bool) LoaderInitOption {
-	return &optionFunc{
-		func() {
-			if providerConfig != nil && !must {
-				return
-			}
-			if errPro := ProviderInit(confProFile); errPro != nil {
-				log.Printf("[providerInit] %#v", errPro)
-				providerConfig = nil
-			} else if confBaseFile == "" {
-				// Check if there are some important key fields missing,
-				// if so, we set a default value for it
-				setDefaultValue(providerConfig)
-				// Even though baseConfig has been initialized, we override it
-				// because we think read from config file is correct config
-				baseConfig = &providerConfig.BaseConfig
-			}
-		},
-		func() {
-			loadProviderConfig()
-		},
+	suffix := strings.Split(configFilePath, ".")
+	conf := &loaderConf{
+		suffix: suffix[len(suffix)-1],
+		path:   absolutePath(configFilePath),
+		delim:  ".",
 	}
+	for _, opt := range opts {
+		opt.apply(conf)
+	}
+	if conf.rc != nil {
+		return conf
+	}
+	if len(conf.bytes) <= 0 {
+		bytes, err := ioutil.ReadFile(conf.path)
+		if err != nil {
+			panic(err)
+		}
+		conf.bytes = bytes
+	}
+	return conf
 }
 
-func RouterInitOption(crf string) LoaderInitOption {
-	return &optionFunc{
-		func() {
-			confRouterFile = crf
-		},
-		func() {
-			initRouter()
-		},
-	}
+type LoaderConfOption interface {
+	apply(vc *loaderConf)
 }
 
-func BaseInitOption(cbf string) LoaderInitOption {
-	return &optionFunc{
-		func() {
-			if cbf == "" {
-				return
-			}
-			confBaseFile = cbf
-			if err := BaseInit(cbf); err != nil {
-				log.Printf("[BaseInit] %#v", err)
-				baseConfig = nil
-			}
-		},
-		func() {
-			// init the global event dispatcher
-			extension.SetAndInitGlobalDispatcher(GetBaseConfig().EventDispatcherType)
+type loaderConfigFunc func(*loaderConf)
 
-			// start the metadata report if config set
-			if err := startMetadataReport(GetApplicationConfig().MetadataType, GetBaseConfig().MetadataReportConfig); err != nil {
-				logger.Errorf("Provider starts metadata report error, and the error is {%#v}", err)
-				return
-			}
-		},
+func (fn loaderConfigFunc) apply(vc *loaderConf) {
+	fn(vc)
+}
+
+// WithGenre set load config file suffix
+//Deprecated: replaced by WithSuffix
+func WithGenre(suffix string) LoaderConfOption {
+	return loaderConfigFunc(func(conf *loaderConf) {
+		g := strings.ToLower(suffix)
+		if err := checkFileSuffix(g); err != nil {
+			panic(err)
+		}
+		conf.suffix = g
+	})
+}
+
+// WithSuffix set load config file suffix
+func WithSuffix(suffix file.Suffix) LoaderConfOption {
+	return loaderConfigFunc(func(conf *loaderConf) {
+		conf.suffix = string(suffix)
+	})
+}
+
+// WithPath set load config path
+func WithPath(path string) LoaderConfOption {
+	return loaderConfigFunc(func(conf *loaderConf) {
+		conf.path = absolutePath(path)
+		bytes, err := ioutil.ReadFile(path)
+		if err != nil {
+			panic(err)
+		}
+		conf.bytes = bytes
+		genre := strings.Split(path, ".")
+		conf.suffix = genre[len(genre)-1]
+	})
+}
+
+func WithRootConfig(rc *RootConfig) LoaderConfOption {
+	return loaderConfigFunc(func(conf *loaderConf) {
+		conf.rc = rc
+	})
+}
+
+func WithDelim(delim string) LoaderConfOption {
+	return loaderConfigFunc(func(conf *loaderConf) {
+		conf.delim = delim
+	})
+}
+
+// WithBytes set load config  bytes
+func WithBytes(bytes []byte) LoaderConfOption {
+	return loaderConfigFunc(func(conf *loaderConf) {
+		conf.bytes = bytes
+	})
+}
+
+// absolutePath get absolut path
+func absolutePath(inPath string) string {
+
+	if inPath == "$HOME" || strings.HasPrefix(inPath, "$HOME"+string(os.PathSeparator)) {
+		inPath = userHomeDir() + inPath[5:]
 	}
+
+	if filepath.IsAbs(inPath) {
+		return filepath.Clean(inPath)
+	}
+
+	p, err := filepath.Abs(inPath)
+	if err == nil {
+		return filepath.Clean(p)
+	}
+
+	return ""
+}
+
+//userHomeDir get gopath
+func userHomeDir() string {
+	if runtime.GOOS == "windows" {
+		home := os.Getenv("HOMEDRIVE") + os.Getenv("HOMEPATH")
+		if home == "" {
+			home = os.Getenv("USERPROFILE")
+		}
+		return home
+	}
+	return os.Getenv("HOME")
+}
+
+// checkFileSuffix check file suffix
+func checkFileSuffix(suffix string) error {
+	for _, g := range []string{"json", "toml", "yaml", "yml", "properties"} {
+		if g == suffix {
+			return nil
+		}
+	}
+	return errors.Errorf("no support file suffix: %s", suffix)
 }

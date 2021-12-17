@@ -18,13 +18,17 @@
 package zookeeper
 
 import (
-	"strings"
+	"encoding/base64"
+	"strconv"
 	"sync"
 )
 
 import (
+	"github.com/dubbogo/go-zookeeper/zk"
+
 	gxset "github.com/dubbogo/gost/container/set"
 	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
+
 	perrors "github.com/pkg/errors"
 )
 
@@ -32,15 +36,13 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/config_center/parser"
 	"dubbo.apache.org/dubbo-go/v3/remoting/zookeeper"
 )
 
 const (
-	// ZkClient
-	// zookeeper client name
-	ZkClient      = "zk config_center"
 	pathSeparator = "/"
 )
 
@@ -57,27 +59,43 @@ type zookeeperDynamicConfiguration struct {
 	listener      *zookeeper.ZkEventListener
 	cacheListener *CacheListener
 	parser        parser.ConfigurationParser
+
+	base64Enabled bool
 }
 
 func newZookeeperDynamicConfiguration(url *common.URL) (*zookeeperDynamicConfiguration, error) {
 	c := &zookeeperDynamicConfiguration{
 		url:      url,
-		rootPath: "/" + url.GetParam(constant.CONFIG_NAMESPACE_KEY, config_center.DEFAULT_GROUP) + "/config",
+		rootPath: "/" + url.GetParam(constant.ConfigNamespaceKey, config_center.DefaultGroup) + "/config",
 	}
-	err := zookeeper.ValidateZookeeperClient(c, ZkClient)
+	logger.Infof("[Zookeeper ConfigCenter] New Zookeeper ConfigCenter with Configuration: %+v, url = %+v", c, c.GetURL())
+	if v, ok := config.GetRootConfig().ConfigCenter.Params["base64"]; ok {
+		base64Enabled, err := strconv.ParseBool(v)
+		if err != nil {
+			panic("value of base64 must be bool, error=" + err.Error())
+		}
+		c.base64Enabled = base64Enabled
+	}
+
+	err := zookeeper.ValidateZookeeperClient(c, url.Location)
 	if err != nil {
 		logger.Errorf("zookeeper client start error ,error message is %v", err)
 		return nil, err
 	}
+	err = c.client.Create(c.rootPath)
+	if err != nil && err != zk.ErrNodeExists {
+		return nil, err
+	}
+
+	// Before handle client restart, we need to ensure that the zk dynamic configuration successfully start and create the configuration directory
 	c.wg.Add(1)
 	go zookeeper.HandleClientRestart(c)
 
+	// Start listener
 	c.listener = zookeeper.NewZkEventListener(c.client)
 	c.cacheListener = NewCacheListener(c.rootPath)
-
-	err = c.client.Create(c.rootPath)
 	c.listener.ListenServiceEvent(url, c.rootPath, c.cacheListener)
-	return c, err
+	return c, nil
 }
 
 func (c *zookeeperDynamicConfiguration) AddListener(key string, listener config_center.ConfigurationListener, opions ...config_center.Option) {
@@ -100,21 +118,21 @@ func (c *zookeeperDynamicConfiguration) GetProperties(key string, opts ...config
 	if len(tmpOpts.Group) != 0 {
 		key = tmpOpts.Group + "/" + key
 	} else {
-
-		/**
-		 * when group is null, we are fetching governance rules, for example:
-		 * 1. key=org.apache.dubbo.DemoService.configurators
-		 * 2. key = org.apache.dubbo.DemoService.condition-router
-		 */
-		i := strings.LastIndex(key, ".")
-		key = key[0:i] + "/" + key[i+1:]
+		key = c.GetURL().GetParam(constant.ConfigNamespaceKey, config_center.DefaultGroup)
 	}
 	content, _, err := c.client.GetContent(c.rootPath + "/" + key)
 	if err != nil {
 		return "", perrors.WithStack(err)
 	}
+	if !c.base64Enabled {
+		return string(content), nil
+	}
 
-	return string(content), nil
+	decoded, err := base64.StdEncoding.DecodeString(string(content))
+	if err != nil {
+		return "", perrors.WithStack(err)
+	}
+	return string(decoded), nil
 }
 
 // GetInternalProperty For zookeeper, getConfig and getConfigs have the same meaning.
@@ -125,7 +143,13 @@ func (c *zookeeperDynamicConfiguration) GetInternalProperty(key string, opts ...
 // PublishConfig will put the value into Zk with specific path
 func (c *zookeeperDynamicConfiguration) PublishConfig(key string, group string, value string) error {
 	path := c.getPath(key, group)
-	err := c.client.CreateWithValue(path, []byte(value))
+	valueBytes := []byte(value)
+	if c.base64Enabled {
+		valueBytes = []byte(base64.StdEncoding.EncodeToString(valueBytes))
+	}
+	// FIXME this method need to be fixed, because it will recursively
+	// create every node in the path with given value which we may not expected.
+	err := c.client.CreateWithValue(path, valueBytes)
 	if err != nil {
 		return perrors.WithStack(err)
 	}
@@ -225,7 +249,7 @@ func (c *zookeeperDynamicConfiguration) getPath(key string, group string) string
 
 func (c *zookeeperDynamicConfiguration) buildPath(group string) string {
 	if len(group) == 0 {
-		group = config_center.DEFAULT_GROUP
+		group = config_center.DefaultGroup
 	}
 	return c.rootPath + pathSeparator + group
 }

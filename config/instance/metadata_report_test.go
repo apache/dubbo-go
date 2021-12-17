@@ -22,6 +22,8 @@ import (
 )
 
 import (
+	gxset "github.com/dubbogo/gost/container/set"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -50,11 +52,19 @@ func (m *mockMetadataReportFactory) CreateMetadataReport(*common.URL) report.Met
 
 type mockMetadataReport struct{}
 
-func (m mockMetadataReport) GetAppMetadata(metadataIdentifier *identifier.SubscriberMetadataIdentifier) (*common.MetadataInfo, error) {
+func (m mockMetadataReport) RegisterServiceAppMapping(string, string, string) error {
 	panic("implement me")
 }
 
-func (m mockMetadataReport) PublishAppMetadata(metadataIdentifier *identifier.SubscriberMetadataIdentifier, info *common.MetadataInfo) error {
+func (m mockMetadataReport) GetServiceAppMapping(string, string) (*gxset.HashSet, error) {
+	panic("implement me")
+}
+
+func (m mockMetadataReport) GetAppMetadata(*identifier.SubscriberMetadataIdentifier) (*common.MetadataInfo, error) {
+	panic("implement me")
+}
+
+func (m mockMetadataReport) PublishAppMetadata(*identifier.SubscriberMetadataIdentifier, *common.MetadataInfo) error {
 	panic("implement me")
 }
 

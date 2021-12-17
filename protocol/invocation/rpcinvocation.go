@@ -29,10 +29,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
-// ///////////////////////////
-// Invocation Implement of RPC
-// ///////////////////////////
-
 // todo: is it necessary to separate fields of consumer(provider) from RPCInvocation
 // nolint
 type RPCInvocation struct {
@@ -198,8 +194,8 @@ func (r *RPCInvocation) SetCallBack(c interface{}) {
 }
 
 func (r *RPCInvocation) ServiceKey() string {
-	return common.ServiceKey(strings.TrimPrefix(r.AttachmentsByKey(constant.PATH_KEY, r.AttachmentsByKey(constant.INTERFACE_KEY, "")), "/"),
-		r.AttachmentsByKey(constant.GROUP_KEY, ""), r.AttachmentsByKey(constant.VERSION_KEY, ""))
+	return common.ServiceKey(strings.TrimPrefix(r.AttachmentsByKey(constant.PathKey, r.AttachmentsByKey(constant.InterfaceKey, "")), "/"),
+		r.AttachmentsByKey(constant.GroupKey, ""), r.AttachmentsByKey(constant.VersionKey, ""))
 }
 
 // /////////////////////////

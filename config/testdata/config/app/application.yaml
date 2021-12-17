@@ -1,0 +1,21 @@
+dubbo:
+  registries:
+    nacos:
+      timeout: 3s
+      address: nacos://127.0.0.1:8848
+  protocols:
+    dubbo:
+      name: dubbo
+      port: 20000
+  consumer:
+    references:
+      helloService:
+        protocol: dubbo
+        interface: org.github.dubbo.HelloService # must be compatible with grpc or dubbo-java
+  provider:
+    register: true
+    registry-ids: nacos
+    services:
+      helloService:
+        protocol: dubbo
+        interface: org.github.dubbo.HelloService # must be compatible with grpc or dubbo-java

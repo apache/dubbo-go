@@ -17,7 +17,9 @@
 
 package judger
 
-import "dubbo.apache.org/dubbo-go/v3/config"
+import (
+	"dubbo.apache.org/dubbo-go/v3/config"
+)
 
 // nolint
 type BoolMatchJudger struct {
@@ -25,8 +27,8 @@ type BoolMatchJudger struct {
 }
 
 // nolint
-func (lsmj *BoolMatchJudger) Judge(input bool) bool {
-	return input == lsmj.Exact
+func (j *BoolMatchJudger) Judge(input bool) bool {
+	return input == j.Exact
 }
 
 // nolint

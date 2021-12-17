@@ -26,6 +26,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/metadata/service/local"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
@@ -44,7 +45,7 @@ func (p *ProtocolPortsMetadataCustomizer) GetPriority() int {
 
 // Customize put the the string like [{"protocol": "dubbo", "port": 123}] into instance's metadata
 func (p *ProtocolPortsMetadataCustomizer) Customize(instance registry.ServiceInstance) {
-	metadataService, err := getMetadataService()
+	metadataService, err := local.GetLocalMetadataService()
 	if err != nil {
 		logger.Errorf("Could not init the MetadataService", err)
 		return
@@ -53,8 +54,8 @@ func (p *ProtocolPortsMetadataCustomizer) Customize(instance registry.ServiceIns
 	// 4 is enough... we don't have many protocol
 	protocolMap := make(map[string]int, 4)
 
-	list := metadataService.GetExportedServiceURLs()
-	if list == nil || len(list) == 0 {
+	list, err := metadataService.GetExportedServiceURLs()
+	if list == nil || len(list) == 0 || err != nil {
 		logger.Debugf("Could not find exported urls", err)
 		return
 	}
@@ -72,7 +73,7 @@ func (p *ProtocolPortsMetadataCustomizer) Customize(instance registry.ServiceIns
 		protocolMap[u.Protocol] = port
 	}
 
-	instance.GetMetadata()[constant.SERVICE_INSTANCE_ENDPOINTS] = endpointsStr(protocolMap)
+	instance.GetMetadata()[constant.ServiceInstanceEndpoints] = endpointsStr(protocolMap)
 }
 
 // endpointsStr convert the map to json like [{"protocol": "dubbo", "port": 123}]

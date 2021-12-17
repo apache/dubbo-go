@@ -1,0 +1,13 @@
+dubbo:
+  registries:
+    nacos:
+      timeout: 3s
+      address: naocs://127.0.0.1:8848
+  provider:
+    registry-ids: nacos
+    services:
+      HelloService:
+        interface: org.dubbo.service.HelloService
+        registry-ids: nacos,zk
+      OrderService:
+        interface: org.dubbo.service.OrderService

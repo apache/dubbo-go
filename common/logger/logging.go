@@ -56,3 +56,13 @@ func Errorf(fmt string, args ...interface{}) {
 func Debugf(fmt string, args ...interface{}) {
 	logger.Debugf(fmt, args...)
 }
+
+// Fatal logs a message, then calls os.Exit.
+func Fatal(args ...interface{}) {
+	logger.Fatal(args...)
+}
+
+// Fatalf logs a templated message, then calls os.Exit.
+func Fatalf(fmt string, args ...interface{}) {
+	logger.Fatalf(fmt, args...)
+}

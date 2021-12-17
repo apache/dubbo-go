@@ -26,9 +26,12 @@ import (
 )
 
 import (
-	"github.com/nacos-group/nacos-sdk-go/clients/naming_client"
+	gxchan "github.com/dubbogo/gost/container/chan"
+	nacosClient "github.com/dubbogo/gost/database/kv/nacos"
+
 	"github.com/nacos-group/nacos-sdk-go/model"
 	"github.com/nacos-group/nacos-sdk-go/vo"
+
 	perrors "github.com/pkg/errors"
 )
 
@@ -41,23 +44,32 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
+var (
+	listenerCache sync.Map
+)
+
+type callback func(services []model.SubscribeService, err error)
+
 type nacosListener struct {
-	namingClient   naming_client.INamingClient
-	listenUrl      *common.URL
-	events         chan *config_center.ConfigChangeEvent
+	namingClient   *nacosClient.NacosNamingClient
+	listenURL      *common.URL
+	regURL         *common.URL
+	events         *gxchan.UnboundedChan
 	instanceMap    map[string]model.Instance
 	cacheLock      sync.Mutex
 	done           chan struct{}
 	subscribeParam *vo.SubscribeParam
 }
 
-// NewRegistryDataListener creates a data listener for nacos
-func NewNacosListener(url *common.URL, namingClient naming_client.INamingClient) (*nacosListener, error) {
+// NewNacosListener creates a data listener for nacos
+func NewNacosListener(url, regURL *common.URL, namingClient *nacosClient.NacosNamingClient) (*nacosListener, error) {
 	listener := &nacosListener{
 		namingClient: namingClient,
-		listenUrl:    url, events: make(chan *config_center.ConfigChangeEvent, 32),
-		instanceMap: map[string]model.Instance{},
-		done:        make(chan struct{}),
+		listenURL:    url,
+		regURL:       regURL,
+		events:       gxchan.NewUnboundedChan(32),
+		instanceMap:  map[string]model.Instance{},
+		done:         make(chan struct{}),
 	}
 	err := listener.startListen()
 	return listener, err
@@ -150,7 +162,6 @@ func (nl *nacosListener) Callback(services []model.SubscribeService, err error) 
 	}
 
 	nl.instanceMap = newInstanceMap
-
 	for i := range addInstances {
 		newUrl := generateUrl(addInstances[i])
 		if newUrl != nil {
@@ -176,30 +187,35 @@ func getSubscribeName(url *common.URL) string {
 	var buffer bytes.Buffer
 
 	buffer.Write([]byte(common.DubboNodes[common.PROVIDER]))
-	appendParam(&buffer, url, constant.INTERFACE_KEY)
-	appendParam(&buffer, url, constant.VERSION_KEY)
-	appendParam(&buffer, url, constant.GROUP_KEY)
+	appendParam(&buffer, url, constant.InterfaceKey)
+	appendParam(&buffer, url, constant.VersionKey)
+	appendParam(&buffer, url, constant.GroupKey)
 	return buffer.String()
 }
 
 func (nl *nacosListener) startListen() error {
 	if nl.namingClient == nil {
-		return perrors.New("nacos naming client stopped")
+		return perrors.New("nacos naming namingClient stopped")
 	}
-	serviceName := getSubscribeName(nl.listenUrl)
-	nl.subscribeParam = &vo.SubscribeParam{ServiceName: serviceName, SubscribeCallback: nl.Callback}
+	nl.subscribeParam = createSubscribeParam(nl.listenURL, nl.regURL, nl.Callback)
+	if nl.subscribeParam == nil {
+		return perrors.New("create nacos subscribeParam failed")
+	}
 	go func() {
-		_ = nl.namingClient.Subscribe(nl.subscribeParam)
+		err := nl.namingClient.Client().Subscribe(nl.subscribeParam)
+		if err == nil {
+			listenerCache.Store(nl.subscribeParam.ServiceName+nl.subscribeParam.GroupName, nl)
+		}
 	}()
 	return nil
 }
 
 func (nl *nacosListener) stopListen() error {
-	return nl.namingClient.Unsubscribe(nl.subscribeParam)
+	return nl.namingClient.Client().Unsubscribe(nl.subscribeParam)
 }
 
 func (nl *nacosListener) process(configType *config_center.ConfigChangeEvent) {
-	nl.events <- configType
+	nl.events.In() <- configType
 }
 
 // Next returns the service event from nacos.
@@ -207,10 +223,11 @@ func (nl *nacosListener) Next() (*registry.ServiceEvent, error) {
 	for {
 		select {
 		case <-nl.done:
-			logger.Warnf("nacos listener is close!listenUrl:%+v", nl.listenUrl)
+			logger.Warnf("nacos listener is close!listenUrl:%+v", nl.listenURL)
 			return nil, perrors.New("listener stopped")
 
-		case e := <-nl.events:
+		case val := <-nl.events.Out():
+			e, _ := val.(*config_center.ConfigChangeEvent)
 			logger.Debugf("got nacos event %s", e)
 			return &registry.ServiceEvent{Action: e.ConfigType, Service: e.Value.(*common.URL)}, nil
 		}
@@ -219,6 +236,6 @@ func (nl *nacosListener) Next() (*registry.ServiceEvent, error) {
 
 // nolint
 func (nl *nacosListener) Close() {
-	nl.stopListen()
+	_ = nl.stopListen()
 	close(nl.done)
 }

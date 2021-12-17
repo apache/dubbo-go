@@ -26,7 +26,9 @@ import (
 
 import (
 	"github.com/go-co-op/gocron"
+
 	perrors "github.com/pkg/errors"
+
 	"go.uber.org/atomic"
 )
 
@@ -71,7 +73,7 @@ func newMetadataReportRetry(retryPeriod int64, retryLimit int64, retryFunc func(
 		retryTimesIfNonFail: 600,
 	}
 
-	newJob, err := mrr.scheduler.Every(uint64(mrr.retryPeriod)).Seconds().Do(
+	newJob, err := mrr.scheduler.Every(int(mrr.retryPeriod)).Seconds().Do(
 		func() {
 			mrr.retryCounter.Inc()
 			logger.Infof("start to retry task for metadata report. retry times: %v", mrr.retryCounter.Load())
@@ -89,7 +91,7 @@ func newMetadataReportRetry(retryPeriod int64, retryLimit int64, retryFunc func(
 // startRetryTask will make scheduler with retry task run
 func (mrr *metadataReportRetry) startRetryTask() {
 	mrr.scheduler.StartAt(time.Now().Add(500 * time.Millisecond))
-	mrr.scheduler.Start()
+	mrr.scheduler.StartAsync()
 }
 
 // MetadataReport is a absolute delegate for MetadataReport
@@ -115,14 +117,14 @@ func NewMetadataReport() (*MetadataReport, error) {
 	}
 	bmr := &MetadataReport{
 		reportUrl:          url,
-		syncReport:         url.GetParamBool(constant.SYNC_REPORT_KEY, false),
+		syncReport:         url.GetParamBool(constant.SyncReportKey, false),
 		failedReports:      make(map[*identifier.MetadataIdentifier]interface{}, 4),
 		allMetadataReports: make(map[*identifier.MetadataIdentifier]interface{}, 4),
 	}
 
 	mrr, err := newMetadataReportRetry(
-		url.GetParamInt(constant.RETRY_PERIOD_KEY, defaultMetadataReportRetryPeriod),
-		url.GetParamInt(constant.RETRY_TIMES_KEY, defaultMetadataReportRetryTimes),
+		url.GetParamInt(constant.RetryPeriodKey, defaultMetadataReportRetryPeriod),
+		url.GetParamInt(constant.RetryTimesKey, defaultMetadataReportRetryTimes),
 		bmr.retry,
 	)
 	if err != nil {
@@ -130,7 +132,7 @@ func NewMetadataReport() (*MetadataReport, error) {
 	}
 
 	bmr.metadataReportRetry = mrr
-	if url.GetParamBool(constant.CYCLE_REPORT_KEY, defaultMetadataReportCycleReport) {
+	if url.GetParamBool(constant.CycleReportKey, defaultMetadataReportCycleReport) {
 		scheduler := gocron.NewScheduler(time.UTC)
 		_, err := scheduler.Every(1).Day().Do(
 			func() {
@@ -143,18 +145,18 @@ func NewMetadataReport() (*MetadataReport, error) {
 			return nil, err
 		}
 		scheduler.StartAt(time.Now().Add(500 * time.Millisecond))
-		scheduler.Start()
+		scheduler.StartAsync()
 	}
 	return bmr, nil
 }
 
-// GetAppMetadata delegate get metadata info
+// PublishAppMetadata delegate publish metadata info
 func (mr *MetadataReport) PublishAppMetadata(identifier *identifier.SubscriberMetadataIdentifier, info *common.MetadataInfo) error {
 	report := instance.GetMetadataReportInstance()
 	return report.PublishAppMetadata(identifier, info)
 }
 
-// PublishAppMetadata delegate publish metadata info
+// GetAppMetadata delegate get metadata info
 func (mr *MetadataReport) GetAppMetadata(identifier *identifier.SubscriberMetadataIdentifier) (*common.MetadataInfo, error) {
 	report := instance.GetMetadataReportInstance()
 	return report.GetAppMetadata(identifier)
@@ -177,7 +179,7 @@ func (mr *MetadataReport) StoreProviderMetadata(identifier *identifier.MetadataI
 
 // storeMetadataTask will delegate to call remote metadata's sdk to store
 func (mr *MetadataReport) storeMetadataTask(role int, identifier *identifier.MetadataIdentifier, definer interface{}) {
-	logger.Infof("store provider metadata. Identifier :%v ; definition: %v .", identifier, definer)
+	logger.Infof("publish provider identifier and definition:  Identifier :%v ; definition: %v .", identifier, definer)
 	mr.allMetadataReportsLock.Lock()
 	mr.allMetadataReports[identifier] = definer
 	mr.allMetadataReportsLock.Unlock()

@@ -19,16 +19,27 @@ package config
 
 import (
 	"github.com/ghodss/yaml"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-// nolint
-type MetaDataStruct struct {
-	Name string `yaml:"name"`
+type MeshRouteMetadata struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	YamlAPIVersion string         `yaml:"apiVersion" `
+	YamlKind       string         `yaml:"kind" `
+	MetaData       MetaDataStruct `yaml:"metadata"`
+	Spec           interface{}
 }
 
-// VirtualService Config Definition
+// nolint
+type MetaDataStruct struct {
+	Name string `yaml:"name" json:"name"`
+}
+
+// VirtualServiceConfig Config Definition
 type VirtualServiceConfig struct {
 	YamlAPIVersion    string `yaml:"apiVersion"`
 	YamlKind          string `yaml:"kind"`
@@ -46,12 +57,13 @@ type UniformRouterConfigSpec struct {
 
 // nolint
 type DubboRoute struct {
-	Services     []*StringMatch            `yaml:"services" json:"service"`
-	RouterDetail []*DubboServiceRouterItem `yaml:"routedetail" json:"routedetail"`
+	Name         string              `yaml:"name" json:"name"`
+	Services     []*StringMatch      `yaml:"services" json:"service"`
+	RouterDetail []*DubboRouteDetail `yaml:"routedetail" json:"routedetail"`
 }
 
 // nolint
-type DubboServiceRouterItem struct {
+type DubboRouteDetail struct {
 	Name   string               `yaml:"name" json:"name"`
 	Match  []*DubboMatchRequest `yaml:"match" json:"match"`
 	Router []*DubboDestination  `yaml:"route" json:"route"`
@@ -145,7 +157,7 @@ type RouterDest struct {
 	// todo port
 }
 
-// DestinationRule Definition
+// DestinationRuleConfig Definition
 type DestinationRuleConfig struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

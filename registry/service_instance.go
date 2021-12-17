@@ -74,8 +74,8 @@ type ServiceInstance interface {
 
 // nolint
 type Endpoint struct {
-	Port     int    `json:"port, omitempty"`
-	Protocol string `json:"protocol, omitempty"`
+	Port     int    `json:"port,omitempty"`
+	Protocol string `json:"protocol,omitempty"`
 }
 
 // DefaultServiceInstance the default implementation of ServiceInstance
@@ -90,6 +90,7 @@ type DefaultServiceInstance struct {
 	Metadata        map[string]string
 	ServiceMetadata *common.MetadataInfo
 	Address         string
+	GroupName       string
 }
 
 // GetID will return this instance's id. It should be unique.
@@ -154,7 +155,7 @@ func (d *DefaultServiceInstance) ToURLs() []*common.URL {
 
 // GetEndPoints get end points from metadata
 func (d *DefaultServiceInstance) GetEndPoints() []*Endpoint {
-	rawEndpoints := d.Metadata[constant.SERVICE_INSTANCE_ENDPOINTS]
+	rawEndpoints := d.Metadata[constant.ServiceInstanceEndpoints]
 	if len(rawEndpoints) == 0 {
 		return nil
 	}

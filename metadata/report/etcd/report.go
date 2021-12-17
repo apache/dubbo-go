@@ -18,12 +18,15 @@
 package etcd
 
 import (
+	"encoding/json"
 	"strings"
-	"time"
 )
 
 import (
+	gxset "github.com/dubbogo/gost/container/set"
 	gxetcd "github.com/dubbogo/gost/database/kv/etcd/v3"
+
+	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -39,7 +42,7 @@ import (
 const DEFAULT_ROOT = "dubbo"
 
 func init() {
-	extension.SetMetadataReportFactory(constant.ETCDV3_KEY, func() factory.MetadataReportFactory {
+	extension.SetMetadataReportFactory(constant.EtcdV3Key, func() factory.MetadataReportFactory {
 		return &etcdMetadataReportFactory{}
 	})
 }
@@ -52,14 +55,25 @@ type etcdMetadataReport struct {
 
 // GetAppMetadata get metadata info from etcd
 func (e *etcdMetadataReport) GetAppMetadata(metadataIdentifier *identifier.SubscriberMetadataIdentifier) (*common.MetadataInfo, error) {
-	// TODO will implement
-	panic("implement me")
+	key := e.getNodeKey(metadataIdentifier)
+	data, err := e.client.Get(key)
+	if err != nil {
+		return nil, err
+	}
+
+	info := &common.MetadataInfo{}
+	return info, json.Unmarshal([]byte(data), info)
 }
 
 // PublishAppMetadata publish metadata info to etcd
 func (e *etcdMetadataReport) PublishAppMetadata(metadataIdentifier *identifier.SubscriberMetadataIdentifier, info *common.MetadataInfo) error {
-	// TODO will implement
-	panic("implement me")
+	key := e.getNodeKey(metadataIdentifier)
+	value, err := json.Marshal(info)
+	if err == nil {
+		err = e.client.Put(key, string(value))
+	}
+
+	return err
 }
 
 // StoreProviderMetadata will store the metadata
@@ -130,28 +144,59 @@ func (e *etcdMetadataReport) GetServiceDefinition(metadataIdentifier *identifier
 	return content, nil
 }
 
+// RegisterServiceAppMapping map the specified Dubbo service interface to current Dubbo app name
+func (e *etcdMetadataReport) RegisterServiceAppMapping(key string, group string, value string) error {
+	path := e.root + constant.PathSeparator + group + constant.PathSeparator + key
+	oldVal, err := e.client.Get(path)
+	if perrors.Cause(err) == gxetcd.ErrKVPairNotFound {
+		return e.client.Put(path, value)
+	} else if err != nil {
+		return err
+	}
+	if strings.Contains(oldVal, value) {
+		return nil
+	}
+	value = oldVal + constant.CommaSeparator + value
+	return e.client.Put(path, value)
+}
+
+// GetServiceAppMapping get the app names from the specified Dubbo service interface
+func (e *etcdMetadataReport) GetServiceAppMapping(key string, group string) (*gxset.HashSet, error) {
+	path := e.root + constant.PathSeparator + group + constant.PathSeparator + key
+	v, err := e.client.Get(path)
+	if err != nil {
+		return nil, err
+	}
+	appNames := strings.Split(v, constant.CommaSeparator)
+	set := gxset.NewSet()
+	for _, app := range appNames {
+		set.Add(app)
+	}
+	return set, nil
+}
+
 type etcdMetadataReportFactory struct{}
 
 // CreateMetadataReport get the MetadataReport instance of etcd
 func (e *etcdMetadataReportFactory) CreateMetadataReport(url *common.URL) report.MetadataReport {
-	timeout, _ := time.ParseDuration(url.GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT))
+	timeout := url.GetParamDuration(constant.TimeoutKey, constant.DefaultRegTimeout)
 	addresses := strings.Split(url.Location, ",")
 	client, err := gxetcd.NewClient(gxetcd.MetadataETCDV3Client, addresses, timeout, 1)
 	if err != nil {
 		logger.Errorf("Could not create etcd metadata report. URL: %s,error:{%v}", url.String(), err)
 		return nil
 	}
-	group := url.GetParam(constant.GROUP_KEY, DEFAULT_ROOT)
-	group = constant.PATH_SEPARATOR + strings.TrimPrefix(group, constant.PATH_SEPARATOR)
+	group := url.GetParam(constant.GroupKey, DEFAULT_ROOT)
+	group = constant.PathSeparator + strings.TrimPrefix(group, constant.PathSeparator)
 	return &etcdMetadataReport{client: client, root: group}
 }
 
 func (e *etcdMetadataReport) getNodeKey(MetadataIdentifier identifier.IMetadataIdentifier) string {
 	var rootDir string
-	if e.root == constant.PATH_SEPARATOR {
+	if e.root == constant.PathSeparator {
 		rootDir = e.root
 	} else {
-		rootDir = e.root + constant.PATH_SEPARATOR
+		rootDir = e.root + constant.PathSeparator
 	}
 	return rootDir + MetadataIdentifier.GetFilePathKey()
 }

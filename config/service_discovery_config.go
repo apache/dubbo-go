@@ -17,14 +17,58 @@
 
 package config
 
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+)
+
 // ServiceDiscoveryConfig will be used to create
 type ServiceDiscoveryConfig struct {
 	// Protocol indicate which implementation will be used.
 	// for example, if the Protocol is nacos, it means that we will use nacosServiceDiscovery
-	Protocol string `yaml:"protocol" json:"protocol,omitempty"`
+	Protocol string `yaml:"protocol" json:"protocol,omitempty" property:"protocol"`
 	// Group, usually you don't need to config this field.
 	// you can use this to do some isolation
 	Group string `yaml:"group" json:"group,omitempty"`
 	// RemoteRef is the reference point to RemoteConfig which will be used to create remotes instances.
-	RemoteRef string `yaml:"remote_ref" json:"remote_ref,omitempty"`
+	RemoteRef string `yaml:"remote_ref" json:"remote_ref,omitempty" property:"remote_ref"`
+}
+
+func (ServiceDiscoveryConfig) Prefix() string {
+	return constant.ServiceDiscPrefix
+}
+
+func (ServiceDiscoveryConfig) Init() error {
+	return nil
+}
+
+func NewServiceDiscoveryConfigBuilder() *ServiceDiscoveryConfigBuilder {
+	return &ServiceDiscoveryConfigBuilder{
+		serviceDiscoveryConfig: &ServiceDiscoveryConfig{},
+	}
+}
+
+type ServiceDiscoveryConfigBuilder struct {
+	serviceDiscoveryConfig *ServiceDiscoveryConfig
+}
+
+func (sdcb *ServiceDiscoveryConfigBuilder) SetProtocol(protocol string) *ServiceDiscoveryConfigBuilder {
+	sdcb.serviceDiscoveryConfig.Protocol = protocol
+	return sdcb
+}
+
+func (sdcb *ServiceDiscoveryConfigBuilder) SetGroup(group string) *ServiceDiscoveryConfigBuilder {
+	sdcb.serviceDiscoveryConfig.Group = group
+	return sdcb
+}
+
+func (sdcb *ServiceDiscoveryConfigBuilder) SetRemoteRef(remoteRef string) *ServiceDiscoveryConfigBuilder {
+	sdcb.serviceDiscoveryConfig.RemoteRef = remoteRef
+	return sdcb
+}
+
+func (sdcb *ServiceDiscoveryConfigBuilder) Build() *ServiceDiscoveryConfig {
+	if err := sdcb.serviceDiscoveryConfig.Init(); err != nil {
+		panic(err)
+	}
+	return sdcb.serviceDiscoveryConfig
 }

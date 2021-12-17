@@ -21,22 +21,21 @@ import (
 	"fmt"
 	"strings"
 	"sync"
-	"time"
 )
 
 import (
 	gxset "github.com/dubbogo/gost/container/set"
 	gxetcd "github.com/dubbogo/gost/database/kv/etcd/v3"
 	gxpage "github.com/dubbogo/gost/hash/page"
+
 	"github.com/hashicorp/vault/sdk/helper/jsonutil"
-	perrors "github.com/pkg/errors"
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 	"dubbo.apache.org/dubbo-go/v3/remoting/etcdv3"
@@ -49,7 +48,7 @@ const (
 var initLock sync.Mutex
 
 func init() {
-	extension.SetServiceDiscovery(constant.ETCDV3_KEY, newEtcdV3ServiceDiscovery)
+	extension.SetServiceDiscovery(constant.EtcdV3Key, newEtcdV3ServiceDiscovery)
 }
 
 // new etcd service discovery struct
@@ -63,7 +62,8 @@ type etcdV3ServiceDiscovery struct {
 	// services is when register or update will add service name
 	services *gxset.HashSet
 	// child listener
-	childListenerMap map[string]*etcdv3.EventListener
+	childListenerMap    map[string]*etcdv3.EventListener
+	instanceListenerMap map[string]*gxset.HashSet
 }
 
 // basic information of this instance
@@ -201,7 +201,7 @@ func (e *etcdV3ServiceDiscovery) GetHealthyInstancesByPage(serviceName string, o
 	return gxpage.NewPage(offset, pageSize, res, len(all))
 }
 
-// Batch get all instances by the specified service names
+// GetRequestInstances Batch get all instances by the specified service names
 func (e *etcdV3ServiceDiscovery) GetRequestInstances(serviceNames []string, offset int, requestedSize int) map[string]gxpage.Pager {
 	res := make(map[string]gxpage.Pager, len(serviceNames))
 	for _, name := range serviceNames {
@@ -215,28 +215,16 @@ func (e *etcdV3ServiceDiscovery) GetRequestInstances(serviceNames []string, offs
 // see addServiceInstancesChangedListener in Java
 func (e *etcdV3ServiceDiscovery) AddListener(listener registry.ServiceInstancesChangedListener) error {
 	for _, t := range listener.GetServiceNames().Values() {
-		serviceName := t.(string)
-		err := e.registerSreviceWatcher(serviceName)
+		err := e.registerServiceInstanceListener(t.(string), listener)
+		if err != nil {
+			return err
+		}
+
+		err = e.registerServiceWatcher(t.(string))
 		if err != nil {
 			return err
 		}
 	}
-	return nil
-}
-
-// DispatchEventByServiceName dispatches the ServiceInstancesChangedEvent to service instance whose name is serviceName
-func (e *etcdV3ServiceDiscovery) DispatchEventByServiceName(serviceName string) error {
-	return e.DispatchEventForInstances(serviceName, e.GetInstances(serviceName))
-}
-
-// DispatchEventForInstances dispatches the ServiceInstancesChangedEvent to target instances
-func (e *etcdV3ServiceDiscovery) DispatchEventForInstances(serviceName string, instances []registry.ServiceInstance) error {
-	return e.DispatchEvent(registry.NewServiceInstancesChangedEvent(serviceName, instances))
-}
-
-// DispatchEvent dispatches the event
-func (e *etcdV3ServiceDiscovery) DispatchEvent(event *registry.ServiceInstancesChangedEvent) error {
-	extension.GetGlobalDispatcher().Dispatch(event)
 	return nil
 }
 
@@ -246,16 +234,32 @@ func toPath(instance registry.ServiceInstance) string {
 		return ""
 	}
 	// like: /services/servicename1/host(127.0.0.1)/8080
-	return fmt.Sprintf("%s%d", ROOT+constant.PATH_SEPARATOR+instance.GetServiceName()+constant.PATH_SEPARATOR+instance.GetHost()+constant.KEY_SEPARATOR, instance.GetPort())
+	return fmt.Sprintf("%s%d", ROOT+constant.PathSeparator+instance.GetServiceName()+constant.PathSeparator+instance.GetHost()+constant.KeySeparator, instance.GetPort())
 }
 
 // to dubbo service path
 func toParentPath(serviceName string) string {
-	return ROOT + constant.PATH_SEPARATOR + serviceName
+	return ROOT + constant.PathSeparator + serviceName
+}
+
+// register service instance listener, instance listener and watcher are matched through serviceName
+func (e *etcdV3ServiceDiscovery) registerServiceInstanceListener(serviceName string, listener registry.ServiceInstancesChangedListener) error {
+	initLock.Lock()
+	defer initLock.Unlock()
+
+	set, found := e.instanceListenerMap[serviceName]
+	if !found {
+		set = gxset.NewSet(listener)
+		set.Add(listener)
+		e.instanceListenerMap[serviceName] = set
+		return nil
+	}
+	set.Add(listener)
+	return nil
 }
 
 // register service watcher
-func (e *etcdV3ServiceDiscovery) registerSreviceWatcher(serviceName string) error {
+func (e *etcdV3ServiceDiscovery) registerServiceWatcher(serviceName string) error {
 	initLock.Lock()
 	defer initLock.Unlock()
 
@@ -273,7 +277,7 @@ func (e *etcdV3ServiceDiscovery) registerSreviceWatcher(serviceName string) erro
 	return nil
 }
 
-// when child data change should DispatchEventByServiceName
+// DataChange when child data change should DispatchEventByServiceName
 func (e *etcdV3ServiceDiscovery) DataChange(eventType remoting.Event) bool {
 	if eventType.Action == remoting.EventTypeUpdate {
 		instance := &registry.DefaultServiceInstance{}
@@ -282,7 +286,15 @@ func (e *etcdV3ServiceDiscovery) DataChange(eventType remoting.Event) bool {
 			instance.ServiceName = ""
 		}
 
-		if err := e.DispatchEventByServiceName(instance.ServiceName); err != nil {
+		// notify instance listener instance change
+		name := instance.ServiceName
+		instances := e.GetInstances(name)
+		for _, lis := range e.instanceListenerMap[instance.ServiceName].Values() {
+			var instanceLis registry.ServiceInstancesChangedListener
+			instanceLis = lis.(registry.ServiceInstancesChangedListener)
+			err = instanceLis.OnEvent(registry.NewServiceInstancesChangedEvent(name, instances))
+		}
+		if err != nil {
 			return false
 		}
 	}
@@ -290,37 +302,28 @@ func (e *etcdV3ServiceDiscovery) DataChange(eventType remoting.Event) bool {
 	return true
 }
 
-// netEcdv3ServiceDiscovery
-func newEtcdV3ServiceDiscovery(name string) (registry.ServiceDiscovery, error) {
+// newEtcdv3ServiceDiscovery
+func newEtcdV3ServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, error) {
 	initLock.Lock()
 	defer initLock.Unlock()
 
-	sdc, ok := config.GetBaseConfig().GetServiceDiscoveries(name)
-	if !ok || len(sdc.RemoteRef) == 0 {
-		return nil, perrors.New("could not init the etcd service instance because the config is invalid")
-	}
+	timeout := url.GetParamDuration(constant.RegistryTimeoutKey, constant.DefaultRegTimeout)
 
-	remoteConfig, ok := config.GetBaseConfig().GetRemoteConfig(sdc.RemoteRef)
-	if !ok {
-		return nil, perrors.New("could not find the remote config for name: " + sdc.RemoteRef)
-	}
-
-	// init etcdv3 client
-	timeout, err := time.ParseDuration(remoteConfig.TimeoutStr)
-	if err != nil {
-		logger.Errorf("timeout config %v is invalid,err is %v", remoteConfig.TimeoutStr, err.Error())
-		return nil, perrors.WithMessagef(err, "new etcd service discovery(address:%v)", remoteConfig.Address)
-	}
-
-	logger.Infof("etcd address is: %v,timeout is:%s", remoteConfig.Address, timeout.String())
+	logger.Infof("etcd address is: %v,timeout is:%s", url.Location, timeout.String())
 
 	client := etcdv3.NewServiceDiscoveryClient(
 		gxetcd.WithName(gxetcd.RegistryETCDV3Client),
 		gxetcd.WithTimeout(timeout),
-		gxetcd.WithEndpoints(strings.Split(remoteConfig.Address, ",")...),
+		gxetcd.WithEndpoints(strings.Split(url.Location, ",")...),
 	)
 
-	descriptor := fmt.Sprintf("etcd-service-discovery[%s]", remoteConfig.Address)
+	descriptor := fmt.Sprintf("etcd-service-discovery[%s]", url.Location)
 
-	return &etcdV3ServiceDiscovery{descriptor, client, nil, gxset.NewSet(), make(map[string]*etcdv3.EventListener)}, nil
+	return &etcdV3ServiceDiscovery{
+		descriptor:          descriptor,
+		client:              client,
+		serviceInstance:     nil,
+		services:            gxset.NewSet(),
+		childListenerMap:    make(map[string]*etcdv3.EventListener),
+		instanceListenerMap: make(map[string]*gxset.HashSet)}, nil
 }

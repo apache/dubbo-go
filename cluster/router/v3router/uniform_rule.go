@@ -38,16 +38,16 @@ import (
 // if match, get result destination key, which should be defined in DestinationRule yaml file
 type VirtualServiceRule struct {
 	// routerItem store match router list and destination list of this router
-	routerItem *config.DubboServiceRouterItem
+	routerItem *config.DubboRouteDetail
 
 	// uniformRule is the upper struct ptr
 	uniformRule *UniformRule
 }
 
-// match read from vsr's Match config
+// match read from VirtualServiceRule's Match config
 // it judges if this invocation matches the router rule request defined in config one by one
-func (vsr *VirtualServiceRule) match(url *common.URL, invocation protocol.Invocation) bool {
-	for _, v := range vsr.routerItem.Match {
+func (r *VirtualServiceRule) match(url *common.URL, invocation protocol.Invocation) bool {
+	for _, v := range r.routerItem.Match {
 		// method match judge
 		if v.Method != nil {
 			methodMatchJudger := judger.NewMethodMatchJudger(v.Method)
@@ -61,7 +61,7 @@ func (vsr *VirtualServiceRule) match(url *common.URL, invocation protocol.Invoca
 			return false
 		}
 
-		// atta match judge
+		// attachment match judge
 		if v.Attachment != nil {
 			attachmentMatchJudger := judger.NewAttachmentMatchJudger(v.Attachment)
 			if attachmentMatchJudger.Judge(invocation) {
@@ -79,9 +79,9 @@ func (vsr *VirtualServiceRule) match(url *common.URL, invocation protocol.Invoca
 
 // tryGetSubsetFromRouterOfOneDestination is a recursion function
 // try from destination 's header to final fallback destination, when success, it return result destination, else return error
-func (vsr *VirtualServiceRule) tryGetSubsetFromRouterOfOneDestination(desc *config.DubboDestination, invokers []protocol.Invoker) ([]protocol.Invoker, int, error) {
+func (r *VirtualServiceRule) tryGetSubsetFromRouterOfOneDestination(desc *config.DubboDestination, invokers []protocol.Invoker) ([]protocol.Invoker, int, error) {
 	subSet := desc.Destination.Subset
-	labels, ok := vsr.uniformRule.DestinationLabelListMap[subSet]
+	labels, ok := r.uniformRule.DestinationLabelListMap[subSet]
 	resultInvokers := make([]protocol.Invoker, 0)
 	if ok {
 		for _, v := range invokers {
@@ -95,7 +95,7 @@ func (vsr *VirtualServiceRule) tryGetSubsetFromRouterOfOneDestination(desc *conf
 	}
 
 	if desc.Destination.Fallback != nil {
-		return vsr.tryGetSubsetFromRouterOfOneDestination(desc.Destination.Fallback, invokers)
+		return r.tryGetSubsetFromRouterOfOneDestination(desc.Destination.Fallback, invokers)
 	}
 	return nil, 0, perrors.New("No invoker matches and no fallback destination to choose!")
 }
@@ -146,10 +146,10 @@ func (w *weightInvokerPairResults) getTargetInvokers() []protocol.Invoker {
 	return w.pairs[0].invokerList
 }
 
-func (vsr *VirtualServiceRule) getRuleTargetInvokers(invokers []protocol.Invoker) ([]protocol.Invoker, error) {
+func (r *VirtualServiceRule) getRuleTargetInvokers(invokers []protocol.Invoker) ([]protocol.Invoker, error) {
 	// weightInvokerPairResult is the collection routerDesc of all destination fields,
 	weightInvokerPairResult := weightInvokerPairResults{}
-	for _, v := range vsr.routerItem.Router {
+	for _, v := range r.routerItem.Router {
 		// v is one destination 's header e.g.
 		/*
 			   route:
@@ -176,7 +176,7 @@ func (vsr *VirtualServiceRule) getRuleTargetInvokers(invokers []protocol.Invoker
 						 host: demo
 						 subset: v6
 		*/
-		invokerListOfOneDest, weight, err := vsr.tryGetSubsetFromRouterOfOneDestination(v, invokers)
+		invokerListOfOneDest, weight, err := r.tryGetSubsetFromRouterOfOneDestination(v, invokers)
 		if err != nil {
 			return nil, err
 		}
@@ -198,7 +198,7 @@ func (vsr *VirtualServiceRule) getRuleTargetInvokers(invokers []protocol.Invoker
 	return weightInvokerPairResult.getTargetInvokers(), nil
 }
 
-// UniformRule
+// UniformRule uniform rule
 type UniformRule struct {
 	services                []*config.StringMatch
 	virtualServiceRules     []VirtualServiceRule
@@ -206,21 +206,22 @@ type UniformRule struct {
 }
 
 // NewDefaultConnChecker constructs a new DefaultConnChecker based on the url
-func newUniformRule(dubboRoute *config.DubboRoute, destinationMap map[string]map[string]string) (*UniformRule, error) {
-	matchItems := dubboRoute.RouterDetail
-	virtualServiceRules := make([]VirtualServiceRule, 0)
-	newUniformRule := &UniformRule{
-		DestinationLabelListMap: destinationMap,
+func newUniformRule(dubboRoute *config.DubboRoute, destinationMap map[string]map[string]string) *UniformRule {
+	uniformRule := &UniformRule{
 		services:                dubboRoute.Services,
+		DestinationLabelListMap: destinationMap,
 	}
-	for _, v := range matchItems {
+
+	routeDetail := dubboRoute.RouterDetail
+	virtualServiceRules := make([]VirtualServiceRule, 0)
+	for _, v := range routeDetail {
 		virtualServiceRules = append(virtualServiceRules, VirtualServiceRule{
 			routerItem:  v,
-			uniformRule: newUniformRule,
+			uniformRule: uniformRule,
 		})
 	}
-	newUniformRule.virtualServiceRules = virtualServiceRules
-	return newUniformRule, nil
+	uniformRule.virtualServiceRules = virtualServiceRules
+	return uniformRule
 }
 
 func (u *UniformRule) route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {

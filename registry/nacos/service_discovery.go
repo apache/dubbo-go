@@ -24,48 +24,53 @@ import (
 
 import (
 	"github.com/dubbogo/gost/container/set"
+	nacosClient "github.com/dubbogo/gost/database/kv/nacos"
 	"github.com/dubbogo/gost/hash/page"
-	"github.com/nacos-group/nacos-sdk-go/clients/naming_client"
+
 	"github.com/nacos-group/nacos-sdk-go/model"
 	"github.com/nacos-group/nacos-sdk-go/vo"
+
 	perrors "github.com/pkg/errors"
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/remoting/nacos"
 )
 
 const (
-	defaultGroup = constant.SERVICE_DISCOVERY_DEFAULT_GROUP
+	defaultGroup = constant.ServiceDiscoveryDefaultGroup
 	idKey        = "id"
 )
 
 // init will put the service discovery into extension
 func init() {
-	extension.SetServiceDiscovery(constant.NACOS_KEY, newNacosServiceDiscovery)
+	extension.SetServiceDiscovery(constant.NacosKey, newNacosServiceDiscovery)
 }
 
 // nacosServiceDiscovery is the implementation of service discovery based on nacos.
-// There is a problem, the go client for nacos does not support the id field.
+// There is a problem, the go namingClient for nacos does not support the id field.
 // we will use the metadata to store the id of ServiceInstance
 type nacosServiceDiscovery struct {
 	group string
 	// descriptor is a short string about the basic information of this instance
 	descriptor string
 
-	// namingClient is the Nacos' client
-	namingClient naming_client.INamingClient
+	// namingClient is the Nacos' namingClient
+	namingClient *nacosClient.NacosNamingClient
 	// cache registry instances
 	registryInstances []registry.ServiceInstance
+
+	instanceListenerMap map[string]*gxset.HashSet
+	listenerLock        sync.Mutex
 }
 
 // Destroy will close the service discovery.
-// Actually, it only marks the naming client as null and then return
+// Actually, it only marks the naming namingClient as null and then return
 func (n *nacosServiceDiscovery) Destroy() error {
 	for _, inst := range n.registryInstances {
 		err := n.Unregister(inst)
@@ -74,14 +79,14 @@ func (n *nacosServiceDiscovery) Destroy() error {
 			logger.Errorf("Unregister nacos instance:%+v, err:%+v", inst, err)
 		}
 	}
-	n.namingClient = nil
+	n.namingClient.Close()
 	return nil
 }
 
 // Register will register the service to nacos
 func (n *nacosServiceDiscovery) Register(instance registry.ServiceInstance) error {
 	ins := n.toRegisterInstance(instance)
-	ok, err := n.namingClient.RegisterInstance(ins)
+	ok, err := n.namingClient.Client().RegisterInstance(ins)
 	if err != nil || !ok {
 		return perrors.WithMessage(err, "Could not register the instance. "+instance.GetServiceName())
 	}
@@ -104,7 +109,7 @@ func (n *nacosServiceDiscovery) Update(instance registry.ServiceInstance) error 
 
 // Unregister will unregister the instance
 func (n *nacosServiceDiscovery) Unregister(instance registry.ServiceInstance) error {
-	ok, err := n.namingClient.DeregisterInstance(n.toDeregisterInstance(instance))
+	ok, err := n.namingClient.Client().DeregisterInstance(n.toDeregisterInstance(instance))
 	if err != nil || !ok {
 		return perrors.WithMessage(err, "Could not unregister the instance. "+instance.GetServiceName())
 	}
@@ -118,7 +123,7 @@ func (n *nacosServiceDiscovery) GetDefaultPageSize() int {
 
 // GetServices will return the all services
 func (n *nacosServiceDiscovery) GetServices() *gxset.HashSet {
-	services, err := n.namingClient.GetAllServicesInfo(vo.GetAllServiceInfoParam{
+	services, err := n.namingClient.Client().GetAllServicesInfo(vo.GetAllServiceInfoParam{
 		GroupName: n.group,
 	})
 
@@ -136,7 +141,7 @@ func (n *nacosServiceDiscovery) GetServices() *gxset.HashSet {
 
 // GetInstances will return the instances of serviceName and the group
 func (n *nacosServiceDiscovery) GetInstances(serviceName string) []registry.ServiceInstance {
-	instances, err := n.namingClient.SelectAllInstances(vo.SelectAllInstancesParam{
+	instances, err := n.namingClient.Client().SelectAllInstances(vo.SelectAllInstancesParam{
 		ServiceName: serviceName,
 		GroupName:   n.group,
 	})
@@ -153,21 +158,23 @@ func (n *nacosServiceDiscovery) GetInstances(serviceName string) []registry.Serv
 		delete(metadata, idKey)
 
 		res = append(res, &registry.DefaultServiceInstance{
-			ID:          id,
-			ServiceName: ins.ServiceName,
+			ID: id,
+			// ins.ServiceName is nacos service name like 'DEFAULT_GROUP@@MyAppName",
+			// which is not the service name we wanted, so we use serviceName directly.
+			ServiceName: serviceName,
 			Host:        ins.Ip,
 			Port:        int(ins.Port),
 			Enable:      ins.Enable,
 			Healthy:     ins.Healthy,
 			Metadata:    metadata,
+			GroupName:   n.group,
 		})
 	}
-
 	return res
 }
 
 // GetInstancesByPage will return the instances
-// Due to nacos client does not support pagination, so we have to query all instances and then return part of them
+// Due to nacos namingClient does not support pagination, so we have to query all instances and then return part of them
 func (n *nacosServiceDiscovery) GetInstancesByPage(serviceName string, offset int, pageSize int) gxpage.Pager {
 	all := n.GetInstances(serviceName)
 	res := make([]interface{}, 0, pageSize)
@@ -179,7 +186,7 @@ func (n *nacosServiceDiscovery) GetInstancesByPage(serviceName string, offset in
 }
 
 // GetHealthyInstancesByPage will return the instance
-// The nacos client has an API SelectInstances, which has a parameter call HealthyOnly.
+// The nacos namingClient has an API SelectInstances, which has a parameter call HealthyOnly.
 // However, the healthy parameter in this method maybe false. So we can not use that API.
 // Thus, we must query all instances and then do filter
 func (n *nacosServiceDiscovery) GetHealthyInstancesByPage(serviceName string, offset int, pageSize int, healthy bool) gxpage.Pager {
@@ -202,7 +209,7 @@ func (n *nacosServiceDiscovery) GetHealthyInstancesByPage(serviceName string, of
 }
 
 // GetRequestInstances will return the instances
-// The nacos client doesn't have batch API, so we should query those serviceNames one by one.
+// The nacos namingClient doesn't have batch API, so we should query those serviceNames one by one.
 func (n *nacosServiceDiscovery) GetRequestInstances(serviceNames []string, offset int, requestedSize int) map[string]gxpage.Pager {
 	res := make(map[string]gxpage.Pager, len(serviceNames))
 	for _, name := range serviceNames {
@@ -211,12 +218,35 @@ func (n *nacosServiceDiscovery) GetRequestInstances(serviceNames []string, offse
 	return res
 }
 
+func (n *nacosServiceDiscovery) registerInstanceListener(listener registry.ServiceInstancesChangedListener) {
+	n.listenerLock.Lock()
+	defer n.listenerLock.Unlock()
+
+	for _, t := range listener.GetServiceNames().Values() {
+		serviceName, ok := t.(string)
+		if !ok {
+			logger.Errorf("service name error %s", t)
+			continue
+		}
+		listenerSet, found := n.instanceListenerMap[serviceName]
+		if !found {
+			listenerSet = gxset.NewSet(listener)
+			listenerSet.Add(listener)
+			n.instanceListenerMap[serviceName] = listenerSet
+		} else {
+			listenerSet.Add(listener)
+		}
+	}
+}
+
 // AddListener will add a listener
 func (n *nacosServiceDiscovery) AddListener(listener registry.ServiceInstancesChangedListener) error {
+	n.registerInstanceListener(listener)
 	for _, t := range listener.GetServiceNames().Values() {
 		serviceName := t.(string)
-		err := n.namingClient.Subscribe(&vo.SubscribeParam{
+		err := n.namingClient.Client().Subscribe(&vo.SubscribeParam{
 			ServiceName: serviceName,
+			GroupName:   n.group,
 			SubscribeCallback: func(services []model.SubscribeService, err error) {
 				if err != nil {
 					logger.Errorf("Could not handle the subscribe notification because the err is not nil."+
@@ -238,10 +268,17 @@ func (n *nacosServiceDiscovery) AddListener(listener registry.ServiceInstancesCh
 						Enable:      service.Enable,
 						Healthy:     true,
 						Metadata:    metadata,
+						GroupName:   n.group,
 					})
 				}
 
-				e := n.DispatchEventForInstances(serviceName, instances)
+				var e error
+				for _, lis := range n.instanceListenerMap[serviceName].Values() {
+					var instanceListener registry.ServiceInstancesChangedListener
+					instanceListener = lis.(registry.ServiceInstancesChangedListener)
+					e = instanceListener.OnEvent(registry.NewServiceInstancesChangedEvent(serviceName, instances))
+				}
+
 				if e != nil {
 					logger.Errorf("Dispatching event got exception, service name: %s, err: %v", serviceName, err)
 				}
@@ -251,22 +288,6 @@ func (n *nacosServiceDiscovery) AddListener(listener registry.ServiceInstancesCh
 			return err
 		}
 	}
-	return nil
-}
-
-// DispatchEventByServiceName will dispatch the event for the service with the service name
-func (n *nacosServiceDiscovery) DispatchEventByServiceName(serviceName string) error {
-	return n.DispatchEventForInstances(serviceName, n.GetInstances(serviceName))
-}
-
-// DispatchEventForInstances will dispatch the event to those instances
-func (n *nacosServiceDiscovery) DispatchEventForInstances(serviceName string, instances []registry.ServiceInstance) error {
-	return n.DispatchEvent(registry.NewServiceInstancesChangedEvent(serviceName, instances))
-}
-
-// DispatchEvent will dispatch the event
-func (n *nacosServiceDiscovery) DispatchEvent(event *registry.ServiceInstancesChangedEvent) error {
-	extension.GetGlobalDispatcher().Dispatch(event)
 	return nil
 }
 
@@ -283,7 +304,7 @@ func (n *nacosServiceDiscovery) toRegisterInstance(instance registry.ServiceInst
 		Ip:          instance.GetHost(),
 		Port:        uint64(instance.GetPort()),
 		Metadata:    metadata,
-		// We must specify the weight since Java nacos client will ignore the instance whose weight is 0
+		// We must specify the weight since Java nacos namingClient will ignore the instance whose weight is 0
 		Weight:    1,
 		Enable:    instance.IsEnable(),
 		Healthy:   instance.IsHealthy(),
@@ -306,49 +327,32 @@ func (n *nacosServiceDiscovery) String() string {
 	return n.descriptor
 }
 
-var (
-	// 16 would be enough. We won't use concurrentMap because in most cases, there are not race condition
-	instanceMap = make(map[string]registry.ServiceDiscovery, 16)
-	initLock    sync.Mutex
-)
-
 // newNacosServiceDiscovery will create new service discovery instance
-func newNacosServiceDiscovery(name string) (registry.ServiceDiscovery, error) {
-	initLock.Lock()
-	defer initLock.Unlock()
-
-	instance, ok := instanceMap[name]
-	if ok {
-		return instance, nil
-	}
-
-	sdc, ok := config.GetBaseConfig().GetServiceDiscoveries(name)
-	if !ok || len(sdc.RemoteRef) == 0 {
-		return nil, perrors.New("could not init the instance because the config is invalid")
-	}
-
-	remoteConfig, ok := config.GetBaseConfig().GetRemoteConfig(sdc.RemoteRef)
-	if !ok {
-		return nil, perrors.New("could not find the remote config for name: " + sdc.RemoteRef)
-	}
-	group := sdc.Group
-	if len(group) == 0 {
-		group = defaultGroup
-	}
-
-	client, err := nacos.NewNacosClient(remoteConfig)
+func newNacosServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, error) {
+	discoveryURL := common.NewURLWithOptions(
+		common.WithParams(url.GetParams()),
+		common.WithParamsValue(constant.TimeoutKey, url.GetParam(constant.RegistryTimeoutKey, constant.DefaultRegTimeout)),
+		common.WithParamsValue(constant.NacosGroupKey, url.GetParam(constant.RegistryGroupKey, defaultGroup)),
+		common.WithParamsValue(constant.NacosUsername, url.Username),
+		common.WithParamsValue(constant.NacosPassword, url.Password),
+		common.WithParamsValue(constant.NacosNamespaceID, url.GetParam(constant.RegistryNamespaceKey, "")))
+	discoveryURL.Location = url.Location
+	discoveryURL.Username = url.Username
+	discoveryURL.Password = url.Password
+	client, err := nacos.NewNacosClientByURL(discoveryURL)
 	if err != nil {
-		return nil, perrors.WithMessage(err, "create nacos client failed.")
+		return nil, perrors.WithMessage(err, "create nacos namingClient failed.")
 	}
 
-	descriptor := fmt.Sprintf("nacos-service-discovery[%s]", remoteConfig.Address)
+	descriptor := fmt.Sprintf("nacos-service-discovery[%s]", discoveryURL.Location)
 
+	group := url.GetParam(constant.RegistryGroupKey, defaultGroup)
 	newInstance := &nacosServiceDiscovery{
-		group:             group,
-		namingClient:      client,
-		descriptor:        descriptor,
-		registryInstances: []registry.ServiceInstance{},
+		group:               group,
+		namingClient:        client,
+		descriptor:          descriptor,
+		registryInstances:   []registry.ServiceInstance{},
+		instanceListenerMap: make(map[string]*gxset.HashSet),
 	}
-	instanceMap[name] = newInstance
 	return newInstance, nil
 }

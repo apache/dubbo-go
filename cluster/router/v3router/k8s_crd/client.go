@@ -29,8 +29,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
+
 	"k8s.io/client-go/kubernetes/scheme"
+
 	"k8s.io/client-go/rest"
+
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -102,7 +105,7 @@ func NewK8sCRDClient(groupName, groupVersion, namespace string, handlers ...List
 	return newClient, nil
 }
 
-// func (c *Client) WatchResources() []cache.Store { can only be called once
+// WatchResources can only be called once
 func (c *Client) WatchResources() []cache.Store {
 	stores := make([]cache.Store, 0)
 	c.once.Do(

@@ -18,7 +18,7 @@
 package identifier
 
 import (
-	"encoding/base64"
+	"net/url"
 )
 
 import (
@@ -52,41 +52,36 @@ func joinParams(joinChar string, params []string) string {
 // getIdentifierKey returns string that format is service:Version:Group:Side:param1:param2...
 func (mdi *BaseMetadataIdentifier) getIdentifierKey(params ...string) string {
 	return mdi.ServiceInterface +
-		constant.KEY_SEPARATOR + mdi.Version +
-		constant.KEY_SEPARATOR + mdi.Group +
-		constant.KEY_SEPARATOR + mdi.Side +
-		joinParams(constant.KEY_SEPARATOR, params)
+		constant.KeySeparator + mdi.Version +
+		constant.KeySeparator + mdi.Group +
+		constant.KeySeparator + mdi.Side +
+		joinParams(constant.KeySeparator, params)
 }
 
 // getFilePathKey returns string that format is metadata/path/Version/Group/Side/param1/param2...
 func (mdi *BaseMetadataIdentifier) getFilePathKey(params ...string) string {
 	path := serviceToPath(mdi.ServiceInterface)
 
-	return constant.DEFAULT_PATH_TAG +
+	return constant.DefaultPathTag +
 		withPathSeparator(path) +
 		withPathSeparator(mdi.Version) +
 		withPathSeparator(mdi.Group) +
 		withPathSeparator(mdi.Side) +
-		joinParams(constant.PATH_SEPARATOR, params)
+		joinParams(constant.PathSeparator, params)
 }
 
 // serviceToPath uss URL encode to decode the @serviceInterface
 func serviceToPath(serviceInterface string) string {
-	if serviceInterface == constant.ANY_VALUE {
+	if serviceInterface == constant.AnyValue {
 		return ""
-	} else {
-		decoded, err := base64.URLEncoding.DecodeString(serviceInterface)
-		if err != nil {
-			return ""
-		}
-		return string(decoded)
 	}
+	return url.PathEscape(serviceInterface)
 }
 
 // withPathSeparator return "/" + @path
 func withPathSeparator(path string) string {
 	if len(path) != 0 {
-		path = constant.PATH_SEPARATOR + path
+		path = constant.PathSeparator + path
 	}
 	return path
 }
@@ -94,16 +89,17 @@ func withPathSeparator(path string) string {
 // BaseApplicationMetadataIdentifier is the base implement of BaseApplicationMetadataIdentifier interface
 type BaseApplicationMetadataIdentifier struct {
 	Application string
+	Group       string
 }
 
 // getIdentifierKey returns string that format is application/param
 func (madi *BaseApplicationMetadataIdentifier) getIdentifierKey(params ...string) string {
-	return madi.Application + joinParams(constant.KEY_SEPARATOR, params)
+	return madi.Application + joinParams(constant.KeySeparator, params)
 }
 
 // getFilePathKey returns string that format is metadata/application/revision
 func (madi *BaseApplicationMetadataIdentifier) getFilePathKey(params ...string) string {
-	return constant.DEFAULT_PATH_TAG +
+	return constant.DefaultPathTag +
 		withPathSeparator(madi.Application) +
-		joinParams(constant.PATH_SEPARATOR, params)
+		joinParams(constant.PathSeparator, params)
 }

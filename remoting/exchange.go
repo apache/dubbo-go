@@ -14,9 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package remoting
 
 import (
+	"fmt"
 	"sync"
 	"time"
 )
@@ -112,6 +114,11 @@ func (response *Response) Handle() {
 	} else {
 		pendingResponse.Callback(pendingResponse.GetCallResponse())
 	}
+}
+
+func (response *Response) String() string {
+	return fmt.Sprintf("&remoting.Response{ID: %d, Version: %s, SerialID: %d, Status: %d, Event: %v, Error: %v, Result: %v}",
+		response.ID, response.Version, response.SerialID, response.Status, response.Event, response.Error, response.Result)
 }
 
 type Options struct {

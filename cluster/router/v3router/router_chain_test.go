@@ -24,26 +24,27 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/cluster/router/v3router/k8s_api"
 	"dubbo.apache.org/dubbo-go/v3/common/yaml"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
-	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/config_center"
 )
 
 const (
 	mockVSConfigPath = "./test_file/virtual_service.yml"
 	mockDRConfigPath = "./test_file/dest_rule.yml"
+	mockConfigPath   = "./test_file/mesh_route.yml"
 )
 
 func TestNewUniformRouterChain(t *testing.T) {
-	vsBytes, _ := yaml.LoadYMLConfig(mockVSConfigPath)
-	drBytes, _ := yaml.LoadYMLConfig(mockDRConfigPath)
-	rc, err := NewUniformRouterChain(vsBytes, drBytes, make(chan struct{}))
-	assert.Nil(t, err)
-	assert.NotNil(t, rc)
+	//rc, err := NewUniformRouterChain()
+	//assert.Nil(t, err)
+	//assert.NotNil(t, rc)
 }
 
 type ruleTestItemStruct struct {
@@ -62,12 +63,12 @@ type ruleTestItemStruct struct {
 func TestParseConfigFromFile(t *testing.T) {
 	vsBytes, _ := yaml.LoadYMLConfig(mockVSConfigPath)
 	drBytes, _ := yaml.LoadYMLConfig(mockDRConfigPath)
-	routers, err := parseFromConfigToRouters(vsBytes, drBytes, make(chan struct{}, 1))
+	routers, err := parseFromConfigToRouters(vsBytes, drBytes)
 	fmt.Println(routers, err)
 	assert.Equal(t, len(routers), 1)
-	assert.NotNil(t, routers[0].dubboRouter)
-	assert.Equal(t, len(routers[0].dubboRouter.uniformRules), 2)
-	for i, v := range routers[0].dubboRouter.uniformRules {
+	assert.NotNil(t, routers[0].uniformRules)
+	assert.Equal(t, len(routers[0].uniformRules), 2)
+	for i, v := range routers[0].uniformRules {
 		if i == 0 {
 			assert.Equal(t, len(v.services), 2)
 			assert.Equal(t, "com.taobao.hsf.demoService:1.0.0", v.services[0].Exact)
@@ -187,22 +188,60 @@ func TestParseConfigFromFile(t *testing.T) {
 }
 
 func TestRouterChain_Route(t *testing.T) {
-	vsBytes, _ := yaml.LoadYMLConfig(mockVSConfigPath)
-	drBytes, _ := yaml.LoadYMLConfig(mockDRConfigPath)
-	rc, err := NewUniformRouterChain(vsBytes, drBytes, make(chan struct{}))
-	assert.Nil(t, err)
-	assert.NotNil(t, rc)
-	newGoodURL, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0")
-	newBadURL1, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0")
-	newBadURL2, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0")
-	goodIvk := protocol.NewBaseInvoker(newGoodURL)
-	b1 := protocol.NewBaseInvoker(newBadURL1)
-	b2 := protocol.NewBaseInvoker(newBadURL2)
-	invokerList := make([]protocol.Invoker, 3)
-	invokerList = append(invokerList, goodIvk)
-	invokerList = append(invokerList, b1)
-	invokerList = append(invokerList, b2)
-	result := rc.Route(invokerList, newGoodURL, invocation.NewRPCInvocation("GetUser", nil, nil))
-	assert.Equal(t, 0, len(result))
+	//rc, err := NewUniformRouterChain()
+	//assert.Nil(t, err)
+	//assert.NotNil(t, rc)
+	//newGoodURL, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0")
+	//newBadURL1, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0")
+	//newBadURL2, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0")
+	//goodIvk := protocol.NewBaseInvoker(newGoodURL)
+	//b1 := protocol.NewBaseInvoker(newBadURL1)
+	//b2 := protocol.NewBaseInvoker(newBadURL2)
+	//invokerList := make([]protocol.Invoker, 3)
+	//invokerList = append(invokerList, goodIvk)
+	//invokerList = append(invokerList, b1)
+	//invokerList = append(invokerList, b2)
+	//result := rc.Route(invokerList, newGoodURL, invocation.NewRPCInvocation("GetUser", nil, nil))
+	//assert.Equal(t, 0, len(result))
 	//todo test find target invoker
+}
+
+func TestRouterChain_Process(t *testing.T) {
+	vsJson := `{"apiVersion":"service.dubbo.apache.org/v1alpha2", "kind":"VirtualService", "name":"demo-route"}`
+
+	rc := &RouterChain{}
+	mockVirtualServiceConfig := &config.VirtualServiceConfig{
+		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{
+				"kubectl.kubernetes.io/last-applied-configuration": vsJson,
+			},
+		},
+	}
+	vsValue, err := yaml.MarshalYML(mockVirtualServiceConfig)
+	assert.Nil(t, err)
+	// test virtual service config chage event
+	mockVirtualServiceChangeEvent := &config_center.ConfigChangeEvent{
+		Key:        k8s_api.VirtualServiceEventKey,
+		Value:      string(vsValue),
+		ConfigType: 0,
+	}
+	rc.Process(mockVirtualServiceChangeEvent)
+
+	// test destination rule config chage event
+	destJson := `{"apiVersion":"service.dubbo.apache.org/v1alpha2", "kind":"VirtualService", "name":"demo-route"}`
+	mockDestinationRuleConfig := &config.DestinationRuleConfig{
+		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{
+				"kubectl.kubernetes.io/last-applied-configuration": destJson,
+			},
+		},
+	}
+	drValue, err := yaml.MarshalYML(mockDestinationRuleConfig)
+	assert.Nil(t, err)
+	mockDestinationRuleChangeEvent := &config_center.ConfigChangeEvent{
+		Key:        k8s_api.DestinationRuleEventKey,
+		Value:      string(drValue),
+		ConfigType: 0,
+	}
+	rc.Process(mockDestinationRuleChangeEvent)
 }

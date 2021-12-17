@@ -20,11 +20,12 @@ package zookeeper
 import (
 	"encoding/json"
 	"strings"
-	"time"
 )
 
 import (
 	"github.com/dubbogo/go-zookeeper/zk"
+
+	gxset "github.com/dubbogo/gost/container/set"
 	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
 )
 
@@ -141,6 +142,39 @@ func (m *zookeeperMetadataReport) GetServiceDefinition(metadataIdentifier *ident
 	return string(v), err
 }
 
+// RegisterServiceAppMapping map the specified Dubbo service interface to current Dubbo app name
+func (m *zookeeperMetadataReport) RegisterServiceAppMapping(key string, group string, value string) error {
+	path := m.rootDir + group + constant.PathSeparator + key
+	v, state, err := m.client.GetContent(path)
+	if err == zk.ErrNoNode {
+		return m.client.CreateWithValue(path, []byte(value))
+	} else if err != nil {
+		return err
+	}
+	oldValue := string(v)
+	if strings.Contains(oldValue, value) {
+		return nil
+	}
+	value = oldValue + constant.CommaSeparator + value
+	_, err = m.client.SetContent(path, []byte(value), state.Version)
+	return err
+}
+
+// GetServiceAppMapping get the app names from the specified Dubbo service interface
+func (m *zookeeperMetadataReport) GetServiceAppMapping(key string, group string) (*gxset.HashSet, error) {
+	path := m.rootDir + group + constant.PathSeparator + key
+	v, _, err := m.client.GetContent(path)
+	if err != nil {
+		return nil, err
+	}
+	appNames := strings.Split(string(v), constant.CommaSeparator)
+	set := gxset.NewSet()
+	for _, e := range appNames {
+		set.Add(e)
+	}
+	return set, nil
+}
+
 type zookeeperMetadataReportFactory struct{}
 
 // nolint
@@ -149,18 +183,18 @@ func (mf *zookeeperMetadataReportFactory) CreateMetadataReport(url *common.URL) 
 		"zookeeperMetadataReport",
 		strings.Split(url.Location, ","),
 		false,
-		gxzookeeper.WithZkTimeOut(15*time.Second),
+		gxzookeeper.WithZkTimeOut(url.GetParamDuration(constant.TimeoutKey, "15s")),
 	)
 	if err != nil {
 		panic(err)
 	}
 
-	rootDir := url.GetParam(constant.GROUP_KEY, "dubbo")
-	if !strings.HasPrefix(rootDir, constant.PATH_SEPARATOR) {
-		rootDir = constant.PATH_SEPARATOR + rootDir
+	rootDir := url.GetParam(constant.MetadataReportGroupKey, "dubbo")
+	if !strings.HasPrefix(rootDir, constant.PathSeparator) {
+		rootDir = constant.PathSeparator + rootDir
 	}
-	if rootDir != constant.PATH_SEPARATOR {
-		rootDir = rootDir + constant.PATH_SEPARATOR
+	if rootDir != constant.PathSeparator {
+		rootDir = rootDir + constant.PathSeparator
 	}
 
 	return &zookeeperMetadataReport{client: client, rootDir: rootDir}

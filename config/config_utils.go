@@ -24,8 +24,20 @@ import (
 )
 
 import (
+	"github.com/go-playground/validator/v10"
+
+	"github.com/pkg/errors"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
+
+var validate *validator.Validate
+
+func init() {
+	validate = validator.New()
+}
 
 func mergeValue(str1, str2, def string) string {
 	if str1 == "" && str2 == "" {
@@ -34,11 +46,11 @@ func mergeValue(str1, str2, def string) string {
 	s1 := strings.Split(str1, ",")
 	s2 := strings.Split(str2, ",")
 	str := "," + strings.Join(append(s1, s2...), ",")
-	defKey := strings.Contains(str, ","+constant.DEFAULT_KEY)
+	defKey := strings.Contains(str, ","+constant.DefaultKey)
 	if !defKey {
-		str = "," + constant.DEFAULT_KEY + str
+		str = "," + constant.DefaultKey + str
 	}
-	str = strings.TrimPrefix(strings.Replace(str, ","+constant.DEFAULT_KEY, ","+def, -1), ",")
+	str = strings.TrimPrefix(strings.Replace(str, ","+constant.DefaultKey, ","+def, -1), ",")
 	return removeMinus(strings.Split(str, ","))
 }
 
@@ -62,4 +74,39 @@ func removeMinus(strArr []string) string {
 	reg := regexp.MustCompile("[,]+")
 	normalStr = reg.ReplaceAllString(strings.Trim(normalStr, ","), ",")
 	return normalStr
+}
+
+// removeDuplicateElement remove duplicate element
+func removeDuplicateElement(items []string) []string {
+	result := make([]string, 0, len(items))
+	temp := map[string]struct{}{}
+	for _, item := range items {
+		if _, ok := temp[item]; !ok && item != "" {
+			temp[item] = struct{}{}
+			result = append(result, item)
+		}
+	}
+	return result
+}
+
+// translateRegistryIds string "nacos,zk" => ["nacos","zk"]
+func translateRegistryIds(registryIds []string) []string {
+	ids := make([]string, 0)
+	for _, id := range registryIds {
+
+		ids = append(ids, strings.Split(id, ",")...)
+	}
+	return removeDuplicateElement(ids)
+}
+
+func verify(s interface{}) error {
+	if err := validate.Struct(s); err != nil {
+		errs := err.(validator.ValidationErrors)
+		var slice []string
+		for _, msg := range errs {
+			slice = append(slice, msg.Error())
+		}
+		return errors.New(strings.Join(slice, ","))
+	}
+	return nil
 }

@@ -28,6 +28,7 @@ import (
 import (
 	hessian "github.com/apache/dubbo-go-hessian2"
 	"github.com/apache/dubbo-go-hessian2/java_exception"
+
 	perrors "github.com/pkg/errors"
 )
 
@@ -149,8 +150,8 @@ func marshalRequest(encoder *hessian.Encoder, p DubboPackage) ([]byte, error) {
 		request.Attachments[TIMEOUT_KEY] = strconv.Itoa(int(service.Timeout / time.Millisecond))
 	}
 
-	_ = encoder.Encode(request.Attachments)
-	return encoder.Buffer(), nil
+	err = encoder.Encode(request.Attachments)
+	return encoder.Buffer(), err
 }
 
 var versionInt = make(map[string]int)
@@ -253,8 +254,8 @@ func unmarshalRequestBody(body []byte, p *DubboPackage) error {
 		return perrors.WithStack(err)
 	}
 
-	if attachments == nil {
-		attachments = map[interface{}]interface{}{constant.INTERFACE_KEY: target}
+	if attachments == nil || attachments == "" {
+		attachments = map[interface{}]interface{}{constant.InterfaceKey: target}
 	}
 
 	if v, ok := attachments.(map[interface{}]interface{}); ok {
@@ -369,16 +370,16 @@ func buildServerSidePackageBody(pkg *DubboPackage) {
 		if req[6] != nil {
 			attachments = req[6].(map[string]interface{})
 		}
-		if svc.Path == "" && attachments[constant.PATH_KEY] != nil && len(attachments[constant.PATH_KEY].(string)) > 0 {
-			svc.Path = attachments[constant.PATH_KEY].(string)
+		if svc.Path == "" && attachments[constant.PathKey] != nil && len(attachments[constant.PathKey].(string)) > 0 {
+			svc.Path = attachments[constant.PathKey].(string)
 		}
-		if _, ok := attachments[constant.INTERFACE_KEY]; ok {
-			svc.Interface = attachments[constant.INTERFACE_KEY].(string)
+		if _, ok := attachments[constant.InterfaceKey]; ok {
+			svc.Interface = attachments[constant.InterfaceKey].(string)
 		} else {
 			svc.Interface = svc.Path
 		}
-		if _, ok := attachments[constant.GROUP_KEY]; ok {
-			svc.Group = attachments[constant.GROUP_KEY].(string)
+		if _, ok := attachments[constant.GroupKey]; ok {
+			svc.Group = attachments[constant.GroupKey].(string)
 		}
 		pkg.SetService(svc)
 		pkg.SetBody(map[string]interface{}{
@@ -489,6 +490,10 @@ func getArgType(v interface{}) string {
 		}
 		switch t.Kind() {
 		case reflect.Struct:
+			p, ok := v.(hessian.Param)
+			if ok {
+				return p.JavaParamName()
+			}
 			v, ok := v.(hessian.POJO)
 			if ok {
 				return v.JavaClassName()

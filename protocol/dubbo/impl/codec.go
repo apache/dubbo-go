@@ -24,6 +24,7 @@ import (
 
 import (
 	hessian "github.com/apache/dubbo-go-hessian2"
+
 	perrors "github.com/pkg/errors"
 )
 
@@ -275,12 +276,12 @@ func packResponse(p DubboPackage, serializer Serializer) ([]byte, error) {
 }
 
 func NewDubboCodec(reader *bufio.Reader) *ProtocolCodec {
-	s, _ := GetSerializerById(constant.S_Hessian2)
+	s, _ := GetSerializerById(constant.SHessian2)
 	return &ProtocolCodec{
 		reader:     reader,
 		pkgType:    0,
 		bodyLen:    0,
 		headerRead: false,
-		serializer: s.(Serializer),
+		serializer: s,
 	}
 }

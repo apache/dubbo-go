@@ -34,6 +34,7 @@ import (
 
 import (
 	"github.com/opentracing/opentracing-go"
+
 	perrors "github.com/pkg/errors"
 )
 
@@ -42,10 +43,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 )
-
-// ////////////////////////////////////////////
-// Request
-// ////////////////////////////////////////////
 
 // Request is HTTP protocol request
 type Request struct {
@@ -104,9 +101,9 @@ func NewHTTPClient(opt *HTTPOptions) *HTTPClient {
 func (c *HTTPClient) NewRequest(service *common.URL, method string, args interface{}) *Request {
 	return &Request{
 		ID:       atomic.AddInt64(&c.ID, 1),
-		group:    service.GetParam(constant.GROUP_KEY, ""),
+		group:    service.GetParam(constant.GroupKey, ""),
 		protocol: service.Protocol,
-		version:  service.GetParam(constant.VERSION_KEY, ""),
+		version:  service.GetParam(constant.VersionKey, ""),
 		service:  service.Path,
 		method:   method,
 		args:     args,
@@ -125,7 +122,7 @@ func (c *HTTPClient) Call(ctx context.Context, service *common.URL, req *Request
 		reqTimeout = 100 * time.Millisecond
 	}
 	httpHeader.Set("Timeout", reqTimeout.String())
-	if md, ok := ctx.Value(constant.DUBBOGO_CTX_KEY).(map[string]string); ok {
+	if md, ok := ctx.Value(constant.DubboGoCtxKey).(map[string]string); ok {
 		for k := range md {
 			httpHeader.Set(k, md[k])
 		}

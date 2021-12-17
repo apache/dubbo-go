@@ -25,6 +25,7 @@ import (
 
 import (
 	perrors "github.com/pkg/errors"
+
 	"gopkg.in/yaml.v2"
 )
 
@@ -54,12 +55,12 @@ func (cr *RestConfigReader) ReadConsumerConfig(reader *bytes.Buffer) error {
 	restConsumerConfig := &config.RestConsumerConfig{}
 	err := yaml.Unmarshal(reader.Bytes(), restConsumerConfig)
 	if err != nil {
-		return perrors.Errorf("[Rest Config] unmarshal Consumer error %#v", perrors.WithStack(err))
+		return perrors.Errorf("[Rest ShutdownConfig] unmarshal Consumer error %#v", perrors.WithStack(err))
 	}
 
 	restConsumerServiceConfigMap := make(map[string]*config.RestServiceConfig, len(restConsumerConfig.RestServiceConfigsMap))
 	for key, rc := range restConsumerConfig.RestServiceConfigsMap {
-		rc.Client = getNotEmptyStr(rc.Client, restConsumerConfig.Client, constant.DEFAULT_REST_CLIENT)
+		rc.Client = getNotEmptyStr(rc.Client, restConsumerConfig.Client, constant.DefaultRestClient)
 		rc.RestMethodConfigsMap = initMethodConfigMap(rc, restConsumerConfig.Consumes, restConsumerConfig.Produces)
 		restConsumerServiceConfigMap[key] = rc
 	}
@@ -72,11 +73,11 @@ func (cr *RestConfigReader) ReadProviderConfig(reader *bytes.Buffer) error {
 	restProviderConfig := &config.RestProviderConfig{}
 	err := yaml.Unmarshal(reader.Bytes(), restProviderConfig)
 	if err != nil {
-		return perrors.Errorf("[Rest Config] unmarshal Provider error %#v", perrors.WithStack(err))
+		return perrors.Errorf("[Rest ShutdownConfig] unmarshal Provider error %#v", perrors.WithStack(err))
 	}
 	restProviderServiceConfigMap := make(map[string]*config.RestServiceConfig, len(restProviderConfig.RestServiceConfigsMap))
 	for key, rc := range restProviderConfig.RestServiceConfigsMap {
-		rc.Server = getNotEmptyStr(rc.Server, restProviderConfig.Server, constant.DEFAULT_REST_SERVER)
+		rc.Server = getNotEmptyStr(rc.Server, restProviderConfig.Server, constant.DefaultRestServer)
 		rc.RestMethodConfigsMap = initMethodConfigMap(rc, restProviderConfig.Consumes, restProviderConfig.Produces)
 		restProviderServiceConfigMap[key] = rc
 	}
@@ -116,7 +117,7 @@ func transformMethodConfig(methodConfig *config.RestMethodConfig) *config.RestMe
 	if len(methodConfig.PathParamsMap) == 0 && len(methodConfig.PathParams) > 0 {
 		paramsMap, err := parseParamsString2Map(methodConfig.PathParams)
 		if err != nil {
-			logger.Warnf("[Rest Config] Path Param parse error:%v", err)
+			logger.Warnf("[Rest ShutdownConfig] Path Param parse error:%v", err)
 		} else {
 			methodConfig.PathParamsMap = paramsMap
 		}
@@ -124,7 +125,7 @@ func transformMethodConfig(methodConfig *config.RestMethodConfig) *config.RestMe
 	if len(methodConfig.QueryParamsMap) == 0 && len(methodConfig.QueryParams) > 0 {
 		paramsMap, err := parseParamsString2Map(methodConfig.QueryParams)
 		if err != nil {
-			logger.Warnf("[Rest Config] Argument Param parse error:%v", err)
+			logger.Warnf("[Rest ShutdownConfig] Argument Param parse error:%v", err)
 		} else {
 			methodConfig.QueryParamsMap = paramsMap
 		}
@@ -132,7 +133,7 @@ func transformMethodConfig(methodConfig *config.RestMethodConfig) *config.RestMe
 	if len(methodConfig.HeadersMap) == 0 && len(methodConfig.Headers) > 0 {
 		headersMap, err := parseParamsString2Map(methodConfig.Headers)
 		if err != nil {
-			logger.Warnf("[Rest Config] Argument Param parse error:%v", err)
+			logger.Warnf("[Rest ShutdownConfig] Argument Param parse error:%v", err)
 		} else {
 			methodConfig.HeadersMap = headersMap
 		}

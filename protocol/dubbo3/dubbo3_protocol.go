@@ -14,20 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package dubbo3
 
 import (
 	"context"
 	"fmt"
 	"reflect"
+	"strconv"
 	"sync"
 )
 
 import (
+	"github.com/dubbogo/grpc-go"
+
+	tripleCommon "github.com/dubbogo/triple/pkg/common"
 	tripleConstant "github.com/dubbogo/triple/pkg/common/constant"
 	triConfig "github.com/dubbogo/triple/pkg/config"
 	"github.com/dubbogo/triple/pkg/triple"
-	"google.golang.org/grpc"
 )
 
 import (
@@ -74,19 +78,22 @@ func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	serviceKey := url.ServiceKey()
 	exporter := NewDubboExporter(serviceKey, invoker, dp.ExporterMap(), dp.serviceMap)
 	dp.SetExporterMap(serviceKey, exporter)
-	logger.Infof("Export service: %s", url.String())
+	logger.Infof("[Triple Protocol] Export service: %s", url.String())
 
-	key := url.GetParam(constant.BEAN_NAME_KEY, "")
+	key := url.GetParam(constant.BeanNameKey, "")
 	var service interface{}
 	service = config.GetProviderService(key)
 
-	serializationType := url.GetParam(constant.SERIALIZATION_KEY, constant.PROTOBUF_SERIALIZATION)
-	var triSerializationType tripleConstant.TripleSerializerName
-	switch serializationType {
-	case constant.PROTOBUF_SERIALIZATION:
-		m, ok := reflect.TypeOf(service).MethodByName("SetProxyImpl")
+	serializationType := url.GetParam(constant.SerializationKey, constant.ProtobufSerialization)
+	var triSerializationType tripleConstant.CodecType
+
+	if serializationType == constant.ProtobufSerialization {
+		m, ok := reflect.TypeOf(service).MethodByName("XXX_SetProxyImpl")
 		if !ok {
-			panic("method SetProxyImpl is necessary for triple service")
+			logger.Errorf("PB service with key = %s is not support XXX_SetProxyImpl to pb."+
+				"Please run go install github.com/dubbogo/tools/cmd/protoc-gen-go-triple@latest to update your "+
+				"protoc-gen-go-triple and re-generate your pb file again.", key)
+			return nil
 		}
 		if invoker == nil {
 			panic(fmt.Sprintf("no invoker found for servicekey: %v", url.ServiceKey()))
@@ -94,15 +101,29 @@ func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 		in := []reflect.Value{reflect.ValueOf(service)}
 		in = append(in, reflect.ValueOf(invoker))
 		m.Func.Call(in)
-		triSerializationType = tripleConstant.PBSerializerName
-	case constant.HESSIAN2_SERIALIZATION:
-		service = &Dubbo3HessianService{proxyImpl: invoker}
-		triSerializationType = tripleConstant.TripleHessianWrapperSerializerName
-	default:
-		panic(fmt.Sprintf("unsupport serialization = %s", serializationType))
+		triSerializationType = tripleConstant.PBCodecName
+	} else {
+		valueOf := reflect.ValueOf(service)
+		typeOf := valueOf.Type()
+		numField := valueOf.NumMethod()
+		tripleService := &UnaryService{proxyImpl: invoker}
+		for i := 0; i < numField; i++ {
+			ft := typeOf.Method(i)
+			if ft.Name == "Reference" {
+				continue
+			}
+			// get all method params type
+			typs := make([]reflect.Type, 0)
+			for j := 2; j < ft.Type.NumIn(); j++ {
+				typs = append(typs, ft.Type.In(j))
+			}
+			tripleService.setReqParamsTypes(ft.Name, typs)
+		}
+		service = tripleService
+		triSerializationType = tripleConstant.CodecType(serializationType)
 	}
 
-	dp.serviceMap.Store(url.GetParam(constant.INTERFACE_KEY, ""), service)
+	dp.serviceMap.Store(url.GetParam(constant.InterfaceKey, ""), service)
 
 	// try start server
 	dp.openServer(url, triSerializationType)
@@ -117,7 +138,7 @@ func (dp *DubboProtocol) Refer(url *common.URL) protocol.Invoker {
 		return nil
 	}
 	dp.SetInvokers(invoker)
-	logger.Infof("Refer service: %s", url.String())
+	logger.Infof("[Triple Protocol] Refer service: %s", url.String())
 	return invoker
 }
 
@@ -143,48 +164,97 @@ func (dp *DubboProtocol) Destroy() {
 // Dubbo3GrpcService is gRPC service
 type Dubbo3GrpcService interface {
 	// SetProxyImpl sets proxy.
-	SetProxyImpl(impl protocol.Invoker)
+	XXX_SetProxyImpl(impl protocol.Invoker)
 	// GetProxyImpl gets proxy.
-	GetProxyImpl() protocol.Invoker
+	XXX_GetProxyImpl() protocol.Invoker
 	// ServiceDesc gets an RPC service's specification.
-	ServiceDesc() *grpc.ServiceDesc
+	XXX_ServiceDesc() *grpc.ServiceDesc
 }
 
-type Dubbo3HessianService struct {
-	proxyImpl protocol.Invoker
+type UnaryService struct {
+	proxyImpl  protocol.Invoker
+	reqTypeMap sync.Map
 }
 
-func (d *Dubbo3HessianService) InvokeWithArgs(ctx context.Context, methodName string, arguments []interface{}) (interface{}, error) {
-	res := d.proxyImpl.Invoke(ctx, invocation.NewRPCInvocation(methodName, arguments, nil))
-	return res.Result(), res.Error()
+func (d *UnaryService) setReqParamsTypes(methodName string, typ []reflect.Type) {
+	d.reqTypeMap.Store(methodName, typ)
+}
+
+func (d *UnaryService) GetReqParamsInterfaces(methodName string) ([]interface{}, bool) {
+	val, ok := d.reqTypeMap.Load(methodName)
+	if !ok {
+		return nil, false
+	}
+	typs := val.([]reflect.Type)
+	reqParamsInterfaces := make([]interface{}, 0, len(typs))
+	for _, typ := range typs {
+		reqParamsInterfaces = append(reqParamsInterfaces, reflect.New(typ).Interface())
+	}
+	return reqParamsInterfaces, true
+}
+
+func (d *UnaryService) InvokeWithArgs(ctx context.Context, methodName string, arguments []interface{}) (interface{}, error) {
+	dubboAttachment, _ := ctx.Value(tripleConstant.TripleAttachement).(tripleCommon.DubboAttachment)
+	res := d.proxyImpl.Invoke(ctx, invocation.NewRPCInvocation(methodName, arguments, dubboAttachment))
+	return res, res.Error()
 }
 
 // openServer open a dubbo3 server, if there is already a service using the same protocol, it returns directly.
-func (dp *DubboProtocol) openServer(url *common.URL, tripleSerializationType tripleConstant.TripleSerializerName) {
+func (dp *DubboProtocol) openServer(url *common.URL, tripleCodecType tripleConstant.CodecType) {
+	dp.serverLock.Lock()
+	defer dp.serverLock.Unlock()
 	_, ok := dp.serverMap[url.Location]
+
 	if ok {
+		dp.serverMap[url.Location].RefreshService()
 		return
 	}
+
+	opts := []triConfig.OptionFunction{
+		triConfig.WithCodecType(tripleCodecType),
+		triConfig.WithLocation(url.Location),
+		triConfig.WithLogger(logger.GetLogger()),
+	}
+	tracingKey := url.GetParam(constant.TracingConfigKey, "")
+	if tracingKey != "" {
+		tracingConfig := config.GetTracingConfig(tracingKey)
+		if tracingConfig != nil {
+			if tracingConfig.ServiceName == "" {
+				tracingConfig.ServiceName = config.GetApplicationConfig().Name
+			}
+			switch tracingConfig.Name {
+			case "jaeger":
+				opts = append(opts, triConfig.WithJaegerConfig(
+					tracingConfig.Address,
+					tracingConfig.ServiceName,
+					tracingConfig.UseAgent,
+				))
+			default:
+				logger.Warnf("unsupported tracing name %s, now triple only support jaeger", tracingConfig.Name)
+			}
+		}
+	}
+
+	if maxCall := url.GetParam(constant.MaxServerRecvMsgSize, ""); maxCall != "" {
+		if size, err := strconv.Atoi(maxCall); err == nil && size != 0 {
+			opts = append(opts, triConfig.WithGRPCMaxServerRecvMessageSize(size))
+		}
+	}
+	if maxCall := url.GetParam(constant.MaxServerSendMsgSize, ""); maxCall != "" {
+		if size, err := strconv.Atoi(maxCall); err == nil && size != 0 {
+			opts = append(opts, triConfig.WithGRPCMaxServerSendMessageSize(size))
+		}
+	}
+
+	triOption := triConfig.NewTripleOption(opts...)
+
 	_, ok = dp.ExporterMap().Load(url.ServiceKey())
 	if !ok {
 		panic("[DubboProtocol]" + url.Key() + "is not existing")
 	}
 
-	dp.serverLock.Lock()
-	defer dp.serverLock.Unlock()
-	_, ok = dp.serverMap[url.Location]
-	if ok {
-		return
-	}
-
-	triOption := triConfig.NewTripleOption(
-		triConfig.WithSerializerType(tripleSerializationType),
-		triConfig.WithLocation(url.Location),
-		triConfig.WithLogger(logger.GetLogger()),
-	)
 	srv := triple.NewTripleServer(dp.serviceMap, triOption)
 	dp.serverMap[url.Location] = srv
-
 	srv.Start()
 }
 

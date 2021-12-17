@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package getty
 
 // copy from dubbo/dubbo_codec.go .
@@ -26,6 +27,7 @@ import (
 
 import (
 	hessian "github.com/apache/dubbo-go-hessian2"
+
 	perrors "github.com/pkg/errors"
 )
 
@@ -57,12 +59,12 @@ func (c *DubboTestCodec) EncodeRequest(request *remoting.Request) (*bytes.Buffer
 	tmpInvocation := invoc
 
 	svc := impl.Service{}
-	svc.Path = tmpInvocation.AttachmentsByKey(constant.PATH_KEY, "")
-	svc.Interface = tmpInvocation.AttachmentsByKey(constant.INTERFACE_KEY, "")
-	svc.Version = tmpInvocation.AttachmentsByKey(constant.VERSION_KEY, "")
-	svc.Group = tmpInvocation.AttachmentsByKey(constant.GROUP_KEY, "")
+	svc.Path = tmpInvocation.AttachmentsByKey(constant.PathKey, "")
+	svc.Interface = tmpInvocation.AttachmentsByKey(constant.InterfaceKey, "")
+	svc.Version = tmpInvocation.AttachmentsByKey(constant.VersionKey, "")
+	svc.Group = tmpInvocation.AttachmentsByKey(constant.GroupKey, "")
 	svc.Method = tmpInvocation.MethodName()
-	timeout, err := strconv.Atoi(tmpInvocation.AttachmentsByKey(constant.TIMEOUT_KEY, strconv.Itoa(constant.DEFAULT_REMOTING_TIMEOUT)))
+	timeout, err := strconv.Atoi(tmpInvocation.AttachmentsByKey(constant.TimeoutKey, strconv.Itoa(constant.DefaultRemotingTimeout)))
 	if err != nil {
 		// it will be wrapped in readwrite.Write .
 		return nil, perrors.WithStack(err)
@@ -70,11 +72,11 @@ func (c *DubboTestCodec) EncodeRequest(request *remoting.Request) (*bytes.Buffer
 	svc.Timeout = time.Duration(timeout)
 
 	header := impl.DubboHeader{}
-	serialization := tmpInvocation.AttachmentsByKey(constant.SERIALIZATION_KEY, constant.HESSIAN2_SERIALIZATION)
-	if serialization == constant.PROTOBUF_SERIALIZATION {
-		header.SerialID = constant.S_Proto
+	serialization := tmpInvocation.AttachmentsByKey(constant.SerializationKey, constant.Hessian2Serialization)
+	if serialization == constant.ProtobufSerialization {
+		header.SerialID = constant.SProto
 	} else {
-		header.SerialID = constant.S_Hessian2
+		header.SerialID = constant.SHessian2
 	}
 	header.ID = request.ID
 	if request.TwoWay {
@@ -102,7 +104,7 @@ func (c *DubboTestCodec) EncodeRequest(request *remoting.Request) (*bytes.Buffer
 func (c *DubboTestCodec) encodeHeartbeartReqeust(request *remoting.Request) (*bytes.Buffer, error) {
 	header := impl.DubboHeader{
 		Type:     impl.PackageHeartbeat,
-		SerialID: constant.S_Hessian2,
+		SerialID: constant.SHessian2,
 		ID:       request.ID,
 	}
 
@@ -207,9 +209,9 @@ func (c *DubboTestCodec) decodeRequest(data []byte) (*remoting.Request, int, err
 			request.Version = req[impl.DubboVersionKey].(string)
 		}
 		// path
-		attachments[constant.PATH_KEY] = pkg.Service.Path
+		attachments[constant.PathKey] = pkg.Service.Path
 		// version
-		attachments[constant.VERSION_KEY] = pkg.Service.Version
+		attachments[constant.VersionKey] = pkg.Service.Version
 		// method
 		methodName = pkg.Service.Method
 		args = req[impl.ArgsKey].([]interface{})

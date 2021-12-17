@@ -26,7 +26,9 @@ import (
 
 import (
 	"github.com/dubbogo/go-zookeeper/zk"
+
 	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
+
 	perrors "github.com/pkg/errors"
 )
 
@@ -257,8 +259,8 @@ func (sd *ServiceDiscovery) DataChange(eventType remoting.Event) bool {
 // getNameAndID get service name and instance id by path
 func (sd *ServiceDiscovery) getNameAndID(path string) (string, string, error) {
 	path = strings.TrimPrefix(path, sd.basePath)
-	path = strings.TrimPrefix(path, constant.PATH_SEPARATOR)
-	pathSlice := strings.Split(path, constant.PATH_SEPARATOR)
+	path = strings.TrimPrefix(path, constant.PathSeparator)
+	pathSlice := strings.Split(path, constant.PathSeparator)
 	if len(pathSlice) < 2 {
 		return "", "", perrors.Errorf("[ServiceDiscovery] path{%s} dont contain name and id", path)
 	}
@@ -275,4 +277,13 @@ func (sd *ServiceDiscovery) pathForInstance(name, id string) string {
 // nolint
 func (sd *ServiceDiscovery) pathForName(name string) string {
 	return path.Join(sd.basePath, name)
+}
+
+func (sd *ServiceDiscovery) Close() {
+	if sd.listener != nil {
+		sd.listener.Close()
+	}
+	if sd.client != nil {
+		sd.client.Close()
+	}
 }

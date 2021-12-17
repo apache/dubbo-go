@@ -19,7 +19,12 @@ package v3router
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/router"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
 )
+
+func init() {
+	extension.SetRouterFactory("mesh", NewUniformRouterFactory)
+}
 
 // UniformRouteFactory is uniform router's factory
 type UniformRouteFactory struct{}
@@ -30,6 +35,6 @@ func NewUniformRouterFactory() router.PriorityRouterFactory {
 }
 
 // NewPriorityRouter construct a new UniformRouteFactory as PriorityRouter
-func (f *UniformRouteFactory) NewPriorityRouter(vsConfigBytes, distConfigBytes []byte, notify chan struct{}) (router.PriorityRouter, error) {
-	return NewUniformRouterChain(vsConfigBytes, distConfigBytes, notify)
+func (f *UniformRouteFactory) NewPriorityRouter() (router.PriorityRouter, error) {
+	return NewUniformRouterChain()
 }

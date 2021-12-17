@@ -33,7 +33,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
@@ -81,7 +80,7 @@ func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	serviceKey := url.ServiceKey()
 	exporter := NewDubboExporter(serviceKey, invoker, dp.ExporterMap())
 	dp.SetExporterMap(serviceKey, exporter)
-	logger.Infof("Export service: %s", url.String())
+	logger.Infof("[DUBBO Protocol] Export service: %s", url.String())
 	// start server
 	dp.openServer(url)
 	return exporter
@@ -96,7 +95,7 @@ func (dp *DubboProtocol) Refer(url *common.URL) protocol.Invoker {
 	}
 	invoker := NewDubboInvoker(url, exchangeClient)
 	dp.SetInvokers(invoker)
-	logger.Infof("Refer service: %s", url.String())
+	logger.Infof("[DUBBO Protocol] Refer service: %s", url.String())
 	return invoker
 }
 
@@ -168,6 +167,7 @@ func doHandleRequest(rpcInvocation *invocation.RPCInvocation) protocol.RPCResult
 			// p.Header.ResponseStatus = hessian.Response_OK
 			// p.Body = hessian.NewResponse(res, nil, result.Attachments())
 		}
+		result.Attrs = invokeResult.Attachments()
 	} else {
 		result.Err = fmt.Errorf("don't have the invoker, key: %s", rpcInvocation.ServiceKey())
 	}
@@ -195,11 +195,18 @@ func getExchangeClient(url *common.URL) *remoting.ExchangeClient {
 				}
 				return
 			}
+
 			// new ExchangeClient
+			//exchangeClientTmp = remoting.NewExchangeClient(url, getty.NewClient(getty.Options{
+			//	ConnectTimeout: config.GetRootConfig().ConfigCenter.ConnectTimeout,
+			//	RequestTimeout: config.GetConsumerConfig().RequestTimeout,
+			//}), config.GetConsumerConfig().ConnectTimeout, false)
+
+			// todo set by config
 			exchangeClientTmp = remoting.NewExchangeClient(url, getty.NewClient(getty.Options{
-				ConnectTimeout: config.GetConsumerConfig().ConnectTimeout,
-				RequestTimeout: config.GetConsumerConfig().RequestTimeout,
-			}), config.GetConsumerConfig().ConnectTimeout, false)
+				ConnectTimeout: 3 * time.Second,
+				RequestTimeout: 3 * time.Second,
+			}), 3*time.Second, false)
 			// input store
 			if exchangeClientTmp != nil {
 				exchangeClientMap.Store(url.Location, exchangeClientTmp)
@@ -228,7 +235,7 @@ func rebuildCtx(inv *invocation.RPCInvocation) context.Context {
 	spanCtx, err := opentracing.GlobalTracer().Extract(opentracing.TextMap,
 		opentracing.TextMapCarrier(filterContext(inv.Attachments())))
 	if err == nil {
-		ctx = context.WithValue(ctx, constant.DubboCtxKey(constant.TRACING_REMOTE_SPAN_CTX), spanCtx)
+		ctx = context.WithValue(ctx, constant.DubboCtxKey(constant.TracingRemoteSpanCtx), spanCtx)
 	}
 	return ctx
 }

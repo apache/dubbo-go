@@ -25,8 +25,11 @@ import (
 
 import (
 	"github.com/apache/dubbo-getty"
+
 	gxsync "github.com/dubbogo/gost/sync"
+
 	perrors "github.com/pkg/errors"
+
 	"gopkg.in/yaml.v2"
 )
 
@@ -40,36 +43,45 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
-var srvConf *ServerConfig
+var (
+	srvConf *ServerConfig
+)
 
 func initServer(protocol string) {
-	// load clientconfig from provider_config
-	// default use dubbo
-	providerConfig := config.GetProviderConfig()
-	if providerConfig.ApplicationConfig == nil {
+	srvConf = GetDefaultServerConfig()
+	if protocol == "" {
 		return
 	}
-	protocolConf := providerConfig.ProtocolConf
-	defaultServerConfig := GetDefaultServerConfig()
+
+	// load server config from rootConfig.Protocols
+	// default use dubbo
+	if config.GetApplicationConfig() == nil {
+		return
+	}
+	if config.GetRootConfig().Protocols == nil {
+		return
+	}
+
+	protocolConf := config.GetRootConfig().Protocols[protocol]
 	if protocolConf == nil {
-		logger.Info("protocol_conf default use dubbo config")
+		logger.Debug("use default getty server config")
+		return
 	} else {
-		dubboConf := protocolConf.(map[interface{}]interface{})[protocol]
-		if dubboConf == nil {
-			logger.Warnf("dubboConf is nil")
+		gettyServerConfig := protocolConf.Params
+		if gettyServerConfig == nil {
+			logger.Debug("gettyServerConfig is nil")
 			return
 		}
 
-		dubboConfByte, err := yaml.Marshal(dubboConf)
+		gettyServerConfigBytes, err := yaml.Marshal(gettyServerConfig)
 		if err != nil {
 			panic(err)
 		}
-		err = yaml.Unmarshal(dubboConfByte, &defaultServerConfig)
+		err = yaml.Unmarshal(gettyServerConfigBytes, srvConf)
 		if err != nil {
 			panic(err)
 		}
 	}
-	srvConf = &defaultServerConfig
 	if err := srvConf.CheckValidity(); err != nil {
 		panic(err)
 	}
@@ -105,7 +117,7 @@ func NewServer(url *common.URL, handlers func(*invocation.RPCInvocation) protoco
 	// init
 	initServer(url.Protocol)
 
-	srvConf.SSLEnabled = url.GetParamBool(constant.SSL_ENABLED_KEY, false)
+	srvConf.SSLEnabled = url.GetParamBool(constant.SslEnabledKey, false)
 
 	s := &Server{
 		conf:           *srvConf,

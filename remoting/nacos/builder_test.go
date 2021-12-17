@@ -18,7 +18,9 @@
 package nacos
 
 import (
+	"net/url"
 	"testing"
+	"time"
 )
 
 import (
@@ -26,26 +28,129 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
 )
 
 func TestNewNacosClient(t *testing.T) {
-	rc := &config.RemoteConfig{}
-	client, err := NewNacosClient(rc)
+	t.Run("AddressIsNil", func(t *testing.T) {
+		rc := &config.RemoteConfig{}
+		rc.Protocol = "nacos"
+		rc.Username = "nacos"
+		client, err := NewNacosClient(rc)
 
-	// address is nil
-	assert.Nil(t, client)
-	assert.NotNil(t, err)
+		// address is nil
+		assert.Nil(t, client)
+		assert.NotNil(t, err)
+	})
 
-	rc.Address = "console.nacos.io:80:123"
-	client, err = NewNacosClient(rc)
-	// invalid address
-	assert.Nil(t, client)
-	assert.NotNil(t, err)
+	t.Run("InvalidAddress", func(t *testing.T) {
+		rc := &config.RemoteConfig{}
+		rc.Address = "console.nacos.io:80:123"
+		client, err := NewNacosClient(rc)
+		// invalid address
+		assert.Nil(t, client)
+		assert.NotNil(t, err)
+	})
 
-	rc.Address = "console.nacos.io:80"
-	rc.TimeoutStr = "10s"
-	client, err = NewNacosClient(rc)
-	assert.NotNil(t, client)
+	t.Run("Normal", func(t *testing.T) {
+		rc := &config.RemoteConfig{}
+		rc.Address = "console.nacos.io:80"
+		rc.Protocol = "nacos"
+		rc.Timeout = "10s"
+		client, err := NewNacosClient(rc)
+		assert.NotNil(t, client)
+		assert.Nil(t, err)
+	})
+
+	t.Run("NormalHasContextPath", func(t *testing.T) {
+		rc := &config.RemoteConfig{}
+		rc.Address = "console.nacos.io:80/nacos"
+		rc.Protocol = "nacos"
+		client, err := NewNacosClient(rc)
+		assert.NotNil(t, client)
+		assert.Nil(t, err)
+	})
+}
+
+func TestGetNacosConfig(t *testing.T) {
+	regurl := getRegUrl()
+	sc, cc, err := GetNacosConfig(regurl)
+
 	assert.Nil(t, err)
+	assert.NotNil(t, sc)
+	assert.NotNil(t, cc)
+	assert.Equal(t, cc.TimeoutMs, uint64(5000))
+}
+
+func TestNewNacosConfigClient(t *testing.T) {
+
+	regurl := getRegUrl()
+	client, err := NewNacosConfigClientByUrl(regurl)
+
+	assert.Nil(t, err)
+	assert.NotNil(t, client)
+}
+
+func TestNewNacosClientByURL(t *testing.T) {
+	regurl := getRegUrl()
+	client, err := NewNacosClientByURL(regurl)
+
+	assert.Nil(t, err)
+	assert.NotNil(t, client)
+}
+
+func TestTimeoutConfig(t *testing.T) {
+	regurlMap := url.Values{}
+	regurlMap.Set(constant.NacosNotLoadLocalCache, "true")
+	// regurlMap.Set(constant.NacosUsername, "nacos")
+	// regurlMap.Set(constant.NacosPassword, "nacos")
+	regurlMap.Set(constant.NacosNamespaceID, "nacos")
+
+	t.Run("default timeout", func(t *testing.T) {
+		newURL, _ := common.NewURL("registry://console.nacos.io:80", common.WithParams(regurlMap))
+
+		_, cc, err := GetNacosConfig(newURL)
+		assert.Nil(t, err)
+
+		assert.Equal(t, cc.TimeoutMs, uint64(int32(10*time.Second/time.Millisecond)))
+	})
+
+	t.Run("right timeout", func(t *testing.T) {
+
+		regurlMap.Set(constant.TimeoutKey, "5s")
+
+		newURL, _ := common.NewURL("registry://console.nacos.io:80", common.WithParams(regurlMap))
+
+		_, cc, err := GetNacosConfig(newURL)
+		assert.Nil(t, err)
+
+		assert.Equal(t, cc.TimeoutMs, uint64(int32(5*time.Second/time.Millisecond)))
+	})
+
+	t.Run("invalid timeout", func(t *testing.T) {
+		regurlMap.Set(constant.TimeoutKey, "5ab")
+
+		newURL, _ := common.NewURL("registry://console.nacos.io:80", common.WithParams(regurlMap))
+		_, cc, err := GetNacosConfig(newURL)
+		assert.Nil(t, err)
+
+		assert.Equal(t, cc.TimeoutMs, uint64(int32(3*time.Second/time.Millisecond)))
+	})
+
+}
+
+func getRegUrl() *common.URL {
+
+	regurlMap := url.Values{}
+	regurlMap.Set(constant.NacosNotLoadLocalCache, "true")
+	// regurlMap.Set(constant.NacosUsername, "nacos")
+	// regurlMap.Set(constant.NacosPassword, "nacos")
+	regurlMap.Set(constant.NacosNamespaceID, "nacos")
+	regurlMap.Set(constant.TimeoutKey, "5s")
+
+	regurl, _ := common.NewURL("registry://console.nacos.io:80", common.WithParams(regurlMap))
+
+	return regurl
 }

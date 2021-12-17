@@ -15,5 +15,4 @@
  * limitations under the License.
  */
 
-// just for test, never use internal for production.
 package internal

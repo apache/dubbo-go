@@ -19,7 +19,6 @@ package dubbo3
 
 import (
 	"context"
-	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
@@ -28,7 +27,8 @@ import (
 )
 
 import (
-	hessian2 "github.com/apache/dubbo-go-hessian2"
+	"github.com/dubbogo/grpc-go/metadata"
+
 	tripleConstant "github.com/dubbogo/triple/pkg/common/constant"
 	triConfig "github.com/dubbogo/triple/pkg/config"
 	"github.com/dubbogo/triple/pkg/triple"
@@ -58,35 +58,56 @@ type DubboInvoker struct {
 
 // NewDubboInvoker constructor
 func NewDubboInvoker(url *common.URL) (*DubboInvoker, error) {
-	requestTimeout := config.GetConsumerConfig().RequestTimeout
-	requestTimeoutStr := url.GetParam(constant.TIMEOUT_KEY, config.GetConsumerConfig().Request_Timeout)
-	if t, err := time.ParseDuration(requestTimeoutStr); err == nil {
-		requestTimeout = t
-	}
+	rt := config.GetConsumerConfig().RequestTimeout
 
-	key := url.GetParam(constant.BEAN_NAME_KEY, "")
-	consumerService := config.GetConsumerService(key)
+	timeout := url.GetParamDuration(constant.TimeoutKey, rt)
+	// for triple pb serialization. The bean name from provider is the provider reference key,
+	// which can't locate the target consumer stub, so we use interface key..
+	interfaceKey := url.GetParam(constant.InterfaceKey, "")
+	consumerService := config.GetConsumerServiceByInterfaceName(interfaceKey)
 
-	var triSerializationType tripleConstant.TripleSerializerName
-	dubboSerializaerType := url.GetParam(constant.SERIALIZATION_KEY, constant.PROTOBUF_SERIALIZATION)
-	switch dubboSerializaerType {
-	case constant.PROTOBUF_SERIALIZATION:
-		triSerializationType = tripleConstant.PBSerializerName
-	case constant.HESSIAN2_SERIALIZATION:
-		triSerializationType = tripleConstant.TripleHessianWrapperSerializerName
-	default:
-		panic(fmt.Sprintf("unsupport serialization = %s", dubboSerializaerType))
-
-	}
+	dubboSerializaerType := url.GetParam(constant.SerializationKey, constant.ProtobufSerialization)
+	triCodecType := tripleConstant.CodecType(dubboSerializaerType)
 	// new triple client
-	triOption := triConfig.NewTripleOption(
-		triConfig.WithClientTimeout(uint32(requestTimeout.Seconds())),
-		triConfig.WithSerializerType(triSerializationType),
+	opts := []triConfig.OptionFunction{
+		triConfig.WithClientTimeout(uint32(timeout.Seconds())),
+		triConfig.WithCodecType(triCodecType),
 		triConfig.WithLocation(url.Location),
-		triConfig.WithHeaderAppVersion(url.GetParam(constant.APP_VERSION_KEY, "")),
-		triConfig.WithHeaderGroup(url.GetParam(constant.GROUP_KEY, "")),
+		triConfig.WithHeaderAppVersion(url.GetParam(constant.AppVersionKey, "")),
+		triConfig.WithHeaderGroup(url.GetParam(constant.GroupKey, "")),
 		triConfig.WithLogger(logger.GetLogger()),
-	)
+	}
+	if maxCall := url.GetParam(constant.MaxCallRecvMsgSize, ""); maxCall != "" {
+		if size, err := strconv.Atoi(maxCall); err == nil && size != 0 {
+			opts = append(opts, triConfig.WithGRPCMaxCallRecvMessageSize(size))
+		}
+	}
+	if maxCall := url.GetParam(constant.MaxCallSendMsgSize, ""); maxCall != "" {
+		if size, err := strconv.Atoi(maxCall); err == nil && size != 0 {
+			opts = append(opts, triConfig.WithGRPCMaxCallSendMessageSize(size))
+		}
+	}
+
+	tracingKey := url.GetParam(constant.TracingConfigKey, "")
+	if tracingKey != "" {
+		tracingConfig := config.GetTracingConfig(tracingKey)
+		if tracingConfig != nil {
+			if tracingConfig.Name == "jaeger" {
+				if tracingConfig.ServiceName == "" {
+					tracingConfig.ServiceName = config.GetApplicationConfig().Name
+				}
+				opts = append(opts, triConfig.WithJaegerConfig(
+					tracingConfig.Address,
+					tracingConfig.ServiceName,
+					tracingConfig.UseAgent,
+				))
+			} else {
+				logger.Warnf("unsupported tracing name %s, now triple only support jaeger", tracingConfig.Name)
+			}
+		}
+	}
+
+	triOption := triConfig.NewTripleOption(opts...)
 	client, err := triple.NewTripleClient(consumerService, triOption)
 
 	if err != nil {
@@ -96,7 +117,7 @@ func NewDubboInvoker(url *common.URL) (*DubboInvoker, error) {
 	return &DubboInvoker{
 		BaseInvoker: *protocol.NewBaseInvoker(url),
 		client:      client,
-		timeout:     requestTimeout,
+		timeout:     timeout,
 		clientGuard: &sync.RWMutex{},
 	}, nil
 }
@@ -146,7 +167,20 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 	}
 
 	// append interface id to ctx
-	ctx = context.WithValue(ctx, tripleConstant.InterfaceKey, di.BaseInvoker.GetURL().GetParam(constant.INTERFACE_KEY, ""))
+	gRPCMD := make(metadata.MD, 0)
+	for k, v := range invocation.Attachments() {
+		if str, ok := v.(string); ok {
+			gRPCMD.Set(k, str)
+			continue
+		}
+		if str, ok := v.([]string); ok {
+			gRPCMD.Set(k, str...)
+			continue
+		}
+		logger.Warnf("triple attachment value with key = %s is invalid, which should be string or []string", k)
+	}
+	ctx = metadata.NewOutgoingContext(ctx, gRPCMD)
+	ctx = context.WithValue(ctx, tripleConstant.InterfaceKey, di.BaseInvoker.GetURL().GetParam(constant.InterfaceKey, ""))
 	in := make([]reflect.Value, 0, 16)
 	in = append(in, reflect.ValueOf(ctx))
 
@@ -155,32 +189,28 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 	}
 
 	methodName := invocation.MethodName()
-
-	res := di.client.Invoke(methodName, in)
-
-	result.Rest = res[0]
-	// check err
-	if res[1].IsValid() && res[1].Interface() != nil {
-		result.Err = res[1].Interface().(error)
-	} else {
-		_ = hessian2.ReflectResponse(res[0], invocation.Reply())
+	triAttachmentWithErr := di.client.Invoke(methodName, in, invocation.Reply())
+	result.Err = triAttachmentWithErr.GetError()
+	result.Attrs = make(map[string]interface{})
+	for k, v := range triAttachmentWithErr.GetAttachments() {
+		result.Attrs[k] = v
 	}
-
+	result.Rest = invocation.Reply()
 	return &result
 }
 
 // get timeout including methodConfig
 func (di *DubboInvoker) getTimeout(invocation *invocation_impl.RPCInvocation) time.Duration {
-	timeout := di.GetURL().GetParam(strings.Join([]string{constant.METHOD_KEYS, invocation.MethodName(), constant.TIMEOUT_KEY}, "."), "")
+	timeout := di.GetURL().GetParam(strings.Join([]string{constant.MethodKeys, invocation.MethodName(), constant.TimeoutKey}, "."), "")
 	if len(timeout) != 0 {
 		if t, err := time.ParseDuration(timeout); err == nil {
 			// config timeout into attachment
-			invocation.SetAttachments(constant.TIMEOUT_KEY, strconv.Itoa(int(t.Milliseconds())))
+			invocation.SetAttachments(constant.TimeoutKey, strconv.Itoa(int(t.Milliseconds())))
 			return t
 		}
 	}
 	// set timeout into invocation at method level
-	invocation.SetAttachments(constant.TIMEOUT_KEY, strconv.Itoa(int(di.timeout.Milliseconds())))
+	invocation.SetAttachments(constant.TimeoutKey, strconv.Itoa(int(di.timeout.Milliseconds())))
 	return di.timeout
 }
 

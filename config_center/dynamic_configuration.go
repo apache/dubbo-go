@@ -34,10 +34,10 @@ import (
 // DynamicConfiguration
 // ////////////////////////////////////////
 const (
-	// DEFAULT_GROUP: default group
-	DEFAULT_GROUP = "dubbo"
-	// DEFAULT_CONFIG_TIMEOUT: default config timeout
-	DEFAULT_CONFIG_TIMEOUT = "10s"
+	// DefaultGroup default group
+	DefaultGroup = "dubbo"
+	// DefaultConfigTimeout default config timeout
+	DefaultConfigTimeout = "10s"
 )
 
 // DynamicConfiguration for modify listener and get properties file
@@ -56,6 +56,8 @@ type DynamicConfiguration interface {
 	GetInternalProperty(string, ...Option) (string, error)
 
 	// PublishConfig will publish the config with the (key, group, value) pair
+	// for zk: path is /$(group)/config/$(key) -> value
+	// for nacos: group, key -> value
 	PublishConfig(string, string, string) error
 
 	// RemoveConfig will remove the config white the (key, group) pair

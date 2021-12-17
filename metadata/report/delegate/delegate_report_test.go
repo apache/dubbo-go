@@ -25,6 +25,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+
 	"go.uber.org/atomic"
 )
 
@@ -74,8 +75,8 @@ func mockNewMetadataReport(t *testing.T) *MetadataReport {
 	cycleReportKey := "true"
 
 	url, err := common.NewURL(fmt.Sprintf(
-		"test://127.0.0.1:20000/?"+constant.SYNC_REPORT_KEY+"=%v&"+constant.RETRY_PERIOD_KEY+"=%v&"+
-			constant.RETRY_TIMES_KEY+"=%v&"+constant.CYCLE_REPORT_KEY+"=%v",
+		"test://127.0.0.1:20000/?"+constant.SyncReportKey+"=%v&"+constant.RetryPeriodKey+"=%v&"+
+			constant.RetryTimesKey+"=%v&"+constant.CycleReportKey+"=%v",
 		syncReportKey, retryPeriodKey, retryTimesKey, cycleReportKey))
 	assert.NoError(t, err)
 	instance.SetMetadataReportUrl(url)
