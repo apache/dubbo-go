@@ -26,20 +26,20 @@ import (
 )
 
 func init() {
-	extension.SetCluster(constant.ClusterKeyFailsafe, newCluster)
+	extension.SetCluster(constant.ClusterKeyFailsafe, newFailsafeCluster)
 }
 
-type cluster struct{}
+type failsafeCluster struct{}
 
-// newCluster returns a failsafe cluster instance.
+// newFailsafeCluster returns a failsafeCluster instance.
 //
 // Failure of security, anomalies, directly ignored. Usually it is
 // used to write audit logs and other operations.
-func newCluster() clusterpkg.Cluster {
-	return &cluster{}
+func newFailsafeCluster() clusterpkg.Cluster {
+	return &failsafeCluster{}
 }
 
 // Join returns a baseClusterInvoker instance
-func (cluster *cluster) Join(directory directory.Directory) protocol.Invoker {
-	return clusterpkg.BuildInterceptorChain(newClusterInvoker(directory))
+func (cluster *failsafeCluster) Join(directory directory.Directory) protocol.Invoker {
+	return clusterpkg.BuildInterceptorChain(newFailsafeClusterInvoker(directory))
 }

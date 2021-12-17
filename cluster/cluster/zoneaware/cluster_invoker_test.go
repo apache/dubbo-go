@@ -74,7 +74,7 @@ func TestZoneWareInvokerWithPreferredSuccess(t *testing.T) {
 		invokers = append(invokers, invoker)
 	}
 
-	zoneAwareCluster := newCluster()
+	zoneAwareCluster := newZoneawareCluster()
 	staticDir := static.NewDirectory(invokers)
 	clusterInvoker := zoneAwareCluster.Join(staticDir)
 
@@ -84,7 +84,7 @@ func TestZoneWareInvokerWithPreferredSuccess(t *testing.T) {
 }
 
 func TestZoneWareInvokerWithWeightSuccess(t *testing.T) {
-	extension.SetLoadbalance(constant.LoadBalanceKeyRandom, random.NewLoadBalance)
+	extension.SetLoadbalance(constant.LoadBalanceKeyRandom, random.NewRandomLoadBalance)
 
 	ctrl := gomock.NewController(t)
 	// In Go versions 1.14+, if you pass a *testing.T
@@ -123,7 +123,7 @@ func TestZoneWareInvokerWithWeightSuccess(t *testing.T) {
 		invokers = append(invokers, invoker)
 	}
 
-	zoneAwareCluster := newCluster()
+	zoneAwareCluster := newZoneawareCluster()
 	staticDir := static.NewDirectory(invokers)
 	clusterInvoker := zoneAwareCluster.Join(staticDir)
 
@@ -170,7 +170,7 @@ func TestZoneWareInvokerWithZoneSuccess(t *testing.T) {
 		invokers = append(invokers, invoker)
 	}
 
-	zoneAwareCluster := newCluster()
+	zoneAwareCluster := newZoneawareCluster()
 	staticDir := static.NewDirectory(invokers)
 	clusterInvoker := zoneAwareCluster.Join(staticDir)
 
@@ -200,7 +200,7 @@ func TestZoneWareInvokerWithZoneForceFail(t *testing.T) {
 		invokers = append(invokers, invoker)
 	}
 
-	zoneAwareCluster := newCluster()
+	zoneAwareCluster := newZoneawareCluster()
 	staticDir := static.NewDirectory(invokers)
 	clusterInvoker := zoneAwareCluster.Join(staticDir)
 

@@ -44,8 +44,8 @@ import (
  *
  * <a href="http://en.wikipedia.org/wiki/Failback">Failback</a>
  */
-type clusterInvoker struct {
-	base.ClusterInvoker
+type failbackClusterInvoker struct {
+	base.BaseClusterInvoker
 
 	once          sync.Once
 	ticker        *time.Ticker
@@ -54,9 +54,9 @@ type clusterInvoker struct {
 	taskList      *queue.Queue
 }
 
-func newClusterInvoker(directory directory.Directory) protocol.Invoker {
-	invoker := &clusterInvoker{
-		ClusterInvoker: base.NewClusterInvoker(directory),
+func newFailbackClusterInvoker(directory directory.Directory) protocol.Invoker {
+	invoker := &failbackClusterInvoker{
+		BaseClusterInvoker: base.NewBaseClusterInvoker(directory),
 	}
 	retriesConfig := invoker.GetURL().GetParam(constant.RetriesKey, constant.DefaultFailbackTimes)
 	retries, err := strconv.Atoi(retriesConfig)
@@ -74,7 +74,7 @@ func newClusterInvoker(directory directory.Directory) protocol.Invoker {
 	return invoker
 }
 
-func (invoker *clusterInvoker) tryTimerTaskProc(ctx context.Context, retryTask *retryTimerTask) {
+func (invoker *failbackClusterInvoker) tryTimerTaskProc(ctx context.Context, retryTask *retryTimerTask) {
 	invoked := make([]protocol.Invoker, 0)
 	invoked = append(invoked, retryTask.lastInvoker)
 
@@ -86,7 +86,7 @@ func (invoker *clusterInvoker) tryTimerTaskProc(ctx context.Context, retryTask *
 	}
 }
 
-func (invoker *clusterInvoker) process(ctx context.Context) {
+func (invoker *failbackClusterInvoker) process(ctx context.Context) {
 	invoker.ticker = time.NewTicker(time.Second * 1)
 	for range invoker.ticker.C {
 		// check each timeout task and re-run
@@ -114,7 +114,7 @@ func (invoker *clusterInvoker) process(ctx context.Context) {
 	}
 }
 
-func (invoker *clusterInvoker) checkRetry(retryTask *retryTimerTask, err error) {
+func (invoker *failbackClusterInvoker) checkRetry(retryTask *retryTimerTask, err error) {
 	logger.Errorf("Failed retry to invoke the method %v in the service %v, wait again. The exception: %v.\n",
 		retryTask.invocation.MethodName(), invoker.GetURL().Service(), err.Error())
 	retryTask.retries++
@@ -131,7 +131,7 @@ func (invoker *clusterInvoker) checkRetry(retryTask *retryTimerTask, err error) 
 }
 
 // nolint
-func (invoker *clusterInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
+func (invoker *failbackClusterInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 	invokers := invoker.Directory.List(invocation)
 	if err := invoker.CheckInvokers(invokers, invocation); err != nil {
 		logger.Errorf("Failed to invoke the method %v in the service %v, wait for retry in background. Ignored exception: %v.\n",
@@ -176,8 +176,8 @@ func (invoker *clusterInvoker) Invoke(ctx context.Context, invocation protocol.I
 	return result
 }
 
-func (invoker *clusterInvoker) Destroy() {
-	invoker.ClusterInvoker.Destroy()
+func (invoker *failbackClusterInvoker) Destroy() {
+	invoker.BaseClusterInvoker.Destroy()
 
 	// stop ticker
 	if invoker.ticker != nil {

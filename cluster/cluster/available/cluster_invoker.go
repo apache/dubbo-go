@@ -32,18 +32,18 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
-type clusterInvoker struct {
-	base.ClusterInvoker
+type availableClusterInvoker struct {
+	base.BaseClusterInvoker
 }
 
-// NewClusterInvoker returns a cluster invoker instance
+// NewClusterInvoker returns a availableCluster invoker instance
 func NewClusterInvoker(directory directory.Directory) protocol.Invoker {
-	return &clusterInvoker{
-		ClusterInvoker: base.NewClusterInvoker(directory),
+	return &availableClusterInvoker{
+		BaseClusterInvoker: base.NewBaseClusterInvoker(directory),
 	}
 }
 
-func (invoker *clusterInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
+func (invoker *availableClusterInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 	invokers := invoker.Directory.List(invocation)
 	err := invoker.CheckInvokers(invokers, invocation)
 	if err != nil {
