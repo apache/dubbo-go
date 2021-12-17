@@ -50,15 +50,15 @@ func (c *overrideConfigurator) GetUrl() *common.URL {
 
 func (c *overrideConfigurator) Configure(url *common.URL) {
 	// remove configuratorUrl some param that can not be configured
-	if c.configuratorUrl.GetParam(constant.ENABLED_KEY, "true") == "false" || len(c.configuratorUrl.Location) == 0 {
+	if c.configuratorUrl.GetParam(constant.EnabledKey, "true") == "false" || len(c.configuratorUrl.Location) == 0 {
 		return
 	}
 
 	// branch for version 2.7.x
-	apiVersion := c.configuratorUrl.GetParam(constant.CONFIG_VERSION_KEY, "")
+	apiVersion := c.configuratorUrl.GetParam(constant.ConfigVersionKey, "")
 	if len(apiVersion) != 0 {
-		currentSide := url.GetParam(constant.SIDE_KEY, "")
-		configuratorSide := c.configuratorUrl.GetParam(constant.SIDE_KEY, "")
+		currentSide := url.GetParam(constant.SideKey, "")
+		configuratorSide := c.configuratorUrl.GetParam(constant.SideKey, "")
 		if currentSide == configuratorSide && common.DubboRole[common.CONSUMER] == currentSide && c.configuratorUrl.Port == "0" {
 			localIP := common.GetLocalIp()
 			c.configureIfMatch(localIP, url)
@@ -72,25 +72,25 @@ func (c *overrideConfigurator) Configure(url *common.URL) {
 }
 
 func (c *overrideConfigurator) configureIfMatchInternal(url *common.URL) {
-	configApp := c.configuratorUrl.GetParam(constant.APPLICATION_KEY, c.configuratorUrl.Username)
-	currentApp := url.GetParam(constant.APPLICATION_KEY, url.Username)
-	if len(configApp) == 0 || constant.ANY_VALUE == configApp || configApp == currentApp {
+	configApp := c.configuratorUrl.GetParam(constant.ApplicationKey, c.configuratorUrl.Username)
+	currentApp := url.GetParam(constant.ApplicationKey, url.Username)
+	if len(configApp) == 0 || constant.AnyValue == configApp || configApp == currentApp {
 		conditionKeys := gxset.NewSet()
-		conditionKeys.Add(constant.CATEGORY_KEY)
-		conditionKeys.Add(constant.CHECK_KEY)
-		conditionKeys.Add(constant.ENABLED_KEY)
-		conditionKeys.Add(constant.GROUP_KEY)
-		conditionKeys.Add(constant.VERSION_KEY)
-		conditionKeys.Add(constant.APPLICATION_KEY)
-		conditionKeys.Add(constant.SIDE_KEY)
-		conditionKeys.Add(constant.CONFIG_VERSION_KEY)
-		conditionKeys.Add(constant.COMPATIBLE_CONFIG_KEY)
+		conditionKeys.Add(constant.CategoryKey)
+		conditionKeys.Add(constant.CheckKey)
+		conditionKeys.Add(constant.EnabledKey)
+		conditionKeys.Add(constant.GroupKey)
+		conditionKeys.Add(constant.VersionKey)
+		conditionKeys.Add(constant.ApplicationKey)
+		conditionKeys.Add(constant.SideKey)
+		conditionKeys.Add(constant.ConfigVersionKey)
+		conditionKeys.Add(constant.CompatibleConfigKey)
 		returnUrl := false
 		c.configuratorUrl.RangeParams(func(k, _ string) bool {
 			value := c.configuratorUrl.GetParam(k, "")
-			if strings.HasPrefix(k, "~") || k == constant.APPLICATION_KEY || k == constant.SIDE_KEY {
+			if strings.HasPrefix(k, "~") || k == constant.ApplicationKey || k == constant.SideKey {
 				conditionKeys.Add(k)
-				if len(value) != 0 && value != constant.ANY_VALUE && value != url.GetParam(strings.TrimPrefix(k, "~"), "") {
+				if len(value) != 0 && value != constant.AnyValue && value != url.GetParam(strings.TrimPrefix(k, "~"), "") {
 					returnUrl = true
 					return false
 				}
@@ -107,9 +107,9 @@ func (c *overrideConfigurator) configureIfMatchInternal(url *common.URL) {
 
 // configureIfMatch translate from java, compatible rules in java
 func (c *overrideConfigurator) configureIfMatch(host string, url *common.URL) {
-	if constant.ANYHOST_VALUE == c.configuratorUrl.Ip || host == c.configuratorUrl.Ip {
-		providers := c.configuratorUrl.GetParam(constant.OVERRIDE_PROVIDERS_KEY, "")
-		if len(providers) == 0 || strings.Contains(providers, url.Location) || strings.Contains(providers, constant.ANYHOST_VALUE) {
+	if constant.AnyHostValue == c.configuratorUrl.Ip || host == c.configuratorUrl.Ip {
+		providers := c.configuratorUrl.GetParam(constant.OverrideProvidersKey, "")
+		if len(providers) == 0 || strings.Contains(providers, url.Location) || strings.Contains(providers, constant.AnyHostValue) {
 			c.configureIfMatchInternal(url)
 		}
 	}
@@ -125,11 +125,11 @@ func (c *overrideConfigurator) configureDeprecated(url *common.URL) {
 		// override url don't have a port, means the ip override url specify is a consumer address or 0.0.0.0
 		// 1.If it is a consumer ip address, the intention is to control a specific consumer instance, it must takes effect at the consumer side, any provider received this override url should ignore;
 		// 2.If the ip is 0.0.0.0, this override url can be used on consumer, and also can be used on provider
-		if url.GetParam(constant.SIDE_KEY, "") == common.DubboRole[common.CONSUMER] {
+		if url.GetParam(constant.SideKey, "") == common.DubboRole[common.CONSUMER] {
 			localIP := common.GetLocalIp()
 			c.configureIfMatch(localIP, url)
 		} else {
-			c.configureIfMatch(constant.ANYHOST_VALUE, url)
+			c.configureIfMatch(constant.AnyHostValue, url)
 		}
 	}
 }

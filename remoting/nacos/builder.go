@@ -35,6 +35,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/config"
 )
 
@@ -68,29 +69,38 @@ func GetNacosConfig(url *common.URL) ([]nacosConstant.ServerConfig, nacosConstan
 			return []nacosConstant.ServerConfig{}, nacosConstant.ClientConfig{},
 				perrors.WithMessagef(err, "split [%s] ", addr)
 		}
-		port, _ := strconv.Atoi(portStr)
-		serverConfigs = append(serverConfigs, nacosConstant.ServerConfig{IpAddr: ip, Port: uint64(port)})
+		portContextPath := strings.Split(portStr, constant.PathSeparator)
+		port, err := strconv.Atoi(portContextPath[0])
+		if err != nil {
+			return []nacosConstant.ServerConfig{}, nacosConstant.ClientConfig{},
+				perrors.WithMessagef(err, "port [%s] ", portContextPath[0])
+		}
+		var contextPath string
+		if len(portContextPath) > 1 {
+			contextPath = constant.PathSeparator + strings.Join(portContextPath[1:], constant.PathSeparator)
+		}
+		serverConfigs = append(serverConfigs, nacosConstant.ServerConfig{IpAddr: ip, Port: uint64(port), ContextPath: contextPath})
 	}
 
-	timeout := url.GetParamDuration(constant.CONFIG_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT)
+	timeout := url.GetParamDuration(constant.TimeoutKey, constant.DefaultRegTimeout)
 
 	clientConfig := nacosConstant.ClientConfig{
 		TimeoutMs:           uint64(int32(timeout / time.Millisecond)),
-		BeatInterval:        url.GetParamInt(constant.NACOS_BEAT_INTERVAL_KEY, 5000),
-		NamespaceId:         url.GetParam(constant.NACOS_NAMESPACE_ID, ""),
-		AppName:             url.GetParam(constant.NACOS_APP_NAME_KEY, ""),
-		Endpoint:            url.GetParam(constant.NACOS_ENDPOINT, ""),
-		RegionId:            url.GetParam(constant.NACOS_REGION_ID_KEY, ""),
-		AccessKey:           url.GetParam(constant.NACOS_ACCESS_KEY, ""),
-		SecretKey:           url.GetParam(constant.NACOS_SECRET_KEY, ""),
-		OpenKMS:             url.GetParamBool(constant.NACOS_OPEN_KMS_KEY, false),
-		CacheDir:            url.GetParam(constant.NACOS_CACHE_DIR_KEY, ""),
-		UpdateThreadNum:     url.GetParamByIntValue(constant.NACOS_UPDATE_THREAD_NUM_KEY, 20),
-		NotLoadCacheAtStart: url.GetParamBool(constant.NACOS_NOT_LOAD_LOCAL_CACHE, true),
-		Username:            url.GetParam(constant.NACOS_USERNAME, ""),
-		Password:            url.GetParam(constant.NACOS_PASSWORD, ""),
-		LogDir:              url.GetParam(constant.NACOS_LOG_DIR_KEY, ""),
-		LogLevel:            url.GetParam(constant.NACOS_LOG_LEVEL_KEY, "info"),
+		NamespaceId:         url.GetParam(constant.NacosNamespaceID, ""),
+		Username:            url.GetParam(constant.NacosUsername, ""),
+		Password:            url.GetParam(constant.NacosPassword, ""),
+		BeatInterval:        url.GetParamInt(constant.NacosBeatIntervalKey, 5000),
+		AppName:             url.GetParam(constant.NacosAppNameKey, ""),
+		Endpoint:            url.GetParam(constant.NacosEndpoint, ""),
+		RegionId:            url.GetParam(constant.NacosRegionIDKey, ""),
+		AccessKey:           url.GetParam(constant.NacosAccessKey, ""),
+		SecretKey:           url.GetParam(constant.NacosSecretKey, ""),
+		OpenKMS:             url.GetParamBool(constant.NacosOpenKmsKey, false),
+		CacheDir:            url.GetParam(constant.NacosCacheDirKey, ""),
+		UpdateThreadNum:     url.GetParamByIntValue(constant.NacosUpdateThreadNumKey, 20),
+		NotLoadCacheAtStart: url.GetParamBool(constant.NacosNotLoadLocalCache, true),
+		LogDir:              url.GetParam(constant.NacosLogDirKey, ""),
+		LogLevel:            url.GetParam(constant.NacosLogLevelKey, "info"),
 	}
 	return serverConfigs, clientConfig, nil
 }
@@ -109,11 +119,12 @@ func NewNacosClient(rc *config.RemoteConfig) (*nacosClient.NacosNamingClient, er
 	return nacosClient.NewNacosNamingClient(nacosClientName, true, scs, cc)
 }
 
-// NewNacosClientByUrl created
-func NewNacosClientByUrl(url *common.URL) (*nacosClient.NacosNamingClient, error) {
+// NewNacosClientByURL created
+func NewNacosClientByURL(url *common.URL) (*nacosClient.NacosNamingClient, error) {
 	scs, cc, err := GetNacosConfig(url)
 	if err != nil {
 		return nil, err
 	}
+	logger.Infof("[Nacos Client] New nacos client with config = %+v", scs)
 	return nacosClient.NewNacosNamingClient(nacosClientName, true, scs, cc)
 }

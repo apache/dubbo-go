@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package local
 
 import (
@@ -36,7 +37,7 @@ import (
 )
 
 func init() {
-	extension.SetLocalMetadataService(constant.DEFAULT_KEY, GetLocalMetadataService)
+	extension.SetLocalMetadataService(constant.DefaultKey, GetLocalMetadataService)
 }
 
 // version will be used by Version func
@@ -128,7 +129,7 @@ func (mts *MetadataService) getAllService(services *sync.Map) []*common.URL {
 		urls := value.(*skip.SkipList)
 		for i := uint64(0); i < urls.Len(); i++ {
 			url := urls.ByPosition(i).(*common.URL)
-			if url.Service() != constant.METADATA_SERVICE_NAME {
+			if url.Service() != constant.MetadataServiceName {
 				res = append(res, url)
 			}
 		}
@@ -146,7 +147,7 @@ func (mts *MetadataService) getSpecifiedService(services *sync.Map, serviceKey s
 		urls := serviceList.(*skip.SkipList)
 		for i := uint64(0); i < urls.Len(); i++ {
 			url := urls.ByPosition(i).(*common.URL)
-			if len(protocol) == 0 || protocol == constant.ANY_VALUE || url.Protocol == protocol || url.GetParam(constant.PROTOCOL_KEY, "") == protocol {
+			if len(protocol) == 0 || protocol == constant.AnyValue || url.Protocol == protocol || url.GetParam(constant.ProtocolKey, "") == protocol {
 				res = append(res, url)
 			}
 		}
@@ -157,7 +158,7 @@ func (mts *MetadataService) getSpecifiedService(services *sync.Map, serviceKey s
 
 // ExportURL can store the in memory
 func (mts *MetadataService) ExportURL(url *common.URL) (bool, error) {
-	if constant.METADATA_SERVICE_NAME == url.GetParam(constant.INTERFACE_KEY, "") {
+	if constant.MetadataServiceName == url.GetParam(constant.InterfaceKey, "") {
 		mts.metadataServiceURL = url
 		return true, nil
 	}
@@ -170,7 +171,7 @@ func (mts *MetadataService) ExportURL(url *common.URL) (bool, error) {
 
 // UnexportURL can remove the url store in memory
 func (mts *MetadataService) UnexportURL(url *common.URL) error {
-	if constant.METADATA_SERVICE_NAME == url.GetParam(constant.INTERFACE_KEY, "") {
+	if constant.MetadataServiceName == url.GetParam(constant.InterfaceKey, "") {
 		mts.metadataServiceURL = nil
 		return nil
 	}
@@ -194,11 +195,11 @@ func (mts *MetadataService) UnsubscribeURL(url *common.URL) error {
 
 // PublishServiceDefinition: publish url's service metadata info, and write into memory
 func (mts *MetadataService) PublishServiceDefinition(url *common.URL) error {
-	if common.RoleType(common.CONSUMER).Role() == url.GetParam(constant.SIDE_KEY, "") {
+	if common.RoleType(common.CONSUMER).Role() == url.GetParam(constant.SideKey, "") {
 		return nil
 	}
-	interfaceName := url.GetParam(constant.INTERFACE_KEY, "")
-	isGeneric := url.GetParamBool(constant.GENERIC_KEY, false)
+	interfaceName := url.GetParam(constant.InterfaceKey, "")
+	isGeneric := url.GetParamBool(constant.GenericKey, false)
 	if len(interfaceName) > 0 && !isGeneric {
 		tmpService := common.ServiceMap.GetServiceByServiceKey(url.Protocol, url.ServiceKey())
 		sd := definition.BuildServiceDefinition(*tmpService, url)
@@ -216,7 +217,7 @@ func (mts *MetadataService) PublishServiceDefinition(url *common.URL) error {
 
 // GetExportedURLs get all exported urls
 func (mts *MetadataService) GetExportedURLs(serviceInterface string, group string, version string, protocol string) ([]*common.URL, error) {
-	if serviceInterface == constant.ANY_VALUE {
+	if serviceInterface == constant.AnyValue {
 		return mts.getAllService(mts.exportedServiceURLs), nil
 	} else {
 		serviceKey := definition.ServiceDescriperBuild(serviceInterface, group, version)
@@ -254,8 +255,8 @@ func (mts *MetadataService) GetMetadataInfo(revision string) (*common.MetadataIn
 }
 
 // GetExportedServiceURLs get exported service urls
-func (mts *MetadataService) GetExportedServiceURLs() []*common.URL {
-	return mts.getAllService(mts.exportedServiceURLs)
+func (mts *MetadataService) GetExportedServiceURLs() ([]*common.URL, error) {
+	return mts.getAllService(mts.exportedServiceURLs), nil
 }
 
 // RefreshMetadata will always return true because it will be implement by remote service
@@ -269,11 +270,12 @@ func (mts *MetadataService) Version() (string, error) {
 }
 
 // GetMetadataServiceURL get url of MetadataService
-func (mts *MetadataService) GetMetadataServiceURL() *common.URL {
-	return mts.metadataServiceURL
+func (mts *MetadataService) GetMetadataServiceURL() (*common.URL, error) {
+	return mts.metadataServiceURL, nil
 }
 
 // GetMetadataServiceURL save url of MetadataService
-func (mts *MetadataService) SetMetadataServiceURL(url *common.URL) {
+func (mts *MetadataService) SetMetadataServiceURL(url *common.URL) error {
 	mts.metadataServiceURL = url
+	return nil
 }

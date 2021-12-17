@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package hystrix
 
 import (
@@ -152,7 +153,7 @@ func (iv *testMockFailInvoker) Invoke(_ context.Context, _ protocol.Invocation) 
 func TestHystrixFilterInvokeSuccess(t *testing.T) {
 	hf := &Filter{}
 	testUrl, err := common.NewURL(
-		fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LOCAL_HOST_VALUE, constant.DEFAULT_PORT))
+		fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LocalHostValue, constant.DefaultPort))
 	assert.NoError(t, err)
 	testInvoker := testMockSuccessInvoker{*protocol.NewBaseInvoker(testUrl)}
 	result := hf.Invoke(context.Background(), &testInvoker, &invocation.RPCInvocation{})
@@ -164,7 +165,7 @@ func TestHystrixFilterInvokeSuccess(t *testing.T) {
 func TestHystrixFilterInvokeFail(t *testing.T) {
 	hf := &Filter{}
 	testUrl, err := common.NewURL(
-		fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LOCAL_HOST_VALUE, constant.DEFAULT_PORT))
+		fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LocalHostValue, constant.DefaultPort))
 	assert.NoError(t, err)
 	testInvoker := testMockFailInvoker{*protocol.NewBaseInvoker(testUrl)}
 	result := hf.Invoke(context.Background(), &testInvoker, &invocation.RPCInvocation{})
@@ -180,7 +181,7 @@ func TestHystricFilterInvokeCircuitBreak(t *testing.T) {
 	for i := 0; i < 50; i++ {
 		go func() {
 			testUrl, err := common.NewURL(
-				fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LOCAL_HOST_VALUE, constant.DEFAULT_PORT))
+				fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LocalHostValue, constant.DefaultPort))
 			assert.NoError(t, err)
 			testInvoker := testMockSuccessInvoker{*protocol.NewBaseInvoker(testUrl)}
 			result := hf.Invoke(context.Background(), &testInvoker, &invocation.RPCInvocation{})
@@ -208,7 +209,7 @@ func TestHystricFilterInvokeCircuitBreakOmitException(t *testing.T) {
 	for i := 0; i < 50; i++ {
 		go func() {
 			testUrl, err := common.NewURL(
-				fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LOCAL_HOST_VALUE, constant.DEFAULT_PORT))
+				fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LocalHostValue, constant.DefaultPort))
 			assert.NoError(t, err)
 			testInvoker := testMockSuccessInvoker{*protocol.NewBaseInvoker(testUrl)}
 			result := hf.Invoke(context.Background(), &testInvoker, &invocation.RPCInvocation{})

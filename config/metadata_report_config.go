@@ -31,13 +31,15 @@ import (
 
 // MetadataReportConfig is app level configuration
 type MetadataReportConfig struct {
-	Protocol     string `required:"true"  yaml:"protocol"  json:"protocol,omitempty"`
-	Address      string `required:"true" yaml:"address" json:"address"`
-	Username     string `yaml:"username" json:"username,omitempty"`
-	Password     string `yaml:"password" json:"password,omitempty"`
-	Timeout      string `yaml:"timeout" json:"timeout,omitempty"`
-	Group        string `yaml:"group" json:"group,omitempty"`
-	MetadataType string `default:"local" yaml:"metadata-type" json:"metadata-type"`
+	Protocol  string `required:"true"  yaml:"protocol"  json:"protocol,omitempty"`
+	Address   string `required:"true" yaml:"address" json:"address"`
+	Username  string `yaml:"username" json:"username,omitempty"`
+	Password  string `yaml:"password" json:"password,omitempty"`
+	Timeout   string `yaml:"timeout" json:"timeout,omitempty"`
+	Group     string `yaml:"group" json:"group,omitempty"`
+	Namespace string `yaml:"namespace" json:"namespace,omitempty"`
+	// metadataType of this application is defined by application config, local or remote
+	metadataType string
 }
 
 // Prefix dubbo.consumer
@@ -49,7 +51,7 @@ func (mc *MetadataReportConfig) Init(rc *RootConfig) error {
 	if mc == nil {
 		return nil
 	}
-	mc.MetadataType = rc.Application.MetadataType
+	mc.metadataType = rc.Application.MetadataType
 	return mc.StartMetadataReport()
 }
 
@@ -59,7 +61,10 @@ func (mc *MetadataReportConfig) ToUrl() (*common.URL, error) {
 		common.WithPassword(mc.Password),
 		common.WithLocation(mc.Address),
 		common.WithProtocol(mc.Protocol),
-		common.WithParamsValue(constant.METADATATYPE_KEY, mc.MetadataType),
+		common.WithParamsValue(constant.TimeoutKey, mc.Timeout),
+		common.WithParamsValue(constant.MetadataReportGroupKey, mc.Group),
+		common.WithParamsValue(constant.MetadataReportNamespaceKey, mc.Namespace),
+		common.WithParamsValue(constant.MetadataTypeKey, mc.metadataType),
 	)
 	if err != nil || len(res.Protocol) == 0 {
 		return nil, perrors.New("Invalid MetadataReport Config.")
@@ -86,13 +91,13 @@ func (mc *MetadataReportConfig) StartMetadataReport() error {
 }
 
 func publishServiceDefinition(url *common.URL) {
-	localService, err := extension.GetLocalMetadataService(constant.DEFAULT_Key)
+	localService, err := extension.GetLocalMetadataService(constant.DefaultKey)
 	if err != nil {
 		logger.Warnf("get local metadata service failed, please check if you have imported _ \"dubbo.apache.org/dubbo-go/v3/metadata/service/local\"")
 		return
 	}
 	localService.PublishServiceDefinition(url)
-	if url.GetParam(constant.METADATATYPE_KEY, "") != constant.REMOTE_METADATA_STORAGE_TYPE {
+	if url.GetParam(constant.MetadataTypeKey, "") != constant.RemoteMetadataStorageType {
 		return
 	}
 	if remoteMetadataService, err := extension.GetRemoteMetadataService(); err == nil && remoteMetadataService != nil {
@@ -104,12 +109,12 @@ func publishServiceDefinition(url *common.URL) {
 // selectMetadataServiceExportedURL get already be exported url
 func selectMetadataServiceExportedURL() *common.URL {
 	var selectedUrl *common.URL
-	metaDataService, err := extension.GetLocalMetadataService(constant.DEFAULT_Key)
+	metaDataService, err := extension.GetLocalMetadataService(constant.DefaultKey)
 	if err != nil {
 		logger.Warnf("get metadata service exporter failed, pls check if you import _ \"dubbo.apache.org/dubbo-go/v3/metadata/service/local\"")
 		return nil
 	}
-	urlList, err := metaDataService.GetExportedURLs(constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE)
+	urlList, err := metaDataService.GetExportedURLs(constant.AnyValue, constant.AnyValue, constant.AnyValue, constant.AnyValue)
 	if err != nil {
 		panic(err)
 	}
@@ -168,12 +173,6 @@ func (mrcb *MetadataReportConfigBuilder) SetTimeout(timeout string) *MetadataRep
 // nolint
 func (mrcb *MetadataReportConfigBuilder) SetGroup(group string) *MetadataReportConfigBuilder {
 	mrcb.metadataReportConfig.Group = group
-	return mrcb
-}
-
-// nolint
-func (mrcb *MetadataReportConfigBuilder) SetMetadataType(metadataType string) *MetadataReportConfigBuilder {
-	mrcb.metadataReportConfig.MetadataType = metadataType
 	return mrcb
 }
 

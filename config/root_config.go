@@ -66,6 +66,8 @@ type RootConfig struct {
 
 	Metric *MetricConfig `yaml:"metrics" json:"metrics,omitempty" property:"metrics"`
 
+	Tracing map[string]*TracingConfig `yaml:"tracing" json:"tracing,omitempty" property:"tracing"`
+
 	// Logger log
 	Logger *LoggerConfig `yaml:"logger" json:"logger,omitempty" property:"logger"`
 
@@ -78,6 +80,8 @@ type RootConfig struct {
 
 	// cache file used to store the current used configurations.
 	CacheFile string `yaml:"cache_file" json:"cache_file,omitempty" property:"cache_file"`
+
+	Custom *CustomConfig `yaml:"custom" json:"custom,omitempty" property:"custom"`
 }
 
 func SetRootConfig(r RootConfig) {
@@ -86,7 +90,7 @@ func SetRootConfig(r RootConfig) {
 
 // Prefix dubbo
 func (RootConfig) Prefix() string {
-	return constant.DUBBO
+	return constant.Dubbo
 }
 
 func GetRootConfig() *RootConfig {
@@ -131,13 +135,16 @@ func registerPOJO() {
 	hessian.RegisterPOJO(&common.URL{})
 }
 
+// Init is to start dubbo-go framework, load local configuration, or read configuration from config-center if necessary.
+// It's deprecated for user to call rootConfig.Init() manually, try config.Load(config.WithRootConfig(rootConfig)) instead.
 func (rc *RootConfig) Init() error {
 	registerPOJO()
 	if err := rc.Logger.Init(); err != nil { // init default logger
 		return err
 	}
 	if err := rc.ConfigCenter.Init(rc); err != nil {
-		logger.Infof("config center doesn't start， because %s", err)
+		logger.Infof("[Config Center] Config center doesn't start")
+		logger.Debugf("config center doesn't start because %s", err)
 	} else {
 		if err := rc.Logger.Init(); err != nil { // init logger using config from config center again
 			return err
@@ -148,12 +155,17 @@ func (rc *RootConfig) Init() error {
 		return err
 	}
 
+	// init user define
+	if err := rc.Custom.Init(); err != nil {
+		return err
+	}
+
 	// init protocol
 	protocols := rc.Protocols
 	if len(protocols) <= 0 {
 		protocol := &ProtocolConfig{}
 		protocols = make(map[string]*ProtocolConfig, 1)
-		protocols[constant.DUBBO] = protocol
+		protocols[constant.Dubbo] = protocol
 		rc.Protocols = protocols
 	}
 	for _, protocol := range protocols {
@@ -178,6 +190,11 @@ func (rc *RootConfig) Init() error {
 	if err := rc.Metric.Init(); err != nil {
 		return err
 	}
+	for _, t := range rc.Tracing {
+		if err := t.Init(); err != nil {
+			return err
+		}
+	}
 	if err := initRouterConfig(rc); err != nil {
 		return err
 	}
@@ -195,12 +212,11 @@ func (rc *RootConfig) Init() error {
 
 func (rc *RootConfig) Start() {
 	startOnce.Do(func() {
+		rc.Consumer.Load()
 		rc.Provider.Load()
 		// todo if register consumer instance or has exported services
 		exportMetadataService()
 		registerServiceInstance()
-
-		rc.Consumer.Load()
 	})
 }
 
@@ -212,10 +228,12 @@ func newEmptyRootConfig() *RootConfig {
 		Application:    NewApplicationConfigBuilder().Build(),
 		Registries:     make(map[string]*RegistryConfig),
 		Protocols:      make(map[string]*ProtocolConfig),
+		Tracing:        make(map[string]*TracingConfig),
 		Provider:       NewProviderConfigBuilder().Build(),
 		Consumer:       NewConsumerConfigBuilder().Build(),
 		Metric:         NewMetricConfigBuilder().Build(),
 		Logger:         NewLoggerConfigBuilder().Build(),
+		Custom:         NewCustomConfigBuilder().Build(),
 	}
 	return newRootConfig
 }
@@ -303,12 +321,17 @@ func (rb *RootConfigBuilder) SetConfigCenter(configCenterConfig *CenterConfig) *
 	return rb
 }
 
+func (rb *RootConfigBuilder) SetCustom(customConfig *CustomConfig) *RootConfigBuilder {
+	rb.rootConfig.Custom = customConfig
+	return rb
+}
+
 func (rb *RootConfigBuilder) Build() *RootConfig {
 	return rb.rootConfig
 }
 
 func exportMetadataService() {
-	ms, err := extension.GetLocalMetadataService(constant.DEFAULT_Key)
+	ms, err := extension.GetLocalMetadataService(constant.DefaultKey)
 	if err != nil {
 		logger.Warnf("could not init metadata service", err)
 		return
@@ -325,7 +348,7 @@ func exportMetadataService() {
 	// So using sync.Once will result in dead lock
 	exporting.Store(true)
 
-	expt := extension.GetMetadataServiceExporter(constant.DEFAULT_Key, ms)
+	expt := extension.GetMetadataServiceExporter(constant.DefaultKey, ms)
 	if expt == nil {
 		logger.Warnf("get metadata service exporter failed, pls check if you import _ \"dubbo.apache.org/dubbo-go/v3/metadata/service/exporter/configurable\"")
 		return

@@ -38,12 +38,6 @@ func init() {
 }
 
 // Filter will calculate the invocation's duration and the report to the reporters
-// If you want to use this filter to collect the metrics,
-// Adding this into your configuration file, like:
-// filter: "metrics"
-// metrics:
-//   reporter:
-//     - "your reporter" # here you should specify the reporter, for example 'prometheus'
 // more info please take a look at dubbo-samples projects
 type Filter struct {
 	reporters []metrics.Reporter

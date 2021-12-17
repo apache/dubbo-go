@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package getty
 
 import (
@@ -52,9 +53,9 @@ func testDecodeTCPPackage(t *testing.T, svr *Server, client *Client) {
 	rpcInvocation := createInvocation("GetAdmin", nil, nil, []interface{}{[]interface{}{"1", "username"}},
 		[]reflect.Value{reflect.ValueOf([]interface{}{"1", "username"}), reflect.ValueOf(ap)})
 	attachment := map[string]string{
-		constant.INTERFACE_KEY: "com.ikurento.user.AdminProvider",
-		constant.PATH_KEY:      "AdminProvider",
-		constant.VERSION_KEY:   "1.0.0",
+		constant.InterfaceKey: "com.ikurento.user.AdminProvider",
+		constant.PathKey:      "AdminProvider",
+		constant.VersionKey:   "1.0.0",
 	}
 	setAttachment(rpcInvocation, attachment)
 	request.Data = rpcInvocation

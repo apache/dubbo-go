@@ -35,6 +35,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config/instance"
 	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
+	"dubbo.apache.org/dubbo-go/v3/metadata/report"
 )
 
 const (
@@ -53,15 +54,19 @@ type MetadataServiceNameMapping struct {
 
 // Map will map the service to this application-level service
 func (d *MetadataServiceNameMapping) Map(url *common.URL) error {
-	serviceInterface := url.GetParam(constant.INTERFACE_KEY, "")
+	serviceInterface := url.GetParam(constant.InterfaceKey, "")
 	// metadata service is admin service, should not be mapped
-	if constant.METADATA_SERVICE_NAME == serviceInterface {
-		logger.Info("try to map the metadata service, will be ignored")
+	if constant.MetadataServiceName == serviceInterface {
+		logger.Debug("try to map the metadata service, will be ignored")
 		return nil
 	}
 
 	appName := config.GetApplicationConfig().Name
-	metadataReport := instance.GetMetadataReportInstance()
+
+	metadataReport := getMetaDataReport(url.GetParam(constant.RegistryKey, ""))
+	if metadataReport == nil {
+		return perrors.New("get metadata report instance is nil")
+	}
 	err := metadataReport.RegisterServiceAppMapping(serviceInterface, defaultGroup, appName)
 	if err != nil {
 		return perrors.WithStack(err)
@@ -71,7 +76,7 @@ func (d *MetadataServiceNameMapping) Map(url *common.URL) error {
 
 // Get will return the application-level services. If not found, the empty set will be returned.
 func (d *MetadataServiceNameMapping) Get(url *common.URL) (*gxset.HashSet, error) {
-	serviceInterface := url.GetParam(constant.INTERFACE_KEY, "")
+	serviceInterface := url.GetParam(constant.InterfaceKey, "")
 	metadataReport := instance.GetMetadataReportInstance()
 	return metadataReport.GetServiceAppMapping(serviceInterface, defaultGroup)
 }
@@ -94,4 +99,15 @@ func GetNameMappingInstance() mapping.ServiceNameMapping {
 		serviceNameMappingInstance = &MetadataServiceNameMapping{}
 	})
 	return serviceNameMappingInstance
+}
+
+// getMetaDataReport obtain metadata reporting instances through registration protocol
+// if the metadata type is remote, obtain the instance from the metadata report configuration
+func getMetaDataReport(protocol string) report.MetadataReport {
+	var metadataReport report.MetadataReport
+	if config.GetApplicationConfig().MetadataType == constant.RemoteMetadataStorageType {
+		metadataReport = instance.GetMetadataReportInstance()
+		return metadataReport
+	}
+	return instance.GetMetadataReportByRegistryProtocol(protocol)
 }

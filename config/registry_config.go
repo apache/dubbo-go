@@ -25,6 +25,8 @@ import (
 
 import (
 	"github.com/creasty/defaults"
+
+	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -32,6 +34,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/config/instance"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
@@ -67,26 +70,54 @@ func (c *RegistryConfig) Init() error {
 	if err := defaults.Set(c); err != nil {
 		return err
 	}
-	c.translateRegistryAddress()
-	return verify(c)
+	return c.startRegistryConfig()
 }
 
 func (c *RegistryConfig) getUrlMap(roleType common.RoleType) url.Values {
 	urlMap := url.Values{}
-	urlMap.Set(constant.GROUP_KEY, c.Group)
-	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(int(roleType)))
-	urlMap.Set(constant.REGISTRY_KEY, c.Protocol)
-	urlMap.Set(constant.REGISTRY_TIMEOUT_KEY, c.Timeout)
+	urlMap.Set(constant.RegistryGroupKey, c.Group)
+	urlMap.Set(constant.RegistryRoleKey, strconv.Itoa(int(roleType)))
+	urlMap.Set(constant.RegistryKey, c.Protocol)
+	urlMap.Set(constant.RegistryTimeoutKey, c.Timeout)
 	// multi registry invoker weight label for load balance
-	urlMap.Set(constant.REGISTRY_KEY+"."+constant.REGISTRY_LABEL_KEY, strconv.FormatBool(true))
-	urlMap.Set(constant.REGISTRY_KEY+"."+constant.PREFERRED_KEY, strconv.FormatBool(c.Preferred))
-	urlMap.Set(constant.REGISTRY_KEY+"."+constant.ZONE_KEY, c.Zone)
-	urlMap.Set(constant.REGISTRY_KEY+"."+constant.WEIGHT_KEY, strconv.FormatInt(c.Weight, 10))
-	urlMap.Set(constant.REGISTRY_TTL_KEY, c.TTL)
+	urlMap.Set(constant.RegistryKey+"."+constant.RegistryLabelKey, strconv.FormatBool(true))
+	urlMap.Set(constant.RegistryKey+"."+constant.PreferredKey, strconv.FormatBool(c.Preferred))
+	urlMap.Set(constant.RegistryKey+"."+constant.RegistryZoneKey, c.Zone)
+	urlMap.Set(constant.RegistryKey+"."+constant.WeightKey, strconv.FormatInt(c.Weight, 10))
+	urlMap.Set(constant.RegistryTTLKey, c.TTL)
 	for k, v := range c.Params {
 		urlMap.Set(k, v)
 	}
 	return urlMap
+}
+
+func (c *RegistryConfig) startRegistryConfig() error {
+	c.translateRegistryAddress()
+	if GetApplicationConfig().MetadataType == constant.DefaultMetadataStorageType && c.RegistryType == constant.ServiceKey {
+		if tmpUrl, err := c.toMetadataReportUrl(); err == nil {
+			instance.SetMetadataReportInstanceByReg(tmpUrl)
+		} else {
+			return perrors.Wrap(err, "Start RegistryConfig failed.")
+		}
+	}
+	return verify(c)
+}
+
+// toMetadataReportUrl translate the registry configuration to the metadata reporting url
+func (c *RegistryConfig) toMetadataReportUrl() (*common.URL, error) {
+	res, err := common.NewURL(c.Address,
+		common.WithLocation(c.Address),
+		common.WithProtocol(c.Protocol),
+		common.WithUsername(c.Username),
+		common.WithPassword(c.Password),
+		common.WithParamsValue(constant.TimeoutKey, c.Timeout),
+		common.WithParamsValue(constant.MetadataReportGroupKey, c.Group),
+		common.WithParamsValue(constant.MetadataReportNamespaceKey, c.Namespace),
+	)
+	if err != nil || len(res.Protocol) == 0 {
+		return nil, perrors.New("Invalid Registry Config.")
+	}
+	return res, nil
 }
 
 //translateRegistryAddress translate registry address
@@ -110,8 +141,8 @@ func (c *RegistryConfig) GetInstance(roleType common.RoleType) (registry.Registr
 		return nil, err
 	}
 	// if the protocol == registry, set protocol the registry value in url.params
-	if u.Protocol == constant.REGISTRY_PROTOCOL {
-		u.Protocol = u.GetParam(constant.REGISTRY_KEY, "")
+	if u.Protocol == constant.RegistryProtocol {
+		u.Protocol = u.GetParam(constant.RegistryKey, "")
 	}
 	return extension.GetRegistry(u.Protocol, u)
 }
@@ -121,16 +152,15 @@ func (c *RegistryConfig) toURL(roleType common.RoleType) (*common.URL, error) {
 	var registryURLProtocol string
 	if c.RegistryType == "service" {
 		// service discovery protocol
-		registryURLProtocol = constant.SERVICE_REGISTRY_PROTOCOL
+		registryURLProtocol = constant.ServiceRegistryProtocol
 	} else {
-		registryURLProtocol = constant.REGISTRY_PROTOCOL
+		registryURLProtocol = constant.RegistryProtocol
 	}
 	return common.NewURL(registryURLProtocol+"://"+address,
 		common.WithParams(c.getUrlMap(roleType)),
-		common.WithParamsValue(constant.SIMPLIFIED_KEY, strconv.FormatBool(c.Simplified)),
-		common.WithParamsValue(constant.REGISTRY_KEY, c.Protocol),
-		common.WithParamsValue(constant.GROUP_KEY, c.Group),
-		common.WithParamsValue(constant.NAMESPACE_KEY, c.Namespace),
+		common.WithParamsValue(constant.RegistrySimplifiedKey, strconv.FormatBool(c.Simplified)),
+		common.WithParamsValue(constant.RegistryKey, c.Protocol),
+		common.WithParamsValue(constant.RegistryNamespaceKey, c.Namespace),
 		common.WithUsername(c.Username),
 		common.WithPassword(c.Password),
 		common.WithLocation(c.Address),

@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package configurator
 
 import (
@@ -46,7 +47,7 @@ func TestConfigureVersion2p6(t *testing.T) {
 	providerUrl, err := common.NewURL("jsonrpc://127.0.0.1:20001/com.ikurento.user.UserProvider?anyhost=true&app.version=0.0.1&application=BDTService&category=providers&cluster=failover&dubbo=dubbo-provider-golang-2.6.0&environment=dev&group=&interface=com.ikurento.user.UserProvider&ip=10.32.20.124&loadbalance=random&methods.GetUser.loadbalance=random&methods.GetUser.retries=1&methods.GetUser.weight=0&module=dubbogo+user-info+server&name=BDTService&organization=ikurento.com&owner=ZX&pid=64225&retries=0&service.filter=echo&side=provider&timestamp=1562076628&version=&warmup=100")
 	assert.NoError(t, err)
 	configurator.Configure(providerUrl)
-	assert.Equal(t, failfast, providerUrl.GetParam(constant.CLUSTER_KEY, ""))
+	assert.Equal(t, failfast, providerUrl.GetParam(constant.ClusterKey, ""))
 }
 
 func TestConfigureVersionOverrideAddr(t *testing.T) {
@@ -58,7 +59,7 @@ func TestConfigureVersionOverrideAddr(t *testing.T) {
 	providerUrl, err := common.NewURL("jsonrpc://127.0.0.1:20001/com.ikurento.user.UserProvider?anyhost=true&app.version=0.0.1&application=BDTService&category=providers&cluster=failover&dubbo=dubbo-provider-golang-2.6.0&environment=dev&group=&interface=com.ikurento.user.UserProvider&ip=10.32.20.124&loadbalance=random&methods.GetUser.loadbalance=random&methods.GetUser.retries=1&methods.GetUser.weight=0&module=dubbogo+user-info+server&name=BDTService&organization=ikurento.com&owner=ZX&pid=64225&retries=0&service.filter=echo&side=provider&timestamp=1562076628&version=&warmup=100")
 	assert.NoError(t, err)
 	configurator.Configure(providerUrl)
-	assert.Equal(t, failover, providerUrl.GetParam(constant.CLUSTER_KEY, ""))
+	assert.Equal(t, failover, providerUrl.GetParam(constant.ClusterKey, ""))
 }
 
 func TestConfigureVersion2p6WithIp(t *testing.T) {
@@ -70,7 +71,7 @@ func TestConfigureVersion2p6WithIp(t *testing.T) {
 	providerUrl, err := common.NewURL("jsonrpc://127.0.0.1:20001/com.ikurento.user.UserProvider?anyhost=true&app.version=0.0.1&application=BDTService&category=providers&cluster=failover&dubbo=dubbo-provider-golang-2.6.0&environment=dev&group=&interface=com.ikurento.user.UserProvider&ip=10.32.20.124&loadbalance=random&methods.GetUser.loadbalance=random&methods.GetUser.retries=1&methods.GetUser.weight=0&module=dubbogo+user-info+server&name=BDTService&organization=ikurento.com&owner=ZX&pid=64225&retries=0&service.filter=echo&side=provider&timestamp=1562076628&version=&warmup=100")
 	assert.NoError(t, err)
 	configurator.Configure(providerUrl)
-	assert.Equal(t, failfast, providerUrl.GetParam(constant.CLUSTER_KEY, ""))
+	assert.Equal(t, failfast, providerUrl.GetParam(constant.ClusterKey, ""))
 }
 
 func TestConfigureVersion2p7(t *testing.T) {
@@ -81,5 +82,5 @@ func TestConfigureVersion2p7(t *testing.T) {
 	providerUrl, err := common.NewURL("jsonrpc://127.0.0.1:20001/com.ikurento.user.UserProvider?anyhost=true&app.version=0.0.1&application=BDTService&category=providers&cluster=failover&dubbo=dubbo-provider-golang-2.6.0&environment=dev&group=&interface=com.ikurento.user.UserProvider&ip=10.32.20.124&loadbalance=random&methods.GetUser.loadbalance=random&methods.GetUser.retries=1&methods.GetUser.weight=0&module=dubbogo+user-info+server&name=BDTService&organization=ikurento.com&owner=ZX&pid=64225&retries=0&service.filter=echo&side=provider&timestamp=1562076628&version=&warmup=100")
 	assert.NoError(t, err)
 	configurator.Configure(providerUrl)
-	assert.Equal(t, failfast, providerUrl.GetParam(constant.CLUSTER_KEY, ""))
+	assert.Equal(t, failfast, providerUrl.GetParam(constant.ClusterKey, ""))
 }

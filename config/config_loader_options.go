@@ -18,12 +18,10 @@
 package config
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
-	"sort"
 	"strings"
 )
 
@@ -33,32 +31,42 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/file"
 )
 
 type loaderConf struct {
-	// loaderConf file type default yaml
-	genre string
+	// loaderConf file extension default yaml
+	suffix string
+
 	// loaderConf file path default ./conf
 	path string
+
 	// loaderConf file delim default .
 	delim string
+
 	// config bytes
 	bytes []byte
+
+	// user provide rootConfig built by config api
+	rc *RootConfig
 }
 
 func NewLoaderConf(opts ...LoaderConfOption) *loaderConf {
 	configFilePath := "../conf/dubbogo.yaml"
-	if configFilePathFromEnv := os.Getenv(constant.CONFIG_FILE_ENV_KEY); configFilePathFromEnv != "" {
+	if configFilePathFromEnv := os.Getenv(constant.ConfigFileEnvKey); configFilePathFromEnv != "" {
 		configFilePath = configFilePathFromEnv
 	}
-	genre := strings.Split(configFilePath, ".")
+	suffix := strings.Split(configFilePath, ".")
 	conf := &loaderConf{
-		genre: genre[len(genre)-1],
-		path:  absolutePath(configFilePath),
-		delim: ".",
+		suffix: suffix[len(suffix)-1],
+		path:   absolutePath(configFilePath),
+		delim:  ".",
 	}
 	for _, opt := range opts {
 		opt.apply(conf)
+	}
+	if conf.rc != nil {
+		return conf
 	}
 	if len(conf.bytes) <= 0 {
 		bytes, err := ioutil.ReadFile(conf.path)
@@ -80,14 +88,22 @@ func (fn loaderConfigFunc) apply(vc *loaderConf) {
 	fn(vc)
 }
 
-// WithGenre set load config  genre
-func WithGenre(genre string) LoaderConfOption {
+// WithGenre set load config file suffix
+//Deprecated: replaced by WithSuffix
+func WithGenre(suffix string) LoaderConfOption {
 	return loaderConfigFunc(func(conf *loaderConf) {
-		g := strings.ToLower(genre)
-		if err := checkGenre(g); err != nil {
+		g := strings.ToLower(suffix)
+		if err := checkFileSuffix(g); err != nil {
 			panic(err)
 		}
-		conf.genre = g
+		conf.suffix = g
+	})
+}
+
+// WithSuffix set load config file suffix
+func WithSuffix(suffix file.Suffix) LoaderConfOption {
+	return loaderConfigFunc(func(conf *loaderConf) {
+		conf.suffix = string(suffix)
 	})
 }
 
@@ -101,13 +117,26 @@ func WithPath(path string) LoaderConfOption {
 		}
 		conf.bytes = bytes
 		genre := strings.Split(path, ".")
-		conf.genre = genre[len(genre)-1]
+		conf.suffix = genre[len(genre)-1]
+	})
+}
+
+func WithRootConfig(rc *RootConfig) LoaderConfOption {
+	return loaderConfigFunc(func(conf *loaderConf) {
+		conf.rc = rc
 	})
 }
 
 func WithDelim(delim string) LoaderConfOption {
 	return loaderConfigFunc(func(conf *loaderConf) {
 		conf.delim = delim
+	})
+}
+
+// WithBytes set load config  bytes
+func WithBytes(bytes []byte) LoaderConfOption {
+	return loaderConfigFunc(func(conf *loaderConf) {
+		conf.bytes = bytes
 	})
 }
 
@@ -142,13 +171,12 @@ func userHomeDir() string {
 	return os.Getenv("HOME")
 }
 
-// checkGenre check Genre
-func checkGenre(genre string) error {
-	genres := []string{"json", "toml", "yaml", "yml"}
-	sort.Strings(genres)
-	idx := sort.SearchStrings(genres, genre)
-	if genres[idx] != genre {
-		return errors.New(fmt.Sprintf("no support %s", genre))
+// checkFileSuffix check file suffix
+func checkFileSuffix(suffix string) error {
+	for _, g := range []string{"json", "toml", "yaml", "yml", "properties"} {
+		if g == suffix {
+			return nil
+		}
 	}
-	return nil
+	return errors.Errorf("no support file suffix: %s", suffix)
 }

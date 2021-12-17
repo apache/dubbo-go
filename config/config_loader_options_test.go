@@ -25,16 +25,49 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/file"
+)
+
 func TestCheckGenre(t *testing.T) {
 
-	err := checkGenre("abc")
+	err := checkFileSuffix("abc")
 	assert.NotNil(t, err)
 
-	err = checkGenre("json")
+	err = checkFileSuffix("zc")
+	assert.NotNil(t, err)
+
+	err = checkFileSuffix("json")
 	assert.Nil(t, err)
 }
 
 func TestFileGenre(t *testing.T) {
 	conf := NewLoaderConf(WithPath("../config/testdata/config/properties/application.properties"))
-	assert.Equal(t, conf.genre, "properties")
+	assert.Equal(t, conf.suffix, "properties")
+}
+
+func TestRootConfig(t *testing.T) {
+	rc := NewRootConfigBuilder().SetApplication(NewApplicationConfigBuilder().SetName("test-app").Build()).Build()
+	conf := NewLoaderConf(WithRootConfig(rc))
+	assert.Equal(t, conf.rc.Application.Name, "test-app")
+}
+
+func TestNewLoaderConf_WithBytes(t *testing.T) {
+	str := `dubbo.application.name=dubbo-go
+dubbo.application.module=local
+dubbo.services.HelloService.registry=nacos,zk`
+
+	conf := NewLoaderConf(WithBytes([]byte(str)), WithGenre("properties"))
+
+	assert.NotNil(t, conf)
+	assert.NotNil(t, conf.bytes)
+}
+
+func TestNewLoaderConf_WithSuffix(t *testing.T) {
+	conf := NewLoaderConf(
+		WithSuffix(file.JSON),
+		WithPath("../config/testdata/config/properties/application.properties"),
+	)
+
+	assert.Equal(t, conf.suffix, string(file.PROPERTIES))
 }

@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 )
 
 import (
@@ -43,12 +44,8 @@ import (
 //     refer to https://github.com/alibaba/sentinel-golang/blob/master/api/init.go
 // 2. Register rules for resources user want to guard
 func init() {
-	extension.SetFilter(constant.SentinelConsumerFilterKey, func() filter.Filter {
-		return &ConsumerFilter{}
-	})
-	extension.SetFilter(constant.SentinelProviderFilterKey, func() filter.Filter {
-		return &ProviderFilter{}
-	})
+	extension.SetFilter(constant.SentinelConsumerFilterKey, newSentinelConsumerFilter)
+	extension.SetFilter(constant.SentinelProviderFilterKey, newSentinelProviderFilter)
 	if err := logging.ResetGlobalLogger(DubboLoggerWrapper{Logger: logger.GetLogger()}); err != nil {
 		logger.Errorf("[Sentinel Filter] fail to ingest dubbo logger into sentinel")
 	}
@@ -103,9 +100,23 @@ func sentinelExit(ctx context.Context, result protocol.Result) {
 	}
 }
 
-type ProviderFilter struct{}
+var (
+	providerOnce     sync.Once
+	sentinelProvider *sentinelProviderFilter
+)
 
-func (d *ProviderFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+type sentinelProviderFilter struct{}
+
+func newSentinelProviderFilter() filter.Filter {
+	if sentinelProvider == nil {
+		providerOnce.Do(func() {
+			sentinelProvider = &sentinelProviderFilter{}
+		})
+	}
+	return sentinelProvider
+}
+
+func (d *sentinelProviderFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	interfaceResourceName, methodResourceName := getResourceName(invoker, invocation, getProviderPrefix())
 
 	var (
@@ -132,14 +143,28 @@ func (d *ProviderFilter) Invoke(ctx context.Context, invoker protocol.Invoker, i
 	return invoker.Invoke(ctx, invocation)
 }
 
-func (d *ProviderFilter) OnResponse(ctx context.Context, result protocol.Result, _ protocol.Invoker, _ protocol.Invocation) protocol.Result {
+func (d *sentinelProviderFilter) OnResponse(ctx context.Context, result protocol.Result, _ protocol.Invoker, _ protocol.Invocation) protocol.Result {
 	sentinelExit(ctx, result)
 	return result
 }
 
-type ConsumerFilter struct{}
+var (
+	consumerOnce     sync.Once
+	sentinelConsumer *sentinelConsumerFilter
+)
 
-func (d *ConsumerFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+type sentinelConsumerFilter struct{}
+
+func newSentinelConsumerFilter() filter.Filter {
+	if sentinelConsumer == nil {
+		consumerOnce.Do(func() {
+			sentinelConsumer = &sentinelConsumerFilter{}
+		})
+	}
+	return sentinelConsumer
+}
+
+func (d *sentinelConsumerFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	interfaceResourceName, methodResourceName := getResourceName(invoker, invocation, getConsumerPrefix())
 	var (
 		interfaceEntry *base.SentinelEntry
@@ -165,7 +190,7 @@ func (d *ConsumerFilter) Invoke(ctx context.Context, invoker protocol.Invoker, i
 	return invoker.Invoke(ctx, invocation)
 }
 
-func (d *ConsumerFilter) OnResponse(ctx context.Context, result protocol.Result, _ protocol.Invoker, _ protocol.Invocation) protocol.Result {
+func (d *sentinelConsumerFilter) OnResponse(ctx context.Context, result protocol.Result, _ protocol.Invoker, _ protocol.Invocation) protocol.Result {
 	sentinelExit(ctx, result)
 	return result
 }
@@ -187,10 +212,7 @@ func SetDubboProviderFallback(f DubboFallback) {
 
 func getDefaultDubboFallback() DubboFallback {
 	return func(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation, blockError *base.BlockError) protocol.Result {
-		result := &protocol.RPCResult{}
-		result.SetResult(nil)
-		result.SetError(blockError)
-		return result
+		return protocol.NewRPCResult(nil, blockError)
 	}
 }
 
@@ -243,6 +265,6 @@ func getInterfaceGroupAndVersionEnabled() bool {
 func getColonSeparatedKey(url *common.URL) string {
 	return fmt.Sprintf("%s:%s:%s",
 		url.Service(),
-		url.GetParam(constant.GROUP_KEY, ""),
-		url.GetParam(constant.VERSION_KEY, ""))
+		url.GetParam(constant.GroupKey, ""),
+		url.GetParam(constant.VersionKey, ""))
 }

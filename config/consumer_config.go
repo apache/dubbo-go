@@ -27,6 +27,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/config/generic"
@@ -45,8 +46,11 @@ type ConsumerConfig struct {
 	RequestTimeout string `default:"3s" yaml:"request-timeout" json:"request-timeout,omitempty" property:"request-timeout"`
 	ProxyFactory   string `default:"default" yaml:"proxy" json:"proxy,omitempty" property:"proxy"`
 	Check          bool   `yaml:"check" json:"check,omitempty" property:"check"`
+	// adaptive service
+	AdaptiveService bool `default:"false" yaml:"adaptive-service" json:"adaptive-service" property:"adaptive-service"`
 
 	References map[string]*ReferenceConfig `yaml:"references" json:"references,omitempty" property:"references"`
+	TracingKey string                      `yaml:"tracing-key" json:"tracing-key" property:"tracing-key"`
 
 	FilterConf                     interface{} `yaml:"filter-conf" json:"filter-conf,omitempty" property:"filter-conf"`
 	MaxWaitTimeForServiceDiscovery string      `default:"3s" yaml:"max-wait-time-for-service-discovery" json:"max-wait-time-for-service-discovery,omitempty" property:"max-wait-time-for-service-discovery"`
@@ -67,8 +71,29 @@ func (cc *ConsumerConfig) Init(rc *RootConfig) error {
 	if len(cc.RegistryIDs) <= 0 {
 		cc.RegistryIDs = rc.getRegistryIds()
 	}
-	for _, reference := range cc.References {
-		if err := reference.Init(rc); err != nil {
+	if cc.TracingKey == "" && len(rc.Tracing) > 0 {
+		for k, _ := range rc.Tracing {
+			cc.TracingKey = k
+			break
+		}
+	}
+	for key, referenceConfig := range cc.References {
+		if referenceConfig.InterfaceName == "" {
+			reference := GetConsumerService(key)
+			// try to use interface name defined by pb
+			triplePBService, ok := reference.(common.TriplePBService)
+			if !ok {
+				logger.Errorf("Dubbogo cannot get interface name with reference = %s."+
+					"Please run the command 'go install github.com/dubbogo/tools/cmd/protoc-gen-go-triple@latest' to get the latest "+
+					"protoc-gen-go-triple,  and then re-generate your pb file again by this tool."+
+					"If you are not using pb serialization, please set 'interfaceName' field in reference config to let dubbogo get the interface name.", key)
+				continue
+			} else {
+				// use interface name defined by pb
+				referenceConfig.InterfaceName = triplePBService.XXX_InterfaceName()
+			}
+		}
+		if err := referenceConfig.Init(rc); err != nil {
 			return err
 		}
 	}
@@ -78,6 +103,7 @@ func (cc *ConsumerConfig) Init(rc *RootConfig) error {
 	if err := verify(cc); err != nil {
 		return err
 	}
+
 	cc.rootConfig = rc
 	return nil
 }
@@ -120,7 +146,7 @@ func (cc *ConsumerConfig) Load() {
 					checkok = false
 					count++
 					if count > maxWait {
-						errMsg := fmt.Sprintf("Request timed out, please check configuration, Failed to check the status of the service %v. No provider available for the service to the consumer use dubbo version %v", refconfig.InterfaceName, constant.Version)
+						errMsg := fmt.Sprintf("No provider available of the service %v.please check configuration.", refconfig.InterfaceName)
 						logger.Error(errMsg)
 						panic(errMsg)
 					}

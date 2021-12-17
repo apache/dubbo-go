@@ -26,6 +26,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
@@ -50,7 +51,7 @@ func (pfw *ProtocolFilterWrapper) Export(invoker protocol.Invoker) protocol.Expo
 	if pfw.protocol == nil {
 		pfw.protocol = extension.GetProtocol(invoker.GetURL().Protocol)
 	}
-	invoker = BuildInvokerChain(invoker, constant.SERVICE_FILTER_KEY)
+	invoker = BuildInvokerChain(invoker, constant.ServiceFilterKey)
 	return pfw.protocol.Export(invoker)
 }
 
@@ -63,7 +64,7 @@ func (pfw *ProtocolFilterWrapper) Refer(url *common.URL) protocol.Invoker {
 	if invoker == nil {
 		return nil
 	}
-	return BuildInvokerChain(invoker, constant.REFERENCE_FILTER_KEY)
+	return BuildInvokerChain(invoker, constant.ReferenceFilterKey)
 }
 
 // Destroy will destroy all invoker and exporter.
@@ -84,6 +85,14 @@ func BuildInvokerChain(invoker protocol.Invoker, key string) protocol.Invoker {
 		flt := extension.GetFilter(strings.TrimSpace(filterNames[i]))
 		fi := &FilterInvoker{next: next, invoker: invoker, filter: flt}
 		next = fi
+	}
+
+	if key == constant.ServiceFilterKey {
+		logger.Debugf("[BuildInvokerChain] The provider invocation link is %s, invoker: %s",
+			strings.Join(append(filterNames, "proxyInvoker"), " -> "), invoker)
+	} else if key == constant.ReferenceFilterKey {
+		logger.Debugf("[BuildInvokerChain] The consumer filters are %s, invoker: %s",
+			strings.Join(append(filterNames, "proxyInvoker"), " -> "), invoker)
 	}
 	return next
 }

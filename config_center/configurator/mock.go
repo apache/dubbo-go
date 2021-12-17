@@ -37,9 +37,9 @@ func (c *mockConfigurator) GetUrl() *common.URL {
 	return c.configuratorUrl
 }
 
-// Configure sets up param CLUSTER_KEY and cluster for url
+// Configure sets up param ClusterKey and cluster for url
 func (c *mockConfigurator) Configure(url *common.URL) {
-	if cluster := c.GetUrl().GetParam(constant.CLUSTER_KEY, ""); cluster != "" {
-		url.SetParam(constant.CLUSTER_KEY, cluster)
+	if cluster := c.GetUrl().GetParam(constant.ClusterKey, ""); cluster != "" {
+		url.SetParam(constant.ClusterKey, cluster)
 	}
 }

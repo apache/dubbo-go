@@ -113,8 +113,10 @@ func NewRouterChain() (*RouterChain, error) {
 
 	for key, routerFactory := range routerFactories {
 		r, err := routerFactory().NewPriorityRouter()
-		if r == nil || err != nil {
-			logger.Errorf("router chain build router fail! routerFactories key:%s  error:%v", key, err)
+		if err != nil {
+			logger.Errorf("Build router chain failed with routerFactories key:%s and error:%v", key, err)
+			continue
+		} else if r == nil {
 			continue
 		}
 		routers = append(routers, r)

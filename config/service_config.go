@@ -50,8 +50,8 @@ import (
 type ServiceConfig struct {
 	id                          string
 	Filter                      string            `yaml:"filter" json:"filter,omitempty" property:"filter"`
-	ProtocolIDs                 []string          `default:"[\"dubbo\"]"  validate:"required"  yaml:"protocol-ids"  json:"protocol-ids,omitempty" property:"protocol-ids"` // multi protocolIDs support, split by ','
-	Interface                   string            `validate:"required"  yaml:"interface"  json:"interface,omitempty" property:"interface"`
+	ProtocolIDs                 []string          `yaml:"protocol-ids"  json:"protocol-ids,omitempty" property:"protocol-ids"` // multi protocolIDs support, split by ','
+	Interface                   string            `yaml:"interface"  json:"interface,omitempty" property:"interface"`
 	RegistryIDs                 []string          `yaml:"registry-ids"  json:"registry-ids,omitempty"  property:"registry-ids"`
 	Cluster                     string            `default:"failover" yaml:"cluster"  json:"cluster,omitempty" property:"cluster"`
 	Loadbalance                 string            `default:"random" yaml:"loadbalance"  json:"loadbalance,omitempty"  property:"loadbalance"`
@@ -75,6 +75,7 @@ type ServiceConfig struct {
 	ParamSign                   string            `yaml:"param.sign" json:"param.sign,omitempty" property:"param.sign"`
 	Tag                         string            `yaml:"tag" json:"tag,omitempty" property:"tag"`
 	GrpcMaxMessageSize          int               `default:"4" yaml:"max_message_size" json:"max_message_size,omitempty"`
+	TracingKey                  string            `yaml:"tracing-key" json:"tracing-key,omitempty" propertiy:"tracing-key"`
 
 	RCProtocolsMap  map[string]*ProtocolConfig
 	RCRegistriesMap map[string]*RegistryConfig
@@ -114,6 +115,14 @@ func (svc *ServiceConfig) Init(rc *RootConfig) error {
 	svc.RegistryIDs = translateRegistryIds(svc.RegistryIDs)
 	if len(svc.RegistryIDs) <= 0 {
 		svc.RegistryIDs = rc.Provider.RegistryIDs
+	}
+	if len(svc.ProtocolIDs) <= 0 {
+		for k, _ := range rc.Protocols {
+			svc.ProtocolIDs = append(svc.ProtocolIDs, k)
+		}
+	}
+	if svc.TracingKey == "" {
+		svc.TracingKey = rc.Provider.TracingKey
 	}
 	svc.export = true
 	return verify(svc)
@@ -155,7 +164,7 @@ func (svc *ServiceConfig) Export() error {
 		logger.Errorf(err.Error())
 		return err
 	}
-	if svc.unexported != nil && svc.exported.Load() {
+	if svc.exported != nil && svc.exported.Load() {
 		logger.Warnf("The service %v has already exported!", svc.Interface)
 		return nil
 	}
@@ -192,11 +201,11 @@ func (svc *ServiceConfig) Export() error {
 			common.WithIp(proto.Ip),
 			common.WithPort(port),
 			common.WithParams(urlMap),
-			common.WithParamsValue(constant.BEAN_NAME_KEY, svc.id),
-			//common.WithParamsValue(constant.SSL_ENABLED_KEY, strconv.FormatBool(config.GetSslEnabled())),
+			common.WithParamsValue(constant.BeanNameKey, svc.id),
+			//common.WithParamsValue(constant.SslEnabledKey, strconv.FormatBool(config.GetSslEnabled())),
 			common.WithMethods(strings.Split(methods, ",")),
 			common.WithToken(svc.Token),
-			common.WithParamsValue(constant.METADATATYPE_KEY, svc.metadataType),
+			common.WithParamsValue(constant.MetadataTypeKey, svc.metadataType),
 		)
 		if len(svc.Tag) > 0 {
 			ivkURL.AddParam(constant.Tagkey, svc.Tag)
@@ -205,20 +214,20 @@ func (svc *ServiceConfig) Export() error {
 		// post process the URL to be exported
 		svc.postProcessConfig(ivkURL)
 		// config post processor may set "export" to false
-		if !ivkURL.GetParamBool(constant.EXPORT_KEY, true) {
+		if !ivkURL.GetParamBool(constant.ExportKey, true) {
 			return nil
 		}
 
 		if len(regUrls) > 0 {
 			svc.cacheMutex.Lock()
 			if svc.cacheProtocol == nil {
-				logger.Infof(fmt.Sprintf("First load the registry protocol, url is {%v}!", ivkURL))
+				logger.Debugf(fmt.Sprintf("First load the registry protocol, url is {%v}!", ivkURL))
 				svc.cacheProtocol = extension.GetProtocol("registry")
 			}
 			svc.cacheMutex.Unlock()
 
 			for _, regUrl := range regUrls {
-				regUrl.SubURL = ivkURL
+				setRegistrySubURL(ivkURL, regUrl)
 				invoker := proxyFactory.GetInvoker(regUrl)
 				exporter := svc.cacheProtocol.Export(invoker)
 				if exporter == nil {
@@ -227,13 +236,15 @@ func (svc *ServiceConfig) Export() error {
 				svc.exporters = append(svc.exporters, exporter)
 			}
 		} else {
-			if ivkURL.GetParam(constant.INTERFACE_KEY, "") == constant.METADATA_SERVICE_NAME {
+			if ivkURL.GetParam(constant.InterfaceKey, "") == constant.MetadataServiceName {
 				ms, err := extension.GetLocalMetadataService("")
 				if err != nil {
 					logger.Warnf("export org.apache.dubbo.metadata.MetadataService failed beacause of %s ! pls check if you import _ \"dubbo.apache.org/dubbo-go/v3/metadata/service/local\"", err)
 					return nil
 				}
-				ms.SetMetadataServiceURL(ivkURL)
+				if err := ms.SetMetadataServiceURL(ivkURL); err != nil {
+					logger.Warnf("SetMetadataServiceURL error = %s", err)
+				}
 			}
 			invoker := proxyFactory.GetInvoker(ivkURL)
 			exporter := extension.GetProtocol(protocolwrapper.FILTER).Export(invoker)
@@ -246,6 +257,12 @@ func (svc *ServiceConfig) Export() error {
 	}
 	svc.exported.Store(true)
 	return nil
+}
+
+//setRegistrySubURL set registry sub url is ivkURl
+func setRegistrySubURL(ivkURL *common.URL, regUrl *common.URL) {
+	ivkURL.AddParam(constant.RegistryKey, regUrl.GetParam(constant.RegistryKey, ""))
+	regUrl.SubURL = ivkURL
 }
 
 //loadProtocol filter protocols by ids
@@ -331,69 +348,74 @@ func (svc *ServiceConfig) getUrlMap() url.Values {
 	for k, v := range svc.Params {
 		urlMap.Set(k, v)
 	}
-	urlMap.Set(constant.INTERFACE_KEY, svc.Interface)
-	urlMap.Set(constant.TIMESTAMP_KEY, strconv.FormatInt(time.Now().Unix(), 10))
-	urlMap.Set(constant.CLUSTER_KEY, svc.Cluster)
-	urlMap.Set(constant.LOADBALANCE_KEY, svc.Loadbalance)
-	urlMap.Set(constant.WARMUP_KEY, svc.Warmup)
-	urlMap.Set(constant.RETRIES_KEY, svc.Retries)
-	urlMap.Set(constant.GROUP_KEY, svc.Group)
-	urlMap.Set(constant.VERSION_KEY, svc.Version)
-	urlMap.Set(constant.ROLE_KEY, strconv.Itoa(common.PROVIDER))
-	urlMap.Set(constant.RELEASE_KEY, "dubbo-golang-"+constant.Version)
-	urlMap.Set(constant.SIDE_KEY, (common.RoleType(common.PROVIDER)).Role())
-	urlMap.Set(constant.MESSAGE_SIZE_KEY, strconv.Itoa(svc.GrpcMaxMessageSize))
+	urlMap.Set(constant.InterfaceKey, svc.Interface)
+	urlMap.Set(constant.TimestampKey, strconv.FormatInt(time.Now().Unix(), 10))
+	urlMap.Set(constant.ClusterKey, svc.Cluster)
+	urlMap.Set(constant.LoadbalanceKey, svc.Loadbalance)
+	urlMap.Set(constant.WarmupKey, svc.Warmup)
+	urlMap.Set(constant.RetriesKey, svc.Retries)
+	if svc.Group != "" {
+		urlMap.Set(constant.GroupKey, svc.Group)
+	}
+	if svc.Version != "" {
+		urlMap.Set(constant.VersionKey, svc.Version)
+	}
+	urlMap.Set(constant.RegistryRoleKey, strconv.Itoa(common.PROVIDER))
+	urlMap.Set(constant.ReleaseKey, "dubbo-golang-"+constant.Version)
+	urlMap.Set(constant.SideKey, (common.RoleType(common.PROVIDER)).Role())
+	urlMap.Set(constant.MessageSizeKey, strconv.Itoa(svc.GrpcMaxMessageSize))
 	// todo: move
-	urlMap.Set(constant.SERIALIZATION_KEY, svc.Serialization)
+	urlMap.Set(constant.SerializationKey, svc.Serialization)
 	// application config info
 	ac := GetApplicationConfig()
-	urlMap.Set(constant.APPLICATION_KEY, ac.Name)
-	urlMap.Set(constant.ORGANIZATION_KEY, ac.Organization)
-	urlMap.Set(constant.NAME_KEY, ac.Name)
-	urlMap.Set(constant.MODULE_KEY, ac.Module)
-	urlMap.Set(constant.APP_VERSION_KEY, ac.Version)
-	urlMap.Set(constant.OWNER_KEY, ac.Owner)
-	urlMap.Set(constant.ENVIRONMENT_KEY, ac.Environment)
+	urlMap.Set(constant.ApplicationKey, ac.Name)
+	urlMap.Set(constant.OrganizationKey, ac.Organization)
+	urlMap.Set(constant.NameKey, ac.Name)
+	urlMap.Set(constant.ModuleKey, ac.Module)
+	urlMap.Set(constant.AppVersionKey, ac.Version)
+	urlMap.Set(constant.OwnerKey, ac.Owner)
+	urlMap.Set(constant.EnvironmentKey, ac.Environment)
 
 	// filter
 	if svc.Filter == "" {
-		urlMap.Set(constant.SERVICE_FILTER_KEY, constant.DEFAULT_SERVICE_FILTERS)
+		urlMap.Set(constant.ServiceFilterKey, constant.DefaultServiceFilters)
 	} else {
-		urlMap.Set(constant.SERVICE_FILTER_KEY, svc.Filter)
+		urlMap.Set(constant.ServiceFilterKey, svc.Filter)
 	}
 
 	// filter special config
 	urlMap.Set(constant.AccessLogFilterKey, svc.AccessLog)
 	// tps limiter
-	urlMap.Set(constant.TPS_LIMIT_STRATEGY_KEY, svc.TpsLimitStrategy)
-	urlMap.Set(constant.TPS_LIMIT_INTERVAL_KEY, svc.TpsLimitInterval)
-	urlMap.Set(constant.TPS_LIMIT_RATE_KEY, svc.TpsLimitRate)
-	urlMap.Set(constant.TPS_LIMITER_KEY, svc.TpsLimiter)
-	urlMap.Set(constant.TPS_REJECTED_EXECUTION_HANDLER_KEY, svc.TpsLimitRejectedHandler)
+	urlMap.Set(constant.TPSLimitStrategyKey, svc.TpsLimitStrategy)
+	urlMap.Set(constant.TPSLimitIntervalKey, svc.TpsLimitInterval)
+	urlMap.Set(constant.TPSLimitRateKey, svc.TpsLimitRate)
+	urlMap.Set(constant.TPSLimiterKey, svc.TpsLimiter)
+	urlMap.Set(constant.TPSRejectedExecutionHandlerKey, svc.TpsLimitRejectedHandler)
+	urlMap.Set(constant.TracingConfigKey, svc.TracingKey)
 
 	// execute limit filter
-	urlMap.Set(constant.EXECUTE_LIMIT_KEY, svc.ExecuteLimit)
-	urlMap.Set(constant.EXECUTE_REJECTED_EXECUTION_HANDLER_KEY, svc.ExecuteLimitRejectedHandler)
+	urlMap.Set(constant.ExecuteLimitKey, svc.ExecuteLimit)
+	urlMap.Set(constant.ExecuteRejectedExecutionHandlerKey, svc.ExecuteLimitRejectedHandler)
 
 	// auth filter
-	urlMap.Set(constant.SERVICE_AUTH_KEY, svc.Auth)
-	urlMap.Set(constant.PARAMETER_SIGNATURE_ENABLE_KEY, svc.ParamSign)
+	urlMap.Set(constant.ServiceAuthKey, svc.Auth)
+	urlMap.Set(constant.ParameterSignatureEnableKey, svc.ParamSign)
 
 	// whether to export or not
-	urlMap.Set(constant.EXPORT_KEY, strconv.FormatBool(svc.export))
+	urlMap.Set(constant.ExportKey, strconv.FormatBool(svc.export))
 
 	for _, v := range svc.Methods {
 		prefix := "methods." + v.Name + "."
-		urlMap.Set(prefix+constant.LOADBALANCE_KEY, v.LoadBalance)
-		urlMap.Set(prefix+constant.RETRIES_KEY, v.Retries)
-		urlMap.Set(prefix+constant.WEIGHT_KEY, strconv.FormatInt(v.Weight, 10))
+		urlMap.Set(prefix+constant.LoadbalanceKey, v.LoadBalance)
+		urlMap.Set(prefix+constant.RetriesKey, v.Retries)
+		urlMap.Set(prefix+constant.WeightKey, strconv.FormatInt(v.Weight, 10))
 
-		urlMap.Set(prefix+constant.TPS_LIMIT_STRATEGY_KEY, v.TpsLimitStrategy)
-		urlMap.Set(prefix+constant.TPS_LIMIT_INTERVAL_KEY, v.TpsLimitInterval)
-		urlMap.Set(prefix+constant.TPS_LIMIT_RATE_KEY, v.TpsLimitRate)
+		urlMap.Set(prefix+constant.TPSLimitStrategyKey, v.TpsLimitStrategy)
+		urlMap.Set(prefix+constant.TPSLimitIntervalKey, v.TpsLimitInterval)
+		urlMap.Set(prefix+constant.TPSLimitRateKey, v.TpsLimitRate)
 
-		urlMap.Set(constant.EXECUTE_LIMIT_KEY, v.ExecuteLimit)
-		urlMap.Set(constant.EXECUTE_REJECTED_EXECUTION_HANDLER_KEY, v.ExecuteLimitRejectedHandler)
+		urlMap.Set(constant.ExecuteLimitKey, v.ExecuteLimit)
+		urlMap.Set(constant.ExecuteRejectedExecutionHandlerKey, v.ExecuteLimitRejectedHandler)
 	}
 
 	return urlMap

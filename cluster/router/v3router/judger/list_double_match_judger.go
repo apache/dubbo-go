@@ -27,8 +27,8 @@ type ListDoubleMatchJudger struct {
 }
 
 // nolint
-func (lsmj *ListDoubleMatchJudger) Judge(input float64) bool {
-	for _, v := range lsmj.Oneof {
+func (j *ListDoubleMatchJudger) Judge(input float64) bool {
+	for _, v := range j.Oneof {
 		if newDoubleMatchJudger(v).Judge(input) {
 			return true
 		}

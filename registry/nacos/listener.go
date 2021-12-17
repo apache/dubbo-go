@@ -44,9 +44,16 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
+var (
+	listenerCache sync.Map
+)
+
+type callback func(services []model.SubscribeService, err error)
+
 type nacosListener struct {
 	namingClient   *nacosClient.NacosNamingClient
-	listenUrl      *common.URL
+	listenURL      *common.URL
+	regURL         *common.URL
 	events         *gxchan.UnboundedChan
 	instanceMap    map[string]model.Instance
 	cacheLock      sync.Mutex
@@ -55,10 +62,11 @@ type nacosListener struct {
 }
 
 // NewNacosListener creates a data listener for nacos
-func NewNacosListener(url *common.URL, namingClient *nacosClient.NacosNamingClient) (*nacosListener, error) {
+func NewNacosListener(url, regURL *common.URL, namingClient *nacosClient.NacosNamingClient) (*nacosListener, error) {
 	listener := &nacosListener{
 		namingClient: namingClient,
-		listenUrl:    url,
+		listenURL:    url,
+		regURL:       regURL,
 		events:       gxchan.NewUnboundedChan(32),
 		instanceMap:  map[string]model.Instance{},
 		done:         make(chan struct{}),
@@ -179,9 +187,9 @@ func getSubscribeName(url *common.URL) string {
 	var buffer bytes.Buffer
 
 	buffer.Write([]byte(common.DubboNodes[common.PROVIDER]))
-	appendParam(&buffer, url, constant.INTERFACE_KEY)
-	appendParam(&buffer, url, constant.VERSION_KEY)
-	appendParam(&buffer, url, constant.GROUP_KEY)
+	appendParam(&buffer, url, constant.InterfaceKey)
+	appendParam(&buffer, url, constant.VersionKey)
+	appendParam(&buffer, url, constant.GroupKey)
 	return buffer.String()
 }
 
@@ -189,15 +197,15 @@ func (nl *nacosListener) startListen() error {
 	if nl.namingClient == nil {
 		return perrors.New("nacos naming namingClient stopped")
 	}
-	serviceName := getSubscribeName(nl.listenUrl)
-	groupName := nl.listenUrl.GetParam(constant.REGISTRY_GROUP_KEY, defaultGroup)
-	nl.subscribeParam = &vo.SubscribeParam{
-		ServiceName:       serviceName,
-		SubscribeCallback: nl.Callback,
-		GroupName:         groupName,
+	nl.subscribeParam = createSubscribeParam(nl.listenURL, nl.regURL, nl.Callback)
+	if nl.subscribeParam == nil {
+		return perrors.New("create nacos subscribeParam failed")
 	}
 	go func() {
-		_ = nl.namingClient.Client().Subscribe(nl.subscribeParam)
+		err := nl.namingClient.Client().Subscribe(nl.subscribeParam)
+		if err == nil {
+			listenerCache.Store(nl.subscribeParam.ServiceName+nl.subscribeParam.GroupName, nl)
+		}
 	}()
 	return nil
 }
@@ -215,7 +223,7 @@ func (nl *nacosListener) Next() (*registry.ServiceEvent, error) {
 	for {
 		select {
 		case <-nl.done:
-			logger.Warnf("nacos listener is close!listenUrl:%+v", nl.listenUrl)
+			logger.Warnf("nacos listener is close!listenUrl:%+v", nl.listenURL)
 			return nil, perrors.New("listener stopped")
 
 		case val := <-nl.events.Out():

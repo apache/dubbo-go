@@ -187,11 +187,11 @@ func (dir *RegistryDirectory) refreshAllInvokers(events []*registry.ServiceEvent
 		}
 		// loop the updateEvents
 		for _, event := range addEvents {
-			logger.Debugf("registry update, result{%s}", event)
+			logger.Debugf("[Registry Directory] registry update, result{%s}", event)
 			if event != nil && event.Service != nil {
-				logger.Infof("selector add service url{%s}", event.Service.String())
+				logger.Infof("[Registry Directory] selector add service url{%s}", event.Service.String())
 			}
-			if event != nil && event.Service != nil && constant.ROUTER_PROTOCOL == event.Service.Protocol {
+			if event != nil && event.Service != nil && constant.RouterProtocol == event.Service.Protocol {
 				dir.configRouters()
 			}
 			if oldInvoker, _ := dir.doCacheInvoker(event.Service, event); oldInvoker != nil {
@@ -245,13 +245,13 @@ func (dir *RegistryDirectory) cacheInvokerByEvent(event *registry.ServiceEvent) 
 		switch event.Action {
 		case remoting.EventTypeAdd, remoting.EventTypeUpdate:
 			u := dir.convertUrl(event)
-			logger.Infof("selector add service url{%s}", event.Service)
-			if u != nil && constant.ROUTER_PROTOCOL == u.Protocol {
+			logger.Infof("[Registry Directory] selector add service url{%s}", event.Service)
+			if u != nil && constant.RouterProtocol == u.Protocol {
 				dir.configRouters()
 			}
 			return dir.cacheInvoker(u, event), nil
 		case remoting.EventTypeDel:
-			logger.Infof("selector delete service url{%s}", event.Service)
+			logger.Infof("[Registry Directory] selector delete service url{%s}", event.Service)
 			return dir.uncacheInvoker(event), nil
 		default:
 			return nil, fmt.Errorf("illegal event type: %v", event.Action)
@@ -267,12 +267,12 @@ func (dir *RegistryDirectory) configRouters() {
 // convertUrl processes override:// and router://
 func (dir *RegistryDirectory) convertUrl(res *registry.ServiceEvent) *common.URL {
 	ret := res.Service
-	if ret.Protocol == constant.OVERRIDE_PROTOCOL || // 1.for override url in 2.6.x
-		ret.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY) == constant.CONFIGURATORS_CATEGORY {
+	if ret.Protocol == constant.OverrideProtocol || // 1.for override url in 2.6.x
+		ret.GetParam(constant.CategoryKey, constant.DefaultCategory) == constant.ConfiguratorsCategory {
 		dir.configurators = append(dir.configurators, extension.GetDefaultConfigurator(ret))
 		ret = nil
-	} else if ret.Protocol == constant.ROUTER_PROTOCOL || // 2.for router
-		ret.GetParam(constant.CATEGORY_KEY, constant.DEFAULT_CATEGORY) == constant.ROUTER_CATEGORY {
+	} else if ret.Protocol == constant.RouterProtocol || // 2.for router
+		ret.GetParam(constant.CategoryKey, constant.DefaultCategory) == constant.RouterCategory {
 		ret = nil
 	}
 	return ret
@@ -291,7 +291,7 @@ func (dir *RegistryDirectory) toGroupInvokers() []protocol.Invoker {
 	})
 
 	for _, invoker := range newInvokersList {
-		group := invoker.GetURL().GetParam(constant.GROUP_KEY, "")
+		group := invoker.GetURL().GetParam(constant.GroupKey, "")
 
 		groupInvokersMap[group] = append(groupInvokersMap[group], invoker)
 	}
@@ -304,7 +304,7 @@ func (dir *RegistryDirectory) toGroupInvokers() []protocol.Invoker {
 	} else {
 		for _, invokers := range groupInvokersMap {
 			staticDir := static.NewDirectory(invokers)
-			cst := extension.GetCluster(dir.GetURL().SubURL.GetParam(constant.CLUSTER_KEY, constant.DEFAULT_CLUSTER))
+			cst := extension.GetCluster(dir.GetURL().SubURL.GetParam(constant.ClusterKey, constant.DefaultCluster))
 			err = staticDir.BuildRouterChain(invokers)
 			if err != nil {
 				logger.Error(err)

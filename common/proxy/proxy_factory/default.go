@@ -66,7 +66,7 @@ func (factory *DefaultProxyFactory) GetProxy(invoker protocol.Invoker, url *comm
 func (factory *DefaultProxyFactory) GetAsyncProxy(invoker protocol.Invoker, callBack interface{}, url *common.URL) *proxy.Proxy {
 	// create proxy
 	attachments := map[string]string{}
-	attachments[constant.ASYNC_KEY] = url.GetParam(constant.ASYNC_KEY, "false")
+	attachments[constant.AsyncKey] = url.GetParam(constant.AsyncKey, "false")
 	return proxy.NewProxy(invoker, callBack, attachments)
 }
 

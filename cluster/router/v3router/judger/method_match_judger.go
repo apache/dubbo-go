@@ -28,22 +28,22 @@ type MethodMatchJudger struct {
 }
 
 // Judge Method Match Judger only judge on
-func (mmj *MethodMatchJudger) Judge(invocation protocol.Invocation) bool {
-	if mmj.NameMatch != nil {
-		strJudger := NewStringMatchJudger(mmj.NameMatch)
+func (j *MethodMatchJudger) Judge(invocation protocol.Invocation) bool {
+	if j.NameMatch != nil {
+		strJudger := NewStringMatchJudger(j.NameMatch)
 		if !strJudger.Judge(invocation.MethodName()) {
 			return false
 		}
 	}
 
 	// todo now argc Must not be zero, else it will cause unexpected result
-	if mmj.Argc != 0 && len(invocation.ParameterValues()) != mmj.Argc {
+	if j.Argc != 0 && len(invocation.ParameterValues()) != j.Argc {
 		return false
 	}
 
-	if mmj.Args != nil {
+	if j.Args != nil {
 		params := invocation.ParameterValues()
-		for _, v := range mmj.Args {
+		for _, v := range j.Args {
 			index := int(v.Index)
 			if index > len(params) || index < 1 {
 				return false
@@ -72,11 +72,11 @@ func (mmj *MethodMatchJudger) Judge(invocation protocol.Invocation) bool {
 		}
 	}
 	// todo Argp match judge ??? conflict to args?
-	//if mmj.Argp != nil {
+	//if j.Argp != nil {
 	//
 	//}
 	// todo Headers match judge: reserve for triple
-	//if mmj.Headers != nil {
+	//if j.Headers != nil {
 	//
 	//}
 	return true

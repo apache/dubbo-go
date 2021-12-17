@@ -34,7 +34,7 @@ func TestDubboPackage_MarshalAndUnmarshal(t *testing.T) {
 	pkg := NewDubboPackage(nil)
 	pkg.Body = []interface{}{"a"}
 	pkg.Header.Type = PackageHeartbeat
-	pkg.Header.SerialID = constant.S_Hessian2
+	pkg.Header.SerialID = constant.SHessian2
 	pkg.Header.ID = 10086
 	pkg.SetSerializer(HessianSerializer{})
 
@@ -49,7 +49,7 @@ func TestDubboPackage_MarshalAndUnmarshal(t *testing.T) {
 	err = pkgres.Unmarshal()
 	assert.NoError(t, err)
 	assert.Equal(t, PackageHeartbeat|PackageRequest|PackageRequest_TwoWay, pkgres.Header.Type)
-	assert.Equal(t, constant.S_Hessian2, pkgres.Header.SerialID)
+	assert.Equal(t, constant.SHessian2, pkgres.Header.SerialID)
 	assert.Equal(t, int64(10086), pkgres.Header.ID)
 	assert.Equal(t, 0, len(pkgres.Body.([]interface{})))
 
@@ -70,7 +70,7 @@ func TestDubboPackage_MarshalAndUnmarshal(t *testing.T) {
 	reassembleBody := pkgres.GetBody().(map[string]interface{})
 	assert.NoError(t, err)
 	assert.Equal(t, PackageRequest, pkgres.Header.Type)
-	assert.Equal(t, constant.S_Hessian2, pkgres.Header.SerialID)
+	assert.Equal(t, constant.SHessian2, pkgres.Header.SerialID)
 	assert.Equal(t, int64(10086), pkgres.Header.ID)
 	assert.Equal(t, "2.0.2", reassembleBody["dubboVersion"].(string))
 	assert.Equal(t, "path", pkgres.Service.Path)

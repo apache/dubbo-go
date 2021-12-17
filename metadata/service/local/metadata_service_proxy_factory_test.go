@@ -57,7 +57,7 @@ func TestCreateProxy(t *testing.T) {
 	pxy := createProxy(ins)
 	assert.Nil(t, pxy)
 
-	ins.Metadata = map[string]string{constant.METADATA_SERVICE_URL_PARAMS_PROPERTY_NAME: `{"protocol":"mock","timeout":"10000","version":"1.0.0","dubbo":"2.0.2","release":"2.7.6","port":"20880"}`}
+	ins.Metadata = map[string]string{constant.MetadataServiceURLParamsPropertyName: `{"protocol":"mock","timeout":"10000","version":"1.0.0","dubbo":"2.0.2","release":"2.7.6","port":"20880"}`}
 	pxy = createProxy(ins)
 	assert.NotNil(t, pxy)
 }
@@ -91,7 +91,5 @@ func (m *mockInvoker) Destroy() {
 }
 
 func (m *mockInvoker) Invoke(context.Context, protocol.Invocation) protocol.Result {
-	return &protocol.RPCResult{
-		Rest: []string{"dubbo://localhost"},
-	}
+	return protocol.NewRPCResult([]string{"dubbo://localhost"}, nil)
 }

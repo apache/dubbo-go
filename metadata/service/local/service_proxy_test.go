@@ -37,7 +37,7 @@ import (
 func TestMetadataServiceProxy_GetExportedURLs(t *testing.T) {
 	pxy := createPxy()
 	assert.NotNil(t, pxy)
-	res, err := pxy.GetExportedURLs(constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE)
+	res, err := pxy.GetExportedURLs(constant.AnyValue, constant.AnyValue, constant.AnyValue, constant.AnyValue)
 	assert.Nil(t, err)
 	assert.Len(t, res, 1)
 }
@@ -50,7 +50,7 @@ func TestNewMetadataService(t *testing.T) {
 	assert.Nil(t, err)
 	err = pxy.PublishServiceDefinition(&common.URL{})
 	assert.Nil(t, err)
-	_, err = pxy.GetServiceDefinition(constant.ANY_VALUE, constant.ANY_VALUE, constant.ANY_VALUE)
+	_, err = pxy.GetServiceDefinition(constant.AnyValue, constant.AnyValue, constant.AnyValue)
 	assert.Nil(t, err)
 	_, err = pxy.Version()
 	assert.Nil(t, err)
@@ -70,7 +70,7 @@ func TestNewMetadataService(t *testing.T) {
 	assert.True(t, len(m) == 0)
 	err = pxy.UnexportURL(&common.URL{})
 	assert.NoError(t, err)
-	ok, err = pxy.RefreshMetadata(constant.ANY_VALUE, constant.ANY_VALUE)
+	ok, err = pxy.RefreshMetadata(constant.AnyValue, constant.AnyValue)
 	assert.False(t, ok)
 	assert.NoError(t, err)
 }
@@ -87,7 +87,7 @@ func createPxy() service.MetadataService {
 		Port:        8080,
 		Enable:      true,
 		Healthy:     true,
-		Metadata:    map[string]string{constant.METADATA_SERVICE_URL_PARAMS_PROPERTY_NAME: `{"timeout":"10000", "protocol":"mock","version":"1.0.0","dubbo":"2.0.2","release":"2.7.6","port":"20880"}`},
+		Metadata:    map[string]string{constant.MetadataServiceURLParamsPropertyName: `{"timeout":"10000", "protocol":"mock","version":"1.0.0","dubbo":"2.0.2","release":"2.7.6","port":"20880"}`},
 	}
 
 	return extension.GetMetadataServiceProxyFactory("").GetProxy(ins)

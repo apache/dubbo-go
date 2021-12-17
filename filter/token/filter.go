@@ -20,6 +20,7 @@ package token
 import (
 	"context"
 	"strings"
+	"sync"
 )
 
 import (
@@ -33,21 +34,33 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
+var (
+	once  sync.Once
+	token *tokenFilter
+)
+
 func init() {
-	extension.SetFilter(constant.TokenFilterKey, func() filter.Filter {
-		return &Filter{}
-	})
+	extension.SetFilter(constant.TokenFilterKey, newTokenFilter)
 }
 
-// Filter will verify if the token is valid
-type Filter struct{}
+// tokenFilter will verify if the token is valid
+type tokenFilter struct{}
+
+func newTokenFilter() filter.Filter {
+	if token == nil {
+		once.Do(func() {
+			token = &tokenFilter{}
+		})
+	}
+	return token
+}
 
 // Invoke verifies the incoming token with the service configured token
-func (f *Filter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
-	invokerTkn := invoker.GetURL().GetParam(constant.TOKEN_KEY, "")
+func (f *tokenFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+	invokerTkn := invoker.GetURL().GetParam(constant.TokenKey, "")
 	if len(invokerTkn) > 0 {
 		attachs := invocation.Attachments()
-		remoteTkn, exist := attachs[constant.TOKEN_KEY]
+		remoteTkn, exist := attachs[constant.TokenKey]
 		if exist && remoteTkn != nil && strings.EqualFold(invokerTkn, remoteTkn.(string)) {
 			return invoker.Invoke(ctx, invocation)
 		}
@@ -59,6 +72,6 @@ func (f *Filter) Invoke(ctx context.Context, invoker protocol.Invoker, invocatio
 }
 
 // OnResponse dummy process, returns the result directly
-func (f *Filter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+func (f *tokenFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	return result
 }

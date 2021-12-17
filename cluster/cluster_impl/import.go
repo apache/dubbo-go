@@ -21,6 +21,7 @@ package cluster_impl
 // This package may be DEPRECATED OR REMOVED in the future.
 
 import (
+	_ "dubbo.apache.org/dubbo-go/v3/cluster/cluster/adaptivesvc"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/cluster/available"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/cluster/broadcast"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/cluster/failback"
@@ -30,5 +31,3 @@ import (
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/cluster/forking"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/cluster/zoneaware"
 )
-
-func init() {}

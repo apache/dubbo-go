@@ -19,6 +19,7 @@ package generic
 
 import (
 	"context"
+	"sync"
 )
 
 import (
@@ -34,17 +35,29 @@ import (
 	invocation2 "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
+var (
+	genericOnce sync.Once
+	instance    *genericFilter
+)
+
 func init() {
-	extension.SetFilter(constant.GenericFilterKey, func() filter.Filter {
-		return &Filter{}
-	})
+	extension.SetFilter(constant.GenericFilterKey, newGenericFilter)
 }
 
-// Filter ensures the structs are converted to maps, this filter is for consumer
-type Filter struct{}
+// genericFilter ensures the structs are converted to maps, this filter is for consumer
+type genericFilter struct{}
+
+func newGenericFilter() filter.Filter {
+	if instance == nil {
+		genericOnce.Do(func() {
+			instance = &genericFilter{}
+		})
+	}
+	return instance
+}
 
 // Invoke turns the parameters to map for generic method
-func (f *Filter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+func (f *genericFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	if isCallingToGenericService(invoker, invocation) {
 
 		mtdname := invocation.MethodName()
@@ -54,7 +67,7 @@ func (f *Filter) Invoke(ctx context.Context, invoker protocol.Invoker, invocatio
 		args := make([]hessian.Object, 0, len(oldargs))
 
 		// get generic info from attachments of invocation, the default value is "true"
-		generic := invocation.AttachmentsByKey(constant.GENERIC_KEY, constant.GenericSerializationDefault)
+		generic := invocation.AttachmentsByKey(constant.GenericKey, constant.GenericSerializationDefault)
 		// get generalizer according to value in the `generic`
 		g := getGeneralizer(generic)
 
@@ -79,19 +92,19 @@ func (f *Filter) Invoke(ctx context.Context, invoker protocol.Invoker, invocatio
 			types,
 			args,
 		}
-		newivc := invocation2.NewRPCInvocation(constant.GENERIC, newargs, invocation.Attachments())
+		newivc := invocation2.NewRPCInvocation(constant.Generic, newargs, invocation.Attachments())
 		newivc.SetReply(invocation.Reply())
-		newivc.Attachments()[constant.GENERIC_KEY] = invoker.GetURL().GetParam(constant.GENERIC_KEY, "")
+		newivc.Attachments()[constant.GenericKey] = invoker.GetURL().GetParam(constant.GenericKey, "")
 
 		return invoker.Invoke(ctx, newivc)
 	} else if isMakingAGenericCall(invoker, invocation) {
-		invocation.Attachments()[constant.GENERIC_KEY] = invoker.GetURL().GetParam(constant.GENERIC_KEY, "")
+		invocation.Attachments()[constant.GenericKey] = invoker.GetURL().GetParam(constant.GenericKey, "")
 	}
 	return invoker.Invoke(ctx, invocation)
 }
 
 // OnResponse dummy process, returns the result directly
-func (f *Filter) OnResponse(_ context.Context, result protocol.Result, _ protocol.Invoker,
+func (f *genericFilter) OnResponse(_ context.Context, result protocol.Result, _ protocol.Invoker,
 	_ protocol.Invocation) protocol.Result {
 	return result
 }

@@ -42,8 +42,8 @@ func TestProviderAuthFilter_Invoke(t *testing.T) {
 	secret := "dubbo-sk"
 	access := "dubbo-ak"
 	url, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=gg&version=2.6.0")
-	url.SetParam(constant.ACCESS_KEY_ID_KEY, access)
-	url.SetParam(constant.SECRET_ACCESS_KEY_KEY, secret)
+	url.SetParam(constant.AccessKeyIDKey, access)
+	url.SetParam(constant.SecretAccessKeyKey, secret)
 	parmas := []interface{}{
 		"OK",
 		struct {
@@ -56,19 +56,19 @@ func TestProviderAuthFilter_Invoke(t *testing.T) {
 	signature, _ := getSignature(url, inv, secret, requestTime)
 
 	inv = invocation.NewRPCInvocation("test", []interface{}{"OK"}, map[string]interface{}{
-		constant.REQUEST_SIGNATURE_KEY: signature,
-		constant.CONSUMER:              "test",
-		constant.REQUEST_TIMESTAMP_KEY: requestTime,
-		constant.AK_KEY:                access,
+		constant.RequestSignatureKey: signature,
+		constant.Consumer:            "test",
+		constant.RequestTimestampKey: requestTime,
+		constant.AKKey:               access,
 	})
 	ctrl := gomock.NewController(t)
-	filter := &ProviderAuthFilter{}
+	filter := &authFilter{}
 	defer ctrl.Finish()
 	invoker := mock.NewMockInvoker(ctrl)
 	result := &protocol.RPCResult{}
 	invoker.EXPECT().Invoke(inv).Return(result).Times(2)
 	invoker.EXPECT().GetUrl().Return(url).Times(2)
 	assert.Equal(t, result, filter.Invoke(context.Background(), invoker, inv))
-	url.SetParam(constant.SERVICE_AUTH_KEY, "true")
+	url.SetParam(constant.ServiceAuthKey, "true")
 	assert.Equal(t, result, filter.Invoke(context.Background(), invoker, inv))
 }

@@ -222,7 +222,7 @@ func (n *nacosMetadataReport) RegisterServiceAppMapping(key string, group string
 		return nil
 	}
 	if oldVal != "" {
-		value = oldVal + constant.COMMA_SEPARATOR + value
+		value = oldVal + constant.CommaSeparator + value
 	}
 	return n.storeMetadata(vo.ConfigParam{
 		DataId:  key,
@@ -243,7 +243,7 @@ func (n *nacosMetadataReport) GetServiceAppMapping(key string, group string) (*g
 	if v == "" {
 		return nil, perrors.New("There is no service app mapping data.")
 	}
-	appNames := strings.Split(v, constant.COMMA_SEPARATOR)
+	appNames := strings.Split(v, constant.CommaSeparator)
 	set := gxset.NewSet()
 	for _, e := range appNames {
 		set.Add(e)
@@ -255,6 +255,11 @@ type nacosMetadataReportFactory struct{}
 
 // nolint
 func (n *nacosMetadataReportFactory) CreateMetadataReport(url *common.URL) report.MetadataReport {
+	url.SetParam(constant.NacosNamespaceID, url.GetParam(constant.MetadataReportNamespaceKey, ""))
+	url.SetParam(constant.TimeoutKey, url.GetParam(constant.TimeoutKey, constant.DefaultRegTimeout))
+	url.SetParam(constant.NacosGroupKey, url.GetParam(constant.MetadataReportGroupKey, constant.ServiceDiscoveryDefaultGroup))
+	url.SetParam(constant.NacosUsername, url.Username)
+	url.SetParam(constant.NacosPassword, url.Password)
 	client, err := nacos.NewNacosConfigClientByUrl(url)
 	if err != nil {
 		logger.Errorf("Could not create nacos metadata report. URL: %s", url.String())

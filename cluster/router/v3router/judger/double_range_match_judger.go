@@ -27,8 +27,8 @@ type DoubleRangeMatchJudger struct {
 }
 
 // nolint
-func (drmj *DoubleRangeMatchJudger) Judge(input float64) bool {
-	return input >= drmj.Start && input < drmj.End
+func (j *DoubleRangeMatchJudger) Judge(input float64) bool {
+	return input >= j.Start && input < j.End
 }
 
 // nolint

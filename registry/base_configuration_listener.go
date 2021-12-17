@@ -55,7 +55,7 @@ func (bcl *BaseConfigurationListener) InitWith(key string, listener config_cente
 	bcl.defaultConfiguratorFunc = f
 	bcl.dynamicConfiguration.AddListener(key, listener)
 	if rawConfig, err := bcl.dynamicConfiguration.GetInternalProperty(key,
-		config_center.WithGroup(constant.DUBBO)); err != nil {
+		config_center.WithGroup(constant.Dubbo)); err != nil {
 		//set configurators to empty
 		bcl.configurators = []config_center.Configurator{}
 		return
@@ -102,13 +102,13 @@ func ToConfigurators(urls []*common.URL, f func(url *common.URL) config_center.C
 	}
 	var configurators []config_center.Configurator
 	for _, url := range urls {
-		if url.Protocol == constant.EMPTY_PROTOCOL {
+		if url.Protocol == constant.EmptyProtocol {
 			configurators = []config_center.Configurator{}
 			break
 		}
 
 		override := url.GetParams()
-		delete(override, constant.ANYHOST_KEY)
+		delete(override, constant.AnyhostKey)
 		if len(override) == 0 {
 			continue
 		}
