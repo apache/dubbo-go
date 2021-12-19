@@ -46,7 +46,7 @@ var broadcastUrl, _ = common.NewURL(
 	fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LocalHostValue, constant.DefaultPort))
 
 func registerBroadcast(mockInvokers ...*mock.MockInvoker) protocol.Invoker {
-	extension.SetLoadbalance("random", random.NewLoadBalance)
+	extension.SetLoadbalance("random", random.NewRandomLoadBalance)
 
 	invokers := []protocol.Invoker{}
 	for i, ivk := range mockInvokers {
@@ -57,7 +57,7 @@ func registerBroadcast(mockInvokers ...*mock.MockInvoker) protocol.Invoker {
 	}
 	staticDir := static.NewDirectory(invokers)
 
-	broadcastCluster := NewCluster()
+	broadcastCluster := newBroadcastCluster()
 	clusterInvoker := broadcastCluster.Join(staticDir)
 	return clusterInvoker
 }

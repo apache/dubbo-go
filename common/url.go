@@ -267,6 +267,7 @@ func NewURL(urlString string, opts ...Option) (*URL, error) {
 	s.Location = serviceURL.Host
 	s.Path = serviceURL.Path
 	for _, location := range strings.Split(s.Location, ",") {
+		location = strings.Trim(location, " ")
 		if strings.Contains(location, ":") {
 			s.Ip, s.Port, err = net.SplitHostPort(location)
 			if err != nil {
