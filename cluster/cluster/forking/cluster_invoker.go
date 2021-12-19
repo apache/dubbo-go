@@ -61,7 +61,7 @@ func (invoker *forkingClusterInvoker) Invoke(ctx context.Context, invocation pro
 	if forks < 0 || forks > len(invokers) {
 		selected = invokers
 	} else {
-		loadBalance := base.GetLoadBalance(invokers[0], invocation)
+		loadBalance := base.GetLoadBalance(invokers[0], invocation.ActualMethodName())
 		for i := 0; i < forks; i++ {
 			if ivk := invoker.DoSelect(loadBalance, invocation, invokers, selected); ivk != nil {
 				selected = append(selected, ivk)
