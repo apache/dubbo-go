@@ -64,6 +64,10 @@ func GracefulShutdownInit() {
 		filter.Set(constant.GracefulShutdownFilterShutdownConfig, rootConfig.Shutdown)
 	}
 
+	if filter, ok := extension.GetFilter(constant.GracefulShutdownProviderFilterKey).(Setter); ok && rootConfig.Shutdown != nil {
+		filter.Set(constant.GracefulShutdownFilterShutdownConfig, rootConfig.Shutdown)
+	}
+
 	go func() {
 		select {
 		case sig := <-signals:
@@ -115,13 +119,21 @@ func destroyAllRegistries() {
 // First we destroy provider's protocols, and then we destroy the consumer protocols.
 func destroyProtocols() {
 	logger.Info("Graceful shutdown --- Destroy protocols. ")
-	logger.Info("Graceful shutdown --- First destroy provider's protocols. ")
 
-	consumerProtocols := getConsumerProtocols()
 	if rootConfig.Protocols == nil {
 		return
 	}
 
+	consumerProtocols := getConsumerProtocols()
+
+	destroyProviderProtocols(consumerProtocols)
+	destroyConsumerProtocols(consumerProtocols)
+}
+
+// destroyProviderProtocols destroys the provider's protocol.
+// if the protocol is consumer's protocol too, we will keep it
+func destroyProviderProtocols(consumerProtocols *gxset.HashSet) {
+	logger.Info("Graceful shutdown --- First destroy provider's protocols. ")
 	for _, protocol := range rootConfig.Protocols {
 		// the protocol is the consumer's protocol too, we can not destroy it.
 		if consumerProtocols.Contains(protocol.Name) {
@@ -129,8 +141,10 @@ func destroyProtocols() {
 		}
 		extension.GetProtocol(protocol.Name).Destroy()
 	}
+}
 
-	logger.Info("Graceful shutdown --- Second destroy consumer's protocols. ")
+func destroyConsumerProtocols(consumerProtocols *gxset.HashSet) {
+	logger.Info("Graceful shutdown --- Second Destroy consumer's protocols. ")
 	for name := range consumerProtocols.Items {
 		extension.GetProtocol(name.(string)).Destroy()
 	}

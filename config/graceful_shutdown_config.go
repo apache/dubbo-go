@@ -28,7 +28,7 @@ import (
 
 const (
 	defaultTimeout     = 60 * time.Second
-	defaultStepTimeout = 10 * time.Second
+	defaultStepTimeout = 3 * time.Second
 )
 
 // ShutdownConfig is used as configuration for graceful shutdown
@@ -47,7 +47,7 @@ type ShutdownConfig struct {
 	 * and the 99.9% requests will return response in 2s, so the StepTimeout will be bigger than(10+2) * 1000ms,
 	 * maybe (10 + 2*3) * 1000ms is a good choice.
 	 */
-	StepTimeout string `default:"10s" yaml:"step_timeout" json:"step.timeout,omitempty" property:"step.timeout"`
+	StepTimeout string `default:"3s" yaml:"step_timeout" json:"step.timeout,omitempty" property:"step.timeout"`
 	// when we try to shutdown the applicationConfig, we will reject the new requests. In most cases, you don't need to configure this.
 	RejectRequestHandler string `yaml:"reject_handler" json:"reject_handler,omitempty" property:"reject_handler"`
 	// true -> new request will be rejected.
