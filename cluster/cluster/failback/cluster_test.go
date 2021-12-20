@@ -48,10 +48,10 @@ import (
 var failbackUrl, _ = common.NewURL(
 	fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LocalHostValue, constant.DefaultPort))
 
-// registerFailback register failbackCluster to cluster extension.
+// registerFailback register failbackCluster to failbackCluster extension.
 func registerFailback(invoker *mock.MockInvoker) protocol.Invoker {
-	extension.SetLoadbalance("random", random.NewLoadBalance)
-	failbackCluster := NewCluster()
+	extension.SetLoadbalance("random", random.NewRandomLoadBalance)
+	failbackCluster := newFailbackCluster()
 
 	var invokers []protocol.Invoker
 	invokers = append(invokers, invoker)
@@ -69,7 +69,7 @@ func TestFailbackSuceess(t *testing.T) {
 	defer ctrl.Finish()
 
 	invoker := mock.NewMockInvoker(ctrl)
-	clusterInvoker := registerFailback(invoker).(*clusterInvoker)
+	clusterInvoker := registerFailback(invoker).(*failbackClusterInvoker)
 
 	invoker.EXPECT().GetUrl().Return(failbackUrl).AnyTimes()
 
@@ -88,7 +88,7 @@ func TestFailbackRetryOneSuccess(t *testing.T) {
 	defer ctrl.Finish()
 
 	invoker := mock.NewMockInvoker(ctrl)
-	clusterInvoker := registerFailback(invoker).(*clusterInvoker)
+	clusterInvoker := registerFailback(invoker).(*failbackClusterInvoker)
 
 	invoker.EXPECT().GetUrl().Return(failbackUrl).AnyTimes()
 	invoker.EXPECT().IsAvailable().Return(true)
@@ -133,7 +133,7 @@ func TestFailbackRetryFailed(t *testing.T) {
 	defer ctrl.Finish()
 
 	invoker := mock.NewMockInvoker(ctrl)
-	clusterInvoker := registerFailback(invoker).(*clusterInvoker)
+	clusterInvoker := registerFailback(invoker).(*failbackClusterInvoker)
 
 	invoker.EXPECT().GetUrl().Return(failbackUrl).AnyTimes()
 	invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
@@ -180,7 +180,7 @@ func TestFailbackRetryFailed10Times(t *testing.T) {
 	defer ctrl.Finish()
 
 	invoker := mock.NewMockInvoker(ctrl)
-	clusterInvoker := registerFailback(invoker).(*clusterInvoker)
+	clusterInvoker := registerFailback(invoker).(*failbackClusterInvoker)
 	clusterInvoker.maxRetries = 10
 
 	invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
@@ -223,7 +223,7 @@ func TestFailbackOutOfLimit(t *testing.T) {
 	defer ctrl.Finish()
 
 	invoker := mock.NewMockInvoker(ctrl)
-	clusterInvoker := registerFailback(invoker).(*clusterInvoker)
+	clusterInvoker := registerFailback(invoker).(*failbackClusterInvoker)
 	clusterInvoker.failbackTasks = 1
 
 	invoker.EXPECT().GetUrl().Return(failbackUrl).AnyTimes()

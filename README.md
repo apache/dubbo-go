@@ -148,6 +148,14 @@ If you are using [apache/dubbo-go](https://github.com/apache/dubbo-go) and think
       </td>      
     </tr>
     <tr></tr>
+    <tr>
+      <td align="center"  valign="middle">
+        <a href="https://www.mi.com/" target="_blank">
+          <img width="222px"  src="https://s02.mifile.cn/assets/static/image/logo-mi2.png">
+        </a>
+      </td>  
+    </tr>
+    <tr></tr>
   </tbody>
 </table>
 </div>

@@ -34,20 +34,20 @@ const (
 )
 
 func init() {
-	extension.SetLoadbalance(constant.LoadBalanceKeyLeastActive, newLoadBalance)
+	extension.SetLoadbalance(constant.LoadBalanceKeyLeastActive, newLeastActiveLoadBalance)
 }
 
-type loadBalance struct{}
+type leastActiveLoadBalance struct{}
 
-// newLoadBalance returns a least active load balance.
+// newLeastActiveLoadBalance returns a least active load balance.
 //
 // A random mechanism based on actives, actives means the number of a consumer's requests have been sent to provider but not yet got response.
-func newLoadBalance() loadbalance.LoadBalance {
-	return &loadBalance{}
+func newLeastActiveLoadBalance() loadbalance.LoadBalance {
+	return &leastActiveLoadBalance{}
 }
 
 // Select gets invoker based on least active load balancing strategy
-func (lb *loadBalance) Select(invokers []protocol.Invoker, invocation protocol.Invocation) protocol.Invoker {
+func (lb *leastActiveLoadBalance) Select(invokers []protocol.Invoker, invocation protocol.Invocation) protocol.Invoker {
 	count := len(invokers)
 	if count == 0 {
 		return nil

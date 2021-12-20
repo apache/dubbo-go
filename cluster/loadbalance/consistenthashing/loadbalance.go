@@ -43,21 +43,21 @@ var (
 )
 
 func init() {
-	extension.SetLoadbalance(constant.LoadBalanceKeyConsistentHashing, newLoadBalance)
+	extension.SetLoadbalance(constant.LoadBalanceKeyConsistentHashing, newConshashLoadBalance)
 }
 
-// loadBalance implementation of load balancing: using consistent hashing
-type loadBalance struct{}
+// conshashLoadBalance implementation of load balancing: using consistent hashing
+type conshashLoadBalance struct{}
 
-// newLoadBalance creates NewConsistentHashLoadBalance
+// newConshashLoadBalance creates NewConsistentHashLoadBalance
 //
 // The same parameters of the request is always sent to the same provider.
-func newLoadBalance() loadbalance.LoadBalance {
-	return &loadBalance{}
+func newConshashLoadBalance() loadbalance.LoadBalance {
+	return &conshashLoadBalance{}
 }
 
 // Select gets invoker based on load balancing strategy
-func (lb *loadBalance) Select(invokers []protocol.Invoker, invocation protocol.Invocation) protocol.Invoker {
+func (lb *conshashLoadBalance) Select(invokers []protocol.Invoker, invocation protocol.Invocation) protocol.Invoker {
 	methodName := invocation.MethodName()
 	key := invokers[0].GetURL().ServiceKey() + "." + methodName
 
