@@ -79,6 +79,15 @@ func (r *RPCInvocation) MethodName() string {
 	return r.methodName
 }
 
+// ActualMethodName gets actual invocation method name. It returns the method name been called if it's a generic call
+func (r *RPCInvocation) ActualMethodName() string {
+	if r.IsGenericInvocation() {
+		return r.Arguments()[0].(string)
+	} else {
+		return r.MethodName()
+	}
+}
+
 // ParameterTypes gets RPC invocation parameter types.
 func (r *RPCInvocation) ParameterTypes() []reflect.Type {
 	return r.parameterTypes
@@ -281,4 +290,12 @@ func WithInvoker(invoker protocol.Invoker) option {
 	return func(invo *RPCInvocation) {
 		invo.invoker = invoker
 	}
+}
+
+// IsGenericInvocation gets if this is a generic invocation
+func (r *RPCInvocation) IsGenericInvocation() bool {
+	return (r.MethodName() == constant.GENERIC ||
+		r.MethodName() == constant.GENERIC_ASYNC) &&
+		r.Arguments() != nil &&
+		len(r.Arguments()) == 3
 }

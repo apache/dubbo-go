@@ -111,13 +111,14 @@ func GetGenericFilter() filter.Filter {
 // isCallingToGenericService check if it calls to a generic service
 func isCallingToGenericService(invoker protocol.Invoker, invocation protocol.Invocation) bool {
 	return isGeneric(invoker.GetURL().GetParam(constant.GENERIC_KEY, "")) &&
-		invocation.MethodName() != constant.GENERIC
+		invocation.MethodName() != constant.GENERIC &&
+		invocation.MethodName() != constant.GENERIC_ASYNC
 }
 
 // isMakingAGenericCall check if it is making a generic call to a generic service
 func isMakingAGenericCall(invoker protocol.Invoker, invocation protocol.Invocation) bool {
 	return isGeneric(invoker.GetURL().GetParam(constant.GENERIC_KEY, "")) &&
-		invocation.MethodName() == constant.GENERIC &&
+		(invocation.MethodName() == constant.GENERIC || invocation.MethodName() == constant.GENERIC_ASYNC) &&
 		invocation.Arguments() != nil &&
 		len(invocation.Arguments()) == 3
 }

@@ -61,6 +61,7 @@ const (
 	DEFAULT_REFERENCE_FILTERS = "cshutdown"
 	GENERIC_REFERENCE_FILTERS = "generic"
 	GENERIC                   = "$invoke"
+	GENERIC_ASYNC             = "$invokeAsync"
 	ECHO                      = "$echo"
 )
 
