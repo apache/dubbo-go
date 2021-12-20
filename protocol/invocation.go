@@ -50,6 +50,6 @@ type Invocation interface {
 	SetAttachments(key string, value interface{})
 	// Invoker gets the invoker in current context.
 	Invoker() Invoker
-	// IsGenericInvocation gets if this is a generic invocation
+	// IsGenericInvocation checks if this is a generic invocation
 	IsGenericInvocation() bool
 }

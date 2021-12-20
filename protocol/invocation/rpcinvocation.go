@@ -292,7 +292,7 @@ func WithInvoker(invoker protocol.Invoker) option {
 	}
 }
 
-// IsGenericInvocation gets if this is a generic invocation
+// IsGenericInvocation checks if this is a generic invocation
 func (r *RPCInvocation) IsGenericInvocation() bool {
 	return (r.MethodName() == constant.GENERIC ||
 		r.MethodName() == constant.GENERIC_ASYNC) &&
