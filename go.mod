@@ -8,11 +8,11 @@ require (
 	github.com/Workiva/go-datastructures v1.0.52
 	github.com/afex/hystrix-go v0.0.0-20180502004556-fa1af6a1f4f5
 	github.com/alibaba/sentinel-golang v1.0.2
-	github.com/apache/dubbo-getty v1.4.5
+	github.com/apache/dubbo-getty v1.4.7-rc2
 	github.com/apache/dubbo-go-hessian2 v1.10.0
 	github.com/creasty/defaults v1.5.2
 	github.com/dubbogo/go-zookeeper v1.0.3
-	github.com/dubbogo/gost v1.11.20-0.20211116110728-26777ca61b4a
+	github.com/dubbogo/gost v1.11.20
 	github.com/dubbogo/grpc-go v1.42.6-triple
 	github.com/dubbogo/triple v1.1.6
 	github.com/emicklei/go-restful/v3 v3.7.3
