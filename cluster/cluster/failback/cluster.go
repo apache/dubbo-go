@@ -26,20 +26,20 @@ import (
 )
 
 func init() {
-	extension.SetCluster(constant.ClusterKeyFailback, NewCluster)
+	extension.SetCluster(constant.ClusterKeyFailback, newFailbackCluster)
 }
 
-type cluster struct{}
+type failbackCluster struct{}
 
-// NewCluster returns a failback cluster instance
+// newFailbackCluster returns a failbackCluster instance
 //
 // Failure automatically restored, failed to record the background request,
 // regular retransmission. Usually used for message notification operations.
-func NewCluster() clusterpkg.Cluster {
-	return &cluster{}
+func newFailbackCluster() clusterpkg.Cluster {
+	return &failbackCluster{}
 }
 
 // Join returns a baseClusterInvoker instance
-func (cluster *cluster) Join(directory directory.Directory) protocol.Invoker {
-	return clusterpkg.BuildInterceptorChain(newClusterInvoker(directory))
+func (cluster *failbackCluster) Join(directory directory.Directory) protocol.Invoker {
+	return clusterpkg.BuildInterceptorChain(newFailbackClusterInvoker(directory))
 }

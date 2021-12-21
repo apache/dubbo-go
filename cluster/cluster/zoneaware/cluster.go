@@ -26,20 +26,20 @@ import (
 )
 
 func init() {
-	extension.SetCluster(constant.ClusterKeyZoneAware, newCluster)
+	extension.SetCluster(constant.ClusterKeyZoneAware, newZoneawareCluster)
 }
 
-type cluster struct{}
+type zoneawareCluster struct{}
 
-// NewZoneAwareCluster returns a zoneaware cluster instance.
+// NewZoneAwareCluster returns a zoneawareCluster instance.
 //
 // More than one registry for subscription.
 // Usually it is used for choose between registries.
-func newCluster() clusterpkg.Cluster {
-	return &cluster{}
+func newZoneawareCluster() clusterpkg.Cluster {
+	return &zoneawareCluster{}
 }
 
 // Join returns a zoneAwareClusterInvoker instance
-func (cluster *cluster) Join(directory directory.Directory) protocol.Invoker {
-	return clusterpkg.BuildInterceptorChain(newClusterInvoker(directory), newInterceptor())
+func (cluster *zoneawareCluster) Join(directory directory.Directory) protocol.Invoker {
+	return clusterpkg.BuildInterceptorChain(newZoneawareClusterInvoker(directory), newInterceptor())
 }

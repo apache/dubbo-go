@@ -26,20 +26,20 @@ import (
 )
 
 func init() {
-	extension.SetCluster(constant.ClusterKeyForking, newCluster)
+	extension.SetCluster(constant.ClusterKeyForking, newForkingCluster)
 }
 
-type cluster struct{}
+type forkingCluster struct{}
 
-// newCluster returns a forking cluster instance.
+// newForkingCluster returns a forkingCluster instance.
 //
 // Multiple servers are invoked in parallel, returning as soon as one succeeds.
 // Usually it is used for real-time demanding read operations while wasting more service resources.
-func newCluster() clusterpkg.Cluster {
-	return &cluster{}
+func newForkingCluster() clusterpkg.Cluster {
+	return &forkingCluster{}
 }
 
 // Join returns a baseClusterInvoker instance
-func (cluster *cluster) Join(directory directory.Directory) protocol.Invoker {
-	return clusterpkg.BuildInterceptorChain(newClusterInvoker(directory))
+func (cluster *forkingCluster) Join(directory directory.Directory) protocol.Invoker {
+	return clusterpkg.BuildInterceptorChain(newForkingClusterInvoker(directory))
 }

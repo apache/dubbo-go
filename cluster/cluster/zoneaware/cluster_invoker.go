@@ -36,18 +36,18 @@ import (
 // 2. check the zone the current request belongs, pick the registry that has the same zone first.
 // 3. Evenly balance traffic between all registries based on each registry's weight.
 // 4. Pick anyone that's available.
-type clusterInvoker struct {
-	base.ClusterInvoker
+type zoneawareClusterInvoker struct {
+	base.BaseClusterInvoker
 }
 
-func newClusterInvoker(directory directory.Directory) protocol.Invoker {
-	invoker := &clusterInvoker{
-		ClusterInvoker: base.NewClusterInvoker(directory),
+func newZoneawareClusterInvoker(directory directory.Directory) protocol.Invoker {
+	invoker := &zoneawareClusterInvoker{
+		BaseClusterInvoker: base.NewBaseClusterInvoker(directory),
 	}
 	return invoker
 }
 
-func (invoker *clusterInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
+func (invoker *zoneawareClusterInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 	invokers := invoker.Directory.List(invocation)
 
 	err := invoker.CheckInvokers(invokers, invocation)
@@ -84,7 +84,7 @@ func (invoker *clusterInvoker) Invoke(ctx context.Context, invocation protocol.I
 	}
 
 	// load balance among all registries, with registry weight count in.
-	loadBalance := base.GetLoadBalance(invokers[0], invocation)
+	loadBalance := base.GetLoadBalance(invokers[0], invocation.ActualMethodName())
 	ivk := invoker.DoSelect(loadBalance, invocation, invokers, nil)
 	if ivk != nil && ivk.IsAvailable() {
 		return ivk.Invoke(ctx, invocation)
