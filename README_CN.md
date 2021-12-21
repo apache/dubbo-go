@@ -164,6 +164,11 @@ Dubbo-go 生态覆盖多种网络协议：Triple、Dubbo、JSONRPC、gRPC、HTTP
           <img width="222px"  src="https://s02.mifile.cn/assets/static/image/logo-mi2.png">
         </a>
       </td>  
+      <td align="center"  valign="middle">
+        <a href="https://opayweb.com/" target="_blank">
+          <img width="222px"  src="https://open.opayweb.com/static/img/logo@2x.35c6fe4c.jpg">
+        </a>
+      </td>  
     </tr>
     <tr></tr>
   </tbody>
