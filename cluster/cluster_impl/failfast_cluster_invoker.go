@@ -43,7 +43,7 @@ func (invoker *failfastClusterInvoker) Invoke(ctx context.Context, invocation pr
 		return &protocol.RPCResult{Err: err}
 	}
 
-	loadbalance := getLoadBalance(invokers[0], invocation)
+	loadbalance := getLoadBalance(invokers[0], invocation.ActualMethodName())
 
 	err = invoker.checkWhetherDestroyed()
 	if err != nil {

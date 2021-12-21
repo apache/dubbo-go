@@ -25,6 +25,8 @@ import (
 type Invocation interface {
 	// MethodName gets invocation method name.
 	MethodName() string
+	// ActualMethodName gets actual invocation method name. It returns the method name been called if it's a generic call
+	ActualMethodName() string
 	// ParameterTypeNames gets invocation parameter type names.
 	ParameterTypeNames() []string
 	// ParameterTypes gets invocation parameter types.
@@ -48,4 +50,6 @@ type Invocation interface {
 	SetAttachments(key string, value interface{})
 	// Invoker gets the invoker in current context.
 	Invoker() Invoker
+	// IsGenericInvocation checks if this is a generic invocation
+	IsGenericInvocation() bool
 }
