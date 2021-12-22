@@ -95,6 +95,7 @@ func createRegisterParam(url *common.URL, serviceName string, groupName string) 
 	params[constant.NacosCategoryKey] = category
 	params[constant.NacosProtocolKey] = url.Protocol
 	params[constant.NacosPathKey] = url.Path
+	params[constant.MethodsKey] = strings.Join(url.Methods, ",")
 	if len(url.Ip) == 0 {
 		url.Ip = localIP
 	}
@@ -150,7 +151,8 @@ func createDeregisterParam(url *common.URL, serviceName string, groupName string
 	}
 }
 
-func (nr *nacosRegistry) DeRegister(url *common.URL) error {
+// UnRegister
+func (nr *nacosRegistry) UnRegister(url *common.URL) error {
 	serviceName := getServiceName(url)
 	groupName := nr.URL.GetParam(constant.NacosGroupKey, defaultGroup)
 	param := createDeregisterParam(url, serviceName, groupName)
@@ -162,11 +164,6 @@ func (nr *nacosRegistry) DeRegister(url *common.URL) error {
 		return perrors.New("DeRegistry [" + serviceName + "] to nacos failed")
 	}
 	return nil
-}
-
-// UnRegister
-func (nr *nacosRegistry) UnRegister(conf *common.URL) error {
-	return perrors.New("UnRegister is not support in nacosRegistry")
 }
 
 func (nr *nacosRegistry) subscribe(conf *common.URL) (registry.Listener, error) {
@@ -212,8 +209,37 @@ func (nr *nacosRegistry) Subscribe(url *common.URL, notifyListener registry.Noti
 }
 
 // UnSubscribe :
-func (nr *nacosRegistry) UnSubscribe(url *common.URL, notifyListener registry.NotifyListener) error {
-	return perrors.New("UnSubscribe not support in nacosRegistry")
+func (nr *nacosRegistry) UnSubscribe(url *common.URL, _ registry.NotifyListener) error {
+	param := createSubscribeParam(url, nr.URL, nil)
+	if param == nil {
+		return nil
+	}
+	err := nr.namingClient.Client().Unsubscribe(param)
+	if err != nil {
+		return perrors.New("UnSubscribe [" + param.ServiceName + "] to nacos failed")
+	}
+	return nil
+}
+
+func createSubscribeParam(url, regUrl *common.URL, cb callback) *vo.SubscribeParam {
+	serviceName := getSubscribeName(url)
+	groupName := regUrl.GetParam(constant.RegistryGroupKey, defaultGroup)
+	if cb == nil {
+		v, ok := listenerCache.Load(serviceName + groupName)
+		if !ok {
+			return nil
+		}
+		listener, ok := v.(*nacosListener)
+		if !ok {
+			return nil
+		}
+		cb = listener.Callback
+	}
+	return &vo.SubscribeParam{
+		ServiceName:       serviceName,
+		SubscribeCallback: cb,
+		GroupName:         groupName,
+	}
 }
 
 // GetURL gets its registration URL
@@ -230,7 +256,7 @@ func (nr *nacosRegistry) IsAvailable() bool {
 // nolint
 func (nr *nacosRegistry) Destroy() {
 	for _, url := range nr.registryUrls {
-		err := nr.DeRegister(url)
+		err := nr.UnRegister(url)
 		logger.Infof("DeRegister Nacos URL:%+v", url)
 		if err != nil {
 			logger.Errorf("Deregister URL:%+v err:%v", url, err.Error())
@@ -244,7 +270,8 @@ func newNacosRegistry(url *common.URL) (registry.Registry, error) {
 	logger.Infof("[Nacos Registry] New nacos registry with url = %+v", url.ToMap())
 	// key transfer: registry -> nacos
 	url.SetParam(constant.NacosNamespaceID, url.GetParam(constant.RegistryNamespaceKey, ""))
-	url.SetParam(constant.NacosUsername, url.GetParam(constant.RegistryUsernameKey, ""))
+	url.SetParam(constant.NacosUsername, url.Username)
+	url.SetParam(constant.NacosPassword, url.Password)
 	url.SetParam(constant.NacosAccessKey, url.GetParam(constant.RegistryAccessKey, ""))
 	url.SetParam(constant.NacosSecretKey, url.GetParam(constant.RegistrySecretKey, ""))
 	url.SetParam(constant.TimeoutKey, url.GetParam(constant.RegistryTimeoutKey, ""))

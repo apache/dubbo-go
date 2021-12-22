@@ -150,8 +150,8 @@ func marshalRequest(encoder *hessian.Encoder, p DubboPackage) ([]byte, error) {
 		request.Attachments[TIMEOUT_KEY] = strconv.Itoa(int(service.Timeout / time.Millisecond))
 	}
 
-	_ = encoder.Encode(request.Attachments)
-	return encoder.Buffer(), nil
+	err = encoder.Encode(request.Attachments)
+	return encoder.Buffer(), err
 }
 
 var versionInt = make(map[string]int)
@@ -254,7 +254,7 @@ func unmarshalRequestBody(body []byte, p *DubboPackage) error {
 		return perrors.WithStack(err)
 	}
 
-	if attachments == nil {
+	if attachments == nil || attachments == "" {
 		attachments = map[interface{}]interface{}{constant.InterfaceKey: target}
 	}
 
@@ -490,6 +490,10 @@ func getArgType(v interface{}) string {
 		}
 		switch t.Kind() {
 		case reflect.Struct:
+			p, ok := v.(hessian.Param)
+			if ok {
+				return p.JavaParamName()
+			}
 			v, ok := v.(hessian.POJO)
 			if ok {
 				return v.JavaClassName()

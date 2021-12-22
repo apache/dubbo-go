@@ -43,20 +43,20 @@ var (
 )
 
 func init() {
-	extension.SetLoadbalance(constant.LoadBalanceKeyRoundRobin, NewLoadBalance)
+	extension.SetLoadbalance(constant.LoadBalanceKeyRoundRobin, NewRRLoadBalance)
 }
 
-type loadBalance struct{}
+type rrLoadBalance struct{}
 
-// NewLoadBalance returns a round robin load balance
+// NewRRLoadBalance returns a round robin load balance
 //
 // Use the weight's common advisory to determine round robin ratio
-func NewLoadBalance() loadbalance.LoadBalance {
-	return &loadBalance{}
+func NewRRLoadBalance() loadbalance.LoadBalance {
+	return &rrLoadBalance{}
 }
 
 // Select gets invoker based on round robin load balancing strategy
-func (lb *loadBalance) Select(invokers []protocol.Invoker, invocation protocol.Invocation) protocol.Invoker {
+func (lb *rrLoadBalance) Select(invokers []protocol.Invoker, invocation protocol.Invocation) protocol.Invoker {
 	count := len(invokers)
 	if count == 0 {
 		return nil

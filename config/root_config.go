@@ -25,6 +25,8 @@ import (
 import (
 	hessian "github.com/apache/dubbo-go-hessian2"
 
+	"github.com/knadh/koanf"
+
 	perrors "github.com/pkg/errors"
 
 	"go.uber.org/atomic"
@@ -35,6 +37,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/metadata/service/exporter"
 )
 
@@ -66,6 +69,8 @@ type RootConfig struct {
 
 	Metric *MetricConfig `yaml:"metrics" json:"metrics,omitempty" property:"metrics"`
 
+	Tracing map[string]*TracingConfig `yaml:"tracing" json:"tracing,omitempty" property:"tracing"`
+
 	// Logger log
 	Logger *LoggerConfig `yaml:"logger" json:"logger,omitempty" property:"logger"`
 
@@ -78,6 +83,8 @@ type RootConfig struct {
 
 	// cache file used to store the current used configurations.
 	CacheFile string `yaml:"cache_file" json:"cache_file,omitempty" property:"cache_file"`
+
+	Custom *CustomConfig `yaml:"custom" json:"custom,omitempty" property:"custom"`
 }
 
 func SetRootConfig(r RootConfig) {
@@ -151,6 +158,11 @@ func (rc *RootConfig) Init() error {
 		return err
 	}
 
+	// init user define
+	if err := rc.Custom.Init(); err != nil {
+		return err
+	}
+
 	// init protocol
 	protocols := rc.Protocols
 	if len(protocols) <= 0 {
@@ -181,6 +193,11 @@ func (rc *RootConfig) Init() error {
 	if err := rc.Metric.Init(); err != nil {
 		return err
 	}
+	for _, t := range rc.Tracing {
+		if err := t.Init(); err != nil {
+			return err
+		}
+	}
 	if err := initRouterConfig(rc); err != nil {
 		return err
 	}
@@ -198,12 +215,11 @@ func (rc *RootConfig) Init() error {
 
 func (rc *RootConfig) Start() {
 	startOnce.Do(func() {
+		rc.Consumer.Load()
 		rc.Provider.Load()
 		// todo if register consumer instance or has exported services
 		exportMetadataService()
 		registerServiceInstance()
-
-		rc.Consumer.Load()
 	})
 }
 
@@ -215,10 +231,12 @@ func newEmptyRootConfig() *RootConfig {
 		Application:    NewApplicationConfigBuilder().Build(),
 		Registries:     make(map[string]*RegistryConfig),
 		Protocols:      make(map[string]*ProtocolConfig),
+		Tracing:        make(map[string]*TracingConfig),
 		Provider:       NewProviderConfigBuilder().Build(),
 		Consumer:       NewConsumerConfigBuilder().Build(),
 		Metric:         NewMetricConfigBuilder().Build(),
 		Logger:         NewLoggerConfigBuilder().Build(),
+		Custom:         NewCustomConfigBuilder().Build(),
 	}
 	return newRootConfig
 }
@@ -306,6 +324,11 @@ func (rb *RootConfigBuilder) SetConfigCenter(configCenterConfig *CenterConfig) *
 	return rb
 }
 
+func (rb *RootConfigBuilder) SetCustom(customConfig *CustomConfig) *RootConfigBuilder {
+	rb.rootConfig.Custom = customConfig
+	return rb
+}
+
 func (rb *RootConfigBuilder) Build() *RootConfig {
 	return rb.rootConfig
 }
@@ -358,4 +381,24 @@ func publishMapping(sc exporter.MetadataServiceExporter) error {
 		}
 	}
 	return nil
+}
+
+// Process receive changing listener's event, dynamic update config
+func (rc *RootConfig) Process(event *config_center.ConfigChangeEvent) {
+	logger.Infof("CenterConfig process event:\n%+v", event)
+	config := NewLoaderConf(WithBytes([]byte(event.Value.(string))))
+	koan := GetConfigResolver(config)
+
+	updateRootConfig := &RootConfig{}
+	if err := koan.UnmarshalWithConf(rc.Prefix(),
+		updateRootConfig, koanf.UnmarshalConf{Tag: "yaml"}); err != nil {
+		logger.Errorf("CenterConfig process unmarshalConf failed, got error %#v", err)
+		return
+	}
+
+	// update register
+	for registerId, updateRegister := range updateRootConfig.Registries {
+		register := rc.Registries[registerId]
+		register.UpdateProperties(updateRegister)
+	}
 }

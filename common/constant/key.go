@@ -52,8 +52,12 @@ const (
 	CommaSeparator         = ","
 	SslEnabledKey          = "ssl-enabled"
 	// ParamsTypeKey key used in pass through invoker factory, to define param type
-	ParamsTypeKey   = "parameter-type-names"
-	MetadataTypeKey = "metadata-type"
+	ParamsTypeKey        = "parameter-type-names"
+	MetadataTypeKey      = "metadata-type"
+	MaxCallSendMsgSize   = "max-call-send-msg-size"
+	MaxServerSendMsgSize = "max-server-send-msg-size"
+	MaxCallRecvMsgSize   = "max-call-recv-msg-size"
+	MaxServerRecvMsgSize = "max-server-recv-msg-size"
 )
 
 const (
@@ -65,6 +69,7 @@ const (
 const (
 	AccessLogFilterKey                   = "accesslog"
 	ActiveFilterKey                      = "active"
+	AdaptiveServiceProviderFilterKey     = "padasvc"
 	AuthConsumerFilterKey                = "sign"
 	AuthProviderFilterKey                = "auth"
 	EchoFilterKey                        = "echo"
@@ -138,8 +143,6 @@ const (
 	ServiceRegistryProtocol = "service-discovery-registry"
 	RegistryRoleKey         = "registry.role"
 	RegistryDefaultKey      = "registry.default"
-	RegistryUsernameKey     = "registry.username"
-	RegistryPasswordKey     = "registry.password"
 	RegistryAccessKey       = "registry.accesskey"
 	RegistrySecretKey       = "registry.secretkey"
 	RegistryTimeoutKey      = "registry.timeout"
@@ -209,7 +212,9 @@ const (
 	ShutdownConfigPrefix       = "dubbo.shutdown"
 	MetadataReportPrefix       = "dubbo.metadata-report"
 	RouterConfigPrefix         = "dubbo.router"
+	TracingConfigPrefix        = "dubbo.tracing"
 	LoggerConfigPrefix         = "dubbo.logger"
+	CustomConfigPrefix         = "dubbo.custom"
 )
 
 const (
@@ -242,6 +247,20 @@ const (
 )
 
 const (
+	PolarisKey                  = "polaris"
+	PolarisDefaultRoleType      = 3
+	PolarisConfigFilePath       = "configPath"
+	PolarisNamespace            = "namespace"
+	PolarisServiceToken         = "token"
+	PolarisServiceNameSeparator = ":"
+	PolarisDubboPath            = "DUBBOPATH"
+	PolarisInstanceID           = "polaris.instanceID"
+	PolarisDefaultNamespace     = "default"
+	PolarisDubboGroup           = "dubbo.group"
+	PolarisClientName           = "polaris-client"
+)
+
+const (
 	FileKey = "file"
 )
 
@@ -260,6 +279,7 @@ const (
 
 const (
 	TracingRemoteSpanCtx = DubboCtxKey("tracing.remote.span.ctx")
+	TracingConfigKey     = "config.tracing"
 )
 
 // Use for router module
@@ -340,10 +360,19 @@ const (
 )
 
 // Generic Filter
-
 const (
 	GenericSerializationDefault = "true"
 	// disable "protobuf-json" temporarily
 	//GenericSerializationProtobuf = "protobuf-json"
 	GenericSerializationGson = "gson"
+)
+
+// AdaptiveService Filter
+// goland:noinspection ALL
+const (
+	// attribute keys
+	AdaptiveServiceUpdaterKey = "adaptive-service.updater"
+	// attachment keys
+	AdaptiveServiceRemainingKey = "adaptive-service.remaining"
+	AdaptiveServiceInflightKey  = "adaptive-service.inflight"
 )

@@ -31,13 +31,15 @@ import (
 // isCallingToGenericService check if it calls to a generic service
 func isCallingToGenericService(invoker protocol.Invoker, invocation protocol.Invocation) bool {
 	return isGeneric(invoker.GetURL().GetParam(constant.GenericKey, "")) &&
-		invocation.MethodName() != constant.Generic
+		invocation.MethodName() != constant.Generic &&
+		invocation.MethodName() != constant.GenericAsync
 }
 
 // isMakingAGenericCall check if it is making a generic call to a generic service
 func isMakingAGenericCall(invoker protocol.Invoker, invocation protocol.Invocation) bool {
 	return isGeneric(invoker.GetURL().GetParam(constant.GenericKey, "")) &&
-		invocation.MethodName() == constant.Generic &&
+		(invocation.MethodName() == constant.Generic ||
+			invocation.MethodName() == constant.GenericAsync) &&
 		invocation.Arguments() != nil &&
 		len(invocation.Arguments()) == 3
 }
@@ -46,13 +48,6 @@ func isMakingAGenericCall(invoker protocol.Invoker, invocation protocol.Invocati
 func isGeneric(generic string) bool {
 	lowerGeneric := strings.ToLower(generic)
 	return lowerGeneric == constant.GenericSerializationDefault
-}
-
-// isGenericInvocation determines if the invocation has generic format
-func isGenericInvocation(invocation protocol.Invocation) bool {
-	return invocation.MethodName() == constant.Generic &&
-		invocation.Arguments() != nil &&
-		len(invocation.Arguments()) == 3
 }
 
 // toUnexport is to lower the first letter

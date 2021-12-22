@@ -43,7 +43,7 @@ const (
 )
 
 func TestRandomlbSelect(t *testing.T) {
-	randomlb := NewLoadBalance()
+	randomlb := NewRandomLoadBalance()
 
 	var invokers []protocol.Invoker
 
@@ -60,7 +60,7 @@ func TestRandomlbSelect(t *testing.T) {
 }
 
 func TestRandomlbSelectWeight(t *testing.T) {
-	randomlb := NewLoadBalance()
+	randomlb := NewRandomLoadBalance()
 
 	invokers := []protocol.Invoker{}
 	for i := 0; i < 10; i++ {
@@ -92,7 +92,7 @@ func TestRandomlbSelectWeight(t *testing.T) {
 }
 
 func TestRandomlbSelectWarmup(t *testing.T) {
-	randomlb := NewLoadBalance()
+	randomlb := NewRandomLoadBalance()
 
 	invokers := []protocol.Invoker{}
 	for i := 0; i < 10; i++ {

@@ -41,7 +41,7 @@ import (
 )
 
 func TestTpsLimitFilterInvokeWithNoTpsLimiter(t *testing.T) {
-	tpsFilter := &Filter{}
+	tpsFilter := &tpsLimitFilter{}
 	invokeUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
 		common.WithParamsValue(constant.TPSLimiterKey, ""))
@@ -64,7 +64,7 @@ func TestGenericFilterInvokeWithDefaultTpsLimiter(t *testing.T) {
 		return mockLimiter
 	})
 
-	tpsFilter := &Filter{}
+	tpsFilter := &tpsLimitFilter{}
 	invokeUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
 		common.WithParamsValue(constant.TPSLimiterKey, constant.DefaultKey))
@@ -95,7 +95,7 @@ func TestGenericFilterInvokeWithDefaultTpsLimiterNotAllow(t *testing.T) {
 		return mockRejectedHandler
 	})
 
-	tpsFilter := &Filter{}
+	tpsFilter := &tpsLimitFilter{}
 	invokeUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
 		common.WithParamsValue(constant.TPSLimiterKey, constant.DefaultKey))

@@ -24,7 +24,7 @@ jobs:
 
     steps:
 
-    - name: Set up Go 1.x
+    - name: Set up Go ${{ matrix.go_version }}
       uses: actions/setup-go@v2
       with:
         go-version: ${{ matrix.go_version }}
@@ -34,7 +34,7 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Cache dependencies
-      uses: actions/cache@v2.1.6
+      uses: actions/cache@v2.1.7
       with:
         # Cache
         path: ~/go/pkg/mod
@@ -52,6 +52,18 @@ jobs:
         else
             go get -v -t -d ./...
         fi
+
+    - name: Install imports-formatter
+      run: |
+        export PATH=$PATH:$(go env GOPATH)/bin
+        export GO111MODULE=on
+        cd ~
+        go get -u github.com/dubbogo/tools/cmd/imports-formatter@v1.0.7
+
+    - name: Check improts
+      run: |
+        imports-formatter -path .
+        git status && [[ -z `git status -s` ]]
 
     - name: gofmt
       run: |

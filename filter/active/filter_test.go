@@ -40,7 +40,7 @@ import (
 func TestFilterInvoke(t *testing.T) {
 	invoc := invocation.NewRPCInvocation("test", []interface{}{"OK"}, make(map[string]interface{}))
 	url, _ := common.NewURL("dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
-	filter := Filter{}
+	filter := activeFilter{}
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	invoker := mock.NewMockInvoker(ctrl)
@@ -57,7 +57,7 @@ func TestFilterOnResponse(t *testing.T) {
 		dubboInvokeStartTime: strconv.FormatInt(c-int64(elapsed), 10),
 	})
 	url, _ := common.NewURL("dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
-	filter := Filter{}
+	filter := activeFilter{}
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	invoker := mock.NewMockInvoker(ctrl)

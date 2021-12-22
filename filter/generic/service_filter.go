@@ -19,6 +19,7 @@ package generic
 
 import (
 	"context"
+	"sync"
 )
 
 import (
@@ -37,17 +38,28 @@ import (
 	invocation2 "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
+var (
+	serviceGenericOnce sync.Once
+	serviceGeneric     *genericServiceFilter
+)
+
 func init() {
-	extension.SetFilter(constant.GenericServiceFilterKey, func() filter.Filter {
-		return &ServiceFilter{}
-	})
+	extension.SetFilter(constant.GenericServiceFilterKey, newGenericServiceFilter)
 }
 
-// ServiceFilter is for Server
-type ServiceFilter struct{}
+// genericServiceFilter is for Server
+type genericServiceFilter struct{}
 
-func (f *ServiceFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
-	if !isGenericInvocation(invocation) {
+func newGenericServiceFilter() filter.Filter {
+	if serviceGeneric == nil {
+		serviceGenericOnce.Do(func() {
+			serviceGeneric = &genericServiceFilter{}
+		})
+	}
+	return serviceGeneric
+}
+func (f *genericServiceFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+	if !invocation.IsGenericInvocation() {
 		return invoker.Invoke(ctx, invocation)
 	}
 
@@ -111,8 +123,8 @@ func (f *ServiceFilter) Invoke(ctx context.Context, invoker protocol.Invoker, in
 	return invoker.Invoke(ctx, newivc)
 }
 
-func (f *ServiceFilter) OnResponse(_ context.Context, result protocol.Result, _ protocol.Invoker, invocation protocol.Invocation) protocol.Result {
-	if isGenericInvocation(invocation) && result.Result() != nil {
+func (f *genericServiceFilter) OnResponse(_ context.Context, result protocol.Result, _ protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+	if invocation.IsGenericInvocation() && result.Result() != nil {
 		// get generic info from attachments of invocation, the default value is "true"
 		generic := invocation.AttachmentsByKey(constant.GenericKey, constant.GenericSerializationDefault)
 		// get generalizer according to value in the `generic`

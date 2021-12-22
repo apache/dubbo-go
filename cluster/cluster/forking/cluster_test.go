@@ -48,7 +48,7 @@ var forkingUrl, _ = common.NewURL(
 	fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LocalHostValue, constant.DefaultPort))
 
 func registerForking(mockInvokers ...*mock.MockInvoker) protocol.Invoker {
-	extension.SetLoadbalance(constant.LoadBalanceKeyRoundRobin, roundrobin.NewLoadBalance)
+	extension.SetLoadbalance(constant.LoadBalanceKeyRoundRobin, roundrobin.NewRRLoadBalance)
 
 	var invokers []protocol.Invoker
 	for i, ivk := range mockInvokers {
@@ -59,7 +59,7 @@ func registerForking(mockInvokers ...*mock.MockInvoker) protocol.Invoker {
 	}
 	staticDir := static.NewDirectory(invokers)
 
-	forkingCluster := newCluster()
+	forkingCluster := newForkingCluster()
 	clusterInvoker := forkingCluster.Join(staticDir)
 	return clusterInvoker
 }

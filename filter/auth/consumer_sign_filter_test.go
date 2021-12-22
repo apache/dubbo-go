@@ -41,7 +41,7 @@ func TestConsumerSignFilter_Invoke(t *testing.T) {
 	url.SetParam(constant.SecretAccessKeyKey, "sk")
 	url.SetParam(constant.AccessKeyIDKey, "ak")
 	inv := invocation.NewRPCInvocation("test", []interface{}{"OK"}, nil)
-	filter := &ConsumerSignFilter{}
+	filter := &signFilter{}
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	invoker := mock.NewMockInvoker(ctrl)

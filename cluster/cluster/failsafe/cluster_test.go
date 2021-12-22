@@ -46,10 +46,10 @@ import (
 var failsafeUrl, _ = common.NewURL(
 	fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LocalHostValue, constant.DefaultPort))
 
-// registerFailsafe register failsafeCluster to cluster extension.
+// registerFailsafe register failsafeCluster to failsafeCluster extension.
 func registerFailsafe(invoker *mock.MockInvoker) protocol.Invoker {
-	extension.SetLoadbalance("random", random.NewLoadBalance)
-	failsafeCluster := newCluster()
+	extension.SetLoadbalance("random", random.NewRandomLoadBalance)
+	failsafeCluster := newFailsafeCluster()
 
 	var invokers []protocol.Invoker
 	invokers = append(invokers, invoker)

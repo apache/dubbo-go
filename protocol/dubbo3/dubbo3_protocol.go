@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"strconv"
 	"sync"
 )
 
@@ -89,7 +90,10 @@ func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	if serializationType == constant.ProtobufSerialization {
 		m, ok := reflect.TypeOf(service).MethodByName("XXX_SetProxyImpl")
 		if !ok {
-			panic("method XXX_SetProxyImpl is necessary for triple service")
+			logger.Errorf("PB service with key = %s is not support XXX_SetProxyImpl to pb."+
+				"Please run go install github.com/dubbogo/tools/cmd/protoc-gen-go-triple@latest to update your "+
+				"protoc-gen-go-triple and re-generate your pb file again.", key)
+			return nil
 		}
 		if invoker == nil {
 			panic(fmt.Sprintf("no invoker found for servicekey: %v", url.ServiceKey()))
@@ -190,13 +194,7 @@ func (d *UnaryService) GetReqParamsInterfaces(methodName string) ([]interface{},
 }
 
 func (d *UnaryService) InvokeWithArgs(ctx context.Context, methodName string, arguments []interface{}) (interface{}, error) {
-	dubboAttachment := make(map[string]interface{})
-	tripleAttachment, ok := ctx.Value(tripleConstant.TripleAttachement).(tripleCommon.TripleAttachment)
-	if ok {
-		for k, v := range tripleAttachment {
-			dubboAttachment[k] = v
-		}
-	}
+	dubboAttachment, _ := ctx.Value(tripleConstant.TripleAttachement).(tripleCommon.DubboAttachment)
 	res := d.proxyImpl.Invoke(ctx, invocation.NewRPCInvocation(methodName, arguments, dubboAttachment))
 	return res, res.Error()
 }
@@ -211,11 +209,44 @@ func (dp *DubboProtocol) openServer(url *common.URL, tripleCodecType tripleConst
 		dp.serverMap[url.Location].RefreshService()
 		return
 	}
-	triOption := triConfig.NewTripleOption(
+
+	opts := []triConfig.OptionFunction{
 		triConfig.WithCodecType(tripleCodecType),
 		triConfig.WithLocation(url.Location),
 		triConfig.WithLogger(logger.GetLogger()),
-	)
+	}
+	tracingKey := url.GetParam(constant.TracingConfigKey, "")
+	if tracingKey != "" {
+		tracingConfig := config.GetTracingConfig(tracingKey)
+		if tracingConfig != nil {
+			if tracingConfig.ServiceName == "" {
+				tracingConfig.ServiceName = config.GetApplicationConfig().Name
+			}
+			switch tracingConfig.Name {
+			case "jaeger":
+				opts = append(opts, triConfig.WithJaegerConfig(
+					tracingConfig.Address,
+					tracingConfig.ServiceName,
+					tracingConfig.UseAgent,
+				))
+			default:
+				logger.Warnf("unsupported tracing name %s, now triple only support jaeger", tracingConfig.Name)
+			}
+		}
+	}
+
+	if maxCall := url.GetParam(constant.MaxServerRecvMsgSize, ""); maxCall != "" {
+		if size, err := strconv.Atoi(maxCall); err == nil && size != 0 {
+			opts = append(opts, triConfig.WithGRPCMaxServerRecvMessageSize(size))
+		}
+	}
+	if maxCall := url.GetParam(constant.MaxServerSendMsgSize, ""); maxCall != "" {
+		if size, err := strconv.Atoi(maxCall); err == nil && size != 0 {
+			opts = append(opts, triConfig.WithGRPCMaxServerSendMessageSize(size))
+		}
+	}
+
+	triOption := triConfig.NewTripleOption(opts...)
 
 	_, ok = dp.ExporterMap().Load(url.ServiceKey())
 	if !ok {

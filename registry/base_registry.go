@@ -312,7 +312,7 @@ func (r *BaseRegistry) providerRegistry(c *common.URL, params url.Values, f crea
 	if c.Path == "" || len(c.Methods) == 0 {
 		return "", "", perrors.Errorf("conf{Path:%s, Methods:%s}", c.Path, c.Methods)
 	}
-	dubboPath = fmt.Sprintf("/dubbo/%s/%s", r.service(c), common.DubboNodes[common.PROVIDER])
+	dubboPath = fmt.Sprintf("/%s/%s/%s", r.URL.GetParam(constant.RegistryGroupKey, "dubbo"), r.service(c), common.DubboNodes[common.PROVIDER])
 	if f != nil {
 		err = f(dubboPath)
 	}
@@ -346,9 +346,7 @@ func (r *BaseRegistry) providerRegistry(c *common.URL, params url.Values, f crea
 
 	s, _ := url.QueryUnescape(params.Encode())
 	rawURL = fmt.Sprintf("%s://%s%s?%s", c.Protocol, host, c.Path, s)
-
 	// Print your own registration service providers.
-	dubboPath = fmt.Sprintf("/dubbo/%s/%s", r.service(c), (common.RoleType(common.PROVIDER)).String())
 	logger.Debugf("provider path:%s, url:%s", dubboPath, rawURL)
 	return dubboPath, rawURL, nil
 }
@@ -360,16 +358,7 @@ func (r *BaseRegistry) consumerRegistry(c *common.URL, params url.Values, f crea
 		rawURL    string
 		err       error
 	)
-	dubboPath = fmt.Sprintf("/dubbo/%s/%s", r.service(c), common.DubboNodes[common.CONSUMER])
-
-	if f != nil {
-		err = f(dubboPath)
-	}
-	if err != nil {
-		logger.Errorf("facadeBasedRegistry.CreatePath(path{%s}) = error{%v}", dubboPath, perrors.WithStack(err))
-		return "", "", perrors.WithStack(err)
-	}
-	dubboPath = fmt.Sprintf("/dubbo/%s/%s", r.service(c), common.DubboNodes[common.PROVIDER])
+	dubboPath = fmt.Sprintf("/%s/%s/%s", r.URL.GetParam(constant.RegistryGroupKey, "dubbo"), r.service(c), common.DubboNodes[common.CONSUMER])
 
 	if f != nil {
 		err = f(dubboPath)
@@ -383,8 +372,6 @@ func (r *BaseRegistry) consumerRegistry(c *common.URL, params url.Values, f crea
 	params.Add("protocol", c.Protocol)
 	s, _ := url.QueryUnescape(params.Encode())
 	rawURL = fmt.Sprintf("consumer://%s%s?%s", localIP, c.Path, s)
-	dubboPath = fmt.Sprintf("/dubbo/%s/%s", r.service(c), (common.RoleType(common.CONSUMER)).String())
-
 	logger.Debugf("consumer path:%s, url:%s", dubboPath, rawURL)
 	return dubboPath, rawURL, nil
 }
@@ -425,7 +412,7 @@ func (r *BaseRegistry) Subscribe(url *common.URL, notifyListener NotifyListener)
 				listener.Close()
 				break
 			} else {
-				logger.Infof("[Zookeeper Registry] update begin, service event: %v", serviceEvent.String())
+				logger.Debugf("[Zookeeper Registry] update begin, service event: %v", serviceEvent.String())
 				notifyListener.Notify(serviceEvent)
 			}
 		}
@@ -456,7 +443,7 @@ func (r *BaseRegistry) UnSubscribe(url *common.URL, notifyListener NotifyListene
 			listener.Close()
 			break
 		} else {
-			logger.Infof("[Zookeeper Registry] update begin, service event: %v", serviceEvent.String())
+			logger.Debugf("[Zookeeper Registry] update begin, service event: %v", serviceEvent.String())
 			notifyListener.Notify(serviceEvent)
 		}
 	}

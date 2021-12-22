@@ -45,7 +45,7 @@ import (
 type ReferenceConfig struct {
 	pxy            *proxy.Proxy
 	id             string
-	InterfaceName  string            `required:"true"  yaml:"interface"  json:"interface,omitempty" property:"interface"`
+	InterfaceName  string            `yaml:"interface"  json:"interface,omitempty" property:"interface"`
 	Check          *bool             `yaml:"check"  json:"check,omitempty" property:"check"`
 	URL            string            `yaml:"url"  json:"url,omitempty" property:"url"`
 	Filter         string            `yaml:"filter" json:"filter,omitempty" property:"filter"`
@@ -67,12 +67,12 @@ type ReferenceConfig struct {
 	Sticky         bool   `yaml:"sticky"   json:"sticky,omitempty" property:"sticky"`
 	RequestTimeout string `yaml:"timeout"  json:"timeout,omitempty" property:"timeout"`
 	ForceTag       bool   `yaml:"force.tag"  json:"force.tag,omitempty" property:"force.tag"`
+	TracingKey     string `yaml:"tracing-key" json:"tracing-key,omitempty" propertiy:"tracing-key"`
 
 	rootConfig   *RootConfig
 	metaDataType string
 }
 
-// nolint
 func (rc *ReferenceConfig) Prefix() string {
 	return constant.ReferenceConfigPrefix + rc.InterfaceName + "."
 }
@@ -97,14 +97,25 @@ func (rc *ReferenceConfig) Init(root *RootConfig) error {
 	if len(rc.RegistryIDs) <= 0 {
 		rc.RegistryIDs = root.Consumer.RegistryIDs
 	}
+	if rc.TracingKey == "" {
+		rc.TracingKey = root.Consumer.TracingKey
+	}
 	if rc.Check == nil {
 		rc.Check = &root.Consumer.Check
 	}
 	return verify(rc)
 }
 
-// Refer ...
+// Refer retrieves invokers from urls.
 func (rc *ReferenceConfig) Refer(srv interface{}) {
+	// If adaptive service is enabled,
+	// the cluster and load balance should be overridden to "adaptivesvc" and "p2c" respectively.
+	if rc.rootConfig.Consumer.AdaptiveService {
+		rc.Cluster = constant.ClusterKeyAdaptiveService
+		rc.Loadbalance = constant.LoadBalanceKeyP2C
+	}
+
+	// cfgURL is an interface-level invoker url, in the other words, it represents an interface.
 	cfgURL := common.NewURLWithOptions(
 		common.WithPath(rc.InterfaceName),
 		common.WithProtocol(rc.Protocol),
@@ -112,6 +123,7 @@ func (rc *ReferenceConfig) Refer(srv interface{}) {
 		common.WithParamsValue(constant.BeanNameKey, rc.id),
 		common.WithParamsValue(constant.MetadataTypeKey, rc.metaDataType),
 	)
+
 	SetConsumerServiceByInterfaceName(rc.InterfaceName, srv)
 	if rc.ForceTag {
 		cfgURL.AddParam(constant.ForceUseTag, "true")
@@ -121,10 +133,15 @@ func (rc *ReferenceConfig) Refer(srv interface{}) {
 	// retrieving urls from config, and appending the urls to rc.urls
 	if rc.URL != "" { // use user-specific urls
 		/*
-		 Two types of URL are allowed for rc.URL: direct url and registry url, they will be handled in different ways.
-		 For example, "tri://localhost:10000" is a direct url, and "registry://localhost:2181" is a registry url.
-		 rc.URL: "tri://localhost:10000;tri://localhost:10001;registry://localhost:2181",
-		 urlStrings = []string{"tri://localhost:10000", "tri://localhost:10001", "registry://localhost:2181"}.
+			 Two types of URL are allowed for rc.URL:
+				1. direct url: server IP, that is, no need for a registry anymore
+				2. registry url
+			 They will be handled in different ways:
+			 For example, we have a direct url and a registry url:
+				1. "tri://localhost:10000" is a direct url
+				2. "registry://localhost:2181" is a registry url.
+			 Then, rc.URL looks like a string separated by semicolon: "tri://localhost:10000;registry://localhost:2181".
+			 The result of urlStrings is a string array: []string{"tri://localhost:10000", "registry://localhost:2181"}.
 		*/
 		urlStrings := gxstrings.RegSplit(rc.URL, "\\s*[;]+\\s*")
 		for _, urlStr := range urlStrings {
@@ -132,14 +149,15 @@ func (rc *ReferenceConfig) Refer(srv interface{}) {
 			if err != nil {
 				panic(fmt.Sprintf("url configuration error,  please check your configuration, user specified URL %v refer error, error message is %v ", urlStr, err.Error()))
 			}
-			if serviceURL.Protocol == constant.RegistryProtocol { // URL stands for a registry protocol
+			if serviceURL.Protocol == constant.RegistryProtocol { // serviceURL in this branch is a registry protocol
 				serviceURL.SubURL = cfgURL
 				rc.urls = append(rc.urls, serviceURL)
-			} else { // URL stands for a direct address
+			} else { // serviceURL in this branch is the target endpoint IP address
 				if serviceURL.Path == "" {
 					serviceURL.Path = "/" + rc.InterfaceName
 				}
-				// merge URL param with cfgURL, others are same as serviceURL
+				// replace params of serviceURL with params of cfgUrl
+				// other stuff, e.g. IP, port, etc., are same as serviceURL
 				newURL := common.MergeURL(serviceURL, cfgURL)
 				rc.urls = append(rc.urls, newURL)
 			}
@@ -244,6 +262,7 @@ func (rc *ReferenceConfig) getURLMap() url.Values {
 	urlMap.Set(constant.RegistryRoleKey, strconv.Itoa(common.CONSUMER))
 	urlMap.Set(constant.ProvidedBy, rc.ProvidedBy)
 	urlMap.Set(constant.SerializationKey, rc.Serialization)
+	urlMap.Set(constant.TracingConfigKey, rc.TracingKey)
 
 	urlMap.Set(constant.ReleaseKey, "dubbo-golang-"+constant.Version)
 	urlMap.Set(constant.SideKey, (common.RoleType(common.CONSUMER)).Role())
@@ -267,7 +286,7 @@ func (rc *ReferenceConfig) getURLMap() url.Values {
 	// filter
 	defaultReferenceFilter := constant.DefaultReferenceFilters
 	if rc.Generic != "" {
-		defaultReferenceFilter = constant.GenericReferenceFilters + "," + defaultReferenceFilter
+		defaultReferenceFilter = constant.GenericFilterKey + "," + defaultReferenceFilter
 	}
 	urlMap.Set(constant.ReferenceFilterKey, mergeValue(rc.rootConfig.Consumer.Filter, "", defaultReferenceFilter))
 

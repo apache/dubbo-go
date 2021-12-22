@@ -8,14 +8,14 @@ require (
 	github.com/Workiva/go-datastructures v1.0.52
 	github.com/afex/hystrix-go v0.0.0-20180502004556-fa1af6a1f4f5
 	github.com/alibaba/sentinel-golang v1.0.2
-	github.com/apache/dubbo-getty v1.4.5
-	github.com/apache/dubbo-go-hessian2 v1.9.3
+	github.com/apache/dubbo-getty v1.4.7-rc2
+	github.com/apache/dubbo-go-hessian2 v1.10.0
 	github.com/creasty/defaults v1.5.2
-	github.com/dubbogo/go-zookeeper v1.0.3
-	github.com/dubbogo/gost v1.11.19
-	github.com/dubbogo/grpc-go v1.42.4-triple
-	github.com/dubbogo/triple v1.1.2
-	github.com/emicklei/go-restful/v3 v3.7.1
+	github.com/dubbogo/go-zookeeper v1.0.4-0.20211212162352-f9d2183d89d5
+	github.com/dubbogo/gost v1.11.21
+	github.com/dubbogo/grpc-go v1.42.6
+	github.com/dubbogo/triple v1.1.6
+	github.com/emicklei/go-restful/v3 v3.7.3
 	github.com/fsnotify/fsnotify v1.5.1
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-co-op/gocron v1.9.0
@@ -26,16 +26,15 @@ require (
 	github.com/grpc-ecosystem/grpc-opentracing v0.0.0-20180507213350-8e809c8a8645
 	github.com/hashicorp/vault/sdk v0.3.0
 	github.com/jinzhu/copier v0.3.2
-	github.com/knadh/koanf v1.3.2
+	github.com/knadh/koanf v1.3.3
 	github.com/magiconair/properties v1.8.5
-	github.com/mitchellh/mapstructure v1.4.2
+	github.com/mitchellh/mapstructure v1.4.3
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
 	github.com/nacos-group/nacos-sdk-go v1.0.9
 	github.com/natefinch/lumberjack v2.0.0+incompatible
-	github.com/onsi/ginkgo v1.10.1 // indirect
-	github.com/onsi/gomega v1.7.0 // indirect
 	github.com/opentracing/opentracing-go v1.2.0
 	github.com/pkg/errors v0.9.1
+	github.com/polarismesh/polaris-go v1.0.1
 	github.com/prometheus/client_golang v1.11.0
 	github.com/satori/go.uuid v1.2.1-0.20181028125025-b2ce2384e17b
 	github.com/stretchr/testify v1.7.0
@@ -45,11 +44,9 @@ require (
 	go.etcd.io/etcd/server/v3 v3.5.0-alpha.0
 	go.uber.org/atomic v1.9.0
 	go.uber.org/zap v1.19.1
-	google.golang.org/grpc v1.42.0
+	google.golang.org/grpc v1.43.0
 	google.golang.org/protobuf v1.27.1
-	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0
-	k8s.io/api v0.16.9
-	k8s.io/apimachinery v0.16.9
+	k8s.io/apimachinery v0.22.4
 	k8s.io/client-go v0.16.9
 )

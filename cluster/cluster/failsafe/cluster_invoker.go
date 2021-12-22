@@ -37,17 +37,17 @@ import (
  * <a href="http://en.wikipedia.org/wiki/Fail-safe">Fail-safe</a>
  *
  */
-type clusterInvoker struct {
-	base.ClusterInvoker
+type failsafeClusterInvoker struct {
+	base.BaseClusterInvoker
 }
 
-func newClusterInvoker(directory directory.Directory) protocol.Invoker {
-	return &clusterInvoker{
-		ClusterInvoker: base.NewClusterInvoker(directory),
+func newFailsafeClusterInvoker(directory directory.Directory) protocol.Invoker {
+	return &failsafeClusterInvoker{
+		BaseClusterInvoker: base.NewBaseClusterInvoker(directory),
 	}
 }
 
-func (invoker *clusterInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
+func (invoker *failsafeClusterInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 	invokers := invoker.Directory.List(invocation)
 
 	err := invoker.CheckInvokers(invokers, invocation)
@@ -58,7 +58,7 @@ func (invoker *clusterInvoker) Invoke(ctx context.Context, invocation protocol.I
 	url := invokers[0].GetURL()
 	methodName := invocation.MethodName()
 	// Get the service loadbalance config
-	lb := url.GetParam(constant.LoadbalanceKey, constant.DefaultLoadbalance)
+	lb := url.GetParam(constant.LoadbalanceKey, constant.DefaultLoadBalance)
 	// Get the service method loadbalance config if have
 	if v := url.GetMethodParam(methodName, constant.LoadbalanceKey, ""); v != "" {
 		lb = v

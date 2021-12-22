@@ -32,7 +32,7 @@ const (
 )
 
 const (
-	DefaultLoadbalance      = "random"
+	DefaultLoadBalance      = "random"
 	DefaultRetries          = "2"
 	DefaultRetriesInt       = 2
 	DefaultProtocol         = "dubbo"
@@ -45,22 +45,30 @@ const (
 	DefaultRestClient       = "resty"
 	DefaultRestServer       = "go-restful"
 	DefaultPort             = 20000
-	DefaultMetadataport     = 20005
 )
 
 const (
-	DefaultKey              = "default"
-	PrefixDefaultKey        = "default."
-	DefaultServiceFilters   = EchoFilterKey + "," + MetricsFilterKey + "," + TokenFilterKey + "," + AccessLogFilterKey + "," + TpsLimitFilterKey + "," + GenericServiceFilterKey + "," + ExecuteLimitFilterKey + "," + GracefulShutdownProviderFilterKey
+	DefaultKey   = "default"
+	Generic      = "$invoke"
+	GenericAsync = "$invokeAsync"
+	Echo         = "$echo"
+)
+
+// default filters
+const (
+	// DefaultServiceFilters defines default service filters, it is highly recommended
+	// that put the AdaptiveServiceProviderFilterKey at the end.
+	DefaultServiceFilters = EchoFilterKey + "," +
+		MetricsFilterKey + "," + TokenFilterKey + "," + AccessLogFilterKey + "," + TpsLimitFilterKey + "," +
+		GenericServiceFilterKey + "," + ExecuteLimitFilterKey + "," + GracefulShutdownProviderFilterKey + "," +
+		AdaptiveServiceProviderFilterKey
+
 	DefaultReferenceFilters = GracefulShutdownConsumerFilterKey
-	GenericReferenceFilters = GenericFilterKey
-	Generic                 = "$invoke"
-	Echo                    = "$echo"
 )
 
 const (
 	AnyValue          = "*"
-	AnyhostValue      = "0.0.0.0"
+	AnyHostValue      = "0.0.0.0"
 	LocalHostValue    = "192.168.1.1"
 	RemoveValuePrefix = "-"
 )
@@ -86,11 +94,4 @@ const (
 
 const (
 	ServiceDiscoveryDefaultGroup = "DEFAULT_GROUP"
-)
-
-const (
-	DefaultProviderConfFilePath = "../profiles/dev/server.yml"
-	DefaultConsumerConfFilePath = "../profiles/dev/client.yml"
-	DefaultLogConfFilePath      = "../profiles/dev/log.yml"
-	DefaultRouterConfFilePath   = "../profiles/dev/router.yml"
 )
