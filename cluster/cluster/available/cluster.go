@@ -29,16 +29,16 @@ func init() {
 	extension.SetCluster(constant.ClusterKeyAvailable, NewAvailableCluster)
 }
 
-type cluster struct{}
+type availableCluster struct{}
 
-// NewAvailableCluster returns a cluster instance
+// NewAvailableCluster returns a availableCluster instance
 //
 // Obtain available service providers
 func NewAvailableCluster() clusterpkg.Cluster {
-	return &cluster{}
+	return &availableCluster{}
 }
 
 // Join returns a baseClusterInvoker instance
-func (cluster *cluster) Join(directory directory.Directory) protocol.Invoker {
+func (cluster *availableCluster) Join(directory directory.Directory) protocol.Invoker {
 	return clusterpkg.BuildInterceptorChain(NewClusterInvoker(directory))
 }

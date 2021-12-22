@@ -10,46 +10,36 @@
 
 [中文 🇨🇳](./README_CN.md)
 
-Apache Dubbo-go, a Dubbo implementation written in Golang, is born to bridge the gap between Java and Golang. Please visit our [official website](https://dubbo.apache.org/zh/docs/languages/golang/) for the quick start and documentation.
+Apache Dubbo-go, a Dubbo implementation written in Golang, is born to bridge the gap between Java and Golang. Please visit our [Dubbo official website](https://dubbo.apache.org/zh/docs/languages/golang/) for the quick start and documentation.
 
-## Architecture
+## RPC Invocation
 
-![dubbo go extend](https://dubbogo.github.io/img/doc/dubbo-go3.0-arch.jpg)
+![](https://dubbogo.github.io/img/dubbogo-3.0-invocation.png)
 
-Dubbo-go has been implemented most layers of Dubbo, like protocol layer, registry layer, etc. An extension module is applied to Dubbo-go in order to achieve a more flexible architecture. Developers are allowed to implement a customized layer conformed to the layer interface and use them in Dubbo-go via `extension.Set` method without modifying the source code.
+Dubbo-go has supported many RPC protocol, like Triple, Dubbo JSONRPC, gRPC, HTTP, HTTP2. 
 
-## Features
+- Triple is the supported protocol of Dubbo3 ecology, and is gRPC extended protocol based on HTTP2, which is compatible with gRPC service.In other words, **on the basis of gRPC's reliable invocation, it adds Dubbo's service governance capability.**
+- Dubbo protocol  is tradition Dubbo ecology protocol, which is capitable with dubbo 2.x, and is a good choice for cross-language invocation between GO and Java old service.
+- HTTP support：As you can see in the figure above, you can invoke Triple/Dubbo service using HTTP protocol through [dubbo-go-pixiu](https://github.com/apache/dubbo-go-pixiu) gateway.
 
-The features that are available for Dubbo-go are:
+## Service Governance Capability.
 
-- **Role**: Consumer, Provider
-- **Transport**: HTTP, TCP
-- **Codec**: JsonRPC V2, Hessian V2, [Json for gRPC](https://github.com/apache/dubbo-go/pull/582), Protocol Buffers
-- **Protocol**: Dubbo, [Triple](https://github.com/dubbogo/triple), JsonRPC V2, [gRPC](https://github.com/apache/dubbo-go/pull/311), [RESTful](https://github.com/apache/dubbo-go/pull/352)
-- **Router**: [Dubbo3 Router](https://github.com/apache/dubbo-go/pull/1187)
-- **Registry**: ZooKeeper, [etcd](https://github.com/apache/dubbo-go/pull/148), [Nacos](https://github.com/apache/dubbo-go/pull/151), [Consul](https://github.com/apache/dubbo-go/pull/121), [K8s](https://github.com/apache/dubbo-go/pull/400)
-- **Dynamic Configure Center & Service Management Configurator**: Zookeeper, [Apollo](https://github.com/apache/dubbo-go/pull/250), [Nacos](https://github.com/apache/dubbo-go/pull/357)
+![](https://dubbogo.github.io/img/devops.png)
+
+- **Registry**: Nacos, Zookeeper, ETCD, Polaris-mesh, Consul.
+- **ConfigCenter**: Nacos, Apollo, Zookeeper
 - **Cluster Strategy**: Failover, [Failfast](https://github.com/apache/dubbo-go/pull/140), [Failsafe/Failback](https://github.com/apache/dubbo-go/pull/136), [Available](https://github.com/apache/dubbo-go/pull/155), [Broadcast](https://github.com/apache/dubbo-go/pull/158), [Forking](https://github.com/apache/dubbo-go/pull/161)
-- **Load Balance**: Random, [RoundRobin](https://github.com/apache/dubbo-go/pull/66), [LeastActive](https://github.com/apache/dubbo-go/pull/65), [ConsistentHash](https://github.com/apache/dubbo-go/pull/261)
+- **Load Balance**: [AdaptiveService](https://github.com/apache/dubbo-go/pull/1649), Random, [RoundRobin](https://github.com/apache/dubbo-go/pull/66), [LeastActive](https://github.com/apache/dubbo-go/pull/65), [ConsistentHash](https://github.com/apache/dubbo-go/pull/261)
 - [**Filter**](./filter): Echo, Hystrix, Token, AccessLog, TpsLimiter, ExecuteLimit, Generic, Auth/Sign, Metrics, Tracing, Active, Seata, Sentinel
-- **Invoke**: [Generic Invoke](https://github.com/apache/dubbo-go/pull/122)
-- **Monitor**: Opentracing API, [Prometheus](https://github.com/apache/dubbo-go/pull/342)
-- **Tracing**: [For JsonRPC](https://github.com/apache/dubbo-go/pull/335), [For Dubbo](https://github.com/apache/dubbo-go/pull/344), [For gRPC](https://github.com/apache/dubbo-go/pull/397)
-- **Metadata Center**: [Nacos(Local)](https://github.com/apache/dubbo-go/pull/522), [ZooKeeper(Local)](https://github.com/apache/dubbo-go/pull/633), [etcd(Local)](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/metadata/report/etcd/report.go), [Consul(Local)](https://github.com/apache/dubbo-go/pull/633), [ZooKeeper(Remoting)](https://github.com/apache/dubbo-go/pull/1161)
-- **Tool**: [Dubbo-go-cli](https://github.com/dubbogo/tools)
+- **[Generic Invoke](https://github.com/apache/dubbo-go/pull/122)**
+- **Monitor**:  [Prometheus](https://github.com/apache/dubbo-go/pull/342)
+- **Tracing**:  Jaeger, Zipkin
+- **Router**: [Dubbo3 Router](https://github.com/apache/dubbo-go/pull/1187)
 
 ## Getting started
 
-### Install Dubbo-go v3
-
-```
-go get dubbo.apache.org/dubbo-go/v3
-```
-
-### Next steps
-
+- Dubbo-go Quick Start: [中文 🇨🇳](https://dubbogo.github.io/zh-cn/docs/user/quickstart/3.0/quickstart_triple.html), [English 🇺🇸](https://dubbogo.github.io/en-us/docs/user/quickstart/3.0/quickstart_triple.html)
 - [Dubbo-go Samples](https://github.com/apache/dubbo-go-samples): The project gives a series of samples that show each feature available for Dubbo-go and help you know how to integrate Dubbo-go with your system.
-- Dubbo-go Quick Start: [中文 🇨🇳](https://dubbogo.github.io/zh-cn/docs/user/quickstart/3.0/quickstart.html), [English 🇺🇸](https://dubbogo.github.io/en-us/docs/user/quick-start.html)
 - [Dubbo-go Benchmark](https://github.com/dubbogo/dubbo-go-benchmark)
 - [Dubbo-go Wiki](https://github.com/apache/dubbo-go/wiki)
 
@@ -156,6 +146,19 @@ If you are using [apache/dubbo-go](https://github.com/apache/dubbo-go) and think
              <img width="222px"  src="https://avatars.githubusercontent.com/u/18279051?s=200&v=4">
           </a>
       </td>      
+    </tr>
+    <tr></tr>
+    <tr>
+      <td align="center"  valign="middle">
+        <a href="https://www.mi.com/" target="_blank">
+          <img width="222px"  src="https://s02.mifile.cn/assets/static/image/logo-mi2.png">
+        </a>
+      </td>  
+      <td align="center"  valign="middle">
+        <a href="https://opayweb.com/" target="_blank">
+          <img width="222px"  src="https://open.opayweb.com/static/img/logo@2x.35c6fe4c.jpg">
+        </a>
+      </td>  
     </tr>
     <tr></tr>
   </tbody>

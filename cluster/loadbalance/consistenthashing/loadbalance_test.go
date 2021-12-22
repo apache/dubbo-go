@@ -108,7 +108,7 @@ func (s *consistentHashLoadBalanceSuite) SetupTest() {
 	s.invoker3 = protocol.NewBaseInvoker(s.url3)
 
 	s.invokers = append(s.invokers, s.invoker1, s.invoker2, s.invoker3)
-	s.lb = newLoadBalance()
+	s.lb = newConshashLoadBalance()
 }
 
 func (s *consistentHashLoadBalanceSuite) TestSelect() {
