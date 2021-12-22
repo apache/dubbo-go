@@ -169,10 +169,9 @@ func isInvoked(selectedInvoker protocol.Invoker, invoked []protocol.Invoker) boo
 	return false
 }
 
-func GetLoadBalance(invoker protocol.Invoker, invocation protocol.Invocation) loadbalance.LoadBalance {
+func GetLoadBalance(invoker protocol.Invoker, methodName string) loadbalance.LoadBalance {
 	url := invoker.GetURL()
 
-	methodName := invocation.MethodName()
 	// Get the service loadbalance config
 	lb := url.GetParam(constant.LoadbalanceKey, constant.DefaultLoadBalance)
 

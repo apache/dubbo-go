@@ -84,7 +84,7 @@ func (invoker *zoneawareClusterInvoker) Invoke(ctx context.Context, invocation p
 	}
 
 	// load balance among all registries, with registry weight count in.
-	loadBalance := base.GetLoadBalance(invokers[0], invocation)
+	loadBalance := base.GetLoadBalance(invokers[0], invocation.ActualMethodName())
 	ivk := invoker.DoSelect(loadBalance, invocation, invokers, nil)
 	if ivk != nil && ivk.IsAvailable() {
 		return ivk.Invoke(ctx, invocation)

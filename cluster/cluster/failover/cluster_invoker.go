@@ -59,9 +59,9 @@ func (invoker *failoverClusterInvoker) Invoke(ctx context.Context, invocation pr
 		return &protocol.RPCResult{Err: err}
 	}
 
-	methodName := invocation.MethodName()
+	methodName := invocation.ActualMethodName()
 	retries := getRetries(invokers, methodName)
-	loadBalance := base.GetLoadBalance(invokers[0], invocation)
+	loadBalance := base.GetLoadBalance(invokers[0], methodName)
 
 	for i := 0; i <= retries; i++ {
 		// Reselect before retry to avoid a change of candidate `invokers`.
