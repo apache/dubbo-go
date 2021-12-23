@@ -35,7 +35,9 @@ import (
 )
 
 var (
-	randSeed = time.Now().Unix()
+	randSeed = func() int64 {
+		return time.Now().Unix()
+	}
 )
 
 func init() {
@@ -73,7 +75,7 @@ func (l *p2cLoadBalance) Select(invokers []protocol.Invoker, invocation protocol
 	if len(invokers) == 2 {
 		i, j = 0, 1
 	} else {
-		rand.Seed(randSeed)
+		rand.Seed(randSeed())
 		i = rand.Intn(len(invokers))
 		j = i
 		for i == j {

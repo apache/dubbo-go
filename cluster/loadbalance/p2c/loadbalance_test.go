@@ -20,7 +20,9 @@ import (
 func TestLoadBalance(t *testing.T) {
 	lb := newP2CLoadBalance()
 	invocation := protoinvoc.NewRPCInvocation("TestMethod", []interface{}{}, nil)
-	randSeed = 0
+	randSeed = func() int64 {
+		return 0
+	}
 
 	t.Run("no invokers", func(t *testing.T) {
 		ivk := lb.Select([]protocol.Invoker{}, invocation)
