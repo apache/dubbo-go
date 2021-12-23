@@ -19,17 +19,13 @@ package config
 
 import (
 	"net/url"
-)
 
-import (
 	"github.com/creasty/defaults"
-	perrors "github.com/pkg/errors"
-)
 
-import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/config/instance"
+	perrors "github.com/pkg/errors"
 )
 
 // MethodConfig is method level configuration
@@ -80,8 +76,8 @@ func (c *MetadataReportConfig) ToUrl() (*common.URL, error) {
 		common.WithLocation(rc.Address),
 		common.WithProtocol(c.Protocol),
 	)
-	if err != nil || len(res.Protocol) == 0 {
-		return nil, perrors.New("Invalid MetadataReportConfig.")
+	if err != nil {
+		return nil, err
 	}
 	res.SetParam("metadata", res.Protocol)
 	return res, nil

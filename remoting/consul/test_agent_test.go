@@ -16,17 +16,3 @@
  */
 
 package consul
-
-import (
-	"testing"
-)
-
-import (
-	"github.com/stretchr/testify/assert"
-)
-
-func TestNewConsulAgent(t *testing.T) {
-	consulAgent := NewConsulAgent(t, 8500)
-	err := consulAgent.Shutdown()
-	assert.NoError(t, err)
-}
