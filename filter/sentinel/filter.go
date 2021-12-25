@@ -212,7 +212,7 @@ func SetDubboProviderFallback(f DubboFallback) {
 
 func getDefaultDubboFallback() DubboFallback {
 	return func(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation, blockError *base.BlockError) protocol.Result {
-		return protocol.NewRPCResult(nil, blockError)
+		return &protocol.RPCResult{Err: blockError}
 	}
 }
 

@@ -32,6 +32,8 @@ func init() {
 	LocalMetrics = newLocalMetrics()
 }
 
+var _ Metrics = (*localMetrics)(nil)
+
 type localMetrics struct {
 	// protect metrics
 	lock    *sync.RWMutex

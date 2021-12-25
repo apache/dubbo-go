@@ -29,6 +29,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
+var _ protocol.Invocation = (*RPCInvocation)(nil)
+
 // todo: is it necessary to separate fields of consumer(provider) from RPCInvocation
 // nolint
 type RPCInvocation struct {

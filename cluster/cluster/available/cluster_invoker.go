@@ -47,12 +47,12 @@ func (invoker *availableClusterInvoker) Invoke(ctx context.Context, invocation p
 	invokers := invoker.Directory.List(invocation)
 	err := invoker.CheckInvokers(invokers, invocation)
 	if err != nil {
-		return protocol.NewRPCResult(nil, err)
+		return &protocol.RPCResult{Err: err}
 	}
 
 	err = invoker.CheckWhetherDestroyed()
 	if err != nil {
-		return protocol.NewRPCResult(nil, err)
+		return &protocol.RPCResult{Err: err}
 	}
 
 	for _, ivk := range invokers {
@@ -60,5 +60,5 @@ func (invoker *availableClusterInvoker) Invoke(ctx context.Context, invocation p
 			return ivk.Invoke(ctx, invocation)
 		}
 	}
-	return protocol.NewRPCResult(nil, errors.New(fmt.Sprintf("no provider available in %v", invokers)))
+	return &protocol.RPCResult{Err: errors.New(fmt.Sprintf("no provider available in %v", invokers))}
 }
