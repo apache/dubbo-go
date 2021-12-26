@@ -34,7 +34,6 @@ func TestProviderFilterInvoke(t *testing.T) {
 
 	filter := extension.GetFilter(constant.GracefulShutdownProviderFilterKey).(*providerGracefulShutdownFilter)
 	filter.Set(constant.GracefulShutdownFilterShutdownConfig, config.GetShutDown())
-
 	assert.Equal(t, filter.shutdownConfig, config.GetShutDown())
 
 	result := filter.Invoke(context.Background(), protocol.NewBaseInvoker(url), invocation)
