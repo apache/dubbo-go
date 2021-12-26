@@ -404,9 +404,8 @@ func (proto *registryProtocol) Destroy() {
 		}
 		// TODO unsubscribeUrl
 
-		// TODO shutdwon phase
 		select {
-		case <-time.After(3 * time.Second):
+		case <-time.After(config.GetShutDown().GetStepTimeout()):
 			exporter.Unexport()
 			proto.bounds.Delete(key)
 		}

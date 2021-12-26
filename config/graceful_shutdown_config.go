@@ -55,6 +55,8 @@ type ShutdownConfig struct {
 	// true -> all requests had been processed. In provider side it means that all requests are returned response to clients
 	// In consumer side, it means that all requests getting response from servers
 	RequestsFinished bool
+	// internal listen kill signal，the default is true.
+	InternalSignal bool `default:"true" yaml:"internal_signal" json:"internal.signal,omitempty" property:"internal.signal"`
 }
 
 // Prefix dubbo.shutdown
@@ -114,6 +116,11 @@ func (scb *ShutdownConfigBuilder) SetRequestsFinished(requestsFinished bool) *Sh
 
 func (scb *ShutdownConfigBuilder) SetRejectRequest(rejectRequest bool) *ShutdownConfigBuilder {
 	scb.shutdownConfig.RejectRequest = rejectRequest
+	return scb
+}
+
+func (scb *ShutdownConfigBuilder) SetInternalSignal(internalSignal bool) *ShutdownConfigBuilder {
+	scb.shutdownConfig.InternalSignal = internalSignal
 	return scb
 }
 

@@ -121,6 +121,16 @@ func GetApplicationConfig() *ApplicationConfig {
 	return rootConfig.Application
 }
 
+func GetShutDown() *ShutdownConfig {
+	if err := check(); err != nil {
+		return NewShutDownConfigBuilder().Build()
+	}
+	if rootConfig.Shutdown != nil {
+		return rootConfig.Shutdown
+	}
+	return NewShutDownConfigBuilder().Build()
+}
+
 // getRegistryIds get registry ids
 func (rc *RootConfig) getRegistryIds() []string {
 	ids := make([]string, 0)
@@ -217,6 +227,7 @@ func (rc *RootConfig) Start() {
 		// todo if register consumer instance or has exported services
 		exportMetadataService()
 		registerServiceInstance()
+		gracefulShutdownInit()
 	})
 }
 
@@ -234,6 +245,7 @@ func newEmptyRootConfig() *RootConfig {
 		Metric:         NewMetricConfigBuilder().Build(),
 		Logger:         NewLoggerConfigBuilder().Build(),
 		Custom:         NewCustomConfigBuilder().Build(),
+		Shutdown:       NewShutDownConfigBuilder().Build(),
 	}
 	return newRootConfig
 }
@@ -323,6 +335,11 @@ func (rb *RootConfigBuilder) SetConfigCenter(configCenterConfig *CenterConfig) *
 
 func (rb *RootConfigBuilder) SetCustom(customConfig *CustomConfig) *RootConfigBuilder {
 	rb.rootConfig.Custom = customConfig
+	return rb
+}
+
+func (rb *RootConfigBuilder) SetShutDown(shutDownConfig *ShutdownConfig) *RootConfigBuilder {
+	rb.rootConfig.Shutdown = shutDownConfig
 	return rb
 }
 

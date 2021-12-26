@@ -53,40 +53,40 @@ import (
  */
 const defaultShutDownTime = time.Second * 60
 
-// GracefulShutdownInit todo GracefulShutdownInit in 3.0 should be discusesed.
-func GracefulShutdownInit() {
-	signals := make(chan os.Signal, 1)
-
-	signal.Notify(signals, ShutdownSignals...)
-
+func gracefulShutdownInit() {
 	// retrieve ShutdownConfig for gracefulShutdownFilter
 	if filter, ok := extension.GetFilter(constant.GracefulShutdownConsumerFilterKey).(Setter); ok && rootConfig.Shutdown != nil {
-		filter.Set(constant.GracefulShutdownFilterShutdownConfig, rootConfig.Shutdown)
+		filter.Set(constant.GracefulShutdownFilterShutdownConfig, GetShutDown())
 	}
 
 	if filter, ok := extension.GetFilter(constant.GracefulShutdownProviderFilterKey).(Setter); ok && rootConfig.Shutdown != nil {
-		filter.Set(constant.GracefulShutdownFilterShutdownConfig, rootConfig.Shutdown)
+		filter.Set(constant.GracefulShutdownFilterShutdownConfig, GetShutDown())
 	}
 
-	go func() {
-		select {
-		case sig := <-signals:
-			logger.Infof("get signal %s, applicationConfig will shutdown.", sig)
-			// gracefulShutdownOnce.Do(func() {
-			time.AfterFunc(totalTimeout(), func() {
-				logger.Warn("Shutdown gracefully timeout, applicationConfig will shutdown immediately. ")
-				os.Exit(0)
-			})
-			BeforeShutdown()
-			// those signals' original behavior is exit with dump ths stack, so we try to keep the behavior
-			for _, dumpSignal := range DumpHeapShutdownSignals {
-				if sig == dumpSignal {
-					debug.WriteHeapDump(os.Stdout.Fd())
+	if GetShutDown().InternalSignal {
+		signals := make(chan os.Signal, 1)
+		signal.Notify(signals, ShutdownSignals...)
+
+		go func() {
+			select {
+			case sig := <-signals:
+				logger.Infof("get signal %s, applicationConfig will shutdown.", sig)
+				// gracefulShutdownOnce.Do(func() {
+				time.AfterFunc(totalTimeout(), func() {
+					logger.Warn("Shutdown gracefully timeout, applicationConfig will shutdown immediately. ")
+					os.Exit(0)
+				})
+				BeforeShutdown()
+				// those signals' original behavior is exit with dump ths stack, so we try to keep the behavior
+				for _, dumpSignal := range DumpHeapShutdownSignals {
+					if sig == dumpSignal {
+						debug.WriteHeapDump(os.Stdout.Fd())
+					}
 				}
+				os.Exit(0)
 			}
-			os.Exit(0)
-		}
-	}()
+		}()
+	}
 }
 
 // BeforeShutdown provides processing flow before shutdown
