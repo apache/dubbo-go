@@ -291,7 +291,7 @@ func createRegisterParam(url *common.URL, serviceName string) *api.InstanceRegis
 	})
 	metadata[constant.PolarisDubboPath] = url.Path
 
-	return &api.InstanceRegisterRequest{
+	req := &api.InstanceRegisterRequest{
 		InstanceRegisterRequest: model.InstanceRegisterRequest{
 			Service:   serviceName,
 			Namespace: url.GetParam(constant.PolarisNamespace, constant.PolarisDefaultNamespace),
@@ -301,6 +301,10 @@ func createRegisterParam(url *common.URL, serviceName string) *api.InstanceRegis
 			Metadata:  metadata,
 		},
 	}
+
+	req.SetTTL(5)
+
+	return req
 }
 
 // createDeregisterParam convert dubbo url to polaris instance deregister request
