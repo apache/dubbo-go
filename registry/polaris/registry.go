@@ -46,7 +46,8 @@ var localIP = ""
 
 const (
 	// RegistryConnDelay registry connection delay
-	RegistryConnDelay = 3
+	RegistryConnDelay                  = 3
+	defaultHeartbeatIntervalSec = 5
 )
 
 func init() {
@@ -302,7 +303,7 @@ func createRegisterParam(url *common.URL, serviceName string) *api.InstanceRegis
 		},
 	}
 
-	req.SetTTL(5)
+	req.SetTTL(defaultHeartbeatIntervalSec)
 
 	return req
 }
