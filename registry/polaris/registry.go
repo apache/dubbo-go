@@ -46,7 +46,7 @@ var localIP = ""
 
 const (
 	// RegistryConnDelay registry connection delay
-	RegistryConnDelay                  = 3
+	RegistryConnDelay           = 3
 	defaultHeartbeatIntervalSec = 5
 )
 
