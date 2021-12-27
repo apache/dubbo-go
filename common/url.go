@@ -613,11 +613,7 @@ func (c *URL) GetMethodParamInt64(method string, key string, d int64) int64 {
 
 // GetMethodParam gets method param
 func (c *URL) GetMethodParam(method string, key string, d string) string {
-	r := c.GetParam("methods."+method+"."+key, "")
-	if r == "" {
-		r = d
-	}
-	return r
+	return c.GetParam("methods."+method+"."+key, d)
 }
 
 // GetMethodParamBool judge whether @method param exists or not

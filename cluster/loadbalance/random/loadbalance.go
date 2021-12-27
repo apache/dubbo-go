@@ -32,16 +32,16 @@ func init() {
 	extension.SetLoadbalance(constant.LoadBalanceKeyRandom, NewRandomLoadBalance)
 }
 
-type randomLoadBalance struct{}
+type RandomLoadBalance struct{}
 
 // NewRandomLoadBalance returns a random load balance instance.
 //
 // Set random probabilities by weight, and the request will be sent to provider randomly.
 func NewRandomLoadBalance() loadbalance.LoadBalance {
-	return &randomLoadBalance{}
+	return &RandomLoadBalance{}
 }
 
-func (lb *randomLoadBalance) Select(invokers []protocol.Invoker, invocation protocol.Invocation) protocol.Invoker {
+func (lb *RandomLoadBalance) Select(invokers []protocol.Invoker, invocation protocol.Invocation) protocol.Invoker {
 	var length int
 	if length = len(invokers); length == 1 {
 		return invokers[0]

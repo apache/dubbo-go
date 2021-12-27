@@ -49,18 +49,18 @@ var (
 	instance loadbalance.LoadBalance
 )
 
-type p2cLoadBalance struct{}
+type P2CLoadBalance struct{}
 
 func newP2CLoadBalance() loadbalance.LoadBalance {
 	if instance == nil {
 		once.Do(func() {
-			instance = &p2cLoadBalance{}
+			instance = &P2CLoadBalance{}
 		})
 	}
 	return instance
 }
 
-func (l *p2cLoadBalance) Select(invokers []protocol.Invoker, invocation protocol.Invocation) protocol.Invoker {
+func (l *P2CLoadBalance) Select(invokers []protocol.Invoker, invocation protocol.Invocation) protocol.Invoker {
 	if len(invokers) == 0 {
 		return nil
 	}

@@ -18,7 +18,11 @@
 package base
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	ivkmock "dubbo.apache.org/dubbo-go/v3/protocol/mock"
 	"fmt"
+	"github.com/golang/mock/gomock"
 	"testing"
 )
 
@@ -28,6 +32,7 @@ import (
 
 import (
 	clusterpkg "dubbo.apache.org/dubbo-go/v3/cluster/cluster"
+	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/p2c"
 	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/random"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
@@ -72,4 +77,58 @@ func TestStickyNormalWhenError(t *testing.T) {
 	invoked = append(invoked, result)
 	result1 := base.DoSelect(random.NewRandomLoadBalance(), invocation.NewRPCInvocation(baseClusterInvokerMethodName, nil, nil), invokers, invoked)
 	assert.NotEqual(t, result, result1)
+}
+
+func TestGetLoadBalance(t *testing.T) {
+
+	t.Run("Default", func(t *testing.T) {
+		ivk := genInvoker(t, 0)
+		lb := GetLoadBalance(ivk, "")
+		_, ok := lb.(*random.RandomLoadBalance)
+		assert.True(t, ok)
+	})
+	
+	t.Run("Method Param", func(t *testing.T) {
+		method := "TestMethod"
+		ivk := genInvoker(t, 0)
+		ivk.GetURL().SetParam(fmt.Sprintf("methods.%s.%s", method, constant.LoadbalanceKey),
+			constant.LoadBalanceKeyP2C)
+		lb := GetLoadBalance(ivk, method)
+		_, ok := lb.(*p2c.P2CLoadBalance)
+		assert.True(t, ok)
+	})
+
+}
+
+func TestDoSelectInvoker(t *testing.T) {
+
+	t.Run("one healthy invoker", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		url, err := common.NewURL(fmt.Sprintf(baseClusterInvokerFormat, 0))
+		assert.Nil(t, err)
+
+		m := ivkmock.NewMockInvoker(ctrl)
+		m.EXPECT().IsAvailable().Return(true)
+		m.EXPECT().GetUrl().Return(url)
+
+		defaultLb := extension.GetLoadbalance(constant.DefaultLoadBalance)
+		clusterInvoker := &BaseClusterInvoker{}
+		invoc := &invocation.RPCInvocation{}
+		ivk := clusterInvoker.doSelectInvoker(defaultLb, invoc, []protocol.Invoker{m}, []protocol.Invoker{})
+
+		assert.Equal(t, url.String(), ivk.GetURL().String())
+	})
+	
+	t.Run("one unhealthy invoker", func(t *testing.T) {
+		
+	})
+
+}
+
+func genInvoker(t *testing.T, index int) *protocol.BaseInvoker {
+	url, err := common.NewURL(fmt.Sprintf(baseClusterInvokerFormat, index))
+	assert.Nil(t, err)
+	return protocol.NewBaseInvoker(url)
 }
