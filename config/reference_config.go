@@ -266,6 +266,7 @@ func (rc *ReferenceConfig) getURLMap() url.Values {
 
 	urlMap.Set(constant.ReleaseKey, "dubbo-golang-"+constant.Version)
 	urlMap.Set(constant.SideKey, (common.RoleType(common.CONSUMER)).Role())
+	urlMap.Set(constant.CategoryKey, constant.ConsumerCategory)
 
 	if len(rc.RequestTimeout) != 0 {
 		urlMap.Set(constant.TimeoutKey, rc.RequestTimeout)
