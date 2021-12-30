@@ -18,6 +18,8 @@
 package nacos
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"net/url"
 	"testing"
 	"time"
 )
@@ -32,8 +34,14 @@ import (
 
 func TestNewNacosClient(t *testing.T) {
 
-	nacosURL := "registry://127.0.0.1:8848"
-	registryUrl, _ := common.NewURL(nacosURL)
+	params := url.Values{}
+	params.Set(constant.NacosNotLoadLocalCache, "true")
+
+	params.Set(constant.NacosNamespaceID, "nacos")
+	params.Set(constant.TimeoutKey, "5s")
+	params.Set(constant.ClientNameKey, "nacos-client")
+
+	registryUrl, _ := common.NewURL("registry://127.0.0.1:8848", common.WithParams(params))
 
 	c := &nacosDynamicConfiguration{
 		url:  registryUrl,
@@ -55,8 +63,15 @@ func TestNewNacosClient(t *testing.T) {
 }
 
 func TestSetNacosClient(t *testing.T) {
-	nacosURL := "registry://127.0.0.1:8848"
-	registryUrl, _ := common.NewURL(nacosURL)
+
+	params := url.Values{}
+	params.Set(constant.NacosNotLoadLocalCache, "true")
+
+	params.Set(constant.NacosNamespaceID, "nacos")
+	params.Set(constant.TimeoutKey, "5s")
+	params.Set(constant.ClientNameKey, "nacos-client")
+
+	registryUrl, _ := common.NewURL("registry://127.0.0.1:8848", common.WithParams(params))
 
 	c := &nacosDynamicConfiguration{
 		url:  registryUrl,
@@ -78,9 +93,16 @@ func TestSetNacosClient(t *testing.T) {
 }
 
 func TestNewNacosClient_connectError(t *testing.T) {
-	nacosURL := "registry://127.0.0.1:8848"
-	registryUrl, err := common.NewURL(nacosURL)
-	assert.NoError(t, err)
+	params := url.Values{}
+	params.Set(constant.NacosNotLoadLocalCache, "true")
+
+	params.Set(constant.NacosNamespaceID, "nacos")
+	params.Set(constant.TimeoutKey, "5s")
+	params.Set(constant.ClientNameKey, "nacos-client")
+
+	registryUrl, err := common.NewURL("registry://127.0.0.1:8848", common.WithParams(params))
+
+	assert.Nil(t, err)
 	c := &nacosDynamicConfiguration{
 		url:  registryUrl,
 		done: make(chan struct{}),
