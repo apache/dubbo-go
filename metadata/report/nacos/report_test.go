@@ -59,7 +59,7 @@ func TestNacosMetadataReport_CRUD(t *testing.T) {
 	serviceUrl, _ := common.NewURL("registry://console.nacos.io:80",
 		common.WithParamsValue(constant.RegistryRoleKey, strconv.Itoa(common.PROVIDER)),
 		common.WithParamsValue(constant.ClientNameKey, "nacos-client"))
-	
+
 	err = rpt.SaveServiceMetadata(serviceMi, serviceUrl)
 	assert.Nil(t, err)
 
