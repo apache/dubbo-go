@@ -39,8 +39,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config"
 )
 
-const nacosClientName = "nacos-client"
-
 // NewNacosConfigClientByUrl read the config from url and build an instance
 func NewNacosConfigClientByUrl(url *common.URL) (*nacosClient.NacosConfigClient, error) {
 	sc, cc, err := GetNacosConfig(url)
@@ -138,5 +136,5 @@ func NewNacosClientByURL(url *common.URL) (*nacosClient.NacosNamingClient, error
 		return nil, perrors.New("nacos client name must set")
 	}
 	logger.Infof("[Nacos Client] New nacos client with config = %+v", scs)
-	return nacosClient.NewNacosNamingClient(nacosClientName, true, scs, cc)
+	return nacosClient.NewNacosNamingClient(clientName, true, scs, cc)
 }
