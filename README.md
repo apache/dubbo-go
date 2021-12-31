@@ -10,7 +10,7 @@
 
 [中文 🇨🇳](./README_CN.md)
 
-Apache Dubbo-go, a Dubbo implementation written in Golang, is born to bridge the gap between Java and Golang. Please visit our [Dubbo official website](https://dubbo.apache.org/zh/docs/languages/golang/) for the quick start and documentation.
+Apache Dubbo-go, a Dubbo implementation written in Golang, is born to bridge the gap between Java/Dubbo and Go/X. Please visit our [Dubbo official website](https://dubbo.apache.org/zh/docs/languages/golang/) for the quick start and documentation.
 
 ## RPC Invocation
 
