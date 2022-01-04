@@ -26,21 +26,21 @@ import (
 )
 
 func init() {
-	extension.SetCluster(constant.ClusterKeyFailover, newCluster)
+	extension.SetCluster(constant.ClusterKeyFailover, newFailoverCluster)
 }
 
-type cluster struct{}
+type failoverCluster struct{}
 
-// newCluster returns a failover cluster instance
+// newFailoverCluster returns a failoverCluster instance
 //
 // Failure automatically switch, when there is a failure,
 // retry the other server (default). Usually used for read operations,
 // but retries can result in longer delays.
-func newCluster() clusterpkg.Cluster {
-	return &cluster{}
+func newFailoverCluster() clusterpkg.Cluster {
+	return &failoverCluster{}
 }
 
 // Join returns a baseClusterInvoker instance
-func (cluster *cluster) Join(directory directory.Directory) protocol.Invoker {
-	return clusterpkg.BuildInterceptorChain(newClusterInvoker(directory))
+func (cluster *failoverCluster) Join(directory directory.Directory) protocol.Invoker {
+	return clusterpkg.BuildInterceptorChain(newFailoverClusterInvoker(directory))
 }

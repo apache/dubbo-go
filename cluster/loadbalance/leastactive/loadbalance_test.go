@@ -34,7 +34,7 @@ import (
 )
 
 func TestLeastActiveSelect(t *testing.T) {
-	loadBalance := newLoadBalance()
+	loadBalance := newLeastActiveLoadBalance()
 
 	var invokers []protocol.Invoker
 
@@ -51,7 +51,7 @@ func TestLeastActiveSelect(t *testing.T) {
 }
 
 func TestLeastActiveByWeight(t *testing.T) {
-	loadBalance := newLoadBalance()
+	loadBalance := newLeastActiveLoadBalance()
 
 	var invokers []protocol.Invoker
 	loop := 3

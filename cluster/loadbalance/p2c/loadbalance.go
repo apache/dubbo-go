@@ -34,8 +34,14 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
+var (
+	randSeed = func() int64 {
+		return time.Now().Unix()
+	}
+)
+
 func init() {
-	extension.SetLoadbalance(constant.LoadBalanceKeyP2C, newLoadBalance)
+	extension.SetLoadbalance(constant.LoadBalanceKeyP2C, newP2CLoadBalance)
 }
 
 var (
@@ -43,18 +49,18 @@ var (
 	instance loadbalance.LoadBalance
 )
 
-type loadBalance struct{}
+type p2cLoadBalance struct{}
 
-func newLoadBalance() loadbalance.LoadBalance {
+func newP2CLoadBalance() loadbalance.LoadBalance {
 	if instance == nil {
 		once.Do(func() {
-			instance = &loadBalance{}
+			instance = &p2cLoadBalance{}
 		})
 	}
 	return instance
 }
 
-func (l *loadBalance) Select(invokers []protocol.Invoker, invocation protocol.Invocation) protocol.Invoker {
+func (l *p2cLoadBalance) Select(invokers []protocol.Invoker, invocation protocol.Invocation) protocol.Invoker {
 	if len(invokers) == 0 {
 		return nil
 	}
@@ -69,25 +75,23 @@ func (l *loadBalance) Select(invokers []protocol.Invoker, invocation protocol.In
 	if len(invokers) == 2 {
 		i, j = 0, 1
 	} else {
-		rand.Seed(time.Now().Unix())
+		rand.Seed(randSeed())
 		i = rand.Intn(len(invokers))
 		j = i
 		for i == j {
 			j = rand.Intn(len(invokers))
 		}
 	}
-	logger.Debugf("[P2C select] Two invokers were selected, i: %d, j: %d, invoker[i]: %s, invoker[j]: %s.",
-		i, j, invokers[i], invokers[j])
+	logger.Debugf("[P2C select] Two invokers were selected, invoker[%d]: %s, invoker[%d]: %s.",
+		i, invokers[i], j, invokers[j])
 
-	// TODO(justxuewei): please consider how to get the real method name from $invoke,
-	// 	see also [#1511](https://github.com/apache/dubbo-go/issues/1511)
-	methodName := invocation.MethodName()
+	methodName := invocation.ActualMethodName()
 	// remainingIIface, remainingJIface means remaining capacity of node i and node j.
 	// If one of the metrics is empty, invoke the invocation to that node directly.
 	remainingIIface, err := m.GetMethodMetrics(invokers[i].GetURL(), methodName, metrics.HillClimbing)
 	if err != nil {
 		if errors.Is(err, metrics.ErrMetricsNotFound) {
-			logger.Debugf("[P2C select] The invoker[i] was selected, because it hasn't been selected before.")
+			logger.Debugf("[P2C select] The invoker[%d] was selected, because it hasn't been selected before.", i)
 			return invokers[i]
 		}
 		logger.Warnf("get method metrics err: %v", err)
@@ -97,7 +101,7 @@ func (l *loadBalance) Select(invokers []protocol.Invoker, invocation protocol.In
 	remainingJIface, err := m.GetMethodMetrics(invokers[j].GetURL(), methodName, metrics.HillClimbing)
 	if err != nil {
 		if errors.Is(err, metrics.ErrMetricsNotFound) {
-			logger.Debugf("[P2C select] The invoker[j] was selected, because it hasn't been selected before.")
+			logger.Debugf("[P2C select] The invoker[%d] was selected, because it hasn't been selected before.", j)
 			return invokers[j]
 		}
 		logger.Warnf("get method metrics err: %v", err)
@@ -116,14 +120,14 @@ func (l *loadBalance) Select(invokers []protocol.Invoker, invocation protocol.In
 		panic(fmt.Sprintf("the type of %s expects to be uint64, but gets %T", metrics.HillClimbing, remainingJIface))
 	}
 
-	logger.Debugf("[P2C select] The invoker[i] remaining is %d, and the invoker[j] is %d.", remainingI, remainingJ)
+	logger.Debugf("[P2C select] The invoker[%d] remaining is %d, and the invoker[%d] is %d.", i, remainingI, j, remainingJ)
 
 	// For the remaining capacity, the bigger, the better.
 	if remainingI > remainingJ {
-		logger.Debugf("[P2C select] The invoker[i] was selected.")
+		logger.Debugf("[P2C select] The invoker[%d] was selected.", i)
 		return invokers[i]
 	}
 
-	logger.Debugf("[P2C select] The invoker[j] was selected.")
+	logger.Debugf("[P2C select] The invoker[%d] was selected.", j)
 	return invokers[j]
 }

@@ -43,7 +43,7 @@ func (iv *testMockSeataInvoker) Invoke(ctx context.Context, _ protocol.Invocatio
 			return &protocol.RPCResult{Rest: xid}
 		}
 	}
-	return protocol.NewRPCResult(nil, nil)
+	return &protocol.RPCResult{}
 }
 
 func TestSeataFilter_Invoke(t *testing.T) {

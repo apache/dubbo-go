@@ -48,9 +48,10 @@ const (
 )
 
 const (
-	DefaultKey = "default"
-	Generic    = "$invoke"
-	Echo       = "$echo"
+	DefaultKey   = "default"
+	Generic      = "$invoke"
+	GenericAsync = "$invokeAsync"
+	Echo         = "$echo"
 )
 
 // default filters

@@ -26,20 +26,20 @@ import (
 )
 
 func init() {
-	extension.SetCluster(constant.ClusterKeyFailfast, NewCluster)
+	extension.SetCluster(constant.ClusterKeyFailfast, newFailfastCluster)
 }
 
-type cluster struct{}
+type failfastCluster struct{}
 
-// NewCluster returns a failfast cluster instance.
+// newFailfastCluster returns a failfastCluster instance.
 //
 // Fast failure, only made a call, failure immediately error. Usually used for non-idempotent write operations,
 // such as adding records.
-func NewCluster() clusterpkg.Cluster {
-	return &cluster{}
+func newFailfastCluster() clusterpkg.Cluster {
+	return &failfastCluster{}
 }
 
 // Join returns a baseClusterInvoker instance
-func (cluster *cluster) Join(directory directory.Directory) protocol.Invoker {
-	return clusterpkg.BuildInterceptorChain(newClusterInvoker(directory))
+func (cluster *failfastCluster) Join(directory directory.Directory) protocol.Invoker {
+	return clusterpkg.BuildInterceptorChain(newFailfastClusterInvoker(directory))
 }

@@ -25,6 +25,8 @@ import (
 import (
 	hessian "github.com/apache/dubbo-go-hessian2"
 
+	"github.com/knadh/koanf"
+
 	perrors "github.com/pkg/errors"
 
 	"go.uber.org/atomic"
@@ -35,6 +37,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/metadata/service/exporter"
 )
 
@@ -378,4 +381,24 @@ func publishMapping(sc exporter.MetadataServiceExporter) error {
 		}
 	}
 	return nil
+}
+
+// Process receive changing listener's event, dynamic update config
+func (rc *RootConfig) Process(event *config_center.ConfigChangeEvent) {
+	logger.Infof("CenterConfig process event:\n%+v", event)
+	config := NewLoaderConf(WithBytes([]byte(event.Value.(string))))
+	koan := GetConfigResolver(config)
+
+	updateRootConfig := &RootConfig{}
+	if err := koan.UnmarshalWithConf(rc.Prefix(),
+		updateRootConfig, koanf.UnmarshalConf{Tag: "yaml"}); err != nil {
+		logger.Errorf("CenterConfig process unmarshalConf failed, got error %#v", err)
+		return
+	}
+
+	// update register
+	for registerId, updateRegister := range updateRootConfig.Registries {
+		register := rc.Registries[registerId]
+		register.UpdateProperties(updateRegister)
+	}
 }
