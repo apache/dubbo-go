@@ -46,7 +46,7 @@ var availableUrl, _ = common.NewURL(fmt.Sprintf("dubbo://%s:%d/com.ikurento.user
 	constant.LocalHostValue, constant.DefaultPort))
 
 func registerAvailable(invoker *mock.MockInvoker) protocol.Invoker {
-	extension.SetLoadbalance("random", random.NewLoadBalance)
+	extension.SetLoadbalance("random", random.NewRandomLoadBalance)
 	availableCluster := NewAvailableCluster()
 
 	invokers := []protocol.Invoker{}
@@ -65,7 +65,7 @@ func TestAvailableClusterInvokerSuccess(t *testing.T) {
 	invoker := mock.NewMockInvoker(ctrl)
 	clusterInvoker := registerAvailable(invoker)
 
-	mockResult := protocol.NewRPCResult(clusterpkg.Rest{Tried: 0, Success: true}, nil)
+	mockResult := &protocol.RPCResult{Rest: clusterpkg.Rest{Tried: 0, Success: true}}
 	invoker.EXPECT().IsAvailable().Return(true)
 	invoker.EXPECT().Invoke(gomock.Any()).Return(mockResult)
 

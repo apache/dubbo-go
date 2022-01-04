@@ -29,19 +29,19 @@ import (
 )
 
 func init() {
-	extension.SetLoadbalance(constant.LoadBalanceKeyRandom, NewLoadBalance)
+	extension.SetLoadbalance(constant.LoadBalanceKeyRandom, NewRandomLoadBalance)
 }
 
-type loadBalance struct{}
+type randomLoadBalance struct{}
 
-// NewLoadBalance returns a random load balance instance.
+// NewRandomLoadBalance returns a random load balance instance.
 //
 // Set random probabilities by weight, and the request will be sent to provider randomly.
-func NewLoadBalance() loadbalance.LoadBalance {
-	return &loadBalance{}
+func NewRandomLoadBalance() loadbalance.LoadBalance {
+	return &randomLoadBalance{}
 }
 
-func (lb *loadBalance) Select(invokers []protocol.Invoker, invocation protocol.Invocation) protocol.Invoker {
+func (lb *randomLoadBalance) Select(invokers []protocol.Invoker, invocation protocol.Invocation) protocol.Invoker {
 	var length int
 	if length = len(invokers); length == 1 {
 		return invokers[0]

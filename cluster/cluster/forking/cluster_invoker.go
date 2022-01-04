@@ -35,17 +35,17 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
-type clusterInvoker struct {
-	base.ClusterInvoker
+type forkingClusterInvoker struct {
+	base.BaseClusterInvoker
 }
 
-func newClusterInvoker(directory directory.Directory) protocol.Invoker {
-	return &clusterInvoker{
-		ClusterInvoker: base.NewClusterInvoker(directory),
+func newForkingClusterInvoker(directory directory.Directory) protocol.Invoker {
+	return &forkingClusterInvoker{
+		BaseClusterInvoker: base.NewBaseClusterInvoker(directory),
 	}
 }
 
-func (invoker *clusterInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
+func (invoker *forkingClusterInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 	if err := invoker.CheckWhetherDestroyed(); err != nil {
 		return &protocol.RPCResult{Err: err}
 	}
@@ -61,7 +61,7 @@ func (invoker *clusterInvoker) Invoke(ctx context.Context, invocation protocol.I
 	if forks < 0 || forks > len(invokers) {
 		selected = invokers
 	} else {
-		loadBalance := base.GetLoadBalance(invokers[0], invocation)
+		loadBalance := base.GetLoadBalance(invokers[0], invocation.ActualMethodName())
 		for i := 0; i < forks; i++ {
 			if ivk := invoker.DoSelect(loadBalance, invocation, invokers, selected); ivk != nil {
 				selected = append(selected, ivk)

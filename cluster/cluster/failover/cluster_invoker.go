@@ -36,17 +36,17 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
-type clusterInvoker struct {
-	base.ClusterInvoker
+type failoverClusterInvoker struct {
+	base.BaseClusterInvoker
 }
 
-func newClusterInvoker(directory directory.Directory) protocol.Invoker {
-	return &clusterInvoker{
-		ClusterInvoker: base.NewClusterInvoker(directory),
+func newFailoverClusterInvoker(directory directory.Directory) protocol.Invoker {
+	return &failoverClusterInvoker{
+		BaseClusterInvoker: base.NewBaseClusterInvoker(directory),
 	}
 }
 
-func (invoker *clusterInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
+func (invoker *failoverClusterInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 	var (
 		result    protocol.Result
 		invoked   []protocol.Invoker
@@ -59,9 +59,9 @@ func (invoker *clusterInvoker) Invoke(ctx context.Context, invocation protocol.I
 		return &protocol.RPCResult{Err: err}
 	}
 
-	methodName := invocation.MethodName()
+	methodName := invocation.ActualMethodName()
 	retries := getRetries(invokers, methodName)
-	loadBalance := base.GetLoadBalance(invokers[0], invocation)
+	loadBalance := base.GetLoadBalance(invokers[0], methodName)
 
 	for i := 0; i <= retries; i++ {
 		// Reselect before retry to avoid a change of candidate `invokers`.

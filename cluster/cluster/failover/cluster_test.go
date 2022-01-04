@@ -41,8 +41,8 @@ import (
 
 // nolint
 func normalInvoke(successCount int, urlParam url.Values, invocations ...*invocation.RPCInvocation) protocol.Result {
-	extension.SetLoadbalance("random", random.NewLoadBalance)
-	failoverCluster := newCluster()
+	extension.SetLoadbalance("random", random.NewRandomLoadBalance)
+	failoverCluster := newFailoverCluster()
 
 	var invokers []protocol.Invoker
 	for i := 0; i < 10; i++ {
@@ -97,8 +97,8 @@ func TestFailoverInvoke2(t *testing.T) {
 
 // nolint
 func TestFailoverDestroy(t *testing.T) {
-	extension.SetLoadbalance("random", random.NewLoadBalance)
-	failoverCluster := newCluster()
+	extension.SetLoadbalance("random", random.NewRandomLoadBalance)
+	failoverCluster := newFailoverCluster()
 
 	invokers := []protocol.Invoker{}
 	for i := 0; i < 10; i++ {

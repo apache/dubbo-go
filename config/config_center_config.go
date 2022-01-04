@@ -160,6 +160,8 @@ func startConfigCenter(rc *RootConfig) error {
 	if err = koan.UnmarshalWithConf(rc.Prefix(), rc, koanf.UnmarshalConf{Tag: "yaml"}); err != nil {
 		return err
 	}
+
+	dynamicConfig.AddListener(cc.DataId, rc, config_center.WithGroup(cc.Group))
 	return nil
 }
 

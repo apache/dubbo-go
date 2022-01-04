@@ -59,7 +59,7 @@ func newGenericServiceFilter() filter.Filter {
 	return serviceGeneric
 }
 func (f *genericServiceFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
-	if !isGenericInvocation(invocation) {
+	if !invocation.IsGenericInvocation() {
 		return invoker.Invoke(ctx, invocation)
 	}
 
@@ -124,7 +124,7 @@ func (f *genericServiceFilter) Invoke(ctx context.Context, invoker protocol.Invo
 }
 
 func (f *genericServiceFilter) OnResponse(_ context.Context, result protocol.Result, _ protocol.Invoker, invocation protocol.Invocation) protocol.Result {
-	if isGenericInvocation(invocation) && result.Result() != nil {
+	if invocation.IsGenericInvocation() && result.Result() != nil {
 		// get generic info from attachments of invocation, the default value is "true"
 		generic := invocation.AttachmentsByKey(constant.GenericKey, constant.GenericSerializationDefault)
 		// get generalizer according to value in the `generic`

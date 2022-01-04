@@ -37,25 +37,25 @@ import (
 )
 
 type adaptiveServiceClusterInvoker struct {
-	base.ClusterInvoker
+	base.BaseClusterInvoker
 }
 
 func newAdaptiveServiceClusterInvoker(directory directory.Directory) protocol.Invoker {
 	return &adaptiveServiceClusterInvoker{
-		ClusterInvoker: base.NewClusterInvoker(directory),
+		BaseClusterInvoker: base.NewBaseClusterInvoker(directory),
 	}
 }
 
 func (ivk *adaptiveServiceClusterInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 	invokers := ivk.Directory.List(invocation)
 	if err := ivk.CheckInvokers(invokers, invocation); err != nil {
-		return protocol.NewRPCResult(nil, err)
+		return &protocol.RPCResult{Err: err}
 	}
 
 	// get loadBalance
 	lbKey := invokers[0].GetURL().GetParam(constant.LoadbalanceKey, constant.LoadBalanceKeyP2C)
 	if lbKey != constant.LoadBalanceKeyP2C {
-		return protocol.NewRPCResult(nil, perrors.Errorf("adaptive service not supports %s load balance", lbKey))
+		return &protocol.RPCResult{Err: perrors.Errorf("adaptive service not supports %s load balance", lbKey)}
 	}
 	lb := extension.GetLoadbalance(lbKey)
 
@@ -78,7 +78,7 @@ func (ivk *adaptiveServiceClusterInvoker) Invoke(ctx context.Context, invocation
 		invocation.MethodName(), metrics.HillClimbing, uint64(remaining))
 	if err != nil {
 		logger.Warnf("adaptive service metrics update is failed, err: %v", err)
-		return protocol.NewRPCResult(nil, err)
+		return &protocol.RPCResult{Err: err}
 	}
 
 	return result

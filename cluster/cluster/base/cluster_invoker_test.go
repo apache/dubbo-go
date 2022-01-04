@@ -46,11 +46,11 @@ func TestStickyNormal(t *testing.T) {
 		url.SetParam("sticky", "true")
 		invokers = append(invokers, clusterpkg.NewMockInvoker(url, 1))
 	}
-	base := &ClusterInvoker{}
+	base := &BaseClusterInvoker{}
 	base.AvailableCheck = true
 	var invoked []protocol.Invoker
 
-	tmpRandomBalance := random.NewLoadBalance()
+	tmpRandomBalance := random.NewRandomLoadBalance()
 	tmpInvocation := invocation.NewRPCInvocation(baseClusterInvokerMethodName, nil, nil)
 	result := base.DoSelect(tmpRandomBalance, tmpInvocation, invokers, invoked)
 	result1 := base.DoSelect(tmpRandomBalance, tmpInvocation, invokers, invoked)
@@ -64,12 +64,12 @@ func TestStickyNormalWhenError(t *testing.T) {
 		url.SetParam("sticky", "true")
 		invokers = append(invokers, clusterpkg.NewMockInvoker(url, 1))
 	}
-	base := &ClusterInvoker{}
+	base := &BaseClusterInvoker{}
 	base.AvailableCheck = true
 
 	var invoked []protocol.Invoker
-	result := base.DoSelect(random.NewLoadBalance(), invocation.NewRPCInvocation(baseClusterInvokerMethodName, nil, nil), invokers, invoked)
+	result := base.DoSelect(random.NewRandomLoadBalance(), invocation.NewRPCInvocation(baseClusterInvokerMethodName, nil, nil), invokers, invoked)
 	invoked = append(invoked, result)
-	result1 := base.DoSelect(random.NewLoadBalance(), invocation.NewRPCInvocation(baseClusterInvokerMethodName, nil, nil), invokers, invoked)
+	result1 := base.DoSelect(random.NewRandomLoadBalance(), invocation.NewRPCInvocation(baseClusterInvokerMethodName, nil, nil), invokers, invoked)
 	assert.NotEqual(t, result, result1)
 }

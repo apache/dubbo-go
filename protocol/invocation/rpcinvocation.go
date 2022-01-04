@@ -29,6 +29,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
+var _ protocol.Invocation = (*RPCInvocation)(nil)
+
 // todo: is it necessary to separate fields of consumer(provider) from RPCInvocation
 // nolint
 type RPCInvocation struct {
@@ -73,6 +75,23 @@ func NewRPCInvocationWithOptions(opts ...option) *RPCInvocation {
 // MethodName gets RPC invocation method name.
 func (r *RPCInvocation) MethodName() string {
 	return r.methodName
+}
+
+// ActualMethodName gets actual invocation method name. It returns the method name been called if it's a generic call
+func (r *RPCInvocation) ActualMethodName() string {
+	if r.IsGenericInvocation() {
+		return r.Arguments()[0].(string)
+	} else {
+		return r.MethodName()
+	}
+}
+
+// IsGenericInvocation gets if this is a generic invocation
+func (r *RPCInvocation) IsGenericInvocation() bool {
+	return (r.MethodName() == constant.Generic ||
+		r.MethodName() == constant.GenericAsync) &&
+		r.Arguments() != nil &&
+		len(r.Arguments()) == 3
 }
 
 // ParameterTypes gets RPC invocation parameter types.
