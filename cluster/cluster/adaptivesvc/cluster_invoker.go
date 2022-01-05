@@ -36,6 +36,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
+var _ protocol.Invoker = (*adaptiveServiceClusterInvoker)(nil)
+
 type adaptiveServiceClusterInvoker struct {
 	base.BaseClusterInvoker
 }

@@ -171,7 +171,7 @@ func (r *RPCInvocation) ServiceKey() string {
 		r.GetAttachmentWithDefaultValue(constant.GroupKey, ""), r.GetAttachmentWithDefaultValue(constant.VersionKey, ""))
 }
 
-func (r *RPCInvocation) SetAttachment(key string, value string) {
+func (r *RPCInvocation) SetAttachment(key string, value interface{}) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 	if r.attachments == nil {

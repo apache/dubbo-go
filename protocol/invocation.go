@@ -45,7 +45,7 @@ type Invocation interface {
 	IsGenericInvocation() bool
 
 	Attachments() map[string]interface{}
-	SetAttachment(key string, value string)
+	SetAttachment(key string, value interface{})
 	GetAttachment(key string) (string, bool)
 	GetAttachmentInterface(string) interface{}
 	GetAttachmentWithDefaultValue(key string, defaultValue string) string
