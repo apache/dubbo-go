@@ -478,6 +478,10 @@ func (e *exporterChangeableWrapper) SetSubscribeUrl(subscribeUrl *common.URL) {
 	e.subscribeUrl = subscribeUrl
 }
 
+func (e *exporterChangeableWrapper) GetInvoker() protocol.Invoker {
+	return e.originInvoker
+}
+
 func newExporterChangeableWrapper(originInvoker protocol.Invoker, exporter protocol.Exporter) *exporterChangeableWrapper {
 	return &exporterChangeableWrapper{
 		originInvoker: originInvoker,

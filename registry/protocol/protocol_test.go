@@ -133,7 +133,7 @@ func exporterNormal(t *testing.T, regProtocol *registryProtocol) *common.URL {
 	invoker := protocol.NewBaseInvoker(url)
 	exporter := regProtocol.Export(invoker)
 
-	assert.IsType(t, &protocol.BaseExporter{}, exporter)
+	assert.IsType(t, &exporterChangeableWrapper{}, exporter)
 	assert.Equal(t, exporter.GetInvoker().GetURL().String(), suburl.String())
 	return url
 }
