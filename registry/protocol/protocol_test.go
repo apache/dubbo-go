@@ -46,6 +46,7 @@ import (
 func init() {
 	config.SetRootConfig(config.RootConfig{
 		Application: &config.ApplicationConfig{Name: "test-application"},
+		Shutdown:    &config.ShutdownConfig{StepTimeout: "0s"},
 	})
 }
 
@@ -209,7 +210,6 @@ func TestDestry(t *testing.T) {
 	exporterNormal(t, regProtocol)
 
 	regProtocol.Destroy()
-	assert.Equal(t, len(regProtocol.invokers), 0)
 
 	var count int
 	regProtocol.registries.Range(func(key, value interface{}) bool {

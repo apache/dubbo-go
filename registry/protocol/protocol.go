@@ -56,7 +56,6 @@ var (
 )
 
 type registryProtocol struct {
-	invokers []protocol.Invoker
 	// Registry Map<RegistryAddress, Registry>
 	registries *sync.Map
 	// To solve the problem of RMI repeated exposure port conflicts,
@@ -165,7 +164,6 @@ func (proto *registryProtocol) Refer(url *common.URL) protocol.Invoker {
 	// new cluster invoker
 	cluster := extension.GetCluster(serviceUrl.GetParam(constant.ClusterKey, constant.DefaultCluster))
 	invoker := cluster.Join(directory)
-	proto.invokers = append(proto.invokers, invoker)
 	return invoker
 }
 
@@ -479,7 +477,7 @@ func (e *exporterChangeableWrapper) SetSubscribeUrl(subscribeUrl *common.URL) {
 }
 
 func (e *exporterChangeableWrapper) GetInvoker() protocol.Invoker {
-	return e.originInvoker
+	return e.exporter.GetInvoker()
 }
 
 func newExporterChangeableWrapper(originInvoker protocol.Invoker, exporter protocol.Exporter) *exporterChangeableWrapper {
