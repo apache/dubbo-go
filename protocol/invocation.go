@@ -38,18 +38,23 @@ type Invocation interface {
 	// Reply gets response of request
 	Reply() interface{}
 	// Attachments gets all attachments
-	Attachments() map[string]interface{}
-	// AttachmentsByKey gets attachment by key , if nil then return default value. （It will be deprecated in the future）
-	AttachmentsByKey(string, string) string
-	Attachment(string) interface{}
-	// Attributes refers to dubbo 2.7.6.  It is different from attachment. It is used in internal process.
-	Attributes() map[string]interface{}
-	// AttributeByKey gets attribute by key , if nil then return default value
-	AttributeByKey(string, interface{}) interface{}
-	// SetAttachments sets attribute by @key and @value.
-	SetAttachments(key string, value interface{})
+
 	// Invoker gets the invoker in current context.
 	Invoker() Invoker
 	// IsGenericInvocation gets if this is a generic invocation
 	IsGenericInvocation() bool
+
+	Attachments() map[string]interface{}
+	SetAttachment(key string, value string)
+	GetAttachment(key string) (string, bool)
+	GetAttachmentInterface(string) interface{}
+	GetAttachmentWithDefaultValue(key string, defaultValue string) string
+
+	// Attributes firstly introduced on dubbo-java 2.7.6. It is
+	// used in internal invocation, that is, it's not passed between
+	// server and client.
+	Attributes() map[string]interface{}
+	SetAttribute(key string, value interface{})
+	GetAttribute(key string) (interface{}, bool)
+	GetAttributeWithDefaultValue(key string, defaultValue interface{}) interface{}
 }

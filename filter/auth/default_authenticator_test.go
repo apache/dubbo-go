@@ -79,10 +79,10 @@ func TestDefaultAuthenticator_Sign(t *testing.T) {
 	testurl.SetParam(constant.ParameterSignatureEnableKey, "false")
 	inv := invocation.NewRPCInvocation("test", []interface{}{"OK"}, nil)
 	_ = authenticator.Sign(inv, testurl)
-	assert.NotEqual(t, inv.AttachmentsByKey(constant.RequestSignatureKey, ""), "")
-	assert.NotEqual(t, inv.AttachmentsByKey(constant.Consumer, ""), "")
-	assert.NotEqual(t, inv.AttachmentsByKey(constant.RequestTimestampKey, ""), "")
-	assert.Equal(t, inv.AttachmentsByKey(constant.AKKey, ""), "akey")
+	assert.NotEqual(t, inv.GetAttachmentWithDefaultValue(constant.RequestSignatureKey, ""), "")
+	assert.NotEqual(t, inv.GetAttachmentWithDefaultValue(constant.Consumer, ""), "")
+	assert.NotEqual(t, inv.GetAttachmentWithDefaultValue(constant.RequestTimestampKey, ""), "")
+	assert.Equal(t, inv.GetAttachmentWithDefaultValue(constant.AKKey, ""), "akey")
 }
 
 func Test_getAccessKeyPairSuccess(t *testing.T) {

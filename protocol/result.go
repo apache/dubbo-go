@@ -31,8 +31,8 @@ type Result interface {
 	SetResult(interface{})
 	// Result gets invoker result.
 	Result() interface{}
-	// SetAttachments replaces the existing attachments with the specified param.
-	SetAttachments(map[string]interface{})
+	// SetAttachment replaces the existing attachments with the specified param.
+	SetAttachment(map[string]interface{})
 	// Attachments gets all attachments
 	Attachments() map[string]interface{}
 
@@ -71,8 +71,8 @@ func (r *RPCResult) Result() interface{} {
 	return r.Rest
 }
 
-// SetAttachments replaces the existing attachments with the specified param.
-func (r *RPCResult) SetAttachments(attr map[string]interface{}) {
+// SetAttachment replaces the existing attachments with the specified param.
+func (r *RPCResult) SetAttachment(attr map[string]interface{}) {
 	r.Attrs = attr
 }
 

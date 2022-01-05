@@ -129,65 +129,19 @@ func (r *RPCInvocation) Attachments() map[string]interface{} {
 	return r.attachments
 }
 
-// AttachmentsByKey gets RPC attachment by key, if nil then return default value.
-func (r *RPCInvocation) AttachmentsByKey(key string, defaultValue string) string {
-	r.lock.RLock()
-	defer r.lock.RUnlock()
-	if r.attachments == nil {
-		return defaultValue
-	}
-	value, ok := r.attachments[key]
-	if ok {
-		return value.(string)
-	}
-	return defaultValue
-}
-
 // Attachment returns the corresponding value from dubbo's attachment with the given key.
-func (r *RPCInvocation) Attachment(key string) interface{} {
+func (r *RPCInvocation) GetAttachmentInterface(key string) interface{} {
 	r.lock.RLock()
 	defer r.lock.RUnlock()
 	if r.attachments == nil {
 		return nil
 	}
-	value, ok := r.attachments[key]
-	if ok {
-		return value
-	}
-	return nil
+	return r.attachments[key]
 }
 
 // Attributes gets all attributes of RPC.
 func (r *RPCInvocation) Attributes() map[string]interface{} {
 	return r.attributes
-}
-
-// AttributeByKey gets attribute by @key. If it is not exist, it will return default value.
-func (r *RPCInvocation) AttributeByKey(key string, defaultValue interface{}) interface{} {
-	r.lock.RLock()
-	defer r.lock.RUnlock()
-	value, ok := r.attributes[key]
-	if ok {
-		return value
-	}
-	return defaultValue
-}
-
-// SetAttachments sets attribute by @key and @value.
-func (r *RPCInvocation) SetAttachments(key string, value interface{}) {
-	r.lock.Lock()
-	defer r.lock.Unlock()
-	if r.attachments == nil {
-		r.attachments = make(map[string]interface{})
-	}
-	r.attachments[key] = value
-}
-
-// SetAttribute sets attribute by @key and @value.
-func (r *RPCInvocation) SetAttribute(key string, value interface{}) {
-	r.lock.Lock()
-	defer r.lock.Unlock()
-	r.attributes[key] = value
 }
 
 // Invoker gets the invoker in current context.
@@ -213,8 +167,76 @@ func (r *RPCInvocation) SetCallBack(c interface{}) {
 }
 
 func (r *RPCInvocation) ServiceKey() string {
-	return common.ServiceKey(strings.TrimPrefix(r.AttachmentsByKey(constant.PathKey, r.AttachmentsByKey(constant.InterfaceKey, "")), "/"),
-		r.AttachmentsByKey(constant.GroupKey, ""), r.AttachmentsByKey(constant.VersionKey, ""))
+	return common.ServiceKey(strings.TrimPrefix(r.GetAttachmentWithDefaultValue(constant.PathKey, r.GetAttachmentWithDefaultValue(constant.InterfaceKey, "")), "/"),
+		r.GetAttachmentWithDefaultValue(constant.GroupKey, ""), r.GetAttachmentWithDefaultValue(constant.VersionKey, ""))
+}
+
+func (r *RPCInvocation) SetAttachment(key string, value string) {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+	if r.attachments == nil {
+		r.attachments = make(map[string]interface{})
+	}
+	r.attachments[key] = value
+}
+
+func (r *RPCInvocation) GetAttachment(key string) (string, bool) {
+	r.lock.RLock()
+	defer r.lock.RUnlock()
+	if r.attachments == nil {
+		return "", false
+	}
+	if value, ok := r.attachments[key]; ok {
+		if str, ok := value.(string); ok {
+			return str, true
+		}
+	}
+	return "", false
+}
+
+func (r *RPCInvocation) GetAttachmentWithDefaultValue(key string, defaultValue string) string {
+	r.lock.RLock()
+	defer r.lock.RUnlock()
+	if r.attachments == nil {
+		return defaultValue
+	}
+	if value, ok := r.attachments[key]; ok {
+		if str, ok := value.(string); ok {
+			return str
+		}
+	}
+	return defaultValue
+}
+
+func (r *RPCInvocation) SetAttribute(key string, value interface{}) {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+	if r.attributes == nil {
+		r.attributes = make(map[string]interface{})
+	}
+	r.attributes[key] = value
+}
+
+func (r *RPCInvocation) GetAttribute(key string) (interface{}, bool) {
+	r.lock.RLock()
+	defer r.lock.RUnlock()
+	if r.attributes == nil {
+		return nil, false
+	}
+	value, ok := r.attributes[key]
+	return value, ok
+}
+
+func (r *RPCInvocation) GetAttributeWithDefaultValue(key string, defaultValue interface{}) interface{} {
+	r.lock.RLock()
+	defer r.lock.RUnlock()
+	if r.attributes == nil {
+		return defaultValue
+	}
+	if value, ok := r.attachments[key]; ok {
+		return value
+	}
+	return defaultValue
 }
 
 // /////////////////////////

@@ -85,7 +85,7 @@ type ProxyInvoker struct {
 // Invoke is used to call service method by invocation
 func (pi *ProxyInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 	result := &protocol.RPCResult{}
-	result.SetAttachments(invocation.Attachments())
+	result.SetAttachment(invocation.Attachments())
 
 	// get providerUrl. The origin url may be is registry URL.
 	url := getProviderURL(pi.GetURL())

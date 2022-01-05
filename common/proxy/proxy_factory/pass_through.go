@@ -79,7 +79,7 @@ type PassThroughProxyInvoker struct {
 // Invoke is used to call service method by invocation
 func (pi *PassThroughProxyInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 	result := &protocol.RPCResult{}
-	result.SetAttachments(invocation.Attachments())
+	result.SetAttachment(invocation.Attachments())
 	url := getProviderURL(pi.GetURL())
 
 	arguments := invocation.Arguments()
@@ -102,7 +102,7 @@ func (pi *PassThroughProxyInvoker) Invoke(ctx context.Context, invocation protoc
 	in := make([]reflect.Value, 5)
 	in = append(in, srv.Rcvr())
 	in = append(in, reflect.ValueOf(invocation.MethodName()))
-	in = append(in, reflect.ValueOf(invocation.Attachment(constant.ParamsTypeKey)))
+	in = append(in, reflect.ValueOf(invocation.GetAttachmentInterface(constant.ParamsTypeKey)))
 	in = append(in, reflect.ValueOf(args))
 	in = append(in, reflect.ValueOf(invocation.Attachments()))
 
