@@ -43,6 +43,12 @@ import (
 	invocation_impl "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
+// same as dubbo_invoker.go attachmentKey
+var attachmentKey = []string{
+	constant.InterfaceKey, constant.GroupKey, constant.TokenKey, constant.TimeoutKey,
+	constant.VersionKey,
+}
+
 // DubboInvoker is implement of protocol.Invoker, a dubboInvoker refer to one service and ip.
 type DubboInvoker struct {
 	protocol.BaseInvoker
@@ -164,6 +170,12 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 		logger.Warnf("this grpcInvoker is destroying")
 		result.Err = protocol.ErrDestroyedInvoker
 		return &result
+	}
+
+	for _, k := range attachmentKey {
+		if v := di.GetURL().GetParam(k, ""); len(v) > 0 {
+			invocation.SetAttachments(k, v)
+		}
 	}
 
 	// append interface id to ctx
