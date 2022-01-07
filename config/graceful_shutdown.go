@@ -55,11 +55,19 @@ const defaultShutDownTime = time.Second * 60
 
 func gracefulShutdownInit() {
 	// retrieve ShutdownConfig for gracefulShutdownFilter
-	if filter, ok := extension.GetFilter(constant.GracefulShutdownConsumerFilterKey).(Setter); ok && rootConfig.Shutdown != nil {
+	cGracefulShutdownFilter, existcGracefulShutdownFilter := extension.GetFilter(constant.GracefulShutdownConsumerFilterKey)
+	if !existcGracefulShutdownFilter {
+		return
+	}
+	sGracefulShutdownFilter, existsGracefulShutdownFilter := extension.GetFilter(constant.GracefulShutdownConsumerFilterKey)
+	if !existsGracefulShutdownFilter {
+		return
+	}
+	if filter, ok := cGracefulShutdownFilter.(Setter); ok && rootConfig.Shutdown != nil {
 		filter.Set(constant.GracefulShutdownFilterShutdownConfig, GetShutDown())
 	}
 
-	if filter, ok := extension.GetFilter(constant.GracefulShutdownProviderFilterKey).(Setter); ok && rootConfig.Shutdown != nil {
+	if filter, ok := sGracefulShutdownFilter.(Setter); ok && rootConfig.Shutdown != nil {
 		filter.Set(constant.GracefulShutdownFilterShutdownConfig, GetShutDown())
 	}
 

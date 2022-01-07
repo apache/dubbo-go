@@ -33,11 +33,11 @@ func SetFilter(name string, v func() filter.Filter) {
 }
 
 // GetFilter finds the filter extension with @name
-func GetFilter(name string) filter.Filter {
+func GetFilter(name string) (filter.Filter, bool) {
 	if filters[name] == nil {
-		panic("filter for " + name + " is not existing, make sure you have imported the package.")
+		return nil, false
 	}
-	return filters[name]()
+	return filters[name](), true
 }
 
 // SetRejectedExecutionHandler sets the RejectedExecutionHandler with @name

@@ -409,6 +409,11 @@ func (proto *registryProtocol) Destroy() {
 		}
 		return true
 	})
+
+	proto.registries.Range(func(key, value interface{}) bool {
+		proto.registries.Delete(key)
+		return true
+	})
 }
 
 func getRegistryUrl(invoker protocol.Invoker) *common.URL {

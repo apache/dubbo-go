@@ -48,7 +48,8 @@ func TestConusmerFilterInvoke(t *testing.T) {
 
 	config.SetRootConfig(*rootConfig)
 
-	filter := extension.GetFilter(constant.GracefulShutdownConsumerFilterKey).(*consumerGracefulShutdownFilter)
+	filterValue, _ := extension.GetFilter(constant.GracefulShutdownConsumerFilterKey)
+	filter := filterValue.(*consumerGracefulShutdownFilter)
 	filter.Set(constant.GracefulShutdownFilterShutdownConfig, config.GetShutDown())
 	assert.Equal(t, filter.shutdownConfig, config.GetShutDown())
 
