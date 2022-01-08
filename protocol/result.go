@@ -42,23 +42,13 @@ type Result interface {
 	Attachment(string, interface{}) interface{}
 }
 
-/////////////////////////////
-// Result Implement of RPC
-/////////////////////////////
+var _ Result = (*RPCResult)(nil)
 
 // RPCResult is default RPC result.
 type RPCResult struct {
 	Attrs map[string]interface{}
 	Err   error
 	Rest  interface{}
-}
-
-func NewRPCResult(result interface{}, err error) *RPCResult {
-	return &RPCResult{
-		Rest:  result,
-		Err:   err,
-		Attrs: make(map[string]interface{}),
-	}
 }
 
 // SetError sets error.

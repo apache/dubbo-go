@@ -94,9 +94,9 @@ func (polaris *polarisServiceDiscovery) Destroy() error {
 		inst.cancel()
 
 		err := polaris.Unregister(inst.instance)
-		logger.Infof("Unregister nacos instance:%+v", inst)
+		logger.Infof("Unregister polaris instance:%+v", inst)
 		if err != nil {
-			logger.Errorf("Unregister nacos instance:%+v, err:%+v", inst, err)
+			logger.Errorf("Unregister polaris instance:%+v, err:%+v", inst, err)
 		}
 	}
 	polaris.provider.Destroy()

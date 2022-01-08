@@ -27,8 +27,8 @@ import (
 
 import (
 	"github.com/dubbogo/grpc-go"
+	"github.com/dubbogo/grpc-go/metadata"
 
-	tripleCommon "github.com/dubbogo/triple/pkg/common"
 	tripleConstant "github.com/dubbogo/triple/pkg/common/constant"
 	triConfig "github.com/dubbogo/triple/pkg/config"
 	"github.com/dubbogo/triple/pkg/triple"
@@ -194,7 +194,13 @@ func (d *UnaryService) GetReqParamsInterfaces(methodName string) ([]interface{},
 }
 
 func (d *UnaryService) InvokeWithArgs(ctx context.Context, methodName string, arguments []interface{}) (interface{}, error) {
-	dubboAttachment, _ := ctx.Value(tripleConstant.TripleAttachement).(tripleCommon.DubboAttachment)
+	dubboAttachment := make(map[string]interface{})
+	md, ok := metadata.FromIncomingContext(ctx)
+	if ok {
+		for k := range md {
+			dubboAttachment[k] = md.Get(k)[0]
+		}
+	}
 	res := d.proxyImpl.Invoke(ctx, invocation.NewRPCInvocation(methodName, arguments, dubboAttachment))
 	return res, res.Error()
 }
