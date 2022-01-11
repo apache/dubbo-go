@@ -47,7 +47,8 @@ func TestMethodServiceTpsLimiterImplIsAllowableOnlyServiceLevel(t *testing.T) {
 	invokeUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
 		common.WithParamsValue(constant.InterfaceKey, methodName),
-		common.WithParamsValue(constant.TPSLimitRateKey, "20"))
+		common.WithParamsValue(constant.TPSLimitRateKey, "20"),
+		common.WithParamsValue(constant.TPSLimitIntervalKey, "60000"))
 
 	mockStrategyImpl := strategy.NewMockTpsLimitStrategy(ctrl)
 	mockStrategyImpl.EXPECT().IsAllowable().Return(true).Times(1)
