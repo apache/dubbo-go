@@ -395,10 +395,11 @@ func (rc *RootConfig) Process(event *config_center.ConfigChangeEvent) {
 		logger.Errorf("CenterConfig process unmarshalConf failed, got error %#v", err)
 		return
 	}
-
-	// update register
+	// dynamically update register
 	for registerId, updateRegister := range updateRootConfig.Registries {
 		register := rc.Registries[registerId]
-		register.UpdateProperties(updateRegister)
+		register.DynamicUpdateProperties(updateRegister)
 	}
+	// dynamically update consumer
+	rc.Consumer.DynamicUpdateProperties(updateRootConfig.Consumer)
 }

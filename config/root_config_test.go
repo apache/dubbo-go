@@ -46,5 +46,6 @@ func TestGoConfigProcess(t *testing.T) {
 	c := &config_center.ConfigChangeEvent{Key: "test", Value: string(bs)}
 	rc.rootConfig.Process(c)
 	assert.Equal(t, rc.rootConfig.Registries["demoZK"].Timeout, "11s")
+	assert.Equal(t, rc.rootConfig.Consumer.RequestTimeout, "6s")
 
 }
