@@ -15,15 +15,23 @@
  * limitations under the License.
  */
 
-package etcdv3
+package nacos
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"testing"
 )
 
 import (
+	gxset "github.com/dubbogo/gost/container/set"
+
+	"github.com/nacos-group/nacos-sdk-go/model"
+	"github.com/nacos-group/nacos-sdk-go/vo"
+
+	perrors "github.com/pkg/errors"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -33,20 +41,22 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/registry"
+	"dubbo.apache.org/dubbo-go/v3/registry/event"
+	"dubbo.apache.org/dubbo-go/v3/remoting/nacos"
 )
 
 const testName = "test"
 
-func TestNewEtcdV3ServiceDiscovery(t *testing.T) {
-	url, _ := common.NewURL("dubbo://127.0.0.1:2379")
-	sd, err := newEtcdV3ServiceDiscovery(url)
+func TestNewNacosServiceDiscovery(t *testing.T) {
+	url, _ := common.NewURL("dubbo://127.0.0.1:8848")
+	sd, err := newNacosServiceDiscovery(url)
 	assert.Nil(t, err)
 	err = sd.Destroy()
 	assert.Nil(t, err)
 }
 
-func TestEtcdV3ServiceDiscoveryGetDefaultPageSize(t *testing.T) {
-	serviceDiscovery := &etcdV3ServiceDiscovery{}
+func TestNacosServiceDiscoveryGetDefaultPageSize(t *testing.T) {
+	serviceDiscovery := &nacosServiceDiscovery{}
 	assert.Equal(t, registry.DefaultPageSize, serviceDiscovery.GetDefaultPageSize())
 }
 
@@ -56,8 +66,8 @@ func TestFunction(t *testing.T) {
 		return &mockProtocol{}
 	})
 
-	url, _ := common.NewURL("dubbo://127.0.0.1:2379")
-	sd, _ := newEtcdV3ServiceDiscovery(url)
+	url, _ := common.NewURL("dubbo://127.0.0.1:8848")
+	sd, _ := newMockNacosServiceDiscovery(url)
 	defer func() {
 		_ = sd.Destroy()
 	}()
@@ -75,6 +85,20 @@ func TestFunction(t *testing.T) {
 	err := sd.Register(ins)
 	assert.Nil(t, err)
 
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	tn := &testNotify{
+		wg: wg,
+		t:  t,
+	}
+	hs := gxset.NewSet()
+	hs.Add(testName)
+
+	sicl := event.NewServiceInstancesChangedListener(hs)
+	sicl.AddListenerAndNotify(testName, tn)
+	err = sd.AddListener(sicl)
+	assert.NoError(t, err)
+
 	ins = &registry.DefaultServiceInstance{
 		ID:          "testID",
 		ServiceName: testName,
@@ -88,7 +112,38 @@ func TestFunction(t *testing.T) {
 	err = sd.Update(ins)
 	assert.NoError(t, err)
 	err = sd.Unregister(ins)
-	assert.NoError(t, err)
+	assert.Nil(t, err)
+}
+
+func newMockNacosServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, error) {
+	discoveryURL := common.NewURLWithOptions(
+		common.WithParams(url.GetParams()),
+		common.WithParamsValue(constant.TimeoutKey, url.GetParam(constant.RegistryTimeoutKey, constant.DefaultRegTimeout)),
+		common.WithParamsValue(constant.NacosGroupKey, url.GetParam(constant.RegistryGroupKey, defaultGroup)),
+		common.WithParamsValue(constant.NacosUsername, url.Username),
+		common.WithParamsValue(constant.NacosPassword, url.Password),
+		common.WithParamsValue(constant.NacosNamespaceID, url.GetParam(constant.RegistryNamespaceKey, "")))
+	discoveryURL.Location = url.Location
+	discoveryURL.Username = url.Username
+	discoveryURL.Password = url.Password
+	client, err := nacos.NewNacosClientByURL(discoveryURL)
+	mc := mockClient{}
+	client.SetClient(mc)
+	if err != nil {
+		return nil, perrors.WithMessage(err, "create nacos namingClient failed.")
+	}
+
+	descriptor := fmt.Sprintf("nacos-service-discovery[%s]", discoveryURL.Location)
+
+	group := url.GetParam(constant.RegistryGroupKey, defaultGroup)
+	newInstance := &nacosServiceDiscovery{
+		group:               group,
+		namingClient:        client,
+		descriptor:          descriptor,
+		registryInstances:   []registry.ServiceInstance{},
+		instanceListenerMap: make(map[string]*gxset.HashSet),
+	}
+	return newInstance, nil
 }
 
 type testNotify struct {
@@ -102,6 +157,50 @@ func (tn *testNotify) Notify(e *registry.ServiceEvent) {
 }
 
 func (tn *testNotify) NotifyAll([]*registry.ServiceEvent, func()) {}
+
+type mockClient struct {
+	instance []interface{}
+}
+
+func (c mockClient) RegisterInstance(param vo.RegisterInstanceParam) (bool, error) {
+	return true, nil
+}
+
+func (c mockClient) DeregisterInstance(param vo.DeregisterInstanceParam) (bool, error) {
+	return true, nil
+}
+
+func (c mockClient) UpdateInstance(param vo.UpdateInstanceParam) (bool, error) {
+	return true, nil
+}
+
+func (c mockClient) GetService(param vo.GetServiceParam) (model.Service, error) {
+	panic("implement me")
+}
+
+func (c mockClient) SelectInstances(param vo.SelectInstancesParam) ([]model.Instance, error) {
+	panic("implement me")
+}
+
+func (c mockClient) SelectAllInstances(param vo.SelectAllInstancesParam) ([]model.Instance, error) {
+	panic("implement me")
+}
+
+func (c mockClient) SelectOneHealthyInstance(param vo.SelectOneHealthInstanceParam) (*model.Instance, error) {
+	panic("implement me")
+}
+
+func (c mockClient) Subscribe(param *vo.SubscribeParam) error {
+	return nil
+}
+
+func (c mockClient) Unsubscribe(param *vo.SubscribeParam) error {
+	panic("implement me")
+}
+
+func (c mockClient) GetAllServicesInfo(param vo.GetAllServiceInfoParam) (model.ServiceList, error) {
+	panic("implement me")
+}
 
 type mockProtocol struct{}
 
