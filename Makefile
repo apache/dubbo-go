@@ -15,6 +15,10 @@
 # limitations under the License.
 #
 
+# DO NOT RUN
+# The makefile is for ci test and has dependencies. Do not run it locally.
+# If you want to run the unit tests, run command `go test ./...` directly.
+
 VERSION ?= latest
 
 GO = go
@@ -44,6 +48,7 @@ ZK_JAR=$(ZK_JAR_PATH)/$(ZK_JAR_NAME)
 SHELL = /bin/bash
 
 prepareLic:
+	echo 'The makefile is for ci test and has dependencies. Do not run it locally. If you want to run the unit tests, run command `go test ./...` directly.'
 	$(GO_LICENSE_CHECKER) -version || (wget https://github.com/lsm-dev/license-header-checker/releases/download/v1.2.0/$(GO_LICENSE_CHECKER_DIR).zip -O $(GO_LICENSE_CHECKER_DIR).zip && unzip -o $(GO_LICENSE_CHECKER_DIR).zip && mkdir -p $(GO_PATH)/bin/ && cp $(GO_LICENSE_CHECKER_DIR)/64bit/license-header-checker $(GO_PATH)/bin/)
 	ls /tmp/tools/license/license.txt || wget -P $(LICENSE_DIR) https://github.com/dubbogo/resources/raw/master/tools/license/license.txt
 

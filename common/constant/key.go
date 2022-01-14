@@ -53,6 +53,7 @@ const (
 	PortKey                = "port"
 	ProtocolKey            = "protocol"
 	PathSeparator          = "/"
+	DotSeparator           = "."
 	CommaSeparator         = ","
 	SslEnabledKey          = "ssl-enabled"
 	// ParamsTypeKey key used in pass through invoker factory, to define param type
