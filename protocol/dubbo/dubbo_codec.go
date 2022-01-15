@@ -65,12 +65,12 @@ func (c *DubboCodec) EncodeRequest(request *remoting.Request) (*bytes.Buffer, er
 	invocation := *invoc
 
 	svc := impl.Service{}
-	svc.Path = invocation.AttachmentsByKey(constant.PathKey, "")
-	svc.Interface = invocation.AttachmentsByKey(constant.InterfaceKey, "")
-	svc.Version = invocation.AttachmentsByKey(constant.VersionKey, "")
-	svc.Group = invocation.AttachmentsByKey(constant.GroupKey, "")
+	svc.Path = invocation.GetAttachmentWithDefaultValue(constant.PathKey, "")
+	svc.Interface = invocation.GetAttachmentWithDefaultValue(constant.InterfaceKey, "")
+	svc.Version = invocation.GetAttachmentWithDefaultValue(constant.VersionKey, "")
+	svc.Group = invocation.GetAttachmentWithDefaultValue(constant.GroupKey, "")
 	svc.Method = invocation.MethodName()
-	timeout, err := strconv.Atoi(invocation.AttachmentsByKey(constant.TimeoutKey, strconv.Itoa(constant.DefaultRemotingTimeout)))
+	timeout, err := strconv.Atoi(invocation.GetAttachmentWithDefaultValue(constant.TimeoutKey, strconv.Itoa(constant.DefaultRemotingTimeout)))
 	if err != nil {
 		// it will be wrapped in readwrite.Write .
 		return nil, perrors.WithStack(err)
@@ -78,7 +78,7 @@ func (c *DubboCodec) EncodeRequest(request *remoting.Request) (*bytes.Buffer, er
 	svc.Timeout = time.Duration(timeout)
 
 	header := impl.DubboHeader{}
-	serialization := invocation.AttachmentsByKey(constant.SerializationKey, constant.Hessian2Serialization)
+	serialization := invocation.GetAttachmentWithDefaultValue(constant.SerializationKey, constant.Hessian2Serialization)
 	if serialization == constant.ProtobufSerialization {
 		header.SerialID = constant.SProto
 	} else {
@@ -254,20 +254,20 @@ func (c *DubboCodec) decodeResponse(data []byte) (*remoting.Response, int, error
 		Status:   pkg.Header.ResponseStatus,
 		Event:    (pkg.Header.Type & impl.PackageHeartbeat) != 0,
 	}
-	var error error
+	var pkgerr error
 	if pkg.Header.Type&impl.PackageHeartbeat != 0x00 {
 		if pkg.Header.Type&impl.PackageResponse != 0x00 {
 			logger.Debugf("get rpc heartbeat response{header: %#v, body: %#v}", pkg.Header, pkg.Body)
 			if pkg.Err != nil {
 				logger.Errorf("rpc heartbeat response{error: %#v}", pkg.Err)
-				error = pkg.Err
+				pkgerr = pkg.Err
 			}
 		} else {
 			logger.Debugf("get rpc heartbeat request{header: %#v, service: %#v, body: %#v}", pkg.Header, pkg.Service, pkg.Body)
 			response.Status = hessian.Response_OK
 			// reply(session, p, hessian.PackageHeartbeat)
 		}
-		return response, hessian.HEADER_LENGTH + pkg.Header.BodyLen, error
+		return response, hessian.HEADER_LENGTH + pkg.Header.BodyLen, pkgerr
 	}
 	logger.Debugf("get rpc response{header: %#v, body: %#v}", pkg.Header, pkg.Body)
 	rpcResult := &protocol.RPCResult{}

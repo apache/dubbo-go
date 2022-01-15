@@ -76,7 +76,7 @@ func createInvocation(methodName string, callback interface{}, reply interface{}
 
 func setAttachment(invocation *invocation.RPCInvocation, attachments map[string]string) {
 	for key, value := range attachments {
-		invocation.SetAttachments(key, value)
+		invocation.SetAttachment(key, value)
 	}
 }
 

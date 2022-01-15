@@ -177,7 +177,7 @@ func TestZoneWareInvokerWithZoneSuccess(t *testing.T) {
 	inv := &invocation.RPCInvocation{}
 	// zone hangzhou
 	hz := zoneArray[0]
-	inv.SetAttachments(constant.RegistryKey+"."+constant.RegistryZoneKey, hz)
+	inv.SetAttachment(constant.RegistryKey+"."+constant.RegistryZoneKey, hz)
 
 	result := clusterInvoker.Invoke(context.Background(), inv)
 
@@ -206,9 +206,9 @@ func TestZoneWareInvokerWithZoneForceFail(t *testing.T) {
 
 	inv := &invocation.RPCInvocation{}
 	// zone hangzhou
-	inv.SetAttachments(constant.RegistryKey+"."+constant.RegistryZoneKey, "hangzhou")
+	inv.SetAttachment(constant.RegistryKey+"."+constant.RegistryZoneKey, "hangzhou")
 	// zone force
-	inv.SetAttachments(constant.RegistryKey+"."+constant.RegistryZoneForceKey, "true")
+	inv.SetAttachment(constant.RegistryKey+"."+constant.RegistryZoneForceKey, "true")
 
 	result := clusterInvoker.Invoke(context.Background(), inv)
 
