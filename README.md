@@ -181,6 +181,14 @@ make test
 
 Please move to [dubbo-samples/golang](https://github.com/dubbogo/dubbo-samples)
 
+## Tools
+
+  * [imports-formatter](https://github.com/dubbogo/tools/blob/master/cmd/imports-formatter/main.go) import code block organizer.
+
+  * [dubbo-go-cli](https://github.com/dubbogo/tools/blob/master/cmd/dubbogo-cli/main.go) dubbo-go command line tools, support for displaying services, initiating service calls and other functions.
+  * [protoc-gen-go-triple](https://github.com/dubbogo/tools/blob/master/cmd/protoc-gen-go-triple/main.go) tripe protocol pb file generation tool.
+  * [protoc-gen-dubbo3grpc](https://github.com/dubbogo/tools/blob/master/cmd/protoc-gen-dubbo3grpc/main.go) dubbo3 grpc pb file generation tool.
+
 ## Contributing
 
 If you are willing to do some code contributions and document contributions to [Apache/dubbo-go](https://github.com/apache/dubbo-go), please visit [contribution intro](https://github.com/apache/dubbo-go/blob/master/contributing.md).
