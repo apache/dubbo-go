@@ -185,6 +185,11 @@ Dubbo-go 生态覆盖多种网络协议：Triple、Dubbo、JSONRPC、gRPC、HTTP
 * [triple](https://github.com/dubbogo/triple) - 基于 HTTP2 的 Dubbo-go 3.0 协议网络库
 * [dubbo-go-hessian2](https://github.com/apache/dubbo-go-hessian2) - 供 Dubbo-go 使用的 hessian2 库
 * [gost](https://github.com/dubbogo/gost) - 供 Dubbo-go 使用的基础代码库
+* 工具
+  * [imports-formatter](https://github.com/dubbogo/tools/blob/master/cmd/imports-formatter/main.go) import 代码块整理工具
+  * [dubbo-go-cli](https://github.com/dubbogo/tools/blob/master/cmd/dubbogo-cli/main.go) dubbo-go 命令行工具、支持展示服务、发起服务调用等功能
+  * [protoc-gen-go-triple](https://github.com/dubbogo/tools/blob/master/cmd/protoc-gen-go-triple/main.go) tripe 协议 pb 生成工具
+  * [protoc-gen-dubbo3grpc](https://github.com/dubbogo/tools/blob/master/cmd/protoc-gen-dubbo3grpc/main.go) dubbo3 grpc 生成工具
 
 ## 许可证
 
