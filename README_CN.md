@@ -54,6 +54,25 @@ Dubbo-go 生态覆盖多种网络协议：Triple、Dubbo、JSONRPC、gRPC、HTTP
 - [Dubbo-go 样例](https://github.com/apache/dubbo-go-samples): 该项目提供了一系列的样例，以展示Dubbo-go的每一项特性以及帮助你将Dubbo-go集成到你的系统中。
 - [Dubbo-go 百科](https://github.com/apache/dubbo-go/wiki)
 
+## 工具
+
+  * [imports-formatter](https://github.com/dubbogo/tools/blob/master/cmd/imports-formatter/main.go) dubbo-go 工程 import 代码块格式化工具
+  * [dubbo-go-cli](https://github.com/dubbogo/tools/blob/master/cmd/dubbogo-cli/main.go) dubbo-go 命令行工具、支持展示服务、发起服务调用、定义 dubbogo 服务 struct 等功能
+  * [protoc-gen-go-triple](https://github.com/dubbogo/tools/blob/master/cmd/protoc-gen-go-triple/main.go) tripe 协议 pb 生成工具
+  * [protoc-gen-dubbo3grpc](https://github.com/dubbogo/tools/blob/master/cmd/protoc-gen-dubbo3grpc/main.go) dubbo3 grpc 生成工具
+
+如果想知道 dubbogo 工具集更多更详细的使用细节，请访问 https://github.com/dubbogo/tools 并仔细阅读其 raedme。
+
+## 生态
+
+* [Dubbo Ecosystem Entry](https://github.com/apache?utf8=%E2%9C%93&q=dubbo&type=&language=) - Apache Dubbo 群组的相关开源项目
+* [dubbo-go-pixiu](https://github.com/apache/dubbo-go-pixiu) - 动态高性能 API 网关，支持 Dubbo 和 Http 等多种协议
+* [dubbo-go-samples](https://github.com/apache/dubbo-go-samples) - Dubbo-go 项目案例
+* [dubbo-getty](https://github.com/apache/dubbo-getty) - Netty 风格的异步网络 IO 库，支持 tcp、udp 和 websocket 等协议
+* [triple](https://github.com/dubbogo/triple) - 基于 HTTP2 的 Dubbo-go 3.0 协议网络库
+* [dubbo-go-hessian2](https://github.com/apache/dubbo-go-hessian2) - 供 Dubbo-go 使用的 hessian2 库
+* [gost](https://github.com/dubbogo/gost) - 供 Dubbo-go 使用的基础代码库
+
 ## 如何贡献
 
 请访问[CONTRIBUTING](./CONTRIBUTING.md)来了解如何提交更新以及贡献工作流。
@@ -175,21 +194,6 @@ Dubbo-go 生态覆盖多种网络协议：Triple、Dubbo、JSONRPC、gRPC、HTTP
 </table>
 </div>
 [查看更多用户示例](https://github.com/apache/dubbo-go/issues/2)
-
-## 生态
-
-* [Dubbo Ecosystem Entry](https://github.com/apache?utf8=%E2%9C%93&q=dubbo&type=&language=) - Apache Dubbo 群组的相关开源项目
-* [dubbo-go-pixiu](https://github.com/apache/dubbo-go-pixiu) - 动态高性能 API 网关，支持 Dubbo 和 Http 等多种协议
-* [dubbo-go-samples](https://github.com/apache/dubbo-go-samples) - Dubbo-go 项目案例
-* [dubbo-getty](https://github.com/apache/dubbo-getty) - Netty 风格的异步网络 IO 库，支持 tcp、udp 和 websocket 等协议
-* [triple](https://github.com/dubbogo/triple) - 基于 HTTP2 的 Dubbo-go 3.0 协议网络库
-* [dubbo-go-hessian2](https://github.com/apache/dubbo-go-hessian2) - 供 Dubbo-go 使用的 hessian2 库
-* [gost](https://github.com/dubbogo/gost) - 供 Dubbo-go 使用的基础代码库
-* 工具
-  * [imports-formatter](https://github.com/dubbogo/tools/blob/master/cmd/imports-formatter/main.go) import 代码块整理工具
-  * [dubbo-go-cli](https://github.com/dubbogo/tools/blob/master/cmd/dubbogo-cli/main.go) dubbo-go 命令行工具、支持展示服务、发起服务调用等功能
-  * [protoc-gen-go-triple](https://github.com/dubbogo/tools/blob/master/cmd/protoc-gen-go-triple/main.go) tripe 协议 pb 生成工具
-  * [protoc-gen-dubbo3grpc](https://github.com/dubbogo/tools/blob/master/cmd/protoc-gen-dubbo3grpc/main.go) dubbo3 grpc 生成工具
 
 ## 许可证
 

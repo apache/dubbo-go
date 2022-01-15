@@ -43,6 +43,27 @@ Dubbo-go has supported many RPC protocol, like Triple, Dubbo JSONRPC, gRPC, HTTP
 - [Dubbo-go Benchmark](https://github.com/dubbogo/dubbo-go-benchmark)
 - [Dubbo-go Wiki](https://github.com/apache/dubbo-go/wiki)
 
+## tools
+
+  * [imports-formatter](https://github.com/dubbogo/tools/blob/master/cmd/imports-formatter/main.go) formatting dubbo-go project import code block.
+  * [dubbo-go-cli](https://github.com/dubbogo/tools/blob/master/cmd/dubbogo-cli/main.go) dubbo-go command line tools, by which you can define your own request pkg and gets rsp struct of your server, and test your service as telnet.
+  * [protoc-gen-go-triple](https://github.com/dubbogo/tools/blob/master/cmd/protoc-gen-go-triple/main.go) tripe protocol pb file generation tool.
+  * [protoc-gen-dubbo3grpc](https://github.com/dubbogo/tools/blob/master/cmd/protoc-gen-dubbo3grpc/main.go) dubbo3 grpc pb file generation tool.
+
+
+If you want to know more about dubbogo tools, please visit https://github.com/dubbogo/tools and read its readme carefully.
+
+## Dubbo-go ecosystem
+
+* [Dubbo Ecosystem Entry](https://github.com/apache?utf8=%E2%9C%93&q=dubbo&type=&language=) - A GitHub group `dubbo` to gather all Dubbo relevant projects not appropriate in [apache](https://github.com/apache) group yet.
+* [dubbo-go-pixiu](https://github.com/apache/dubbo-go-pixiu) - A dynamic, high-performance API gateway solution for Dubbo and Http services.
+* [dubbo-go-samples](https://github.com/apache/dubbo-go-samples) - Samples for Apache Dubbo-go.
+* [dubbo-getty](https://github.com/apache/dubbo-getty) - A netty like asynchronous network I/O library which supports tcp/udp/websocket network protocol.
+* [triple](https://github.com/dubbogo/triple) - A golang network package that based on http2, used by Dubbo-go 3.0.
+* [dubbo-go-hessian2](https://github.com/apache/dubbo-go-hessian2) - A golang hessian library used by Apache/dubbo-go.
+* [gost](https://github.com/dubbogo/gost) - A go sdk for Apache Dubbo-go.
+
+
 ## Contributing
 
 Please visit [CONTRIBUTING](./CONTRIBUTING.md) for details on submitting patches and the contribution workflow.
@@ -166,22 +187,6 @@ If you are using [apache/dubbo-go](https://github.com/apache/dubbo-go) and think
 </div>
 
 [See more user cases](https://github.com/apache/dubbo-go/issues/2)
-
-## Dubbo-go ecosystem
-
-* [Dubbo Ecosystem Entry](https://github.com/apache?utf8=%E2%9C%93&q=dubbo&type=&language=) - A GitHub group `dubbo` to gather all Dubbo relevant projects not appropriate in [apache](https://github.com/apache) group yet.
-* [dubbo-go-pixiu](https://github.com/apache/dubbo-go-pixiu) - A dynamic, high-performance API gateway solution for Dubbo and Http services.
-* [dubbo-go-samples](https://github.com/apache/dubbo-go-samples) - Samples for Apache Dubbo-go.
-* [dubbo-getty](https://github.com/apache/dubbo-getty) - A netty like asynchronous network I/O library which supports tcp/udp/websocket network protocol.
-* [triple](https://github.com/dubbogo/triple) - A golang network package that based on http2, used by Dubbo-go 3.0.
-* [dubbo-go-hessian2](https://github.com/apache/dubbo-go-hessian2) - A golang hessian library used by Apache/dubbo-go.
-* [gost](https://github.com/dubbogo/gost) - A go sdk for Apache Dubbo-go.
-* tools
-  * [imports-formatter](https://github.com/dubbogo/tools/blob/master/cmd/imports-formatter/main.go) import code block organizer.
-
-  * [dubbo-go-cli](https://github.com/dubbogo/tools/blob/master/cmd/dubbogo-cli/main.go) dubbo-go command line tools, support for displaying services, initiating service calls and other functions.
-  * [protoc-gen-go-triple](https://github.com/dubbogo/tools/blob/master/cmd/protoc-gen-go-triple/main.go) tripe protocol pb file generation tool.
-  * [protoc-gen-dubbo3grpc](https://github.com/dubbogo/tools/blob/master/cmd/protoc-gen-dubbo3grpc/main.go) dubbo3 grpc pb file generation tool.
 
 ## License
 
