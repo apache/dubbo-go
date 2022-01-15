@@ -176,6 +176,12 @@ If you are using [apache/dubbo-go](https://github.com/apache/dubbo-go) and think
 * [triple](https://github.com/dubbogo/triple) - A golang network package that based on http2, used by Dubbo-go 3.0.
 * [dubbo-go-hessian2](https://github.com/apache/dubbo-go-hessian2) - A golang hessian library used by Apache/dubbo-go.
 * [gost](https://github.com/dubbogo/gost) - A go sdk for Apache Dubbo-go.
+* tools
+  * [imports-formatter](https://github.com/dubbogo/tools/blob/master/cmd/imports-formatter/main.go) import code block organizer.
+
+  * [dubbo-go-cli](https://github.com/dubbogo/tools/blob/master/cmd/dubbogo-cli/main.go) dubbo-go command line tools, support for displaying services, initiating service calls and other functions.
+  * [protoc-gen-go-triple](https://github.com/dubbogo/tools/blob/master/cmd/protoc-gen-go-triple/main.go) tripe protocol pb file generation tool.
+  * [protoc-gen-dubbo3grpc](https://github.com/dubbogo/tools/blob/master/cmd/protoc-gen-dubbo3grpc/main.go) dubbo3 grpc pb file generation tool.
 
 ## License
 
