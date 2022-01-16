@@ -20,6 +20,7 @@ package zookeeper
 import (
 	"encoding/base64"
 	"strconv"
+	"strings"
 	"sync"
 )
 
@@ -65,8 +66,9 @@ type zookeeperDynamicConfiguration struct {
 
 func newZookeeperDynamicConfiguration(url *common.URL) (*zookeeperDynamicConfiguration, error) {
 	c := &zookeeperDynamicConfiguration{
-		url:      url,
-		rootPath: "/" + url.GetParam(constant.ConfigNamespaceKey, config_center.DefaultGroup) + "/config",
+		url: url,
+		// TODO adapt config center config
+		rootPath: "/dubbo/config",
 	}
 	logger.Infof("[Zookeeper ConfigCenter] New Zookeeper ConfigCenter with Configuration: %+v, url = %+v", c, c.GetURL())
 	if v, ok := config.GetRootConfig().ConfigCenter.Params["base64"]; ok {
@@ -93,13 +95,26 @@ func newZookeeperDynamicConfiguration(url *common.URL) (*zookeeperDynamicConfigu
 
 	// Start listener
 	c.listener = zookeeper.NewZkEventListener(c.client)
-	c.cacheListener = NewCacheListener(c.rootPath)
-	c.listener.ListenServiceEvent(url, c.rootPath, c.cacheListener)
+	c.cacheListener = NewCacheListener(c.rootPath, c.listener)
+	c.listener.ListenConfigurationEvent(c.rootPath, c.cacheListener)
 	return c, nil
 }
 
-func (c *zookeeperDynamicConfiguration) AddListener(key string, listener config_center.ConfigurationListener, opions ...config_center.Option) {
-	c.cacheListener.AddListener(key, listener)
+// AddListener add listener for key
+// TODO this method should has a parameter 'group', and it does not now, so we should concat group and key with '/' manually
+func (c *zookeeperDynamicConfiguration) AddListener(key string, listener config_center.ConfigurationListener, options ...config_center.Option) {
+	qualifiedKey := buildPath(c.rootPath, key)
+	c.cacheListener.AddListener(qualifiedKey, listener)
+}
+
+// buildPath build path and format
+func buildPath(rootPath, subPath string) string {
+	path := strings.TrimRight(rootPath+pathSeparator+subPath, pathSeparator)
+	if !strings.HasPrefix(path, pathSeparator) {
+		path = pathSeparator + path
+	}
+	path = strings.ReplaceAll(path, "//", "/")
+	return path
 }
 
 func (c *zookeeperDynamicConfiguration) RemoveListener(key string, listener config_center.ConfigurationListener, opions ...config_center.Option) {
@@ -118,7 +133,7 @@ func (c *zookeeperDynamicConfiguration) GetProperties(key string, opts ...config
 	if len(tmpOpts.Group) != 0 {
 		key = tmpOpts.Group + "/" + key
 	} else {
-		key = c.GetURL().GetParam(constant.ConfigNamespaceKey, config_center.DefaultGroup)
+		key = c.GetURL().GetParam(constant.ConfigNamespaceKey, config_center.DefaultGroup) + "/" + key
 	}
 	content, _, err := c.client.GetContent(c.rootPath + "/" + key)
 	if err != nil {

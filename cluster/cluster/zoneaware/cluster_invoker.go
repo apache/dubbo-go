@@ -65,7 +65,7 @@ func (invoker *zoneawareClusterInvoker) Invoke(ctx context.Context, invocation p
 
 	// providers in the registry with the same zone
 	key := constant.RegistryKey + "." + constant.RegistryZoneKey
-	zone := invocation.AttachmentsByKey(key, "")
+	zone := invocation.GetAttachmentWithDefaultValue(key, "")
 	if "" != zone {
 		for _, invoker := range invokers {
 			if invoker.IsAvailable() && matchParam(zone, key, "", invoker) {
@@ -73,7 +73,7 @@ func (invoker *zoneawareClusterInvoker) Invoke(ctx context.Context, invocation p
 			}
 		}
 
-		force := invocation.AttachmentsByKey(constant.RegistryKey+"."+constant.RegistryZoneForceKey, "")
+		force := invocation.GetAttachmentWithDefaultValue(constant.RegistryKey+"."+constant.RegistryZoneForceKey, "")
 		if "true" == force {
 			return &protocol.RPCResult{
 				Err: fmt.Errorf("no registry instance in zone or "+

@@ -43,6 +43,12 @@ import (
 	invocation_impl "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
+// same as dubbo_invoker.go attachmentKey
+var attachmentKey = []string{
+	constant.InterfaceKey, constant.GroupKey, constant.TokenKey, constant.TimeoutKey,
+	constant.VersionKey,
+}
+
 // DubboInvoker is implement of protocol.Invoker, a dubboInvoker refer to one service and ip.
 type DubboInvoker struct {
 	protocol.BaseInvoker
@@ -166,6 +172,12 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 		return &result
 	}
 
+	for _, k := range attachmentKey {
+		if v := di.GetURL().GetParam(k, ""); len(v) > 0 {
+			invocation.SetAttachments(k, v)
+		}
+	}
+
 	// append interface id to ctx
 	gRPCMD := make(metadata.MD, 0)
 	for k, v := range invocation.Attachments() {
@@ -205,12 +217,12 @@ func (di *DubboInvoker) getTimeout(invocation *invocation_impl.RPCInvocation) ti
 	if len(timeout) != 0 {
 		if t, err := time.ParseDuration(timeout); err == nil {
 			// config timeout into attachment
-			invocation.SetAttachments(constant.TimeoutKey, strconv.Itoa(int(t.Milliseconds())))
+			invocation.SetAttachment(constant.TimeoutKey, strconv.Itoa(int(t.Milliseconds())))
 			return t
 		}
 	}
 	// set timeout into invocation at method level
-	invocation.SetAttachments(constant.TimeoutKey, strconv.Itoa(int(di.timeout.Milliseconds())))
+	invocation.SetAttachment(constant.TimeoutKey, strconv.Itoa(int(di.timeout.Milliseconds())))
 	return di.timeout
 }
 

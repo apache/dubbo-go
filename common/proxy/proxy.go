@@ -181,43 +181,44 @@ func DefaultProxyImplementFunc(p *Proxy, v common.RPCService) {
 			}
 
 			for k, value := range p.attachments {
-				inv.SetAttachments(k, value)
+				inv.SetAttachment(k, value)
 			}
 
 			// add user setAttachment. It is compatibility with previous versions.
 			atm := invCtx.Value(constant.AttachmentKey)
 			if m, ok := atm.(map[string]string); ok {
 				for k, value := range m {
-					inv.SetAttachments(k, value)
+					inv.SetAttachment(k, value)
 				}
 			} else if m2, ok2 := atm.(map[string]interface{}); ok2 {
 				// it is support to transfer map[string]interface{}. It refers to dubbo-java 2.7.
 				for k, value := range m2 {
-					inv.SetAttachments(k, value)
+					inv.SetAttachment(k, value)
 				}
 			}
 
 			result := p.invoke.Invoke(invCtx, inv)
 			err = result.Error()
+			// cause is raw user level error
+			cause := perrors.Cause(err)
 			if err != nil {
-				// the cause reason
-				err = perrors.Cause(err)
 				// if some error happened, it should be log some info in the separate file.
-				if throwabler, ok := err.(java_exception.Throwabler); ok {
-					logger.Warnf("[CallProxy] invoke service throw exception: %v , stackTraceElements: %v", err.Error(), throwabler.GetStackTrace())
+				if throwabler, ok := cause.(java_exception.Throwabler); ok {
+					logger.Warnf("[CallProxy] invoke service throw exception: %v , stackTraceElements: %v", cause.Error(), throwabler.GetStackTrace())
 				} else {
+					// entire error is only for printing, do not return, because user would not want to deal with massive framework-level error message
 					logger.Warnf("[CallProxy] received rpc err: %v", err)
 				}
 			} else {
 				logger.Debugf("[CallProxy] received rpc result successfully: %s", result)
 			}
 			if len(outs) == 1 {
-				return []reflect.Value{reflect.ValueOf(&err).Elem()}
+				return []reflect.Value{reflect.ValueOf(&cause).Elem()}
 			}
 			if len(outs) == 2 && outs[0].Kind() != reflect.Ptr {
-				return []reflect.Value{reply.Elem(), reflect.ValueOf(&err).Elem()}
+				return []reflect.Value{reply.Elem(), reflect.ValueOf(&cause).Elem()}
 			}
-			return []reflect.Value{reply, reflect.ValueOf(&err).Elem()}
+			return []reflect.Value{reply, reflect.ValueOf(&cause).Elem()}
 		}
 	}
 

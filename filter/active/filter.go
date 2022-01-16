@@ -59,14 +59,14 @@ func newActiveFilter() filter.Filter {
 
 // Invoke starts to record the requests status
 func (f *activeFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
-	invocation.(*invocation2.RPCInvocation).SetAttachments(dubboInvokeStartTime, strconv.FormatInt(protocol.CurrentTimeMillis(), 10))
+	invocation.(*invocation2.RPCInvocation).SetAttachment(dubboInvokeStartTime, strconv.FormatInt(protocol.CurrentTimeMillis(), 10))
 	protocol.BeginCount(invoker.GetURL(), invocation.MethodName())
 	return invoker.Invoke(ctx, invocation)
 }
 
 // OnResponse update the active count base on the request result.
 func (f *activeFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
-	startTime, err := strconv.ParseInt(invocation.(*invocation2.RPCInvocation).AttachmentsByKey(dubboInvokeStartTime, "0"), 10, 64)
+	startTime, err := strconv.ParseInt(invocation.(*invocation2.RPCInvocation).GetAttachmentWithDefaultValue(dubboInvokeStartTime, "0"), 10, 64)
 	if err != nil {
 		result.SetError(err)
 		logger.Errorf("parse dubbo_invoke_start_time to int64 failed")
