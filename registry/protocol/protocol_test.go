@@ -217,13 +217,6 @@ func TestDestroy(t *testing.T) {
 		return true
 	})
 	assert.Equal(t, 0, count)
-
-	var count2 int
-	regProtocol.bounds.Range(func(key, value interface{}) bool {
-		count2++
-		return true
-	})
-	assert.Equal(t, 0, count2)
 }
 
 func TestExportWithOverrideListener(t *testing.T) {
