@@ -22,7 +22,6 @@ The service implemented is defined in:
 https://github.com/grpc/grpc/blob/master/src/proto/grpc/reflection/v1alpha/reflection.proto.
 
 */
-// nolint
 package reflection
 
 import (
