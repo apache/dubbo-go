@@ -46,7 +46,6 @@ func init() {
 }
 
 type consumerGracefulShutdownFilter struct {
-	activeCount    int32
 	shutdownConfig *config.ShutdownConfig
 }
 
@@ -54,7 +53,6 @@ func newConsumerGracefulShutdownFilter() filter.Filter {
 	if csf == nil {
 		csfOnce.Do(func() {
 			csf = &consumerGracefulShutdownFilter{}
-
 		})
 	}
 	return csf
@@ -62,17 +60,13 @@ func newConsumerGracefulShutdownFilter() filter.Filter {
 
 // Invoke adds the requests count and block the new requests if application is closing
 func (f *consumerGracefulShutdownFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
-	atomic.AddInt32(&f.activeCount, 1)
+	atomic.AddInt32(&f.shutdownConfig.ConsumerActiveCount, 1)
 	return invoker.Invoke(ctx, invocation)
 }
 
 // OnResponse reduces the number of active processes then return the process result
 func (f *consumerGracefulShutdownFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
-	atomic.AddInt32(&f.activeCount, -1)
-	// although this isn't thread safe, it won't be a problem if the f.rejectNewRequest() is true.
-	if f.shutdownConfig != nil && f.shutdownConfig.RejectRequest && f.activeCount <= 0 {
-		f.shutdownConfig.RequestsFinished = true
-	}
+	atomic.AddInt32(&f.shutdownConfig.ConsumerActiveCount, -1)
 	return result
 }
 

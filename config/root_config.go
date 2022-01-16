@@ -218,6 +218,9 @@ func (rc *RootConfig) Init() error {
 	if err := rc.Consumer.Init(rc); err != nil {
 		return err
 	}
+	if err := rc.Shutdown.Init(); err != nil {
+		return err
+	}
 	// todo if we can remove this from Init in the future?
 	rc.Start()
 	return nil
@@ -225,12 +228,12 @@ func (rc *RootConfig) Init() error {
 
 func (rc *RootConfig) Start() {
 	startOnce.Do(func() {
+		gracefulShutdownInit()
 		rc.Consumer.Load()
 		rc.Provider.Load()
 		// todo if register consumer instance or has exported services
 		exportMetadataService()
 		registerServiceInstance()
-		gracefulShutdownInit()
 	})
 }
 

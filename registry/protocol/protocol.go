@@ -402,11 +402,15 @@ func (proto *registryProtocol) Destroy() {
 		}
 		// TODO unsubscribeUrl
 
-		select {
-		case <-time.After(config.GetShutDown().GetStepTimeout()):
-			exporter.Unexport()
-			proto.bounds.Delete(key)
-		}
+		// close all protocol server after consumerUpdateWait + stepTimeout(max time wait during
+		// waitAndAcceptNewRequests procedure)
+		go func() {
+			select {
+			case <-time.After(config.GetShutDown().GetStepTimeout() + config.GetShutDown().GetConsumerUpdateWaitTime()):
+				exporter.Unexport()
+				proto.bounds.Delete(key)
+			}
+		}()
 		return true
 	})
 

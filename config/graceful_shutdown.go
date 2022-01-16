@@ -59,7 +59,7 @@ func gracefulShutdownInit() {
 	if !existcGracefulShutdownFilter {
 		return
 	}
-	sGracefulShutdownFilter, existsGracefulShutdownFilter := extension.GetFilter(constant.GracefulShutdownConsumerFilterKey)
+	sGracefulShutdownFilter, existsGracefulShutdownFilter := extension.GetFilter(constant.GracefulShutdownProviderFilterKey)
 	if !existsGracefulShutdownFilter {
 		return
 	}
@@ -164,13 +164,28 @@ func waitAndAcceptNewRequests() {
 		return
 	}
 
-	timeout := rootConfig.Shutdown.GetStepTimeout()
+	time.Sleep(rootConfig.Shutdown.GetConsumerUpdateWaitTime())
 
+	timeout := rootConfig.Shutdown.GetStepTimeout()
 	// ignore this step
 	if timeout < 0 {
 		return
 	}
-	time.Sleep(timeout)
+	waitingProviderProcessedTimeout(rootConfig.Shutdown)
+}
+
+func waitingProviderProcessedTimeout(shutdownConfig *ShutdownConfig) {
+	timeout := shutdownConfig.GetStepTimeout()
+	if timeout <= 0 {
+		return
+	}
+	deadline := time.Now().Add(timeout)
+
+	for time.Now().Before(deadline) && shutdownConfig.ProviderActiveCount > 0 {
+		// sleep 10 ms and then we check it again
+		time.Sleep(10 * time.Millisecond)
+		logger.Infof("waiting for provider active invocation count = %d", shutdownConfig.ProviderActiveCount)
+	}
 }
 
 //for provider. It will wait for processing receiving requests
@@ -181,19 +196,20 @@ func waitForSendingAndReceivingRequests() {
 		return
 	}
 	rootConfig.Shutdown.RejectRequest = true
-	waitingProcessedTimeout(rootConfig.Shutdown)
+	waitingConsumerProcessedTimeout(rootConfig.Shutdown)
 }
 
-func waitingProcessedTimeout(shutdownConfig *ShutdownConfig) {
+func waitingConsumerProcessedTimeout(shutdownConfig *ShutdownConfig) {
 	timeout := shutdownConfig.GetStepTimeout()
 	if timeout <= 0 {
 		return
 	}
 	deadline := time.Now().Add(timeout)
 
-	for time.Now().Before(deadline) && !shutdownConfig.RequestsFinished {
+	for time.Now().Before(deadline) && shutdownConfig.ConsumerActiveCount > 0 {
 		// sleep 10 ms and then we check it again
 		time.Sleep(10 * time.Millisecond)
+		logger.Infof("waiting for consumer active invocation count = %d", shutdownConfig.ConsumerActiveCount)
 	}
 }
 

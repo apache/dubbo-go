@@ -20,6 +20,7 @@ package graceful_shutdown
 import (
 	"context"
 	"sync"
+	"sync/atomic"
 )
 
 import (
@@ -51,7 +52,6 @@ func newProviderGracefulShutdownFilter() filter.Filter {
 	if psf == nil {
 		psfOnce.Do(func() {
 			psf = &providerGracefulShutdownFilter{}
-
 		})
 	}
 	return psf
@@ -63,12 +63,13 @@ func (f *providerGracefulShutdownFilter) Invoke(ctx context.Context, invoker pro
 		logger.Info("The application is closing, new request will be rejected.")
 		return f.getRejectHandler().RejectedExecution(invoker.GetURL(), invocation)
 	}
+	atomic.AddInt32(&f.shutdownConfig.ProviderActiveCount, 1)
 	return invoker.Invoke(ctx, invocation)
 }
 
 // OnResponse reduces the number of active processes then return the process result
 func (f *providerGracefulShutdownFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
-
+	atomic.AddInt32(&f.shutdownConfig.ProviderActiveCount, -1)
 	return result
 }
 

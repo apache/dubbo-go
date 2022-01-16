@@ -29,7 +29,6 @@ import (
 func TestShutdownConfigGetTimeout(t *testing.T) {
 	config := ShutdownConfig{}
 	assert.False(t, config.RejectRequest)
-	assert.False(t, config.RequestsFinished)
 
 	config = ShutdownConfig{
 		Timeout:     "60s",
