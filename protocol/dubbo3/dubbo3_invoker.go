@@ -174,7 +174,7 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 
 	for _, k := range attachmentKey {
 		if v := di.GetURL().GetParam(k, ""); len(v) > 0 {
-			invocation.SetAttachments(k, v)
+			invocation.SetAttachment(k, v)
 		}
 	}
 
