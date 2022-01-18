@@ -48,7 +48,8 @@ import (
 const testName = "test"
 
 func TestNewNacosServiceDiscovery(t *testing.T) {
-	url, _ := common.NewURL("dubbo://127.0.0.1:8848")
+	url, _ := common.NewURL("dubbo://127.0.0.1:8848",
+		common.WithParamsValue(constant.ClientNameKey, "nacos-client"))
 	sd, err := newNacosServiceDiscovery(url)
 	assert.Nil(t, err)
 	err = sd.Destroy()
@@ -122,6 +123,7 @@ func newMockNacosServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, e
 		common.WithParamsValue(constant.NacosGroupKey, url.GetParam(constant.RegistryGroupKey, defaultGroup)),
 		common.WithParamsValue(constant.NacosUsername, url.Username),
 		common.WithParamsValue(constant.NacosPassword, url.Password),
+		common.WithParamsValue(constant.ClientNameKey, "nacos-client"),
 		common.WithParamsValue(constant.NacosNamespaceID, url.GetParam(constant.RegistryNamespaceKey, "")))
 	discoveryURL.Location = url.Location
 	discoveryURL.Username = url.Username
