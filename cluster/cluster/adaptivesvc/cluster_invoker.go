@@ -30,6 +30,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/cluster/base"
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
 	"dubbo.apache.org/dubbo-go/v3/cluster/metrics"
+	clsutils "dubbo.apache.org/dubbo-go/v3/cluster/utils"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
@@ -67,8 +68,20 @@ func (ivk *adaptiveServiceClusterInvoker) Invoke(ctx context.Context, invocation
 	// invoke
 	result := invoker.Invoke(ctx, invocation)
 
+	// if the adaptive service encounters an error, DO NOT
+	// update the metrics.
+	if clsutils.IsAdaptiveServiceFailed(result.Error()) {
+		return result
+	}
+
 	// update metrics
-	remainingStr := result.Attachment(constant.AdaptiveServiceRemainingKey, "").(string)
+	remainingIface := result.Attachment(constant.AdaptiveServiceRemainingKey, "")
+	remainingStr, ok := remainingIface.(string)
+	if !ok {
+		logger.Errorf("[adasvc cluster] The %s field type of value %v should be string.",
+			constant.AdaptiveServiceRemainingKey, remainingIface)
+		return result
+	}
 	remaining, err := strconv.Atoi(remainingStr)
 	if err != nil {
 		logger.Warnf("the remaining is unexpected, we need a int type, but we got %s, err: %v.", remainingStr, err)
