@@ -78,7 +78,7 @@ func (ivk *adaptiveServiceClusterInvoker) Invoke(ctx context.Context, invocation
 	remainingIface := result.Attachment(constant.AdaptiveServiceRemainingKey, "")
 	remainingStr, ok := remainingIface.(string)
 	if !ok {
-		logger.Errorf("[adasvc cluster] The %s field is not expectedly, the value is %v, we expect a string",
+		logger.Errorf("[adasvc cluster] The %s field type of value %v should be string.",
 			constant.AdaptiveServiceRemainingKey, remainingIface)
 		return result
 	}
