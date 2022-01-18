@@ -21,6 +21,7 @@ import (
 	"container/list"
 	"fmt"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -403,6 +404,7 @@ func (svc *ServiceConfig) getUrlMap() url.Values {
 
 	// whether to export or not
 	urlMap.Set(constant.ExportKey, strconv.FormatBool(svc.export))
+	urlMap.Set(constant.PIDKey, fmt.Sprintf("%d", os.Getpid()))
 
 	for _, v := range svc.Methods {
 		prefix := "methods." + v.Name + "."

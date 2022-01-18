@@ -181,19 +181,19 @@ func DefaultProxyImplementFunc(p *Proxy, v common.RPCService) {
 			}
 
 			for k, value := range p.attachments {
-				inv.SetAttachments(k, value)
+				inv.SetAttachment(k, value)
 			}
 
 			// add user setAttachment. It is compatibility with previous versions.
 			atm := invCtx.Value(constant.AttachmentKey)
 			if m, ok := atm.(map[string]string); ok {
 				for k, value := range m {
-					inv.SetAttachments(k, value)
+					inv.SetAttachment(k, value)
 				}
 			} else if m2, ok2 := atm.(map[string]interface{}); ok2 {
 				// it is support to transfer map[string]interface{}. It refers to dubbo-java 2.7.
 				for k, value := range m2 {
-					inv.SetAttachments(k, value)
+					inv.SetAttachment(k, value)
 				}
 			}
 

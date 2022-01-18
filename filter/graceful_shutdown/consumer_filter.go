@@ -15,10 +15,11 @@
  * limitations under the License.
  */
 
-package gshutdown
+package graceful_shutdown
 
 import (
 	"context"
+	"sync"
 	"sync/atomic"
 )
 
@@ -31,44 +32,45 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
+var (
+	csfOnce sync.Once
+	csf     *consumerGracefulShutdownFilter
+)
+
 func init() {
 	// `init()` is performed before config.Load(), so shutdownConfig will be retrieved after config was loaded.
-	var csf = &Filter{}
-	var psf = &Filter{}
 	extension.SetFilter(constant.GracefulShutdownConsumerFilterKey, func() filter.Filter {
-		return csf
+		return newConsumerGracefulShutdownFilter()
 	})
-	extension.SetFilter(constant.GracefulShutdownProviderFilterKey, func() filter.Filter {
-		return psf
-	})
+
 }
 
-type Filter struct {
-	activeCount    int32
+type consumerGracefulShutdownFilter struct {
 	shutdownConfig *config.ShutdownConfig
 }
 
-// Invoke adds the requests count and block the new requests if application is closing
-func (f *Filter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
-	if f.rejectNewRequest() {
-		logger.Info("The application is closing, new request will be rejected.")
-		return f.getRejectHandler().RejectedExecution(invoker.GetURL(), invocation)
+func newConsumerGracefulShutdownFilter() filter.Filter {
+	if csf == nil {
+		csfOnce.Do(func() {
+			csf = &consumerGracefulShutdownFilter{}
+		})
 	}
-	atomic.AddInt32(&f.activeCount, 1)
+	return csf
+}
+
+// Invoke adds the requests count and block the new requests if application is closing
+func (f *consumerGracefulShutdownFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+	atomic.AddInt32(&f.shutdownConfig.ConsumerActiveCount, 1)
 	return invoker.Invoke(ctx, invocation)
 }
 
 // OnResponse reduces the number of active processes then return the process result
-func (f *Filter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
-	atomic.AddInt32(&f.activeCount, -1)
-	// although this isn't thread safe, it won't be a problem if the f.rejectNewRequest() is true.
-	if f.shutdownConfig != nil && f.shutdownConfig.RejectRequest && f.activeCount <= 0 {
-		f.shutdownConfig.RequestsFinished = true
-	}
+func (f *consumerGracefulShutdownFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+	atomic.AddInt32(&f.shutdownConfig.ConsumerActiveCount, -1)
 	return result
 }
 
-func (f *Filter) Set(name string, conf interface{}) {
+func (f *consumerGracefulShutdownFilter) Set(name string, conf interface{}) {
 	switch name {
 	case constant.GracefulShutdownFilterShutdownConfig:
 		if shutdownConfig, ok := conf.(*config.ShutdownConfig); ok {
@@ -79,19 +81,4 @@ func (f *Filter) Set(name string, conf interface{}) {
 	default:
 		// do nothing
 	}
-}
-
-func (f *Filter) rejectNewRequest() bool {
-	if f.shutdownConfig == nil {
-		return false
-	}
-	return f.shutdownConfig.RejectRequest
-}
-
-func (f *Filter) getRejectHandler() filter.RejectedExecutionHandler {
-	handler := constant.DefaultKey
-	if f.shutdownConfig != nil && len(f.shutdownConfig.RejectRequestHandler) > 0 {
-		handler = f.shutdownConfig.RejectRequestHandler
-	}
-	return extension.GetRejectedExecutionHandler(handler)
 }

@@ -91,7 +91,7 @@ func (f *adaptiveServiceProviderFilter) Invoke(ctx context.Context, invoker prot
 func (f *adaptiveServiceProviderFilter) OnResponse(_ context.Context, result protocol.Result, invoker protocol.Invoker,
 	invocation protocol.Invocation) protocol.Result {
 	// get updater from the attributes
-	updaterIface := invocation.AttributeByKey(constant.AdaptiveServiceUpdaterKey, nil)
+	updaterIface, _ := invocation.GetAttribute(constant.AdaptiveServiceUpdaterKey)
 	if updaterIface == nil {
 		return &protocol.RPCResult{Err: ErrUpdaterNotFound}
 	}

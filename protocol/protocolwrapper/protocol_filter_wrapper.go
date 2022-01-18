@@ -82,7 +82,7 @@ func BuildInvokerChain(invoker protocol.Invoker, key string) protocol.Invoker {
 	// The order of filters is from left to right, so loading from right to left
 	next := invoker
 	for i := len(filterNames) - 1; i >= 0; i-- {
-		flt := extension.GetFilter(strings.TrimSpace(filterNames[i]))
+		flt, _ := extension.GetFilter(strings.TrimSpace(filterNames[i]))
 		fi := &FilterInvoker{next: next, invoker: invoker, filter: flt}
 		next = fi
 	}
