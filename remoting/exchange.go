@@ -46,7 +46,7 @@ func init() {
 }
 
 func SequenceId() int64 {
-	// increse 2 for every request as the same before.
+	// increase 2 for every request as the same before.
 	// We expect that the request from client to server, the requestId is even; but from server to client, the requestId is odd.
 	return sequence.Add(2)
 }
