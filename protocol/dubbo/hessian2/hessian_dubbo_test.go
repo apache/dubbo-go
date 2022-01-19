@@ -214,7 +214,7 @@ func TestHessianCodec_ReadAttachments(t *testing.T) {
 	t.Log(h)
 
 	err = codecR1.ReadBody(body)
-	assert.Equal(t, "can not find go type name com.test.caseb in registry", err.Error())
+	assert.NoError(t, err)
 	attrs, err := codecR2.ReadAttachments()
 	assert.NoError(t, err)
 	assert.Equal(t, "2.6.4", attrs[DUBBO_VERSION_KEY])
