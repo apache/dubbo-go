@@ -203,10 +203,21 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 	methodName := invocation.MethodName()
 	triAttachmentWithErr := di.client.Invoke(methodName, in, invocation.Reply())
 	result.Err = triAttachmentWithErr.GetError()
+
 	result.Attrs = make(map[string]interface{})
+
 	for k, v := range triAttachmentWithErr.GetAttachments() {
 		result.Attrs[k] = v
 	}
+
+	// Here, before making a remote call, the server may be terminated because the value is transmitted to the client.
+	// Because each rpc request will initiate dubboinvoker -> filter invoker multiple times
+	// So you need to consider using the variables called by the call chain for maintenance
+
+	for k, v := range invocation.Attachments() {
+		result.Attrs[k] = v
+	}
+
 	result.Rest = invocation.Reply()
 	return &result
 }
