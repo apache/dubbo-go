@@ -23,6 +23,7 @@ import (
 
 import (
 	"github.com/creasty/defaults"
+	"go.uber.org/atomic"
 )
 
 import (
@@ -67,8 +68,8 @@ type ShutdownConfig struct {
 	// true -> new request will be rejected.
 	RejectRequest bool
 	// active invocation
-	ConsumerActiveCount int32
-	ProviderActiveCount int32
+	ConsumerActiveCount atomic.Int32
+	ProviderActiveCount atomic.Int32
 }
 
 // Prefix dubbo.shutdown
@@ -102,7 +103,7 @@ func (config *ShutdownConfig) GetConsumerUpdateWaitTime() time.Duration {
 	result, err := time.ParseDuration(config.ConsumerUpdateWaitTime)
 	if err != nil {
 		logger.Errorf("The ConsumerUpdateTimeout configuration is invalid: %s, and we will use the default value: %s, err: %v",
-			config.ConsumerActiveCount, defaultConsumerUpdateWaitTime.String(), err)
+			config.ConsumerActiveCount.Load(), defaultConsumerUpdateWaitTime.String(), err)
 		return defaultConsumerUpdateWaitTime
 	}
 	return result

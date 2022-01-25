@@ -181,10 +181,10 @@ func waitingProviderProcessedTimeout(shutdownConfig *ShutdownConfig) {
 	}
 	deadline := time.Now().Add(timeout)
 
-	for time.Now().Before(deadline) && shutdownConfig.ProviderActiveCount > 0 {
+	for time.Now().Before(deadline) && shutdownConfig.ProviderActiveCount.Load() > 0 {
 		// sleep 10 ms and then we check it again
 		time.Sleep(10 * time.Millisecond)
-		logger.Infof("waiting for provider active invocation count = %d", shutdownConfig.ProviderActiveCount)
+		logger.Infof("waiting for provider active invocation count = %d", shutdownConfig.ProviderActiveCount.Load())
 	}
 }
 
@@ -195,7 +195,7 @@ func waitForSendingAndReceivingRequests() {
 		// ignore this step
 		return
 	}
-	rootConfig.Shutdown.RejectRequest = true
+	rootConfig.Shutdown.RejectRequest.Store(true)
 	waitingConsumerProcessedTimeout(rootConfig.Shutdown)
 }
 
@@ -206,10 +206,10 @@ func waitingConsumerProcessedTimeout(shutdownConfig *ShutdownConfig) {
 	}
 	deadline := time.Now().Add(timeout)
 
-	for time.Now().Before(deadline) && shutdownConfig.ConsumerActiveCount > 0 {
+	for time.Now().Before(deadline) && shutdownConfig.ConsumerActiveCount.Load() > 0 {
 		// sleep 10 ms and then we check it again
 		time.Sleep(10 * time.Millisecond)
-		logger.Infof("waiting for consumer active invocation count = %d", shutdownConfig.ConsumerActiveCount)
+		logger.Infof("waiting for consumer active invocation count = %d", shutdownConfig.ConsumerActiveCount.Load())
 	}
 }
 
