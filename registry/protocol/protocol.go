@@ -162,7 +162,11 @@ func (proto *registryProtocol) Refer(url *common.URL) protocol.Invoker {
 	}
 
 	// new cluster invoker
-	cluster := extension.GetCluster(serviceUrl.GetParam(constant.ClusterKey, constant.DefaultCluster))
+	clusterKey := serviceUrl.GetParam(constant.ClusterKey, constant.DefaultCluster)
+	cluster, err := extension.GetCluster(clusterKey)
+	if err != nil {
+		panic(err)
+	}
 	invoker := cluster.Join(directory)
 	return invoker
 }

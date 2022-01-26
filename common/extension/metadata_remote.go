@@ -40,7 +40,7 @@ func SetRemoteMetadataService(creatorFunc remoteMetadataServiceCreator) {
 	creator = creatorFunc
 }
 
-// GetRemoteMetadataServiceFactory will create a MetadataService instance
+// GetRemoteMetadataService will create a MetadataService instance
 func GetRemoteMetadataService() (service.RemoteMetadataService, error) {
 	if creator != nil {
 		return creator()

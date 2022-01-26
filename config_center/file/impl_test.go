@@ -42,7 +42,9 @@ func initFileData(t *testing.T) (*FileSystemDynamicConfiguration, error) {
 	urlString := "registry://127.0.0.1:2181"
 	regurl, err := common.NewURL(urlString)
 	assert.NoError(t, err)
-	dc, err := extension.GetConfigCenterFactory("file").GetDynamicConfiguration(regurl)
+	factory, err := extension.GetConfigCenterFactory("file")
+	assert.NoError(t, err)
+	dc, err := factory.GetDynamicConfiguration(regurl)
 	assert.NoError(t, err)
 
 	return dc.(*FileSystemDynamicConfiguration), err
