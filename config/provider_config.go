@@ -19,6 +19,7 @@ package config
 
 import (
 	"fmt"
+	perrors "github.com/pkg/errors"
 )
 
 import (
