@@ -19,13 +19,14 @@ package config
 
 import (
 	"fmt"
-	perrors "github.com/pkg/errors"
 )
 
 import (
 	"github.com/creasty/defaults"
 
 	tripleConstant "github.com/dubbogo/triple/pkg/common/constant"
+
+	perrors "github.com/pkg/errors"
 )
 
 import (
