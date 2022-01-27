@@ -118,6 +118,7 @@ func (c *RegistryConfig) toMetadataReportUrl() (*common.URL, error) {
 		common.WithUsername(c.Username),
 		common.WithPassword(c.Password),
 		common.WithParamsValue(constant.TimeoutKey, c.Timeout),
+		common.WithParamsValue(constant.ClientNameKey, c.NameId()),
 		common.WithParamsValue(constant.MetadataReportGroupKey, c.Group),
 		common.WithParamsValue(constant.MetadataReportNamespaceKey, c.Namespace),
 	)
