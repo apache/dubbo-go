@@ -91,7 +91,7 @@ func InitLogger(conf *Config) {
 	}
 
 	if conf == nil || conf.LumberjackConfig == nil {
-		zapLogger, _ = config.ZapConfig.Build(zap.AddCallerSkip(1))
+		zapLogger, _ = config.ZapConfig.Build(zap.AddCaller(), zap.AddCallerSkip(1))
 	} else {
 		config.LumberjackConfig = conf.LumberjackConfig
 		zapLogger = initZapLoggerWithSyncer(config)
@@ -145,7 +145,7 @@ func initZapLoggerWithSyncer(conf *Config) *zap.Logger {
 		zap.NewAtomicLevelAt(conf.ZapConfig.Level.Level()),
 	)
 
-	return zap.New(core, zap.AddCallerSkip(1))
+	return zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1))
 }
 
 // getEncoder get encoder by config, zapcore support json and console encoder
