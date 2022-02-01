@@ -66,6 +66,11 @@ func (RegistryConfig) Prefix() string {
 	return constant.RegistryConfigPrefix
 }
 
+// NameId unique identifier id for client
+func (c *RegistryConfig) NameId() string {
+	return strings.Join([]string{c.Prefix(), c.Protocol, c.Address}, "-")
+}
+
 func (c *RegistryConfig) Init() error {
 	if err := defaults.Set(c); err != nil {
 		return err
@@ -85,6 +90,8 @@ func (c *RegistryConfig) getUrlMap(roleType common.RoleType) url.Values {
 	urlMap.Set(constant.RegistryKey+"."+constant.RegistryZoneKey, c.Zone)
 	urlMap.Set(constant.RegistryKey+"."+constant.WeightKey, strconv.FormatInt(c.Weight, 10))
 	urlMap.Set(constant.RegistryTTLKey, c.TTL)
+	urlMap.Set(constant.ClientNameKey, c.NameId())
+
 	for k, v := range c.Params {
 		urlMap.Set(k, v)
 	}
@@ -111,6 +118,7 @@ func (c *RegistryConfig) toMetadataReportUrl() (*common.URL, error) {
 		common.WithUsername(c.Username),
 		common.WithPassword(c.Password),
 		common.WithParamsValue(constant.TimeoutKey, c.Timeout),
+		common.WithParamsValue(constant.ClientNameKey, c.NameId()),
 		common.WithParamsValue(constant.MetadataReportGroupKey, c.Group),
 		common.WithParamsValue(constant.MetadataReportNamespaceKey, c.Namespace),
 	)

@@ -18,6 +18,10 @@
 package config
 
 import (
+	"strings"
+)
+
+import (
 	perrors "github.com/pkg/errors"
 )
 
@@ -55,6 +59,11 @@ func (mc *MetadataReportConfig) Init(rc *RootConfig) error {
 	return mc.StartMetadataReport()
 }
 
+// NameId unique identifier id for client
+func (mc *MetadataReportConfig) NameId() string {
+	return strings.Join([]string{mc.Prefix(), mc.Protocol, mc.Address}, "-")
+}
+
 func (mc *MetadataReportConfig) ToUrl() (*common.URL, error) {
 	res, err := common.NewURL(mc.Address,
 		common.WithUsername(mc.Username),
@@ -65,6 +74,7 @@ func (mc *MetadataReportConfig) ToUrl() (*common.URL, error) {
 		common.WithParamsValue(constant.MetadataReportGroupKey, mc.Group),
 		common.WithParamsValue(constant.MetadataReportNamespaceKey, mc.Namespace),
 		common.WithParamsValue(constant.MetadataTypeKey, mc.metadataType),
+		common.WithParamsValue(constant.ClientNameKey, mc.NameId()),
 	)
 	if err != nil || len(res.Protocol) == 0 {
 		return nil, perrors.New("Invalid MetadataReport Config.")
@@ -77,7 +87,7 @@ func (mc *MetadataReportConfig) IsValid() bool {
 	return len(mc.Protocol) != 0
 }
 
-// StartMetadataReport: The entry of metadata report start
+// StartMetadataReport  The entry of metadata report start
 func (mc *MetadataReportConfig) StartMetadataReport() error {
 	if mc == nil || !mc.IsValid() {
 		return nil

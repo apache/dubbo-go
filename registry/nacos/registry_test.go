@@ -42,10 +42,12 @@ func TestNacosRegistry_Register(t *testing.T) {
 	if !checkNacosServerAlive() {
 		return
 	}
-	regurlMap := url.Values{}
-	regurlMap.Set(constant.RegistryRoleKey, strconv.Itoa(common.PROVIDER))
-	regurlMap.Set(constant.NacosNotLoadLocalCache, "true")
-	regurl, _ := common.NewURL("registry://console.nacos.io:80", common.WithParams(regurlMap))
+	params := url.Values{}
+	params.Set(constant.RegistryRoleKey, strconv.Itoa(common.PROVIDER))
+	params.Set(constant.NacosNotLoadLocalCache, "true")
+	params.Set(constant.ClientNameKey, "nacos-client")
+
+	regurl, _ := common.NewURL("registry://console.nacos.io:80", common.WithParams(params))
 
 	urlMap := url.Values{}
 	urlMap.Set(constant.GroupKey, "guangzhou-idc")
@@ -53,6 +55,7 @@ func TestNacosRegistry_Register(t *testing.T) {
 	urlMap.Set(constant.InterfaceKey, "com.ikurento.user.UserProvider")
 	urlMap.Set(constant.VersionKey, "1.0.0")
 	urlMap.Set(constant.ClusterKey, "mock")
+	urlMap.Set(constant.ClientNameKey, "nacos-client")
 	testUrl, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParams(urlMap), common.WithMethods([]string{"GetUser", "AddUser"}))
 
 	reg, err := newNacosRegistry(regurl)
@@ -82,6 +85,7 @@ func TestNacosRegistry_Subscribe(t *testing.T) {
 	regurlMap := url.Values{}
 	regurlMap.Set(constant.RegistryRoleKey, strconv.Itoa(common.PROVIDER))
 	regurlMap.Set(constant.NacosNotLoadLocalCache, "true")
+	regurlMap.Set(constant.ClientNameKey, "nacos-client")
 	regurl, _ := common.NewURL("registry://console.nacos.io:80", common.WithParams(regurlMap))
 
 	urlMap := url.Values{}
@@ -91,6 +95,7 @@ func TestNacosRegistry_Subscribe(t *testing.T) {
 	urlMap.Set(constant.VersionKey, "1.0.0")
 	urlMap.Set(constant.ClusterKey, "mock")
 	urlMap.Set(constant.NacosPathKey, "")
+	urlMap.Set(constant.ClientNameKey, "nacos-client")
 	testUrl, _ := common.NewURL("dubbo://127.0.0.1:20000/com.dubbo.user.UserProvider", common.WithParams(urlMap), common.WithMethods([]string{"GetUser", "AddUser"}))
 
 	reg, _ := newNacosRegistry(regurl)
@@ -126,6 +131,7 @@ func TestNacosRegistry_Subscribe_del(t *testing.T) {
 	regurlMap := url.Values{}
 	regurlMap.Set(constant.RegistryRoleKey, strconv.Itoa(common.PROVIDER))
 	regurlMap.Set(constant.NacosNotLoadLocalCache, "true")
+	regurlMap.Set(constant.ClientNameKey, "nacos-client")
 	regurl, _ := common.NewURL("registry://console.nacos.io:80", common.WithParams(regurlMap))
 
 	urlMap := url.Values{}
@@ -135,6 +141,7 @@ func TestNacosRegistry_Subscribe_del(t *testing.T) {
 	urlMap.Set(constant.VersionKey, "2.0.0")
 	urlMap.Set(constant.ClusterKey, "mock")
 	urlMap.Set(constant.NacosPathKey, "")
+	urlMap.Set(constant.ClientNameKey, "nacos-client")
 	url1, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParams(urlMap), common.WithMethods([]string{"GetUser", "AddUser"}))
 	url2, _ := common.NewURL("dubbo://127.0.0.2:20000/com.ikurento.user.UserProvider", common.WithParams(urlMap), common.WithMethods([]string{"GetUser", "AddUser"}))
 
@@ -200,6 +207,7 @@ func TestNacosListener_Close(t *testing.T) {
 	regurlMap := url.Values{}
 	regurlMap.Set(constant.RegistryRoleKey, strconv.Itoa(common.PROVIDER))
 	regurlMap.Set(constant.NacosNotLoadLocalCache, "true")
+	regurlMap.Set(constant.ClientNameKey, "nacos-client")
 	regurl, _ := common.NewURL("registry://console.nacos.io:80", common.WithParams(regurlMap))
 
 	urlMap := url.Values{}
@@ -209,6 +217,7 @@ func TestNacosListener_Close(t *testing.T) {
 	urlMap.Set(constant.VersionKey, "1.0.0")
 	urlMap.Set(constant.ClusterKey, "mock")
 	urlMap.Set(constant.NacosPathKey, "")
+	urlMap.Set(constant.ClientNameKey, "nacos-client")
 	url1, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider2", common.WithParams(urlMap), common.WithMethods([]string{"GetUser", "AddUser"}))
 	reg, _ := newNacosRegistry(regurl)
 	listener, err := reg.(*nacosRegistry).subscribe(url1)

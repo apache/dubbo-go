@@ -149,6 +149,7 @@ func getRegUrl() *common.URL {
 	// regurlMap.Set(constant.NacosPassword, "nacos")
 	regurlMap.Set(constant.NacosNamespaceID, "nacos")
 	regurlMap.Set(constant.TimeoutKey, "5s")
+	regurlMap.Set(constant.ClientNameKey, "nacos-client")
 
 	regurl, _ := common.NewURL("registry://console.nacos.io:80", common.WithParams(regurlMap))
 
