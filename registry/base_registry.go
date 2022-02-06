@@ -95,11 +95,11 @@ type BaseRegistry struct {
 	// context             context.Context
 	facadeBasedRegistry FacadeBasedRegistry
 	*common.URL
-	birth    int64          // time of file birth, seconds since Epoch; 0 if unknown
-	wg       sync.WaitGroup // wg+done for zk restart
-	done     chan struct{}
-	cltLock  sync.RWMutex           // ctl lock is a lock for services map
-	services map[string]*common.URL // service name + protocol -> service config, for store the service registered
+	birth      int64          // time of file birth, seconds since Epoch; 0 if unknown
+	wg         sync.WaitGroup // wg+done for zk restart
+	done       chan struct{}
+	registered *sync.Map
+	cltLock    sync.RWMutex
 }
 
 // InitBaseRegistry for init some local variables and set BaseRegistry's subclass to it
@@ -107,7 +107,7 @@ func (r *BaseRegistry) InitBaseRegistry(url *common.URL, facadeRegistry FacadeBa
 	r.URL = url
 	r.birth = time.Now().UnixNano()
 	r.done = make(chan struct{})
-	r.services = make(map[string]*common.URL)
+	r.registered = &sync.Map{}
 	r.facadeBasedRegistry = facadeRegistry
 	return r
 }
@@ -131,77 +131,46 @@ func (r *BaseRegistry) Destroy() {
 }
 
 // Register implement interface registry to register
-func (r *BaseRegistry) Register(conf *common.URL) error {
-	var (
-		ok  bool
-		err error
-	)
+func (r *BaseRegistry) Register(url *common.URL) error {
 	// if developer define registry port and ip, use it first.
-	if ipToRegistry := os.Getenv("DUBBO_IP_TO_REGISTRY"); ipToRegistry != "" {
-		conf.Ip = ipToRegistry
+	if ipToRegistry := os.Getenv("DUBBO_IP_TO_REGISTRY"); len(ipToRegistry) > 0 {
+		url.Ip = ipToRegistry
+	} else {
+		url.Ip = common.GetLocalIp()
 	}
-	if portToRegistry := os.Getenv("DUBBO_PORT_TO_REGISTRY"); portToRegistry != "" {
-		conf.Port = portToRegistry
+	if portToRegistry := os.Getenv("DUBBO_PORT_TO_REGISTRY"); len(portToRegistry) > 0 {
+		url.Port = portToRegistry
 	}
 	// todo bug when provider、consumer simultaneous initialization
-	//role, _ := strconv.Atoi(r.URL.GetParam(constant.RegistryRoleKey, ""))
-	role, _ := strconv.Atoi(conf.GetParam(constant.RegistryRoleKey, ""))
-	// Check if the service has been registered
-	r.cltLock.Lock()
-	_, ok = r.services[conf.Key()]
-	r.cltLock.Unlock()
-	if ok {
-		return perrors.Errorf("Path{%s} has been registered", conf.Key())
+	if _, ok := r.registered.Load(url.Key()); ok {
+		return perrors.Errorf("Service {%s} has been registered", url.Key())
 	}
 
-	err = r.register(conf)
-	if err != nil {
-		return perrors.WithMessagef(err, "register(conf:%+v)", conf)
+	err := r.register(url)
+	if err == nil {
+		r.registered.Store(url.Key(), url)
+
+	} else {
+		err = perrors.WithMessagef(err, "register(url:%+v)", url)
 	}
 
-	r.cltLock.Lock()
-	r.services[conf.Key()] = conf
-	r.cltLock.Unlock()
-	logger.Debugf("(%sRegistry)Register(conf{%#v})", common.DubboRole[role], conf)
-
-	return nil
+	return err
 }
 
 // UnRegister implement interface registry to unregister
-func (r *BaseRegistry) UnRegister(conf *common.URL) error {
-	var (
-		ok     bool
-		err    error
-		oldURL *common.URL
-	)
-
-	func() {
-		r.cltLock.Lock()
-		defer r.cltLock.Unlock()
-		oldURL, ok = r.services[conf.Key()]
-
-		if !ok {
-			err = perrors.Errorf("Path{%s} has not registered", conf.Key())
-		}
-
-		delete(r.services, conf.Key())
-	}()
-
-	if err != nil {
-		return err
+func (r *BaseRegistry) UnRegister(url *common.URL) error {
+	if _, ok := r.registered.Load(url.Key()); !ok {
+		return perrors.Errorf("Service {%s} has not registered", url.Key())
 	}
 
-	err = r.unregister(conf)
-	if err != nil {
-		func() {
-			r.cltLock.Lock()
-			defer r.cltLock.Unlock()
-			r.services[conf.Key()] = oldURL
-		}()
-		return perrors.WithMessagef(err, "register(conf:%+v)", conf)
+	err := r.unregister(url)
+	if err == nil {
+		r.registered.Delete(url.Key())
+	} else {
+		err = perrors.WithMessagef(err, "unregister(url:%+v)", url)
 	}
 
-	return nil
+	return err
 }
 
 // service is for getting service path stored in url
@@ -211,23 +180,20 @@ func (r *BaseRegistry) service(c *common.URL) string {
 
 // RestartCallBack for reregister when reconnect
 func (r *BaseRegistry) RestartCallBack() bool {
-	// copy r.services
-	services := make([]*common.URL, 0, len(r.services))
-	for _, confIf := range r.services {
-		services = append(services, confIf)
-	}
-
 	flag := true
-	for _, confIf := range services {
-		err := r.register(confIf)
+	r.registered.Range(func(key, value interface{}) bool {
+		registeredUrl := value.(*common.URL)
+		err := r.register(registeredUrl)
 		if err != nil {
-			logger.Errorf("(ZkProviderRegistry)register(conf{%#v}) = error{%#v}",
-				confIf, perrors.WithStack(err))
 			flag = false
-			break
+			logger.Errorf("failed to re-register service :%v, error{%#v}",
+				registeredUrl, perrors.WithStack(err))
+			return flag
 		}
-		logger.Infof("success to re-register service :%v", confIf.Key())
-	}
+
+		logger.Infof("success to re-register service :%v", registeredUrl.Key())
+		return flag
+	})
 
 	if flag {
 		r.facadeBasedRegistry.InitListeners()
@@ -266,14 +232,8 @@ func (r *BaseRegistry) processURL(c *common.URL, f func(string, string) error, c
 		return true
 	})
 
-	params.Add("pid", processID)
-	params.Add("ip", localIP)
-	// params.Add("timeout", fmt.Sprintf("%d", int64(r.Timeout)/1e6))
-
 	role, _ := strconv.Atoi(c.GetParam(constant.RegistryRoleKey, ""))
-	//role, _ := strconv.Atoi(r.URL.GetParam(constant.RegistryRoleKey, ""))
 	switch role {
-
 	case common.PROVIDER:
 		dubboPath, rawURL, err = r.providerRegistry(c, params, cpf)
 	case common.CONSUMER:
@@ -330,7 +290,7 @@ func (r *BaseRegistry) providerRegistry(c *common.URL, params url.Values, f crea
 	}
 	logger.Debugf("provider url params:%#v", params)
 	var host string
-	if c.Ip == "" {
+	if len(c.Ip) > 0 {
 		host = localIP
 	} else {
 		host = c.Ip
@@ -458,7 +418,7 @@ func (r *BaseRegistry) closeRegisters() {
 	// Close and remove(set to nil) the registry client
 	r.facadeBasedRegistry.CloseAndNilClient()
 	// reset the services map
-	r.services = nil
+	r.registered = nil
 }
 
 // IsAvailable judge to is registry not closed by chan r.done

@@ -15,34 +15,32 @@
  * limitations under the License.
  */
 
-package config
+package utils
 
 import (
-	"testing"
-	"time"
+	"fmt"
+	"strings"
 )
 
 import (
-	"github.com/stretchr/testify/assert"
+	"dubbo.apache.org/dubbo-go/v3/filter/adaptivesvc"
+	adasvcfilter "dubbo.apache.org/dubbo-go/v3/filter/adaptivesvc/limiter"
 )
 
-func TestShutdownConfigGetTimeout(t *testing.T) {
-	config := ShutdownConfig{}
-	assert.False(t, config.RejectRequest)
+var ReachLimitationErrorString = fmt.Sprintf("%s: %s",
+	adaptivesvc.ErrAdaptiveSvcInterrupted.Error(),
+	adasvcfilter.ErrReachLimitation.Error())
 
-	config = ShutdownConfig{
-		Timeout:     "60s",
-		StepTimeout: "10s",
+func DoesAdaptiveServiceReachLimitation(err error) bool {
+	if err == nil {
+		return false
 	}
+	return err.Error() == ReachLimitationErrorString
+}
 
-	assert.Equal(t, 60*time.Second, config.GetTimeout())
-	assert.Equal(t, 10*time.Second, config.GetStepTimeout())
-
-	config = ShutdownConfig{
-		Timeout:     "34ms",
-		StepTimeout: "79ms",
+func IsAdaptiveServiceFailed(err error) bool {
+	if err == nil {
+		return false
 	}
-
-	assert.Equal(t, 34*time.Millisecond, config.GetTimeout())
-	assert.Equal(t, 79*time.Millisecond, config.GetStepTimeout())
+	return strings.HasPrefix(err.Error(), adaptivesvc.ErrAdaptiveSvcInterrupted.Error())
 }

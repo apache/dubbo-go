@@ -228,13 +228,9 @@ func unpackResponseBody(decoder *hessian.Decoder, resp interface{}) error {
 			}
 		}
 
-		// If the return value is nil,
-		// we should consider it normal
-		if rsp == nil {
-			return nil
-		}
+		response.RspObj = rsp
 
-		return perrors.WithStack(ReflectResponse(rsp, response.RspObj))
+		return nil
 
 	case RESPONSE_NULL_VALUE, RESPONSE_NULL_VALUE_WITH_ATTACHMENTS:
 		if rspType == RESPONSE_NULL_VALUE_WITH_ATTACHMENTS {

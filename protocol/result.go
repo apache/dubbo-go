@@ -71,7 +71,7 @@ func (r *RPCResult) Result() interface{} {
 	return r.Rest
 }
 
-// SetAttachments replaces the existing attachments with the specified param.
+// SetAttachment replaces the existing attachments with the specified param.
 func (r *RPCResult) SetAttachments(attr map[string]interface{}) {
 	r.Attrs = attr
 }

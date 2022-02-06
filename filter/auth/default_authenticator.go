@@ -69,10 +69,10 @@ func (authenticator *defaultAuthenticator) Sign(invocation protocol.Invocation, 
 	if err != nil {
 		return err
 	}
-	inv.SetAttachments(constant.RequestSignatureKey, signature)
-	inv.SetAttachments(constant.RequestTimestampKey, currentTimeMillis)
-	inv.SetAttachments(constant.AKKey, accessKeyPair.AccessKey)
-	inv.SetAttachments(constant.Consumer, consumer)
+	inv.SetAttachment(constant.RequestSignatureKey, signature)
+	inv.SetAttachment(constant.RequestTimestampKey, currentTimeMillis)
+	inv.SetAttachment(constant.AKKey, accessKeyPair.AccessKey)
+	inv.SetAttachment(constant.Consumer, consumer)
 	return nil
 }
 
@@ -97,11 +97,11 @@ func getSignature(url *common.URL, invocation protocol.Invocation, secrectKey st
 
 // Authenticate verifies whether the signature sent by the requester is correct
 func (authenticator *defaultAuthenticator) Authenticate(invocation protocol.Invocation, url *common.URL) error {
-	accessKeyId := invocation.AttachmentsByKey(constant.AKKey, "")
+	accessKeyId := invocation.GetAttachmentWithDefaultValue(constant.AKKey, "")
 
-	requestTimestamp := invocation.AttachmentsByKey(constant.RequestTimestampKey, "")
-	originSignature := invocation.AttachmentsByKey(constant.RequestSignatureKey, "")
-	consumer := invocation.AttachmentsByKey(constant.Consumer, "")
+	requestTimestamp := invocation.GetAttachmentWithDefaultValue(constant.RequestTimestampKey, "")
+	originSignature := invocation.GetAttachmentWithDefaultValue(constant.RequestSignatureKey, "")
+	consumer := invocation.GetAttachmentWithDefaultValue(constant.Consumer, "")
 	if IsEmpty(accessKeyId, false) || IsEmpty(consumer, false) ||
 		IsEmpty(requestTimestamp, false) || IsEmpty(originSignature, false) {
 		return errors.New("failed to authenticate your ak/sk, maybe the consumer has not enabled the auth")

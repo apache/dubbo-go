@@ -63,7 +63,7 @@ package dubbo
 //	assert.Equal(t, User{ID: "1", Name: "username"}, *res.Result().(*User))
 //
 //	// CallOneway
-//	inv.SetAttachments(constant.ASYNC_KEY, "true")
+//	inv.SetAttachment(constant.ASYNC_KEY, "true")
 //	res = invoker.Invoke(context.Background(), inv)
 //	assert.NoError(t, res.Error())
 //
@@ -81,7 +81,7 @@ package dubbo
 //	assert.NoError(t, res.Error())
 //
 //	// Err_No_Reply
-//	inv.SetAttachments(constant.ASYNC_KEY, "false")
+//	inv.SetAttachment(constant.ASYNC_KEY, "false")
 //	inv.SetReply(nil)
 //	res = invoker.Invoke(context.Background(), inv)
 //	assert.EqualError(t, res.Error(), "request need @response")

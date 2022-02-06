@@ -101,20 +101,14 @@ func GetRootConfig() *RootConfig {
 }
 
 func GetProviderConfig() *ProviderConfig {
-	if err := check(); err != nil {
-		return NewProviderConfigBuilder().Build()
-	}
-	if rootConfig.Provider != nil {
+	if err := check(); err == nil && rootConfig.Provider != nil {
 		return rootConfig.Provider
 	}
 	return NewProviderConfigBuilder().Build()
 }
 
 func GetConsumerConfig() *ConsumerConfig {
-	if err := check(); err != nil {
-		return NewConsumerConfigBuilder().Build()
-	}
-	if rootConfig.Consumer != nil {
+	if err := check(); err == nil && rootConfig.Consumer != nil {
 		return rootConfig.Consumer
 	}
 	return NewConsumerConfigBuilder().Build()
@@ -122,6 +116,13 @@ func GetConsumerConfig() *ConsumerConfig {
 
 func GetApplicationConfig() *ApplicationConfig {
 	return rootConfig.Application
+}
+
+func GetShutDown() *ShutdownConfig {
+	if err := check(); err == nil && rootConfig.Shutdown != nil {
+		return rootConfig.Shutdown
+	}
+	return NewShutDownConfigBuilder().Build()
 }
 
 // getRegistryIds get registry ids
@@ -208,6 +209,9 @@ func (rc *RootConfig) Init() error {
 	if err := rc.Consumer.Init(rc); err != nil {
 		return err
 	}
+	if err := rc.Shutdown.Init(); err != nil {
+		return err
+	}
 	// todo if we can remove this from Init in the future?
 	rc.Start()
 	return nil
@@ -215,6 +219,7 @@ func (rc *RootConfig) Init() error {
 
 func (rc *RootConfig) Start() {
 	startOnce.Do(func() {
+		gracefulShutdownInit()
 		rc.Consumer.Load()
 		rc.Provider.Load()
 		// todo if register consumer instance or has exported services
@@ -237,6 +242,7 @@ func newEmptyRootConfig() *RootConfig {
 		Metric:         NewMetricConfigBuilder().Build(),
 		Logger:         NewLoggerConfigBuilder().Build(),
 		Custom:         NewCustomConfigBuilder().Build(),
+		Shutdown:       NewShutDownConfigBuilder().Build(),
 	}
 	return newRootConfig
 }
@@ -326,6 +332,11 @@ func (rb *RootConfigBuilder) SetConfigCenter(configCenterConfig *CenterConfig) *
 
 func (rb *RootConfigBuilder) SetCustom(customConfig *CustomConfig) *RootConfigBuilder {
 	rb.rootConfig.Custom = customConfig
+	return rb
+}
+
+func (rb *RootConfigBuilder) SetShutDown(shutDownConfig *ShutdownConfig) *RootConfigBuilder {
+	rb.rootConfig.Shutdown = shutDownConfig
 	return rb
 }
 

@@ -174,7 +174,7 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 
 	for _, k := range attachmentKey {
 		if v := di.GetURL().GetParam(k, ""); len(v) > 0 {
-			invocation.SetAttachments(k, v)
+			invocation.SetAttachment(k, v)
 		}
 	}
 
@@ -217,12 +217,12 @@ func (di *DubboInvoker) getTimeout(invocation *invocation_impl.RPCInvocation) ti
 	if len(timeout) != 0 {
 		if t, err := time.ParseDuration(timeout); err == nil {
 			// config timeout into attachment
-			invocation.SetAttachments(constant.TimeoutKey, strconv.Itoa(int(t.Milliseconds())))
+			invocation.SetAttachment(constant.TimeoutKey, strconv.Itoa(int(t.Milliseconds())))
 			return t
 		}
 	}
 	// set timeout into invocation at method level
-	invocation.SetAttachments(constant.TimeoutKey, strconv.Itoa(int(di.timeout.Milliseconds())))
+	invocation.SetAttachment(constant.TimeoutKey, strconv.Itoa(int(di.timeout.Milliseconds())))
 	return di.timeout
 }
 

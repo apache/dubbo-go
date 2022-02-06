@@ -279,22 +279,17 @@ func (dir *RegistryDirectory) convertUrl(res *registry.ServiceEvent) *common.URL
 }
 
 func (dir *RegistryDirectory) toGroupInvokers() []protocol.Invoker {
-	var (
-		err             error
-		newInvokersList []protocol.Invoker
-	)
+	var err error
+
 	groupInvokersMap := make(map[string][]protocol.Invoker)
 
 	dir.cacheInvokersMap.Range(func(key, value interface{}) bool {
-		newInvokersList = append(newInvokersList, value.(protocol.Invoker))
+		invoker := value.(protocol.Invoker)
+		group := invoker.GetURL().GetParam(constant.GroupKey, "")
+		groupInvokersMap[group] = append(groupInvokersMap[group], invoker)
 		return true
 	})
 
-	for _, invoker := range newInvokersList {
-		group := invoker.GetURL().GetParam(constant.GroupKey, "")
-
-		groupInvokersMap[group] = append(groupInvokersMap[group], invoker)
-	}
 	groupInvokersList := make([]protocol.Invoker, 0, len(groupInvokersMap))
 	if len(groupInvokersMap) == 1 {
 		// len is 1 it means no group setting ,so do not need cluster again

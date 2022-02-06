@@ -24,6 +24,10 @@ const (
 )
 
 const (
+	ClientNameKey = "remote-client-name"
+)
+
+const (
 	GroupKey               = "group"
 	VersionKey             = "version"
 	InterfaceKey           = "interface"
@@ -49,6 +53,7 @@ const (
 	PortKey                = "port"
 	ProtocolKey            = "protocol"
 	PathSeparator          = "/"
+	DotSeparator           = "."
 	CommaSeparator         = ","
 	SslEnabledKey          = "ssl-enabled"
 	// ParamsTypeKey key used in pass through invoker factory, to define param type

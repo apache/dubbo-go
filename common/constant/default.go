@@ -27,11 +27,8 @@ const (
 )
 
 const (
-	DefaultWeight = 100     //
-	DefaultWarmup = 10 * 60 // in java here is 10*60*1000 because of System.currentTimeMillis() is measured in milliseconds & in go time.Unix() is second
-)
-
-const (
+	DefaultWeight           = 100     //
+	DefaultWarmup           = 10 * 60 // in java here is 10*60*1000 because of System.currentTimeMillis() is measured in milliseconds & in go time.Unix() is second
 	DefaultLoadBalance      = "random"
 	DefaultRetries          = "2"
 	DefaultRetriesInt       = 2
@@ -60,8 +57,7 @@ const (
 	// that put the AdaptiveServiceProviderFilterKey at the end.
 	DefaultServiceFilters = EchoFilterKey + "," +
 		MetricsFilterKey + "," + TokenFilterKey + "," + AccessLogFilterKey + "," + TpsLimitFilterKey + "," +
-		GenericServiceFilterKey + "," + ExecuteLimitFilterKey + "," + GracefulShutdownProviderFilterKey + "," +
-		AdaptiveServiceProviderFilterKey
+		GenericServiceFilterKey + "," + ExecuteLimitFilterKey + "," + GracefulShutdownProviderFilterKey
 
 	DefaultReferenceFilters = GracefulShutdownConsumerFilterKey
 )

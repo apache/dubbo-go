@@ -21,6 +21,7 @@ import (
 	"container/list"
 	"fmt"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -80,6 +81,7 @@ type ServiceConfig struct {
 	RCProtocolsMap  map[string]*ProtocolConfig
 	RCRegistriesMap map[string]*RegistryConfig
 	ProxyFactoryKey string
+	adaptiveService bool
 	unexported      *atomic.Bool
 	exported        *atomic.Bool
 	export          bool // a flag to control whether the current service should export or not
@@ -377,11 +379,16 @@ func (svc *ServiceConfig) getUrlMap() url.Values {
 	urlMap.Set(constant.EnvironmentKey, ac.Environment)
 
 	// filter
+	var filters string
 	if svc.Filter == "" {
-		urlMap.Set(constant.ServiceFilterKey, constant.DefaultServiceFilters)
+		filters = constant.DefaultServiceFilters
 	} else {
-		urlMap.Set(constant.ServiceFilterKey, svc.Filter)
+		filters = svc.Filter
 	}
+	if svc.adaptiveService {
+		filters += fmt.Sprintf(",%s", constant.AdaptiveServiceProviderFilterKey)
+	}
+	urlMap.Set(constant.ServiceFilterKey, filters)
 
 	// filter special config
 	urlMap.Set(constant.AccessLogFilterKey, svc.AccessLog)
@@ -403,6 +410,7 @@ func (svc *ServiceConfig) getUrlMap() url.Values {
 
 	// whether to export or not
 	urlMap.Set(constant.ExportKey, strconv.FormatBool(svc.export))
+	urlMap.Set(constant.PIDKey, fmt.Sprintf("%d", os.Getpid()))
 
 	for _, v := range svc.Methods {
 		prefix := "methods." + v.Name + "."

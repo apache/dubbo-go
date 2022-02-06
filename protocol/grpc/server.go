@@ -165,3 +165,8 @@ func registerService(providerServices map[string]*config.ServiceConfig, server *
 func (s *Server) Stop() {
 	s.grpcServer.Stop()
 }
+
+// GracefulStop gRPC server
+func (s *Server) GracefulStop() {
+	s.grpcServer.GracefulStop()
+}

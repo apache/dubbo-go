@@ -116,39 +116,52 @@ func doTestResponse(t *testing.T, packageType PackageType, responseStatus byte, 
 func TestResponse(t *testing.T) {
 	caseObj := Case{A: "a", B: 1}
 	decodedResponse := &DubboResponse{}
+	hessian.RegisterPOJO(&caseObj)
 
 	arr := []*Case{&caseObj}
-	var arrRes []interface{}
-	decodedResponse.RspObj = &arrRes
+	decodedResponse.RspObj = nil
 	doTestResponse(t, PackageResponse, Response_OK, arr, decodedResponse, func() {
+		arrRes, ok := decodedResponse.RspObj.([]*Case)
+		if !ok {
+			t.Errorf("expect []*Case, but get %s", reflect.TypeOf(decodedResponse.RspObj).String())
+			return
+		}
 		assert.Equal(t, 1, len(arrRes))
 		assert.Equal(t, &caseObj, arrRes[0])
 	})
 
-	decodedResponse.RspObj = &Case{}
-	doTestResponse(t, PackageResponse, Response_OK, &Case{A: "a", B: 1}, decodedResponse, nil)
+	doTestResponse(t, PackageResponse, Response_OK, &caseObj, decodedResponse, func() {
+		assert.Equal(t, &caseObj, decodedResponse.RspObj)
+	})
 
 	s := "ok!!!!!"
-	strObj := ""
-	decodedResponse.RspObj = &strObj
-	doTestResponse(t, PackageResponse, Response_OK, s, decodedResponse, nil)
+	doTestResponse(t, PackageResponse, Response_OK, s, decodedResponse, func() {
+		assert.Equal(t, s, decodedResponse.RspObj)
+	})
 
-	var intObj int64
-	decodedResponse.RspObj = &intObj
-	doTestResponse(t, PackageResponse, Response_OK, int64(3), decodedResponse, nil)
+	doTestResponse(t, PackageResponse, Response_OK, int64(3), decodedResponse, func() {
+		assert.Equal(t, int64(3), decodedResponse.RspObj)
+	})
 
-	boolObj := false
-	decodedResponse.RspObj = &boolObj
-	doTestResponse(t, PackageResponse, Response_OK, true, decodedResponse, nil)
+	doTestResponse(t, PackageResponse, Response_OK, true, decodedResponse, func() {
+		assert.Equal(t, true, decodedResponse.RspObj)
+	})
 
-	strObj = ""
-	decodedResponse.RspObj = &strObj
-	doTestResponse(t, PackageResponse, hessian.Response_SERVER_ERROR, "error!!!!!", decodedResponse, nil)
+	errorMsg := "error!!!!!"
+	decodedResponse.RspObj = nil
+	doTestResponse(t, PackageResponse, Response_SERVER_ERROR, errorMsg, decodedResponse, func() {
+		assert.Equal(t, "java exception:error!!!!!", decodedResponse.Exception.Error())
+	})
 
+	decodedResponse.RspObj = nil
+	decodedResponse.Exception = nil
 	mapObj := map[string][]*Case{"key": {&caseObj}}
-	mapRes := map[interface{}]interface{}{}
-	decodedResponse.RspObj = &mapRes
 	doTestResponse(t, PackageResponse, Response_OK, mapObj, decodedResponse, func() {
+		mapRes, ok := decodedResponse.RspObj.(map[interface{}]interface{})
+		if !ok {
+			t.Errorf("expect map[string][]*Case, but get %s", reflect.TypeOf(decodedResponse.RspObj).String())
+			return
+		}
 		c, ok := mapRes["key"]
 		if !ok {
 			assert.FailNow(t, "no key in decoded response map")
@@ -214,7 +227,7 @@ func TestHessianCodec_ReadAttachments(t *testing.T) {
 	t.Log(h)
 
 	err = codecR1.ReadBody(body)
-	assert.Equal(t, "can not find go type name com.test.caseb in registry", err.Error())
+	assert.NoError(t, err)
 	attrs, err := codecR2.ReadAttachments()
 	assert.NoError(t, err)
 	assert.Equal(t, "2.6.4", attrs[DUBBO_VERSION_KEY])
