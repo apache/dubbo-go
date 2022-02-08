@@ -1,6 +1,26 @@
 # Release Notes
 ---
 
+## 1.5.8-rc1
+
+### New Features
+
+- [support $invokeAsync](https://github.com/apache/dubbo-go/pull/1682)
+- [support multi registry address](https://github.com/apache/dubbo-go/pull/1671)
+- [1.5 support nacos ContextPath](https://github.com/apache/dubbo-go/pull/1655)
+- [support custom registry group name on nacos for 1.5](https://github.com/apache/dubbo-go/commit/fbe3ed4fd93f1d07d81c2f88fc1bbbd7b8f99c21)
+
+### Enhancement
+
+- [remove black_list module](https://github.com/apache/dubbo-go/pull/1605)
+
+### Bugfixes
+
+- [upgrade getty from 1.4.5 to 1.4.7](https://github.com/apache/dubbo-go/pull/1719)
+- [1.5.7 MetadataReportConfig lost the error](https://github.com/apache/dubbo-go/pull/1662)
+- [url too many colons in address](https://github.com/apache/dubbo-go/pull/1306)
+- [1.5 fix the nacos namespace from server/client.yml does not take effect](https://github.com/apache/dubbo-go/pull/1576)
+
 ## 1.5.7
 
 ### New Features
