@@ -220,8 +220,8 @@ func (rc *RootConfig) Init() error {
 func (rc *RootConfig) Start() {
 	startOnce.Do(func() {
 		gracefulShutdownInit()
-		rc.Consumer.Load()
 		rc.Provider.Load()
+		rc.Consumer.Load()
 		// todo if register consumer instance or has exported services
 		exportMetadataService()
 		registerServiceInstance()
