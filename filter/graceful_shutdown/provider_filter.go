@@ -89,7 +89,7 @@ func (f *providerGracefulShutdownFilter) rejectNewRequest() bool {
 	if f.shutdownConfig == nil {
 		return false
 	}
-	return f.shutdownConfig.RejectRequest
+	return f.shutdownConfig.RejectRequest.Load()
 }
 
 func (f *providerGracefulShutdownFilter) getRejectHandler() filter.RejectedExecutionHandler {

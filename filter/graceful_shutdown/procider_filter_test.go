@@ -65,7 +65,7 @@ func TestProviderFilterInvoke(t *testing.T) {
 	assert.NotNil(t, result)
 	assert.Nil(t, result.Error())
 
-	config.GetShutDown().RejectRequest = true
+	config.GetShutDown().RejectRequest.Store(true)
 	result = filter.Invoke(context.Background(), protocol.NewBaseInvoker(url), invocation)
 	assert.NotNil(t, result)
 	assert.NotNil(t, result.Error().Error(), "Rejected")
