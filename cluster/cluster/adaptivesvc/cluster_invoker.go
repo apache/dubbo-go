@@ -66,6 +66,7 @@ func (ivk *adaptiveServiceClusterInvoker) Invoke(ctx context.Context, invocation
 	invoker := lb.Select(invokers, invocation)
 
 	// invoke
+	invocation.SetAttachment(constant.AdaptiveServiceEnabledKey, constant.AdaptiveServiceIsEnabled)
 	result := invoker.Invoke(ctx, invocation)
 
 	// if the adaptive service encounters an error, DO NOT
