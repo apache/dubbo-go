@@ -380,4 +380,7 @@ const (
 	// attachment keys
 	AdaptiveServiceRemainingKey = "adaptive-service.remaining"
 	AdaptiveServiceInflightKey  = "adaptive-service.inflight"
+	AdaptiveServiceEnabledKey   = "adaptive-service.enabled"
+	// enabled value
+	AdaptiveServiceIsEnabled = "1"
 )

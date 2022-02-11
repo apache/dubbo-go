@@ -64,6 +64,11 @@ func newAdaptiveServiceProviderFilter() filter.Filter {
 
 func (f *adaptiveServiceProviderFilter) Invoke(ctx context.Context, invoker protocol.Invoker,
 	invocation protocol.Invocation) protocol.Result {
+	if invocation.GetAttachmentWithDefaultValue(constant.AdaptiveServiceEnabledKey, "") !=
+		constant.AdaptiveServiceIsEnabled {
+		// the adaptive service is enabled on the invocation
+		return invoker.Invoke(ctx, invocation)
+	}
 
 	l, err := limiterMapperSingleton.getMethodLimiter(invoker.GetURL(), invocation.MethodName())
 	if err != nil {
@@ -91,6 +96,10 @@ func (f *adaptiveServiceProviderFilter) Invoke(ctx context.Context, invoker prot
 
 func (f *adaptiveServiceProviderFilter) OnResponse(_ context.Context, result protocol.Result, invoker protocol.Invoker,
 	invocation protocol.Invocation) protocol.Result {
+	if result.Attachment(constant.AdaptiveServiceEnabledKey, "") != constant.AdaptiveServiceIsEnabled {
+		// the adaptive service is enabled on the invocation
+		return result
+	}
 
 	if isErrAdaptiveSvcInterrupted(result.Error()) {
 		// If the Invoke method of the adaptiveServiceProviderFilter returns an error,
