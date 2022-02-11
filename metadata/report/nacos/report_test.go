@@ -19,6 +19,7 @@ package nacos
 
 import (
 	"net/http"
+	"net/url"
 	"strconv"
 	"testing"
 	"time"
@@ -54,7 +55,11 @@ func TestNacosMetadataReport_CRUD(t *testing.T) {
 	assert.Nil(t, err)
 
 	serviceMi := newServiceMetadataIdentifier()
-	serviceUrl, _ := common.NewURL("registry://console.nacos.io:80", common.WithParamsValue(constant.RegistryRoleKey, strconv.Itoa(common.PROVIDER)))
+
+	serviceUrl, _ := common.NewURL("registry://console.nacos.io:80",
+		common.WithParamsValue(constant.RegistryRoleKey, strconv.Itoa(common.PROVIDER)),
+		common.WithParamsValue(constant.ClientNameKey, "nacos-client"))
+
 	err = rpt.SaveServiceMetadata(serviceMi, serviceUrl)
 	assert.Nil(t, err)
 
@@ -97,7 +102,16 @@ func TestNacosMetadataReportFactory_CreateMetadataReport(t *testing.T) {
 }
 
 func newTestReport() report.MetadataReport {
-	regurl, _ := common.NewURL("registry://console.nacos.io:80", common.WithParamsValue(constant.RegistryRoleKey, strconv.Itoa(common.PROVIDER)))
+	params := url.Values{}
+	params.Set(constant.NacosNotLoadLocalCache, "true")
+
+	params.Set(constant.NacosNamespaceID, "nacos")
+	params.Set(constant.TimeoutKey, "5s")
+	params.Set(constant.ClientNameKey, "nacos-client")
+	params.Set(constant.RegistryRoleKey, strconv.Itoa(common.PROVIDER))
+
+	regurl, _ := common.NewURL("registry://console.nacos.io:80", common.WithParams(params))
+
 	res := extension.GetMetadataReportFactory("nacos").CreateMetadataReport(regurl)
 	return res
 }

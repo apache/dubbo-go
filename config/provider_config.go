@@ -25,6 +25,8 @@ import (
 	"github.com/creasty/defaults"
 
 	tripleConstant "github.com/dubbogo/triple/pkg/common/constant"
+
+	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -49,8 +51,10 @@ type ProviderConfig struct {
 	FilterConf   interface{}               `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf"`
 	ConfigType   map[string]string         `yaml:"config_type" json:"config_type,omitempty" property:"config_type"`
 	// adaptive service
+	AdaptiveService        bool `default:"false" yaml:"adaptive-service" json:"adaptive-service" property:"adaptive-service"`
 	AdaptiveServiceVerbose bool `default:"false" yaml:"adaptive-service-verbose" json:"adaptive-service-verbose" property:"adaptive-service-verbose"`
-	rootConfig             *RootConfig
+
+	rootConfig *RootConfig
 }
 
 func (ProviderConfig) Prefix() string {
@@ -97,6 +101,8 @@ func (c *ProviderConfig) Init(rc *RootConfig) error {
 		if err := serviceConfig.Init(rc); err != nil {
 			return err
 		}
+
+		serviceConfig.adaptiveService = c.AdaptiveService
 	}
 
 	for k, v := range rc.Protocols {
@@ -117,6 +123,10 @@ func (c *ProviderConfig) Init(rc *RootConfig) error {
 	}
 	// enable adaptive service verbose
 	if c.AdaptiveServiceVerbose {
+		if !c.AdaptiveService {
+			return perrors.Errorf("The adaptive service is disabled, " +
+				"adaptive service verbose should be disabled either.")
+		}
 		logger.Infof("adaptive service verbose is enabled.")
 		logger.Debugf("debug-level info could be shown.")
 		aslimiter.Verbose = true

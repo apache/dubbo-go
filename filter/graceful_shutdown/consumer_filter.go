@@ -20,7 +20,6 @@ package graceful_shutdown
 import (
 	"context"
 	"sync"
-	"sync/atomic"
 )
 
 import (
@@ -60,13 +59,13 @@ func newConsumerGracefulShutdownFilter() filter.Filter {
 
 // Invoke adds the requests count and block the new requests if application is closing
 func (f *consumerGracefulShutdownFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
-	atomic.AddInt32(&f.shutdownConfig.ConsumerActiveCount, 1)
+	f.shutdownConfig.ConsumerActiveCount.Inc()
 	return invoker.Invoke(ctx, invocation)
 }
 
 // OnResponse reduces the number of active processes then return the process result
 func (f *consumerGracefulShutdownFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
-	atomic.AddInt32(&f.shutdownConfig.ConsumerActiveCount, -1)
+	f.shutdownConfig.ConsumerActiveCount.Dec()
 	return result
 }
 

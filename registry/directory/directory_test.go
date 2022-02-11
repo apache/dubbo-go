@@ -28,7 +28,9 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/cluster/cluster"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/router"
+	_ "dubbo.apache.org/dubbo-go/v3/cluster/router/v3router"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
@@ -184,4 +186,45 @@ func normalRegistryDir(noMockEvent ...bool) (*RegistryDirectory, *registry.MockR
 		}
 	}
 	return dir.(*RegistryDirectory), mockRegistry.(*registry.MockRegistry)
+}
+
+func TestToGroupInvokers(t *testing.T) {
+	t.Run("SameGroup", func(t *testing.T) {
+		registryDirectory, mockRegistry := normalRegistryDir(true)
+		providerUrl, _ := common.NewURL("dubbo://0.0.0.0:20000/org.apache.dubbo-go.mockService",
+			common.WithParamsValue(constant.ClusterKey, "mock1"),
+			common.WithParamsValue(constant.GroupKey, "group"),
+			common.WithParamsValue(constant.VersionKey, "1.0.0"))
+		mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: providerUrl})
+		time.Sleep(1e9)
+		assert.True(t, len(registryDirectory.toGroupInvokers()) == 1)
+		providerUrl1, _ := common.NewURL("dubbo://0.0.0.0:20001/org.apache.dubbo-go.mockService",
+			common.WithParamsValue(constant.ClusterKey, "mock1"),
+			common.WithParamsValue(constant.GroupKey, "group"),
+			common.WithParamsValue(constant.VersionKey, "1.0.0"))
+		mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: providerUrl1})
+		time.Sleep(1e9)
+		assert.True(t, len(registryDirectory.toGroupInvokers()) == 2)
+	})
+
+	t.Run("DifferentGroup", func(t *testing.T) {
+		extension.SetCluster("mock", cluster.NewMockCluster)
+
+		registryDirectory, mockRegistry := normalRegistryDir(true)
+		providerUrl, _ := common.NewURL("dubbo://0.0.0.0:20000/org.apache.dubbo-go.mockService",
+			common.WithParamsValue(constant.ClusterKey, "mock1"),
+			common.WithParamsValue(constant.GroupKey, "group"),
+			common.WithParamsValue(constant.VersionKey, "1.0.0"))
+		mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: providerUrl})
+		time.Sleep(1e9)
+		assert.True(t, len(registryDirectory.toGroupInvokers()) == 1)
+
+		providerUrl1, _ := common.NewURL("dubbo://0.0.0.0:20000/org.apache.dubbo-go.mockService",
+			common.WithParamsValue(constant.ClusterKey, "mock1"),
+			common.WithParamsValue(constant.GroupKey, "group1"),
+			common.WithParamsValue(constant.VersionKey, "1.0.0"))
+		mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: providerUrl1})
+		time.Sleep(1e9)
+		assert.True(t, len(registryDirectory.toGroupInvokers()) == 2)
+	})
 }

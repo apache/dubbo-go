@@ -86,7 +86,7 @@ func (proto *registryProtocol) getRegistry(registryUrl *common.URL) registry.Reg
 		reg, err = extension.GetRegistry(registryUrl.Protocol, registryUrl)
 		if err != nil {
 			logger.Errorf("Registry can not connect success, program is going to panic.Error message is %s", err.Error())
-			panic(err.Error())
+			panic(err)
 		}
 		proto.registries.Store(registryUrl.Location, reg)
 	}

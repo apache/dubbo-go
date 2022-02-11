@@ -20,7 +20,6 @@ package graceful_shutdown
 import (
 	"context"
 	"sync"
-	"sync/atomic"
 )
 
 import (
@@ -72,13 +71,13 @@ func (f *providerGracefulShutdownFilter) Invoke(ctx context.Context, invoker pro
 			return rejectedExecutionHandler.RejectedExecution(invoker.GetURL(), invocation)
 		}
 	}
-	atomic.AddInt32(&f.shutdownConfig.ProviderActiveCount, 1)
+	f.shutdownConfig.ProviderActiveCount.Inc()
 	return invoker.Invoke(ctx, invocation)
 }
 
 // OnResponse reduces the number of active processes then return the process result
 func (f *providerGracefulShutdownFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
-	atomic.AddInt32(&f.shutdownConfig.ProviderActiveCount, -1)
+	f.shutdownConfig.ProviderActiveCount.Dec()
 	return result
 }
 

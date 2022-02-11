@@ -13,7 +13,7 @@ require (
 	github.com/creasty/defaults v1.5.2
 	github.com/dubbogo/go-zookeeper v1.0.4-0.20211212162352-f9d2183d89d5
 	github.com/dubbogo/gost v1.11.22
-	github.com/dubbogo/grpc-go v1.42.7
+	github.com/dubbogo/grpc-go v1.42.8
 	github.com/dubbogo/triple v1.1.8-rc2
 	github.com/emicklei/go-restful/v3 v3.7.3
 	github.com/fsnotify/fsnotify v1.5.1
@@ -30,21 +30,21 @@ require (
 	github.com/magiconair/properties v1.8.5
 	github.com/mitchellh/mapstructure v1.4.3
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
-	github.com/nacos-group/nacos-sdk-go v1.0.9
+	github.com/nacos-group/nacos-sdk-go v1.1.0
 	github.com/natefinch/lumberjack v2.0.0+incompatible
 	github.com/opentracing/opentracing-go v1.2.0
 	github.com/pkg/errors v0.9.1
 	github.com/polarismesh/polaris-go v1.0.1
-	github.com/prometheus/client_golang v1.12.0
+	github.com/prometheus/client_golang v1.12.1
 	github.com/satori/go.uuid v1.2.1-0.20181028125025-b2ce2384e17b
 	github.com/stretchr/testify v1.7.0
 	github.com/zouyx/agollo/v3 v3.4.5
-	go.etcd.io/etcd/api/v3 v3.5.1
-	go.etcd.io/etcd/client/v3 v3.5.0
-	go.etcd.io/etcd/server/v3 v3.5.0-alpha.0
+	go.etcd.io/etcd/api/v3 v3.5.2
+	go.etcd.io/etcd/client/v3 v3.5.2
+	go.etcd.io/etcd/server/v3 v3.5.2
 	go.uber.org/atomic v1.9.0
 	go.uber.org/zap v1.20.0
-	google.golang.org/grpc v1.43.0
+	google.golang.org/grpc v1.44.0
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/apimachinery v0.22.4

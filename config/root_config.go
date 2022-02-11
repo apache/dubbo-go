@@ -101,20 +101,14 @@ func GetRootConfig() *RootConfig {
 }
 
 func GetProviderConfig() *ProviderConfig {
-	if err := check(); err != nil {
-		return NewProviderConfigBuilder().Build()
-	}
-	if rootConfig.Provider != nil {
+	if err := check(); err == nil && rootConfig.Provider != nil {
 		return rootConfig.Provider
 	}
 	return NewProviderConfigBuilder().Build()
 }
 
 func GetConsumerConfig() *ConsumerConfig {
-	if err := check(); err != nil {
-		return NewConsumerConfigBuilder().Build()
-	}
-	if rootConfig.Consumer != nil {
+	if err := check(); err == nil && rootConfig.Consumer != nil {
 		return rootConfig.Consumer
 	}
 	return NewConsumerConfigBuilder().Build()
@@ -125,10 +119,7 @@ func GetApplicationConfig() *ApplicationConfig {
 }
 
 func GetShutDown() *ShutdownConfig {
-	if err := check(); err != nil {
-		return NewShutDownConfigBuilder().Build()
-	}
-	if rootConfig.Shutdown != nil {
+	if err := check(); err == nil && rootConfig.Shutdown != nil {
 		return rootConfig.Shutdown
 	}
 	return NewShutDownConfigBuilder().Build()
