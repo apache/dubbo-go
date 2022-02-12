@@ -137,13 +137,22 @@ func (s *ServiceConfig) Init(rc *RootConfig) error {
 func (s *ServiceConfig) check() error {
 	// check if the limiter has been imported
 	if s.TpsLimiter != "" {
-		_ = extension.GetTpsLimiter(s.TpsLimiter)
+		_, err := extension.GetTpsLimiter(s.TpsLimiter)
+		if err != nil {
+			panic(err)
+		}
 	}
 	if s.TpsLimitStrategy != "" {
-		_ = extension.GetTpsLimitStrategyCreator(s.TpsLimitStrategy)
+		_, err := extension.GetTpsLimitStrategyCreator(s.TpsLimitStrategy)
+		if err != nil {
+			panic(err)
+		}
 	}
 	if s.TpsLimitRejectedHandler != "" {
-		_ = extension.GetTpsLimitStrategyCreator(s.TpsLimitStrategy)
+		_, err := extension.GetRejectedExecutionHandler(s.TpsLimitRejectedHandler)
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	if s.TpsLimitInterval != "" {

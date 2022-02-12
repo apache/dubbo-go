@@ -18,6 +18,10 @@
 package extension
 
 import (
+	"errors"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/filter"
 )
 
@@ -32,13 +36,13 @@ func SetTpsLimiter(name string, creator func() filter.TpsLimiter) {
 }
 
 // GetTpsLimiter finds the TpsLimiter with @name
-func GetTpsLimiter(name string) filter.TpsLimiter {
+func GetTpsLimiter(name string) (filter.TpsLimiter, error) {
 	creator, ok := tpsLimiter[name]
 	if !ok {
-		panic("TpsLimiter for " + name + " is not existing, make sure you have import the package " +
+		return nil, errors.New("TpsLimiter for " + name + " is not existing, make sure you have import the package " +
 			"and you have register it by invoking extension.SetTpsLimiter.")
 	}
-	return creator()
+	return creator(), nil
 }
 
 // SetTpsLimitStrategy sets the TpsLimitStrategyCreator with @name
@@ -47,11 +51,11 @@ func SetTpsLimitStrategy(name string, creator filter.TpsLimitStrategyCreator) {
 }
 
 // GetTpsLimitStrategyCreator finds the TpsLimitStrategyCreator with @name
-func GetTpsLimitStrategyCreator(name string) filter.TpsLimitStrategyCreator {
+func GetTpsLimitStrategyCreator(name string) (filter.TpsLimitStrategyCreator, error) {
 	creator, ok := tpsLimitStrategy[name]
 	if !ok {
-		panic("TpsLimitStrategy for " + name + " is not existing, make sure you have import the package " +
+		return nil, errors.New("TpsLimitStrategy for " + name + " is not existing, make sure you have import the package " +
 			"and you have register it by invoking extension.SetTpsLimitStrategy.")
 	}
-	return creator
+	return creator, nil
 }

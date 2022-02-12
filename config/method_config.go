@@ -79,7 +79,10 @@ func initProviderMethodConfig(sc *ServiceConfig) error {
 func (m *MethodConfig) check() error {
 	qualifieldMethodName := m.InterfaceName + "#" + m.Name
 	if m.TpsLimitStrategy != "" {
-		_ = extension.GetTpsLimitStrategyCreator(m.TpsLimitStrategy)
+		_, err := extension.GetTpsLimitStrategyCreator(m.TpsLimitStrategy)
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	if m.TpsLimitInterval != "" {

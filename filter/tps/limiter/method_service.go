@@ -166,7 +166,11 @@ func (limiter MethodServiceTpsLimiter) IsAllowable(url *common.URL, invocation p
 	// find the strategy config and then create one
 	limitStrategyConfig := url.GetParam(methodConfigPrefix+constant.TPSLimitStrategyKey,
 		url.GetParam(constant.TPSLimitStrategyKey, constant.DefaultKey))
-	limitStateCreator := extension.GetTpsLimitStrategyCreator(limitStrategyConfig)
+	limitStateCreator, err := extension.GetTpsLimitStrategyCreator(limitStrategyConfig)
+	if err != nil {
+		logger.Warn(err)
+		return true
+	}
 
 	// we using loadOrStore to ensure thread-safe
 	limitState, _ = limiter.tpsState.LoadOrStore(limitTarget, limitStateCreator.Create(int(limitRate), int(limitInterval)))
