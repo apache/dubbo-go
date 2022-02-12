@@ -19,7 +19,6 @@ package config
 
 import (
 	"net/url"
-	"strings"
 	"time"
 )
 
@@ -53,11 +52,6 @@ func (rc *RemoteConfig) Prefix() string {
 // nolint
 func (rc *RemoteConfig) Init() error {
 	return nil
-}
-
-// NameId unique identifier id for client
-func (rc *RemoteConfig) NameId() string {
-	return strings.Join([]string{rc.Prefix(), rc.Protocol, rc.Address}, "-")
 }
 
 // GetTimeout return timeout duration.
@@ -99,7 +93,7 @@ func (rc *RemoteConfig) getUrlMap() url.Values {
 	urlMap.Set(constant.ConfigUsernameKey, rc.Username)
 	urlMap.Set(constant.ConfigPasswordKey, rc.Password)
 	urlMap.Set(constant.ConfigTimeoutKey, rc.Timeout)
-	urlMap.Set(constant.ClientNameKey, rc.NameId())
+	urlMap.Set(constant.ClientNameKey, clientNameID(rc, rc.Protocol, rc.Protocol))
 
 	for key, val := range rc.Params {
 		urlMap.Set(key, val)
