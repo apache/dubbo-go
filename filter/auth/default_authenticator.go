@@ -135,8 +135,13 @@ func getAccessKeyPair(invocation protocol.Invocation, url *common.URL) (*filter.
 func doAuthWork(url *common.URL, do func(filter.Authenticator) error) error {
 	shouldAuth := url.GetParamBool(constant.ServiceAuthKey, false)
 	if shouldAuth {
-		authenticator := extension.GetAuthenticator(url.GetParam(constant.AuthenticatorKey, constant.DefaultAuthenticator))
-		return do(authenticator)
+		authenticator, exist := extension.GetAuthenticator(url.GetParam(constant.AuthenticatorKey, constant.DefaultAuthenticator))
+		if exist {
+			return do(authenticator)
+
+		} else {
+			return errors.New("Authenticator for " + constant.ServiceAuthKey + " is not existing, make sure you have import the package.")
+		}
 	}
 	return nil
 }
