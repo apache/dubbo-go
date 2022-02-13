@@ -112,9 +112,9 @@ const (
 	TPSLimiterKey                      = "tps.limiter"
 	TPSRejectedExecutionHandlerKey     = "tps.limit.rejected.handler"
 	TPSLimitRateKey                    = "tps.limit.rate"
-	DefaultTPSLimitRate                = "-1"
+	DefaultTPSLimitRate                = -1
 	TPSLimitIntervalKey                = "tps.limit.interval"
-	DefaultTPSLimitInterval            = "60000"
+	DefaultTPSLimitInterval            = -1
 	TPSLimitStrategyKey                = "tps.limit.strategy"
 	ExecuteLimitKey                    = "execute.limit"
 	DefaultExecuteLimit                = "-1"
