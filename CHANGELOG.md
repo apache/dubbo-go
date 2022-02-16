@@ -1,6 +1,31 @@
 # Release Notes
 ---
 
+## 3.0.1
+
+### Features
+
+- [Add Graceful Shutdown](https://github.com/apache/dubbo-go/pull/1675)
+- [Disabled Adaptive Service if set disabled by the Client](https://github.com/apache/dubbo-go/pull/1748)
+- [Don't load Adaptive Service Filter if not set ](https://github.com/apache/dubbo-go/pull/1735)
+
+### Bugfixs
+
+- [Fix: JSON-RPC request timeout time dynamically](https://github.com/apache/dubbo-go/pull/1713)
+- [Fix: the heartbeat of polaris cannot be reported](https://github.com/apache/dubbo-go/pull/1688)
+- [Fix: triple protocol request doesn't carry attachment such as group or version](https://github.com/apache/dubbo-go/pull/1700)
+- [Fix: location trim space](https://github.com/apache/dubbo-go/pull/1670)
+- [Fix: add category key to the Consumer for diff with Provider](https://github.com/apache/dubbo-go/pull/1672)
+
+### Enhancements
+
+- [Support `$invokeAsync` for generic service](https://github.com/apache/dubbo-go/pull/1674)
+- [Refactor invocation interface](https://github.com/apache/dubbo-go/pull/1702)
+- [Log print the caller ](https://github.com/apache/dubbo-go/pull/1732)
+- [Refactor Nacos listener check-healthy ](https://github.com/apache/dubbo-go/pull/1729)
+- [Refactor Zookeeper dynamic configuration listener](https://github.com/apache/dubbo-go/pull/1665)
+- [Support set Nacos ContextPath](https://github.com/apache/dubbo-go/pull/1656)
+
 ## 3.0.0
 
 ### Features
