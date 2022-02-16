@@ -5,9 +5,9 @@
 
 ### Features
 
-- [Add Graceful Shutdown](https://github.com/apache/dubbo-go/pull/1675)
-- [Disabled Adaptive Service if set disabled by the Client](https://github.com/apache/dubbo-go/pull/1748)
-- [Don't load Adaptive Service Filter if not set ](https://github.com/apache/dubbo-go/pull/1735)
+- [Support Graceful Shutdown](https://github.com/apache/dubbo-go/pull/1675)
+- [Support `$invokeAsync` for generic service](https://github.com/apache/dubbo-go/pull/1674)
+- [Support config the Nacos context path](https://github.com/apache/dubbo-go/pull/1656)
 
 ### Bugfixs
 
@@ -19,12 +19,13 @@
 
 ### Enhancements
 
-- [Support `$invokeAsync` for generic service](https://github.com/apache/dubbo-go/pull/1674)
-- [Refactor invocation interface](https://github.com/apache/dubbo-go/pull/1702)
+- [Disabled Adaptive Service if set disabled by the Client](https://github.com/apache/dubbo-go/pull/1748)
+- [Don't load Adaptive Service Filter if not set ](https://github.com/apache/dubbo-go/pull/1735)
 - [Log print the caller ](https://github.com/apache/dubbo-go/pull/1732)
+- [Refactor invocation interface](https://github.com/apache/dubbo-go/pull/1702)
 - [Refactor Nacos listener check-healthy ](https://github.com/apache/dubbo-go/pull/1729)
 - [Refactor Zookeeper dynamic configuration listener](https://github.com/apache/dubbo-go/pull/1665)
-- [Support set Nacos ContextPath](https://github.com/apache/dubbo-go/pull/1656)
+
 
 ## 3.0.0
 
