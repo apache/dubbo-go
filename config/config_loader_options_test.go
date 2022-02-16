@@ -18,6 +18,7 @@
 package config
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -70,4 +71,39 @@ func TestNewLoaderConf_WithSuffix(t *testing.T) {
 	)
 
 	assert.Equal(t, conf.suffix, string(file.PROPERTIES))
+}
+
+func TestResolverFilePath(t *testing.T) {
+	name, suffix := resolverFilePath("../config/application.properties")
+	assert.Equal(t, name, "application")
+	assert.Equal(t, suffix, "properties")
+}
+
+func TestResolverFilePath_Illegal_Path(t *testing.T) {
+	name, suffix := resolverFilePath("application.properties")
+	assert.Equal(t, name, "application")
+	assert.Equal(t, suffix, "properties")
+}
+
+func TestResolverFilePath_Illegal_Path_Name(t *testing.T) {
+	name, suffix := resolverFilePath("application")
+	assert.Equal(t, name, "application")
+	assert.Equal(t, suffix, string(file.YAML))
+}
+
+func Test_getActiveFilePath(t *testing.T) {
+	conf := NewLoaderConf(
+		WithSuffix(file.JSON),
+		WithPath("../config/testdata/config/properties/application.properties"),
+	)
+
+	filePath := conf.getActiveFilePath("dev")
+
+	assert.Equal(t, strings.HasSuffix(filePath, "application-dev.properties"), true)
+
+	exists := pathExists(filePath)
+	assert.Equal(t, exists, false)
+	exists = pathExists("application.properties")
+	assert.Equal(t, exists, false)
+
 }
