@@ -40,7 +40,7 @@ func TestLoaderConf_MergeConfig(t *testing.T) {
 	rc := NewRootConfigBuilder().Build()
 	conf := NewLoaderConf(WithPath("./testdata/config/active/application.yaml"))
 	koan := GetConfigResolver(conf)
-	koan = conf.MergeConfig(koan, nil)
+	koan = conf.MergeConfig(koan)
 
 	err := koan.UnmarshalWithConf(rc.Prefix(), rc, koanf.UnmarshalConf{Tag: "yaml"})
 	assert.Nil(t, err)
