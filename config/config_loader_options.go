@@ -232,8 +232,7 @@ func (conf *loaderConf) getActiveFilePath(active string) string {
 func pathExists(path string) bool {
 	if _, err := os.Stat(path); err == nil {
 		return true
-	} else if os.IsNotExist(err) {
-		return false
+	} else {
+		return !os.IsNotExist(err)
 	}
-	return false
 }
