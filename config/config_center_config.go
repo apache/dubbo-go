@@ -18,7 +18,6 @@
 package config
 
 import (
-	"fmt"
 	"net/url"
 	"strings"
 )
@@ -69,11 +68,6 @@ func (CenterConfig) Prefix() string {
 	return constant.ConfigCenterPrefix
 }
 
-// NameId unique identifier id for client
-func (c *CenterConfig) NameId() string {
-	return strings.Join([]string{c.Prefix(), c.Protocol, c.Address}, "-")
-}
-
 func (c *CenterConfig) check() error {
 	if err := defaults.Set(c); err != nil {
 		return err
@@ -100,7 +94,7 @@ func (c *CenterConfig) GetUrlMap() url.Values {
 	urlMap.Set(constant.ConfigClusterKey, c.Cluster)
 	urlMap.Set(constant.ConfigAppIDKey, c.AppID)
 	urlMap.Set(constant.ConfigTimeoutKey, c.Timeout)
-	urlMap.Set(constant.ClientNameKey, c.NameId())
+	urlMap.Set(constant.ClientNameKey, clientNameID(c, c.Protocol, c.Address))
 
 	for key, val := range c.Params {
 		urlMap.Set(key, val)
@@ -170,9 +164,9 @@ func (c *CenterConfig) CreateDynamicConfiguration() (config_center.DynamicConfig
 	if err != nil {
 		return nil, err
 	}
-	factory := extension.GetConfigCenterFactory(configCenterUrl.Protocol)
-	if factory == nil {
-		return nil, errors.New(fmt.Sprintf("Get config center factory of %s failed", configCenterUrl.Protocol))
+	factory, err := extension.GetConfigCenterFactory(configCenterUrl.Protocol)
+	if err != nil {
+		return nil, err
 	}
 	return factory.GetDynamicConfiguration(configCenterUrl)
 }

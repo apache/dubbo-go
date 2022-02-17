@@ -72,12 +72,22 @@ func (t *tpsLimitFilter) Invoke(ctx context.Context, invoker protocol.Invoker, i
 	tpsLimiter := url.GetParam(constant.TPSLimiterKey, "")
 	rejectedExeHandler := url.GetParam(constant.TPSRejectedExecutionHandlerKey, constant.DefaultKey)
 	if len(tpsLimiter) > 0 {
-		allow := extension.GetTpsLimiter(tpsLimiter).IsAllowable(invoker.GetURL(), invocation)
+		limiter, err := extension.GetTpsLimiter(tpsLimiter)
+		if err != nil {
+			logger.Warn(err)
+			return invoker.Invoke(ctx, invocation)
+		}
+		allow := limiter.IsAllowable(invoker.GetURL(), invocation)
 		if allow {
 			return invoker.Invoke(ctx, invocation)
 		}
 		logger.Errorf("The invocation was rejected due to over the limiter limitation, url: %s ", url.String())
-		return extension.GetRejectedExecutionHandler(rejectedExeHandler).RejectedExecution(url, invocation)
+		rejectedExecutionHandler, err := extension.GetRejectedExecutionHandler(rejectedExeHandler)
+		if err != nil {
+			logger.Warn(err)
+		} else {
+			return rejectedExecutionHandler.RejectedExecution(url, invocation)
+		}
 	}
 	return invoker.Invoke(ctx, invocation)
 }

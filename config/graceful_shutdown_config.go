@@ -67,7 +67,7 @@ type ShutdownConfig struct {
 	InternalSignal bool `default:"true" yaml:"internal-signal" json:"internal.signal,omitempty" property:"internal.signal"`
 
 	// true -> new request will be rejected.
-	RejectRequest bool
+	RejectRequest atomic.Bool
 	// active invocation
 	ConsumerActiveCount atomic.Int32
 	ProviderActiveCount atomic.Int32
@@ -138,7 +138,7 @@ func (scb *ShutdownConfigBuilder) SetRejectRequestHandler(rejectRequestHandler s
 }
 
 func (scb *ShutdownConfigBuilder) SetRejectRequest(rejectRequest bool) *ShutdownConfigBuilder {
-	scb.shutdownConfig.RejectRequest = rejectRequest
+	scb.shutdownConfig.RejectRequest.Store(rejectRequest)
 	return scb
 }
 

@@ -31,6 +31,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
@@ -150,6 +151,7 @@ func (limiter MethodServiceTpsLimiter) IsAllowable(url *common.URL, invocation p
 
 	if limitRate < 0 {
 		// the limitTarget is not necessary to be limited.
+		logger.Errorf("Found error configuration value of tps.limit.rate for the invocation %s, ignores TPS Limiter", url.ServiceKey()+"#"+invocation.MethodName())
 		return true
 	}
 
@@ -157,13 +159,18 @@ func (limiter MethodServiceTpsLimiter) IsAllowable(url *common.URL, invocation p
 		constant.TPSLimitIntervalKey,
 		constant.DefaultTPSLimitInterval)
 	if limitInterval <= 0 {
-		panic(fmt.Sprintf("The interval must be positive, please check your configuration! url: %s", url.String()))
+		logger.Errorf(fmt.Sprintf("Found error configuration value of tps.limit.interval for the invocation %s, ignores TPS Limiter", url.ServiceKey()+"#"+invocation.MethodName()))
+		return true
 	}
 
 	// find the strategy config and then create one
 	limitStrategyConfig := url.GetParam(methodConfigPrefix+constant.TPSLimitStrategyKey,
 		url.GetParam(constant.TPSLimitStrategyKey, constant.DefaultKey))
-	limitStateCreator := extension.GetTpsLimitStrategyCreator(limitStrategyConfig)
+	limitStateCreator, err := extension.GetTpsLimitStrategyCreator(limitStrategyConfig)
+	if err != nil {
+		logger.Warn(err)
+		return true
+	}
 
 	// we using loadOrStore to ensure thread-safe
 	limitState, _ = limiter.tpsState.LoadOrStore(limitTarget, limitStateCreator.Create(int(limitRate), int(limitInterval)))
@@ -178,22 +185,24 @@ func getLimitConfig(methodLevelConfig string,
 	url *common.URL,
 	invocation protocol.Invocation,
 	configKey string,
-	defaultVal string) int64 {
+	defaultVal int64) int64 {
 
 	if len(methodLevelConfig) > 0 {
 		result, err := strconv.ParseInt(methodLevelConfig, 0, 0)
 		if err != nil {
-			panic(fmt.Sprintf("The %s for invocation %s # %s must be positive, please check your configuration!",
+			logger.Error(fmt.Sprintf("The %s for invocation %s # %s must be positive, please check your configuration!",
 				configKey, url.ServiceKey(), invocation.MethodName()))
+			return defaultVal
 		}
 		return result
 	}
 
 	// actually there is no method-level configuration, so we use the service-level configuration
 
-	result, err := strconv.ParseInt(url.GetParam(configKey, defaultVal), 0, 0)
+	result, err := strconv.ParseInt(url.GetParam(configKey, ""), 0, 0)
 	if err != nil {
-		panic(fmt.Sprintf("Cannot parse the configuration %s, please check your configuration!", configKey))
+		logger.Errorf(fmt.Sprintf("Cannot parse the configuration %s, please check your configuration!", configKey))
+		return defaultVal
 	}
 	return result
 }

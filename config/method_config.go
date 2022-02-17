@@ -18,11 +18,17 @@
 package config
 
 import (
+	"fmt"
+	"strconv"
+)
+
+import (
 	"github.com/creasty/defaults"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
 )
 
 // MethodConfig defines method config
@@ -43,16 +49,16 @@ type MethodConfig struct {
 }
 
 // nolint
-func (mc *MethodConfig) Prefix() string {
-	if len(mc.InterfaceId) != 0 {
-		return constant.Dubbo + "." + mc.InterfaceName + "." + mc.InterfaceId + "." + mc.Name + "."
+func (m *MethodConfig) Prefix() string {
+	if len(m.InterfaceId) != 0 {
+		return constant.Dubbo + "." + m.InterfaceName + "." + m.InterfaceId + "." + m.Name + "."
 	}
 
-	return constant.Dubbo + "." + mc.InterfaceName + "." + mc.Name + "."
+	return constant.Dubbo + "." + m.InterfaceName + "." + m.Name + "."
 }
 
-func (mc *MethodConfig) Init() error {
-	return mc.check()
+func (m *MethodConfig) Init() error {
+	return m.check()
 }
 
 func initProviderMethodConfig(sc *ServiceConfig) error {
@@ -70,9 +76,37 @@ func initProviderMethodConfig(sc *ServiceConfig) error {
 }
 
 // check set default value and verify
-func (mc *MethodConfig) check() error {
-	if err := defaults.Set(mc); err != nil {
+func (m *MethodConfig) check() error {
+	qualifieldMethodName := m.InterfaceName + "#" + m.Name
+	if m.TpsLimitStrategy != "" {
+		_, err := extension.GetTpsLimitStrategyCreator(m.TpsLimitStrategy)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	if m.TpsLimitInterval != "" {
+		tpsLimitInterval, err := strconv.ParseInt(m.TpsLimitInterval, 0, 0)
+		if err != nil {
+			return fmt.Errorf("[MethodConfig] Cannot parse the configuration tps.limit.interval for method %s, please check your configuration", qualifieldMethodName)
+		}
+		if tpsLimitInterval < 0 {
+			return fmt.Errorf("[MethodConfig] The configuration tps.limit.interval for %s must be positive, please check your configuration", qualifieldMethodName)
+		}
+	}
+
+	if m.TpsLimitRate != "" {
+		tpsLimitRate, err := strconv.ParseInt(m.TpsLimitRate, 0, 0)
+		if err != nil {
+			return fmt.Errorf("[MethodConfig] Cannot parse the configuration tps.limit.rate for method %s, please check your configuration", qualifieldMethodName)
+		}
+		if tpsLimitRate < 0 {
+			return fmt.Errorf("[MethodConfig] The configuration tps.limit.rate for method %s must be positive, please check your configuration", qualifieldMethodName)
+		}
+	}
+
+	if err := defaults.Set(m); err != nil {
 		return err
 	}
-	return verify(mc)
+	return verify(m)
 }
