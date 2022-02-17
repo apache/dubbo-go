@@ -1,11 +1,12 @@
 package config
 
 import (
-	"github.com/knadh/koanf"
 	"testing"
 )
 
 import (
+	"github.com/knadh/koanf"
+
 	"github.com/stretchr/testify/assert"
 )
 
