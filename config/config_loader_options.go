@@ -201,22 +201,25 @@ func resolverFilePath(path string) (name, suffix string) {
 }
 
 //MergeConfig merge config file
-func (conf *loaderConf) MergeConfig(koan *koanf.Koanf, config []byte) *koanf.Koanf {
-	var activeKoan *koanf.Koanf
+func (conf *loaderConf) MergeConfig(koan *koanf.Koanf) *koanf.Koanf {
+	var (
+		activeKoan *koanf.Koanf
+		activeConf *loaderConf
+	)
 	active := koan.String("dubbo.profiles.active")
 	active = getLegalActive(active)
 	logger.Infof("The following profiles are active: %s", active)
-	if config == nil && defaultActive != active {
+	if defaultActive != active {
 		path := conf.getActiveFilePath(active)
 		if !pathExists(path) {
 			logger.Debugf("Config file:%s not exist skip config merge", path)
 			return koan
 		}
-		activeConf := NewLoaderConf(WithPath(path))
+		activeConf = NewLoaderConf(WithPath(path))
 		activeKoan = GetConfigResolver(activeConf)
-	}
-	if err := koan.Merge(activeKoan); err != nil {
-		logger.Debugf("Config merge err %s", err)
+		if err := koan.Merge(activeKoan); err != nil {
+			logger.Debugf("Config merge err %s", err)
+		}
 	}
 	return koan
 }
