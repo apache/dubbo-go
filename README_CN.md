@@ -65,6 +65,7 @@ Dubbo-go 生态覆盖多种网络协议：Triple、Dubbo、JSONRPC、gRPC、HTTP
 如果想知道 dubbogo 工具集更多更详细的使用细节，请访问 https://github.com/dubbogo/tools 并仔细阅读其 raedme。
 
 ## Intellij 插件
+
 * Windows:
   * File > Settings > Plugins > Browse repositories... > 搜索 "Dubbo Go" > Install Plugin
 * MacOS:

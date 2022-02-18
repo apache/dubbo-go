@@ -55,6 +55,7 @@ Dubbo-go has supported many RPC protocol, like Triple, Dubbo JSONRPC, gRPC, HTTP
 If you want to know more about dubbogo tools, please visit https://github.com/dubbogo/tools and read its readme carefully.
 
 ## Intellij Plugin
+
 * Using IDE built-in plugin system on Windows:
     * File > Settings > Plugins > Browse repositories... > Search for "Dubbo Go" > Install Plugin
 * Using IDE built-in plugin system on MacOS:
