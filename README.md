@@ -66,15 +66,15 @@ If you want to know more about dubbogo tools, please visit https://github.com/du
 
 |      Feature       | IDEA | GoLand |
 |:------------------:|:----:|:------:|
-| Hessian2 Generator | [x]  |  [x]   |
-| New Project/Module | [x]  |  [x]   |
+| Hessian2 Generator |  ✅️  |   ✅️   |
+| New Project/Module |  ✅️  |   ✅️   |
 
 
 |    Project/Module Template     | Progress |
 |:------------------------------:|:--------:|
-|    Sample (client, server)     |   [x]    |
-| Empty Project (minimum import) |   [x]    |
-|          Dubbo + Gin           |   [ ]    |
+|    Sample (client, server)     |    ✅️    |
+| Empty Project (minimum import) |    ✅️    |
+|          Dubbo + Gin           |    ⬜     |
 
 
 If you want to know more about dubbogo Intellij Plugin, please visit [https://gitee.com/changeden/intellij-plugin-dubbo-go-generator](https://gitee.com/changeden/intellij-plugin-dubbo-go-generator) and read its readme carefully.
