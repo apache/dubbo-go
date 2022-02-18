@@ -38,7 +38,7 @@ func TestApplicationConfig(t *testing.T) {
 	assert.NotNil(t, center)
 }
 
-func TestApplication_Build(t *testing.T) {
+func TestApplicationConfigBuilder(t *testing.T) {
 
 	application := NewApplicationConfigBuilder().
 		SetOrganization("organization").
