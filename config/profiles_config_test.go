@@ -60,3 +60,16 @@ func TestLoaderConf_MergeConfig(t *testing.T) {
 	assert.Equal(t, consumer.References["helloService"].Protocol, "dubbo")
 	assert.Equal(t, consumer.References["helloService"].InterfaceName, "org.github.dubbo.HelloService")
 }
+
+func Test_getLegalActive(t *testing.T) {
+
+	t.Run("default", func(t *testing.T) {
+		active := getLegalActive("")
+		assert.Equal(t, active, "default")
+	})
+
+	t.Run("normal", func(t *testing.T) {
+		active := getLegalActive("active")
+		assert.Equal(t, active, "active")
+	})
+}
