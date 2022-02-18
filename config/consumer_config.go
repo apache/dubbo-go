@@ -239,3 +239,11 @@ func (ccb *ConsumerConfigBuilder) SetRootConfig(rootConfig *RootConfig) *Consume
 func (ccb *ConsumerConfigBuilder) Build() *ConsumerConfig {
 	return ccb.consumerConfig
 }
+
+// DynamicUpdateProperties dynamically update properties.
+func (cc *ConsumerConfig) DynamicUpdateProperties(newConsumerConfig *ConsumerConfig) {
+	if newConsumerConfig != nil && newConsumerConfig.RequestTimeout != cc.RequestTimeout {
+		cc.RequestTimeout = newConsumerConfig.RequestTimeout
+		logger.Infof("ConsumerConfig's RequestTimeout was dynamically updated, new value:%v", cc.RequestTimeout)
+	}
+}
