@@ -18,7 +18,6 @@
 package config
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"strings"
 	"testing"
 )
@@ -28,6 +27,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	_ "dubbo.apache.org/dubbo-go/v3/config_center/apollo"
 )
 
