@@ -17,7 +17,18 @@
 
 package config
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
+
+import (
+	"github.com/stretchr/testify/assert"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+)
 
 func TestNewServiceConfigBuilder(t *testing.T) {
 	registryConfig := NewRegistryConfigWithProtocolDefaultPort("nacos")
@@ -25,6 +36,7 @@ func TestNewServiceConfigBuilder(t *testing.T) {
 		SetName("dubbo").
 		SetPort("20000").
 		Build()
+	rc := newEmptyRootConfig()
 
 	serviceConfig := NewServiceConfigBuilder().
 		SetRegistryIDs("nacos").
@@ -37,8 +49,19 @@ func TestNewServiceConfigBuilder(t *testing.T) {
 		AddRCRegistry("nacos", registryConfig).
 		AddRCProtocol("dubbo", protocolConfig).
 		SetGroup("dubbo").
-		SetVersion("1.0.0").SetProxyFactoryKey("defulte")
-	Build()
+		SetVersion("1.0.0").
+		SetProxyFactoryKey("default").
+		SetSerialization("serialization").
+		SetServiceID("org.apache.dubbo").
+		Build()
 
-	//serviceConfig.Init()
+	serviceConfig.InitExported()
+
+	err := serviceConfig.Init(rc)
+	assert.Nil(t, err)
+	err = serviceConfig.check()
+	assert.Nil(t, err)
+
+	assert.Equal(t, serviceConfig.Prefix(), strings.Join([]string{constant.ServiceConfigPrefix, serviceConfig.id}, "."))
+	assert.Equal(t, serviceConfig.IsExport(), false)
 }
