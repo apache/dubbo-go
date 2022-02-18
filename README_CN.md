@@ -66,10 +66,8 @@ Dubbo-go 生态覆盖多种网络协议：Triple、Dubbo、JSONRPC、gRPC、HTTP
 
 ## Intellij 插件
 
-* Windows:
-  * File > Settings > Plugins > Browse repositories... > 搜索 "Dubbo Go" > Install Plugin
-* MacOS:
-  * Preferences > Settings > Plugins > Browse repositories... > 搜索 "Dubbo Go" > Install Plugin
+* Windows: File > Settings > Plugins > Browse repositories... > 搜索 "Dubbo Go" > Install Plugin
+* MacOS: Preferences > Settings > Plugins > Browse repositories... > 搜索 "Dubbo Go" > Install Plugin
 * 手动安装:
   * 下载[最新版插件](https://plugins.jetbrains.com/plugin/18581-dubbo-go) 并且尝试手动安装， Preferences > Plugins > Install plugin from disk...
   * 插件市场[https://plugins.jetbrains.com/plugin/18581-dubbo-go](https://plugins.jetbrains.com/plugin/18581-dubbo-go)

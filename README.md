@@ -56,10 +56,8 @@ If you want to know more about dubbogo tools, please visit https://github.com/du
 
 ## Intellij Plugin
 
-* Using IDE built-in plugin system on Windows:
-    * File > Settings > Plugins > Browse repositories... > Search for "Dubbo Go" > Install Plugin
-* Using IDE built-in plugin system on MacOS:
-    * Preferences > Settings > Plugins > Browse repositories... > Search for "Dubbo Go" > Install Plugin
+* Windows: File > Settings > Plugins > Browse repositories... > Search for "Dubbo Go" > Install Plugin
+* MacOS: Preferences > Settings > Plugins > Browse repositories... > Search for "Dubbo Go" > Install Plugin
 * Manually:
     * Download the [latest release](https://plugins.jetbrains.com/plugin/18581-dubbo-go) and install it manually using Preferences > Plugins > Install plugin from disk...
     * From official jetbrains store from download
