@@ -1,0 +1,7 @@
+dubbo:
+  profiles:
+    active: local
+  registries:
+    nacos:
+      timeout: 3s
+      address: nacos://127.0.0.1:8848

@@ -220,6 +220,7 @@ const (
 	TracingConfigPrefix        = "dubbo.tracing"
 	LoggerConfigPrefix         = "dubbo.logger"
 	CustomConfigPrefix         = "dubbo.custom"
+	ProfilesConfigPrefix       = "dubbo.profiles"
 )
 
 const (
