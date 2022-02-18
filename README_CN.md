@@ -64,6 +64,29 @@ Dubbo-go 生态覆盖多种网络协议：Triple、Dubbo、JSONRPC、gRPC、HTTP
 
 如果想知道 dubbogo 工具集更多更详细的使用细节，请访问 https://github.com/dubbogo/tools 并仔细阅读其 raedme。
 
+## Intellij 插件
+
+* Windows: File > Settings > Plugins > Browse repositories... > 搜索 "Dubbo Go" > Install Plugin
+* MacOS: Preferences > Settings > Plugins > Browse repositories... > 搜索 "Dubbo Go" > Install Plugin
+* 手动安装:
+  * 下载[最新版插件](https://plugins.jetbrains.com/plugin/18581-dubbo-go) 并且尝试手动安装， Preferences > Plugins > Install plugin from disk...
+  * 插件市场[https://plugins.jetbrains.com/plugin/18581-dubbo-go](https://plugins.jetbrains.com/plugin/18581-dubbo-go)
+
+
+|      特性      | IDEA | GoLand |
+|:------------:|:----:|:------:|
+| Hessian2 生成器 |  ✅️  |   ✅️   |
+|   创建项目/模块    |  ✅️  |   ✅️   |
+
+
+|    项目/模块模板     | 进度  |
+|:--------------:|:---:|
+| 例子 (包含客户端、服务端) | ✅️  |
+|   空项目 (最小导入)   | ✅️  |
+|  Dubbo + Gin   |  ⬜  |
+
+如果想知道 dubbogo 工具集更多更详细的使用细节，请访问 [https://gitee.com/changeden/intellij-plugin-dubbo-go-generator](https://gitee.com/changeden/intellij-plugin-dubbo-go-generator) 并仔细阅读其 raedme。
+
 ## 生态
 
 * [Dubbo Ecosystem Entry](https://github.com/apache?utf8=%E2%9C%93&q=dubbo&type=&language=) - Apache Dubbo 群组的相关开源项目
