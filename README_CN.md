@@ -83,7 +83,7 @@ Dubbo-go 生态覆盖多种网络协议：Triple、Dubbo、JSONRPC、gRPC、HTTP
 |    项目/模块模板     | 进度  |
 |:--------------:|:---:|
 | 例子 (包含客户端、服务端) | [x] |
-|   空项目 (最小导入)   | [ ] |
+|   空项目 (最小导入)   | [x] |
 |  Dubbo + Gin   | [ ] |
 
 如果想知道 dubbogo 工具集更多更详细的使用细节，请访问 [https://gitee.com/changeden/intellij-plugin-dubbo-go-generator](https://gitee.com/changeden/intellij-plugin-dubbo-go-generator) 并仔细阅读其 raedme。

@@ -73,7 +73,7 @@ If you want to know more about dubbogo tools, please visit https://github.com/du
 |    Project/Module Template     | Progress |
 |:------------------------------:|:--------:|
 |    Sample (client, server)     |   [x]    |
-| Empty Project (minimum import) |   [ ]    |
+| Empty Project (minimum import) |   [x]    |
 |          Dubbo + Gin           |   [ ]    |
 
 
