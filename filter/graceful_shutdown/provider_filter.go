@@ -60,7 +60,16 @@ func newProviderGracefulShutdownFilter() filter.Filter {
 func (f *providerGracefulShutdownFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	if f.rejectNewRequest() {
 		logger.Info("The application is closing, new request will be rejected.")
-		return f.getRejectHandler().RejectedExecution(invoker.GetURL(), invocation)
+		handler := constant.DefaultKey
+		if f.shutdownConfig != nil && len(f.shutdownConfig.RejectRequestHandler) > 0 {
+			handler = f.shutdownConfig.RejectRequestHandler
+		}
+		rejectedExecutionHandler, err := extension.GetRejectedExecutionHandler(handler)
+		if err != nil {
+			logger.Warn(err)
+		} else {
+			return rejectedExecutionHandler.RejectedExecution(invoker.GetURL(), invocation)
+		}
 	}
 	f.shutdownConfig.ProviderActiveCount.Inc()
 	return invoker.Invoke(ctx, invocation)
@@ -90,12 +99,4 @@ func (f *providerGracefulShutdownFilter) rejectNewRequest() bool {
 		return false
 	}
 	return f.shutdownConfig.RejectRequest.Load()
-}
-
-func (f *providerGracefulShutdownFilter) getRejectHandler() filter.RejectedExecutionHandler {
-	handler := constant.DefaultKey
-	if f.shutdownConfig != nil && len(f.shutdownConfig.RejectRequestHandler) > 0 {
-		handler = f.shutdownConfig.RejectRequestHandler
-	}
-	return extension.GetRejectedExecutionHandler(handler)
 }

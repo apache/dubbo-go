@@ -201,7 +201,12 @@ func (rc *ReferenceConfig) Refer(srv interface{}) {
 			if u := rc.invoker.GetURL(); u != nil {
 				hitClu = u.GetParam(constant.ClusterKey, constant.ClusterKeyZoneAware)
 			}
-			rc.invoker = extension.GetCluster(hitClu).Join(static.NewDirectory(invokers))
+			cluster, err := extension.GetCluster(hitClu)
+			if err != nil {
+				panic(err)
+			} else {
+				rc.invoker = cluster.Join(static.NewDirectory(invokers))
+			}
 		}
 	} else {
 		var hitClu string
@@ -215,7 +220,12 @@ func (rc *ReferenceConfig) Refer(srv interface{}) {
 				hitClu = u.GetParam(constant.ClusterKey, constant.ClusterKeyZoneAware)
 			}
 		}
-		rc.invoker = extension.GetCluster(hitClu).Join(static.NewDirectory(invokers))
+		cluster, err := extension.GetCluster(hitClu)
+		if err != nil {
+			panic(err)
+		} else {
+			rc.invoker = cluster.Join(static.NewDirectory(invokers))
+		}
 	}
 
 	// publish consumer's metadata

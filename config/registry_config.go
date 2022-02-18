@@ -66,11 +66,6 @@ func (RegistryConfig) Prefix() string {
 	return constant.RegistryConfigPrefix
 }
 
-// NameId unique identifier id for client
-func (c *RegistryConfig) NameId() string {
-	return strings.Join([]string{c.Prefix(), c.Protocol, c.Address}, "-")
-}
-
 func (c *RegistryConfig) Init() error {
 	if err := defaults.Set(c); err != nil {
 		return err
@@ -90,7 +85,7 @@ func (c *RegistryConfig) getUrlMap(roleType common.RoleType) url.Values {
 	urlMap.Set(constant.RegistryKey+"."+constant.RegistryZoneKey, c.Zone)
 	urlMap.Set(constant.RegistryKey+"."+constant.WeightKey, strconv.FormatInt(c.Weight, 10))
 	urlMap.Set(constant.RegistryTTLKey, c.TTL)
-	urlMap.Set(constant.ClientNameKey, c.NameId())
+	urlMap.Set(constant.ClientNameKey, clientNameID(c, c.Protocol, c.Address))
 
 	for k, v := range c.Params {
 		urlMap.Set(k, v)
@@ -118,7 +113,7 @@ func (c *RegistryConfig) toMetadataReportUrl() (*common.URL, error) {
 		common.WithUsername(c.Username),
 		common.WithPassword(c.Password),
 		common.WithParamsValue(constant.TimeoutKey, c.Timeout),
-		common.WithParamsValue(constant.ClientNameKey, c.NameId()),
+		common.WithParamsValue(constant.ClientNameKey, clientNameID(c, c.Protocol, c.Address)),
 		common.WithParamsValue(constant.MetadataReportGroupKey, c.Group),
 		common.WithParamsValue(constant.MetadataReportNamespaceKey, c.Namespace),
 	)
@@ -406,11 +401,11 @@ func (rcb *RegistryConfigBuilder) Build() *RegistryConfig {
 	return rcb.registryConfig
 }
 
-// UpdateProperties update registry
-func (c *RegistryConfig) UpdateProperties(updateRegistryConfig *RegistryConfig) {
+// DynamicUpdateProperties update registry
+func (c *RegistryConfig) DynamicUpdateProperties(updateRegistryConfig *RegistryConfig) {
 	// if nacos's registry timeout not equal local root config's registry timeout , update.
 	if updateRegistryConfig != nil && updateRegistryConfig.Timeout != c.Timeout {
 		c.Timeout = updateRegistryConfig.Timeout
-		logger.Infof("CenterConfig process update timeout, new value:%v", c.Timeout)
+		logger.Infof("RegistryConfigs Timeout was dynamically updated, new value:%v", c.Timeout)
 	}
 }

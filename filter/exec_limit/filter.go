@@ -128,7 +128,12 @@ func (f *executeLimitFilter) Invoke(ctx context.Context, invoker protocol.Invoke
 		logger.Errorf("The invocation was rejected due to over the execute limitation, url: %s ", ivkURL.String())
 		rejectedHandlerConfig := ivkURL.GetParam(methodConfigPrefix+constant.ExecuteRejectedExecutionHandlerKey,
 			ivkURL.GetParam(constant.ExecuteRejectedExecutionHandlerKey, constant.DefaultKey))
-		return extension.GetRejectedExecutionHandler(rejectedHandlerConfig).RejectedExecution(ivkURL, invocation)
+		rejectedExecutionHandler, err := extension.GetRejectedExecutionHandler(rejectedHandlerConfig)
+		if err != nil {
+			logger.Warn(err)
+		} else {
+			return rejectedExecutionHandler.RejectedExecution(ivkURL, invocation)
+		}
 	}
 
 	return invoker.Invoke(ctx, invocation)

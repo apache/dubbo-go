@@ -1,0 +1,16 @@
+dubbo:
+  profiles:
+    active: local
+  registries:
+    nacos:
+      timeout: 10s
+      address: nacos://127.0.0.1:8848
+  protocols:
+    dubbo:
+      name: dubbo
+      port: 20000
+  consumer:
+    references:
+      helloService:
+        protocol: dubbo
+        interface: org.github.dubbo.HelloService

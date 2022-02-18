@@ -15,20 +15,30 @@
  * limitations under the License.
  */
 
-package constant
+package config
 
-const (
-	ClusterKeyAvailable       = "available"
-	ClusterKeyBroadcast       = "broadcast"
-	ClusterKeyFailback        = "failback"
-	ClusterKeyFailfast        = "failfast"
-	ClusterKeyFailover        = "failover"
-	ClusterKeyFailsafe        = "failsafe"
-	ClusterKeyForking         = "forking"
-	ClusterKeyZoneAware       = "zoneAware"
-	ClusterKeyAdaptiveService = "adaptiveService"
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
-const (
-	NonImportErrorMsgFormat = "Cluster for %s is not existing, make sure you have import the package."
+var (
+	defaultActive = "default"
 )
+
+type ProfilesConfig struct {
+	// active profiles
+	Active string
+}
+
+// Prefix dubbo.profiles
+func (ProfilesConfig) Prefix() string {
+	return constant.ProfilesConfigPrefix
+}
+
+// getLegalActive if active is null return default
+func getLegalActive(active string) string {
+	if len(active) == 0 {
+		return defaultActive
+	}
+	return active
+}

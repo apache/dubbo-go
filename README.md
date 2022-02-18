@@ -46,12 +46,37 @@ Dubbo-go has supported many RPC protocol, like Triple, Dubbo JSONRPC, gRPC, HTTP
 ## tools
 
   * [imports-formatter](https://github.com/dubbogo/tools/blob/master/cmd/imports-formatter/main.go) formatting dubbo-go project import code block.
-  * [dubbo-go-cli](https://github.com/dubbogo/tools/blob/master/cmd/dubbogo-cli/main.go) dubbo-go command line tools, by which you can define your own request pkg and gets rsp struct of your server, and test your service as telnet.
+  * [dubbo-go-cli](https://github.com/dubbogo/tools/blob/master/cmd/dubbogo-cli/main.go) dubbo-go command line tools, by which you can define your own request pkg and gets rsp struct of your server, test your service as telnet and generate hessian.POJO register method body.
+  * [dubbo-go-cli-v2](https://github.com/dubbogo/tools/blob/master/cmd/dubbogo-cli-v2/main.go) new dubbo-go line tools, you can get services from register center, create a demo and has the same features with [dubbo-go-cli](https://github.com/dubbogo/tools/blob/master/cmd/dubbogo-cli/main.go).
   * [protoc-gen-go-triple](https://github.com/dubbogo/tools/blob/master/cmd/protoc-gen-go-triple/main.go) tripe protocol pb file generation tool.
   * [protoc-gen-dubbo3grpc](https://github.com/dubbogo/tools/blob/master/cmd/protoc-gen-dubbo3grpc/main.go) dubbo3 grpc pb file generation tool.
 
 
 If you want to know more about dubbogo tools, please visit https://github.com/dubbogo/tools and read its readme carefully.
+
+## Intellij Plugin
+
+* Windows: File > Settings > Plugins > Browse repositories... > Search for "Dubbo Go" > Install Plugin
+* MacOS: Preferences > Settings > Plugins > Browse repositories... > Search for "Dubbo Go" > Install Plugin
+* Manually:
+    * Download the [latest release](https://plugins.jetbrains.com/plugin/18581-dubbo-go) and install it manually using Preferences > Plugins > Install plugin from disk...
+    * From official jetbrains store from download
+
+
+|      Feature       | IDEA | GoLand |
+|:------------------:|:----:|:------:|
+| Hessian2 Generator |  ✅️  |   ✅️   |
+| New Project/Module |  ✅️  |   ✅️   |
+
+
+|    Project/Module Template     | Progress |
+|:------------------------------:|:--------:|
+|    Sample (client, server)     |    ✅️    |
+| Empty Project (minimum import) |    ✅️    |
+|          Dubbo + Gin           |    ⬜     |
+
+
+If you want to know more about dubbogo Intellij Plugin, please visit [https://gitee.com/changeden/intellij-plugin-dubbo-go-generator](https://gitee.com/changeden/intellij-plugin-dubbo-go-generator) and read its readme carefully.
 
 ## Dubbo-go ecosystem
 
