@@ -70,3 +70,16 @@ func TestLoggerInit(t *testing.T) {
 		logger.Errorf("%s", "error")
 	})
 }
+
+func TestNewLoggerConfigBuilder(t *testing.T) {
+	config := NewLoggerConfigBuilder().
+		SetLumberjackConfig(nil).
+		SetZapConfig(ZapConfig{}).
+		Build()
+
+	assert.NotNil(t, config)
+	values := config.getUrlMap()
+	assert.NotNil(t, values)
+	err := config.check()
+	assert.NoError(t, err)
+}
