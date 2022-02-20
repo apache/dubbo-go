@@ -25,10 +25,24 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestMetricConfigBuilder(t *testing.T) {
-	config := NewMetricConfigBuilder().Build()
-	err := config.Init()
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+)
+
+func TestNewMetadataReportConfigBuilder(t *testing.T) {
+	config := NewMetadataReportConfigBuilder().
+		SetProtocol("nacos").
+		SetAddress("127.0.0.1:8848").
+		SetUsername("nacos").
+		SetPassword("123456").
+		SetTimeout("10s").
+		SetGroup("dubbo").
+		Build()
+
+	assert.Equal(t, config.IsValid(), true)
+	assert.Equal(t, config.Prefix(), constant.MetadataReportPrefix)
+
+	url, err := config.ToUrl()
 	assert.NoError(t, err)
-	reporterConfig := config.ToReporterConfig()
-	assert.Equal(t, string(reporterConfig.Mode), "pull")
+	assert.Equal(t, url.GetParam(constant.TimeoutKey, "3s"), "10s")
 }
