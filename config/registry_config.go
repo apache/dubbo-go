@@ -381,7 +381,7 @@ func (rcb *RegistryConfigBuilder) SetParams(params map[string]string) *RegistryC
 	return rcb
 }
 
-func (rcb *RegistryConfigBuilder) addParam(key, value string) *RegistryConfigBuilder {
+func (rcb *RegistryConfigBuilder) AddParam(key, value string) *RegistryConfigBuilder {
 	if rcb.registryConfig.Params == nil {
 		rcb.registryConfig.Params = make(map[string]string)
 	}
