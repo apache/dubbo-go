@@ -18,7 +18,9 @@
 package config
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"testing"
+	"time"
 )
 
 import (
@@ -40,4 +42,33 @@ func TestRemoteConfig_GetParam(t *testing.T) {
 
 	value = rc.GetParam(key, def)
 	assert.Equal(t, actualVal, value)
+}
+
+func TestNewRemoteConfigBuilder(t *testing.T) {
+	config := NewRemoteConfigBuilder().
+		SetProtocol("nacos").
+		SetAddress("127.0.0.1:8848").
+		SetTimeout("10s").
+		SetUsername("nacos").
+		SetPassword("nacos").
+		SetParams(map[string]string{"timeout": "3s"}).
+		AddParam("timeout", "15s").
+		Build()
+
+	values := config.getUrlMap()
+	assert.Equal(t, values.Get("timeout"), "15s")
+
+	url, err := config.ToURL()
+	assert.NoError(t, err)
+	assert.Equal(t, url.GetParam("timeout", "3s"), "15s")
+
+	err = config.Init()
+	assert.NoError(t, err)
+
+	timeout := config.GetTimeout()
+	assert.Equal(t, timeout, 10*time.Second)
+	assert.Equal(t, config.Prefix(), constant.RemotePrefix)
+
+	param := config.GetParam("timeout", "3s")
+	assert.Equal(t, param, "15s")
 }
