@@ -87,6 +87,6 @@ func TestNewRouterConfigBuilder(t *testing.T) {
 	assert.NoError(t, err)
 	err = config.Init()
 	assert.NoError(t, err)
-	
+
 	assert.Equal(t, config.Prefix(), constant.RouterConfigPrefix)
 }
