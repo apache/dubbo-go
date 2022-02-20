@@ -25,6 +25,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+)
+
 func TestProviderConfigEmptyRegistry(t *testing.T) {
 	err := Load(WithPath("./testdata/config/provider/empty_registry_application.yaml"))
 	assert.Nil(t, err)
@@ -58,3 +62,23 @@ func TestProviderConfigRootRegistry(t *testing.T) {
 //	assert.NoError(t, ProviderInit(conPath))
 //	assert.Equal(t, "dubbo", config.referenceConfig.Services["UserProvider"].Protocol)
 //}
+
+func TestNewProviderConfigBuilder(t *testing.T) {
+
+	config := NewProviderConfigBuilder().
+		SetFilter("echo").
+		SetRegister(true).
+		SetRegistryIDs("nacos").
+		SetServices(map[string]*ServiceConfig{}).
+		AddService("HelloService", &ServiceConfig{}).
+		SetProxyFactory("default").
+		SetFilterConf(nil).
+		SetConfigType(map[string]string{}).
+		AddConfigType("", "").
+		SetRootConfig(nil).
+		Build()
+
+	err := config.check()
+	assert.NoError(t, err)
+	assert.Equal(t, config.Prefix(), constant.ProviderConfigPrefix)
+}

@@ -97,60 +97,50 @@ type RouterConfigBuilder struct {
 	routerConfig *RouterConfig
 }
 
-// nolint
 func NewRouterConfigBuilder() *RouterConfigBuilder {
 	return &RouterConfigBuilder{routerConfig: &RouterConfig{}}
 }
 
-// nolint
 func (rcb *RouterConfigBuilder) SetScope(scope string) *RouterConfigBuilder {
 	rcb.routerConfig.Scope = scope
 	return rcb
 }
 
-// nolint
 func (rcb *RouterConfigBuilder) SetKey(key string) *RouterConfigBuilder {
 	rcb.routerConfig.Key = key
 	return rcb
 }
 
-// nolint
 func (rcb *RouterConfigBuilder) SetForce(force bool) *RouterConfigBuilder {
 	rcb.routerConfig.Force = force
 	return rcb
 }
 
-// nolint
 func (rcb *RouterConfigBuilder) SetRuntime(runtime bool) *RouterConfigBuilder {
 	rcb.routerConfig.Runtime = runtime
 	return rcb
 }
 
-// nolint
 func (rcb *RouterConfigBuilder) SetEnable(enable bool) *RouterConfigBuilder {
 	rcb.routerConfig.Enable = enable
 	return rcb
 }
 
-// nolint
 func (rcb *RouterConfigBuilder) SetValid(valid bool) *RouterConfigBuilder {
 	rcb.routerConfig.Valid = valid
 	return rcb
 }
 
-// nolint
 func (rcb *RouterConfigBuilder) SetPriority(priority int) *RouterConfigBuilder {
 	rcb.routerConfig.Priority = priority
 	return rcb
 }
 
-// nolint
 func (rcb *RouterConfigBuilder) SetConditions(conditions []string) *RouterConfigBuilder {
 	rcb.routerConfig.Conditions = conditions
 	return rcb
 }
 
-// nolint
 func (rcb *RouterConfigBuilder) AddCondition(condition string) *RouterConfigBuilder {
 	if rcb.routerConfig.Conditions == nil {
 		rcb.routerConfig.Conditions = make([]string, 0)
@@ -159,13 +149,11 @@ func (rcb *RouterConfigBuilder) AddCondition(condition string) *RouterConfigBuil
 	return rcb
 }
 
-// nolint
 func (rcb *RouterConfigBuilder) SetTags(tags []Tag) *RouterConfigBuilder {
 	rcb.routerConfig.Tags = tags
 	return rcb
 }
 
-// nolint
 func (rcb *RouterConfigBuilder) AddTag(tag Tag) *RouterConfigBuilder {
 	if rcb.routerConfig.Tags == nil {
 		rcb.routerConfig.Tags = make([]Tag, 0)
@@ -174,7 +162,6 @@ func (rcb *RouterConfigBuilder) AddTag(tag Tag) *RouterConfigBuilder {
 	return rcb
 }
 
-// nolint
 func (rcb *RouterConfigBuilder) Build() *RouterConfig {
 	if err := rcb.routerConfig.Init(); err != nil {
 		panic(err)

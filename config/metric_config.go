@@ -38,23 +38,22 @@ type MetricConfig struct {
 	PushGatewayAddress string `default:"" yaml:"push-gateway-address" json:"push-gateway-address,omitempty" property:"push-gateway-address"`
 }
 
-func (m *MetricConfig) ToReporterConfig() *metrics.ReporterConfig {
+func (mc *MetricConfig) ToReporterConfig() *metrics.ReporterConfig {
 	defaultMetricsReportConfig := metrics.NewReporterConfig()
-	if m.Mode == metrics.ReportModePush {
+	if mc.Mode == metrics.ReportModePush {
 		defaultMetricsReportConfig.Mode = metrics.ReportModePush
 	}
-	if m.Namespace != "" {
-		defaultMetricsReportConfig.Namespace = m.Namespace
+	if mc.Namespace != "" {
+		defaultMetricsReportConfig.Namespace = mc.Namespace
 	}
 
-	defaultMetricsReportConfig.Enable = m.Enable == "1"
-	defaultMetricsReportConfig.Port = m.Port
-	defaultMetricsReportConfig.Path = m.Path
-	defaultMetricsReportConfig.PushGatewayAddress = m.PushGatewayAddress
+	defaultMetricsReportConfig.Enable = mc.Enable == "1"
+	defaultMetricsReportConfig.Port = mc.Port
+	defaultMetricsReportConfig.Path = mc.Path
+	defaultMetricsReportConfig.PushGatewayAddress = mc.PushGatewayAddress
 	return defaultMetricsReportConfig
 }
 
-// nolint
 func (mc *MetricConfig) Init() error {
 	if mc == nil {
 		return errors.New("metrics config is null")
@@ -73,12 +72,10 @@ type MetricConfigBuilder struct {
 	metricConfig *MetricConfig
 }
 
-// nolint
 func NewMetricConfigBuilder() *MetricConfigBuilder {
 	return &MetricConfigBuilder{metricConfig: &MetricConfig{}}
 }
 
-// nolint
 func (mcb *MetricConfigBuilder) Build() *MetricConfig {
 	return mcb.metricConfig
 }

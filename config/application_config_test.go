@@ -25,6 +25,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+)
+
 func TestApplicationConfig(t *testing.T) {
 
 	err := Load(WithPath("./testdata/config/application/application.yaml"))
@@ -32,4 +36,31 @@ func TestApplicationConfig(t *testing.T) {
 
 	center := rootConfig.Registries
 	assert.NotNil(t, center)
+}
+
+func TestApplicationConfigBuilder(t *testing.T) {
+
+	application := NewApplicationConfigBuilder().
+		SetOrganization("organization").
+		SetName("name").
+		SetModule("module").
+		SetVersion("version").
+		SetOwner("owner").
+		SetEnvironment("environment").
+		SetMetadataType("metadataType").
+		Build()
+
+	err := application.check()
+	assert.Nil(t, err)
+	err = application.Init()
+
+	assert.Nil(t, err)
+	assert.Equal(t, application.Name, "name")
+	assert.Equal(t, application.Organization, "organization")
+	assert.Equal(t, application.Module, "module")
+	assert.Equal(t, application.Version, "version")
+	assert.Equal(t, application.Owner, "owner")
+	assert.Equal(t, application.Environment, "environment")
+	assert.Equal(t, application.MetadataType, "metadataType")
+	assert.Equal(t, application.Prefix(), constant.ApplicationConfigPrefix)
 }
