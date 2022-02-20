@@ -18,13 +18,16 @@
 package config
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"testing"
 	"time"
 )
 
 import (
 	"github.com/stretchr/testify/assert"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
 func TestRemoteConfig_GetParam(t *testing.T) {
