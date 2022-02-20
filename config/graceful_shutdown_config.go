@@ -78,7 +78,6 @@ func (config *ShutdownConfig) Prefix() string {
 	return constant.ShutdownConfigPrefix
 }
 
-// nolint
 func (config *ShutdownConfig) GetTimeout() time.Duration {
 	result, err := time.ParseDuration(config.Timeout)
 	if err != nil {
@@ -89,7 +88,6 @@ func (config *ShutdownConfig) GetTimeout() time.Duration {
 	return result
 }
 
-// nolint
 func (config *ShutdownConfig) GetStepTimeout() time.Duration {
 	result, err := time.ParseDuration(config.StepTimeout)
 	if err != nil {
