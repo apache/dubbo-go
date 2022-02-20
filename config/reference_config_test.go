@@ -17,6 +17,19 @@
 
 package config
 
+import (
+	"testing"
+)
+
+import (
+	"github.com/stretchr/testify/assert"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	_ "dubbo.apache.org/dubbo-go/v3/common/proxy/proxy_factory"
+)
+
 //import (
 //	"context"
 //	"dubbo.apache.org/dubbo-go/v3/config"
@@ -409,3 +422,33 @@ package config
 //func (gf *mockShutdownFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 //	return result
 //}
+func TestNewReferenceConfigBuilder(t *testing.T) {
+	registryConfig := NewRegistryConfigWithProtocolDefaultPort("nacos")
+	protocolConfig := NewProtocolConfigBuilder().
+		SetName("dubbo").
+		SetPort("20000").
+		Build()
+	config := NewReferenceConfigBuilder().
+		SetInterface("org.apache.dubbo.HelloService").
+		SetRegistryIDs("nacos").
+		SetGeneric(false).
+		SetCluster("cluster").
+		SetSerialization("serialization").
+		SetProtocol("dubbo").
+		Build()
+
+	config.rootConfig = NewRootConfigBuilder().
+		SetProtocols(map[string]*ProtocolConfig{"dubbo": protocolConfig}).
+		SetRegistries(map[string]*RegistryConfig{"nacos": registryConfig}).
+		Build()
+
+	assert.Equal(t, config.Prefix(), constant.ReferenceConfigPrefix+config.InterfaceName+".")
+	proxy := config.GetProxy()
+	assert.Nil(t, proxy)
+
+	values := config.getURLMap()
+	assert.Equal(t, values.Get(constant.GroupKey), "")
+
+	invoker := config.GetInvoker()
+	assert.Nil(t, invoker)
+}
