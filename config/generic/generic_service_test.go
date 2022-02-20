@@ -15,16 +15,18 @@
  * limitations under the License.
  */
 
-package interfaces
+package generic
 
-var (
-	configs = map[string]Config{}
+import (
+	"testing"
 )
 
-type Config interface {
-	Prefix() string
-}
+import (
+	"github.com/stretchr/testify/assert"
+)
 
-func SetConfig(c Config) {
-	configs[c.Prefix()] = c
+func TestGenericService(t *testing.T) {
+	service := NewGenericService("HelloService")
+	reference := service.Reference()
+	assert.Equal(t, reference, "HelloService")
 }
