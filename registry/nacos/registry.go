@@ -274,7 +274,7 @@ func newNacosRegistry(url *common.URL) (registry.Registry, error) {
 	url.SetParam(constant.NacosPassword, url.Password)
 	url.SetParam(constant.NacosAccessKey, url.GetParam(constant.RegistryAccessKey, ""))
 	url.SetParam(constant.NacosSecretKey, url.GetParam(constant.RegistrySecretKey, ""))
-	url.SetParam(constant.TimeoutKey, url.GetParam(constant.RegistryTimeoutKey, ""))
+	url.SetParam(constant.NacosTimeout, url.GetParam(constant.RegistryTimeoutKey, ""))
 	url.SetParam(constant.NacosGroupKey, url.GetParam(constant.RegistryGroupKey, defaultGroup))
 	namingClient, err := nacos.NewNacosClientByURL(url)
 	if err != nil {

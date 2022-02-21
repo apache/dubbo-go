@@ -164,6 +164,7 @@ func (c *RegistryConfig) toURL(roleType common.RoleType) (*common.URL, error) {
 		common.WithParamsValue(constant.RegistrySimplifiedKey, strconv.FormatBool(c.Simplified)),
 		common.WithParamsValue(constant.RegistryKey, c.Protocol),
 		common.WithParamsValue(constant.RegistryNamespaceKey, c.Namespace),
+		common.WithParamsValue(constant.RegistryTimeoutKey, c.Timeout),
 		common.WithUsername(c.Username),
 		common.WithPassword(c.Password),
 		common.WithLocation(c.Address),
