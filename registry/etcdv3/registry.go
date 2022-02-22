@@ -74,7 +74,7 @@ func (r *etcdV3Registry) ClientLock() *sync.Mutex {
 }
 
 func newETCDV3Registry(url *common.URL) (registry.Registry, error) {
-	timeout := url.GetParamDuration(constant.ConfigTimeoutKey, constant.DefaultRegTimeout)
+	timeout := url.GetParamDuration(constant.RegistryTimeoutKey, constant.DefaultRegTimeout)
 
 	logger.Infof("etcd address is: %v, timeout is: %s", url.Location, timeout.String())
 

@@ -250,6 +250,7 @@ const (
 	NacosLogLevelKey          = "nacos.logLevel"
 	NacosUsername             = "nacos.username"
 	NacosPassword             = "nacos.password"
+	NacosTimeout              = "nacos.timeout"
 )
 
 const (
