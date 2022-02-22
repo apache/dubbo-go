@@ -15,16 +15,33 @@
  * limitations under the License.
  */
 
-package interfaces
+package config
 
-var (
-	configs = map[string]Config{}
+import (
+	"reflect"
+	"testing"
 )
 
-type Config interface {
-	Prefix() string
-}
+import (
+	getty "github.com/apache/dubbo-getty"
 
-func SetConfig(c Config) {
-	configs[c.Prefix()] = c
+	"github.com/stretchr/testify/assert"
+)
+
+func TestServerTlsConfigBuilder(t *testing.T) {
+
+	SetServerTlsConfigBuilder(&getty.ServerTlsConfigBuilder{})
+	SetClientTlsConfigBuilder(&getty.ClientTlsConfigBuilder{})
+
+	serverTlsConfig := GetServerTlsConfigBuilder()
+	clientTlsConfig := GetClientTlsConfigBuilder()
+
+	vf := reflect.ValueOf(serverTlsConfig)
+	name := reflect.Indirect(vf).Type().Name()
+
+	assert.Equal(t, name, "ServerTlsConfigBuilder")
+
+	vf = reflect.ValueOf(clientTlsConfig)
+	name = reflect.Indirect(vf).Type().Name()
+	assert.Equal(t, name, "ClientTlsConfigBuilder")
 }

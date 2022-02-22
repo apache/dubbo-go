@@ -31,7 +31,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/config/interfaces"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
 )
 
 var validate *validator.Validate
@@ -113,6 +113,6 @@ func verify(s interface{}) error {
 }
 
 // clientNameID unique identifier id for client
-func clientNameID(config interfaces.Config, protocol, address string) string {
+func clientNameID(config extension.Config, protocol, address string) string {
 	return strings.Join([]string{config.Prefix(), protocol, address}, "-")
 }
