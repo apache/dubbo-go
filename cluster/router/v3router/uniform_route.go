@@ -77,3 +77,7 @@ func (r *UniformRouter) Priority() int64 {
 func (r *UniformRouter) URL() *common.URL {
 	return nil
 }
+
+// Notify the router the invoker list
+func (r *UniformRouter) Notify(invokers []protocol.Invoker) {
+}

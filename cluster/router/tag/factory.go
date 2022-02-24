@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package v3router
+package tag
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/router"
@@ -24,18 +24,18 @@ import (
 )
 
 func init() {
-	extension.SetRouterFactory(constant.V3RouterFactoryKey, NewUniformRouterFactory)
+	extension.SetRouterFactory(constant.TagRouterFactoryKey, NewTagRouterFactory)
 }
 
-// UniformRouteFactory is uniform router's factory
-type UniformRouteFactory struct{}
+// RouteFactory router factory
+type RouteFactory struct{}
 
-// NewUniformRouterFactory constructs a new PriorityRouterFactory
-func NewUniformRouterFactory() router.PriorityRouterFactory {
-	return &UniformRouteFactory{}
+// NewTagRouterFactory constructs a new PriorityRouterFactory
+func NewTagRouterFactory() router.PriorityRouterFactory {
+	return &RouteFactory{}
 }
 
-// NewPriorityRouter construct a new UniformRouteFactory as PriorityRouter
-func (f *UniformRouteFactory) NewPriorityRouter() (router.PriorityRouter, error) {
-	return NewUniformRouterChain()
+// NewPriorityRouter construct a new PriorityRouter
+func (f *RouteFactory) NewPriorityRouter() (router.PriorityRouter, error) {
+	return NewTagPriorityRouter()
 }

@@ -32,6 +32,7 @@ import (
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/p2c"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/random"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/roundrobin"
+	_ "dubbo.apache.org/dubbo-go/v3/cluster/router/tag"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/router/v3router"
 	_ "dubbo.apache.org/dubbo-go/v3/common/proxy/proxy_factory"
 	_ "dubbo.apache.org/dubbo-go/v3/config_center/apollo"

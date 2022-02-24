@@ -26,7 +26,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
-// PriorityRouterFactory creates creates priority router with url
+// PriorityRouterFactory creates priority router with url
 type PriorityRouterFactory interface {
 	// NewPriorityRouter creates router instance with URL
 	NewPriorityRouter() (PriorityRouter, error)
@@ -43,6 +43,9 @@ type PriorityRouter interface {
 	// Priority Return Priority in router
 	// 0 to ^int(0) is better
 	Priority() int64
+
+	// Notify the router the invoker list
+	Notify(invokers []protocol.Invoker)
 }
 
 // Poolable caches address pool and address metadata for a router instance which will be used later in Router's Route.

@@ -53,7 +53,7 @@ type RouterChain struct {
 func (c *RouterChain) Route(url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
 	finalInvokers := c.invokers
 	for _, r := range c.copyRouters() {
-		finalInvokers = r.Route(c.invokers, url, invocation)
+		finalInvokers = r.Route(finalInvokers, url, invocation)
 	}
 	return finalInvokers
 }
@@ -76,8 +76,11 @@ func (c *RouterChain) AddRouters(routers []router.PriorityRouter) {
 // time interval exceeds timeThreshold since last cache update, then notify to update the cache.
 func (c *RouterChain) SetInvokers(invokers []protocol.Invoker) {
 	c.mutex.Lock()
+	defer c.mutex.Unlock()
 	c.invokers = invokers
-	c.mutex.Unlock()
+	for _, v := range c.routers {
+		v.Notify(c.invokers)
+	}
 }
 
 // copyRouters make a snapshot copy from RouterChain's router list.
