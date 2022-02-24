@@ -63,17 +63,24 @@ If you want to know more about dubbogo tools, please visit https://github.com/du
     * From official jetbrains store from download
 
 
+### Feature
 |      Feature       | IDEA | GoLand |
 |:------------------:|:----:|:------:|
 | Hessian2 Generator |  ✅️  |   ✅️   |
 | New Project/Module |  ✅️  |   ✅️   |
 
+#### Project/Module Template
+| Project/Module Template | Progress |
+|:-----------------------:|:--------:|
+|         Sample          |    ✅️    |
+|      Empty Project      |    ✅️    |
 
-|    Project/Module Template     | Progress |
-|:------------------------------:|:--------:|
-|    Sample (client, server)     |    ✅️    |
-| Empty Project (minimum import) |    ✅️    |
-|          Dubbo + Gin           |    ⬜     |
+##### Empty Project Template Middleware
+|  Middleware  |                Module                 | Support |
+|:------------:|:-------------------------------------:|:-------:|
+| Web Service  |    [Gin](github.com/gin-gonic/gin)    |   ✅️    |
+| Memory Cache | [Redis](github.com/go-redis/redis/v8) |   ✅️    |
+|   Database   |         [Gorm](gorm.io/gorm)          |   ✅️    |
 
 
 If you want to know more about dubbogo Intellij Plugin, please visit [https://gitee.com/changeden/intellij-plugin-dubbo-go-generator](https://gitee.com/changeden/intellij-plugin-dubbo-go-generator) and read its readme carefully.
