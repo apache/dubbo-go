@@ -18,7 +18,7 @@
 package rest
 
 import (
-	rest_config "dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"sync"
 	"time"
 )
@@ -31,7 +31,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/rest/client"
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/rest/client/client_impl"
-	_ "dubbo.apache.org/dubbo-go/v3/protocol/rest/config/reader"
 	"dubbo.apache.org/dubbo-go/v3/protocol/rest/server"
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/rest/server/server_impl"
 )
@@ -69,7 +68,7 @@ func (rp *RestProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	serviceKey := url.ServiceKey()
 	exporter := NewRestExporter(serviceKey, invoker, rp.ExporterMap())
 	id := url.GetParam(constant.BeanNameKey, "")
-	restServiceConfig := rest_config.GetRestProviderServiceConfig(id)
+	restServiceConfig := config.GetRestProviderServiceConfig(id)
 	if restServiceConfig == nil {
 		logger.Errorf("%s service doesn't has provider config", url.Path)
 		return nil
@@ -95,7 +94,7 @@ func (rp *RestProtocol) Refer(url *common.URL) protocol.Invoker {
 		requestTimeout = t
 	}
 	id := url.GetParam(constant.BeanNameKey, "")
-	restServiceConfig := rest_config.GetRestConsumerServiceConfig(id)
+	restServiceConfig := config.GetRestConsumerServiceConfig(id)
 	if restServiceConfig == nil {
 		logger.Errorf("%s service doesn't has consumer config", url.Path)
 		return nil
