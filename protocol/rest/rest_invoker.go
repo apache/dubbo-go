@@ -19,6 +19,7 @@ package rest
 
 import (
 	"context"
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"fmt"
 	"net/http"
 )
@@ -32,7 +33,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	invocation_impl "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/rest/client"
-	"dubbo.apache.org/dubbo-go/v3/protocol/rest/config"
 )
 
 // nolint

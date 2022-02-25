@@ -19,6 +19,7 @@ package server_impl
 
 import (
 	"context"
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"fmt"
 	"net"
 	"net/http"
@@ -37,7 +38,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
-	"dubbo.apache.org/dubbo-go/v3/protocol/rest/config"
 	"dubbo.apache.org/dubbo-go/v3/protocol/rest/server"
 )
 

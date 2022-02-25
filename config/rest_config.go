@@ -18,10 +18,15 @@
 package config
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"github.com/creasty/defaults"
+	"strconv"
+	"strings"
 )
 
 var (
+	// pi todo Encapsulation it , do not export
 	restConsumerServiceConfigMap map[string]*RestServiceConfig
 	restProviderServiceConfigMap map[string]*RestServiceConfig
 )
@@ -44,6 +49,94 @@ func (c *RestConsumerConfig) UnmarshalYAML(unmarshal func(interface{}) error) er
 		return err
 	}
 	return nil
+}
+
+// pi todo refactor
+func (c *RestConsumerConfig) Init(rc *RootConfig) error {
+	restConsumerConfig := rc.RestConsumer
+
+	restConsumerServiceConfigMap := make(map[string]*RestServiceConfig, len(restConsumerConfig.RestServiceConfigsMap))
+	for key, rc := range restConsumerConfig.RestServiceConfigsMap {
+		rc.Client = getNotEmptyStr(rc.Client, restConsumerConfig.Client, constant.DefaultRestClient)
+		rc.RestMethodConfigsMap = initMethodConfigMap(rc, restConsumerConfig.Consumes, restConsumerConfig.Produces)
+		restConsumerServiceConfigMap[key] = rc
+	}
+
+	SetRestConsumerServiceConfigMap(restConsumerServiceConfigMap)
+
+	return nil
+}
+
+// initProviderRestConfig ...
+func initMethodConfigMap(rc *RestServiceConfig, consumes string, produces string) map[string]*RestMethodConfig {
+	mcm := make(map[string]*RestMethodConfig, len(rc.RestMethodConfigs))
+	for _, mc := range rc.RestMethodConfigs {
+		mc.InterfaceName = rc.InterfaceName
+		mc.Path = rc.Path + mc.Path
+		mc.Consumes = getNotEmptyStr(mc.Consumes, rc.Consumes, consumes)
+		mc.Produces = getNotEmptyStr(mc.Produces, rc.Produces, produces)
+		mc.MethodType = getNotEmptyStr(mc.MethodType, rc.MethodType)
+		mc = transformMethodConfig(mc)
+		mcm[mc.MethodName] = mc
+	}
+	return mcm
+}
+
+// transformMethodConfig
+func transformMethodConfig(methodConfig *RestMethodConfig) *RestMethodConfig {
+	if len(methodConfig.PathParamsMap) == 0 && len(methodConfig.PathParams) > 0 {
+		paramsMap, err := parseParamsString2Map(methodConfig.PathParams)
+		if err != nil {
+			logger.Warnf("[Rest ShutdownConfig] Path Param parse error:%v", err)
+		} else {
+			methodConfig.PathParamsMap = paramsMap
+		}
+	}
+	if len(methodConfig.QueryParamsMap) == 0 && len(methodConfig.QueryParams) > 0 {
+		paramsMap, err := parseParamsString2Map(methodConfig.QueryParams)
+		if err != nil {
+			logger.Warnf("[Rest ShutdownConfig] Argument Param parse error:%v", err)
+		} else {
+			methodConfig.QueryParamsMap = paramsMap
+		}
+	}
+	if len(methodConfig.HeadersMap) == 0 && len(methodConfig.Headers) > 0 {
+		headersMap, err := parseParamsString2Map(methodConfig.Headers)
+		if err != nil {
+			logger.Warnf("[Rest ShutdownConfig] Argument Param parse error:%v", err)
+		} else {
+			methodConfig.HeadersMap = headersMap
+		}
+	}
+	return methodConfig
+}
+
+// transform a string to a map
+// for example:
+// string "0:id,1:name" => map [0:id,1:name]
+func parseParamsString2Map(params string) (map[int]string, error) {
+	m := make(map[int]string, 8)
+	for _, p := range strings.Split(params, ",") {
+		pa := strings.Split(p, ":")
+		key, err := strconv.Atoi(pa[0])
+		if err != nil {
+			return nil, err
+		}
+		m[key] = pa[1]
+	}
+	return m, nil
+}
+
+// function will return first not empty string ..
+func getNotEmptyStr(args ...string) string {
+	var r string
+	for _, t := range args {
+		if len(t) > 0 {
+			r = t
+			break
+		}
+	}
+	return r
 }
 
 // nolint
@@ -150,4 +243,18 @@ func GetRestConsumerServiceConfigMap() map[string]*RestServiceConfig {
 // nolint
 func GetRestProviderServiceConfigMap() map[string]*RestServiceConfig {
 	return restProviderServiceConfigMap
+}
+
+func (c *RestProviderConfig) Init(rc *RootConfig) error {
+
+	restProviderConfig := rc.RestProvider
+	restProviderServiceConfigMap := make(map[string]*RestServiceConfig, len(restProviderConfig.RestServiceConfigsMap))
+	for key, rc := range restProviderConfig.RestServiceConfigsMap {
+		rc.Server = getNotEmptyStr(rc.Server, restProviderConfig.Server, constant.DefaultRestServer)
+		rc.RestMethodConfigsMap = initMethodConfigMap(rc, restProviderConfig.Consumes, restProviderConfig.Produces)
+		restProviderServiceConfigMap[key] = rc
+	}
+	SetRestProviderServiceConfigMap(restProviderServiceConfigMap)
+
+	return nil
 }

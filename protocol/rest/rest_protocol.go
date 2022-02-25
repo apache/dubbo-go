@@ -18,6 +18,7 @@
 package rest
 
 import (
+	rest_config "dubbo.apache.org/dubbo-go/v3/config"
 	"sync"
 	"time"
 )
@@ -30,7 +31,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/rest/client"
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/rest/client/client_impl"
-	rest_config "dubbo.apache.org/dubbo-go/v3/protocol/rest/config"
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/rest/config/reader"
 	"dubbo.apache.org/dubbo-go/v3/protocol/rest/server"
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/rest/server/server_impl"

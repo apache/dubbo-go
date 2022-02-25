@@ -19,6 +19,7 @@ package server
 
 import (
 	"context"
+	rest_config "dubbo.apache.org/dubbo-go/v3/config"
 	"errors"
 	"net/http"
 	"reflect"
@@ -34,7 +35,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
-	rest_config "dubbo.apache.org/dubbo-go/v3/protocol/rest/config"
 )
 
 const parseParameterErrorStr = "An error occurred while parsing parameters on the server"

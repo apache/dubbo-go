@@ -67,6 +67,12 @@ type RootConfig struct {
 	// consumer config
 	Consumer *ConsumerConfig `yaml:"consumer" json:"consumer" property:"consumer"`
 
+	// pi todo rest provider config
+	RestProvider *RestProviderConfig `yaml:"rest-provider" json:"rest-provider" property:"rest-provider"`
+
+	// pi todo rest consumer config
+	RestConsumer *RestConsumerConfig `yaml:"rest-consumer" json:"rest-consumer" property:"rest-consumer"`
+
 	Metric *MetricConfig `yaml:"metrics" json:"metrics,omitempty" property:"metrics"`
 
 	Tracing map[string]*TracingConfig `yaml:"tracing" json:"tracing,omitempty" property:"tracing"`
@@ -205,6 +211,15 @@ func (rc *RootConfig) Init() error {
 	if err := initRouterConfig(rc); err != nil {
 		return err
 	}
+
+	// provider、consumer must last init
+	if err := rc.RestProvider.Init(rc); err != nil {
+		return err
+	}
+	if err := rc.RestConsumer.Init(rc); err != nil {
+		return err
+	}
+
 	// provider、consumer must last init
 	if err := rc.Provider.Init(rc); err != nil {
 		return err
