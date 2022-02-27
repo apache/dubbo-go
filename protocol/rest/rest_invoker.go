@@ -91,6 +91,7 @@ func (ri *RestInvoker) Invoke(ctx context.Context, invocation protocol.Invocatio
 		Body:        body,
 		Header:      header,
 	}
+	// pi todo Rest protocol : inv.Reply is null
 	result.Err = ri.client.Do(req, inv.Reply())
 	if result.Err == nil {
 		result.Rest = inv.Reply()

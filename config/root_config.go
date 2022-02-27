@@ -68,10 +68,10 @@ type RootConfig struct {
 	Consumer *ConsumerConfig `yaml:"consumer" json:"consumer" property:"consumer"`
 
 	// pi todo rest provider config
-	RestProvider *RestProviderConfig `yaml:"rest-provider" json:"rest-provider" property:"rest-provider"`
+	RestProvider *RestProviderConfig `yaml:"provider" json:"rest-provider" property:"rest-provider"`
 
 	// pi todo rest consumer config
-	RestConsumer *RestConsumerConfig `yaml:"rest-consumer" json:"rest-consumer" property:"rest-consumer"`
+	RestConsumer *RestConsumerConfig `yaml:"consumer" json:"rest-consumer" property:"rest-consumer"`
 
 	Metric *MetricConfig `yaml:"metrics" json:"metrics,omitempty" property:"metrics"`
 
@@ -238,6 +238,10 @@ func (rc *RootConfig) Init() error {
 func (rc *RootConfig) Start() {
 	startOnce.Do(func() {
 		gracefulShutdownInit()
+
+		rc.RestConsumer.Load()
+		rc.RestProvider.Load()
+
 		rc.Consumer.Load()
 		rc.Provider.Load()
 		// todo if register consumer instance or has exported services

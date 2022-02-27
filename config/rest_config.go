@@ -37,6 +37,8 @@ type RestConsumerConfig struct {
 	Produces              string                        `default:"application/json" yaml:"rest_produces"  json:"rest_produces,omitempty" property:"rest_produces"`
 	Consumes              string                        `default:"application/json" yaml:"rest_consumes"  json:"rest_consumes,omitempty" property:"rest_consumes"`
 	RestServiceConfigsMap map[string]*RestServiceConfig `yaml:"references" json:"references,omitempty" property:"references"`
+
+	rootConfig *RootConfig
 }
 
 // UnmarshalYAML unmarshals the RestConsumerConfig by @unmarshal function
@@ -70,6 +72,9 @@ func (c *RestConsumerConfig) Init(rc *RootConfig) error {
 	SetRestConsumerServiceConfigMap(restConsumerServiceConfigMap)
 
 	return nil
+}
+
+func (c *RestConsumerConfig) Load() {
 }
 
 // initProviderRestConfig ...
@@ -150,6 +155,8 @@ type RestProviderConfig struct {
 	Produces              string                        `default:"*/*" yaml:"rest_produces"  json:"rest_produces,omitempty" property:"rest_produces"`
 	Consumes              string                        `default:"*/*" yaml:"rest_consumes"  json:"rest_consumes,omitempty" property:"rest_consumes"`
 	RestServiceConfigsMap map[string]*RestServiceConfig `yaml:"services" json:"services,omitempty" property:"services"`
+
+	rootConfig *RootConfig
 }
 
 // UnmarshalYAML unmarshals the RestProviderConfig by @unmarshal function
@@ -268,4 +275,8 @@ func (c *RestProviderConfig) Init(rc *RootConfig) error {
 	SetRestProviderServiceConfigMap(restProviderServiceConfigMap)
 
 	return nil
+}
+
+func (c *RestProviderConfig) Load() {
+
 }
