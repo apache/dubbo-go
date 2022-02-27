@@ -55,6 +55,11 @@ func (c *RestConsumerConfig) UnmarshalYAML(unmarshal func(interface{}) error) er
 func (c *RestConsumerConfig) Init(rc *RootConfig) error {
 	restConsumerConfig := rc.RestConsumer
 
+	if restConsumerConfig == nil {
+		logger.Debugf("[rest-protocol] no consumer config")
+		return nil
+	}
+
 	restConsumerServiceConfigMap := make(map[string]*RestServiceConfig, len(restConsumerConfig.RestServiceConfigsMap))
 	for key, rc := range restConsumerConfig.RestServiceConfigsMap {
 		rc.Client = getNotEmptyStr(rc.Client, restConsumerConfig.Client, constant.DefaultRestClient)
@@ -248,6 +253,12 @@ func GetRestProviderServiceConfigMap() map[string]*RestServiceConfig {
 func (c *RestProviderConfig) Init(rc *RootConfig) error {
 
 	restProviderConfig := rc.RestProvider
+
+	if restProviderConfig == nil {
+		logger.Debugf("[rest-protocol] no provider config")
+		return nil
+	}
+
 	restProviderServiceConfigMap := make(map[string]*RestServiceConfig, len(restProviderConfig.RestServiceConfigsMap))
 	for key, rc := range restProviderConfig.RestServiceConfigsMap {
 		rc.Server = getNotEmptyStr(rc.Server, restProviderConfig.Server, constant.DefaultRestServer)

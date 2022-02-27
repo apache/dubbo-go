@@ -32,12 +32,15 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/rest/client"
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/rest/client/client_impl"
 	"dubbo.apache.org/dubbo-go/v3/protocol/rest/server"
-	_ "dubbo.apache.org/dubbo-go/v3/protocol/rest/server/server_impl"
 )
 
 var restProtocol *RestProtocol
 
 const REST = "rest"
+
+func init() {
+	SetRestServer(constant.DefaultRestServer, server.NewGoRestfulServer)
+}
 
 // nolint
 func init() {
@@ -122,7 +125,7 @@ func (rp *RestProtocol) getServer(url *common.URL, serverType string) server.Res
 	if ok {
 		return restServer
 	}
-	restServer = extension.GetNewRestServer(serverType)
+	restServer = GetNewRestServer(serverType)
 	restServer.Start(url)
 	rp.serverMap[url.Location] = restServer
 	return restServer

@@ -15,23 +15,42 @@
  * limitations under the License.
  */
 
-package extension
+package server
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/protocol/rest/server"
+	"dubbo.apache.org/dubbo-go/v3/config"
+	"testing"
 )
 
-var restServers = make(map[string]func() server.RestServer, 8)
+import (
+	"github.com/stretchr/testify/assert"
+)
 
-// SetRestServer sets the RestServer with @name
-func SetRestServer(name string, fun func() server.RestServer) {
-	restServers[name] = fun
-}
+import (
+	"dubbo.apache.org/dubbo-go/v3/common"
+)
 
-// GetNewRestServer finds the RestServer with @name
-func GetNewRestServer(name string) server.RestServer {
-	if restServers[name] == nil {
-		panic("restServer for " + name + " is not existing, make sure you have import the package.")
+func TestGoRestfulServerDeploySameUrl(t *testing.T) {
+	grs := NewGoRestfulServer()
+	url, err := common.NewURL("http://127.0.0.1:43121")
+	assert.NoError(t, err)
+	grs.Start(url)
+	rmc := &config.RestMethodConfig{
+		Produces:   "*/*",
+		Consumes:   "*/*",
+		MethodType: "POST",
+		Path:       "/test",
 	}
-	return restServers[name]()
+	f := func(request RestServerRequest, response RestServerResponse) {}
+	grs.Deploy(rmc, f)
+	rmc1 := &config.RestMethodConfig{
+		Produces:   "*/*",
+		Consumes:   "*/*",
+		MethodType: "GET",
+		Path:       "/test",
+	}
+	grs.Deploy(rmc1, f)
+	grs.UnDeploy(rmc)
+	grs.UnDeploy(rmc1)
+	grs.Destroy()
 }
