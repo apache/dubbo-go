@@ -198,19 +198,7 @@ func (l *ZkEventListener) handleZkNodeEvent(zkPath string, children []string, li
 
 	newChildren, err := l.Client.GetChildren(zkPath)
 	if err != nil {
-		// TODO need to ignore this error in gost
-		if err == gxzookeeper.ErrNilChildren {
-			content, _, connErr := l.Client.Conn.Get(zkPath)
-			if connErr != nil {
-				logger.Errorf("Get new node path {%v} 's content error,message is  {%v}",
-					zkPath, perrors.WithStack(connErr))
-			} else {
-				// TODO this if for config center listener, and will be removed when we refactor config center listener
-				listener.DataChange(remoting.Event{Path: zkPath, Action: remoting.EventTypeUpdate, Content: string(content)})
-			}
-		} else {
-			logger.Errorf("path{%s} child nodes changed, zk.Children() = error{%v}", zkPath, perrors.WithStack(err))
-		}
+		logger.Errorf("[ZkEventListener handleZkNodeEvent]Path{%s} child nodes changed, zk.Children() = error{%v}", zkPath, perrors.WithStack(err))
 		return
 	}
 
