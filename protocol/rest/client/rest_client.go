@@ -22,13 +22,11 @@ import (
 	"time"
 )
 
-// RestOptions
 type RestOptions struct {
 	RequestTimeout time.Duration
 	ConnectTimeout time.Duration
 }
 
-// RestClientRequest
 type RestClientRequest struct {
 	Header      http.Header
 	Location    string

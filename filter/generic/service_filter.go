@@ -91,13 +91,6 @@ func (f *genericServiceFilter) Invoke(ctx context.Context, invoker protocol.Invo
 	// get generalizer according to value in the `generic`
 	g := getGeneralizer(generic)
 
-	//if strings.ToLower(generic) == constant.GenericSerializationProtobuf {
-	//	if len(args) > 1 {
-	//		logger.Warnf("\"%s\" only supports one argument, but we get %d arguments actually",
-	//			constant.GenericSerializationProtobuf, len(args))
-	//	}
-	//}
-
 	if len(args) != len(argsType) {
 		return &protocol.RPCResult{
 			Err: perrors.Errorf("the number of args(=%d) is not matched with \"%s\" method", len(args), mtdname),

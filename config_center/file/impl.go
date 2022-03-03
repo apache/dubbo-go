@@ -54,7 +54,6 @@ const (
 	defaultConfigCenterEncoding   = "UTF-8"
 )
 
-// FileSystemDynamicConfiguration
 type FileSystemDynamicConfiguration struct {
 	config_center.BaseDynamicConfiguration
 	url           *common.URL

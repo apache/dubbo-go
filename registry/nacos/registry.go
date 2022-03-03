@@ -44,7 +44,6 @@ import (
 var localIP = ""
 
 const (
-	// RegistryConnDelay registry connection delay
 	RegistryConnDelay = 3
 )
 
@@ -151,7 +150,6 @@ func createDeregisterParam(url *common.URL, serviceName string, groupName string
 	}
 }
 
-// UnRegister
 func (nr *nacosRegistry) UnRegister(url *common.URL) error {
 	serviceName := getServiceName(url)
 	groupName := nr.URL.GetParam(constant.NacosGroupKey, defaultGroup)
@@ -170,7 +168,6 @@ func (nr *nacosRegistry) subscribe(conf *common.URL) (registry.Listener, error) 
 	return NewNacosListener(conf, nr.URL, nr.namingClient)
 }
 
-// subscribe from registry
 func (nr *nacosRegistry) Subscribe(url *common.URL, notifyListener registry.NotifyListener) error {
 	// TODO
 	role, _ := strconv.Atoi(url.GetParam(constant.RegistryRoleKey, ""))

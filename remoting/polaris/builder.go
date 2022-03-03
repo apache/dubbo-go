@@ -27,7 +27,6 @@ import (
 
 import (
 	perrors "github.com/pkg/errors"
-
 	"github.com/polarismesh/polaris-go/api"
 	"github.com/polarismesh/polaris-go/pkg/config"
 	"github.com/polarismesh/polaris-go/pkg/model"
@@ -76,9 +75,6 @@ func GetPolarisConfig(url *common.URL) (api.SDKContext, string, error) {
 	return sdkCtx, url.GetParam(constant.PolarisNamespace, constant.PolarisDefaultNamespace), nil
 }
 
-// mergePolarisConfiguration
-//  @param easy
-//  @param complexConf
 func mergePolarisConfiguration(easy, complexConf config.Configuration) {
 
 	easySvrList := easy.GetGlobal().GetServerConnector().GetAddresses()

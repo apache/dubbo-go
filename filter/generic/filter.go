@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+// Package generic provides a filter for generic invoke.
 package generic
 
 import (

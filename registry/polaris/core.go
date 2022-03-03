@@ -34,7 +34,6 @@ import (
 
 type subscriber func(remoting.EventType, []model.Instance)
 
-// PolarisServiceWatcher
 type PolarisServiceWatcher struct {
 	consumer       api.ConsumerAPI
 	subscribeParam *api.WatchServiceRequest

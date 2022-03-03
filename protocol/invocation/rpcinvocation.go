@@ -129,7 +129,7 @@ func (r *RPCInvocation) Attachments() map[string]interface{} {
 	return r.attachments
 }
 
-// Attachment returns the corresponding value from dubbo's attachment with the given key.
+// GetAttachmentInterface returns the corresponding value from dubbo's attachment with the given key.
 func (r *RPCInvocation) GetAttachmentInterface(key string) interface{} {
 	r.lock.RLock()
 	defer r.lock.RUnlock()
@@ -238,10 +238,6 @@ func (r *RPCInvocation) GetAttributeWithDefaultValue(key string, defaultValue in
 	}
 	return defaultValue
 }
-
-// /////////////////////////
-// option
-// /////////////////////////
 
 type option func(invo *RPCInvocation)
 

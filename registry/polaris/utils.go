@@ -35,7 +35,6 @@ var (
 	protocolForDubboGO string = "dubbo"
 )
 
-// Polaris's heartbeat mission
 type PolarisHeartbeat struct {
 	cancel   context.CancelFunc
 	instance registry.ServiceInstance

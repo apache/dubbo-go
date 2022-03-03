@@ -22,7 +22,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
-// Authenticator defines how an Authenticator works.
+// Authenticator is the interface which defines how an Authenticator works.
 // Custom Authenticator must be set by calling auth.SetAuthenticator before use.
 type Authenticator interface {
 

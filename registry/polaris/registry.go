@@ -45,7 +45,6 @@ import (
 var localIP = ""
 
 const (
-	// RegistryConnDelay registry connection delay
 	RegistryConnDelay           = 3
 	defaultHeartbeatIntervalSec = 5
 )
@@ -84,7 +83,6 @@ type polarisRegistry struct {
 	watchers     map[string]*PolarisServiceWatcher
 }
 
-// Register
 func (pr *polarisRegistry) Register(url *common.URL) error {
 	serviceName := getServiceName(url)
 	param := createRegisterParam(url, serviceName)
@@ -113,7 +111,6 @@ func (pr *polarisRegistry) Register(url *common.URL) error {
 	return nil
 }
 
-// UnRegister
 func (pr *polarisRegistry) UnRegister(conf *common.URL) error {
 	var (
 		ok     bool
@@ -154,7 +151,6 @@ func (pr *polarisRegistry) UnRegister(conf *common.URL) error {
 	return nil
 }
 
-// Subscribe
 func (pr *polarisRegistry) Subscribe(url *common.URL, notifyListener registry.NotifyListener) error {
 	role, _ := strconv.Atoi(url.GetParam(constant.RegistryRoleKey, ""))
 	if role != common.CONSUMER {
@@ -222,18 +218,15 @@ func (pr *polarisRegistry) createPolarisWatcherIfAbsent(url *common.URL) (*Polar
 	return pr.watchers[serviceName], nil
 }
 
-// UnSubscribe
 func (pr *polarisRegistry) UnSubscribe(url *common.URL, notifyListener registry.NotifyListener) error {
 	// TODO wait polaris support it
 	return perrors.New("UnSubscribe not support in polarisRegistry")
 }
 
-// GetURL
 func (pr *polarisRegistry) GetURL() *common.URL {
 	return pr.url
 }
 
-// Destroy
 func (pr *polarisRegistry) Destroy() {
 	for _, val := range pr.registryUrls {
 		val.cancel()

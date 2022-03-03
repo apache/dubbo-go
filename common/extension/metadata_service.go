@@ -41,7 +41,7 @@ func SetLocalMetadataService(key string, creator localMetadataServiceCreator) {
 	localMetadataServiceInsMap[key] = creator
 }
 
-// GetMetadataService will create a local MetadataService instance
+// GetLocalMetadataService will create a local MetadataService instance
 func GetLocalMetadataService(key string) (service.MetadataService, error) {
 	if key == "" {
 		key = constant.DefaultKey

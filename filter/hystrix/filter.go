@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+// Package hystrix provides a filter for hystrix.
 package hystrix
 
 import (

@@ -15,9 +15,7 @@
  * limitations under the License.
  */
 
-package filter
-
-// TpsLimitStrategy defines how to do the TPS limiting in method level.
+// Package filter defines the functions of a filter.
 /*
  * please register your implementation by invoking SetTpsLimitStrategy
  * "UserProvider":
@@ -32,12 +30,16 @@ package filter
  *      tps.interval: 3000
  *      tps.limit.strategy: "name of implementation" # method-level
  */
+package filter
+
+// TpsLimitStrategy is the interface which defines how to do the TPS limiting in method level.
+//
+// IsAllowable will return true if this invocation is not over limitation.
 type TpsLimitStrategy interface {
-	// IsAllowable will return true if this invocation is not over limitation
 	IsAllowable() bool
 }
 
-// TpsLimitStrategyCreator is the creator abstraction for TpsLimitStrategy
+// TpsLimitStrategyCreator is the interface which creates TpsLimitStrategy.
 type TpsLimitStrategyCreator interface {
 	// Create will create an instance of TpsLimitStrategy
 	// It will be a little hard to understand this method.

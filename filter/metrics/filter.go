@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+// Package metrics provides a filter for metrics collection.
 package metrics
 
 import (

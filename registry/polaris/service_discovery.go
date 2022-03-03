@@ -166,12 +166,10 @@ func (polaris *polarisServiceDiscovery) Unregister(instance registry.ServiceInst
 	return nil
 }
 
-// GetDefaultPageSize
 func (polaris *polarisServiceDiscovery) GetDefaultPageSize() int {
 	return registry.DefaultPageSize
 }
 
-// GetServices
 func (polaris *polarisServiceDiscovery) GetServices() *gxset.HashSet {
 	return polaris.services
 }
@@ -238,7 +236,7 @@ func (polaris *polarisServiceDiscovery) GetHealthyInstancesByPage(serviceName st
 	return gxpage.NewPage(offset, pageSize, res, len(all))
 }
 
-// Batch get all instances by the specified service names
+// GetRequestInstances get all instances by the specified service names
 func (polaris *polarisServiceDiscovery) GetRequestInstances(serviceNames []string, offset int, requestedSize int) map[string]gxpage.Pager {
 	res := make(map[string]gxpage.Pager, len(serviceNames))
 	for _, name := range serviceNames {

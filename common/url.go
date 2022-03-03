@@ -48,24 +48,17 @@ import (
 
 // dubbo role type constant
 const (
-	// CONSUMER is consumer role
 	CONSUMER = iota
-	// CONFIGURATOR is configurator role
 	CONFIGURATOR
-	// ROUTER is router role
 	ROUTER
-	// PROVIDER is provider role
 	PROVIDER
 	PROTOCOL = "protocol"
 )
 
 var (
-	// DubboNodes Dubbo service node
-	DubboNodes = [...]string{"consumers", "configurators", "routers", "providers"}
-	// DubboRole Dubbo service role
-	DubboRole = [...]string{"consumer", "", "routers", "provider"}
-	// CompareURLEqualFunc compare two URL is equal
-	compareURLEqualFunc CompareURLEqualFunc
+	DubboNodes          = [...]string{"consumers", "configurators", "routers", "providers"} // Dubbo service node
+	DubboRole           = [...]string{"consumer", "", "routers", "provider"}                // Dubbo service role
+	compareURLEqualFunc CompareURLEqualFunc                                                 // function to compare two URL is equal
 )
 
 func init() {
@@ -766,7 +759,7 @@ func (c *URL) Compare(comp cm.Comparator) int {
 	}
 }
 
-// Copy URL based on the reserved parameter's keys.
+// CloneWithParams Copy URL based on the reserved parameter's keys.
 func (c *URL) CloneWithParams(reserveParams []string) *URL {
 	params := url.Values{}
 	for _, reserveParam := range reserveParams {

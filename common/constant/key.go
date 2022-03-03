@@ -56,13 +56,12 @@ const (
 	DotSeparator           = "."
 	CommaSeparator         = ","
 	SslEnabledKey          = "ssl-enabled"
-	// ParamsTypeKey key used in pass through invoker factory, to define param type
-	ParamsTypeKey        = "parameter-type-names"
-	MetadataTypeKey      = "metadata-type"
-	MaxCallSendMsgSize   = "max-call-send-msg-size"
-	MaxServerSendMsgSize = "max-server-send-msg-size"
-	MaxCallRecvMsgSize   = "max-call-recv-msg-size"
-	MaxServerRecvMsgSize = "max-server-recv-msg-size"
+	ParamsTypeKey          = "parameter-type-names" // key used in pass through invoker factory, to define param type
+	MetadataTypeKey        = "metadata-type"
+	MaxCallSendMsgSize     = "max-call-send-msg-size"
+	MaxServerSendMsgSize   = "max-server-send-msg-size"
+	MaxCallRecvMsgSize     = "max-call-recv-msg-size"
+	MaxServerRecvMsgSize   = "max-server-recv-msg-size"
 )
 
 const (
@@ -291,60 +290,40 @@ const (
 
 // Use for router module
 const (
-	// TagRouterRuleSuffix Specify tag router suffix
-	TagRouterRuleSuffix = ".tag-router"
-	// ConditionRouterRuleSuffix Specify condition router suffix
-	ConditionRouterRuleSuffix = ".condition-router"
-	// MeshRouteSuffix Specify mesh router suffix
-	MeshRouteSuffix = ".MESHAPPRULE"
-	// ForceUseTag is the tag in attachment
-	ForceUseTag = "dubbo.force.tag"
-	Tagkey      = "dubbo.tag"
-	// AttachmentKey in context in invoker
-	AttachmentKey = DubboCtxKey("attachment")
+	TagRouterRuleSuffix       = ".tag-router"             // Specify tag router suffix
+	ConditionRouterRuleSuffix = ".condition-router"       // Specify condition router suffix
+	MeshRouteSuffix           = ".MESHAPPRULE"            // Specify mesh router suffix
+	ForceUseTag               = "dubbo.force.tag"         // the tag in attachment
+	Tagkey                    = "dubbo.tag"               //  key of tag
+	AttachmentKey             = DubboCtxKey("attachment") // key in context in invoker
 )
 
 // Auth filter
 const (
-	// name of service filter
-	ServiceAuthKey = "auth"
-	// key of authenticator
-	AuthenticatorKey = "authenticator"
-	// name of default authenticator
-	DefaultAuthenticator = "accesskeys"
-	// name of default url storage
-	DefaultAccessKeyStorage = "urlstorage"
-	// key of storage
-	AccessKeyStorageKey = "accessKey.storage"
-	// key of request timestamp
-	RequestTimestampKey = "timestamp"
-	// key of request signature
-	RequestSignatureKey = "signature"
-	// AK key
-	AKKey = "ak"
-	// signature format
-	SignatureStringFormat = "%s#%s#%s#%s"
-	// key whether enable signature
-	ParameterSignatureEnableKey = "param.sign"
-	// consumer
-	Consumer = "consumer"
-	// key of access key id
-	AccessKeyIDKey = ".accessKeyId"
-	// key of secret access key
-	SecretAccessKeyKey = ".secretAccessKey"
+	ServiceAuthKey              = "auth"              // name of service filter
+	AuthenticatorKey            = "authenticator"     // key of authenticator
+	DefaultAuthenticator        = "accesskeys"        // name of default authenticator
+	DefaultAccessKeyStorage     = "urlstorage"        // name of default url storage
+	AccessKeyStorageKey         = "accessKey.storage" // key of storage
+	RequestTimestampKey         = "timestamp"         // key of request timestamp
+	RequestSignatureKey         = "signature"         // key of request signature
+	AKKey                       = "ak"                // AK key
+	SignatureStringFormat       = "%s#%s#%s#%s"       // signature format
+	ParameterSignatureEnableKey = "param.sign"        // key whether enable signature
+	Consumer                    = "consumer"          // consumer
+	AccessKeyIDKey              = ".accessKeyId"      // key of access key id
+	SecretAccessKeyKey          = ".secretAccessKey"  // key of secret access key
 )
 
 // metadata report
 
 const (
-	MetaConfigRemote  = "remote"
-	MetaConfigLocal   = "local"
-	KeySeparator      = ":"
-	DefaultPathTag    = "metadata"
-	KeyRevisionPrefix = "revision"
-
-	// metadata service
-	MetadataServiceName = "org.apache.dubbo.metadata.MetadataService"
+	MetaConfigRemote    = "remote"
+	MetaConfigLocal     = "local"
+	KeySeparator        = ":"
+	DefaultPathTag      = "metadata"
+	KeyRevisionPrefix   = "revision"
+	MetadataServiceName = "org.apache.dubbo.metadata.MetadataService" // metadata service
 )
 
 // service discovery
@@ -361,28 +340,21 @@ const (
 	MetadataServicePrefix                  = "dubbo.metadata-service."
 	MetadataServiceURLParamsPropertyName   = MetadataServicePrefix + "url-params"
 	MetadataServiceURLsPropertyName        = MetadataServicePrefix + "urls"
-
-	// ServiceDiscoveryKey indicate which service discovery instance will be used
-	ServiceDiscoveryKey = "service_discovery"
+	ServiceDiscoveryKey                    = "service_discovery" // indicate which service discovery instance will be used
 )
 
 // Generic Filter
 const (
 	GenericSerializationDefault = "true"
-	// disable "protobuf-json" temporarily
-	//GenericSerializationProtobuf = "protobuf-json"
-	GenericSerializationGson = "gson"
+	GenericSerializationGson    = "gson"
 )
 
 // AdaptiveService Filter
 // goland:noinspection ALL
 const (
-	// attribute keys
-	AdaptiveServiceUpdaterKey = "adaptive-service.updater"
-	// attachment keys
+	AdaptiveServiceUpdaterKey   = "adaptive-service.updater"
 	AdaptiveServiceRemainingKey = "adaptive-service.remaining"
 	AdaptiveServiceInflightKey  = "adaptive-service.inflight"
 	AdaptiveServiceEnabledKey   = "adaptive-service.enabled"
-	// enabled value
-	AdaptiveServiceIsEnabled = "1"
+	AdaptiveServiceIsEnabled    = "1"
 )

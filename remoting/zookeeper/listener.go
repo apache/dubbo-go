@@ -63,7 +63,6 @@ func NewZkEventListener(client *gxzookeeper.ZookeeperClient) *ZkEventListener {
 
 // ListenServiceNodeEvent listen a path node event
 func (l *ZkEventListener) ListenServiceNodeEvent(zkPath string, listener remoting.DataListener) {
-	// listen l service node
 	l.wg.Add(1)
 	go func(zkPath string, listener remoting.DataListener) {
 		if l.listenServiceNodeEvent(zkPath, listener) {
@@ -387,9 +386,7 @@ func timeSecondDuration(sec int) time.Duration {
 }
 
 // ListenServiceEvent is invoked by ZkConsumerRegistry::Register/ZkConsumerRegistry::get/ZkConsumerRegistry::getListener
-// registry.go:Listen -> listenServiceEvent -> listenDirEvent -> listenServiceNodeEvent
-//                            |
-//                            --------> listenServiceNodeEvent
+// registry.go:Listen -> listenServiceEvent -> listenDirEvent -> listenServiceNodeEvent --------> listenServiceNodeEvent
 func (l *ZkEventListener) ListenServiceEvent(conf *common.URL, zkPath string, listener remoting.DataListener) {
 	logger.Infof("[Zookeeper Listener] listen dubbo path{%s}", zkPath)
 	l.wg.Add(1)
@@ -398,10 +395,6 @@ func (l *ZkEventListener) ListenServiceEvent(conf *common.URL, zkPath string, li
 		logger.Warnf("ListenServiceEvent->listenDirEvent(zkPath{%s}) goroutine exit now", zkPath)
 	}(zkPath, listener)
 }
-
-//func (l *ZkEventListener) valid() bool {
-//	return l.client.ZkConnValid()
-//}
 
 // Close will let client listen exit
 func (l *ZkEventListener) Close() {

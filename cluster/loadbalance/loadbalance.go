@@ -21,8 +21,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
-// LoadBalance
-// Extension - LoadBalance
 type LoadBalance interface {
 	Select([]protocol.Invoker, protocol.Invocation) protocol.Invoker
 }

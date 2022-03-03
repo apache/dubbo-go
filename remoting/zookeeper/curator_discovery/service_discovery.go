@@ -45,7 +45,7 @@ type Entry struct {
 	instance *ServiceInstance
 }
 
-// ServiceInstance which define in curator-x-discovery, please refer to
+// ServiceDiscovery which define in curator-x-discovery, please refer to
 // https://github.com/apache/curator/blob/master/curator-x-discovery/src/main/java/org/apache/curator/x/discovery/ServiceDiscovery.java
 // It's not exactly the same as curator-x-discovery's service discovery
 type ServiceDiscovery struct {
@@ -229,7 +229,7 @@ func (sd *ServiceDiscovery) QueryForInstance(name string, id string) (*ServiceIn
 	return instance, nil
 }
 
-// QueryForInstance query all service name in zookeeper
+// QueryForNames query all service name in zookeeper
 func (sd *ServiceDiscovery) QueryForNames() ([]string, error) {
 	return sd.client.GetChildren(sd.basePath)
 }
@@ -239,7 +239,7 @@ func (sd *ServiceDiscovery) ListenServiceEvent(name string, listener remoting.Da
 	sd.listener.ListenServiceEvent(nil, sd.pathForName(name), listener)
 }
 
-// ListenServiceEvent add a listener in a instance
+// ListenServiceInstanceEvent add a listener in a instance
 func (sd *ServiceDiscovery) ListenServiceInstanceEvent(name, id string, listener remoting.DataListener) {
 	sd.listener.ListenServiceNodeEvent(sd.pathForInstance(name, id), listener)
 }
