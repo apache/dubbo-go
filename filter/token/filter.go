@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-// Package token provides a filter for token.
+// Package token provides token filter.
 package token
 
 import (

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-// Package adaptivesvc provides a filter for adaptive service.
+// Package adaptivesvc providers AdaptiveService filter.
 package adaptivesvc
 
 import (

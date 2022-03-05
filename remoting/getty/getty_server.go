@@ -24,16 +24,6 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-getty"
-
-	gxsync "github.com/dubbogo/gost/sync"
-
-	perrors "github.com/pkg/errors"
-
-	"gopkg.in/yaml.v2"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
@@ -41,6 +31,14 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
+
+	"github.com/apache/dubbo-getty"
+
+	gxsync "github.com/dubbogo/gost/sync"
+
+	perrors "github.com/pkg/errors"
+
+	"gopkg.in/yaml.v2"
 )
 
 var (

@@ -25,15 +25,13 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/remoting"
+
 	gxetcd "github.com/dubbogo/gost/database/kv/etcd/v3"
 
 	"github.com/stretchr/testify/assert"
 
 	"go.etcd.io/etcd/server/v3/embed"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
 const defaultEtcdV3WorkDir = "/tmp/default-dubbo-go-remote.etcd"

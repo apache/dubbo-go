@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-// Package accesslog provides a filter for logging.
+// Package accesslog providers logging filter.
 package accesslog
 
 import (
