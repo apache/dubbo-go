@@ -23,10 +23,12 @@ import (
 )
 
 import (
+	gxetcd "github.com/dubbogo/gost/database/kv/etcd/v3"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
-
-	gxetcd "github.com/dubbogo/gost/database/kv/etcd/v3"
 )
 
 type clientFacade interface {

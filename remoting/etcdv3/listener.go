@@ -23,9 +23,6 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
-	"dubbo.apache.org/dubbo-go/v3/remoting"
-
 	gxetcd "github.com/dubbogo/gost/database/kv/etcd/v3"
 
 	perrors "github.com/pkg/errors"
@@ -33,6 +30,11 @@ import (
 	"go.etcd.io/etcd/api/v3/mvccpb"
 
 	clientv3 "go.etcd.io/etcd/client/v3"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
 // nolint
