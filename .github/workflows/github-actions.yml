@@ -21,9 +21,9 @@ jobs:
     env:
       DING_TOKEN: ${{ secrets.DING_TOKEN }}
       DING_SIGN: ${{ secrets.DING_SIGN }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
-
     - name: Set up Go ${{ matrix.go_version }}
       uses: actions/setup-go@v2
       with:
@@ -32,6 +32,13 @@ jobs:
 
     - name: Check out code into the Go module directory
       uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - name: Merge branch
+      run: |
+        git remote add upstream https://github.com/apache/dubbo-go
+        git pull upstream ${{ github.base_ref }}:${{ github.base_ref }} --allow-unrelated-histories
+        git merge ${{ github.base_ref }}
 
     - name: Cache dependencies
       uses: actions/cache@v2.1.7
