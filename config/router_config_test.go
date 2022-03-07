@@ -74,7 +74,7 @@ func TestNewRouterConfigBuilder(t *testing.T) {
 		SetKey("key").
 		SetForce(true).
 		SetRuntime(true).
-		SetEnable(true).
+		SetEnabled(true).
 		SetValid(true).
 		SetPriority(10).
 		SetConditions([]string{"condition"}).

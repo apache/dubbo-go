@@ -301,7 +301,9 @@ const (
 	ForceUseTag = "dubbo.force.tag"
 	Tagkey      = "dubbo.tag"
 	// AttachmentKey in context in invoker
-	AttachmentKey = DubboCtxKey("attachment")
+	AttachmentKey       = DubboCtxKey("attachment")
+	TagRouterFactoryKey = "tag"
+	V3RouterFactoryKey  = "mesh"
 )
 
 // Auth filter
