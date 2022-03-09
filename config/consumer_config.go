@@ -137,24 +137,24 @@ func (cc *ConsumerConfig) Load() {
 	var count int
 	for {
 		checkok := true
-		for _, refconfig := range cc.References {
-			if (refconfig.Check != nil && *refconfig.Check) ||
-				(refconfig.Check == nil && cc.Check) ||
-				(refconfig.Check == nil) { // default to true
+		for key, ref := range cc.References {
+			if (ref.Check != nil && *ref.Check && GetProviderService(key) == nil) ||
+				(ref.Check == nil && cc.Check && GetProviderService(key) == nil) ||
+				(ref.Check == nil && GetProviderService(key) == nil) { // default to true
 
-				if refconfig.invoker != nil && !refconfig.invoker.IsAvailable() {
+				if ref.invoker != nil && !ref.invoker.IsAvailable() {
 					checkok = false
 					count++
 					if count > maxWait {
-						errMsg := fmt.Sprintf("No provider available of the service %v.please check configuration.", refconfig.InterfaceName)
+						errMsg := fmt.Sprintf("No provider available of the service %v.please check configuration.", ref.InterfaceName)
 						logger.Error(errMsg)
 						panic(errMsg)
 					}
 					time.Sleep(time.Second * 1)
 					break
 				}
-				if refconfig.invoker == nil {
-					logger.Warnf("The interface %s invoker not exist, may you should check your interface config.", refconfig.InterfaceName)
+				if ref.invoker == nil {
+					logger.Warnf("The interface %s invoker not exist, may you should check your interface config.", ref.InterfaceName)
 				}
 			}
 		}
