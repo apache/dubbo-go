@@ -46,11 +46,11 @@ jobs:
 
     - name: Merge base
       run: |
-        git branch | awk '{print $1}'
-        git remote -v | awk '{print $1 $2}'
-        git remote add upstream https://github.com/apache/dubbo-go.git
-        git fetch upstream 3.0
-        git checkout -b 3.0 upstream/3.0
+        git fetch origin 3.0
+        git checkout -b 3.0 origin/3.0
+        git remote add devrepo https://github.com/$GITHUB_REPOSITORY/dubbo-go.git
+        git fetch devrepo $GITHUB_SHA
+        git merge devrepo/$GITHUB_SHA
 
     - name: Get dependencies
       run: |
