@@ -51,6 +51,7 @@ jobs:
         git checkout -b 3.0 origin/3.0
         git remote add devrepo https://github.com/${{github.event.pull_request.head.repo.full_name}}.git
         git fetch devrepo ${{github.event.pull_request.head.sha}}
+        git config --global user.email "dubbo-go@github-ci.com"
         git merge ${{github.event.pull_request.head.sha}}
 
     - name: Get dependencies
