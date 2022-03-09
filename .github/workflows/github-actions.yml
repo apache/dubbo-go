@@ -50,8 +50,8 @@ jobs:
         git fetch origin 3.0
         git checkout -b 3.0 origin/3.0
         git remote add devrepo https://github.com/${{github.event.pull_request.head.repo.full_name}}.git
-        git fetch devrepo ${{github.event.pull_request.head.sha}}
-        git merge devrepo/${{github.event.pull_request.head.sha}}
+        git fetch devrepo ${{github.base_ref}}
+        git merge devrepo/${{github.base_ref}}
 
     - name: Get dependencies
       run: |
