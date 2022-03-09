@@ -45,12 +45,13 @@ jobs:
           ${{ runner.os }}-go-
 
     - name: Merge base
+      if: ${{ github.event_name == 'pull_request' }}
       run: |
         git fetch origin 3.0
         git checkout -b 3.0 origin/3.0
-        git remote add devrepo https://github.com/$GITHUB_REPOSITORY/dubbo-go.git
-        git fetch devrepo $GITHUB_SHA
-        git merge devrepo/$GITHUB_SHA
+        git remote add devrepo https://github.com/${{github.event.pull_request.head.repo.full_name}}/dubbo-go.git
+        git fetch devrepo ${{github.event.pull_request.head.sha}}
+        git merge devrepo/${{github.event.pull_request.head.sha}}
 
     - name: Get dependencies
       run: |
