@@ -44,6 +44,17 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-go-
 
+    - name: Merge base
+      if: ${{ github.event_name == 'pull_request' }}
+      run: |
+        git fetch origin 3.0
+        git checkout -b 3.0 origin/3.0
+        git remote add devrepo https://github.com/${{github.event.pull_request.head.repo.full_name}}.git
+        git fetch devrepo ${{github.event.pull_request.head.sha}}
+        git config --global user.email "dubbo-go@github-ci.com"
+        git config --global user.name "robot"
+        git merge ${{github.event.pull_request.head.sha}}
+
     - name: Get dependencies
       run: |
         if [ -f Gopkg.toml ]; then
