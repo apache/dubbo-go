@@ -44,6 +44,13 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-go-
 
+    - name: Merge base
+      run: |
+        git branch
+        git remote -v
+        git remote add upstream https://github.com/apache/dubbo-go.git
+        git checkout -b 3.0 upstream/3.0
+
     - name: Get dependencies
       run: |
         if [ -f Gopkg.toml ]; then
