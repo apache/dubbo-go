@@ -18,20 +18,19 @@
 package k8s_api
 
 import (
+	"context"
+
 	metav "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 
 	"k8s.io/client-go/kubernetes/scheme"
 
-	"k8s.io/client-go/rest"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/router/v3router/k8s_crd"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
+	"k8s.io/client-go/rest"
 )
 
 const (
@@ -92,7 +91,7 @@ func (r *VirtualServiceListenerHandler) Watch(opts metav.ListOptions, restClient
 		Namespace(ns).
 		Resource(VirtualServiceResource).
 		VersionedParams(&opts, scheme.ParameterCodec).
-		Watch()
+		Watch(context.TODO())
 }
 
 // nolint
@@ -103,7 +102,7 @@ func (r *VirtualServiceListenerHandler) List(opts metav.ListOptions, restClient 
 		Namespace(ns).
 		Resource(VirtualServiceResource).
 		VersionedParams(&opts, scheme.ParameterCodec).
-		Do().
+		Do(context.TODO()).
 		Into(&result)
 
 	return &result, err
@@ -171,7 +170,7 @@ func (r *DestRuleListenerHandler) Watch(opts metav.ListOptions, restClient *rest
 		Namespace(ns).
 		Resource(DestRuleResource).
 		VersionedParams(&opts, scheme.ParameterCodec).
-		Watch()
+		Watch(context.TODO())
 }
 
 // nolint
@@ -182,7 +181,7 @@ func (r *DestRuleListenerHandler) List(opts metav.ListOptions, restClient *rest.
 		Namespace(ns).
 		Resource(DestRuleResource).
 		VersionedParams(&opts, scheme.ParameterCodec).
-		Do().
+		Do(context.TODO()).
 		Into(&result)
 
 	return &result, err
