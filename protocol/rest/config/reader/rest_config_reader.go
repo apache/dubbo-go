@@ -61,6 +61,7 @@ func (cr *RestConfigReader) ReadConsumerConfig(reader *bytes.Buffer) error {
 	restConsumerServiceConfigMap := make(map[string]*config.RestServiceConfig, len(restConsumerConfig.RestServiceConfigsMap))
 	for key, rc := range restConsumerConfig.RestServiceConfigsMap {
 		rc.Client = getNotEmptyStr(rc.Client, restConsumerConfig.Client, constant.DefaultRestClient)
+		//初始化每个方法的配置
 		rc.RestMethodConfigsMap = initMethodConfigMap(rc, restConsumerConfig.Consumes, restConsumerConfig.Produces)
 		restConsumerServiceConfigMap[key] = rc
 	}
@@ -90,10 +91,10 @@ func initMethodConfigMap(rc *config.RestServiceConfig, consumes string, produces
 	mcm := make(map[string]*config.RestMethodConfig, len(rc.RestMethodConfigs))
 	for _, mc := range rc.RestMethodConfigs {
 		mc.InterfaceName = rc.InterfaceName
-		mc.Path = rc.Path + mc.Path
+		mc.RestCommonConfig.Path = rc.Path + mc.RestCommonConfig.Path
 		mc.Consumes = getNotEmptyStr(mc.Consumes, rc.Consumes, consumes)
 		mc.Produces = getNotEmptyStr(mc.Produces, rc.Produces, produces)
-		mc.MethodType = getNotEmptyStr(mc.MethodType, rc.MethodType)
+		mc.RestCommonConfig.MethodType = getNotEmptyStr(mc.RestCommonConfig.MethodType, rc.MethodType)
 		mc = transformMethodConfig(mc)
 		mcm[mc.MethodName] = mc
 	}
@@ -114,16 +115,26 @@ func getNotEmptyStr(args ...string) string {
 
 // transformMethodConfig
 func transformMethodConfig(methodConfig *config.RestMethodConfig) *config.RestMethodConfig {
-	if len(methodConfig.PathParamsMap) == 0 && len(methodConfig.PathParams) > 0 {
-		paramsMap, err := parseParamsString2Map(methodConfig.PathParams)
+	if len(methodConfig.PathParamsMap) == 0 && len(methodConfig.RestCommonConfig.PathParams) > 0 {
+		paramsMap, err := parseParamsString2Map(methodConfig.RestCommonConfig.PathParams)
 		if err != nil {
 			logger.Warnf("[Rest ShutdownConfig] Path Param parse error:%v", err)
 		} else {
 			methodConfig.PathParamsMap = paramsMap
 		}
 	}
-	if len(methodConfig.QueryParamsMap) == 0 && len(methodConfig.QueryParams) > 0 {
-		paramsMap, err := parseParamsString2Map(methodConfig.QueryParams)
+
+	restCommonConfig := methodConfig.RestCommonConfig
+
+	if len(methodConfig.QueryParamsMap) == 0 && restCommonConfig!= nil {
+
+		//初始化chan类型
+		restParam :=make([]string,4, 8)
+		const count = iota
+		restParam[0] = restCommonConfig.Path
+		restParam[1] = restCommonConfig.MethodType
+		restParam[2] = restCommonConfig.QueryParams
+		paramsMap, err := parseParamsString2Map(restParam[0])
 		if err != nil {
 			logger.Warnf("[Rest ShutdownConfig] Argument Param parse error:%v", err)
 		} else {

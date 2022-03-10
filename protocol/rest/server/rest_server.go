@@ -243,6 +243,7 @@ func assembleArgsFromBody(methodConfig *rest_config.RestMethodConfig, argsTypes 
 }
 
 // assembleArgsFromQueryParams assemble arguments from query params
+// FIXME rest协议改造组装参数
 func assembleArgsFromQueryParams(methodConfig *rest_config.RestMethodConfig, argsLength int, argsTypes []reflect.Type, req RestServerRequest, args []interface{}) error {
 	var (
 		err   error

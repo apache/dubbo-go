@@ -121,6 +121,7 @@ func generateUrl(instance model.Instance) *common.URL {
 	)
 }
 
+// 订阅注册中心地址的地方
 // Callback will be invoked when got subscribed events.
 func (nl *nacosListener) Callback(services []model.SubscribeService, err error) {
 	if err != nil {

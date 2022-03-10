@@ -39,6 +39,7 @@ import (
 var restProtocol *RestProtocol
 
 const REST = "rest"
+//FIXME rest旧版协议文件
 
 // nolint
 func init() {

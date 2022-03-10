@@ -56,7 +56,10 @@ references:
       - name: "GetUser"
         retries: "3"
         timeout: "5s"
-        rest_query_params: "1:userid,2:username"
+        - rest:
+          - path: "/GetUser"
+          - method: "GET"
+          - query_params: "0:id"
         rest_headers: "3:age"
         rest_path_params: "4:time,2:name"
         rest_body: 0
