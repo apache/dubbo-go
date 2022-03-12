@@ -12,7 +12,7 @@ require (
 	github.com/apache/dubbo-go-hessian2 v1.11.0
 	github.com/creasty/defaults v1.5.2
 	github.com/dubbogo/go-zookeeper v1.0.4-0.20211212162352-f9d2183d89d5
-	github.com/dubbogo/gost v1.11.24
+	github.com/dubbogo/gost v1.11.25
 	github.com/dubbogo/grpc-go v1.42.8
 	github.com/dubbogo/triple v1.1.8-rc2
 	github.com/emicklei/go-restful/v3 v3.7.3
@@ -30,7 +30,7 @@ require (
 	github.com/magiconair/properties v1.8.6
 	github.com/mitchellh/mapstructure v1.4.3
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
-	github.com/nacos-group/nacos-sdk-go v1.1.0
+	github.com/nacos-group/nacos-sdk-go v1.1.1
 	github.com/natefinch/lumberjack v2.0.0+incompatible
 	github.com/opentracing/opentracing-go v1.2.0
 	github.com/pkg/errors v0.9.1

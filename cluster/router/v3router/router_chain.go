@@ -120,6 +120,10 @@ func (r *RouterChain) URL() *common.URL {
 	return nil
 }
 
+// Notify the router the invoker list
+func (r *RouterChain) Notify(invokers []protocol.Invoker) {
+}
+
 // Deprecated parseFromConfigToRouters parse virtualService and destinationRule yaml file bytes to target router list
 func parseFromConfigToRouters(virtualServiceConfig, destinationRuleConfig []byte) ([]*UniformRouter, error) {
 	var virtualServiceConfigList []*config.VirtualServiceConfig
