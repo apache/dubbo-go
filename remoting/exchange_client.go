@@ -96,18 +96,22 @@ func (cl *ExchangeClient) doInit(url *common.URL) error {
 	return nil
 }
 
+// IncreaseActiveNumber increase number of service using client.
 func (client *ExchangeClient) IncreaseActiveNumber() uint32 {
 	return client.activeNum.Add(1)
 }
 
+// DecreaseActiveNumber decrease number of service using client.
 func (client *ExchangeClient) DecreaseActiveNumber() uint32 {
 	return client.activeNum.Sub(1)
 }
 
+// GetActiveNumber get number of service using client.
 func (client *ExchangeClient) GetActiveNumber() uint32 {
 	return client.activeNum.Load()
 }
 
+// Request means two way request.
 func (client *ExchangeClient) Request(invocation *protocol.Invocation, url *common.URL, timeout time.Duration,
 	result *protocol.RPCResult) error {
 	if er := client.doInit(url); er != nil {
@@ -140,6 +144,7 @@ func (client *ExchangeClient) Request(invocation *protocol.Invocation, url *comm
 	return nil
 }
 
+// AsyncRequest async two way request.
 func (client *ExchangeClient) AsyncRequest(invocation *protocol.Invocation, url *common.URL, timeout time.Duration,
 	callback common.AsyncCallback, result *protocol.RPCResult) error {
 	if er := client.doInit(url); er != nil {
@@ -165,6 +170,7 @@ func (client *ExchangeClient) AsyncRequest(invocation *protocol.Invocation, url 
 	return nil
 }
 
+// Send sends oneway request.
 func (client *ExchangeClient) Send(invocation *protocol.Invocation, url *common.URL, timeout time.Duration) error {
 	if er := client.doInit(url); er != nil {
 		return er
@@ -184,6 +190,7 @@ func (client *ExchangeClient) Send(invocation *protocol.Invocation, url *common.
 	return nil
 }
 
+// Close close the client.
 func (client *ExchangeClient) Close() {
 	client.client.Close()
 	client.init = false

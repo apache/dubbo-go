@@ -116,7 +116,7 @@ func createRegisterParam(url *common.URL, serviceName string, groupName string) 
 	return instance
 }
 
-// Register will register the service @url to its nacos registry center
+// Register will register the service @url to its nacos registry center.
 func (nr *nacosRegistry) Register(url *common.URL) error {
 	serviceName := getServiceName(url)
 	groupName := nr.URL.GetParam(constant.NacosGroupKey, defaultGroup)
@@ -150,6 +150,7 @@ func createDeregisterParam(url *common.URL, serviceName string, groupName string
 	}
 }
 
+// UnRegister returns nil if unregister successfully. If not, returns an error.
 func (nr *nacosRegistry) UnRegister(url *common.URL) error {
 	serviceName := getServiceName(url)
 	groupName := nr.URL.GetParam(constant.NacosGroupKey, defaultGroup)
@@ -168,6 +169,7 @@ func (nr *nacosRegistry) subscribe(conf *common.URL) (registry.Listener, error) 
 	return NewNacosListener(conf, nr.URL, nr.namingClient)
 }
 
+// Subscribe returns nil if subscribing registry successfully. If not returns an error.
 func (nr *nacosRegistry) Subscribe(url *common.URL, notifyListener registry.NotifyListener) error {
 	// TODO
 	role, _ := strconv.Atoi(url.GetParam(constant.RegistryRoleKey, ""))

@@ -178,7 +178,8 @@ func timeSecondDuration(sec int) time.Duration {
 }
 
 // ListenServiceEvent is invoked by etcdv3 ConsumerRegistry::Registe/ etcdv3 ConsumerRegistry::get/etcdv3 ConsumerRegistry::getListener
-// registry.go:Listen -> listenServiceEvent -> listenDirEvent -> listenServiceNodeEvent --------> listenServiceNodeEvent
+// registry.go:Listen -> listenServiceEvent -> listenDirEvent -> listenServiceNodeEvent
+// registry.go:Listen -> listenServiceEvent -> listenServiceNodeEvent
 func (l *EventListener) ListenServiceEvent(key string, listener remoting.DataListener) {
 	l.keyMapLock.RLock()
 	_, ok := l.keyMap[key]

@@ -386,7 +386,8 @@ func timeSecondDuration(sec int) time.Duration {
 }
 
 // ListenServiceEvent is invoked by ZkConsumerRegistry::Register/ZkConsumerRegistry::get/ZkConsumerRegistry::getListener
-// registry.go:Listen -> listenServiceEvent -> listenDirEvent -> listenServiceNodeEvent --------> listenServiceNodeEvent
+// registry.go:Listen -> listenServiceEvent -> listenDirEvent -> listenServiceNodeEvent
+// registry.go:Listen -> listenServiceEvent -> listenServiceNodeEvent
 func (l *ZkEventListener) ListenServiceEvent(conf *common.URL, zkPath string, listener remoting.DataListener) {
 	logger.Infof("[Zookeeper Listener] listen dubbo path{%s}", zkPath)
 	l.wg.Add(1)
