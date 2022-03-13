@@ -39,7 +39,7 @@
  So the method DeleteUser and method AddUser will be limited by service-level configuration.
  Sometimes we want to do something, like log the request or return default value when the request is over limitation.
  Then you can implement the RejectedExecutionHandler interface and register it by invoking SetRejectedExecutionHandler.
- */
+*/
 package exec_limit
 
 import (
