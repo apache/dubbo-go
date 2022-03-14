@@ -10,12 +10,16 @@ require (
 	github.com/alibaba/sentinel-golang v1.0.4
 	github.com/apache/dubbo-getty v1.4.7
 	github.com/apache/dubbo-go-hessian2 v1.11.0
+	github.com/cespare/xxhash/v2 v2.1.2
+	github.com/cncf/udpa/go v0.0.0-20210930031921-04548b0d99d4
+	github.com/cncf/xds/go v0.0.0-20211011173535-cb28da3451f1
 	github.com/creasty/defaults v1.5.2
 	github.com/dubbogo/go-zookeeper v1.0.4-0.20211212162352-f9d2183d89d5
 	github.com/dubbogo/gost v1.11.25
 	github.com/dubbogo/grpc-go v1.42.8
 	github.com/dubbogo/triple v1.1.8-rc2
 	github.com/emicklei/go-restful/v3 v3.7.3
+	github.com/envoyproxy/go-control-plane v0.10.0
 	github.com/fsnotify/fsnotify v1.5.1
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-co-op/gocron v1.9.0
@@ -23,6 +27,7 @@ require (
 	github.com/go-resty/resty/v2 v2.7.0
 	github.com/golang/mock v1.4.4
 	github.com/golang/protobuf v1.5.2
+	github.com/google/go-cmp v0.5.6
 	github.com/grpc-ecosystem/grpc-opentracing v0.0.0-20180507213350-8e809c8a8645
 	github.com/hashicorp/vault/sdk v0.3.0
 	github.com/jinzhu/copier v0.3.5
@@ -44,7 +49,8 @@ require (
 	go.etcd.io/etcd/server/v3 v3.5.2
 	go.uber.org/atomic v1.9.0
 	go.uber.org/zap v1.21.0
-	google.golang.org/grpc v1.44.0
+	google.golang.org/genproto v0.0.0-20211104193956-4c6863e31247
+	google.golang.org/grpc v1.45.0
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/apimachinery v0.22.4
