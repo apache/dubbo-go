@@ -18,7 +18,7 @@
 // Package internal contains gRPC-internal code, to avoid polluting
 // the godoc of the top-level grpc package.  It must not import any grpc
 // symbols to avoid circular dependencies.
-package internal
+package xds
 
 import (
 	"context"
