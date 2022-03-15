@@ -25,13 +25,12 @@ import (
 	"os"
 	"testing"
 
+	internal "dubbo.apache.org/dubbo-go/v3/xds"
+	"dubbo.apache.org/dubbo-go/v3/xds/client/resource/version"
+	"dubbo.apache.org/dubbo-go/v3/xds/utils/envconfig"
 	"github.com/golang/protobuf/proto"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-
-	"dubbo.apache.org/dubbo-go/v3/xds"
-	"dubbo.apache.org/dubbo-go/v3/xds/client/resource/version"
-	"dubbo.apache.org/dubbo-go/v3/xds/utils/envconfig"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/google"
 	"google.golang.org/grpc/credentials/insecure"

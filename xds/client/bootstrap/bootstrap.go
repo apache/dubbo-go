@@ -27,7 +27,7 @@ import (
 	"io/ioutil"
 	"strings"
 
-	"dubbo.apache.org/dubbo-go/v3/xds"
+	internal "dubbo.apache.org/dubbo-go/v3/xds"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource/version"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/envconfig"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/pretty"
