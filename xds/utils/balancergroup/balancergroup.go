@@ -23,7 +23,7 @@ import (
 	"sync"
 	"time"
 
-	"dubbo.apache.org/dubbo-go/v3/xds/utils/cache"
+	cache "dubbo.apache.org/dubbo-go/v3/xds/utils/xds_cache"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpclog"
 	"google.golang.org/grpc/balancer"
 	"google.golang.org/grpc/connectivity"

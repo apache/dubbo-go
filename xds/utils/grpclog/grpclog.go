@@ -20,11 +20,12 @@
 package grpclog
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"os"
 )
 
 // Logger is the logger used for the non-depth log functions.
-var Logger LoggerV2
+var Logger = logger.GetLogger()
 
 // DepthLogger is the logger used for the depth log functions.
 var DepthLogger DepthLoggerV2
@@ -34,7 +35,7 @@ func InfoDepth(depth int, args ...interface{}) {
 	if DepthLogger != nil {
 		DepthLogger.InfoDepth(depth, args...)
 	} else {
-		Logger.Infoln(args...)
+		Logger.Info(args...)
 	}
 }
 
@@ -43,7 +44,7 @@ func WarningDepth(depth int, args ...interface{}) {
 	if DepthLogger != nil {
 		DepthLogger.WarningDepth(depth, args...)
 	} else {
-		Logger.Warningln(args...)
+		Logger.Warn(args...)
 	}
 }
 
@@ -52,7 +53,7 @@ func ErrorDepth(depth int, args ...interface{}) {
 	if DepthLogger != nil {
 		DepthLogger.ErrorDepth(depth, args...)
 	} else {
-		Logger.Errorln(args...)
+		Logger.Error(args...)
 	}
 }
 
@@ -61,7 +62,7 @@ func FatalDepth(depth int, args ...interface{}) {
 	if DepthLogger != nil {
 		DepthLogger.FatalDepth(depth, args...)
 	} else {
-		Logger.Fatalln(args...)
+		Logger.Fatal(args...)
 	}
 	os.Exit(1)
 }

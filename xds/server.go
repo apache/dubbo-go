@@ -20,6 +20,7 @@ package xds
 
 import (
 	"context"
+	"dubbo.apache.org/dubbo-go/v3/xds/internal"
 	"errors"
 	"fmt"
 	"net"
@@ -55,8 +56,8 @@ var (
 		return grpc.NewServer(opts...)
 	}
 
-	grpcGetServerCreds    = GetServerCredentials.(func(*grpc.Server) credentials.TransportCredentials)
-	drainServerTransports = DrainServerTransports.(func(*grpc.Server, string))
+	grpcGetServerCreds    = internal.GetServerCredentials.(func(*grpc.Server) credentials.TransportCredentials)
+	drainServerTransports = internal.DrainServerTransports.(func(*grpc.Server, string))
 	logger                = grpclog.Component("xds")
 )
 

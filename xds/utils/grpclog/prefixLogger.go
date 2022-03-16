@@ -63,9 +63,6 @@ func (pl *PrefixLogger) Errorf(format string, args ...interface{}) {
 
 // Debugf does info logging at verbose level 2.
 func (pl *PrefixLogger) Debugf(format string, args ...interface{}) {
-	if !Logger.V(2) {
-		return
-	}
 	if pl != nil {
 		// Handle nil, so the tests can pass in a nil logger.
 		format = pl.prefix + format

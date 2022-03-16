@@ -19,13 +19,13 @@
 package bootstrap
 
 import (
+	internal2 "dubbo.apache.org/dubbo-go/v3/xds/internal"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"testing"
 
-	internal "dubbo.apache.org/dubbo-go/v3/xds"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource/version"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/envconfig"
 	"github.com/golang/protobuf/proto"
@@ -647,7 +647,7 @@ func TestNewConfigWithCertificateProviders(t *testing.T) {
 		}`,
 	}
 
-	getBuilder := internal.GetCertificateProviderBuilder.(func(string) certprovider.Builder)
+	getBuilder := internal2.GetCertificateProviderBuilder.(func(string) certprovider.Builder)
 	parser := getBuilder(fakeCertProviderName)
 	if parser == nil {
 		t.Fatalf("missing certprovider plugin %q", fakeCertProviderName)

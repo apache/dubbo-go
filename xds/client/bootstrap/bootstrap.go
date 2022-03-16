@@ -22,12 +22,12 @@ package bootstrap
 
 import (
 	"bytes"
+	internal2 "dubbo.apache.org/dubbo-go/v3/xds/internal"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"strings"
 
-	internal "dubbo.apache.org/dubbo-go/v3/xds"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource/version"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/envconfig"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/pretty"
@@ -333,7 +333,7 @@ func NewConfigFromContents(data []byte) (*Config, error) {
 				return nil, fmt.Errorf("xds: json.Unmarshal(%v) for field %q failed during bootstrap: %v", string(v), k, err)
 			}
 			configs := make(map[string]*certprovider.BuildableConfig)
-			getBuilder := internal.GetCertificateProviderBuilder.(func(string) certprovider.Builder)
+			getBuilder := internal2.GetCertificateProviderBuilder.(func(string) certprovider.Builder)
 			for instance, data := range providerInstances {
 				var nameAndConfig struct {
 					PluginName string          `json:"plugin_name"`

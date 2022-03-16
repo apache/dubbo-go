@@ -27,9 +27,9 @@ import (
 
 	"dubbo.apache.org/dubbo-go/v3/xds/client/bootstrap"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
-	"dubbo.apache.org/dubbo-go/v3/xds/utils/cache"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpclog"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpcsync"
+	cache "dubbo.apache.org/dubbo-go/v3/xds/utils/xds_cache"
 )
 
 // clientImpl is the real implementation of the xds client. The exported Client
