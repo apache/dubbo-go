@@ -24,6 +24,11 @@ import (
 )
 
 func init() {
+	/*
+		Tag router is not imported in dubbo-go/imports/imports.go, because it relies on config center,
+		and cause warning if config center is empty.
+		User can import this package and config config center to use tag router.
+	*/
 	extension.SetRouterFactory(constant.TagRouterFactoryKey, NewTagRouterFactory)
 }
 
