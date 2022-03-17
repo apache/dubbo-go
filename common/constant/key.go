@@ -294,7 +294,7 @@ const (
 	ConditionRouterRuleSuffix = ".condition-router"       // Specify condition router suffix
 	MeshRouteSuffix           = ".MESHAPPRULE"            // Specify mesh router suffix
 	ForceUseTag               = "dubbo.force.tag"         // the tag in attachment
-	Tagkey                    = "dubbo.tag"               //  key of tag
+	Tagkey                    = "dubbo.tag"               // key of tag
 	AttachmentKey             = DubboCtxKey("attachment") // key in context in invoker
 	TagRouterFactoryKey       = "tag"
 	V3RouterFactoryKey        = "mesh"
