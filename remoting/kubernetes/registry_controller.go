@@ -166,7 +166,7 @@ func (c *dubboRegistryController) initWatchSet() error {
 	}
 
 	for ns := range c.needWatchedNamespace {
-		pods, err := c.kc.CoreV1().Pods(ns).List(context.TODO(), metav1.ListOptions{
+		pods, err := c.kc.CoreV1().Pods(ns).List(c.ctx, metav1.ListOptions{
 			LabelSelector: req.String(),
 		})
 		if err != nil {
@@ -450,7 +450,7 @@ func (c *dubboRegistryController) initCurrentPod() error {
 
 // patchCurrentPod writes new meta for current pod
 func (c *dubboRegistryController) patchCurrentPod(patch []byte) (*v1.Pod, error) {
-	updatedPod, err := c.kc.CoreV1().Pods(c.namespace).Patch(context.TODO(), c.name, types.StrategicMergePatchType, patch, metav1.PatchOptions{})
+	updatedPod, err := c.kc.CoreV1().Pods(c.namespace).Patch(c.ctx, c.name, types.StrategicMergePatchType, patch, metav1.PatchOptions{})
 	if err != nil {
 		return nil, perrors.WithMessage(err, "patch in kubernetes pod ")
 	}
@@ -552,7 +552,7 @@ func (c *dubboRegistryController) marshalRecord(ol []*WatcherEvent) (string, err
 
 // readCurrentPod reads from kubernetes-env current pod status
 func (c *dubboRegistryController) readCurrentPod() (*v1.Pod, error) {
-	currentPod, err := c.kc.CoreV1().Pods(c.namespace).Get(context.TODO(), c.name, metav1.GetOptions{})
+	currentPod, err := c.kc.CoreV1().Pods(c.namespace).Get(c.ctx, c.name, metav1.GetOptions{})
 	if err != nil {
 		return nil, perrors.WithMessagef(err, "get current (%s) pod in namespace (%s)", c.name, c.namespace)
 	}

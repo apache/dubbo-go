@@ -22,25 +22,22 @@ import (
 	"strings"
 	"sync"
 	"time"
-)
 
-import (
 	gxset "github.com/dubbogo/gost/container/set"
 
-	perrors "github.com/pkg/errors"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
+	perrors "github.com/pkg/errors"
+
 	_ "dubbo.apache.org/dubbo-go/v3/config_center/configurator"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
 	"dubbo.apache.org/dubbo-go/v3/registry"
+
 	_ "dubbo.apache.org/dubbo-go/v3/registry/directory"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
@@ -81,6 +78,7 @@ func newRegistryProtocol() *registryProtocol {
 
 func (proto *registryProtocol) getRegistry(registryUrl *common.URL) registry.Registry {
 	var err error
+	logger.Info("linjb registryUrl ", registryUrl)
 	reg, loaded := proto.registries.Load(registryUrl.Location)
 	if !loaded {
 		reg, err = extension.GetRegistry(registryUrl.Protocol, registryUrl)
@@ -178,7 +176,7 @@ func (proto *registryProtocol) Export(originInvoker protocol.Invoker) protocol.E
 	})
 	registryUrl := getRegistryUrl(originInvoker)
 	providerUrl := getProviderUrl(originInvoker)
-
+	logger.Info("linjb%s,", providerUrl)
 	overriderUrl := getSubscribedOverrideUrl(providerUrl)
 	// Deprecated! subscribe to override rules in 2.6.x or before.
 	overrideSubscribeListener := newOverrideSubscribeListener(overriderUrl, originInvoker, proto)
@@ -387,6 +385,7 @@ func isMatchCategory(category string, categories string) bool {
 }
 
 func getSubscribedOverrideUrl(providerUrl *common.URL) *common.URL {
+	logger.Info("linjb--getSubscribedOverrideUrl---,", providerUrl)
 	newUrl := providerUrl.Clone()
 	newUrl.Protocol = constant.ProviderProtocol
 	newUrl.SetParam(constant.CategoryKey, constant.ConfiguratorsCategory)

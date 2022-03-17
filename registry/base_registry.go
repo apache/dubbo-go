@@ -232,7 +232,7 @@ func (r *BaseRegistry) processURL(c *common.URL, f func(string, string) error, c
 		return true
 	})
 
-	role, _ := strconv.Atoi(c.GetParam(constant.RegistryRoleKey, ""))
+	role, _ := strconv.Atoi(r.URL.GetParam(constant.RegistryRoleKey, ""))
 	switch role {
 	case common.PROVIDER:
 		dubboPath, rawURL, err = r.providerRegistry(c, params, cpf)

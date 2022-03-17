@@ -26,25 +26,19 @@ import (
 	"strings"
 	"sync"
 	"time"
-)
 
-import (
 	"github.com/creasty/defaults"
 
 	gxnet "github.com/dubbogo/gost/net"
 
-	perrors "github.com/pkg/errors"
-
-	"go.uber.org/atomic"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
+	perrors "github.com/pkg/errors"
+	"go.uber.org/atomic"
 )
 
 // ServiceConfig is the configuration of the service provider
@@ -119,7 +113,7 @@ func (s *ServiceConfig) Init(rc *RootConfig) error {
 		s.RegistryIDs = rc.Provider.RegistryIDs
 	}
 	if len(s.ProtocolIDs) <= 0 {
-		for k, _ := range rc.Protocols {
+		for k := range rc.Protocols {
 			s.ProtocolIDs = append(s.ProtocolIDs, k)
 		}
 	}

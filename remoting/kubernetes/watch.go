@@ -22,7 +22,9 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+)
 
+import (
 	perrors "github.com/pkg/errors"
 )
 
