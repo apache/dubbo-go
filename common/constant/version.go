@@ -20,5 +20,5 @@ package constant
 const (
 	Version = "3.0.0"      // apache/dubbo-go version
 	Name    = "dubbogo"    // module name
-	DATE    = "2021/05/14" //release date
+	DATE    = "2021/05/14" // release date
 )
