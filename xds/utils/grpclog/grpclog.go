@@ -25,7 +25,12 @@ import (
 )
 
 // Logger is the logger used for the non-depth log functions.
-var Logger = logger.GetLogger()
+var Logger = func() logger.Logger {
+	logger.InitLogger(&logger.Config{
+		CallerSkip: 2,
+	})
+	return logger.GetLogger()
+}()
 
 // DepthLogger is the logger used for the depth log functions.
 var DepthLogger DepthLoggerV2

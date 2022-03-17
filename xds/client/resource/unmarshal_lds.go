@@ -288,10 +288,10 @@ func processServerSideListener(lis *v3listenerpb.Listener, logger *grpclog.Prefi
 		},
 	}
 
-	fcMgr, err := NewFilterChainManager(lis, logger)
-	if err != nil {
-		return nil, err
-	}
-	lu.InboundListenerCfg.FilterChains = fcMgr
+	//fcMgr, err := NewFilterChainManager(lis, logger)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//lu.InboundListenerCfg.FilterChains = fcMgr
 	return lu, nil
 }
