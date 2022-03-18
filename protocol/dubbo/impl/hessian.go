@@ -482,6 +482,22 @@ func getArgType(v interface{}) string {
 		return "java.util.Map"
 	case hessian.POJOEnum:
 		return v.(hessian.POJOEnum).JavaClassName()
+	case *int8:
+		return "java.lang.Byte"
+	case *int16:
+		return "java.lang.Short"
+	case *uint16:
+		return "java.lang.Character"
+	case *int:
+		return "java.lang.Long"
+	case *int32:
+		return "java.lang.Integer"
+	case *int64:
+		return "java.lang.Long"
+	case *float32:
+		return "java.lang.Float"
+	case *float64:
+		return "java.lang.Double"
 	//  Serialized tags for complex types
 	default:
 		t := reflect.TypeOf(v)
