@@ -121,7 +121,7 @@ func BuildServiceDefinition(service common.Service, url *common.URL) *ServiceDef
 	return sd
 }
 
-// ServiceDescriperBuild: build the service key, format is `group/serviceName:version` which be same as URL's service key
+// ServiceDescriperBuild builds the service key, format is `group/serviceName:version` which be same as URL's service key
 func ServiceDescriperBuild(serviceName string, group string, version string) string {
 	buf := &bytes.Buffer{}
 	if group != "" {

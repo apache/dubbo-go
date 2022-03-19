@@ -47,12 +47,10 @@ var attachmentKey = []string{
 // DubboInvoker is implement of protocol.Invoker. A dubboInvoker refers to one service and ip.
 type DubboInvoker struct {
 	protocol.BaseInvoker
-	// the exchange layer, it is focus on network communication.
-	clientGuard *sync.RWMutex
+	clientGuard *sync.RWMutex // the exchange layer, it is focus on network communication.
 	client      *remoting.ExchangeClient
 	quitOnce    sync.Once
-	// timeout for service(interface) level.
-	timeout time.Duration
+	timeout     time.Duration // timeout for service(interface) level.
 }
 
 // NewDubboInvoker constructor

@@ -46,10 +46,6 @@ func init() {
 	extension.SetRegistry("zookeeper", newZkRegistry)
 }
 
-/////////////////////////////////////
-// zookeeper registry
-/////////////////////////////////////
-
 type zkRegistry struct {
 	registry.BaseRegistry
 	client       *gxzookeeper.ZookeeperClient
@@ -57,8 +53,7 @@ type zkRegistry struct {
 	listener     *zookeeper.ZkEventListener
 	dataListener *RegistryDataListener
 	cltLock      sync.Mutex
-	// for provider
-	zkPath map[string]int // key = protocol://ip:port/interface
+	zkPath       map[string]int // key = protocol://ip:port/interface
 }
 
 func newZkRegistry(url *common.URL) (registry.Registry, error) {
@@ -100,7 +95,6 @@ func newMockZkRegistry(url *common.URL, opts ...gxzookeeper.Option) (*zk.TestClu
 		err error
 		r   *zkRegistry
 		c   *zk.TestCluster
-		// event <-chan zk.Event
 	)
 
 	r = &zkRegistry{

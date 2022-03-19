@@ -21,22 +21,25 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 )
 
-// It is interface of server for network communication.
-// If you use getty as network communication, you should define GettyServer that implements this interface.
+// Server is the interface that wraps the basic Start method and Stop method.
+// It is interface of server for network communication. If you use getty as network
+// communication, you should define GettyServer that implements this interface.
+//
+// Start method invokes once for connection.
+//
+// Stop method is for destroy.
 type Server interface {
-	// invoke once for connection
 	Start()
-	// it is for destroy
 	Stop()
 }
 
-// This is abstraction level. it is like facade.
+// ExchangeServer is abstraction level. it is like facade. it implements Start and Stop.
 type ExchangeServer struct {
 	Server Server
 	URL    *common.URL
 }
 
-// Create ExchangeServer
+// NewExchangeServer returns a ExchangeServer that constructs from url and server.
 func NewExchangeServer(url *common.URL, server Server) *ExchangeServer {
 	exchangServer := &ExchangeServer{
 		Server: server,
@@ -45,12 +48,10 @@ func NewExchangeServer(url *common.URL, server Server) *ExchangeServer {
 	return exchangServer
 }
 
-// start server
 func (server *ExchangeServer) Start() {
 	server.Server.Start()
 }
 
-// stop server
 func (server *ExchangeServer) Stop() {
 	server.Server.Stop()
 }

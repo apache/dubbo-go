@@ -39,23 +39,17 @@ const (
 
 // ConsumerConfig is Consumer default configuration
 type ConsumerConfig struct {
-	Filter string `yaml:"filter" json:"filter,omitempty" property:"filter"`
-	// support string
-	RegistryIDs []string `yaml:"registry-ids" json:"registry-ids,omitempty" property:"registry-ids"`
-
-	RequestTimeout string `default:"3s" yaml:"request-timeout" json:"request-timeout,omitempty" property:"request-timeout"`
-	ProxyFactory   string `default:"default" yaml:"proxy" json:"proxy,omitempty" property:"proxy"`
-	Check          bool   `yaml:"check" json:"check,omitempty" property:"check"`
-	// adaptive service
-	AdaptiveService bool `default:"false" yaml:"adaptive-service" json:"adaptive-service" property:"adaptive-service"`
-
-	References map[string]*ReferenceConfig `yaml:"references" json:"references,omitempty" property:"references"`
-	TracingKey string                      `yaml:"tracing-key" json:"tracing-key" property:"tracing-key"`
-
-	FilterConf                     interface{} `yaml:"filter-conf" json:"filter-conf,omitempty" property:"filter-conf"`
-	MaxWaitTimeForServiceDiscovery string      `default:"3s" yaml:"max-wait-time-for-service-discovery" json:"max-wait-time-for-service-discovery,omitempty" property:"max-wait-time-for-service-discovery"`
-
-	rootConfig *RootConfig
+	Filter                         string                      `yaml:"filter" json:"filter,omitempty" property:"filter"`
+	RegistryIDs                    []string                    `yaml:"registry-ids" json:"registry-ids,omitempty" property:"registry-ids"`
+	RequestTimeout                 string                      `default:"3s" yaml:"request-timeout" json:"request-timeout,omitempty" property:"request-timeout"`
+	ProxyFactory                   string                      `default:"default" yaml:"proxy" json:"proxy,omitempty" property:"proxy"`
+	Check                          bool                        `yaml:"check" json:"check,omitempty" property:"check"`
+	AdaptiveService                bool                        `default:"false" yaml:"adaptive-service" json:"adaptive-service" property:"adaptive-service"`
+	References                     map[string]*ReferenceConfig `yaml:"references" json:"references,omitempty" property:"references"`
+	TracingKey                     string                      `yaml:"tracing-key" json:"tracing-key" property:"tracing-key"`
+	FilterConf                     interface{}                 `yaml:"filter-conf" json:"filter-conf,omitempty" property:"filter-conf"`
+	MaxWaitTimeForServiceDiscovery string                      `default:"3s" yaml:"max-wait-time-for-service-discovery" json:"max-wait-time-for-service-discovery,omitempty" property:"max-wait-time-for-service-discovery"`
+	rootConfig                     *RootConfig
 }
 
 // Prefix dubbo.consumer

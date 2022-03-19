@@ -59,14 +59,6 @@ func NewEnvInstance() {
 	instance = &Environment{configCenterFirst: true}
 }
 
-//func (env *Environment) SetConfigCenterFirst() {
-//	env.configCenterFirst = true
-//}
-
-//func (env *Environment) ConfigCenterFirst() bool {
-//	return env.configCenterFirst
-//}
-
 // UpdateExternalConfigMap updates env externalConfigMap field
 func (env *Environment) UpdateExternalConfigMap(externalMap map[string]string) {
 	for k, v := range externalMap {

@@ -22,18 +22,18 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
-// TpsLimiter defines the Limiter that judge if the TPS overs the threshold
-/*
- * please register your implementation by invoking SetTpsLimiter
- * The usage, for example:
- * "UserProvider":
- *   registry: "hangzhouzk"
- *   protocol : "dubbo"
- *   interface : "com.ikurento.user.UserProvider"
- *   ... # other configuration
- *   tps.limiter: "the name of limiter",
- */
+// TpsLimiter is the interface which defines the Limiter that judge if the TPS overs the threshold
+//
+// IsAllowable method will check whether this invocation should be enabled for further process
+//
+// please register your implementation by invoking SetTpsLimiter
+// The usage, for example:
+// "UserProvider":
+//   registry: "hangzhouzk"
+//   protocol : "dubbo"
+//   interface : "com.ikurento.user.UserProvider"
+//   ... # other configuration
+//   tps.limiter: "the name of limiter",
 type TpsLimiter interface {
-	// IsAllowable will check whether this invocation should be enabled for further process
 	IsAllowable(*common.URL, protocol.Invocation) bool
 }

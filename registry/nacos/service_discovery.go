@@ -47,7 +47,6 @@ const (
 	idKey        = "id"
 )
 
-// init will put the service discovery into extension
 func init() {
 	extension.SetServiceDiscovery(constant.NacosKey, newNacosServiceDiscovery)
 }

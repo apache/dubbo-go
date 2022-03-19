@@ -115,10 +115,7 @@ func setClientGrPool() {
 
 // Options : param config
 type Options struct {
-	// connect timeout
-	// remove request timeout, it will be calculate for every request
 	ConnectTimeout time.Duration
-	// request timeout
 	RequestTimeout time.Duration
 }
 

@@ -21,13 +21,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 )
 
-/*
- * -----------------------------------NOTICE---------------------------------------------
- * If there is no special case, you'd better inherit BaseRegistry and implement the
- * FacadeBasedRegistry interface instead of directly implementing the Registry interface.
- * --------------------------------------------------------------------------------------
- */
-// Registry Extension - Registry
+// Registry is the interface that wraps Register、UnRegister、Subscribe and UnSubscribe method.
 type Registry interface {
 	common.Node
 

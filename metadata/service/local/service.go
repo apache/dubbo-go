@@ -62,8 +62,7 @@ var (
 	metadataServiceInitOnce sync.Once
 )
 
-// NewMetadataService: initiate a metadata service
-// it should be singleton
+// GetLocalMetadataService which should be singleton initiates a metadata service
 func GetLocalMetadataService() (service.MetadataService, error) {
 	metadataServiceInitOnce.Do(func() {
 		metadataServiceInstance = &MetadataService{
@@ -193,7 +192,7 @@ func (mts *MetadataService) UnsubscribeURL(url *common.URL) error {
 	return nil
 }
 
-// PublishServiceDefinition: publish url's service metadata info, and write into memory
+// PublishServiceDefinition publish url's service metadata info, and write into memory
 func (mts *MetadataService) PublishServiceDefinition(url *common.URL) error {
 	if common.RoleType(common.CONSUMER).Role() == url.GetParam(constant.SideKey, "") {
 		return nil
@@ -237,7 +236,7 @@ func (mts *MetadataService) GetServiceDefinition(interfaceName string, group str
 	return v.(string), nil
 }
 
-// GetServiceDefinition can get service definition by serviceKey
+// GetServiceDefinitionByServiceKey can get service definition by serviceKey
 func (mts *MetadataService) GetServiceDefinitionByServiceKey(serviceKey string) (string, error) {
 	v, _ := mts.serviceDefinitions.Load(serviceKey)
 	return v.(string), nil
@@ -274,7 +273,7 @@ func (mts *MetadataService) GetMetadataServiceURL() (*common.URL, error) {
 	return mts.metadataServiceURL, nil
 }
 
-// GetMetadataServiceURL save url of MetadataService
+// SetMetadataServiceURL save url of MetadataService
 func (mts *MetadataService) SetMetadataServiceURL(url *common.URL) error {
 	mts.metadataServiceURL = url
 	return nil

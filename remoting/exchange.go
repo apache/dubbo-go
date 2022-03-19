@@ -33,41 +33,34 @@ import (
 )
 
 var (
-	// generate request ID for global use
-	sequence atomic.Int64
-
-	// store requestID and response
-	pendingResponses = new(sync.Map)
+	sequence         atomic.Int64    // generate request ID for global use
+	pendingResponses = new(sync.Map) // store requestID and response
 )
 
 type SequenceType int64
 
 func init() {
-	// init request ID
 	sequence.Store(0)
 }
 
+// SequenceID increase 2 for every request as the same before. We expect that
+// the request from client to server, the requestID is even; but from server
+// to client, the requestID is odd.
 func SequenceID() int64 {
-	// increse 2 for every request as the same before.
-	// We expect that the request from client to server, the requestID is even; but from server to client, the requestID is odd.
 	return sequence.Add(2)
 }
 
-// this is request for transport layer
+// Request is the request for transport layer.
 type Request struct {
-	ID int64
-	// protocol version
-	Version string
-	// serial ID (ignore)
-	SerialID byte
-	// Data
-	Data   interface{}
-	TwoWay bool
-	Event  bool
+	ID       int64
+	Version  string // protocol version
+	SerialID byte   // serial ID (ignore)
+	Data     interface{}
+	TwoWay   bool
+	Event    bool
 }
 
-// NewRequest aims to create Request.
-// The ID is auto increase.
+// NewRequest aims to create Request. The ID is auto increase.
 func NewRequest(version string) *Request {
 	return &Request{
 		ID:      SequenceID(),
@@ -75,7 +68,7 @@ func NewRequest(version string) *Request {
 	}
 }
 
-// this is response for transport layer
+// Response is the response for transport layer.
 type Response struct {
 	ID       int64
 	Version  string
@@ -94,7 +87,6 @@ func NewResponse(id int64, version string) *Response {
 	}
 }
 
-// the response is heartbeat
 func (response *Response) IsHeartbeat() bool {
 	return response.Event && response.Result == nil
 }
@@ -122,7 +114,6 @@ func (response *Response) String() string {
 }
 
 type Options struct {
-	// connect timeout
 	ConnectTimeout time.Duration
 }
 
@@ -136,7 +127,8 @@ type AsyncCallbackResponse struct {
 	Reply     interface{}
 }
 
-// the client sends request to server, there is one pendingResponse at client side to wait the response from server
+// PendingResponse is the client sends request to server, there is one
+// pendingResponse at client side to wait the response from server.
 type PendingResponse struct {
 	seq       int64
 	Err       error
@@ -174,7 +166,7 @@ func (r PendingResponse) GetCallResponse() common.CallbackResponse {
 	}
 }
 
-// store response into map
+// AddPendingResponse stores the response into map
 func AddPendingResponse(pr *PendingResponse) {
 	pendingResponses.Store(SequenceType(pr.seq), pr)
 }
@@ -191,7 +183,7 @@ func removePendingResponse(seq SequenceType) *PendingResponse {
 	return nil
 }
 
-// get response
+// GetPendingResponse gets the response
 func GetPendingResponse(seq SequenceType) *PendingResponse {
 	if presp, ok := pendingResponses.Load(seq); ok {
 		return presp.(*PendingResponse)

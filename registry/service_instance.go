@@ -32,7 +32,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 )
 
-// ServiceInstance is the model class of an instance of a service, which is used for service registration and discovery.
+// ServiceInstance is the interface  which is used for service registration and discovery.
 type ServiceInstance interface {
 
 	// GetID will return this instance's id. It should be unique.
@@ -56,19 +56,19 @@ type ServiceInstance interface {
 	// GetMetadata will return the metadata
 	GetMetadata() map[string]string
 
-	// ToURLs
+	// ToURLs will return a list of url
 	ToURLs() []*common.URL
 
-	// GetEndPoints
+	// GetEndPoints will get end points from metadata
 	GetEndPoints() []*Endpoint
 
-	// Copy
+	// Copy will return a instance with different port
 	Copy(endpoint *Endpoint) ServiceInstance
 
-	// GetAddress
+	// GetAddress will return the ip:Port
 	GetAddress() string
 
-	// SetServiceMetadata
+	// SetServiceMetadata saves metadata in instance
 	SetServiceMetadata(info *common.MetadataInfo)
 }
 
@@ -141,7 +141,7 @@ func (d *DefaultServiceInstance) SetServiceMetadata(m *common.MetadataInfo) {
 	d.ServiceMetadata = m
 }
 
-// ToURLs
+// ToURLs return a list of url.
 func (d *DefaultServiceInstance) ToURLs() []*common.URL {
 	urls := make([]*common.URL, 0, 8)
 	for _, service := range d.ServiceMetadata.Services {
@@ -192,9 +192,9 @@ func (d *DefaultServiceInstance) GetMetadata() map[string]string {
 	return d.Metadata
 }
 
-// ServiceInstanceCustomizer is an extension point which allow user using custom logic to modify instance
-// Be careful of priority. Usually you should use number between [100, 9000]
-// other number will be thought as system reserve number
+// ServiceInstanceCustomizer is an extension point which allow user using custom
+// logic to modify instance. Be careful of priority. Usually you should use number
+// between [100, 9000] other number will be thought as system reserve number
 type ServiceInstanceCustomizer interface {
 	gxsort.Prioritizer
 

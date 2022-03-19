@@ -15,6 +15,31 @@
  * limitations under the License.
  */
 
+// Package exec_limit provides a filter for limiting the number of in-progress request and it's thread-safe.
+/*
+ example:
+ "UserProvider":
+   registry: "hangzhouzk"
+   protocol : "dubbo"
+   interface : "com.ikurento.user.UserProvider"
+   ... # other configuration
+   execute.limit: 200 # the name of MethodServiceTpsLimiterImpl. if the value < 0, invocation will be ignored.
+   execute.limit.rejected.handle: "default" # the name of rejected handler
+   methods:
+    - name: "GetUser"
+      execute.limit: 20, # in this case, this configuration in service-level will be ignored.
+    - name: "UpdateUser"
+      execute.limit: -1, # If the rate<0, the method will be ignored
+    - name: "DeleteUser"
+      execute.limit.rejected.handle: "customHandler" # Using the custom handler to do something when the request was rejected.
+    - name: "AddUser"
+ From the example, the configuration in service-level is 200, and the configuration of method GetUser is 20.
+ it means that, the GetUser will be counted separately.
+ The configuration of method UpdateUser is -1, so the invocation for it will not be counted.
+ So the method DeleteUser and method AddUser will be limited by service-level configuration.
+ Sometimes we want to do something, like log the request or return default value when the request is over limitation.
+ Then you can implement the RejectedExecutionHandler interface and register it by invoking SetRejectedExecutionHandler.
+*/
 package exec_limit
 
 import (
@@ -46,31 +71,6 @@ func init() {
 	extension.SetFilter(constant.ExecuteLimitFilterKey, newFilter)
 }
 
-// Filter will limit the number of in-progress request and it's thread-safe.
-/**
- * example:
- * "UserProvider":
- *   registry: "hangzhouzk"
- *   protocol : "dubbo"
- *   interface : "com.ikurento.user.UserProvider"
- *   ... # other configuration
- *   execute.limit: 200 # the name of MethodServiceTpsLimiterImpl. if the value < 0, invocation will be ignored.
- *   execute.limit.rejected.handle: "default" # the name of rejected handler
- *   methods:
- *    - name: "GetUser"
- *      execute.limit: 20, # in this case, this configuration in service-level will be ignored.
- *    - name: "UpdateUser"
- *      execute.limit: -1, # If the rate<0, the method will be ignored
- *    - name: "DeleteUser"
- *      execute.limit.rejected.handle: "customHandler" # Using the custom handler to do something when the request was rejected.
- *    - name: "AddUser"
- * From the example, the configuration in service-level is 200, and the configuration of method GetUser is 20.
- * it means that, the GetUser will be counted separately.
- * The configuration of method UpdateUser is -1, so the invocation for it will not be counted.
- * So the method DeleteUser and method AddUser will be limited by service-level configuration.
- * Sometimes we want to do something, like log the request or return default value when the request is over limitation.
- * Then you can implement the RejectedExecutionHandler interface and register it by invoking SetRejectedExecutionHandler.
- */
 type executeLimitFilter struct {
 	executeState *concurrent.Map
 }

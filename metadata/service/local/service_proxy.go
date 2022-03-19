@@ -30,14 +30,11 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
-// actually it's RPC stub
-// this will only be used by client-side
-// if the metadata service is "local" metadata service in server side,
-// which means that metadata service is RPC service too.
-// so in client-side, if we want to get the metadata information,
-// we must call metadata service
-// this is the stub, or proxy
-// for now, only GetMetadataInfo need to be implemented
+// MetadataServiceProxy actually is a  RPC stub which will only be used by client-side.
+// If the metadata service is "local" metadata service in server side, which means that
+// metadata service is RPC service too. So in client-side, if we want to get the metadata
+// information, we must call metadata service .This is the stub, or proxy  for now, only
+// GetMetadataInfo need to be implemented.
 // TODO use ProxyFactory to create proxy
 type MetadataServiceProxy struct {
 	invkr protocol.Invoker
