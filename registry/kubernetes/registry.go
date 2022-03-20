@@ -160,10 +160,11 @@ func newKubernetesRegistry(url *common.URL) (registry.Registry, error) {
 
 	r.InitBaseRegistry(url, r)
 
+	logger.Info("newKubernetesRegistry-linjb-------")
 	if err := kubernetes.ValidateClient(r); err != nil {
 		return nil, perrors.WithStack(err)
 	}
-
+	logger.Info("newKubernetesRegistry-linjb-------")
 	r.WaitGroup().Add(1)
 	go r.HandleClientRestart()
 	r.InitListeners()

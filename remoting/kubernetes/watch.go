@@ -19,6 +19,8 @@ package kubernetes
 
 import (
 	"context"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	"fmt"
 	"strconv"
 	"strings"
 	"sync"
@@ -239,12 +241,18 @@ func (s *watcherSetImpl) addWatcher(key string, prefix bool) (Watcher, error) {
 
 // Get gets elements from watcher-set
 func (s *watcherSetImpl) Get(key string, prefix bool) ([]*WatcherEvent, error) {
-
+	logger.Info("Get===linjb")
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 
 	if err := s.valid(); err != nil {
 		return nil, err
+	}
+	logger.Info("Get===linjb")
+
+	for k, v := range s.cache {
+		logger.Info("Get===linjb")
+		fmt.Println(k, v)
 	}
 
 	if !prefix {
@@ -256,7 +264,7 @@ func (s *watcherSetImpl) Get(key string, prefix bool) ([]*WatcherEvent, error) {
 		// object
 		return nil, ErrKVPairNotFound
 	}
-
+	logger.Info("Get===linjb")
 	var out []*WatcherEvent
 
 	for k, v := range s.cache {

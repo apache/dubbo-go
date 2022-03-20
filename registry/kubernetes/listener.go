@@ -18,6 +18,7 @@
 package kubernetes
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"strings"
 
 	gxchan "github.com/dubbogo/gost/container/chan"
@@ -47,17 +48,18 @@ func (l *dataListener) AddInterestedURL(url *common.URL) {
 
 // DataChange
 // notify listen, when interest event
-func (l *dataListener) DataChange(eventType remoting.Event) bool {
-
-	index := strings.Index(eventType.Path, "/providers/")
+func (l *dataListener) DataChange(event remoting.Event) bool {
+	providersPath := constant.PathSeparator + constant.ProviderCategory + constant.PathSeparator
+	logger.Infof("linjb=====Datachange", event.Path, providersPath)
+	index := strings.Index(event.Path, providersPath)
 	if index == -1 {
-		logger.Warnf("Listen with no url, event.path={%v}", eventType.Path)
+		logger.Warnf("Listen with no url, event.path={%v}", event.Path)
 		return false
 	}
-	url := eventType.Path[index+len("/providers/"):]
+	url := event.Path[index+len(providersPath):]
 	serviceURL, err := common.NewURL(url)
 	if err != nil {
-		logger.Warnf("Listen NewURL(r{%s}) = error{%v}", eventType.Path, err)
+		logger.Warnf("Listen NewURL(r{%s}) = error{%v}", event.Path, err)
 		return false
 	}
 
@@ -65,9 +67,9 @@ func (l *dataListener) DataChange(eventType remoting.Event) bool {
 		if serviceURL.URLEqual(v) {
 			l.listener.Process(
 				&config_center.ConfigChangeEvent{
-					Key:        eventType.Path,
+					Key:        event.Path,
 					Value:      serviceURL,
-					ConfigType: eventType.Action,
+					ConfigType: event.Action,
 				},
 			)
 			return true

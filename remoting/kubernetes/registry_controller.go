@@ -133,6 +133,7 @@ func newDubboRegistryController(
 	}
 
 	if err := c.initPodInformer(); err != nil {
+		logger.Info("GetInClusterKubernetesClient===linjb")
 		return nil, perrors.WithMessage(err, "init pod informer")
 	}
 
@@ -144,13 +145,14 @@ func newDubboRegistryController(
 // GetInClusterKubernetesClient
 // current pod running in kubernetes-cluster
 func GetInClusterKubernetesClient() (kubernetes.Interface, error) {
-
+	logger.Info("GetInClusterKubernetesClient===linjb")
 	// read in-cluster config
 	cfg, err := rest.InClusterConfig()
 	if err != nil {
+		logger.Info("GetInClusterKubernetesClient===linjb")
 		return nil, perrors.WithMessage(err, "get in-cluster config")
 	}
-
+	logger.Info("GetInClusterKubernetesClient===linjb")
 	return kubernetes.NewForConfig(cfg)
 }
 
@@ -236,25 +238,29 @@ func (c *dubboRegistryController) initNamespacedPodInformer(ns string) error {
 
 func (c *dubboRegistryController) initPodInformer() error {
 
+	logger.Info("initPodInformer===linjb")
 	if c.role == common.PROVIDER {
 		return nil
 	}
-
+	logger.Info("initPodInformer===linjb")
 	// read need watched namespaces list
 	needWatchedNameSpaceList := os.Getenv(needWatchedNameSpaceKey)
 	if len(needWatchedNameSpaceList) == 0 {
 		return perrors.New("read value from env by key (DUBBO_NAMESPACE)")
 	}
+	logger.Info("initPodInformer===linjb")
 	for _, ns := range strings.Split(needWatchedNameSpaceList, ",") {
 		c.needWatchedNamespace[ns] = struct{}{}
 	}
+	logger.Info("initPodInformer===linjb")
 	// current work namespace should be watched
 	c.needWatchedNamespace[c.namespace] = struct{}{}
-
+	logger.Info("initPodInformer===linjb")
 	c.queue = workqueue.New()
-
+	logger.Info("initPodInformer===linjb")
 	// init all watch needed pod-informer
 	for watchedNS := range c.needWatchedNamespace {
+		logger.Info("initPodInformer===linjb")
 		if err := c.initNamespacedPodInformer(watchedNS); err != nil {
 			return err
 		}

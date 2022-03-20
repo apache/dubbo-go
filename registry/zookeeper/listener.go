@@ -74,6 +74,8 @@ func (l *RegistryDataListener) UnSubscribeURL(url *common.URL) config_center.Con
 // DataChange accepts all events sent from the zookeeper server and trigger the corresponding listener for processing
 func (l *RegistryDataListener) DataChange(event remoting.Event) bool {
 	providersPath := constant.PathSeparator + constant.ProviderCategory + constant.PathSeparator
+	logger.Infof("linjb=====Datachange", event.Path, providersPath)
+
 	// Intercept the last bit
 	index := strings.Index(event.Path, providersPath)
 	if index == -1 {
