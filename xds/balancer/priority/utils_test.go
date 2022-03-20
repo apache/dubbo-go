@@ -18,7 +18,9 @@
 
 package priority
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestCompareStringSlice(t *testing.T) {
 	tests := []struct {

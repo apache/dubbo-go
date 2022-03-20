@@ -228,7 +228,7 @@ const (
 )
 
 const (
-	NacosKey                  = "nacos
+	NacosKey                  = "nacos"
 	NacosGroupKey             = "nacos.group"
 	NacosDefaultRoleType      = 3
 	NacosCacheDirKey          = "nacos.cacheDir"
@@ -275,7 +275,7 @@ const (
 	ZookeeperKey = "zookeeper"
 )
 
-const(
+const (
 	XDSRegistryKey = "xds"
 )
 

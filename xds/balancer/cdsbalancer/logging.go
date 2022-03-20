@@ -20,9 +20,14 @@ package cdsbalancer
 
 import (
 	"fmt"
+)
 
-	internalgrpclog "dubbo.apache.org/dubbo-go/v3/xds/utils/grpclog"
+import (
 	"google.golang.org/grpc/grpclog"
+)
+
+import (
+	internalgrpclog "dubbo.apache.org/dubbo-go/v3/xds/utils/grpclog"
 )
 
 const prefix = "[cds-lb %p] "

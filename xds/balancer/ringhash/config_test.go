@@ -20,7 +20,9 @@ package ringhash
 
 import (
 	"testing"
+)
 
+import (
 	"github.com/google/go-cmp/cmp"
 )
 

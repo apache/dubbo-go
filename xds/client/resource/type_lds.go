@@ -19,9 +19,14 @@ package resource
 
 import (
 	"time"
+)
 
-	"dubbo.apache.org/dubbo-go/v3/xds/httpfilter"
+import (
 	"google.golang.org/protobuf/types/known/anypb"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/xds/httpfilter"
 )
 
 // ListenerUpdate contains information received in an LDS response, which is of

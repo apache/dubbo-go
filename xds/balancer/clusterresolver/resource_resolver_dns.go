@@ -20,8 +20,11 @@ package clusterresolver
 
 import (
 	"fmt"
+)
 
+import (
 	"google.golang.org/grpc/resolver"
+
 	"google.golang.org/grpc/serviceconfig"
 )
 

@@ -29,7 +29,18 @@ import (
 	"fmt"
 	"sync"
 	"time"
+)
 
+import (
+	v3corepb "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+
+	_struct "github.com/golang/protobuf/ptypes/struct"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/keepalive"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/xds/client/bootstrap"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/controller/version"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/pubsub"
@@ -37,8 +48,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/backoff"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/buffer"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpclog"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/keepalive"
 )
 
 // Controller manages the connection and stream to the control plane.
@@ -55,7 +64,7 @@ type Controller struct {
 	logger          *grpclog.PrefixLogger
 
 	cc               *grpc.ClientConn // Connection to the management server.
-	vClient          version.VersionedClient
+	vClient          version.MetadataWrappedVersionClient
 	stopRunGoroutine context.CancelFunc
 
 	backoff  func(int) time.Duration
@@ -152,6 +161,41 @@ func New(config *bootstrap.ServerConfig, updateHandler pubsub.UpdateHandler, val
 	go ret.run(ctx)
 
 	return ret, nil
+}
+
+func (t *Controller) SetMetadata(m *_struct.Struct) error {
+	dopts := []grpc.DialOption{
+		t.config.Creds,
+		grpc.WithKeepaliveParams(keepalive.ClientParameters{
+			Time:    5 * time.Minute,
+			Timeout: 20 * time.Second,
+		}),
+	}
+
+	cc, err := grpc.Dial(t.config.ServerURI, dopts...)
+	if err != nil {
+		// An error from a non-blocking dial indicates something serious.
+		return fmt.Errorf("xds: failed to dial control plane {%s}: %v", t.config.ServerURI, err)
+	}
+	t.cc = cc
+	builder := version.GetAPIClientBuilder(t.config.TransportAPI)
+	if builder == nil {
+		return fmt.Errorf("no client builder for xDS API version: %v", t.config.TransportAPI)
+	}
+	v3PBNode, ok := t.config.NodeProto.(*v3corepb.Node)
+	if ok {
+		v3PBNode.Metadata = m
+	}
+	apiClient, err := builder(version.BuildOptions{NodeProto: t.config.NodeProto, Logger: t.logger})
+	if err != nil {
+		return err
+	}
+	t.vClient = apiClient
+	t.stopRunGoroutine()
+	ctx, cancel := context.WithCancel(context.Background())
+	t.stopRunGoroutine = cancel
+	go t.run(ctx)
+	return nil
 }
 
 // Close closes the controller.

@@ -19,7 +19,7 @@ package xds
 
 import (
 	"bytes"
-	"dubbo.apache.org/dubbo-go/v3/remoting/xds"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -34,6 +34,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/registry"
+	"dubbo.apache.org/dubbo-go/v3/remoting/xds"
 )
 
 var localIP = ""
@@ -53,6 +54,10 @@ type xdsRegistry struct {
 	registryURL      *common.URL
 }
 
+func isProvider(url *common.URL) bool {
+	return getCategory(url) == "providers"
+}
+
 func getCategory(url *common.URL) string {
 	role, _ := strconv.Atoi(url.GetParam(constant.RegistryRoleKey, strconv.Itoa(constant.NacosDefaultRoleType)))
 	category := common.DubboNodes[role]
@@ -69,6 +74,16 @@ func getServiceName(url *common.URL) string {
 	return buffer.String()
 }
 
+func getSubscribeName(url *common.URL) string {
+	var buffer bytes.Buffer
+
+	buffer.Write([]byte(common.DubboNodes[common.PROVIDER]))
+	appendParam(&buffer, url, constant.InterfaceKey)
+	appendParam(&buffer, url, constant.VersionKey)
+	appendParam(&buffer, url, constant.GroupKey)
+	return buffer.String()
+}
+
 func appendParam(target *bytes.Buffer, url *common.URL, key string) {
 	value := url.GetParam(key, "")
 	target.Write([]byte(constant.NacosServiceNameSeparator))
@@ -79,31 +94,36 @@ func appendParam(target *bytes.Buffer, url *common.URL, key string) {
 
 // Register will register the service @url to its nacos registry center
 func (nr *xdsRegistry) Register(url *common.URL) error {
-	// todo get hostName of this app
-	return nr.xdsWrappedClient.ChangeInterfaceMap(getServiceName(url), "host name of this")
+	if !isProvider(url) {
+		return nil
+	}
+	return nr.xdsWrappedClient.ChangeInterfaceMap(getServiceName(url), true)
 }
 
 // UnRegister
 func (nr *xdsRegistry) UnRegister(url *common.URL) error {
-	return nr.xdsWrappedClient.ChangeInterfaceMap(getServiceName(url), "")
+	return nr.xdsWrappedClient.ChangeInterfaceMap(getServiceName(url), false)
 }
 
 // Subscribe from xds client
 func (nr *xdsRegistry) Subscribe(url *common.URL, notifyListener registry.NotifyListener) error {
-	hostName, err := nr.getHostNameFromURL(url)
+	if isProvider(url) {
+		return nil
+	}
+	hostAddr, svcAddr, err := nr.getHostAddrFromURL(url)
 	if err != nil {
 		return err
 	}
-	return nr.xdsWrappedClient.Subscribe(hostName, notifyListener)
+	return nr.xdsWrappedClient.Subscribe(svcAddr, url.GetParam(constant.InterfaceKey, ""), hostAddr, notifyListener)
 }
 
 // UnSubscribe from xds client
 func (nr *xdsRegistry) UnSubscribe(url *common.URL, _ registry.NotifyListener) error {
-	hostName, err := nr.getHostNameFromURL(url)
+	_, svcAddr, err := nr.getHostAddrFromURL(url)
 	if err != nil {
 		return err
 	}
-	nr.xdsWrappedClient.UnSubscribe(hostName)
+	nr.xdsWrappedClient.UnSubscribe(svcAddr)
 	return nil
 }
 
@@ -112,14 +132,10 @@ func (nr *xdsRegistry) GetURL() *common.URL {
 	return nr.registryURL
 }
 
-func (nr *xdsRegistry) getHostNameFromURL(url *common.URL) (string, error) {
-	interfaceAppMap := nr.xdsWrappedClient.GetInterfaceAppNameMapFromPilot()
-	svcName := getServiceName(url)
-	hostName, ok := interfaceAppMap[svcName]
-	if !ok {
-		return "", perrors.Errorf("service %s not found", svcName)
-	}
-	return hostName, nil
+func (nr *xdsRegistry) getHostAddrFromURL(url *common.URL) (string, string, error) {
+	svcName := getSubscribeName(url)
+	hostAddr, err := nr.xdsWrappedClient.GetHostAddrFromPilot(svcName)
+	return hostAddr, svcName, err
 }
 
 // IsAvailable determines nacos registry center whether it is available
@@ -143,10 +159,17 @@ func (nr *xdsRegistry) Destroy() {
 
 // newXDSRegistry will create new instance
 func newXDSRegistry(url *common.URL) (registry.Registry, error) {
-	logger.Infof("[XDS Registry] New nacos registry with url = %+v", url.ToMap())
-	// todo get podName, get Namespace Name
+	logger.Infof("[XDS Registry] New XDS registry with url = %+v", url.ToMap())
+	pn := os.Getenv(constant.PodNameEnvKey)
+	ns := os.Getenv(constant.PodNamespaceEnvKey)
+	if pn == "" || ns == "" {
+		return nil, perrors.New("POD_NAME and POD_NAMESPACE can't be empty when using xds registry")
+	}
 
-	wrappedXDSClient := xds.NewXDSWrappedClient("", "", localIP, url.Location)
+	wrappedXDSClient, err := xds.NewXDSWrappedClient(pn, ns, localIP, url.Ip)
+	if err != nil {
+		return nil, err
+	}
 	tmpRegistry := &xdsRegistry{
 		xdsWrappedClient: wrappedXDSClient,
 		registryURL:      url,

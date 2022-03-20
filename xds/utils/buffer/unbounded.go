@@ -18,7 +18,9 @@
 // Package buffer provides an implementation of an unbounded buffer.
 package buffer
 
-import "sync"
+import (
+	"sync"
+)
 
 // Unbounded is an implementation of an unbounded buffer which does not use
 // extra goroutines. This is typically used for passing updates from one entity

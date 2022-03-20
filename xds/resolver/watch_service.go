@@ -22,7 +22,9 @@ import (
 	"fmt"
 	"sync"
 	"time"
+)
 
+import (
 	"dubbo.apache.org/dubbo-go/v3/xds/client"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
 	"dubbo.apache.org/dubbo-go/v3/xds/clusterspecifier"

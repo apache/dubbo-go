@@ -17,7 +17,9 @@
 
 package resource
 
-import "google.golang.org/protobuf/types/known/anypb"
+import (
+	"google.golang.org/protobuf/types/known/anypb"
+)
 
 // ClusterType is the type of cluster from a received CDS response.
 type ClusterType int

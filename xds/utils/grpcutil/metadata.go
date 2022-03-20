@@ -20,7 +20,9 @@ package grpcutil
 
 import (
 	"context"
+)
 
+import (
 	"google.golang.org/grpc/metadata"
 )
 

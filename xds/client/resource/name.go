@@ -21,7 +21,9 @@ import (
 	"net/url"
 	"sort"
 	"strings"
+)
 
+import (
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/envconfig"
 )
 

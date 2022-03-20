@@ -22,18 +22,25 @@ import (
 	"fmt"
 	"net"
 	"strconv"
+)
 
+import (
+	v3clusterpb "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	v3corepb "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	v3aggregateclusterpb "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/aggregate/v3"
+	v3tlspb "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
+
+	"github.com/golang/protobuf/proto"
+
+	"google.golang.org/protobuf/types/known/anypb"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource/version"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/envconfig"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpclog"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/matcher"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/pretty"
-	v3clusterpb "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
-	v3corepb "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	v3aggregateclusterpb "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/aggregate/v3"
-	v3tlspb "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
-	"github.com/golang/protobuf/proto"
-	"google.golang.org/protobuf/types/known/anypb"
 )
 
 // TransportSocket proto message has a `name` field which is expected to be set
@@ -81,6 +88,8 @@ const (
 
 func validateClusterAndConstructClusterUpdate(cluster *v3clusterpb.Cluster) (ClusterUpdate, error) {
 	var lbPolicy *ClusterLBPolicyRingHash
+	// todo @(laurence) this direct set
+	cluster.LbPolicy = v3clusterpb.Cluster_ROUND_ROBIN
 	switch cluster.GetLbPolicy() {
 	case v3clusterpb.Cluster_ROUND_ROBIN:
 		lbPolicy = nil // The default is round_robin, and there's no config to set.
@@ -134,6 +143,10 @@ func validateClusterAndConstructClusterUpdate(cluster *v3clusterpb.Cluster) (Clu
 	}
 
 	// Validate and set cluster type from the response.
+	// todo @laurence this set cluster
+	if x, ok := cluster.GetClusterDiscoveryType().(*v3clusterpb.Cluster_Type); ok {
+		x.Type = v3clusterpb.Cluster_EDS
+	}
 	switch {
 	case cluster.GetType() == v3clusterpb.Cluster_EDS:
 		if cluster.GetEdsClusterConfig().GetEdsConfig().GetAds() == nil {

@@ -20,22 +20,13 @@ package xds
 
 import (
 	"context"
-	"dubbo.apache.org/dubbo-go/v3/xds/internal"
 	"errors"
 	"fmt"
 	"net"
 	"sync"
+)
 
-	"dubbo.apache.org/dubbo-go/v3/xds/client"
-	"dubbo.apache.org/dubbo-go/v3/xds/client/bootstrap"
-	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
-	"dubbo.apache.org/dubbo-go/v3/xds/server"
-	"dubbo.apache.org/dubbo-go/v3/xds/utils/buffer"
-	"dubbo.apache.org/dubbo-go/v3/xds/utils/envconfig"
-	internalgrpclog "dubbo.apache.org/dubbo-go/v3/xds/utils/grpclog"
-	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpcsync"
-	iresolver "dubbo.apache.org/dubbo-go/v3/xds/utils/resolver"
-	"dubbo.apache.org/dubbo-go/v3/xds/utils/transport"
+import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/connectivity"
@@ -43,6 +34,20 @@ import (
 	"google.golang.org/grpc/grpclog"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/xds/client"
+	"dubbo.apache.org/dubbo-go/v3/xds/client/bootstrap"
+	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
+	"dubbo.apache.org/dubbo-go/v3/xds/internal"
+	"dubbo.apache.org/dubbo-go/v3/xds/server"
+	"dubbo.apache.org/dubbo-go/v3/xds/utils/buffer"
+	"dubbo.apache.org/dubbo-go/v3/xds/utils/envconfig"
+	internalgrpclog "dubbo.apache.org/dubbo-go/v3/xds/utils/grpclog"
+	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpcsync"
+	iresolver "dubbo.apache.org/dubbo-go/v3/xds/utils/resolver"
+	"dubbo.apache.org/dubbo-go/v3/xds/utils/transport"
 )
 
 const serverPrefix = "[xds-server %p] "

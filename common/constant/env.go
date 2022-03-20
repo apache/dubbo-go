@@ -23,4 +23,7 @@ const (
 	ConfigFileEnvKey = "DUBBO_GO_CONFIG_PATH"
 	// AppLogConfFile ...
 	AppLogConfFile = "AppLogConfFile"
+
+	PodNameEnvKey      = "POD_NAME"
+	PodNamespaceEnvKey = "POD_NAMESPACE"
 )

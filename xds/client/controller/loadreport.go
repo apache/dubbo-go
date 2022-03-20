@@ -19,10 +19,15 @@ package controller
 
 import (
 	"context"
+)
 
+import (
+	"google.golang.org/grpc"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/xds/client/controller/version"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/load"
-	"google.golang.org/grpc"
 )
 
 // ReportLoad starts an load reporting stream to the given server. If the server

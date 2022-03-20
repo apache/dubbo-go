@@ -22,8 +22,11 @@ import (
 	"fmt"
 	"math"
 	"testing"
+)
 
+import (
 	xxhash "github.com/cespare/xxhash/v2"
+
 	"google.golang.org/grpc/resolver"
 )
 

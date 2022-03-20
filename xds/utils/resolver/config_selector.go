@@ -22,10 +22,16 @@ package resolver
 import (
 	"context"
 	"sync"
+)
 
-	"dubbo.apache.org/dubbo-go/v3/xds/utils/serviceconfig"
+import (
 	"google.golang.org/grpc/metadata"
+
 	"google.golang.org/grpc/resolver"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/xds/utils/serviceconfig"
 )
 
 // ConfigSelector controls what configuration to use for every RPC.

@@ -20,8 +20,11 @@
 package grpclog
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"os"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
 )
 
 // Logger is the logger used for the non-depth log functions.

@@ -1,21 +1,25 @@
 package main
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/xds/client"
-	"dubbo.apache.org/dubbo-go/v3/xds/client/bootstrap"
-	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
-	"dubbo.apache.org/dubbo-go/v3/xds/client/resource/version"
 	"fmt"
-	structpb "github.com/golang/protobuf/ptypes/struct"
-	"google.golang.org/grpc/credentials/insecure"
-
-	v3corepb "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	"google.golang.org/grpc"
 )
 
 import (
+	v3corepb "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+
+	structpb "github.com/golang/protobuf/ptypes/struct"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/xds/client"
+	"dubbo.apache.org/dubbo-go/v3/xds/client/bootstrap"
 	_ "dubbo.apache.org/dubbo-go/v3/xds/client/controller/version/v2"
 	_ "dubbo.apache.org/dubbo-go/v3/xds/client/controller/version/v3"
+	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
+	"dubbo.apache.org/dubbo-go/v3/xds/client/resource/version"
 )
 
 const (
@@ -65,18 +69,29 @@ func main() {
 		panic(err)
 	}
 
-	clusterName := "outbound|20000||dubbo-go-app.default.svc.cluster.local" //
-	//clusterName :=  "outbound|27||laurence-svc.default.svc.cluster.local"
-	xdsClient.WatchListener("", func(update resource.ListenerUpdate, err error) {
+	//clusterName := "outbound|20000||dubbo-go-app.default.svc.cluster.local" //
+	//clusterName := "outbound|8848||nacos.default.svc.cluster.local"
+	//endpointClusterMap := sync.Map{}
+	//xdsClient.WatchCluster("*", func(update resource.ClusterUpdate, err error) {
+	//	xdsClient.WatchEndpoints(update.ClusterName, func(endpoint resource.EndpointsUpdate, err error) {
+	//		for _, v := range endpoint.Localities {
+	//			for _, e := range v.Endpoints {
+	//				endpointClusterMap.Store(e.Address, update.ClusterName)
+	//			}
+	//		}
+	//	})
+	//})
+
+	//
+	xdsClient.WatchEndpoints("outbound|15012||istiod.istio-system.svc.cluster.local", func(update resource.EndpointsUpdate, err error) {
 		fmt.Printf("%+v\n err = %s", update, err)
 	})
 
-	xdsClient.WatchCluster(clusterName, func(update resource.ClusterUpdate, err error) {
+	xdsClient.WatchCluster("*", func(update resource.ClusterUpdate, err error) {
 		fmt.Printf("%+v\n err = %s", update, err)
-	})
 
-	xdsClient.WatchEndpoints(clusterName, func(update resource.EndpointsUpdate, err error) {
-		fmt.Printf("%+v\n err = %s", update, err)
 	})
+	//
+
 	select {}
 }

@@ -20,12 +20,20 @@ package ringhash
 
 import (
 	"fmt"
+)
 
-	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpclog"
+import (
 	"google.golang.org/grpc/balancer"
+
 	"google.golang.org/grpc/codes"
+
 	"google.golang.org/grpc/connectivity"
+
 	"google.golang.org/grpc/status"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpclog"
 )
 
 type picker struct {

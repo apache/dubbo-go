@@ -22,21 +22,30 @@ package v3
 import (
 	"context"
 	"fmt"
+)
 
+import (
+	v3corepb "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	v3adsgrpc "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
+	v3discoverypb "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
+
+	"github.com/golang/protobuf/proto"
+	_struct "github.com/golang/protobuf/ptypes/struct"
+
+	statuspb "google.golang.org/genproto/googleapis/rpc/status"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+
+	"google.golang.org/protobuf/types/known/anypb"
+)
+
+import (
 	controllerversion "dubbo.apache.org/dubbo-go/v3/xds/client/controller/version"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
 	resourceversion "dubbo.apache.org/dubbo-go/v3/xds/client/resource/version"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpclog"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/pretty"
-	"github.com/golang/protobuf/proto"
-	statuspb "google.golang.org/genproto/googleapis/rpc/status"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/protobuf/types/known/anypb"
-
-	v3corepb "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	v3adsgrpc "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
-	v3discoverypb "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 )
 
 func init() {
@@ -52,7 +61,7 @@ var (
 	}
 )
 
-func newClient(opts controllerversion.BuildOptions) (controllerversion.VersionedClient, error) {
+func newClient(opts controllerversion.BuildOptions) (controllerversion.MetadataWrappedVersionClient, error) {
 	nodeProto, ok := opts.NodeProto.(*v3corepb.Node)
 	if !ok {
 		return nil, fmt.Errorf("xds: unsupported Node proto type: %T, want %T", opts.NodeProto, v3corepb.Node{})
@@ -75,6 +84,11 @@ type client struct {
 
 func (v3c *client) NewStream(ctx context.Context, cc *grpc.ClientConn) (grpc.ClientStream, error) {
 	return v3adsgrpc.NewAggregatedDiscoveryServiceClient(cc).StreamAggregatedResources(ctx, grpc.WaitForReady(true))
+}
+
+// SetMetadata update client metadata
+func (v3c *client) SetMetadata(p *_struct.Struct) {
+	v3c.nodeProto.Metadata = p
 }
 
 // SendRequest sends out a DiscoveryRequest for the given resourceNames, of type

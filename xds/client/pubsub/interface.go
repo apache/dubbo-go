@@ -17,7 +17,9 @@
 
 package pubsub
 
-import "dubbo.apache.org/dubbo-go/v3/xds/client/resource"
+import (
+	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
+)
 
 // UpdateHandler receives and processes (by taking appropriate actions) xDS
 // resource updates from an APIClient for a specific version.

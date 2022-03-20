@@ -22,24 +22,30 @@ package bootstrap
 
 import (
 	"bytes"
-	internal2 "dubbo.apache.org/dubbo-go/v3/xds/internal"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"strings"
+)
 
-	"dubbo.apache.org/dubbo-go/v3/xds/client/resource/version"
-	"dubbo.apache.org/dubbo-go/v3/xds/utils/envconfig"
-	"dubbo.apache.org/dubbo-go/v3/xds/utils/pretty"
+import (
+	v2corepb "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	v3corepb "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/google"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/credentials/tls/certprovider"
+)
 
-	v2corepb "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	v3corepb "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+import (
+	"dubbo.apache.org/dubbo-go/v3/xds/client/resource/version"
+	internal2 "dubbo.apache.org/dubbo-go/v3/xds/internal"
+	"dubbo.apache.org/dubbo-go/v3/xds/utils/envconfig"
+	"dubbo.apache.org/dubbo-go/v3/xds/utils/pretty"
 )
 
 const (

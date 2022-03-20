@@ -20,7 +20,9 @@ package wrr
 import (
 	"fmt"
 	"sync"
+)
 
+import (
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpcrand"
 )
 

@@ -21,18 +21,26 @@ package version
 import (
 	"context"
 	"time"
+)
 
+import (
+	"github.com/golang/protobuf/proto"
+	_struct "github.com/golang/protobuf/ptypes/struct"
+
+	"google.golang.org/grpc"
+
+	"google.golang.org/protobuf/types/known/anypb"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/xds/client/load"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource/version"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpclog"
-	"github.com/golang/protobuf/proto"
-	"google.golang.org/grpc"
-	"google.golang.org/protobuf/types/known/anypb"
 )
 
 var (
-	m = make(map[version.TransportAPI]func(opts BuildOptions) (VersionedClient, error))
+	m = make(map[version.TransportAPI]func(opts BuildOptions) (MetadataWrappedVersionClient, error))
 )
 
 // RegisterAPIClientBuilder registers a client builder for xDS transport protocol
@@ -41,13 +49,13 @@ var (
 // NOTE: this function must only be called during initialization time (i.e. in
 // an init() function), and is not thread-safe. If multiple builders are
 // registered for the same version, the one registered last will take effect.
-func RegisterAPIClientBuilder(v version.TransportAPI, f func(opts BuildOptions) (VersionedClient, error)) {
+func RegisterAPIClientBuilder(v version.TransportAPI, f func(opts BuildOptions) (MetadataWrappedVersionClient, error)) {
 	m[v] = f
 }
 
 // GetAPIClientBuilder returns the client builder registered for the provided
 // xDS transport API version.
-func GetAPIClientBuilder(version version.TransportAPI) func(opts BuildOptions) (VersionedClient, error) {
+func GetAPIClientBuilder(version version.TransportAPI) func(opts BuildOptions) (MetadataWrappedVersionClient, error) {
 	if f, ok := m[version]; ok {
 		return f
 	}
@@ -120,4 +128,9 @@ type VersionedClient interface {
 	// report with load data reported since the last time this method was
 	// invoked.
 	SendLoadStatsRequest(s grpc.ClientStream, loads []*load.Data) error
+}
+
+type MetadataWrappedVersionClient interface {
+	VersionedClient
+	SetMetadata(p *_struct.Struct)
 }

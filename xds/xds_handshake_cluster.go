@@ -18,6 +18,7 @@ package xds
 
 import (
 	"google.golang.org/grpc/attributes"
+
 	"google.golang.org/grpc/resolver"
 )
 

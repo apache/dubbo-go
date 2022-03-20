@@ -19,26 +19,33 @@
 package bootstrap
 
 import (
-	internal2 "dubbo.apache.org/dubbo-go/v3/xds/internal"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"testing"
+)
 
-	"dubbo.apache.org/dubbo-go/v3/xds/client/resource/version"
-	"dubbo.apache.org/dubbo-go/v3/xds/utils/envconfig"
+import (
+	v2corepb "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	v3corepb "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+
 	"github.com/golang/protobuf/proto"
+	structpb "github.com/golang/protobuf/ptypes/struct"
+
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/google"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/credentials/tls/certprovider"
+)
 
-	v2corepb "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	v3corepb "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	structpb "github.com/golang/protobuf/ptypes/struct"
+import (
+	"dubbo.apache.org/dubbo-go/v3/xds/client/resource/version"
+	internal2 "dubbo.apache.org/dubbo-go/v3/xds/internal"
+	"dubbo.apache.org/dubbo-go/v3/xds/utils/envconfig"
 )
 
 var (

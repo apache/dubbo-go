@@ -21,8 +21,11 @@ package matcher
 import (
 	"regexp"
 	"testing"
+)
 
+import (
 	v3matcherpb "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
+
 	"github.com/google/go-cmp/cmp"
 )
 

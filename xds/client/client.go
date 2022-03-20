@@ -24,7 +24,13 @@ import (
 	"fmt"
 	"sync"
 	"time"
+)
 
+import (
+	_struct "github.com/golang/protobuf/ptypes/struct"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/xds/client/bootstrap"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpclog"
@@ -40,8 +46,9 @@ import (
 // style of ccBalancerWrapper so that the Client type does not implement these
 // exported methods.
 type clientImpl struct {
-	done   *grpcsync.Event
-	config *bootstrap.Config
+	done                  *grpcsync.Event
+	config                *bootstrap.Config
+	refreshMetadataCancel func()
 
 	// authorityMu protects the authority fields. It's necessary because an
 	// authority is created when it's used.
@@ -89,6 +96,18 @@ func newWithConfig(config *bootstrap.Config, watchExpiryTimeout time.Duration, i
 
 	c.logger.Infof("Created")
 	return c, nil
+}
+
+func (c *clientImpl) SetMetadata(m *_struct.Struct) error {
+	a, _, err := c.findAuthority(resource.ParseName(""))
+	if err != nil {
+		return err
+	}
+	if err := a.SetMetadata(m); err != nil {
+		return err
+	}
+	a.watchEndpoints("", func(update resource.EndpointsUpdate, err error) {})
+	return nil
 }
 
 // BootstrapConfig returns the configuration read from the bootstrap file.

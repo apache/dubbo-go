@@ -18,6 +18,10 @@
 package client
 
 import (
+	_struct "github.com/golang/protobuf/ptypes/struct"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/xds/client/bootstrap"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/controller"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/load"
@@ -30,6 +34,7 @@ type controllerInterface interface {
 	AddWatch(resourceType resource.ResourceType, resourceName string)
 	RemoveWatch(resourceType resource.ResourceType, resourceName string)
 	ReportLoad(server string) (*load.Store, func())
+	SetMetadata(m *_struct.Struct) error
 	Close()
 }
 

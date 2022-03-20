@@ -25,7 +25,9 @@ package pubsub
 import (
 	"sync"
 	"time"
+)
 
+import (
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/buffer"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpclog"
