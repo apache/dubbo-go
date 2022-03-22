@@ -274,7 +274,7 @@ func newxdsClient(localIP, podName, namespace, dubboGoMetadata, istiodIP string)
 func getDubboGoMetadata(dubboGoMetadata string) *structpb.Struct {
 	return &structpb.Struct{
 		Fields: map[string]*structpb.Value{
-			"CLUSTER_ID":{
+			"CLUSTER_ID": {
 				Kind: &structpb.Value_StringValue{StringValue: "Kubernetes"},
 			},
 			"LABELS": {

@@ -32,12 +32,12 @@ func main() {
 	v3NodeProto := &v3corepb.Node{
 		Id:                   "sidecar~172.1.1.1~sleep-55b5877479-rwcct.default~default.svc.cluster.local",
 		UserAgentName:        gRPCUserAgentName,
-		Cluster:              "KUBERNETES",
+		Cluster:              "testCluster",
 		UserAgentVersionType: &v3corepb.Node_UserAgentVersion{UserAgentVersion: "1.45.0"},
 		ClientFeatures:       []string{clientFeatureNoOverprovisioning},
 		Metadata: &structpb.Struct{
 			Fields: map[string]*structpb.Value{
-				"CLUSTER_ID":{
+				"CLUSTER_ID": {
 					Kind: &structpb.Value_StringValue{StringValue: "Kubernetes"},
 				},
 				"LABELS": {
