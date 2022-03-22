@@ -22,7 +22,9 @@ package resource
 import (
 	"encoding/json"
 	"fmt"
+)
 
+import (
 	"google.golang.org/grpc/resolver"
 )
 

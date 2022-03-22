@@ -17,7 +17,9 @@
 
 package bootstrap
 
-import "testing"
+import (
+	"testing"
+)
 
 func Test_percentEncode(t *testing.T) {
 	tests := []struct {

@@ -18,9 +18,12 @@
 package pubsub
 
 import (
+	"google.golang.org/protobuf/proto"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/pretty"
-	"google.golang.org/protobuf/proto"
 )
 
 type watcherInfoWithUpdate struct {
@@ -59,6 +62,9 @@ func (pb *Pubsub) callCallback(wiu *watcherInfoWithUpdate) {
 			ccb = func() { wiu.wi.rdsCallback(wiu.update.(resource.RouteConfigUpdate), wiu.err) }
 		}
 	case resource.ClusterResource:
+		if s, ok := pb.cdsWatchers["*"]; ok && s[wiu.wi] {
+			ccb = func() { wiu.wi.cdsCallback(wiu.update.(resource.ClusterUpdate), wiu.err) }
+		}
 		if s, ok := pb.cdsWatchers[wiu.wi.target]; ok && s[wiu.wi] {
 			ccb = func() { wiu.wi.cdsCallback(wiu.update.(resource.ClusterUpdate), wiu.err) }
 		}
@@ -186,7 +192,11 @@ func (pb *Pubsub) NewClusters(updates map[string]resource.ClusterUpdateErrTuple,
 	defer pb.mu.Unlock()
 
 	for name, uErr := range updates {
-		if s, ok := pb.cdsWatchers[name]; ok {
+		s, ok := pb.cdsWatchers[name]
+		if !ok {
+			s, ok = pb.cdsWatchers["*"]
+		}
+		if ok {
 			if uErr.Err != nil {
 				// On error, keep previous version for each resource. But update
 				// status and error.

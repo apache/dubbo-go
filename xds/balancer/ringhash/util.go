@@ -18,7 +18,9 @@
 
 package ringhash
 
-import "context"
+import (
+	"context"
+)
 
 type clusterKey struct{}
 

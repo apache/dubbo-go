@@ -19,8 +19,11 @@
 package bootstrap
 
 import (
-	internalgrpclog "dubbo.apache.org/dubbo-go/v3/xds/utils/grpclog"
 	"google.golang.org/grpc/grpclog"
+)
+
+import (
+	internalgrpclog "dubbo.apache.org/dubbo-go/v3/xds/utils/grpclog"
 )
 
 const prefix = "[xds-bootstrap] "

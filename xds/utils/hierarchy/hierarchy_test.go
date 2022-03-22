@@ -20,9 +20,13 @@ package hierarchy
 
 import (
 	"testing"
+)
 
+import (
 	"github.com/google/go-cmp/cmp"
+
 	"google.golang.org/grpc/attributes"
+
 	"google.golang.org/grpc/resolver"
 )
 

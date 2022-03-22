@@ -24,17 +24,23 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+)
 
+import (
+	v3rbacpb "github.com/envoyproxy/go-control-plane/envoy/config/rbac/v3"
+	rpb "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/rbac/v3"
+
+	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes"
+
+	"google.golang.org/protobuf/types/known/anypb"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/xds/httpfilter"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/envconfig"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/rbac"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/resolver"
-	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes"
-	"google.golang.org/protobuf/types/known/anypb"
-
-	v3rbacpb "github.com/envoyproxy/go-control-plane/envoy/config/rbac/v3"
-	rpb "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/rbac/v3"
 )
 
 func init() {

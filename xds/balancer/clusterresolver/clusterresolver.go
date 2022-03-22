@@ -23,7 +23,22 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+)
 
+import (
+	"google.golang.org/grpc/attributes"
+
+	"google.golang.org/grpc/balancer"
+	"google.golang.org/grpc/balancer/base"
+
+	"google.golang.org/grpc/connectivity"
+
+	"google.golang.org/grpc/resolver"
+
+	"google.golang.org/grpc/serviceconfig"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/xds/balancer/priority"
 	"dubbo.apache.org/dubbo-go/v3/xds/client"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
@@ -31,12 +46,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpclog"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpcsync"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/pretty"
-	"google.golang.org/grpc/attributes"
-	"google.golang.org/grpc/balancer"
-	"google.golang.org/grpc/balancer/base"
-	"google.golang.org/grpc/connectivity"
-	"google.golang.org/grpc/resolver"
-	"google.golang.org/grpc/serviceconfig"
 )
 
 // Name is the name of the cluster_resolver balancer.

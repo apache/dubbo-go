@@ -23,18 +23,24 @@ import (
 	"errors"
 	"fmt"
 	"time"
+)
 
-	"dubbo.apache.org/dubbo-go/v3/xds/client/load"
-	"dubbo.apache.org/dubbo-go/v3/xds/utils/pretty"
-	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes"
-
-	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
+import (
 	v2corepb "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	v2endpointpb "github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
 	lrsgrpc "github.com/envoyproxy/go-control-plane/envoy/service/load_stats/v2"
 	lrspb "github.com/envoyproxy/go-control-plane/envoy/service/load_stats/v2"
+
+	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes"
+
 	"google.golang.org/grpc"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/xds/client/load"
+	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
+	"dubbo.apache.org/dubbo-go/v3/xds/utils/pretty"
 )
 
 const clientFeatureLRSSendAllClusters = "envoy.lrs.supports_send_all_clusters"

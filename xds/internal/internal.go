@@ -18,13 +18,16 @@
 // Package internal contains gRPC-internal code, to avoid polluting
 // the godoc of the top-level grpc package.  It must not import any grpc
 // symbols to avoid circular dependencies.
-package xds
+package internal
 
 import (
 	"context"
 	"time"
+)
 
+import (
 	"google.golang.org/grpc/connectivity"
+
 	"google.golang.org/grpc/serviceconfig"
 )
 

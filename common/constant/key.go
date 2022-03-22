@@ -276,6 +276,10 @@ const (
 )
 
 const (
+	XDSRegistryKey = "xds"
+)
+
+const (
 	EtcdV3Key = "etcdv3"
 )
 

@@ -22,21 +22,30 @@ package v2
 import (
 	"context"
 	"fmt"
+)
 
+import (
+	v2xdspb "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	v2corepb "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	v2adsgrpc "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
+
+	"github.com/golang/protobuf/proto"
+	_struct "github.com/golang/protobuf/ptypes/struct"
+
+	statuspb "google.golang.org/genproto/googleapis/rpc/status"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+
+	"google.golang.org/protobuf/types/known/anypb"
+)
+
+import (
 	controllerversion "dubbo.apache.org/dubbo-go/v3/xds/client/controller/version"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
 	resourceversion "dubbo.apache.org/dubbo-go/v3/xds/client/resource/version"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpclog"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/pretty"
-	"github.com/golang/protobuf/proto"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/protobuf/types/known/anypb"
-
-	v2xdspb "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	v2corepb "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	v2adsgrpc "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
-	statuspb "google.golang.org/genproto/googleapis/rpc/status"
 )
 
 func init() {
@@ -52,7 +61,7 @@ var (
 	}
 )
 
-func newClient(opts controllerversion.BuildOptions) (controllerversion.VersionedClient, error) {
+func newClient(opts controllerversion.BuildOptions) (controllerversion.MetadataWrappedVersionClient, error) {
 	nodeProto, ok := opts.NodeProto.(*v2corepb.Node)
 	if !ok {
 		return nil, fmt.Errorf("xds: unsupported Node proto type: %T, want %T", opts.NodeProto, (*v2corepb.Node)(nil))
@@ -69,6 +78,11 @@ type adsStream v2adsgrpc.AggregatedDiscoveryService_StreamAggregatedResourcesCli
 type client struct {
 	nodeProto *v2corepb.Node
 	logger    *grpclog.PrefixLogger
+}
+
+// SetMetadata update client metadata
+func (v2c *client) SetMetadata(p *_struct.Struct) {
+	v2c.nodeProto.Metadata = p
 }
 
 func (v2c *client) NewStream(ctx context.Context, cc *grpc.ClientConn) (grpc.ClientStream, error) {

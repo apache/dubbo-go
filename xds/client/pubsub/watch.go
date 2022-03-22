@@ -21,7 +21,9 @@ import (
 	"fmt"
 	"sync"
 	"time"
+)
 
+import (
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/pretty"
 )
@@ -184,6 +186,10 @@ func (pb *Pubsub) watch(wi *watchInfo) (first bool, cancel func() bool) {
 			wi.newUpdate(v)
 		}
 	case resource.ClusterResource:
+		if v, ok := pb.cdsCache["*"]; ok {
+			pb.logger.Debugf("CDS resource with name * found in cache: %+v", pretty.ToJSON(v))
+			wi.newUpdate(v)
+		}
 		if v, ok := pb.cdsCache[resourceName]; ok {
 			pb.logger.Debugf("CDS resource with name %v found in cache: %+v", wi.target, pretty.ToJSON(v))
 			wi.newUpdate(v)

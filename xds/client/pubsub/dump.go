@@ -18,8 +18,11 @@
 package pubsub
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
 	anypb "github.com/golang/protobuf/ptypes/any"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
 )
 
 func rawFromCache(s string, cache interface{}) *anypb.Any {

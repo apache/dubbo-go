@@ -20,10 +20,13 @@ package matcher
 
 import (
 	"fmt"
-	"google.golang.org/grpc/metadata"
 	"regexp"
 	"strconv"
 	"strings"
+)
+
+import (
+	"google.golang.org/grpc/metadata"
 )
 
 // HeaderMatcher is an interface for header matchers. These are

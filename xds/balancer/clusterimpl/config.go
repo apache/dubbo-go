@@ -20,9 +20,14 @@ package clusterimpl
 
 import (
 	"encoding/json"
+)
 
-	internalserviceconfig "dubbo.apache.org/dubbo-go/v3/xds/utils/serviceconfig"
+import (
 	"google.golang.org/grpc/serviceconfig"
+)
+
+import (
+	internalserviceconfig "dubbo.apache.org/dubbo-go/v3/xds/utils/serviceconfig"
 )
 
 // DropConfig contains the category, and drop ratio.

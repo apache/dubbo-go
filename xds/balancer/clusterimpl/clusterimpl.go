@@ -24,12 +24,24 @@
 package clusterimpl
 
 import (
-	internal "dubbo.apache.org/dubbo-go/v3/xds"
 	"encoding/json"
 	"fmt"
 	"sync"
 	"sync/atomic"
+)
 
+import (
+	"google.golang.org/grpc/balancer"
+
+	"google.golang.org/grpc/connectivity"
+
+	"google.golang.org/grpc/resolver"
+
+	"google.golang.org/grpc/serviceconfig"
+)
+
+import (
+	internal "dubbo.apache.org/dubbo-go/v3/xds"
 	"dubbo.apache.org/dubbo-go/v3/xds/balancer/loadstore"
 	"dubbo.apache.org/dubbo-go/v3/xds/client"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/load"
@@ -38,10 +50,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpclog"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpcsync"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/pretty"
-	"google.golang.org/grpc/balancer"
-	"google.golang.org/grpc/connectivity"
-	"google.golang.org/grpc/resolver"
-	"google.golang.org/grpc/serviceconfig"
 )
 
 const (

@@ -20,7 +20,13 @@ package client
 import (
 	"errors"
 	"fmt"
+)
 
+import (
+	_struct "github.com/golang/protobuf/ptypes/struct"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/xds/client/bootstrap"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/load"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/pubsub"
@@ -149,6 +155,10 @@ type authority struct {
 	pubsub     *pubsub.Pubsub
 	controller controllerInterface
 	refCount   int
+}
+
+func (a *authority) SetMetadata(m *_struct.Struct) error {
+	return a.controller.SetMetadata(m)
 }
 
 // caller must hold parent's authorityMu.

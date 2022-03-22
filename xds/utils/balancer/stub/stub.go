@@ -19,7 +19,9 @@
 // Package stub implements a balancer for testing purposes.
 package stub
 
-import "google.golang.org/grpc/balancer"
+import (
+	"google.golang.org/grpc/balancer"
+)
 
 // BalancerFuncs contains all balancer.Balancer functions with a preceding
 // *BalancerData parameter for passing additional instance information.  Any

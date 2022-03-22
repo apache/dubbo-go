@@ -18,7 +18,9 @@
 
 package grpcutil
 
-import "regexp"
+import (
+	"regexp"
+)
 
 // FullMatchWithRegex returns whether the full text matches the regex provided.
 func FullMatchWithRegex(re *regexp.Regexp, text string) bool {

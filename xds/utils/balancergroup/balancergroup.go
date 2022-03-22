@@ -22,12 +22,19 @@ import (
 	"fmt"
 	"sync"
 	"time"
+)
 
-	"dubbo.apache.org/dubbo-go/v3/xds/utils/cache"
-	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpclog"
+import (
 	"google.golang.org/grpc/balancer"
+
 	"google.golang.org/grpc/connectivity"
+
 	"google.golang.org/grpc/resolver"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpclog"
+	cache "dubbo.apache.org/dubbo-go/v3/xds/utils/xds_cache"
 )
 
 // subBalancerWrapper is used to keep the configurations that will be used to start
