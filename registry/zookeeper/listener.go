@@ -78,7 +78,9 @@ func (l *RegistryDataListener) DataChange(event remoting.Event) bool {
 
 	// Intercept the last bit
 	index := strings.Index(event.Path, providersPath)
+	logger.Info("linjb=======", index)
 	if index == -1 {
+		logger.Info("linjb=======DataChange")
 		logger.Warnf("[RegistryDataListener][DataChange]Listen error zk node path {%s}, "+
 			"this listener is used to listen services which under the directory of providers/", event.Path)
 		return false

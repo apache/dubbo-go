@@ -109,7 +109,7 @@ func newDubboRegistryController(
 	if err != nil {
 		return nil, perrors.WithMessage(err, "get kubernetes client")
 	}
-
+	logger.Info("newDubboRegistryController===linjb, roleType=%s", roleType.Role())
 	c := &dubboRegistryController{
 		ctx:                       ctx,
 		role:                      roleType,
@@ -119,19 +119,19 @@ func newDubboRegistryController(
 		namespacedPodInformers:    make(map[string]informerscorev1.PodInformer),
 		kc:                        kc,
 	}
-
+	logger.Info("newDubboRegistryController===linjb")
 	if err := c.readConfig(); err != nil {
 		return nil, perrors.WithMessage(err, "read config")
 	}
-
+	logger.Info("newDubboRegistryController===linjb")
 	if err := c.initCurrentPod(); err != nil {
 		return nil, perrors.WithMessage(err, "init current pod")
 	}
-
+	logger.Info("newDubboRegistryController===linjb")
 	if err := c.initWatchSet(); err != nil {
 		return nil, perrors.WithMessage(err, "init watch set")
 	}
-
+	logger.Info("newDubboRegistryController===linjb")
 	if err := c.initPodInformer(); err != nil {
 		logger.Info("GetInClusterKubernetesClient===linjb")
 		return nil, perrors.WithMessage(err, "init pod informer")
@@ -161,13 +161,15 @@ func GetInClusterKubernetesClient() (kubernetes.Interface, error) {
 // 2. put every element to watcherSet
 // 3. refresh watch book-mark
 func (c *dubboRegistryController) initWatchSet() error {
-
+	logger.Info("linjb=====initWatchSet", c)
 	req, err := labels.NewRequirement(DubboIOLabelKey, selection.In, []string{DubboIOConsumerLabelValue, DubboIOProviderLabelValue})
 	if err != nil {
+		logger.Info("linjb====initWatchSet", err)
 		return perrors.WithMessage(err, "new requirement")
 	}
-
+	logger.Info("linjb=====initWatchSet", c.needWatchedNamespace)
 	for ns := range c.needWatchedNamespace {
+		logger.Info("linjb===initWatchSet===", ns)
 		pods, err := c.kc.CoreV1().Pods(ns).List(c.ctx, metav1.ListOptions{
 			LabelSelector: req.String(),
 		})
@@ -183,6 +185,7 @@ func (c *dubboRegistryController) initWatchSet() error {
 			if c.listAndWatchStartResourceVersion < rv {
 				c.listAndWatchStartResourceVersion = rv
 			}
+			logger.Info("linjb====initWatchSet==pods.Items", p)
 			c.handleWatchedPodEvent(&p, watch.Added)
 		}
 	}
@@ -238,8 +241,9 @@ func (c *dubboRegistryController) initNamespacedPodInformer(ns string) error {
 
 func (c *dubboRegistryController) initPodInformer() error {
 
-	logger.Info("initPodInformer===linjb")
+	logger.Info("initPodInformer===linjb", c)
 	if c.role == common.PROVIDER {
+		logger.Info("initPodInformer===linjb ", c.role)
 		return nil
 	}
 	logger.Info("initPodInformer===linjb")
@@ -370,7 +374,7 @@ func (c *dubboRegistryController) processNextWorkItem() bool {
 // handleWatchedPodEvent handles watched pod event
 func (c *dubboRegistryController) handleWatchedPodEvent(p *v1.Pod, eventType watch.EventType) {
 	logger.Debugf("get @type = %s event from @pod = %s", eventType, p.GetName())
-
+	logger.Info("linjb====handleWatchedPodEvent", c)
 	for ak, av := range p.GetAnnotations() {
 		// not dubbo interest annotation
 		if ak != DubboIOAnnotationKey {
@@ -397,11 +401,13 @@ func (c *dubboRegistryController) handleWatchedPodEvent(p *v1.Pod, eventType wat
 
 			logger.Debugf("putting @key=%s @value=%s to watcherSet", o.Key, o.Value)
 			if err := c.watcherSet.Put(o); err != nil {
+				logger.Info("linjb===watcherSet==", o)
 				logger.Errorf("put (%#v) to cache watcherSet: %v ", o, err)
 				return
 			}
 		}
 	}
+
 }
 
 // unmarshalRecord unmarshals the kubernetes dubbo annotation value

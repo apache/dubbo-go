@@ -43,6 +43,7 @@ const (
 )
 
 func init() {
+	//1
 	extension.SetRegistry(Name, newKubernetesRegistry)
 }
 
@@ -56,7 +57,7 @@ type kubernetesRegistry struct {
 	configListener *configurationListener
 }
 
-// Client gets the etcdv3 kubernetes
+// Client gets the kubernetes
 func (r *kubernetesRegistry) Client() *kubernetes.Client {
 	r.cltLock.RLock()
 	client := r.client
@@ -134,9 +135,13 @@ func (r *kubernetesRegistry) DoSubscribe(svc *common.URL) (registry.Listener, er
 
 	//register the svc to dataListener
 	r.dataListener.AddInterestedURL(svc)
-	//go r.listener.ListenServiceEvent(fmt.Sprintf("/%s/%s/"+constant.DefaultCategory, r.URL.GetParam(constant.RegistryGroupKey, "dubbo"), svc.Service()), r.dataListener)
+	logger.Info("linjb====DoSubscribe ", svc)
+	logger.Info("linjb====DoSubscribe ", svc.Path)
+	logger.Info("linjb====DoSubscribe ", svc.Service())
+	logger.Info("linjb====DoSubscribe ", svc.Protocol)
+	go r.listener.ListenServiceEvent(fmt.Sprintf("/%s/%s/"+constant.DefaultCategory, r.URL.GetParam(constant.RegistryGroupKey, "dubbo"), svc.Service()), r.dataListener)
 
-	go r.listener.ListenServiceEvent(fmt.Sprintf("/dubbo/%s/"+constant.DefaultCategory, svc.Service()), r.dataListener)
+	//go r.listener.ListenServiceEvent(fmt.Sprintf("/dubbo/%s/"+constant.DefaultCategory, svc.Service()), r.dataListener)
 
 	return configListener, nil
 }
@@ -154,7 +159,7 @@ func (r *kubernetesRegistry) InitListeners() {
 }
 
 func newKubernetesRegistry(url *common.URL) (registry.Registry, error) {
-
+	//2
 	// actually, kubernetes use in-cluster config,
 	r := &kubernetesRegistry{}
 

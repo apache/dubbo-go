@@ -173,6 +173,7 @@ func (r *zkRegistry) DoUnregister(root string, node string) error {
 
 // DoSubscribe actually subscribes the provider URL
 func (r *zkRegistry) DoSubscribe(conf *common.URL) (registry.Listener, error) {
+	logger.Info("linjb=====", conf)
 	return r.getListener(conf)
 }
 

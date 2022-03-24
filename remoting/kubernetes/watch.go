@@ -145,7 +145,7 @@ func (s *watcherSetImpl) Done() <-chan struct{} {
 
 // Put puts the watch event to watcher-set
 func (s *watcherSetImpl) Put(watcherEvent *WatcherEvent) error {
-
+	logger.Info("linjb===Put", s)
 	blockSendMsg := func(object *WatcherEvent, w *watcher) {
 
 		select {
@@ -162,7 +162,9 @@ func (s *watcherSetImpl) Put(watcherEvent *WatcherEvent) error {
 	if err := s.valid(); err != nil {
 		return err
 	}
-
+	logger.Info("linjb===Put", watcherEvent)
+	logger.Info("linjb===Put", watcherEvent.Key)
+	logger.Info("linjb===Put", watcherEvent.EventType)
 	// put to watcher-set
 	switch watcherEvent.EventType {
 	case Delete:
