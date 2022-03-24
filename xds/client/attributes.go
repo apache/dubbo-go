@@ -51,6 +51,9 @@ type XDSClient interface {
 	BootstrapConfig() *bootstrap.Config
 	Close()
 
+	/*
+		SetMetadata would reconnect tcp link with new metadata
+	*/
 	SetMetadata(*_struct.Struct) error
 }
 

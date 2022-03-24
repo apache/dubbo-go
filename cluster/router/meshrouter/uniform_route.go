@@ -69,7 +69,7 @@ func (r *MeshRouter) Route(invokers []protocol.Invoker, url *common.URL, invocat
 
 	clusterInvokerMap := make(map[string][]protocol.Invoker)
 	for _, v := range invokers {
-		meshClusterId := v.GetURL().GetParam("meshClusterId", "")
+		meshClusterId := v.GetURL().GetParam(constant.MeshClusterIDKey, "")
 		if _, ok := clusterInvokerMap[meshClusterId]; !ok {
 			clusterInvokerMap[meshClusterId] = make([]protocol.Invoker, 0)
 		}

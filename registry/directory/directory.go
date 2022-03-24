@@ -320,7 +320,7 @@ func (dir *RegistryDirectory) uncacheInvokerWithClusterId(clusterId string) []pr
 	logger.Debugf("All service will be deleted in cache invokers with clusterId %s!", clusterId)
 	invokerKeys := make([]string, 0)
 	dir.cacheInvokersMap.Range(func(key, cacheInvoker interface{}) bool {
-		if cacheInvoker.(protocol.Invoker).GetURL().GetParam("meshClusterId", "") == clusterId {
+		if cacheInvoker.(protocol.Invoker).GetURL().GetParam(constant.MeshClusterIDKey, "") == clusterId {
 			invokerKeys = append(invokerKeys, key.(string))
 		}
 		return true
@@ -334,7 +334,7 @@ func (dir *RegistryDirectory) uncacheInvokerWithClusterId(clusterId string) []pr
 
 // uncacheInvoker will return abandoned Invoker, if no Invoker to be abandoned, return nil
 func (dir *RegistryDirectory) uncacheInvoker(event *registry.ServiceEvent) []protocol.Invoker {
-	if clusterId := event.Service.GetParam("meshClusterId", ""); event.Service.Location == "*" && clusterId != "" {
+	if clusterId := event.Service.GetParam(constant.MeshClusterIDKey, ""); event.Service.Location == constant.MeshAnyAddrMatcher && clusterId != "" {
 		dir.uncacheInvokerWithClusterId(clusterId)
 	}
 	return []protocol.Invoker{dir.uncacheInvokerWithKey(event.Key())}

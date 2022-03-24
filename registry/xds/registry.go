@@ -166,7 +166,7 @@ func newXDSRegistry(url *common.URL) (registry.Registry, error) {
 		return nil, perrors.New("POD_NAME and POD_NAMESPACE can't be empty when using xds registry")
 	}
 
-	wrappedXDSClient, err := xds.NewXDSWrappedClient(pn, ns, localIP, url.Ip)
+	wrappedXDSClient, err := xds.NewXDSWrappedClient(pn, ns, localIP, xds.NewAddr(url.Ip+":"+url.Port))
 	if err != nil {
 		return nil, err
 	}

@@ -1,41 +1,49 @@
 package xds
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/registry"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
 )
 
+// endPointWatcherCtx is endpoint watching context
 type endPointWatcherCtx struct {
-	clusterName         string
-	interfaceName       string
-	hostAddr            string
-	xdsClient           *WrappedClient
-	hostAddrListenerMap map[string]map[string]registry.NotifyListener
-	cancel              func()
+	clusterName   string
+	interfaceName string
+	hostAddr      string
+	xdsClient     *WrappedClient
+	cancel        func()
 }
 
+// handle handles endpoint update event and send to directory to refresh invoker
 func (watcher *endPointWatcherCtx) handle(update resource.EndpointsUpdate, err error) {
 	for _, v := range update.Localities {
 		for _, e := range v.Endpoints {
-			// FIXME: is this c we want?
 			event := generateRegistryEvent(watcher.clusterName, e, watcher.interfaceName)
-			// todo lock WrappedClient's resource
-			for _, l := range watcher.hostAddrListenerMap[watcher.hostAddr] {
+			watcher.xdsClient.hostAddrListenerMapLock.RLock()
+			for _, l := range watcher.xdsClient.hostAddrListenerMap[watcher.hostAddr] {
 				// notify all listeners listening this hostAddr
 				l.Notify(event)
 			}
+			watcher.xdsClient.hostAddrListenerMapLock.Unlock()
 		}
 	}
 }
 
+// destroy call cancel and send event to listener to remove related invokers of current deleated cluster
 func (watcher *endPointWatcherCtx) destroy() {
 	watcher.cancel()
+	/*
+		directory would identify this by EndpointHealthStatusUnhealthy and Location == "*" and none empty clusterId
+		and delete related invokers
+	*/
 	event := generateRegistryEvent(watcher.clusterName, resource.Endpoint{
 		HealthStatus: resource.EndpointHealthStatusUnhealthy,
-		Address:      "*", // destroy all endpoint of this cluster
+		Address:      constant.MeshAnyAddrMatcher, // destroy all endpoint of this cluster
 	}, watcher.interfaceName)
-	for _, l := range watcher.hostAddrListenerMap[watcher.hostAddr] {
+	watcher.xdsClient.hostAddrListenerMapLock.RLock()
+	for _, l := range watcher.xdsClient.hostAddrListenerMap[watcher.hostAddr] {
 		// notify all listeners listening this hostAddr
 		l.Notify(event)
 	}
+	watcher.xdsClient.hostAddrListenerMapLock.Unlock()
 }
