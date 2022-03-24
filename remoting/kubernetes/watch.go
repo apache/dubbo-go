@@ -19,7 +19,6 @@ package kubernetes
 
 import (
 	"context"
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"fmt"
 	"strconv"
 	"strings"
@@ -145,7 +144,6 @@ func (s *watcherSetImpl) Done() <-chan struct{} {
 
 // Put puts the watch event to watcher-set
 func (s *watcherSetImpl) Put(watcherEvent *WatcherEvent) error {
-	logger.Info("linjb===Put", s)
 	blockSendMsg := func(object *WatcherEvent, w *watcher) {
 
 		select {
@@ -162,9 +160,6 @@ func (s *watcherSetImpl) Put(watcherEvent *WatcherEvent) error {
 	if err := s.valid(); err != nil {
 		return err
 	}
-	logger.Info("linjb===Put", watcherEvent)
-	logger.Info("linjb===Put", watcherEvent.Key)
-	logger.Info("linjb===Put", watcherEvent.EventType)
 	// put to watcher-set
 	switch watcherEvent.EventType {
 	case Delete:
@@ -243,17 +238,14 @@ func (s *watcherSetImpl) addWatcher(key string, prefix bool) (Watcher, error) {
 
 // Get gets elements from watcher-set
 func (s *watcherSetImpl) Get(key string, prefix bool) ([]*WatcherEvent, error) {
-	logger.Info("Get===linjb")
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 
 	if err := s.valid(); err != nil {
 		return nil, err
 	}
-	logger.Info("Get===linjb")
 
 	for k, v := range s.cache {
-		logger.Info("Get===linjb")
 		fmt.Println(k, v)
 	}
 
@@ -266,7 +258,6 @@ func (s *watcherSetImpl) Get(key string, prefix bool) ([]*WatcherEvent, error) {
 		// object
 		return nil, ErrKVPairNotFound
 	}
-	logger.Info("Get===linjb")
 	var out []*WatcherEvent
 
 	for k, v := range s.cache {

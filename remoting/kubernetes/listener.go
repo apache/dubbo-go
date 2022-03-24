@@ -88,7 +88,6 @@ func (l *EventListener) handleEvents(event *WatcherEvent, listeners ...remoting.
 	case Create:
 		for _, listener := range listeners {
 			logger.Infof("kubernetes-watcherSet get event (key{%s}) = event{EventNodeDataCreated}", event.Key)
-			logger.Infof("handleEvents linjb======", event.Value)
 			listener.DataChange(remoting.Event{
 				Path:    string(event.Key),
 				Action:  remoting.EventTypeAdd,
@@ -171,10 +170,8 @@ func (l *EventListener) ListenServiceEvent(key string, listener remoting.DataLis
 	}
 	l.keyMap[key] = struct{}{}
 	l.keyMapLock.Unlock()
-	logger.Infof("ListenServiceEvent===linjb", key)
 	keyList, valueList, err := l.client.GetChildren(key)
 	if err != nil {
-		logger.Infof("ListenServiceEvent===linjb")
 		logger.Warnf("Get new node path {%v} 's content error,message is  {%v}", key, perrors.WithMessage(err, "get children"))
 	}
 

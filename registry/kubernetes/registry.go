@@ -135,10 +135,6 @@ func (r *kubernetesRegistry) DoSubscribe(svc *common.URL) (registry.Listener, er
 
 	//register the svc to dataListener
 	r.dataListener.AddInterestedURL(svc)
-	logger.Info("linjb====DoSubscribe ", svc)
-	logger.Info("linjb====DoSubscribe ", svc.Path)
-	logger.Info("linjb====DoSubscribe ", svc.Service())
-	logger.Info("linjb====DoSubscribe ", svc.Protocol)
 	go r.listener.ListenServiceEvent(fmt.Sprintf("/%s/%s/"+constant.DefaultCategory, r.URL.GetParam(constant.RegistryGroupKey, "dubbo"), svc.Service()), r.dataListener)
 
 	//go r.listener.ListenServiceEvent(fmt.Sprintf("/dubbo/%s/"+constant.DefaultCategory, svc.Service()), r.dataListener)
@@ -165,11 +161,9 @@ func newKubernetesRegistry(url *common.URL) (registry.Registry, error) {
 
 	r.InitBaseRegistry(url, r)
 
-	logger.Info("newKubernetesRegistry-linjb-------")
 	if err := kubernetes.ValidateClient(r); err != nil {
 		return nil, perrors.WithStack(err)
 	}
-	logger.Info("newKubernetesRegistry-linjb-------")
 	r.WaitGroup().Add(1)
 	go r.HandleClientRestart()
 	r.InitListeners()

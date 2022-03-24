@@ -74,13 +74,10 @@ func (l *RegistryDataListener) UnSubscribeURL(url *common.URL) config_center.Con
 // DataChange accepts all events sent from the zookeeper server and trigger the corresponding listener for processing
 func (l *RegistryDataListener) DataChange(event remoting.Event) bool {
 	providersPath := constant.PathSeparator + constant.ProviderCategory + constant.PathSeparator
-	logger.Infof("linjb=====Datachange", event.Path, providersPath)
 
 	// Intercept the last bit
 	index := strings.Index(event.Path, providersPath)
-	logger.Info("linjb=======", index)
 	if index == -1 {
-		logger.Info("linjb=======DataChange")
 		logger.Warnf("[RegistryDataListener][DataChange]Listen error zk node path {%s}, "+
 			"this listener is used to listen services which under the directory of providers/", event.Path)
 		return false

@@ -32,7 +32,8 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-var clientPodListJsonData = `{
+var clientPodListJsonData = `
+{
     "apiVersion": "v1",
     "items": [
         {

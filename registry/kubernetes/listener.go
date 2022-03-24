@@ -43,7 +43,6 @@ func NewRegistryDataListener(listener config_center.ConfigurationListener) *data
 
 // AddInterestedURL adds the @url of registry center to the listener
 func (l *dataListener) AddInterestedURL(url *common.URL) {
-	logger.Info("linjb=====AddInterestedURL ", url)
 	l.interestedURL = append(l.interestedURL, url)
 }
 
@@ -51,9 +50,7 @@ func (l *dataListener) AddInterestedURL(url *common.URL) {
 // notify listen, when interest event
 func (l *dataListener) DataChange(event remoting.Event) bool {
 	providersPath := constant.PathSeparator + constant.ProviderCategory + constant.PathSeparator
-	logger.Infof("linjb=====Datachange", event.Path, providersPath)
 	index := strings.Index(event.Path, providersPath)
-	logger.Infof("linjb=====index", index)
 	if index == -1 {
 		logger.Warnf("Listen with no url, event.path={%v}", event.Path)
 		return false

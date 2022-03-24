@@ -45,34 +45,27 @@ type Client struct {
 // newClient returns Client instance for registry
 func newClient(url *common.URL) (*Client, error) {
 	// read type
-	logger.Info("newClient===linjb")
 	r, err := strconv.Atoi(url.GetParams().Get(constant.RegistryRoleKey))
 	if err != nil {
 		return nil, perrors.WithMessage(err, "atoi role")
 	}
-	logger.Info("newClient===linjb")
 
 	ctx, cancel := context.WithCancel(context.Background())
-	logger.Info("newClient===linjb")
 	controller, err := newDubboRegistryController(ctx, common.RoleType(r), GetInClusterKubernetesClient)
 	if err != nil {
-		logger.Info("newClient===linjb")
 		cancel()
 		return nil, perrors.WithMessage(err, "new dubbo-registry controller")
 	}
-	logger.Info("newClient===linjb")
 
 	c := &Client{
 		ctx:        ctx,
 		cancel:     cancel,
 		controller: controller,
 	}
-	logger.Info("newClient===linjb")
 	if r == common.CONSUMER {
 		// only consumer have to start informer factory
 		c.controller.startALLInformers()
 	}
-	logger.Info("newClient===linjb")
 	return c, nil
 }
 
@@ -94,10 +87,8 @@ func (c *Client) Create(k, v string) error {
 
 // GetChildren gets k children list from kubernetes-watcherSet
 func (c *Client) GetChildren(k string) ([]string, []string, error) {
-	logger.Infof("GetChildren===linjb", k)
 	objectList, err := c.controller.watcherSet.Get(k, true)
 	if err != nil {
-		logger.Infof("GetChildren===linjb")
 		return nil, nil, perrors.WithMessagef(err, "get children from watcherSet on (%s)", k)
 	}
 
@@ -172,7 +163,6 @@ func (c *Client) Close() {
 func ValidateClient(container clientFacade) error {
 
 	client := container.Client()
-	logger.Info("ValidateClient-linjb-------")
 	// new Client
 	if client == nil || client.Valid() {
 
@@ -183,7 +173,6 @@ func ValidateClient(container clientFacade) error {
 		}
 		container.SetClient(newClient)
 	}
-	logger.Info("ValidateClient-linjb-------")
 
 	return nil
 }

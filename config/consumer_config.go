@@ -132,17 +132,14 @@ func (cc *ConsumerConfig) Load() {
 	} else {
 		maxWait = int(maxWaitDuration.Seconds())
 	}
-	logger.Info("linjb=====Load")
 	// wait for invoker is available, if wait over default 3s, then panic
 	var count int
 	for {
 		checkok := true
 		for _, refconfig := range cc.References {
-			logger.Info("linjb====Load ", refconfig, maxWait)
 			if (refconfig.Check != nil && *refconfig.Check) ||
 				(refconfig.Check == nil && cc.Check) ||
 				(refconfig.Check == nil) { // default to true
-				logger.Info("linjb====Load", refconfig.invoker, count)
 				if refconfig.invoker != nil && !refconfig.invoker.IsAvailable() {
 					checkok = false
 					count++

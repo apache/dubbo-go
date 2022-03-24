@@ -231,7 +231,6 @@ func NewURLWithOptions(opts ...Option) *URL {
 // NewURL will create a new URL
 // the urlString should not be empty
 func NewURL(urlString string, opts ...Option) (*URL, error) {
-	fmt.Println("linjb======NewURL", urlString)
 	s := URL{baseURL: baseURL{}}
 	if urlString == "" {
 		return &s, nil
