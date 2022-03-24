@@ -191,6 +191,23 @@ func (pb *Pubsub) NewClusters(updates map[string]resource.ClusterUpdateErrTuple,
 	pb.mu.Lock()
 	defer pb.mu.Unlock()
 
+	for k, update := range pb.cdsCache {
+		if _, ok := updates[k]; !ok {
+			// this is a delete event
+			s, ok := pb.cdsWatchers[k]
+			if !ok {
+				s, ok = pb.cdsWatchers["*"]
+			}
+			if ok {
+				for wi := range s {
+					// delete
+					update.ClusterName = "-" + update.ClusterName
+					wi.newUpdate(update)
+				}
+			}
+		}
+	}
+
 	for name, uErr := range updates {
 		s, ok := pb.cdsWatchers[name]
 		if !ok {

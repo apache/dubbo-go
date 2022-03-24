@@ -18,6 +18,7 @@
 package protocol
 
 import (
+	"context"
 	"reflect"
 )
 
@@ -57,4 +58,6 @@ type Invocation interface {
 	SetAttribute(key string, value interface{})
 	GetAttribute(key string) (interface{}, bool)
 	GetAttributeWithDefaultValue(key string, defaultValue interface{}) interface{}
+
+	ToContext() context.Context
 }

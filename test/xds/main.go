@@ -86,8 +86,12 @@ func main() {
 	//})
 
 	//
-	xdsClient.WatchEndpoints("outbound|15010||istiod.istio-system.svc.cluster.local", func(update resource.EndpointsUpdate, err error) {
-		fmt.Printf("%+v\n err = %s", update, err)
+	//xdsClient.WatchEndpoints("outbound|15010||istiod.istio-system.svc.cluster.local", func(update resource.EndpointsUpdate, err error) {
+	//	fmt.Printf("%+v\n err = %s", update, err)
+	//})
+
+	xdsClient.WatchCluster("*", func(update resource.ClusterUpdate, err error) {
+		fmt.Println(update)
 	})
 
 	//xdsClient.WatchCluster("*", func(update resource.ClusterUpdate, err error) {

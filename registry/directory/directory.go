@@ -129,13 +129,15 @@ func (dir *RegistryDirectory) refreshInvokers(event *registry.ServiceEvent) {
 		logger.Debug("refresh invokers with nil")
 	}
 
-	var oldInvoker protocol.Invoker
+	var oldInvoker []protocol.Invoker
 	if event != nil {
 		oldInvoker, _ = dir.cacheInvokerByEvent(event)
 	}
 	dir.setNewInvokers()
-	if oldInvoker != nil {
-		oldInvoker.Destroy()
+	for _, v := range oldInvoker {
+		if v != nil {
+			v.Destroy()
+		}
 	}
 }
 
@@ -238,7 +240,7 @@ func (dir *RegistryDirectory) setNewInvokers() {
 }
 
 // cacheInvokerByEvent caches invokers from the service event
-func (dir *RegistryDirectory) cacheInvokerByEvent(event *registry.ServiceEvent) (protocol.Invoker, error) {
+func (dir *RegistryDirectory) cacheInvokerByEvent(event *registry.ServiceEvent) ([]protocol.Invoker, error) {
 	// judge is override or others
 	if event != nil {
 
@@ -249,7 +251,7 @@ func (dir *RegistryDirectory) cacheInvokerByEvent(event *registry.ServiceEvent) 
 			if u != nil && constant.RouterProtocol == u.Protocol {
 				dir.configRouters()
 			}
-			return dir.cacheInvoker(u, event), nil
+			return []protocol.Invoker{dir.cacheInvoker(u, event)}, nil
 		case remoting.EventTypeDel:
 			logger.Infof("[Registry Directory] selector delete service url{%s}", event.Service)
 			return dir.uncacheInvoker(event), nil
@@ -314,9 +316,28 @@ func (dir *RegistryDirectory) toGroupInvokers() []protocol.Invoker {
 	return groupInvokersList
 }
 
+func (dir *RegistryDirectory) uncacheInvokerWithClusterId(clusterId string) []protocol.Invoker {
+	logger.Debugf("All service will be deleted in cache invokers with clusterId %s!", clusterId)
+	invokerKeys := make([]string, 0)
+	dir.cacheInvokersMap.Range(func(key, cacheInvoker interface{}) bool {
+		if cacheInvoker.(protocol.Invoker).GetURL().GetParam("meshClusterId", "") == clusterId {
+			invokerKeys = append(invokerKeys, key.(string))
+		}
+		return true
+	})
+	uncachedInvokers := make([]protocol.Invoker, 0)
+	for _, v := range invokerKeys {
+		uncachedInvokers = append(uncachedInvokers, dir.uncacheInvokerWithKey(v))
+	}
+	return uncachedInvokers
+}
+
 // uncacheInvoker will return abandoned Invoker, if no Invoker to be abandoned, return nil
-func (dir *RegistryDirectory) uncacheInvoker(event *registry.ServiceEvent) protocol.Invoker {
-	return dir.uncacheInvokerWithKey(event.Key())
+func (dir *RegistryDirectory) uncacheInvoker(event *registry.ServiceEvent) []protocol.Invoker {
+	if clusterId := event.Service.GetParam("meshClusterId", ""); event.Service.Location == "*" && clusterId != "" {
+		dir.uncacheInvokerWithClusterId(clusterId)
+	}
+	return []protocol.Invoker{dir.uncacheInvokerWithKey(event.Key())}
 }
 
 func (dir *RegistryDirectory) uncacheInvokerWithKey(key string) protocol.Invoker {

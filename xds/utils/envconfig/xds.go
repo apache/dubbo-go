@@ -70,7 +70,7 @@ var (
 	// Note that there is no env var protection for the server-side because we
 	// have a brand new API on the server-side and users explicitly need to use
 	// the new API to get security integration on the server.
-	XDSClientSideSecurity = !strings.EqualFold(os.Getenv(clientSideSecuritySupportEnv), "false")
+	XDSClientSideSecurity = false // !strings.EqualFold(os.Getenv(clientSideSecuritySupportEnv), "true")
 	// XDSAggregateAndDNS indicates whether processing of aggregated cluster
 	// and DNS cluster is enabled, which can be enabled by setting the
 	// environment variable

@@ -134,7 +134,7 @@ func (nr *xdsRegistry) GetURL() *common.URL {
 
 func (nr *xdsRegistry) getHostAddrFromURL(url *common.URL) (string, string, error) {
 	svcName := getSubscribeName(url)
-	hostAddr, err := nr.xdsWrappedClient.GetHostAddrFromPilot(svcName)
+	hostAddr, err := nr.xdsWrappedClient.GetHostAddrByServiceUniqueKey(svcName)
 	return hostAddr, svcName, err
 }
 
@@ -170,9 +170,11 @@ func newXDSRegistry(url *common.URL) (registry.Registry, error) {
 	if err != nil {
 		return nil, err
 	}
-	tmpRegistry := &xdsRegistry{
+
+	newRegistry := &xdsRegistry{
 		xdsWrappedClient: wrappedXDSClient,
 		registryURL:      url,
 	}
-	return tmpRegistry, nil
+
+	return newRegistry, nil
 }

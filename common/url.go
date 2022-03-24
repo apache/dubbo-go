@@ -367,9 +367,10 @@ func (c *URL) Key() string {
 func (c *URL) GetCacheInvokerMapKey() string {
 	urlNew, _ := NewURL(c.PrimitiveURL)
 
-	buildString := fmt.Sprintf("%s://%s:%s@%s:%s/?interface=%s&group=%s&version=%s&timestamp=%s",
+	buildString := fmt.Sprintf("%s://%s:%s@%s:%s/?interface=%s&group=%s&version=%s&timestamp=%s&meshClusterId=%s",
 		c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Service(), c.GetParam(constant.GroupKey, ""),
-		c.GetParam(constant.VersionKey, ""), urlNew.GetParam(constant.TimestampKey, ""))
+		c.GetParam(constant.VersionKey, ""), urlNew.GetParam(constant.TimestampKey, ""),
+		c.GetParam("meshClusterId", ""))
 	return buildString
 }
 
