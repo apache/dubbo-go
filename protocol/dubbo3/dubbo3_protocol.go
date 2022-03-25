@@ -23,12 +23,18 @@ import (
 	"reflect"
 	"strconv"
 	"sync"
+)
 
+import (
 	"github.com/dubbogo/grpc-go"
 	"github.com/dubbogo/grpc-go/metadata"
 
 	tripleConstant "github.com/dubbogo/triple/pkg/common/constant"
+	triConfig "github.com/dubbogo/triple/pkg/config"
+	"github.com/dubbogo/triple/pkg/triple"
+)
 
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
@@ -36,8 +42,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
-	triConfig "github.com/dubbogo/triple/pkg/config"
-	"github.com/dubbogo/triple/pkg/triple"
 )
 
 var protocolOnce sync.Once

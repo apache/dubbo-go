@@ -59,7 +59,7 @@ const prefix = "name"
 var (
 	watcherStopLog = "the watcherSet watcher was stopped"
 )
-var clientPodListJsonData = `{
+var clientPodListJsonData = `
 {
     "apiVersion": "v1",
     "items": [
