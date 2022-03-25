@@ -20,7 +20,9 @@ package kubernetes
 import (
 	"testing"
 	"time"
+)
 
+import (
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 	"github.com/stretchr/testify/assert"
 )

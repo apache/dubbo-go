@@ -19,10 +19,15 @@ package kubernetes
 
 import (
 	"sync"
+)
 
+import (
+	perrors "github.com/pkg/errors"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
-	perrors "github.com/pkg/errors"
 )
 
 type EventListener struct {

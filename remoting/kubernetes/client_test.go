@@ -20,12 +20,16 @@ package kubernetes
 import (
 	"encoding/json"
 	"fmt"
-	v1 "k8s.io/api/core/v1"
 	_ "net/http/pprof"
+
 	"os"
 	"strings"
 	"sync"
 	"testing"
+)
+
+import (
+	v1 "k8s.io/api/core/v1"
 )
 
 // tests dataset

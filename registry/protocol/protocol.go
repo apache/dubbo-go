@@ -22,22 +22,25 @@ import (
 	"strings"
 	"sync"
 	"time"
+)
 
+import (
 	gxset "github.com/dubbogo/gost/container/set"
 
+	perrors "github.com/pkg/errors"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
-	perrors "github.com/pkg/errors"
-
 	_ "dubbo.apache.org/dubbo-go/v3/config_center/configurator"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
 	"dubbo.apache.org/dubbo-go/v3/registry"
-
 	_ "dubbo.apache.org/dubbo-go/v3/registry/directory"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
@@ -175,6 +178,7 @@ func (proto *registryProtocol) Export(originInvoker protocol.Invoker) protocol.E
 	})
 	registryUrl := getRegistryUrl(originInvoker)
 	providerUrl := getProviderUrl(originInvoker)
+
 	overriderUrl := getSubscribedOverrideUrl(providerUrl)
 	// Deprecated! subscribe to override rules in 2.6.x or before.
 	overrideSubscribeListener := newOverrideSubscribeListener(overriderUrl, originInvoker, proto)

@@ -132,6 +132,7 @@ func (cc *ConsumerConfig) Load() {
 	} else {
 		maxWait = int(maxWaitDuration.Seconds())
 	}
+
 	// wait for invoker is available, if wait over default 3s, then panic
 	var count int
 	for {
@@ -140,6 +141,7 @@ func (cc *ConsumerConfig) Load() {
 			if (refconfig.Check != nil && *refconfig.Check) ||
 				(refconfig.Check == nil && cc.Check) ||
 				(refconfig.Check == nil) { // default to true
+
 				if refconfig.invoker != nil && !refconfig.invoker.IsAvailable() {
 					checkok = false
 					count++

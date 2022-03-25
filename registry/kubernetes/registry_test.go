@@ -24,12 +24,16 @@ import (
 	"sync"
 	"testing"
 	"time"
+)
 
+import (
 	"github.com/stretchr/testify/assert"
+	v1 "k8s.io/api/core/v1"
+)
 
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	v1 "k8s.io/api/core/v1"
 )
 
 var clientPodListJsonData = `
