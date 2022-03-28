@@ -31,10 +31,8 @@ import (
 )
 
 const (
-	// MAX_JSONRPC_ID max jsonrpc request/response id
-	MAX_JSONRPC_ID = 0x7FFFFFFF
-	// VERSION jsonrpc version
-	VERSION = "2.0"
+	MAX_JSONRPC_ID = 0x7FFFFFFF // max jsonrpc request/response id
+	VERSION        = "2.0"      // jsonrpc version
 )
 
 // CodecData is codec data for json RPC.
@@ -45,9 +43,9 @@ type CodecData struct {
 	Error  string
 }
 
+// Errors defined in the JSON-RPC spec. See
+// http://www.jsonrpc.org/specification#error_object.
 const (
-	// Errors defined in the JSON-RPC spec. See
-	// http://www.jsonrpc.org/specification#error_object.
 	CodeParseError     = -32700
 	CodeInvalidRequest = -32600
 	CodeMethodNotFound = -32601
@@ -74,10 +72,6 @@ func (e *Error) Error() string {
 	}
 	return string(buf)
 }
-
-//////////////////////////////////////////
-// json client codec
-//////////////////////////////////////////
 
 type clientRequest struct {
 	Version string      `json:"jsonrpc"`
@@ -197,10 +191,6 @@ func (c *jsonClientCodec) Read(streamBytes []byte, x interface{}) error {
 	}
 	return perrors.WithStack(json.Unmarshal(*c.rsp.Result, x))
 }
-
-//////////////////////////////////////////
-// json server codec
-//////////////////////////////////////////
 
 type serverRequest struct {
 	Version string           `json:"jsonrpc"`

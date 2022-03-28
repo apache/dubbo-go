@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+// Package tracing provides tracing collection filter.
 package tracing
 
 import (

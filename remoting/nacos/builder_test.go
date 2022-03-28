@@ -114,19 +114,19 @@ func TestTimeoutConfig(t *testing.T) {
 		_, cc, err := GetNacosConfig(newURL)
 		assert.Nil(t, err)
 
-		assert.Equal(t, cc.TimeoutMs, uint64(int32(10*time.Second/time.Millisecond)))
+		assert.Equal(t, cc.TimeoutMs, uint64(int32(5*time.Second/time.Millisecond)))
 	})
 
 	t.Run("right timeout", func(t *testing.T) {
 
-		regurlMap.Set(constant.TimeoutKey, "5s")
+		regurlMap.Set(constant.NacosTimeout, "7s")
 
 		newURL, _ := common.NewURL("registry://console.nacos.io:80", common.WithParams(regurlMap))
 
 		_, cc, err := GetNacosConfig(newURL)
 		assert.Nil(t, err)
 
-		assert.Equal(t, cc.TimeoutMs, uint64(int32(5*time.Second/time.Millisecond)))
+		assert.Equal(t, cc.TimeoutMs, uint64(int32(7*time.Second/time.Millisecond)))
 	})
 
 	t.Run("invalid timeout", func(t *testing.T) {
@@ -136,7 +136,7 @@ func TestTimeoutConfig(t *testing.T) {
 		_, cc, err := GetNacosConfig(newURL)
 		assert.Nil(t, err)
 
-		assert.Equal(t, cc.TimeoutMs, uint64(int32(3*time.Second/time.Millisecond)))
+		assert.NotEqual(t, cc.TimeoutMs, uint64(int32(3*time.Second/time.Millisecond)))
 	})
 
 }

@@ -32,35 +32,38 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
-// It is interface of client for network communication.
-// If you use getty as network communication, you should define GettyClient that implements this interface.
+// Client is the interface that wraps SetExchangeClient、 Connect、Close、Request and
+// IsAvailable method. It is interface of client for network communication. If you
+// use getty as network communication, you should define GettyClient that implements
+// this interface.
+//
+// SetExchangeClient method sets a ExchangeClient instance.
+//
+// Connect method is to connect url.
+//
+// Close method is for destroy.
+//
+// Request method is sending request to server.
+//
+// IsAvailable method checks whether the client is still available.
 type Client interface {
 	SetExchangeClient(client *ExchangeClient)
-	// connect url
 	Connect(url *common.URL) error
-	// close
 	Close()
-	// send request to server.
 	Request(request *Request, timeout time.Duration, response *PendingResponse) error
-	// check if the client is still available
 	IsAvailable() bool
 }
 
-// This is abstraction level. it is like facade.
+// ExchangeClient is abstraction level. it is like facade.
 type ExchangeClient struct {
-	// connect server timeout
-	ConnectTimeout time.Duration
-	// to dial server address. The format: ip:port
-	address string
-	// the client that will deal with the transport. It is interface, and it will use gettyClient by default.
-	client Client
-	// the tag for init.
-	init bool
-	// the number of service using the exchangeClient
-	activeNum uatomic.Uint32
+	ConnectTimeout time.Duration  // timeout for connecting server
+	address        string         // server address for dialing. The format: ip:port
+	client         Client         // dealing with the transport
+	init           bool           // the tag for init.
+	activeNum      uatomic.Uint32 // the number of service using the exchangeClient
 }
 
-// create ExchangeClient
+// NewExchangeClient returns a ExchangeClient.
 func NewExchangeClient(url *common.URL, client Client, connectTimeout time.Duration, lazyInit bool) *ExchangeClient {
 	exchangeClient := &ExchangeClient{
 		ConnectTimeout: connectTimeout,
@@ -93,22 +96,22 @@ func (cl *ExchangeClient) doInit(url *common.URL) error {
 	return nil
 }
 
-// increase number of service using client
+// IncreaseActiveNumber increase number of service using client.
 func (client *ExchangeClient) IncreaseActiveNumber() uint32 {
 	return client.activeNum.Add(1)
 }
 
-// decrease number of service using client
+// DecreaseActiveNumber decrease number of service using client.
 func (client *ExchangeClient) DecreaseActiveNumber() uint32 {
 	return client.activeNum.Sub(1)
 }
 
-// get number of service using client
+// GetActiveNumber get number of service using client.
 func (client *ExchangeClient) GetActiveNumber() uint32 {
 	return client.activeNum.Load()
 }
 
-// two way request
+// Request means two way request.
 func (client *ExchangeClient) Request(invocation *protocol.Invocation, url *common.URL, timeout time.Duration,
 	result *protocol.RPCResult) error {
 	if er := client.doInit(url); er != nil {
@@ -141,7 +144,7 @@ func (client *ExchangeClient) Request(invocation *protocol.Invocation, url *comm
 	return nil
 }
 
-// async two way request
+// AsyncRequest async two way request.
 func (client *ExchangeClient) AsyncRequest(invocation *protocol.Invocation, url *common.URL, timeout time.Duration,
 	callback common.AsyncCallback, result *protocol.RPCResult) error {
 	if er := client.doInit(url); er != nil {
@@ -167,7 +170,7 @@ func (client *ExchangeClient) AsyncRequest(invocation *protocol.Invocation, url 
 	return nil
 }
 
-// oneway request
+// Send sends oneway request.
 func (client *ExchangeClient) Send(invocation *protocol.Invocation, url *common.URL, timeout time.Duration) error {
 	if er := client.doInit(url); er != nil {
 		return er
@@ -187,10 +190,9 @@ func (client *ExchangeClient) Send(invocation *protocol.Invocation, url *common.
 	return nil
 }
 
-// close client
+// Close close the client.
 func (client *ExchangeClient) Close() {
 	client.client.Close()
-	// for reinit client
 	client.init = false
 }
 

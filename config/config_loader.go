@@ -45,6 +45,7 @@ func Load(opts ...LoaderConfOption) error {
 	conf := NewLoaderConf(opts...)
 	if conf.rc == nil {
 		koan := GetConfigResolver(conf)
+		koan = conf.MergeConfig(koan)
 		if err := koan.UnmarshalWithConf(rootConfig.Prefix(),
 			rootConfig, koanf.UnmarshalConf{Tag: "yaml"}); err != nil {
 			return err

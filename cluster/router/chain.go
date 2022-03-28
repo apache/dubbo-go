@@ -22,7 +22,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
-// Chain
 type Chain interface {
 	Route(*common.URL, protocol.Invocation) []protocol.Invoker
 	// Refresh invokers

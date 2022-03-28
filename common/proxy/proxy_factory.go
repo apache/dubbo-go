@@ -22,7 +22,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
-// ProxyFactory interface.
 type ProxyFactory interface {
 	GetProxy(invoker protocol.Invoker, url *common.URL) *Proxy
 	GetAsyncProxy(invoker protocol.Invoker, callBack interface{}, url *common.URL) *Proxy

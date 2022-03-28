@@ -19,8 +19,6 @@ package constant
 
 // nolint
 const (
-	// ConfigFileEnvKey is key of environment variable dubbogo configure file path
-	ConfigFileEnvKey = "DUBBO_GO_CONFIG_PATH"
-	// AppLogConfFile ...
-	AppLogConfFile = "AppLogConfFile"
+	ConfigFileEnvKey = "DUBBO_GO_CONFIG_PATH" // key of environment variable dubbogo configure file path
+	AppLogConfFile   = "AppLogConfFile"
 )

@@ -43,14 +43,13 @@ type SerialID byte
 
 func init() {
 	codec := &DubboCodec{}
-	// this is for registry dubboCodec of dubbo protocol
 	remoting.RegistryCodec("dubbo", codec)
 }
 
-// DubboCodec. It is implements remoting.Codec
+// DubboCodec  implements remoting.Codec
 type DubboCodec struct{}
 
-// encode request for transport
+// EncodeRequest encodes request for transport
 func (c *DubboCodec) EncodeRequest(request *remoting.Request) (*bytes.Buffer, error) {
 	if request.Event {
 		return c.encodeHeartbeartReqeust(request)
@@ -128,7 +127,7 @@ func (c *DubboCodec) encodeHeartbeartReqeust(request *remoting.Request) (*bytes.
 	return pkg.Marshal()
 }
 
-// encode response
+// EncodeResponse encodes response
 func (c *DubboCodec) EncodeResponse(response *remoting.Response) (*bytes.Buffer, error) {
 	ptype := impl.PackageResponse
 	if response.IsHeartbeat() {

@@ -41,10 +41,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
-// todo: WritePkg_Timeout will entry *.yml
 const (
-	// WritePkg_Timeout the timeout of write pkg
-	WritePkg_Timeout = 5 * time.Second
+	WritePkg_Timeout = 5 * time.Second // TODO: WritePkg_Timeout will entry *.yml
 )
 
 var (
@@ -64,10 +62,6 @@ func (s *rpcSession) AddReqNum(num int32) {
 func (s *rpcSession) GetReqNum() int32 {
 	return atomic.LoadInt32(&s.reqNum)
 }
-
-// //////////////////////////////////////////
-// RpcClientHandler
-// //////////////////////////////////////////
 
 // nolint
 type RpcClientHandler struct {
@@ -173,10 +167,6 @@ func (h *RpcClientHandler) OnCron(session getty.Session) {
 		logger.Warnf("failed to send heartbeat, error{%v}", err)
 	}
 }
-
-// //////////////////////////////////////////
-// RpcServerHandler
-// //////////////////////////////////////////
 
 // nolint
 type RpcServerHandler struct {

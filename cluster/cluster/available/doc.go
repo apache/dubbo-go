@@ -15,16 +15,5 @@
  * limitations under the License.
  */
 
-package interfaces
-
-var (
-	configs = map[string]Config{}
-)
-
-type Config interface {
-	Prefix() string
-}
-
-func SetConfig(c Config) {
-	configs[c.Prefix()] = c
-}
+// Package available implements Available cluster strategy.
+package available

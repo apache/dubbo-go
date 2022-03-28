@@ -27,6 +27,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
 func TestLoadRegistries(t *testing.T) {
@@ -73,4 +74,60 @@ func TestTranslateRegistryAddress(t *testing.T) {
 
 	assert.Equal(t, "nacos", reg.Protocol)
 	assert.Equal(t, "127.0.0.1:8848", reg.Address)
+}
+
+func TestNewRegistryConfigBuilder(t *testing.T) {
+
+	config := NewRegistryConfigBuilder().
+		SetProtocol("nacos").
+		SetTimeout("10s").
+		SetGroup("group").
+		SetNamespace("public").
+		SetTTL("10s").
+		SetAddress("127.0.0.1:8848").
+		SetUsername("nacos").
+		SetPassword("123456").
+		SetSimplified(true).
+		SetPreferred(true).
+		SetZone("zone").
+		SetWeight(100).
+		SetParams(map[string]string{"timeout": "3s"}).
+		AddParam("timeout", "15s").
+		SetRegistryType("local").
+		Build()
+
+	config.DynamicUpdateProperties(config)
+
+	assert.Equal(t, config.Prefix(), constant.RegistryConfigPrefix)
+
+	values := config.getUrlMap(common.PROVIDER)
+	assert.Equal(t, values.Get("timeout"), "15s")
+
+	url, err := config.toMetadataReportUrl()
+	assert.NoError(t, err)
+	assert.Equal(t, url.GetParam("timeout", "3s"), "10s")
+
+	url, err = config.toURL(common.PROVIDER)
+	assert.NoError(t, err)
+	assert.Equal(t, url.GetParam("timeout", "3s"), "15s")
+
+	address := config.translateRegistryAddress()
+	assert.Equal(t, address, "127.0.0.1:8848")
+}
+
+func TestNewRegistryConfig(t *testing.T) {
+	config := NewRegistryConfig(
+		WithRegistryProtocol("nacos"),
+		WithRegistryAddress("127.0.0.1:8848"),
+		WithRegistryTimeOut("10s"),
+		WithRegistryGroup("group"),
+		WithRegistryTTL("10s"),
+		WithRegistryUserName("nacos"),
+		WithRegistryPassword("123456"),
+		WithRegistrySimplified(true),
+		WithRegistryPreferred(true),
+		WithRegistryWeight(100),
+		WithRegistryParams(map[string]string{"timeout": "3s"}))
+
+	assert.Equal(t, config.Timeout, "10s")
 }

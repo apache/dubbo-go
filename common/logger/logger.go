@@ -28,7 +28,6 @@ import (
 
 var logger Logger
 
-// init a default logger
 func init() {
 	InitLogger(nil)
 }

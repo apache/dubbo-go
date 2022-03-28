@@ -20,20 +20,19 @@ package constant
 const (
 	Dubbo            = "dubbo"
 	ProviderProtocol = "provider"
-	// OverrideProtocol is compatible with 2.6.x
-	OverrideProtocol = "override"
+	OverrideProtocol = "override" //compatible with 2.6.x
 	EmptyProtocol    = "empty"
 	RouterProtocol   = "router"
 )
 
 const (
-	DefaultWeight           = 100     //
+	DefaultWeight           = 100
 	DefaultWarmup           = 10 * 60 // in java here is 10*60*1000 because of System.currentTimeMillis() is measured in milliseconds & in go time.Unix() is second
 	DefaultLoadBalance      = "random"
 	DefaultRetries          = "2"
 	DefaultRetriesInt       = 2
 	DefaultProtocol         = "dubbo"
-	DefaultRegTimeout       = "10s"
+	DefaultRegTimeout       = "5s"
 	DefaultRegTTL           = "15m"
 	DefaultCluster          = "failover"
 	DefaultFailbackTimes    = "3"

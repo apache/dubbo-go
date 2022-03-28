@@ -49,7 +49,6 @@ func (rc *RemoteConfig) Prefix() string {
 	return constant.RemotePrefix
 }
 
-// nolint
 func (rc *RemoteConfig) Init() error {
 	return nil
 }

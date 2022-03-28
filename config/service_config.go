@@ -109,8 +109,12 @@ func (s *ServiceConfig) Init(rc *RootConfig) error {
 	s.exported = atomic.NewBool(false)
 	s.metadataType = rc.Application.MetadataType
 	s.unexported = atomic.NewBool(false)
-	s.RCRegistriesMap = rc.Registries
-	s.RCProtocolsMap = rc.Protocols
+	if len(s.RCRegistriesMap) == 0 {
+		s.RCRegistriesMap = rc.Registries
+	}
+	if len(s.RCProtocolsMap) == 0 {
+		s.RCProtocolsMap = rc.Protocols
+	}
 	if rc.Provider != nil {
 		s.ProxyFactoryKey = rc.Provider.ProxyFactory
 	}

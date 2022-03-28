@@ -18,6 +18,7 @@
 package config
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -25,15 +26,19 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+)
+
 func TestCustomInit(t *testing.T) {
 	t.Run("empty use default", func(t *testing.T) {
 		err := Load(WithPath("./testdata/config/custom/empty.yaml"))
 		assert.Nil(t, err)
 		assert.NotNil(t, rootConfig)
-		CustomConfig := rootConfig.Custom
-		assert.NotNil(t, CustomConfig)
-		assert.Equal(t, CustomConfig.ConfigMap, map[string]interface{}(nil))
-		assert.Equal(t, CustomConfig.GetDefineValue("test", "test"), "test")
+		customConfig := rootConfig.Custom
+		assert.NotNil(t, customConfig)
+		assert.Equal(t, customConfig.ConfigMap, map[string]interface{}(nil))
+		assert.Equal(t, customConfig.GetDefineValue("test", "test"), "test")
 		assert.Equal(t, GetDefineValue("test", "test"), "test")
 	})
 
@@ -41,28 +46,43 @@ func TestCustomInit(t *testing.T) {
 		err := Load(WithPath("./testdata/config/custom/custom.yaml"))
 		assert.Nil(t, err)
 		assert.NotNil(t, rootConfig)
-		CustomConfig := rootConfig.Custom
-		assert.NotNil(t, CustomConfig)
-		assert.Equal(t, CustomConfig.ConfigMap, map[string]interface{}{"test-config": true})
-		assert.Equal(t, CustomConfig.GetDefineValue("test-config", false), true)
-		assert.Equal(t, CustomConfig.GetDefineValue("test-no-config", false), false)
+		customConfig := rootConfig.Custom
+		assert.NotNil(t, customConfig)
+		assert.Equal(t, customConfig.ConfigMap, map[string]interface{}{"test-config": true})
+		assert.Equal(t, customConfig.GetDefineValue("test-config", false), true)
+		assert.Equal(t, customConfig.GetDefineValue("test-no-config", false), false)
 		assert.Equal(t, GetDefineValue("test-config", false), true)
 		assert.Equal(t, GetDefineValue("test-no-config", false), false)
 	})
 
 	t.Run("config builder", func(t *testing.T) {
-		CustomConfigBuilder := NewCustomConfigBuilder()
-		CustomConfigBuilder.SetDefineConfig("test-build", true)
-		CustomConfig := CustomConfigBuilder.Build()
-		assert.NotNil(t, CustomConfig)
-		assert.Equal(t, CustomConfig.GetDefineValue("test-build", false), true)
-		assert.Equal(t, CustomConfig.GetDefineValue("test-no-build", false), false)
+		customConfigBuilder := NewCustomConfigBuilder()
+		customConfigBuilder.SetDefineConfig("test-build", true)
+		customConfig := customConfigBuilder.Build()
+		assert.NotNil(t, customConfig)
+		assert.Equal(t, customConfig.GetDefineValue("test-build", false), true)
+		assert.Equal(t, customConfig.GetDefineValue("test-no-build", false), false)
 		// todo @(laurence) now we should guarantee rootConfig ptr can't be changed during test
 		tempRootConfig := rootConfig
-		rt := NewRootConfigBuilder().SetCustom(CustomConfig).Build()
+		rt := NewRootConfigBuilder().SetCustom(customConfig).Build()
 		SetRootConfig(*rt)
 		assert.Equal(t, GetDefineValue("test-build", false), true)
 		assert.Equal(t, GetDefineValue("test-no-build", false), false)
 		SetRootConfig(*tempRootConfig)
 	})
+}
+
+func TestConfigUtils(t *testing.T) {
+	config := NewRegistryConfigWithProtocolDefaultPort("nacos")
+
+	id := clientNameID(config, config.Protocol, config.Address)
+
+	assert.Equal(t, id, strings.Join([]string{constant.RegistryConfigPrefix, "nacos", "127.0.0.1:8848"}, "-"))
+
+	ids := translateRegistryIds([]string{"nacos,zk"})
+	assert.Equal(t, ids[0], "nacos")
+	assert.Equal(t, ids[1], "zk")
+
+	element := removeDuplicateElement([]string{"nacos", "nacos"})
+	assert.Equal(t, len(element), 1)
 }

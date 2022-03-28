@@ -149,24 +149,20 @@ type LoggerConfigBuilder struct {
 	loggerConfig *LoggerConfig
 }
 
-// nolint
 func NewLoggerConfigBuilder() *LoggerConfigBuilder {
 	return &LoggerConfigBuilder{loggerConfig: &LoggerConfig{}}
 }
 
-// nolint
 func (lcb *LoggerConfigBuilder) SetLumberjackConfig(lumberjackConfig *lumberjack.Logger) *LoggerConfigBuilder {
 	lcb.loggerConfig.LumberjackConfig = lumberjackConfig
 	return lcb
 }
 
-// nolint
 func (lcb *LoggerConfigBuilder) SetZapConfig(zapConfig ZapConfig) *LoggerConfigBuilder {
 	lcb.loggerConfig.ZapConfig = zapConfig
 	return lcb
 }
 
-// nolint
 func (lcb *LoggerConfigBuilder) Build() *LoggerConfig {
 	return lcb.loggerConfig
 }

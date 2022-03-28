@@ -84,7 +84,7 @@ func GetNacosConfig(url *common.URL) ([]nacosConstant.ServerConfig, nacosConstan
 		serverConfigs = append(serverConfigs, nacosConstant.ServerConfig{IpAddr: ip, Port: uint64(port), ContextPath: contextPath})
 	}
 
-	timeout := url.GetParamDuration(constant.TimeoutKey, constant.DefaultRegTimeout)
+	timeout := url.GetParamDuration(constant.NacosTimeout, constant.DefaultRegTimeout)
 
 	clientConfig := nacosConstant.ClientConfig{
 		TimeoutMs:           uint64(int32(timeout / time.Millisecond)),

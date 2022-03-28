@@ -63,7 +63,6 @@ func NewZkEventListener(client *gxzookeeper.ZookeeperClient) *ZkEventListener {
 
 // ListenServiceNodeEvent listen a path node event
 func (l *ZkEventListener) ListenServiceNodeEvent(zkPath string, listener remoting.DataListener) {
-	// listen l service node
 	l.wg.Add(1)
 	go func(zkPath string, listener remoting.DataListener) {
 		if l.listenServiceNodeEvent(zkPath, listener) {
@@ -198,19 +197,7 @@ func (l *ZkEventListener) handleZkNodeEvent(zkPath string, children []string, li
 
 	newChildren, err := l.Client.GetChildren(zkPath)
 	if err != nil {
-		// TODO need to ignore this error in gost
-		if err == gxzookeeper.ErrNilChildren {
-			content, _, connErr := l.Client.Conn.Get(zkPath)
-			if connErr != nil {
-				logger.Errorf("Get new node path {%v} 's content error,message is  {%v}",
-					zkPath, perrors.WithStack(connErr))
-			} else {
-				// TODO this if for config center listener, and will be removed when we refactor config center listener
-				listener.DataChange(remoting.Event{Path: zkPath, Action: remoting.EventTypeUpdate, Content: string(content)})
-			}
-		} else {
-			logger.Errorf("path{%s} child nodes changed, zk.Children() = error{%v}", zkPath, perrors.WithStack(err))
-		}
+		logger.Errorf("[ZkEventListener handleZkNodeEvent]Path{%s} child nodes changed, zk.Children() = error{%v}", zkPath, perrors.WithStack(err))
 		return
 	}
 
@@ -400,8 +387,7 @@ func timeSecondDuration(sec int) time.Duration {
 
 // ListenServiceEvent is invoked by ZkConsumerRegistry::Register/ZkConsumerRegistry::get/ZkConsumerRegistry::getListener
 // registry.go:Listen -> listenServiceEvent -> listenDirEvent -> listenServiceNodeEvent
-//                            |
-//                            --------> listenServiceNodeEvent
+// registry.go:Listen -> listenServiceEvent -> listenServiceNodeEvent
 func (l *ZkEventListener) ListenServiceEvent(conf *common.URL, zkPath string, listener remoting.DataListener) {
 	logger.Infof("[Zookeeper Listener] listen dubbo path{%s}", zkPath)
 	l.wg.Add(1)
@@ -410,10 +396,6 @@ func (l *ZkEventListener) ListenServiceEvent(conf *common.URL, zkPath string, li
 		logger.Warnf("ListenServiceEvent->listenDirEvent(zkPath{%s}) goroutine exit now", zkPath)
 	}(zkPath, listener)
 }
-
-//func (l *ZkEventListener) valid() bool {
-//	return l.client.ZkConnValid()
-//}
 
 // Close will let client listen exit
 func (l *ZkEventListener) Close() {

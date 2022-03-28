@@ -54,6 +54,37 @@ Dubbo-go has supported many RPC protocol, like Triple, Dubbo JSONRPC, gRPC, HTTP
 
 If you want to know more about dubbogo tools, please visit https://github.com/dubbogo/tools and read its readme carefully.
 
+## Intellij Plugin
+
+* Windows: File > Settings > Plugins > Browse repositories... > Search for "Dubbo Go" > Install Plugin
+* MacOS: Preferences > Settings > Plugins > Browse repositories... > Search for "Dubbo Go" > Install Plugin
+* Manually:
+    * Download the [latest release](https://plugins.jetbrains.com/plugin/18581-dubbo-go) and install it manually using Preferences > Plugins > Install plugin from disk...
+    * From official jetbrains store from download
+
+
+### Feature
+|      Feature       | IDEA | GoLand |
+|:------------------:|:----:|:------:|
+| Hessian2 Generator |  ✅️  |   ✅️   |
+| New Project/Module |  ✅️  |   ✅️   |
+
+#### Project/Module Template
+| Project/Module Template | Progress |
+|:-----------------------:|:--------:|
+|         Sample          |    ✅️    |
+|      Empty Project      |    ✅️    |
+
+##### Empty Project Template Middleware
+|  Middleware  |                Module                 | Support |
+|:------------:|:-------------------------------------:|:-------:|
+| Web Service  |    [Gin](github.com/gin-gonic/gin)    |   ✅️    |
+| Memory Cache | [Redis](github.com/go-redis/redis/v8) |   ✅️    |
+|   Database   |         [Gorm](gorm.io/gorm)          |   ✅️    |
+
+
+If you want to know more about dubbogo Intellij Plugin, please visit [https://gitee.com/changeden/intellij-plugin-dubbo-go-generator](https://gitee.com/changeden/intellij-plugin-dubbo-go-generator) and read its readme carefully.
+
 ## Dubbo-go ecosystem
 
 * [Dubbo Ecosystem Entry](https://github.com/apache?utf8=%E2%9C%93&q=dubbo&type=&language=) - A GitHub group `dubbo` to gather all Dubbo relevant projects not appropriate in [apache](https://github.com/apache) group yet.

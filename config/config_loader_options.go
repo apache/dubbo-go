@@ -26,41 +26,37 @@ import (
 )
 
 import (
+	"github.com/knadh/koanf"
+
 	"github.com/pkg/errors"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/file"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
 )
 
 type loaderConf struct {
-	// loaderConf file extension default yaml
-	suffix string
-
-	// loaderConf file path default ./conf
-	path string
-
-	// loaderConf file delim default .
-	delim string
-
-	// config bytes
-	bytes []byte
-
-	// user provide rootConfig built by config api
-	rc *RootConfig
+	suffix string      // loaderConf file extension default yaml
+	path   string      // loaderConf file path default ./conf/dubbogo.yaml
+	delim  string      // loaderConf file delim default .
+	bytes  []byte      // config bytes
+	rc     *RootConfig // user provide rootConfig built by config api
+	name   string      // config file name
 }
 
 func NewLoaderConf(opts ...LoaderConfOption) *loaderConf {
-	configFilePath := "../conf/dubbogo.yaml"
+	configFilePath := "./conf/dubbogo.yaml"
 	if configFilePathFromEnv := os.Getenv(constant.ConfigFileEnvKey); configFilePathFromEnv != "" {
 		configFilePath = configFilePathFromEnv
 	}
-	suffix := strings.Split(configFilePath, ".")
+	name, suffix := resolverFilePath(configFilePath)
 	conf := &loaderConf{
-		suffix: suffix[len(suffix)-1],
+		suffix: suffix,
 		path:   absolutePath(configFilePath),
 		delim:  ".",
+		name:   name,
 	}
 	for _, opt := range opts {
 		opt.apply(conf)
@@ -69,11 +65,11 @@ func NewLoaderConf(opts ...LoaderConfOption) *loaderConf {
 		return conf
 	}
 	if len(conf.bytes) <= 0 {
-		bytes, err := ioutil.ReadFile(conf.path)
-		if err != nil {
+		if bytes, err := ioutil.ReadFile(conf.path); err != nil {
 			panic(err)
+		} else {
+			conf.bytes = bytes
 		}
-		conf.bytes = bytes
 	}
 	return conf
 }
@@ -111,13 +107,14 @@ func WithSuffix(suffix file.Suffix) LoaderConfOption {
 func WithPath(path string) LoaderConfOption {
 	return loaderConfigFunc(func(conf *loaderConf) {
 		conf.path = absolutePath(path)
-		bytes, err := ioutil.ReadFile(path)
-		if err != nil {
+		if bytes, err := ioutil.ReadFile(path); err != nil {
 			panic(err)
+		} else {
+			conf.bytes = bytes
 		}
-		conf.bytes = bytes
-		genre := strings.Split(path, ".")
-		conf.suffix = genre[len(genre)-1]
+		name, suffix := resolverFilePath(path)
+		conf.suffix = suffix
+		conf.name = name
 	})
 }
 
@@ -179,4 +176,52 @@ func checkFileSuffix(suffix string) error {
 		}
 	}
 	return errors.Errorf("no support file suffix: %s", suffix)
+}
+
+//resolverFilePath resolver file path
+// eg: give a ./conf/dubbogo.yaml return dubbogo and yaml
+func resolverFilePath(path string) (name, suffix string) {
+	paths := strings.Split(path, "/")
+	fileName := strings.Split(paths[len(paths)-1], ".")
+	if len(fileName) < 2 {
+		return fileName[0], string(file.YAML)
+	}
+	return fileName[0], fileName[1]
+}
+
+//MergeConfig merge config file
+func (conf *loaderConf) MergeConfig(koan *koanf.Koanf) *koanf.Koanf {
+	var (
+		activeKoan *koanf.Koanf
+		activeConf *loaderConf
+	)
+	active := koan.String("dubbo.profiles.active")
+	active = getLegalActive(active)
+	logger.Infof("The following profiles are active: %s", active)
+	if defaultActive != active {
+		path := conf.getActiveFilePath(active)
+		if !pathExists(path) {
+			logger.Debugf("Config file:%s not exist skip config merge", path)
+			return koan
+		}
+		activeConf = NewLoaderConf(WithPath(path))
+		activeKoan = GetConfigResolver(activeConf)
+		if err := koan.Merge(activeKoan); err != nil {
+			logger.Debugf("Config merge err %s", err)
+		}
+	}
+	return koan
+}
+
+func (conf *loaderConf) getActiveFilePath(active string) string {
+	suffix := constant.DotSeparator + conf.suffix
+	return strings.ReplaceAll(conf.path, suffix, "") + "-" + active + suffix
+}
+
+func pathExists(path string) bool {
+	if _, err := os.Stat(path); err == nil {
+		return true
+	} else {
+		return !os.IsNotExist(err)
+	}
 }

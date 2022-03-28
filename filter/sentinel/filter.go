@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 
+// Package sentinel provides a filter when using sentinel.
+// Integrate Sentinel Go MUST HAVE:
+// 1. Must initialize Sentinel Go run environment, refer to https://github.com/alibaba/sentinel-golang/blob/master/api/init.go
+// 2. Register rules for resources user want to guard
 package sentinel
 
 import (
@@ -39,10 +43,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
-// Integrate Sentinel Go MUST HAVE:
-// 1. Must initialize Sentinel Go run environment,
-//     refer to https://github.com/alibaba/sentinel-golang/blob/master/api/init.go
-// 2. Register rules for resources user want to guard
 func init() {
 	extension.SetFilter(constant.SentinelConsumerFilterKey, newSentinelConsumerFilter)
 	extension.SetFilter(constant.SentinelProviderFilterKey, newSentinelProviderFilter)

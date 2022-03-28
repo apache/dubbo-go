@@ -57,7 +57,7 @@ func init() {
 
 var dubboProtocol *DubboProtocol
 
-// It support dubbo protocol. It implements Protocol interface for dubbo protocol.
+// DubboProtocol supports dubbo protocol. It implements Protocol interface for dubbo protocol.
 type DubboProtocol struct {
 	protocol.BaseProtocol
 	// It is store relationship about serviceKey(group/interface:version) and ExchangeServer
@@ -195,12 +195,6 @@ func getExchangeClient(url *common.URL) *remoting.ExchangeClient {
 				}
 				return
 			}
-
-			// new ExchangeClient
-			//exchangeClientTmp = remoting.NewExchangeClient(url, getty.NewClient(getty.Options{
-			//	ConnectTimeout: config.GetRootConfig().ConfigCenter.ConnectTimeout,
-			//	RequestTimeout: config.GetConsumerConfig().RequestTimeout,
-			//}), config.GetConsumerConfig().ConnectTimeout, false)
 
 			// todo set by config
 			exchangeClientTmp = remoting.NewExchangeClient(url, getty.NewClient(getty.Options{

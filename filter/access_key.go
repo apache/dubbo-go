@@ -32,8 +32,8 @@ type AccessKeyPair struct {
 	Options      string `yaml:"options"   json:"options,omitempty" property:"options"`
 }
 
-// AccessKeyStorage supports us to store our AccessKeyPair or load AccessKeyPair from other
-// storage, such as filesystem.
+// AccessKeyStorage is the interface which supports us to store our AccessKeyPair or
+// load AccessKeyPair from other storage, such as filesystem.
 type AccessKeyStorage interface {
 	GetAccessKeyPair(protocol.Invocation, *common.URL) *AccessKeyPair
 }

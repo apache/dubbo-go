@@ -45,15 +45,13 @@ const (
 	rootPath = "/services"
 )
 
-// init will put the service discovery into extension
 func init() {
 	extension.SetServiceDiscovery(constant.ZookeeperKey, newZookeeperServiceDiscovery)
 }
 
 type zookeeperServiceDiscovery struct {
-	client *gxzookeeper.ZookeeperClient
-	csd    *curator_discovery.ServiceDiscovery
-	// listener    *zookeeper.ZkEventListener
+	client              *gxzookeeper.ZookeeperClient
+	csd                 *curator_discovery.ServiceDiscovery
 	url                 *common.URL
 	wg                  sync.WaitGroup
 	cltLock             sync.Mutex
@@ -127,7 +125,7 @@ func (zksd *zookeeperServiceDiscovery) String() string {
 	return fmt.Sprintf("zookeeper-service-discovery[%s]", zksd.url)
 }
 
-// Close client be closed
+// Destroy will destroy the clinet.
 func (zksd *zookeeperServiceDiscovery) Destroy() error {
 	zksd.csd.Close()
 	return nil
@@ -140,7 +138,7 @@ func (zksd *zookeeperServiceDiscovery) Register(instance registry.ServiceInstanc
 	return zksd.csd.RegisterService(cris)
 }
 
-// Register will update service in zookeeper, instance convert to curator's service instance
+// Update will update service in zookeeper, instance convert to curator's service instance
 // which define in curator-x-discovery, please refer to https://github.com/apache/curator.
 func (zksd *zookeeperServiceDiscovery) Update(instance registry.ServiceInstance) error {
 	cris := zksd.toCuratorInstance(instance)

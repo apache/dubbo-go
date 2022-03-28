@@ -174,25 +174,21 @@ func (pcb *ProviderConfigBuilder) SetFilter(filter string) *ProviderConfigBuilde
 	return pcb
 }
 
-// nolint
 func (pcb *ProviderConfigBuilder) SetRegister(register bool) *ProviderConfigBuilder {
 	pcb.providerConfig.Register = register
 	return pcb
 }
 
-// nolint
 func (pcb *ProviderConfigBuilder) SetRegistryIDs(RegistryIDs ...string) *ProviderConfigBuilder {
 	pcb.providerConfig.RegistryIDs = RegistryIDs
 	return pcb
 }
 
-// nolint
 func (pcb *ProviderConfigBuilder) SetServices(services map[string]*ServiceConfig) *ProviderConfigBuilder {
 	pcb.providerConfig.Services = services
 	return pcb
 }
 
-// nolint
 func (pcb *ProviderConfigBuilder) AddService(serviceID string, serviceConfig *ServiceConfig) *ProviderConfigBuilder {
 	if pcb.providerConfig.Services == nil {
 		pcb.providerConfig.Services = make(map[string]*ServiceConfig)
@@ -201,25 +197,21 @@ func (pcb *ProviderConfigBuilder) AddService(serviceID string, serviceConfig *Se
 	return pcb
 }
 
-// nolint
 func (pcb *ProviderConfigBuilder) SetProxyFactory(proxyFactory string) *ProviderConfigBuilder {
 	pcb.providerConfig.ProxyFactory = proxyFactory
 	return pcb
 }
 
-// nolint
 func (pcb *ProviderConfigBuilder) SetFilterConf(filterConf interface{}) *ProviderConfigBuilder {
 	pcb.providerConfig.FilterConf = filterConf
 	return pcb
 }
 
-// nolint
 func (pcb *ProviderConfigBuilder) SetConfigType(configType map[string]string) *ProviderConfigBuilder {
 	pcb.providerConfig.ConfigType = configType
 	return pcb
 }
 
-// nolint
 func (pcb *ProviderConfigBuilder) AddConfigType(key, value string) *ProviderConfigBuilder {
 	if pcb.providerConfig.ConfigType == nil {
 		pcb.providerConfig.ConfigType = make(map[string]string)
@@ -228,13 +220,11 @@ func (pcb *ProviderConfigBuilder) AddConfigType(key, value string) *ProviderConf
 	return pcb
 }
 
-// nolint
 func (pcb *ProviderConfigBuilder) SetRootConfig(rootConfig *RootConfig) *ProviderConfigBuilder {
 	pcb.providerConfig.rootConfig = rootConfig
 	return pcb
 }
 
-// nolint
 func (pcb *ProviderConfigBuilder) Build() *ProviderConfig {
 	return pcb.providerConfig
 }

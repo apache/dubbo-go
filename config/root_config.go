@@ -48,43 +48,22 @@ var (
 
 // RootConfig is the root config
 type RootConfig struct {
-	// Application applicationConfig config
-	Application *ApplicationConfig `validate:"required" yaml:"application" json:"application,omitempty" property:"application"`
-
-	Protocols map[string]*ProtocolConfig `validate:"required" yaml:"protocols" json:"protocols" property:"protocols"`
-
-	// Registries registry config
-	Registries map[string]*RegistryConfig `yaml:"registries" json:"registries" property:"registries"`
-
-	// TODO ConfigCenter and CenterConfig?
-	ConfigCenter *CenterConfig `yaml:"config-center" json:"config-center,omitempty"`
-
-	MetadataReport *MetadataReportConfig `yaml:"metadata-report" json:"metadata-report,omitempty" property:"metadata-report"`
-
-	// provider config
-	Provider *ProviderConfig `yaml:"provider" json:"provider" property:"provider"`
-
-	// consumer config
-	Consumer *ConsumerConfig `yaml:"consumer" json:"consumer" property:"consumer"`
-
-	Metric *MetricConfig `yaml:"metrics" json:"metrics,omitempty" property:"metrics"`
-
-	Tracing map[string]*TracingConfig `yaml:"tracing" json:"tracing,omitempty" property:"tracing"`
-
-	// Logger log
-	Logger *LoggerConfig `yaml:"logger" json:"logger,omitempty" property:"logger"`
-
-	// Shutdown config
-	Shutdown *ShutdownConfig `yaml:"shutdown" json:"shutdown,omitempty" property:"shutdown"`
-
-	Router []*RouterConfig `yaml:"router" json:"router,omitempty" property:"router"`
-
-	EventDispatcherType string `default:"direct" yaml:"event-dispatcher-type" json:"event-dispatcher-type,omitempty"`
-
-	// cache file used to store the current used configurations.
-	CacheFile string `yaml:"cache_file" json:"cache_file,omitempty" property:"cache_file"`
-
-	Custom *CustomConfig `yaml:"custom" json:"custom,omitempty" property:"custom"`
+	Application         *ApplicationConfig         `validate:"required" yaml:"application" json:"application,omitempty" property:"application"`
+	Protocols           map[string]*ProtocolConfig `validate:"required" yaml:"protocols" json:"protocols" property:"protocols"`
+	Registries          map[string]*RegistryConfig `yaml:"registries" json:"registries" property:"registries"`
+	ConfigCenter        *CenterConfig              `yaml:"config-center" json:"config-center,omitempty"` // TODO ConfigCenter and CenterConfig?
+	MetadataReport      *MetadataReportConfig      `yaml:"metadata-report" json:"metadata-report,omitempty" property:"metadata-report"`
+	Provider            *ProviderConfig            `yaml:"provider" json:"provider" property:"provider"`
+	Consumer            *ConsumerConfig            `yaml:"consumer" json:"consumer" property:"consumer"`
+	Metric              *MetricConfig              `yaml:"metrics" json:"metrics,omitempty" property:"metrics"`
+	Tracing             map[string]*TracingConfig  `yaml:"tracing" json:"tracing,omitempty" property:"tracing"`
+	Logger              *LoggerConfig              `yaml:"logger" json:"logger,omitempty" property:"logger"`
+	Shutdown            *ShutdownConfig            `yaml:"shutdown" json:"shutdown,omitempty" property:"shutdown"`
+	Router              []*RouterConfig            `yaml:"router" json:"router,omitempty" property:"router"`
+	EventDispatcherType string                     `default:"direct" yaml:"event-dispatcher-type" json:"event-dispatcher-type,omitempty"`
+	CacheFile           string                     `yaml:"cache_file" json:"cache_file,omitempty" property:"cache_file"`
+	Custom              *CustomConfig              `yaml:"custom" json:"custom,omitempty" property:"custom"`
+	Profiles            *ProfilesConfig            `yaml:"profiles" json:"profiles,omitempty" property:"profiles"`
 }
 
 func SetRootConfig(r RootConfig) {
@@ -406,10 +385,11 @@ func (rc *RootConfig) Process(event *config_center.ConfigChangeEvent) {
 		logger.Errorf("CenterConfig process unmarshalConf failed, got error %#v", err)
 		return
 	}
-
-	// update register
+	// dynamically update register
 	for registerId, updateRegister := range updateRootConfig.Registries {
 		register := rc.Registries[registerId]
-		register.UpdateProperties(updateRegister)
+		register.DynamicUpdateProperties(updateRegister)
 	}
+	// dynamically update consumer
+	rc.Consumer.DynamicUpdateProperties(updateRootConfig.Consumer)
 }

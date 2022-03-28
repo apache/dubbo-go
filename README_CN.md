@@ -64,6 +64,36 @@ Dubbo-go 生态覆盖多种网络协议：Triple、Dubbo、JSONRPC、gRPC、HTTP
 
 如果想知道 dubbogo 工具集更多更详细的使用细节，请访问 https://github.com/dubbogo/tools 并仔细阅读其 raedme。
 
+## Intellij 插件
+
+* Windows: File > Settings > Plugins > Browse repositories... > 搜索 "Dubbo Go" > Install Plugin
+* MacOS: Preferences > Settings > Plugins > Browse repositories... > 搜索 "Dubbo Go" > Install Plugin
+* 手动安装:
+  * 下载[最新版插件](https://plugins.jetbrains.com/plugin/18581-dubbo-go) 并且尝试手动安装， Preferences > Plugins > Install plugin from disk...
+  * 插件市场[https://plugins.jetbrains.com/plugin/18581-dubbo-go](https://plugins.jetbrains.com/plugin/18581-dubbo-go)
+
+
+### 功能特性
+|      特性      | IDEA | GoLand |
+|:------------:|:----:|:------:|
+| Hessian2 生成器 |  ✅️  |   ✅️   |
+|   创建项目/模块    |  ✅️  |   ✅️   |
+
+#### 创建新项目
+| 项目/模块模板 | 进度  |
+|:-------:|:---:|
+|  官方例子   | ✅️  |
+|   空项目   | ✅️  |
+
+##### 空项目模板中间件
+| 中间件类型 |                 可选模块                  | 是否支持 |
+|:-----:|:-------------------------------------:|:----:|
+| 网络服务  |    [Gin](github.com/gin-gonic/gin)    |  ✅️  |
+| 内存缓存  | [Redis](github.com/go-redis/redis/v8) |  ✅️  |
+|  数据库  |         [Gorm](gorm.io/gorm)          |  ✅️  |
+
+如果想知道 dubbogo 工具集更多更详细的使用细节，请访问 [https://gitee.com/changeden/intellij-plugin-dubbo-go-generator](https://gitee.com/changeden/intellij-plugin-dubbo-go-generator) 并仔细阅读其 raedme。
+
 ## 生态
 
 * [Dubbo Ecosystem Entry](https://github.com/apache?utf8=%E2%9C%93&q=dubbo&type=&language=) - Apache Dubbo 群组的相关开源项目
