@@ -1,10 +1,10 @@
 /*
- *
- * Copyright 2020 gRPC authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -13,7 +13,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package controller
@@ -374,7 +373,7 @@ func (t *Controller) processAckInfo(ack *ackAction, stream grpc.ClientStream) (t
 }
 
 // reportLoad starts an LRS stream to report load data to the management server.
-// It blocks until the context is cancelled.
+// It blocks until the context is canceled.
 func (t *Controller) reportLoad(ctx context.Context, cc *grpc.ClientConn, opts controllerversion.LoadReportingOptions) {
 	retries := 0
 	for {
@@ -402,7 +401,7 @@ func (t *Controller) reportLoad(ctx context.Context, cc *grpc.ClientConn, opts c
 		}
 		t.logger.Infof("lrs: created LRS stream")
 
-		if err := t.vClient.SendFirstLoadStatsRequest(stream); err != nil {
+		if err = t.vClient.SendFirstLoadStatsRequest(stream); err != nil {
 			t.logger.Warningf("lrs: failed to send first request: %v", err)
 			continue
 		}

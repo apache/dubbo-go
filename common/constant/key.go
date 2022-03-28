@@ -93,6 +93,7 @@ const (
 	TokenFilterKey                       = "token"
 	TpsLimitFilterKey                    = "tps"
 	TracingFilterKey                     = "tracing"
+	XdsCircuitBreakerKey                 = "xds_circuit_reaker"
 )
 
 const (

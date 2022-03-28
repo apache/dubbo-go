@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package xds
 
 import (
@@ -5,7 +22,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"strings"
 	"sync"
 	"time"
@@ -173,7 +189,7 @@ func NewXDSWrappedClient(podName, namespace, localIP string, istioAddr Addr) (*W
 
 func (w *WrappedClient) getServiceUniqueKeyHostAddrMapFromPilot() (map[string]string, error) {
 	req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("http://%s:8080/debug/adsz", w.istiodPodIP), nil)
-	token, err := os.ReadFile(istiodTokenPath)
+	token, err := ioutil.ReadFile(istiodTokenPath)
 	if err != nil {
 		return nil, err
 	}
@@ -229,12 +245,25 @@ func getHostNameAndPortFromAddr(hostAddr string) (string, string) {
 	return hostName, port
 }
 
+func (w *WrappedClient) GetClusterUpdateIgnoreVersion(hostAddr string) resource.ClusterUpdate {
+	hostName, port := getHostNameAndPortFromAddr(hostAddr)
+	w.cdsMapLock.RLock()
+	defer w.cdsMapLock.Unlock()
+	for clusterName, v := range w.cdsMap {
+		clusterNameData := strings.Split(clusterName, "|")
+		if clusterNameData[1] == port && clusterNameData[3] == hostName {
+			return v
+		}
+	}
+	return resource.ClusterUpdate{}
+}
+
 func (w *WrappedClient) getAllVersionClusterName(hostAddr string) []string {
 	hostName, port := getHostNameAndPortFromAddr(hostAddr)
 	allVersionClusterNames := make([]string, 0)
 	w.cdsMapLock.RLock()
 	defer w.cdsMapLock.Unlock()
-	for clusterName, _ := range w.cdsMap {
+	for clusterName := range w.cdsMap {
 		clusterNameData := strings.Split(clusterName, "|")
 		if clusterNameData[1] == port && clusterNameData[3] == hostName {
 			allVersionClusterNames = append(allVersionClusterNames, clusterName)
@@ -296,7 +325,7 @@ func (w *WrappedClient) registerHostLevelSubscription(hostAddr, interfaceName, s
 		w.hostAddrClusterCtxMapLock.Unlock()
 
 		oldlisteningClusterMap := make(map[string]bool)
-		for cluster, _ := range listeningClustersCancelMap {
+		for cluster := range listeningClustersCancelMap {
 			oldlisteningClusterMap[cluster] = false
 		}
 		for _, updatedClusterName := range updatedAllVersionedClusterName {
@@ -485,7 +514,7 @@ func (w *WrappedClient) initClientAndLoadLocalHostAddr() error {
 		// todo: what's going on? istiod can't discover istiod.istio-system.svc.cluster.local!!
 		if clusterNameList[3] == w.istiodAddr.HostnameOrIP {
 			// 1. find istiod podIP
-			// todo: When would eds level watch be cancelled?
+			// todo: When would eds level watch be canceled?
 			cancel1 = xdsClient.WatchEndpoints(update.ClusterName, func(endpoint resource.EndpointsUpdate, err error) {
 				if foundIstiod {
 					return
@@ -502,7 +531,7 @@ func (w *WrappedClient) initClientAndLoadLocalHostAddr() error {
 			return
 		}
 		// 2. found local hostAddr
-		// todo: When would eds level watch be cancelled?
+		// todo: When would eds level watch be canceled?
 		cancel2 = xdsClient.WatchEndpoints(update.ClusterName, func(endpoint resource.EndpointsUpdate, err error) {
 			if foundLocal {
 				return
@@ -580,7 +609,7 @@ func getDubboGoMetadata(dubboGoMetadata string) *structpb.Struct {
 }
 
 func (w *WrappedClient) runWatchingResource() {
-	for _ = range w.cdsUpdateEventChan {
+	for range w.cdsUpdateEventChan {
 		w.cdsUpdateEventHandlersLock.RLock()
 		for _, h := range w.cdsUpdateEventHandlers {
 			h()

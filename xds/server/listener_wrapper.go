@@ -1,10 +1,10 @@
 /*
- *
- * Copyright 2021 gRPC authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -13,7 +13,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 // Package server contains internal server-side functionality used by the public
@@ -136,7 +135,7 @@ func NewListenerWrapper(params ListenerWrapperParams) (net.Listener, <-chan stru
 	lw.logger.Infof("Watch started on resource name %v", lw.name)
 	lw.cancelWatch = func() {
 		cancelWatch()
-		lw.logger.Infof("Watch cancelled on resource name %v", lw.name)
+		lw.logger.Infof("Watch canceled on resource name %v", lw.name)
 	}
 	go lw.run()
 	return lw, lw.goodUpdate.Done()
@@ -174,10 +173,10 @@ type listenerWrapper struct {
 	// keep track of whether the received update is the first one or not.
 	goodUpdate *grpcsync.Event
 	// A small race exists in the XDSClient code between the receipt of an xDS
-	// response and the user cancelling the associated watch. In this window,
+	// response and the user canceling the associated watch. In this window,
 	// the registered callback may be invoked after the watch is canceled, and
 	// the user is expected to work around this. This event signifies that the
-	// listener is closed (and hence the watch is cancelled), and we drop any
+	// listener is closed (and hence the watch is canceled), and we drop any
 	// updates received in the callback if this event has fired.
 	closed *grpcsync.Event
 

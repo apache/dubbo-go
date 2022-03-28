@@ -1,10 +1,10 @@
 /*
- *
- * Copyright 2021 gRPC authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -153,14 +153,14 @@ func unwrapHTTPFilterConfig(config *anypb.Any) (proto.Message, string, error) {
 		// The real type name is inside the new TypedStruct message.
 		s := new(v3cncftypepb.TypedStruct)
 		if err := ptypes.UnmarshalAny(config, s); err != nil {
-			return nil, "", fmt.Errorf("error unmarshalling TypedStruct filter config: %v", err)
+			return nil, "", fmt.Errorf("error unmarshaling TypedStruct filter config: %v", err)
 		}
 		return s, s.GetTypeUrl(), nil
 	case ptypes.Is(config, &v1udpatypepb.TypedStruct{}):
 		// The real type name is inside the old TypedStruct message.
 		s := new(v1udpatypepb.TypedStruct)
 		if err := ptypes.UnmarshalAny(config, s); err != nil {
-			return nil, "", fmt.Errorf("error unmarshalling TypedStruct filter config: %v", err)
+			return nil, "", fmt.Errorf("error unmarshaling TypedStruct filter config: %v", err)
 		}
 		return s, s.GetTypeUrl(), nil
 	default:
@@ -201,7 +201,7 @@ func processHTTPFilterOverrides(cfgs map[string]*anypb.Any) (map[string]httpfilt
 		s := new(v3routepb.FilterConfig)
 		if ptypes.Is(cfg, s) {
 			if err := ptypes.UnmarshalAny(cfg, s); err != nil {
-				return nil, fmt.Errorf("filter override %q: error unmarshalling FilterConfig: %v", name, err)
+				return nil, fmt.Errorf("filter override %q: error unmarshaling FilterConfig: %v", name, err)
 			}
 			cfg = s.GetConfig()
 			optional = s.GetIsOptional()

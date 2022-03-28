@@ -875,3 +875,21 @@ func (c *URL) GetParamDuration(s string, d string) time.Duration {
 	}
 	return 3 * time.Second
 }
+
+func GetSubscribeName(url *URL) string {
+	var buffer bytes.Buffer
+
+	buffer.Write([]byte(DubboNodes[PROVIDER]))
+	appendParam(&buffer, url, constant.InterfaceKey)
+	appendParam(&buffer, url, constant.VersionKey)
+	appendParam(&buffer, url, constant.GroupKey)
+	return buffer.String()
+}
+
+func appendParam(target *bytes.Buffer, url *URL, key string) {
+	value := url.GetParam(key, "")
+	target.Write([]byte(constant.NacosServiceNameSeparator))
+	if strings.TrimSpace(value) != "" {
+		target.Write([]byte(value))
+	}
+}
