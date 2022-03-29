@@ -76,7 +76,7 @@ type (
 		QueueNumber int `default:"0" yaml:"queue-number" json:"queue-number,omitempty"`
 
 		// session tcp parameters
-		GettySessionParam GettySessionParam `required:"true" yaml:",inline" json:",inline"`
+		GettySessionParam GettySessionParam `required:"true" yaml:"getty-session-param" json:"getty-session-param"`
 	}
 
 	// ClientConfig holds supported types by the multi config package
@@ -104,7 +104,7 @@ type (
 		QueueNumber int `default:"0" yaml:"queue-number" json:"queue-number,omitempty"`
 
 		// session tcp parameters
-		GettySessionParam GettySessionParam `required:"true" yaml:",inline" json:",inline"`
+		GettySessionParam GettySessionParam `required:"true" yaml:"getty-session-param" json:"getty-session-param"`
 	}
 )
 
