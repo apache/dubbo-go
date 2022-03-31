@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 
+/*
+ * Copyright gRPC authors.
+ */
+
 // Package httpfilter contains the HTTPFilter interface and a registry for
 // storing and retrieving their implementations.
 package httpfilter

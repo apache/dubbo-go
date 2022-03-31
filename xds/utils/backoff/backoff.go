@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 
+/*
+ * Copyright gRPC authors.
+ */
+
 // Package backoff implement the backoff strategy for gRPC.
 //
 // This is kept in internal until the gRPC project decides whether or not to

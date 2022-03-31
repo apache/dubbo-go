@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 
+/*
+ * Copyright gRPC authors.
+ */
+
 // Package networktype declares the network type to be used in the default
 // dialer. Attribute of a resolver.Address.
 package networktype

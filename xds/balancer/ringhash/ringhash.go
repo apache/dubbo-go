@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 
+/*
+ * Copyright gRPC authors.
+ */
+
 // Package ringhash implements the ringhash balancer.
 package ringhash
 

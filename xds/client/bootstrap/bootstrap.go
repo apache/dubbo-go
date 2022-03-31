@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 
+/*
+ * Copyright gRPC authors.
+ */
+
 // Package bootstrap provides the functionality to initialize certain aspects
 // of an xDS client by reading a bootstrap file.
 package bootstrap

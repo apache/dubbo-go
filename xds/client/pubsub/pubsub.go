@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 
+/*
+ * Copyright gRPC authors.
+ */
+
 // Package pubsub implements a utility type to maintain resource watchers and
 // the updates.
 //

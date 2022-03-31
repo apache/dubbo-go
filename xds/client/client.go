@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 
+/*
+ * Copyright gRPC authors.
+ */
+
 // package client implements a full fledged gRPC client for the xDS API used
 // by the xds resolver and balancer implementations.
 package client

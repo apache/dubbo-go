@@ -35,7 +35,7 @@ type EventType int
 
 const (
 	// EventTypeAdd means add event
-	EventTypeAdd = iota
+	EventTypeAdd EventType = iota
 	// EventTypeDel means del event
 	EventTypeDel
 	// EventTypeUpdate means update event

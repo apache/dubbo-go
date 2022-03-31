@@ -24,13 +24,10 @@ import (
 )
 
 import (
-	perrors "github.com/pkg/errors"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/router"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/remoting/xds"
@@ -44,14 +41,14 @@ const (
 
 // MeshRouter have
 type MeshRouter struct {
-	client *xds.WrappedClient
+	client *xds.WrappedClientImpl
 }
 
 // NewMeshRouter construct an NewConnCheckRouter via url
 func NewMeshRouter() (router.PriorityRouter, error) {
 	xdsWrappedClient := xds.GetXDSWrappedClient()
 	if xdsWrappedClient == nil {
-		return nil, perrors.Errorf("[Mesh Router] xds wrapped client is not created.")
+		logger.Debugf("[Mesh Router] xds wrapped client is not created.")
 	}
 	return &MeshRouter{
 		client: xdsWrappedClient,
@@ -60,6 +57,9 @@ func NewMeshRouter() (router.PriorityRouter, error) {
 
 // Route gets a list of routed invoker
 func (r *MeshRouter) Route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
+	if r.client == nil {
+		return invokers
+	}
 	hostAddr, err := r.client.GetHostAddrByServiceUniqueKey(getSubscribeName(url))
 	if err != nil {
 		// todo deal with error

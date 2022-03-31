@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 
+/*
+ * Copyright gRPC authors.
+ */
+
 // Package serviceconfig contains utility functions to parse service config.
 package serviceconfig
 

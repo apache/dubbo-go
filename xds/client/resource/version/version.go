@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 
+/*
+ * Copyright gRPC authors.
+ */
+
 // Package version defines constants to distinguish between supported xDS API
 // versions.
 package version

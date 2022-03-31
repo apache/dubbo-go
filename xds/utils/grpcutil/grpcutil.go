@@ -15,5 +15,9 @@
  * limitations under the License.
  */
 
+/*
+ * Copyright gRPC authors.
+ */
+
 // Package grpcutil provides utility functions used across the gRPC codebase.
 package grpcutil

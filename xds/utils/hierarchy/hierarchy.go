@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 
+/*
+ * Copyright gRPC authors.
+ */
+
 // Package hierarchy contains functions to set and get hierarchy string from
 // addresses.
 //

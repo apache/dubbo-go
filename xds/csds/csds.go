@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 
+/*
+ * Copyright gRPC authors.
+ */
+
 // Package csds implements features to dump the status (xDS responses) the
 // xds_client is using.
 //

@@ -18,52 +18,36 @@
 package xds
 
 import (
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
-	"net/http"
-	"strings"
 	"sync"
 	"time"
 )
 
 import (
-	v3corepb "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-
-	structpb "github.com/golang/protobuf/ptypes/struct"
-
 	perrors "github.com/pkg/errors"
-
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/registry"
-	"dubbo.apache.org/dubbo-go/v3/remoting"
+	xdsCommon "dubbo.apache.org/dubbo-go/v3/remoting/xds/common"
+	"dubbo.apache.org/dubbo-go/v3/remoting/xds/ewatcher"
+	"dubbo.apache.org/dubbo-go/v3/remoting/xds/interfaceMapping"
 	"dubbo.apache.org/dubbo-go/v3/xds/client"
-	"dubbo.apache.org/dubbo-go/v3/xds/client/bootstrap"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
-	"dubbo.apache.org/dubbo-go/v3/xds/client/resource/version"
 )
 
 const (
+	// todo make istiodTokenPath configurable
+	defaultIstiodTokenPath          = "/var/run/secrets/token/istio-token"
+	defaultIstiodDebugPort          = "8080"
 	gRPCUserAgentName               = "gRPC Go"
 	clientFeatureNoOverprovisioning = "envoy.lb.does_not_support_overprovisioning"
 )
 
-const (
-	istiodTokenPath     = "/var/run/secrets/token/istio-token"
-	authorizationHeader = "Authorization"
-	istiodTokenPrefix   = "Bearer "
-)
+// xdsWrappedClient should only init once
+var xdsWrappedClient *WrappedClientImpl
 
-var xdsWrappedClient *WrappedClient
-
-type WrappedClient struct {
+type WrappedClientImpl struct {
 	/*
 		local info
 	*/
@@ -78,14 +62,14 @@ type WrappedClient struct {
 	/*
 		hostAddr is local pod's cluster and hostAddr, like dubbo-go-app.default.svc.cluster.local:20000
 	*/
-	hostAddr string
+	hostAddr xdsCommon.Addr
 
 	/*
 		istiod info
 		istiodAddr is istio $(istioSeviceFullName):$(xds-grpc-port) like istiod.istio-system.svc.cluster.local:15010
 		istiodPodIP is to call istiod unexposed debug port 8080
 	*/
-	istiodAddr  Addr
+	istiodAddr  xdsCommon.Addr
 	istiodPodIP string
 
 	/*
@@ -94,10 +78,9 @@ type WrappedClient struct {
 	xdsClient client.XDSClient
 
 	/*
-		interfaceAppNameMap store map of serviceUniqueKey -> hostAddr
+		interfaceMapHandler manages dubbogo metadata containing service key -> hostAddr map
 	*/
-	interfaceAppNameMap     map[string]string
-	interfaceAppNameMapLock sync.RWMutex
+	interfaceMapHandler interfaceMapping.InterfaceMapHandler
 
 	/*
 		rdsMap cache router config
@@ -134,15 +117,8 @@ type WrappedClient struct {
 	/*
 		hostAddrClusterCtxMap[hostAddr][clusterName] -> endPointWatcherCtx
 	*/
-	hostAddrClusterCtxMap     map[string]map[string]endPointWatcherCtx
+	hostAddrClusterCtxMap     map[string]map[string]ewatcher.EWatcher
 	hostAddrClusterCtxMapLock sync.RWMutex
-
-	/*
-		interfaceNameHostAddrMap cache the dubbo interface unique key -> hostName
-		the data is read from istiod:8080/debug/adsz, connection metadata["LABELS"]["DUBBO_GO"]
-	*/
-	interfaceNameHostAddrMap     map[string]string
-	interfaceNameHostAddrMapLock sync.RWMutex
 
 	/*
 		subscribeStopChMap stores subscription stop chan
@@ -150,152 +126,124 @@ type WrappedClient struct {
 	subscribeStopChMap sync.Map
 }
 
-func GetXDSWrappedClient() *WrappedClient {
+func GetXDSWrappedClient() *WrappedClientImpl {
 	return xdsWrappedClient
 }
 
-func NewXDSWrappedClient(podName, namespace, localIP string, istioAddr Addr) (*WrappedClient, error) {
+// NewXDSWrappedClient create or get singleton xdsWrappedClient
+func NewXDSWrappedClient(podName, namespace, localIP string, istioAddr xdsCommon.Addr) (XDSWrapperClient, error) {
 	// todo @(laurence) safety problem? what if to concurrent 'new' both create new client?
 	if xdsWrappedClient != nil {
 		return xdsWrappedClient, nil
 	}
-	// get hostname from http://localhost:8080/debug/endpointz
-	newClient := &WrappedClient{
-		podName:             podName,
-		namespace:           namespace,
-		localIP:             localIP,
-		istiodAddr:          istioAddr,
-		interfaceAppNameMap: make(map[string]string),
+
+	// write param
+	newClient := &WrappedClientImpl{
+		podName:    podName,
+		namespace:  namespace,
+		localIP:    localIP,
+		istiodAddr: istioAddr,
 
 		rdsMap: make(map[string]resource.RouteConfigUpdate),
 		cdsMap: make(map[string]resource.ClusterUpdate),
 
 		hostAddrListenerMap:   make(map[string]map[string]registry.NotifyListener),
-		hostAddrClusterCtxMap: make(map[string]map[string]endPointWatcherCtx),
+		hostAddrClusterCtxMap: make(map[string]map[string]ewatcher.EWatcher),
 
-		interfaceNameHostAddrMap: make(map[string]string),
-		cdsUpdateEventChan:       make(chan struct{}),
-		cdsUpdateEventHandlers:   make([]func(), 0),
+		cdsUpdateEventChan:     make(chan struct{}),
+		cdsUpdateEventHandlers: make([]func(), 0),
 	}
-	// todo @(laurence)  gr control
-	go newClient.runWatchingResource()
-	if err := newClient.initClientAndLoadLocalHostAddr(); err != nil {
+
+	// 1. init xdsclient
+	if err := newClient.initXDSClient(); err != nil {
 		return nil, err
 	}
+	// 2. watching cds update event
+	// todo @(laurence)  gr control
+	go newClient.runWatchingCdsUpdateEvent()
+
+	// 3. load basic info from istiod and start listening cds
+	if err := newClient.startWatchingAllClusterAndLoadLocalHostAddrAndIstioPodIP(); err != nil {
+		return nil, err
+	}
+
+	// 4. init interface map handler
+	newClient.interfaceMapHandler = interfaceMapping.NewInterfaceMapHandlerImpl(
+		newClient.xdsClient,
+		defaultIstiodTokenPath,
+		xdsCommon.NewAddr(newClient.istiodPodIP+":"+defaultIstiodDebugPort),
+		newClient.hostAddr)
 
 	xdsWrappedClient = newClient
 	return newClient, nil
 }
 
-func (w *WrappedClient) getServiceUniqueKeyHostAddrMapFromPilot() (map[string]string, error) {
-	req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("http://%s:8080/debug/adsz", w.istiodPodIP), nil)
-	token, err := ioutil.ReadFile(istiodTokenPath)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Add(authorizationHeader, istiodTokenPrefix+string(token))
-	rsp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		logger.Infof("[XDS Wrapped Client] Try getting interface host map from istio %s, IP %s with error %s\n",
-			w.istiodAddr.HostnameOrIP, w.istiodPodIP, err)
-		return nil, err
-	}
-
-	data, err := ioutil.ReadAll(rsp.Body)
-	if err != nil {
-		return nil, err
-	}
-	adszRsp := &ADSZResponse{}
-	if err := json.Unmarshal(data, adszRsp); err != nil {
-		return nil, err
-	}
-	return adszRsp.GetMap(), nil
-}
-
 // GetHostAddrByServiceUniqueKey  todo 1. timeout 2. hostAddr change?
-func (w *WrappedClient) GetHostAddrByServiceUniqueKey(serviceUniqueKey string) (string, error) {
-	w.interfaceNameHostAddrMapLock.RLock()
-	if hostAddr, ok := w.interfaceNameHostAddrMap[serviceUniqueKey]; ok {
-		return hostAddr, nil
-	}
-	w.interfaceNameHostAddrMapLock.Unlock()
-
-	for {
-		if interfaceHostAddrMap, err := w.getServiceUniqueKeyHostAddrMapFromPilot(); err != nil {
-			return "", err
-		} else {
-			w.interfaceNameHostAddrMapLock.Lock()
-			w.interfaceNameHostAddrMap = interfaceHostAddrMap
-			w.interfaceNameHostAddrMapLock.Unlock()
-			hostName, ok := interfaceHostAddrMap[serviceUniqueKey]
-			if !ok {
-				logger.Infof("[XDS Wrapped Client] Try getting interface %s 's host from istio %d:8080\n", serviceUniqueKey, w.istiodPodIP)
-				time.Sleep(time.Millisecond * 100)
-				continue
-			}
-			return hostName, nil
-		}
-	}
+func (w *WrappedClientImpl) GetHostAddrByServiceUniqueKey(serviceUniqueKey string) (string, error) {
+	return w.interfaceMapHandler.GetHostAddrMap(serviceUniqueKey)
 }
 
-func getHostNameAndPortFromAddr(hostAddr string) (string, string) {
-	ipPort := strings.Split(hostAddr, ":")
-	hostName := ipPort[0]
-	port := ipPort[1]
-	return hostName, port
+// ChangeInterfaceMap change the map of serviceUniqueKey -> appname, if add is true, register, else unregister
+func (w *WrappedClientImpl) ChangeInterfaceMap(serviceUniqueKey string, add bool) error {
+	if add {
+		return w.interfaceMapHandler.Register(serviceUniqueKey)
+	}
+	return w.interfaceMapHandler.UnRegister(serviceUniqueKey)
 }
 
-func (w *WrappedClient) GetClusterUpdateIgnoreVersion(hostAddr string) resource.ClusterUpdate {
-	hostName, port := getHostNameAndPortFromAddr(hostAddr)
+func (w *WrappedClientImpl) GetRouterConfig(hostAddr string) resource.RouteConfigUpdate {
+	w.rdsMapLock.RLock()
+	defer w.rdsMapLock.RUnlock()
+	routeConfig, ok := w.rdsMap[hostAddr]
+	if ok {
+		return routeConfig
+	}
+	return resource.RouteConfigUpdate{}
+}
+
+func (w *WrappedClientImpl) GetClusterUpdateIgnoreVersion(hostAddr string) resource.ClusterUpdate {
+	addr := xdsCommon.NewAddr(hostAddr)
 	w.cdsMapLock.RLock()
 	defer w.cdsMapLock.Unlock()
 	for clusterName, v := range w.cdsMap {
-		clusterNameData := strings.Split(clusterName, "|")
-		if clusterNameData[1] == port && clusterNameData[3] == hostName {
+		cluster := xdsCommon.NewCluster(clusterName)
+		if cluster.Addr.Port == addr.Port && cluster.Addr.HostnameOrIP == addr.HostnameOrIP {
 			return v
 		}
 	}
 	return resource.ClusterUpdate{}
 }
 
-func (w *WrappedClient) getAllVersionClusterName(hostAddr string) []string {
-	hostName, port := getHostNameAndPortFromAddr(hostAddr)
-	allVersionClusterNames := make([]string, 0)
-	w.cdsMapLock.RLock()
-	defer w.cdsMapLock.Unlock()
-	for clusterName := range w.cdsMap {
-		clusterNameData := strings.Split(clusterName, "|")
-		if clusterNameData[1] == port && clusterNameData[3] == hostName {
-			allVersionClusterNames = append(allVersionClusterNames, clusterName)
-		}
+func (w *WrappedClientImpl) Subscribe(svcUniqueName, interfaceName, hostAddr string, lst registry.NotifyListener) error {
+	_, ok := w.subscribeStopChMap.Load(svcUniqueName)
+	if ok {
+		return perrors.Errorf("XDS WrappedClientImpl subscribe interface %s failed, subscription already exist.", interfaceName)
 	}
-	return allVersionClusterNames
+	stopCh := make(chan struct{})
+	w.subscribeStopChMap.Store(svcUniqueName, stopCh)
+	w.registerHostLevelSubscription(hostAddr, interfaceName, svcUniqueName, lst)
+	<-stopCh
+	w.unregisterHostLevelSubscription(hostAddr, svcUniqueName)
+	return nil
 }
 
-func generateRegistryEvent(clusterName string, endpoint resource.Endpoint, interfaceName string) *registry.ServiceEvent {
-	// todo now only support triple protocol
-	url, _ := common.NewURL(fmt.Sprintf("tri://%s/%s", endpoint.Address, interfaceName))
-	logger.Infof("[XDS Registry] Get Update event from pilot: interfaceName = %s, addr = %s, healthy = %d\n",
-		interfaceName, endpoint.Address, endpoint.HealthStatus)
-	clusterNames := strings.Split(clusterName, "|")
-	// todo const MeshSubsetKey
-	url.AddParam(constant.MeshSubsetKey, clusterNames[2])
-	url.AddParam(constant.MeshClusterIDKey, clusterName)
-	url.AddParam(constant.MeshHostAddrKey, clusterNames[3]+":"+clusterNames[1])
-	if endpoint.HealthStatus == resource.EndpointHealthStatusUnhealthy {
-		return &registry.ServiceEvent{
-			Action:  remoting.EventTypeDel,
-			Service: url,
-		}
+func (w *WrappedClientImpl) UnSubscribe(svcUniqueName string) {
+	if stopCh, ok := w.subscribeStopChMap.Load(svcUniqueName); ok {
+		close(stopCh.(chan struct{}))
 	}
-	return &registry.ServiceEvent{
-		Action:  remoting.EventTypeUpdate,
-		Service: url,
-	}
+	w.subscribeStopChMap.Delete(svcUniqueName)
+}
+
+func (w *WrappedClientImpl) GetHostAddress() xdsCommon.Addr {
+	return w.hostAddr
+}
+
+func (w *WrappedClientImpl) GetIstioPodIP() string {
+	return w.istiodPodIP
 }
 
 // registerHostLevelSubscription register: 1. all related cluster, 2. router config
-func (w *WrappedClient) registerHostLevelSubscription(hostAddr, interfaceName, svcUniqueName string, lst registry.NotifyListener) {
+func (w *WrappedClientImpl) registerHostLevelSubscription(hostAddr, interfaceName, svcUniqueName string, lst registry.NotifyListener) {
 	// 1. listen all cluster related endpoint
 	w.hostAddrListenerMapLock.Lock()
 	if _, ok := w.hostAddrListenerMap[hostAddr]; ok {
@@ -308,7 +256,7 @@ func (w *WrappedClient) registerHostLevelSubscription(hostAddr, interfaceName, s
 	w.hostAddrListenerMap[hostAddr] = make(map[string]registry.NotifyListener)
 
 	w.hostAddrClusterCtxMapLock.Lock()
-	w.hostAddrClusterCtxMap[hostAddr] = make(map[string]endPointWatcherCtx)
+	w.hostAddrClusterCtxMap[hostAddr] = make(map[string]ewatcher.EWatcher)
 	w.hostAddrClusterCtxMapLock.Unlock()
 
 	w.hostAddrListenerMap[hostAddr][svcUniqueName] = lst
@@ -322,7 +270,7 @@ func (w *WrappedClient) registerHostLevelSubscription(hostAddr, interfaceName, s
 		// do patch
 		w.hostAddrClusterCtxMapLock.RLock()
 		listeningClustersCancelMap := w.hostAddrClusterCtxMap[hostAddr]
-		w.hostAddrClusterCtxMapLock.Unlock()
+		w.hostAddrClusterCtxMapLock.RUnlock()
 
 		oldlisteningClusterMap := make(map[string]bool)
 		for cluster := range listeningClustersCancelMap {
@@ -335,14 +283,10 @@ func (w *WrappedClient) registerHostLevelSubscription(hostAddr, interfaceName, s
 				continue
 			}
 			// new cluster
-			watcher := endPointWatcherCtx{
-				interfaceName: interfaceName,
-				clusterName:   updatedClusterName,
-				hostAddr:      hostAddr,
-				xdsClient:     w,
-			}
-			cancel := w.xdsClient.WatchEndpoints(updatedClusterName, watcher.handle)
-			watcher.cancel = cancel
+			watcher := ewatcher.NewEndpointWatcherCtxImpl(
+				updatedClusterName, hostAddr, interfaceName, &w.hostAddrListenerMapLock, w.hostAddrListenerMap)
+			cancel := w.xdsClient.WatchEndpoints(updatedClusterName, watcher.Handle)
+			watcher.SetCancelFunction(cancel)
 			w.hostAddrClusterCtxMapLock.Lock()
 			w.hostAddrClusterCtxMap[hostAddr][updatedClusterName] = watcher
 			w.hostAddrClusterCtxMapLock.Unlock()
@@ -355,7 +299,7 @@ func (w *WrappedClient) registerHostLevelSubscription(hostAddr, interfaceName, s
 				w.hostAddrClusterCtxMapLock.Lock()
 				if watchCtx, ok := w.hostAddrClusterCtxMap[hostAddr][cluster]; ok {
 					delete(w.hostAddrClusterCtxMap[hostAddr], cluster)
-					watchCtx.destroy()
+					watchCtx.Destroy()
 				}
 				w.hostAddrClusterCtxMapLock.Unlock()
 			}
@@ -366,13 +310,9 @@ func (w *WrappedClient) registerHostLevelSubscription(hostAddr, interfaceName, s
 	// update cluster of now
 	allVersionedClusterName := w.getAllVersionClusterName(hostAddr)
 	for _, c := range allVersionedClusterName {
-		watcher := endPointWatcherCtx{
-			interfaceName: interfaceName,
-			clusterName:   c,
-			hostAddr:      hostAddr,
-			xdsClient:     w,
-		}
-		watcher.cancel = w.xdsClient.WatchEndpoints(c, watcher.handle)
+		watcher := ewatcher.NewEndpointWatcherCtxImpl(
+			c, hostAddr, interfaceName, &w.hostAddrListenerMapLock, w.hostAddrListenerMap)
+		watcher.SetCancelFunction(w.xdsClient.WatchEndpoints(c, watcher.Handle))
 
 		w.hostAddrClusterCtxMapLock.Lock()
 		w.hostAddrClusterCtxMap[hostAddr][c] = watcher
@@ -391,17 +331,7 @@ func (w *WrappedClient) registerHostLevelSubscription(hostAddr, interfaceName, s
 	})
 }
 
-func (w *WrappedClient) GetRouterConfig(hostAddr string) resource.RouteConfigUpdate {
-	w.rdsMapLock.RLock()
-	defer w.rdsMapLock.Unlock()
-	routeConfig, ok := w.rdsMap[hostAddr]
-	if ok {
-		return routeConfig
-	}
-	return resource.RouteConfigUpdate{}
-}
-
-func (w *WrappedClient) unregisterHostLevelSubscription(hostAddr, svcUniqueName string) {
+func (w *WrappedClientImpl) unregisterHostLevelSubscription(hostAddr, svcUniqueName string) {
 	w.hostAddrListenerMapLock.Lock()
 	defer w.hostAddrListenerMapLock.Unlock()
 	if _, ok := w.hostAddrListenerMap[hostAddr]; ok {
@@ -414,7 +344,7 @@ func (w *WrappedClient) unregisterHostLevelSubscription(hostAddr, svcUniqueName 
 			keys := make([]string, 0)
 			w.hostAddrClusterCtxMapLock.Lock()
 			for k, c := range w.hostAddrClusterCtxMap[hostAddr] {
-				c.destroy()
+				c.Destroy()
 				keys = append(keys, k)
 			}
 			for _, v := range keys {
@@ -425,71 +355,33 @@ func (w *WrappedClient) unregisterHostLevelSubscription(hostAddr, svcUniqueName 
 	}
 }
 
-func (w *WrappedClient) Subscribe(svcUniqueName, interfaceName, hostAddr string, lst registry.NotifyListener) error {
-	_, ok := w.subscribeStopChMap.Load(svcUniqueName)
-	if ok {
-		return perrors.Errorf("XDS WrappedClient subscribe interface %s failed, subscription already exist.", interfaceName)
-	}
-	stopCh := make(chan struct{})
-	w.subscribeStopChMap.Store(svcUniqueName, stopCh)
-	w.registerHostLevelSubscription(hostAddr, interfaceName, svcUniqueName, lst)
-	<-stopCh
-	w.unregisterHostLevelSubscription(hostAddr, svcUniqueName)
-	return nil
-}
-
-func (w *WrappedClient) UnSubscribe(svcUniqueName string) {
-	if stopCh, ok := w.subscribeStopChMap.Load(svcUniqueName); ok {
-		close(stopCh.(chan struct{}))
-	}
-	w.subscribeStopChMap.Delete(svcUniqueName)
-}
-
-func (w *WrappedClient) interfaceAppNameMap2String() string {
-	w.interfaceAppNameMapLock.RLock()
-	defer w.interfaceAppNameMapLock.Unlock()
-	data, _ := json.Marshal(w.interfaceAppNameMap)
-	return string(data)
-}
-
-// ChangeInterfaceMap change the map of serviceUniqueKey -> appname, if add is true, register, else unregister
-func (w *WrappedClient) ChangeInterfaceMap(serviceUniqueKey string, add bool) error {
-	w.interfaceAppNameMapLock.Lock()
-	defer w.interfaceAppNameMapLock.Unlock()
-	if add {
-		w.interfaceAppNameMap[serviceUniqueKey] = w.hostAddr
-	} else {
-		delete(w.interfaceAppNameMap, serviceUniqueKey)
-	}
-	if w.xdsClient == nil {
-		xdsClient, err := newxdsClient(w.localIP, w.podName, w.namespace, w.interfaceAppNameMap2String(), w.istiodAddr)
-		if err != nil {
-			return err
-		}
-		w.xdsClient = xdsClient
-		return nil
-	}
-
-	if err := w.xdsClient.SetMetadata(getDubboGoMetadata(w.interfaceAppNameMap2String())); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (w *WrappedClient) initClientAndLoadLocalHostAddr() error {
-	// call watch and refresh istiod debug interface
-	xdsClient, err := newxdsClient(w.localIP, w.podName, w.namespace, w.interfaceAppNameMap2String(), w.istiodAddr)
+func (w *WrappedClientImpl) initXDSClient() error {
+	xdsClient, err := xdsClientFactoryFunction(w.localIP, w.podName, w.namespace, w.istiodAddr)
 	if err != nil {
 		return err
 	}
+	w.xdsClient = xdsClient
+	return nil
+}
+
+// startWatchingAllClusterAndLoadLocalHostAddrAndIstioPodIP is blocking function
+// 1. start watching all cluster by cds
+// 2. discovery local pod's hostAddr by cds and eds
+// 3. discovery istiod pod ip by cds and eds
+func (w *WrappedClientImpl) startWatchingAllClusterAndLoadLocalHostAddrAndIstioPodIP() error {
+	// call watch and refresh istiod debug interface
 	foundLocalStopCh := make(chan struct{})
 	foundIstiodStopCh := make(chan struct{})
+	discoveryFinishedStopCh := make(chan struct{})
+	// todo timeout configure
+	timeoutCh := time.After(time.Second * 3)
 	foundLocal := false
 	foundIstiod := false
 	var cancel1 func()
 	var cancel2 func()
+
 	// todo @(laurence) here, if istiod is unhealthy, here should be timeout and tell developer.
-	_ = xdsClient.WatchCluster("*", func(update resource.ClusterUpdate, err error) {
+	_ = w.xdsClient.WatchCluster("*", func(update resource.ClusterUpdate, err error) {
 		if update.ClusterName == "" {
 			return
 		}
@@ -510,19 +402,17 @@ func (w *WrappedClient) initClientAndLoadLocalHostAddr() error {
 			return
 		}
 		// only into here during start sniffing istiod/service prcedure
-		clusterNameList := strings.Split(update.ClusterName, "|")
-		// todo: what's going on? istiod can't discover istiod.istio-system.svc.cluster.local!!
-		if clusterNameList[3] == w.istiodAddr.HostnameOrIP {
+		cluster := xdsCommon.NewCluster(update.ClusterName)
+		if cluster.Addr.HostnameOrIP == w.istiodAddr.HostnameOrIP {
 			// 1. find istiod podIP
 			// todo: When would eds level watch be canceled?
-			cancel1 = xdsClient.WatchEndpoints(update.ClusterName, func(endpoint resource.EndpointsUpdate, err error) {
+			cancel1 = w.xdsClient.WatchEndpoints(update.ClusterName, func(endpoint resource.EndpointsUpdate, err error) {
 				if foundIstiod {
 					return
 				}
 				for _, v := range endpoint.Localities {
 					for _, e := range v.Endpoints {
-						addrs := strings.Split(e.Address, ":")
-						w.istiodPodIP = addrs[0]
+						w.istiodPodIP = xdsCommon.NewAddr(e.Address).HostnameOrIP
 						foundIstiod = true
 						close(foundLocalStopCh)
 					}
@@ -532,16 +422,15 @@ func (w *WrappedClient) initClientAndLoadLocalHostAddr() error {
 		}
 		// 2. found local hostAddr
 		// todo: When would eds level watch be canceled?
-		cancel2 = xdsClient.WatchEndpoints(update.ClusterName, func(endpoint resource.EndpointsUpdate, err error) {
+		cancel2 = w.xdsClient.WatchEndpoints(update.ClusterName, func(endpoint resource.EndpointsUpdate, err error) {
 			if foundLocal {
 				return
 			}
 			for _, v := range endpoint.Localities {
 				for _, e := range v.Endpoints {
-					addrs := strings.Split(e.Address, ":")
-					if addrs[0] == w.localIP {
-						clusterNames := strings.Split(update.ClusterName, "|")
-						w.hostAddr = clusterNames[3] + ":" + clusterNames[1]
+					if xdsCommon.NewAddr(e.Address).HostnameOrIP == w.localIP {
+						cluster := xdsCommon.NewCluster(update.ClusterName)
+						w.hostAddr = cluster.Addr
 						foundLocal = true
 						close(foundIstiodStopCh)
 					}
@@ -549,71 +438,73 @@ func (w *WrappedClient) initClientAndLoadLocalHostAddr() error {
 			}
 		})
 	})
-	<-foundIstiodStopCh
-	<-foundLocalStopCh
-	cancel1()
-	cancel2()
-	w.xdsClient = xdsClient
-	return nil
-}
+	go func() {
+		<-foundIstiodStopCh
+		<-foundLocalStopCh
+		close(discoveryFinishedStopCh)
+	}()
 
-func newxdsClient(localIP, podName, namespace, dubboGoMetadata string, istioAddr Addr) (client.XDSClient, error) {
-	// todo fix these ugly magic num
-	v3NodeProto := &v3corepb.Node{
-		Id:                   "sidecar~" + localIP + "~" + podName + "." + namespace + "~" + namespace + ".svc.cluster.local",
-		UserAgentName:        gRPCUserAgentName,
-		UserAgentVersionType: &v3corepb.Node_UserAgentVersion{UserAgentVersion: "1.45.0"},
-		ClientFeatures:       []string{clientFeatureNoOverprovisioning},
-	}
-
-	nonNilCredsConfigV2 := &bootstrap.Config{
-		XDSServer: &bootstrap.ServerConfig{
-			ServerURI:    istioAddr.String(),
-			Creds:        grpc.WithTransportCredentials(insecure.NewCredentials()),
-			TransportAPI: version.TransportV3,
-			NodeProto:    v3NodeProto,
-		},
-		ClientDefaultListenerResourceNameTemplate: "%s",
-	}
-
-	newClient, err := client.NewWithConfig(nonNilCredsConfigV2)
-	if err != nil {
-		return nil, err
-	}
-	if err := newClient.SetMetadata(getDubboGoMetadata(dubboGoMetadata)); err != nil {
-		return nil, err
-	}
-	return newClient, nil
-}
-
-func getDubboGoMetadata(dubboGoMetadata string) *structpb.Struct {
-	return &structpb.Struct{
-		Fields: map[string]*structpb.Value{
-			constant.XDSMetadataClusterIDKey: {
-				// Set cluster id to Kubernetes to ensure dubbo-go's xds client can get service
-				// istiod.istio-system.svc.cluster.local's
-				// pods ip from istiod by eds, to call no-endpoint port of istio like 8080
-				Kind: &structpb.Value_StringValue{StringValue: constant.XDSMetadataDefaultDomainName},
-			},
-			constant.XDSMetadataLabelsKey: {
-				Kind: &structpb.Value_StructValue{StructValue: &structpb.Struct{
-					Fields: map[string]*structpb.Value{
-						constant.XDSMetadataDubboGoMapperKey: {
-							Kind: &structpb.Value_StringValue{StringValue: dubboGoMetadata},
-						},
-					},
-				}},
-			},
-		},
+	select {
+	case <-discoveryFinishedStopCh:
+		// discovery success
+		// waiting for cancel function to have value
+		time.Sleep(time.Second)
+		cancel1()
+		cancel2()
+		return nil
+	case <-timeoutCh:
+		if cancel1 != nil {
+			cancel1()
+		}
+		if cancel2 != nil {
+			cancel2()
+		}
+		select {
+		case <-foundIstiodStopCh:
+			return DiscoverLocalError
+		default:
+			return DiscoverIstioPodError
+		}
 	}
 }
 
-func (w *WrappedClient) runWatchingResource() {
+// runWatchingCdsUpdateEvent is blocking function, starts to read event from cdsUpdateEventChan and call cdsUpdateEventHandlers
+func (w *WrappedClientImpl) runWatchingCdsUpdateEvent() {
 	for range w.cdsUpdateEventChan {
 		w.cdsUpdateEventHandlersLock.RLock()
 		for _, h := range w.cdsUpdateEventHandlers {
 			h()
 		}
-		w.cdsUpdateEventHandlersLock.Unlock()
+		w.cdsUpdateEventHandlersLock.RUnlock()
 	}
+}
+
+// getAllVersionClusterName get all clusterID that is the subset of given hostAddr from cache: cdsMap
+// like: if given hostAddr is 'outbound|20000||dubbo-go-app.default.svc.cluster.local', and result would be
+// ['outbound|20000|v1|dubbo-go-app.default.svc.cluster.local',
+// 'outbound|20000||dubbo-go-app.default.svc.cluster.local',
+// 'outbound|20000|v2|dubbo-go-app.default.svc.cluster.local']
+func (w *WrappedClientImpl) getAllVersionClusterName(hostAddr string) []string {
+	addr := xdsCommon.NewAddr(hostAddr)
+	allVersionClusterNames := make([]string, 0)
+	w.cdsMapLock.RLock()
+	defer w.cdsMapLock.RUnlock()
+	for clusterName, _ := range w.cdsMap {
+		cluster := xdsCommon.NewCluster(clusterName)
+		if cluster.Addr.Port == addr.Port && cluster.Addr.HostnameOrIP == addr.HostnameOrIP {
+			allVersionClusterNames = append(allVersionClusterNames, clusterName)
+		}
+	}
+	return allVersionClusterNames
+}
+
+type XDSWrapperClient interface {
+	Subscribe(svcUniqueName, interfaceName, hostAddr string, lst registry.NotifyListener) error
+	UnSubscribe(svcUniqueName string)
+	GetRouterConfig(hostAddr string) resource.RouteConfigUpdate
+	GetHostAddrByServiceUniqueKey(serviceUniqueKey string) (string, error)
+	ChangeInterfaceMap(serviceUniqueKey string, add bool) error
+	GetClusterUpdateIgnoreVersion(hostAddr string) resource.ClusterUpdate
+	GetHostAddress() xdsCommon.Addr
+	GetIstioPodIP() string
 }

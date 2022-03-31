@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 
+/*
+ * Copyright gRPC authors.
+ */
+
 // Package rbac implements the Envoy RBAC HTTP filter.
 package rbac
 

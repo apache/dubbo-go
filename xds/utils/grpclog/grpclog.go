@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 
+/*
+ * Copyright gRPC authors.
+ */
+
 // Package grpclog (internal) defines depth logging for grpc.
 package grpclog
 

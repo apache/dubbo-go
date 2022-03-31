@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 
+/*
+ * Copyright gRPC authors.
+ */
+
 // Package pretty defines helper functions to pretty-print structs for logging.
 package pretty
 

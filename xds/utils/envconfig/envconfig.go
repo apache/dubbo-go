@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 
+/*
+ * Copyright gRPC authors.
+ */
+
 // Package envconfig contains grpc settings configured by environment variables.
 package envconfig
 

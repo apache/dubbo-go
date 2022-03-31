@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 
+/*
+ * Copyright gRPC authors.
+ */
+
 // Package resource contains functions to proto xds updates (unmarshal from
 // proto), and types for the resource updates.
 package resource

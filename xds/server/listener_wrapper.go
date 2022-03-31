@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 
+/*
+ * Copyright gRPC authors.
+ */
+
 // Package server contains internal server-side functionality used by the public
 // facing xds package.
 package server

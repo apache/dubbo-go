@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 
+/*
+ * Copyright gRPC authors.
+ */
+
 package load
 
 // PerClusterReporter wraps the methods from the loadStore that are used here.

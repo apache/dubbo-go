@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package xds
+package interfaceMapping
 
 import (
 	"encoding/json"
@@ -34,6 +34,7 @@ func (a *ADSZResponse) GetMap() map[string]string {
 	result := make(map[string]string)
 	for _, c := range a.Clients {
 		resultMap := make(map[string]string)
+		// todo assert failed panic
 		_ = json.Unmarshal([]byte(c.Metadata["LABELS"].(map[string]interface{})["DUBBO_GO"].(string)), &resultMap)
 		for k, v := range resultMap {
 			result[k] = v

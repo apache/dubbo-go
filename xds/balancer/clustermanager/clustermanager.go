@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 
+/*
+ * Copyright gRPC authors.
+ */
+
 // Package clustermanager implements the cluster manager LB policy for xds.
 package clustermanager
 

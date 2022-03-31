@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 
+/*
+ * Copyright gRPC authors.
+ */
+
 // Package v2 provides xDS v2 transport protocol specific functionality.
 package v2
 

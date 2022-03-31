@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 
+/*
+ * Copyright gRPC authors.
+ */
+
 // Package priority implements the priority balancer.
 //
 // This balancer will be kept in internal until we use it in the xds balancers,

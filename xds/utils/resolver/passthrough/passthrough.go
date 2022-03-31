@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 
+/*
+ * Copyright gRPC authors.
+ */
+
 // Package passthrough implements a pass-through resolver. It sends the target
 // name without scheme back to gRPC as resolved address.
 package passthrough

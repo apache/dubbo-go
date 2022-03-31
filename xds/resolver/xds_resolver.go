@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 
+/*
+ * Copyright gRPC authors.
+ */
+
 // Package resolver implements the xds resolver, that does LDS and RDS to find
 // the cluster to use.
 package resolver

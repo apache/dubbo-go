@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 
+/*
+ * Copyright gRPC authors.
+ */
+
 // Package xds contains non-user facing functionality of the xds credentials.
 package xds
 

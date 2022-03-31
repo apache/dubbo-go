@@ -41,7 +41,7 @@ func init() {
 // if you wish to using opentracing, please add the this filter into your filter attribute in your configure file.
 // notice that this could be used in both client-side and server-side.
 type circuitBreakerFilter struct {
-	client *xds.WrappedClient
+	client xds.XDSWrapperClient
 }
 
 func (cb *circuitBreakerFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {

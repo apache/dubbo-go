@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 
+/*
+ * Copyright gRPC authors.
+ */
+
 // Package loadstore contains the loadStoreWrapper shared by the balancers.
 package loadstore
 

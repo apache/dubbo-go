@@ -14,6 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+/*
+ * Copyright gRPC authors.
+ */
 // Package balancergroup implements a utility struct to bind multiple balancers
 // into one balancer.
 package balancergroup

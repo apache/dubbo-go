@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 
+/*
+ * Copyright gRPC authors.
+ */
+
 // Package grpcrand implements math/rand functions in a concurrent-safe way
 // with a global random source, independent of math/rand's global source.
 package grpcrand

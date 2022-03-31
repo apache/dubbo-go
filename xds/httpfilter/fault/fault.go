@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 
+/*
+ * Copyright gRPC authors.
+ */
+
 // Package fault implements the Envoy Fault Injection HTTP filter.
 package fault
 

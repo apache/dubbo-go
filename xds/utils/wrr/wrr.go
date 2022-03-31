@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 
+/*
+ * Copyright gRPC authors.
+ */
+
 // Package wrr contains the interface and common implementations of wrr
 // algorithms.
 package wrr

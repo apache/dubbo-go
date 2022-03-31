@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 
+/*
+ * Copyright gRPC authors.
+ */
+
 // Package matcher contains types that need to be shared between code under
 // google.golang.org/grpc/xds/... and the rest of gRPC.
 package matcher

@@ -41,5 +41,7 @@ git clone -b master https://github.com/apache/dubbo-go-samples.git samples && cd
 # update dubbo-go to current commit id
 go mod edit -replace=dubbo.apache.org/dubbo-go/v3=github.com/"$1"/v3@"$2"
 
+go mod tidy
+
 # start integrate test
 ./start_integrate_test.sh

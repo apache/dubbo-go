@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 
+/*
+ * Copyright gRPC authors.
+ */
+
 // Package grpcsync implements additional synchronization primitives built upon
 // the sync package.
 package grpcsync

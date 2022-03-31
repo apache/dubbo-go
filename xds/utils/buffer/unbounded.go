@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 
+/*
+ * Copyright gRPC authors.
+ */
+
 // Package buffer provides an implementation of an unbounded buffer.
 package buffer
 

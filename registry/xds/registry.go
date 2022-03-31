@@ -35,14 +35,10 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/remoting/xds"
+	common2 "dubbo.apache.org/dubbo-go/v3/remoting/xds/common"
 )
 
 var localIP = ""
-
-const (
-	// RegistryConnDelay registry connection delay
-	RegistryConnDelay = 3
-)
 
 func init() {
 	localIP = common.GetLocalIp()
@@ -50,7 +46,7 @@ func init() {
 }
 
 type xdsRegistry struct {
-	xdsWrappedClient *xds.WrappedClient
+	xdsWrappedClient xds.XDSWrapperClient
 	registryURL      *common.URL
 }
 
@@ -163,10 +159,11 @@ func newXDSRegistry(url *common.URL) (registry.Registry, error) {
 	pn := os.Getenv(constant.PodNameEnvKey)
 	ns := os.Getenv(constant.PodNamespaceEnvKey)
 	if pn == "" || ns == "" {
-		return nil, perrors.New("POD_NAME and POD_NAMESPACE can't be empty when using xds registry")
+		return nil, perrors.Errorf("%s and %s can't be empty when using xds registry",
+			constant.PodNameEnvKey, constant.PodNamespaceEnvKey)
 	}
 
-	wrappedXDSClient, err := xds.NewXDSWrappedClient(pn, ns, localIP, xds.NewAddr(url.Ip+":"+url.Port))
+	wrappedXDSClient, err := xds.NewXDSWrappedClient(pn, ns, localIP, common2.NewAddr(url.Ip+":"+url.Port))
 	if err != nil {
 		return nil, err
 	}

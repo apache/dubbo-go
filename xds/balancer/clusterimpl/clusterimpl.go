@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 
+/*
+ * Copyright gRPC authors.
+ */
+
 // Package clusterimpl implements the xds_cluster_impl balancing policy. It
 // handles the cluster features (e.g. circuit_breaking, RPC dropping).
 //

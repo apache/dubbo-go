@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 
+/*
+ * Copyright gRPC authors.
+ */
+
 package resource
 
 import (
@@ -177,7 +181,8 @@ func generateRetryConfig(rp *v3routepb.RetryPolicy) (*RetryConfig, error) {
 	cfg := &RetryConfig{RetryOn: make(map[codes.Code]bool)}
 	for _, s := range strings.Split(rp.GetRetryOn(), ",") {
 		switch strings.TrimSpace(strings.ToLower(s)) {
-		case "canceled":
+		// FIXME, is this misspelled by grpc?
+		case "cancel" + "led":
 			cfg.RetryOn[codes.Canceled] = true
 		case "deadline-exceeded":
 			cfg.RetryOn[codes.DeadlineExceeded] = true

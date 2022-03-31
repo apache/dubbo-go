@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 
+/*
+ * Copyright gRPC authors.
+ */
+
 // Package internal contains functions/structs shared by xds
 // balancers/resolvers.
 package resource

@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 
+/*
+ * Copyright gRPC authors.
+ */
+
 // Package clusterresolver contains EDS balancer implementation.
 package clusterresolver
 

@@ -14,6 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+/*
+ * Copyright gRPC authors.
+ */
 // Package balancerload defines APIs to parse server loads in trailers. The
 // parsed loads are sent to balancers in DoneInfo.
 package balancerload
