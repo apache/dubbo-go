@@ -26,10 +26,6 @@ type DataListener interface {
 	DataChange(event Event) bool // bool is return for interface implement is interesting
 }
 
-//////////////////////////////////////////
-// event type
-//////////////////////////////////////////
-
 // EventType means SourceObjectEventType
 type EventType int
 
@@ -38,7 +34,6 @@ const (
 	EventTypeAdd EventType = iota
 	// EventTypeDel means del event
 	EventTypeDel
-	// EventTypeUpdate means update event
 	EventTypeUpdate
 )
 
@@ -52,10 +47,6 @@ var serviceEventTypeStrings = [...]string{
 func (t EventType) String() string {
 	return serviceEventTypeStrings[t]
 }
-
-//////////////////////////////////////////
-// service event
-//////////////////////////////////////////
 
 // Event defines common elements for service event
 type Event struct {

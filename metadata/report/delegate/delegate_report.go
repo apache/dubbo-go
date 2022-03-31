@@ -42,12 +42,9 @@ import (
 )
 
 const (
-	// defaultMetadataReportRetryTimes is defined for max  times to retry
-	defaultMetadataReportRetryTimes int64 = 100
-	// defaultMetadataReportRetryPeriod is defined for cycle interval to retry, the unit is second
-	defaultMetadataReportRetryPeriod int64 = 3
-	// defaultMetadataReportRetryPeriod is defined for cycle report or not
-	defaultMetadataReportCycleReport bool = true
+	defaultMetadataReportRetryTimes  int64 = 100  // max  times to retry
+	defaultMetadataReportRetryPeriod int64 = 3    // cycle interval to retry, the unit is second
+	defaultMetadataReportCycleReport bool  = true // cycle report or not
 )
 
 // metadataReportRetry is a scheduler for retrying task

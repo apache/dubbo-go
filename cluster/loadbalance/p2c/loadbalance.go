@@ -98,6 +98,7 @@ func (l *p2cLoadBalance) Select(invokers []protocol.Invoker, invocation protocol
 		return nil
 	}
 
+	// TODO(justxuewei): It should have a strategy to drop some metrics after a period of time.
 	remainingJIface, err := m.GetMethodMetrics(invokers[j].GetURL(), methodName, metrics.HillClimbing)
 	if err != nil {
 		if errors.Is(err, metrics.ErrMetricsNotFound) {

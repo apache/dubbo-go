@@ -76,9 +76,6 @@ func GetPolarisConfig(url *common.URL) (api.SDKContext, string, error) {
 	return sdkCtx, url.GetParam(constant.PolarisNamespace, constant.PolarisDefaultNamespace), nil
 }
 
-// mergePolarisConfiguration
-//  @param easy
-//  @param complexConf
 func mergePolarisConfiguration(easy, complexConf config.Configuration) {
 
 	easySvrList := easy.GetGlobal().GetServerConnector().GetAddresses()

@@ -25,7 +25,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
-// BaseMetadataIdentifier defined for describe the Metadata base identify
+// IMetadataIdentifier is the interface which describes the Metadata base identify
 type IMetadataIdentifier interface {
 	GetFilePathKey() string
 	GetIdentifierKey() string

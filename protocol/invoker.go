@@ -34,11 +34,8 @@ import (
 )
 
 var (
-	// ErrClientClosed means client has clossed.
-	ErrClientClosed = perrors.New("remoting client has closed")
-	// ErrNoReply
-	ErrNoReply = perrors.New("request need @response")
-	// ErrDestroyedInvoker
+	ErrClientClosed     = perrors.New("remoting client has closed")
+	ErrNoReply          = perrors.New("request need @response")
 	ErrDestroyedInvoker = perrors.New("request Destroyed invoker")
 )
 
@@ -51,11 +48,7 @@ type Invoker interface {
 	Invoke(context.Context, Invocation) Result
 }
 
-/////////////////////////////
-// base invoker
-/////////////////////////////
-
-// BaseInvoker provides default invoker implement
+// BaseInvoker provides default invoker implements Invoker
 type BaseInvoker struct {
 	url       *common.URL
 	available uatomic.Bool

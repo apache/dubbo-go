@@ -21,6 +21,5 @@ import (
 	"time"
 )
 
-// The value will be 10^6
-// 1ms = 10^6ns
+// MsToNanoRate  will be 10^6, 1ms = 10^6ns
 var MsToNanoRate = int64(time.Millisecond / time.Nanosecond)

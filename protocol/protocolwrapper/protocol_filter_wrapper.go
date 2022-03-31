@@ -102,10 +102,6 @@ func GetProtocol() protocol.Protocol {
 	return &ProtocolFilterWrapper{}
 }
 
-///////////////////////////
-// filter invoker
-///////////////////////////
-
 // FilterInvoker defines invoker and filter
 type FilterInvoker struct {
 	next    protocol.Invoker

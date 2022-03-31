@@ -26,29 +26,28 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 )
 
-// Protocol
-// Extension - protocol
+// Protocol is the interface that wraps the basic Export、 Refer and Destroy method.
+//
+// Export method is to export service for remote invocation
+//
+// Refer method is to refer a remote service
+//
+// Destroy method will destroy all invoker and exporter, so it only is called once.
 type Protocol interface {
-	// Export service for remote invocation
 	Export(invoker Invoker) Exporter
-	// Refer a remote service
 	Refer(url *common.URL) Invoker
-	// Destroy will destroy all invoker and exporter, so it only is called once.
 	Destroy()
 }
 
-// Exporter
-// wrapping invoker
+// Exporter is the interface that wraps the basic GetInvoker method and Destroy Unexport.
+//
+// GetInvoker method is to get invoker.
+//
+// Unexport method is to unexport a exported service
 type Exporter interface {
-	// GetInvoker gets invoker.
 	GetInvoker() Invoker
-	// Unexport exported service.
 	Unexport()
 }
-
-/////////////////////////////
-// base protocol
-/////////////////////////////
 
 // BaseProtocol is default protocol implement.
 type BaseProtocol struct {
@@ -113,10 +112,6 @@ func (bp *BaseProtocol) Destroy() {
 		return true
 	})
 }
-
-/////////////////////////////
-// base exporter
-/////////////////////////////
 
 // BaseExporter is default exporter implement.
 type BaseExporter struct {

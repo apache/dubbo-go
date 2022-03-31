@@ -64,9 +64,7 @@ type RegistryDirectory struct {
 	configurators                  []config_center.Configurator
 	consumerConfigurationListener  *consumerConfigurationListener
 	referenceConfigurationListener *referenceConfigurationListener
-	// serviceKey                     string
-	// forbidden                      atomic.Bool
-	registerLock sync.Mutex // this lock if for register
+	registerLock                   sync.Mutex // this lock if for register
 }
 
 // NewRegistryDirectory will create a new RegistryDirectory

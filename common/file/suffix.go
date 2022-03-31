@@ -19,15 +19,10 @@ package file
 
 type Suffix string
 
-// file suffix
 const (
-	JSON = Suffix("json")
-
-	TOML = Suffix("toml")
-
-	YAML = Suffix("yaml")
-
-	YML = Suffix("yml")
-
+	JSON       = Suffix("json")
+	TOML       = Suffix("toml")
+	YAML       = Suffix("yaml")
+	YML        = Suffix("yml")
 	PROPERTIES = Suffix("properties")
 )

@@ -15,6 +15,9 @@
  * limitations under the License.
  */
 
+// Package echo providers health check filter.
+// RPCService need a Echo method in consumer, if you want to use Filter
+// eg: Echo func(ctx context.Context, arg interface{}, rsp *Xxx) error
 package echo
 
 import (
@@ -38,10 +41,6 @@ func init() {
 	extension.SetFilter(constant.EchoFilterKey, newEchoFilter)
 }
 
-// Filter health check
-// RPCService need a Echo method in consumer, if you want to use Filter
-// eg:
-//		Echo func(ctx context.Context, arg interface{}, rsp *Xxx) error
 type echoFilter struct{}
 
 func newEchoFilter() filter.Filter {

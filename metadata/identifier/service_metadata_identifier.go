@@ -29,8 +29,7 @@ type ServiceMetadataIdentifier struct {
 	BaseMetadataIdentifier
 }
 
-// NewServiceMetadataIdentifier create instance.
-// The ServiceInterface is the @url.Service()
+// NewServiceMetadataIdentifier create instance. The ServiceInterface is the @url.Service()
 // other parameters are read from @url
 func NewServiceMetadataIdentifier(url *common.URL) *ServiceMetadataIdentifier {
 	return &ServiceMetadataIdentifier{

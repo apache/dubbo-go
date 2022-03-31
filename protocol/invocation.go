@@ -22,7 +22,7 @@ import (
 	"reflect"
 )
 
-// Invocation is a invocation for each remote method.
+// Invocation is a interface which is invocation for each remote method.
 type Invocation interface {
 	// MethodName gets invocation method name.
 	MethodName() string

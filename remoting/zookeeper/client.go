@@ -33,10 +33,8 @@ import (
 )
 
 const (
-	// ConnDelay connection delay interval
-	ConnDelay = 3
-	// MaxFailTimes max fail times
-	MaxFailTimes = 3
+	ConnDelay    = 3 // connection delay interval
+	MaxFailTimes = 3 // max fail times
 )
 
 // ValidateZookeeperClient validates client and sets options

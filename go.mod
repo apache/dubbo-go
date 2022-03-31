@@ -3,7 +3,7 @@ module dubbo.apache.org/dubbo-go/v3
 go 1.17
 
 require (
-	contrib.go.opencensus.io/exporter/prometheus v0.4.0
+	contrib.go.opencensus.io/exporter/prometheus v0.4.1
 	github.com/RoaringBitmap/roaring v0.7.1
 	github.com/Workiva/go-datastructures v1.0.52
 	github.com/afex/hystrix-go v0.0.0-20180502004556-fa1af6a1f4f5
@@ -16,9 +16,9 @@ require (
 	github.com/creasty/defaults v1.5.2
 	github.com/dubbogo/go-zookeeper v1.0.4-0.20211212162352-f9d2183d89d5
 	github.com/dubbogo/gost v1.11.25
-	github.com/dubbogo/grpc-go v1.42.8
-	github.com/dubbogo/triple v1.1.8-rc2
-	github.com/emicklei/go-restful/v3 v3.7.3
+	github.com/dubbogo/grpc-go v1.42.9
+	github.com/dubbogo/triple v1.1.8
+	github.com/emicklei/go-restful/v3 v3.7.4
 	github.com/envoyproxy/go-control-plane v0.10.0
 	github.com/fsnotify/fsnotify v1.5.1
 	github.com/ghodss/yaml v1.0.0
@@ -42,7 +42,7 @@ require (
 	github.com/polarismesh/polaris-go v1.0.1
 	github.com/prometheus/client_golang v1.12.1
 	github.com/satori/go.uuid v1.2.1-0.20181028125025-b2ce2384e17b
-	github.com/stretchr/testify v1.7.0
+	github.com/stretchr/testify v1.7.1
 	github.com/zouyx/agollo/v3 v3.4.5
 	go.etcd.io/etcd/api/v3 v3.5.2
 	go.etcd.io/etcd/client/v3 v3.5.2
@@ -51,7 +51,7 @@ require (
 	go.uber.org/zap v1.21.0
 	google.golang.org/genproto v0.0.0-20211104193956-4c6863e31247
 	google.golang.org/grpc v1.45.0
-	google.golang.org/protobuf v1.27.1
+	google.golang.org/protobuf v1.28.0
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/apimachinery v0.22.4
 	k8s.io/client-go v0.16.9
