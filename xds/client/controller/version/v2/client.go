@@ -16,7 +16,9 @@
  */
 
 /*
- * Copyright gRPC authors.
+ *
+ * Copyright 2019 gRPC authors.
+ *
  */
 
 // Package v2 provides xDS v2 transport protocol specific functionality.

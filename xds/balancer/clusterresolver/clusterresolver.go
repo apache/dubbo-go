@@ -16,7 +16,9 @@
  */
 
 /*
- * Copyright gRPC authors.
+ *
+ * Copyright 2021 gRPC authors.
+ *
  */
 
 // Package clusterresolver contains EDS balancer implementation.

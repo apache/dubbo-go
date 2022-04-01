@@ -16,7 +16,9 @@
  */
 
 /*
- * Copyright gRPC authors.
+ *
+ * Copyright 2018 gRPC authors.
+ *
  */
 
 package grpcutil

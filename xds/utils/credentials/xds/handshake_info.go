@@ -16,7 +16,9 @@
  */
 
 /*
- * Copyright gRPC authors.
+ *
+ * Copyright 2020 gRPC authors.
+ *
  */
 
 // Package xds contains non-user facing functionality of the xds credentials.

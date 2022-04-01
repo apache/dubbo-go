@@ -16,7 +16,9 @@
  */
 
 /*
- * Copyright gRPC authors.
+ *
+ * Copyright 2020 gRPC authors.
+ *
  */
 
 // Package version defines constants to distinguish between supported xDS API

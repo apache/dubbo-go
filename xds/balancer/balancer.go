@@ -16,7 +16,9 @@
  */
 
 /*
- * Copyright gRPC authors.
+ *
+ * Copyright 2020 gRPC authors.
+ *
  */
 
 // Package balancer installs all the xds balancers.

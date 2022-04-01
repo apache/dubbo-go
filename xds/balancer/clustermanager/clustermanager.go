@@ -16,7 +16,9 @@
  */
 
 /*
- * Copyright gRPC authors.
+ *
+ * Copyright 2020 gRPC authors.
+ *
  */
 
 // Package clustermanager implements the cluster manager LB policy for xds.

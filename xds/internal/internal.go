@@ -16,7 +16,9 @@
  */
 
 /*
- * Copyright gRPC authors.
+ *
+ * Copyright 2016 gRPC authors.
+ *
  */
 
 // Package internal contains gRPC-internal code, to avoid polluting

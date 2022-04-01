@@ -16,7 +16,9 @@
  */
 
 /*
- * Copyright gRPC authors.
+ *
+ * Copyright 2021 gRPC authors.
+ *
  */
 
 // Package priority implements the priority balancer.

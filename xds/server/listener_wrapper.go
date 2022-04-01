@@ -16,7 +16,9 @@
  */
 
 /*
- * Copyright gRPC authors.
+ *
+ * Copyright 2021 gRPC authors.
+ *
  */
 
 // Package server contains internal server-side functionality used by the public

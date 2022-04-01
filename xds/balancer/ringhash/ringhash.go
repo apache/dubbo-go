@@ -16,7 +16,9 @@
  */
 
 /*
- * Copyright gRPC authors.
+ *
+ * Copyright 2021 gRPC authors.
+ *
  */
 
 // Package ringhash implements the ringhash balancer.

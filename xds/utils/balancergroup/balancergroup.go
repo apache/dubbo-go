@@ -16,8 +16,11 @@
  */
 
 /*
- * Copyright gRPC authors.
+ *
+ * Copyright 2019 gRPC authors.
+ *
  */
+
 // Package balancergroup implements a utility struct to bind multiple balancers
 // into one balancer.
 package balancergroup

@@ -16,7 +16,9 @@
  */
 
 /*
- * Copyright gRPC authors.
+ *
+ * Copyright 2019 gRPC authors.
+ *
  */
 // Package balancerload defines APIs to parse server loads in trailers. The
 // parsed loads are sent to balancers in DoneInfo.

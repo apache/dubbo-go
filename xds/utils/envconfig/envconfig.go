@@ -16,7 +16,9 @@
  */
 
 /*
- * Copyright gRPC authors.
+ *
+ * Copyright 2018 gRPC authors.
+ *
  */
 
 // Package envconfig contains grpc settings configured by environment variables.

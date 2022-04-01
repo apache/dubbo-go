@@ -16,7 +16,9 @@
  */
 
 /*
- * Copyright gRPC authors.
+ *
+ * Copyright 2019 gRPC authors.
+ *
  */
 
 // package client implements a full fledged gRPC client for the xDS API used

@@ -16,7 +16,9 @@
  */
 
 /*
- * Copyright gRPC authors.
+ *
+ * Copyright 2019 gRPC authors.
+ *
  */
 
 // Package bootstrap provides the functionality to initialize certain aspects

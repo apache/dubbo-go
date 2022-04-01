@@ -16,7 +16,9 @@
  */
 
 /*
- * Copyright gRPC authors.
+ *
+ * Copyright 2018 gRPC authors.
+ *
  */
 
 // Package grpcsync implements additional synchronization primitives built upon

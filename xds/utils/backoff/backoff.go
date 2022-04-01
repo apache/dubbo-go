@@ -16,7 +16,9 @@
  */
 
 /*
- * Copyright gRPC authors.
+ *
+ * Copyright 2017 gRPC authors.
+ *
  */
 
 // Package backoff implement the backoff strategy for gRPC.

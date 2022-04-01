@@ -16,8 +16,11 @@
  */
 
 /*
- * Copyright gRPC authors.
+ *
+ * Copyright 2019 gRPC authors.
+ *
  */
+
 package xds_cache
 
 import (

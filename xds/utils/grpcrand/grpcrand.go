@@ -16,7 +16,9 @@
  */
 
 /*
- * Copyright gRPC authors.
+ *
+ * Copyright 2018 gRPC authors.
+ *
  */
 
 // Package grpcrand implements math/rand functions in a concurrent-safe way
