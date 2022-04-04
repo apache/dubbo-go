@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package interfaceMapping
+package mapping
 
 import (
 	"encoding/json"

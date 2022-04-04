@@ -26,7 +26,7 @@ import (
 
 import (
 	xdsCommon "dubbo.apache.org/dubbo-go/v3/remoting/xds/common"
-	"dubbo.apache.org/dubbo-go/v3/remoting/xds/interfaceMapping"
+	"dubbo.apache.org/dubbo-go/v3/remoting/xds/mapping"
 	"dubbo.apache.org/dubbo-go/v3/xds/client"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/bootstrap"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource/version"
@@ -41,7 +41,7 @@ var xdsClientFactoryFunction = func(localIP, podName, namespace string, istioAdd
 		UserAgentName:        gRPCUserAgentName,
 		UserAgentVersionType: &v3corepb.Node_UserAgentVersion{UserAgentVersion: "1.45.0"},
 		ClientFeatures:       []string{clientFeatureNoOverprovisioning},
-		Metadata:             interfaceMapping.GetDubboGoMetadata(""),
+		Metadata:             mapping.GetDubboGoMetadata(""),
 	}
 
 	nonNilCredsConfigV2 := &bootstrap.Config{

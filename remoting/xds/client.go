@@ -31,7 +31,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	xdsCommon "dubbo.apache.org/dubbo-go/v3/remoting/xds/common"
 	"dubbo.apache.org/dubbo-go/v3/remoting/xds/ewatcher"
-	"dubbo.apache.org/dubbo-go/v3/remoting/xds/interfaceMapping"
+	"dubbo.apache.org/dubbo-go/v3/remoting/xds/mapping"
 	"dubbo.apache.org/dubbo-go/v3/xds/client"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
 )
@@ -80,7 +80,7 @@ type WrappedClientImpl struct {
 	/*
 		interfaceMapHandler manages dubbogo metadata containing service key -> hostAddr map
 	*/
-	interfaceMapHandler interfaceMapping.InterfaceMapHandler
+	interfaceMapHandler mapping.InterfaceMapHandler
 
 	/*
 		rdsMap cache router config
@@ -168,7 +168,7 @@ func NewXDSWrappedClient(podName, namespace, localIP string, istioAddr xdsCommon
 	}
 
 	// 4. init interface map handler
-	newClient.interfaceMapHandler = interfaceMapping.NewInterfaceMapHandlerImpl(
+	newClient.interfaceMapHandler = mapping.NewInterfaceMapHandlerImpl(
 		newClient.xdsClient,
 		defaultIstiodTokenPath,
 		xdsCommon.NewAddr(newClient.istiodPodIP+":"+defaultIstiodDebugPort),

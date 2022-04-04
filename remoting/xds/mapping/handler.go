@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package interfaceMapping
+package mapping
 
 import (
 	"encoding/json"
@@ -82,6 +82,7 @@ func (i *InterfaceMapHandlerImpl) Register(serviceUniqueKey string) error {
 func (i *InterfaceMapHandlerImpl) GetHostAddrMap(serviceUniqueKey string) (string, error) {
 	i.interfaceNameHostAddrMapLock.RLock()
 	if hostAddr, ok := i.interfaceNameHostAddrMap[serviceUniqueKey]; ok {
+		i.interfaceNameHostAddrMapLock.RUnlock()
 		return hostAddr, nil
 	}
 	i.interfaceNameHostAddrMapLock.RUnlock()

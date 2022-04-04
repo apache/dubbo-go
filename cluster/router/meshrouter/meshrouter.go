@@ -85,10 +85,11 @@ func (r *MeshRouter) Route(invokers []protocol.Invoker, url *common.URL, invocat
 			// 2. match http route
 			for _, r := range vh.Routes {
 				//route.
-				ctx := invocation.ToContext()
+				ctx := invocation.GetAttachmentAsContext()
 				matcher, err := resource.RouteToMatcher(r)
 				if err != nil {
-					panic(err)
+					logger.Errorf("[Mesh Router] router to matcher failed with error %s", err)
+					return invokers
 				}
 				if matcher.Match(resolver.RPCInfo{
 					Context: ctx,
@@ -96,7 +97,8 @@ func (r *MeshRouter) Route(invokers []protocol.Invoker, url *common.URL, invocat
 				}) {
 					// Loop through routes in order and select first match.
 					if r == nil || r.WeightedClusters == nil {
-						panic("cluster notfound")
+						logger.Errorf("[Mesh Router] route's WeightedClusters is empty, route: %+v", r)
+						return invokers
 					}
 					invokersWeightPairs := make(invokerWeightPairs, 0)
 

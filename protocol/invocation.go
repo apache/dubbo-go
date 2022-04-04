@@ -50,6 +50,7 @@ type Invocation interface {
 	GetAttachment(key string) (string, bool)
 	GetAttachmentInterface(string) interface{}
 	GetAttachmentWithDefaultValue(key string, defaultValue string) string
+	GetAttachmentAsContext() context.Context
 
 	// Attributes firstly introduced on dubbo-java 2.7.6. It is
 	// used in internal invocation, that is, it's not passed between
@@ -58,6 +59,4 @@ type Invocation interface {
 	SetAttribute(key string, value interface{})
 	GetAttribute(key string) (interface{}, bool)
 	GetAttributeWithDefaultValue(key string, defaultValue interface{}) interface{}
-
-	ToContext() context.Context
 }

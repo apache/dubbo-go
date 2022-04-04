@@ -51,7 +51,7 @@ type xdsRegistry struct {
 }
 
 func isProvider(url *common.URL) bool {
-	return getCategory(url) == "providers"
+	return getCategory(url) == constant.ProviderCategory
 }
 
 func getCategory(url *common.URL) string {

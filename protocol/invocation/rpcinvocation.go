@@ -244,7 +244,7 @@ func (r *RPCInvocation) GetAttributeWithDefaultValue(key string, defaultValue in
 	return defaultValue
 }
 
-func (r *RPCInvocation) ToContext() context.Context {
+func (r *RPCInvocation) GetAttachmentAsContext() context.Context {
 	gRPCMD := make(metadata.MD, 0)
 	ctx := context.Background()
 	for k, v := range r.Attachments() {

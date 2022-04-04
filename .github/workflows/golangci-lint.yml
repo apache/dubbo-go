@@ -12,7 +12,7 @@ jobs:
     strategy:
       matrix:
         golang:
-          - 1.17
+          - 1.15
     steps:
       - uses: actions/setup-go@v2
         with:

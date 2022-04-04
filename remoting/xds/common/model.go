@@ -18,6 +18,7 @@
 package common
 
 import (
+	"net"
 	"strings"
 )
 
@@ -27,15 +28,15 @@ type Addr struct {
 }
 
 func NewAddr(addr string) Addr {
-	addrs := strings.Split(addr, ":")
+	host, port, _ := net.SplitHostPort(addr)
 	return Addr{
-		HostnameOrIP: addrs[0],
-		Port:         addrs[1],
+		HostnameOrIP: host,
+		Port:         port,
 	}
 }
 
 func (a *Addr) String() string {
-	return a.HostnameOrIP + ":" + a.Port
+	return net.JoinHostPort(a.HostnameOrIP, a.Port)
 }
 
 type Cluster struct {
