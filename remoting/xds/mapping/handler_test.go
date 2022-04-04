@@ -18,8 +18,8 @@
 package mapping
 
 import (
+	"io/ioutil"
 	"net/http"
-	"os"
 	"testing"
 	"time"
 )
@@ -125,5 +125,5 @@ func getMatchFunction(metadata string) func(abc *structpb.Struct) bool {
 }
 
 func generateMockToken() error {
-	return os.WriteFile(istioTokenPathFoo, []byte(istioTokenFoo), 0777)
+	return ioutil.WriteFile(istioTokenPathFoo, []byte(istioTokenFoo), 0777)
 }

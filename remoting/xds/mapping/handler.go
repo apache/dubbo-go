@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"sync"
 	"time"
 )
@@ -109,7 +108,7 @@ func (i *InterfaceMapHandlerImpl) GetHostAddrMap(serviceUniqueKey string) (strin
 // 'dubbo-go-app.default.svc.cluster.local:20000'
 func (i *InterfaceMapHandlerImpl) getServiceUniqueKeyHostAddrMapFromPilot() (map[string]string, error) {
 	req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("http://%s/debug/adsz", i.istioDebugAddr.String()), nil)
-	token, err := os.ReadFile(i.istioTokenPath)
+	token, err := ioutil.ReadFile(i.istioTokenPath)
 	if err != nil {
 		return nil, err
 	}
