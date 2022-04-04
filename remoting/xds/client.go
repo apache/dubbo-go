@@ -90,7 +90,7 @@ type WrappedClientImpl struct {
 	rdsMapLock sync.RWMutex
 
 	/*
-		cdsMap cache full clusterId -> clusterUpdate map of this istiod
+		cdsMap cache full clusterID -> clusterUpdate map of this istiod
 	*/
 	cdsMap     map[string]resource.ClusterUpdate
 	cdsMapLock sync.RWMutex

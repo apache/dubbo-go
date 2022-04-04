@@ -69,11 +69,11 @@ func (r *MeshRouter) Route(invokers []protocol.Invoker, url *common.URL, invocat
 
 	clusterInvokerMap := make(map[string][]protocol.Invoker)
 	for _, v := range invokers {
-		meshClusterId := v.GetURL().GetParam(constant.MeshClusterIDKey, "")
-		if _, ok := clusterInvokerMap[meshClusterId]; !ok {
-			clusterInvokerMap[meshClusterId] = make([]protocol.Invoker, 0)
+		meshClusterID := v.GetURL().GetParam(constant.MeshClusterIDKey, "")
+		if _, ok := clusterInvokerMap[meshClusterID]; !ok {
+			clusterInvokerMap[meshClusterID] = make([]protocol.Invoker, 0)
 		}
-		clusterInvokerMap[meshClusterId] = append(clusterInvokerMap[meshClusterId], v)
+		clusterInvokerMap[meshClusterID] = append(clusterInvokerMap[meshClusterID], v)
 	}
 
 	if len(rconf.VirtualHosts) != 0 {
@@ -102,9 +102,9 @@ func (r *MeshRouter) Route(invokers []protocol.Invoker, url *common.URL, invocat
 					}
 					invokersWeightPairs := make(invokerWeightPairs, 0)
 
-					for clusterId, weight := range r.WeightedClusters {
+					for clusterID, weight := range r.WeightedClusters {
 						// cluster -> invokers
-						targetInvokers := clusterInvokerMap[clusterId]
+						targetInvokers := clusterInvokerMap[clusterID]
 						invokersWeightPairs = append(invokersWeightPairs, invokerWeightPair{
 							invokers: targetInvokers,
 							weight:   weight.Weight,

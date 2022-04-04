@@ -87,7 +87,7 @@ func (watcher *endPointWatcherCtx) Destroy() {
 		watcher.cancel()
 	}
 	/*
-		directory would identify this by EndpointHealthStatusUnhealthy and Location == "*" and none empty clusterId
+		directory would identify this by EndpointHealthStatusUnhealthy and Location == "*" and none empty clusterID
 		and delete related invokers
 	*/
 	event := generateRegistryEvent(watcher.clusterName, resource.Endpoint{

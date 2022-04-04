@@ -18,7 +18,7 @@
 package constant
 
 const (
-	MeshClusterIDKey = "meshClusterId"
+	MeshClusterIDKey = "meshClusterID"
 	MeshHostAddrKey  = "meshHostAddr"
 	MeshSubsetKey    = "meshSubset"
 
