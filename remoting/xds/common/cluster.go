@@ -17,7 +17,9 @@
 
 package common
 
-import "strings"
+import (
+	"strings"
+)
 
 type Cluster struct {
 	Bound  string
