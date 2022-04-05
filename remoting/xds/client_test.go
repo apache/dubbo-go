@@ -165,10 +165,10 @@ func testWithDiscoverySuccess(t *testing.T) {
 			cancelCalledCounter.Inc()
 		})
 
-	xdsClientFactoryFunction = func(localIP, podName, namespace string, istioAddr common.Addr) (client.XDSClient, error) {
+	xdsClientFactoryFunction = func(localIP, podName, namespace string, istioAddr common.HostAddr) (client.XDSClient, error) {
 		return mockXDSClient, nil
 	}
-	xdsWrappedClient, err := NewXDSWrappedClient(podNameFoo, localNamespaceFoo, localIPFoo, common.NewAddr(istioHostAddrFoo))
+	xdsWrappedClient, err := NewXDSWrappedClient(podNameFoo, localNamespaceFoo, localIPFoo, common.NewHostNameOrIPAddr(istioHostAddrFoo))
 	assert.Nil(t, err)
 	assert.NotNil(t, xdsWrappedClient)
 
@@ -246,10 +246,10 @@ func testFailedWithIstioCDS(t *testing.T) {
 			cancelCalledCounter.Inc()
 		})
 
-	xdsClientFactoryFunction = func(localIP, podName, namespace string, istioAddr common.Addr) (client.XDSClient, error) {
+	xdsClientFactoryFunction = func(localIP, podName, namespace string, istioAddr common.HostAddr) (client.XDSClient, error) {
 		return mockXDSClient, nil
 	}
-	xdsWrappedClient, err := NewXDSWrappedClient(podNameFoo, localNamespaceFoo, localIPFoo, common.NewAddr(istioHostAddrFoo))
+	xdsWrappedClient, err := NewXDSWrappedClient(podNameFoo, localNamespaceFoo, localIPFoo, common.NewHostNameOrIPAddr(istioHostAddrFoo))
 	assert.Equal(t, DiscoverIstioPodError, err)
 	assert.Nil(t, xdsWrappedClient)
 	assert.Equal(t, int32(1), cancelCalledCounter.Load())
@@ -321,10 +321,10 @@ func testFailedWithLocalCDS(t *testing.T) {
 			cancelCalledCounter.Inc()
 		})
 
-	xdsClientFactoryFunction = func(localIP, podName, namespace string, istioAddr common.Addr) (client.XDSClient, error) {
+	xdsClientFactoryFunction = func(localIP, podName, namespace string, istioAddr common.HostAddr) (client.XDSClient, error) {
 		return mockXDSClient, nil
 	}
-	xdsWrappedClient, err := NewXDSWrappedClient(podNameFoo, localNamespaceFoo, localIPFoo, common.NewAddr(istioHostAddrFoo))
+	xdsWrappedClient, err := NewXDSWrappedClient(podNameFoo, localNamespaceFoo, localIPFoo, common.NewHostNameOrIPAddr(istioHostAddrFoo))
 	assert.Equal(t, DiscoverLocalError, err)
 	assert.Nil(t, xdsWrappedClient)
 	assert.Equal(t, int32(1), cancelCalledCounter.Load())
@@ -396,10 +396,10 @@ func testFailedWithNoneCDS(t *testing.T) {
 			cancelCalledCounter.Inc()
 		})
 
-	xdsClientFactoryFunction = func(localIP, podName, namespace string, istioAddr common.Addr) (client.XDSClient, error) {
+	xdsClientFactoryFunction = func(localIP, podName, namespace string, istioAddr common.HostAddr) (client.XDSClient, error) {
 		return mockXDSClient, nil
 	}
-	xdsWrappedClient, err := NewXDSWrappedClient(podNameFoo, localNamespaceFoo, localIPFoo, common.NewAddr(istioHostAddrFoo))
+	xdsWrappedClient, err := NewXDSWrappedClient(podNameFoo, localNamespaceFoo, localIPFoo, common.NewHostNameOrIPAddr(istioHostAddrFoo))
 	assert.Equal(t, DiscoverIstioPodError, err)
 	assert.Nil(t, xdsWrappedClient)
 	assert.Equal(t, int32(0), cancelCalledCounter.Load())
@@ -471,10 +471,10 @@ func testFailedWithLocalEDSFailed(t *testing.T) {
 			cancelCalledCounter.Inc()
 		})
 
-	xdsClientFactoryFunction = func(localIP, podName, namespace string, istioAddr common.Addr) (client.XDSClient, error) {
+	xdsClientFactoryFunction = func(localIP, podName, namespace string, istioAddr common.HostAddr) (client.XDSClient, error) {
 		return mockXDSClient, nil
 	}
-	xdsWrappedClient, err := NewXDSWrappedClient(podNameFoo, localNamespaceFoo, localIPFoo, common.NewAddr(istioHostAddrFoo))
+	xdsWrappedClient, err := NewXDSWrappedClient(podNameFoo, localNamespaceFoo, localIPFoo, common.NewHostNameOrIPAddr(istioHostAddrFoo))
 	assert.Equal(t, DiscoverLocalError, err)
 	assert.Nil(t, xdsWrappedClient)
 	assert.Equal(t, int32(2), cancelCalledCounter.Load())
@@ -546,10 +546,10 @@ func testFailedWithIstioEDSFailed(t *testing.T) {
 			cancelCalledCounter.Inc()
 		})
 
-	xdsClientFactoryFunction = func(localIP, podName, namespace string, istioAddr common.Addr) (client.XDSClient, error) {
+	xdsClientFactoryFunction = func(localIP, podName, namespace string, istioAddr common.HostAddr) (client.XDSClient, error) {
 		return mockXDSClient, nil
 	}
-	xdsWrappedClient, err := NewXDSWrappedClient(podNameFoo, localNamespaceFoo, localIPFoo, common.NewAddr(istioHostAddrFoo))
+	xdsWrappedClient, err := NewXDSWrappedClient(podNameFoo, localNamespaceFoo, localIPFoo, common.NewHostNameOrIPAddr(istioHostAddrFoo))
 	assert.Equal(t, DiscoverIstioPodError, err)
 	assert.Nil(t, xdsWrappedClient)
 	assert.Equal(t, int32(2), cancelCalledCounter.Load())
@@ -717,12 +717,12 @@ func testSubscribe(t *testing.T) {
 		})).
 		Return(func() {})
 
-	xdsClientFactoryFunction = func(localIP, podName, namespace string, istioAddr common.Addr) (client.XDSClient, error) {
+	xdsClientFactoryFunction = func(localIP, podName, namespace string, istioAddr common.HostAddr) (client.XDSClient, error) {
 		return mockXDSClient, nil
 	}
 
 	xdsWrappedClient = nil
-	xdsWrappedClient, err := NewXDSWrappedClient(podNameFoo, localNamespaceFoo, localIPFoo, common.NewAddr(istioHostAddrFoo))
+	xdsWrappedClient, err := NewXDSWrappedClient(podNameFoo, localNamespaceFoo, localIPFoo, common.NewHostNameOrIPAddr(istioHostAddrFoo))
 	assert.Nil(t, err)
 	assert.NotNil(t, xdsWrappedClient)
 

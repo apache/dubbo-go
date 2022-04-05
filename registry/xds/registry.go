@@ -163,7 +163,7 @@ func newXDSRegistry(url *common.URL) (registry.Registry, error) {
 			constant.PodNameEnvKey, constant.PodNamespaceEnvKey)
 	}
 
-	wrappedXDSClient, err := xds.NewXDSWrappedClient(pn, ns, localIP, common2.NewAddr(url.Ip+":"+url.Port))
+	wrappedXDSClient, err := xds.NewXDSWrappedClient(pn, ns, localIP, common2.NewHostNameOrIPAddr(url.Ip+":"+url.Port))
 	if err != nil {
 		return nil, err
 	}

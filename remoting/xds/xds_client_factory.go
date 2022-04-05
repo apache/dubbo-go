@@ -34,7 +34,7 @@ import (
 
 // xdsClientFactoryFunction generates new xds client
 // when running ut, it's for for ut to replace
-var xdsClientFactoryFunction = func(localIP, podName, namespace string, istioAddr xdsCommon.Addr) (client.XDSClient, error) {
+var xdsClientFactoryFunction = func(localIP, podName, namespace string, istioAddr xdsCommon.HostAddr) (client.XDSClient, error) {
 	// todo fix these ugly magic num
 	v3NodeProto := &v3corepb.Node{
 		Id:                   "sidecar~" + localIP + "~" + podName + "." + namespace + "~" + namespace + ".svc.cluster.local",

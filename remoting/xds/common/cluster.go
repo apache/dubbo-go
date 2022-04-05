@@ -17,31 +17,11 @@
 
 package common
 
-import (
-	"net"
-	"strings"
-)
-
-type Addr struct {
-	HostnameOrIP string
-	Port         string
-}
-
-func NewAddr(addr string) Addr {
-	host, port, _ := net.SplitHostPort(addr)
-	return Addr{
-		HostnameOrIP: host,
-		Port:         port,
-	}
-}
-
-func (a *Addr) String() string {
-	return net.JoinHostPort(a.HostnameOrIP, a.Port)
-}
+import "strings"
 
 type Cluster struct {
 	Bound  string
-	Addr   Addr
+	Addr   HostAddr
 	Subset string
 }
 
@@ -49,7 +29,7 @@ func NewCluster(clusterID string) Cluster {
 	clusterIDs := strings.Split(clusterID, "|")
 	return Cluster{
 		Bound: clusterIDs[0],
-		Addr: Addr{
+		Addr: HostAddr{
 			Port:         clusterIDs[1],
 			HostnameOrIP: clusterIDs[3],
 		},

@@ -42,9 +42,9 @@ const (
 )
 
 type InterfaceMapHandlerImpl struct {
-	hostAddr common.Addr
+	hostAddr common.HostAddr
 
-	istioDebugAddr common.Addr
+	istioDebugAddr common.HostAddr
 
 	xdsClient client.XDSClient
 
@@ -138,7 +138,7 @@ func (i *InterfaceMapHandlerImpl) interfaceAppNameMap2DubboGoMetadata() *structp
 	return GetDubboGoMetadata(string(data))
 }
 
-func NewInterfaceMapHandlerImpl(xdsClient client.XDSClient, istioTokenPath string, istioDebugAddr, hostAddr common.Addr) InterfaceMapHandler {
+func NewInterfaceMapHandlerImpl(xdsClient client.XDSClient, istioTokenPath string, istioDebugAddr, hostAddr common.HostAddr) InterfaceMapHandler {
 	return &InterfaceMapHandlerImpl{
 		xdsClient:                xdsClient,
 		interfaceAppNameMap:      map[string]string{},

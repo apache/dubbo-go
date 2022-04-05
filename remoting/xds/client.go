@@ -62,14 +62,14 @@ type WrappedClientImpl struct {
 	/*
 		hostAddr is local pod's cluster and hostAddr, like dubbo-go-app.default.svc.cluster.local:20000
 	*/
-	hostAddr xdsCommon.Addr
+	hostAddr xdsCommon.HostAddr
 
 	/*
 		istiod info
 		istiodAddr is istio $(istioSeviceFullName):$(xds-grpc-port) like istiod.istio-system.svc.cluster.local:15010
 		istiodPodIP is to call istiod unexposed debug port 8080
 	*/
-	istiodAddr  xdsCommon.Addr
+	istiodAddr  xdsCommon.HostAddr
 	istiodPodIP string
 
 	/*
@@ -131,7 +131,7 @@ func GetXDSWrappedClient() *WrappedClientImpl {
 }
 
 // NewXDSWrappedClient create or get singleton xdsWrappedClient
-func NewXDSWrappedClient(podName, namespace, localIP string, istioAddr xdsCommon.Addr) (XDSWrapperClient, error) {
+func NewXDSWrappedClient(podName, namespace, localIP string, istioAddr xdsCommon.HostAddr) (XDSWrapperClient, error) {
 	// todo @(laurence) safety problem? what if to concurrent 'new' both create new client?
 	if xdsWrappedClient != nil {
 		return xdsWrappedClient, nil
@@ -171,7 +171,7 @@ func NewXDSWrappedClient(podName, namespace, localIP string, istioAddr xdsCommon
 	newClient.interfaceMapHandler = mapping.NewInterfaceMapHandlerImpl(
 		newClient.xdsClient,
 		defaultIstiodTokenPath,
-		xdsCommon.NewAddr(newClient.istiodPodIP+":"+defaultIstiodDebugPort),
+		xdsCommon.NewHostNameOrIPAddr(newClient.istiodPodIP+":"+defaultIstiodDebugPort),
 		newClient.hostAddr)
 
 	xdsWrappedClient = newClient
@@ -202,7 +202,7 @@ func (w *WrappedClientImpl) GetRouterConfig(hostAddr string) resource.RouteConfi
 }
 
 func (w *WrappedClientImpl) GetClusterUpdateIgnoreVersion(hostAddr string) resource.ClusterUpdate {
-	addr := xdsCommon.NewAddr(hostAddr)
+	addr := xdsCommon.NewHostNameOrIPAddr(hostAddr)
 	w.cdsMapLock.RLock()
 	defer w.cdsMapLock.Unlock()
 	for clusterName, v := range w.cdsMap {
@@ -234,7 +234,7 @@ func (w *WrappedClientImpl) UnSubscribe(svcUniqueName string) {
 	w.subscribeStopChMap.Delete(svcUniqueName)
 }
 
-func (w *WrappedClientImpl) GetHostAddress() xdsCommon.Addr {
+func (w *WrappedClientImpl) GetHostAddress() xdsCommon.HostAddr {
 	return w.hostAddr
 }
 
@@ -252,7 +252,7 @@ func (w *WrappedClientImpl) registerHostLevelSubscription(hostAddr, interfaceNam
 		w.hostAddrListenerMapLock.Unlock()
 		return
 	}
-	// host Addr key must not exist in map, create one
+	// host HostAddr key must not exist in map, create one
 	w.hostAddrListenerMap[hostAddr] = make(map[string]registry.NotifyListener)
 
 	w.hostAddrClusterCtxMapLock.Lock()
@@ -412,7 +412,7 @@ func (w *WrappedClientImpl) startWatchingAllClusterAndLoadLocalHostAddrAndIstioP
 				}
 				for _, v := range endpoint.Localities {
 					for _, e := range v.Endpoints {
-						w.istiodPodIP = xdsCommon.NewAddr(e.Address).HostnameOrIP
+						w.istiodPodIP = xdsCommon.NewHostNameOrIPAddr(e.Address).HostnameOrIP
 						foundIstiod = true
 						close(foundLocalStopCh)
 					}
@@ -428,7 +428,7 @@ func (w *WrappedClientImpl) startWatchingAllClusterAndLoadLocalHostAddrAndIstioP
 			}
 			for _, v := range endpoint.Localities {
 				for _, e := range v.Endpoints {
-					if xdsCommon.NewAddr(e.Address).HostnameOrIP == w.localIP {
+					if xdsCommon.NewHostNameOrIPAddr(e.Address).HostnameOrIP == w.localIP {
 						cluster := xdsCommon.NewCluster(update.ClusterName)
 						w.hostAddr = cluster.Addr
 						foundLocal = true
@@ -485,7 +485,7 @@ func (w *WrappedClientImpl) runWatchingCdsUpdateEvent() {
 // 'outbound|20000||dubbo-go-app.default.svc.cluster.local',
 // 'outbound|20000|v2|dubbo-go-app.default.svc.cluster.local']
 func (w *WrappedClientImpl) getAllVersionClusterName(hostAddr string) []string {
-	addr := xdsCommon.NewAddr(hostAddr)
+	addr := xdsCommon.NewHostNameOrIPAddr(hostAddr)
 	allVersionClusterNames := make([]string, 0)
 	w.cdsMapLock.RLock()
 	defer w.cdsMapLock.RUnlock()
@@ -505,6 +505,6 @@ type XDSWrapperClient interface {
 	GetHostAddrByServiceUniqueKey(serviceUniqueKey string) (string, error)
 	ChangeInterfaceMap(serviceUniqueKey string, add bool) error
 	GetClusterUpdateIgnoreVersion(hostAddr string) resource.ClusterUpdate
-	GetHostAddress() xdsCommon.Addr
+	GetHostAddress() xdsCommon.HostAddr
 	GetIstioPodIP() string
 }
