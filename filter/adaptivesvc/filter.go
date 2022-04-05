@@ -97,7 +97,16 @@ func (f *adaptiveServiceProviderFilter) Invoke(ctx context.Context, invoker prot
 
 func (f *adaptiveServiceProviderFilter) OnResponse(_ context.Context, result protocol.Result, invoker protocol.Invoker,
 	invocation protocol.Invocation) protocol.Result {
-	if result.Attachment(constant.AdaptiveServiceEnabledKey, "") != constant.AdaptiveServiceIsEnabled {
+	var asEnabled string
+	asEnabledIface := result.Attachment(constant.AdaptiveServiceEnabledKey, nil)
+	if asEnabledIface != nil {
+		if str, strOK := asEnabledIface.(string); strOK {
+			asEnabled = str
+		} else if strArr, strArrOK := asEnabledIface.([]string); strArrOK && len(strArr) > 0 {
+			asEnabled = strArr[0]
+		}
+	}
+	if asEnabled != constant.AdaptiveServiceIsEnabled {
 		// the adaptive service is enabled on the invocation
 		return result
 	}

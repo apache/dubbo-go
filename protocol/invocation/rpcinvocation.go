@@ -186,24 +186,20 @@ func (r *RPCInvocation) GetAttachment(key string) (string, bool) {
 	if r.attachments == nil {
 		return "", false
 	}
-	if value, ok := r.attachments[key]; ok {
-		if str, ok := value.(string); ok {
+	if value, existed := r.attachments[key]; existed {
+		if str, strOK := value.(string); strOK {
 			return str, true
+		} else if strArr, strArrOK := value.([]string); strArrOK && len(strArr) > 0 {
+			// For triple protocol, the attachment value is wrapped by an array.
+			return strArr[0], true
 		}
 	}
 	return "", false
 }
 
 func (r *RPCInvocation) GetAttachmentWithDefaultValue(key string, defaultValue string) string {
-	r.lock.RLock()
-	defer r.lock.RUnlock()
-	if r.attachments == nil {
-		return defaultValue
-	}
-	if value, ok := r.attachments[key]; ok {
-		if str, ok := value.(string); ok {
-			return str
-		}
+	if value, ok := r.GetAttachment(key); ok {
+		return value
 	}
 	return defaultValue
 }
