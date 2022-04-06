@@ -385,6 +385,11 @@ func (pcb *ReferenceConfigBuilder) SetProtocol(protocol string) *ReferenceConfig
 	return pcb
 }
 
+func (pcb *ReferenceConfigBuilder) SetURL(url string) *ReferenceConfigBuilder {
+	pcb.referenceConfig.URL = url
+	return pcb
+}
+
 func (pcb *ReferenceConfigBuilder) Build() *ReferenceConfig {
 	return pcb.referenceConfig
 }
