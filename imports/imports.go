@@ -51,6 +51,8 @@ import (
 	_ "dubbo.apache.org/dubbo-go/v3/filter/sentinel"
 	_ "dubbo.apache.org/dubbo-go/v3/filter/token"
 	_ "dubbo.apache.org/dubbo-go/v3/filter/tps"
+	_ "dubbo.apache.org/dubbo-go/v3/filter/tps/limiter"
+	_ "dubbo.apache.org/dubbo-go/v3/filter/tps/strategy"
 	_ "dubbo.apache.org/dubbo-go/v3/filter/tracing"
 	_ "dubbo.apache.org/dubbo-go/v3/metadata/mapping/metadata"
 	_ "dubbo.apache.org/dubbo-go/v3/metadata/report/etcd"
