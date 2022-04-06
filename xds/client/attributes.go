@@ -1,0 +1,76 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/*
+ *
+ * Copyright 2021 gRPC authors.
+ *
+ */
+
+package client
+
+import (
+	_struct "github.com/golang/protobuf/ptypes/struct"
+
+	"google.golang.org/grpc/resolver"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/xds/client/bootstrap"
+	"dubbo.apache.org/dubbo-go/v3/xds/client/load"
+	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
+)
+
+type clientKeyType string
+
+const clientKey = clientKeyType("grpc.xds.internal.client.Client")
+
+// XDSClient is a full fledged gRPC client which queries a set of discovery APIs
+// (collectively termed as xDS) on a remote management server, to discover
+// various dynamic resources.
+type XDSClient interface {
+	WatchListener(string, func(resource.ListenerUpdate, error)) func()
+	WatchRouteConfig(string, func(resource.RouteConfigUpdate, error)) func()
+	WatchCluster(string, func(resource.ClusterUpdate, error)) func()
+	WatchEndpoints(clusterName string, edsCb func(resource.EndpointsUpdate, error)) (cancel func())
+	ReportLoad(server string) (*load.Store, func())
+
+	DumpLDS() map[string]resource.UpdateWithMD
+	DumpRDS() map[string]resource.UpdateWithMD
+	DumpCDS() map[string]resource.UpdateWithMD
+	DumpEDS() map[string]resource.UpdateWithMD
+
+	BootstrapConfig() *bootstrap.Config
+	Close()
+
+	/*
+		SetMetadata would reconnect tcp link with new metadata
+	*/
+	SetMetadata(*_struct.Struct) error
+}
+
+// FromResolverState returns the Client from state, or nil if not present.
+func FromResolverState(state resolver.State) XDSClient {
+	cs, _ := state.Attributes.Value(clientKey).(XDSClient)
+	return cs
+}
+
+// SetClient sets c in state and returns the new state.
+func SetClient(state resolver.State, c XDSClient) resolver.State {
+	state.Attributes = state.Attributes.WithValue(clientKey, c)
+	return state
+}
