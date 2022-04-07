@@ -33,9 +33,23 @@ type ADSZClient struct {
 func (a *ADSZResponse) GetMap() map[string]string {
 	result := make(map[string]string)
 	for _, c := range a.Clients {
+		if c.Metadata["LABELS"] == nil {
+			continue
+		}
+		labelsMap, ok := c.Metadata["LABELS"].(map[string]interface{})
+		if !ok {
+			continue
+		}
+		dubbogoMetadata := labelsMap["DUBBO_GO"]
+		if dubbogoMetadata == nil {
+			continue
+		}
+		dubbogoMetadataStr, ok := dubbogoMetadata.(string)
+		if !ok {
+			continue
+		}
 		resultMap := make(map[string]string)
-		// todo assert failed panic
-		_ = json.Unmarshal([]byte(c.Metadata["LABELS"].(map[string]interface{})["DUBBO_GO"].(string)), &resultMap)
+		_ = json.Unmarshal([]byte(dubbogoMetadataStr), &resultMap)
 		for k, v := range resultMap {
 			result[k] = v
 		}
