@@ -224,6 +224,11 @@ Dubbo-go 生态覆盖多种网络协议：Triple、Dubbo、JSONRPC、gRPC、HTTP
           <img width="222px" src="https://img.xmkanshu.com/u/202204/01/201253131.png">
         </a>
       </td>
+      <td align="center" valign="middle">
+        <a href="https://amap.com/" target="_blank">
+          <img width="222px" src="https://github.com/seven-tan/static/blob/main/logo.png?raw=true" >
+        </a>
+      </td>
     </tr>
     <tr></tr>
   </tbody>
