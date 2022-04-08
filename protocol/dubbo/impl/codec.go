@@ -20,6 +20,7 @@ package impl
 import (
 	"bufio"
 	"encoding/binary"
+	"io"
 )
 
 import (
@@ -48,7 +49,10 @@ func (c *ProtocolCodec) ReadHeader(header *DubboHeader) error {
 		return hessian.ErrHeaderNotEnough
 	}
 	buf, err := c.reader.Peek(HEADER_LENGTH)
-	if err != nil { // this is impossible
+	if err != nil {
+		if perrors.Is(err, io.EOF) {
+			return hessian.ErrHeaderNotEnough
+		}
 		return perrors.WithStack(err)
 	}
 	_, err = c.reader.Discard(HEADER_LENGTH)
@@ -159,6 +163,9 @@ func (c *ProtocolCodec) Decode(p *DubboPackage) error {
 	}
 	body, err := c.reader.Peek(p.GetBodyLen())
 	if err != nil {
+		if perrors.Is(err, io.EOF) {
+			return hessian.ErrBodyNotEnough
+		}
 		return err
 	}
 	if p.IsResponseWithException() {
