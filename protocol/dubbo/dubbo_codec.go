@@ -38,6 +38,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
+const RequestFlag = 2
+
 // SerialID serial ID
 type SerialID byte
 
@@ -161,6 +163,9 @@ func (c *DubboCodec) EncodeResponse(response *remoting.Response) (*bytes.Buffer,
 
 // Decode data, including request and response.
 func (c *DubboCodec) Decode(data []byte) (remoting.DecodeResult, int, error) {
+	if len(data) < RequestFlag+1 {
+		return remoting.DecodeResult{}, 0, hessian.ErrNotEnoughBuf
+	}
 	if c.isRequest(data) {
 		req, len, err := c.decodeRequest(data)
 		if err != nil {
@@ -177,7 +182,7 @@ func (c *DubboCodec) Decode(data []byte) (remoting.DecodeResult, int, error) {
 }
 
 func (c *DubboCodec) isRequest(data []byte) bool {
-	return data[2]&byte(0x80) != 0x00
+	return data[RequestFlag]&byte(0x80) != 0x00
 }
 
 // decode request
