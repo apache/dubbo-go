@@ -92,6 +92,7 @@ const (
 	TokenFilterKey                       = "token"
 	TpsLimitFilterKey                    = "tps"
 	TracingFilterKey                     = "tracing"
+	XdsCircuitBreakerKey                 = "xds_circuit_reaker"
 )
 
 const (
@@ -275,6 +276,10 @@ const (
 )
 
 const (
+	XDSRegistryKey = "xds"
+)
+
+const (
 	EtcdV3Key = "etcdv3"
 )
 
@@ -290,14 +295,15 @@ const (
 
 // Use for router module
 const (
-	TagRouterRuleSuffix       = ".tag-router"             // Specify tag router suffix
+	TagRouterRuleSuffix       = ".tag-router"
 	ConditionRouterRuleSuffix = ".condition-router"       // Specify condition router suffix
 	MeshRouteSuffix           = ".MESHAPPRULE"            // Specify mesh router suffix
 	ForceUseTag               = "dubbo.force.tag"         // the tag in attachment
 	Tagkey                    = "dubbo.tag"               // key of tag
 	AttachmentKey             = DubboCtxKey("attachment") // key in context in invoker
 	TagRouterFactoryKey       = "tag"
-	V3RouterFactoryKey        = "mesh"
+	V3RouterFactoryKey        = "v3router"
+	MeshRouterFactoryKey      = "mesh"
 )
 
 // Auth filter

@@ -191,6 +191,7 @@ func (rc *RootConfig) Init() error {
 	if err := rc.Shutdown.Init(); err != nil {
 		return err
 	}
+	SetRootConfig(*rc)
 	// todo if we can remove this from Init in the future?
 	rc.Start()
 	return nil

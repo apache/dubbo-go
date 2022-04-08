@@ -32,7 +32,7 @@ import (
 type MetricConfig struct {
 	Mode               string `default:"pull" yaml:"mode" json:"mode,omitempty" property:"mode"` // push or pull,
 	Namespace          string `default:"dubbo" yaml:"namespace" json:"namespace,omitempty" property:"namespace"`
-	Enable             string `default:"true" yaml:"enable" json:"enable,omitempty" property:"enable"`
+	Enable             bool   `default:"true" yaml:"enable" json:"enable,omitempty" property:"enable"`
 	Port               string `default:"9090" yaml:"port" json:"port,omitempty" property:"port"`
 	Path               string `default:"/metrics" yaml:"path" json:"path,omitempty" property:"path"`
 	PushGatewayAddress string `default:"" yaml:"push-gateway-address" json:"push-gateway-address,omitempty" property:"push-gateway-address"`
@@ -47,7 +47,7 @@ func (mc *MetricConfig) ToReporterConfig() *metrics.ReporterConfig {
 		defaultMetricsReportConfig.Namespace = mc.Namespace
 	}
 
-	defaultMetricsReportConfig.Enable = mc.Enable == "1"
+	defaultMetricsReportConfig.Enable = mc.Enable
 	defaultMetricsReportConfig.Port = mc.Port
 	defaultMetricsReportConfig.Path = mc.Path
 	defaultMetricsReportConfig.PushGatewayAddress = mc.PushGatewayAddress

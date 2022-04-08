@@ -18,6 +18,10 @@
 package limiter
 
 import (
+	"time"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 )
 
@@ -29,6 +33,13 @@ func VerboseDebugf(msg string, args ...interface{}) {
 }
 
 func minUint64(lhs, rhs uint64) uint64 {
+	if lhs < rhs {
+		return lhs
+	}
+	return rhs
+}
+
+func minDuration(lhs, rhs time.Duration) time.Duration {
 	if lhs < rhs {
 		return lhs
 	}

@@ -230,9 +230,9 @@ func (di *DubboInvoker) getTimeout(invocation *invocation_impl.RPCInvocation) ti
 func (di *DubboInvoker) IsAvailable() bool {
 	client := di.getClient()
 	if client != nil {
+		// FIXME here can't check if tcp server is started now!!!
 		return client.IsAvailable()
 	}
-
 	return false
 }
 
