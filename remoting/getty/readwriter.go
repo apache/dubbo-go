@@ -18,14 +18,11 @@
 package getty
 
 import (
-	"errors"
 	"reflect"
 )
 
 import (
 	"github.com/apache/dubbo-getty"
-
-	hessian "github.com/apache/dubbo-go-hessian2"
 
 	perrors "github.com/pkg/errors"
 )
@@ -48,19 +45,14 @@ func NewRpcClientPackageHandler(client *Client) *RpcClientPackageHandler {
 // Read data from server. if the package size from server is larger than 4096 byte, server will read 4096 byte
 // and send to client each time. the Read can assemble it.
 func (p *RpcClientPackageHandler) Read(ss getty.Session, data []byte) (interface{}, int, error) {
-	resp, length, err := (p.client.codec).Decode(data)
-	// err := pkg.Unmarshal(buf, p.client)
+	rsp, length, err := (p.client.codec).Decode(data)
 	if err != nil {
-		if errors.Is(err, hessian.ErrHeaderNotEnough) || errors.Is(err, hessian.ErrBodyNotEnough) {
-			return nil, 0, nil
-		}
-
-		logger.Errorf("pkg.Unmarshal(ss:%+v, len(@data):%d) = error:%+v", ss, len(data), err)
-
+		err = perrors.WithStack(err)
+	}
+	if rsp.Result == nil {
 		return nil, length, err
 	}
-
-	return resp, length, nil
+	return rsp, length, err
 }
 
 // Write send the data to server
@@ -102,17 +94,12 @@ func NewRpcServerPackageHandler(server *Server) *RpcServerPackageHandler {
 // and send to client each time. the Read can assemble it.
 func (p *RpcServerPackageHandler) Read(ss getty.Session, data []byte) (interface{}, int, error) {
 	req, length, err := (p.server.codec).Decode(data)
-	// resp,len, err := (*p.).DecodeResponse(buf)
 	if err != nil {
-		if errors.Is(err, hessian.ErrHeaderNotEnough) || errors.Is(err, hessian.ErrBodyNotEnough) {
-			return nil, 0, nil
-		}
-
-		logger.Errorf("pkg.Unmarshal(ss:%+v, len(@data):%d) = error:%+v", ss, len(data), err)
-
-		return nil, 0, err
+		err = perrors.WithStack(err)
 	}
-
+	if req.Result == nil {
+		return nil, length, err // as getty rule
+	}
 	return req, length, err
 }
 

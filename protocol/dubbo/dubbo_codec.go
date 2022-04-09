@@ -34,7 +34,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo/impl"
-	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	invct "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
@@ -161,19 +161,25 @@ func (c *DubboCodec) EncodeResponse(response *remoting.Response) (*bytes.Buffer,
 
 // Decode data, including request and response.
 func (c *DubboCodec) Decode(data []byte) (remoting.DecodeResult, int, error) {
+	var res remoting.DecodeResult
+
+	dataLen := len(data)
+	if dataLen < impl.HEADER_LENGTH { // check whether header bytes is enough or not
+		return res, 0, nil
+	}
 	if c.isRequest(data) {
-		req, len, err := c.decodeRequest(data)
+		req, length, err := c.decodeRequest(data)
 		if err != nil {
-			return remoting.DecodeResult{}, len, perrors.WithStack(err)
+			return remoting.DecodeResult{}, length, perrors.WithStack(err)
 		}
-		return remoting.DecodeResult{IsRequest: true, Result: req}, len, perrors.WithStack(err)
+		return remoting.DecodeResult{IsRequest: true, Result: req}, length, perrors.WithStack(err)
 	}
 
-	resp, len, err := c.decodeResponse(data)
+	resp, length, err := c.decodeResponse(data)
 	if err != nil {
-		return remoting.DecodeResult{}, len, perrors.WithStack(err)
+		return remoting.DecodeResult{}, length, perrors.WithStack(err)
 	}
-	return remoting.DecodeResult{IsRequest: false, Result: resp}, len, perrors.WithStack(err)
+	return remoting.DecodeResult{IsRequest: false, Result: resp}, length, perrors.WithStack(err)
 }
 
 func (c *DubboCodec) isRequest(data []byte) bool {
@@ -182,16 +188,18 @@ func (c *DubboCodec) isRequest(data []byte) bool {
 
 // decode request
 func (c *DubboCodec) decodeRequest(data []byte) (*remoting.Request, int, error) {
-	var request *remoting.Request = nil
+	var request *remoting.Request
 	buf := bytes.NewBuffer(data)
 	pkg := impl.NewDubboPackage(buf)
 	pkg.SetBody(make([]interface{}, 7))
 	err := pkg.Unmarshal()
 	if err != nil {
 		originErr := perrors.Cause(err)
-		if originErr == hessian.ErrHeaderNotEnough || originErr == hessian.ErrBodyNotEnough {
-			// FIXME
-			return nil, 0, originErr
+		if originErr == hessian.ErrHeaderNotEnough { // this is impossible, as dubbo_codec.go:DubboCodec::Decode() line 167
+			return nil, 0, nil
+		}
+		if originErr == hessian.ErrBodyNotEnough {
+			return nil, hessian.HEADER_LENGTH + pkg.GetBodyLen(), nil
 		}
 		logger.Errorf("pkg.Unmarshal(len(@data):%d) = error:%+v", buf.Len(), err)
 
@@ -223,8 +231,8 @@ func (c *DubboCodec) decodeRequest(data []byte) (*remoting.Request, int, error) 
 		methodName = pkg.Service.Method
 		args = req[impl.ArgsKey].([]interface{})
 		attachments = req[impl.AttachmentsKey].(map[string]interface{})
-		invoc := invocation.NewRPCInvocationWithOptions(invocation.WithAttachments(attachments),
-			invocation.WithArguments(args), invocation.WithMethodName(methodName))
+		invoc := invct.NewRPCInvocationWithOptions(invct.WithAttachments(attachments),
+			invct.WithArguments(args), invct.WithMethodName(methodName))
 		request.Data = invoc
 
 	}
@@ -239,10 +247,13 @@ func (c *DubboCodec) decodeResponse(data []byte) (*remoting.Response, int, error
 	if err != nil {
 		originErr := perrors.Cause(err)
 		// if the data is very big, so the receive need much times.
-		if originErr == hessian.ErrHeaderNotEnough || originErr == hessian.ErrBodyNotEnough {
-			return nil, 0, originErr
-		}
 		logger.Errorf("pkg.Unmarshal(len(@data):%d) = error:%+v", buf.Len(), err)
+		if originErr == hessian.ErrHeaderNotEnough { // this is impossible, as dubbo_codec.go:DubboCodec::Decode() line 167
+			return nil, 0, nil
+		}
+		if originErr == hessian.ErrBodyNotEnough {
+			return nil, hessian.HEADER_LENGTH + pkg.GetBodyLen(), nil
+		}
 
 		return nil, 0, perrors.WithStack(err)
 	}
