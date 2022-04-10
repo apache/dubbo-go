@@ -28,17 +28,13 @@ import (
 
 const DefaultPageSize = 100
 
-// ServiceDiscovery is the common operations of Service Discovery
+// ServiceDiscovery is the interface that wraps common operations of Service Discovery
 type ServiceDiscovery interface {
 	fmt.Stringer
-
-	// ----------------- lifecycle -------------------
 
 	// Destroy will destroy the service discovery.
 	// If the discovery cannot be destroy, it will return an error.
 	Destroy() error
-
-	// ----------------- registration ----------------
 
 	// Register will register an instance of ServiceInstance to registry
 	Register(instance ServiceInstance) error
@@ -49,7 +45,6 @@ type ServiceDiscovery interface {
 	// Unregister will unregister this instance from registry
 	Unregister(instance ServiceInstance) error
 
-	// ----------------- discovery -------------------
 	// GetDefaultPageSize will return the default page size
 	GetDefaultPageSize() int
 
@@ -59,8 +54,8 @@ type ServiceDiscovery interface {
 	// GetInstances will return all service instances with serviceName
 	GetInstances(serviceName string) []ServiceInstance
 
-	// GetInstancesByPage will return a page containing instances of ServiceInstance with the serviceName
-	// the page will start at offset
+	// GetInstancesByPage will return a page containing instances of ServiceInstance
+	// with the serviceName the page will start at offset
 	GetInstancesByPage(serviceName string, offset int, pageSize int) gxpage.Pager
 
 	// GetHealthyInstancesByPage will return a page containing instances of ServiceInstance.
@@ -68,10 +63,9 @@ type ServiceDiscovery interface {
 	// The page will start at offset
 	GetHealthyInstancesByPage(serviceName string, offset int, pageSize int, healthy bool) gxpage.Pager
 
-	// Batch get all instances by the specified service names
+	// GetRequestInstances gets all instances by the specified service names
 	GetRequestInstances(serviceNames []string, offset int, requestedSize int) map[string]gxpage.Pager
 
-	// ----------------- event ----------------------
 	// AddListener adds a new ServiceInstancesChangedListenerImpl
 	// see addServiceInstancesChangedListener in Java
 	AddListener(listener ServiceInstancesChangedListener) error

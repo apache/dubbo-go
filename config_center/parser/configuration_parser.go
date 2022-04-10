@@ -37,10 +37,8 @@ import (
 )
 
 const (
-	// ScopeApplication : scope application
 	ScopeApplication = "application"
-	// GeneralType defines the general type
-	GeneralType = "general"
+	GeneralType      = "general"
 )
 
 // ConfigurationParser interface

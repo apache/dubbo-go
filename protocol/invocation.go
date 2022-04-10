@@ -18,10 +18,11 @@
 package protocol
 
 import (
+	"context"
 	"reflect"
 )
 
-// Invocation is a invocation for each remote method.
+// Invocation is a interface which is invocation for each remote method.
 type Invocation interface {
 	// MethodName gets invocation method name.
 	MethodName() string
@@ -49,6 +50,7 @@ type Invocation interface {
 	GetAttachment(key string) (string, bool)
 	GetAttachmentInterface(string) interface{}
 	GetAttachmentWithDefaultValue(key string, defaultValue string) string
+	GetAttachmentAsContext() context.Context
 
 	// Attributes firstly introduced on dubbo-java 2.7.6. It is
 	// used in internal invocation, that is, it's not passed between

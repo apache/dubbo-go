@@ -40,23 +40,18 @@ import (
 
 // RegistryConfig is the configuration of the registry center
 type RegistryConfig struct {
-	Protocol  string `validate:"required" yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
-	Timeout   string `default:"5s" validate:"required" yaml:"timeout" json:"timeout,omitempty" property:"timeout"` // unit: second
-	Group     string `yaml:"group" json:"group,omitempty" property:"group"`
-	Namespace string `yaml:"namespace" json:"namespace,omitempty" property:"namespace"`
-	TTL       string `default:"10s" yaml:"ttl" json:"ttl,omitempty" property:"ttl"` // unit: minute
-	// for registry
-	Address    string `validate:"required" yaml:"address" json:"address,omitempty" property:"address"`
-	Username   string `yaml:"username" json:"username,omitempty" property:"username"`
-	Password   string `yaml:"password" json:"password,omitempty"  property:"password"`
-	Simplified bool   `yaml:"simplified" json:"simplified,omitempty"  property:"simplified"`
-	// Always use this registry first if set to true, useful when subscribe to multiple registriesConfig
-	Preferred bool `yaml:"preferred" json:"preferred,omitempty" property:"preferred"`
-	// The region where the registry belongs, usually used to isolate traffics
-	Zone string `yaml:"zone" json:"zone,omitempty" property:"zone"`
-	// Affects traffic distribution among registriesConfig,
-	// useful when subscribe to multiple registriesConfig Take effect only when no preferred registry is specified.
-	Weight       int64             `yaml:"weight" json:"weight,omitempty" property:"weight"`
+	Protocol     string            `validate:"required" yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
+	Timeout      string            `default:"5s" validate:"required" yaml:"timeout" json:"timeout,omitempty" property:"timeout"` // unit: second
+	Group        string            `yaml:"group" json:"group,omitempty" property:"group"`
+	Namespace    string            `yaml:"namespace" json:"namespace,omitempty" property:"namespace"`
+	TTL          string            `default:"10s" yaml:"ttl" json:"ttl,omitempty" property:"ttl"` // unit: minute
+	Address      string            `validate:"required" yaml:"address" json:"address,omitempty" property:"address"`
+	Username     string            `yaml:"username" json:"username,omitempty" property:"username"`
+	Password     string            `yaml:"password" json:"password,omitempty"  property:"password"`
+	Simplified   bool              `yaml:"simplified" json:"simplified,omitempty"  property:"simplified"`
+	Preferred    bool              `yaml:"preferred" json:"preferred,omitempty" property:"preferred"` // Always use this registry first if set to true, useful when subscribe to multiple registriesConfig
+	Zone         string            `yaml:"zone" json:"zone,omitempty" property:"zone"`                // The region where the registry belongs, usually used to isolate traffics
+	Weight       int64             `yaml:"weight" json:"weight,omitempty" property:"weight"`          // Affects traffic distribution among registriesConfig, useful when subscribe to multiple registriesConfig Take effect only when no preferred registry is specified.
 	Params       map[string]string `yaml:"params" json:"params,omitempty" property:"params"`
 	RegistryType string            `yaml:"registry-type"`
 }
@@ -171,16 +166,10 @@ func (c *RegistryConfig) toURL(roleType common.RoleType) (*common.URL, error) {
 	)
 }
 
-///////////////////////////////////// registry config api
 const (
-	// defaultZKAddr is the default registry address of zookeeper
-	defaultZKAddr = "127.0.0.1:2181"
-
-	// defaultNacosAddr is the default registry address of nacos
-	defaultNacosAddr = "127.0.0.1:8848"
-
-	// defaultRegistryTimeout is the default registry timeout
-	defaultRegistryTimeout = "3s"
+	defaultZKAddr          = "127.0.0.1:2181" // default registry address of zookeeper
+	defaultNacosAddr       = "127.0.0.1:8848" // the default registry address of nacos
+	defaultRegistryTimeout = "3s"             // the default registry timeout
 )
 
 type RegistryConfigOpt func(config *RegistryConfig) *RegistryConfig

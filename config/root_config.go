@@ -48,52 +48,25 @@ var (
 
 // RootConfig is the root config
 type RootConfig struct {
-	// Application applicationConfig config
-	Application *ApplicationConfig `validate:"required" yaml:"application" json:"application,omitempty" property:"application"`
-
-	Protocols map[string]*ProtocolConfig `validate:"required" yaml:"protocols" json:"protocols" property:"protocols"`
-
-	// Registries registry config
-	Registries map[string]*RegistryConfig `yaml:"registries" json:"registries" property:"registries"`
-
-	// TODO ConfigCenter and CenterConfig?
-	ConfigCenter *CenterConfig `yaml:"config-center" json:"config-center,omitempty"`
-
-	MetadataReport *MetadataReportConfig `yaml:"metadata-report" json:"metadata-report,omitempty" property:"metadata-report"`
-
-	// provider config
-	Provider *ProviderConfig `yaml:"provider" json:"provider" property:"provider"`
-
-	// consumer config
-	Consumer *ConsumerConfig `yaml:"consumer" json:"consumer" property:"consumer"`
-
-	// pi todo rest provider config
+	Application         *ApplicationConfig         `validate:"required" yaml:"application" json:"application,omitempty" property:"application"`
+	Protocols           map[string]*ProtocolConfig `validate:"required" yaml:"protocols" json:"protocols" property:"protocols"`
+	Registries          map[string]*RegistryConfig `yaml:"registries" json:"registries" property:"registries"`
+	ConfigCenter        *CenterConfig              `yaml:"config-center" json:"config-center,omitempty"` // TODO ConfigCenter and CenterConfig?
+	MetadataReport      *MetadataReportConfig      `yaml:"metadata-report" json:"metadata-report,omitempty" property:"metadata-report"`
+	Provider            *ProviderConfig            `yaml:"provider" json:"provider" property:"provider"`
+	Consumer            *ConsumerConfig            `yaml:"consumer" json:"consumer" property:"consumer"`
+	Metric              *MetricConfig              `yaml:"metrics" json:"metrics,omitempty" property:"metrics"`
+	Tracing             map[string]*TracingConfig  `yaml:"tracing" json:"tracing,omitempty" property:"tracing"`
+	Logger              *LoggerConfig              `yaml:"logger" json:"logger,omitempty" property:"logger"`
+	Shutdown            *ShutdownConfig            `yaml:"shutdown" json:"shutdown,omitempty" property:"shutdown"`
+	Router              []*RouterConfig            `yaml:"router" json:"router,omitempty" property:"router"`
+	EventDispatcherType string                     `default:"direct" yaml:"event-dispatcher-type" json:"event-dispatcher-type,omitempty"`
+	CacheFile           string                     `yaml:"cache_file" json:"cache_file,omitempty" property:"cache_file"`
+	Custom              *CustomConfig              `yaml:"custom" json:"custom,omitempty" property:"custom"`
+	Profiles            *ProfilesConfig            `yaml:"profiles" json:"profiles,omitempty" property:"profiles"`
+	// pi todo rest provider/consumer config
 	RestProvider *RestProviderConfig `yaml:"provider" json:"rest-provider" property:"rest-provider"`
-
-	// pi todo rest consumer config
 	RestConsumer *RestConsumerConfig `yaml:"consumer" json:"rest-consumer" property:"rest-consumer"`
-
-	Metric *MetricConfig `yaml:"metrics" json:"metrics,omitempty" property:"metrics"`
-
-	Tracing map[string]*TracingConfig `yaml:"tracing" json:"tracing,omitempty" property:"tracing"`
-
-	// Logger log
-	Logger *LoggerConfig `yaml:"logger" json:"logger,omitempty" property:"logger"`
-
-	// Shutdown config
-	Shutdown *ShutdownConfig `yaml:"shutdown" json:"shutdown,omitempty" property:"shutdown"`
-
-	Router []*RouterConfig `yaml:"router" json:"router,omitempty" property:"router"`
-
-	EventDispatcherType string `default:"direct" yaml:"event-dispatcher-type" json:"event-dispatcher-type,omitempty"`
-
-	// cache file used to store the current used configurations.
-	CacheFile string `yaml:"cache_file" json:"cache_file,omitempty" property:"cache_file"`
-
-	Custom *CustomConfig `yaml:"custom" json:"custom,omitempty" property:"custom"`
-
-	// Profiles config
-	Profiles *ProfilesConfig `yaml:"profiles" json:"profiles,omitempty" property:"profiles"`
 }
 
 func SetRootConfig(r RootConfig) {
@@ -212,6 +185,7 @@ func (rc *RootConfig) Init() error {
 		return err
 	}
 
+	// pi rest provider/consumer init
 	// provider、consumer must last init
 	if err := rc.RestProvider.Init(rc); err != nil {
 		return err
@@ -230,6 +204,7 @@ func (rc *RootConfig) Init() error {
 	if err := rc.Shutdown.Init(); err != nil {
 		return err
 	}
+	SetRootConfig(*rc)
 	// todo if we can remove this from Init in the future?
 	rc.Start()
 	return nil
@@ -239,6 +214,7 @@ func (rc *RootConfig) Start() {
 	startOnce.Do(func() {
 		gracefulShutdownInit()
 
+		// pi rest provider/consumer Load
 		rc.RestConsumer.Load()
 		rc.RestProvider.Load()
 
@@ -261,6 +237,7 @@ func newEmptyRootConfig() *RootConfig {
 		Tracing:        make(map[string]*TracingConfig),
 		Provider:       NewProviderConfigBuilder().Build(),
 		Consumer:       NewConsumerConfigBuilder().Build(),
+		// pi rest provider/consumer builder
 		RestProvider:   NewRestProviderConfigBuilder().Build(),
 		RestConsumer:   NewRestConsumerConfigBuilder().Build(),
 		Metric:         NewMetricConfigBuilder().Build(),

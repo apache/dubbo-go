@@ -17,8 +17,9 @@
 
 package registry
 
-// RegistryFactory
+// RegistryFactory is the interface that wraps GetRegistries method.
+//
+// GetRegistries method get all registries.
 type RegistryFactory interface {
-	// GetRegistries get registries
 	GetRegistries() []Registry
 }

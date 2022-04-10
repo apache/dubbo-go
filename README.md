@@ -211,7 +211,17 @@ If you are using [apache/dubbo-go](https://github.com/apache/dubbo-go) and think
         <a href="https://opayweb.com/" target="_blank">
           <img width="222px"  src="https://open.opayweb.com/static/img/logo@2x.35c6fe4c.jpg">
         </a>
-      </td>  
+      </td>
+      <td align="center" valign="middle">
+        <a href="http://www.zongheng.com/" target="_blank">
+          <img width="222px" src="https://img.xmkanshu.com/u/202204/01/201253131.png">
+        </a>
+      </td>
+      <td align="center" valign="middle">
+        <a href="https://amap.com/" target="_blank">
+          <img width="222px" src="https://github.com/seven-tan/static/blob/main/logo.png?raw=true" >
+        </a>
+      </td>
     </tr>
     <tr></tr>
   </tbody>

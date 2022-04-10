@@ -29,13 +29,11 @@ import (
 
 // RouterConfig is the configuration of the router.
 type RouterConfig struct {
-	// Scope must be chosen from `service` and `application`.
-	Scope string `validate:"required" yaml:"scope" json:"scope,omitempty" property:"scope"`
-	// Key specifies which service or application the rule body acts on.
-	Key        string   `validate:"required" yaml:"key" json:"key,omitempty" property:"key"`
+	Scope      string   `validate:"required" yaml:"scope" json:"scope,omitempty" property:"scope"` // must be chosen from `service` and `application`.
+	Key        string   `validate:"required" yaml:"key" json:"key,omitempty" property:"key"`       // specifies which service or application the rule body acts on.
 	Force      bool     `default:"false" yaml:"force" json:"force,omitempty" property:"force"`
 	Runtime    bool     `default:"false" yaml:"runtime" json:"runtime,omitempty" property:"runtime"`
-	Enable     bool     `default:"true" yaml:"enable" json:"enable,omitempty" property:"enable"`
+	Enabled    bool     `default:"true" yaml:"enabled" json:"enabled,omitempty" property:"enabled"`
 	Valid      bool     `default:"true" yaml:"valid" json:"valid,omitempty" property:"valid"`
 	Priority   int      `default:"0" yaml:"priority" json:"priority,omitempty" property:"priority"`
 	Conditions []string `yaml:"conditions" json:"conditions,omitempty" property:"conditions"`
@@ -74,25 +72,6 @@ func initRouterConfig(rc *RootConfig) error {
 	return nil
 }
 
-//// LocalRouterRules defines the local router config structure
-//type LocalRouterRules struct {
-//	RouterRules []interface{} `yaml:"routerRules"`
-//}
-//
-//// RouterInit Set config file to init router config
-//func RouterInit(vsConfigPath, drConfigPath string) error {
-//	vsBytes, err := yaml.LoadYMLConfig(vsConfigPath)
-//	if err != nil {
-//		return err
-//	}
-//	drBytes, err := yaml.LoadYMLConfig(drConfigPath)
-//	if err != nil {
-//		return err
-//	}
-//	chain.SetVSAndDRConfigByte(vsBytes, drBytes)
-//	return nil
-//}
-
 type RouterConfigBuilder struct {
 	routerConfig *RouterConfig
 }
@@ -121,8 +100,8 @@ func (rcb *RouterConfigBuilder) SetRuntime(runtime bool) *RouterConfigBuilder {
 	return rcb
 }
 
-func (rcb *RouterConfigBuilder) SetEnable(enable bool) *RouterConfigBuilder {
-	rcb.routerConfig.Enable = enable
+func (rcb *RouterConfigBuilder) SetEnabled(enabled bool) *RouterConfigBuilder {
+	rcb.routerConfig.Enabled = enabled
 	return rcb
 }
 

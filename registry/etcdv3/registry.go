@@ -40,7 +40,6 @@ import (
 )
 
 const (
-	// Name module name
 	Name = "etcdv3"
 )
 

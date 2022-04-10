@@ -26,8 +26,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/metadata/identifier"
 )
 
-// MetadataReport is an interface of
-// remote metadata report.
+// MetadataReport is an interface of remote metadata report.
 type MetadataReport interface {
 	// StoreProviderMetadata stores the metadata.
 	// Metadata includes the basic info of the server,

@@ -35,7 +35,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
-// The Service Discovery Changed  Event Listener
+// ServiceInstancesChangedListenerImpl The Service Discovery Changed  Event Listener
 type ServiceInstancesChangedListenerImpl struct {
 	serviceNames       *gxset.HashSet
 	listeners          map[string]registry.NotifyListener

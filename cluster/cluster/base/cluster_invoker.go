@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+// Package base implements invoker for the manipulation of cluster strategy.
 package base
 
 import (

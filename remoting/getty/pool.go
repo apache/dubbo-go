@@ -39,10 +39,9 @@ import (
 )
 
 type gettyRPCClient struct {
-	once sync.Once
-	// protocol string
-	addr   string
-	active int64 // zero, not create or be destroyed
+	once   sync.Once
+	addr   string // protocol string
+	active int64  // zero, not create or be destroyed
 
 	rpcClient *Client
 

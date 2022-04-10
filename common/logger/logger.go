@@ -28,7 +28,6 @@ import (
 
 var logger Logger
 
-// init a default logger
 func init() {
 	InitLogger(nil)
 }
@@ -42,6 +41,7 @@ type DubboLogger struct {
 type Config struct {
 	LumberjackConfig *lumberjack.Logger `yaml:"lumberjack-config"`
 	ZapConfig        *zap.Config        `yaml:"zap-config"`
+	CallerSkip       int
 }
 
 // Logger is the interface for Logger types
@@ -90,8 +90,16 @@ func InitLogger(conf *Config) {
 		config.ZapConfig = conf.ZapConfig
 	}
 
+	if conf != nil {
+		config.CallerSkip = conf.CallerSkip
+	}
+
+	if config.CallerSkip == 0 {
+		config.CallerSkip = 1
+	}
+
 	if conf == nil || conf.LumberjackConfig == nil {
-		zapLogger, _ = config.ZapConfig.Build(zap.AddCaller(), zap.AddCallerSkip(1))
+		zapLogger, _ = config.ZapConfig.Build(zap.AddCaller(), zap.AddCallerSkip(config.CallerSkip))
 	} else {
 		config.LumberjackConfig = conf.LumberjackConfig
 		zapLogger = initZapLoggerWithSyncer(config)
@@ -145,7 +153,7 @@ func initZapLoggerWithSyncer(conf *Config) *zap.Logger {
 		zap.NewAtomicLevelAt(conf.ZapConfig.Level.Level()),
 	)
 
-	return zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1))
+	return zap.New(core, zap.AddCaller(), zap.AddCallerSkip(conf.CallerSkip))
 }
 
 // getEncoder get encoder by config, zapcore support json and console encoder

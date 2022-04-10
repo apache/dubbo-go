@@ -132,7 +132,6 @@ func (e *etcdV3ServiceDiscovery) Unregister(instance registry.ServiceInstance) e
 	return nil
 }
 
-// ----------------- discovery -------------------
 // GetDefaultPageSize will return the default page size
 func (e *etcdV3ServiceDiscovery) GetDefaultPageSize() int {
 	return registry.DefaultPageSize
@@ -210,7 +209,6 @@ func (e *etcdV3ServiceDiscovery) GetRequestInstances(serviceNames []string, offs
 	return res
 }
 
-// ----------------- event ----------------------
 // AddListener adds a new ServiceInstancesChangedListenerImpl
 // see addServiceInstancesChangedListener in Java
 func (e *etcdV3ServiceDiscovery) AddListener(listener registry.ServiceInstancesChangedListener) error {

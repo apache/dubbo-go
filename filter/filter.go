@@ -25,11 +25,10 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
-// Filter interface defines the functions of a filter
-// Extension - Filter
+// Filter is the interface which wraps Invoke and OnResponse method and defines the functions of a filter.
+// Invoke method is the core function of a filter, it determines the process of the filter.
+// OnResponse method updates the results from Invoke and then returns the modified results.
 type Filter interface {
-	// Invoke is the core function of a filter, it determines the process of the filter
 	Invoke(context.Context, protocol.Invoker, protocol.Invocation) protocol.Result
-	// OnResponse updates the results from Invoke and then returns the modified results.
 	OnResponse(context.Context, protocol.Result, protocol.Invoker, protocol.Invocation) protocol.Result
 }

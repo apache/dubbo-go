@@ -35,7 +35,6 @@ const (
 	Zero = byte(0x00)
 )
 
-// constansts
 const (
 	TAG_READ        = int32(-1)
 	ASCII_GAP       = 32

@@ -55,7 +55,7 @@ var (
 	dubboProtocol *DubboProtocol
 )
 
-// It support dubbo protocol. It implements Protocol interface for dubbo protocol.
+// DubboProtocol supports dubbo 3.0 protocol. It implements Protocol interface for dubbo protocol.
 type DubboProtocol struct {
 	protocol.BaseProtocol
 	serverLock sync.Mutex

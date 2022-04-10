@@ -15,10 +15,9 @@
  * limitations under the License.
  */
 
+// Package cluster_impl is for being compatible with older dubbo-go, please use `imports` package.
+// It may be DEPRECATED OR REMOVED in the future.
 package cluster_impl
-
-// This package is for being compatible with older dubbo-go, please use `imports` package.
-// This package may be DEPRECATED OR REMOVED in the future.
 
 import (
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/cluster/adaptivesvc"

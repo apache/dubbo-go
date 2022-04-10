@@ -82,7 +82,7 @@ func (grs *GoRestfulServer) Start(url *common.URL) {
 	}()
 }
 
-// Publish a http api in go-restful server
+// Deploy is to Publish a http api in go-restful server
 // The routeFunc should be invoked when the server receive a request
 func (grs *GoRestfulServer) Deploy(restMethodConfig *config.RestMethodConfig, routeFunc func(request RestServerRequest, response RestServerResponse)) {
 	rf := func(req *restful.Request, resp *restful.Response) {
@@ -94,7 +94,7 @@ func (grs *GoRestfulServer) Deploy(restMethodConfig *config.RestMethodConfig, ro
 		Path(restMethodConfig.Path).To(rf))
 }
 
-// Delete a http api in go-restful server
+// UnDeploy is to Delete a http api in go-restful server
 func (grs *GoRestfulServer) UnDeploy(restMethodConfig *config.RestMethodConfig) {
 	err := grs.ws.RemoveRoute(restMethodConfig.Path, restMethodConfig.MethodType)
 	if err != nil {

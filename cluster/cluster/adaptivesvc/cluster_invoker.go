@@ -76,9 +76,16 @@ func (ivk *adaptiveServiceClusterInvoker) Invoke(ctx context.Context, invocation
 	}
 
 	// update metrics
-	remainingIface := result.Attachment(constant.AdaptiveServiceRemainingKey, "")
-	remainingStr, ok := remainingIface.(string)
-	if !ok {
+	var remainingStr string
+	remainingIface := result.Attachment(constant.AdaptiveServiceRemainingKey, nil)
+	if remainingIface != nil {
+		if str, strOK := remainingIface.(string); strOK {
+			remainingStr = str
+		} else if strArr, strArrOK := remainingIface.([]string); strArrOK && len(strArr) > 0 {
+			remainingStr = strArr[0]
+		}
+	}
+	if remainingStr == "" {
 		logger.Errorf("[adasvc cluster] The %s field type of value %v should be string.",
 			constant.AdaptiveServiceRemainingKey, remainingIface)
 		return result

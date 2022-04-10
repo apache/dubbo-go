@@ -31,10 +31,10 @@ jobs:
       id: go
 
     - name: Check out code into the Go module directory
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Cache dependencies
-      uses: actions/cache@v2.1.7
+      uses: actions/cache@v3
       with:
         # Cache
         path: ~/go/pkg/mod
@@ -43,6 +43,17 @@ jobs:
         # An ordered list of keys to use for restoring the cache if no cache hit occurred for key
         restore-keys: |
           ${{ runner.os }}-go-
+
+    - name: Merge base
+      if: ${{ github.event_name == 'pull_request' }}
+      run: |
+        git fetch origin 3.0
+        git checkout -b 3.0 origin/3.0
+        git remote add devrepo https://github.com/${{github.event.pull_request.head.repo.full_name}}.git
+        git fetch devrepo ${{github.event.pull_request.head.sha}}
+        git config --global user.email "dubbo-go@github-ci.com"
+        git config --global user.name "robot"
+        git merge ${{github.event.pull_request.head.sha}}
 
     - name: Get dependencies
       run: |
@@ -69,12 +80,6 @@ jobs:
       run: |
         go fmt ./... && git status && [[ -z `git status -s` ]]
         # diff -u <(echo -n) <(gofmt -d -s .)
-
-    - name: Install go ci lint
-      run: curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.41.1
-
-    - name: Run Linter
-      run: golangci-lint run --timeout=10m -v
 
     - name: Verify
       run: |

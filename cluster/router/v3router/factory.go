@@ -19,11 +19,12 @@ package v3router
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/router"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 )
 
 func init() {
-	extension.SetRouterFactory("mesh", NewUniformRouterFactory)
+	extension.SetRouterFactory(constant.V3RouterFactoryKey, NewUniformRouterFactory)
 }
 
 // UniformRouteFactory is uniform router's factory

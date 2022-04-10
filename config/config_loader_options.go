@@ -38,27 +38,16 @@ import (
 )
 
 type loaderConf struct {
-	// loaderConf file extension default yaml
-	suffix string
-
-	// loaderConf file path default ./conf/dubbogo.yaml
-	path string
-
-	// loaderConf file delim default .
-	delim string
-
-	// config bytes
-	bytes []byte
-
-	// user provide rootConfig built by config api
-	rc *RootConfig
-
-	// config file name
-	name string
+	suffix string      // loaderConf file extension default yaml
+	path   string      // loaderConf file path default ./conf/dubbogo.yaml
+	delim  string      // loaderConf file delim default .
+	bytes  []byte      // config bytes
+	rc     *RootConfig // user provide rootConfig built by config api
+	name   string      // config file name
 }
 
 func NewLoaderConf(opts ...LoaderConfOption) *loaderConf {
-	configFilePath := "./conf/dubbogo.yaml"
+	configFilePath := "../conf/dubbogo.yaml"
 	if configFilePathFromEnv := os.Getenv(constant.ConfigFileEnvKey); configFilePathFromEnv != "" {
 		configFilePath = configFilePathFromEnv
 	}
