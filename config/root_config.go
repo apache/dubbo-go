@@ -261,6 +261,8 @@ func newEmptyRootConfig() *RootConfig {
 		Tracing:        make(map[string]*TracingConfig),
 		Provider:       NewProviderConfigBuilder().Build(),
 		Consumer:       NewConsumerConfigBuilder().Build(),
+		RestProvider:   NewRestProviderConfigBuilder().Build(),
+		RestConsumer:   NewRestConsumerConfigBuilder().Build(),
 		Metric:         NewMetricConfigBuilder().Build(),
 		Logger:         NewLoggerConfigBuilder().Build(),
 		Custom:         NewCustomConfigBuilder().Build(),

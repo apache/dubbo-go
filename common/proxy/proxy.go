@@ -140,6 +140,7 @@ func DefaultProxyImplementFunc(p *Proxy, v common.RPCService) {
 				}
 			} else { // only return error
 				replyEmptyFlag = true
+				//reply = reflect.New(outs[0])
 			}
 
 			start := 0
@@ -175,6 +176,7 @@ func DefaultProxyImplementFunc(p *Proxy, v common.RPCService) {
 
 			inv = invocation_impl.NewRPCInvocationWithOptions(invocation_impl.WithMethodName(methodName),
 				invocation_impl.WithArguments(inIArr),
+				//invocation_impl.WithReply(reply.Interface()),
 				invocation_impl.WithCallBack(p.callback), invocation_impl.WithParameterValues(inVArr))
 			if !replyEmptyFlag {
 				inv.SetReply(reply.Interface())

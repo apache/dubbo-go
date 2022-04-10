@@ -94,10 +94,16 @@ func initMethodConfigMap(rc *RestServiceConfig, consumes string, produces string
 
 // transformMethodConfig
 func transformMethodConfig(methodConfig *RestMethodConfig) *RestMethodConfig {
+
+	// pi todo do not set default value，it make the value change
+	//if err := defaults.Set(methodConfig); err != nil {
+	//	logger.Warnf("[RestConfig] defaults config error:%v", err)
+	//}
+
 	if len(methodConfig.PathParamsMap) == 0 && len(methodConfig.PathParams) > 0 {
 		paramsMap, err := parseParamsString2Map(methodConfig.PathParams)
 		if err != nil {
-			logger.Warnf("[Rest ShutdownConfig] Path Param parse error:%v", err)
+			logger.Warnf("[RestConfig] Path Param parse error:%v", err)
 		} else {
 			methodConfig.PathParamsMap = paramsMap
 		}
@@ -105,7 +111,7 @@ func transformMethodConfig(methodConfig *RestMethodConfig) *RestMethodConfig {
 	if len(methodConfig.QueryParamsMap) == 0 && len(methodConfig.QueryParams) > 0 {
 		paramsMap, err := parseParamsString2Map(methodConfig.QueryParams)
 		if err != nil {
-			logger.Warnf("[Rest ShutdownConfig] Argument Param parse error:%v", err)
+			logger.Warnf("[RestConfig] Query Param parse error:%v", err)
 		} else {
 			methodConfig.QueryParamsMap = paramsMap
 		}
@@ -113,7 +119,7 @@ func transformMethodConfig(methodConfig *RestMethodConfig) *RestMethodConfig {
 	if len(methodConfig.HeadersMap) == 0 && len(methodConfig.Headers) > 0 {
 		headersMap, err := parseParamsString2Map(methodConfig.Headers)
 		if err != nil {
-			logger.Warnf("[Rest ShutdownConfig] Argument Param parse error:%v", err)
+			logger.Warnf("[RestConfig] Header parse error:%v", err)
 		} else {
 			methodConfig.HeadersMap = headersMap
 		}
@@ -279,4 +285,45 @@ func (c *RestProviderConfig) Init(rc *RootConfig) error {
 
 func (c *RestProviderConfig) Load() {
 
+}
+
+type RestProviderConfigBuilder struct {
+	restProviderConfig *RestProviderConfig
+}
+
+func NewRestProviderConfigBuilder() *RestProviderConfigBuilder {
+	return &RestProviderConfigBuilder{restProviderConfig: newEmptyRestProviderConfig()}
+}
+
+func (pcb *RestProviderConfigBuilder) Build() *RestProviderConfig {
+	return pcb.restProviderConfig
+}
+
+func newEmptyRestProviderConfig() *RestProviderConfig {
+	newProviderConfig := &RestProviderConfig{
+		Server:   "go-restful",
+		Produces: "*/*",
+		Consumes: "*/*",
+	}
+	return newProviderConfig
+}
+
+type RestConsumerConfigBuilder struct {
+	restConsumerConfig *RestConsumerConfig
+}
+
+func NewRestConsumerConfigBuilder() *RestConsumerConfigBuilder {
+	return &RestConsumerConfigBuilder{restConsumerConfig: newEmptyRestConsumerConfig()}
+}
+
+func newEmptyRestConsumerConfig() *RestConsumerConfig {
+	return &RestConsumerConfig{
+		Client:   "resty",
+		Produces: "application/json",
+		Consumes: "application/json",
+	}
+}
+
+func (ccb *RestConsumerConfigBuilder) Build() *RestConsumerConfig {
+	return ccb.restConsumerConfig
 }

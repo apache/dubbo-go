@@ -30,7 +30,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/rest/client"
-	_ "dubbo.apache.org/dubbo-go/v3/protocol/rest/client/client_impl"
+	"dubbo.apache.org/dubbo-go/v3/protocol/rest/client/client_impl"
 	"dubbo.apache.org/dubbo-go/v3/protocol/rest/server"
 )
 
@@ -40,6 +40,10 @@ const REST = "rest"
 
 func init() {
 	SetRestServer(constant.DefaultRestServer, server.NewGoRestfulServer)
+}
+
+func init() {
+	extension.SetRestClient(constant.DefaultRestClient, client_impl.NewRestyClient)
 }
 
 // nolint
