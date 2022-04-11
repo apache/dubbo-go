@@ -18,6 +18,10 @@
 package constant
 
 const (
+	EndPointWeight = "endPointWeight"
+)
+
+const (
 	MeshClusterIDKey = "meshClusterID"
 	MeshHostAddrKey  = "meshHostAddr"
 	MeshSubsetKey    = "meshSubset"

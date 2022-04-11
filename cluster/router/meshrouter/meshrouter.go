@@ -18,9 +18,7 @@
 package meshrouter
 
 import (
-	"bytes"
 	"math/rand"
-	"strings"
 )
 
 import (
@@ -31,8 +29,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/remoting/xds"
-	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
-	"dubbo.apache.org/dubbo-go/v3/xds/utils/resolver"
 )
 
 const (
@@ -60,7 +56,7 @@ func (r *MeshRouter) Route(invokers []protocol.Invoker, url *common.URL, invocat
 	if r.client == nil {
 		return invokers
 	}
-	hostAddr, err := r.client.GetHostAddrByServiceUniqueKey(getSubscribeName(url))
+	hostAddr, err := r.client.GetHostAddrByServiceUniqueKey(common.GetSubscribeName(url))
 	if err != nil {
 		// todo deal with error
 		return nil
@@ -75,47 +71,28 @@ func (r *MeshRouter) Route(invokers []protocol.Invoker, url *common.URL, invocat
 		}
 		clusterInvokerMap[meshClusterID] = append(clusterInvokerMap[meshClusterID], v)
 	}
-
-	if len(rconf.VirtualHosts) != 0 {
-		// try to route to sub virtual host
-		for _, vh := range rconf.VirtualHosts {
-			// 1. match domain
-			//vh.Domains == ["*"]
-
-			// 2. match http route
-			for _, r := range vh.Routes {
-				//route.
-				ctx := invocation.GetAttachmentAsContext()
-				matcher, err := resource.RouteToMatcher(r)
-				if err != nil {
-					logger.Errorf("[Mesh Router] router to matcher failed with error %s", err)
-					return invokers
-				}
-				if matcher.Match(resolver.RPCInfo{
-					Context: ctx,
-					Method:  "/" + invocation.MethodName(),
-				}) {
-					// Loop through routes in order and select first match.
-					if r == nil || r.WeightedClusters == nil {
-						logger.Errorf("[Mesh Router] route's WeightedClusters is empty, route: %+v", r)
-						return invokers
-					}
-					invokersWeightPairs := make(invokerWeightPairs, 0)
-
-					for clusterID, weight := range r.WeightedClusters {
-						// cluster -> invokers
-						targetInvokers := clusterInvokerMap[clusterID]
-						invokersWeightPairs = append(invokersWeightPairs, invokerWeightPair{
-							invokers: targetInvokers,
-							weight:   weight.Weight,
-						})
-					}
-					return invokersWeightPairs.GetInvokers()
-				}
-			}
-		}
+	route, err := r.client.MatchRoute(rconf, invocation)
+	if err != nil {
+		logger.Errorf("[Mesh Router] not found route,method=%s", invocation.MethodName())
+		return nil
 	}
-	return invokers
+
+	// Loop through routes in order and select first match.
+	if route == nil || route.WeightedClusters == nil {
+		logger.Errorf("[Mesh Router] route's WeightedClusters is empty, route: %+v", r)
+		return invokers
+	}
+	invokersWeightPairs := make(invokerWeightPairs, 0)
+
+	for clusterID, weight := range route.WeightedClusters {
+		// cluster -> invokers
+		targetInvokers := clusterInvokerMap[clusterID]
+		invokersWeightPairs = append(invokersWeightPairs, invokerWeightPair{
+			invokers: targetInvokers,
+			weight:   weight.Weight,
+		})
+	}
+	return invokersWeightPairs.GetInvokers()
 }
 
 // Process there is no process needs for uniform Router, as it upper struct RouterChain has done it
@@ -166,22 +143,4 @@ func (i *invokerWeightPairs) GetInvokers() []protocol.Invoker {
 		}
 	}
 	return (*i)[0].invokers
-}
-
-func getSubscribeName(url *common.URL) string {
-	var buffer bytes.Buffer
-
-	buffer.Write([]byte(common.DubboNodes[common.PROVIDER]))
-	appendParam(&buffer, url, constant.InterfaceKey)
-	appendParam(&buffer, url, constant.VersionKey)
-	appendParam(&buffer, url, constant.GroupKey)
-	return buffer.String()
-}
-
-func appendParam(target *bytes.Buffer, url *common.URL, key string) {
-	value := url.GetParam(key, "")
-	target.Write([]byte(constant.NacosServiceNameSeparator))
-	if strings.TrimSpace(value) != "" {
-		target.Write([]byte(value))
-	}
 }
