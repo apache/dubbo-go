@@ -70,14 +70,6 @@ func NewRestyClient(restOption *client.RestOptions) client.RestClient {
 func (rc *RestyClient) Do(restRequest *client.RestClientRequest, res interface{}) error {
 	req := rc.client.R()
 	req.Header = restRequest.Header
-	// pi todo fix the case of res is nil
-
-	//resp, err := req.
-	//	SetPathParams(restRequest.PathParams).
-	//	SetQueryParams(restRequest.QueryParams).
-	//	SetBody(restRequest.Body).
-	//	SetResult(res).
-	//	Execute(restRequest.Method, "http://"+path.Join(restRequest.Location, restRequest.Path))
 	req.SetPathParams(restRequest.PathParams).
 		SetQueryParams(restRequest.QueryParams).
 		SetBody(restRequest.Body)

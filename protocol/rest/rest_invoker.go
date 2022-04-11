@@ -19,7 +19,6 @@ package rest
 
 import (
 	"context"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"fmt"
 	"net/http"
 )
@@ -30,6 +29,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	invocation_impl "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/rest/client"
@@ -91,7 +91,6 @@ func (ri *RestInvoker) Invoke(ctx context.Context, invocation protocol.Invocatio
 		Body:        body,
 		Header:      header,
 	}
-	// pi todo Rest protocol : inv.Reply is null
 	result.Err = ri.client.Do(req, inv.Reply())
 	if result.Err == nil {
 		result.Rest = inv.Reply()

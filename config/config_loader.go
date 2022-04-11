@@ -19,7 +19,6 @@ package config
 
 import (
 	"errors"
-	"github.com/mitchellh/mapstructure"
 	"reflect"
 	"strconv"
 )
@@ -48,28 +47,7 @@ func Load(opts ...LoaderConfOption) error {
 		koan := GetConfigResolver(conf)
 		koan = conf.MergeConfig(koan)
 		if err := koan.UnmarshalWithConf(rootConfig.Prefix(),
-			rootConfig, koanf.UnmarshalConf{Tag: "yaml", DecoderConfig: &mapstructure.DecoderConfig{
-				DecodeHook: mapstructure.ComposeDecodeHookFunc(
-					mapstructure.StringToTimeDurationHookFunc(),
-					// default
-					func() mapstructure.DecodeHookFunc {
-						return func(
-							f reflect.Type,
-							t reflect.Type,
-							data interface{}) (interface{}, error) {
-
-							//if err := defaults.Set(t); err != nil {
-							//	return data, err
-							//}
-
-							return data, nil
-						}
-					}(),
-				),
-				Metadata:         nil,
-				Result:           rootConfig,
-				WeaklyTypedInput: true,
-			}}); err != nil {
+			rootConfig, koanf.UnmarshalConf{Tag: "yaml"}); err != nil {
 			return err
 		}
 	} else {

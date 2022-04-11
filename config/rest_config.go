@@ -18,11 +18,17 @@
 package config
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
-	"github.com/creasty/defaults"
 	"strconv"
 	"strings"
+)
+
+import (
+	"github.com/creasty/defaults"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
 )
 
 var (
@@ -74,9 +80,6 @@ func (c *RestConsumerConfig) Init(rc *RootConfig) error {
 	return nil
 }
 
-func (c *RestConsumerConfig) Load() {
-}
-
 // initProviderRestConfig ...
 func initMethodConfigMap(rc *RestServiceConfig, consumes string, produces string) map[string]*RestMethodConfig {
 	mcm := make(map[string]*RestMethodConfig, len(rc.RestMethodConfigs))
@@ -94,12 +97,6 @@ func initMethodConfigMap(rc *RestServiceConfig, consumes string, produces string
 
 // transformMethodConfig
 func transformMethodConfig(methodConfig *RestMethodConfig) *RestMethodConfig {
-
-	// pi todo do not set default value，it make the value change
-	//if err := defaults.Set(methodConfig); err != nil {
-	//	logger.Warnf("[RestConfig] defaults config error:%v", err)
-	//}
-
 	if len(methodConfig.PathParamsMap) == 0 && len(methodConfig.PathParams) > 0 {
 		paramsMap, err := parseParamsString2Map(methodConfig.PathParams)
 		if err != nil {
@@ -281,10 +278,6 @@ func (c *RestProviderConfig) Init(rc *RootConfig) error {
 	SetRestProviderServiceConfigMap(restProviderServiceConfigMap)
 
 	return nil
-}
-
-func (c *RestProviderConfig) Load() {
-
 }
 
 type RestProviderConfigBuilder struct {

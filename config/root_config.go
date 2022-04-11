@@ -64,9 +64,8 @@ type RootConfig struct {
 	CacheFile           string                     `yaml:"cache_file" json:"cache_file,omitempty" property:"cache_file"`
 	Custom              *CustomConfig              `yaml:"custom" json:"custom,omitempty" property:"custom"`
 	Profiles            *ProfilesConfig            `yaml:"profiles" json:"profiles,omitempty" property:"profiles"`
-	// pi todo rest provider/consumer config
-	RestProvider *RestProviderConfig `yaml:"provider" json:"rest-provider" property:"rest-provider"`
-	RestConsumer *RestConsumerConfig `yaml:"consumer" json:"rest-consumer" property:"rest-consumer"`
+	RestProvider        *RestProviderConfig        `yaml:"provider" json:"rest-provider" property:"rest-provider"`
+	RestConsumer        *RestConsumerConfig        `yaml:"consumer" json:"rest-consumer" property:"rest-consumer"`
 }
 
 func SetRootConfig(r RootConfig) {
@@ -186,7 +185,6 @@ func (rc *RootConfig) Init() error {
 	}
 
 	// pi rest provider/consumer init
-	// provider、consumer must last init
 	if err := rc.RestProvider.Init(rc); err != nil {
 		return err
 	}
@@ -213,11 +211,6 @@ func (rc *RootConfig) Init() error {
 func (rc *RootConfig) Start() {
 	startOnce.Do(func() {
 		gracefulShutdownInit()
-
-		// pi rest provider/consumer Load
-		rc.RestConsumer.Load()
-		rc.RestProvider.Load()
-
 		rc.Consumer.Load()
 		rc.Provider.Load()
 		// todo if register consumer instance or has exported services
@@ -238,12 +231,12 @@ func newEmptyRootConfig() *RootConfig {
 		Provider:       NewProviderConfigBuilder().Build(),
 		Consumer:       NewConsumerConfigBuilder().Build(),
 		// pi rest provider/consumer builder
-		RestProvider:   NewRestProviderConfigBuilder().Build(),
-		RestConsumer:   NewRestConsumerConfigBuilder().Build(),
-		Metric:         NewMetricConfigBuilder().Build(),
-		Logger:         NewLoggerConfigBuilder().Build(),
-		Custom:         NewCustomConfigBuilder().Build(),
-		Shutdown:       NewShutDownConfigBuilder().Build(),
+		RestProvider: NewRestProviderConfigBuilder().Build(),
+		RestConsumer: NewRestConsumerConfigBuilder().Build(),
+		Metric:       NewMetricConfigBuilder().Build(),
+		Logger:       NewLoggerConfigBuilder().Build(),
+		Custom:       NewCustomConfigBuilder().Build(),
+		Shutdown:     NewShutDownConfigBuilder().Build(),
 	}
 	return newRootConfig
 }
