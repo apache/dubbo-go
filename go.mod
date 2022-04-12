@@ -19,7 +19,7 @@ require (
 	github.com/dubbogo/grpc-go v1.42.9
 	github.com/dubbogo/triple v1.1.8
 	github.com/emicklei/go-restful/v3 v3.7.4
-	github.com/envoyproxy/go-control-plane v0.10.0
+	github.com/envoyproxy/go-control-plane v0.10.1
 	github.com/fsnotify/fsnotify v1.5.1
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-co-op/gocron v1.9.0
