@@ -49,7 +49,10 @@ func (p *RpcClientPackageHandler) Read(ss getty.Session, data []byte) (interface
 	if err != nil {
 		err = perrors.WithStack(err)
 	}
-	if rsp.Result == nil {
+	if rsp == ((*remoting.DecodeResult)(nil)) {
+		return nil, length, err
+	}
+	if rsp.Result == ((*remoting.Response)(nil)) || rsp.Result == ((*remoting.Request)(nil)) {
 		return nil, length, err
 	}
 	return rsp, length, err
@@ -97,7 +100,10 @@ func (p *RpcServerPackageHandler) Read(ss getty.Session, data []byte) (interface
 	if err != nil {
 		err = perrors.WithStack(err)
 	}
-	if req.Result == nil {
+	if req == ((*remoting.DecodeResult)(nil)) {
+		return nil, length, err
+	}
+	if req.Result == ((*remoting.Request)(nil)) || req.Result == ((*remoting.Response)(nil)) {
 		return nil, length, err // as getty rule
 	}
 	return req, length, err
