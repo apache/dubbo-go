@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: "*"
 
+permissions:
+  contents: read
+
 jobs:
   build:
     name: ${{ matrix.os }} - Go ${{ matrix.go_version }}
@@ -25,7 +28,7 @@ jobs:
     steps:
 
     - name: Set up Go ${{ matrix.go_version }}
-      uses: actions/setup-go@v2
+      uses: actions/setup-go@v3
       with:
         go-version: ${{ matrix.go_version }}
       id: go

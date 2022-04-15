@@ -94,8 +94,8 @@ func (h *RpcClientHandler) OnClose(session getty.Session) {
 
 // OnMessage get response from getty server, and update the session to the getty client session list
 func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
-	result, ok := pkg.(remoting.DecodeResult)
-	if !ok {
+	result, ok := pkg.(*remoting.DecodeResult)
+	if !ok || result == ((*remoting.DecodeResult)(nil)) {
 		logger.Errorf("[RpcClientHandler.OnMessage] getty client gets an unexpected rpc result: %#v", result)
 		return
 	}
@@ -232,8 +232,8 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 	}
 	h.rwlock.Unlock()
 
-	decodeResult, drOK := pkg.(remoting.DecodeResult)
-	if !drOK {
+	decodeResult, drOK := pkg.(*remoting.DecodeResult)
+	if !drOK || decodeResult == ((*remoting.DecodeResult)(nil)) {
 		logger.Errorf("illegal package{%#v}", pkg)
 		return
 	}

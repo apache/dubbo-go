@@ -75,8 +75,8 @@ func testDecodeTCPPackage(t *testing.T, svr *Server, client *Client) {
 	assert.True(t, incompletePkgLen >= impl.HEADER_LENGTH, "header buffer too short")
 	incompletePkg := pkgBytes[0 : incompletePkgLen-1]
 	pkg, pkgLen, err := pkgReadHandler.Read(nil, incompletePkg)
-	assert.NoError(t, err)
-	assert.Equal(t, pkg, nil)
+	assert.Equal(t, err.Error(), "body buffer too short")
+	assert.Equal(t, pkg.(*remoting.DecodeResult).Result, nil)
 	assert.Equal(t, pkgLen, 0)
 }
 

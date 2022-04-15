@@ -223,6 +223,8 @@ var (
 
 // Error part
 var (
+	// the following errors has already existed in github.com/apache/dubbo-go-hessian2.
+	// Please do not use them.
 	ErrHeaderNotEnough = errors.New("header buffer too short")
 	ErrBodyNotEnough   = errors.New("body buffer too short")
 	ErrJavaException   = errors.New("got java exception")

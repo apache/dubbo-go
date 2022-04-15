@@ -5,8 +5,14 @@ on:
   pull_request:
     branches: "*"
 
+permissions:
+  contents: read
+
 jobs:
   golangci:
+    permissions:
+      contents: read  # for actions/checkout to fetch code
+      pull-requests: read  # for golangci/golangci-lint-action to fetch pull requests
     name: lint
     runs-on: ubuntu-latest
     strategy:
@@ -14,7 +20,7 @@ jobs:
         golang:
           - 1.15
     steps:
-      - uses: actions/setup-go@v2
+      - uses: actions/setup-go@v3
         with:
           go-version: 1.15
       - uses: actions/checkout@v3
