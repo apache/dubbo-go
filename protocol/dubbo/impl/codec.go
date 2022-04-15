@@ -157,7 +157,7 @@ func (c *ProtocolCodec) Decode(p *DubboPackage) error {
 			return err
 		}
 	}
-	if c.reader.Size() < p.GetBodyLen() {
+	if c.reader.Size() < p.GetBodyLen()+HEADER_LENGTH {
 		return hessian.ErrBodyNotEnough
 	}
 	body, err := c.reader.Peek(p.GetBodyLen())
