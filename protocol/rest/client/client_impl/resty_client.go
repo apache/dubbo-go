@@ -38,7 +38,6 @@ import (
 //func init() {
 //	extension.SetRestClient(constant.DefaultRestClient, NewRestyClient)
 //}
-
 // RestyClient a rest client implement by Resty
 type RestyClient struct {
 	client *resty.Client

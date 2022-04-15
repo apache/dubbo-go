@@ -19,7 +19,6 @@ package server
 
 import (
 	"context"
-	rest_config "dubbo.apache.org/dubbo-go/v3/config"
 	"errors"
 	"net/http"
 	"reflect"
@@ -33,6 +32,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	rest_config "dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
