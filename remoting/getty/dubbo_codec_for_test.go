@@ -155,19 +155,19 @@ func (c *DubboTestCodec) EncodeResponse(response *remoting.Response) (*bytes.Buf
 }
 
 // Decode data, including request and response.
-func (c *DubboTestCodec) Decode(data []byte) (remoting.DecodeResult, int, error) {
+func (c *DubboTestCodec) Decode(data []byte) (*remoting.DecodeResult, int, error) {
 	if c.isRequest(data) {
 		req, len, err := c.decodeRequest(data)
 		if err != nil {
-			return remoting.DecodeResult{}, len, perrors.WithStack(err)
+			return &remoting.DecodeResult{}, len, perrors.WithStack(err)
 		}
-		return remoting.DecodeResult{IsRequest: true, Result: req}, len, perrors.WithStack(err)
+		return &remoting.DecodeResult{IsRequest: true, Result: req}, len, perrors.WithStack(err)
 	} else {
 		resp, len, err := c.decodeResponse(data)
 		if err != nil {
-			return remoting.DecodeResult{}, len, perrors.WithStack(err)
+			return &remoting.DecodeResult{}, len, perrors.WithStack(err)
 		}
-		return remoting.DecodeResult{IsRequest: false, Result: resp}, len, perrors.WithStack(err)
+		return &remoting.DecodeResult{IsRequest: false, Result: resp}, len, perrors.WithStack(err)
 	}
 }
 
