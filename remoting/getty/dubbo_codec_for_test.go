@@ -155,19 +155,19 @@ func (c *DubboTestCodec) EncodeResponse(response *remoting.Response) (*bytes.Buf
 }
 
 // Decode data, including request and response.
-func (c *DubboTestCodec) Decode(data []byte) (remoting.DecodeResult, int, error) {
+func (c *DubboTestCodec) Decode(data []byte) (*remoting.DecodeResult, int, error) {
 	if c.isRequest(data) {
-		req, len, err := c.decodeRequest(data)
+		req, length, err := c.decodeRequest(data)
 		if err != nil {
-			return remoting.DecodeResult{}, len, perrors.WithStack(err)
+			return &remoting.DecodeResult{}, length, perrors.WithStack(err)
 		}
-		return remoting.DecodeResult{IsRequest: true, Result: req}, len, perrors.WithStack(err)
+		return &remoting.DecodeResult{IsRequest: true, Result: req}, length, perrors.WithStack(err)
 	} else {
-		resp, len, err := c.decodeResponse(data)
+		rsp, length, err := c.decodeResponse(data)
 		if err != nil {
-			return remoting.DecodeResult{}, len, perrors.WithStack(err)
+			return &remoting.DecodeResult{}, length, perrors.WithStack(err)
 		}
-		return remoting.DecodeResult{IsRequest: false, Result: resp}, len, perrors.WithStack(err)
+		return &remoting.DecodeResult{IsRequest: false, Result: rsp}, length, perrors.WithStack(err)
 	}
 }
 
@@ -232,8 +232,11 @@ func (c *DubboTestCodec) decodeResponse(data []byte) (*remoting.Response, int, e
 	if err != nil {
 		originErr := perrors.Cause(err)
 		// if the data is very big, so the receive need much times.
-		if originErr == hessian.ErrHeaderNotEnough || originErr == hessian.ErrBodyNotEnough {
-			return nil, 0, originErr
+		if originErr == hessian.ErrHeaderNotEnough { // this is impossible, as dubbo_codec.go:DubboCodec::Decode() line 167
+			return nil, 0, nil
+		}
+		if originErr == hessian.ErrBodyNotEnough {
+			return nil, hessian.HEADER_LENGTH + pkg.GetBodyLen(), nil
 		}
 		return nil, 0, perrors.WithStack(err)
 	}

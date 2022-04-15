@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package dubbo
 
 import (
@@ -32,7 +33,7 @@ import (
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/protocol"
 	"github.com/apache/dubbo-go/protocol/dubbo/impl"
-	"github.com/apache/dubbo-go/protocol/invocation"
+	incvt "github.com/apache/dubbo-go/protocol/invocation"
 	"github.com/apache/dubbo-go/remoting"
 )
 
@@ -161,20 +162,27 @@ func (c *DubboCodec) EncodeResponse(response *remoting.Response) (*bytes.Buffer,
 }
 
 // Decode data, including request and response.
-func (c *DubboCodec) Decode(data []byte) (remoting.DecodeResult, int, error) {
+func (c *DubboCodec) Decode(data []byte) (*remoting.DecodeResult, int, error) {
+	dataLen := len(data)
+	if dataLen < impl.HEADER_LENGTH { // check whether header bytes is enough or not
+		return nil, 0, nil
+	}
 	if c.isRequest(data) {
-		req, len, err := c.decodeRequest(data)
+		req, length, err := c.decodeRequest(data)
 		if err != nil {
-			return remoting.DecodeResult{}, len, perrors.WithStack(err)
+			return &remoting.DecodeResult{}, length, perrors.WithStack(err)
 		}
-		return remoting.DecodeResult{IsRequest: true, Result: req}, len, perrors.WithStack(err)
+		return &remoting.DecodeResult{IsRequest: true, Result: req}, length, perrors.WithStack(err)
 	}
 
-	resp, len, err := c.decodeResponse(data)
+	rsp, length, err := c.decodeResponse(data)
 	if err != nil {
-		return remoting.DecodeResult{}, len, perrors.WithStack(err)
+		return nil, length, perrors.WithStack(err)
 	}
-	return remoting.DecodeResult{IsRequest: false, Result: resp}, len, perrors.WithStack(err)
+	if rsp == ((*remoting.Response)(nil)) {
+		return nil, length, err
+	}
+	return &remoting.DecodeResult{IsRequest: false, Result: rsp}, length, perrors.WithStack(err)
 }
 
 func (c *DubboCodec) isRequest(data []byte) bool {
@@ -183,16 +191,19 @@ func (c *DubboCodec) isRequest(data []byte) bool {
 
 // decode request
 func (c *DubboCodec) decodeRequest(data []byte) (*remoting.Request, int, error) {
-	var request *remoting.Request = nil
+	var request *remoting.Request
 	buf := bytes.NewBuffer(data)
 	pkg := impl.NewDubboPackage(buf)
 	pkg.SetBody(make([]interface{}, 7))
 	err := pkg.Unmarshal()
 	if err != nil {
 		originErr := perrors.Cause(err)
-		if originErr == hessian.ErrHeaderNotEnough || originErr == hessian.ErrBodyNotEnough {
-			//FIXME
-			return nil, 0, originErr
+		// this is impossible. because this case has been handled in 'protocol/dubbo/dubbo_codec.go:DubboCodec::Decode'
+		if originErr == hessian.ErrHeaderNotEnough {
+			return nil, 0, nil
+		}
+		if originErr == hessian.ErrBodyNotEnough {
+			return nil, hessian.HEADER_LENGTH + pkg.GetBodyLen(), nil
 		}
 		logger.Errorf("pkg.Unmarshal(len(@data):%d) = error:%+v", buf.Len(), err)
 
@@ -224,8 +235,8 @@ func (c *DubboCodec) decodeRequest(data []byte) (*remoting.Request, int, error) 
 		methodName = pkg.Service.Method
 		args = req[impl.ArgsKey].([]interface{})
 		attachments = req[impl.AttachmentsKey].(map[string]interface{})
-		invoc := invocation.NewRPCInvocationWithOptions(invocation.WithAttachments(attachments),
-			invocation.WithArguments(args), invocation.WithMethodName(methodName))
+		invoc := incvt.NewRPCInvocationWithOptions(incvt.WithAttachments(attachments),
+			incvt.WithArguments(args), incvt.WithMethodName(methodName))
 		request.Data = invoc
 
 	}
@@ -240,10 +251,14 @@ func (c *DubboCodec) decodeResponse(data []byte) (*remoting.Response, int, error
 	if err != nil {
 		originErr := perrors.Cause(err)
 		// if the data is very big, so the receive need much times.
-		if originErr == hessian.ErrHeaderNotEnough || originErr == hessian.ErrBodyNotEnough {
-			return nil, 0, originErr
+		// this is impossible. because this case has been handled in 'protocol/dubbo/dubbo_codec.go:DubboCodec::Decode'
+		if originErr == hessian.ErrHeaderNotEnough {
+			return nil, 0, nil
 		}
-		logger.Errorf("pkg.Unmarshal(len(@data):%d) = error:%+v", buf.Len(), err)
+		if originErr == hessian.ErrBodyNotEnough {
+			return nil, hessian.HEADER_LENGTH + pkg.GetBodyLen(), nil
+		}
+		logger.Warnf("pkg.Unmarshal(len(@data):%d) = error:%+v", buf.Len(), err)
 
 		return nil, 0, perrors.WithStack(err)
 	}
