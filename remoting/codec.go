@@ -24,7 +24,7 @@ import (
 type Codec interface {
 	EncodeRequest(request *Request) (*bytes.Buffer, error)
 	EncodeResponse(response *Response) (*bytes.Buffer, error)
-	Decode(data []byte) (DecodeResult, int, error)
+	Decode(data []byte) (*DecodeResult, int, error)
 }
 
 type DecodeResult struct {
