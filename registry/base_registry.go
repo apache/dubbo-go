@@ -286,7 +286,7 @@ func (r *BaseRegistry) providerRegistry(c *common.URL, params url.Values, f crea
 	}
 	logger.Debugf("provider url params:%#v", params)
 	var host string
-	if len(c.Ip) > 0 {
+	if len(c.Ip) == 0 {
 		host = localIP
 	} else {
 		host = c.Ip
