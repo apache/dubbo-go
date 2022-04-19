@@ -66,8 +66,14 @@ func (p *RpcClientPackageHandler) Read(ss getty.Session, data []byte) (interface
 // Write send the data to server
 func (p *RpcClientPackageHandler) Write(ss getty.Session, pkg interface{}) ([]byte, error) {
 	req, ok := pkg.(*remoting.Request)
+	maxBufLength := clientConf.GettySessionParam.MaxMsgLen + hessian.HEADER_LENGTH
 	if ok {
 		buf, err := (p.client.codec).EncodeRequest(req)
+		bufLength := buf.Len()
+		if bufLength > maxBufLength {
+			logger.Errorf("Data length %d too large, max payload %d", bufLength-hessian.HEADER_LENGTH, clientConf.GettySessionParam.MaxMsgLen)
+			return nil, perrors.Errorf("Data length %d too large, max payload %d", bufLength-hessian.HEADER_LENGTH, clientConf.GettySessionParam.MaxMsgLen)
+		}
 		if err != nil {
 			logger.Warnf("binary.Write(req{%#v}) = err{%#v}", req, perrors.WithStack(err))
 			return nil, perrors.WithStack(err)
@@ -78,6 +84,11 @@ func (p *RpcClientPackageHandler) Write(ss getty.Session, pkg interface{}) ([]by
 	res, ok := pkg.(*remoting.Response)
 	if ok {
 		buf, err := (p.client.codec).EncodeResponse(res)
+		bufLength := buf.Len()
+		if bufLength > maxBufLength {
+			logger.Errorf("Data length %d too large, max payload %d", bufLength-hessian.HEADER_LENGTH, clientConf.GettySessionParam.MaxMsgLen)
+			return nil, perrors.Errorf("Data length %d too large, max payload %d", bufLength-hessian.HEADER_LENGTH, clientConf.GettySessionParam.MaxMsgLen)
+		}
 		if err != nil {
 			logger.Warnf("binary.Write(res{%#v}) = err{%#v}", req, perrors.WithStack(err))
 			return nil, perrors.WithStack(err)
@@ -119,8 +130,14 @@ func (p *RpcServerPackageHandler) Read(ss getty.Session, data []byte) (interface
 // Write send the data to client
 func (p *RpcServerPackageHandler) Write(ss getty.Session, pkg interface{}) ([]byte, error) {
 	res, ok := pkg.(*remoting.Response)
+	maxBufLength := srvConf.GettySessionParam.MaxMsgLen + hessian.HEADER_LENGTH
 	if ok {
 		buf, err := (p.server.codec).EncodeResponse(res)
+		bufLength := buf.Len()
+		if bufLength > maxBufLength {
+			logger.Errorf("Data length %d too large, max payload %d", bufLength-hessian.HEADER_LENGTH, srvConf.GettySessionParam.MaxMsgLen)
+			return nil, perrors.Errorf("Data length %d too large, max payload %d", bufLength-hessian.HEADER_LENGTH, srvConf.GettySessionParam.MaxMsgLen)
+		}
 		if err != nil {
 			logger.Warnf("binary.Write(res{%#v}) = err{%#v}", res, perrors.WithStack(err))
 			return nil, perrors.WithStack(err)
@@ -131,6 +148,11 @@ func (p *RpcServerPackageHandler) Write(ss getty.Session, pkg interface{}) ([]by
 	req, ok := pkg.(*remoting.Request)
 	if ok {
 		buf, err := (p.server.codec).EncodeRequest(req)
+		bufLength := buf.Len()
+		if bufLength > maxBufLength {
+			logger.Errorf("Data length %d too large, max payload %d", bufLength-hessian.HEADER_LENGTH, srvConf.GettySessionParam.MaxMsgLen)
+			return nil, perrors.Errorf("Data length %d too large, max payload %d", bufLength-hessian.HEADER_LENGTH, srvConf.GettySessionParam.MaxMsgLen)
+		}
 		if err != nil {
 			logger.Warnf("binary.Write(req{%#v}) = err{%#v}", res, perrors.WithStack(err))
 			return nil, perrors.WithStack(err)

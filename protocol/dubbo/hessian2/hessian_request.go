@@ -173,7 +173,7 @@ END:
 	byteArray = encoder.Buffer()
 	pkgLen = len(byteArray)
 	if pkgLen > int(DEFAULT_LEN) { // 8M
-		return nil, perrors.Errorf("Data length %d too large, max payload %d", pkgLen, DEFAULT_LEN)
+		logger.Warnf("Data length %d too large, recommand max payload %d", pkgLen, DEFAULT_LEN)
 	}
 	// byteArray{body length}
 	binary.BigEndian.PutUint32(byteArray[12:], uint32(pkgLen-HEADER_LENGTH))
