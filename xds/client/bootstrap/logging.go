@@ -23,14 +23,4 @@
 
 package bootstrap
 
-import (
-	"google.golang.org/grpc/grpclog"
-)
-
-import (
-	internalgrpclog "dubbo.apache.org/dubbo-go/v3/xds/utils/grpclog"
-)
-
 const prefix = "[xds-bootstrap] "
-
-var logger = internalgrpclog.NewPrefixLogger(grpclog.Component("xds"), prefix)

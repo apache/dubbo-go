@@ -219,7 +219,7 @@ func (b *priorityBalancer) handleChildStateUpdate(childName string, s balancer.S
 		// Lower priorities should all be closed, this is an unexpected update.
 		// Can happen if the child policy sends an update after we tell it to
 		// close.
-		b.logger.Warningf("priority: received picker update from priority %v,  lower than priority in use %v", priority, b.priorityInUse)
+		b.logger.Warnf("priority: received picker update from priority %v,  lower than priority in use %v", priority, b.priorityInUse)
 		return
 	}
 

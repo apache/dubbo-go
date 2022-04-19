@@ -94,8 +94,8 @@ type LoggerV2 interface {
 	Warning(args ...interface{})
 	// Warningln logs to WARNING log. Arguments are handled in the manner of fmt.Println.
 	Warningln(args ...interface{})
-	// Warningf logs to WARNING log. Arguments are handled in the manner of fmt.Printf.
-	Warningf(format string, args ...interface{})
+	// Warnf logs to WARNING log. Arguments are handled in the manner of fmt.Printf.
+	Warnf(format string, args ...interface{})
 	// Error logs to ERROR log. Arguments are handled in the manner of fmt.Print.
 	Error(args ...interface{})
 	// Errorln logs to ERROR log. Arguments are handled in the manner of fmt.Println.

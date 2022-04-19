@@ -45,13 +45,13 @@ import (
 )
 
 import (
+	dubboLogger "dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/xds/balancer/clusterresolver"
 	"dubbo.apache.org/dubbo-go/v3/xds/balancer/ringhash"
 	"dubbo.apache.org/dubbo-go/v3/xds/client"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/buffer"
 	xdsinternal "dubbo.apache.org/dubbo-go/v3/xds/utils/credentials/xds"
-	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpclog"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpcsync"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/pretty"
 	internalserviceconfig "dubbo.apache.org/dubbo-go/v3/xds/utils/serviceconfig"
@@ -97,7 +97,7 @@ func (bb) Build(cc balancer.ClientConn, opts balancer.BuildOptions) balancer.Bal
 		done:     grpcsync.NewEvent(),
 		xdsHI:    xdsinternal.NewHandshakeInfo(nil, nil),
 	}
-	b.logger = prefixLogger((b))
+	b.logger = dubboLogger.GetLogger()
 	b.logger.Infof("Created")
 	var creds credentials.TransportCredentials
 	switch {
@@ -172,7 +172,7 @@ type cdsBalancer struct {
 	xdsClient      client.XDSClient      // xDS client to watch Cluster resource.
 	clusterHandler *clusterHandler       // To watch the clusters.
 	childLB        balancer.Balancer
-	logger         *grpclog.PrefixLogger
+	logger         dubboLogger.Logger
 	closed         *grpcsync.Event
 	done           *grpcsync.Event
 
@@ -290,7 +290,7 @@ func buildProviderFunc(configs map[string]*certprovider.BuildableConfig, instanc
 // lead to clientConn updates being invoked on the underlying cluster_resolver balancer.
 func (b *cdsBalancer) handleWatchUpdate(update clusterHandlerUpdate) {
 	if err := update.err; err != nil {
-		b.logger.Warningf("Watch error from xds-client %p: %v", b.xdsClient, err)
+		b.logger.Warnf("Watch error from xds-client %p: %v", b.xdsClient, err)
 		b.handleErrorFromUpdate(err, false)
 		return
 	}
@@ -306,7 +306,7 @@ func (b *cdsBalancer) handleWatchUpdate(update clusterHandlerUpdate) {
 		// If the security config is invalid, for example, if the provider
 		// instance is not found in the bootstrap config, we need to put the
 		// channel in transient failure.
-		b.logger.Warningf("Invalid security config update from xds-client %p: %v", b.xdsClient, err)
+		b.logger.Warnf("Invalid security config update from xds-client %p: %v", b.xdsClient, err)
 		b.handleErrorFromUpdate(err, false)
 		return
 	}
@@ -471,7 +471,7 @@ func (b *cdsBalancer) handleErrorFromUpdate(err error, fromParent bool) {
 // xdsResolver.
 func (b *cdsBalancer) UpdateClientConnState(state balancer.ClientConnState) error {
 	if b.closed.HasFired() {
-		b.logger.Warningf("xds: received ClientConnState {%+v} after cdsBalancer was closed", state)
+		b.logger.Warnf("xds: received ClientConnState {%+v} after cdsBalancer was closed", state)
 		return errBalancerClosed
 	}
 
@@ -489,11 +489,11 @@ func (b *cdsBalancer) UpdateClientConnState(state balancer.ClientConnState) erro
 	// something that is received on the wire.
 	lbCfg, ok := state.BalancerConfig.(*lbConfig)
 	if !ok {
-		b.logger.Warningf("xds: unexpected LoadBalancingConfig type: %T", state.BalancerConfig)
+		b.logger.Warnf("xds: unexpected LoadBalancingConfig type: %T", state.BalancerConfig)
 		return balancer.ErrBadResolverState
 	}
 	if lbCfg.ClusterName == "" {
-		b.logger.Warningf("xds: no clusterName found in LoadBalancingConfig: %+v", lbCfg)
+		b.logger.Warnf("xds: no clusterName found in LoadBalancingConfig: %+v", lbCfg)
 		return balancer.ErrBadResolverState
 	}
 	b.updateCh.Put(&ccUpdate{clusterName: lbCfg.ClusterName})
@@ -503,7 +503,7 @@ func (b *cdsBalancer) UpdateClientConnState(state balancer.ClientConnState) erro
 // ResolverError handles errors reported by the xdsResolver.
 func (b *cdsBalancer) ResolverError(err error) {
 	if b.closed.HasFired() {
-		b.logger.Warningf("xds: received resolver error {%v} after cdsBalancer was closed", err)
+		b.logger.Warnf("xds: received resolver error {%v} after cdsBalancer was closed", err)
 		return
 	}
 	b.updateCh.Put(&ccUpdate{err: err})
@@ -512,7 +512,7 @@ func (b *cdsBalancer) ResolverError(err error) {
 // UpdateSubConnState handles subConn updates from gRPC.
 func (b *cdsBalancer) UpdateSubConnState(sc balancer.SubConn, state balancer.SubConnState) {
 	if b.closed.HasFired() {
-		b.logger.Warningf("xds: received subConn update {%v, %v} after cdsBalancer was closed", sc, state)
+		b.logger.Warnf("xds: received subConn update {%v, %v} after cdsBalancer was closed", sc, state)
 		return
 	}
 	b.updateCh.Put(&scUpdate{subConn: sc, state: state})
