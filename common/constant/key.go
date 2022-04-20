@@ -251,6 +251,7 @@ const (
 	NacosUsername             = "nacos.username"
 	NacosPassword             = "nacos.password"
 	NacosTimeout              = "nacos.timeout"
+	UpdateCacheWhenEmpty      = "nacos.updateCacheWhenEmpty"
 )
 
 const (
