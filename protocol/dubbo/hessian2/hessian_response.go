@@ -164,8 +164,9 @@ func packResponse(header DubboHeader, ret interface{}) ([]byte, error) {
 	byteArray = encoder.Buffer()
 	byteArray = hessian.EncNull(byteArray) // if not, "java client" will throw exception  "unexpected end of file"
 	pkgLen := len(byteArray)
-	if pkgLen > int(DEFAULT_LEN) { // 8M
-		return nil, perrors.Errorf("Data length %d too large, max payload %d", pkgLen, DEFAULT_LEN)
+	if pkgLen > int(DEFAULT_LEN) { // recommand 8M
+		logger.Warnf("Data length %d too large, recommand max payload %d. "+
+			"Dubbo java can't handle the package which size greater than %d!!!", pkgLen, DEFAULT_LEN, DEFAULT_LEN)
 	}
 	// byteArray{body length}
 	binary.BigEndian.PutUint32(byteArray[12:], uint32(pkgLen-HEADER_LENGTH))
