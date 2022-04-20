@@ -269,13 +269,13 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 		if e := recover(); e != nil {
 			resp.Status = hessian.Response_SERVER_ERROR
 			if err, ok := e.(error); ok {
-				logger.Errorf("OnMessage panic: %+v", perrors.WithStack(err))
+				logger.Errorf("OnMessage panic: %+v, req: %#v", perrors.WithStack(err), req.Data)
 				resp.Error = perrors.WithStack(err)
 			} else if err, ok := e.(string); ok {
-				logger.Errorf("OnMessage panic: %+v", perrors.New(err))
+				logger.Errorf("OnMessage panic: %+v, req: %#v", perrors.New(err), req.Data)
 				resp.Error = perrors.New(err)
 			} else {
-				logger.Errorf("OnMessage panic: %+v, this is impossible.", e)
+				logger.Errorf("OnMessage panic: %+v, this is impossible. req: %#v", e, req.Data)
 				resp.Error = fmt.Errorf("OnMessage panic unknow exception. %+v", e)
 			}
 
