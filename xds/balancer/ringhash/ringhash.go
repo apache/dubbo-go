@@ -44,7 +44,7 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpclog"
+	dubboLogger "dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/pretty"
 )
 
@@ -64,7 +64,7 @@ func (bb) Build(cc balancer.ClientConn, bOpts balancer.BuildOptions) balancer.Ba
 		scStates: make(map[balancer.SubConn]*subConn),
 		csEvltr:  &connectivityStateEvaluator{},
 	}
-	b.logger = prefixLogger(b)
+	b.logger = dubboLogger.GetLogger()
 	b.logger.Infof("Created")
 	return b
 }
@@ -173,7 +173,7 @@ func (sc *subConn) queueConnect() {
 
 type ringhashBalancer struct {
 	cc     balancer.ClientConn
-	logger *grpclog.PrefixLogger
+	logger dubboLogger.Logger
 
 	config *LBConfig
 
@@ -231,7 +231,7 @@ func (b *ringhashBalancer) updateAddresses(addrs []resolver.Address) bool {
 			// (like creds) will be used.
 			sc, err := b.cc.NewSubConn([]resolver.Address{a}, balancer.NewSubConnOptions{HealthCheckEnabled: true})
 			if err != nil {
-				logger.Warningf("base.baseBalancer: failed to create new SubConn: %v", err)
+				dubboLogger.Warnf("base.baseBalancer: failed to create new SubConn: %v", err)
 				continue
 			}
 			scs := &subConn{addr: a.Addr, sc: sc}

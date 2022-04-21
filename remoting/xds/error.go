@@ -22,6 +22,6 @@ import (
 )
 
 var (
-	DiscoverLocalError    = errors.New("Discovery local Pod's host from xds failed, please register service with endpoint to k8s")
-	DiscoverIstioPodError = errors.New("Discovery local Pod's host from xds failed, please register service with endpoint to k8s")
+	DiscoverLocalError     = errors.New("Discovery local Pod's host from xds, failed please register service with endpoint to k8s ")
+	DiscoverIstiodPodError = errors.New("Discovery istiod Pod's host from xds failed, please register service with endpoint to k8s ")
 )

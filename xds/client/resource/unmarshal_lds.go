@@ -45,9 +45,9 @@ import (
 )
 
 import (
+	dubboLogger "dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource/version"
 	"dubbo.apache.org/dubbo-go/v3/xds/httpfilter"
-	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpclog"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/pretty"
 )
 
@@ -60,7 +60,7 @@ func UnmarshalListener(opts *UnmarshalOptions) (map[string]ListenerUpdateErrTupl
 	return update, md, err
 }
 
-func unmarshalListenerResource(r *anypb.Any, f UpdateValidatorFunc, logger *grpclog.PrefixLogger) (string, ListenerUpdate, error) {
+func unmarshalListenerResource(r *anypb.Any, f UpdateValidatorFunc, logger dubboLogger.Logger) (string, ListenerUpdate, error) {
 	if !IsListenerResource(r.GetTypeUrl()) {
 		return "", ListenerUpdate{}, fmt.Errorf("unexpected resource type: %q ", r.GetTypeUrl())
 	}
@@ -70,7 +70,7 @@ func unmarshalListenerResource(r *anypb.Any, f UpdateValidatorFunc, logger *grpc
 	if err := proto.Unmarshal(r.GetValue(), lis); err != nil {
 		return "", ListenerUpdate{}, fmt.Errorf("failed to unmarshal resource: %v", err)
 	}
-	logger.Infof("Resource with name: %v, type: %T, contains: %v", lis.GetName(), lis, pretty.ToJSON(lis))
+	dubboLogger.Debugf("Resource with name: %v, type: %T, contains: %v", lis.GetName(), lis, pretty.ToJSON(lis))
 
 	lu, err := processListener(lis, logger, v2)
 	if err != nil {
@@ -85,7 +85,7 @@ func unmarshalListenerResource(r *anypb.Any, f UpdateValidatorFunc, logger *grpc
 	return lis.GetName(), *lu, nil
 }
 
-func processListener(lis *v3listenerpb.Listener, logger *grpclog.PrefixLogger, v2 bool) (*ListenerUpdate, error) {
+func processListener(lis *v3listenerpb.Listener, logger dubboLogger.Logger, v2 bool) (*ListenerUpdate, error) {
 	if lis.GetApiListener() != nil {
 		return processClientSideListener(lis, logger, v2)
 	}
@@ -94,7 +94,7 @@ func processListener(lis *v3listenerpb.Listener, logger *grpclog.PrefixLogger, v
 
 // processClientSideListener checks if the provided Listener proto meets
 // the expected criteria. If so, it returns a non-empty routeConfigName.
-func processClientSideListener(lis *v3listenerpb.Listener, logger *grpclog.PrefixLogger, v2 bool) (*ListenerUpdate, error) {
+func processClientSideListener(lis *v3listenerpb.Listener, logger dubboLogger.Logger, v2 bool) (*ListenerUpdate, error) {
 	update := &ListenerUpdate{}
 
 	apiLisAny := lis.GetApiListener().GetApiListener()
@@ -281,7 +281,7 @@ func processHTTPFilters(filters []*v3httppb.HttpFilter, server bool) ([]HTTPFilt
 	return ret, nil
 }
 
-func processServerSideListener(lis *v3listenerpb.Listener, logger *grpclog.PrefixLogger) (*ListenerUpdate, error) {
+func processServerSideListener(lis *v3listenerpb.Listener, logger dubboLogger.Logger) (*ListenerUpdate, error) {
 	if n := len(lis.ListenerFilters); n != 0 {
 		return nil, fmt.Errorf("unsupported field 'listener_filters' contains %d entries", n)
 	}

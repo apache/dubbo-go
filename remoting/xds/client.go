@@ -414,7 +414,7 @@ func (w *WrappedClientImpl) startWatchingAllClusterAndLoadLocalHostAddrAndIstioP
 					for _, e := range v.Endpoints {
 						w.istiodPodIP = xdsCommon.NewHostNameOrIPAddr(e.Address).HostnameOrIP
 						foundIstiod = true
-						close(foundLocalStopCh)
+						close(foundIstiodStopCh)
 					}
 				}
 			})
@@ -432,7 +432,7 @@ func (w *WrappedClientImpl) startWatchingAllClusterAndLoadLocalHostAddrAndIstioP
 						cluster := xdsCommon.NewCluster(update.ClusterName)
 						w.hostAddr = cluster.Addr
 						foundLocal = true
-						close(foundIstiodStopCh)
+						close(foundLocalStopCh)
 					}
 				}
 			}
@@ -463,7 +463,7 @@ func (w *WrappedClientImpl) startWatchingAllClusterAndLoadLocalHostAddrAndIstioP
 		case <-foundIstiodStopCh:
 			return DiscoverLocalError
 		default:
-			return DiscoverIstioPodError
+			return DiscoverIstiodPodError
 		}
 	}
 }

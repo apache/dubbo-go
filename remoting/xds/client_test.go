@@ -250,7 +250,7 @@ func testFailedWithIstioCDS(t *testing.T) {
 		return mockXDSClient, nil
 	}
 	xdsWrappedClient, err := NewXDSWrappedClient(podNameFoo, localNamespaceFoo, localIPFoo, common.NewHostNameOrIPAddr(istioHostAddrFoo))
-	assert.Equal(t, DiscoverIstioPodError, err)
+	assert.Equal(t, DiscoverIstiodPodError, err)
 	assert.Nil(t, xdsWrappedClient)
 	assert.Equal(t, int32(1), cancelCalledCounter.Load())
 }
@@ -400,7 +400,7 @@ func testFailedWithNoneCDS(t *testing.T) {
 		return mockXDSClient, nil
 	}
 	xdsWrappedClient, err := NewXDSWrappedClient(podNameFoo, localNamespaceFoo, localIPFoo, common.NewHostNameOrIPAddr(istioHostAddrFoo))
-	assert.Equal(t, DiscoverIstioPodError, err)
+	assert.Equal(t, DiscoverIstiodPodError, err)
 	assert.Nil(t, xdsWrappedClient)
 	assert.Equal(t, int32(0), cancelCalledCounter.Load())
 }
@@ -550,7 +550,7 @@ func testFailedWithIstioEDSFailed(t *testing.T) {
 		return mockXDSClient, nil
 	}
 	xdsWrappedClient, err := NewXDSWrappedClient(podNameFoo, localNamespaceFoo, localIPFoo, common.NewHostNameOrIPAddr(istioHostAddrFoo))
-	assert.Equal(t, DiscoverIstioPodError, err)
+	assert.Equal(t, DiscoverIstiodPodError, err)
 	assert.Nil(t, xdsWrappedClient)
 	assert.Equal(t, int32(2), cancelCalledCounter.Load())
 }
