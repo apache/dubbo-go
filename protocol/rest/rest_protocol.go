@@ -37,6 +37,15 @@ import (
 var restProtocol *RestProtocol
 
 const REST = "rest"
+//FIXME rest旧版协议文件
+
+func init() {
+	SetRestServer(constant.DefaultRestServer, server.NewGoRestfulServer)
+}
+
+func init() {
+	extension.SetRestClient(constant.DefaultRestClient, client_impl.NewRestyClient)
+}
 
 func init() {
 	SetRestServer(constant.DefaultRestServer, server.NewGoRestfulServer)

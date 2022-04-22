@@ -70,8 +70,9 @@ services:
         execute.limit: "200"
         # the name of RejectedExecutionHandler
         execute.limit.rejected.handler: "default"
-        rest_query_params: "1:userid,2:username"
-        rest_headers: "3:age"
+        - rest:
+          - query_params: "1:userid,2:username"
+          - headers: "3:age"
         rest_path_params: "4:time,2:name"
         rest_body: 0
         rest_produces: "application/xml"

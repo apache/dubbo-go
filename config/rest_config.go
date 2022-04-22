@@ -185,7 +185,6 @@ type RestServiceConfig struct {
 	Client               string              `yaml:"rest_client" json:"rest_client,omitempty" property:"rest_client"`
 	Server               string              `yaml:"rest_server" json:"rest_server,omitempty" property:"rest_server"`
 	RestMethodConfigs    []*RestMethodConfig `yaml:"methods" json:"methods,omitempty" property:"methods"`
-	RestMethodConfigsMap map[string]*RestMethodConfig
 }
 
 // UnmarshalYAML unmarshals the RestServiceConfig by @unmarshal function
@@ -200,6 +199,14 @@ func (c *RestServiceConfig) UnmarshalYAML(unmarshal func(interface{}) error) err
 	return nil
 }
 
+type RestCommonConfig struct {
+	Path           string `yaml:"path"  json:"rest_path,omitempty" property:"rest_path"`
+	MethodType     string `yaml:"method"  json:"rest_method,omitempty" property:"rest_method"`
+	QueryParams    string `yaml:"query_params"  json:"rest_query_params,omitempty" property:"rest_query_params"`
+	PathParams 	   string `yaml:"path_params" json:"rest_path_params,omitempty" property:"rest_query_params"`
+
+}
+
 // nolint
 type RestMethodConfig struct {
 	InterfaceName  string
@@ -212,7 +219,7 @@ type RestMethodConfig struct {
 	PathParams     string `yaml:"rest_path_params"  json:"rest_path_params,omitempty" property:"rest_path_params"`
 	PathParamsMap  map[int]string
 	QueryParams    string `yaml:"rest_query_params"  json:"rest_query_params,omitempty" property:"rest_query_params"`
-	QueryParamsMap map[int]string
+	RestCommonConfig    *RestCommonConfig `yaml:"rest" json:"rest_common,omitempty" property:"rest_common"`
 	Body           int    `default:"-1" yaml:"rest_body"  json:"rest_body,omitempty" property:"rest_body"`
 	Headers        string `yaml:"rest_headers"  json:"rest_headers,omitempty" property:"rest_headers"`
 	HeadersMap     map[int]string
