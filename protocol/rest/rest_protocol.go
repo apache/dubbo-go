@@ -37,7 +37,6 @@ import (
 var restProtocol *RestProtocol
 
 const REST = "rest"
-//FIXME rest旧版协议文件
 
 func init() {
 	SetRestServer(constant.DefaultRestServer, server.NewGoRestfulServer)
@@ -91,7 +90,7 @@ func (rp *RestProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	}
 	rp.SetExporterMap(serviceKey, exporter)
 	restServer := rp.getServer(url, restServiceConfig.Server)
-	for _, methodConfig := range restServiceConfig.RestMethodConfigsMap {
+	for _, methodConfig := range restServiceConfig.RestMethodConfigs {
 		restServer.Deploy(methodConfig, server.GetRouteFunc(invoker, methodConfig))
 	}
 	return exporter
@@ -117,7 +116,7 @@ func (rp *RestProtocol) Refer(url *common.URL) protocol.Invoker {
 	}
 	restOptions := client.RestOptions{RequestTimeout: requestTimeout, ConnectTimeout: connectTimeout}
 	restClient := rp.getClient(restOptions, restServiceConfig.Client)
-	invoker := NewRestInvoker(url, &restClient, restServiceConfig.RestMethodConfigsMap)
+	invoker := NewRestInvoker(url, &restClient, restServiceConfig.RestMethodConfigs)
 	rp.SetInvokers(invoker)
 	return invoker
 }
