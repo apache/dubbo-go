@@ -34,7 +34,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo/impl"
-	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	invct "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
@@ -43,14 +43,13 @@ type SerialID byte
 
 func init() {
 	codec := &DubboCodec{}
-	// this is for registry dubboCodec of dubbo protocol
 	remoting.RegistryCodec("dubbo", codec)
 }
 
-// DubboCodec. It is implements remoting.Codec
+// DubboCodec  implements remoting.Codec
 type DubboCodec struct{}
 
-// encode request for transport
+// EncodeRequest encodes request for transport
 func (c *DubboCodec) EncodeRequest(request *remoting.Request) (*bytes.Buffer, error) {
 	if request.Event {
 		return c.encodeHeartbeartReqeust(request)
@@ -65,12 +64,12 @@ func (c *DubboCodec) EncodeRequest(request *remoting.Request) (*bytes.Buffer, er
 	invocation := *invoc
 
 	svc := impl.Service{}
-	svc.Path = invocation.AttachmentsByKey(constant.PathKey, "")
-	svc.Interface = invocation.AttachmentsByKey(constant.InterfaceKey, "")
-	svc.Version = invocation.AttachmentsByKey(constant.VersionKey, "")
-	svc.Group = invocation.AttachmentsByKey(constant.GroupKey, "")
+	svc.Path = invocation.GetAttachmentWithDefaultValue(constant.PathKey, "")
+	svc.Interface = invocation.GetAttachmentWithDefaultValue(constant.InterfaceKey, "")
+	svc.Version = invocation.GetAttachmentWithDefaultValue(constant.VersionKey, "")
+	svc.Group = invocation.GetAttachmentWithDefaultValue(constant.GroupKey, "")
 	svc.Method = invocation.MethodName()
-	timeout, err := strconv.Atoi(invocation.AttachmentsByKey(constant.TimeoutKey, strconv.Itoa(constant.DefaultRemotingTimeout)))
+	timeout, err := strconv.Atoi(invocation.GetAttachmentWithDefaultValue(constant.TimeoutKey, strconv.Itoa(constant.DefaultRemotingTimeout)))
 	if err != nil {
 		// it will be wrapped in readwrite.Write .
 		return nil, perrors.WithStack(err)
@@ -78,7 +77,7 @@ func (c *DubboCodec) EncodeRequest(request *remoting.Request) (*bytes.Buffer, er
 	svc.Timeout = time.Duration(timeout)
 
 	header := impl.DubboHeader{}
-	serialization := invocation.AttachmentsByKey(constant.SerializationKey, constant.Hessian2Serialization)
+	serialization := invocation.GetAttachmentWithDefaultValue(constant.SerializationKey, constant.Hessian2Serialization)
 	if serialization == constant.ProtobufSerialization {
 		header.SerialID = constant.SProto
 	} else {
@@ -128,7 +127,7 @@ func (c *DubboCodec) encodeHeartbeartReqeust(request *remoting.Request) (*bytes.
 	return pkg.Marshal()
 }
 
-// encode response
+// EncodeResponse encodes response
 func (c *DubboCodec) EncodeResponse(response *remoting.Response) (*bytes.Buffer, error) {
 	ptype := impl.PackageResponse
 	if response.IsHeartbeat() {
@@ -161,20 +160,30 @@ func (c *DubboCodec) EncodeResponse(response *remoting.Response) (*bytes.Buffer,
 }
 
 // Decode data, including request and response.
-func (c *DubboCodec) Decode(data []byte) (remoting.DecodeResult, int, error) {
+func (c *DubboCodec) Decode(data []byte) (*remoting.DecodeResult, int, error) {
+	dataLen := len(data)
+	if dataLen < impl.HEADER_LENGTH { // check whether header bytes is enough or not
+		return nil, 0, nil
+	}
 	if c.isRequest(data) {
-		req, len, err := c.decodeRequest(data)
+		req, length, err := c.decodeRequest(data)
 		if err != nil {
-			return remoting.DecodeResult{}, len, perrors.WithStack(err)
+			return nil, length, perrors.WithStack(err)
 		}
-		return remoting.DecodeResult{IsRequest: true, Result: req}, len, perrors.WithStack(err)
+		if req == ((*remoting.Request)(nil)) {
+			return nil, length, err
+		}
+		return &remoting.DecodeResult{IsRequest: true, Result: req}, length, perrors.WithStack(err)
 	}
 
-	resp, len, err := c.decodeResponse(data)
+	rsp, length, err := c.decodeResponse(data)
 	if err != nil {
-		return remoting.DecodeResult{}, len, perrors.WithStack(err)
+		return nil, length, perrors.WithStack(err)
 	}
-	return remoting.DecodeResult{IsRequest: false, Result: resp}, len, perrors.WithStack(err)
+	if rsp == ((*remoting.Response)(nil)) {
+		return nil, length, err
+	}
+	return &remoting.DecodeResult{IsRequest: false, Result: rsp}, length, perrors.WithStack(err)
 }
 
 func (c *DubboCodec) isRequest(data []byte) bool {
@@ -183,16 +192,18 @@ func (c *DubboCodec) isRequest(data []byte) bool {
 
 // decode request
 func (c *DubboCodec) decodeRequest(data []byte) (*remoting.Request, int, error) {
-	var request *remoting.Request = nil
+	var request *remoting.Request
 	buf := bytes.NewBuffer(data)
 	pkg := impl.NewDubboPackage(buf)
 	pkg.SetBody(make([]interface{}, 7))
 	err := pkg.Unmarshal()
 	if err != nil {
 		originErr := perrors.Cause(err)
-		if originErr == hessian.ErrHeaderNotEnough || originErr == hessian.ErrBodyNotEnough {
-			// FIXME
-			return nil, 0, originErr
+		if originErr == hessian.ErrHeaderNotEnough { // this is impossible, as dubbo_codec.go:DubboCodec::Decode() line 167
+			return nil, 0, nil
+		}
+		if originErr == hessian.ErrBodyNotEnough {
+			return nil, hessian.HEADER_LENGTH + pkg.GetBodyLen(), nil
 		}
 		logger.Errorf("pkg.Unmarshal(len(@data):%d) = error:%+v", buf.Len(), err)
 
@@ -224,8 +235,8 @@ func (c *DubboCodec) decodeRequest(data []byte) (*remoting.Request, int, error) 
 		methodName = pkg.Service.Method
 		args = req[impl.ArgsKey].([]interface{})
 		attachments = req[impl.AttachmentsKey].(map[string]interface{})
-		invoc := invocation.NewRPCInvocationWithOptions(invocation.WithAttachments(attachments),
-			invocation.WithArguments(args), invocation.WithMethodName(methodName))
+		invoc := invct.NewRPCInvocationWithOptions(invct.WithAttachments(attachments),
+			invct.WithArguments(args), invct.WithMethodName(methodName))
 		request.Data = invoc
 
 	}
@@ -240,11 +251,14 @@ func (c *DubboCodec) decodeResponse(data []byte) (*remoting.Response, int, error
 	if err != nil {
 		originErr := perrors.Cause(err)
 		// if the data is very big, so the receive need much times.
-		if originErr == hessian.ErrHeaderNotEnough || originErr == hessian.ErrBodyNotEnough {
-			return nil, 0, originErr
+		if originErr == hessian.ErrHeaderNotEnough { // this is impossible, as dubbo_codec.go:DubboCodec::Decode() line 167
+			return nil, 0, nil
 		}
-		logger.Errorf("pkg.Unmarshal(len(@data):%d) = error:%+v", buf.Len(), err)
+		if originErr == hessian.ErrBodyNotEnough {
+			return nil, hessian.HEADER_LENGTH + pkg.GetBodyLen(), nil
+		}
 
+		logger.Warnf("pkg.Unmarshal(len(@data):%d) = error:%+v", buf.Len(), err)
 		return nil, 0, perrors.WithStack(err)
 	}
 	response := &remoting.Response{
@@ -254,20 +268,20 @@ func (c *DubboCodec) decodeResponse(data []byte) (*remoting.Response, int, error
 		Status:   pkg.Header.ResponseStatus,
 		Event:    (pkg.Header.Type & impl.PackageHeartbeat) != 0,
 	}
-	var error error
+	var pkgerr error
 	if pkg.Header.Type&impl.PackageHeartbeat != 0x00 {
 		if pkg.Header.Type&impl.PackageResponse != 0x00 {
 			logger.Debugf("get rpc heartbeat response{header: %#v, body: %#v}", pkg.Header, pkg.Body)
 			if pkg.Err != nil {
 				logger.Errorf("rpc heartbeat response{error: %#v}", pkg.Err)
-				error = pkg.Err
+				pkgerr = pkg.Err
 			}
 		} else {
 			logger.Debugf("get rpc heartbeat request{header: %#v, service: %#v, body: %#v}", pkg.Header, pkg.Service, pkg.Body)
 			response.Status = hessian.Response_OK
 			// reply(session, p, hessian.PackageHeartbeat)
 		}
-		return response, hessian.HEADER_LENGTH + pkg.Header.BodyLen, error
+		return response, hessian.HEADER_LENGTH + pkg.Header.BodyLen, pkgerr
 	}
 	logger.Debugf("get rpc response{header: %#v, body: %#v}", pkg.Header, pkg.Body)
 	rpcResult := &protocol.RPCResult{}

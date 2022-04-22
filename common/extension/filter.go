@@ -18,6 +18,10 @@
 package extension
 
 import (
+	"github.com/pkg/errors"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/filter"
 )
 
@@ -33,11 +37,11 @@ func SetFilter(name string, v func() filter.Filter) {
 }
 
 // GetFilter finds the filter extension with @name
-func GetFilter(name string) filter.Filter {
+func GetFilter(name string) (filter.Filter, bool) {
 	if filters[name] == nil {
-		panic("filter for " + name + " is not existing, make sure you have imported the package.")
+		return nil, false
 	}
-	return filters[name]()
+	return filters[name](), true
 }
 
 // SetRejectedExecutionHandler sets the RejectedExecutionHandler with @name
@@ -46,11 +50,11 @@ func SetRejectedExecutionHandler(name string, creator func() filter.RejectedExec
 }
 
 // GetRejectedExecutionHandler finds the RejectedExecutionHandler with @name
-func GetRejectedExecutionHandler(name string) filter.RejectedExecutionHandler {
+func GetRejectedExecutionHandler(name string) (filter.RejectedExecutionHandler, error) {
 	creator, ok := rejectedExecutionHandler[name]
 	if !ok {
-		panic("RejectedExecutionHandler for " + name + " is not existing, make sure you have import the package " +
+		return nil, errors.New("RejectedExecutionHandler for " + name + " is not existing, make sure you have import the package " +
 			"and you have register it by invoking extension.SetRejectedExecutionHandler.")
 	}
-	return creator()
+	return creator(), nil
 }

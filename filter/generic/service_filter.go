@@ -87,16 +87,9 @@ func (f *genericServiceFilter) Invoke(ctx context.Context, invoker protocol.Invo
 	argsType := method.ArgsType()
 
 	// get generic info from attachments of invocation, the default value is "true"
-	generic := invocation.AttachmentsByKey(constant.GenericKey, constant.GenericSerializationDefault)
+	generic := invocation.GetAttachmentWithDefaultValue(constant.GenericKey, constant.GenericSerializationDefault)
 	// get generalizer according to value in the `generic`
 	g := getGeneralizer(generic)
-
-	//if strings.ToLower(generic) == constant.GenericSerializationProtobuf {
-	//	if len(args) > 1 {
-	//		logger.Warnf("\"%s\" only supports one argument, but we get %d arguments actually",
-	//			constant.GenericSerializationProtobuf, len(args))
-	//	}
-	//}
 
 	if len(args) != len(argsType) {
 		return &protocol.RPCResult{
@@ -126,7 +119,7 @@ func (f *genericServiceFilter) Invoke(ctx context.Context, invoker protocol.Invo
 func (f *genericServiceFilter) OnResponse(_ context.Context, result protocol.Result, _ protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	if invocation.IsGenericInvocation() && result.Result() != nil {
 		// get generic info from attachments of invocation, the default value is "true"
-		generic := invocation.AttachmentsByKey(constant.GenericKey, constant.GenericSerializationDefault)
+		generic := invocation.GetAttachmentWithDefaultValue(constant.GenericKey, constant.GenericSerializationDefault)
 		// get generalizer according to value in the `generic`
 		g := getGeneralizer(generic)
 

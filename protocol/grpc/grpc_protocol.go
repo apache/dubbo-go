@@ -103,14 +103,14 @@ func (gp *GrpcProtocol) Refer(url *common.URL) protocol.Invoker {
 func (gp *GrpcProtocol) Destroy() {
 	logger.Infof("GrpcProtocol destroy.")
 
-	gp.BaseProtocol.Destroy()
-
 	gp.serverLock.Lock()
 	defer gp.serverLock.Unlock()
 	for key, server := range gp.serverMap {
 		delete(gp.serverMap, key)
-		server.Stop()
+		server.GracefulStop()
 	}
+
+	gp.BaseProtocol.Destroy()
 }
 
 // GetProtocol gets gRPC protocol, will create if null.

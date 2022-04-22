@@ -38,11 +38,11 @@ func (z *interceptor) Invoke(ctx context.Context, invoker protocol.Invoker, invo
 		switch value := force.(type) {
 		case bool:
 			if value {
-				invocation.SetAttachments(key, "true")
+				invocation.SetAttachment(key, "true")
 			}
 		case string:
 			if "true" == value {
-				invocation.SetAttachments(key, "true")
+				invocation.SetAttachment(key, "true")
 			}
 		default:
 			// ignore

@@ -26,10 +26,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+)
+
 func TestShutdownConfigGetTimeout(t *testing.T) {
 	config := ShutdownConfig{}
-	assert.False(t, config.RejectRequest)
-	assert.False(t, config.RequestsFinished)
+	assert.False(t, config.RejectRequest.Load())
 
 	config = ShutdownConfig{
 		Timeout:     "60s",
@@ -46,4 +49,28 @@ func TestShutdownConfigGetTimeout(t *testing.T) {
 
 	assert.Equal(t, 34*time.Millisecond, config.GetTimeout())
 	assert.Equal(t, 79*time.Millisecond, config.GetStepTimeout())
+}
+
+func TestNewShutDownConfigBuilder(t *testing.T) {
+	config := NewShutDownConfigBuilder().
+		SetTimeout("10s").
+		SetStepTimeout("15s").
+		SetRejectRequestHandler("handler").
+		SetRejectRequest(true).
+		SetInternalSignal(true).
+		Build()
+
+	assert.Equal(t, config.Prefix(), constant.ShutdownConfigPrefix)
+
+	timeout := config.GetTimeout()
+	assert.Equal(t, timeout, 10*time.Second)
+
+	stepTimeout := config.GetStepTimeout()
+	assert.Equal(t, stepTimeout, 15*time.Second)
+
+	err := config.Init()
+	assert.NoError(t, err)
+
+	waitTime := config.GetConsumerUpdateWaitTime()
+	assert.Equal(t, waitTime, 3*time.Second)
 }

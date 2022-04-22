@@ -59,12 +59,12 @@ func (c *DubboTestCodec) EncodeRequest(request *remoting.Request) (*bytes.Buffer
 	tmpInvocation := invoc
 
 	svc := impl.Service{}
-	svc.Path = tmpInvocation.AttachmentsByKey(constant.PathKey, "")
-	svc.Interface = tmpInvocation.AttachmentsByKey(constant.InterfaceKey, "")
-	svc.Version = tmpInvocation.AttachmentsByKey(constant.VersionKey, "")
-	svc.Group = tmpInvocation.AttachmentsByKey(constant.GroupKey, "")
+	svc.Path = tmpInvocation.GetAttachmentWithDefaultValue(constant.PathKey, "")
+	svc.Interface = tmpInvocation.GetAttachmentWithDefaultValue(constant.InterfaceKey, "")
+	svc.Version = tmpInvocation.GetAttachmentWithDefaultValue(constant.VersionKey, "")
+	svc.Group = tmpInvocation.GetAttachmentWithDefaultValue(constant.GroupKey, "")
 	svc.Method = tmpInvocation.MethodName()
-	timeout, err := strconv.Atoi(tmpInvocation.AttachmentsByKey(constant.TimeoutKey, strconv.Itoa(constant.DefaultRemotingTimeout)))
+	timeout, err := strconv.Atoi(tmpInvocation.GetAttachmentWithDefaultValue(constant.TimeoutKey, strconv.Itoa(constant.DefaultRemotingTimeout)))
 	if err != nil {
 		// it will be wrapped in readwrite.Write .
 		return nil, perrors.WithStack(err)
@@ -72,7 +72,7 @@ func (c *DubboTestCodec) EncodeRequest(request *remoting.Request) (*bytes.Buffer
 	svc.Timeout = time.Duration(timeout)
 
 	header := impl.DubboHeader{}
-	serialization := tmpInvocation.AttachmentsByKey(constant.SerializationKey, constant.Hessian2Serialization)
+	serialization := tmpInvocation.GetAttachmentWithDefaultValue(constant.SerializationKey, constant.Hessian2Serialization)
 	if serialization == constant.ProtobufSerialization {
 		header.SerialID = constant.SProto
 	} else {
@@ -155,19 +155,19 @@ func (c *DubboTestCodec) EncodeResponse(response *remoting.Response) (*bytes.Buf
 }
 
 // Decode data, including request and response.
-func (c *DubboTestCodec) Decode(data []byte) (remoting.DecodeResult, int, error) {
+func (c *DubboTestCodec) Decode(data []byte) (*remoting.DecodeResult, int, error) {
 	if c.isRequest(data) {
 		req, len, err := c.decodeRequest(data)
 		if err != nil {
-			return remoting.DecodeResult{}, len, perrors.WithStack(err)
+			return &remoting.DecodeResult{}, len, perrors.WithStack(err)
 		}
-		return remoting.DecodeResult{IsRequest: true, Result: req}, len, perrors.WithStack(err)
+		return &remoting.DecodeResult{IsRequest: true, Result: req}, len, perrors.WithStack(err)
 	} else {
 		resp, len, err := c.decodeResponse(data)
 		if err != nil {
-			return remoting.DecodeResult{}, len, perrors.WithStack(err)
+			return &remoting.DecodeResult{}, len, perrors.WithStack(err)
 		}
-		return remoting.DecodeResult{IsRequest: false, Result: resp}, len, perrors.WithStack(err)
+		return &remoting.DecodeResult{IsRequest: false, Result: resp}, len, perrors.WithStack(err)
 	}
 }
 

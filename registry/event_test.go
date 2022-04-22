@@ -34,7 +34,7 @@ func TestKey(t *testing.T) {
 	se := ServiceEvent{
 		Service: u1,
 	}
-	assert.Equal(t, se.Key(), "dubbo://:@127.0.0.1:20000/?interface=com.ikurento.user.UserProvider&group=&version=2.0&timestamp=")
+	assert.Equal(t, se.Key(), "dubbo://:@127.0.0.1:20000/?interface=com.ikurento.user.UserProvider&group=&version=2.0&timestamp=&meshClusterID=")
 
 	se2 := ServiceEvent{
 		Service: u1,

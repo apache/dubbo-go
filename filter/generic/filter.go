@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+// Package generic provides generic invoke filter.
 package generic
 
 import (
@@ -67,7 +68,7 @@ func (f *genericFilter) Invoke(ctx context.Context, invoker protocol.Invoker, in
 		args := make([]hessian.Object, 0, len(oldargs))
 
 		// get generic info from attachments of invocation, the default value is "true"
-		generic := invocation.AttachmentsByKey(constant.GenericKey, constant.GenericSerializationDefault)
+		generic := invocation.GetAttachmentWithDefaultValue(constant.GenericKey, constant.GenericSerializationDefault)
 		// get generalizer according to value in the `generic`
 		g := getGeneralizer(generic)
 

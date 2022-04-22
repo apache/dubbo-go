@@ -39,23 +39,17 @@ const (
 
 // ConsumerConfig is Consumer default configuration
 type ConsumerConfig struct {
-	Filter string `yaml:"filter" json:"filter,omitempty" property:"filter"`
-	// support string
-	RegistryIDs []string `yaml:"registry-ids" json:"registry-ids,omitempty" property:"registry-ids"`
-
-	RequestTimeout string `default:"3s" yaml:"request-timeout" json:"request-timeout,omitempty" property:"request-timeout"`
-	ProxyFactory   string `default:"default" yaml:"proxy" json:"proxy,omitempty" property:"proxy"`
-	Check          bool   `yaml:"check" json:"check,omitempty" property:"check"`
-	// adaptive service
-	AdaptiveService bool `default:"false" yaml:"adaptive-service" json:"adaptive-service" property:"adaptive-service"`
-
-	References map[string]*ReferenceConfig `yaml:"references" json:"references,omitempty" property:"references"`
-	TracingKey string                      `yaml:"tracing-key" json:"tracing-key" property:"tracing-key"`
-
-	FilterConf                     interface{} `yaml:"filter-conf" json:"filter-conf,omitempty" property:"filter-conf"`
-	MaxWaitTimeForServiceDiscovery string      `default:"3s" yaml:"max-wait-time-for-service-discovery" json:"max-wait-time-for-service-discovery,omitempty" property:"max-wait-time-for-service-discovery"`
-
-	rootConfig *RootConfig
+	Filter                         string                      `yaml:"filter" json:"filter,omitempty" property:"filter"`
+	RegistryIDs                    []string                    `yaml:"registry-ids" json:"registry-ids,omitempty" property:"registry-ids"`
+	RequestTimeout                 string                      `default:"3s" yaml:"request-timeout" json:"request-timeout,omitempty" property:"request-timeout"`
+	ProxyFactory                   string                      `default:"default" yaml:"proxy" json:"proxy,omitempty" property:"proxy"`
+	Check                          bool                        `yaml:"check" json:"check,omitempty" property:"check"`
+	AdaptiveService                bool                        `default:"false" yaml:"adaptive-service" json:"adaptive-service" property:"adaptive-service"`
+	References                     map[string]*ReferenceConfig `yaml:"references" json:"references,omitempty" property:"references"`
+	TracingKey                     string                      `yaml:"tracing-key" json:"tracing-key" property:"tracing-key"`
+	FilterConf                     interface{}                 `yaml:"filter-conf" json:"filter-conf,omitempty" property:"filter-conf"`
+	MaxWaitTimeForServiceDiscovery string                      `default:"3s" yaml:"max-wait-time-for-service-discovery" json:"max-wait-time-for-service-discovery,omitempty" property:"max-wait-time-for-service-discovery"`
+	rootConfig                     *RootConfig
 }
 
 // Prefix dubbo.consumer
@@ -137,24 +131,24 @@ func (cc *ConsumerConfig) Load() {
 	var count int
 	for {
 		checkok := true
-		for _, refconfig := range cc.References {
-			if (refconfig.Check != nil && *refconfig.Check) ||
-				(refconfig.Check == nil && cc.Check) ||
-				(refconfig.Check == nil) { // default to true
+		for key, ref := range cc.References {
+			if (ref.Check != nil && *ref.Check && GetProviderService(key) == nil) ||
+				(ref.Check == nil && cc.Check && GetProviderService(key) == nil) ||
+				(ref.Check == nil && GetProviderService(key) == nil) { // default to true
 
-				if refconfig.invoker != nil && !refconfig.invoker.IsAvailable() {
+				if ref.invoker != nil && !ref.invoker.IsAvailable() {
 					checkok = false
 					count++
 					if count > maxWait {
-						errMsg := fmt.Sprintf("No provider available of the service %v.please check configuration.", refconfig.InterfaceName)
+						errMsg := fmt.Sprintf("No provider available of the service %v.please check configuration.", ref.InterfaceName)
 						logger.Error(errMsg)
 						panic(errMsg)
 					}
 					time.Sleep(time.Second * 1)
 					break
 				}
-				if refconfig.invoker == nil {
-					logger.Warnf("The interface %s invoker not exist, may you should check your interface config.", refconfig.InterfaceName)
+				if ref.invoker == nil {
+					logger.Warnf("The interface %s invoker not exist, may you should check your interface config.", ref.InterfaceName)
 				}
 			}
 		}
@@ -238,4 +232,12 @@ func (ccb *ConsumerConfigBuilder) SetRootConfig(rootConfig *RootConfig) *Consume
 
 func (ccb *ConsumerConfigBuilder) Build() *ConsumerConfig {
 	return ccb.consumerConfig
+}
+
+// DynamicUpdateProperties dynamically update properties.
+func (cc *ConsumerConfig) DynamicUpdateProperties(newConsumerConfig *ConsumerConfig) {
+	if newConsumerConfig != nil && newConsumerConfig.RequestTimeout != cc.RequestTimeout {
+		cc.RequestTimeout = newConsumerConfig.RequestTimeout
+		logger.Infof("ConsumerConfig's RequestTimeout was dynamically updated, new value:%v", cc.RequestTimeout)
+	}
 }

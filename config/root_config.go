@@ -48,43 +48,24 @@ var (
 
 // RootConfig is the root config
 type RootConfig struct {
-	// Application applicationConfig config
-	Application *ApplicationConfig `validate:"required" yaml:"application" json:"application,omitempty" property:"application"`
-
-	Protocols map[string]*ProtocolConfig `validate:"required" yaml:"protocols" json:"protocols" property:"protocols"`
-
-	// Registries registry config
-	Registries map[string]*RegistryConfig `yaml:"registries" json:"registries" property:"registries"`
-
-	// TODO ConfigCenter and CenterConfig?
-	ConfigCenter *CenterConfig `yaml:"config-center" json:"config-center,omitempty"`
-
-	MetadataReport *MetadataReportConfig `yaml:"metadata-report" json:"metadata-report,omitempty" property:"metadata-report"`
-
-	// provider config
-	Provider *ProviderConfig `yaml:"provider" json:"provider" property:"provider"`
-
-	// consumer config
-	Consumer *ConsumerConfig `yaml:"consumer" json:"consumer" property:"consumer"`
-
-	Metric *MetricConfig `yaml:"metrics" json:"metrics,omitempty" property:"metrics"`
-
-	Tracing map[string]*TracingConfig `yaml:"tracing" json:"tracing,omitempty" property:"tracing"`
-
-	// Logger log
-	Logger *LoggerConfig `yaml:"logger" json:"logger,omitempty" property:"logger"`
-
-	// Shutdown config
-	Shutdown *ShutdownConfig `yaml:"shutdown" json:"shutdown,omitempty" property:"shutdown"`
-
-	Router []*RouterConfig `yaml:"router" json:"router,omitempty" property:"router"`
-
-	EventDispatcherType string `default:"direct" yaml:"event-dispatcher-type" json:"event-dispatcher-type,omitempty"`
-
-	// cache file used to store the current used configurations.
-	CacheFile string `yaml:"cache_file" json:"cache_file,omitempty" property:"cache_file"`
-
-	Custom *CustomConfig `yaml:"custom" json:"custom,omitempty" property:"custom"`
+	Application         *ApplicationConfig         `validate:"required" yaml:"application" json:"application,omitempty" property:"application"`
+	Protocols           map[string]*ProtocolConfig `validate:"required" yaml:"protocols" json:"protocols" property:"protocols"`
+	Registries          map[string]*RegistryConfig `yaml:"registries" json:"registries" property:"registries"`
+	ConfigCenter        *CenterConfig              `yaml:"config-center" json:"config-center,omitempty"` // TODO ConfigCenter and CenterConfig?
+	MetadataReport      *MetadataReportConfig      `yaml:"metadata-report" json:"metadata-report,omitempty" property:"metadata-report"`
+	Provider            *ProviderConfig            `yaml:"provider" json:"provider" property:"provider"`
+	Consumer            *ConsumerConfig            `yaml:"consumer" json:"consumer" property:"consumer"`
+	Metric              *MetricConfig              `yaml:"metrics" json:"metrics,omitempty" property:"metrics"`
+	Tracing             map[string]*TracingConfig  `yaml:"tracing" json:"tracing,omitempty" property:"tracing"`
+	Logger              *LoggerConfig              `yaml:"logger" json:"logger,omitempty" property:"logger"`
+	Shutdown            *ShutdownConfig            `yaml:"shutdown" json:"shutdown,omitempty" property:"shutdown"`
+	Router              []*RouterConfig            `yaml:"router" json:"router,omitempty" property:"router"`
+	EventDispatcherType string                     `default:"direct" yaml:"event-dispatcher-type" json:"event-dispatcher-type,omitempty"`
+	CacheFile           string                     `yaml:"cache_file" json:"cache_file,omitempty" property:"cache_file"`
+	Custom              *CustomConfig              `yaml:"custom" json:"custom,omitempty" property:"custom"`
+	Profiles            *ProfilesConfig            `yaml:"profiles" json:"profiles,omitempty" property:"profiles"`
+	RestProvider        *RestProviderConfig        `yaml:"provider" json:"rest-provider" property:"rest-provider"`
+	RestConsumer        *RestConsumerConfig        `yaml:"consumer" json:"rest-consumer" property:"rest-consumer"`
 }
 
 func SetRootConfig(r RootConfig) {
@@ -101,20 +82,14 @@ func GetRootConfig() *RootConfig {
 }
 
 func GetProviderConfig() *ProviderConfig {
-	if err := check(); err != nil {
-		return NewProviderConfigBuilder().Build()
-	}
-	if rootConfig.Provider != nil {
+	if err := check(); err == nil && rootConfig.Provider != nil {
 		return rootConfig.Provider
 	}
 	return NewProviderConfigBuilder().Build()
 }
 
 func GetConsumerConfig() *ConsumerConfig {
-	if err := check(); err != nil {
-		return NewConsumerConfigBuilder().Build()
-	}
-	if rootConfig.Consumer != nil {
+	if err := check(); err == nil && rootConfig.Consumer != nil {
 		return rootConfig.Consumer
 	}
 	return NewConsumerConfigBuilder().Build()
@@ -122,6 +97,13 @@ func GetConsumerConfig() *ConsumerConfig {
 
 func GetApplicationConfig() *ApplicationConfig {
 	return rootConfig.Application
+}
+
+func GetShutDown() *ShutdownConfig {
+	if err := check(); err == nil && rootConfig.Shutdown != nil {
+		return rootConfig.Shutdown
+	}
+	return NewShutDownConfigBuilder().Build()
 }
 
 // getRegistryIds get registry ids
@@ -201,6 +183,15 @@ func (rc *RootConfig) Init() error {
 	if err := initRouterConfig(rc); err != nil {
 		return err
 	}
+
+	// pi rest provider/consumer init
+	if err := rc.RestProvider.Init(rc); err != nil {
+		return err
+	}
+	if err := rc.RestConsumer.Init(rc); err != nil {
+		return err
+	}
+
 	// provider、consumer must last init
 	if err := rc.Provider.Init(rc); err != nil {
 		return err
@@ -208,6 +199,10 @@ func (rc *RootConfig) Init() error {
 	if err := rc.Consumer.Init(rc); err != nil {
 		return err
 	}
+	if err := rc.Shutdown.Init(); err != nil {
+		return err
+	}
+	SetRootConfig(*rc)
 	// todo if we can remove this from Init in the future?
 	rc.Start()
 	return nil
@@ -215,6 +210,7 @@ func (rc *RootConfig) Init() error {
 
 func (rc *RootConfig) Start() {
 	startOnce.Do(func() {
+		gracefulShutdownInit()
 		rc.Consumer.Load()
 		rc.Provider.Load()
 		// todo if register consumer instance or has exported services
@@ -234,9 +230,13 @@ func newEmptyRootConfig() *RootConfig {
 		Tracing:        make(map[string]*TracingConfig),
 		Provider:       NewProviderConfigBuilder().Build(),
 		Consumer:       NewConsumerConfigBuilder().Build(),
-		Metric:         NewMetricConfigBuilder().Build(),
-		Logger:         NewLoggerConfigBuilder().Build(),
-		Custom:         NewCustomConfigBuilder().Build(),
+		// pi rest provider/consumer builder
+		RestProvider: NewRestProviderConfigBuilder().Build(),
+		RestConsumer: NewRestConsumerConfigBuilder().Build(),
+		Metric:       NewMetricConfigBuilder().Build(),
+		Logger:       NewLoggerConfigBuilder().Build(),
+		Custom:       NewCustomConfigBuilder().Build(),
+		Shutdown:     NewShutDownConfigBuilder().Build(),
 	}
 	return newRootConfig
 }
@@ -329,6 +329,11 @@ func (rb *RootConfigBuilder) SetCustom(customConfig *CustomConfig) *RootConfigBu
 	return rb
 }
 
+func (rb *RootConfigBuilder) SetShutDown(shutDownConfig *ShutdownConfig) *RootConfigBuilder {
+	rb.rootConfig.Shutdown = shutDownConfig
+	return rb
+}
+
 func (rb *RootConfigBuilder) Build() *RootConfig {
 	return rb.rootConfig
 }
@@ -395,10 +400,11 @@ func (rc *RootConfig) Process(event *config_center.ConfigChangeEvent) {
 		logger.Errorf("CenterConfig process unmarshalConf failed, got error %#v", err)
 		return
 	}
-
-	// update register
+	// dynamically update register
 	for registerId, updateRegister := range updateRootConfig.Registries {
 		register := rc.Registries[registerId]
-		register.UpdateProperties(updateRegister)
+		register.DynamicUpdateProperties(updateRegister)
 	}
+	// dynamically update consumer
+	rc.Consumer.DynamicUpdateProperties(updateRootConfig.Consumer)
 }

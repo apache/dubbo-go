@@ -49,7 +49,6 @@ func (rc *RemoteConfig) Prefix() string {
 	return constant.RemotePrefix
 }
 
-// nolint
 func (rc *RemoteConfig) Init() error {
 	return nil
 }
@@ -93,6 +92,7 @@ func (rc *RemoteConfig) getUrlMap() url.Values {
 	urlMap.Set(constant.ConfigUsernameKey, rc.Username)
 	urlMap.Set(constant.ConfigPasswordKey, rc.Password)
 	urlMap.Set(constant.ConfigTimeoutKey, rc.Timeout)
+	urlMap.Set(constant.ClientNameKey, clientNameID(rc, rc.Protocol, rc.Protocol))
 
 	for key, val := range rc.Params {
 		urlMap.Set(key, val)

@@ -53,36 +53,48 @@ import (
  */
 const defaultShutDownTime = time.Second * 60
 
-// GracefulShutdownInit todo GracefulShutdownInit in 3.0 should be discusesed.
-func GracefulShutdownInit() {
-	signals := make(chan os.Signal, 1)
-
-	signal.Notify(signals, ShutdownSignals...)
-
+func gracefulShutdownInit() {
 	// retrieve ShutdownConfig for gracefulShutdownFilter
-	if filter, ok := extension.GetFilter(constant.GracefulShutdownConsumerFilterKey).(Setter); ok && rootConfig.Shutdown != nil {
-		filter.Set(constant.GracefulShutdownFilterShutdownConfig, rootConfig.Shutdown)
+	cGracefulShutdownFilter, existcGracefulShutdownFilter := extension.GetFilter(constant.GracefulShutdownConsumerFilterKey)
+	if !existcGracefulShutdownFilter {
+		return
+	}
+	sGracefulShutdownFilter, existsGracefulShutdownFilter := extension.GetFilter(constant.GracefulShutdownProviderFilterKey)
+	if !existsGracefulShutdownFilter {
+		return
+	}
+	if filter, ok := cGracefulShutdownFilter.(Setter); ok && rootConfig.Shutdown != nil {
+		filter.Set(constant.GracefulShutdownFilterShutdownConfig, GetShutDown())
 	}
 
-	go func() {
-		select {
-		case sig := <-signals:
-			logger.Infof("get signal %s, applicationConfig will shutdown.", sig)
-			// gracefulShutdownOnce.Do(func() {
-			time.AfterFunc(totalTimeout(), func() {
-				logger.Warn("Shutdown gracefully timeout, applicationConfig will shutdown immediately. ")
-				os.Exit(0)
-			})
-			BeforeShutdown()
-			// those signals' original behavior is exit with dump ths stack, so we try to keep the behavior
-			for _, dumpSignal := range DumpHeapShutdownSignals {
-				if sig == dumpSignal {
-					debug.WriteHeapDump(os.Stdout.Fd())
+	if filter, ok := sGracefulShutdownFilter.(Setter); ok && rootConfig.Shutdown != nil {
+		filter.Set(constant.GracefulShutdownFilterShutdownConfig, GetShutDown())
+	}
+
+	if GetShutDown().InternalSignal {
+		signals := make(chan os.Signal, 1)
+		signal.Notify(signals, ShutdownSignals...)
+
+		go func() {
+			select {
+			case sig := <-signals:
+				logger.Infof("get signal %s, applicationConfig will shutdown.", sig)
+				// gracefulShutdownOnce.Do(func() {
+				time.AfterFunc(totalTimeout(), func() {
+					logger.Warn("Shutdown gracefully timeout, applicationConfig will shutdown immediately. ")
+					os.Exit(0)
+				})
+				BeforeShutdown()
+				// those signals' original behavior is exit with dump ths stack, so we try to keep the behavior
+				for _, dumpSignal := range DumpHeapShutdownSignals {
+					if sig == dumpSignal {
+						debug.WriteHeapDump(os.Stdout.Fd())
+					}
 				}
+				os.Exit(0)
 			}
-			os.Exit(0)
-		}
-	}()
+		}()
+	}
 }
 
 // BeforeShutdown provides processing flow before shutdown
@@ -115,13 +127,21 @@ func destroyAllRegistries() {
 // First we destroy provider's protocols, and then we destroy the consumer protocols.
 func destroyProtocols() {
 	logger.Info("Graceful shutdown --- Destroy protocols. ")
-	logger.Info("Graceful shutdown --- First destroy provider's protocols. ")
 
-	consumerProtocols := getConsumerProtocols()
 	if rootConfig.Protocols == nil {
 		return
 	}
 
+	consumerProtocols := getConsumerProtocols()
+
+	destroyProviderProtocols(consumerProtocols)
+	destroyConsumerProtocols(consumerProtocols)
+}
+
+// destroyProviderProtocols destroys the provider's protocol.
+// if the protocol is consumer's protocol too, we will keep it
+func destroyProviderProtocols(consumerProtocols *gxset.HashSet) {
+	logger.Info("Graceful shutdown --- First destroy provider's protocols. ")
 	for _, protocol := range rootConfig.Protocols {
 		// the protocol is the consumer's protocol too, we can not destroy it.
 		if consumerProtocols.Contains(protocol.Name) {
@@ -129,8 +149,10 @@ func destroyProtocols() {
 		}
 		extension.GetProtocol(protocol.Name).Destroy()
 	}
+}
 
-	logger.Info("Graceful shutdown --- Second destroy consumer's protocols. ")
+func destroyConsumerProtocols(consumerProtocols *gxset.HashSet) {
+	logger.Info("Graceful shutdown --- Second Destroy consumer's protocols. ")
 	for name := range consumerProtocols.Items {
 		extension.GetProtocol(name.(string)).Destroy()
 	}
@@ -142,13 +164,28 @@ func waitAndAcceptNewRequests() {
 		return
 	}
 
-	timeout := rootConfig.Shutdown.GetStepTimeout()
+	time.Sleep(rootConfig.Shutdown.GetConsumerUpdateWaitTime())
 
+	timeout := rootConfig.Shutdown.GetStepTimeout()
 	// ignore this step
 	if timeout < 0 {
 		return
 	}
-	time.Sleep(timeout)
+	waitingProviderProcessedTimeout(rootConfig.Shutdown)
+}
+
+func waitingProviderProcessedTimeout(shutdownConfig *ShutdownConfig) {
+	timeout := shutdownConfig.GetStepTimeout()
+	if timeout <= 0 {
+		return
+	}
+	deadline := time.Now().Add(timeout)
+
+	for time.Now().Before(deadline) && shutdownConfig.ProviderActiveCount.Load() > 0 {
+		// sleep 10 ms and then we check it again
+		time.Sleep(10 * time.Millisecond)
+		logger.Infof("waiting for provider active invocation count = %d", shutdownConfig.ProviderActiveCount.Load())
+	}
 }
 
 //for provider. It will wait for processing receiving requests
@@ -158,20 +195,21 @@ func waitForSendingAndReceivingRequests() {
 		// ignore this step
 		return
 	}
-	rootConfig.Shutdown.RejectRequest = true
-	waitingProcessedTimeout(rootConfig.Shutdown)
+	rootConfig.Shutdown.RejectRequest.Store(true)
+	waitingConsumerProcessedTimeout(rootConfig.Shutdown)
 }
 
-func waitingProcessedTimeout(shutdownConfig *ShutdownConfig) {
+func waitingConsumerProcessedTimeout(shutdownConfig *ShutdownConfig) {
 	timeout := shutdownConfig.GetStepTimeout()
 	if timeout <= 0 {
 		return
 	}
 	deadline := time.Now().Add(timeout)
 
-	for time.Now().Before(deadline) && !shutdownConfig.RequestsFinished {
+	for time.Now().Before(deadline) && shutdownConfig.ConsumerActiveCount.Load() > 0 {
 		// sleep 10 ms and then we check it again
 		time.Sleep(10 * time.Millisecond)
+		logger.Infof("waiting for consumer active invocation count = %d", shutdownConfig.ConsumerActiveCount.Load())
 	}
 }
 

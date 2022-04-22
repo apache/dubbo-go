@@ -43,6 +43,59 @@ Dubbo-go has supported many RPC protocol, like Triple, Dubbo JSONRPC, gRPC, HTTP
 - [Dubbo-go Benchmark](https://github.com/dubbogo/dubbo-go-benchmark)
 - [Dubbo-go Wiki](https://github.com/apache/dubbo-go/wiki)
 
+## tools
+
+  * [imports-formatter](https://github.com/dubbogo/tools/blob/master/cmd/imports-formatter/main.go) formatting dubbo-go project import code block.
+  * [dubbo-go-cli](https://github.com/dubbogo/tools/blob/master/cmd/dubbogo-cli/main.go) dubbo-go command line tools, by which you can define your own request pkg and gets rsp struct of your server, test your service as telnet and generate hessian.POJO register method body.
+  * [dubbo-go-cli-v2](https://github.com/dubbogo/tools/blob/master/cmd/dubbogo-cli-v2/main.go) new dubbo-go line tools, you can get services from register center, create a demo and has the same features with [dubbo-go-cli](https://github.com/dubbogo/tools/blob/master/cmd/dubbogo-cli/main.go).
+  * [protoc-gen-go-triple](https://github.com/dubbogo/tools/blob/master/cmd/protoc-gen-go-triple/main.go) tripe protocol pb file generation tool.
+  * [protoc-gen-dubbo3grpc](https://github.com/dubbogo/tools/blob/master/cmd/protoc-gen-dubbo3grpc/main.go) dubbo3 grpc pb file generation tool.
+
+
+If you want to know more about dubbogo tools, please visit https://github.com/dubbogo/tools and read its readme carefully.
+
+## Intellij Plugin
+
+* Windows: File > Settings > Plugins > Browse repositories... > Search for "Dubbo Go" > Install Plugin
+* MacOS: Preferences > Settings > Plugins > Browse repositories... > Search for "Dubbo Go" > Install Plugin
+* Manually:
+    * Download the [latest release](https://plugins.jetbrains.com/plugin/18581-dubbo-go) and install it manually using Preferences > Plugins > Install plugin from disk...
+    * From official jetbrains store from download
+
+
+### Feature
+|      Feature       | IDEA | GoLand |
+|:------------------:|:----:|:------:|
+| Hessian2 Generator |  ✅️  |   ✅️   |
+| New Project/Module |  ✅️  |   ✅️   |
+
+#### Project/Module Template
+| Project/Module Template | Progress |
+|:-----------------------:|:--------:|
+|         Sample          |    ✅️    |
+|      Empty Project      |    ✅️    |
+
+##### Empty Project Template Middleware
+|  Middleware  |                Module                 | Support |
+|:------------:|:-------------------------------------:|:-------:|
+| Web Service  |    [Gin](github.com/gin-gonic/gin)    |   ✅️    |
+| Memory Cache | [Redis](github.com/go-redis/redis/v8) |   ✅️    |
+|   Database   |         [Gorm](gorm.io/gorm)          |   ✅️    |
+
+
+If you want to know more about dubbogo Intellij Plugin, please visit [https://gitee.com/changeden/intellij-plugin-dubbo-go-generator](https://gitee.com/changeden/intellij-plugin-dubbo-go-generator) and read its readme carefully.
+
+## Dubbo-go ecosystem
+
+* [Dubbo Ecosystem Entry](https://github.com/apache?utf8=%E2%9C%93&q=dubbo&type=&language=) - A GitHub group `dubbo` to gather all Dubbo relevant projects not appropriate in [apache](https://github.com/apache) group yet.
+* [dubbo-go-pixiu](https://github.com/apache/dubbo-go-pixiu) - A dynamic, high-performance API gateway solution for Dubbo and Http services.
+* [dubbo-go-samples](https://github.com/apache/dubbo-go-samples) - Samples for Apache Dubbo-go.
+* [dubbo-getty](https://github.com/apache/dubbo-getty) - A netty like asynchronous network I/O library which supports tcp/udp/websocket network protocol.
+* [triple](https://github.com/dubbogo/triple) - A golang network package that based on http2, used by Dubbo-go 3.0.
+* [dubbo-go-hessian2](https://github.com/apache/dubbo-go-hessian2) - A golang hessian library used by Apache/dubbo-go.
+* [gost](https://github.com/dubbogo/gost) - A go sdk for Apache Dubbo-go.
+
+
 ## Contributing
 
 Please visit [CONTRIBUTING](./CONTRIBUTING.md) for details on submitting patches and the contribution workflow.
@@ -158,7 +211,17 @@ If you are using [apache/dubbo-go](https://github.com/apache/dubbo-go) and think
         <a href="https://opayweb.com/" target="_blank">
           <img width="222px"  src="https://open.opayweb.com/static/img/logo@2x.35c6fe4c.jpg">
         </a>
-      </td>  
+      </td>
+      <td align="center" valign="middle">
+        <a href="http://www.zongheng.com/" target="_blank">
+          <img width="222px" src="https://img.xmkanshu.com/u/202204/01/201253131.png">
+        </a>
+      </td>
+      <td align="center" valign="middle">
+        <a href="https://amap.com/" target="_blank">
+          <img width="222px" src="https://github.com/seven-tan/static/blob/main/logo.png?raw=true" >
+        </a>
+      </td>
     </tr>
     <tr></tr>
   </tbody>
@@ -166,16 +229,6 @@ If you are using [apache/dubbo-go](https://github.com/apache/dubbo-go) and think
 </div>
 
 [See more user cases](https://github.com/apache/dubbo-go/issues/2)
-
-## Dubbo-go ecosystem
-
-* [Dubbo Ecosystem Entry](https://github.com/apache?utf8=%E2%9C%93&q=dubbo&type=&language=) - A GitHub group `dubbo` to gather all Dubbo relevant projects not appropriate in [apache](https://github.com/apache) group yet.
-* [dubbo-go-pixiu](https://github.com/apache/dubbo-go-pixiu) - A dynamic, high-performance API gateway solution for Dubbo and Http services.
-* [dubbo-go-samples](https://github.com/apache/dubbo-go-samples) - Samples for Apache Dubbo-go.
-* [dubbo-getty](https://github.com/apache/dubbo-getty) - A netty like asynchronous network I/O library which supports tcp/udp/websocket network protocol.
-* [triple](https://github.com/dubbogo/triple) - A golang network package that based on http2, used by Dubbo-go 3.0.
-* [dubbo-go-hessian2](https://github.com/apache/dubbo-go-hessian2) - A golang hessian library used by Apache/dubbo-go.
-* [gost](https://github.com/dubbogo/gost) - A go sdk for Apache Dubbo-go.
 
 ## License
 

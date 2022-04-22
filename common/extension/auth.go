@@ -33,11 +33,11 @@ func SetAuthenticator(name string, fcn func() filter.Authenticator) {
 
 // GetAuthenticator finds the Authenticator with @name
 // Panic if not found
-func GetAuthenticator(name string) filter.Authenticator {
+func GetAuthenticator(name string) (filter.Authenticator, bool) {
 	if authenticators[name] == nil {
-		panic("authenticator for " + name + " is not existing, make sure you have import the package.")
+		return nil, false
 	}
-	return authenticators[name]()
+	return authenticators[name](), true
 }
 
 // SetAccessKeyStorages will set the @fcn into map with this name

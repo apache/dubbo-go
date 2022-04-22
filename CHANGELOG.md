@@ -1,6 +1,32 @@
 # Release Notes
 ---
 
+## 3.0.1
+
+### Features
+
+- [Support Graceful Shutdown](https://github.com/apache/dubbo-go/pull/1675)
+- [Support `$invokeAsync` for generic service](https://github.com/apache/dubbo-go/pull/1674)
+- [Support config the Nacos context path](https://github.com/apache/dubbo-go/pull/1656)
+
+### Bugfixs
+
+- [Fix: JSON-RPC request timeout time dynamically](https://github.com/apache/dubbo-go/pull/1713)
+- [Fix: the heartbeat of polaris cannot be reported](https://github.com/apache/dubbo-go/pull/1688)
+- [Fix: triple protocol request doesn't carry attachment such as group or version](https://github.com/apache/dubbo-go/pull/1700)
+- [Fix: location trim space](https://github.com/apache/dubbo-go/pull/1670)
+- [Fix: add category key to the Consumer for diff with Provider](https://github.com/apache/dubbo-go/pull/1672)
+
+### Enhancements
+
+- [Disabled Adaptive Service if set disabled by the Client](https://github.com/apache/dubbo-go/pull/1748)
+- [Don't load Adaptive Service Filter if not set ](https://github.com/apache/dubbo-go/pull/1735)
+- [Log print the caller ](https://github.com/apache/dubbo-go/pull/1732)
+- [Refactor invocation interface](https://github.com/apache/dubbo-go/pull/1702)
+- [Refactor Nacos listener check-healthy ](https://github.com/apache/dubbo-go/pull/1729)
+- [Refactor Zookeeper dynamic configuration listener](https://github.com/apache/dubbo-go/pull/1665)
+
+
 ## 3.0.0
 
 ### Features
@@ -319,7 +345,7 @@ Milestone: [https://github.com/apache/dubbo-go/milestone/5](https://github.com/a
 - [Fix go client quit abnormally when it connects java server](https://github.com/apache/dubbo-go/pull/820) [@wenxuwan](https://github.com/wenxuwan)
 - [Fix sentinel windows issue](https://github.com/apache/dubbo-go/pull/821) [@louyuting](https://github.com/louyuting)
 - [Fix metadata default port](https://github.com/apache/dubbo-go/pull/821) [@sanxun0325](https://github.com/sanxun0325)
-- [Fix consul can not destory](https://github.com/apache/dubbo-go/pull/788) [@LaurenceLiZhixin](https://github.com/LaurenceLiZhixin)
+- [Fix consul can not destroy](https://github.com/apache/dubbo-go/pull/788) [@LaurenceLiZhixin](https://github.com/LaurenceLiZhixin)
 
 Milestone: [https://github.com/apache/dubbo-go/milestone/6](https://github.com/apache/dubbo-go/milestone/6?closed=1)
 
@@ -364,7 +390,7 @@ Project: [https://github.com/apache/dubbo-go/projects/10](https://github.com/apa
 - [Fix go client quit abnormally when it connects java server](https://github.com/apache/dubbo-go/pull/820) [@wenxuwan](https://github.com/wenxuwan)      
 - [Fix sentinel windows issue](https://github.com/apache/dubbo-go/pull/821) [@louyuting](https://github.com/louyuting)      
 - [Fix metadata default port](https://github.com/apache/dubbo-go/pull/821) [@sanxun0325](https://github.com/sanxun0325)      
-- [Fix consul can not destory](https://github.com/apache/dubbo-go/pull/788) [@LaurenceLiZhixin](https://github.com/LaurenceLiZhixin)      
+- [Fix consul can not destroy](https://github.com/apache/dubbo-go/pull/788) [@LaurenceLiZhixin](https://github.com/LaurenceLiZhixin)      
 
 Milestone: [https://github.com/apache/dubbo-go/milestone/6](https://github.com/apache/dubbo-go/milestone/6?closed=1)
 

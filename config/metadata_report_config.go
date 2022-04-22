@@ -65,6 +65,7 @@ func (mc *MetadataReportConfig) ToUrl() (*common.URL, error) {
 		common.WithParamsValue(constant.MetadataReportGroupKey, mc.Group),
 		common.WithParamsValue(constant.MetadataReportNamespaceKey, mc.Namespace),
 		common.WithParamsValue(constant.MetadataTypeKey, mc.metadataType),
+		common.WithParamsValue(constant.ClientNameKey, clientNameID(mc, mc.Protocol, mc.Address)),
 	)
 	if err != nil || len(res.Protocol) == 0 {
 		return nil, perrors.New("Invalid MetadataReport Config.")
@@ -77,7 +78,7 @@ func (mc *MetadataReportConfig) IsValid() bool {
 	return len(mc.Protocol) != 0
 }
 
-// StartMetadataReport: The entry of metadata report start
+// StartMetadataReport  The entry of metadata report start
 func (mc *MetadataReportConfig) StartMetadataReport() error {
 	if mc == nil || !mc.IsValid() {
 		return nil
@@ -135,49 +136,40 @@ type MetadataReportConfigBuilder struct {
 	metadataReportConfig *MetadataReportConfig
 }
 
-// nolint
 func NewMetadataReportConfigBuilder() *MetadataReportConfigBuilder {
 	return &MetadataReportConfigBuilder{metadataReportConfig: &MetadataReportConfig{}}
 }
 
-// nolint
 func (mrcb *MetadataReportConfigBuilder) SetProtocol(protocol string) *MetadataReportConfigBuilder {
 	mrcb.metadataReportConfig.Protocol = protocol
 	return mrcb
 }
 
-// nolint
 func (mrcb *MetadataReportConfigBuilder) SetAddress(address string) *MetadataReportConfigBuilder {
 	mrcb.metadataReportConfig.Address = address
 	return mrcb
 }
 
-// nolint
 func (mrcb *MetadataReportConfigBuilder) SetUsername(username string) *MetadataReportConfigBuilder {
 	mrcb.metadataReportConfig.Username = username
 	return mrcb
 }
 
-// nolint
 func (mrcb *MetadataReportConfigBuilder) SetPassword(password string) *MetadataReportConfigBuilder {
 	mrcb.metadataReportConfig.Password = password
 	return mrcb
 }
 
-// nolint
 func (mrcb *MetadataReportConfigBuilder) SetTimeout(timeout string) *MetadataReportConfigBuilder {
 	mrcb.metadataReportConfig.Timeout = timeout
 	return mrcb
 }
 
-// nolint
 func (mrcb *MetadataReportConfigBuilder) SetGroup(group string) *MetadataReportConfigBuilder {
 	mrcb.metadataReportConfig.Group = group
 	return mrcb
 }
 
-// nolint
 func (mrcb *MetadataReportConfigBuilder) Build() *MetadataReportConfig {
-	// TODO Init
 	return mrcb.metadataReportConfig
 }

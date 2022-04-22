@@ -47,12 +47,10 @@ var attachmentKey = []string{
 // DubboInvoker is implement of protocol.Invoker. A dubboInvoker refers to one service and ip.
 type DubboInvoker struct {
 	protocol.BaseInvoker
-	// the exchange layer, it is focus on network communication.
-	clientGuard *sync.RWMutex
+	clientGuard *sync.RWMutex // the exchange layer, it is focus on network communication.
 	client      *remoting.ExchangeClient
 	quitOnce    sync.Once
-	// timeout for service(interface) level.
-	timeout time.Duration
+	timeout     time.Duration // timeout for service(interface) level.
 }
 
 // NewDubboInvoker constructor
@@ -117,10 +115,10 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 
 	inv := invocation.(*invocation_impl.RPCInvocation)
 	// init param
-	inv.SetAttachments(constant.PathKey, di.GetURL().GetParam(constant.InterfaceKey, ""))
+	inv.SetAttachment(constant.PathKey, di.GetURL().GetParam(constant.InterfaceKey, ""))
 	for _, k := range attachmentKey {
 		if v := di.GetURL().GetParam(k, ""); len(v) > 0 {
-			inv.SetAttachments(k, v)
+			inv.SetAttachment(k, v)
 		}
 	}
 
@@ -133,7 +131,7 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 		url.SetParam(constant.SerializationKey, constant.Hessian2Serialization)
 	}
 	// async
-	async, err := strconv.ParseBool(inv.AttachmentsByKey(constant.AsyncKey, "false"))
+	async, err := strconv.ParseBool(inv.GetAttachmentWithDefaultValue(constant.AsyncKey, "false"))
 	if err != nil {
 		logger.Errorf("ParseBool - error: %v", err)
 		async = false
@@ -172,12 +170,12 @@ func (di *DubboInvoker) getTimeout(invocation *invocation_impl.RPCInvocation) ti
 	if len(timeout) != 0 {
 		if t, err := time.ParseDuration(timeout); err == nil {
 			// config timeout into attachment
-			invocation.SetAttachments(constant.TimeoutKey, strconv.Itoa(int(t.Milliseconds())))
+			invocation.SetAttachment(constant.TimeoutKey, strconv.Itoa(int(t.Milliseconds())))
 			return t
 		}
 	}
 	// set timeout into invocation at method level
-	invocation.SetAttachments(constant.TimeoutKey, strconv.Itoa(int(di.timeout.Milliseconds())))
+	invocation.SetAttachment(constant.TimeoutKey, strconv.Itoa(int(di.timeout.Milliseconds())))
 	return di.timeout
 }
 

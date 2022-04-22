@@ -30,17 +30,12 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config_center/parser"
 )
 
-// ////////////////////////////////////////
-// DynamicConfiguration
-// ////////////////////////////////////////
 const (
-	// DefaultGroup default group
-	DefaultGroup = "dubbo"
-	// DefaultConfigTimeout default config timeout
+	DefaultGroup         = "dubbo"
 	DefaultConfigTimeout = "10s"
 )
 
-// DynamicConfiguration for modify listener and get properties file
+// DynamicConfiguration is the interface which modifys listener and gets properties file.
 type DynamicConfiguration interface {
 	Parser() parser.ConfigurationParser
 	SetParser(parser.ConfigurationParser)

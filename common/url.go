@@ -48,24 +48,17 @@ import (
 
 // dubbo role type constant
 const (
-	// CONSUMER is consumer role
 	CONSUMER = iota
-	// CONFIGURATOR is configurator role
 	CONFIGURATOR
-	// ROUTER is router role
 	ROUTER
-	// PROVIDER is provider role
 	PROVIDER
 	PROTOCOL = "protocol"
 )
 
 var (
-	// DubboNodes Dubbo service node
-	DubboNodes = [...]string{"consumers", "configurators", "routers", "providers"}
-	// DubboRole Dubbo service role
-	DubboRole = [...]string{"consumer", "", "routers", "provider"}
-	// CompareURLEqualFunc compare two URL is equal
-	compareURLEqualFunc CompareURLEqualFunc
+	DubboNodes          = [...]string{"consumers", "configurators", "routers", "providers"} // Dubbo service node
+	DubboRole           = [...]string{"consumer", "", "routers", "provider"}                // Dubbo service role
+	compareURLEqualFunc CompareURLEqualFunc                                                 // function to compare two URL is equal
 )
 
 func init() {
@@ -367,9 +360,10 @@ func (c *URL) Key() string {
 func (c *URL) GetCacheInvokerMapKey() string {
 	urlNew, _ := NewURL(c.PrimitiveURL)
 
-	buildString := fmt.Sprintf("%s://%s:%s@%s:%s/?interface=%s&group=%s&version=%s&timestamp=%s",
+	buildString := fmt.Sprintf("%s://%s:%s@%s:%s/?interface=%s&group=%s&version=%s&timestamp=%s&"+constant.MeshClusterIDKey+"=%s",
 		c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Service(), c.GetParam(constant.GroupKey, ""),
-		c.GetParam(constant.VersionKey, ""), urlNew.GetParam(constant.TimestampKey, ""))
+		c.GetParam(constant.VersionKey, ""), urlNew.GetParam(constant.TimestampKey, ""),
+		c.GetParam(constant.MeshClusterIDKey, ""))
 	return buildString
 }
 
@@ -766,7 +760,7 @@ func (c *URL) Compare(comp cm.Comparator) int {
 	}
 }
 
-// Copy URL based on the reserved parameter's keys.
+// CloneWithParams Copy URL based on the reserved parameter's keys.
 func (c *URL) CloneWithParams(reserveParams []string) *URL {
 	params := url.Values{}
 	for _, reserveParam := range reserveParams {
@@ -873,4 +867,22 @@ func (c *URL) GetParamDuration(s string, d string) time.Duration {
 		return t
 	}
 	return 3 * time.Second
+}
+
+func GetSubscribeName(url *URL) string {
+	var buffer bytes.Buffer
+
+	buffer.Write([]byte(DubboNodes[PROVIDER]))
+	appendParam(&buffer, url, constant.InterfaceKey)
+	appendParam(&buffer, url, constant.VersionKey)
+	appendParam(&buffer, url, constant.GroupKey)
+	return buffer.String()
+}
+
+func appendParam(target *bytes.Buffer, url *URL, key string) {
+	value := url.GetParam(key, "")
+	target.Write([]byte(constant.NacosServiceNameSeparator))
+	if strings.TrimSpace(value) != "" {
+		target.Write([]byte(value))
+	}
 }

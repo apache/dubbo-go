@@ -26,6 +26,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/yaml"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 )
@@ -46,5 +47,45 @@ func TestGoConfigProcess(t *testing.T) {
 	c := &config_center.ConfigChangeEvent{Key: "test", Value: string(bs)}
 	rc.rootConfig.Process(c)
 	assert.Equal(t, rc.rootConfig.Registries["demoZK"].Timeout, "11s")
+	assert.Equal(t, rc.rootConfig.Consumer.RequestTimeout, "6s")
 
+}
+
+func TestNewRootConfigBuilder(t *testing.T) {
+	registryConfig := NewRegistryConfigWithProtocolDefaultPort("nacos")
+	protocolConfig := NewProtocolConfigBuilder().
+		SetName("dubbo").
+		SetPort("20000").
+		Build()
+	rootConfig = NewRootConfigBuilder().
+		SetConfigCenter(NewConfigCenterConfigBuilder().Build()).
+		SetMetadataReport(NewMetadataReportConfigBuilder().Build()).
+		AddProtocol("dubbo", protocolConfig).
+		AddRegistry("nacos", registryConfig).
+		SetProtocols(map[string]*ProtocolConfig{"dubbo": protocolConfig}).
+		SetRegistries(map[string]*RegistryConfig{"nacos": registryConfig}).
+		SetProvider(NewProviderConfigBuilder().Build()).
+		SetConsumer(NewConsumerConfigBuilder().Build()).
+		SetMetric(NewMetricConfigBuilder().Build()).
+		SetLogger(NewLoggerConfigBuilder().Build()).
+		SetShutdown(NewShutDownConfigBuilder().Build()).
+		SetShutDown(NewShutDownConfigBuilder().Build()).
+		SetRouter([]*RouterConfig{}).
+		SetEventDispatcherType("direct").
+		SetCacheFile("abc=123").
+		Build()
+
+	assert.Equal(t, rootConfig.Prefix(), constant.Dubbo)
+	ids := rootConfig.getRegistryIds()
+	assert.Equal(t, ids[0], "nacos")
+
+	down := GetShutDown()
+	assert.NotNil(t, down)
+
+	application := GetApplicationConfig()
+	assert.NotNil(t, application)
+
+	registerPOJO()
+	config := GetRootConfig()
+	assert.Equal(t, rootConfig, config)
 }

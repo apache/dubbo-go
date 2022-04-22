@@ -94,7 +94,7 @@ func (exporter *MetadataServiceExporter) GetExportedURLs() []*common.URL {
 	return exporter.ServiceConfig.GetExportedUrls()
 }
 
-// isExported will return is metadataServiceExporter exported or not
+// IsExported will return is metadataServiceExporter exported or not
 func (exporter *MetadataServiceExporter) IsExported() bool {
 	exporter.lock.RLock()
 	defer exporter.lock.RUnlock()

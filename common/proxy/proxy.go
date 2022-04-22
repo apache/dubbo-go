@@ -140,6 +140,7 @@ func DefaultProxyImplementFunc(p *Proxy, v common.RPCService) {
 				}
 			} else { // only return error
 				replyEmptyFlag = true
+				//reply = reflect.New(outs[0])
 			}
 
 			start := 0
@@ -175,25 +176,26 @@ func DefaultProxyImplementFunc(p *Proxy, v common.RPCService) {
 
 			inv = invocation_impl.NewRPCInvocationWithOptions(invocation_impl.WithMethodName(methodName),
 				invocation_impl.WithArguments(inIArr),
+				//invocation_impl.WithReply(reply.Interface()),
 				invocation_impl.WithCallBack(p.callback), invocation_impl.WithParameterValues(inVArr))
 			if !replyEmptyFlag {
 				inv.SetReply(reply.Interface())
 			}
 
 			for k, value := range p.attachments {
-				inv.SetAttachments(k, value)
+				inv.SetAttachment(k, value)
 			}
 
 			// add user setAttachment. It is compatibility with previous versions.
 			atm := invCtx.Value(constant.AttachmentKey)
 			if m, ok := atm.(map[string]string); ok {
 				for k, value := range m {
-					inv.SetAttachments(k, value)
+					inv.SetAttachment(k, value)
 				}
 			} else if m2, ok2 := atm.(map[string]interface{}); ok2 {
 				// it is support to transfer map[string]interface{}. It refers to dubbo-java 2.7.
 				for k, value := range m2 {
-					inv.SetAttachments(k, value)
+					inv.SetAttachment(k, value)
 				}
 			}
 

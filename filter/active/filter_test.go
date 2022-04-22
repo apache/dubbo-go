@@ -47,7 +47,7 @@ func TestFilterInvoke(t *testing.T) {
 	invoker.EXPECT().Invoke(gomock.Any()).Return(nil)
 	invoker.EXPECT().GetUrl().Return(url).Times(1)
 	filter.Invoke(context.Background(), invoker, invoc)
-	assert.True(t, invoc.AttachmentsByKey(dubboInvokeStartTime, "") != "")
+	assert.True(t, invoc.GetAttachmentWithDefaultValue(dubboInvokeStartTime, "") != "")
 }
 
 func TestFilterOnResponse(t *testing.T) {

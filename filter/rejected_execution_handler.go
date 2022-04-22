@@ -22,16 +22,13 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
-// RejectedExecutionHandler defines the handler to handle exceptions from invoking filters.
-/**
- * If the invocation cannot pass any validation in filter, like ExecuteLimitFilter and TpsLimitFilter,
- * the implementation will be used.
- * The common case is that sometimes you want to return the default value when the request was rejected.
- * Or you want to be warned if any request was rejected.
- * In such situation, implement this interface and register it by invoking extension.SetRejectedExecutionHandler.
- */
+// RejectedExecutionHandler is the interface which defines the handler to handle exceptions from invoking filters.
+// If the invocation cannot pass any validation in filter, like ExecuteLimitFilter and TpsLimitFilter,
+// the implementation will be used. The common case is that sometimes you want to return the default
+// value when the request was rejected.  Or you want to be warned if any request was rejected.
+// In such situation, implement this interface and register it by invoking extension.SetRejectedExecutionHandler.
+//
+// RejectedExecution method will be called if the invocation was rejected by some component.
 type RejectedExecutionHandler interface {
-
-	// RejectedExecution will be called if the invocation was rejected by some component.
 	RejectedExecution(url *common.URL, invocation protocol.Invocation) protocol.Result
 }

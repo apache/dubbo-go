@@ -68,7 +68,7 @@ func newNacosDynamicConfiguration(url *common.URL) (*nacosDynamicConfiguration, 
 	url.SetParam(constant.NacosPassword, url.Password)
 	url.SetParam(constant.NacosAccessKey, url.GetParam(constant.ConfigAccessKey, ""))
 	url.SetParam(constant.NacosSecretKey, url.GetParam(constant.ConfigSecretKey, ""))
-	url.SetParam(constant.TimeoutKey, url.GetParam(constant.ConfigTimeoutKey, ""))
+	url.SetParam(constant.NacosTimeout, url.GetParam(constant.ConfigTimeoutKey, ""))
 	url.SetParam(constant.NacosGroupKey, url.GetParam(constant.ConfigGroupKey, constant2.DEFAULT_GROUP))
 	c := &nacosDynamicConfiguration{
 		url:  url,

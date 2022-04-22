@@ -26,6 +26,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+)
+
 const (
 	testDestinationRuleYML      = "testdata/router_config_dest_rule.yml"
 	errorTestDestinationRuleYML = "testdata/router_config_destination_rule_error.yml"
@@ -57,4 +61,32 @@ func TestRouterInit(t *testing.T) {
 	//
 	//err = RouterInit(testVirtualServiceYML, errorTestDestinationRuleYML)
 	//assert.Error(t, err)
+}
+
+func TestNewRouterConfigBuilder(t *testing.T) {
+	tag := Tag{
+		Name:      "tag",
+		Addresses: []string{"127.0.0.1"},
+	}
+	rc := newEmptyRootConfig()
+	config := NewRouterConfigBuilder().
+		SetScope("scope").
+		SetKey("key").
+		SetForce(true).
+		SetRuntime(true).
+		SetEnabled(true).
+		SetValid(true).
+		SetPriority(10).
+		SetConditions([]string{"condition"}).
+		AddCondition("condition").
+		SetTags([]Tag{tag}).
+		AddTag(tag).
+		Build()
+
+	err := initRouterConfig(rc)
+	assert.NoError(t, err)
+	err = config.Init()
+	assert.NoError(t, err)
+
+	assert.Equal(t, config.Prefix(), constant.RouterConfigPrefix)
 }

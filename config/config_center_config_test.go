@@ -26,6 +26,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	_ "dubbo.apache.org/dubbo-go/v3/config_center/apollo"
 )
 
@@ -36,4 +37,54 @@ func TestApolloConfigCenterConfig(t *testing.T) {
 
 	registries := rootConfig.Registries
 	assert.NotNil(t, registries)
+}
+func TestConfigCenterConfig(t *testing.T) {
+	var (
+		config *CenterConfig
+		err    error
+	)
+
+	t.Run("ConfigCenterConfigBuilder", func(t *testing.T) {
+		config = NewConfigCenterConfigBuilder().
+			SetProtocol("protocol").
+			SetUserName("userName").
+			SetAddress("address").
+			SetPassword("password").
+			SetNamespace("namespace").
+			SetGroup("group").
+			SetDataID("dataId").
+			Build()
+
+		err = config.check()
+		assert.Nil(t, err)
+
+		assert.Equal(t, config.Protocol, "protocol")
+		assert.Equal(t, config.Username, "userName")
+		assert.Equal(t, config.Address, "address")
+		assert.Equal(t, config.Password, "password")
+		assert.Equal(t, config.Namespace, "namespace")
+		assert.Equal(t, config.Group, "group")
+		assert.Equal(t, config.DataId, "dataId")
+		assert.Equal(t, config.Prefix(), constant.ConfigCenterPrefix)
+		//assert.Equal(t, config.NameId(),
+		//	strings.Join([]string{constant.ConfigCenterPrefix, "protocol", "address"}, "-"))
+	})
+
+	t.Run("GetUrlMap", func(t *testing.T) {
+		url := config.GetUrlMap()
+		assert.Equal(t, url.Get(constant.ConfigNamespaceKey), config.Namespace)
+		assert.Equal(t, url.Get(constant.ConfigClusterKey), config.Cluster)
+	})
+
+	t.Run("translateConfigAddress", func(t *testing.T) {
+		address := config.translateConfigAddress()
+		assert.Equal(t, address, "address")
+	})
+
+	t.Run("toUrl", func(t *testing.T) {
+		url, err := config.toURL()
+		assert.Nil(t, err)
+		namespace := url.GetParam(constant.ConfigNamespaceKey, "namespace")
+		assert.Equal(t, namespace, "namespace")
+	})
 }

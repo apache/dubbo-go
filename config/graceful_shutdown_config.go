@@ -22,13 +22,20 @@ import (
 )
 
 import (
+	"github.com/creasty/defaults"
+
+	"go.uber.org/atomic"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 )
 
 const (
-	defaultTimeout     = 60 * time.Second
-	defaultStepTimeout = 10 * time.Second
+	defaultTimeout                = 60 * time.Second
+	defaultStepTimeout            = 3 * time.Second
+	defaultConsumerUpdateWaitTime = 3 * time.Second
 )
 
 // ShutdownConfig is used as configuration for graceful shutdown
@@ -47,14 +54,23 @@ type ShutdownConfig struct {
 	 * and the 99.9% requests will return response in 2s, so the StepTimeout will be bigger than(10+2) * 1000ms,
 	 * maybe (10 + 2*3) * 1000ms is a good choice.
 	 */
-	StepTimeout string `default:"10s" yaml:"step_timeout" json:"step.timeout,omitempty" property:"step.timeout"`
+	StepTimeout string `default:"3s" yaml:"step-timeout" json:"step.timeout,omitempty" property:"step.timeout"`
+
+	/*
+	 * ConsumerUpdateWaitTime means when provider is shutting down, after the unregister, time to wait for client to
+	 * update invokers. During this time, incoming invocation can be treated normally.
+	 */
+	ConsumerUpdateWaitTime string `default:"3s" yaml:"consumer-update-wait-time" json:"consumerUpdate.waitTIme,omitempty" property:"consumerUpdate.waitTIme"`
 	// when we try to shutdown the applicationConfig, we will reject the new requests. In most cases, you don't need to configure this.
-	RejectRequestHandler string `yaml:"reject_handler" json:"reject_handler,omitempty" property:"reject_handler"`
+	RejectRequestHandler string `yaml:"reject-handler" json:"reject-handler,omitempty" property:"reject_handler"`
+	// internal listen kill signal，the default is true.
+	InternalSignal bool `default:"true" yaml:"internal-signal" json:"internal.signal,omitempty" property:"internal.signal"`
+
 	// true -> new request will be rejected.
-	RejectRequest bool
-	// true -> all requests had been processed. In provider side it means that all requests are returned response to clients
-	// In consumer side, it means that all requests getting response from servers
-	RequestsFinished bool
+	RejectRequest atomic.Bool
+	// active invocation
+	ConsumerActiveCount atomic.Int32
+	ProviderActiveCount atomic.Int32
 }
 
 // Prefix dubbo.shutdown
@@ -62,7 +78,6 @@ func (config *ShutdownConfig) Prefix() string {
 	return constant.ShutdownConfigPrefix
 }
 
-// nolint
 func (config *ShutdownConfig) GetTimeout() time.Duration {
 	result, err := time.ParseDuration(config.Timeout)
 	if err != nil {
@@ -73,7 +88,6 @@ func (config *ShutdownConfig) GetTimeout() time.Duration {
 	return result
 }
 
-// nolint
 func (config *ShutdownConfig) GetStepTimeout() time.Duration {
 	result, err := time.ParseDuration(config.StepTimeout)
 	if err != nil {
@@ -82,6 +96,20 @@ func (config *ShutdownConfig) GetStepTimeout() time.Duration {
 		return defaultStepTimeout
 	}
 	return result
+}
+
+func (config *ShutdownConfig) GetConsumerUpdateWaitTime() time.Duration {
+	result, err := time.ParseDuration(config.ConsumerUpdateWaitTime)
+	if err != nil {
+		logger.Errorf("The ConsumerUpdateTimeout configuration is invalid: %s, and we will use the default value: %s, err: %v",
+			config.ConsumerActiveCount.Load(), defaultConsumerUpdateWaitTime.String(), err)
+		return defaultConsumerUpdateWaitTime
+	}
+	return result
+}
+
+func (config *ShutdownConfig) Init() error {
+	return defaults.Set(config)
 }
 
 type ShutdownConfigBuilder struct {
@@ -107,16 +135,17 @@ func (scb *ShutdownConfigBuilder) SetRejectRequestHandler(rejectRequestHandler s
 	return scb
 }
 
-func (scb *ShutdownConfigBuilder) SetRequestsFinished(requestsFinished bool) *ShutdownConfigBuilder {
-	scb.shutdownConfig.RequestsFinished = requestsFinished
+func (scb *ShutdownConfigBuilder) SetRejectRequest(rejectRequest bool) *ShutdownConfigBuilder {
+	scb.shutdownConfig.RejectRequest.Store(rejectRequest)
 	return scb
 }
 
-func (scb *ShutdownConfigBuilder) SetRejectRequest(rejectRequest bool) *ShutdownConfigBuilder {
-	scb.shutdownConfig.RejectRequest = rejectRequest
+func (scb *ShutdownConfigBuilder) SetInternalSignal(internalSignal bool) *ShutdownConfigBuilder {
+	scb.shutdownConfig.InternalSignal = internalSignal
 	return scb
 }
 
 func (scb *ShutdownConfigBuilder) Build() *ShutdownConfig {
+	defaults.Set(scb)
 	return scb.shutdownConfig
 }

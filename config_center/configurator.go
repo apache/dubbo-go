@@ -21,7 +21,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 )
 
-// Configurator supports GetUrl and constructor
+// Configurator is the interface which wraps  GetUrl and Configure method.
 type Configurator interface {
 	GetUrl() *common.URL
 	Configure(url *common.URL)

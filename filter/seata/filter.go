@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+// Package seata provides a filter when use seata-golang, use this filter to transfer xid.
 package seata
 
 import (
@@ -44,7 +45,6 @@ func init() {
 	extension.SetFilter(constant.SeataFilterKey, newSeataFilter)
 }
 
-// seataFilter when use seata-golang, use this filter to transfer xid
 type seataFilter struct{}
 
 func newSeataFilter() filter.Filter {
@@ -58,7 +58,7 @@ func newSeataFilter() filter.Filter {
 
 // Invoke Get Xid by attachment key `SEATA_XID`. When use Seata, transfer xid by attachments
 func (f *seataFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
-	xid := invocation.AttachmentsByKey(string(SEATA_XID), "")
+	xid := invocation.GetAttachmentWithDefaultValue(string(SEATA_XID), "")
 	if len(strings.TrimSpace(xid)) > 0 {
 		logger.Debugf("Method: %v,Xid: %v", invocation.MethodName(), xid)
 		return invoker.Invoke(context.WithValue(ctx, SEATA_XID, xid), invocation)

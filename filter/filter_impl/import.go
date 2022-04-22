@@ -15,10 +15,9 @@
  * limitations under the License.
  */
 
+// Package filter_impl is for being compatible with older dubbo-go, please use `imports` package.
+// It may be DEPRECATED OR REMOVED in the future.
 package filter_impl
-
-// This package is for being compatible with older dubbo-go, please use `imports` package.
-// This package may be DEPRECATED OR REMOVED in the future.
 
 import (
 	_ "dubbo.apache.org/dubbo-go/v3/filter/accesslog"
@@ -28,7 +27,7 @@ import (
 	_ "dubbo.apache.org/dubbo-go/v3/filter/echo"
 	_ "dubbo.apache.org/dubbo-go/v3/filter/exec_limit"
 	_ "dubbo.apache.org/dubbo-go/v3/filter/generic"
-	_ "dubbo.apache.org/dubbo-go/v3/filter/gshutdown"
+	_ "dubbo.apache.org/dubbo-go/v3/filter/graceful_shutdown"
 	_ "dubbo.apache.org/dubbo-go/v3/filter/hystrix"
 	_ "dubbo.apache.org/dubbo-go/v3/filter/metrics"
 	_ "dubbo.apache.org/dubbo-go/v3/filter/seata"

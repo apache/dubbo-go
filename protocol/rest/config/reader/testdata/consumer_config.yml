@@ -73,5 +73,5 @@ references:
 
 shutdown_conf:
   timeout: 60s
-  step_timeout: 10s
+  step-timeout: 10s
 

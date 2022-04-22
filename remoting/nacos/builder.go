@@ -39,15 +39,17 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config"
 )
 
-const nacosClientName = "nacos-client"
-
 // NewNacosConfigClientByUrl read the config from url and build an instance
 func NewNacosConfigClientByUrl(url *common.URL) (*nacosClient.NacosConfigClient, error) {
 	sc, cc, err := GetNacosConfig(url)
 	if err != nil {
 		return nil, err
 	}
-	return nacosClient.NewNacosConfigClient(nacosClientName, true, sc, cc)
+	clientName := url.GetParam(constant.ClientNameKey, "")
+	if len(clientName) <= 0 {
+		return nil, perrors.New("nacos client name must set")
+	}
+	return nacosClient.NewNacosConfigClient(clientName, true, sc, cc)
 }
 
 // GetNacosConfig will return the nacos config
@@ -82,7 +84,7 @@ func GetNacosConfig(url *common.URL) ([]nacosConstant.ServerConfig, nacosConstan
 		serverConfigs = append(serverConfigs, nacosConstant.ServerConfig{IpAddr: ip, Port: uint64(port), ContextPath: contextPath})
 	}
 
-	timeout := url.GetParamDuration(constant.TimeoutKey, constant.DefaultRegTimeout)
+	timeout := url.GetParamDuration(constant.NacosTimeout, constant.DefaultRegTimeout)
 
 	clientConfig := nacosConstant.ClientConfig{
 		TimeoutMs:           uint64(int32(timeout / time.Millisecond)),
@@ -116,7 +118,11 @@ func NewNacosClient(rc *config.RemoteConfig) (*nacosClient.NacosNamingClient, er
 	if err != nil {
 		return nil, err
 	}
-	return nacosClient.NewNacosNamingClient(nacosClientName, true, scs, cc)
+	clientName := url.GetParam(constant.ClientNameKey, "")
+	if len(clientName) <= 0 {
+		return nil, perrors.New("nacos client name must set")
+	}
+	return nacosClient.NewNacosNamingClient(clientName, true, scs, cc)
 }
 
 // NewNacosClientByURL created
@@ -125,6 +131,10 @@ func NewNacosClientByURL(url *common.URL) (*nacosClient.NacosNamingClient, error
 	if err != nil {
 		return nil, err
 	}
+	clientName := url.GetParam(constant.ClientNameKey, "")
+	if len(clientName) <= 0 {
+		return nil, perrors.New("nacos client name must set")
+	}
 	logger.Infof("[Nacos Client] New nacos client with config = %+v", scs)
-	return nacosClient.NewNacosNamingClient(nacosClientName, true, scs, cc)
+	return nacosClient.NewNacosNamingClient(clientName, true, scs, cc)
 }

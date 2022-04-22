@@ -21,16 +21,16 @@ import (
 	"bytes"
 )
 
-// codec for exchangeClient
+// Codec is the interface that wrap EncodeRequest、 EncodeResponse and Decode method
+// for exchangeClient.
 type Codec interface {
 	EncodeRequest(request *Request) (*bytes.Buffer, error)
 	EncodeResponse(response *Response) (*bytes.Buffer, error)
-	Decode(data []byte) (DecodeResult, int, error)
+	Decode(data []byte) (*DecodeResult, int, error)
 }
 
 type DecodeResult struct {
-	// IsRequest indicates whether the current request is a heartbeat request
-	IsRequest bool
+	IsRequest bool // indicates whether the current request is a heartbeat request
 	Result    interface{}
 }
 

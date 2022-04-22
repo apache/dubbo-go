@@ -30,11 +30,14 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/cluster/base"
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
 	"dubbo.apache.org/dubbo-go/v3/cluster/metrics"
+	clsutils "dubbo.apache.org/dubbo-go/v3/cluster/utils"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
+
+var _ protocol.Invoker = (*adaptiveServiceClusterInvoker)(nil)
 
 type adaptiveServiceClusterInvoker struct {
 	base.BaseClusterInvoker
@@ -63,10 +66,30 @@ func (ivk *adaptiveServiceClusterInvoker) Invoke(ctx context.Context, invocation
 	invoker := lb.Select(invokers, invocation)
 
 	// invoke
+	invocation.SetAttachment(constant.AdaptiveServiceEnabledKey, constant.AdaptiveServiceIsEnabled)
 	result := invoker.Invoke(ctx, invocation)
 
+	// if the adaptive service encounters an error, DO NOT
+	// update the metrics.
+	if clsutils.IsAdaptiveServiceFailed(result.Error()) {
+		return result
+	}
+
 	// update metrics
-	remainingStr := result.Attachment(constant.AdaptiveServiceRemainingKey, "").(string)
+	var remainingStr string
+	remainingIface := result.Attachment(constant.AdaptiveServiceRemainingKey, nil)
+	if remainingIface != nil {
+		if str, strOK := remainingIface.(string); strOK {
+			remainingStr = str
+		} else if strArr, strArrOK := remainingIface.([]string); strArrOK && len(strArr) > 0 {
+			remainingStr = strArr[0]
+		}
+	}
+	if remainingStr == "" {
+		logger.Errorf("[adasvc cluster] The %s field type of value %v should be string.",
+			constant.AdaptiveServiceRemainingKey, remainingIface)
+		return result
+	}
 	remaining, err := strconv.Atoi(remainingStr)
 	if err != nil {
 		logger.Warnf("the remaining is unexpected, we need a int type, but we got %s, err: %v.", remainingStr, err)

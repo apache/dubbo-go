@@ -21,7 +21,6 @@ import (
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/json"
 	"github.com/knadh/koanf/parsers/toml"
-	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/rawbytes"
 
 	"github.com/pkg/errors"
@@ -30,6 +29,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/file"
 	"dubbo.apache.org/dubbo-go/v3/config/parsers/properties"
+	"dubbo.apache.org/dubbo-go/v3/config/parsers/yaml"
 )
 
 // GetConfigResolver get config resolver
@@ -52,6 +52,7 @@ func GetConfigResolver(conf *loaderConf) *koanf.Koanf {
 
 	switch conf.suffix {
 	case "yaml", "yml":
+		//err = k.Load(rawbytes.Provider(bytes), yaml.Parser())
 		err = k.Load(rawbytes.Provider(bytes), yaml.Parser())
 	case "json":
 		err = k.Load(rawbytes.Provider(bytes), json.Parser())

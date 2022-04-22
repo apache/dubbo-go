@@ -53,9 +53,8 @@ func NewEventListener(client *gxetcd.Client) *EventListener {
 	}
 }
 
-// listenServiceNodeEvent Listen on a spec key
-// this method will return true when spec key deleted,
-// this method will return false when deep layer connection lose
+// ListenServiceNodeEvent Listen on a spec key.It will return true when spec key deleted,
+// and return false when deep layer connection lose
 func (l *EventListener) ListenServiceNodeEvent(key string, listener ...remoting.DataListener) bool {
 	defer l.wg.Done()
 	for {
@@ -180,8 +179,7 @@ func timeSecondDuration(sec int) time.Duration {
 
 // ListenServiceEvent is invoked by etcdv3 ConsumerRegistry::Registe/ etcdv3 ConsumerRegistry::get/etcdv3 ConsumerRegistry::getListener
 // registry.go:Listen -> listenServiceEvent -> listenDirEvent -> listenServiceNodeEvent
-//                            |
-//                            --------> listenServiceNodeEvent
+// registry.go:Listen -> listenServiceEvent -> listenServiceNodeEvent
 func (l *EventListener) ListenServiceEvent(key string, listener remoting.DataListener) {
 	l.keyMapLock.RLock()
 	_, ok := l.keyMap[key]

@@ -18,7 +18,16 @@
 package extension
 
 import (
+	"fmt"
+)
+
+import (
+	"github.com/pkg/errors"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/cluster"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
 var clusters = make(map[string]func() cluster.Cluster)
@@ -30,9 +39,9 @@ func SetCluster(name string, fcn func() cluster.Cluster) {
 }
 
 // GetCluster finds the cluster fault-tolerant mode with @name
-func GetCluster(name string) cluster.Cluster {
+func GetCluster(name string) (cluster.Cluster, error) {
 	if clusters[name] == nil {
-		panic("cluster for " + name + " is not existing, make sure you have import the package.")
+		return nil, errors.New(fmt.Sprintf(constant.NonImportErrorMsgFormat, constant.ClusterKeyFailover))
 	}
-	return clusters[name]()
+	return clusters[name](), nil
 }

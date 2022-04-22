@@ -34,7 +34,6 @@ type MeshRouteMetadata struct {
 	Spec           interface{}
 }
 
-// nolint
 type MetaDataStruct struct {
 	Name string `yaml:"name" json:"name"`
 }
@@ -49,20 +48,17 @@ type VirtualServiceConfig struct {
 	Spec              UniformRouterConfigSpec `yaml:"spec" json:"spec"`
 }
 
-// nolint
 type UniformRouterConfigSpec struct {
 	Hosts []string      `yaml:"hosts" json:"hosts"`
 	Dubbo []*DubboRoute `yaml:"dubbo" json:"dubbo"`
 }
 
-// nolint
 type DubboRoute struct {
 	Name         string              `yaml:"name" json:"name"`
 	Services     []*StringMatch      `yaml:"services" json:"service"`
 	RouterDetail []*DubboRouteDetail `yaml:"routedetail" json:"routedetail"`
 }
 
-// nolint
 type DubboRouteDetail struct {
 	Name   string               `yaml:"name" json:"name"`
 	Match  []*DubboMatchRequest `yaml:"match" json:"match"`
@@ -70,7 +66,6 @@ type DubboRouteDetail struct {
 	// todo mirror/retries/timeout
 }
 
-// nolint
 type DubboMatchRequest struct {
 	Name         string                  `yaml:"name" json:"name"`
 	Method       *DubboMethodMatch       `yaml:"method" json:"method"`
@@ -80,26 +75,22 @@ type DubboMatchRequest struct {
 	Threshold    *DoubleMatch            `yaml:"threshold" json:"threshold"`
 }
 
-// nolint
 type DoubleMatch struct {
 	Exact float64           `yaml:"exact" json:"exact"`
 	Range *DoubleRangeMatch `yaml:"range" json:"range"`
 	Mode  float64           `yaml:"mode" json:"mode"`
 }
 
-// nolint
 type DoubleRangeMatch struct {
 	Start float64 `yaml:"start" json:"start"`
 	End   float64 `yaml:"end" json:"end"`
 }
 
-// nolint
 type DubboAttachmentMatch struct {
 	EagleeyeContext map[string]*StringMatch `yaml:"eagleeyecontext" json:"eagleeyecontext"`
 	DubboContext    map[string]*StringMatch `yaml:"dubbocontext" json:"dubbocontext"`
 }
 
-// nolint
 type DubboMethodMatch struct {
 	NameMatch *StringMatch            `yaml:"name_match" json:"name_match"`
 	Argc      int                     `yaml:"argc" json:"argc"`
@@ -108,7 +99,6 @@ type DubboMethodMatch struct {
 	Headers   map[string]*StringMatch `yaml:"headers" json:"headers"`
 }
 
-// nolint
 type DubboMethodArg struct {
 	Index     uint32           `yaml:"index" json:"index"`
 	Type      string           `yaml:"type" json:"type"`
@@ -118,22 +108,18 @@ type DubboMethodArg struct {
 	//todo reserve field
 }
 
-// nolint
 type ListStringMatch struct {
 	Oneof []*StringMatch `yaml:"oneof" json:"oneof"`
 }
 
-// nolint
 type ListDoubleMatch struct {
 	Oneof []*DoubleMatch `yaml:"oneof" json:"oneof"`
 }
 
-// nolint
 type BoolMatch struct {
 	Exact bool `yaml:"exact" json:"exact"`
 }
 
-// nolint
 type StringMatch struct {
 	Exact   string `yaml:"exact" json:"exact"`
 	Prefix  string `yaml:"prefix" json:"prefix"`
@@ -142,13 +128,11 @@ type StringMatch struct {
 	Empty   string `yaml:"empty" json:"empty"`
 }
 
-// nolint
 type DubboDestination struct {
 	Destination RouterDest `yaml:"destination" json:"destination"`
 	//Subset      string            `yaml:"subset"`
 }
 
-// nolint
 type RouterDest struct {
 	Host     string            `yaml:"host" json:"host"`
 	Subset   string            `yaml:"subset" json:"subset"`
@@ -167,7 +151,6 @@ type DestinationRuleConfig struct {
 	Spec              DestinationRuleSpec `yaml:"spec" json:"spec"`
 }
 
-// nolint
 func (drc *DestinationRuleConfig) DeepCopyObject() runtime.Object {
 	data, _ := yaml.Marshal(drc)
 	out := &DestinationRuleConfig{}
@@ -175,19 +158,16 @@ func (drc *DestinationRuleConfig) DeepCopyObject() runtime.Object {
 	return out
 }
 
-// nolint
 type DestinationRuleSpec struct {
 	Host    string                  `yaml:"host" json:"host"`
 	SubSets []DestinationRuleSubSet `yaml:"subsets" json:"subsets"`
 }
 
-// nolint
 type DestinationRuleSubSet struct {
 	Name   string            `yaml:"name" json:"name"`
 	Labels map[string]string `yaml:"labels" json:"labels"`
 }
 
-// nolint
 func (urc *VirtualServiceConfig) DeepCopyObject() runtime.Object {
 	data, _ := yaml.Marshal(urc)
 	out := &VirtualServiceConfig{}
@@ -195,21 +175,18 @@ func (urc *VirtualServiceConfig) DeepCopyObject() runtime.Object {
 	return out
 }
 
-// nolint
 type DestinationRuleSpecList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []DestinationRuleSpec `json:"items"`
 }
 
-// nolint
 type VirtualServiceConfigList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []VirtualServiceConfig `json:"items"`
 }
 
-// nolint
 func (drc *VirtualServiceConfigList) DeepCopyObject() runtime.Object {
 	out := &VirtualServiceConfigList{
 		TypeMeta: drc.TypeMeta,
@@ -222,14 +199,12 @@ func (drc *VirtualServiceConfigList) DeepCopyObject() runtime.Object {
 	return out
 }
 
-// nolint
 type DestinationRuleConfigList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []DestinationRuleConfig `json:"items"`
 }
 
-// nolint
 func (drc *DestinationRuleConfigList) DeepCopyObject() runtime.Object {
 	out := &DestinationRuleConfigList{
 		TypeMeta: drc.TypeMeta,

@@ -15,6 +15,20 @@
  * limitations under the License.
  */
 
+/*
+Package tps provides a filter for limiting the requests by TPS.
+ if you wish to use the TpsLimiter, please add the configuration into your service provider configuration:
+ for example:
+ "UserProvider":
+   registry: "hangzhouzk"
+   protocol : "dubbo"
+   interface : "com.ikurento.user.UserProvider"
+   ... # other configuration
+   tps.limiter: "method-service", # it should be the name of limiter. if the value is 'default',
+                                  # the MethodServiceTpsLimiter will be used.
+   tps.limit.rejected.handler: "default", # optional, or the name of the implementation
+   if the value of 'tps.limiter' is nil or empty string, the tps filter will do nothing
+*/
 package tps
 
 import (
@@ -41,20 +55,6 @@ func init() {
 	extension.SetFilter(constant.TpsLimitFilterKey, newTpsLimitFilter)
 }
 
-// Filter filters the requests by TPS
-/**
- * if you wish to use the TpsLimiter, please add the configuration into your service provider configuration:
- * for example:
- * "UserProvider":
- *   registry: "hangzhouzk"
- *   protocol : "dubbo"
- *   interface : "com.ikurento.user.UserProvider"
- *   ... # other configuration
- *   tps.limiter: "method-service", # it should be the name of limiter. if the value is 'default',
- *                                  # the MethodServiceTpsLimiter will be used.
- *   tps.limit.rejected.handler: "default", # optional, or the name of the implementation
- *   if the value of 'tps.limiter' is nil or empty string, the tps filter will do nothing
- */
 type tpsLimitFilter struct{}
 
 func newTpsLimitFilter() filter.Filter {
@@ -72,12 +72,22 @@ func (t *tpsLimitFilter) Invoke(ctx context.Context, invoker protocol.Invoker, i
 	tpsLimiter := url.GetParam(constant.TPSLimiterKey, "")
 	rejectedExeHandler := url.GetParam(constant.TPSRejectedExecutionHandlerKey, constant.DefaultKey)
 	if len(tpsLimiter) > 0 {
-		allow := extension.GetTpsLimiter(tpsLimiter).IsAllowable(invoker.GetURL(), invocation)
+		limiter, err := extension.GetTpsLimiter(tpsLimiter)
+		if err != nil {
+			logger.Warn(err)
+			return invoker.Invoke(ctx, invocation)
+		}
+		allow := limiter.IsAllowable(invoker.GetURL(), invocation)
 		if allow {
 			return invoker.Invoke(ctx, invocation)
 		}
 		logger.Errorf("The invocation was rejected due to over the limiter limitation, url: %s ", url.String())
-		return extension.GetRejectedExecutionHandler(rejectedExeHandler).RejectedExecution(url, invocation)
+		rejectedExecutionHandler, err := extension.GetRejectedExecutionHandler(rejectedExeHandler)
+		if err != nil {
+			logger.Warn(err)
+		} else {
+			return rejectedExecutionHandler.RejectedExecution(url, invocation)
+		}
 	}
 	return invoker.Invoke(ctx, invocation)
 }

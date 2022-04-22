@@ -28,3 +28,7 @@ const (
 	ClusterKeyZoneAware       = "zoneAware"
 	ClusterKeyAdaptiveService = "adaptiveService"
 )
+
+const (
+	NonImportErrorMsgFormat = "Cluster for %s is not existing, make sure you have import the package."
+)

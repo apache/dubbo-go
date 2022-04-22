@@ -15,11 +15,13 @@
  * limitations under the License.
  */
 
+// Package adaptivesvc providers AdaptiveService filter.
 package adaptivesvc
 
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 )
 
@@ -40,8 +42,9 @@ var (
 	adaptiveServiceProviderFilterOnce sync.Once
 	instance                          filter.Filter
 
-	ErrUpdaterNotFound       = fmt.Errorf("updater not found")
-	ErrUnexpectedUpdaterType = fmt.Errorf("unexpected updater type")
+	ErrAdaptiveSvcInterrupted = fmt.Errorf("adaptive service interrupted")
+	ErrUpdaterNotFound        = fmt.Errorf("updater not found")
+	ErrUnexpectedUpdaterType  = fmt.Errorf("unexpected updater type")
 )
 
 func init() {
@@ -62,6 +65,11 @@ func newAdaptiveServiceProviderFilter() filter.Filter {
 
 func (f *adaptiveServiceProviderFilter) Invoke(ctx context.Context, invoker protocol.Invoker,
 	invocation protocol.Invocation) protocol.Result {
+	if invocation.GetAttachmentWithDefaultValue(constant.AdaptiveServiceEnabledKey, "") !=
+		constant.AdaptiveServiceIsEnabled {
+		// the adaptive service is enabled on the invocation
+		return invoker.Invoke(ctx, invocation)
+	}
 
 	l, err := limiterMapperSingleton.getMethodLimiter(invoker.GetURL(), invocation.MethodName())
 	if err != nil {
@@ -70,47 +78,68 @@ func (f *adaptiveServiceProviderFilter) Invoke(ctx context.Context, invoker prot
 			// a new limiter
 			if l, err = limiterMapperSingleton.newAndSetMethodLimiter(invoker.GetURL(),
 				invocation.MethodName(), limiter.HillClimbingLimiter); err != nil {
-				return &protocol.RPCResult{Err: err}
+				return &protocol.RPCResult{Err: wrapErrAdaptiveSvcInterrupted(err)}
 			}
 		} else {
 			// unexpected errors
-			return &protocol.RPCResult{Err: err}
+			return &protocol.RPCResult{Err: wrapErrAdaptiveSvcInterrupted(err)}
 		}
 	}
 
 	updater, err := l.Acquire()
 	if err != nil {
-		return &protocol.RPCResult{Err: err}
+		return &protocol.RPCResult{Err: wrapErrAdaptiveSvcInterrupted(err)}
 	}
 
-	invocation.Attributes()[constant.AdaptiveServiceUpdaterKey] = updater
-
+	invocation.SetAttribute(constant.AdaptiveServiceUpdaterKey, updater)
 	return invoker.Invoke(ctx, invocation)
 }
 
 func (f *adaptiveServiceProviderFilter) OnResponse(_ context.Context, result protocol.Result, invoker protocol.Invoker,
 	invocation protocol.Invocation) protocol.Result {
+	var asEnabled string
+	asEnabledIface := result.Attachment(constant.AdaptiveServiceEnabledKey, nil)
+	if asEnabledIface != nil {
+		if str, strOK := asEnabledIface.(string); strOK {
+			asEnabled = str
+		} else if strArr, strArrOK := asEnabledIface.([]string); strArrOK && len(strArr) > 0 {
+			asEnabled = strArr[0]
+		}
+	}
+	if asEnabled != constant.AdaptiveServiceIsEnabled {
+		// the adaptive service is enabled on the invocation
+		return result
+	}
+
+	if isErrAdaptiveSvcInterrupted(result.Error()) {
+		// If the Invoke method of the adaptiveServiceProviderFilter returns an error,
+		// the OnResponse of the adaptiveServiceProviderFilter should not be performed.
+		return result
+	}
+
 	// get updater from the attributes
-	updaterIface := invocation.AttributeByKey(constant.AdaptiveServiceUpdaterKey, nil)
+	updaterIface, _ := invocation.GetAttribute(constant.AdaptiveServiceUpdaterKey)
 	if updaterIface == nil {
+		logger.Errorf("[adasvc filter] The updater is not found on the attributes: %#v",
+			invocation.Attributes())
 		return &protocol.RPCResult{Err: ErrUpdaterNotFound}
 	}
 	updater, ok := updaterIface.(limiter.Updater)
 	if !ok {
+		logger.Errorf("[adasvc filter] The type of the updater is not unexpected, we got %#v", updaterIface)
 		return &protocol.RPCResult{Err: ErrUnexpectedUpdaterType}
 	}
 
 	err := updater.DoUpdate()
 	if err != nil {
-		// DoUpdate was failed, but the invocation is not failed.
-		// Printing the error to logs is better than returning a
-		// result with an error.
 		logger.Errorf("[adasvc filter] The DoUpdate method was failed, err: %s.", err)
+		return &protocol.RPCResult{Err: err}
 	}
 
 	// get limiter for the mapper
 	l, err := limiterMapperSingleton.getMethodLimiter(invoker.GetURL(), invocation.MethodName())
 	if err != nil {
+		logger.Errorf("[adasvc filter] The method limiter for \"%s\" is not found.", invocation.MethodName())
 		return &protocol.RPCResult{Err: err}
 	}
 
@@ -122,4 +151,15 @@ func (f *adaptiveServiceProviderFilter) OnResponse(_ context.Context, result pro
 		constant.AdaptiveServiceInflightKey, l.Inflight())
 
 	return result
+}
+
+func wrapErrAdaptiveSvcInterrupted(customizedErr interface{}) error {
+	return fmt.Errorf("%w: %v", ErrAdaptiveSvcInterrupted, customizedErr)
+}
+
+func isErrAdaptiveSvcInterrupted(err error) bool {
+	if err == nil {
+		return false
+	}
+	return strings.HasPrefix(err.Error(), ErrAdaptiveSvcInterrupted.Error())
 }

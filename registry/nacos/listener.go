@@ -86,6 +86,7 @@ func generateInstance(ss model.SubscribeService) model.Instance {
 		Weight:      ss.Weight,
 		Metadata:    ss.Metadata,
 		ClusterName: ss.ClusterName,
+		Healthy:     ss.Healthy,
 	}
 }
 
@@ -144,19 +145,17 @@ func (nl *nacosListener) Callback(services []model.SubscribeService, err error) 
 		host := services[i].Ip + ":" + strconv.Itoa(int(services[i].Port))
 		instance := generateInstance(services[i])
 		newInstanceMap[host] = instance
-		if old, ok := nl.instanceMap[host]; !ok {
+		if old, ok := nl.instanceMap[host]; !ok && instance.Healthy {
 			// instance does not exist in cache, add it to cache
 			addInstances = append(addInstances, instance)
-		} else {
+		} else if !reflect.DeepEqual(old, instance) && instance.Healthy {
 			// instance is not different from cache, update it to cache
-			if !reflect.DeepEqual(old, instance) {
-				updateInstances = append(updateInstances, instance)
-			}
+			updateInstances = append(updateInstances, instance)
 		}
 	}
 
 	for host, inst := range nl.instanceMap {
-		if _, ok := newInstanceMap[host]; !ok {
+		if newInstance, ok := newInstanceMap[host]; !ok || !newInstance.Healthy {
 			// cache instance does not exist in new instance list, remove it from cache
 			delInstances = append(delInstances, inst)
 		}
@@ -164,21 +163,18 @@ func (nl *nacosListener) Callback(services []model.SubscribeService, err error) 
 
 	nl.instanceMap = newInstanceMap
 	for i := range addInstances {
-		newUrl := generateUrl(addInstances[i])
-		if newUrl != nil {
+		if newUrl := generateUrl(addInstances[i]); newUrl != nil {
 			nl.process(&config_center.ConfigChangeEvent{Value: newUrl, ConfigType: remoting.EventTypeAdd})
 		}
 	}
 	for i := range delInstances {
-		newUrl := generateUrl(delInstances[i])
-		if newUrl != nil {
+		if newUrl := generateUrl(delInstances[i]); newUrl != nil {
 			nl.process(&config_center.ConfigChangeEvent{Value: newUrl, ConfigType: remoting.EventTypeDel})
 		}
 	}
 
 	for i := range updateInstances {
-		newUrl := generateUrl(updateInstances[i])
-		if newUrl != nil {
+		if newUrl := generateUrl(updateInstances[i]); newUrl != nil {
 			nl.process(&config_center.ConfigChangeEvent{Value: newUrl, ConfigType: remoting.EventTypeUpdate})
 		}
 	}

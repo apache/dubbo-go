@@ -18,6 +18,7 @@
 package nacos
 
 import (
+	"net/url"
 	"sync"
 	"testing"
 	"time"
@@ -29,12 +30,20 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/config_center/parser"
 )
 
 func getNacosConfig(t *testing.T) config_center.DynamicConfiguration {
-	registryUrl, err := common.NewURL("registry://console.nacos.io:80")
+	params := url.Values{}
+	params.Set(constant.NacosNotLoadLocalCache, "true")
+
+	params.Set(constant.NacosNamespaceID, "nacos")
+	params.Set(constant.TimeoutKey, "5s")
+	params.Set(constant.ClientNameKey, "nacos-client")
+
+	registryUrl, err := common.NewURL("registry://console.nacos.io:80", common.WithParams(params))
 	assert.Nil(t, err)
 	nacosConfig, err := newNacosDynamicConfiguration(registryUrl)
 	assert.Nil(t, err)

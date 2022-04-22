@@ -25,6 +25,8 @@ import (
 	"github.com/creasty/defaults"
 
 	tripleConstant "github.com/dubbogo/triple/pkg/common/constant"
+
+	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -49,8 +51,10 @@ type ProviderConfig struct {
 	FilterConf   interface{}               `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf"`
 	ConfigType   map[string]string         `yaml:"config_type" json:"config_type,omitempty" property:"config_type"`
 	// adaptive service
+	AdaptiveService        bool `default:"false" yaml:"adaptive-service" json:"adaptive-service" property:"adaptive-service"`
 	AdaptiveServiceVerbose bool `default:"false" yaml:"adaptive-service-verbose" json:"adaptive-service-verbose" property:"adaptive-service-verbose"`
-	rootConfig             *RootConfig
+
+	rootConfig *RootConfig
 }
 
 func (ProviderConfig) Prefix() string {
@@ -97,6 +101,8 @@ func (c *ProviderConfig) Init(rc *RootConfig) error {
 		if err := serviceConfig.Init(rc); err != nil {
 			return err
 		}
+
+		serviceConfig.adaptiveService = c.AdaptiveService
 	}
 
 	for k, v := range rc.Protocols {
@@ -117,6 +123,10 @@ func (c *ProviderConfig) Init(rc *RootConfig) error {
 	}
 	// enable adaptive service verbose
 	if c.AdaptiveServiceVerbose {
+		if !c.AdaptiveService {
+			return perrors.Errorf("The adaptive service is disabled, " +
+				"adaptive service verbose should be disabled either.")
+		}
 		logger.Infof("adaptive service verbose is enabled.")
 		logger.Debugf("debug-level info could be shown.")
 		aslimiter.Verbose = true
@@ -164,25 +174,21 @@ func (pcb *ProviderConfigBuilder) SetFilter(filter string) *ProviderConfigBuilde
 	return pcb
 }
 
-// nolint
 func (pcb *ProviderConfigBuilder) SetRegister(register bool) *ProviderConfigBuilder {
 	pcb.providerConfig.Register = register
 	return pcb
 }
 
-// nolint
 func (pcb *ProviderConfigBuilder) SetRegistryIDs(RegistryIDs ...string) *ProviderConfigBuilder {
 	pcb.providerConfig.RegistryIDs = RegistryIDs
 	return pcb
 }
 
-// nolint
 func (pcb *ProviderConfigBuilder) SetServices(services map[string]*ServiceConfig) *ProviderConfigBuilder {
 	pcb.providerConfig.Services = services
 	return pcb
 }
 
-// nolint
 func (pcb *ProviderConfigBuilder) AddService(serviceID string, serviceConfig *ServiceConfig) *ProviderConfigBuilder {
 	if pcb.providerConfig.Services == nil {
 		pcb.providerConfig.Services = make(map[string]*ServiceConfig)
@@ -191,25 +197,21 @@ func (pcb *ProviderConfigBuilder) AddService(serviceID string, serviceConfig *Se
 	return pcb
 }
 
-// nolint
 func (pcb *ProviderConfigBuilder) SetProxyFactory(proxyFactory string) *ProviderConfigBuilder {
 	pcb.providerConfig.ProxyFactory = proxyFactory
 	return pcb
 }
 
-// nolint
 func (pcb *ProviderConfigBuilder) SetFilterConf(filterConf interface{}) *ProviderConfigBuilder {
 	pcb.providerConfig.FilterConf = filterConf
 	return pcb
 }
 
-// nolint
 func (pcb *ProviderConfigBuilder) SetConfigType(configType map[string]string) *ProviderConfigBuilder {
 	pcb.providerConfig.ConfigType = configType
 	return pcb
 }
 
-// nolint
 func (pcb *ProviderConfigBuilder) AddConfigType(key, value string) *ProviderConfigBuilder {
 	if pcb.providerConfig.ConfigType == nil {
 		pcb.providerConfig.ConfigType = make(map[string]string)
@@ -218,13 +220,11 @@ func (pcb *ProviderConfigBuilder) AddConfigType(key, value string) *ProviderConf
 	return pcb
 }
 
-// nolint
 func (pcb *ProviderConfigBuilder) SetRootConfig(rootConfig *RootConfig) *ProviderConfigBuilder {
 	pcb.providerConfig.rootConfig = rootConfig
 	return pcb
 }
 
-// nolint
 func (pcb *ProviderConfigBuilder) Build() *ProviderConfig {
 	return pcb.providerConfig
 }

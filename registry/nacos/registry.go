@@ -44,7 +44,6 @@ import (
 var localIP = ""
 
 const (
-	// RegistryConnDelay registry connection delay
 	RegistryConnDelay = 3
 )
 
@@ -117,7 +116,7 @@ func createRegisterParam(url *common.URL, serviceName string, groupName string) 
 	return instance
 }
 
-// Register will register the service @url to its nacos registry center
+// Register will register the service @url to its nacos registry center.
 func (nr *nacosRegistry) Register(url *common.URL) error {
 	serviceName := getServiceName(url)
 	groupName := nr.URL.GetParam(constant.NacosGroupKey, defaultGroup)
@@ -151,7 +150,7 @@ func createDeregisterParam(url *common.URL, serviceName string, groupName string
 	}
 }
 
-// UnRegister
+// UnRegister returns nil if unregister successfully. If not, returns an error.
 func (nr *nacosRegistry) UnRegister(url *common.URL) error {
 	serviceName := getServiceName(url)
 	groupName := nr.URL.GetParam(constant.NacosGroupKey, defaultGroup)
@@ -170,7 +169,7 @@ func (nr *nacosRegistry) subscribe(conf *common.URL) (registry.Listener, error) 
 	return NewNacosListener(conf, nr.URL, nr.namingClient)
 }
 
-// subscribe from registry
+// Subscribe returns nil if subscribing registry successfully. If not returns an error.
 func (nr *nacosRegistry) Subscribe(url *common.URL, notifyListener registry.NotifyListener) error {
 	// TODO
 	role, _ := strconv.Atoi(url.GetParam(constant.RegistryRoleKey, ""))
@@ -274,7 +273,7 @@ func newNacosRegistry(url *common.URL) (registry.Registry, error) {
 	url.SetParam(constant.NacosPassword, url.Password)
 	url.SetParam(constant.NacosAccessKey, url.GetParam(constant.RegistryAccessKey, ""))
 	url.SetParam(constant.NacosSecretKey, url.GetParam(constant.RegistrySecretKey, ""))
-	url.SetParam(constant.TimeoutKey, url.GetParam(constant.RegistryTimeoutKey, ""))
+	url.SetParam(constant.NacosTimeout, url.GetParam(constant.RegistryTimeoutKey, constant.DefaultRegTimeout))
 	url.SetParam(constant.NacosGroupKey, url.GetParam(constant.RegistryGroupKey, defaultGroup))
 	namingClient, err := nacos.NewNacosClientByURL(url)
 	if err != nil {

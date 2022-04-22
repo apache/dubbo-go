@@ -53,9 +53,10 @@ func NewReporterConfig() *ReporterConfig {
 	}
 }
 
-// Reporter will be used to report the invocation's duration
+// Reporter is the interface which will be used to report the invocation's duration
+//
+// Report method reports the duration of an invocation.
 type Reporter interface {
-	// report the duration of an invocation
 	Report(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation,
 		cost time.Duration, res protocol.Result)
 }

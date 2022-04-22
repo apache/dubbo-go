@@ -27,19 +27,25 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/rest/client"
-	_ "dubbo.apache.org/dubbo-go/v3/protocol/rest/client/client_impl"
-	rest_config "dubbo.apache.org/dubbo-go/v3/protocol/rest/config"
-	_ "dubbo.apache.org/dubbo-go/v3/protocol/rest/config/reader"
+	"dubbo.apache.org/dubbo-go/v3/protocol/rest/client/client_impl"
 	"dubbo.apache.org/dubbo-go/v3/protocol/rest/server"
-	_ "dubbo.apache.org/dubbo-go/v3/protocol/rest/server/server_impl"
 )
 
 var restProtocol *RestProtocol
 
 const REST = "rest"
 //FIXME rest旧版协议文件
+
+func init() {
+	SetRestServer(constant.DefaultRestServer, server.NewGoRestfulServer)
+}
+
+func init() {
+	extension.SetRestClient(constant.DefaultRestClient, client_impl.NewRestyClient)
+}
 
 // nolint
 func init() {
@@ -70,7 +76,7 @@ func (rp *RestProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	serviceKey := url.ServiceKey()
 	exporter := NewRestExporter(serviceKey, invoker, rp.ExporterMap())
 	id := url.GetParam(constant.BeanNameKey, "")
-	restServiceConfig := rest_config.GetRestProviderServiceConfig(id)
+	restServiceConfig := config.GetRestProviderServiceConfig(id)
 	if restServiceConfig == nil {
 		logger.Errorf("%s service doesn't has provider config", url.Path)
 		return nil
@@ -96,7 +102,7 @@ func (rp *RestProtocol) Refer(url *common.URL) protocol.Invoker {
 		requestTimeout = t
 	}
 	id := url.GetParam(constant.BeanNameKey, "")
-	restServiceConfig := rest_config.GetRestConsumerServiceConfig(id)
+	restServiceConfig := config.GetRestConsumerServiceConfig(id)
 	if restServiceConfig == nil {
 		logger.Errorf("%s service doesn't has consumer config", url.Path)
 		return nil
@@ -124,7 +130,7 @@ func (rp *RestProtocol) getServer(url *common.URL, serverType string) server.Res
 	if ok {
 		return restServer
 	}
-	restServer = extension.GetNewRestServer(serverType)
+	restServer = GetNewRestServer(serverType)
 	restServer.Start(url)
 	rp.serverMap[url.Location] = restServer
 	return restServer

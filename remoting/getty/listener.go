@@ -41,10 +41,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
-// todo: WritePkg_Timeout will entry *.yml
 const (
-	// WritePkg_Timeout the timeout of write pkg
-	WritePkg_Timeout = 5 * time.Second
+	WritePkg_Timeout = 5 * time.Second // TODO: WritePkg_Timeout will entry *.yml
 )
 
 var (
@@ -64,10 +62,6 @@ func (s *rpcSession) AddReqNum(num int32) {
 func (s *rpcSession) GetReqNum() int32 {
 	return atomic.LoadInt32(&s.reqNum)
 }
-
-// //////////////////////////////////////////
-// RpcClientHandler
-// //////////////////////////////////////////
 
 // nolint
 type RpcClientHandler struct {
@@ -100,8 +94,8 @@ func (h *RpcClientHandler) OnClose(session getty.Session) {
 
 // OnMessage get response from getty server, and update the session to the getty client session list
 func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
-	result, ok := pkg.(remoting.DecodeResult)
-	if !ok {
+	result, ok := pkg.(*remoting.DecodeResult)
+	if !ok || result == ((*remoting.DecodeResult)(nil)) {
 		logger.Errorf("[RpcClientHandler.OnMessage] getty client gets an unexpected rpc result: %#v", result)
 		return
 	}
@@ -174,10 +168,6 @@ func (h *RpcClientHandler) OnCron(session getty.Session) {
 	}
 }
 
-// //////////////////////////////////////////
-// RpcServerHandler
-// //////////////////////////////////////////
-
 // nolint
 type RpcServerHandler struct {
 	maxSessionNum  int
@@ -242,8 +232,8 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 	}
 	h.rwlock.Unlock()
 
-	decodeResult, drOK := pkg.(remoting.DecodeResult)
-	if !drOK {
+	decodeResult, drOK := pkg.(*remoting.DecodeResult)
+	if !drOK || decodeResult == ((*remoting.DecodeResult)(nil)) {
 		logger.Errorf("illegal package{%#v}", pkg)
 		return
 	}

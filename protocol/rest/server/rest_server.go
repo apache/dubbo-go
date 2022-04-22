@@ -32,9 +32,9 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	rest_config "dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
-	rest_config "dubbo.apache.org/dubbo-go/v3/protocol/rest/config"
 )
 
 const parseParameterErrorStr = "An error occurred while parsing parameters on the server"
@@ -81,8 +81,7 @@ type RestServerResponse interface {
 	WriteEntity(value interface{}) error
 }
 
-// GetRouteFunc
-// A route function will be invoked by http server
+// GetRouteFunc is a route function will be invoked by http server
 func GetRouteFunc(invoker protocol.Invoker, methodConfig *rest_config.RestMethodConfig) func(req RestServerRequest, resp RestServerResponse) {
 	return func(req RestServerRequest, resp RestServerResponse) {
 		var (
@@ -160,9 +159,12 @@ func getArgsInterfaceFromRequest(req RestServerRequest, methodConfig *rest_confi
 		m := make(map[string]interface{})
 		// TODO read as a slice
 		if err := req.ReadEntity(&m); err != nil {
-			return nil, perrors.Errorf("[Go restful] Read body entity as map[string]interface{} error:%v", err)
+			// pi todo improve the fault tolerance so just logger warn
+			//return nil, perrors.Errorf("[Go restful] Read body entity as map[string]interface{} error:%v", err)
+			logger.Warnf("[Go Restful] parsing http parameters by body entity error: %v", err)
+		} else {
+			argsMap[methodConfig.Body] = m
 		}
-		argsMap[methodConfig.Body] = m
 	}
 	args := make([]interface{}, maxKey+1)
 	for k, v := range argsMap {
@@ -235,9 +237,12 @@ func assembleArgsFromBody(methodConfig *rest_config.RestMethodConfig, argsTypes 
 			}
 		}
 		if err := req.ReadEntity(&ni); err != nil {
-			return perrors.Errorf("[Go restful] Read body entity error, error is %v", perrors.WithStack(err))
+			// pi todo improve the fault tolerance so just logger warn
+			//return perrors.Errorf("[Go restful] Read body entity error, error is %v", perrors.WithStack(err))
+			logger.Warnf("[Go Restful] parsing http parameters by body entity error: %v", err)
+		} else {
+			args[methodConfig.Body] = ni
 		}
-		args[methodConfig.Body] = ni
 	}
 	return nil
 }
