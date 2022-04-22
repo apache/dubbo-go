@@ -71,7 +71,7 @@ func (c *RestConsumerConfig) Init(rc *RootConfig) error {
 	restConsumerServiceConfigMap := make(map[string]*RestServiceConfig, len(restConsumerConfig.RestServiceConfigsMap))
 	for key, rc := range restConsumerConfig.RestServiceConfigsMap {
 		rc.Client = getNotEmptyStr(rc.Client, restConsumerConfig.Client, constant.DefaultRestClient)
-		rc.RestMethodConfigsMap = initMethodConfigMap(rc, restConsumerConfig.Consumes, restConsumerConfig.Produces)
+		rc.RestMethodConfigs = initMethodConfigMap(rc, restConsumerConfig.Consumes, restConsumerConfig.Produces)
 		restConsumerServiceConfigMap[key] = rc
 	}
 
@@ -184,7 +184,7 @@ type RestServiceConfig struct {
 	MethodType           string              `yaml:"rest_method"  json:"rest_method,omitempty" property:"rest_method"`
 	Client               string              `yaml:"rest_client" json:"rest_client,omitempty" property:"rest_client"`
 	Server               string              `yaml:"rest_server" json:"rest_server,omitempty" property:"rest_server"`
-	RestMethodConfigs    []*RestMethodConfig `yaml:"methods" json:"methods,omitempty" property:"methods"`
+	RestMethodConfigs    map[string]*RestMethodConfig `yaml:"methods" json:"methods,omitempty" property:"methods"`
 }
 
 // UnmarshalYAML unmarshals the RestServiceConfig by @unmarshal function
@@ -220,6 +220,7 @@ type RestMethodConfig struct {
 	PathParamsMap  map[int]string
 	QueryParams    string `yaml:"rest_query_params"  json:"rest_query_params,omitempty" property:"rest_query_params"`
 	RestCommonConfig    *RestCommonConfig `yaml:"rest" json:"rest_common,omitempty" property:"rest_common"`
+	QueryParamsMap map[int]string
 	Body           int    `default:"-1" yaml:"rest_body"  json:"rest_body,omitempty" property:"rest_body"`
 	Headers        string `yaml:"rest_headers"  json:"rest_headers,omitempty" property:"rest_headers"`
 	HeadersMap     map[int]string
@@ -279,7 +280,7 @@ func (c *RestProviderConfig) Init(rc *RootConfig) error {
 	restProviderServiceConfigMap := make(map[string]*RestServiceConfig, len(restProviderConfig.RestServiceConfigsMap))
 	for key, rc := range restProviderConfig.RestServiceConfigsMap {
 		rc.Server = getNotEmptyStr(rc.Server, restProviderConfig.Server, constant.DefaultRestServer)
-		rc.RestMethodConfigsMap = initMethodConfigMap(rc, restProviderConfig.Consumes, restProviderConfig.Produces)
+		rc.RestMethodConfigs = initMethodConfigMap(rc, restProviderConfig.Consumes, restProviderConfig.Produces)
 		restProviderServiceConfigMap[key] = rc
 	}
 	SetRestProviderServiceConfigMap(restProviderServiceConfigMap)
