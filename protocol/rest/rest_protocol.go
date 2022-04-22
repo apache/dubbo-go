@@ -47,6 +47,14 @@ func init() {
 	extension.SetRestClient(constant.DefaultRestClient, client_impl.NewRestyClient)
 }
 
+func init() {
+	SetRestServer(constant.DefaultRestServer, server.NewGoRestfulServer)
+}
+
+func init() {
+	extension.SetRestClient(constant.DefaultRestClient, client_impl.NewRestyClient)
+}
+
 // nolint
 func init() {
 	extension.SetProtocol(REST, GetRestProtocol)
