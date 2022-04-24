@@ -30,6 +30,7 @@ import (
 	ocprom "contrib.go.opencensus.io/exporter/prometheus"
 
 	"github.com/prometheus/client_golang/prometheus"
+	prom "github.com/prometheus/client_golang/prometheus"
 )
 
 import (
@@ -216,9 +217,9 @@ func newPrometheusReporter(reporterConfig *metrics.ReporterConfig) metrics.Repor
 				providerRTGaugeVec: newGaugeVec(providerPrefix+serviceKey+rtSuffix, reporterConfig.Namespace, labelNames),
 			}
 
-			prometheus.DefaultRegisterer.MustRegister(reporterInstance.consumerRTGaugeVec, reporterInstance.providerRTGaugeVec)
+			prom.DefaultRegisterer.MustRegister(reporterInstance.consumerRTGaugeVec, reporterInstance.providerRTGaugeVec)
 			metricsExporter, err := ocprom.NewExporter(ocprom.Options{
-				Registry: prometheus.DefaultRegisterer.(*prometheus.Registry),
+				Registry: prom.DefaultRegisterer.(*prom.Registry),
 			})
 			if err != nil {
 				logger.Errorf("new prometheus reporter with error = %s", err)
@@ -249,7 +250,7 @@ func (reporter *PrometheusReporter) setGauge(gaugeName string, toSetValue float6
 		// gauge
 		if val, exist := reporter.userGauge.Load(gaugeName); !exist {
 			newGauge := newGauge(gaugeName, reporter.namespace)
-			_ = prometheus.DefaultRegisterer.Register(newGauge)
+			_ = prom.DefaultRegisterer.Register(newGauge)
 
 			reporter.userGauge.Store(gaugeName, newGauge)
 			newGauge.Set(toSetValue)
@@ -266,7 +267,7 @@ func (reporter *PrometheusReporter) setGauge(gaugeName string, toSetValue float6
 			keyList = append(keyList, k)
 		}
 		newGaugeVec := newGaugeVec(gaugeName, reporter.namespace, keyList)
-		_ = prometheus.DefaultRegisterer.Register(newGaugeVec)
+		_ = prom.DefaultRegisterer.Register(newGaugeVec)
 		reporter.userGaugeVec.Store(gaugeName, newGaugeVec)
 		newGaugeVec.With(labelMap).Set(toSetValue)
 	} else {
@@ -281,7 +282,7 @@ func (reporter *PrometheusReporter) incCounter(counterName string, labelMap prom
 		// counter
 		if val, exist := reporter.userCounter.Load(counterName); !exist {
 			newCounter := newCounter(counterName, reporter.namespace)
-			_ = prometheus.DefaultRegisterer.Register(newCounter)
+			_ = prom.DefaultRegisterer.Register(newCounter)
 			reporter.userCounter.Store(counterName, newCounter)
 			newCounter.Inc()
 		} else {
@@ -297,7 +298,7 @@ func (reporter *PrometheusReporter) incCounter(counterName string, labelMap prom
 			keyList = append(keyList, k)
 		}
 		newCounterVec := newCounterVec(counterName, reporter.namespace, keyList)
-		_ = prometheus.DefaultRegisterer.Register(newCounterVec)
+		_ = prom.DefaultRegisterer.Register(newCounterVec)
 		reporter.userCounterVec.Store(counterName, newCounterVec)
 		newCounterVec.With(labelMap).Inc()
 	} else {
@@ -312,7 +313,7 @@ func (reporter *PrometheusReporter) incSummary(summaryName string, toSetValue fl
 		// summary
 		if val, exist := reporter.userSummary.Load(summaryName); !exist {
 			newSummary := newSummary(summaryName, reporter.namespace)
-			_ = prometheus.DefaultRegisterer.Register(newSummary)
+			_ = prom.DefaultRegisterer.Register(newSummary)
 			reporter.userSummary.Store(summaryName, newSummary)
 			newSummary.Observe(toSetValue)
 		} else {
@@ -328,7 +329,7 @@ func (reporter *PrometheusReporter) incSummary(summaryName string, toSetValue fl
 			keyList = append(keyList, k)
 		}
 		newSummaryVec := newSummaryVec(summaryName, reporter.namespace, keyList)
-		_ = prometheus.DefaultRegisterer.Register(newSummaryVec)
+		_ = prom.DefaultRegisterer.Register(newSummaryVec)
 		reporter.userSummaryVec.Store(summaryName, newSummaryVec)
 		newSummaryVec.With(labelMap).Observe(toSetValue)
 	} else {
