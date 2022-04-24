@@ -44,11 +44,11 @@ import (
 )
 
 import (
+	dubboLogger "dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/xds/balancer/priority"
 	"dubbo.apache.org/dubbo-go/v3/xds/client"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/buffer"
-	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpclog"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpcsync"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/pretty"
 )
@@ -73,12 +73,12 @@ type bb struct{}
 func (bb) Build(cc balancer.ClientConn, opts balancer.BuildOptions) balancer.Balancer {
 	priorityBuilder := balancer.Get(priority.Name)
 	if priorityBuilder == nil {
-		logger.Errorf("priority balancer is needed but not registered")
+		dubboLogger.Errorf("priority balancer is needed but not registered")
 		return nil
 	}
 	priorityConfigParser, ok := priorityBuilder.(balancer.ConfigParser)
 	if !ok {
-		logger.Errorf("priority balancer builder is not a config parser")
+		dubboLogger.Errorf("priority balancer builder is not a config parser")
 		return nil
 	}
 
@@ -91,7 +91,7 @@ func (bb) Build(cc balancer.ClientConn, opts balancer.BuildOptions) balancer.Bal
 		priorityBuilder:      priorityBuilder,
 		priorityConfigParser: priorityConfigParser,
 	}
-	b.logger = prefixLogger(b)
+	b.logger = dubboLogger.GetLogger()
 	b.logger.Infof("Created")
 
 	b.resourceWatcher = newResourceResolver(b)
@@ -141,7 +141,7 @@ type clusterResolverBalancer struct {
 	bOpts           balancer.BuildOptions
 	updateCh        *buffer.Unbounded // Channel for updates from gRPC.
 	resourceWatcher *resourceResolver
-	logger          *grpclog.PrefixLogger
+	logger          dubboLogger.Logger
 	closed          *grpcsync.Event
 	done            *grpcsync.Event
 
@@ -173,7 +173,7 @@ func (b *clusterResolverBalancer) handleClientConnUpdate(update *ccUpdate) {
 	b.logger.Infof("Receive update from resolver, balancer config: %v", pretty.ToJSON(update.state.BalancerConfig))
 	cfg, _ := update.state.BalancerConfig.(*LBConfig)
 	if cfg == nil {
-		b.logger.Warningf("xds: unexpected LoadBalancingConfig type: %T", update.state.BalancerConfig)
+		b.logger.Warnf("xds: unexpected LoadBalancingConfig type: %T", update.state.BalancerConfig)
 		return
 	}
 
@@ -189,7 +189,7 @@ func (b *clusterResolverBalancer) handleClientConnUpdate(update *ccUpdate) {
 	// need to generate a new balancer config and send it to the child, because
 	// certain fields (unrelated to EDS watch) might have changed.
 	if err := b.updateChildConfig(); err != nil {
-		b.logger.Warningf("failed to update child policy config: %v", err)
+		b.logger.Warnf("failed to update child policy config: %v", err)
 	}
 }
 
@@ -197,7 +197,7 @@ func (b *clusterResolverBalancer) handleClientConnUpdate(update *ccUpdate) {
 // lead to clientConn updates being invoked on the underlying child balancer.
 func (b *clusterResolverBalancer) handleWatchUpdate(update *resourceUpdate) {
 	if err := update.err; err != nil {
-		b.logger.Warningf("Watch error from xds-client %p: %v", b.xdsClient, err)
+		b.logger.Warnf("Watch error from xds-client %p: %v", b.xdsClient, err)
 		b.handleErrorFromUpdate(err, false)
 		return
 	}
@@ -210,7 +210,7 @@ func (b *clusterResolverBalancer) handleWatchUpdate(update *resourceUpdate) {
 	// for the priority balancer), and new addresses (the endpoints come from
 	// the EDS response).
 	if err := b.updateChildConfig(); err != nil {
-		b.logger.Warningf("failed to update child policy's balancer config: %v", err)
+		b.logger.Warnf("failed to update child policy's balancer config: %v", err)
 	}
 }
 
@@ -258,7 +258,7 @@ func (b *clusterResolverBalancer) updateChildConfig() error {
 // watcher should keep watching.
 // In both cases, the sub-balancers will be receive the error.
 func (b *clusterResolverBalancer) handleErrorFromUpdate(err error, fromParent bool) {
-	b.logger.Warningf("Received error: %v", err)
+	b.logger.Warnf("Received error: %v", err)
 	if fromParent && resource.ErrType(err) == resource.ErrorTypeResourceNotFound {
 		// This is an error from the parent ClientConn (can be the parent CDS
 		// balancer), and is a resource-not-found error. This means the resource
@@ -336,7 +336,7 @@ func (b *clusterResolverBalancer) run() {
 // xdsResolver.
 func (b *clusterResolverBalancer) UpdateClientConnState(state balancer.ClientConnState) error {
 	if b.closed.HasFired() {
-		b.logger.Warningf("xds: received ClientConnState {%+v} after clusterResolverBalancer was closed", state)
+		b.logger.Warnf("xds: received ClientConnState {%+v} after clusterResolverBalancer was closed", state)
 		return errBalancerClosed
 	}
 
@@ -356,7 +356,7 @@ func (b *clusterResolverBalancer) UpdateClientConnState(state balancer.ClientCon
 // ResolverError handles errors reported by the xdsResolver.
 func (b *clusterResolverBalancer) ResolverError(err error) {
 	if b.closed.HasFired() {
-		b.logger.Warningf("xds: received resolver error {%v} after clusterResolverBalancer was closed", err)
+		b.logger.Warnf("xds: received resolver error {%v} after clusterResolverBalancer was closed", err)
 		return
 	}
 	b.updateCh.Put(&ccUpdate{err: err})
@@ -365,7 +365,7 @@ func (b *clusterResolverBalancer) ResolverError(err error) {
 // UpdateSubConnState handles subConn updates from gRPC.
 func (b *clusterResolverBalancer) UpdateSubConnState(sc balancer.SubConn, state balancer.SubConnState) {
 	if b.closed.HasFired() {
-		b.logger.Warningf("xds: received subConn update {%v, %v} after clusterResolverBalancer was closed", sc, state)
+		b.logger.Warnf("xds: received subConn update {%v, %v} after clusterResolverBalancer was closed", sc, state)
 		return
 	}
 	b.updateCh.Put(&scUpdate{subConn: sc, state: state})

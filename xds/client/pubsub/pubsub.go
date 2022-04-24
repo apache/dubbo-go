@@ -34,9 +34,9 @@ import (
 )
 
 import (
+	dubboLogger "dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/buffer"
-	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpclog"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpcsync"
 )
 
@@ -47,7 +47,7 @@ import (
 // any time.
 type Pubsub struct {
 	done               *grpcsync.Event
-	logger             *grpclog.PrefixLogger
+	logger             dubboLogger.Logger
 	watchExpiryTimeout time.Duration
 
 	updateCh *buffer.Unbounded // chan *watcherInfoWithUpdate
@@ -68,7 +68,7 @@ type Pubsub struct {
 }
 
 // New creates a new Pubsub.
-func New(watchExpiryTimeout time.Duration, logger *grpclog.PrefixLogger) *Pubsub {
+func New(watchExpiryTimeout time.Duration, logger dubboLogger.Logger) *Pubsub {
 	pb := &Pubsub{
 		done:               grpcsync.NewEvent(),
 		logger:             logger,

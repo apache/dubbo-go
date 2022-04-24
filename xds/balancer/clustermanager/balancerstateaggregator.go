@@ -36,7 +36,7 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpclog"
+	dubboLogger "dubbo.apache.org/dubbo-go/v3/common/logger"
 )
 
 type subBalancerState struct {
@@ -55,7 +55,7 @@ func (s *subBalancerState) String() string {
 
 type balancerStateAggregator struct {
 	cc     balancer.ClientConn
-	logger *grpclog.PrefixLogger
+	logger dubboLogger.Logger
 
 	mu sync.Mutex
 	// If started is false, no updates should be sent to the parent cc. A closed
@@ -70,7 +70,7 @@ type balancerStateAggregator struct {
 	idToPickerState map[string]*subBalancerState
 }
 
-func newBalancerStateAggregator(cc balancer.ClientConn, logger *grpclog.PrefixLogger) *balancerStateAggregator {
+func newBalancerStateAggregator(cc balancer.ClientConn, logger dubboLogger.Logger) *balancerStateAggregator {
 	return &balancerStateAggregator{
 		cc:              cc,
 		logger:          logger,

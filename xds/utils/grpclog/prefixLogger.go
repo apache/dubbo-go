@@ -46,8 +46,8 @@ func (pl *PrefixLogger) Infof(format string, args ...interface{}) {
 	InfoDepth(1, fmt.Sprintf(format, args...))
 }
 
-// Warningf does warning logging.
-func (pl *PrefixLogger) Warningf(format string, args ...interface{}) {
+// Warnf does warning logging.
+func (pl *PrefixLogger) Warnf(format string, args ...interface{}) {
 	if pl != nil {
 		format = pl.prefix + format
 		pl.logger.WarningDepth(1, fmt.Sprintf(format, args...))
@@ -64,17 +64,6 @@ func (pl *PrefixLogger) Errorf(format string, args ...interface{}) {
 		return
 	}
 	ErrorDepth(1, fmt.Sprintf(format, args...))
-}
-
-// Debugf does info logging at verbose level 2.
-func (pl *PrefixLogger) Debugf(format string, args ...interface{}) {
-	if pl != nil {
-		// Handle nil, so the tests can pass in a nil logger.
-		format = pl.prefix + format
-		pl.logger.InfoDepth(1, fmt.Sprintf(format, args...))
-		return
-	}
-	InfoDepth(1, fmt.Sprintf(format, args...))
 }
 
 // NewPrefixLogger creates a prefix logger with the given prefix.

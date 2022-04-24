@@ -47,13 +47,13 @@ import (
 )
 
 import (
+	dubboLogger "dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/bootstrap"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/controller/version"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/pubsub"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/backoff"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/buffer"
-	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpclog"
 )
 
 // Controller manages the connection and stream to the control plane.
@@ -67,7 +67,7 @@ type Controller struct {
 	config          *bootstrap.ServerConfig
 	updateHandler   pubsub.UpdateHandler
 	updateValidator resource.UpdateValidatorFunc
-	logger          *grpclog.PrefixLogger
+	logger          dubboLogger.Logger
 
 	cc               *grpc.ClientConn // Connection to the management server.
 	vClient          version.MetadataWrappedVersionClient
@@ -104,7 +104,7 @@ type Controller struct {
 }
 
 // New creates a new controller.
-func New(config *bootstrap.ServerConfig, updateHandler pubsub.UpdateHandler, validator resource.UpdateValidatorFunc, logger *grpclog.PrefixLogger) (_ *Controller, retErr error) {
+func New(config *bootstrap.ServerConfig, updateHandler pubsub.UpdateHandler, validator resource.UpdateValidatorFunc, logger dubboLogger.Logger) (_ *Controller, retErr error) {
 	switch {
 	case config == nil:
 		return nil, errors.New("xds: no xds_server provided")
@@ -128,13 +128,13 @@ func New(config *bootstrap.ServerConfig, updateHandler pubsub.UpdateHandler, val
 		config:          config,
 		updateValidator: validator,
 		updateHandler:   updateHandler,
-
-		backoff:    backoff.DefaultExponential.Backoff, // TODO: should this be configurable?
-		streamCh:   make(chan grpc.ClientStream, 1),
-		sendCh:     buffer.NewUnbounded(),
-		watchMap:   make(map[resource.ResourceType]map[string]bool),
-		versionMap: make(map[resource.ResourceType]string),
-		nonceMap:   make(map[resource.ResourceType]string),
+		logger:          logger,
+		backoff:         backoff.DefaultExponential.Backoff, // TODO: should this be configurable?
+		streamCh:        make(chan grpc.ClientStream, 1),
+		sendCh:          buffer.NewUnbounded(),
+		watchMap:        make(map[resource.ResourceType]map[string]bool),
+		versionMap:      make(map[resource.ResourceType]string),
+		nonceMap:        make(map[resource.ResourceType]string),
 
 		lrsClients: make(map[string]*lrsClient),
 	}

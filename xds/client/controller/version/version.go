@@ -39,10 +39,10 @@ import (
 )
 
 import (
+	dubboLogger "dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/load"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource/version"
-	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpclog"
 )
 
 var (
@@ -77,7 +77,7 @@ type BuildOptions struct {
 	// // streams.
 	// Backoff func(int) time.Duration
 	// Logger provides enhanced logging capabilities.
-	Logger *grpclog.PrefixLogger
+	Logger dubboLogger.Logger
 }
 
 // LoadReportingOptions contains configuration knobs for reporting load data.
