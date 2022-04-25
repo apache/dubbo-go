@@ -75,8 +75,8 @@ func getSubscribeName(url *common.URL) string {
 
 	buffer.Write([]byte(common.DubboNodes[common.PROVIDER]))
 	appendParam(&buffer, url, constant.InterfaceKey)
-	// We would not append group or version to this name, as istio ecosystem only cares about hostname during cds.
-	// The subscribe name is to find real hostName only.
+	// We would not append group or version to this name, as istio ecosystem only cares about 'hostname' during cds procedure.
+	// The subscribe name is used to find the real hostName.
 	// Group or version are managed by traffic policy, not dubbo-go.
 	return buffer.String()
 }
