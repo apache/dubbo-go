@@ -33,7 +33,7 @@ require (
 	github.com/jinzhu/copier v0.3.5
 	github.com/knadh/koanf v1.4.1
 	github.com/magiconair/properties v1.8.6
-	github.com/mitchellh/mapstructure v1.4.3
+	github.com/mitchellh/mapstructure v1.5.0
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
 	github.com/nacos-group/nacos-sdk-go v1.1.1
 	github.com/natefinch/lumberjack v2.0.0+incompatible
