@@ -37,7 +37,7 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpclog"
+	dubboLogger "dubbo.apache.org/dubbo-go/v3/common/logger"
 )
 
 // UnmarshalOptions wraps the input parameters for `UnmarshalXxx` functions.
@@ -47,7 +47,7 @@ type UnmarshalOptions struct {
 	// Resources are the xDS resources resources in the received response.
 	Resources []*anypb.Any
 	// Logger is the prefix logger to be used during unmarshaling.
-	Logger *grpclog.PrefixLogger
+	Logger dubboLogger.Logger
 	// UpdateValidator is a post unmarshal validation check provided by the
 	// upper layer.
 	UpdateValidator UpdateValidatorFunc

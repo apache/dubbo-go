@@ -36,9 +36,9 @@ import (
 )
 
 import (
+	dubboLogger "dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/bootstrap"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
-	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpclog"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpcsync"
 	cache "dubbo.apache.org/dubbo-go/v3/xds/utils/xds_cache"
 )
@@ -75,7 +75,7 @@ type clientImpl struct {
 	// never both.
 	idleAuthorities *cache.TimeoutCache
 
-	logger             *grpclog.PrefixLogger
+	logger             dubboLogger.Logger
 	watchExpiryTimeout time.Duration
 }
 
@@ -96,7 +96,7 @@ func newWithConfig(config *bootstrap.Config, watchExpiryTimeout time.Duration, i
 		}
 	}()
 
-	c.logger = prefixLogger(c)
+	c.logger = dubboLogger.GetLogger()
 	c.logger.Infof("Created ClientConn to xDS management server: %s", config.XDSServer)
 
 	c.logger.Infof("Created")

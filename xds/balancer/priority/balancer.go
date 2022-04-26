@@ -44,9 +44,9 @@ import (
 )
 
 import (
+	dubboLogger "dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/balancergroup"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/buffer"
-	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpclog"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpcsync"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/hierarchy"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/pretty"
@@ -70,7 +70,7 @@ func (bb) Build(cc balancer.ClientConn, bOpts balancer.BuildOptions) balancer.Ba
 		childBalancerStateUpdate: buffer.NewUnbounded(),
 	}
 
-	b.logger = prefixLogger(b)
+	b.logger = dubboLogger.GetLogger()
 	b.bg = balancergroup.New(cc, bOpts, b, b.logger)
 	b.bg.Start()
 	go b.run()
@@ -94,7 +94,7 @@ type timerWrapper struct {
 }
 
 type priorityBalancer struct {
-	logger                   *grpclog.PrefixLogger
+	logger                   dubboLogger.Logger
 	cc                       balancer.ClientConn
 	bg                       *balancergroup.BalancerGroup
 	done                     *grpcsync.Event

@@ -38,15 +38,15 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpclog"
+	dubboLogger "dubbo.apache.org/dubbo-go/v3/common/logger"
 )
 
 type picker struct {
 	ring   *ring
-	logger *grpclog.PrefixLogger
+	logger dubboLogger.Logger
 }
 
-func newPicker(ring *ring, logger *grpclog.PrefixLogger) *picker {
+func newPicker(ring *ring, logger dubboLogger.Logger) *picker {
 	return &picker{ring: ring, logger: logger}
 }
 
