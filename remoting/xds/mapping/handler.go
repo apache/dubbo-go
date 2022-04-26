@@ -28,6 +28,8 @@ import (
 
 import (
 	structpb "github.com/golang/protobuf/ptypes/struct"
+
+	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -86,6 +88,8 @@ func (i *InterfaceMapHandlerImpl) GetHostAddrMap(serviceUniqueKey string) (strin
 	}
 	i.interfaceNameHostAddrMapLock.RUnlock()
 
+	retryCount := 0
+	maxRetries := 30
 	for {
 		if interfaceHostAddrMap, err := i.getServiceUniqueKeyHostAddrMapFromPilot(); err != nil {
 			return "", err
@@ -95,8 +99,14 @@ func (i *InterfaceMapHandlerImpl) GetHostAddrMap(serviceUniqueKey string) (strin
 			i.interfaceNameHostAddrMapLock.Unlock()
 			hostName, ok := interfaceHostAddrMap[serviceUniqueKey]
 			if !ok {
-				logger.Infof("[XDS Wrapped Client] Try getting interface %s 's host from istio %d:8080\n", serviceUniqueKey, i.istioDebugAddr)
+				logger.Infof("[XDS Wrapped Client] Try getting interface %s 's host from istio %s:8080\n", serviceUniqueKey, i.istioDebugAddr)
 				time.Sleep(time.Millisecond * 100)
+				retryCount++
+				if retryCount > maxRetries {
+					err := perrors.Errorf("[XDS Wrapped Client] Try getting interface %s 's host from istio %s:8080 failed. Please check if provider's service resource is deployed correctly.\n", serviceUniqueKey, i.istioDebugAddr)
+					logger.Error(err)
+					return "", err
+				}
 				continue
 			}
 			return hostName, nil

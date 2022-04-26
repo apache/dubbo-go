@@ -60,24 +60,25 @@ func getCategory(url *common.URL) string {
 	return category
 }
 
-// getServiceName return serviceName $(providers_or_consumers):$(interfaceName)
+// getServiceName return serviceName $(providers_or_consumers):$(interfaceName):$(version):$(group)
 func getServiceName(url *common.URL) string {
 	var buffer bytes.Buffer
 
 	buffer.Write([]byte(getCategory(url)))
 	appendParam(&buffer, url, constant.InterfaceKey)
+	appendParam(&buffer, url, constant.VersionKey)
+	appendParam(&buffer, url, constant.GroupKey)
 	return buffer.String()
 }
 
-// getSubscribeName returns subscribeName is providers:$(interfaceName)
+// getSubscribeName returns subscribeName is providers:$(interfaceName):$(version):$(group)
 func getSubscribeName(url *common.URL) string {
 	var buffer bytes.Buffer
 
 	buffer.Write([]byte(common.DubboNodes[common.PROVIDER]))
 	appendParam(&buffer, url, constant.InterfaceKey)
-	// We would not append group or version to this name, as istio ecosystem only cares about 'hostname' during cds procedure.
-	// The subscribe name is used to find the real hostName.
-	// Group or version are managed by traffic policy, not dubbo-go.
+	appendParam(&buffer, url, constant.VersionKey)
+	appendParam(&buffer, url, constant.GroupKey)
 	return buffer.String()
 }
 

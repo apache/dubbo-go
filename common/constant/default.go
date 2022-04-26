@@ -19,6 +19,7 @@ package constant
 
 const (
 	Dubbo            = "dubbo"
+	Tri              = "tri"
 	ProviderProtocol = "provider"
 	OverrideProtocol = "override" //compatible with 2.6.x
 	EmptyProtocol    = "empty"

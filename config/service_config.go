@@ -73,6 +73,7 @@ type ServiceConfig struct {
 	ExecuteLimit                string            `yaml:"execute.limit" json:"execute.limit,omitempty" property:"execute.limit"`
 	ExecuteLimitRejectedHandler string            `yaml:"execute.limit.rejected.handler" json:"execute.limit.rejected.handler,omitempty" property:"execute.limit.rejected.handler"`
 	Auth                        string            `yaml:"auth" json:"auth,omitempty" property:"auth"`
+	NotRegister                 bool              `yaml:"register" json:"register,omitempty" property:"register"`
 	ParamSign                   string            `yaml:"param.sign" json:"param.sign,omitempty" property:"param.sign"`
 	Tag                         string            `yaml:"tag" json:"tag,omitempty" property:"tag"`
 	GrpcMaxMessageSize          int               `default:"4" yaml:"max_message_size" json:"max_message_size,omitempty"`
@@ -108,6 +109,12 @@ func (s *ServiceConfig) Init(rc *RootConfig) error {
 	}
 	s.exported = atomic.NewBool(false)
 	s.metadataType = rc.Application.MetadataType
+	if s.Version == "" {
+		s.Version = rc.Application.Version
+	}
+	if s.Group == "" {
+		s.Group = rc.Application.Group
+	}
 	s.unexported = atomic.NewBool(false)
 	if len(s.RCRegistriesMap) == 0 {
 		s.RCRegistriesMap = rc.Registries
@@ -222,7 +229,11 @@ func (s *ServiceConfig) Export() error {
 		return nil
 	}
 
-	regUrls := loadRegistries(s.RegistryIDs, s.RCRegistriesMap, common.PROVIDER)
+	regUrls := make([]*common.URL, 0)
+	if !s.NotRegister {
+		regUrls = loadRegistries(s.RegistryIDs, s.RCRegistriesMap, common.PROVIDER)
+	}
+
 	urlMap := s.getUrlMap()
 	protocolConfigs := loadProtocol(s.ProtocolIDs, s.RCProtocolsMap)
 	if len(protocolConfigs) == 0 {
@@ -592,6 +603,11 @@ func (pcb *ServiceConfigBuilder) SetSerialization(serialization string) *Service
 
 func (pcb *ServiceConfigBuilder) SetServiceID(id string) *ServiceConfigBuilder {
 	pcb.serviceConfig.id = id
+	return pcb
+}
+
+func (pcb *ServiceConfigBuilder) SetNotRegister(notRegister bool) *ServiceConfigBuilder {
+	pcb.serviceConfig.NotRegister = notRegister
 	return pcb
 }
 

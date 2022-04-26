@@ -89,6 +89,12 @@ func (rc *ReferenceConfig) Init(root *RootConfig) error {
 	rc.rootConfig = root
 	if root.Application != nil {
 		rc.metaDataType = root.Application.MetadataType
+		if rc.Group == "" {
+			rc.Group = root.Application.Group
+		}
+		if rc.Version == "" {
+			rc.Version = root.Application.Version
+		}
 	}
 	if rc.Cluster == "" {
 		rc.Cluster = "failover"
