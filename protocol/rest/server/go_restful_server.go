@@ -38,9 +38,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config"
 )
 
-//func init() {
-//	rest.SetRestServer(constant.DefaultRestServer, NewGoRestfulServer)
-//}
 var filterSlice []restful.FilterFunction
 
 // GoRestfulServer a rest server implement by go-restful
