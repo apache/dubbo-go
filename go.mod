@@ -27,7 +27,7 @@ require (
 	github.com/go-resty/resty/v2 v2.7.0
 	github.com/golang/mock v1.4.4
 	github.com/golang/protobuf v1.5.2
-	github.com/google/go-cmp v0.5.7
+	github.com/google/go-cmp v0.5.8
 	github.com/grpc-ecosystem/grpc-opentracing v0.0.0-20180507213350-8e809c8a8645
 	github.com/hashicorp/vault/sdk v0.3.0
 	github.com/jinzhu/copier v0.3.5
