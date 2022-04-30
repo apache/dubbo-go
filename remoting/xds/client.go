@@ -125,6 +125,11 @@ type WrappedClientImpl struct {
 		subscribeStopChMap stores subscription stop chan
 	*/
 	subscribeStopChMap sync.Map
+
+	/*
+		xdsSniffingTimeout stores xds sniffing timeout duration
+	*/
+	xdsSniffingTimeout time.Duration
 }
 
 func GetXDSWrappedClient() *WrappedClientImpl {
@@ -153,6 +158,8 @@ func NewXDSWrappedClient(podName, namespace, localIP string, istioAddr xdsCommon
 
 		cdsUpdateEventChan:     make(chan struct{}),
 		cdsUpdateEventHandlers: make([]func(), 0),
+
+		xdsSniffingTimeout: time.Second * 10,
 	}
 
 	// 1. init xdsclient
@@ -375,7 +382,7 @@ func (w *WrappedClientImpl) startWatchingAllClusterAndLoadLocalHostAddrAndIstioP
 	foundIstiodStopCh := make(chan struct{})
 	discoveryFinishedStopCh := make(chan struct{})
 	// todo timeout configure
-	timeoutCh := time.After(time.Second * 3)
+	timeoutCh := time.After(w.xdsSniffingTimeout)
 	foundLocal := false
 	foundIstiod := false
 	var cancel1 func()

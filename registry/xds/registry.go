@@ -39,6 +39,7 @@ import (
 )
 
 var localIP = ""
+var DefaultXDSSniffingTimeoutStr = "5s"
 
 func init() {
 	localIP = common.GetLocalIp()
