@@ -159,7 +159,7 @@ func NewXDSWrappedClient(podName, namespace, localIP string, istioAddr xdsCommon
 		cdsUpdateEventChan:     make(chan struct{}),
 		cdsUpdateEventHandlers: make([]func(), 0),
 
-		xdsSniffingTimeout: time.Second * 10,
+		xdsSniffingTimeout: time.Hour,
 	}
 
 	// 1. init xdsclient
