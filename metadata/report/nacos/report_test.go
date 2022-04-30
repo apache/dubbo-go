@@ -18,58 +18,26 @@
 package nacos
 
 import (
-	"net/http"
-	"net/url"
+	"encoding/json"
+	"reflect"
 	"strconv"
 	"testing"
-	"time"
 )
 
 import (
-	"github.com/stretchr/testify/assert"
+	nacosClient "github.com/dubbogo/gost/database/kv/nacos"
+
+	"github.com/golang/mock/gomock"
+
+	"github.com/nacos-group/nacos-sdk-go/model"
+	"github.com/nacos-group/nacos-sdk-go/vo"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/metadata/identifier"
-	"dubbo.apache.org/dubbo-go/v3/metadata/report"
 )
-
-func TestNacosMetadataReport_CRUD(t *testing.T) {
-	if !checkNacosServerAlive() {
-		return
-	}
-	rpt := newTestReport()
-	assert.NotNil(t, rpt)
-
-	providerMi := newMetadataIdentifier("server")
-	providerMeta := "provider"
-	err := rpt.StoreProviderMetadata(providerMi, providerMeta)
-	assert.Nil(t, err)
-
-	consumerMi := newMetadataIdentifier("client")
-	consumerMeta := "consumer"
-	err = rpt.StoreConsumerMetadata(consumerMi, consumerMeta)
-	assert.Nil(t, err)
-
-	serviceMi := newServiceMetadataIdentifier()
-
-	serviceUrl, _ := common.NewURL("registry://console.nacos.io:80",
-		common.WithParamsValue(constant.RegistryRoleKey, strconv.Itoa(common.PROVIDER)),
-		common.WithParamsValue(constant.ClientNameKey, "nacos-client"))
-
-	err = rpt.SaveServiceMetadata(serviceMi, serviceUrl)
-	assert.Nil(t, err)
-
-	exportedUrls, err := rpt.GetExportedURLs(serviceMi)
-	assert.Equal(t, 1, len(exportedUrls))
-	assert.Nil(t, err)
-
-	err = rpt.RemoveServiceMetadata(serviceMi)
-	assert.Nil(t, err)
-}
 
 func newServiceMetadataIdentifier() *identifier.ServiceMetadataIdentifier {
 	return &identifier.ServiceMetadataIdentifier{
@@ -96,30 +64,490 @@ func newMetadataIdentifier(side string) *identifier.MetadataIdentifier {
 	}
 }
 
-func TestNacosMetadataReportFactory_CreateMetadataReport(t *testing.T) {
-	res := newTestReport()
-	assert.NotNil(t, res)
+// MockIConfigClient is a mock of IConfigClient interface
+type MockIConfigClient struct {
+	ctrl     *gomock.Controller
+	recorder *MockIConfigClientMockRecorder
 }
 
-func newTestReport() report.MetadataReport {
-	params := url.Values{}
-	params.Set(constant.NacosNotLoadLocalCache, "true")
-
-	params.Set(constant.NacosNamespaceID, "nacos")
-	params.Set(constant.TimeoutKey, "5s")
-	params.Set(constant.ClientNameKey, "nacos-client")
-	params.Set(constant.RegistryRoleKey, strconv.Itoa(common.PROVIDER))
-
-	regurl, _ := common.NewURL("registry://console.nacos.io:80", common.WithParams(params))
-
-	res := extension.GetMetadataReportFactory("nacos").CreateMetadataReport(regurl)
-	return res
+// MockIConfigClientMockRecorder is the mock recorder for MockIConfigClient
+type MockIConfigClientMockRecorder struct {
+	mock *MockIConfigClient
 }
 
-func checkNacosServerAlive() bool {
-	c := http.Client{Timeout: time.Second}
-	if _, err := c.Get("http://console.nacos.io/nacos/"); err != nil {
-		return false
+// NewMockIConfigClient creates a new mock instance
+func NewMockIConfigClient(ctrl *gomock.Controller) *MockIConfigClient {
+	mock := &MockIConfigClient{ctrl: ctrl}
+	mock.recorder = &MockIConfigClientMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use
+func (m *MockIConfigClient) EXPECT() *MockIConfigClientMockRecorder {
+	return m.recorder
+}
+
+// GetConfig mocks base method
+func (m *MockIConfigClient) GetConfig(param vo.ConfigParam) (string, error) {
+	ret := m.ctrl.Call(m, "GetConfig", param)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetConfig indicates an expected call of GetConfig
+func (mr *MockIConfigClientMockRecorder) GetConfig(param interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConfig", reflect.TypeOf((*MockIConfigClient)(nil).GetConfig), param)
+}
+
+// PublishConfig mocks base method
+func (m *MockIConfigClient) PublishConfig(param vo.ConfigParam) (bool, error) {
+	ret := m.ctrl.Call(m, "PublishConfig", param)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// PublishConfig indicates an expected call of PublishConfig
+func (mr *MockIConfigClientMockRecorder) PublishConfig(param interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PublishConfig", reflect.TypeOf((*MockIConfigClient)(nil).PublishConfig), param)
+}
+
+// DeleteConfig mocks base method
+func (m *MockIConfigClient) DeleteConfig(param vo.ConfigParam) (bool, error) {
+	ret := m.ctrl.Call(m, "DeleteConfig", param)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DeleteConfig indicates an expected call of DeleteConfig
+func (mr *MockIConfigClientMockRecorder) DeleteConfig(param interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteConfig", reflect.TypeOf((*MockIConfigClient)(nil).DeleteConfig), param)
+}
+
+// ListenConfig mocks base method
+func (m *MockIConfigClient) ListenConfig(params vo.ConfigParam) error {
+	ret := m.ctrl.Call(m, "ListenConfig", params)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ListenConfig indicates an expected call of ListenConfig
+func (mr *MockIConfigClientMockRecorder) ListenConfig(params interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListenConfig", reflect.TypeOf((*MockIConfigClient)(nil).ListenConfig), params)
+}
+
+// CancelListenConfig mocks base method
+func (m *MockIConfigClient) CancelListenConfig(params vo.ConfigParam) error {
+	ret := m.ctrl.Call(m, "CancelListenConfig", params)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CancelListenConfig indicates an expected call of CancelListenConfig
+func (mr *MockIConfigClientMockRecorder) CancelListenConfig(params interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CancelListenConfig", reflect.TypeOf((*MockIConfigClient)(nil).CancelListenConfig), params)
+}
+
+// SearchConfig mocks base method
+func (m *MockIConfigClient) SearchConfig(param vo.SearchConfigParam) (*model.ConfigPage, error) {
+	ret := m.ctrl.Call(m, "SearchConfig", param)
+	ret0, _ := ret[0].(*model.ConfigPage)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SearchConfig indicates an expected call of SearchConfig
+func (mr *MockIConfigClientMockRecorder) SearchConfig(param interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchConfig", reflect.TypeOf((*MockIConfigClient)(nil).SearchConfig), param)
+}
+
+// PublishAggr mocks base method
+func (m *MockIConfigClient) PublishAggr(param vo.ConfigParam) (bool, error) {
+	ret := m.ctrl.Call(m, "PublishAggr", param)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// PublishAggr indicates an expected call of PublishAggr
+func (mr *MockIConfigClientMockRecorder) PublishAggr(param interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PublishAggr", reflect.TypeOf((*MockIConfigClient)(nil).PublishAggr), param)
+}
+
+func Test_nacosMetadataReport_GetAppMetadata(t *testing.T) {
+	type fields struct {
+		client *nacosClient.NacosConfigClient
 	}
-	return true
+	type args struct {
+		metadataIdentifier *identifier.SubscriberMetadataIdentifier
+	}
+
+	mi := common.MetadataInfo{
+		App: "GetAppMetadata",
+	}
+	data, _ := json.Marshal(mi)
+
+	ctrl := gomock.NewController(t)
+	mnc := NewMockIConfigClient(ctrl)
+	mnc.EXPECT().GetConfig(gomock.Any()).Return(string(data), nil)
+	nc := &nacosClient.NacosConfigClient{}
+	nc.SetClient(mnc)
+
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    *common.MetadataInfo
+		wantErr bool
+	}{
+		{
+			name: "test",
+			fields: fields{
+				client: nc,
+			},
+			args: args{
+				metadataIdentifier: &identifier.SubscriberMetadataIdentifier{},
+			},
+			want:    &mi,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			n := &nacosMetadataReport{
+				client: tt.fields.client,
+			}
+			got, err := n.GetAppMetadata(tt.args.metadataIdentifier)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetAppMetadata() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GetAppMetadata() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_nacosMetadataReport_PublishAppMetadata(t *testing.T) {
+	type fields struct {
+		client *nacosClient.NacosConfigClient
+	}
+	type args struct {
+		metadataIdentifier *identifier.SubscriberMetadataIdentifier
+		info               *common.MetadataInfo
+	}
+
+	ctrl := gomock.NewController(t)
+	mnc := NewMockIConfigClient(ctrl)
+	mnc.EXPECT().PublishConfig(gomock.Any()).Return(true, nil)
+	nc := &nacosClient.NacosConfigClient{}
+	nc.SetClient(mnc)
+
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "test",
+			fields: fields{
+				client: nc,
+			},
+			args: args{
+				metadataIdentifier: &identifier.SubscriberMetadataIdentifier{},
+				info: &common.MetadataInfo{
+					App: "PublishAppMetadata",
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			n := &nacosMetadataReport{
+				client: tt.fields.client,
+			}
+			if err := n.PublishAppMetadata(tt.args.metadataIdentifier, tt.args.info); (err != nil) != tt.wantErr {
+				t.Errorf("PublishAppMetadata() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func Test_nacosMetadataReport_StoreProviderMetadata(t *testing.T) {
+	type fields struct {
+		client *nacosClient.NacosConfigClient
+	}
+	type args struct {
+		providerIdentifier *identifier.MetadataIdentifier
+		serviceDefinitions string
+	}
+
+	ctrl := gomock.NewController(t)
+	mnc := NewMockIConfigClient(ctrl)
+	mnc.EXPECT().PublishConfig(gomock.Any()).Return(true, nil)
+	nc := &nacosClient.NacosConfigClient{}
+	nc.SetClient(mnc)
+
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "test",
+			fields: fields{
+				client: nc,
+			},
+			args: args{
+				providerIdentifier: newMetadataIdentifier("provider"),
+				serviceDefinitions: "provider",
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			n := &nacosMetadataReport{
+				client: tt.fields.client,
+			}
+			if err := n.StoreProviderMetadata(tt.args.providerIdentifier, tt.args.serviceDefinitions); (err != nil) != tt.wantErr {
+				t.Errorf("StoreProviderMetadata() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func Test_nacosMetadataReport_StoreConsumerMetadata(t *testing.T) {
+	type fields struct {
+		client *nacosClient.NacosConfigClient
+	}
+	type args struct {
+		consumerMetadataIdentifier *identifier.MetadataIdentifier
+		serviceParameterString     string
+	}
+
+	ctrl := gomock.NewController(t)
+	mnc := NewMockIConfigClient(ctrl)
+	mnc.EXPECT().PublishConfig(gomock.Any()).Return(true, nil)
+	nc := &nacosClient.NacosConfigClient{}
+	nc.SetClient(mnc)
+
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "test",
+			fields: fields{
+				client: nc,
+			},
+			args: args{
+				consumerMetadataIdentifier: newMetadataIdentifier("conusmer"),
+				serviceParameterString:     "conusmer",
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			n := &nacosMetadataReport{
+				client: tt.fields.client,
+			}
+			if err := n.StoreConsumerMetadata(tt.args.consumerMetadataIdentifier, tt.args.serviceParameterString); (err != nil) != tt.wantErr {
+				t.Errorf("StoreConsumerMetadata() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func Test_nacosMetadataReport_SaveServiceMetadata(t *testing.T) {
+	type fields struct {
+		client *nacosClient.NacosConfigClient
+	}
+	type args struct {
+		metadataIdentifier *identifier.ServiceMetadataIdentifier
+		url                *common.URL
+	}
+
+	ctrl := gomock.NewController(t)
+	mnc := NewMockIConfigClient(ctrl)
+	mnc.EXPECT().PublishConfig(gomock.Any()).Return(true, nil)
+	nc := &nacosClient.NacosConfigClient{}
+	nc.SetClient(mnc)
+
+	serviceURL, _ := common.NewURL("registry://test.nacos.io:80",
+		common.WithParamsValue(constant.RegistryRoleKey, strconv.Itoa(common.PROVIDER)),
+		common.WithParamsValue(constant.ClientNameKey, "nacos-client"))
+
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "test",
+			fields: fields{
+				client: nc,
+			},
+			args: args{
+				metadataIdentifier: newServiceMetadataIdentifier(),
+				url:                serviceURL,
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			n := &nacosMetadataReport{
+				client: tt.fields.client,
+			}
+			if err := n.SaveServiceMetadata(tt.args.metadataIdentifier, tt.args.url); (err != nil) != tt.wantErr {
+				t.Errorf("SaveServiceMetadata() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func Test_nacosMetadataReport_RemoveServiceMetadata(t *testing.T) {
+	type fields struct {
+		client *nacosClient.NacosConfigClient
+	}
+	type args struct {
+		metadataIdentifier *identifier.ServiceMetadataIdentifier
+	}
+
+	ctrl := gomock.NewController(t)
+	mnc := NewMockIConfigClient(ctrl)
+	mnc.EXPECT().DeleteConfig(gomock.Any()).Return(true, nil)
+	nc := &nacosClient.NacosConfigClient{}
+	nc.SetClient(mnc)
+
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "test",
+			fields: fields{
+				client: nc,
+			},
+			args: args{
+				metadataIdentifier: newServiceMetadataIdentifier(),
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			n := &nacosMetadataReport{
+				client: tt.fields.client,
+			}
+			if err := n.RemoveServiceMetadata(tt.args.metadataIdentifier); (err != nil) != tt.wantErr {
+				t.Errorf("RemoveServiceMetadata() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func Test_nacosMetadataReport_SaveSubscribedData(t *testing.T) {
+	type fields struct {
+		client *nacosClient.NacosConfigClient
+	}
+	type args struct {
+		subscriberMetadataIdentifier *identifier.SubscriberMetadataIdentifier
+		urls                         string
+	}
+
+	ctrl := gomock.NewController(t)
+	mnc := NewMockIConfigClient(ctrl)
+	mnc.EXPECT().PublishConfig(gomock.Any()).Return(true, nil)
+	nc := &nacosClient.NacosConfigClient{}
+	nc.SetClient(mnc)
+
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "test",
+			fields: fields{
+				client: nc,
+			},
+			args: args{
+				subscriberMetadataIdentifier: &identifier.SubscriberMetadataIdentifier{},
+				urls:                         "urls",
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			n := &nacosMetadataReport{
+				client: tt.fields.client,
+			}
+			if err := n.SaveSubscribedData(tt.args.subscriberMetadataIdentifier, tt.args.urls); (err != nil) != tt.wantErr {
+				t.Errorf("SaveSubscribedData() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func Test_nacosMetadataReport_RegisterServiceAppMapping(t *testing.T) {
+	type fields struct {
+		client *nacosClient.NacosConfigClient
+	}
+	type args struct {
+		key   string
+		group string
+		value string
+	}
+
+	ctrl := gomock.NewController(t)
+	mnc := NewMockIConfigClient(ctrl)
+	mnc.EXPECT().GetConfig(gomock.Any()).Return("oldValue", nil)
+	nc := &nacosClient.NacosConfigClient{}
+	nc.SetClient(mnc)
+
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "test",
+			fields: fields{
+				client: nc,
+			},
+			args: args{
+				key:   "test",
+				group: "test",
+				value: "oldValue",
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			n := &nacosMetadataReport{
+				client: tt.fields.client,
+			}
+			if err := n.RegisterServiceAppMapping(tt.args.key, tt.args.group, tt.args.value); (err != nil) != tt.wantErr {
+				t.Errorf("RegisterServiceAppMapping() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
 }
