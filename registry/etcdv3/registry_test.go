@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+// nolint
 package etcdv3
 
 import (
