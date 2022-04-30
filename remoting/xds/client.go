@@ -18,6 +18,7 @@
 package xds
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"sync"
 	"time"
 )
@@ -379,6 +380,8 @@ func (w *WrappedClientImpl) startWatchingAllClusterAndLoadLocalHostAddrAndIstioP
 	foundIstiod := false
 	var cancel1 func()
 	var cancel2 func()
+	logger.Infof("[XDS Wrapped Client] Start sniffing with istio hostname = %s, localIp = %s",
+		w.istiodAddr.HostnameOrIP, w.localIP)
 
 	// todo @(laurence) here, if istiod is unhealthy, here should be timeout and tell developer.
 	_ = w.xdsClient.WatchCluster("*", func(update resource.ClusterUpdate, err error) {
@@ -390,6 +393,7 @@ func (w *WrappedClientImpl) startWatchingAllClusterAndLoadLocalHostAddrAndIstioP
 			w.cdsMapLock.Lock()
 			defer w.cdsMapLock.Unlock()
 			delete(w.cdsMap, update.ClusterName[1:])
+			logger.Infof("[XDS Wrapped Client] Delete cluster %s", update.ClusterName[1:])
 			w.cdsUpdateEventChan <- struct{}{} // send update event
 			return
 		}
@@ -401,6 +405,7 @@ func (w *WrappedClientImpl) startWatchingAllClusterAndLoadLocalHostAddrAndIstioP
 		if foundLocal && foundIstiod {
 			return
 		}
+		logger.Infof("[XDS Wrapped Client] Sniffing with cluster name = %s", update.ClusterName[1:])
 		// only into here during start sniffing istiod/service prcedure
 		cluster := xdsCommon.NewCluster(update.ClusterName)
 		if cluster.Addr.HostnameOrIP == w.istiodAddr.HostnameOrIP {
@@ -413,6 +418,7 @@ func (w *WrappedClientImpl) startWatchingAllClusterAndLoadLocalHostAddrAndIstioP
 				for _, v := range endpoint.Localities {
 					for _, e := range v.Endpoints {
 						w.istiodPodIP = xdsCommon.NewHostNameOrIPAddr(e.Address).HostnameOrIP
+						logger.Infof("[XDS Wrapped Client] Sniffing found istiod podIP = %s", w.istiodPodIP)
 						foundIstiod = true
 						close(foundIstiodStopCh)
 					}
@@ -428,6 +434,7 @@ func (w *WrappedClientImpl) startWatchingAllClusterAndLoadLocalHostAddrAndIstioP
 			}
 			for _, v := range endpoint.Localities {
 				for _, e := range v.Endpoints {
+					logger.Infof("[XDS Wrapped Client] Sniffing Found eds endpoint = %+v", e)
 					if xdsCommon.NewHostNameOrIPAddr(e.Address).HostnameOrIP == w.localIP {
 						cluster := xdsCommon.NewCluster(update.ClusterName)
 						w.hostAddr = cluster.Addr
