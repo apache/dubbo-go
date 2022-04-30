@@ -400,7 +400,7 @@ func (w *WrappedClientImpl) startWatchingAllClusterAndLoadLocalHostAddrAndIstioP
 			w.cdsMapLock.Lock()
 			defer w.cdsMapLock.Unlock()
 			delete(w.cdsMap, update.ClusterName[1:])
-			logger.Infof("[XDS Wrapped Client] Delete cluster %s", update.ClusterName[1:])
+			logger.Infof("[XDS Wrapped Client] Delete cluster %s", update.ClusterName)
 			w.cdsUpdateEventChan <- struct{}{} // send update event
 			return
 		}
@@ -412,16 +412,18 @@ func (w *WrappedClientImpl) startWatchingAllClusterAndLoadLocalHostAddrAndIstioP
 		if foundLocal && foundIstiod {
 			return
 		}
-		logger.Infof("[XDS Wrapped Client] Sniffing with cluster name = %s", update.ClusterName[1:])
+		logger.Infof("[XDS Wrapped Client] Sniffing with cluster name = %s", update.ClusterName)
 		// only into here during start sniffing istiod/service prcedure
 		cluster := xdsCommon.NewCluster(update.ClusterName)
 		if cluster.Addr.HostnameOrIP == w.istiodAddr.HostnameOrIP {
 			// 1. find istiod podIP
 			// todo: When would eds level watch be canceled?
+			logger.Info("[XDS Wrapped Client] Sniffing get istiod cluster")
 			cancel1 = w.xdsClient.WatchEndpoints(update.ClusterName, func(endpoint resource.EndpointsUpdate, err error) {
 				if foundIstiod {
 					return
 				}
+				logger.Infof("[XDS Wrapped Client] Sniffing get istiod endpoint = %+v, localities = %+v", endpoint, endpoint.Localities)
 				for _, v := range endpoint.Localities {
 					for _, e := range v.Endpoints {
 						w.istiodPodIP = xdsCommon.NewHostNameOrIPAddr(e.Address).HostnameOrIP
@@ -477,7 +479,7 @@ func (w *WrappedClientImpl) startWatchingAllClusterAndLoadLocalHostAddrAndIstioP
 		case <-foundIstiodStopCh:
 			return DiscoverLocalError
 		default:
-			return DiscoverIstiodPodError
+			return DiscoverIstiodPodIpError
 		}
 	}
 }
