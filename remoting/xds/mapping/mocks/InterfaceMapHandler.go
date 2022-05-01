@@ -76,3 +76,15 @@ func (_m *InterfaceMapHandler) UnRegister(_a0 string) error {
 
 	return r0
 }
+
+// GetDubboGoMetadata provides a mock function
+func (_m *InterfaceMapHandler) GetDubboGoMetadata() map[string]string {
+	ret := _m.Called()
+
+	var r0 map[string]string
+	if rf, ok := ret.Get(0).(func() map[string]string); ok {
+		r0 = rf()
+	}
+
+	return r0
+}

@@ -18,7 +18,6 @@
 package xds
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"sync"
 	"time"
 )
@@ -29,6 +28,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	xdsCommon "dubbo.apache.org/dubbo-go/v3/remoting/xds/common"
 	"dubbo.apache.org/dubbo-go/v3/remoting/xds/ewatcher"
@@ -189,6 +189,11 @@ func NewXDSWrappedClient(podName, namespace, localIP string, istioAddr xdsCommon
 // GetHostAddrByServiceUniqueKey  todo 1. timeout 2. hostAddr change?
 func (w *WrappedClientImpl) GetHostAddrByServiceUniqueKey(serviceUniqueKey string) (string, error) {
 	return w.interfaceMapHandler.GetHostAddrMap(serviceUniqueKey)
+}
+
+// GetDubboGoMetadata get all registered metadata of dubbogo
+func (w *WrappedClientImpl) GetDubboGoMetadata() map[string]string {
+	return w.interfaceMapHandler.GetDubboGoMetadata()
 }
 
 // ChangeInterfaceMap change the map of serviceUniqueKey -> appname, if add is true, register, else unregister
@@ -521,6 +526,7 @@ type XDSWrapperClient interface {
 	UnSubscribe(svcUniqueName string)
 	GetRouterConfig(hostAddr string) resource.RouteConfigUpdate
 	GetHostAddrByServiceUniqueKey(serviceUniqueKey string) (string, error)
+	GetDubboGoMetadata() map[string]string
 	ChangeInterfaceMap(serviceUniqueKey string, add bool) error
 	GetClusterUpdateIgnoreVersion(hostAddr string) resource.ClusterUpdate
 	GetHostAddress() xdsCommon.HostAddr
