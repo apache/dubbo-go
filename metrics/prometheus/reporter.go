@@ -78,9 +78,9 @@ func init() {
 // https://prometheus.io/docs/guides/go-application/
 type PrometheusReporter struct {
 	// report the consumer-side's rt gauge data
-	consumerRTGaugeVec *prometheus.SummaryVec
+	consumerRTSummaryVec *prometheus.SummaryVec
 	// report the provider-side's rt gauge data
-	providerRTGaugeVec *prometheus.SummaryVec
+	providerRTSummaryVec *prometheus.SummaryVec
 	// todo tps support
 	// report the consumer-side's tps gauge data
 	consumerTPSGaugeVec *prometheus.GaugeVec
@@ -104,9 +104,9 @@ func (reporter *PrometheusReporter) Report(ctx context.Context, invoker protocol
 	url := invoker.GetURL()
 	var rtVec *prometheus.SummaryVec
 	if isProvider(url) {
-		rtVec = reporter.providerRTGaugeVec
+		rtVec = reporter.providerRTSummaryVec
 	} else if isConsumer(url) {
-		rtVec = reporter.consumerRTGaugeVec
+		rtVec = reporter.consumerRTSummaryVec
 	} else {
 		logger.Warnf("The url belongs neither the consumer nor the provider, "+
 			"so the invocation will be ignored. url: %s", url.String())
@@ -213,11 +213,11 @@ func newPrometheusReporter(reporterConfig *metrics.ReporterConfig) metrics.Repor
 		reporterInitOnce.Do(func() {
 			reporterInstance = &PrometheusReporter{
 				namespace:          reporterConfig.Namespace,
-				consumerRTGaugeVec: newSummaryVec(consumerPrefix+serviceKey+rtSuffix, reporterConfig.Namespace, labelNames),
-				providerRTGaugeVec: newSummaryVec(providerPrefix+serviceKey+rtSuffix, reporterConfig.Namespace, labelNames),
+				consumerRTSummaryVec: newSummaryVec(consumerPrefix+serviceKey+rtSuffix, reporterConfig.Namespace, labelNames),
+				providerRTSummaryVec: newSummaryVec(providerPrefix+serviceKey+rtSuffix, reporterConfig.Namespace, labelNames),
 			}
 
-			prom.DefaultRegisterer.MustRegister(reporterInstance.consumerRTGaugeVec, reporterInstance.providerRTGaugeVec)
+			prom.DefaultRegisterer.MustRegister(reporterInstance.consumerRTSummaryVec, reporterInstance.providerRTSummaryVec)
 			metricsExporter, err := ocprom.NewExporter(ocprom.Options{
 				Registry: prom.DefaultRegisterer.(*prom.Registry),
 			})
