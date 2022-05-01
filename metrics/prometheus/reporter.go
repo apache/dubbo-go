@@ -78,9 +78,9 @@ func init() {
 // https://prometheus.io/docs/guides/go-application/
 type PrometheusReporter struct {
 	// report the consumer-side's rt gauge data
-	consumerRTGaugeVec *prometheus.GaugeVec
+	consumerRTGaugeVec *prometheus.SummaryVec
 	// report the provider-side's rt gauge data
-	providerRTGaugeVec *prometheus.GaugeVec
+	providerRTGaugeVec *prometheus.SummaryVec
 	// todo tps support
 	// report the consumer-side's tps gauge data
 	consumerTPSGaugeVec *prometheus.GaugeVec
@@ -102,7 +102,7 @@ type PrometheusReporter struct {
 // or it will be ignored
 func (reporter *PrometheusReporter) Report(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation, cost time.Duration, res protocol.Result) {
 	url := invoker.GetURL()
-	var rtVec *prometheus.GaugeVec
+	var rtVec *prometheus.SummaryVec
 	if isProvider(url) {
 		rtVec = reporter.providerRTGaugeVec
 	} else if isConsumer(url) {
@@ -121,7 +121,7 @@ func (reporter *PrometheusReporter) Report(ctx context.Context, invoker protocol
 		timeoutKey: url.GetParam(timeoutKey, ""),
 	}
 	costMs := cost.Nanoseconds()
-	rtVec.With(labels).Set(float64(costMs))
+	rtVec.With(labels).Observe(float64(costMs))
 }
 
 func newHistogramVec(name, namespace string, labels []string) *prometheus.HistogramVec {
@@ -213,8 +213,8 @@ func newPrometheusReporter(reporterConfig *metrics.ReporterConfig) metrics.Repor
 		reporterInitOnce.Do(func() {
 			reporterInstance = &PrometheusReporter{
 				namespace:          reporterConfig.Namespace,
-				consumerRTGaugeVec: newGaugeVec(consumerPrefix+serviceKey+rtSuffix, reporterConfig.Namespace, labelNames),
-				providerRTGaugeVec: newGaugeVec(providerPrefix+serviceKey+rtSuffix, reporterConfig.Namespace, labelNames),
+				consumerRTGaugeVec: newSummaryVec(consumerPrefix+serviceKey+rtSuffix, reporterConfig.Namespace, labelNames),
+				providerRTGaugeVec: newSummaryVec(providerPrefix+serviceKey+rtSuffix, reporterConfig.Namespace, labelNames),
 			}
 
 			prom.DefaultRegisterer.MustRegister(reporterInstance.consumerRTGaugeVec, reporterInstance.providerRTGaugeVec)
