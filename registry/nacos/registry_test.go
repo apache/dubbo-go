@@ -190,16 +190,25 @@ func (mr *MockINamingClientMockRecorder) GetAllServicesInfo(param interface{}) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllServicesInfo", reflect.TypeOf((*MockINamingClient)(nil).GetAllServicesInfo), param)
 }
 
-func Test_nacosRegistry_Register(t *testing.T) {
-	type fields struct {
-		URL          *common.URL
-		namingClient *nacosClient.NacosNamingClient
-		registryUrls []*common.URL
-	}
-	type args struct {
-		url *common.URL
-	}
+type fields struct {
+	URL          *common.URL
+	namingClient *nacosClient.NacosNamingClient
+	registryUrls []*common.URL
+}
+type args struct {
+	url            *common.URL
+	notifyListener registry.NotifyListener
+}
 
+func newNacosRegistryForTest(f fields) *nacosRegistry {
+	return &nacosRegistry{
+		URL:          f.URL,
+		namingClient: f.namingClient,
+		registryUrls: f.registryUrls,
+	}
+}
+
+func Test_nacosRegistry_Register(t *testing.T) {
 	params := url.Values{}
 	params.Set(constant.RegistryRoleKey, strconv.Itoa(common.PROVIDER))
 	params.Set(constant.NacosNotLoadLocalCache, "true")
@@ -243,11 +252,7 @@ func Test_nacosRegistry_Register(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			nr := &nacosRegistry{
-				URL:          tt.fields.URL,
-				namingClient: tt.fields.namingClient,
-				registryUrls: tt.fields.registryUrls,
-			}
+			nr := newNacosRegistryForTest(tt.fields)
 			if err := nr.Register(tt.args.url); (err != nil) != tt.wantErr {
 				t.Errorf("Register() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -256,15 +261,6 @@ func Test_nacosRegistry_Register(t *testing.T) {
 }
 
 func Test_nacosRegistry_UnRegister(t *testing.T) {
-	type fields struct {
-		URL          *common.URL
-		namingClient *nacosClient.NacosNamingClient
-		registryUrls []*common.URL
-	}
-	type args struct {
-		url *common.URL
-	}
-
 	params := url.Values{}
 	params.Set(constant.RegistryRoleKey, strconv.Itoa(common.PROVIDER))
 	params.Set(constant.NacosNotLoadLocalCache, "true")
@@ -308,11 +304,7 @@ func Test_nacosRegistry_UnRegister(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			nr := &nacosRegistry{
-				URL:          tt.fields.URL,
-				namingClient: tt.fields.namingClient,
-				registryUrls: tt.fields.registryUrls,
-			}
+			nr := newNacosRegistryForTest(tt.fields)
 			if err := nr.UnRegister(tt.args.url); (err != nil) != tt.wantErr {
 				t.Errorf("UnRegister() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -321,16 +313,6 @@ func Test_nacosRegistry_UnRegister(t *testing.T) {
 }
 
 func Test_nacosRegistry_Subscribe(t *testing.T) {
-	type fields struct {
-		URL          *common.URL
-		namingClient *nacosClient.NacosNamingClient
-		registryUrls []*common.URL
-	}
-	type args struct {
-		url            *common.URL
-		notifyListener registry.NotifyListener
-	}
-
 	params := url.Values{}
 	params.Set(constant.RegistryRoleKey, strconv.Itoa(common.PROVIDER))
 	params.Set(constant.NacosNotLoadLocalCache, "true")
@@ -373,11 +355,7 @@ func Test_nacosRegistry_Subscribe(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			nr := &nacosRegistry{
-				URL:          tt.fields.URL,
-				namingClient: tt.fields.namingClient,
-				registryUrls: tt.fields.registryUrls,
-			}
+			nr := newNacosRegistryForTest(tt.fields)
 			if err := nr.Subscribe(tt.args.url, tt.args.notifyListener); (err != nil) != tt.wantErr {
 				t.Errorf("Subscribe() error = %v, wantErr %v", err, tt.wantErr)
 			}

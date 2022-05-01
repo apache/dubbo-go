@@ -176,14 +176,31 @@ func (mr *MockIConfigClientMockRecorder) PublishAggr(param interface{}) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PublishAggr", reflect.TypeOf((*MockIConfigClient)(nil).PublishAggr), param)
 }
 
-func Test_nacosMetadataReport_GetAppMetadata(t *testing.T) {
-	type fields struct {
-		client *nacosClient.NacosConfigClient
-	}
-	type args struct {
-		metadataIdentifier *identifier.SubscriberMetadataIdentifier
-	}
+type fields struct {
+	client *nacosClient.NacosConfigClient
+}
+type args struct {
+	subscriberMetadataIdentifier *identifier.SubscriberMetadataIdentifier
+	info                         *common.MetadataInfo
+	providerIdentifier           *identifier.MetadataIdentifier
+	serviceDefinitions           string
+	consumerMetadataIdentifier   *identifier.MetadataIdentifier
+	serviceParameterString       string
+	url                          *common.URL
+	serviceMetadataIdentifier    *identifier.ServiceMetadataIdentifier
+	urls                         string
+	key                          string
+	group                        string
+	value                        string
+}
 
+func newNacosMetadataReport(f fields) *nacosMetadataReport {
+	return &nacosMetadataReport{
+		client: f.client,
+	}
+}
+
+func Test_nacosMetadataReport_GetAppMetadata(t *testing.T) {
 	mi := common.MetadataInfo{
 		App: "GetAppMetadata",
 	}
@@ -208,7 +225,7 @@ func Test_nacosMetadataReport_GetAppMetadata(t *testing.T) {
 				client: nc,
 			},
 			args: args{
-				metadataIdentifier: &identifier.SubscriberMetadataIdentifier{},
+				subscriberMetadataIdentifier: &identifier.SubscriberMetadataIdentifier{},
 			},
 			want:    &mi,
 			wantErr: false,
@@ -216,10 +233,8 @@ func Test_nacosMetadataReport_GetAppMetadata(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			n := &nacosMetadataReport{
-				client: tt.fields.client,
-			}
-			got, err := n.GetAppMetadata(tt.args.metadataIdentifier)
+			n := newNacosMetadataReport(tt.fields)
+			got, err := n.GetAppMetadata(tt.args.subscriberMetadataIdentifier)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetAppMetadata() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -232,14 +247,6 @@ func Test_nacosMetadataReport_GetAppMetadata(t *testing.T) {
 }
 
 func Test_nacosMetadataReport_PublishAppMetadata(t *testing.T) {
-	type fields struct {
-		client *nacosClient.NacosConfigClient
-	}
-	type args struct {
-		metadataIdentifier *identifier.SubscriberMetadataIdentifier
-		info               *common.MetadataInfo
-	}
-
 	ctrl := gomock.NewController(t)
 	mnc := NewMockIConfigClient(ctrl)
 	mnc.EXPECT().PublishConfig(gomock.Any()).Return(true, nil)
@@ -258,7 +265,7 @@ func Test_nacosMetadataReport_PublishAppMetadata(t *testing.T) {
 				client: nc,
 			},
 			args: args{
-				metadataIdentifier: &identifier.SubscriberMetadataIdentifier{},
+				subscriberMetadataIdentifier: &identifier.SubscriberMetadataIdentifier{},
 				info: &common.MetadataInfo{
 					App: "PublishAppMetadata",
 				},
@@ -268,10 +275,8 @@ func Test_nacosMetadataReport_PublishAppMetadata(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			n := &nacosMetadataReport{
-				client: tt.fields.client,
-			}
-			if err := n.PublishAppMetadata(tt.args.metadataIdentifier, tt.args.info); (err != nil) != tt.wantErr {
+			n := newNacosMetadataReport(tt.fields)
+			if err := n.PublishAppMetadata(tt.args.subscriberMetadataIdentifier, tt.args.info); (err != nil) != tt.wantErr {
 				t.Errorf("PublishAppMetadata() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -279,14 +284,6 @@ func Test_nacosMetadataReport_PublishAppMetadata(t *testing.T) {
 }
 
 func Test_nacosMetadataReport_StoreProviderMetadata(t *testing.T) {
-	type fields struct {
-		client *nacosClient.NacosConfigClient
-	}
-	type args struct {
-		providerIdentifier *identifier.MetadataIdentifier
-		serviceDefinitions string
-	}
-
 	ctrl := gomock.NewController(t)
 	mnc := NewMockIConfigClient(ctrl)
 	mnc.EXPECT().PublishConfig(gomock.Any()).Return(true, nil)
@@ -313,9 +310,7 @@ func Test_nacosMetadataReport_StoreProviderMetadata(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			n := &nacosMetadataReport{
-				client: tt.fields.client,
-			}
+			n := newNacosMetadataReport(tt.fields)
 			if err := n.StoreProviderMetadata(tt.args.providerIdentifier, tt.args.serviceDefinitions); (err != nil) != tt.wantErr {
 				t.Errorf("StoreProviderMetadata() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -324,14 +319,6 @@ func Test_nacosMetadataReport_StoreProviderMetadata(t *testing.T) {
 }
 
 func Test_nacosMetadataReport_StoreConsumerMetadata(t *testing.T) {
-	type fields struct {
-		client *nacosClient.NacosConfigClient
-	}
-	type args struct {
-		consumerMetadataIdentifier *identifier.MetadataIdentifier
-		serviceParameterString     string
-	}
-
 	ctrl := gomock.NewController(t)
 	mnc := NewMockIConfigClient(ctrl)
 	mnc.EXPECT().PublishConfig(gomock.Any()).Return(true, nil)
@@ -358,9 +345,7 @@ func Test_nacosMetadataReport_StoreConsumerMetadata(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			n := &nacosMetadataReport{
-				client: tt.fields.client,
-			}
+			n := newNacosMetadataReport(tt.fields)
 			if err := n.StoreConsumerMetadata(tt.args.consumerMetadataIdentifier, tt.args.serviceParameterString); (err != nil) != tt.wantErr {
 				t.Errorf("StoreConsumerMetadata() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -369,14 +354,6 @@ func Test_nacosMetadataReport_StoreConsumerMetadata(t *testing.T) {
 }
 
 func Test_nacosMetadataReport_SaveServiceMetadata(t *testing.T) {
-	type fields struct {
-		client *nacosClient.NacosConfigClient
-	}
-	type args struct {
-		metadataIdentifier *identifier.ServiceMetadataIdentifier
-		url                *common.URL
-	}
-
 	ctrl := gomock.NewController(t)
 	mnc := NewMockIConfigClient(ctrl)
 	mnc.EXPECT().PublishConfig(gomock.Any()).Return(true, nil)
@@ -399,18 +376,16 @@ func Test_nacosMetadataReport_SaveServiceMetadata(t *testing.T) {
 				client: nc,
 			},
 			args: args{
-				metadataIdentifier: newServiceMetadataIdentifier(),
-				url:                serviceURL,
+				serviceMetadataIdentifier: newServiceMetadataIdentifier(),
+				url:                       serviceURL,
 			},
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			n := &nacosMetadataReport{
-				client: tt.fields.client,
-			}
-			if err := n.SaveServiceMetadata(tt.args.metadataIdentifier, tt.args.url); (err != nil) != tt.wantErr {
+			n := newNacosMetadataReport(tt.fields)
+			if err := n.SaveServiceMetadata(tt.args.serviceMetadataIdentifier, tt.args.url); (err != nil) != tt.wantErr {
 				t.Errorf("SaveServiceMetadata() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -418,13 +393,6 @@ func Test_nacosMetadataReport_SaveServiceMetadata(t *testing.T) {
 }
 
 func Test_nacosMetadataReport_RemoveServiceMetadata(t *testing.T) {
-	type fields struct {
-		client *nacosClient.NacosConfigClient
-	}
-	type args struct {
-		metadataIdentifier *identifier.ServiceMetadataIdentifier
-	}
-
 	ctrl := gomock.NewController(t)
 	mnc := NewMockIConfigClient(ctrl)
 	mnc.EXPECT().DeleteConfig(gomock.Any()).Return(true, nil)
@@ -443,17 +411,15 @@ func Test_nacosMetadataReport_RemoveServiceMetadata(t *testing.T) {
 				client: nc,
 			},
 			args: args{
-				metadataIdentifier: newServiceMetadataIdentifier(),
+				serviceMetadataIdentifier: newServiceMetadataIdentifier(),
 			},
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			n := &nacosMetadataReport{
-				client: tt.fields.client,
-			}
-			if err := n.RemoveServiceMetadata(tt.args.metadataIdentifier); (err != nil) != tt.wantErr {
+			n := newNacosMetadataReport(tt.fields)
+			if err := n.RemoveServiceMetadata(tt.args.serviceMetadataIdentifier); (err != nil) != tt.wantErr {
 				t.Errorf("RemoveServiceMetadata() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -461,14 +427,6 @@ func Test_nacosMetadataReport_RemoveServiceMetadata(t *testing.T) {
 }
 
 func Test_nacosMetadataReport_SaveSubscribedData(t *testing.T) {
-	type fields struct {
-		client *nacosClient.NacosConfigClient
-	}
-	type args struct {
-		subscriberMetadataIdentifier *identifier.SubscriberMetadataIdentifier
-		urls                         string
-	}
-
 	ctrl := gomock.NewController(t)
 	mnc := NewMockIConfigClient(ctrl)
 	mnc.EXPECT().PublishConfig(gomock.Any()).Return(true, nil)
@@ -495,9 +453,7 @@ func Test_nacosMetadataReport_SaveSubscribedData(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			n := &nacosMetadataReport{
-				client: tt.fields.client,
-			}
+			n := newNacosMetadataReport(tt.fields)
 			if err := n.SaveSubscribedData(tt.args.subscriberMetadataIdentifier, tt.args.urls); (err != nil) != tt.wantErr {
 				t.Errorf("SaveSubscribedData() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -506,15 +462,6 @@ func Test_nacosMetadataReport_SaveSubscribedData(t *testing.T) {
 }
 
 func Test_nacosMetadataReport_RegisterServiceAppMapping(t *testing.T) {
-	type fields struct {
-		client *nacosClient.NacosConfigClient
-	}
-	type args struct {
-		key   string
-		group string
-		value string
-	}
-
 	ctrl := gomock.NewController(t)
 	mnc := NewMockIConfigClient(ctrl)
 	mnc.EXPECT().GetConfig(gomock.Any()).Return("oldValue", nil)
@@ -542,9 +489,7 @@ func Test_nacosMetadataReport_RegisterServiceAppMapping(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			n := &nacosMetadataReport{
-				client: tt.fields.client,
-			}
+			n := newNacosMetadataReport(tt.fields)
 			if err := n.RegisterServiceAppMapping(tt.args.key, tt.args.group, tt.args.value); (err != nil) != tt.wantErr {
 				t.Errorf("RegisterServiceAppMapping() error = %v, wantErr %v", err, tt.wantErr)
 			}

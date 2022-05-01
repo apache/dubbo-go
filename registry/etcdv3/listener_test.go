@@ -31,23 +31,27 @@ type MockDataListener struct{}
 
 func (*MockDataListener) Process(configType *config_center.ConfigChangeEvent) {}
 
+type dataListenerFields struct {
+	interestedURL []*common.URL
+	listener      config_center.ConfigurationListener
+}
+
+func newDataListener(listenerFields dataListenerFields) *dataListener {
+	return &dataListener{
+		interestedURL: listenerFields.interestedURL,
+		listener:      listenerFields.listener,
+	}
+}
 func Test_dataListener_DataChange(t *testing.T) {
-	type fields struct {
-		interestedURL []*common.URL
-		listener      config_center.ConfigurationListener
-	}
-	type args struct {
-		eventType remoting.Event
-	}
 	tests := []struct {
 		name   string
-		fields fields
+		fields dataListenerFields
 		args   args
 		want   bool
 	}{
 		{
 			name: "test",
-			fields: fields{
+			fields: dataListenerFields{
 				interestedURL: nil,
 				listener:      &MockDataListener{},
 			},
@@ -61,10 +65,7 @@ func Test_dataListener_DataChange(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			l := &dataListener{
-				interestedURL: tt.fields.interestedURL,
-				listener:      tt.fields.listener,
-			}
+			l := newDataListener(tt.fields)
 			if got := l.DataChange(tt.args.eventType); got != tt.want {
 				t.Errorf("DataChange() = %v, want %v", got, tt.want)
 			}

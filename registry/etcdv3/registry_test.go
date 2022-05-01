@@ -20,7 +20,6 @@ package etcdv3
 
 import (
 	"reflect"
-	"strconv"
 	"sync"
 	"testing"
 )
@@ -29,49 +28,39 @@ import (
 	"github.com/agiledragon/gomonkey"
 
 	gxetcd "github.com/dubbogo/gost/database/kv/etcd/v3"
-
-	"github.com/stretchr/testify/assert"
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/registry"
+	"dubbo.apache.org/dubbo-go/v3/remoting"
 	"dubbo.apache.org/dubbo-go/v3/remoting/etcdv3"
 )
 
-func initRegistry(t *testing.T) *etcdV3Registry {
-	regurl, err := common.NewURL("registry://127.0.0.1:2379", common.WithParamsValue(constant.RegistryRoleKey, strconv.Itoa(common.PROVIDER)))
-	if err != nil {
-		t.Fatal(err)
-	}
+type fields struct {
+	BaseRegistry   registry.BaseRegistry
+	cltLock        sync.Mutex
+	client         *gxetcd.Client
+	listenerLock   sync.RWMutex
+	listener       *etcdv3.EventListener
+	dataListener   *dataListener
+	configListener *configurationListener
+}
+type args struct {
+	root      string
+	node      string
+	eventType remoting.Event
+}
 
-	reg, err := newETCDV3Registry(regurl)
-	if err != nil {
-		t.Fatal(err)
+func newEtcdV3Registry(f fields) *etcdV3Registry {
+	return &etcdV3Registry{
+		client:         f.client,
+		listener:       f.listener,
+		dataListener:   f.dataListener,
+		configListener: f.configListener,
 	}
-
-	out := reg.(*etcdV3Registry)
-	err = out.client.CleanKV()
-	assert.NoError(t, err)
-	return out
 }
 
 func Test_etcdV3Registry_DoRegister(t *testing.T) {
-	type fields struct {
-		BaseRegistry   registry.BaseRegistry
-		cltLock        sync.Mutex
-		client         *gxetcd.Client
-		listenerLock   sync.RWMutex
-		listener       *etcdv3.EventListener
-		dataListener   *dataListener
-		configListener *configurationListener
-	}
-	type args struct {
-		root string
-		node string
-	}
-
 	var client *gxetcd.Client
 	patches := gomonkey.NewPatches()
 	patches = patches.ApplyMethod(reflect.TypeOf(client), "RegisterTemp", func(_ *gxetcd.Client, k, v string) error {
@@ -99,15 +88,7 @@ func Test_etcdV3Registry_DoRegister(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r := &etcdV3Registry{
-				BaseRegistry:   tt.fields.BaseRegistry,
-				cltLock:        tt.fields.cltLock,
-				client:         tt.fields.client,
-				listenerLock:   tt.fields.listenerLock,
-				listener:       tt.fields.listener,
-				dataListener:   tt.fields.dataListener,
-				configListener: tt.fields.configListener,
-			}
+			r := newEtcdV3Registry(tt.fields)
 			if err := r.DoRegister(tt.args.root, tt.args.node); (err != nil) != tt.wantErr {
 				t.Errorf("DoRegister() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -116,19 +97,6 @@ func Test_etcdV3Registry_DoRegister(t *testing.T) {
 }
 
 func Test_etcdV3Registry_DoUnregister(t *testing.T) {
-	type fields struct {
-		BaseRegistry   registry.BaseRegistry
-		cltLock        sync.Mutex
-		client         *gxetcd.Client
-		listenerLock   sync.RWMutex
-		listener       *etcdv3.EventListener
-		dataListener   *dataListener
-		configListener *configurationListener
-	}
-	type args struct {
-		root string
-		node string
-	}
 	tests := []struct {
 		name    string
 		fields  fields
@@ -142,15 +110,7 @@ func Test_etcdV3Registry_DoUnregister(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r := &etcdV3Registry{
-				BaseRegistry:   tt.fields.BaseRegistry,
-				cltLock:        tt.fields.cltLock,
-				client:         tt.fields.client,
-				listenerLock:   tt.fields.listenerLock,
-				listener:       tt.fields.listener,
-				dataListener:   tt.fields.dataListener,
-				configListener: tt.fields.configListener,
-			}
+			r := newEtcdV3Registry(tt.fields)
 			if err := r.DoUnregister(tt.args.root, tt.args.node); (err != nil) != tt.wantErr {
 				t.Errorf("DoUnregister() error = %v, wantErr %v", err, tt.wantErr)
 			}

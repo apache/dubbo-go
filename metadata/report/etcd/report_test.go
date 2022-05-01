@@ -72,16 +72,30 @@ func newMetadataIdentifier(side string) *identifier.MetadataIdentifier {
 	}
 }
 
-func Test_etcdMetadataReport_PublishAppMetadata(t *testing.T) {
-	type fields struct {
-		client *gxetcd.Client
-		root   string
-	}
-	type args struct {
-		metadataIdentifier *identifier.SubscriberMetadataIdentifier
-		info               *common.MetadataInfo
-	}
+type fields struct {
+	client *gxetcd.Client
+	root   string
+}
+type args struct {
+	subscriberMetadataIdentifier *identifier.SubscriberMetadataIdentifier
+	info                         *common.MetadataInfo
+	providerIdentifier           *identifier.MetadataIdentifier
+	serviceDefinitions           string
+	consumerMetadataIdentifier   *identifier.MetadataIdentifier
+	serviceParameterString       string
+	serviceMetadataIdentifier    *identifier.ServiceMetadataIdentifier
+	url                          *common.URL
+	urls                         string
+}
 
+func newEtcdMetadataReport(f fields) *etcdMetadataReport {
+	return &etcdMetadataReport{
+		client: f.client,
+		root:   f.root,
+	}
+}
+
+func Test_etcdMetadataReport_PublishAppMetadata(t *testing.T) {
 	var client *gxetcd.Client
 	patches := gomonkey.NewPatches()
 	patches = patches.ApplyMethod(reflect.TypeOf(client), "Put", func(_ *gxetcd.Client, k, v string, opts ...clientv3.OpOption) error {
@@ -102,19 +116,16 @@ func Test_etcdMetadataReport_PublishAppMetadata(t *testing.T) {
 				root:   "/dubbo",
 			},
 			args: args{
-				metadataIdentifier: newSubscribeMetadataIdentifier(),
-				info:               &common.MetadataInfo{},
+				subscriberMetadataIdentifier: newSubscribeMetadataIdentifier(),
+				info:                         &common.MetadataInfo{},
 			},
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e := &etcdMetadataReport{
-				client: tt.fields.client,
-				root:   tt.fields.root,
-			}
-			if err := e.PublishAppMetadata(tt.args.metadataIdentifier, tt.args.info); (err != nil) != tt.wantErr {
+			e := newEtcdMetadataReport(tt.fields)
+			if err := e.PublishAppMetadata(tt.args.subscriberMetadataIdentifier, tt.args.info); (err != nil) != tt.wantErr {
 				t.Errorf("PublishAppMetadata() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -122,15 +133,6 @@ func Test_etcdMetadataReport_PublishAppMetadata(t *testing.T) {
 }
 
 func Test_etcdMetadataReport_StoreProviderMetadata(t *testing.T) {
-	type fields struct {
-		client *gxetcd.Client
-		root   string
-	}
-	type args struct {
-		providerIdentifier *identifier.MetadataIdentifier
-		serviceDefinitions string
-	}
-
 	var client *gxetcd.Client
 	patches := gomonkey.NewPatches()
 	patches = patches.ApplyMethod(reflect.TypeOf(client), "Put", func(_ *gxetcd.Client, k, v string, opts ...clientv3.OpOption) error {
@@ -159,10 +161,7 @@ func Test_etcdMetadataReport_StoreProviderMetadata(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e := &etcdMetadataReport{
-				client: tt.fields.client,
-				root:   tt.fields.root,
-			}
+			e := newEtcdMetadataReport(tt.fields)
 			if err := e.StoreProviderMetadata(tt.args.providerIdentifier, tt.args.serviceDefinitions); (err != nil) != tt.wantErr {
 				t.Errorf("StoreProviderMetadata() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -171,15 +170,6 @@ func Test_etcdMetadataReport_StoreProviderMetadata(t *testing.T) {
 }
 
 func Test_etcdMetadataReport_StoreConsumerMetadata(t *testing.T) {
-	type fields struct {
-		client *gxetcd.Client
-		root   string
-	}
-	type args struct {
-		consumerMetadataIdentifier *identifier.MetadataIdentifier
-		serviceParameterString     string
-	}
-
 	var client *gxetcd.Client
 	patches := gomonkey.NewPatches()
 	patches = patches.ApplyMethod(reflect.TypeOf(client), "Put", func(_ *gxetcd.Client, k, v string, opts ...clientv3.OpOption) error {
@@ -208,10 +198,7 @@ func Test_etcdMetadataReport_StoreConsumerMetadata(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e := &etcdMetadataReport{
-				client: tt.fields.client,
-				root:   tt.fields.root,
-			}
+			e := newEtcdMetadataReport(tt.fields)
 			if err := e.StoreConsumerMetadata(tt.args.consumerMetadataIdentifier, tt.args.serviceParameterString); (err != nil) != tt.wantErr {
 				t.Errorf("StoreConsumerMetadata() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -220,15 +207,6 @@ func Test_etcdMetadataReport_StoreConsumerMetadata(t *testing.T) {
 }
 
 func Test_etcdMetadataReport_SaveServiceMetadata(t *testing.T) {
-	type fields struct {
-		client *gxetcd.Client
-		root   string
-	}
-	type args struct {
-		metadataIdentifier *identifier.ServiceMetadataIdentifier
-		url                *common.URL
-	}
-
 	var client *gxetcd.Client
 	patches := gomonkey.NewPatches()
 	patches = patches.ApplyMethod(reflect.TypeOf(client), "Put", func(_ *gxetcd.Client, k, v string, opts ...clientv3.OpOption) error {
@@ -250,19 +228,16 @@ func Test_etcdMetadataReport_SaveServiceMetadata(t *testing.T) {
 				root:   "/dubbo",
 			},
 			args: args{
-				metadataIdentifier: newServiceMetadataIdentifier(),
-				url:                serviceURL,
+				serviceMetadataIdentifier: newServiceMetadataIdentifier(),
+				url:                       serviceURL,
 			},
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e := &etcdMetadataReport{
-				client: tt.fields.client,
-				root:   tt.fields.root,
-			}
-			if err := e.SaveServiceMetadata(tt.args.metadataIdentifier, tt.args.url); (err != nil) != tt.wantErr {
+			e := newEtcdMetadataReport(tt.fields)
+			if err := e.SaveServiceMetadata(tt.args.serviceMetadataIdentifier, tt.args.url); (err != nil) != tt.wantErr {
 				t.Errorf("SaveServiceMetadata() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -270,15 +245,6 @@ func Test_etcdMetadataReport_SaveServiceMetadata(t *testing.T) {
 }
 
 func Test_etcdMetadataReport_SaveSubscribedData(t *testing.T) {
-	type fields struct {
-		client *gxetcd.Client
-		root   string
-	}
-	type args struct {
-		subscriberMetadataIdentifier *identifier.SubscriberMetadataIdentifier
-		urls                         string
-	}
-
 	var client *gxetcd.Client
 	patches := gomonkey.NewPatches()
 	patches = patches.ApplyMethod(reflect.TypeOf(client), "Put", func(_ *gxetcd.Client, k, v string, opts ...clientv3.OpOption) error {
@@ -307,10 +273,7 @@ func Test_etcdMetadataReport_SaveSubscribedData(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e := &etcdMetadataReport{
-				client: tt.fields.client,
-				root:   tt.fields.root,
-			}
+			e := newEtcdMetadataReport(tt.fields)
 			if err := e.SaveSubscribedData(tt.args.subscriberMetadataIdentifier, tt.args.urls); (err != nil) != tt.wantErr {
 				t.Errorf("SaveSubscribedData() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -319,14 +282,6 @@ func Test_etcdMetadataReport_SaveSubscribedData(t *testing.T) {
 }
 
 func Test_etcdMetadataReport_RemoveServiceMetadata(t *testing.T) {
-	type fields struct {
-		client *gxetcd.Client
-		root   string
-	}
-	type args struct {
-		metadataIdentifier *identifier.ServiceMetadataIdentifier
-	}
-
 	var client *gxetcd.Client
 	patches := gomonkey.NewPatches()
 	patches = patches.ApplyMethod(reflect.TypeOf(client), "Delete", func(_ *gxetcd.Client, k string) error {
@@ -347,18 +302,15 @@ func Test_etcdMetadataReport_RemoveServiceMetadata(t *testing.T) {
 				root:   DEFAULT_ROOT,
 			},
 			args: args{
-				metadataIdentifier: newServiceMetadataIdentifier(),
+				serviceMetadataIdentifier: newServiceMetadataIdentifier(),
 			},
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e := &etcdMetadataReport{
-				client: tt.fields.client,
-				root:   tt.fields.root,
-			}
-			if err := e.RemoveServiceMetadata(tt.args.metadataIdentifier); (err != nil) != tt.wantErr {
+			e := newEtcdMetadataReport(tt.fields)
+			if err := e.RemoveServiceMetadata(tt.args.serviceMetadataIdentifier); (err != nil) != tt.wantErr {
 				t.Errorf("RemoveServiceMetadata() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -366,14 +318,6 @@ func Test_etcdMetadataReport_RemoveServiceMetadata(t *testing.T) {
 }
 
 func Test_etcdMetadataReport_GetAppMetadata(t *testing.T) {
-	type fields struct {
-		client *gxetcd.Client
-		root   string
-	}
-	type args struct {
-		metadataIdentifier *identifier.SubscriberMetadataIdentifier
-	}
-
 	info := &common.MetadataInfo{}
 	target, _ := json.Marshal(info)
 	var client *gxetcd.Client
@@ -397,7 +341,7 @@ func Test_etcdMetadataReport_GetAppMetadata(t *testing.T) {
 				root:   DEFAULT_ROOT,
 			},
 			args: args{
-				metadataIdentifier: newSubscribeMetadataIdentifier(),
+				subscriberMetadataIdentifier: newSubscribeMetadataIdentifier(),
 			},
 			want:    &common.MetadataInfo{},
 			wantErr: false,
@@ -405,11 +349,8 @@ func Test_etcdMetadataReport_GetAppMetadata(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e := &etcdMetadataReport{
-				client: tt.fields.client,
-				root:   tt.fields.root,
-			}
-			got, err := e.GetAppMetadata(tt.args.metadataIdentifier)
+			e := newEtcdMetadataReport(tt.fields)
+			got, err := e.GetAppMetadata(tt.args.subscriberMetadataIdentifier)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetAppMetadata() error = %v, wantErr %v", err, tt.wantErr)
 				return

@@ -152,24 +152,35 @@ func (mr *MockIConfigClientMockRecorder) PublishAggr(param interface{}) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PublishAggr", reflect.TypeOf((*MockIConfigClient)(nil).PublishAggr), param)
 }
 
-func Test_nacosDynamicConfiguration_PublishConfig(t *testing.T) {
-	type fields struct {
-		BaseDynamicConfiguration config_center.BaseDynamicConfiguration
-		url                      *common.URL
-		rootPath                 string
-		wg                       sync.WaitGroup
-		cltLock                  sync.Mutex
-		done                     chan struct{}
-		client                   *nacosClient.NacosConfigClient
-		keyListeners             sync.Map
-		parser                   parser.ConfigurationParser
-	}
-	type args struct {
-		key   string
-		group string
-		value string
-	}
+type fields struct {
+	BaseDynamicConfiguration config_center.BaseDynamicConfiguration
+	url                      *common.URL
+	rootPath                 string
+	wg                       sync.WaitGroup
+	cltLock                  sync.Mutex
+	done                     chan struct{}
+	client                   *nacosClient.NacosConfigClient
+	keyListeners             sync.Map
+	parser                   parser.ConfigurationParser
+}
+type args struct {
+	key   string
+	group string
+	value string
+}
 
+func newnNacosDynamicConfiguration(f fields) *nacosDynamicConfiguration {
+	return &nacosDynamicConfiguration{
+		BaseDynamicConfiguration: f.BaseDynamicConfiguration,
+		url:                      f.url,
+		rootPath:                 f.rootPath,
+		done:                     f.done,
+		client:                   f.client,
+		parser:                   f.parser,
+	}
+}
+
+func Test_nacosDynamicConfiguration_PublishConfig(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	mnc := NewMockIConfigClient(ctrl)
 	mnc.EXPECT().PublishConfig(gomock.Any()).Return(true, nil)
@@ -197,17 +208,7 @@ func Test_nacosDynamicConfiguration_PublishConfig(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			n := &nacosDynamicConfiguration{
-				BaseDynamicConfiguration: tt.fields.BaseDynamicConfiguration,
-				url:                      tt.fields.url,
-				rootPath:                 tt.fields.rootPath,
-				wg:                       tt.fields.wg,
-				cltLock:                  tt.fields.cltLock,
-				done:                     tt.fields.done,
-				client:                   tt.fields.client,
-				keyListeners:             tt.fields.keyListeners,
-				parser:                   tt.fields.parser,
-			}
+			n := newnNacosDynamicConfiguration(tt.fields)
 			if err := n.PublishConfig(tt.args.key, tt.args.group, tt.args.value); (err != nil) != tt.wantErr {
 				t.Errorf("PublishConfig() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -216,21 +217,6 @@ func Test_nacosDynamicConfiguration_PublishConfig(t *testing.T) {
 }
 
 func Test_nacosDynamicConfiguration_GetConfigKeysByGroup(t *testing.T) {
-	type fields struct {
-		BaseDynamicConfiguration config_center.BaseDynamicConfiguration
-		url                      *common.URL
-		rootPath                 string
-		wg                       sync.WaitGroup
-		cltLock                  sync.Mutex
-		done                     chan struct{}
-		client                   *nacosClient.NacosConfigClient
-		keyListeners             sync.Map
-		parser                   parser.ConfigurationParser
-	}
-	type args struct {
-		group string
-	}
-
 	cp := &model.ConfigPage{
 		PageItems: []model.ConfigItem{
 			{
@@ -267,17 +253,7 @@ func Test_nacosDynamicConfiguration_GetConfigKeysByGroup(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			n := &nacosDynamicConfiguration{
-				BaseDynamicConfiguration: tt.fields.BaseDynamicConfiguration,
-				url:                      tt.fields.url,
-				rootPath:                 tt.fields.rootPath,
-				wg:                       tt.fields.wg,
-				cltLock:                  tt.fields.cltLock,
-				done:                     tt.fields.done,
-				client:                   tt.fields.client,
-				keyListeners:             tt.fields.keyListeners,
-				parser:                   tt.fields.parser,
-			}
+			n := newnNacosDynamicConfiguration(tt.fields)
 			got, err := n.GetConfigKeysByGroup(tt.args.group)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetConfigKeysByGroup() error = %v, wantErr %v", err, tt.wantErr)

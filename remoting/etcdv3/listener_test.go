@@ -26,10 +26,11 @@ import (
 	gxetcd "github.com/dubbogo/gost/database/kv/etcd/v3"
 )
 
+type args struct {
+	client *gxetcd.Client
+}
+
 func TestNewEventListener(t *testing.T) {
-	type args struct {
-		client *gxetcd.Client
-	}
 	tests := []struct {
 		name string
 		args args

@@ -50,11 +50,12 @@ func getRegURL() *common.URL {
 	return regURL
 }
 
-func TestNewNacosClientByURL(t *testing.T) {
-	type args struct {
-		url *common.URL
-	}
+type args struct {
+	url *common.URL
+	rc  *config.RemoteConfig
+}
 
+func TestNewNacosClientByURL(t *testing.T) {
 	patches := gomonkey.NewPatches()
 	patches = patches.ApplyFunc(nacosClient.NewNacosNamingClient, func(name string, share bool, sc []nacosConstant.ServerConfig,
 		cc nacosConstant.ClientConfig) (*nacosClient.NacosNamingClient, error) {
@@ -92,10 +93,6 @@ func TestNewNacosClientByURL(t *testing.T) {
 }
 
 func TestNewNacosClient(t *testing.T) {
-	type args struct {
-		rc *config.RemoteConfig
-	}
-
 	patches := gomonkey.NewPatches()
 	patches = patches.ApplyFunc(nacosClient.NewNacosNamingClient, func(name string, share bool, sc []nacosConstant.ServerConfig,
 		cc nacosConstant.ClientConfig) (*nacosClient.NacosNamingClient, error) {
@@ -139,9 +136,6 @@ func TestNewNacosClient(t *testing.T) {
 }
 
 func TestGetNacosConfig(t *testing.T) {
-	type args struct {
-		url *common.URL
-	}
 	tests := []struct {
 		name    string
 		args    args
@@ -179,10 +173,6 @@ func TestGetNacosConfig(t *testing.T) {
 }
 
 func TestNewNacosConfigClientByUrl(t *testing.T) {
-	type args struct {
-		url *common.URL
-	}
-
 	patches := gomonkey.NewPatches()
 	patches = patches.ApplyFunc(nacosClient.NewNacosNamingClient, func(name string, share bool, sc []nacosConstant.ServerConfig,
 		cc nacosConstant.ClientConfig) (*nacosClient.NacosNamingClient, error) {
