@@ -137,18 +137,24 @@ func GetXDSWrappedClient() *WrappedClientImpl {
 }
 
 // NewXDSWrappedClient create or get singleton xdsWrappedClient
-func NewXDSWrappedClient(podName, namespace, localIP string, istioAddr xdsCommon.HostAddr) (XDSWrapperClient, error) {
+func NewXDSWrappedClient(config Config) (XDSWrapperClient, error) {
 	// todo @(laurence) safety problem? what if to concurrent 'new' both create new client?
 	if xdsWrappedClient != nil {
 		return xdsWrappedClient, nil
 	}
+	if config.SniffingTimeout == 0 {
+		config.SniffingTimeout, _ = time.ParseDuration(constant.DefaultRegTimeout)
+	}
+	if config.DebugPort == "" {
+		config.DebugPort = "8080"
+	}
 
 	// write param
 	newClient := &WrappedClientImpl{
-		podName:    podName,
-		namespace:  namespace,
-		localIP:    localIP,
-		istiodAddr: istioAddr,
+		podName:    config.PodName,
+		namespace:  config.Namespace,
+		localIP:    config.LocalIP,
+		istiodAddr: config.IstioAddr,
 
 		rdsMap: make(map[string]resource.RouteConfigUpdate),
 		cdsMap: make(map[string]resource.ClusterUpdate),
@@ -159,7 +165,7 @@ func NewXDSWrappedClient(podName, namespace, localIP string, istioAddr xdsCommon
 		cdsUpdateEventChan:     make(chan struct{}),
 		cdsUpdateEventHandlers: make([]func(), 0),
 
-		xdsSniffingTimeout: time.Hour,
+		xdsSniffingTimeout: config.SniffingTimeout,
 	}
 
 	// 1. init xdsclient
@@ -171,7 +177,7 @@ func NewXDSWrappedClient(podName, namespace, localIP string, istioAddr xdsCommon
 	go newClient.runWatchingCdsUpdateEvent()
 
 	// 3. load basic info from istiod and start listening cds
-	if err := newClient.startWatchingAllClusterAndLoadLocalHostAddrAndIstioPodIP(); err != nil {
+	if err := newClient.startWatchingAllClusterAndLoadLocalHostAddrAndIstioPodIP(config.LocalDebugMode); err != nil {
 		return nil, err
 	}
 
@@ -179,8 +185,8 @@ func NewXDSWrappedClient(podName, namespace, localIP string, istioAddr xdsCommon
 	newClient.interfaceMapHandler = mapping.NewInterfaceMapHandlerImpl(
 		newClient.xdsClient,
 		defaultIstiodTokenPath,
-		xdsCommon.NewHostNameOrIPAddr(newClient.istiodPodIP+":"+defaultIstiodDebugPort),
-		newClient.hostAddr)
+		xdsCommon.NewHostNameOrIPAddr(newClient.istiodPodIP+":"+config.DebugPort),
+		newClient.hostAddr, config.LocalDebugMode)
 
 	xdsWrappedClient = newClient
 	return newClient, nil
@@ -381,7 +387,7 @@ func (w *WrappedClientImpl) initXDSClient() error {
 // 1. start watching all cluster by cds
 // 2. discovery local pod's hostAddr by cds and eds
 // 3. discovery istiod pod ip by cds and eds
-func (w *WrappedClientImpl) startWatchingAllClusterAndLoadLocalHostAddrAndIstioPodIP() error {
+func (w *WrappedClientImpl) startWatchingAllClusterAndLoadLocalHostAddrAndIstioPodIP(localDebugMode bool) error {
 	// call watch and refresh istiod debug interface
 	foundLocalStopCh := make(chan struct{})
 	foundIstiodStopCh := make(chan struct{})
@@ -459,6 +465,17 @@ func (w *WrappedClientImpl) startWatchingAllClusterAndLoadLocalHostAddrAndIstioP
 			}
 		})
 	})
+
+	if localDebugMode {
+		go func() {
+			<-foundIstiodStopCh
+			<-foundLocalStopCh
+			cancel1()
+			cancel2()
+		}()
+		return nil
+	}
+
 	go func() {
 		<-foundIstiodStopCh
 		<-foundLocalStopCh

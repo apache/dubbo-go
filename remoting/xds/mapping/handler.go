@@ -64,6 +64,7 @@ type InterfaceMapHandlerImpl struct {
 	*/
 	interfaceNameHostAddrMap     map[string]string
 	interfaceNameHostAddrMapLock sync.RWMutex
+	localDebugMode               bool
 }
 
 func (i *InterfaceMapHandlerImpl) UnRegister(serviceUniqueKey string) error {
@@ -122,11 +123,13 @@ func (i *InterfaceMapHandlerImpl) GetHostAddrMap(serviceUniqueKey string) (strin
 // 'dubbo-go-app.default.svc.cluster.local:20000'
 func (i *InterfaceMapHandlerImpl) getServiceUniqueKeyHostAddrMapFromPilot() (map[string]string, error) {
 	req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("http://%s/debug/adsz", i.istioDebugAddr.String()), nil)
-	token, err := ioutil.ReadFile(i.istioTokenPath)
-	if err != nil {
-		return nil, err
+	if !i.localDebugMode {
+		token, err := ioutil.ReadFile(i.istioTokenPath)
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Add(authorizationHeader, istiodTokenPrefix+string(token))
 	}
-	req.Header.Add(authorizationHeader, istiodTokenPrefix+string(token))
 	rsp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		logger.Infof("[XDS Wrapped Client] Try getting interface host map from istio IP %s with error %s\n",
@@ -152,7 +155,7 @@ func (i *InterfaceMapHandlerImpl) interfaceAppNameMap2DubboGoMetadata() *structp
 	return GetDubboGoMetadata(string(data))
 }
 
-func NewInterfaceMapHandlerImpl(xdsClient client.XDSClient, istioTokenPath string, istioDebugAddr, hostAddr common.HostAddr) InterfaceMapHandler {
+func NewInterfaceMapHandlerImpl(xdsClient client.XDSClient, istioTokenPath string, istioDebugAddr, hostAddr common.HostAddr, localDebugMode bool) InterfaceMapHandler {
 	return &InterfaceMapHandlerImpl{
 		xdsClient:                xdsClient,
 		interfaceAppNameMap:      map[string]string{},
@@ -160,6 +163,7 @@ func NewInterfaceMapHandlerImpl(xdsClient client.XDSClient, istioTokenPath strin
 		istioDebugAddr:           istioDebugAddr,
 		hostAddr:                 hostAddr,
 		istioTokenPath:           istioTokenPath,
+		localDebugMode:           localDebugMode,
 	}
 }
 
