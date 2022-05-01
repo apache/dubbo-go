@@ -467,8 +467,10 @@ func (w *WrappedClientImpl) startWatchingAllClusterAndLoadLocalHostAddrAndIstioP
 		time.Sleep(time.Second)
 		cancel1()
 		cancel2()
+		logger.Infof("[XDS Wrapper Client] Sniffing Finished with host addr = %s, istiod pod ip = %s", w.hostAddr, w.istiodPodIP)
 		return nil
 	case <-timeoutCh:
+		logger.Warnf("[XDS Wrapper Client] Sniffing timeout with duration = %v", w.xdsSniffingTimeout)
 		if cancel1 != nil {
 			cancel1()
 		}
