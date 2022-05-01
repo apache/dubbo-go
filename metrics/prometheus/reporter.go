@@ -212,7 +212,7 @@ func newPrometheusReporter(reporterConfig *metrics.ReporterConfig) metrics.Repor
 	if reporterInstance == nil {
 		reporterInitOnce.Do(func() {
 			reporterInstance = &PrometheusReporter{
-				namespace:          reporterConfig.Namespace,
+				namespace:            reporterConfig.Namespace,
 				consumerRTSummaryVec: newSummaryVec(consumerPrefix+serviceKey+rtSuffix, reporterConfig.Namespace, labelNames),
 				providerRTSummaryVec: newSummaryVec(providerPrefix+serviceKey+rtSuffix, reporterConfig.Namespace, labelNames),
 			}
