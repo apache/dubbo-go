@@ -80,8 +80,8 @@ func (i *InterfaceMapHandlerImpl) Register(serviceUniqueKey string) error {
 	return i.xdsClient.SetMetadata(i.interfaceAppNameMap2DubboGoMetadata())
 }
 
-func (i *InterfaceMapHandlerImpl) GetDubboGoMetadata() map[string]string {
-	return i.interfaceNameHostAddrMap
+func (i *InterfaceMapHandlerImpl) GetDubboGoMetadata() (map[string]string, error) {
+	return i.getServiceUniqueKeyHostAddrMapFromPilot()
 }
 
 func (i *InterfaceMapHandlerImpl) GetHostAddrMap(serviceUniqueKey string) (string, error) {
@@ -167,5 +167,5 @@ type InterfaceMapHandler interface {
 	Register(string) error
 	UnRegister(string) error
 	GetHostAddrMap(string) (string, error)
-	GetDubboGoMetadata() map[string]string
+	GetDubboGoMetadata() (map[string]string, error)
 }

@@ -192,7 +192,7 @@ func (w *WrappedClientImpl) GetHostAddrByServiceUniqueKey(serviceUniqueKey strin
 }
 
 // GetDubboGoMetadata get all registered metadata of dubbogo
-func (w *WrappedClientImpl) GetDubboGoMetadata() map[string]string {
+func (w *WrappedClientImpl) GetDubboGoMetadata() (map[string]string, error) {
 	return w.interfaceMapHandler.GetDubboGoMetadata()
 }
 
@@ -526,7 +526,7 @@ type XDSWrapperClient interface {
 	UnSubscribe(svcUniqueName string)
 	GetRouterConfig(hostAddr string) resource.RouteConfigUpdate
 	GetHostAddrByServiceUniqueKey(serviceUniqueKey string) (string, error)
-	GetDubboGoMetadata() map[string]string
+	GetDubboGoMetadata() (map[string]string, error)
 	ChangeInterfaceMap(serviceUniqueKey string, add bool) error
 	GetClusterUpdateIgnoreVersion(hostAddr string) resource.ClusterUpdate
 	GetHostAddress() xdsCommon.HostAddr
