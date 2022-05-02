@@ -21,7 +21,7 @@ require (
 	github.com/dubbogo/triple v1.1.8
 	github.com/emicklei/go-restful/v3 v3.7.4
 	github.com/envoyproxy/go-control-plane v0.10.1
-	github.com/fsnotify/fsnotify v1.5.3
+	github.com/fsnotify/fsnotify v1.5.4
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-co-op/gocron v1.9.0
 	github.com/go-playground/validator/v10 v10.10.1
