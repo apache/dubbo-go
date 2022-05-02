@@ -18,6 +18,7 @@
 package xds
 
 import (
+	"errors"
 	"sync"
 	"time"
 )
@@ -28,12 +29,14 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	xdsCommon "dubbo.apache.org/dubbo-go/v3/remoting/xds/common"
 	"dubbo.apache.org/dubbo-go/v3/remoting/xds/ewatcher"
 	"dubbo.apache.org/dubbo-go/v3/remoting/xds/mapping"
 	"dubbo.apache.org/dubbo-go/v3/xds/client"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
+	"dubbo.apache.org/dubbo-go/v3/xds/utils/resolver"
 )
 
 const (
@@ -498,6 +501,28 @@ func (w *WrappedClientImpl) getAllVersionClusterName(hostAddr string) []string {
 	return allVersionClusterNames
 }
 
+func (w *WrappedClientImpl) MatchRoute(routerConfig resource.RouteConfigUpdate, invocation protocol.Invocation) (*resource.Route, error) {
+	ctx := invocation.GetAttachmentAsContext()
+	rpcInfo := resolver.RPCInfo{
+		Context: ctx,
+		Method:  "/" + invocation.MethodName(),
+	}
+	// try to route to sub virtual host
+	for _, vh := range routerConfig.VirtualHosts {
+		for _, r := range vh.Routes {
+			//route.
+			matcher, err := resource.RouteToMatcher(r)
+			if err != nil {
+				return nil, err
+			}
+			if matcher.Match(rpcInfo) {
+				return r, nil
+			}
+		}
+	}
+	return nil, errors.New("not found route")
+}
+
 type XDSWrapperClient interface {
 	Subscribe(svcUniqueName, interfaceName, hostAddr string, lst registry.NotifyListener) error
 	UnSubscribe(svcUniqueName string)
@@ -507,4 +532,5 @@ type XDSWrapperClient interface {
 	GetClusterUpdateIgnoreVersion(hostAddr string) resource.ClusterUpdate
 	GetHostAddress() xdsCommon.HostAddr
 	GetIstioPodIP() string
+	MatchRoute(routerConfig resource.RouteConfigUpdate, invocation protocol.Invocation) (*resource.Route, error)
 }
