@@ -1,6 +1,13 @@
 # Release Notes
 ---
 
+## 1.5.8
+
+### Bugfixes
+
+- [fix bug](https://github.com/apache/dubbo-go/pull/1662)
+- [decode net stream bytes as getty rule](https://github.com/apache/dubbo-go/pull/1833)
+
 ## 1.5.8-rc1
 
 ### New Features
