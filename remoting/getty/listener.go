@@ -278,13 +278,6 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 	}
 	resp.Result = result
 
-	if result.Err != nil {
-		// This error is caused by two way:
-		// 1. Service invoke success and return error.
-		// 2. Service invoke fail and generate panic, but user don't handle this panic.
-		resp.Status = hessian.Response_SERVER_ERROR
-	}
-
 	reply(session, resp)
 }
 
