@@ -27,11 +27,9 @@ import (
 )
 
 import (
-	perrors "github.com/pkg/errors"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
+
+	perrors "github.com/pkg/errors"
 )
 
 // RPCService the type alias of interface{}

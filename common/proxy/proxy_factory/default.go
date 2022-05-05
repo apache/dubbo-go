@@ -24,16 +24,14 @@ import (
 )
 
 import (
-	perrors "github.com/pkg/errors"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/common/proxy"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
+
+	perrors "github.com/pkg/errors"
 )
 
 func init() {
@@ -67,6 +65,7 @@ func (factory *DefaultProxyFactory) GetAsyncProxy(invoker protocol.Invoker, call
 	// create proxy
 	attachments := map[string]string{}
 	attachments[constant.AsyncKey] = url.GetParam(constant.AsyncKey, "false")
+	attachments[constant.EnvironmentKey] = url.GetParam(constant.EnvironmentKey, "dev")
 	return proxy.NewProxy(invoker, callBack, attachments)
 }
 

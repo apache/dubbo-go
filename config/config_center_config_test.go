@@ -22,12 +22,10 @@ import (
 )
 
 import (
-	"github.com/stretchr/testify/assert"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	_ "dubbo.apache.org/dubbo-go/v3/config_center/apollo"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestApolloConfigCenterConfig(t *testing.T) {

@@ -24,16 +24,14 @@ import (
 )
 
 import (
-	hessian "github.com/apache/dubbo-go-hessian2"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	invocation2 "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+
+	hessian "github.com/apache/dubbo-go-hessian2"
 )
 
 var (

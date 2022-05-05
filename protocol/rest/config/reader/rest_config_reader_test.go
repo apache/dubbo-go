@@ -19,16 +19,14 @@ package reader
 
 import (
 	"bytes"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"testing"
 )
 
 import (
-	"github.com/stretchr/testify/assert"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common/yaml"
+	"dubbo.apache.org/dubbo-go/v3/config"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestRestConfigReaderReadConsumerConfig(t *testing.T) {

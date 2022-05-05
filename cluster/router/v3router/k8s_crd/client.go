@@ -23,6 +23,8 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -35,10 +37,6 @@ import (
 	"k8s.io/client-go/rest"
 
 	"k8s.io/client-go/tools/cache"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
 )
 
 type Client struct {

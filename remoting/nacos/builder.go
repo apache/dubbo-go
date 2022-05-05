@@ -25,18 +25,16 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/config"
+
 	nacosClient "github.com/dubbogo/gost/database/kv/nacos"
 
 	nacosConstant "github.com/nacos-group/nacos-sdk-go/common/constant"
 
 	perrors "github.com/pkg/errors"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
-	"dubbo.apache.org/dubbo-go/v3/config"
 )
 
 // NewNacosConfigClientByUrl read the config from url and build an instance
@@ -87,22 +85,23 @@ func GetNacosConfig(url *common.URL) ([]nacosConstant.ServerConfig, nacosConstan
 	timeout := url.GetParamDuration(constant.NacosTimeout, constant.DefaultRegTimeout)
 
 	clientConfig := nacosConstant.ClientConfig{
-		TimeoutMs:           uint64(int32(timeout / time.Millisecond)),
-		NamespaceId:         url.GetParam(constant.NacosNamespaceID, ""),
-		Username:            url.GetParam(constant.NacosUsername, ""),
-		Password:            url.GetParam(constant.NacosPassword, ""),
-		BeatInterval:        url.GetParamInt(constant.NacosBeatIntervalKey, 5000),
-		AppName:             url.GetParam(constant.NacosAppNameKey, ""),
-		Endpoint:            url.GetParam(constant.NacosEndpoint, ""),
-		RegionId:            url.GetParam(constant.NacosRegionIDKey, ""),
-		AccessKey:           url.GetParam(constant.NacosAccessKey, ""),
-		SecretKey:           url.GetParam(constant.NacosSecretKey, ""),
-		OpenKMS:             url.GetParamBool(constant.NacosOpenKmsKey, false),
-		CacheDir:            url.GetParam(constant.NacosCacheDirKey, ""),
-		UpdateThreadNum:     url.GetParamByIntValue(constant.NacosUpdateThreadNumKey, 20),
-		NotLoadCacheAtStart: url.GetParamBool(constant.NacosNotLoadLocalCache, true),
-		LogDir:              url.GetParam(constant.NacosLogDirKey, ""),
-		LogLevel:            url.GetParam(constant.NacosLogLevelKey, "info"),
+		TimeoutMs:            uint64(int32(timeout / time.Millisecond)),
+		NamespaceId:          url.GetParam(constant.NacosNamespaceID, ""),
+		Username:             url.GetParam(constant.NacosUsername, ""),
+		Password:             url.GetParam(constant.NacosPassword, ""),
+		BeatInterval:         url.GetParamInt(constant.NacosBeatIntervalKey, 5000),
+		AppName:              url.GetParam(constant.NacosAppNameKey, ""),
+		Endpoint:             url.GetParam(constant.NacosEndpoint, ""),
+		RegionId:             url.GetParam(constant.NacosRegionIDKey, ""),
+		AccessKey:            url.GetParam(constant.NacosAccessKey, ""),
+		SecretKey:            url.GetParam(constant.NacosSecretKey, ""),
+		OpenKMS:              url.GetParamBool(constant.NacosOpenKmsKey, false),
+		CacheDir:             url.GetParam(constant.NacosCacheDirKey, ""),
+		UpdateThreadNum:      url.GetParamByIntValue(constant.NacosUpdateThreadNumKey, 20),
+		NotLoadCacheAtStart:  url.GetParamBool(constant.NacosNotLoadLocalCache, true),
+		LogDir:               url.GetParam(constant.NacosLogDirKey, ""),
+		LogLevel:             url.GetParam(constant.NacosLogLevelKey, "info"),
+		UpdateCacheWhenEmpty: url.GetParamBool(constant.NacosUpdateCacheWhenEmpty, false),
 	}
 	return serverConfigs, clientConfig, nil
 }

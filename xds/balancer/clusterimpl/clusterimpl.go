@@ -36,6 +36,16 @@ import (
 )
 
 import (
+	dubboLogger "dubbo.apache.org/dubbo-go/v3/common/logger"
+	internal "dubbo.apache.org/dubbo-go/v3/xds"
+	"dubbo.apache.org/dubbo-go/v3/xds/balancer/loadstore"
+	"dubbo.apache.org/dubbo-go/v3/xds/client"
+	"dubbo.apache.org/dubbo-go/v3/xds/client/load"
+	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
+	"dubbo.apache.org/dubbo-go/v3/xds/utils/buffer"
+	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpcsync"
+	"dubbo.apache.org/dubbo-go/v3/xds/utils/pretty"
+
 	"google.golang.org/grpc/balancer"
 
 	"google.golang.org/grpc/connectivity"
@@ -43,18 +53,6 @@ import (
 	"google.golang.org/grpc/resolver"
 
 	"google.golang.org/grpc/serviceconfig"
-)
-
-import (
-	internal "dubbo.apache.org/dubbo-go/v3/xds"
-	"dubbo.apache.org/dubbo-go/v3/xds/balancer/loadstore"
-	"dubbo.apache.org/dubbo-go/v3/xds/client"
-	"dubbo.apache.org/dubbo-go/v3/xds/client/load"
-	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
-	"dubbo.apache.org/dubbo-go/v3/xds/utils/buffer"
-	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpclog"
-	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpcsync"
-	"dubbo.apache.org/dubbo-go/v3/xds/utils/pretty"
 )
 
 const (
@@ -80,7 +78,7 @@ func (bb) Build(cc balancer.ClientConn, bOpts balancer.BuildOptions) balancer.Ba
 		pickerUpdateCh:  buffer.NewUnbounded(),
 		requestCountMax: defaultRequestCountMax,
 	}
-	b.logger = prefixLogger(b)
+	b.logger = dubboLogger.GetLogger()
 	go b.run()
 	b.logger.Infof("Created")
 	return b
@@ -110,7 +108,7 @@ type clusterImplBalancer struct {
 	done   *grpcsync.Event
 
 	bOpts     balancer.BuildOptions
-	logger    *grpclog.PrefixLogger
+	logger    dubboLogger.Logger
 	xdsClient client.XDSClient
 
 	config           *LBConfig
@@ -229,7 +227,7 @@ func (b *clusterImplBalancer) updateLoadStore(newConfig *LBConfig) error {
 
 func (b *clusterImplBalancer) UpdateClientConnState(s balancer.ClientConnState) error {
 	if b.closed.HasFired() {
-		b.logger.Warningf("xds: received ClientConnState {%+v} after clusterImplBalancer was closed", s)
+		b.logger.Warnf("xds: received ClientConnState {%+v} after clusterImplBalancer was closed", s)
 		return nil
 	}
 
@@ -295,7 +293,7 @@ func (b *clusterImplBalancer) UpdateClientConnState(s balancer.ClientConnState) 
 
 func (b *clusterImplBalancer) ResolverError(err error) {
 	if b.closed.HasFired() {
-		b.logger.Warningf("xds: received resolver error {%+v} after clusterImplBalancer was closed", err)
+		b.logger.Warnf("xds: received resolver error {%+v} after clusterImplBalancer was closed", err)
 		return
 	}
 
@@ -306,7 +304,7 @@ func (b *clusterImplBalancer) ResolverError(err error) {
 
 func (b *clusterImplBalancer) UpdateSubConnState(sc balancer.SubConn, s balancer.SubConnState) {
 	if b.closed.HasFired() {
-		b.logger.Warningf("xds: received subconn state change {%+v, %+v} after clusterImplBalancer was closed", sc, s)
+		b.logger.Warnf("xds: received subconn state change {%+v, %+v} after clusterImplBalancer was closed", sc, s)
 		return
 	}
 

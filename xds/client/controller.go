@@ -24,16 +24,14 @@
 package client
 
 import (
-	_struct "github.com/golang/protobuf/ptypes/struct"
-)
-
-import (
+	dubboLogger "dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/bootstrap"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/controller"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/load"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/pubsub"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
-	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpclog"
+
+	_struct "github.com/golang/protobuf/ptypes/struct"
 )
 
 type controllerInterface interface {
@@ -44,6 +42,6 @@ type controllerInterface interface {
 	Close()
 }
 
-var newController = func(config *bootstrap.ServerConfig, pubsub *pubsub.Pubsub, validator resource.UpdateValidatorFunc, logger *grpclog.PrefixLogger) (controllerInterface, error) {
+var newController = func(config *bootstrap.ServerConfig, pubsub *pubsub.Pubsub, validator resource.UpdateValidatorFunc, logger dubboLogger.Logger) (controllerInterface, error) {
 	return controller.New(config, pubsub, validator, logger)
 }

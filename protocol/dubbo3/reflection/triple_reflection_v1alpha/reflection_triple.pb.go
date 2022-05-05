@@ -29,18 +29,16 @@ import (
 )
 
 import (
+	protocol "dubbo.apache.org/dubbo-go/v3/protocol"
+	dubbo3 "dubbo.apache.org/dubbo-go/v3/protocol/dubbo3"
+	invocation "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+
 	grpc_go "github.com/dubbogo/grpc-go"
 	codes "github.com/dubbogo/grpc-go/codes"
 	status "github.com/dubbogo/grpc-go/status"
 
 	constant "github.com/dubbogo/triple/pkg/common/constant"
 	triple "github.com/dubbogo/triple/pkg/triple"
-)
-
-import (
-	protocol "dubbo.apache.org/dubbo-go/v3/protocol"
-	dubbo3 "dubbo.apache.org/dubbo-go/v3/protocol/dubbo3"
-	invocation "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
 // This is a compile-time assertion to ensure that this generated file

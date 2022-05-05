@@ -24,13 +24,11 @@ import (
 )
 
 import (
-	uberAtomic "go.uber.org/atomic"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
+
+	uberAtomic "go.uber.org/atomic"
 )
 
 var (

@@ -24,12 +24,10 @@
 package pubsub
 
 import (
-	"google.golang.org/protobuf/proto"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/pretty"
+
+	"google.golang.org/protobuf/proto"
 )
 
 type watcherInfoWithUpdate struct {

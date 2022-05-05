@@ -33,11 +33,9 @@ import (
 )
 
 import (
-	v3matcherpb "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpcutil"
+
+	v3matcherpb "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 )
 
 // StringMatcher contains match criteria for matching a string, and is an

@@ -36,20 +36,18 @@ import (
 )
 
 import (
+	dubboLogger "dubbo.apache.org/dubbo-go/v3/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/xds/client/bootstrap"
+	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
+	internalbackoff "dubbo.apache.org/dubbo-go/v3/xds/utils/backoff"
+	"dubbo.apache.org/dubbo-go/v3/xds/utils/envconfig"
+	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpcsync"
+
 	"google.golang.org/grpc/backoff"
 
 	"google.golang.org/grpc/connectivity"
 
 	"google.golang.org/grpc/grpclog"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/xds/client/bootstrap"
-	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
-	internalbackoff "dubbo.apache.org/dubbo-go/v3/xds/utils/backoff"
-	"dubbo.apache.org/dubbo-go/v3/xds/utils/envconfig"
-	internalgrpclog "dubbo.apache.org/dubbo-go/v3/xds/utils/grpclog"
-	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpcsync"
 )
 
 var (
@@ -77,10 +75,6 @@ type ServingModeCallback func(addr net.Addr, mode connectivity.ServingMode, err 
 // reconnect and have the new configuration applied to the newly created
 // connections.
 type DrainCallback func(addr net.Addr)
-
-func prefixLogger(p *listenerWrapper) *internalgrpclog.PrefixLogger {
-	return internalgrpclog.NewPrefixLogger(logger, fmt.Sprintf("[xds-server-listener %p] ", p))
-}
 
 // XDSClient wraps the methods on the XDSClient which are required by
 // the listenerWrapper.
@@ -128,7 +122,7 @@ func NewListenerWrapper(params ListenerWrapperParams) (net.Listener, <-chan stru
 		ldsUpdateCh: make(chan ldsUpdateWithError, 1),
 		rdsUpdateCh: make(chan rdsHandlerUpdate, 1),
 	}
-	lw.logger = prefixLogger(lw)
+	lw.logger = dubboLogger.GetLogger()
 
 	// Serve() verifies that Addr() returns a valid TCPAddr. So, it is safe to
 	// ignore the error from SplitHostPort().
@@ -157,7 +151,7 @@ type ldsUpdateWithError struct {
 // particular invocation of Serve().
 type listenerWrapper struct {
 	net.Listener
-	logger *internalgrpclog.PrefixLogger
+	logger dubboLogger.Logger
 
 	name          string
 	xdsCredsInUse bool
@@ -281,7 +275,7 @@ func (l *listenerWrapper) Accept() (net.Conn, error) {
 			// error, `grpc.Serve()` method sleeps for a small duration and
 			// therefore ends up blocking all connection attempts during that
 			// time frame, which is also not ideal for an error like this.
-			l.logger.Warningf("connection from %s to %s failed to find any matching filter chain", conn.RemoteAddr().String(), conn.LocalAddr().String())
+			l.logger.Warnf("connection from %s to %s failed to find any matching filter chain", conn.RemoteAddr().String(), conn.LocalAddr().String())
 			conn.Close()
 			continue
 		}
@@ -313,7 +307,7 @@ func (l *listenerWrapper) Accept() (net.Conn, error) {
 		// tradeoff for simplicity.
 		vhswi, err := fc.ConstructUsableRouteConfiguration(rc)
 		if err != nil {
-			l.logger.Warningf("route configuration construction: %v", err)
+			l.logger.Warnf("route configuration construction: %v", err)
 			conn.Close()
 			continue
 		}
@@ -354,7 +348,7 @@ func (l *listenerWrapper) run() {
 // goroutine.
 func (l *listenerWrapper) handleListenerUpdate(update resource.ListenerUpdate, err error) {
 	if l.closed.HasFired() {
-		l.logger.Warningf("Resource %q received update: %v with error: %v, after listener was closed", l.name, update, err)
+		l.logger.Warnf("Resource %q received update: %v with error: %v, after listener was closed", l.name, update, err)
 		return
 	}
 	// Remove any existing entry in ldsUpdateCh and replace with the new one, as the only update
@@ -371,11 +365,11 @@ func (l *listenerWrapper) handleListenerUpdate(update resource.ListenerUpdate, e
 // configuration (both LDS and RDS) has been received.
 func (l *listenerWrapper) handleRDSUpdate(update rdsHandlerUpdate) {
 	if l.closed.HasFired() {
-		l.logger.Warningf("RDS received update: %v with error: %v, after listener was closed", update.updates, update.err)
+		l.logger.Warnf("RDS received update: %v with error: %v, after listener was closed", update.updates, update.err)
 		return
 	}
 	if update.err != nil {
-		l.logger.Warningf("Received error for rds names specified in resource %q: %+v", l.name, update.err)
+		l.logger.Warnf("Received error for rds names specified in resource %q: %+v", l.name, update.err)
 		if resource.ErrType(update.err) == resource.ErrorTypeResourceNotFound {
 			l.switchMode(nil, connectivity.ServingModeNotServing, update.err)
 		}
@@ -391,7 +385,7 @@ func (l *listenerWrapper) handleRDSUpdate(update rdsHandlerUpdate) {
 
 func (l *listenerWrapper) handleLDSUpdate(update ldsUpdateWithError) {
 	if update.err != nil {
-		l.logger.Warningf("Received error for resource %q: %+v", l.name, update.err)
+		l.logger.Warnf("Received error for resource %q: %+v", l.name, update.err)
 		if resource.ErrType(update.err) == resource.ErrorTypeResourceNotFound {
 			l.switchMode(nil, connectivity.ServingModeNotServing, update.err)
 		}
@@ -450,5 +444,5 @@ func (l *listenerWrapper) switchMode(fcs *resource.FilterChainManager, newMode c
 	if l.modeCallback != nil {
 		l.modeCallback(l.Listener.Addr(), newMode, err)
 	}
-	l.logger.Warningf("Listener %q entering mode: %q due to error: %v", l.Addr(), newMode, err)
+	l.logger.Warnf("Listener %q entering mode: %q due to error: %v", l.Addr(), newMode, err)
 }

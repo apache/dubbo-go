@@ -22,16 +22,14 @@ import (
 )
 
 import (
-	"github.com/golang/mock/gomock"
-
-	"github.com/stretchr/testify/assert"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/metrics"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	protoinvoc "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+
+	"github.com/golang/mock/gomock"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestLoadBalance(t *testing.T) {

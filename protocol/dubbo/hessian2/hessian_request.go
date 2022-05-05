@@ -25,13 +25,11 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
+
 	hessian "github.com/apache/dubbo-go-hessian2"
 
 	perrors "github.com/pkg/errors"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
 )
 
 func getArgType(v interface{}) string {

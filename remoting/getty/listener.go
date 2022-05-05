@@ -25,6 +25,11 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/remoting"
+
 	"github.com/apache/dubbo-getty"
 
 	hessian "github.com/apache/dubbo-go-hessian2"
@@ -32,13 +37,6 @@ import (
 	gxtime "github.com/dubbogo/gost/time"
 
 	perrors "github.com/pkg/errors"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
-	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
-	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
 const (
@@ -269,13 +267,13 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 		if e := recover(); e != nil {
 			resp.Status = hessian.Response_SERVER_ERROR
 			if err, ok := e.(error); ok {
-				logger.Errorf("OnMessage panic: %+v", perrors.WithStack(err))
+				logger.Errorf("OnMessage panic: %+v, req: %#v", perrors.WithStack(err), req.Data)
 				resp.Error = perrors.WithStack(err)
 			} else if err, ok := e.(string); ok {
-				logger.Errorf("OnMessage panic: %+v", perrors.New(err))
+				logger.Errorf("OnMessage panic: %+v, req: %#v", perrors.New(err), req.Data)
 				resp.Error = perrors.New(err)
 			} else {
-				logger.Errorf("OnMessage panic: %+v, this is impossible.", e)
+				logger.Errorf("OnMessage panic: %+v, this is impossible. req: %#v", e, req.Data)
 				resp.Error = fmt.Errorf("OnMessage panic unknow exception. %+v", e)
 			}
 

@@ -37,17 +37,15 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/config"
+	rpb "dubbo.apache.org/dubbo-go/v3/protocol/dubbo3/reflection/triple_reflection_v1alpha"
+
 	"github.com/dubbogo/grpc-go"
 	"github.com/dubbogo/grpc-go/codes"
 	"github.com/dubbogo/grpc-go/status"
 
 	"github.com/golang/protobuf/proto"
 	dpb "github.com/golang/protobuf/protoc-gen-go/descriptor"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/config"
-	rpb "dubbo.apache.org/dubbo-go/v3/protocol/dubbo3/reflection/triple_reflection_v1alpha"
 )
 
 // GRPCServer is the interface provided by a gRPC server. It is implemented by

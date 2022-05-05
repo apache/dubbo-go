@@ -27,15 +27,13 @@ import (
 )
 
 import (
-	"github.com/emicklei/go-restful/v3"
-
-	perrors "github.com/pkg/errors"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/config"
+
+	"github.com/emicklei/go-restful/v3"
+
+	perrors "github.com/pkg/errors"
 )
 
 var filterSlice []restful.FilterFunction

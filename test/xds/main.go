@@ -22,21 +22,19 @@ import (
 )
 
 import (
-	v3corepb "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-
-	structpb "github.com/golang/protobuf/ptypes/struct"
-
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/xds/client"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/bootstrap"
 	_ "dubbo.apache.org/dubbo-go/v3/xds/client/controller/version/v2"
 	_ "dubbo.apache.org/dubbo-go/v3/xds/client/controller/version/v3"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource/version"
+
+	v3corepb "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+
+	structpb "github.com/golang/protobuf/ptypes/struct"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 const (

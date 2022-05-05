@@ -24,10 +24,6 @@ import (
 )
 
 import (
-	"github.com/stretchr/testify/assert"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/cluster"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/router"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/router/v3router"
@@ -39,6 +35,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func init() {

@@ -18,11 +18,9 @@
 package extension
 
 import (
-	perrors "github.com/pkg/errors"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/registry/servicediscovery/instance"
+
+	perrors "github.com/pkg/errors"
 )
 
 var serviceInstanceSelectorMappings = make(map[string]func() instance.ServiceInstanceSelector, 2)

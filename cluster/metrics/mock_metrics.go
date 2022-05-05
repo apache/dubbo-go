@@ -26,11 +26,9 @@ import (
 )
 
 import (
-	gomock "github.com/golang/mock/gomock"
-)
-
-import (
 	common "dubbo.apache.org/dubbo-go/v3/common"
+
+	gomock "github.com/golang/mock/gomock"
 )
 
 // MockMetrics is a mock of Metrics interface.

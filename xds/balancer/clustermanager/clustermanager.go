@@ -30,20 +30,16 @@ import (
 )
 
 import (
-	"google.golang.org/grpc/balancer"
+	dubboLogger "dubbo.apache.org/dubbo-go/v3/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/xds/utils/balancergroup"
+	"dubbo.apache.org/dubbo-go/v3/xds/utils/hierarchy"
+	"dubbo.apache.org/dubbo-go/v3/xds/utils/pretty"
 
-	"google.golang.org/grpc/grpclog"
+	"google.golang.org/grpc/balancer"
 
 	"google.golang.org/grpc/resolver"
 
 	"google.golang.org/grpc/serviceconfig"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/xds/utils/balancergroup"
-	internalgrpclog "dubbo.apache.org/dubbo-go/v3/xds/utils/grpclog"
-	"dubbo.apache.org/dubbo-go/v3/xds/utils/hierarchy"
-	"dubbo.apache.org/dubbo-go/v3/xds/utils/pretty"
 )
 
 const balancerName = "xds_cluster_manager_experimental"
@@ -56,7 +52,7 @@ type bb struct{}
 
 func (bb) Build(cc balancer.ClientConn, opts balancer.BuildOptions) balancer.Balancer {
 	b := &bal{}
-	b.logger = prefixLogger(b)
+	b.logger = dubboLogger.GetLogger()
 	b.stateAggregator = newBalancerStateAggregator(cc, b.logger)
 	b.stateAggregator.start()
 	b.bg = balancergroup.New(cc, opts, b.stateAggregator, b.logger)
@@ -74,7 +70,7 @@ func (bb) ParseConfig(c json.RawMessage) (serviceconfig.LoadBalancingConfig, err
 }
 
 type bal struct {
-	logger *internalgrpclog.PrefixLogger
+	logger dubboLogger.Logger
 
 	// TODO: make this package not dependent on xds specific code. Same as for
 	// weighted target balancer.
@@ -151,12 +147,4 @@ func (b *bal) Close() {
 
 func (b *bal) ExitIdle() {
 	b.bg.ExitIdle()
-}
-
-const prefix = "[xds-cluster-manager-lb %p] "
-
-var logger = grpclog.Component("xds")
-
-func prefixLogger(p *bal) *internalgrpclog.PrefixLogger {
-	return internalgrpclog.NewPrefixLogger(logger, fmt.Sprintf(prefix, p))
 }

@@ -23,11 +23,9 @@ import (
 )
 
 import (
-	"google.golang.org/grpc"
-)
-
-import (
 	log "dubbo.apache.org/dubbo-go/v3/common/logger"
+
+	"google.golang.org/grpc"
 )
 
 // server is used to implement helloworld.GreeterServer.

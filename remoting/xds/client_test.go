@@ -23,13 +23,6 @@ import (
 )
 
 import (
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-
-	"go.uber.org/atomic"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	registryMocks "dubbo.apache.org/dubbo-go/v3/registry/mocks"
@@ -38,6 +31,11 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/xds/client"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/mocks"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+
+	"go.uber.org/atomic"
 )
 
 const (
@@ -250,7 +248,7 @@ func testFailedWithIstioCDS(t *testing.T) {
 		return mockXDSClient, nil
 	}
 	xdsWrappedClient, err := NewXDSWrappedClient(podNameFoo, localNamespaceFoo, localIPFoo, common.NewHostNameOrIPAddr(istioHostAddrFoo))
-	assert.Equal(t, DiscoverIstioPodError, err)
+	assert.Equal(t, DiscoverIstiodPodError, err)
 	assert.Nil(t, xdsWrappedClient)
 	assert.Equal(t, int32(1), cancelCalledCounter.Load())
 }
@@ -400,7 +398,7 @@ func testFailedWithNoneCDS(t *testing.T) {
 		return mockXDSClient, nil
 	}
 	xdsWrappedClient, err := NewXDSWrappedClient(podNameFoo, localNamespaceFoo, localIPFoo, common.NewHostNameOrIPAddr(istioHostAddrFoo))
-	assert.Equal(t, DiscoverIstioPodError, err)
+	assert.Equal(t, DiscoverIstiodPodError, err)
 	assert.Nil(t, xdsWrappedClient)
 	assert.Equal(t, int32(0), cancelCalledCounter.Load())
 }
@@ -550,7 +548,7 @@ func testFailedWithIstioEDSFailed(t *testing.T) {
 		return mockXDSClient, nil
 	}
 	xdsWrappedClient, err := NewXDSWrappedClient(podNameFoo, localNamespaceFoo, localIPFoo, common.NewHostNameOrIPAddr(istioHostAddrFoo))
-	assert.Equal(t, DiscoverIstioPodError, err)
+	assert.Equal(t, DiscoverIstiodPodError, err)
 	assert.Nil(t, xdsWrappedClient)
 	assert.Equal(t, int32(2), cancelCalledCounter.Load())
 }

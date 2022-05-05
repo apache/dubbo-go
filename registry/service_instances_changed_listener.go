@@ -22,11 +22,9 @@ import (
 )
 
 import (
-	gxset "github.com/dubbogo/gost/container/set"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common/observer"
+
+	gxset "github.com/dubbogo/gost/container/set"
 )
 
 // ServiceInstancesChangedListener is the interface of the Service Discovery Changed Event Listener

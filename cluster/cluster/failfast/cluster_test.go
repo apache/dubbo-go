@@ -24,14 +24,6 @@ import (
 )
 
 import (
-	"github.com/golang/mock/gomock"
-
-	perrors "github.com/pkg/errors"
-
-	"github.com/stretchr/testify/assert"
-)
-
-import (
 	clusterpkg "dubbo.apache.org/dubbo-go/v3/cluster/cluster"
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory/static"
 	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/random"
@@ -41,6 +33,12 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/mock"
+
+	"github.com/golang/mock/gomock"
+
+	perrors "github.com/pkg/errors"
+
+	"github.com/stretchr/testify/assert"
 )
 
 var failfastUrl, _ = common.NewURL(

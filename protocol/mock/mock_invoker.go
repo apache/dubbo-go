@@ -27,12 +27,10 @@ import (
 )
 
 import (
-	"github.com/golang/mock/gomock"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
+
+	"github.com/golang/mock/gomock"
 )
 
 // MockInvoker is a mock of Invoker interface

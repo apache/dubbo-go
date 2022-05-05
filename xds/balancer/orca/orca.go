@@ -25,22 +25,17 @@
 package orca
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/xds/utils/balancerload"
+
 	orcapb "github.com/cncf/xds/go/xds/data/orca/v3"
 
 	"github.com/golang/protobuf/proto"
 
-	"google.golang.org/grpc/grpclog"
-
 	"google.golang.org/grpc/metadata"
 )
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/xds/utils/balancerload"
-)
-
 const mdKey = "X-Endpoint-Load-Metrics-Bin"
-
-var logger = grpclog.Component("xds")
 
 // toBytes converts a orca load report into bytes.
 func toBytes(r *orcapb.OrcaLoadReport) []byte {
@@ -50,7 +45,7 @@ func toBytes(r *orcapb.OrcaLoadReport) []byte {
 
 	b, err := proto.Marshal(r)
 	if err != nil {
-		logger.Warningf("orca: failed to marshal load report: %v", err)
+		logger.Warnf("orca: failed to marshal load report: %v", err)
 		return nil
 	}
 	return b
@@ -69,7 +64,7 @@ func ToMetadata(r *orcapb.OrcaLoadReport) metadata.MD {
 func fromBytes(b []byte) *orcapb.OrcaLoadReport {
 	ret := new(orcapb.OrcaLoadReport)
 	if err := proto.Unmarshal(b, ret); err != nil {
-		logger.Warningf("orca: failed to unmarshal load report: %v", err)
+		logger.Warnf("orca: failed to unmarshal load report: %v", err)
 		return nil
 	}
 	return ret

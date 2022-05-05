@@ -24,12 +24,6 @@ import (
 )
 
 import (
-	"github.com/golang/mock/gomock"
-
-	"github.com/stretchr/testify/assert"
-)
-
-import (
 	clusterpkg "dubbo.apache.org/dubbo-go/v3/cluster/cluster"
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory/static"
 	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/random"
@@ -39,6 +33,10 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/mock"
+
+	"github.com/golang/mock/gomock"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestZoneWareInvokerWithPreferredSuccess(t *testing.T) {
@@ -68,7 +66,7 @@ func TestZoneWareInvokerWithPreferredSuccess(t *testing.T) {
 			invoker.EXPECT().Invoke(gomock.Any()).DoAndReturn(
 				func(invocation protocol.Invocation) protocol.Result {
 					return &protocol.RPCResult{}
-				})
+				}).AnyTimes()
 		}
 
 		invokers = append(invokers, invoker)
@@ -166,7 +164,7 @@ func TestZoneWareInvokerWithZoneSuccess(t *testing.T) {
 					Attrs: map[string]interface{}{constant.RegistryZoneKey: zoneValue},
 					Rest:  clusterpkg.Rest{Tried: 0, Success: true},
 				}
-			})
+			}).AnyTimes()
 		invokers = append(invokers, invoker)
 	}
 

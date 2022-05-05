@@ -24,6 +24,11 @@
 package clusterimpl
 
 import (
+	dubboLogger "dubbo.apache.org/dubbo-go/v3/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/xds/client"
+	"dubbo.apache.org/dubbo-go/v3/xds/client/load"
+	"dubbo.apache.org/dubbo-go/v3/xds/utils/wrr"
+
 	orcapb "github.com/cncf/xds/go/xds/data/orca/v3"
 
 	"google.golang.org/grpc/balancer"
@@ -33,12 +38,6 @@ import (
 	"google.golang.org/grpc/connectivity"
 
 	"google.golang.org/grpc/status"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/xds/client"
-	"dubbo.apache.org/dubbo-go/v3/xds/client/load"
-	"dubbo.apache.org/dubbo-go/v3/xds/utils/wrr"
 )
 
 // NewRandomWRR is used when calculating drops. It's exported so that tests can
@@ -149,7 +148,7 @@ func (d *picker) Pick(info balancer.PickInfo) (balancer.PickResult, error) {
 		// be used.
 		lIDStr, e = scw.localityID().ToString()
 		if e != nil {
-			logger.Infof("failed to marshal LocalityID: %#v, loads won't be reported", scw.localityID())
+			dubboLogger.Infof("failed to marshal LocalityID: %#v, loads won't be reported", scw.localityID())
 		}
 	}
 

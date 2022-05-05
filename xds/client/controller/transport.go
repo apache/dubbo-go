@@ -30,16 +30,14 @@ import (
 )
 
 import (
-	"github.com/golang/protobuf/proto"
-
-	"google.golang.org/grpc"
-)
-
-import (
 	controllerversion "dubbo.apache.org/dubbo-go/v3/xds/client/controller/version"
 	resourceversion "dubbo.apache.org/dubbo-go/v3/xds/client/controller/version"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/load"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
+
+	"github.com/golang/protobuf/proto"
+
+	"google.golang.org/grpc"
 )
 
 // AddWatch adds a watch for an xDS resource given its type and name.
@@ -93,7 +91,7 @@ func (t *Controller) run(ctx context.Context) {
 		stream, err := t.vClient.NewStream(ctx, t.cc)
 		if err != nil {
 			t.updateHandler.NewConnectionError(err)
-			t.logger.Warningf("xds: ADS stream creation failed: %v", err)
+			t.logger.Warnf("xds: ADS stream creation failed: %v", err)
 			continue
 		}
 		t.logger.Infof("ADS stream created")
@@ -163,7 +161,7 @@ func (t *Controller) send(ctx context.Context) {
 				continue
 			}
 			if err := t.vClient.SendRequest(stream, target, rType, version, nonce, errMsg); err != nil {
-				t.logger.Warningf("ADS request for {target: %q, type: %v, version: %q, nonce: %q} failed: %v", target, rType, version, nonce, err)
+				t.logger.Warnf("ADS request for {target: %q, type: %v, version: %q, nonce: %q} failed: %v", target, rType, version, nonce, err)
 				// send failed, clear the current stream.
 				stream = nil
 			}
@@ -188,7 +186,7 @@ func (t *Controller) sendExisting(stream grpc.ClientStream) bool {
 
 	for rType, s := range t.watchMap {
 		if err := t.vClient.SendRequest(stream, mapToSlice(s), rType, "", "", ""); err != nil {
-			t.logger.Warningf("ADS request failed: %v", err)
+			t.logger.Warnf("ADS request failed: %v", err)
 			return false
 		}
 	}
@@ -204,14 +202,14 @@ func (t *Controller) recv(stream grpc.ClientStream) bool {
 		resp, err := t.vClient.RecvResponse(stream)
 		if err != nil {
 			t.updateHandler.NewConnectionError(err)
-			t.logger.Warningf("ADS stream is closed with error: %v", err)
+			t.logger.Warnf("ADS stream is closed with error: %v", err)
 			return success
 		}
 
 		rType, version, nonce, err := t.handleResponse(resp)
 
 		if e, ok := err.(resourceversion.ErrResourceTypeUnsupported); ok {
-			t.logger.Warningf("%s", e.ErrStr)
+			t.logger.Warnf("%s", e.ErrStr)
 			continue
 		}
 		if err != nil {
@@ -222,7 +220,7 @@ func (t *Controller) recv(stream grpc.ClientStream) bool {
 				errMsg:  err.Error(),
 				stream:  stream,
 			})
-			t.logger.Warningf("Sending NACK for response type: %v, version: %v, nonce: %v, reason: %v", rType, version, nonce, err)
+			t.logger.Warnf("Sending NACK for response type: %v, version: %v, nonce: %v, reason: %v", rType, version, nonce, err)
 			continue
 		}
 		t.sendCh.Put(&ackAction{
@@ -402,19 +400,19 @@ func (t *Controller) reportLoad(ctx context.Context, cc *grpc.ClientConn, opts c
 		retries++
 		stream, err := t.vClient.NewLoadStatsStream(ctx, cc)
 		if err != nil {
-			t.logger.Warningf("lrs: failed to create stream: %v", err)
+			t.logger.Warnf("lrs: failed to create stream: %v", err)
 			continue
 		}
 		t.logger.Infof("lrs: created LRS stream")
 
 		if err = t.vClient.SendFirstLoadStatsRequest(stream); err != nil {
-			t.logger.Warningf("lrs: failed to send first request: %v", err)
+			t.logger.Warnf("lrs: failed to send first request: %v", err)
 			continue
 		}
 
 		clusters, interval, err := t.vClient.HandleLoadStatsResponse(stream)
 		if err != nil {
-			t.logger.Warningf("%v", err)
+			t.logger.Warnf("%v", err)
 			continue
 		}
 
@@ -433,7 +431,7 @@ func (t *Controller) sendLoads(ctx context.Context, stream grpc.ClientStream, st
 			return
 		}
 		if err := t.vClient.SendLoadStatsRequest(stream, store.Stats(clusterNames)); err != nil {
-			t.logger.Warningf("%v", err)
+			t.logger.Warnf("%v", err)
 			return
 		}
 	}

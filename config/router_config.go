@@ -18,13 +18,11 @@
 package config
 
 import (
-	"github.com/creasty/defaults"
-)
-
-import (
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/router/chain"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	_ "dubbo.apache.org/dubbo-go/v3/metrics/prometheus"
+
+	"github.com/creasty/defaults"
 )
 
 // RouterConfig is the configuration of the router.

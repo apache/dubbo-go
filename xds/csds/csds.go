@@ -34,6 +34,12 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/xds/client"
+	_ "dubbo.apache.org/dubbo-go/v3/xds/client/controller/version/v2" // Register v2 xds_client.
+	_ "dubbo.apache.org/dubbo-go/v3/xds/client/controller/version/v3" // Register v3 xds_client.
+	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
+
 	v3adminpb "github.com/envoyproxy/go-control-plane/envoy/admin/v3"
 	v2corepb "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	v3corepb "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -44,26 +50,16 @@ import (
 
 	"google.golang.org/grpc/codes"
 
-	"google.golang.org/grpc/grpclog"
-
 	"google.golang.org/grpc/status"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/xds/client"
-	_ "dubbo.apache.org/dubbo-go/v3/xds/client/controller/version/v2" // Register v2 xds_client.
-	_ "dubbo.apache.org/dubbo-go/v3/xds/client/controller/version/v3" // Register v3 xds_client.
-	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
-)
-
 var (
-	logger       = grpclog.Component("xds")
 	newXDSClient = func() client.XDSClient {
 		c, err := client.New()
 		if err != nil {
-			logger.Warningf("failed to create xds client: %v", err)
+			logger.Warnf("failed to create xds client: %v", err)
 			return nil
 		}
 		return c
@@ -175,15 +171,15 @@ func nodeProtoToV3(n proto.Message) *v3corepb.Node {
 	case *v2corepb.Node:
 		v2, err := proto.Marshal(nn)
 		if err != nil {
-			logger.Warningf("Failed to marshal node (%v): %v", n, err)
+			logger.Warnf("Failed to marshal node (%v): %v", n, err)
 			break
 		}
 		node = new(v3corepb.Node)
 		if err := proto.Unmarshal(v2, node); err != nil {
-			logger.Warningf("Failed to unmarshal node (%v): %v", v2, err)
+			logger.Warnf("Failed to unmarshal node (%v): %v", v2, err)
 		}
 	default:
-		logger.Warningf("node from bootstrap is %#v, only v2.Node and v3.Node are supported", nn)
+		logger.Warnf("node from bootstrap is %#v, only v2.Node and v3.Node are supported", nn)
 	}
 	return node
 }

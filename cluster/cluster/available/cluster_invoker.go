@@ -23,13 +23,11 @@ import (
 )
 
 import (
-	"github.com/pkg/errors"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/cluster/base"
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
+
+	"github.com/pkg/errors"
 )
 
 type availableClusterInvoker struct {

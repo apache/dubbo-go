@@ -18,11 +18,9 @@
 package mapping
 
 import (
-	gxset "github.com/dubbogo/gost/container/set"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+
+	gxset "github.com/dubbogo/gost/container/set"
 )
 
 type MockServiceNameMapping struct{}

@@ -30,6 +30,12 @@ import (
 )
 
 import (
+	dubboLogger "dubbo.apache.org/dubbo-go/v3/common/logger"
+	controllerversion "dubbo.apache.org/dubbo-go/v3/xds/client/controller/version"
+	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
+	resourceversion "dubbo.apache.org/dubbo-go/v3/xds/client/resource/version"
+	"dubbo.apache.org/dubbo-go/v3/xds/utils/pretty"
+
 	v3corepb "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	v3adsgrpc "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	v3discoverypb "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
@@ -43,14 +49,6 @@ import (
 	"google.golang.org/grpc/codes"
 
 	"google.golang.org/protobuf/types/known/anypb"
-)
-
-import (
-	controllerversion "dubbo.apache.org/dubbo-go/v3/xds/client/controller/version"
-	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
-	resourceversion "dubbo.apache.org/dubbo-go/v3/xds/client/resource/version"
-	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpclog"
-	"dubbo.apache.org/dubbo-go/v3/xds/utils/pretty"
 )
 
 func init() {
@@ -72,7 +70,7 @@ func newClient(opts controllerversion.BuildOptions) (controllerversion.MetadataW
 		return nil, fmt.Errorf("xds: unsupported Node proto type: %T, want %T", opts.NodeProto, v3corepb.Node{})
 	}
 	v3c := &client{
-		nodeProto: nodeProto, logger: opts.Logger,
+		nodeProto: nodeProto, logger: dubboLogger.GetLogger(),
 	}
 	return v3c, nil
 }
@@ -84,7 +82,7 @@ type adsStream v3adsgrpc.AggregatedDiscoveryService_StreamAggregatedResourcesCli
 // are multiplexed.
 type client struct {
 	nodeProto *v3corepb.Node
-	logger    *grpclog.PrefixLogger
+	logger    dubboLogger.Logger
 }
 
 func (v3c *client) NewStream(ctx context.Context, cc *grpc.ClientConn) (grpc.ClientStream, error) {

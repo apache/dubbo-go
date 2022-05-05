@@ -25,10 +25,6 @@ import (
 )
 
 import (
-	"github.com/Workiva/go-datastructures/queue"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/cluster/base"
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
 	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
@@ -36,6 +32,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
+
+	"github.com/Workiva/go-datastructures/queue"
 )
 
 /**

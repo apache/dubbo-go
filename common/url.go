@@ -31,6 +31,8 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+
 	cm "github.com/Workiva/go-datastructures/common"
 
 	gxset "github.com/dubbogo/gost/container/set"
@@ -40,10 +42,6 @@ import (
 	perrors "github.com/pkg/errors"
 
 	"github.com/satori/go.uuid"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
 // dubbo role type constant

@@ -31,16 +31,14 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
+
 	"google.golang.org/grpc/balancer"
 
 	"google.golang.org/grpc/codes"
 
-	"google.golang.org/grpc/grpclog"
-
 	externalserviceconfig "google.golang.org/grpc/serviceconfig"
 )
-
-var logger = grpclog.Component("core")
 
 // BalancerConfig wraps the name and config associated with one load balancing
 // policy. It corresponds to a single entry of the loadBalancingConfig field
@@ -115,7 +113,7 @@ func (bc *BalancerConfig) UnmarshalJSON(b []byte) error {
 		parser, ok := builder.(balancer.ConfigParser)
 		if !ok {
 			if string(jsonCfg) != "{}" {
-				logger.Warningf("non-empty balancer configuration %q, but balancer does not implement ParseConfig", string(jsonCfg))
+				logger.Warnf("non-empty balancer configuration %q, but balancer does not implement ParseConfig", string(jsonCfg))
 			}
 			// Stop at this, though the builder doesn't support parsing config.
 			return nil

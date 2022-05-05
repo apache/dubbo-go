@@ -35,6 +35,10 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/xds/httpfilter"
+	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpcrand"
+	iresolver "dubbo.apache.org/dubbo-go/v3/xds/utils/resolver"
+
 	cpb "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/common/fault/v3"
 	fpb "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/fault/v3"
 	tpb "github.com/envoyproxy/go-control-plane/envoy/type/v3"
@@ -49,12 +53,6 @@ import (
 	"google.golang.org/grpc/status"
 
 	"google.golang.org/protobuf/types/known/anypb"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/xds/httpfilter"
-	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpcrand"
-	iresolver "dubbo.apache.org/dubbo-go/v3/xds/utils/resolver"
 )
 
 const headerAbortHTTPStatus = "x-envoy-fault-abort-request"

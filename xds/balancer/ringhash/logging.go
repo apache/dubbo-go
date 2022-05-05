@@ -23,22 +23,4 @@
 
 package ringhash
 
-import (
-	"fmt"
-)
-
-import (
-	"google.golang.org/grpc/grpclog"
-)
-
-import (
-	internalgrpclog "dubbo.apache.org/dubbo-go/v3/xds/utils/grpclog"
-)
-
 const prefix = "[ring-hash-lb %p] "
-
-var logger = grpclog.Component("xds")
-
-func prefixLogger(p *ringhashBalancer) *internalgrpclog.PrefixLogger {
-	return internalgrpclog.NewPrefixLogger(logger, fmt.Sprintf(prefix, p))
-}

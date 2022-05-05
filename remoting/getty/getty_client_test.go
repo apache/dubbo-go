@@ -27,14 +27,6 @@ import (
 )
 
 import (
-	hessian "github.com/apache/dubbo-go-hessian2"
-
-	perrors "github.com/pkg/errors"
-
-	"github.com/stretchr/testify/assert"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	. "dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/proxy/proxy_factory"
@@ -42,6 +34,12 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
+
+	hessian "github.com/apache/dubbo-go-hessian2"
+
+	perrors "github.com/pkg/errors"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestRunSuite(t *testing.T) {

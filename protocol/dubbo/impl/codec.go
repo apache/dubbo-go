@@ -23,15 +23,13 @@ import (
 )
 
 import (
-	hessian "github.com/apache/dubbo-go-hessian2"
-
-	perrors "github.com/pkg/errors"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
+
+	hessian "github.com/apache/dubbo-go-hessian2"
+
+	perrors "github.com/pkg/errors"
 )
 
 type ProtocolCodec struct {
@@ -157,7 +155,7 @@ func (c *ProtocolCodec) Decode(p *DubboPackage) error {
 			return err
 		}
 	}
-	if c.reader.Size() < p.GetBodyLen()+HEADER_LENGTH {
+	if c.reader.Size() < p.GetBodyLen() {
 		return hessian.ErrBodyNotEnough
 	}
 	body, err := c.reader.Peek(p.GetBodyLen())

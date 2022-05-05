@@ -26,11 +26,9 @@
 package httpfilter
 
 import (
-	"github.com/golang/protobuf/proto"
-)
-
-import (
 	iresolver "dubbo.apache.org/dubbo-go/v3/xds/utils/resolver"
+
+	"github.com/golang/protobuf/proto"
 )
 
 // FilterConfig represents an opaque data structure holding configuration for a

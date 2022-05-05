@@ -30,20 +30,18 @@ import (
 )
 
 import (
+	dubboLogger "dubbo.apache.org/dubbo-go/v3/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/xds/client/resource/version"
+	"dubbo.apache.org/dubbo-go/v3/xds/httpfilter"
+	"dubbo.apache.org/dubbo-go/v3/xds/utils/envconfig"
+	"dubbo.apache.org/dubbo-go/v3/xds/utils/resolver"
+
 	v3listenerpb "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	v3httppb "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	v3tlspb "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/xds/client/resource/version"
-	"dubbo.apache.org/dubbo-go/v3/xds/httpfilter"
-	"dubbo.apache.org/dubbo-go/v3/xds/utils/envconfig"
-	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpclog"
-	"dubbo.apache.org/dubbo-go/v3/xds/utils/resolver"
 )
 
 const (
@@ -189,7 +187,7 @@ const (
 // 7. Source IP address.
 // 8. Source port.
 type FilterChainManager struct {
-	logger *grpclog.PrefixLogger
+	logger dubboLogger.Logger
 	// Destination prefix is the first match criteria that we support.
 	// Therefore, this multi-stage map is indexed on destination prefixes
 	// specified in the match criteria.
@@ -260,7 +258,7 @@ type sourcePrefixEntry struct {
 //
 // This function is only exported so that tests outside of this package can
 // create a FilterChainManager.
-func NewFilterChainManager(lis *v3listenerpb.Listener, logger *grpclog.PrefixLogger) (*FilterChainManager, error) {
+func NewFilterChainManager(lis *v3listenerpb.Listener, logger dubboLogger.Logger) (*FilterChainManager, error) {
 	// Parse all the filter chains and build the internal data structures.
 	fci := &FilterChainManager{
 		logger:           logger,
@@ -317,7 +315,7 @@ func (fci *FilterChainManager) addFilterChains(fcs []*v3listenerpb.FilterChain) 
 		if fcm.GetDestinationPort().GetValue() != 0 {
 			// Destination port is the first match criteria and we do not
 			// support filter chains which contains this match criteria.
-			fci.logger.Warningf("Dropping filter chain %+v since it contains unsupported destination_port match field", fc)
+			fci.logger.Warnf("Dropping filter chain %+v since it contains unsupported destination_port match field", fc)
 			continue
 		}
 
@@ -366,7 +364,7 @@ func (fci *FilterChainManager) addFilterChainsForServerNames(dstEntry *destPrefi
 	// Filter chains specifying server names in their match criteria always fail
 	// a match at connection time. So, these filter chains can be dropped now.
 	if len(fc.GetFilterChainMatch().GetServerNames()) != 0 {
-		fci.logger.Warningf("Dropping filter chain %+v since it contains unsupported server_names match field", fc)
+		fci.logger.Warnf("Dropping filter chain %+v since it contains unsupported server_names match field", fc)
 		return nil
 	}
 
@@ -379,13 +377,13 @@ func (fci *FilterChainManager) addFilterChainsForTransportProtocols(dstEntry *de
 	case tp != "" && tp != "raw_buffer":
 		// Only allow filter chains with transport protocol set to empty string
 		// or "raw_buffer".
-		fci.logger.Warningf("Dropping filter chain %+v since it contains unsupported value for transport_protocols match field", fc)
+		fci.logger.Warnf("Dropping filter chain %+v since it contains unsupported value for transport_protocols match field", fc)
 		return nil
 	case tp == "" && dstEntry.rawBufferSeen:
 		// If we have already seen filter chains with transport protocol set to
 		// "raw_buffer", we can drop filter chains with transport protocol set
 		// to empty string, since the former takes precedence.
-		fci.logger.Warningf("Dropping filter chain %+v since it contains unsupported value for transport_protocols match field", fc)
+		fci.logger.Warnf("Dropping filter chain %+v since it contains unsupported value for transport_protocols match field", fc)
 		return nil
 	case tp != "" && !dstEntry.rawBufferSeen:
 		// This is the first "raw_buffer" that we are seeing. Set the bit and
@@ -399,7 +397,7 @@ func (fci *FilterChainManager) addFilterChainsForTransportProtocols(dstEntry *de
 
 func (fci *FilterChainManager) addFilterChainsForApplicationProtocols(dstEntry *destPrefixEntry, fc *v3listenerpb.FilterChain) error {
 	if len(fc.GetFilterChainMatch().GetApplicationProtocols()) != 0 {
-		fci.logger.Warningf("Dropping filter chain %+v since it contains unsupported application_protocols match field", fc)
+		fci.logger.Warnf("Dropping filter chain %+v since it contains unsupported application_protocols match field", fc)
 		return nil
 	}
 	return fci.addFilterChainsForSourceType(dstEntry, fc)

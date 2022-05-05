@@ -32,12 +32,10 @@ import (
 )
 
 import (
-	"google.golang.org/grpc/credentials/tls/certprovider"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
 	xdsinternal "dubbo.apache.org/dubbo-go/v3/xds/utils/credentials/xds"
+
+	"google.golang.org/grpc/credentials/tls/certprovider"
 )
 
 // connWrapper is a thin wrapper around a net.Conn returned by Accept(). It

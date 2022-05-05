@@ -23,10 +23,6 @@ import (
 )
 
 import (
-	"github.com/Workiva/go-datastructures/slice/skip"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
@@ -34,6 +30,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/metadata/definition"
 	"dubbo.apache.org/dubbo-go/v3/metadata/service"
+
+	"github.com/Workiva/go-datastructures/slice/skip"
 )
 
 func init() {

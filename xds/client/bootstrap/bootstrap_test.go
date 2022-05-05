@@ -32,6 +32,9 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/xds/client/resource/version"
+	"dubbo.apache.org/dubbo-go/v3/xds/utils/envconfig"
+
 	v2corepb "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	v3corepb "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 
@@ -45,11 +48,6 @@ import (
 	"google.golang.org/grpc/credentials/google"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/credentials/tls/certprovider"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/xds/client/resource/version"
-	"dubbo.apache.org/dubbo-go/v3/xds/utils/envconfig"
 )
 
 var (

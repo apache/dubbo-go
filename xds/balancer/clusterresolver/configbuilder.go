@@ -30,20 +30,19 @@ import (
 )
 
 import (
-	"google.golang.org/grpc/balancer/roundrobin"
-	"google.golang.org/grpc/balancer/weightedroundrobin"
-	"google.golang.org/grpc/balancer/weightedtarget"
-
-	"google.golang.org/grpc/resolver"
-)
-
-import (
+	dubboLogger "dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/xds/balancer/clusterimpl"
 	"dubbo.apache.org/dubbo-go/v3/xds/balancer/priority"
 	"dubbo.apache.org/dubbo-go/v3/xds/balancer/ringhash"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/hierarchy"
 	internalserviceconfig "dubbo.apache.org/dubbo-go/v3/xds/utils/serviceconfig"
+
+	"google.golang.org/grpc/balancer/roundrobin"
+	"google.golang.org/grpc/balancer/weightedroundrobin"
+	"google.golang.org/grpc/balancer/weightedtarget"
+
+	"google.golang.org/grpc/resolver"
 )
 
 const million = 1000000
@@ -276,7 +275,7 @@ func priorityLocalitiesToClusterImpl(localities []resource.Locality, priorityNam
 		// If lb policy is ROUND_ROBIN:
 		// - locality-picking policy is weighted_target
 		// - endpoint-picking policy is round_robin
-		logger.Infof("xds lb policy is %q, building config with weighted_target + round_robin", rrName)
+		dubboLogger.Infof("xds lb policy is %q, building config with weighted_target + round_robin", rrName)
 		// Child of weighted_target is hardcoded to round_robin.
 		wtConfig, addrs := localitiesToWeightedTarget(localities, priorityName, rrBalancerConfig)
 		clusterImplCfg.ChildPolicy = &internalserviceconfig.BalancerConfig{Name: weightedtarget.Name, Config: wtConfig}
@@ -287,7 +286,7 @@ func priorityLocalitiesToClusterImpl(localities []resource.Locality, priorityNam
 		// If lb policy is RIHG_HASH, will build one ring_hash policy as child.
 		// The endpoints from all localities will be flattened to one addresses
 		// list, and the ring_hash policy will pick endpoints from it.
-		logger.Infof("xds lb policy is %q, building config with ring_hash", rhName)
+		dubboLogger.Infof("xds lb policy is %q, building config with ring_hash", rhName)
 		addrs := localitiesToRingHash(localities, priorityName)
 		// Set child to ring_hash, note that the ring_hash config is from
 		// xdsLBPolicy.

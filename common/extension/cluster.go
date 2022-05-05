@@ -22,12 +22,10 @@ import (
 )
 
 import (
-	"github.com/pkg/errors"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/cluster"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+
+	"github.com/pkg/errors"
 )
 
 var clusters = make(map[string]func() cluster.Cluster)
