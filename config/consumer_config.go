@@ -107,7 +107,7 @@ func (cc *ConsumerConfig) Load() {
 	for registeredTypeName, refRPCService := range GetConsumerServiceMap() {
 		refConfig, ok := cc.References[registeredTypeName]
 		if !ok {
-			// not found configuration, now new a configuraiton with default.
+			// not found configuration, now new a configuration with default.
 			refConfig = NewReferenceConfigBuilder().SetProtocol(tripleConstant.TRIPLE).Build()
 			triplePBService, ok := refRPCService.(common.TriplePBService)
 			if !ok {
@@ -121,7 +121,7 @@ func (cc *ConsumerConfig) Load() {
 				refConfig.InterfaceName = triplePBService.XXX_InterfaceName()
 			}
 			if err := refConfig.Init(rootConfig); err != nil {
-				logger.Errorf(fmt.Sprintf("refernece with registeredTypeName = %s init failed! err: %#v", registeredTypeName, err))
+				logger.Errorf(fmt.Sprintf("reference with registeredTypeName = %s init failed! err: %#v", registeredTypeName, err))
 				continue
 			}
 		}
