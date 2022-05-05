@@ -17,6 +17,7 @@
 
 package nacos
 
+/*
 import (
 	"net/url"
 	"reflect"
@@ -205,3 +206,5 @@ func TestNewNacosConfigClientByUrl(t *testing.T) {
 		})
 	}
 }
+
+*/

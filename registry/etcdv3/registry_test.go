@@ -18,6 +18,7 @@
 // nolint
 package etcdv3
 
+/*
 import (
 	"reflect"
 	"sync"
@@ -117,3 +118,5 @@ func Test_etcdV3Registry_DoUnregister(t *testing.T) {
 		})
 	}
 }
+
+*/
