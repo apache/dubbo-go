@@ -28,6 +28,8 @@ import (
 
 import (
 	structpb "github.com/golang/protobuf/ptypes/struct"
+
+	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -62,6 +64,7 @@ type InterfaceMapHandlerImpl struct {
 	*/
 	interfaceNameHostAddrMap     map[string]string
 	interfaceNameHostAddrMapLock sync.RWMutex
+	localDebugMode               bool
 }
 
 func (i *InterfaceMapHandlerImpl) UnRegister(serviceUniqueKey string) error {
@@ -78,6 +81,10 @@ func (i *InterfaceMapHandlerImpl) Register(serviceUniqueKey string) error {
 	return i.xdsClient.SetMetadata(i.interfaceAppNameMap2DubboGoMetadata())
 }
 
+func (i *InterfaceMapHandlerImpl) GetDubboGoMetadata() (map[string]string, error) {
+	return i.getServiceUniqueKeyHostAddrMapFromPilot()
+}
+
 func (i *InterfaceMapHandlerImpl) GetHostAddrMap(serviceUniqueKey string) (string, error) {
 	i.interfaceNameHostAddrMapLock.RLock()
 	if hostAddr, ok := i.interfaceNameHostAddrMap[serviceUniqueKey]; ok {
@@ -86,6 +93,8 @@ func (i *InterfaceMapHandlerImpl) GetHostAddrMap(serviceUniqueKey string) (strin
 	}
 	i.interfaceNameHostAddrMapLock.RUnlock()
 
+	retryCount := 0
+	maxRetries := 30
 	for {
 		if interfaceHostAddrMap, err := i.getServiceUniqueKeyHostAddrMapFromPilot(); err != nil {
 			return "", err
@@ -95,8 +104,14 @@ func (i *InterfaceMapHandlerImpl) GetHostAddrMap(serviceUniqueKey string) (strin
 			i.interfaceNameHostAddrMapLock.Unlock()
 			hostName, ok := interfaceHostAddrMap[serviceUniqueKey]
 			if !ok {
-				logger.Infof("[XDS Wrapped Client] Try getting interface %s 's host from istio %d:8080\n", serviceUniqueKey, i.istioDebugAddr)
+				logger.Infof("[XDS Wrapped Client] Try getting interface %s 's host from istio %s:8080\n", serviceUniqueKey, i.istioDebugAddr)
 				time.Sleep(time.Millisecond * 100)
+				retryCount++
+				if retryCount > maxRetries {
+					err := perrors.Errorf("[XDS Wrapped Client] Try getting interface %s 's host from istio %s:8080 failed. Please check if provider's service resource is deployed correctly.\n", serviceUniqueKey, i.istioDebugAddr)
+					logger.Error(err)
+					return "", err
+				}
 				continue
 			}
 			return hostName, nil
@@ -108,11 +123,13 @@ func (i *InterfaceMapHandlerImpl) GetHostAddrMap(serviceUniqueKey string) (strin
 // 'dubbo-go-app.default.svc.cluster.local:20000'
 func (i *InterfaceMapHandlerImpl) getServiceUniqueKeyHostAddrMapFromPilot() (map[string]string, error) {
 	req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("http://%s/debug/adsz", i.istioDebugAddr.String()), nil)
-	token, err := ioutil.ReadFile(i.istioTokenPath)
-	if err != nil {
-		return nil, err
+	if !i.localDebugMode {
+		token, err := ioutil.ReadFile(i.istioTokenPath)
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Add(authorizationHeader, istiodTokenPrefix+string(token))
 	}
-	req.Header.Add(authorizationHeader, istiodTokenPrefix+string(token))
 	rsp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		logger.Infof("[XDS Wrapped Client] Try getting interface host map from istio IP %s with error %s\n",
@@ -138,7 +155,7 @@ func (i *InterfaceMapHandlerImpl) interfaceAppNameMap2DubboGoMetadata() *structp
 	return GetDubboGoMetadata(string(data))
 }
 
-func NewInterfaceMapHandlerImpl(xdsClient client.XDSClient, istioTokenPath string, istioDebugAddr, hostAddr common.HostAddr) InterfaceMapHandler {
+func NewInterfaceMapHandlerImpl(xdsClient client.XDSClient, istioTokenPath string, istioDebugAddr, hostAddr common.HostAddr, localDebugMode bool) InterfaceMapHandler {
 	return &InterfaceMapHandlerImpl{
 		xdsClient:                xdsClient,
 		interfaceAppNameMap:      map[string]string{},
@@ -146,6 +163,7 @@ func NewInterfaceMapHandlerImpl(xdsClient client.XDSClient, istioTokenPath strin
 		istioDebugAddr:           istioDebugAddr,
 		hostAddr:                 hostAddr,
 		istioTokenPath:           istioTokenPath,
+		localDebugMode:           localDebugMode,
 	}
 }
 
@@ -153,4 +171,5 @@ type InterfaceMapHandler interface {
 	Register(string) error
 	UnRegister(string) error
 	GetHostAddrMap(string) (string, error)
+	GetDubboGoMetadata() (map[string]string, error)
 }

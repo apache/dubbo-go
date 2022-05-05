@@ -20,7 +20,6 @@ package nacos
 
 import (
 	"reflect"
-	"sync"
 	"testing"
 )
 
@@ -156,11 +155,8 @@ type fields struct {
 	BaseDynamicConfiguration config_center.BaseDynamicConfiguration
 	url                      *common.URL
 	rootPath                 string
-	wg                       sync.WaitGroup
-	cltLock                  sync.Mutex
 	done                     chan struct{}
 	client                   *nacosClient.NacosConfigClient
-	keyListeners             sync.Map
 	parser                   parser.ConfigurationParser
 }
 type args struct {
@@ -169,7 +165,7 @@ type args struct {
 	value string
 }
 
-func newnNacosDynamicConfiguration(f fields) *nacosDynamicConfiguration {
+func newnNacosDynamicConfiguration(f *fields) *nacosDynamicConfiguration {
 	return &nacosDynamicConfiguration{
 		BaseDynamicConfiguration: f.BaseDynamicConfiguration,
 		url:                      f.url,
@@ -208,7 +204,7 @@ func Test_nacosDynamicConfiguration_PublishConfig(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			n := newnNacosDynamicConfiguration(tt.fields)
+			n := newnNacosDynamicConfiguration(&tt.fields)
 			if err := n.PublishConfig(tt.args.key, tt.args.group, tt.args.value); (err != nil) != tt.wantErr {
 				t.Errorf("PublishConfig() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -253,7 +249,7 @@ func Test_nacosDynamicConfiguration_GetConfigKeysByGroup(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			n := newnNacosDynamicConfiguration(tt.fields)
+			n := newnNacosDynamicConfiguration(&tt.fields)
 			got, err := n.GetConfigKeysByGroup(tt.args.group)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetConfigKeysByGroup() error = %v, wantErr %v", err, tt.wantErr)

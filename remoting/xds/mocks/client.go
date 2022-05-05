@@ -33,6 +33,11 @@ type WrappedClientMock struct {
 	mock.Mock
 }
 
+func (m *WrappedClientMock) GetDubboGoMetadata() (map[string]string, error) {
+	args := m.Called()
+	return args.Get(0).(map[string]string), args.Error(1)
+}
+
 func (m *WrappedClientMock) Subscribe(svcUniqueName, interfaceName, hostAddr string, lst registry.NotifyListener) error {
 	args := m.Called(svcUniqueName, interfaceName, hostAddr, lst)
 	return args.Error(0)

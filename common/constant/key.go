@@ -367,3 +367,9 @@ const (
 	AdaptiveServiceEnabledKey   = "adaptive-service.enabled"
 	AdaptiveServiceIsEnabled    = "1"
 )
+
+// reflection service
+const (
+	ReflectionServiceTypeName  = "XXX_serverReflectionServer"
+	ReflectionServiceInterface = "grpc.reflection.v1alpha.ServerReflection"
+)
