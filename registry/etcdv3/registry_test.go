@@ -15,113 +15,108 @@
  * limitations under the License.
  */
 
+// nolint
 package etcdv3
 
+/*
 import (
-	"strconv"
+	"reflect"
+	"sync"
 	"testing"
-	"time"
 )
 
 import (
-	"github.com/stretchr/testify/assert"
+	"github.com/agiledragon/gomonkey"
+
+	gxetcd "github.com/dubbogo/gost/database/kv/etcd/v3"
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/registry"
+	"dubbo.apache.org/dubbo-go/v3/remoting"
+	"dubbo.apache.org/dubbo-go/v3/remoting/etcdv3"
 )
 
-func initRegistry(t *testing.T) *etcdV3Registry {
-	regurl, err := common.NewURL("registry://127.0.0.1:2379", common.WithParamsValue(constant.RegistryRoleKey, strconv.Itoa(common.PROVIDER)))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	reg, err := newETCDV3Registry(regurl)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	out := reg.(*etcdV3Registry)
-	err = out.client.CleanKV()
-	assert.NoError(t, err)
-	return out
+type fields struct {
+	BaseRegistry   registry.BaseRegistry
+	cltLock        sync.Mutex
+	client         *gxetcd.Client
+	listenerLock   sync.RWMutex
+	listener       *etcdv3.EventListener
+	dataListener   *dataListener
+	configListener *configurationListener
+}
+type args struct {
+	root      string
+	node      string
+	eventType remoting.Event
 }
 
-//
-//func (suite *RegistryTestSuite) TestRegister() {
-//	t := suite.T()
-//
-//	url, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParamsValue(constant.ClusterKey, "mock"), common.WithMethods([]string{"GetUser", "AddUser"}))
-//
-//	reg := initRegistry(t)
-//	err := reg.Register(url)
-//	assert.NoError(t, err)
-//	children, _, err := reg.client.GetChildrenKVList("/dubbo/com.ikurento.user.UserProvider/providers")
-//	if err != nil {
-//		t.Fatal(err)
-//	}
-//	assert.Regexp(t, ".*dubbo%3A%2F%2F127.0.0.1%3A20000%2Fcom.ikurento.user.UserProvider%3Fanyhost%3Dtrue%26cluster%3Dmock", children)
-//	assert.NoError(t, err)
-//}
-//
-//func (suite *RegistryTestSuite) TestSubscribe() {
-//	t := suite.T()
-//	regurl, _ := common.NewURL("registry://127.0.0.1:1111", common.WithParamsValue(constant.RegistryRoleKey, strconv.Itoa(common.PROVIDER)))
-//	url, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParamsValue(constant.ClusterKey, "mock"), common.WithMethods([]string{"GetUser", "AddUser"}))
-//
-//	reg := initRegistry(t)
-//	// provider register
-//	err := reg.Register(url)
-//	if err != nil {
-//		t.Fatal(err)
-//	}
-//
-//	// consumer register
-//	regurl.SetParam(constant.RegistryRoleKey, strconv.Itoa(common.Consumer))
-//	reg2 := initRegistry(t)
-//
-//	err = reg2.Register(url)
-//	assert.NoError(t, err)
-//	listener, err := reg2.DoSubscribe(url)
-//	if err != nil {
-//		t.Fatal(err)
-//	}
-//
-//	serviceEvent, err := listener.Next()
-//	if err != nil {
-//		t.Fatal(err)
-//	}
-//	assert.Regexp(t, ".*ServiceEvent{Action{add}.*", serviceEvent.String())
-//}
-
-func (suite *RegistryTestSuite) TestConsumerDestroy() {
-	t := suite.T()
-	url, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParamsValue(constant.ClusterKey, "mock"), common.WithMethods([]string{"GetUser", "AddUser"}))
-
-	reg := initRegistry(t)
-	_, err := reg.DoSubscribe(url)
-	if err != nil {
-		t.Fatal(err)
+func newEtcdV3Registry(f fields) *etcdV3Registry {
+	return &etcdV3Registry{
+		client:         f.client,
+		listener:       f.listener,
+		dataListener:   f.dataListener,
+		configListener: f.configListener,
 	}
-
-	// listener.Close()
-	time.Sleep(1e9)
-	reg.Destroy()
-
-	assert.Equal(t, false, reg.IsAvailable())
 }
 
-func (suite *RegistryTestSuite) TestProviderDestroy() {
-	t := suite.T()
-	reg := initRegistry(t)
-	url, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider", common.WithParamsValue(constant.ClusterKey, "mock"), common.WithMethods([]string{"GetUser", "AddUser"}))
-	err := reg.Register(url)
-	assert.NoError(t, err)
+func Test_etcdV3Registry_DoRegister(t *testing.T) {
+	var client *gxetcd.Client
+	patches := gomonkey.NewPatches()
+	patches = patches.ApplyMethod(reflect.TypeOf(client), "RegisterTemp", func(_ *gxetcd.Client, k, v string) error {
+		return nil
+	})
+	defer patches.Reset()
 
-	// listener.Close()
-	time.Sleep(1e9)
-	reg.Destroy()
-	assert.Equal(t, false, reg.IsAvailable())
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "test",
+			fields: fields{
+				client: client,
+			},
+			args: args{
+				root: "/dubbo",
+				node: "/go",
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := newEtcdV3Registry(tt.fields)
+			if err := r.DoRegister(tt.args.root, tt.args.node); (err != nil) != tt.wantErr {
+				t.Errorf("DoRegister() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
 }
+
+func Test_etcdV3Registry_DoUnregister(t *testing.T) {
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name:    "test",
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := newEtcdV3Registry(tt.fields)
+			if err := r.DoUnregister(tt.args.root, tt.args.node); (err != nil) != tt.wantErr {
+				t.Errorf("DoUnregister() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+*/

@@ -68,7 +68,7 @@ func TestZoneWareInvokerWithPreferredSuccess(t *testing.T) {
 			invoker.EXPECT().Invoke(gomock.Any()).DoAndReturn(
 				func(invocation protocol.Invocation) protocol.Result {
 					return &protocol.RPCResult{}
-				})
+				}).AnyTimes()
 		}
 
 		invokers = append(invokers, invoker)
@@ -166,7 +166,7 @@ func TestZoneWareInvokerWithZoneSuccess(t *testing.T) {
 					Attrs: map[string]interface{}{constant.RegistryZoneKey: zoneValue},
 					Rest:  clusterpkg.Rest{Tried: 0, Success: true},
 				}
-			})
+			}).AnyTimes()
 		invokers = append(invokers, invoker)
 	}
 

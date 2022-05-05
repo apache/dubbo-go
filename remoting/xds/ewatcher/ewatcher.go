@@ -19,6 +19,7 @@ package ewatcher
 
 import (
 	"fmt"
+	"strconv"
 	"sync"
 )
 
@@ -112,6 +113,7 @@ func generateRegistryEvent(clusterID string, endpoint resource.Endpoint, interfa
 	url.AddParam(constant.MeshSubsetKey, cluster.Subset)
 	url.AddParam(constant.MeshClusterIDKey, clusterID)
 	url.AddParam(constant.MeshHostAddrKey, cluster.Addr.String())
+	url.AddParam(constant.EndPointWeight, strconv.Itoa(int(endpoint.Weight)))
 	if endpoint.HealthStatus == resource.EndpointHealthStatusUnhealthy {
 		return &registry.ServiceEvent{
 			Action:  remoting.EventTypeDel,

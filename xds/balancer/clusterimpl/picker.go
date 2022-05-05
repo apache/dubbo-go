@@ -36,6 +36,7 @@ import (
 )
 
 import (
+	dubboLogger "dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/xds/client"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/load"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/wrr"
@@ -149,7 +150,7 @@ func (d *picker) Pick(info balancer.PickInfo) (balancer.PickResult, error) {
 		// be used.
 		lIDStr, e = scw.localityID().ToString()
 		if e != nil {
-			logger.Infof("failed to marshal LocalityID: %#v, loads won't be reported", scw.localityID())
+			dubboLogger.Infof("failed to marshal LocalityID: %#v, loads won't be reported", scw.localityID())
 		}
 	}
 

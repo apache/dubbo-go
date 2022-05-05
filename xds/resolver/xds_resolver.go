@@ -38,10 +38,10 @@ import (
 )
 
 import (
+	dubboLogger "dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/xds/client"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/bootstrap"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
-	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpclog"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpcsync"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/pretty"
 	iresolver "dubbo.apache.org/dubbo-go/v3/xds/utils/resolver"
@@ -88,7 +88,7 @@ func (b *xdsResolverBuilder) Build(t resolver.Target, cc resolver.ClientConn, op
 			r.Close()
 		}
 	}()
-	r.logger = prefixLogger(r)
+	r.logger = dubboLogger.GetLogger()
 	r.logger.Infof("Creating resolver for target: %+v", t)
 
 	newXDSClient := newXDSClient
@@ -181,7 +181,7 @@ type xdsResolver struct {
 	cc     resolver.ClientConn
 	closed *grpcsync.Event
 
-	logger *grpclog.PrefixLogger
+	logger dubboLogger.Logger
 
 	// The underlying xdsClient which performs all xDS requests and responses.
 	client client.XDSClient
@@ -243,7 +243,7 @@ func (r *xdsResolver) run() {
 			return
 		case update := <-r.updateCh:
 			if update.err != nil {
-				r.logger.Warningf("Watch error on resource %v from xds-client %p, %v", r.target.Endpoint, r.client, update.err)
+				r.logger.Warnf("Watch error on resource %v from xds-client %p, %v", r.target.Endpoint, r.client, update.err)
 				if resource.ErrType(update.err) == resource.ErrorTypeResourceNotFound {
 					// If error is resource-not-found, it means the LDS
 					// resource was removed. Ultimately send an empty service
@@ -271,7 +271,7 @@ func (r *xdsResolver) run() {
 			// Create the config selector for this update.
 			cs, err := r.newConfigSelector(update.su)
 			if err != nil {
-				r.logger.Warningf("Error parsing update on resource %v from xds-client %p: %v", r.target.Endpoint, r.client, err)
+				r.logger.Warnf("Error parsing update on resource %v from xds-client %p: %v", r.target.Endpoint, r.client, err)
 				r.cc.ReportError(err)
 				continue
 			}
