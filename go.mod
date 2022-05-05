@@ -21,7 +21,6 @@ require (
 	github.com/emicklei/go-restful/v3 v3.7.4
 	github.com/envoyproxy/go-control-plane v0.10.1
 	github.com/fsnotify/fsnotify v1.5.4
-	github.com/ghodss/yaml v1.0.0
 	github.com/go-co-op/gocron v1.9.0
 	github.com/go-playground/validator/v10 v10.11.0
 	github.com/go-resty/resty/v2 v2.7.0
@@ -42,6 +41,7 @@ require (
 	github.com/polarismesh/polaris-go v1.0.2
 	github.com/prometheus/client_golang v1.12.1
 	github.com/satori/go.uuid v1.2.1-0.20181028125025-b2ce2384e17b
+	github.com/spf13/afero v1.2.2 // indirect
 	github.com/stretchr/testify v1.7.1
 	github.com/zouyx/agollo/v3 v3.4.5
 	go.etcd.io/etcd/api/v3 v3.5.4
@@ -52,6 +52,4 @@ require (
 	google.golang.org/grpc v1.45.0
 	google.golang.org/protobuf v1.28.0
 	gopkg.in/yaml.v2 v2.4.0
-	k8s.io/apimachinery v0.22.4
-	k8s.io/client-go v0.16.9
 )
