@@ -43,6 +43,8 @@ type ProviderConfig struct {
 	Register bool `yaml:"register" json:"register" property:"register"`
 	// RegistryIDs is registry ids list
 	RegistryIDs []string `yaml:"registry-ids" json:"registry-ids" property:"registry-ids"`
+	// protocol
+	ProtocolIDs []string `yaml:"protocol-ids" json:"protocol-ids" property:"protocol-ids"`
 	// TracingKey is tracing ids list
 	TracingKey string `yaml:"tracing-key" json:"tracing-key" property:"tracing-key"`
 	// Services services
@@ -72,10 +74,12 @@ func (c *ProviderConfig) Init(rc *RootConfig) error {
 	if c == nil {
 		return nil
 	}
-	c.RegistryIDs = translateRegistryIds(c.RegistryIDs)
+	c.RegistryIDs = translateIds(c.RegistryIDs)
 	if len(c.RegistryIDs) <= 0 {
 		c.RegistryIDs = rc.getRegistryIds()
 	}
+	c.ProtocolIDs = translateIds(c.ProtocolIDs)
+
 	if c.TracingKey == "" && len(rc.Tracing) > 0 {
 		for k, _ := range rc.Tracing {
 			c.TracingKey = k
@@ -176,6 +180,7 @@ func newEmptyProviderConfig() *ProviderConfig {
 	newProviderConfig := &ProviderConfig{
 		Services:    make(map[string]*ServiceConfig),
 		RegistryIDs: make([]string, 8),
+		ProtocolIDs: make([]string, 8),
 	}
 	return newProviderConfig
 }

@@ -42,6 +42,7 @@ const (
 type ConsumerConfig struct {
 	Filter                         string                      `yaml:"filter" json:"filter,omitempty" property:"filter"`
 	RegistryIDs                    []string                    `yaml:"registry-ids" json:"registry-ids,omitempty" property:"registry-ids"`
+	Protocol                       string                      `yaml:"protocol" json:"protocol,omitempty" property:"protocol"`
 	RequestTimeout                 string                      `default:"3s" yaml:"request-timeout" json:"request-timeout,omitempty" property:"request-timeout"`
 	ProxyFactory                   string                      `default:"default" yaml:"proxy" json:"proxy,omitempty" property:"proxy"`
 	Check                          bool                        `yaml:"check" json:"check,omitempty" property:"check"`
@@ -62,7 +63,7 @@ func (cc *ConsumerConfig) Init(rc *RootConfig) error {
 	if cc == nil {
 		return nil
 	}
-	cc.RegistryIDs = translateRegistryIds(cc.RegistryIDs)
+	cc.RegistryIDs = translateIds(cc.RegistryIDs)
 	if len(cc.RegistryIDs) <= 0 {
 		cc.RegistryIDs = rc.getRegistryIds()
 	}

@@ -125,9 +125,14 @@ func (s *ServiceConfig) Init(rc *RootConfig) error {
 	if rc.Provider != nil {
 		s.ProxyFactoryKey = rc.Provider.ProxyFactory
 	}
-	s.RegistryIDs = translateRegistryIds(s.RegistryIDs)
+	s.RegistryIDs = translateIds(s.RegistryIDs)
 	if len(s.RegistryIDs) <= 0 {
 		s.RegistryIDs = rc.Provider.RegistryIDs
+	}
+
+	s.ProtocolIDs = translateIds(s.ProtocolIDs)
+	if len(s.ProtocolIDs) <= 0 {
+		s.ProtocolIDs = rc.Provider.ProtocolIDs
 	}
 	if len(s.ProtocolIDs) <= 0 {
 		for k, _ := range rc.Protocols {
