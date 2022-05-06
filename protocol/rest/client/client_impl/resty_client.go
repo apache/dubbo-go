@@ -26,11 +26,13 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/protocol/rest/client"
-
 	"github.com/go-resty/resty/v2"
 
 	perrors "github.com/pkg/errors"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/protocol/rest/client"
 )
 
 //func init() {

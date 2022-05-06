@@ -26,11 +26,13 @@ import (
 )
 
 import (
+	"github.com/cespare/xxhash/v2"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpcrand"
-
-	"github.com/cespare/xxhash/v2"
 )
 
 type invokerWithWeight struct {

@@ -22,9 +22,11 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/config"
-
 	perrors "github.com/pkg/errors"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/config"
 )
 
 const (

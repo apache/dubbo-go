@@ -23,6 +23,13 @@ import (
 )
 
 import (
+	gxset "github.com/dubbogo/gost/container/set"
+	gxetcd "github.com/dubbogo/gost/database/kv/etcd/v3"
+
+	perrors "github.com/pkg/errors"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
@@ -30,11 +37,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/metadata/identifier"
 	"dubbo.apache.org/dubbo-go/v3/metadata/report"
 	"dubbo.apache.org/dubbo-go/v3/metadata/report/factory"
-
-	gxset "github.com/dubbogo/gost/container/set"
-	gxetcd "github.com/dubbogo/gost/database/kv/etcd/v3"
-
-	perrors "github.com/pkg/errors"
 )
 
 const DEFAULT_ROOT = "dubbo"

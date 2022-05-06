@@ -32,9 +32,11 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpcrand"
-
 	grpcbackoff "google.golang.org/grpc/backoff"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpcrand"
 )
 
 // Strategy defines the methodology for backing off after a grpc connection

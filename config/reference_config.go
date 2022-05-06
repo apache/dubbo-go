@@ -25,6 +25,12 @@ import (
 )
 
 import (
+	"github.com/creasty/defaults"
+
+	gxstrings "github.com/dubbogo/gost/strings"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory/static"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
@@ -33,10 +39,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config/generic"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
-
-	"github.com/creasty/defaults"
-
-	gxstrings "github.com/dubbogo/gost/strings"
 )
 
 // ReferenceConfig is the configuration of service consumer

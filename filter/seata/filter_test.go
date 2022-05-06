@@ -23,10 +23,12 @@ import (
 )
 
 import (
+	"github.com/stretchr/testify/assert"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
-
-	"github.com/stretchr/testify/assert"
 )
 
 type testMockSeataInvoker struct {

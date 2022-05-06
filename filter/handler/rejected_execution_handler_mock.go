@@ -26,10 +26,12 @@ import (
 )
 
 import (
+	gomock "github.com/golang/mock/gomock"
+)
+
+import (
 	common "dubbo.apache.org/dubbo-go/v3/common"
 	protocol "dubbo.apache.org/dubbo-go/v3/protocol"
-
-	gomock "github.com/golang/mock/gomock"
 )
 
 // MockRejectedExecutionHandler is a mock of RejectedExecutionHandler interface

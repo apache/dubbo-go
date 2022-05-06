@@ -30,14 +30,16 @@ import (
 )
 
 import (
+	"github.com/golang/protobuf/proto"
+
+	"google.golang.org/grpc"
+)
+
+import (
 	controllerversion "dubbo.apache.org/dubbo-go/v3/xds/client/controller/version"
 	resourceversion "dubbo.apache.org/dubbo-go/v3/xds/client/controller/version"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/load"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
-
-	"github.com/golang/protobuf/proto"
-
-	"google.golang.org/grpc"
 )
 
 // AddWatch adds a watch for an xDS resource given its type and name.

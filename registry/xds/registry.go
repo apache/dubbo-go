@@ -25,6 +25,10 @@ import (
 )
 
 import (
+	perrors "github.com/pkg/errors"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
@@ -32,8 +36,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/remoting/xds"
 	common2 "dubbo.apache.org/dubbo-go/v3/remoting/xds/common"
-
-	perrors "github.com/pkg/errors"
 )
 
 var localIP = ""

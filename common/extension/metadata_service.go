@@ -22,10 +22,12 @@ import (
 )
 
 import (
+	perrors "github.com/pkg/errors"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/metadata/service"
-
-	perrors "github.com/pkg/errors"
 )
 
 type localMetadataServiceCreator func() (service.MetadataService, error)

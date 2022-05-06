@@ -25,11 +25,13 @@ import (
 )
 
 import (
+	gxset "github.com/dubbogo/gost/container/set"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
-
-	gxset "github.com/dubbogo/gost/container/set"
 )
 
 /*

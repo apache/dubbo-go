@@ -29,9 +29,11 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/xds/utils/transport/networktype"
-
 	"google.golang.org/grpc/resolver"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/xds/utils/transport/networktype"
 )
 
 const unixScheme = "unix"

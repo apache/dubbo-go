@@ -26,6 +26,10 @@ import (
 )
 
 import (
+	"github.com/opentracing/opentracing-go"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
@@ -33,8 +37,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	invocation_impl "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
-
-	"github.com/opentracing/opentracing-go"
 )
 
 var attachmentKey = []string{

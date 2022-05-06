@@ -23,18 +23,20 @@ import (
 )
 
 import (
+	"github.com/creasty/defaults"
+
+	"github.com/knadh/koanf"
+
+	"github.com/pkg/errors"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	conf "dubbo.apache.org/dubbo-go/v3/common/config"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
-
-	"github.com/creasty/defaults"
-
-	"github.com/knadh/koanf"
-
-	"github.com/pkg/errors"
 )
 
 // CenterConfig is configuration for config center

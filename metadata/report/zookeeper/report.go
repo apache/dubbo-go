@@ -23,6 +23,13 @@ import (
 )
 
 import (
+	"github.com/dubbogo/go-zookeeper/zk"
+
+	gxset "github.com/dubbogo/gost/container/set"
+	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
@@ -30,11 +37,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/metadata/identifier"
 	"dubbo.apache.org/dubbo-go/v3/metadata/report"
 	"dubbo.apache.org/dubbo-go/v3/metadata/report/factory"
-
-	"github.com/dubbogo/go-zookeeper/zk"
-
-	gxset "github.com/dubbogo/gost/container/set"
-	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
 )
 
 var emptyStrSlice = make([]string, 0)

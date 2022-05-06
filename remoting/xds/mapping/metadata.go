@@ -18,9 +18,11 @@
 package mapping
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
-
 	structpb "github.com/golang/protobuf/ptypes/struct"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
 // GetDubboGoMetadata create metadata of dubbo-go-app and register to istiod

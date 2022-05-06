@@ -27,18 +27,20 @@ import (
 )
 
 import (
+	"github.com/dubbogo/grpc-go/metadata"
+
+	tripleConstant "github.com/dubbogo/triple/pkg/common/constant"
+	triConfig "github.com/dubbogo/triple/pkg/config"
+	"github.com/dubbogo/triple/pkg/triple"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	invocation_impl "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
-
-	"github.com/dubbogo/grpc-go/metadata"
-
-	tripleConstant "github.com/dubbogo/triple/pkg/common/constant"
-	triConfig "github.com/dubbogo/triple/pkg/config"
-	"github.com/dubbogo/triple/pkg/triple"
 )
 
 // same as dubbo_invoker.go attachmentKey

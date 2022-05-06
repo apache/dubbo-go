@@ -23,9 +23,11 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/file"
-
 	"github.com/stretchr/testify/assert"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/file"
 )
 
 func TestCheckGenre(t *testing.T) {

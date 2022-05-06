@@ -32,13 +32,15 @@ import (
 )
 
 import (
+	_struct "github.com/golang/protobuf/ptypes/struct"
+)
+
+import (
 	dubboLogger "dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/bootstrap"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpcsync"
 	cache "dubbo.apache.org/dubbo-go/v3/xds/utils/xds_cache"
-
-	_struct "github.com/golang/protobuf/ptypes/struct"
 )
 
 // clientImpl is the real implementation of the xds client. The exported Client

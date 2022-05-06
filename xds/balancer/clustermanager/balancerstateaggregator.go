@@ -29,12 +29,14 @@ import (
 )
 
 import (
-	dubboLogger "dubbo.apache.org/dubbo-go/v3/common/logger"
-
 	"google.golang.org/grpc/balancer"
 	"google.golang.org/grpc/balancer/base"
 
 	"google.golang.org/grpc/connectivity"
+)
+
+import (
+	dubboLogger "dubbo.apache.org/dubbo-go/v3/common/logger"
 )
 
 type subBalancerState struct {

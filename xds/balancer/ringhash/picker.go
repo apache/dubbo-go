@@ -28,8 +28,6 @@ import (
 )
 
 import (
-	dubboLogger "dubbo.apache.org/dubbo-go/v3/common/logger"
-
 	"google.golang.org/grpc/balancer"
 
 	"google.golang.org/grpc/codes"
@@ -37,6 +35,10 @@ import (
 	"google.golang.org/grpc/connectivity"
 
 	"google.golang.org/grpc/status"
+)
+
+import (
+	dubboLogger "dubbo.apache.org/dubbo-go/v3/common/logger"
 )
 
 type picker struct {

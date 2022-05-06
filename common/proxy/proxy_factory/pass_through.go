@@ -23,13 +23,15 @@ import (
 )
 
 import (
+	perrors "github.com/pkg/errors"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/proxy"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
-
-	perrors "github.com/pkg/errors"
 )
 
 func init() {

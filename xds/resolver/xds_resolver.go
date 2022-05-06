@@ -32,6 +32,12 @@ import (
 )
 
 import (
+	"google.golang.org/grpc/credentials"
+
+	"google.golang.org/grpc/resolver"
+)
+
+import (
 	dubboLogger "dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/xds/client"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/bootstrap"
@@ -39,10 +45,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpcsync"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/pretty"
 	iresolver "dubbo.apache.org/dubbo-go/v3/xds/utils/resolver"
-
-	"google.golang.org/grpc/credentials"
-
-	"google.golang.org/grpc/resolver"
 )
 
 const xdsScheme = "xds"

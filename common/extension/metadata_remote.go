@@ -22,9 +22,11 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/metadata/service"
-
 	perrors "github.com/pkg/errors"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/metadata/service"
 )
 
 type remoteMetadataServiceCreator func() (service.RemoteMetadataService, error)

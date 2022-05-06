@@ -18,9 +18,11 @@
 package dubbo
 
 import (
-	invocation_impl "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
-
 	"github.com/opentracing/opentracing-go"
+)
+
+import (
+	invocation_impl "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
 func injectTraceCtx(currentSpan opentracing.Span, inv *invocation_impl.RPCInvocation) error {

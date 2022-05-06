@@ -34,12 +34,6 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
-	"dubbo.apache.org/dubbo-go/v3/xds/client"
-	_ "dubbo.apache.org/dubbo-go/v3/xds/client/controller/version/v2" // Register v2 xds_client.
-	_ "dubbo.apache.org/dubbo-go/v3/xds/client/controller/version/v3" // Register v3 xds_client.
-	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
-
 	v3adminpb "github.com/envoyproxy/go-control-plane/envoy/admin/v3"
 	v2corepb "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	v3corepb "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -53,6 +47,14 @@ import (
 	"google.golang.org/grpc/status"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/xds/client"
+	_ "dubbo.apache.org/dubbo-go/v3/xds/client/controller/version/v2" // Register v2 xds_client.
+	_ "dubbo.apache.org/dubbo-go/v3/xds/client/controller/version/v3" // Register v3 xds_client.
+	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
 )
 
 var (

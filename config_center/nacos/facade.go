@@ -22,10 +22,12 @@ import (
 )
 
 import (
+	nacosClient "github.com/dubbogo/gost/database/kv/nacos"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
-
-	nacosClient "github.com/dubbogo/gost/database/kv/nacos"
 )
 
 type nacosClientFacade interface {

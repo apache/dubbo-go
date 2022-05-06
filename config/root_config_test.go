@@ -22,11 +22,13 @@ import (
 )
 
 import (
+	"github.com/stretchr/testify/assert"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/yaml"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestGoConfigProcess(t *testing.T) {

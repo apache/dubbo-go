@@ -23,6 +23,12 @@ import (
 )
 
 import (
+	gxset "github.com/dubbogo/gost/container/set"
+
+	"github.com/stretchr/testify/assert"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/cluster"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	common_cfg "dubbo.apache.org/dubbo-go/v3/common/config"
@@ -35,10 +41,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
-
-	gxset "github.com/dubbogo/gost/container/set"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func init() {

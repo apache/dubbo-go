@@ -23,6 +23,13 @@ import (
 )
 
 import (
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+
+	"go.uber.org/atomic"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	registryMocks "dubbo.apache.org/dubbo-go/v3/registry/mocks"
@@ -31,11 +38,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/xds/client"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/mocks"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-
-	"go.uber.org/atomic"
 )
 
 const (

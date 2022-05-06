@@ -23,6 +23,10 @@ import (
 )
 
 import (
+	"gopkg.in/yaml.v2"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/router"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	conf "dubbo.apache.org/dubbo-go/v3/common/config"
@@ -32,8 +36,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
-
-	"gopkg.in/yaml.v2"
 )
 
 // RouterChain contains all uniform router logic

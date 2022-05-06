@@ -25,6 +25,15 @@ import (
 )
 
 import (
+	"github.com/dubbogo/go-zookeeper/zk"
+
+	gxset "github.com/dubbogo/gost/container/set"
+	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
+
+	perrors "github.com/pkg/errors"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
@@ -32,13 +41,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/config_center/parser"
 	"dubbo.apache.org/dubbo-go/v3/remoting/zookeeper"
-
-	"github.com/dubbogo/go-zookeeper/zk"
-
-	gxset "github.com/dubbogo/gost/container/set"
-	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
-
-	perrors "github.com/pkg/errors"
 )
 
 const (

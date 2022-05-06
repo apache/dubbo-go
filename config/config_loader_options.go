@@ -26,13 +26,15 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/common/file"
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
-
 	"github.com/knadh/koanf"
 
 	"github.com/pkg/errors"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/file"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
 )
 
 type loaderConf struct {

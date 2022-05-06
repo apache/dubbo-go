@@ -18,16 +18,18 @@
 package config
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/file"
-	"dubbo.apache.org/dubbo-go/v3/config/parsers/properties"
-	"dubbo.apache.org/dubbo-go/v3/config/parsers/yaml"
-
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/json"
 	"github.com/knadh/koanf/parsers/toml"
 	"github.com/knadh/koanf/providers/rawbytes"
 
 	"github.com/pkg/errors"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/file"
+	"dubbo.apache.org/dubbo-go/v3/config/parsers/properties"
+	"dubbo.apache.org/dubbo-go/v3/config/parsers/yaml"
 )
 
 // GetConfigResolver get config resolver

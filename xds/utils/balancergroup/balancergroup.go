@@ -32,14 +32,16 @@ import (
 )
 
 import (
-	dubboLogger "dubbo.apache.org/dubbo-go/v3/common/logger"
-	cache "dubbo.apache.org/dubbo-go/v3/xds/utils/xds_cache"
-
 	"google.golang.org/grpc/balancer"
 
 	"google.golang.org/grpc/connectivity"
 
 	"google.golang.org/grpc/resolver"
+)
+
+import (
+	dubboLogger "dubbo.apache.org/dubbo-go/v3/common/logger"
+	cache "dubbo.apache.org/dubbo-go/v3/xds/utils/xds_cache"
 )
 
 // subBalancerWrapper is used to keep the configurations that will be used to start

@@ -27,11 +27,13 @@ import (
 )
 
 import (
+	structpb "github.com/golang/protobuf/ptypes/struct"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/remoting/xds/common"
 	"dubbo.apache.org/dubbo-go/v3/xds/client"
-
-	structpb "github.com/golang/protobuf/ptypes/struct"
 )
 
 const (

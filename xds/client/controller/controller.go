@@ -38,6 +38,15 @@ import (
 )
 
 import (
+	v3corepb "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+
+	_struct "github.com/golang/protobuf/ptypes/struct"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/keepalive"
+)
+
+import (
 	dubboLogger "dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/bootstrap"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/controller/version"
@@ -45,13 +54,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/backoff"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/buffer"
-
-	v3corepb "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-
-	_struct "github.com/golang/protobuf/ptypes/struct"
-
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/keepalive"
 )
 
 // Controller manages the connection and stream to the control plane.

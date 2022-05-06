@@ -23,11 +23,13 @@ import (
 )
 
 import (
+	native_grpc "github.com/dubbogo/grpc-go"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo3/internal"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
-
-	native_grpc "github.com/dubbogo/grpc-go"
 )
 
 // userd dubbo3 biz service

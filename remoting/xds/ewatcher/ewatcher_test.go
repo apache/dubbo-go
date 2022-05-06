@@ -23,13 +23,15 @@ import (
 )
 
 import (
+	"github.com/stretchr/testify/assert"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	mockRegistry "dubbo.apache.org/dubbo-go/v3/registry/mocks"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
-
-	"github.com/stretchr/testify/assert"
 )
 
 const (

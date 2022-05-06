@@ -23,10 +23,12 @@ import (
 )
 
 import (
+	"github.com/creasty/defaults"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
-
-	"github.com/creasty/defaults"
 )
 
 var (

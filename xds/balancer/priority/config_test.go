@@ -28,11 +28,13 @@ import (
 )
 
 import (
-	internalserviceconfig "dubbo.apache.org/dubbo-go/v3/xds/utils/serviceconfig"
-
 	"github.com/google/go-cmp/cmp"
 
 	"google.golang.org/grpc/balancer/roundrobin"
+)
+
+import (
+	internalserviceconfig "dubbo.apache.org/dubbo-go/v3/xds/utils/serviceconfig"
 )
 
 func TestParseConfig(t *testing.T) {

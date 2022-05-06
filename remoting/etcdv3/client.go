@@ -18,11 +18,13 @@
 package etcdv3
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
-
 	gxetcd "github.com/dubbogo/gost/database/kv/etcd/v3"
 
 	perrors "github.com/pkg/errors"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
 )
 
 // ValidateClient validates client and sets options

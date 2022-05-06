@@ -29,12 +29,14 @@ import (
 )
 
 import (
+	"google.golang.org/grpc/metadata"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpcrand"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/matcher"
 	metedatautils "dubbo.apache.org/dubbo-go/v3/xds/utils/metadata"
 	iresolver "dubbo.apache.org/dubbo-go/v3/xds/utils/resolver"
-
-	"google.golang.org/grpc/metadata"
 )
 
 // RouteToMatcher converts a route to a Matcher to match incoming RPC's against.

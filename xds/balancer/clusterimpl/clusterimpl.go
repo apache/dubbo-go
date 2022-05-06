@@ -36,6 +36,16 @@ import (
 )
 
 import (
+	"google.golang.org/grpc/balancer"
+
+	"google.golang.org/grpc/connectivity"
+
+	"google.golang.org/grpc/resolver"
+
+	"google.golang.org/grpc/serviceconfig"
+)
+
+import (
 	dubboLogger "dubbo.apache.org/dubbo-go/v3/common/logger"
 	internal "dubbo.apache.org/dubbo-go/v3/xds"
 	"dubbo.apache.org/dubbo-go/v3/xds/balancer/loadstore"
@@ -45,14 +55,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/buffer"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpcsync"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/pretty"
-
-	"google.golang.org/grpc/balancer"
-
-	"google.golang.org/grpc/connectivity"
-
-	"google.golang.org/grpc/resolver"
-
-	"google.golang.org/grpc/serviceconfig"
 )
 
 const (

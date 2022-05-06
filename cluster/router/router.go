@@ -18,10 +18,12 @@
 package router
 
 import (
+	"github.com/RoaringBitmap/roaring"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
-
-	"github.com/RoaringBitmap/roaring"
 )
 
 // PriorityRouterFactory creates priority router with url

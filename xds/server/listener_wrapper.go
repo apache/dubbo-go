@@ -36,18 +36,20 @@ import (
 )
 
 import (
+	"google.golang.org/grpc/backoff"
+
+	"google.golang.org/grpc/connectivity"
+
+	"google.golang.org/grpc/grpclog"
+)
+
+import (
 	dubboLogger "dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/bootstrap"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
 	internalbackoff "dubbo.apache.org/dubbo-go/v3/xds/utils/backoff"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/envconfig"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpcsync"
-
-	"google.golang.org/grpc/backoff"
-
-	"google.golang.org/grpc/connectivity"
-
-	"google.golang.org/grpc/grpclog"
 )
 
 var (

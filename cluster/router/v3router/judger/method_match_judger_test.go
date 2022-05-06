@@ -23,10 +23,12 @@ import (
 )
 
 import (
+	"github.com/stretchr/testify/assert"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestMethodMatchJudger(t *testing.T) {

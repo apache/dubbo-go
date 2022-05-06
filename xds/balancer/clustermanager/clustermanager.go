@@ -30,16 +30,18 @@ import (
 )
 
 import (
-	dubboLogger "dubbo.apache.org/dubbo-go/v3/common/logger"
-	"dubbo.apache.org/dubbo-go/v3/xds/utils/balancergroup"
-	"dubbo.apache.org/dubbo-go/v3/xds/utils/hierarchy"
-	"dubbo.apache.org/dubbo-go/v3/xds/utils/pretty"
-
 	"google.golang.org/grpc/balancer"
 
 	"google.golang.org/grpc/resolver"
 
 	"google.golang.org/grpc/serviceconfig"
+)
+
+import (
+	dubboLogger "dubbo.apache.org/dubbo-go/v3/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/xds/utils/balancergroup"
+	"dubbo.apache.org/dubbo-go/v3/xds/utils/hierarchy"
+	"dubbo.apache.org/dubbo-go/v3/xds/utils/pretty"
 )
 
 const balancerName = "xds_cluster_manager_experimental"

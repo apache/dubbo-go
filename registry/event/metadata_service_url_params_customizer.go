@@ -22,14 +22,16 @@ import (
 )
 
 import (
+	gxset "github.com/dubbogo/gost/container/set"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/metadata/service/local"
 	"dubbo.apache.org/dubbo-go/v3/registry"
-
-	gxset "github.com/dubbogo/gost/container/set"
 )
 
 func init() {

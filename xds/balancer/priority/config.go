@@ -29,9 +29,11 @@ import (
 )
 
 import (
-	internalserviceconfig "dubbo.apache.org/dubbo-go/v3/xds/utils/serviceconfig"
-
 	"google.golang.org/grpc/serviceconfig"
+)
+
+import (
+	internalserviceconfig "dubbo.apache.org/dubbo-go/v3/xds/utils/serviceconfig"
 )
 
 // Child is a child of priority balancer.

@@ -18,14 +18,16 @@
 package apollo
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
-	"dubbo.apache.org/dubbo-go/v3/config_center"
-	"dubbo.apache.org/dubbo-go/v3/remoting"
-
 	"github.com/zouyx/agollo/v3"
 	"github.com/zouyx/agollo/v3/storage"
 
 	"gopkg.in/yaml.v2"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/config_center"
+	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
 type apolloListener struct {
