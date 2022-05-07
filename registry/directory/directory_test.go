@@ -29,8 +29,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/cluster"
-	_ "dubbo.apache.org/dubbo-go/v3/cluster/router"
-	_ "dubbo.apache.org/dubbo-go/v3/cluster/router/v3router"
+	_ "dubbo.apache.org/dubbo-go/v3/cluster/router/tag"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
@@ -206,7 +205,6 @@ func TestToGroupInvokers(t *testing.T) {
 		time.Sleep(1e9)
 		assert.True(t, len(registryDirectory.toGroupInvokers()) == 2)
 	})
-
 	t.Run("DifferentGroup", func(t *testing.T) {
 		extension.SetCluster("mock", cluster.NewMockCluster)
 
