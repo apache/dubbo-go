@@ -172,8 +172,9 @@ func packRequest(service Service, header DubboHeader, req interface{}) ([]byte, 
 END:
 	byteArray = encoder.Buffer()
 	pkgLen = len(byteArray)
-	if pkgLen > int(DEFAULT_LEN) { // 8M
-		return nil, perrors.Errorf("Data length %d too large, max payload %d", pkgLen, DEFAULT_LEN)
+	if pkgLen > int(DEFAULT_LEN) { // recommand 8M
+		logger.Warnf("Data length %d too large, recommand max payload %d. "+
+			"Dubbo java can't handle the package whose size is greater than %d!!!", pkgLen, DEFAULT_LEN, DEFAULT_LEN)
 	}
 	// byteArray{body length}
 	binary.BigEndian.PutUint32(byteArray[12:], uint32(pkgLen-HEADER_LENGTH))
