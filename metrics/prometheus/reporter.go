@@ -77,10 +77,11 @@ func init() {
 // if you want to use this feature, you need to initialize your prometheus.
 // https://prometheus.io/docs/guides/go-application/
 type PrometheusReporter struct {
+	reporterConfig *metrics.ReporterConfig
 	// report the consumer-side's rt gauge data
-	consumerRTGaugeVec *prometheus.GaugeVec
+	consumerRTSummaryVec *prometheus.SummaryVec
 	// report the provider-side's rt gauge data
-	providerRTGaugeVec *prometheus.GaugeVec
+	providerRTSummaryVec *prometheus.SummaryVec
 	// todo tps support
 	// report the consumer-side's tps gauge data
 	consumerTPSGaugeVec *prometheus.GaugeVec
@@ -102,11 +103,11 @@ type PrometheusReporter struct {
 // or it will be ignored
 func (reporter *PrometheusReporter) Report(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation, cost time.Duration, res protocol.Result) {
 	url := invoker.GetURL()
-	var rtVec *prometheus.GaugeVec
+	var rtVec *prometheus.SummaryVec
 	if isProvider(url) {
-		rtVec = reporter.providerRTGaugeVec
+		rtVec = reporter.providerRTSummaryVec
 	} else if isConsumer(url) {
-		rtVec = reporter.consumerRTGaugeVec
+		rtVec = reporter.consumerRTSummaryVec
 	} else {
 		logger.Warnf("The url belongs neither the consumer nor the provider, "+
 			"so the invocation will be ignored. url: %s", url.String())
@@ -121,7 +122,7 @@ func (reporter *PrometheusReporter) Report(ctx context.Context, invoker protocol
 		timeoutKey: url.GetParam(timeoutKey, ""),
 	}
 	costMs := cost.Nanoseconds()
-	rtVec.With(labels).Set(float64(costMs))
+	rtVec.With(labels).Observe(float64(costMs))
 }
 
 func newHistogramVec(name, namespace string, labels []string) *prometheus.HistogramVec {
@@ -176,7 +177,7 @@ func newSummary(name, namespace string) prometheus.Summary {
 
 // newSummaryVec create SummaryVec, the Namespace is dubbo
 // the objectives is from my experience.
-func newSummaryVec(name, namespace string, labels []string) *prometheus.SummaryVec {
+func newSummaryVec(name, namespace string, labels []string, maxAge int64) *prometheus.SummaryVec {
 	return prometheus.NewSummaryVec(
 		prometheus.SummaryOpts{
 			Namespace: namespace,
@@ -189,6 +190,7 @@ func newSummaryVec(name, namespace string, labels []string) *prometheus.SummaryV
 				0.99:  0.001,
 				0.999: 0.0001,
 			},
+			MaxAge: time.Duration(maxAge),
 		},
 		labels,
 	)
@@ -212,12 +214,12 @@ func newPrometheusReporter(reporterConfig *metrics.ReporterConfig) metrics.Repor
 	if reporterInstance == nil {
 		reporterInitOnce.Do(func() {
 			reporterInstance = &PrometheusReporter{
-				namespace:          reporterConfig.Namespace,
-				consumerRTGaugeVec: newGaugeVec(consumerPrefix+serviceKey+rtSuffix, reporterConfig.Namespace, labelNames),
-				providerRTGaugeVec: newGaugeVec(providerPrefix+serviceKey+rtSuffix, reporterConfig.Namespace, labelNames),
+				reporterConfig:       reporterConfig,
+				namespace:            reporterConfig.Namespace,
+				consumerRTSummaryVec: newSummaryVec(consumerPrefix+serviceKey+rtSuffix, reporterConfig.Namespace, labelNames, reporterConfig.SummaryMaxAge),
+				providerRTSummaryVec: newSummaryVec(providerPrefix+serviceKey+rtSuffix, reporterConfig.Namespace, labelNames, reporterConfig.SummaryMaxAge),
 			}
-
-			prom.DefaultRegisterer.MustRegister(reporterInstance.consumerRTGaugeVec, reporterInstance.providerRTGaugeVec)
+			prom.DefaultRegisterer.MustRegister(reporterInstance.consumerRTSummaryVec, reporterInstance.providerRTSummaryVec)
 			metricsExporter, err := ocprom.NewExporter(ocprom.Options{
 				Registry: prom.DefaultRegisterer.(*prom.Registry),
 			})
@@ -328,7 +330,7 @@ func (reporter *PrometheusReporter) incSummary(summaryName string, toSetValue fl
 		for k, _ := range labelMap {
 			keyList = append(keyList, k)
 		}
-		newSummaryVec := newSummaryVec(summaryName, reporter.namespace, keyList)
+		newSummaryVec := newSummaryVec(summaryName, reporter.namespace, keyList, reporter.reporterConfig.SummaryMaxAge)
 		_ = prom.DefaultRegisterer.Register(newSummaryVec)
 		reporter.userSummaryVec.Store(summaryName, newSummaryVec)
 		newSummaryVec.With(labelMap).Observe(toSetValue)
