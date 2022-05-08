@@ -77,6 +77,7 @@ func init() {
 // if you want to use this feature, you need to initialize your prometheus.
 // https://prometheus.io/docs/guides/go-application/
 type PrometheusReporter struct {
+	reporterConfig *metrics.ReporterConfig
 	// report the consumer-side's rt gauge data
 	consumerRTSummaryVec *prometheus.SummaryVec
 	// report the provider-side's rt gauge data
@@ -213,6 +214,7 @@ func newPrometheusReporter(reporterConfig *metrics.ReporterConfig) metrics.Repor
 	if reporterInstance == nil {
 		reporterInitOnce.Do(func() {
 			reporterInstance = &PrometheusReporter{
+				reporterConfig:       reporterConfig,
 				namespace:            reporterConfig.Namespace,
 				consumerRTSummaryVec: newSummaryVec(consumerPrefix+serviceKey+rtSuffix, reporterConfig.Namespace, labelNames, reporterConfig.SummaryMaxAge),
 				providerRTSummaryVec: newSummaryVec(providerPrefix+serviceKey+rtSuffix, reporterConfig.Namespace, labelNames, reporterConfig.SummaryMaxAge),
@@ -328,7 +330,7 @@ func (reporter *PrometheusReporter) incSummary(summaryName string, toSetValue fl
 		for k, _ := range labelMap {
 			keyList = append(keyList, k)
 		}
-		newSummaryVec := newSummaryVec(summaryName, reporter.namespace, keyList)
+		newSummaryVec := newSummaryVec(summaryName, reporter.namespace, keyList, reporter.reporterConfig.SummaryMaxAge)
 		_ = prom.DefaultRegisterer.Register(newSummaryVec)
 		reporter.userSummaryVec.Store(summaryName, newSummaryVec)
 		newSummaryVec.With(labelMap).Observe(toSetValue)
