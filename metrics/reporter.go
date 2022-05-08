@@ -26,6 +26,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
+const DefMaxAge = 600000000000
+
 type ReporterConfig struct {
 	Enable             bool
 	Namespace          string
@@ -33,6 +35,7 @@ type ReporterConfig struct {
 	Port               string
 	Path               string
 	PushGatewayAddress string
+	SummaryMaxAge      int64
 }
 
 type ReportMode string
@@ -50,6 +53,7 @@ func NewReporterConfig() *ReporterConfig {
 		Path:               "/metrics",
 		Mode:               ReportModePull,
 		PushGatewayAddress: "",
+		SummaryMaxAge:      DefMaxAge,
 	}
 }
 

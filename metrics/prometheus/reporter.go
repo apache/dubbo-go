@@ -176,7 +176,7 @@ func newSummary(name, namespace string) prometheus.Summary {
 
 // newSummaryVec create SummaryVec, the Namespace is dubbo
 // the objectives is from my experience.
-func newSummaryVec(name, namespace string, labels []string) *prometheus.SummaryVec {
+func newSummaryVec(name, namespace string, labels []string, maxAge int64) *prometheus.SummaryVec {
 	return prometheus.NewSummaryVec(
 		prometheus.SummaryOpts{
 			Namespace: namespace,
@@ -189,6 +189,7 @@ func newSummaryVec(name, namespace string, labels []string) *prometheus.SummaryV
 				0.99:  0.001,
 				0.999: 0.0001,
 			},
+			MaxAge: time.Duration(maxAge),
 		},
 		labels,
 	)
@@ -213,10 +214,9 @@ func newPrometheusReporter(reporterConfig *metrics.ReporterConfig) metrics.Repor
 		reporterInitOnce.Do(func() {
 			reporterInstance = &PrometheusReporter{
 				namespace:            reporterConfig.Namespace,
-				consumerRTSummaryVec: newSummaryVec(consumerPrefix+serviceKey+rtSuffix, reporterConfig.Namespace, labelNames),
-				providerRTSummaryVec: newSummaryVec(providerPrefix+serviceKey+rtSuffix, reporterConfig.Namespace, labelNames),
+				consumerRTSummaryVec: newSummaryVec(consumerPrefix+serviceKey+rtSuffix, reporterConfig.Namespace, labelNames, reporterConfig.SummaryMaxAge),
+				providerRTSummaryVec: newSummaryVec(providerPrefix+serviceKey+rtSuffix, reporterConfig.Namespace, labelNames, reporterConfig.SummaryMaxAge),
 			}
-
 			prom.DefaultRegisterer.MustRegister(reporterInstance.consumerRTSummaryVec, reporterInstance.providerRTSummaryVec)
 			metricsExporter, err := ocprom.NewExporter(ocprom.Options{
 				Registry: prom.DefaultRegisterer.(*prom.Registry),

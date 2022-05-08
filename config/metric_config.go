@@ -19,7 +19,6 @@ package config
 
 import (
 	"github.com/creasty/defaults"
-
 	"github.com/pkg/errors"
 )
 
@@ -36,6 +35,7 @@ type MetricConfig struct {
 	Port               string `default:"9090" yaml:"port" json:"port,omitempty" property:"port"`
 	Path               string `default:"/metrics" yaml:"path" json:"path,omitempty" property:"path"`
 	PushGatewayAddress string `default:"" yaml:"push-gateway-address" json:"push-gateway-address,omitempty" property:"push-gateway-address"`
+	SummaryMaxAge      int64  `default:"600000000000" yaml:"summary-max-age" json:"summary-max-age,omitempty" property:"summary-max-age"`
 }
 
 func (mc *MetricConfig) ToReporterConfig() *metrics.ReporterConfig {
@@ -51,6 +51,7 @@ func (mc *MetricConfig) ToReporterConfig() *metrics.ReporterConfig {
 	defaultMetricsReportConfig.Port = mc.Port
 	defaultMetricsReportConfig.Path = mc.Path
 	defaultMetricsReportConfig.PushGatewayAddress = mc.PushGatewayAddress
+	defaultMetricsReportConfig.SummaryMaxAge = mc.SummaryMaxAge
 	return defaultMetricsReportConfig
 }
 
