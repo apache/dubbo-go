@@ -608,8 +608,8 @@ github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINE
 github.com/pkg/profile v1.2.1/go.mod h1:hJw3o1OdXxsrSjjVksARp5W95eeEaEfptyVZyv6JUPA=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
-github.com/polarismesh/polaris-go v1.0.2 h1:vMPTgO+DKNq9mC5HP7wFnlotIqg2waOAIKQq0qoZchY=
-github.com/polarismesh/polaris-go v1.0.2/go.mod h1:pXNvQS2mL3HzyAj9PhKUjJsfAgbXFA1EBmBG7Yc2KdE=
+github.com/polarismesh/polaris-go v1.1.0 h1:nFvn3q3XaVFhzF7pBnIySrN0ZZBwvbbYXC5r2DpsQN0=
+github.com/polarismesh/polaris-go v1.1.0/go.mod h1:tquawfjEKp1W3ffNJQSzhfditjjoZ7tvhOCElN7Efzs=
 github.com/posener/complete v1.1.1/go.mod h1:em0nMJCgc9GFtwrmVmEMR/ZL6WyhyjMBndrE9hABlRI=
 github.com/prometheus/client_golang v0.9.1/go.mod h1:7SWBe2y4D6OKWSNQJUaRYU/AaXPKyh/dDVn+NZz0KFw=
 github.com/prometheus/client_golang v0.9.3-0.20190127221311-3c4408c8b829/go.mod h1:p2iRAGwDERtqlqzRXnrOVns+ignqQo//hLXqYxZYVNs=
