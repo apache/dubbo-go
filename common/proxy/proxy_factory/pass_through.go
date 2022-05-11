@@ -19,6 +19,7 @@ package proxy_factory
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 )
 
@@ -30,6 +31,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/common/proxy"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
@@ -106,11 +108,28 @@ func (pi *PassThroughProxyInvoker) Invoke(ctx context.Context, invocation protoc
 	in = append(in, reflect.ValueOf(args))
 	in = append(in, reflect.ValueOf(invocation.Attachments()))
 
-	returnValues := method.Method().Func.Call(in)
-
+	var replyv reflect.Value
 	var retErr interface{}
-	replyv := returnValues[0]
-	retErr = returnValues[1].Interface()
+	func() {
+		// Handle invoke exception in user func.
+		defer func() {
+			if e := recover(); e != nil {
+				if err, ok := e.(error); ok {
+					logger.Errorf("Invoke function error: %+v, service: %#v", perrors.WithStack(err), url)
+					result.SetError(e.(error))
+				} else if err, ok := e.(string); ok {
+					logger.Errorf("Invoke function error: %+v, service: %#v", perrors.New(err), url)
+					result.SetError(perrors.New(err))
+				} else {
+					logger.Errorf("Invoke function error: %+v, this is impossible. service: %#v", e, url)
+					result.SetError(fmt.Errorf("invoke function error, unknow exception: %+v", e))
+				}
+			}
+		}()
+		returnValues := method.Method().Func.Call(in)
+		replyv = returnValues[0]
+		retErr = returnValues[1].Interface()
+	}()
 
 	if retErr != nil {
 		result.SetError(retErr.(error))

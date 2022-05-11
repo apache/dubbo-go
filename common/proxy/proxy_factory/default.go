@@ -85,8 +85,8 @@ type ProxyInvoker struct {
 }
 
 // Invoke is used to call service method by invocation
-func (pi *ProxyInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) (result protocol.Result) {
-	result = &protocol.RPCResult{}
+func (pi *ProxyInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
+	result := &protocol.RPCResult{}
 	result.SetAttachments(invocation.Attachments())
 
 	// get providerUrl. The origin url may be is registry URL.
@@ -138,36 +138,39 @@ func (pi *ProxyInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 
 	// prepare replyv
 	var replyv reflect.Value
+	var retErr interface{}
 	//if method.ReplyType() == nil && len(method.ArgsType()) > 0 {
 	//
 	//	replyv = reflect.New(method.ArgsType()[len(method.ArgsType())-1].Elem())
 	//	in = append(in, replyv)
 	//}
 
-	defer func() {
-		if e := recover(); e != nil {
-			if err, ok := e.(error); ok {
-				logger.Errorf("Invoke function error: %+v, service: %#v", perrors.WithStack(err), url)
-				result.SetError(e.(error))
-			} else if err, ok := e.(string); ok {
-				logger.Errorf("Invoke function error: %+v, service: %#v", perrors.New(err), url)
-				result.SetError(perrors.New(err))
-			} else {
-				logger.Errorf("Invoke function error: %+v, this is impossible. service: %#v", e, url)
-				result.SetError(fmt.Errorf("Invoke function error, unknow exception: %+v", e))
+	func() {
+		// Handle invoke exception in user func.
+		defer func() {
+			if e := recover(); e != nil {
+				if err, ok := e.(error); ok {
+					logger.Errorf("Invoke function error: %+v, service: %#v", perrors.WithStack(err), url)
+					result.SetError(e.(error))
+				} else if err, ok := e.(string); ok {
+					logger.Errorf("Invoke function error: %+v, service: %#v", perrors.New(err), url)
+					result.SetError(perrors.New(err))
+				} else {
+					logger.Errorf("Invoke function error: %+v, this is impossible. service: %#v", e, url)
+					result.SetError(fmt.Errorf("invoke function error, unknow exception: %+v", e))
+				}
 			}
+		}()
+		returnValues := method.Method().Func.Call(in)
+
+		if len(returnValues) == 1 {
+			retErr = returnValues[0].Interface()
+		} else {
+			replyv = returnValues[0]
+			retErr = returnValues[1].Interface()
 		}
 	}()
 
-	returnValues := method.Method().Func.Call(in)
-
-	var retErr interface{}
-	if len(returnValues) == 1 {
-		retErr = returnValues[0].Interface()
-	} else {
-		replyv = returnValues[0]
-		retErr = returnValues[1].Interface()
-	}
 	if retErr != nil {
 		result.SetError(retErr.(error))
 	} else {
