@@ -19,7 +19,6 @@ package proxy_factory
 
 import (
 	"context"
-	"fmt"
 	"reflect"
 )
 
@@ -110,26 +109,17 @@ func (pi *PassThroughProxyInvoker) Invoke(ctx context.Context, invocation protoc
 
 	var replyv reflect.Value
 	var retErr interface{}
-	func() {
-		// Handle invoke exception in user func.
-		defer func() {
-			if e := recover(); e != nil {
-				if err, ok := e.(error); ok {
-					logger.Errorf("Invoke function error: %+v, service: %#v", perrors.WithStack(err), url)
-					result.SetError(e.(error))
-				} else if err, ok := e.(string); ok {
-					logger.Errorf("Invoke function error: %+v, service: %#v", perrors.New(err), url)
-					result.SetError(perrors.New(err))
-				} else {
-					logger.Errorf("Invoke function error: %+v, this is impossible. service: %#v", e, url)
-					result.SetError(fmt.Errorf("invoke function error, unknow exception: %+v", e))
-				}
-			}
-		}()
-		returnValues := method.Method().Func.Call(in)
-		replyv = returnValues[0]
-		retErr = returnValues[1].Interface()
-	}()
+
+	returnValues, callErr := callLocalMethod(method.Method(), in)
+
+	if callErr != nil {
+		logger.Errorf("Invoke function error: %+v, service: %#v", callErr, url)
+		result.SetError(callErr)
+		return result
+	}
+
+	replyv = returnValues[0]
+	retErr = returnValues[1].Interface()
 
 	if retErr != nil {
 		result.SetError(retErr.(error))
@@ -138,5 +128,6 @@ func (pi *PassThroughProxyInvoker) Invoke(ctx context.Context, invocation protoc
 	if replyv.IsValid() && (replyv.Kind() != reflect.Ptr || replyv.Kind() == reflect.Ptr && replyv.Elem().IsValid()) {
 		result.SetResult(replyv.Interface())
 	}
+
 	return result
 }

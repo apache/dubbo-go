@@ -19,7 +19,6 @@ package proxy_factory
 
 import (
 	"context"
-	"fmt"
 	"reflect"
 	"strings"
 )
@@ -139,45 +138,30 @@ func (pi *ProxyInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 	// prepare replyv
 	var replyv reflect.Value
 	var retErr interface{}
-	//if method.ReplyType() == nil && len(method.ArgsType()) > 0 {
-	//
-	//	replyv = reflect.New(method.ArgsType()[len(method.ArgsType())-1].Elem())
-	//	in = append(in, replyv)
-	//}
 
-	func() {
-		// Handle invoke exception in user func.
-		defer func() {
-			if e := recover(); e != nil {
-				if err, ok := e.(error); ok {
-					logger.Errorf("Invoke function error: %+v, service: %#v", perrors.WithStack(err), url)
-					result.SetError(e.(error))
-				} else if err, ok := e.(string); ok {
-					logger.Errorf("Invoke function error: %+v, service: %#v", perrors.New(err), url)
-					result.SetError(perrors.New(err))
-				} else {
-					logger.Errorf("Invoke function error: %+v, this is impossible. service: %#v", e, url)
-					result.SetError(fmt.Errorf("invoke function error, unknow exception: %+v", e))
-				}
-			}
-		}()
-		returnValues := method.Method().Func.Call(in)
+	returnValues, callErr := callLocalMethod(method.Method(), in)
 
-		if len(returnValues) == 1 {
-			retErr = returnValues[0].Interface()
-		} else {
-			replyv = returnValues[0]
-			retErr = returnValues[1].Interface()
-		}
-	}()
+	if callErr != nil {
+		logger.Errorf("Invoke function error: %+v, service: %#v", callErr, url)
+		result.SetError(callErr)
+		return result
+	}
+
+	if len(returnValues) == 1 {
+		retErr = returnValues[0].Interface()
+	} else {
+		replyv = returnValues[0]
+		retErr = returnValues[1].Interface()
+	}
 
 	if retErr != nil {
 		result.SetError(retErr.(error))
-	} else {
-		if replyv.IsValid() && (replyv.Kind() != reflect.Ptr || replyv.Kind() == reflect.Ptr && replyv.Elem().IsValid()) {
-			result.SetResult(replyv.Interface())
-		}
+		return result
 	}
+	if replyv.IsValid() && (replyv.Kind() != reflect.Ptr || replyv.Kind() == reflect.Ptr && replyv.Elem().IsValid()) {
+		result.SetResult(replyv.Interface())
+	}
+
 	return result
 }
 
