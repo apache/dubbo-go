@@ -76,6 +76,8 @@ jobs:
 
     - name: Check improts
       run: |
+        export $(go env | grep GOROOT | sed 's/\"//g')
+        echo $GOROOT
         imports-formatter -path .
         git status && [[ -z `git status -s` ]]
 
