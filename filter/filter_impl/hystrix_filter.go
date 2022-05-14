@@ -23,11 +23,15 @@ import (
 	"regexp"
 	"sync"
 )
+
 import (
 	"github.com/afex/hystrix-go/hystrix"
+
 	perrors "github.com/pkg/errors"
+
 	"gopkg.in/yaml.v2"
 )
+
 import (
 	"github.com/apache/dubbo-go/common/extension"
 	"github.com/apache/dubbo-go/common/logger"

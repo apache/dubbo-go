@@ -22,11 +22,11 @@
 package tps
 
 import (
-	gomock "github.com/golang/mock/gomock"
+	reflect "reflect"
 )
 
 import (
-	reflect "reflect"
+	gomock "github.com/golang/mock/gomock"
 )
 
 // MockTpsLimitStrategy is a mock of TpsLimitStrategy interface

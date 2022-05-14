@@ -23,6 +23,7 @@ import (
 
 import (
 	"github.com/creasty/defaults"
+
 	perrors "github.com/pkg/errors"
 )
 
@@ -34,7 +35,6 @@ import (
 /////////////////////////
 // providerConfig
 /////////////////////////
-
 // ProviderConfig is the default configuration of service provider
 type ProviderConfig struct {
 	BaseConfig     `yaml:",inline" property:"base"`

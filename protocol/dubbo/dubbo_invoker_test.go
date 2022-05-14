@@ -27,8 +27,11 @@ import (
 
 import (
 	hessian "github.com/apache/dubbo-go-hessian2"
+
 	"github.com/opentracing/opentracing-go"
+
 	perrors "github.com/pkg/errors"
+
 	"github.com/stretchr/testify/assert"
 )
 

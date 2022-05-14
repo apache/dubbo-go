@@ -23,6 +23,7 @@ import (
 
 import (
 	"github.com/RoaringBitmap/roaring"
+
 	perrors "github.com/pkg/errors"
 )
 

@@ -26,7 +26,9 @@ import (
 
 import (
 	hessian "github.com/apache/dubbo-go-hessian2"
+
 	"github.com/golang/mock/gomock"
+
 	"github.com/stretchr/testify/assert"
 )
 

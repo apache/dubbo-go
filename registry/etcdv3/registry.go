@@ -22,10 +22,11 @@ import (
 	"path"
 	"strings"
 	"sync"
-	"time"
 )
 
 import (
+	etcd "github.com/dubbogo/gost/database/kv/etcd/v3"
+
 	perrors "github.com/pkg/errors"
 )
 
@@ -50,7 +51,7 @@ func init() {
 type etcdV3Registry struct {
 	registry.BaseRegistry
 	cltLock        sync.Mutex
-	client         *etcdv3.Client
+	client         *etcd.Client
 	listenerLock   sync.RWMutex
 	listener       *etcdv3.EventListener
 	dataListener   *dataListener
@@ -58,12 +59,12 @@ type etcdV3Registry struct {
 }
 
 // Client gets the etcdv3 client
-func (r *etcdV3Registry) Client() *etcdv3.Client {
+func (r *etcdV3Registry) Client() *etcd.Client {
 	return r.client
 }
 
 // SetClient sets the etcdv3 client
-func (r *etcdV3Registry) SetClient(client *etcdv3.Client) {
+func (r *etcdV3Registry) SetClient(client *etcd.Client) {
 	r.client = client
 }
 
@@ -73,13 +74,7 @@ func (r *etcdV3Registry) ClientLock() *sync.Mutex {
 }
 
 func newETCDV3Registry(url *common.URL) (registry.Registry, error) {
-
-	timeout, err := time.ParseDuration(url.GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT))
-	if err != nil {
-		logger.Errorf("timeout config %v is invalid ,err is %v",
-			url.GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT), err.Error())
-		return nil, perrors.WithMessagef(err, "new etcd registry(address:%+v)", url.Location)
-	}
+	timeout := url.GetParamDuration(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT)
 
 	logger.Infof("etcd address is: %v, timeout is: %s", url.Location, timeout.String())
 
@@ -89,9 +84,9 @@ func newETCDV3Registry(url *common.URL) (registry.Registry, error) {
 
 	if err := etcdv3.ValidateClient(
 		r,
-		etcdv3.WithName(etcdv3.RegistryETCDV3Client),
-		etcdv3.WithTimeout(timeout),
-		etcdv3.WithEndpoints(strings.Split(url.Location, ",")...),
+		etcd.WithName(etcd.RegistryETCDV3Client),
+		etcd.WithTimeout(timeout),
+		etcd.WithEndpoints(strings.Split(url.Location, ",")...),
 	); err != nil {
 		return nil, err
 	}

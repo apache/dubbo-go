@@ -26,6 +26,7 @@ import (
 
 import (
 	consul "github.com/hashicorp/consul/api"
+
 	perrors "github.com/pkg/errors"
 )
 

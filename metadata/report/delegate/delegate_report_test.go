@@ -25,6 +25,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+
 	"go.uber.org/atomic"
 )
 

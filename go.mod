@@ -34,6 +34,8 @@ require (
 	github.com/satori/go.uuid v1.2.1-0.20181028125025-b2ce2384e17b
 	github.com/stretchr/testify v1.7.0
 	github.com/zouyx/agollo/v3 v3.4.5
+	go.etcd.io/etcd/api/v3 v3.5.0-alpha.0
+	go.etcd.io/etcd/client/v3 v3.5.0-alpha.0
 	go.uber.org/atomic v1.9.0
 	go.uber.org/zap v1.16.0
 	google.golang.org/grpc v1.36.0

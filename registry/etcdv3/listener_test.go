@@ -25,7 +25,9 @@ import (
 
 import (
 	"github.com/coreos/etcd/embed"
+
 	gxtime "github.com/dubbogo/gost/time"
+
 	"github.com/stretchr/testify/suite"
 )
 

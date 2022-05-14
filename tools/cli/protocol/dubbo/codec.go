@@ -26,11 +26,9 @@ import (
 )
 
 import (
-	perrors "github.com/pkg/errors"
-)
-
-import (
 	hessian "github.com/apache/dubbo-go-hessian2"
+
+	perrors "github.com/pkg/errors"
 )
 
 //SerialID serial ID

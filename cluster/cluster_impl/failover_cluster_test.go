@@ -23,8 +23,10 @@ import (
 	"net/url"
 	"testing"
 )
+
 import (
 	perrors "github.com/pkg/errors"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -42,7 +44,6 @@ import (
 // ///////////////////////////
 // mock invoker
 // ///////////////////////////
-
 // nolint
 type MockInvoker struct {
 	url       *common.URL

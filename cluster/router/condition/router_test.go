@@ -22,9 +22,13 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common"
 	"github.com/dubbogo/gost/container/set"
+
 	"github.com/stretchr/testify/assert"
+)
+
+import (
+	"github.com/apache/dubbo-go/common"
 )
 
 func TestParseRule(t *testing.T) {

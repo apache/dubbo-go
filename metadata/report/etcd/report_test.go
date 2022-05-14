@@ -26,6 +26,7 @@ import (
 
 import (
 	"github.com/coreos/etcd/embed"
+
 	"github.com/stretchr/testify/assert"
 )
 
