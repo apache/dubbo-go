@@ -67,7 +67,7 @@ func (f *otelServerFilter) OnResponse(ctx context.Context, result protocol.Resul
 
 func (f *otelServerFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	attachments := invocation.Attachments()
-	bags, spanCtx := Extract(ctx, &attachments, f.Propagators)
+	bags, spanCtx := Extract(ctx, attachments, f.Propagators)
 	ctx = baggage.ContextWithBaggage(ctx, bags)
 
 	tracer := f.TracerProvider.Tracer(
@@ -125,8 +125,11 @@ func (f *otelClientFilter) Invoke(ctx context.Context, invoker protocol.Invoker,
 	)
 	defer span.End()
 
-	attachments := make(map[string]interface{})
-	Inject(ctx, &(attachments), f.Propagators)
+	attachments := invocation.Attachments()
+	if attachments == nil {
+		attachments = map[string]interface{}{}
+	}
+	Inject(ctx, attachments, f.Propagators)
 	for k, v := range attachments {
 		invocation.SetAttachment(k, v)
 	}

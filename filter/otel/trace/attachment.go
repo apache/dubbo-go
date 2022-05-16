@@ -30,7 +30,7 @@ import (
 )
 
 type metadataSupplier struct {
-	metadata *map[string]interface{}
+	metadata map[string]interface{}
 }
 
 var _ propagation.TextMapCarrier = &metadataSupplier{}
@@ -39,7 +39,7 @@ func (s *metadataSupplier) Get(key string) string {
 	if s.metadata == nil {
 		return ""
 	}
-	item, ok := (*s.metadata)[key]
+	item, ok := s.metadata[key]
 	if !ok {
 		return ""
 	}
@@ -55,14 +55,14 @@ func (s *metadataSupplier) Get(key string) string {
 
 func (s *metadataSupplier) Set(key string, value string) {
 	if s.metadata == nil {
-		s.metadata = &map[string]interface{}{}
+		s.metadata = map[string]interface{}{}
 	}
-	(*s.metadata)[key] = value
+	s.metadata[key] = value
 }
 
 func (s *metadataSupplier) Keys() []string {
-	out := make([]string, 0, len(*s.metadata))
-	for key := range *s.metadata {
+	out := make([]string, 0, len(s.metadata))
+	for key := range s.metadata {
 		out = append(out, key)
 	}
 	return out
@@ -71,7 +71,7 @@ func (s *metadataSupplier) Keys() []string {
 // Inject injects correlation context and span context into the dubbo
 // metadata object. This function is meant to be used on outgoing
 // requests.
-func Inject(ctx context.Context, metadata *map[string]interface{}, propagators propagation.TextMapPropagator) {
+func Inject(ctx context.Context, metadata map[string]interface{}, propagators propagation.TextMapPropagator) {
 	propagators.Inject(ctx, &metadataSupplier{
 		metadata: metadata,
 	})
@@ -80,7 +80,7 @@ func Inject(ctx context.Context, metadata *map[string]interface{}, propagators p
 // Extract returns the correlation context and span context that
 // another service encoded in the dubbo metadata object with Inject.
 // This function is meant to be used on incoming requests.
-func Extract(ctx context.Context, metadata *map[string]interface{}, propagators propagation.TextMapPropagator) (baggage.Baggage, trace.SpanContext) {
+func Extract(ctx context.Context, metadata map[string]interface{}, propagators propagation.TextMapPropagator) (baggage.Baggage, trace.SpanContext) {
 	ctx = propagators.Extract(ctx, &metadataSupplier{
 		metadata: metadata,
 	})
