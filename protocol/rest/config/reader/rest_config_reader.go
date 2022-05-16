@@ -60,7 +60,7 @@ func (cr *RestConfigReader) ReadConsumerConfig(reader *bytes.Buffer) error {
 
 	restConsumerServiceConfigMap := make(map[string]*config.RestServiceConfig, len(restConsumerConfig.RestServiceConfigsMap))
 	for key, rc := range restConsumerConfig.RestServiceConfigsMap {
-		rc.Client = getNotEmptyStr(rc.Client, restConsumerConfig.Client, constant.DefaultRestClient)
+		rc.Client = config.GetNotEmptyStr(rc.Client, restConsumerConfig.Client, constant.DefaultRestClient)
 		//初始化每个方法的配置
 		rc.RestMethodConfigs = initMethodConfigMap(rc, restConsumerConfig.Consumes, restConsumerConfig.Produces)
 		restConsumerServiceConfigMap[key] = rc
@@ -78,7 +78,7 @@ func (cr *RestConfigReader) ReadProviderConfig(reader *bytes.Buffer) error {
 	}
 	restProviderServiceConfigMap := make(map[string]*config.RestServiceConfig, len(restProviderConfig.RestServiceConfigsMap))
 	for key, rc := range restProviderConfig.RestServiceConfigsMap {
-		rc.Server = getNotEmptyStr(rc.Server, restProviderConfig.Server, constant.DefaultRestServer)
+		rc.Server = config.GetNotEmptyStr(rc.Server, restProviderConfig.Server, constant.DefaultRestServer)
 		rc.RestMethodConfigs = initMethodConfigMap(rc, restProviderConfig.Consumes, restProviderConfig.Produces)
 		restProviderServiceConfigMap[key] = rc
 	}
@@ -92,26 +92,15 @@ func initMethodConfigMap(rc *config.RestServiceConfig, consumes string, produces
 	for _, mc := range rc.RestMethodConfigs {
 		mc.InterfaceName = rc.InterfaceName
 		mc.RestCommonConfig.Path = rc.Path + mc.RestCommonConfig.Path
-		mc.Consumes = getNotEmptyStr(mc.Consumes, rc.Consumes, consumes)
-		mc.Produces = getNotEmptyStr(mc.Produces, rc.Produces, produces)
-		mc.RestCommonConfig.MethodType = getNotEmptyStr(mc.RestCommonConfig.MethodType, rc.MethodType)
+		mc.Consumes = config.GetNotEmptyStr(mc.Consumes, rc.Consumes, consumes)
+		mc.Produces = config.GetNotEmptyStr(mc.Produces, rc.Produces, produces)
+		mc.RestCommonConfig.MethodType = config.GetNotEmptyStr(mc.RestCommonConfig.MethodType, rc.MethodType)
 		mc = transformMethodConfig(mc)
 		mcm[mc.MethodName] = mc
 	}
 	return mcm
 }
 
-// function will return first not empty string ..
-func getNotEmptyStr(args ...string) string {
-	var r string
-	for _, t := range args {
-		if len(t) > 0 {
-			r = t
-			break
-		}
-	}
-	return r
-}
 
 // transformMethodConfig
 func transformMethodConfig(methodConfig *config.RestMethodConfig) *config.RestMethodConfig {

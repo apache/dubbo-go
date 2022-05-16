@@ -43,7 +43,6 @@ type RestConsumerConfig struct {
 	Produces              string                        `default:"application/json" yaml:"rest_produces"  json:"rest_produces,omitempty" property:"rest_produces"`
 	Consumes              string                        `default:"application/json" yaml:"rest_consumes"  json:"rest_consumes,omitempty" property:"rest_consumes"`
 	RestServiceConfigsMap map[string]*RestServiceConfig `yaml:"references" json:"references,omitempty" property:"references"`
-
 	rootConfig *RootConfig
 }
 
@@ -70,7 +69,7 @@ func (c *RestConsumerConfig) Init(rc *RootConfig) error {
 
 	restConsumerServiceConfigMap := make(map[string]*RestServiceConfig, len(restConsumerConfig.RestServiceConfigsMap))
 	for key, rc := range restConsumerConfig.RestServiceConfigsMap {
-		rc.Client = getNotEmptyStr(rc.Client, restConsumerConfig.Client, constant.DefaultRestClient)
+		rc.Client = GetNotEmptyStr(rc.Client, restConsumerConfig.Client, constant.DefaultRestClient)
 		rc.RestMethodConfigs = initMethodConfigMap(rc, restConsumerConfig.Consumes, restConsumerConfig.Produces)
 		restConsumerServiceConfigMap[key] = rc
 	}
@@ -86,9 +85,9 @@ func initMethodConfigMap(rc *RestServiceConfig, consumes string, produces string
 	for _, mc := range rc.RestMethodConfigs {
 		mc.InterfaceName = rc.InterfaceName
 		mc.Path = rc.Path + mc.Path
-		mc.Consumes = getNotEmptyStr(mc.Consumes, rc.Consumes, consumes)
-		mc.Produces = getNotEmptyStr(mc.Produces, rc.Produces, produces)
-		mc.MethodType = getNotEmptyStr(mc.MethodType, rc.MethodType)
+		mc.Consumes = GetNotEmptyStr(mc.Consumes, rc.Consumes, consumes)
+		mc.Produces = GetNotEmptyStr(mc.Produces, rc.Produces, produces)
+		mc.MethodType = GetNotEmptyStr(mc.MethodType, rc.MethodType)
 		mc = transformMethodConfig(mc)
 		mcm[mc.MethodName] = mc
 	}
@@ -141,7 +140,7 @@ func parseParamsString2Map(params string) (map[int]string, error) {
 }
 
 // function will return first not empty string ..
-func getNotEmptyStr(args ...string) string {
+func GetNotEmptyStr(args ...string) string {
 	var r string
 	for _, t := range args {
 		if len(t) > 0 {
@@ -158,7 +157,6 @@ type RestProviderConfig struct {
 	Produces              string                        `default:"*/*" yaml:"rest_produces"  json:"rest_produces,omitempty" property:"rest_produces"`
 	Consumes              string                        `default:"*/*" yaml:"rest_consumes"  json:"rest_consumes,omitempty" property:"rest_consumes"`
 	RestServiceConfigsMap map[string]*RestServiceConfig `yaml:"services" json:"services,omitempty" property:"services"`
-
 	rootConfig *RootConfig
 }
 
@@ -279,7 +277,7 @@ func (c *RestProviderConfig) Init(rc *RootConfig) error {
 
 	restProviderServiceConfigMap := make(map[string]*RestServiceConfig, len(restProviderConfig.RestServiceConfigsMap))
 	for key, rc := range restProviderConfig.RestServiceConfigsMap {
-		rc.Server = getNotEmptyStr(rc.Server, restProviderConfig.Server, constant.DefaultRestServer)
+		rc.Server = GetNotEmptyStr(rc.Server, restProviderConfig.Server, constant.DefaultRestServer)
 		rc.RestMethodConfigs = initMethodConfigMap(rc, restProviderConfig.Consumes, restProviderConfig.Produces)
 		restProviderServiceConfigMap[key] = rc
 	}

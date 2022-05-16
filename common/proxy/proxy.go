@@ -140,7 +140,6 @@ func DefaultProxyImplementFunc(p *Proxy, v common.RPCService) {
 				}
 			} else { // only return error
 				replyEmptyFlag = true
-				//reply = reflect.New(outs[0])
 			}
 
 			start := 0
