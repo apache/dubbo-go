@@ -21,6 +21,10 @@ import (
 	"testing"
 )
 
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+)
+
 type filed struct {
 	name string
 	want string
@@ -30,7 +34,7 @@ func TestSemVersion(t *testing.T) {
 	tests := []filed{
 		{
 			name: "test",
-			want: "semver:3.0.0",
+			want: "semver:" + constant.Version,
 		},
 	}
 	for _, tt := range tests {
