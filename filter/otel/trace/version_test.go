@@ -50,7 +50,7 @@ func TestVersion(t *testing.T) {
 	tests := []filed{
 		{
 			name: "test",
-			want: "3.0.0",
+			want: constant.Version,
 		},
 	}
 	for _, tt := range tests {
