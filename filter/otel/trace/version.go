@@ -17,9 +17,13 @@
 
 package trace
 
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+)
+
 // Version is the current release version of the dubbogo instrumentation.
 func Version() string {
-	return "3.0.0"
+	return constant.Version
 }
 
 // SemVersion is the semantic version to be supplied to tracer/meter creation.
