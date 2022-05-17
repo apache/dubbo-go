@@ -39,18 +39,14 @@ func (s *metadataSupplier) Get(key string) string {
 	if s.metadata == nil {
 		return ""
 	}
-	item, ok := s.metadata[key]
+	item, ok := s.metadata[key].([]string)
 	if !ok {
 		return ""
 	}
-	value, ok := item.([]string)
-	if !ok {
+	if len(item) == 0 {
 		return ""
 	}
-	if len(value) == 0 {
-		return ""
-	}
-	return value[0]
+	return item[0]
 }
 
 func (s *metadataSupplier) Set(key string, value string) {
