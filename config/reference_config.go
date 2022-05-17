@@ -23,10 +23,15 @@ import (
 	"net/url"
 	"strconv"
 	"time"
+)
 
+import (
 	"github.com/creasty/defaults"
-	gxstrings "github.com/dubbogo/gost/strings"
 
+	gxstrings "github.com/dubbogo/gost/strings"
+)
+
+import (
 	"github.com/apache/dubbo-go/cluster/directory"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
