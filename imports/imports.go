@@ -46,6 +46,7 @@ import (
 	_ "dubbo.apache.org/dubbo-go/v3/filter/graceful_shutdown"
 	_ "dubbo.apache.org/dubbo-go/v3/filter/hystrix"
 	_ "dubbo.apache.org/dubbo-go/v3/filter/metrics"
+	_ "dubbo.apache.org/dubbo-go/v3/filter/otel/trace"
 	_ "dubbo.apache.org/dubbo-go/v3/filter/seata"
 	_ "dubbo.apache.org/dubbo-go/v3/filter/sentinel"
 	_ "dubbo.apache.org/dubbo-go/v3/filter/token"
