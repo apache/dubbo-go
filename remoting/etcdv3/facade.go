@@ -24,10 +24,14 @@ import (
 
 import (
 	etcd "github.com/dubbogo/gost/database/kv/etcd/v3"
+	gxtime "github.com/dubbogo/gost/time"
+
+	perrors "github.com/pkg/errors"
 )
 
 import (
 	"github.com/apache/dubbo-go/common"
+	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/logger"
 )
 
@@ -43,16 +47,59 @@ type clientFacade interface {
 
 // HandleClientRestart keeps the connection between client and server
 func HandleClientRestart(r clientFacade) {
+	var (
+		err       error
+		failTimes int
+	)
 	defer r.WaitGroup().Done()
+LOOP:
 	for {
 		select {
 		case <-r.Done():
 			logger.Warnf("(ETCDV3ProviderRegistry)reconnectETCDV3 goroutine exit now...")
 			return
+		case <-r.Client().Done():
+			r.ClientLock().Lock()
+			clientName := etcd.RegistryETCDV3Client
+			timeout, _ := time.ParseDuration(r.GetURL().GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT))
+			endpoints := r.Client().GetEndPoints()
+			r.Client().Close()
+			r.SetClient(nil)
+			r.ClientLock().Unlock()
+
+			// try to connect to etcd,
+			failTimes = 0
+			for {
+				select {
+				case <-r.Done():
+					logger.Warnf("(ETCDV3ProviderRegistry)reconnectETCDRegistry goroutine exit now...")
+					break LOOP
+				case <-gxtime.After(timeSecondDuration(failTimes * ConnDelay)): // avoid connect frequent
+				}
+				err = ValidateClient(
+					r,
+					etcd.WithName(clientName),
+					etcd.WithEndpoints(endpoints...),
+					etcd.WithTimeout(timeout),
+				)
+				logger.Infof("ETCDV3ProviderRegistry.validateETCDV3Client(etcd Addr{%s}) = error{%#v}",
+					endpoints, perrors.WithStack(err))
+				if err == nil && r.RestartCallBack() {
+					break
+				}
+				failTimes++
+				if MaxFailTimes <= failTimes {
+					failTimes = MaxFailTimes
+				}
+			}
 			// re-register all services
 		case <-r.Client().GetCtx().Done():
 			r.RestartCallBack()
 			time.Sleep(10 * time.Millisecond)
 		}
 	}
+}
+
+func timeSecondDuration(sec int) time.Duration {
+	return time.Duration(sec) * time.Second
 }

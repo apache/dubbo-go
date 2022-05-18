@@ -27,6 +27,13 @@ import (
 	"github.com/apache/dubbo-go/common/logger"
 )
 
+const (
+	// ConnDelay connection delay
+	ConnDelay = 3
+	// MaxFailTimes max failure times
+	MaxFailTimes = 15
+)
+
 // ValidateClient validates client and sets options
 func ValidateClient(container clientFacade, opts ...etcd.Option) error {
 	options := &etcd.Options{}

@@ -3,13 +3,6 @@
 
 ## 1.5.8
 
-### Bugfixes
-
-- [fix bug](https://github.com/apache/dubbo-go/pull/1662)
-- [decode net stream bytes as getty rule](https://github.com/apache/dubbo-go/pull/1833)
-
-## 1.5.8-rc1
-
 ### New Features
 
 - [support $invokeAsync](https://github.com/apache/dubbo-go/pull/1682)
@@ -27,6 +20,8 @@
 - [1.5.7 MetadataReportConfig lost the error](https://github.com/apache/dubbo-go/pull/1662)
 - [url too many colons in address](https://github.com/apache/dubbo-go/pull/1306)
 - [1.5 fix the nacos namespace from server/client.yml does not take effect](https://github.com/apache/dubbo-go/pull/1576)
+- [url too many colons in address](https://github.com/apache/dubbo-go/pull/1662)
+- [decode net stream bytes as getty rule](https://github.com/apache/dubbo-go/pull/1833)
 
 ## 1.5.7
 
