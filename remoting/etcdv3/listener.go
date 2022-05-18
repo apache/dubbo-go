@@ -19,19 +19,12 @@ package etcdv3
 
 import (
 	"sync"
-)
 
-import (
 	etcd "github.com/dubbogo/gost/database/kv/etcd/v3"
-
 	perrors "github.com/pkg/errors"
-
 	"go.etcd.io/etcd/api/v3/mvccpb"
+	client "go.etcd.io/etcd/client/v3"
 
-	"go.etcd.io/etcd/client/v3"
-)
-
-import (
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/remoting"
 )
@@ -98,7 +91,7 @@ func (l *EventListener) ListenServiceNodeEvent(key string, listener ...remoting.
 
 // return true means the event type is DELETE
 // return false means the event type is CREATE || UPDATE
-func (l *EventListener) handleEvents(event *clientv3.Event, listeners ...remoting.DataListener) bool {
+func (l *EventListener) handleEvents(event *client.Event, listeners ...remoting.DataListener) bool {
 
 	logger.Infof("got a etcd event {type: %s, key: %s}", event.Type, event.Kv.Key)
 
