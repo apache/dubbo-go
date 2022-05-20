@@ -19,7 +19,7 @@ require (
 	github.com/dubbogo/grpc-go v1.42.9
 	github.com/dubbogo/triple v1.1.8
 	github.com/emicklei/go-restful/v3 v3.7.4
-	github.com/envoyproxy/go-control-plane v0.10.1
+	github.com/envoyproxy/go-control-plane v0.10.2-0.20220325020618-49ff273808a1
 	github.com/fsnotify/fsnotify v1.5.4
 	github.com/go-co-op/gocron v1.9.0
 	github.com/go-playground/validator/v10 v10.11.0
@@ -51,7 +51,7 @@ require (
 	go.uber.org/atomic v1.9.0
 	go.uber.org/zap v1.21.0
 	google.golang.org/genproto v0.0.0-20211104193956-4c6863e31247
-	google.golang.org/grpc v1.45.0
+	google.golang.org/grpc v1.46.2
 	google.golang.org/protobuf v1.28.0
 	gopkg.in/yaml.v2 v2.4.0
 )
