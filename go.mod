@@ -4,7 +4,7 @@ go 1.15
 
 require (
 	contrib.go.opencensus.io/exporter/prometheus v0.4.1
-	github.com/RoaringBitmap/roaring v0.7.1
+	github.com/RoaringBitmap/roaring v1.0.0
 	github.com/Workiva/go-datastructures v1.0.52
 	github.com/afex/hystrix-go v0.0.0-20180502004556-fa1af6a1f4f5
 	github.com/alibaba/sentinel-golang v1.0.4
@@ -27,6 +27,7 @@ require (
 	github.com/golang/mock v1.5.0
 	github.com/golang/protobuf v1.5.2
 	github.com/google/go-cmp v0.5.8
+	github.com/gopherjs/gopherjs v0.0.0-20190910122728-9d188e94fb99 // indirect
 	github.com/grpc-ecosystem/grpc-opentracing v0.0.0-20180507213350-8e809c8a8645
 	github.com/hashicorp/vault/sdk v0.3.0
 	github.com/jinzhu/copier v0.3.5
