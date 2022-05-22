@@ -17,7 +17,9 @@
 
 package kubernetes
 
-import "github.com/apache/dubbo-go/common"
+import (
+	"github.com/apache/dubbo-go/common"
+)
 
 type clientFacade interface {
 	Client() *Client

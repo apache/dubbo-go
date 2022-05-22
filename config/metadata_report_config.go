@@ -19,13 +19,18 @@ package config
 
 import (
 	"net/url"
+)
 
+import (
 	"github.com/creasty/defaults"
 
+	perrors "github.com/pkg/errors"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/config/instance"
-	perrors "github.com/pkg/errors"
 )
 
 // MethodConfig is method level configuration

@@ -25,7 +25,9 @@ import (
 
 import (
 	"github.com/afex/hystrix-go/hystrix"
+
 	"github.com/pkg/errors"
+
 	"github.com/stretchr/testify/assert"
 )
 

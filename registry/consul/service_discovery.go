@@ -28,8 +28,10 @@ import (
 import (
 	"github.com/dubbogo/gost/container/set"
 	"github.com/dubbogo/gost/hash/page"
+
 	consul "github.com/hashicorp/consul/api"
 	"github.com/hashicorp/consul/api/watch"
+
 	perrors "github.com/pkg/errors"
 )
 

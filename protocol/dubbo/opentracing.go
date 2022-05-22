@@ -20,6 +20,7 @@ package dubbo
 import (
 	"github.com/opentracing/opentracing-go"
 )
+
 import (
 	invocation_impl "github.com/apache/dubbo-go/protocol/invocation"
 )

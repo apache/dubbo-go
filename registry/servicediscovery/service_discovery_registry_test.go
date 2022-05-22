@@ -24,8 +24,10 @@ import (
 import (
 	"github.com/dubbogo/gost/container/set"
 	"github.com/dubbogo/gost/hash/page"
+
 	"github.com/stretchr/testify/assert"
 )
+
 import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/extension"

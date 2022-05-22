@@ -32,9 +32,13 @@ import (
 
 import (
 	cm "github.com/Workiva/go-datastructures/common"
+
 	gxset "github.com/dubbogo/gost/container/set"
+
 	"github.com/jinzhu/copier"
+
 	perrors "github.com/pkg/errors"
+
 	"github.com/satori/go.uuid"
 )
 
@@ -46,7 +50,6 @@ import (
 // ///////////////////////////////
 // dubbo role type
 // ///////////////////////////////
-
 // role constant
 const (
 	// CONSUMER is consumer role

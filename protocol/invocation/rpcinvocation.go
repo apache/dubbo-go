@@ -32,7 +32,6 @@ import (
 // ///////////////////////////
 // Invocation Implement of RPC
 // ///////////////////////////
-
 // todo: is it necessary to separate fields of consumer(provider) from RPCInvocation
 // nolint
 type RPCInvocation struct {

@@ -25,7 +25,9 @@ import (
 
 import (
 	"github.com/RoaringBitmap/roaring"
+
 	gxnet "github.com/dubbogo/gost/net"
+
 	perrors "github.com/pkg/errors"
 )
 
