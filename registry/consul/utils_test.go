@@ -19,8 +19,6 @@ package consul
 
 import (
 	"fmt"
-	"github.com/apache/dubbo-go/common/logger"
-	"github.com/stretchr/testify/assert"
 	"net"
 	"net/url"
 	"strconv"
@@ -29,8 +27,13 @@ import (
 )
 
 import (
+	"github.com/stretchr/testify/assert"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
+	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/registry"
 	"github.com/apache/dubbo-go/remoting"
 	"github.com/apache/dubbo-go/remoting/consul"

@@ -18,16 +18,17 @@
 package config
 
 import (
-	"github.com/apache/dubbo-go/common"
 	"testing"
 )
 
 import (
 	"github.com/stretchr/testify/assert"
+
 	"go.uber.org/atomic"
 )
 
 import (
+	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/extension"
 )
 

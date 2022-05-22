@@ -19,6 +19,7 @@ package cluster_impl
 
 import (
 	perrors "github.com/pkg/errors"
+
 	"go.uber.org/atomic"
 )
 

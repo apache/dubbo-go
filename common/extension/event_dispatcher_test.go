@@ -25,6 +25,7 @@ import (
 import (
 	"github.com/stretchr/testify/assert"
 )
+
 import (
 	"github.com/apache/dubbo-go/common/observer"
 )

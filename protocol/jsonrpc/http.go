@@ -34,6 +34,7 @@ import (
 
 import (
 	"github.com/opentracing/opentracing-go"
+
 	perrors "github.com/pkg/errors"
 )
 
@@ -46,7 +47,6 @@ import (
 // ////////////////////////////////////////////
 // Request
 // ////////////////////////////////////////////
-
 // Request is HTTP protocol request
 type Request struct {
 	ID       int64

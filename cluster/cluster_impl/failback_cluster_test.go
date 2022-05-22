@@ -27,7 +27,9 @@ import (
 
 import (
 	"github.com/golang/mock/gomock"
+
 	perrors "github.com/pkg/errors"
+
 	"github.com/stretchr/testify/assert"
 )
 

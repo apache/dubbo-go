@@ -24,7 +24,9 @@ import (
 
 import (
 	"github.com/RoaringBitmap/roaring"
+
 	"github.com/dubbogo/gost/container/set"
+
 	perrors "github.com/pkg/errors"
 )
 
