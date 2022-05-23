@@ -18,6 +18,7 @@
 package rest
 
 import (
+	"strconv"
 	"sync"
 	"time"
 )
@@ -88,7 +89,7 @@ func (rp *RestProtocol) Refer(url *common.URL) protocol.Invoker {
 	// start
 	requestTimeout := 3 * time.Second
 	requestTimeoutStr := url.GetParam(constant.TimeoutKey, "3s")
-	connectTimeout := config.GetConsumerConfig().ConnectTimeout
+	connectTime := config.GetConsumerConfig().ConnectTimeout
 	// end
 	if t, err := time.ParseDuration(requestTimeoutStr); err == nil {
 		requestTimeout = t
@@ -99,6 +100,9 @@ func (rp *RestProtocol) Refer(url *common.URL) protocol.Invoker {
 		logger.Errorf("%s service doesn't has consumer config", url.Path)
 		return nil
 	}
+	atoi,_ := strconv.Atoi(connectTime)
+	connectTimeout := time.Duration(atoi) * time.Second
+
 	restOptions := client.RestOptions{RequestTimeout: requestTimeout, ConnectTimeout: connectTimeout}
 	restClient := rp.getClient(restOptions, restServiceConfig.Client)
 	invoker := NewRestInvoker(url, &restClient, restServiceConfig.RestMethodConfigs)

@@ -50,7 +50,7 @@ type ConsumerConfig struct {
 	FilterConf                     interface{}                 `yaml:"filter-conf" json:"filter-conf,omitempty" property:"filter-conf"`
 	MaxWaitTimeForServiceDiscovery string                      `default:"3s" yaml:"max-wait-time-for-service-discovery" json:"max-wait-time-for-service-discovery,omitempty" property:"max-wait-time-for-service-discovery"`
 	rootConfig                     *RootConfig
-	ConnectTimeout                 time.Duration			   `default:"3s" yaml:"connect-timeout" json:"connect-timeout,omitempty" property:"connect-timeout" `
+	ConnectTimeout                 string			   		   `default:"3s" yaml:"connect-timeout" json:"connect-timeout,omitempty" property:"connect-timeout" `
 }
 
 // Prefix dubbo.consumer
@@ -168,7 +168,7 @@ func newEmptyConsumerConfig() *ConsumerConfig {
 	newConsumerConfig := &ConsumerConfig{
 		References:     make(map[string]*ReferenceConfig, 8),
 		RequestTimeout: "3s",
-		ConnectTimeout: 3 * time.Second,
+		ConnectTimeout: "3s",
 		Check:          true,
 	}
 	return newConsumerConfig
