@@ -115,11 +115,9 @@ func transformMethodConfig(methodConfig *config.RestMethodConfig) *config.RestMe
 
 	restCommonConfig := methodConfig.RestCommonConfig
 
-	if len(methodConfig.QueryParamsMap) == 0 && restCommonConfig!= nil {
+	if len(methodConfig.QueryParamsMap) == 0 {
 
-		//初始化chan类型
 		restParam :=make([]string,4, 8)
-		const count = iota
 		restParam[0] = restCommonConfig.Path
 		restParam[1] = restCommonConfig.MethodType
 		restParam[2] = restCommonConfig.QueryParams
