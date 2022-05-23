@@ -55,14 +55,6 @@ func TestString(t *testing.T) {
 	assert.Equal(t, n2[1], "")
 }
 
-func TestRouterInit(t *testing.T) {
-	//err := RouterInit(testVirtualServiceYML, testDestinationRuleYML)
-	//assert.NoError(t, err)
-	//
-	//err = RouterInit(testVirtualServiceYML, errorTestDestinationRuleYML)
-	//assert.Error(t, err)
-}
-
 func TestNewRouterConfigBuilder(t *testing.T) {
 	tag := Tag{
 		Name:      "tag",

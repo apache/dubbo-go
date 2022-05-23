@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 )
 
 import (
@@ -75,6 +76,7 @@ func TestJsonrpcProtocolRefer(t *testing.T) {
 	assert.NoError(t, err)
 	con := config.ConsumerConfig{
 		RequestTimeout: "5s",
+		ConnectTimeout: 3 * time.Second,
 	}
 	config.SetConsumerConfig(con)
 	invoker := proto.Refer(url)

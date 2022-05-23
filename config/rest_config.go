@@ -32,7 +32,7 @@ import (
 )
 
 var (
-	// pi todo Encapsulation it , do not export
+
 	restConsumerServiceConfigMap map[string]*RestServiceConfig
 	restProviderServiceConfigMap map[string]*RestServiceConfig
 )
@@ -58,7 +58,7 @@ func (c *RestConsumerConfig) UnmarshalYAML(unmarshal func(interface{}) error) er
 	return nil
 }
 
-// pi todo refactor
+
 func (c *RestConsumerConfig) Init(rc *RootConfig) error {
 	restConsumerConfig := rc.RestConsumer
 

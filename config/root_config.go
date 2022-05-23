@@ -213,7 +213,6 @@ func (rc *RootConfig) Start() {
 		gracefulShutdownInit()
 		rc.Consumer.Load()
 		rc.Provider.Load()
-		// todo if register consumer instance or has exported services
 		exportMetadataService()
 		registerServiceInstance()
 	})

@@ -157,9 +157,9 @@ func getArgsInterfaceFromRequest(req RestServerRequest, methodConfig *rconfig.Re
 			maxKey = methodConfig.Body
 		}
 		m := make(map[string]interface{})
-		// TODO read as a slice
+
 		if err := req.ReadEntity(&m); err != nil {
-			// pi todo improve the fault tolerance so just logger warn
+			
 			//return nil, perrors.Errorf("[Go restful] Read body entity as map[string]interface{} error:%v", err)
 			logger.Warnf("[Go Restful] parsing http parameters by body entity error: %v", err)
 		} else {
@@ -237,7 +237,7 @@ func assembleArgsFromBody(methodConfig *rconfig.RestMethodConfig, argsTypes []re
 			}
 		}
 		if err := req.ReadEntity(&ni); err != nil {
-			// pi todo improve the fault tolerance so just logger warn
+			
 			//return perrors.Errorf("[Go restful] Read body entity error, error is %v", perrors.WithStack(err))
 			logger.Warnf("[Go Restful] parsing http parameters by body entity error: %v", err)
 		} else {

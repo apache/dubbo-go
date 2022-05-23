@@ -40,23 +40,9 @@ const REST = "rest"
 
 func init() {
 	SetRestServer(constant.DefaultRestServer, server.NewGoRestfulServer)
-}
-
-func init() {
 	extension.SetRestClient(constant.DefaultRestClient, client_impl.NewRestyClient)
-}
-
-func init() {
-	SetRestServer(constant.DefaultRestServer, server.NewGoRestfulServer)
-}
-
-func init() {
-	extension.SetRestClient(constant.DefaultRestClient, client_impl.NewRestyClient)
-}
-
-// nolint
-func init() {
 	extension.SetProtocol(REST, GetRestProtocol)
+
 }
 
 // nolint
@@ -99,11 +85,10 @@ func (rp *RestProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 // Refer create rest service reference
 func (rp *RestProtocol) Refer(url *common.URL) protocol.Invoker {
 	// create rest_invoker
-	// todo fix timeout config
 	// start
-	requestTimeout := time.Duration(3 * time.Second)
+	requestTimeout := 3 * time.Second
 	requestTimeoutStr := url.GetParam(constant.TimeoutKey, "3s")
-	connectTimeout := requestTimeout // config.GetConsumerConfig().ConnectTimeout
+	connectTimeout := config.GetConsumerConfig().ConnectTimeout
 	// end
 	if t, err := time.ParseDuration(requestTimeoutStr); err == nil {
 		requestTimeout = t

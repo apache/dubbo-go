@@ -52,7 +52,6 @@ func GetConfigResolver(conf *loaderConf) *koanf.Koanf {
 
 	switch conf.suffix {
 	case "yaml", "yml":
-		//err = k.Load(rawbytes.Provider(bytes), yaml.Parser())
 		err = k.Load(rawbytes.Provider(bytes), yaml.Parser())
 	case "json":
 		err = k.Load(rawbytes.Provider(bytes), json.Parser())
