@@ -7,8 +7,8 @@ on:
     branches: "*"
 
 jobs:
-  init:
-    name: ${{ matrix.os }} - Go ${{ matrix.go }}
+  build:
+    name: ${{ matrix.os }} - go ${{ matrix.go }}
     runs-on: ${{ matrix.os }}
     strategy:
       # If you want to matrix build , you can append the following list.
@@ -24,7 +24,7 @@ jobs:
           go-version: ${{ matrix.go }}
 
       - name: Check out code into the Go module directory
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Cache dependencies
         uses: actions/cache@v2.1.4
@@ -45,48 +45,21 @@ jobs:
           else
               go get -v -t -d ./...
           fi
-  golangci:
-    needs:
-      - init
-    permissions:
-      contents: read  # for actions/checkout to fetch code
-      pull-requests: read  # for golangci/golangci-lint-action to fetch pull requests
-    name: lint
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        go:
-          - 1.15
-    steps:
-      - uses: actions/setup-go@v3
-        with:
-          go-version: ${{ matrix.go }}
-      - uses: actions/checkout@v3
+
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3.2.0
         with:
           version: v1.44.2
           args: --timeout=10m
           skip-go-installation: true
-  integratetest:
-    needs:
-      - init
-    name: ${{ matrix.os }} - Go ${{ matrix.go }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      # If you want to matrix build , you can append the following list.
-      matrix:
-        go:
-          - 1.15
-        os:
-          - ubuntu-latest
-    steps:
+
+      - name: gofmt
+        run: |
+          go fmt ./... && git status && [[ -z `git status -s` ]]
+          # diff -u <(echo -n) <(gofmt -d -s .)
       - name: verify
         run: |
           make verify
-
-      - name: Post Coverage
-        run: bash <(curl -s https://codecov.io/bash)
 
       # This step only runs when the event type is a pull_request
       - name: Integrate Test
@@ -100,20 +73,5 @@ jobs:
         run: |
           chmod +x integrate_test.sh && ./integrate_test.sh $GITHUB_REPOSITORY $GITHUB_SHA $GITHUB_BASE_REF
 
-  check:
-    needs:
-      - init
-    name: ${{ matrix.os }} - Go ${{ matrix.go }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      # If you want to matrix build , you can append the following list.
-      matrix:
-        go:
-          - 1.15
-        os:
-          - ubuntu-latest
-    steps:
-      - name: gofmt
-        run: |
-          go fmt ./... && git status && [[ -z `git status -s` ]]
-          # diff -u <(echo -n) <(gofmt -d -s .)
+      - name: Post Coverage
+        run: bash <(curl -s https://codecov.io/bash)
