@@ -18,10 +18,19 @@
 package xds
 
 import (
-	"errors"
+	"time"
 )
 
-var (
-	DiscoverLocalError       = errors.New("Discovery local Pod's host from xds, failed please register service with endpoint to k8s ")
-	DiscoverIstiodPodIpError = errors.New("Discovery istiod Pod's ip from xds failed, please register service with endpoint to k8s ")
+import (
+	xdsCommon "dubbo.apache.org/dubbo-go/v3/remoting/xds/common"
 )
+
+type Config struct {
+	PodName         string
+	Namespace       string
+	IstioAddr       xdsCommon.HostAddr
+	DebugPort       string
+	LocalIP         string
+	LocalDebugMode  bool
+	SniffingTimeout time.Duration
+}

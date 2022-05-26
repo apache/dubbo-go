@@ -29,6 +29,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	xdsCommon "dubbo.apache.org/dubbo-go/v3/remoting/xds/common"
@@ -127,6 +128,11 @@ type WrappedClientImpl struct {
 		subscribeStopChMap stores subscription stop chan
 	*/
 	subscribeStopChMap sync.Map
+
+	/*
+		xdsSniffingTimeout stores xds sniffing timeout duration
+	*/
+	xdsSniffingTimeout time.Duration
 }
 
 func GetXDSWrappedClient() *WrappedClientImpl {
@@ -134,18 +140,24 @@ func GetXDSWrappedClient() *WrappedClientImpl {
 }
 
 // NewXDSWrappedClient create or get singleton xdsWrappedClient
-func NewXDSWrappedClient(podName, namespace, localIP string, istioAddr xdsCommon.HostAddr) (XDSWrapperClient, error) {
+func NewXDSWrappedClient(config Config) (XDSWrapperClient, error) {
 	// todo @(laurence) safety problem? what if to concurrent 'new' both create new client?
 	if xdsWrappedClient != nil {
 		return xdsWrappedClient, nil
 	}
+	if config.SniffingTimeout == 0 {
+		config.SniffingTimeout, _ = time.ParseDuration(constant.DefaultRegTimeout)
+	}
+	if config.DebugPort == "" {
+		config.DebugPort = "8080"
+	}
 
 	// write param
 	newClient := &WrappedClientImpl{
-		podName:    podName,
-		namespace:  namespace,
-		localIP:    localIP,
-		istiodAddr: istioAddr,
+		podName:    config.PodName,
+		namespace:  config.Namespace,
+		localIP:    config.LocalIP,
+		istiodAddr: config.IstioAddr,
 
 		rdsMap: make(map[string]resource.RouteConfigUpdate),
 		cdsMap: make(map[string]resource.ClusterUpdate),
@@ -155,6 +167,8 @@ func NewXDSWrappedClient(podName, namespace, localIP string, istioAddr xdsCommon
 
 		cdsUpdateEventChan:     make(chan struct{}),
 		cdsUpdateEventHandlers: make([]func(), 0),
+
+		xdsSniffingTimeout: config.SniffingTimeout,
 	}
 
 	// 1. init xdsclient
@@ -166,7 +180,7 @@ func NewXDSWrappedClient(podName, namespace, localIP string, istioAddr xdsCommon
 	go newClient.runWatchingCdsUpdateEvent()
 
 	// 3. load basic info from istiod and start listening cds
-	if err := newClient.startWatchingAllClusterAndLoadLocalHostAddrAndIstioPodIP(); err != nil {
+	if err := newClient.startWatchingAllClusterAndLoadLocalHostAddrAndIstioPodIP(config.LocalDebugMode); err != nil {
 		return nil, err
 	}
 
@@ -174,8 +188,8 @@ func NewXDSWrappedClient(podName, namespace, localIP string, istioAddr xdsCommon
 	newClient.interfaceMapHandler = mapping.NewInterfaceMapHandlerImpl(
 		newClient.xdsClient,
 		defaultIstiodTokenPath,
-		xdsCommon.NewHostNameOrIPAddr(newClient.istiodPodIP+":"+defaultIstiodDebugPort),
-		newClient.hostAddr)
+		xdsCommon.NewHostNameOrIPAddr(newClient.istiodPodIP+":"+config.DebugPort),
+		newClient.hostAddr, config.LocalDebugMode)
 
 	xdsWrappedClient = newClient
 	return newClient, nil
@@ -184,6 +198,11 @@ func NewXDSWrappedClient(podName, namespace, localIP string, istioAddr xdsCommon
 // GetHostAddrByServiceUniqueKey  todo 1. timeout 2. hostAddr change?
 func (w *WrappedClientImpl) GetHostAddrByServiceUniqueKey(serviceUniqueKey string) (string, error) {
 	return w.interfaceMapHandler.GetHostAddrMap(serviceUniqueKey)
+}
+
+// GetDubboGoMetadata get all registered metadata of dubbogo
+func (w *WrappedClientImpl) GetDubboGoMetadata() (map[string]string, error) {
+	return w.interfaceMapHandler.GetDubboGoMetadata()
 }
 
 // ChangeInterfaceMap change the map of serviceUniqueKey -> appname, if add is true, register, else unregister
@@ -371,17 +390,19 @@ func (w *WrappedClientImpl) initXDSClient() error {
 // 1. start watching all cluster by cds
 // 2. discovery local pod's hostAddr by cds and eds
 // 3. discovery istiod pod ip by cds and eds
-func (w *WrappedClientImpl) startWatchingAllClusterAndLoadLocalHostAddrAndIstioPodIP() error {
+func (w *WrappedClientImpl) startWatchingAllClusterAndLoadLocalHostAddrAndIstioPodIP(localDebugMode bool) error {
 	// call watch and refresh istiod debug interface
 	foundLocalStopCh := make(chan struct{})
 	foundIstiodStopCh := make(chan struct{})
 	discoveryFinishedStopCh := make(chan struct{})
 	// todo timeout configure
-	timeoutCh := time.After(time.Second * 3)
+	timeoutCh := time.After(w.xdsSniffingTimeout)
 	foundLocal := false
 	foundIstiod := false
 	var cancel1 func()
 	var cancel2 func()
+	logger.Infof("[XDS Wrapped Client] Start sniffing with istio hostname = %s, localIp = %s",
+		w.istiodAddr.HostnameOrIP, w.localIP)
 
 	// todo @(laurence) here, if istiod is unhealthy, here should be timeout and tell developer.
 	_ = w.xdsClient.WatchCluster("*", func(update resource.ClusterUpdate, err error) {
@@ -393,6 +414,7 @@ func (w *WrappedClientImpl) startWatchingAllClusterAndLoadLocalHostAddrAndIstioP
 			w.cdsMapLock.Lock()
 			defer w.cdsMapLock.Unlock()
 			delete(w.cdsMap, update.ClusterName[1:])
+			logger.Infof("[XDS Wrapped Client] Delete cluster %s", update.ClusterName)
 			w.cdsUpdateEventChan <- struct{}{} // send update event
 			return
 		}
@@ -404,18 +426,22 @@ func (w *WrappedClientImpl) startWatchingAllClusterAndLoadLocalHostAddrAndIstioP
 		if foundLocal && foundIstiod {
 			return
 		}
+		logger.Infof("[XDS Wrapped Client] Sniffing with cluster name = %s", update.ClusterName)
 		// only into here during start sniffing istiod/service prcedure
 		cluster := xdsCommon.NewCluster(update.ClusterName)
 		if cluster.Addr.HostnameOrIP == w.istiodAddr.HostnameOrIP {
 			// 1. find istiod podIP
 			// todo: When would eds level watch be canceled?
+			logger.Info("[XDS Wrapped Client] Sniffing get istiod cluster")
 			cancel1 = w.xdsClient.WatchEndpoints(update.ClusterName, func(endpoint resource.EndpointsUpdate, err error) {
 				if foundIstiod {
 					return
 				}
+				logger.Infof("[XDS Wrapped Client] Sniffing get istiod endpoint = %+v, localities = %+v", endpoint, endpoint.Localities)
 				for _, v := range endpoint.Localities {
 					for _, e := range v.Endpoints {
 						w.istiodPodIP = xdsCommon.NewHostNameOrIPAddr(e.Address).HostnameOrIP
+						logger.Infof("[XDS Wrapped Client] Sniffing found istiod podIP = %s", w.istiodPodIP)
 						foundIstiod = true
 						close(foundIstiodStopCh)
 					}
@@ -431,6 +457,7 @@ func (w *WrappedClientImpl) startWatchingAllClusterAndLoadLocalHostAddrAndIstioP
 			}
 			for _, v := range endpoint.Localities {
 				for _, e := range v.Endpoints {
+					logger.Infof("[XDS Wrapped Client] Sniffing Found eds endpoint = %+v", e)
 					if xdsCommon.NewHostNameOrIPAddr(e.Address).HostnameOrIP == w.localIP {
 						cluster := xdsCommon.NewCluster(update.ClusterName)
 						w.hostAddr = cluster.Addr
@@ -441,6 +468,17 @@ func (w *WrappedClientImpl) startWatchingAllClusterAndLoadLocalHostAddrAndIstioP
 			}
 		})
 	})
+
+	if localDebugMode {
+		go func() {
+			<-foundIstiodStopCh
+			<-foundLocalStopCh
+			cancel1()
+			cancel2()
+		}()
+		return nil
+	}
+
 	go func() {
 		<-foundIstiodStopCh
 		<-foundLocalStopCh
@@ -454,8 +492,10 @@ func (w *WrappedClientImpl) startWatchingAllClusterAndLoadLocalHostAddrAndIstioP
 		time.Sleep(time.Second)
 		cancel1()
 		cancel2()
+		logger.Infof("[XDS Wrapper Client] Sniffing Finished with host addr = %s, istiod pod ip = %s", w.hostAddr, w.istiodPodIP)
 		return nil
 	case <-timeoutCh:
+		logger.Warnf("[XDS Wrapper Client] Sniffing timeout with duration = %v", w.xdsSniffingTimeout)
 		if cancel1 != nil {
 			cancel1()
 		}
@@ -466,7 +506,7 @@ func (w *WrappedClientImpl) startWatchingAllClusterAndLoadLocalHostAddrAndIstioP
 		case <-foundIstiodStopCh:
 			return DiscoverLocalError
 		default:
-			return DiscoverIstiodPodError
+			return DiscoverIstiodPodIpError
 		}
 	}
 }
@@ -528,6 +568,7 @@ type XDSWrapperClient interface {
 	UnSubscribe(svcUniqueName string)
 	GetRouterConfig(hostAddr string) resource.RouteConfigUpdate
 	GetHostAddrByServiceUniqueKey(serviceUniqueKey string) (string, error)
+	GetDubboGoMetadata() (map[string]string, error)
 	ChangeInterfaceMap(serviceUniqueKey string, add bool) error
 	GetClusterUpdateIgnoreVersion(hostAddr string) resource.ClusterUpdate
 	GetHostAddress() xdsCommon.HostAddr

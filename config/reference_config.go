@@ -49,7 +49,7 @@ type ReferenceConfig struct {
 	Check          *bool             `yaml:"check"  json:"check,omitempty" property:"check"`
 	URL            string            `yaml:"url"  json:"url,omitempty" property:"url"`
 	Filter         string            `yaml:"filter" json:"filter,omitempty" property:"filter"`
-	Protocol       string            `default:"tri" yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
+	Protocol       string            `yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
 	RegistryIDs    []string          `yaml:"registry-ids"  json:"registry-ids,omitempty"  property:"registry-ids"`
 	Cluster        string            `yaml:"cluster"  json:"cluster,omitempty" property:"cluster"`
 	Loadbalance    string            `yaml:"loadbalance"  json:"loadbalance,omitempty" property:"loadbalance"`
@@ -89,14 +89,25 @@ func (rc *ReferenceConfig) Init(root *RootConfig) error {
 	rc.rootConfig = root
 	if root.Application != nil {
 		rc.metaDataType = root.Application.MetadataType
+		if rc.Group == "" {
+			rc.Group = root.Application.Group
+		}
+		if rc.Version == "" {
+			rc.Version = root.Application.Version
+		}
 	}
 	if rc.Cluster == "" {
 		rc.Cluster = "failover"
 	}
-	rc.RegistryIDs = translateRegistryIds(rc.RegistryIDs)
+	rc.RegistryIDs = translateIds(rc.RegistryIDs)
 	if len(rc.RegistryIDs) <= 0 {
 		rc.RegistryIDs = root.Consumer.RegistryIDs
 	}
+
+	if rc.Protocol == "" {
+		rc.Protocol = root.Consumer.Protocol
+	}
+
 	if rc.TracingKey == "" {
 		rc.TracingKey = root.Consumer.TracingKey
 	}

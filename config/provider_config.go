@@ -43,6 +43,8 @@ type ProviderConfig struct {
 	Register bool `yaml:"register" json:"register" property:"register"`
 	// RegistryIDs is registry ids list
 	RegistryIDs []string `yaml:"registry-ids" json:"registry-ids" property:"registry-ids"`
+	// protocol
+	ProtocolIDs []string `yaml:"protocol-ids" json:"protocol-ids" property:"protocol-ids"`
 	// TracingKey is tracing ids list
 	TracingKey string `yaml:"tracing-key" json:"tracing-key" property:"tracing-key"`
 	// Services services
@@ -72,10 +74,12 @@ func (c *ProviderConfig) Init(rc *RootConfig) error {
 	if c == nil {
 		return nil
 	}
-	c.RegistryIDs = translateRegistryIds(c.RegistryIDs)
+	c.RegistryIDs = translateIds(c.RegistryIDs)
 	if len(c.RegistryIDs) <= 0 {
 		c.RegistryIDs = rc.getRegistryIds()
 	}
+	c.ProtocolIDs = translateIds(c.ProtocolIDs)
+
 	if c.TracingKey == "" && len(rc.Tracing) > 0 {
 		for k, _ := range rc.Tracing {
 			c.TracingKey = k
@@ -107,14 +111,16 @@ func (c *ProviderConfig) Init(rc *RootConfig) error {
 
 	for k, v := range rc.Protocols {
 		if v.Name == tripleConstant.TRIPLE {
+			// Auto create reflection service configure only when provider with triple service is configured.
 			tripleReflectionService := NewServiceConfigBuilder().
 				SetProtocolIDs(k).
-				SetInterface("grpc.reflection.v1alpha.ServerReflection").
+				SetNotRegister(true).
+				SetInterface(constant.ReflectionServiceInterface).
 				Build()
 			if err := tripleReflectionService.Init(rc); err != nil {
 				return err
 			}
-			c.Services["XXX_serverReflectionServer"] = tripleReflectionService
+			c.Services[constant.ReflectionServiceTypeName] = tripleReflectionService
 		}
 	}
 
@@ -135,21 +141,38 @@ func (c *ProviderConfig) Init(rc *RootConfig) error {
 }
 
 func (c *ProviderConfig) Load() {
-	for key, svs := range c.Services {
-		rpcService := GetProviderService(key)
-		if rpcService == nil {
-			logger.Warnf("Service reference key %s does not exist, please check if this key "+
-				"matches your provider struct type name, or matches the returned valued of your provider struct's Reference() function."+
-				"View https://www.yuque.com/u772707/eqpff0/pqfgz3#zxdw0 for details", key)
-			continue
+	for registeredTypeName, service := range GetProviderServiceMap() {
+		serviceConfig, ok := c.Services[registeredTypeName]
+		if !ok {
+			if registeredTypeName == constant.ReflectionServiceTypeName {
+				// do not auto generate reflection server's configuration.
+				continue
+			}
+			// service doesn't config in config file, create one with default
+			logger.Warnf("Dubbogo can not find service with registeredTypeName %s in configuration. Use the default configuration instead.", registeredTypeName)
+			supportPBPackagerNameSerivce, ok := service.(common.TriplePBService)
+			serviceConfig = NewServiceConfigBuilder().Build()
+			if !ok {
+				logger.Errorf("Dubbogo do not read service interface name with registeredTypeName = %s."+
+					"Please run go install github.com/dubbogo/tools/cmd/protoc-gen-go-triple@latest to update your "+
+					"protoc-gen-go-triple and re-generate your pb file again."+
+					"If you are not using pb serialization, please set 'interface' field in service config.", registeredTypeName)
+				continue
+			} else {
+				// use interface name defined by pb
+				serviceConfig.Interface = supportPBPackagerNameSerivce.XXX_InterfaceName()
+			}
+			if err := serviceConfig.Init(rootConfig); err != nil {
+				logger.Errorf("Service with refKey = %s init failed with error = %s")
+			}
+			serviceConfig.adaptiveService = c.AdaptiveService
 		}
-		svs.id = key
-		svs.Implement(rpcService)
-		if err := svs.Export(); err != nil {
-			logger.Errorf(fmt.Sprintf("service %s export failed! err: %#v", key, err))
+		serviceConfig.id = registeredTypeName
+		serviceConfig.Implement(service)
+		if err := serviceConfig.Export(); err != nil {
+			logger.Errorf(fmt.Sprintf("service with registeredTypeName = %s export failed! err: %#v", registeredTypeName, err))
 		}
 	}
-
 }
 
 // newEmptyProviderConfig returns ProviderConfig with default ApplicationConfig
@@ -157,6 +180,7 @@ func newEmptyProviderConfig() *ProviderConfig {
 	newProviderConfig := &ProviderConfig{
 		Services:    make(map[string]*ServiceConfig),
 		RegistryIDs: make([]string, 8),
+		ProtocolIDs: make([]string, 8),
 	}
 	return newProviderConfig
 }
