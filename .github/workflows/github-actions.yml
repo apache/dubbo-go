@@ -51,6 +51,9 @@ jobs:
         with:
           version: v1.44.2
           args: --timeout=10m
+          skip-pkg-cache: true
+          skip-cache: true
+          skip-build-cache: true
 
       - name: gofmt
         run: |
