@@ -15,25 +15,43 @@
  * limitations under the License.
  */
 
-package judger
+package proxy_factory
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/config"
+	"fmt"
+	"reflect"
 )
 
-// nolint
-type DoubleRangeMatchJudger struct {
-	config.DoubleRangeMatch
-}
+import (
+	perrors "github.com/pkg/errors"
+)
 
-// nolint
-func (j *DoubleRangeMatchJudger) Judge(input float64) bool {
-	return input >= j.Start && input < j.End
-}
+// CallLocalMethod is used to handle invoke exception in user func.
+func callLocalMethod(method reflect.Method, in []reflect.Value) ([]reflect.Value, error) {
+	var (
+		returnValues []reflect.Value
+		retErr       error
+	)
 
-// nolint
-func newDoubleRangeMatchJudger(matchConf *config.DoubleRangeMatch) *DoubleRangeMatchJudger {
-	return &DoubleRangeMatchJudger{
-		DoubleRangeMatch: *matchConf,
+	func() {
+		defer func() {
+			if e := recover(); e != nil {
+				if err, ok := e.(error); ok {
+					retErr = err
+				} else if err, ok := e.(string); ok {
+					retErr = perrors.New(err)
+				} else {
+					retErr = fmt.Errorf("invoke function error, unknow exception: %+v", e)
+				}
+			}
+		}()
+
+		returnValues = method.Func.Call(in)
+	}()
+
+	if retErr != nil {
+		return nil, retErr
 	}
+
+	return returnValues, retErr
 }

@@ -57,12 +57,13 @@ func (lb *leastActiveLoadBalance) Select(invokers []protocol.Invoker, invocation
 	}
 
 	var (
-		leastActive  int32                = -1 // The least active value of all invokers
-		totalWeight  int64                     // The number of invokers having the same least active value (LEAST_ACTIVE)
-		firstWeight  int64                     // Initial value, used for comparison
-		leastCount   int                       // The number of invokers having the same least active value (LEAST_ACTIVE)
-		leastIndexes = make([]int, count)      // The index of invokers having the same least active value (LEAST_ACTIVE)
-		sameWeight   = true                    // Every invoker has the same weight value?
+		leastActive  int32                  = -1 // The least active value of all invokers
+		totalWeight  int64                       // The number of invokers having the same least active value (LEAST_ACTIVE)
+		firstWeight  int64                       // Initial value, used for comparison
+		leastCount   int                         // The number of invokers having the same least active value (LEAST_ACTIVE)
+		leastIndexes = make([]int, count)        // The index of invokers having the same least active value (LEAST_ACTIVE)
+		sameWeight   = true                      // Every invoker has the same weight value?
+		weights      = make([]int64, count)      // The weight of every invokers
 	)
 
 	for i := 0; i < count; i++ {
@@ -70,21 +71,23 @@ func (lb *leastActiveLoadBalance) Select(invokers []protocol.Invoker, invocation
 		// Active number
 		active := protocol.GetMethodStatus(invoker.GetURL(), invocation.MethodName()).GetActive()
 		// current weight (maybe in warmUp)
-		weight := loadbalance.GetWeight(invoker, invocation)
+		afterWarmup := loadbalance.GetWeight(invoker, invocation)
+		// save for later use
+		weights[i] = afterWarmup
 		// There are smaller active services
 		if leastActive == -1 || active < leastActive {
 			leastActive = active
 			leastIndexes[0] = i
 			leastCount = 1 // next available leastIndex offset
-			totalWeight = weight
-			firstWeight = weight
+			totalWeight = afterWarmup
+			firstWeight = afterWarmup
 			sameWeight = true
 		} else if active == leastActive {
 			leastIndexes[leastCount] = i
-			totalWeight += weight
+			totalWeight += afterWarmup
 			leastCount++
 
-			if sameWeight && (i > 0) && weight != firstWeight {
+			if sameWeight && afterWarmup != firstWeight {
 				sameWeight = false
 			}
 		}
@@ -98,8 +101,8 @@ func (lb *leastActiveLoadBalance) Select(invokers []protocol.Invoker, invocation
 		offsetWeight := rand.Int63n(totalWeight) + 1
 		for i := 0; i < leastCount; i++ {
 			leastIndex := leastIndexes[i]
-			offsetWeight -= loadbalance.GetWeight(invokers[i], invocation)
-			if offsetWeight <= 0 {
+			offsetWeight -= weights[leastIndex]
+			if offsetWeight < 0 {
 				return invokers[leastIndex]
 			}
 		}

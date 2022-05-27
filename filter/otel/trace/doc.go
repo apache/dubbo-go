@@ -15,27 +15,6 @@
  * limitations under the License.
  */
 
-package v3router
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/cluster/router"
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/common/extension"
-)
-
-func init() {
-	extension.SetRouterFactory(constant.V3RouterFactoryKey, NewUniformRouterFactory)
-}
-
-// UniformRouteFactory is uniform router's factory
-type UniformRouteFactory struct{}
-
-// NewUniformRouterFactory constructs a new PriorityRouterFactory
-func NewUniformRouterFactory() router.PriorityRouterFactory {
-	return &UniformRouteFactory{}
-}
-
-// NewPriorityRouter construct a new UniformRouteFactory as PriorityRouter
-func (f *UniformRouteFactory) NewPriorityRouter() (router.PriorityRouter, error) {
-	return NewUniformRouterChain()
-}
+// Package trace instruments dubbogo with open-telemetry
+// (https://github.com/open-telemetry/opentelemetry-go).
+package trace

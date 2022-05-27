@@ -21,6 +21,7 @@ package hystrix
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"regexp"
 	"sync"
 )
@@ -252,7 +253,14 @@ func initConfigConsumer() error {
 	if config.GetConsumerConfig().FilterConf == nil {
 		return perrors.Errorf("no config for hystrix_consumer")
 	}
-	filterConfig := config.GetConsumerConfig().FilterConf.(map[interface{}]interface{})[HYSTRIX]
+	filterConf := config.GetConsumerConfig().FilterConf
+	var filterConfig interface{}
+	switch reflect.ValueOf(filterConf).Interface().(type) {
+	case map[interface{}]interface{}:
+		filterConfig = config.GetConsumerConfig().FilterConf.(map[interface{}]interface{})[HYSTRIX]
+	case map[string]interface{}:
+		filterConfig = config.GetConsumerConfig().FilterConf.(map[string]interface{})[HYSTRIX]
+	}
 	if filterConfig == nil {
 		return perrors.Errorf("no config for hystrix_consumer")
 	}

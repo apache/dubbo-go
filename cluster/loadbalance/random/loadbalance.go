@@ -42,23 +42,27 @@ func NewRandomLoadBalance() loadbalance.LoadBalance {
 }
 
 func (lb *randomLoadBalance) Select(invokers []protocol.Invoker, invocation protocol.Invocation) protocol.Invoker {
+
+	// Number of invokers
 	var length int
 	if length = len(invokers); length == 1 {
 		return invokers[0]
 	}
+
+	// Every invoker has the same weight?
 	sameWeight := true
+	// the maxWeight of every invokers, the minWeight = 0 or the maxWeight of the last invoker
 	weights := make([]int64, length)
+	// The sum of weights
+	var totalWeight int64 = 0
 
-	firstWeight := loadbalance.GetWeight(invokers[0], invocation)
-	totalWeight := firstWeight
-	weights[0] = firstWeight
-
-	for i := 1; i < length; i++ {
+	for i := 0; i < length; i++ {
 		weight := loadbalance.GetWeight(invokers[i], invocation)
-		weights[i] = weight
-
+		//Sum
 		totalWeight += weight
-		if sameWeight && weight != firstWeight {
+		// save for later use
+		weights[i] = totalWeight
+		if sameWeight && totalWeight != weight*(int64(i+1)) {
 			sameWeight = false
 		}
 	}
@@ -68,8 +72,7 @@ func (lb *randomLoadBalance) Select(invokers []protocol.Invoker, invocation prot
 		offset := rand.Int63n(totalWeight)
 
 		for i := 0; i < length; i++ {
-			offset -= weights[i]
-			if offset < 0 {
+			if offset < weights[i] {
 				return invokers[i]
 			}
 		}

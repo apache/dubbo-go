@@ -93,6 +93,8 @@ const (
 	TpsLimitFilterKey                    = "tps"
 	TracingFilterKey                     = "tracing"
 	XdsCircuitBreakerKey                 = "xds_circuit_reaker"
+	OTELServerTraceKey                   = "otelServerTrace"
+	OTELClientTraceKey                   = "otelClientTrace"
 )
 
 const (
@@ -303,8 +305,6 @@ const (
 	Tagkey                    = "dubbo.tag"               // key of tag
 	AttachmentKey             = DubboCtxKey("attachment") // key in context in invoker
 	TagRouterFactoryKey       = "tag"
-	V3RouterFactoryKey        = "v3router"
-	MeshRouterFactoryKey      = "mesh"
 )
 
 // Auth filter
@@ -366,4 +366,10 @@ const (
 	AdaptiveServiceInflightKey  = "adaptive-service.inflight"
 	AdaptiveServiceEnabledKey   = "adaptive-service.enabled"
 	AdaptiveServiceIsEnabled    = "1"
+)
+
+// reflection service
+const (
+	ReflectionServiceTypeName  = "XXX_serverReflectionServer"
+	ReflectionServiceInterface = "grpc.reflection.v1alpha.ServerReflection"
 )

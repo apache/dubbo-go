@@ -15,26 +15,49 @@
  * limitations under the License.
  */
 
-package judger
+package trace
 
 import (
 	"testing"
 )
 
 import (
-	"github.com/stretchr/testify/assert"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/config"
-)
+type filed struct {
+	name string
+	want string
+}
 
-func TestListStringMatchJudger(t *testing.T) {
-	assert.True(t, newListStringMatchJudger(&config.ListStringMatch{
-		Oneof: []*config.StringMatch{{Exact: "abd"}},
-	}).Judge("abd"))
+func TestSemVersion(t *testing.T) {
+	tests := []filed{
+		{
+			name: "test",
+			want: "semver:" + constant.Version,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := SemVersion(); got != tt.want {
+				t.Errorf("SemVersion() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
 
-	assert.False(t, newListStringMatchJudger(&config.ListStringMatch{
-		Oneof: []*config.StringMatch{{Exact: "abc"}},
-	}).Judge("abd"))
+func TestVersion(t *testing.T) {
+	tests := []filed{
+		{
+			name: "test",
+			want: constant.Version,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := Version(); got != tt.want {
+				t.Errorf("Version() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

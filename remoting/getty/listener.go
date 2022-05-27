@@ -18,7 +18,6 @@
 package getty
 
 import (
-	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -265,27 +264,6 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 		return
 	}
 
-	defer func() {
-		if e := recover(); e != nil {
-			resp.Status = hessian.Response_SERVER_ERROR
-			if err, ok := e.(error); ok {
-				logger.Errorf("OnMessage panic: %+v, req: %#v", perrors.WithStack(err), req.Data)
-				resp.Error = perrors.WithStack(err)
-			} else if err, ok := e.(string); ok {
-				logger.Errorf("OnMessage panic: %+v, req: %#v", perrors.New(err), req.Data)
-				resp.Error = perrors.New(err)
-			} else {
-				logger.Errorf("OnMessage panic: %+v, this is impossible. req: %#v", e, req.Data)
-				resp.Error = fmt.Errorf("OnMessage panic unknow exception. %+v", e)
-			}
-
-			if !req.TwoWay {
-				return
-			}
-			reply(session, resp)
-		}
-	}()
-
 	invoc, ok := req.Data.(*invocation.RPCInvocation)
 	if !ok {
 		panic("create invocation occur some exception for the type is not suitable one.")
@@ -299,6 +277,7 @@ func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
 		return
 	}
 	resp.Result = result
+
 	reply(session, resp)
 }
 

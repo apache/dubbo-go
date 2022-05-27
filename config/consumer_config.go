@@ -24,13 +24,14 @@ import (
 
 import (
 	"github.com/creasty/defaults"
+
+	tripleConstant "github.com/dubbogo/triple/pkg/common/constant"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
-	"dubbo.apache.org/dubbo-go/v3/config/generic"
 )
 
 const (
@@ -41,6 +42,7 @@ const (
 type ConsumerConfig struct {
 	Filter                         string                      `yaml:"filter" json:"filter,omitempty" property:"filter"`
 	RegistryIDs                    []string                    `yaml:"registry-ids" json:"registry-ids,omitempty" property:"registry-ids"`
+	Protocol                       string                      `yaml:"protocol" json:"protocol,omitempty" property:"protocol"`
 	RequestTimeout                 string                      `default:"3s" yaml:"request-timeout" json:"request-timeout,omitempty" property:"request-timeout"`
 	ProxyFactory                   string                      `default:"default" yaml:"proxy" json:"proxy,omitempty" property:"proxy"`
 	Check                          bool                        `yaml:"check" json:"check,omitempty" property:"check"`
@@ -62,7 +64,7 @@ func (cc *ConsumerConfig) Init(rc *RootConfig) error {
 	if cc == nil {
 		return nil
 	}
-	cc.RegistryIDs = translateRegistryIds(cc.RegistryIDs)
+	cc.RegistryIDs = translateIds(cc.RegistryIDs)
 	if len(cc.RegistryIDs) <= 0 {
 		cc.RegistryIDs = rc.getRegistryIds()
 	}
@@ -104,19 +106,30 @@ func (cc *ConsumerConfig) Init(rc *RootConfig) error {
 }
 
 func (cc *ConsumerConfig) Load() {
-	for key, ref := range cc.References {
-		if ref.Generic != "" {
-			genericService := generic.NewGenericService(key)
-			SetConsumerService(genericService)
+	for registeredTypeName, refRPCService := range GetConsumerServiceMap() {
+		refConfig, ok := cc.References[registeredTypeName]
+		if !ok {
+			// not found configuration, now new a configuration with default.
+			refConfig = NewReferenceConfigBuilder().SetProtocol(tripleConstant.TRIPLE).Build()
+			triplePBService, ok := refRPCService.(common.TriplePBService)
+			if !ok {
+				logger.Errorf("Dubbo-go cannot get interface name with registeredTypeName = %s."+
+					"Please run the command 'go install github.com/dubbogo/tools/cmd/protoc-gen-go-triple@latest' to get the latest "+
+					"protoc-gen-go-triple,  and then re-generate your pb file again by this tool."+
+					"If you are not using pb serialization, please set 'interfaceName' field in reference config to let dubbogo get the interface name.", registeredTypeName)
+				continue
+			} else {
+				// use interface name defined by pb
+				refConfig.InterfaceName = triplePBService.XXX_InterfaceName()
+			}
+			if err := refConfig.Init(rootConfig); err != nil {
+				logger.Errorf(fmt.Sprintf("reference with registeredTypeName = %s init failed! err: %#v", registeredTypeName, err))
+				continue
+			}
 		}
-		rpcService := GetConsumerService(key)
-		if rpcService == nil {
-			logger.Warnf("%s does not exist!", key)
-			continue
-		}
-		ref.id = key
-		ref.Refer(rpcService)
-		ref.Implement(rpcService)
+		refConfig.id = registeredTypeName
+		refConfig.Refer(refRPCService)
+		refConfig.Implement(refRPCService)
 	}
 
 	var maxWait int

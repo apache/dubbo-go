@@ -15,18 +15,20 @@
  * limitations under the License.
  */
 
-package judger
+package trace
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common"
+	"go.opentelemetry.io/otel/attribute"
+
+	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
 )
 
-// nolint
-func JudgeUrlLabel(url *common.URL, labels map[string]string) bool {
-	for k, v := range labels {
-		if url.GetParam(k, "") != v {
-			return false
-		}
-	}
-	return true
-}
+var (
+	RPCNameKey             = attribute.Key("name")
+	RPCMessageTypeKey      = attribute.Key("message.type")
+	RPCMessageIDKey        = attribute.Key("message.id")
+	RPCSystemDubbo         = semconv.RPCSystemKey.String("apache_dubbo")
+	RPCNameMessage         = RPCNameKey.String("message")
+	RPCMessageTypeSent     = RPCMessageTypeKey.String("SENT")
+	RPCMessageTypeReceived = RPCMessageTypeKey.String("RECEIVED")
+)

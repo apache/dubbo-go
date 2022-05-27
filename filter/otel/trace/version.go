@@ -15,33 +15,18 @@
  * limitations under the License.
  */
 
-package judger
+package trace
 
 import (
-	"testing"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
-import (
-	"github.com/stretchr/testify/assert"
-)
+// Version is the current release version of the dubbogo instrumentation.
+func Version() string {
+	return constant.Version
+}
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/config"
-)
-
-func TestDoubleRangeMatchJudger(t *testing.T) {
-	assert.True(t, newDoubleRangeMatchJudger(&config.DoubleRangeMatch{
-		Start: 1.0,
-		End:   1.5,
-	}).Judge(1.3))
-
-	assert.False(t, newDoubleRangeMatchJudger(&config.DoubleRangeMatch{
-		Start: 1.0,
-		End:   1.5,
-	}).Judge(1.9))
-
-	assert.False(t, newDoubleRangeMatchJudger(&config.DoubleRangeMatch{
-		Start: 1.0,
-		End:   1.5,
-	}).Judge(0.9))
+// SemVersion is the semantic version to be supplied to tracer/meter creation.
+func SemVersion() string {
+	return "semver:" + Version()
 }

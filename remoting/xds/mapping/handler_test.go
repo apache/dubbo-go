@@ -53,7 +53,7 @@ const (
 
 func TestNewInterfaceMapHandler(t *testing.T) {
 	mockXDSClient := &mocks.XDSClient{}
-	interfaceMapHandler := NewInterfaceMapHandlerImpl(mockXDSClient, istioTokenPathFoo, common.NewHostNameOrIPAddr(istiodDebugAddrStrFoo), common.NewHostNameOrIPAddr(localPodServiceAddr))
+	interfaceMapHandler := NewInterfaceMapHandlerImpl(mockXDSClient, istioTokenPathFoo, common.NewHostNameOrIPAddr(istiodDebugAddrStrFoo), common.NewHostNameOrIPAddr(localPodServiceAddr), false)
 	assert.NotNil(t, interfaceMapHandler)
 }
 
@@ -61,7 +61,7 @@ func TestInterfaceMapHandlerRegisterAndUnregister(t *testing.T) {
 	mockXDSClient := &mocks.XDSClient{}
 	mockXDSClient.On("SetMetadata", mock.AnythingOfType("*structpb.Struct")).Return(nil)
 
-	interfaceMapHandler := NewInterfaceMapHandlerImpl(mockXDSClient, istioTokenPathFoo, common.NewHostNameOrIPAddr(istiodDebugAddrStrFoo), common.NewHostNameOrIPAddr(localPodServiceAddr))
+	interfaceMapHandler := NewInterfaceMapHandlerImpl(mockXDSClient, istioTokenPathFoo, common.NewHostNameOrIPAddr(istiodDebugAddrStrFoo), common.NewHostNameOrIPAddr(localPodServiceAddr), false)
 
 	assert.Nil(t, interfaceMapHandler.Register(serviceKey1))
 	assert.Nil(t, interfaceMapHandler.Register(serviceKey2))
@@ -76,7 +76,7 @@ func TestInterfaceMapHandlerRegisterAndUnregister(t *testing.T) {
 
 func TestGetServiceUniqueKeyHostAddrMapFromPilot(t *testing.T) {
 	mockXDSClient := &mocks.XDSClient{}
-	interfaceMapHandler := NewInterfaceMapHandlerImpl(mockXDSClient, istioTokenPathFoo, common.NewHostNameOrIPAddr(istiodDebugAddrStrFoo), common.NewHostNameOrIPAddr(localPodServiceAddr))
+	interfaceMapHandler := NewInterfaceMapHandlerImpl(mockXDSClient, istioTokenPathFoo, common.NewHostNameOrIPAddr(istiodDebugAddrStrFoo), common.NewHostNameOrIPAddr(localPodServiceAddr), false)
 	assert.Nil(t, generateMockToken())
 
 	// 1. start mock http server

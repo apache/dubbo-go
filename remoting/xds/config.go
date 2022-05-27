@@ -15,46 +15,22 @@
  * limitations under the License.
  */
 
-package judger
+package xds
 
 import (
-	"regexp"
-	"strings"
+	"time"
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/config"
+	xdsCommon "dubbo.apache.org/dubbo-go/v3/remoting/xds/common"
 )
 
-// nolint
-type StringMatchJudger struct {
-	config.StringMatch
-}
-
-// nolint
-func (j *StringMatchJudger) Judge(input string) bool {
-	if j.Exact != "" {
-		return input == j.Exact
-	}
-	if j.Prefix != "" {
-		return strings.HasPrefix(input, j.Prefix)
-	}
-	if j.Regex != "" {
-		ok, err := regexp.MatchString(j.Regex, input)
-		return ok && err == nil
-	}
-	if j.NoEmpty != "" {
-		return input != ""
-	}
-	if j.Empty != "" {
-		return input == ""
-	}
-	return true
-}
-
-// nolint
-func NewStringMatchJudger(matchConf *config.StringMatch) *StringMatchJudger {
-	return &StringMatchJudger{
-		StringMatch: *matchConf,
-	}
+type Config struct {
+	PodName         string
+	Namespace       string
+	IstioAddr       xdsCommon.HostAddr
+	DebugPort       string
+	LocalIP         string
+	LocalDebugMode  bool
+	SniffingTimeout time.Duration
 }

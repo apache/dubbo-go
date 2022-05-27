@@ -137,28 +137,31 @@ func (pi *ProxyInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 
 	// prepare replyv
 	var replyv reflect.Value
-	//if method.ReplyType() == nil && len(method.ArgsType()) > 0 {
-	//
-	//	replyv = reflect.New(method.ArgsType()[len(method.ArgsType())-1].Elem())
-	//	in = append(in, replyv)
-	//}
-
-	returnValues := method.Method().Func.Call(in)
-
 	var retErr interface{}
+
+	returnValues, callErr := callLocalMethod(method.Method(), in)
+
+	if callErr != nil {
+		logger.Errorf("Invoke function error: %+v, service: %#v", callErr, url)
+		result.SetError(callErr)
+		return result
+	}
+
 	if len(returnValues) == 1 {
 		retErr = returnValues[0].Interface()
 	} else {
 		replyv = returnValues[0]
 		retErr = returnValues[1].Interface()
 	}
+
 	if retErr != nil {
 		result.SetError(retErr.(error))
-	} else {
-		if replyv.IsValid() && (replyv.Kind() != reflect.Ptr || replyv.Kind() == reflect.Ptr && replyv.Elem().IsValid()) {
-			result.SetResult(replyv.Interface())
-		}
+		return result
 	}
+	if replyv.IsValid() && (replyv.Kind() != reflect.Ptr || replyv.Kind() == reflect.Ptr && replyv.Elem().IsValid()) {
+		result.SetResult(replyv.Interface())
+	}
+
 	return result
 }
 
