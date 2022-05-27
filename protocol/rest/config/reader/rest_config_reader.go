@@ -19,6 +19,7 @@ package reader
 
 import (
 	"bytes"
+	common "dubbo.apache.org/dubbo-go/v3/protocol/rest/config"
 	"strconv"
 	"strings"
 )
@@ -60,7 +61,7 @@ func (cr *RestConfigReader) ReadConsumerConfig(reader *bytes.Buffer) error {
 
 	restConsumerServiceConfigMap := make(map[string]*config.RestServiceConfig, len(restConsumerConfig.RestServiceConfigsMap))
 	for key, rc := range restConsumerConfig.RestServiceConfigsMap {
-		rc.Client = config.GetNotEmptyStr(rc.Client, restConsumerConfig.Client, constant.DefaultRestClient)
+		rc.Client = common.GetNotEmptyStr(rc.Client, restConsumerConfig.Client, constant.DefaultRestClient)
 		//初始化每个方法的配置
 		rc.RestMethodConfigs = initMethodConfigMap(rc, restConsumerConfig.Consumes, restConsumerConfig.Produces)
 		restConsumerServiceConfigMap[key] = rc
@@ -78,7 +79,7 @@ func (cr *RestConfigReader) ReadProviderConfig(reader *bytes.Buffer) error {
 	}
 	restProviderServiceConfigMap := make(map[string]*config.RestServiceConfig, len(restProviderConfig.RestServiceConfigsMap))
 	for key, rc := range restProviderConfig.RestServiceConfigsMap {
-		rc.Server = config.GetNotEmptyStr(rc.Server, restProviderConfig.Server, constant.DefaultRestServer)
+		rc.Server = common.GetNotEmptyStr(rc.Server, restProviderConfig.Server, constant.DefaultRestServer)
 		rc.RestMethodConfigs = initMethodConfigMap(rc, restProviderConfig.Consumes, restProviderConfig.Produces)
 		restProviderServiceConfigMap[key] = rc
 	}
@@ -92,9 +93,9 @@ func initMethodConfigMap(rc *config.RestServiceConfig, consumes string, produces
 	for _, mc := range rc.RestMethodConfigs {
 		mc.InterfaceName = rc.InterfaceName
 		mc.RestCommonConfig.Path = rc.Path + mc.RestCommonConfig.Path
-		mc.Consumes = config.GetNotEmptyStr(mc.Consumes, rc.Consumes, consumes)
-		mc.Produces = config.GetNotEmptyStr(mc.Produces, rc.Produces, produces)
-		mc.RestCommonConfig.MethodType = config.GetNotEmptyStr(mc.RestCommonConfig.MethodType, rc.MethodType)
+		mc.Consumes = common.GetNotEmptyStr(mc.Consumes, rc.Consumes, consumes)
+		mc.Produces = common.GetNotEmptyStr(mc.Produces, rc.Produces, produces)
+		mc.RestCommonConfig.MethodType = common.GetNotEmptyStr(mc.RestCommonConfig.MethodType, rc.MethodType)
 		mc = transformMethodConfig(mc)
 		mcm[mc.MethodName] = mc
 	}

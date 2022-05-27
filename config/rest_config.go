@@ -29,6 +29,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	common "dubbo.apache.org/dubbo-go/v3/protocol/rest/config"
 )
 
 var (
@@ -69,7 +70,7 @@ func (c *RestConsumerConfig) Init(rc *RootConfig) error {
 
 	restConsumerServiceConfigMap := make(map[string]*RestServiceConfig, len(restConsumerConfig.RestServiceConfigsMap))
 	for key, rc := range restConsumerConfig.RestServiceConfigsMap {
-		rc.Client = GetNotEmptyStr(rc.Client, restConsumerConfig.Client, constant.DefaultRestClient)
+		rc.Client = common.GetNotEmptyStr(rc.Client, restConsumerConfig.Client, constant.DefaultRestClient)
 		rc.RestMethodConfigs = initMethodConfigMap(rc, restConsumerConfig.Consumes, restConsumerConfig.Produces)
 		restConsumerServiceConfigMap[key] = rc
 	}
@@ -85,9 +86,9 @@ func initMethodConfigMap(rc *RestServiceConfig, consumes string, produces string
 	for _, mc := range rc.RestMethodConfigs {
 		mc.InterfaceName = rc.InterfaceName
 		mc.Path = rc.Path + mc.Path
-		mc.Consumes = GetNotEmptyStr(mc.Consumes, rc.Consumes, consumes)
-		mc.Produces = GetNotEmptyStr(mc.Produces, rc.Produces, produces)
-		mc.MethodType = GetNotEmptyStr(mc.MethodType, rc.MethodType)
+		mc.Consumes = common.GetNotEmptyStr(mc.Consumes, rc.Consumes, consumes)
+		mc.Produces = common.GetNotEmptyStr(mc.Produces, rc.Produces, produces)
+		mc.MethodType = common.GetNotEmptyStr(mc.MethodType, rc.MethodType)
 		mc = transformMethodConfig(mc)
 		mcm[mc.MethodName] = mc
 	}
@@ -137,18 +138,6 @@ func parseParamsString2Map(params string) (map[int]string, error) {
 		m[key] = pa[1]
 	}
 	return m, nil
-}
-
-// function will return first not empty string ..
-func GetNotEmptyStr(args ...string) string {
-	var r string
-	for _, t := range args {
-		if len(t) > 0 {
-			r = t
-			break
-		}
-	}
-	return r
 }
 
 // nolint
@@ -277,7 +266,7 @@ func (c *RestProviderConfig) Init(rc *RootConfig) error {
 
 	restProviderServiceConfigMap := make(map[string]*RestServiceConfig, len(restProviderConfig.RestServiceConfigsMap))
 	for key, rc := range restProviderConfig.RestServiceConfigsMap {
-		rc.Server = GetNotEmptyStr(rc.Server, restProviderConfig.Server, constant.DefaultRestServer)
+		rc.Server = common.GetNotEmptyStr(rc.Server, restProviderConfig.Server, constant.DefaultRestServer)
 		rc.RestMethodConfigs = initMethodConfigMap(rc, restProviderConfig.Consumes, restProviderConfig.Produces)
 		restProviderServiceConfigMap[key] = rc
 	}
