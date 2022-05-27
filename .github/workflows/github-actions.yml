@@ -46,6 +46,14 @@ jobs:
               go get -v -t -d ./...
           fi
 
+      - name: gofmt
+        run: |
+          go fmt ./... && git status && [[ -z `git status -s` ]]
+          # diff -u <(echo -n) <(gofmt -d -s .)
+      - name: verify
+        run: |
+          make verify
+
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3.2.0
         with:
@@ -54,14 +62,6 @@ jobs:
           skip-pkg-cache: true
           skip-cache: true
           skip-build-cache: true
-
-      - name: gofmt
-        run: |
-          go fmt ./... && git status && [[ -z `git status -s` ]]
-          # diff -u <(echo -n) <(gofmt -d -s .)
-      - name: verify
-        run: |
-          make verify
 
       # This step only runs when the event type is a pull_request
       - name: Integrate Test
