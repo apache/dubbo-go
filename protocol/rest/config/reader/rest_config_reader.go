@@ -19,7 +19,6 @@ package reader
 
 import (
 	"bytes"
-	common "dubbo.apache.org/dubbo-go/v3/protocol/rest/config"
 	"strconv"
 	"strings"
 )
@@ -36,6 +35,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config/interfaces"
+	common "dubbo.apache.org/dubbo-go/v3/protocol/rest/config"
 )
 
 const REST = "rest"
