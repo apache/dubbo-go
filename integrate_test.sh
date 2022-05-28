@@ -40,8 +40,8 @@ samples_testing() {
     git clone -b "$3" https://github.com/apache/dubbo-go-samples.git samples && cd samples
 
     # update dubbo-go to current commit id
-    go mod edit -replace=github.com/apache/dubbo-go=github.com/"$1"@"$2"
     go mod edit -replace=google.golang.org/grpc=google.golang.org/grpc@v1.41.0
+    go mod edit -replace=github.com/apache/dubbo-go=github.com/"$1"@"$2"
 
     # start integrate test
     chmod +x integrate_test.sh
