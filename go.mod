@@ -19,7 +19,7 @@ require (
 	github.com/golang/mock v1.4.4
 	github.com/golang/protobuf v1.4.3
 	github.com/grpc-ecosystem/grpc-opentracing v0.0.0-20180507213350-8e809c8a8645
-	github.com/hashicorp/consul v1.12.0
+	github.com/hashicorp/consul v1.11.6
 	github.com/hashicorp/consul/api v1.11.0
 	github.com/hashicorp/vault/sdk v0.1.14-0.20200519221838-e0cfd64bc267
 	github.com/jinzhu/copier v0.0.0-20190625015134-976e0346caa8
@@ -45,6 +45,7 @@ require (
 )
 
 replace (
+	google.golang.org/grpc => google.golang.org/grpc v1.26.0
 	k8s.io/api => k8s.io/api v0.16.9
 	k8s.io/apimachinery => k8s.io/apimachinery v0.16.9
 	k8s.io/client-go => k8s.io/client-go v0.16.9
