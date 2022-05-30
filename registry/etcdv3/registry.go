@@ -132,13 +132,6 @@ func (r *etcdV3Registry) CloseListener() {
 
 // CreatePath create the path in the registry center of etcd
 func (r *etcdV3Registry) CreatePath(k string) error {
-	//var tmpPath string
-	//for _, str := range strings.Split(k, "/")[1:] {
-	//	tmpPath = path.Join(tmpPath, "/", str)
-	//	if err := r.client.Put(tmpPath, ""); err != nil {
-	//		return perrors.WithMessagef(err, "create path %s in etcd", tmpPath)
-	//	}
-	//}
 	return perrors.WithMessagef(r.client.Put(k, ""), "create path %s in etcd", k)
 }
 
