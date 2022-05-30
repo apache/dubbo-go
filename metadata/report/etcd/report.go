@@ -23,6 +23,10 @@ import (
 )
 
 import (
+	etcd "github.com/dubbogo/gost/database/kv/etcd/v3"
+)
+
+import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/common/extension"
@@ -30,10 +34,13 @@ import (
 	"github.com/apache/dubbo-go/metadata/identifier"
 	"github.com/apache/dubbo-go/metadata/report"
 	"github.com/apache/dubbo-go/metadata/report/factory"
-	"github.com/apache/dubbo-go/remoting/etcdv3"
 )
 
-const DEFAULT_ROOT = "dubbo"
+const (
+	DEFAULT_ROOT = "dubbo"
+	// metadataETCDV3Client client name
+	MetadataETCDV3Client = "etcd metadata"
+)
 
 func init() {
 	extension.SetMetadataReportFactory(constant.ETCDV3_KEY, func() factory.MetadataReportFactory {
@@ -43,7 +50,7 @@ func init() {
 
 // etcdMetadataReport is the implementation of MetadataReport based etcd
 type etcdMetadataReport struct {
-	client *etcdv3.Client
+	client *etcd.Client
 	root   string
 }
 
@@ -121,7 +128,7 @@ type etcdMetadataReportFactory struct{}
 func (e *etcdMetadataReportFactory) CreateMetadataReport(url *common.URL) report.MetadataReport {
 	timeout, _ := time.ParseDuration(url.GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT))
 	addresses := strings.Split(url.Location, ",")
-	client, err := etcdv3.NewClient(etcdv3.MetadataETCDV3Client, addresses, timeout, 1)
+	client, err := etcd.NewClient(MetadataETCDV3Client, addresses, timeout, 1)
 	if err != nil {
 		logger.Errorf("Could not create etcd metadata report. URL: %s,error:{%v}", url.String(), err)
 		return nil

@@ -140,13 +140,7 @@ func (proto *registryProtocol) Refer(url *common.URL) protocol.Invoker {
 		registryUrl.Protocol = registryUrl.GetParam(constant.REGISTRY_KEY, "")
 	}
 
-	var reg registry.Registry
-	if regI, loaded := proto.registries.Load(registryUrl.Key()); !loaded {
-		reg = getRegistry(registryUrl)
-		proto.registries.Store(registryUrl.Key(), reg)
-	} else {
-		reg = regI.(registry.Registry)
-	}
+	reg := proto.getRegistry(registryUrl)
 
 	// new registry directory for store service url from registry
 	directory, err := extension.GetDefaultRegistryDirectory(registryUrl, reg)
@@ -167,6 +161,17 @@ func (proto *registryProtocol) Refer(url *common.URL) protocol.Invoker {
 	invoker := cluster.Join(directory)
 	proto.invokers = append(proto.invokers, invoker)
 	return invoker
+}
+
+func (proto *registryProtocol) getRegistry(registryUrl *common.URL) registry.Registry {
+	var reg registry.Registry
+	if regI, loaded := proto.registries.Load(registryUrl.Key()); !loaded {
+		reg = getRegistry(registryUrl)
+		proto.registries.Store(registryUrl.Key(), reg)
+	} else {
+		reg = regI.(registry.Registry)
+	}
+	return reg
 }
 
 // Export provider service to registry center

@@ -23,11 +23,15 @@ import (
 	"net/url"
 	"strconv"
 	"time"
+)
 
+import (
 	"github.com/creasty/defaults"
 
 	gxstrings "github.com/dubbogo/gost/strings"
+)
 
+import (
 	"github.com/apache/dubbo-go/cluster/directory"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
@@ -250,6 +254,8 @@ func (c *ReferenceConfig) getUrlMap() url.Values {
 
 	urlMap.Set(constant.RELEASE_KEY, "dubbo-golang-"+constant.Version)
 	urlMap.Set(constant.SIDE_KEY, (common.RoleType(common.CONSUMER)).Role())
+	// do not add this key, it will cause the etcd client to not work properly
+	//urlMap.Set(constant.CATEGORY_KEY, constant.CONSUMERS_CATEGORY)
 
 	if len(c.RequestTimeout) != 0 {
 		urlMap.Set(constant.TIMEOUT_KEY, c.RequestTimeout)

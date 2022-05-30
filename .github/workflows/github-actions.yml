@@ -18,7 +18,7 @@ jobs:
         os:
           - ubuntu-latest
     steps:
-      - name: Set up Go 1.x
+      - name: Set up Go ${{ matrix.go }}
         uses: actions/setup-go@v2
         with:
           go-version: ${{ matrix.go }}
@@ -46,13 +46,6 @@ jobs:
               go get -v -t -d ./...
           fi
 
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v3.2.0
-        with:
-          version: v1.44.2
-          args: --timeout=10m
-          skip-go-installation: true
-
       - name: gofmt
         run: |
           go fmt ./... && git status && [[ -z `git status -s` ]]
@@ -60,6 +53,15 @@ jobs:
       - name: verify
         run: |
           make verify
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3.2.0
+        with:
+          version: v1.44.2
+          args: --timeout=10m -v --config=.golangci.yml
+          skip-pkg-cache: true
+          skip-cache: true
+          skip-build-cache: true
 
       # This step only runs when the event type is a pull_request
       - name: Integrate Test

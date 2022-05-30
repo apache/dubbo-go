@@ -19,14 +19,16 @@ package etcdv3
 
 import (
 	"sync"
-	"time"
 )
 
 import (
-	"github.com/coreos/etcd/clientv3"
-	"github.com/coreos/etcd/mvcc/mvccpb"
+	etcd "github.com/dubbogo/gost/database/kv/etcd/v3"
 
 	perrors "github.com/pkg/errors"
+
+	"go.etcd.io/etcd/api/v3/mvccpb"
+
+	client "go.etcd.io/etcd/client/v3"
 )
 
 import (
@@ -36,21 +38,21 @@ import (
 
 // nolint
 type EventListener struct {
-	client     *Client
+	client     *etcd.Client
 	keyMapLock sync.RWMutex
 	keyMap     map[string]struct{}
 	wg         sync.WaitGroup
 }
 
 // NewEventListener returns a EventListener instance
-func NewEventListener(client *Client) *EventListener {
+func NewEventListener(client *etcd.Client) *EventListener {
 	return &EventListener{
 		client: client,
 		keyMap: make(map[string]struct{}),
 	}
 }
 
-// listenServiceNodeEvent Listen on a spec key
+// ListenServiceNodeEvent Listen on a spec key
 // this method will return true when spec key deleted,
 // this method will return false when deep layer connection lose
 func (l *EventListener) ListenServiceNodeEvent(key string, listener ...remoting.DataListener) bool {
@@ -63,14 +65,13 @@ func (l *EventListener) ListenServiceNodeEvent(key string, listener ...remoting.
 		}
 
 		select {
-
 		// client stopped
 		case <-l.client.Done():
 			logger.Warnf("etcd client stopped")
 			return false
 
 		// client ctx stop
-		case <-l.client.ctx.Done():
+		case <-l.client.GetCtx().Done():
 			logger.Warnf("etcd client ctx cancel")
 			return false
 
@@ -97,7 +98,7 @@ func (l *EventListener) ListenServiceNodeEvent(key string, listener ...remoting.
 
 // return true means the event type is DELETE
 // return false means the event type is CREATE || UPDATE
-func (l *EventListener) handleEvents(event *clientv3.Event, listeners ...remoting.DataListener) bool {
+func (l *EventListener) handleEvents(event *client.Event, listeners ...remoting.DataListener) bool {
 
 	logger.Infof("got a etcd event {type: %s, key: %s}", event.Type, event.Kv.Key)
 
@@ -149,7 +150,7 @@ func (l *EventListener) ListenServiceNodeEventWithPrefix(prefix string, listener
 			return
 
 		// client ctx stop
-		case <-l.client.ctx.Done():
+		case <-l.client.GetCtx().Done():
 			logger.Warnf("etcd client ctx cancel")
 			return
 
@@ -172,10 +173,6 @@ func (l *EventListener) ListenServiceNodeEventWithPrefix(prefix string, listener
 	}
 }
 
-func timeSecondDuration(sec int) time.Duration {
-	return time.Duration(sec) * time.Second
-}
-
 // ListenServiceEvent is invoked by etcdv3 ConsumerRegistry::Registe/ etcdv3 ConsumerRegistry::get/etcdv3 ConsumerRegistry::getListener
 // registry.go:Listen -> listenServiceEvent -> listenDirEvent -> listenServiceNodeEvent
 //                            |
@@ -194,7 +191,7 @@ func (l *EventListener) ListenServiceEvent(key string, listener remoting.DataLis
 	l.keyMap[key] = struct{}{}
 	l.keyMapLock.Unlock()
 
-	keyList, valueList, err := l.client.getChildren(key)
+	keyList, valueList, err := l.client.GetChildren(key)
 	if err != nil {
 		logger.Warnf("Get new node path {%v} 's content error,message is  {%v}", key, perrors.WithMessage(err, "get children"))
 	}
@@ -227,7 +224,6 @@ func (l *EventListener) ListenServiceEvent(key string, listener remoting.DataLis
 	}(key)
 }
 
-// nolint
 func (l *EventListener) Close() {
 	l.wg.Wait()
 }

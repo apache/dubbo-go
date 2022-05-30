@@ -23,6 +23,7 @@ import (
 )
 
 import (
+	etcd "github.com/dubbogo/gost/database/kv/etcd/v3"
 	gxtime "github.com/dubbogo/gost/time"
 
 	perrors "github.com/pkg/errors"
@@ -35,8 +36,8 @@ import (
 )
 
 type clientFacade interface {
-	Client() *Client
-	SetClient(*Client)
+	Client() *etcd.Client
+	SetClient(*etcd.Client)
 	ClientLock() *sync.Mutex
 	WaitGroup() *sync.WaitGroup //for wait group control, etcd client listener & etcd client container
 	Done() chan struct{}        //for etcd client control
@@ -46,25 +47,22 @@ type clientFacade interface {
 
 // HandleClientRestart keeps the connection between client and server
 func HandleClientRestart(r clientFacade) {
-
 	var (
 		err       error
 		failTimes int
 	)
-
 	defer r.WaitGroup().Done()
 LOOP:
 	for {
 		select {
 		case <-r.Done():
 			logger.Warnf("(ETCDV3ProviderRegistry)reconnectETCDV3 goroutine exit now...")
-			break LOOP
-			// re-register all services
+			return
 		case <-r.Client().Done():
 			r.ClientLock().Lock()
-			clientName := RegistryETCDV3Client
+			clientName := etcd.RegistryETCDV3Client
 			timeout, _ := time.ParseDuration(r.GetURL().GetParam(constant.REGISTRY_TIMEOUT_KEY, constant.DEFAULT_REG_TIMEOUT))
-			endpoints := r.Client().endpoints
+			endpoints := r.Client().GetEndPoints()
 			r.Client().Close()
 			r.SetClient(nil)
 			r.ClientLock().Unlock()
@@ -80,9 +78,9 @@ LOOP:
 				}
 				err = ValidateClient(
 					r,
-					WithName(clientName),
-					WithEndpoints(endpoints...),
-					WithTimeout(timeout),
+					etcd.WithName(clientName),
+					etcd.WithEndpoints(endpoints...),
+					etcd.WithTimeout(timeout),
 				)
 				logger.Infof("ETCDV3ProviderRegistry.validateETCDV3Client(etcd Addr{%s}) = error{%#v}",
 					endpoints, perrors.WithStack(err))
@@ -94,6 +92,14 @@ LOOP:
 					failTimes = MaxFailTimes
 				}
 			}
+			// re-register all services
+		case <-r.Client().GetCtx().Done():
+			r.RestartCallBack()
+			time.Sleep(10 * time.Millisecond)
 		}
 	}
+}
+
+func timeSecondDuration(sec int) time.Duration {
+	return time.Duration(sec) * time.Second
 }
