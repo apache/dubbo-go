@@ -143,7 +143,7 @@ func transformMethodConfig(methodConfig *config.RestMethodConfig) *config.RestMe
 // for example:
 // string "0:id,1:name" => map [0:id,1:name]
 func parseParamsString2Map(params string) (map[int]string, error) {
-	m := make(map[int]string, 8)
+	m := make(map[int]string)
 	for _, p := range strings.Split(params, ",") {
 		pa := strings.Split(p, ":")
 		key, err := strconv.Atoi(pa[0])
