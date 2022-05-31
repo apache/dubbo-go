@@ -92,10 +92,10 @@ func initMethodConfigMap(rc *config.RestServiceConfig, consumes string, produces
 	mcm := make(map[string]*config.RestMethodConfig, len(rc.RestMethodConfigs))
 	for _, mc := range rc.RestMethodConfigs {
 		mc.InterfaceName = rc.InterfaceName
-		mc.RestCommonConfig.Path = rc.Path + mc.RestCommonConfig.Path
+		mc.Path = rc.Path + mc.Path
 		mc.Consumes = common.GetNotEmptyStr(mc.Consumes, rc.Consumes, consumes)
 		mc.Produces = common.GetNotEmptyStr(mc.Produces, rc.Produces, produces)
-		mc.RestCommonConfig.MethodType = common.GetNotEmptyStr(mc.RestCommonConfig.MethodType, rc.MethodType)
+		mc.MethodType = common.GetNotEmptyStr(mc.MethodType, rc.MethodType)
 		mc = transformMethodConfig(mc)
 		mcm[mc.MethodName] = mc
 	}
@@ -104,8 +104,8 @@ func initMethodConfigMap(rc *config.RestServiceConfig, consumes string, produces
 
 // transformMethodConfig
 func transformMethodConfig(methodConfig *config.RestMethodConfig) *config.RestMethodConfig {
-	if len(methodConfig.PathParamsMap) == 0 && len(methodConfig.RestCommonConfig.PathParams) > 0 {
-		paramsMap, err := parseParamsString2Map(methodConfig.RestCommonConfig.PathParams)
+	if len(methodConfig.PathParamsMap) == 0 && len(methodConfig.PathParams) > 0 {
+		paramsMap, err := parseParamsString2Map(methodConfig.PathParams)
 		if err != nil {
 			logger.Warnf("[Rest ShutdownConfig] Path Param parse error:%v", err)
 		} else {
@@ -113,7 +113,7 @@ func transformMethodConfig(methodConfig *config.RestMethodConfig) *config.RestMe
 		}
 	}
 
-	restCommonConfig := methodConfig.RestCommonConfig
+	restCommonConfig := methodConfig
 
 	if len(methodConfig.QueryParamsMap) == 0 {
 
