@@ -159,7 +159,7 @@ func getArgsInterfaceFromRequest(req RestServerRequest, methodConfig *rconfig.Re
 		m := make(map[string]interface{})
 
 		if err := req.ReadEntity(&m); err != nil {
-			
+
 			//return nil, perrors.Errorf("[Go restful] Read body entity as map[string]interface{} error:%v", err)
 			logger.Warnf("[Go Restful] parsing http parameters by body entity error: %v", err)
 		} else {
@@ -237,7 +237,7 @@ func assembleArgsFromBody(methodConfig *rconfig.RestMethodConfig, argsTypes []re
 			}
 		}
 		if err := req.ReadEntity(&ni); err != nil {
-			
+
 			//return perrors.Errorf("[Go restful] Read body entity error, error is %v", perrors.WithStack(err))
 			logger.Warnf("[Go Restful] parsing http parameters by body entity error: %v", err)
 		} else {

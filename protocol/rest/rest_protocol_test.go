@@ -17,7 +17,6 @@
 
 package rest
 
-
 import (
 	"context"
 	"errors"
@@ -97,7 +96,7 @@ func TestRestProtocolExport(t *testing.T) {
 		Body:           -1,
 	}
 	configMap["com.ikurento.user.UserProvider"] = &rest_config.RestServiceConfig{
-		Server:               "go-restful",
+		Server:            "go-restful",
 		RestMethodConfigs: methodConfigMap,
 	}
 	rest_config.SetRestProviderServiceConfigMap(configMap)

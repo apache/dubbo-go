@@ -100,7 +100,7 @@ func (rp *RestProtocol) Refer(url *common.URL) protocol.Invoker {
 		logger.Errorf("%s service doesn't has consumer config", url.Path)
 		return nil
 	}
-	atoi,_ := strconv.Atoi(connectTime)
+	atoi, _ := strconv.Atoi(connectTime)
 	connectTimeout := time.Duration(atoi) * time.Second
 
 	restOptions := client.RestOptions{RequestTimeout: requestTimeout, ConnectTimeout: connectTimeout}

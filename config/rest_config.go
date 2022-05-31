@@ -33,7 +33,6 @@ import (
 )
 
 var (
-
 	restConsumerServiceConfigMap map[string]*RestServiceConfig
 	restProviderServiceConfigMap map[string]*RestServiceConfig
 )
@@ -44,7 +43,7 @@ type RestConsumerConfig struct {
 	Produces              string                        `default:"application/json" yaml:"rest_produces"  json:"rest_produces,omitempty" property:"rest_produces"`
 	Consumes              string                        `default:"application/json" yaml:"rest_consumes"  json:"rest_consumes,omitempty" property:"rest_consumes"`
 	RestServiceConfigsMap map[string]*RestServiceConfig `yaml:"references" json:"references,omitempty" property:"references"`
-	rootConfig *RootConfig
+	rootConfig            *RootConfig
 }
 
 // UnmarshalYAML unmarshals the RestConsumerConfig by @unmarshal function
@@ -58,7 +57,6 @@ func (c *RestConsumerConfig) UnmarshalYAML(unmarshal func(interface{}) error) er
 	}
 	return nil
 }
-
 
 func (c *RestConsumerConfig) Init(rc *RootConfig) error {
 	restConsumerConfig := rc.RestConsumer
@@ -146,7 +144,7 @@ type RestProviderConfig struct {
 	Produces              string                        `default:"*/*" yaml:"rest_produces"  json:"rest_produces,omitempty" property:"rest_produces"`
 	Consumes              string                        `default:"*/*" yaml:"rest_consumes"  json:"rest_consumes,omitempty" property:"rest_consumes"`
 	RestServiceConfigsMap map[string]*RestServiceConfig `yaml:"services" json:"services,omitempty" property:"services"`
-	rootConfig *RootConfig
+	rootConfig            *RootConfig
 }
 
 // UnmarshalYAML unmarshals the RestProviderConfig by @unmarshal function
@@ -163,15 +161,15 @@ func (c *RestProviderConfig) UnmarshalYAML(unmarshal func(interface{}) error) er
 
 // nolint
 type RestServiceConfig struct {
-	InterfaceName        string              `required:"true"  yaml:"interface"  json:"interface,omitempty" property:"interface"`
-	URL                  string              `yaml:"url"  json:"url,omitempty" property:"url"`
-	Path                 string              `yaml:"rest_path"  json:"rest_path,omitempty" property:"rest_path"`
-	Produces             string              `yaml:"rest_produces"  json:"rest_produces,omitempty" property:"rest_produces"`
-	Consumes             string              `yaml:"rest_consumes"  json:"rest_consumes,omitempty" property:"rest_consumes"`
-	MethodType           string              `yaml:"rest_method"  json:"rest_method,omitempty" property:"rest_method"`
-	Client               string              `yaml:"rest_client" json:"rest_client,omitempty" property:"rest_client"`
-	Server               string              `yaml:"rest_server" json:"rest_server,omitempty" property:"rest_server"`
-	RestMethodConfigs    map[string]*RestMethodConfig `yaml:"methods" json:"methods,omitempty" property:"methods"`
+	InterfaceName     string                       `required:"true"  yaml:"interface"  json:"interface,omitempty" property:"interface"`
+	URL               string                       `yaml:"url"  json:"url,omitempty" property:"url"`
+	Path              string                       `yaml:"rest_path"  json:"rest_path,omitempty" property:"rest_path"`
+	Produces          string                       `yaml:"rest_produces"  json:"rest_produces,omitempty" property:"rest_produces"`
+	Consumes          string                       `yaml:"rest_consumes"  json:"rest_consumes,omitempty" property:"rest_consumes"`
+	MethodType        string                       `yaml:"rest_method"  json:"rest_method,omitempty" property:"rest_method"`
+	Client            string                       `yaml:"rest_client" json:"rest_client,omitempty" property:"rest_client"`
+	Server            string                       `yaml:"rest_server" json:"rest_server,omitempty" property:"rest_server"`
+	RestMethodConfigs map[string]*RestMethodConfig `yaml:"methods" json:"methods,omitempty" property:"methods"`
 }
 
 // UnmarshalYAML unmarshals the RestServiceConfig by @unmarshal function
@@ -187,30 +185,29 @@ func (c *RestServiceConfig) UnmarshalYAML(unmarshal func(interface{}) error) err
 }
 
 type RestCommonConfig struct {
-	Path           string `yaml:"path"  json:"rest_path,omitempty" property:"rest_path"`
-	MethodType     string `yaml:"method"  json:"rest_method,omitempty" property:"rest_method"`
-	QueryParams    string `yaml:"query_params"  json:"rest_query_params,omitempty" property:"rest_query_params"`
-	PathParams 	   string `yaml:"path_params" json:"rest_path_params,omitempty" property:"rest_query_params"`
-
+	Path        string `yaml:"path"  json:"rest_path,omitempty" property:"rest_path"`
+	MethodType  string `yaml:"method"  json:"rest_method,omitempty" property:"rest_method"`
+	QueryParams string `yaml:"query_params"  json:"rest_query_params,omitempty" property:"rest_query_params"`
+	PathParams  string `yaml:"path_params" json:"rest_path_params,omitempty" property:"rest_query_params"`
 }
 
 // nolint
 type RestMethodConfig struct {
-	InterfaceName  string
-	MethodName     string `required:"true" yaml:"name"  json:"name,omitempty" property:"name"`
-	URL            string `yaml:"url"  json:"url,omitempty" property:"url"`
-	Path           string `yaml:"rest_path"  json:"rest_path,omitempty" property:"rest_path"`
-	Produces       string `yaml:"rest_produces"  json:"rest_produces,omitempty" property:"rest_produces"`
-	Consumes       string `yaml:"rest_consumes"  json:"rest_consumes,omitempty" property:"rest_consumes"`
-	MethodType     string `yaml:"rest_method"  json:"rest_method,omitempty" property:"rest_method"`
-	PathParams     string `yaml:"rest_path_params"  json:"rest_path_params,omitempty" property:"rest_path_params"`
-	PathParamsMap  map[int]string
-	QueryParams    string `yaml:"rest_query_params"  json:"rest_query_params,omitempty" property:"rest_query_params"`
-	RestCommonConfig    *RestCommonConfig `yaml:"rest" json:"rest_common,omitempty" property:"rest_common"`
-	QueryParamsMap map[int]string
-	Body           int    `default:"-1" yaml:"rest_body"  json:"rest_body,omitempty" property:"rest_body"`
-	Headers        string `yaml:"rest_headers"  json:"rest_headers,omitempty" property:"rest_headers"`
-	HeadersMap     map[int]string
+	InterfaceName    string
+	MethodName       string `required:"true" yaml:"name"  json:"name,omitempty" property:"name"`
+	URL              string `yaml:"url"  json:"url,omitempty" property:"url"`
+	Path             string `yaml:"rest_path"  json:"rest_path,omitempty" property:"rest_path"`
+	Produces         string `yaml:"rest_produces"  json:"rest_produces,omitempty" property:"rest_produces"`
+	Consumes         string `yaml:"rest_consumes"  json:"rest_consumes,omitempty" property:"rest_consumes"`
+	MethodType       string `yaml:"rest_method"  json:"rest_method,omitempty" property:"rest_method"`
+	PathParams       string `yaml:"rest_path_params"  json:"rest_path_params,omitempty" property:"rest_path_params"`
+	PathParamsMap    map[int]string
+	QueryParams      string            `yaml:"rest_query_params"  json:"rest_query_params,omitempty" property:"rest_query_params"`
+	RestCommonConfig *RestCommonConfig `yaml:"rest" json:"rest_common,omitempty" property:"rest_common"`
+	QueryParamsMap   map[int]string
+	Body             int    `default:"-1" yaml:"rest_body"  json:"rest_body,omitempty" property:"rest_body"`
+	Headers          string `yaml:"rest_headers"  json:"rest_headers,omitempty" property:"rest_headers"`
+	HeadersMap       map[int]string
 }
 
 // UnmarshalYAML unmarshals the RestMethodConfig by @unmarshal function

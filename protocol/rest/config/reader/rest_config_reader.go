@@ -102,7 +102,6 @@ func initMethodConfigMap(rc *config.RestServiceConfig, consumes string, produces
 	return mcm
 }
 
-
 // transformMethodConfig
 func transformMethodConfig(methodConfig *config.RestMethodConfig) *config.RestMethodConfig {
 	if len(methodConfig.PathParamsMap) == 0 && len(methodConfig.RestCommonConfig.PathParams) > 0 {
@@ -118,7 +117,7 @@ func transformMethodConfig(methodConfig *config.RestMethodConfig) *config.RestMe
 
 	if len(methodConfig.QueryParamsMap) == 0 {
 
-		restParam :=make([]string,4, 8)
+		restParam := make([]string, 4, 8)
 		restParam[0] = restCommonConfig.Path
 		restParam[1] = restCommonConfig.MethodType
 		restParam[2] = restCommonConfig.QueryParams

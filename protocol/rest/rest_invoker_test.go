@@ -13,10 +13,9 @@
 * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 * See the License for the specific language governing permissions and
 * limitations under the License.
-*/
+ */
 
 package rest
-
 
 import (
 	"context"
@@ -156,7 +155,7 @@ func TestRestInvokerInvoke(t *testing.T) {
 	}
 
 	configMap["com.ikurento.user.UserProvider"] = &rest_config.RestServiceConfig{
-		Server:               "go-restful",
+		Server:            "go-restful",
 		RestMethodConfigs: methodConfigMap,
 	}
 	rest_config.SetRestProviderServiceConfigMap(configMap)
@@ -166,8 +165,7 @@ func TestRestInvokerInvoke(t *testing.T) {
 	configMap = make(map[string]*rest_config.RestServiceConfig)
 	configMap["com.ikurento.user.UserProvider"] = &rest_config.RestServiceConfig{
 		RestMethodConfigs: methodConfigMap,
-		InterfaceName: "com.ikurento.user.UserProvider",
-
+		InterfaceName:     "com.ikurento.user.UserProvider",
 	}
 	restClient := client_impl.NewRestyClient(&client.RestOptions{ConnectTimeout: 3 * time.Second, RequestTimeout: 3 * time.Second})
 	invoker := NewRestInvoker(url, &restClient, methodConfigMap)

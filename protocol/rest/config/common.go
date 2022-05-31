@@ -1,7 +1,6 @@
 package config
 
 // function will return first not empty string ..
-// function will return first not empty string ..
 func GetNotEmptyStr(args ...string) string {
 	var r string
 	for _, t := range args {
