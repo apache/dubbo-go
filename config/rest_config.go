@@ -66,14 +66,14 @@ func (c *RestConsumerConfig) Init(rc *RootConfig) error {
 		return nil
 	}
 
-	restConsumerServiceConfigMap := make(map[string]*RestServiceConfig, len(restConsumerConfig.RestServiceConfigsMap))
+	restConsumerServices := make(map[string]*RestServiceConfig, len(restConsumerConfig.RestServiceConfigsMap))
 	for key, rc := range restConsumerConfig.RestServiceConfigsMap {
 		rc.Client = common.GetNotEmptyStr(rc.Client, restConsumerConfig.Client, constant.DefaultRestClient)
 		rc.RestMethodConfigs = initMethodConfigMap(rc, restConsumerConfig.Consumes, restConsumerConfig.Produces)
-		restConsumerServiceConfigMap[key] = rc
+		restConsumerServices[key] = rc
 	}
 
-	SetRestConsumerServiceConfigMap(restConsumerServiceConfigMap)
+	SetRestConsumerServiceConfigMap(restConsumerServices)
 
 	return nil
 }
