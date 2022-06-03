@@ -96,6 +96,9 @@ func (rc *ReferenceConfig) Init(root *RootConfig) error {
 			rc.Version = root.Application.Version
 		}
 	}
+	if rc.Filter == "" {
+		rc.Filter = root.Consumer.Filter
+	}
 	if rc.Cluster == "" {
 		rc.Cluster = "failover"
 	}
@@ -309,7 +312,7 @@ func (rc *ReferenceConfig) getURLMap() url.Values {
 	if rc.Generic != "" {
 		defaultReferenceFilter = constant.GenericFilterKey + "," + defaultReferenceFilter
 	}
-	urlMap.Set(constant.ReferenceFilterKey, mergeValue(rc.rootConfig.Consumer.Filter, "", defaultReferenceFilter))
+	urlMap.Set(constant.ReferenceFilterKey, mergeValue(rc.Filter, "", defaultReferenceFilter))
 
 	for _, v := range rc.Methods {
 		urlMap.Set("methods."+v.Name+"."+constant.LoadbalanceKey, v.LoadBalance)
