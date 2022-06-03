@@ -21,7 +21,7 @@
 - [url too many colons in address](https://github.com/apache/dubbo-go/pull/1306)
 - [1.5 fix the nacos namespace from server/client.yml does not take effect](https://github.com/apache/dubbo-go/pull/1576)
 - [url too many colons in address](https://github.com/apache/dubbo-go/pull/1662)
-- [decode net stream bytes as getty rule](https://github.com/apache/dubbo-go/pull/1833)-
+- [decode net stream bytes as getty rule](https://github.com/apache/dubbo-go/pull/1833)
 - [remove consul](https://github.com/apache/dubbo-go/pull/1898)
 - [fix etcd consume event listener](https://github.com/apache/dubbo-go/pull/1898)
 
