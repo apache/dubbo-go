@@ -109,6 +109,9 @@ func (s *ServiceConfig) Init(rc *RootConfig) error {
 	}
 	s.exported = atomic.NewBool(false)
 	s.metadataType = rc.Application.MetadataType
+	if s.Filter == "" {
+		s.Filter = rc.Provider.Filter
+	}
 	if s.Version == "" {
 		s.Version = rc.Application.Version
 	}
