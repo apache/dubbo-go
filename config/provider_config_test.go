@@ -42,7 +42,8 @@ func TestProviderConfigRootRegistry(t *testing.T) {
 	assert.Nil(t, err)
 	provider := rootConfig.Provider
 	assert.NotNil(t, provider)
-	assert.Equal(t, 2, len(provider.Services))
+	assert.NotNil(t, provider.Services["HelloService"])
+	assert.NotNil(t, provider.Services["OrderService"])
 
 	assert.Equal(t, 2, len(provider.Services["HelloService"].RegistryIDs))
 	assert.Equal(t, 1, len(provider.Services["OrderService"].RegistryIDs))
