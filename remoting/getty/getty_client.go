@@ -27,8 +27,6 @@ import (
 	"github.com/apache/dubbo-getty"
 
 	gxsync "github.com/dubbogo/gost/sync"
-	gxtime "github.com/dubbogo/gost/time"
-
 	perrors "github.com/pkg/errors"
 
 	"go.uber.org/atomic"
@@ -207,7 +205,7 @@ func (c *Client) Request(request *remoting.Request, timeout time.Duration, respo
 	}
 
 	select {
-	case <-gxtime.After(timeout):
+	case <-time.After(timeout):
 		return perrors.WithStack(errClientReadTimeout)
 	case <-response.Done:
 		err = response.Err
