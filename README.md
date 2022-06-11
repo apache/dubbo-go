@@ -27,7 +27,7 @@ Dubbo-go has supported many RPC protocol, like Triple, Dubbo JSONRPC, gRPC, HTTP
 ![](https://dubbogo.github.io/img/devops.png)
 
 - **Registry**: Nacos, Zookeeper, ETCD, Polaris-mesh, Consul.
-- **ConfigCenter**: Nacos, Apollo, Zookeeper
+- **ConfigCenter**: Nacos, Zookeeper
 - **Cluster Strategy**: Failover, [Failfast](https://github.com/apache/dubbo-go/pull/140), [Failsafe/Failback](https://github.com/apache/dubbo-go/pull/136), [Available](https://github.com/apache/dubbo-go/pull/155), [Broadcast](https://github.com/apache/dubbo-go/pull/158), [Forking](https://github.com/apache/dubbo-go/pull/161)
 - **Load Balance**: [AdaptiveService](https://github.com/apache/dubbo-go/pull/1649), Random, [RoundRobin](https://github.com/apache/dubbo-go/pull/66), [LeastActive](https://github.com/apache/dubbo-go/pull/65), [ConsistentHash](https://github.com/apache/dubbo-go/pull/261)
 - [**Filter**](./filter): Echo, Hystrix, Token, AccessLog, TpsLimiter, ExecuteLimit, Generic, Auth/Sign, Metrics, Tracing, Active, Seata, Sentinel
