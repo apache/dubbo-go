@@ -29,7 +29,7 @@ require (
 	github.com/google/go-cmp v0.5.8
 	github.com/gopherjs/gopherjs v0.0.0-20190910122728-9d188e94fb99 // indirect
 	github.com/grpc-ecosystem/grpc-opentracing v0.0.0-20180507213350-8e809c8a8645
-	github.com/hashicorp/vault/sdk v0.3.0
+	github.com/hashicorp/vault/sdk v0.5.1
 	github.com/jinzhu/copier v0.3.5
 	github.com/knadh/koanf v1.4.1
 	github.com/magiconair/properties v1.8.6
@@ -42,9 +42,7 @@ require (
 	github.com/polarismesh/polaris-go v1.1.0
 	github.com/prometheus/client_golang v1.12.2
 	github.com/satori/go.uuid v1.2.1-0.20181028125025-b2ce2384e17b
-	github.com/spf13/afero v1.2.2 // indirect
 	github.com/stretchr/testify v1.7.1
-	github.com/zouyx/agollo/v3 v3.4.5
 	go.etcd.io/etcd/api/v3 v3.5.4
 	go.etcd.io/etcd/client/v3 v3.5.4
 	go.opentelemetry.io/otel v1.7.0
