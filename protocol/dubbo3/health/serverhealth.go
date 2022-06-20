@@ -37,7 +37,7 @@ import (
 )
 
 // Server implements `service Health`.
-type XXX_healthServer struct {
+type DubbogoHealthServer struct {
 	healthtriple.UnimplementedHealthServer
 	mu sync.RWMutex
 	// If shutdown is true, it's expected all serving status is NOT_SERVING, and
@@ -48,18 +48,18 @@ type XXX_healthServer struct {
 	updates   map[string]map[healthtriple.Health_WatchServer]chan healthpb.HealthCheckResponse_ServingStatus
 }
 
-var healthServer *XXX_healthServer
+var healthServer *DubbogoHealthServer
 
 // NewServer returns a new Server.
-func NewServer() *XXX_healthServer {
-	return &XXX_healthServer{
+func NewServer() *DubbogoHealthServer {
+	return &DubbogoHealthServer{
 		statusMap: map[string]healthpb.HealthCheckResponse_ServingStatus{"": healthpb.HealthCheckResponse_SERVING},
 		updates:   make(map[string]map[healthtriple.Health_WatchServer]chan healthpb.HealthCheckResponse_ServingStatus),
 	}
 }
 
 // Check implements `service Health`.
-func (s *XXX_healthServer) Check(ctx context.Context, in *healthpb.HealthCheckRequest) (*healthpb.HealthCheckResponse, error) {
+func (s *DubbogoHealthServer) Check(ctx context.Context, in *healthpb.HealthCheckRequest) (*healthpb.HealthCheckResponse, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	if servingStatus, ok := s.statusMap[in.Service]; ok {
@@ -71,7 +71,7 @@ func (s *XXX_healthServer) Check(ctx context.Context, in *healthpb.HealthCheckRe
 }
 
 // Watch implements `service Health`.
-func (s *XXX_healthServer) Watch(in *healthpb.HealthCheckRequest, stream healthtriple.Health_WatchServer) error {
+func (s *DubbogoHealthServer) Watch(in *healthpb.HealthCheckRequest, stream healthtriple.Health_WatchServer) error {
 	service := in.Service
 	// update channel is used for getting service status updates.
 	update := make(chan healthpb.HealthCheckResponse_ServingStatus, 1)
@@ -117,7 +117,7 @@ func (s *XXX_healthServer) Watch(in *healthpb.HealthCheckRequest, stream healtht
 
 // SetServingStatus is called when need to reset the serving status of a service
 // or insert a new service entry into the statusMap.
-func (s *XXX_healthServer) SetServingStatus(service string, servingStatus healthpb.HealthCheckResponse_ServingStatus) {
+func (s *DubbogoHealthServer) SetServingStatus(service string, servingStatus healthpb.HealthCheckResponse_ServingStatus) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.shutdown {
@@ -128,7 +128,7 @@ func (s *XXX_healthServer) SetServingStatus(service string, servingStatus health
 	s.setServingStatusLocked(service, servingStatus)
 }
 
-func (s *XXX_healthServer) setServingStatusLocked(service string, servingStatus healthpb.HealthCheckResponse_ServingStatus) {
+func (s *DubbogoHealthServer) setServingStatusLocked(service string, servingStatus healthpb.HealthCheckResponse_ServingStatus) {
 	s.statusMap[service] = servingStatus
 	for _, update := range s.updates[service] {
 		// Clears previous updates, that are not sent to the client, from the channel.
@@ -147,7 +147,7 @@ func (s *XXX_healthServer) setServingStatusLocked(service string, servingStatus 
 //
 // This changes serving status for all services. To set status for a particular
 // services, call SetServingStatus().
-func (s *XXX_healthServer) Shutdown() {
+func (s *DubbogoHealthServer) Shutdown() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.shutdown = true
@@ -161,7 +161,7 @@ func (s *XXX_healthServer) Shutdown() {
 //
 // This changes serving status for all services. To set status for a particular
 // services, call SetServingStatus().
-func (s *XXX_healthServer) Resume() {
+func (s *DubbogoHealthServer) Resume() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.shutdown = false
