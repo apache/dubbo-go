@@ -111,6 +111,17 @@ func (c *ProviderConfig) Init(rc *RootConfig) error {
 
 	for k, v := range rc.Protocols {
 		if v.Name == tripleConstant.TRIPLE {
+			// Auto create grpc based health check service.
+			healthService := NewServiceConfigBuilder().
+				SetProtocolIDs(k).
+				SetNotRegister(true).
+				SetInterface(constant.HealthCheckServiceInterface).
+				Build()
+			if err := healthService.Init(rc); err != nil {
+				return err
+			}
+			c.Services[constant.HealthCheckServiceTypeName] = healthService
+
 			// Auto create reflection service configure only when provider with triple service is configured.
 			tripleReflectionService := NewServiceConfigBuilder().
 				SetProtocolIDs(k).
@@ -120,7 +131,9 @@ func (c *ProviderConfig) Init(rc *RootConfig) error {
 			if err := tripleReflectionService.Init(rc); err != nil {
 				return err
 			}
+			// Maybe only register once, If setting this service, break from traversing Protocols.
 			c.Services[constant.ReflectionServiceTypeName] = tripleReflectionService
+			break
 		}
 	}
 
@@ -144,8 +157,9 @@ func (c *ProviderConfig) Load() {
 	for registeredTypeName, service := range GetProviderServiceMap() {
 		serviceConfig, ok := c.Services[registeredTypeName]
 		if !ok {
-			if registeredTypeName == constant.ReflectionServiceTypeName {
-				// do not auto generate reflection server's configuration.
+			if registeredTypeName == constant.ReflectionServiceTypeName ||
+				registeredTypeName == constant.HealthCheckServiceTypeName {
+				// do not auto generate reflection or health check server's configuration.
 				continue
 			}
 			// service doesn't config in config file, create one with default
