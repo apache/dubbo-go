@@ -21,27 +21,21 @@ import (
 	"math/rand"
 	"sync"
 	"time"
-)
 
-import (
-	"github.com/apache/dubbo-getty"
+	getty "github.com/apache/dubbo-getty"
 
 	gxsync "github.com/dubbogo/gost/sync"
+
 	gxtime "github.com/dubbogo/gost/time"
 
-	perrors "github.com/pkg/errors"
-
-	"go.uber.org/atomic"
-
-	"gopkg.in/yaml.v2"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
+	"github.com/dubbogo/gost/log/logger"
+	perrors "github.com/pkg/errors"
+	"go.uber.org/atomic"
+	"gopkg.in/yaml.v2"
 )
 
 var (

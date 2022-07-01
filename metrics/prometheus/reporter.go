@@ -24,22 +24,17 @@ import (
 	"strings"
 	"sync"
 	"time"
-)
 
-import (
 	ocprom "contrib.go.opencensus.io/exporter/prometheus"
-
 	"github.com/prometheus/client_golang/prometheus"
-	prom "github.com/prometheus/client_golang/prometheus"
-)
 
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"github.com/dubbogo/gost/log/logger"
+	prom "github.com/prometheus/client_golang/prometheus"
 )
 
 const (

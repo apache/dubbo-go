@@ -29,12 +29,9 @@ import (
 
 	"github.com/golang/protobuf/proto"
 
-	"google.golang.org/grpc/metadata"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/balancerload"
+	"github.com/dubbogo/gost/log/logger"
+	"google.golang.org/grpc/metadata"
 )
 
 const mdKey = "X-Endpoint-Load-Metrics-Bin"

@@ -19,14 +19,15 @@ package internal
 
 import (
 	"context"
-)
 
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	log "dubbo.apache.org/dubbo-go/v3/common/logger"
-	_ "dubbo.apache.org/dubbo-go/v3/common/proxy/proxy_factory"
+	log "github.com/dubbogo/gost/log/logger"
+
 	"dubbo.apache.org/dubbo-go/v3/config"
+	_ "dubbo.apache.org/dubbo-go/v3/proxy/proxy_factory"
+
 	_ "dubbo.apache.org/dubbo-go/v3/filter/filter_impl"
+
 	_ "dubbo.apache.org/dubbo-go/v3/metrics/prometheus"
 )
 

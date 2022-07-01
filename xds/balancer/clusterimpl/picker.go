@@ -33,13 +33,11 @@ import (
 	"google.golang.org/grpc/connectivity"
 
 	"google.golang.org/grpc/status"
-)
 
-import (
-	dubboLogger "dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/xds/client"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/load"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/wrr"
+	dubboLogger "github.com/dubbogo/gost/log/logger"
 )
 
 // NewRandomWRR is used when calculating drops. It's exported so that tests can

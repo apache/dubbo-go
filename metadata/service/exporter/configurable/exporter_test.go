@@ -19,19 +19,18 @@ package configurable
 
 import (
 	"testing"
-)
 
-import (
-	"github.com/stretchr/testify/assert"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	_ "dubbo.apache.org/dubbo-go/v3/common/proxy/proxy_factory"
+	"github.com/stretchr/testify/assert"
+
 	"dubbo.apache.org/dubbo-go/v3/config"
+	_ "dubbo.apache.org/dubbo-go/v3/proxy/proxy_factory"
+
 	_ "dubbo.apache.org/dubbo-go/v3/filter/filter_impl"
 	"dubbo.apache.org/dubbo-go/v3/metadata/service/local"
+
 	_ "dubbo.apache.org/dubbo-go/v3/metrics/prometheus"
+
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/dubbo"
 	"dubbo.apache.org/dubbo-go/v3/remoting/getty"
 )

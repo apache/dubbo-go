@@ -19,18 +19,13 @@ package getty
 
 import (
 	"reflect"
-)
 
-import (
-	"github.com/apache/dubbo-getty"
+	getty "github.com/apache/dubbo-getty"
 
-	perrors "github.com/pkg/errors"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo/impl"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
+	"github.com/dubbogo/gost/log/logger"
+	perrors "github.com/pkg/errors"
 )
 
 // RpcClientPackageHandler Read data from server and Write data to server

@@ -47,17 +47,13 @@ import (
 	"strconv"
 	"sync"
 	"sync/atomic"
-)
 
-import (
-	"github.com/modern-go/concurrent"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/filter"
+	"github.com/dubbogo/gost/log/logger"
+	"github.com/modern-go/concurrent"
+
 	_ "dubbo.apache.org/dubbo-go/v3/filter/handler"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )

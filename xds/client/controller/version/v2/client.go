@@ -27,28 +27,25 @@ package v2
 import (
 	"context"
 	"fmt"
-)
 
-import (
 	v2xdspb "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	v2corepb "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	v2adsgrpc "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
 
+	v2adsgrpc "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
 	"github.com/golang/protobuf/proto"
+
 	_struct "github.com/golang/protobuf/ptypes/struct"
 
 	statuspb "google.golang.org/genproto/googleapis/rpc/status"
-
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-
 	"google.golang.org/protobuf/types/known/anypb"
-)
 
-import (
-	dubboLogger "dubbo.apache.org/dubbo-go/v3/common/logger"
+	dubboLogger "github.com/dubbogo/gost/log/logger"
+
 	controllerversion "dubbo.apache.org/dubbo-go/v3/xds/client/controller/version"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
+
 	resourceversion "dubbo.apache.org/dubbo-go/v3/xds/client/resource/version"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/pretty"
 )

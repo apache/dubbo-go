@@ -21,26 +21,20 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net"
-)
 
-import (
-	"github.com/apache/dubbo-getty"
+	getty "github.com/apache/dubbo-getty"
 
 	gxsync "github.com/dubbogo/gost/sync"
 
-	perrors "github.com/pkg/errors"
-
-	"gopkg.in/yaml.v2"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
+	"github.com/dubbogo/gost/log/logger"
+	perrors "github.com/pkg/errors"
+	"gopkg.in/yaml.v2"
 )
 
 var (

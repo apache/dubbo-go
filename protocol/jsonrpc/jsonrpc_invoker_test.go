@@ -30,7 +30,7 @@ package jsonrpc
 //
 //import (
 //	"dubbo.apache.org/dubbo-go/v3/common"
-//	"dubbo.apache.org/dubbo-go/v3/common/proxy/proxy_factory"
+//	"dubbo.apache.org/dubbo-go/v3/proxy/proxy_factory"
 //	"dubbo.apache.org/dubbo-go/v3/protocol"
 //	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 //)

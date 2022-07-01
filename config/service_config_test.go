@@ -21,16 +21,12 @@ import (
 	"context"
 	"strings"
 	"testing"
-)
 
-import (
-	"github.com/stretchr/testify/assert"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	_ "dubbo.apache.org/dubbo-go/v3/common/proxy/proxy_factory"
+	"github.com/stretchr/testify/assert"
+
+	_ "dubbo.apache.org/dubbo-go/v3/proxy/proxy_factory"
 )
 
 type HelloService struct {

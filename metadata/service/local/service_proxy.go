@@ -20,14 +20,12 @@ package local
 import (
 	"context"
 	"reflect"
-)
 
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"github.com/dubbogo/gost/log/logger"
 )
 
 // MetadataServiceProxy actually is a  RPC stub which will only be used by client-side.

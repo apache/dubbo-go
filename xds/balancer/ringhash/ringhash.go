@@ -29,23 +29,16 @@ import (
 	"errors"
 	"fmt"
 	"sync"
-)
 
-import (
 	"google.golang.org/grpc/balancer"
 	"google.golang.org/grpc/balancer/base"
 	"google.golang.org/grpc/balancer/weightedroundrobin"
-
 	"google.golang.org/grpc/connectivity"
-
 	"google.golang.org/grpc/resolver"
-
 	"google.golang.org/grpc/serviceconfig"
-)
 
-import (
-	dubboLogger "dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/pretty"
+	dubboLogger "github.com/dubbogo/gost/log/logger"
 )
 
 // Name is the name of the ring_hash balancer.

@@ -19,10 +19,8 @@ package limiter
 
 import (
 	"time"
-)
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	"github.com/dubbogo/gost/log/logger"
 )
 
 func VerboseDebugf(msg string, args ...interface{}) {

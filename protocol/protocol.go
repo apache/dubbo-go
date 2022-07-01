@@ -19,11 +19,9 @@ package protocol
 
 import (
 	"sync"
-)
 
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	"github.com/dubbogo/gost/log/logger"
 )
 
 // Protocol is the interface that wraps the basic Export、 Refer and Destroy method.

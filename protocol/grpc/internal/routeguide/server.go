@@ -26,16 +26,11 @@ import (
 	"net"
 	"sync"
 	"time"
-)
 
-import (
 	"github.com/golang/protobuf/proto"
-
 	"google.golang.org/grpc"
-)
 
-import (
-	log "dubbo.apache.org/dubbo-go/v3/common/logger"
+	log "github.com/dubbogo/gost/log/logger"
 )
 
 type routeGuideServer struct {

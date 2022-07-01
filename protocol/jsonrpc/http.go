@@ -30,18 +30,13 @@ import (
 	"strings"
 	"sync/atomic"
 	"time"
-)
 
-import (
 	"github.com/opentracing/opentracing-go"
 
-	perrors "github.com/pkg/errors"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	"github.com/dubbogo/gost/log/logger"
+	perrors "github.com/pkg/errors"
 )
 
 // Request is HTTP protocol request

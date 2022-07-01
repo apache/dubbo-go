@@ -21,12 +21,10 @@ import (
 	"fmt"
 	"math/rand"
 	"time"
-)
 
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/common/observer"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
+	"github.com/dubbogo/gost/gof/observer"
 )
 
 type KeyFunc func(*common.URL) string

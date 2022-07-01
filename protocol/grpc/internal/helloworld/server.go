@@ -20,14 +20,10 @@ package helloworld
 import (
 	"context"
 	"net"
-)
 
-import (
 	"google.golang.org/grpc"
-)
 
-import (
-	log "dubbo.apache.org/dubbo-go/v3/common/logger"
+	log "github.com/dubbogo/gost/log/logger"
 )
 
 // server is used to implement helloworld.GreeterServer.

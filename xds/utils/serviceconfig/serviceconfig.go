@@ -28,18 +28,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
-)
 
-import (
 	"google.golang.org/grpc/balancer"
-
 	"google.golang.org/grpc/codes"
 
+	"github.com/dubbogo/gost/log/logger"
 	externalserviceconfig "google.golang.org/grpc/serviceconfig"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
 )
 
 // BalancerConfig wraps the name and config associated with one load balancing

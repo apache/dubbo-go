@@ -21,11 +21,9 @@ import (
 	"io"
 	"math/rand"
 	"time"
-)
 
-import (
-	log "dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/config"
+	log "github.com/dubbogo/gost/log/logger"
 )
 
 func init() {

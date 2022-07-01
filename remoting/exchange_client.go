@@ -20,16 +20,11 @@ package remoting
 import (
 	"errors"
 	"time"
-)
 
-import (
-	uatomic "go.uber.org/atomic"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"github.com/dubbogo/gost/log/logger"
+	uatomic "go.uber.org/atomic"
 )
 
 // Client is the interface that wraps SetExchangeClient、 Connect、Close、Request and

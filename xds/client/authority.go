@@ -26,18 +26,14 @@ package client
 import (
 	"errors"
 	"fmt"
-)
 
-import (
 	_struct "github.com/golang/protobuf/ptypes/struct"
-)
 
-import (
-	dubboLogger "dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/bootstrap"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/load"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/pubsub"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
+	dubboLogger "github.com/dubbogo/gost/log/logger"
 )
 
 const federationScheme = "xdstp"

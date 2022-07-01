@@ -19,14 +19,9 @@ package config
 
 import (
 	"testing"
-)
 
-import (
+	"github.com/dubbogo/gost/log/logger"
 	"github.com/stretchr/testify/assert"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
 )
 
 func TestLoggerInit(t *testing.T) {

@@ -27,14 +27,12 @@ import (
 	"fmt"
 	"sync"
 	"time"
-)
 
-import (
-	dubboLogger "dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/xds/client"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
 	"dubbo.apache.org/dubbo-go/v3/xds/clusterspecifier"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/pretty"
+	dubboLogger "github.com/dubbogo/gost/log/logger"
 )
 
 // serviceUpdate contains information received from the LDS/RDS responses which

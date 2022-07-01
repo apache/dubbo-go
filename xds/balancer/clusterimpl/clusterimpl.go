@@ -33,20 +33,14 @@ import (
 	"fmt"
 	"sync"
 	"sync/atomic"
-)
 
-import (
 	"google.golang.org/grpc/balancer"
-
 	"google.golang.org/grpc/connectivity"
-
 	"google.golang.org/grpc/resolver"
-
 	"google.golang.org/grpc/serviceconfig"
-)
 
-import (
-	dubboLogger "dubbo.apache.org/dubbo-go/v3/common/logger"
+	dubboLogger "github.com/dubbogo/gost/log/logger"
+
 	internal "dubbo.apache.org/dubbo-go/v3/xds"
 	"dubbo.apache.org/dubbo-go/v3/xds/balancer/loadstore"
 	"dubbo.apache.org/dubbo-go/v3/xds/client"
