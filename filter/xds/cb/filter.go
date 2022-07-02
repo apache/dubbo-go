@@ -19,7 +19,13 @@ package cb
 
 import (
 	"context"
+)
 
+import (
+	"github.com/dubbogo/gost/log/logger"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
@@ -28,7 +34,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/remoting/xds"
 	"dubbo.apache.org/dubbo-go/v3/xds/client"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
-	"github.com/dubbogo/gost/log/logger"
 )
 
 // this should be executed before users set their own Tracer

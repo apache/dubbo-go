@@ -25,12 +25,18 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+)
 
+import (
 	getty "github.com/apache/dubbo-getty"
 
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"github.com/dubbogo/gost/log/logger"
+
 	perrors "github.com/pkg/errors"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/config"
 )
 
 type gettyRPCClient struct {

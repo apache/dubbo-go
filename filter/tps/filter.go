@@ -34,14 +34,17 @@ package tps
 import (
 	"context"
 	"sync"
+)
 
+import (
+	"github.com/dubbogo/gost/log/logger"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
-	"github.com/dubbogo/gost/log/logger"
-
 	_ "dubbo.apache.org/dubbo-go/v3/filter/handler"
-
 	_ "dubbo.apache.org/dubbo-go/v3/filter/tps/limiter"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )

@@ -20,17 +20,24 @@ package config
 import (
 	"net/url"
 	"strings"
+)
 
-	"dubbo.apache.org/dubbo-go/v3/common"
+import (
 	"github.com/creasty/defaults"
-	"github.com/knadh/koanf"
-	"github.com/pkg/errors"
 
+	"github.com/dubbogo/gost/log/logger"
+
+	"github.com/knadh/koanf"
+
+	"github.com/pkg/errors"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 	conf "dubbo.apache.org/dubbo-go/v3/common/config"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
-	"github.com/dubbogo/gost/log/logger"
 )
 
 // CenterConfig is configuration for config center

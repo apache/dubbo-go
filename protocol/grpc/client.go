@@ -22,15 +22,24 @@ import (
 	"strconv"
 	"sync"
 	"time"
+)
 
+import (
+	"github.com/dubbogo/gost/log/logger"
+
+	"github.com/grpc-ecosystem/grpc-opentracing/go/otgrpc"
+
+	"github.com/opentracing/opentracing-go"
+
+	"google.golang.org/grpc"
+
+	"gopkg.in/yaml.v2"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
-	"github.com/dubbogo/gost/log/logger"
-	"github.com/grpc-ecosystem/grpc-opentracing/go/otgrpc"
-	"github.com/opentracing/opentracing-go"
-	"google.golang.org/grpc"
-	"gopkg.in/yaml.v2"
 )
 
 var clientConf *ClientConfig

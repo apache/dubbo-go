@@ -19,12 +19,17 @@ package zookeeper
 
 import (
 	"strings"
+)
 
+import (
 	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
-
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"github.com/dubbogo/gost/log/logger"
+
 	perrors "github.com/pkg/errors"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
 const (

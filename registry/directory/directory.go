@@ -22,7 +22,15 @@ import (
 	"net/url"
 	"os"
 	"sync"
+)
 
+import (
+	"github.com/dubbogo/gost/log/logger"
+
+	perrors "github.com/pkg/errors"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory/base"
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory/static"
@@ -32,9 +40,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
-	"github.com/dubbogo/gost/log/logger"
-	perrors "github.com/pkg/errors"
-
 	_ "dubbo.apache.org/dubbo-go/v3/config_center/configurator"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"

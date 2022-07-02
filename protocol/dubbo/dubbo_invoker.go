@@ -23,14 +23,19 @@ import (
 	"strings"
 	"sync"
 	"time"
+)
 
+import (
+	"github.com/dubbogo/gost/log/logger"
+
+	"github.com/opentracing/opentracing-go"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
-	"github.com/dubbogo/gost/log/logger"
-	"github.com/opentracing/opentracing-go"
-
 	invocation_impl "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )

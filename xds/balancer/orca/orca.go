@@ -27,11 +27,15 @@ package orca
 import (
 	orcapb "github.com/cncf/xds/go/xds/data/orca/v3"
 
+	"github.com/dubbogo/gost/log/logger"
+
 	"github.com/golang/protobuf/proto"
 
-	"dubbo.apache.org/dubbo-go/v3/xds/utils/balancerload"
-	"github.com/dubbogo/gost/log/logger"
 	"google.golang.org/grpc/metadata"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/xds/utils/balancerload"
 )
 
 const mdKey = "X-Endpoint-Load-Metrics-Bin"

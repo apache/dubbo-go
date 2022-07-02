@@ -20,12 +20,18 @@ package protocol
 import (
 	"context"
 	"fmt"
+)
+
+import (
+	"github.com/dubbogo/gost/log/logger"
 
 	perrors "github.com/pkg/errors"
 
-	"dubbo.apache.org/dubbo-go/v3/common"
-	"github.com/dubbogo/gost/log/logger"
 	uatomic "go.uber.org/atomic"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 )
 
 var (

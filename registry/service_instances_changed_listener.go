@@ -19,7 +19,9 @@ package registry
 
 import (
 	"reflect"
+)
 
+import (
 	gxset "github.com/dubbogo/gost/container/set"
 	"github.com/dubbogo/gost/gof/observer"
 )

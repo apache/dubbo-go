@@ -19,8 +19,8 @@ package etcdv3
 
 import (
 	gxetcd "github.com/dubbogo/gost/database/kv/etcd/v3"
-
 	"github.com/dubbogo/gost/log/logger"
+
 	perrors "github.com/pkg/errors"
 )
 

@@ -33,17 +33,24 @@ import (
 	"fmt"
 	"sync"
 	"time"
+)
+
+import (
+	dubboLogger "github.com/dubbogo/gost/log/logger"
 
 	"google.golang.org/grpc/balancer"
-	"google.golang.org/grpc/resolver"
-	"google.golang.org/grpc/serviceconfig"
 
+	"google.golang.org/grpc/resolver"
+
+	"google.golang.org/grpc/serviceconfig"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/balancergroup"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/buffer"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpcsync"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/hierarchy"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/pretty"
-	dubboLogger "github.com/dubbogo/gost/log/logger"
 )
 
 // Name is the name of the priority balancer.

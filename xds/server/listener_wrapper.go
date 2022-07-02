@@ -33,15 +33,21 @@ import (
 	"sync/atomic"
 	"time"
 	"unsafe"
+)
 
-	"google.golang.org/grpc/backoff"
-	"google.golang.org/grpc/connectivity"
-	"google.golang.org/grpc/grpclog"
-
-	"dubbo.apache.org/dubbo-go/v3/xds/client/bootstrap"
-	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
+import (
 	dubboLogger "github.com/dubbogo/gost/log/logger"
 
+	"google.golang.org/grpc/backoff"
+
+	"google.golang.org/grpc/connectivity"
+
+	"google.golang.org/grpc/grpclog"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/xds/client/bootstrap"
+	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
 	internalbackoff "dubbo.apache.org/dubbo-go/v3/xds/utils/backoff"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/envconfig"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpcsync"

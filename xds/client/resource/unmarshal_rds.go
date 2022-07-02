@@ -28,18 +28,26 @@ import (
 	"regexp"
 	"strings"
 	"time"
+)
+
+import (
+	dubboLogger "github.com/dubbogo/gost/log/logger"
 
 	v3routepb "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	v3typepb "github.com/envoyproxy/go-control-plane/envoy/type/v3"
-	"github.com/golang/protobuf/proto"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/protobuf/types/known/anypb"
 
+	"github.com/golang/protobuf/proto"
+
+	"google.golang.org/grpc/codes"
+
+	"google.golang.org/protobuf/types/known/anypb"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource/version"
 	"dubbo.apache.org/dubbo-go/v3/xds/clusterspecifier"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/envconfig"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/pretty"
-	dubboLogger "github.com/dubbogo/gost/log/logger"
 )
 
 // UnmarshalRouteConfig processes resources received in an RDS response,

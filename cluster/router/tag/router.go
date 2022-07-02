@@ -20,17 +20,22 @@ package tag
 import (
 	"strings"
 	"sync"
+)
 
-	"dubbo.apache.org/dubbo-go/v3/common"
+import (
+	"github.com/dubbogo/gost/log/logger"
+
 	"gopkg.in/yaml.v2"
+)
 
+import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 	conf "dubbo.apache.org/dubbo-go/v3/common/config"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
-	"github.com/dubbogo/gost/log/logger"
 )
 
 type PriorityRouter struct {

@@ -24,13 +24,18 @@ import (
 	"sync"
 	"testing"
 	"time"
+)
 
+import (
 	hessian "github.com/apache/dubbo-go-hessian2"
 
-	"dubbo.apache.org/dubbo-go/v3/common"
 	perrors "github.com/pkg/errors"
-	"github.com/stretchr/testify/assert"
 
+	"github.com/stretchr/testify/assert"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 	. "dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/protocol"

@@ -24,17 +24,24 @@ import (
 	"reflect"
 	"regexp"
 	"sync"
+)
 
+import (
 	"github.com/afex/hystrix-go/hystrix"
 
+	"github.com/dubbogo/gost/log/logger"
+
+	perrors "github.com/pkg/errors"
+
+	"gopkg.in/yaml.v2"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
-	"github.com/dubbogo/gost/log/logger"
-	perrors "github.com/pkg/errors"
-	"gopkg.in/yaml.v2"
 )
 
 const (

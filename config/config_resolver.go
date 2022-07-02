@@ -24,9 +24,12 @@ import (
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/rawbytes"
 
+	"github.com/pkg/errors"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant/file"
 	"dubbo.apache.org/dubbo-go/v3/config/parsers/properties"
-	"github.com/pkg/errors"
 )
 
 // GetConfigResolver get config resolver

@@ -21,9 +21,18 @@ import (
 	"bytes"
 	"strings"
 	"sync"
+)
 
+import (
 	gxset "github.com/dubbogo/gost/container/set"
+	"github.com/dubbogo/gost/log/logger"
 
+	perrors "github.com/pkg/errors"
+
+	"go.uber.org/atomic"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
@@ -33,9 +42,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/registry/event"
 	"dubbo.apache.org/dubbo-go/v3/registry/servicediscovery/synthesizer"
-	"github.com/dubbogo/gost/log/logger"
-	perrors "github.com/pkg/errors"
-	"go.uber.org/atomic"
 )
 
 func init() {

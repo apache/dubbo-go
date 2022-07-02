@@ -22,16 +22,21 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+)
 
+import (
 	gxset "github.com/dubbogo/gost/container/set"
-
-	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"github.com/dubbogo/gost/log/logger"
+
 	perrors "github.com/pkg/errors"
+
 	"github.com/zouyx/agollo/v3"
 	"github.com/zouyx/agollo/v3/env/config"
+)
 
+import (
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	cc "dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/config_center/parser"
 )

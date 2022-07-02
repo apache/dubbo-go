@@ -26,6 +26,8 @@ package clusterimpl
 import (
 	orcapb "github.com/cncf/xds/go/xds/data/orca/v3"
 
+	dubboLogger "github.com/dubbogo/gost/log/logger"
+
 	"google.golang.org/grpc/balancer"
 
 	"google.golang.org/grpc/codes"
@@ -33,11 +35,12 @@ import (
 	"google.golang.org/grpc/connectivity"
 
 	"google.golang.org/grpc/status"
+)
 
+import (
 	"dubbo.apache.org/dubbo-go/v3/xds/client"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/load"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/wrr"
-	dubboLogger "github.com/dubbogo/gost/log/logger"
 )
 
 // NewRandomWRR is used when calculating drops. It's exported so that tests can

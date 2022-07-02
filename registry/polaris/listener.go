@@ -21,16 +21,22 @@ import (
 	"bytes"
 	"net/url"
 	"strconv"
+)
 
+import (
 	gxchan "github.com/dubbogo/gost/container/chan"
+	"github.com/dubbogo/gost/log/logger"
 
+	perrors "github.com/pkg/errors"
+
+	"github.com/polarismesh/polaris-go/pkg/model"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/registry"
-	"github.com/dubbogo/gost/log/logger"
-	perrors "github.com/pkg/errors"
-	"github.com/polarismesh/polaris-go/pkg/model"
 )
 
 type polarisListener struct {

@@ -27,15 +27,22 @@ package clustermanager
 import (
 	"encoding/json"
 	"fmt"
+)
+
+import (
+	dubboLogger "github.com/dubbogo/gost/log/logger"
 
 	"google.golang.org/grpc/balancer"
-	"google.golang.org/grpc/resolver"
-	"google.golang.org/grpc/serviceconfig"
 
+	"google.golang.org/grpc/resolver"
+
+	"google.golang.org/grpc/serviceconfig"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/balancergroup"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/hierarchy"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/pretty"
-	dubboLogger "github.com/dubbogo/gost/log/logger"
 )
 
 const balancerName = "xds_cluster_manager_experimental"

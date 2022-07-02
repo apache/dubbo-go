@@ -21,13 +21,18 @@ import (
 	"errors"
 	"sync"
 	"time"
+)
 
+import (
+	"github.com/dubbogo/gost/log/logger"
+
+	perrors "github.com/pkg/errors"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/registry"
-	"github.com/dubbogo/gost/log/logger"
-	perrors "github.com/pkg/errors"
-
 	xdsCommon "dubbo.apache.org/dubbo-go/v3/remoting/xds/common"
 	"dubbo.apache.org/dubbo-go/v3/remoting/xds/ewatcher"
 	"dubbo.apache.org/dubbo-go/v3/remoting/xds/mapping"

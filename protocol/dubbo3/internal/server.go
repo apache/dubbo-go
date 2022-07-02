@@ -19,16 +19,18 @@ package internal
 
 import (
 	"context"
+)
 
-	"dubbo.apache.org/dubbo-go/v3/common"
+import (
 	log "github.com/dubbogo/gost/log/logger"
+)
 
+import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/config"
-	_ "dubbo.apache.org/dubbo-go/v3/proxy/proxy_factory"
-
 	_ "dubbo.apache.org/dubbo-go/v3/filter/filter_impl"
-
 	_ "dubbo.apache.org/dubbo-go/v3/metrics/prometheus"
+	_ "dubbo.apache.org/dubbo-go/v3/proxy/proxy_factory"
 )
 
 // server is used to implement helloworld.GreeterServer.

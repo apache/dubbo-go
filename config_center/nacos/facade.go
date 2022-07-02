@@ -19,10 +19,15 @@ package nacos
 
 import (
 	"sync"
+)
 
-	"dubbo.apache.org/dubbo-go/v3/common"
+import (
 	nacosClient "github.com/dubbogo/gost/database/kv/nacos"
 	"github.com/dubbogo/gost/log/logger"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 )
 
 type nacosClientFacade interface {

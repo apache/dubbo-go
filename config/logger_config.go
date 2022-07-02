@@ -19,14 +19,22 @@ package config
 
 import (
 	"net/url"
+)
 
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
+import (
 	"github.com/creasty/defaults"
+
 	"github.com/dubbogo/gost/encoding/yaml"
 	"github.com/dubbogo/gost/log/logger"
+
 	"github.com/natefinch/lumberjack"
+
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
 type ZapConfig struct {
