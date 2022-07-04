@@ -30,7 +30,7 @@ import (
 )
 
 import (
-	dubboLogger "github.com/dubbogo/gost/log/logger"
+	dubbogoLogger "github.com/dubbogo/gost/log/logger"
 
 	"google.golang.org/grpc/balancer"
 
@@ -55,7 +55,7 @@ type bb struct{}
 
 func (bb) Build(cc balancer.ClientConn, opts balancer.BuildOptions) balancer.Balancer {
 	b := &bal{}
-	b.logger = dubboLogger.GetLogger()
+	b.logger = dubbogoLogger.GetLogger()
 	b.stateAggregator = newBalancerStateAggregator(cc, b.logger)
 	b.stateAggregator.start()
 	b.bg = balancergroup.New(cc, opts, b.stateAggregator, b.logger)
@@ -73,7 +73,7 @@ func (bb) ParseConfig(c json.RawMessage) (serviceconfig.LoadBalancingConfig, err
 }
 
 type bal struct {
-	logger dubboLogger.Logger
+	logger dubbogoLogger.Logger
 
 	// TODO: make this package not dependent on xds specific code. Same as for
 	// weighted target balancer.

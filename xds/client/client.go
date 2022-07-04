@@ -32,7 +32,7 @@ import (
 )
 
 import (
-	dubboLogger "github.com/dubbogo/gost/log/logger"
+	dubbogoLogger "github.com/dubbogo/gost/log/logger"
 
 	_struct "github.com/golang/protobuf/ptypes/struct"
 )
@@ -76,7 +76,7 @@ type clientImpl struct {
 	// never both.
 	idleAuthorities *cache.TimeoutCache
 
-	logger             dubboLogger.Logger
+	logger             dubbogoLogger.Logger
 	watchExpiryTimeout time.Duration
 }
 
@@ -97,7 +97,7 @@ func newWithConfig(config *bootstrap.Config, watchExpiryTimeout time.Duration, i
 		}
 	}()
 
-	c.logger = dubboLogger.GetLogger()
+	c.logger = dubbogoLogger.GetLogger()
 	c.logger.Infof("Created ClientConn to xDS management server: %s", config.XDSServer)
 
 	c.logger.Infof("Created")

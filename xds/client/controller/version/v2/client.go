@@ -30,7 +30,7 @@ import (
 )
 
 import (
-	dubboLogger "github.com/dubbogo/gost/log/logger"
+	dubbogoLogger "github.com/dubbogo/gost/log/logger"
 
 	v2xdspb "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	v2corepb "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
@@ -72,7 +72,7 @@ func newClient(opts controllerversion.BuildOptions) (controllerversion.MetadataW
 	if !ok {
 		return nil, fmt.Errorf("xds: unsupported Node proto type: %T, want %T", opts.NodeProto, (*v2corepb.Node)(nil))
 	}
-	v2c := &client{nodeProto: nodeProto, logger: dubboLogger.GetLogger()}
+	v2c := &client{nodeProto: nodeProto, logger: dubbogoLogger.GetLogger()}
 	return v2c, nil
 }
 
@@ -83,7 +83,7 @@ type adsStream v2adsgrpc.AggregatedDiscoveryService_StreamAggregatedResourcesCli
 // are multiplexed.
 type client struct {
 	nodeProto *v2corepb.Node
-	logger    dubboLogger.Logger
+	logger    dubbogoLogger.Logger
 }
 
 // SetMetadata update client metadata

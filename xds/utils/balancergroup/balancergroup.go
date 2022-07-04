@@ -32,7 +32,7 @@ import (
 )
 
 import (
-	dubboLogger "github.com/dubbogo/gost/log/logger"
+	dubbogoLogger "github.com/dubbogo/gost/log/logger"
 
 	"google.golang.org/grpc/balancer"
 
@@ -207,7 +207,7 @@ func (sbc *subBalancerWrapper) stopBalancer() {
 type BalancerGroup struct {
 	cc        balancer.ClientConn
 	buildOpts balancer.BuildOptions
-	logger    dubboLogger.Logger
+	logger    dubbogoLogger.Logger
 
 	// stateAggregator is where the state/picker updates will be sent to. It's
 	// provided by the parent balancer, to build a picker with all the
@@ -262,7 +262,7 @@ var DefaultSubBalancerCloseTimeout = 15 * time.Minute
 
 // New creates a new BalancerGroup. Note that the BalancerGroup
 // needs to be started to work.
-func New(cc balancer.ClientConn, bOpts balancer.BuildOptions, stateAggregator BalancerStateAggregator, logger dubboLogger.Logger) *BalancerGroup {
+func New(cc balancer.ClientConn, bOpts balancer.BuildOptions, stateAggregator BalancerStateAggregator, logger dubbogoLogger.Logger) *BalancerGroup {
 	return &BalancerGroup{
 		cc:              cc,
 		buildOpts:       bOpts,

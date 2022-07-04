@@ -30,7 +30,7 @@ import (
 )
 
 import (
-	dubboLogger "github.com/dubbogo/gost/log/logger"
+	dubbogoLogger "github.com/dubbogo/gost/log/logger"
 
 	"github.com/golang/protobuf/proto"
 	_struct "github.com/golang/protobuf/ptypes/struct"
@@ -78,7 +78,7 @@ type BuildOptions struct {
 	// // streams.
 	// Backoff func(int) time.Duration
 	// Logger provides enhanced logging capabilities.
-	Logger dubboLogger.Logger
+	Logger dubbogoLogger.Logger
 }
 
 // LoadReportingOptions contains configuration knobs for reporting load data.

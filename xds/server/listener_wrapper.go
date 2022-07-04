@@ -36,7 +36,7 @@ import (
 )
 
 import (
-	dubboLogger "github.com/dubbogo/gost/log/logger"
+	dubbogoLogger "github.com/dubbogo/gost/log/logger"
 
 	"google.golang.org/grpc/backoff"
 
@@ -125,7 +125,7 @@ func NewListenerWrapper(params ListenerWrapperParams) (net.Listener, <-chan stru
 		ldsUpdateCh: make(chan ldsUpdateWithError, 1),
 		rdsUpdateCh: make(chan rdsHandlerUpdate, 1),
 	}
-	lw.logger = dubboLogger.GetLogger()
+	lw.logger = dubbogoLogger.GetLogger()
 
 	// Serve() verifies that Addr() returns a valid TCPAddr. So, it is safe to
 	// ignore the error from SplitHostPort().
@@ -154,7 +154,7 @@ type ldsUpdateWithError struct {
 // particular invocation of Serve().
 type listenerWrapper struct {
 	net.Listener
-	logger dubboLogger.Logger
+	logger dubbogoLogger.Logger
 
 	name          string
 	xdsCredsInUse bool

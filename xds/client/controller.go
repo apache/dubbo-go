@@ -24,7 +24,7 @@
 package client
 
 import (
-	dubboLogger "github.com/dubbogo/gost/log/logger"
+	dubbogoLogger "github.com/dubbogo/gost/log/logger"
 
 	_struct "github.com/golang/protobuf/ptypes/struct"
 )
@@ -45,6 +45,6 @@ type controllerInterface interface {
 	Close()
 }
 
-var newController = func(config *bootstrap.ServerConfig, pubsub *pubsub.Pubsub, validator resource.UpdateValidatorFunc, logger dubboLogger.Logger) (controllerInterface, error) {
+var newController = func(config *bootstrap.ServerConfig, pubsub *pubsub.Pubsub, validator resource.UpdateValidatorFunc, logger dubbogoLogger.Logger) (controllerInterface, error) {
 	return controller.New(config, pubsub, validator, logger)
 }

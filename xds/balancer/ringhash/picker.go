@@ -28,7 +28,7 @@ import (
 )
 
 import (
-	dubboLogger "github.com/dubbogo/gost/log/logger"
+	dubbogoLogger "github.com/dubbogo/gost/log/logger"
 
 	"google.golang.org/grpc/balancer"
 
@@ -41,10 +41,10 @@ import (
 
 type picker struct {
 	ring   *ring
-	logger dubboLogger.Logger
+	logger dubbogoLogger.Logger
 }
 
-func newPicker(ring *ring, logger dubboLogger.Logger) *picker {
+func newPicker(ring *ring, logger dubbogoLogger.Logger) *picker {
 	return &picker{ring: ring, logger: logger}
 }
 

@@ -31,7 +31,7 @@ import (
 )
 
 import (
-	dubboLogger "github.com/dubbogo/gost/log/logger"
+	dubbogoLogger "github.com/dubbogo/gost/log/logger"
 
 	"google.golang.org/grpc/balancer"
 	"google.golang.org/grpc/balancer/base"
@@ -98,7 +98,7 @@ func (bb) Build(cc balancer.ClientConn, opts balancer.BuildOptions) balancer.Bal
 		done:     grpcsync.NewEvent(),
 		xdsHI:    xdsinternal.NewHandshakeInfo(nil, nil),
 	}
-	b.logger = dubboLogger.GetLogger()
+	b.logger = dubbogoLogger.GetLogger()
 	b.logger.Infof("Created")
 	var creds credentials.TransportCredentials
 	switch {
@@ -173,7 +173,7 @@ type cdsBalancer struct {
 	xdsClient      client.XDSClient      // xDS client to watch Cluster resource.
 	clusterHandler *clusterHandler       // To watch the clusters.
 	childLB        balancer.Balancer
-	logger         dubboLogger.Logger
+	logger         dubbogoLogger.Logger
 	closed         *grpcsync.Event
 	done           *grpcsync.Event
 

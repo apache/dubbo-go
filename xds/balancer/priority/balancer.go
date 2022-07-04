@@ -36,7 +36,7 @@ import (
 )
 
 import (
-	dubboLogger "github.com/dubbogo/gost/log/logger"
+	dubbogoLogger "github.com/dubbogo/gost/log/logger"
 
 	"google.golang.org/grpc/balancer"
 
@@ -71,7 +71,7 @@ func (bb) Build(cc balancer.ClientConn, bOpts balancer.BuildOptions) balancer.Ba
 		childBalancerStateUpdate: buffer.NewUnbounded(),
 	}
 
-	b.logger = dubboLogger.GetLogger()
+	b.logger = dubbogoLogger.GetLogger()
 	b.bg = balancergroup.New(cc, bOpts, b, b.logger)
 	b.bg.Start()
 	go b.run()
@@ -95,7 +95,7 @@ type timerWrapper struct {
 }
 
 type priorityBalancer struct {
-	logger                   dubboLogger.Logger
+	logger                   dubbogoLogger.Logger
 	cc                       balancer.ClientConn
 	bg                       *balancergroup.BalancerGroup
 	done                     *grpcsync.Event

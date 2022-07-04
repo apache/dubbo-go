@@ -29,7 +29,7 @@ import (
 )
 
 import (
-	dubboLogger "github.com/dubbogo/gost/log/logger"
+	dubbogoLogger "github.com/dubbogo/gost/log/logger"
 
 	_struct "github.com/golang/protobuf/ptypes/struct"
 )
@@ -73,7 +73,7 @@ func (c *clientImpl) findAuthority(n *resource.Name) (_ *authority, unref func()
 
 	a, err := c.newAuthority(config)
 	if err != nil {
-		dubboLogger.Errorf(`[XDS Authority] new authority failed with error = %s, please makesure you have imported 
+		dubbogoLogger.Errorf(`[XDS Authority] new authority failed with error = %s, please makesure you have imported 
 	_ "dubbo.apache.org/dubbo-go/v3/xds/client/controller/version/v2"
 	_ "dubbo.apache.org/dubbo-go/v3/xds/client/controller/version/v3"`, err)
 		return nil, nil, fmt.Errorf("xds: failed to connect to the control plane for authority %q: %v", authority, err)

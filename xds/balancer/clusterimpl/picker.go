@@ -26,7 +26,7 @@ package clusterimpl
 import (
 	orcapb "github.com/cncf/xds/go/xds/data/orca/v3"
 
-	dubboLogger "github.com/dubbogo/gost/log/logger"
+	dubbogoLogger "github.com/dubbogo/gost/log/logger"
 
 	"google.golang.org/grpc/balancer"
 
@@ -151,7 +151,7 @@ func (d *picker) Pick(info balancer.PickInfo) (balancer.PickResult, error) {
 		// be used.
 		lIDStr, e = scw.localityID().ToString()
 		if e != nil {
-			dubboLogger.Infof("failed to marshal LocalityID: %#v, loads won't be reported", scw.localityID())
+			dubbogoLogger.Infof("failed to marshal LocalityID: %#v, loads won't be reported", scw.localityID())
 		}
 	}
 
