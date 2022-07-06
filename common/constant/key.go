@@ -371,6 +371,12 @@ const (
 
 // reflection service
 const (
-	ReflectionServiceTypeName  = "XXX_serverReflectionServer"
+	ReflectionServiceTypeName  = "DubbogoServerReflectionServer"
 	ReflectionServiceInterface = "grpc.reflection.v1alpha.ServerReflection"
+)
+
+// healthcheck service
+const (
+	HealthCheckServiceTypeName  = "DubbogoHealthServer"
+	HealthCheckServiceInterface = "grpc.health.v1.Health"
 )

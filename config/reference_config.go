@@ -192,7 +192,7 @@ func (rc *ReferenceConfig) Refer(srv interface{}) {
 	invokers := make([]protocol.Invoker, len(rc.urls))
 	for i, u := range rc.urls {
 		if u.Protocol == constant.ServiceRegistryProtocol {
-			invoker = extension.GetProtocol("registry").Refer(u)
+			invoker = extension.GetProtocol(constant.RegistryProtocol).Refer(u)
 		} else {
 			invoker = extension.GetProtocol(u.Protocol).Refer(u)
 		}
