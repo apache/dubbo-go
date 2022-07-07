@@ -23,11 +23,12 @@ import (
 )
 
 import (
+	"github.com/dubbogo/gost/encoding/yaml"
+
 	"github.com/stretchr/testify/assert"
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/yaml"
 	"dubbo.apache.org/dubbo-go/v3/protocol/rest/config"
 )
 

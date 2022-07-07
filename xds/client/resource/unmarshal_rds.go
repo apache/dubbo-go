@@ -31,6 +31,8 @@ import (
 )
 
 import (
+	dubbogoLogger "github.com/dubbogo/gost/log/logger"
+
 	v3routepb "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	v3typepb "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 
@@ -42,7 +44,6 @@ import (
 )
 
 import (
-	dubboLogger "dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource/version"
 	"dubbo.apache.org/dubbo-go/v3/xds/clusterspecifier"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/envconfig"
@@ -59,7 +60,7 @@ func UnmarshalRouteConfig(opts *UnmarshalOptions) (map[string]RouteConfigUpdateE
 	return update, md, err
 }
 
-func unmarshalRouteConfigResource(r *anypb.Any, logger dubboLogger.Logger) (string, RouteConfigUpdate, error) {
+func unmarshalRouteConfigResource(r *anypb.Any, logger dubbogoLogger.Logger) (string, RouteConfigUpdate, error) {
 	if !IsRouteConfigResource(r.GetTypeUrl()) {
 		return "", RouteConfigUpdate{}, fmt.Errorf("unexpected resource type: %q ", r.GetTypeUrl())
 	}
@@ -67,7 +68,7 @@ func unmarshalRouteConfigResource(r *anypb.Any, logger dubboLogger.Logger) (stri
 	if err := proto.Unmarshal(r.GetValue(), rc); err != nil {
 		return "", RouteConfigUpdate{}, fmt.Errorf("failed to unmarshal resource: %v", err)
 	}
-	dubboLogger.Debugf("Resource with name: %v, type: %T, contains: %v.", rc.GetName(), rc, pretty.ToJSON(rc))
+	dubbogoLogger.Debugf("Resource with name: %v, type: %T, contains: %v.", rc.GetName(), rc, pretty.ToJSON(rc))
 
 	// TODO: Pass version.TransportAPI instead of relying upon the type URL
 	v2 := r.GetTypeUrl() == version.V2RouteConfigURL
@@ -95,7 +96,7 @@ func unmarshalRouteConfigResource(r *anypb.Any, logger dubboLogger.Logger) (stri
 // field must be empty and whose route field must be set.  Inside that route
 // message, the cluster field will contain the clusterName or weighted clusters
 // we are looking for.
-func generateRDSUpdateFromRouteConfiguration(rc *v3routepb.RouteConfiguration, logger dubboLogger.Logger, v2 bool) (RouteConfigUpdate, error) {
+func generateRDSUpdateFromRouteConfiguration(rc *v3routepb.RouteConfiguration, logger dubbogoLogger.Logger, v2 bool) (RouteConfigUpdate, error) {
 	vhs := make([]*VirtualHost, 0, len(rc.GetVirtualHosts()))
 	csps := make(map[string]clusterspecifier.BalancerConfig)
 	if envconfig.XDSRLS {
@@ -230,7 +231,7 @@ func generateRetryConfig(rp *v3routepb.RetryPolicy) (*RetryConfig, error) {
 	return cfg, nil
 }
 
-func routesProtoToSlice(routes []*v3routepb.Route, csps map[string]clusterspecifier.BalancerConfig, logger dubboLogger.Logger, v2 bool) ([]*Route, map[string]bool, error) {
+func routesProtoToSlice(routes []*v3routepb.Route, csps map[string]clusterspecifier.BalancerConfig, logger dubbogoLogger.Logger, v2 bool) ([]*Route, map[string]bool, error) {
 	var routesRet []*Route
 	var cspNames = make(map[string]bool)
 	for _, r := range routes {
@@ -421,7 +422,7 @@ func routesProtoToSlice(routes []*v3routepb.Route, csps map[string]clusterspecif
 	return routesRet, cspNames, nil
 }
 
-func hashPoliciesProtoToSlice(policies []*v3routepb.RouteAction_HashPolicy, logger dubboLogger.Logger) ([]*HashPolicy, error) {
+func hashPoliciesProtoToSlice(policies []*v3routepb.RouteAction_HashPolicy, logger dubbogoLogger.Logger) ([]*HashPolicy, error) {
 	var hashPoliciesRet []*HashPolicy
 	for _, p := range policies {
 		policy := HashPolicy{Terminal: p.Terminal}

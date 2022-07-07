@@ -24,6 +24,8 @@ import (
 import (
 	"github.com/creasty/defaults"
 
+	"github.com/dubbogo/gost/log/logger"
+
 	tripleConstant "github.com/dubbogo/triple/pkg/common/constant"
 
 	perrors "github.com/pkg/errors"
@@ -32,7 +34,6 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	aslimiter "dubbo.apache.org/dubbo-go/v3/filter/adaptivesvc/limiter"
 )
 

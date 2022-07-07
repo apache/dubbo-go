@@ -31,6 +31,7 @@ import (
 import (
 	"github.com/creasty/defaults"
 
+	"github.com/dubbogo/gost/log/logger"
 	gxnet "github.com/dubbogo/gost/net"
 
 	perrors "github.com/pkg/errors"
@@ -42,7 +43,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
 )

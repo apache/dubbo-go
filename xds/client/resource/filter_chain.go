@@ -30,6 +30,8 @@ import (
 )
 
 import (
+	dubbogoLogger "github.com/dubbogo/gost/log/logger"
+
 	v3listenerpb "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	v3httppb "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	v3tlspb "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
@@ -39,7 +41,6 @@ import (
 )
 
 import (
-	dubboLogger "dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource/version"
 	"dubbo.apache.org/dubbo-go/v3/xds/httpfilter"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/envconfig"
@@ -189,7 +190,7 @@ const (
 // 7. Source IP address.
 // 8. Source port.
 type FilterChainManager struct {
-	logger dubboLogger.Logger
+	logger dubbogoLogger.Logger
 	// Destination prefix is the first match criteria that we support.
 	// Therefore, this multi-stage map is indexed on destination prefixes
 	// specified in the match criteria.
@@ -260,7 +261,7 @@ type sourcePrefixEntry struct {
 //
 // This function is only exported so that tests outside of this package can
 // create a FilterChainManager.
-func NewFilterChainManager(lis *v3listenerpb.Listener, logger dubboLogger.Logger) (*FilterChainManager, error) {
+func NewFilterChainManager(lis *v3listenerpb.Listener, logger dubbogoLogger.Logger) (*FilterChainManager, error) {
 	// Parse all the filter chains and build the internal data structures.
 	fci := &FilterChainManager{
 		logger:           logger,

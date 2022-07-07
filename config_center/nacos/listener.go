@@ -22,13 +22,14 @@ import (
 )
 
 import (
+	"github.com/dubbogo/gost/log/logger"
+
 	constant2 "github.com/nacos-group/nacos-sdk-go/common/constant"
 	"github.com/nacos-group/nacos-sdk-go/vo"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )

@@ -32,13 +32,14 @@ import (
 )
 
 import (
+	dubbogoLogger "github.com/dubbogo/gost/log/logger"
+
 	"google.golang.org/grpc/credentials"
 
 	"google.golang.org/grpc/resolver"
 )
 
 import (
-	dubboLogger "dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/xds/client"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/bootstrap"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
@@ -88,7 +89,7 @@ func (b *xdsResolverBuilder) Build(t resolver.Target, cc resolver.ClientConn, op
 			r.Close()
 		}
 	}()
-	r.logger = dubboLogger.GetLogger()
+	r.logger = dubbogoLogger.GetLogger()
 	r.logger.Infof("Creating resolver for target: %+v", t)
 
 	newXDSClient := newXDSClient
@@ -181,7 +182,7 @@ type xdsResolver struct {
 	cc     resolver.ClientConn
 	closed *grpcsync.Event
 
-	logger dubboLogger.Logger
+	logger dubbogoLogger.Logger
 
 	// The underlying xdsClient which performs all xDS requests and responses.
 	client client.XDSClient

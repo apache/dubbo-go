@@ -26,6 +26,7 @@ import (
 
 import (
 	nacosClient "github.com/dubbogo/gost/database/kv/nacos"
+	"github.com/dubbogo/gost/log/logger"
 
 	nacosConstant "github.com/nacos-group/nacos-sdk-go/common/constant"
 
@@ -35,7 +36,6 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/config"
 )
 

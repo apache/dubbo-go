@@ -38,6 +38,8 @@ import (
 )
 
 import (
+	dubbogoLogger "github.com/dubbogo/gost/log/logger"
+
 	v3corepb "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 
 	_struct "github.com/golang/protobuf/ptypes/struct"
@@ -47,7 +49,6 @@ import (
 )
 
 import (
-	dubboLogger "dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/bootstrap"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/controller/version"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/pubsub"
@@ -67,7 +68,7 @@ type Controller struct {
 	config          *bootstrap.ServerConfig
 	updateHandler   pubsub.UpdateHandler
 	updateValidator resource.UpdateValidatorFunc
-	logger          dubboLogger.Logger
+	logger          dubbogoLogger.Logger
 
 	cc               *grpc.ClientConn // Connection to the management server.
 	vClient          version.MetadataWrappedVersionClient
@@ -104,7 +105,7 @@ type Controller struct {
 }
 
 // New creates a new controller.
-func New(config *bootstrap.ServerConfig, updateHandler pubsub.UpdateHandler, validator resource.UpdateValidatorFunc, logger dubboLogger.Logger) (_ *Controller, retErr error) {
+func New(config *bootstrap.ServerConfig, updateHandler pubsub.UpdateHandler, validator resource.UpdateValidatorFunc, logger dubbogoLogger.Logger) (_ *Controller, retErr error) {
 	switch {
 	case config == nil:
 		return nil, errors.New("xds: no xds_server provided")

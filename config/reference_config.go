@@ -35,10 +35,10 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/common/proxy"
 	"dubbo.apache.org/dubbo-go/v3/config/generic"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
+	"dubbo.apache.org/dubbo-go/v3/proxy"
 )
 
 // ReferenceConfig is the configuration of service consumer

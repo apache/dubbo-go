@@ -25,13 +25,14 @@ import (
 
 import (
 	"github.com/Workiva/go-datastructures/queue"
+
+	"github.com/dubbogo/gost/log/logger"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/cluster/base"
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 

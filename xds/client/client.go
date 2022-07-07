@@ -32,11 +32,12 @@ import (
 )
 
 import (
+	dubbogoLogger "github.com/dubbogo/gost/log/logger"
+
 	_struct "github.com/golang/protobuf/ptypes/struct"
 )
 
 import (
-	dubboLogger "dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/bootstrap"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpcsync"
@@ -75,7 +76,7 @@ type clientImpl struct {
 	// never both.
 	idleAuthorities *cache.TimeoutCache
 
-	logger             dubboLogger.Logger
+	logger             dubbogoLogger.Logger
 	watchExpiryTimeout time.Duration
 }
 
@@ -96,7 +97,7 @@ func newWithConfig(config *bootstrap.Config, watchExpiryTimeout time.Duration, i
 		}
 	}()
 
-	c.logger = dubboLogger.GetLogger()
+	c.logger = dubbogoLogger.GetLogger()
 	c.logger.Infof("Created ClientConn to xDS management server: %s", config.XDSServer)
 
 	c.logger.Infof("Created")
