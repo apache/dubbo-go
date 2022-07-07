@@ -30,6 +30,7 @@ import (
 )
 
 func init() {
+	rand.Seed(time.Now().UnixNano())
 	extension.SetServiceInstanceSelector("random", NewRandomServiceInstanceSelector)
 }
 
@@ -47,7 +48,6 @@ func (r *RandomServiceInstanceSelector) Select(url *common.URL, serviceInstances
 	if len(serviceInstances) == 1 {
 		return serviceInstances[0]
 	}
-	rand.Seed(time.Now().UnixNano())
 	index := rand.Intn(len(serviceInstances))
 	return serviceInstances[index]
 }
