@@ -253,10 +253,16 @@ func (reporter *PrometheusReporter) setGauge(gaugeName string, toSetValue float6
 		// gauge
 		if val, exist := reporter.userGauge.Load(gaugeName); !exist {
 			newGauge := newGauge(gaugeName, reporter.namespace)
-			_ = prom.DefaultRegisterer.Register(newGauge)
+			err := prom.DefaultRegisterer.Register(newGauge)
+			if err == nil {
+				reporter.userGauge.Store(gaugeName, newGauge)
+				newGauge.Set(toSetValue)
+			} else if are, ok := err.(prometheus.AlreadyRegisteredError); ok {
+				// A gauge for that metric has been registered before.
+				// Use the old gauge from now on.
+				are.ExistingCollector.(prometheus.Gauge).Set(toSetValue)
+			}
 
-			reporter.userGauge.Store(gaugeName, newGauge)
-			newGauge.Set(toSetValue)
 		} else {
 			val.(prometheus.Gauge).Set(toSetValue)
 		}
@@ -270,9 +276,15 @@ func (reporter *PrometheusReporter) setGauge(gaugeName string, toSetValue float6
 			keyList = append(keyList, k)
 		}
 		newGaugeVec := newGaugeVec(gaugeName, reporter.namespace, keyList)
-		_ = prom.DefaultRegisterer.Register(newGaugeVec)
-		reporter.userGaugeVec.Store(gaugeName, newGaugeVec)
-		newGaugeVec.With(labelMap).Set(toSetValue)
+		err := prom.DefaultRegisterer.Register(newGaugeVec)
+		if err == nil {
+			reporter.userGaugeVec.Store(gaugeName, newGaugeVec)
+			newGaugeVec.With(labelMap).Set(toSetValue)
+		} else if are, ok := err.(prometheus.AlreadyRegisteredError); ok {
+			// A gauge for that metric has been registered before.
+			// Use the old gauge from now on.
+			are.ExistingCollector.(*prometheus.GaugeVec).With(labelMap).Set(toSetValue)
+		}
 	} else {
 		val.(*prometheus.GaugeVec).With(labelMap).Set(toSetValue)
 	}
@@ -285,9 +297,15 @@ func (reporter *PrometheusReporter) incCounter(counterName string, labelMap prom
 		// counter
 		if val, exist := reporter.userCounter.Load(counterName); !exist {
 			newCounter := newCounter(counterName, reporter.namespace)
-			_ = prom.DefaultRegisterer.Register(newCounter)
-			reporter.userCounter.Store(counterName, newCounter)
-			newCounter.Inc()
+			err := prom.DefaultRegisterer.Register(newCounter)
+			if err == nil {
+				reporter.userCounter.Store(counterName, newCounter)
+				newCounter.Inc()
+			} else if are, ok := err.(prometheus.AlreadyRegisteredError); ok {
+				// A counter for that metric has been registered before.
+				// Use the old counter from now on.
+				are.ExistingCollector.(prometheus.Counter).Inc()
+			}
 		} else {
 			val.(prometheus.Counter).Inc()
 		}
@@ -301,9 +319,15 @@ func (reporter *PrometheusReporter) incCounter(counterName string, labelMap prom
 			keyList = append(keyList, k)
 		}
 		newCounterVec := newCounterVec(counterName, reporter.namespace, keyList)
-		_ = prom.DefaultRegisterer.Register(newCounterVec)
-		reporter.userCounterVec.Store(counterName, newCounterVec)
-		newCounterVec.With(labelMap).Inc()
+		err := prom.DefaultRegisterer.Register(newCounterVec)
+		if err == nil {
+			reporter.userCounterVec.Store(counterName, newCounterVec)
+			newCounterVec.With(labelMap).Inc()
+		} else if are, ok := err.(prometheus.AlreadyRegisteredError); ok {
+			// A counter for that metric has been registered before.
+			// Use the old counter from now on.
+			are.ExistingCollector.(*prometheus.CounterVec).With(labelMap).Inc()
+		}
 	} else {
 		val.(*prometheus.CounterVec).With(labelMap).Inc()
 	}
@@ -316,9 +340,15 @@ func (reporter *PrometheusReporter) incSummary(summaryName string, toSetValue fl
 		// summary
 		if val, exist := reporter.userSummary.Load(summaryName); !exist {
 			newSummary := newSummary(summaryName, reporter.namespace)
-			_ = prom.DefaultRegisterer.Register(newSummary)
-			reporter.userSummary.Store(summaryName, newSummary)
-			newSummary.Observe(toSetValue)
+			err := prom.DefaultRegisterer.Register(newSummary)
+			if err == nil {
+				reporter.userSummary.Store(summaryName, newSummary)
+				newSummary.Observe(toSetValue)
+			} else if are, ok := err.(prometheus.AlreadyRegisteredError); ok {
+				// A summary for that metric has been registered before.
+				// Use the old summary from now on.
+				are.ExistingCollector.(prometheus.Summary).Observe(toSetValue)
+			}
 		} else {
 			val.(prometheus.Summary).Observe(toSetValue)
 		}
@@ -332,9 +362,15 @@ func (reporter *PrometheusReporter) incSummary(summaryName string, toSetValue fl
 			keyList = append(keyList, k)
 		}
 		newSummaryVec := newSummaryVec(summaryName, reporter.namespace, keyList, reporter.reporterConfig.SummaryMaxAge)
-		_ = prom.DefaultRegisterer.Register(newSummaryVec)
-		reporter.userSummaryVec.Store(summaryName, newSummaryVec)
-		newSummaryVec.With(labelMap).Observe(toSetValue)
+		err := prom.DefaultRegisterer.Register(newSummaryVec)
+		if err == nil {
+			reporter.userSummaryVec.Store(summaryName, newSummaryVec)
+			newSummaryVec.With(labelMap).Observe(toSetValue)
+		} else if are, ok := err.(prometheus.AlreadyRegisteredError); ok {
+			// A summary for that metric has been registered before.
+			// Use the old summary from now on.
+			are.ExistingCollector.(*prometheus.SummaryVec).With(labelMap).Observe(toSetValue)
+		}
 	} else {
 		val.(*prometheus.SummaryVec).With(labelMap).Observe(toSetValue)
 	}
