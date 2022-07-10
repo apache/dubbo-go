@@ -203,6 +203,7 @@ func (mts *MetadataService) PublishServiceDefinition(url *common.URL) error {
 	if len(interfaceName) > 0 && !isGeneric {
 		tmpService := common.ServiceMap.GetServiceByServiceKey(url.Protocol, url.ServiceKey())
 		sd := definition.BuildServiceDefinition(*tmpService, url)
+		// Waiting to be uncommented when passing sufficient tests
 		// sd := definition.BuildFullDefinition(*tmpService, url)
 		data, err := sd.ToBytes()
 		if err != nil {
