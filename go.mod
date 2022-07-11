@@ -10,6 +10,7 @@ require (
 	github.com/alibaba/sentinel-golang v1.0.4
 	github.com/apache/dubbo-getty v1.4.8
 	github.com/apache/dubbo-go-hessian2 v1.11.0
+	github.com/apache/rocketmq-client-go/v2 v2.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2
 	github.com/cncf/udpa/go v0.0.0-20210930031921-04548b0d99d4
 	github.com/cncf/xds/go v0.0.0-20211011173535-cb28da3451f1
