@@ -50,10 +50,6 @@ const (
 	rlsInXDSEnv                  = "GRPC_EXPERIMENTAL_XDS_RLS_LB"
 
 	c2pResolverTestOnlyTrafficDirectorURIEnv = "GRPC_TEST_ONLY_GOOGLE_C2P_RESOLVER_TRAFFIC_DIRECTOR_URI"
-
-	KubernetesServiceAccountPath = "/var/run/secrets/kubernetes.io/serviceaccount/token"
-
-	IstioCAEndpoint = "istiod.istio-system.svc:15012"
 )
 
 var (

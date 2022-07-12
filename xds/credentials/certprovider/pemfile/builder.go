@@ -55,8 +55,6 @@ func (p *PluginBuilder) ParseConfig(c interface{}) (*certprovider.BuildableConfi
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("option")
-	fmt.Println(opts)
 	return certprovider.NewBuildableConfig(pluginName, opts.canonical(), func(certprovider.BuildOptions) certprovider.Provider {
 		return newProvider(opts)
 	}), nil
