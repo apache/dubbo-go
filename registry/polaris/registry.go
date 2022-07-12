@@ -42,6 +42,8 @@ import (
 )
 
 var localIP = ""
+var newParam api.WatchServiceRequest
+var newConsumer api.ConsumerAPI
 
 const (
 	RegistryConnDelay           = 3
@@ -163,8 +165,24 @@ func (pr *polarisRegistry) Subscribe(url *common.URL, notifyListener registry.No
 			continue
 		}
 
+		watcher := &PolarisServiceWatcher{
+			subscribeParam: &newParam,
+			consumer:       newConsumer,
+			lock:           &sync.RWMutex{},
+			subscribers:    make([]subscriber, 0),
+			execOnce:       &sync.Once{},
+		}
+
+		watcher, err = newPolarisWatcher(&newParam, newConsumer)
+		if err != nil {
+			logger.Warnf("getwatcher() = err:%v", perrors.WithStack(err))
+			<-time.After(time.Duration(RegistryConnDelay) * time.Second)
+			continue
+		}
 		for {
+
 			serviceEvent, err := listener.Next()
+
 			if err != nil {
 				logger.Warnf("Selector.watch() = error{%v}", perrors.WithStack(err))
 				listener.Close()
@@ -172,6 +190,7 @@ func (pr *polarisRegistry) Subscribe(url *common.URL, notifyListener registry.No
 			}
 			logger.Infof("update begin, service event: %v", serviceEvent.String())
 			notifyListener.Notify(serviceEvent)
+			watcher.startWatch()
 		}
 	}
 }

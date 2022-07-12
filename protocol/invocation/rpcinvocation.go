@@ -234,7 +234,7 @@ func (r *RPCInvocation) GetAttributeWithDefaultValue(key string, defaultValue in
 	if r.attributes == nil {
 		return defaultValue
 	}
-	if value, ok := r.attachments[key]; ok {
+	if value, ok := r.attributes[key]; ok {
 		return value
 	}
 	return defaultValue
