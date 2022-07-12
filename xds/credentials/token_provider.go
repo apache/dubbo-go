@@ -28,6 +28,7 @@ type saTokenProvider struct {
 	tokenPath string
 }
 
+// NewSaTokenProvider return a provider
 func NewSaTokenProvider(tokenPath string) (*saTokenProvider, error) {
 	sa, err := ioutil.ReadFile(tokenPath)
 	if err != nil {
@@ -39,6 +40,7 @@ func NewSaTokenProvider(tokenPath string) (*saTokenProvider, error) {
 	}, nil
 }
 
+// GetRequestMetadata return meta of authorization
 func (s *saTokenProvider) GetRequestMetadata(ctx context.Context, uri ...string) (map[string]string, error) {
 
 	meta := make(map[string]string)
@@ -47,6 +49,7 @@ func (s *saTokenProvider) GetRequestMetadata(ctx context.Context, uri ...string)
 	return meta, nil
 }
 
+// RequireTransportSecurity always false
 func (s *saTokenProvider) RequireTransportSecurity() bool {
 	return false
 }

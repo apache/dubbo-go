@@ -17,9 +17,15 @@
 
 package credentials
 
+import "os"
+
 const (
 	KubernetesServiceAccountPath = "/var/run/secrets/kubernetes.io/serviceaccount/token"
 	IsitoCaServiceAccountPath    = "/var/run/secrets/tokens/istio-token"
 	RootCertPath                 = "/var/run/secrets/istio/root-cert.pem"
 	IstioCAEndpoint              = "istiod.istio-system.svc:15012"
+)
+
+var (
+	POD_NAMESPACE = os.Getenv("POD_NAMESPACE")
 )

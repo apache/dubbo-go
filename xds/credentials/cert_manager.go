@@ -55,7 +55,7 @@ func NewCertManager() (CertManager, error) {
 			log.Errorf("build bootstrap config error :%s", err.Error())
 			return nil, err
 		}
-		certProvider, err := buildProviderFunc(config.CertProviderConfigs, "default", "rootCA", false, true)
+		certProvider, err := buildProvider(config.CertProviderConfigs, "default")
 
 		if err != nil {
 			log.Errorf("get cert provider error :%s", err.Error())
@@ -94,15 +94,16 @@ func (c *AgentCertManager) GetCertificate() ([]tls.Certificate, error) {
 	return material.Certs, nil
 }
 
-func buildProviderFunc(configs map[string]*certprovider.BuildableConfig, instanceName, certName string, wantIdentity, wantRoot bool) (certprovider.Provider, error) {
+// buildProvider  build cert provider from config
+func buildProvider(configs map[string]*certprovider.BuildableConfig, instanceName string) (certprovider.Provider, error) {
 	cfg, ok := configs[instanceName]
 	if !ok {
 		return nil, fmt.Errorf("certificate provider instance %q not found in bootstrap file", instanceName)
 	}
 	provider, err := cfg.Build(certprovider.BuildOptions{
-		CertName:     certName,
-		WantIdentity: wantIdentity,
-		WantRoot:     wantRoot,
+		CertName:     "root-ca",
+		WantIdentity: true,
+		WantRoot:     true,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("xds: failed to get security plugin instance (%+v): %v", cfg, err)
@@ -146,6 +147,7 @@ func (c *CACertManager) GetRootCertificate() (*x509.CertPool, error) {
 	return c.Roots, nil
 }
 
+// UpdateRoot update root cert
 func (c *CACertManager) UpdateRoot() error {
 	rootFileContents, err := ioutil.ReadFile(c.rootPath)
 	if err != nil {
@@ -168,6 +170,7 @@ func (c *CACertManager) UpdateRoot() error {
 	return nil
 }
 
+// UpdateCert update  cert
 func (c *CACertManager) UpdateCert() error {
 	tokenProvider, err := NewSaTokenProvider(IsitoCaServiceAccountPath)
 	if err != nil {
@@ -185,7 +188,7 @@ func (c *CACertManager) UpdateCert() error {
 		CertSigner:    "kubernetes.default.svc",
 		ClusterID:     "Kubernetes",
 	})
-	host := "spiffe://" + "cluster.local" + "/ns/" + "echo-grpc" + "/sa/" + tokenProvider.Token
+	host := "spiffe://" + "cluster.local" + "/ns/" + POD_NAMESPACE + "/sa/" + tokenProvider.Token
 
 	//use default
 	options := certgenerate.CertOptions{
@@ -207,7 +210,7 @@ func (c *CACertManager) UpdateCert() error {
 		return err
 	}
 
-	cert, _, err := c.ParseCert(concatCerts(sign), keyPEM)
+	cert, _, err := c.parseCert(concatCerts(sign), keyPEM)
 	if err != nil {
 		return err
 	}
@@ -215,7 +218,7 @@ func (c *CACertManager) UpdateCert() error {
 	return nil
 }
 
-func (c *CACertManager) ParseCert(certByte []byte, keyByte []byte) (*tls.Certificate, time.Time, error) {
+func (c *CACertManager) parseCert(certByte []byte, keyByte []byte) (*tls.Certificate, time.Time, error) {
 	block, _ := pem.Decode(certByte)
 	if block == nil {
 		return nil, time.Now(), fmt.Errorf("failed to decode certificate")
