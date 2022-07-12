@@ -86,9 +86,9 @@ func (watcher *PolarisServiceWatcher) startWatch() {
 			Value:      resp.GetAllInstancesResp.Instances,
 			ConfigType: remoting.EventTypeAdd,
 		})
-
-		select {
-		case event := <-resp.EventChannel:
+		for event := range resp.EventChannel {
+			//select {
+			//case event := <-resp.EventChannel:
 			eType := event.GetSubScribeEventType()
 			if eType == api.EventInstance {
 				insEvent := event.(*model.InstanceEvent)
