@@ -22,18 +22,21 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
-	log "dubbo.apache.org/dubbo-go/v3/common/logger"
-	"dubbo.apache.org/dubbo-go/v3/xds/client/bootstrap"
-	"dubbo.apache.org/dubbo-go/v3/xds/credentials/certgenerate"
-	"dubbo.apache.org/dubbo-go/v3/xds/credentials/certprovider"
-	"dubbo.apache.org/dubbo-go/v3/xds/credentials/certprovider/remote"
-	"dubbo.apache.org/dubbo-go/v3/xds/utils/envconfig"
 	"encoding/pem"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"strings"
 	"time"
+)
+
+import (
+	log "dubbo.apache.org/dubbo-go/v3/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/xds/client/bootstrap"
+	"dubbo.apache.org/dubbo-go/v3/xds/credentials/certgenerate"
+	"dubbo.apache.org/dubbo-go/v3/xds/credentials/certprovider"
+	"dubbo.apache.org/dubbo-go/v3/xds/credentials/certprovider/remote"
+	"dubbo.apache.org/dubbo-go/v3/xds/utils/envconfig"
 )
 
 //CertManager manage agent or no agent cert

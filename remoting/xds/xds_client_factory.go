@@ -19,7 +19,9 @@ package xds
 
 import (
 	v3corepb "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 import (
@@ -45,7 +47,7 @@ var xdsClientFactoryFunction = func(localIP, podName, namespace string, istioAdd
 	nonNilCredsConfigV2 := &bootstrap.Config{
 		XDSServer: &bootstrap.ServerConfig{
 			ServerURI:    istioAddr.String(),
-			Creds:        grpc.WithInsecure(),
+			Creds:        grpc.WithTransportCredentials(insecure.NewCredentials()),
 			TransportAPI: version.TransportV3,
 			NodeProto:    v3NodeProto,
 		},
