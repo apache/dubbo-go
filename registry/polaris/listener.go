@@ -18,7 +18,6 @@
 package polaris
 
 import (
-	"bytes"
 	"net/url"
 	"strconv"
 )
@@ -34,7 +33,6 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
@@ -76,13 +74,6 @@ func (pl *polarisListener) Next() (*registry.ServiceEvent, error) {
 func (pl *polarisListener) Close() {
 	// TODO need to add UnWatch in polaris
 	close(pl.closeCh)
-}
-
-func getSubscribeName(url *common.URL) string {
-	var buffer bytes.Buffer
-	buffer.Write([]byte(common.DubboNodes[common.PROVIDER]))
-	appendParam(&buffer, url, constant.InterfaceKey)
-	return buffer.String()
 }
 
 func generateUrl(instance model.Instance) *common.URL {
