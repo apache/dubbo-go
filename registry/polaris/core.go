@@ -115,7 +115,7 @@ func (watcher *PolarisServiceWatcher) startWatch() {
 						})
 					}
 				}
-				time.Sleep(time.Duration(100 * time.Millisecond))
+
 			}
 		}
 	}
