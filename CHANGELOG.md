@@ -1,5 +1,40 @@
 # Release Notes
 ---
+## 3.0.2
+
+### Features
+
+- [Support hessian java method java.lang param](https://github.com/apache/dubbo-go/pull/1783)
+- [Support istio xds](https://github.com/apache/dubbo-go/pull/1804)
+- [Support istio xds ring hash](https://github.com/apache/dubbo-go/pull/1828)
+- [Support otel trace](https://github.com/apache/dubbo-go/pull/1886)
+
+### Bugfixs
+
+- [Fix: where limitation not updates](https://github.com/apache/dubbo-go/pull/1784)
+- [Fix: rootConfig and getty-session-param](https://github.com/apache/dubbo-go/pull/1802)
+- [Fix: xds adsz empty metadata](https://github.com/apache/dubbo-go/pull/1813)
+- [Fix: decode net stream bytes as getty rule](https://github.com/apache/dubbo-go/pull/1820)
+- [Fix: ip register issue](https://github.com/apache/dubbo-go/pull/1821)
+- [Fix: getty unit test](https://github.com/apache/dubbo-go/pull/1829)
+- [Fix: remove HEADER_LENGTH in decode because of discard](https://github.com/apache/dubbo-go/pull/1831)
+- [Fix: xds log use dubbogo logger](https://github.com/apache/dubbo-go/pull/1846)
+- [Fix: limit rpc package data size by user's config rather than DEFAULT_LEN](https://github.com/apache/dubbo-go/pull/1848)
+- [Fix: complete grpc based protocol panic recover handle](https://github.com/apache/dubbo-go/pull/1866)
+
+### Enhancements
+
+- [Add req.Data to OnMessage panic error log](https://github.com/apache/dubbo-go/pull/1847)
+- [Add nacos updateCacheWhenEmpty options](https://github.com/apache/dubbo-go/pull/1852)
+- [Xds enhancement](https://github.com/apache/dubbo-go/pull/1853)
+- [Mock etcd and nacos in ut](https://github.com/apache/dubbo-go/pull/1873)
+- [Use summary type to observe p99](https://github.com/apache/dubbo-go/pull/1875)
+- [Remove gomonkey](https://github.com/apache/dubbo-go/pull/1881)
+- [Optimized load balancing algorithm](https://github.com/apache/dubbo-go/pull/1884)
+- [RandomLoadBalance code optimization](https://github.com/apache/dubbo-go/pull/1899)
+- [Export hessian type api](https://github.com/apache/dubbo-go/pull/1911)
+- [Export method getArgsTypeList for extension](https://github.com/apache/dubbo-go/pull/1913)
+
 
 ## 3.0.1
 

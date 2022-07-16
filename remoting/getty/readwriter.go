@@ -22,13 +22,14 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-getty"
+	getty "github.com/apache/dubbo-getty"
+
+	"github.com/dubbogo/gost/log/logger"
 
 	perrors "github.com/pkg/errors"
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo/impl"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )

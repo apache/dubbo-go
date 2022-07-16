@@ -15,31 +15,27 @@
  * limitations under the License.
  */
 
-package apollo
+package meshrouter
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/cluster/router"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/config_center"
-	"dubbo.apache.org/dubbo-go/v3/config_center/parser"
 )
 
 func init() {
-	extension.SetConfigCenterFactory("apollo", createDynamicConfigurationFactory)
+	extension.SetRouterFactory(constant.MeshRouterFactoryKey, NewMeshRouterFactory)
 }
 
-func createDynamicConfigurationFactory() config_center.DynamicConfigurationFactory {
-	return &apolloConfigurationFactory{}
+// MeshRouterFactory is mesh router's factory
+type MeshRouterFactory struct{}
+
+// NewMeshRouterFactory constructs a new PriorityRouterFactory
+func NewMeshRouterFactory() router.PriorityRouterFactory {
+	return &MeshRouterFactory{}
 }
 
-type apolloConfigurationFactory struct{}
-
-// GetDynamicConfiguration gets the dynamic configuration
-func (f *apolloConfigurationFactory) GetDynamicConfiguration(url *common.URL) (config_center.DynamicConfiguration, error) {
-	dynamicConfiguration, err := newApolloConfiguration(url)
-	if err != nil {
-		return nil, err
-	}
-	dynamicConfiguration.SetParser(&parser.DefaultConfigurationParser{})
-	return dynamicConfiguration, err
+// NewPriorityRouter construct a new UniformRouteFactory as PriorityRouter
+func (f *MeshRouterFactory) NewPriorityRouter() (router.PriorityRouter, error) {
+	return NewMeshRouter()
 }

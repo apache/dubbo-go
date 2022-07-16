@@ -1,8 +1,0 @@
-dubbo:
-  config-center:
-    address: apollo://106.54.227.205:8080
-    cluster: dev
-    namespace: dubbogo.yaml
-    app-id: dubbo-go
-    params:
-      secret: 3a64cf5cd9ac4fcd94eb045de433689c

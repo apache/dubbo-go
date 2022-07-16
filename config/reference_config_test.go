@@ -27,7 +27,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	_ "dubbo.apache.org/dubbo-go/v3/common/proxy/proxy_factory"
+	_ "dubbo.apache.org/dubbo-go/v3/proxy/proxy_factory"
 )
 
 //import (

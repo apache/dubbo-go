@@ -87,17 +87,17 @@ func (mi *MetadataInfo) CalAndGetRevision() string {
 	if len(mi.Services) == 0 {
 		return "0"
 	}
-	candidates := make([]string, 8)
+	candidates := make([]string, 0, 8)
 
 	for _, s := range mi.Services {
-		sk := s.ServiceKey
+		iface := s.URL.GetParam(constant.InterfaceKey, "")
 		ms := s.URL.Methods
 		if len(ms) == 0 {
-			candidates = append(candidates, sk)
+			candidates = append(candidates, iface)
 		} else {
 			for _, m := range ms {
 				// methods are part of candidates
-				candidates = append(candidates, sk+constant.KeySeparator+m)
+				candidates = append(candidates, iface+constant.KeySeparator+m)
 			}
 		}
 

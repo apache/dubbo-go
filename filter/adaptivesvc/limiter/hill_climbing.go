@@ -130,7 +130,7 @@ func NewHillClimbingUpdater(limiter *HillClimbing) *HillClimbingUpdater {
 		seq:       limiter.seq.Add(1) - 1,
 	}
 	VerboseDebugf("[NewHillClimbingUpdater] A new request arrived, seq: %d, inflight: %d, time: %s.",
-		u.seq, inflight, u.startTime.String())
+		u.seq, inflight, u.startTime)
 	return u
 }
 

@@ -29,13 +29,14 @@ import (
 	hessian "github.com/apache/dubbo-go-hessian2"
 	"github.com/apache/dubbo-go-hessian2/java_exception"
 
+	"github.com/dubbogo/gost/log/logger"
+
 	perrors "github.com/pkg/errors"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
 )
 
 type HessianSerializer struct{}
@@ -129,7 +130,7 @@ func marshalRequest(encoder *hessian.Encoder, p DubboPackage) ([]byte, error) {
 		logger.Infof("request args are: %+v", request.Params)
 		return nil, perrors.Errorf("@params is not of type: []interface{}")
 	}
-	types, err := getArgsTypeList(args)
+	types, err := GetArgsTypeList(args)
 	if err != nil {
 		return nil, perrors.Wrapf(err, " PackRequest(args:%+v)", args)
 	}
@@ -392,7 +393,7 @@ func buildServerSidePackageBody(pkg *DubboPackage) {
 	}
 }
 
-func getArgsTypeList(args []interface{}) (string, error) {
+func GetArgsTypeList(args []interface{}) (string, error) {
 	var (
 		typ   string
 		types string

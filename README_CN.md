@@ -32,7 +32,7 @@ Dubbo-go 生态覆盖多种网络协议：Triple、Dubbo、JSONRPC、gRPC、HTTP
 
 - **配置中心**
 
-  开发者可以使用Nacos、Apollo（携程开源）、Zookeeper 进行框架/用户的配置的发布和拉取。
+  开发者可以使用Nacos、Zookeeper 进行框架/用户的配置的发布和拉取。
 
 - **集群策略**: Failover, [Failfast](https://github.com/apache/dubbo-go/pull/140), [Failsafe/Failback](https://github.com/apache/dubbo-go/pull/136), [Available](https://github.com/apache/dubbo-go/pull/155), [Broadcast](https://github.com/apache/dubbo-go/pull/158), [Forking](https://github.com/apache/dubbo-go/pull/161) 等
 

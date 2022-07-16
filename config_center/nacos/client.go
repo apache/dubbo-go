@@ -24,12 +24,12 @@ import (
 
 import (
 	nacosClient "github.com/dubbogo/gost/database/kv/nacos"
+	"github.com/dubbogo/gost/log/logger"
 
 	perrors "github.com/pkg/errors"
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/remoting/nacos"
 )
 

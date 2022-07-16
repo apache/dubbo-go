@@ -37,7 +37,7 @@ package zookeeper
 //	"dubbo.apache.org/dubbo-go/v3/common"
 //	"dubbo.apache.org/dubbo-go/v3/common/constant"
 //	"dubbo.apache.org/dubbo-go/v3/common/extension"
-//	"dubbo.apache.org/dubbo-go/v3/common/observer"
+//	"github.com/dubbogo/gost/gof/observer"
 //	"dubbo.apache.org/dubbo-go/v3/common/observer/dispatcher"
 //	"dubbo.apache.org/dubbo-go/v3/config"
 //	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"

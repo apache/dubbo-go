@@ -30,7 +30,10 @@ import (
 )
 
 import (
-	dubboLogger "dubbo.apache.org/dubbo-go/v3/common/logger"
+	dubbogoLogger "github.com/dubbogo/gost/log/logger"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/xds/client"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
 	"dubbo.apache.org/dubbo-go/v3/xds/clusterspecifier"
@@ -65,7 +68,7 @@ type ldsConfig struct {
 // Note that during race (e.g. an xDS response is received while the user is
 // calling cancel()), there's a small window where the callback can be called
 // after the watcher is canceled. The caller needs to handle this case.
-func watchService(c client.XDSClient, serviceName string, cb func(serviceUpdate, error), logger dubboLogger.Logger) (cancel func()) {
+func watchService(c client.XDSClient, serviceName string, cb func(serviceUpdate, error), logger dubbogoLogger.Logger) (cancel func()) {
 	w := &serviceUpdateWatcher{
 		logger:      logger,
 		c:           c,
@@ -80,7 +83,7 @@ func watchService(c client.XDSClient, serviceName string, cb func(serviceUpdate,
 // serviceUpdateWatcher handles LDS and RDS response, and calls the service
 // callback at the right time.
 type serviceUpdateWatcher struct {
-	logger      dubboLogger.Logger
+	logger      dubbogoLogger.Logger
 	c           client.XDSClient
 	serviceName string
 	ldsCancel   func()

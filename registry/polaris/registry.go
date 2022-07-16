@@ -25,6 +25,8 @@ import (
 )
 
 import (
+	"github.com/dubbogo/gost/log/logger"
+
 	perrors "github.com/pkg/errors"
 
 	"github.com/polarismesh/polaris-go/api"
@@ -35,10 +37,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
-	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/registry"
-	"dubbo.apache.org/dubbo-go/v3/remoting"
 	"dubbo.apache.org/dubbo-go/v3/remoting/polaris"
 )
 
@@ -61,12 +60,10 @@ func newPolarisRegistry(url *common.URL) (registry.Registry, error) {
 		return &polarisRegistry{}, err
 	}
 	pRegistry := &polarisRegistry{
-		consumer:     api.NewConsumerAPIByContext(sdkCtx),
 		provider:     api.NewProviderAPIByContext(sdkCtx),
 		lock:         &sync.RWMutex{},
 		registryUrls: make(map[string]*PolarisHeartbeat),
 		listenerLock: &sync.RWMutex{},
-		watchers:     make(map[string]*PolarisServiceWatcher),
 	}
 
 	return pRegistry, nil
@@ -74,13 +71,11 @@ func newPolarisRegistry(url *common.URL) (registry.Registry, error) {
 
 type polarisRegistry struct {
 	url          *common.URL
-	consumer     api.ConsumerAPI
 	provider     api.ProviderAPI
 	lock         *sync.RWMutex
 	registryUrls map[string]*PolarisHeartbeat
 
 	listenerLock *sync.RWMutex
-	watchers     map[string]*PolarisServiceWatcher
 }
 
 // Register will register the service @url to its polaris registry center.
@@ -160,12 +155,6 @@ func (pr *polarisRegistry) Subscribe(url *common.URL, notifyListener registry.No
 		return nil
 	}
 
-	watcher, err := pr.createPolarisWatcherIfAbsent(url)
-
-	if err != nil {
-		return err
-	}
-
 	for {
 		listener, err := NewPolarisListener(url)
 		if err != nil {
@@ -173,13 +162,6 @@ func (pr *polarisRegistry) Subscribe(url *common.URL, notifyListener registry.No
 			<-time.After(time.Duration(RegistryConnDelay) * time.Second)
 			continue
 		}
-
-		watcher.AddSubscriber(func(et remoting.EventType, instances []model.Instance) {
-			for i := range instances {
-				instance := instances[i]
-				listener.events.In() <- &config_center.ConfigChangeEvent{ConfigType: et, Value: instance}
-			}
-		})
 
 		for {
 			serviceEvent, err := listener.Next()
@@ -192,33 +174,6 @@ func (pr *polarisRegistry) Subscribe(url *common.URL, notifyListener registry.No
 			notifyListener.Notify(serviceEvent)
 		}
 	}
-}
-
-func (pr *polarisRegistry) createPolarisWatcherIfAbsent(url *common.URL) (*PolarisServiceWatcher, error) {
-
-	pr.listenerLock.Lock()
-	defer pr.listenerLock.Unlock()
-
-	serviceName := getSubscribeName(url)
-
-	if _, exist := pr.watchers[serviceName]; !exist {
-		subscribeParam := &api.WatchServiceRequest{
-			WatchServiceRequest: model.WatchServiceRequest{
-				Key: model.ServiceKey{
-					Namespace: url.GetParam(constant.PolarisNamespace, constant.PolarisDefaultNamespace),
-					Service:   serviceName,
-				},
-			},
-		}
-
-		watcher, err := newPolarisWatcher(subscribeParam, pr.consumer)
-		if err != nil {
-			return nil, err
-		}
-		pr.watchers[serviceName] = watcher
-	}
-
-	return pr.watchers[serviceName], nil
 }
 
 // UnSubscribe returns nil if unsubscribing registry successfully. If not returns an error.

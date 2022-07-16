@@ -35,10 +35,10 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/common/proxy"
 	"dubbo.apache.org/dubbo-go/v3/config/generic"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
+	"dubbo.apache.org/dubbo-go/v3/proxy"
 )
 
 // ReferenceConfig is the configuration of service consumer
@@ -95,6 +95,9 @@ func (rc *ReferenceConfig) Init(root *RootConfig) error {
 		if rc.Version == "" {
 			rc.Version = root.Application.Version
 		}
+	}
+	if rc.Filter == "" {
+		rc.Filter = root.Consumer.Filter
 	}
 	if rc.Cluster == "" {
 		rc.Cluster = "failover"
@@ -189,7 +192,7 @@ func (rc *ReferenceConfig) Refer(srv interface{}) {
 	invokers := make([]protocol.Invoker, len(rc.urls))
 	for i, u := range rc.urls {
 		if u.Protocol == constant.ServiceRegistryProtocol {
-			invoker = extension.GetProtocol("registry").Refer(u)
+			invoker = extension.GetProtocol(constant.RegistryProtocol).Refer(u)
 		} else {
 			invoker = extension.GetProtocol(u.Protocol).Refer(u)
 		}
@@ -309,7 +312,7 @@ func (rc *ReferenceConfig) getURLMap() url.Values {
 	if rc.Generic != "" {
 		defaultReferenceFilter = constant.GenericFilterKey + "," + defaultReferenceFilter
 	}
-	urlMap.Set(constant.ReferenceFilterKey, mergeValue(rc.rootConfig.Consumer.Filter, "", defaultReferenceFilter))
+	urlMap.Set(constant.ReferenceFilterKey, mergeValue(rc.Filter, "", defaultReferenceFilter))
 
 	for _, v := range rc.Methods {
 		urlMap.Set("methods."+v.Name+"."+constant.LoadbalanceKey, v.LoadBalance)
