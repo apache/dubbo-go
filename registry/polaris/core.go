@@ -86,34 +86,36 @@ func (watcher *PolarisServiceWatcher) startWatch() {
 			Value:      resp.GetAllInstancesResp.Instances,
 			ConfigType: remoting.EventTypeAdd,
 		})
-
-		select {
-		case event := <-resp.EventChannel:
-			eType := event.GetSubScribeEventType()
-			if eType == api.EventInstance {
-				insEvent := event.(*model.InstanceEvent)
-				if insEvent.AddEvent != nil {
-					watcher.notifyAllSubscriber(&config_center.ConfigChangeEvent{
-						Value:      insEvent.AddEvent.Instances,
-						ConfigType: remoting.EventTypeAdd,
-					})
-				}
-				if insEvent.UpdateEvent != nil {
-					instances := make([]model.Instance, len(insEvent.UpdateEvent.UpdateList))
-					for i := range insEvent.UpdateEvent.UpdateList {
-						instances[i] = insEvent.UpdateEvent.UpdateList[i].After
+		for {
+			select {
+			case event := <-resp.EventChannel:
+				eType := event.GetSubScribeEventType()
+				if eType == api.EventInstance {
+					insEvent := event.(*model.InstanceEvent)
+					if insEvent.AddEvent != nil {
+						watcher.notifyAllSubscriber(&config_center.ConfigChangeEvent{
+							Value:      insEvent.AddEvent.Instances,
+							ConfigType: remoting.EventTypeAdd,
+						})
 					}
-					watcher.notifyAllSubscriber(&config_center.ConfigChangeEvent{
-						Value:      instances,
-						ConfigType: remoting.EventTypeUpdate,
-					})
+					if insEvent.UpdateEvent != nil {
+						instances := make([]model.Instance, len(insEvent.UpdateEvent.UpdateList))
+						for i := range insEvent.UpdateEvent.UpdateList {
+							instances[i] = insEvent.UpdateEvent.UpdateList[i].After
+						}
+						watcher.notifyAllSubscriber(&config_center.ConfigChangeEvent{
+							Value:      instances,
+							ConfigType: remoting.EventTypeUpdate,
+						})
+					}
+					if insEvent.DeleteEvent != nil {
+						watcher.notifyAllSubscriber(&config_center.ConfigChangeEvent{
+							Value:      insEvent.DeleteEvent.Instances,
+							ConfigType: remoting.EventTypeDel,
+						})
+					}
 				}
-				if insEvent.DeleteEvent != nil {
-					watcher.notifyAllSubscriber(&config_center.ConfigChangeEvent{
-						Value:      insEvent.DeleteEvent.Instances,
-						ConfigType: remoting.EventTypeDel,
-					})
-				}
+
 			}
 		}
 	}
