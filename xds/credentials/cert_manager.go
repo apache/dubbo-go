@@ -189,6 +189,9 @@ func (c *CACertManager) UpdateCert() error {
 		CertSigner:    certSigner,
 		ClusterID:     clusterID,
 	})
+	if err != nil {
+		return err
+	}
 	host := "spiffe://" + "cluster.local" + "/ns/" + PodNamespace + "/sa/" + "default"
 	ttl, err := strconv.ParseInt(CertTTL, 10, 64)
 	if err != nil {
@@ -214,7 +217,7 @@ func (c *CACertManager) UpdateCert() error {
 		return err
 	}
 
-	cert, _, err := c.parseCert(concatCerts(sign), keyPEM)
+	cert, err := c.parseCert(concatCerts(sign), keyPEM)
 	if err != nil {
 		return err
 	}
@@ -222,21 +225,23 @@ func (c *CACertManager) UpdateCert() error {
 	return nil
 }
 
-func (c *CACertManager) parseCert(certByte []byte, keyByte []byte) (*tls.Certificate, time.Time, error) {
+func (c *CACertManager) parseCert(certByte []byte, keyByte []byte) (*tls.Certificate, error) {
 	block, _ := pem.Decode(certByte)
 	if block == nil {
-		return nil, time.Now(), fmt.Errorf("failed to decode certificate")
+		return nil, fmt.Errorf("failed to decode certificate")
 	}
 	cert, err := x509.ParseCertificate(block.Bytes)
-
+	if err != nil {
+		return nil, err
+	}
 	expired := cert.NotAfter
 	log.Infof("cert expired after:" + expired.String())
 	c.NoAfter = expired
 	pair, err := tls.X509KeyPair(certByte, keyByte)
 	if err != nil {
-		return nil, time.Now(), fmt.Errorf("failed to parse certificate: %v", err)
+		return nil, fmt.Errorf("failed to parse certificate: %v", err)
 	}
-	return &pair, expired, nil
+	return &pair, nil
 }
 
 func concatCerts(certsPEM []string) []byte {
