@@ -26,6 +26,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -101,7 +102,7 @@ func buildProvider(configs map[string]*certprovider.BuildableConfig, instanceNam
 		return nil, fmt.Errorf("certificate provider instance %q not found in bootstrap file", instanceName)
 	}
 	provider, err := cfg.Build(certprovider.BuildOptions{
-		CertName:     "root-ca",
+		CertName:     "ca",
 		WantIdentity: true,
 		WantRoot:     true,
 	})
@@ -172,7 +173,7 @@ func (c *CACertManager) UpdateRoot() error {
 
 // UpdateCert update  cert
 func (c *CACertManager) UpdateCert() error {
-	tokenProvider, err := NewSaTokenProvider(IsitoCaServiceAccountPath)
+	tokenProvider, err := NewSaTokenProvider(ServiceAccountPath)
 	if err != nil {
 		return err
 	}
@@ -185,17 +186,20 @@ func (c *CACertManager) UpdateCert() error {
 		CAEndpoint:    IstioCAEndpoint,
 		TrustedRoots:  trustRoot,
 		TokenProvider: tokenProvider,
-		CertSigner:    "kubernetes.default.svc",
-		ClusterID:     "Kubernetes",
+		CertSigner:    certSigner,
+		ClusterID:     clusterID,
 	})
-	host := "spiffe://" + "cluster.local" + "/ns/" + POD_NAMESPACE + "/sa/" + tokenProvider.Token
+	host := "spiffe://" + "cluster.local" + "/ns/" + PodNamespace + "/sa/" + "default"
+	ttl, err := strconv.ParseInt(CertTTL, 10, 64)
+	if err != nil {
+		return err
+	}
 
-	//use default
 	options := certgenerate.CertOptions{
 		Host:       host,
 		RSAKeySize: 2048,
 		PKCS8Key:   true,
-		ECSigAlg:   certgenerate.EcdsaSigAlg,
+		TTL:        time.Duration(ttl),
 	}
 
 	// Generate the cert/key, send CSR to CA.
@@ -204,7 +208,7 @@ func (c *CACertManager) UpdateCert() error {
 		log.Errorf("failed to generate key and certificate for CSR: %v", err)
 		return err
 	}
-	sign, err := citadelClient.CSRSign(csrPEM, int64(200000))
+	sign, err := citadelClient.CSRSign(csrPEM, ttl)
 
 	if err != nil {
 		return err
