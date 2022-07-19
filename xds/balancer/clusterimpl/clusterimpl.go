@@ -36,6 +36,8 @@ import (
 )
 
 import (
+	dubbogoLogger "github.com/dubbogo/gost/log/logger"
+
 	"google.golang.org/grpc/balancer"
 
 	"google.golang.org/grpc/connectivity"
@@ -46,7 +48,6 @@ import (
 )
 
 import (
-	dubboLogger "dubbo.apache.org/dubbo-go/v3/common/logger"
 	internal "dubbo.apache.org/dubbo-go/v3/xds"
 	"dubbo.apache.org/dubbo-go/v3/xds/balancer/loadstore"
 	"dubbo.apache.org/dubbo-go/v3/xds/client"
@@ -80,7 +81,7 @@ func (bb) Build(cc balancer.ClientConn, bOpts balancer.BuildOptions) balancer.Ba
 		pickerUpdateCh:  buffer.NewUnbounded(),
 		requestCountMax: defaultRequestCountMax,
 	}
-	b.logger = dubboLogger.GetLogger()
+	b.logger = dubbogoLogger.GetLogger()
 	go b.run()
 	b.logger.Infof("Created")
 	return b
@@ -110,7 +111,7 @@ type clusterImplBalancer struct {
 	done   *grpcsync.Event
 
 	bOpts     balancer.BuildOptions
-	logger    dubboLogger.Logger
+	logger    dubbogoLogger.Logger
 	xdsClient client.XDSClient
 
 	config           *LBConfig

@@ -16,5 +16,5 @@ updates:
     # default location of `.github/workflows`
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
     target-branch: "3.0"

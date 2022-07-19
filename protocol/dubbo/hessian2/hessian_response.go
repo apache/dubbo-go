@@ -29,11 +29,9 @@ import (
 	hessian "github.com/apache/dubbo-go-hessian2"
 	"github.com/apache/dubbo-go-hessian2/java_exception"
 
-	perrors "github.com/pkg/errors"
-)
+	"github.com/dubbogo/gost/log/logger"
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	perrors "github.com/pkg/errors"
 )
 
 // DubboResponse dubbo response

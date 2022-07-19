@@ -22,11 +22,9 @@ import (
 )
 
 import (
-	"github.com/stretchr/testify/assert"
-)
+	"github.com/dubbogo/gost/log/logger"
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestLoggerInit(t *testing.T) {

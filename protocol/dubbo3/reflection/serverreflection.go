@@ -60,7 +60,7 @@ type GRPCServer interface {
 
 var _ GRPCServer = (*grpc.Server)(nil)
 
-type XXX_serverReflectionServer struct {
+type DubbogoServerReflectionServer struct {
 	rpb.UnimplementedServerReflectionServer
 	s GRPCServer
 
@@ -69,7 +69,7 @@ type XXX_serverReflectionServer struct {
 	symbols      map[string]*dpb.FileDescriptorProto // map of fully-qualified names to files
 }
 
-func (r *XXX_serverReflectionServer) SetGRPCServer(s *grpc.Server) {
+func (r *DubbogoServerReflectionServer) SetGRPCServer(s *grpc.Server) {
 	r.s = s
 }
 
@@ -81,7 +81,7 @@ type protoMessage interface {
 	Descriptor() ([]byte, []int)
 }
 
-func (s *XXX_serverReflectionServer) getSymbols() (svcNames []string, symbolIndex map[string]*dpb.FileDescriptorProto) {
+func (s *DubbogoServerReflectionServer) getSymbols() (svcNames []string, symbolIndex map[string]*dpb.FileDescriptorProto) {
 	s.initSymbols.Do(func() {
 		serviceInfo := s.s.GetServiceInfo()
 
@@ -106,7 +106,7 @@ func (s *XXX_serverReflectionServer) getSymbols() (svcNames []string, symbolInde
 	return s.serviceNames, s.symbols
 }
 
-func (s *XXX_serverReflectionServer) processFile(fd *dpb.FileDescriptorProto, processed map[string]struct{}) {
+func (s *DubbogoServerReflectionServer) processFile(fd *dpb.FileDescriptorProto, processed map[string]struct{}) {
 	filename := fd.GetName()
 	if _, ok := processed[filename]; ok {
 		return
@@ -143,7 +143,7 @@ func (s *XXX_serverReflectionServer) processFile(fd *dpb.FileDescriptorProto, pr
 	}
 }
 
-func (s *XXX_serverReflectionServer) processMessage(fd *dpb.FileDescriptorProto, prefix string, msg *dpb.DescriptorProto) {
+func (s *DubbogoServerReflectionServer) processMessage(fd *dpb.FileDescriptorProto, prefix string, msg *dpb.DescriptorProto) {
 	msgName := fqn(prefix, msg.GetName())
 	s.symbols[msgName] = fd
 
@@ -165,7 +165,7 @@ func (s *XXX_serverReflectionServer) processMessage(fd *dpb.FileDescriptorProto,
 	}
 }
 
-func (s *XXX_serverReflectionServer) processEnum(fd *dpb.FileDescriptorProto, prefix string, en *dpb.EnumDescriptorProto) {
+func (s *DubbogoServerReflectionServer) processEnum(fd *dpb.FileDescriptorProto, prefix string, en *dpb.EnumDescriptorProto) {
 	enName := fqn(prefix, en.GetName())
 	s.symbols[enName] = fd
 
@@ -175,7 +175,7 @@ func (s *XXX_serverReflectionServer) processEnum(fd *dpb.FileDescriptorProto, pr
 	}
 }
 
-func (s *XXX_serverReflectionServer) processField(fd *dpb.FileDescriptorProto, prefix string, fld *dpb.FieldDescriptorProto) {
+func (s *DubbogoServerReflectionServer) processField(fd *dpb.FileDescriptorProto, prefix string, fld *dpb.FieldDescriptorProto) {
 	fldName := fqn(prefix, fld.GetName())
 	s.symbols[fldName] = fd
 }
@@ -189,7 +189,7 @@ func fqn(prefix, name string) string {
 
 // fileDescForType gets the file descriptor for the given type.
 // The given type should be a proto message.
-func (s *XXX_serverReflectionServer) fileDescForType(st reflect.Type) (*dpb.FileDescriptorProto, error) {
+func (s *DubbogoServerReflectionServer) fileDescForType(st reflect.Type) (*dpb.FileDescriptorProto, error) {
 	m, ok := reflect.Zero(reflect.PtrTo(st)).Interface().(protoMessage)
 	if !ok {
 		return nil, fmt.Errorf("failed to create message from type: %v", st)
@@ -258,7 +258,7 @@ func fileDescContainingExtension(st reflect.Type, ext int32) (*dpb.FileDescripto
 	return decodeFileDesc(proto.FileDescriptor(extDesc.Filename))
 }
 
-func (s *XXX_serverReflectionServer) allExtensionNumbersForType(st reflect.Type) ([]int32, error) {
+func (s *DubbogoServerReflectionServer) allExtensionNumbersForType(st reflect.Type) ([]int32, error) {
 	m, ok := reflect.Zero(reflect.PtrTo(st)).Interface().(proto.Message)
 	if !ok {
 		return nil, fmt.Errorf("failed to create message from type: %v", st)
@@ -304,7 +304,7 @@ func fileDescWithDependencies(fd *dpb.FileDescriptorProto, sentFileDescriptors m
 // fileDescEncodingByFilename finds the file descriptor for given filename,
 // finds all of its previously unsent transitive dependencies, does marshaling
 // on them, and returns the marshaled result.
-func (s *XXX_serverReflectionServer) fileDescEncodingByFilename(name string, sentFileDescriptors map[string]bool) ([][]byte, error) {
+func (s *DubbogoServerReflectionServer) fileDescEncodingByFilename(name string, sentFileDescriptors map[string]bool) ([][]byte, error) {
 	enc := proto.FileDescriptor(name)
 	if enc == nil {
 		return nil, fmt.Errorf("unknown file: %v", name)
@@ -338,7 +338,7 @@ func parseMetadata(meta interface{}) ([]byte, bool) {
 // given symbol, finds all of its previously unsent transitive dependencies,
 // does marshaling on them, and returns the marshaled result. The given symbol
 // can be a type, a service or a method.
-func (s *XXX_serverReflectionServer) fileDescEncodingContainingSymbol(name string, sentFileDescriptors map[string]bool) ([][]byte, error) {
+func (s *DubbogoServerReflectionServer) fileDescEncodingContainingSymbol(name string, sentFileDescriptors map[string]bool) ([][]byte, error) {
 	_, symbols := s.getSymbols()
 	//
 	if strings.HasPrefix(name, "grpc.") {
@@ -367,7 +367,7 @@ func (s *XXX_serverReflectionServer) fileDescEncodingContainingSymbol(name strin
 // fileDescEncodingContainingExtension finds the file descriptor containing
 // given extension, finds all of its previously unsent transitive dependencies,
 // does marshaling on them, and returns the marshaled result.
-func (s *XXX_serverReflectionServer) fileDescEncodingContainingExtension(typeName string, extNum int32, sentFileDescriptors map[string]bool) ([][]byte, error) {
+func (s *DubbogoServerReflectionServer) fileDescEncodingContainingExtension(typeName string, extNum int32, sentFileDescriptors map[string]bool) ([][]byte, error) {
 	st, err := typeForName(typeName)
 	if err != nil {
 		return nil, err
@@ -380,7 +380,7 @@ func (s *XXX_serverReflectionServer) fileDescEncodingContainingExtension(typeNam
 }
 
 // allExtensionNumbersForTypeName returns all extension numbers for the given type.
-func (s *XXX_serverReflectionServer) allExtensionNumbersForTypeName(name string) ([]int32, error) {
+func (s *DubbogoServerReflectionServer) allExtensionNumbersForTypeName(name string) ([]int32, error) {
 	st, err := typeForName(name)
 	if err != nil {
 		return nil, err
@@ -393,7 +393,7 @@ func (s *XXX_serverReflectionServer) allExtensionNumbersForTypeName(name string)
 }
 
 // ServerReflectionInfo is the reflection service handler.
-func (s *XXX_serverReflectionServer) ServerReflectionInfo(stream rpb.ServerReflection_ServerReflectionInfoServer) error {
+func (s *DubbogoServerReflectionServer) ServerReflectionInfo(stream rpb.ServerReflection_ServerReflectionInfoServer) error {
 	sentFileDescriptors := make(map[string]bool)
 	for {
 		in, err := stream.Recv()
@@ -493,5 +493,5 @@ func (s *XXX_serverReflectionServer) ServerReflectionInfo(stream rpb.ServerRefle
 	}
 }
 func init() {
-	config.SetProviderService(&XXX_serverReflectionServer{})
+	config.SetProviderService(&DubbogoServerReflectionServer{})
 }

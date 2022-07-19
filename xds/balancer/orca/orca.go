@@ -27,13 +27,14 @@ package orca
 import (
 	orcapb "github.com/cncf/xds/go/xds/data/orca/v3"
 
+	"github.com/dubbogo/gost/log/logger"
+
 	"github.com/golang/protobuf/proto"
 
 	"google.golang.org/grpc/metadata"
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/balancerload"
 )
 

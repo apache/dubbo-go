@@ -1,7 +1,0 @@
-
-intTest: 11
-booleanTest: false
-strTest: "strTest"
-
-child:
-  strTest: "childStrTest"
