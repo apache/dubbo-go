@@ -21,11 +21,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
-)
-
-import (
-	"github.com/dubbogo/gost/log/logger"
 )
 
 import (
@@ -74,8 +71,8 @@ func (def *ServiceDefinition) String() string {
 
 // FullServiceDefinition is the describer of service definition with parameters
 type FullServiceDefinition struct {
+	Parameters map[string]string
 	ServiceDefinition
-	Params map[string]string
 }
 
 // MethodDefinition is the describer of method definition
@@ -129,9 +126,9 @@ func BuildFullDefinition(service common.Service, url *common.URL) *FullServiceDe
 	fsd := &FullServiceDefinition{}
 	sd := BuildServiceDefinition(service, url)
 	fsd.ServiceDefinition = *sd
-	fsd.Params = make(map[string]string)
-	for k,v := range url.GetParams() {
-		fsd.Params[k] = strings.Join(v, ",")
+	fsd.Parameters = make(map[string]string)
+	for k, v := range url.GetParams() {
+		fsd.Parameters[k] = strings.Join(v, ",")
 	}
 	return fsd
 }
@@ -160,14 +157,17 @@ func (def *FullServiceDefinition) String() string {
 		types.WriteString(fmt.Sprintf("{id:%v,type:%v,builderName:%v}", d.ID, d.Type, d.TypeBuilderName))
 	}
 
-	dparam, err := json.Marshal(def.Params)
-	if err != nil {
-		logger.Errorf("convert FullServiceDefinition to string error in stage json.Marshal, msg is %+v", err)
-		panic(err)
+	sortSlice := make([]string, 0)
+	var parameters strings.Builder
+	for k := range def.Parameters {
+		sortSlice = append(sortSlice, k)
 	}
-	params := string(dparam)
+	sort.Slice(sortSlice, func(i, j int) bool { return sortSlice[i] < sortSlice[j] })
+	for _, k := range sortSlice {
+		parameters.WriteString(fmt.Sprintf("%v:%v,", k,def.Parameters[k]))
+	}
 
-	return fmt.Sprintf("{parameters:%v, canonicalName:%v, codeSource:%v, methods:[%v], types:[%v]}", params, def.CanonicalName, def.CodeSource, methodStr.String(), types.String())
+	return fmt.Sprintf("{parameters:{%v}, canonicalName:%v, codeSource:%v, methods:[%v], types:[%v]}", strings.TrimRight(parameters.String(), ","), def.CanonicalName, def.CodeSource, methodStr.String(), types.String())
 }
 
 // ServiceDescriperBuild builds the service key, format is `group/serviceName:version` which be same as URL's service key

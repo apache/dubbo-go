@@ -109,9 +109,9 @@ func (s *MetadataService) PublishServiceDefinition(url *common.URL) error {
 	if common.RoleType(common.PROVIDER).Role() == url.GetParam(constant.SideKey, "") {
 		if len(interfaceName) > 0 && !isGeneric {
 			sv := common.ServiceMap.GetServiceByServiceKey(url.Protocol, url.ServiceKey())
-			sd := definition.BuildServiceDefinition(*sv, url)
+			// sd := definition.BuildServiceDefinition(*sv, url)
 			// Waiting to be uncommented when passing sufficient tests
-			// sd := definition.BuildFullDefinition(*sv, url)
+			sd := definition.BuildFullDefinition(*sv, url)
 			id := &identifier.MetadataIdentifier{
 				BaseMetadataIdentifier: identifier.BaseMetadataIdentifier{
 					ServiceInterface: interfaceName,

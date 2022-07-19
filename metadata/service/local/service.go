@@ -202,9 +202,9 @@ func (mts *MetadataService) PublishServiceDefinition(url *common.URL) error {
 	isGeneric := url.GetParamBool(constant.GenericKey, false)
 	if len(interfaceName) > 0 && !isGeneric {
 		tmpService := common.ServiceMap.GetServiceByServiceKey(url.Protocol, url.ServiceKey())
-		sd := definition.BuildServiceDefinition(*tmpService, url)
+		// sd := definition.BuildServiceDefinition(*tmpService, url)
 		// Waiting to be uncommented when passing sufficient tests
-		// sd := definition.BuildFullDefinition(*tmpService, url)
+		sd := definition.BuildFullDefinition(*tmpService, url)
 		data, err := sd.ToBytes()
 		if err != nil {
 			logger.Errorf("publishProvider getServiceDescriptor error. providerUrl:%v , error:%v ", url, err)
