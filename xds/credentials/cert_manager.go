@@ -38,7 +38,17 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/xds/credentials/certprovider"
 	"dubbo.apache.org/dubbo-go/v3/xds/credentials/certprovider/remote"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/envconfig"
+
+	"dubbo.apache.org/dubbo-go/v3/xds/credentials/certprovider/pemfile"
+	"dubbo.apache.org/dubbo-go/v3/xds/internal"
 )
+
+func init() {
+	//init file_watcher builder
+	certprovider.Register(&pemfile.PluginBuilder{})
+	//init builder func
+	internal.GetCertificateProviderBuilder = certprovider.GetBuilder
+}
 
 //CertManager manage agent or no agent cert
 type CertManager interface {
