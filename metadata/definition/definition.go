@@ -164,7 +164,7 @@ func (def *FullServiceDefinition) String() string {
 	}
 	sort.Slice(sortSlice, func(i, j int) bool { return sortSlice[i] < sortSlice[j] })
 	for _, k := range sortSlice {
-		parameters.WriteString(fmt.Sprintf("%v:%v,", k,def.Parameters[k]))
+		parameters.WriteString(fmt.Sprintf("%v:%v,", k, def.Parameters[k]))
 	}
 
 	return fmt.Sprintf("{parameters:{%v}, canonicalName:%v, codeSource:%v, methods:[%v], types:[%v]}", strings.TrimRight(parameters.String(), ","), def.CanonicalName, def.CodeSource, methodStr.String(), types.String())
