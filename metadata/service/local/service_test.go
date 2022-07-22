@@ -20,15 +20,10 @@ package local
 import (
 	"fmt"
 	"testing"
-)
 
-import (
-	"github.com/stretchr/testify/assert"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/metadata/definition"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestMetadataService(t *testing.T) {
@@ -99,9 +94,6 @@ func TestMetadataService(t *testing.T) {
 	assert.NoError(t, err)
 	err = mts.PublishServiceDefinition(u)
 	assert.NoError(t, err)
-	// expected := "{\"CanonicalName\":\"com.ikurento.user.UserProvider\",\"CodeSource\":\"\"," +
-	// 	"\"Methods\":[{\"Name\":\"GetUser\",\"ParameterTypes\":[\"slice\"],\"ReturnType\":\"ptr\"," +
-	// 	"\"Parameters\":null}],\"Types\":null}"
 	expected := "{\"Parameters\":{\"anyhost\":\"true\",\"application\":\"BDTService\"," +
 		"\"bean.name\":\"UserProvider\",\"category\":\"providers\",\"default.timeout\":\"10000\"," +
 		"\"dubbo\":\"dubbo-provider-golang-1.0.0\",\"environment\":\"dev\",\"group\":\"group1\"," +

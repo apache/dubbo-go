@@ -20,21 +20,15 @@ package local
 import (
 	"sort"
 	"sync"
-)
 
-import (
-	"github.com/Workiva/go-datastructures/slice/skip"
-
-	"github.com/dubbogo/gost/log/logger"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/metadata/definition"
 	"dubbo.apache.org/dubbo-go/v3/metadata/service"
+	"github.com/Workiva/go-datastructures/slice/skip"
+	"github.com/dubbogo/gost/log/logger"
 )
 
 func init() {
@@ -202,8 +196,6 @@ func (mts *MetadataService) PublishServiceDefinition(url *common.URL) error {
 	isGeneric := url.GetParamBool(constant.GenericKey, false)
 	if len(interfaceName) > 0 && !isGeneric {
 		tmpService := common.ServiceMap.GetServiceByServiceKey(url.Protocol, url.ServiceKey())
-		// sd := definition.BuildServiceDefinition(*tmpService, url)
-		// Waiting to be uncommented when passing sufficient tests
 		sd := definition.BuildFullDefinition(*tmpService, url)
 		data, err := sd.ToBytes()
 		if err != nil {

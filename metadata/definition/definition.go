@@ -23,9 +23,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
-)
 
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
@@ -122,6 +120,7 @@ func BuildServiceDefinition(service common.Service, url *common.URL) *ServiceDef
 	return sd
 }
 
+// BuildFullDefinition can build service definition with full url parameters
 func BuildFullDefinition(service common.Service, url *common.URL) *FullServiceDefinition {
 	fsd := &FullServiceDefinition{}
 	sd := BuildServiceDefinition(service, url)
