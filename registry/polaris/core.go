@@ -114,8 +114,6 @@ func (watcher *PolarisServiceWatcher) startWatch() {
 						})
 					}
 				}
-			case <-time.After(1 * time.Second):
-				continue
 			}
 		}
 
