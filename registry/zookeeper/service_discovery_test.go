@@ -57,7 +57,7 @@ type testNotify struct {
 }
 
 func (tn *testNotify) Notify(e *registry.ServiceEvent) {
-	assert.Equal(tn.t, "2233", e.Service.Port)
+	assert.Equal(tn.t, "2181", e.Service.Port)
 	tn.wg.Done()
 }
 
