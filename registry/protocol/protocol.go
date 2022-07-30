@@ -241,9 +241,9 @@ func (proto *registryProtocol) reExport(invoker protocol.Invoker, newUrl *common
 	key := getCacheKey(invoker)
 	if oldExporter, loaded := proto.bounds.Load(key); loaded {
 		wrappedNewInvoker := newInvokerDelegate(invoker, newUrl)
-		oldExporter.(protocol.Exporter).Unexport()
+		oldExporter.(protocol.Exporter).UnExport()
 		proto.bounds.Delete(key)
-		// oldExporter Unexport function unRegister rpcService from the serviceMap, so need register it again as far as possible
+		// oldExporter UnExport function unRegister rpcService from the serviceMap, so need register it again as far as possible
 		if err := registerServiceMap(invoker); err != nil {
 			logger.Error(err.Error())
 		}
@@ -402,7 +402,7 @@ func getSubscribedOverrideUrl(providerUrl *common.URL) *common.URL {
 func (proto *registryProtocol) Destroy() {
 	proto.bounds.Range(func(key, value interface{}) bool {
 		// protocol holds the exporters actually, instead, registry holds them in order to avoid export repeatedly, so
-		// the work for unexport should be finished in protocol.Unexport(), see also config.destroyProviderProtocols().
+		// the work for unexport should be finished in protocol.UnExport(), see also config.destroyProviderProtocols().
 		exporter := value.(*exporterChangeableWrapper)
 		reg := proto.getRegistry(getRegistryUrl(exporter.originInvoker))
 		if err := reg.UnRegister(exporter.registerUrl); err != nil {
@@ -415,7 +415,7 @@ func (proto *registryProtocol) Destroy() {
 		go func() {
 			select {
 			case <-time.After(config.GetShutDown().GetStepTimeout() + config.GetShutDown().GetConsumerUpdateWaitTime()):
-				exporter.Unexport()
+				exporter.UnExport()
 				proto.bounds.Delete(key)
 			}
 		}()
@@ -481,8 +481,8 @@ type exporterChangeableWrapper struct {
 	subscribeUrl  *common.URL
 }
 
-func (e *exporterChangeableWrapper) Unexport() {
-	e.exporter.Unexport()
+func (e *exporterChangeableWrapper) UnExport() {
+	e.exporter.UnExport()
 }
 
 func (e *exporterChangeableWrapper) SetRegisterUrl(registerUrl *common.URL) {

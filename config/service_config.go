@@ -138,7 +138,7 @@ func (s *ServiceConfig) Init(rc *RootConfig) error {
 		s.ProtocolIDs = rc.Provider.ProtocolIDs
 	}
 	if len(s.ProtocolIDs) <= 0 {
-		for k, _ := range rc.Protocols {
+		for k := range rc.Protocols {
 			s.ProtocolIDs = append(s.ProtocolIDs, k)
 		}
 	}
@@ -400,7 +400,7 @@ func (s *ServiceConfig) Unexport() {
 		s.exportersLock.Lock()
 		defer s.exportersLock.Unlock()
 		for _, exporter := range s.exporters {
-			exporter.Unexport()
+			exporter.UnExport()
 		}
 		s.exporters = nil
 	}()
