@@ -27,8 +27,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
-type interceptor struct {
-}
+type interceptor struct{}
 
 func (z *interceptor) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	key := constant.RegistryKey + "." + constant.RegistryZoneForceKey

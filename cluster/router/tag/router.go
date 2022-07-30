@@ -94,7 +94,6 @@ func (p *PriorityRouter) Notify(invokers []protocol.Invoker) {
 		return
 	}
 	p.Process(&config_center.ConfigChangeEvent{Key: key, Value: value, ConfigType: remoting.EventTypeAdd})
-
 }
 
 func (p *PriorityRouter) Process(event *config_center.ConfigChangeEvent) {
