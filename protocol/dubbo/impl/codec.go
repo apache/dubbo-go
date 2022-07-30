@@ -19,6 +19,9 @@ package impl
 
 import (
 	"bufio"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/base64"
 	"encoding/binary"
 )
 
@@ -187,6 +190,28 @@ func (c *ProtocolCodec) Decode(p *DubboPackage) error {
 			RspObj: remoting.GetPendingResponse(remoting.SequenceType(p.Header.ID)).Reply,
 		}
 	}
+
+	// decode signBlock when p is request
+	if !p.IsResponse() {
+		signBlock, err := c.serializer.UnmarshalSign(body)
+		if err != nil {
+			return perrors.WithStack(err)
+		}
+
+		// get content lenth from signBlock and get serialized body
+		contentLen := (int)(signBlock["contentLen"].(int64))
+		_, _ = c.reader.Discard(p.GetBodyLen() - contentLen)
+		content, _ := c.reader.Peek(contentLen)
+
+		originSignature := signBlock[constant.RequestSignatureKey]
+
+		err = c.serializer.Unmarshal(content, p)
+
+		p.Body.(map[string]interface{})["attachments"].(map[string]interface{})[constant.RequestSignatureKey] = originSignature
+		p.Body.(map[string]interface{})["attachments"].(map[string]interface{})["content"] = string(content)
+
+		return err
+	}
 	return c.serializer.Unmarshal(body, p)
 }
 
@@ -227,12 +252,42 @@ func packRequest(p DubboPackage, serializer Serializer) ([]byte, error) {
 	if p.IsHeartBeat() {
 		byteArray = append(byteArray, byte('N'))
 		pkgLen = 1
-	} else {
+	} else { // Add aksk signature at codec level
+		sk := p.Body.(*RequestPayload).Attachments[constant.SKKey]
+
+		if sk != nil {
+			delete(p.Body.(*RequestPayload).Attachments, constant.SKKey)
+		}
+
+		// 1. serialize body
 		body, err := serializer.Marshal(p)
 		if err != nil {
 			return nil, err
 		}
 		pkgLen = len(body)
+
+		signBlock := make(map[string]interface{})
+		if sk != nil {
+			// 2. generate signature for serialized body
+			signature := doSign(body, sk.(string))
+
+			// 3. generate signBlock
+			signBlock[constant.RequestSignatureKey] = signature
+		} else {
+			signBlock[constant.RequestSignatureKey] = nil
+		}
+
+		signBlock["contentLen"] = pkgLen
+
+		// 4. serialize signBlock and concat it to front of byteArray
+		body_sign, err := serializer.MarshalSign(signBlock)
+		if err != nil {
+			return nil, err
+		}
+
+		pkgLen += len(body_sign)
+		byteArray = append(byteArray, body_sign...)
+
 		if pkgLen > int(DEFAULT_LEN) { // recommand 8M
 			logger.Warnf("Data length %d too large, recommand max payload %d. "+
 				"Dubbo java can't handle the package whose size is greater than %d!!!", pkgLen, DEFAULT_LEN, DEFAULT_LEN)
@@ -290,4 +345,13 @@ func NewDubboCodec(reader *bufio.Reader) *ProtocolCodec {
 		headerRead: false,
 		serializer: s,
 	}
+}
+
+func doSign(bytes []byte, key string) string {
+	mac := hmac.New(sha256.New, []byte(key))
+	if _, err := mac.Write(bytes); err != nil {
+		logger.Error(err)
+	}
+	signature := mac.Sum(nil)
+	return base64.URLEncoding.EncodeToString(signature)
 }

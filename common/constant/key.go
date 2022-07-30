@@ -318,6 +318,7 @@ const (
 	RequestTimestampKey         = "timestamp"         // key of request timestamp
 	RequestSignatureKey         = "signature"         // key of request signature
 	AKKey                       = "ak"                // AK key
+	SKKey                       = "sk"                // SK key
 	SignatureStringFormat       = "%s#%s#%s#%s"       // signature format
 	ParameterSignatureEnableKey = "param.sign"        // key whether enable signature
 	Consumer                    = "consumer"          // consumer

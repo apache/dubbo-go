@@ -155,6 +155,26 @@ func marshalRequest(encoder *hessian.Encoder, p DubboPackage) ([]byte, error) {
 	return encoder.Buffer(), err
 }
 
+func (h HessianSerializer) MarshalSign(s map[string]interface{}) ([]byte, error) {
+	encoder := hessian.NewEncoder()
+	err := encoder.Encode(s)
+	return encoder.Buffer(), err
+}
+
+func (h HessianSerializer) UnmarshalSign(body []byte) (map[interface{}]interface{}, error) {
+	decoder := hessian.NewDecoder(body)
+	sign, err := decoder.Decode()
+
+	if err != nil {
+		return nil, perrors.WithStack(err)
+	}
+
+	if v, ok := sign.(map[interface{}]interface{}); ok {
+		return v, nil
+	}
+	return nil, perrors.Errorf("get wrong signature: %+v", sign)
+}
+
 var versionInt = make(map[string]int)
 
 // https://github.com/apache/dubbo/blob/dubbo-2.7.1/dubbo-common/src/main/java/org/apache/dubbo/common/Version.java#L96

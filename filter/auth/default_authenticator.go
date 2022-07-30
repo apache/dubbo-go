@@ -65,12 +65,13 @@ func (authenticator *defaultAuthenticator) Sign(invocation protocol.Invocation, 
 		return errors.New("get accesskey pair failed, cause: " + err.Error())
 	}
 	inv := invocation.(*invocation_impl.RPCInvocation)
-	signature, err := getSignature(url, invocation, accessKeyPair.SecretKey, currentTimeMillis)
-	if err != nil {
-		return err
-	}
-	inv.SetAttachment(constant.RequestSignatureKey, signature)
+	// signature, err := getSignature(url, invocation, accessKeyPair.SecretKey, currentTimeMillis)
+	// if err != nil {
+	// 	return err
+	// }
+	// inv.SetAttachment(constant.RequestSignatureKey, signature)
 	inv.SetAttachment(constant.RequestTimestampKey, currentTimeMillis)
+	inv.SetAttachment(constant.SKKey, accessKeyPair.SecretKey)
 	inv.SetAttachment(constant.AKKey, accessKeyPair.AccessKey)
 	inv.SetAttachment(constant.Consumer, consumer)
 	return nil
@@ -102,6 +103,8 @@ func (authenticator *defaultAuthenticator) Authenticate(invocation protocol.Invo
 	requestTimestamp := invocation.GetAttachmentWithDefaultValue(constant.RequestTimestampKey, "")
 	originSignature := invocation.GetAttachmentWithDefaultValue(constant.RequestSignatureKey, "")
 	consumer := invocation.GetAttachmentWithDefaultValue(constant.Consumer, "")
+	content := invocation.GetAttachmentWithDefaultValue("content", "")
+	
 	if IsEmpty(accessKeyId, false) || IsEmpty(consumer, false) ||
 		IsEmpty(requestTimestamp, false) || IsEmpty(originSignature, false) {
 		return errors.New("failed to authenticate your ak/sk, maybe the consumer has not enabled the auth")
@@ -112,7 +115,9 @@ func (authenticator *defaultAuthenticator) Authenticate(invocation protocol.Invo
 		return errors.New("failed to authenticate , can't load the accessKeyPair")
 	}
 
-	computeSignature, err := getSignature(url, invocation, accessKeyPair.SecretKey, requestTimestamp)
+	// computeSignature, err := getSignature(url, invocation, accessKeyPair.SecretKey, requestTimestamp)
+
+	computeSignature := Sign(content, accessKeyPair.SecretKey)
 	if err != nil {
 		return err
 	}

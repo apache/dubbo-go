@@ -23,7 +23,9 @@ import (
 
 type Serializer interface {
 	Marshal(p DubboPackage) ([]byte, error)
+	MarshalSign(map[string]interface{}) ([]byte, error)
 	Unmarshal([]byte, *DubboPackage) error
+	UnmarshalSign([]byte) (map[interface{}]interface{}, error)
 }
 
 func LoadSerializer(p *DubboPackage) error {
