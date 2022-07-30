@@ -32,11 +32,8 @@ import (
 )
 
 import (
-	"google.golang.org/grpc/credentials/tls/certprovider"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
+	"dubbo.apache.org/dubbo-go/v3/xds/credentials/certprovider"
 	xdsinternal "dubbo.apache.org/dubbo-go/v3/xds/utils/credentials/xds"
 )
 

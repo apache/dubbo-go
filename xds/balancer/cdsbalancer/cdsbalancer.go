@@ -37,7 +37,6 @@ import (
 	"google.golang.org/grpc/connectivity"
 
 	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/credentials/tls/certprovider"
 
 	"google.golang.org/grpc/resolver"
 
@@ -50,6 +49,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/xds/balancer/ringhash"
 	"dubbo.apache.org/dubbo-go/v3/xds/client"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
+	"dubbo.apache.org/dubbo-go/v3/xds/credentials/certprovider"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/buffer"
 	xdsinternal "dubbo.apache.org/dubbo-go/v3/xds/utils/credentials/xds"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpcsync"
