@@ -62,7 +62,7 @@ func (f *tokenFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invo
 	if len(invokerTkn) > 0 {
 		attachs := invocation.Attachments()
 		remoteTkn, exist := attachs[constant.TokenKey]
-		if exist && remoteTkn != nil && strings.EqualFold(invokerTkn, remoteTkn.(string)) {
+		if exist && remoteTkn != nil && strings.EqualFold(invokerTkn, remoteTkn.([]string)[0]) {
 			return invoker.Invoke(ctx, invocation)
 		}
 		return &protocol.RPCResult{Err: perrors.Errorf("Invalid token! Forbid invoke remote service %v method %s ",
