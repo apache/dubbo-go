@@ -32,7 +32,7 @@ import (
 )
 
 import (
-	log "dubbo.apache.org/dubbo-go/v3/common/logger"
+	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/bootstrap"
 	"dubbo.apache.org/dubbo-go/v3/xds/credentials/certgenerate"
 	"dubbo.apache.org/dubbo-go/v3/xds/credentials/certprovider"
@@ -62,13 +62,13 @@ func NewCertManager() (CertManager, error) {
 		manager := &AgentCertManager{}
 		config, err := bootstrap.NewConfig()
 		if err != nil {
-			log.Errorf("build bootstrap config error :%s", err.Error())
+			logger.Errorf("build bootstrap config error :%s", err.Error())
 			return nil, err
 		}
 		certProvider, err := buildProvider(config.CertProviderConfigs, "default")
 
 		if err != nil {
-			log.Errorf("get cert provider error :%s", err.Error())
+			logger.Errorf("get cert provider error :%s", err.Error())
 			return nil, err
 		}
 		manager.provider = certProvider
@@ -165,7 +165,7 @@ func (c *CACertManager) UpdateRoot() error {
 	}
 	trustPool := x509.NewCertPool()
 	if !trustPool.AppendCertsFromPEM(rootFileContents) {
-		log.Warn("failed to parse root certificate")
+		logger.Warn("failed to parse root certificate")
 	}
 	c.Roots = trustPool
 	block, _ := pem.Decode(rootFileContents)
@@ -217,7 +217,7 @@ func (c *CACertManager) UpdateCert() error {
 	// Generate the cert/key, send CSR to CA.
 	csrPEM, keyPEM, err := certgenerate.GenCSR(options)
 	if err != nil {
-		log.Errorf("failed to generate key and certificate for CSR: %v", err)
+		logger.Errorf("failed to generate key and certificate for CSR: %v", err)
 		return err
 	}
 	sign, err := citadelClient.CSRSign(csrPEM, ttl)
@@ -244,7 +244,7 @@ func (c *CACertManager) parseCert(certByte []byte, keyByte []byte) (*tls.Certifi
 		return nil, err
 	}
 	expired := cert.NotAfter
-	log.Infof("cert expired after:" + expired.String())
+	logger.Infof("cert expired after:" + expired.String())
 	c.NoAfter = expired
 	pair, err := tls.X509KeyPair(certByte, keyByte)
 	if err != nil {
