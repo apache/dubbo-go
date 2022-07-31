@@ -33,7 +33,7 @@ import (
 	"crypto/x509/pkix"
 	"errors"
 	"fmt"
-	"os"
+	"io/ioutil"
 	"strings"
 )
 
@@ -116,7 +116,7 @@ func AppendRootCerts(pemCert []byte, rootCertFile string) ([]byte, error) {
 	rootCerts := pemCert
 	if len(rootCertFile) > 0 {
 		log.Debugf("append root certificates from %v", rootCertFile)
-		certBytes, err := os.ReadFile(rootCertFile)
+		certBytes, err := ioutil.ReadFile(rootCertFile)
 		if err != nil {
 			return rootCerts, fmt.Errorf("failed to read root certificates (%v)", err)
 		}

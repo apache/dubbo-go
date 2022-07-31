@@ -35,8 +35,8 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"math/big"
-	"os"
 	"strings"
 	"time"
 )
@@ -242,12 +242,12 @@ func GenCertFromCSR(csr *x509.CertificateRequest, signingCert *x509.Certificate,
 //	signerCertFile: cert file name
 //	signerPrivFile: private key file name
 func LoadSignerCredsFromFiles(signerCertFile string, signerPrivFile string) (*x509.Certificate, crypto.PrivateKey, error) {
-	signerCertBytes, err := os.ReadFile(signerCertFile)
+	signerCertBytes, err := ioutil.ReadFile(signerCertFile)
 	if err != nil {
 		return nil, nil, fmt.Errorf("certificate file reading failure (%v)", err)
 	}
 
-	signerPrivBytes, err := os.ReadFile(signerPrivFile)
+	signerPrivBytes, err := ioutil.ReadFile(signerPrivFile)
 	if err != nil {
 		return nil, nil, fmt.Errorf("private key file reading failure (%v)", err)
 	}
