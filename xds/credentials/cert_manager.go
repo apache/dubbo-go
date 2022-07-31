@@ -36,11 +36,10 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/xds/client/bootstrap"
 	"dubbo.apache.org/dubbo-go/v3/xds/credentials/certgenerate"
 	"dubbo.apache.org/dubbo-go/v3/xds/credentials/certprovider"
-	"dubbo.apache.org/dubbo-go/v3/xds/credentials/certprovider/remote"
-	"dubbo.apache.org/dubbo-go/v3/xds/utils/envconfig"
-
 	"dubbo.apache.org/dubbo-go/v3/xds/credentials/certprovider/pemfile"
+	"dubbo.apache.org/dubbo-go/v3/xds/credentials/certprovider/remote"
 	"dubbo.apache.org/dubbo-go/v3/xds/internal"
+	"dubbo.apache.org/dubbo-go/v3/xds/utils/envconfig"
 )
 
 func init() {

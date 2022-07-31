@@ -31,11 +31,14 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	log "dubbo.apache.org/dubbo-go/v3/common/logger"
 	"errors"
 	"fmt"
 	"os"
 	"strings"
+)
+
+import (
+	log "dubbo.apache.org/dubbo-go/v3/common/logger"
 )
 
 // minimumRsaKeySize is the minimum RSA key size to generate certificates

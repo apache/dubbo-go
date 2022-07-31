@@ -38,8 +38,11 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/xds/credentials/certprovider"
 	"github.com/dubbogo/grpc-go/grpclog"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/xds/credentials/certprovider"
 )
 
 const defaultCertRefreshDuration = 1 * time.Hour

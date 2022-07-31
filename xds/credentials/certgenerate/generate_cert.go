@@ -32,7 +32,6 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	log "dubbo.apache.org/dubbo-go/v3/common/logger"
 	"encoding/pem"
 	"errors"
 	"fmt"
@@ -40,6 +39,10 @@ import (
 	"os"
 	"strings"
 	"time"
+)
+
+import (
+	log "dubbo.apache.org/dubbo-go/v3/common/logger"
 )
 
 // SupportedECSignatureAlgorithms are the types of EC Signature Algorithms

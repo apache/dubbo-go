@@ -25,8 +25,11 @@ package certprovider
 
 import (
 	"context"
-	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpcsync"
 	"sync"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpcsync"
 )
 
 // Distributor makes it easy for provider implementations to furnish new key
