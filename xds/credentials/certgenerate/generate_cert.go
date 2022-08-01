@@ -42,7 +42,7 @@ import (
 )
 
 import (
-	log "dubbo.apache.org/dubbo-go/v3/common/logger"
+	"github.com/dubbogo/gost/log/logger"
 )
 
 // SupportedECSignatureAlgorithms are the types of EC Signature Algorithms
@@ -299,8 +299,8 @@ func genCertTemplateFromCSR(csr *x509.CertificateRequest, subjectIDs []string, t
 	// In this case, set CN as determined by DualUseCommonName(subjectIDsInString).
 	if len(csr.Subject.CommonName) != 0 {
 		if cn, err := DualUseCommonName(subjectIDsInString); err != nil {
-			// log and continue
-			log.Errorf("dual-use failed for cert template - omitting CN (%v)", err)
+			// logger and continue
+			logger.Errorf("dual-use failed for cert template - omitting CN (%v)", err)
 		} else {
 			subject.CommonName = cn
 		}
@@ -369,8 +369,8 @@ func genCertTemplateFromOptions(options CertOptions) (*x509.Certificate, error) 
 		if options.IsDualUse {
 			cn, err := DualUseCommonName(h)
 			if err != nil {
-				// log and continue
-				log.Errorf("dual-use failed for cert template - omitting CN (%v)", err)
+				// logger and continue
+				logger.Errorf("dual-use failed for cert template - omitting CN (%v)", err)
 			} else {
 				subject.CommonName = cn
 			}

@@ -38,7 +38,7 @@ import (
 )
 
 import (
-	log "dubbo.apache.org/dubbo-go/v3/common/logger"
+	"github.com/dubbogo/gost/log/logger"
 )
 
 // minimumRsaKeySize is the minimum RSA key size to generate certificates
@@ -99,8 +99,8 @@ func GenCSRTemplate(options CertOptions) (*x509.CertificateRequest, error) {
 		if options.IsDualUse {
 			cn, err := DualUseCommonName(h)
 			if err != nil {
-				// log and continue
-				//log.Errorf("dual-use failed for CSR template - omitting CN (%v)", err)
+				// logger and continue
+				//logger.Errorf("dual-use failed for CSR template - omitting CN (%v)", err)
 			} else {
 				template.Subject.CommonName = cn
 			}
@@ -115,7 +115,7 @@ func GenCSRTemplate(options CertOptions) (*x509.CertificateRequest, error) {
 func AppendRootCerts(pemCert []byte, rootCertFile string) ([]byte, error) {
 	rootCerts := pemCert
 	if len(rootCertFile) > 0 {
-		log.Debugf("append root certificates from %v", rootCertFile)
+		logger.Debugf("append root certificates from %v", rootCertFile)
 		certBytes, err := ioutil.ReadFile(rootCertFile)
 		if err != nil {
 			return rootCerts, fmt.Errorf("failed to read root certificates (%v)", err)
