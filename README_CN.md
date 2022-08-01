@@ -14,7 +14,7 @@ Apache Dubbo Go 语言实现，架起 Java 和 Golang 之间的桥梁，与 gRPC
 
 ## RPC 调用
 
-![](https://dubbogo.github.io/img/dubbogo-3.0-invocation.png)
+![](https://dubbo-go-pixiu.github.io/img/pixiu-dubbo-ecosystem.png)
 
 Dubbo-go 生态覆盖多种网络协议：Triple、Dubbo、JSONRPC、gRPC、HTTP、HTTP2 等。
 
