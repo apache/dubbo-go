@@ -104,7 +104,7 @@ func (authenticator *defaultAuthenticator) Authenticate(invocation protocol.Invo
 	originSignature := invocation.GetAttachmentWithDefaultValue(constant.RequestSignatureKey, "")
 	consumer := invocation.GetAttachmentWithDefaultValue(constant.Consumer, "")
 	content := invocation.GetAttachmentWithDefaultValue("content", "")
-	
+
 	if IsEmpty(accessKeyId, false) || IsEmpty(consumer, false) ||
 		IsEmpty(requestTimestamp, false) || IsEmpty(originSignature, false) {
 		return errors.New("failed to authenticate your ak/sk, maybe the consumer has not enabled the auth")
