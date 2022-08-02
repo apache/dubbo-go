@@ -298,7 +298,8 @@ func genCertTemplateFromCSR(csr *x509.CertificateRequest, subjectIDs []string, t
 	// Dual use mode if common name in CSR is not empty.
 	// In this case, set CN as determined by DualUseCommonName(subjectIDsInString).
 	if len(csr.Subject.CommonName) != 0 {
-		if cn, err := DualUseCommonName(subjectIDsInString); err != nil {
+		var cn string
+		if cn, err = DualUseCommonName(subjectIDsInString); err != nil {
 			// logger and continue
 			logger.Errorf("dual-use failed for cert template - omitting CN (%v)", err)
 		} else {
