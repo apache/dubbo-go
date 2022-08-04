@@ -168,7 +168,8 @@ func (def *FullServiceDefinition) String() string {
 		parameters.WriteString(fmt.Sprintf("%v:%v,", k, def.Parameters[k]))
 	}
 
-	return fmt.Sprintf("{parameters:{%v}, canonicalName:%v, codeSource:%v, methods:[%v], types:[%v]}", strings.TrimRight(parameters.String(), ","), def.CanonicalName, def.CodeSource, methodStr.String(), types.String())
+	return fmt.Sprintf("{parameters:{%v}, canonicalName:%v, codeSource:%v, methods:[%v], types:[%v]}",
+		strings.TrimRight(parameters.String(), ","), def.CanonicalName, def.CodeSource, methodStr.String(), types.String())
 }
 
 // ServiceDescriperBuild builds the service key, format is `group/serviceName:version` which be same as URL's service key
