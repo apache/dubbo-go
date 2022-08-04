@@ -124,6 +124,13 @@ func (config *ShutdownConfig) GetConsumerUpdateWaitTime() time.Duration {
 	return result
 }
 
+func (config *ShutdownConfig) GetInternalSignal() bool {
+	if config.InternalSignal == nil {
+		return false
+	}
+	return *config.InternalSignal
+}
+
 func (config *ShutdownConfig) Init() error {
 	return defaults.Set(config)
 }
@@ -162,7 +169,7 @@ func (scb *ShutdownConfigBuilder) SetInternalSignal(internalSignal bool) *Shutdo
 }
 
 func (scb *ShutdownConfigBuilder) Build() *ShutdownConfig {
-	defaults.Set(scb)
+	defaults.MustSet(scb.shutdownConfig)
 	return scb.shutdownConfig
 }
 
