@@ -56,7 +56,7 @@ func registerFailback(invoker *mock.MockInvoker) protocol.Invoker {
 	var invokers []protocol.Invoker
 	invokers = append(invokers, invoker)
 
-	invoker.EXPECT().GetUrl().Return(failbackUrl)
+	invoker.EXPECT().GetUrl().Return(failbackUrl).AnyTimes()
 
 	staticDir := static.NewDirectory(invokers)
 	clusterInvoker := failbackCluster.Join(staticDir)
@@ -73,10 +73,10 @@ func TestFailbackSuceess(t *testing.T) {
 
 	invoker.EXPECT().GetUrl().Return(failbackUrl).AnyTimes()
 
-	invoker.EXPECT().IsAvailable().Return(true)
+	invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
 
 	mockResult := &protocol.RPCResult{Rest: clusterpkg.Rest{Tried: 0, Success: true}}
-	invoker.EXPECT().Invoke(gomock.Any()).Return(mockResult)
+	invoker.EXPECT().Invoke(gomock.Any()).Return(mockResult).AnyTimes()
 
 	result := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
 	assert.Equal(t, mockResult, result)
@@ -121,7 +121,7 @@ func TestFailbackRetryOneSuccess(t *testing.T) {
 	wg.Wait()
 	assert.Equal(t, int64(0), clusterInvoker.taskList.Len())
 
-	invoker.EXPECT().Destroy().Return()
+	invoker.EXPECT().Destroy().Return().AnyTimes()
 	clusterInvoker.Destroy()
 
 	assert.Equal(t, int64(0), clusterInvoker.taskList.Len())

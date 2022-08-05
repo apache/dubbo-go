@@ -284,6 +284,11 @@ func (c *URL) Group() string {
 	return c.GetParam(constant.GroupKey, "")
 }
 
+// Interface get interface
+func (c *URL) Interface() string {
+	return c.GetParam(constant.InterfaceKey, "")
+}
+
 // Version get group
 func (c *URL) Version() string {
 	return c.GetParam(constant.VersionKey, "")
@@ -356,7 +361,7 @@ func (c *URL) Key() string {
 	return buildString
 }
 
-//GetCacheInvokerMapKey get directory cacheInvokerMap key
+// GetCacheInvokerMapKey get directory cacheInvokerMap key
 func (c *URL) GetCacheInvokerMapKey() string {
 	urlNew, _ := NewURL(c.PrimitiveURL)
 
@@ -369,7 +374,7 @@ func (c *URL) GetCacheInvokerMapKey() string {
 
 // ServiceKey gets a unique key of a service.
 func (c *URL) ServiceKey() string {
-	return ServiceKey(c.GetParam(constant.InterfaceKey, strings.TrimPrefix(c.Path, "/")),
+	return ServiceKey(c.GetParam(constant.InterfaceKey, strings.TrimPrefix(c.Path, constant.PathSeparator)),
 		c.GetParam(constant.GroupKey, ""), c.GetParam(constant.VersionKey, ""))
 }
 
@@ -861,7 +866,7 @@ func GetCompareURLEqualFunc() CompareURLEqualFunc {
 	return compareURLEqualFunc
 }
 
-//GetParamDuration get duration if param is invalid or missing will return 3s
+// GetParamDuration get duration if param is invalid or missing will return 3s
 func (c *URL) GetParamDuration(s string, d string) time.Duration {
 	if t, err := time.ParseDuration(c.GetParam(s, d)); err == nil {
 		return t

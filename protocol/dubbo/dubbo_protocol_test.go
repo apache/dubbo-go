@@ -100,10 +100,10 @@ func TestDubboProtocol_Export(t *testing.T) {
 	eq2 := exporter2.GetInvoker().GetURL().URLEqual(url2)
 	assert.True(t, eq2)
 
-	// make sure exporterMap after 'Unexport'
+	// make sure exporterMap after 'UnExport'
 	_, ok := proto.(*DubboProtocol).ExporterMap().Load(url2.ServiceKey())
 	assert.True(t, ok)
-	exporter2.Unexport()
+	exporter2.UnExport()
 	_, ok = proto.(*DubboProtocol).ExporterMap().Load(url2.ServiceKey())
 	assert.False(t, ok)
 

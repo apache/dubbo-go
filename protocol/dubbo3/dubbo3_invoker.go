@@ -73,8 +73,8 @@ func NewDubboInvoker(url *common.URL) (*DubboInvoker, error) {
 	interfaceKey := url.GetParam(constant.InterfaceKey, "")
 	consumerService := config.GetConsumerServiceByInterfaceName(interfaceKey)
 
-	dubboSerializaerType := url.GetParam(constant.SerializationKey, constant.ProtobufSerialization)
-	triCodecType := tripleConstant.CodecType(dubboSerializaerType)
+	dubboSerializerType := url.GetParam(constant.SerializationKey, constant.ProtobufSerialization)
+	triCodecType := tripleConstant.CodecType(dubboSerializerType)
 	// new triple client
 	opts := []triConfig.OptionFunction{
 		triConfig.WithClientTimeout(uint32(timeout.Seconds())),
@@ -181,6 +181,7 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 
 	// append interface id to ctx
 	gRPCMD := make(metadata.MD, 0)
+	// triple will convert attachment value to []string
 	for k, v := range invocation.Attachments() {
 		if str, ok := v.(string); ok {
 			gRPCMD.Set(k, str)
@@ -190,7 +191,7 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 			gRPCMD.Set(k, str...)
 			continue
 		}
-		logger.Warnf("triple attachment value with key = %s is invalid, which should be string or []string", k)
+		logger.Warnf("[Triple Protocol]Triple attachment value with key = %s is invalid, which should be string or []string", k)
 	}
 	ctx = metadata.NewOutgoingContext(ctx, gRPCMD)
 	ctx = context.WithValue(ctx, tripleConstant.InterfaceKey, di.BaseInvoker.GetURL().GetParam(constant.InterfaceKey, ""))

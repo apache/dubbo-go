@@ -14,7 +14,7 @@ Apache Dubbo-go, a Dubbo implementation written in Golang, is born to bridge the
 
 ## RPC Invocation
 
-![](https://dubbogo.github.io/img/dubbogo-3.0-invocation.png)
+![](https://dubbo-go-pixiu.github.io/img/pixiu-dubbo-ecosystem.png)
 
 Dubbo-go has supported many RPC protocol, like Triple, Dubbo JSONRPC, gRPC, HTTP, HTTP2.
 
