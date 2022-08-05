@@ -43,6 +43,9 @@ type BaseMetadataIdentifier struct {
 func joinParams(joinChar string, params []string) string {
 	var joinedStr string
 	for _, param := range params {
+		if param == ""{
+			break
+		}
 		joinedStr += joinChar
 		joinedStr += param
 	}
