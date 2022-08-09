@@ -32,3 +32,35 @@ func getInvokerKey(url *common.URL) string {
 func getInstanceKey(url *common.URL) string {
 	return fmt.Sprintf("%s:%s", url.Ip, url.Port)
 }
+
+func ToFloat64(i interface{}) float64 {
+	if i == nil {
+		return 0
+	}
+	switch s := i.(type) {
+	case float64:
+		return s
+	case float32:
+		return float64(s)
+	case int64:
+		return float64(s)
+	case int32:
+		return float64(s)
+	case int16:
+		return float64(s)
+	case int8:
+		return float64(s)
+	case uint:
+		return float64(s)
+	case uint64:
+		return float64(s)
+	case uint32:
+		return float64(s)
+	case uint16:
+		return float64(s)
+	case uint8:
+		return float64(s)
+	default:
+		return 0
+	}
+}

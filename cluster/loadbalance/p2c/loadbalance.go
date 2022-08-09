@@ -18,8 +18,6 @@
 package p2c
 
 import (
-	"errors"
-	"fmt"
 	"math/rand"
 	"sync"
 	"time"
@@ -32,6 +30,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
 	"dubbo.apache.org/dubbo-go/v3/cluster/metrics"
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
@@ -71,9 +70,6 @@ func (l *p2cLoadBalance) Select(invokers []protocol.Invoker, invocation protocol
 	if len(invokers) == 1 {
 		return invokers[0]
 	}
-	// m is the Metrics, which saves the metrics of instance, invokers and methods
-	// The local metrics is available only for the earlier version.
-	m := metrics.LocalMetrics
 	// picks two nodes randomly
 	var i, j int
 	if len(invokers) == 2 {
@@ -89,49 +85,64 @@ func (l *p2cLoadBalance) Select(invokers []protocol.Invoker, invocation protocol
 		i, invokers[i], j, invokers[j])
 
 	methodName := invocation.ActualMethodName()
-	// remainingIIface, remainingJIface means remaining capacity of node i and node j.
-	// If one of the metrics is empty, invoke the invocation to that node directly.
-	remainingIIface, err := m.GetMethodMetrics(invokers[i].GetURL(), methodName, metrics.HillClimbing)
-	if err != nil {
-		if errors.Is(err, metrics.ErrMetricsNotFound) {
-			logger.Debugf("[P2C select] The invoker[%d] was selected, because it hasn't been selected before.", i)
-			return invokers[i]
-		}
-		logger.Warnf("get method metrics err: %v", err)
-		return nil
-	}
 
-	// TODO(justxuewei): It should have a strategy to drop some metrics after a period of time.
-	remainingJIface, err := m.GetMethodMetrics(invokers[j].GetURL(), methodName, metrics.HillClimbing)
-	if err != nil {
-		if errors.Is(err, metrics.ErrMetricsNotFound) {
-			logger.Debugf("[P2C select] The invoker[%d] was selected, because it hasn't been selected before.", j)
-			return invokers[j]
-		}
-		logger.Warnf("get method metrics err: %v", err)
-		return nil
-	}
+	weightI, weightJ := Weight(invokers[i].GetURL(), invokers[j].GetURL(), methodName)
 
-	// Convert interface to int, if the type is unexpected, panic immediately
-	remainingI, ok := remainingIIface.(uint64)
-	if !ok {
-		panic(fmt.Sprintf("[P2C select] the type of %s expects to be uint64, but gets %T",
-			metrics.HillClimbing, remainingIIface))
-	}
-
-	remainingJ, ok := remainingJIface.(uint64)
-	if !ok {
-		panic(fmt.Sprintf("the type of %s expects to be uint64, but gets %T", metrics.HillClimbing, remainingJIface))
-	}
-
-	logger.Debugf("[P2C select] The invoker[%d] remaining is %d, and the invoker[%d] is %d.", i, remainingI, j, remainingJ)
+	logger.Debugf("[P2C I] %s: %f", invokers[i].GetURL().Ip, weightI)
+	logger.Debugf("[P2C J] %s: %f", invokers[j].GetURL().Ip, weightJ)
 
 	// For the remaining capacity, the bigger, the better.
-	if remainingI > remainingJ {
+	if weightI > weightJ {
 		logger.Debugf("[P2C select] The invoker[%d] was selected.", i)
 		return invokers[i]
 	}
 
 	logger.Debugf("[P2C select] The invoker[%d] was selected.", j)
 	return invokers[j]
+}
+
+//Weight w_i = s_i + ε*t_i
+func Weight(urlI, urlJ *common.URL, methodName string) (weightI, weightJ float64) {
+
+	sI := successRateWeight(urlI, methodName)
+	sJ := successRateWeight(urlJ, methodName)
+
+	rttIFace, _ := metrics.EMAMetrics.GetMethodMetrics(urlI, methodName, metrics.RTT)
+	rttJFace, _ := metrics.EMAMetrics.GetMethodMetrics(urlJ, methodName, metrics.RTT)
+	rttI := metrics.ToFloat64(rttIFace)
+	rttJ := metrics.ToFloat64(rttJFace)
+
+	avgRtt := (rttI + rttJ) / 2
+	tI := norm((1 + avgRtt) / (1 + rttI))
+	tJ := norm((1 + avgRtt) / (1 + rttJ))
+
+	avgS := (sI + sJ) / 2
+	avgL := (tI + tJ) / 2
+	e := avgS / avgL
+
+	weightI = sI + e*tI
+	weightJ = sJ + e*tJ
+
+	//weightI = sI + norm((1+avgRtt)/(1+rttI))
+	//weightJ = sJ + norm((1+avgRtt)/(1+rttJ))
+
+	return weightI, weightJ
+}
+
+func norm(x float64) float64 {
+	return x / (x + 1)
+}
+
+func successRateWeight(url *common.URL, methodName string) float64 {
+	requestsIFace, _ := metrics.SlidingWindowCounterMetrics.GetMethodMetrics(url, methodName, metrics.Requests)
+	acceptsIFace, _ := metrics.SlidingWindowCounterMetrics.GetMethodMetrics(url, methodName, metrics.Accepts)
+
+	requests := metrics.ToFloat64(requestsIFace)
+	accepts := metrics.ToFloat64(acceptsIFace)
+	r := (1 + accepts) / (1 + requests)
+
+	if r > 1 {
+		r = 1
+	}
+	return r
 }
