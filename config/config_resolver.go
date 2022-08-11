@@ -18,14 +18,18 @@
 package config
 
 import (
+	"strings"
+)
+
+import (
 	log "github.com/dubbogo/gost/log/logger"
+
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/json"
 	"github.com/knadh/koanf/parsers/toml"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/confmap"
 	"github.com/knadh/koanf/providers/rawbytes"
-	"strings"
 
 	"github.com/pkg/errors"
 )
