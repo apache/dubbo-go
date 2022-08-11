@@ -1,9 +1,13 @@
 package config
 
 import (
-	"github.com/knadh/koanf"
-	"github.com/stretchr/testify/assert"
 	"testing"
+)
+
+import (
+	"github.com/knadh/koanf"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestResolvePlaceHolder(t *testing.T) {
