@@ -85,15 +85,18 @@ const (
 func resolvePlaceholder(resolver *koanf.Koanf) *koanf.Koanf {
 	m := make(map[string]interface{})
 	for k, v := range resolver.All() {
-		if _, ok := v.(string); !ok {
+		s, ok := v.(string)
+		if !ok {
 			continue
 		}
-		s := v.(string)
-		newKey := checkPlaceholder(s)
+		newKey, defaultValue := checkPlaceholder(s)
 		if newKey == "" {
 			continue
 		}
 		m[k] = resolver.Get(newKey)
+		if m[k] == nil {
+			m[k] = defaultValue
+		}
 	}
 	err := resolver.Load(confmap.Provider(m, resolver.Delim()), nil)
 	if err != nil {
@@ -102,10 +105,19 @@ func resolvePlaceholder(resolver *koanf.Koanf) *koanf.Koanf {
 	return resolver
 }
 
-func checkPlaceholder(s string) string {
-	s = strings.Trim(s, " ")
+func checkPlaceholder(s string) (newKey, defaultValue string) {
+	s = strings.TrimSpace(s)
 	if !strings.HasPrefix(s, PlaceholderPrefix) || !strings.HasSuffix(s, PlaceholderSuffix) {
-		return ""
+		return
 	}
-	return strings.Trim(s[len(PlaceholderPrefix):len(s)-len(PlaceholderSuffix)], " ")
+	s = s[len(PlaceholderPrefix) : len(s)-len(PlaceholderSuffix)]
+	indexColon := strings.Index(s, ":")
+	if indexColon == -1 {
+		newKey = strings.TrimSpace(s)
+		return
+	}
+	newKey = strings.TrimSpace(s[0:indexColon])
+	defaultValue = strings.TrimSpace(s[indexColon+1:])
+
+	return
 }
