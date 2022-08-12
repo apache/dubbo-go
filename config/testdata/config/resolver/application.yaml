@@ -19,10 +19,10 @@ dubbo:
     nacos:
       timeout: 5s
       group: ${notexist}
-      address: ${dubbo.config-center.address}
+      address: ${dubbo.config-center.address:nacos://127.0.0.1:8848}
     zk:
       protocol: zookeeper
-      group: dev
+      group: ${notexist:dev}
       address: 127.0.0.1:2181
   services:
     helloService:
