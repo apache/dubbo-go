@@ -71,7 +71,7 @@ func gracefulShutdownInit() {
 		filter.Set(constant.GracefulShutdownFilterShutdownConfig, GetShutDown())
 	}
 
-	if GetShutDown().InternalSignal {
+	if GetShutDown().GetInternalSignal() {
 		signals := make(chan os.Signal, 1)
 		signal.Notify(signals, ShutdownSignals...)
 

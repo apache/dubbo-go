@@ -48,4 +48,6 @@ func TestBuildServiceDefinition(t *testing.T) {
 	service := common.ServiceMap.GetServiceByServiceKey(url.Protocol, url.ServiceKey())
 	sd := BuildServiceDefinition(*service, url)
 	assert.Equal(t, "{canonicalName:com.ikurento.user.UserProvider, codeSource:, methods:[{name:GetUser,parameterTypes:[{type:slice}],returnType:ptr,params:[] }], types:[]}", sd.String())
+	fsd := BuildFullDefinition(*service, url)
+	assert.Equal(t, "{parameters:{anyhost:true,application:BDTService,bean.name:UserProvider,category:providers,default.timeout:10000,dubbo:dubbo-provider-golang-1.0.0,environment:dev,group:group1,interface:com.ikurento.user.UserProvider,ip:192.168.56.1,methods:GetUser,module:dubbogo user-info server,org:ikurento.com,owner:ZX,pid:1447,revision:0.0.1,side:provider,timeout:3000,timestamp:1556509797245,version:0.0.1}, canonicalName:com.ikurento.user.UserProvider, codeSource:, methods:[{name:GetUser,parameterTypes:[{type:slice}],returnType:ptr,params:[] }], types:[]}", fsd.String())
 }

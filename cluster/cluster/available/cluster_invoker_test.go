@@ -19,6 +19,7 @@ package available
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"testing"
@@ -51,7 +52,8 @@ func registerAvailable(invoker *mock.MockInvoker) protocol.Invoker {
 
 	invokers := []protocol.Invoker{}
 	invokers = append(invokers, invoker)
-	invoker.EXPECT().GetUrl().Return(availableUrl)
+	invoker.EXPECT().GetUrl().Return(availableUrl).AnyTimes()
+	invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
 
 	staticDir := static.NewDirectory(invokers)
 	clusterInvoker := availableCluster.Join(staticDir)
@@ -66,8 +68,8 @@ func TestAvailableClusterInvokerSuccess(t *testing.T) {
 	clusterInvoker := registerAvailable(invoker)
 
 	mockResult := &protocol.RPCResult{Rest: clusterpkg.Rest{Tried: 0, Success: true}}
-	invoker.EXPECT().IsAvailable().Return(true)
-	invoker.EXPECT().Invoke(gomock.Any()).Return(mockResult)
+	invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
+	invoker.EXPECT().Invoke(gomock.Any()).Return(mockResult).AnyTimes()
 
 	result := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
 
@@ -81,7 +83,10 @@ func TestAvailableClusterInvokerNoAvail(t *testing.T) {
 	invoker := mock.NewMockInvoker(ctrl)
 	clusterInvoker := registerAvailable(invoker)
 
-	invoker.EXPECT().IsAvailable().Return(false)
+	invoker.EXPECT().IsAvailable().Return(false).AnyTimes()
+
+	res := &protocol.RPCResult{Err: errors.New("no provider available")}
+	invoker.EXPECT().Invoke(gomock.Any()).Return(res).AnyTimes()
 
 	result := clusterInvoker.Invoke(context.TODO(), &invocation.RPCInvocation{})
 

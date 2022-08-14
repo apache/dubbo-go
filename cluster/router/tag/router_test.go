@@ -354,7 +354,8 @@ tags:
  - name: tag1
    addresses: [192.168.0.1:20881]
  - name: tag2
-   addresses: [192.168.0.2:20882]`}
+   addresses: [192.168.0.2:20882]`,
+		}
 		dc, _ := mockFactory.GetDynamicConfiguration(ccUrl)
 		common_cfg.GetEnvInstance().SetDynamicConfiguration(dc)
 		p.Notify(invokerList)
@@ -380,7 +381,8 @@ tags:
 		extension.SetDefaultConfigurator(configurator.NewMockConfigurator)
 		ccUrl, _ := common.NewURL("mock://127.0.0.1:1111")
 		mockFactory := &config_center.MockDynamicConfigurationFactory{
-			Content: `xxxxxx`}
+			Content: `xxxxxx`,
+		}
 		dc, _ := mockFactory.GetDynamicConfiguration(ccUrl)
 		common_cfg.GetEnvInstance().SetDynamicConfiguration(dc)
 		p.Notify(invokerList)
