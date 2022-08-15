@@ -76,11 +76,6 @@ func GetConfigResolver(conf *loaderConf) *koanf.Koanf {
 	return resolvePlaceholder(k)
 }
 
-const (
-	PlaceholderPrefix = "${"
-	PlaceholderSuffix = "}"
-)
-
 // resolvePlaceholder replace ${xx} with real value
 func resolvePlaceholder(resolver *koanf.Koanf) *koanf.Koanf {
 	m := make(map[string]interface{})
@@ -107,10 +102,10 @@ func resolvePlaceholder(resolver *koanf.Koanf) *koanf.Koanf {
 
 func checkPlaceholder(s string) (newKey, defaultValue string) {
 	s = strings.TrimSpace(s)
-	if !strings.HasPrefix(s, PlaceholderPrefix) || !strings.HasSuffix(s, PlaceholderSuffix) {
+	if !strings.HasPrefix(s, file.PlaceholderPrefix) || !strings.HasSuffix(s, file.PlaceholderSuffix) {
 		return
 	}
-	s = s[len(PlaceholderPrefix) : len(s)-len(PlaceholderSuffix)]
+	s = s[len(file.PlaceholderPrefix) : len(s)-len(file.PlaceholderSuffix)]
 	indexColon := strings.Index(s, ":")
 	if indexColon == -1 {
 		newKey = strings.TrimSpace(s)
