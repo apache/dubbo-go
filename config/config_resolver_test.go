@@ -29,7 +29,7 @@ import (
 
 func TestResolvePlaceHolder(t *testing.T) {
 	t.Run("test resolver", func(t *testing.T) {
-		conf := NewLoaderConf(WithPath("/Users/zlb/GolandProjects/dubbo-go/config/testdata/config/resolver/application.yaml"))
+		conf := NewLoaderConf(WithPath("./testdata/config/resolver/application.yaml"))
 		koan := GetConfigResolver(conf)
 		assert.Equal(t, koan.Get("dubbo.config-center.address"), koan.Get("dubbo.registries.nacos.address"))
 		assert.Equal(t, koan.Get("localhost"), koan.Get("dubbo.protocols.dubbo.ip"))
