@@ -16,7 +16,7 @@ require (
 	github.com/creasty/defaults v1.5.2
 	github.com/dubbogo/go-zookeeper v1.0.4-0.20211212162352-f9d2183d89d5
 	github.com/dubbogo/gost v1.12.6-0.20220719055648-01d5bc07b111
-	github.com/dubbogo/grpc-go v1.42.9
+	github.com/dubbogo/grpc-go v1.42.10
 	github.com/dubbogo/triple v1.1.8
 	github.com/emicklei/go-restful/v3 v3.8.0
 	github.com/envoyproxy/go-control-plane v0.10.2-0.20220325020618-49ff273808a1
