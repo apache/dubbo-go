@@ -34,9 +34,10 @@ import (
 )
 
 const (
-	defaultTimeout                = 60 * time.Second
-	defaultStepTimeout            = 3 * time.Second
-	defaultConsumerUpdateWaitTime = 3 * time.Second
+	defaultTimeout                     = 60 * time.Second
+	defaultStepTimeout                 = 3 * time.Second
+	defaultConsumerUpdateWaitTime      = 3 * time.Second
+	defaultOfflineRequestWindowTimeout = 3 * time.Second
 )
 
 // ShutdownConfig is used as configuration for graceful shutdown
@@ -66,12 +67,16 @@ type ShutdownConfig struct {
 	RejectRequestHandler string `yaml:"reject-handler" json:"reject-handler,omitempty" property:"reject_handler"`
 	// internal listen kill signal，the default is true.
 	InternalSignal bool `default:"true" yaml:"internal-signal" json:"internal.signal,omitempty" property:"internal.signal"`
-
+	// offline request window length
+	OfflineRequestWindowTimeout string `yaml:"offline-request-window-timeout" json:"offlineRequestWindowTimeout,omitempty" property:"offlineRequestWindowTimeout"`
 	// true -> new request will be rejected.
 	RejectRequest atomic.Bool
 	// active invocation
 	ConsumerActiveCount atomic.Int32
 	ProviderActiveCount atomic.Int32
+
+	// provider last received request timestamp
+	ProviderLastReceivedRequestTime atomic.Time
 }
 
 // Prefix dubbo.shutdown
@@ -95,6 +100,16 @@ func (config *ShutdownConfig) GetStepTimeout() time.Duration {
 		logger.Errorf("The StepTimeout configuration is invalid: %s, and we will use the default value: %s, err: %v",
 			config.StepTimeout, defaultStepTimeout.String(), err)
 		return defaultStepTimeout
+	}
+	return result
+}
+
+func (config *ShutdownConfig) GetOfflineRequestWindowTimeout() time.Duration {
+	result, err := time.ParseDuration(config.OfflineRequestWindowTimeout)
+	if err != nil {
+		logger.Errorf("The OfflineRequestWindowTimeout configuration is invalid: %s, and we will use the default value: %s, err: %v",
+			config.OfflineRequestWindowTimeout, defaultOfflineRequestWindowTimeout.String(), err)
+		return defaultOfflineRequestWindowTimeout
 	}
 	return result
 }
@@ -149,4 +164,9 @@ func (scb *ShutdownConfigBuilder) SetInternalSignal(internalSignal bool) *Shutdo
 func (scb *ShutdownConfigBuilder) Build() *ShutdownConfig {
 	defaults.Set(scb)
 	return scb.shutdownConfig
+}
+
+func (scb *ShutdownConfigBuilder) SetOfflineRequestWindowTimeout(offlineRequestWindowTimeout string) *ShutdownConfigBuilder {
+	scb.shutdownConfig.OfflineRequestWindowTimeout = offlineRequestWindowTimeout
+	return scb
 }

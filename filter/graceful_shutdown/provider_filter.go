@@ -20,6 +20,7 @@ package graceful_shutdown
 import (
 	"context"
 	"sync"
+	"time"
 )
 
 import (
@@ -75,6 +76,7 @@ func (f *providerGracefulShutdownFilter) Invoke(ctx context.Context, invoker pro
 		}
 	}
 	f.shutdownConfig.ProviderActiveCount.Inc()
+	f.shutdownConfig.ProviderLastReceivedRequestTime.Store(time.Now())
 	return invoker.Invoke(ctx, invocation)
 }
 

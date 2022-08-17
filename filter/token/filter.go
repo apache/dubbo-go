@@ -44,6 +44,10 @@ func init() {
 	extension.SetFilter(constant.TokenFilterKey, newTokenFilter)
 }
 
+const (
+	InValidTokenFormat = "[Token Filter]Invalid token! Forbid invoke remote service %v with method %s"
+)
+
 // tokenFilter will verify if the token is valid
 type tokenFilter struct{}
 
@@ -60,13 +64,31 @@ func newTokenFilter() filter.Filter {
 func (f *tokenFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	invokerTkn := invoker.GetURL().GetParam(constant.TokenKey, "")
 	if len(invokerTkn) > 0 {
-		attachs := invocation.Attachments()
-		remoteTkn, exist := attachs[constant.TokenKey]
-		if exist && remoteTkn != nil && strings.EqualFold(invokerTkn, remoteTkn.(string)) {
+		attas := invocation.Attachments()
+		var remoteTkn string
+		remoteTknIface, exist := attas[constant.TokenKey]
+		if !exist || remoteTknIface == nil {
+			return &protocol.RPCResult{Err: perrors.Errorf(InValidTokenFormat, invoker, invocation.MethodName())}
+		}
+		switch remoteTknIface.(type) {
+		case string:
+			// deal with dubbo protocol
+			remoteTkn = remoteTknIface.(string)
+		case []string:
+			// deal with triple protocol
+			remoteTkns := remoteTknIface.([]string)
+			if len(remoteTkns) != 1 {
+				return &protocol.RPCResult{Err: perrors.Errorf(InValidTokenFormat, invoker, invocation.MethodName())}
+			}
+			remoteTkn = remoteTkns[0]
+		default:
+			return &protocol.RPCResult{Err: perrors.Errorf(InValidTokenFormat, invoker, invocation.MethodName())}
+		}
+
+		if strings.EqualFold(invokerTkn, remoteTkn) {
 			return invoker.Invoke(ctx, invocation)
 		}
-		return &protocol.RPCResult{Err: perrors.Errorf("Invalid token! Forbid invoke remote service %v method %s ",
-			invoker, invocation.MethodName())}
+		return &protocol.RPCResult{Err: perrors.Errorf(InValidTokenFormat, invoker, invocation.MethodName())}
 	}
 
 	return invoker.Invoke(ctx, invocation)

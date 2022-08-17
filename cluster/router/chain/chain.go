@@ -52,7 +52,19 @@ type RouterChain struct {
 
 // Route Loop routers in RouterChain and call Route method to determine the target invokers list.
 func (c *RouterChain) Route(url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
-	finalInvokers := c.invokers
+	finalInvokers := make([]protocol.Invoker, 0, len(c.invokers))
+	// multiple invoker may include different methods, find correct invoker otherwise
+	// will return the invoker without methods
+	for _, invoker := range c.invokers {
+		if invoker.GetURL().ServiceKey() == url.ServiceKey() {
+			finalInvokers = append(finalInvokers, invoker)
+		}
+	}
+
+	if len(finalInvokers) == 0 {
+		finalInvokers = c.invokers
+	}
+
 	for _, r := range c.copyRouters() {
 		finalInvokers = r.Route(finalInvokers, url, invocation)
 	}

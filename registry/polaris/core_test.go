@@ -1,12 +1,19 @@
 package polaris
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/remoting"
-	"github.com/polarismesh/polaris-go/api"
-	"github.com/polarismesh/polaris-go/pkg/model"
-	"github.com/stretchr/testify/assert"
 	"sync"
 	"testing"
+)
+
+import (
+	"github.com/polarismesh/polaris-go/api"
+	"github.com/polarismesh/polaris-go/pkg/model"
+
+	"github.com/stretchr/testify/assert"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
 func TestPolarisServiceWatcher_AddSubscriber(t *testing.T) {

@@ -51,11 +51,9 @@ func registerForking(mockInvokers ...*mock.MockInvoker) protocol.Invoker {
 	extension.SetLoadbalance(constant.LoadBalanceKeyRoundRobin, roundrobin.NewRRLoadBalance)
 
 	var invokers []protocol.Invoker
-	for i, ivk := range mockInvokers {
+	for _, ivk := range mockInvokers {
 		invokers = append(invokers, ivk)
-		if i == 0 {
-			ivk.EXPECT().GetUrl().Return(forkingUrl)
-		}
+		ivk.EXPECT().GetUrl().Return(forkingUrl).AnyTimes()
 	}
 	staticDir := static.NewDirectory(invokers)
 
@@ -145,14 +143,14 @@ func TestForkingInvokeHalfTimeout(t *testing.T) {
 				func(protocol.Invocation) protocol.Result {
 					wg.Done()
 					return mockResult
-				})
+				}).AnyTimes()
 		} else {
 			invoker.EXPECT().Invoke(gomock.Any()).DoAndReturn(
 				func(protocol.Invocation) protocol.Result {
 					time.Sleep(2 * time.Second)
 					wg.Done()
 					return mockResult
-				})
+				}).AnyTimes()
 		}
 	}
 

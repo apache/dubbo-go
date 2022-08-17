@@ -35,26 +35,37 @@ func TestShutdownConfigGetTimeout(t *testing.T) {
 	assert.False(t, config.RejectRequest.Load())
 
 	config = ShutdownConfig{
-		Timeout:     "60s",
-		StepTimeout: "10s",
+		Timeout:                     "60s",
+		StepTimeout:                 "10s",
+		OfflineRequestWindowTimeout: "30s",
 	}
 
 	assert.Equal(t, 60*time.Second, config.GetTimeout())
 	assert.Equal(t, 10*time.Second, config.GetStepTimeout())
-
+	assert.Equal(t, 30*time.Second, config.GetOfflineRequestWindowTimeout())
 	config = ShutdownConfig{
-		Timeout:     "34ms",
-		StepTimeout: "79ms",
+		Timeout:                     "34ms",
+		StepTimeout:                 "79ms",
+		OfflineRequestWindowTimeout: "13ms",
 	}
 
 	assert.Equal(t, 34*time.Millisecond, config.GetTimeout())
 	assert.Equal(t, 79*time.Millisecond, config.GetStepTimeout())
+	assert.Equal(t, 13*time.Millisecond, config.GetOfflineRequestWindowTimeout())
+
+	// test default
+	config = ShutdownConfig{}
+
+	assert.Equal(t, defaultTimeout, config.GetTimeout())
+	assert.Equal(t, defaultStepTimeout, config.GetStepTimeout())
+	assert.Equal(t, defaultOfflineRequestWindowTimeout, config.GetOfflineRequestWindowTimeout())
 }
 
 func TestNewShutDownConfigBuilder(t *testing.T) {
 	config := NewShutDownConfigBuilder().
 		SetTimeout("10s").
 		SetStepTimeout("15s").
+		SetOfflineRequestWindowTimeout("13s").
 		SetRejectRequestHandler("handler").
 		SetRejectRequest(true).
 		SetInternalSignal(true).
@@ -68,6 +79,8 @@ func TestNewShutDownConfigBuilder(t *testing.T) {
 	stepTimeout := config.GetStepTimeout()
 	assert.Equal(t, stepTimeout, 15*time.Second)
 
+	offlineRequestWindowTimeout := config.GetOfflineRequestWindowTimeout()
+	assert.Equal(t, offlineRequestWindowTimeout, 13*time.Second)
 	err := config.Init()
 	assert.NoError(t, err)
 
