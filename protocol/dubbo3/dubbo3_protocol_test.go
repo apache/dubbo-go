@@ -57,10 +57,10 @@ func TestDubboProtocolExport(t *testing.T) {
 	eq := exporter.GetInvoker().GetURL().URLEqual(url)
 	assert.True(t, eq)
 
-	// make sure exporterMap after 'Unexport'
+	// make sure exporterMap after 'UnExport'
 	_, ok := proto.(*DubboProtocol).ExporterMap().Load(url.ServiceKey())
 	assert.True(t, ok)
-	exporter.Unexport()
+	exporter.UnExport()
 	_, ok = proto.(*DubboProtocol).ExporterMap().Load(url.ServiceKey())
 	assert.False(t, ok)
 
@@ -144,7 +144,7 @@ func TestDubbo3UnaryService_GetReqParamsInterfaces(t *testing.T) {
 
 func subTest(t *testing.T, val, paramsInterfaces interface{}) {
 	list := paramsInterfaces.([]interface{})
-	for k, _ := range list {
+	for k := range list {
 		err := hessian.ReflectResponse(val, list[k])
 		assert.Nil(t, err)
 	}

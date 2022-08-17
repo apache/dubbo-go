@@ -36,7 +36,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
-	invocation_impl "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
@@ -84,7 +84,7 @@ func (di *DubboInvoker) getClient() *remoting.ExchangeClient {
 }
 
 // Invoke call remoting.
-func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
+func (di *DubboInvoker) Invoke(ctx context.Context, ivc protocol.Invocation) protocol.Result {
 	var (
 		err    error
 		result protocol.RPCResult
@@ -114,7 +114,7 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 		return &result
 	}
 
-	inv := invocation.(*invocation_impl.RPCInvocation)
+	inv := ivc.(*invocation.RPCInvocation)
 	// init param
 	inv.SetAttachment(constant.PathKey, di.GetURL().GetParam(constant.InterfaceKey, ""))
 	for _, k := range attachmentKey {
@@ -142,15 +142,15 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 	timeout := di.getTimeout(inv)
 	if async {
 		if callBack, ok := inv.CallBack().(func(response common.CallbackResponse)); ok {
-			result.Err = di.client.AsyncRequest(&invocation, url, timeout, callBack, rest)
+			result.Err = di.client.AsyncRequest(&ivc, url, timeout, callBack, rest)
 		} else {
-			result.Err = di.client.Send(&invocation, url, timeout)
+			result.Err = di.client.Send(&ivc, url, timeout)
 		}
 	} else {
 		if inv.Reply() == nil {
 			result.Err = protocol.ErrNoReply
 		} else {
-			result.Err = di.client.Request(&invocation, url, timeout, rest)
+			result.Err = di.client.Request(&ivc, url, timeout, rest)
 		}
 	}
 	if result.Err == nil {
@@ -162,21 +162,21 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 }
 
 // get timeout including methodConfig
-func (di *DubboInvoker) getTimeout(invocation *invocation_impl.RPCInvocation) time.Duration {
-	methodName := invocation.MethodName()
+func (di *DubboInvoker) getTimeout(ivc *invocation.RPCInvocation) time.Duration {
+	methodName := ivc.MethodName()
 	if di.GetURL().GetParamBool(constant.GenericKey, false) {
-		methodName = invocation.Arguments()[0].(string)
+		methodName = ivc.Arguments()[0].(string)
 	}
 	timeout := di.GetURL().GetParam(strings.Join([]string{constant.MethodKeys, methodName, constant.TimeoutKey}, "."), "")
 	if len(timeout) != 0 {
 		if t, err := time.ParseDuration(timeout); err == nil {
 			// config timeout into attachment
-			invocation.SetAttachment(constant.TimeoutKey, strconv.Itoa(int(t.Milliseconds())))
+			ivc.SetAttachment(constant.TimeoutKey, strconv.Itoa(int(t.Milliseconds())))
 			return t
 		}
 	}
 	// set timeout into invocation at method level
-	invocation.SetAttachment(constant.TimeoutKey, strconv.Itoa(int(di.timeout.Milliseconds())))
+	ivc.SetAttachment(constant.TimeoutKey, strconv.Itoa(int(di.timeout.Milliseconds())))
 	return di.timeout
 }
 
@@ -207,11 +207,11 @@ func (di *DubboInvoker) Destroy() {
 
 // Finally, I made the decision that I don't provide a general way to transfer the whole context
 // because it could be misused. If the context contains to many key-value pairs, the performance will be much lower.
-func (di *DubboInvoker) appendCtx(ctx context.Context, inv *invocation_impl.RPCInvocation) {
+func (di *DubboInvoker) appendCtx(ctx context.Context, ivc *invocation.RPCInvocation) {
 	// inject opentracing ctx
 	currentSpan := opentracing.SpanFromContext(ctx)
 	if currentSpan != nil {
-		err := injectTraceCtx(currentSpan, inv)
+		err := injectTraceCtx(currentSpan, ivc)
 		if err != nil {
 			logger.Errorf("Could not inject the span context into attachments: %v", err)
 		}

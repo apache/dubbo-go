@@ -19,30 +19,23 @@ package zookeeper
 
 import (
 	"context"
-	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
-	"dubbo.apache.org/dubbo-go/v3/registry"
-	"dubbo.apache.org/dubbo-go/v3/registry/event"
-	"dubbo.apache.org/dubbo-go/v3/remoting/nacos"
-	"fmt"
-	gxset "github.com/dubbogo/gost/container/set"
-	"github.com/nacos-group/nacos-sdk-go/model"
-	"github.com/nacos-group/nacos-sdk-go/vo"
-	perrors "github.com/pkg/errors"
 	"sync"
 	"testing"
 )
 
 import (
+	"github.com/nacos-group/nacos-sdk-go/model"
+	"github.com/nacos-group/nacos-sdk-go/vo"
+
 	"github.com/stretchr/testify/assert"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/registry"
 )
-
-const testName = "test"
 
 func Test_newZookeeperServiceDiscovery(t *testing.T) {
 	url, _ := common.NewURL("dubbo://127.0.0.1:2181",
@@ -53,92 +46,9 @@ func Test_newZookeeperServiceDiscovery(t *testing.T) {
 	assert.Nil(t, err)
 
 }
-
-func TestFunction(t *testing.T) {
-
-	extension.SetProtocol("mock", func() protocol.Protocol {
-		return &mockProtocol{}
-	})
-
-	url, _ := common.NewURL("dubbo://127.0.0.1:8848")
-	sd, _ := newMockNacosServiceDiscovery(url)
-	defer func() {
-		_ = sd.Destroy()
-	}()
-
-	ins := &registry.DefaultServiceInstance{
-		ID:          "testID",
-		ServiceName: testName,
-		Host:        "127.0.0.1",
-		Port:        2233,
-		Enable:      true,
-		Healthy:     true,
-		Metadata:    nil,
-	}
-	ins.Metadata = map[string]string{"t1": "test12", constant.MetadataServiceURLParamsPropertyName: `{"protocol":"mock","timeout":"10000","version":"1.0.0","dubbo":"2.0.2","release":"2.7.6","port":"2233"}`}
-	err := sd.Register(ins)
-	assert.Nil(t, err)
-
-	wg := &sync.WaitGroup{}
-	wg.Add(1)
-	tn := &testNotify{
-		wg: wg,
-		t:  t,
-	}
-	hs := gxset.NewSet()
-	hs.Add(testName)
-
-	sicl := event.NewServiceInstancesChangedListener(hs)
-	sicl.AddListenerAndNotify(testName, tn)
-	err = sd.AddListener(sicl)
-	assert.NoError(t, err)
-
-	ins = &registry.DefaultServiceInstance{
-		ID:          "testID",
-		ServiceName: testName,
-		Host:        "127.0.0.1",
-		Port:        2233,
-		Enable:      true,
-		Healthy:     true,
-		Metadata:    nil,
-	}
-	ins.Metadata = map[string]string{"t1": "test12", constant.MetadataServiceURLParamsPropertyName: `{"protocol":"mock","timeout":"10000","version":"1.0.0","dubbo":"2.0.2","release":"2.7.6","port":"2233"}`}
-	err = sd.Update(ins)
-	assert.NoError(t, err)
-	err = sd.Unregister(ins)
-	assert.Nil(t, err)
-}
-
-func newMockNacosServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, error) {
-	discoveryURL := common.NewURLWithOptions(
-		common.WithParams(url.GetParams()),
-		common.WithParamsValue(constant.TimeoutKey, url.GetParam(constant.RegistryTimeoutKey, constant.DefaultRegTimeout)),
-		common.WithParamsValue(constant.NacosGroupKey, url.GetParam(constant.RegistryGroupKey, defaultGroup)),
-		common.WithParamsValue(constant.NacosUsername, url.Username),
-		common.WithParamsValue(constant.NacosPassword, url.Password),
-		common.WithParamsValue(constant.ClientNameKey, "nacos-client"),
-		common.WithParamsValue(constant.NacosNamespaceID, url.GetParam(constant.RegistryNamespaceKey, "")))
-	discoveryURL.Location = url.Location
-	discoveryURL.Username = url.Username
-	discoveryURL.Password = url.Password
-	client, err := nacos.NewNacosClientByURL(discoveryURL)
-	mc := mockClient{}
-	client.SetClient(mc)
-	if err != nil {
-		return nil, perrors.WithMessage(err, "create nacos namingClient failed.")
-	}
-
-	descriptor := fmt.Sprintf("zk-service-discovery[%s]", discoveryURL.Location)
-
-	group := url.GetParam(constant.RegistryGroupKey, defaultGroup)
-	newInstance := &nacosServiceDiscovery{
-		group:               group,
-		namingClient:        client,
-		descriptor:          descriptor,
-		registryInstances:   []registry.ServiceInstance{},
-		instanceListenerMap: make(map[string]*gxset.HashSet),
-	}
-	return newInstance, nil
+func Test_zookeeperServiceDiscovery_DataChange(t *testing.T) {
+	serviceDiscovery := &zookeeperServiceDiscovery{}
+	assert.Equal(t, registry.DefaultPageSize, serviceDiscovery.GetDefaultPageSize())
 }
 
 type testNotify struct {
@@ -147,7 +57,7 @@ type testNotify struct {
 }
 
 func (tn *testNotify) Notify(e *registry.ServiceEvent) {
-	assert.Equal(tn.t, "2233", e.Service.Port)
+	assert.Equal(tn.t, "2181", e.Service.Port)
 	tn.wg.Done()
 }
 

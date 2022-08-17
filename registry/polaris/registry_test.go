@@ -1,11 +1,17 @@
 package polaris
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common"
-	"github.com/polarismesh/polaris-go/api"
 	"reflect"
 	"sync"
 	"testing"
+)
+
+import (
+	"github.com/polarismesh/polaris-go/api"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 )
 
 func Test_createDeregisterParam(t *testing.T) {

@@ -239,7 +239,7 @@ func (sd *ServiceDiscovery) ListenServiceEvent(name string, listener remoting.Da
 	sd.listener.ListenServiceEvent(nil, sd.pathForName(name), listener)
 }
 
-// ListenServiceInstanceEvent add a listener in a instance
+// ListenServiceInstanceEvent add a listener in an instance
 func (sd *ServiceDiscovery) ListenServiceInstanceEvent(name, id string, listener remoting.DataListener) {
 	sd.listener.ListenServiceNodeEvent(sd.pathForInstance(name, id), listener)
 }

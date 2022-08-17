@@ -63,7 +63,7 @@ func TestZoneWareInvokerWithPreferredSuccess(t *testing.T) {
 			invoker.EXPECT().Invoke(gomock.Any()).DoAndReturn(
 				func(invocation protocol.Invocation) protocol.Result {
 					return mockResult
-				})
+				}).AnyTimes()
 		} else {
 			invoker.EXPECT().Invoke(gomock.Any()).DoAndReturn(
 				func(invocation protocol.Invocation) protocol.Result {

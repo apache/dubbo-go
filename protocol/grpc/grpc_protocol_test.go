@@ -83,10 +83,10 @@ func TestGrpcProtocolExport(t *testing.T) {
 	eq := exporter.GetInvoker().GetURL().URLEqual(url)
 	assert.True(t, eq)
 
-	// make sure exporterMap after 'Unexport'
+	// make sure exporterMap after 'UnExport'
 	_, ok := proto.(*GrpcProtocol).ExporterMap().Load(url.ServiceKey())
 	assert.True(t, ok)
-	exporter.Unexport()
+	exporter.UnExport()
 	_, ok = proto.(*GrpcProtocol).ExporterMap().Load(url.ServiceKey())
 	assert.False(t, ok)
 
