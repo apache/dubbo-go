@@ -60,7 +60,7 @@ type ReferenceConfig struct {
 	Group            string            `yaml:"group"  json:"group,omitempty" property:"group"`
 	Version          string            `yaml:"version"  json:"version,omitempty" property:"version"`
 	Serialization    string            `yaml:"serialization" json:"serialization" property:"serialization"`
-	ProvidedBy       string            `yaml:"provided-by"  json:"provided-by,omitempty" property:"provided-by"`
+	ProvidedBy       string            `yaml:"provided_by"  json:"provided_by,omitempty" property:"provided_by"`
 	Methods          []*MethodConfig   `yaml:"methods"  json:"methods,omitempty" property:"methods"`
 	Async            bool              `yaml:"async"  json:"async,omitempty" property:"async"`
 	Params           map[string]string `yaml:"params"  json:"params,omitempty" property:"params"`
