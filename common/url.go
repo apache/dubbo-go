@@ -529,7 +529,7 @@ func (c *URL) GetParam(s string, d string) string {
 	return r
 }
 
-// GetParamNoDefault gets value by key
+// GetParamNoDefault gets value by key, return nil,false if no value found mapping to the key
 func (c *URL) GetParamNoDefault(s string) (string, bool) {
 	c.paramsLock.RLock()
 	defer c.paramsLock.RUnlock()
