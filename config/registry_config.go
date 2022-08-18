@@ -55,7 +55,6 @@ type RegistryConfig struct {
 	Weight       int64             `yaml:"weight" json:"weight,omitempty" property:"weight"`          // Affects traffic distribution among registriesConfig, useful when subscribe to multiple registriesConfig Take effect only when no preferred registry is specified.
 	Params       map[string]string `yaml:"params" json:"params,omitempty" property:"params"`
 	RegistryType string            `yaml:"registry-type"`
-	RegisterMode string            `yaml:"register-mode" json:"register-mode,omitempty" property:"register-mode"`
 }
 
 // Prefix dubbo.registries

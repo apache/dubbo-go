@@ -62,10 +62,6 @@ const (
 	MaxServerSendMsgSize   = "max-server-send-msg-size"
 	MaxCallRecvMsgSize     = "max-call-recv-msg-size"
 	MaxServerRecvMsgSize   = "max-server-recv-msg-size"
-	RegisterModeKey        = "register-mode"
-	RegisterModeInstance   = "instance"
-	RegisterModeInterface  = "interface"
-	RegisterModeAll        = "all"
 )
 
 const (
