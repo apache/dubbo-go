@@ -147,6 +147,7 @@ func (d *DefaultServiceInstance) ToURLs() []*common.URL {
 	for _, service := range d.ServiceMetadata.Services {
 		url := common.NewURLWithOptions(common.WithProtocol(service.Protocol),
 			common.WithIp(d.Host), common.WithPort(strconv.Itoa(d.Port)),
+			common.WithPath(service.Name), common.WithInterface(service.Name),
 			common.WithMethods(service.GetMethods()), common.WithParams(service.GetParams()))
 		urls = append(urls, url)
 	}

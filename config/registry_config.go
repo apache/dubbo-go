@@ -55,6 +55,7 @@ type RegistryConfig struct {
 	Weight       int64             `yaml:"weight" json:"weight,omitempty" property:"weight"`          // Affects traffic distribution among registriesConfig, useful when subscribe to multiple registriesConfig Take effect only when no preferred registry is specified.
 	Params       map[string]string `yaml:"params" json:"params,omitempty" property:"params"`
 	RegistryType string            `yaml:"registry-type"`
+	RegisterMode string            `yaml:"register-mode" json:"register-mode,omitempty" property:"register-mode"`
 }
 
 // Prefix dubbo.registries
@@ -152,10 +153,128 @@ func (c *RegistryConfig) toURL(roleType common.RoleType) (*common.URL, error) {
 	if c.RegistryType == "service" {
 		// service discovery protocol
 		registryURLProtocol = constant.ServiceRegistryProtocol
-	} else {
+	} else if c.RegistryType == "interface" {
 		registryURLProtocol = constant.RegistryProtocol
+	} else {
+		registryURLProtocol = constant.ServiceRegistryProtocol
 	}
 	return common.NewURL(registryURLProtocol+"://"+address,
+		common.WithParams(c.getUrlMap(roleType)),
+		common.WithParamsValue(constant.RegistrySimplifiedKey, strconv.FormatBool(c.Simplified)),
+		common.WithParamsValue(constant.RegistryKey, c.Protocol),
+		common.WithParamsValue(constant.RegistryNamespaceKey, c.Namespace),
+		common.WithParamsValue(constant.RegistryTimeoutKey, c.Timeout),
+		common.WithUsername(c.Username),
+		common.WithPassword(c.Password),
+		common.WithLocation(c.Address),
+	)
+}
+
+func (c *RegistryConfig) toURLs(roleType common.RoleType) ([]*common.URL, error) {
+	address := c.translateRegistryAddress()
+	var urls []*common.URL
+	var err error
+	if c.RegistryType == "service" {
+		// service discovery protocol
+		if registryURL, err := c.createNewURL(constant.ServiceRegistryProtocol, address, roleType); err == nil {
+			urls = append(urls, registryURL)
+		}
+	} else if c.RegistryType == "interface" {
+		if registryURL, err := c.createNewURL(constant.RegistryProtocol, address, roleType); err == nil {
+			urls = append(urls, registryURL)
+		}
+	} else if c.RegistryType == "all" {
+		if registryURL, err := c.createNewURL(constant.ServiceRegistryProtocol, address, roleType); err == nil {
+			urls = append(urls, registryURL)
+		}
+		if registryURL, err := c.createNewURL(constant.RegistryProtocol, address, roleType); err == nil {
+			urls = append(urls, registryURL)
+		}
+	} else {
+		if registryURL, err := c.createNewURL(constant.ServiceRegistryProtocol, address, roleType); err == nil {
+			urls = append(urls, registryURL)
+		}
+	}
+	return urls, err
+}
+
+func loadRegistries(registryIds []string, registries map[string]*RegistryConfig, roleType common.RoleType) []*common.URL {
+	var registryURLs []*common.URL
+	//trSlice := strings.Split(targetRegistries, ",")
+
+	for k, registryConf := range registries {
+		target := false
+
+		// if user not config targetRegistries, default load all
+		// Notice: in func "func Split(s, sep string) []string" comment:
+		// if s does not contain sep and sep is not empty, SplitAfter returns
+		// a slice of length 1 whose only element is s. So we have to add the
+		// condition when targetRegistries string is not set (it will be "" when not set)
+		if len(registryIds) == 0 || (len(registryIds) == 1 && registryIds[0] == "") {
+			target = true
+		} else {
+			// else if user config targetRegistries
+			for _, tr := range registryIds {
+				if tr == k {
+					target = true
+					break
+				}
+			}
+		}
+
+		if target {
+			if urls, err := registryConf.toURLs(roleType); err != nil {
+				logger.Errorf("The registry id: %s url is invalid, error: %#v", k, err)
+				panic(err)
+			} else {
+				registryURLs = append(registryURLs, urls...)
+			}
+		}
+	}
+
+	//if roleType == common.PROVIDER {
+	//	registryURLs = genCompatibleRegistries(registryURLs)
+	//}
+
+	return registryURLs
+}
+
+//// GenCompatibleRegistries check register-mode to see if we need to do double registration for migration or compatibility reasons,
+//// if so, generate registry url of that kind.
+//func genCompatibleRegistries(registryURLs []*common.URL) []*common.URL {
+//	var res []*common.URL
+//	for _, registryURL := range registryURLs {
+//		if registryURL.Protocol == constant.ServiceRegistryProtocol {
+//			// check and generate 'registry://' url
+//			registerMode := registryURL.GetParam(constant.RegisterModeKey, constant.RegisterModeInstance)
+//			res = append(res, registryURL)
+//			if registerMode == constant.RegisterModeAll {
+//				if compatibleURL, err := createNewURL(constant.RegistryProtocol, registryURL); err != nil {
+//					res = append(res, compatibleURL)
+//				}
+//			}
+//		} else {
+//			// check and generate 'service-discovery-registry://' url
+//			registerMode := registryURL.GetParam(constant.RegisterModeKey, constant.RegisterModeInstance)
+//
+//			if registerMode == constant.RegisterModeAll || registerMode == constant.RegisterModeInstance {
+//				if compatibleURL, err := createNewURL(constant.ServiceRegistryProtocol, registryURL); err == nil {
+//					res = append(res, compatibleURL)
+//				} else {
+//					panic(fmt.Sprintf("Error generate compatible service discovery registry url, original url is %v, error is %#v", registryURL, err))
+//				}
+//			}
+//
+//			if registerMode == constant.RegisterModeAll || registerMode == constant.RegisterModeInterface {
+//				res = append(res, registryURL)
+//			}
+//		}
+//	}
+//	return res
+//}
+
+func (c *RegistryConfig) createNewURL(protocol string, address string, roleType common.RoleType) (*common.URL, error) {
+	return common.NewURL(protocol+"://"+address,
 		common.WithParams(c.getUrlMap(roleType)),
 		common.WithParamsValue(constant.RegistrySimplifiedKey, strconv.FormatBool(c.Simplified)),
 		common.WithParamsValue(constant.RegistryKey, c.Protocol),

@@ -350,43 +350,6 @@ func loadProtocol(protocolIds []string, protocols map[string]*ProtocolConfig) []
 	return returnProtocols
 }
 
-func loadRegistries(registryIds []string, registries map[string]*RegistryConfig, roleType common.RoleType) []*common.URL {
-	var registryURLs []*common.URL
-	//trSlice := strings.Split(targetRegistries, ",")
-
-	for k, registryConf := range registries {
-		target := false
-
-		// if user not config targetRegistries, default load all
-		// Notice: in func "func Split(s, sep string) []string" comment:
-		// if s does not contain sep and sep is not empty, SplitAfter returns
-		// a slice of length 1 whose only element is s. So we have to add the
-		// condition when targetRegistries string is not set (it will be "" when not set)
-		if len(registryIds) == 0 || (len(registryIds) == 1 && registryIds[0] == "") {
-			target = true
-		} else {
-			// else if user config targetRegistries
-			for _, tr := range registryIds {
-				if tr == k {
-					target = true
-					break
-				}
-			}
-		}
-
-		if target {
-			if registryURL, err := registryConf.toURL(roleType); err != nil {
-				logger.Errorf("The registry id: %s url is invalid, error: %#v", k, err)
-				panic(err)
-			} else {
-				registryURLs = append(registryURLs, registryURL)
-			}
-		}
-	}
-
-	return registryURLs
-}
-
 // Unexport will call unexport of all exporters service config exported
 func (s *ServiceConfig) Unexport() {
 	if !s.exported.Load() {

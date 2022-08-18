@@ -205,7 +205,7 @@ func (si *ServiceInfo) GetMethods() []string {
 		s := si.Params[constant.MethodsKey]
 		return strings.Split(s, ",")
 	}
-	methods := make([]string, 8)
+	methods := make([]string, 0)
 	for k, _ := range si.Params {
 		ms := strings.Index(k, ".")
 		if ms > 0 {

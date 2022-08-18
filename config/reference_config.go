@@ -19,7 +19,9 @@ package config
 
 import (
 	"fmt"
+	constant2 "github.com/dubbogo/triple/pkg/common/constant"
 	"net/url"
+	"os"
 	"strconv"
 	"time"
 )
@@ -27,6 +29,7 @@ import (
 import (
 	"github.com/creasty/defaults"
 
+	"github.com/dubbogo/gost/log/logger"
 	gxstrings "github.com/dubbogo/gost/strings"
 )
 
@@ -43,34 +46,34 @@ import (
 
 // ReferenceConfig is the configuration of service consumer
 type ReferenceConfig struct {
-	pxy            *proxy.Proxy
-	id             string
-	InterfaceName  string            `yaml:"interface"  json:"interface,omitempty" property:"interface"`
-	Check          *bool             `yaml:"check"  json:"check,omitempty" property:"check"`
-	URL            string            `yaml:"url"  json:"url,omitempty" property:"url"`
-	Filter         string            `yaml:"filter" json:"filter,omitempty" property:"filter"`
-	Protocol       string            `yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
-	RegistryIDs    []string          `yaml:"registry-ids"  json:"registry-ids,omitempty"  property:"registry-ids"`
-	Cluster        string            `yaml:"cluster"  json:"cluster,omitempty" property:"cluster"`
-	Loadbalance    string            `yaml:"loadbalance"  json:"loadbalance,omitempty" property:"loadbalance"`
-	Retries        string            `yaml:"retries"  json:"retries,omitempty" property:"retries"`
-	Group          string            `yaml:"group"  json:"group,omitempty" property:"group"`
-	Version        string            `yaml:"version"  json:"version,omitempty" property:"version"`
-	Serialization  string            `yaml:"serialization" json:"serialization" property:"serialization"`
-	ProvidedBy     string            `yaml:"provided_by"  json:"provided_by,omitempty" property:"provided_by"`
-	Methods        []*MethodConfig   `yaml:"methods"  json:"methods,omitempty" property:"methods"`
-	Async          bool              `yaml:"async"  json:"async,omitempty" property:"async"`
-	Params         map[string]string `yaml:"params"  json:"params,omitempty" property:"params"`
-	invoker        protocol.Invoker
-	urls           []*common.URL
-	Generic        string `yaml:"generic"  json:"generic,omitempty" property:"generic"`
-	Sticky         bool   `yaml:"sticky"   json:"sticky,omitempty" property:"sticky"`
-	RequestTimeout string `yaml:"timeout"  json:"timeout,omitempty" property:"timeout"`
-	ForceTag       bool   `yaml:"force.tag"  json:"force.tag,omitempty" property:"force.tag"`
-	TracingKey     string `yaml:"tracing-key" json:"tracing-key,omitempty" propertiy:"tracing-key"`
-
-	rootConfig   *RootConfig
-	metaDataType string
+	pxy              *proxy.Proxy
+	id               string
+	InterfaceName    string            `yaml:"interface"  json:"interface,omitempty" property:"interface"`
+	Check            *bool             `yaml:"check"  json:"check,omitempty" property:"check"`
+	URL              string            `yaml:"url"  json:"url,omitempty" property:"url"`
+	Filter           string            `yaml:"filter" json:"filter,omitempty" property:"filter"`
+	Protocol         string            `yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
+	RegistryIDs      []string          `yaml:"registry-ids"  json:"registry-ids,omitempty"  property:"registry-ids"`
+	Cluster          string            `yaml:"cluster"  json:"cluster,omitempty" property:"cluster"`
+	Loadbalance      string            `yaml:"loadbalance"  json:"loadbalance,omitempty" property:"loadbalance"`
+	Retries          string            `yaml:"retries"  json:"retries,omitempty" property:"retries"`
+	Group            string            `yaml:"group"  json:"group,omitempty" property:"group"`
+	Version          string            `yaml:"version"  json:"version,omitempty" property:"version"`
+	Serialization    string            `yaml:"serialization" json:"serialization" property:"serialization"`
+	ProvidedBy       string            `yaml:"provided-by"  json:"provided-by,omitempty" property:"provided-by"`
+	Methods          []*MethodConfig   `yaml:"methods"  json:"methods,omitempty" property:"methods"`
+	Async            bool              `yaml:"async"  json:"async,omitempty" property:"async"`
+	Params           map[string]string `yaml:"params"  json:"params,omitempty" property:"params"`
+	invoker          protocol.Invoker
+	urls             []*common.URL
+	Generic          string `yaml:"generic"  json:"generic,omitempty" property:"generic"`
+	Sticky           bool   `yaml:"sticky"   json:"sticky,omitempty" property:"sticky"`
+	RequestTimeout   string `yaml:"timeout"  json:"timeout,omitempty" property:"timeout"`
+	ForceTag         bool   `yaml:"force.tag"  json:"force.tag,omitempty" property:"force.tag"`
+	TracingKey       string `yaml:"tracing-key" json:"tracing-key,omitempty" propertiy:"tracing-key"`
+	rootConfig       *RootConfig
+	metaDataType     string
+	MeshProviderPort int `yaml:"mesh-provider-port" json:"mesh-provider-port,omitempty" propertiy:"mesh-provider-port"`
 }
 
 func (rc *ReferenceConfig) Prefix() string {
@@ -120,6 +123,41 @@ func (rc *ReferenceConfig) Init(root *RootConfig) error {
 	return verify(rc)
 }
 
+func getEnv(key, fallback string) string {
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
+	return fallback
+}
+
+func updateOrCreateMeshURL(rc *ReferenceConfig) {
+	if rc.URL != "" {
+		logger.Infof("URL specified explicitly %v", rc.URL)
+	}
+
+	if !rc.rootConfig.Consumer.MeshEnabled {
+		return
+	}
+	if rc.Protocol != constant2.TRIPLE {
+		panic(fmt.Sprintf("Mesh mode enabled, Triple protocol expected but %v protocol found!", rc.Protocol))
+	}
+	if rc.ProvidedBy == "" {
+		panic(fmt.Sprintf("Mesh mode enabled, provided-by should not be empty!"))
+	}
+
+	podNamespace := getEnv(constant.PodNamespaceEnvKey, constant.DefaultNamespace)
+	clusterDomain := getEnv(constant.ClusterDomainKey, constant.DefaultClusterDomain)
+
+	var meshPort int
+	if rc.MeshProviderPort > 0 {
+		meshPort = rc.MeshProviderPort
+	} else {
+		meshPort = constant.DefaultMeshPort
+	}
+
+	rc.URL = "tri://" + rc.ProvidedBy + "." + podNamespace + constant.SVC + clusterDomain + ":" + strconv.Itoa(meshPort)
+}
+
 // Refer retrieves invokers from urls.
 func (rc *ReferenceConfig) Refer(srv interface{}) {
 	// If adaptive service is enabled,
@@ -143,6 +181,9 @@ func (rc *ReferenceConfig) Refer(srv interface{}) {
 		cfgURL.AddParam(constant.ForceUseTag, "true")
 	}
 	rc.postProcessConfig(cfgURL)
+
+	// if mesh-enabled is set
+	updateOrCreateMeshURL(rc)
 
 	// retrieving urls from config, and appending the urls to rc.urls
 	if rc.URL != "" { // use user-specific urls
@@ -173,6 +214,7 @@ func (rc *ReferenceConfig) Refer(srv interface{}) {
 				// replace params of serviceURL with params of cfgUrl
 				// other stuff, e.g. IP, port, etc., are same as serviceURL
 				newURL := common.MergeURL(serviceURL, cfgURL)
+				newURL.AddParam("peer", "true")
 				rc.urls = append(rc.urls, newURL)
 			}
 		}
