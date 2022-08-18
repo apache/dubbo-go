@@ -727,7 +727,7 @@ func MergeURL(serviceURL *URL, referenceURL *URL) *URL {
 	// iterator the referenceURL if serviceURL not have the key ,merge in
 	// referenceURL usually will not changed. so change RangeParams to GetParams to avoid the string value copy.// Group get group
 	for key, value := range referenceURL.GetParams() {
-		if _, ok := mergedURL.GetParamNoDefault(key); ok {
+		if _, ok := mergedURL.GetParamNoDefault(key); !ok {
 			if len(value) > 0 {
 				params[key] = value
 			}
@@ -738,7 +738,7 @@ func MergeURL(serviceURL *URL, referenceURL *URL) *URL {
 	methodConfigMergeFcn := mergeNormalParam(params, referenceURL, []string{constant.LoadbalanceKey, constant.ClusterKey, constant.RetriesKey, constant.TimeoutKey})
 
 	// remote timestamp
-	if v, ok := serviceURL.GetParamNoDefault(constant.TimestampKey); ok {
+	if v, ok := serviceURL.GetParamNoDefault(constant.TimestampKey); !ok {
 		params[constant.RemoteTimestampKey] = []string{v}
 		params[constant.TimestampKey] = []string{referenceURL.GetParam(constant.TimestampKey, "")}
 	}
