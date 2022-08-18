@@ -193,9 +193,6 @@ func WithPath(path string) Option {
 // WithInterface sets interface param for URL
 func WithInterface(v string) Option {
 	return func(url *URL) {
-		if url.params == nil {
-
-		}
 		url.SetParam(constant.InterfaceKey, v)
 	}
 }
