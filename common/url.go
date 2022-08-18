@@ -301,6 +301,7 @@ func (c *URL) Version() string {
 	return c.GetParam(constant.VersionKey, "")
 }
 
+// Address with format "ip:port"
 func (c *URL) Address() string {
 	if c.Port == "" {
 		return c.Ip
