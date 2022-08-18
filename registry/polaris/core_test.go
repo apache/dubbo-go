@@ -25,7 +25,7 @@ func TestPolarisServiceWatcher_AddSubscriber(t *testing.T) {
 		consumer       api.ConsumerAPI
 		subscribeParam *api.WatchServiceRequest
 		lock           *sync.RWMutex
-		subscribers    []subscriber
+		subscribers    []item
 		execOnce       *sync.Once
 	}
 	type args struct {
@@ -42,7 +42,7 @@ func TestPolarisServiceWatcher_AddSubscriber(t *testing.T) {
 				subscribeParam: &newParam,
 				consumer:       newConsumer,
 				lock:           &sync.RWMutex{},
-				subscribers:    make([]subscriber, 0),
+				subscribers:    make([]item, 0),
 				execOnce:       &sync.Once{},
 			}
 			assert.Empty(t, watcher)
