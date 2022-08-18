@@ -231,46 +231,8 @@ func loadRegistries(registryIds []string, registries map[string]*RegistryConfig,
 		}
 	}
 
-	//if roleType == common.PROVIDER {
-	//	registryURLs = genCompatibleRegistries(registryURLs)
-	//}
-
 	return registryURLs
 }
-
-//// GenCompatibleRegistries check register-mode to see if we need to do double registration for migration or compatibility reasons,
-//// if so, generate registry url of that kind.
-//func genCompatibleRegistries(registryURLs []*common.URL) []*common.URL {
-//	var res []*common.URL
-//	for _, registryURL := range registryURLs {
-//		if registryURL.Protocol == constant.ServiceRegistryProtocol {
-//			// check and generate 'registry://' url
-//			registerMode := registryURL.GetParam(constant.RegisterModeKey, constant.RegisterModeInstance)
-//			res = append(res, registryURL)
-//			if registerMode == constant.RegisterModeAll {
-//				if compatibleURL, err := createNewURL(constant.RegistryProtocol, registryURL); err != nil {
-//					res = append(res, compatibleURL)
-//				}
-//			}
-//		} else {
-//			// check and generate 'service-discovery-registry://' url
-//			registerMode := registryURL.GetParam(constant.RegisterModeKey, constant.RegisterModeInstance)
-//
-//			if registerMode == constant.RegisterModeAll || registerMode == constant.RegisterModeInstance {
-//				if compatibleURL, err := createNewURL(constant.ServiceRegistryProtocol, registryURL); err == nil {
-//					res = append(res, compatibleURL)
-//				} else {
-//					panic(fmt.Sprintf("Error generate compatible service discovery registry url, original url is %v, error is %#v", registryURL, err))
-//				}
-//			}
-//
-//			if registerMode == constant.RegisterModeAll || registerMode == constant.RegisterModeInterface {
-//				res = append(res, registryURL)
-//			}
-//		}
-//	}
-//	return res
-//}
 
 func (c *RegistryConfig) createNewURL(protocol string, address string, roleType common.RoleType) (*common.URL, error) {
 	return common.NewURL(protocol+"://"+address,
