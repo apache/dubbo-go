@@ -51,7 +51,7 @@ type ConsumerConfig struct {
 	References                     map[string]*ReferenceConfig `yaml:"references" json:"references,omitempty" property:"references"`
 	TracingKey                     string                      `yaml:"tracing-key" json:"tracing-key" property:"tracing-key"`
 	FilterConf                     interface{}                 `yaml:"filter-conf" json:"filter-conf,omitempty" property:"filter-conf"`
-	MaxWaitTimeForServiceDiscovery string                      `default:"300s" yaml:"max-wait-time-for-service-discovery" json:"max-wait-time-for-service-discovery,omitempty" property:"max-wait-time-for-service-discovery"`
+	MaxWaitTimeForServiceDiscovery string                      `default:"3s" yaml:"max-wait-time-for-service-discovery" json:"max-wait-time-for-service-discovery,omitempty" property:"max-wait-time-for-service-discovery"`
 	MeshEnabled                    bool                        `yaml:"mesh-enabled" json:"mesh-enabled,omitempty" property:"mesh-enabled"`
 	rootConfig                     *RootConfig
 }
@@ -137,7 +137,7 @@ func (cc *ConsumerConfig) Load() {
 
 	if maxWaitDuration, err := time.ParseDuration(cc.MaxWaitTimeForServiceDiscovery); err != nil {
 		logger.Warnf("Invalid consumer max wait time for service discovery: %s, fallback to 3s", cc.MaxWaitTimeForServiceDiscovery)
-		maxWait = 300
+		maxWait = 3
 	} else {
 		maxWait = int(maxWaitDuration.Seconds())
 	}
