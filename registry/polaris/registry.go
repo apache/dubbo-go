@@ -150,8 +150,11 @@ func (pr *polarisRegistry) UnRegister(conf *common.URL) error {
 
 // Subscribe returns nil if subscribing registry successfully. If not returns an error.
 func (pr *polarisRegistry) Subscribe(url *common.URL, notifyListener registry.NotifyListener) error {
-	var newParam api.WatchServiceRequest
-	var newConsumer api.ConsumerAPI
+	var (
+		newParam    api.WatchServiceRequest
+		newConsumer api.ConsumerAPI
+	)
+
 	role, _ := strconv.Atoi(url.GetParam(constant.RegistryRoleKey, ""))
 	if role != common.CONSUMER {
 		return nil

@@ -66,7 +66,7 @@ type ShutdownConfig struct {
 	// when we try to shutdown the applicationConfig, we will reject the new requests. In most cases, you don't need to configure this.
 	RejectRequestHandler string `yaml:"reject-handler" json:"reject-handler,omitempty" property:"reject_handler"`
 	// internal listen kill signal，the default is true.
-	InternalSignal bool `default:"true" yaml:"internal-signal" json:"internal.signal,omitempty" property:"internal.signal"`
+	InternalSignal *bool `default:"true" yaml:"internal-signal" json:"internal.signal,omitempty" property:"internal.signal"`
 	// offline request window length
 	OfflineRequestWindowTimeout string `yaml:"offline-request-window-timeout" json:"offlineRequestWindowTimeout,omitempty" property:"offlineRequestWindowTimeout"`
 	// true -> new request will be rejected.
@@ -124,6 +124,13 @@ func (config *ShutdownConfig) GetConsumerUpdateWaitTime() time.Duration {
 	return result
 }
 
+func (config *ShutdownConfig) GetInternalSignal() bool {
+	if config.InternalSignal == nil {
+		return false
+	}
+	return *config.InternalSignal
+}
+
 func (config *ShutdownConfig) Init() error {
 	return defaults.Set(config)
 }
@@ -157,12 +164,12 @@ func (scb *ShutdownConfigBuilder) SetRejectRequest(rejectRequest bool) *Shutdown
 }
 
 func (scb *ShutdownConfigBuilder) SetInternalSignal(internalSignal bool) *ShutdownConfigBuilder {
-	scb.shutdownConfig.InternalSignal = internalSignal
+	scb.shutdownConfig.InternalSignal = &internalSignal
 	return scb
 }
 
 func (scb *ShutdownConfigBuilder) Build() *ShutdownConfig {
-	defaults.Set(scb)
+	defaults.MustSet(scb.shutdownConfig)
 	return scb.shutdownConfig
 }
 

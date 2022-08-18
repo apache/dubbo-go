@@ -20,6 +20,7 @@ target/
 classes
 
 # go mod, go test
+.go-version
 vendor/
 logs/
 .vscode/

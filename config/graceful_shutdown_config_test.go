@@ -68,7 +68,7 @@ func TestNewShutDownConfigBuilder(t *testing.T) {
 		SetOfflineRequestWindowTimeout("13s").
 		SetRejectRequestHandler("handler").
 		SetRejectRequest(true).
-		SetInternalSignal(true).
+		SetInternalSignal(false).
 		Build()
 
 	assert.Equal(t, config.Prefix(), constant.ShutdownConfigPrefix)
@@ -86,4 +86,18 @@ func TestNewShutDownConfigBuilder(t *testing.T) {
 
 	waitTime := config.GetConsumerUpdateWaitTime()
 	assert.Equal(t, waitTime, 3*time.Second)
+
+	assert.Equal(t, config.GetInternalSignal(), false)
+}
+
+func TestGetInternalSignal(t *testing.T) {
+	config := NewShutDownConfigBuilder().
+		SetTimeout("10s").
+		SetStepTimeout("15s").
+		SetOfflineRequestWindowTimeout("13s").
+		SetRejectRequestHandler("handler").
+		SetRejectRequest(true).
+		Build()
+
+	assert.Equal(t, config.GetInternalSignal(), true)
 }

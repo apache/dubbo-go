@@ -17,6 +17,10 @@ import (
 )
 
 func TestPolarisServiceWatcher_AddSubscriber(t *testing.T) {
+	var (
+		newParam    api.WatchServiceRequest
+		newConsumer api.ConsumerAPI
+	)
 	type fields struct {
 		consumer       api.ConsumerAPI
 		subscribeParam *api.WatchServiceRequest
