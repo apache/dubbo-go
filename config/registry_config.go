@@ -173,24 +173,25 @@ func (c *RegistryConfig) toURLs(roleType common.RoleType) ([]*common.URL, error)
 	address := c.translateRegistryAddress()
 	var urls []*common.URL
 	var err error
+	var registryURL *common.URL
 	if c.RegistryType == "service" {
 		// service discovery protocol
-		if registryURL, err := c.createNewURL(constant.ServiceRegistryProtocol, address, roleType); err == nil {
+		if registryURL, err = c.createNewURL(constant.ServiceRegistryProtocol, address, roleType); err == nil {
 			urls = append(urls, registryURL)
 		}
 	} else if c.RegistryType == "interface" {
-		if registryURL, err := c.createNewURL(constant.RegistryProtocol, address, roleType); err == nil {
+		if registryURL, err = c.createNewURL(constant.RegistryProtocol, address, roleType); err == nil {
 			urls = append(urls, registryURL)
 		}
 	} else if c.RegistryType == "all" {
-		if registryURL, err := c.createNewURL(constant.ServiceRegistryProtocol, address, roleType); err == nil {
+		if registryURL, err = c.createNewURL(constant.ServiceRegistryProtocol, address, roleType); err == nil {
 			urls = append(urls, registryURL)
 		}
-		if registryURL, err := c.createNewURL(constant.RegistryProtocol, address, roleType); err == nil {
+		if registryURL, err = c.createNewURL(constant.RegistryProtocol, address, roleType); err == nil {
 			urls = append(urls, registryURL)
 		}
 	} else {
-		if registryURL, err := c.createNewURL(constant.ServiceRegistryProtocol, address, roleType); err == nil {
+		if registryURL, err = c.createNewURL(constant.ServiceRegistryProtocol, address, roleType); err == nil {
 			urls = append(urls, registryURL)
 		}
 	}
