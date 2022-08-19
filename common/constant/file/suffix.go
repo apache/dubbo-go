@@ -26,3 +26,8 @@ const (
 	YML        = Suffix("yml")
 	PROPERTIES = Suffix("properties")
 )
+
+const (
+	PlaceholderPrefix = "${"
+	PlaceholderSuffix = "}"
+)

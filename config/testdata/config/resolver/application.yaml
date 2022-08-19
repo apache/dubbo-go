@@ -1,0 +1,36 @@
+localhost: 127.0.0.1
+dubbo:
+  application:
+    name: dubbo-go
+    module: local
+    version: 1.0.0
+    owner: zhaoyunxing
+  config-center:
+    address: nacos://127.0.0.1:8848
+    cluster: dev
+    namespace: dubbo
+    log-dir: ./logs
+  protocols:
+    dubbo:
+      name: dubbo
+      ip: ${localhost}
+      port: 20000
+  registries:
+    nacos:
+      timeout: 5s
+      group: ${notexist}
+      address: ${dubbo.config-center.address:nacos://127.0.0.1:8848}
+    zk:
+      protocol: zookeeper
+      group: ${notexist:dev}
+      address: 127.0.0.1:2181
+  services:
+    helloService:
+      interface: org.dubbo.service.HelloService
+      registry-ids: nacos,zk
+    orderService:
+      interface: org.dubbo.service.OrderService
+      registry-ids: nacos
+  provider:
+    register: true
+    services:
