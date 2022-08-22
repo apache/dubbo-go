@@ -171,7 +171,8 @@ func (pr *polarisRegistry) Subscribe(url *common.URL, notifyListener registry.No
 		watcher, err := newPolarisWatcher(&newParam, newConsumer)
 		if err != nil {
 			logger.Warnf("getwatcher() = err:%v", perrors.WithStack(err))
-			<-time.After(time.Duration(RegistryConnDelay) * time.Second)
+			timer := time.NewTimer(time.Duration(RegistryConnDelay) * time.Second)
+			timer.Reset(time.Duration(RegistryConnDelay) * time.Second)
 			continue
 		}
 		for {
