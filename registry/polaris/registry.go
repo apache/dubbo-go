@@ -19,6 +19,7 @@ package polaris
 
 import (
 	"context"
+	"dubbo.apache.org/dubbo-go/v3/remoting"
 	"strconv"
 	"sync"
 	"time"
@@ -70,11 +71,13 @@ func newPolarisRegistry(url *common.URL) (registry.Registry, error) {
 }
 
 type polarisRegistry struct {
+	consumer     api.ConsumerAPI
+	namespace    string
 	url          *common.URL
 	provider     api.ProviderAPI
 	lock         *sync.RWMutex
 	registryUrls map[string]*PolarisHeartbeat
-
+	watchers     map[string]*PolarisServiceWatcher
 	listenerLock *sync.RWMutex
 }
 
@@ -150,10 +153,6 @@ func (pr *polarisRegistry) UnRegister(conf *common.URL) error {
 
 // Subscribe returns nil if subscribing registry successfully. If not returns an error.
 func (pr *polarisRegistry) Subscribe(url *common.URL, notifyListener registry.NotifyListener) error {
-	var (
-		newParam    api.WatchServiceRequest
-		newConsumer api.ConsumerAPI
-	)
 
 	role, _ := strconv.Atoi(url.GetParam(constant.RegistryRoleKey, ""))
 	if role != common.CONSUMER {
@@ -162,21 +161,43 @@ func (pr *polarisRegistry) Subscribe(url *common.URL, notifyListener registry.No
 
 	for {
 		listener, err := NewPolarisListener(url)
+
 		if err != nil {
 			logger.Warnf("getListener() = err:%v", perrors.WithStack(err))
 			<-time.After(time.Duration(RegistryConnDelay) * time.Second)
 			continue
 		}
+		serviceName := getServiceName(url)
+		watcher, err := pr.createPolarisWatcher(serviceName)
+		if err != nil {
+			return err
+		}
 
-		watcher, err := newPolarisWatcher(&newParam, newConsumer)
+		watcher.AddSubscriber(func(et remoting.EventType, instances []model.Instance) {
+			dubboInstances := make([]registry.ServiceInstance, 0, len(instances))
+			for _, instance := range instances {
+				dubboInstances = append(dubboInstances, &registry.DefaultServiceInstance{
+					ID:          instance.GetId(),
+					ServiceName: instance.GetService(),
+					Host:        instance.GetHost(),
+					Port:        int(instance.GetPort()),
+					Enable:      !instance.IsIsolated(),
+					Healthy:     instance.IsHealthy(),
+					Metadata:    instance.GetMetadata(),
+					GroupName:   instance.GetMetadata()[constant.PolarisDubboGroup],
+				})
+			}
+			registry.NewServiceInstancesChangedEvent(serviceName, dubboInstances)
+			listener.Next()
+		})
 		if err != nil {
 			logger.Warnf("getwatcher() = err:%v", perrors.WithStack(err))
 			timer := time.NewTimer(time.Duration(RegistryConnDelay) * time.Second)
 			timer.Reset(time.Duration(RegistryConnDelay) * time.Second)
 			continue
 		}
-		for {
 
+		for {
 			serviceEvent, err := listener.Next()
 
 			if err != nil {
@@ -201,6 +222,30 @@ func (pr *polarisRegistry) UnSubscribe(url *common.URL, notifyListener registry.
 func (pr *polarisRegistry) GetURL() *common.URL {
 	return pr.url
 }
+func (pr *polarisRegistry) createPolarisWatcher(serviceName string) (*PolarisServiceWatcher, error) {
+
+	pr.listenerLock.Lock()
+	defer pr.listenerLock.Unlock()
+
+	if _, exist := pr.watchers[serviceName]; !exist {
+		subscribeParam := &api.WatchServiceRequest{
+			WatchServiceRequest: model.WatchServiceRequest{
+				Key: model.ServiceKey{
+					Namespace: pr.namespace,
+					Service:   serviceName,
+				},
+			},
+		}
+
+		watcher, err := newPolarisWatcher(subscribeParam, pr.consumer)
+		if err != nil {
+			return nil, err
+		}
+		pr.watchers[serviceName] = watcher
+	}
+
+	return pr.watchers[serviceName], nil
+}
 
 // Destroy stop polaris registry.
 func (pr *polarisRegistry) Destroy() {
@@ -221,7 +266,8 @@ func (pr *polarisRegistry) IsAvailable() bool {
 }
 
 // doHeartbeat Since polaris does not support automatic reporting of instance heartbeats, separate logic is
-//  needed to implement it
+//
+//	needed to implement it
 func (pr *polarisRegistry) doHeartbeat(ctx context.Context, ins *api.InstanceRegisterRequest) {
 	ticker := time.NewTicker(time.Duration(4) * time.Second)
 
