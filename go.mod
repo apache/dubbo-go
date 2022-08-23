@@ -16,7 +16,7 @@ require (
 	github.com/creasty/defaults v1.5.2
 	github.com/dubbogo/go-zookeeper v1.0.4-0.20211212162352-f9d2183d89d5
 	github.com/dubbogo/gost v1.12.6-0.20220719055648-01d5bc07b111
-	github.com/dubbogo/grpc-go v1.42.9
+	github.com/dubbogo/grpc-go v1.42.10
 	github.com/dubbogo/triple v1.1.8
 	github.com/emicklei/go-restful/v3 v3.8.0
 	github.com/envoyproxy/go-control-plane v0.10.2-0.20220325020618-49ff273808a1
@@ -31,7 +31,7 @@ require (
 	github.com/grpc-ecosystem/grpc-opentracing v0.0.0-20180507213350-8e809c8a8645
 	github.com/hashicorp/vault/sdk v0.5.3
 	github.com/jinzhu/copier v0.3.5
-	github.com/knadh/koanf v1.4.2
+	github.com/knadh/koanf v1.4.3
 	github.com/magiconair/properties v1.8.6
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
