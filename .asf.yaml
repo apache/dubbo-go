@@ -5,7 +5,7 @@ notifications:
     jira_options: link label link label
 github:
     homepage: https://dubbo.apache.org/
-    description: "Dubbo-go is the go language implementation of Dubbo."
+    description: "Go Implementation For Apache Dubbo ."
     labels:
         - go
         - rpc
