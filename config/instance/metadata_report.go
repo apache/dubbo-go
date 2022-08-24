@@ -47,7 +47,10 @@ func SetMetadataReportInstance(selectiveUrl ...*common.URL) {
 		var url *common.URL
 		if len(selectiveUrl) > 0 {
 			url = selectiveUrl[0]
-			instance = extension.GetMetadataReportFactory(url.Protocol).CreateMetadataReport(url)
+			fac := extension.GetMetadataReportFactory(url.Protocol)
+			if fac != nil {
+				instance = fac.CreateMetadataReport(url)
+			}
 			reportUrl = url
 		}
 	})
