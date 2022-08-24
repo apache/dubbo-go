@@ -113,7 +113,7 @@ func TestMetadataService(t *testing.T) {
 	extension.SetMetadataReportFactory("mock", getMetadataReportFactory)
 	u, err := common.NewURL("mock://127.0.0.1:20000/?sync.report=true")
 	assert.NoError(t, err)
-	instance.GetMetadataReportInstance(u)
+	instance.SetMetadataReportInstance(u)
 	mts, err := GetRemoteMetadataService()
 	assert.NoError(t, err)
 	assert.NotNil(t, mts)
