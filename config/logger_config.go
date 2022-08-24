@@ -22,6 +22,8 @@ import (
 )
 
 import (
+	getty "github.com/apache/dubbo-getty"
+
 	"github.com/creasty/defaults"
 
 	"github.com/dubbogo/gost/encoding/yaml"
@@ -94,6 +96,7 @@ func (lc *LoggerConfig) Init() error {
 	}
 	lc.ZapConfig.setZapConfig(logConf.ZapConfig)
 	logger.InitLogger(logConf)
+	getty.SetLogger(logger.GetLogger())
 	return nil
 }
 

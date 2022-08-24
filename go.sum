@@ -173,8 +173,8 @@ github.com/dubbogo/go-zookeeper v1.0.4-0.20211212162352-f9d2183d89d5/go.mod h1:f
 github.com/dubbogo/gost v1.9.0/go.mod h1:pPTjVyoJan3aPxBPNUX0ADkXjPibLo+/Ib0/fADXSG8=
 github.com/dubbogo/gost v1.11.18/go.mod h1:vIcP9rqz2KsXHPjsAwIUtfJIJjppQLQDcYaZTy/61jI=
 github.com/dubbogo/gost v1.11.23/go.mod h1:PhJ8+qZJx+Txjx1KthNPuVkCvUca0jRLgKWj/noGgeI=
-github.com/dubbogo/gost v1.12.6-0.20220719055648-01d5bc07b111 h1:ydfcIHE0slI/R1plWVKaJWpgwo60EuZ5MQyQ3ZiOITQ=
-github.com/dubbogo/gost v1.12.6-0.20220719055648-01d5bc07b111/go.mod h1:f0bcP1xpBUdDgiNjNYKF6F3qlA+RFKs0k980FhoEn/g=
+github.com/dubbogo/gost v1.12.6-0.20220824084206-300e27e9e524 h1:QgDFv0rwH6RTVSpYc9oEZsAGM4DGg0YN5XHk69vZshU=
+github.com/dubbogo/gost v1.12.6-0.20220824084206-300e27e9e524/go.mod h1:0YHTGJtjHiYlWtVEkZnyrvhr7rR+23GczNaJrgc2v38=
 github.com/dubbogo/grpc-go v1.42.9/go.mod h1:F1T9hnUvYGW4JLK1QNriavpOkhusU677ovPzLkk6zHM=
 github.com/dubbogo/grpc-go v1.42.10 h1:CoyCdtqKJEar/3rPa6peZbDqYZ/mVsCqAxB6TfTSkhQ=
 github.com/dubbogo/grpc-go v1.42.10/go.mod h1:JMkPt1mIHL96GAFeYsMoMjew6f1ROKycikGzZQH1s5U=
