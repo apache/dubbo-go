@@ -41,20 +41,22 @@ import (
 
 // RegistryConfig is the configuration of the registry center
 type RegistryConfig struct {
-	Protocol     string            `validate:"required" yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
-	Timeout      string            `default:"5s" validate:"required" yaml:"timeout" json:"timeout,omitempty" property:"timeout"` // unit: second
-	Group        string            `yaml:"group" json:"group,omitempty" property:"group"`
-	Namespace    string            `yaml:"namespace" json:"namespace,omitempty" property:"namespace"`
-	TTL          string            `default:"10s" yaml:"ttl" json:"ttl,omitempty" property:"ttl"` // unit: minute
-	Address      string            `validate:"required" yaml:"address" json:"address,omitempty" property:"address"`
-	Username     string            `yaml:"username" json:"username,omitempty" property:"username"`
-	Password     string            `yaml:"password" json:"password,omitempty"  property:"password"`
-	Simplified   bool              `yaml:"simplified" json:"simplified,omitempty"  property:"simplified"`
-	Preferred    bool              `yaml:"preferred" json:"preferred,omitempty" property:"preferred"` // Always use this registry first if set to true, useful when subscribe to multiple registriesConfig
-	Zone         string            `yaml:"zone" json:"zone,omitempty" property:"zone"`                // The region where the registry belongs, usually used to isolate traffics
-	Weight       int64             `yaml:"weight" json:"weight,omitempty" property:"weight"`          // Affects traffic distribution among registriesConfig, useful when subscribe to multiple registriesConfig Take effect only when no preferred registry is specified.
-	Params       map[string]string `yaml:"params" json:"params,omitempty" property:"params"`
-	RegistryType string            `yaml:"registry-type"`
+	Protocol          string            `validate:"required" yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
+	Timeout           string            `default:"5s" validate:"required" yaml:"timeout" json:"timeout,omitempty" property:"timeout"` // unit: second
+	Group             string            `yaml:"group" json:"group,omitempty" property:"group"`
+	Namespace         string            `yaml:"namespace" json:"namespace,omitempty" property:"namespace"`
+	TTL               string            `default:"10s" yaml:"ttl" json:"ttl,omitempty" property:"ttl"` // unit: minute
+	Address           string            `validate:"required" yaml:"address" json:"address,omitempty" property:"address"`
+	Username          string            `yaml:"username" json:"username,omitempty" property:"username"`
+	Password          string            `yaml:"password" json:"password,omitempty"  property:"password"`
+	Simplified        bool              `yaml:"simplified" json:"simplified,omitempty"  property:"simplified"`
+	Preferred         bool              `yaml:"preferred" json:"preferred,omitempty" property:"preferred"` // Always use this registry first if set to true, useful when subscribe to multiple registriesConfig
+	Zone              string            `yaml:"zone" json:"zone,omitempty" property:"zone"`                // The region where the registry belongs, usually used to isolate traffics
+	Weight            int64             `yaml:"weight" json:"weight,omitempty" property:"weight"`          // Affects traffic distribution among registriesConfig, useful when subscribe to multiple registriesConfig Take effect only when no preferred registry is specified.
+	Params            map[string]string `yaml:"params" json:"params,omitempty" property:"params"`
+	RegistryType      string            `yaml:"registry-type"`
+	UseAsMetaReport   bool              `default:"true" yaml:"use-as-meta-report" json:"use-as-meta-report,omitempty" property:"use-as-meta-report"`
+	UseAsConfigCenter bool              `default:"true" yaml:"use-as-config-center" json:"use-as-config-center,omitempty" property:"use-as-config-center"`
 }
 
 // Prefix dubbo.registries
@@ -91,7 +93,7 @@ func (c *RegistryConfig) getUrlMap(roleType common.RoleType) url.Values {
 
 func (c *RegistryConfig) startRegistryConfig() error {
 	c.translateRegistryAddress()
-	if GetApplicationConfig().MetadataType == constant.DefaultMetadataStorageType && c.RegistryType == constant.ServiceKey {
+	if c.UseAsMetaReport {
 		if tmpUrl, err := c.toMetadataReportUrl(); err == nil {
 			instance.SetMetadataReportInstanceByReg(tmpUrl)
 		} else {

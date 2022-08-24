@@ -36,6 +36,13 @@ var (
 func GetMetadataReportByRegistryProtocol(protocol string) report.MetadataReport {
 	mux.RLock()
 	defer mux.RUnlock()
+	if protocol == "" {
+		// return the first instance
+		for _, regInstance := range regInstances {
+			return regInstance
+		}
+	}
+	// find the accurate instance
 	regInstance, ok := regInstances[protocol]
 	if !ok {
 		return nil

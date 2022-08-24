@@ -40,7 +40,8 @@ func TestGetMetadataReportInstance(t *testing.T) {
 		return &mockMetadataReportFactory{}
 	})
 	u, _ := common.NewURL("mock://127.0.0.1")
-	rpt := GetMetadataReportInstance(u)
+	SetMetadataReportInstance(u)
+	rpt := GetMetadataReportInstance()
 	assert.NotNil(t, rpt)
 }
 
