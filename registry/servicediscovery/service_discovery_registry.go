@@ -209,6 +209,7 @@ func (s *serviceDiscoveryRegistry) Subscribe(url *common.URL, notify registry.No
 		for _, serviceNameTmp := range services.Values() {
 			serviceName := serviceNameTmp.(string)
 			instances := s.serviceDiscovery.GetInstances(serviceName)
+			logger.Infof("Synchronized instance notification on subscription, instance list size %s", len(instances))
 			err = listener.OnEvent(&registry.ServiceInstancesChangedEvent{
 				ServiceName: serviceName,
 				Instances:   instances,

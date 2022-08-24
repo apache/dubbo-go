@@ -24,6 +24,8 @@ import (
 )
 
 import (
+	"github.com/dubbogo/gost/log/logger"
+
 	"github.com/knadh/koanf"
 
 	perrors "github.com/pkg/errors"
@@ -90,6 +92,7 @@ func registerServiceInstance() {
 			continue
 		}
 		// publish app level data to registry
+		logger.Infof("Starting register instance address %v", instance)
 		err := sdr.GetServiceDiscovery().Register(instance)
 		if err != nil {
 			panic(err)
