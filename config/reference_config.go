@@ -19,7 +19,6 @@ package config
 
 import (
 	"fmt"
-	constant2 "github.com/dubbogo/triple/pkg/common/constant"
 	"net/url"
 	"os"
 	"strconv"
@@ -42,6 +41,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
 	"dubbo.apache.org/dubbo-go/v3/proxy"
+	constant2 "github.com/dubbogo/triple/pkg/common/constant"
 )
 
 // ReferenceConfig is the configuration of service consumer
