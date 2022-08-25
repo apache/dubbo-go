@@ -67,9 +67,9 @@ func (ivk *adaptiveServiceClusterInvoker) Invoke(ctx context.Context, invocation
 	_ = metrics.SlidingWindowCounterMetrics.SetMethodMetrics(invoker.GetURL(), invocation.MethodName(), metrics.Requests, 1)
 	// invoke
 	invocation.SetAttachment(constant.AdaptiveServiceEnabledKey, constant.AdaptiveServiceIsEnabled)
-	startTime := time.Now().UnixMilli()
+	startTime := time.Now().UnixNano()
 	result := invoker.Invoke(ctx, invocation)
-	rtt := time.Now().UnixMilli() - startTime
+	rtt := time.Now().UnixNano() - startTime
 	// if the adaptive service encounters an error, DO NOT
 	// update the metrics.
 	if clsutils.IsAdaptiveServiceFailed(result.Error()) {
