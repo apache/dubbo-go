@@ -19,6 +19,7 @@ package adaptivesvc
 
 import (
 	"context"
+	"errors"
 	"time"
 )
 
@@ -72,6 +73,8 @@ func (ivk *adaptiveServiceClusterInvoker) Invoke(ctx context.Context, invocation
 	// if the adaptive service encounters an error, DO NOT
 	// update the metrics.
 	if clsutils.IsAdaptiveServiceFailed(result.Error()) {
+		return result
+	} else if errors.Is(result.Error(), context.DeadlineExceeded) {
 		return result
 	}
 	_ = metrics.EMAMetrics.SetMethodMetrics(invoker.GetURL(), invocation.MethodName(), metrics.RTT, rtt)

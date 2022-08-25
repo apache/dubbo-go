@@ -88,9 +88,6 @@ func (l *p2cLoadBalance) Select(invokers []protocol.Invoker, invocation protocol
 
 	weightI, weightJ := Weight(invokers[i].GetURL(), invokers[j].GetURL(), methodName)
 
-	logger.Debugf("[P2C I] %s: %f", invokers[i].GetURL().Ip, weightI)
-	logger.Debugf("[P2C J] %s: %f", invokers[j].GetURL().Ip, weightJ)
-
 	// For the remaining capacity, the bigger, the better.
 	if weightI > weightJ {
 		logger.Debugf("[P2C select] The invoker[%d] was selected.", i)
@@ -102,47 +99,48 @@ func (l *p2cLoadBalance) Select(invokers []protocol.Invoker, invocation protocol
 }
 
 //Weight w_i = s_i + ε*t_i
-func Weight(urlI, urlJ *common.URL, methodName string) (weightI, weightJ float64) {
+func Weight(url1, url2 *common.URL, methodName string) (weight1, weight2 float64) {
 
-	sI := successRateWeight(urlI, methodName)
-	sJ := successRateWeight(urlJ, methodName)
+	s1 := successRateWeight(url1, methodName)
+	s2 := successRateWeight(url2, methodName)
 
-	rttIFace, _ := metrics.EMAMetrics.GetMethodMetrics(urlI, methodName, metrics.RTT)
-	rttJFace, _ := metrics.EMAMetrics.GetMethodMetrics(urlJ, methodName, metrics.RTT)
-	rttI := metrics.ToFloat64(rttIFace)
-	rttJ := metrics.ToFloat64(rttJFace)
+	rtt1Iface, _ := metrics.EMAMetrics.GetMethodMetrics(url1, methodName, metrics.RTT)
+	rtt2Iface, _ := metrics.EMAMetrics.GetMethodMetrics(url2, methodName, metrics.RTT)
+	rtt1 := metrics.ToFloat64(rtt1Iface)
+	rtt2 := metrics.ToFloat64(rtt2Iface)
+	logger.Debugf("[P2C Weight Metrics] [invoker1] %s's s score: %f, rtt: %f; [invoker2] %s's s score: %f, rtt: %f.",
+		url1.Ip, s1, rtt1, url2.Ip, s2, rtt2)
+	avgRtt := (rtt1 + rtt2) / 2
+	t1 := normalize((1 + avgRtt) / (1 + rtt1))
+	t2 := normalize((1 + avgRtt) / (1 + rtt2))
 
-	avgRtt := (rttI + rttJ) / 2
-	tI := norm((1 + avgRtt) / (1 + rttI))
-	tJ := norm((1 + avgRtt) / (1 + rttJ))
+	avgS := (s1 + s2) / 2
+	avgT := (t1 + t2) / 2
+	e := avgS / avgT
 
-	avgS := (sI + sJ) / 2
-	avgL := (tI + tJ) / 2
-	e := avgS / avgL
-
-	weightI = sI + e*tI
-	weightJ = sJ + e*tJ
-
-	//weightI = sI + norm((1+avgRtt)/(1+rttI))
-	//weightJ = sJ + norm((1+avgRtt)/(1+rttJ))
-
-	return weightI, weightJ
+	weight1 = s1 + e*t1
+	weight2 = s2 + e*t2
+	logger.Debugf("[P2C Weight] [invoker1] %s's s score: %f, t score: %f, weight: %f; [invoker2] %s's s score: %f, t score: %f, weight: %f.",
+		url1.Ip, s1, t1, weight1, url2.Ip, s2, t2, weight2)
+	return weight1, weight2
 }
 
-func norm(x float64) float64 {
-	return x / (x + 1)
+func normalize(x float64) float64 {
+	return 1.5 * x / (x + 1)
 }
 
 func successRateWeight(url *common.URL, methodName string) float64 {
-	requestsIFace, _ := metrics.SlidingWindowCounterMetrics.GetMethodMetrics(url, methodName, metrics.Requests)
-	acceptsIFace, _ := metrics.SlidingWindowCounterMetrics.GetMethodMetrics(url, methodName, metrics.Accepts)
+	requestsIface, _ := metrics.SlidingWindowCounterMetrics.GetMethodMetrics(url, methodName, metrics.Requests)
+	acceptsIface, _ := metrics.SlidingWindowCounterMetrics.GetMethodMetrics(url, methodName, metrics.Accepts)
 
-	requests := metrics.ToFloat64(requestsIFace)
-	accepts := metrics.ToFloat64(acceptsIFace)
+	requests := metrics.ToFloat64(requestsIface)
+	accepts := metrics.ToFloat64(acceptsIface)
 	r := (1 + accepts) / (1 + requests)
 
 	if r > 1 {
 		r = 1
 	}
+	logger.Debugf("[P2C Weight] [Success Rate] %s requests: %f, accepts: %f, success rate: %f.",
+		url.Ip, requests, accepts, r)
 	return r
 }

@@ -107,7 +107,7 @@ func newSlidingWindowCounterMetrics() *slidingWindowCounterMetrics {
 	return &slidingWindowCounterMetrics{
 		opts: SlidingWindowCounterOpts{
 			Size:           10,
-			BucketDuration: 20000000,
+			BucketDuration: 50000000,
 		},
 	}
 }
