@@ -202,7 +202,11 @@ func (s *serviceDiscoveryRegistry) Subscribe(url *common.URL, notify registry.No
 	}
 	// FIXME ServiceNames.String() is not good
 	serviceNamesKey := services.String()
-	protocolServiceKey := url.ServiceKey() + ":" + url.Protocol
+	protocol := "tri" // consume "tri" protocol by default, other protocols need to be specified on reference/consumer explicitly
+	if url.Protocol != "" {
+		protocol = url.Protocol
+	}
+	protocolServiceKey := url.ServiceKey() + ":" + protocol
 	listener := s.serviceListeners[serviceNamesKey]
 	if listener == nil {
 		listener = event.NewServiceInstancesChangedListener(services)
