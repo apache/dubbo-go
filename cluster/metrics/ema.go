@@ -9,7 +9,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 )
 
-// EMA is a policy for ring window based on time duration.
+// EMA is a struct implemented Exponential Moving Average.
 // val = old * (1 - alpha) + new * alpha
 type EMA struct {
 	mu    sync.Mutex
@@ -21,7 +21,7 @@ type EMAOpts struct {
 	Alpha float64
 }
 
-// NewEMA creates a new EMA based on the given window and EMAOpts.
+// NewEMA creates a new EMA based on the given EMAOpts.
 func NewEMA(opts EMAOpts) *EMA {
 	return &EMA{
 		alpha: opts.Alpha,
