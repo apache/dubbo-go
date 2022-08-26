@@ -24,9 +24,8 @@ import (
 	"encoding/json"
 	"errors"
 	"strings"
-)
 
-import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"github.com/dubbogo/gost/log/logger"
 )
 
@@ -76,4 +75,16 @@ func IsEmpty(s string, allowSpace bool) bool {
 		return strings.TrimSpace(s) == ""
 	}
 	return false
+}
+
+func GenSignBlock(bytes []byte, key interface{}) map[string]interface{} {
+	signBlock := make(map[string]interface{})
+	if key != nil {
+		signature := doSign(bytes, key.(string))
+		signBlock[constant.RequestSignatureKey] = signature
+	} else {
+		signBlock[constant.RequestSignatureKey] = nil
+	}
+	signBlock["contentLen"] = len(bytes)
+	return signBlock
 }

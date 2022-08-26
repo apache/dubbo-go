@@ -19,23 +19,14 @@ package impl
 
 import (
 	"bufio"
-	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/base64"
 	"encoding/binary"
-)
 
-import (
-	hessian "github.com/apache/dubbo-go-hessian2"
-
-	"github.com/dubbogo/gost/log/logger"
-
-	perrors "github.com/pkg/errors"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/filter/auth"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
+	hessian "github.com/apache/dubbo-go-hessian2"
+	"github.com/dubbogo/gost/log/logger"
+	perrors "github.com/pkg/errors"
 )
 
 type ProtocolCodec struct {
@@ -264,28 +255,17 @@ func packRequest(p DubboPackage, serializer Serializer) ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-		pkgLen = len(body)
 
-		signBlock := make(map[string]interface{})
-		if sk != nil {
-			// 2. generate signature for serialized body
-			signature := doSign(body, sk.(string))
+		// 2. generate signBlock
+		signBlock := auth.GenSignBlock(body, sk)
 
-			// 3. generate signBlock
-			signBlock[constant.RequestSignatureKey] = signature
-		} else {
-			signBlock[constant.RequestSignatureKey] = nil
-		}
-
-		signBlock["contentLen"] = pkgLen
-
-		// 4. serialize signBlock and concat it to front of byteArray
+		// 3. serialize signBlock and concat it to front of byteArray
 		body_sign, err := serializer.MarshalSign(signBlock)
 		if err != nil {
 			return nil, err
 		}
 
-		pkgLen += len(body_sign)
+		pkgLen = len(body) + len(body_sign)
 		byteArray = append(byteArray, body_sign...)
 
 		if pkgLen > int(DEFAULT_LEN) { // recommand 8M
@@ -347,11 +327,3 @@ func NewDubboCodec(reader *bufio.Reader) *ProtocolCodec {
 	}
 }
 
-func doSign(bytes []byte, key string) string {
-	mac := hmac.New(sha256.New, []byte(key))
-	if _, err := mac.Write(bytes); err != nil {
-		logger.Error(err)
-	}
-	signature := mac.Sum(nil)
-	return base64.URLEncoding.EncodeToString(signature)
-}
