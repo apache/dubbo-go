@@ -92,12 +92,11 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry) (director
 
 	dir.consumerConfigurationListener = newConsumerConfigurationListener(dir)
 
-	go dir.subscribe(url.SubURL)
 	return dir, nil
 }
 
 // subscribe from registry
-func (dir *RegistryDirectory) subscribe(url *common.URL) {
+func (dir *RegistryDirectory) Subscribe(url *common.URL) {
 	logger.Debugf("subscribe service :%s for RegistryDirectory.", url.Key())
 	dir.consumerConfigurationListener.addNotifyListener(dir)
 	dir.referenceConfigurationListener = newReferenceConfigurationListener(dir, url)
