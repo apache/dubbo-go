@@ -105,27 +105,27 @@ func (lstn *ServiceInstancesChangedListenerImpl) OnEvent(e observer.Event) error
 		}
 		lstn.revisionToMetadata = newRevisionToMetadata
 
-		for serviceInstance, revisions := range localServiceToRevisions {
-			revisionsToUrls := protocolRevisionsToUrls[serviceInstance.Protocol]
+		for serviceInfo, revisions := range localServiceToRevisions {
+			revisionsToUrls := protocolRevisionsToUrls[serviceInfo.Protocol]
 			if revisionsToUrls == nil {
-				protocolRevisionsToUrls[serviceInstance.Protocol] = make(map[*gxset.HashSet][]*common.URL)
-				revisionsToUrls = protocolRevisionsToUrls[serviceInstance.Protocol]
+				protocolRevisionsToUrls[serviceInfo.Protocol] = make(map[*gxset.HashSet][]*common.URL)
+				revisionsToUrls = protocolRevisionsToUrls[serviceInfo.Protocol]
 			}
 			urls := revisionsToUrls[revisions]
 			if urls != nil {
-				newServiceURLs[serviceInstance.GetMatchKey()] = urls
+				newServiceURLs[serviceInfo.GetMatchKey()] = urls
 			} else {
 				urls = make([]*common.URL, 0, 8)
 				for _, v := range revisions.Values() {
 					r := v.(string)
 					for _, i := range revisionToInstances[r] {
 						if i != nil {
-							urls = append(urls, i.ToURLs()...)
+							urls = append(urls, i.ToURLs(serviceInfo)...)
 						}
 					}
 				}
 				revisionsToUrls[revisions] = urls
-				newServiceURLs[serviceInstance.GetMatchKey()] = urls
+				newServiceURLs[serviceInfo.GetMatchKey()] = urls
 			}
 		}
 		lstn.serviceUrls = newServiceURLs
