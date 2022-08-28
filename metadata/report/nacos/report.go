@@ -211,17 +211,14 @@ func (n *nacosMetadataReport) getConfig(param vo.ConfigParam) (string, error) {
 
 // RegisterServiceAppMapping map the specified Dubbo service interface to current Dubbo app name
 func (n *nacosMetadataReport) RegisterServiceAppMapping(key string, group string, value string) error {
-	oldVal, err := n.getConfig(vo.ConfigParam{
+	oldVal, _ := n.getConfig(vo.ConfigParam{
 		DataId: key,
 		Group:  group,
 	})
-	if err != nil {
-		return err
-	}
-	if strings.Contains(oldVal, value) {
-		return nil
-	}
 	if oldVal != "" {
+		if strings.Contains(oldVal, value) {
+			return nil
+		}
 		value = oldVal + constant.CommaSeparator + value
 	}
 	return n.storeMetadata(vo.ConfigParam{

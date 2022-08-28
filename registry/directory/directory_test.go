@@ -170,7 +170,7 @@ func normalRegistryDir(noMockEvent ...bool) (*RegistryDirectory, *registry.MockR
 	mockRegistry, _ := registry.NewMockRegistry(&common.URL{})
 	dir, _ := NewRegistryDirectory(url, mockRegistry)
 
-	go dir.(*RegistryDirectory).subscribe(suburl)
+	go dir.(*RegistryDirectory).Subscribe(suburl)
 	if len(noMockEvent) == 0 {
 		for i := 0; i < 3; i++ {
 			mockRegistry.(*registry.MockRegistry).MockEvent(
