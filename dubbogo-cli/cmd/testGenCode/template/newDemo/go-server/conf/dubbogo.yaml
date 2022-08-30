@@ -1,0 +1,9 @@
+dubbo:
+  protocols:
+    triple:
+      name: tri
+      port: 20000
+  provider:
+    services:
+      GreeterProvider:
+        interface: "" # read from pb
