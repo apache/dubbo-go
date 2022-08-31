@@ -93,7 +93,7 @@ func (c *RegistryConfig) getUrlMap(roleType common.RoleType) url.Values {
 
 func (c *RegistryConfig) startRegistryConfig() error {
 	c.translateRegistryAddress()
-	if c.UseAsMetaReport {
+	if c.UseAsMetaReport && isValid(c.Address) {
 		if tmpUrl, err := c.toMetadataReportUrl(); err == nil {
 			instance.SetMetadataReportInstanceByReg(tmpUrl)
 		} else {
@@ -177,7 +177,9 @@ func (c *RegistryConfig) toURLs(roleType common.RoleType) ([]*common.URL, error)
 	var err error
 	var registryURL *common.URL
 
-	if address == constant.DefaultRevision {
+	if !isValid(c.Address) {
+		logger.Infof("Empty or N/A registry address found, the process will work with no registry enabled "+
+			"which means that the address of this instance will not be registered and not able to be found by other consumer instances.", c.Address)
 		return urls, nil
 	}
 
