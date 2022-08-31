@@ -176,6 +176,11 @@ func (c *RegistryConfig) toURLs(roleType common.RoleType) ([]*common.URL, error)
 	var urls []*common.URL
 	var err error
 	var registryURL *common.URL
+
+	if address == constant.DefaultRevision {
+		return urls, nil
+	}
+
 	if c.RegistryType == "service" {
 		// service discovery protocol
 		if registryURL, err = c.createNewURL(constant.ServiceRegistryProtocol, address, roleType); err == nil {
