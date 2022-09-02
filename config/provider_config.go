@@ -94,7 +94,7 @@ func (c *ProviderConfig) Init(rc *RootConfig) error {
 			supportPBPackagerNameSerivce, ok := service.(common.TriplePBService)
 			if !ok {
 				logger.Errorf("Service with reference = %s is not support read interface name from it."+
-					"Please run go install github.com/dubbogo/tools/cmd/protoc-gen-go-triple@latest to update your "+
+					"Please run go install github.com/dubbogo/dubbogo-cli/cmd/protoc-gen-go-triple@latest to update your "+
 					"protoc-gen-go-triple and re-generate your pb file again."+
 					"If you are not using pb serialization, please set 'interface' field in service config.", key)
 				continue
@@ -169,7 +169,7 @@ func (c *ProviderConfig) Load() {
 			serviceConfig = NewServiceConfigBuilder().Build()
 			if !ok {
 				logger.Errorf("Dubbogo do not read service interface name with registeredTypeName = %s."+
-					"Please run go install github.com/dubbogo/tools/cmd/protoc-gen-go-triple@latest to update your "+
+					"Please run go install github.com/dubbogo/dubbogo-cli/cmd/protoc-gen-go-triple@latest to update your "+
 					"protoc-gen-go-triple and re-generate your pb file again."+
 					"If you are not using pb serialization, please set 'interface' field in service config.", registeredTypeName)
 				continue

@@ -1,0 +1,74 @@
+replicaCount: 1
+
+image:
+  repository: $(your_repo)/$(namespace)/$(image_name)
+  pullPolicy: Always
+  tag: "1.0.0"
+
+# Dubbo-go-mesh version control labels
+version:
+  labels:
+    dubbogoAppVersion: 0.0.1
+
+container:
+  env:
+    - name: POD_NAME
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.name
+    - name: POD_NAMESPACE
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.namespace
+  ports:
+    - name: triple
+      containerPort: 20000
+      protocol: TCP
+  volumeMounts:
+    - mountPath: /var/run/secrets/token
+      name: istio-token
+
+volumes:
+  - name: istio-token
+    projected:
+      sources:
+        - serviceAccountToken:
+            audience: istio-ca
+            path: istio-token
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+# fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+# runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 20000
+  portName: triple
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

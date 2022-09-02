@@ -81,7 +81,7 @@ func (cc *ConsumerConfig) Init(rc *RootConfig) error {
 			triplePBService, ok := reference.(common.TriplePBService)
 			if !ok {
 				logger.Errorf("Dubbo-go cannot get interface name with reference = %s."+
-					"Please run the command 'go install github.com/dubbogo/tools/cmd/protoc-gen-go-triple@latest' to get the latest "+
+					"Please run the command 'go install github.com/dubbogo/dubbogo-cli/cmd/protoc-gen-go-triple@latest' to get the latest "+
 					"protoc-gen-go-triple,  and then re-generate your pb file again by this tool."+
 					"If you are not using pb serialization, please set 'interfaceName' field in reference config to let dubbogo get the interface name.", key)
 				continue
@@ -114,7 +114,7 @@ func (cc *ConsumerConfig) Load() {
 			triplePBService, ok := refRPCService.(common.TriplePBService)
 			if !ok {
 				logger.Errorf("Dubbo-go cannot get interface name with registeredTypeName = %s."+
-					"Please run the command 'go install github.com/dubbogo/tools/cmd/protoc-gen-go-triple@latest' to get the latest "+
+					"Please run the command 'go install github.com/dubbogo/dubbogo-cli/cmd/protoc-gen-go-triple@latest' to get the latest "+
 					"protoc-gen-go-triple,  and then re-generate your pb file again by this tool."+
 					"If you are not using pb serialization, please set 'interfaceName' field in reference config to let dubbogo get the interface name.", registeredTypeName)
 				continue

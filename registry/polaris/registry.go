@@ -148,11 +148,76 @@ func (pr *polarisRegistry) UnRegister(conf *common.URL) error {
 	return nil
 }
 
-// Subscribe returns nil if subscribing registry successfully. If not returns an error.
 func (pr *polarisRegistry) Subscribe(url *common.URL, notifyListener registry.NotifyListener) error {
+
+	for {
+		listener, err := NewPolarisListener(url)
+		if err != nil {
+			logger.Warnf("getListener() = err:%v", perrors.WithStack(err))
+			<-time.After(time.Duration(RegistryConnDelay) * time.Second)
+			continue
+		}
+
+		if err != nil {
+			logger.Warnf("getwatcher() = err:%v", perrors.WithStack(err))
+			timer := time.NewTimer(time.Duration(RegistryConnDelay) * time.Second)
+			timer.Reset(time.Duration(RegistryConnDelay) * time.Second)
+			continue
+		}
+		for {
+
+			serviceEvent, err := listener.Next()
+
+			if err != nil {
+				logger.Warnf("Selector.watch() = error{%v}", perrors.WithStack(err))
+				listener.Close()
+				return err
+			}
+			logger.Infof("update begin, service event: %v", serviceEvent.String())
+			notifyListener.Notify(serviceEvent)
+
+		}
+	}
+
+}
+
+// createPolarisWatcherIfAbsent Calculate whether the corresponding PolarisWatcher needs to be created,
+// if it does not exist, create one, otherwise return the existing one
+func (polaris *polarisServiceDiscovery) createPolarisWatcher(serviceName string) (*PolarisServiceWatcher, error) {
+
+	polaris.listenerLock.Lock()
+	defer polaris.listenerLock.Unlock()
+
+	if _, exist := polaris.watchers[serviceName]; !exist {
+		subscribeParam := &api.WatchServiceRequest{
+			WatchServiceRequest: model.WatchServiceRequest{
+				Key: model.ServiceKey{
+					Namespace: polaris.namespace,
+					Service:   serviceName,
+				},
+			},
+		}
+
+		watcher, err := newPolarisWatcher(subscribeParam, polaris.consumer)
+		if err != nil {
+			return nil, err
+		}
+		polaris.watchers[serviceName] = watcher
+	}
+
+	return polaris.watchers[serviceName], nil
+}
+
+// Subscribe returns nil if subscribing registry successfully. If not returns an error.
+func (pr *polarisServiceDiscovery) SubscribeBywatcher(url *common.URL, notifyListener registry.NotifyListener, listener registry.ServiceInstancesChangedListener) error {
+
 	role, _ := strconv.Atoi(url.GetParam(constant.RegistryRoleKey, ""))
 	if role != common.CONSUMER {
 		return nil
+	}
+	for _, val := range listener.GetServiceNames().Values() {
+		serviceName := val.(string)
+		watcher, err := pr.createPolarisWatcher(serviceName)
 	}
 
 	for {
@@ -163,8 +228,16 @@ func (pr *polarisRegistry) Subscribe(url *common.URL, notifyListener registry.No
 			continue
 		}
 
+		if err != nil {
+			logger.Warnf("getwatcher() = err:%v", perrors.WithStack(err))
+			timer := time.NewTimer(time.Duration(RegistryConnDelay) * time.Second)
+			timer.Reset(time.Duration(RegistryConnDelay) * time.Second)
+			continue
+		}
 		for {
+
 			serviceEvent, err := listener.Next()
+
 			if err != nil {
 				logger.Warnf("Selector.watch() = error{%v}", perrors.WithStack(err))
 				listener.Close()
@@ -172,6 +245,7 @@ func (pr *polarisRegistry) Subscribe(url *common.URL, notifyListener registry.No
 			}
 			logger.Infof("update begin, service event: %v", serviceEvent.String())
 			notifyListener.Notify(serviceEvent)
+
 		}
 	}
 }

@@ -51,6 +51,7 @@ func NewPolarisListener(url *common.URL) (*polarisListener, error) {
 		events:    gxchan.NewUnboundedChan(32),
 		closeCh:   make(chan struct{}),
 	}
+
 	return listener, nil
 }
 

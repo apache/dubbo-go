@@ -67,20 +67,6 @@ jobs:
             go get -v -t -d ./...
         fi
 
-    - name: Install imports-formatter
-      run: |
-        export PATH=$PATH:$(go env GOPATH)/bin
-        export GO111MODULE=on
-        cd ~
-        go get -u github.com/dubbogo/tools/cmd/imports-formatter@v1.0.7
-
-    - name: Check improts
-      run: |
-        export $(go env | grep GOROOT | sed 's/\"//g')
-        echo $GOROOT
-        imports-formatter -path .
-        git status && [[ -z `git status -s` ]]
-
     - name: gofmt
       run: |
         go fmt ./... && git status && [[ -z `git status -s` ]]
