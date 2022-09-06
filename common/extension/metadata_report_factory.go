@@ -31,7 +31,6 @@ func SetMetadataReportFactory(name string, v func() factory.MetadataReportFactor
 // GetMetadataReportFactory finds the MetadataReportFactory with @name
 func GetMetadataReportFactory(name string) factory.MetadataReportFactory {
 	if metaDataReportFactories[name] == nil {
-		//panic("metadata report for " + name + " is not existing, make sure you have import the package.")
 		return nil
 	}
 	return metaDataReportFactories[name]()

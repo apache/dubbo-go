@@ -77,7 +77,9 @@ func (sd *ServiceDiscovery) registerService(instance *ServiceInstance) error {
 
 	err = sd.client.Delete(path)
 	if err != nil {
-		logger.Infof("Nothing happened trying to delete existing node %s, the node doesn't exist or delete failed, will continue with the registration process.", path)
+		logger.Infof("Failed when trying to delete node %s, will continue with the registration process. "+
+			"This is designed to avoid previous ephemeral node hold the position,"+
+			" so it's normal for this action to fail because the node might not exist or has been deleted, error msg is %s.", path, err.Error())
 	}
 
 	err = sd.client.CreateTempWithValue(path, data)
