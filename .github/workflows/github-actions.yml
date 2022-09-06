@@ -50,8 +50,8 @@ jobs:
     - name: Merge base
       if: ${{ github.event_name == 'pull_request' }}
       run: |
-        git fetch origin 3.0
-        git checkout -b 3.0 origin/3.0
+        git fetch origin 3.1
+        git checkout -b 3.1 origin/3.1
         git remote add devrepo https://github.com/${{github.event.pull_request.head.repo.full_name}}.git
         git fetch devrepo ${{github.event.pull_request.head.sha}}
         git config --global user.email "dubbo-go@github-ci.com"
