@@ -38,6 +38,9 @@ var (
 	ServiceAccountPath = f(os.Getenv("SERVICE_ACCOUNT_PATH"), DefaultIsitoCaServiceAccountPath)
 	certSigner         = f(os.Getenv("CERT_SIGNER"), DefaultCertSigner)
 	clusterID          = f(os.Getenv("CLUSTER_ID"), DefaultClusterID)
+	URIPrefix          = f(os.Getenv("URI_PREFIX"), "spiffe://")
+	Domain             = f(os.Getenv("DOMAIN"), "cluster.local")
+	ServiceAccountName = f(os.Getenv("SERVICE_ACCOUNT_NAME"), "default")
 )
 
 var f = func(a, b string) string {

@@ -194,7 +194,6 @@ func (c *CitadelClient) buildConnection() (*grpc.ClientConn, error) {
 	}
 	ol = append(ol, grpc.WithPerRPCCredentials(c.opts.TokenProvider))
 	ol = append(ol, c.opts.GRPCOptions...)
-	//security.CARetryInterceptor())
 
 	conn, err := grpc.Dial(c.opts.CAEndpoint, ol...)
 	if err != nil {

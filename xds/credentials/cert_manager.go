@@ -204,7 +204,7 @@ func (c *CACertManager) UpdateCert() error {
 	if err != nil {
 		return err
 	}
-	host := "spiffe://" + "cluster.local" + "/ns/" + PodNamespace + "/sa/" + "default"
+	host := URIPrefix + Domain + "/ns/" + PodNamespace + "/sa/" + ServiceAccountName
 	ttl, err := strconv.ParseInt(CertTTL, 10, 64)
 	if err != nil {
 		return err
