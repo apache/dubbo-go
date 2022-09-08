@@ -10,7 +10,7 @@
 
 [English 🇺🇸](./README.md)
 
-Apache Dubbo Go 语言实现，架起 Java 和 Golang 之间的桥梁，与 gRPC/Dubbo/SpringCloud 生态互联互通，带领 Java 生态享受云原生时代的技术红利。请访问[Dubbo 官网](https://dubbo.apache.org/zh/docs/languages/golang/)查看快速开始和文档。
+Apache Dubbo Go 语言实现，架起 Java 和 Golang 之间的桥梁，与 gRPC/Dubbo/SpringCloud 生态互联互通，带领 Java 生态享受云原生时代的技术红利。请访问[Dubbo 官网](https://dubbo.apache.org/zh/docs/languages/golang/)查看快速开始和文档 。
 
 ## RPC 调用
 
