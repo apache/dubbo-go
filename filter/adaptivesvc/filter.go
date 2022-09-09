@@ -78,7 +78,7 @@ func (f *adaptiveServiceProviderFilter) Invoke(ctx context.Context, invoker prot
 			// limiter is not found on the mapper, just create
 			// a new limiter
 			if l, err = limiterMapperSingleton.newAndSetMethodLimiter(invoker.GetURL(),
-				invocation.MethodName(), limiter.HillClimbingLimiter); err != nil {
+				invocation.MethodName(), limiter.AutoConcurrencyLimiter); err != nil {
 				return &protocol.RPCResult{Err: wrapErrAdaptiveSvcInterrupted(err)}
 			}
 		} else {
