@@ -24,9 +24,14 @@ import (
 	"encoding/json"
 	"errors"
 	"strings"
+)
 
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
+import (
 	"github.com/dubbogo/gost/log/logger"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
 // Sign gets a signature string with given bytes
