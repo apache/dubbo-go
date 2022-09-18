@@ -71,7 +71,7 @@ func gracefulShutdownInit() {
 		filter.Set(constant.GracefulShutdownFilterShutdownConfig, GetShutDown())
 	}
 
-	if GetShutDown().InternalSignal {
+	if GetShutDown().GetInternalSignal() {
 		signals := make(chan os.Signal, 1)
 		signal.Notify(signals, ShutdownSignals...)
 
@@ -119,7 +119,7 @@ func BeforeShutdown() {
 
 func destroyAllRegistries() {
 	logger.Info("Graceful shutdown --- Destroy all registriesConfig. ")
-	registryProtocol := extension.GetProtocol(constant.RegistryKey)
+	registryProtocol := extension.GetProtocol(constant.RegistryProtocol)
 	registryProtocol.Destroy()
 }
 
@@ -181,10 +181,13 @@ func waitingProviderProcessedTimeout(shutdownConfig *ShutdownConfig) {
 	}
 	deadline := time.Now().Add(timeout)
 
-	for time.Now().Before(deadline) && shutdownConfig.ProviderActiveCount.Load() > 0 {
+	offlineRequestWindowTimeout := shutdownConfig.GetOfflineRequestWindowTimeout()
+	for time.Now().Before(deadline) &&
+		(shutdownConfig.ProviderActiveCount.Load() > 0 || time.Now().Before(shutdownConfig.ProviderLastReceivedRequestTime.Load().Add(offlineRequestWindowTimeout))) {
 		// sleep 10 ms and then we check it again
 		time.Sleep(10 * time.Millisecond)
-		logger.Infof("waiting for provider active invocation count = %d", shutdownConfig.ProviderActiveCount.Load())
+		logger.Infof("waiting for provider active invocation count = %d, provider last received request time: %v",
+			shutdownConfig.ProviderActiveCount.Load(), shutdownConfig.ProviderLastReceivedRequestTime.Load())
 	}
 }
 

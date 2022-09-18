@@ -77,7 +77,7 @@ func registerServiceInstance() {
 	if err != nil {
 		panic(err)
 	}
-	p := extension.GetProtocol(constant.RegistryKey)
+	p := extension.GetProtocol(constant.RegistryProtocol)
 	var rp registry.RegistryFactory
 	var ok bool
 	if rp, ok = p.(registry.RegistryFactory); !ok {

@@ -44,6 +44,7 @@ var (
 )
 
 func init() {
+	rand.Seed(randSeed())
 	extension.SetLoadbalance(constant.LoadBalanceKeyP2C, newP2CLoadBalance)
 }
 
@@ -78,7 +79,6 @@ func (l *p2cLoadBalance) Select(invokers []protocol.Invoker, invocation protocol
 	if len(invokers) == 2 {
 		i, j = 0, 1
 	} else {
-		rand.Seed(randSeed())
 		i = rand.Intn(len(invokers))
 		j = i
 		for i == j {

@@ -48,11 +48,11 @@ func TestJsonrpcProtocolExport(t *testing.T) {
 	eq := exporter.GetInvoker().GetURL().URLEqual(url)
 	assert.True(t, eq)
 
-	// make sure exporterMap after 'Unexport'
+	// make sure exporterMap after 'UnExport'
 	fmt.Println(url.Path)
 	_, ok := proto.(*JsonrpcProtocol).ExporterMap().Load(strings.TrimPrefix(url.Path, "/"))
 	assert.True(t, ok)
-	exporter.Unexport()
+	exporter.UnExport()
 	_, ok = proto.(*JsonrpcProtocol).ExporterMap().Load(strings.TrimPrefix(url.Path, "/"))
 	assert.False(t, ok)
 

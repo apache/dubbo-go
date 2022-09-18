@@ -18,6 +18,7 @@
 package p2c
 
 import (
+	"math/rand"
 	"testing"
 )
 
@@ -37,16 +38,18 @@ import (
 func TestLoadBalance(t *testing.T) {
 	lb := newP2CLoadBalance()
 	invocation := protoinvoc.NewRPCInvocation("TestMethod", []interface{}{}, nil)
-	randSeed = func() int64 {
+	randSeed := func() int64 {
 		return 0
 	}
 
 	t.Run("no invokers", func(t *testing.T) {
+		rand.Seed(randSeed())
 		ivk := lb.Select([]protocol.Invoker{}, invocation)
 		assert.Nil(t, ivk)
 	})
 
 	t.Run("one invoker", func(t *testing.T) {
+		rand.Seed(randSeed())
 		url0, _ := common.NewURL("dubbo://192.168.1.0:20000/com.ikurento.user.UserProvider")
 
 		ivkArr := []protocol.Invoker{
@@ -57,6 +60,7 @@ func TestLoadBalance(t *testing.T) {
 	})
 
 	t.Run("two invokers", func(t *testing.T) {
+		rand.Seed(randSeed())
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
@@ -86,6 +90,7 @@ func TestLoadBalance(t *testing.T) {
 	})
 
 	t.Run("multiple invokers", func(t *testing.T) {
+		rand.Seed(randSeed())
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
@@ -117,6 +122,7 @@ func TestLoadBalance(t *testing.T) {
 	})
 
 	t.Run("metrics i not found", func(t *testing.T) {
+		rand.Seed(randSeed())
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
@@ -144,6 +150,7 @@ func TestLoadBalance(t *testing.T) {
 	})
 
 	t.Run("metrics j not found", func(t *testing.T) {
+		rand.Seed(randSeed())
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 

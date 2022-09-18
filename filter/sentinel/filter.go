@@ -57,7 +57,7 @@ type DubboLoggerWrapper struct {
 }
 
 func (d DubboLoggerWrapper) Debug(msg string, keysAndValues ...interface{}) {
-	d.Logger.Debug(logging.AssembleMsg(logging.GlobalCallerDepth, "DEBUG", msg, nil, keysAndValues))
+	d.Logger.Debug(logging.AssembleMsg(logging.GlobalCallerDepth, "DEBUG", msg, nil, keysAndValues...))
 }
 
 func (d DubboLoggerWrapper) DebugEnabled() bool {
@@ -65,7 +65,7 @@ func (d DubboLoggerWrapper) DebugEnabled() bool {
 }
 
 func (d DubboLoggerWrapper) Info(msg string, keysAndValues ...interface{}) {
-	d.Logger.Info(logging.AssembleMsg(logging.GlobalCallerDepth, "INFO", msg, nil, keysAndValues))
+	d.Logger.Info(logging.AssembleMsg(logging.GlobalCallerDepth, "INFO", msg, nil, keysAndValues...))
 }
 
 func (d DubboLoggerWrapper) InfoEnabled() bool {
@@ -73,7 +73,7 @@ func (d DubboLoggerWrapper) InfoEnabled() bool {
 }
 
 func (d DubboLoggerWrapper) Warn(msg string, keysAndValues ...interface{}) {
-	d.Logger.Warn(logging.AssembleMsg(logging.GlobalCallerDepth, "WARN", msg, nil, keysAndValues))
+	d.Logger.Warn(logging.AssembleMsg(logging.GlobalCallerDepth, "WARN", msg, nil, keysAndValues...))
 }
 
 func (d DubboLoggerWrapper) WarnEnabled() bool {
@@ -81,7 +81,7 @@ func (d DubboLoggerWrapper) WarnEnabled() bool {
 }
 
 func (d DubboLoggerWrapper) Error(err error, msg string, keysAndValues ...interface{}) {
-	d.Logger.Warn(logging.AssembleMsg(logging.GlobalCallerDepth, "ERROR", msg, err, keysAndValues))
+	d.Logger.Warn(logging.AssembleMsg(logging.GlobalCallerDepth, "ERROR", msg, err, keysAndValues...))
 }
 
 func (d DubboLoggerWrapper) ErrorEnabled() bool {

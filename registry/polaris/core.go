@@ -32,13 +32,13 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
-type subscriber func(remoting.EventType, []model.Instance)
+type item func(remoting.EventType, []model.Instance)
 
 type PolarisServiceWatcher struct {
 	consumer       api.ConsumerAPI
 	subscribeParam *api.WatchServiceRequest
 	lock           *sync.RWMutex
-	subscribers    []subscriber
+	subscribers    []item
 	execOnce       *sync.Once
 }
 
@@ -48,7 +48,7 @@ func newPolarisWatcher(param *api.WatchServiceRequest, consumer api.ConsumerAPI)
 		subscribeParam: param,
 		consumer:       consumer,
 		lock:           &sync.RWMutex{},
-		subscribers:    make([]subscriber, 0),
+		subscribers:    make([]item, 0),
 		execOnce:       &sync.Once{},
 	}
 	return watcher, nil
@@ -57,9 +57,8 @@ func newPolarisWatcher(param *api.WatchServiceRequest, consumer api.ConsumerAPI)
 // AddSubscriber add subscriber into watcher's subscribers
 func (watcher *PolarisServiceWatcher) AddSubscriber(subscriber func(remoting.EventType, []model.Instance)) {
 
-	watcher.lazyRun()
-
 	watcher.lock.Lock()
+	watcher.lazyRun()
 	defer watcher.lock.Unlock()
 
 	watcher.subscribers = append(watcher.subscribers, subscriber)
@@ -74,48 +73,50 @@ func (watcher *PolarisServiceWatcher) lazyRun() {
 
 // startWatch start run work to watch target service by polaris
 func (watcher *PolarisServiceWatcher) startWatch() {
-
 	for {
 		resp, err := watcher.consumer.WatchService(watcher.subscribeParam)
 		if err != nil {
 			time.Sleep(time.Duration(500 * time.Millisecond))
 			continue
 		}
-
 		watcher.notifyAllSubscriber(&config_center.ConfigChangeEvent{
 			Value:      resp.GetAllInstancesResp.Instances,
 			ConfigType: remoting.EventTypeAdd,
 		})
 
-		select {
-		case event := <-resp.EventChannel:
-			eType := event.GetSubScribeEventType()
-			if eType == api.EventInstance {
-				insEvent := event.(*model.InstanceEvent)
-				if insEvent.AddEvent != nil {
-					watcher.notifyAllSubscriber(&config_center.ConfigChangeEvent{
-						Value:      insEvent.AddEvent.Instances,
-						ConfigType: remoting.EventTypeAdd,
-					})
-				}
-				if insEvent.UpdateEvent != nil {
-					instances := make([]model.Instance, len(insEvent.UpdateEvent.UpdateList))
-					for i := range insEvent.UpdateEvent.UpdateList {
-						instances[i] = insEvent.UpdateEvent.UpdateList[i].After
+		for {
+			select {
+			case event := <-resp.EventChannel:
+				eType := event.GetSubScribeEventType()
+				if eType == api.EventInstance {
+					insEvent := event.(*model.InstanceEvent)
+
+					if insEvent.AddEvent != nil {
+						watcher.notifyAllSubscriber(&config_center.ConfigChangeEvent{
+							Value:      insEvent.AddEvent.Instances,
+							ConfigType: remoting.EventTypeAdd,
+						})
 					}
-					watcher.notifyAllSubscriber(&config_center.ConfigChangeEvent{
-						Value:      instances,
-						ConfigType: remoting.EventTypeUpdate,
-					})
-				}
-				if insEvent.DeleteEvent != nil {
-					watcher.notifyAllSubscriber(&config_center.ConfigChangeEvent{
-						Value:      insEvent.DeleteEvent.Instances,
-						ConfigType: remoting.EventTypeDel,
-					})
+					if insEvent.UpdateEvent != nil {
+						instances := make([]model.Instance, len(insEvent.UpdateEvent.UpdateList))
+						for i := range insEvent.UpdateEvent.UpdateList {
+							instances[i] = insEvent.UpdateEvent.UpdateList[i].After
+						}
+						watcher.notifyAllSubscriber(&config_center.ConfigChangeEvent{
+							Value:      instances,
+							ConfigType: remoting.EventTypeUpdate,
+						})
+					}
+					if insEvent.DeleteEvent != nil {
+						watcher.notifyAllSubscriber(&config_center.ConfigChangeEvent{
+							Value:      insEvent.DeleteEvent.Instances,
+							ConfigType: remoting.EventTypeDel,
+						})
+					}
 				}
 			}
 		}
+
 	}
 }
 

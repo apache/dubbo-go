@@ -29,7 +29,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 )
 
-// Protocol is the interface that wraps the basic Export、 Refer and Destroy method.
+// Protocol is the interface that wraps the basic Export, Refer and Destroy method.
 //
 // Export method is to export service for remote invocation
 //
@@ -42,14 +42,14 @@ type Protocol interface {
 	Destroy()
 }
 
-// Exporter is the interface that wraps the basic GetInvoker method and Destroy Unexport.
+// Exporter is the interface that wraps the basic GetInvoker method and Destroy UnExport.
 //
 // GetInvoker method is to get invoker.
 //
-// Unexport method is to unexport a exported service
+// UnExport is to un export an exported service
 type Exporter interface {
 	GetInvoker() Invoker
-	Unexport()
+	UnExport()
 }
 
 // BaseProtocol is default protocol implement.
@@ -105,10 +105,10 @@ func (bp *BaseProtocol) Destroy() {
 	}
 	bp.invokers = []Invoker{}
 
-	// unexport exporters
+	// un export exporters
 	bp.exporterMap.Range(func(key, exporter interface{}) bool {
 		if exporter != nil {
-			exporter.(Exporter).Unexport()
+			exporter.(Exporter).UnExport()
 		} else {
 			bp.exporterMap.Delete(key)
 		}
@@ -137,8 +137,8 @@ func (de *BaseExporter) GetInvoker() Invoker {
 	return de.invoker
 }
 
-// Unexport exported service.
-func (de *BaseExporter) Unexport() {
+// UnExport un export service.
+func (de *BaseExporter) UnExport() {
 	logger.Infof("Exporter unexport.")
 	de.invoker.Destroy()
 	de.exporterMap.Delete(de.key)
