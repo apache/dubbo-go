@@ -36,10 +36,10 @@ type ServiceDefiner interface {
 
 // ServiceDefinition is the describer of service definition
 type ServiceDefinition struct {
-	CanonicalName string
-	CodeSource    string
-	Methods       []MethodDefinition
-	Types         []TypeDefinition
+	CanonicalName string             `json:"canonicalName,omitempty"`
+	CodeSource    string             `json:"codeSource,omitempty"`
+	Methods       []MethodDefinition `json:"methods,omitempty"`
+	Types         []TypeDefinition   `json:"types,omitempty"`
 }
 
 // ToBytes convert ServiceDefinition to json string
@@ -70,26 +70,26 @@ func (def *ServiceDefinition) String() string {
 
 // FullServiceDefinition is the describer of service definition with parameters
 type FullServiceDefinition struct {
+	Parameters map[string]string `json:"parameters,omitempty"`
 	ServiceDefinition
-	Params map[string]string
 }
 
 // MethodDefinition is the describer of method definition
 type MethodDefinition struct {
-	Name           string
-	ParameterTypes []string
-	ReturnType     string
-	Parameters     []TypeDefinition
+	Name           string           `json:"name,omitempty"`
+	ParameterTypes []string         `json:"parameterTypes,omitempty"`
+	ReturnType     string           `json:"returnTypes,omitempty"`
+	Parameters     []TypeDefinition `json:"parameters,omitempty"`
 }
 
 // TypeDefinition is the describer of type definition
 type TypeDefinition struct {
-	ID              string
-	Type            string
-	Items           []TypeDefinition
-	Enums           []string
-	Properties      map[string]TypeDefinition
-	TypeBuilderName string
+	ID              string                    `json:"id,omitempty"`
+	Type            string                    `json:"type,omitempty"`
+	Items           []TypeDefinition          `json:"items,omitempty"`
+	Enums           []string                  `json:"enums,omitempty"`
+	Properties      map[string]TypeDefinition `json:"properties,omitempty"`
+	TypeBuilderName string                    `json:"typeBuilderName,omitempty"`
 }
 
 // BuildServiceDefinition can build service definition which will be used to describe a service
