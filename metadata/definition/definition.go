@@ -90,9 +90,7 @@ type TypeDefinition struct {
 	Items           []TypeDefinition          `json:"items"`
 	Enums           []string                  `json:"enums"`
 	Properties      map[string]TypeDefinition `json:"properties"`
-	TypeBuilderName string                    `json:"typeBuilderName
-
-"`
+	TypeBuilderName string                    `json:"typeBuilderName"`
 }
 
 // BuildServiceDefinition can build service definition which will be used to describe a service
