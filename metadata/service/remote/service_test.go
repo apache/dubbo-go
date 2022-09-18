@@ -146,9 +146,9 @@ func TestMockInmemoryProc(t *testing.T) {
 	err = mts.PublishServiceDefinition(u)
 	assert.NoError(t, err)
 
-	expected := "{\"CanonicalName\":\"com.ikurento.user.UserProvider\",\"CodeSource\":\"\"," +
-		"\"Methods\":[{\"Name\":\"GetUser\",\"ParameterTypes\":[\"slice\"],\"ReturnType\":\"ptr\"," +
-		"\"Parameters\":null}],\"Types\":null}"
+	expected := "{\"canonicalName\":\"com.ikurento.user.UserProvider\",\"codeSource\":\"\"," +
+		"\"methods\":[{\"name\":\"GetUser\",\"parameterTypes\":[\"slice\"],\"returnType\":\"ptr\"," +
+		"\"parameters\":null}],\"types\":null}"
 	def1, _ := mts.GetServiceDefinition(serviceName, group, version)
 	assert.Equal(t, expected, def1)
 	serviceKey := definition.ServiceDescriperBuild(serviceName, group, version)

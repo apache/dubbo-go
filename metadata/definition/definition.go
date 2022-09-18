@@ -36,10 +36,10 @@ type ServiceDefiner interface {
 
 // ServiceDefinition is the describer of service definition
 type ServiceDefinition struct {
-	CanonicalName string             `json:"canonicalName,omitempty"`
-	CodeSource    string             `json:"codeSource,omitempty"`
-	Methods       []MethodDefinition `json:"methods,omitempty"`
-	Types         []TypeDefinition   `json:"types,omitempty"`
+	CanonicalName string             `json:"canonicalName"`
+	CodeSource    string             `json:"codeSource"`
+	Methods       []MethodDefinition `json:"methods"`
+	Types         []TypeDefinition   `json:"types"`
 }
 
 // ToBytes convert ServiceDefinition to json string
@@ -70,26 +70,28 @@ func (def *ServiceDefinition) String() string {
 
 // FullServiceDefinition is the describer of service definition with parameters
 type FullServiceDefinition struct {
-	Parameters map[string]string `json:"parameters,omitempty"`
+	Parameters map[string]string `json:"parameters"`
 	ServiceDefinition
 }
 
 // MethodDefinition is the describer of method definition
 type MethodDefinition struct {
-	Name           string           `json:"name,omitempty"`
-	ParameterTypes []string         `json:"parameterTypes,omitempty"`
-	ReturnType     string           `json:"returnTypes,omitempty"`
-	Parameters     []TypeDefinition `json:"parameters,omitempty"`
+	Name           string           `json:"name"`
+	ParameterTypes []string         `json:"parameterTypes"`
+	ReturnType     string           `json:"returnType"`
+	Parameters     []TypeDefinition `json:"parameters"`
 }
 
 // TypeDefinition is the describer of type definition
 type TypeDefinition struct {
-	ID              string                    `json:"id,omitempty"`
-	Type            string                    `json:"type,omitempty"`
-	Items           []TypeDefinition          `json:"items,omitempty"`
-	Enums           []string                  `json:"enums,omitempty"`
-	Properties      map[string]TypeDefinition `json:"properties,omitempty"`
-	TypeBuilderName string                    `json:"typeBuilderName,omitempty"`
+	ID              string                    `json:"id"`
+	Type            string                    `json:"type"`
+	Items           []TypeDefinition          `json:"items"`
+	Enums           []string                  `json:"enums"`
+	Properties      map[string]TypeDefinition `json:"properties"`
+	TypeBuilderName string                    `json:"typeBuilderName
+
+"`
 }
 
 // BuildServiceDefinition can build service definition which will be used to describe a service
