@@ -19,7 +19,6 @@ package auth
 
 import (
 	"errors"
-	"fmt"
 	"strconv"
 	"sync"
 	"time"
@@ -65,35 +64,12 @@ func (authenticator *defaultAuthenticator) Sign(invocation protocol.Invocation, 
 		return errors.New("get accesskey pair failed, cause: " + err.Error())
 	}
 	inv := invocation.(*invocation_impl.RPCInvocation)
-	// signature, err := getSignature(url, invocation, accessKeyPair.SecretKey, currentTimeMillis)
-	// if err != nil {
-	// 	return err
-	// }
-	// inv.SetAttachment(constant.RequestSignatureKey, signature)
+
 	inv.SetAttachment(constant.RequestTimestampKey, currentTimeMillis)
 	inv.SetAttachment(constant.SKKey, accessKeyPair.SecretKey)
 	inv.SetAttachment(constant.AKKey, accessKeyPair.AccessKey)
 	inv.SetAttachment(constant.Consumer, consumer)
 	return nil
-}
-
-// getSignature
-// get signature by the metadata and params of the invocation
-func getSignature(url *common.URL, invocation protocol.Invocation, secrectKey string, currentTime string) (string, error) {
-	requestString := fmt.Sprintf(constant.SignatureStringFormat,
-		url.ColonSeparatedKey(), invocation.MethodName(), secrectKey, currentTime)
-	var signature string
-	if parameterEncrypt := url.GetParamBool(constant.ParameterSignatureEnableKey, false); parameterEncrypt {
-		var err error
-		if signature, err = SignWithParams(invocation.Arguments(), requestString, secrectKey); err != nil {
-			// TODO
-			return "", errors.New("sign the request with params failed, cause:" + err.Error())
-		}
-	} else {
-		signature = Sign(requestString, secrectKey)
-	}
-
-	return signature, nil
 }
 
 // Authenticate verifies whether the signature sent by the requester is correct
@@ -114,8 +90,6 @@ func (authenticator *defaultAuthenticator) Authenticate(invocation protocol.Invo
 	if err != nil {
 		return errors.New("failed to authenticate , can't load the accessKeyPair")
 	}
-
-	// computeSignature, err := getSignature(url, invocation, accessKeyPair.SecretKey, requestTimestamp)
 
 	computeSignature := Sign(content, accessKeyPair.SecretKey)
 	if err != nil {

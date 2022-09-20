@@ -21,8 +21,6 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
-	"encoding/json"
-	"errors"
 	"strings"
 )
 
@@ -37,29 +35,6 @@ import (
 // Sign gets a signature string with given bytes
 func Sign(metadata, key string) string {
 	return doSign([]byte(metadata), key)
-}
-
-// SignWithParams returns a signature with giving params and metadata.
-func SignWithParams(params []interface{}, metadata, key string) (string, error) {
-	if len(params) == 0 {
-		return Sign(metadata, key), nil
-	}
-
-	data := append(params, metadata)
-	if bytes, err := toBytes(data); err != nil {
-		// TODO
-		return "", errors.New("data convert to bytes failed")
-	} else {
-		return doSign(bytes, key), nil
-	}
-}
-
-func toBytes(data []interface{}) ([]byte, error) {
-	if bytes, err := json.Marshal(data); err != nil {
-		return nil, errors.New("")
-	} else {
-		return bytes, nil
-	}
 }
 
 func doSign(bytes []byte, key string) string {
