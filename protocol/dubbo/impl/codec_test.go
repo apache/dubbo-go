@@ -28,11 +28,12 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/filter/auth"
+	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
 func TestDubboPackage_MarshalAndUnmarshal(t *testing.T) {
 	pkg := NewDubboPackage(nil)
-	pkg.Body = []interface{}{"a"}
 	pkg.Header.Type = PackageHeartbeat
 	pkg.Header.SerialID = constant.SHessian2
 	pkg.Header.ID = 10086
@@ -54,6 +55,9 @@ func TestDubboPackage_MarshalAndUnmarshal(t *testing.T) {
 	assert.Equal(t, 0, len(pkgres.Body.([]interface{})))
 
 	// request
+	tmpInvocation := invocation.NewRPCInvocation("test", []interface{}{"a"}, nil)
+	tmpInvocation.SetAttachment(constant.SKKey, "key")
+	pkg.Body = NewRequestPayload(tmpInvocation.Arguments(), tmpInvocation.Attachments())
 	pkg.Header.Type = PackageRequest
 	pkg.Service.Interface = "Service"
 	pkg.Service.Path = "path"
@@ -78,12 +82,17 @@ func TestDubboPackage_MarshalAndUnmarshal(t *testing.T) {
 	assert.Equal(t, "Method", pkgres.Service.Method)
 	assert.Equal(t, "Ljava/lang/String;", reassembleBody["argsTypes"].(string))
 	assert.Equal(t, []interface{}{"a"}, reassembleBody["args"])
+	content := reassembleBody["attachments"].(map[string]interface{})["content"].(string)
+	signature := auth.Sign(content, "key")
+
 	tmpData := map[string]interface{}{
 		"dubbo":     "2.0.2",
 		"interface": "Service",
 		"path":      "path",
 		"timeout":   "1000",
 		"version":   "2.6",
+		"signature": signature,
+		"content": content,
 	}
 	assert.Equal(t, tmpData, reassembleBody["attachments"])
 }

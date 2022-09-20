@@ -18,7 +18,7 @@
 package auth
 
 import (
-	"fmt"
+	"encoding/json"
 	"net/url"
 	"strconv"
 	"testing"
@@ -39,16 +39,17 @@ func TestDefaultAuthenticator_Authenticate(t *testing.T) {
 	secret := "dubbo-sk"
 	access := "dubbo-ak"
 	testurl, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=gg&version=2.6.0")
-	testurl.SetParam(constant.ParameterSignatureEnableKey, "true")
 	testurl.SetParam(constant.AccessKeyIDKey, access)
 	testurl.SetParam(constant.SecretAccessKeyKey, secret)
 	parmas := []interface{}{"OK", struct {
 		Name string
 		ID   int64
 	}{"YUYU", 1}}
-	inv := invocation.NewRPCInvocation("test", parmas, nil)
+
 	requestTime := strconv.Itoa(int(time.Now().Unix() * 1000))
-	signature, _ := getSignature(testurl, inv, secret, requestTime)
+	
+	content, _ := json.Marshal(parmas)
+	signature := doSign(content, secret)
 
 	authenticator = &defaultAuthenticator{}
 
@@ -57,15 +58,19 @@ func TestDefaultAuthenticator_Authenticate(t *testing.T) {
 		constant.Consumer:            "test",
 		constant.RequestTimestampKey: requestTime,
 		constant.AKKey:               access,
+		"content":				      string(content),
 	})
 	err := authenticator.Authenticate(invcation, testurl)
 	assert.Nil(t, err)
+
 	// modify the params
+	content, _ = json.Marshal(parmas[:1])
 	invcation = invocation.NewRPCInvocation("test", parmas[:1], map[string]interface{}{
 		constant.RequestSignatureKey: signature,
 		constant.Consumer:            "test",
 		constant.RequestTimestampKey: requestTime,
 		constant.AKKey:               access,
+		"content":				      string(content),
 	})
 	err = authenticator.Authenticate(invcation, testurl)
 	assert.NotNil(t, err)
@@ -79,10 +84,10 @@ func TestDefaultAuthenticator_Sign(t *testing.T) {
 	testurl.SetParam(constant.ParameterSignatureEnableKey, "false")
 	inv := invocation.NewRPCInvocation("test", []interface{}{"OK"}, nil)
 	_ = authenticator.Sign(inv, testurl)
-	assert.NotEqual(t, inv.GetAttachmentWithDefaultValue(constant.RequestSignatureKey, ""), "")
 	assert.NotEqual(t, inv.GetAttachmentWithDefaultValue(constant.Consumer, ""), "")
 	assert.NotEqual(t, inv.GetAttachmentWithDefaultValue(constant.RequestTimestampKey, ""), "")
 	assert.Equal(t, inv.GetAttachmentWithDefaultValue(constant.AKKey, ""), "akey")
+	assert.Equal(t, inv.GetAttachmentWithDefaultValue(constant.SKKey, ""), "skey")
 }
 
 func Test_getAccessKeyPairSuccess(t *testing.T) {
@@ -112,34 +117,4 @@ func Test_getAccessKeyPairFailed(t *testing.T) {
 		common.WithParamsValue(constant.AccessKeyIDKey, "akey"), common.WithParamsValue(constant.AccessKeyStorageKey, "dubbo"))
 	_, e = getAccessKeyPair(invcation, testurl)
 	assert.NoError(t, e)
-}
-
-func Test_getSignatureWithinParams(t *testing.T) {
-	testurl, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=gg&version=2.6.0")
-	testurl.SetParam(constant.ParameterSignatureEnableKey, "true")
-	inv := invocation.NewRPCInvocation("test", []interface{}{"OK"}, map[string]interface{}{
-		"": "",
-	})
-	secret := "dubbo"
-	current := strconv.Itoa(int(time.Now().Unix() * 1000))
-	signature, _ := getSignature(testurl, inv, secret, current)
-	requestString := fmt.Sprintf(constant.SignatureStringFormat,
-		testurl.ColonSeparatedKey(), inv.MethodName(), secret, current)
-	s, _ := SignWithParams(inv.Arguments(), requestString, secret)
-	assert.False(t, IsEmpty(signature, false))
-	assert.Equal(t, s, signature)
-}
-
-func Test_getSignature(t *testing.T) {
-	testurl, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=gg&version=2.6.0")
-	testurl.SetParam(constant.ParameterSignatureEnableKey, "false")
-	inv := invocation.NewRPCInvocation("test", []interface{}{"OK"}, nil)
-	secret := "dubbo"
-	current := strconv.Itoa(int(time.Now().Unix() * 1000))
-	signature, _ := getSignature(testurl, inv, secret, current)
-	requestString := fmt.Sprintf(constant.SignatureStringFormat,
-		testurl.ColonSeparatedKey(), inv.MethodName(), secret, current)
-	s := Sign(requestString, secret)
-	assert.False(t, IsEmpty(signature, false))
-	assert.Equal(t, s, signature)
 }

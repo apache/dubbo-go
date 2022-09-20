@@ -25,6 +25,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+)
+
 func TestIsEmpty(t *testing.T) {
 	type args struct {
 		s          string
@@ -58,19 +62,6 @@ func TestSign(t *testing.T) {
 	assert.NotNil(t, signature)
 }
 
-func TestSignWithParams(t *testing.T) {
-	metadata := "com.ikurento.user.UserProvider::sayHi"
-	key := "key"
-	params := []interface{}{
-		"a", 1, struct {
-			Name string
-			ID   int64
-		}{"YuYu", 1},
-	}
-	signature, _ := SignWithParams(params, metadata, key)
-	assert.False(t, IsEmpty(signature, false))
-}
-
 func Test_doSign(t *testing.T) {
 	sign := doSign([]byte("DubboGo"), "key")
 	sign1 := doSign([]byte("DubboGo"), "key")
@@ -80,21 +71,17 @@ func Test_doSign(t *testing.T) {
 	assert.NotEqual(t, sign1, sign2)
 }
 
-func Test_toBytes(t *testing.T) {
-	params := []interface{}{
-		"a", 1, struct {
-			Name string
-			ID   int64
-		}{"YuYu", 1},
-	}
-	params2 := []interface{}{
-		"a", 1, struct {
-			Name string
-			ID   int64
-		}{"YuYu", 1},
-	}
-	jsonBytes, _ := toBytes(params)
-	jsonBytes2, _ := toBytes(params2)
-	assert.NotNil(t, jsonBytes)
-	assert.Equal(t, jsonBytes, jsonBytes2)
+func Test_GenSignBlock(t *testing.T) {
+	signBlock := GenSignBlock([]byte("DubboGo"), "key")
+	assert.NotNil(t, signBlock[constant.RequestSignatureKey])
+	assert.Equal(t, signBlock["contentLen"], len([]byte("DubboGo")))
+
+	signBlock1 := GenSignBlock([]byte("DubboGo"), nil)
+	assert.Nil(t, signBlock1[constant.RequestSignatureKey])
+	assert.Equal(t, signBlock1["contentLen"], len([]byte("DubboGo")))
+
+	signBlock2 := GenSignBlock([]byte("DubboGo"), "key")
+	signBlock3 := GenSignBlock([]byte("DubboGo"), "key2")
+	assert.Equal(t, signBlock[constant.RequestSignatureKey], signBlock2[constant.RequestSignatureKey])
+	assert.NotEqual(t, signBlock[constant.RequestSignatureKey], signBlock3[constant.RequestSignatureKey])
 }

@@ -19,6 +19,7 @@ package auth
 
 import (
 	"context"
+	"encoding/json"
 	"strconv"
 	"testing"
 	"time"
@@ -51,15 +52,17 @@ func TestProviderAuthFilter_Invoke(t *testing.T) {
 			ID   int64
 		}{"YUYU", 1},
 	}
-	inv := invocation.NewRPCInvocation("test", parmas, nil)
 	requestTime := strconv.Itoa(int(time.Now().Unix() * 1000))
-	signature, _ := getSignature(url, inv, secret, requestTime)
+	
+	content, _ := json.Marshal(parmas)
+	signature := doSign(content, secret)
 
-	inv = invocation.NewRPCInvocation("test", []interface{}{"OK"}, map[string]interface{}{
+	inv := invocation.NewRPCInvocation("test", []interface{}{"OK"}, map[string]interface{}{
 		constant.RequestSignatureKey: signature,
 		constant.Consumer:            "test",
 		constant.RequestTimestampKey: requestTime,
 		constant.AKKey:               access,
+		"content":				      string(content),
 	})
 	ctrl := gomock.NewController(t)
 	filter := &authFilter{}
