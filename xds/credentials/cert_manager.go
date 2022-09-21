@@ -107,7 +107,7 @@ func (c *AgentCertManager) GetCertificate() ([]tls.Certificate, error) {
 	return material.Certs, nil
 }
 
-// buildProvider  build cert provider from config
+// buildProvider build cert provider from config
 func buildProvider(configs map[string]*certprovider.BuildableConfig, instanceName string) (certprovider.Provider, error) {
 	cfg, ok := configs[instanceName]
 	if !ok {
@@ -177,13 +177,13 @@ func (c *CACertManager) UpdateRoot() error {
 	}
 	cert, err := x509.ParseCertificate(block.Bytes)
 	if err != nil {
-		return nil
+		return err
 	}
 	c.RootNoAfter = cert.NotAfter
 	return nil
 }
 
-// UpdateCert update  cert
+// UpdateCert update cert
 func (c *CACertManager) UpdateCert() error {
 	tokenProvider, err := NewSaTokenProvider(ServiceAccountPath)
 	if err != nil {
@@ -192,7 +192,7 @@ func (c *CACertManager) UpdateCert() error {
 
 	trustRoot, err := c.GetRootCertificate()
 	if err != nil {
-		return nil
+		return err
 	}
 	citadelClient, err := remote.NewCitadelClient(&remote.Options{
 		CAEndpoint:    IstioCAEndpoint,
