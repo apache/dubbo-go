@@ -23,4 +23,8 @@ const (
 	AppLogConfFile     = "AppLogConfFile"
 	PodNameEnvKey      = "POD_NAME"
 	PodNamespaceEnvKey = "POD_NAMESPACE"
+
+	DubboIpToRegistryKey       = "DUBBO_IP_TO_REGISTRY"
+	DubboPortToRegistryKey     = "DUBBO_PORT_TO_REGISTRY"
+	DubboDefaultPortToRegistry = "80"
 )
