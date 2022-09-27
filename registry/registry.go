@@ -49,6 +49,7 @@ type Registry interface {
 	// subscribe(event.URL) (Listener, error)
 	// Will replace mode1 in dubbogo version v1.1.0
 	// mode2: callback mode, subscribe with notify(notify listener).
+
 	Subscribe(*common.URL, NotifyListener) error
 
 	// UnSubscribe is required to support the contract:

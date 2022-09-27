@@ -51,7 +51,6 @@ type ServiceDiscovery interface {
 	// GetServices will return the all service names.
 	GetServices() *gxset.HashSet
 
-	// GetInstances will return all service instances with serviceName
 	GetInstances(serviceName string) []ServiceInstance
 
 	// GetInstancesByPage will return a page containing instances of ServiceInstance

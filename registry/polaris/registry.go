@@ -70,11 +70,13 @@ func newPolarisRegistry(url *common.URL) (registry.Registry, error) {
 }
 
 type polarisRegistry struct {
+	consumer     api.ConsumerAPI
+	namespace    string
 	url          *common.URL
 	provider     api.ProviderAPI
 	lock         *sync.RWMutex
 	registryUrls map[string]*PolarisHeartbeat
-
+	watchers     map[string]*PolarisServiceWatcher
 	listenerLock *sync.RWMutex
 }
 
@@ -183,77 +185,29 @@ func (pr *polarisRegistry) Subscribe(url *common.URL, notifyListener registry.No
 
 // createPolarisWatcherIfAbsent Calculate whether the corresponding PolarisWatcher needs to be created,
 // if it does not exist, create one, otherwise return the existing one
-func (polaris *polarisServiceDiscovery) createPolarisWatcher(serviceName string) (*PolarisServiceWatcher, error) {
+func (pr *polarisRegistry) createPolarisWatcher(serviceName string) (*PolarisServiceWatcher, error) {
 
-	polaris.listenerLock.Lock()
-	defer polaris.listenerLock.Unlock()
+	pr.listenerLock.Lock()
+	defer pr.listenerLock.Unlock()
 
-	if _, exist := polaris.watchers[serviceName]; !exist {
+	if _, exist := pr.watchers[serviceName]; !exist {
 		subscribeParam := &api.WatchServiceRequest{
 			WatchServiceRequest: model.WatchServiceRequest{
 				Key: model.ServiceKey{
-					Namespace: polaris.namespace,
+					Namespace: pr.namespace,
 					Service:   serviceName,
 				},
 			},
 		}
 
-		watcher, err := newPolarisWatcher(subscribeParam, polaris.consumer)
+		watcher, err := newPolarisWatcher(subscribeParam, pr.consumer)
 		if err != nil {
 			return nil, err
 		}
-		polaris.watchers[serviceName] = watcher
+		pr.watchers[serviceName] = watcher
 	}
 
-	return polaris.watchers[serviceName], nil
-}
-
-// Subscribe returns nil if subscribing registry successfully. If not returns an error.
-func (pr *polarisServiceDiscovery) SubscribeBywatcher(url *common.URL, notifyListener registry.NotifyListener, listener registry.ServiceInstancesChangedListener) error {
-
-	role, _ := strconv.Atoi(url.GetParam(constant.RegistryRoleKey, ""))
-	if role != common.CONSUMER {
-		return nil
-	}
-	for _, val := range listener.GetServiceNames().Values() {
-		serviceName := val.(string)
-		watcher, err := pr.createPolarisWatcher(serviceName)
-	}
-
-	for {
-		listener, err := NewPolarisListener(url)
-		if err != nil {
-			logger.Warnf("getListener() = err:%v", perrors.WithStack(err))
-			<-time.After(time.Duration(RegistryConnDelay) * time.Second)
-			continue
-		}
-
-		if err != nil {
-			logger.Warnf("getwatcher() = err:%v", perrors.WithStack(err))
-			timer := time.NewTimer(time.Duration(RegistryConnDelay) * time.Second)
-			timer.Reset(time.Duration(RegistryConnDelay) * time.Second)
-			continue
-		}
-		for {
-
-			serviceEvent, err := listener.Next()
-
-			if err != nil {
-				logger.Warnf("Selector.watch() = error{%v}", perrors.WithStack(err))
-				listener.Close()
-				return err
-			}
-			logger.Infof("update begin, service event: %v", serviceEvent.String())
-			notifyListener.Notify(serviceEvent)
-
-		}
-	}
-}
-
-// UnSubscribe returns nil if unsubscribing registry successfully. If not returns an error.
-func (pr *polarisRegistry) UnSubscribe(url *common.URL, notifyListener registry.NotifyListener) error {
-	// TODO wait polaris support it
-	return perrors.New("UnSubscribe not support in polarisRegistry")
+	return pr.watchers[serviceName], nil
 }
 
 // GetURL returns polaris registry's url.
