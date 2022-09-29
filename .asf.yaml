@@ -3,3 +3,29 @@ notifications:
     issues:       notifications@dubbo.apache.org
     pullrequests: notifications@dubbo.apache.org
     jira_options: link label link label
+github:
+    homepage: https://dubbo.apache.org/
+    description: "Go Implementation For Apache Dubbo ."
+    labels:
+        - go
+        - rpc
+        - microservices
+        - http2
+        - service-mesh
+    features:
+        # Enable wiki for documentation
+        wiki: true
+        # Enable issue management
+        issues: true
+        # Enable projects for project management boards
+        projects: true
+    protected_branches:
+        master:
+            # only disable force push
+            foo: bar
+        3.0:
+            # only disable force push
+            foo: bar
+        3.1:
+            # only disable force push
+            foo: bar

@@ -57,7 +57,7 @@ func TestNewURLWithOptions(t *testing.T) {
 	assert.Equal(t, loopbackAddress, u.Ip)
 	assert.Equal(t, "8080", u.Port)
 	assert.Equal(t, methods, u.Methods)
-	assert.Equal(t, params, u.params)
+	assert.Equal(t, 2, len(u.params))
 }
 
 func TestURL(t *testing.T) {

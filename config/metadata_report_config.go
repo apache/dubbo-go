@@ -85,7 +85,7 @@ func (mc *MetadataReportConfig) StartMetadataReport() error {
 		return nil
 	}
 	if tmpUrl, err := mc.ToUrl(); err == nil {
-		instance.GetMetadataReportInstance(tmpUrl)
+		instance.SetMetadataReportInstance(tmpUrl)
 		return nil
 	} else {
 		return perrors.Wrap(err, "Start MetadataReport failed.")

@@ -197,18 +197,23 @@ func (s *serviceDiscoveryRegistry) Subscribe(url *common.URL, notify registry.No
 	}
 	services := s.getServices(url)
 	if services.Empty() {
-		return perrors.Errorf("Should has at least one way to know which services this interface belongs to, "+
-			"subscription url:%s", url.String())
+		return perrors.Errorf("Should has at least one way to know which services this interface belongs to,"+
+			" either specify 'provided-by' for reference or enable metadata-report center subscription url:%s", url.String())
 	}
 	// FIXME ServiceNames.String() is not good
 	serviceNamesKey := services.String()
-	protocolServiceKey := url.ServiceKey() + ":" + url.Protocol
+	protocol := "tri" // consume "tri" protocol by default, other protocols need to be specified on reference/consumer explicitly
+	if url.Protocol != "" {
+		protocol = url.Protocol
+	}
+	protocolServiceKey := url.ServiceKey() + ":" + protocol
 	listener := s.serviceListeners[serviceNamesKey]
 	if listener == nil {
 		listener = event.NewServiceInstancesChangedListener(services)
 		for _, serviceNameTmp := range services.Values() {
 			serviceName := serviceNameTmp.(string)
 			instances := s.serviceDiscovery.GetInstances(serviceName)
+			logger.Infof("Synchronized instance notification on subscription, instance list size %s", len(instances))
 			err = listener.OnEvent(&registry.ServiceInstancesChangedEvent{
 				ServiceName: serviceName,
 				Instances:   instances,

@@ -19,8 +19,13 @@ package constant
 
 // nolint
 const (
-	ConfigFileEnvKey   = "DUBBO_GO_CONFIG_PATH" // key of environment variable dubbogo configure file path
-	AppLogConfFile     = "AppLogConfFile"
-	PodNameEnvKey      = "POD_NAME"
-	PodNamespaceEnvKey = "POD_NAMESPACE"
+	ConfigFileEnvKey     = "DUBBO_GO_CONFIG_PATH" // key of environment variable dubbogo configure file path
+	AppLogConfFile       = "AppLogConfFile"
+	PodNameEnvKey        = "POD_NAME"
+	PodNamespaceEnvKey   = "POD_NAMESPACE"
+	ClusterDomainKey     = "CLUSTER_DOMAIN"
+	DefaultClusterDomain = "cluster.local"
+	DefaultNamespace     = "default"
+	SVC                  = "svc"
+	DefaultMeshPort      = 80
 )

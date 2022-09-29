@@ -65,11 +65,12 @@ func (d *MetadataServiceNameMapping) Map(url *common.URL) error {
 
 	metadataReport := getMetaDataReport(url.GetParam(constant.RegistryKey, ""))
 	if metadataReport == nil {
-		return perrors.New("get metadata report instance is nil")
-	}
-	err := metadataReport.RegisterServiceAppMapping(serviceInterface, defaultGroup, appName)
-	if err != nil {
-		return perrors.WithStack(err)
+		logger.Info("get metadata report instance is nil, metadata service will be enabled!")
+	} else {
+		err := metadataReport.RegisterServiceAppMapping(serviceInterface, defaultGroup, appName)
+		if err != nil {
+			return perrors.WithStack(err)
+		}
 	}
 	return nil
 }
