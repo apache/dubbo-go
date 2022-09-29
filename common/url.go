@@ -530,21 +530,17 @@ func (c *URL) GetParam(s string, d string) string {
 	return r
 }
 
-// GetParamNoDefault gets value by key, return nil,false if no value found mapping to the key
-func (c *URL) GetParamNoDefault(s string) (string, bool) {
+// GetNonDefaultParam gets value by key, return nil,false if no value found mapping to the key
+func (c *URL) GetNonDefaultParam(s string) (string, bool) {
 	c.paramsLock.RLock()
 	defer c.paramsLock.RUnlock()
 
 	var r string
-	ok := true
 	if len(c.params) > 0 {
 		r = c.params.Get(s)
 	}
-	if len(r) == 0 {
-		ok = false
-	}
 
-	return r, ok
+    return r, r != ""
 }
 
 // GetParams gets values
@@ -725,7 +721,7 @@ func MergeURL(serviceURL *URL, referenceURL *URL) *URL {
 	// iterator the referenceURL if serviceURL not have the key ,merge in
 	// referenceURL usually will not changed. so change RangeParams to GetParams to avoid the string value copy.// Group get group
 	for key, value := range referenceURL.GetParams() {
-		if _, ok := mergedURL.GetParamNoDefault(key); !ok {
+		if _, ok := mergedURL.GetNonDefaultParam(key); !ok {
 			if len(value) > 0 {
 				params[key] = value
 			}
@@ -736,7 +732,7 @@ func MergeURL(serviceURL *URL, referenceURL *URL) *URL {
 	methodConfigMergeFcn := mergeNormalParam(params, referenceURL, []string{constant.LoadbalanceKey, constant.ClusterKey, constant.RetriesKey, constant.TimeoutKey})
 
 	// remote timestamp
-	if v, ok := serviceURL.GetParamNoDefault(constant.TimestampKey); !ok {
+	if v, ok := serviceURL.GetNonDefaultParam(constant.TimestampKey); !ok {
 		params[constant.RemoteTimestampKey] = []string{v}
 		params[constant.TimestampKey] = []string{referenceURL.GetParam(constant.TimestampKey, "")}
 	}
