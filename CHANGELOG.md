@@ -1,5 +1,42 @@
 # Release Notes
 ---
+## 3.0.3
+
+### Features
+- [Support Grpc based Health check](https://github.com/apache/dubbo-go/pull/1935)
+- [Support xds certificate](https://github.com/apache/dubbo-go/pull/1945)
+- [Support gracefully offline without registry](https://github.com/apache/dubbo-go/pull/1973)
+- [Support nacosRegistry and polarisRegistry register ip and port from env](https://github.com/apache/dubbo-go/pull/2061)
+
+### Bugfixs
+- [Fix: typo correction](https://github.com/apache/dubbo-go/pull/1924)
+- [Fix: revision calc](https://github.com/apache/dubbo-go/pull/1926)
+- [Fix: rand.Seed() duplicate concurrent calls](https://github.com/apache/dubbo-go/pull/1958)
+- [Fix: when creating metrics objects concurrently](https://github.com/apache/dubbo-go/pull/1961)
+- [Fix: remove consumer of polaris](https://github.com/apache/dubbo-go/pull/1962)
+- [Fix: assembleMsg bad use, pass []any as any in variadic function](https://github.com/apache/dubbo-go/pull/1964)
+- [Fix: getting attributes issue](https://github.com/apache/dubbo-go/pull/1968)
+- [Fix: PolarisServiceWatcher](https://github.com/apache/dubbo-go/pull/1988)
+- [Fix: route with more invokers](https://github.com/apache/dubbo-go/pull/2000)
+- [Fix: shutdown InternalSignal default value ](https://github.com/apache/dubbo-go/pull/2003)
+- [Fix: service discovery related issues and add mesh proxy mode support](https://github.com/apache/dubbo-go/pull/2022)
+- [Fix: polaris Subscriber](https://github.com/apache/dubbo-go/pull/2026)
+- [Fix: adaptive-service: deadlock caused by rwMutex in limiter mapper](https://github.com/apache/dubbo-go/pull/2053)
+
+### Enhancements
+- [Chore remove apollo config center](https://github.com/apache/dubbo-go/pull/1932)
+- [Reduce common directory](https://github.com/apache/dubbo-go/pull/1948)
+- [Remove useless time format](https://github.com/apache/dubbo-go/pull/1955)
+- [Enhance ServiceDefinition in MetadataService](https://github.com/apache/dubbo-go/pull/1963)
+- [Add dubbo-go cli and edit readme](https://github.com/apache/dubbo-go/pull/1971)
+- [Gost upgrade to master of latest](https://github.com/apache/dubbo-go/pull/1993)
+- [Upgrade hessian2 to v1.11.1](https://github.com/apache/dubbo-go/pull/1995)
+- [Configure placeholder lookup](https://github.com/apache/dubbo-go/pull/2014)
+- [Enable publish servicedefinition to metadata center](https://github.com/apache/dubbo-go/pull/2025)
+- [Add the set of getty logger](https://github.com/apache/dubbo-go/pull/2029)
+- [Use notifyAll insteadOf notify for listener events notify](https://github.com/apache/dubbo-go/pull/2043)
+
+
 ## 3.0.2
 
 ### Features
