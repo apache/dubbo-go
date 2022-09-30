@@ -15,16 +15,29 @@
  * limitations under the License.
  */
 
-package constant
+/*
+ *
+ * Copyright Istio Authors
+ *
+ */
 
-// nolint
-const (
-	ConfigFileEnvKey   = "DUBBO_GO_CONFIG_PATH" // key of environment variable dubbogo configure file path
-	AppLogConfFile     = "AppLogConfFile"
-	PodNameEnvKey      = "POD_NAME"
-	PodNamespaceEnvKey = "POD_NAMESPACE"
+package certgenerate
 
-	DubboIpToRegistryKey       = "DUBBO_IP_TO_REGISTRY"
-	DubboPortToRegistryKey     = "DUBBO_PORT_TO_REGISTRY"
-	DubboDefaultPortToRegistry = "80"
+import (
+	"fmt"
+	"strings"
 )
+
+// DualUseCommonName extracts a valid CommonName from a comma-delimited host string
+// for dual-use certificates.
+func DualUseCommonName(host string) (string, error) {
+	// cn uses one hostname, drop the rest
+	first := strings.SplitN(host, ",", 2)[0]
+
+	// cn max length is 64 (ub-common-name @ https://tools.ietf.org/html/rfc5280)
+	if l := len(first); l > 64 {
+		return "", fmt.Errorf("certificate CN upper bound exceeded (%v>64): %s", l, first)
+	}
+
+	return first, nil
+}
