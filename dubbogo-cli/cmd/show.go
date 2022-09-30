@@ -43,9 +43,15 @@ func init() {
 	rootCmd.AddCommand(showCmd)
 	showCmd.Flags().String("r", "r", "")
 	showCmd.Flags().String("h", "h", "")
+	showCmd.Flags().Bool("mc", false, "Get Metadata in MetadataCenter or not")
 }
 
 func show(cmd *cobra.Command, _ []string) {
+	var (
+		methodsMap map[string][]string
+		err error
+	)
+
 	registry, err := cmd.Flags().GetString("r")
 	if err != nil {
 		panic(err)
@@ -59,7 +65,18 @@ func show(cmd *cobra.Command, _ []string) {
 		log.Print("registry not support")
 		return
 	}
-	methodsMap, err := fact("dubbogo-cli", []string{host}).ShowChildren()
+
+	metadataCenter, err := cmd.Flags().GetBool("mc")
+	if err != nil {
+		panic(err)
+	}
+
+	if metadataCenter {
+		methodsMap, err = fact("dubbogo-cli", []string{host}).ShowMetadataCenterChildren()
+	} else {
+		methodsMap, err = fact("dubbogo-cli", []string{host}).ShowChildren()
+	}
+
 	if err != nil {
 		panic(err)
 	}

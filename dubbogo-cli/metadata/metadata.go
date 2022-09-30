@@ -24,6 +24,7 @@ import (
 // MetaData meta data from registration center
 type MetaData interface {
 	ShowChildren() (map[string][]string, error)
+	ShowMetadataCenterChildren() (map[string][]string, error)
 }
 
 // Factory metaData factory function
