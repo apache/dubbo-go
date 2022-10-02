@@ -18,6 +18,8 @@
 package utils
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -43,4 +45,11 @@ func IsAdaptiveServiceFailed(err error) bool {
 		return false
 	}
 	return strings.HasPrefix(err.Error(), adaptivesvc.ErrAdaptiveSvcInterrupted.Error())
+}
+
+func IsDeadlineExceeded(err error) bool {
+	if err == nil {
+		return false
+	}
+	return errors.Is(err, context.DeadlineExceeded)
 }

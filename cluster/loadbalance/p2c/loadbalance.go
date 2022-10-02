@@ -137,6 +137,7 @@ func successRateWeight(url *common.URL, methodName string) float64 {
 	accepts := metrics.ToFloat64(acceptsIface)
 	r := (1 + accepts) / (1 + requests)
 
+	//r will greater than 1 because SlidingWindowCounter collects the most recent data and there is a delay in receiving a response.
 	if r > 1 {
 		r = 1
 	}

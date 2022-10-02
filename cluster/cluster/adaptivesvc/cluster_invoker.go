@@ -19,7 +19,6 @@ package adaptivesvc
 
 import (
 	"context"
-	"errors"
 	"time"
 )
 
@@ -72,12 +71,21 @@ func (ivk *adaptiveServiceClusterInvoker) Invoke(ctx context.Context, invocation
 	rtt := time.Now().UnixNano() - startTime
 	// if the adaptive service encounters an error, DO NOT
 	// update the metrics.
-	if clsutils.IsAdaptiveServiceFailed(result.Error()) {
-		return result
-	} else if errors.Is(result.Error(), context.DeadlineExceeded) {
+	if shouldDrop(result.Error()) {
 		return result
 	}
 	_ = metrics.EMAMetrics.SetMethodMetrics(invoker.GetURL(), invocation.MethodName(), metrics.RTT, rtt)
 	_ = metrics.SlidingWindowCounterMetrics.SetMethodMetrics(invoker.GetURL(), invocation.MethodName(), metrics.Accepts, 1)
 	return result
+}
+
+func shouldDrop(err error) bool {
+	switch {
+	case clsutils.IsAdaptiveServiceFailed(err):
+		return true
+	case clsutils.IsDeadlineExceeded(err):
+		return true
+	default:
+		return false
+	}
 }
