@@ -18,7 +18,6 @@
 package rolling
 
 import (
-	"fmt"
 	"sync"
 )
 
@@ -39,7 +38,7 @@ func NewEMAMetrics(opts EMAOpts) *EMAMetrics {
 }
 
 func (m *EMAMetrics) GetMethodMetrics(url *common.URL, methodName, key string) (float64, error) {
-	metricsKey := fmt.Sprintf("%s.%s.%s.%s", utils.GetInstanceKey(url), utils.GetInvokerKey(url), methodName, key)
+	metricsKey := utils.GetMethodMetricsKey(url, methodName, key)
 	if metrics, ok := m.metrics.Load(metricsKey); ok {
 		return metrics.(*EMA).Value(), nil
 	}
@@ -47,7 +46,7 @@ func (m *EMAMetrics) GetMethodMetrics(url *common.URL, methodName, key string) (
 }
 
 func (m *EMAMetrics) AppendMethodMetrics(url *common.URL, methodName, key string, val float64) error {
-	metricsKey := fmt.Sprintf("%s.%s.%s.%s", utils.GetInstanceKey(url), utils.GetInvokerKey(url), methodName, key)
+	metricsKey := utils.GetMethodMetricsKey(url, methodName, key)
 	if metrics, ok := m.metrics.Load(metricsKey); ok {
 		metrics.(*EMA).Append(val)
 	} else {

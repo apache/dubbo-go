@@ -69,3 +69,7 @@ func ToFloat64(i interface{}) float64 {
 		return 0
 	}
 }
+
+func GetMethodMetricsKey(url *common.URL, methodName, key string) string {
+	return fmt.Sprintf("%s.%s.%s.%s", GetInstanceKey(url), GetInvokerKey(url), methodName, key)
+}
