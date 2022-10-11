@@ -104,10 +104,9 @@ func Weight(url1, url2 *common.URL, methodName string) (weight1, weight2 float64
 	s1 := successRateWeight(url1, methodName)
 	s2 := successRateWeight(url2, methodName)
 
-	rtt1Iface, _ := metrics.EMAMetrics.GetMethodMetrics(url1, methodName, metrics.RTT)
-	rtt2Iface, _ := metrics.EMAMetrics.GetMethodMetrics(url2, methodName, metrics.RTT)
-	rtt1 := metrics.ToFloat64(rtt1Iface)
-	rtt2 := metrics.ToFloat64(rtt2Iface)
+	rtt1, _ := metrics.EMAMetrics.GetMethodMetrics(url1, methodName, metrics.RTT)
+	rtt2, _ := metrics.EMAMetrics.GetMethodMetrics(url2, methodName, metrics.RTT)
+
 	logger.Debugf("[P2C Weight Metrics] [invoker1] %s's s score: %f, rtt: %f; [invoker2] %s's s score: %f, rtt: %f.",
 		url1.Ip, s1, rtt1, url2.Ip, s2, rtt2)
 	avgRtt := (rtt1 + rtt2) / 2
@@ -128,11 +127,9 @@ func normalize(x float64) float64 {
 }
 
 func successRateWeight(url *common.URL, methodName string) float64 {
-	requestsIface, _ := metrics.SlidingWindowCounterMetrics.GetMethodMetrics(url, methodName, metrics.Requests)
-	acceptsIface, _ := metrics.SlidingWindowCounterMetrics.GetMethodMetrics(url, methodName, metrics.Accepts)
+	requests, _ := metrics.SlidingWindowCounterMetrics.GetMethodMetrics(url, methodName, metrics.Requests)
+	accepts, _ := metrics.SlidingWindowCounterMetrics.GetMethodMetrics(url, methodName, metrics.Accepts)
 
-	requests := metrics.ToFloat64(requestsIface)
-	accepts := metrics.ToFloat64(acceptsIface)
 	r := (1 + accepts) / (1 + requests)
 
 	//r will greater than 1 because SlidingWindowCounter collects the most recent data and there is a delay in receiving a response.

@@ -15,52 +15,39 @@
  * limitations under the License.
  */
 
-package metrics
+package rolling
 
 import (
-	"fmt"
+	"sync"
 )
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/common"
-)
-
-func getInvokerKey(url *common.URL) string {
-	return url.Path
+// EMA is a struct implemented Exponential Moving Average.
+// val = old * (1 - alpha) + new * alpha
+type EMA struct {
+	mu    sync.Mutex
+	alpha float64
+	val   float64
 }
 
-func getInstanceKey(url *common.URL) string {
-	return fmt.Sprintf("%s:%s", url.Ip, url.Port)
+type EMAOpts struct {
+	Alpha float64
 }
 
-func ToFloat64(i interface{}) float64 {
-	if i == nil {
-		return 0
+// NewEMA creates a new EMA based on the given EMAOpts.
+func NewEMA(opts EMAOpts) *EMA {
+	return &EMA{
+		alpha: opts.Alpha,
+		val:   0,
 	}
-	switch s := i.(type) {
-	case float64:
-		return s
-	case float32:
-		return float64(s)
-	case int64:
-		return float64(s)
-	case int32:
-		return float64(s)
-	case int16:
-		return float64(s)
-	case int8:
-		return float64(s)
-	case uint:
-		return float64(s)
-	case uint64:
-		return float64(s)
-	case uint32:
-		return float64(s)
-	case uint16:
-		return float64(s)
-	case uint8:
-		return float64(s)
-	default:
-		return 0
-	}
+}
+
+func (e *EMA) Append(v float64) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+
+	e.val = e.val*(1-e.alpha) + v*e.alpha
+}
+
+func (e *EMA) Value() float64 {
+	return e.val
 }

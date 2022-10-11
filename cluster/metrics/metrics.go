@@ -18,15 +18,7 @@
 package metrics
 
 import (
-	"github.com/pkg/errors"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-)
-
-var (
-	ErrMetricsNotFound = errors.New("metrics not found")
 )
 
 type Metrics interface {

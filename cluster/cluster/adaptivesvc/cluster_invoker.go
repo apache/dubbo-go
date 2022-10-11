@@ -63,7 +63,7 @@ func (ivk *adaptiveServiceClusterInvoker) Invoke(ctx context.Context, invocation
 
 	// select a node by the loadBalance
 	invoker := lb.Select(invokers, invocation)
-	_ = metrics.SlidingWindowCounterMetrics.SetMethodMetrics(invoker.GetURL(), invocation.MethodName(), metrics.Requests, 1)
+	_ = metrics.SlidingWindowCounterMetrics.AppendMethodMetrics(invoker.GetURL(), invocation.MethodName(), metrics.Requests, 1)
 	// invoke
 	invocation.SetAttachment(constant.AdaptiveServiceEnabledKey, constant.AdaptiveServiceIsEnabled)
 	startTime := time.Now().UnixNano()
@@ -74,8 +74,8 @@ func (ivk *adaptiveServiceClusterInvoker) Invoke(ctx context.Context, invocation
 	if shouldDrop(result.Error()) {
 		return result
 	}
-	_ = metrics.EMAMetrics.SetMethodMetrics(invoker.GetURL(), invocation.MethodName(), metrics.RTT, rtt)
-	_ = metrics.SlidingWindowCounterMetrics.SetMethodMetrics(invoker.GetURL(), invocation.MethodName(), metrics.Accepts, 1)
+	_ = metrics.EMAMetrics.AppendMethodMetrics(invoker.GetURL(), invocation.MethodName(), metrics.RTT, float64(rtt))
+	_ = metrics.SlidingWindowCounterMetrics.AppendMethodMetrics(invoker.GetURL(), invocation.MethodName(), metrics.Accepts, 1)
 	return result
 }
 

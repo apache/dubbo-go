@@ -15,16 +15,11 @@
  * limitations under the License.
  */
 
-package metrics
+package rolling
 
 import (
-	"fmt"
 	"sync"
 	"time"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/common"
 )
 
 // SlidingWindowCounter is a policy for ring window based on time duration.
@@ -34,8 +29,8 @@ import (
 type SlidingWindowCounter struct {
 	size           int
 	mu             sync.Mutex
-	buckets        []int64
-	count          int64
+	buckets        []float64
+	count          float64
 	offset         int
 	bucketDuration time.Duration
 	lastAppendTime time.Time
@@ -49,7 +44,7 @@ type SlidingWindowCounterOpts struct {
 
 // NewSlidingWindowCounter creates a new SlidingWindowCounter based on the given window and SlidingWindowCounterOpts.
 func NewSlidingWindowCounter(opts SlidingWindowCounterOpts) *SlidingWindowCounter {
-	buckets := make([]int64, opts.Size)
+	buckets := make([]float64, opts.Size)
 
 	return &SlidingWindowCounter{
 		size:           opts.Size,
@@ -68,11 +63,11 @@ func (c *SlidingWindowCounter) timespan() int {
 	return c.size
 }
 
-func (c *SlidingWindowCounter) Add(_ int64) {
+func (c *SlidingWindowCounter) Append(val float64) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	//move offset
+	// move offset
 	timespan := c.timespan()
 	if timespan > 0 {
 		start := (c.offset + 1) % c.size
@@ -83,11 +78,14 @@ func (c *SlidingWindowCounter) Add(_ int64) {
 		c.lastAppendTime = c.lastAppendTime.Add(time.Duration(timespan * int(c.bucketDuration)))
 	}
 
-	c.buckets[c.offset]++
-	c.count++
+	c.buckets[c.offset] += val
+	c.count += val
 }
 
-func (c *SlidingWindowCounter) Value() int64 {
+func (c *SlidingWindowCounter) Value() float64 {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	return c.count
 }
 
@@ -105,61 +103,4 @@ func (c *SlidingWindowCounter) ResetBuckets(offset int, count int) {
 	for i := 0; i < count; i++ {
 		c.ResetBucket(offset + i)
 	}
-}
-
-var SlidingWindowCounterMetrics Metrics
-
-func init() {
-	SlidingWindowCounterMetrics = newSlidingWindowCounterMetrics()
-}
-
-var _ Metrics = (*slidingWindowCounterMetrics)(nil)
-
-type slidingWindowCounterMetrics struct {
-	opts    SlidingWindowCounterOpts
-	metrics sync.Map
-}
-
-func newSlidingWindowCounterMetrics() *slidingWindowCounterMetrics {
-	return &slidingWindowCounterMetrics{
-		opts: SlidingWindowCounterOpts{
-			Size:           10,
-			BucketDuration: 50000000,
-		},
-	}
-}
-
-func (m *slidingWindowCounterMetrics) GetMethodMetrics(url *common.URL, methodName, key string) (interface{}, error) {
-	metricsKey := fmt.Sprintf("%s.%s.%s.%s", getInstanceKey(url), getInvokerKey(url), methodName, key)
-	if metrics, ok := m.metrics.Load(metricsKey); ok {
-		return metrics.(*SlidingWindowCounter).Value(), nil
-	}
-	return int64(0), ErrMetricsNotFound
-}
-
-func (m *slidingWindowCounterMetrics) SetMethodMetrics(url *common.URL, methodName, key string, _ interface{}) error {
-	metricsKey := fmt.Sprintf("%s.%s.%s.%s", getInstanceKey(url), getInvokerKey(url), methodName, key)
-	if metrics, ok := m.metrics.Load(metricsKey); ok {
-		metrics.(*SlidingWindowCounter).Add(1)
-	} else {
-		metrics, _ = m.metrics.LoadOrStore(metricsKey, NewSlidingWindowCounter(m.opts))
-		metrics.(*SlidingWindowCounter).Add(1)
-	}
-	return nil
-}
-
-func (m *slidingWindowCounterMetrics) GetInvokerMetrics(url *common.URL, key string) (interface{}, error) {
-	panic("implement me")
-}
-
-func (m *slidingWindowCounterMetrics) SetInvokerMetrics(url *common.URL, key string, value interface{}) error {
-	panic("implement me")
-}
-
-func (m *slidingWindowCounterMetrics) GetInstanceMetrics(url *common.URL, key string) (interface{}, error) {
-	panic("implement me")
-}
-
-func (m *slidingWindowCounterMetrics) SetInstanceMetrics(url *common.URL, key string, value interface{}) error {
-	panic("implement me")
 }

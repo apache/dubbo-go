@@ -30,6 +30,8 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/metrics"
+	"dubbo.apache.org/dubbo-go/v3/cluster/metrics/rolling"
+	"dubbo.apache.org/dubbo-go/v3/cluster/metrics/utils"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	protoinvoc "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
@@ -64,9 +66,9 @@ func TestLoadBalance(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		emaMetrics := metrics.NewMockMetrics(ctrl)
+		emaMetrics := rolling.NewMockMetrics(ctrl)
 		metrics.EMAMetrics = emaMetrics
-		slidingWindowCounterMetrics := metrics.NewMockMetrics(ctrl)
+		slidingWindowCounterMetrics := rolling.NewMockMetrics(ctrl)
 		metrics.SlidingWindowCounterMetrics = slidingWindowCounterMetrics
 
 		url0, _ := common.NewURL("dubbo://192.168.1.0:20000/com.ikurento.user.UserProvider")
@@ -113,9 +115,9 @@ func TestLoadBalance(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		emaMetrics := metrics.NewMockMetrics(ctrl)
+		emaMetrics := rolling.NewMockMetrics(ctrl)
 		metrics.EMAMetrics = emaMetrics
-		slidingWindowCounterMetrics := metrics.NewMockMetrics(ctrl)
+		slidingWindowCounterMetrics := rolling.NewMockMetrics(ctrl)
 		metrics.SlidingWindowCounterMetrics = slidingWindowCounterMetrics
 
 		url0, _ := common.NewURL("dubbo://192.168.1.0:20000/com.ikurento.user.UserProvider")
@@ -126,29 +128,29 @@ func TestLoadBalance(t *testing.T) {
 		emaMetrics.EXPECT().
 			GetMethodMetrics(gomock.Eq(url0), gomock.Eq(invocation.MethodName()), gomock.Eq(metrics.RTT)).
 			Times(1).
-			Return(uint64(10), nil)
+			Return(float64(10), nil)
 		emaMetrics.EXPECT().
 			GetMethodMetrics(gomock.Eq(url1), gomock.Eq(invocation.MethodName()), gomock.Eq(metrics.RTT)).
 			Times(1).
-			Return(uint64(5), nil)
+			Return(float64(5), nil)
 		//requests
 		slidingWindowCounterMetrics.EXPECT().
 			GetMethodMetrics(gomock.Eq(url0), gomock.Eq(invocation.MethodName()), gomock.Eq(metrics.Requests)).
 			Times(1).
-			Return(uint64(10), nil)
+			Return(float64(10), nil)
 		slidingWindowCounterMetrics.EXPECT().
 			GetMethodMetrics(gomock.Eq(url1), gomock.Eq(invocation.MethodName()), gomock.Eq(metrics.Requests)).
 			Times(1).
-			Return(uint64(10), nil)
+			Return(float64(10), nil)
 		//accepts
 		slidingWindowCounterMetrics.EXPECT().
 			GetMethodMetrics(gomock.Eq(url0), gomock.Eq(invocation.MethodName()), gomock.Eq(metrics.Accepts)).
 			Times(1).
-			Return(uint64(5), nil)
+			Return(float64(5), nil)
 		slidingWindowCounterMetrics.EXPECT().
 			GetMethodMetrics(gomock.Eq(url1), gomock.Eq(invocation.MethodName()), gomock.Eq(metrics.Accepts)).
 			Times(1).
-			Return(uint64(5), nil)
+			Return(float64(5), nil)
 
 		ivkArr := []protocol.Invoker{
 			protocol.NewBaseInvoker(url0),
@@ -166,9 +168,9 @@ func TestLoadBalance(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		emaMetrics := metrics.NewMockMetrics(ctrl)
+		emaMetrics := rolling.NewMockMetrics(ctrl)
 		metrics.EMAMetrics = emaMetrics
-		slidingWindowCounterMetrics := metrics.NewMockMetrics(ctrl)
+		slidingWindowCounterMetrics := rolling.NewMockMetrics(ctrl)
 		metrics.SlidingWindowCounterMetrics = slidingWindowCounterMetrics
 
 		url0, _ := common.NewURL("dubbo://192.168.1.0:20000/com.ikurento.user.UserProvider")
@@ -179,29 +181,29 @@ func TestLoadBalance(t *testing.T) {
 		emaMetrics.EXPECT().
 			GetMethodMetrics(gomock.Eq(url0), gomock.Eq(invocation.MethodName()), gomock.Eq(metrics.RTT)).
 			Times(1).
-			Return(0, metrics.ErrMetricsNotFound)
+			Return(0, utils.ErrMetricsNotFound)
 		emaMetrics.EXPECT().
 			GetMethodMetrics(gomock.Eq(url1), gomock.Eq(invocation.MethodName()), gomock.Eq(metrics.RTT)).
 			Times(1).
-			Return(uint64(5), nil)
+			Return(float64(5), nil)
 		//requests
 		slidingWindowCounterMetrics.EXPECT().
 			GetMethodMetrics(gomock.Eq(url0), gomock.Eq(invocation.MethodName()), gomock.Eq(metrics.Requests)).
 			Times(1).
-			Return(0, metrics.ErrMetricsNotFound)
+			Return(0, utils.ErrMetricsNotFound)
 		slidingWindowCounterMetrics.EXPECT().
 			GetMethodMetrics(gomock.Eq(url1), gomock.Eq(invocation.MethodName()), gomock.Eq(metrics.Requests)).
 			Times(1).
-			Return(uint64(10), nil)
+			Return(float64(10), nil)
 		//accepts
 		slidingWindowCounterMetrics.EXPECT().
 			GetMethodMetrics(gomock.Eq(url0), gomock.Eq(invocation.MethodName()), gomock.Eq(metrics.Accepts)).
 			Times(1).
-			Return(0, metrics.ErrMetricsNotFound)
+			Return(0, utils.ErrMetricsNotFound)
 		slidingWindowCounterMetrics.EXPECT().
 			GetMethodMetrics(gomock.Eq(url1), gomock.Eq(invocation.MethodName()), gomock.Eq(metrics.Accepts)).
 			Times(1).
-			Return(uint64(5), nil)
+			Return(float64(5), nil)
 
 		ivkArr := []protocol.Invoker{
 			protocol.NewBaseInvoker(url0),
@@ -219,9 +221,9 @@ func TestLoadBalance(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		emaMetrics := metrics.NewMockMetrics(ctrl)
+		emaMetrics := rolling.NewMockMetrics(ctrl)
 		metrics.EMAMetrics = emaMetrics
-		slidingWindowCounterMetrics := metrics.NewMockMetrics(ctrl)
+		slidingWindowCounterMetrics := rolling.NewMockMetrics(ctrl)
 		metrics.SlidingWindowCounterMetrics = slidingWindowCounterMetrics
 
 		url0, _ := common.NewURL("dubbo://192.168.1.0:20000/com.ikurento.user.UserProvider")
@@ -232,29 +234,29 @@ func TestLoadBalance(t *testing.T) {
 		emaMetrics.EXPECT().
 			GetMethodMetrics(gomock.Eq(url0), gomock.Eq(invocation.MethodName()), gomock.Eq(metrics.RTT)).
 			Times(1).
-			Return(uint64(10), nil)
+			Return(float64(10), nil)
 		emaMetrics.EXPECT().
 			GetMethodMetrics(gomock.Eq(url1), gomock.Eq(invocation.MethodName()), gomock.Eq(metrics.RTT)).
 			Times(1).
-			Return(0, metrics.ErrMetricsNotFound)
+			Return(0, utils.ErrMetricsNotFound)
 		//requests
 		slidingWindowCounterMetrics.EXPECT().
 			GetMethodMetrics(gomock.Eq(url0), gomock.Eq(invocation.MethodName()), gomock.Eq(metrics.Requests)).
 			Times(1).
-			Return(uint64(10), nil)
+			Return(float64(10), nil)
 		slidingWindowCounterMetrics.EXPECT().
 			GetMethodMetrics(gomock.Eq(url1), gomock.Eq(invocation.MethodName()), gomock.Eq(metrics.Requests)).
 			Times(1).
-			Return(0, metrics.ErrMetricsNotFound)
+			Return(0, utils.ErrMetricsNotFound)
 		//accepts
 		slidingWindowCounterMetrics.EXPECT().
 			GetMethodMetrics(gomock.Eq(url0), gomock.Eq(invocation.MethodName()), gomock.Eq(metrics.Accepts)).
 			Times(1).
-			Return(uint64(5), nil)
+			Return(float64(5), nil)
 		slidingWindowCounterMetrics.EXPECT().
 			GetMethodMetrics(gomock.Eq(url1), gomock.Eq(invocation.MethodName()), gomock.Eq(metrics.Accepts)).
 			Times(1).
-			Return(0, metrics.ErrMetricsNotFound)
+			Return(0, utils.ErrMetricsNotFound)
 
 		ivkArr := []protocol.Invoker{
 			protocol.NewBaseInvoker(url0),
