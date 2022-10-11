@@ -28,7 +28,7 @@ import (
 // SlidingWindowCounter will increment current offset.
 type SlidingWindowCounter struct {
 	size           int
-	mu             sync.Mutex
+	mu             sync.RWMutex
 	buckets        []float64
 	count          float64
 	offset         int
@@ -83,8 +83,8 @@ func (c *SlidingWindowCounter) Append(val float64) {
 }
 
 func (c *SlidingWindowCounter) Value() float64 {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 
 	return c.count
 }

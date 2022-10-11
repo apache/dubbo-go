@@ -24,7 +24,7 @@ import (
 // EMA is a struct implemented Exponential Moving Average.
 // val = old * (1 - alpha) + new * alpha
 type EMA struct {
-	mu    sync.Mutex
+	mu    sync.RWMutex
 	alpha float64
 	val   float64
 }
@@ -49,5 +49,8 @@ func (e *EMA) Append(v float64) {
 }
 
 func (e *EMA) Value() float64 {
+	e.mu.RLock()
+	defer e.mu.RUnlock()
+
 	return e.val
 }
