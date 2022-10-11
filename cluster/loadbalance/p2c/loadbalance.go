@@ -114,9 +114,7 @@ func Weight(url1, url2 *common.URL, methodName string) (weight1, weight2 float64
 	t1 := normalize((1 + avgRtt) / (1 + rtt1))
 	t2 := normalize((1 + avgRtt) / (1 + rtt2))
 
-	avgS := (s1 + s2) / 2
-	avgT := (t1 + t2) / 2
-	e := avgS / avgT
+	e := (s1 + s2) / (t1 + t2)
 
 	weight1 = s1 + e*t1
 	weight2 = s2 + e*t2
