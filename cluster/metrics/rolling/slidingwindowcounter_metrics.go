@@ -26,6 +26,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 )
 
+var _ Metrics = (*SlidingWindowCounterMetrics)(nil)
+
 type SlidingWindowCounterMetrics struct {
 	opts    SlidingWindowCounterOpts
 	metrics sync.Map

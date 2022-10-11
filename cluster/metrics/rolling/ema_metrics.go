@@ -26,6 +26,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 )
 
+var _ Metrics = (*EMAMetrics)(nil)
+
 type EMAMetrics struct {
 	opts    EMAOpts
 	metrics sync.Map
