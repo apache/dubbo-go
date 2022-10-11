@@ -77,29 +77,29 @@ func TestLoadBalance(t *testing.T) {
 		emaMetrics.EXPECT().
 			GetMethodMetrics(gomock.Eq(url0), gomock.Eq(invocation.MethodName()), gomock.Eq(metrics.RTT)).
 			Times(1).
-			Return(uint64(10), nil)
+			Return(float64(10), nil)
 		emaMetrics.EXPECT().
 			GetMethodMetrics(gomock.Eq(url1), gomock.Eq(invocation.MethodName()), gomock.Eq(metrics.RTT)).
 			Times(1).
-			Return(uint64(5), nil)
+			Return(float64(5), nil)
 		//requests
 		slidingWindowCounterMetrics.EXPECT().
 			GetMethodMetrics(gomock.Eq(url0), gomock.Eq(invocation.MethodName()), gomock.Eq(metrics.Requests)).
 			Times(1).
-			Return(uint64(10), nil)
+			Return(float64(10), nil)
 		slidingWindowCounterMetrics.EXPECT().
 			GetMethodMetrics(gomock.Eq(url1), gomock.Eq(invocation.MethodName()), gomock.Eq(metrics.Requests)).
 			Times(1).
-			Return(uint64(10), nil)
+			Return(float64(10), nil)
 		//accepts
 		slidingWindowCounterMetrics.EXPECT().
 			GetMethodMetrics(gomock.Eq(url0), gomock.Eq(invocation.MethodName()), gomock.Eq(metrics.Accepts)).
 			Times(1).
-			Return(uint64(5), nil)
+			Return(float64(5), nil)
 		slidingWindowCounterMetrics.EXPECT().
 			GetMethodMetrics(gomock.Eq(url1), gomock.Eq(invocation.MethodName()), gomock.Eq(metrics.Accepts)).
 			Times(1).
-			Return(uint64(5), nil)
+			Return(float64(5), nil)
 		ivkArr := []protocol.Invoker{
 			protocol.NewBaseInvoker(url0),
 			protocol.NewBaseInvoker(url1),
@@ -181,7 +181,7 @@ func TestLoadBalance(t *testing.T) {
 		emaMetrics.EXPECT().
 			GetMethodMetrics(gomock.Eq(url0), gomock.Eq(invocation.MethodName()), gomock.Eq(metrics.RTT)).
 			Times(1).
-			Return(0, utils.ErrMetricsNotFound)
+			Return(float64(0), utils.ErrMetricsNotFound)
 		emaMetrics.EXPECT().
 			GetMethodMetrics(gomock.Eq(url1), gomock.Eq(invocation.MethodName()), gomock.Eq(metrics.RTT)).
 			Times(1).
@@ -190,7 +190,7 @@ func TestLoadBalance(t *testing.T) {
 		slidingWindowCounterMetrics.EXPECT().
 			GetMethodMetrics(gomock.Eq(url0), gomock.Eq(invocation.MethodName()), gomock.Eq(metrics.Requests)).
 			Times(1).
-			Return(0, utils.ErrMetricsNotFound)
+			Return(float64(0), utils.ErrMetricsNotFound)
 		slidingWindowCounterMetrics.EXPECT().
 			GetMethodMetrics(gomock.Eq(url1), gomock.Eq(invocation.MethodName()), gomock.Eq(metrics.Requests)).
 			Times(1).
@@ -199,7 +199,7 @@ func TestLoadBalance(t *testing.T) {
 		slidingWindowCounterMetrics.EXPECT().
 			GetMethodMetrics(gomock.Eq(url0), gomock.Eq(invocation.MethodName()), gomock.Eq(metrics.Accepts)).
 			Times(1).
-			Return(0, utils.ErrMetricsNotFound)
+			Return(float64(0), utils.ErrMetricsNotFound)
 		slidingWindowCounterMetrics.EXPECT().
 			GetMethodMetrics(gomock.Eq(url1), gomock.Eq(invocation.MethodName()), gomock.Eq(metrics.Accepts)).
 			Times(1).
@@ -238,7 +238,7 @@ func TestLoadBalance(t *testing.T) {
 		emaMetrics.EXPECT().
 			GetMethodMetrics(gomock.Eq(url1), gomock.Eq(invocation.MethodName()), gomock.Eq(metrics.RTT)).
 			Times(1).
-			Return(0, utils.ErrMetricsNotFound)
+			Return(float64(0), utils.ErrMetricsNotFound)
 		//requests
 		slidingWindowCounterMetrics.EXPECT().
 			GetMethodMetrics(gomock.Eq(url0), gomock.Eq(invocation.MethodName()), gomock.Eq(metrics.Requests)).
@@ -247,7 +247,7 @@ func TestLoadBalance(t *testing.T) {
 		slidingWindowCounterMetrics.EXPECT().
 			GetMethodMetrics(gomock.Eq(url1), gomock.Eq(invocation.MethodName()), gomock.Eq(metrics.Requests)).
 			Times(1).
-			Return(0, utils.ErrMetricsNotFound)
+			Return(float64(0), utils.ErrMetricsNotFound)
 		//accepts
 		slidingWindowCounterMetrics.EXPECT().
 			GetMethodMetrics(gomock.Eq(url0), gomock.Eq(invocation.MethodName()), gomock.Eq(metrics.Accepts)).
@@ -256,7 +256,7 @@ func TestLoadBalance(t *testing.T) {
 		slidingWindowCounterMetrics.EXPECT().
 			GetMethodMetrics(gomock.Eq(url1), gomock.Eq(invocation.MethodName()), gomock.Eq(metrics.Accepts)).
 			Times(1).
-			Return(0, utils.ErrMetricsNotFound)
+			Return(float64(0), utils.ErrMetricsNotFound)
 
 		ivkArr := []protocol.Invoker{
 			protocol.NewBaseInvoker(url0),
