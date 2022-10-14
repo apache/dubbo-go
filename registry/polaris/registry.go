@@ -20,7 +20,6 @@ package polaris
 import (
 	"context"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
-	"reflect"
 	"strconv"
 	"sync"
 	"time"
@@ -160,31 +159,27 @@ func (pr *polarisRegistry) Subscribe(url *common.URL, notifyListener registry.No
 			<-time.After(time.Duration(RegistryConnDelay) * time.Second)
 			continue
 		}
-		//servicename	:=reflect.ValueOf(registry.ServiceInstancesChangedListener.GetServiceNames().Values())
-		for i := range registry.ServiceInstancesChangedListener().GetServiceNames().Values() {
-			serviceName := i.(string)
-			watcher, err := pr.createPolarisWatcher(url.GetServices()[i])
-			if err != nil {
-				return err
-			}
-
-			watcher.AddSubscriber(func(et remoting.EventType, instances []model.Instance) {
-				dubboInstances := make([]registry.ServiceInstance, 0, len(instances))
-				for _, instance := range instances {
-					dubboInstances = append(dubboInstances, &registry.DefaultServiceInstance{
-						ID:          instance.GetId(),
-						ServiceName: instance.GetService(),
-						Host:        instance.GetHost(),
-						Port:        int(instance.GetPort()),
-						Enable:      !instance.IsIsolated(),
-						Healthy:     instance.IsHealthy(),
-						Metadata:    instance.GetMetadata(),
-						GroupName:   instance.GetMetadata()[constant.PolarisDubboGroup],
-					})
-				}
-
-			})
+		serviceName := getServiceName(url)
+		watcher, err := pr.createPolarisWatcher(serviceName)
+		if err != nil {
+			return err
 		}
+
+		watcher.AddSubscriber(func(et remoting.EventType, instances []model.Instance) {
+			dubboInstances := make([]registry.ServiceInstance, 0, len(instances))
+			for _, instance := range instances {
+				dubboInstances = append(dubboInstances, &registry.DefaultServiceInstance{
+					ID:          instance.GetId(),
+					ServiceName: instance.GetService(),
+					Host:        instance.GetHost(),
+					Port:        int(instance.GetPort()),
+					Enable:      !instance.IsIsolated(),
+					Healthy:     instance.IsHealthy(),
+					Metadata:    instance.GetMetadata(),
+					GroupName:   instance.GetMetadata()[constant.PolarisDubboGroup],
+				})
+			}
+		})
 
 		if err != nil {
 			logger.Warnf("getwatcher() = err:%v", perrors.WithStack(err))
@@ -206,41 +201,7 @@ func (pr *polarisRegistry) Subscribe(url *common.URL, notifyListener registry.No
 
 		}
 	}
-
 }
-
-//func (pr *polarisRegistry) Subscribe(url *common.URL, notifyListener registry.NotifyListener) error {
-//
-//	for {
-//		listener, err := NewPolarisListener(url)
-//		if err != nil {
-//			logger.Warnf("getListener() = err:%v", perrors.WithStack(err))
-//			<-time.After(time.Duration(RegistryConnDelay) * time.Second)
-//			continue
-//		}
-//
-//		if err != nil {
-//			logger.Warnf("getwatcher() = err:%v", perrors.WithStack(err))
-//			timer := time.NewTimer(time.Duration(RegistryConnDelay) * time.Second)
-//			timer.Reset(time.Duration(RegistryConnDelay) * time.Second)
-//			continue
-//		}
-//		for {
-//
-//			serviceEvent, err := listener.Next()
-//
-//			if err != nil {
-//				logger.Warnf("Selector.watch() = error{%v}", perrors.WithStack(err))
-//				listener.Close()
-//				return err
-//			}
-//			logger.Infof("update begin, service event: %v", serviceEvent.String())
-//			notifyListener.Notify(serviceEvent)
-//
-//		}
-//	}
-//
-//}
 
 // createPolarisWatcherIfAbsent Calculate whether the corresponding PolarisWatcher needs to be created,
 // if it does not exist, create one, otherwise return the existing one
