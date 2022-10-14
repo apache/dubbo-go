@@ -164,7 +164,6 @@ func (pr *polarisRegistry) Subscribe(url *common.URL, notifyListener registry.No
 		if err != nil {
 			return err
 		}
-
 		watcher.AddSubscriber(func(et remoting.EventType, instances []model.Instance) {
 			dubboInstances := make([]registry.ServiceInstance, 0, len(instances))
 			for _, instance := range instances {
@@ -179,6 +178,7 @@ func (pr *polarisRegistry) Subscribe(url *common.URL, notifyListener registry.No
 					GroupName:   instance.GetMetadata()[constant.PolarisDubboGroup],
 				})
 			}
+			listener.Next()
 		})
 
 		if err != nil {
@@ -188,9 +188,7 @@ func (pr *polarisRegistry) Subscribe(url *common.URL, notifyListener registry.No
 			continue
 		}
 		for {
-
 			serviceEvent, err := listener.Next()
-
 			if err != nil {
 				logger.Warnf("Selector.watch() = error{%v}", perrors.WithStack(err))
 				listener.Close()
@@ -198,7 +196,6 @@ func (pr *polarisRegistry) Subscribe(url *common.URL, notifyListener registry.No
 			}
 			logger.Infof("update begin, service event: %v", serviceEvent.String())
 			notifyListener.Notify(serviceEvent)
-
 		}
 	}
 }
