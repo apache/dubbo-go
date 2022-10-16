@@ -71,7 +71,7 @@ func (z *ZookeeperMetadataReport) GetChildren(path string) ([]string, error) {
 }
 
 // ShowChildren shou children list
-func (z *ZookeeperMetadataReport) ShowChildren() (map[string][]string, error) {
+func (z *ZookeeperMetadataReport) ShowRegistryCenterChildren() (map[string][]string, error) {
 	methodsMap := map[string][]string{}
 	inters, err := z.GetChildren("")
 	if err != nil {

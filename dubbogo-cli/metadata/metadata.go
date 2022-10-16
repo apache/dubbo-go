@@ -23,7 +23,7 @@ import (
 
 // MetaData meta data from registration center
 type MetaData interface {
-	ShowChildren() (map[string][]string, error)
+	ShowRegistryCenterChildren() (map[string][]string, error)
 	ShowMetadataCenterChildren() (map[string][]string, error)
 }
 

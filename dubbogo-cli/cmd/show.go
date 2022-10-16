@@ -60,21 +60,21 @@ func show(cmd *cobra.Command, _ []string) {
 	if err != nil {
 		panic(err)
 	}
+	metadataCenter, err := cmd.Flags().GetBool("mc")
+	if err != nil {
+		panic(err)
+	}
+
 	fact, ok := metadata.GetFactory(registry)
 	if !ok {
 		log.Print("registry not support")
 		return
 	}
 
-	metadataCenter, err := cmd.Flags().GetBool("mc")
-	if err != nil {
-		panic(err)
-	}
-
 	if metadataCenter {
 		methodsMap, err = fact("dubbogo-cli", []string{host}).ShowMetadataCenterChildren()
 	} else {
-		methodsMap, err = fact("dubbogo-cli", []string{host}).ShowChildren()
+		methodsMap, err = fact("dubbogo-cli", []string{host}).ShowRegistryCenterChildren()
 	}
 
 	if err != nil {
