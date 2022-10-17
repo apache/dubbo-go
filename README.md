@@ -69,13 +69,13 @@ If you want to know more about dubbogo tools, please visit https://github.com/ap
 | Hessian2 Generator |  ✅️  |   ✅️   |
 | New Project/Module |  ✅️  |   ✅️   |
 
-### Project/module templates
+#### Project/module templates
 | Project/Module Template | Progress |
 |:-----------------------:|:--------:|
 |         Sample          |    ✅️    |
 |      Empty Project      |    ✅️    |
 
-### Empty project template middleware
+##### Empty project template middleware
 |  Middleware  |                Module                 | Support |
 |:------------:|:-------------------------------------:|:-------:|
 | Web Service  |    [Gin](github.com/gin-gonic/gin)    |   ✅️    |
@@ -83,9 +83,8 @@ If you want to know more about dubbogo tools, please visit https://github.com/ap
 |   Database   |         [Gorm](gorm.io/gorm)          |   ✅️    |
 
 
-If you want to know more about the Intellij Plugin for Dubbo-go, please you may
-refer
-to[https://gitee.com/changeden/intellij-plugin-dubbo-go-generator](https://gitee.com/changeden/intellij-plugin-dubbo-go-generator).
+If you want to know more about the Intellij Plugin for Dubbo-go, you may
+refer to [https://gitee.com/changeden/intellij-plugin-dubbo-go-generator](https://gitee.com/changeden/intellij-plugin-dubbo-go-generator).
 
 ## Ecosystem
 
