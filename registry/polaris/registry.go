@@ -178,6 +178,8 @@ func (pr *polarisRegistry) Subscribe(url *common.URL, notifyListener registry.No
 					GroupName:   instance.GetMetadata()[constant.PolarisDubboGroup],
 				})
 			}
+
+			registry.NewServiceInstancesChangedEvent(serviceName, dubboInstances)
 			listener.Next()
 		})
 
@@ -251,7 +253,8 @@ func (pr *polarisRegistry) IsAvailable() bool {
 }
 
 // doHeartbeat Since polaris does not support automatic reporting of instance heartbeats, separate logic is
-//  needed to implement it
+//
+//	needed to implement it
 func (pr *polarisRegistry) doHeartbeat(ctx context.Context, ins *api.InstanceRegisterRequest) {
 	ticker := time.NewTicker(time.Duration(4) * time.Second)
 
