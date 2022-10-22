@@ -18,6 +18,7 @@
 package grpc
 
 import (
+	"crypto/tls"
 	"fmt"
 	"net"
 	"sync"
@@ -32,11 +33,14 @@ import (
 	"github.com/opentracing/opentracing-go"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
@@ -81,12 +85,30 @@ func (s *Server) Start(url *common.URL) {
 	// If global trace instance was set, then server tracer instance
 	// can be get. If not, will return NoopTracer.
 	tracer := opentracing.GlobalTracer()
-	server := grpc.NewServer(
+	var serverOpts []grpc.ServerOption
+	serverOpts = append(serverOpts,
 		grpc.UnaryInterceptor(otgrpc.OpenTracingServerInterceptor(tracer)),
 		grpc.StreamInterceptor(otgrpc.OpenTracingStreamServerInterceptor(tracer)),
 		grpc.MaxRecvMsgSize(1024*1024*s.bufferSize),
 		grpc.MaxSendMsgSize(1024*1024*s.bufferSize),
 	)
+
+	if url.GetParam(constant.SslEnabledKey, "false") == "true" {
+		var cfg *tls.Config
+		cfg, err = config.GetServerTlsConfig(&config.TLSConfig{
+			CACertFile:    url.GetParam(constant.CACert, ""),
+			TLSCertFile:   url.GetParam(constant.TLSCert, ""),
+			TLSKeyFile:    url.GetParam(constant.TLSKey, ""),
+			TLSServerName: url.GetParam(constant.TLSServerNAME, ""),
+		})
+		if err != nil {
+			return
+		}
+		serverOpts = append(serverOpts, grpc.Creds(credentials.NewTLS(cfg)))
+	} else {
+		serverOpts = append(serverOpts, grpc.Creds(insecure.NewCredentials()))
+	}
+	server := grpc.NewServer(serverOpts...)
 	s.grpcServer = server
 
 	go func() {

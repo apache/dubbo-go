@@ -27,10 +27,11 @@ import (
 
 // ProtocolConfig is protocol configuration
 type ProtocolConfig struct {
-	Name   string      `default:"dubbo" validate:"required" yaml:"name" json:"name,omitempty" property:"name"`
-	Ip     string      `yaml:"ip"  json:"ip,omitempty" property:"ip"`
-	Port   string      `default:"20000" yaml:"port" json:"port,omitempty" property:"port"`
-	Params interface{} `yaml:"params" json:"params,omitempty" property:"params"`
+	Name      string      `default:"dubbo" validate:"required" yaml:"name" json:"name,omitempty" property:"name"`
+	Ip        string      `yaml:"ip"  json:"ip,omitempty" property:"ip"`
+	Port      string      `default:"20000" yaml:"port" json:"port,omitempty" property:"port"`
+	Params    interface{} `yaml:"params" json:"params,omitempty" property:"params"`
+	TLSConfig *TLSConfig  `yaml:"tls_config" json:"tls_config,omitempty" property:"tls_config"`
 }
 
 // Prefix dubbo.config-center
