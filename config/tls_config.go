@@ -82,7 +82,8 @@ func GetClientTlsConfig(opt *TLSConfig) (*tls.Config, error) {
 	cfg.RootCAs = ca
 	//need mTls
 	if opt.TLSCertFile != "" {
-		cert, err := tls.LoadX509KeyPair(opt.TLSCertFile, opt.TLSKeyFile)
+		var cert tls.Certificate
+		cert, err = tls.LoadX509KeyPair(opt.TLSCertFile, opt.TLSKeyFile)
 		if err != nil {
 			return nil, err
 		}
