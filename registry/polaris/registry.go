@@ -178,7 +178,6 @@ func (pr *polarisRegistry) Subscribe(url *common.URL, notifyListener registry.No
 					GroupName:   instance.GetMetadata()[constant.PolarisDubboGroup],
 				})
 			}
-
 			registry.NewServiceInstancesChangedEvent(serviceName, dubboInstances)
 			listener.Next()
 		})
