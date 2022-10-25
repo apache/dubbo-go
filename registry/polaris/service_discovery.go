@@ -19,6 +19,7 @@ package polaris
 
 import (
 	"context"
+	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"fmt"
 	"net/url"
 	"sync"
@@ -260,7 +261,15 @@ func (polaris *polarisServiceDiscovery) AddListener(listener registry.ServiceIns
 		if err != nil {
 			return err
 		}
-
+		resp, err := watcher.consumer.WatchService(watcher.subscribeParam)
+		if err != nil {
+			time.Sleep(time.Duration(500 * time.Millisecond))
+			continue
+		}
+		watcher.notifyAllSubscriber(&config_center.ConfigChangeEvent{
+			Value:      resp.GetAllInstancesResp.Instances,
+			ConfigType: remoting.EventTypeAdd,
+		})
 		watcher.AddSubscriber(func(et remoting.EventType, instances []model.Instance) {
 			dubboInstances := make([]registry.ServiceInstance, 0, len(instances))
 			for _, instance := range instances {
@@ -275,7 +284,6 @@ func (polaris *polarisServiceDiscovery) AddListener(listener registry.ServiceIns
 					GroupName:   instance.GetMetadata()[constant.PolarisDubboGroup],
 				})
 			}
-
 			listener.OnEvent(registry.NewServiceInstancesChangedEvent(serviceName, dubboInstances))
 		})
 	}
@@ -348,7 +356,8 @@ func convertToDeregisterInstance(namespace string, instance registry.ServiceInst
 }
 
 // doHeartbeat Since polaris does not support automatic reporting of instance heartbeats, separate logic is
-//  needed to implement it
+//
+//	needed to implement it
 func (polaris *polarisServiceDiscovery) doHeartbeat(ctx context.Context, ins *api.InstanceRegisterRequest) {
 	ticker := time.NewTicker(time.Duration(4) * time.Second)
 
