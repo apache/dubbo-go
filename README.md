@@ -219,9 +219,15 @@ If you are using [apache/dubbo-go](https://github.com/apache/dubbo-go) and think
       </td>
       <td align="center" valign="middle">
         <a href="https://amap.com/" target="_blank">
-          <img width="222px" src="https://github.com/seven-tan/static/blob/main/logo.png?raw=true" >
+          <img width="222px" src="https://github.com/seven-tan/static/blob/main/logo.png" >
         </a>
       </td>
+      <td align="center" valign="middle">
+        <a href="https://chinaz.com/" target="_blank">
+          <img width="222px" src="https://img.chinaz.com/2020/img/chinaz-logo.png" >
+        </a>
+      </td>
+
     </tr>
     <tr></tr>
   </tbody>
