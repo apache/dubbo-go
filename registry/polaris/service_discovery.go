@@ -261,6 +261,7 @@ func (polaris *polarisServiceDiscovery) AddListener(listener registry.ServiceIns
 		if err != nil {
 			return err
 		}
+
 		resp, err := watcher.consumer.WatchService(watcher.subscribeParam)
 		if err != nil {
 			time.Sleep(time.Duration(500 * time.Millisecond))
