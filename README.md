@@ -228,7 +228,6 @@ If you are using [apache/dubbo-go](https://github.com/apache/dubbo-go) and think
           <img width="222px" src="https://img.chinaz.com/2020/img/chinaz-logo.png" >
         </a>
       </td>
-
     </tr>
     <tr></tr>
   </tbody>
