@@ -29,8 +29,8 @@ import (
 
 	"github.com/golang/mock/gomock"
 
-	"github.com/nacos-group/nacos-sdk-go/model"
-	"github.com/nacos-group/nacos-sdk-go/vo"
+	"github.com/nacos-group/nacos-sdk-go/v2/model"
+	"github.com/nacos-group/nacos-sdk-go/v2/vo"
 )
 
 import (
@@ -151,7 +151,7 @@ func (mr *MockIConfigClientMockRecorder) CancelListenConfig(params interface{}) 
 }
 
 // SearchConfig mocks base method
-func (m *MockIConfigClient) SearchConfig(param vo.SearchConfigParam) (*model.ConfigPage, error) {
+func (m *MockIConfigClient) SearchConfig(param vo.SearchConfigParm) (*model.ConfigPage, error) {
 	ret := m.ctrl.Call(m, "SearchConfig", param)
 	ret0, _ := ret[0].(*model.ConfigPage)
 	ret1, _ := ret[1].(error)

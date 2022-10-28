@@ -27,8 +27,8 @@ import (
 	nacosClient "github.com/dubbogo/gost/database/kv/nacos"
 	"github.com/dubbogo/gost/log/logger"
 
-	constant2 "github.com/nacos-group/nacos-sdk-go/common/constant"
-	"github.com/nacos-group/nacos-sdk-go/vo"
+	constant2 "github.com/nacos-group/nacos-sdk-go/v2/common/constant"
+	"github.com/nacos-group/nacos-sdk-go/v2/vo"
 
 	perrors "github.com/pkg/errors"
 )
@@ -126,7 +126,7 @@ func (n *nacosDynamicConfiguration) PublishConfig(key string, group string, valu
 // GetConfigKeysByGroup will return all keys with the group
 func (n *nacosDynamicConfiguration) GetConfigKeysByGroup(group string) (*gxset.HashSet, error) {
 	group = n.resolvedGroup(group)
-	page, err := n.client.Client().SearchConfig(vo.SearchConfigParam{
+	page, err := n.client.Client().SearchConfig(vo.SearchConfigParm{
 		Search: "accurate",
 		Group:  group,
 		PageNo: 1,

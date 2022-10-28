@@ -30,8 +30,8 @@ import (
 	nacosClient "github.com/dubbogo/gost/database/kv/nacos"
 	"github.com/dubbogo/gost/log/logger"
 
-	"github.com/nacos-group/nacos-sdk-go/model"
-	"github.com/nacos-group/nacos-sdk-go/vo"
+	"github.com/nacos-group/nacos-sdk-go/v2/model"
+	"github.com/nacos-group/nacos-sdk-go/v2/vo"
 
 	perrors "github.com/pkg/errors"
 )
@@ -48,7 +48,7 @@ var (
 	listenerCache sync.Map
 )
 
-type callback func(services []model.SubscribeService, err error)
+type callback func(services []model.Instance, err error)
 
 type nacosListener struct {
 	namingClient   *nacosClient.NacosNamingClient
@@ -75,13 +75,12 @@ func NewNacosListener(url, regURL *common.URL, namingClient *nacosClient.NacosNa
 	return listener, err
 }
 
-func generateInstance(ss model.SubscribeService) model.Instance {
+func generateInstance(ss model.Instance) model.Instance {
 	return model.Instance{
 		InstanceId:  ss.InstanceId,
 		Ip:          ss.Ip,
 		Port:        ss.Port,
 		ServiceName: ss.ServiceName,
-		Valid:       ss.Valid,
 		Enable:      ss.Enable,
 		Weight:      ss.Weight,
 		Metadata:    ss.Metadata,
@@ -123,7 +122,7 @@ func generateUrl(instance model.Instance) *common.URL {
 }
 
 // Callback will be invoked when got subscribed events.
-func (nl *nacosListener) Callback(services []model.SubscribeService, err error) {
+func (nl *nacosListener) Callback(services []model.Instance, err error) {
 	if err != nil {
 		logger.Errorf("nacos subscribe callback error:%s , subscribe:%+v ", err.Error(), nl.subscribeParam)
 		return
