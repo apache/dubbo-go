@@ -72,3 +72,4 @@ verify: clean license test
 clean: prepare
 	rm -rf coverage.txt
 	rm -rf license-header-checker*
+
