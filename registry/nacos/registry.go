@@ -41,14 +41,11 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/remoting/nacos"
 )
 
-var localIP = ""
-
 const (
 	RegistryConnDelay = 3
 )
 
 func init() {
-	localIP = common.GetLocalIp()
 	extension.SetRegistry(constant.NacosKey, newNacosRegistry)
 }
 
@@ -95,12 +92,7 @@ func createRegisterParam(url *common.URL, serviceName string, groupName string) 
 	params[constant.NacosProtocolKey] = url.Protocol
 	params[constant.NacosPathKey] = url.Path
 	params[constant.MethodsKey] = strings.Join(url.Methods, ",")
-	if len(url.Ip) == 0 {
-		url.Ip = localIP
-	}
-	if len(url.Port) == 0 || url.Port == "0" {
-		url.Port = "80"
-	}
+	common.HandleRegisterIPAndPort(url)
 	port, _ := strconv.Atoi(url.Port)
 	instance := vo.RegisterInstanceParam{
 		Ip:          url.Ip,
@@ -134,12 +126,7 @@ func (nr *nacosRegistry) Register(url *common.URL) error {
 }
 
 func createDeregisterParam(url *common.URL, serviceName string, groupName string) vo.DeregisterInstanceParam {
-	if len(url.Ip) == 0 {
-		url.Ip = localIP
-	}
-	if len(url.Port) == 0 || url.Port == "0" {
-		url.Port = "80"
-	}
+	common.HandleRegisterIPAndPort(url)
 	port, _ := strconv.Atoi(url.Port)
 	return vo.DeregisterInstanceParam{
 		Ip:          url.Ip,

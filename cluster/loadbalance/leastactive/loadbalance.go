@@ -94,7 +94,7 @@ func (lb *leastActiveLoadBalance) Select(invokers []protocol.Invoker, invocation
 	}
 
 	if leastCount == 1 {
-		return invokers[0]
+		return invokers[leastIndexes[0]]
 	}
 
 	if !sameWeight && totalWeight > 0 {

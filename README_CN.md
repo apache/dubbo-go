@@ -10,7 +10,7 @@
 
 [English 🇺🇸](./README.md)
 
-Apache Dubbo Go 语言实现，架起 Java 和 Golang 之间的桥梁，与 gRPC/Dubbo/SpringCloud 生态互联互通，带领 Java 生态享受云原生时代的技术红利。请访问[Dubbo 官网](https://dubbo.apache.org/zh/docs/languages/golang/)查看快速开始和文档。
+Apache Dubbo Go 语言实现，架起 Java 和 Golang 之间的桥梁，与 gRPC/Dubbo/SpringCloud 生态互联互通，带领 Java 生态享受云原生时代的技术红利。请访问[Dubbo 官网](https://dubbo.apache.org/zh/docs3-v2/golang-sdk/)查看快速开始和文档。
 
 ## RPC 调用
 
@@ -58,11 +58,11 @@ Dubbo-go 生态覆盖多种网络协议：Triple、Dubbo、JSONRPC、gRPC、HTTP
 
   * [imports-formatter](https://github.com/dubbogo/tools/blob/master/cmd/imports-formatter/main.go) dubbo-go 工程 import 代码块格式化工具
   * [dubbo-go-cli](https://github.com/dubbogo/tools/blob/master/cmd/dubbogo-cli/main.go) dubbo-go 命令行工具、支持展示服务、发起服务调用、定义 dubbogo 服务 struct 等功能、生成 hessian.POJO 方法体
-  * [dubbo-go-cli-v2](https://github.com/dubbogo/tools/blob/master/cmd/dubbogo-cli-v2/main.go) 新 dubbo-go 命令行工具, 支持创建 demo、从注册中心获取服务列表以及兼容 [dubbo-go-cli](https://github.com/dubbogo/tools/blob/master/cmd/dubbogo-cli/main.go) 的所有功能
+  * [dubbo-go-cli-v2](https://github.com/apache/dubbo-go/blob/master/dubbogo-cli/main.go) 新 dubbo-go 命令行工具, 支持创建 demo、创建应用模版、一键安装 protoc-gen-go-triple 及 imports-formatter 工具，从注册中心获取服务列表以及兼容 [dubbo-go-cli](https://github.com/dubbogo/tools/blob/master/cmd/dubbogo-cli/main.go) 的所有功能
   * [protoc-gen-go-triple](https://github.com/dubbogo/tools/blob/master/cmd/protoc-gen-go-triple/main.go) tripe 协议 pb 生成工具
   * [protoc-gen-dubbo3grpc](https://github.com/dubbogo/tools/blob/master/cmd/protoc-gen-dubbo3grpc/main.go) dubbo3 grpc 生成工具
 
-如果想知道 dubbogo 工具集更多更详细的使用细节，请访问 https://github.com/dubbogo/tools 并仔细阅读其 raedme。
+如果想知道 dubbogo 工具集更多更详细的使用细节，请访问 https://github.com/apache/dubbo-go/blob/master/dubbogo-cli 并仔细阅读其 raedme。
 
 ## Intellij 插件
 
@@ -226,7 +226,12 @@ Dubbo-go 生态覆盖多种网络协议：Triple、Dubbo、JSONRPC、gRPC、HTTP
       </td>
       <td align="center" valign="middle">
         <a href="https://amap.com/" target="_blank">
-          <img width="222px" src="https://github.com/seven-tan/static/blob/main/logo.png?raw=true" >
+          <img width="222px" src="https://github.com/seven-tan/static/blob/main/logo.png" >
+        </a>
+      </td>
+      <td align="center" valign="middle">
+        <a href="https://chinaz.com/" target="_blank">
+          <img width="222px" src="https://img.chinaz.com/2020/img/chinaz-logo.png" >
         </a>
       </td>
     </tr>

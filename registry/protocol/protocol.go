@@ -70,7 +70,7 @@ type registryProtocol struct {
 }
 
 func init() {
-	extension.SetProtocol("registry", GetProtocol)
+	extension.SetProtocol(constant.RegistryProtocol, GetProtocol)
 }
 
 func newRegistryProtocol() *registryProtocol {
