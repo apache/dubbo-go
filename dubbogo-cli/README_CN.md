@@ -64,6 +64,26 @@ dubbogo-cli 支持以下能力
 
   - 查看 Istio 的注册信息【功能开发中】
 
+- 查看 dubbo-go 元数据中心信息
+
+    - 查看 Zookeeper 上面的元数据信息, 获取接口及方法列表
+
+      ```bash
+      $ dubbogo-cli show --mc zookeeper --h 127.0.0.1:2181
+        interface: grpc.health.v1.Health
+        methods: [Watch Check]
+        interface: grpc.reflection.v1alpha.ServerReflection
+        methods: [ServerReflectionInfo]
+        interface: org.apache.dubbo.metadata.MetadataService
+        methods: [GetServiceDefinition GetServiceDefinitionByServiceKey UnsubscribeURL getMetadataInfo PublishServiceDefinition GetMetadataServiceURL GetSubscribedURLs RefreshMetadata GetExportedServiceURLs getExportedURLs ServiceName SetMetadataServiceURL SubscribeURL UnexportURL Version ExportURL]
+        interface: com.apache.dubbo.sample.basic.IGreeter
+        methods: [SayHello SayHelloStream]
+      ```
+
+    - 查看 Nacos 上面的元数据信息 【功能开发中】
+
+    - 查看 Istio 的元数据信息【功能开发中】
+
 - 调试 Dubbo 协议接口
 
 - 调试 Triple 协议接口

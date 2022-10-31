@@ -60,6 +60,26 @@ dubbogo-cli supports the following capabilities
 
   - View Istio's registration information [ in development ]
 
+
+- View dubbo-go application metadata center information
+
+  - View the metadata information on Zookeeper
+    ```bash
+    $ dubbogo-cli show --mc zookeeper --h 127.0.0.1:2181
+      interface: grpc.health.v1.Health
+      methods: [Watch Check]
+      interface: grpc.reflection.v1alpha.ServerReflection
+      methods: [ServerReflectionInfo]
+      interface: org.apache.dubbo.metadata.MetadataService
+      methods: [GetServiceDefinition GetServiceDefinitionByServiceKey UnsubscribeURL getMetadataInfo PublishServiceDefinition GetMetadataServiceURL GetSubscribedURLs RefreshMetadata GetExportedServiceURLs getExportedURLs ServiceName SetMetadataServiceURL SubscribeURL UnexportURL Version ExportURL]
+      interface: com.apache.dubbo.sample.basic.IGreeter
+      methods: [SayHello SayHelloStream]
+    ```
+
+  - View the metadata information on Nacos [ in development ]
+
+  - View Istio's metadata information [ in development ]
+
 - Debug Dubbo protocol application
 
 - Debug Triple protocol application
