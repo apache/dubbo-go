@@ -10,21 +10,21 @@
 
 [中文 🇨🇳](./README_CN.md)
 
-Apache Dubbo-go, a Dubbo implementation written in Golang, is born to bridge the gap between Java/Dubbo and Go/X. Please visit our [Dubbo official website](https://dubbo.apache.org/zh/docs/languages/golang/) for the quick start and documentation.
+Apache Dubbo-go, a Dubbo implementation written in Golang, is born to bridge the gap between Java/Dubbo and Go/X. Please visit our [Dubbo official website](https://dubbo.apache.org/zh/docs3-v2/golang-sdk/) for the quick start and documentation.
 
-## RPC Invocation
+## RPC invocation
 
-![](https://dubbo-go-pixiu.github.io/img/pixiu-dubbo-ecosystem.png)
+<img src="https://dubbo-go-pixiu.github.io/img/pixiu-dubbo-ecosystem.png" height="400px" display="display: block, margin: auto" />
 
-Dubbo-go has supported many RPC protocol, like Triple, Dubbo JSONRPC, gRPC, HTTP, HTTP2.
+Dubbo-go has supported many RPC protocols, like Triple, Dubbo JSONRPC, gRPC, HTTP, HTTP2.
 
 - Triple is the supported protocol of Dubbo3 ecology, and is gRPC extended protocol based on HTTP2, which is compatible with gRPC service.In other words, **on the basis of gRPC's reliable invocation, it adds Dubbo's service governance capability.**
-- Dubbo protocol  is tradition Dubbo ecology protocol, which is capitable with dubbo 2.x, and is a good choice for cross-language invocation between GO and Java old service.
+- Dubbo protocol is tradition Dubbo ecology protocol, which is compatible with Dubbo 2.x, and is a good choice for cross-language invocation between GO and Java legacy service.
 - HTTP support：As you can see in the figure above, you can invoke Triple/Dubbo service using HTTP protocol through [dubbo-go-pixiu](https://github.com/apache/dubbo-go-pixiu) gateway.
 
-## Service Governance Capability.
+## Service governance capability
 
-![](https://dubbogo.github.io/img/devops.png)
+<img src="https://dubbogo.github.io/img/devops.png" height="300px" display="display: block, margin: auto" />
 
 - **Registry**: Nacos, Zookeeper, ETCD, Polaris-mesh, Consul.
 - **ConfigCenter**: Nacos, Zookeeper
@@ -43,18 +43,18 @@ Dubbo-go has supported many RPC protocol, like Triple, Dubbo JSONRPC, gRPC, HTTP
 - [Dubbo-go Benchmark](https://github.com/dubbogo/dubbo-go-benchmark)
 - [Dubbo-go Wiki](https://github.com/apache/dubbo-go/wiki)
 
-## tools
+## Tools
 
   * [imports-formatter](https://github.com/dubbogo/tools/blob/master/cmd/imports-formatter/main.go) formatting dubbo-go project import code block.
   * [dubbo-go-cli](https://github.com/dubbogo/tools/blob/master/cmd/dubbogo-cli/main.go) dubbo-go command line tools, by which you can define your own request pkg and gets rsp struct of your server, test your service as telnet and generate hessian.POJO register method body.
-  * [dubbo-go-cli-v2](https://github.com/dubbogo/tools/blob/master/cmd/dubbogo-cli-v2/main.go) new dubbo-go line tools, you can get services from register center, create a demo and has the same features with [dubbo-go-cli](https://github.com/dubbogo/tools/blob/master/cmd/dubbogo-cli/main.go).
+  * [dubbo-go-cli-v2](https://github.com/apache/dubbo-go/blob/master/dubbogo-cli/main.go) new dubbo-go line tools, you can get services from register center, create a demo , create application templates, one-click installation of protoc-gen-go-triple and imports-formatter tools,and has the same features with [dubbo-go-cli](https://github.com/dubbogo/tools/blob/master/cmd/dubbogo-cli/main.go).
   * [protoc-gen-go-triple](https://github.com/dubbogo/tools/blob/master/cmd/protoc-gen-go-triple/main.go) tripe protocol pb file generation tool.
   * [protoc-gen-dubbo3grpc](https://github.com/dubbogo/tools/blob/master/cmd/protoc-gen-dubbo3grpc/main.go) dubbo3 grpc pb file generation tool.
 
 
-If you want to know more about dubbogo tools, please visit https://github.com/dubbogo/tools and read its readme carefully.
+If you want to know more about dubbogo tools, please visit https://github.com/apache/dubbo-go/blob/master/dubbogo-cli and read its readme carefully.
 
-## Intellij Plugin
+## Intellij plugin
 
 * Windows: File > Settings > Plugins > Browse repositories... > Search for "Dubbo Go" > Install Plugin
 * MacOS: Preferences > Settings > Plugins > Browse repositories... > Search for "Dubbo Go" > Install Plugin
@@ -63,19 +63,19 @@ If you want to know more about dubbogo tools, please visit https://github.com/du
     * From official jetbrains store from download
 
 
-### Feature
+### Features
 |      Feature       | IDEA | GoLand |
 |:------------------:|:----:|:------:|
 | Hessian2 Generator |  ✅️  |   ✅️   |
 | New Project/Module |  ✅️  |   ✅️   |
 
-#### Project/Module Template
+#### Project/module templates
 | Project/Module Template | Progress |
 |:-----------------------:|:--------:|
 |         Sample          |    ✅️    |
 |      Empty Project      |    ✅️    |
 
-##### Empty Project Template Middleware
+##### Empty project template middleware
 |  Middleware  |                Module                 | Support |
 |:------------:|:-------------------------------------:|:-------:|
 | Web Service  |    [Gin](github.com/gin-gonic/gin)    |   ✅️    |
@@ -83,9 +83,10 @@ If you want to know more about dubbogo tools, please visit https://github.com/du
 |   Database   |         [Gorm](gorm.io/gorm)          |   ✅️    |
 
 
-If you want to know more about dubbogo Intellij Plugin, please visit [https://gitee.com/changeden/intellij-plugin-dubbo-go-generator](https://gitee.com/changeden/intellij-plugin-dubbo-go-generator) and read its readme carefully.
+If you want to know more about the Intellij Plugin for Dubbo-go, you may
+refer to [https://gitee.com/changeden/intellij-plugin-dubbo-go-generator](https://gitee.com/changeden/intellij-plugin-dubbo-go-generator).
 
-## Dubbo-go ecosystem
+## Ecosystem
 
 * [Dubbo Ecosystem Entry](https://github.com/apache?utf8=%E2%9C%93&q=dubbo&type=&language=) - A GitHub group `dubbo` to gather all Dubbo relevant projects not appropriate in [apache](https://github.com/apache) group yet.
 * [dubbo-go-pixiu](https://github.com/apache/dubbo-go-pixiu) - A dynamic, high-performance API gateway solution for Dubbo and Http services.
@@ -219,7 +220,12 @@ If you are using [apache/dubbo-go](https://github.com/apache/dubbo-go) and think
       </td>
       <td align="center" valign="middle">
         <a href="https://amap.com/" target="_blank">
-          <img width="222px" src="https://github.com/seven-tan/static/blob/main/logo.png?raw=true" >
+          <img width="222px" src="https://github.com/seven-tan/static/blob/main/logo.png" >
+        </a>
+      </td>
+      <td align="center" valign="middle">
+        <a href="https://chinaz.com/" target="_blank">
+          <img width="222px" src="https://img.chinaz.com/2020/img/chinaz-logo.png" >
         </a>
       </td>
     </tr>

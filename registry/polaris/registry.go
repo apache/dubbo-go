@@ -42,15 +42,12 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/remoting/polaris"
 )
 
-var localIP = ""
-
 const (
 	RegistryConnDelay           = 3
 	defaultHeartbeatIntervalSec = 5
 )
 
 func init() {
-	localIP = common.GetLocalIp()
 	extension.SetRegistry(constant.PolarisKey, newPolarisRegistry)
 }
 
@@ -292,12 +289,7 @@ func (pr *polarisRegistry) doHeartbeat(ctx context.Context, ins *api.InstanceReg
 
 // createRegisterParam convert dubbo url to polaris instance register request
 func createRegisterParam(url *common.URL, serviceName string) *api.InstanceRegisterRequest {
-	if len(url.Ip) == 0 {
-		url.Ip = localIP
-	}
-	if len(url.Port) == 0 || url.Port == "0" {
-		url.Port = "80"
-	}
+	common.HandleRegisterIPAndPort(url)
 	port, _ := strconv.Atoi(url.Port)
 
 	metadata := make(map[string]string, len(url.GetParams()))
@@ -325,12 +317,7 @@ func createRegisterParam(url *common.URL, serviceName string) *api.InstanceRegis
 
 // createDeregisterParam convert dubbo url to polaris instance deregister request
 func createDeregisterParam(url *common.URL, serviceName string) *api.InstanceDeRegisterRequest {
-	if len(url.Ip) == 0 {
-		url.Ip = localIP
-	}
-	if len(url.Port) == 0 || url.Port == "0" {
-		url.Port = "80"
-	}
+	common.HandleRegisterIPAndPort(url)
 	port, _ := strconv.Atoi(url.Port)
 	return &api.InstanceDeRegisterRequest{
 		InstanceDeRegisterRequest: model.InstanceDeRegisterRequest{

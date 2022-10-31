@@ -93,3 +93,12 @@ consumer:
     plugin:
       subscribeLocalChannel:
         channelBufferSize: 50
+  statReporter:
+    enable: false
+    chain:
+      - prometheus
+    #描述：统计上报插件配置
+    plugin:
+      prometheus:
+        metricHost:
+        metricPort: 28080
