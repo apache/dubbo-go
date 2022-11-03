@@ -185,6 +185,11 @@ func (m *MockINamingClient) GetAllServicesInfo(param vo.GetAllServiceInfoParam) 
 	return ret0, ret1
 }
 
+// CloseClient ...
+func (m *MockINamingClient) CloseClient() {
+	m.ctrl.Call(m, "CloseClient")
+}
+
 // GetAllServicesInfo indicates an expected call of GetAllServicesInfo
 func (mr *MockINamingClientMockRecorder) GetAllServicesInfo(param interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllServicesInfo", reflect.TypeOf((*MockINamingClient)(nil).GetAllServicesInfo), param)
