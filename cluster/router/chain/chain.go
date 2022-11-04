@@ -113,6 +113,10 @@ func (c *RouterChain) AddRouters(routers []router.PriorityRouter) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	c.routers = newRouters
+	if len(extension.GetRouterFactories()) == 0 {
+		return
+	}
+
 	go func() {
 		c.notify <- struct{}{}
 	}()
@@ -124,6 +128,9 @@ func (c *RouterChain) SetInvokers(invokers []protocol.Invoker) {
 	c.mutex.Lock()
 	c.invokers = invokers
 	c.mutex.Unlock()
+	if len(extension.GetRouterFactories()) == 0 {
+		return
+	}
 
 	go func() {
 		c.notify <- struct{}{}
