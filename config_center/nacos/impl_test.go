@@ -45,6 +45,10 @@ type MockIConfigClient struct {
 	recorder *MockIConfigClientMockRecorder
 }
 
+func (m *MockIConfigClient) CloseClient() {
+	return
+}
+
 // MockIConfigClientMockRecorder is the mock recorder for MockIConfigClient
 type MockIConfigClientMockRecorder struct {
 	mock *MockIConfigClient
