@@ -64,3 +64,35 @@ func TestInvoke(t *testing.T) {
 	assert.NotNil(t, res.Result())
 	assert.Equal(t, "Hello request name", bizReply.Message)
 }
+
+func TestInvokeTimoutConfig(t *testing.T) {
+	go internal.InitDubboServer()
+	time.Sleep(time.Second * 3)
+
+	// test for millisecond
+	tmpMockUrl := mockDubbo3CommonUrl2 + "&timeout=300ms"
+	url, err := common.NewURL(tmpMockUrl)
+	assert.Nil(t, err)
+
+	invoker, err := NewDubboInvoker(url)
+	assert.Nil(t, err)
+
+	assert.Equal(t, invoker.timeout, time.Duration(time.Millisecond*300))
+
+	// test for second
+	tmpMockUrl = mockDubbo3CommonUrl2 + "&timeout=1s"
+	url, err = common.NewURL(tmpMockUrl)
+	assert.Nil(t, err)
+
+	invoker, err = NewDubboInvoker(url)
+	assert.Nil(t, err)
+	assert.Equal(t, invoker.timeout, time.Duration(time.Second))
+
+	// test for timeout default config
+	url, err = common.NewURL(mockDubbo3CommonUrl2)
+	assert.Nil(t, err)
+
+	invoker, err = NewDubboInvoker(url)
+	assert.Nil(t, err)
+	assert.Equal(t, invoker.timeout, time.Duration(time.Second*3))
+}
