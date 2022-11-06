@@ -29,6 +29,7 @@ var (
 
 const (
 	HillClimbingLimiter = iota
+	AutoConcurrencyLimiter
 )
 
 type Limiter interface {
