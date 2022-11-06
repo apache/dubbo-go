@@ -22,6 +22,10 @@ import (
 )
 
 import (
+	"github.com/dubbogo/gost/log/logger"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
@@ -43,6 +47,10 @@ type BaseMetadataIdentifier struct {
 func joinParams(joinChar string, params []string) string {
 	var joinedStr string
 	for _, param := range params {
+		if param == "" {
+			logger.Info("[Metadata report] Break loop in `joinParams` to avoid invalid path when meeting empty param")
+			break
+		}
 		joinedStr += joinChar
 		joinedStr += param
 	}

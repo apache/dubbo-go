@@ -58,6 +58,8 @@ func (m *limiterMapper) newAndSetMethodLimiter(url *common.URL, methodName strin
 		ok bool
 	)
 	m.rwMutex.Lock()
+	defer m.rwMutex.Unlock()
+
 	if l, ok = limiterMapperSingleton.mapper[key]; ok {
 		return l, nil
 	}
@@ -70,7 +72,6 @@ func (m *limiterMapper) newAndSetMethodLimiter(url *common.URL, methodName strin
 		return nil, ErrLimiterTypeNotFound
 	}
 	limiterMapperSingleton.mapper[key] = l
-	m.rwMutex.Unlock()
 	return l, nil
 }
 

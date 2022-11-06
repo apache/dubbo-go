@@ -18,10 +18,17 @@
 package config
 
 import (
+	"strings"
+)
+
+import (
+	log "github.com/dubbogo/gost/log/logger"
+
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/json"
 	"github.com/knadh/koanf/parsers/toml"
 	"github.com/knadh/koanf/parsers/yaml"
+	"github.com/knadh/koanf/providers/confmap"
 	"github.com/knadh/koanf/providers/rawbytes"
 
 	"github.com/pkg/errors"
@@ -66,5 +73,46 @@ func GetConfigResolver(conf *loaderConf) *koanf.Koanf {
 	if err != nil {
 		panic(err)
 	}
-	return k
+	return resolvePlaceholder(k)
+}
+
+// resolvePlaceholder replace ${xx} with real value
+func resolvePlaceholder(resolver *koanf.Koanf) *koanf.Koanf {
+	m := make(map[string]interface{})
+	for k, v := range resolver.All() {
+		s, ok := v.(string)
+		if !ok {
+			continue
+		}
+		newKey, defaultValue := checkPlaceholder(s)
+		if newKey == "" {
+			continue
+		}
+		m[k] = resolver.Get(newKey)
+		if m[k] == nil {
+			m[k] = defaultValue
+		}
+	}
+	err := resolver.Load(confmap.Provider(m, resolver.Delim()), nil)
+	if err != nil {
+		log.Errorf("resolvePlaceholder error %s", err)
+	}
+	return resolver
+}
+
+func checkPlaceholder(s string) (newKey, defaultValue string) {
+	s = strings.TrimSpace(s)
+	if !strings.HasPrefix(s, file.PlaceholderPrefix) || !strings.HasSuffix(s, file.PlaceholderSuffix) {
+		return
+	}
+	s = s[len(file.PlaceholderPrefix) : len(s)-len(file.PlaceholderSuffix)]
+	indexColon := strings.Index(s, ":")
+	if indexColon == -1 {
+		newKey = strings.TrimSpace(s)
+		return
+	}
+	newKey = strings.TrimSpace(s[0:indexColon])
+	defaultValue = strings.TrimSpace(s[indexColon+1:])
+
+	return
 }

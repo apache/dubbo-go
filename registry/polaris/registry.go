@@ -41,15 +41,12 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/remoting/polaris"
 )
 
-var localIP = ""
-
 const (
 	RegistryConnDelay           = 3
 	defaultHeartbeatIntervalSec = 5
 )
 
 func init() {
-	localIP = common.GetLocalIp()
 	extension.SetRegistry(constant.PolarisKey, newPolarisRegistry)
 }
 
@@ -150,6 +147,11 @@ func (pr *polarisRegistry) UnRegister(conf *common.URL) error {
 
 // Subscribe returns nil if subscribing registry successfully. If not returns an error.
 func (pr *polarisRegistry) Subscribe(url *common.URL, notifyListener registry.NotifyListener) error {
+	var (
+		newParam    api.WatchServiceRequest
+		newConsumer api.ConsumerAPI
+	)
+
 	role, _ := strconv.Atoi(url.GetParam(constant.RegistryRoleKey, ""))
 	if role != common.CONSUMER {
 		return nil
@@ -163,8 +165,17 @@ func (pr *polarisRegistry) Subscribe(url *common.URL, notifyListener registry.No
 			continue
 		}
 
+		watcher, err := newPolarisWatcher(&newParam, newConsumer)
+		if err != nil {
+			logger.Warnf("getwatcher() = err:%v", perrors.WithStack(err))
+			timer := time.NewTimer(time.Duration(RegistryConnDelay) * time.Second)
+			timer.Reset(time.Duration(RegistryConnDelay) * time.Second)
+			continue
+		}
 		for {
+
 			serviceEvent, err := listener.Next()
+
 			if err != nil {
 				logger.Warnf("Selector.watch() = error{%v}", perrors.WithStack(err))
 				listener.Close()
@@ -172,6 +183,7 @@ func (pr *polarisRegistry) Subscribe(url *common.URL, notifyListener registry.No
 			}
 			logger.Infof("update begin, service event: %v", serviceEvent.String())
 			notifyListener.Notify(serviceEvent)
+			watcher.startWatch()
 		}
 	}
 }
@@ -231,12 +243,7 @@ func (pr *polarisRegistry) doHeartbeat(ctx context.Context, ins *api.InstanceReg
 
 // createRegisterParam convert dubbo url to polaris instance register request
 func createRegisterParam(url *common.URL, serviceName string) *api.InstanceRegisterRequest {
-	if len(url.Ip) == 0 {
-		url.Ip = localIP
-	}
-	if len(url.Port) == 0 || url.Port == "0" {
-		url.Port = "80"
-	}
+	common.HandleRegisterIPAndPort(url)
 	port, _ := strconv.Atoi(url.Port)
 
 	metadata := make(map[string]string, len(url.GetParams()))
@@ -264,12 +271,7 @@ func createRegisterParam(url *common.URL, serviceName string) *api.InstanceRegis
 
 // createDeregisterParam convert dubbo url to polaris instance deregister request
 func createDeregisterParam(url *common.URL, serviceName string) *api.InstanceDeRegisterRequest {
-	if len(url.Ip) == 0 {
-		url.Ip = localIP
-	}
-	if len(url.Port) == 0 || url.Port == "0" {
-		url.Port = "80"
-	}
+	common.HandleRegisterIPAndPort(url)
 	port, _ := strconv.Atoi(url.Port)
 	return &api.InstanceDeRegisterRequest{
 		InstanceDeRegisterRequest: model.InstanceDeRegisterRequest{

@@ -18,7 +18,12 @@
 package common
 
 import (
+	"os"
+	"strconv"
+
 	gxnet "github.com/dubbogo/gost/net"
+
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
 var localIp string
@@ -29,4 +34,29 @@ func GetLocalIp() string {
 	}
 	localIp, _ = gxnet.GetLocalIP()
 	return localIp
+}
+
+func HandleRegisterIPAndPort(url *URL) {
+	// if developer define registry port and ip, use it first.
+	if ipToRegistry := os.Getenv(constant.DubboIpToRegistryKey); len(ipToRegistry) > 0 {
+		url.Ip = ipToRegistry
+	}
+	if len(url.Ip) == 0 {
+		url.Ip = GetLocalIp()
+	}
+	if portToRegistry := os.Getenv(constant.DubboPortToRegistryKey); isValidPort(portToRegistry) {
+		url.Port = portToRegistry
+	}
+	if len(url.Port) == 0 || url.Port == "0" {
+		url.Port = constant.DubboDefaultPortToRegistry
+	}
+}
+
+func isValidPort(port string) bool {
+	if len(port) == 0 {
+		return false
+	}
+
+	portInt, err := strconv.Atoi(port)
+	return err == nil && portInt > 0 && portInt < 65536
 }

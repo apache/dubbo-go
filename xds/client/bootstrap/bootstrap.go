@@ -45,12 +45,12 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/google"
 	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/credentials/tls/certprovider"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource/version"
-	internal2 "dubbo.apache.org/dubbo-go/v3/xds/internal"
+	"dubbo.apache.org/dubbo-go/v3/xds/credentials/certprovider"
+	"dubbo.apache.org/dubbo-go/v3/xds/internal"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/envconfig"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/pretty"
 )
@@ -346,7 +346,7 @@ func NewConfigFromContents(data []byte) (*Config, error) {
 				return nil, fmt.Errorf("xds: json.Unmarshal(%v) for field %q failed during bootstrap: %v", string(v), k, err)
 			}
 			configs := make(map[string]*certprovider.BuildableConfig)
-			getBuilder := internal2.GetCertificateProviderBuilder.(func(string) certprovider.Builder)
+			getBuilder := internal.GetCertificateProviderBuilder.(func(string) certprovider.Builder)
 			for instance, data := range providerInstances {
 				var nameAndConfig struct {
 					PluginName string          `json:"plugin_name"`

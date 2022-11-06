@@ -141,7 +141,7 @@ func (dir *RegistryDirectory) refreshInvokers(event *registry.ServiceEvent) {
 }
 
 // refreshAllInvokers the argument is the complete list of the service events,  we can safely assume any cached invoker
-// not in the incoming list can be removed.  The Action of serviceEvent should be EventTypeUpdate.
+// not in the incoming list can be removed.  The Action of serviceEvent should be EventTypeUpdate or EventTypeAdd.
 func (dir *RegistryDirectory) refreshAllInvokers(events []*registry.ServiceEvent, callback func()) {
 	var (
 		oldInvokers []protocol.Invoker
@@ -152,7 +152,7 @@ func (dir *RegistryDirectory) refreshAllInvokers(events []*registry.ServiceEvent
 
 	// loop the events to check the Action should be EventTypeUpdate.
 	for _, event := range events {
-		if event.Action != remoting.EventTypeUpdate {
+		if event.Action != remoting.EventTypeUpdate && event.Action != remoting.EventTypeAdd {
 			panic("Your implements of register center is wrong, " +
 				"please check the Action of ServiceEvent should be EventTypeUpdate")
 		}
@@ -186,9 +186,9 @@ func (dir *RegistryDirectory) refreshAllInvokers(events []*registry.ServiceEvent
 				addEvents = append(addEvents, event)
 			}
 		}
-		// loop the updateEvents
+		// loop the serviceEvents
 		for _, event := range addEvents {
-			logger.Debugf("[Registry Directory] registry update, result{%s}", event)
+			logger.Debugf("[Registry Directory] registry changed, result{%s}", event)
 			if event != nil && event.Service != nil {
 				logger.Infof("[Registry Directory] selector add service url{%s}", event.Service.String())
 			}
