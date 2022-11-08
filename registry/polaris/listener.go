@@ -18,6 +18,7 @@
 package polaris
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/remoting"
 	"net/url"
 	"strconv"
 )
@@ -38,21 +39,27 @@ import (
 )
 
 type polarisListener struct {
-	watcher   *PolarisServiceWatcher
-	listenUrl *common.URL
-	events    *gxchan.UnboundedChan
-	closeCh   chan struct{}
+	watcher *PolarisServiceWatcher
+	events  *gxchan.UnboundedChan
+	closeCh chan struct{}
 }
 
 // NewPolarisListener new polaris listener
-func NewPolarisListener(url *common.URL) (*polarisListener, error) {
+func NewPolarisListener(watcher *PolarisServiceWatcher) (*polarisListener, error) {
 	listener := &polarisListener{
-		listenUrl: url,
-		events:    gxchan.NewUnboundedChan(32),
-		closeCh:   make(chan struct{}),
+		watcher: watcher,
+		events:  gxchan.NewUnboundedChan(32),
+		closeCh: make(chan struct{}),
 	}
-
+	listener.startListen()
 	return listener, nil
+}
+func (pl *polarisListener) startListen() {
+	pl.watcher.AddSubscriber(func(et remoting.EventType, ins []model.Instance) {
+		for i := range ins {
+			pl.events.In() <- &config_center.ConfigChangeEvent{Value: generateUrl(ins[i]), ConfigType: et}
+		}
+	})
 }
 
 // Next returns next service event once received
@@ -60,7 +67,7 @@ func (pl *polarisListener) Next() (*registry.ServiceEvent, error) {
 	for {
 		select {
 		case <-pl.closeCh:
-			logger.Warnf("polaris listener is close!listenUrl:%+v", pl.listenUrl)
+			logger.Warnf("polaris listener is close!listenUrl:%+v")
 			return nil, perrors.New("listener stopped")
 		case val := <-pl.events.Out():
 			e, _ := val.(*config_center.ConfigChangeEvent)

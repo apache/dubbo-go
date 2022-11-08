@@ -53,12 +53,14 @@ func init() {
 
 // newPolarisRegistry will create new instance
 func newPolarisRegistry(url *common.URL) (registry.Registry, error) {
-	sdkCtx, _, err := polaris.GetPolarisConfig(url)
+	sdkCtx, ns, err := polaris.GetPolarisConfig(url)
 	if err != nil {
 		return &polarisRegistry{}, err
 	}
 	pRegistry := &polarisRegistry{
+		namespace:    ns,
 		provider:     api.NewProviderAPIByContext(sdkCtx),
+		consumer:     api.NewConsumerAPIByContext(sdkCtx),
 		lock:         &sync.RWMutex{},
 		registryUrls: make(map[string]*PolarisHeartbeat),
 		listenerLock: &sync.RWMutex{},
@@ -156,20 +158,35 @@ func (pr *polarisRegistry) Subscribe(url *common.URL, notifyListener registry.No
 	if role != common.CONSUMER {
 		return nil
 	}
+	timer := time.NewTimer(time.Duration(RegistryConnDelay) * time.Second)
+	defer timer.Stop()
+
+	req := api.WatchServiceRequest{
+		WatchServiceRequest: model.WatchServiceRequest{
+			Key: model.ServiceKey{
+				Service:   common.GetSubscribeName(url),
+				Namespace: pr.namespace,
+			},
+		},
+	}
 
 	for {
-		listener, err := NewPolarisListener(url)
+		watcher, err := newPolarisWatcher(&req, pr.consumer)
+
+		if err != nil {
+			logger.Warnf("getwatcher() = err:%v", perrors.WithStack(err))
+			<-timer.C
+			timer.Reset(time.Duration(RegistryConnDelay) * time.Second)
+			continue
+		}
+		listener, err := NewPolarisListener(watcher)
+		serviceName := getServiceName(url)
 
 		if err != nil {
 			logger.Warnf("getListener() = err:%v", perrors.WithStack(err))
-			<-time.After(time.Duration(RegistryConnDelay) * time.Second)
+			<-timer.C
+			timer.Reset(time.Duration(RegistryConnDelay) * time.Second)
 			continue
-		}
-		serviceName := getServiceName(url)
-		watcher, err := pr.createPolarisWatcher(serviceName)
-
-		if err != nil {
-			return err
 		}
 
 		watcher.AddSubscriber(func(et remoting.EventType, instances []model.Instance) {
