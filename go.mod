@@ -39,7 +39,7 @@ require (
 	github.com/natefinch/lumberjack v2.0.0+incompatible
 	github.com/opentracing/opentracing-go v1.2.0
 	github.com/pkg/errors v0.9.1
-	github.com/polarismesh/polaris-go v1.1.0
+	github.com/polarismesh/polaris-go v1.2.0
 	github.com/prometheus/client_golang v1.12.2
 	github.com/satori/go.uuid v1.2.1-0.20181028125025-b2ce2384e17b
 	github.com/stretchr/testify v1.8.1
@@ -49,7 +49,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.11.0
 	go.uber.org/atomic v1.9.0
 	go.uber.org/zap v1.21.0
-	google.golang.org/genproto v0.0.0-20211104193956-4c6863e31247
+	google.golang.org/genproto v0.0.0-20220504150022-98cd25cafc72
 	google.golang.org/grpc v1.50.1
 	google.golang.org/protobuf v1.28.1
 	gopkg.in/yaml.v2 v2.4.0
