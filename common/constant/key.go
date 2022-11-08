@@ -64,6 +64,14 @@ const (
 	MaxServerRecvMsgSize   = "max-server-recv-msg-size"
 )
 
+//tls constant
+const (
+	TLSKey        = "tls_key"
+	TLSCert       = "tls_cert"
+	CACert        = "ca_cert"
+	TLSServerNAME = "tls_server_name"
+)
+
 const (
 	ServiceFilterKey   = "service.filter"
 	ReferenceFilterKey = "reference.filter"
