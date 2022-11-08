@@ -68,14 +68,15 @@ func newPolarisRegistry(url *common.URL) (registry.Registry, error) {
 }
 
 type polarisRegistry struct {
-	consumer     api.ConsumerAPI
-	namespace    string
-	url          *common.URL
-	provider     api.ProviderAPI
-	lock         *sync.RWMutex
-	registryUrls map[string]*PolarisHeartbeat
-	watchers     map[string]*PolarisServiceWatcher
-	listenerLock *sync.RWMutex
+	consumer        api.ConsumerAPI
+	namespace       string
+	url             *common.URL
+	provider        api.ProviderAPI
+	lock            *sync.RWMutex
+	registryUrls    map[string]*PolarisHeartbeat
+	watchers        map[string]*PolarisServiceWatcher
+	listenerLock    *sync.RWMutex
+	registrylstener registry.ServiceInstancesChangedListener
 }
 
 // Register will register the service @url to its polaris registry center.
@@ -166,6 +167,7 @@ func (pr *polarisRegistry) Subscribe(url *common.URL, notifyListener registry.No
 		}
 		serviceName := getServiceName(url)
 		watcher, err := pr.createPolarisWatcher(serviceName)
+
 		if err != nil {
 			return err
 		}
@@ -184,8 +186,9 @@ func (pr *polarisRegistry) Subscribe(url *common.URL, notifyListener registry.No
 					GroupName:   instance.GetMetadata()[constant.PolarisDubboGroup],
 				})
 			}
-			registry.NewServiceInstancesChangedEvent(serviceName, dubboInstances)
-			listener.Next()
+
+			pr.registrylstener.OnEvent(registry.NewServiceInstancesChangedEvent(serviceName, dubboInstances))
+
 		})
 		if err != nil {
 			logger.Warnf("getwatcher() = err:%v", perrors.WithStack(err))
@@ -219,6 +222,7 @@ func (pr *polarisRegistry) UnSubscribe(url *common.URL, notifyListener registry.
 func (pr *polarisRegistry) GetURL() *common.URL {
 	return pr.url
 }
+
 func (pr *polarisRegistry) createPolarisWatcher(serviceName string) (*PolarisServiceWatcher, error) {
 
 	pr.listenerLock.Lock()
