@@ -30,8 +30,6 @@ global:
     plugin:
       grpc:
         maxCallRecvMsgSize: 52428800
-  statReporter:
-    enable: false
 consumer:
   localCache:
     type: inmemory
