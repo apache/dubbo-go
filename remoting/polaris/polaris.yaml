@@ -31,16 +31,7 @@ global:
       grpc:
         maxCallRecvMsgSize: 52428800
   statReporter:
-    enable: true
-    chain:
-      - stat2Monitor
-      - serviceCache
-    plugin:
-      stat2Monitor:
-        metricsReportWindow: 1m
-        metricsNumBuckets: 12
-      serviceCache:
-        reportInterval: 3m
+    enable: false
 consumer:
   localCache:
     type: inmemory

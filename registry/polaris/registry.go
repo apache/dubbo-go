@@ -52,12 +52,14 @@ func init() {
 
 // newPolarisRegistry will create new instance
 func newPolarisRegistry(url *common.URL) (registry.Registry, error) {
-	sdkCtx, _, err := polaris.GetPolarisConfig(url)
+	sdkCtx, ns, err := polaris.GetPolarisConfig(url)
 	if err != nil {
 		return &polarisRegistry{}, err
 	}
 	pRegistry := &polarisRegistry{
+		namespace:    ns,
 		provider:     api.NewProviderAPIByContext(sdkCtx),
+		consumer:     api.NewConsumerAPIByContext(sdkCtx),
 		lock:         &sync.RWMutex{},
 		registryUrls: make(map[string]*PolarisHeartbeat),
 		listenerLock: &sync.RWMutex{},
@@ -67,8 +69,10 @@ func newPolarisRegistry(url *common.URL) (registry.Registry, error) {
 }
 
 type polarisRegistry struct {
+	namespace    string
 	url          *common.URL
 	provider     api.ProviderAPI
+	consumer     api.ConsumerAPI
 	lock         *sync.RWMutex
 	registryUrls map[string]*PolarisHeartbeat
 
@@ -147,29 +151,34 @@ func (pr *polarisRegistry) UnRegister(conf *common.URL) error {
 
 // Subscribe returns nil if subscribing registry successfully. If not returns an error.
 func (pr *polarisRegistry) Subscribe(url *common.URL, notifyListener registry.NotifyListener) error {
-	var (
-		newParam    api.WatchServiceRequest
-		newConsumer api.ConsumerAPI
-	)
 
 	role, _ := strconv.Atoi(url.GetParam(constant.RegistryRoleKey, ""))
 	if role != common.CONSUMER {
 		return nil
 	}
 
-	for {
-		listener, err := NewPolarisListener(url)
-		if err != nil {
-			logger.Warnf("getListener() = err:%v", perrors.WithStack(err))
-			<-time.After(time.Duration(RegistryConnDelay) * time.Second)
-			continue
-		}
+	req := api.WatchServiceRequest{
+		WatchServiceRequest: model.WatchServiceRequest{
+			Key: model.ServiceKey{
+				Service:   common.GetSubscribeName(url),
+				Namespace: pr.namespace,
+			},
+		},
+	}
 
-		watcher, err := newPolarisWatcher(&newParam, newConsumer)
+	for {
+		watcher, err := newPolarisWatcher(&req, pr.consumer)
 		if err != nil {
 			logger.Warnf("getwatcher() = err:%v", perrors.WithStack(err))
 			timer := time.NewTimer(time.Duration(RegistryConnDelay) * time.Second)
 			timer.Reset(time.Duration(RegistryConnDelay) * time.Second)
+			continue
+		}
+
+		listener, err := NewPolarisListener(watcher)
+		if err != nil {
+			logger.Warnf("getListener() = err:%v", perrors.WithStack(err))
+			<-time.After(time.Duration(RegistryConnDelay) * time.Second)
 			continue
 		}
 		for {
@@ -218,7 +227,8 @@ func (pr *polarisRegistry) IsAvailable() bool {
 }
 
 // doHeartbeat Since polaris does not support automatic reporting of instance heartbeats, separate logic is
-//  needed to implement it
+//
+//	needed to implement it
 func (pr *polarisRegistry) doHeartbeat(ctx context.Context, ins *api.InstanceRegisterRequest) {
 	ticker := time.NewTicker(time.Duration(4) * time.Second)
 

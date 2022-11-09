@@ -64,7 +64,6 @@ func GetPolarisConfig(url *common.URL) (api.SDKContext, string, error) {
 			return nil, "", err
 		}
 		mergePolarisConfiguration(polarisConf, complexConf)
-
 		polarisConf = complexConf
 	}
 
