@@ -18,7 +18,6 @@
 package polaris
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/remoting"
 	"net/url"
 	"strconv"
 )
@@ -36,6 +35,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/registry"
+	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
 type polarisListener struct {
