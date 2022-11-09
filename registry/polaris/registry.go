@@ -19,7 +19,6 @@ package polaris
 
 import (
 	"context"
-	"dubbo.apache.org/dubbo-go/v3/remoting"
 	"strconv"
 	"sync"
 	"time"
@@ -70,15 +69,14 @@ func newPolarisRegistry(url *common.URL) (registry.Registry, error) {
 }
 
 type polarisRegistry struct {
-	consumer        api.ConsumerAPI
-	namespace       string
-	url             *common.URL
-	provider        api.ProviderAPI
-	lock            *sync.RWMutex
-	registryUrls    map[string]*PolarisHeartbeat
-	watchers        map[string]*PolarisServiceWatcher
-	listenerLock    *sync.RWMutex
-	registrylstener registry.ServiceInstancesChangedListener
+	consumer     api.ConsumerAPI
+	namespace    string
+	url          *common.URL
+	provider     api.ProviderAPI
+	lock         *sync.RWMutex
+	registryUrls map[string]*PolarisHeartbeat
+	watchers     map[string]*PolarisServiceWatcher
+	listenerLock *sync.RWMutex
 }
 
 // Register will register the service @url to its polaris registry center.
@@ -180,7 +178,6 @@ func (pr *polarisRegistry) Subscribe(url *common.URL, notifyListener registry.No
 			continue
 		}
 		listener, err := NewPolarisListener(watcher)
-		serviceName := getServiceName(url)
 
 		if err != nil {
 			logger.Warnf("getListener() = err:%v", perrors.WithStack(err))
@@ -189,24 +186,6 @@ func (pr *polarisRegistry) Subscribe(url *common.URL, notifyListener registry.No
 			continue
 		}
 
-		watcher.AddSubscriber(func(et remoting.EventType, instances []model.Instance) {
-			dubboInstances := make([]registry.ServiceInstance, 0, len(instances))
-			for _, instance := range instances {
-				dubboInstances = append(dubboInstances, &registry.DefaultServiceInstance{
-					ID:          instance.GetId(),
-					ServiceName: instance.GetService(),
-					Host:        instance.GetHost(),
-					Port:        int(instance.GetPort()),
-					Enable:      !instance.IsIsolated(),
-					Healthy:     instance.IsHealthy(),
-					Metadata:    instance.GetMetadata(),
-					GroupName:   instance.GetMetadata()[constant.PolarisDubboGroup],
-				})
-			}
-
-			pr.registrylstener.OnEvent(registry.NewServiceInstancesChangedEvent(serviceName, dubboInstances))
-
-		})
 		if err != nil {
 			logger.Warnf("getwatcher() = err:%v", perrors.WithStack(err))
 			timer := time.NewTimer(time.Duration(RegistryConnDelay) * time.Second)
