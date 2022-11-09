@@ -157,6 +157,9 @@ func (pr *polarisRegistry) Subscribe(url *common.URL, notifyListener registry.No
 		return nil
 	}
 
+	timer := time.NewTimer(time.Duration(RegistryConnDelay) * time.Second)
+	defer timer.Stop()
+
 	req := api.WatchServiceRequest{
 		WatchServiceRequest: model.WatchServiceRequest{
 			Key: model.ServiceKey{
@@ -170,7 +173,7 @@ func (pr *polarisRegistry) Subscribe(url *common.URL, notifyListener registry.No
 		watcher, err := newPolarisWatcher(&req, pr.consumer)
 		if err != nil {
 			logger.Warnf("getwatcher() = err:%v", perrors.WithStack(err))
-			timer := time.NewTimer(time.Duration(RegistryConnDelay) * time.Second)
+			<-timer.C
 			timer.Reset(time.Duration(RegistryConnDelay) * time.Second)
 			continue
 		}
@@ -178,7 +181,8 @@ func (pr *polarisRegistry) Subscribe(url *common.URL, notifyListener registry.No
 		listener, err := NewPolarisListener(watcher)
 		if err != nil {
 			logger.Warnf("getListener() = err:%v", perrors.WithStack(err))
-			<-time.After(time.Duration(RegistryConnDelay) * time.Second)
+			<-timer.C
+			timer.Reset(time.Duration(RegistryConnDelay) * time.Second)
 			continue
 		}
 		for {
@@ -192,7 +196,6 @@ func (pr *polarisRegistry) Subscribe(url *common.URL, notifyListener registry.No
 			}
 			logger.Infof("update begin, service event: %v", serviceEvent.String())
 			notifyListener.Notify(serviceEvent)
-			watcher.startWatch()
 		}
 	}
 }
