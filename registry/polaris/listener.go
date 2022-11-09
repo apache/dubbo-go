@@ -67,7 +67,7 @@ func (pl *polarisListener) Next() (*registry.ServiceEvent, error) {
 	for {
 		select {
 		case <-pl.closeCh:
-			logger.Warnf("polaris listener is close!listenUrl:%+v")
+			logger.Warnf("polaris listener is close")
 			return nil, perrors.New("listener stopped")
 		case val := <-pl.events.Out():
 			e, _ := val.(*config_center.ConfigChangeEvent)
