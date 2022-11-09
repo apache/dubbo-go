@@ -37,5 +37,5 @@ func TestStat(t *testing.T) {
 	assert.NotZero(t, i.Frequency)
 	assert.NotZero(t, i.Quota)
 
-	select {}
+	time.Sleep(time.Second * 10)
 }
