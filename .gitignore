@@ -9,6 +9,7 @@
 # Test binary, build with `go test -c`
 *.test
 
+
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 coverage.txt
@@ -22,6 +23,7 @@ classes
 vendor/
 logs/
 .vscode/
+.go-version
 
 # unit test
 remoting/zookeeper/zookeeper-4unittest/
