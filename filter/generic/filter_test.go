@@ -52,9 +52,9 @@ func TestFilter_Invoke(t *testing.T) {
 	normalInvocation := invocation.NewRPCInvocation("Hello", []interface{}{"arg1"}, make(map[string]interface{}))
 
 	mockInvoker := mock.NewMockInvoker(ctrl)
-	mockInvoker.EXPECT().GetUrl().Return(invokeUrl).Times(2)
-	mockInvoker.EXPECT().Invoke(gomock.Not(normalInvocation)).DoAndReturn(
-		func(invocation protocol.Invocation) protocol.Result {
+	mockInvoker.EXPECT().GetURL().Return(invokeUrl).Times(2)
+	mockInvoker.EXPECT().Invoke(gomock.Any(), gomock.Not(normalInvocation)).DoAndReturn(
+		func(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 			assert.Equal(t, constant.Generic, invocation.MethodName())
 			args := invocation.Arguments()
 			assert.Equal(t, "Hello", args[0])
@@ -85,9 +85,9 @@ func TestFilter_InvokeWithGenericCall(t *testing.T) {
 	}, make(map[string]interface{}))
 
 	mockInvoker := mock.NewMockInvoker(ctrl)
-	mockInvoker.EXPECT().GetUrl().Return(invokeUrl).Times(3)
-	mockInvoker.EXPECT().Invoke(gomock.Any()).DoAndReturn(
-		func(invocation protocol.Invocation) protocol.Result {
+	mockInvoker.EXPECT().GetURL().Return(invokeUrl).Times(3)
+	mockInvoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(
+		func(arg0 context.Context, invocation protocol.Invocation) protocol.Result {
 			assert.Equal(t, constant.Generic, invocation.MethodName())
 			args := invocation.Arguments()
 			assert.Equal(t, "hello", args[0])

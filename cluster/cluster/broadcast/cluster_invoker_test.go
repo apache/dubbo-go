@@ -51,7 +51,7 @@ func registerBroadcast(mockInvokers ...*mock.MockInvoker) protocol.Invoker {
 	invokers := []protocol.Invoker{}
 	for _, ivk := range mockInvokers {
 		invokers = append(invokers, ivk)
-		ivk.EXPECT().GetUrl().Return(broadcastUrl).AnyTimes()
+		ivk.EXPECT().GetURL().Return(broadcastUrl).AnyTimes()
 	}
 	staticDir := static.NewDirectory(invokers)
 
@@ -70,7 +70,7 @@ func TestBroadcastInvokeSuccess(t *testing.T) {
 	for i := 0; i < 3; i++ {
 		invoker := mock.NewMockInvoker(ctrl)
 		invokers = append(invokers, invoker)
-		invoker.EXPECT().Invoke(gomock.Any()).Return(mockResult).AnyTimes()
+		invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(mockResult).AnyTimes()
 	}
 
 	clusterInvoker := registerBroadcast(invokers...)
@@ -90,17 +90,17 @@ func TestBroadcastInvokeFailed(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		invoker := mock.NewMockInvoker(ctrl)
 		invokers = append(invokers, invoker)
-		invoker.EXPECT().Invoke(gomock.Any()).Return(mockResult).AnyTimes()
+		invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(mockResult).AnyTimes()
 	}
 	{
 		invoker := mock.NewMockInvoker(ctrl)
 		invokers = append(invokers, invoker)
-		invoker.EXPECT().Invoke(gomock.Any()).Return(mockFailedResult).AnyTimes()
+		invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(mockFailedResult).AnyTimes()
 	}
 	for i := 0; i < 10; i++ {
 		invoker := mock.NewMockInvoker(ctrl)
 		invokers = append(invokers, invoker)
-		invoker.EXPECT().Invoke(gomock.Any()).Return(mockResult).AnyTimes()
+		invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(mockResult).AnyTimes()
 	}
 
 	clusterInvoker := registerBroadcast(invokers...)

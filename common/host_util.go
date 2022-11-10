@@ -20,9 +20,13 @@ package common
 import (
 	"os"
 	"strconv"
+)
 
+import (
 	gxnet "github.com/dubbogo/gost/net"
+)
 
+import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 

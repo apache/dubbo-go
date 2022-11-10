@@ -55,7 +55,7 @@ func registerFailfast(invoker *mock.MockInvoker) protocol.Invoker {
 	invokers = append(invokers, invoker)
 
 	invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
-	invoker.EXPECT().GetUrl().Return(failfastUrl).AnyTimes()
+	invoker.EXPECT().GetURL().Return(failfastUrl).AnyTimes()
 
 	staticDir := static.NewDirectory(invokers)
 	clusterInvoker := failfastCluster.Join(staticDir)
@@ -70,11 +70,11 @@ func TestFailfastInvokeSuccess(t *testing.T) {
 	clusterInvoker := registerFailfast(invoker)
 
 	invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
-	invoker.EXPECT().GetUrl().Return(failfastUrl).AnyTimes()
+	invoker.EXPECT().GetURL().Return(failfastUrl).AnyTimes()
 
 	mockResult := &protocol.RPCResult{Rest: clusterpkg.Rest{Tried: 0, Success: true}}
 
-	invoker.EXPECT().Invoke(gomock.Any()).Return(mockResult).AnyTimes()
+	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(mockResult).AnyTimes()
 	result := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
 
 	assert.NoError(t, result.Error())
@@ -91,11 +91,11 @@ func TestFailfastInvokeFail(t *testing.T) {
 	clusterInvoker := registerFailfast(invoker)
 
 	invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
-	invoker.EXPECT().GetUrl().Return(failfastUrl).AnyTimes()
+	invoker.EXPECT().GetURL().Return(failfastUrl).AnyTimes()
 
 	mockResult := &protocol.RPCResult{Err: perrors.New("error")}
 
-	invoker.EXPECT().Invoke(gomock.Any()).Return(mockResult).AnyTimes()
+	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(mockResult).AnyTimes()
 	result := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
 
 	assert.NotNil(t, result.Error())

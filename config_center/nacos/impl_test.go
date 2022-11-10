@@ -29,8 +29,8 @@ import (
 
 	"github.com/golang/mock/gomock"
 
-	"github.com/nacos-group/nacos-sdk-go/model"
-	"github.com/nacos-group/nacos-sdk-go/vo"
+	"github.com/nacos-group/nacos-sdk-go/v2/model"
+	"github.com/nacos-group/nacos-sdk-go/v2/vo"
 )
 
 import (
@@ -94,6 +94,11 @@ func (m *MockIConfigClient) DeleteConfig(param vo.ConfigParam) (bool, error) {
 	ret0, _ := ret[0].(bool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
+}
+
+// CloseClient client nacos client
+func (mr *MockIConfigClient) CloseClient() {
+
 }
 
 // DeleteConfig indicates an expected call of DeleteConfig

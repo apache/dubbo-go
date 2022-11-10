@@ -56,7 +56,7 @@ func registerFailback(invoker *mock.MockInvoker) protocol.Invoker {
 	var invokers []protocol.Invoker
 	invokers = append(invokers, invoker)
 
-	invoker.EXPECT().GetUrl().Return(failbackUrl).AnyTimes()
+	invoker.EXPECT().GetURL().Return(failbackUrl).AnyTimes()
 
 	staticDir := static.NewDirectory(invokers)
 	clusterInvoker := failbackCluster.Join(staticDir)
@@ -71,12 +71,12 @@ func TestFailbackSuceess(t *testing.T) {
 	invoker := mock.NewMockInvoker(ctrl)
 	clusterInvoker := registerFailback(invoker).(*failbackClusterInvoker)
 
-	invoker.EXPECT().GetUrl().Return(failbackUrl).AnyTimes()
+	invoker.EXPECT().GetURL().Return(failbackUrl).AnyTimes()
 
 	invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
 
 	mockResult := &protocol.RPCResult{Rest: clusterpkg.Rest{Tried: 0, Success: true}}
-	invoker.EXPECT().Invoke(gomock.Any()).Return(mockResult).AnyTimes()
+	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(mockResult).AnyTimes()
 
 	result := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
 	assert.Equal(t, mockResult, result)
@@ -90,12 +90,12 @@ func TestFailbackRetryOneSuccess(t *testing.T) {
 	invoker := mock.NewMockInvoker(ctrl)
 	clusterInvoker := registerFailback(invoker).(*failbackClusterInvoker)
 
-	invoker.EXPECT().GetUrl().Return(failbackUrl).AnyTimes()
+	invoker.EXPECT().GetURL().Return(failbackUrl).AnyTimes()
 	invoker.EXPECT().IsAvailable().Return(true)
 
 	// failed at first
 	mockFailedResult := &protocol.RPCResult{Err: perrors.New("error")}
-	invoker.EXPECT().Invoke(gomock.Any()).Return(mockFailedResult)
+	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(mockFailedResult)
 
 	// success second
 	var wg sync.WaitGroup
@@ -103,7 +103,7 @@ func TestFailbackRetryOneSuccess(t *testing.T) {
 	now := time.Now()
 	mockSuccResult := &protocol.RPCResult{Rest: clusterpkg.Rest{Tried: 0, Success: true}}
 	invoker.EXPECT().IsAvailable().Return(true)
-	invoker.EXPECT().Invoke(gomock.Any()).DoAndReturn(func(protocol.Invocation) protocol.Result {
+	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(func(context.Context, protocol.Invocation) protocol.Result {
 		delta := time.Since(now).Nanoseconds() / int64(time.Second)
 		assert.True(t, delta >= 5)
 		wg.Done()
@@ -135,11 +135,11 @@ func TestFailbackRetryFailed(t *testing.T) {
 	invoker := mock.NewMockInvoker(ctrl)
 	clusterInvoker := registerFailback(invoker).(*failbackClusterInvoker)
 
-	invoker.EXPECT().GetUrl().Return(failbackUrl).AnyTimes()
+	invoker.EXPECT().GetURL().Return(failbackUrl).AnyTimes()
 	invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
 
 	mockFailedResult := &protocol.RPCResult{Err: perrors.New("error")}
-	invoker.EXPECT().Invoke(gomock.Any()).Return(mockFailedResult)
+	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(mockFailedResult)
 
 	//
 	var wg sync.WaitGroup
@@ -150,7 +150,7 @@ func TestFailbackRetryFailed(t *testing.T) {
 	// add retry call that eventually failed.
 	for i := 0; i < retries; i++ {
 		j := i + 1
-		invoker.EXPECT().Invoke(gomock.Any()).DoAndReturn(func(protocol.Invocation) protocol.Result {
+		invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(func(context.Context, protocol.Invocation) protocol.Result {
 			delta := time.Since(now).Nanoseconds() / int64(time.Second)
 			assert.True(t, delta >= int64(5*j))
 			wg.Done()
@@ -184,17 +184,17 @@ func TestFailbackRetryFailed10Times(t *testing.T) {
 	clusterInvoker.maxRetries = 10
 
 	invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
-	invoker.EXPECT().GetUrl().Return(failbackUrl).AnyTimes()
+	invoker.EXPECT().GetURL().Return(failbackUrl).AnyTimes()
 
 	// 10 task should failed firstly.
 	mockFailedResult := &protocol.RPCResult{Err: perrors.New("error")}
-	invoker.EXPECT().Invoke(gomock.Any()).Return(mockFailedResult).Times(10)
+	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(mockFailedResult).Times(10)
 
 	// 10 task should retry and failed.
 	var wg sync.WaitGroup
 	wg.Add(10)
 	now := time.Now()
-	invoker.EXPECT().Invoke(gomock.Any()).DoAndReturn(func(protocol.Invocation) protocol.Result {
+	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(func(context.Context, protocol.Invocation) protocol.Result {
 		delta := time.Since(now).Nanoseconds() / int64(time.Second)
 		assert.True(t, delta >= 5)
 		wg.Done()
@@ -226,11 +226,11 @@ func TestFailbackOutOfLimit(t *testing.T) {
 	clusterInvoker := registerFailback(invoker).(*failbackClusterInvoker)
 	clusterInvoker.failbackTasks = 1
 
-	invoker.EXPECT().GetUrl().Return(failbackUrl).AnyTimes()
+	invoker.EXPECT().GetURL().Return(failbackUrl).AnyTimes()
 	invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
 
 	mockFailedResult := &protocol.RPCResult{Err: perrors.New("error")}
-	invoker.EXPECT().Invoke(gomock.Any()).Return(mockFailedResult).Times(11)
+	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(mockFailedResult).Times(11)
 
 	// reached limit
 	result := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
