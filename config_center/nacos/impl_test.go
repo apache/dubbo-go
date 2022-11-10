@@ -45,7 +45,7 @@ type MockIConfigClient struct {
 	recorder *MockIConfigClientMockRecorder
 }
 
-// CloseClient creates a new mock instance
+// CloseClient close mock client
 func (m *MockIConfigClient) CloseClient() {
 	return
 }

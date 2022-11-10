@@ -70,6 +70,7 @@ type MockIConfigClient struct {
 	recorder *MockIConfigClientMockRecorder
 }
 
+// CloseClient close mock client
 func (m *MockIConfigClient) CloseClient() {
 	return
 }

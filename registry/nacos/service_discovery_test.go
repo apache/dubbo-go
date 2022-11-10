@@ -164,7 +164,9 @@ type mockClient struct {
 	instance []interface{}
 }
 
+// CloseClient close mock client
 func (c mockClient) CloseClient() {
+	return
 }
 
 func (c mockClient) RegisterInstance(param vo.RegisterInstanceParam) (bool, error) {
