@@ -29,7 +29,7 @@ import (
 
 	nacosClient "github.com/dubbogo/gost/database/kv/nacos"
 
-	nacosConstant "github.com/nacos-group/nacos-sdk-go/common/constant"
+	nacosConstant "github.com/nacos-group/nacos-sdk-go/v2common/constant"
 
 	"github.com/stretchr/testify/assert"
 )

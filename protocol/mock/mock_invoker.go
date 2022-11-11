@@ -22,84 +22,92 @@
 package mock
 
 import (
-	"context"
-	"reflect"
+	context "context"
+	reflect "reflect"
 )
 
 import (
-	"github.com/golang/mock/gomock"
+	gomock "github.com/golang/mock/gomock"
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	common "dubbo.apache.org/dubbo-go/v3/common"
+	protocol "dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
-// MockInvoker is a mock of Invoker interface
+// MockInvoker is a mock of Invoker interface.
 type MockInvoker struct {
 	ctrl     *gomock.Controller
 	recorder *MockInvokerMockRecorder
 }
 
-// MockInvokerMockRecorder is the mock recorder for MockInvoker
+// MockInvokerMockRecorder is the mock recorder for MockInvoker.
 type MockInvokerMockRecorder struct {
 	mock *MockInvoker
 }
 
-// NewMockInvoker creates a new mock instance
+// NewMockInvoker creates a new mock instance.
 func NewMockInvoker(ctrl *gomock.Controller) *MockInvoker {
 	mock := &MockInvoker{ctrl: ctrl}
 	mock.recorder = &MockInvokerMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockInvoker) EXPECT() *MockInvokerMockRecorder {
 	return m.recorder
 }
 
-// GetURL mocks base method
+// Destroy mocks base method.
+func (m *MockInvoker) Destroy() {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "Destroy")
+}
+
+// Destroy indicates an expected call of Destroy.
+func (mr *MockInvokerMockRecorder) Destroy() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Destroy", reflect.TypeOf((*MockInvoker)(nil).Destroy))
+}
+
+// GetURL mocks base method.
 func (m *MockInvoker) GetURL() *common.URL {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetURL")
 	ret0, _ := ret[0].(*common.URL)
 	return ret0
 }
 
-// GetUrl indicates an expected call of GetUrl
-func (mr *MockInvokerMockRecorder) GetUrl() *gomock.Call {
+// GetURL indicates an expected call of GetURL.
+func (mr *MockInvokerMockRecorder) GetURL() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetURL", reflect.TypeOf((*MockInvoker)(nil).GetURL))
 }
 
-// IsAvailable mocks base method
+// Invoke mocks base method.
+func (m *MockInvoker) Invoke(arg0 context.Context, arg1 protocol.Invocation) protocol.Result {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Invoke", arg0, arg1)
+	ret0, _ := ret[0].(protocol.Result)
+	return ret0
+}
+
+// Invoke indicates an expected call of Invoke.
+func (mr *MockInvokerMockRecorder) Invoke(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Invoke", reflect.TypeOf((*MockInvoker)(nil).Invoke), arg0, arg1)
+}
+
+// IsAvailable mocks base method.
 func (m *MockInvoker) IsAvailable() bool {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "IsAvailable")
 	ret0, _ := ret[0].(bool)
 	return ret0
 }
 
-// IsAvailable indicates an expected call of IsAvailable
+// IsAvailable indicates an expected call of IsAvailable.
 func (mr *MockInvokerMockRecorder) IsAvailable() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsAvailable", reflect.TypeOf((*MockInvoker)(nil).IsAvailable))
-}
-
-// Destroy mocks base method
-func (m *MockInvoker) Destroy() {
-	m.ctrl.Call(m, "Destroy")
-}
-
-// Destroy indicates an expected call of Destroy
-func (mr *MockInvokerMockRecorder) Destroy() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Destroy", reflect.TypeOf((*MockInvoker)(nil).Destroy))
-}
-
-// Invoke mocks base method
-func (m *MockInvoker) Invoke(ctx context.Context, arg0 protocol.Invocation) protocol.Result {
-	ret := m.ctrl.Call(m, "Invoke", arg0)
-	ret0, _ := ret[0].(protocol.Result)
-	return ret0
-}
-
-// Invoke indicates an expected call of Invoke
-func (mr *MockInvokerMockRecorder) Invoke(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Invoke", reflect.TypeOf((*MockInvoker)(nil).Invoke), arg0)
 }

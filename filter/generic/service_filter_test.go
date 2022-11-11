@@ -79,15 +79,15 @@ func TestServiceFilter_Invoke(t *testing.T) {
 
 	// methodName is not "$invoke"
 	invocation1 := invocation.NewRPCInvocation("test", nil, nil)
-	mockInvoker.EXPECT().Invoke(gomock.Eq(invocation1))
+	mockInvoker.EXPECT().Invoke(gomock.Any(), gomock.Eq(invocation1))
 	_ = filter.Invoke(context.Background(), mockInvoker, invocation1)
 	// arguments are nil
 	invocation2 := invocation.NewRPCInvocation(constant.Generic, nil, nil)
-	mockInvoker.EXPECT().Invoke(gomock.Eq(invocation2))
+	mockInvoker.EXPECT().Invoke(gomock.Any(), gomock.Eq(invocation2))
 	_ = filter.Invoke(context.Background(), mockInvoker, invocation2)
 	// the number of arguments is not 3
 	invocation3 := invocation.NewRPCInvocation(constant.Generic, []interface{}{"hello"}, nil)
-	mockInvoker.EXPECT().Invoke(gomock.Eq(invocation3))
+	mockInvoker.EXPECT().Invoke(gomock.Any(), gomock.Eq(invocation3))
 	_ = filter.Invoke(context.Background(), mockInvoker, invocation3)
 
 	// hello service
@@ -107,7 +107,7 @@ func TestServiceFilter_Invoke(t *testing.T) {
 	assert.Nil(t, err)
 
 	// mock
-	mockInvoker.EXPECT().GetUrl().Return(ivkUrl).Times(3)
+	mockInvoker.EXPECT().GetURL().Return(ivkUrl).Times(3)
 
 	// invoke a method without errors using default generalization
 	invocation4 := invocation.NewRPCInvocation(constant.Generic,
@@ -146,12 +146,12 @@ func TestServiceFilter_Invoke(t *testing.T) {
 	//		constant.GenericKey: constant.GenericSerializationProtobuf,
 	//	})
 
-	mockInvoker.EXPECT().Invoke(gomock.All(
+	mockInvoker.EXPECT().Invoke(gomock.Any(), gomock.All(
 		gomock.Not(invocation1),
 		gomock.Not(invocation2),
 		gomock.Not(invocation3),
 	)).DoAndReturn(
-		func(invocation protocol.Invocation) protocol.Result {
+		func(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 			switch invocation.MethodName() {
 			case "Hello":
 				who := invocation.Arguments()[0].(string)

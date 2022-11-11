@@ -53,7 +53,7 @@ func registerForking(mockInvokers ...*mock.MockInvoker) protocol.Invoker {
 	var invokers []protocol.Invoker
 	for _, ivk := range mockInvokers {
 		invokers = append(invokers, ivk)
-		ivk.EXPECT().GetUrl().Return(forkingUrl).AnyTimes()
+		ivk.EXPECT().GetURL().Return(forkingUrl).AnyTimes()
 	}
 	staticDir := static.NewDirectory(invokers)
 
@@ -78,8 +78,8 @@ func TestForkingInvokeSuccess(t *testing.T) {
 		invoker := mock.NewMockInvoker(ctrl)
 		invokers = append(invokers, invoker)
 		invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
-		invoker.EXPECT().Invoke(gomock.Any()).DoAndReturn(
-			func(protocol.Invocation) protocol.Result {
+		invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(
+			func(context.Context, protocol.Invocation) protocol.Result {
 				wg.Done()
 				return mockResult
 			})
@@ -107,8 +107,8 @@ func TestForkingInvokeTimeout(t *testing.T) {
 		invoker := mock.NewMockInvoker(ctrl)
 		invokers = append(invokers, invoker)
 		invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
-		invoker.EXPECT().Invoke(gomock.Any()).DoAndReturn(
-			func(protocol.Invocation) protocol.Result {
+		invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(
+			func(context.Context, protocol.Invocation) protocol.Result {
 				time.Sleep(2 * time.Second)
 				wg.Done()
 				return mockResult
@@ -139,14 +139,14 @@ func TestForkingInvokeHalfTimeout(t *testing.T) {
 		invokers = append(invokers, invoker)
 		invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
 		if i == 1 {
-			invoker.EXPECT().Invoke(gomock.Any()).DoAndReturn(
-				func(protocol.Invocation) protocol.Result {
+			invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(
+				func(context.Context, protocol.Invocation) protocol.Result {
 					wg.Done()
 					return mockResult
 				}).AnyTimes()
 		} else {
-			invoker.EXPECT().Invoke(gomock.Any()).DoAndReturn(
-				func(protocol.Invocation) protocol.Result {
+			invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(
+				func(context.Context, protocol.Invocation) protocol.Result {
 					time.Sleep(2 * time.Second)
 					wg.Done()
 					return mockResult
