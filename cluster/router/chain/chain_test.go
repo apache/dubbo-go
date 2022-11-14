@@ -24,7 +24,6 @@ import (
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/protocol"
-	"github.com/dubbogo/go-zookeeper/zk"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -47,8 +46,6 @@ const (
 	forceField       = "force"
 	forceValue       = "true"
 )
-
-var zkCluster *zk.TestCluster
 
 func TestNewRouterChain(t *testing.T) {
 	chain, _ := NewRouterChain(getRouteUrl(applicationKey))
