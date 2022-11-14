@@ -41,30 +41,68 @@ var showCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(showCmd)
-	showCmd.Flags().String("r", "r", "")
+	showCmd.Flags().String("r", "", "")
+	showCmd.Flags().String("mc", "", "Get Metadata in MetadataCenter")
 	showCmd.Flags().String("h", "h", "")
+
 }
 
 func show(cmd *cobra.Command, _ []string) {
+	var (
+		methodsMap map[string][]string
+		err error
+	)
+
 	registry, err := cmd.Flags().GetString("r")
 	if err != nil {
 		panic(err)
 	}
+
+	metadataCenter, err := cmd.Flags().GetString("mc")
+	if err != nil {
+		panic(err)
+	}
+
 	host, err := cmd.Flags().GetString("h")
 	if err != nil {
 		panic(err)
 	}
-	fact, ok := metadata.GetFactory(registry)
-	if !ok {
-		log.Print("registry not support")
-		return
+
+	if registry != "" {
+		registryFactory, ok := metadata.GetFactory(registry)
+		if !ok {
+			log.Print("registry not support")
+			return
+		}
+		methodsMap, err = registryFactory("dubbogo-cli", []string{host}).ShowRegistryCenterChildren()
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("======================\n")
+		fmt.Printf("Registry:\n")
+		for k, v := range methodsMap {
+			fmt.Printf("interface: %s\n", k)
+			fmt.Printf("methods: %v\n", v)
+		}
+		fmt.Printf("======================\n")
 	}
-	methodsMap, err := fact("dubbogo-cli", []string{host}).ShowChildren()
-	if err != nil {
-		panic(err)
-	}
-	for k, v := range methodsMap {
-		fmt.Printf("interface: %s\n", k)
-		fmt.Printf("methods: %v\n", v)
+
+	if metadataCenter != "" {
+		metadataCenterFactory, ok := metadata.GetFactory(metadataCenter)
+		if !ok {
+			log.Print("metadataCenter not support")
+			return
+		}
+		methodsMap, err = metadataCenterFactory("dubbogo-cli", []string{host}).ShowMetadataCenterChildren()
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("======================\n")
+		fmt.Printf("MetadataCenter:\n")
+		for k, v := range methodsMap {
+			fmt.Printf("interface: %s\n", k)
+			fmt.Printf("methods: %v\n", v)
+		}
+		fmt.Printf("======================\n")
 	}
 }

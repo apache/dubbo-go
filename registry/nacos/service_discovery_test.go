@@ -27,8 +27,8 @@ import (
 import (
 	gxset "github.com/dubbogo/gost/container/set"
 
-	"github.com/nacos-group/nacos-sdk-go/model"
-	"github.com/nacos-group/nacos-sdk-go/vo"
+	"github.com/nacos-group/nacos-sdk-go/v2/model"
+	"github.com/nacos-group/nacos-sdk-go/v2/vo"
 
 	perrors "github.com/pkg/errors"
 
@@ -202,6 +202,9 @@ func (c mockClient) Unsubscribe(param *vo.SubscribeParam) error {
 
 func (c mockClient) GetAllServicesInfo(param vo.GetAllServiceInfoParam) (model.ServiceList, error) {
 	panic("implement me")
+}
+
+func (c mockClient) CloseClient() {
 }
 
 type mockProtocol struct{}

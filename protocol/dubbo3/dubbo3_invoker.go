@@ -77,7 +77,7 @@ func NewDubboInvoker(url *common.URL) (*DubboInvoker, error) {
 	triCodecType := tripleConstant.CodecType(dubboSerializerType)
 	// new triple client
 	opts := []triConfig.OptionFunction{
-		triConfig.WithClientTimeout(uint32(timeout.Seconds())),
+		triConfig.WithClientTimeout(timeout),
 		triConfig.WithCodecType(triCodecType),
 		triConfig.WithLocation(url.Location),
 		triConfig.WithHeaderAppVersion(url.GetParam(constant.AppVersionKey, "")),

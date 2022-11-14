@@ -44,8 +44,8 @@ func TestFilterInvoke(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	invoker := mock.NewMockInvoker(ctrl)
-	invoker.EXPECT().Invoke(gomock.Any()).Return(nil)
-	invoker.EXPECT().GetUrl().Return(url).Times(1)
+	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(nil)
+	invoker.EXPECT().GetURL().Return(url).Times(1)
 	filter.Invoke(context.Background(), invoker, invoc)
 	assert.True(t, invoc.GetAttachmentWithDefaultValue(dubboInvokeStartTime, "") != "")
 }
@@ -61,7 +61,7 @@ func TestFilterOnResponse(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	invoker := mock.NewMockInvoker(ctrl)
-	invoker.EXPECT().GetUrl().Return(url).Times(1)
+	invoker.EXPECT().GetURL().Return(url).Times(1)
 	result := &protocol.RPCResult{
 		Err: errors.New("test"),
 	}
