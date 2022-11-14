@@ -72,7 +72,7 @@ type RouterChain struct {
 }
 
 const (
-	NoHasRouter = iota
+	NoRouter = iota
 	HasRouter
 )
 
@@ -120,7 +120,7 @@ func (c *RouterChain) AddRouters(routers []router.PriorityRouter) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	c.routers = newRouters
-	if c.routerStatus.Load() == NoHasRouter {
+	if c.routerStatus.Load() == int32(NoRouter) {
 		return
 	}
 
@@ -135,7 +135,7 @@ func (c *RouterChain) SetInvokers(invokers []protocol.Invoker) {
 	c.mutex.Lock()
 	c.invokers = invokers
 	c.mutex.Unlock()
-	if c.routerStatus.Load() == NoHasRouter {
+	if c.routerStatus.Load() == int32(NoRouter) {
 		return
 	}
 
@@ -310,7 +310,7 @@ func NewRouterChain(url *common.URL) (*RouterChain, error) {
 		last:   time.Now(),
 		notify: make(chan struct{}),
 	}
-	chain.routerStatus.Store(HasRouter)
+	chain.routerStatus.Store(int32(HasRouter))
 
 	routers := make([]router.PriorityRouter, 0, len(routerFactories))
 	for key, routerFactory := range routerFactories {
