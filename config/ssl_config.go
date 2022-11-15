@@ -22,22 +22,28 @@ import (
 )
 
 var (
+	//Deprecated: use TLSConfig instead.
 	serverTlsConfigBuilder getty.TlsConfigBuilder
+	//Deprecated: use TLSConfig instead.
 	clientTlsConfigBuilder getty.TlsConfigBuilder
 )
 
+//Deprecated: use TLSConfig instead.
 func GetServerTlsConfigBuilder() getty.TlsConfigBuilder {
 	return serverTlsConfigBuilder
 }
 
+//Deprecated: use TLSConfig instead.
 func GetClientTlsConfigBuilder() getty.TlsConfigBuilder {
 	return clientTlsConfigBuilder
 }
 
+// Deprecated: use TLSConfig instead.
 func SetServerTlsConfigBuilder(configBuilder getty.TlsConfigBuilder) {
 	serverTlsConfigBuilder = configBuilder
 }
 
+//Deprecated: use TLSConfig instead.
 func SetClientTlsConfigBuilder(configBuilder getty.TlsConfigBuilder) {
 	clientTlsConfigBuilder = configBuilder
 }

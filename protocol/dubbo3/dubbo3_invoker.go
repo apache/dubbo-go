@@ -77,7 +77,7 @@ func NewDubboInvoker(url *common.URL) (*DubboInvoker, error) {
 	triCodecType := tripleConstant.CodecType(dubboSerializerType)
 	// new triple client
 	opts := []triConfig.OptionFunction{
-		triConfig.WithClientTimeout(uint32(timeout.Seconds())),
+		triConfig.WithClientTimeout(timeout),
 		triConfig.WithCodecType(triCodecType),
 		triConfig.WithLocation(url.Location),
 		triConfig.WithHeaderAppVersion(url.GetParam(constant.AppVersionKey, "")),
@@ -115,6 +115,12 @@ func NewDubboInvoker(url *common.URL) (*DubboInvoker, error) {
 	}
 
 	triOption := triConfig.NewTripleOption(opts...)
+	if url.GetParam(constant.SslEnabledKey, "false") == "true" {
+		triOption.TLSCertFile = url.GetParam(constant.TLSCert, "")
+		triOption.TLSKeyFile = url.GetParam(constant.TLSKey, "")
+		triOption.CACertFile = url.GetParam(constant.CACert, "")
+		triOption.TLSServerName = url.GetParam(constant.TLSServerNAME, "")
+	}
 	client, err := triple.NewTripleClient(consumerService, triOption)
 
 	if err != nil {

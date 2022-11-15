@@ -35,10 +35,6 @@ import (
 	perrors "github.com/pkg/errors"
 )
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/config"
-)
-
 type gettyRPCClient struct {
 	once   sync.Once
 	addr   string // protocol string
@@ -56,14 +52,14 @@ func newGettyRPCClientConn(rpcClient *Client, addr string) (*gettyRPCClient, err
 		gettyClient getty.Client
 		sslEnabled  bool
 	)
-	sslEnabled = rpcClient.sslEnabled
+	sslEnabled = rpcClient.conf.SSLEnabled
 	clientOpts := []getty.ClientOption{
 		getty.WithServerAddress(addr),
 		getty.WithConnectionNumber((int)(rpcClient.conf.ConnectionNum)),
 		getty.WithReconnectInterval(rpcClient.conf.ReconnectInterval),
 	}
 	if sslEnabled {
-		clientOpts = append(clientOpts, getty.WithClientSslEnabled(sslEnabled), getty.WithClientTlsConfigBuilder(config.GetClientTlsConfigBuilder()))
+		clientOpts = append(clientOpts, getty.WithClientSslEnabled(sslEnabled), getty.WithClientTlsConfigBuilder(rpcClient.conf.TLSBuilder))
 	}
 
 	if clientGrPool != nil {
