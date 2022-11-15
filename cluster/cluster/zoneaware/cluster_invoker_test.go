@@ -57,16 +57,16 @@ func TestZoneWareInvokerWithPreferredSuccess(t *testing.T) {
 		url, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i))
 		invoker := mock.NewMockInvoker(ctrl)
 		invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
-		invoker.EXPECT().GetUrl().Return(url).AnyTimes()
+		invoker.EXPECT().GetURL().Return(url).AnyTimes()
 		if 0 == i {
 			url.SetParam(constant.RegistryKey+"."+constant.PreferredKey, "true")
-			invoker.EXPECT().Invoke(gomock.Any()).DoAndReturn(
-				func(invocation protocol.Invocation) protocol.Result {
+			invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(
+				func(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 					return mockResult
 				}).AnyTimes()
 		} else {
-			invoker.EXPECT().Invoke(gomock.Any()).DoAndReturn(
-				func(invocation protocol.Invocation) protocol.Result {
+			invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(
+				func(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 					return &protocol.RPCResult{}
 				}).AnyTimes()
 		}
@@ -99,12 +99,12 @@ func TestZoneWareInvokerWithWeightSuccess(t *testing.T) {
 		url, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i))
 		invoker := mock.NewMockInvoker(ctrl)
 		invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
-		invoker.EXPECT().GetUrl().Return(url).AnyTimes()
+		invoker.EXPECT().GetURL().Return(url).AnyTimes()
 		url.SetParam(constant.RegistryKey+"."+constant.RegistryLabelKey, "true")
 		if 1 == i {
 			url.SetParam(constant.RegistryKey+"."+constant.WeightKey, w1)
-			invoker.EXPECT().Invoke(gomock.Any()).DoAndReturn(
-				func(invocation protocol.Invocation) protocol.Result {
+			invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(
+				func(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 					return &protocol.RPCResult{
 						Attrs: map[string]interface{}{constant.WeightKey: w1},
 						Rest:  clusterpkg.Rest{Tried: 0, Success: true},
@@ -112,8 +112,8 @@ func TestZoneWareInvokerWithWeightSuccess(t *testing.T) {
 				}).MaxTimes(100)
 		} else {
 			url.SetParam(constant.RegistryKey+"."+constant.WeightKey, w2)
-			invoker.EXPECT().Invoke(gomock.Any()).DoAndReturn(
-				func(invocation protocol.Invocation) protocol.Result {
+			invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(
+				func(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 					return &protocol.RPCResult{
 						Attrs: map[string]interface{}{constant.WeightKey: w2},
 						Rest:  clusterpkg.Rest{Tried: 0, Success: true},
@@ -159,9 +159,9 @@ func TestZoneWareInvokerWithZoneSuccess(t *testing.T) {
 
 		invoker := mock.NewMockInvoker(ctrl)
 		invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
-		invoker.EXPECT().GetUrl().Return(url).AnyTimes()
-		invoker.EXPECT().Invoke(gomock.Any()).DoAndReturn(
-			func(invocation protocol.Invocation) protocol.Result {
+		invoker.EXPECT().GetURL().Return(url).AnyTimes()
+		invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(
+			func(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 				return &protocol.RPCResult{
 					Attrs: map[string]interface{}{constant.RegistryZoneKey: zoneValue},
 					Rest:  clusterpkg.Rest{Tried: 0, Success: true},
@@ -196,7 +196,7 @@ func TestZoneWareInvokerWithZoneForceFail(t *testing.T) {
 
 		invoker := mock.NewMockInvoker(ctrl)
 		invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
-		invoker.EXPECT().GetUrl().Return(url).AnyTimes()
+		invoker.EXPECT().GetURL().Return(url).AnyTimes()
 		invokers = append(invokers, invoker)
 	}
 

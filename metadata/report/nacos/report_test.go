@@ -29,8 +29,8 @@ import (
 
 	"github.com/golang/mock/gomock"
 
-	"github.com/nacos-group/nacos-sdk-go/model"
-	"github.com/nacos-group/nacos-sdk-go/vo"
+	"github.com/nacos-group/nacos-sdk-go/v2/model"
+	"github.com/nacos-group/nacos-sdk-go/v2/vo"
 )
 
 import (
@@ -131,6 +131,10 @@ func (m *MockIConfigClient) ListenConfig(params vo.ConfigParam) error {
 	ret := m.ctrl.Call(m, "ListenConfig", params)
 	ret0, _ := ret[0].(error)
 	return ret0
+}
+
+// CloseClient close nacos client
+func (m *MockIConfigClient) CloseClient() {
 }
 
 // ListenConfig indicates an expected call of ListenConfig
