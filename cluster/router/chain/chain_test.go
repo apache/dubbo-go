@@ -19,13 +19,19 @@ package chain
 
 import (
 	"fmt"
+	"testing"
+)
+
+import (
+	"github.com/stretchr/testify/assert"
+)
+
+import (
 	_ "github.com/apache/dubbo-go/cluster/router"
 	_ "github.com/apache/dubbo-go/cluster/router/tag"
 	"github.com/apache/dubbo-go/common"
 	"github.com/apache/dubbo-go/common/constant"
 	"github.com/apache/dubbo-go/protocol"
-	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 var (
