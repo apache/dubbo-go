@@ -19,9 +19,13 @@ package cmd
 
 import (
 	"log"
+)
 
+import (
 	"github.com/spf13/cobra"
+)
 
+import (
 	"dubbo.apache.org/dubbo-go/v3/dubbogo-cli/internal/client"
 	"dubbo.apache.org/dubbo-go/v3/dubbogo-cli/internal/json_register"
 )

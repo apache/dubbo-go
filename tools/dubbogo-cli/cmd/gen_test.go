@@ -23,9 +23,13 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+)
 
+import (
 	"github.com/stretchr/testify/assert"
+)
 
+import (
 	"dubbo.apache.org/dubbo-go/v3/dubbogo-cli/generator/application"
 	"dubbo.apache.org/dubbo-go/v3/dubbogo-cli/generator/sample"
 )

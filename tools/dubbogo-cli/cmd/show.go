@@ -20,9 +20,13 @@ package cmd
 import (
 	"fmt"
 	"log"
+)
 
+import (
 	"github.com/spf13/cobra"
+)
 
+import (
 	"dubbo.apache.org/dubbo-go/v3/dubbogo-cli/metadata"
 	_ "dubbo.apache.org/dubbo-go/v3/dubbogo-cli/metadata/zookeeper"
 )
