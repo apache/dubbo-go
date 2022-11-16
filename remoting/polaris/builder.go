@@ -27,15 +27,13 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
+
 	perrors "github.com/pkg/errors"
 
 	"github.com/polarismesh/polaris-go"
 	"github.com/polarismesh/polaris-go/api"
 	"github.com/polarismesh/polaris-go/pkg/config"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/common"
 )
 
 var (

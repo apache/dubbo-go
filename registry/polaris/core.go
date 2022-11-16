@@ -23,14 +23,12 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/config_center"
+	"dubbo.apache.org/dubbo-go/v3/remoting"
+
 	api "github.com/polarismesh/polaris-go"
 	internalapi "github.com/polarismesh/polaris-go/api"
 	"github.com/polarismesh/polaris-go/pkg/model"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/config_center"
-	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
 type item func(remoting.EventType, []model.Instance)

@@ -59,7 +59,6 @@ func getServiceName(url *common.URL) string {
 	return buffer.String()
 }
 
-
 func getSubscribeName(url *common.URL) string {
 	var buffer bytes.Buffer
 
