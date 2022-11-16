@@ -267,8 +267,6 @@ const (
 const (
 	PolarisKey                  = "polaris"
 	PolarisDefaultRoleType      = 3
-	PolarisConfigFilePath       = "configPath"
-	PolarisNamespace            = "namespace"
 	PolarisServiceToken         = "token"
 	PolarisServiceNameSeparator = ":"
 	PolarisDubboPath            = "DUBBOPATH"

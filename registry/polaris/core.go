@@ -23,7 +23,8 @@ import (
 )
 
 import (
-	"github.com/polarismesh/polaris-go/api"
+	api "github.com/polarismesh/polaris-go"
+	internalapi "github.com/polarismesh/polaris-go/api"
 	"github.com/polarismesh/polaris-go/pkg/model"
 )
 
@@ -88,7 +89,7 @@ func (watcher *PolarisServiceWatcher) startWatch() {
 			select {
 			case event := <-resp.EventChannel:
 				eType := event.GetSubScribeEventType()
-				if eType == api.EventInstance {
+				if eType == internalapi.EventInstance {
 					insEvent := event.(*model.InstanceEvent)
 
 					if insEvent.AddEvent != nil {

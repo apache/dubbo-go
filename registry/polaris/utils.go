@@ -19,7 +19,6 @@ package polaris
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -35,8 +34,7 @@ var (
 	protocolForDubboGO string = "dubbo"
 )
 
-type PolarisHeartbeat struct {
-	cancel   context.CancelFunc
+type PolarisInstanceInfo struct {
 	instance registry.ServiceInstance
 	url      *common.URL
 }
@@ -57,6 +55,15 @@ func getServiceName(url *common.URL) string {
 	var buffer bytes.Buffer
 
 	buffer.Write([]byte(getCategory(url)))
+	appendParam(&buffer, url, constant.InterfaceKey)
+	return buffer.String()
+}
+
+
+func getSubscribeName(url *common.URL) string {
+	var buffer bytes.Buffer
+
+	buffer.Write([]byte(common.DubboNodes[common.PROVIDER]))
 	appendParam(&buffer, url, constant.InterfaceKey)
 	return buffer.String()
 }
