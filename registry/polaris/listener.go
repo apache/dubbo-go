@@ -23,17 +23,19 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/config_center"
-	"dubbo.apache.org/dubbo-go/v3/registry"
-	"dubbo.apache.org/dubbo-go/v3/remoting"
-
 	gxchan "github.com/dubbogo/gost/container/chan"
 	"github.com/dubbogo/gost/log/logger"
 
 	perrors "github.com/pkg/errors"
 
 	"github.com/polarismesh/polaris-go/pkg/model"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/config_center"
+	"dubbo.apache.org/dubbo-go/v3/registry"
+	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
 type polarisListener struct {
