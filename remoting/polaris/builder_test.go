@@ -24,7 +24,6 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -38,11 +37,7 @@ func TestGetPolarisConfigByUrl(t *testing.T) {
 }
 
 func getRegUrl() *common.URL {
-
 	regurlMap := url.Values{}
-	regurlMap.Set(constant.PolarisNamespace, "default")
-
 	regurl, _ := common.NewURL("registry://127.0.0.1:8091", common.WithParams(regurlMap))
-
 	return regurl
 }
