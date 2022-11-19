@@ -255,6 +255,7 @@ func (dp *DubboProtocol) openServer(url *common.URL, tripleCodecType tripleConst
 		triOption.TLSKeyFile = url.GetParam(constant.TLSKey, "")
 		triOption.CACertFile = url.GetParam(constant.CACert, "")
 		triOption.TLSServerName = url.GetParam(constant.TLSServerNAME, "")
+		logger.Infof("Triple Server initialized the TLS configuration")
 	}
 
 	_, ok = dp.ExporterMap().Load(url.ServiceKey())

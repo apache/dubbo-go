@@ -120,6 +120,7 @@ func NewDubboInvoker(url *common.URL) (*DubboInvoker, error) {
 		triOption.TLSKeyFile = url.GetParam(constant.TLSKey, "")
 		triOption.CACertFile = url.GetParam(constant.CACert, "")
 		triOption.TLSServerName = url.GetParam(constant.TLSServerNAME, "")
+		logger.Infof("Triple Client initialized the TLS configuration")
 	}
 	client, err := triple.NewTripleClient(consumerService, triOption)
 

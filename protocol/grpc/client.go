@@ -85,6 +85,7 @@ func NewClient(url *common.URL) (*Client, error) {
 			TLSKeyFile:    url.GetParam(constant.TLSKey, ""),
 			TLSServerName: url.GetParam(constant.TLSServerNAME, ""),
 		})
+		logger.Infof("Grpc Client initialized the TLS configuration")
 		if err != nil {
 			return nil, err
 		}

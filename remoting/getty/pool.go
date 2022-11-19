@@ -59,6 +59,7 @@ func newGettyRPCClientConn(rpcClient *Client, addr string) (*gettyRPCClient, err
 		getty.WithReconnectInterval(rpcClient.conf.ReconnectInterval),
 	}
 	if sslEnabled {
+		logger.Infof("Getty client initialized the TLS configuration")
 		clientOpts = append(clientOpts, getty.WithClientSslEnabled(sslEnabled), getty.WithClientTlsConfigBuilder(rpcClient.conf.TLSBuilder))
 	}
 

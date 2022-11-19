@@ -74,6 +74,7 @@ func initServer(protocol string) {
 				ServerPrivateKeyPath:          protocolConf.TLSConfig.TLSKeyFile,
 				ServerTrustCertCollectionPath: protocolConf.TLSConfig.CACertFile,
 			}
+			logger.Infof("Getty Server initialized the TLS configuration")
 		}
 		//getty params
 		gettyServerConfig := protocolConf.Params

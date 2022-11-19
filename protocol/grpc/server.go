@@ -101,6 +101,7 @@ func (s *Server) Start(url *common.URL) {
 			TLSKeyFile:    url.GetParam(constant.TLSKey, ""),
 			TLSServerName: url.GetParam(constant.TLSServerNAME, ""),
 		})
+		logger.Infof("Grpc Server initialized the TLS configuration")
 		if err != nil {
 			return
 		}
