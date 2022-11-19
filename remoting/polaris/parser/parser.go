@@ -18,11 +18,15 @@
 package parser
 
 import (
+	"encoding/json"
 	"regexp"
 	"strconv"
 	"strings"
+)
 
+import (
 	"github.com/dubbogo/gost/log/logger"
+
 	"github.com/oliveagle/jsonpath"
 )
 
@@ -79,15 +83,20 @@ var (
 func ParseArgumentsByExpression(key string, parameters []interface{}) interface{} {
 	index, key := resolveIndex(key)
 	if index == -1 || index >= len(parameters) {
-		logger.Errorf("invalid expression for : %s", key)
+		logger.Errorf("[Parser][Polaris] invalid expression for : %s", key)
 		return nil
 	}
 
-	arg := parameters[index]
-
-	res, err := jsonpath.JsonPathLookup(arg, key)
+	data, err := json.Marshal(parameters[index])
 	if err != nil {
-		logger.Errorf("invalid do json path lookup by key : %s, err : %+v", key, err)
+		logger.Errorf("[Parser][Polaris] marshal parameter %+v fail : %+v", parameters[index], err)
+		return nil
+	}
+	var searchVal interface{}
+	_ = json.Unmarshal(data, &searchVal)
+	res, err := jsonpath.JsonPathLookup(searchVal, key)
+	if err != nil {
+		logger.Errorf("[Parser][Polaris] invalid do json path lookup by key : %s, err : %+v", key, err)
 	}
 
 	return res

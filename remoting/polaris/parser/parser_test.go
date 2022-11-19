@@ -20,7 +20,9 @@ package parser
 import (
 	"encoding/json"
 	"testing"
+)
 
+import (
 	"github.com/stretchr/testify/assert"
 )
 
