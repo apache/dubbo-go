@@ -112,7 +112,7 @@ func resolveIndex(key string) (int, string) {
 			return -1, ""
 		}
 		startIndex := endIndex + 2
-		if rune(key[endIndex + 1]) != rune('.') {
+		if rune(key[endIndex+1]) != rune('.') {
 			startIndex = endIndex + 1
 		}
 		return int(index), key[startIndex:]
