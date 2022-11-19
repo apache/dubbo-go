@@ -57,7 +57,7 @@ func (pl *polarisTpsLimiter) IsAllowable(url *common.URL, invocation protocol.In
 	if req == nil {
 		return true
 	}
-	logger.Infof("[TpsLimiter][Polaris] quota req : %+v", req)
+	logger.Debugf("[TpsLimiter][Polaris] quota req : %+v", req)
 
 	resp, err := pl.limitApi.GetQuota(req)
 	if err != nil {
