@@ -47,7 +47,7 @@ const (
 	SampleWindowSizeMs = 1000
 	MinSampleCount     = 40
 	MaxSampleCount     = 500
-	CpuDecay           = 0.95
+	CPUDecay           = 0.95
 )
 
 type AutoConcurrency struct {
@@ -55,7 +55,7 @@ type AutoConcurrency struct {
 
 	exploreRatio         float64
 	emaFactor            float64
-	noLoadLatency        float64 //duration
+	noLoadLatency        float64 // duration
 	maxQPS               float64
 	halfSampleIntervalMS int64
 	maxConcurrency       uint64
@@ -64,7 +64,7 @@ type AutoConcurrency struct {
 	startSampleTimeUs  int64
 	lastSamplingTimeUs *atomic.Int64
 	resetLatencyUs     int64 // time to reset noLoadLatency
-	remeasureStartUs   int64 //time to reset req data (sampleCount, totalSampleUs, totalReqCount)
+	remeasureStartUs   int64 // time to reset req data (sampleCount, totalSampleUs, totalReqCount)
 	sampleCount        int64
 	totalSampleUs      int64
 	totalReqCount      *atomic.Int64
@@ -82,6 +82,7 @@ func cpuproc() {
 	defer func() {
 		ticker.Stop()
 		if err := recover(); err != nil {
+			logger.Warnf("cpu usage collector panic: %v", err)
 			go cpuproc()
 		}
 	}()
@@ -89,13 +90,13 @@ func cpuproc() {
 	for range ticker.C {
 		usage := cpu.CpuUsage()
 		prevCPU := cpuLoad.Load()
-		curCPU := uint64(float64(prevCPU)*CpuDecay + float64(usage)*(1.0-CpuDecay))
+		curCPU := uint64(float64(prevCPU)*CPUDecay + float64(usage)*(1.0-CPUDecay))
 		logger.Debugf("current cpu usage: %d", curCPU)
 		cpuLoad.Store(curCPU)
 	}
 }
 
-func CpuUsage() uint64 {
+func CPUUsage() uint64 {
 	return cpuLoad.Load()
 }
 
@@ -152,7 +153,7 @@ func (l *AutoConcurrency) Remaining() uint64 {
 
 func (l *AutoConcurrency) Acquire() (Updater, error) {
 	now := time.Now()
-	if l.inflight.Inc() > l.maxConcurrency && CpuUsage() >= 500 { // only when cpu load is above 50%
+	if l.inflight.Inc() > l.maxConcurrency && CPUUsage() >= 500 { // only when cpu load is above 50%
 		l.inflight.Dec()
 		return nil, ErrReachLimitation
 	}
