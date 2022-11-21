@@ -28,79 +28,18 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/config"
 )
-
-func TestGetPolarisConfig(t *testing.T) {
-
-	rc := &config.RemoteConfig{}
-	rc.Params = make(map[string]string)
-
-	rc.Protocol = "polaris"
-	rc.Address = "127.0.0.1:8091"
-
-	rc.Params[constant.PolarisNamespace] = "default"
-
-	url, err := rc.ToURL()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	sdkCtx, namespace, err := GetPolarisConfig(url)
-
-	if err != nil {
-		t.Fatal(err)
-	}
-	assert.NotNil(t, sdkCtx, "SDKContext")
-
-	assert.Equal(t, "default", namespace, "namespace")
-	assert.ElementsMatch(t, []string{"127.0.0.1:8091"}, sdkCtx.GetConfig().GetGlobal().GetServerConnector().GetAddresses(), "server address")
-}
-
-func TestGetPolarisConfigWithExternalFile(t *testing.T) {
-
-	rc := &config.RemoteConfig{}
-	rc.Params = make(map[string]string)
-
-	rc.Protocol = "polaris"
-	rc.Address = "127.0.0.1:8091"
-
-	rc.Params[constant.PolarisNamespace] = "default"
-	rc.Params[constant.PolarisConfigFilePath] = "./polaris.yaml"
-
-	url, err := rc.ToURL()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	sdkCtx, namespace, err := GetPolarisConfig(url)
-
-	if err != nil {
-		t.Fatal(err)
-	}
-	assert.NotNil(t, sdkCtx, "SDKContext")
-
-	assert.Equal(t, "default", namespace, "namespace")
-	assert.ElementsMatch(t, []string{"127.0.0.1:8091", "127.0.0.2:8091"}, sdkCtx.GetConfig().GetGlobal().GetServerConnector().GetAddresses(), "server address")
-}
 
 func TestGetPolarisConfigByUrl(t *testing.T) {
 	regurl := getRegUrl()
-	sdkCtx, namespace, err := GetPolarisConfig(regurl)
+	err := InitSDKContext(regurl)
 
 	assert.Nil(t, err)
-	assert.Equal(t, "default", namespace, "namespace")
-	assert.ElementsMatch(t, []string{"127.0.0.1:8091", "127.0.0.2:8091"}, sdkCtx.GetConfig().GetGlobal().GetServerConnector().GetAddresses(), "server address")
+	assert.ElementsMatch(t, []string{"127.0.0.1:8091"}, sdkCtx.GetConfig().GetGlobal().GetServerConnector().GetAddresses(), "server address")
 }
 
 func getRegUrl() *common.URL {
-
 	regurlMap := url.Values{}
-	regurlMap.Set(constant.PolarisNamespace, "default")
-	regurlMap.Set(constant.PolarisConfigFilePath, "./polaris.yaml")
-
 	regurl, _ := common.NewURL("registry://127.0.0.1:8091", common.WithParams(regurlMap))
-
 	return regurl
 }
