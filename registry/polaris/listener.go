@@ -57,7 +57,7 @@ func NewPolarisListener(watcher *PolarisServiceWatcher) (*polarisListener, error
 func (pl *polarisListener) startListen() {
 	pl.watcher.AddSubscriber(func(et remoting.EventType, ins []model.Instance) {
 		for i := range ins {
-			pl.events.In() <- &config_center.ConfigChangeEvent{Value: generateUrl(ins[i]), ConfigType: et}
+			pl.events.In() <- &config_center.ConfigChangeEvent{Value: ins[i], ConfigType: et}
 		}
 	})
 }

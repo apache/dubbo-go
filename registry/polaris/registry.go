@@ -18,7 +18,6 @@
 package polaris
 
 import (
-	"context"
 	"strconv"
 	"sync"
 	"time"
@@ -29,7 +28,7 @@ import (
 
 	perrors "github.com/pkg/errors"
 
-	"github.com/polarismesh/polaris-go/api"
+	api "github.com/polarismesh/polaris-go"
 	"github.com/polarismesh/polaris-go/pkg/model"
 )
 
@@ -52,98 +51,72 @@ func init() {
 
 // newPolarisRegistry will create new instance
 func newPolarisRegistry(url *common.URL) (registry.Registry, error) {
-	sdkCtx, ns, err := polaris.GetPolarisConfig(url)
-	if err != nil {
+	if err := polaris.InitSDKContext(url); err != nil {
 		return &polarisRegistry{}, err
 	}
+
+	providerApi, err := polaris.GetProviderAPI()
+	if err != nil {
+		return nil, err
+	}
+
+	consumerApi, err := polaris.GetConsumerAPI()
+	if err != nil {
+		return nil, err
+	}
+
 	pRegistry := &polarisRegistry{
-		namespace:    ns,
-		provider:     api.NewProviderAPIByContext(sdkCtx),
-		consumer:     api.NewConsumerAPIByContext(sdkCtx),
-		lock:         &sync.RWMutex{},
-		registryUrls: make(map[string]*PolarisHeartbeat),
-		listenerLock: &sync.RWMutex{},
+		url:          url,
+		namespace:    url.GetParam(constant.RegistryNamespaceKey, constant.PolarisDefaultNamespace),
+		provider:     providerApi,
+		consumer:     consumerApi,
+		registryUrls: make([]*common.URL, 0, 4),
+		watchers:     map[string]*PolarisServiceWatcher{},
 	}
 
 	return pRegistry, nil
 }
 
 type polarisRegistry struct {
-	consumer     api.ConsumerAPI
 	namespace    string
 	url          *common.URL
+	consumer     api.ConsumerAPI
 	provider     api.ProviderAPI
-	lock         *sync.RWMutex
-	registryUrls map[string]*PolarisHeartbeat
+	lock         sync.RWMutex
+	registryUrls []*common.URL
+	listenerLock sync.RWMutex
 	watchers     map[string]*PolarisServiceWatcher
-	listenerLock *sync.RWMutex
 }
 
 // Register will register the service @url to its polaris registry center.
 func (pr *polarisRegistry) Register(url *common.URL) error {
+
 	serviceName := getServiceName(url)
-	param := createRegisterParam(url, serviceName)
-	resp, err := pr.provider.Register(param)
+	request := createRegisterParam(url, serviceName)
+	request.Namespace = pr.namespace
+	resp, err := pr.provider.RegisterInstance(request)
 	if err != nil {
 		return err
 	}
 
 	if resp.Existed {
 		logger.Warnf("instance already regist, namespace:%+v, service:%+v, host:%+v, port:%+v",
-			param.Namespace, param.Service, param.Host, param.Port)
+			request.Namespace, request.Service, request.Host, request.Port)
 	}
-
-	pr.lock.Lock()
-	defer pr.lock.Unlock()
-
 	url.SetParam(constant.PolarisInstanceID, resp.InstanceID)
 
-	ctx, cancel := context.WithCancel(context.Background())
-	go pr.doHeartbeat(ctx, param)
+	pr.lock.Lock()
+	pr.registryUrls = append(pr.registryUrls, url)
+	pr.lock.Unlock()
 
-	pr.registryUrls[url.Key()] = &PolarisHeartbeat{
-		url:    url,
-		cancel: cancel,
-	}
 	return nil
 }
 
 // UnRegister returns nil if unregister successfully. If not, returns an error.
 func (pr *polarisRegistry) UnRegister(conf *common.URL) error {
-	var (
-		ok     bool
-		err    error
-		oldVal *PolarisHeartbeat
-	)
-
-	func() {
-		pr.lock.Lock()
-		defer pr.lock.Unlock()
-
-		oldVal, ok = pr.registryUrls[conf.Key()]
-
-		if !ok {
-			err = perrors.Errorf("Path{%s} has not registered", conf.Key())
-			return
-		}
-
-		oldVal.cancel()
-		delete(pr.registryUrls, oldVal.url.Key())
-	}()
-
-	if err != nil {
-		return err
-	}
-
 	request := createDeregisterParam(conf, getServiceName(conf))
-
-	err = pr.provider.Deregister(request)
-	if err != nil {
-		func() {
-			pr.lock.Lock()
-			defer pr.lock.Unlock()
-			pr.registryUrls[conf.Key()] = oldVal
-		}()
+	request.Namespace = pr.namespace
+	if err := pr.provider.Deregister(request); err != nil {
 		return perrors.WithMessagef(err, "register(conf:%+v)", conf)
 	}
 	return nil
@@ -159,36 +132,20 @@ func (pr *polarisRegistry) Subscribe(url *common.URL, notifyListener registry.No
 	timer := time.NewTimer(time.Duration(RegistryConnDelay) * time.Second)
 	defer timer.Stop()
 
-	req := api.WatchServiceRequest{
-		WatchServiceRequest: model.WatchServiceRequest{
-			Key: model.ServiceKey{
-				Service:   common.GetSubscribeName(url),
-				Namespace: pr.namespace,
-			},
-		},
-	}
-
 	for {
-		watcher, err := newPolarisWatcher(&req, pr.consumer)
-
+		serviceName := getSubscribeName(url)
+		watcher, err := pr.createPolarisWatcher(serviceName)
 		if err != nil {
 			logger.Warnf("getwatcher() = err:%v", perrors.WithStack(err))
 			<-timer.C
 			timer.Reset(time.Duration(RegistryConnDelay) * time.Second)
 			continue
 		}
-		listener, err := NewPolarisListener(watcher)
 
+		listener, err := NewPolarisListener(watcher)
 		if err != nil {
 			logger.Warnf("getListener() = err:%v", perrors.WithStack(err))
 			<-timer.C
-			timer.Reset(time.Duration(RegistryConnDelay) * time.Second)
-			continue
-		}
-
-		if err != nil {
-			logger.Warnf("getwatcher() = err:%v", perrors.WithStack(err))
-			timer := time.NewTimer(time.Duration(RegistryConnDelay) * time.Second)
 			timer.Reset(time.Duration(RegistryConnDelay) * time.Second)
 			continue
 		}
@@ -203,7 +160,6 @@ func (pr *polarisRegistry) Subscribe(url *common.URL, notifyListener registry.No
 			}
 			logger.Infof("update begin, service event: %v", serviceEvent.String())
 			notifyListener.Notify(serviceEvent)
-			watcher.startWatch()
 		}
 	}
 }
@@ -246,12 +202,12 @@ func (pr *polarisRegistry) createPolarisWatcher(serviceName string) (*PolarisSer
 
 // Destroy stop polaris registry.
 func (pr *polarisRegistry) Destroy() {
-	for _, val := range pr.registryUrls {
-		val.cancel()
-		err := pr.UnRegister(val.url)
-		logger.Infof("DeRegister Polaris URL:%+v", val.url)
+	for i := range pr.registryUrls {
+		url := pr.registryUrls[i]
+		err := pr.UnRegister(url)
+		logger.Infof("DeRegister Polaris URL:%+v", url)
 		if err != nil {
-			logger.Errorf("Deregister URL:%+v err:%v", val.url, err.Error())
+			logger.Errorf("Deregister Polaris URL:%+v err:%v", url, err.Error())
 		}
 	}
 	return
@@ -260,31 +216,6 @@ func (pr *polarisRegistry) Destroy() {
 // IsAvailable always return true when use polaris
 func (pr *polarisRegistry) IsAvailable() bool {
 	return true
-}
-
-// doHeartbeat Since polaris does not support automatic reporting of instance heartbeats, separate logic is
-//
-//	needed to implement it
-func (pr *polarisRegistry) doHeartbeat(ctx context.Context, ins *api.InstanceRegisterRequest) {
-	ticker := time.NewTicker(time.Duration(4) * time.Second)
-
-	heartbeat := &api.InstanceHeartbeatRequest{
-		InstanceHeartbeatRequest: model.InstanceHeartbeatRequest{
-			Service:   ins.Service,
-			Namespace: ins.Namespace,
-			Host:      ins.Host,
-			Port:      ins.Port,
-		},
-	}
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			pr.provider.Heartbeat(heartbeat)
-		}
-	}
 }
 
 // createRegisterParam convert dubbo url to polaris instance register request
@@ -299,14 +230,16 @@ func createRegisterParam(url *common.URL, serviceName string) *api.InstanceRegis
 	})
 	metadata[constant.PolarisDubboPath] = url.Path
 
+	ver := url.GetParam("version", "")
+
 	req := &api.InstanceRegisterRequest{
 		InstanceRegisterRequest: model.InstanceRegisterRequest{
-			Service:   serviceName,
-			Namespace: url.GetParam(constant.PolarisNamespace, constant.PolarisDefaultNamespace),
-			Host:      url.Ip,
-			Port:      port,
-			Protocol:  &protocolForDubboGO,
-			Metadata:  metadata,
+			Service:  serviceName,
+			Host:     url.Ip,
+			Port:     port,
+			Protocol: &protocolForDubboGO,
+			Version:  &ver,
+			Metadata: metadata,
 		},
 	}
 
@@ -321,10 +254,9 @@ func createDeregisterParam(url *common.URL, serviceName string) *api.InstanceDeR
 	port, _ := strconv.Atoi(url.Port)
 	return &api.InstanceDeRegisterRequest{
 		InstanceDeRegisterRequest: model.InstanceDeRegisterRequest{
-			Service:   serviceName,
-			Namespace: url.GetParam(constant.PolarisNamespace, constant.PolarisDefaultNamespace),
-			Host:      url.Ip,
-			Port:      port,
+			Service: serviceName,
+			Host:    url.Ip,
+			Port:    port,
 		},
 	}
 }
