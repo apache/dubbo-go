@@ -36,13 +36,11 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
 var (
-	once      sync.Once
-	namesapce string
-	sdkCtx    api.SDKContext
+	once   sync.Once
+	sdkCtx api.SDKContext
 )
 
 var (
@@ -85,11 +83,6 @@ func GetLimiterAPI() (polaris.LimitAPI, error) {
 	return polaris.NewLimitAPIByContext(sdkCtx), nil
 }
 
-// GetNamespace gets user defined namespace info
-func GetNamespace() string {
-	return namesapce
-}
-
 // InitSDKContext inits polaris SDKContext by URL
 func InitSDKContext(url *common.URL) error {
 	if url == nil {
@@ -98,6 +91,7 @@ func InitSDKContext(url *common.URL) error {
 
 	var rerr error
 	once.Do(func() {
+
 		addresses := strings.Split(url.Location, ",")
 		serverConfigs := make([]string, 0, len(addresses))
 		for _, addr := range addresses {
@@ -113,7 +107,6 @@ func InitSDKContext(url *common.URL) error {
 		_sdkCtx, err := api.InitContextByConfig(polarisConf)
 		rerr = err
 		sdkCtx = _sdkCtx
-		namesapce = url.GetParam(constant.RegistryNamespaceKey, constant.PolarisDefaultNamespace)
 	})
 
 	return rerr
