@@ -145,7 +145,7 @@ func (p *polarisRouter) buildRouteRequest(svc string, url *common.URL,
 	invoaction protocol.Invocation) (polaris.ProcessRoutersRequest, error) {
 
 	routeReq := polaris.ProcessRoutersRequest{
-		model.ProcessRoutersRequest{
+		ProcessRoutersRequest: model.ProcessRoutersRequest{
 			SourceService: model.ServiceInfo{
 				Metadata: map[string]string{},
 			},
@@ -241,7 +241,7 @@ func collectRouteLabels(routings []*v1.Route) []string {
 
 func (p *polarisRouter) buildInstanceMap(svc string) map[string]model.Instance {
 	resp, err := p.consumerApi.GetAllInstances(&polaris.GetAllInstancesRequest{
-		model.GetAllInstancesRequest{
+		GetAllInstancesRequest: model.GetAllInstancesRequest{
 			Service:   svc,
 			Namespace: remotingpolaris.GetNamespace(),
 		},
@@ -295,7 +295,7 @@ func (p *polarisRouter) Notify(invokers []protocol.Invoker) {
 	}
 
 	_, err = p.consumerApi.GetAllInstances(&polaris.GetAllInstancesRequest{
-		model.GetAllInstancesRequest{
+		GetAllInstancesRequest: model.GetAllInstancesRequest{
 			Service:   service,
 			Namespace: remotingpolaris.GetNamespace(),
 		},
