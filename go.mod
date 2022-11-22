@@ -18,7 +18,7 @@ require (
 	github.com/dubbogo/gost v1.13.1
 	github.com/dubbogo/grpc-go v1.42.10
 	github.com/dubbogo/triple v1.2.1
-	github.com/emicklei/go-restful/v3 v3.10.0
+	github.com/emicklei/go-restful/v3 v3.10.1
 	github.com/envoyproxy/go-control-plane v0.10.2-0.20220325020618-49ff273808a1
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/go-co-op/gocron v1.9.0
@@ -53,7 +53,7 @@ require (
 	go.uber.org/multierr v1.8.0 // indirect
 	go.uber.org/zap v1.21.0
 	google.golang.org/genproto v0.0.0-20220504150022-98cd25cafc72
-	google.golang.org/grpc v1.50.1
+	google.golang.org/grpc v1.51.0
 	google.golang.org/protobuf v1.28.1
 	gopkg.in/yaml.v2 v2.4.0
 )
