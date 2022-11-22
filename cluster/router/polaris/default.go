@@ -15,27 +15,13 @@
  * limitations under the License.
  */
 
-package constant
+package polaris
 
-const (
-	PolarisKey                  = "polaris"
-	PolarisDefaultRoleType      = 3
-	PolarisServiceToken         = "token"
-	PolarisServiceNameSeparator = ":"
-	PolarisDubboPath            = "DUBBOPATH"
-	PolarisInstanceID           = "polaris.instanceID"
-	PolarisDefaultNamespace     = "default"
-	PolarisDubboGroup           = "dubbo.group"
-	PolarisClientName           = "polaris-client"
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
 )
 
-const (
-	PolarisInstanceHealthStatus   = "healthstatus"
-	PolarisInstanceIsolatedStatus = "isolated"
-	PolarisCIrcuirbreakerStatus   = "circuitbreaker"
-)
-
-const (
-	PluginPolarisTpsLimiter    = "polaris-limit"
-	PluginPolarisRouterFactory = "polaris-router"
-)
+func init() {
+	extension.SetRouterFactory(constant.PluginPolarisRouterFactory, NewPolarisRouterFactory)
+}

@@ -15,27 +15,21 @@
  * limitations under the License.
  */
 
-package constant
+package polaris
 
-const (
-	PolarisKey                  = "polaris"
-	PolarisDefaultRoleType      = 3
-	PolarisServiceToken         = "token"
-	PolarisServiceNameSeparator = ":"
-	PolarisDubboPath            = "DUBBOPATH"
-	PolarisInstanceID           = "polaris.instanceID"
-	PolarisDefaultNamespace     = "default"
-	PolarisDubboGroup           = "dubbo.group"
-	PolarisClientName           = "polaris-client"
+import (
+	"dubbo.apache.org/dubbo-go/v3/cluster/router"
 )
 
-const (
-	PolarisInstanceHealthStatus   = "healthstatus"
-	PolarisInstanceIsolatedStatus = "isolated"
-	PolarisCIrcuirbreakerStatus   = "circuitbreaker"
-)
+// RouteFactory router factory
+type RouteFactory struct{}
 
-const (
-	PluginPolarisTpsLimiter    = "polaris-limit"
-	PluginPolarisRouterFactory = "polaris-router"
-)
+// NewPolarisRouterFactory constructs a new PriorityRouterFactory
+func NewPolarisRouterFactory() router.PriorityRouterFactory {
+	return &RouteFactory{}
+}
+
+// NewPriorityRouter construct a new PriorityRouter
+func (f *RouteFactory) NewPriorityRouter() (router.PriorityRouter, error) {
+	return newPolarisRouter()
+}
