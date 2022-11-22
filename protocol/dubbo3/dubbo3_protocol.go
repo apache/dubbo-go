@@ -247,15 +247,21 @@ func (dp *DubboProtocol) openServer(url *common.URL, tripleCodecType tripleConst
 			opts = append(opts, triConfig.WithGRPCMaxServerRecvMessageSize(size))
 		}
 	}
+	if maxCall := url.GetParam(constant.MaxServerSendMsgSize, ""); maxCall != "" {
+		if size, err := strconv.Atoi(maxCall); err == nil && size != 0 {
+			opts = append(opts, triConfig.WithGRPCMaxServerSendMessageSize(size))
+		}
+	}
 
 	triOption := triConfig.NewTripleOption(opts...)
 
-	if url.GetParam(constant.SslEnabledKey, "false") == "true" {
-		triOption.TLSCertFile = url.GetParam(constant.TLSCert, "")
-		triOption.TLSKeyFile = url.GetParam(constant.TLSKey, "")
-		triOption.CACertFile = url.GetParam(constant.CACert, "")
-		triOption.TLSServerName = url.GetParam(constant.TLSServerNAME, "")
-		logger.Infof("Triple Server initialized the TLS configuration")
+	tlsConfig := config.GetRootConfig().TLSConfig
+	if tlsConfig != nil {
+		triOption.TLSCertFile = tlsConfig.TLSCertFile
+		triOption.TLSKeyFile = tlsConfig.TLSKeyFile
+		triOption.CACertFile = tlsConfig.CACertFile
+		triOption.TLSServerName = tlsConfig.TLSServerName
+		logger.Infof("Triple Server initialized the TLSConfig configuration")
 	}
 
 	_, ok = dp.ExporterMap().Load(url.ServiceKey())

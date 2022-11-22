@@ -115,12 +115,13 @@ func NewDubboInvoker(url *common.URL) (*DubboInvoker, error) {
 	}
 
 	triOption := triConfig.NewTripleOption(opts...)
-	if url.GetParam(constant.SslEnabledKey, "false") == "true" {
-		triOption.TLSCertFile = url.GetParam(constant.TLSCert, "")
-		triOption.TLSKeyFile = url.GetParam(constant.TLSKey, "")
-		triOption.CACertFile = url.GetParam(constant.CACert, "")
-		triOption.TLSServerName = url.GetParam(constant.TLSServerNAME, "")
-		logger.Infof("Triple Client initialized the TLS configuration")
+	tlsConfig := config.GetRootConfig().TLSConfig
+	if tlsConfig != nil {
+		triOption.TLSCertFile = tlsConfig.TLSCertFile
+		triOption.TLSKeyFile = tlsConfig.TLSKeyFile
+		triOption.CACertFile = tlsConfig.CACertFile
+		triOption.TLSServerName = tlsConfig.TLSServerName
+		logger.Infof("Triple Client initialized the TLSConfig configuration")
 	}
 	client, err := triple.NewTripleClient(consumerService, triOption)
 

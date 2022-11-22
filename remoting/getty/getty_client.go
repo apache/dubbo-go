@@ -75,12 +75,13 @@ func initClient(protocol string) {
 		return
 	} else {
 		//client tls config
-		if protocolConf.TLSConfig != nil {
+		tlsConfig := config.GetRootConfig().TLSConfig
+		if tlsConfig != nil {
 			clientConf.SSLEnabled = true
 			clientConf.TLSBuilder = &getty.ClientTlsConfigBuilder{
-				ClientKeyCertChainPath:        protocolConf.TLSConfig.TLSCertFile,
-				ClientPrivateKeyPath:          protocolConf.TLSConfig.TLSKeyFile,
-				ClientTrustCertCollectionPath: protocolConf.TLSConfig.CACertFile,
+				ClientKeyCertChainPath:        tlsConfig.TLSCertFile,
+				ClientPrivateKeyPath:          tlsConfig.TLSKeyFile,
+				ClientTrustCertCollectionPath: tlsConfig.CACertFile,
 			}
 		}
 		//getty params

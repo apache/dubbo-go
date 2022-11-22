@@ -67,14 +67,15 @@ func initServer(protocol string) {
 		return
 	} else {
 		//server tls config
-		if protocolConf.TLSConfig != nil {
+		tlsConfig := config.GetRootConfig().TLSConfig
+		if tlsConfig != nil {
 			srvConf.SSLEnabled = true
 			srvConf.TLSBuilder = &getty.ServerTlsConfigBuilder{
-				ServerKeyCertChainPath:        protocolConf.TLSConfig.TLSCertFile,
-				ServerPrivateKeyPath:          protocolConf.TLSConfig.TLSKeyFile,
-				ServerTrustCertCollectionPath: protocolConf.TLSConfig.CACertFile,
+				ServerKeyCertChainPath:        tlsConfig.TLSCertFile,
+				ServerPrivateKeyPath:          tlsConfig.TLSKeyFile,
+				ServerTrustCertCollectionPath: tlsConfig.CACertFile,
 			}
-			logger.Infof("Getty Server initialized the TLS configuration")
+			logger.Infof("Getty Server initialized the TLSConfig configuration")
 		}
 		//getty params
 		gettyServerConfig := protocolConf.Params
@@ -214,6 +215,7 @@ func (s *Server) Start() {
 	if s.conf.SSLEnabled {
 		serverOpts = append(serverOpts, getty.WithServerSslEnabled(s.conf.SSLEnabled),
 			getty.WithServerTlsConfigBuilder(srvConf.TLSBuilder))
+		logger.Infof("Getty Server initialized the TLSConfig configuration")
 	}
 
 	serverOpts = append(serverOpts, getty.WithServerTaskPool(gxsync.NewTaskPoolSimple(s.conf.GrPoolSize)))
