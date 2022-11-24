@@ -211,33 +211,28 @@ func (l *AutoConcurrency) Update(latency int64, samplingTimeUs int64) {
 		return
 	}
 
-	if l.sampleCount > 0 {
-		qps := float64(l.totalReqCount.Load()) * 1000000.0 / float64(samplingTimeUs-l.startSampleTimeUs)
-		l.updateQPS(qps)
+	qps := float64(l.totalReqCount.Load()) * 1000000.0 / float64(samplingTimeUs-l.startSampleTimeUs)
+	l.updateQPS(qps)
 
-		avgLatency := l.totalSampleUs / l.sampleCount
-		l.updateNoLoadLatency(float64(avgLatency))
+	avgLatency := l.totalSampleUs / l.sampleCount
+	l.updateNoLoadLatency(float64(avgLatency))
 
-		nextMaxConcurrency := uint64(0)
-		if l.remeasureStartUs <= samplingTimeUs { // should reset
-			l.Reset(samplingTimeUs)
-			l.resetLatencyUs = samplingTimeUs + avgLatency*2
-			nextMaxConcurrency = uint64(math.Ceil(l.maxQPS * l.noLoadLatency * 0.9 / 1000000))
-		} else {
-			// use explore ratio to adjust MaxConcurrency
-			if float64(avgLatency) <= l.noLoadLatency*(1.0+MinExploreRatio) ||
-				qps >= l.maxQPS*(1.0+MinExploreRatio) {
-				l.exploreRatio = math.Min(MaxExploreRatio, l.exploreRatio+0.02)
-			} else {
-				l.exploreRatio = math.Max(MinExploreRatio, l.exploreRatio-0.02)
-			}
-			nextMaxConcurrency = uint64(math.Ceil(l.noLoadLatency * l.maxQPS * (1 + l.exploreRatio) / 1000000))
-		}
-		l.maxConcurrency = nextMaxConcurrency
+	nextMaxConcurrency := uint64(0)
+	if l.remeasureStartUs <= samplingTimeUs { // should reset
+		l.Reset(samplingTimeUs)
+		l.resetLatencyUs = samplingTimeUs + avgLatency*2
+		nextMaxConcurrency = uint64(math.Ceil(l.maxQPS * l.noLoadLatency * 0.9 / 1000000))
 	} else {
-		// There may be no more data because the service is overloaded, reducing concurrency
-		l.maxConcurrency /= 2
+		// use explore ratio to adjust MaxConcurrency
+		if float64(avgLatency) <= l.noLoadLatency*(1.0+MinExploreRatio) ||
+			qps >= l.maxQPS*(1.0+MinExploreRatio) {
+			l.exploreRatio = math.Min(MaxExploreRatio, l.exploreRatio+0.02)
+		} else {
+			l.exploreRatio = math.Max(MinExploreRatio, l.exploreRatio-0.02)
+		}
+		nextMaxConcurrency = uint64(math.Ceil(l.noLoadLatency * l.maxQPS * (1 + l.exploreRatio) / 1000000))
 	}
+	l.maxConcurrency = nextMaxConcurrency
 
 	// maxConcurrency should be no less than 1
 	if l.maxConcurrency <= 0 {
