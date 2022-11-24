@@ -44,17 +44,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/remoting/polaris/parser"
 )
 
-// TODO need to remove when polaris-go upgrade to v1.3.0
-const (
-	LabelKeyMethod        = "$method"
-	LabelKeyHeader        = "$header."
-	LabelKeyQuery         = "$query."
-	LabelKeyCallerService = "$caller_service."
-	LabelKeyCallerIp      = "$caller_ip"
-	LabelKeyPath          = "$path"
-	LabelKeyCookie        = "$cookie."
-)
-
 var (
 	_ router.PriorityRouter = (*polarisRouter)(nil)
 )
@@ -162,18 +151,19 @@ func (p *polarisRouter) buildRouteRequest(svc string, url *common.URL,
 
 	for i := range labels {
 		label := labels[i]
-		if strings.Compare(label, LabelKeyPath) == 0 {
-			routeReq.SourceService.Metadata[LabelKeyPath] = getInvokeMethod(url, invoaction)
+		if strings.Compare(label, model.LabelKeyPath) == 0 {
+			routeReq.AddArguments(model.BuildPathArgument(getInvokeMethod(url, invoaction)))
 			continue
 		}
-		if strings.HasPrefix(label, LabelKeyHeader) {
-			if val, ok := attachement[strings.TrimPrefix(label, LabelKeyHeader)]; ok {
+		if strings.HasPrefix(label, model.LabelKeyHeader) {
+			if val, ok := attachement[strings.TrimPrefix(label, model.LabelKeyHeader)]; ok {
 				routeReq.SourceService.Metadata[label] = fmt.Sprintf("%+v", val)
+				routeReq.AddArguments(model.BuildArgumentFromLabel(label, fmt.Sprintf("%+v", val)))
 			}
 		}
-		if strings.HasPrefix(label, LabelKeyQuery) {
+		if strings.HasPrefix(label, model.LabelKeyQuery) {
 			if val := parser.ParseArgumentsByExpression(label, arguments); val != nil {
-				routeReq.SourceService.Metadata[label] = fmt.Sprintf("%+v", val)
+				routeReq.AddArguments(model.BuildArgumentFromLabel(label, fmt.Sprintf("%+v", val)))
 			}
 		}
 	}
