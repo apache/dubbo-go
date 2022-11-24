@@ -123,7 +123,7 @@ func Weight(url1, url2 *common.URL, methodName string) (weight1, weight2 float64
 }
 
 func normalize(x float64) float64 {
-	return 1.5 * x / (x + 1)
+	return x / (x + 1)
 }
 
 func successRateWeight(url *common.URL, methodName string) float64 {
