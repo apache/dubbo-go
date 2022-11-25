@@ -15,31 +15,20 @@
  * limitations under the License.
  */
 
-package polaris
+package constant
 
-import (
-	"net/url"
-	"testing"
+const (
+	PolarisKey                  = "polaris"
+	PolarisDefaultRoleType      = 3
+	PolarisServiceToken         = "token"
+	PolarisServiceNameSeparator = ":"
+	PolarisDubboPath            = "DUBBOPATH"
+	PolarisInstanceID           = "polaris.instanceID"
+	PolarisDefaultNamespace     = "default"
+	PolarisDubboGroup           = "dubbo.group"
+	PolarisClientName           = "polaris-client"
 )
 
-import (
-	"github.com/stretchr/testify/assert"
+const (
+	PluginPolarisTpsLimiter = "polaris-limit"
 )
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/common"
-)
-
-func TestGetPolarisConfigByUrl(t *testing.T) {
-	regurl := getRegUrl()
-	err := InitSDKContext(regurl)
-
-	assert.Nil(t, err)
-	assert.ElementsMatch(t, []string{"127.0.0.1:8091"}, sdkCtx.GetConfig().GetGlobal().GetServerConnector().GetAddresses(), "server address")
-}
-
-func getRegUrl() *common.URL {
-	regurlMap := url.Values{}
-	regurl, _ := common.NewURL("registry://127.0.0.1:8091", common.WithParams(regurlMap))
-	return regurl
-}

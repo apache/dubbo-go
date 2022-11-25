@@ -19,8 +19,6 @@ global:
     maxRetryTimes: 5
     retryInterval: 1s
   serverConnector:
-    addresses:
-      - 127.0.0.2:8091
     protocol: grpc
     connectTimeout: 500ms
     messageTimeout: 1s

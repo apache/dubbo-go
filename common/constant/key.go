@@ -265,20 +265,6 @@ const (
 )
 
 const (
-	PolarisKey                  = "polaris"
-	PolarisDefaultRoleType      = 3
-	PolarisConfigFilePath       = "configPath"
-	PolarisNamespace            = "namespace"
-	PolarisServiceToken         = "token"
-	PolarisServiceNameSeparator = ":"
-	PolarisDubboPath            = "DUBBOPATH"
-	PolarisInstanceID           = "polaris.instanceID"
-	PolarisDefaultNamespace     = "default"
-	PolarisDubboGroup           = "dubbo.group"
-	PolarisClientName           = "polaris-client"
-)
-
-const (
 	FileKey = "file"
 )
 

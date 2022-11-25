@@ -18,11 +18,8 @@
 package polaris
 
 import (
-	"context"
 	"fmt"
-	"net/url"
 	"sync"
-	"time"
 )
 
 import (
@@ -32,42 +29,60 @@ import (
 
 	perrors "github.com/pkg/errors"
 
-	"github.com/polarismesh/polaris-go/api"
+	api "github.com/polarismesh/polaris-go"
 	"github.com/polarismesh/polaris-go/pkg/model"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 	"dubbo.apache.org/dubbo-go/v3/remoting/polaris"
 )
 
-// newPolarisServiceDiscovery will create new service discovery instance
-func newPolarisServiceDiscovery() (registry.ServiceDiscovery, error) {
-	metadataReportConfig := config.GetMetadataReportConfg()
-	url := common.NewURLWithOptions(
-		common.WithParams(make(url.Values)),
-		common.WithParamsValue(constant.RegistryTimeoutKey, metadataReportConfig.Timeout))
-	url.Location = metadataReportConfig.Address
+func init() {
+	extension.SetServiceDiscovery(constant.PolarisKey, newPolarisServiceDiscovery)
+}
 
-	sdkCtx, namespace, err := polaris.GetPolarisConfig(url)
+// newPolarisServiceDiscovery will create new service discovery instance
+func newPolarisServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, error) {
+	discoveryURL := common.NewURLWithOptions(
+		common.WithParams(url.GetParams()),
+		common.WithParamsValue(constant.TimeoutKey, url.GetParam(constant.RegistryTimeoutKey, constant.DefaultRegTimeout)),
+		common.WithParamsValue(constant.PolarisServiceToken, url.Password),
+		common.WithParamsValue(constant.RegistryNamespaceKey, url.GetParam(constant.RegistryNamespaceKey, constant.PolarisDefaultNamespace)))
+	discoveryURL.Location = url.Location
+	discoveryURL.Password = url.Password
+
+	if err := polaris.InitSDKContext(url); err != nil {
+		return nil, err
+	}
+
+	providerApi, err := polaris.GetProviderAPI()
+	if err != nil {
+		return nil, err
+	}
+
+	consumerApi, err := polaris.GetConsumerAPI()
+	if err != nil {
+		return nil, err
+	}
 
 	if err != nil {
 		return nil, perrors.WithMessage(err, "create polaris namingClient failed.")
 	}
 
-	descriptor := fmt.Sprintf("polaris-service-discovery[%s]", metadataReportConfig.Address)
+	descriptor := fmt.Sprintf("polaris-service-discovery[%s]", discoveryURL.Location)
 
 	newInstance := &polarisServiceDiscovery{
-		namespace:         namespace,
+		namespace:         discoveryURL.GetParam(constant.RegistryNamespaceKey, constant.PolarisDefaultNamespace),
 		descriptor:        descriptor,
 		instanceLock:      &sync.RWMutex{},
-		consumer:          api.NewConsumerAPIByContext(sdkCtx),
-		provider:          api.NewProviderAPIByContext(sdkCtx),
-		registryInstances: make(map[string]*PolarisHeartbeat),
+		consumer:          consumerApi,
+		provider:          providerApi,
+		registryInstances: make(map[string]*PolarisInstanceInfo),
 		listenerLock:      &sync.RWMutex{},
 		watchers:          make(map[string]*PolarisServiceWatcher),
 	}
@@ -81,7 +96,7 @@ type polarisServiceDiscovery struct {
 	consumer          api.ConsumerAPI
 	services          *gxset.HashSet
 	instanceLock      *sync.RWMutex
-	registryInstances map[string]*PolarisHeartbeat
+	registryInstances map[string]*PolarisInstanceInfo
 	watchers          map[string]*PolarisServiceWatcher
 	listenerLock      *sync.RWMutex
 }
@@ -90,9 +105,6 @@ type polarisServiceDiscovery struct {
 // and close polaris.ConsumerAPI and polaris.ProviderAPI
 func (polaris *polarisServiceDiscovery) Destroy() error {
 	for _, inst := range polaris.registryInstances {
-
-		inst.cancel()
-
 		err := polaris.Unregister(inst.instance)
 		logger.Infof("Unregister polaris instance:%+v", inst)
 		if err != nil {
@@ -108,7 +120,7 @@ func (polaris *polarisServiceDiscovery) Destroy() error {
 func (polaris *polarisServiceDiscovery) Register(instance registry.ServiceInstance) error {
 
 	ins := convertToRegisterInstance(polaris.namespace, instance)
-	resp, err := polaris.provider.Register(ins)
+	resp, err := polaris.provider.RegisterInstance(ins)
 	if err != nil {
 		return perrors.WithMessage(err, "could not register the instance. "+instance.GetServiceName())
 	}
@@ -118,14 +130,10 @@ func (polaris *polarisServiceDiscovery) Register(instance registry.ServiceInstan
 			polaris.namespace, instance.GetServiceName(), instance.GetHost(), instance.GetPort())
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	go polaris.doHeartbeat(ctx, ins)
-
 	polaris.instanceLock.Lock()
 	defer polaris.instanceLock.Unlock()
 
-	polaris.registryInstances[getInstanceKey(polaris.namespace, instance)] = &PolarisHeartbeat{
-		cancel:   cancel,
+	polaris.registryInstances[getInstanceKey(polaris.namespace, instance)] = &PolarisInstanceInfo{
 		instance: instance,
 	}
 	polaris.services.Add(instance.GetServiceName())
@@ -149,10 +157,8 @@ func (polaris *polarisServiceDiscovery) Unregister(instance registry.ServiceInst
 	func() {
 		polaris.instanceLock.Lock()
 		defer polaris.instanceLock.Unlock()
-
 		key := getInstanceKey(polaris.namespace, instance)
-		if heartbeat, exist := polaris.registryInstances[key]; exist {
-			heartbeat.cancel()
+		if _, exist := polaris.registryInstances[key]; exist {
 			delete(polaris.registryInstances, key)
 		}
 	}()
@@ -338,29 +344,5 @@ func convertToDeregisterInstance(namespace string, instance registry.ServiceInst
 			Host:      instance.GetHost(),
 			Port:      instance.GetPort(),
 		},
-	}
-}
-
-// doHeartbeat Since polaris does not support automatic reporting of instance heartbeats, separate logic is
-//  needed to implement it
-func (polaris *polarisServiceDiscovery) doHeartbeat(ctx context.Context, ins *api.InstanceRegisterRequest) {
-	ticker := time.NewTicker(time.Duration(4) * time.Second)
-
-	heartbeat := &api.InstanceHeartbeatRequest{
-		InstanceHeartbeatRequest: model.InstanceHeartbeatRequest{
-			Service:   ins.Service,
-			Namespace: ins.Namespace,
-			Host:      ins.Host,
-			Port:      ins.Port,
-		},
-	}
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			polaris.provider.Heartbeat(heartbeat)
-		}
 	}
 }

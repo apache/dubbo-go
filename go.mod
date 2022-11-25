@@ -18,7 +18,7 @@ require (
 	github.com/dubbogo/gost v1.13.1
 	github.com/dubbogo/grpc-go v1.42.10
 	github.com/dubbogo/triple v1.2.2-rc2
-	github.com/emicklei/go-restful/v3 v3.10.0
+	github.com/emicklei/go-restful/v3 v3.10.1
 	github.com/envoyproxy/go-control-plane v0.10.2-0.20220325020618-49ff273808a1
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/go-co-op/gocron v1.9.0
@@ -33,13 +33,15 @@ require (
 	github.com/jinzhu/copier v0.3.5
 	github.com/knadh/koanf v1.4.4
 	github.com/magiconair/properties v1.8.6
+	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
 	github.com/nacos-group/nacos-sdk-go/v2 v2.1.2
 	github.com/natefinch/lumberjack v2.0.0+incompatible
+	github.com/oliveagle/jsonpath v0.0.0-20180606110733-2e52cf6e6852
 	github.com/opentracing/opentracing-go v1.2.0
 	github.com/pkg/errors v0.9.1
-	github.com/polarismesh/polaris-go v1.1.0
+	github.com/polarismesh/polaris-go v1.2.0
 	github.com/prometheus/client_golang v1.12.2
 	github.com/satori/go.uuid v1.2.1-0.20181028125025-b2ce2384e17b
 	github.com/stretchr/testify v1.8.1
@@ -48,9 +50,10 @@ require (
 	go.opentelemetry.io/otel v1.11.0
 	go.opentelemetry.io/otel/trace v1.11.0
 	go.uber.org/atomic v1.9.0
+	go.uber.org/multierr v1.8.0 // indirect
 	go.uber.org/zap v1.21.0
-	google.golang.org/genproto v0.0.0-20211104193956-4c6863e31247
-	google.golang.org/grpc v1.50.1
+	google.golang.org/genproto v0.0.0-20220504150022-98cd25cafc72
+	google.golang.org/grpc v1.51.0
 	google.golang.org/protobuf v1.28.1
 	gopkg.in/yaml.v2 v2.4.0
 )
