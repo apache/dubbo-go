@@ -86,7 +86,8 @@ func (p *polarisRouter) Route(invokers []protocol.Invoker, url *common.URL,
 		logger.Warnf("[tag router] invokers from previous router is empty")
 		return invokers
 	}
-	service := url.Service()
+
+	service := getService(url)
 	instanceMap := p.buildInstanceMap(service)
 	if len(instanceMap) == 0 {
 		return invokers
@@ -128,6 +129,22 @@ func (p *polarisRouter) Route(invokers []protocol.Invoker, url *common.URL,
 	}
 
 	return ret
+}
+
+func getService(url *common.URL) string {
+	applicationMode := false
+	for _, item := range config.GetRootConfig().Registries {
+		if item.Protocol == constant.PolarisKey {
+			applicationMode = item.RegistryType == constant.ServiceKey
+		}
+	}
+
+	service := "providers:" + url.Service()
+	if applicationMode {
+		service = config.GetApplicationConfig().Name
+	}
+
+	return service
 }
 
 func (p *polarisRouter) buildRouteRequest(svc string, url *common.URL,
@@ -266,7 +283,7 @@ func (p *polarisRouter) Notify(invokers []protocol.Invoker) {
 	if len(invokers) == 0 {
 		return
 	}
-	service := invokers[0].GetURL().Service()
+	service := getService(invokers[0].GetURL())
 	if service == "" {
 		logger.Error("url service is empty")
 		return
