@@ -18,6 +18,7 @@
 package polaris
 
 import (
+	"fmt"
 	"strconv"
 	"sync"
 	"time"
@@ -37,6 +38,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/registry"
+	"dubbo.apache.org/dubbo-go/v3/remoting"
 	"dubbo.apache.org/dubbo-go/v3/remoting/polaris"
 )
 
@@ -168,6 +170,27 @@ func (pr *polarisRegistry) Subscribe(url *common.URL, notifyListener registry.No
 func (pr *polarisRegistry) UnSubscribe(url *common.URL, notifyListener registry.NotifyListener) error {
 	// TODO wait polaris support it
 	return perrors.New("UnSubscribe not support in polarisRegistry")
+}
+
+// LoadSubscribeInstances load subscribe instance
+func (pr *polarisRegistry) LoadSubscribeInstances(url *common.URL, notify registry.NotifyListener) error {
+	serviceName := getSubscribeName(url)
+	resp, err := pr.consumer.GetAllInstances(&api.GetAllInstancesRequest{
+		GetAllInstancesRequest: model.GetAllInstancesRequest{
+			Service:   serviceName,
+			Namespace: pr.namespace,
+		},
+	})
+	if err != nil {
+		return perrors.New(fmt.Sprintf("could not query the instances for serviceName=%s,namespace=%s,error=%v",
+			serviceName, pr.namespace, err))
+	}
+	for i := range resp.Instances {
+		if newUrl := generateUrl(resp.Instances[i]); newUrl != nil {
+			notify.Notify(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: newUrl})
+		}
+	}
+	return nil
 }
 
 // GetURL returns polaris registry's url.
