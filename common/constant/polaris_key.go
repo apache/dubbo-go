@@ -38,4 +38,5 @@ const (
 const (
 	PluginPolarisTpsLimiter    = "polaris-limit"
 	PluginPolarisRouterFactory = "polaris-router"
+	PluginPolarisReportFilter  = "polaris-report"
 )
