@@ -53,24 +53,24 @@ var (
 )
 
 func newPolarisRouter() (*polarisRouter, error) {
-	routerApi, err := remotingpolaris.GetRouterAPI()
+	routerAPI, err := remotingpolaris.GetRouterAPI()
 	if err != nil {
 		return nil, err
 	}
-	consumerApi, err := remotingpolaris.GetConsumerAPI()
+	consumerAPI, err := remotingpolaris.GetConsumerAPI()
 	if err != nil {
 		return nil, err
 	}
 
 	return &polarisRouter{
-		routerApi:   routerApi,
-		consumerApi: consumerApi,
+		routerAPI:   routerAPI,
+		consumerAPI: consumerAPI,
 	}, nil
 }
 
 type polarisRouter struct {
-	routerApi   polaris.RouterAPI
-	consumerApi polaris.ConsumerAPI
+	routerAPI   polaris.RouterAPI
+	consumerAPI polaris.ConsumerAPI
 
 	cancel context.CancelFunc
 
@@ -97,12 +97,12 @@ func (p *polarisRouter) Route(invokers []protocol.Invoker, url *common.URL,
 	targetIns := make([]model.Instance, 0, len(invokers))
 	for i := range invokers {
 		invoker := invokers[i]
-		instanceId := invoker.GetURL().GetParam(constant.PolarisInstanceID, "")
-		if len(instanceId) == 0 {
+		instanceID := invoker.GetURL().GetParam(constant.PolarisInstanceID, "")
+		if len(instanceID) == 0 {
 			continue
 		}
-		invokersMap[instanceId] = invoker
-		if val, ok := instanceMap[instanceId]; ok {
+		invokersMap[instanceID] = invoker
+		if val, ok := instanceMap[instanceID]; ok {
 			targetIns = append(targetIns, val)
 		}
 	}
@@ -116,7 +116,7 @@ func (p *polarisRouter) Route(invokers []protocol.Invoker, url *common.URL,
 		Namespace: remotingpolaris.GetNamespace(),
 	}, targetIns)
 
-	resp, err := p.routerApi.ProcessRouters(&req)
+	resp, err := p.routerAPI.ProcessRouters(&req)
 	if err != nil {
 		return invokers
 	}
@@ -148,7 +148,7 @@ func getService(url *common.URL) string {
 }
 
 func (p *polarisRouter) buildRouteRequest(svc string, url *common.URL,
-	invoaction protocol.Invocation) (polaris.ProcessRoutersRequest, error) {
+	invocation protocol.Invocation) (polaris.ProcessRoutersRequest, error) {
 
 	routeReq := polaris.ProcessRoutersRequest{
 		ProcessRoutersRequest: model.ProcessRoutersRequest{
@@ -158,8 +158,8 @@ func (p *polarisRouter) buildRouteRequest(svc string, url *common.URL,
 		},
 	}
 
-	attachement := invoaction.Attachments()
-	arguments := invoaction.Arguments()
+	attachement := invocation.Attachments()
+	arguments := invocation.Arguments()
 
 	labels, err := p.buildTrafficLabels(svc)
 	if err != nil {
@@ -169,7 +169,7 @@ func (p *polarisRouter) buildRouteRequest(svc string, url *common.URL,
 	for i := range labels {
 		label := labels[i]
 		if strings.Compare(label, model.LabelKeyPath) == 0 {
-			routeReq.AddArguments(model.BuildPathArgument(getInvokeMethod(url, invoaction)))
+			routeReq.AddArguments(model.BuildPathArgument(getInvokeMethod(url, invocation)))
 			continue
 		}
 		if strings.HasPrefix(label, model.LabelKeyHeader) {
@@ -193,7 +193,7 @@ func (p *polarisRouter) buildTrafficLabels(svc string) ([]string, error) {
 	req.Namespace = remotingpolaris.GetNamespace()
 	req.Service = svc
 	req.SetTimeout(time.Second)
-	engine := p.routerApi.SDKContext().GetEngine()
+	engine := p.routerAPI.SDKContext().GetEngine()
 	resp, err := engine.SyncGetServiceRule(model.EventRouting, req)
 	if err != nil {
 		logger.Errorf("[Router][Polaris] ns:%s svc:%s get route rule fail : %+v", req.GetNamespace(), req.GetService(), err)
@@ -247,7 +247,7 @@ func collectRouteLabels(routings []*v1.Route) []string {
 }
 
 func (p *polarisRouter) buildInstanceMap(svc string) map[string]model.Instance {
-	resp, err := p.consumerApi.GetAllInstances(&polaris.GetAllInstancesRequest{
+	resp, err := p.consumerAPI.GetAllInstances(&polaris.GetAllInstancesRequest{
 		GetAllInstancesRequest: model.GetAllInstancesRequest{
 			Service:   svc,
 			Namespace: remotingpolaris.GetNamespace(),
@@ -294,14 +294,14 @@ func (p *polarisRouter) Notify(invokers []protocol.Invoker) {
 	req.Service = service
 	req.SetTimeout(time.Second)
 
-	engine := p.routerApi.SDKContext().GetEngine()
+	engine := p.routerAPI.SDKContext().GetEngine()
 	_, err := engine.SyncGetServiceRule(model.EventRouting, req)
 	if err != nil {
 		logger.Errorf("[Router][Polaris] ns:%s svc:%s get route rule fail : %+v", req.GetNamespace(), req.GetService(), err)
 		return
 	}
 
-	_, err = p.consumerApi.GetAllInstances(&polaris.GetAllInstancesRequest{
+	_, err = p.consumerAPI.GetAllInstances(&polaris.GetAllInstancesRequest{
 		GetAllInstancesRequest: model.GetAllInstancesRequest{
 			Service:   service,
 			Namespace: remotingpolaris.GetNamespace(),
