@@ -67,7 +67,14 @@ type RouterChain struct {
 	notify chan struct{}
 	// Address cache
 	cache atomic.Value
+
+	routerStatus atomic.Int32
 }
+
+const (
+	NoRouter = iota
+	HasRouter
+)
 
 func (c *RouterChain) GetNotifyChan() chan struct{} {
 	return c.notify
@@ -113,6 +120,10 @@ func (c *RouterChain) AddRouters(routers []router.PriorityRouter) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	c.routers = newRouters
+	if c.routerStatus.Load() == int32(NoRouter) {
+		return
+	}
+
 	go func() {
 		c.notify <- struct{}{}
 	}()
@@ -124,6 +135,9 @@ func (c *RouterChain) SetInvokers(invokers []protocol.Invoker) {
 	c.mutex.Lock()
 	c.invokers = invokers
 	c.mutex.Unlock()
+	if c.routerStatus.Load() == int32(NoRouter) {
+		return
+	}
 
 	go func() {
 		c.notify <- struct{}{}
@@ -296,6 +310,7 @@ func NewRouterChain(url *common.URL) (*RouterChain, error) {
 		last:   time.Now(),
 		notify: make(chan struct{}),
 	}
+	chain.routerStatus.Store(int32(HasRouter))
 
 	routers := make([]router.PriorityRouter, 0, len(routerFactories))
 	for key, routerFactory := range routerFactories {
