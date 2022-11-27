@@ -1,6 +1,32 @@
 # Release Notes
 ---
 
+## 3.0.4
+
+### Features
+
+- [CLI: Support getting metadata from metadataCenter](https://github.com/apache/dubbo-go/pull/2066)
+- [Support TLS for Dubbo/Triple/GRPC protocols](https://github.com/apache/dubbo-go/pull/2073)
+- [Add polaris subscribe](https://github.com/apache/dubbo-go/pull/2100)
+- [Support Polaris ratelimit](https://github.com/apache/dubbo-go/pull/2128)
+- [Support polaris router ability](https://github.com/apache/dubbo-go/pull/2132)
+
+### Bugfixes
+
+- [Fix: leastactive choose wrong invoker](https://github.com/apache/dubbo-go/pull/2068)
+- [Fix: add more setter of ReferenceConfigBuilder](https://github.com/apache/dubbo-go/pull/2098)
+- [Fix: timeout don't support ms bug](https://github.com/apache/dubbo-go/pull/2105)
+- [Fix: env DUBBO_IP_TO_REGISTRY doesn't work](https://github.com/apache/dubbo-go/pull/2138)
+
+### Enhancements
+
+- [Upgrade Triple to v1.1.9](https://github.com/apache/dubbo-go/pull/2072)
+- [Docs: update style and out-of-date links in readme](https://github.com/apache/dubbo-go/pull/2079)
+- [Upgrade Hessian to v1.11.3](https://github.com/apache/dubbo-go/pull/2087)
+- [Upgrade gopkg.in/yaml.v3 to 3.0.0](https://github.com/apache/dubbo-go/pull/2112)
+- [Upgrade nacos to v2.1.2](https://github.com/apache/dubbo-go/pull/2116)
+- [Refactor registry polaris project](https://github.com/apache/dubbo-go/pull/2125)
+
 ## 3.0.3
 
 ### Features
@@ -9,7 +35,7 @@
 - [Support gracefully offline without registry](https://github.com/apache/dubbo-go/pull/1973)
 - [Support nacosRegistry and polarisRegistry register ip and port from env](https://github.com/apache/dubbo-go/pull/2061)
 
-### Bugfixs
+### Bugfixes
 - [Fix: typo correction](https://github.com/apache/dubbo-go/pull/1924)
 - [Fix: revision calc](https://github.com/apache/dubbo-go/pull/1926)
 - [Fix: rand.Seed() duplicate concurrent calls](https://github.com/apache/dubbo-go/pull/1958)
@@ -47,7 +73,7 @@
 - [Support istio xds ring hash](https://github.com/apache/dubbo-go/pull/1828)
 - [Support otel trace](https://github.com/apache/dubbo-go/pull/1886)
 
-### Bugfixs
+### Bugfixes
 
 - [Fix: where limitation not updates](https://github.com/apache/dubbo-go/pull/1784)
 - [Fix: rootConfig and getty-session-param](https://github.com/apache/dubbo-go/pull/1802)
@@ -82,7 +108,7 @@
 - [Support `$invokeAsync` for generic service](https://github.com/apache/dubbo-go/pull/1674)
 - [Support config the Nacos context path](https://github.com/apache/dubbo-go/pull/1656)
 
-### Bugfixs
+### Bugfixes
 
 - [Fix: JSON-RPC request timeout time dynamically](https://github.com/apache/dubbo-go/pull/1713)
 - [Fix: the heartbeat of polaris cannot be reported](https://github.com/apache/dubbo-go/pull/1688)
@@ -111,7 +137,7 @@
 - [Triple proto reflection support](https://github.com/apache/dubbo-go/pull/1603)
 - [Triple pb with jaeger tracing support](https://github.com/apache/dubbo-go/pull/1596)
 
-### Bugfixs
+### Bugfixes
 
 - [Validate nacos's user and password configuration](https://github.com/apache/dubbo-go/pull/1645)
 - [Fix bug of service configuration exported field](https://github.com/apache/dubbo-go/pull/1639/files)
