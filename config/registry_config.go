@@ -149,13 +149,55 @@ func (c *RegistryConfig) GetInstance(roleType common.RoleType) (registry.Registr
 func (c *RegistryConfig) toURL(roleType common.RoleType) (*common.URL, error) {
 	address := c.translateRegistryAddress()
 	var registryURLProtocol string
-	if c.RegistryType == "service" {
+	if c.RegistryType == constant.RegistryTypeService {
 		// service discovery protocol
 		registryURLProtocol = constant.ServiceRegistryProtocol
-	} else {
+	} else if c.RegistryType == constant.RegistryTypeInterface {
 		registryURLProtocol = constant.RegistryProtocol
+	} else {
+		registryURLProtocol = constant.ServiceRegistryProtocol
 	}
-	return common.NewURL(registryURLProtocol+"://"+address,
+	return c.createNewURL(registryURLProtocol, address, roleType)
+}
+
+func (c *RegistryConfig) toURLs(roleType common.RoleType) ([]*common.URL, error) {
+	address := c.translateRegistryAddress()
+	var urls []*common.URL
+	var err error
+	var registryURL *common.URL
+
+	if !isValid(c.Address) {
+		logger.Infof("Empty or N/A registry address found, the process will work with no registry enabled " +
+			"which means that the address of this instance will not be registered and not able to be found by other consumer instances.")
+		return urls, nil
+	}
+
+	if c.RegistryType == constant.RegistryTypeService {
+		// service discovery protocol
+		if registryURL, err = c.createNewURL(constant.ServiceRegistryProtocol, address, roleType); err == nil {
+			urls = append(urls, registryURL)
+		}
+	} else if c.RegistryType == constant.RegistryTypeInterface {
+		if registryURL, err = c.createNewURL(constant.RegistryProtocol, address, roleType); err == nil {
+			urls = append(urls, registryURL)
+		}
+	} else if c.RegistryType == constant.RegistryTypeAll {
+		if registryURL, err = c.createNewURL(constant.ServiceRegistryProtocol, address, roleType); err == nil {
+			urls = append(urls, registryURL)
+		}
+		if registryURL, err = c.createNewURL(constant.RegistryProtocol, address, roleType); err == nil {
+			urls = append(urls, registryURL)
+		}
+	} else {
+		if registryURL, err = c.createNewURL(constant.ServiceRegistryProtocol, address, roleType); err == nil {
+			urls = append(urls, registryURL)
+		}
+	}
+	return urls, err
+}
+
+func (c *RegistryConfig) createNewURL(protocol string, address string, roleType common.RoleType) (*common.URL, error) {
+	return common.NewURL(protocol+"://"+address,
 		common.WithParams(c.getUrlMap(roleType)),
 		common.WithParamsValue(constant.RegistrySimplifiedKey, strconv.FormatBool(c.Simplified)),
 		common.WithParamsValue(constant.RegistryKey, c.Protocol),
