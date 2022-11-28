@@ -255,6 +255,15 @@ func (dp *DubboProtocol) openServer(url *common.URL, tripleCodecType tripleConst
 
 	triOption := triConfig.NewTripleOption(opts...)
 
+	tlsConfig := config.GetRootConfig().TLSConfig
+	if tlsConfig != nil {
+		triOption.TLSCertFile = tlsConfig.TLSCertFile
+		triOption.TLSKeyFile = tlsConfig.TLSKeyFile
+		triOption.CACertFile = tlsConfig.CACertFile
+		triOption.TLSServerName = tlsConfig.TLSServerName
+		logger.Infof("Triple Server initialized the TLSConfig configuration")
+	}
+
 	_, ok = dp.ExporterMap().Load(url.ServiceKey())
 	if !ok {
 		panic("[DubboProtocol]" + url.Key() + "is not existing")
