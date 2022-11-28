@@ -24,7 +24,6 @@
 - [Docs: update style and out-of-date links in readme](https://github.com/apache/dubbo-go/pull/2079)
 - [Upgrade Hessian to v1.11.3](https://github.com/apache/dubbo-go/pull/2087)
 - [Upgrade gopkg.in/yaml.v3 to 3.0.0](https://github.com/apache/dubbo-go/pull/2112)
-- [Upgrade nacos to v2.1.2](https://github.com/apache/dubbo-go/pull/2116)
 - [Refactor registry polaris project](https://github.com/apache/dubbo-go/pull/2125)
 
 ## 3.0.3
