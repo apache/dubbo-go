@@ -41,13 +41,13 @@ import (
 )
 
 type polarisTpsLimiter struct {
-	limitApi polaris.LimitAPI
+	limitAPI polaris.LimitAPI
 }
 
 func (pl *polarisTpsLimiter) IsAllowable(url *common.URL, invocation protocol.Invocation) bool {
 	var err error
 
-	pl.limitApi, err = remotingpolaris.GetLimiterAPI()
+	pl.limitAPI, err = remotingpolaris.GetLimiterAPI()
 	if err != nil {
 		logger.Error("[TpsLimiter][Polaris] create polaris LimitAPI fail : %+v", err)
 		return true
@@ -59,7 +59,7 @@ func (pl *polarisTpsLimiter) IsAllowable(url *common.URL, invocation protocol.In
 	}
 	logger.Debugf("[TpsLimiter][Polaris] quota req : %+v", req)
 
-	resp, err := pl.limitApi.GetQuota(req)
+	resp, err := pl.limitAPI.GetQuota(req)
 	if err != nil {
 		logger.Error("[TpsLimiter][Polaris] ns:%s svc:%s get quota fail : %+v", remotingpolaris.GetNamespace(), url.Service(), err)
 		return true
@@ -121,7 +121,7 @@ func (pl *polarisTpsLimiter) buildQuotaRequest(url *common.URL, invoaction proto
 }
 
 func (pl *polarisTpsLimiter) buildArguments(req *model.QuotaRequestImpl) ([]*v1.MatchArgument, bool) {
-	engine := pl.limitApi.SDKContext().GetEngine()
+	engine := pl.limitAPI.SDKContext().GetEngine()
 
 	getRuleReq := &data.CommonRateLimitRequest{
 		DstService: model.ServiceKey{

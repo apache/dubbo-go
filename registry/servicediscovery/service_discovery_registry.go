@@ -165,6 +165,7 @@ func (s *serviceDiscoveryRegistry) Register(url *common.URL) error {
 	if !shouldRegister(url) {
 		return nil
 	}
+	common.HandleRegisterIPAndPort(url)
 	ok, err := s.metaDataService.ExportURL(url)
 
 	if err != nil {
