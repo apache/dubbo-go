@@ -155,7 +155,7 @@ func (c *RegistryConfig) toURL(roleType common.RoleType) (*common.URL, error) {
 	} else if c.RegistryType == constant.RegistryTypeInterface {
 		registryURLProtocol = constant.RegistryProtocol
 	} else {
-		registryURLProtocol = constant.ServiceRegistryProtocol
+		registryURLProtocol = constant.InterfaceKey
 	}
 	return c.createNewURL(registryURLProtocol, address, roleType)
 }
