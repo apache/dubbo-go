@@ -6,8 +6,9 @@
 ### Features
 
 - [CLI: Support getting metadata from metadataCenter](https://github.com/apache/dubbo-go/pull/2066)
-- [Support TLS for Dubbo/Triple/GRPC protocols](https://github.com/apache/dubbo-go/pull/2073)
-- [Add polaris subscribe](https://github.com/apache/dubbo-go/pull/2100)
+- [Support TLS for gRPC protocols](https://github.com/apache/dubbo-go/pull/2073)
+- [Support TLS for Dubbo/Triple protocols](https://github.com/apache/dubbo-go/pull/2117)
+- [Support Polaris subscribe](https://github.com/apache/dubbo-go/pull/2100)
 - [Support Polaris ratelimit](https://github.com/apache/dubbo-go/pull/2128)
 - [Support polaris router ability](https://github.com/apache/dubbo-go/pull/2132)
 

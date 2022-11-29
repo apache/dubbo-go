@@ -16,11 +16,11 @@ Apache Dubbo-go, a Dubbo implementation written in Golang, is born to bridge the
 
 <img src="https://dubbo-go-pixiu.github.io/img/pixiu-dubbo-ecosystem.png" height="400px" display="display: block, margin: auto" />
 
-Dubbo-go has supported many RPC protocols, like Triple, Dubbo JSONRPC, gRPC, HTTP, HTTP2.
+Dubbo-go has supported many RPC protocols, like Triple, Dubbo, JSONRPC, gRPC, HTTP, HTTP2. The Triple, Dubbo and gRPC protocols supported security connections via TLS.
 
 - Triple is the supported protocol of Dubbo3 ecology, and is gRPC extended protocol based on HTTP2, which is compatible with gRPC service.In other words, **on the basis of gRPC's reliable invocation, it adds Dubbo's service governance capability.**
 - Dubbo protocol is tradition Dubbo ecology protocol, which is compatible with Dubbo 2.x, and is a good choice for cross-language invocation between GO and Java legacy service.
-- HTTP support：As you can see in the figure above, you can invoke Triple/Dubbo service using HTTP protocol through [dubbo-go-pixiu](https://github.com/apache/dubbo-go-pixiu) gateway.
+- HTTP support: As you can see in the figure above, you can invoke Triple/Dubbo service using HTTP protocol through [dubbo-go-pixiu](https://github.com/apache/dubbo-go-pixiu) gateway.
 
 ## Service governance capability
 
