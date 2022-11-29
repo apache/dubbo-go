@@ -16,7 +16,7 @@ Apache Dubbo Go 语言实现，架起 Java 和 Golang 之间的桥梁，与 gRPC
 
 ![](https://dubbo-go-pixiu.github.io/img/pixiu-dubbo-ecosystem.png)
 
-Dubbo-go 生态覆盖多种网络协议：Triple、Dubbo、JSONRPC、gRPC、HTTP、HTTP2 等。
+Dubbo-go 生态覆盖多种网络协议：Triple、Dubbo、JSONRPC、gRPC、HTTP、HTTP2 等。Triple、Dubbo 和 gRPC 协议支持基于 TLS 的安全通信。
 
 - Triple 协议是 Dubbo3 生态主推的协议，是基于 gRPC 的扩展协议，底层为HTTP2，可与 gRPC 服务互通。**相当于在 gRPC 可靠的传输基础上，增加了 Dubbo 的服务治理能力。**
 - Dubbo 协议是 Dubbo 生态的传统协议，dubbo-go 支持的 dubbo 协议与dubbo2.x 版本兼容，是 Go 语言和旧版本 Dubbo 服务互通的不错选择。
