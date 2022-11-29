@@ -25,10 +25,10 @@ import (
 
 // TLSConfig tls config
 type TLSConfig struct {
-	CACertFile    string `yaml:"ca_cert_file" json:"ca_cert_file" property:"ca_cert_file"`
-	TLSCertFile   string `yaml:"tls_cert_file" json:"tls_cert_file" property:"tls_cert_file"`
-	TLSKeyFile    string `yaml:"tls_key_file" json:"tls_key_file" property:"tls_key_file"`
-	TLSServerName string `yaml:"tls_server_name" json:"tls_server_name" property:"tls_server_name"`
+	CACertFile    string `yaml:"ca-cert-file" json:"ca-cert-file" property:"ca-cert-file"`
+	TLSCertFile   string `yaml:"tls-cert-file" json:"tls-cert-file" property:"tls-cert-file"`
+	TLSKeyFile    string `yaml:"tls-key-file" json:"tls-key-file" property:"tls-key-file"`
+	TLSServerName string `yaml:"tls-server-name" json:"tls-server-name" property:"tls-server-name"`
 }
 
 // GetServerTlsConfig build server tls config from TLSConfig

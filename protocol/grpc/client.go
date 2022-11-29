@@ -78,13 +78,16 @@ func NewClient(url *common.URL) (*Client, error) {
 			grpc.MaxCallSendMsgSize(1024*1024*maxMessageSize),
 		),
 	)
-	if url.GetParam(constant.SslEnabledKey, "false") == "true" {
+	tlsConfig := config.GetRootConfig().TLSConfig
+
+	if tlsConfig != nil {
 		cfg, err := config.GetClientTlsConfig(&config.TLSConfig{
-			CACertFile:    url.GetParam(constant.CACert, ""),
-			TLSCertFile:   url.GetParam(constant.TLSCert, ""),
-			TLSKeyFile:    url.GetParam(constant.TLSKey, ""),
-			TLSServerName: url.GetParam(constant.TLSServerNAME, ""),
+			CACertFile:    tlsConfig.CACertFile,
+			TLSCertFile:   tlsConfig.TLSCertFile,
+			TLSKeyFile:    tlsConfig.TLSKeyFile,
+			TLSServerName: tlsConfig.TLSServerName,
 		})
+		logger.Infof("Grpc Client initialized the TLSConfig configuration")
 		if err != nil {
 			return nil, err
 		}
