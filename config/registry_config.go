@@ -155,7 +155,8 @@ func (c *RegistryConfig) toURL(roleType common.RoleType) (*common.URL, error) {
 	} else if c.RegistryType == constant.RegistryTypeInterface {
 		registryURLProtocol = constant.RegistryProtocol
 	} else {
-		registryURLProtocol = constant.InterfaceKey
+		// default use interface
+		registryURLProtocol = constant.RegistryProtocol
 	}
 	return c.createNewURL(registryURLProtocol, address, roleType)
 }
@@ -188,8 +189,9 @@ func (c *RegistryConfig) toURLs(roleType common.RoleType) ([]*common.URL, error)
 		if registryURL, err = c.createNewURL(constant.RegistryProtocol, address, roleType); err == nil {
 			urls = append(urls, registryURL)
 		}
+		// default use interface
 	} else {
-		if registryURL, err = c.createNewURL(constant.ServiceRegistryProtocol, address, roleType); err == nil {
+		if registryURL, err = c.createNewURL(constant.RegistryProtocol, address, roleType); err == nil {
 			urls = append(urls, registryURL)
 		}
 	}
