@@ -36,6 +36,7 @@
 - [Support nacosRegistry and polarisRegistry register ip and port from env](https://github.com/apache/dubbo-go/pull/2061)
 
 ### Bugfixes
+
 - [Fix: typo correction](https://github.com/apache/dubbo-go/pull/1924)
 - [Fix: revision calc](https://github.com/apache/dubbo-go/pull/1926)
 - [Fix: rand.Seed() duplicate concurrent calls](https://github.com/apache/dubbo-go/pull/1958)
@@ -51,6 +52,7 @@
 - [Fix: adaptive-service: deadlock caused by rwMutex in limiter mapper](https://github.com/apache/dubbo-go/pull/2053)
 
 ### Enhancements
+
 - [Chore remove apollo config center](https://github.com/apache/dubbo-go/pull/1932)
 - [Reduce common directory](https://github.com/apache/dubbo-go/pull/1948)
 - [Remove useless time format](https://github.com/apache/dubbo-go/pull/1955)
