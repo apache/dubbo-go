@@ -149,12 +149,12 @@ func (c *RegistryConfig) GetInstance(roleType common.RoleType) (registry.Registr
 func (c *RegistryConfig) toURL(roleType common.RoleType) (*common.URL, error) {
 	address := c.translateRegistryAddress()
 	var registryURLProtocol string
-	if c.RegistryType == constant.RegistryTypeService {
-		// service discovery protocol
+	switch c.RegistryType {
+	case constant.RegistryTypeService:
 		registryURLProtocol = constant.ServiceRegistryProtocol
-	} else if c.RegistryType == constant.RegistryTypeInterface {
+	case constant.RegistryTypeInterface:
 		registryURLProtocol = constant.RegistryProtocol
-	} else {
+	default:
 		// default use interface
 		registryURLProtocol = constant.RegistryProtocol
 	}
@@ -172,25 +172,24 @@ func (c *RegistryConfig) toURLs(roleType common.RoleType) ([]*common.URL, error)
 			"which means that the address of this instance will not be registered and not able to be found by other consumer instances.")
 		return urls, nil
 	}
-
-	if c.RegistryType == constant.RegistryTypeService {
-		// service discovery protocol
+	switch c.RegistryType {
+	case constant.RegistryTypeService:
 		if registryURL, err = c.createNewURL(constant.ServiceRegistryProtocol, address, roleType); err == nil {
 			urls = append(urls, registryURL)
 		}
-	} else if c.RegistryType == constant.RegistryTypeInterface {
+	case constant.RegistryTypeInterface:
 		if registryURL, err = c.createNewURL(constant.RegistryProtocol, address, roleType); err == nil {
 			urls = append(urls, registryURL)
 		}
-	} else if c.RegistryType == constant.RegistryTypeAll {
+	case constant.RegistryTypeAll:
 		if registryURL, err = c.createNewURL(constant.ServiceRegistryProtocol, address, roleType); err == nil {
 			urls = append(urls, registryURL)
 		}
 		if registryURL, err = c.createNewURL(constant.RegistryProtocol, address, roleType); err == nil {
 			urls = append(urls, registryURL)
 		}
+	default:
 		// default use interface
-	} else {
 		if registryURL, err = c.createNewURL(constant.RegistryProtocol, address, roleType); err == nil {
 			urls = append(urls, registryURL)
 		}
