@@ -63,16 +63,13 @@ func NewZkEventListener(client *gxzookeeper.ZookeeperClient) *ZkEventListener {
 
 // ListenServiceNodeEvent listen a path node event
 func (l *ZkEventListener) ListenServiceNodeEvent(zkPath string, listener remoting.DataListener) {
-	l.wg.Add(1)
-	go func(zkPath string, listener remoting.DataListener) {
-		if l.listenServiceNodeEvent(zkPath, listener) {
-			listener.DataChange(remoting.Event{Path: zkPath, Action: remoting.EventTypeDel})
-			l.pathMapLock.Lock()
-			delete(l.pathMap, zkPath)
-			l.pathMapLock.Unlock()
-		}
-		logger.Warnf("ListenServiceNodeEvent->listenSelf(zk path{%s}) goroutine exit now", zkPath)
-	}(zkPath, listener)
+	if l.listenServiceNodeEvent(zkPath, listener) {
+		listener.DataChange(remoting.Event{Path: zkPath, Action: remoting.EventTypeDel})
+		l.pathMapLock.Lock()
+		delete(l.pathMap, zkPath)
+		l.pathMapLock.Unlock()
+	}
+	logger.Warnf("ListenServiceNodeEvent->listenSelf(zk path{%s}) goroutine exit now", zkPath)
 }
 
 // ListenConfigurationEvent listen a path node event
@@ -128,7 +125,6 @@ func (l *ZkEventListener) ListenConfigurationEvent(zkPath string, listener remot
 
 // nolint
 func (l *ZkEventListener) listenServiceNodeEvent(zkPath string, listener ...remoting.DataListener) bool {
-	defer l.wg.Done()
 
 	l.pathMapLock.Lock()
 	a, ok := l.pathMap[zkPath]
@@ -219,18 +215,14 @@ func (l *ZkEventListener) handleZkNodeEvent(zkPath string, children []string, li
 			continue
 		}
 		// listen l service node
-		l.wg.Add(1)
-		go func(node string, listener remoting.DataListener) {
-			// invoker l.wg.Done() in l.listenServiceNodeEvent
-			if l.listenServiceNodeEvent(node, listener) {
-				logger.Warnf("delete zkNode{%s}", node)
-				listener.DataChange(remoting.Event{Path: node, Action: remoting.EventTypeDel})
-				l.pathMapLock.Lock()
-				delete(l.pathMap, zkPath)
-				l.pathMapLock.Unlock()
-			}
-			logger.Debugf("handleZkNodeEvent->listenSelf(zk path{%s}) goroutine exit now", node)
-		}(newNode, listener)
+		if l.listenServiceNodeEvent(newNode, listener) {
+			logger.Warnf("delete zkNode{%s}", newNode)
+			listener.DataChange(remoting.Event{Path: newNode, Action: remoting.EventTypeDel})
+			l.pathMapLock.Lock()
+			delete(l.pathMap, zkPath)
+			l.pathMapLock.Unlock()
+		}
+		logger.Debugf("handleZkNodeEvent->listenSelf(zk path{%s}) goroutine exit now", newNode)
 	}
 
 	// old node was deleted
@@ -326,17 +318,13 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkRootPath string, li
 				continue
 			}
 			logger.Debugf("[Zookeeper EventListener][listenDirEvent] listen dubbo service key{%s}", zkNodePath)
-			l.wg.Add(1)
-			go func(zkPath string, listener remoting.DataListener) {
-				// invoker l.wg.Done() in l.listenServiceNodeEvent
-				if l.listenServiceNodeEvent(zkPath, listener) {
-					listener.DataChange(remoting.Event{Path: zkPath, Action: remoting.EventTypeDel})
-					l.pathMapLock.Lock()
-					delete(l.pathMap, zkPath)
-					l.pathMapLock.Unlock()
-				}
-				logger.Warnf("listenDirEvent->listenSelf(zk path{%s}) goroutine exit now", zkPath)
-			}(zkNodePath, listener)
+			if l.listenServiceNodeEvent(zkNodePath, listener) {
+				listener.DataChange(remoting.Event{Path: zkNodePath, Action: remoting.EventTypeDel})
+				l.pathMapLock.Lock()
+				delete(l.pathMap, zkNodePath)
+				l.pathMapLock.Unlock()
+			}
+			logger.Warnf("listenDirEvent->listenSelf(zk path{%s}) goroutine exit now", zkNodePath)
 		}
 		if l.startScheduleWatchTask(zkRootPath, children, ttl, listener, childEventCh) {
 			return
