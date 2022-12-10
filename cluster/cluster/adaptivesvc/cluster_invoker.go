@@ -19,12 +19,10 @@ package adaptivesvc
 
 import (
 	"context"
-	"strconv"
+	"time"
 )
 
 import (
-	"github.com/dubbogo/gost/log/logger"
-
 	perrors "github.com/pkg/errors"
 )
 
@@ -65,45 +63,29 @@ func (ivk *adaptiveServiceClusterInvoker) Invoke(ctx context.Context, invocation
 
 	// select a node by the loadBalance
 	invoker := lb.Select(invokers, invocation)
-
+	_ = metrics.SlidingWindowCounterMetrics.AppendMethodMetrics(invoker.GetURL(), invocation.MethodName(), metrics.Requests, 1)
 	// invoke
 	invocation.SetAttachment(constant.AdaptiveServiceEnabledKey, constant.AdaptiveServiceIsEnabled)
+	startTime := time.Now().UnixNano()
 	result := invoker.Invoke(ctx, invocation)
-
+	rtt := time.Now().UnixNano() - startTime
 	// if the adaptive service encounters an error, DO NOT
 	// update the metrics.
-	if clsutils.IsAdaptiveServiceFailed(result.Error()) {
+	if shouldDrop(result.Error()) {
 		return result
 	}
-
-	// update metrics
-	var remainingStr string
-	remainingIface := result.Attachment(constant.AdaptiveServiceRemainingKey, nil)
-	if remainingIface != nil {
-		if str, strOK := remainingIface.(string); strOK {
-			remainingStr = str
-		} else if strArr, strArrOK := remainingIface.([]string); strArrOK && len(strArr) > 0 {
-			remainingStr = strArr[0]
-		}
-	}
-	if remainingStr == "" {
-		logger.Errorf("[adasvc cluster] The %s field type of value %v should be string.",
-			constant.AdaptiveServiceRemainingKey, remainingIface)
-		return result
-	}
-	remaining, err := strconv.Atoi(remainingStr)
-	if err != nil {
-		logger.Warnf("the remaining is unexpected, we need a int type, but we got %s, err: %v.", remainingStr, err)
-		return result
-	}
-	logger.Debugf("[adasvc cluster] The server status was received successfully, %s: %#v",
-		constant.AdaptiveServiceRemainingKey, remainingStr)
-	err = metrics.LocalMetrics.SetMethodMetrics(invoker.GetURL(),
-		invocation.MethodName(), metrics.HillClimbing, uint64(remaining))
-	if err != nil {
-		logger.Warnf("adaptive service metrics update is failed, err: %v", err)
-		return &protocol.RPCResult{Err: err}
-	}
-
+	_ = metrics.EMAMetrics.AppendMethodMetrics(invoker.GetURL(), invocation.MethodName(), metrics.RTT, float64(rtt))
+	_ = metrics.SlidingWindowCounterMetrics.AppendMethodMetrics(invoker.GetURL(), invocation.MethodName(), metrics.Accepts, 1)
 	return result
+}
+
+func shouldDrop(err error) bool {
+	switch {
+	case clsutils.IsAdaptiveServiceFailed(err):
+		return true
+	case clsutils.IsDeadlineExceeded(err):
+		return true
+	default:
+		return false
+	}
 }

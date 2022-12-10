@@ -19,4 +19,7 @@ package metrics
 
 const (
 	HillClimbing = "hill-climbing"
+	Requests     = "requests"
+	Accepts      = "accepts"
+	RTT          = "rtt"
 )

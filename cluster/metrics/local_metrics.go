@@ -18,18 +18,28 @@
 package metrics
 
 import (
-	"fmt"
 	"sync"
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/cluster/metrics/rolling"
+	"dubbo.apache.org/dubbo-go/v3/cluster/metrics/utils"
 	"dubbo.apache.org/dubbo-go/v3/common"
 )
 
-var LocalMetrics Metrics
+var (
+	LocalMetrics                Metrics
+	EMAMetrics                  rolling.Metrics
+	SlidingWindowCounterMetrics rolling.Metrics
+)
 
 func init() {
 	LocalMetrics = newLocalMetrics()
+	EMAMetrics = rolling.NewEMAMetrics(rolling.EMAOpts{Alpha: 0.75})
+	SlidingWindowCounterMetrics = rolling.NewSlidingWindowCounterMetrics(rolling.SlidingWindowCounterOpts{
+		Size:           10,
+		BucketDuration: 50000000,
+	})
 }
 
 var _ Metrics = (*localMetrics)(nil)
@@ -50,17 +60,17 @@ func newLocalMetrics() *localMetrics {
 func (m *localMetrics) GetMethodMetrics(url *common.URL, methodName, key string) (interface{}, error) {
 	m.lock.RLock()
 	defer m.lock.RUnlock()
-	metricsKey := fmt.Sprintf("%s.%s.%s.%s", getInstanceKey(url), getInvokerKey(url), methodName, key)
+	metricsKey := utils.GetMethodMetricsKey(url, methodName, key)
 	if metrics, ok := m.metrics[metricsKey]; ok {
 		return metrics, nil
 	}
-	return nil, ErrMetricsNotFound
+	return nil, utils.ErrMetricsNotFound
 }
 
 func (m *localMetrics) SetMethodMetrics(url *common.URL, methodName, key string, value interface{}) error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
-	metricsKey := fmt.Sprintf("%s.%s.%s.%s", getInstanceKey(url), getInvokerKey(url), methodName, key)
+	metricsKey := utils.GetMethodMetricsKey(url, methodName, key)
 	m.metrics[metricsKey] = value
 	return nil
 }

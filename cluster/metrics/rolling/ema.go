@@ -15,41 +15,42 @@
  * limitations under the License.
  */
 
-package utils
+package rolling
 
 import (
-	"context"
-	"errors"
-	"fmt"
-	"strings"
+	"sync"
 )
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/filter/adaptivesvc"
-	adasvcfilter "dubbo.apache.org/dubbo-go/v3/filter/adaptivesvc/limiter"
-)
-
-var ReachLimitationErrorString = fmt.Sprintf("%s: %s",
-	adaptivesvc.ErrAdaptiveSvcInterrupted.Error(),
-	adasvcfilter.ErrReachLimitation.Error())
-
-func DoesAdaptiveServiceReachLimitation(err error) bool {
-	if err == nil {
-		return false
-	}
-	return err.Error() == ReachLimitationErrorString
+// EMA is a struct implemented Exponential Moving Average.
+// val = old * (1 - alpha) + new * alpha
+type EMA struct {
+	mu    sync.RWMutex
+	alpha float64
+	val   float64
 }
 
-func IsAdaptiveServiceFailed(err error) bool {
-	if err == nil {
-		return false
-	}
-	return strings.HasPrefix(err.Error(), adaptivesvc.ErrAdaptiveSvcInterrupted.Error())
+type EMAOpts struct {
+	Alpha float64
 }
 
-func IsDeadlineExceeded(err error) bool {
-	if err == nil {
-		return false
+// NewEMA creates a new EMA based on the given EMAOpts.
+func NewEMA(opts EMAOpts) *EMA {
+	return &EMA{
+		alpha: opts.Alpha,
+		val:   0,
 	}
-	return errors.Is(err, context.DeadlineExceeded)
+}
+
+func (e *EMA) Append(v float64) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+
+	e.val = e.val*(1-e.alpha) + v*e.alpha
+}
+
+func (e *EMA) Value() float64 {
+	e.mu.RLock()
+	defer e.mu.RUnlock()
+
+	return e.val
 }
