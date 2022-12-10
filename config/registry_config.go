@@ -91,7 +91,7 @@ func (c *RegistryConfig) getUrlMap(roleType common.RoleType) url.Values {
 
 func (c *RegistryConfig) startRegistryConfig() error {
 	c.translateRegistryAddress()
-	if GetApplicationConfig().MetadataType == constant.DefaultMetadataStorageType && c.RegistryType == constant.ServiceKey {
+	if GetApplicationConfig().MetadataType == constant.DefaultMetadataStorageType && c.RegistryType == constant.ServiceKey || c.RegistryType == constant.RegistryTypeAll {
 		if tmpUrl, err := c.toMetadataReportUrl(); err == nil {
 			instance.SetMetadataReportInstanceByReg(tmpUrl)
 		} else {
