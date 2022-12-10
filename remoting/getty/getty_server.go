@@ -36,7 +36,6 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
@@ -67,6 +66,18 @@ func initServer(protocol string) {
 		logger.Debug("use default getty server config")
 		return
 	} else {
+		//server tls config
+		tlsConfig := config.GetRootConfig().TLSConfig
+		if tlsConfig != nil {
+			srvConf.SSLEnabled = true
+			srvConf.TLSBuilder = &getty.ServerTlsConfigBuilder{
+				ServerKeyCertChainPath:        tlsConfig.TLSCertFile,
+				ServerPrivateKeyPath:          tlsConfig.TLSKeyFile,
+				ServerTrustCertCollectionPath: tlsConfig.CACertFile,
+			}
+			logger.Infof("Getty Server initialized the TLSConfig configuration")
+		}
+		//getty params
 		gettyServerConfig := protocolConf.Params
 		if gettyServerConfig == nil {
 			logger.Debug("gettyServerConfig is nil")
@@ -82,6 +93,7 @@ func initServer(protocol string) {
 			panic(err)
 		}
 	}
+
 	if err := srvConf.CheckValidity(); err != nil {
 		panic(err)
 	}
@@ -116,9 +128,6 @@ type Server struct {
 func NewServer(url *common.URL, handlers func(*invocation.RPCInvocation) protocol.RPCResult) *Server {
 	// init
 	initServer(url.Protocol)
-
-	srvConf.SSLEnabled = url.GetParamBool(constant.SslEnabledKey, false)
-
 	s := &Server{
 		conf:           *srvConf,
 		addr:           url.Location,
@@ -205,7 +214,8 @@ func (s *Server) Start() {
 	serverOpts := []getty.ServerOption{getty.WithLocalAddress(addr)}
 	if s.conf.SSLEnabled {
 		serverOpts = append(serverOpts, getty.WithServerSslEnabled(s.conf.SSLEnabled),
-			getty.WithServerTlsConfigBuilder(config.GetServerTlsConfigBuilder()))
+			getty.WithServerTlsConfigBuilder(srvConf.TLSBuilder))
+		logger.Infof("Getty Server initialized the TLSConfig configuration")
 	}
 
 	serverOpts = append(serverOpts, getty.WithServerTaskPool(gxsync.NewTaskPoolSimple(s.conf.GrPoolSize)))

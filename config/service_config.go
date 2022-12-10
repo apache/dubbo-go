@@ -279,14 +279,6 @@ func (s *ServiceConfig) Export() error {
 			common.WithToken(s.Token),
 			common.WithParamsValue(constant.MetadataTypeKey, s.metadataType),
 		)
-		//server tls config
-		if proto.TLSConfig != nil {
-			ivkURL.AddParam(constant.SslEnabledKey, "true")
-			ivkURL.AddParam(constant.TLSCert, proto.TLSConfig.TLSCertFile)
-			ivkURL.AddParam(constant.TLSKey, proto.TLSConfig.TLSKeyFile)
-			ivkURL.AddParam(constant.CACert, proto.TLSConfig.CACertFile)
-			ivkURL.AddParam(constant.TLSServerNAME, proto.TLSConfig.TLSServerName)
-		}
 		if len(s.Tag) > 0 {
 			ivkURL.AddParam(constant.Tagkey, s.Tag)
 		}
