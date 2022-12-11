@@ -91,7 +91,7 @@ func (c *RegistryConfig) getUrlMap(roleType common.RoleType) url.Values {
 
 func (c *RegistryConfig) startRegistryConfig() error {
 	c.translateRegistryAddress()
-	if GetApplicationConfig().MetadataType == constant.DefaultMetadataStorageType && c.RegistryType == constant.ServiceKey {
+	if GetApplicationConfig().MetadataType == constant.DefaultMetadataStorageType && c.RegistryType == constant.ServiceKey || c.RegistryType == constant.RegistryTypeAll {
 		if tmpUrl, err := c.toMetadataReportUrl(); err == nil {
 			instance.SetMetadataReportInstanceByReg(tmpUrl)
 		} else {
@@ -149,13 +149,56 @@ func (c *RegistryConfig) GetInstance(roleType common.RoleType) (registry.Registr
 func (c *RegistryConfig) toURL(roleType common.RoleType) (*common.URL, error) {
 	address := c.translateRegistryAddress()
 	var registryURLProtocol string
-	if c.RegistryType == "service" {
-		// service discovery protocol
+	switch c.RegistryType {
+	case constant.RegistryTypeService:
 		registryURLProtocol = constant.ServiceRegistryProtocol
-	} else {
+	case constant.RegistryTypeInterface:
+		registryURLProtocol = constant.RegistryProtocol
+	default:
+		// default use interface
 		registryURLProtocol = constant.RegistryProtocol
 	}
-	return common.NewURL(registryURLProtocol+"://"+address,
+	return c.createNewURL(registryURLProtocol, address, roleType)
+}
+
+func (c *RegistryConfig) toURLs(roleType common.RoleType) ([]*common.URL, error) {
+	address := c.translateRegistryAddress()
+	var urls []*common.URL
+	var err error
+	var registryURL *common.URL
+
+	if !isValid(c.Address) {
+		logger.Infof("Empty or N/A registry address found, the process will work with no registry enabled " +
+			"which means that the address of this instance will not be registered and not able to be found by other consumer instances.")
+		return urls, nil
+	}
+	switch c.RegistryType {
+	case constant.RegistryTypeService:
+		if registryURL, err = c.createNewURL(constant.ServiceRegistryProtocol, address, roleType); err == nil {
+			urls = append(urls, registryURL)
+		}
+	case constant.RegistryTypeInterface:
+		if registryURL, err = c.createNewURL(constant.RegistryProtocol, address, roleType); err == nil {
+			urls = append(urls, registryURL)
+		}
+	case constant.RegistryTypeAll:
+		if registryURL, err = c.createNewURL(constant.ServiceRegistryProtocol, address, roleType); err == nil {
+			urls = append(urls, registryURL)
+		}
+		if registryURL, err = c.createNewURL(constant.RegistryProtocol, address, roleType); err == nil {
+			urls = append(urls, registryURL)
+		}
+	default:
+		// default use interface
+		if registryURL, err = c.createNewURL(constant.RegistryProtocol, address, roleType); err == nil {
+			urls = append(urls, registryURL)
+		}
+	}
+	return urls, err
+}
+
+func (c *RegistryConfig) createNewURL(protocol string, address string, roleType common.RoleType) (*common.URL, error) {
+	return common.NewURL(protocol+"://"+address,
 		common.WithParams(c.getUrlMap(roleType)),
 		common.WithParamsValue(constant.RegistrySimplifiedKey, strconv.FormatBool(c.Simplified)),
 		common.WithParamsValue(constant.RegistryKey, c.Protocol),
