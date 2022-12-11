@@ -1,15 +1,15 @@
 # dubbo-go-schema
-这个项目为了更好的编写dubbo-go配置文件
+这个项目为了便捷的编写dubbo-go配置文件
 
 ## 怎么使用
 
-## golang
+### golang
 
 > [dubbo-go.json](./dubbo-go.json)
 
 ![img.png](images/img.png)
 
-## vs code
+### vs code
 
 ![vs-code](images/vs-code.png)
 
