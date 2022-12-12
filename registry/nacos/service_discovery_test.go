@@ -27,8 +27,8 @@ import (
 import (
 	gxset "github.com/dubbogo/gost/container/set"
 
-	"github.com/nacos-group/nacos-sdk-go/v2/model"
-	"github.com/nacos-group/nacos-sdk-go/v2/vo"
+	"github.com/nacos-group/nacos-sdk-go/model"
+	"github.com/nacos-group/nacos-sdk-go/vo"
 
 	perrors "github.com/pkg/errors"
 

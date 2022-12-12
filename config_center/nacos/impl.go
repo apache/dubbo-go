@@ -27,8 +27,8 @@ import (
 	nacosClient "github.com/dubbogo/gost/database/kv/nacos"
 	"github.com/dubbogo/gost/log/logger"
 
-	constant2 "github.com/nacos-group/nacos-sdk-go/v2/common/constant"
-	"github.com/nacos-group/nacos-sdk-go/v2/vo"
+	constant2 "github.com/nacos-group/nacos-sdk-go/common/constant"
+	"github.com/nacos-group/nacos-sdk-go/vo"
 
 	perrors "github.com/pkg/errors"
 )

@@ -18,28 +18,18 @@
 package polaris
 
 import (
-	"net/url"
-	"testing"
+	"dubbo.apache.org/dubbo-go/v3/cluster/router"
 )
 
-import (
-	"github.com/stretchr/testify/assert"
-)
+// RouteFactory router factory
+type RouteFactory struct{}
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/common"
-)
-
-func TestGetPolarisConfigByUrl(t *testing.T) {
-	regurl := getRegUrl()
-	err := InitSDKContext(regurl)
-
-	assert.Nil(t, err)
-	assert.ElementsMatch(t, []string{"127.0.0.1:8091"}, sdkCtx.GetConfig().GetGlobal().GetServerConnector().GetAddresses(), "server address")
+// NewPolarisRouterFactory constructs a new PriorityRouterFactory
+func NewPolarisRouterFactory() router.PriorityRouterFactory {
+	return &RouteFactory{}
 }
 
-func getRegUrl() *common.URL {
-	regurlMap := url.Values{}
-	regurl, _ := common.NewURL("registry://127.0.0.1:8091", common.WithParams(regurlMap))
-	return regurl
+// NewPriorityRouter construct a new PriorityRouter
+func (f *RouteFactory) NewPriorityRouter() (router.PriorityRouter, error) {
+	return newPolarisRouter()
 }

@@ -28,8 +28,8 @@ import (
 	gxpage "github.com/dubbogo/gost/hash/page"
 	"github.com/dubbogo/gost/log/logger"
 
-	"github.com/nacos-group/nacos-sdk-go/v2/model"
-	"github.com/nacos-group/nacos-sdk-go/v2/vo"
+	"github.com/nacos-group/nacos-sdk-go/model"
+	"github.com/nacos-group/nacos-sdk-go/vo"
 
 	perrors "github.com/pkg/errors"
 )
@@ -246,7 +246,7 @@ func (n *nacosServiceDiscovery) AddListener(listener registry.ServiceInstancesCh
 		err := n.namingClient.Client().Subscribe(&vo.SubscribeParam{
 			ServiceName: serviceName,
 			GroupName:   n.group,
-			SubscribeCallback: func(services []model.Instance, err error) {
+			SubscribeCallback: func(services []model.SubscribeService, err error) {
 				if err != nil {
 					logger.Errorf("Could not handle the subscribe notification because the err is not nil."+
 						" service name: %s, err: %v", serviceName, err)

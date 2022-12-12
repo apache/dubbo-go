@@ -23,14 +23,15 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 import (
 	perrors "github.com/pkg/errors"
 
+	"github.com/polarismesh/polaris-go"
 	"github.com/polarismesh/polaris-go/api"
 	"github.com/polarismesh/polaris-go/pkg/config"
-	"github.com/polarismesh/polaris-go/pkg/model"
 )
 
 import (
@@ -38,42 +39,84 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
-// GetPolarisConfig get polaris config from dubbo url
-func GetPolarisConfig(url *common.URL) (api.SDKContext, string, error) {
+var (
+	once      sync.Once
+	namesapce string
+	sdkCtx    api.SDKContext
+)
+
+var (
+	ErrorSDKContextNotInit = errors.New("polaris SDKContext not init")
+)
+
+// GetConsumerAPI creates one polaris ConsumerAPI instance
+func GetConsumerAPI() (polaris.ConsumerAPI, error) {
+	if sdkCtx == nil {
+		return nil, ErrorSDKContextNotInit
+	}
+
+	return polaris.NewConsumerAPIByContext(sdkCtx), nil
+}
+
+// GetProviderAPI creates one polaris ProviderAPI instance
+func GetProviderAPI() (polaris.ProviderAPI, error) {
+	if sdkCtx == nil {
+		return nil, ErrorSDKContextNotInit
+	}
+
+	return polaris.NewProviderAPIByContext(sdkCtx), nil
+}
+
+// GetRouterAPI create one polaris RouterAPI instance
+func GetRouterAPI() (polaris.RouterAPI, error) {
+	if sdkCtx == nil {
+		return nil, ErrorSDKContextNotInit
+	}
+
+	return polaris.NewRouterAPIByContext(sdkCtx), nil
+}
+
+// GetLimiterAPI creates one polaris LimiterAPI instance
+func GetLimiterAPI() (polaris.LimitAPI, error) {
+	if sdkCtx == nil {
+		return nil, ErrorSDKContextNotInit
+	}
+
+	return polaris.NewLimitAPIByContext(sdkCtx), nil
+}
+
+// GetNamespace gets user defined namespace info
+func GetNamespace() string {
+	return namesapce
+}
+
+// InitSDKContext inits polaris SDKContext by URL
+func InitSDKContext(url *common.URL) error {
 	if url == nil {
-		return nil, "", errors.New("url is empty!")
+		return errors.New("url is empty!")
 	}
 
-	addresses := strings.Split(url.Location, ",")
-	serverConfigs := make([]string, 0, len(addresses))
-	for _, addr := range addresses {
-		ip, portStr, err := net.SplitHostPort(addr)
-		if err != nil {
-			return nil, "", perrors.WithMessagef(err, "split [%s] ", addr)
+	var rerr error
+	once.Do(func() {
+		addresses := strings.Split(url.Location, ",")
+		serverConfigs := make([]string, 0, len(addresses))
+		for _, addr := range addresses {
+			ip, portStr, err := net.SplitHostPort(addr)
+			if err != nil {
+				rerr = perrors.WithMessagef(err, "split [%s] ", addr)
+			}
+			port, _ := strconv.Atoi(portStr)
+			serverConfigs = append(serverConfigs, fmt.Sprintf("%s:%d", ip, uint64(port)))
 		}
-		port, _ := strconv.Atoi(portStr)
-		serverConfigs = append(serverConfigs, fmt.Sprintf("%s:%d", ip, uint64(port)))
-	}
 
-	polarisConf := config.NewDefaultConfiguration(serverConfigs)
+		polarisConf := config.NewDefaultConfiguration(serverConfigs)
+		_sdkCtx, err := api.InitContextByConfig(polarisConf)
+		rerr = err
+		sdkCtx = _sdkCtx
+		namesapce = url.GetParam(constant.RegistryNamespaceKey, constant.PolarisDefaultNamespace)
+	})
 
-	confPath := url.GetParam(constant.PolarisConfigFilePath, "")
-	if confPath != "" && model.IsFile(confPath) {
-		complexConf, err := config.LoadConfigurationByFile(confPath)
-		if err != nil {
-			return nil, "", err
-		}
-		mergePolarisConfiguration(polarisConf, complexConf)
-
-		polarisConf = complexConf
-	}
-
-	sdkCtx, err := api.InitContextByConfig(polarisConf)
-	if err != nil {
-		return nil, "", err
-	}
-
-	return sdkCtx, url.GetParam(constant.PolarisNamespace, constant.PolarisDefaultNamespace), nil
+	return rerr
 }
 
 func mergePolarisConfiguration(easy, complexConf config.Configuration) {

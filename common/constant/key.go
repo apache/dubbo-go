@@ -169,6 +169,9 @@ const (
 	RegistrySimplifiedKey   = "simplified"
 	RegistryNamespaceKey    = "registry.namespace"
 	RegistryGroupKey        = "registry.group"
+	RegistryTypeInterface   = "interface"
+	RegistryTypeService     = "service"
+	RegistryTypeAll         = "all"
 )
 
 const (
@@ -262,20 +265,6 @@ const (
 	NacosPassword             = "nacos.password"
 	NacosTimeout              = "nacos.timeout"
 	NacosUpdateCacheWhenEmpty = "nacos.updateCacheWhenEmpty"
-)
-
-const (
-	PolarisKey                  = "polaris"
-	PolarisDefaultRoleType      = 3
-	PolarisConfigFilePath       = "configPath"
-	PolarisNamespace            = "namespace"
-	PolarisServiceToken         = "token"
-	PolarisServiceNameSeparator = ":"
-	PolarisDubboPath            = "DUBBOPATH"
-	PolarisInstanceID           = "polaris.instanceID"
-	PolarisDefaultNamespace     = "default"
-	PolarisDubboGroup           = "dubbo.group"
-	PolarisClientName           = "polaris-client"
 )
 
 const (

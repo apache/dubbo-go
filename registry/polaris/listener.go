@@ -18,6 +18,7 @@
 package polaris
 
 import (
+	"fmt"
 	"net/url"
 	"strconv"
 )
@@ -33,6 +34,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
@@ -57,7 +59,7 @@ func NewPolarisListener(watcher *PolarisServiceWatcher) (*polarisListener, error
 func (pl *polarisListener) startListen() {
 	pl.watcher.AddSubscriber(func(et remoting.EventType, ins []model.Instance) {
 		for i := range ins {
-			pl.events.In() <- &config_center.ConfigChangeEvent{Value: generateUrl(ins[i]), ConfigType: et}
+			pl.events.In() <- &config_center.ConfigChangeEvent{Value: ins[i], ConfigType: et}
 		}
 	})
 }
@@ -107,6 +109,10 @@ func generateUrl(instance model.Instance) *common.URL {
 	for k, v := range instance.GetMetadata() {
 		urlMap.Set(k, v)
 	}
+	urlMap.Set(constant.PolarisInstanceID, instance.GetId())
+	urlMap.Set(constant.PolarisInstanceHealthStatus, fmt.Sprintf("%+v", instance.IsHealthy()))
+	urlMap.Set(constant.PolarisInstanceIsolatedStatus, fmt.Sprintf("%+v", instance.IsIsolated()))
+	instance.GetCircuitBreakerStatus()
 	return common.NewURLWithOptions(
 		common.WithIp(instance.GetHost()),
 		common.WithPort(strconv.Itoa(int(instance.GetPort()))),

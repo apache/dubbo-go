@@ -40,7 +40,6 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
@@ -93,17 +92,19 @@ func (s *Server) Start(url *common.URL) {
 		grpc.MaxSendMsgSize(1024*1024*s.bufferSize),
 	)
 
-	if url.GetParam(constant.SslEnabledKey, "false") == "true" {
+	tlsConfig := config.GetRootConfig().TLSConfig
+	if tlsConfig != nil {
 		var cfg *tls.Config
 		cfg, err = config.GetServerTlsConfig(&config.TLSConfig{
-			CACertFile:    url.GetParam(constant.CACert, ""),
-			TLSCertFile:   url.GetParam(constant.TLSCert, ""),
-			TLSKeyFile:    url.GetParam(constant.TLSKey, ""),
-			TLSServerName: url.GetParam(constant.TLSServerNAME, ""),
+			CACertFile:    tlsConfig.CACertFile,
+			TLSCertFile:   tlsConfig.TLSCertFile,
+			TLSKeyFile:    tlsConfig.TLSKeyFile,
+			TLSServerName: tlsConfig.TLSServerName,
 		})
 		if err != nil {
 			return
 		}
+		logger.Infof("Grpc Server initialized the TLSConfig configuration")
 		serverOpts = append(serverOpts, grpc.Creds(credentials.NewTLS(cfg)))
 	} else {
 		serverOpts = append(serverOpts, grpc.Creds(insecure.NewCredentials()))

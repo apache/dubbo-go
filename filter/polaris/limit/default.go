@@ -15,31 +15,16 @@
  * limitations under the License.
  */
 
-package polaris
+package limit
 
 import (
-	"net/url"
-	"testing"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/filter"
 )
 
-import (
-	"github.com/stretchr/testify/assert"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/common"
-)
-
-func TestGetPolarisConfigByUrl(t *testing.T) {
-	regurl := getRegUrl()
-	err := InitSDKContext(regurl)
-
-	assert.Nil(t, err)
-	assert.ElementsMatch(t, []string{"127.0.0.1:8091"}, sdkCtx.GetConfig().GetGlobal().GetServerConnector().GetAddresses(), "server address")
-}
-
-func getRegUrl() *common.URL {
-	regurlMap := url.Values{}
-	regurl, _ := common.NewURL("registry://127.0.0.1:8091", common.WithParams(regurlMap))
-	return regurl
+func init() {
+	extension.SetTpsLimiter(constant.PluginPolarisTpsLimiter, func() filter.TpsLimiter {
+		return &polarisTpsLimiter{}
+	})
 }

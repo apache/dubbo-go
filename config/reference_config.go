@@ -63,12 +63,11 @@ type ReferenceConfig struct {
 	Params         map[string]string `yaml:"params"  json:"params,omitempty" property:"params"`
 	invoker        protocol.Invoker
 	urls           []*common.URL
-	Generic        string     `yaml:"generic"  json:"generic,omitempty" property:"generic"`
-	Sticky         bool       `yaml:"sticky"   json:"sticky,omitempty" property:"sticky"`
-	RequestTimeout string     `yaml:"timeout"  json:"timeout,omitempty" property:"timeout"`
-	ForceTag       bool       `yaml:"force.tag"  json:"force.tag,omitempty" property:"force.tag"`
-	TracingKey     string     `yaml:"tracing-key" json:"tracing-key,omitempty" propertiy:"tracing-key"`
-	TLSConfig      *TLSConfig `yaml:"tls_config" json:"tls_config,omitempty" property:"tls_config"`
+	Generic        string `yaml:"generic"  json:"generic,omitempty" property:"generic"`
+	Sticky         bool   `yaml:"sticky"   json:"sticky,omitempty" property:"sticky"`
+	RequestTimeout string `yaml:"timeout"  json:"timeout,omitempty" property:"timeout"`
+	ForceTag       bool   `yaml:"force.tag"  json:"force.tag,omitempty" property:"force.tag"`
+	TracingKey     string `yaml:"tracing-key" json:"tracing-key,omitempty" propertiy:"tracing-key"`
 
 	rootConfig   *RootConfig
 	metaDataType string
@@ -138,14 +137,6 @@ func (rc *ReferenceConfig) Refer(srv interface{}) {
 		common.WithParamsValue(constant.BeanNameKey, rc.id),
 		common.WithParamsValue(constant.MetadataTypeKey, rc.metaDataType),
 	)
-	//client tls client
-	if rc.TLSConfig != nil {
-		cfgURL.AddParam(constant.SslEnabledKey, "true")
-		cfgURL.AddParam(constant.TLSCert, rc.TLSConfig.TLSCertFile)
-		cfgURL.AddParam(constant.TLSKey, rc.TLSConfig.TLSKeyFile)
-		cfgURL.AddParam(constant.CACert, rc.TLSConfig.CACertFile)
-		cfgURL.AddParam(constant.TLSServerNAME, rc.TLSConfig.TLSServerName)
-	}
 
 	SetConsumerServiceByInterfaceName(rc.InterfaceName, srv)
 	if rc.ForceTag {

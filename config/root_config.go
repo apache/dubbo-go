@@ -65,6 +65,7 @@ type RootConfig struct {
 	CacheFile           string                     `yaml:"cache_file" json:"cache_file,omitempty" property:"cache_file"`
 	Custom              *CustomConfig              `yaml:"custom" json:"custom,omitempty" property:"custom"`
 	Profiles            *ProfilesConfig            `yaml:"profiles" json:"profiles,omitempty" property:"profiles"`
+	TLSConfig           *TLSConfig                 `yaml:"tls_config" json:"tls_config,omitempty" property:"tls_config"`
 }
 
 func SetRootConfig(r RootConfig) {

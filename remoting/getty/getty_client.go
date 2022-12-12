@@ -39,7 +39,6 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
@@ -75,6 +74,17 @@ func initClient(protocol string) {
 		logger.Info("use default getty client config")
 		return
 	} else {
+		//client tls config
+		tlsConfig := config.GetRootConfig().TLSConfig
+		if tlsConfig != nil {
+			clientConf.SSLEnabled = true
+			clientConf.TLSBuilder = &getty.ClientTlsConfigBuilder{
+				ClientKeyCertChainPath:        tlsConfig.TLSCertFile,
+				ClientPrivateKeyPath:          tlsConfig.TLSKeyFile,
+				ClientTrustCertCollectionPath: tlsConfig.CACertFile,
+			}
+		}
+		//getty params
 		gettyClientConfig := protocolConf.Params
 		if gettyClientConfig == nil {
 			logger.Debugf("gettyClientConfig is nil")
@@ -158,7 +168,7 @@ func (c *Client) SetExchangeClient(client *remoting.ExchangeClient) {
 func (c *Client) Connect(url *common.URL) error {
 	initClient(url.Protocol)
 	c.conf = *clientConf
-	c.sslEnabled = url.GetParamBool(constant.SslEnabledKey, false)
+	c.sslEnabled = c.conf.SSLEnabled
 	// codec
 	c.codec = remoting.GetCodec(url.Protocol)
 	c.addr = url.Location

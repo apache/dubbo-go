@@ -30,8 +30,8 @@ import (
 	nacosClient "github.com/dubbogo/gost/database/kv/nacos"
 	"github.com/dubbogo/gost/log/logger"
 
-	"github.com/nacos-group/nacos-sdk-go/v2/model"
-	"github.com/nacos-group/nacos-sdk-go/v2/vo"
+	"github.com/nacos-group/nacos-sdk-go/model"
+	"github.com/nacos-group/nacos-sdk-go/vo"
 
 	perrors "github.com/pkg/errors"
 )
@@ -48,7 +48,7 @@ var (
 	listenerCache sync.Map
 )
 
-type callback func(services []model.Instance, err error)
+type callback func(services []model.SubscribeService, err error)
 
 type nacosListener struct {
 	namingClient   *nacosClient.NacosNamingClient
@@ -73,6 +73,21 @@ func NewNacosListener(url, regURL *common.URL, namingClient *nacosClient.NacosNa
 	}
 	err := listener.startListen()
 	return listener, err
+}
+
+func generateInstance(ss model.SubscribeService) model.Instance {
+	return model.Instance{
+		InstanceId:  ss.InstanceId,
+		Ip:          ss.Ip,
+		Port:        ss.Port,
+		ServiceName: ss.ServiceName,
+		Valid:       ss.Valid,
+		Enable:      ss.Enable,
+		Weight:      ss.Weight,
+		Metadata:    ss.Metadata,
+		ClusterName: ss.ClusterName,
+		Healthy:     ss.Healthy,
+	}
 }
 
 func generateUrl(instance model.Instance) *common.URL {
@@ -108,7 +123,7 @@ func generateUrl(instance model.Instance) *common.URL {
 }
 
 // Callback will be invoked when got subscribed events.
-func (nl *nacosListener) Callback(services []model.Instance, err error) {
+func (nl *nacosListener) Callback(services []model.SubscribeService, err error) {
 	if err != nil {
 		logger.Errorf("nacos subscribe callback error:%s , subscribe:%+v ", err.Error(), nl.subscribeParam)
 		return
@@ -127,7 +142,7 @@ func (nl *nacosListener) Callback(services []model.Instance, err error) {
 			continue
 		}
 		host := services[i].Ip + ":" + strconv.Itoa(int(services[i].Port))
-		instance := services[i]
+		instance := generateInstance(services[i])
 		newInstanceMap[host] = instance
 		if old, ok := nl.instanceMap[host]; !ok && instance.Healthy {
 			// instance does not exist in cache, add it to cache
