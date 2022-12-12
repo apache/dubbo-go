@@ -135,7 +135,7 @@ func (z *ZookeeperMetadataReport) searchMetadataProvider(path string, methods *[
 	}
 	for _, interChild := range interChildren {
 		if interChild == "provider" {
-			content , _, err := z.client.GetContent("/" + "dubbo" + "/" + path + "/" + interChild)
+			content, _, err := z.client.GetContent("/" + "dubbo" + "/" + path + "/" + interChild)
 			if err != nil {
 				fmt.Printf("Zookeeper Get Content Error: %v\n", err)
 				return
@@ -150,7 +150,7 @@ func (z *ZookeeperMetadataReport) searchMetadataProvider(path string, methods *[
 				*methods = append(*methods, method.Name)
 			}
 		} else {
-			z.searchMetadataProvider(path + "/" + interChild, methods)
+			z.searchMetadataProvider(path+"/"+interChild, methods)
 		}
 	}
 }

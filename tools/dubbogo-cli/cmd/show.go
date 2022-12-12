@@ -50,7 +50,7 @@ func init() {
 func show(cmd *cobra.Command, _ []string) {
 	var (
 		methodsMap map[string][]string
-		err error
+		err        error
 	)
 
 	registry, err := cmd.Flags().GetString("r")
