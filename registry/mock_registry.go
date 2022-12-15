@@ -131,6 +131,11 @@ func (r *MockRegistry) UnSubscribe(url *common.URL, notifyListener NotifyListene
 	return nil
 }
 
+// LoadSubscribeInstances load subscribe instance
+func (r *MockRegistry) LoadSubscribeInstances(_ *common.URL, _ NotifyListener) error {
+	return nil
+}
+
 type listener struct {
 	count      int64
 	registry   *MockRegistry

@@ -407,6 +407,11 @@ func (r *BaseRegistry) UnSubscribe(url *common.URL, notifyListener NotifyListene
 	return nil
 }
 
+// LoadSubscribeInstances load subscribe instance
+func (r *BaseRegistry) LoadSubscribeInstances(url *common.URL, notify NotifyListener) error {
+	return r.facadeBasedRegistry.LoadSubscribeInstances(url, notify)
+}
+
 // closeRegisters close and remove registry client and reset services map
 func (r *BaseRegistry) closeRegisters() {
 	logger.Infof("begin to close provider client")

@@ -168,6 +168,11 @@ func (r *etcdV3Registry) DoUnsubscribe(conf *common.URL) (registry.Listener, err
 	return nil, perrors.New("DoUnsubscribe is not support in etcdV3Registry")
 }
 
+// LoadSubscribeInstances load subscribe instance
+func (r *etcdV3Registry) LoadSubscribeInstances(_ *common.URL, _ registry.NotifyListener) error {
+	return nil
+}
+
 func (r *etcdV3Registry) handleClientRestart() {
 	r.WaitGroup().Add(1)
 	go etcdv3.HandleClientRestart(r)
