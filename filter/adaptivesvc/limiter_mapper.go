@@ -66,6 +66,8 @@ func (m *limiterMapper) newAndSetMethodLimiter(url *common.URL, methodName strin
 	switch limiterType {
 	case limiter.HillClimbingLimiter:
 		l = limiter.NewHillClimbing()
+	case limiter.AutoConcurrencyLimiter:
+		l = limiter.NewAutoConcurrencyLimiter()
 	default:
 		return nil, ErrLimiterTypeNotFound
 	}

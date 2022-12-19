@@ -78,7 +78,7 @@ func (f *adaptiveServiceProviderFilter) Invoke(ctx context.Context, invoker prot
 			// limiter is not found on the mapper, just create
 			// a new limiter
 			if l, err = limiterMapperSingleton.newAndSetMethodLimiter(invoker.GetURL(),
-				invocation.MethodName(), limiter.HillClimbingLimiter); err != nil {
+				invocation.MethodName(), limiter.AutoConcurrencyLimiter); err != nil {
 				return &protocol.RPCResult{Err: wrapErrAdaptiveSvcInterrupted(err)}
 			}
 		} else {
@@ -144,9 +144,6 @@ func (f *adaptiveServiceProviderFilter) OnResponse(_ context.Context, result pro
 		return &protocol.RPCResult{Err: err}
 	}
 
-	// set attachments to inform consumer of provider status
-	result.AddAttachment(constant.AdaptiveServiceRemainingKey, fmt.Sprintf("%d", l.Remaining()))
-	result.AddAttachment(constant.AdaptiveServiceInflightKey, fmt.Sprintf("%d", l.Inflight()))
 	logger.Debugf("[adasvc filter] The attachments are set, %s: %d, %s: %d.",
 		constant.AdaptiveServiceRemainingKey, l.Remaining(),
 		constant.AdaptiveServiceInflightKey, l.Inflight())

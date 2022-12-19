@@ -15,34 +15,27 @@
  * limitations under the License.
  */
 
-package limiter
+package cpu
 
 import (
 	"fmt"
+	"testing"
+	"time"
 )
 
-var ErrReachLimitation = fmt.Errorf("reach limitation")
-
-var (
-	Verbose = false
+import (
+	"github.com/stretchr/testify/assert"
 )
 
-const (
-	HillClimbingLimiter = iota
-	AutoConcurrencyLimiter
-)
+func TestStat(t *testing.T) {
+	time.Sleep(time.Second * 2)
+	var i Info
+	u := CpuUsage()
+	i = GetInfo()
+	fmt.Printf("cpu:: %+v\n", stats)
+	assert.NotZero(t, u)
+	assert.NotZero(t, i.Frequency)
+	assert.NotZero(t, i.Quota)
 
-type Limiter interface {
-	Inflight() uint64
-	Remaining() uint64
-	// Acquire inspects the current status of the system:
-	// - if reaches the limitation, reject the request immediately.
-	// - if not, grant this request and return an Updater defined below.
-	Acquire() (Updater, error)
-}
-
-type Updater interface {
-	// DoUpdate is called once an invocation is finished, it tells Updater that the invocation is finished, and please
-	// update the Remaining, Inflight parameters of the Limiter.
-	DoUpdate() error
+	time.Sleep(time.Second * 10)
 }

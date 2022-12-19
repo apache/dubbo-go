@@ -15,34 +15,65 @@
  * limitations under the License.
  */
 
-package limiter
+package cpu
 
 import (
 	"fmt"
+	"time"
 )
 
-var ErrReachLimitation = fmt.Errorf("reach limitation")
-
-var (
-	Verbose = false
+import (
+	"go.uber.org/atomic"
 )
 
 const (
-	HillClimbingLimiter = iota
-	AutoConcurrencyLimiter
+	interval time.Duration = time.Millisecond * 500
 )
 
-type Limiter interface {
-	Inflight() uint64
-	Remaining() uint64
-	// Acquire inspects the current status of the system:
-	// - if reaches the limitation, reject the request immediately.
-	// - if not, grant this request and return an Updater defined below.
-	Acquire() (Updater, error)
+var (
+	stats CPU
+	usage = atomic.NewUint64(0)
+)
+
+// CPU is cpu stat usage.
+type CPU interface {
+	Usage() (u uint64, e error)
+	Info() Info
 }
 
-type Updater interface {
-	// DoUpdate is called once an invocation is finished, it tells Updater that the invocation is finished, and please
-	// update the Remaining, Inflight parameters of the Limiter.
-	DoUpdate() error
+func init() {
+	var (
+		err error
+	)
+	stats, err = newCgroupCPU()
+	if err != nil {
+		panic(fmt.Sprintf("cgroup cpu init failed! err:=%v", err))
+	}
+	go func() {
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+		for {
+			<-ticker.C
+			u, err := stats.Usage()
+			if err == nil && u != 0 {
+				usage.Store(u)
+			}
+		}
+	}()
+}
+
+// Info cpu info.
+type Info struct {
+	Frequency uint64
+	Quota     float64
+}
+
+// CpuUsage read cpu stat.
+func CpuUsage() uint64 {
+	return usage.Load()
+}
+
+// GetInfo get cpu info.
+func GetInfo() Info {
+	return stats.Info()
 }
