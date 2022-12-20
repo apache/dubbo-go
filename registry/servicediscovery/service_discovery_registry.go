@@ -229,6 +229,11 @@ func (s *serviceDiscoveryRegistry) Subscribe(url *common.URL, notify registry.No
 	return nil
 }
 
+// LoadSubscribeInstances load subscribe instance
+func (s *serviceDiscoveryRegistry) LoadSubscribeInstances(_ *common.URL, _ registry.NotifyListener) error {
+	return nil
+}
+
 func getUrlKey(url *common.URL) string {
 	var bf bytes.Buffer
 	if len(url.Protocol) != 0 {

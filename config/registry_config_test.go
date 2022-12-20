@@ -66,6 +66,19 @@ func TestLoadRegistries1(t *testing.T) {
 	assert.Equal(t, "127.0.0.2:2181", urls[0].Location)
 }
 
+func TestRegistryTypeAll(t *testing.T) {
+	target := []string{"test"}
+	regs := map[string]*RegistryConfig{
+		"test": {
+			Protocol:     "mock",
+			Address:      "127.0.0.2:2181",
+			RegistryType: constant.RegistryTypeAll,
+		},
+	}
+	urls := loadRegistries(target, regs, common.PROVIDER)
+	assert.Equal(t, 2, len(urls))
+}
+
 func TestTranslateRegistryAddress(t *testing.T) {
 	reg := new(RegistryConfig)
 	reg.Address = "nacos://127.0.0.1:8848"

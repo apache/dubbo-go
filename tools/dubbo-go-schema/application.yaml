@@ -1,0 +1,25 @@
+dubbo:
+  registries:
+    nacos:
+      timeout: 5s
+      registry-type: service
+      protocol: nacos
+  protocols:
+    dubbo:
+      name: dubbo
+  provider:
+    services:
+      userService:
+        protocol-ids:
+          - dubbo
+        loadbalance: random
+  consumer:
+    references:
+      dddd:
+        filter: dddd
+        interface: ddddd
+        timeout: dd
+
+
+
+

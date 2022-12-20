@@ -9,8 +9,8 @@ require (
 	github.com/afex/hystrix-go v0.0.0-20180502004556-fa1af6a1f4f5
 	github.com/alibaba/sentinel-golang v1.0.4
 	github.com/apache/dubbo-getty v1.4.9-0.20221022181821-4dc6252ce98c
-	github.com/apache/dubbo-go-hessian2 v1.11.4
-	github.com/cespare/xxhash/v2 v2.1.2
+	github.com/apache/dubbo-go-hessian2 v1.11.5
+	github.com/cespare/xxhash/v2 v2.2.0
 	github.com/cncf/udpa/go v0.0.0-20210930031921-04548b0d99d4
 	github.com/cncf/xds/go v0.0.0-20211011173535-cb28da3451f1
 	github.com/creasty/defaults v1.5.2
@@ -32,7 +32,7 @@ require (
 	github.com/hashicorp/vault/sdk v0.6.0
 	github.com/jinzhu/copier v0.3.5
 	github.com/knadh/koanf v1.4.4
-	github.com/magiconair/properties v1.8.6
+	github.com/magiconair/properties v1.8.7
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
@@ -41,7 +41,7 @@ require (
 	github.com/oliveagle/jsonpath v0.0.0-20180606110733-2e52cf6e6852
 	github.com/opentracing/opentracing-go v1.2.0
 	github.com/pkg/errors v0.9.1
-	github.com/polarismesh/polaris-go v1.3.0-alpha
+	github.com/polarismesh/polaris-go v1.3.0
 	github.com/prometheus/client_golang v1.12.2
 	github.com/satori/go.uuid v1.2.1-0.20181028125025-b2ce2384e17b
 	github.com/stretchr/testify v1.8.1

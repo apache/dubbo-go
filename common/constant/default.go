@@ -89,4 +89,5 @@ const (
 
 const (
 	ServiceDiscoveryDefaultGroup = "DEFAULT_GROUP"
+	NotAvailable                 = "N/A"
 )
