@@ -169,9 +169,6 @@ const (
 	RegistrySimplifiedKey   = "simplified"
 	RegistryNamespaceKey    = "registry.namespace"
 	RegistryGroupKey        = "registry.group"
-	RegistryTypeInterface   = "interface"
-	RegistryTypeService     = "service"
-	RegistryTypeAll         = "all"
 )
 
 const (

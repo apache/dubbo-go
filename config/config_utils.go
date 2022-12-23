@@ -116,7 +116,3 @@ func verify(s interface{}) error {
 func clientNameID(config extension.Config, protocol, address string) string {
 	return strings.Join([]string{config.Prefix(), protocol, address}, "-")
 }
-
-func isValid(addr string) bool {
-	return addr != "" && addr != constant.NotAvailable
-}
