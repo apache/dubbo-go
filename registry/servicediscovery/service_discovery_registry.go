@@ -19,6 +19,7 @@ package servicediscovery
 
 import (
 	"bytes"
+	"dubbo.apache.org/dubbo-go/v3/remoting"
 	"strings"
 	"sync"
 )
@@ -230,7 +231,26 @@ func (s *serviceDiscoveryRegistry) Subscribe(url *common.URL, notify registry.No
 }
 
 // LoadSubscribeInstances load subscribe instance
-func (s *serviceDiscoveryRegistry) LoadSubscribeInstances(_ *common.URL, _ registry.NotifyListener) error {
+func (s *serviceDiscoveryRegistry) LoadSubscribeInstances(url *common.URL, notify registry.NotifyListener) error {
+	appName := url.GetParam(constant.ApplicationKey, url.Username)
+	serviceName := url.ServiceKey() + ":" + url.Protocol
+	instances := s.serviceDiscovery.GetInstances(appName)
+	for _, instance := range instances {
+		if instance.GetMetadata() == nil {
+			logger.Warnf("Instance metadata is nil: %s", instance.GetHost())
+			continue
+		}
+		revision := instance.GetMetadata()[constant.ExportedServicesRevisionPropertyName]
+		if "0" == revision {
+			logger.Infof("Find instance without valid service metadata: %s", instance.GetHost())
+			continue
+		}
+		metadataInfo, err := event.GetMetadataInfo(instance, revision)
+		if err != nil {
+			return err
+		}
+		notify.Notify(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: metadataInfo.Services[serviceName].URL})
+	}
 	return nil
 }
 
