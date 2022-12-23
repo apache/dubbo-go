@@ -375,11 +375,11 @@ func loadRegistries(registryIds []string, registries map[string]*RegistryConfig,
 		}
 
 		if target {
-			if urls, err := registryConf.toURLs(roleType); err != nil {
+			if registryURL, err := registryConf.toURL(roleType); err != nil {
 				logger.Errorf("The registry id: %s url is invalid, error: %#v", k, err)
 				panic(err)
 			} else {
-				registryURLs = append(registryURLs, urls...)
+				registryURLs = append(registryURLs, registryURL)
 			}
 		}
 	}

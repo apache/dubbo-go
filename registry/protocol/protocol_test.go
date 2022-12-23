@@ -225,7 +225,7 @@ func TestExportWithOverrideListener(t *testing.T) {
 	regProtocol := newRegistryProtocol()
 	url := exporterNormal(t, regProtocol)
 	var reg *registry.MockRegistry
-	if regI, loaded := regProtocol.registries.Load(url.PrimitiveURL); loaded {
+	if regI, loaded := regProtocol.registries.Load(url.Location); loaded {
 		reg = regI.(*registry.MockRegistry)
 	} else {
 		assert.Fail(t, "regProtocol.registries.Load can not be loaded")
@@ -252,7 +252,7 @@ func TestExportWithServiceConfig(t *testing.T) {
 	common_cfg.GetEnvInstance().SetDynamicConfiguration(dc)
 	regProtocol := newRegistryProtocol()
 	url := exporterNormal(t, regProtocol)
-	if _, loaded := regProtocol.registries.Load(url.PrimitiveURL); !loaded {
+	if _, loaded := regProtocol.registries.Load(url.Location); !loaded {
 		assert.Fail(t, "regProtocol.registries.Load can not be loaded")
 		return
 	}
@@ -275,7 +275,7 @@ func TestExportWithApplicationConfig(t *testing.T) {
 	common_cfg.GetEnvInstance().SetDynamicConfiguration(dc)
 	regProtocol := newRegistryProtocol()
 	url := exporterNormal(t, regProtocol)
-	if _, loaded := regProtocol.registries.Load(url.PrimitiveURL); !loaded {
+	if _, loaded := regProtocol.registries.Load(url.Location); !loaded {
 		assert.Fail(t, "regProtocol.registries.Load can not be loaded")
 		return
 	}
