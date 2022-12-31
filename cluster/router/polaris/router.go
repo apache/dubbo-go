@@ -294,6 +294,9 @@ func (p *polarisRouter) Priority() int64 {
 
 // Notify the router the invoker list
 func (p *polarisRouter) Notify(invokers []protocol.Invoker) {
+	if !p.openRoute {
+		return
+	}
 	if len(invokers) == 0 {
 		return
 	}
