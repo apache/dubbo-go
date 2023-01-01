@@ -40,19 +40,21 @@ import (
 )
 
 var (
-	once      sync.Once
-	namesapce string
-	sdkCtx    api.SDKContext
+	once               sync.Once
+	namesapce          string
+	sdkCtx             api.SDKContext
+	openPolarisAbility bool
 )
 
 var (
-	ErrorSDKContextNotInit = errors.New("polaris SDKContext not init")
+	ErrorNoOpenPolarisAbility = errors.New("polaris ability not open")
+	ErrorSDKContextNotInit    = errors.New("polaris SDKContext not init")
 )
 
 // GetConsumerAPI creates one polaris ConsumerAPI instance
 func GetConsumerAPI() (polaris.ConsumerAPI, error) {
-	if sdkCtx == nil {
-		return nil, ErrorSDKContextNotInit
+	if err := Check(); err != nil {
+		return nil, err
 	}
 
 	return polaris.NewConsumerAPIByContext(sdkCtx), nil
@@ -60,8 +62,8 @@ func GetConsumerAPI() (polaris.ConsumerAPI, error) {
 
 // GetProviderAPI creates one polaris ProviderAPI instance
 func GetProviderAPI() (polaris.ProviderAPI, error) {
-	if sdkCtx == nil {
-		return nil, ErrorSDKContextNotInit
+	if err := Check(); err != nil {
+		return nil, err
 	}
 
 	return polaris.NewProviderAPIByContext(sdkCtx), nil
@@ -69,8 +71,8 @@ func GetProviderAPI() (polaris.ProviderAPI, error) {
 
 // GetRouterAPI create one polaris RouterAPI instance
 func GetRouterAPI() (polaris.RouterAPI, error) {
-	if sdkCtx == nil {
-		return nil, ErrorSDKContextNotInit
+	if err := Check(); err != nil {
+		return nil, err
 	}
 
 	return polaris.NewRouterAPIByContext(sdkCtx), nil
@@ -78,11 +80,21 @@ func GetRouterAPI() (polaris.RouterAPI, error) {
 
 // GetLimiterAPI creates one polaris LimiterAPI instance
 func GetLimiterAPI() (polaris.LimitAPI, error) {
-	if sdkCtx == nil {
-		return nil, ErrorSDKContextNotInit
+	if err := Check(); err != nil {
+		return nil, err
 	}
 
 	return polaris.NewLimitAPIByContext(sdkCtx), nil
+}
+
+func Check() error {
+	if !openPolarisAbility {
+		return ErrorNoOpenPolarisAbility
+	}
+	if sdkCtx == nil {
+		return ErrorSDKContextNotInit
+	}
+	return nil
 }
 
 // GetNamespace gets user defined namespace info
@@ -95,6 +107,8 @@ func InitSDKContext(url *common.URL) error {
 	if url == nil {
 		return errors.New("url is empty!")
 	}
+
+	openPolarisAbility = true
 
 	var rerr error
 	once.Do(func() {

@@ -18,6 +18,7 @@
 package limit
 
 import (
+	"errors"
 	"fmt"
 	"time"
 )
@@ -45,6 +46,11 @@ type polarisTpsLimiter struct {
 }
 
 func (pl *polarisTpsLimiter) IsAllowable(url *common.URL, invocation protocol.Invocation) bool {
+	if err := remotingpolaris.Check(); errors.Is(err, remotingpolaris.ErrorNoOpenPolarisAbility) {
+		logger.Debug("[TpsLimiter][Polaris] not open polaris ratelimit ability")
+		return true
+	}
+
 	var err error
 
 	pl.limitAPI, err = remotingpolaris.GetLimiterAPI()

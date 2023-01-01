@@ -53,6 +53,12 @@ var (
 )
 
 func newPolarisRouter() (*polarisRouter, error) {
+	if err := remotingpolaris.Check(); errors.Is(err, remotingpolaris.ErrorNoOpenPolarisAbility) {
+		return &polarisRouter{
+			openRoute: false,
+		}, nil
+	}
+
 	routerAPI, err := remotingpolaris.GetRouterAPI()
 	if err != nil {
 		return nil, err
@@ -63,12 +69,15 @@ func newPolarisRouter() (*polarisRouter, error) {
 	}
 
 	return &polarisRouter{
+		openRoute:   true,
 		routerAPI:   routerAPI,
 		consumerAPI: consumerAPI,
 	}, nil
 }
 
 type polarisRouter struct {
+	openRoute bool
+
 	routerAPI   polaris.RouterAPI
 	consumerAPI polaris.ConsumerAPI
 
@@ -82,8 +91,13 @@ type polarisRouter struct {
 func (p *polarisRouter) Route(invokers []protocol.Invoker, url *common.URL,
 	invoaction protocol.Invocation) []protocol.Invoker {
 
+	if !p.openRoute {
+		logger.Debug("[Router][Polaris] not open polaris route ability")
+		return invokers
+	}
+
 	if len(invokers) == 0 {
-		logger.Warnf("[tag router] invokers from previous router is empty")
+		logger.Warn("[Router][Polaris] invokers from previous router is empty")
 		return invokers
 	}
 
@@ -280,6 +294,9 @@ func (p *polarisRouter) Priority() int64 {
 
 // Notify the router the invoker list
 func (p *polarisRouter) Notify(invokers []protocol.Invoker) {
+	if !p.openRoute {
+		return
+	}
 	if len(invokers) == 0 {
 		return
 	}
