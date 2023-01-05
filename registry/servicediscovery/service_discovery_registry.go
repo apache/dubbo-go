@@ -233,7 +233,6 @@ func (s *serviceDiscoveryRegistry) Subscribe(url *common.URL, notify registry.No
 // LoadSubscribeInstances load subscribe instance
 func (s *serviceDiscoveryRegistry) LoadSubscribeInstances(url *common.URL, notify registry.NotifyListener) error {
 	appName := url.GetParam(constant.ApplicationKey, url.Username)
-	serviceName := url.ServiceKey() + ":" + url.Protocol
 	instances := s.serviceDiscovery.GetInstances(appName)
 	for _, instance := range instances {
 		if instance.GetMetadata() == nil {
@@ -249,7 +248,10 @@ func (s *serviceDiscoveryRegistry) LoadSubscribeInstances(url *common.URL, notif
 		if err != nil {
 			return err
 		}
-		notify.Notify(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: metadataInfo.Services[serviceName].URL})
+		instance.SetServiceMetadata(metadataInfo)
+		for _, url := range instance.ToURLs() {
+			notify.Notify(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: url})
+		}
 	}
 	return nil
 }
