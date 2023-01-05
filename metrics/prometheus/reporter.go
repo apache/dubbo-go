@@ -377,25 +377,37 @@ func (reporter *PrometheusReporter) incSummary(summaryName string, toSetValue fl
 }
 
 func SetGaugeWithLabel(gaugeName string, val float64, label prometheus.Labels) {
-	reporterInstance.setGauge(gaugeName, val, label)
+	if reporterInstance.reporterConfig.Enable {
+		reporterInstance.setGauge(gaugeName, val, label)
+	}
 }
 
 func SetGauge(gaugeName string, val float64) {
-	reporterInstance.setGauge(gaugeName, val, make(prometheus.Labels))
+	if reporterInstance.reporterConfig.Enable {
+		reporterInstance.setGauge(gaugeName, val, make(prometheus.Labels))
+	}
 }
 
 func IncCounterWithLabel(counterName string, label prometheus.Labels) {
-	reporterInstance.incCounter(counterName, label)
+	if reporterInstance.reporterConfig.Enable {
+		reporterInstance.incCounter(counterName, label)
+	}
 }
 
 func IncCounter(summaryName string) {
-	reporterInstance.incCounter(summaryName, make(prometheus.Labels))
+	if reporterInstance.reporterConfig.Enable {
+		reporterInstance.incCounter(summaryName, make(prometheus.Labels))
+	}
 }
 
 func IncSummaryWithLabel(counterName string, val float64, label prometheus.Labels) {
-	reporterInstance.incSummary(counterName, val, label)
+	if reporterInstance.reporterConfig.Enable {
+		reporterInstance.incSummary(counterName, val, label)
+	}
 }
 
 func IncSummary(summaryName string, val float64) {
-	reporterInstance.incSummary(summaryName, val, make(prometheus.Labels))
+	if reporterInstance.reporterConfig.Enable {
+		reporterInstance.incSummary(summaryName, val, make(prometheus.Labels))
+	}
 }
