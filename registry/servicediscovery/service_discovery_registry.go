@@ -239,7 +239,11 @@ func (s *serviceDiscoveryRegistry) LoadSubscribeInstances(url *common.URL, notif
 			logger.Warnf("Instance metadata is nil: %s", instance.GetHost())
 			continue
 		}
-		revision := instance.GetMetadata()[constant.ExportedServicesRevisionPropertyName]
+		revision, ok := instance.GetMetadata()[constant.ExportedServicesRevisionPropertyName]
+		if !ok {
+			logger.Warnf("Instance metadata revision is nil: %s", instance.GetHost())
+			continue
+		}
 		if "0" == revision {
 			logger.Infof("Find instance without valid service metadata: %s", instance.GetHost())
 			continue
