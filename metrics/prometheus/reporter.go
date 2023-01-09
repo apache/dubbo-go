@@ -426,9 +426,11 @@ func startupServer(reporterConfig *metrics.ReporterConfig) {
 }
 
 func shutdownServer() {
-	err := reporterInstance.reporterServer.Shutdown(context.Background())
-	if err != nil {
-		logger.Errorf("shutdown prometheus reporter with error = %s, prometheus reporter close now", err)
-		reporterInstance.reporterServer.Close()
+	if reporterInstance.reporterServer != nil {
+		err := reporterInstance.reporterServer.Shutdown(context.Background())
+		if err != nil {
+			logger.Errorf("shutdown prometheus reporter with error = %s, prometheus reporter close now", err)
+			reporterInstance.reporterServer.Close()
+		}
 	}
 }
