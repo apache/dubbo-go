@@ -89,6 +89,8 @@ func (mc *MetricConfig) DynamicUpdateProperties(newMetricConfig *MetricConfig) {
 		if newMetricConfig.Enable != mc.Enable {
 			mc.Enable = newMetricConfig.Enable
 			logger.Infof("MetricConfig's Enable was dynamically updated, new value:%v", mc.Enable)
+
+			extension.GetMetricReporter("prometheus", mc.ToReporterConfig())
 		}
 	}
 }
