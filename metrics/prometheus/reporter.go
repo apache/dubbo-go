@@ -225,16 +225,18 @@ func newPrometheusReporter(reporterConfig *metrics.ReporterConfig) metrics.Repor
 				consumerRTSummaryVec: newSummaryVec(consumerPrefix+serviceKey+rtSuffix, reporterConfig.Namespace, labelNames, reporterConfig.SummaryMaxAge),
 				providerRTSummaryVec: newSummaryVec(providerPrefix+serviceKey+rtSuffix, reporterConfig.Namespace, labelNames, reporterConfig.SummaryMaxAge),
 			}
+
+			prom.DefaultRegisterer.MustRegister(reporterInstance.consumerRTSummaryVec, reporterInstance.providerRTSummaryVec)
 		})
 	}
 
 	if reporterConfig.Enable {
 		if reporterConfig.Mode == metrics.ReportModePull {
-			go startupServer(reporterConfig)
+			go reporterInstance.startupServer(reporterConfig)
 		}
 		// todo pushgateway support
 	} else {
-		shutdownServer()
+		reporterInstance.shutdownServer()
 	}
 
 	return reporterInstance
@@ -406,8 +408,7 @@ func IncSummary(summaryName string, val float64) {
 	}
 }
 
-func startupServer(reporterConfig *metrics.ReporterConfig) {
-	prom.DefaultRegisterer.MustRegister(reporterInstance.consumerRTSummaryVec, reporterInstance.providerRTSummaryVec)
+func (reporter *PrometheusReporter) startupServer(reporterConfig *metrics.ReporterConfig) {
 	metricsExporter, err := ocprom.NewExporter(ocprom.Options{
 		Registry: prom.DefaultRegisterer.(*prom.Registry),
 	})
@@ -425,7 +426,7 @@ func startupServer(reporterConfig *metrics.ReporterConfig) {
 	}
 }
 
-func shutdownServer() {
+func (reporter *PrometheusReporter) shutdownServer() {
 	if reporterInstance.reporterServer != nil {
 		err := reporterInstance.reporterServer.Shutdown(context.Background())
 		if err != nil {
