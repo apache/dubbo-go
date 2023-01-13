@@ -28,22 +28,18 @@ import (
 	"strings"
 	"sync"
 	"time"
-)
 
-import (
 	cm "github.com/Workiva/go-datastructures/common"
 
 	gxset "github.com/dubbogo/gost/container/set"
 
 	"github.com/jinzhu/copier"
 
-	perrors "github.com/pkg/errors"
-
-	"github.com/satori/go.uuid"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+
+	"github.com/google/uuid"
+
+	perrors "github.com/pkg/errors"
 )
 
 // dubbo role type constant
@@ -203,7 +199,7 @@ func WithToken(token string) Option {
 		if len(token) > 0 {
 			value := token
 			if strings.ToLower(token) == "true" || strings.ToLower(token) == "default" {
-				u, _ := uuid.NewV4()
+				u, _ := uuid.NewUUID()
 				value = u.String()
 			}
 			url.SetParam(constant.TokenKey, value)
@@ -356,7 +352,7 @@ func (c *URL) Key() string {
 	return buildString
 }
 
-//GetCacheInvokerMapKey get directory cacheInvokerMap key
+// GetCacheInvokerMapKey get directory cacheInvokerMap key
 func (c *URL) GetCacheInvokerMapKey() string {
 	urlNew, _ := NewURL(c.PrimitiveURL)
 
@@ -861,7 +857,7 @@ func GetCompareURLEqualFunc() CompareURLEqualFunc {
 	return compareURLEqualFunc
 }
 
-//GetParamDuration get duration if param is invalid or missing will return 3s
+// GetParamDuration get duration if param is invalid or missing will return 3s
 func (c *URL) GetParamDuration(s string, d string) time.Duration {
 	if t, err := time.ParseDuration(c.GetParam(s, d)); err == nil {
 		return t
