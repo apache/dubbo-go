@@ -395,4 +395,10 @@ func (rc *RootConfig) Process(event *config_center.ConfigChangeEvent) {
 	}
 	// dynamically update consumer
 	rc.Consumer.DynamicUpdateProperties(updateRootConfig.Consumer)
+
+	// dynamically update logger
+	rc.Logger.DynamicUpdateProperties(updateRootConfig.Logger)
+
+	// dynamically update metric
+	rc.Metric.DynamicUpdateProperties(updateRootConfig.Metric)
 }
