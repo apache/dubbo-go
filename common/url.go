@@ -35,11 +35,9 @@ import (
 
 	gxset "github.com/dubbogo/gost/container/set"
 
+	"github.com/google/uuid"
 	"github.com/jinzhu/copier"
-
 	perrors "github.com/pkg/errors"
-
-	"github.com/satori/go.uuid"
 )
 
 import (
@@ -203,7 +201,7 @@ func WithToken(token string) Option {
 		if len(token) > 0 {
 			value := token
 			if strings.ToLower(token) == "true" || strings.ToLower(token) == "default" {
-				u, _ := uuid.NewV4()
+				u, _ := uuid.NewUUID()
 				value = u.String()
 			}
 			url.SetParam(constant.TokenKey, value)
@@ -684,7 +682,8 @@ func (c *URL) ToMap() map[string]string {
 // will be added into result.
 // for example, if serviceURL contains params (a1->v1, b1->v2) and referenceURL contains params(a2->v3, b1 -> v4)
 // the params of result will be (a1->v1, b1->v2, a2->v3).
-// You should notice that the value of b1 is v2, not v4.
+// You should notice that the value of b1 is v2, not v4
+// except constant.LoadbalanceKey, constant.ClusterKey, constant.RetriesKey, constant.TimeoutKey.
 // due to URL is not thread-safe, so this method is not thread-safe
 func MergeURL(serviceURL *URL, referenceURL *URL) *URL {
 	// After Clone, it is a new URL that there is no thread safe issue.
@@ -693,15 +692,14 @@ func MergeURL(serviceURL *URL, referenceURL *URL) *URL {
 	// iterator the referenceURL if serviceURL not have the key ,merge in
 	// referenceURL usually will not changed. so change RangeParams to GetParams to avoid the string value copy.// Group get group
 	for key, value := range referenceURL.GetParams() {
-		if v := mergedURL.GetParam(key, ""); len(v) == 0 {
-			if len(value) > 0 {
-				params[key] = value
+		if v := mergedURL.GetParam(key, ""); len(v) == 0 && len(value) > 0 {
+			if params == nil {
+				params = url.Values{}
 			}
+			params[key] = make([]string, len(value))
+			copy(params[key], value)
 		}
 	}
-
-	// loadBalance,cluster,retries strategy config
-	methodConfigMergeFcn := mergeNormalParam(params, referenceURL, []string{constant.LoadbalanceKey, constant.ClusterKey, constant.RetriesKey, constant.TimeoutKey})
 
 	// remote timestamp
 	if v := serviceURL.GetParam(constant.TimestampKey, ""); len(v) > 0 {
@@ -711,8 +709,17 @@ func MergeURL(serviceURL *URL, referenceURL *URL) *URL {
 
 	// finally execute methodConfigMergeFcn
 	for _, method := range referenceURL.Methods {
-		for _, fcn := range methodConfigMergeFcn {
-			fcn("methods." + method)
+		for _, paramKey := range []string{constant.LoadbalanceKey, constant.ClusterKey, constant.RetriesKey, constant.TimeoutKey} {
+			if v := referenceURL.GetParam(paramKey, ""); len(v) > 0 {
+				params[paramKey] = []string{v}
+			}
+
+			methodsKey := "methods." + method + "." + paramKey
+			//if len(mergedURL.GetParam(methodsKey, "")) == 0 {
+			if v := referenceURL.GetParam(methodsKey, ""); len(v) > 0 {
+				params[methodsKey] = []string{v}
+			}
+			//}
 		}
 	}
 	// In this way, we will raise some performance.
@@ -732,7 +739,6 @@ func (c *URL) Clone() *URL {
 		newURL.SetParam(key, value)
 		return true
 	})
-
 	return newURL
 }
 
@@ -816,21 +822,6 @@ func IsEquals(left *URL, right *URL, excludes ...string) bool {
 	}
 
 	return true
-}
-
-func mergeNormalParam(params url.Values, referenceURL *URL, paramKeys []string) []func(method string) {
-	methodConfigMergeFcn := make([]func(method string), 0, len(paramKeys))
-	for _, paramKey := range paramKeys {
-		if v := referenceURL.GetParam(paramKey, ""); len(v) > 0 {
-			params[paramKey] = []string{v}
-		}
-		methodConfigMergeFcn = append(methodConfigMergeFcn, func(method string) {
-			if v := referenceURL.GetParam(method+"."+paramKey, ""); len(v) > 0 {
-				params[method+"."+paramKey] = []string{v}
-			}
-		})
-	}
-	return methodConfigMergeFcn
 }
 
 // URLSlice will be used to sort URL instance
