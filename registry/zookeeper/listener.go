@@ -97,7 +97,7 @@ func (l *RegistryDataListener) DataChange(event remoting.Event) bool {
 			listener.Process(
 				&config_center.ConfigChangeEvent{
 					Key:        event.Path,
-					Value:      serviceURL,
+					Value:      serviceURL.Clone(),
 					ConfigType: event.Action,
 				},
 			)

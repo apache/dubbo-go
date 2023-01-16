@@ -90,7 +90,7 @@ func Test_MergeProviderUrl(t *testing.T) {
 	time.Sleep(1e9)
 	assert.Len(t, registryDirectory.cacheInvokers, 1)
 	if len(registryDirectory.cacheInvokers) > 0 {
-		assert.Equal(t, "mock", registryDirectory.cacheInvokers[0].GetURL().GetParam(constant.ClusterKey, ""))
+		assert.Equal(t, "mock1", registryDirectory.cacheInvokers[0].GetURL().GetParam(constant.ClusterKey, ""))
 	}
 }
 
