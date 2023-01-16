@@ -30,7 +30,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/gopherjs/gopherjs v0.0.0-20190910122728-9d188e94fb99 // indirect
 	github.com/grpc-ecosystem/grpc-opentracing v0.0.0-20180507213350-8e809c8a8645
-	github.com/hashicorp/vault/sdk v0.6.2
+	github.com/hashicorp/vault/sdk v0.7.0
 	github.com/jinzhu/copier v0.3.5
 	github.com/knadh/koanf v1.4.5
 	github.com/magiconair/properties v1.8.7
