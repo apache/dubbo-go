@@ -64,6 +64,7 @@ type serviceDiscoveryRegistry struct {
 	subscribedURLsSynthesizers       []synthesizer.SubscribedURLsSynthesizer
 	serviceRevisionExportedURLsCache map[string]map[string][]*common.URL
 	serviceListeners                 map[string]registry.ServiceInstancesChangedListener
+	serviceMappingListeners          map[string]registry.MappingListener
 }
 
 func newServiceDiscoveryRegistry(url *common.URL) (registry.Registry, error) {
@@ -88,6 +89,8 @@ func newServiceDiscoveryRegistry(url *common.URL) (registry.Registry, error) {
 		serviceNameMapping:               serviceNameMapping,
 		metaDataService:                  metaDataService,
 		serviceListeners:                 make(map[string]registry.ServiceInstancesChangedListener),
+		// cache for mapping listener
+		serviceMappingListeners: make(map[string]registry.MappingListener),
 	}, nil
 }
 
@@ -106,7 +109,7 @@ func (s *serviceDiscoveryRegistry) UnSubscribe(url *common.URL, listener registr
 	if err != nil {
 		return err
 	}
-	services := s.getServices(url)
+	services := s.getServices(url, nil)
 	if services == nil {
 		return nil
 	}
@@ -114,6 +117,11 @@ func (s *serviceDiscoveryRegistry) UnSubscribe(url *common.URL, listener registr
 	serviceNamesKey := services.String()
 	l := s.serviceListeners[serviceNamesKey]
 	l.RemoveListener(url.ServiceKey())
+	s.stopListen(url)
+	err = s.serviceNameMapping.Remove(url)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -196,12 +204,22 @@ func (s *serviceDiscoveryRegistry) Subscribe(url *common.URL, notify registry.No
 	if err != nil {
 		return perrors.WithMessage(err, "subscribe url error: "+url.String())
 	}
-	services := s.getServices(url)
+
+	mappingListener := event.NewMappingListener(s.url, url, s.subscribedServices, notify)
+	services := s.getServices(url, mappingListener)
 	if services.Empty() {
-		return perrors.Errorf("Should has at least one way to know which services this interface belongs to, "+
-			"subscription url:%s", url.String())
+		return nil
+		//return perrors.Errorf("Should has at least one way to know which services this interface belongs to, "+
+		//	"subscription url:%s", url.String())
 	}
+	// first notify
+	mappingListener.OnEvent(registry.NewServiceMappingChangedEvent(url.ServiceKey(), services))
+	return nil
+}
+
+func (s *serviceDiscoveryRegistry) SubscribeURL(url *common.URL, notify registry.NotifyListener, services *gxset.HashSet) {
 	// FIXME ServiceNames.String() is not good
+	var err error
 	serviceNamesKey := services.String()
 	protocolServiceKey := url.ServiceKey() + ":" + url.Protocol
 	listener := s.serviceListeners[serviceNamesKey]
@@ -226,7 +244,6 @@ func (s *serviceDiscoveryRegistry) Subscribe(url *common.URL, notify registry.No
 	if err != nil {
 		logger.Errorf("add instance listener catch error,url:%s err:%s", url.String(), err.Error())
 	}
-	return nil
 }
 
 // LoadSubscribeInstances load subscribe instance
@@ -276,14 +293,14 @@ func shouldSubscribe(url *common.URL) bool {
 	return !shouldRegister(url)
 }
 
-func (s *serviceDiscoveryRegistry) getServices(url *common.URL) *gxset.HashSet {
+func (s *serviceDiscoveryRegistry) getServices(url *common.URL, listener registry.MappingListener) *gxset.HashSet {
 	services := gxset.NewSet()
 	serviceNames := url.GetParam(constant.ProvidedBy, "")
 	if len(serviceNames) > 0 {
 		services = parseServices(serviceNames)
 	}
 	if services.Empty() {
-		services = s.findMappedServices(url)
+		services = s.findMappedServices(url, listener)
 		if services.Empty() {
 			return s.subscribedServices
 		}
@@ -291,11 +308,15 @@ func (s *serviceDiscoveryRegistry) getServices(url *common.URL) *gxset.HashSet {
 	return services
 }
 
-func (s *serviceDiscoveryRegistry) findMappedServices(url *common.URL) *gxset.HashSet {
-	serviceNames, err := s.serviceNameMapping.Get(url)
+func (s *serviceDiscoveryRegistry) findMappedServices(url *common.URL, listener registry.MappingListener) *gxset.HashSet {
+	serviceNames, err := s.serviceNameMapping.Get(url, listener)
 	if err != nil {
 		logger.Errorf("get service names catch error, url:%s, err:%s ", url.String(), err.Error())
 		return gxset.NewSet()
+	}
+	if listener != nil {
+		protocolServiceKey := url.ServiceKey() + ":" + url.Protocol
+		s.serviceMappingListeners[protocolServiceKey] = listener
 	}
 	return serviceNames
 }
@@ -303,3 +324,12 @@ func (s *serviceDiscoveryRegistry) findMappedServices(url *common.URL) *gxset.Ha
 var (
 	exporting = &atomic.Bool{}
 )
+
+func (s *serviceDiscoveryRegistry) stopListen(url *common.URL) {
+	protocolServiceKey := url.ServiceKey() + ":" + url.Protocol
+	listener := s.serviceMappingListeners[protocolServiceKey]
+	if listener != nil {
+		delete(s.serviceMappingListeners, protocolServiceKey)
+		listener.Stop()
+	}
+}

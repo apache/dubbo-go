@@ -38,6 +38,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/metadata/report"
 	"dubbo.apache.org/dubbo-go/v3/metadata/report/factory"
 	"dubbo.apache.org/dubbo-go/v3/metadata/service/local"
+	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
 var (
@@ -61,7 +62,11 @@ func (mr metadataReport) RegisterServiceAppMapping(string, string, string) error
 	panic("implement me")
 }
 
-func (mr metadataReport) GetServiceAppMapping(string, string) (*gxset.HashSet, error) {
+func (mr metadataReport) GetServiceAppMapping(string, string, registry.MappingListener) (*gxset.HashSet, error) {
+	panic("implement me")
+}
+
+func (mr metadataReport) RemoveServiceAppMappingListener(string, string) error {
 	panic("implement me")
 }
 

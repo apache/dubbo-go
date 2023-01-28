@@ -15,31 +15,13 @@
  * limitations under the License.
  */
 
-package mapping
+package registry
 
 import (
-	gxset "github.com/dubbogo/gost/container/set"
+	"github.com/dubbogo/gost/gof/observer"
 )
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/registry"
-)
-
-type MockServiceNameMapping struct{}
-
-func NewMockServiceNameMapping() *MockServiceNameMapping {
-	return &MockServiceNameMapping{}
-}
-
-func (m *MockServiceNameMapping) Map(*common.URL) error {
-	return nil
-}
-
-func (m *MockServiceNameMapping) Get(*common.URL, registry.MappingListener) (*gxset.HashSet, error) {
-	panic("implement me")
-}
-
-func (m *MockServiceNameMapping) Remove(*common.URL) error {
-	panic("implement me")
+type MappingListener interface {
+	OnEvent(e observer.Event) error
+	Stop()
 }
