@@ -65,7 +65,10 @@ type Registry interface {
 	// so sync load the instance of the preparing to subscribe service before
 	// formally subscribing.
 	LoadSubscribeInstances(*common.URL, NotifyListener) error
-	
+
+	// SubscribeURL is required to support the contract:
+	// 1. ServiceInstancesChangedListener provide by SubscribeURL
+	// 2. ServiceMappingChangedEvent provide by Subscribe
 	SubscribeURL(*common.URL, NotifyListener, *gxset.HashSet)
 }
 
