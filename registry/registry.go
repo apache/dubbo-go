@@ -19,6 +19,7 @@ package registry
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	gxset "github.com/dubbogo/gost/container/set"
 )
 
 // Registry is the interface that wraps Register、UnRegister、Subscribe and UnSubscribe method.
@@ -64,6 +65,8 @@ type Registry interface {
 	// so sync load the instance of the preparing to subscribe service before
 	// formally subscribing.
 	LoadSubscribeInstances(*common.URL, NotifyListener) error
+	
+	SubscribeURL(*common.URL, NotifyListener, *gxset.HashSet)
 }
 
 // nolint

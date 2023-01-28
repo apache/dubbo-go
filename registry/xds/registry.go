@@ -19,6 +19,7 @@ package xds
 
 import (
 	"bytes"
+	gxset "github.com/dubbogo/gost/container/set"
 	"os"
 	"strconv"
 	"strings"
@@ -130,6 +131,9 @@ func (nr *xdsRegistry) UnSubscribe(url *common.URL, _ registry.NotifyListener) e
 // LoadSubscribeInstances load subscribe instance
 func (nr *xdsRegistry) LoadSubscribeInstances(_ *common.URL, _ registry.NotifyListener) error {
 	return nil
+}
+
+func (r *xdsRegistry) SubscribeURL(url *common.URL, notifyListener registry.NotifyListener, services *gxset.HashSet) {
 }
 
 // GetURL gets its registration URL

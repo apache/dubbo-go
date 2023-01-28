@@ -20,6 +20,7 @@ package nacos
 import (
 	"bytes"
 	"fmt"
+	gxset "github.com/dubbogo/gost/container/set"
 	"strconv"
 	"strings"
 	"time"
@@ -228,6 +229,9 @@ func (nr *nacosRegistry) LoadSubscribeInstances(url *common.URL, notify registry
 		}
 	}
 	return nil
+}
+
+func (r *nacosRegistry) SubscribeURL(url *common.URL, notifyListener registry.NotifyListener, services *gxset.HashSet) {
 }
 
 func createSubscribeParam(url, regUrl *common.URL, cb callback) *vo.SubscribeParam {

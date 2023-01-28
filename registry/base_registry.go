@@ -19,6 +19,7 @@ package registry
 
 import (
 	"fmt"
+	gxset "github.com/dubbogo/gost/container/set"
 	"net/url"
 	"os"
 	"strconv"
@@ -410,6 +411,9 @@ func (r *BaseRegistry) UnSubscribe(url *common.URL, notifyListener NotifyListene
 // LoadSubscribeInstances load subscribe instance
 func (r *BaseRegistry) LoadSubscribeInstances(url *common.URL, notify NotifyListener) error {
 	return r.facadeBasedRegistry.LoadSubscribeInstances(url, notify)
+}
+
+func (r *BaseRegistry) SubscribeURL(url *common.URL, notifyListener NotifyListener, services *gxset.HashSet) {
 }
 
 // closeRegisters close and remove registry client and reset services map
