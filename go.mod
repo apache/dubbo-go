@@ -4,7 +4,7 @@ go 1.15
 
 require (
 	contrib.go.opencensus.io/exporter/prometheus v0.4.1
-	github.com/RoaringBitmap/roaring v1.2.0
+	github.com/RoaringBitmap/roaring v1.2.2
 	github.com/Workiva/go-datastructures v1.0.52
 	github.com/afex/hystrix-go v0.0.0-20180502004556-fa1af6a1f4f5
 	github.com/alibaba/sentinel-golang v1.0.4
