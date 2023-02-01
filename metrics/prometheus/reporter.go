@@ -78,7 +78,6 @@ func init() {
 // if you want to use this feature, you need to initialize your prometheus.
 // https://prometheus.io/docs/guides/go-application/
 type PrometheusReporter struct {
-	reporterServer *http.Server
 	reporterConfig *metrics.ReporterConfig
 	// report the consumer-side's rt gauge data
 	consumerRTSummaryVec *prometheus.SummaryVec
@@ -104,10 +103,6 @@ type PrometheusReporter struct {
 // the role in url must be consumer or provider
 // or it will be ignored
 func (reporter *PrometheusReporter) Report(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation, cost time.Duration, res protocol.Result) {
-	if !reporter.reporterConfig.Enable {
-		return
-	}
-
 	url := invoker.GetURL()
 	var rtVec *prometheus.SummaryVec
 	if isProvider(url) {
@@ -225,20 +220,29 @@ func newPrometheusReporter(reporterConfig *metrics.ReporterConfig) metrics.Repor
 				consumerRTSummaryVec: newSummaryVec(consumerPrefix+serviceKey+rtSuffix, reporterConfig.Namespace, labelNames, reporterConfig.SummaryMaxAge),
 				providerRTSummaryVec: newSummaryVec(providerPrefix+serviceKey+rtSuffix, reporterConfig.Namespace, labelNames, reporterConfig.SummaryMaxAge),
 			}
-
 			prom.DefaultRegisterer.MustRegister(reporterInstance.consumerRTSummaryVec, reporterInstance.providerRTSummaryVec)
+			metricsExporter, err := ocprom.NewExporter(ocprom.Options{
+				Registry: prom.DefaultRegisterer.(*prom.Registry),
+			})
+			if err != nil {
+				logger.Errorf("new prometheus reporter with error = %s", err)
+				return
+			}
+
+			if reporterConfig.Enable {
+				if reporterConfig.Mode == metrics.ReportModePull {
+					go func() {
+						mux := http.NewServeMux()
+						mux.Handle(reporterConfig.Path, metricsExporter)
+						if err := http.ListenAndServe(":"+reporterConfig.Port, mux); err != nil {
+							logger.Warnf("new prometheus reporter with error = %s", err)
+						}
+					}()
+				}
+				// todo pushgateway support
+			}
 		})
 	}
-
-	if reporterConfig.Enable {
-		if reporterConfig.Mode == metrics.ReportModePull {
-			go reporterInstance.startupServer(reporterConfig)
-		}
-		// todo pushgateway support
-	} else {
-		reporterInstance.shutdownServer()
-	}
-
 	return reporterInstance
 }
 
@@ -373,65 +377,25 @@ func (reporter *PrometheusReporter) incSummary(summaryName string, toSetValue fl
 }
 
 func SetGaugeWithLabel(gaugeName string, val float64, label prometheus.Labels) {
-	if reporterInstance.reporterConfig.Enable {
-		reporterInstance.setGauge(gaugeName, val, label)
-	}
+	reporterInstance.setGauge(gaugeName, val, label)
 }
 
 func SetGauge(gaugeName string, val float64) {
-	if reporterInstance.reporterConfig.Enable {
-		reporterInstance.setGauge(gaugeName, val, make(prometheus.Labels))
-	}
+	reporterInstance.setGauge(gaugeName, val, make(prometheus.Labels))
 }
 
 func IncCounterWithLabel(counterName string, label prometheus.Labels) {
-	if reporterInstance.reporterConfig.Enable {
-		reporterInstance.incCounter(counterName, label)
-	}
+	reporterInstance.incCounter(counterName, label)
 }
 
 func IncCounter(summaryName string) {
-	if reporterInstance.reporterConfig.Enable {
-		reporterInstance.incCounter(summaryName, make(prometheus.Labels))
-	}
+	reporterInstance.incCounter(summaryName, make(prometheus.Labels))
 }
 
 func IncSummaryWithLabel(counterName string, val float64, label prometheus.Labels) {
-	if reporterInstance.reporterConfig.Enable {
-		reporterInstance.incSummary(counterName, val, label)
-	}
+	reporterInstance.incSummary(counterName, val, label)
 }
 
 func IncSummary(summaryName string, val float64) {
-	if reporterInstance.reporterConfig.Enable {
-		reporterInstance.incSummary(summaryName, val, make(prometheus.Labels))
-	}
-}
-
-func (reporter *PrometheusReporter) startupServer(reporterConfig *metrics.ReporterConfig) {
-	metricsExporter, err := ocprom.NewExporter(ocprom.Options{
-		Registry: prom.DefaultRegisterer.(*prom.Registry),
-	})
-	if err != nil {
-		logger.Errorf("new prometheus reporter with error = %s", err)
-		return
-	}
-
-	// start server
-	mux := http.NewServeMux()
-	mux.Handle(reporterConfig.Path, metricsExporter)
-	reporterInstance.reporterServer = &http.Server{Addr: ":" + reporterConfig.Port, Handler: mux}
-	if err := reporterInstance.reporterServer.ListenAndServe(); err != nil {
-		logger.Warnf("new prometheus reporter with error = %s", err)
-	}
-}
-
-func (reporter *PrometheusReporter) shutdownServer() {
-	if reporterInstance.reporterServer != nil {
-		err := reporterInstance.reporterServer.Shutdown(context.Background())
-		if err != nil {
-			logger.Errorf("shutdown prometheus reporter with error = %s, prometheus reporter close now", err)
-			reporterInstance.reporterServer.Close()
-		}
-	}
+	reporterInstance.incSummary(summaryName, val, make(prometheus.Labels))
 }
