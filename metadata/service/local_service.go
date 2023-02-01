@@ -116,7 +116,12 @@ func NewBaseMetadataServiceProxyFactory(creator MetadataServiceProxyCreator) *Ba
 }
 
 func (b *BaseMetadataServiceProxyFactory) GetProxy(ins registry.ServiceInstance) MetadataService {
-	return b.creator(ins).(MetadataService)
+	key := ins.GetServiceName() + "##" + getExportedServicesRevision(ins)
+	if proxy, ok := b.proxies.Load(key); ok {
+		return proxy.(MetadataService)
+	}
+	v, _ := b.proxies.LoadOrStore(key, b.creator(ins))
+	return v.(MetadataService)
 }
 
 func getExportedServicesRevision(serviceInstance registry.ServiceInstance) string {
