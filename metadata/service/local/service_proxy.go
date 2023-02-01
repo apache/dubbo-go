@@ -181,6 +181,8 @@ func (m *MetadataServiceProxy) GetMetadataInfo(revision string) (*common.Metadat
 		invocation.WithAttachments(map[string]interface{}{constant.AsyncKey: "false"}),
 		invocation.WithParameterValues([]reflect.Value{rV}))
 	res := m.invkr.Invoke(context.Background(), inv)
+	// when request finished, invoker will colse
+	defer m.invkr.Destroy()
 	if res.Error() != nil {
 		logger.Errorf("could not get the metadata info from remote provider: %v", res.Error())
 		return nil, res.Error()

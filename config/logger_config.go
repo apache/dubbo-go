@@ -170,3 +170,11 @@ func (lcb *LoggerConfigBuilder) SetZapConfig(zapConfig ZapConfig) *LoggerConfigB
 func (lcb *LoggerConfigBuilder) Build() *LoggerConfig {
 	return lcb.loggerConfig
 }
+
+// DynamicUpdateProperties dynamically update properties.
+func (lc *LoggerConfig) DynamicUpdateProperties(newLoggerConfig *LoggerConfig) {
+	if newLoggerConfig != nil && lc.ZapConfig.Level != newLoggerConfig.ZapConfig.Level {
+		lc.ZapConfig.Level = newLoggerConfig.ZapConfig.Level
+		logger.Infof("LoggerConfig's ZapConfig Level was dynamically updated, new value:%v", lc.ZapConfig.Level)
+	}
+}

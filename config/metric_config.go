@@ -19,6 +19,7 @@ package config
 
 import (
 	"github.com/creasty/defaults"
+	"github.com/dubbogo/gost/log/logger"
 
 	"github.com/pkg/errors"
 )
@@ -80,4 +81,16 @@ func NewMetricConfigBuilder() *MetricConfigBuilder {
 
 func (mcb *MetricConfigBuilder) Build() *MetricConfig {
 	return mcb.metricConfig
+}
+
+// DynamicUpdateProperties dynamically update properties.
+func (mc *MetricConfig) DynamicUpdateProperties(newMetricConfig *MetricConfig) {
+	if newMetricConfig != nil {
+		if newMetricConfig.Enable != mc.Enable {
+			mc.Enable = newMetricConfig.Enable
+			logger.Infof("MetricConfig's Enable was dynamically updated, new value:%v", mc.Enable)
+
+			extension.GetMetricReporter("prometheus", mc.ToReporterConfig())
+		}
+	}
 }
