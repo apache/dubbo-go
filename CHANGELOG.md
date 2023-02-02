@@ -1,6 +1,16 @@
 # Release Notes
 ---
 
+## 3.0.5
+
+### Bugfixes
+
+- [Fix: Consumers try to reconnect to the metadata service of offline providers infinitely](https://github.com/apache/dubbo-go/pull/2166)
+- [Fix: Service discovery registry notify before return](https://github.com/apache/dubbo-go/pull/2168)
+- [Fix: Do not launch Polaris governance capability if Polaris is not enabled](https://github.com/apache/dubbo-go/pull/2171)
+- [Fix: Config of metrics enbale not works](https://github.com/apache/dubbo-go/pull/2180)
+- [Fix: Replace assignment behavior with copy operation to avoid OOM](https://github.com/apache/dubbo-go/pull/2182)
+
 ## 3.0.4
 
 ### Features
