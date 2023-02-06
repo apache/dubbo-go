@@ -19,7 +19,6 @@ package zookeeper
 
 import (
 	"fmt"
-	gxset "github.com/dubbogo/gost/container/set"
 	"net/url"
 	"path"
 	"sync"
@@ -178,9 +177,6 @@ func (r *zkRegistry) DoUnsubscribe(conf *common.URL) (registry.Listener, error) 
 // LoadSubscribeInstances load subscribe instance
 func (r *zkRegistry) LoadSubscribeInstances(_ *common.URL, _ registry.NotifyListener) error {
 	return nil
-}
-
-func (r *zkRegistry) SubscribeURL(url *common.URL, notifyListener registry.NotifyListener, services *gxset.HashSet) {
 }
 
 // CloseAndNilClient closes listeners and clear client

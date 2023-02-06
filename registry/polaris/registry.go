@@ -19,7 +19,6 @@ package polaris
 
 import (
 	"fmt"
-	gxset "github.com/dubbogo/gost/container/set"
 	"strconv"
 	"sync"
 	"time"
@@ -192,9 +191,6 @@ func (pr *polarisRegistry) LoadSubscribeInstances(url *common.URL, notify regist
 		}
 	}
 	return nil
-}
-
-func (r *polarisRegistry) SubscribeURL(url *common.URL, notifyListener registry.NotifyListener, services *gxset.HashSet) {
 }
 
 // GetURL returns polaris registry's url.

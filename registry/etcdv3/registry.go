@@ -19,7 +19,6 @@ package etcdv3
 
 import (
 	"fmt"
-	gxset "github.com/dubbogo/gost/container/set"
 	"path"
 	"strings"
 	"sync"
@@ -172,9 +171,6 @@ func (r *etcdV3Registry) DoUnsubscribe(conf *common.URL) (registry.Listener, err
 // LoadSubscribeInstances load subscribe instance
 func (r *etcdV3Registry) LoadSubscribeInstances(_ *common.URL, _ registry.NotifyListener) error {
 	return nil
-}
-
-func (r *etcdV3Registry) SubscribeURL(url *common.URL, notifyListener registry.NotifyListener, services *gxset.HashSet) {
 }
 
 func (r *etcdV3Registry) handleClientRestart() {

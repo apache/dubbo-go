@@ -19,7 +19,6 @@ package registry
 
 import (
 	"fmt"
-	gxset "github.com/dubbogo/gost/container/set"
 	"time"
 )
 
@@ -135,9 +134,6 @@ func (r *MockRegistry) UnSubscribe(url *common.URL, notifyListener NotifyListene
 // LoadSubscribeInstances load subscribe instance
 func (r *MockRegistry) LoadSubscribeInstances(_ *common.URL, _ NotifyListener) error {
 	return nil
-}
-
-func (r *MockRegistry) SubscribeURL(url *common.URL, notifyListener NotifyListener, services *gxset.HashSet) {
 }
 
 type listener struct {

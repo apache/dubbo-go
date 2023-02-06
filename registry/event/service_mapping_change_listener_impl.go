@@ -31,6 +31,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/registry"
+	"dubbo.apache.org/dubbo-go/v3/registry/servicediscovery"
 )
 
 type ServiceMappingChangedListenerImpl struct {
@@ -73,17 +74,17 @@ func (lstn *ServiceMappingChangedListenerImpl) OnEvent(e observer.Event) error {
 	}
 	newServiceNames := sm.GetServiceNames()
 	oldServiceNames := lstn.oldServiceNames
-
 	// serviceMapping is orderly
 	if newServiceNames.Empty() || oldServiceNames.String() == newServiceNames.String() {
 		return nil
 	}
-
 	if newServiceNames.Size() > 0 && oldServiceNames.Empty() {
 		if reg, err = extension.GetRegistry(constant.ServiceRegistryProtocol, lstn.registryUrl); err != nil {
 			return err
 		}
-		reg.SubscribeURL(lstn.serviceUrl, lstn.listener, newServiceNames)
+		if sdreg, ok := reg.(*servicediscovery.ServiceDiscoveryRegistry); ok {
+			sdreg.SubscribeURL(lstn.serviceUrl, lstn.listener, newServiceNames)
+		}
 		lstn.oldServiceNames = newServiceNames
 		return nil
 	}
@@ -94,7 +95,9 @@ func (lstn *ServiceMappingChangedListenerImpl) OnEvent(e observer.Event) error {
 			if reg, err = extension.GetRegistry(constant.ServiceRegistryProtocol, lstn.registryUrl); err != nil {
 				return err
 			}
-			reg.SubscribeURL(lstn.serviceUrl, lstn.listener, newServiceNames)
+			if sdreg, ok := reg.(*servicediscovery.ServiceDiscoveryRegistry); ok {
+				sdreg.SubscribeURL(lstn.serviceUrl, lstn.listener, newServiceNames)
+			}
 			lstn.oldServiceNames = newServiceNames
 		}
 	}
