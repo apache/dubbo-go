@@ -47,7 +47,7 @@ import (
 // same as dubbo_invoker.go attachmentKey
 var attachmentKey = []string{
 	constant.InterfaceKey, constant.GroupKey, constant.TokenKey, constant.TimeoutKey,
-	constant.VersionKey,
+	constant.VersionKey, tripleConstant.TripleServiceGroup, tripleConstant.TripleServiceVersion,
 }
 
 // DubboInvoker is implement of protocol.Invoker, a dubboInvoker refer to one service and ip.
@@ -182,7 +182,17 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 	}
 
 	for _, k := range attachmentKey {
-		if v := di.GetURL().GetParam(k, ""); len(v) > 0 {
+		var paramKey string
+		switch k {
+		case tripleConstant.TripleServiceGroup:
+			paramKey = constant.GroupKey
+		case tripleConstant.TripleServiceVersion:
+			paramKey = constant.VersionKey
+		default:
+			paramKey = k
+		}
+
+		if v := di.GetURL().GetParam(paramKey, ""); len(v) > 0 {
 			invocation.SetAttachment(k, v)
 		}
 	}
