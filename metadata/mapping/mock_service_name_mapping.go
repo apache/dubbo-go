@@ -36,7 +36,7 @@ func (m *MockServiceNameMapping) Map(*common.URL) error {
 	return nil
 }
 
-func (m *MockServiceNameMapping) Get(*common.URL, listener registry.MappingListener) (*gxset.HashSet, error) {
+func (m *MockServiceNameMapping) Get(*common.URL, registry.MappingListener) (*gxset.HashSet, error) {
 	panic("implement me")
 }
 
