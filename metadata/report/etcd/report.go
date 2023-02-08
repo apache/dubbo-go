@@ -37,6 +37,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/metadata/identifier"
 	"dubbo.apache.org/dubbo-go/v3/metadata/report"
 	"dubbo.apache.org/dubbo-go/v3/metadata/report/factory"
+	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
 const DEFAULT_ROOT = "dubbo"
@@ -161,7 +162,7 @@ func (e *etcdMetadataReport) RegisterServiceAppMapping(key string, group string,
 }
 
 // GetServiceAppMapping get the app names from the specified Dubbo service interface
-func (e *etcdMetadataReport) GetServiceAppMapping(key string, group string) (*gxset.HashSet, error) {
+func (e *etcdMetadataReport) GetServiceAppMapping(key string, group string, listener registry.MappingListener) (*gxset.HashSet, error) {
 	path := e.root + constant.PathSeparator + group + constant.PathSeparator + key
 	v, err := e.client.Get(path)
 	if err != nil {
@@ -173,6 +174,10 @@ func (e *etcdMetadataReport) GetServiceAppMapping(key string, group string) (*gx
 		set.Add(app)
 	}
 	return set, nil
+}
+
+func (e *etcdMetadataReport) RemoveServiceAppMappingListener(key string, group string) error {
+	return nil
 }
 
 type etcdMetadataReportFactory struct{}

@@ -24,6 +24,7 @@ import (
 )
 
 import (
+	gxset "github.com/dubbogo/gost/container/set"
 	"github.com/dubbogo/gost/gof/observer"
 )
 
@@ -100,4 +101,30 @@ func NewServiceInstancesChangedEvent(serviceName string, instances []ServiceInst
 		ServiceName: serviceName,
 		Instances:   instances,
 	}
+}
+
+type ServiceMappingChangeEvent struct {
+	observer.BaseEvent
+	ServiceKey   string
+	ServiceNames *gxset.HashSet
+}
+
+// NewServiceMappingChangedEvent will create the ServiceMappingChangeEvent
+func NewServiceMappingChangedEvent(serviceKey string, serviceNames *gxset.HashSet) *ServiceMappingChangeEvent {
+	return &ServiceMappingChangeEvent{
+		BaseEvent: observer.BaseEvent{
+			Source:    serviceKey,
+			Timestamp: time.Now(),
+		},
+		ServiceKey:   serviceKey,
+		ServiceNames: serviceNames,
+	}
+}
+
+func (sm *ServiceMappingChangeEvent) GetServiceNames() *gxset.HashSet {
+	return sm.ServiceNames
+}
+
+func (sm *ServiceMappingChangeEvent) GetServiceKey() string {
+	return sm.ServiceKey
 }
