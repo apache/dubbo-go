@@ -205,7 +205,7 @@ func (s *ServiceDiscoveryRegistry) Subscribe(url *common.URL, notify registry.No
 		return perrors.WithMessage(err, "subscribe url error: "+url.String())
 	}
 
-	mappingListener := event.NewMappingListener(s.url, url, s.subscribedServices, notify)
+	mappingListener := NewMappingListener(s.url, url, s.subscribedServices, notify)
 	services := s.getServices(url, mappingListener)
 	if services.Empty() {
 		return nil
@@ -222,7 +222,7 @@ func (s *ServiceDiscoveryRegistry) SubscribeURL(url *common.URL, notify registry
 	protocolServiceKey := url.ServiceKey() + ":" + url.Protocol
 	listener := s.serviceListeners[serviceNamesKey]
 	if listener == nil {
-		listener = event.NewServiceInstancesChangedListener(services)
+		listener = NewServiceInstancesChangedListener(services)
 		for _, serviceNameTmp := range services.Values() {
 			serviceName := serviceNameTmp.(string)
 			instances := s.serviceDiscovery.GetInstances(serviceName)
@@ -261,7 +261,7 @@ func (s *ServiceDiscoveryRegistry) LoadSubscribeInstances(url *common.URL, notif
 			logger.Infof("Find instance without valid service metadata: %s", instance.GetHost())
 			continue
 		}
-		metadataInfo, err := event.GetMetadataInfo(instance, revision)
+		metadataInfo, err := GetMetadataInfo(instance, revision)
 		if err != nil {
 			return err
 		}
