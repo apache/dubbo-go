@@ -28,7 +28,6 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
@@ -78,7 +77,7 @@ func (lstn *ServiceMappingChangedListenerImpl) OnEvent(e observer.Event) error {
 		return nil
 	}
 	if newServiceNames.Size() > 0 && oldServiceNames.Empty() {
-		if reg, err = extension.GetRegistry(constant.ServiceRegistryProtocol, lstn.registryUrl); err != nil {
+		if reg, err = extension.GetRegistry(lstn.registryUrl.Protocol, lstn.registryUrl); err != nil {
 			return err
 		}
 		if sdreg, ok := reg.(*ServiceDiscoveryRegistry); ok {
@@ -91,7 +90,7 @@ func (lstn *ServiceMappingChangedListenerImpl) OnEvent(e observer.Event) error {
 		if !oldServiceNames.Contains(service) {
 			lstn.mappingCache.Delete(oldServiceNames.String())
 			lstn.mappingCache.Store(newServiceNames.String(), newServiceNames)
-			if reg, err = extension.GetRegistry(constant.ServiceRegistryProtocol, lstn.registryUrl); err != nil {
+			if reg, err = extension.GetRegistry(lstn.registryUrl.Protocol, lstn.registryUrl); err != nil {
 				return err
 			}
 			if sdreg, ok := reg.(*ServiceDiscoveryRegistry); ok {
