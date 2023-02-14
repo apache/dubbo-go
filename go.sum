@@ -405,7 +405,6 @@ github.com/apache/dubbo-getty v1.4.9 h1:Y8l1EYJqIc7BnmyfYtvG4H4Nmu4v7P1uS31fFQGd
 github.com/apache/dubbo-getty v1.4.9/go.mod h1:6qmrqBSPGs3B35zwEuGhEYNVsx1nfGT/xzV2yOt2amM=
 github.com/apache/dubbo-go-hessian2 v1.9.1/go.mod h1:xQUjE7F8PX49nm80kChFvepA/AvqAZ0oh/UaB6+6pBE=
 github.com/apache/dubbo-go-hessian2 v1.9.3/go.mod h1:xQUjE7F8PX49nm80kChFvepA/AvqAZ0oh/UaB6+6pBE=
-github.com/apache/dubbo-go-hessian2 v1.11.4/go.mod h1:QP9Tc0w/B/mDopjusebo/c7GgEfl6Lz8jeuFg8JA6yw=
 github.com/apache/dubbo-go-hessian2 v1.12.0 h1:n2JXPMGc4u/ihBbOt25d3mmv1k92X9TvLnqfgyNscKQ=
 github.com/apache/dubbo-go-hessian2 v1.12.0/go.mod h1:QP9Tc0w/B/mDopjusebo/c7GgEfl6Lz8jeuFg8JA6yw=
 github.com/apache/thrift v0.12.0/go.mod h1:cp2SuWMxlEZw2r+iP2GNCdIi4C1qmUzdZFSVb+bacwQ=
@@ -524,8 +523,8 @@ github.com/dubbogo/grpc-go v1.42.10/go.mod h1:JMkPt1mIHL96GAFeYsMoMjew6f1ROKycik
 github.com/dubbogo/jsonparser v1.0.1/go.mod h1:tYAtpctvSP/tWw4MeelsowSPgXQRVHHWbqL6ynps8jU=
 github.com/dubbogo/net v0.0.4/go.mod h1:1CGOnM7X3he+qgGNqjeADuE5vKZQx/eMSeUkpU3ujIc=
 github.com/dubbogo/triple v1.0.9/go.mod h1:1t9me4j4CTvNDcsMZy6/OGarbRyAUSY0tFXGXHCp7Iw=
-github.com/dubbogo/triple v1.2.2-rc2 h1:2AaLd+uKwnNnR3qOIXTNPU/OHk77qIDNGMX3GstEtaY=
-github.com/dubbogo/triple v1.2.2-rc2/go.mod h1:8qprF2uJX82IE5hjiIuswp416sEr0oL/+bb7IjiizYs=
+github.com/dubbogo/triple v1.2.2-rc3 h1:9rxLqru35MmJkypCHJMiZb1VzwH+zmbPBend9Cq+VOI=
+github.com/dubbogo/triple v1.2.2-rc3/go.mod h1:9pgEahtmsY/avYJp3dzUQE8CMMVe1NtGBmUhfICKLJk=
 github.com/dustin/go-humanize v0.0.0-20171111073723-bb3d318650d4/go.mod h1:HtrtbFcZ19U5GC7JDqmcUSB87Iq5E25KnS6fMYU6eOk=
 github.com/dustin/go-humanize v1.0.0 h1:VSnTsYCnlFHaM2/igO1h6X3HA71jcobQuxemgkq4zYo=
 github.com/dustin/go-humanize v1.0.0/go.mod h1:HtrtbFcZ19U5GC7JDqmcUSB87Iq5E25KnS6fMYU6eOk=
@@ -1153,8 +1152,8 @@ github.com/tmc/grpc-websocket-proxy v0.0.0-20201229170055-e5319fda7802 h1:uruHq4
 github.com/tmc/grpc-websocket-proxy v0.0.0-20201229170055-e5319fda7802/go.mod h1:ncp9v5uamzpCO7NfCPTXjqaC+bZgJeR0sMTm6dMHP7U=
 github.com/toolkits/concurrent v0.0.0-20150624120057-a4371d70e3e3/go.mod h1:QDlpd3qS71vYtakd2hmdpqhJ9nwv6mD6A30bQ1BPBFE=
 github.com/tv42/httpunix v0.0.0-20150427012821-b75d8614f926/go.mod h1:9ESjWnEqriFuLhtthL60Sar/7RFoluCcXsuvEwTV5KM=
-github.com/uber/jaeger-client-go v2.30.0+incompatible h1:D6wyKGCecFaSRUpo8lCVbaOOb6ThwMmTEbhRwtKR97o=
-github.com/uber/jaeger-client-go v2.30.0+incompatible/go.mod h1:WVhlPFC8FDjOFMMWRy2pZqQJSXxYSwNYOkTr/Z6d3Kk=
+github.com/uber/jaeger-client-go v2.29.1+incompatible h1:R9ec3zO3sGpzs0abd43Y+fBZRJ9uiH6lXyR/+u6brW4=
+github.com/uber/jaeger-client-go v2.29.1+incompatible/go.mod h1:WVhlPFC8FDjOFMMWRy2pZqQJSXxYSwNYOkTr/Z6d3Kk=
 github.com/uber/jaeger-lib v2.4.1+incompatible h1:td4jdvLcExb4cBISKIpHuGoVXh+dVKhn2Um6rjCsSsg=
 github.com/uber/jaeger-lib v2.4.1+incompatible/go.mod h1:ComeNDZlWwrWnDv8aPp0Ba6+uUTzImX/AauajbLI56U=
 github.com/ugorji/go v1.2.6 h1:tGiWC9HENWE2tqYycIqFTNorMmFRVhNwCpDOpWqnk8E=

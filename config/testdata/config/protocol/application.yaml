@@ -5,3 +5,8 @@ dubbo:
       group: dev
       address: nacos://127.0.0.1:8848
   protocols:
+    dubbo:
+      name: dubbo
+      port: 20000
+      max-server-send-msg-size: 4mib
+      max-server-recv-msg-size: 4mib

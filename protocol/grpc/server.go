@@ -27,6 +27,7 @@ import (
 
 import (
 	"github.com/dubbogo/gost/log/logger"
+	"github.com/dustin/go-humanize"
 
 	"github.com/grpc-ecosystem/grpc-opentracing/go/otgrpc"
 
@@ -40,6 +41,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
@@ -81,6 +83,15 @@ func (s *Server) Start(url *common.URL) {
 		panic(err)
 	}
 
+	maxServerRecvMsgSize := constant.DefaultMaxServerRecvMsgSize
+	if recvMsgSize, convertErr := humanize.ParseBytes(url.GetParam(constant.MaxServerRecvMsgSize, "")); convertErr == nil && recvMsgSize != 0 {
+		maxServerRecvMsgSize = int(recvMsgSize)
+	}
+	maxServerSendMsgSize := constant.DefaultMaxServerSendMsgSize
+	if sendMsgSize, convertErr := humanize.ParseBytes(url.GetParam(constant.MaxServerSendMsgSize, "")); err == convertErr && sendMsgSize != 0 {
+		maxServerSendMsgSize = int(sendMsgSize)
+	}
+
 	// If global trace instance was set, then server tracer instance
 	// can be get. If not, will return NoopTracer.
 	tracer := opentracing.GlobalTracer()
@@ -88,8 +99,8 @@ func (s *Server) Start(url *common.URL) {
 	serverOpts = append(serverOpts,
 		grpc.UnaryInterceptor(otgrpc.OpenTracingServerInterceptor(tracer)),
 		grpc.StreamInterceptor(otgrpc.OpenTracingStreamServerInterceptor(tracer)),
-		grpc.MaxRecvMsgSize(1024*1024*s.bufferSize),
-		grpc.MaxSendMsgSize(1024*1024*s.bufferSize),
+		grpc.MaxRecvMsgSize(maxServerRecvMsgSize),
+		grpc.MaxSendMsgSize(maxServerSendMsgSize),
 	)
 
 	tlsConfig := config.GetRootConfig().TLSConfig

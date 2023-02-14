@@ -31,6 +31,9 @@ type ProtocolConfig struct {
 	Ip     string      `yaml:"ip"  json:"ip,omitempty" property:"ip"`
 	Port   string      `default:"20000" yaml:"port" json:"port,omitempty" property:"port"`
 	Params interface{} `yaml:"params" json:"params,omitempty" property:"params"`
+
+	MaxServerSendMsgSize string `yaml:"max-server-send-msg-size" json:"max-server-send-msg-size,omitempty"`
+	MaxServerRecvMsgSize string `default:"4mib" yaml:"max-server-recv-msg-size" json:"max-server-recv-msg-size,omitempty"`
 }
 
 // Prefix dubbo.config-center
@@ -74,6 +77,16 @@ func (pcb *ProtocolConfigBuilder) SetPort(port string) *ProtocolConfigBuilder {
 
 func (pcb *ProtocolConfigBuilder) SetParams(params interface{}) *ProtocolConfigBuilder {
 	pcb.protocolConfig.Params = params
+	return pcb
+}
+
+func (pcb *ProtocolConfigBuilder) SetMaxServerSendMsgSize(maxServerSendMsgSize string) *ProtocolConfigBuilder {
+	pcb.protocolConfig.MaxServerSendMsgSize = maxServerSendMsgSize
+	return pcb
+}
+
+func (pcb *ProtocolConfigBuilder) SetMaxServerRecvMsgSize(maxServerRecvMsgSize string) *ProtocolConfigBuilder {
+	pcb.protocolConfig.MaxServerRecvMsgSize = maxServerRecvMsgSize
 	return pcb
 }
 
