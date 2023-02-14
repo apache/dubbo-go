@@ -61,7 +61,17 @@ func NewClient(url *common.URL) (*Client, error) {
 	// If not, will return NoopTracer.
 	tracer := opentracing.GlobalTracer()
 	dialOpts := make([]grpc.DialOption, 0, 4)
+
 	maxMessageSize, _ := strconv.Atoi(url.GetParam(constant.MessageSizeKey, "4"))
+	// if MaxCallRecvMsgSize or MaxCallSendMsgSize is not empty, override maxMessageSize
+	maxCallRecvMsgSize := 1024 * 1024 * maxMessageSize
+	if recvMsgSize, err := strconv.Atoi(url.GetParam(constant.MaxCallRecvMsgSize, "0")); err == nil && recvMsgSize != 0 {
+		maxCallRecvMsgSize = recvMsgSize
+	}
+	maxCallSendMsgSize := 1024 * 1024 * maxMessageSize
+	if sendMsgSize, err := strconv.Atoi(url.GetParam(constant.MaxCallSendMsgSize, "0")); err == nil && sendMsgSize != 0 {
+		maxCallSendMsgSize = sendMsgSize
+	}
 
 	// consumer config client connectTimeout
 	//connectTimeout := config.GetConsumerConfig().ConnectTimeout
@@ -74,8 +84,8 @@ func NewClient(url *common.URL) (*Client, error) {
 		grpc.WithStreamInterceptor(otgrpc.OpenTracingStreamClientInterceptor(tracer, otgrpc.LogPayloads())),
 		grpc.WithDefaultCallOptions(
 			grpc.CallContentSubtype(clientConf.ContentSubType),
-			grpc.MaxCallRecvMsgSize(1024*1024*maxMessageSize),
-			grpc.MaxCallSendMsgSize(1024*1024*maxMessageSize),
+			grpc.MaxCallRecvMsgSize(maxCallRecvMsgSize),
+			grpc.MaxCallSendMsgSize(maxCallSendMsgSize),
 		),
 	)
 	tlsConfig := config.GetRootConfig().TLSConfig

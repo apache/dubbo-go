@@ -21,6 +21,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -40,6 +41,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
@@ -81,6 +83,17 @@ func (s *Server) Start(url *common.URL) {
 		panic(err)
 	}
 
+	maxMessageSize, _ := strconv.Atoi(url.GetParam(constant.MessageSizeKey, "4"))
+	// if MaxCallRecvMsgSize or MaxCallSendMsgSize is not empty, override maxMessageSize
+	maxServerRecvMsgSize := 1024 * 1024 * maxMessageSize
+	if recvMsgSize, convertErr := strconv.Atoi(url.GetParam(constant.MaxServerRecvMsgSize, "0")); convertErr == nil && recvMsgSize != 0 {
+		maxServerRecvMsgSize = recvMsgSize
+	}
+	maxServerSendMsgSize := 1024 * 1024 * maxMessageSize
+	if sendMsgSize, convertErr := strconv.Atoi(url.GetParam(constant.MaxServerSendMsgSize, "0")); err == convertErr && sendMsgSize != 0 {
+		maxServerSendMsgSize = sendMsgSize
+	}
+
 	// If global trace instance was set, then server tracer instance
 	// can be get. If not, will return NoopTracer.
 	tracer := opentracing.GlobalTracer()
@@ -88,8 +101,8 @@ func (s *Server) Start(url *common.URL) {
 	serverOpts = append(serverOpts,
 		grpc.UnaryInterceptor(otgrpc.OpenTracingServerInterceptor(tracer)),
 		grpc.StreamInterceptor(otgrpc.OpenTracingStreamServerInterceptor(tracer)),
-		grpc.MaxRecvMsgSize(1024*1024*s.bufferSize),
-		grpc.MaxSendMsgSize(1024*1024*s.bufferSize),
+		grpc.MaxRecvMsgSize(maxServerRecvMsgSize),
+		grpc.MaxSendMsgSize(maxServerSendMsgSize),
 	)
 
 	tlsConfig := config.GetRootConfig().TLSConfig

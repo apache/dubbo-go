@@ -19,6 +19,7 @@ package config
 
 import (
 	"container/list"
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"os"
@@ -76,8 +77,10 @@ type ServiceConfig struct {
 	NotRegister                 bool              `yaml:"not_register" json:"not_register,omitempty" property:"not_register"`
 	ParamSign                   string            `yaml:"param.sign" json:"param.sign,omitempty" property:"param.sign"`
 	Tag                         string            `yaml:"tag" json:"tag,omitempty" property:"tag"`
-	GrpcMaxMessageSize          int               `default:"4" yaml:"max_message_size" json:"max_message_size,omitempty"`
-	TracingKey                  string            `yaml:"tracing-key" json:"tracing-key,omitempty" propertiy:"tracing-key"`
+	//Deprecated: for provider use ProtocolParamsConfig instead, for consumer use ReferenceConfig.Params instead
+	//see ReferenceConfig.Params[constant.MaxCallSendMsgSize] and ReferenceConfig.Params[constant.MaxCallRecvMsgSize]
+	GrpcMaxMessageSize int    `default:"4" yaml:"max_message_size" json:"max_message_size,omitempty"`
+	TracingKey         string `yaml:"tracing-key" json:"tracing-key,omitempty" propertiy:"tracing-key"`
 
 	RCProtocolsMap  map[string]*ProtocolConfig
 	RCRegistriesMap map[string]*RegistryConfig
@@ -267,6 +270,10 @@ func (s *ServiceConfig) Export() error {
 			port = nextPort.Value.(string)
 			nextPort = nextPort.Next()
 		}
+		// fix https://github.com/apache/dubbo-go/issues/2176
+		// init protocol params
+		protoParams := getProtoParams(proto.Params)
+
 		ivkURL := common.NewURLWithOptions(
 			common.WithPath(s.Interface),
 			common.WithProtocol(proto.Name),
@@ -278,6 +285,8 @@ func (s *ServiceConfig) Export() error {
 			common.WithMethods(strings.Split(methods, ",")),
 			common.WithToken(s.Token),
 			common.WithParamsValue(constant.MetadataTypeKey, s.metadataType),
+			common.WithParamsValue(constant.MaxServerSendMsgSize, strconv.Itoa(protoParams.MaxServerSendMsgSize)),
+			common.WithParamsValue(constant.MaxServerRecvMsgSize, strconv.Itoa(protoParams.MaxServerRecvMsgSize)),
 		)
 		if len(s.Tag) > 0 {
 			ivkURL.AddParam(constant.Tagkey, s.Tag)
@@ -331,13 +340,27 @@ func (s *ServiceConfig) Export() error {
 	return nil
 }
 
-//setRegistrySubURL set registry sub url is ivkURl
+// getProtoParams get protocol params, convert to ProtocolParamsConfig
+func getProtoParams(params interface{}) *ProtocolParamsConfig {
+	marshal, err := json.Marshal(params)
+	if err != nil {
+		logger.Warnf("parse protocol params to json error: %v", err)
+	}
+	protoParams := &ProtocolParamsConfig{}
+	err = json.Unmarshal(marshal, protoParams)
+	if err != nil {
+		logger.Warnf("parse protocol params to json error: %v", err)
+	}
+	return protoParams
+}
+
+// setRegistrySubURL set registry sub url is ivkURl
 func setRegistrySubURL(ivkURL *common.URL, regUrl *common.URL) {
 	ivkURL.AddParam(constant.RegistryKey, regUrl.GetParam(constant.RegistryKey, ""))
 	regUrl.SubURL = ivkURL
 }
 
-//loadProtocol filter protocols by ids
+// loadProtocol filter protocols by ids
 func loadProtocol(protocolIds []string, protocols map[string]*ProtocolConfig) []*ProtocolConfig {
 	returnProtocols := make([]*ProtocolConfig, 0, len(protocols))
 	for _, v := range protocolIds {
