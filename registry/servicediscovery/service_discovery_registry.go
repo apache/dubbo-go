@@ -40,6 +40,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/metadata/service"
 	"dubbo.apache.org/dubbo-go/v3/metadata/service/local"
 	"dubbo.apache.org/dubbo-go/v3/registry"
+	_ "dubbo.apache.org/dubbo-go/v3/registry/event"
 	"dubbo.apache.org/dubbo-go/v3/registry/servicediscovery/synthesizer"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
