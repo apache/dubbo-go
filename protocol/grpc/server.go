@@ -21,13 +21,13 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net"
-	"strconv"
 	"sync"
 	"time"
 )
 
 import (
 	"github.com/dubbogo/gost/log/logger"
+	"github.com/dustin/go-humanize"
 
 	"github.com/grpc-ecosystem/grpc-opentracing/go/otgrpc"
 
@@ -83,15 +83,13 @@ func (s *Server) Start(url *common.URL) {
 		panic(err)
 	}
 
-	maxMessageSize, _ := strconv.Atoi(url.GetParam(constant.MessageSizeKey, "4"))
-	// if MaxCallRecvMsgSize or MaxCallSendMsgSize is not empty, override maxMessageSize
-	maxServerRecvMsgSize := 1024 * 1024 * maxMessageSize
-	if recvMsgSize, convertErr := strconv.Atoi(url.GetParam(constant.MaxServerRecvMsgSize, "0")); convertErr == nil && recvMsgSize != 0 {
-		maxServerRecvMsgSize = recvMsgSize
+	maxServerRecvMsgSize := constant.DefaultMaxServerRecvMsgSize
+	if recvMsgSize, convertErr := humanize.ParseBytes(url.GetParam(constant.MaxServerRecvMsgSize, "")); convertErr == nil && recvMsgSize != 0 {
+		maxServerRecvMsgSize = int(recvMsgSize)
 	}
-	maxServerSendMsgSize := 1024 * 1024 * maxMessageSize
-	if sendMsgSize, convertErr := strconv.Atoi(url.GetParam(constant.MaxServerSendMsgSize, "0")); err == convertErr && sendMsgSize != 0 {
-		maxServerSendMsgSize = sendMsgSize
+	maxServerSendMsgSize := constant.DefaultMaxServerSendMsgSize
+	if sendMsgSize, convertErr := humanize.ParseBytes(url.GetParam(constant.MaxServerSendMsgSize, "")); err == convertErr && sendMsgSize != 0 {
+		maxServerSendMsgSize = int(sendMsgSize)
 	}
 
 	// If global trace instance was set, then server tracer instance

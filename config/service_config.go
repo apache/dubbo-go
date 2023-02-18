@@ -19,7 +19,6 @@ package config
 
 import (
 	"container/list"
-	"encoding/json"
 	"fmt"
 	"net/url"
 	"os"
@@ -77,10 +76,7 @@ type ServiceConfig struct {
 	NotRegister                 bool              `yaml:"not_register" json:"not_register,omitempty" property:"not_register"`
 	ParamSign                   string            `yaml:"param.sign" json:"param.sign,omitempty" property:"param.sign"`
 	Tag                         string            `yaml:"tag" json:"tag,omitempty" property:"tag"`
-	//Deprecated: for provider use ProtocolParamsConfig instead, for consumer use ReferenceConfig.Params instead
-	//see ReferenceConfig.Params[constant.MaxCallSendMsgSize] and ReferenceConfig.Params[constant.MaxCallRecvMsgSize]
-	GrpcMaxMessageSize int    `default:"4" yaml:"max_message_size" json:"max_message_size,omitempty"`
-	TracingKey         string `yaml:"tracing-key" json:"tracing-key,omitempty" propertiy:"tracing-key"`
+	TracingKey                  string            `yaml:"tracing-key" json:"tracing-key,omitempty" propertiy:"tracing-key"`
 
 	RCProtocolsMap  map[string]*ProtocolConfig
 	RCRegistriesMap map[string]*RegistryConfig
@@ -270,10 +266,6 @@ func (s *ServiceConfig) Export() error {
 			port = nextPort.Value.(string)
 			nextPort = nextPort.Next()
 		}
-		// fix https://github.com/apache/dubbo-go/issues/2176
-		// init protocol params
-		protoParams := getProtoParams(proto.Params)
-
 		ivkURL := common.NewURLWithOptions(
 			common.WithPath(s.Interface),
 			common.WithProtocol(proto.Name),
@@ -285,8 +277,9 @@ func (s *ServiceConfig) Export() error {
 			common.WithMethods(strings.Split(methods, ",")),
 			common.WithToken(s.Token),
 			common.WithParamsValue(constant.MetadataTypeKey, s.metadataType),
-			common.WithParamsValue(constant.MaxServerSendMsgSize, strconv.Itoa(protoParams.MaxServerSendMsgSize)),
-			common.WithParamsValue(constant.MaxServerRecvMsgSize, strconv.Itoa(protoParams.MaxServerRecvMsgSize)),
+			// fix https://github.com/apache/dubbo-go/issues/2176
+			common.WithParamsValue(constant.MaxServerSendMsgSize, proto.MaxServerSendMsgSize),
+			common.WithParamsValue(constant.MaxServerRecvMsgSize, proto.MaxServerRecvMsgSize),
 		)
 		if len(s.Tag) > 0 {
 			ivkURL.AddParam(constant.Tagkey, s.Tag)
@@ -338,20 +331,6 @@ func (s *ServiceConfig) Export() error {
 	}
 	s.exported.Store(true)
 	return nil
-}
-
-// getProtoParams get protocol params, convert to ProtocolParamsConfig
-func getProtoParams(params interface{}) *ProtocolParamsConfig {
-	marshal, err := json.Marshal(params)
-	if err != nil {
-		logger.Warnf("parse protocol params to json error: %v", err)
-	}
-	protoParams := &ProtocolParamsConfig{}
-	err = json.Unmarshal(marshal, protoParams)
-	if err != nil {
-		logger.Warnf("parse protocol params to json error: %v", err)
-	}
-	return protoParams
 }
 
 // setRegistrySubURL set registry sub url is ivkURl
@@ -458,7 +437,6 @@ func (s *ServiceConfig) getUrlMap() url.Values {
 	urlMap.Set(constant.RegistryRoleKey, strconv.Itoa(common.PROVIDER))
 	urlMap.Set(constant.ReleaseKey, "dubbo-golang-"+constant.Version)
 	urlMap.Set(constant.SideKey, (common.RoleType(common.PROVIDER)).Role())
-	urlMap.Set(constant.MessageSizeKey, strconv.Itoa(s.GrpcMaxMessageSize))
 	// todo: move
 	urlMap.Set(constant.SerializationKey, s.Serialization)
 	// application config info

@@ -35,6 +35,7 @@ func TestGetProtocolsConfig(t *testing.T) {
 		// default
 		assert.Equal(t, "dubbo", protocols["dubbo"].Name)
 		assert.Equal(t, string("20000"), protocols["dubbo"].Port)
+		assert.Equal(t, "4mb", protocols["dubbo"].MaxServerRecvMsgSize)
 	})
 
 	t.Run("use config", func(t *testing.T) {
@@ -45,5 +46,7 @@ func TestGetProtocolsConfig(t *testing.T) {
 		// default
 		assert.Equal(t, "dubbo", protocols["dubbo"].Name)
 		assert.Equal(t, string("20000"), protocols["dubbo"].Port)
+		assert.Equal(t, "4mb", protocols["dubbo"].MaxServerSendMsgSize)
+		assert.Equal(t, "4mb", protocols["dubbo"].MaxServerRecvMsgSize)
 	})
 }

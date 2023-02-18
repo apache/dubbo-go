@@ -19,13 +19,13 @@ package grpc
 
 import (
 	"reflect"
-	"strconv"
 	"sync"
 	"time"
 )
 
 import (
 	"github.com/dubbogo/gost/log/logger"
+	"github.com/dustin/go-humanize"
 
 	"github.com/grpc-ecosystem/grpc-opentracing/go/otgrpc"
 
@@ -62,15 +62,14 @@ func NewClient(url *common.URL) (*Client, error) {
 	tracer := opentracing.GlobalTracer()
 	dialOpts := make([]grpc.DialOption, 0, 4)
 
-	maxMessageSize, _ := strconv.Atoi(url.GetParam(constant.MessageSizeKey, "4"))
-	// if MaxCallRecvMsgSize or MaxCallSendMsgSize is not empty, override maxMessageSize
-	maxCallRecvMsgSize := 1024 * 1024 * maxMessageSize
-	if recvMsgSize, err := strconv.Atoi(url.GetParam(constant.MaxCallRecvMsgSize, "0")); err == nil && recvMsgSize != 0 {
-		maxCallRecvMsgSize = recvMsgSize
+	// set max send and recv msg size
+	maxCallRecvMsgSize := constant.DefaultMaxCallRecvMsgSize
+	if recvMsgSize, err := humanize.ParseBytes(url.GetParam(constant.MaxCallRecvMsgSize, "0")); err == nil && recvMsgSize != 0 {
+		maxCallRecvMsgSize = int(recvMsgSize)
 	}
-	maxCallSendMsgSize := 1024 * 1024 * maxMessageSize
-	if sendMsgSize, err := strconv.Atoi(url.GetParam(constant.MaxCallSendMsgSize, "0")); err == nil && sendMsgSize != 0 {
-		maxCallSendMsgSize = sendMsgSize
+	maxCallSendMsgSize := constant.DefaultMaxCallSendMsgSize
+	if sendMsgSize, err := humanize.ParseBytes(url.GetParam(constant.MaxCallSendMsgSize, "0")); err == nil && sendMsgSize != 0 {
+		maxCallSendMsgSize = int(sendMsgSize)
 	}
 
 	// consumer config client connectTimeout
