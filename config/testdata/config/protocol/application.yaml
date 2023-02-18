@@ -8,5 +8,5 @@ dubbo:
     dubbo:
       name: dubbo
       port: 20000
-      max-server-send-msg-size: 4mb
-      max-server-recv-msg-size: 4mb
+      max-server-send-msg-size: 4mib
+      max-server-recv-msg-size: 4mib

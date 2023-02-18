@@ -33,7 +33,7 @@ type ProtocolConfig struct {
 	Params interface{} `yaml:"params" json:"params,omitempty" property:"params"`
 
 	MaxServerSendMsgSize string `yaml:"max-server-send-msg-size" json:"max-server-send-msg-size,omitempty"`
-	MaxServerRecvMsgSize string `default:"4mb" yaml:"max-server-recv-msg-size" json:"max-server-recv-msg-size,omitempty"`
+	MaxServerRecvMsgSize string `default:"4mib" yaml:"max-server-recv-msg-size" json:"max-server-recv-msg-size,omitempty"`
 }
 
 // Prefix dubbo.config-center
