@@ -694,7 +694,7 @@ func MergeURL(serviceURL *URL, referenceURL *URL) *URL {
 	for key, value := range referenceURL.GetParams() {
 		if v := mergedURL.GetParam(key, ""); len(v) == 0 && len(value) > 0 {
 			if params == nil {
-				params = url.Values{}
+				params = make(url.Values)
 			}
 			params[key] = make([]string, len(value))
 			copy(params[key], value)
