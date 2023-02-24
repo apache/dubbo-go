@@ -294,7 +294,7 @@ func (s *ServiceConfig) Export() error {
 			s.cacheMutex.Lock()
 			if s.cacheProtocol == nil {
 				logger.Debugf(fmt.Sprintf("First load the registry protocol, url is {%v}!", ivkURL))
-				s.cacheProtocol = extension.GetProtocol("registry")
+				s.cacheProtocol = extension.GetProtocol(constant.RegistryProtocol)
 			}
 			s.cacheMutex.Unlock()
 

@@ -18,6 +18,7 @@
 package polaris
 
 import (
+	"fmt"
 	"net/url"
 	"strconv"
 )
@@ -33,25 +34,34 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/registry"
+	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
 type polarisListener struct {
-	watcher   *PolarisServiceWatcher
-	listenUrl *common.URL
-	events    *gxchan.UnboundedChan
-	closeCh   chan struct{}
+	watcher *PolarisServiceWatcher
+	events  *gxchan.UnboundedChan
+	closeCh chan struct{}
 }
 
 // NewPolarisListener new polaris listener
-func NewPolarisListener(url *common.URL) (*polarisListener, error) {
+func NewPolarisListener(watcher *PolarisServiceWatcher) (*polarisListener, error) {
 	listener := &polarisListener{
-		listenUrl: url,
-		events:    gxchan.NewUnboundedChan(32),
-		closeCh:   make(chan struct{}),
+		watcher: watcher,
+		events:  gxchan.NewUnboundedChan(32),
+		closeCh: make(chan struct{}),
 	}
+	listener.startListen()
 	return listener, nil
+}
+func (pl *polarisListener) startListen() {
+	pl.watcher.AddSubscriber(func(et remoting.EventType, ins []model.Instance) {
+		for i := range ins {
+			pl.events.In() <- &config_center.ConfigChangeEvent{Value: ins[i], ConfigType: et}
+		}
+	})
 }
 
 // Next returns next service event once received
@@ -59,7 +69,7 @@ func (pl *polarisListener) Next() (*registry.ServiceEvent, error) {
 	for {
 		select {
 		case <-pl.closeCh:
-			logger.Warnf("polaris listener is close!listenUrl:%+v", pl.listenUrl)
+			logger.Warnf("polaris listener is close")
 			return nil, perrors.New("listener stopped")
 		case val := <-pl.events.Out():
 			e, _ := val.(*config_center.ConfigChangeEvent)
@@ -99,6 +109,10 @@ func generateUrl(instance model.Instance) *common.URL {
 	for k, v := range instance.GetMetadata() {
 		urlMap.Set(k, v)
 	}
+	urlMap.Set(constant.PolarisInstanceID, instance.GetId())
+	urlMap.Set(constant.PolarisInstanceHealthStatus, fmt.Sprintf("%+v", instance.IsHealthy()))
+	urlMap.Set(constant.PolarisInstanceIsolatedStatus, fmt.Sprintf("%+v", instance.IsIsolated()))
+	instance.GetCircuitBreakerStatus()
 	return common.NewURLWithOptions(
 		common.WithIp(instance.GetHost()),
 		common.WithPort(strconv.Itoa(int(instance.GetPort()))),

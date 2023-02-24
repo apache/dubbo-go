@@ -18,6 +18,7 @@
 package grpc
 
 import (
+	"crypto/tls"
 	"fmt"
 	"net"
 	"sync"
@@ -32,6 +33,8 @@ import (
 	"github.com/opentracing/opentracing-go"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
 )
 
@@ -81,12 +84,32 @@ func (s *Server) Start(url *common.URL) {
 	// If global trace instance was set, then server tracer instance
 	// can be get. If not, will return NoopTracer.
 	tracer := opentracing.GlobalTracer()
-	server := grpc.NewServer(
+	var serverOpts []grpc.ServerOption
+	serverOpts = append(serverOpts,
 		grpc.UnaryInterceptor(otgrpc.OpenTracingServerInterceptor(tracer)),
 		grpc.StreamInterceptor(otgrpc.OpenTracingStreamServerInterceptor(tracer)),
 		grpc.MaxRecvMsgSize(1024*1024*s.bufferSize),
 		grpc.MaxSendMsgSize(1024*1024*s.bufferSize),
 	)
+
+	tlsConfig := config.GetRootConfig().TLSConfig
+	if tlsConfig != nil {
+		var cfg *tls.Config
+		cfg, err = config.GetServerTlsConfig(&config.TLSConfig{
+			CACertFile:    tlsConfig.CACertFile,
+			TLSCertFile:   tlsConfig.TLSCertFile,
+			TLSKeyFile:    tlsConfig.TLSKeyFile,
+			TLSServerName: tlsConfig.TLSServerName,
+		})
+		if err != nil {
+			return
+		}
+		logger.Infof("Grpc Server initialized the TLSConfig configuration")
+		serverOpts = append(serverOpts, grpc.Creds(credentials.NewTLS(cfg)))
+	} else {
+		serverOpts = append(serverOpts, grpc.Creds(insecure.NewCredentials()))
+	}
+	server := grpc.NewServer(serverOpts...)
 	s.grpcServer = server
 
 	go func() {

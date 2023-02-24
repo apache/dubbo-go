@@ -22,6 +22,8 @@ import (
 )
 
 import (
+	getty "github.com/apache/dubbo-getty"
+
 	"github.com/creasty/defaults"
 
 	"github.com/dubbogo/gost/encoding/yaml"
@@ -94,6 +96,7 @@ func (lc *LoggerConfig) Init() error {
 	}
 	lc.ZapConfig.setZapConfig(logConf.ZapConfig)
 	logger.InitLogger(logConf)
+	getty.SetLogger(logger.GetLogger())
 	return nil
 }
 
@@ -166,4 +169,12 @@ func (lcb *LoggerConfigBuilder) SetZapConfig(zapConfig ZapConfig) *LoggerConfigB
 
 func (lcb *LoggerConfigBuilder) Build() *LoggerConfig {
 	return lcb.loggerConfig
+}
+
+// DynamicUpdateProperties dynamically update properties.
+func (lc *LoggerConfig) DynamicUpdateProperties(newLoggerConfig *LoggerConfig) {
+	if newLoggerConfig != nil && lc.ZapConfig.Level != newLoggerConfig.ZapConfig.Level {
+		lc.ZapConfig.Level = newLoggerConfig.ZapConfig.Level
+		logger.Infof("LoggerConfig's ZapConfig Level was dynamically updated, new value:%v", lc.ZapConfig.Level)
+	}
 }

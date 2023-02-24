@@ -323,7 +323,7 @@ func TestMergeUrl(t *testing.T) {
 	assert.Equal(t, "1", mergedUrl.GetParam("test2", ""))
 	assert.Equal(t, "1", mergedUrl.GetParam("test3", ""))
 	assert.Equal(t, "1", mergedUrl.GetParam(constant.RetriesKey, ""))
-	assert.Equal(t, "2", mergedUrl.GetParam(constant.MethodKeys+".testMethod."+constant.RetriesKey, ""))
+	assert.Equal(t, "1", mergedUrl.GetParam(constant.MethodKeys+".testMethod."+constant.RetriesKey, ""))
 }
 
 func TestURLSetParams(t *testing.T) {

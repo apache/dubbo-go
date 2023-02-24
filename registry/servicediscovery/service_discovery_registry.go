@@ -42,6 +42,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/registry/event"
 	"dubbo.apache.org/dubbo-go/v3/registry/servicediscovery/synthesizer"
+	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
 func init() {
@@ -165,6 +166,7 @@ func (s *serviceDiscoveryRegistry) Register(url *common.URL) error {
 	if !shouldRegister(url) {
 		return nil
 	}
+	common.HandleRegisterIPAndPort(url)
 	ok, err := s.metaDataService.ExportURL(url)
 
 	if err != nil {
@@ -229,6 +231,36 @@ func (s *serviceDiscoveryRegistry) Subscribe(url *common.URL, notify registry.No
 	err = s.serviceDiscovery.AddListener(listener)
 	if err != nil {
 		logger.Errorf("add instance listener catch error,url:%s err:%s", url.String(), err.Error())
+	}
+	return nil
+}
+
+// LoadSubscribeInstances load subscribe instance
+func (s *serviceDiscoveryRegistry) LoadSubscribeInstances(url *common.URL, notify registry.NotifyListener) error {
+	appName := url.GetParam(constant.ApplicationKey, url.Username)
+	instances := s.serviceDiscovery.GetInstances(appName)
+	for _, instance := range instances {
+		if instance.GetMetadata() == nil {
+			logger.Warnf("Instance metadata is nil: %s", instance.GetHost())
+			continue
+		}
+		revision, ok := instance.GetMetadata()[constant.ExportedServicesRevisionPropertyName]
+		if !ok {
+			logger.Warnf("Instance metadata revision is nil: %s", instance.GetHost())
+			continue
+		}
+		if "0" == revision {
+			logger.Infof("Find instance without valid service metadata: %s", instance.GetHost())
+			continue
+		}
+		metadataInfo, err := event.GetMetadataInfo(instance, revision)
+		if err != nil {
+			return err
+		}
+		instance.SetServiceMetadata(metadataInfo)
+		for _, url := range instance.ToURLs() {
+			notify.Notify(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: url})
+		}
 	}
 	return nil
 }

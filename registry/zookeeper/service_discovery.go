@@ -180,7 +180,7 @@ func (zksd *zookeeperServiceDiscovery) GetInstances(serviceName string) []regist
 	}
 	iss := make([]registry.ServiceInstance, 0, len(criss))
 	for _, cris := range criss {
-		iss = append(iss, zksd.toZookeeperInstance(cris))
+		iss = append(iss, toZookeeperInstance(cris))
 	}
 	return iss
 }
@@ -304,7 +304,7 @@ func (zksd *zookeeperServiceDiscovery) toCuratorInstance(instance registry.Servi
 }
 
 // toZookeeperInstance convert to registry's service instance
-func (zksd *zookeeperServiceDiscovery) toZookeeperInstance(cris *curator_discovery.ServiceInstance) registry.ServiceInstance {
+func toZookeeperInstance(cris *curator_discovery.ServiceInstance) registry.ServiceInstance {
 	pl, ok := cris.Payload.(map[string]interface{})
 	if !ok {
 		logger.Errorf("[zkServiceDiscovery] toZookeeperInstance{%s} payload is not map[string]interface{}", cris.ID)

@@ -447,6 +447,76 @@ func (pcb *ReferenceConfigBuilder) SetURL(url string) *ReferenceConfigBuilder {
 	return pcb
 }
 
+func (pcb *ReferenceConfigBuilder) SetFilter(filter string) *ReferenceConfigBuilder {
+	pcb.referenceConfig.Filter = filter
+	return pcb
+}
+
+func (pcb *ReferenceConfigBuilder) SetLoadbalance(loadbalance string) *ReferenceConfigBuilder {
+	pcb.referenceConfig.Loadbalance = loadbalance
+	return pcb
+}
+
+func (pcb *ReferenceConfigBuilder) SetRetries(retries string) *ReferenceConfigBuilder {
+	pcb.referenceConfig.Retries = retries
+	return pcb
+}
+
+func (pcb *ReferenceConfigBuilder) SetGroup(group string) *ReferenceConfigBuilder {
+	pcb.referenceConfig.Group = group
+	return pcb
+}
+
+func (pcb *ReferenceConfigBuilder) SetVersion(version string) *ReferenceConfigBuilder {
+	pcb.referenceConfig.Version = version
+	return pcb
+}
+
+func (pcb *ReferenceConfigBuilder) SetProvidedBy(providedBy string) *ReferenceConfigBuilder {
+	pcb.referenceConfig.ProvidedBy = providedBy
+	return pcb
+}
+
+func (pcb *ReferenceConfigBuilder) SetMethodConfig(methodConfigs []*MethodConfig) *ReferenceConfigBuilder {
+	pcb.referenceConfig.Methods = methodConfigs
+	return pcb
+}
+
+func (pcb *ReferenceConfigBuilder) AddMethodConfig(methodConfig *MethodConfig) *ReferenceConfigBuilder {
+	pcb.referenceConfig.Methods = append(pcb.referenceConfig.Methods, methodConfig)
+	return pcb
+}
+
+func (pcb *ReferenceConfigBuilder) SetAsync(async bool) *ReferenceConfigBuilder {
+	pcb.referenceConfig.Async = async
+	return pcb
+}
+
+func (pcb *ReferenceConfigBuilder) SetParams(params map[string]string) *ReferenceConfigBuilder {
+	pcb.referenceConfig.Params = params
+	return pcb
+}
+
+func (pcb *ReferenceConfigBuilder) SetSticky(sticky bool) *ReferenceConfigBuilder {
+	pcb.referenceConfig.Sticky = sticky
+	return pcb
+}
+
+func (pcb *ReferenceConfigBuilder) SetRequestTimeout(requestTimeout string) *ReferenceConfigBuilder {
+	pcb.referenceConfig.RequestTimeout = requestTimeout
+	return pcb
+}
+
+func (pcb *ReferenceConfigBuilder) SetForceTag(forceTag bool) *ReferenceConfigBuilder {
+	pcb.referenceConfig.ForceTag = forceTag
+	return pcb
+}
+
+func (pcb *ReferenceConfigBuilder) SetTracingKey(tracingKey string) *ReferenceConfigBuilder {
+	pcb.referenceConfig.TracingKey = tracingKey
+	return pcb
+}
+
 func (pcb *ReferenceConfigBuilder) Build() *ReferenceConfig {
 	return pcb.referenceConfig
 }

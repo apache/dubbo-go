@@ -23,7 +23,8 @@ import (
 )
 
 import (
-	"github.com/polarismesh/polaris-go/api"
+	api "github.com/polarismesh/polaris-go"
+	internalapi "github.com/polarismesh/polaris-go/api"
 	"github.com/polarismesh/polaris-go/pkg/model"
 )
 
@@ -32,13 +33,13 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
-type subscriber func(remoting.EventType, []model.Instance)
+type item func(remoting.EventType, []model.Instance)
 
 type PolarisServiceWatcher struct {
 	consumer       api.ConsumerAPI
 	subscribeParam *api.WatchServiceRequest
 	lock           *sync.RWMutex
-	subscribers    []subscriber
+	subscribers    []item
 	execOnce       *sync.Once
 }
 
@@ -48,7 +49,7 @@ func newPolarisWatcher(param *api.WatchServiceRequest, consumer api.ConsumerAPI)
 		subscribeParam: param,
 		consumer:       consumer,
 		lock:           &sync.RWMutex{},
-		subscribers:    make([]subscriber, 0),
+		subscribers:    make([]item, 0),
 		execOnce:       &sync.Once{},
 	}
 	return watcher, nil
@@ -88,7 +89,7 @@ func (watcher *PolarisServiceWatcher) startWatch() {
 			select {
 			case event := <-resp.EventChannel:
 				eType := event.GetSubScribeEventType()
-				if eType == api.EventInstance {
+				if eType == internalapi.EventInstance {
 					insEvent := event.(*model.InstanceEvent)
 
 					if insEvent.AddEvent != nil {

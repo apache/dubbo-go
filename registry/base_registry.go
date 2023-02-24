@@ -132,12 +132,12 @@ func (r *BaseRegistry) Destroy() {
 // Register implement interface registry to register
 func (r *BaseRegistry) Register(url *common.URL) error {
 	// if developer define registry port and ip, use it first.
-	if ipToRegistry := os.Getenv("DUBBO_IP_TO_REGISTRY"); len(ipToRegistry) > 0 {
+	if ipToRegistry := os.Getenv(constant.DubboIpToRegistryKey); len(ipToRegistry) > 0 {
 		url.Ip = ipToRegistry
 	} else {
 		url.Ip = common.GetLocalIp()
 	}
-	if portToRegistry := os.Getenv("DUBBO_PORT_TO_REGISTRY"); len(portToRegistry) > 0 {
+	if portToRegistry := os.Getenv(constant.DubboPortToRegistryKey); len(portToRegistry) > 0 {
 		url.Port = portToRegistry
 	}
 	// todo bug when provider、consumer simultaneous initialization
@@ -405,6 +405,11 @@ func (r *BaseRegistry) UnSubscribe(url *common.URL, notifyListener NotifyListene
 		}
 	}
 	return nil
+}
+
+// LoadSubscribeInstances load subscribe instance
+func (r *BaseRegistry) LoadSubscribeInstances(url *common.URL, notify NotifyListener) error {
+	return r.facadeBasedRegistry.LoadSubscribeInstances(url, notify)
 }
 
 // closeRegisters close and remove registry client and reset services map

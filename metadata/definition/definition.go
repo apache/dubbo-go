@@ -37,10 +37,10 @@ type ServiceDefiner interface {
 
 // ServiceDefinition is the describer of service definition
 type ServiceDefinition struct {
-	CanonicalName string
-	CodeSource    string
-	Methods       []MethodDefinition
-	Types         []TypeDefinition
+	CanonicalName string             `json:"canonicalName"`
+	CodeSource    string             `json:"codeSource"`
+	Methods       []MethodDefinition `json:"methods"`
+	Types         []TypeDefinition   `json:"types"`
 }
 
 // ToBytes convert ServiceDefinition to json string
@@ -71,26 +71,26 @@ func (def *ServiceDefinition) String() string {
 
 // FullServiceDefinition is the describer of service definition with parameters
 type FullServiceDefinition struct {
-	Parameters map[string]string
+	Parameters map[string]string `json:"parameters"`
 	ServiceDefinition
 }
 
 // MethodDefinition is the describer of method definition
 type MethodDefinition struct {
-	Name           string
-	ParameterTypes []string
-	ReturnType     string
-	Parameters     []TypeDefinition
+	Name           string           `json:"name"`
+	ParameterTypes []string         `json:"parameterTypes"`
+	ReturnType     string           `json:"returnType"`
+	Parameters     []TypeDefinition `json:"parameters"`
 }
 
 // TypeDefinition is the describer of type definition
 type TypeDefinition struct {
-	ID              string
-	Type            string
-	Items           []TypeDefinition
-	Enums           []string
-	Properties      map[string]TypeDefinition
-	TypeBuilderName string
+	ID              string                    `json:"id"`
+	Type            string                    `json:"type"`
+	Items           []TypeDefinition          `json:"items"`
+	Enums           []string                  `json:"enums"`
+	Properties      map[string]TypeDefinition `json:"properties"`
+	TypeBuilderName string                    `json:"typeBuilderName"`
 }
 
 // BuildServiceDefinition can build service definition which will be used to describe a service

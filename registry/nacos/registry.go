@@ -19,6 +19,7 @@ package nacos
 
 import (
 	"bytes"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -38,17 +39,15 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/registry"
+	"dubbo.apache.org/dubbo-go/v3/remoting"
 	"dubbo.apache.org/dubbo-go/v3/remoting/nacos"
 )
-
-var localIP = ""
 
 const (
 	RegistryConnDelay = 3
 )
 
 func init() {
-	localIP = common.GetLocalIp()
 	extension.SetRegistry(constant.NacosKey, newNacosRegistry)
 }
 
@@ -95,12 +94,7 @@ func createRegisterParam(url *common.URL, serviceName string, groupName string) 
 	params[constant.NacosProtocolKey] = url.Protocol
 	params[constant.NacosPathKey] = url.Path
 	params[constant.MethodsKey] = strings.Join(url.Methods, ",")
-	if len(url.Ip) == 0 {
-		url.Ip = localIP
-	}
-	if len(url.Port) == 0 || url.Port == "0" {
-		url.Port = "80"
-	}
+	common.HandleRegisterIPAndPort(url)
 	port, _ := strconv.Atoi(url.Port)
 	instance := vo.RegisterInstanceParam{
 		Ip:          url.Ip,
@@ -134,12 +128,7 @@ func (nr *nacosRegistry) Register(url *common.URL) error {
 }
 
 func createDeregisterParam(url *common.URL, serviceName string, groupName string) vo.DeregisterInstanceParam {
-	if len(url.Ip) == 0 {
-		url.Ip = localIP
-	}
-	if len(url.Port) == 0 || url.Port == "0" {
-		url.Port = "80"
-	}
+	common.HandleRegisterIPAndPort(url)
 	port, _ := strconv.Atoi(url.Port)
 	return vo.DeregisterInstanceParam{
 		Ip:          url.Ip,
@@ -216,6 +205,27 @@ func (nr *nacosRegistry) UnSubscribe(url *common.URL, _ registry.NotifyListener)
 	err := nr.namingClient.Client().Unsubscribe(param)
 	if err != nil {
 		return perrors.New("UnSubscribe [" + param.ServiceName + "] to nacos failed")
+	}
+	return nil
+}
+
+// LoadSubscribeInstances load subscribe instance
+func (nr *nacosRegistry) LoadSubscribeInstances(url *common.URL, notify registry.NotifyListener) error {
+	serviceName := getSubscribeName(url)
+	groupName := nr.GetURL().GetParam(constant.RegistryGroupKey, defaultGroup)
+	instances, err := nr.namingClient.Client().SelectAllInstances(vo.SelectAllInstancesParam{
+		ServiceName: serviceName,
+		GroupName:   groupName,
+	})
+	if err != nil {
+		return perrors.New(fmt.Sprintf("could not query the instances for serviceName=%s,groupName=%s,error=%v",
+			serviceName, groupName, err))
+	}
+
+	for i := range instances {
+		if newUrl := generateUrl(instances[i]); newUrl != nil {
+			notify.Notify(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: newUrl})
+		}
 	}
 	return nil
 }

@@ -86,7 +86,7 @@ func (fn loaderConfigFunc) apply(vc *loaderConf) {
 }
 
 // WithGenre set load config file suffix
-//Deprecated: replaced by WithSuffix
+// Deprecated: replaced by WithSuffix
 func WithGenre(suffix string) LoaderConfOption {
 	return loaderConfigFunc(func(conf *loaderConf) {
 		g := strings.ToLower(suffix)
@@ -108,7 +108,7 @@ func WithSuffix(suffix file.Suffix) LoaderConfOption {
 func WithPath(path string) LoaderConfOption {
 	return loaderConfigFunc(func(conf *loaderConf) {
 		conf.path = absolutePath(path)
-		if bytes, err := ioutil.ReadFile(path); err != nil {
+		if bytes, err := ioutil.ReadFile(conf.path); err != nil {
 			panic(err)
 		} else {
 			conf.bytes = bytes
@@ -157,7 +157,7 @@ func absolutePath(inPath string) string {
 	return ""
 }
 
-//userHomeDir get gopath
+// userHomeDir get gopath
 func userHomeDir() string {
 	if runtime.GOOS == "windows" {
 		home := os.Getenv("HOMEDRIVE") + os.Getenv("HOMEPATH")
@@ -179,7 +179,7 @@ func checkFileSuffix(suffix string) error {
 	return errors.Errorf("no support file suffix: %s", suffix)
 }
 
-//resolverFilePath resolver file path
+// resolverFilePath resolver file path
 // eg: give a ./conf/dubbogo.yaml return dubbogo and yaml
 func resolverFilePath(path string) (name, suffix string) {
 	paths := strings.Split(path, "/")
@@ -190,7 +190,7 @@ func resolverFilePath(path string) (name, suffix string) {
 	return fileName[0], fileName[1]
 }
 
-//MergeConfig merge config file
+// MergeConfig merge config file
 func (conf *loaderConf) MergeConfig(koan *koanf.Koanf) *koanf.Koanf {
 	var (
 		activeKoan *koanf.Koanf

@@ -109,6 +109,10 @@ func (m *MockINamingClient) GetService(param vo.GetServiceParam) (model.Service,
 	return ret0, ret1
 }
 
+// CloseClient close nacos client
+func (m *MockINamingClient) CloseClient() {
+}
+
 // GetService indicates an expected call of GetService
 func (mr *MockINamingClientMockRecorder) GetService(param interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetService", reflect.TypeOf((*MockINamingClient)(nil).GetService), param)

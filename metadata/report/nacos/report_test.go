@@ -133,6 +133,10 @@ func (m *MockIConfigClient) ListenConfig(params vo.ConfigParam) error {
 	return ret0
 }
 
+// CloseClient close nacos client
+func (m *MockIConfigClient) CloseClient() {
+}
+
 // ListenConfig indicates an expected call of ListenConfig
 func (mr *MockIConfigClientMockRecorder) ListenConfig(params interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListenConfig", reflect.TypeOf((*MockIConfigClient)(nil).ListenConfig), params)

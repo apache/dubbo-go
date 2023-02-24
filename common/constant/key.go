@@ -64,6 +64,14 @@ const (
 	MaxServerRecvMsgSize   = "max-server-recv-msg-size"
 )
 
+//tls constant
+const (
+	TLSKey        = "tls_key"
+	TLSCert       = "tls_cert"
+	CACert        = "ca_cert"
+	TLSServerNAME = "tls_server_name"
+)
+
 const (
 	ServiceFilterKey   = "service.filter"
 	ReferenceFilterKey = "reference.filter"
@@ -257,20 +265,6 @@ const (
 	NacosPassword             = "nacos.password"
 	NacosTimeout              = "nacos.timeout"
 	NacosUpdateCacheWhenEmpty = "nacos.updateCacheWhenEmpty"
-)
-
-const (
-	PolarisKey                  = "polaris"
-	PolarisDefaultRoleType      = 3
-	PolarisConfigFilePath       = "configPath"
-	PolarisNamespace            = "namespace"
-	PolarisServiceToken         = "token"
-	PolarisServiceNameSeparator = ":"
-	PolarisDubboPath            = "DUBBOPATH"
-	PolarisInstanceID           = "polaris.instanceID"
-	PolarisDefaultNamespace     = "default"
-	PolarisDubboGroup           = "dubbo.group"
-	PolarisClientName           = "polaris-client"
 )
 
 const (

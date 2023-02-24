@@ -92,7 +92,7 @@ func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 		m, ok := reflect.TypeOf(service).MethodByName("XXX_SetProxyImpl")
 		if !ok {
 			logger.Errorf("PB service with key = %s is not support XXX_SetProxyImpl to pb."+
-				"Please run go install github.com/dubbogo/tools/cmd/protoc-gen-go-triple@latest to update your "+
+				"Please run go install github.com/dubbogo/dubbogo-cli/cmd/protoc-gen-go-triple@latest to update your "+
 				"protoc-gen-go-triple and re-generate your pb file again.", key)
 			return nil
 		}
@@ -254,6 +254,15 @@ func (dp *DubboProtocol) openServer(url *common.URL, tripleCodecType tripleConst
 	}
 
 	triOption := triConfig.NewTripleOption(opts...)
+
+	tlsConfig := config.GetRootConfig().TLSConfig
+	if tlsConfig != nil {
+		triOption.TLSCertFile = tlsConfig.TLSCertFile
+		triOption.TLSKeyFile = tlsConfig.TLSKeyFile
+		triOption.CACertFile = tlsConfig.CACertFile
+		triOption.TLSServerName = tlsConfig.TLSServerName
+		logger.Infof("Triple Server initialized the TLSConfig configuration")
+	}
 
 	_, ok = dp.ExporterMap().Load(url.ServiceKey())
 	if !ok {

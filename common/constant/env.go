@@ -28,4 +28,8 @@ const (
 	DefaultNamespace     = "default"
 	SVC                  = "svc"
 	DefaultMeshPort      = 80
+
+	DubboIpToRegistryKey       = "DUBBO_IP_TO_REGISTRY"
+	DubboPortToRegistryKey     = "DUBBO_PORT_TO_REGISTRY"
+	DubboDefaultPortToRegistry = "80"
 )

@@ -96,6 +96,11 @@ func (m *MockIConfigClient) DeleteConfig(param vo.ConfigParam) (bool, error) {
 	return ret0, ret1
 }
 
+// CloseClient client nacos client
+func (mr *MockIConfigClient) CloseClient() {
+
+}
+
 // DeleteConfig indicates an expected call of DeleteConfig
 func (mr *MockIConfigClientMockRecorder) DeleteConfig(param interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteConfig", reflect.TypeOf((*MockIConfigClient)(nil).DeleteConfig), param)

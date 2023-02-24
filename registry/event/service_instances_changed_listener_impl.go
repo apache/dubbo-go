@@ -88,7 +88,7 @@ func (lstn *ServiceInstancesChangedListenerImpl) OnEvent(e observer.Event) error
 			revisionToInstances[revision] = append(subInstances, instance)
 			metadataInfo := lstn.revisionToMetadata[revision]
 			if metadataInfo == nil {
-				metadataInfo, err = lstn.getMetadataInfo(instance, revision)
+				metadataInfo, err = GetMetadataInfo(instance, revision)
 				if err != nil {
 					return err
 				}
@@ -132,45 +132,17 @@ func (lstn *ServiceInstancesChangedListenerImpl) OnEvent(e observer.Event) error
 
 		for key, notifyListener := range lstn.listeners {
 			urls := lstn.serviceUrls[key]
+			events := make([]*registry.ServiceEvent, 0, len(urls))
 			for _, url := range urls {
-				notifyListener.Notify(&registry.ServiceEvent{
+				events = append(events, &registry.ServiceEvent{
 					Action:  remoting.EventTypeAdd,
 					Service: url,
 				})
 			}
+			notifyListener.NotifyAll(events, func() {})
 		}
 	}
 	return nil
-}
-
-// getMetadataInfo get metadata info when MetadataStorageTypePropertyName is null
-func (lstn *ServiceInstancesChangedListenerImpl) getMetadataInfo(instance registry.ServiceInstance, revision string) (*common.MetadataInfo, error) {
-	var metadataStorageType string
-	var metadataInfo *common.MetadataInfo
-	if instance.GetMetadata() == nil {
-		metadataStorageType = constant.DefaultMetadataStorageType
-	} else {
-		metadataStorageType = instance.GetMetadata()[constant.MetadataStorageTypePropertyName]
-	}
-	if metadataStorageType == constant.RemoteMetadataStorageType {
-		remoteMetadataServiceImpl, err := extension.GetRemoteMetadataService()
-		if err != nil {
-			return nil, err
-		}
-		metadataInfo, err = remoteMetadataServiceImpl.GetMetadata(instance)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		var err error
-		proxyFactory := extension.GetMetadataServiceProxyFactory(constant.DefaultKey)
-		metadataService := proxyFactory.GetProxy(instance)
-		metadataInfo, err = metadataService.GetMetadataInfo(revision)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return metadataInfo, nil
 }
 
 // AddListenerAndNotify add notify listener and notify to listen service event
@@ -211,4 +183,34 @@ func (lstn *ServiceInstancesChangedListenerImpl) GetPriority() int {
 // GetEventType returns ServiceInstancesChangedEvent
 func (lstn *ServiceInstancesChangedListenerImpl) GetEventType() reflect.Type {
 	return reflect.TypeOf(&registry.ServiceInstancesChangedEvent{})
+}
+
+// GetMetadataInfo get metadata info when MetadataStorageTypePropertyName is null
+func GetMetadataInfo(instance registry.ServiceInstance, revision string) (*common.MetadataInfo, error) {
+	var metadataStorageType string
+	var metadataInfo *common.MetadataInfo
+	if instance.GetMetadata() == nil {
+		metadataStorageType = constant.DefaultMetadataStorageType
+	} else {
+		metadataStorageType = instance.GetMetadata()[constant.MetadataStorageTypePropertyName]
+	}
+	if metadataStorageType == constant.RemoteMetadataStorageType {
+		remoteMetadataServiceImpl, err := extension.GetRemoteMetadataService()
+		if err != nil {
+			return nil, err
+		}
+		metadataInfo, err = remoteMetadataServiceImpl.GetMetadata(instance)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		var err error
+		proxyFactory := extension.GetMetadataServiceProxyFactory(constant.DefaultKey)
+		metadataService := proxyFactory.GetProxy(instance)
+		metadataInfo, err = metadataService.GetMetadataInfo(revision)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return metadataInfo, nil
 }

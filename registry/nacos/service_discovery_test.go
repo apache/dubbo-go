@@ -204,6 +204,9 @@ func (c mockClient) GetAllServicesInfo(param vo.GetAllServiceInfoParam) (model.S
 	panic("implement me")
 }
 
+func (c mockClient) CloseClient() {
+}
+
 type mockProtocol struct{}
 
 func (m mockProtocol) Export(protocol.Invoker) protocol.Exporter {
