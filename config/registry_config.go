@@ -45,7 +45,7 @@ type RegistryConfig struct {
 	Timeout      string            `default:"5s" validate:"required" yaml:"timeout" json:"timeout,omitempty" property:"timeout"` // unit: second
 	Group        string            `yaml:"group" json:"group,omitempty" property:"group"`
 	Namespace    string            `yaml:"namespace" json:"namespace,omitempty" property:"namespace"`
-	TTL          string            `default:"10s" yaml:"ttl" json:"ttl,omitempty" property:"ttl"` // unit: minute
+	TTL          string            `default:"15m" yaml:"ttl" json:"ttl,omitempty" property:"ttl"`
 	Address      string            `validate:"required" yaml:"address" json:"address,omitempty" property:"address"`
 	Username     string            `yaml:"username" json:"username,omitempty" property:"username"`
 	Password     string            `yaml:"password" json:"password,omitempty"  property:"password"`
