@@ -20,6 +20,7 @@ package common
 import (
 	"context"
 	"reflect"
+	"sync"
 	"testing"
 )
 
@@ -113,7 +114,7 @@ func TestServiceMapRegister(t *testing.T) {
 	assert.EqualError(t, err, "type testService:v2 has no exported methods of suitable type")
 
 	ServiceMap = &serviceMap{
-		serviceMap:   make(map[string]map[string]*Service),
+		serviceMap:   make(map[string]*sync.Map),
 		interfaceMap: make(map[string][]*Service),
 	}
 }
