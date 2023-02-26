@@ -9,7 +9,7 @@ require (
 	github.com/afex/hystrix-go v0.0.0-20180502004556-fa1af6a1f4f5
 	github.com/alibaba/sentinel-golang v1.0.4
 	github.com/apache/dubbo-getty v1.4.9
-	github.com/apache/dubbo-go-hessian2 v1.11.6
+	github.com/apache/dubbo-go-hessian2 v1.12.0
 	github.com/cespare/xxhash/v2 v2.2.0
 	github.com/cncf/udpa/go v0.0.0-20210930031921-04548b0d99d4
 	github.com/cncf/xds/go v0.0.0-20220314180256-7f1daf1720fc
@@ -49,7 +49,7 @@ require (
 	go.etcd.io/etcd/client/v3 v3.5.7
 	go.opentelemetry.io/otel v1.11.0
 	go.opentelemetry.io/otel/trace v1.11.0
-	go.uber.org/atomic v1.9.0
+	go.uber.org/atomic v1.10.0
 	go.uber.org/multierr v1.8.0 // indirect
 	go.uber.org/zap v1.21.0
 	google.golang.org/genproto v0.0.0-20221118155620-16455021b5e6
