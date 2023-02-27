@@ -258,8 +258,10 @@ func (s *serviceDiscoveryRegistry) LoadSubscribeInstances(url *common.URL, notif
 			return err
 		}
 		instance.SetServiceMetadata(metadataInfo)
-		for _, url := range instance.ToURLs() {
-			notify.Notify(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: url})
+		for _, serviceInfo := range metadataInfo.Services {
+			for _, url := range instance.ToURLs(serviceInfo) {
+				notify.Notify(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: url})
+			}
 		}
 	}
 	return nil
