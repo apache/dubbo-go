@@ -44,7 +44,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/polarismesh/polaris-go v1.3.0
 	github.com/prometheus/client_golang v1.12.2
-	github.com/stretchr/testify v1.8.1
+	github.com/stretchr/testify v1.8.2
 	go.etcd.io/etcd/api/v3 v3.5.7
 	go.etcd.io/etcd/client/v3 v3.5.7
 	go.opentelemetry.io/otel v1.11.0
