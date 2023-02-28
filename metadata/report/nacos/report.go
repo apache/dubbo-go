@@ -247,8 +247,14 @@ func (n *nacosMetadataReport) RegisterServiceAppMapping(key string, group string
 	if err != nil {
 		return err
 	}
-	if strings.Contains(oldVal, value) {
-		return nil
+	// fix service mapping duplicated
+	oldApps := strings.Split(oldVal, constant.CommaSeparator)
+	if len(oldApps) > 0 {
+		for _, app := range oldApps {
+			if app == value {
+				return nil
+			}
+		}
 	}
 	if oldVal != "" {
 		value = oldVal + constant.CommaSeparator + value
