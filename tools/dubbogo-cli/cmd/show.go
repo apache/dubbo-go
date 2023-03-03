@@ -20,10 +20,13 @@ package cmd
 import (
 	"fmt"
 	"log"
+	"os"
+	"strings"
 )
 
 import (
 	"github.com/spf13/cobra"
+	"github.com/olekukonko/tablewriter"
 )
 
 import (
@@ -68,6 +71,9 @@ func show(cmd *cobra.Command, _ []string) {
 		panic(err)
 	}
 
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"Interface", "Method"})
+
 	if registry != "" {
 		registryFactory, ok := metadata.GetFactory(registry)
 		if !ok {
@@ -81,9 +87,9 @@ func show(cmd *cobra.Command, _ []string) {
 		fmt.Printf("======================\n")
 		fmt.Printf("Registry:\n")
 		for k, v := range methodsMap {
-			fmt.Printf("interface: %s\n", k)
-			fmt.Printf("methods: %v\n", v)
+			table.Append([]string{k, strings.Join(v, ", ")})
 		}
+		table.Render()
 		fmt.Printf("======================\n")
 	}
 
@@ -100,9 +106,10 @@ func show(cmd *cobra.Command, _ []string) {
 		fmt.Printf("======================\n")
 		fmt.Printf("MetadataCenter:\n")
 		for k, v := range methodsMap {
-			fmt.Printf("interface: %s\n", k)
-			fmt.Printf("methods: %v\n", v)
+			table.Append([]string{k, strings.Join(v, ", ")})
 		}
+		table.Render()
 		fmt.Printf("======================\n")
 	}
 }
+
