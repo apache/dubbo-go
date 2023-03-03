@@ -145,11 +145,11 @@ func (gi *GrpcInvoker) IsDestroyed() bool {
 // Destroy will destroy gRPC's invoker and client, so it is only called once
 func (gi *GrpcInvoker) Destroy() {
 	gi.quitOnce.Do(func() {
-		gi.BaseInvoker.Destroy()
 		client := gi.getClient()
 		if client != nil {
 			gi.setClient(nil)
 			client.Close()
 		}
+		gi.BaseInvoker.Destroy()
 	})
 }

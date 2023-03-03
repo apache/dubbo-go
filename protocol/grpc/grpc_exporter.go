@@ -46,9 +46,9 @@ func NewGrpcExporter(key string, invoker protocol.Invoker, exporterMap *sync.Map
 // Unexport and unregister gRPC service from registry and memory.
 func (gg *GrpcExporter) UnExport() {
 	interfaceName := gg.GetInvoker().GetURL().GetParam(constant.InterfaceKey, "")
-	gg.BaseExporter.UnExport()
 	err := common.ServiceMap.UnRegister(interfaceName, GRPC, gg.GetInvoker().GetURL().ServiceKey())
 	if err != nil {
 		logger.Errorf("[GrpcExporter.UnExport] error: %v", err)
 	}
+	gg.BaseExporter.UnExport()
 }

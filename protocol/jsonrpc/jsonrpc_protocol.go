@@ -96,13 +96,13 @@ func (jp *JsonrpcProtocol) Refer(url *common.URL) protocol.Invoker {
 func (jp *JsonrpcProtocol) Destroy() {
 	logger.Infof("jsonrpcProtocol destroy.")
 
-	jp.BaseProtocol.Destroy()
-
 	// stop server
 	for key, server := range jp.serverMap {
 		delete(jp.serverMap, key)
 		server.Stop()
 	}
+
+	jp.BaseProtocol.Destroy()
 }
 
 func (jp *JsonrpcProtocol) openServer(url *common.URL) {

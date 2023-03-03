@@ -152,7 +152,6 @@ func (rp *RestProtocol) getClient(restOptions client.RestOptions, clientType str
 // Destroy destroy rest service
 func (rp *RestProtocol) Destroy() {
 	// destroy rest_server
-	rp.BaseProtocol.Destroy()
 	for key, tmpServer := range rp.serverMap {
 		tmpServer.Destroy()
 		delete(rp.serverMap, key)
@@ -160,6 +159,7 @@ func (rp *RestProtocol) Destroy() {
 	for key := range rp.clientMap {
 		delete(rp.clientMap, key)
 	}
+	rp.BaseProtocol.Destroy()
 }
 
 // GetRestProtocol get a rest protocol

@@ -116,7 +116,6 @@ func (dir *RegistryDirectory) Notify(event *registry.ServiceEvent) {
 		return
 	}
 	dir.refreshInvokers(event)
-	event = nil
 }
 
 // NotifyAll notify the events that are complete Service Event List.

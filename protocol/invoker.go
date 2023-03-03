@@ -92,6 +92,7 @@ func (bi *BaseInvoker) Destroy() {
 	logger.Infof("Destroy invoker: %s", bi.GetURL())
 	bi.destroyed.Store(true)
 	bi.available.Store(false)
+	bi.url = nil
 }
 
 func (bi *BaseInvoker) String() string {
