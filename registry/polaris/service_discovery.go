@@ -317,9 +317,12 @@ func (polaris *polarisServiceDiscovery) String() string {
 
 func convertToRegisterInstance(namespace string, instance registry.ServiceInstance) *api.InstanceRegisterRequest {
 
-	health := instance.IsHealthy()
-	isolate := instance.IsEnable()
-	ttl := 5
+	var (
+		health      = instance.IsHealthy()
+		isolate     = instance.IsEnable()
+		ttl         = 5
+		protocolVal = protocolForDubboGO
+	)
 
 	return &api.InstanceRegisterRequest{
 		InstanceRegisterRequest: model.InstanceRegisterRequest{
@@ -327,7 +330,7 @@ func convertToRegisterInstance(namespace string, instance registry.ServiceInstan
 			Namespace: namespace,
 			Host:      instance.GetHost(),
 			Port:      instance.GetPort(),
-			Protocol:  &protocolForDubboGO,
+			Protocol:  &protocolVal,
 			Metadata:  instance.GetMetadata(),
 			Healthy:   &health,
 			Isolate:   &isolate,
