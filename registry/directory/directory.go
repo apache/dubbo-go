@@ -90,9 +90,9 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry) (director
 		logger.Warnf("fail to create router chain with url: %s, err is: %v", url.SubURL, err)
 	}
 
-	dir.consumerConfigurationListener = newConsumerConfigurationListener(dir)
-	dir.consumerConfigurationListener.addNotifyListener(dir)
-	dir.referenceConfigurationListener = newReferenceConfigurationListener(dir, url)
+	//dir.consumerConfigurationListener = newConsumerConfigurationListener(dir)
+	//dir.consumerConfigurationListener.addNotifyListener(dir)
+	//dir.referenceConfigurationListener = newReferenceConfigurationListener(dir, url)
 
 	if err := dir.registry.LoadSubscribeInstances(url.SubURL, dir); err != nil {
 		return nil, err
@@ -448,8 +448,8 @@ func (dir *RegistryDirectory) Destroy() {
 
 func (dir *RegistryDirectory) overrideUrl(targetUrl *common.URL) {
 	doOverrideUrl(dir.configurators, targetUrl)
-	doOverrideUrl(dir.consumerConfigurationListener.Configurators(), targetUrl)
-	doOverrideUrl(dir.referenceConfigurationListener.Configurators(), targetUrl)
+	//doOverrideUrl(dir.consumerConfigurationListener.Configurators(), targetUrl)
+	//doOverrideUrl(dir.referenceConfigurationListener.Configurators(), targetUrl)
 }
 
 func (dir *RegistryDirectory) getConsumerUrl(c *common.URL) *common.URL {
