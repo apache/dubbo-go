@@ -91,3 +91,35 @@ func GetClientTlsConfig(opt *TLSConfig) (*tls.Config, error) {
 	}
 	return cfg, err
 }
+
+type TLSConfigBuilder struct {
+	tlsConfig *TLSConfig
+}
+
+func NewTLSConfigBuilder() *TLSConfigBuilder {
+	return &TLSConfigBuilder{tlsConfig: &TLSConfig{}}
+}
+
+func (tcb *TLSConfigBuilder) SetCACertFile(caCertFile string) *TLSConfigBuilder {
+	tcb.tlsConfig.CACertFile = caCertFile
+	return tcb
+}
+
+func (tcb *TLSConfigBuilder) SetTLSCertFile(tlsCertFile string) *TLSConfigBuilder {
+	tcb.tlsConfig.TLSCertFile = tlsCertFile
+	return tcb
+}
+
+func (tcb *TLSConfigBuilder) SetTLSKeyFile(tlsKeyFile string) *TLSConfigBuilder {
+	tcb.tlsConfig.TLSKeyFile = tlsKeyFile
+	return tcb
+}
+
+func (tcb *TLSConfigBuilder) SetTLSServerName(tlsServerName string) *TLSConfigBuilder {
+	tcb.tlsConfig.TLSServerName = tlsServerName
+	return tcb
+}
+
+func (tcb *TLSConfigBuilder) Build() *TLSConfig {
+	return tcb.tlsConfig
+}
