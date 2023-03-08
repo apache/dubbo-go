@@ -255,11 +255,6 @@ func createRegisterParam(url *common.URL, serviceName string) *api.InstanceRegis
 
 	ver := url.GetParam("version", "")
 
-	protocolVal := protocolForDubboGO
-	if len(url.Protocol) != 0 {
-		protocolVal = url.Protocol
-	}
-
 	req := &api.InstanceRegisterRequest{
 		InstanceRegisterRequest: model.InstanceRegisterRequest{
 			Service:  serviceName,
