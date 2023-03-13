@@ -13,7 +13,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.2.0
 	github.com/cncf/udpa/go v0.0.0-20210930031921-04548b0d99d4
 	github.com/cncf/xds/go v0.0.0-20220314180256-7f1daf1720fc
-	github.com/creasty/defaults v1.5.2
+	github.com/creasty/defaults v1.7.0
 	github.com/dubbogo/go-zookeeper v1.0.4-0.20211212162352-f9d2183d89d5
 	github.com/dubbogo/gost v1.13.2
 	github.com/dubbogo/grpc-go v1.42.10
