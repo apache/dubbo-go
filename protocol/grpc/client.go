@@ -18,7 +18,6 @@
 package grpc
 
 import (
-	"crypto/tls"
 	"reflect"
 	"strconv"
 	"sync"
@@ -79,13 +78,19 @@ func NewClient(url *common.URL) (*Client, error) {
 			grpc.MaxCallSendMsgSize(1024*1024*maxMessageSize),
 		),
 	)
-	var cfg *tls.Config
-	var err error
-	if cfg, err = config.GetClientTlsConfig(config.GetTLSConfig()); err != nil {
-		return nil, err
-	}
-	if cfg != nil {
+	tlsConfig := config.GetRootConfig().TLSConfig
+
+	if tlsConfig != nil {
+		cfg, err := config.GetClientTlsConfig(&config.TLSConfig{
+			CACertFile:    tlsConfig.CACertFile,
+			TLSCertFile:   tlsConfig.TLSCertFile,
+			TLSKeyFile:    tlsConfig.TLSKeyFile,
+			TLSServerName: tlsConfig.TLSServerName,
+		})
 		logger.Infof("Grpc Client initialized the TLSConfig configuration")
+		if err != nil {
+			return nil, err
+		}
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(credentials.NewTLS(cfg)))
 	} else {
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))

@@ -234,6 +234,7 @@ const (
 	LoggerConfigPrefix         = "dubbo.logger"
 	CustomConfigPrefix         = "dubbo.custom"
 	ProfilesConfigPrefix       = "dubbo.profiles"
+	TLSConfigPrefix            = "dubbo.tls_config"
 )
 
 const (

@@ -92,11 +92,18 @@ func (s *Server) Start(url *common.URL) {
 		grpc.MaxSendMsgSize(1024*1024*s.bufferSize),
 	)
 
-	var cfg *tls.Config
-	if cfg, err = config.GetServerTlsConfig(config.GetTLSConfig()); err != nil {
-		return
-	}
-	if cfg != nil {
+	tlsConfig := config.GetRootConfig().TLSConfig
+	if tlsConfig != nil {
+		var cfg *tls.Config
+		cfg, err = config.GetServerTlsConfig(&config.TLSConfig{
+			CACertFile:    tlsConfig.CACertFile,
+			TLSCertFile:   tlsConfig.TLSCertFile,
+			TLSKeyFile:    tlsConfig.TLSKeyFile,
+			TLSServerName: tlsConfig.TLSServerName,
+		})
+		if err != nil {
+			return
+		}
 		logger.Infof("Grpc Server initialized the TLSConfig configuration")
 		serverOpts = append(serverOpts, grpc.Creds(credentials.NewTLS(cfg)))
 	} else {
