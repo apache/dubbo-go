@@ -17,7 +17,7 @@ require (
 	github.com/dubbogo/go-zookeeper v1.0.4-0.20211212162352-f9d2183d89d5
 	github.com/dubbogo/gost v1.13.2
 	github.com/dubbogo/grpc-go v1.42.10
-	github.com/dubbogo/triple v1.2.2-rc2
+	github.com/dubbogo/triple v1.2.2-rc3
 	github.com/emicklei/go-restful/v3 v3.10.1
 	github.com/envoyproxy/go-control-plane v0.11.0
 	github.com/fsnotify/fsnotify v1.6.0
@@ -45,6 +45,7 @@ require (
 	github.com/polarismesh/polaris-go v1.3.0
 	github.com/prometheus/client_golang v1.12.2
 	github.com/stretchr/testify v1.8.2
+	github.com/uber/jaeger-client-go v2.30.0+incompatible // indirect
 	go.etcd.io/etcd/api/v3 v3.5.7
 	go.etcd.io/etcd/client/v3 v3.5.7
 	go.opentelemetry.io/otel v1.11.0
