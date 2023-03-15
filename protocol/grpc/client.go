@@ -64,11 +64,11 @@ func NewClient(url *common.URL) (*Client, error) {
 
 	// set max send and recv msg size
 	maxCallRecvMsgSize := constant.DefaultMaxCallRecvMsgSize
-	if recvMsgSize, err := humanize.ParseBytes(url.GetParam(constant.MaxCallRecvMsgSize, "0")); err == nil && recvMsgSize != 0 {
+	if recvMsgSize, err := humanize.ParseBytes(url.GetParam(constant.MaxCallRecvMsgSize, "")); err == nil && recvMsgSize > 0 {
 		maxCallRecvMsgSize = int(recvMsgSize)
 	}
 	maxCallSendMsgSize := constant.DefaultMaxCallSendMsgSize
-	if sendMsgSize, err := humanize.ParseBytes(url.GetParam(constant.MaxCallSendMsgSize, "0")); err == nil && sendMsgSize != 0 {
+	if sendMsgSize, err := humanize.ParseBytes(url.GetParam(constant.MaxCallSendMsgSize, "")); err == nil && sendMsgSize > 0 {
 		maxCallSendMsgSize = int(sendMsgSize)
 	}
 

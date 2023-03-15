@@ -19,6 +19,8 @@ package grpc
 
 import (
 	"context"
+	"fmt"
+	"github.com/dustin/go-humanize"
 	"testing"
 )
 
@@ -87,4 +89,9 @@ func TestStreamClient(t *testing.T) {
 	routeChatStream, err := client.RouteChat(context.Background())
 	assert.NoError(t, err)
 	routeguide.RunRouteChat(routeChatStream)
+}
+
+func TestT(t *testing.T) {
+	bytes, err := humanize.ParseBytes("0")
+	fmt.Println(bytes, err)
 }
