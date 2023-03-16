@@ -30,10 +30,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
-var (
-	protocolForDubboGO string = "dubbo"
-)
-
 type PolarisInstanceInfo struct {
 	instance registry.ServiceInstance
 	url      *common.URL

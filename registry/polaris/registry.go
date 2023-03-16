@@ -260,7 +260,7 @@ func createRegisterParam(url *common.URL, serviceName string) *api.InstanceRegis
 			Service:  serviceName,
 			Host:     url.Ip,
 			Port:     port,
-			Protocol: &protocolForDubboGO,
+			Protocol: &url.Protocol,
 			Version:  &ver,
 			Metadata: metadata,
 		},
