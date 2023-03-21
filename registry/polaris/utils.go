@@ -49,8 +49,6 @@ func getCategory(url *common.URL) string {
 // just copy from dubbo-go for nacos
 func getServiceName(url *common.URL) string {
 	var buffer bytes.Buffer
-
-	buffer.Write([]byte(getCategory(url)))
 	appendParam(&buffer, url, constant.InterfaceKey)
 	return buffer.String()
 }
