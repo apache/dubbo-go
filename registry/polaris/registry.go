@@ -92,6 +92,9 @@ type polarisRegistry struct {
 
 // Register will register the service @url to its polaris registry center.
 func (pr *polarisRegistry) Register(url *common.URL) error {
+	if getCategory(url) != "providers" {
+		return nil
+	}
 
 	serviceName := getServiceName(url)
 	request := createRegisterParam(url, serviceName)
