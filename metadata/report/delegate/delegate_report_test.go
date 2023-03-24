@@ -21,17 +21,12 @@ import (
 	"fmt"
 	"testing"
 	"time"
-)
-
-import (
-	"github.com/dubbogo/gost/log/logger"
 
 	"github.com/stretchr/testify/assert"
-
 	"go.uber.org/atomic"
-)
 
-import (
+	"github.com/dubbogo/gost/log/logger"
+
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config/instance"

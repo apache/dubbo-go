@@ -29,23 +29,16 @@ import (
 	"errors"
 	"fmt"
 	"sync"
-)
-
-import (
-	dubbogoLogger "github.com/dubbogo/gost/log/logger"
 
 	"google.golang.org/grpc/balancer"
 	"google.golang.org/grpc/balancer/base"
 	"google.golang.org/grpc/balancer/weightedroundrobin"
-
 	"google.golang.org/grpc/connectivity"
-
 	"google.golang.org/grpc/resolver"
-
 	"google.golang.org/grpc/serviceconfig"
-)
 
-import (
+	dubbogoLogger "github.com/dubbogo/gost/log/logger"
+
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/pretty"
 )
 
@@ -323,10 +316,11 @@ func (b *ringhashBalancer) ResolverError(err error) {
 // It triggers an update to cc when:
 // - the new state is TransientFailure, to update the error message
 //   - it's possible that this is a noop, but sending an extra update is easier
-//   than comparing errors
+//     than comparing errors
+//
 // - the aggregated state is changed
 //   - the same picker will be sent again, but this update may trigger a re-pick
-//   for some RPCs.
+//     for some RPCs.
 func (b *ringhashBalancer) UpdateSubConnState(sc balancer.SubConn, state balancer.SubConnState) {
 	s := state.ConnectivityState
 	b.logger.Infof("handle SubConn state change: %p, %v", sc, s)

@@ -20,14 +20,11 @@ package etcdv3
 import (
 	"sync"
 	"time"
-)
 
-import (
 	gxetcd "github.com/dubbogo/gost/database/kv/etcd/v3"
-	"github.com/dubbogo/gost/log/logger"
-)
 
-import (
+	"github.com/dubbogo/gost/log/logger"
+
 	"dubbo.apache.org/dubbo-go/v3/common"
 )
 

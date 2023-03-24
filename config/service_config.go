@@ -26,20 +26,14 @@ import (
 	"strings"
 	"sync"
 	"time"
-)
 
-import (
 	"github.com/creasty/defaults"
+	gxnet "github.com/dubbogo/gost/net"
+	perrors "github.com/pkg/errors"
+	"go.uber.org/atomic"
 
 	"github.com/dubbogo/gost/log/logger"
-	gxnet "github.com/dubbogo/gost/net"
 
-	perrors "github.com/pkg/errors"
-
-	"go.uber.org/atomic"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
@@ -331,13 +325,13 @@ func (s *ServiceConfig) Export() error {
 	return nil
 }
 
-//setRegistrySubURL set registry sub url is ivkURl
+// setRegistrySubURL set registry sub url is ivkURl
 func setRegistrySubURL(ivkURL *common.URL, regUrl *common.URL) {
 	ivkURL.AddParam(constant.RegistryKey, regUrl.GetParam(constant.RegistryKey, ""))
 	regUrl.SubURL = ivkURL
 }
 
-//loadProtocol filter protocols by ids
+// loadProtocol filter protocols by ids
 func loadProtocol(protocolIds []string, protocols map[string]*ProtocolConfig) []*ProtocolConfig {
 	returnProtocols := make([]*ProtocolConfig, 0, len(protocols))
 	for _, v := range protocolIds {

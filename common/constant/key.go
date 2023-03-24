@@ -64,7 +64,7 @@ const (
 	MaxServerRecvMsgSize   = "max-server-recv-msg-size"
 )
 
-//tls constant
+// tls constant
 const (
 	TLSKey        = "tls_key"
 	TLSCert       = "tls_cert"
@@ -377,4 +377,17 @@ const (
 const (
 	HealthCheckServiceTypeName  = "DubbogoHealthServer"
 	HealthCheckServiceInterface = "grpc.health.v1.Health"
+)
+
+const (
+	LoggerLevelKey          = "logger.level"
+	LoggerDriverKey         = "logger.driver"
+	LoggerFormatKey         = "logger.format"
+	LoggerAppenderKey       = "logger.appender"
+	LoggerFileNameKey       = "logger.file.name"
+	LoggerFileNaxSizeKey    = "logger.file.max-size"
+	LoggerFileMaxBackupsKey = "logger.file.max-backups"
+	LoggerFileMaxAgeKey     = "logger.file.max-age"
+	LoggerFileLocalTimeKey  = "logger.file.local-time"
+	LoggerFileCompressKey   = "logger.file.compress"
 )

@@ -18,23 +18,16 @@
 package config
 
 import (
-	_ "net/http/pprof"
+	//_ "net/http/pprof"
 	"sync"
-)
 
-import (
 	hessian "github.com/apache/dubbo-go-hessian2"
+	"github.com/knadh/koanf"
+	perrors "github.com/pkg/errors"
+	"go.uber.org/atomic"
 
 	"github.com/dubbogo/gost/log/logger"
 
-	"github.com/knadh/koanf"
-
-	perrors "github.com/pkg/errors"
-
-	"go.uber.org/atomic"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
@@ -52,7 +45,7 @@ type RootConfig struct {
 	Application         *ApplicationConfig         `validate:"required" yaml:"application" json:"application,omitempty" property:"application"`
 	Protocols           map[string]*ProtocolConfig `validate:"required" yaml:"protocols" json:"protocols" property:"protocols"`
 	Registries          map[string]*RegistryConfig `yaml:"registries" json:"registries" property:"registries"`
-	ConfigCenter        *CenterConfig              `yaml:"config-center" json:"config-center,omitempty"` // TODO ConfigCenter and CenterConfig?
+	ConfigCenter        *CenterConfig              `yaml:"config-center" json:"config-center,omitempty"`
 	MetadataReport      *MetadataReportConfig      `yaml:"metadata-report" json:"metadata-report,omitempty" property:"metadata-report"`
 	Provider            *ProviderConfig            `yaml:"provider" json:"provider" property:"provider"`
 	Consumer            *ConsumerConfig            `yaml:"consumer" json:"consumer" property:"consumer"`
@@ -73,7 +66,7 @@ func SetRootConfig(r RootConfig) {
 }
 
 // Prefix dubbo
-func (RootConfig) Prefix() string {
+func (rc *RootConfig) Prefix() string {
 	return constant.Dubbo
 }
 
@@ -138,7 +131,7 @@ func (rc *RootConfig) Init() error {
 		logger.Infof("[Config Center] Config center doesn't start")
 		logger.Debugf("config center doesn't start because %s", err)
 	} else {
-		if err := rc.Logger.Init(); err != nil { // init logger using config from config center again
+		if err = rc.Logger.Init(); err != nil { // init logger using config from config center again
 			return err
 		}
 	}

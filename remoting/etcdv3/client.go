@@ -19,6 +19,7 @@ package etcdv3
 
 import (
 	gxetcd "github.com/dubbogo/gost/database/kv/etcd/v3"
+
 	"github.com/dubbogo/gost/log/logger"
 
 	perrors "github.com/pkg/errors"
@@ -59,7 +60,7 @@ func ValidateClient(container clientFacade, opts ...gxetcd.Option) error {
 	return nil
 }
 
-//  nolint
+// nolint
 func NewServiceDiscoveryClient(opts ...gxetcd.Option) *gxetcd.Client {
 	options := &gxetcd.Options{
 		Heartbeat: 1, // default heartbeat

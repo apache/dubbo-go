@@ -21,9 +21,7 @@ import (
 	"github.com/creasty/defaults"
 
 	"github.com/pkg/errors"
-)
 
-import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
@@ -41,7 +39,7 @@ type ApplicationConfig struct {
 }
 
 // Prefix dubbo.application
-func (ApplicationConfig) Prefix() string {
+func (ac *ApplicationConfig) Prefix() string {
 	return constant.ApplicationConfigPrefix
 }
 

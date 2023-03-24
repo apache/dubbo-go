@@ -29,19 +29,13 @@ import (
 	"fmt"
 	"sync"
 	"time"
-)
-
-import (
-	dubbogoLogger "github.com/dubbogo/gost/log/logger"
 
 	"google.golang.org/grpc/balancer"
-
 	"google.golang.org/grpc/connectivity"
-
 	"google.golang.org/grpc/resolver"
-)
 
-import (
+	dubbogoLogger "github.com/dubbogo/gost/log/logger"
+
 	cache "dubbo.apache.org/dubbo-go/v3/xds/utils/xds_cache"
 )
 
@@ -187,18 +181,18 @@ func (sbc *subBalancerWrapper) stopBalancer() {
 // sub-balancer manager by a high level balancer.
 //
 // Updates from ClientConn are forwarded to sub-balancers
-//  - service config update
-//  - address update
-//  - subConn state change
-//     - find the corresponding balancer and forward
+//   - service config update
+//   - address update
+//   - subConn state change
+//   - find the corresponding balancer and forward
 //
 // Actions from sub-balances are forwarded to parent ClientConn
-//  - new/remove SubConn
-//  - picker update and health states change
-//     - sub-pickers are sent to an aggregator provided by the parent, which
+//   - new/remove SubConn
+//   - picker update and health states change
+//   - sub-pickers are sent to an aggregator provided by the parent, which
 //     will group them into a group-picker. The aggregated connectivity state is
 //     also handled by the aggregator.
-//  - resolveNow
+//   - resolveNow
 //
 // Sub-balancers are only built when the balancer group is started. If the
 // balancer group is closed, the sub-balancers are also closed. And it's

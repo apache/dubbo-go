@@ -23,17 +23,12 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
-)
-
-import (
-	"github.com/dubbogo/gost/log/logger"
 
 	"github.com/knadh/koanf"
-
 	"github.com/pkg/errors"
-)
 
-import (
+	"github.com/dubbogo/gost/log/logger"
+
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/constant/file"
 )

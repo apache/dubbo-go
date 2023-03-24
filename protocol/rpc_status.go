@@ -21,15 +21,11 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-)
-
-import (
-	"github.com/dubbogo/gost/log/logger"
 
 	uberAtomic "go.uber.org/atomic"
-)
 
-import (
+	"github.com/dubbogo/gost/log/logger"
+
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )

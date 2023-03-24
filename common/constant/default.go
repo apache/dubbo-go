@@ -91,3 +91,9 @@ const (
 	ServiceDiscoveryDefaultGroup = "DEFAULT_GROUP"
 	NotAvailable                 = "N/A"
 )
+
+const (
+	LoggerLevel    = "info"
+	LoggerAppender = "console"
+	LoggerFormat   = "text"
+)

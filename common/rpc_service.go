@@ -24,12 +24,10 @@ import (
 	"sync"
 	"unicode"
 	"unicode/utf8"
-)
-
-import (
-	"github.com/dubbogo/gost/log/logger"
 
 	perrors "github.com/pkg/errors"
+
+	"github.com/dubbogo/gost/log/logger"
 )
 
 // RPCService the type alias of interface{}

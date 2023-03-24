@@ -26,15 +26,12 @@ package clustermanager
 import (
 	"fmt"
 	"sync"
-)
-
-import (
-	dubbogoLogger "github.com/dubbogo/gost/log/logger"
 
 	"google.golang.org/grpc/balancer"
 	"google.golang.org/grpc/balancer/base"
-
 	"google.golang.org/grpc/connectivity"
+
+	dubbogoLogger "github.com/dubbogo/gost/log/logger"
 )
 
 type subBalancerState struct {

@@ -19,10 +19,6 @@ package config
 
 import (
 	"strings"
-)
-
-import (
-	log "github.com/dubbogo/gost/log/logger"
 
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/json"
@@ -30,11 +26,10 @@ import (
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/confmap"
 	"github.com/knadh/koanf/providers/rawbytes"
-
 	"github.com/pkg/errors"
-)
 
-import (
+	log "github.com/dubbogo/gost/log/logger"
+
 	"dubbo.apache.org/dubbo-go/v3/common/constant/file"
 	"dubbo.apache.org/dubbo-go/v3/config/parsers/properties"
 )

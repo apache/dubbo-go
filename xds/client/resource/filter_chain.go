@@ -27,20 +27,15 @@ import (
 	"errors"
 	"fmt"
 	"net"
-)
-
-import (
-	dubbogoLogger "github.com/dubbogo/gost/log/logger"
 
 	v3listenerpb "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	v3httppb "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	v3tlspb "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
-
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
-)
 
-import (
+	dubbogoLogger "github.com/dubbogo/gost/log/logger"
+
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource/version"
 	"dubbo.apache.org/dubbo-go/v3/xds/httpfilter"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/envconfig"
@@ -171,11 +166,11 @@ const (
 // filter chains in a single Listener resource. It also contains the default
 // filter chain specified in the Listener resource. It provides two important
 // pieces of functionality:
-// 1. Validate the filter chains in an incoming Listener resource to make sure
-//    that there aren't filter chains which contain the same match criteria.
-// 2. As part of performing the above validation, it builds an internal data
-//    structure which will if used to look up the matching filter chain at
-//    connection time.
+//  1. Validate the filter chains in an incoming Listener resource to make sure
+//     that there aren't filter chains which contain the same match criteria.
+//  2. As part of performing the above validation, it builds an internal data
+//     structure which will if used to look up the matching filter chain at
+//     connection time.
 //
 // The logic specified in the documentation around the xDS FilterChainMatch
 // proto mentions 8 criteria to match on.

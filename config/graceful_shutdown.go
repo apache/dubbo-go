@@ -22,14 +22,11 @@ import (
 	"os/signal"
 	"runtime/debug"
 	"time"
-)
 
-import (
 	gxset "github.com/dubbogo/gost/container/set"
-	"github.com/dubbogo/gost/log/logger"
-)
 
-import (
+	"github.com/dubbogo/gost/log/logger"
+
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 )
@@ -191,7 +188,7 @@ func waitingProviderProcessedTimeout(shutdownConfig *ShutdownConfig) {
 	}
 }
 
-//for provider. It will wait for processing receiving requests
+// for provider. It will wait for processing receiving requests
 func waitForSendingAndReceivingRequests() {
 	logger.Info("Graceful shutdown --- Keep waiting until sending/accepting requests finish or timeout. ")
 	if rootConfig == nil || rootConfig.Shutdown == nil {

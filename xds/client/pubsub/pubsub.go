@@ -31,13 +31,9 @@ package pubsub
 import (
 	"sync"
 	"time"
-)
 
-import (
 	dubbogoLogger "github.com/dubbogo/gost/log/logger"
-)
 
-import (
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/buffer"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpcsync"

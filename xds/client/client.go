@@ -29,15 +29,11 @@ import (
 	"fmt"
 	"sync"
 	"time"
-)
-
-import (
-	dubbogoLogger "github.com/dubbogo/gost/log/logger"
 
 	_struct "github.com/golang/protobuf/ptypes/struct"
-)
 
-import (
+	dubbogoLogger "github.com/dubbogo/gost/log/logger"
+
 	"dubbo.apache.org/dubbo-go/v3/xds/client/bootstrap"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpcsync"

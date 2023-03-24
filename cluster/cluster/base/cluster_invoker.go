@@ -24,9 +24,7 @@ import (
 	perrors "github.com/pkg/errors"
 
 	"go.uber.org/atomic"
-)
 
-import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
 	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
 	"dubbo.apache.org/dubbo-go/v3/common"

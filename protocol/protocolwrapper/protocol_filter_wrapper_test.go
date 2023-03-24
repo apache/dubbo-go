@@ -21,15 +21,11 @@ import (
 	"context"
 	"net/url"
 	"testing"
-)
-
-import (
-	"github.com/dubbogo/gost/log/logger"
 
 	"github.com/stretchr/testify/assert"
-)
 
-import (
+	"github.com/dubbogo/gost/log/logger"
+
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"

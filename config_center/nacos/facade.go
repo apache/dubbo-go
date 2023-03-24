@@ -19,14 +19,11 @@ package nacos
 
 import (
 	"sync"
-)
 
-import (
 	nacosClient "github.com/dubbogo/gost/database/kv/nacos"
-	"github.com/dubbogo/gost/log/logger"
-)
 
-import (
+	"github.com/dubbogo/gost/log/logger"
+
 	"dubbo.apache.org/dubbo-go/v3/common"
 )
 

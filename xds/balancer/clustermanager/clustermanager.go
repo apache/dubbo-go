@@ -27,19 +27,13 @@ package clustermanager
 import (
 	"encoding/json"
 	"fmt"
-)
-
-import (
-	dubbogoLogger "github.com/dubbogo/gost/log/logger"
 
 	"google.golang.org/grpc/balancer"
-
 	"google.golang.org/grpc/resolver"
-
 	"google.golang.org/grpc/serviceconfig"
-)
 
-import (
+	dubbogoLogger "github.com/dubbogo/gost/log/logger"
+
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/balancergroup"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/hierarchy"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/pretty"

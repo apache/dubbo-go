@@ -21,24 +21,26 @@ import (
 	"errors"
 	"reflect"
 	"strconv"
-)
 
-import (
+	"github.com/dubbogo/gost/log/logger"
 	"github.com/knadh/koanf"
-
 	perrors "github.com/pkg/errors"
-)
 
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/logger/zap"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
 var (
 	rootConfig = NewRootConfigBuilder().Build()
 )
+
+func init() {
+	log := zap.NewDefault()
+	logger.SetLogger(log)
+}
 
 func Load(opts ...LoaderConfOption) error {
 	// conf
@@ -103,8 +105,7 @@ func registerServiceInstance() {
 	}
 }
 
-//
-//// nolint
+// // nolint
 func createInstance(url *common.URL) (registry.ServiceInstance, error) {
 	appConfig := GetApplicationConfig()
 	port, err := strconv.ParseInt(url.Port, 10, 32)

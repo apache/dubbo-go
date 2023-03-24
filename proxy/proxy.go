@@ -22,17 +22,12 @@ import (
 	"errors"
 	"reflect"
 	"sync"
-)
 
-import (
 	"github.com/apache/dubbo-go-hessian2/java_exception"
+	perrors "github.com/pkg/errors"
 
 	"github.com/dubbogo/gost/log/logger"
 
-	perrors "github.com/pkg/errors"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
@@ -87,9 +82,10 @@ func WithProxyImplementFunc(f ImplementFunc) ProxyOption {
 // Implement
 // proxy implement
 // In consumer, RPCService like:
-// 		type XxxProvider struct {
-//  		Yyy func(ctx context.Context, args []interface{}, rsp *Zzz) error
-// 		}
+//
+//			type XxxProvider struct {
+//	 		Yyy func(ctx context.Context, args []interface{}, rsp *Zzz) error
+//			}
 func (p *Proxy) Implement(v common.RPCService) {
 	p.once.Do(func() {
 		p.implement(p, v)

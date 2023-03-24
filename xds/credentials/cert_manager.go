@@ -29,13 +29,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
-)
 
-import (
 	"github.com/dubbogo/gost/log/logger"
-)
 
-import (
 	"dubbo.apache.org/dubbo-go/v3/xds/client/bootstrap"
 	"dubbo.apache.org/dubbo-go/v3/xds/credentials/certgenerate"
 	"dubbo.apache.org/dubbo-go/v3/xds/credentials/certprovider"
@@ -52,7 +48,7 @@ func init() {
 	internal.GetCertificateProviderBuilder = certprovider.GetBuilder
 }
 
-//CertManager manage agent or no agent cert
+// CertManager manage agent or no agent cert
 type CertManager interface {
 	GetCertificate() ([]tls.Certificate, error)
 	GetRootCertificate() (*x509.CertPool, error)
@@ -89,7 +85,7 @@ type AgentCertManager struct {
 	provider certprovider.Provider
 }
 
-//GetRootCertificate return certificate of ca
+// GetRootCertificate return certificate of ca
 func (c *AgentCertManager) GetRootCertificate() (*x509.CertPool, error) {
 	material, err := c.provider.KeyMaterial(context.Background())
 	if err != nil {
@@ -98,7 +94,7 @@ func (c *AgentCertManager) GetRootCertificate() (*x509.CertPool, error) {
 	return material.Roots, nil
 }
 
-//GetCertificate return certificate of application
+// GetCertificate return certificate of application
 func (c *AgentCertManager) GetCertificate() ([]tls.Certificate, error) {
 	material, err := c.provider.KeyMaterial(context.Background())
 	if err != nil {
@@ -138,7 +134,7 @@ type CACertManager struct {
 	rootPath string
 }
 
-//GetCertificate return certificate of application
+// GetCertificate return certificate of application
 func (c *CACertManager) GetCertificate() ([]tls.Certificate, error) {
 	//cert expired
 	if time.Now().After(c.NoAfter) {
@@ -149,7 +145,7 @@ func (c *CACertManager) GetCertificate() ([]tls.Certificate, error) {
 	return c.Certs, nil
 }
 
-//GetRootCertificate return certificate of ca
+// GetRootCertificate return certificate of ca
 func (c *CACertManager) GetRootCertificate() (*x509.CertPool, error) {
 	//root expired
 	if time.Now().After(c.RootNoAfter) {

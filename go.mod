@@ -35,6 +35,7 @@ require (
 	github.com/knadh/koanf v1.5.0
 	github.com/kr/pretty v0.3.0 // indirect
 	github.com/magiconair/properties v1.8.7
+	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
@@ -58,5 +59,6 @@ require (
 	google.golang.org/grpc v1.52.0
 	google.golang.org/protobuf v1.30.0
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
+	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0
 )

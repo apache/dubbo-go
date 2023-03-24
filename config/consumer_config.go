@@ -20,17 +20,12 @@ package config
 import (
 	"fmt"
 	"time"
-)
 
-import (
 	"github.com/creasty/defaults"
+	tripleConstant "github.com/dubbogo/triple/pkg/common/constant"
 
 	"github.com/dubbogo/gost/log/logger"
 
-	tripleConstant "github.com/dubbogo/triple/pkg/common/constant"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )

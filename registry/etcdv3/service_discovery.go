@@ -21,18 +21,14 @@ import (
 	"fmt"
 	"strings"
 	"sync"
-)
 
-import (
 	gxset "github.com/dubbogo/gost/container/set"
 	gxetcd "github.com/dubbogo/gost/database/kv/etcd/v3"
 	gxpage "github.com/dubbogo/gost/hash/page"
+	"github.com/hashicorp/vault/sdk/helper/jsonutil"
+
 	"github.com/dubbogo/gost/log/logger"
 
-	"github.com/hashicorp/vault/sdk/helper/jsonutil"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"

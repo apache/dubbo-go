@@ -27,27 +27,19 @@ package v2
 import (
 	"context"
 	"fmt"
-)
-
-import (
-	dubbogoLogger "github.com/dubbogo/gost/log/logger"
 
 	v2xdspb "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	v2corepb "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	v2adsgrpc "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
-
 	"github.com/golang/protobuf/proto"
 	_struct "github.com/golang/protobuf/ptypes/struct"
-
 	statuspb "google.golang.org/genproto/googleapis/rpc/status"
-
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-
 	"google.golang.org/protobuf/types/known/anypb"
-)
 
-import (
+	dubbogoLogger "github.com/dubbogo/gost/log/logger"
+
 	controllerversion "dubbo.apache.org/dubbo-go/v3/xds/client/controller/version"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
 	resourceversion "dubbo.apache.org/dubbo-go/v3/xds/client/resource/version"
@@ -99,10 +91,10 @@ func (v2c *client) NewStream(ctx context.Context, cc *grpc.ClientConn) (grpc.Cli
 // rType, on the provided stream.
 //
 // version is the ack version to be sent with the request
-// - If this is the new request (not an ack/nack), version will be empty.
-// - If this is an ack, version will be the version from the response.
-// - If this is a nack, version will be the previous acked version (from
-//   versionMap). If there was no ack before, it will be empty.
+//   - If this is the new request (not an ack/nack), version will be empty.
+//   - If this is an ack, version will be the version from the response.
+//   - If this is a nack, version will be the previous acked version (from
+//     versionMap). If there was no ack before, it will be empty.
 func (v2c *client) SendRequest(s grpc.ClientStream, resourceNames []string, rType resource.ResourceType, version, nonce, errMsg string) error {
 	stream, ok := s.(adsStream)
 	if !ok {

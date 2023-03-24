@@ -18,135 +18,102 @@
 package config
 
 import (
-	"net/url"
-)
+	"fmt"
+	"strconv"
 
-import (
 	getty "github.com/apache/dubbo-getty"
 
 	"github.com/creasty/defaults"
 
-	"github.com/dubbogo/gost/encoding/yaml"
 	"github.com/dubbogo/gost/log/logger"
 
-	"github.com/natefinch/lumberjack"
-
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-)
-
-import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
 )
-
-type ZapConfig struct {
-	Level             string                 `default:"info" json:"level,omitempty" yaml:"level" property:"level"`
-	Development       bool                   `default:"false" json:"development,omitempty" yaml:"development" property:"development"`
-	DisableCaller     bool                   `default:"false" json:"disable-caller,omitempty" yaml:"disable-caller" property:"disable-caller"`
-	DisableStacktrace bool                   `default:"false" json:"disable-stacktrace,omitempty" yaml:"disable-stacktrace" property:"disable-stacktrace"`
-	Encoding          string                 `default:"console" json:"encoding,omitempty" yaml:"encoding" property:"encoding"`
-	EncoderConfig     EncoderConfig          `default:"" json:"encoder-config,omitempty" yaml:"encoder-config" property:"encoder-config"`
-	OutputPaths       []string               `default:"[\"stderr\"]" json:"output-paths,omitempty" yaml:"output-paths" property:"output-paths"`
-	ErrorOutputPaths  []string               `default:"[\"stderr\"]" json:"error-output-paths,omitempty" yaml:"error-output-paths" property:"error-output-paths"`
-	InitialFields     map[string]interface{} `default:"" json:"initial-fields,omitempty" yaml:"initial-fields" property:"initial-fields"`
-}
 
 type LoggerConfig struct {
-	LumberjackConfig *lumberjack.Logger `yaml:"lumberjack-config" json:"lumberjack-config,omitempty" property:"lumberjack-config"`
-	ZapConfig        ZapConfig          `yaml:"zap-config" json:"zap-config,omitempty" property:"zap-config"`
+	// logger driver default zap
+	Driver string `default:"zap" yaml:"driver"`
+
+	// logger level
+	Level string `default:"info" yaml:"level"`
+
+	// logger formatter default text
+	Format string `default:"text" yaml:"format"`
+
+	// supports simultaneous file and console eg: console,file default console
+	Appender string `default:"console" yaml:"appender"`
+
+	// logger file
+	File *File `yaml:"file"`
 }
 
-type EncoderConfig struct {
-	MessageKey     string            `default:"message" json:"message-key,omitempty" yaml:"message-key" property:"message-key"`
-	LevelKey       string            `default:"level" json:"level-key,omitempty" yaml:"level-key" property:"level-key"`
-	TimeKey        string            `default:"time" json:"time-key,omitempty" yaml:"time-key" property:"time-key"`
-	NameKey        string            `default:"logger" json:"name-key,omitempty" yaml:"name-key" property:"name-key"`
-	CallerKey      string            `default:"caller" json:"caller-key,omitempty" yaml:"caller-key" property:"caller-key"`
-	StacktraceKey  string            `default:"stacktrace" json:"stacktrace-key,omitempty" yaml:"stacktrace-key" property:"stacktrace-key"`
-	EncodeLevel    string            `default:"capitalColor" json:"level-encoder" yaml:"level-encoder" property:"level-encoder"`
-	EncodeTime     string            `default:"iso8601" json:"time-encoder" yaml:"time-encoder" property:"time-encoder"`
-	EncodeDuration string            `default:"seconds" json:"duration-encoder" yaml:"duration-encoder" property:"duration-encoder"`
-	EncodeCaller   string            `default:"short" json:"caller-encoder" yaml:"calle-encoder" property:"caller-encoder"`
-	Params         map[string]string `yaml:"params" json:"params,omitempty"`
+type File struct {
+	// log file name default dubbo.log
+	Name string `default:"dubbo.log" yaml:"name"`
+
+	// log max size default 100Mb
+	MaxSize int `default:"100" yaml:"max-size"`
+
+	// log max backups default 5
+	MaxBackups int `default:"5" yaml:"max-backups"`
+
+	// log file max age default 3 day
+	MaxAge int `default:"3" yaml:"max-age"`
+
+	Compress *bool `default:"true" yaml:"compress"`
 }
 
 // Prefix dubbo.logger
-func (LoggerConfig) Prefix() string {
+func (l *LoggerConfig) Prefix() string {
 	return constant.LoggerConfigPrefix
 }
 
-func (lc *LoggerConfig) Init() error {
-	err := lc.check()
-	if err != nil {
+func (l *LoggerConfig) Init() error {
+	var (
+		log logger.Logger
+		err error
+	)
+	if err = l.check(); err != nil {
 		return err
 	}
 
-	bytes, err := yaml.MarshalYML(lc)
-	if err != nil {
+	if log, err = extension.GetLogger(l.Driver, l.toURL()); err != nil {
 		return err
 	}
-
-	logConf := &logger.Config{}
-	if err = yaml.UnmarshalYML(bytes, logConf); err != nil {
-		return err
-	}
-	err = lc.ZapConfig.EncoderConfig.setEncoderConfig(&(logConf.ZapConfig.EncoderConfig))
-	if err != nil {
-		return err
-	}
-	lc.ZapConfig.setZapConfig(logConf.ZapConfig)
-	logger.InitLogger(logConf)
-	getty.SetLogger(logger.GetLogger())
+	// set log
+	logger.SetLogger(log)
+	getty.SetLogger(log)
 	return nil
 }
 
-func (lc *LoggerConfig) check() error {
-	if err := defaults.Set(lc); err != nil {
+func (l *LoggerConfig) check() error {
+	if err := defaults.Set(l); err != nil {
 		return err
 	}
-	return verify(lc)
+	return verify(l)
 }
 
-func (e *ZapConfig) setZapConfig(config *zap.Config) {
-	config.OutputPaths = e.OutputPaths
-	config.ErrorOutputPaths = e.ErrorOutputPaths
-	config.DisableStacktrace = e.DisableStacktrace
-	config.DisableCaller = e.DisableCaller
-	config.InitialFields = e.InitialFields
+func (l *LoggerConfig) toURL() *common.URL {
+	address := fmt.Sprintf("%s://%s", l.Driver, l.Level)
+	url, _ := common.NewURL(address,
+		common.WithParamsValue(constant.LoggerLevelKey, l.Level),
+		common.WithParamsValue(constant.LoggerDriverKey, l.Driver),
+		common.WithParamsValue(constant.LoggerFormatKey, l.Format),
+		common.WithParamsValue(constant.LoggerAppenderKey, l.Appender),
+		common.WithParamsValue(constant.LoggerFileNameKey, l.File.Name),
+		common.WithParamsValue(constant.LoggerFileNaxSizeKey, strconv.Itoa(l.File.MaxSize)),
+		common.WithParamsValue(constant.LoggerFileMaxBackupsKey, strconv.Itoa(l.File.MaxBackups)),
+		common.WithParamsValue(constant.LoggerFileMaxAgeKey, strconv.Itoa(l.File.MaxAge)),
+		common.WithParamsValue(constant.LoggerFileCompressKey, strconv.FormatBool(*l.File.Compress)),
+	)
+	return url
 }
 
-func (e *EncoderConfig) setEncoderConfig(encoderConfig *zapcore.EncoderConfig) error {
-	encoderConfig.MessageKey = e.MessageKey
-	encoderConfig.LevelKey = e.LevelKey
-	encoderConfig.TimeKey = e.TimeKey
-	encoderConfig.NameKey = e.NameKey
-	encoderConfig.CallerKey = e.CallerKey
-	encoderConfig.StacktraceKey = e.StacktraceKey
+// DynamicUpdateProperties dynamically update properties.
+func (l *LoggerConfig) DynamicUpdateProperties(new *LoggerConfig) {
 
-	if err := encoderConfig.EncodeLevel.UnmarshalText([]byte(e.EncodeLevel)); err != nil {
-		return err
-	}
-
-	if err := encoderConfig.EncodeTime.UnmarshalText([]byte(e.EncodeTime)); err != nil {
-		return err
-	}
-
-	if err := encoderConfig.EncodeDuration.UnmarshalText([]byte(e.EncodeDuration)); err != nil {
-		return err
-	}
-
-	if err := encoderConfig.EncodeCaller.UnmarshalText([]byte(e.EncodeCaller)); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (lc *LoggerConfig) getUrlMap() url.Values {
-	urlMap := url.Values{}
-	for key, val := range lc.ZapConfig.EncoderConfig.Params {
-		urlMap.Set(key, val)
-	}
-	return urlMap
 }
 
 type LoggerConfigBuilder struct {
@@ -154,27 +121,54 @@ type LoggerConfigBuilder struct {
 }
 
 func NewLoggerConfigBuilder() *LoggerConfigBuilder {
-	return &LoggerConfigBuilder{loggerConfig: &LoggerConfig{}}
+	return &LoggerConfigBuilder{loggerConfig: &LoggerConfig{File: &File{}}}
 }
 
-func (lcb *LoggerConfigBuilder) SetLumberjackConfig(lumberjackConfig *lumberjack.Logger) *LoggerConfigBuilder {
-	lcb.loggerConfig.LumberjackConfig = lumberjackConfig
+func (lcb *LoggerConfigBuilder) SetDriver(driver string) *LoggerConfigBuilder {
+	lcb.loggerConfig.Driver = driver
 	return lcb
 }
 
-func (lcb *LoggerConfigBuilder) SetZapConfig(zapConfig ZapConfig) *LoggerConfigBuilder {
-	lcb.loggerConfig.ZapConfig = zapConfig
+func (lcb *LoggerConfigBuilder) SetLevel(level string) *LoggerConfigBuilder {
+	lcb.loggerConfig.Level = level
+	return lcb
+}
+
+func (lcb *LoggerConfigBuilder) SetFormat(format string) *LoggerConfigBuilder {
+	lcb.loggerConfig.Format = format
+	return lcb
+}
+
+func (lcb *LoggerConfigBuilder) SetAppender(appender string) *LoggerConfigBuilder {
+	lcb.loggerConfig.Appender = appender
+	return lcb
+}
+
+func (lcb *LoggerConfigBuilder) SetFileName(name string) *LoggerConfigBuilder {
+	lcb.loggerConfig.File.Name = name
+	return lcb
+}
+
+func (lcb *LoggerConfigBuilder) SetFileMaxSize(maxSize int) *LoggerConfigBuilder {
+	lcb.loggerConfig.File.MaxSize = maxSize
+	return lcb
+}
+
+func (lcb *LoggerConfigBuilder) SetFileMaxBackups(maxBackups int) *LoggerConfigBuilder {
+	lcb.loggerConfig.File.MaxBackups = maxBackups
+	return lcb
+}
+
+func (lcb *LoggerConfigBuilder) SetFileMaxAge(maxAge int) *LoggerConfigBuilder {
+	lcb.loggerConfig.File.MaxBackups = maxAge
+	return lcb
+}
+
+func (lcb *LoggerConfigBuilder) SetFileCompress(compress bool) *LoggerConfigBuilder {
+	lcb.loggerConfig.File.Compress = &compress
 	return lcb
 }
 
 func (lcb *LoggerConfigBuilder) Build() *LoggerConfig {
 	return lcb.loggerConfig
-}
-
-// DynamicUpdateProperties dynamically update properties.
-func (lc *LoggerConfig) DynamicUpdateProperties(newLoggerConfig *LoggerConfig) {
-	if newLoggerConfig != nil && lc.ZapConfig.Level != newLoggerConfig.ZapConfig.Level {
-		lc.ZapConfig.Level = newLoggerConfig.ZapConfig.Level
-		logger.Infof("LoggerConfig's ZapConfig Level was dynamically updated, new value:%v", lc.ZapConfig.Level)
-	}
 }

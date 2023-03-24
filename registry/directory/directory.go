@@ -22,15 +22,11 @@ import (
 	"net/url"
 	"os"
 	"sync"
-)
-
-import (
-	"github.com/dubbogo/gost/log/logger"
 
 	perrors "github.com/pkg/errors"
-)
 
-import (
+	"github.com/dubbogo/gost/log/logger"
+
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory/base"
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory/static"

@@ -26,15 +26,11 @@ package client
 import (
 	"errors"
 	"fmt"
-)
-
-import (
-	dubbogoLogger "github.com/dubbogo/gost/log/logger"
 
 	_struct "github.com/golang/protobuf/ptypes/struct"
-)
 
-import (
+	dubbogoLogger "github.com/dubbogo/gost/log/logger"
+
 	"dubbo.apache.org/dubbo-go/v3/xds/client/bootstrap"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/load"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/pubsub"

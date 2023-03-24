@@ -20,13 +20,9 @@ package event
 import (
 	"encoding/json"
 	"strconv"
-)
 
-import (
 	"github.com/dubbogo/gost/log/logger"
-)
 
-import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/metadata/service/local"

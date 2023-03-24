@@ -27,9 +27,7 @@ import (
 	dubbogoLogger "github.com/dubbogo/gost/log/logger"
 
 	_struct "github.com/golang/protobuf/ptypes/struct"
-)
 
-import (
 	"dubbo.apache.org/dubbo-go/v3/xds/client/bootstrap"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/controller"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/load"

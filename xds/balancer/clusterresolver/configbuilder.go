@@ -27,19 +27,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
-)
-
-import (
-	dubbogoLogger "github.com/dubbogo/gost/log/logger"
 
 	"google.golang.org/grpc/balancer/roundrobin"
 	"google.golang.org/grpc/balancer/weightedroundrobin"
 	"google.golang.org/grpc/balancer/weightedtarget"
-
 	"google.golang.org/grpc/resolver"
-)
 
-import (
+	dubbogoLogger "github.com/dubbogo/gost/log/logger"
+
 	"dubbo.apache.org/dubbo-go/v3/xds/balancer/clusterimpl"
 	"dubbo.apache.org/dubbo-go/v3/xds/balancer/priority"
 	"dubbo.apache.org/dubbo-go/v3/xds/balancer/ringhash"
@@ -73,22 +68,23 @@ type priorityConfig struct {
 // If xds lb policy is ROUND_ROBIN, the children will be weighted_target for
 // locality picking, and round_robin for endpoint picking.
 //
-//                                   ┌────────┐
-//                                   │priority│
-//                                   └┬──────┬┘
-//                                    │      │
-//                        ┌───────────▼┐    ┌▼───────────┐
-//                        │cluster_impl│    │cluster_impl│
-//                        └─┬──────────┘    └──────────┬─┘
-//                          │                          │
-//           ┌──────────────▼─┐                      ┌─▼──────────────┐
-//           │locality_picking│                      │locality_picking│
-//           └┬──────────────┬┘                      └┬──────────────┬┘
-//            │              │                        │              │
-//          ┌─▼─┐          ┌─▼─┐                    ┌─▼─┐          ┌─▼─┐
-//          │LRS│          │LRS│                    │LRS│          │LRS│
-//          └─┬─┘          └─┬─┘                    └─┬─┘          └─┬─┘
-//            │              │                        │              │
+//	                         ┌────────┐
+//	                         │priority│
+//	                         └┬──────┬┘
+//	                          │      │
+//	              ┌───────────▼┐    ┌▼───────────┐
+//	              │cluster_impl│    │cluster_impl│
+//	              └─┬──────────┘    └──────────┬─┘
+//	                │                          │
+//	 ┌──────────────▼─┐                      ┌─▼──────────────┐
+//	 │locality_picking│                      │locality_picking│
+//	 └┬──────────────┬┘                      └┬──────────────┬┘
+//	  │              │                        │              │
+//	┌─▼─┐          ┌─▼─┐                    ┌─▼─┐          ┌─▼─┐
+//	│LRS│          │LRS│                    │LRS│          │LRS│
+//	└─┬─┘          └─┬─┘                    └─┬─┘          └─┬─┘
+//	  │              │                        │              │
+//
 // ┌──────────▼─────┐  ┌─────▼──────────┐  ┌──────────▼─────┐  ┌─────▼──────────┐
 // │endpoint_picking│  │endpoint_picking│  │endpoint_picking│  │endpoint_picking│
 // └────────────────┘  └────────────────┘  └────────────────┘  └────────────────┘
@@ -97,14 +93,17 @@ type priorityConfig struct {
 // The endpoints from all localities will be flattened to one addresses list,
 // and the ring_hash policy will pick endpoints from it.
 //
-//           ┌────────┐
-//           │priority│
-//           └┬──────┬┘
-//            │      │
+//	┌────────┐
+//	│priority│
+//	└┬──────┬┘
+//	 │      │
+//
 // ┌──────────▼─┐  ┌─▼──────────┐
 // │cluster_impl│  │cluster_impl│
 // └──────┬─────┘  └─────┬──────┘
-//        │              │
+//
+//	│              │
+//
 // ┌──────▼─────┐  ┌─────▼──────┐
 // │ ring_hash  │  │ ring_hash  │
 // └────────────┘  └────────────┘

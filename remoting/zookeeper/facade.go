@@ -20,14 +20,11 @@ package zookeeper
 import (
 	"sync"
 	"time"
-)
 
-import (
 	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
-	"github.com/dubbogo/gost/log/logger"
-)
 
-import (
+	"github.com/dubbogo/gost/log/logger"
+
 	"dubbo.apache.org/dubbo-go/v3/common"
 )
 

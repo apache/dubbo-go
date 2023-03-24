@@ -23,13 +23,9 @@ import (
 	"math/rand"
 	"sync"
 	"time"
-)
 
-import (
 	"github.com/dubbogo/gost/log/logger"
-)
 
-import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
 	"dubbo.apache.org/dubbo-go/v3/cluster/metrics"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
