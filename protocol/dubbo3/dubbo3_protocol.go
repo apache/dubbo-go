@@ -21,8 +21,12 @@ import (
 	"context"
 	"fmt"
 	"reflect"
-	"strconv"
 	"sync"
+)
+
+import (
+	"github.com/dubbogo/gost/log/logger"
+	"github.com/dustin/go-humanize"
 
 	"github.com/dubbogo/grpc-go"
 	"github.com/dubbogo/grpc-go/metadata"
@@ -237,16 +241,16 @@ func (dp *DubboProtocol) openServer(url *common.URL, tripleCodecType tripleConst
 		}
 	}
 
-	if maxCall := url.GetParam(constant.MaxServerRecvMsgSize, ""); maxCall != "" {
-		if size, err := strconv.Atoi(maxCall); err == nil && size != 0 {
-			opts = append(opts, triConfig.WithGRPCMaxServerRecvMessageSize(size))
-		}
+	maxServerRecvMsgSize := constant.DefaultMaxServerRecvMsgSize
+	if recvMsgSize, err := humanize.ParseBytes(url.GetParam(constant.MaxServerRecvMsgSize, "")); err == nil && recvMsgSize != 0 {
+		maxServerRecvMsgSize = int(recvMsgSize)
 	}
-	if maxCall := url.GetParam(constant.MaxServerSendMsgSize, ""); maxCall != "" {
-		if size, err := strconv.Atoi(maxCall); err == nil && size != 0 {
-			opts = append(opts, triConfig.WithGRPCMaxServerSendMessageSize(size))
-		}
+	maxServerSendMsgSize := constant.DefaultMaxServerSendMsgSize
+	if sendMsgSize, err := humanize.ParseBytes(url.GetParam(constant.MaxServerSendMsgSize, "")); err == nil && sendMsgSize != 0 {
+		maxServerSendMsgSize = int(sendMsgSize)
 	}
+	opts = append(opts, triConfig.WithGRPCMaxServerRecvMessageSize(maxServerRecvMsgSize))
+	opts = append(opts, triConfig.WithGRPCMaxServerSendMessageSize(maxServerSendMsgSize))
 
 	triOption := triConfig.NewTripleOption(opts...)
 

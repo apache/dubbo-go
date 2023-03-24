@@ -24,6 +24,11 @@ import (
 	"strings"
 	"sync"
 	"time"
+)
+
+import (
+	"github.com/dubbogo/gost/log/logger"
+	"github.com/dustin/go-humanize"
 
 	"github.com/dubbogo/grpc-go/metadata"
 	tripleConstant "github.com/dubbogo/triple/pkg/common/constant"
@@ -79,16 +84,16 @@ func NewDubboInvoker(url *common.URL) (*DubboInvoker, error) {
 		triConfig.WithHeaderGroup(url.GetParam(constant.GroupKey, "")),
 		triConfig.WithLogger(logger.GetLogger()),
 	}
-	if maxCall := url.GetParam(constant.MaxCallRecvMsgSize, ""); maxCall != "" {
-		if size, err := strconv.Atoi(maxCall); err == nil && size != 0 {
-			opts = append(opts, triConfig.WithGRPCMaxCallRecvMessageSize(size))
-		}
+	maxCallRecvMsgSize := constant.DefaultMaxCallRecvMsgSize
+	if maxCall, err := humanize.ParseBytes(url.GetParam(constant.MaxCallRecvMsgSize, "")); err == nil && maxCall != 0 {
+		maxCallRecvMsgSize = int(maxCall)
 	}
-	if maxCall := url.GetParam(constant.MaxCallSendMsgSize, ""); maxCall != "" {
-		if size, err := strconv.Atoi(maxCall); err == nil && size != 0 {
-			opts = append(opts, triConfig.WithGRPCMaxCallSendMessageSize(size))
-		}
+	maxCallSendMsgSize := constant.DefaultMaxCallSendMsgSize
+	if maxCall, err := humanize.ParseBytes(url.GetParam(constant.MaxCallSendMsgSize, "")); err == nil && maxCall != 0 {
+		maxCallSendMsgSize = int(maxCall)
 	}
+	opts = append(opts, triConfig.WithGRPCMaxCallRecvMessageSize(maxCallRecvMsgSize))
+	opts = append(opts, triConfig.WithGRPCMaxCallSendMessageSize(maxCallSendMsgSize))
 
 	tracingKey := url.GetParam(constant.TracingConfigKey, "")
 	if tracingKey != "" {

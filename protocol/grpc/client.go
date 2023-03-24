@@ -19,10 +19,10 @@ package grpc
 
 import (
 	"reflect"
-	"strconv"
 	"sync"
 	"time"
 
+	"github.com/dustin/go-humanize"
 	"github.com/grpc-ecosystem/grpc-opentracing/go/otgrpc"
 	"github.com/opentracing/opentracing-go"
 	"google.golang.org/grpc"
@@ -54,7 +54,16 @@ func NewClient(url *common.URL) (*Client, error) {
 	// If not, will return NoopTracer.
 	tracer := opentracing.GlobalTracer()
 	dialOpts := make([]grpc.DialOption, 0, 4)
-	maxMessageSize, _ := strconv.Atoi(url.GetParam(constant.MessageSizeKey, "4"))
+
+	// set max send and recv msg size
+	maxCallRecvMsgSize := constant.DefaultMaxCallRecvMsgSize
+	if recvMsgSize, err := humanize.ParseBytes(url.GetParam(constant.MaxCallRecvMsgSize, "")); err == nil && recvMsgSize > 0 {
+		maxCallRecvMsgSize = int(recvMsgSize)
+	}
+	maxCallSendMsgSize := constant.DefaultMaxCallSendMsgSize
+	if sendMsgSize, err := humanize.ParseBytes(url.GetParam(constant.MaxCallSendMsgSize, "")); err == nil && sendMsgSize > 0 {
+		maxCallSendMsgSize = int(sendMsgSize)
+	}
 
 	// consumer config client connectTimeout
 	//connectTimeout := config.GetConsumerConfig().ConnectTimeout
@@ -67,8 +76,8 @@ func NewClient(url *common.URL) (*Client, error) {
 		grpc.WithStreamInterceptor(otgrpc.OpenTracingStreamClientInterceptor(tracer, otgrpc.LogPayloads())),
 		grpc.WithDefaultCallOptions(
 			grpc.CallContentSubtype(clientConf.ContentSubType),
-			grpc.MaxCallRecvMsgSize(1024*1024*maxMessageSize),
-			grpc.MaxCallSendMsgSize(1024*1024*maxMessageSize),
+			grpc.MaxCallRecvMsgSize(maxCallRecvMsgSize),
+			grpc.MaxCallSendMsgSize(maxCallSendMsgSize),
 		),
 	)
 	tlsConfig := config.GetRootConfig().TLSConfig

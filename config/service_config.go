@@ -70,7 +70,6 @@ type ServiceConfig struct {
 	NotRegister                 bool              `yaml:"not_register" json:"not_register,omitempty" property:"not_register"`
 	ParamSign                   string            `yaml:"param.sign" json:"param.sign,omitempty" property:"param.sign"`
 	Tag                         string            `yaml:"tag" json:"tag,omitempty" property:"tag"`
-	GrpcMaxMessageSize          int               `default:"4" yaml:"max_message_size" json:"max_message_size,omitempty"`
 	TracingKey                  string            `yaml:"tracing-key" json:"tracing-key,omitempty" propertiy:"tracing-key"`
 
 	RCProtocolsMap  map[string]*ProtocolConfig
@@ -272,6 +271,9 @@ func (s *ServiceConfig) Export() error {
 			common.WithMethods(strings.Split(methods, ",")),
 			common.WithToken(s.Token),
 			common.WithParamsValue(constant.MetadataTypeKey, s.metadataType),
+			// fix https://github.com/apache/dubbo-go/issues/2176
+			common.WithParamsValue(constant.MaxServerSendMsgSize, proto.MaxServerSendMsgSize),
+			common.WithParamsValue(constant.MaxServerRecvMsgSize, proto.MaxServerRecvMsgSize),
 		)
 		if len(s.Tag) > 0 {
 			ivkURL.AddParam(constant.Tagkey, s.Tag)
@@ -429,7 +431,6 @@ func (s *ServiceConfig) getUrlMap() url.Values {
 	urlMap.Set(constant.RegistryRoleKey, strconv.Itoa(common.PROVIDER))
 	urlMap.Set(constant.ReleaseKey, "dubbo-golang-"+constant.Version)
 	urlMap.Set(constant.SideKey, (common.RoleType(common.PROVIDER)).Role())
-	urlMap.Set(constant.MessageSizeKey, strconv.Itoa(s.GrpcMaxMessageSize))
 	// todo: move
 	urlMap.Set(constant.SerializationKey, s.Serialization)
 	// application config info

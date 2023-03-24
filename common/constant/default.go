@@ -17,6 +17,8 @@
 
 package constant
 
+import "math"
+
 const (
 	Dubbo            = "dubbo"
 	ProviderProtocol = "provider"
@@ -90,6 +92,14 @@ const (
 const (
 	ServiceDiscoveryDefaultGroup = "DEFAULT_GROUP"
 	NotAvailable                 = "N/A"
+)
+
+const (
+	DefaultMaxServerRecvMsgSize = 1024 * 1024 * 4
+	DefaultMaxServerSendMsgSize = math.MaxInt32
+
+	DefaultMaxCallRecvMsgSize = 1024 * 1024 * 4
+	DefaultMaxCallSendMsgSize = math.MaxInt32
 )
 
 const (
