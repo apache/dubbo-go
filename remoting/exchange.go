@@ -21,11 +21,15 @@ import (
 	"fmt"
 	"sync"
 	"time"
+)
 
-	"go.uber.org/atomic"
-
+import (
 	"github.com/dubbogo/gost/log/logger"
 
+	"go.uber.org/atomic"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 )
 

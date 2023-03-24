@@ -20,13 +20,19 @@ package config
 import (
 	"net/url"
 	"strings"
+)
 
+import (
 	"github.com/creasty/defaults"
-	"github.com/knadh/koanf"
-	"github.com/pkg/errors"
 
 	"github.com/dubbogo/gost/log/logger"
 
+	"github.com/knadh/koanf"
+
+	"github.com/pkg/errors"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	conf "dubbo.apache.org/dubbo-go/v3/common/config"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"

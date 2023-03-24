@@ -22,12 +22,16 @@ package health
 import (
 	"context"
 	"sync"
+)
+
+import (
+	"github.com/dubbogo/gost/log/logger"
 
 	"github.com/dubbogo/grpc-go/codes"
 	"github.com/dubbogo/grpc-go/status"
+)
 
-	"github.com/dubbogo/gost/log/logger"
-
+import (
 	"dubbo.apache.org/dubbo-go/v3/config"
 	healthpb "dubbo.apache.org/dubbo-go/v3/protocol/dubbo3/health/triple_health_v1"
 	healthtriple "dubbo.apache.org/dubbo-go/v3/protocol/dubbo3/health/triple_health_v1"

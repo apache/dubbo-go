@@ -23,15 +23,20 @@ import (
 	"reflect"
 	"strconv"
 	"sync"
+)
 
+import (
 	gxchan "github.com/dubbogo/gost/container/chan"
 	nacosClient "github.com/dubbogo/gost/database/kv/nacos"
-	"github.com/nacos-group/nacos-sdk-go/model"
-	"github.com/nacos-group/nacos-sdk-go/vo"
-	perrors "github.com/pkg/errors"
-
 	"github.com/dubbogo/gost/log/logger"
 
+	"github.com/nacos-group/nacos-sdk-go/model"
+	"github.com/nacos-group/nacos-sdk-go/vo"
+
+	perrors "github.com/pkg/errors"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config_center"

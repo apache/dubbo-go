@@ -23,17 +23,24 @@ import (
 	"net"
 	"sync"
 	"time"
+)
+
+import (
+	"github.com/dubbogo/gost/log/logger"
+
+	"github.com/dustin/go-humanize"
 
 	"github.com/grpc-ecosystem/grpc-opentracing/go/otgrpc"
+
 	"github.com/opentracing/opentracing-go"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
+)
 
-	"github.com/dubbogo/gost/log/logger"
-	"github.com/dustin/go-humanize"
-
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"

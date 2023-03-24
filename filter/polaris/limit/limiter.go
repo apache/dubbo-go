@@ -21,14 +21,18 @@ import (
 	"errors"
 	"fmt"
 	"time"
+)
+
+import (
+	"github.com/dubbogo/gost/log/logger"
 
 	"github.com/polarismesh/polaris-go"
 	"github.com/polarismesh/polaris-go/pkg/flow/data"
 	"github.com/polarismesh/polaris-go/pkg/model"
 	v1 "github.com/polarismesh/polaris-go/pkg/model/pb/v1"
+)
 
-	"github.com/dubbogo/gost/log/logger"
-
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"

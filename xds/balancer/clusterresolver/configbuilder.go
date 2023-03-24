@@ -27,14 +27,19 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
+)
+
+import (
+	dubbogoLogger "github.com/dubbogo/gost/log/logger"
 
 	"google.golang.org/grpc/balancer/roundrobin"
 	"google.golang.org/grpc/balancer/weightedroundrobin"
 	"google.golang.org/grpc/balancer/weightedtarget"
+
 	"google.golang.org/grpc/resolver"
+)
 
-	dubbogoLogger "github.com/dubbogo/gost/log/logger"
-
+import (
 	"dubbo.apache.org/dubbo-go/v3/xds/balancer/clusterimpl"
 	"dubbo.apache.org/dubbo-go/v3/xds/balancer/priority"
 	"dubbo.apache.org/dubbo-go/v3/xds/balancer/ringhash"

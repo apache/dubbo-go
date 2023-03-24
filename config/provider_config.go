@@ -19,13 +19,19 @@ package config
 
 import (
 	"fmt"
+)
 
+import (
 	"github.com/creasty/defaults"
-	tripleConstant "github.com/dubbogo/triple/pkg/common/constant"
-	perrors "github.com/pkg/errors"
 
 	"github.com/dubbogo/gost/log/logger"
 
+	tripleConstant "github.com/dubbogo/triple/pkg/common/constant"
+
+	perrors "github.com/pkg/errors"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	aslimiter "dubbo.apache.org/dubbo-go/v3/filter/adaptivesvc/limiter"

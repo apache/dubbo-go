@@ -20,12 +20,16 @@ package remote
 import (
 	"fmt"
 	"testing"
+)
 
+import (
 	gxset "github.com/dubbogo/gost/container/set"
-	"github.com/stretchr/testify/assert"
-
 	"github.com/dubbogo/gost/log/logger"
 
+	"github.com/stretchr/testify/assert"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/config/instance"

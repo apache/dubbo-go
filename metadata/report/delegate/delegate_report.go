@@ -22,13 +22,19 @@ import (
 	"runtime/debug"
 	"sync"
 	"time"
+)
 
-	"github.com/go-co-op/gocron"
-	perrors "github.com/pkg/errors"
-	"go.uber.org/atomic"
-
+import (
 	"github.com/dubbogo/gost/log/logger"
 
+	"github.com/go-co-op/gocron"
+
+	perrors "github.com/pkg/errors"
+
+	"go.uber.org/atomic"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config/instance"

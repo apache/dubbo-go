@@ -3,14 +3,18 @@ package zap
 import (
 	"os"
 	"strings"
+)
+
+import (
+	"github.com/dubbogo/gost/log/logger"
 
 	"github.com/mattn/go-colorable"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+)
 
-	"github.com/dubbogo/gost/log/logger"
-
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"

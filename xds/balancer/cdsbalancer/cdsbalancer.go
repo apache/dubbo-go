@@ -28,16 +28,24 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+)
+
+import (
+	dubbogoLogger "github.com/dubbogo/gost/log/logger"
 
 	"google.golang.org/grpc/balancer"
 	"google.golang.org/grpc/balancer/base"
+
 	"google.golang.org/grpc/connectivity"
+
 	"google.golang.org/grpc/credentials"
+
 	"google.golang.org/grpc/resolver"
+
 	"google.golang.org/grpc/serviceconfig"
+)
 
-	dubbogoLogger "github.com/dubbogo/gost/log/logger"
-
+import (
 	"dubbo.apache.org/dubbo-go/v3/xds/balancer/clusterresolver"
 	"dubbo.apache.org/dubbo-go/v3/xds/balancer/ringhash"
 	"dubbo.apache.org/dubbo-go/v3/xds/client"

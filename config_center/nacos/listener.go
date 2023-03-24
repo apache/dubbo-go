@@ -19,12 +19,16 @@ package nacos
 
 import (
 	"context"
+)
+
+import (
+	"github.com/dubbogo/gost/log/logger"
 
 	constant2 "github.com/nacos-group/nacos-sdk-go/common/constant"
 	"github.com/nacos-group/nacos-sdk-go/vo"
+)
 
-	"github.com/dubbogo/gost/log/logger"
-
+import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/remoting"

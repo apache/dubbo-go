@@ -23,7 +23,9 @@ import (
 	"github.com/dubbogo/gost/log/logger"
 
 	"github.com/pkg/errors"
+)
 
+import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 )

@@ -21,9 +21,13 @@ import (
 	"io"
 	"math/rand"
 	"time"
+)
 
+import (
 	log "github.com/dubbogo/gost/log/logger"
+)
 
+import (
 	"dubbo.apache.org/dubbo-go/v3/config"
 )
 

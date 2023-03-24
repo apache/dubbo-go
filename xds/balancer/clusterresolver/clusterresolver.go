@@ -28,16 +28,24 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+)
 
-	"google.golang.org/grpc/attributes"
-	"google.golang.org/grpc/balancer"
-	"google.golang.org/grpc/balancer/base"
-	"google.golang.org/grpc/connectivity"
-	"google.golang.org/grpc/resolver"
-	"google.golang.org/grpc/serviceconfig"
-
+import (
 	dubbogoLogger "github.com/dubbogo/gost/log/logger"
 
+	"google.golang.org/grpc/attributes"
+
+	"google.golang.org/grpc/balancer"
+	"google.golang.org/grpc/balancer/base"
+
+	"google.golang.org/grpc/connectivity"
+
+	"google.golang.org/grpc/resolver"
+
+	"google.golang.org/grpc/serviceconfig"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/xds/balancer/priority"
 	"dubbo.apache.org/dubbo-go/v3/xds/client"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"

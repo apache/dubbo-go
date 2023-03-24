@@ -2,7 +2,9 @@ package logger
 
 import (
 	"gopkg.in/natefinch/lumberjack.v2"
+)
 
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )

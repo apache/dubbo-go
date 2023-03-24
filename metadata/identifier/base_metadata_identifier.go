@@ -19,9 +19,13 @@ package identifier
 
 import (
 	"net/url"
+)
 
+import (
 	"github.com/dubbogo/gost/log/logger"
+)
 
+import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 

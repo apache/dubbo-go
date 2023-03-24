@@ -22,10 +22,12 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+)
+
+import (
+	"github.com/dubbogo/gost/log/logger"
 
 	"github.com/oliveagle/jsonpath"
-
-	"github.com/dubbogo/gost/log/logger"
 )
 
 const (

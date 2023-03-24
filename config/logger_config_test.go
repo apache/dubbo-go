@@ -19,10 +19,12 @@ package config
 
 import (
 	"testing"
+)
+
+import (
+	"github.com/dubbogo/gost/log/logger"
 
 	"github.com/stretchr/testify/assert"
-
-	"github.com/dubbogo/gost/log/logger"
 )
 
 func TestLoggerInit(t *testing.T) {

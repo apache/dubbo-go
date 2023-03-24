@@ -19,7 +19,9 @@ package extension
 
 import (
 	"github.com/dubbogo/gost/log/logger"
+)
 
+import (
 	"dubbo.apache.org/dubbo-go/v3/proxy"
 )
 

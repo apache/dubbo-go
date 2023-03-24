@@ -20,11 +20,15 @@ package tag
 import (
 	"strings"
 	"sync"
+)
 
-	"gopkg.in/yaml.v2"
-
+import (
 	"github.com/dubbogo/gost/log/logger"
 
+	"gopkg.in/yaml.v2"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	conf "dubbo.apache.org/dubbo-go/v3/common/config"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
