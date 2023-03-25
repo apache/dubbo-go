@@ -171,6 +171,16 @@ func (c *zookeeperDynamicConfiguration) PublishConfig(key string, group string, 
 	return nil
 }
 
+// RemoveConfig will remove the config with the (key, group) pair
+func (c *zookeeperDynamicConfiguration) RemoveConfig(key string, group string) error {
+	path := c.getPath(key, group)
+	err := c.client.Delete(path)
+	if err != nil {
+		return perrors.WithStack(err)
+	}
+	return nil
+}
+
 // GetConfigKeysByGroup will return all keys with the group
 func (c *zookeeperDynamicConfiguration) GetConfigKeysByGroup(group string) (*gxset.HashSet, error) {
 	path := c.getPath("", group)
