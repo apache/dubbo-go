@@ -41,7 +41,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/registry"
-	"dubbo.apache.org/dubbo-go/v3/registry/event"
+	"dubbo.apache.org/dubbo-go/v3/registry/servicediscovery"
 	"dubbo.apache.org/dubbo-go/v3/remoting/nacos"
 )
 
@@ -95,7 +95,7 @@ func TestFunction(t *testing.T) {
 	hs := gxset.NewSet()
 	hs.Add(testName)
 
-	sicl := event.NewServiceInstancesChangedListener(hs)
+	sicl := servicediscovery.NewServiceInstancesChangedListener(hs)
 	sicl.AddListenerAndNotify(testName, tn)
 	err = sd.AddListener(sicl)
 	assert.NoError(t, err)

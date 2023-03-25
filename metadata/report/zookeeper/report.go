@@ -37,6 +37,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/metadata/identifier"
 	"dubbo.apache.org/dubbo-go/v3/metadata/report"
 	"dubbo.apache.org/dubbo-go/v3/metadata/report/factory"
+	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
 var emptyStrSlice = make([]string, 0)
@@ -161,7 +162,7 @@ func (m *zookeeperMetadataReport) RegisterServiceAppMapping(key string, group st
 }
 
 // GetServiceAppMapping get the app names from the specified Dubbo service interface
-func (m *zookeeperMetadataReport) GetServiceAppMapping(key string, group string) (*gxset.HashSet, error) {
+func (m *zookeeperMetadataReport) GetServiceAppMapping(key string, group string, listener registry.MappingListener) (*gxset.HashSet, error) {
 	path := m.rootDir + group + constant.PathSeparator + key
 	v, _, err := m.client.GetContent(path)
 	if err != nil {
@@ -173,6 +174,10 @@ func (m *zookeeperMetadataReport) GetServiceAppMapping(key string, group string)
 		set.Add(e)
 	}
 	return set, nil
+}
+
+func (m *zookeeperMetadataReport) RemoveServiceAppMappingListener(key string, group string) error {
+	return nil
 }
 
 type zookeeperMetadataReportFactory struct{}
