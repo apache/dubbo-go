@@ -411,6 +411,31 @@ func ServiceKey(intf string, group string, version string) string {
 	return buf.String()
 }
 
+// ParseServiceKey get interface, group and version from servicekey
+func ParseServiceKey(serviceKey string) (string, string, string) {
+	var (
+		group   string
+		version string
+	)
+	if serviceKey == "" {
+		return "", "", ""
+	}
+	// get group if it exists
+	sepIndex := strings.Index(serviceKey, constant.PathSeparator)
+	if sepIndex != -1 {
+		group = serviceKey[:sepIndex]
+		serviceKey = serviceKey[sepIndex+1:]
+	}
+	// get version if it exists
+	sepIndex = strings.LastIndex(serviceKey, constant.KeySeparator)
+	if sepIndex != -1 {
+		version = serviceKey[sepIndex+1:]
+		serviceKey = serviceKey[:sepIndex]
+	}
+
+	return serviceKey, group, version
+}
+
 // ColonSeparatedKey
 // The format is "{interface}:[version]:[group]"
 func (c *URL) ColonSeparatedKey() string {
@@ -538,7 +563,7 @@ func (c *URL) GetNonDefaultParam(s string) (string, bool) {
 		r = c.params.Get(s)
 	}
 
-    return r, r != ""
+	return r, r != ""
 }
 
 // GetParams gets values
