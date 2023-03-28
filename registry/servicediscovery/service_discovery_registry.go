@@ -209,7 +209,6 @@ func (s *ServiceDiscoveryRegistry) Subscribe(url *common.URL, notify registry.No
 	mappingListener := NewMappingListener(s.url, url, s.subscribedServices, notify)
 	services := s.getServices(url, mappingListener)
 	if services.Empty() {
-		return nil
 		return perrors.Errorf("Should has at least one way to know which services this interface belongs to,"+
 			" either specify 'provided-by' for reference or enable metadata-report center subscription url:%s", url.String())
 	}
