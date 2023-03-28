@@ -30,6 +30,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
+	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
 func init() {
@@ -42,8 +43,12 @@ func (i *InMemoryServiceNameMapping) Map(url *common.URL) error {
 	return nil
 }
 
-func (i *InMemoryServiceNameMapping) Get(url *common.URL) (*gxset.HashSet, error) {
+func (i *InMemoryServiceNameMapping) Get(url *common.URL, listener registry.MappingListener) (*gxset.HashSet, error) {
 	return gxset.NewSet(config.GetApplicationConfig().Name), nil
+}
+
+func (i *InMemoryServiceNameMapping) Remove(url *common.URL) error {
+	return nil
 }
 
 var (

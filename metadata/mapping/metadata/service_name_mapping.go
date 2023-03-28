@@ -36,6 +36,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config/instance"
 	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
 	"dubbo.apache.org/dubbo-go/v3/metadata/report"
+	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
 const (
@@ -76,10 +77,16 @@ func (d *MetadataServiceNameMapping) Map(url *common.URL) error {
 }
 
 // Get will return the application-level services. If not found, the empty set will be returned.
-func (d *MetadataServiceNameMapping) Get(url *common.URL) (*gxset.HashSet, error) {
+func (d *MetadataServiceNameMapping) Get(url *common.URL, listener registry.MappingListener) (*gxset.HashSet, error) {
 	serviceInterface := url.GetParam(constant.InterfaceKey, "")
 	metadataReport := instance.GetMetadataReportInstance()
-	return metadataReport.GetServiceAppMapping(serviceInterface, defaultGroup)
+	return metadataReport.GetServiceAppMapping(serviceInterface, defaultGroup, listener)
+}
+
+func (d *MetadataServiceNameMapping) Remove(url *common.URL) error {
+	serviceInterface := url.GetParam(constant.InterfaceKey, "")
+	metadataReport := instance.GetMetadataReportInstance()
+	return metadataReport.RemoveServiceAppMappingListener(serviceInterface, defaultGroup)
 }
 
 // buildMappingKey will return mapping key, it looks like defaultGroup/serviceInterface
