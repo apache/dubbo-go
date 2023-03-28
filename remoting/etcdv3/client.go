@@ -38,7 +38,7 @@ func ValidateClient(container clientFacade, opts ...gxetcd.Option) error {
 	if container.Client() == nil {
 		newClient, err := gxetcd.NewClient(options.Name, options.Endpoints, options.Timeout, options.Heartbeat)
 		if err != nil {
-			logger.Warnf("new etcd client (name{%s}, etcd addresses{%v}, timeout{%d}) = error{%v}",
+			logger.Warnf("snew etcd client (name{%s}, etcd addresses{%v}, timeout{%d}) = error{%v}",
 				options.Name, options.Endpoints, options.Timeout, err)
 			return perrors.WithMessagef(err, "new client (address:%+v)", options.Endpoints)
 		}
@@ -59,7 +59,7 @@ func ValidateClient(container clientFacade, opts ...gxetcd.Option) error {
 	return nil
 }
 
-//  nolint
+// nolint
 func NewServiceDiscoveryClient(opts ...gxetcd.Option) *gxetcd.Client {
 	options := &gxetcd.Options{
 		Heartbeat: 1, // default heartbeat
