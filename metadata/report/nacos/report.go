@@ -244,18 +244,15 @@ func (n *nacosMetadataReport) RegisterServiceAppMapping(key string, group string
 		DataId: key,
 		Group:  group,
 	})
-	if err != nil {
-		return err
-	}
-	oldApps := strings.Split(oldVal, constant.CommaSeparator)
-	if len(oldApps) > 0 {
-		for _, app := range oldApps {
-			if app == value {
-				return nil
+	if oldVal != "" {
+		oldApps := strings.Split(oldVal, constant.CommaSeparator)
+		if len(oldApps) > 0 {
+			for _, app := range oldApps {
+				if app == value {
+					return nil
+				}
 			}
 		}
-	}
-	if oldVal != "" {
 		value = oldVal + constant.CommaSeparator + value
 	}
 	return n.storeMetadata(vo.ConfigParam{
