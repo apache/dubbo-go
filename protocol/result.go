@@ -33,7 +33,7 @@ import (
 //
 // SetAttachments method replaces the existing attachments with the specified param.
 //
-// Attachments method gets all attachments
+// # Attachments method gets all attachments
 //
 // AddAttachment method adds the specified map to existing attachments in this instance.
 //

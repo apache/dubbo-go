@@ -25,29 +25,33 @@ import (
 	perrors "github.com/pkg/errors"
 )
 
+// import (
 //
-//import (
 //	"context"
 //	"strings"
 //	"testing"
 //	"time"
-//)
 //
-//import (
+// )
+//
+// import (
+//
 //	"github.com/opentracing/opentracing-go"
 //
 //	perrors "github.com/pkg/errors"
 //
 //	"github.com/stretchr/testify/assert"
-//)
 //
-//import (
+// )
+//
+// import (
+//
 //	"dubbo.apache.org/dubbo-go/v3/common"
 //	"dubbo.apache.org/dubbo-go/v3/common/constant"
 //	"dubbo.apache.org/dubbo-go/v3/proxy/proxy_factory"
 //	"dubbo.apache.org/dubbo-go/v3/protocol"
-//)
 //
+// )
 type (
 	User struct {
 		ID   string `json:"id"`
@@ -58,125 +62,125 @@ type (
 	}
 )
 
+// const (
 //
-//const (
 //	mockJsonCommonUrl = "jsonrpc://127.0.0.1:20001/com.ikurento.user.UserProvider?anyhost=true&" +
 //		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
 //		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
 //		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
 //		"side=provider&timeout=3000&timestamp=1556509797245&bean.name=UserProvider"
-//)
 //
-//func TestHTTPClientCall(t *testing.T) {
-//	methods, err := common.ServiceMap.Register("com.ikurento.user.UserProvider", "jsonrpc", "", "", &UserProvider{})
-//	assert.NoError(t, err)
-//	assert.Equal(t, "GetUser,GetUser0,GetUser1,GetUser2,GetUser3,GetUser4", methods)
+// )
 //
-//	// Export
-//	proto := GetProtocol()
-//	url, err := common.NewURL(mockJsonCommonUrl)
-//	assert.NoError(t, err)
-//	proto.Export(&proxy_factory.ProxyInvoker{
-//		BaseInvoker: *protocol.NewBaseInvoker(url),
-//	})
-//	time.Sleep(time.Second * 2)
+//	func TestHTTPClientCall(t *testing.T) {
+//		methods, err := common.ServiceMap.Register("com.ikurento.user.UserProvider", "jsonrpc", "", "", &UserProvider{})
+//		assert.NoError(t, err)
+//		assert.Equal(t, "GetUser,GetUser0,GetUser1,GetUser2,GetUser3,GetUser4", methods)
 //
-//	client := NewHTTPClient(&HTTPOptions{})
+//		// Export
+//		proto := GetProtocol()
+//		url, err := common.NewURL(mockJsonCommonUrl)
+//		assert.NoError(t, err)
+//		proto.Export(&proxy_factory.ProxyInvoker{
+//			BaseInvoker: *protocol.NewBaseInvoker(url),
+//		})
+//		time.Sleep(time.Second * 2)
 //
-//	// call GetUser
-//	ctx := context.WithValue(context.Background(), constant.DUBBOGO_CTX_KEY, map[string]string{
-//		"X-Proxy-ID": "dubbogo",
-//		"X-Services": url.Path,
-//		"X-Method":   "GetUser",
-//	})
+//		client := NewHTTPClient(&HTTPOptions{})
 //
-//	req := client.NewRequest(url, "GetUser", []interface{}{"1", "username"})
-//	reply := &User{}
-//	err = client.Call(ctx, url, req, reply)
-//	assert.NoError(t, err)
-//	assert.Equal(t, "1", reply.ID)
-//	assert.Equal(t, "username", reply.Name)
+//		// call GetUser
+//		ctx := context.WithValue(context.Background(), constant.DUBBOGO_CTX_KEY, map[string]string{
+//			"X-Proxy-ID": "dubbogo",
+//			"X-Services": url.Path,
+//			"X-Method":   "GetUser",
+//		})
 //
-//	// call GetUser0
-//	ctx = context.WithValue(context.Background(), constant.DUBBOGO_CTX_KEY, map[string]string{
-//		"X-Proxy-ID": "dubbogo",
-//		"X-Services": url.Path,
-//		"X-Method":   "GetUser0",
-//	})
-//	req = client.NewRequest(url, "GetUser0", []interface{}{"1", nil, "username"})
-//	reply = &User{}
-//	err = client.Call(ctx, url, req, reply)
-//	assert.NoError(t, err)
-//	assert.Equal(t, "1", reply.ID)
-//	assert.Equal(t, "username", reply.Name)
+//		req := client.NewRequest(url, "GetUser", []interface{}{"1", "username"})
+//		reply := &User{}
+//		err = client.Call(ctx, url, req, reply)
+//		assert.NoError(t, err)
+//		assert.Equal(t, "1", reply.ID)
+//		assert.Equal(t, "username", reply.Name)
 //
-//	// call GetUser1
-//	ctx = context.WithValue(context.Background(), constant.DUBBOGO_CTX_KEY, map[string]string{
-//		"X-Proxy-ID": "dubbogo",
-//		"X-Services": url.Path,
-//		"X-Method":   "GetUser1",
-//	})
-//	req = client.NewRequest(url, "GetUser1", []interface{}{})
-//	reply = &User{}
-//	err = client.Call(ctx, url, req, reply)
-//	assert.True(t, strings.Contains(err.Error(), "500 Internal Server Error"))
-//	assert.True(t, strings.Contains(err.Error(), "\\\"result\\\":{},\\\"error\\\":{\\\"code\\\":-32000,\\\"message\\\":\\\"error\\\"}"))
+//		// call GetUser0
+//		ctx = context.WithValue(context.Background(), constant.DUBBOGO_CTX_KEY, map[string]string{
+//			"X-Proxy-ID": "dubbogo",
+//			"X-Services": url.Path,
+//			"X-Method":   "GetUser0",
+//		})
+//		req = client.NewRequest(url, "GetUser0", []interface{}{"1", nil, "username"})
+//		reply = &User{}
+//		err = client.Call(ctx, url, req, reply)
+//		assert.NoError(t, err)
+//		assert.Equal(t, "1", reply.ID)
+//		assert.Equal(t, "username", reply.Name)
 //
-//	// call GetUser2
-//	ctx = context.WithValue(context.Background(), constant.DUBBOGO_CTX_KEY, map[string]string{
-//		"X-Proxy-ID": "dubbogo",
-//		"X-Services": url.Path,
-//		"X-Method":   "GetUser2",
-//	})
-//	req = client.NewRequest(url, "GetUser2", []interface{}{"1", "username"})
-//	reply1 := []User{}
-//	err = client.Call(ctx, url, req, &reply1)
-//	assert.NoError(t, err)
-//	assert.Equal(t, User{ID: "1", Name: "username"}, reply1[0])
+//		// call GetUser1
+//		ctx = context.WithValue(context.Background(), constant.DUBBOGO_CTX_KEY, map[string]string{
+//			"X-Proxy-ID": "dubbogo",
+//			"X-Services": url.Path,
+//			"X-Method":   "GetUser1",
+//		})
+//		req = client.NewRequest(url, "GetUser1", []interface{}{})
+//		reply = &User{}
+//		err = client.Call(ctx, url, req, reply)
+//		assert.True(t, strings.Contains(err.Error(), "500 Internal Server Error"))
+//		assert.True(t, strings.Contains(err.Error(), "\\\"result\\\":{},\\\"error\\\":{\\\"code\\\":-32000,\\\"message\\\":\\\"error\\\"}"))
 //
-//	// call GetUser3
-//	ctx = context.WithValue(context.Background(), constant.DUBBOGO_CTX_KEY, map[string]string{
-//		"X-Proxy-ID": "dubbogo",
-//		"X-Services": url.Path,
-//		"X-Method":   "GetUser3",
-//	})
-//	req = client.NewRequest(url, "GetUser3", []interface{}{"1", "username"})
-//	reply1 = []User{}
-//	err = client.Call(ctx, url, req, &reply1)
-//	assert.NoError(t, err)
-//	assert.Equal(t, User{ID: "1", Name: "username"}, reply1[0])
+//		// call GetUser2
+//		ctx = context.WithValue(context.Background(), constant.DUBBOGO_CTX_KEY, map[string]string{
+//			"X-Proxy-ID": "dubbogo",
+//			"X-Services": url.Path,
+//			"X-Method":   "GetUser2",
+//		})
+//		req = client.NewRequest(url, "GetUser2", []interface{}{"1", "username"})
+//		reply1 := []User{}
+//		err = client.Call(ctx, url, req, &reply1)
+//		assert.NoError(t, err)
+//		assert.Equal(t, User{ID: "1", Name: "username"}, reply1[0])
 //
-//	// call GetUser4
-//	ctx = context.WithValue(context.Background(), constant.DUBBOGO_CTX_KEY, map[string]string{
-//		"X-Proxy-ID": "dubbogo",
-//		"X-Services": url.Path,
-//		"X-Method":   "GetUser4",
-//	})
-//	req = client.NewRequest(url, "GetUser4", []interface{}{0})
-//	reply = &User{}
-//	err = client.Call(ctx, url, req, reply)
-//	assert.NoError(t, err)
-//	assert.Equal(t, &User{ID: "", Name: ""}, reply)
+//		// call GetUser3
+//		ctx = context.WithValue(context.Background(), constant.DUBBOGO_CTX_KEY, map[string]string{
+//			"X-Proxy-ID": "dubbogo",
+//			"X-Services": url.Path,
+//			"X-Method":   "GetUser3",
+//		})
+//		req = client.NewRequest(url, "GetUser3", []interface{}{"1", "username"})
+//		reply1 = []User{}
+//		err = client.Call(ctx, url, req, &reply1)
+//		assert.NoError(t, err)
+//		assert.Equal(t, User{ID: "1", Name: "username"}, reply1[0])
 //
-//	ctx = context.WithValue(context.Background(), constant.DUBBOGO_CTX_KEY, map[string]string{
-//		"X-Proxy-ID": "dubbogo",
-//		"X-Services": url.Path,
-//		"X-Method":   "GetUser4",
-//	})
+//		// call GetUser4
+//		ctx = context.WithValue(context.Background(), constant.DUBBOGO_CTX_KEY, map[string]string{
+//			"X-Proxy-ID": "dubbogo",
+//			"X-Services": url.Path,
+//			"X-Method":   "GetUser4",
+//		})
+//		req = client.NewRequest(url, "GetUser4", []interface{}{0})
+//		reply = &User{}
+//		err = client.Call(ctx, url, req, reply)
+//		assert.NoError(t, err)
+//		assert.Equal(t, &User{ID: "", Name: ""}, reply)
 //
-//	span := opentracing.StartSpan("Test-Inject-Tracing-ID")
-//	ctx = opentracing.ContextWithSpan(ctx, span)
+//		ctx = context.WithValue(context.Background(), constant.DUBBOGO_CTX_KEY, map[string]string{
+//			"X-Proxy-ID": "dubbogo",
+//			"X-Services": url.Path,
+//			"X-Method":   "GetUser4",
+//		})
 //
-//	req = client.NewRequest(url, "GetUser4", []interface{}{1})
-//	reply = &User{}
-//	err = client.Call(ctx, url, req, reply)
-//	assert.NoError(t, err)
-//	assert.Equal(t, &User{ID: "1", Name: ""}, reply)
+//		span := opentracing.StartSpan("Test-Inject-Tracing-ID")
+//		ctx = opentracing.ContextWithSpan(ctx, span)
 //
-//	// destroy
-//	proto.Destroy()
-//}
+//		req = client.NewRequest(url, "GetUser4", []interface{}{1})
+//		reply = &User{}
+//		err = client.Call(ctx, url, req, reply)
+//		assert.NoError(t, err)
+//		assert.Equal(t, &User{ID: "1", Name: ""}, reply)
 //
+//		// destroy
+//		proto.Destroy()
+//	}
 func (u *UserProvider) GetUser(ctx context.Context, req []interface{}, rsp *User) error {
 	rsp.ID = req[0].(string)
 	rsp.Name = req[1].(string)

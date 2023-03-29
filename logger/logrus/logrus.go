@@ -21,17 +21,11 @@ import (
 	"io"
 	"os"
 	"strings"
-)
 
-import (
 	"github.com/dubbogo/gost/log/logger"
-
 	"github.com/mattn/go-colorable"
-
 	"github.com/sirupsen/logrus"
-)
 
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"

@@ -27,7 +27,7 @@ import (
 
 // ServiceNameMapping  is the interface which trys to build the mapping between application-level service and interface-level service.
 //
-// Map method will map the service to this application-level service
+// # Map method will map the service to this application-level service
 //
 // Get method will return the application-level services
 type ServiceNameMapping interface {
