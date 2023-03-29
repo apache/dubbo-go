@@ -23,12 +23,20 @@ import (
 	"io/ioutil"
 )
 
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+)
+
 // TLSConfig tls config
 type TLSConfig struct {
 	CACertFile    string `yaml:"ca-cert-file" json:"ca-cert-file" property:"ca-cert-file"`
 	TLSCertFile   string `yaml:"tls-cert-file" json:"tls-cert-file" property:"tls-cert-file"`
 	TLSKeyFile    string `yaml:"tls-key-file" json:"tls-key-file" property:"tls-key-file"`
 	TLSServerName string `yaml:"tls-server-name" json:"tls-server-name" property:"tls-server-name"`
+}
+
+func (t *TLSConfig) Prefix() string {
+	return constant.TLSConfigPrefix
 }
 
 // GetServerTlsConfig build server tls config from TLSConfig
@@ -90,4 +98,48 @@ func GetClientTlsConfig(opt *TLSConfig) (*tls.Config, error) {
 		cfg.Certificates = []tls.Certificate{cert}
 	}
 	return cfg, err
+}
+
+type TLSConfigBuilder struct {
+	tlsConfig *TLSConfig
+}
+
+func NewTLSConfigBuilder() *TLSConfigBuilder {
+	return &TLSConfigBuilder{}
+}
+
+func (tcb *TLSConfigBuilder) SetCACertFile(caCertFile string) *TLSConfigBuilder {
+	if tcb.tlsConfig == nil {
+		tcb.tlsConfig = &TLSConfig{}
+	}
+	tcb.tlsConfig.CACertFile = caCertFile
+	return tcb
+}
+
+func (tcb *TLSConfigBuilder) SetTLSCertFile(tlsCertFile string) *TLSConfigBuilder {
+	if tcb.tlsConfig == nil {
+		tcb.tlsConfig = &TLSConfig{}
+	}
+	tcb.tlsConfig.TLSCertFile = tlsCertFile
+	return tcb
+}
+
+func (tcb *TLSConfigBuilder) SetTLSKeyFile(tlsKeyFile string) *TLSConfigBuilder {
+	if tcb.tlsConfig == nil {
+		tcb.tlsConfig = &TLSConfig{}
+	}
+	tcb.tlsConfig.TLSKeyFile = tlsKeyFile
+	return tcb
+}
+
+func (tcb *TLSConfigBuilder) SetTLSServerName(tlsServerName string) *TLSConfigBuilder {
+	if tcb.tlsConfig == nil {
+		tcb.tlsConfig = &TLSConfig{}
+	}
+	tcb.tlsConfig.TLSServerName = tlsServerName
+	return tcb
+}
+
+func (tcb *TLSConfigBuilder) Build() *TLSConfig {
+	return tcb.tlsConfig
 }

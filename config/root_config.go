@@ -106,6 +106,13 @@ func GetShutDown() *ShutdownConfig {
 	return NewShutDownConfigBuilder().Build()
 }
 
+func GetTLSConfig() *TLSConfig {
+	if err := check(); err == nil && rootConfig.TLSConfig != nil {
+		return rootConfig.TLSConfig
+	}
+	return NewTLSConfigBuilder().Build()
+}
+
 // getRegistryIds get registry ids
 func (rc *RootConfig) getRegistryIds() []string {
 	ids := make([]string, 0)
@@ -225,6 +232,7 @@ func newEmptyRootConfig() *RootConfig {
 		Logger:         NewLoggerConfigBuilder().Build(),
 		Custom:         NewCustomConfigBuilder().Build(),
 		Shutdown:       NewShutDownConfigBuilder().Build(),
+		TLSConfig:      NewTLSConfigBuilder().Build(),
 	}
 	return newRootConfig
 }
@@ -319,6 +327,11 @@ func (rb *RootConfigBuilder) SetCustom(customConfig *CustomConfig) *RootConfigBu
 
 func (rb *RootConfigBuilder) SetShutDown(shutDownConfig *ShutdownConfig) *RootConfigBuilder {
 	rb.rootConfig.Shutdown = shutDownConfig
+	return rb
+}
+
+func (rb *RootConfigBuilder) SetTLSConfig(tlsConfig *TLSConfig) *RootConfigBuilder {
+	rb.rootConfig.TLSConfig = tlsConfig
 	return rb
 }
 

@@ -15,31 +15,31 @@
  * limitations under the License.
  */
 
-package mapping
+package config
 
 import (
-	gxset "github.com/dubbogo/gost/container/set"
+	"testing"
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/registry"
+	"github.com/stretchr/testify/assert"
 )
 
-type MockServiceNameMapping struct{}
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+)
 
-func NewMockServiceNameMapping() *MockServiceNameMapping {
-	return &MockServiceNameMapping{}
-}
+func TestNewTLSConfigBuilder(t *testing.T) {
+	config := NewTLSConfigBuilder().
+		SetCACertFile("ca_cert_file").
+		SetTLSKeyFile("tls_key_file").
+		SetTLSServerName("tls_server_name").
+		SetTLSCertFile("tls_cert_file").
+		Build()
+	assert.Equal(t, config.CACertFile, "ca_cert_file")
+	assert.Equal(t, config.TLSCertFile, "tls_cert_file")
+	assert.Equal(t, config.TLSServerName, "tls_server_name")
+	assert.Equal(t, config.TLSKeyFile, "tls_key_file")
+	assert.Equal(t, config.Prefix(), constant.TLSConfigPrefix)
 
-func (m *MockServiceNameMapping) Map(*common.URL) error {
-	return nil
-}
-
-func (m *MockServiceNameMapping) Get(*common.URL, registry.MappingListener) (*gxset.HashSet, error) {
-	panic("implement me")
-}
-
-func (m *MockServiceNameMapping) Remove(*common.URL) error {
-	panic("implement me")
 }

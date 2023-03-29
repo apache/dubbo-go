@@ -123,6 +123,22 @@ func (n *nacosDynamicConfiguration) PublishConfig(key string, group string, valu
 	return nil
 }
 
+// RemoveConfig will remove the config with the (key, group) pair
+func (n *nacosDynamicConfiguration) RemoveConfig(key string, group string) error {
+	group = n.resolvedGroup(group)
+	ok, err := n.client.Client().DeleteConfig(vo.ConfigParam{
+		DataId: key,
+		Group:  group,
+	})
+	if err != nil {
+		return perrors.WithStack(err)
+	}
+	if !ok {
+		return perrors.New("remove config from Nacos failed")
+	}
+	return nil
+}
+
 // GetConfigKeysByGroup will return all keys with the group
 func (n *nacosDynamicConfiguration) GetConfigKeysByGroup(group string) (*gxset.HashSet, error) {
 	group = n.resolvedGroup(group)
