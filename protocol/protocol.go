@@ -31,9 +31,9 @@ import (
 
 // Protocol is the interface that wraps the basic Export, Refer and Destroy method.
 //
-// Export method is to export service for remote invocation
+// # Export method is to export service for remote invocation
 //
-// Refer method is to refer a remote service
+// # Refer method is to refer a remote service
 //
 // Destroy method will destroy all invoker and exporter, so it only is called once.
 type Protocol interface {
