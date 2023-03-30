@@ -122,7 +122,7 @@ func (pr *polarisRegistry) UnRegister(url *common.URL) error {
 	request := createDeregisterParam(url, url.Interface())
 	request.Namespace = pr.namespace
 	if err := pr.provider.Deregister(request); err != nil {
-		return perrors.WithMessagef(err, "register(conf:%+v)", url)
+		return perrors.WithMessagef(err, "fail to deregister(conf:%+v)", url)
 	}
 	return nil
 }
