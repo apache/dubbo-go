@@ -101,10 +101,10 @@ func (v3c *client) SetMetadata(p *_struct.Struct) {
 // rType, on the provided stream.
 //
 // version is the ack version to be sent with the request
-// - If this is the new request (not an ack/nack), version will be empty.
-// - If this is an ack, version will be the version from the response.
-// - If this is a nack, version will be the previous acked version (from
-//   versionMap). If there was no ack before, it will be empty.
+//   - If this is the new request (not an ack/nack), version will be empty.
+//   - If this is an ack, version will be the version from the response.
+//   - If this is a nack, version will be the previous acked version (from
+//     versionMap). If there was no ack before, it will be empty.
 func (v3c *client) SendRequest(s grpc.ClientStream, resourceNames []string, rType resource.ResourceType, version, nonce, errMsg string) error {
 	stream, ok := s.(adsStream)
 	if !ok {

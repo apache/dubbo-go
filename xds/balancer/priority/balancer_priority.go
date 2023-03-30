@@ -61,15 +61,15 @@ var (
 // set parent ClientConn to TransientFailure
 // - Otherwise, Scan all children from p0, and check balancer stats:
 //   - For any of the following cases:
-// 	   - If balancer is not started (not built), this is either a new child
-//       with high priority, or a new builder for an existing child.
-// 	   - If balancer is READY
-// 	   - If this is the lowest priority
+//   - If balancer is not started (not built), this is either a new child
+//     with high priority, or a new builder for an existing child.
+//   - If balancer is READY
+//   - If this is the lowest priority
 //   - do the following:
-//     - if this is not the old childInUse, override picker so old picker is no
-//       longer used.
-//     - switch to it (because all higher priorities are neither new or Ready)
-//     - forward the new addresses and config
+//   - if this is not the old childInUse, override picker so old picker is no
+//     longer used.
+//   - switch to it (because all higher priorities are neither new or Ready)
+//   - forward the new addresses and config
 //
 // Caller must hold b.mu.
 func (b *priorityBalancer) syncPriority() {
@@ -255,6 +255,7 @@ func (b *priorityBalancer) handleChildStateUpdate(childName string, s balancer.S
 // - If it's from higher priority:
 //   - Switch to this priority
 //   - Forward the update
+//
 // - If it's from priorityInUse:
 //   - Forward only
 //
@@ -282,13 +283,14 @@ func (b *priorityBalancer) handlePriorityWithNewStateReady(child *childBalancer,
 // An update with state TransientFailure:
 // - If it's from a higher priority:
 //   - Do not forward, and do nothing
+//
 // - If it's from priorityInUse:
 //   - If there's no lower:
-//     - Forward and do nothing else
+//   - Forward and do nothing else
 //   - If there's a lower priority:
-//     - Switch to the lower
-//     - Forward the lower child's state
-//     - Do NOT forward this update
+//   - Switch to the lower
+//   - Forward the lower child's state
+//   - Do NOT forward this update
 //
 // Caller must make sure priorityInUse is not higher than priority.
 //
@@ -320,6 +322,7 @@ func (b *priorityBalancer) handlePriorityWithNewStateTransientFailure(child *chi
 // An update with state Connecting:
 // - If it's from a higher priority
 //   - Do nothing
+//
 // - If it's from priorityInUse, the behavior depends on previous state.
 //
 // When new state is Connecting, the behavior depends on previous state. If the
