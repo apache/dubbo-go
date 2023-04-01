@@ -115,10 +115,10 @@ func (t *Controller) run(ctx context.Context) {
 // new requests to send on the stream.
 //
 // For each new request (watchAction), it's
-//  - processed and added to the watch map
-//    - so resend will pick them up when there are new streams
-//  - sent on the current stream if there's one
-//    - the current stream is cleared when any send on it fails
+//   - processed and added to the watch map
+//   - so resend will pick them up when there are new streams
+//   - sent on the current stream if there's one
+//   - the current stream is cleared when any send on it fails
 //
 // For each new stream, all the existing requests will be resent.
 //
