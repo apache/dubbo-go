@@ -20,6 +20,7 @@ package condition
 import (
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -27,20 +28,113 @@ import (
 	"github.com/dubbogo/gost/log/logger"
 
 	"github.com/pkg/errors"
+
+	"gopkg.in/yaml.v2"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/router/condition/matcher"
 	"dubbo.apache.org/dubbo-go/v3/common"
+	conf "dubbo.apache.org/dubbo-go/v3/common/config"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
 var (
 	RoutePattern = regexp.MustCompile("([&!=,]*)\\s*([^&!=,\\s]+)")
 )
+
+type ConditionDynamicRouter struct {
+	ruleKey          string
+	conditionRouters []*ConditionStateRouter
+	routerConfig     *config.RouterConfig
+}
+
+func NewConditionDynamicRouter() (*ConditionDynamicRouter, error) {
+	return &ConditionDynamicRouter{}, nil
+}
+
+func (c *ConditionDynamicRouter) Route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
+	if len(invokers) == 0 || len(c.conditionRouters) == 0 {
+		return invokers
+	}
+	for _, router := range c.conditionRouters {
+		invokers = router.Route(invokers, url, invocation)
+	}
+	return invokers
+}
+
+func (c *ConditionDynamicRouter) URL() *common.URL {
+	return nil
+}
+
+func (c *ConditionDynamicRouter) Priority() int64 {
+	return 0
+}
+
+func (c *ConditionDynamicRouter) Notify(invokers []protocol.Invoker) {
+	if len(invokers) == 0 {
+		return
+	}
+	service := invokers[0].GetURL().Service()
+	if service == "" {
+		logger.Error("url service is empty")
+		return
+	}
+	dynamicConfiguration := conf.GetEnvInstance().GetDynamicConfiguration()
+	if dynamicConfiguration == nil {
+		logger.Warnf("config center does not start, please check if the configuration center has been properly configured in dubbogo.yml")
+		return
+	}
+	key := service + "::" + constant.ConditionRouterRuleSuffix
+	dynamicConfiguration.AddListener(key, c)
+	value, err := dynamicConfiguration.GetRule(key)
+	if err != nil {
+		logger.Errorf("query router rule fail,key=%s,err=%v", key, err)
+		return
+	}
+	c.Process(&config_center.ConfigChangeEvent{Key: key, Value: value, ConfigType: remoting.EventTypeAdd})
+}
+
+func (c *ConditionDynamicRouter) Process(event *config_center.ConfigChangeEvent) {
+	if event.ConfigType == remoting.EventTypeDel {
+		c.routerConfig = nil
+		c.conditionRouters = make([]*ConditionStateRouter, 0)
+	} else {
+		routerConfig, err := parseRoute(event.Value.(string))
+		if err != nil {
+			logger.Warnf("[condition router]Parse new condition route config error, %+v "+
+				"and we will use the original condition rule configuration.", err)
+			return
+		}
+		c.routerConfig = routerConfig
+		if c.routerConfig != nil {
+			conditionRouters := make([]*ConditionStateRouter, 0, len(c.routerConfig.Conditions))
+			for _, conditionRule := range c.routerConfig.Conditions {
+				url, err := common.NewURL("condition://")
+				if err != nil {
+					logger.Warnf("[condition router]Parse new condition route config error, %+v "+
+						"and we will use the original condition rule configuration.", err)
+					return
+				}
+				url.AddParam(constant.RuleKey, conditionRule)
+				url.AddParam(constant.ForceKey, strconv.FormatBool(c.routerConfig.Force))
+				conditionRoute, err := NewConditionStateRouter(url)
+				if err != nil {
+					logger.Warnf("[condition router]Parse new condition route config error, %+v "+
+						"and we will use the original condition rule configuration.", err)
+					return
+				}
+				conditionRouters = append(conditionRouters, conditionRoute)
+			}
+			c.conditionRouters = conditionRouters
+		}
+	}
+}
 
 type ConditionStateRouter struct {
 	enable           bool
@@ -267,3 +361,17 @@ type byPriority []matcher.ConditionMatcherFactory
 func (a byPriority) Len() int           { return len(a) }
 func (a byPriority) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a byPriority) Less(i, j int) bool { return a[i].Priority() < a[j].Priority() }
+
+func parseRoute(routeContent string) (*config.RouterConfig, error) {
+	routeDecoder := yaml.NewDecoder(strings.NewReader(routeContent))
+	routerConfig := &config.RouterConfig{}
+	err := routeDecoder.Decode(routerConfig)
+	if err != nil {
+		return nil, err
+	}
+	routerConfig.Valid = true
+	if len(routerConfig.Tags) == 0 {
+		routerConfig.Valid = false
+	}
+	return routerConfig, nil
+}

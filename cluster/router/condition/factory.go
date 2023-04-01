@@ -35,8 +35,7 @@ func NewConditionRouterFactory() router.PriorityRouterFactory {
 	return &RouteFactory{}
 }
 
-// NewPriorityRouter construct a new ConditionStateRouter
+// NewPriorityRouter construct a new ConditionDynamicRouter
 func (f *RouteFactory) NewPriorityRouter() (router.PriorityRouter, error) {
-	//TODO Modify url
-	return nil, nil
+	return NewConditionDynamicRouter()
 }

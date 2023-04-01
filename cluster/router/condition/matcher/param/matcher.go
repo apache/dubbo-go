@@ -51,6 +51,6 @@ func NewParamConditionMatcher(key string) *ConditionMatcher {
 	return conditionMatcher
 }
 
-func (u *ConditionMatcher) GetValue(sample map[string]string, url *common.URL, invocation protocol.Invocation) string {
-	return u.GetSampleValueFromUrl(u.Key, sample, url, invocation)
+func (c *ConditionMatcher) GetValue(sample map[string]string, url *common.URL, invocation protocol.Invocation) string {
+	return c.GetSampleValueFromUrl(c.Key, sample, url, invocation)
 }
