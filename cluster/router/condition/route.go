@@ -123,6 +123,7 @@ func (c *ConditionDynamicRouter) Process(event *config_center.ConfigChangeEvent)
 				}
 				url.AddParam(constant.RuleKey, conditionRule)
 				url.AddParam(constant.ForceKey, strconv.FormatBool(c.routerConfig.Force))
+				url.AddParam(constant.EnabledKey, strconv.FormatBool(c.routerConfig.Enabled))
 				conditionRoute, err := NewConditionStateRouter(url)
 				if err != nil {
 					logger.Warnf("[condition router]Parse new condition route config error, %+v "+

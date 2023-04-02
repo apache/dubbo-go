@@ -76,7 +76,7 @@ func (p *PriorityRouter) Notify(invokers []protocol.Invoker) {
 	if len(invokers) == 0 {
 		return
 	}
-	service := invokers[0].GetURL().Service()
+	service := invokers[0].GetURL().GetParam("application", "")
 	if service == "" {
 		logger.Error("url service is empty")
 		return
