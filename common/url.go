@@ -690,7 +690,6 @@ func (c *URL) ToMap() map[string]string {
 			port = "0"
 		}
 		paramsMap["port"] = port
-		paramsMap["address"] = c.Location
 	}
 	if c.Protocol != "" {
 		paramsMap[PROTOCOL] = c.Protocol
