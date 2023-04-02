@@ -35,7 +35,7 @@ import (
 //
 // # Refer method is to refer a remote service
 //
-// Destroy method will destroy all invoker and exporter, so it only is called once.
+// Destroy method will destroy all invokers and exporters, so it only is called once.
 type Protocol interface {
 	Export(invoker Invoker) Exporter
 	Refer(url *common.URL) Invoker
