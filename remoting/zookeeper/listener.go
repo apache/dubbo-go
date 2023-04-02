@@ -463,7 +463,11 @@ func (l *ZkEventListener) ListenServiceEvent(conf *common.URL, zkPath string, li
 	logger.Infof("[Zookeeper Listener] listen dubbo path{%s}", zkPath)
 	l.wg.Add(1)
 	go func(zkPath string, listener remoting.DataListener) {
-		l.listenDirEvent(conf, zkPath, listener, conf.Interface())
+		intf := ""
+		if conf != nil {
+			intf = conf.Interface()
+		}
+		l.listenDirEvent(conf, zkPath, listener, intf)
 		logger.Warnf("ListenServiceEvent->listenDirEvent(zkPath{%s}) goroutine exit now", zkPath)
 	}(zkPath, listener)
 }
