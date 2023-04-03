@@ -38,6 +38,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/metadata/report"
 	"dubbo.apache.org/dubbo-go/v3/metadata/report/factory"
 	"dubbo.apache.org/dubbo-go/v3/metadata/service/local"
+	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
 var (
@@ -61,7 +62,11 @@ func (mr metadataReport) RegisterServiceAppMapping(string, string, string) error
 	panic("implement me")
 }
 
-func (mr metadataReport) GetServiceAppMapping(string, string) (*gxset.HashSet, error) {
+func (mr metadataReport) GetServiceAppMapping(string, string, registry.MappingListener) (*gxset.HashSet, error) {
+	panic("implement me")
+}
+
+func (mr metadataReport) RemoveServiceAppMappingListener(string, string) error {
 	panic("implement me")
 }
 
@@ -113,7 +118,7 @@ func TestMetadataService(t *testing.T) {
 	extension.SetMetadataReportFactory("mock", getMetadataReportFactory)
 	u, err := common.NewURL("mock://127.0.0.1:20000/?sync.report=true")
 	assert.NoError(t, err)
-	instance.GetMetadataReportInstance(u)
+	instance.SetMetadataReportInstance(u)
 	mts, err := GetRemoteMetadataService()
 	assert.NoError(t, err)
 	assert.NotNil(t, mts)

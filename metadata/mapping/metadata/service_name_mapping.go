@@ -36,6 +36,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config/instance"
 	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
 	"dubbo.apache.org/dubbo-go/v3/metadata/report"
+	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
 const (
@@ -65,20 +66,27 @@ func (d *MetadataServiceNameMapping) Map(url *common.URL) error {
 
 	metadataReport := getMetaDataReport(url.GetParam(constant.RegistryKey, ""))
 	if metadataReport == nil {
-		return perrors.New("get metadata report instance is nil")
-	}
-	err := metadataReport.RegisterServiceAppMapping(serviceInterface, defaultGroup, appName)
-	if err != nil {
-		return perrors.WithStack(err)
+		logger.Info("get metadata report instance is nil, metadata service will be enabled!")
+	} else {
+		err := metadataReport.RegisterServiceAppMapping(serviceInterface, defaultGroup, appName)
+		if err != nil {
+			return perrors.WithStack(err)
+		}
 	}
 	return nil
 }
 
 // Get will return the application-level services. If not found, the empty set will be returned.
-func (d *MetadataServiceNameMapping) Get(url *common.URL) (*gxset.HashSet, error) {
+func (d *MetadataServiceNameMapping) Get(url *common.URL, listener registry.MappingListener) (*gxset.HashSet, error) {
 	serviceInterface := url.GetParam(constant.InterfaceKey, "")
 	metadataReport := instance.GetMetadataReportInstance()
-	return metadataReport.GetServiceAppMapping(serviceInterface, defaultGroup)
+	return metadataReport.GetServiceAppMapping(serviceInterface, defaultGroup, listener)
+}
+
+func (d *MetadataServiceNameMapping) Remove(url *common.URL) error {
+	serviceInterface := url.GetParam(constant.InterfaceKey, "")
+	metadataReport := instance.GetMetadataReportInstance()
+	return metadataReport.RemoveServiceAppMappingListener(serviceInterface, defaultGroup)
 }
 
 // buildMappingKey will return mapping key, it looks like defaultGroup/serviceInterface

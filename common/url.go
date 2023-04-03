@@ -148,10 +148,10 @@ func WithMethods(methods []string) Option {
 	}
 }
 
-// WithParams sets params for URL
+// WithParams deep copy the params in the argument into params of the target URL
 func WithParams(params url.Values) Option {
 	return func(url *URL) {
-		url.params = params
+		url.SetParams(params)
 	}
 }
 
@@ -187,6 +187,13 @@ func WithPort(port string) Option {
 func WithPath(path string) Option {
 	return func(url *URL) {
 		url.Path = "/" + strings.TrimPrefix(path, "/")
+	}
+}
+
+// WithInterface sets interface param for URL
+func WithInterface(v string) Option {
+	return func(url *URL) {
+		url.SetParam(constant.InterfaceKey, v)
 	}
 }
 
@@ -292,6 +299,14 @@ func (c *URL) Interface() string {
 // Version get group
 func (c *URL) Version() string {
 	return c.GetParam(constant.VersionKey, "")
+}
+
+// Address with format "ip:port"
+func (c *URL) Address() string {
+	if c.Port == "" {
+		return c.Ip
+	}
+	return c.Ip + ":" + c.Port
 }
 
 // URLEqual judge @URL and @c is equal or not.
@@ -515,6 +530,19 @@ func (c *URL) GetParam(s string, d string) string {
 	return r
 }
 
+// GetNonDefaultParam gets value by key, return nil,false if no value found mapping to the key
+func (c *URL) GetNonDefaultParam(s string) (string, bool) {
+	c.paramsLock.RLock()
+	defer c.paramsLock.RUnlock()
+
+	var r string
+	if len(c.params) > 0 {
+		r = c.params.Get(s)
+	}
+
+	return r, r != ""
+}
+
 // GetParams gets values
 func (c *URL) GetParams() url.Values {
 	return c.params
@@ -694,9 +722,9 @@ func MergeURL(serviceURL *URL, referenceURL *URL) *URL {
 	// iterator the referenceURL if serviceURL not have the key ,merge in
 	// referenceURL usually will not changed. so change RangeParams to GetParams to avoid the string value copy.// Group get group
 	for key, value := range referenceURL.GetParams() {
-		if v := mergedURL.GetParam(key, ""); len(v) == 0 && len(value) > 0 {
-			if params == nil {
-				params = url.Values{}
+		if _, ok := mergedURL.GetNonDefaultParam(key); !ok {
+			if len(value) > 0 {
+				params[key] = value
 			}
 			params[key] = make([]string, len(value))
 			copy(params[key], value)
@@ -704,7 +732,7 @@ func MergeURL(serviceURL *URL, referenceURL *URL) *URL {
 	}
 
 	// remote timestamp
-	if v := serviceURL.GetParam(constant.TimestampKey, ""); len(v) > 0 {
+	if v, ok := serviceURL.GetNonDefaultParam(constant.TimestampKey); !ok {
 		params[constant.RemoteTimestampKey] = []string{v}
 		params[constant.TimestampKey] = []string{referenceURL.GetParam(constant.TimestampKey, "")}
 	}

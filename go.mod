@@ -18,7 +18,7 @@ require (
 	github.com/dubbogo/gost v1.13.2
 	github.com/dubbogo/grpc-go v1.42.10
 	github.com/dubbogo/triple v1.2.2-rc3
-	github.com/dustin/go-humanize v1.0.0
+	github.com/dustin/go-humanize v1.0.1
 	github.com/emicklei/go-restful/v3 v3.10.1
 	github.com/envoyproxy/go-control-plane v0.11.0
 	github.com/fsnotify/fsnotify v1.6.0

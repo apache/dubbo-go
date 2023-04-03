@@ -41,20 +41,22 @@ import (
 
 // RegistryConfig is the configuration of the registry center
 type RegistryConfig struct {
-	Protocol     string            `validate:"required" yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
-	Timeout      string            `default:"5s" validate:"required" yaml:"timeout" json:"timeout,omitempty" property:"timeout"` // unit: second
-	Group        string            `yaml:"group" json:"group,omitempty" property:"group"`
-	Namespace    string            `yaml:"namespace" json:"namespace,omitempty" property:"namespace"`
-	TTL          string            `default:"15m" yaml:"ttl" json:"ttl,omitempty" property:"ttl"`
-	Address      string            `validate:"required" yaml:"address" json:"address,omitempty" property:"address"`
-	Username     string            `yaml:"username" json:"username,omitempty" property:"username"`
-	Password     string            `yaml:"password" json:"password,omitempty"  property:"password"`
-	Simplified   bool              `yaml:"simplified" json:"simplified,omitempty"  property:"simplified"`
-	Preferred    bool              `yaml:"preferred" json:"preferred,omitempty" property:"preferred"` // Always use this registry first if set to true, useful when subscribe to multiple registriesConfig
-	Zone         string            `yaml:"zone" json:"zone,omitempty" property:"zone"`                // The region where the registry belongs, usually used to isolate traffics
-	Weight       int64             `yaml:"weight" json:"weight,omitempty" property:"weight"`          // Affects traffic distribution among registriesConfig, useful when subscribe to multiple registriesConfig Take effect only when no preferred registry is specified.
-	Params       map[string]string `yaml:"params" json:"params,omitempty" property:"params"`
-	RegistryType string            `yaml:"registry-type"`
+	Protocol          string            `validate:"required" yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
+	Timeout           string            `default:"5s" validate:"required" yaml:"timeout" json:"timeout,omitempty" property:"timeout"` // unit: second
+	Group             string            `yaml:"group" json:"group,omitempty" property:"group"`
+	Namespace         string            `yaml:"namespace" json:"namespace,omitempty" property:"namespace"`
+	TTL               string            `default:"15m" yaml:"ttl" json:"ttl,omitempty" property:"ttl"` // unit: minute
+	Address           string            `validate:"required" yaml:"address" json:"address,omitempty" property:"address"`
+	Username          string            `yaml:"username" json:"username,omitempty" property:"username"`
+	Password          string            `yaml:"password" json:"password,omitempty"  property:"password"`
+	Simplified        bool              `yaml:"simplified" json:"simplified,omitempty"  property:"simplified"`
+	Preferred         bool              `yaml:"preferred" json:"preferred,omitempty" property:"preferred"` // Always use this registry first if set to true, useful when subscribe to multiple registriesConfig
+	Zone              string            `yaml:"zone" json:"zone,omitempty" property:"zone"`                // The region where the registry belongs, usually used to isolate traffics
+	Weight            int64             `yaml:"weight" json:"weight,omitempty" property:"weight"`          // Affects traffic distribution among registriesConfig, useful when subscribe to multiple registriesConfig Take effect only when no preferred registry is specified.
+	Params            map[string]string `yaml:"params" json:"params,omitempty" property:"params"`
+	RegistryType      string            `yaml:"registry-type"`
+	UseAsMetaReport   bool              `default:"true" yaml:"use-as-meta-report" json:"use-as-meta-report,omitempty" property:"use-as-meta-report"`
+	UseAsConfigCenter bool              `default:"true" yaml:"use-as-config-center" json:"use-as-config-center,omitempty" property:"use-as-config-center"`
 }
 
 // Prefix dubbo.registries
@@ -91,7 +93,7 @@ func (c *RegistryConfig) getUrlMap(roleType common.RoleType) url.Values {
 
 func (c *RegistryConfig) startRegistryConfig() error {
 	c.translateRegistryAddress()
-	if GetApplicationConfig().MetadataType == constant.DefaultMetadataStorageType && c.RegistryType == constant.ServiceKey || c.RegistryType == constant.RegistryTypeAll {
+	if c.UseAsMetaReport && isValid(c.Address) {
 		if tmpUrl, err := c.toMetadataReportUrl(); err == nil {
 			instance.SetMetadataReportInstanceByReg(tmpUrl)
 		} else {
@@ -150,16 +152,24 @@ func (c *RegistryConfig) GetInstance(roleType common.RoleType) (registry.Registr
 func (c *RegistryConfig) toURL(roleType common.RoleType) (*common.URL, error) {
 	address := c.translateRegistryAddress()
 	var registryURLProtocol string
-	switch c.RegistryType {
-	case constant.RegistryTypeService:
+	if c.RegistryType == constant.RegistryTypeService {
+		// service discovery protocol
 		registryURLProtocol = constant.ServiceRegistryProtocol
-	case constant.RegistryTypeInterface:
+	} else if c.RegistryType == constant.RegistryTypeInterface {
 		registryURLProtocol = constant.RegistryProtocol
-	default:
-		// default use interface
-		registryURLProtocol = constant.RegistryProtocol
+	} else {
+		registryURLProtocol = constant.ServiceRegistryProtocol
 	}
-	return c.createNewURL(registryURLProtocol, address, roleType)
+	return common.NewURL(registryURLProtocol+"://"+address,
+		common.WithParams(c.getUrlMap(roleType)),
+		common.WithParamsValue(constant.RegistrySimplifiedKey, strconv.FormatBool(c.Simplified)),
+		common.WithParamsValue(constant.RegistryKey, c.Protocol),
+		common.WithParamsValue(constant.RegistryNamespaceKey, c.Namespace),
+		common.WithParamsValue(constant.RegistryTimeoutKey, c.Timeout),
+		common.WithUsername(c.Username),
+		common.WithPassword(c.Password),
+		common.WithLocation(c.Address),
+	)
 }
 
 func (c *RegistryConfig) toURLs(roleType common.RoleType) ([]*common.URL, error) {
@@ -173,29 +183,66 @@ func (c *RegistryConfig) toURLs(roleType common.RoleType) ([]*common.URL, error)
 			"which means that the address of this instance will not be registered and not able to be found by other consumer instances.")
 		return urls, nil
 	}
-	switch c.RegistryType {
-	case constant.RegistryTypeService:
+
+	if c.RegistryType == constant.RegistryTypeService {
+		// service discovery protocol
 		if registryURL, err = c.createNewURL(constant.ServiceRegistryProtocol, address, roleType); err == nil {
 			urls = append(urls, registryURL)
 		}
-	case constant.RegistryTypeInterface:
+	} else if c.RegistryType == constant.RegistryTypeInterface {
 		if registryURL, err = c.createNewURL(constant.RegistryProtocol, address, roleType); err == nil {
 			urls = append(urls, registryURL)
 		}
-	case constant.RegistryTypeAll:
+	} else if c.RegistryType == constant.RegistryTypeAll {
 		if registryURL, err = c.createNewURL(constant.ServiceRegistryProtocol, address, roleType); err == nil {
 			urls = append(urls, registryURL)
 		}
 		if registryURL, err = c.createNewURL(constant.RegistryProtocol, address, roleType); err == nil {
 			urls = append(urls, registryURL)
 		}
-	default:
-		// default use interface
-		if registryURL, err = c.createNewURL(constant.RegistryProtocol, address, roleType); err == nil {
+	} else {
+		if registryURL, err = c.createNewURL(constant.ServiceRegistryProtocol, address, roleType); err == nil {
 			urls = append(urls, registryURL)
 		}
 	}
 	return urls, err
+}
+
+func loadRegistries(registryIds []string, registries map[string]*RegistryConfig, roleType common.RoleType) []*common.URL {
+	var registryURLs []*common.URL
+	//trSlice := strings.Split(targetRegistries, ",")
+
+	for k, registryConf := range registries {
+		target := false
+
+		// if user not config targetRegistries, default load all
+		// Notice: in func "func Split(s, sep string) []string" comment:
+		// if s does not contain sep and sep is not empty, SplitAfter returns
+		// a slice of length 1 whose only element is s. So we have to add the
+		// condition when targetRegistries string is not set (it will be "" when not set)
+		if len(registryIds) == 0 || (len(registryIds) == 1 && registryIds[0] == "") {
+			target = true
+		} else {
+			// else if user config targetRegistries
+			for _, tr := range registryIds {
+				if tr == k {
+					target = true
+					break
+				}
+			}
+		}
+
+		if target {
+			if urls, err := registryConf.toURLs(roleType); err != nil {
+				logger.Errorf("The registry id: %s url is invalid, error: %#v", k, err)
+				panic(err)
+			} else {
+				registryURLs = append(registryURLs, urls...)
+			}
+		}
+	}
+
+	return registryURLs
 }
 
 func (c *RegistryConfig) createNewURL(protocol string, address string, roleType common.RoleType) (*common.URL, error) {

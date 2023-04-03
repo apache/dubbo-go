@@ -22,6 +22,10 @@ import (
 )
 
 import (
+	"github.com/dubbogo/gost/log/logger"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/metadata/report"
@@ -36,6 +40,13 @@ var (
 func GetMetadataReportByRegistryProtocol(protocol string) report.MetadataReport {
 	mux.RLock()
 	defer mux.RUnlock()
+	if protocol == "" {
+		// return the first instance
+		for _, regInstance := range regInstances {
+			return regInstance
+		}
+	}
+	// find the accurate instance
 	regInstance, ok := regInstances[protocol]
 	if !ok {
 		return nil
@@ -50,5 +61,11 @@ func SetMetadataReportInstanceByReg(url *common.URL) {
 	if _, ok := regInstances[url.Protocol]; ok {
 		return
 	}
-	regInstances[url.Protocol] = extension.GetMetadataReportFactory(url.Protocol).CreateMetadataReport(url)
+
+	fac := extension.GetMetadataReportFactory(url.Protocol)
+	if fac != nil {
+		regInstances[url.Protocol] = fac.CreateMetadataReport(url)
+	} else {
+		logger.Infof("Metadata of type %v not registered.", url.Protocol)
+	}
 }

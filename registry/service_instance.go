@@ -57,7 +57,7 @@ type ServiceInstance interface {
 	GetMetadata() map[string]string
 
 	// ToURLs will return a list of url
-	ToURLs() []*common.URL
+	ToURLs(service *common.ServiceInfo) []*common.URL
 
 	// GetEndPoints will get end points from metadata
 	GetEndPoints() []*Endpoint
@@ -91,6 +91,7 @@ type DefaultServiceInstance struct {
 	ServiceMetadata *common.MetadataInfo
 	Address         string
 	GroupName       string
+	endpoints       []*Endpoint `json:"-"`
 }
 
 // GetID will return this instance's id. It should be unique.
@@ -142,11 +143,29 @@ func (d *DefaultServiceInstance) SetServiceMetadata(m *common.MetadataInfo) {
 }
 
 // ToURLs return a list of url.
-func (d *DefaultServiceInstance) ToURLs() []*common.URL {
+func (d *DefaultServiceInstance) ToURLs(service *common.ServiceInfo) []*common.URL {
 	urls := make([]*common.URL, 0, 8)
-	for _, service := range d.ServiceMetadata.Services {
+	if d.endpoints == nil {
+		err := json.Unmarshal([]byte(d.Metadata[constant.ServiceInstanceEndpoints]), &d.endpoints)
+		if err != nil {
+			logger.Errorf("Error parsing endpoints of service instance v%, multiple protocol services might not be able to work properly, err is v%.", d, err)
+		}
+	}
+
+	if len(d.endpoints) > 0 {
+		for _, endpoint := range d.endpoints {
+			if endpoint.Protocol == service.Protocol {
+				url := common.NewURLWithOptions(common.WithProtocol(service.Protocol),
+					common.WithIp(d.Host), common.WithPort(strconv.Itoa(endpoint.Port)),
+					common.WithPath(service.Name), common.WithInterface(service.Name),
+					common.WithMethods(service.GetMethods()), common.WithParams(service.GetParams()))
+				urls = append(urls, url)
+			}
+		}
+	} else {
 		url := common.NewURLWithOptions(common.WithProtocol(service.Protocol),
 			common.WithIp(d.Host), common.WithPort(strconv.Itoa(d.Port)),
+			common.WithPath(service.Name), common.WithInterface(service.Name),
 			common.WithMethods(service.GetMethods()), common.WithParams(service.GetParams()))
 		urls = append(urls, url)
 	}

@@ -98,12 +98,11 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry) (director
 		return nil, err
 	}
 
-	go dir.subscribe(url.SubURL)
 	return dir, nil
 }
 
 // subscribe from registry
-func (dir *RegistryDirectory) subscribe(url *common.URL) {
+func (dir *RegistryDirectory) Subscribe(url *common.URL) {
 	logger.Debugf("subscribe service :%s for RegistryDirectory.", url.Key())
 	if err := dir.registry.Subscribe(url, dir); err != nil {
 		logger.Error("registry.Subscribe(url:%v, dir:%v) = error:%v", url, dir, err)

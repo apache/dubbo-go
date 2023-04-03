@@ -74,6 +74,14 @@ func (sd *ServiceDiscovery) registerService(instance *ServiceInstance) error {
 	if err != nil {
 		return err
 	}
+
+	err = sd.client.Delete(path)
+	if err != nil {
+		logger.Infof("Failed when trying to delete node %s, will continue with the registration process. "+
+			"This is designed to avoid previous ephemeral node hold the position,"+
+			" so it's normal for this action to fail because the node might not exist or has been deleted, error msg is %s.", path, err.Error())
+	}
+
 	err = sd.client.CreateTempWithValue(path, data)
 	if err == zk.ErrNodeExists {
 		_, state, _ := sd.client.GetContent(path)
@@ -272,6 +280,11 @@ func (sd *ServiceDiscovery) getNameAndID(path string) (string, string, error) {
 // nolint
 func (sd *ServiceDiscovery) pathForInstance(name, id string) string {
 	return path.Join(sd.basePath, name, id)
+}
+
+// nolint
+func (sd *ServiceDiscovery) prefixPathForInstance(name string) string {
+	return path.Join(sd.basePath, name)
 }
 
 // nolint

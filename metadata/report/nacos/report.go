@@ -40,6 +40,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/metadata/identifier"
 	"dubbo.apache.org/dubbo-go/v3/metadata/report"
 	"dubbo.apache.org/dubbo-go/v3/metadata/report/factory"
+	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/remoting/nacos"
 )
 
@@ -209,19 +210,49 @@ func (n *nacosMetadataReport) getConfig(param vo.ConfigParam) (string, error) {
 	return cfg, nil
 }
 
-// RegisterServiceAppMapping map the specified Dubbo service interface to current Dubbo app name
-func (n *nacosMetadataReport) RegisterServiceAppMapping(key string, group string, value string) error {
-	oldVal, err := n.getConfig(vo.ConfigParam{
+func (n *nacosMetadataReport) addListener(key string, group string, notify registry.MappingListener) error {
+	return n.client.Client().ListenConfig(vo.ConfigParam{
+		DataId: key,
+		Group:  group,
+		OnChange: func(namespace, group, dataId, data string) {
+			go callback(notify, dataId, data)
+		},
+	})
+}
+
+func callback(notify registry.MappingListener, dataId, data string) {
+	appNames := strings.Split(data, constant.CommaSeparator)
+	set := gxset.NewSet()
+	for _, app := range appNames {
+		set.Add(app)
+	}
+	if err := notify.OnEvent(registry.NewServiceMappingChangedEvent(dataId, set)); err != nil {
+		logger.Errorf("serviceMapping callback err: %s", err.Error())
+	}
+}
+
+func (n *nacosMetadataReport) removeServiceMappingListener(key string, group string) error {
+	return n.client.Client().CancelListenConfig(vo.ConfigParam{
 		DataId: key,
 		Group:  group,
 	})
-	if err != nil {
-		return err
-	}
-	if strings.Contains(oldVal, value) {
-		return nil
-	}
+}
+
+// RegisterServiceAppMapping map the specified Dubbo service interface to current Dubbo app name
+func (n *nacosMetadataReport) RegisterServiceAppMapping(key string, group string, value string) error {
+	oldVal, _ := n.getConfig(vo.ConfigParam{
+		DataId: key,
+		Group:  group,
+	})
 	if oldVal != "" {
+		oldApps := strings.Split(oldVal, constant.CommaSeparator)
+		if len(oldApps) > 0 {
+			for _, app := range oldApps {
+				if app == value {
+					return nil
+				}
+			}
+		}
 		value = oldVal + constant.CommaSeparator + value
 	}
 	return n.storeMetadata(vo.ConfigParam{
@@ -232,7 +263,13 @@ func (n *nacosMetadataReport) RegisterServiceAppMapping(key string, group string
 }
 
 // GetServiceAppMapping get the app names from the specified Dubbo service interface
-func (n *nacosMetadataReport) GetServiceAppMapping(key string, group string) (*gxset.HashSet, error) {
+func (n *nacosMetadataReport) GetServiceAppMapping(key string, group string, listener registry.MappingListener) (*gxset.HashSet, error) {
+	// add service mapping listener
+	if listener != nil {
+		if err := n.addListener(key, group, listener); err != nil {
+			logger.Errorf("add serviceMapping listener err: %s", err.Error())
+		}
+	}
 	v, err := n.getConfig(vo.ConfigParam{
 		DataId: key,
 		Group:  group,
@@ -249,6 +286,11 @@ func (n *nacosMetadataReport) GetServiceAppMapping(key string, group string) (*g
 		set.Add(e)
 	}
 	return set, nil
+}
+
+// RemoveServiceAppMappingListener remove the serviceMapping listener from metadata center
+func (n *nacosMetadataReport) RemoveServiceAppMappingListener(key string, group string) error {
+	return n.removeServiceMappingListener(key, group)
 }
 
 type nacosMetadataReportFactory struct{}

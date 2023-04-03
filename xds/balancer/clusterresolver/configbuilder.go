@@ -98,17 +98,20 @@ type priorityConfig struct {
 // The endpoints from all localities will be flattened to one addresses list,
 // and the ring_hash policy will pick endpoints from it.
 //
-//	         	┌────────┐
-//	         	│priority│
-//	         	└┬──────┬┘
-//	         	 │      │
-//	   ┌──────────▼─┐  ┌─▼──────────┐
-//	   │cluster_impl│  │cluster_impl│
-//	   └──────┬─────┘  └─────┬──────┘
-//		         │              │
-//	   ┌──────▼─────┐  ┌─────▼──────┐
-//	   │ ring_hash  │  │ ring_hash  │
-//	   └────────────┘  └────────────┘
+//	┌────────┐
+//	│priority│
+//	└┬──────┬┘
+//	 │      │
+//
+// ┌──────────▼─┐  ┌─▼──────────┐
+// │cluster_impl│  │cluster_impl│
+// └──────┬─────┘  └─────┬──────┘
+//
+//	│              │
+//
+// ┌──────▼─────┐  ┌─────▼──────┐
+// │ ring_hash  │  │ ring_hash  │
+// └────────────┘  └────────────┘
 //
 // If endpointPickingPolicy is nil, roundrobin will be used.
 //

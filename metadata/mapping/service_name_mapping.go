@@ -23,6 +23,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
 // ServiceNameMapping  is the interface which trys to build the mapping between application-level service and interface-level service.
@@ -32,5 +33,6 @@ import (
 // Get method will return the application-level services
 type ServiceNameMapping interface {
 	Map(url *common.URL) error
-	Get(url *common.URL) (*gxset.HashSet, error)
+	Get(url *common.URL, listener registry.MappingListener) (*gxset.HashSet, error)
+	Remove(url *common.URL) error
 }
