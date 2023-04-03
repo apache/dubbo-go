@@ -22,7 +22,7 @@ import (
 	"io/ioutil"
 )
 
-//provide k8s service account
+// provide k8s service account
 type saTokenProvider struct {
 	Token     string
 	tokenPath string

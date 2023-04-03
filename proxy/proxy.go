@@ -87,9 +87,10 @@ func WithProxyImplementFunc(f ImplementFunc) ProxyOption {
 // Implement
 // proxy implement
 // In consumer, RPCService like:
-// 		type XxxProvider struct {
-//  		Yyy func(ctx context.Context, args []interface{}, rsp *Zzz) error
-// 		}
+//
+//			type XxxProvider struct {
+//	 		Yyy func(ctx context.Context, args []interface{}, rsp *Zzz) error
+//			}
 func (p *Proxy) Implement(v common.RPCService) {
 	p.once.Do(func() {
 		p.implement(p, v)
