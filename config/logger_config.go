@@ -20,17 +20,11 @@ package config
 import (
 	"fmt"
 	"strconv"
-)
 
-import (
 	getty "github.com/apache/dubbo-getty"
-
 	"github.com/creasty/defaults"
-
 	"github.com/dubbogo/gost/log/logger"
-)
 
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
@@ -164,7 +158,7 @@ func (lcb *LoggerConfigBuilder) SetFileMaxBackups(maxBackups int) *LoggerConfigB
 }
 
 func (lcb *LoggerConfigBuilder) SetFileMaxAge(maxAge int) *LoggerConfigBuilder {
-	lcb.loggerConfig.File.MaxBackups = maxAge
+	lcb.loggerConfig.File.MaxAge = maxAge
 	return lcb
 }
 
@@ -173,6 +167,10 @@ func (lcb *LoggerConfigBuilder) SetFileCompress(compress bool) *LoggerConfigBuil
 	return lcb
 }
 
+// Build return config and set default value if nil
 func (lcb *LoggerConfigBuilder) Build() *LoggerConfig {
+	if err := defaults.Set(lcb.loggerConfig); err != nil {
+		return nil
+	}
 	return lcb.loggerConfig
 }

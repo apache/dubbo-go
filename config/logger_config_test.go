@@ -19,11 +19,8 @@ package config
 
 import (
 	"testing"
-)
 
-import (
 	"github.com/dubbogo/gost/log/logger"
-
 	"github.com/stretchr/testify/assert"
 )
 
@@ -69,12 +66,21 @@ func TestNewLoggerConfigBuilder(t *testing.T) {
 	config := NewLoggerConfigBuilder().
 		SetDriver("zap").
 		SetLevel("info").
-		SetFileName("hello.log").
+		SetFileName("dubbo.log").
+		SetFileMaxAge(10).
 		Build()
 
 	assert.NotNil(t, config)
-	values := config.toURL()
-	assert.NotNil(t, values)
-	err := config.check()
-	assert.NoError(t, err)
+
+	assert.Equal(t, config.File.Name, "dubbo.log")
+	assert.Equal(t, config.Driver, "zap")
+	assert.Equal(t, config.Level, "info")
+	assert.Equal(t, config.File.MaxAge, 10)
+
+	// default value
+	assert.Equal(t, config.Appender, "console")
+	assert.Equal(t, config.Format, "text")
+	assert.Equal(t, config.File.MaxSize, 100)
+	assert.Equal(t, *config.File.Compress, true)
+	assert.Equal(t, config.File.MaxBackups, 5)
 }
