@@ -84,27 +84,27 @@ func instantiate(config *common.URL) (log logger.Logger, err error) {
 }
 
 func (l *Logger) Debug(args ...interface{}) {
-	l.lg.Debug(args)
+	l.lg.Debug(args...)
 }
 
 func (l *Logger) Debugf(template string, args ...interface{}) {
-	l.lg.Debugf(template, args)
+	l.lg.Debugf(template, args...)
 }
 
 func (l *Logger) Info(args ...interface{}) {
-	l.lg.Info(args)
+	l.lg.Info(args...)
 }
 
 func (l *Logger) Infof(template string, args ...interface{}) {
-	l.lg.Infof(template, args)
+	l.lg.Infof(template, args...)
 }
 
 func (l *Logger) Warn(args ...interface{}) {
-	l.lg.Warn(args)
+	l.lg.Warn(args...)
 }
 
 func (l *Logger) Warnf(template string, args ...interface{}) {
-	l.lg.Warnf(template, args)
+	l.lg.Warnf(template, args...)
 }
 
 func (l *Logger) Error(args ...interface{}) {
@@ -112,13 +112,13 @@ func (l *Logger) Error(args ...interface{}) {
 }
 
 func (l *Logger) Errorf(template string, args ...interface{}) {
-	l.lg.Errorf(template, args)
+	l.lg.Errorf(template, args...)
 }
 
 func (l *Logger) Fatal(args ...interface{}) {
-	l.lg.Fatal(args)
+	l.lg.Fatal(args...)
 }
 
 func (l *Logger) Fatalf(fmt string, args ...interface{}) {
-	l.lg.Fatalf(fmt, args)
+	l.lg.Fatalf(fmt, args...)
 }
