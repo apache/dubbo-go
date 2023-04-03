@@ -108,7 +108,7 @@ func (l *Logger) Warnf(template string, args ...interface{}) {
 }
 
 func (l *Logger) Error(args ...interface{}) {
-	l.lg.Error(args)
+	l.lg.Error(args...)
 }
 
 func (l *Logger) Errorf(template string, args ...interface{}) {
