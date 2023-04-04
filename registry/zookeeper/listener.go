@@ -94,7 +94,8 @@ func (l *RegistryDataListener) DataChange(event remoting.Event) bool {
 	}
 	match := false
 	for serviceKey, listener := range l.subscribed {
-		if serviceURL.ServiceKey() == serviceKey {
+		intf, group, version := common.ParseServiceKey(serviceKey)
+		if serviceURL.ServiceKey() == serviceKey || common.IsAnyCondition(intf, group, version, serviceURL) {
 			listener.Process(
 				&config_center.ConfigChangeEvent{
 					Key:        event.Path,
@@ -104,21 +105,6 @@ func (l *RegistryDataListener) DataChange(event remoting.Event) bool {
 			)
 			match = true
 		}
-
-		// AnyValue condition
-		intf, group, version := common.ParseServiceKey(serviceKey)
-		if intf != constant.AnyValue || group != constant.AnyValue && group != serviceURL.Group() ||
-			version != constant.AnyValue && version != serviceURL.Group() {
-			continue
-		}
-		listener.Process(
-			&config_center.ConfigChangeEvent{
-				Key:        event.Path,
-				Value:      serviceURL.Clone(),
-				ConfigType: event.Action,
-			},
-		)
-		match = true
 	}
 	return match
 }

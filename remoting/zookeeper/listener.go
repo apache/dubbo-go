@@ -240,16 +240,15 @@ func (l *ZkEventListener) handleZkNodeEvent(zkPath string, children []string, li
 	}
 }
 
-// listenerAllDirEvent listen all services when conf.InterfaceKey = "*"
-func (l *ZkEventListener) listenAllDirEvent(conf *common.URL, listener remoting.DataListener) {
+// listenerAllDirEvents listens all services when conf.InterfaceKey = "*"
+func (l *ZkEventListener) listenAllDirEvents(conf *common.URL, listener remoting.DataListener) {
 	var (
 		failTimes int
 		ttl       time.Duration
 	)
 	ttl = defaultTTL
 	if conf != nil {
-		timeout, err := time.ParseDuration(conf.GetParam(constant.RegistryTTLKey, constant.DefaultRegTTL))
-		if err == nil {
+		if timeout, err := time.ParseDuration(conf.GetParam(constant.RegistryTTLKey, constant.DefaultRegTTL)); err == nil {
 			ttl = timeout
 		} else {
 			logger.Warnf("[Zookeeper EventListener][listenDirEvent] Wrong configuration for registry.ttl, error=%+v, using default value %v instead", err, defaultTTL)
@@ -280,22 +279,21 @@ func (l *ZkEventListener) listenAllDirEvent(conf *common.URL, listener remoting.
 		}
 		failTimes = 0
 		if len(children) == 0 {
-			logger.Debugf("[Zookeeper EventListener][listenDirEvent] Can not gey any children for the path {%s}, please check if the provider does ready.", rootPath)
+			logger.Warnf("[Zookeeper EventListener][listenDirEvent] Can not get any children for the path \"%s\", please check if the provider does ready.", rootPath)
 		}
 		for _, c := range children {
-			// Build the children path
+			// Build the child path
 			zkRootPath := path.Join(rootPath, constant.PathSeparator, url.QueryEscape(c), constant.PathSeparator, constant.ProvidersCategory)
 			// Save the path to avoid listen repeatedly
 			l.pathMapLock.Lock()
-			_, ok := l.pathMap[zkRootPath]
-			if !ok {
+			if _, ok := l.pathMap[zkRootPath]; ok {
+				logger.Warnf("[Zookeeper EventListener][listenDirEvent] The child with zk path {%s} has already been listened.", zkRootPath)
+				l.pathMapLock.Unlock()
+				continue
+			} else {
 				l.pathMap[zkRootPath] = uatomic.NewInt32(0)
 			}
 			l.pathMapLock.Unlock()
-			if ok {
-				logger.Warnf("[Zookeeper EventListener][listenDirEvent] The child with zk path {%s} has already been listened.", zkRootPath)
-				continue
-			}
 			logger.Debugf("[Zookeeper EventListener][listenDirEvent] listen dubbo interface key{%s}", zkRootPath)
 			l.wg.Add(1)
 			// listen every interface
@@ -321,7 +319,7 @@ func (l *ZkEventListener) listenAllDirEvent(conf *common.URL, listener remoting.
 func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkRootPath string, listener remoting.DataListener, intf string) {
 	defer l.wg.Done()
 	if intf == constant.AnyValue {
-		l.listenAllDirEvent(conf, listener)
+		l.listenAllDirEvents(conf, listener)
 		return
 	}
 	var (
@@ -363,8 +361,7 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkRootPath string, li
 			// Only need to compare Path when subscribing to provider
 			if strings.LastIndex(zkRootPath, constant.ProviderCategory) != -1 {
 				provider, _ := common.NewURL(c)
-				if provider.Interface() != intf || conf.Group() != constant.AnyValue && conf.Group() != provider.Group() ||
-					conf.Version() != constant.AnyValue && conf.Version() != provider.Version() {
+				if provider.Interface() != intf || !common.IsAnyCondition(constant.AnyValue, conf.Group(), conf.Version(), provider) {
 					continue
 				}
 			}

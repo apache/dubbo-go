@@ -413,7 +413,7 @@ func ServiceKey(intf string, group string, version string) string {
 	return buf.String()
 }
 
-// ParseServiceKey get interface, group and version from servicekey
+// ParseServiceKey gets interface, group and version from service key
 func ParseServiceKey(serviceKey string) (string, string, string) {
 	var (
 		group   string
@@ -436,6 +436,12 @@ func ParseServiceKey(serviceKey string) (string, string, string) {
 	}
 
 	return serviceKey, group, version
+}
+
+// IsAnyCondition judges if is any condition
+func IsAnyCondition(intf, group, version string, serviceURL *URL) bool {
+	return intf == constant.AnyValue && (group == constant.AnyValue ||
+		group == serviceURL.Group()) && (version == constant.AnyValue || version == serviceURL.Version())
 }
 
 // ColonSeparatedKey

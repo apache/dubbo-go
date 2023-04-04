@@ -488,3 +488,67 @@ func TestParseServiceKey(t *testing.T) {
 		})
 	}
 }
+
+func TestIsAnyCondition(t *testing.T) {
+	type args struct {
+		intf       string
+		group      string
+		version    string
+		serviceURL *URL
+	}
+	serviceURL, _ := NewURL(GetLocalIp()+":0", WithProtocol("admin"), WithParams(url.Values{
+		constant.GroupKey:   {"group"},
+		constant.VersionKey: {"version"},
+	}))
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "test1",
+			args: args{
+				intf:       constant.AnyValue,
+				group:      constant.AnyValue,
+				version:    constant.AnyValue,
+				serviceURL: serviceURL,
+			},
+			want: true,
+		},
+		{
+			name: "test2",
+			args: args{
+				intf:       constant.AnyValue,
+				group:      "group",
+				version:    "version",
+				serviceURL: serviceURL,
+			},
+			want: true,
+		},
+		{
+			name: "test3",
+			args: args{
+				intf:       "intf",
+				group:      constant.AnyValue,
+				version:    constant.AnyValue,
+				serviceURL: serviceURL,
+			},
+			want: false,
+		},
+		{
+			name: "test4",
+			args: args{
+				intf:       constant.AnyValue,
+				group:      "group1",
+				version:    constant.AnyValue,
+				serviceURL: serviceURL,
+			},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equalf(t, tt.want, IsAnyCondition(tt.args.intf, tt.args.group, tt.args.version, tt.args.serviceURL), "IsAnyCondition(%v, %v, %v, %v)", tt.args.intf, tt.args.group, tt.args.version, tt.args.serviceURL)
+		})
+	}
+}
