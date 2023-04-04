@@ -103,8 +103,7 @@ func registerServiceInstance() {
 	}
 }
 
-//
-//// nolint
+// // nolint
 func createInstance(url *common.URL) (registry.ServiceInstance, error) {
 	appConfig := GetApplicationConfig()
 	port, err := strconv.ParseInt(url.Port, 10, 32)

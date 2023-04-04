@@ -119,8 +119,9 @@ func (c *RegistryConfig) toMetadataReportUrl() (*common.URL, error) {
 	return res, nil
 }
 
-//translateRegistryAddress translate registry address
-//  eg:address=nacos://127.0.0.1:8848 will return 127.0.0.1:8848 and protocol will set nacos
+// translateRegistryAddress translate registry address
+//
+//	eg:address=nacos://127.0.0.1:8848 will return 127.0.0.1:8848 and protocol will set nacos
 func (c *RegistryConfig) translateRegistryAddress() string {
 	if strings.Contains(c.Address, "://") {
 		u, err := url.Parse(c.Address)

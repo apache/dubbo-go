@@ -17,17 +17,18 @@
 
 /*
 Package tps provides a filter for limiting the requests by TPS.
- if you wish to use the TpsLimiter, please add the configuration into your service provider configuration:
- for example:
- "UserProvider":
-   registry: "hangzhouzk"
-   protocol : "dubbo"
-   interface : "com.ikurento.user.UserProvider"
-   ... # other configuration
-   tps.limiter: "method-service", # it should be the name of limiter. if the value is 'default',
-                                  # the MethodServiceTpsLimiter will be used.
-   tps.limit.rejected.handler: "default", # optional, or the name of the implementation
-   if the value of 'tps.limiter' is nil or empty string, the tps filter will do nothing
+
+	if you wish to use the TpsLimiter, please add the configuration into your service provider configuration:
+	for example:
+	"UserProvider":
+	  registry: "hangzhouzk"
+	  protocol : "dubbo"
+	  interface : "com.ikurento.user.UserProvider"
+	  ... # other configuration
+	  tps.limiter: "method-service", # it should be the name of limiter. if the value is 'default',
+	                                 # the MethodServiceTpsLimiter will be used.
+	  tps.limit.rejected.handler: "default", # optional, or the name of the implementation
+	  if the value of 'tps.limiter' is nil or empty string, the tps filter will do nothing
 */
 package tps
 

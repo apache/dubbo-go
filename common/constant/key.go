@@ -64,7 +64,7 @@ const (
 	MaxServerRecvMsgSize   = "max-server-recv-msg-size"
 )
 
-//tls constant
+// tls constant
 const (
 	TLSKey        = "tls_key"
 	TLSCert       = "tls_cert"

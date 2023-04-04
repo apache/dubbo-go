@@ -103,8 +103,9 @@ func (c *CenterConfig) GetUrlMap() url.Values {
 	return urlMap
 }
 
-//translateConfigAddress translate config address
-//  eg:address=nacos://127.0.0.1:8848 will return 127.0.0.1:8848 and protocol will set nacos
+// translateConfigAddress translate config address
+//
+//	eg:address=nacos://127.0.0.1:8848 will return 127.0.0.1:8848 and protocol will set nacos
 func (c *CenterConfig) translateConfigAddress() string {
 	if strings.Contains(c.Address, "://") {
 		translatedUrl, err := url.Parse(c.Address)

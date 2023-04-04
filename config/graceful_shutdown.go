@@ -191,7 +191,7 @@ func waitingProviderProcessedTimeout(shutdownConfig *ShutdownConfig) {
 	}
 }
 
-//for provider. It will wait for processing receiving requests
+// for provider. It will wait for processing receiving requests
 func waitForSendingAndReceivingRequests() {
 	logger.Info("Graceful shutdown --- Keep waiting until sending/accepting requests finish or timeout. ")
 	if rootConfig == nil || rootConfig.Shutdown == nil {

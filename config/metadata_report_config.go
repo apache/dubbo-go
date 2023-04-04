@@ -107,7 +107,6 @@ func publishServiceDefinition(url *common.URL) {
 	}
 }
 
-//
 // selectMetadataServiceExportedURL get already be exported url
 func selectMetadataServiceExportedURL() *common.URL {
 	var selectedUrl *common.URL
