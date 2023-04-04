@@ -27,14 +27,14 @@ type ConditionMatcherFactory interface {
 	ShouldMatch(key string) bool
 	//NewMatcher return a matcher instance for the key.
 	NewMatcher(key string) ConditionMatcher
-	// Priority Return Priority in router
+	// Priority Return Priority in ConditionMatcherFactory
 	// 0 to ^int(0) is better
 	Priority() int64
 }
 
 /*
 ConditionMatcher represents a specific match condition of a condition rule.
-The following condition rule '=bar&arguments[0]=hello* => region=hangzhou' consists of three ConditionMatchers:
+The following condition rule 'foo=bar&arguments[0]=hello* => region=hangzhou' consists of three ConditionMatchers:
 1. param.ConditionMatcher represented by 'foo=bar'
 2. argument.ConditionMatcher represented by 'arguments[0]=hello*'
 3. param.ConditionMatcher represented by 'region=hangzhou'

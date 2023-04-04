@@ -35,7 +35,7 @@ var (
 )
 
 /*
- * analysis the arguments in the rule.
+ * analysis the attachments in the rule.
  * Examples would be like this:
  * "attachments[foo]=bar", whenCondition is that the attachment value of 'foo' is equal to 'bar'.
  */
@@ -72,13 +72,13 @@ func (c *ConditionMatcher) GetValue(sample map[string]string, url *common.URL, i
 	argumentExpress := expressArray[0]
 	matcher := AttachmentsPattern.FindStringSubmatch(argumentExpress)
 	if len(matcher) == 0 {
-		return "dubbo internal not found argument condition value"
+		return "dubbo internal not found attachments condition value"
 	}
 
 	//extract the attachment index
 	attachmentKey := matcher[1]
 	if attachmentKey == "" {
-		return "dubbo internal not found argument condition value"
+		return "dubbo internal not found attachments condition value"
 	}
 
 	//extract the attachment value

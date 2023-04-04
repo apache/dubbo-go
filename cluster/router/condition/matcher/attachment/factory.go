@@ -35,7 +35,7 @@ func init() {
 type MatcherFactory struct {
 }
 
-// NewAttachmentMatcherFactory constructs a new attachmentMatcherFactory
+// NewAttachmentMatcherFactory constructs a new attachment.MatcherFactory
 func NewAttachmentMatcherFactory() matcher.ConditionMatcherFactory {
 	return &MatcherFactory{}
 }

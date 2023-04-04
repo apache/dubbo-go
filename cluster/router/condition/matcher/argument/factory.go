@@ -35,7 +35,7 @@ func init() {
 type MatcherFactory struct {
 }
 
-// NewArgumentMatcherFactory constructs a new artumentMatcherFactory
+// NewArgumentMatcherFactory constructs a new argument.MatcherFactory
 func NewArgumentMatcherFactory() matcher.ConditionMatcherFactory {
 	return &MatcherFactory{}
 }

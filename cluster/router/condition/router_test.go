@@ -495,7 +495,7 @@ func TestRoute_attachments(t *testing.T) {
 		wantVal int
 	}{
 		{
-			name:            "empty attachments",
+			name:            "Empty attachments",
 			attachmentKey:   "",
 			attachmentValue: "",
 			rule:            "attachments[foo] = a " + " => " + " host = 1.2.3.4",
@@ -575,7 +575,7 @@ func TestRoute_range_pattern(t *testing.T) {
 		wantVal int
 	}{
 		{
-			name:            "empty attachment",
+			name:            "Empty attachment",
 			attachmentKey:   "",
 			attachmentValue: "",
 			rule:            "attachments[user_id] = 1~100 " + " => " + " region=hangzhou",
@@ -583,7 +583,7 @@ func TestRoute_range_pattern(t *testing.T) {
 			wantVal: 3,
 		},
 		{
-			name:            "in the range",
+			name:            "In the range",
 			attachmentKey:   "user_id",
 			attachmentValue: "80",
 			rule:            "attachments[user_id] = 1~100 " + " => " + " region=hangzhou",
@@ -591,7 +591,7 @@ func TestRoute_range_pattern(t *testing.T) {
 			wantVal: 1,
 		},
 		{
-			name:            "out of range",
+			name:            "Out of range",
 			attachmentKey:   "user_id",
 			attachmentValue: "101",
 			rule:            "attachments[user_id] = 1~100 " + " => " + " region=hangzhou",
@@ -660,7 +660,7 @@ func TestRoute_multiple_conditions(t *testing.T) {
 		wantVal int
 	}{
 		{
-			name:        "all conditions match",
+			name:        "All conditions match",
 			argument:    "a",
 			consumerUrl: "consumer://" + LocalHost + "/com.foo.BarService?application=consumer_app",
 			rule:        "application=consumer_app&arguments[0]=a" + " => " + " host = " + LocalHost,
@@ -668,7 +668,7 @@ func TestRoute_multiple_conditions(t *testing.T) {
 			wantVal: 2,
 		},
 		{
-			name:        "one of the conditions does not match",
+			name:        "One of the conditions does not match",
 			argument:    "a",
 			consumerUrl: "consumer://" + LocalHost + "/com.foo.BarService?application=another_consumer_app",
 			rule:        "application=consumer_app&arguments[0]=a" + " => " + " host = " + LocalHost,

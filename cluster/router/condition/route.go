@@ -80,9 +80,9 @@ func (c *ConditionDynamicRouter) Notify(invokers []protocol.Invoker) {
 	if len(invokers) == 0 {
 		return
 	}
-	service := invokers[0].GetURL().Service()
-	if service == "" {
-		logger.Error("url service is empty")
+	url := invokers[0].GetURL()
+	if url == nil {
+		logger.Error("url is empty")
 		return
 	}
 	dynamicConfiguration := conf.GetEnvInstance().GetDynamicConfiguration()
@@ -90,7 +90,7 @@ func (c *ConditionDynamicRouter) Notify(invokers []protocol.Invoker) {
 		logger.Warnf("config center does not start, please check if the configuration center has been properly configured in dubbogo.yml")
 		return
 	}
-	key := service + "::" + constant.ConditionRouterRuleSuffix
+	key := url.Service() + ":" + url.GetParam("version", "") + ":" + url.GetParam("group", "") + constant.ConditionRouterRuleSuffix
 	dynamicConfiguration.AddListener(key, c)
 	value, err := dynamicConfiguration.GetRule(key)
 	if err != nil {
