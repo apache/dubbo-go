@@ -31,7 +31,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
-// must initialize before using the filter and after loading configuration
+// must initialized before using the filter and after loading configuration
 var metricFilterInstance *Filter
 
 func init() {
