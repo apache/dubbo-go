@@ -107,8 +107,7 @@ func (config *ShutdownConfig) GetStepTimeout() time.Duration {
 func (config *ShutdownConfig) GetOfflineRequestWindowTimeout() time.Duration {
 	result, err := time.ParseDuration(config.OfflineRequestWindowTimeout)
 	if err != nil {
-		logger.Errorf("The OfflineRequestWindowTimeout configuration is invalid: %s, and we will use the default value: %s, err: %v",
-			config.OfflineRequestWindowTimeout, defaultOfflineRequestWindowTimeout.String(), err)
+		logger.Infof("The OfflineRequestWindowTimeout (%s) is not set or not valid, use a default value (3s), err = %s", config.OfflineRequestWindowTimeout, err)
 		return defaultOfflineRequestWindowTimeout
 	}
 	return result
