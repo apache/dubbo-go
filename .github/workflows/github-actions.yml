@@ -72,9 +72,7 @@ jobs:
       run: |
         make verify
 
-    # This step only runs when the event type is a pull_request
     - name: Integration Testing
-      if: ${{ github.event_name == 'pull_request' }}
       run: |
         if [ "$GITHUB_EVENT_NAME" == "pull_request" ]; then
           chmod +x integrate_test.sh \
