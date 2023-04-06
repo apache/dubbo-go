@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: "*"
+    branches: [master, develop, "1.5", "3.0"]
   pull_request:
     branches: "*"
 
@@ -21,15 +21,19 @@ jobs:
         os:
           - ubuntu-latest
 
+    env:
+      DING_TOKEN: ${{ secrets.DING_TOKEN }}
+      DING_SIGN: ${{ secrets.DING_SIGN }}
+
     steps:
 
-    - name: Setup Go ${{ matrix.go_version }}
+    - name: Set up Go ${{ matrix.go_version }}
       uses: actions/setup-go@v3
       with:
         go-version: ${{ matrix.go_version }}
       id: go
 
-    - name: Checkout
+    - name: Check out code into the Go module directory
       uses: actions/checkout@v3
 
     - name: Cache dependencies
@@ -43,19 +47,18 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-go-
 
-    - name: Merge code into the upstream
+    - name: Merge base
       if: ${{ github.event_name == 'pull_request' }}
       run: |
-        echo "$GITHUB_BASE_REF, $GITHUB_REF_NAME, $GITHUB_REF"
-        git fetch origin $GITHUB_BASE_REF
-        git checkout -b $GITHUB_BASE_REF origin/$GITHUB_BASE_REF
+        git fetch origin 3.1
+        git checkout -b 3.1 origin/3.1
         git remote add devrepo https://github.com/${{github.event.pull_request.head.repo.full_name}}.git
         git fetch devrepo ${{github.event.pull_request.head.sha}}
         git config --global user.email "dubbo-go@github-ci.com"
         git config --global user.name "robot"
         git merge ${{github.event.pull_request.head.sha}}
 
-    - name: Install dependencies
+    - name: Get dependencies
       run: |
         if [ -f Gopkg.toml ]; then
             curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
@@ -64,30 +67,29 @@ jobs:
             go get -v -t -d ./...
         fi
 
-    - name: Format code
+    - name: gofmt
       run: |
         go fmt ./... && git status && [[ -z `git status -s` ]]
+        # diff -u <(echo -n) <(gofmt -d -s .)
 
     - name: Verify
       run: |
         make verify
 
     # This step only runs when the event type is a pull_request
-    - name: Integration Testing
+    - name: Integrate Test
       if: ${{ github.event_name == 'pull_request' }}
       run: |
-        if [ "$GITHUB_EVENT_NAME" == "pull_request" ]; then
-          chmod +x integrate_test.sh \
-            && [[ -n "${{github.event.pull_request.head.repo.full_name}}" ]] \
-            && [[ -n "${{github.event.pull_request.head.sha}}" ]] \
-            && [[ -n "${{github.base_ref}}" ]] \
-            && ./integrate_test.sh ${{github.event.pull_request.head.repo.full_name}} ${{github.event.pull_request.head.sha}} ${{github.base_ref}}
-        elif [ "$GITHUB_EVENT_NAME" == "push" ]; then
-          chmod +x integrate_test.sh && ./integrate_test.sh $GITHUB_REPOSITORY $GITHUB_SHA $GITHUB_BASE_REF
-        else
-          echo "$GITHUB_EVENT_NAME is an unsupported event type."
-          exit 1
-        fi
+        chmod +x integrate_test.sh && [[ -n "${{github.event.pull_request.head.repo.full_name}}" ]] && [[ -n "${{github.event.pull_request.head.sha}}" ]] && [[ -n "${{github.base_ref}}" ]] && ./integrate_test.sh ${{github.event.pull_request.head.repo.full_name}} ${{github.event.pull_request.head.sha}} ${{github.base_ref}}
 
-    - name: Codecov
+    # This step only runs when the event type is a push
+    - name: Integrate Test
+      if: ${{ github.event_name == 'push' }}
+      run: |
+        chmod +x integrate_test.sh && ./integrate_test.sh $GITHUB_REPOSITORY $GITHUB_SHA $GITHUB_BASE_REF
+
+    - name: Post Coverage
       run: bash <(curl -s https://codecov.io/bash)
+
+    - name: Hello world
+      run: echo Hello world ${{ secrets.DING_TOKEN }} ${{ secrets.DING_SIGN }}

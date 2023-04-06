@@ -1,7 +1,7 @@
 name: golangci-lint
 on:
   push:
-    branches: "*"
+    branches: [master, develop, "1.5", "3.0"]
   pull_request:
     branches: "*"
 

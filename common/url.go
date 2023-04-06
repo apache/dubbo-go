@@ -540,7 +540,7 @@ func (c *URL) GetNonDefaultParam(s string) (string, bool) {
 		r = c.params.Get(s)
 	}
 
-	return r, r != ""
+    return r, r != ""
 }
 
 // GetParams gets values
