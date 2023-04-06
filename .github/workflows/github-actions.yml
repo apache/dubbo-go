@@ -32,17 +32,6 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v3
 
-    - name: Cache dependencies
-      uses: actions/cache@v3
-      with:
-        # Cache
-        path: ~/go/pkg/mod
-        # Cache key
-        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-        # An ordered list of keys to use for restoring the cache if no cache hit occurred for key
-        restore-keys: |
-          ${{ runner.os }}-go-
-
     - name: Merge code into the upstream
       if: ${{ github.event_name == 'pull_request' }}
       run: |
