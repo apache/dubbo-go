@@ -161,7 +161,7 @@ func (proto *registryProtocol) Refer(url *common.URL) protocol.Invoker {
 		logger.Errorf("Directory %v is expected to implement Directory, and will return nil invoker!", dic)
 		return nil
 	}
-	regDic.Subscribe(registryUrl.SubURL)
+	go regDic.Subscribe(registryUrl.SubURL)
 
 	err = reg.Register(serviceUrl)
 	if err != nil {
