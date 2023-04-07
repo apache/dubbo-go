@@ -5,15 +5,30 @@ labels: kind/bug
 
 ---
 
-<!-- Please use this template while reporting a bug and provide as much info as possible. Not doing so may result in your bug not being addressed in a timely manner. Thanks!
+### Environment
 
+<!-- 
+- Server: Dubbo-go, v3.0.5
+- Client: Dubbo-go, v3.0.5
+- Protocol: Triple
+- Registry: Nacos, v2.0.0
 -->
 
+- Server: 
+- Client: 
+- Protocol: 
+- Registry: 
 
-**What happened**:
+### Issue description
 
-**What you expected to happen**:
+<!-- Here is a brief description about the issue. -->
 
-**How to reproduce it (as minimally and precisely as possible)**:
+### Logs
 
-**Anything else we need to know?**:
+<details><summary>Click me to check logs</summary>
+
+```
+Copy logs to here.
+```
+
+</details>
