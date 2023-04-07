@@ -46,7 +46,6 @@ jobs:
     - name: Merge code into the upstream
       if: ${{ github.event_name == 'pull_request' }}
       run: |
-        echo "$GITHUB_BASE_REF, $GITHUB_REF_NAME, $GITHUB_REF"
         git fetch origin $GITHUB_BASE_REF
         git checkout -b $GITHUB_BASE_REF origin/$GITHUB_BASE_REF
         git remote add devrepo https://github.com/${{github.event.pull_request.head.repo.full_name}}.git
@@ -72,9 +71,7 @@ jobs:
       run: |
         make verify
 
-    # This step only runs when the event type is a pull_request
     - name: Integration Testing
-      if: ${{ github.event_name == 'pull_request' }}
       run: |
         if [ "$GITHUB_EVENT_NAME" == "pull_request" ]; then
           chmod +x integrate_test.sh \
