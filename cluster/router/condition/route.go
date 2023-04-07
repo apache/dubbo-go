@@ -170,7 +170,7 @@ func NewConditionStateRouter(url *common.URL) (*ConditionStateRouter, error) {
 	if enable {
 		rule := url.GetParam(constant.RuleKey, "")
 		if rule == "" || len(strings.Trim(rule, " ")) == 0 {
-			logger.Fatal("Illegal route rule!")
+			return nil, errors.Errorf("Illegal route rule!")
 		}
 		rule = strings.Replace(rule, "consumer.", "", -1)
 		rule = strings.Replace(rule, "privoder.", "", -1)
