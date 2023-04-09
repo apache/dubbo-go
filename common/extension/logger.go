@@ -21,9 +21,7 @@ import (
 	"github.com/dubbogo/gost/log/logger"
 
 	"github.com/pkg/errors"
-)
 
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 )
 
@@ -40,6 +38,6 @@ func GetLogger(driver string, config *common.URL) (logger.Logger, error) {
 	} else {
 		return nil, errors.Errorf("logger for %s does not exist. "+
 			"please make sure that you have imported the package "+
-			"github.com/dubbogo/gost/log/logger/%s", driver, driver)
+			"dubbo.apache.org/dubbo-go/v3/logger/%s", driver, driver)
 	}
 }
