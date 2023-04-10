@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package pattern_impl
+package scope
 
 import (
 	"strconv"
@@ -40,10 +40,10 @@ type ScopeValuePattern struct {
 }
 
 func init() {
-	extension.SetValuePattern("scope", NewScopeValuePattern)
+	extension.SetValuePattern("scope", NewValuePattern)
 }
 
-func NewScopeValuePattern() pattern.ValuePattern {
+func NewValuePattern() pattern.ValuePattern {
 	return &ScopeValuePattern{}
 }
 

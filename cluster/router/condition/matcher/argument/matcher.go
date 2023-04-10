@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package matcher_impl
+package argument
 
 import (
 	"fmt"
@@ -25,10 +25,11 @@ import (
 )
 
 import (
-	"github.com/pkg/errors"
+	"github.com/dubbogo/gost/log/logger"
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/cluster/router/condition/matcher/base"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
@@ -45,33 +46,37 @@ var (
  */
 
 type ArgumentConditionMatcher struct {
-	BaseConditionMatcher
+	base.BaseConditionMatcher
 }
 
-func NewArgumentConditionMatcher(key string) *ArgumentConditionMatcher {
+func NewConditionMatcher(key string) *ArgumentConditionMatcher {
 	conditionMatcher := &ArgumentConditionMatcher{
-		*NewBaseConditionMatcher(key),
+		*base.NewBaseConditionMatcher(key),
 	}
 	conditionMatcher.Matcher = conditionMatcher
 	return conditionMatcher
 }
 
-func (a *ArgumentConditionMatcher) GetValue(sample map[string]string, url *common.URL, invocation protocol.Invocation) (string, error) {
+func (a *ArgumentConditionMatcher) GetValue(sample map[string]string, url *common.URL, invocation protocol.Invocation) string {
 	// split the rule
 	expressArray := strings.Split(a.Key, "\\.")
 	argumentExpress := expressArray[0]
 	matcher := ArgumentsPattern.FindStringSubmatch(argumentExpress)
 	if len(matcher) == 0 {
-		return "", errors.Errorf("dubbo internal not found argument condition value")
+		logger.Warn("dubbo internal not found argument condition value")
+		return ""
 	}
 
 	// extract the argument index
 	index, err := strconv.Atoi(matcher[1])
 	if err != nil {
-		return "", errors.Errorf("dubbo internal not found argument condition value")
+		logger.Warn("dubbo internal not found argument condition value")
+		return ""
 	}
+
 	if index < 0 || index > len(invocation.Arguments()) {
-		return "", errors.Errorf("dubbo internal not found argument condition value")
+		logger.Warn("dubbo internal not found argument condition value")
+		return ""
 	}
-	return fmt.Sprint(invocation.Arguments()[index]), nil
+	return fmt.Sprint(invocation.Arguments()[index])
 }

@@ -400,7 +400,7 @@ func TestRoute_return(t *testing.T) {
 	}
 }
 
-// TestRoute_arguments also tests matcher_impl.ArgumentConditionMatcher's GetValue
+// TestRoute_arguments also tests argument.ArgumentConditionMatcher's GetValue method
 func TestRoute_arguments(t *testing.T) {
 
 	url1, _ := common.NewURL("dubbo://10.20.3.3:20880/com.foo.BarService")
@@ -471,7 +471,7 @@ func TestRoute_arguments(t *testing.T) {
 	}
 }
 
-// TestRoute_attachments also tests matcher_impl.AttachmentConditionMatcher's GetValue method
+// TestRoute_attachments also tests attachment.AttachmentConditionMatcher's GetValue method
 func TestRoute_attachments(t *testing.T) {
 	consumerURL, _ := common.NewURL("consumer://" + LocalHost + "/com.foo.BarService")
 
@@ -551,7 +551,7 @@ func TestRoute_attachments(t *testing.T) {
 	}
 }
 
-// TestRoute_range_pattern also tests pattern_impl.ScopeValuePattern's Match method
+// TestRoute_range_pattern also tests scope.ScopeValuePattern's Match method
 func TestRoute_range_pattern(t *testing.T) {
 
 	consumerURL, _ := common.NewURL("consumer://" + LocalHost + "/com.foo.BarService")

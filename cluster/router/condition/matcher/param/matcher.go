@@ -15,25 +15,26 @@
  * limitations under the License.
  */
 
-package matcher_impl
+package param
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/cluster/router/condition/matcher/base"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
 type ParamConditionMatcher struct {
-	BaseConditionMatcher
+	base.BaseConditionMatcher
 }
 
 func NewParamConditionMatcher(key string) *ParamConditionMatcher {
 	conditionMatcher := &ParamConditionMatcher{
-		*NewBaseConditionMatcher(key),
+		*base.NewBaseConditionMatcher(key),
 	}
 	conditionMatcher.Matcher = conditionMatcher
 	return conditionMatcher
 }
 
-func (p *ParamConditionMatcher) GetValue(sample map[string]string, url *common.URL, invocation protocol.Invocation) (string, error) {
-	return p.GetSampleValueFromURL(p.Key, sample, url, invocation), nil
+func (p *ParamConditionMatcher) GetValue(sample map[string]string, url *common.URL, invocation protocol.Invocation) string {
+	return p.GetSampleValueFromURL(p.Key, sample, url, invocation)
 }

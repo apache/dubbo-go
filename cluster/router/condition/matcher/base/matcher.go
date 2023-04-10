@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package matcher_impl
+package base
 
 import (
 	"sort"
@@ -64,8 +64,8 @@ func NewBaseConditionMatcher(key string) *BaseConditionMatcher {
 	return b
 }
 
-func (b *BaseConditionMatcher) GetValue(sample map[string]string, url *common.URL, invocation protocol.Invocation) (string, error) {
-	return "", nil
+func (b *BaseConditionMatcher) GetValue(sample map[string]string, url *common.URL, invocation protocol.Invocation) string {
+	return ""
 }
 
 func (b *BaseConditionMatcher) GetSampleValueFromURL(conditionKey string, sample map[string]string, param *common.URL, invocation protocol.Invocation) string {
@@ -80,12 +80,7 @@ func (b *BaseConditionMatcher) GetSampleValueFromURL(conditionKey string, sample
 }
 
 func (b *BaseConditionMatcher) IsMatch(sample map[string]string, param *common.URL, invocation protocol.Invocation, isWhenCondition bool) bool {
-	value, err := b.Matcher.GetValue(sample, param, invocation)
-	if err != nil {
-		logger.Error(err)
-		return false
-	}
-
+	value := b.Matcher.GetValue(sample, param, invocation)
 	if value == "" {
 		// if key does not present in whichever of url, invocation or attachment based on the matcher type, then return false.
 		return false

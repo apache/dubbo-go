@@ -15,10 +15,9 @@
  * limitations under the License.
  */
 
-package matcher_impl
+package argument
 
 import (
-	"math"
 	"strings"
 )
 
@@ -30,8 +29,6 @@ import (
 
 func init() {
 	extension.SetMatcherFactory("argument", NewArgumentMatcherFactory)
-	extension.SetMatcherFactory("attachments", NewAttachmentMatcherFactory)
-	extension.SetMatcherFactory("param", NewParamMatcherFactory)
 }
 
 // ArgumentMatcherFactory matcher factory
@@ -47,57 +44,11 @@ func (a *ArgumentMatcherFactory) ShouldMatch(key string) bool {
 	return strings.HasPrefix(key, constant.Arguments)
 }
 
-// NewMatcher construct a new matcher
+// NewMatcher constructs a new matcher
 func (a *ArgumentMatcherFactory) NewMatcher(key string) matcher.ConditionMatcher {
-	return NewArgumentConditionMatcher(key)
+	return NewConditionMatcher(key)
 }
 
 func (a *ArgumentMatcherFactory) Priority() int64 {
 	return 300
-}
-
-// AttachmentMatcherFactory matcher factory
-type AttachmentMatcherFactory struct {
-}
-
-// NewAttachmentMatcherFactory constructs a new attachment.AttachmentMatcherFactory
-func NewAttachmentMatcherFactory() matcher.ConditionMatcherFactory {
-	return &AttachmentMatcherFactory{}
-}
-
-func (a *AttachmentMatcherFactory) ShouldMatch(key string) bool {
-	return strings.HasPrefix(key, constant.Attachments)
-}
-
-// NewMatcher construct a new matcher
-func (a *AttachmentMatcherFactory) NewMatcher(key string) matcher.ConditionMatcher {
-	return NewAttachmentConditionMatcher(key)
-}
-
-func (a *AttachmentMatcherFactory) Priority() int64 {
-	return 200
-}
-
-// ParamMatcherFactory matcher factory
-type ParamMatcherFactory struct {
-}
-
-// NewParamMatcherFactory constructs a new paramMatcherFactory
-func NewParamMatcherFactory() matcher.ConditionMatcherFactory {
-	return &ParamMatcherFactory{}
-}
-
-func (p *ParamMatcherFactory) ShouldMatch(key string) bool {
-	return true
-}
-
-// NewMatcher construct a new matcher
-func (p *ParamMatcherFactory) NewMatcher(key string) matcher.ConditionMatcher {
-	return NewParamConditionMatcher(key)
-}
-
-// Priority make sure this is the last matcher being executed.
-// This instance will be loaded separately to ensure it always gets executed as the last matcher.
-func (p *ParamMatcherFactory) Priority() int64 {
-	return math.MaxInt64
 }

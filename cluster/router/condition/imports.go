@@ -18,6 +18,11 @@
 package condition
 
 import (
-	_ "dubbo.apache.org/dubbo-go/v3/cluster/router/condition/matcher/matcher_impl"
-	_ "dubbo.apache.org/dubbo-go/v3/cluster/router/condition/matcher/pattern/pattern_impl"
+	_ "dubbo.apache.org/dubbo-go/v3/cluster/router/condition/matcher"
+	_ "dubbo.apache.org/dubbo-go/v3/cluster/router/condition/matcher/argument"
+	_ "dubbo.apache.org/dubbo-go/v3/cluster/router/condition/matcher/attachment"
+	_ "dubbo.apache.org/dubbo-go/v3/cluster/router/condition/matcher/param"
+	_ "dubbo.apache.org/dubbo-go/v3/cluster/router/condition/matcher/pattern"
+	_ "dubbo.apache.org/dubbo-go/v3/cluster/router/condition/matcher/pattern/scope"
+	_ "dubbo.apache.org/dubbo-go/v3/cluster/router/condition/matcher/pattern/wildcard"
 )

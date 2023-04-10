@@ -35,9 +35,9 @@ type ConditionMatcherFactory interface {
 /*
 ConditionMatcher represents a specific match condition of a condition rule.
 The following condition rule 'foo=bar&arguments[0]=hello* => region=hangzhou' consists of three ConditionMatchers:
-1. matcher_impl.ParamConditionMatcher represented by 'foo=bar'
-2. matcher_impl.ArgumentConditionMatcher represented by 'arguments[0]=hello*'
-3. matcher_impl.ParamConditionMatcher represented by 'region=hangzhou'
+1. param.ParamConditionMatcher represented by 'foo=bar'
+2. argument.ArgumentConditionMatcher represented by 'arguments[0]=hello*'
+3. param.ParamConditionMatcher represented by 'region=hangzhou'
 */
 type ConditionMatcher interface {
 	// IsMatch indicates whether this matcher matches the patterns with request context.
@@ -50,5 +50,5 @@ type ConditionMatcher interface {
 	GetMismatches() map[string]struct{}
 	// GetValue returns a value from different places of the request context, for example, url, attachment and invocation.
 	// This makes condition rule possible to check values in any place of a request.
-	GetValue(sample map[string]string, url *common.URL, invocation protocol.Invocation) (string, error)
+	GetValue(sample map[string]string, url *common.URL, invocation protocol.Invocation) string
 }

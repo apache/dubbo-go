@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package pattern_impl
+package wildcard
 
 import (
 	"math"
@@ -37,10 +37,10 @@ type WildcardValuePattern struct {
 }
 
 func init() {
-	extension.SetValuePattern("wildcard", NewWildcardValuePattern)
+	extension.SetValuePattern("wildcard", NewValuePattern)
 }
 
-func NewWildcardValuePattern() pattern.ValuePattern {
+func NewValuePattern() pattern.ValuePattern {
 	return &WildcardValuePattern{}
 }
 
