@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package argument
+package matcher_impl
 
 import (
 	"fmt"
@@ -25,14 +25,11 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/log/logger"
+	"github.com/pkg/errors"
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/cluster/router/condition/matcher/base"
-	"dubbo.apache.org/dubbo-go/v3/cluster/router/condition/matcher/pattern"
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
@@ -47,49 +44,34 @@ var (
  * "arguments[1]=a", whenCondition is that the second argument is equal to 'a'.
  */
 
-type ConditionMatcher struct {
-	base.ConditionMatcher
+type ArgumentConditionMatcher struct {
+	BaseConditionMatcher
 }
 
-func NewConditionMatcher(key string) *ConditionMatcher {
-	valuePatterns := extension.GetValuePatterns()
-	valueMatchers := make([]pattern.ValuePattern, 0, len(valuePatterns))
-	for _, valuePattern := range valuePatterns {
-		valueMatchers = append(valueMatchers, valuePattern())
+func NewArgumentConditionMatcher(key string) *ArgumentConditionMatcher {
+	conditionMatcher := &ArgumentConditionMatcher{
+		*NewBaseConditionMatcher(key),
 	}
-
-	base.SortValuePattern(valueMatchers)
-
-	conditionMatcher := &ConditionMatcher{
-		base.ConditionMatcher{
-			Key:           key,
-			Matches:       map[string]struct{}{},
-			Mismatches:    map[string]struct{}{},
-			ValueMatchers: valueMatchers,
-		},
-	}
-
 	conditionMatcher.Matcher = conditionMatcher
 	return conditionMatcher
 }
 
-func (c *ConditionMatcher) GetValue(sample map[string]string, url *common.URL, invocation protocol.Invocation) string {
+func (a *ArgumentConditionMatcher) GetValue(sample map[string]string, url *common.URL, invocation protocol.Invocation) (string, error) {
 	// split the rule
-	expressArray := strings.Split(c.Key, "\\.")
+	expressArray := strings.Split(a.Key, "\\.")
 	argumentExpress := expressArray[0]
 	matcher := ArgumentsPattern.FindStringSubmatch(argumentExpress)
 	if len(matcher) == 0 {
-		return "dubbo internal not found argument condition value"
+		return "", errors.Errorf("dubbo internal not found argument condition value")
 	}
 
-	//extract the argument index
+	// extract the argument index
 	index, err := strconv.Atoi(matcher[1])
 	if err != nil {
-		logger.Warn("Parse argument match condition failed,Invalid , will ignore., ")
-		return "dubbo internal not found argument condition value"
+		return "", errors.Errorf("dubbo internal not found argument condition value")
 	}
 	if index < 0 || index > len(invocation.Arguments()) {
-		return "dubbo internal not found argument condition value"
+		return "", errors.Errorf("dubbo internal not found argument condition value")
 	}
-	return fmt.Sprint(invocation.Arguments()[index])
+	return fmt.Sprint(invocation.Arguments()[index]), nil
 }

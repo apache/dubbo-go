@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package scope
+package pattern_impl
 
 import (
 	"strconv"
@@ -36,27 +36,26 @@ import (
 /**
  * Matches with patterns like 'key=1~100', 'key=~100' or 'key=1~'
  */
-
-type ValuePattern struct {
+type ScopeValuePattern struct {
 }
 
 func init() {
-	extension.SetValuePattern("scope", NewValuePattern)
+	extension.SetValuePattern("scope", NewScopeValuePattern)
 }
 
-func NewValuePattern() pattern.ValuePattern {
-	return &ValuePattern{}
+func NewScopeValuePattern() pattern.ValuePattern {
+	return &ScopeValuePattern{}
 }
 
-func (v *ValuePattern) Priority() int64 {
+func (s *ScopeValuePattern) Priority() int64 {
 	return 100
 }
 
-func (v *ValuePattern) ShouldMatch(pattern string) bool {
+func (s *ScopeValuePattern) ShouldMatch(pattern string) bool {
 	return strings.Contains(pattern, "~")
 }
 
-func (v *ValuePattern) Match(pattern string, value string, url *common.URL, invocation protocol.Invocation, isWhenCondition bool) bool {
+func (s *ScopeValuePattern) Match(pattern string, value string, url *common.URL, invocation protocol.Invocation, isWhenCondition bool) bool {
 	defaultValue := !isWhenCondition
 
 	intValue, err := strconv.Atoi(value)

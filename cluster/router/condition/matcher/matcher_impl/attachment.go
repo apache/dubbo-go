@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package attachment
+package matcher_impl
 
 import (
 	"regexp"
@@ -23,10 +23,11 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/cluster/router/condition/matcher/base"
-	"dubbo.apache.org/dubbo-go/v3/cluster/router/condition/matcher/pattern"
+	"github.com/pkg/errors"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
@@ -40,48 +41,34 @@ var (
  * "attachments[foo]=bar", whenCondition is that the attachment value of 'foo' is equal to 'bar'.
  */
 
-type ConditionMatcher struct {
-	base.ConditionMatcher
+type AttachmentConditionMatcher struct {
+	BaseConditionMatcher
 }
 
-func NewConditionMatcher(key string) *ConditionMatcher {
-	valuePatterns := extension.GetValuePatterns()
-	valueMatchers := make([]pattern.ValuePattern, 0, len(valuePatterns))
-	for _, valuePattern := range valuePatterns {
-		valueMatchers = append(valueMatchers, valuePattern())
+func NewAttachmentConditionMatcher(key string) *AttachmentConditionMatcher {
+	conditionMatcher := &AttachmentConditionMatcher{
+		*NewBaseConditionMatcher(key),
 	}
-
-	base.SortValuePattern(valueMatchers)
-
-	conditionMatcher := &ConditionMatcher{
-		base.ConditionMatcher{
-			Key:           key,
-			Matches:       map[string]struct{}{},
-			Mismatches:    map[string]struct{}{},
-			ValueMatchers: valueMatchers,
-		},
-	}
-
 	conditionMatcher.Matcher = conditionMatcher
 	return conditionMatcher
 }
 
-func (c *ConditionMatcher) GetValue(sample map[string]string, url *common.URL, invocation protocol.Invocation) string {
+func (a *AttachmentConditionMatcher) GetValue(sample map[string]string, url *common.URL, invocation protocol.Invocation) (string, error) {
 	// split the rule
-	expressArray := strings.Split(c.Key, "\\.")
+	expressArray := strings.Split(a.Key, "\\.")
 	argumentExpress := expressArray[0]
 	matcher := AttachmentsPattern.FindStringSubmatch(argumentExpress)
 	if len(matcher) == 0 {
-		return "dubbo internal not found attachments condition value"
+		return "", errors.Errorf("dubbo internal not found argument condition value")
 	}
 
-	//extract the attachment index
+	// extract the attachment index
 	attachmentKey := matcher[1]
 	if attachmentKey == "" {
-		return "dubbo internal not found attachments condition value"
+		return "", errors.Errorf("dubbo internal not found argument condition value")
 	}
 
 	//extract the attachment value
 	attachment, _ := invocation.GetAttachment(attachmentKey)
-	return attachment
+	return attachment, nil
 }

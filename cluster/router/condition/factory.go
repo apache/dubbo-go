@@ -24,18 +24,33 @@ import (
 )
 
 func init() {
-	extension.SetRouterFactory(constant.ConditionRouterFactoryKey, NewConditionRouterFactory)
+	extension.SetRouterFactory(constant.ConditionServiceRouterFactoryKey, NewServiceConditionRouterFactory)
+	extension.SetRouterFactory(constant.ConditionAppRouterFactoryKey, NewAppConditionRouterFactory)
 }
 
-// RouteFactory router factory
-type RouteFactory struct{}
+// ServiceRouteFactory router factory
+type ServiceRouteFactory struct{}
 
-// NewConditionRouterFactory constructs a new PriorityRouterFactory
-func NewConditionRouterFactory() router.PriorityRouterFactory {
-	return &RouteFactory{}
+// NewServiceConditionRouterFactory constructs a new PriorityRouterFactory
+func NewServiceConditionRouterFactory() router.PriorityRouterFactory {
+	return &ServiceRouteFactory{}
 }
 
-// NewPriorityRouter construct a new ConditionDynamicRouter
-func (f *RouteFactory) NewPriorityRouter() (router.PriorityRouter, error) {
-	return NewConditionDynamicRouter()
+// NewPriorityRouter constructs a new ServiceRouter
+func (s *ServiceRouteFactory) NewPriorityRouter() (router.PriorityRouter, error) {
+	return NewServiceRouter(), nil
+}
+
+// AppConditionRouterFactory router factory
+type AppConditionRouterFactory struct {
+}
+
+// NewAppConditionRouterFactory router factory
+func NewAppConditionRouterFactory() router.PriorityRouterFactory {
+	return &AppConditionRouterFactory{}
+}
+
+// NewPriorityRouter constructs a new ApplicationRouter
+func (a *AppConditionRouterFactory) NewPriorityRouter() (router.PriorityRouter, error) {
+	return NewApplicationRouter(), nil
 }

@@ -15,42 +15,25 @@
  * limitations under the License.
  */
 
-package param
+package matcher_impl
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/cluster/router/condition/matcher/base"
-	"dubbo.apache.org/dubbo-go/v3/cluster/router/condition/matcher/pattern"
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
-type ConditionMatcher struct {
-	base.ConditionMatcher
+type ParamConditionMatcher struct {
+	BaseConditionMatcher
 }
 
-func NewParamConditionMatcher(key string) *ConditionMatcher {
-	valuePatterns := extension.GetValuePatterns()
-	valueMatchers := make([]pattern.ValuePattern, 0, len(valuePatterns))
-	for _, valuePattern := range valuePatterns {
-		valueMatchers = append(valueMatchers, valuePattern())
+func NewParamConditionMatcher(key string) *ParamConditionMatcher {
+	conditionMatcher := &ParamConditionMatcher{
+		*NewBaseConditionMatcher(key),
 	}
-
-	base.SortValuePattern(valueMatchers)
-
-	conditionMatcher := &ConditionMatcher{
-		base.ConditionMatcher{
-			Key:           key,
-			Matches:       map[string]struct{}{},
-			Mismatches:    map[string]struct{}{},
-			ValueMatchers: valueMatchers,
-		},
-	}
-
 	conditionMatcher.Matcher = conditionMatcher
 	return conditionMatcher
 }
 
-func (c *ConditionMatcher) GetValue(sample map[string]string, url *common.URL, invocation protocol.Invocation) string {
-	return c.GetSampleValueFromUrl(c.Key, sample, url, invocation)
+func (p *ParamConditionMatcher) GetValue(sample map[string]string, url *common.URL, invocation protocol.Invocation) (string, error) {
+	return p.GetSampleValueFromURL(p.Key, sample, url, invocation), nil
 }

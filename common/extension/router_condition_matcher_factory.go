@@ -31,7 +31,7 @@ func SetMatcherFactory(name string, fun func() matcher.ConditionMatcherFactory) 
 
 func GetMatcherFactory(name string) matcher.ConditionMatcherFactory {
 	if matchers[name] == nil {
-		panic("matcher_factory for " + name + " is not existing, make sure you have import the package.")
+		panic("matcher_factory for " + name + " is not existing, make sure you have imported the package.")
 	}
 	return matchers[name]()
 }

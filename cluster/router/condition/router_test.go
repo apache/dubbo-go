@@ -39,7 +39,7 @@ const (
 func TestRoute_matchWhen(t *testing.T) {
 
 	rpcInvocation := invocation.NewRPCInvocation("getFoo", nil, nil)
-	whenConsumerUrl, _ := common.NewURL("consumer://1.1.1.1/com.foo.BarService")
+	whenConsumerURL, _ := common.NewURL("consumer://1.1.1.1/com.foo.BarService")
 
 	testData := []struct {
 		name        string
@@ -50,56 +50,56 @@ func TestRoute_matchWhen(t *testing.T) {
 	}{
 		{
 			name:        " => host = 1.2.3.4",
-			consumerUrl: whenConsumerUrl,
+			consumerUrl: whenConsumerURL,
 			rule:        " => host = 1.2.3.4",
 
 			wantVal: true,
 		},
 		{
 			name:        "host = 1.2.3.4 => ",
-			consumerUrl: whenConsumerUrl,
+			consumerUrl: whenConsumerURL,
 			rule:        "host = 1.2.3.4 => ",
 
 			wantVal: false,
 		},
 		{
 			name:        "host = 2.2.2.2,1.1.1.1,3.3.3.3 => host = 1.2.3.4",
-			consumerUrl: whenConsumerUrl,
+			consumerUrl: whenConsumerURL,
 			rule:        "host = 2.2.2.2,1.1.1.1,3.3.3.3 => host = 1.2.3.4",
 
 			wantVal: true,
 		},
 		{
 			name:        "host = 2.2.2.2,1.1.1.1,3.3.3.3 & host !=1.1.1.1 => host = 1.2.3.4",
-			consumerUrl: whenConsumerUrl,
+			consumerUrl: whenConsumerURL,
 			rule:        "host = 2.2.2.2,1.1.1.1,3.3.3.3 & host !=1.1.1.1 => host = 1.2.3.4",
 
 			wantVal: false,
 		},
 		{
 			name:        "host !=4.4.4.4 & host = 2.2.2.2,1.1.1.1,3.3.3.3 => host = 1.2.3.4",
-			consumerUrl: whenConsumerUrl,
+			consumerUrl: whenConsumerURL,
 			rule:        "host !=4.4.4.4 & host = 2.2.2.2,1.1.1.1,3.3.3.3 => host = 1.2.3.4",
 
 			wantVal: true,
 		},
 		{
 			name:        "host !=4.4.4.* & host = 2.2.2.2,1.1.1.1,3.3.3.3 => host = 1.2.3.4",
-			consumerUrl: whenConsumerUrl,
+			consumerUrl: whenConsumerURL,
 			rule:        "host !=4.4.4.* & host = 2.2.2.2,1.1.1.1,3.3.3.3 => host = 1.2.3.4",
 
 			wantVal: true,
 		},
 		{
 			name:        "host = 2.2.2.2,1.1.1.*,3.3.3.3 & host != 1.1.1.1 => host = 1.2.3.4",
-			consumerUrl: whenConsumerUrl,
+			consumerUrl: whenConsumerURL,
 			rule:        "host = 2.2.2.2,1.1.1.*,3.3.3.3 & host != 1.1.1.1 => host = 1.2.3.4",
 
 			wantVal: false,
 		},
 		{
 			name:        "host = 2.2.2.2,1.1.1.*,3.3.3.3 & host != 1.1.1.2 => host = 1.2.3.4",
-			consumerUrl: whenConsumerUrl,
+			consumerUrl: whenConsumerURL,
 			rule:        "host = 2.2.2.2,1.1.1.*,3.3.3.3 & host != 1.1.1.2 => host = 1.2.3.4",
 
 			wantVal: true,
@@ -121,7 +121,7 @@ func TestRoute_matchWhen(t *testing.T) {
 
 func TestRoute_matchFilter(t *testing.T) {
 
-	consumerUrl, _ := common.NewURL("consumer://" + LocalHost + "/com.foo.BarService")
+	consumerURL, _ := common.NewURL("consumer://" + LocalHost + "/com.foo.BarService")
 	url1, _ := common.NewURL("dubbo://10.20.3.3:20880/com.foo.BarService?serialization=fastjson")
 	url2, _ := common.NewURL("dubbo://" + LocalHost + ":20880/com.foo.BarService")
 	url3, _ := common.NewURL("dubbo://" + LocalHost + ":20880/com.foo.BarService")
@@ -139,49 +139,49 @@ func TestRoute_matchFilter(t *testing.T) {
 
 	testData := []struct {
 		name        string
-		comsumerUrl *common.URL
+		comsumerURL *common.URL
 		rule        string
 
 		wantVal int
 	}{
 		{
 			name:        "host = " + LocalHost + " => " + " host = 10.20.3.3",
-			comsumerUrl: consumerUrl,
+			comsumerURL: consumerURL,
 			rule:        "host = " + LocalHost + " => " + " host = 10.20.3.3",
 
 			wantVal: 1,
 		},
 		{
 			name:        "host = " + LocalHost + " => " + " host = 10.20.3.* & host != 10.20.3.3",
-			comsumerUrl: consumerUrl,
+			comsumerURL: consumerURL,
 			rule:        "host = " + LocalHost + " => " + " host = 10.20.3.* & host != 10.20.3.3",
 
 			wantVal: 0,
 		},
 		{
 			name:        "host = " + LocalHost + " => " + " host = 10.20.3.3  & host != 10.20.3.3",
-			comsumerUrl: consumerUrl,
+			comsumerURL: consumerURL,
 			rule:        "host = " + LocalHost + " => " + " host = 10.20.3.3  & host != 10.20.3.3",
 
 			wantVal: 0,
 		},
 		{
 			name:        "host = " + LocalHost + " => " + " host = 10.20.3.2,10.20.3.3,10.20.3.4",
-			comsumerUrl: consumerUrl,
+			comsumerURL: consumerURL,
 			rule:        "host = " + LocalHost + " => " + " host = 10.20.3.2,10.20.3.3,10.20.3.4",
 
 			wantVal: 1,
 		},
 		{
 			name:        "host = " + LocalHost + " => " + " host != 10.20.3.3",
-			comsumerUrl: consumerUrl,
+			comsumerURL: consumerURL,
 			rule:        "host = " + LocalHost + " => " + " host != 10.20.3.3",
 
 			wantVal: 2,
 		},
 		{
 			name:        "host = " + LocalHost + " => " + " serialization = fastjson",
-			comsumerUrl: consumerUrl,
+			comsumerURL: consumerURL,
 			rule:        "host = " + LocalHost + " => " + " serialization = fastjson",
 
 			wantVal: 1,
@@ -198,7 +198,7 @@ func TestRoute_matchFilter(t *testing.T) {
 			router, err := NewConditionStateRouter(url)
 			assert.Nil(t, err)
 
-			filteredInvokers := router.Route(invokerList, data.comsumerUrl, rpcInvocation)
+			filteredInvokers := router.Route(invokerList, data.comsumerURL, rpcInvocation)
 			resVal := len(filteredInvokers)
 			assert.Equal(t, data.wantVal, resVal)
 		})
@@ -211,28 +211,28 @@ func TestRoute_methodRoute(t *testing.T) {
 
 	testData := []struct {
 		name        string
-		consumerUrl string
+		consumerURL string
 		rule        string
 
 		wantVal bool
 	}{
 		{
 			name:        "More than one methods, mismatch",
-			consumerUrl: "consumer://1.1.1.1/com.foo.BarService?methods=setFoo,getFoo,findFoo",
+			consumerURL: "consumer://1.1.1.1/com.foo.BarService?methods=setFoo,getFoo,findFoo",
 			rule:        "methods=getFoo => host = 1.2.3.4",
 
 			wantVal: true,
 		},
 		{
 			name:        "Exactly one method, match",
-			consumerUrl: "consumer://1.1.1.1/com.foo.BarService?methods=getFoo",
+			consumerURL: "consumer://1.1.1.1/com.foo.BarService?methods=getFoo",
 			rule:        "methods=getFoo => host = 1.2.3.4",
 
 			wantVal: true,
 		},
 		{
 			name:        "Method routing and Other condition routing can work together",
-			consumerUrl: "consumer://1.1.1.1/com.foo.BarService?methods=getFoo",
+			consumerURL: "consumer://1.1.1.1/com.foo.BarService?methods=getFoo",
 			rule:        "methods=getFoo & host!=1.1.1.1 => host = 1.2.3.4",
 
 			wantVal: false,
@@ -246,7 +246,7 @@ func TestRoute_methodRoute(t *testing.T) {
 			url.AddParam(constant.RuleKey, data.rule)
 			router, err := NewConditionStateRouter(url)
 			assert.Nil(t, err)
-			consumer, _ := common.NewURL(data.consumerUrl)
+			consumer, _ := common.NewURL(data.consumerURL)
 			resVal := router.matchWhen(consumer, rpcInvocation)
 			assert.Equal(t, data.wantVal, resVal)
 		})
@@ -256,7 +256,7 @@ func TestRoute_methodRoute(t *testing.T) {
 func TestRoute_return(t *testing.T) {
 
 	rpcInvocation := invocation.NewRPCInvocation("getFoo", nil, nil)
-	consumerUrl, _ := common.NewURL("consumer://" + LocalHost + "/com.foo.BarService")
+	consumerURL, _ := common.NewURL("consumer://" + LocalHost + "/com.foo.BarService")
 
 	testData := []struct {
 		name string
@@ -391,7 +391,7 @@ func TestRoute_return(t *testing.T) {
 			router, err := NewConditionStateRouter(url)
 			assert.Nil(t, err)
 
-			filterInvokers := router.Route(invokers, consumerUrl, rpcInvocation)
+			filterInvokers := router.Route(invokers, consumerURL, rpcInvocation)
 			resVal := len(filterInvokers)
 
 			assert.Equal(t, data.wantVal, resVal)
@@ -400,6 +400,7 @@ func TestRoute_return(t *testing.T) {
 	}
 }
 
+// TestRoute_arguments also tests matcher_impl.ArgumentConditionMatcher's GetValue
 func TestRoute_arguments(t *testing.T) {
 
 	url1, _ := common.NewURL("dubbo://10.20.3.3:20880/com.foo.BarService")
@@ -415,7 +416,7 @@ func TestRoute_arguments(t *testing.T) {
 	invokerList = append(invokerList, ink2)
 	invokerList = append(invokerList, ink3)
 
-	consumerUrl, _ := common.NewURL("consumer://" + LocalHost + "/com.foo.BarService")
+	consumerURL, _ := common.NewURL("consumer://" + LocalHost + "/com.foo.BarService")
 
 	testData := []struct {
 		name     string
@@ -462,7 +463,7 @@ func TestRoute_arguments(t *testing.T) {
 
 			rpcInvocation := invocation.NewRPCInvocation("getBar", arguments, nil)
 
-			filterInvokers := router.Route(invokerList, consumerUrl, rpcInvocation)
+			filterInvokers := router.Route(invokerList, consumerURL, rpcInvocation)
 			resVal := len(filterInvokers)
 			assert.Equal(t, data.wantVal, resVal)
 
@@ -470,8 +471,9 @@ func TestRoute_arguments(t *testing.T) {
 	}
 }
 
+// TestRoute_attachments also tests matcher_impl.AttachmentConditionMatcher's GetValue method
 func TestRoute_attachments(t *testing.T) {
-	consumerUrl, _ := common.NewURL("consumer://" + LocalHost + "/com.foo.BarService")
+	consumerURL, _ := common.NewURL("consumer://" + LocalHost + "/com.foo.BarService")
 
 	url1, _ := common.NewURL("dubbo://10.20.3.3:20880/com.foo.BarService?region=hangzhou")
 	url2, _ := common.NewURL("dubbo://" + LocalHost + ":20880/com.foo.BarService")
@@ -541,7 +543,7 @@ func TestRoute_attachments(t *testing.T) {
 			router, err := NewConditionStateRouter(url)
 			assert.Nil(t, err)
 
-			filterInvokers := router.Route(invokerList, consumerUrl, rpcInvocation)
+			filterInvokers := router.Route(invokerList, consumerURL, rpcInvocation)
 
 			resVal := len(filterInvokers)
 			assert.Equal(t, data.wantVal, resVal)
@@ -549,9 +551,10 @@ func TestRoute_attachments(t *testing.T) {
 	}
 }
 
+// TestRoute_range_pattern also tests pattern_impl.ScopeValuePattern's Match method
 func TestRoute_range_pattern(t *testing.T) {
 
-	consumerUrl, _ := common.NewURL("consumer://" + LocalHost + "/com.foo.BarService")
+	consumerURL, _ := common.NewURL("consumer://" + LocalHost + "/com.foo.BarService")
 
 	url1, _ := common.NewURL("dubbo://10.20.3.3:20880/com.foo.BarService?region=hangzhou")
 	url2, _ := common.NewURL("dubbo://" + LocalHost + ":20880/com.foo.BarService")
@@ -629,7 +632,7 @@ func TestRoute_range_pattern(t *testing.T) {
 			router, err := NewConditionStateRouter(url)
 			assert.Nil(t, err)
 
-			filterInvokers := router.Route(invokerList, consumerUrl, rpcInvocation)
+			filterInvokers := router.Route(invokerList, consumerURL, rpcInvocation)
 
 			resVal := len(filterInvokers)
 			assert.Equal(t, data.wantVal, resVal)
@@ -654,7 +657,7 @@ func TestRoute_multiple_conditions(t *testing.T) {
 	testData := []struct {
 		name        string
 		argument    string
-		consumerUrl string
+		consumerURL string
 		rule        string
 
 		wantVal int
@@ -662,7 +665,7 @@ func TestRoute_multiple_conditions(t *testing.T) {
 		{
 			name:        "All conditions match",
 			argument:    "a",
-			consumerUrl: "consumer://" + LocalHost + "/com.foo.BarService?application=consumer_app",
+			consumerURL: "consumer://" + LocalHost + "/com.foo.BarService?application=consumer_app",
 			rule:        "application=consumer_app&arguments[0]=a" + " => " + " host = " + LocalHost,
 
 			wantVal: 2,
@@ -670,7 +673,7 @@ func TestRoute_multiple_conditions(t *testing.T) {
 		{
 			name:        "One of the conditions does not match",
 			argument:    "a",
-			consumerUrl: "consumer://" + LocalHost + "/com.foo.BarService?application=another_consumer_app",
+			consumerURL: "consumer://" + LocalHost + "/com.foo.BarService?application=another_consumer_app",
 			rule:        "application=consumer_app&arguments[0]=a" + " => " + " host = " + LocalHost,
 
 			wantVal: 3,
@@ -678,7 +681,7 @@ func TestRoute_multiple_conditions(t *testing.T) {
 	}
 	for _, data := range testData {
 		t.Run(data.name, func(t *testing.T) {
-			consumerUrl, err := common.NewURL(data.consumerUrl)
+			consumerUrl, err := common.NewURL(data.consumerURL)
 			assert.Nil(t, err)
 
 			url, err := common.NewURL("condition://" + LocalHost + "/com.foo.BarService")

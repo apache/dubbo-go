@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package wildcard
+package pattern_impl
 
 import (
 	"math"
@@ -33,26 +33,25 @@ import (
  * Matches with patterns like 'key=hello', 'key=hello*', 'key=*hello', 'key=h*o' or 'key=*'
  * This pattern evaluator must be the last one being executed.
  */
-
-type ValuePattern struct {
+type WildcardValuePattern struct {
 }
 
 func init() {
-	extension.SetValuePattern("wildcard", NewValuePattern)
+	extension.SetValuePattern("wildcard", NewWildcardValuePattern)
 }
 
-func NewValuePattern() pattern.ValuePattern {
-	return &ValuePattern{}
+func NewWildcardValuePattern() pattern.ValuePattern {
+	return &WildcardValuePattern{}
 }
 
-func (v *ValuePattern) Priority() int64 {
+func (w *WildcardValuePattern) Priority() int64 {
 	return math.MaxInt64
 }
 
-func (v *ValuePattern) ShouldMatch(pattern string) bool {
+func (w *WildcardValuePattern) ShouldMatch(pattern string) bool {
 	return true
 }
 
-func (v *ValuePattern) Match(pattern string, value string, url *common.URL, invocation protocol.Invocation, isWhenCondition bool) bool {
+func (w *WildcardValuePattern) Match(pattern string, value string, url *common.URL, invocation protocol.Invocation, isWhenCondition bool) bool {
 	return utils.IsMatchGlobPattern(pattern, value, url)
 }

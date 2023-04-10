@@ -23,11 +23,11 @@ import (
 )
 
 type ValuePattern interface {
-	//ShouldMatch return weather the input pattern of a specific form, for example, range pattern '1~100', wildcard pattern 'hello*', etc.
+	// ShouldMatch indicates whether the input is a specific pattern, for example, range pattern '1~100', wildcard pattern 'hello*', etc.
 	ShouldMatch(pattern string) bool
-	//Match is the pattern matches with the request context
+	// Match indicates whether a pattern is matched with the request context
 	Match(pattern string, value string, url *common.URL, invocation protocol.Invocation, isWhenCondition bool) bool
-	// Priority Return Priority in valuePattern
-	// 0 to ^int(0) is better
+	// Priority returns a priority for this valuePattern
+	// 0 to ^int(0) is better, smaller value by better priority
 	Priority() int64
 }

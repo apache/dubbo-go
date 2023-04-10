@@ -33,7 +33,7 @@ func SetValuePattern(name string, fun func() pattern.ValuePattern) {
 // GetValuePattern gets create valuePattern function by name
 func GetValuePattern(name string) pattern.ValuePattern {
 	if valuePatterns[name] == nil {
-		panic("value_pattern for " + name + " is not existing, make sure you have import the package.")
+		panic("value_pattern for " + name + " is not existing, make sure you have imported the package.")
 	}
 	return valuePatterns[name]()
 }

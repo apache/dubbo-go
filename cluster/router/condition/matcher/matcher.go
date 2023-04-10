@@ -23,32 +23,32 @@ import (
 )
 
 type ConditionMatcherFactory interface {
-	//ShouldMatch return whether the key is of the form of the current matcher type which this factory instance represents..
+	//ShouldMatch indicates whether the key is of the form of the current matcher type which this factory instance represents.
 	ShouldMatch(key string) bool
-	//NewMatcher return a matcher instance for the key.
+	//NewMatcher returns a matcher instance for the key.
 	NewMatcher(key string) ConditionMatcher
-	// Priority Return Priority in ConditionMatcherFactory
-	// 0 to ^int(0) is better
+	// Priority returns Priority in ConditionMatcherFactory
+	// 0 to ^int(0) is better, smaller value by better priority
 	Priority() int64
 }
 
 /*
 ConditionMatcher represents a specific match condition of a condition rule.
 The following condition rule 'foo=bar&arguments[0]=hello* => region=hangzhou' consists of three ConditionMatchers:
-1. param.ConditionMatcher represented by 'foo=bar'
-2. argument.ConditionMatcher represented by 'arguments[0]=hello*'
-3. param.ConditionMatcher represented by 'region=hangzhou'
+1. matcher_impl.ParamConditionMatcher represented by 'foo=bar'
+2. matcher_impl.ArgumentConditionMatcher represented by 'arguments[0]=hello*'
+3. matcher_impl.ParamConditionMatcher represented by 'region=hangzhou'
 */
 type ConditionMatcher interface {
-	// IsMatch return weather the patterns of this matcher matches with request context.
+	// IsMatch indicates whether this matcher matches the patterns with request context.
 	IsMatch(sample map[string]string, param *common.URL, invocation protocol.Invocation, isWhenCondition bool) bool
-	// GetMatches return Matches
+	// GetMatches returns Matches
 	// match patterns extracted from when condition
 	GetMatches() map[string]struct{}
-	// GetMismatches return Mismatches
+	// GetMismatches returns Mismatches
 	// mismatch patterns extracted from then condition
 	GetMismatches() map[string]struct{}
-	// GetValue return value from different places of the request context, for example, url, attachment and invocation.
+	// GetValue returns a value from different places of the request context, for example, url, attachment and invocation.
 	// This makes condition rule possible to check values in any place of a request.
-	GetValue(sample map[string]string, url *common.URL, invocation protocol.Invocation) string
+	GetValue(sample map[string]string, url *common.URL, invocation protocol.Invocation) (string, error)
 }
