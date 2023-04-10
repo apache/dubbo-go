@@ -27,7 +27,11 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/config"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/config_center"
+	"dubbo.apache.org/dubbo-go/v3/config_center/configurator"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
@@ -701,4 +705,92 @@ func TestRoute_multiple_conditions(t *testing.T) {
 			assert.Equal(t, data.wantVal, resVal)
 		})
 	}
+}
+
+func TestServiceRouter(t *testing.T) {
+
+	consumerURL, _ := common.NewURL("consumer://" + "1.1.1.1" + "/com.foo.BarService")
+
+	url1, _ := common.NewURL("dubbo://10.20.3.3:20880/com.foo.BarService")
+	url2, _ := common.NewURL("dubbo://" + LocalHost + ":20880/com.foo.BarService?region=hangzhou")
+	url3, _ := common.NewURL("dubbo://" + LocalHost + ":20880/com.foo.BarService")
+
+	ink1 := protocol.NewBaseInvoker(url1)
+	ink2 := protocol.NewBaseInvoker(url2)
+	ink3 := protocol.NewBaseInvoker(url3)
+
+	invokerList := make([]protocol.Invoker, 0, 3)
+	invokerList = append(invokerList, ink1)
+	invokerList = append(invokerList, ink2)
+	invokerList = append(invokerList, ink3)
+
+	extension.SetDefaultConfigurator(configurator.NewMockConfigurator)
+	ccUrl, _ := common.NewURL("mock://127.0.0.1:1111")
+	mockFactory := &config_center.MockDynamicConfigurationFactory{
+		Content: `
+scope: service
+force: true
+enabled: true
+runtime: true
+key: com.foo.BarService
+conditions:
+ - 'method=sayHello => region=hangzhou'`,
+	}
+	dc, _ := mockFactory.GetDynamicConfiguration(ccUrl)
+	config.GetEnvInstance().SetDynamicConfiguration(dc)
+
+	router := NewServiceRouter()
+	router.Notify(invokerList)
+
+	rpcInvocation := invocation.NewRPCInvocation("sayHello", nil, nil)
+	invokers := router.Route(invokerList, consumerURL, rpcInvocation)
+	assert.Equal(t, 1, len(invokers))
+
+	rpcInvocation = invocation.NewRPCInvocation("sayHi", nil, nil)
+	invokers = router.Route(invokerList, consumerURL, rpcInvocation)
+	assert.Equal(t, 3, len(invokers))
+}
+
+func TestApplicationRouter(t *testing.T) {
+
+	consumerURL, _ := common.NewURL("consumer://" + "1.1.1.1" + "/com.foo.BarService")
+
+	url1, _ := common.NewURL("dubbo://10.20.3.3:20880/com.foo.BarService?application=demo-provider")
+	url2, _ := common.NewURL("dubbo://" + LocalHost + ":20880/com.foo.BarService?application=demo-provider&region=hangzhou")
+	url3, _ := common.NewURL("dubbo://" + LocalHost + ":20880/com.foo.BarService?application=demo-provider")
+
+	ink1 := protocol.NewBaseInvoker(url1)
+	ink2 := protocol.NewBaseInvoker(url2)
+	ink3 := protocol.NewBaseInvoker(url3)
+
+	invokerList := make([]protocol.Invoker, 0, 3)
+	invokerList = append(invokerList, ink1)
+	invokerList = append(invokerList, ink2)
+	invokerList = append(invokerList, ink3)
+
+	extension.SetDefaultConfigurator(configurator.NewMockConfigurator)
+	ccUrl, _ := common.NewURL("mock://127.0.0.1:1111")
+	mockFactory := &config_center.MockDynamicConfigurationFactory{
+		Content: `
+scope: application
+force: true
+enabled: true
+runtime: true
+key: demo-provider
+conditions:
+ - 'method=sayHello => region=hangzhou'`,
+	}
+	dc, _ := mockFactory.GetDynamicConfiguration(ccUrl)
+	config.GetEnvInstance().SetDynamicConfiguration(dc)
+
+	router := NewApplicationRouter()
+	router.Notify(invokerList)
+
+	rpcInvocation := invocation.NewRPCInvocation("sayHello", nil, nil)
+	invokers := router.Route(invokerList, consumerURL, rpcInvocation)
+	assert.Equal(t, 1, len(invokers))
+
+	rpcInvocation = invocation.NewRPCInvocation("sayHi", nil, nil)
+	invokers = router.Route(invokerList, consumerURL, rpcInvocation)
+	assert.Equal(t, 3, len(invokers))
 }
