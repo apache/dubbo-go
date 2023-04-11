@@ -19,13 +19,8 @@ package service
 
 import (
 	"context"
-)
-
-import (
 	"dubbo-go-app/api"
-)
 
-import (
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	"dubbo.apache.org/dubbo-go/v3/config"
 )

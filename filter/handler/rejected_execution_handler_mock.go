@@ -23,14 +23,11 @@ package handler
 
 import (
 	reflect "reflect"
-)
 
-import (
 	gomock "github.com/golang/mock/gomock"
-)
 
-import (
 	common "dubbo.apache.org/dubbo-go/v3/common"
+
 	protocol "dubbo.apache.org/dubbo-go/v3/protocol"
 )
 

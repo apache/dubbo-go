@@ -23,15 +23,11 @@ import (
 	"strconv"
 	"sync"
 	"time"
-)
 
-import (
-	"go.uber.org/atomic"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/dubbogo-cli/internal/common"
 	"dubbo.apache.org/dubbo-go/v3/dubbogo-cli/internal/protocol"
+	"go.uber.org/atomic"
+
 	_ "dubbo.apache.org/dubbo-go/v3/dubbogo-cli/internal/protocol/dubbo"
 )
 

@@ -20,15 +20,10 @@ package config
 import (
 	"net/url"
 	"time"
-)
 
-import (
-	perrors "github.com/pkg/errors"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	perrors "github.com/pkg/errors"
 )
 
 // RemoteConfig usually we need some middleware, including nacos, zookeeper

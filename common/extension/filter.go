@@ -18,11 +18,8 @@
 package extension
 
 import (
-	"github.com/pkg/errors"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/filter"
+	"github.com/pkg/errors"
 )
 
 var (

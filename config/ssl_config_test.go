@@ -20,11 +20,8 @@ package config
 import (
 	"reflect"
 	"testing"
-)
 
-import (
 	getty "github.com/apache/dubbo-getty"
-
 	"github.com/stretchr/testify/assert"
 )
 

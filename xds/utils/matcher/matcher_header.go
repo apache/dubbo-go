@@ -28,9 +28,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-)
 
-import (
 	"google.golang.org/grpc/metadata"
 )
 

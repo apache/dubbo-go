@@ -20,11 +20,8 @@ package helloworld
 import (
 	"context"
 	"net"
-)
 
-import (
 	log "github.com/dubbogo/gost/log/logger"
-
 	"google.golang.org/grpc"
 )
 

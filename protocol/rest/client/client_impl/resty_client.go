@@ -23,18 +23,13 @@ import (
 	"net/http"
 	"path"
 	"time"
-)
 
-import (
 	"github.com/go-resty/resty/v2"
 
-	perrors "github.com/pkg/errors"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/protocol/rest/client"
+	perrors "github.com/pkg/errors"
 )
 
 func init() {

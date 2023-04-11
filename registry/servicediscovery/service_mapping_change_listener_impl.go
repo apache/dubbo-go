@@ -19,17 +19,12 @@ package servicediscovery
 
 import (
 	"sync"
-)
 
-import (
-	gxset "github.com/dubbogo/gost/container/set"
-	"github.com/dubbogo/gost/gof/observer"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/registry"
+	gxset "github.com/dubbogo/gost/container/set"
+	"github.com/dubbogo/gost/gof/observer"
 )
 
 type ServiceMappingChangedListenerImpl struct {

@@ -20,9 +20,7 @@ package etcdv3
 import (
 	"reflect"
 	"testing"
-)
 
-import (
 	gxetcd "github.com/dubbogo/gost/database/kv/etcd/v3"
 )
 

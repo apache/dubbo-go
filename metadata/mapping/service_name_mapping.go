@@ -18,12 +18,9 @@
 package mapping
 
 import (
-	gxset "github.com/dubbogo/gost/container/set"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/registry"
+	gxset "github.com/dubbogo/gost/container/set"
 )
 
 // ServiceNameMapping  is the interface which trys to build the mapping between application-level service and interface-level service.

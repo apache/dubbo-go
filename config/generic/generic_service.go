@@ -19,9 +19,7 @@ package generic
 
 import (
 	"context"
-)
 
-import (
 	hessian "github.com/apache/dubbo-go-hessian2"
 )
 

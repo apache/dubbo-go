@@ -22,17 +22,12 @@ import (
 	"context"
 	"strings"
 	"sync"
-)
 
-import (
-	perrors "github.com/pkg/errors"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
+	perrors "github.com/pkg/errors"
 )
 
 var (

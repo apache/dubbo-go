@@ -20,17 +20,11 @@ package zookeeper
 import (
 	"encoding/json"
 	"strings"
-)
 
-import (
 	"github.com/dubbogo/go-zookeeper/zk"
 
 	gxset "github.com/dubbogo/gost/container/set"
-	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
-	"github.com/dubbogo/gost/log/logger"
-)
 
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
@@ -38,6 +32,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/metadata/report"
 	"dubbo.apache.org/dubbo-go/v3/metadata/report/factory"
 	"dubbo.apache.org/dubbo-go/v3/registry"
+	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
+	"github.com/dubbogo/gost/log/logger"
 )
 
 var emptyStrSlice = make([]string, 0)

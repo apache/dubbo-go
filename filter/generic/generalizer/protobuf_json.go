@@ -20,13 +20,9 @@ package generalizer
 import (
 	"reflect"
 	"sync"
-)
 
-import (
 	perrors "github.com/pkg/errors"
-
 	"google.golang.org/protobuf/encoding/protojson"
-
 	"google.golang.org/protobuf/proto"
 )
 

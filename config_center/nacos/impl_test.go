@@ -21,22 +21,16 @@ package nacos
 import (
 	"reflect"
 	"testing"
-)
 
-import (
 	gxset "github.com/dubbogo/gost/container/set"
-	nacosClient "github.com/dubbogo/gost/database/kv/nacos"
 
-	"github.com/golang/mock/gomock"
-
-	"github.com/nacos-group/nacos-sdk-go/model"
-	"github.com/nacos-group/nacos-sdk-go/vo"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/config_center/parser"
+	nacosClient "github.com/dubbogo/gost/database/kv/nacos"
+	"github.com/golang/mock/gomock"
+	"github.com/nacos-group/nacos-sdk-go/model"
+	"github.com/nacos-group/nacos-sdk-go/vo"
 )
 
 // MockIConfigClient is a mock of IConfigClient interface

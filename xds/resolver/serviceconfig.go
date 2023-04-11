@@ -31,19 +31,7 @@ import (
 	"strings"
 	"sync/atomic"
 	"time"
-)
 
-import (
-	xxhash "github.com/cespare/xxhash/v2"
-
-	"google.golang.org/grpc/codes"
-
-	"google.golang.org/grpc/metadata"
-
-	"google.golang.org/grpc/status"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/xds/balancer/clustermanager"
 	"dubbo.apache.org/dubbo-go/v3/xds/balancer/ringhash"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
@@ -51,6 +39,11 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/xds/httpfilter/router"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/envconfig"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpcrand"
+	xxhash "github.com/cespare/xxhash/v2"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
+
 	iresolver "dubbo.apache.org/dubbo-go/v3/xds/utils/resolver"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/serviceconfig"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/wrr"

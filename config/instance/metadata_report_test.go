@@ -19,21 +19,15 @@ package instance
 
 import (
 	"testing"
-)
 
-import (
-	gxset "github.com/dubbogo/gost/container/set"
-
-	"github.com/stretchr/testify/assert"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/metadata/identifier"
 	"dubbo.apache.org/dubbo-go/v3/metadata/report"
 	"dubbo.apache.org/dubbo-go/v3/metadata/report/factory"
 	"dubbo.apache.org/dubbo-go/v3/registry"
+	gxset "github.com/dubbogo/gost/container/set"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGetMetadataReportInstance(t *testing.T) {

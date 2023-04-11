@@ -20,13 +20,9 @@ package base
 import (
 	"fmt"
 	"testing"
-)
 
-import (
 	"github.com/stretchr/testify/assert"
-)
 
-import (
 	clusterpkg "dubbo.apache.org/dubbo-go/v3/cluster/cluster"
 	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/random"
 	"dubbo.apache.org/dubbo-go/v3/common"

@@ -20,15 +20,10 @@ package config
 import (
 	"fmt"
 	"strconv"
-)
 
-import (
-	"github.com/creasty/defaults"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"github.com/creasty/defaults"
 )
 
 // MethodConfig defines method config

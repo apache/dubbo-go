@@ -35,14 +35,9 @@ import (
 	"io/ioutil"
 	"path/filepath"
 	"time"
-)
 
-import (
-	"github.com/dubbogo/grpc-go/grpclog"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/xds/credentials/certprovider"
+	"github.com/dubbogo/grpc-go/grpclog"
 )
 
 const defaultCertRefreshDuration = 1 * time.Hour

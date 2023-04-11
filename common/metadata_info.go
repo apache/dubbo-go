@@ -23,14 +23,9 @@ import (
 	"net/url"
 	"sort"
 	"strings"
-)
 
-import (
-	gxset "github.com/dubbogo/gost/container/set"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	gxset "github.com/dubbogo/gost/container/set"
 )
 
 var IncludeKeys = gxset.NewSet(

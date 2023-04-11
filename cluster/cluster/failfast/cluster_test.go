@@ -21,17 +21,12 @@ import (
 	"context"
 	"fmt"
 	"testing"
-)
 
-import (
 	"github.com/golang/mock/gomock"
 
 	perrors "github.com/pkg/errors"
-
 	"github.com/stretchr/testify/assert"
-)
 
-import (
 	clusterpkg "dubbo.apache.org/dubbo-go/v3/cluster/cluster"
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory/static"
 	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/random"

@@ -22,16 +22,11 @@ import (
 	"reflect"
 	"strings"
 	"sync"
-)
 
-import (
-	"google.golang.org/grpc/metadata"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"google.golang.org/grpc/metadata"
 )
 
 var _ protocol.Invocation = (*RPCInvocation)(nil)

@@ -22,9 +22,7 @@ package hessian2
 import (
 	"reflect"
 	"regexp"
-)
 
-import (
 	perrors "github.com/pkg/errors"
 )
 

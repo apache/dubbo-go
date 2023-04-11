@@ -27,16 +27,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
-)
 
-import (
-	"google.golang.org/protobuf/encoding/protojson"
-
-	"google.golang.org/protobuf/types/known/durationpb"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/xds/credentials/certprovider"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/durationpb"
 )
 
 const (

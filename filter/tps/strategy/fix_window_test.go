@@ -20,9 +20,7 @@ package strategy
 import (
 	"testing"
 	"time"
-)
 
-import (
 	"github.com/stretchr/testify/assert"
 )
 

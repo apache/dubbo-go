@@ -23,13 +23,9 @@ package metrics
 
 import (
 	reflect "reflect"
-)
 
-import (
 	gomock "github.com/golang/mock/gomock"
-)
 
-import (
 	common "dubbo.apache.org/dubbo-go/v3/common"
 )
 

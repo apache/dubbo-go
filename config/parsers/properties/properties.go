@@ -19,9 +19,7 @@ package properties
 
 import (
 	"strings"
-)
 
-import (
 	"github.com/magiconair/properties"
 )
 

@@ -20,9 +20,7 @@ package proxy_factory
 import (
 	"fmt"
 	"reflect"
-)
 
-import (
 	perrors "github.com/pkg/errors"
 )
 

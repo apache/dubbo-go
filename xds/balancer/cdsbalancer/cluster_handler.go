@@ -26,9 +26,7 @@ package cdsbalancer
 import (
 	"errors"
 	"sync"
-)
 
-import (
 	"dubbo.apache.org/dubbo-go/v3/xds/client"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
 )

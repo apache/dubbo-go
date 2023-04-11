@@ -19,16 +19,10 @@ package config
 
 import (
 	"testing"
-)
 
-import (
-	"github.com/knadh/koanf"
-
-	"github.com/stretchr/testify/assert"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"github.com/knadh/koanf"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestProfilesConfig_Prefix(t *testing.T) {

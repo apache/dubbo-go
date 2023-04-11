@@ -27,9 +27,7 @@ package httpfilter
 
 import (
 	"github.com/golang/protobuf/proto"
-)
 
-import (
 	iresolver "dubbo.apache.org/dubbo-go/v3/xds/utils/resolver"
 )
 

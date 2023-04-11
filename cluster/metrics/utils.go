@@ -19,9 +19,7 @@ package metrics
 
 import (
 	"fmt"
-)
 
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 )
 

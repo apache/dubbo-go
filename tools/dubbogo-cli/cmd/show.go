@@ -22,15 +22,11 @@ import (
 	"log"
 	"os"
 	"strings"
-)
 
-import (
-	"github.com/spf13/cobra"
-	"github.com/olekukonko/tablewriter"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/dubbogo-cli/metadata"
+	"github.com/olekukonko/tablewriter"
+	"github.com/spf13/cobra"
+
 	_ "dubbo.apache.org/dubbo-go/v3/dubbogo-cli/metadata/zookeeper"
 )
 
@@ -112,4 +108,3 @@ func show(cmd *cobra.Command, _ []string) {
 		fmt.Printf("======================\n")
 	}
 }
-

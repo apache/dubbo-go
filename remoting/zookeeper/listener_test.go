@@ -20,9 +20,7 @@ package zookeeper
 import (
 	"net/url"
 	"testing"
-)
 
-import (
 	"github.com/stretchr/testify/assert"
 )
 

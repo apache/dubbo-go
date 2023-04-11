@@ -21,15 +21,10 @@ import (
 	"context"
 	"testing"
 	"time"
-)
 
-import (
-	"github.com/stretchr/testify/assert"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGetMetricReporter(t *testing.T) {

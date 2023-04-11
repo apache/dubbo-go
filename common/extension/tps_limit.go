@@ -19,9 +19,7 @@ package extension
 
 import (
 	"errors"
-)
 
-import (
 	"dubbo.apache.org/dubbo-go/v3/filter"
 )
 

@@ -21,9 +21,7 @@ package mocks
 
 import (
 	mock "github.com/stretchr/testify/mock"
-)
 
-import (
 	registry "dubbo.apache.org/dubbo-go/v3/registry"
 )
 

@@ -20,17 +20,12 @@ package etcd
 import (
 	"encoding/json"
 	"strings"
-)
 
-import (
 	gxset "github.com/dubbogo/gost/container/set"
+
 	gxetcd "github.com/dubbogo/gost/database/kv/etcd/v3"
 	"github.com/dubbogo/gost/log/logger"
 
-	perrors "github.com/pkg/errors"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
@@ -38,6 +33,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/metadata/report"
 	"dubbo.apache.org/dubbo-go/v3/metadata/report/factory"
 	"dubbo.apache.org/dubbo-go/v3/registry"
+	perrors "github.com/pkg/errors"
 )
 
 const DEFAULT_ROOT = "dubbo"

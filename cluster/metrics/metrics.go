@@ -18,11 +18,8 @@
 package metrics
 
 import (
-	"github.com/pkg/errors"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"github.com/pkg/errors"
 )
 
 var (

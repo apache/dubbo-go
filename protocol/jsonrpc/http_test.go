@@ -19,9 +19,7 @@ package jsonrpc
 
 import (
 	"context"
-)
 
-import (
 	perrors "github.com/pkg/errors"
 )
 

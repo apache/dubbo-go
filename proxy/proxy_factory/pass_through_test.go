@@ -20,15 +20,10 @@ package proxy_factory
 import (
 	"fmt"
 	"testing"
-)
 
-import (
-	"github.com/stretchr/testify/assert"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestPassThroughProxyFactoryGetProxy(t *testing.T) {

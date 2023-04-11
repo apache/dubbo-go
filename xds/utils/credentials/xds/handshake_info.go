@@ -32,17 +32,11 @@ import (
 	"fmt"
 	"strings"
 	"sync"
-)
 
-import (
-	"google.golang.org/grpc/attributes"
-
-	"google.golang.org/grpc/resolver"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/xds/credentials/certprovider"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/matcher"
+	"google.golang.org/grpc/attributes"
+	"google.golang.org/grpc/resolver"
 )
 
 func init() {

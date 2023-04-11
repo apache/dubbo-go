@@ -19,14 +19,9 @@ package extension
 
 import (
 	"fmt"
-)
 
-import (
-	perrors "github.com/pkg/errors"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/metadata/service"
+	perrors "github.com/pkg/errors"
 )
 
 type remoteMetadataServiceCreator func() (service.RemoteMetadataService, error)

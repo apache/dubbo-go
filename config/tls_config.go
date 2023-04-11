@@ -21,9 +21,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"io/ioutil"
-)
 
-import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 

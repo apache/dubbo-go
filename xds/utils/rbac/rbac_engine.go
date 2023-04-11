@@ -34,11 +34,9 @@ import (
 	"fmt"
 	"net"
 	"strconv"
-)
 
-import (
+	"dubbo.apache.org/dubbo-go/v3/xds/utils/transport"
 	v3rbacpb "github.com/envoyproxy/go-control-plane/envoy/config/rbac/v3"
-
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
@@ -46,10 +44,6 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/xds/utils/transport"
 )
 
 const logLevel = 2

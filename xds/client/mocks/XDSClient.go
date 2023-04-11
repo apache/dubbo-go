@@ -23,11 +23,11 @@ import (
 	mock "github.com/stretchr/testify/mock"
 
 	structpb "google.golang.org/protobuf/types/known/structpb"
-)
 
-import (
 	bootstrap "dubbo.apache.org/dubbo-go/v3/xds/client/bootstrap"
+
 	load "dubbo.apache.org/dubbo-go/v3/xds/client/load"
+
 	resource "dubbo.apache.org/dubbo-go/v3/xds/client/resource"
 )
 

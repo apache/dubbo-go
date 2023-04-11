@@ -20,18 +20,13 @@ package p2c
 import (
 	"math/rand"
 	"testing"
-)
 
-import (
-	"github.com/golang/mock/gomock"
-
-	"github.com/stretchr/testify/assert"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/metrics"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
+
 	protoinvoc "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 

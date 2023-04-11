@@ -19,9 +19,7 @@ package cluster
 
 import (
 	"context"
-)
 
-import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 

@@ -23,9 +23,7 @@ package strategy
 
 import (
 	reflect "reflect"
-)
 
-import (
 	gomock "github.com/golang/mock/gomock"
 )
 

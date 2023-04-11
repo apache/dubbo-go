@@ -19,18 +19,11 @@ package config
 
 import (
 	"time"
-)
 
-import (
-	"github.com/creasty/defaults"
-
-	"github.com/dubbogo/gost/log/logger"
-
-	"go.uber.org/atomic"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"github.com/creasty/defaults"
+	"github.com/dubbogo/gost/log/logger"
+	"go.uber.org/atomic"
 )
 
 const (

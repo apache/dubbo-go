@@ -27,11 +27,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"testing"
-)
 
-import (
 	"github.com/google/go-cmp/cmp"
-
 	"google.golang.org/grpc/balancer"
 
 	externalserviceconfig "google.golang.org/grpc/serviceconfig"

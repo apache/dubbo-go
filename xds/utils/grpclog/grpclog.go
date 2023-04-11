@@ -26,9 +26,7 @@ package grpclog
 
 import (
 	"os"
-)
 
-import (
 	"github.com/dubbogo/gost/log/logger"
 )
 

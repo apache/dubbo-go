@@ -19,9 +19,7 @@ package config_center
 
 import (
 	"fmt"
-)
 
-import (
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 

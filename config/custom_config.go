@@ -18,11 +18,8 @@
 package config
 
 import (
-	"github.com/creasty/defaults"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"github.com/creasty/defaults"
 )
 
 type CustomConfig struct {

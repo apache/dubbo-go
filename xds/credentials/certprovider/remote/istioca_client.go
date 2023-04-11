@@ -29,17 +29,12 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-)
 
-import (
 	structpb "github.com/golang/protobuf/ptypes/struct"
-
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
-)
 
-import (
 	v1alpha1 "dubbo.apache.org/dubbo-go/v3/xds/credentials/certprovider/remote/v1alpha1"
 )
 

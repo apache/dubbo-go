@@ -21,9 +21,7 @@ import (
 	"container/list"
 	"strings"
 	"sync"
-)
 
-import (
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 )
 

@@ -20,15 +20,10 @@ package local
 import (
 	"fmt"
 	"testing"
-)
 
-import (
-	"github.com/stretchr/testify/assert"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/metadata/definition"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestMetadataService(t *testing.T) {

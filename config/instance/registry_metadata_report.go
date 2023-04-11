@@ -19,16 +19,11 @@ package instance
 
 import (
 	"sync"
-)
 
-import (
-	"github.com/dubbogo/gost/log/logger"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/metadata/report"
+	"github.com/dubbogo/gost/log/logger"
 )
 
 var (

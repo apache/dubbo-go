@@ -21,10 +21,8 @@ import (
 	"bufio"
 	"encoding/binary"
 	"time"
-)
 
-import (
-	"github.com/apache/dubbo-go-hessian2"
+	hessian "github.com/apache/dubbo-go-hessian2"
 
 	perrors "github.com/pkg/errors"
 )

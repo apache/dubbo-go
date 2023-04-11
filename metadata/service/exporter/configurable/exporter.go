@@ -19,21 +19,19 @@ package configurable
 
 import (
 	"sync"
-)
 
-import (
-	"github.com/dubbogo/gost/log/logger"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/config"
+	"github.com/dubbogo/gost/log/logger"
+
 	_ "dubbo.apache.org/dubbo-go/v3/metadata/mapping/metadata"
 	"dubbo.apache.org/dubbo-go/v3/metadata/service"
 	"dubbo.apache.org/dubbo-go/v3/metadata/service/exporter"
+
 	_ "dubbo.apache.org/dubbo-go/v3/metadata/service/remote"
+
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/dubbo"
 )
 

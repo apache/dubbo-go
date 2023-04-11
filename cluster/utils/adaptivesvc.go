@@ -20,9 +20,7 @@ package utils
 import (
 	"fmt"
 	"strings"
-)
 
-import (
 	"dubbo.apache.org/dubbo-go/v3/filter/adaptivesvc"
 	adasvcfilter "dubbo.apache.org/dubbo-go/v3/filter/adaptivesvc/limiter"
 )

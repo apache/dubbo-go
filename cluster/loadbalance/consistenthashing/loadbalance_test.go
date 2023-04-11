@@ -20,17 +20,12 @@ package consistenthashing
 import (
 	"fmt"
 	"testing"
-)
 
-import (
-	"github.com/stretchr/testify/suite"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"github.com/stretchr/testify/suite"
 )
 
 const (

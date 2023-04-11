@@ -33,19 +33,15 @@ import (
 	"sort"
 	"strings"
 	"sync"
-)
 
-import (
 	"github.com/dubbogo/grpc-go"
 	"github.com/dubbogo/grpc-go/codes"
 	"github.com/dubbogo/grpc-go/status"
-
 	"github.com/golang/protobuf/proto"
-	dpb "github.com/golang/protobuf/protoc-gen-go/descriptor"
-)
 
-import (
 	"dubbo.apache.org/dubbo-go/v3/config"
+	dpb "github.com/golang/protobuf/protoc-gen-go/descriptor"
+
 	rpb "dubbo.apache.org/dubbo-go/v3/protocol/dubbo3/reflection/triple_reflection_v1alpha"
 )
 

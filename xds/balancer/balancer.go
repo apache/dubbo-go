@@ -26,12 +26,20 @@ package balancer
 
 import (
 	_ "google.golang.org/grpc/balancer/weightedtarget" // Register the weighted_target balancer
+
+	_ "dubbo.apache.org/dubbo-go/v3/xds/balancer/cdsbalancer"
+
+	// Register the CDS balancer
+	_ "dubbo.apache.org/dubbo-go/v3/xds/balancer/clusterimpl"
+
+	// Register the xds_cluster_impl balancer
+	_ "dubbo.apache.org/dubbo-go/v3/xds/balancer/clustermanager"
+
+	// Register the xds_cluster_manager balancer
+	_ "dubbo.apache.org/dubbo-go/v3/xds/balancer/clusterresolver"
+
+	// Register the xds_cluster_resolver balancer
+	_ "dubbo.apache.org/dubbo-go/v3/xds/balancer/priority"
 )
 
-import (
-	_ "dubbo.apache.org/dubbo-go/v3/xds/balancer/cdsbalancer"     // Register the CDS balancer
-	_ "dubbo.apache.org/dubbo-go/v3/xds/balancer/clusterimpl"     // Register the xds_cluster_impl balancer
-	_ "dubbo.apache.org/dubbo-go/v3/xds/balancer/clustermanager"  // Register the xds_cluster_manager balancer
-	_ "dubbo.apache.org/dubbo-go/v3/xds/balancer/clusterresolver" // Register the xds_cluster_resolver balancer
-	_ "dubbo.apache.org/dubbo-go/v3/xds/balancer/priority"        // Register the priority balancer
-)
+// Register the priority balancer

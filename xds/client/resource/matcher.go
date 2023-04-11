@@ -26,16 +26,13 @@ package resource
 import (
 	"fmt"
 	"strings"
-)
 
-import (
-	"google.golang.org/grpc/metadata"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/grpcrand"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/matcher"
+	"google.golang.org/grpc/metadata"
+
 	metedatautils "dubbo.apache.org/dubbo-go/v3/xds/utils/metadata"
+
 	iresolver "dubbo.apache.org/dubbo-go/v3/xds/utils/resolver"
 )
 

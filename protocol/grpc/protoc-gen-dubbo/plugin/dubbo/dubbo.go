@@ -21,9 +21,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-)
 
-import (
 	pb "github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"github.com/golang/protobuf/protoc-gen-go/generator"
 )

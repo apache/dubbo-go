@@ -26,9 +26,7 @@ package internal
 import (
 	reflect "reflect"
 	sync "sync"
-)
 
-import (
 	proto "github.com/golang/protobuf/proto"
 
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"

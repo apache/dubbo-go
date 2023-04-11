@@ -29,19 +29,12 @@ import (
 	"fmt"
 	"sync"
 	"time"
-)
 
-import (
 	dubbogoLogger "github.com/dubbogo/gost/log/logger"
-
 	"google.golang.org/grpc/balancer"
-
 	"google.golang.org/grpc/connectivity"
-
 	"google.golang.org/grpc/resolver"
-)
 
-import (
 	cache "dubbo.apache.org/dubbo-go/v3/xds/utils/xds_cache"
 )
 

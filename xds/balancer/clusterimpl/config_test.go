@@ -25,17 +25,14 @@ package clusterimpl
 
 import (
 	"testing"
-)
 
-import (
 	"github.com/google/go-cmp/cmp"
-
 	"google.golang.org/grpc/balancer"
-	_ "google.golang.org/grpc/balancer/roundrobin"
-	_ "google.golang.org/grpc/balancer/weightedtarget"
-)
 
-import (
+	_ "google.golang.org/grpc/balancer/roundrobin"
+
+	_ "google.golang.org/grpc/balancer/weightedtarget"
+
 	internalserviceconfig "dubbo.apache.org/dubbo-go/v3/xds/utils/serviceconfig"
 )
 

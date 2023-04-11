@@ -26,19 +26,13 @@ package router
 
 import (
 	"fmt"
-)
 
-import (
+	"dubbo.apache.org/dubbo-go/v3/xds/httpfilter"
 	pb "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/router/v3"
-
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
-
 	"google.golang.org/protobuf/types/known/anypb"
-)
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/xds/httpfilter"
 	iresolver "dubbo.apache.org/dubbo-go/v3/xds/utils/resolver"
 )
 

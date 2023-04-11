@@ -25,11 +25,8 @@ package priority
 
 import (
 	"sync/atomic"
-)
 
-import (
 	"google.golang.org/grpc/balancer"
-
 	"google.golang.org/grpc/resolver"
 )
 

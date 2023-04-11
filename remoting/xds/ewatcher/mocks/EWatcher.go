@@ -21,9 +21,7 @@ package mocks
 
 import (
 	mock "github.com/stretchr/testify/mock"
-)
 
-import (
 	resource "dubbo.apache.org/dubbo-go/v3/xds/client/resource"
 )
 

@@ -20,15 +20,11 @@ package auth
 import (
 	"net/url"
 	"testing"
-)
 
-import (
-	"github.com/stretchr/testify/assert"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"github.com/stretchr/testify/assert"
+
 	invocation2 "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 

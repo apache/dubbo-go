@@ -18,7 +18,7 @@
 package config
 
 import (
-	"github.com/apache/dubbo-getty"
+	getty "github.com/apache/dubbo-getty"
 )
 
 var (

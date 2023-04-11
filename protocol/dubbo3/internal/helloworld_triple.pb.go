@@ -25,20 +25,21 @@ package internal
 
 import (
 	context "context"
-)
 
-import (
 	grpc "github.com/dubbogo/grpc-go"
+
 	codes "github.com/dubbogo/grpc-go/codes"
+
 	status "github.com/dubbogo/grpc-go/status"
 
 	common "github.com/dubbogo/triple/pkg/common"
-	constant "github.com/dubbogo/triple/pkg/common/constant"
-	triple "github.com/dubbogo/triple/pkg/triple"
-)
 
-import (
+	constant "github.com/dubbogo/triple/pkg/common/constant"
+
+	triple "github.com/dubbogo/triple/pkg/triple"
+
 	protocol "dubbo.apache.org/dubbo-go/v3/protocol"
+
 	invocation "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 

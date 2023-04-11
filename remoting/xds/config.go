@@ -19,9 +19,7 @@ package xds
 
 import (
 	"time"
-)
 
-import (
 	xdsCommon "dubbo.apache.org/dubbo-go/v3/remoting/xds/common"
 )
 

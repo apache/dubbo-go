@@ -20,22 +20,21 @@ package rest
 import (
 	"sync"
 	"time"
-)
 
-import (
-	"github.com/dubbogo/gost/log/logger"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/rest/client"
+	"github.com/dubbogo/gost/log/logger"
+
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/rest/client/client_impl"
+
 	rest_config "dubbo.apache.org/dubbo-go/v3/protocol/rest/config"
+
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/rest/config/reader"
 	"dubbo.apache.org/dubbo-go/v3/protocol/rest/server"
+
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/rest/server/server_impl"
 )
 

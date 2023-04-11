@@ -20,14 +20,9 @@ package polaris
 import (
 	"net/url"
 	"testing"
-)
 
-import (
-	"github.com/stretchr/testify/assert"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGetPolarisConfigByUrl(t *testing.T) {

@@ -21,17 +21,12 @@ import (
 	"fmt"
 	"strconv"
 	"testing"
-)
 
-import (
-	"github.com/stretchr/testify/assert"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestRoundRobinSelect(t *testing.T) {

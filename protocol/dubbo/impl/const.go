@@ -20,9 +20,7 @@ package impl
 import (
 	"reflect"
 	"regexp"
-)
 
-import (
 	"github.com/pkg/errors"
 )
 

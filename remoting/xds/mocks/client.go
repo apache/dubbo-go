@@ -18,12 +18,10 @@
 package mocks
 
 import (
-	"github.com/stretchr/testify/mock"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/registry"
+	"github.com/stretchr/testify/mock"
+
 	xdsCommon "dubbo.apache.org/dubbo-go/v3/remoting/xds/common"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
 )

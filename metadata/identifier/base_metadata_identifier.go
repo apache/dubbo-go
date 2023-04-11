@@ -19,14 +19,9 @@ package identifier
 
 import (
 	"net/url"
-)
 
-import (
-	"github.com/dubbogo/gost/log/logger"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"github.com/dubbogo/gost/log/logger"
 )
 
 // IMetadataIdentifier is the interface which describes the Metadata base identify

@@ -28,11 +28,8 @@ import (
 	"math"
 	"sort"
 	"strconv"
-)
 
-import (
 	xxhash "github.com/cespare/xxhash/v2"
-
 	"google.golang.org/grpc/resolver"
 )
 

@@ -20,16 +20,12 @@ package registry
 import (
 	"encoding/json"
 	"strconv"
-)
 
-import (
 	"github.com/dubbogo/gost/log/logger"
-	gxsort "github.com/dubbogo/gost/sort"
-)
 
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	gxsort "github.com/dubbogo/gost/sort"
 )
 
 // ServiceInstance is the interface  which is used for service registration and discovery.

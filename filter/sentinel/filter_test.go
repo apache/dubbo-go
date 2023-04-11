@@ -22,18 +22,12 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
-)
 
-import (
-	"github.com/alibaba/sentinel-golang/core/flow"
-
-	"github.com/stretchr/testify/assert"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"github.com/alibaba/sentinel-golang/core/flow"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestSentinelFilter_QPS(t *testing.T) {

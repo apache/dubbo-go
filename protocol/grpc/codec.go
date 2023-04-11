@@ -20,12 +20,9 @@ package grpc
 import (
 	"bytes"
 	"encoding/json"
-)
 
-import (
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
-
 	"google.golang.org/grpc/encoding"
 )
 

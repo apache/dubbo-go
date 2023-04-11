@@ -26,12 +26,9 @@ package priority
 import (
 	"errors"
 	"time"
-)
 
-import (
 	"google.golang.org/grpc/balancer"
 	"google.golang.org/grpc/balancer/base"
-
 	"google.golang.org/grpc/connectivity"
 )
 

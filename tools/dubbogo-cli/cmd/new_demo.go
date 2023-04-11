@@ -19,14 +19,9 @@ package cmd
 
 import (
 	"fmt"
-)
 
-import (
-	"github.com/spf13/cobra"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/dubbogo-cli/generator/sample"
+	"github.com/spf13/cobra"
 )
 
 // newDemoCmd represents the new command

@@ -26,9 +26,7 @@ package resource
 import (
 	"regexp"
 	"strings"
-)
 
-import (
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/matcher"
 )
 

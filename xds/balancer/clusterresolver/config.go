@@ -28,16 +28,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-)
 
-import (
-	"google.golang.org/grpc/balancer/roundrobin"
-
-	"google.golang.org/grpc/serviceconfig"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/xds/balancer/ringhash"
+	"google.golang.org/grpc/balancer/roundrobin"
+	"google.golang.org/grpc/serviceconfig"
+
 	internalserviceconfig "dubbo.apache.org/dubbo-go/v3/xds/utils/serviceconfig"
 )
 

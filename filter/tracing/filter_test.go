@@ -20,17 +20,12 @@ package tracing
 import (
 	"context"
 	"testing"
-)
 
-import (
-	"github.com/opentracing/opentracing-go"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"github.com/opentracing/opentracing-go"
 )
 
 func TestTracingFilterInvoke(t *testing.T) {

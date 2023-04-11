@@ -19,9 +19,7 @@ package registry
 
 import (
 	"fmt"
-)
 
-import (
 	gxset "github.com/dubbogo/gost/container/set"
 	gxpage "github.com/dubbogo/gost/hash/page"
 )

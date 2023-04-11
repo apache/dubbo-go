@@ -26,9 +26,7 @@ package matcher
 import (
 	"regexp"
 	"testing"
-)
 
-import (
 	"google.golang.org/grpc/metadata"
 )
 

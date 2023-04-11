@@ -27,23 +27,16 @@ package version
 import (
 	"context"
 	"time"
-)
 
-import (
 	dubbogoLogger "github.com/dubbogo/gost/log/logger"
-
 	"github.com/golang/protobuf/proto"
-	_struct "github.com/golang/protobuf/ptypes/struct"
 
-	"google.golang.org/grpc"
-
-	"google.golang.org/protobuf/types/known/anypb"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/xds/client/load"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource/version"
+	_struct "github.com/golang/protobuf/ptypes/struct"
+	"google.golang.org/grpc"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 var (

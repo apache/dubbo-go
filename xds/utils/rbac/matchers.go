@@ -28,16 +28,14 @@ import (
 	"fmt"
 	"net"
 	"regexp"
-)
 
-import (
 	v3corepb "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	v3rbacpb "github.com/envoyproxy/go-control-plane/envoy/config/rbac/v3"
-	v3route_componentspb "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	v3matcherpb "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
-)
 
-import (
+	v3route_componentspb "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+
+	v3matcherpb "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
+
 	internalmatcher "dubbo.apache.org/dubbo-go/v3/xds/utils/matcher"
 )
 

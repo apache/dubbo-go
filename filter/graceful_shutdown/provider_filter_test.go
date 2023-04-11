@@ -21,15 +21,7 @@ import (
 	"context"
 	"net/url"
 	"testing"
-)
 
-import (
-	perrors "github.com/pkg/errors"
-
-	"github.com/stretchr/testify/assert"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
@@ -37,6 +29,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	perrors "github.com/pkg/errors"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestProviderFilterInvoke(t *testing.T) {

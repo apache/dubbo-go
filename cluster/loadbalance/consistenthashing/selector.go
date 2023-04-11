@@ -23,14 +23,9 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-)
 
-import (
-	gxsort "github.com/dubbogo/gost/sort"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
+	gxsort "github.com/dubbogo/gost/sort"
 )
 
 // selector implementation of Selector:get invoker based on load balancing strategy

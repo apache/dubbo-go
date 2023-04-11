@@ -26,13 +26,9 @@ import (
 	"net"
 	"sync"
 	"time"
-)
 
-import (
 	log "github.com/dubbogo/gost/log/logger"
-
 	"github.com/golang/protobuf/proto"
-
 	"google.golang.org/grpc"
 )
 

@@ -21,16 +21,11 @@ import (
 	"fmt"
 	"log"
 	"reflect"
-)
 
-import (
 	hessian "github.com/apache/dubbo-go-hessian2"
 
-	jparser "github.com/dubbogo/gost/encoding/json"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/dubbogo-cli/internal/common"
+	jparser "github.com/dubbogo/gost/encoding/json"
 )
 
 // RegisterStructFromFile create the interface defined by @path file, and register it to hessian

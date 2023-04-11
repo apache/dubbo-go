@@ -28,13 +28,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
-)
 
-import (
 	"github.com/dubbogo/gost/log/logger"
-
 	"google.golang.org/grpc/balancer"
-
 	"google.golang.org/grpc/codes"
 
 	externalserviceconfig "google.golang.org/grpc/serviceconfig"

@@ -26,13 +26,10 @@ package client
 import (
 	_struct "github.com/golang/protobuf/ptypes/struct"
 
-	"google.golang.org/grpc/resolver"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/xds/client/bootstrap"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/load"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
+	"google.golang.org/grpc/resolver"
 )
 
 type clientKeyType string

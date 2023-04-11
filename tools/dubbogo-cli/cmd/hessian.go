@@ -19,15 +19,10 @@ package cmd
 
 import (
 	"runtime"
-)
 
-import (
-	"github.com/spf13/cobra"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/dubbogo-cli/generator/sample"
 	"dubbo.apache.org/dubbo-go/v3/dubbogo-cli/generator/sample/hessian"
+	"github.com/spf13/cobra"
 )
 
 // hessianCmd represents the hessian-register-generator command

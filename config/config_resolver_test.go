@@ -19,11 +19,8 @@ package config
 
 import (
 	"testing"
-)
 
-import (
 	"github.com/knadh/koanf"
-
 	"github.com/stretchr/testify/assert"
 )
 
