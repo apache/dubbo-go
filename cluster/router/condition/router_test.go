@@ -725,7 +725,7 @@ func TestServiceRouter(t *testing.T) {
 	invokerList = append(invokerList, ink3)
 
 	extension.SetDefaultConfigurator(configurator.NewMockConfigurator)
-	ccUrl, _ := common.NewURL("mock://127.0.0.1:1111")
+	ccURL, _ := common.NewURL("mock://127.0.0.1:1111")
 	mockFactory := &config_center.MockDynamicConfigurationFactory{
 		Content: `
 scope: service
@@ -736,7 +736,7 @@ key: com.foo.BarService
 conditions:
  - 'method=sayHello => region=hangzhou'`,
 	}
-	dc, _ := mockFactory.GetDynamicConfiguration(ccUrl)
+	dc, _ := mockFactory.GetDynamicConfiguration(ccURL)
 	config.GetEnvInstance().SetDynamicConfiguration(dc)
 
 	router := NewServiceRouter()
@@ -769,7 +769,7 @@ func TestApplicationRouter(t *testing.T) {
 	invokerList = append(invokerList, ink3)
 
 	extension.SetDefaultConfigurator(configurator.NewMockConfigurator)
-	ccUrl, _ := common.NewURL("mock://127.0.0.1:1111")
+	ccURL, _ := common.NewURL("mock://127.0.0.1:1111")
 	mockFactory := &config_center.MockDynamicConfigurationFactory{
 		Content: `
 scope: application
@@ -780,7 +780,7 @@ key: demo-provider
 conditions:
  - 'method=sayHello => region=hangzhou'`,
 	}
-	dc, _ := mockFactory.GetDynamicConfiguration(ccUrl)
+	dc, _ := mockFactory.GetDynamicConfiguration(ccURL)
 	config.GetEnvInstance().SetDynamicConfiguration(dc)
 
 	router := NewApplicationRouter()
