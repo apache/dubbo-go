@@ -36,7 +36,7 @@ const (
 	LocalHost = "127.0.0.1"
 )
 
-func TestRoute_matchWhen(t *testing.T) {
+func TestRoute_MatchWhen(t *testing.T) {
 
 	rpcInvocation := invocation.NewRPCInvocation("getFoo", nil, nil)
 	whenConsumerURL, _ := common.NewURL("consumer://1.1.1.1/com.foo.BarService")
@@ -119,8 +119,8 @@ func TestRoute_matchWhen(t *testing.T) {
 	}
 }
 
-// TestRoute_matchFilter also tests wildcard.WildcardValuePattern's Match method
-func TestRoute_matchFilter(t *testing.T) {
+// TestRoute_MatchFilter also tests wildcard.WildcardValuePattern's Match method
+func TestRoute_MatchFilter(t *testing.T) {
 
 	consumerURL, _ := common.NewURL("consumer://" + LocalHost + "/com.foo.BarService")
 	url1, _ := common.NewURL("dubbo://10.20.3.3:20880/com.foo.BarService?serialization=fastjson")
@@ -206,7 +206,7 @@ func TestRoute_matchFilter(t *testing.T) {
 	}
 }
 
-func TestRoute_methodRoute(t *testing.T) {
+func TestRoute_MethodRoute(t *testing.T) {
 
 	rpcInvocation := invocation.NewRPCInvocation("getFoo", nil, nil)
 
@@ -254,7 +254,7 @@ func TestRoute_methodRoute(t *testing.T) {
 	}
 }
 
-func TestRoute_return(t *testing.T) {
+func TestRoute_Return(t *testing.T) {
 
 	rpcInvocation := invocation.NewRPCInvocation("getFoo", nil, nil)
 	consumerURL, _ := common.NewURL("consumer://" + LocalHost + "/com.foo.BarService")
