@@ -296,14 +296,21 @@ const (
 
 // Use for router module
 const (
-	TagRouterRuleSuffix       = ".tag-router"
-	ConditionRouterRuleSuffix = ".condition-router"       // Specify condition router suffix
-	MeshRouteSuffix           = ".MESHAPPRULE"            // Specify mesh router suffix
-	ForceUseTag               = "dubbo.force.tag"         // the tag in attachment
-	Tagkey                    = "dubbo.tag"               // key of tag
-	AttachmentKey             = DubboCtxKey("attachment") // key in context in invoker
-	TagRouterFactoryKey       = "tag"
-	MeshRouterFactoryKey      = "mesh"
+	TagRouterRuleSuffix              = ".tag-router"
+	ConditionRouterRuleSuffix        = ".condition-router" // Specify condition router suffix
+	MeshRouteSuffix                  = ".MESHAPPRULE"      // Specify mesh router suffix
+	ForceUseTag                      = "dubbo.force.tag"   // the tag in attachment
+	ForceUseCondition                = "dubbo.force.condition"
+	Tagkey                           = "dubbo.tag" // key of tag
+	ConditionKey                     = "dubbo.condition"
+	AttachmentKey                    = DubboCtxKey("attachment") // key in context in invoker
+	TagRouterFactoryKey              = "tag"
+	ConditionAppRouterFactoryKey     = "provider.condition"
+	ConditionServiceRouterFactoryKey = "service.condition"
+	ForceKey                         = "force"
+	Arguments                        = "arguments"
+	Attachments                      = "attachments"
+	MeshRouterFactoryKey             = "mesh"
 )
 
 // Auth filter
