@@ -19,11 +19,11 @@ package wildcard
 
 import (
 	"math"
+	"strings"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/router/condition/matcher/pattern"
-	"dubbo.apache.org/dubbo-go/v3/cluster/utils"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
@@ -53,5 +53,34 @@ func (w *WildcardValuePattern) ShouldMatch(pattern string) bool {
 }
 
 func (w *WildcardValuePattern) Match(pattern string, value string, url *common.URL, invocation protocol.Invocation, isWhenCondition bool) bool {
-	return utils.IsMatchGlobPattern(pattern, value, url)
+	if url != nil && strings.HasPrefix(pattern, "$") {
+		pattern = url.GetRawParam(pattern[1:])
+	}
+
+	if "*" == pattern {
+		return true
+	}
+	if pattern == "" && value == "" {
+		return true
+	}
+	if pattern == "" || value == "" {
+		return false
+	}
+
+	i := strings.LastIndex(pattern, "*")
+	// doesn't find "*"
+	if i == -1 {
+		return value == pattern
+	} else if i == len(pattern)-1 {
+		// "*" is at the end
+		return strings.HasPrefix(value, pattern[0:i])
+	} else if i == 0 {
+		// "*" is at the beginning
+		return strings.HasSuffix(value, pattern[i+1:])
+	} else {
+		// "*" is in the middle
+		prefix := pattern[0:i]
+		suffix := pattern[i+1:]
+		return strings.HasPrefix(value, prefix) && strings.HasSuffix(value, suffix)
+	}
 }

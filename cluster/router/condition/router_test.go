@@ -123,6 +123,7 @@ func TestRoute_matchWhen(t *testing.T) {
 	}
 }
 
+// TestRoute_matchFilter also tests wildcard.WildcardValuePattern's Match method
 func TestRoute_matchFilter(t *testing.T) {
 
 	consumerURL, _ := common.NewURL("consumer://" + LocalHost + "/com.foo.BarService")
