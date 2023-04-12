@@ -130,14 +130,6 @@ func (c *StateRouter) URL() *common.URL {
 	return c.url
 }
 
-func (c *StateRouter) Priority() int64 {
-	return 0
-}
-
-// Notify the router the invoker list
-func (c *StateRouter) Notify(invokers []protocol.Invoker) {
-}
-
 func (c *StateRouter) matchWhen(url *common.URL, invocation protocol.Invocation) bool {
 	if len(c.whenCondition) == 0 {
 		return true

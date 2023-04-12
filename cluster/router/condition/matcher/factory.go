@@ -46,7 +46,7 @@ func (a *ArgumentMatcherFactory) ShouldMatch(key string) bool {
 
 // NewMatcher constructs a new matcher
 func (a *ArgumentMatcherFactory) NewMatcher(key string) Matcher {
-	return NewConditionMatcher(key)
+	return NewArgumentConditionMatcher(key)
 }
 
 func (a *ArgumentMatcherFactory) Priority() int64 {

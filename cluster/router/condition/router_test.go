@@ -33,13 +33,16 @@ import (
 )
 
 const (
+	host1 = "1.1.1.1"
+	host2 = "10.20.3.3"
+
 	conditionAddr = "condition://127.0.0.1/com.foo.BarService"
 
 	localConsumerAddr  = "consumer://127.0.0.1/com.foo.BarService"
-	remoteConsumerAddr = "consumer://1.1.1.1/com.foo.BarService"
+	remoteConsumerAddr = "consumer://" + host1 + "/com.foo.BarService"
 
 	localProviderAddr  = "dubbo://127.0.0.1:20880/com.foo.BarService"
-	remoteProviderAddr = "dubbo://10.20.3.3:20880/com.foo.BarService"
+	remoteProviderAddr = "dubbo://" + host2 + ":20880/com.foo.BarService"
 )
 
 func TestRouteMatchWhen(t *testing.T) {
@@ -125,7 +128,7 @@ func TestRouteMatchWhen(t *testing.T) {
 	}
 }
 
-// TestRouteMatchFilter also tests wildcard.WildcardValuePattern's Match method
+// TestRouteMatchFilter also tests pattern_value.WildcardValuePattern's Match method
 func TestRouteMatchFilter(t *testing.T) {
 
 	consumerURL, _ := common.NewURL(localConsumerAddr)
@@ -166,16 +169,16 @@ func TestRouteMatchFilter(t *testing.T) {
 			wantVal: 0,
 		},
 		{
-			name:        "host = 127.0.0.1 => " + " host = 10.20.3.3  & host != 10.20.3.3",
+			name:        "host = 127.0.0.1 => host = 10.20.3.3  & host != 10.20.3.3",
 			comsumerURL: consumerURL,
-			rule:        "host = 127.0.0.1  => " + " host = 10.20.3.3  & host != 10.20.3.3",
+			rule:        "host = 127.0.0.1 => host = 10.20.3.3  & host != 10.20.3.3",
 
 			wantVal: 0,
 		},
 		{
-			name:        "host = 127.0.0.1 => " + " host = 10.20.3.2,10.20.3.3,10.20.3.4",
+			name:        "host = 127.0.0.1 => host = 10.20.3.2,10.20.3.3,10.20.3.4",
 			comsumerURL: consumerURL,
-			rule:        "host = 127.0.0.1 => " + " host = 10.20.3.2,10.20.3.3,10.20.3.4",
+			rule:        "host = 127.0.0.1 => host = 10.20.3.2,10.20.3.3,10.20.3.4",
 
 			wantVal: 1,
 		},
@@ -225,21 +228,21 @@ func TestRouterMethodRoute(t *testing.T) {
 	}{
 		{
 			name:        "More than one methods, mismatch",
-			consumerURL: "consumer://1.1.1.1/com.foo.BarService?methods=setFoo,getFoo,findFoo",
+			consumerURL: remoteConsumerAddr + "?methods=setFoo,getFoo,findFoo",
 			rule:        "methods=getFoo => host = 1.2.3.4",
 
 			wantVal: true,
 		},
 		{
 			name:        "Exactly one method, match",
-			consumerURL: "consumer://1.1.1.1/com.foo.BarService?methods=getFoo",
+			consumerURL: remoteConsumerAddr + "?methods=getFoo",
 			rule:        "methods=getFoo => host = 1.2.3.4",
 
 			wantVal: true,
 		},
 		{
 			name:        "Method routing and Other condition routing can work together",
-			consumerURL: "consumer://1.1.1.1/com.foo.BarService?methods=getFoo",
+			consumerURL: remoteConsumerAddr + "?methods=getFoo",
 			rule:        "methods=getFoo & host!=1.1.1.1 => host = 1.2.3.4",
 
 			wantVal: false,
@@ -403,6 +406,77 @@ func TestRouteReturn(t *testing.T) {
 
 			assert.Equal(t, data.wantVal, resVal)
 			assert.Equal(t, wantInvokers, filterInvokers)
+		})
+	}
+}
+
+// TestRouteArguments also tests matcher.ArgumentConditionMatcher's GetValue method
+func TestRouteArguments(t *testing.T) {
+
+	url1, _ := common.NewURL(remoteProviderAddr)
+	url2, _ := common.NewURL(localProviderAddr)
+	url3, _ := common.NewURL(localProviderAddr)
+
+	ink1 := protocol.NewBaseInvoker(url1)
+	ink2 := protocol.NewBaseInvoker(url2)
+	ink3 := protocol.NewBaseInvoker(url3)
+
+	invokerList := make([]protocol.Invoker, 0, 3)
+	invokerList = append(invokerList, ink1)
+	invokerList = append(invokerList, ink2)
+	invokerList = append(invokerList, ink3)
+
+	consumerURL, _ := common.NewURL(localConsumerAddr)
+
+	testData := []struct {
+		name     string
+		argument interface{}
+		rule     string
+
+		wantVal int
+	}{
+		{
+			name:     "Empty arguments",
+			argument: nil,
+			rule:     "arguments[0] = a => host = 1.2.3.4",
+
+			wantVal: 3,
+		},
+		{
+			name:     "String arguments",
+			argument: "a",
+			rule:     "arguments[0] = a => host = 1.2.3.4",
+
+			wantVal: 0,
+		},
+		{
+			name:     "Int arguments",
+			argument: 1,
+			rule:     "arguments[0] = 1 => host = 127.0.0.1",
+
+			wantVal: 2,
+		},
+	}
+
+	for _, data := range testData {
+		t.Run(data.name, func(t *testing.T) {
+
+			url, err := common.NewURL(conditionAddr)
+			assert.Nil(t, err)
+			url.AddParam(constant.RuleKey, data.rule)
+			url.AddParam(constant.ForceKey, "true")
+			router, err := NewConditionStateRouter(url)
+			assert.Nil(t, err)
+
+			arguments := make([]interface{}, 0, 1)
+			arguments = append(arguments, data.argument)
+
+			rpcInvocation := invocation.NewRPCInvocation("getBar", arguments, nil)
+
+			filterInvokers := router.Route(invokerList, consumerURL, rpcInvocation)
+			resVal := len(filterInvokers)
+			assert.Equal(t, data.wantVal, resVal)
+
 		})
 	}
 }
