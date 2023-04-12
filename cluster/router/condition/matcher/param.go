@@ -15,11 +15,23 @@
  * limitations under the License.
  */
 
-package condition
+package matcher
 
 import (
-	_ "dubbo.apache.org/dubbo-go/v3/cluster/router/condition/matcher"
-	_ "dubbo.apache.org/dubbo-go/v3/cluster/router/condition/matcher/param"
-	_ "dubbo.apache.org/dubbo-go/v3/cluster/router/condition/matcher/pattern"
-	_ "dubbo.apache.org/dubbo-go/v3/cluster/router/condition/matcher/pattern/wildcard"
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
+
+type ParamConditionMatcher struct {
+	BaseConditionMatcher
+}
+
+func NewParamConditionMatcher(key string) *ParamConditionMatcher {
+	return &ParamConditionMatcher{
+		*NewBaseConditionMatcher(key),
+	}
+}
+
+func (p *ParamConditionMatcher) GetValue(sample map[string]string, url *common.URL, invocation protocol.Invocation) string {
+	return GetSampleValueFromURL(p.key, sample, url, invocation)
+}

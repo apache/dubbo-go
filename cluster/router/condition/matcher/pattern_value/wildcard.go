@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package wildcard
+package pattern_value
 
 import (
 	"math"
@@ -23,24 +23,20 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/cluster/router/condition/matcher/pattern"
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
-/**
- * Matches with patterns like 'key=hello', 'key=hello*', 'key=*hello', 'key=h*o' or 'key=*'
- * This pattern evaluator must be the last one being executed.
- */
+// WildcardValuePattern evaluator must be the last one being executed.
+// matches with patterns like 'key=hello', 'key=hello*', 'key=*hello', 'key=h*o' or 'key=*'
 type WildcardValuePattern struct {
 }
 
 func init() {
-	extension.SetValuePattern("wildcard", NewValuePattern)
+	SetValuePattern("wildcard", NewValuePattern)
 }
 
-func NewValuePattern() pattern.ValuePattern {
+func NewValuePattern() ValuePattern {
 	return &WildcardValuePattern{}
 }
 

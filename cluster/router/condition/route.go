@@ -35,92 +35,63 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/router/condition/matcher"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/config"
-	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
 var (
-	RoutePattern = regexp.MustCompile("([&!=,]*)\\s*([^&!=,\\s]+)")
+	routePattern = regexp.MustCompile("([&!=,]*)\\s*([^&!=,\\s]+)")
+
+	illegalMsg = "Illegal route rule \"%s\", The error char '%s' before '%s'"
+
+	matcherFactories = make([]matcher.ConditionMatcherFactory, 0, 8)
 )
 
-type ConditionStateRouter struct {
-	enable           bool
-	force            bool
-	url              *common.URL
-	whenCondition    map[string]matcher.ConditionMatcher
-	thenCondition    map[string]matcher.ConditionMatcher
-	matcherFactories []matcher.ConditionMatcherFactory
+func init() {
+	factoriesMap := matcher.GetMatcherFactories()
+	if len(factoriesMap) == 0 {
+		return
+	}
+	for _, factory := range factoriesMap {
+		matcherFactories = append(matcherFactories, factory())
+	}
+	sortMatcherFactories(matcherFactories)
 }
 
-func NewConditionStateRouter(url *common.URL) (*ConditionStateRouter, error) {
+type StateRouter struct {
+	enable        bool
+	force         bool
+	url           *common.URL
+	whenCondition map[string]matcher.Matcher
+	thenCondition map[string]matcher.Matcher
+}
 
-	matcherFactories := extension.GetMatcherFactories()
+func NewConditionStateRouter(url *common.URL) (*StateRouter, error) {
 	if len(matcherFactories) == 0 {
 		return nil, errors.Errorf("No ConditionMatcherFactory exists")
 	}
-	factories := make([]matcher.ConditionMatcherFactory, 0, len(matcherFactories))
-	for _, matcherFactory := range matcherFactories {
-		factories = append(factories, matcherFactory())
-	}
-	sortMatcherFactories(factories)
 
 	force := url.GetParamBool(constant.ForceKey, false)
 	enable := url.GetParamBool(constant.EnabledKey, true)
-	c := &ConditionStateRouter{
-		url:              url,
-		force:            force,
-		matcherFactories: factories,
-		enable:           enable,
+	c := &StateRouter{
+		url:    url,
+		force:  force,
+		enable: enable,
 	}
 
 	if enable {
-		rule := url.GetParam(constant.RuleKey, "")
-		if rule == "" || len(strings.Trim(rule, " ")) == 0 {
-			return nil, errors.Errorf("Illegal route rule!")
+		when, then, err := generateMatcher(url)
+		if err != nil {
+			return nil, err
 		}
-		rule = strings.Replace(rule, "consumer.", "", -1)
-		rule = strings.Replace(rule, "provider.", "", -1)
-		i := strings.Index(rule, "=>")
-		// for the case of `{when rule} => {then rule}`
-		var whenRule string
-		var thenRule string
-		if i < 0 {
-			whenRule = ""
-			thenRule = strings.Trim(rule, " ")
-		} else {
-			whenRule = strings.Trim(rule[0:i], " ")
-			thenRule = strings.Trim(rule[i+2:], " ")
-		}
-		var when map[string]matcher.ConditionMatcher
-		var then map[string]matcher.ConditionMatcher
-		var err error
-		if whenRule == "" || whenRule == " " || whenRule == "true" {
-			when = make(map[string]matcher.ConditionMatcher)
-		} else {
-			when, err = c.parseRule(whenRule)
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		if thenRule == "" || thenRule == " " || thenRule == "false" {
-			then = nil
-		} else {
-			then, err = c.parseRule(thenRule)
-			if err != nil {
-				return nil, err
-			}
-		}
-		// NOTE: It should be determined on the business level whether the `When condition` can be empty or not.
 		c.whenCondition = when
 		c.thenCondition = then
 	}
 	return c, nil
 }
 
-func (c *ConditionStateRouter) Route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
+// Route Determine the target invokers list.
+func (c *StateRouter) Route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
 	if !c.enable {
 		return invokers
 	}
@@ -155,103 +126,158 @@ func (c *ConditionStateRouter) Route(invokers []protocol.Invoker, url *common.UR
 	return invokers
 }
 
-func (c *ConditionStateRouter) URL() *common.URL {
+func (c *StateRouter) URL() *common.URL {
 	return c.url
 }
 
-func (c *ConditionStateRouter) Priority() int64 {
+func (c *StateRouter) Priority() int64 {
 	return 0
 }
 
-func (c *ConditionStateRouter) Notify(invokers []protocol.Invoker) {
+// Notify the router the invoker list
+func (c *StateRouter) Notify(invokers []protocol.Invoker) {
 }
 
-func (c *ConditionStateRouter) Process(event *config_center.ConfigChangeEvent) {
-}
-
-func (c *ConditionStateRouter) parseRule(rule string) (map[string]matcher.ConditionMatcher, error) {
-	condition := make(map[string]matcher.ConditionMatcher)
-	if rule == "" || rule == " " {
-		return condition, nil
-	}
-	// Key-Value pair, stores both match and mismatch conditions
-	var matcherPair matcher.ConditionMatcher
-	// Multiple values
-	values := make(map[string]struct{})
-	allMatchers := RoutePattern.FindAllStringSubmatch(rule, -1)
-	for _, matchers := range allMatchers {
-		separator := matchers[1]
-		content := matchers[2]
-		// Start part of the condition expression.
-		if separator == "" {
-			matcherPair = c.getMatcher(content)
-			condition[content] = matcherPair
-		} else if "&" == separator {
-			// The KV part of the condition expression
-			if condition[content] == nil {
-				matcherPair = c.getMatcher(content)
-				condition[content] = matcherPair
-			} else {
-				matcherPair = condition[content]
-			}
-		} else if "=" == separator {
-			// The Value in the KV part.
-			if matcherPair == nil {
-				return nil, errors.Errorf("Illegal route rule \"%s\", The error char '%s' before '%s'",
-					rule, separator, content)
-			}
-			values = matcherPair.GetMatches()
-			values[content] = struct{}{}
-		} else if "!=" == separator {
-			// The Value in the KV part.
-			if matcherPair == nil {
-				return nil, errors.Errorf("Illegal route rule \"%s\", The error char '%s' before '%s'",
-					rule, separator, content)
-			}
-			values = matcherPair.GetMismatches()
-			values[content] = struct{}{}
-		} else if "," == separator { // Should be separated by ','
-			// The Value in the KV part, if Value have more than one items.
-			if values == nil || len(values) == 0 {
-				return nil, errors.Errorf("Illegal route rule \"%s\", The error char '%s' before '%s'",
-					rule, separator, content)
-			}
-			values[content] = struct{}{}
-		} else {
-			return nil, errors.Errorf("Illegal route rule \"%s\", The error char '%s' before '%s'",
-				rule, separator, content)
-		}
-	}
-	return condition, nil
-}
-
-func (c *ConditionStateRouter) getMatcher(key string) matcher.ConditionMatcher {
-	for _, factory := range c.matcherFactories {
-		if factory.ShouldMatch(key) {
-			return factory.NewMatcher(key)
-		}
-	}
-	return extension.GetMatcherFactory("param").NewMatcher(key)
-}
-
-func (c *ConditionStateRouter) matchWhen(url *common.URL, invocation protocol.Invocation) bool {
+func (c *StateRouter) matchWhen(url *common.URL, invocation protocol.Invocation) bool {
 	if len(c.whenCondition) == 0 {
 		return true
 	}
 	return doMatch(url, nil, invocation, c.whenCondition, true)
 }
 
-func (c *ConditionStateRouter) matchThen(url *common.URL, param *common.URL) bool {
+func (c *StateRouter) matchThen(url *common.URL, param *common.URL) bool {
 	if len(c.thenCondition) == 0 {
 		return false
 	}
 	return doMatch(url, param, nil, c.thenCondition, false)
 }
 
-func doMatch(url *common.URL, param *common.URL, invocation protocol.Invocation, conditions map[string]matcher.ConditionMatcher, isWhenCondition bool) bool {
+func generateMatcher(url *common.URL) (when, then map[string]matcher.Matcher, err error) {
+	rule := url.GetParam(constant.RuleKey, "")
+	if rule == "" || len(strings.Trim(rule, " ")) == 0 {
+		return nil, nil, errors.Errorf("Illegal route rule!")
+	}
+	rule = strings.Replace(rule, "consumer.", "", -1)
+	rule = strings.Replace(rule, "provider.", "", -1)
+	i := strings.Index(rule, "=>")
+	// for the case of `{when rule} => {then rule}`
+	var whenRule string
+	var thenRule string
+	if i < 0 {
+		whenRule = ""
+		thenRule = strings.Trim(rule, " ")
+	} else {
+		whenRule = strings.Trim(rule[0:i], " ")
+		thenRule = strings.Trim(rule[i+2:], " ")
+	}
+
+	when, err = parseWhen(whenRule)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	then, err = parseThen(thenRule)
+	if err != nil {
+		return nil, nil, err
+	}
+	// NOTE: It should be determined on the business level whether the `When condition` can be empty or not.
+	return when, then, nil
+}
+
+func parseWhen(whenRule string) (map[string]matcher.Matcher, error) {
+	if whenRule == "" || whenRule == " " || whenRule == "true" {
+		return make(map[string]matcher.Matcher), nil
+	} else {
+		when, err := parseRule(whenRule)
+		if err != nil {
+			return nil, err
+		}
+		return when, nil
+	}
+}
+
+func parseThen(thenRule string) (map[string]matcher.Matcher, error) {
+	if thenRule == "" || thenRule == " " || thenRule == "false" {
+		return nil, nil
+	} else {
+		when, err := parseRule(thenRule)
+		if err != nil {
+			return nil, err
+		}
+		return when, nil
+	}
+}
+
+func parseRule(rule string) (map[string]matcher.Matcher, error) {
+	condition := make(map[string]matcher.Matcher)
+	if rule == "" || rule == " " {
+		return condition, nil
+	}
+	// key-Value pair, stores both match and mismatch conditions
+	var matcherPair matcher.Matcher
+	// Multiple values
+	values := make(map[string]struct{})
+	allMatchers := routePattern.FindAllStringSubmatch(rule, -1)
+	for _, matchers := range allMatchers {
+		separator := matchers[1]
+		content := matchers[2]
+		// Start part of the condition expression.
+		if separator == "" {
+			matcherPair = getMatcher(content)
+			condition[content] = matcherPair
+
+		} else if "&" == separator {
+			// The KV part of the condition expression
+			if condition[content] == nil {
+				matcherPair = getMatcher(content)
+				condition[content] = matcherPair
+			} else {
+				matcherPair = condition[content]
+			}
+
+		} else if "=" == separator {
+			// The Value in the KV part.
+			if matcherPair == nil {
+				return nil, errors.Errorf(illegalMsg, rule, separator, content)
+			}
+			values = matcherPair.GetMatches()
+			values[content] = struct{}{}
+
+		} else if "!=" == separator {
+			// The Value in the KV part.
+			if matcherPair == nil {
+				return nil, errors.Errorf(illegalMsg, rule, separator, content)
+			}
+			values = matcherPair.GetMismatches()
+			values[content] = struct{}{}
+
+		} else if "," == separator { // Should be separated by ','
+			// The Value in the KV part, if Value have more than one items.
+			if values == nil || len(values) == 0 {
+				return nil, errors.Errorf(illegalMsg, rule, separator, content)
+			}
+			values[content] = struct{}{}
+
+		} else {
+			return nil, errors.Errorf(illegalMsg, rule, separator, content)
+		}
+	}
+	return condition, nil
+}
+
+func getMatcher(key string) matcher.Matcher {
+	for _, factory := range matcherFactories {
+		if factory.ShouldMatch(key) {
+			return factory.NewMatcher(key)
+		}
+	}
+	return matcher.GetMatcherFactory("param").NewMatcher(key)
+}
+
+func doMatch(url *common.URL, param *common.URL, invocation protocol.Invocation, conditions map[string]matcher.Matcher, isWhenCondition bool) bool {
 	sample := url.ToMap()
 	for _, matcherPair := range conditions {
-		if !matcherPair.IsMatch(sample, param, invocation, isWhenCondition) {
+		if !matcher.Match(matcherPair, sample, param, invocation, isWhenCondition) {
 			return false
 		}
 	}

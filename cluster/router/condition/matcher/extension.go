@@ -15,26 +15,26 @@
  * limitations under the License.
  */
 
-package param
+package matcher
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/cluster/router/condition/matcher/base"
-	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+var (
+	matchers = make(map[string]func() ConditionMatcherFactory)
 )
 
-type ParamConditionMatcher struct {
-	base.BaseConditionMatcher
+// SetMatcherFactory sets create matcherFactory function with @name
+func SetMatcherFactory(name string, fun func() ConditionMatcherFactory) {
+	matchers[name] = fun
 }
 
-func NewParamConditionMatcher(key string) *ParamConditionMatcher {
-	conditionMatcher := &ParamConditionMatcher{
-		*base.NewBaseConditionMatcher(key),
+// GetMatcherFactory gets create matcherFactory function by name
+func GetMatcherFactory(name string) ConditionMatcherFactory {
+	if matchers[name] == nil {
+		panic("matcher_factory for " + name + " is not existing, make sure you have imported the package.")
 	}
-	conditionMatcher.Matcher = conditionMatcher
-	return conditionMatcher
+	return matchers[name]()
 }
 
-func (p *ParamConditionMatcher) GetValue(sample map[string]string, url *common.URL, invocation protocol.Invocation) string {
-	return p.GetSampleValueFromURL(p.Key, sample, url, invocation)
+// GetMatcherFactories gets all create matcherFactory function
+func GetMatcherFactories() map[string]func() ConditionMatcherFactory {
+	return matchers
 }

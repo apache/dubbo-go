@@ -33,13 +33,19 @@ import (
 )
 
 const (
-	LocalHost = "127.0.0.1"
+	conditionAddr = "condition://127.0.0.1/com.foo.BarService"
+
+	localConsumerAddr  = "consumer://127.0.0.1/com.foo.BarService"
+	remoteConsumerAddr = "consumer://1.1.1.1/com.foo.BarService"
+
+	localProviderAddr  = "dubbo://127.0.0.1:20880/com.foo.BarService"
+	remoteProviderAddr = "dubbo://10.20.3.3:20880/com.foo.BarService"
 )
 
 func TestRouteMatchWhen(t *testing.T) {
 
 	rpcInvocation := invocation.NewRPCInvocation("getFoo", nil, nil)
-	whenConsumerURL, _ := common.NewURL("consumer://1.1.1.1/com.foo.BarService")
+	whenConsumerURL, _ := common.NewURL(remoteConsumerAddr)
 
 	testData := []struct {
 		name        string
@@ -108,7 +114,7 @@ func TestRouteMatchWhen(t *testing.T) {
 
 	for _, data := range testData {
 		t.Run(data.name, func(t *testing.T) {
-			url, err := common.NewURL("condition://0.0.0.0/com.foo.BarService")
+			url, err := common.NewURL(conditionAddr)
 			assert.Nil(t, err)
 			url.AddParam(constant.RuleKey, data.rule)
 			router, err := NewConditionStateRouter(url)
@@ -122,10 +128,10 @@ func TestRouteMatchWhen(t *testing.T) {
 // TestRouteMatchFilter also tests wildcard.WildcardValuePattern's Match method
 func TestRouteMatchFilter(t *testing.T) {
 
-	consumerURL, _ := common.NewURL("consumer://" + LocalHost + "/com.foo.BarService")
-	url1, _ := common.NewURL("dubbo://10.20.3.3:20880/com.foo.BarService?serialization=fastjson")
-	url2, _ := common.NewURL("dubbo://" + LocalHost + ":20880/com.foo.BarService")
-	url3, _ := common.NewURL("dubbo://" + LocalHost + ":20880/com.foo.BarService")
+	consumerURL, _ := common.NewURL(localConsumerAddr)
+	url1, _ := common.NewURL(remoteProviderAddr + "?serialization=fastjson")
+	url2, _ := common.NewURL(localProviderAddr)
+	url3, _ := common.NewURL(localProviderAddr)
 
 	rpcInvocation := invocation.NewRPCInvocation("getFoo", nil, nil)
 
@@ -146,44 +152,44 @@ func TestRouteMatchFilter(t *testing.T) {
 		wantVal int
 	}{
 		{
-			name:        "host = " + LocalHost + " => " + " host = 10.20.3.3",
+			name:        "host = 127.0.0.1 => host = 10.20.3.3",
 			comsumerURL: consumerURL,
-			rule:        "host = " + LocalHost + " => " + " host = 10.20.3.3",
+			rule:        "host = 127.0.0.1 => host = 10.20.3.3",
 
 			wantVal: 1,
 		},
 		{
-			name:        "host = " + LocalHost + " => " + " host = 10.20.3.* & host != 10.20.3.3",
+			name:        "host = 127.0.0.1 => host = 10.20.3.* & host != 10.20.3.3",
 			comsumerURL: consumerURL,
-			rule:        "host = " + LocalHost + " => " + " host = 10.20.3.* & host != 10.20.3.3",
+			rule:        "host = 127.0.0.1 => host = 10.20.3.* & host != 10.20.3.3",
 
 			wantVal: 0,
 		},
 		{
-			name:        "host = " + LocalHost + " => " + " host = 10.20.3.3  & host != 10.20.3.3",
+			name:        "host = 127.0.0.1 => " + " host = 10.20.3.3  & host != 10.20.3.3",
 			comsumerURL: consumerURL,
-			rule:        "host = " + LocalHost + " => " + " host = 10.20.3.3  & host != 10.20.3.3",
+			rule:        "host = 127.0.0.1  => " + " host = 10.20.3.3  & host != 10.20.3.3",
 
 			wantVal: 0,
 		},
 		{
-			name:        "host = " + LocalHost + " => " + " host = 10.20.3.2,10.20.3.3,10.20.3.4",
+			name:        "host = 127.0.0.1 => " + " host = 10.20.3.2,10.20.3.3,10.20.3.4",
 			comsumerURL: consumerURL,
-			rule:        "host = " + LocalHost + " => " + " host = 10.20.3.2,10.20.3.3,10.20.3.4",
+			rule:        "host = 127.0.0.1 => " + " host = 10.20.3.2,10.20.3.3,10.20.3.4",
 
 			wantVal: 1,
 		},
 		{
-			name:        "host = " + LocalHost + " => " + " host != 10.20.3.3",
+			name:        "host = 127.0.0.1 => host != 10.20.3.3",
 			comsumerURL: consumerURL,
-			rule:        "host = " + LocalHost + " => " + " host != 10.20.3.3",
+			rule:        "host = 127.0.0.1 => host != 10.20.3.3",
 
 			wantVal: 2,
 		},
 		{
-			name:        "host = " + LocalHost + " => " + " serialization = fastjson",
+			name:        "host = 127.0.0.1 => serialization = fastjson",
 			comsumerURL: consumerURL,
-			rule:        "host = " + LocalHost + " => " + " serialization = fastjson",
+			rule:        "host = 127.0.0.1 => serialization = fastjson",
 
 			wantVal: 1,
 		},
@@ -191,7 +197,7 @@ func TestRouteMatchFilter(t *testing.T) {
 
 	for _, data := range testData {
 		t.Run(data.name, func(t *testing.T) {
-			url, err := common.NewURL("condition://" + LocalHost + "/com.foo.BarService")
+			url, err := common.NewURL(conditionAddr)
 			assert.Nil(t, err)
 			url.AddParam(constant.RuleKey, data.rule)
 			url.AddParam(constant.ForceKey, "true")
@@ -242,7 +248,7 @@ func TestRouterMethodRoute(t *testing.T) {
 
 	for _, data := range testData {
 		t.Run(data.name, func(t *testing.T) {
-			url, err := common.NewURL("condition://0.0.0.0/com.foo.BarService")
+			url, err := common.NewURL(conditionAddr)
 			assert.Nil(t, err)
 			url.AddParam(constant.RuleKey, data.rule)
 			router, err := NewConditionStateRouter(url)
@@ -257,7 +263,7 @@ func TestRouterMethodRoute(t *testing.T) {
 func TestRouteReturn(t *testing.T) {
 
 	rpcInvocation := invocation.NewRPCInvocation("getFoo", nil, nil)
-	consumerURL, _ := common.NewURL("consumer://" + LocalHost + "/com.foo.BarService")
+	consumerURL, _ := common.NewURL(localConsumerAddr)
 
 	testData := []struct {
 		name string
@@ -274,7 +280,7 @@ func TestRouteReturn(t *testing.T) {
 				"",
 				"",
 			},
-			rule: "host = " + LocalHost + " => false",
+			rule: "host = 127.0.0.1 => false",
 
 			wantUrls: []string{},
 			wantVal:  0,
@@ -286,7 +292,7 @@ func TestRouteReturn(t *testing.T) {
 				"",
 				"",
 			},
-			rule: "host = " + LocalHost + " => ",
+			rule: "host = 127.0.0.1 => ",
 
 			wantUrls: []string{},
 			wantVal:  0,
@@ -294,76 +300,76 @@ func TestRouteReturn(t *testing.T) {
 		{
 			name: "ReturnAll",
 			urls: []string{
-				"dubbo://" + LocalHost + ":20880/com.foo.BarService",
-				"dubbo://" + LocalHost + ":20880/com.foo.BarService",
-				"dubbo://" + LocalHost + ":20880/com.foo.BarService",
+				localProviderAddr,
+				localProviderAddr,
+				localProviderAddr,
 			},
-			rule: "host = " + LocalHost + " => " + " host = " + LocalHost,
+			rule: "host = 127.0.0.1 => host = 127.0.0.1",
 
 			wantUrls: []string{
-				"dubbo://" + LocalHost + ":20880/com.foo.BarService",
-				"dubbo://" + LocalHost + ":20880/com.foo.BarService",
-				"dubbo://" + LocalHost + ":20880/com.foo.BarService",
+				localProviderAddr,
+				localProviderAddr,
+				localProviderAddr,
 			},
 			wantVal: 3,
 		},
 		{
 			name: "HostFilter",
 			urls: []string{
-				"dubbo://10.20.3.3:20880/com.foo.BarService",
-				"dubbo://" + LocalHost + ":20880/com.foo.BarService",
-				"dubbo://" + LocalHost + ":20880/com.foo.BarService",
+				remoteProviderAddr,
+				localProviderAddr,
+				localProviderAddr,
 			},
-			rule: "host = " + LocalHost + " => " + " host = " + LocalHost,
+			rule: "host = 127.0.0.1 => host = 127.0.0.1",
 
 			wantUrls: []string{
-				"dubbo://" + LocalHost + ":20880/com.foo.BarService",
-				"dubbo://" + LocalHost + ":20880/com.foo.BarService",
+				localProviderAddr,
+				localProviderAddr,
 			},
 			wantVal: 2,
 		},
 		{
 			name: "EmptyHostFilter",
 			urls: []string{
-				"dubbo://10.20.3.3:20880/com.foo.BarService",
-				"dubbo://" + LocalHost + ":20880/com.foo.BarService",
-				"dubbo://" + LocalHost + ":20880/com.foo.BarService",
+				remoteProviderAddr,
+				localProviderAddr,
+				localProviderAddr,
 			},
-			rule: " => " + " host = " + LocalHost,
+			rule: " => host = 127.0.0.1",
 
 			wantUrls: []string{
-				"dubbo://" + LocalHost + ":20880/com.foo.BarService",
-				"dubbo://" + LocalHost + ":20880/com.foo.BarService",
+				localProviderAddr,
+				localProviderAddr,
 			},
 			wantVal: 2,
 		},
 		{
 			name: "FalseHostFilter",
 			urls: []string{
-				"dubbo://10.20.3.3:20880/com.foo.BarService",
-				"dubbo://" + LocalHost + ":20880/com.foo.BarService",
-				"dubbo://" + LocalHost + ":20880/com.foo.BarService",
+				remoteProviderAddr,
+				localProviderAddr,
+				localProviderAddr,
 			},
-			rule: "true => " + " host = " + LocalHost,
+			rule: "true => host = 127.0.0.1",
 
 			wantUrls: []string{
-				"dubbo://" + LocalHost + ":20880/com.foo.BarService",
-				"dubbo://" + LocalHost + ":20880/com.foo.BarService",
+				localProviderAddr,
+				localProviderAddr,
 			},
 			wantVal: 2,
 		},
 		{
 			name: "PlaceHolder",
 			urls: []string{
-				"dubbo://10.20.3.3:20880/com.foo.BarService",
-				"dubbo://" + LocalHost + ":20880/com.foo.BarService",
-				"dubbo://" + LocalHost + ":20880/com.foo.BarService",
+				remoteProviderAddr,
+				localProviderAddr,
+				localProviderAddr,
 			},
-			rule: "host = " + LocalHost + " => " + " host = $host",
+			rule: "host = 127.0.0.1 => host = $host",
 
 			wantUrls: []string{
-				"dubbo://" + LocalHost + ":20880/com.foo.BarService",
-				"dubbo://" + LocalHost + ":20880/com.foo.BarService",
+				localProviderAddr,
+				localProviderAddr,
 			},
 			wantVal: 2,
 		},
@@ -386,7 +392,7 @@ func TestRouteReturn(t *testing.T) {
 				wantInvokers = append(wantInvokers, invoker)
 			}
 
-			url, err := common.NewURL("condition://" + LocalHost + "/com.foo.BarService")
+			url, err := common.NewURL(conditionAddr)
 			assert.Nil(t, err)
 			url.AddParam(constant.RuleKey, data.rule)
 			router, err := NewConditionStateRouter(url)

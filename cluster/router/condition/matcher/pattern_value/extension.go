@@ -15,19 +15,26 @@
  * limitations under the License.
  */
 
-package pattern
+package pattern_value
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+var (
+	valuePatterns = make(map[string]func() ValuePattern)
 )
 
-type ValuePattern interface {
-	// ShouldMatch indicates whether the input is a specific pattern, for example, range pattern '1~100', wildcard pattern 'hello*', etc.
-	ShouldMatch(pattern string) bool
-	// Match indicates whether a pattern is matched with the request context
-	Match(pattern string, value string, url *common.URL, invocation protocol.Invocation, isWhenCondition bool) bool
-	// Priority returns a priority for this valuePattern
-	// 0 to ^int(0) is better, smaller value by better priority
-	Priority() int64
+// SetValuePattern sets create valuePattern function with @name
+func SetValuePattern(name string, fun func() ValuePattern) {
+	valuePatterns[name] = fun
+}
+
+// GetValuePattern gets create valuePattern function by name
+func GetValuePattern(name string) ValuePattern {
+	if valuePatterns[name] == nil {
+		panic("value_pattern for " + name + " is not existing, make sure you have imported the package.")
+	}
+	return valuePatterns[name]()
+}
+
+// GetValuePatterns gets all create valuePattern function
+func GetValuePatterns() map[string]func() ValuePattern {
+	return valuePatterns
 }

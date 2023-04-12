@@ -23,30 +23,28 @@ import (
 )
 
 type ConditionMatcherFactory interface {
-	//ShouldMatch indicates whether the key is of the form of the current matcher type which this factory instance represents.
+	// ShouldMatch indicates whether the key is of the form of the current matcher type which this factory instance represents.
 	ShouldMatch(key string) bool
-	//NewMatcher returns a matcher instance for the key.
-	NewMatcher(key string) ConditionMatcher
+	// NewMatcher returns a matcher instance for the key.
+	NewMatcher(key string) Matcher
 	// Priority returns Priority in ConditionMatcherFactory
-	// 0 to ^int(0) is better, smaller value by better priority
+	// 0 to ^int(0) is better, smaller value by better priority.
 	Priority() int64
 }
 
-/*
-ConditionMatcher represents a specific match condition of a condition rule.
-The following condition rule 'foo=bar&arguments[0]=hello* => region=hangzhou' consists of three ConditionMatchers:
-1. param.ParamConditionMatcher represented by 'foo=bar'
-2. argument.ArgumentConditionMatcher represented by 'arguments[0]=hello*'
-3. param.ParamConditionMatcher represented by 'region=hangzhou'
-*/
-type ConditionMatcher interface {
+// Matcher represents a specific match condition of a condition rule.
+// The following condition rule 'foo=bar&arguments[0]=hello* => region=hangzhou' consists of three ConditionMatchers:
+// 1. param.ParamConditionMatcher represented by 'foo=bar'
+// 2. argument.ArgumentConditionMatcher represented by 'arguments[0]=hello*'
+// 3. param.ParamConditionMatcher represented by 'region=hangzhou'
+type Matcher interface {
 	// IsMatch indicates whether this matcher matches the patterns with request context.
-	IsMatch(sample map[string]string, param *common.URL, invocation protocol.Invocation, isWhenCondition bool) bool
-	// GetMatches returns Matches
-	// match patterns extracted from when condition
+	IsMatch(value string, param *common.URL, invocation protocol.Invocation, isWhenCondition bool) bool
+	// GetMatches returns matches.
+	// match patterns extracted from when condition.
 	GetMatches() map[string]struct{}
-	// GetMismatches returns Mismatches
-	// mismatch patterns extracted from then condition
+	// GetMismatches returns misMatches.
+	// mismatch patterns extracted from then condition.
 	GetMismatches() map[string]struct{}
 	// GetValue returns a value from different places of the request context, for example, url, attachment and invocation.
 	// This makes condition rule possible to check values in any place of a request.

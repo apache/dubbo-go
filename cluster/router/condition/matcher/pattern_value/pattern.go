@@ -15,27 +15,19 @@
  * limitations under the License.
  */
 
-package extension
+package pattern_value
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/cluster/router/condition/matcher"
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
-var (
-	matchers = make(map[string]func() matcher.ConditionMatcherFactory)
-)
-
-func SetMatcherFactory(name string, fun func() matcher.ConditionMatcherFactory) {
-	matchers[name] = fun
-}
-
-func GetMatcherFactory(name string) matcher.ConditionMatcherFactory {
-	if matchers[name] == nil {
-		panic("matcher_factory for " + name + " is not existing, make sure you have imported the package.")
-	}
-	return matchers[name]()
-}
-
-func GetMatcherFactories() map[string]func() matcher.ConditionMatcherFactory {
-	return matchers
+type ValuePattern interface {
+	// ShouldMatch indicates whether the input is a specific pattern, for example, range pattern '1~100', wildcard pattern 'hello*', etc.
+	ShouldMatch(pattern string) bool
+	// Match indicates whether a pattern is matched with the request context
+	Match(pattern string, value string, url *common.URL, invocation protocol.Invocation, isWhenCondition bool) bool
+	// Priority returns a priority for this valuePattern
+	// 0 to ^int(0) is better, smaller value by better priority
+	Priority() int64
 }

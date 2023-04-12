@@ -15,19 +15,42 @@
  * limitations under the License.
  */
 
-package param
+package matcher
 
 import (
 	"math"
+	"strings"
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/cluster/router/condition/matcher"
-	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
 func init() {
-	extension.SetMatcherFactory("param", NewParamMatcherFactory)
+	SetMatcherFactory("argument", NewArgumentMatcherFactory)
+	SetMatcherFactory("param", NewParamMatcherFactory)
+}
+
+// ArgumentMatcherFactory matcher factory
+type ArgumentMatcherFactory struct {
+}
+
+// NewArgumentMatcherFactory constructs a new argument.ArgumentMatcherFactory
+func NewArgumentMatcherFactory() ConditionMatcherFactory {
+	return &ArgumentMatcherFactory{}
+}
+
+func (a *ArgumentMatcherFactory) ShouldMatch(key string) bool {
+	return strings.HasPrefix(key, constant.Arguments)
+}
+
+// NewMatcher constructs a new matcher
+func (a *ArgumentMatcherFactory) NewMatcher(key string) Matcher {
+	return NewConditionMatcher(key)
+}
+
+func (a *ArgumentMatcherFactory) Priority() int64 {
+	return 300
 }
 
 // ParamMatcherFactory matcher factory
@@ -35,7 +58,7 @@ type ParamMatcherFactory struct {
 }
 
 // NewParamMatcherFactory constructs a new paramMatcherFactory
-func NewParamMatcherFactory() matcher.ConditionMatcherFactory {
+func NewParamMatcherFactory() ConditionMatcherFactory {
 	return &ParamMatcherFactory{}
 }
 
@@ -44,7 +67,7 @@ func (p *ParamMatcherFactory) ShouldMatch(key string) bool {
 }
 
 // NewMatcher constructs a new matcher
-func (p *ParamMatcherFactory) NewMatcher(key string) matcher.ConditionMatcher {
+func (p *ParamMatcherFactory) NewMatcher(key string) Matcher {
 	return NewParamConditionMatcher(key)
 }
 
