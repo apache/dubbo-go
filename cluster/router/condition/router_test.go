@@ -33,16 +33,13 @@ import (
 )
 
 const (
-	host1 = "1.1.1.1"
-	host2 = "10.20.3.3"
-
 	conditionAddr = "condition://127.0.0.1/com.foo.BarService"
 
 	localConsumerAddr  = "consumer://127.0.0.1/com.foo.BarService"
-	remoteConsumerAddr = "consumer://" + host1 + "/com.foo.BarService"
+	remoteConsumerAddr = "consumer://dubbo.apache.org/com.foo.BarService"
 
 	localProviderAddr  = "dubbo://127.0.0.1:20880/com.foo.BarService"
-	remoteProviderAddr = "dubbo://" + host2 + ":20880/com.foo.BarService"
+	remoteProviderAddr = "dubbo://dubbo.apache.org:20880/com.foo.BarService"
 )
 
 func TestRouteMatchWhen(t *testing.T) {
@@ -72,44 +69,44 @@ func TestRouteMatchWhen(t *testing.T) {
 			wantVal: false,
 		},
 		{
-			name:        "host = 2.2.2.2,1.1.1.1,3.3.3.3 => host = 1.2.3.4",
+			name:        "host = 2.2.2.2,dubbo.apache.org,3.3.3.3 => host = 1.2.3.4",
 			consumerUrl: whenConsumerURL,
-			rule:        "host = 2.2.2.2,1.1.1.1,3.3.3.3 => host = 1.2.3.4",
+			rule:        "host = 2.2.2.2,dubbo.apache.org,3.3.3.3 => host = 1.2.3.4",
 
 			wantVal: true,
 		},
 		{
-			name:        "host = 2.2.2.2,1.1.1.1,3.3.3.3 & host !=1.1.1.1 => host = 1.2.3.4",
+			name:        "host = 2.2.2.2,dubbo.apache.org,3.3.3.3 & host !=dubbo.apache.org => host = 1.2.3.4",
 			consumerUrl: whenConsumerURL,
-			rule:        "host = 2.2.2.2,1.1.1.1,3.3.3.3 & host !=1.1.1.1 => host = 1.2.3.4",
+			rule:        "host = 2.2.2.2,dubbo.apache.org,3.3.3.3 & host !=dubbo.apache.org => host = 1.2.3.4",
 
 			wantVal: false,
 		},
 		{
-			name:        "host !=4.4.4.4 & host = 2.2.2.2,1.1.1.1,3.3.3.3 => host = 1.2.3.4",
+			name:        "host !=4.4.4.4 & host = 2.2.2.2,dubbo.apache.org,3.3.3.3 => host = 1.2.3.4",
 			consumerUrl: whenConsumerURL,
-			rule:        "host !=4.4.4.4 & host = 2.2.2.2,1.1.1.1,3.3.3.3 => host = 1.2.3.4",
+			rule:        "host !=4.4.4.4 & host = 2.2.2.2,dubbo.apache.org,3.3.3.3 => host = 1.2.3.4",
 
 			wantVal: true,
 		},
 		{
-			name:        "host !=4.4.4.* & host = 2.2.2.2,1.1.1.1,3.3.3.3 => host = 1.2.3.4",
+			name:        "host !=4.4.4.* & host = 2.2.2.2,dubbo.apache.org,3.3.3.3 => host = 1.2.3.4",
 			consumerUrl: whenConsumerURL,
-			rule:        "host !=4.4.4.* & host = 2.2.2.2,1.1.1.1,3.3.3.3 => host = 1.2.3.4",
+			rule:        "host !=4.4.4.* & host = 2.2.2.2,dubbo.apache.org,3.3.3.3 => host = 1.2.3.4",
 
 			wantVal: true,
 		},
 		{
-			name:        "host = 2.2.2.2,1.1.1.*,3.3.3.3 & host != 1.1.1.1 => host = 1.2.3.4",
+			name:        "host = 2.2.2.2,dubbo.apache.*,3.3.3.3 & host != dubbo.apache.org => host = 1.2.3.4",
 			consumerUrl: whenConsumerURL,
-			rule:        "host = 2.2.2.2,1.1.1.*,3.3.3.3 & host != 1.1.1.1 => host = 1.2.3.4",
+			rule:        "host = 2.2.2.2,dubbo.apache.*,3.3.3.3 & host != dubbo.apache.org => host = 1.2.3.4",
 
 			wantVal: false,
 		},
 		{
-			name:        "host = 2.2.2.2,1.1.1.*,3.3.3.3 & host != 1.1.1.2 => host = 1.2.3.4",
+			name:        "host = 2.2.2.2,dubbo.apache.*,3.3.3.3 & host != 1.1.1.2 => host = 1.2.3.4",
 			consumerUrl: whenConsumerURL,
-			rule:        "host = 2.2.2.2,1.1.1.*,3.3.3.3 & host != 1.1.1.2 => host = 1.2.3.4",
+			rule:        "host = 2.2.2.2,dubbo.apache.*,3.3.3.3 & host != 1.1.1.2 => host = 1.2.3.4",
 
 			wantVal: true,
 		},
@@ -155,37 +152,37 @@ func TestRouteMatchFilter(t *testing.T) {
 		wantVal int
 	}{
 		{
-			name:        "host = 127.0.0.1 => host = 10.20.3.3",
+			name:        "host = 127.0.0.1 => host = dubbo.apache.org",
 			comsumerURL: consumerURL,
-			rule:        "host = 127.0.0.1 => host = 10.20.3.3",
+			rule:        "host = 127.0.0.1 => host = dubbo.apache.org",
 
 			wantVal: 1,
 		},
 		{
-			name:        "host = 127.0.0.1 => host = 10.20.3.* & host != 10.20.3.3",
+			name:        "host = 127.0.0.1 => host = 10.20.3.* & host != dubbo.apache.org",
 			comsumerURL: consumerURL,
-			rule:        "host = 127.0.0.1 => host = 10.20.3.* & host != 10.20.3.3",
+			rule:        "host = 127.0.0.1 => host = 10.20.3.* & host != dubbo.apache.org",
 
 			wantVal: 0,
 		},
 		{
-			name:        "host = 127.0.0.1 => host = 10.20.3.3  & host != 10.20.3.3",
+			name:        "host = 127.0.0.1 => host = dubbo.apache.org  & host != dubbo.apache.org",
 			comsumerURL: consumerURL,
-			rule:        "host = 127.0.0.1 => host = 10.20.3.3  & host != 10.20.3.3",
+			rule:        "host = 127.0.0.1 => host = dubbo.apache.org  & host != dubbo.apache.org",
 
 			wantVal: 0,
 		},
 		{
-			name:        "host = 127.0.0.1 => host = 10.20.3.2,10.20.3.3,10.20.3.4",
+			name:        "host = 127.0.0.1 => host = 10.20.3.2,dubbo.apache.org,10.20.3.4",
 			comsumerURL: consumerURL,
-			rule:        "host = 127.0.0.1 => host = 10.20.3.2,10.20.3.3,10.20.3.4",
+			rule:        "host = 127.0.0.1 => host = 10.20.3.2,dubbo.apache.org,10.20.3.4",
 
 			wantVal: 1,
 		},
 		{
-			name:        "host = 127.0.0.1 => host != 10.20.3.3",
+			name:        "host = 127.0.0.1 => host != dubbo.apache.org",
 			comsumerURL: consumerURL,
-			rule:        "host = 127.0.0.1 => host != 10.20.3.3",
+			rule:        "host = 127.0.0.1 => host != dubbo.apache.org",
 
 			wantVal: 2,
 		},
@@ -243,7 +240,7 @@ func TestRouterMethodRoute(t *testing.T) {
 		{
 			name:        "Method routing and Other condition routing can work together",
 			consumerURL: remoteConsumerAddr + "?methods=getFoo",
-			rule:        "methods=getFoo & host!=1.1.1.1 => host = 1.2.3.4",
+			rule:        "methods=getFoo & host!=dubbo.apache.org => host = 1.2.3.4",
 
 			wantVal: false,
 		},

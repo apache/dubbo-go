@@ -34,9 +34,9 @@ type ConditionMatcherFactory interface {
 
 // Matcher represents a specific match condition of a condition rule.
 // The following condition rule 'foo=bar&arguments[0]=hello* => region=hangzhou' consists of three ConditionMatchers:
-// 1. param.ParamConditionMatcher represented by 'foo=bar'
-// 2. argument.ArgumentConditionMatcher represented by 'arguments[0]=hello*'
-// 3. param.ParamConditionMatcher represented by 'region=hangzhou'
+// 1. ParamConditionMatcher represented by 'foo=bar'
+// 2. ArgumentConditionMatcher represented by 'arguments[0]=hello*'
+// 3. ParamConditionMatcher represented by 'region=hangzhou'
 type Matcher interface {
 	// IsMatch indicates whether this matcher matches the patterns with request context.
 	IsMatch(value string, param *common.URL, invocation protocol.Invocation, isWhenCondition bool) bool

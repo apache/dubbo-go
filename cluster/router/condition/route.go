@@ -201,60 +201,83 @@ func parseThen(thenRule string) (map[string]matcher.Matcher, error) {
 }
 
 func parseRule(rule string) (map[string]matcher.Matcher, error) {
-	condition := make(map[string]matcher.Matcher)
-	if rule == "" || rule == " " {
-		return condition, nil
+	if isRuleEmpty(rule) {
+		return make(map[string]matcher.Matcher), nil
 	}
-	// key-Value pair, stores both match and mismatch conditions
-	var matcherPair matcher.Matcher
-	// Multiple values
+
+	condition, err := processMatchers(rule)
+	if err != nil {
+		return nil, err
+	}
+
+	return condition, nil
+}
+
+func isRuleEmpty(rule string) bool {
+	return rule == "" || (len(rule) == 1 && rule[0] == ' ')
+}
+
+func processMatchers(rule string) (map[string]matcher.Matcher, error) {
+	condition := make(map[string]matcher.Matcher)
+	var currentMatcher matcher.Matcher
+	var err error
 	values := make(map[string]struct{})
-	allMatchers := routePattern.FindAllStringSubmatch(rule, -1)
-	for _, matchers := range allMatchers {
+
+	for _, matchers := range routePattern.FindAllStringSubmatch(rule, -1) {
 		separator := matchers[1]
 		content := matchers[2]
-		// Start part of the condition expression.
-		if separator == "" {
-			matcherPair = getMatcher(content)
-			condition[content] = matcherPair
 
-		} else if "&" == separator {
-			// The KV part of the condition expression
-			if condition[content] == nil {
-				matcherPair = getMatcher(content)
-				condition[content] = matcherPair
-			} else {
-				matcherPair = condition[content]
+		switch separator {
+		case "":
+			currentMatcher = getMatcher(content)
+			condition[content] = currentMatcher
+		case "&":
+			currentMatcher, condition = processAndSeparator(content, condition)
+		case "=", "!=":
+			values, currentMatcher, err = processEqualNotEqualSeparator(separator, content, currentMatcher, rule)
+			if err != nil {
+				return nil, err
 			}
-
-		} else if "=" == separator {
-			// The Value in the KV part.
-			if matcherPair == nil {
-				return nil, errors.Errorf(illegalMsg, rule, separator, content)
+		case ",":
+			values, err = processCommaSeparator(content, values, rule)
+			if err != nil {
+				return nil, err
 			}
-			values = matcherPair.GetMatches()
-			values[content] = struct{}{}
-
-		} else if "!=" == separator {
-			// The Value in the KV part.
-			if matcherPair == nil {
-				return nil, errors.Errorf(illegalMsg, rule, separator, content)
-			}
-			values = matcherPair.GetMismatches()
-			values[content] = struct{}{}
-
-		} else if "," == separator { // Should be separated by ','
-			// The Value in the KV part, if Value have more than one items.
-			if values == nil || len(values) == 0 {
-				return nil, errors.Errorf(illegalMsg, rule, separator, content)
-			}
-			values[content] = struct{}{}
-
-		} else {
+		default:
 			return nil, errors.Errorf(illegalMsg, rule, separator, content)
 		}
 	}
+
 	return condition, nil
+}
+
+func processAndSeparator(content string, condition map[string]matcher.Matcher) (matcher.Matcher, map[string]matcher.Matcher) {
+	currentMatcher := condition[content]
+	if currentMatcher == nil {
+		currentMatcher = getMatcher(content)
+		condition[content] = currentMatcher
+	}
+	return currentMatcher, condition
+}
+
+func processEqualNotEqualSeparator(separator, content string, currentMatcher matcher.Matcher, rule string) (map[string]struct{}, matcher.Matcher, error) {
+	if currentMatcher == nil {
+		return nil, nil, errors.Errorf(illegalMsg, rule, separator, content)
+	}
+	values := currentMatcher.GetMatches()
+	if separator == "!=" {
+		values = currentMatcher.GetMismatches()
+	}
+	values[content] = struct{}{}
+	return values, currentMatcher, nil
+}
+
+func processCommaSeparator(content string, values map[string]struct{}, rule string) (map[string]struct{}, error) {
+	if len(values) == 0 {
+		return nil, errors.Errorf(illegalMsg, rule, ",", content)
+	}
+	values[content] = struct{}{}
+	return values, nil
 }
 
 func getMatcher(key string) matcher.Matcher {
