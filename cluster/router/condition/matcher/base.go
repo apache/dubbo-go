@@ -19,6 +19,7 @@ package matcher
 
 import (
 	"sort"
+	"sync"
 )
 
 import (
@@ -34,15 +35,9 @@ import (
 
 var (
 	valueMatchers = make([]pattern_value.ValuePattern, 0, 8)
-)
 
-func init() {
-	valuePatterns := pattern_value.GetValuePatterns()
-	for _, valuePattern := range valuePatterns {
-		valueMatchers = append(valueMatchers, valuePattern())
-	}
-	sortValuePattern(valueMatchers)
-}
+	once sync.Once
+)
 
 // BaseConditionMatcher records the match and mismatch patterns of this matcher while at the same time
 // provides the common match logics.
@@ -116,6 +111,7 @@ func (b *BaseConditionMatcher) patternMisMatches(value string, param *common.URL
 }
 
 func doPatternMatch(pattern string, value string, url *common.URL, invocation protocol.Invocation, isWhenCondition bool) bool {
+	once.Do(initValueMatchers)
 	for _, valueMatcher := range valueMatchers {
 		if valueMatcher.ShouldMatch(pattern) {
 			return valueMatcher.Match(pattern, value, url, invocation, isWhenCondition)
@@ -142,6 +138,14 @@ func GetSampleValueFromURL(conditionKey string, sample map[string]string, param 
 
 func Match(condition Matcher, sample map[string]string, param *common.URL, invocation protocol.Invocation, isWhenCondition bool) bool {
 	return condition.IsMatch(condition.GetValue(sample, param, invocation), param, invocation, isWhenCondition)
+}
+
+func initValueMatchers() {
+	valuePatterns := pattern_value.GetValuePatterns()
+	for _, valuePattern := range valuePatterns {
+		valueMatchers = append(valueMatchers, valuePattern())
+	}
+	sortValuePattern(valueMatchers)
 }
 
 func sortValuePattern(valuePatterns []pattern_value.ValuePattern) {

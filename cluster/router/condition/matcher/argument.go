@@ -34,8 +34,8 @@ import (
 )
 
 var (
-	ArgumentsPattern      = regexp.MustCompile("arguments\\[([0-9]+)\\]")
-	NotFoundArgumentValue = "dubbo internal not found argument condition value"
+	argumentsPattern      = regexp.MustCompile("arguments\\[([0-9]+)\\]")
+	notFoundArgumentValue = "dubbo internal not found argument condition value"
 )
 
 // ArgumentConditionMatcher analysis the arguments in the rule.
@@ -56,21 +56,21 @@ func (a *ArgumentConditionMatcher) GetValue(sample map[string]string, url *commo
 	// split the rule
 	expressArray := strings.Split(a.key, "\\.")
 	argumentExpress := expressArray[0]
-	matcher := ArgumentsPattern.FindStringSubmatch(argumentExpress)
+	matcher := argumentsPattern.FindStringSubmatch(argumentExpress)
 	if len(matcher) == 0 {
-		logger.Warn(NotFoundArgumentValue)
+		logger.Warn(notFoundArgumentValue)
 		return ""
 	}
 
 	// extract the argument index
 	index, err := strconv.Atoi(matcher[1])
 	if err != nil {
-		logger.Warn(NotFoundArgumentValue)
+		logger.Warn(notFoundArgumentValue)
 		return ""
 	}
 
 	if index < 0 || index > len(invocation.Arguments()) {
-		logger.Warn(NotFoundArgumentValue)
+		logger.Warn(notFoundArgumentValue)
 		return ""
 	}
 	return fmt.Sprint(invocation.Arguments()[index])

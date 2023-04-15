@@ -21,6 +21,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"sync"
 )
 
 import (
@@ -45,18 +46,9 @@ var (
 	illegalMsg = "Illegal route rule \"%s\", The error char '%s' before '%s'"
 
 	matcherFactories = make([]matcher.ConditionMatcherFactory, 0, 8)
-)
 
-func init() {
-	factoriesMap := matcher.GetMatcherFactories()
-	if len(factoriesMap) == 0 {
-		return
-	}
-	for _, factory := range factoriesMap {
-		matcherFactories = append(matcherFactories, factory())
-	}
-	sortMatcherFactories(matcherFactories)
-}
+	once sync.Once
+)
 
 type StateRouter struct {
 	enable        bool
@@ -67,6 +59,8 @@ type StateRouter struct {
 }
 
 func NewConditionStateRouter(url *common.URL) (*StateRouter, error) {
+	once.Do(initMatcherFactories)
+
 	if len(matcherFactories) == 0 {
 		return nil, errors.Errorf("No ConditionMatcherFactory exists")
 	}
@@ -128,6 +122,10 @@ func (c *StateRouter) Route(invokers []protocol.Invoker, url *common.URL, invoca
 
 func (c *StateRouter) URL() *common.URL {
 	return c.url
+}
+
+func (c *StateRouter) Priority() int64 {
+	return 0
 }
 
 func (c *StateRouter) matchWhen(url *common.URL, invocation protocol.Invocation) bool {
@@ -297,6 +295,17 @@ func doMatch(url *common.URL, param *common.URL, invocation protocol.Invocation,
 		}
 	}
 	return true
+}
+
+func initMatcherFactories() {
+	factoriesMap := matcher.GetMatcherFactories()
+	if len(factoriesMap) == 0 {
+		return
+	}
+	for _, factory := range factoriesMap {
+		matcherFactories = append(matcherFactories, factory())
+	}
+	sortMatcherFactories(matcherFactories)
 }
 
 func sortMatcherFactories(matcherFactories []matcher.ConditionMatcherFactory) {
