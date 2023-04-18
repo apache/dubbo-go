@@ -18,6 +18,7 @@
 package zookeeper
 
 import (
+	"net/url"
 	"path"
 	"strings"
 	"sync"
@@ -238,8 +239,89 @@ func (l *ZkEventListener) handleZkNodeEvent(zkPath string, children []string, li
 		listener.DataChange(remoting.Event{Path: oldNode, Action: remoting.EventTypeDel})
 	}
 }
-func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkRootPath string, listener remoting.DataListener) {
+
+// listenerAllDirEvents listens all services when conf.InterfaceKey = "*"
+func (l *ZkEventListener) listenAllDirEvents(conf *common.URL, listener remoting.DataListener) {
+	var (
+		failTimes int
+		ttl       time.Duration
+	)
+	ttl = defaultTTL
+	if conf != nil {
+		if timeout, err := time.ParseDuration(conf.GetParam(constant.RegistryTTLKey, constant.DefaultRegTTL)); err == nil {
+			ttl = timeout
+		} else {
+			logger.Warnf("[Zookeeper EventListener][listenDirEvent] Wrong configuration for registry.ttl, error=%+v, using default value %v instead", err, defaultTTL)
+		}
+	}
+	if ttl > 20e9 {
+		ttl = 20e9
+	}
+
+	rootPath := path.Join(constant.PathSeparator, constant.Dubbo)
+	for {
+		// get all interfaces
+		children, childEventCh, err := l.Client.GetChildrenW(rootPath)
+		if err != nil {
+			failTimes++
+			if MaxFailTimes <= failTimes {
+				failTimes = MaxFailTimes
+			}
+			logger.Errorf("[Zookeeper EventListener][listenDirEvent] Get children of path {%s} with watcher failed, the error is %+v", rootPath, err)
+			// Maybe the zookeeper does not ready yet, sleep failTimes * ConnDelay senconds to wait
+			after := time.After(timeSecondDuration(failTimes * ConnDelay))
+			select {
+			case <-after:
+				continue
+			case <-l.exit:
+				return
+			}
+		}
+		failTimes = 0
+		if len(children) == 0 {
+			logger.Warnf("[Zookeeper EventListener][listenDirEvent] Can not get any children for the path \"%s\", please check if the provider does ready.", rootPath)
+		}
+		for _, c := range children {
+			// Build the child path
+			zkRootPath := path.Join(rootPath, constant.PathSeparator, url.QueryEscape(c), constant.PathSeparator, constant.ProvidersCategory)
+			// Save the path to avoid listen repeatedly
+			l.pathMapLock.Lock()
+			if _, ok := l.pathMap[zkRootPath]; ok {
+				logger.Warnf("[Zookeeper EventListener][listenDirEvent] The child with zk path {%s} has already been listened.", zkRootPath)
+				l.pathMapLock.Unlock()
+				continue
+			} else {
+				l.pathMap[zkRootPath] = uatomic.NewInt32(0)
+			}
+			l.pathMapLock.Unlock()
+			logger.Debugf("[Zookeeper EventListener][listenDirEvent] listen dubbo interface key{%s}", zkRootPath)
+			l.wg.Add(1)
+			// listen every interface
+			go l.listenDirEvent(conf, zkRootPath, listener, c)
+		}
+
+		ticker := time.NewTicker(ttl)
+		select {
+		case <-ticker.C:
+			ticker.Stop()
+		case zkEvent := <-childEventCh:
+			logger.Debugf("Get a zookeeper childEventCh{type:%s, server:%s, path:%s, state:%d-%s, err:%v}",
+				zkEvent.Type.String(), zkEvent.Server, zkEvent.Path, zkEvent.State, gxzookeeper.StateToString(zkEvent.State), zkEvent.Err)
+			ticker.Stop()
+		case <-l.exit:
+			logger.Warnf("listen(path{%s}) goroutine exit now...", rootPath)
+			ticker.Stop()
+			return
+		}
+	}
+}
+
+func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkRootPath string, listener remoting.DataListener, intf string) {
 	defer l.wg.Done()
+	if intf == constant.AnyValue {
+		l.listenAllDirEvents(conf, listener)
+		return
+	}
 	var (
 		failTimes int
 		ttl       time.Duration
@@ -279,7 +361,7 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkRootPath string, li
 			// Only need to compare Path when subscribing to provider
 			if strings.LastIndex(zkRootPath, constant.ProviderCategory) != -1 {
 				provider, _ := common.NewURL(c)
-				if provider.ServiceKey() != conf.ServiceKey() {
+				if provider.Interface() != intf || !common.IsAnyCondition(constant.AnyValue, conf.Group(), conf.Version(), provider) {
 					continue
 				}
 			}
@@ -326,7 +408,6 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkRootPath string, li
 		}
 		if l.startScheduleWatchTask(zkRootPath, children, ttl, listener, childEventCh) {
 			return
-
 		}
 	}
 }
@@ -367,6 +448,7 @@ func (l *ZkEventListener) startScheduleWatchTask(
 		}
 	}
 }
+
 func timeSecondDuration(sec int) time.Duration {
 	return time.Duration(sec) * time.Second
 }
@@ -378,7 +460,11 @@ func (l *ZkEventListener) ListenServiceEvent(conf *common.URL, zkPath string, li
 	logger.Infof("[Zookeeper Listener] listen dubbo path{%s}", zkPath)
 	l.wg.Add(1)
 	go func(zkPath string, listener remoting.DataListener) {
-		l.listenDirEvent(conf, zkPath, listener)
+		intf := ""
+		if conf != nil {
+			intf = conf.Interface()
+		}
+		l.listenDirEvent(conf, zkPath, listener, intf)
 		logger.Warnf("ListenServiceEvent->listenDirEvent(zkPath{%s}) goroutine exit now", zkPath)
 	}(zkPath, listener)
 }
