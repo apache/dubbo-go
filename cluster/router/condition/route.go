@@ -85,8 +85,8 @@ func NewConditionStateRouter(url *common.URL) (*StateRouter, error) {
 }
 
 // Route Determine the target invokers list.
-func (c *StateRouter) Route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
-	if !c.enable {
+func (s *StateRouter) Route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
+	if !s.enable {
 		return invokers
 	}
 
@@ -94,25 +94,25 @@ func (c *StateRouter) Route(invokers []protocol.Invoker, url *common.URL, invoca
 		return invokers
 	}
 
-	if !c.matchWhen(url, invocation) {
+	if !s.matchWhen(url, invocation) {
 		return invokers
 	}
 
-	if len(c.thenCondition) == 0 {
+	if len(s.thenCondition) == 0 {
 		logger.Warn("condition state router thenCondition is empty")
 		return []protocol.Invoker{}
 	}
 
 	var result = make([]protocol.Invoker, 0, len(invokers))
 	for _, invoker := range invokers {
-		if c.matchThen(invoker.GetURL(), url) {
+		if s.matchThen(invoker.GetURL(), url) {
 			result = append(result, invoker)
 		}
 	}
 
 	if len(result) != 0 {
 		return result
-	} else if c.force {
+	} else if s.force {
 		logger.Warn("execute condition state router result list is empty. and force=true")
 		return result
 	}
@@ -120,26 +120,26 @@ func (c *StateRouter) Route(invokers []protocol.Invoker, url *common.URL, invoca
 	return invokers
 }
 
-func (c *StateRouter) URL() *common.URL {
-	return c.url
+func (s *StateRouter) URL() *common.URL {
+	return s.url
 }
 
-func (c *StateRouter) Priority() int64 {
+func (s *StateRouter) Priority() int64 {
 	return 0
 }
 
-func (c *StateRouter) matchWhen(url *common.URL, invocation protocol.Invocation) bool {
-	if len(c.whenCondition) == 0 {
+func (s *StateRouter) matchWhen(url *common.URL, invocation protocol.Invocation) bool {
+	if len(s.whenCondition) == 0 {
 		return true
 	}
-	return doMatch(url, nil, invocation, c.whenCondition, true)
+	return doMatch(url, nil, invocation, s.whenCondition, true)
 }
 
-func (c *StateRouter) matchThen(url *common.URL, param *common.URL) bool {
-	if len(c.thenCondition) == 0 {
+func (s *StateRouter) matchThen(url *common.URL, param *common.URL) bool {
+	if len(s.thenCondition) == 0 {
 		return false
 	}
-	return doMatch(url, param, nil, c.thenCondition, false)
+	return doMatch(url, param, nil, s.thenCondition, false)
 }
 
 func generateMatcher(url *common.URL) (when, then map[string]matcher.Matcher, err error) {

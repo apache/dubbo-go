@@ -28,6 +28,7 @@ import (
 
 func init() {
 	SetMatcherFactory("argument", NewArgumentMatcherFactory)
+	SetMatcherFactory("attachments", NewAttachmentMatcherFactory)
 	SetMatcherFactory("param", NewParamMatcherFactory)
 }
 
@@ -51,6 +52,28 @@ func (a *ArgumentMatcherFactory) NewMatcher(key string) Matcher {
 
 func (a *ArgumentMatcherFactory) Priority() int64 {
 	return 300
+}
+
+// AttachmentMatcherFactory matcher factory
+type AttachmentMatcherFactory struct {
+}
+
+// NewAttachmentMatcherFactory constructs a new attachment.AttachmentMatcherFactory
+func NewAttachmentMatcherFactory() ConditionMatcherFactory {
+	return &AttachmentMatcherFactory{}
+}
+
+func (a *AttachmentMatcherFactory) ShouldMatch(key string) bool {
+	return strings.HasPrefix(key, constant.Attachments)
+}
+
+// NewMatcher constructs a new matcher
+func (a *AttachmentMatcherFactory) NewMatcher(key string) Matcher {
+	return NewAttachmentConditionMatcher(key)
+}
+
+func (a *AttachmentMatcherFactory) Priority() int64 {
+	return 200
 }
 
 // ParamMatcherFactory matcher factory

@@ -33,10 +33,10 @@ type WildcardValuePattern struct {
 }
 
 func init() {
-	SetValuePattern("wildcard", NewValuePattern)
+	SetValuePattern("wildcard", NewWildcardValuePattern)
 }
 
-func NewValuePattern() ValuePattern {
+func NewWildcardValuePattern() ValuePattern {
 	return &WildcardValuePattern{}
 }
 
