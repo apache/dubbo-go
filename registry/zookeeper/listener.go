@@ -92,8 +92,10 @@ func (l *RegistryDataListener) DataChange(event remoting.Event) bool {
 	if l.closed {
 		return false
 	}
+	match := false
 	for serviceKey, listener := range l.subscribed {
-		if serviceURL.ServiceKey() == serviceKey {
+		intf, group, version := common.ParseServiceKey(serviceKey)
+		if serviceURL.ServiceKey() == serviceKey || common.IsAnyCondition(intf, group, version, serviceURL) {
 			listener.Process(
 				&config_center.ConfigChangeEvent{
 					Key:        event.Path,
@@ -101,10 +103,10 @@ func (l *RegistryDataListener) DataChange(event remoting.Event) bool {
 					ConfigType: event.Action,
 				},
 			)
-			return true
+			match = true
 		}
 	}
-	return false
+	return match
 }
 
 // Close all RegistryConfigurationListener in subscribed
