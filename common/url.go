@@ -413,6 +413,37 @@ func ServiceKey(intf string, group string, version string) string {
 	return buf.String()
 }
 
+// ParseServiceKey gets interface, group and version from service key
+func ParseServiceKey(serviceKey string) (string, string, string) {
+	var (
+		group   string
+		version string
+	)
+	if serviceKey == "" {
+		return "", "", ""
+	}
+	// get group if it exists
+	sepIndex := strings.Index(serviceKey, constant.PathSeparator)
+	if sepIndex != -1 {
+		group = serviceKey[:sepIndex]
+		serviceKey = serviceKey[sepIndex+1:]
+	}
+	// get version if it exists
+	sepIndex = strings.LastIndex(serviceKey, constant.KeySeparator)
+	if sepIndex != -1 {
+		version = serviceKey[sepIndex+1:]
+		serviceKey = serviceKey[:sepIndex]
+	}
+
+	return serviceKey, group, version
+}
+
+// IsAnyCondition judges if is any condition
+func IsAnyCondition(intf, group, version string, serviceURL *URL) bool {
+	return intf == constant.AnyValue && (group == constant.AnyValue ||
+		group == serviceURL.Group()) && (version == constant.AnyValue || version == serviceURL.Version())
+}
+
 // ColonSeparatedKey
 // The format is "{interface}:[version]:[group]"
 func (c *URL) ColonSeparatedKey() string {

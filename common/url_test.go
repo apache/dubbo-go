@@ -421,3 +421,134 @@ func TestCompareURLEqualFunc(t *testing.T) {
 func CustomCompareURLEqual(l *URL, r *URL, execludeParam ...string) bool {
 	return l.PrimitiveURL == r.PrimitiveURL
 }
+
+func TestParseServiceKey(t *testing.T) {
+	type args struct {
+		serviceKey string
+	}
+	tests := []struct {
+		name  string
+		args  args
+		want  string
+		want1 string
+		want2 string
+	}{
+		{
+			name: "test1",
+			args: args{
+				serviceKey: "group/interface:version",
+			},
+			want:  "interface",
+			want1: "group",
+			want2: "version",
+		},
+		{
+			name: "test2",
+			args: args{
+				serviceKey: "*/*:*",
+			},
+			want:  "*",
+			want1: "*",
+			want2: "*",
+		},
+		{
+			name: "test3",
+			args: args{
+				serviceKey: "group/org.apache.dubbo.mock.api.MockService",
+			},
+			want:  "org.apache.dubbo.mock.api.MockService",
+			want1: "group",
+			want2: "",
+		},
+		{
+			name: "test4",
+			args: args{
+				serviceKey: "org.apache.dubbo.mock.api.MockService",
+			},
+			want:  "org.apache.dubbo.mock.api.MockService",
+			want1: "",
+			want2: "",
+		},
+		{
+			name: "test5",
+			args: args{
+				serviceKey: "group/",
+			},
+			want:  "",
+			want1: "group",
+			want2: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, got1, got2 := ParseServiceKey(tt.args.serviceKey)
+			assert.Equalf(t, tt.want, got, "ParseServiceKey(%v)", tt.args.serviceKey)
+			assert.Equalf(t, tt.want1, got1, "ParseServiceKey(%v)", tt.args.serviceKey)
+			assert.Equalf(t, tt.want2, got2, "ParseServiceKey(%v)", tt.args.serviceKey)
+		})
+	}
+}
+
+func TestIsAnyCondition(t *testing.T) {
+	type args struct {
+		intf       string
+		group      string
+		version    string
+		serviceURL *URL
+	}
+	serviceURL, _ := NewURL(GetLocalIp()+":0", WithProtocol("admin"), WithParams(url.Values{
+		constant.GroupKey:   {"group"},
+		constant.VersionKey: {"version"},
+	}))
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "test1",
+			args: args{
+				intf:       constant.AnyValue,
+				group:      constant.AnyValue,
+				version:    constant.AnyValue,
+				serviceURL: serviceURL,
+			},
+			want: true,
+		},
+		{
+			name: "test2",
+			args: args{
+				intf:       constant.AnyValue,
+				group:      "group",
+				version:    "version",
+				serviceURL: serviceURL,
+			},
+			want: true,
+		},
+		{
+			name: "test3",
+			args: args{
+				intf:       "intf",
+				group:      constant.AnyValue,
+				version:    constant.AnyValue,
+				serviceURL: serviceURL,
+			},
+			want: false,
+		},
+		{
+			name: "test4",
+			args: args{
+				intf:       constant.AnyValue,
+				group:      "group1",
+				version:    constant.AnyValue,
+				serviceURL: serviceURL,
+			},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equalf(t, tt.want, IsAnyCondition(tt.args.intf, tt.args.group, tt.args.version, tt.args.serviceURL), "IsAnyCondition(%v, %v, %v, %v)", tt.args.intf, tt.args.group, tt.args.version, tt.args.serviceURL)
+		})
+	}
+}
