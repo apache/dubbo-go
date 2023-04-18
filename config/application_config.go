@@ -38,6 +38,7 @@ type ApplicationConfig struct {
 	Environment  string `yaml:"environment" json:"environment,omitempty" property:"environment"`
 	// the metadata type. remote or local
 	MetadataType string `default:"local" yaml:"metadata-type" json:"metadataType,omitempty" property:"metadataType"`
+	Tag          string `yaml:"tag" json:"tag,omitempty" property:"tag"`
 }
 
 // Prefix dubbo.application
