@@ -53,7 +53,7 @@ func (p *PriorityRouter) Route(invokers []protocol.Invoker, url *common.URL, inv
 		return invokers
 	}
 	// tag is valid in application
-	key := url.GetParam(constant.ApplicationKey, "") + constant.TagRouterRuleSuffix
+	key := strings.Join([]string{url.GetParam(constant.ApplicationKey, ""), constant.TagRouterRuleSuffix}, "")
 	value, ok := p.routerConfigs.Load(key)
 	if !ok {
 		return staticTag(invokers, url, invocation)
@@ -87,7 +87,7 @@ func (p *PriorityRouter) Notify(invokers []protocol.Invoker) {
 		logger.Warnf("config center does not start, please check if the configuration center has been properly configured in dubbogo.yml")
 		return
 	}
-	key := service + constant.TagRouterRuleSuffix
+	key := strings.Join([]string{service, constant.TagRouterRuleSuffix}, "")
 	dynamicConfiguration.AddListener(key, p)
 	value, err := dynamicConfiguration.GetRule(key)
 	if err != nil {
