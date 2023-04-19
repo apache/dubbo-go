@@ -19,6 +19,7 @@ package condition
 
 import (
 	"strconv"
+	"strings"
 	"sync"
 )
 
@@ -63,15 +64,13 @@ func (d *DynamicRouter) Process(event *config_center.ConfigChangeEvent) {
 	} else {
 		routerConfig, err := parseRoute(event.Value.(string))
 		if err != nil {
-			logger.Warnf("[condition router]Build a new condition route config error, %+v "+
-				"and we will use the original condition rule configuration.", err)
+			logger.Warnf("[condition router]Build a new condition route config error, %+v and we will use the original condition rule configuration.", err)
 			return
 		}
 		d.routerConfig = routerConfig
 		conditions, err := d.GenerateConditions()
 		if err != nil {
-			logger.Warnf("[condition router]Build a new condition route config error, %+v "+
-				"and we will use the original condition rule configuration.", err)
+			logger.Warnf("[condition router]Build a new condition route config error, %+v and we will use the original condition rule configuration.", err)
 			return
 		}
 		d.conditionRouters = conditions
@@ -128,7 +127,8 @@ func (s *ServiceRouter) Notify(invokers []protocol.Invoker) {
 		logger.Warnf("config center does not start, please check if the configuration center has been properly configured in dubbogo.yml")
 		return
 	}
-	key := url.Service() + ":" + url.GetParam("version", "") + ":" + url.GetParam("group", "") + constant.ConditionRouterRuleSuffix
+	key := strings.Join([]string{strings.Join([]string{url.Service(), url.GetParam(constant.VersionKey, ""), url.GetParam(constant.GroupKey, "")}, ":"),
+		constant.ConditionRouterRuleSuffix}, "")
 	dynamicConfiguration.AddListener(key, s)
 	value, err := dynamicConfiguration.GetRule(key)
 	if err != nil {
@@ -154,7 +154,7 @@ func NewApplicationRouter() *ApplicationRouter {
 
 	dynamicConfiguration := conf.GetEnvInstance().GetDynamicConfiguration()
 	if dynamicConfiguration != nil {
-		dynamicConfiguration.AddListener(applicationName+constant.ConditionRouterRuleSuffix, a)
+		dynamicConfiguration.AddListener(strings.Join([]string{applicationName, constant.ConditionRouterRuleSuffix}, ""), a)
 	}
 	return a
 }
@@ -189,10 +189,10 @@ func (a *ApplicationRouter) Notify(invokers []protocol.Invoker) {
 		}
 
 		if a.application != "" {
-			dynamicConfiguration.RemoveListener(a.application+constant.ConditionRouterRuleSuffix, a)
+			dynamicConfiguration.RemoveListener(strings.Join([]string{a.application, constant.ConditionRouterRuleSuffix}, ""), a)
 		}
 
-		key := providerApplicaton + constant.ConditionRouterRuleSuffix
+		key := strings.Join([]string{providerApplicaton, constant.ConditionRouterRuleSuffix}, "")
 		dynamicConfiguration.AddListener(key, a)
 		a.application = providerApplicaton
 		value, err := dynamicConfiguration.GetRule(key)
