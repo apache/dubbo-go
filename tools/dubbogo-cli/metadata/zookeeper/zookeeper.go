@@ -70,7 +70,7 @@ func (z *ZookeeperMetadataReport) GetChildren(path string) ([]string, error) {
 	return z.client.GetChildren(z.rootDir + delimiter + path)
 }
 
-// ShowChildren shou children list
+// ShowRegistryCenterChildren show children list
 func (z *ZookeeperMetadataReport) ShowRegistryCenterChildren() (map[string][]string, error) {
 	methodsMap := map[string][]string{}
 	inters, err := z.GetChildren("")

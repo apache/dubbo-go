@@ -23,7 +23,7 @@ type ResponsePayload struct {
 	Attachments map[string]interface{}
 }
 
-// NewResponse create a new ResponsePayload
+// NewResponsePayload create a new ResponsePayload
 func NewResponsePayload(rspObj interface{}, exception error, attachments map[string]interface{}) *ResponsePayload {
 	if attachments == nil {
 		attachments = make(map[string]interface{})
