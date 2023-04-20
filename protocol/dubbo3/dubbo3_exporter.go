@@ -48,7 +48,7 @@ func NewDubboExporter(key string, invoker protocol.Invoker, exporterMap *sync.Ma
 	}
 }
 
-// Unexport unexport dubbo3 service exporter.
+// UnExport unexport dubbo3 service exporter.
 func (de *DubboExporter) UnExport() {
 	url := de.GetInvoker().GetURL()
 	interfaceName := url.GetParam(constant.InterfaceKey, "")

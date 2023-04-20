@@ -43,7 +43,7 @@ func NewRestExporter(key string, invoker protocol.Invoker, exporterMap *sync.Map
 	}
 }
 
-// Unexport unexport the RestExporter
+// UnExport unexport the RestExporter
 func (re *RestExporter) UnExport() {
 	interfaceName := re.GetInvoker().GetURL().GetParam(constant.InterfaceKey, "")
 	re.BaseExporter.UnExport()

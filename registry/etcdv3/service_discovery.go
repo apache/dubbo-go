@@ -300,7 +300,7 @@ func (e *etcdV3ServiceDiscovery) DataChange(eventType remoting.Event) bool {
 	return true
 }
 
-// newEtcdv3ServiceDiscovery
+// newEtcdV3ServiceDiscovery
 func newEtcdV3ServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, error) {
 	initLock.Lock()
 	defer initLock.Unlock()
