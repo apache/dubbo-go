@@ -68,7 +68,7 @@ func (d *DynamicRouter) Process(event *config_center.ConfigChangeEvent) {
 			return
 		}
 		d.routerConfig = routerConfig
-		conditions, err := d.GenerateConditions()
+		conditions, err := generateConditions(d.routerConfig)
 		if err != nil {
 			logger.Warnf("[condition router]Build a new condition route config error, %+v and we will use the original condition rule configuration.", err)
 			return
@@ -77,19 +77,19 @@ func (d *DynamicRouter) Process(event *config_center.ConfigChangeEvent) {
 	}
 }
 
-func (d *DynamicRouter) GenerateConditions() ([]*StateRouter, error) {
-	if d.routerConfig == nil {
+func generateConditions(routerConfig *config.RouterConfig) ([]*StateRouter, error) {
+	if routerConfig == nil {
 		return make([]*StateRouter, 0), nil
 	}
-	conditionRouters := make([]*StateRouter, 0, len(d.routerConfig.Conditions))
-	for _, conditionRule := range d.routerConfig.Conditions {
+	conditionRouters := make([]*StateRouter, 0, len(routerConfig.Conditions))
+	for _, conditionRule := range routerConfig.Conditions {
 		url, err := common.NewURL("condition://")
 		if err != nil {
 			return nil, err
 		}
 		url.AddParam(constant.RuleKey, conditionRule)
-		url.AddParam(constant.ForceKey, strconv.FormatBool(d.routerConfig.Force))
-		url.AddParam(constant.EnabledKey, strconv.FormatBool(d.routerConfig.Enabled))
+		url.AddParam(constant.ForceKey, strconv.FormatBool(routerConfig.Force))
+		url.AddParam(constant.EnabledKey, strconv.FormatBool(routerConfig.Enabled))
 		conditionRoute, err := NewConditionStateRouter(url)
 		if err != nil {
 			return nil, err
