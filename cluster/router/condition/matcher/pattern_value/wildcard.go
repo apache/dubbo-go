@@ -24,6 +24,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
@@ -33,7 +34,7 @@ type WildcardValuePattern struct {
 }
 
 func init() {
-	SetValuePattern("wildcard", NewWildcardValuePattern)
+	SetValuePattern(constant.Wildcard, NewWildcardValuePattern)
 }
 
 func NewWildcardValuePattern() ValuePattern {

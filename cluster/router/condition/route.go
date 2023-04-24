@@ -284,7 +284,7 @@ func getMatcher(key string) matcher.Matcher {
 			return factory.NewMatcher(key)
 		}
 	}
-	return matcher.GetMatcherFactory("param").NewMatcher(key)
+	return matcher.GetMatcherFactory(constant.Param).NewMatcher(key)
 }
 
 func doMatch(url *common.URL, param *common.URL, invocation protocol.Invocation, conditions map[string]matcher.Matcher, isWhenCondition bool) bool {

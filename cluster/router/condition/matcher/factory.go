@@ -27,9 +27,9 @@ import (
 )
 
 func init() {
-	SetMatcherFactory("argument", NewArgumentMatcherFactory)
-	SetMatcherFactory("attachments", NewAttachmentMatcherFactory)
-	SetMatcherFactory("param", NewParamMatcherFactory)
+	SetMatcherFactory(constant.Arguments, NewArgumentMatcherFactory)
+	SetMatcherFactory(constant.Attachments, NewAttachmentMatcherFactory)
+	SetMatcherFactory(constant.Param, NewParamMatcherFactory)
 }
 
 // ArgumentMatcherFactory matcher factory
