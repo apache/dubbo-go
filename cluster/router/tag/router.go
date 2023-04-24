@@ -77,9 +77,9 @@ func (p *PriorityRouter) Notify(invokers []protocol.Invoker) {
 	if len(invokers) == 0 {
 		return
 	}
-	service := invokers[0].GetURL().GetParam(constant.ApplicationKey, "")
-	if service == "" {
-		logger.Error("url service is empty")
+	application := invokers[0].GetURL().GetParam(constant.ApplicationKey, "")
+	if application == "" {
+		logger.Error("url application is empty")
 		return
 	}
 	dynamicConfiguration := conf.GetEnvInstance().GetDynamicConfiguration()
@@ -87,7 +87,7 @@ func (p *PriorityRouter) Notify(invokers []protocol.Invoker) {
 		logger.Warnf("config center does not start, please check if the configuration center has been properly configured in dubbogo.yml")
 		return
 	}
-	key := strings.Join([]string{service, constant.TagRouterRuleSuffix}, "")
+	key := strings.Join([]string{application, constant.TagRouterRuleSuffix}, "")
 	dynamicConfiguration.AddListener(key, p)
 	value, err := dynamicConfiguration.GetRule(key)
 	if err != nil {
