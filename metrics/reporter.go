@@ -20,9 +20,7 @@ package metrics
 import (
 	"context"
 	"time"
-)
 
-import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
@@ -61,6 +59,6 @@ func NewReporterConfig() *ReporterConfig {
 //
 // Report method reports the duration of an invocation.
 type Reporter interface {
-	Report(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation,
+	ReportAfterInvocation(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation,
 		cost time.Duration, res protocol.Result)
 }
