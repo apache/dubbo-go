@@ -58,6 +58,6 @@ func buildMetricsName(args ...string) string {
 		sb.WriteString("_")
 		sb.WriteString(arg)
 	}
-	res, _ := strings.CutPrefix(sb.String(), "_")
+	res := strings.TrimPrefix(sb.String(), "_")
 	return res
 }
