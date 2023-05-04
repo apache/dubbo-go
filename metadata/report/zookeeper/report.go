@@ -89,13 +89,23 @@ func (m *zookeeperMetadataReport) PublishAppMetadata(metadataIdentifier *identif
 // StoreProviderMetadata stores the metadata.
 func (m *zookeeperMetadataReport) StoreProviderMetadata(providerIdentifier *identifier.MetadataIdentifier, serviceDefinitions string) error {
 	k := m.rootDir + providerIdentifier.GetFilePathKey()
-	return m.client.CreateWithValue(k, []byte(serviceDefinitions))
+	err := m.client.CreateWithValue(k, []byte(serviceDefinitions))
+	if err == zk.ErrNodeExists {
+		logger.Debugf("Try to store provider metadata failed. In most cases, it's not a problem. ")
+		return nil
+	}
+	return err
 }
 
 // StoreConsumerMetadata stores the metadata.
 func (m *zookeeperMetadataReport) StoreConsumerMetadata(consumerMetadataIdentifier *identifier.MetadataIdentifier, serviceParameterString string) error {
 	k := m.rootDir + consumerMetadataIdentifier.GetFilePathKey()
-	return m.client.CreateWithValue(k, []byte(serviceParameterString))
+	err := m.client.CreateWithValue(k, []byte(serviceParameterString))
+	if err == zk.ErrNodeExists {
+		logger.Debugf("Try to store consumer metadata failed. In most cases, it's not a problem. ")
+		return nil
+	}
+	return err
 }
 
 // SaveServiceMetadata saves the metadata.
