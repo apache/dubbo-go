@@ -9,7 +9,7 @@ require (
 	github.com/afex/hystrix-go v0.0.0-20180502004556-fa1af6a1f4f5
 	github.com/alibaba/sentinel-golang v1.0.4
 	github.com/apache/dubbo-getty v1.4.9
-	github.com/apache/dubbo-go-hessian2 v1.12.2-0.20230505162745-f9c7f78ea0e0
+	github.com/apache/dubbo-go-hessian2 v1.12.2
 	github.com/cespare/xxhash/v2 v2.2.0
 	github.com/cncf/udpa/go v0.0.0-20210930031921-04548b0d99d4
 	github.com/cncf/xds/go v0.0.0-20220314180256-7f1daf1720fc
