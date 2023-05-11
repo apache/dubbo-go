@@ -47,7 +47,7 @@ Dubbo-go has supported many RPC protocols, like Triple, Dubbo, JSONRPC, gRPC, HT
 
   * [imports-formatter](https://github.com/dubbogo/tools/blob/master/cmd/imports-formatter/main.go) formatting dubbo-go project import code block.
   * [dubbo-go-cli](https://github.com/dubbogo/tools/blob/master/cmd/dubbogo-cli/main.go) dubbo-go command line tools, by which you can define your own request pkg and gets rsp struct of your server, test your service as telnet and generate hessian.POJO register method body.
-  * [dubbo-go-cli-v2](https://github.com/apache/dubbo-go/blob/master/dubbogo-cli/main.go) new dubbo-go line tools, you can get services from register center, create a demo , create application templates, one-click installation of protoc-gen-go-triple and imports-formatter tools,and has the same features with [dubbo-go-cli](https://github.com/dubbogo/tools/blob/master/cmd/dubbogo-cli/main.go).
+  * [dubbo-go-cli-v2](https://github.com/dubbogo/tools/blob/master/cmd/dubbogo-cli-v2/README_CN.md) new dubbo-go line tools, you can get services from register center, create a demo , create application templates, one-click installation of protoc-gen-go-triple and imports-formatter tools,and has the same features with [dubbo-go-cli](https://github.com/dubbogo/tools/blob/master/cmd/dubbogo-cli/main.go).
   * [protoc-gen-go-triple](https://github.com/dubbogo/tools/blob/master/cmd/protoc-gen-go-triple/main.go) tripe protocol pb file generation tool.
   * [protoc-gen-dubbo3grpc](https://github.com/dubbogo/tools/blob/master/cmd/protoc-gen-dubbo3grpc/main.go) dubbo3 grpc pb file generation tool.
 
