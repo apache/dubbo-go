@@ -25,8 +25,9 @@ import (
 )
 
 import (
-	"github.com/spf13/cobra"
 	"github.com/olekukonko/tablewriter"
+
+	"github.com/spf13/cobra"
 )
 
 import (

@@ -17,7 +17,9 @@
 
 package constant
 
-import "math"
+import (
+	"math"
+)
 
 const (
 	Dubbo            = "dubbo"

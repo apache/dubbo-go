@@ -153,7 +153,7 @@ func getService(url *common.URL) string {
 		}
 	}
 
-	service := "providers:" + url.Service()
+	service := url.Interface()
 	if applicationMode {
 		service = config.GetApplicationConfig().Name
 	}

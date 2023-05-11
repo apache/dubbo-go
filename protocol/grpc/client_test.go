@@ -20,11 +20,12 @@ package grpc
 import (
 	"context"
 	"fmt"
-	"github.com/dustin/go-humanize"
 	"testing"
 )
 
 import (
+	"github.com/dustin/go-humanize"
+
 	"github.com/stretchr/testify/assert"
 )
 
