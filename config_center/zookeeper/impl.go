@@ -169,9 +169,9 @@ func (c *zookeeperDynamicConfiguration) PublishConfig(key string, group string, 
 		// try update value if node already exists
 		if perrors.Is(err, zk.ErrNodeExists) {
 			_, stat, _ := c.client.GetContent(path)
-			_, err := c.client.SetContent(path, valueBytes, stat.Version)
-			if err != nil {
-				return perrors.WithStack(err)
+			_, setErr := c.client.SetContent(path, valueBytes, stat.Version)
+			if setErr != nil {
+				return perrors.WithStack(setErr)
 			}
 			return nil
 		}
