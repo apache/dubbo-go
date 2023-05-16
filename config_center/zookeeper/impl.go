@@ -166,6 +166,15 @@ func (c *zookeeperDynamicConfiguration) PublishConfig(key string, group string, 
 	// create every node in the path with given value which we may not expected.
 	err := c.client.CreateWithValue(path, valueBytes)
 	if err != nil {
+		// try update value if node already exists
+		if perrors.Is(err, zk.ErrNodeExists) {
+			_, stat, _ := c.client.GetContent(path)
+			_, err := c.client.SetContent(path, valueBytes, stat.Version)
+			if err != nil {
+				return perrors.WithStack(err)
+			}
+			return nil
+		}
 		return perrors.WithStack(err)
 	}
 	return nil
