@@ -90,6 +90,7 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry) (director
 		logger.Warnf("fail to create router chain with url: %s, err is: %v", url.SubURL, err)
 	}
 
+	// FIXME
 	//dir.consumerConfigurationListener = newConsumerConfigurationListener(dir)
 	//dir.consumerConfigurationListener.addNotifyListener(dir)
 	//dir.referenceConfigurationListener = newReferenceConfigurationListener(dir, url)
