@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package greet;
+
+option go_package = "dubbo.apache.org/dubbo-go/v3/protocol/grpc_new/internal/proto;greet";
+
+message GreetRequest {
+  string name = 1;
+}
+
+message GreetResponse {
+  string greeting = 1;
+}
+
+message GreetStreamRequest {
+  string name = 1;
+}
+
+message GreetStreamResponse {
+  string greeting = 1;
+}
+
+service GreetService {
+  rpc Greet(GreetRequest) returns (GreetResponse) {}
+  rpc GreetStream(stream GreetStreamRequest) returns (stream GreetStreamResponse) {}
+}

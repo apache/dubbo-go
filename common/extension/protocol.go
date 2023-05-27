@@ -19,6 +19,7 @@ package extension
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"github.com/dubbogo/gost/log/logger"
 )
 
 var protocols = make(map[string]func() protocol.Protocol)
@@ -30,6 +31,9 @@ func SetProtocol(name string, v func() protocol.Protocol) {
 
 // GetProtocol finds the protocol extension with @name
 func GetProtocol(name string) protocol.Protocol {
+	for key := range protocols {
+		logger.Infof("protocol key: %s", key)
+	}
 	if protocols[name] == nil {
 		panic("protocol for " + name + " is not existing, make sure you have import the package.")
 	}
