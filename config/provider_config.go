@@ -164,19 +164,16 @@ func (c *ProviderConfig) Load() {
 				continue
 			}
 			// service doesn't config in config file, create one with default
-			logger.Warnf("Dubbogo can not find service with registeredTypeName %s in configuration. Use the default configuration instead.", registeredTypeName)
 			supportPBPackagerNameSerivce, ok := service.(common.TriplePBService)
-			serviceConfig = NewServiceConfigBuilder().Build()
 			if !ok {
-				logger.Errorf("Dubbogo do not read service interface name with registeredTypeName = %s."+
-					"Please run go install github.com/dubbogo/dubbogo-cli/cmd/protoc-gen-go-triple@latest to update your "+
-					"protoc-gen-go-triple and re-generate your pb file again."+
-					"If you are not using pb serialization, please set 'interface' field in service config.", registeredTypeName)
+				logger.Warnf(
+					"The provider service %s is ignored: neither the config is found, nor it is a valid Triple service.",
+					registeredTypeName)
 				continue
-			} else {
-				// use interface name defined by pb
-				serviceConfig.Interface = supportPBPackagerNameSerivce.XXX_InterfaceName()
 			}
+			serviceConfig = NewServiceConfigBuilder().Build()
+			// use interface name defined by pb
+			serviceConfig.Interface = supportPBPackagerNameSerivce.XXX_InterfaceName()
 			if err := serviceConfig.Init(rootConfig); err != nil {
 				logger.Errorf("Service with refKey = %s init failed with error = %s")
 			}
