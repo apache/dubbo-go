@@ -343,7 +343,11 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkRootPath string, li
 			if MaxFailTimes <= failTimes {
 				failTimes = MaxFailTimes
 			}
-			logger.Errorf("[Zookeeper EventListener][listenDirEvent] Get children of path {%s} with watcher failed, the error is %+v", zkRootPath, err)
+
+			err = perrors.Cause(err)
+			if !strings.Contains(err.Error(), "node does not exist") { // ignore if node not exist
+				logger.Errorf("[Zookeeper EventListener][listenDirEvent] Get children of path {%s} with watcher failed, the error is %+v", zkRootPath, err)
+			}
 			// Maybe the provider does not ready yet, sleep failTimes * ConnDelay senconds to wait
 			after := time.After(timeSecondDuration(failTimes * ConnDelay))
 			select {

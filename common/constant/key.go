@@ -176,6 +176,9 @@ const (
 
 const (
 	ApplicationKey         = "application"
+	ApplicationNameKey     = "application_name"
+	HostnameKey            = "hostname"
+	IpKey                  = "ip"
 	OrganizationKey        = "organization"
 	NameKey                = "name"
 	ModuleKey              = "module"
