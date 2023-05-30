@@ -19,6 +19,7 @@ package config
 
 import (
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -65,12 +66,19 @@ func (cc *ConsumerConfig) Init(rc *RootConfig) error {
 	if cc == nil {
 		return nil
 	}
+
+	consumerNames := make([]string, 0, len(cc.References))
+	for k := range cc.References {
+		consumerNames = append(consumerNames, k)
+	}
+	logger.Debugf("Registered consumer clients are %v", strings.Join(consumerNames, ", "))
+
 	cc.RegistryIDs = translateIds(cc.RegistryIDs)
 	if len(cc.RegistryIDs) <= 0 {
 		cc.RegistryIDs = rc.getRegistryIds()
 	}
 	if cc.TracingKey == "" && len(rc.Tracing) > 0 {
-		for k, _ := range rc.Tracing {
+		for k := range rc.Tracing {
 			cc.TracingKey = k
 			break
 		}
