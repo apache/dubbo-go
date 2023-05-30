@@ -15,30 +15,31 @@
  * limitations under the License.
  */
 
-package extension
+package prometheus
 
-import (
-	"context"
-	"testing"
-	"time"
+import "dubbo.apache.org/dubbo-go/v3/common/constant"
 
-	"dubbo.apache.org/dubbo-go/v3/metrics"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
-	"github.com/stretchr/testify/assert"
+const (
+	reporterName       = "prometheus"
+	applicationNameKey = constant.ApplicationNameKey
+	groupKey           = constant.GroupKey
+	hostnameKey        = constant.HostnameKey
+	interfaceKey       = constant.InterfaceKey
+	ipKey              = constant.IpKey
+	methodKey          = constant.MethodKey
+	versionKey         = constant.VersionKey
+
+	providerField = "provider"
+	consumerField = "consumer"
+
+	requestsField = "requests"
+	rtField       = "rt"
+	tpsField      = "tps"
+
+	milliSecondsField = "milliseconds"
+
+	counterField = "counter"
+	summaryField = "summary"
+
+	totalField = "total"
 )
-
-func TestGetMetricReporter(t *testing.T) {
-	reporter := &mockReporter{}
-	name := "mock"
-	SetMetricReporter(name, func(config *metrics.ReporterConfig) metrics.Reporter {
-		return reporter
-	})
-	res := GetMetricReporter(name, metrics.NewReporterConfig())
-	assert.Equal(t, reporter, res)
-}
-
-type mockReporter struct{}
-
-// implement the interface of Reporter
-func (m mockReporter) ReportAfterInvocation(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation, cost time.Duration, res protocol.Result) {
-}
