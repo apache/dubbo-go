@@ -21,10 +21,15 @@ import (
 	"strconv"
 	"strings"
 	"time"
+)
 
+import (
+	"github.com/prometheus/client_golang/prometheus"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"github.com/prometheus/client_golang/prometheus"
 )
 
 // isProvider shows whether this url represents the application received the request as server
