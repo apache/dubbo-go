@@ -52,7 +52,8 @@ func (p *PriorityRouter) Route(invokers []protocol.Invoker, url *common.URL, inv
 		logger.Warnf("[tag router] invokers from previous router is empty")
 		return invokers
 	}
-	key := url.Service() + constant.TagRouterRuleSuffix
+	// tag is valid in application
+	key := strings.Join([]string{url.GetParam(constant.ApplicationKey, ""), constant.TagRouterRuleSuffix}, "")
 	value, ok := p.routerConfigs.Load(key)
 	if !ok {
 		return staticTag(invokers, url, invocation)
@@ -76,9 +77,9 @@ func (p *PriorityRouter) Notify(invokers []protocol.Invoker) {
 	if len(invokers) == 0 {
 		return
 	}
-	service := invokers[0].GetURL().Service()
-	if service == "" {
-		logger.Error("url service is empty")
+	application := invokers[0].GetURL().GetParam(constant.ApplicationKey, "")
+	if application == "" {
+		logger.Error("url application is empty")
 		return
 	}
 	dynamicConfiguration := conf.GetEnvInstance().GetDynamicConfiguration()
@@ -86,7 +87,7 @@ func (p *PriorityRouter) Notify(invokers []protocol.Invoker) {
 		logger.Warnf("config center does not start, please check if the configuration center has been properly configured in dubbogo.yml")
 		return
 	}
-	key := service + constant.TagRouterRuleSuffix
+	key := strings.Join([]string{application, constant.TagRouterRuleSuffix}, "")
 	dynamicConfiguration.AddListener(key, p)
 	value, err := dynamicConfiguration.GetRule(key)
 	if err != nil {

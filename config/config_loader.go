@@ -131,6 +131,7 @@ func createInstance(url *common.URL) (registry.ServiceInstance, error) {
 		Enable:      true,
 		Healthy:     true,
 		Metadata:    metadata,
+		Tag:         appConfig.Tag,
 	}
 
 	for _, cus := range extension.GetCustomizers() {
