@@ -20,10 +20,15 @@ package prometheus
 import (
 	"context"
 	"time"
+)
 
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
+)
+
+import (
 	"github.com/dubbogo/gost/log/logger"
 	"github.com/prometheus/client_golang/prometheus"
 )

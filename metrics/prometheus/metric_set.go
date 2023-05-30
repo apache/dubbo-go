@@ -19,9 +19,14 @@ package prometheus
 
 import (
 	"strings"
+)
 
-	"dubbo.apache.org/dubbo-go/v3/metrics"
+import (
 	"github.com/prometheus/client_golang/prometheus"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/metrics"
 )
 
 // metricSet is a set of metrics that are reported to prometheus in dubbo go
