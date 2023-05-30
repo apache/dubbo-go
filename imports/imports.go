@@ -32,6 +32,7 @@ import (
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/p2c"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/random"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/roundrobin"
+	_ "dubbo.apache.org/dubbo-go/v3/cluster/router/condition"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/router/meshrouter"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/router/polaris"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/router/tag"

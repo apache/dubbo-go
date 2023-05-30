@@ -313,6 +313,9 @@ const (
 	ForceKey                         = "force"
 	Arguments                        = "arguments"
 	Attachments                      = "attachments"
+	Param                            = "param"
+	Scope                            = "scope"
+	Wildcard                         = "wildcard"
 	MeshRouterFactoryKey             = "mesh"
 )
 
