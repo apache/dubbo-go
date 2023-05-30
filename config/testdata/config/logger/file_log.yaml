@@ -9,36 +9,14 @@ dubbo:
       group: test
       address: 127.0.0.1:2181
   logger:
-    lumberjack-config:
-      filename: logs.log
-      maxSize: 1
-      maxAge: 3
-      maxBackups: 5
-      localTime: true
-      compress: false
-
-    zap-config:
+    logger:
       level: debug
-      development: false
-      disable-caller: false
-      disable-stacktrace: false
-      sampling:
-      encoding: console
-      # encoder
-      encoder-config:
-        message-key: message
-        level-key: level
-        time-key: time
-        name-key: logger
-        caller-key: caller
-        stacktrace-key: stacktrace
-        level-encoder: capitalColor
-        time-encoder: iso8601
-        duration-encoder: seconds
-        caller-encoder: short
-        name-encoder:
-      output-paths:
-        - stderr
-      error-output-paths:
-        - stderr
-      initial-fields:
+      driver: logrus
+      format: text
+      appender: console,file
+      file:
+        name: pandora.log
+        max-size: 1
+        max-backups: 2
+        max-age: 3
+        compress: true

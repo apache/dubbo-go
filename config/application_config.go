@@ -42,7 +42,7 @@ type ApplicationConfig struct {
 }
 
 // Prefix dubbo.application
-func (ApplicationConfig) Prefix() string {
+func (ac *ApplicationConfig) Prefix() string {
 	return constant.ApplicationConfigPrefix
 }
 

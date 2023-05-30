@@ -19,11 +19,8 @@ package config
 
 import (
 	"testing"
-)
 
-import (
 	"github.com/dubbogo/gost/log/logger"
-
 	"github.com/stretchr/testify/assert"
 )
 
@@ -34,7 +31,6 @@ func TestLoggerInit(t *testing.T) {
 		assert.NotNil(t, rootConfig)
 		loggerConfig := rootConfig.Logger
 		assert.NotNil(t, loggerConfig)
-		assert.Equal(t, []string{"stderr"}, loggerConfig.ZapConfig.OutputPaths)
 	})
 
 	t.Run("use config", func(t *testing.T) {
@@ -43,9 +39,6 @@ func TestLoggerInit(t *testing.T) {
 		loggerConfig := rootConfig.Logger
 		assert.NotNil(t, loggerConfig)
 		// default
-		assert.Equal(t, "debug", loggerConfig.ZapConfig.Level)
-		assert.Equal(t, "message", loggerConfig.ZapConfig.EncoderConfig.MessageKey)
-		assert.Equal(t, "stacktrace", loggerConfig.ZapConfig.EncoderConfig.StacktraceKey)
 		logger.Info("hello")
 	})
 
@@ -54,10 +47,6 @@ func TestLoggerInit(t *testing.T) {
 		assert.Nil(t, err)
 		loggerConfig := rootConfig.Logger
 		assert.NotNil(t, loggerConfig)
-		// default
-		assert.Equal(t, "debug", loggerConfig.ZapConfig.Level)
-		assert.Equal(t, "message", loggerConfig.ZapConfig.EncoderConfig.MessageKey)
-		assert.Equal(t, "stacktrace", loggerConfig.ZapConfig.EncoderConfig.StacktraceKey)
 		logger.Debug("debug")
 		logger.Info("info")
 		logger.Warn("warn")
@@ -71,13 +60,23 @@ func TestLoggerInit(t *testing.T) {
 
 func TestNewLoggerConfigBuilder(t *testing.T) {
 	config := NewLoggerConfigBuilder().
-		SetLumberjackConfig(nil).
-		SetZapConfig(ZapConfig{}).
+		SetDriver("zap").
+		SetLevel("info").
+		SetFileName("dubbo.log").
+		SetFileMaxAge(10).
 		Build()
 
 	assert.NotNil(t, config)
-	values := config.getUrlMap()
-	assert.NotNil(t, values)
-	err := config.check()
-	assert.NoError(t, err)
+
+	assert.Equal(t, config.File.Name, "dubbo.log")
+	assert.Equal(t, config.Driver, "zap")
+	assert.Equal(t, config.Level, "info")
+	assert.Equal(t, config.File.MaxAge, 10)
+
+	// default value
+	assert.Equal(t, config.Appender, "console")
+	assert.Equal(t, config.Format, "text")
+	assert.Equal(t, config.File.MaxSize, 100)
+	assert.Equal(t, *config.File.Compress, true)
+	assert.Equal(t, config.File.MaxBackups, 5)
 }

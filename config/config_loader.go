@@ -35,12 +35,18 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/logger/zap"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
 var (
 	rootConfig = NewRootConfigBuilder().Build()
 )
+
+func init() {
+	log := zap.NewDefault()
+	logger.SetLogger(log)
+}
 
 func Load(opts ...LoaderConfOption) error {
 	// conf
