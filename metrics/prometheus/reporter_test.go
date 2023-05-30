@@ -21,18 +21,13 @@ import (
 	"context"
 	"testing"
 	"time"
-)
 
-import (
-	"github.com/stretchr/testify/assert"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestPrometheusReporter_Report(t *testing.T) {
@@ -50,7 +45,7 @@ func TestPrometheusReporter_Report(t *testing.T) {
 
 	assert.False(t, isConsumer(url))
 	ctx := context.Background()
-	reporter.Report(ctx, invoker, inv, 100*time.Millisecond, nil)
+	reporter.ReportAfterInvocation(ctx, invoker, inv, 100*time.Millisecond, nil)
 
 	// consumer side
 	url, _ = common.NewURL(
@@ -60,7 +55,7 @@ func TestPrometheusReporter_Report(t *testing.T) {
 			"BDTService&organization=ikurento.com&owner=ZX&registry.role=0&retries=&" +
 			"service.filter=echo%2Ctoken%2Caccesslog&timestamp=1569153406&token=934804bf-b007-4174-94eb-96e3e1d60cc7&version=&warmup=100")
 	invoker = protocol.NewBaseInvoker(url)
-	reporter.Report(ctx, invoker, inv, 100*time.Millisecond, nil)
+	reporter.ReportAfterInvocation(ctx, invoker, inv, 100*time.Millisecond, nil)
 
 	// invalid role
 	url, _ = common.NewURL(
@@ -70,5 +65,5 @@ func TestPrometheusReporter_Report(t *testing.T) {
 			"BDTService&organization=ikurento.com&owner=ZX&registry.role=9&retries=&" +
 			"service.filter=echo%2Ctoken%2Caccesslog&timestamp=1569153406&token=934804bf-b007-4174-94eb-96e3e1d60cc7&version=&warmup=100")
 	invoker = protocol.NewBaseInvoker(url)
-	reporter.Report(ctx, invoker, inv, 100*time.Millisecond, nil)
+	reporter.ReportAfterInvocation(ctx, invoker, inv, 100*time.Millisecond, nil)
 }

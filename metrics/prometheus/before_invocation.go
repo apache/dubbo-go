@@ -15,30 +15,4 @@
  * limitations under the License.
  */
 
-package extension
-
-import (
-	"context"
-	"testing"
-	"time"
-
-	"dubbo.apache.org/dubbo-go/v3/metrics"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
-	"github.com/stretchr/testify/assert"
-)
-
-func TestGetMetricReporter(t *testing.T) {
-	reporter := &mockReporter{}
-	name := "mock"
-	SetMetricReporter(name, func(config *metrics.ReporterConfig) metrics.Reporter {
-		return reporter
-	})
-	res := GetMetricReporter(name, metrics.NewReporterConfig())
-	assert.Equal(t, reporter, res)
-}
-
-type mockReporter struct{}
-
-// implement the interface of Reporter
-func (m mockReporter) ReportAfterInvocation(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation, cost time.Duration, res protocol.Result) {
-}
+package prometheus
