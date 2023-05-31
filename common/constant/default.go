@@ -17,7 +17,9 @@
 
 package constant
 
-import "math"
+import (
+	"math"
+)
 
 const (
 	Dubbo            = "dubbo"
@@ -100,4 +102,10 @@ const (
 
 	DefaultMaxCallRecvMsgSize = 1024 * 1024 * 4
 	DefaultMaxCallSendMsgSize = math.MaxInt32
+)
+
+const (
+	LoggerLevel    = "info"
+	LoggerAppender = "console"
+	LoggerFormat   = "text"
 )

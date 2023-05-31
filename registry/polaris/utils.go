@@ -18,10 +18,8 @@
 package polaris
 
 import (
-	"bytes"
 	"fmt"
 	"strconv"
-	"strings"
 )
 
 import (
@@ -44,30 +42,4 @@ func getCategory(url *common.URL) string {
 	role, _ := strconv.Atoi(url.GetParam(constant.RegistryRoleKey, strconv.Itoa(constant.PolarisDefaultRoleType)))
 	category := common.DubboNodes[role]
 	return category
-}
-
-// just copy from dubbo-go for nacos
-func getServiceName(url *common.URL) string {
-	var buffer bytes.Buffer
-
-	buffer.Write([]byte(getCategory(url)))
-	appendParam(&buffer, url, constant.InterfaceKey)
-	return buffer.String()
-}
-
-func getSubscribeName(url *common.URL) string {
-	var buffer bytes.Buffer
-
-	buffer.Write([]byte(common.DubboNodes[common.PROVIDER]))
-	appendParam(&buffer, url, constant.InterfaceKey)
-	return buffer.String()
-}
-
-// just copy from dubbo-go for nacos
-func appendParam(target *bytes.Buffer, url *common.URL, key string) {
-	value := url.GetParam(key, "")
-	target.Write([]byte(constant.PolarisServiceNameSeparator))
-	if strings.TrimSpace(value) != "" {
-		target.Write([]byte(value))
-	}
 }
