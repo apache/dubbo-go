@@ -19,6 +19,7 @@ package registry
 
 import (
 	"encoding/json"
+	url2 "net/url"
 	"strconv"
 )
 
@@ -70,6 +71,9 @@ type ServiceInstance interface {
 
 	// SetServiceMetadata saves metadata in instance
 	SetServiceMetadata(info *common.MetadataInfo)
+
+	// GetTag will return the tag of the instance
+	GetTag() string
 }
 
 // nolint
@@ -92,6 +96,7 @@ type DefaultServiceInstance struct {
 	Address         string
 	GroupName       string
 	endpoints       []*Endpoint `json:"-"`
+	Tag             string
 }
 
 // GetID will return this instance's id. It should be unique.
@@ -142,6 +147,10 @@ func (d *DefaultServiceInstance) SetServiceMetadata(m *common.MetadataInfo) {
 	d.ServiceMetadata = m
 }
 
+func (d *DefaultServiceInstance) GetTag() string {
+	return d.Tag
+}
+
 // ToURLs return a list of url.
 func (d *DefaultServiceInstance) ToURLs(service *common.ServiceInfo) []*common.URL {
 	urls := make([]*common.URL, 0, 8)
@@ -158,7 +167,8 @@ func (d *DefaultServiceInstance) ToURLs(service *common.ServiceInfo) []*common.U
 				url := common.NewURLWithOptions(common.WithProtocol(service.Protocol),
 					common.WithIp(d.Host), common.WithPort(strconv.Itoa(endpoint.Port)),
 					common.WithPath(service.Name), common.WithInterface(service.Name),
-					common.WithMethods(service.GetMethods()), common.WithParams(service.GetParams()))
+					common.WithMethods(service.GetMethods()), common.WithParams(service.GetParams()),
+					common.WithParams(url2.Values{constant.Tagkey: {d.Tag}}))
 				urls = append(urls, url)
 			}
 		}
@@ -166,7 +176,8 @@ func (d *DefaultServiceInstance) ToURLs(service *common.ServiceInfo) []*common.U
 		url := common.NewURLWithOptions(common.WithProtocol(service.Protocol),
 			common.WithIp(d.Host), common.WithPort(strconv.Itoa(d.Port)),
 			common.WithPath(service.Name), common.WithInterface(service.Name),
-			common.WithMethods(service.GetMethods()), common.WithParams(service.GetParams()))
+			common.WithMethods(service.GetMethods()), common.WithParams(service.GetParams()),
+			common.WithParams(url2.Values{constant.Tagkey: {d.Tag}}))
 		urls = append(urls, url)
 	}
 	return urls
@@ -198,6 +209,7 @@ func (d *DefaultServiceInstance) Copy(endpoint *Endpoint) ServiceInstance {
 		Healthy:         d.Healthy,
 		Metadata:        d.Metadata,
 		ServiceMetadata: d.ServiceMetadata,
+		Tag:             d.Tag,
 	}
 	dn.ID = d.GetAddress()
 	return dn
