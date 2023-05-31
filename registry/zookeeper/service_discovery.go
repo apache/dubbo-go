@@ -299,6 +299,7 @@ func (zksd *zookeeperServiceDiscovery) toCuratorInstance(instance registry.Servi
 		Port:                instance.GetPort(),
 		Payload:             pl,
 		RegistrationTimeUTC: 0,
+		Tag:                 instance.GetTag(),
 	}
 	return cuis
 }
@@ -327,5 +328,6 @@ func toZookeeperInstance(cris *curator_discovery.ServiceInstance) registry.Servi
 		Enable:      true,
 		Healthy:     true,
 		Metadata:    md,
+		Tag:         cris.Tag,
 	}
 }

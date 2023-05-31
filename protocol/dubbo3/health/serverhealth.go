@@ -25,7 +25,7 @@ import (
 )
 
 import (
-	logger "github.com/dubbogo/gost/log/logger"
+	"github.com/dubbogo/gost/log/logger"
 
 	"github.com/dubbogo/grpc-go/codes"
 	"github.com/dubbogo/grpc-go/status"
