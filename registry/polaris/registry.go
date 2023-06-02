@@ -92,8 +92,11 @@ type polarisRegistry struct {
 
 // Register will register the service @url to its polaris registry center.
 func (pr *polarisRegistry) Register(url *common.URL) error {
+	if getCategory(url) != "providers" {
+		return nil
+	}
 
-	serviceName := getServiceName(url)
+	serviceName := url.Interface()
 	request := createRegisterParam(url, serviceName)
 	request.Namespace = pr.namespace
 	resp, err := pr.provider.RegisterInstance(request)
@@ -115,11 +118,11 @@ func (pr *polarisRegistry) Register(url *common.URL) error {
 }
 
 // UnRegister returns nil if unregister successfully. If not, returns an error.
-func (pr *polarisRegistry) UnRegister(conf *common.URL) error {
-	request := createDeregisterParam(conf, getServiceName(conf))
+func (pr *polarisRegistry) UnRegister(url *common.URL) error {
+	request := createDeregisterParam(url, url.Interface())
 	request.Namespace = pr.namespace
 	if err := pr.provider.Deregister(request); err != nil {
-		return perrors.WithMessagef(err, "register(conf:%+v)", conf)
+		return perrors.WithMessagef(err, "fail to deregister(conf:%+v)", url)
 	}
 	return nil
 }
@@ -135,7 +138,7 @@ func (pr *polarisRegistry) Subscribe(url *common.URL, notifyListener registry.No
 	defer timer.Stop()
 
 	for {
-		serviceName := getSubscribeName(url)
+		serviceName := url.Interface()
 		watcher, err := pr.createPolarisWatcher(serviceName)
 		if err != nil {
 			logger.Warnf("getwatcher() = err:%v", perrors.WithStack(err))
@@ -174,9 +177,9 @@ func (pr *polarisRegistry) UnSubscribe(url *common.URL, notifyListener registry.
 
 // LoadSubscribeInstances load subscribe instance
 func (pr *polarisRegistry) LoadSubscribeInstances(url *common.URL, notify registry.NotifyListener) error {
-	serviceName := getSubscribeName(url)
-	resp, err := pr.consumer.GetAllInstances(&api.GetAllInstancesRequest{
-		GetAllInstancesRequest: model.GetAllInstancesRequest{
+	serviceName := url.Interface()
+	resp, err := pr.consumer.GetInstances(&api.GetInstancesRequest{
+		GetInstancesRequest: model.GetInstancesRequest{
 			Service:   serviceName,
 			Namespace: pr.namespace,
 		},

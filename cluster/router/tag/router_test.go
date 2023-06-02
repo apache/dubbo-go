@@ -129,8 +129,8 @@ func TestRouter(t *testing.T) {
 	t.Run("dynamicEmptyTag_requestEmptyTag", func(t *testing.T) {
 		p, err := NewTagPriorityRouter()
 		assert.Nil(t, err)
-		p.routerConfigs.Store(consumerUrl.Service()+constant.TagRouterRuleSuffix, config.RouterConfig{
-			Key:     consumerUrl.Service() + constant.TagRouterRuleSuffix,
+		p.routerConfigs.Store(consumerUrl.GetParam(constant.ApplicationKey, "")+constant.TagRouterRuleSuffix, config.RouterConfig{
+			Key:     consumerUrl.GetParam(constant.ApplicationKey, "") + constant.TagRouterRuleSuffix,
 			Force:   false,
 			Enabled: true,
 			Valid:   true,
@@ -149,8 +149,8 @@ func TestRouter(t *testing.T) {
 	t.Run("dynamicEmptyTag_requestHasTag", func(t *testing.T) {
 		p, err := NewTagPriorityRouter()
 		assert.Nil(t, err)
-		p.routerConfigs.Store(consumerUrl.Service()+constant.TagRouterRuleSuffix, config.RouterConfig{
-			Key:     consumerUrl.Service() + constant.TagRouterRuleSuffix,
+		p.routerConfigs.Store(consumerUrl.GetParam(constant.ApplicationKey, "")+constant.TagRouterRuleSuffix, config.RouterConfig{
+			Key:     consumerUrl.GetParam(constant.ApplicationKey, "") + constant.TagRouterRuleSuffix,
 			Force:   false,
 			Enabled: true,
 			Valid:   true,
@@ -170,8 +170,8 @@ func TestRouter(t *testing.T) {
 	t.Run("dynamicTag_requestEmptyTag", func(t *testing.T) {
 		p, err := NewTagPriorityRouter()
 		assert.Nil(t, err)
-		p.routerConfigs.Store(consumerUrl.Service()+constant.TagRouterRuleSuffix, config.RouterConfig{
-			Key:     consumerUrl.Service() + constant.TagRouterRuleSuffix,
+		p.routerConfigs.Store(consumerUrl.GetParam(constant.ApplicationKey, "")+constant.TagRouterRuleSuffix, config.RouterConfig{
+			Key:     consumerUrl.GetParam(constant.ApplicationKey, "") + constant.TagRouterRuleSuffix,
 			Force:   false,
 			Enabled: true,
 			Valid:   true,
@@ -194,8 +194,8 @@ func TestRouter(t *testing.T) {
 	t.Run("dynamicTag_emptyAddress_requestHasTag", func(t *testing.T) {
 		p, err := NewTagPriorityRouter()
 		assert.Nil(t, err)
-		p.routerConfigs.Store(consumerUrl.Service()+constant.TagRouterRuleSuffix, config.RouterConfig{
-			Key:     consumerUrl.Service() + constant.TagRouterRuleSuffix,
+		p.routerConfigs.Store(consumerUrl.GetParam(constant.ApplicationKey, "")+constant.TagRouterRuleSuffix, config.RouterConfig{
+			Key:     consumerUrl.GetParam(constant.ApplicationKey, "") + constant.TagRouterRuleSuffix,
 			Force:   false,
 			Enabled: true,
 			Valid:   true,
@@ -218,8 +218,8 @@ func TestRouter(t *testing.T) {
 	t.Run("dynamicTag_address_requestHasTag", func(t *testing.T) {
 		p, err := NewTagPriorityRouter()
 		assert.Nil(t, err)
-		p.routerConfigs.Store(consumerUrl.Service()+constant.TagRouterRuleSuffix, config.RouterConfig{
-			Key:     consumerUrl.Service() + constant.TagRouterRuleSuffix,
+		p.routerConfigs.Store(consumerUrl.GetParam(constant.ApplicationKey, "")+constant.TagRouterRuleSuffix, config.RouterConfig{
+			Key:     consumerUrl.GetParam(constant.ApplicationKey, "") + constant.TagRouterRuleSuffix,
 			Force:   false,
 			Enabled: true,
 			Valid:   true,
@@ -243,8 +243,8 @@ func TestRouter(t *testing.T) {
 	t.Run("dynamicTag_twoAddress_requestHasTag", func(t *testing.T) {
 		p, err := NewTagPriorityRouter()
 		assert.Nil(t, err)
-		p.routerConfigs.Store(consumerUrl.Service()+constant.TagRouterRuleSuffix, config.RouterConfig{
-			Key:     consumerUrl.Service() + constant.TagRouterRuleSuffix,
+		p.routerConfigs.Store(consumerUrl.GetParam(constant.ApplicationKey, "")+constant.TagRouterRuleSuffix, config.RouterConfig{
+			Key:     consumerUrl.GetParam(constant.ApplicationKey, "") + constant.TagRouterRuleSuffix,
 			Force:   false,
 			Enabled: true,
 			Valid:   true,
@@ -268,8 +268,8 @@ func TestRouter(t *testing.T) {
 	t.Run("dynamicTag_addressNotMatch_requestHasTag", func(t *testing.T) {
 		p, err := NewTagPriorityRouter()
 		assert.Nil(t, err)
-		p.routerConfigs.Store(consumerUrl.Service()+constant.TagRouterRuleSuffix, config.RouterConfig{
-			Key:     consumerUrl.Service() + constant.TagRouterRuleSuffix,
+		p.routerConfigs.Store(consumerUrl.GetParam(constant.ApplicationKey, "")+constant.TagRouterRuleSuffix, config.RouterConfig{
+			Key:     consumerUrl.GetParam(constant.ApplicationKey, "") + constant.TagRouterRuleSuffix,
 			Force:   false,
 			Enabled: true,
 			Valid:   true,
@@ -293,8 +293,8 @@ func TestRouter(t *testing.T) {
 	t.Run("dynamicTag_notValid", func(t *testing.T) {
 		p, err := NewTagPriorityRouter()
 		assert.Nil(t, err)
-		p.routerConfigs.Store(consumerUrl.Service()+constant.TagRouterRuleSuffix, config.RouterConfig{
-			Key:     consumerUrl.Service() + constant.TagRouterRuleSuffix,
+		p.routerConfigs.Store(consumerUrl.GetParam(constant.ApplicationKey, "")+constant.TagRouterRuleSuffix, config.RouterConfig{
+			Key:     consumerUrl.GetParam(constant.ApplicationKey, "") + constant.TagRouterRuleSuffix,
 			Force:   false,
 			Enabled: true,
 			Valid:   false,
@@ -338,6 +338,7 @@ func TestNotify(t *testing.T) {
 		ivk := protocol.NewBaseInvoker(url1)
 		ivk1 := protocol.NewBaseInvoker(url2)
 		ivk2 := protocol.NewBaseInvoker(url3)
+		ivk.GetURL().SetParam(constant.ApplicationKey, "org.apache.dubbo.UserProvider.Test")
 		invokerList := make([]protocol.Invoker, 0, 3)
 		invokerList = append(invokerList, ivk)
 		invokerList = append(invokerList, ivk1)
@@ -359,7 +360,7 @@ tags:
 		dc, _ := mockFactory.GetDynamicConfiguration(ccUrl)
 		common_cfg.GetEnvInstance().SetDynamicConfiguration(dc)
 		p.Notify(invokerList)
-		value, ok := p.routerConfigs.Load(url3.Service() + constant.TagRouterRuleSuffix)
+		value, ok := p.routerConfigs.Load(url1.GetParam(constant.ApplicationKey, "") + constant.TagRouterRuleSuffix)
 		assert.True(t, ok)
 		routerCfg := value.(config.RouterConfig)
 		assert.True(t, routerCfg.Key == "org.apache.dubbo.UserProvider.Test")
@@ -374,6 +375,7 @@ tags:
 		ivk := protocol.NewBaseInvoker(url1)
 		ivk1 := protocol.NewBaseInvoker(url2)
 		ivk2 := protocol.NewBaseInvoker(url3)
+		ivk.GetURL().SetParam(constant.ApplicationKey, "org.apache.dubbo.UserProvider.Test")
 		invokerList := make([]protocol.Invoker, 0, 3)
 		invokerList = append(invokerList, ivk)
 		invokerList = append(invokerList, ivk1)
@@ -386,7 +388,7 @@ tags:
 		dc, _ := mockFactory.GetDynamicConfiguration(ccUrl)
 		common_cfg.GetEnvInstance().SetDynamicConfiguration(dc)
 		p.Notify(invokerList)
-		value, ok := p.routerConfigs.Load(url3.Service() + constant.TagRouterRuleSuffix)
+		value, ok := p.routerConfigs.Load(url1.GetParam(constant.ApplicationKey, "") + constant.TagRouterRuleSuffix)
 		assert.True(t, ok == false)
 		assert.True(t, value == nil)
 	})

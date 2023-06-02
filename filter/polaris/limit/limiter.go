@@ -83,7 +83,7 @@ func (pl *polarisTpsLimiter) buildQuotaRequest(url *common.URL, invoaction proto
 		}
 	}
 
-	svc := "providers:" + url.Service()
+	svc := url.Interface()
 	method := invoaction.MethodName()
 	if applicationMode {
 		svc = config.GetApplicationConfig().Name

@@ -15,16 +15,23 @@
  * limitations under the License.
  */
 
-package curator_discovery
+package extension
 
-// ServiceInstance which define in curator-x-discovery, please refer to
-// https://github.com/apache/curator/blob/master/curator-x-discovery/src/main/java/org/apache/curator/x/discovery/ServiceInstance.java
-type ServiceInstance struct {
-	Name                string      `json:"name,omitempty"`
-	ID                  string      `json:"id,omitempty"`
-	Address             string      `json:"address,omitempty"`
-	Port                int         `json:"port,omitempty"`
-	Payload             interface{} `json:"payload,omitempty"`
-	RegistrationTimeUTC int64       `json:"registrationTimeUTC,omitempty"`
-	Tag                 string      `json:"tag,omitempty"`
+import (
+	"dubbo.apache.org/dubbo-go/v3/cluster/router/condition/matcher/pattern_value"
+)
+
+// SetValuePattern sets create valuePattern function with @name
+func SetValuePattern(name string, fun func() pattern_value.ValuePattern) {
+	pattern_value.SetValuePattern(name, fun)
+}
+
+// GetValuePattern gets create valuePattern function by name
+func GetValuePattern(name string) pattern_value.ValuePattern {
+	return pattern_value.GetValuePattern(name)
+}
+
+// GetValuePatterns gets all create valuePattern function
+func GetValuePatterns() map[string]func() pattern_value.ValuePattern {
+	return pattern_value.GetValuePatterns()
 }

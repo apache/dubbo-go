@@ -79,11 +79,10 @@ func newPolarisServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, err
 	newInstance := &polarisServiceDiscovery{
 		namespace:         discoveryURL.GetParam(constant.RegistryNamespaceKey, constant.PolarisDefaultNamespace),
 		descriptor:        descriptor,
-		instanceLock:      &sync.RWMutex{},
 		consumer:          consumerApi,
 		provider:          providerApi,
+		services:          gxset.NewSet(),
 		registryInstances: make(map[string]*PolarisInstanceInfo),
-		listenerLock:      &sync.RWMutex{},
 		watchers:          make(map[string]*PolarisServiceWatcher),
 	}
 	return newInstance, nil
@@ -95,10 +94,10 @@ type polarisServiceDiscovery struct {
 	provider          api.ProviderAPI
 	consumer          api.ConsumerAPI
 	services          *gxset.HashSet
-	instanceLock      *sync.RWMutex
+	instanceLock      sync.RWMutex
 	registryInstances map[string]*PolarisInstanceInfo
 	watchers          map[string]*PolarisServiceWatcher
-	listenerLock      *sync.RWMutex
+	listenerLock      sync.RWMutex
 }
 
 // Destroy destroy polarisServiceDiscovery, will do unregister all ServiceInstance
