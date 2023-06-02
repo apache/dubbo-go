@@ -19,6 +19,7 @@ package zookeeper
 
 import (
 	"encoding/json"
+	perrors "github.com/pkg/errors"
 	"strings"
 )
 
@@ -79,7 +80,7 @@ func (m *zookeeperMetadataReport) PublishAppMetadata(metadataIdentifier *identif
 		return err
 	}
 	err = m.client.CreateWithValue(k, data)
-	if err == zk.ErrNodeExists {
+	if perrors.Is(err, zk.ErrNodeExists) {
 		logger.Debugf("Try to create the node data failed. In most cases, it's not a problem. ")
 		return nil
 	}
@@ -90,7 +91,7 @@ func (m *zookeeperMetadataReport) PublishAppMetadata(metadataIdentifier *identif
 func (m *zookeeperMetadataReport) StoreProviderMetadata(providerIdentifier *identifier.MetadataIdentifier, serviceDefinitions string) error {
 	k := m.rootDir + providerIdentifier.GetFilePathKey()
 	err := m.client.CreateWithValue(k, []byte(serviceDefinitions))
-	if err == zk.ErrNodeExists {
+	if perrors.Is(err, zk.ErrNodeExists) {
 		logger.Debugf("Try to store provider metadata failed. In most cases, it's not a problem. ")
 		return nil
 	}
@@ -101,7 +102,7 @@ func (m *zookeeperMetadataReport) StoreProviderMetadata(providerIdentifier *iden
 func (m *zookeeperMetadataReport) StoreConsumerMetadata(consumerMetadataIdentifier *identifier.MetadataIdentifier, serviceParameterString string) error {
 	k := m.rootDir + consumerMetadataIdentifier.GetFilePathKey()
 	err := m.client.CreateWithValue(k, []byte(serviceParameterString))
-	if err == zk.ErrNodeExists {
+	if perrors.Is(err, zk.ErrNodeExists) {
 		logger.Debugf("Try to store consumer metadata failed. In most cases, it's not a problem. ")
 		return nil
 	}
