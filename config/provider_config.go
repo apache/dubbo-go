@@ -76,12 +76,17 @@ func (c *ProviderConfig) Init(rc *RootConfig) error {
 	if c == nil {
 		return nil
 	}
-
-	providerNames := make([]string, 0, len(c.Services))
-	for k := range c.Services {
-		providerNames = append(providerNames, k)
+	buildDebugMsg := func() string {
+		if len(c.Services) == 0 {
+			return "empty"
+		}
+		providerNames := make([]string, 0, len(c.Services))
+		for k := range c.Services {
+			providerNames = append(providerNames, k)
+		}
+		return strings.Join(providerNames, ", ")
 	}
-	logger.Debugf("Registered provider services are %v", strings.Join(providerNames, ", "))
+	logger.Debugf("Registered provider services are %v", buildDebugMsg())
 
 	c.RegistryIDs = translateIds(c.RegistryIDs)
 	if len(c.RegistryIDs) <= 0 {

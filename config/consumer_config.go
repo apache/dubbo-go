@@ -67,11 +67,17 @@ func (cc *ConsumerConfig) Init(rc *RootConfig) error {
 		return nil
 	}
 
-	consumerNames := make([]string, 0, len(cc.References))
-	for k := range cc.References {
-		consumerNames = append(consumerNames, k)
+	buildDebugMsg := func() string {
+		if len(cc.References) == 0 {
+			return "empty"
+		}
+		consumerNames := make([]string, 0, len(cc.References))
+		for k := range cc.References {
+			consumerNames = append(consumerNames, k)
+		}
+		return strings.Join(consumerNames, ", ")
 	}
-	logger.Debugf("Registered consumer clients are %v", strings.Join(consumerNames, ", "))
+	logger.Debugf("Registered consumer clients are %v", buildDebugMsg())
 
 	cc.RegistryIDs = translateIds(cc.RegistryIDs)
 	if len(cc.RegistryIDs) <= 0 {
