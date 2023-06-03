@@ -87,18 +87,18 @@ func testClientStream(cli *greetconnect.GreetServiceClientImpl) error {
 	if err != nil {
 		return err
 	}
-	logger.Infof("GRPC_NEW bidi stream resp: %s", resp.Msg)
+	logger.Infof("GRPC_NEW client stream resp: %s", resp.Msg)
 	return nil
 }
 
 func testServerStream(cli *greetconnect.GreetServiceClientImpl) error {
-	logger.Info("start to test GRPC_NEW client stream")
+	logger.Info("start to test GRPC_NEW server stream")
 	stream, err := cli.GreetServerStream(context.Background(), connect.NewRequest(&greet.GreetServerStreamRequest{Name: "dubbo"}))
 	if err != nil {
 		return err
 	}
 	for stream.Receive() {
-		logger.Infof("GRPC_NEW bidi stream resp: %s", stream.Msg().Greeting)
+		logger.Infof("GRPC_NEW server stream resp: %s", stream.Msg().Greeting)
 	}
 	if stream.Err() != nil {
 		return err
