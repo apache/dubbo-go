@@ -25,6 +25,7 @@ import (
 	"sync"
 )
 
+// GrpcNewExporter wraps BaseExporter
 type GrpcNewExporter struct {
 	*protocol.BaseExporter
 }
@@ -35,7 +36,7 @@ func NewGrpcNewExporter(key string, invoker protocol.Invoker, exporterMap *sync.
 	}
 }
 
-// UnExport and unregister gRPC service from registry and memory.
+// UnExport and unregister GRPC_NEW service from registry and memory.
 func (gne *GrpcNewExporter) UnExport() {
 	interfaceName := gne.GetInvoker().GetURL().GetParam(constant.InterfaceKey, "")
 	gne.BaseExporter.UnExport()

@@ -28,6 +28,7 @@ import (
 	protocol "dubbo.apache.org/dubbo-go/v3/protocol"
 	connect "dubbo.apache.org/dubbo-go/v3/protocol/grpc_new/connect"
 	v1 "dubbo.apache.org/dubbo-go/v3/protocol/grpc_new/connect/proto/connect/ping/v1"
+	invocation "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	errors "errors"
 	http "net/http"
 	strings "strings"
@@ -72,11 +73,11 @@ type PingServiceClient interface {
 	// Fail always fails.
 	Fail(context.Context, *connect.Request[v1.FailRequest]) (*connect.Response[v1.FailResponse], error)
 	// Sum calculates the sum of the numbers sent on the stream.
-	Sum(context.Context) *connect.ClientStreamForClient[v1.SumRequest, v1.SumResponse]
+	Sum(context.Context) (*connect.ClientStreamForClient[v1.SumRequest, v1.SumResponse], error)
 	// CountUp returns a stream of the numbers up to the given request.
 	CountUp(context.Context, *connect.Request[v1.CountUpRequest]) (*connect.ServerStreamForClient[v1.CountUpResponse], error)
 	// CumSum determines the cumulative sum of all the numbers sent on the stream.
-	CumSum(context.Context) *connect.BidiStreamForClient[v1.CumSumRequest, v1.CumSumResponse]
+	CumSum(context.Context) (*connect.BidiStreamForClient[v1.CumSumRequest, v1.CumSumResponse], error)
 }
 
 // NewPingServiceClient constructs a client for the connect.ping.v1.PingService service. By default,
@@ -138,7 +139,7 @@ func (c *pingServiceClient) Fail(ctx context.Context, req *connect.Request[v1.Fa
 }
 
 // Sum calls connect.ping.v1.PingService.Sum.
-func (c *pingServiceClient) Sum(ctx context.Context) *connect.ClientStreamForClient[v1.SumRequest, v1.SumResponse] {
+func (c *pingServiceClient) Sum(ctx context.Context) (*connect.ClientStreamForClient[v1.SumRequest, v1.SumResponse], error) {
 	return c.sum.CallClientStream(ctx)
 }
 
@@ -148,7 +149,7 @@ func (c *pingServiceClient) CountUp(ctx context.Context, req *connect.Request[v1
 }
 
 // CumSum calls connect.ping.v1.PingService.CumSum.
-func (c *pingServiceClient) CumSum(ctx context.Context) *connect.BidiStreamForClient[v1.CumSumRequest, v1.CumSumResponse] {
+func (c *pingServiceClient) CumSum(ctx context.Context) (*connect.BidiStreamForClient[v1.CumSumRequest, v1.CumSumResponse], error) {
 	return c.cumSum.CallBidiStream(ctx)
 }
 
@@ -159,11 +160,11 @@ type PingServiceClientImpl struct {
 	// Fail always fails.
 	Fail func(ctx context.Context, req *connect.Request[v1.FailRequest]) (*connect.Response[v1.FailResponse], error)
 	// Sum calculates the sum of the numbers sent on the stream.
-	Sum func(ctx context.Context) *connect.ClientStreamForClient[v1.SumRequest, v1.SumResponse]
+	Sum func(ctx context.Context) (*connect.ClientStreamForClient[v1.SumRequest, v1.SumResponse], error)
 	// CountUp returns a stream of the numbers up to the given request.
 	CountUp func(ctx context.Context, req *connect.Request[v1.CountUpRequest]) (*connect.ServerStreamForClient[v1.CountUpResponse], error)
 	// CumSum determines the cumulative sum of all the numbers sent on the stream.
-	CumSum func(ctx context.Context) *connect.BidiStreamForClient[v1.CumSumRequest, v1.CumSumResponse]
+	CumSum func(ctx context.Context) (*connect.BidiStreamForClient[v1.CumSumRequest, v1.CumSumResponse], error)
 }
 
 // GetDubboStub is used for Dubbo to initialize client interface
@@ -243,11 +244,68 @@ func (s *PingServiceProviderBase) GetProxyImpl() protocol.Invoker {
 }
 
 func (s *PingServiceProviderBase) BuildHandler(impl interface{}, opts ...connect.HandlerOption) (string, http.Handler) {
-	svc, ok := impl.(PingServiceHandler)
+	_, ok := impl.(PingServiceHandler)
 	if !ok {
 		panic("impl has not implemented PingServiceHandler")
 	}
-	return NewPingServiceHandler(svc, opts...)
+	mux := http.NewServeMux()
+	mux.Handle(PingServicePingProcedure, connect.NewUnaryHandler(
+		PingServicePingProcedure,
+		func(ctx context.Context, req *connect.Request[v1.PingRequest]) (*connect.Response[v1.PingResponse], error) {
+			var args []interface{}
+			args = append(args, req)
+			invo := invocation.NewRPCInvocation("Ping", args, nil)
+			res := s.proxyImpl.Invoke(ctx, invo)
+			return res.Result().(*connect.Response[v1.PingResponse]), res.Error()
+		},
+		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
+		connect.WithHandlerOptions(opts...),
+	))
+	mux.Handle(PingServiceFailProcedure, connect.NewUnaryHandler(
+		PingServiceFailProcedure,
+		func(ctx context.Context, req *connect.Request[v1.FailRequest]) (*connect.Response[v1.FailResponse], error) {
+			var args []interface{}
+			args = append(args, req)
+			invo := invocation.NewRPCInvocation("Fail", args, nil)
+			res := s.proxyImpl.Invoke(ctx, invo)
+			return res.Result().(*connect.Response[v1.FailResponse]), res.Error()
+		},
+		opts...,
+	))
+	mux.Handle(PingServiceSumProcedure, connect.NewClientStreamHandler(
+		PingServiceSumProcedure,
+		func(ctx context.Context, stream *connect.ClientStream[v1.SumRequest]) (*connect.Response[v1.SumResponse], error) {
+			var args []interface{}
+			args = append(args, stream)
+			invo := invocation.NewRPCInvocation("Sum", args, nil)
+			res := s.proxyImpl.Invoke(ctx, invo)
+			return res.Result().(*connect.Response[v1.SumResponse]), res.Error()
+		},
+		opts...,
+	))
+	mux.Handle(PingServiceCountUpProcedure, connect.NewServerStreamHandler(
+		PingServiceCountUpProcedure,
+		func(ctx context.Context, req *connect.Request[v1.CountUpRequest], stream *connect.ServerStream[v1.CountUpResponse]) error {
+			var args []interface{}
+			args = append(args, req, stream)
+			invo := invocation.NewRPCInvocation("CountUp", args, nil)
+			res := s.proxyImpl.Invoke(ctx, invo)
+			return res.Error()
+		},
+		opts...,
+	))
+	mux.Handle(PingServiceCumSumProcedure, connect.NewBidiStreamHandler(
+		PingServiceCumSumProcedure,
+		func(ctx context.Context, stream *connect.BidiStream[v1.CumSumRequest, v1.CumSumResponse]) error {
+			var args []interface{}
+			args = append(args, stream)
+			invo := invocation.NewRPCInvocation("CumSum", args, nil)
+			res := s.proxyImpl.Invoke(ctx, invo)
+			return res.Error()
+		},
+		opts...,
+	))
+	return "/connect.ping.v1.PingService/", mux
 }
 
 func (s *PingServiceProviderBase) Reference() string {

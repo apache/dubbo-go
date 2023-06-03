@@ -52,15 +52,17 @@ func TestNewClient_InitFailure(t *testing.T) {
 
 	t.Run("bidi", func(t *testing.T) {
 		t.Parallel()
-		bidiStream := client.CumSum(context.Background())
-		err := bidiStream.Send(&pingv1.CumSumRequest{})
+		bidiStream, err := client.CumSum(context.Background())
+		validateExpectedError(t, err)
+		err = bidiStream.Send(&pingv1.CumSumRequest{})
 		validateExpectedError(t, err)
 	})
 
 	t.Run("client_stream", func(t *testing.T) {
 		t.Parallel()
-		clientStream := client.Sum(context.Background())
-		err := clientStream.Send(&pingv1.SumRequest{})
+		clientStream, err := client.Sum(context.Background())
+		validateExpectedError(t, err)
+		err = clientStream.Send(&pingv1.SumRequest{})
 		validateExpectedError(t, err)
 	})
 
@@ -97,7 +99,8 @@ func TestClientPeer(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, r.Msg.Text, text)
 		// client streaming
-		clientStream := client.Sum(ctx)
+		clientStream, err := client.Sum(ctx)
+		assert.Nil(t, err)
 		t.Cleanup(func() {
 			_, closeErr := clientStream.CloseAndReceive()
 			assert.Nil(t, closeErr)
@@ -113,7 +116,8 @@ func TestClientPeer(t *testing.T) {
 		})
 		assert.Nil(t, err)
 		// bidi streaming
-		bidiStream := client.CumSum(ctx)
+		bidiStream, err := client.CumSum(ctx)
+		assert.Nil(t, err)
 		t.Cleanup(func() {
 			assert.Nil(t, bidiStream.CloseRequest())
 			assert.Nil(t, bidiStream.CloseResponse())

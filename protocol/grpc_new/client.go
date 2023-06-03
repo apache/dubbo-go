@@ -18,20 +18,20 @@
 package grpc_new
 
 import (
+	"context"
 	"crypto/tls"
 	connect "dubbo.apache.org/dubbo-go/v3/protocol/grpc_new/connect"
 	"golang.org/x/net/http2"
+	"net"
 	"net/http"
 	"reflect"
-	"sync"
+	"strings"
 )
 
 import (
 	"github.com/dubbogo/gost/log/logger"
 
 	"github.com/dustin/go-humanize"
-
-	"gopkg.in/yaml.v2"
 )
 
 import (
@@ -40,19 +40,19 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config"
 )
 
-var clientConf *ClientConfig
-var clientConfInitOnce sync.Once
+const (
+	httpPrefix  string = "http://"
+	httpsPrefix string = "https://"
+)
 
-// Client is gRPC client include client connection and invoker
+// Client is GRPC_NEW client wrapping connection and dubbo invoker
 type Client struct {
 	*http.Client
 	invoker reflect.Value
 }
 
-// NewClient creates a new gRPC client.
+// NewClient creates a new GRPC_NEW client.
 func NewClient(url *common.URL) (*Client, error) {
-	clientConfInitOnce.Do(clientInit)
-
 	// If global trace instance was set, it means trace function enabled.
 	// If not, will return NoopTracer.
 	//tracer := opentracing.GlobalTracer()
@@ -85,6 +85,7 @@ func NewClient(url *common.URL) (*Client, error) {
 	//	),
 	//)
 	var cfg *tls.Config
+	var tlsFlag bool
 	var err error
 	tlsConfig := config.GetRootConfig().TLSConfig
 	if tlsConfig != nil {
@@ -98,6 +99,7 @@ func NewClient(url *common.URL) (*Client, error) {
 		if err != nil {
 			return nil, err
 		}
+		tlsFlag = true
 	}
 
 	key := url.GetParam(constant.InterfaceKey, "")
@@ -116,8 +118,17 @@ func NewClient(url *common.URL) (*Client, error) {
 		}
 		cliOpts = append(cliOpts, connect.WithHTTPGet())
 	case GRPC_NEW:
-		transport = &http2.Transport{
-			TLSClientConfig: cfg,
+		if tlsFlag {
+			transport = &http2.Transport{
+				TLSClientConfig: cfg,
+			}
+		} else {
+			transport = &http2.Transport{
+				DialTLSContext: func(_ context.Context, network, addr string, _ *tls.Config) (net.Conn, error) {
+					return net.Dial(network, addr)
+				},
+				AllowHTTP: true,
+			}
 		}
 		cliOpts = append(cliOpts, connect.WithGRPC())
 	// todo: process triple
@@ -127,7 +138,7 @@ func NewClient(url *common.URL) (*Client, error) {
 	cli := &http.Client{
 		Transport: transport,
 	}
-	invoker := getInvoker(impl, cli, url.Location, cliOpts...)
+	invoker := getInvokerFromStub(impl, cli, url.Location, tlsFlag, cliOpts...)
 
 	return &Client{
 		Client:  cli,
@@ -135,51 +146,21 @@ func NewClient(url *common.URL) (*Client, error) {
 	}, nil
 }
 
-func clientInit() {
-	// load rootConfig from runtime
-	rootConfig := config.GetRootConfig()
-
-	clientConfig := GetClientConfig()
-	clientConf = &clientConfig
-
-	// check client config and decide whether to use the default config
-	defer func() {
-		if clientConf == nil || len(clientConf.ContentSubType) == 0 {
-			defaultClientConfig := GetDefaultClientConfig()
-			clientConf = &defaultClientConfig
-		}
-		if err := clientConf.Validate(); err != nil {
-			panic(err)
-		}
-	}()
-
-	if rootConfig.Application == nil {
-		return
-	}
-	protocolConf := config.GetRootConfig().Protocols
-
-	if protocolConf == nil {
-		logger.Info("protocol_conf default use dubbo config")
+// getInvokerFromStub makes use of GetDubboStub of dubbo clientImpl to generate rpc client
+func getInvokerFromStub(impl interface{}, cli connect.HTTPClient, baseURL string, tlsFlag bool, opts ...connect.ClientOption) interface{} {
+	baseURL = strings.TrimPrefix(baseURL, httpPrefix)
+	baseURL = strings.TrimPrefix(baseURL, httpsPrefix)
+	if tlsFlag {
+		baseURL = httpsPrefix + baseURL
 	} else {
-		grpcNewConf := protocolConf[GRPC_NEW]
-		if grpcNewConf == nil {
-			logger.Warnf("grpcConf is nil")
-			return
-		}
-		grpcNewConfByte, err := yaml.Marshal(grpcNewConf)
-		if err != nil {
-			panic(err)
-		}
-		err = yaml.Unmarshal(grpcNewConfByte, clientConf)
-		if err != nil {
-			panic(err)
-		}
+		baseURL = httpPrefix + baseURL
 	}
-}
-
-func getInvoker(impl interface{}, cli connect.HTTPClient, baseURL string, opts ...connect.ClientOption) interface{} {
 	var in []reflect.Value
-	in = append(in, reflect.ValueOf(cli), reflect.ValueOf(baseURL), reflect.ValueOf(opts))
+	in = append(in, reflect.ValueOf(cli), reflect.ValueOf(baseURL))
+	for _, opt := range opts {
+		in = append(in, reflect.ValueOf(opt))
+	}
+	// GetDubboStub(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption)
 	method := reflect.ValueOf(impl).MethodByName("GetDubboStub")
 	res := method.Call(in)
 	return res[0].Interface()

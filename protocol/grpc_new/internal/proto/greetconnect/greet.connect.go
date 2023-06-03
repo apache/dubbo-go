@@ -9,6 +9,7 @@ import (
 	protocol "dubbo.apache.org/dubbo-go/v3/protocol"
 	connect "dubbo.apache.org/dubbo-go/v3/protocol/grpc_new/connect"
 	proto "dubbo.apache.org/dubbo-go/v3/protocol/grpc_new/internal/proto"
+	invocation "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	errors "errors"
 	http "net/http"
 	strings "strings"
@@ -39,12 +40,20 @@ const (
 	// GreetServiceGreetStreamProcedure is the fully-qualified name of the GreetService's GreetStream
 	// RPC.
 	GreetServiceGreetStreamProcedure = "/greet.GreetService/GreetStream"
+	// GreetServiceGreetClientStreamProcedure is the fully-qualified name of the GreetService's
+	// GreetClientStream RPC.
+	GreetServiceGreetClientStreamProcedure = "/greet.GreetService/GreetClientStream"
+	// GreetServiceGreetServerStreamProcedure is the fully-qualified name of the GreetService's
+	// GreetServerStream RPC.
+	GreetServiceGreetServerStreamProcedure = "/greet.GreetService/GreetServerStream"
 )
 
 // GreetServiceClient is a client for the greet.GreetService service.
 type GreetServiceClient interface {
 	Greet(context.Context, *connect.Request[proto.GreetRequest]) (*connect.Response[proto.GreetResponse], error)
-	GreetStream(context.Context) *connect.BidiStreamForClient[proto.GreetStreamRequest, proto.GreetStreamResponse]
+	GreetStream(context.Context) (*connect.BidiStreamForClient[proto.GreetStreamRequest, proto.GreetStreamResponse], error)
+	GreetClientStream(context.Context) (*connect.ClientStreamForClient[proto.GreetClientStreamRequest, proto.GreetClientStreamResponse], error)
+	GreetServerStream(context.Context, *connect.Request[proto.GreetServerStreamRequest]) (*connect.ServerStreamForClient[proto.GreetServerStreamResponse], error)
 }
 
 // NewGreetServiceClient constructs a client for the greet.GreetService service. By default, it uses
@@ -67,13 +76,25 @@ func NewGreetServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			baseURL+GreetServiceGreetStreamProcedure,
 			opts...,
 		),
+		greetClientStream: connect.NewClient[proto.GreetClientStreamRequest, proto.GreetClientStreamResponse](
+			httpClient,
+			baseURL+GreetServiceGreetClientStreamProcedure,
+			opts...,
+		),
+		greetServerStream: connect.NewClient[proto.GreetServerStreamRequest, proto.GreetServerStreamResponse](
+			httpClient,
+			baseURL+GreetServiceGreetServerStreamProcedure,
+			opts...,
+		),
 	}
 }
 
 // greetServiceClient implements GreetServiceClient.
 type greetServiceClient struct {
-	greet       *connect.Client[proto.GreetRequest, proto.GreetResponse]
-	greetStream *connect.Client[proto.GreetStreamRequest, proto.GreetStreamResponse]
+	greet             *connect.Client[proto.GreetRequest, proto.GreetResponse]
+	greetStream       *connect.Client[proto.GreetStreamRequest, proto.GreetStreamResponse]
+	greetClientStream *connect.Client[proto.GreetClientStreamRequest, proto.GreetClientStreamResponse]
+	greetServerStream *connect.Client[proto.GreetServerStreamRequest, proto.GreetServerStreamResponse]
 }
 
 // Greet calls greet.GreetService.Greet.
@@ -82,14 +103,26 @@ func (c *greetServiceClient) Greet(ctx context.Context, req *connect.Request[pro
 }
 
 // GreetStream calls greet.GreetService.GreetStream.
-func (c *greetServiceClient) GreetStream(ctx context.Context) *connect.BidiStreamForClient[proto.GreetStreamRequest, proto.GreetStreamResponse] {
+func (c *greetServiceClient) GreetStream(ctx context.Context) (*connect.BidiStreamForClient[proto.GreetStreamRequest, proto.GreetStreamResponse], error) {
 	return c.greetStream.CallBidiStream(ctx)
+}
+
+// GreetClientStream calls greet.GreetService.GreetClientStream.
+func (c *greetServiceClient) GreetClientStream(ctx context.Context) (*connect.ClientStreamForClient[proto.GreetClientStreamRequest, proto.GreetClientStreamResponse], error) {
+	return c.greetClientStream.CallClientStream(ctx)
+}
+
+// GreetServerStream calls greet.GreetService.GreetServerStream.
+func (c *greetServiceClient) GreetServerStream(ctx context.Context, req *connect.Request[proto.GreetServerStreamRequest]) (*connect.ServerStreamForClient[proto.GreetServerStreamResponse], error) {
+	return c.greetServerStream.CallServerStream(ctx, req)
 }
 
 // GreetServiceClientImpl is the Dubbo client api for the greet.GreetService service.
 type GreetServiceClientImpl struct {
-	Greet       func(ctx context.Context, req *connect.Request[proto.GreetRequest]) (*connect.Response[proto.GreetResponse], error)
-	GreetStream func(ctx context.Context) *connect.BidiStreamForClient[proto.GreetStreamRequest, proto.GreetStreamResponse]
+	Greet             func(ctx context.Context, req *connect.Request[proto.GreetRequest]) (*connect.Response[proto.GreetResponse], error)
+	GreetStream       func(ctx context.Context) (*connect.BidiStreamForClient[proto.GreetStreamRequest, proto.GreetStreamResponse], error)
+	GreetClientStream func(ctx context.Context) (*connect.ClientStreamForClient[proto.GreetClientStreamRequest, proto.GreetClientStreamResponse], error)
+	GreetServerStream func(ctx context.Context, req *connect.Request[proto.GreetServerStreamRequest]) (*connect.ServerStreamForClient[proto.GreetServerStreamResponse], error)
 }
 
 // GetDubboStub is used for Dubbo to initialize client interface
@@ -106,6 +139,8 @@ func (c *GreetServiceClientImpl) Reference() string {
 type GreetServiceHandler interface {
 	Greet(context.Context, *connect.Request[proto.GreetRequest]) (*connect.Response[proto.GreetResponse], error)
 	GreetStream(context.Context, *connect.BidiStream[proto.GreetStreamRequest, proto.GreetStreamResponse]) error
+	GreetClientStream(context.Context, *connect.ClientStream[proto.GreetClientStreamRequest]) (*connect.Response[proto.GreetClientStreamResponse], error)
+	GreetServerStream(context.Context, *connect.Request[proto.GreetServerStreamRequest], *connect.ServerStream[proto.GreetServerStreamResponse]) error
 }
 
 // NewGreetServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -123,6 +158,16 @@ func NewGreetServiceHandler(svc GreetServiceHandler, opts ...connect.HandlerOpti
 	mux.Handle(GreetServiceGreetStreamProcedure, connect.NewBidiStreamHandler(
 		GreetServiceGreetStreamProcedure,
 		svc.GreetStream,
+		opts...,
+	))
+	mux.Handle(GreetServiceGreetClientStreamProcedure, connect.NewClientStreamHandler(
+		GreetServiceGreetClientStreamProcedure,
+		svc.GreetClientStream,
+		opts...,
+	))
+	mux.Handle(GreetServiceGreetServerStreamProcedure, connect.NewServerStreamHandler(
+		GreetServiceGreetServerStreamProcedure,
+		svc.GreetServerStream,
 		opts...,
 	))
 	return "/greet.GreetService/", mux
@@ -145,11 +190,56 @@ func (s *GreetServiceProviderBase) GetProxyImpl() protocol.Invoker {
 }
 
 func (s *GreetServiceProviderBase) BuildHandler(impl interface{}, opts ...connect.HandlerOption) (string, http.Handler) {
-	svc, ok := impl.(GreetServiceHandler)
+	_, ok := impl.(GreetServiceHandler)
 	if !ok {
 		panic("impl has not implemented GreetServiceHandler")
 	}
-	return NewGreetServiceHandler(svc, opts...)
+	mux := http.NewServeMux()
+	mux.Handle(GreetServiceGreetProcedure, connect.NewUnaryHandler(
+		GreetServiceGreetProcedure,
+		func(ctx context.Context, req *connect.Request[proto.GreetRequest]) (*connect.Response[proto.GreetResponse], error) {
+			var args []interface{}
+			args = append(args, req)
+			invo := invocation.NewRPCInvocation("Greet", args, nil)
+			res := s.proxyImpl.Invoke(ctx, invo)
+			return res.Result().(*connect.Response[proto.GreetResponse]), res.Error()
+		},
+		opts...,
+	))
+	mux.Handle(GreetServiceGreetStreamProcedure, connect.NewBidiStreamHandler(
+		GreetServiceGreetStreamProcedure,
+		func(ctx context.Context, stream *connect.BidiStream[proto.GreetStreamRequest, proto.GreetStreamResponse]) error {
+			var args []interface{}
+			args = append(args, stream)
+			invo := invocation.NewRPCInvocation("GreetStream", args, nil)
+			res := s.proxyImpl.Invoke(ctx, invo)
+			return res.Error()
+		},
+		opts...,
+	))
+	mux.Handle(GreetServiceGreetClientStreamProcedure, connect.NewClientStreamHandler(
+		GreetServiceGreetClientStreamProcedure,
+		func(ctx context.Context, stream *connect.ClientStream[proto.GreetClientStreamRequest]) (*connect.Response[proto.GreetClientStreamResponse], error) {
+			var args []interface{}
+			args = append(args, stream)
+			invo := invocation.NewRPCInvocation("GreetClientStream", args, nil)
+			res := s.proxyImpl.Invoke(ctx, invo)
+			return res.Result().(*connect.Response[proto.GreetClientStreamResponse]), res.Error()
+		},
+		opts...,
+	))
+	mux.Handle(GreetServiceGreetServerStreamProcedure, connect.NewServerStreamHandler(
+		GreetServiceGreetServerStreamProcedure,
+		func(ctx context.Context, req *connect.Request[proto.GreetServerStreamRequest], stream *connect.ServerStream[proto.GreetServerStreamResponse]) error {
+			var args []interface{}
+			args = append(args, req, stream)
+			invo := invocation.NewRPCInvocation("GreetServerStream", args, nil)
+			res := s.proxyImpl.Invoke(ctx, invo)
+			return res.Error()
+		},
+		opts...,
+	))
+	return "/greet.GreetService/", mux
 }
 
 func (s *GreetServiceProviderBase) Reference() string {
@@ -165,4 +255,12 @@ func (UnimplementedGreetServiceHandler) Greet(context.Context, *connect.Request[
 
 func (UnimplementedGreetServiceHandler) GreetStream(context.Context, *connect.BidiStream[proto.GreetStreamRequest, proto.GreetStreamResponse]) error {
 	return connect.NewError(connect.CodeUnimplemented, errors.New("greet.GreetService.GreetStream is not implemented"))
+}
+
+func (UnimplementedGreetServiceHandler) GreetClientStream(context.Context, *connect.ClientStream[proto.GreetClientStreamRequest]) (*connect.Response[proto.GreetClientStreamResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("greet.GreetService.GreetClientStream is not implemented"))
+}
+
+func (UnimplementedGreetServiceHandler) GreetServerStream(context.Context, *connect.Request[proto.GreetServerStreamRequest], *connect.ServerStream[proto.GreetServerStreamResponse]) error {
+	return connect.NewError(connect.CodeUnimplemented, errors.New("greet.GreetService.GreetServerStream is not implemented"))
 }

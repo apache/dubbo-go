@@ -4,14 +4,10 @@ import (
 	"context"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
-	hessian2 "github.com/apache/dubbo-go-hessian2"
 	"github.com/dubbogo/gost/log/logger"
-	"github.com/pkg/errors"
 	"reflect"
 	"sync"
 )
-
-var errNoReply = errors.New("request need @response")
 
 type GrpcNewInvoker struct {
 	protocol.BaseInvoker
@@ -34,14 +30,14 @@ func (gni *GrpcNewInvoker) getClient() *Client {
 	return gni.client
 }
 
-// Invoke is used to call service method by invocation
+// Invoke is used to call client-side method.
 func (gni *GrpcNewInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 	var result protocol.RPCResult
 
 	if !gni.BaseInvoker.IsAvailable() {
 		// Generally, the case will not happen, because the invoker has been removed
 		// from the invoker list before destroy,so no new request will enter the destroyed invoker
-		logger.Warnf("this grpcInvoker is destroyed")
+		logger.Warnf("GrpcNewInvoker is destroyed")
 		result.Err = protocol.ErrDestroyedInvoker
 		return &result
 	}
@@ -54,18 +50,6 @@ func (gni *GrpcNewInvoker) Invoke(ctx context.Context, invocation protocol.Invoc
 		return &result
 	}
 
-	if !gni.BaseInvoker.IsAvailable() {
-		// Generally, the case will not happen, because the invoker has been removed
-		// from the invoker list before destroy,so no new request will enter the destroyed invoker
-		logger.Warnf("this grpcInvoker is destroying")
-		result.Err = protocol.ErrDestroyedInvoker
-		return &result
-	}
-
-	if invocation.Reply() == nil {
-		result.Err = errNoReply
-	}
-
 	var in []reflect.Value
 	in = append(in, reflect.ValueOf(ctx))
 	in = append(in, invocation.ParameterValues()...)
@@ -74,19 +58,20 @@ func (gni *GrpcNewInvoker) Invoke(ctx context.Context, invocation protocol.Invoc
 	method := gni.client.invoker.MethodByName(methodName)
 	res := method.Call(in)
 
-	result.Rest = res[0]
+	if len(res) >= 1 {
+		result.Rest = res[0]
+		ReflectResponse(res[0], invocation.Reply())
+	}
 	// check err
-	if !res[1].IsNil() {
-		result.Err = res[1].Interface().(error)
-	} else {
-		// todo figure this out
-		_ = hessian2.ReflectResponse(res[0], invocation.Reply())
+	if len(res) >= 2 {
+		if !res[1].IsNil() {
+			result.Err = res[1].Interface().(error)
+		}
 	}
 
 	return &result
 }
 
-// todo: add state to client
 // IsAvailable get available status
 func (gni *GrpcNewInvoker) IsAvailable() bool {
 	client := gni.getClient()
@@ -97,7 +82,6 @@ func (gni *GrpcNewInvoker) IsAvailable() bool {
 	return false
 }
 
-// todo: add state
 // IsDestroyed get destroyed status
 func (gni *GrpcNewInvoker) IsDestroyed() bool {
 	client := gni.getClient()
@@ -108,14 +92,13 @@ func (gni *GrpcNewInvoker) IsDestroyed() bool {
 	return false
 }
 
-// Destroy will destroy gRPC's invoker and client, so it is only called once
+// Destroy will destroy GRPC_New's invoker and client, so it is only called once
 func (gni *GrpcNewInvoker) Destroy() {
 	gni.quitOnce.Do(func() {
 		gni.BaseInvoker.Destroy()
 		client := gni.getClient()
 		if client != nil {
 			gni.setClient(nil)
-			// todo:
 			client.CloseIdleConnections()
 		}
 	})

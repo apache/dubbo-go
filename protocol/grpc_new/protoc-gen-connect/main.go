@@ -66,6 +66,7 @@ const (
 	stringsPackage       = protogen.GoImportPath("strings")
 	connectPackage       = protogen.GoImportPath("dubbo.apache.org/dubbo-go/v3/protocol/grpc_new/connect")
 	dubboProtocolPackage = protogen.GoImportPath("dubbo.apache.org/dubbo-go/v3/protocol")
+	invocationPackage    = protogen.GoImportPath("dubbo.apache.org/dubbo-go/v3/protocol/invocation")
 
 	generatedFilenameExtension = ".connect.go"
 	generatedPackageSuffix     = "connect"
@@ -348,14 +349,16 @@ func clientSignature(g *protogen.GeneratedFile, method *protogen.Method, named b
 	if method.Desc.IsStreamingClient() && method.Desc.IsStreamingServer() {
 		// bidi streaming
 		return method.GoName + "(" + ctxName + " " + g.QualifiedGoIdent(contextPackage.Ident("Context")) + ") " +
-			"*" + g.QualifiedGoIdent(connectPackage.Ident("BidiStreamForClient")) +
-			"[" + g.QualifiedGoIdent(method.Input.GoIdent) + ", " + g.QualifiedGoIdent(method.Output.GoIdent) + "]"
+			"(*" + g.QualifiedGoIdent(connectPackage.Ident("BidiStreamForClient")) +
+			"[" + g.QualifiedGoIdent(method.Input.GoIdent) + ", " + g.QualifiedGoIdent(method.Output.GoIdent) + "]" +
+			", error)"
 	}
 	if method.Desc.IsStreamingClient() {
 		// client streaming
 		return method.GoName + "(" + ctxName + " " + g.QualifiedGoIdent(contextPackage.Ident("Context")) + ") " +
-			"*" + g.QualifiedGoIdent(connectPackage.Ident("ClientStreamForClient")) +
-			"[" + g.QualifiedGoIdent(method.Input.GoIdent) + ", " + g.QualifiedGoIdent(method.Output.GoIdent) + "]"
+			"(*" + g.QualifiedGoIdent(connectPackage.Ident("ClientStreamForClient")) +
+			"[" + g.QualifiedGoIdent(method.Input.GoIdent) + ", " + g.QualifiedGoIdent(method.Output.GoIdent) + "]" +
+			", error)"
 	}
 	if method.Desc.IsStreamingServer() {
 		return method.GoName + "(" + ctxName + " " + g.QualifiedGoIdent(contextPackage.Ident("Context")) +
@@ -374,7 +377,6 @@ func generateDubboClientApi(g *protogen.GeneratedFile, service *protogen.Service
 	wrapComments(g, dubboImpl, " is the Dubbo client api for the ", service.Desc.FullName(), " service.")
 	g.P("type ", dubboImpl, " struct {")
 	for _, method := range service.Methods {
-		// todo: figure it out
 		g.Annotate(names.Client+"."+method.GoName, method.Location)
 		leadingComments(
 			g,
@@ -409,14 +411,16 @@ func dubboClientField(g *protogen.GeneratedFile, method *protogen.Method, named 
 	if method.Desc.IsStreamingClient() && method.Desc.IsStreamingServer() {
 		// bidi streaming
 		return method.GoName + " func(" + ctxName + " " + g.QualifiedGoIdent(contextPackage.Ident("Context")) + ") " +
-			"*" + g.QualifiedGoIdent(connectPackage.Ident("BidiStreamForClient")) +
-			"[" + g.QualifiedGoIdent(method.Input.GoIdent) + ", " + g.QualifiedGoIdent(method.Output.GoIdent) + "]"
+			"(*" + g.QualifiedGoIdent(connectPackage.Ident("BidiStreamForClient")) +
+			"[" + g.QualifiedGoIdent(method.Input.GoIdent) + ", " + g.QualifiedGoIdent(method.Output.GoIdent) + "]" +
+			", error)"
 	}
 	if method.Desc.IsStreamingClient() {
 		// client streaming
 		return method.GoName + " func(" + ctxName + " " + g.QualifiedGoIdent(contextPackage.Ident("Context")) + ") " +
-			"*" + g.QualifiedGoIdent(connectPackage.Ident("ClientStreamForClient")) +
-			"[" + g.QualifiedGoIdent(method.Input.GoIdent) + ", " + g.QualifiedGoIdent(method.Output.GoIdent) + "]"
+			"(*" + g.QualifiedGoIdent(connectPackage.Ident("ClientStreamForClient")) +
+			"[" + g.QualifiedGoIdent(method.Input.GoIdent) + ", " + g.QualifiedGoIdent(method.Output.GoIdent) + "]" +
+			", error)"
 	}
 	if method.Desc.IsStreamingServer() {
 		return method.GoName + " func(" + ctxName + " " + g.QualifiedGoIdent(contextPackage.Ident("Context")) +
@@ -519,11 +523,76 @@ func generateDubboProviderBase(g *protogen.GeneratedFile, service *protogen.Serv
 	g.P("")
 
 	g.P("func (s *", base, ") BuildHandler(impl interface{}, opts ...", connectPackage.Ident("HandlerOption"), ") (string, ", httpPackage.Ident("Handler"), ") {")
-	g.P("svc, ok := impl.(", names.Server, ")")
+	g.P("_, ok := impl.(", names.Server, ")")
 	g.P("if !ok {")
 	g.P("panic(\"impl has not implemented ", names.Server, "\")")
 	g.P("}")
-	g.P("return ", names.ServerConstructor, "(svc, opts...)")
+	g.P("mux := ", httpPackage.Ident("NewServeMux"), "()")
+	for _, method := range service.Methods {
+		var invocationArgs []string
+		var twoReturnValsFlag bool
+		isStreamingServer := method.Desc.IsStreamingServer()
+		isStreamingClient := method.Desc.IsStreamingClient()
+		idempotency := methodIdempotency(method)
+		switch {
+		case isStreamingClient && !isStreamingServer:
+			g.P(`mux.Handle(`, procedureConstName(method), `, `, connectPackage.Ident("NewClientStreamHandler"), "(")
+			g.P(procedureConstName(method), `,`)
+			g.P("func(ctx ", contextPackage.Ident("Context"), ", stream *", connectPackage.Ident("ClientStream"),
+				"[", g.QualifiedGoIdent(method.Input.GoIdent), "]) (*", connectPackage.Ident("Response"),
+				"[", g.QualifiedGoIdent(method.Output.GoIdent), "], error) {")
+			invocationArgs = append(invocationArgs, "stream")
+			twoReturnValsFlag = true
+		case !isStreamingClient && isStreamingServer:
+			g.P(`mux.Handle(`, procedureConstName(method), `, `, connectPackage.Ident("NewServerStreamHandler"), "(")
+			g.P(procedureConstName(method), `,`)
+			g.P("func(ctx ", contextPackage.Ident("Context"), ", req *", connectPackage.Ident("Request"),
+				"[", g.QualifiedGoIdent(method.Input.GoIdent), "], stream *", connectPackage.Ident("ServerStream"),
+				"[", g.QualifiedGoIdent(method.Output.GoIdent), "]) error {")
+			invocationArgs = append(invocationArgs, "req", "stream")
+		case isStreamingClient && isStreamingServer:
+			g.P(`mux.Handle(`, procedureConstName(method), `, `, connectPackage.Ident("NewBidiStreamHandler"), "(")
+			g.P(procedureConstName(method), `,`)
+			g.P("func(ctx ", contextPackage.Ident("Context"), ", stream *", connectPackage.Ident("BidiStream"),
+				"[", g.QualifiedGoIdent(method.Input.GoIdent), ", ", g.QualifiedGoIdent(method.Output.GoIdent), "]) error {")
+			invocationArgs = append(invocationArgs, "stream")
+		default:
+			g.P(`mux.Handle(`, procedureConstName(method), `, `, connectPackage.Ident("NewUnaryHandler"), "(")
+			g.P(procedureConstName(method), `,`)
+			g.P("func(ctx ", contextPackage.Ident("Context"), ", req *", connectPackage.Ident("Request"),
+				"[", g.QualifiedGoIdent(method.Input.GoIdent), "]) (*", connectPackage.Ident("Response"),
+				"[", g.QualifiedGoIdent(method.Output.GoIdent), "], error) {")
+			invocationArgs = append(invocationArgs, "req")
+			twoReturnValsFlag = true
+		}
+		g.P("var args []interface{}")
+		var args string
+		for _, arg := range invocationArgs {
+			args += ", " + arg
+		}
+		g.P("args = append(args", args, ")")
+		g.P("invo := ", invocationPackage.Ident("NewRPCInvocation("), "\"", method.GoName, "\"", ", args, nil)")
+		g.P("res := s.proxyImpl.Invoke(ctx, invo)")
+		if twoReturnValsFlag {
+			g.P("return res.Result().(*", connectPackage.Ident("Response"), "[", g.QualifiedGoIdent(method.Output.GoIdent),
+				"]), res.Error()")
+		} else {
+			g.P("return res.Error()")
+		}
+		g.P("},")
+		switch idempotency {
+		case connect.IdempotencyNoSideEffects:
+			g.P(connectPackage.Ident("WithIdempotency"), "(", connectPackage.Ident("IdempotencyNoSideEffects"), "),")
+			g.P(connectPackage.Ident("WithHandlerOptions"), "(opts...),")
+		case connect.IdempotencyIdempotent:
+			g.P(connectPackage.Ident("WithIdempotency"), "(", connectPackage.Ident("IdempotencyIdempotent"), "),")
+			g.P(connectPackage.Ident("WithHandlerOptions"), "(opts...),")
+		case connect.IdempotencyUnknown:
+			g.P("opts...,")
+		}
+		g.P("))")
+	}
+	g.P(`return "/`, reflectionName(service), `/", mux`)
 	g.P("}")
 	g.P("")
 

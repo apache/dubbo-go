@@ -20,7 +20,25 @@ message GreetStreamResponse {
   string greeting = 1;
 }
 
+message GreetClientStreamRequest {
+  string name = 1;
+}
+
+message GreetClientStreamResponse {
+  string greeting = 1;
+}
+
+message GreetServerStreamRequest {
+  string name = 1;
+}
+
+message GreetServerStreamResponse {
+  string greeting = 1;
+}
+
 service GreetService {
   rpc Greet(GreetRequest) returns (GreetResponse) {}
   rpc GreetStream(stream GreetStreamRequest) returns (stream GreetStreamResponse) {}
+  rpc GreetClientStream(stream GreetClientStreamRequest) returns (GreetClientStreamResponse) {}
+  rpc GreetServerStream(GreetServerStreamRequest) returns (stream GreetServerStreamResponse) {}
 }

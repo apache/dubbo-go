@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	// GRPC_NEW module name
+	// GRPC_NEW protocol name
 	GRPC_NEW = "grpc_new"
 )
 
@@ -44,14 +44,14 @@ type GrpcNewProtocol struct {
 	serverMap  map[string]*Server
 }
 
-// Export gRPC service for remote invocation
-func (gp *GrpcNewProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
+// Export GRPC_NEW service for remote invocation
+func (gnp *GrpcNewProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	url := invoker.GetURL()
 	serviceKey := url.ServiceKey()
-	exporter := NewGrpcNewExporter(serviceKey, invoker, gp.ExporterMap())
-	gp.SetExporterMap(serviceKey, exporter)
+	exporter := NewGrpcNewExporter(serviceKey, invoker, gnp.ExporterMap())
+	gnp.SetExporterMap(serviceKey, exporter)
 	logger.Infof("[GRPC_NEW Protocol] Export service: %s", url.String())
-	gp.openServer(url)
+	gnp.openServer(url)
 	return exporter
 }
 
@@ -101,6 +101,7 @@ func (gnp *GrpcNewProtocol) Destroy() {
 func NewGrpcNewProtocol() *GrpcNewProtocol {
 	return &GrpcNewProtocol{
 		BaseProtocol: protocol.NewBaseProtocol(),
+		serverMap:    make(map[string]*Server),
 	}
 }
 
