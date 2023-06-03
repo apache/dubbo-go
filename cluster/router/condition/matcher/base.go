@@ -77,7 +77,7 @@ func (b *BaseConditionMatcher) IsMatch(value string, param *common.URL, invocati
 
 	if len(b.matches) != 0 && len(b.misMatches) != 0 {
 		// when both mismatches and matches contain the same value, then using mismatches first
-		return b.patternMatches(value, param, invocation, isWhenCondition) && b.patternMisMatches(value, param, invocation, isWhenCondition)
+		return b.patternMisMatches(value, param, invocation, isWhenCondition) && b.patternMatches(value, param, invocation, isWhenCondition)
 	}
 	return false
 }
@@ -120,7 +120,7 @@ func doPatternMatch(pattern string, value string, url *common.URL, invocation pr
 	// If no value matcher is available, will force to use wildcard value matcher
 	logger.Error("Executing condition rule value match expression error, will force to use wildcard value matcher")
 
-	valuePattern := pattern_value.GetValuePattern("wildcard")
+	valuePattern := pattern_value.GetValuePattern(constant.Wildcard)
 	return valuePattern.Match(pattern, value, url, invocation, isWhenCondition)
 }
 

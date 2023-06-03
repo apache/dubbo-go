@@ -15,16 +15,24 @@
  * limitations under the License.
  */
 
-package curator_discovery
+package logger
 
-// ServiceInstance which define in curator-x-discovery, please refer to
-// https://github.com/apache/curator/blob/master/curator-x-discovery/src/main/java/org/apache/curator/x/discovery/ServiceInstance.java
-type ServiceInstance struct {
-	Name                string      `json:"name,omitempty"`
-	ID                  string      `json:"id,omitempty"`
-	Address             string      `json:"address,omitempty"`
-	Port                int         `json:"port,omitempty"`
-	Payload             interface{} `json:"payload,omitempty"`
-	RegistrationTimeUTC int64       `json:"registrationTimeUTC,omitempty"`
-	Tag                 string      `json:"tag,omitempty"`
+import (
+	"gopkg.in/natefinch/lumberjack.v2"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+)
+
+func FileConfig(config *common.URL) *lumberjack.Logger {
+	return &lumberjack.Logger{
+		Filename:   config.GetParam(constant.LoggerFileNameKey, "dubbo.log"),
+		MaxSize:    config.GetParamByIntValue(constant.LoggerFileNaxSizeKey, 1),
+		MaxBackups: config.GetParamByIntValue(constant.LoggerFileMaxBackupsKey, 1),
+		MaxAge:     config.GetParamByIntValue(constant.LoggerFileMaxAgeKey, 3),
+		LocalTime:  config.GetParamBool(constant.LoggerFileLocalTimeKey, true),
+		Compress:   config.GetParamBool(constant.LoggerFileCompressKey, true),
+	}
 }

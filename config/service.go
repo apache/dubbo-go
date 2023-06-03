@@ -19,10 +19,9 @@ package config
 
 import (
 	"sync"
-)
 
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"github.com/dubbogo/gost/log/logger"
 )
 
 var (
@@ -38,7 +37,10 @@ var (
 func SetConsumerService(service common.RPCService) {
 	ref := common.GetReference(service)
 	conServicesLock.Lock()
-	defer conServicesLock.Unlock()
+	defer func() {
+		conServicesLock.Unlock()
+		logger.Debugf("A consumer service %s was registered successfully.", ref)
+	}()
 	conServices[ref] = service
 }
 
@@ -46,7 +48,10 @@ func SetConsumerService(service common.RPCService) {
 func SetProviderService(service common.RPCService) {
 	ref := common.GetReference(service)
 	proServicesLock.Lock()
-	defer proServicesLock.Unlock()
+	defer func() {
+		proServicesLock.Unlock()
+		logger.Debugf("A provider service %s was registered successfully.", ref)
+	}()
 	proServices[ref] = service
 }
 
