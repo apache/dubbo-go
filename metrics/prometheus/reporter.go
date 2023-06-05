@@ -102,3 +102,39 @@ func (reporter *PrometheusReporter) shutdownServer() {
 		}
 	}
 }
+
+func (reporter *PrometheusReporter) reportRTSummaryVec(role string, labels *prometheus.Labels, costMs int64) {
+	switch role {
+	case providerField:
+		reporter.providerRTSummaryVec.With(*labels).Observe(float64(costMs))
+	case consumerField:
+		reporter.consumerRTSummaryVec.With(*labels).Observe(float64(costMs))
+	}
+}
+
+func (reporter *PrometheusReporter) reportRequestTotalCounterVec(role string, labels *prometheus.Labels) {
+	switch role {
+	case providerField:
+		reporter.providerRequestTotalCounterVec.With(*labels).Inc()
+	case consumerField:
+		reporter.consumerRequestTotalCounterVec.With(*labels).Inc()
+	}
+}
+
+func (reporter *PrometheusReporter) incRequestProcessingGaugeVec(role string, labels *prometheus.Labels) {
+	switch role {
+	case providerField:
+		reporter.providerRequestProcessingGaugeVec.With(*labels).Inc()
+	case consumerField:
+		reporter.consumerRequestProcessingGaugeVec.With(*labels).Inc()
+	}
+}
+
+func (reporter *PrometheusReporter) decRequestProcessingGaugeVec(role string, labels *prometheus.Labels) {
+	switch role {
+	case providerField:
+		reporter.providerRequestProcessingGaugeVec.With(*labels).Dec()
+	case consumerField:
+		reporter.consumerRequestProcessingGaugeVec.With(*labels).Dec()
+	}
+}

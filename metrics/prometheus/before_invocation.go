@@ -16,3 +16,23 @@
  */
 
 package prometheus
+
+import (
+	"context"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
+)
+
+func (reporter *PrometheusReporter) ReportBeforeInvocation(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) {
+	if !reporter.reporterConfig.Enable {
+		return
+	}
+	url := invoker.GetURL()
+
+	role := getRole(url)
+	if role == "" {
+		return
+	}
+	labels := buildLabels(url)
+
+	reporter.incRequestProcessingGaugeVec(role, &labels)
+}
