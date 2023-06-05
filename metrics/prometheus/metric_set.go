@@ -37,14 +37,14 @@ type metricSet struct {
 	providerRTSummaryVec *prometheus.SummaryVec
 
 	// report the provider-side's request total counter data
-	providerRequestTotalCounterVec *prometheus.CounterVec
+	providerRequestsTotalCounterVec *prometheus.CounterVec
 	// report the provider-side's processing request counter data
-	providerRequestProcessingGaugeVec *prometheus.GaugeVec
+	providerRequestsProcessingGaugeVec *prometheus.GaugeVec
 
 	// report the consumer-side's request total counter data
-	consumerRequestTotalCounterVec *prometheus.CounterVec
+	consumerRequestsTotalCounterVec *prometheus.CounterVec
 	// report the consumer-side's processing request counter data
-	consumerRequestProcessingGaugeVec *prometheus.GaugeVec
+	consumerRequestsProcessingGaugeVec *prometheus.GaugeVec
 }
 
 var labelNames = []string{applicationNameKey, groupKey, hostnameKey, interfaceKey, ipKey, methodKey, versionKey}
@@ -53,18 +53,18 @@ var labelNames = []string{applicationNameKey, groupKey, hostnameKey, interfaceKe
 func (ms *metricSet) initAndRegister(reporterConfig *metrics.ReporterConfig) {
 	ms.consumerRTSummaryVec = newSummaryVec(buildMetricsName(consumerField, rtField, milliSecondsField, summaryField), reporterConfig.Namespace, labelNames, reporterConfig.SummaryMaxAge)
 	ms.providerRTSummaryVec = newSummaryVec(buildMetricsName(providerField, rtField, milliSecondsField, summaryField), reporterConfig.Namespace, labelNames, reporterConfig.SummaryMaxAge)
-	ms.consumerRequestTotalCounterVec = newCounterVec(buildMetricsName(consumerField, requestsField, totalField), reporterConfig.Namespace, labelNames)
-	ms.providerRequestTotalCounterVec = newCounterVec(buildMetricsName(providerField, requestsField, totalField), reporterConfig.Namespace, labelNames)
-	ms.consumerRequestProcessingGaugeVec = newGaugeVec(buildMetricsName(consumerField, requestsField, processingField), reporterConfig.Namespace, labelNames)
-	ms.providerRequestProcessingGaugeVec = newGaugeVec(buildMetricsName(providerField, requestsField, processingField), reporterConfig.Namespace, labelNames)
+	ms.consumerRequestsTotalCounterVec = newCounterVec(buildMetricsName(consumerField, requestsField, totalField), reporterConfig.Namespace, labelNames)
+	ms.providerRequestsTotalCounterVec = newCounterVec(buildMetricsName(providerField, requestsField, totalField), reporterConfig.Namespace, labelNames)
+	ms.consumerRequestsProcessingGaugeVec = newGaugeVec(buildMetricsName(consumerField, requestsField, processingField), reporterConfig.Namespace, labelNames)
+	ms.providerRequestsProcessingGaugeVec = newGaugeVec(buildMetricsName(providerField, requestsField, processingField), reporterConfig.Namespace, labelNames)
 
 	prometheus.DefaultRegisterer.MustRegister(
 		ms.consumerRTSummaryVec,
 		ms.providerRTSummaryVec,
-		ms.consumerRequestTotalCounterVec,
-		ms.providerRequestTotalCounterVec,
-		ms.consumerRequestProcessingGaugeVec,
-		ms.providerRequestProcessingGaugeVec,
+		ms.consumerRequestsTotalCounterVec,
+		ms.providerRequestsTotalCounterVec,
+		ms.consumerRequestsProcessingGaugeVec,
+		ms.providerRequestsProcessingGaugeVec,
 	)
 }
 

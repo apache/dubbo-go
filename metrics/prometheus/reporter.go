@@ -112,29 +112,29 @@ func (reporter *PrometheusReporter) reportRTSummaryVec(role string, labels *prom
 	}
 }
 
-func (reporter *PrometheusReporter) reportRequestTotalCounterVec(role string, labels *prometheus.Labels) {
+func (reporter *PrometheusReporter) reportRequestsTotalCounterVec(role string, labels *prometheus.Labels) {
 	switch role {
 	case providerField:
-		reporter.providerRequestTotalCounterVec.With(*labels).Inc()
+		reporter.providerRequestsTotalCounterVec.With(*labels).Inc()
 	case consumerField:
-		reporter.consumerRequestTotalCounterVec.With(*labels).Inc()
+		reporter.consumerRequestsTotalCounterVec.With(*labels).Inc()
 	}
 }
 
-func (reporter *PrometheusReporter) incRequestProcessingGaugeVec(role string, labels *prometheus.Labels) {
+func (reporter *PrometheusReporter) incRequestsProcessingGaugeVec(role string, labels *prometheus.Labels) {
 	switch role {
 	case providerField:
-		reporter.providerRequestProcessingGaugeVec.With(*labels).Inc()
+		reporter.providerRequestsProcessingGaugeVec.With(*labels).Inc()
 	case consumerField:
-		reporter.consumerRequestProcessingGaugeVec.With(*labels).Inc()
+		reporter.consumerRequestsProcessingGaugeVec.With(*labels).Inc()
 	}
 }
 
-func (reporter *PrometheusReporter) decRequestProcessingGaugeVec(role string, labels *prometheus.Labels) {
+func (reporter *PrometheusReporter) decRequestsProcessingGaugeVec(role string, labels *prometheus.Labels) {
 	switch role {
 	case providerField:
-		reporter.providerRequestProcessingGaugeVec.With(*labels).Dec()
+		reporter.providerRequestsProcessingGaugeVec.With(*labels).Dec()
 	case consumerField:
-		reporter.consumerRequestProcessingGaugeVec.With(*labels).Dec()
+		reporter.consumerRequestsProcessingGaugeVec.With(*labels).Dec()
 	}
 }

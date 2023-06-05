@@ -34,5 +34,5 @@ func (reporter *PrometheusReporter) ReportBeforeInvocation(ctx context.Context, 
 	}
 	labels := buildLabels(url)
 
-	reporter.incRequestProcessingGaugeVec(role, &labels)
+	reporter.incRequestsProcessingGaugeVec(role, &labels)
 }

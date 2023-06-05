@@ -39,6 +39,6 @@ func (reporter *PrometheusReporter) ReportAfterInvocation(ctx context.Context, i
 	labels := buildLabels(url)
 
 	reporter.reportRTSummaryVec(role, &labels, cost.Milliseconds())
-	reporter.reportRequestTotalCounterVec(role, &labels)
-	reporter.decRequestProcessingGaugeVec(role, &labels)
+	reporter.reportRequestsTotalCounterVec(role, &labels)
+	reporter.decRequestsProcessingGaugeVec(role, &labels)
 }
