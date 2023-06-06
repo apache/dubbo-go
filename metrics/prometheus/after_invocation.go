@@ -41,4 +41,9 @@ func (reporter *PrometheusReporter) ReportAfterInvocation(ctx context.Context, i
 	reporter.reportRTSummaryVec(role, &labels, cost.Milliseconds())
 	reporter.reportRequestsTotalCounterVec(role, &labels)
 	reporter.decRequestsProcessingGaugeVec(role, &labels)
+
+	if res != nil && res.Error() == nil {
+		// succeed
+		reporter.incRequestsSucceedTotalCounterVec(role, &labels)
+	}
 }

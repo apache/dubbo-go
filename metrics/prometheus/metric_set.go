@@ -40,11 +40,15 @@ type metricSet struct {
 	providerRequestsTotalCounterVec *prometheus.CounterVec
 	// report the provider-side's processing request counter data
 	providerRequestsProcessingGaugeVec *prometheus.GaugeVec
+	// The number of requests successfully received by the provider
+	providerRequestsSucceedTotalCounterVec *prometheus.CounterVec
 
 	// report the consumer-side's request total counter data
 	consumerRequestsTotalCounterVec *prometheus.CounterVec
 	// report the consumer-side's processing request counter data
 	consumerRequestsProcessingGaugeVec *prometheus.GaugeVec
+	// The number of successful requests sent by consumers
+	consumerRequestsSucceedTotalCounterVec *prometheus.CounterVec
 }
 
 var labelNames = []string{applicationNameKey, groupKey, hostnameKey, interfaceKey, ipKey, methodKey, versionKey}
@@ -57,6 +61,8 @@ func (ms *metricSet) initAndRegister(reporterConfig *metrics.ReporterConfig) {
 	ms.providerRequestsTotalCounterVec = newCounterVec(buildMetricsName(providerField, requestsField, totalField), reporterConfig.Namespace, labelNames)
 	ms.consumerRequestsProcessingGaugeVec = newGaugeVec(buildMetricsName(consumerField, requestsField, processingField), reporterConfig.Namespace, labelNames)
 	ms.providerRequestsProcessingGaugeVec = newGaugeVec(buildMetricsName(providerField, requestsField, processingField), reporterConfig.Namespace, labelNames)
+	ms.consumerRequestsSucceedTotalCounterVec = newCounterVec(buildMetricsName(consumerField, requestsField, succeedField, totalField), reporterConfig.Namespace, labelNames)
+	ms.providerRequestsSucceedTotalCounterVec = newCounterVec(buildMetricsName(providerField, requestsField, succeedField, totalField), reporterConfig.Namespace, labelNames)
 
 	prometheus.DefaultRegisterer.MustRegister(
 		ms.consumerRTSummaryVec,
@@ -65,6 +71,8 @@ func (ms *metricSet) initAndRegister(reporterConfig *metrics.ReporterConfig) {
 		ms.providerRequestsTotalCounterVec,
 		ms.consumerRequestsProcessingGaugeVec,
 		ms.providerRequestsProcessingGaugeVec,
+		ms.consumerRequestsSucceedTotalCounterVec,
+		ms.providerRequestsSucceedTotalCounterVec,
 	)
 }
 

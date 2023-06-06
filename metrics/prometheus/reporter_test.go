@@ -50,6 +50,7 @@ func TestPrometheusReporter_Report(t *testing.T) {
 
 	assert.False(t, isConsumer(url))
 	ctx := context.Background()
+	reporter.ReportBeforeInvocation(ctx, invoker, inv)
 	reporter.ReportAfterInvocation(ctx, invoker, inv, 100*time.Millisecond, nil)
 
 	// consumer side
@@ -60,6 +61,7 @@ func TestPrometheusReporter_Report(t *testing.T) {
 			"BDTService&organization=ikurento.com&owner=ZX&registry.role=0&retries=&" +
 			"service.filter=echo%2Ctoken%2Caccesslog&timestamp=1569153406&token=934804bf-b007-4174-94eb-96e3e1d60cc7&version=&warmup=100")
 	invoker = protocol.NewBaseInvoker(url)
+	reporter.ReportBeforeInvocation(ctx, invoker, inv)
 	reporter.ReportAfterInvocation(ctx, invoker, inv, 100*time.Millisecond, nil)
 
 	// invalid role
@@ -70,5 +72,6 @@ func TestPrometheusReporter_Report(t *testing.T) {
 			"BDTService&organization=ikurento.com&owner=ZX&registry.role=9&retries=&" +
 			"service.filter=echo%2Ctoken%2Caccesslog&timestamp=1569153406&token=934804bf-b007-4174-94eb-96e3e1d60cc7&version=&warmup=100")
 	invoker = protocol.NewBaseInvoker(url)
+	reporter.ReportBeforeInvocation(ctx, invoker, inv)
 	reporter.ReportAfterInvocation(ctx, invoker, inv, 100*time.Millisecond, nil)
 }

@@ -43,4 +43,5 @@ const (
 
 	totalField      = "total"
 	processingField = "processing"
+	succeedField    = "succeed"
 )

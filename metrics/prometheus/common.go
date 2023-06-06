@@ -34,6 +34,10 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
+var (
+	defaultHistogramBucket = []float64{10, 50, 100, 200, 500, 1000, 10000}
+)
+
 func buildLabels(url *common.URL) prometheus.Labels {
 	return prometheus.Labels{
 		applicationNameKey: url.GetParam(constant.ApplicationKey, ""),

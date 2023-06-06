@@ -34,9 +34,8 @@ import (
 )
 
 var (
-	reporterInstance       *PrometheusReporter
-	reporterInitOnce       sync.Once
-	defaultHistogramBucket = []float64{10, 50, 100, 200, 500, 1000, 10000}
+	reporterInstance *PrometheusReporter
+	reporterInitOnce sync.Once
 )
 
 // should initialize after loading configuration
@@ -136,5 +135,14 @@ func (reporter *PrometheusReporter) decRequestsProcessingGaugeVec(role string, l
 		reporter.providerRequestsProcessingGaugeVec.With(*labels).Dec()
 	case consumerField:
 		reporter.consumerRequestsProcessingGaugeVec.With(*labels).Dec()
+	}
+}
+
+func (reporter *PrometheusReporter) incRequestsSucceedTotalCounterVec(role string, labels *prometheus.Labels) {
+	switch role {
+	case providerField:
+		reporter.providerRequestsSucceedTotalCounterVec.With(*labels).Inc()
+	case consumerField:
+		reporter.consumerRequestsSucceedTotalCounterVec.With(*labels).Inc()
 	}
 }
