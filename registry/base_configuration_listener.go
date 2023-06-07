@@ -69,7 +69,7 @@ func (bcl *BaseConfigurationListener) InitWith(key string, listener config_cente
 
 // Process the notification event once there's any change happens on the config.
 func (bcl *BaseConfigurationListener) Process(event *config_center.ConfigChangeEvent) {
-	logger.Debugf("Notification of overriding rule, change type is: %v , raw config content is:%v", event.ConfigType, event.Value)
+	logger.Infof("Notification of overriding rule, change type is: %v , raw config content is:%v", event.ConfigType, event.Value)
 	if event.ConfigType == remoting.EventTypeDel {
 		bcl.configurators = nil
 	} else {

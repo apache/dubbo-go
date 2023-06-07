@@ -115,7 +115,19 @@ type URL struct {
 	Password string
 	Methods  []string
 	// special for registry
-	SubURL *URL
+	SubURL     *URL
+	Attributes sync.Map
+}
+
+func (c *URL) AddAttribute(key string, value interface{}) {
+	if value != nil {
+		c.Attributes.Store(key, value)
+	}
+}
+
+func (c *URL) GetAttribute(key string) interface{} {
+	v, _ := c.Attributes.Load(key)
+	return v
 }
 
 // JavaClassName POJO for URL

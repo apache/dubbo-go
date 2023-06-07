@@ -70,6 +70,38 @@ type ConfigItem struct {
 	Applications      []string          `yaml:"applications"`
 	Parameters        map[string]string `yaml:"parameters"`
 	Side              string            `yaml:"side"`
+	Match             ConditionMatch    `yaml:"match"`
+}
+
+type ConditionMatch struct {
+	Address         common.AddressMatch    `yaml:"address"`
+	ProviderAddress common.AddressMatch    `yaml:"providerAddress"`
+	Service         common.ListStringMatch `yaml:"service"`
+	App             common.ListStringMatch `yaml:"app"`
+	Param           []common.ParamMatch    `yaml:"param"`
+}
+
+func (c ConditionMatch) IsMatch(host string, url *common.URL) bool {
+	if !c.Address.IsMatch(host) {
+		return false
+	}
+	if !c.ProviderAddress.IsMatch(url.Location) {
+		return false
+	}
+	if !c.Service.IsMatch(url.ServiceKey()) {
+		return false
+	}
+	if !c.App.IsMatch(url.GetParam(constant.ApplicationKey, "")) {
+		return false
+	}
+	if c.Param != nil {
+		for _, p := range c.Param {
+			if !p.IsMatch(url) {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 // Parse load content
@@ -145,6 +177,7 @@ func serviceItemToUrls(item ConfigItem, config ConfiguratorConfig) ([]*common.UR
 				if err != nil {
 					return nil, perrors.WithStack(err)
 				}
+				url.AddAttribute(constant.MatchCondition, item.Match)
 				urls = append(urls, url)
 			}
 		} else {
@@ -152,6 +185,7 @@ func serviceItemToUrls(item ConfigItem, config ConfiguratorConfig) ([]*common.UR
 			if err != nil {
 				return nil, perrors.WithStack(err)
 			}
+			url.AddAttribute(constant.MatchCondition, item.Match)
 			urls = append(urls, url)
 		}
 	}
@@ -193,6 +227,7 @@ func appItemToUrls(item ConfigItem, config ConfiguratorConfig) ([]*common.URL, e
 			if err != nil {
 				return nil, perrors.WithStack(err)
 			}
+			url.AddAttribute(constant.MatchCondition, item.Match)
 			urls = append(urls, url)
 		}
 	}

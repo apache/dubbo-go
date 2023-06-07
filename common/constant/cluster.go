@@ -32,3 +32,8 @@ const (
 const (
 	NonImportErrorMsgFormat = "Cluster for %s is not existing, make sure you have import the package."
 )
+
+const (
+	MatchCondition = "MATCH_CONDITION"
+	ApiVersion     = "v3.0"
+)

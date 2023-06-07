@@ -18,6 +18,7 @@
 package config
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"github.com/creasty/defaults"
 )
 
@@ -41,8 +42,9 @@ type RouterConfig struct {
 }
 
 type Tag struct {
-	Name      string   `yaml:"name" json:"name,omitempty" property:"name"`
-	Addresses []string `yaml:"addresses" json:"addresses,omitempty" property:"addresses"`
+	Name      string              `yaml:"name" json:"name,omitempty" property:"name"`
+	Match     []common.ParamMatch `yaml:"match" json:"match,omitempty" property:"match"`
+	Addresses []string            `yaml:"addresses" json:"addresses,omitempty" property:"addresses"`
 }
 
 // Prefix dubbo.router
