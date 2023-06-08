@@ -25,6 +25,7 @@ import (
 
 import (
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
 import (
@@ -98,6 +99,55 @@ func newSummary(name, namespace string) prometheus.Summary {
 // the objectives is from my experience.
 func newSummaryVec(name, namespace string, labels []string, maxAge int64) *prometheus.SummaryVec {
 	return prometheus.NewSummaryVec(
+		prometheus.SummaryOpts{
+			Namespace: namespace,
+			Name:      name,
+			Objectives: map[float64]float64{
+				0.5:   0.01,
+				0.75:  0.01,
+				0.90:  0.005,
+				0.98:  0.002,
+				0.99:  0.001,
+				0.999: 0.0001,
+			},
+			MaxAge: time.Duration(maxAge),
+		},
+		labels,
+	)
+}
+
+// create an auto register histogram vec
+func newAutoHistogramVec(name, namespace string, labels []string) *prometheus.HistogramVec {
+	return promauto.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Namespace: namespace,
+			Name:      name,
+			Buckets:   defaultHistogramBucket,
+		},
+		labels)
+}
+
+// create an auto register counter vec
+func newAutoCounterVec(name, namespace string, labels []string) *prometheus.CounterVec {
+	return promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name:      name,
+			Namespace: namespace,
+		}, labels)
+}
+
+// create an auto register gauge vec
+func newAutoGaugeVec(name, namespace string, labels []string) *prometheus.GaugeVec {
+	return promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name:      name,
+			Namespace: namespace,
+		}, labels)
+}
+
+// create an auto register summary vec
+func newAutoSummaryVec(name, namespace string, labels []string, maxAge int64) *prometheus.SummaryVec {
+	return promauto.NewSummaryVec(
 		prometheus.SummaryOpts{
 			Namespace: namespace,
 			Name:      name,

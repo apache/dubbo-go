@@ -49,12 +49,10 @@ var labelNames = []string{applicationNameKey, groupKey, hostnameKey, interfaceKe
 
 // init metric set and register to prometheus
 func (ms *metricSet) initAndRegister(reporterConfig *metrics.ReporterConfig) {
-	ms.consumerRTSummaryVec = newSummaryVec(buildMetricsName(consumerField, rtField, milliSecondsField, summaryField), reporterConfig.Namespace, labelNames, reporterConfig.SummaryMaxAge)
-	ms.providerRTSummaryVec = newSummaryVec(buildMetricsName(providerField, rtField, milliSecondsField, summaryField), reporterConfig.Namespace, labelNames, reporterConfig.SummaryMaxAge)
-	ms.consumerRequestTotalCounterVec = newCounterVec(buildMetricsName(consumerField, requestsField, totalField), reporterConfig.Namespace, labelNames)
-	ms.providerRequestTotalCounterVec = newCounterVec(buildMetricsName(providerField, requestsField, totalField), reporterConfig.Namespace, labelNames)
-
-	prometheus.DefaultRegisterer.MustRegister(ms.consumerRTSummaryVec, ms.providerRTSummaryVec, ms.consumerRequestTotalCounterVec, ms.providerRequestTotalCounterVec)
+	ms.consumerRTSummaryVec = newAutoSummaryVec(buildMetricsName(consumerField, rtField, milliSecondsField, summaryField), reporterConfig.Namespace, labelNames, reporterConfig.SummaryMaxAge)
+	ms.providerRTSummaryVec = newAutoSummaryVec(buildMetricsName(providerField, rtField, milliSecondsField, summaryField), reporterConfig.Namespace, labelNames, reporterConfig.SummaryMaxAge)
+	ms.consumerRequestTotalCounterVec = newAutoCounterVec(buildMetricsName(consumerField, requestsField, totalField), reporterConfig.Namespace, labelNames)
+	ms.providerRequestTotalCounterVec = newAutoCounterVec(buildMetricsName(providerField, requestsField, totalField), reporterConfig.Namespace, labelNames)
 }
 
 func buildMetricsName(args ...string) string {

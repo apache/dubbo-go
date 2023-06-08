@@ -24,9 +24,8 @@ import (
 )
 
 import (
-	ocprom "contrib.go.opencensus.io/exporter/prometheus"
 	"github.com/dubbogo/gost/log/logger"
-	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 import (
@@ -85,17 +84,9 @@ func newPrometheusReporter(reporterConfig *metrics.ReporterConfig) metrics.Repor
 }
 
 func (reporter *PrometheusReporter) startupServer(reporterConfig *metrics.ReporterConfig) {
-	metricsExporter, err := ocprom.NewExporter(ocprom.Options{
-		Registry: prometheus.DefaultRegisterer.(*prometheus.Registry),
-	})
-	if err != nil {
-		logger.Errorf("new prometheus reporter with error = %s", err)
-		return
-	}
-
 	// start server
 	mux := http.NewServeMux()
-	mux.Handle(reporterConfig.Path, metricsExporter)
+	mux.Handle(reporterConfig.Path, promhttp.Handler())
 	reporterInstance.reporterServer = &http.Server{Addr: ":" + reporterConfig.Port, Handler: mux}
 	if err := reporterInstance.reporterServer.ListenAndServe(); err != nil {
 		logger.Warnf("new prometheus reporter with error = %s", err)
