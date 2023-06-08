@@ -120,21 +120,21 @@ func (reporter *PrometheusReporter) reportRequestsTotalCounterVec(role string, l
 	}
 }
 
-func (reporter *PrometheusReporter) incRequestsProcessingGaugeVec(role string, labels *prometheus.Labels) {
+func (reporter *PrometheusReporter) incRequestsProcessingTotalGaugeVec(role string, labels *prometheus.Labels) {
 	switch role {
 	case providerField:
-		reporter.providerRequestsProcessingGaugeVec.With(*labels).Inc()
+		reporter.providerRequestsProcessingTotalGaugeVec.With(*labels).Inc()
 	case consumerField:
-		reporter.consumerRequestsProcessingGaugeVec.With(*labels).Inc()
+		reporter.consumerRequestsProcessingTotalGaugeVec.With(*labels).Inc()
 	}
 }
 
-func (reporter *PrometheusReporter) decRequestsProcessingGaugeVec(role string, labels *prometheus.Labels) {
+func (reporter *PrometheusReporter) decRequestsProcessingTotalGaugeVec(role string, labels *prometheus.Labels) {
 	switch role {
 	case providerField:
-		reporter.providerRequestsProcessingGaugeVec.With(*labels).Dec()
+		reporter.providerRequestsProcessingTotalGaugeVec.With(*labels).Dec()
 	case consumerField:
-		reporter.consumerRequestsProcessingGaugeVec.With(*labels).Dec()
+		reporter.consumerRequestsProcessingTotalGaugeVec.With(*labels).Dec()
 	}
 }
 

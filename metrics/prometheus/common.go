@@ -18,13 +18,13 @@
 package prometheus
 
 import (
-	"github.com/dubbogo/gost/log/logger"
 	"strconv"
 	"strings"
 	"time"
 )
 
 import (
+	"github.com/dubbogo/gost/log/logger"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )

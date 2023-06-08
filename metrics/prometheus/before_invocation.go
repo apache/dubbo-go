@@ -19,6 +19,8 @@ package prometheus
 
 import (
 	"context"
+)
+import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
@@ -34,5 +36,5 @@ func (reporter *PrometheusReporter) ReportBeforeInvocation(ctx context.Context, 
 	}
 	labels := buildLabels(url)
 
-	reporter.incRequestsProcessingGaugeVec(role, &labels)
+	reporter.incRequestsProcessingTotalGaugeVec(role, &labels)
 }
