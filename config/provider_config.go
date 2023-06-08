@@ -19,6 +19,7 @@ package config
 
 import (
 	"fmt"
+	"strings"
 )
 
 import (
@@ -75,6 +76,18 @@ func (c *ProviderConfig) Init(rc *RootConfig) error {
 	if c == nil {
 		return nil
 	}
+	buildDebugMsg := func() string {
+		if len(c.Services) == 0 {
+			return "empty"
+		}
+		providerNames := make([]string, 0, len(c.Services))
+		for k := range c.Services {
+			providerNames = append(providerNames, k)
+		}
+		return strings.Join(providerNames, ", ")
+	}
+	logger.Debugf("Registered provider services are %v", buildDebugMsg())
+
 	c.RegistryIDs = translateIds(c.RegistryIDs)
 	if len(c.RegistryIDs) <= 0 {
 		c.RegistryIDs = rc.getRegistryIds()
@@ -82,7 +95,7 @@ func (c *ProviderConfig) Init(rc *RootConfig) error {
 	c.ProtocolIDs = translateIds(c.ProtocolIDs)
 
 	if c.TracingKey == "" && len(rc.Tracing) > 0 {
-		for k, _ := range rc.Tracing {
+		for k := range rc.Tracing {
 			c.TracingKey = k
 			break
 		}
