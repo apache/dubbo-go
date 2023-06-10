@@ -55,25 +55,14 @@ var labelNames = []string{applicationNameKey, groupKey, hostnameKey, interfaceKe
 
 // init metric set and register to prometheus
 func (ms *metricSet) initAndRegister(reporterConfig *metrics.ReporterConfig) {
-	ms.consumerRTSummaryVec = newSummaryVec(buildMetricsName(consumerField, rtField, milliSecondsField, summaryField), reporterConfig.Namespace, labelNames, reporterConfig.SummaryMaxAge)
-	ms.providerRTSummaryVec = newSummaryVec(buildMetricsName(providerField, rtField, milliSecondsField, summaryField), reporterConfig.Namespace, labelNames, reporterConfig.SummaryMaxAge)
-	ms.consumerRequestsTotalCounterVec = newCounterVec(buildMetricsName(consumerField, requestsField, totalField), reporterConfig.Namespace, labelNames)
-	ms.providerRequestsTotalCounterVec = newCounterVec(buildMetricsName(providerField, requestsField, totalField), reporterConfig.Namespace, labelNames)
-	ms.consumerRequestsProcessingTotalGaugeVec = newGaugeVec(buildMetricsName(consumerField, requestsField, processingField, totalField), reporterConfig.Namespace, labelNames)
-	ms.providerRequestsProcessingTotalGaugeVec = newGaugeVec(buildMetricsName(providerField, requestsField, processingField, totalField), reporterConfig.Namespace, labelNames)
-	ms.consumerRequestsSucceedTotalCounterVec = newCounterVec(buildMetricsName(consumerField, requestsField, succeedField, totalField), reporterConfig.Namespace, labelNames)
-	ms.providerRequestsSucceedTotalCounterVec = newCounterVec(buildMetricsName(providerField, requestsField, succeedField, totalField), reporterConfig.Namespace, labelNames)
-
-	prometheus.DefaultRegisterer.MustRegister(
-		ms.consumerRTSummaryVec,
-		ms.providerRTSummaryVec,
-		ms.consumerRequestsTotalCounterVec,
-		ms.providerRequestsTotalCounterVec,
-		ms.consumerRequestsProcessingTotalGaugeVec,
-		ms.providerRequestsProcessingTotalGaugeVec,
-		ms.consumerRequestsSucceedTotalCounterVec,
-		ms.providerRequestsSucceedTotalCounterVec,
-	)
+	ms.consumerRTSummaryVec = newAutoSummaryVec(buildMetricsName(consumerField, rtField, milliSecondsField, summaryField), reporterConfig.Namespace, labelNames, reporterConfig.SummaryMaxAge)
+	ms.providerRTSummaryVec = newAutoSummaryVec(buildMetricsName(providerField, rtField, milliSecondsField, summaryField), reporterConfig.Namespace, labelNames, reporterConfig.SummaryMaxAge)
+	ms.consumerRequestsTotalCounterVec = newAutoCounterVec(buildMetricsName(consumerField, requestsField, totalField), reporterConfig.Namespace, labelNames)
+	ms.providerRequestsTotalCounterVec = newAutoCounterVec(buildMetricsName(providerField, requestsField, totalField), reporterConfig.Namespace, labelNames)
+	ms.consumerRequestsProcessingTotalGaugeVec = newAutoGaugeVec(buildMetricsName(consumerField, requestsField, processingField, totalField), reporterConfig.Namespace, labelNames)
+	ms.providerRequestsProcessingTotalGaugeVec = newAutoGaugeVec(buildMetricsName(providerField, requestsField, processingField, totalField), reporterConfig.Namespace, labelNames)
+	ms.consumerRequestsSucceedTotalCounterVec = newAutoCounterVec(buildMetricsName(consumerField, requestsField, succeedField, totalField), reporterConfig.Namespace, labelNames)
+	ms.providerRequestsSucceedTotalCounterVec = newAutoCounterVec(buildMetricsName(providerField, requestsField, succeedField, totalField), reporterConfig.Namespace, labelNames)
 }
 
 func buildMetricsName(args ...string) string {
