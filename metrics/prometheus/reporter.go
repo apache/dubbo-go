@@ -147,3 +147,19 @@ func (reporter *PrometheusReporter) incRequestsSucceedTotalCounterVec(role strin
 		reporter.consumerRequestsSucceedTotalCounterVec.With(*labels).Inc()
 	}
 }
+
+func (reporter *PrometheusReporter) updateRTMillisecondsMinGaugeVec(role string, labels *prometheus.Labels, costMs int64) {
+	var gaugeVec *prometheus.GaugeVec
+	var m *sync.Map
+
+	switch role {
+	case providerField:
+		gaugeVec = reporter.providerRTMillisecondsMinGaugeVec
+		m = reporter.providerRTMillisecondsMinSyncMap
+	case consumerField:
+		gaugeVec = reporter.consumerRTMillisecondsMinGaugeVec
+		m = reporter.consumerRTMillisecondsMinSyncMap
+	}
+
+	go updateMin(m, labels, gaugeVec, costMs)
+}

@@ -38,7 +38,8 @@ const (
 
 	milliSecondsField = "milliseconds"
 
-	counterField = "counter"
+	minField     = "min"
+	maxField     = "max"
 	summaryField = "summary"
 
 	totalField      = "total"
