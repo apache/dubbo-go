@@ -54,8 +54,8 @@ type ProviderConfig struct {
 	FilterConf   interface{}               `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf"`
 	ConfigType   map[string]string         `yaml:"config_type" json:"config_type,omitempty" property:"config_type"`
 	// adaptive service
-	AdaptiveService        bool `default:"false" yaml:"adaptive-service" json:"adaptive-service" property:"adaptive-service"`
-	AdaptiveServiceVerbose bool `default:"false" yaml:"adaptive-service-verbose" json:"adaptive-service-verbose" property:"adaptive-service-verbose"`
+	AdaptiveService        *bool `default:"false" yaml:"adaptive-service" json:"adaptive-service" property:"adaptive-service"`
+	AdaptiveServiceVerbose *bool `default:"false" yaml:"adaptive-service-verbose" json:"adaptive-service-verbose" property:"adaptive-service-verbose"`
 
 	rootConfig *RootConfig
 }
@@ -107,7 +107,7 @@ func (c *ProviderConfig) Init(rc *RootConfig) error {
 			return err
 		}
 
-		serviceConfig.adaptiveService = c.AdaptiveService
+		serviceConfig.adaptiveService = *c.AdaptiveService
 	}
 
 	for k, v := range rc.Protocols {
@@ -142,8 +142,8 @@ func (c *ProviderConfig) Init(rc *RootConfig) error {
 		return err
 	}
 	// enable adaptive service verbose
-	if c.AdaptiveServiceVerbose {
-		if !c.AdaptiveService {
+	if *c.AdaptiveServiceVerbose {
+		if !*c.AdaptiveService {
 			return perrors.Errorf("The adaptive service is disabled, " +
 				"adaptive service verbose should be disabled either.")
 		}
@@ -180,7 +180,7 @@ func (c *ProviderConfig) Load() {
 			if err := serviceConfig.Init(rootConfig); err != nil {
 				logger.Errorf("Service with refKey = %s init failed with error = %s")
 			}
-			serviceConfig.adaptiveService = c.AdaptiveService
+			serviceConfig.adaptiveService = *c.AdaptiveService
 		}
 		serviceConfig.id = registeredTypeName
 		serviceConfig.Implement(service)
