@@ -76,3 +76,8 @@ func (m *mockReporter) ReportAfterInvocation(ctx context.Context, invoker protoc
 	m.Called(ctx, invoker, invocation)
 	m.wg.Done()
 }
+
+func (m *mockReporter) ReportBeforeInvocation(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) {
+	m.Called(ctx, invoker, invocation)
+	m.wg.Done()
+}

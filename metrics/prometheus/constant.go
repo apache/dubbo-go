@@ -41,5 +41,7 @@ const (
 	counterField = "counter"
 	summaryField = "summary"
 
-	totalField = "total"
+	totalField      = "total"
+	processingField = "processing"
+	succeedField    = "succeed"
 )

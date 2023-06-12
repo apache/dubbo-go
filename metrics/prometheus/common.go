@@ -24,6 +24,7 @@ import (
 )
 
 import (
+	"github.com/dubbogo/gost/log/logger"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
@@ -32,6 +33,35 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
+
+var (
+	defaultHistogramBucket = []float64{10, 50, 100, 200, 500, 1000, 10000}
+)
+
+func buildLabels(url *common.URL) prometheus.Labels {
+	return prometheus.Labels{
+		applicationNameKey: url.GetParam(constant.ApplicationKey, ""),
+		groupKey:           url.Group(),
+		hostnameKey:        "not implemented yet",
+		interfaceKey:       url.Service(),
+		ipKey:              common.GetLocalIp(),
+		versionKey:         url.GetParam(constant.AppVersionKey, ""),
+		methodKey:          url.GetParam(constant.MethodKey, ""),
+	}
+}
+
+// return the role of the application, provider or consumer, if the url is not a valid one, return empty string
+func getRole(url *common.URL) (role string) {
+	if isProvider(url) {
+		role = providerField
+	} else if isConsumer(url) {
+		role = consumerField
+	} else {
+		logger.Warnf("The url belongs neither the consumer nor the provider, "+
+			"so the invocation will be ignored. url: %s", url.String())
+	}
+	return
+}
 
 // isProvider shows whether this url represents the application received the request as server
 func isProvider(url *common.URL) bool {

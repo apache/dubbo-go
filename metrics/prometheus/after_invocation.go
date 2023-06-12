@@ -23,61 +23,27 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
-)
-
-import (
-	"github.com/dubbogo/gost/log/logger"
-	"github.com/prometheus/client_golang/prometheus"
 )
 
 func (reporter *PrometheusReporter) ReportAfterInvocation(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation, cost time.Duration, res protocol.Result) {
 	if !reporter.reporterConfig.Enable {
 		return
 	}
-
 	url := invoker.GetURL()
 
-	var role string // provider or consumer
-	if isProvider(url) {
-		role = providerField
-	} else if isConsumer(url) {
-		role = consumerField
-	} else {
-		logger.Warnf("The url belongs neither the consumer nor the provider, "+
-			"so the invocation will be ignored. url: %s", url.String())
+	role := getRole(url)
+	if role == "" {
 		return
 	}
-	labels := prometheus.Labels{
-		applicationNameKey: url.GetParam(constant.ApplicationKey, ""),
-		groupKey:           url.Group(),
-		hostnameKey:        "",
-		interfaceKey:       url.Service(),
-		ipKey:              common.GetLocalIp(),
-		versionKey:         url.GetParam(constant.AppVersionKey, ""),
-		methodKey:          invocation.MethodName(),
-	}
+	labels := buildLabels(url)
 
 	reporter.reportRTSummaryVec(role, &labels, cost.Milliseconds())
-	reporter.reportRequestTotalCounterVec(role, &labels)
-}
+	reporter.reportRequestsTotalCounterVec(role, &labels)
+	reporter.decRequestsProcessingTotalGaugeVec(role, &labels)
 
-func (r *PrometheusReporter) reportRTSummaryVec(role string, labels *prometheus.Labels, costMs int64) {
-	switch role {
-	case providerField:
-		r.providerRTSummaryVec.With(*labels).Observe(float64(costMs))
-	case consumerField:
-		r.consumerRTSummaryVec.With(*labels).Observe(float64(costMs))
-	}
-}
-
-func (r *PrometheusReporter) reportRequestTotalCounterVec(role string, labels *prometheus.Labels) {
-	switch role {
-	case providerField:
-		r.providerRequestTotalCounterVec.With(*labels).Inc()
-	case consumerField:
-		r.consumerRequestTotalCounterVec.With(*labels).Inc()
+	if res != nil && res.Error() == nil {
+		// succeed
+		reporter.incRequestsSucceedTotalCounterVec(role, &labels)
 	}
 }
