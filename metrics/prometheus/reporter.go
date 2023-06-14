@@ -24,9 +24,9 @@ import (
 )
 
 import (
-	ocprom "contrib.go.opencensus.io/exporter/prometheus"
 	"github.com/dubbogo/gost/log/logger"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 import (
@@ -35,9 +35,8 @@ import (
 )
 
 var (
-	reporterInstance       *PrometheusReporter
-	reporterInitOnce       sync.Once
-	defaultHistogramBucket = []float64{10, 50, 100, 200, 500, 1000, 10000}
+	reporterInstance *PrometheusReporter
+	reporterInitOnce sync.Once
 )
 
 // should initialize after loading configuration
@@ -85,17 +84,9 @@ func newPrometheusReporter(reporterConfig *metrics.ReporterConfig) metrics.Repor
 }
 
 func (reporter *PrometheusReporter) startupServer(reporterConfig *metrics.ReporterConfig) {
-	metricsExporter, err := ocprom.NewExporter(ocprom.Options{
-		Registry: prometheus.DefaultRegisterer.(*prometheus.Registry),
-	})
-	if err != nil {
-		logger.Errorf("new prometheus reporter with error = %s", err)
-		return
-	}
-
 	// start server
 	mux := http.NewServeMux()
-	mux.Handle(reporterConfig.Path, metricsExporter)
+	mux.Handle(reporterConfig.Path, promhttp.Handler())
 	reporterInstance.reporterServer = &http.Server{Addr: ":" + reporterConfig.Port, Handler: mux}
 	if err := reporterInstance.reporterServer.ListenAndServe(); err != nil {
 		logger.Warnf("new prometheus reporter with error = %s", err)
@@ -109,5 +100,50 @@ func (reporter *PrometheusReporter) shutdownServer() {
 			logger.Errorf("shutdown prometheus reporter with error = %s, prometheus reporter close now", err)
 			reporterInstance.reporterServer.Close()
 		}
+	}
+}
+
+func (reporter *PrometheusReporter) reportRTSummaryVec(role string, labels *prometheus.Labels, costMs int64) {
+	switch role {
+	case providerField:
+		reporter.providerRTSummaryVec.With(*labels).Observe(float64(costMs))
+	case consumerField:
+		reporter.consumerRTSummaryVec.With(*labels).Observe(float64(costMs))
+	}
+}
+
+func (reporter *PrometheusReporter) reportRequestsTotalCounterVec(role string, labels *prometheus.Labels) {
+	switch role {
+	case providerField:
+		reporter.providerRequestsTotalCounterVec.With(*labels).Inc()
+	case consumerField:
+		reporter.consumerRequestsTotalCounterVec.With(*labels).Inc()
+	}
+}
+
+func (reporter *PrometheusReporter) incRequestsProcessingTotalGaugeVec(role string, labels *prometheus.Labels) {
+	switch role {
+	case providerField:
+		reporter.providerRequestsProcessingTotalGaugeVec.With(*labels).Inc()
+	case consumerField:
+		reporter.consumerRequestsProcessingTotalGaugeVec.With(*labels).Inc()
+	}
+}
+
+func (reporter *PrometheusReporter) decRequestsProcessingTotalGaugeVec(role string, labels *prometheus.Labels) {
+	switch role {
+	case providerField:
+		reporter.providerRequestsProcessingTotalGaugeVec.With(*labels).Dec()
+	case consumerField:
+		reporter.consumerRequestsProcessingTotalGaugeVec.With(*labels).Dec()
+	}
+}
+
+func (reporter *PrometheusReporter) incRequestsSucceedTotalCounterVec(role string, labels *prometheus.Labels) {
+	switch role {
+	case providerField:
+		reporter.providerRequestsSucceedTotalCounterVec.With(*labels).Inc()
+	case consumerField:
+		reporter.consumerRequestsSucceedTotalCounterVec.With(*labels).Inc()
 	}
 }
