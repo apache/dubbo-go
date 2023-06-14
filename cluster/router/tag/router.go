@@ -118,6 +118,7 @@ func parseRoute(routeContent string) (*config.RouterConfig, error) {
 	if err != nil {
 		return nil, err
 	}
+	routerConfig.Valid = new(bool)
 	*routerConfig.Valid = true
 	if len(routerConfig.Tags) == 0 {
 		*routerConfig.Valid = false
