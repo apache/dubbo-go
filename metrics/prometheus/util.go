@@ -20,11 +20,24 @@ package prometheus
 import (
 	"strings"
 	"sync"
+	"sync/atomic"
 )
 
 import (
 	"github.com/prometheus/client_golang/prometheus"
 )
+
+type GaugeVecWithSyncMap struct {
+	GaugeVec *prometheus.GaugeVec
+	SyncMap  *sync.Map
+}
+
+func newAutoGaugeVecWithSyncMap(name, namespace string, labels []string) *GaugeVecWithSyncMap {
+	return &GaugeVecWithSyncMap{
+		GaugeVec: newAutoGaugeVec(name, namespace, labels),
+		SyncMap:  &sync.Map{},
+	}
+}
 
 func convertLabelsToMapKey(labels prometheus.Labels) string {
 	return strings.Join([]string{
@@ -38,24 +51,28 @@ func convertLabelsToMapKey(labels prometheus.Labels) string {
 	}, "_")
 }
 
-func updateMin(m *sync.Map, labels *prometheus.Labels, gaugeVec *prometheus.GaugeVec, costMs int64) {
+func (gv *GaugeVecWithSyncMap) updateMin(labels *prometheus.Labels, curValue int64) {
 	key := convertLabelsToMapKey(*labels)
+	cur := &atomic.Value{} // for first store
+	cur.Store(curValue)
 	for {
-		if actual, loaded := m.LoadOrStore(key, costMs); loaded {
-			if costMs < actual.(int64) {
-				// need to update
-				if m.CompareAndSwap(key, actual, costMs) {
-					// value is not changed, update success
-					gaugeVec.With(*labels).Set(float64(costMs))
+		if actual, loaded := gv.SyncMap.LoadOrStore(key, cur); loaded {
+			store := actual.(*atomic.Value)
+			storeValue := store.Load().(int64)
+			if curValue < storeValue {
+				if store.CompareAndSwap(storeValue, curValue) {
+					// value is not changed, should update
+					gv.GaugeVec.With(*labels).Set(float64(curValue))
 					break
 				}
+				// value has changed, continue for loop
 			} else {
 				// no need to update
 				break
 			}
 		} else {
-			// store current costMs as this labels' init value
-			gaugeVec.With(*labels).Set(float64(costMs))
+			// store current curValue as this labels' init value
+			gv.GaugeVec.With(*labels).Set(float64(curValue))
 			break
 		}
 	}

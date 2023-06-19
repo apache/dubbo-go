@@ -19,7 +19,6 @@ package prometheus
 
 import (
 	"strings"
-	"sync"
 )
 
 import (
@@ -44,8 +43,7 @@ type metricSet struct {
 	// The number of requests successfully received by the provider
 	providerRequestsSucceedTotalCounterVec *prometheus.CounterVec
 
-	providerRTMillisecondsMinGaugeVec *prometheus.GaugeVec
-	providerRTMillisecondsMinSyncMap  *sync.Map
+	providerRTMillisecondsMinGaugeVecWithSyncMap *GaugeVecWithSyncMap
 
 	// report the consumer-side's request total counter data
 	consumerRequestsTotalCounterVec *prometheus.CounterVec
@@ -54,8 +52,7 @@ type metricSet struct {
 	// The number of successful requests sent by consumers
 	consumerRequestsSucceedTotalCounterVec *prometheus.CounterVec
 
-	consumerRTMillisecondsMinGaugeVec *prometheus.GaugeVec
-	consumerRTMillisecondsMinSyncMap  *sync.Map
+	consumerRTMillisecondsMinGaugeVecWithSyncMap *GaugeVecWithSyncMap
 }
 
 var labelNames = []string{applicationNameKey, groupKey, hostnameKey, interfaceKey, ipKey, methodKey, versionKey}
@@ -70,10 +67,8 @@ func (ms *metricSet) initAndRegister(reporterConfig *metrics.ReporterConfig) {
 	ms.providerRequestsProcessingTotalGaugeVec = newAutoGaugeVec(buildMetricsName(providerField, requestsField, processingField, totalField), reporterConfig.Namespace, labelNames)
 	ms.consumerRequestsSucceedTotalCounterVec = newAutoCounterVec(buildMetricsName(consumerField, requestsField, succeedField, totalField), reporterConfig.Namespace, labelNames)
 	ms.providerRequestsSucceedTotalCounterVec = newAutoCounterVec(buildMetricsName(providerField, requestsField, succeedField, totalField), reporterConfig.Namespace, labelNames)
-	ms.consumerRTMillisecondsMinGaugeVec = newAutoGaugeVec(buildMetricsName(consumerField, rtField, milliSecondsField, minField), reporterConfig.Namespace, labelNames)
-	ms.consumerRTMillisecondsMinSyncMap = &sync.Map{}
-	ms.providerRTMillisecondsMinGaugeVec = newAutoGaugeVec(buildMetricsName(providerField, rtField, milliSecondsField, minField), reporterConfig.Namespace, labelNames)
-	ms.providerRTMillisecondsMinSyncMap = &sync.Map{}
+	ms.consumerRTMillisecondsMinGaugeVecWithSyncMap = newAutoGaugeVecWithSyncMap(buildMetricsName(consumerField, rtField, milliSecondsField, minField), reporterConfig.Namespace, labelNames)
+	ms.providerRTMillisecondsMinGaugeVecWithSyncMap = newAutoGaugeVecWithSyncMap(buildMetricsName(providerField, rtField, milliSecondsField, minField), reporterConfig.Namespace, labelNames)
 }
 
 func buildMetricsName(args ...string) string {
