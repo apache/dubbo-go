@@ -235,7 +235,7 @@ func (dp *DubboProtocol) openServer(url *common.URL, tripleCodecType tripleConst
 				opts = append(opts, triConfig.WithJaegerConfig(
 					tracingConfig.Address,
 					tracingConfig.ServiceName,
-					tracingConfig.UseAgent,
+					*tracingConfig.UseAgent,
 				))
 			default:
 				logger.Warnf("unsupported tracing name %s, now triple only support jaeger", tracingConfig.Name)

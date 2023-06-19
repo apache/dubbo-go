@@ -108,7 +108,7 @@ func NewDubboInvoker(url *common.URL) (*DubboInvoker, error) {
 				opts = append(opts, triConfig.WithJaegerConfig(
 					tracingConfig.Address,
 					tracingConfig.ServiceName,
-					tracingConfig.UseAgent,
+					*tracingConfig.UseAgent,
 				))
 			} else {
 				logger.Warnf("unsupported tracing name %s, now triple only support jaeger", tracingConfig.Name)

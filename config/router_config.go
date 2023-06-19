@@ -31,10 +31,10 @@ import (
 type RouterConfig struct {
 	Scope      string   `validate:"required" yaml:"scope" json:"scope,omitempty" property:"scope"` // must be chosen from `service` and `application`.
 	Key        string   `validate:"required" yaml:"key" json:"key,omitempty" property:"key"`       // specifies which service or application the rule body acts on.
-	Force      bool     `default:"false" yaml:"force" json:"force,omitempty" property:"force"`
-	Runtime    bool     `default:"false" yaml:"runtime" json:"runtime,omitempty" property:"runtime"`
-	Enabled    bool     `default:"true" yaml:"enabled" json:"enabled,omitempty" property:"enabled"`
-	Valid      bool     `default:"true" yaml:"valid" json:"valid,omitempty" property:"valid"`
+	Force      *bool    `default:"false" yaml:"force" json:"force,omitempty" property:"force"`
+	Runtime    *bool    `default:"false" yaml:"runtime" json:"runtime,omitempty" property:"runtime"`
+	Enabled    *bool    `default:"true" yaml:"enabled" json:"enabled,omitempty" property:"enabled"`
+	Valid      *bool    `default:"true" yaml:"valid" json:"valid,omitempty" property:"valid"`
 	Priority   int      `default:"0" yaml:"priority" json:"priority,omitempty" property:"priority"`
 	Conditions []string `yaml:"conditions" json:"conditions,omitempty" property:"conditions"`
 	Tags       []Tag    `yaml:"tags" json:"tags,omitempty" property:"tags"`
@@ -91,22 +91,22 @@ func (rcb *RouterConfigBuilder) SetKey(key string) *RouterConfigBuilder {
 }
 
 func (rcb *RouterConfigBuilder) SetForce(force bool) *RouterConfigBuilder {
-	rcb.routerConfig.Force = force
+	rcb.routerConfig.Force = &force
 	return rcb
 }
 
 func (rcb *RouterConfigBuilder) SetRuntime(runtime bool) *RouterConfigBuilder {
-	rcb.routerConfig.Runtime = runtime
+	rcb.routerConfig.Runtime = &runtime
 	return rcb
 }
 
 func (rcb *RouterConfigBuilder) SetEnabled(enabled bool) *RouterConfigBuilder {
-	rcb.routerConfig.Enabled = enabled
+	rcb.routerConfig.Enabled = &enabled
 	return rcb
 }
 
 func (rcb *RouterConfigBuilder) SetValid(valid bool) *RouterConfigBuilder {
-	rcb.routerConfig.Valid = valid
+	rcb.routerConfig.Valid = &valid
 	return rcb
 }
 
