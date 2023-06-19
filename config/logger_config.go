@@ -41,9 +41,9 @@ import (
 
 type ZapConfig struct {
 	Level             string                 `default:"info" json:"level,omitempty" yaml:"level" property:"level"`
-	Development       bool                   `default:"false" json:"development,omitempty" yaml:"development" property:"development"`
-	DisableCaller     bool                   `default:"false" json:"disable-caller,omitempty" yaml:"disable-caller" property:"disable-caller"`
-	DisableStacktrace bool                   `default:"false" json:"disable-stacktrace,omitempty" yaml:"disable-stacktrace" property:"disable-stacktrace"`
+	Development       *bool                  `default:"false" json:"development,omitempty" yaml:"development" property:"development"`
+	DisableCaller     *bool                  `default:"false" json:"disable-caller,omitempty" yaml:"disable-caller" property:"disable-caller"`
+	DisableStacktrace *bool                  `default:"false" json:"disable-stacktrace,omitempty" yaml:"disable-stacktrace" property:"disable-stacktrace"`
 	Encoding          string                 `default:"console" json:"encoding,omitempty" yaml:"encoding" property:"encoding"`
 	EncoderConfig     EncoderConfig          `default:"" json:"encoder-config,omitempty" yaml:"encoder-config" property:"encoder-config"`
 	OutputPaths       []string               `default:"[\"stderr\"]" json:"output-paths,omitempty" yaml:"output-paths" property:"output-paths"`
@@ -110,8 +110,8 @@ func (lc *LoggerConfig) check() error {
 func (e *ZapConfig) setZapConfig(config *zap.Config) {
 	config.OutputPaths = e.OutputPaths
 	config.ErrorOutputPaths = e.ErrorOutputPaths
-	config.DisableStacktrace = e.DisableStacktrace
-	config.DisableCaller = e.DisableCaller
+	config.DisableStacktrace = *e.DisableStacktrace
+	config.DisableCaller = *e.DisableCaller
 	config.InitialFields = e.InitialFields
 }
 
