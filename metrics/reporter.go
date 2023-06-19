@@ -63,4 +63,5 @@ func NewReporterConfig() *ReporterConfig {
 type Reporter interface {
 	ReportAfterInvocation(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation,
 		cost time.Duration, res protocol.Result)
+	ReportBeforeInvocation(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation)
 }
