@@ -35,6 +35,7 @@ import (
 )
 
 var (
+	labelNames             = []string{applicationNameKey, groupKey, hostnameKey, interfaceKey, ipKey, methodKey, versionKey}
 	defaultHistogramBucket = []float64{10, 50, 100, 200, 500, 1000, 10000}
 )
 

@@ -40,6 +40,9 @@ const (
 
 	minField     = "min"
 	maxField     = "max"
+	sumField     = "sum"
+	avgField     = "avg"
+	lastField    = "last"
 	summaryField = "summary"
 
 	totalField      = "total"

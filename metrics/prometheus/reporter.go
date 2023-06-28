@@ -156,3 +156,21 @@ func (reporter *PrometheusReporter) updateRTMillisecondsMinGaugeVec(role string,
 		go reporter.consumerRTMillisecondsMinGaugeVecWithSyncMap.updateMin(labels, costMs)
 	}
 }
+
+func (reporter *PrometheusReporter) updateRTMillisecondsMaxGaugeVec(role string, labels *prometheus.Labels, costMs int64) {
+	switch role {
+	case providerField:
+		go reporter.providerRTMillisecondsMaxGaugeVecWithSyncMap.updateMax(labels, costMs)
+	case consumerField:
+		go reporter.consumerRTMillisecondsMaxGaugeVecWithSyncMap.updateMax(labels, costMs)
+	}
+}
+
+func (reporter *PrometheusReporter) updateRTMillisecondsSumGaugeVec(role string, labels *prometheus.Labels, costMs int64) {
+	switch role {
+	case providerField:
+		go reporter.providerRTMillisecondsSumGaugeVecWithSyncMap.updateSum(labels, costMs)
+	case consumerField:
+		go reporter.consumerRTMillisecondsSumGaugeVecWithSyncMap.updateSum(labels, costMs)
+	}
+}

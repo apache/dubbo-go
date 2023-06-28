@@ -77,3 +77,52 @@ func (gv *GaugeVecWithSyncMap) updateMin(labels *prometheus.Labels, curValue int
 		}
 	}
 }
+
+func (gv *GaugeVecWithSyncMap) updateMax(labels *prometheus.Labels, curValue int64) {
+	key := convertLabelsToMapKey(*labels)
+	cur := &atomic.Value{} // for first store
+	cur.Store(curValue)
+	for {
+		if actual, loaded := gv.SyncMap.LoadOrStore(key, cur); loaded {
+			store := actual.(*atomic.Value)
+			storeValue := store.Load().(int64)
+			if curValue > storeValue {
+				if store.CompareAndSwap(storeValue, curValue) {
+					// value is not changed, should update
+					gv.GaugeVec.With(*labels).Set(float64(curValue))
+					break
+				}
+				// value has changed, continue for loop
+			} else {
+				// no need to update
+				break
+			}
+		} else {
+			// store current curValue as this labels' init value
+			gv.GaugeVec.With(*labels).Set(float64(curValue))
+			break
+		}
+	}
+}
+
+func (gv *GaugeVecWithSyncMap) updateSum(labels *prometheus.Labels, curValue int64) {
+	key := convertLabelsToMapKey(*labels)
+	cur := &atomic.Value{} // for first store
+	cur.Store(curValue)
+
+	for {
+		if actual, loaded := gv.SyncMap.LoadOrStore(key, cur); loaded {
+			store := actual.(*atomic.Value)
+			storeValue := store.Load().(int64)
+			if store.CompareAndSwap(storeValue, storeValue+curValue) {
+				// value is not changed, should update
+				gv.GaugeVec.With(*labels).Set(float64(storeValue + curValue))
+				break
+			}
+		} else {
+			// store current curValue as this labels' init value
+			gv.GaugeVec.With(*labels).Set(float64(curValue))
+			break
+		}
+	}
+}
