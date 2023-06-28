@@ -50,6 +50,8 @@ type metricSet struct {
 	providerRTMillisecondsSumCounterVec *prometheus.CounterVec
 	// The average response time of all requests processed by the provider
 	providerRTMillisecondsAvgGaugeVecWithSyncMap *GaugeVecWithSyncMap
+	// The current response time in the provider’s processing of requests
+	providerRTMillisecondsLastGaugeVec *prometheus.GaugeVec
 
 	// report the consumer-side's request total counter data
 	consumerRequestsTotalCounterVec *prometheus.CounterVec
@@ -65,6 +67,8 @@ type metricSet struct {
 	consumerRTMillisecondsSumCounterVec *prometheus.CounterVec
 	// The average response time of all requests processed by the consumer
 	consumerRTMillisecondsAvgGaugeVecWithSyncMap *GaugeVecWithSyncMap
+	// The current response time in the consumer’s processing of requests
+	consumerRTMillisecondsLastGaugeVec *prometheus.GaugeVec
 }
 
 // init metric set and register to prometheus
@@ -85,6 +89,8 @@ func (ms *metricSet) initAndRegister(reporterConfig *metrics.ReporterConfig) {
 	ms.providerRTMillisecondsSumCounterVec = newAutoCounterVec(buildMetricsName(providerField, rtField, milliSecondsField, sumField), reporterConfig.Namespace, labelNames)
 	ms.consumerRTMillisecondsAvgGaugeVecWithSyncMap = newAutoGaugeVecWithSyncMap(buildMetricsName(consumerField, rtField, milliSecondsField, avgField), reporterConfig.Namespace, labelNames)
 	ms.providerRTMillisecondsAvgGaugeVecWithSyncMap = newAutoGaugeVecWithSyncMap(buildMetricsName(providerField, rtField, milliSecondsField, avgField), reporterConfig.Namespace, labelNames)
+	ms.consumerRTMillisecondsLastGaugeVec = newAutoGaugeVec(buildMetricsName(consumerField, rtField, milliSecondsField, lastField), reporterConfig.Namespace, labelNames)
+	ms.providerRTMillisecondsLastGaugeVec = newAutoGaugeVec(buildMetricsName(providerField, rtField, milliSecondsField, lastField), reporterConfig.Namespace, labelNames)
 }
 
 func buildMetricsName(args ...string) string {
