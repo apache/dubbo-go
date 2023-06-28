@@ -18,116 +18,58 @@
 package prometheus
 
 import (
+	"strconv"
 	"strings"
-	"sync"
-	"sync/atomic"
 )
 
 import (
+	"github.com/dubbogo/gost/log/logger"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-type GaugeVecWithSyncMap struct {
-	GaugeVec *prometheus.GaugeVec
-	SyncMap  *sync.Map
-}
+import (
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+)
 
-func newAutoGaugeVecWithSyncMap(name, namespace string, labels []string) *GaugeVecWithSyncMap {
-	return &GaugeVecWithSyncMap{
-		GaugeVec: newAutoGaugeVec(name, namespace, labels),
-		SyncMap:  &sync.Map{},
+var (
+	labelNames             = []string{applicationNameKey, groupKey, hostnameKey, interfaceKey, ipKey, methodKey, versionKey}
+	defaultHistogramBucket = []float64{10, 50, 100, 200, 500, 1000, 10000}
+)
+
+func buildLabels(url *common.URL) prometheus.Labels {
+	return prometheus.Labels{
+		applicationNameKey: url.GetParam(constant.ApplicationKey, ""),
+		groupKey:           url.Group(),
+		hostnameKey:        "not implemented yet",
+		interfaceKey:       url.Service(),
+		ipKey:              common.GetLocalIp(),
+		versionKey:         url.GetParam(constant.AppVersionKey, ""),
+		methodKey:          url.GetParam(constant.MethodKey, ""),
 	}
 }
 
-func convertLabelsToMapKey(labels prometheus.Labels) string {
-	return strings.Join([]string{
-		labels[applicationNameKey],
-		labels[groupKey],
-		labels[hostnameKey],
-		labels[interfaceKey],
-		labels[ipKey],
-		labels[versionKey],
-		labels[methodKey],
-	}, "_")
+// return the role of the application, provider or consumer, if the url is not a valid one, return empty string
+func getRole(url *common.URL) (role string) {
+	if isProvider(url) {
+		role = providerField
+	} else if isConsumer(url) {
+		role = consumerField
+	} else {
+		logger.Warnf("The url belongs neither the consumer nor the provider, "+
+			"so the invocation will be ignored. url: %s", url.String())
+	}
+	return
 }
 
-func (gv *GaugeVecWithSyncMap) updateMin(labels *prometheus.Labels, curValue int64) {
-	key := convertLabelsToMapKey(*labels)
-	cur := &atomic.Value{} // for first store
-	cur.Store(curValue)
-	for {
-		if actual, loaded := gv.SyncMap.LoadOrStore(key, cur); loaded {
-			store := actual.(*atomic.Value)
-			storeValue := store.Load().(int64)
-			if curValue < storeValue {
-				if store.CompareAndSwap(storeValue, curValue) {
-					// value is not changed, should update
-					gv.GaugeVec.With(*labels).Set(float64(curValue))
-					break
-				}
-				// value has changed, continue for loop
-			} else {
-				// no need to update
-				break
-			}
-		} else {
-			// store current curValue as this labels' init value
-			gv.GaugeVec.With(*labels).Set(float64(curValue))
-			break
-		}
-	}
+// isProvider shows whether this url represents the application received the request as server
+func isProvider(url *common.URL) bool {
+	role := url.GetParam(constant.RegistryRoleKey, "")
+	return strings.EqualFold(role, strconv.Itoa(common.PROVIDER))
 }
 
-func (gv *GaugeVecWithSyncMap) updateMax(labels *prometheus.Labels, curValue int64) {
-	key := convertLabelsToMapKey(*labels)
-	cur := &atomic.Value{} // for first store
-	cur.Store(curValue)
-	for {
-		if actual, loaded := gv.SyncMap.LoadOrStore(key, cur); loaded {
-			store := actual.(*atomic.Value)
-			storeValue := store.Load().(int64)
-			if curValue > storeValue {
-				if store.CompareAndSwap(storeValue, curValue) {
-					// value is not changed, should update
-					gv.GaugeVec.With(*labels).Set(float64(curValue))
-					break
-				}
-				// value has changed, continue for loop
-			} else {
-				// no need to update
-				break
-			}
-		} else {
-			// store current curValue as this labels' init value
-			gv.GaugeVec.With(*labels).Set(float64(curValue))
-			break
-		}
-	}
-}
-
-func (gv *GaugeVecWithSyncMap) updateAvg(labels *prometheus.Labels, curValue int64) {
-	key := convertLabelsToMapKey(*labels)
-	cur := &atomic.Value{} // for first store
-	type avgPair struct {
-		Sum int64
-		N   int64
-	}
-	cur.Store(avgPair{Sum: curValue, N: 1})
-
-	for {
-		if actual, loaded := gv.SyncMap.LoadOrStore(key, cur); loaded {
-			store := actual.(*atomic.Value)
-			storeValue := store.Load().(avgPair)
-			newValue := avgPair{Sum: storeValue.Sum + curValue, N: storeValue.N + 1}
-			if store.CompareAndSwap(storeValue, newValue) {
-				// value is not changed, should update
-				gv.GaugeVec.With(*labels).Set(float64(newValue.Sum / newValue.N))
-				break
-			}
-		} else {
-			// store current curValue as this labels' init value
-			gv.GaugeVec.With(*labels).Set(float64(curValue))
-			break
-		}
-	}
+// isConsumer shows whether this url represents the application sent then request as client
+func isConsumer(url *common.URL) bool {
+	role := url.GetParam(constant.RegistryRoleKey, "")
+	return strings.EqualFold(role, strconv.Itoa(common.CONSUMER))
 }

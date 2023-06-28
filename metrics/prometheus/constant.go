@@ -34,16 +34,14 @@ const (
 
 	requestsField = "requests"
 	rtField       = "rt"
-	tpsField      = "tps"
 
 	milliSecondsField = "milliseconds"
 
-	minField     = "min"
-	maxField     = "max"
-	sumField     = "sum"
-	avgField     = "avg"
-	lastField    = "last"
-	summaryField = "summary"
+	minField  = "min"
+	maxField  = "max"
+	sumField  = "sum"
+	avgField  = "avg"
+	lastField = "last"
 
 	totalField      = "total"
 	processingField = "processing"
