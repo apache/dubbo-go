@@ -166,12 +166,12 @@ func (reporter *PrometheusReporter) updateRTMillisecondsMaxGaugeVec(role string,
 	}
 }
 
-func (reporter *PrometheusReporter) updateRTMillisecondsSumGaugeVec(role string, labels *prometheus.Labels, costMs int64) {
+func (reporter *PrometheusReporter) updateRTMillisecondsCounterGaugeVec(role string, labels *prometheus.Labels, costMs int64) {
 	switch role {
 	case providerField:
-		go reporter.providerRTMillisecondsSumGaugeVecWithSyncMap.updateSum(labels, costMs)
+		reporter.providerRTMillisecondsSumCounterVec.With(*labels).Add(float64(costMs))
 	case consumerField:
-		go reporter.consumerRTMillisecondsSumGaugeVecWithSyncMap.updateSum(labels, costMs)
+		reporter.consumerRTMillisecondsSumCounterVec.With(*labels).Add(float64(costMs))
 	}
 }
 

@@ -47,7 +47,7 @@ type metricSet struct {
 	// The maximum response time among all requests processed by the provider
 	providerRTMillisecondsMaxGaugeVecWithSyncMap *GaugeVecWithSyncMap
 	// The total time taken by the provider to process all requests
-	providerRTMillisecondsSumGaugeVecWithSyncMap *GaugeVecWithSyncMap
+	providerRTMillisecondsSumCounterVec *prometheus.CounterVec
 	// The average response time of all requests processed by the provider
 	providerRTMillisecondsAvgGaugeVecWithSyncMap *GaugeVecWithSyncMap
 
@@ -62,7 +62,7 @@ type metricSet struct {
 	// The maximum response time among all requests processed by the consumer
 	consumerRTMillisecondsMaxGaugeVecWithSyncMap *GaugeVecWithSyncMap
 	// The total time taken by the consumer to process all requests
-	consumerRTMillisecondsSumGaugeVecWithSyncMap *GaugeVecWithSyncMap
+	consumerRTMillisecondsSumCounterVec *prometheus.CounterVec
 	// The average response time of all requests processed by the consumer
 	consumerRTMillisecondsAvgGaugeVecWithSyncMap *GaugeVecWithSyncMap
 }
@@ -81,8 +81,8 @@ func (ms *metricSet) initAndRegister(reporterConfig *metrics.ReporterConfig) {
 	ms.providerRTMillisecondsMinGaugeVecWithSyncMap = newAutoGaugeVecWithSyncMap(buildMetricsName(providerField, rtField, milliSecondsField, minField), reporterConfig.Namespace, labelNames)
 	ms.consumerRTMillisecondsMaxGaugeVecWithSyncMap = newAutoGaugeVecWithSyncMap(buildMetricsName(consumerField, rtField, milliSecondsField, maxField), reporterConfig.Namespace, labelNames)
 	ms.providerRTMillisecondsMaxGaugeVecWithSyncMap = newAutoGaugeVecWithSyncMap(buildMetricsName(providerField, rtField, milliSecondsField, maxField), reporterConfig.Namespace, labelNames)
-	ms.consumerRTMillisecondsSumGaugeVecWithSyncMap = newAutoGaugeVecWithSyncMap(buildMetricsName(consumerField, rtField, milliSecondsField, sumField), reporterConfig.Namespace, labelNames)
-	ms.providerRTMillisecondsSumGaugeVecWithSyncMap = newAutoGaugeVecWithSyncMap(buildMetricsName(providerField, rtField, milliSecondsField, sumField), reporterConfig.Namespace, labelNames)
+	ms.consumerRTMillisecondsSumCounterVec = newAutoCounterVec(buildMetricsName(consumerField, rtField, milliSecondsField, sumField), reporterConfig.Namespace, labelNames)
+	ms.providerRTMillisecondsSumCounterVec = newAutoCounterVec(buildMetricsName(providerField, rtField, milliSecondsField, sumField), reporterConfig.Namespace, labelNames)
 	ms.consumerRTMillisecondsAvgGaugeVecWithSyncMap = newAutoGaugeVecWithSyncMap(buildMetricsName(consumerField, rtField, milliSecondsField, avgField), reporterConfig.Namespace, labelNames)
 	ms.providerRTMillisecondsAvgGaugeVecWithSyncMap = newAutoGaugeVecWithSyncMap(buildMetricsName(providerField, rtField, milliSecondsField, avgField), reporterConfig.Namespace, labelNames)
 }
