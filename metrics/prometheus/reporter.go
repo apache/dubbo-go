@@ -174,3 +174,12 @@ func (reporter *PrometheusReporter) updateRTMillisecondsSumGaugeVec(role string,
 		go reporter.consumerRTMillisecondsSumGaugeVecWithSyncMap.updateSum(labels, costMs)
 	}
 }
+
+func (reporter *PrometheusReporter) updateRTMillisecondsAvgGaugeVec(role string, labels *prometheus.Labels, costMs int64) {
+	switch role {
+	case providerField:
+		go reporter.providerRTMillisecondsAvgGaugeVecWithSyncMap.updateAvg(labels, costMs)
+	case consumerField:
+		go reporter.consumerRTMillisecondsAvgGaugeVecWithSyncMap.updateAvg(labels, costMs)
+	}
+}

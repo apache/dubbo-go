@@ -44,6 +44,7 @@ func (reporter *PrometheusReporter) ReportAfterInvocation(ctx context.Context, i
 	reporter.updateRTMillisecondsMinGaugeVec(role, &labels, cost.Milliseconds())
 	reporter.updateRTMillisecondsMaxGaugeVec(role, &labels, cost.Milliseconds())
 	reporter.updateRTMillisecondsSumGaugeVec(role, &labels, cost.Milliseconds())
+	reporter.updateRTMillisecondsAvgGaugeVec(role, &labels, cost.Milliseconds())
 
 	if res != nil && res.Error() == nil {
 		// succeed

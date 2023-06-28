@@ -126,3 +126,30 @@ func (gv *GaugeVecWithSyncMap) updateSum(labels *prometheus.Labels, curValue int
 		}
 	}
 }
+
+func (gv *GaugeVecWithSyncMap) updateAvg(labels *prometheus.Labels, curValue int64) {
+	key := convertLabelsToMapKey(*labels)
+	cur := &atomic.Value{} // for first store
+	type avgPair struct {
+		Sum int64
+		N   int64
+	}
+	cur.Store(avgPair{Sum: curValue, N: 1})
+
+	for {
+		if actual, loaded := gv.SyncMap.LoadOrStore(key, cur); loaded {
+			store := actual.(*atomic.Value)
+			storeValue := store.Load().(avgPair)
+			newValue := avgPair{Sum: storeValue.Sum + curValue, N: storeValue.N + 1}
+			if store.CompareAndSwap(storeValue, newValue) {
+				// value is not changed, should update
+				gv.GaugeVec.With(*labels).Set(float64(newValue.Sum / newValue.N))
+				break
+			}
+		} else {
+			// store current curValue as this labels' init value
+			gv.GaugeVec.With(*labels).Set(float64(curValue))
+			break
+		}
+	}
+}
