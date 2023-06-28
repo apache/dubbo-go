@@ -18,6 +18,7 @@
 package tag
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -174,7 +175,7 @@ func TestRouter(t *testing.T) {
 	t.Run("dynamicTag_requestEmptyTag", func(t *testing.T) {
 		p, err := NewTagPriorityRouter()
 		assert.Nil(t, err)
-		p.routerConfigs.Store(consumerUrl.Service()+constant.TagRouterRuleSuffix, config.RouterConfig{
+		p.routerConfigs.Store(strings.Join([]string{consumerUrl.GetParam(constant.ApplicationKey, ""), constant.TagRouterRuleSuffix}, ""), config.RouterConfig{
 			Key:     consumerUrl.Service() + constant.TagRouterRuleSuffix,
 			Force:   falsePointer,
 			Enabled: truePointer,
@@ -222,7 +223,7 @@ func TestRouter(t *testing.T) {
 	t.Run("dynamicTag_address_requestHasTag", func(t *testing.T) {
 		p, err := NewTagPriorityRouter()
 		assert.Nil(t, err)
-		p.routerConfigs.Store(consumerUrl.Service()+constant.TagRouterRuleSuffix, config.RouterConfig{
+		p.routerConfigs.Store(strings.Join([]string{consumerUrl.GetParam(constant.ApplicationKey, ""), constant.TagRouterRuleSuffix}, ""), config.RouterConfig{
 			Key:     consumerUrl.Service() + constant.TagRouterRuleSuffix,
 			Force:   falsePointer,
 			Enabled: truePointer,
@@ -247,7 +248,7 @@ func TestRouter(t *testing.T) {
 	t.Run("dynamicTag_twoAddress_requestHasTag", func(t *testing.T) {
 		p, err := NewTagPriorityRouter()
 		assert.Nil(t, err)
-		p.routerConfigs.Store(consumerUrl.Service()+constant.TagRouterRuleSuffix, config.RouterConfig{
+		p.routerConfigs.Store(strings.Join([]string{consumerUrl.GetParam(constant.ApplicationKey, ""), constant.TagRouterRuleSuffix}, ""), config.RouterConfig{
 			Key:     consumerUrl.Service() + constant.TagRouterRuleSuffix,
 			Force:   falsePointer,
 			Enabled: truePointer,
