@@ -59,7 +59,7 @@ func (p *PriorityRouter) Route(invokers []protocol.Invoker, url *common.URL, inv
 		return staticTag(invokers, url, invocation)
 	}
 	routerCfg := value.(config.RouterConfig)
-	if !routerCfg.Enabled || !routerCfg.Valid {
+	if !*routerCfg.Enabled || !*routerCfg.Valid {
 		return staticTag(invokers, url, invocation)
 	}
 	return dynamicTag(invokers, url, invocation, routerCfg)
@@ -119,9 +119,10 @@ func parseRoute(routeContent string) (*config.RouterConfig, error) {
 	if err != nil {
 		return nil, err
 	}
-	routerConfig.Valid = true
+	routerConfig.Valid = new(bool)
+	*routerConfig.Valid = true
 	if len(routerConfig.Tags) == 0 {
-		routerConfig.Valid = false
+		*routerConfig.Valid = false
 	}
 	return routerConfig, nil
 }

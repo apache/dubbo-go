@@ -36,5 +36,5 @@ func TestTracingConfig(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, tracing.Prefix(), constant.TracingConfigPrefix)
 	assert.Equal(t, tracing.Name, "jaeger")
-	assert.Equal(t, tracing.UseAgent, false)
+	assert.Equal(t, *tracing.UseAgent, false)
 }
