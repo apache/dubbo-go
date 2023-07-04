@@ -65,7 +65,9 @@ func (mc *MetricConfig) Init() error {
 	if err := verify(mc); err != nil {
 		return err
 	}
-	extension.GetMetricReporter("prometheus", mc.ToReporterConfig())
+	config := mc.ToReporterConfig()
+	extension.GetMetricReporter("prometheus", config)
+	metrics.Init(config)
 	return nil
 }
 
