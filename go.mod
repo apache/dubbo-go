@@ -10,8 +10,8 @@ require (
 	github.com/apache/dubbo-getty v1.4.9
 	github.com/apache/dubbo-go-hessian2 v1.12.2
 	github.com/cespare/xxhash/v2 v2.2.0
-	github.com/cncf/udpa/go v0.0.0-20210930031921-04548b0d99d4
-	github.com/cncf/xds/go v0.0.0-20220314180256-7f1daf1720fc
+	github.com/cncf/udpa/go v0.0.0-20220112060539-c52dc94e7fbe
+	github.com/cncf/xds/go v0.0.0-20230105202645-06c439db220b
 	github.com/creasty/defaults v1.5.2
 	github.com/dubbogo/go-zookeeper v1.0.4-0.20211212162352-f9d2183d89d5
 	github.com/dubbogo/gost v1.13.2
@@ -57,8 +57,8 @@ require (
 	go.uber.org/atomic v1.10.0
 	go.uber.org/multierr v1.8.0 // indirect
 	go.uber.org/zap v1.21.0
-	google.golang.org/genproto v0.0.0-20221118155620-16455021b5e6
-	google.golang.org/grpc v1.52.0
+	google.golang.org/genproto v0.0.0-20230110181048-76db0878b65f
+	google.golang.org/grpc v1.53.0
 	google.golang.org/protobuf v1.30.0
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
