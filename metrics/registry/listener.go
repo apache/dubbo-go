@@ -28,8 +28,14 @@ var (
 	handlers     []func(event *RegistryMetricsEvent)
 )
 
+//func Collector(m metrics.MetricRegistry, r *metrics.ReporterConfig) {
+//	regRegistry = m
+//
+//	// init related metrics
+//}
+
 func init() {
-	AddHandler(regHandler)
+	AddHandler(regHandler, subHandler, notifyHandler, directoryHandler, serverSubHandler, serverRegHandler)
 	//metrics.AddCollector(Collector)
 	metrics.Subscribe(constant.MetricsRegistry, registryChan)
 	go receiveEvent()
@@ -61,6 +67,33 @@ func regHandler(event *RegistryMetricsEvent) {
 	// Save metrics to the MetricRegistry
 }
 
-//func Collector(m metrics.MetricRegistry, r *metrics.ReporterConfig) {
-//	regRegistry = m
-//}
+func subHandler(event *RegistryMetricsEvent) {
+	// Event is converted to metrics
+
+	// Save metrics to the MetricRegistry
+
+}
+
+func notifyHandler(event *RegistryMetricsEvent) {
+	// Event is converted to metrics
+
+	// Save metrics to the MetricRegistry
+}
+
+func directoryHandler(event *RegistryMetricsEvent) {
+	// Event is converted to metrics
+
+	// Save metrics to the MetricRegistry
+}
+
+func serverRegHandler(event *RegistryMetricsEvent) {
+	// Event is converted to metrics
+
+	// Save metrics to the MetricRegistry
+}
+
+func serverSubHandler(event *RegistryMetricsEvent) {
+	// Event is converted to metrics
+
+	// Save metrics to the MetricRegistry
+}

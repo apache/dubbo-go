@@ -15,28 +15,37 @@
  * limitations under the License.
  */
 
-package registry
+package metrics
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
-type RegistryMetricsEvent struct {
-	//Contains some information, such as time, success, failure
+var mockChan = make(chan MetricsEvent, 16)
+
+type MockEvent struct {
 }
 
-func (r RegistryMetricsEvent) Type() string {
-	return constant.MetricsRegistry
+func (m MockEvent) Type() string {
+	return "dubbo.metrics.mock"
 }
 
-// NewRegistryEvent
+func NewEmptyMockEvent() *MockEvent {
+	return &MockEvent{}
+}
 
-// NewSubscribeEvent
+func init() {
+	Subscribe("dubbo.metrics.mock", mockChan)
+	Publish(NewEmptyMockEvent())
+}
 
-// NewNotifyEvent
+func TestBusPublish(t *testing.T) {
+	t.Run("testBusPublish", func(t *testing.T) {
+		event := <-mockChan
 
-// NewDirectoryEvent
-
-// NewServerRegistryEvent
-
-// NewServerSubscribeEvent
+		if event, ok := event.(MockEvent); ok {
+			assert.Equal(t, event, NewEmptyMockEvent())
+		}
+	})
+}
