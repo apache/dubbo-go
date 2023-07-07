@@ -8,15 +8,15 @@ var registry MetricRegistry
 type CollectorFunc func(MetricRegistry, *ReporterConfig)
 
 // Init 整个 Metrics 模块初始化入口
-func Init(c *ReporterConfig) {
+func Init(config *ReporterConfig) {
 	// config.extention = prometheus
-	regFunc, ok := registries["config.extention"]
+	regFunc, ok := registries[config.Protocol]
 	if !ok {
-		regFunc, _ = registries["prometheus"] // default
+		regFunc = registries["prometheus"] // default
 	}
-	registry = regFunc(c)
-	for _, v := range collectors {
-		v(registry, c)
+	registry = regFunc(config)
+	for _, co := range collectors {
+		co(registry, config)
 	}
 	registry.Export()
 }
@@ -37,7 +37,7 @@ type MetricRegistry interface {
 	Gauge(*MetricId) GaugeMetric         // add or update a gauge
 	Histogram(*MetricId) HistogramMetric // add a metric num to a histogram
 	Summary(*MetricId) SummaryMetric     // add a metric num to a summary
-	Export() // 数据暴露， 如 Prometheus 是 http 暴露
+	Export()                             // 数据暴露， 如 Prometheus 是 http 暴露
 	// GetMetrics() []*MetricSample // 获取所有指标数据
 	// GetMetricsString() (string, error) // 如需复用端口则加一下这个接口
 }
@@ -128,7 +128,7 @@ type TimeMetrics interface {
 	Record(float64)
 }
 
-// NewTimeMetrics init and write all data to registry 
+// NewTimeMetrics init and write all data to registry
 func NewTimeMetrics(min *MetricId, avg *MetricId, max *MetricId, last *MetricId, sum *MetricId) {
 
 }

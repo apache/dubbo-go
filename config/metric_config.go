@@ -22,9 +22,12 @@ import (
 
 	"github.com/dubbogo/gost/log/logger"
 
+	"github.com/pkg/errors"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
-	"github.com/pkg/errors"
 )
 
 // MetricConfig This is the config struct for all metrics implementation
@@ -36,6 +39,7 @@ type MetricConfig struct {
 	Path               string `default:"/metrics" yaml:"path" json:"path,omitempty" property:"path"`
 	PushGatewayAddress string `default:"" yaml:"push-gateway-address" json:"push-gateway-address,omitempty" property:"push-gateway-address"`
 	SummaryMaxAge      int64  `default:"600000000000" yaml:"summary-max-age" json:"summary-max-age,omitempty" property:"summary-max-age"`
+	Protocol           string `default:"prometheus" yaml:"protocol" json:"protocol,omitempty" property:"protocol"`
 }
 
 func (mc *MetricConfig) ToReporterConfig() *metrics.ReporterConfig {
@@ -66,7 +70,7 @@ func (mc *MetricConfig) Init() error {
 		return err
 	}
 	config := mc.ToReporterConfig()
-	extension.GetMetricReporter("prometheus", config)
+	extension.GetMetricReporter(mc.Protocol, config)
 	metrics.Init(config)
 	return nil
 }
@@ -90,7 +94,7 @@ func (mc *MetricConfig) DynamicUpdateProperties(newMetricConfig *MetricConfig) {
 			mc.Enable = newMetricConfig.Enable
 			logger.Infof("MetricConfig's Enable was dynamically updated, new value:%v", mc.Enable)
 
-			extension.GetMetricReporter("prometheus", mc.ToReporterConfig())
+			extension.GetMetricReporter(mc.Protocol, mc.ToReporterConfig())
 		}
 	}
 }

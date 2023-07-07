@@ -18,12 +18,12 @@
 package common
 
 import (
-	"github.com/dubbogo/gost/log/logger"
 	"os"
 	"strconv"
 )
 
 import (
+	"github.com/dubbogo/gost/log/logger"
 	gxnet "github.com/dubbogo/gost/net"
 )
 
