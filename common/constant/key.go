@@ -404,3 +404,8 @@ const (
 	LoggerFileLocalTimeKey  = "logger.file.local-time"
 	LoggerFileCompressKey   = "logger.file.compress"
 )
+
+// metrics key
+const (
+	MetricsRegistry = "dubbo.metrics.registry"
+)
