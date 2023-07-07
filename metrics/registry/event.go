@@ -23,6 +23,15 @@ import (
 
 type RegistryMetricsEvent struct {
 	//Contains some information, such as time, success, failure
+
+	// PostType MetricKey
+	// FinishType MetricKey
+	// ErrorType MetricKey
+	// Level MetricsLevel
+
+	// Time
+	// Start time.time
+	// End time.time
 }
 
 func (r RegistryMetricsEvent) Type() string {

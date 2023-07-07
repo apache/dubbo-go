@@ -28,12 +28,11 @@ var (
 	handlers     []func(event *RegistryMetricsEvent)
 )
 
-//func Collector(m metrics.MetricRegistry, r *metrics.ReporterConfig) {
-//	regRegistry = m
+//	func Collector(m metrics.MetricRegistry, r *metrics.ReporterConfig) {
+//		regRegistry = m
 //
-//	// init related metrics
-//}
-
+//		// init related metrics
+//	}
 func init() {
 	AddHandler(regHandler, subHandler, notifyHandler, directoryHandler, serverSubHandler, serverRegHandler)
 	//metrics.AddCollector(Collector)
