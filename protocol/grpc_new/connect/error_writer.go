@@ -100,10 +100,10 @@ func (w *ErrorWriter) Write(response http.ResponseWriter, request *http.Request,
 		setHeaderCanonical(response.Header(), headerContentType, connectUnaryContentTypeJSON)
 		return w.writeConnectUnary(response, err)
 	}
-	if _, ok := w.streamingConnectContentTypes[ctype]; ok {
-		setHeaderCanonical(response.Header(), headerContentType, ctype)
-		return w.writeConnectStreaming(response, err)
-	}
+	//if _, ok := w.streamingConnectContentTypes[ctype]; ok {
+	//	setHeaderCanonical(response.Header(), headerContentType, ctype)
+	//	return w.writeConnectStreaming(response, err)
+	//}
 	if _, ok := w.grpcContentTypes[ctype]; ok {
 		setHeaderCanonical(response.Header(), headerContentType, ctype)
 		return w.writeGRPC(response, err)
@@ -128,20 +128,20 @@ func (w *ErrorWriter) writeConnectUnary(response http.ResponseWriter, err error)
 	return writeErr
 }
 
-func (w *ErrorWriter) writeConnectStreaming(response http.ResponseWriter, err error) error {
-	response.WriteHeader(http.StatusOK)
-	marshaler := &connectStreamingMarshaler{
-		envelopeWriter: envelopeWriter{
-			writer:     response,
-			bufferPool: w.bufferPool,
-		},
-	}
-	// MarshalEndStream returns *Error: check return value to avoid typed nils.
-	if marshalErr := marshaler.MarshalEndStream(err, make(http.Header)); marshalErr != nil {
-		return marshalErr
-	}
-	return nil
-}
+//func (w *ErrorWriter) writeConnectStreaming(response http.ResponseWriter, err error) error {
+//	response.WriteHeader(http.StatusOK)
+//	marshaler := &connectStreamingMarshaler{
+//		envelopeWriter: envelopeWriter{
+//			writer:     response,
+//			bufferPool: w.bufferPool,
+//		},
+//	}
+//	// MarshalEndStream returns *Error: check return value to avoid typed nils.
+//	if marshalErr := marshaler.MarshalEndStream(err, make(http.Header)); marshalErr != nil {
+//		return marshalErr
+//	}
+//	return nil
+//}
 
 func (w *ErrorWriter) writeGRPC(response http.ResponseWriter, err error) error {
 	trailers := make(http.Header, 2) // need space for at least code & message
