@@ -34,19 +34,18 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/config"
 	healthpb "dubbo.apache.org/dubbo-go/v3/protocol/dubbo3/health/triple_health_v1"
-	healthtriple "dubbo.apache.org/dubbo-go/v3/protocol/dubbo3/health/triple_health_v1"
 )
 
 // Server implements `service Health`.
 type DubbogoHealthServer struct {
-	healthtriple.UnimplementedHealthServer
+	healthpb.UnimplementedHealthServer
 	mu sync.RWMutex
 	// If shutdown is true, it's expected all serving status is NOT_SERVING, and
 	// will stay in NOT_SERVING.
 	shutdown bool
 	// statusMap stores the serving status of the services this Server monitors.
 	statusMap map[string]healthpb.HealthCheckResponse_ServingStatus
-	updates   map[string]map[healthtriple.Health_WatchServer]chan healthpb.HealthCheckResponse_ServingStatus
+	updates   map[string]map[healthpb.Health_WatchServer]chan healthpb.HealthCheckResponse_ServingStatus
 }
 
 var healthServer *DubbogoHealthServer
@@ -55,7 +54,7 @@ var healthServer *DubbogoHealthServer
 func NewServer() *DubbogoHealthServer {
 	return &DubbogoHealthServer{
 		statusMap: map[string]healthpb.HealthCheckResponse_ServingStatus{"": healthpb.HealthCheckResponse_SERVING},
-		updates:   make(map[string]map[healthtriple.Health_WatchServer]chan healthpb.HealthCheckResponse_ServingStatus),
+		updates:   make(map[string]map[healthpb.Health_WatchServer]chan healthpb.HealthCheckResponse_ServingStatus),
 	}
 }
 
@@ -72,7 +71,7 @@ func (s *DubbogoHealthServer) Check(ctx context.Context, in *healthpb.HealthChec
 }
 
 // Watch implements `service Health`.
-func (s *DubbogoHealthServer) Watch(in *healthpb.HealthCheckRequest, stream healthtriple.Health_WatchServer) error {
+func (s *DubbogoHealthServer) Watch(in *healthpb.HealthCheckRequest, stream healthpb.Health_WatchServer) error {
 	service := in.Service
 	// update channel is used for getting service status updates.
 	update := make(chan healthpb.HealthCheckResponse_ServingStatus, 1)
@@ -86,7 +85,7 @@ func (s *DubbogoHealthServer) Watch(in *healthpb.HealthCheckRequest, stream heal
 
 	// Registers the update channel to the correct place in the updates map.
 	if _, ok := s.updates[service]; !ok {
-		s.updates[service] = make(map[healthtriple.Health_WatchServer]chan healthpb.HealthCheckResponse_ServingStatus)
+		s.updates[service] = make(map[healthpb.Health_WatchServer]chan healthpb.HealthCheckResponse_ServingStatus)
 	}
 	s.updates[service][stream] = update
 	defer func() {
