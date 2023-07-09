@@ -143,7 +143,7 @@ func updateOrCreateMeshURL(rc *ReferenceConfig) {
 		panic(fmt.Sprintf("Mesh mode enabled, Triple protocol expected but %v protocol found!", rc.Protocol))
 	}
 	if rc.ProvidedBy == "" {
-		panic(fmt.Sprintf("Mesh mode enabled, provided-by should not be empty!"))
+		panic("Mesh mode enabled, provided-by should not be empty!")
 	}
 
 	podNamespace := getEnv(constant.PodNamespaceEnvKey, constant.DefaultNamespace)
