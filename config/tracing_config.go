@@ -30,7 +30,7 @@ type TracingConfig struct {
 	Name        string `default:"jaeger" yaml:"name" json:"name,omitempty" property:"name"` // jaeger or zipkin(todo)
 	ServiceName string `yaml:"serviceName" json:"serviceName,omitempty" property:"serviceName"`
 	Address     string `yaml:"address" json:"address,omitempty" property:"address"`
-	UseAgent    bool   `default:"false" yaml:"use-agent" json:"use-agent,omitempty" property:"use-agent"`
+	UseAgent    *bool  `default:"false" yaml:"use-agent" json:"use-agent,omitempty" property:"use-agent"`
 }
 
 // Prefix dubbo.router

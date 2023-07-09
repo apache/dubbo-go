@@ -21,6 +21,7 @@ import (
 	"context"
 	"net/http"
 	"sync"
+	"time"
 )
 
 import (
@@ -32,6 +33,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
 var (
@@ -62,7 +64,7 @@ func newPrometheusReporter(reporterConfig *metrics.ReporterConfig) metrics.Repor
 	if reporterInstance == nil {
 		reporterInitOnce.Do(func() {
 			ms := &metricSet{}
-			ms.initAndRegister(reporterConfig)
+			ms.init(reporterConfig)
 			reporterInstance = &PrometheusReporter{
 				reporterConfig: reporterConfig,
 				namespace:      reporterConfig.Namespace,
@@ -103,47 +105,92 @@ func (reporter *PrometheusReporter) shutdownServer() {
 	}
 }
 
-func (reporter *PrometheusReporter) reportRTSummaryVec(role string, labels *prometheus.Labels, costMs int64) {
-	switch role {
-	case providerField:
-		reporter.providerRTSummaryVec.With(*labels).Observe(float64(costMs))
-	case consumerField:
-		reporter.consumerRTSummaryVec.With(*labels).Observe(float64(costMs))
+func (reporter *PrometheusReporter) ReportBeforeInvocation(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) {
+	if !reporter.reporterConfig.Enable {
+		return
+	}
+	url := invoker.GetURL()
+
+	role := getRole(url)
+	if role == "" {
+		return
+	}
+	labels := buildLabels(url)
+
+	reporter.incRequestsProcessingTotal(role, &labels)
+}
+
+func (reporter *PrometheusReporter) ReportAfterInvocation(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation, cost time.Duration, res protocol.Result) {
+	if !reporter.reporterConfig.Enable {
+		return
+	}
+	url := invoker.GetURL()
+
+	role := getRole(url)
+	if role == "" {
+		return
+	}
+	labels := buildLabels(url)
+
+	reporter.incRequestsTotal(role, &labels)
+	reporter.decRequestsProcessingTotal(role, &labels)
+	reporter.reportRTMilliseconds(role, &labels, cost.Milliseconds())
+
+	if res != nil && res.Error() == nil {
+		// succeed
+		reporter.incRequestsSucceedTotal(role, &labels)
 	}
 }
 
-func (reporter *PrometheusReporter) reportRequestsTotalCounterVec(role string, labels *prometheus.Labels) {
+func (reporter *PrometheusReporter) incRequestsTotal(role string, labels *prometheus.Labels) {
 	switch role {
 	case providerField:
-		reporter.providerRequestsTotalCounterVec.With(*labels).Inc()
+		reporter.provider.requestsTotal.With(*labels).Inc()
 	case consumerField:
-		reporter.consumerRequestsTotalCounterVec.With(*labels).Inc()
+		reporter.consumer.requestsTotal.With(*labels).Inc()
 	}
 }
 
-func (reporter *PrometheusReporter) incRequestsProcessingTotalGaugeVec(role string, labels *prometheus.Labels) {
+func (reporter *PrometheusReporter) incRequestsProcessingTotal(role string, labels *prometheus.Labels) {
 	switch role {
 	case providerField:
-		reporter.providerRequestsProcessingTotalGaugeVec.With(*labels).Inc()
+		reporter.provider.requestsProcessingTotal.With(*labels).Inc()
 	case consumerField:
-		reporter.consumerRequestsProcessingTotalGaugeVec.With(*labels).Inc()
+		reporter.consumer.requestsProcessingTotal.With(*labels).Inc()
 	}
 }
 
-func (reporter *PrometheusReporter) decRequestsProcessingTotalGaugeVec(role string, labels *prometheus.Labels) {
+func (reporter *PrometheusReporter) decRequestsProcessingTotal(role string, labels *prometheus.Labels) {
 	switch role {
 	case providerField:
-		reporter.providerRequestsProcessingTotalGaugeVec.With(*labels).Dec()
+		reporter.provider.requestsProcessingTotal.With(*labels).Dec()
 	case consumerField:
-		reporter.consumerRequestsProcessingTotalGaugeVec.With(*labels).Dec()
+		reporter.consumer.requestsProcessingTotal.With(*labels).Dec()
 	}
 }
 
-func (reporter *PrometheusReporter) incRequestsSucceedTotalCounterVec(role string, labels *prometheus.Labels) {
+func (reporter *PrometheusReporter) incRequestsSucceedTotal(role string, labels *prometheus.Labels) {
 	switch role {
 	case providerField:
-		reporter.providerRequestsSucceedTotalCounterVec.With(*labels).Inc()
+		reporter.provider.requestsSucceedTotal.With(*labels).Inc()
 	case consumerField:
-		reporter.consumerRequestsSucceedTotalCounterVec.With(*labels).Inc()
+		reporter.consumer.requestsSucceedTotal.With(*labels).Inc()
+	}
+}
+
+func (reporter *PrometheusReporter) reportRTMilliseconds(role string, labels *prometheus.Labels, costMs int64) {
+	switch role {
+	case providerField:
+		go reporter.provider.rtMillisecondsLast.With(*labels).Set(float64(costMs))
+		go reporter.provider.rtMillisecondsSum.With(*labels).Add(float64(costMs))
+		go reporter.provider.rtMillisecondsMin.updateMin(labels, costMs)
+		go reporter.provider.rtMillisecondsMax.updateMax(labels, costMs)
+		go reporter.provider.rtMillisecondsAvg.updateAvg(labels, costMs)
+	case consumerField:
+		go reporter.consumer.rtMillisecondsLast.With(*labels).Set(float64(costMs))
+		go reporter.consumer.rtMillisecondsSum.With(*labels).Add(float64(costMs))
+		go reporter.consumer.rtMillisecondsMin.updateMin(labels, costMs)
+		go reporter.consumer.rtMillisecondsMax.updateMax(labels, costMs)
+		go reporter.consumer.rtMillisecondsAvg.updateAvg(labels, costMs)
 	}
 }
