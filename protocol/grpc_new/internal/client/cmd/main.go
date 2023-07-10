@@ -4,9 +4,9 @@ import (
 	"context"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	_ "dubbo.apache.org/dubbo-go/v3/imports"
-	"dubbo.apache.org/dubbo-go/v3/protocol/grpc_new/connect"
 	greet "dubbo.apache.org/dubbo-go/v3/protocol/grpc_new/internal/proto"
 	"dubbo.apache.org/dubbo-go/v3/protocol/grpc_new/internal/proto/greetconnect"
+	"dubbo.apache.org/dubbo-go/v3/protocol/grpc_new/triple"
 	"github.com/dubbogo/gost/log/logger"
 )
 
@@ -41,7 +41,7 @@ func main() {
 
 func testUnary(cli *greetconnect.GreetServiceClientImpl) error {
 	logger.Info("start to test GRPC_NEW unary call")
-	resp, err := cli.Greet(context.Background(), connect.NewRequest(&greet.GreetRequest{Name: "dubbo"}))
+	resp, err := cli.Greet(context.Background(), triple.NewRequest(&greet.GreetRequest{Name: "dubbo"}))
 	if err != nil {
 		return err
 	}
@@ -93,7 +93,7 @@ func testClientStream(cli *greetconnect.GreetServiceClientImpl) error {
 
 func testServerStream(cli *greetconnect.GreetServiceClientImpl) error {
 	logger.Info("start to test GRPC_NEW server stream")
-	stream, err := cli.GreetServerStream(context.Background(), connect.NewRequest(&greet.GreetServerStreamRequest{Name: "dubbo"}))
+	stream, err := cli.GreetServerStream(context.Background(), triple.NewRequest(&greet.GreetServerStreamRequest{Name: "dubbo"}))
 	if err != nil {
 		return err
 	}
