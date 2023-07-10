@@ -33,7 +33,6 @@ import (
 	dubbogoLogger "github.com/dubbogo/gost/log/logger"
 
 	v3corepb "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	v3adsgrpc "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	v3discoverypb "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 
 	"github.com/golang/protobuf/proto"
@@ -78,7 +77,7 @@ func newClient(opts controllerversion.BuildOptions) (controllerversion.MetadataW
 	return v3c, nil
 }
 
-type adsStream v3adsgrpc.AggregatedDiscoveryService_StreamAggregatedResourcesClient
+type adsStream v3discoverypb.AggregatedDiscoveryService_StreamAggregatedResourcesClient
 
 // client performs the actual xDS RPCs using the xDS v3 API. It creates a
 // single ADS stream on which the different types of xDS requests and responses
@@ -89,7 +88,7 @@ type client struct {
 }
 
 func (v3c *client) NewStream(ctx context.Context, cc *grpc.ClientConn) (grpc.ClientStream, error) {
-	return v3adsgrpc.NewAggregatedDiscoveryServiceClient(cc).StreamAggregatedResources(ctx, grpc.WaitForReady(true))
+	return v3discoverypb.NewAggregatedDiscoveryServiceClient(cc).StreamAggregatedResources(ctx, grpc.WaitForReady(true))
 }
 
 // SetMetadata update client metadata
