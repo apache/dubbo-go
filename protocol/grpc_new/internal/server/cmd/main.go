@@ -4,7 +4,6 @@ import (
 	"context"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	_ "dubbo.apache.org/dubbo-go/v3/imports"
-	"dubbo.apache.org/dubbo-go/v3/protocol/grpc_new/connect"
 	greet "dubbo.apache.org/dubbo-go/v3/protocol/grpc_new/internal/proto"
 	"dubbo.apache.org/dubbo-go/v3/protocol/grpc_new/internal/proto/greetconnect"
 	"errors"
@@ -18,12 +17,12 @@ type GreetConnectServer struct {
 	greetconnect.GreetServiceProviderBase
 }
 
-func (srv *GreetConnectServer) Greet(ctx context.Context, req *connect.Request[greet.GreetRequest]) (*connect.Response[greet.GreetResponse], error) {
-	resp := connect.NewResponse(&greet.GreetResponse{Greeting: "hello " + req.Msg.Name})
+func (srv *GreetConnectServer) Greet(ctx context.Context, req *triple.Request[greet.GreetRequest]) (*triple.Response[greet.GreetResponse], error) {
+	resp := triple.NewResponse(&greet.GreetResponse{Greeting: "hello " + req.Msg.Name})
 	return resp, nil
 }
 
-func (srv *GreetConnectServer) GreetStream(ctx context.Context, stream *connect.BidiStream[greet.GreetStreamRequest, greet.GreetStreamResponse]) error {
+func (srv *GreetConnectServer) GreetStream(ctx context.Context, stream *triple.BidiStream[greet.GreetStreamRequest, greet.GreetStreamResponse]) error {
 	for {
 		req, err := stream.Receive()
 		if err != nil {
@@ -35,7 +34,7 @@ func (srv *GreetConnectServer) GreetStream(ctx context.Context, stream *connect.
 	}
 }
 
-func (srv *GreetConnectServer) GreetClientStream(ctx context.Context, stream *connect.ClientStream[greet.GreetClientStreamRequest]) (*connect.Response[greet.GreetClientStreamResponse], error) {
+func (srv *GreetConnectServer) GreetClientStream(ctx context.Context, stream *triple.ClientStream[greet.GreetClientStreamRequest]) (*triple.Response[greet.GreetClientStreamResponse], error) {
 	var reqs []string
 	for stream.Receive() {
 		reqs = append(reqs, stream.Msg().Name)
@@ -43,7 +42,7 @@ func (srv *GreetConnectServer) GreetClientStream(ctx context.Context, stream *co
 	if stream.Err() != nil && !errors.Is(stream.Err(), io.EOF) {
 		logger.Errorf("ClientStream unexpected err: %s", stream.Err())
 	}
-	resp := connect.NewResponse(
+	resp := triple.NewResponse(
 		&greet.GreetClientStreamResponse{
 			Greeting: "Hello" + strings.Join(reqs, ","),
 		},
@@ -51,7 +50,7 @@ func (srv *GreetConnectServer) GreetClientStream(ctx context.Context, stream *co
 	return resp, nil
 }
 
-func (srv *GreetConnectServer) GreetServerStream(ctx context.Context, req *connect.Request[greet.GreetServerStreamRequest], stream *connect.ServerStream[greet.GreetServerStreamResponse]) error {
+func (srv *GreetConnectServer) GreetServerStream(ctx context.Context, req *triple.Request[greet.GreetServerStreamRequest], stream *triple.ServerStream[greet.GreetServerStreamResponse]) error {
 	for i := 0; i < 5; i++ {
 		if err := stream.Send(&greet.GreetServerStreamResponse{Greeting: "Hello" + req.Msg.Name}); err != nil {
 			logger.Errorf("ServerStream unexpected err: %s", err)
