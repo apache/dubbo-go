@@ -33,7 +33,6 @@ import (
 import (
 	v2corepb "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	v2endpointpb "github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
-	lrsgrpc "github.com/envoyproxy/go-control-plane/envoy/service/load_stats/v2"
 	lrspb "github.com/envoyproxy/go-control-plane/envoy/service/load_stats/v2"
 
 	"github.com/golang/protobuf/proto"
@@ -50,10 +49,10 @@ import (
 
 const clientFeatureLRSSendAllClusters = "envoy.lrs.supports_send_all_clusters"
 
-type lrsStream lrsgrpc.LoadReportingService_StreamLoadStatsClient
+type lrsStream lrspb.LoadReportingService_StreamLoadStatsClient
 
 func (v2c *client) NewLoadStatsStream(ctx context.Context, cc *grpc.ClientConn) (grpc.ClientStream, error) {
-	c := lrsgrpc.NewLoadReportingServiceClient(cc)
+	c := lrspb.NewLoadReportingServiceClient(cc)
 	return c.StreamLoadStats(ctx)
 }
 
