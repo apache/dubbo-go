@@ -1,15 +1,31 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package metrics
 
 var registries = make(map[string]func(*ReporterConfig) MetricRegistry)
 var collectors = make([]CollectorFunc, 0)
 var registry MetricRegistry
 
-// CollectorFunc 各个指标处理模块扩展
+// CollectorFunc used to extend more indicators
 type CollectorFunc func(MetricRegistry, *ReporterConfig)
 
-// Init 整个 Metrics 模块初始化入口
+// Init Metrics module
 func Init(config *ReporterConfig) {
-	// config.extention = prometheus
 	regFunc, ok := registries[config.Protocol]
 	if !ok {
 		regFunc = registries["prometheus"] // default
@@ -21,33 +37,33 @@ func Init(config *ReporterConfig) {
 	registry.Export()
 }
 
-// SetRegistry 扩展其他数据容器，暴露方式，内置 Prometheus 实现
+// SetRegistry extend more MetricRegistry, default PrometheusRegistry
 func SetRegistry(name string, v func(*ReporterConfig) MetricRegistry) {
 	registries[name] = v
 }
 
-// AddCollector 扩展指标收集器，例如 metadata、耗时、配置中心等
+// AddCollector add more indicators, like  metadata、sla、configcenter、metadata etc
 func AddCollector(name string, fun func(MetricRegistry, *ReporterConfig)) {
 	collectors = append(collectors, fun)
 }
 
-// MetricRegistry 数据指标容器，指标计算、指标暴露、聚合
+// MetricRegistry data container，data compute、expose、agg
 type MetricRegistry interface {
 	Counter(*MetricId) CounterMetric     // add or update a counter
 	Gauge(*MetricId) GaugeMetric         // add or update a gauge
 	Histogram(*MetricId) HistogramMetric // add a metric num to a histogram
 	Summary(*MetricId) SummaryMetric     // add a metric num to a summary
 	Export()                             // 数据暴露， 如 Prometheus 是 http 暴露
-	// GetMetrics() []*MetricSample // 获取所有指标数据
-	// GetMetricsString() (string, error) // 如需复用端口则加一下这个接口
+	// GetMetrics() []*MetricSample // get all metric data
+	// GetMetricsString() (string, error) // get text format metric data
 }
 
-// 组合暴露方式，参考 micrometer CompositeMeterRegistry
-//type CompositeRegistry struct {
-//	rs []MetricRegistry
-//}
+// multi registry，like micrometer CompositeMeterRegistry
+// type CompositeRegistry struct {
+// 	rs []MetricRegistry
+// }
 
-// Type 指标类型，暂定和 micrometer 一致
+// Type metric type, save with micrometer
 type Type uint8
 
 const (
@@ -63,7 +79,7 @@ const (
 // # HELP dubbo_metadata_store_provider_succeed_total Succeed Store Provider Metadata
 // # TYPE dubbo_metadata_store_provider_succeed_total gauge
 // dubbo_metadata_store_provider_succeed_total{application_name="provider",hostname="localhost",interface="org.example.DemoService",ip="10.252.156.213",} 1.0
-// 除值以外的其他属性
+// other properties except value
 type MetricId struct {
 	Name string
 	Desc string
@@ -79,19 +95,24 @@ func (m *MetricId) TagKeys() []string {
 	return keys
 }
 
-// MetricSample 一个指标的完整定义，包含值，这是指标的最终呈现，不是中间值(如 summary，histogram 他们统计完后会导出为一组 MetricSample)
+func NewMetricId(key *MetricKey, level MetricLevel) *MetricId {
+	return &MetricId{Name: key.Name, Desc: key.Desc, Tags: level.Tags()}
+}
+
+// MetricSample a metric sample，This is the final data presentation, 
+// not an intermediate result(like summary，histogram they will export to a set of MetricSample)
 type MetricSample struct {
 	*MetricId
 	value float64
 }
 
-// CounterMetric 指标抽象接口
+// CounterMetric counter metric
 type CounterMetric interface {
 	Inc()
 	Add(float64)
 }
 
-// GaugeMetric 指标抽象接口
+// GaugeMetric gauge metric
 type GaugeMetric interface {
 	Set(float64)
 	// Inc()
@@ -100,12 +121,12 @@ type GaugeMetric interface {
 	// Sub(float64)
 }
 
-// HistogramMetric 指标抽象接口
+// HistogramMetric histogram metric
 type HistogramMetric interface {
 	Record(float64)
 }
 
-// SummaryMetric 指标抽象接口
+// SummaryMetric summary metric
 type SummaryMetric interface {
 	Record(float64)
 }
@@ -116,46 +137,54 @@ type StatesMetrics interface {
 	AddSuccess(float64)
 	Fail()
 	AddFailed(float64)
+	Inc(succ bool)
 }
 
-func NewStatesMetrics(total *MetricId, succ *MetricId, fail *MetricId) StatesMetrics {
+func NewStatesMetrics(total func() *MetricId, succ func() *MetricId, fail func() *MetricId) StatesMetrics {
 	return &DefaultStatesMetric{total: total, succ: succ, fail: fail, r: registry}
 }
 
-// TimeMetrics 综合指标, 包括 min(Gauge)、max(Gauge)、avg(Gauge)、sum(Gauge)、last(Gauge)，调用 MetricRegistry 实现最终暴露
-// 参见 dubbo-java org.apache.dubbo.metrics.aggregate.TimeWindowAggregator 类实现
+type DefaultStatesMetric struct {
+	r     MetricRegistry
+	total func() *MetricId
+	succ  func() *MetricId
+	fail  func() *MetricId
+}
+
+func (c DefaultStatesMetric) Inc(succ bool) {
+	if succ {
+		c.Success()
+	} else {
+		c.Fail()
+	}
+}
+func (c DefaultStatesMetric) Success() {
+	c.r.Counter(c.total()).Inc()
+	c.r.Counter(c.succ()).Inc()
+}
+
+func (c DefaultStatesMetric) AddSuccess(v float64) {
+	c.r.Counter(c.total()).Add(v)
+	c.r.Counter(c.succ()).Add(v)
+}
+
+func (c DefaultStatesMetric) Fail() {
+	c.r.Counter(c.total()).Inc()
+	c.r.Counter(c.fail()).Inc()
+}
+
+func (c DefaultStatesMetric) AddFailed(v float64) {
+	c.r.Counter(c.total()).Add(v)
+	c.r.Counter(c.fail()).Add(v)
+}
+
+// TimeMetrics muliti metrics, include min(Gauge)、max(Gauge)、avg(Gauge)、sum(Gauge)、last(Gauge)，call MetricRegistry to expose
+// see dubbo-java org.apache.dubbo.metrics.aggregate.TimeWindowAggregator 
 type TimeMetrics interface {
 	Record(float64)
 }
 
 // NewTimeMetrics init and write all data to registry
-func NewTimeMetrics(min *MetricId, avg *MetricId, max *MetricId, last *MetricId, sum *MetricId) {
-
-}
-
-type DefaultStatesMetric struct {
-	r     MetricRegistry
-	total *MetricId
-	succ  *MetricId
-	fail  *MetricId
-}
-
-func (c DefaultStatesMetric) Success() {
-	c.r.Counter(c.total).Inc()
-	c.r.Counter(c.succ).Inc()
-}
-
-func (c DefaultStatesMetric) AddSuccess(v float64) {
-	c.r.Counter(c.total).Add(v)
-	c.r.Counter(c.succ).Add(v)
-}
-
-func (c DefaultStatesMetric) Fail() {
-	c.r.Counter(c.total).Inc()
-	c.r.Counter(c.fail).Inc()
-}
-
-func (c DefaultStatesMetric) AddFailed(v float64) {
-	c.r.Counter(c.total).Add(v)
-	c.r.Counter(c.fail).Add(v)
+func NewTimeMetrics(name string, l MetricLevel) {
+	
 }
