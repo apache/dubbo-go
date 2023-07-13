@@ -20,27 +20,23 @@ package aggregate
 // pane represents a window over a period of time.
 // It uses interface{} to store any type of value.
 type pane struct {
-	StartInMs    int64
-	EndInMs      int64
-	IntervalInMs int64
-	Value        interface{}
+	startInMs    int64
+	endInMs      int64
+	intervalInMs int64
+	value        interface{}
 }
 
 func newPane(intervalInMs, startInMs int64, value interface{}) *pane {
 	return &pane{
-		StartInMs:    startInMs,
-		EndInMs:      startInMs + intervalInMs,
-		IntervalInMs: intervalInMs,
-		Value:        value,
+		startInMs:    startInMs,
+		endInMs:      startInMs + intervalInMs,
+		intervalInMs: intervalInMs,
+		value:        value,
 	}
 }
 
-// isTimeInWindow checks whether given timestamp is in current pane.
-func (p *pane) isTimeInWindow(timeMillis int64) bool {
-	return p.StartInMs <= timeMillis && timeMillis < p.EndInMs
-}
-
-// isPaneDeprecated checks if the specified pane is deprecated at the specified timestamp
-func (p *pane) isPaneDeprecated(timeMillis int64) bool {
-	return timeMillis-p.StartInMs > p.IntervalInMs
+func (p *pane) resetTo(startInMs int64, value interface{}) {
+	p.startInMs = startInMs
+	p.endInMs = startInMs + p.intervalInMs
+	p.value = value
 }

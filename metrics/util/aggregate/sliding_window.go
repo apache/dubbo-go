@@ -47,17 +47,22 @@ func (s *slidingWindow) values(timeMillis int64) []interface{} {
 	res := make([]interface{}, 0, s.paneCount)
 
 	for _, p := range s.paneSlice {
-		if p == nil || p.isPaneDeprecated(timeMillis) {
+		if p == nil || s.isPaneDeprecated(p, timeMillis) {
 			continue
 		}
-		res = append(res, p.Value)
+		res = append(res, p.value)
 	}
 
 	return res
 }
 
+// isPaneDeprecated checks if the specified pane is deprecated at the specified timeMillis
+func (s *slidingWindow) isPaneDeprecated(pane *pane, timeMillis int64) bool {
+	return timeMillis-pane.startInMs > s.intervalInMs
+}
+
 // currentPane get the pane at the specified timestamp in milliseconds.
-func (s *slidingWindow) currentPane(timeMillis int64, newEmptyValue func() interface{}, resetPaneTo func(*pane, int64) *pane) *pane {
+func (s *slidingWindow) currentPane(timeMillis int64, newEmptyValue func() interface{}) *pane {
 	if timeMillis < 0 {
 		return nil
 	}
@@ -70,11 +75,12 @@ func (s *slidingWindow) currentPane(timeMillis int64, newEmptyValue func() inter
 		return p
 	} else {
 		p := s.paneSlice[paneIdx]
-		if paneStart == p.StartInMs {
+		if paneStart == p.startInMs {
 			return p
-		} else if paneStart > p.StartInMs {
+		} else if paneStart > p.startInMs {
 			// The pane has deprecated. To avoid the overhead of creating a new instance, reset the original pane directly.
-			return resetPaneTo(p, paneStart)
+			p.resetTo(paneStart, newEmptyValue())
+			return p
 		} else {
 			// The specified timestamp has passed.
 			return newPane(s.paneIntervalInMs, paneStart, newEmptyValue())

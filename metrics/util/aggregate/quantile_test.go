@@ -19,7 +19,7 @@ package aggregate
 
 import "testing"
 
-func TestTimeWindowQuantile_AddAndQuantile(t1 *testing.T) {
+func TestAddAndQuantile(t1 *testing.T) {
 	timeWindowQuantile := NewTimeWindowQuantile(100, 10, 1)
 	for i := 1; i <= 100; i++ {
 		timeWindowQuantile.Add(float64(i))

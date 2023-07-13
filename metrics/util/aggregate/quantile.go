@@ -18,9 +18,12 @@
 package aggregate
 
 import (
-	"github.com/influxdata/tdigest"
 	"sync"
 	"time"
+)
+
+import (
+	"github.com/influxdata/tdigest"
 )
 
 // TimeWindowQuantile wrappers sliding window around T-Digest.
@@ -40,26 +43,14 @@ func NewTimeWindowQuantile(compression float64, paneCount int, timeWindowSeconds
 	}
 }
 
-// Quantile returns the quantile of the sliding window by merging all panes.
+// Quantile returns a quantile of the sliding window by merging all panes.
 func (t *TimeWindowQuantile) Quantile(q float64) float64 {
-	t.mux.RLock()
-	defer t.mux.RUnlock()
-
-	td := tdigest.NewWithCompression(t.compression)
-	for _, v := range t.window.values(time.Now().UnixMilli()) {
-		td.AddCentroidList(v.(*tdigest.TDigest).Centroids())
-	}
-	return td.Quantile(q)
+	return t.mergeTDigests().Quantile(q)
 }
 
+// Quantiles returns quantiles of the sliding window by merging all panes.
 func (t *TimeWindowQuantile) Quantiles(qs []float64) []float64 {
-	t.mux.RLock()
-	defer t.mux.RUnlock()
-
-	td := tdigest.NewWithCompression(t.compression)
-	for _, v := range t.window.values(time.Now().UnixMilli()) {
-		td.AddCentroidList(v.(*tdigest.TDigest).Centroids())
-	}
+	td := t.mergeTDigests()
 
 	res := make([]float64, len(qs))
 	for i, q := range qs {
@@ -69,21 +60,26 @@ func (t *TimeWindowQuantile) Quantiles(qs []float64) []float64 {
 	return res
 }
 
+// mergeTDigests merges all panes' TDigests into one TDigest.
+func (t *TimeWindowQuantile) mergeTDigests() *tdigest.TDigest {
+	t.mux.RLock()
+	defer t.mux.RUnlock()
+
+	td := tdigest.NewWithCompression(t.compression)
+	for _, v := range t.window.values(time.Now().UnixMilli()) {
+		td.AddCentroidList(v.(*tdigest.TDigest).Centroids())
+	}
+	return td
+}
+
 // Add adds a value to the sliding window's current pane.
 func (t *TimeWindowQuantile) Add(value float64) {
 	t.mux.Lock()
 	defer t.mux.Unlock()
 
-	t.window.currentPane(time.Now().UnixMilli(), t.newEmptyValue, t.resetPaneTo).Value.(*tdigest.TDigest).Add(value, 1)
+	t.window.currentPane(time.Now().UnixMilli(), t.newEmptyValue).value.(*tdigest.TDigest).Add(value, 1)
 }
 
 func (t *TimeWindowQuantile) newEmptyValue() interface{} {
 	return tdigest.NewWithCompression(t.compression)
-}
-
-func (t *TimeWindowQuantile) resetPaneTo(p *pane, paneStart int64) *pane {
-	p.StartInMs = paneStart
-	p.EndInMs = paneStart + t.window.paneIntervalInMs
-	p.Value = t.newEmptyValue()
-	return p
 }
