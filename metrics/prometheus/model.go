@@ -18,7 +18,6 @@
 package prometheus
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/metrics/util/aggregate"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -28,6 +27,10 @@ import (
 import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/metrics/util/aggregate"
 )
 
 func newHistogramVec(name, namespace string, labels []string) *prometheus.HistogramVec {
