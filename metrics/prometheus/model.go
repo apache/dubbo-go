@@ -29,6 +29,10 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
+import (
+	"dubbo.apache.org/dubbo-go/v3/metrics/util/aggregate"
+)
+
 func newHistogramVec(name, namespace string, labels []string) *prometheus.HistogramVec {
 	return prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
@@ -151,7 +155,7 @@ func newAutoSummaryVec(name, namespace string, labels []string, maxAge int64) *p
 
 type GaugeVecWithSyncMap struct {
 	GaugeVec *prometheus.GaugeVec
-	SyncMap  *sync.Map
+	SyncMap  *sync.Map // key: labels, value: *atomic.Value
 }
 
 func newAutoGaugeVecWithSyncMap(name, namespace string, labels []string) *GaugeVecWithSyncMap {
@@ -251,5 +255,46 @@ func (gv *GaugeVecWithSyncMap) updateAvg(labels *prometheus.Labels, curValue int
 			gv.GaugeVec.With(*labels).Set(float64(curValue))
 			break
 		}
+	}
+}
+
+type quantileGaugeVec struct {
+	gaugeVecSlice []*prometheus.GaugeVec
+	quantiles     []float64
+	syncMap       *sync.Map // key: labels string, value: TimeWindowQuantile
+}
+
+// Notice: names and quantiles should be the same length and same order.
+func newQuantileGaugeVec(names []string, namespace string, labels []string, quantiles []float64) *quantileGaugeVec {
+	gvs := make([]*prometheus.GaugeVec, len(names))
+	for i, name := range names {
+		gvs[i] = newAutoGaugeVec(name, namespace, labels)
+	}
+	gv := &quantileGaugeVec{
+		gaugeVecSlice: gvs,
+		quantiles:     quantiles,
+		syncMap:       &sync.Map{},
+	}
+	return gv
+}
+
+func (gv *quantileGaugeVec) updateQuantile(labels *prometheus.Labels, curValue int64) {
+	key := convertLabelsToMapKey(*labels)
+	cur := aggregate.NewTimeWindowQuantile(100, 10, 120)
+	cur.Add(float64(curValue))
+
+	updateFunc := func(td *aggregate.TimeWindowQuantile) {
+		qs := td.Quantiles(gv.quantiles)
+		for i, q := range qs {
+			gv.gaugeVecSlice[i].With(*labels).Set(q)
+		}
+	}
+
+	if actual, loaded := gv.syncMap.LoadOrStore(key, cur); loaded {
+		store := actual.(*aggregate.TimeWindowQuantile)
+		store.Add(float64(curValue))
+		updateFunc(store)
+	} else {
+		updateFunc(cur)
 	}
 }
