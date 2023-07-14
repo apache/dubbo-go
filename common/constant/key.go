@@ -201,6 +201,7 @@ const (
 	GitCommitIdKey         = "git_commit_id"
 	ConfigCenterKey        = "config_center"
 	ChangeTypeKey          = "change_type"
+	KeyKey                 = "key"
 )
 
 // config center keys
@@ -413,4 +414,5 @@ const (
 const (
 	MetricsRegistry = "dubbo.metrics.registry"
 	MetricsMetadata = "dubbo.metrics.metadata"
+	MetricApp       = "dubbo.metrics.app"
 )

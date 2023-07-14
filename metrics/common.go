@@ -92,3 +92,37 @@ func (m MethodMetricLevel) Tags() map[string]string {
 	tags[constant.VersionKey] = m.Version
 	return tags
 }
+
+type ConfigCenterLevel struct {
+	ApplicationName string
+	Ip string
+	HostName string
+	Key string
+	Group string
+	ConfigCenter string
+	ChangeType string
+}
+
+func NewConfigCenterLevel(key string, group string, configCenter string, changeType string) *ConfigCenterLevel {
+	return &ConfigCenterLevel{
+		ApplicationName: appLevel.ApplicationName,
+		Ip: appLevel.Ip,
+		HostName: appLevel.HostName,
+		Key: key,
+		Group: group,
+		ConfigCenter: configCenter,
+		ChangeType: changeType,
+	}
+}
+
+func (l ConfigCenterLevel) Tags() map[string]string {
+	tags := make(map[string]string)
+	tags[constant.ApplicationKey] = l.ApplicationName
+	tags[constant.IpKey] = l.Ip
+	tags[constant.HostnameKey] = l.HostName
+	tags[constant.KeyKey] = l.Key
+	tags[constant.GroupKey] = l.Group
+	tags[constant.ConfigCenterKey] = l.ConfigCenter
+	tags[constant.ChangeTypeKey] = l.ChangeType
+	return tags
+}
