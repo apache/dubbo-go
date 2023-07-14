@@ -65,5 +65,3 @@ func (r *PubMetricEventReport) PublishAppMetadata(i *identifier.SubscriberMetada
 	metrics.Publish(event)
 	return err
 }
-
-

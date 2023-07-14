@@ -74,7 +74,7 @@ func (c *MetadataMetricCollector) handleMetadataSub(event *MetadataMetricEvent) 
 
 func (c *MetadataMetricCollector) handleStoreProvider(event *MetadataMetricEvent) {
 	level := metrics.NewServiceMetric(event.Attachment[constant.InterfaceKey])
-	m := newStatesMetricFunc(metadataStoreProvider,metadataStoreProviderSucceed, metadataStoreProviderFailed, level, c.r)
+	m := newStatesMetricFunc(metadataStoreProvider, metadataStoreProviderSucceed, metadataStoreProviderFailed, level, c.r)
 	m.Inc(event.Succ)
 	// TODO add RT metric dubbo_store_provider_interface_rt_milliseconds
 }
@@ -89,11 +89,11 @@ func newStatesMetricFunc(total *metrics.MetricKey, succ *metrics.MetricKey, fail
 }
 
 type MetadataMetricEvent struct {
-	Name  MetricName
-	Succ  bool
-	Start time.Time
-	End   time.Time
-	Attachment  map[string]string
+	Name       MetricName
+	Succ       bool
+	Start      time.Time
+	End        time.Time
+	Attachment map[string]string
 }
 
 func (*MetadataMetricEvent) Type() string {

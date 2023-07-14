@@ -25,6 +25,7 @@ var registry MetricRegistry
 type CollectorFunc func(MetricRegistry, *ReporterConfig)
 
 const defaultRegistry = "prometheus"
+
 // Init Metrics module
 func Init(config *ReporterConfig) {
 	regFunc, ok := registries[config.Protocol]
@@ -100,7 +101,7 @@ func NewMetricId(key *MetricKey, level MetricLevel) *MetricId {
 	return &MetricId{Name: key.Name, Desc: key.Desc, Tags: level.Tags()}
 }
 
-// MetricSample a metric sample，This is the final data presentation, 
+// MetricSample a metric sample，This is the final data presentation,
 // not an intermediate result(like summary，histogram they will export to a set of MetricSample)
 type MetricSample struct {
 	*MetricId
@@ -180,12 +181,12 @@ func (c DefaultStatesMetric) AddFailed(v float64) {
 }
 
 // TimeMetrics muliti metrics, include min(Gauge)、max(Gauge)、avg(Gauge)、sum(Gauge)、last(Gauge)，call MetricRegistry to expose
-// see dubbo-java org.apache.dubbo.metrics.aggregate.TimeWindowAggregator 
+// see dubbo-java org.apache.dubbo.metrics.aggregate.TimeWindowAggregator
 type TimeMetrics interface {
 	Record(float64)
 }
 
 // NewTimeMetrics init and write all data to registry
 func NewTimeMetrics(name string, l MetricLevel) {
-	
+
 }
