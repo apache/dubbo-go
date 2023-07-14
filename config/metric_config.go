@@ -26,7 +26,6 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 )
@@ -70,14 +69,7 @@ func (mc *MetricConfig) Init() error {
 	if err := verify(mc); err != nil {
 		return err
 	}
-	metrics.SetApplicationLevel(
-		&metrics.ApplicationMetricLevel{
-			ApplicationName: GetRootConfig().Application.Name,
-			Version: GetRootConfig().Application.Version,
-			Ip: common.GetLocalIp(),
-			HostName: common.GetLocalHostName(),
-			GitCommitId: "",
-		})
+	metrics.InitAppInfo(GetRootConfig().Application.Name, GetRootConfig().Application.Version,)
 	config := mc.ToReporterConfig()
 	extension.GetMetricReporter(mc.Protocol, config)
 	metrics.Init(config)

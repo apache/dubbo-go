@@ -17,7 +17,10 @@
 
 package metrics
 
-import "dubbo.apache.org/dubbo-go/v3/common/constant"
+import (
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+)
 
 type MetricKey struct {
 	Name string
@@ -36,18 +39,27 @@ type ApplicationMetricLevel struct {
 	ApplicationName string
 	Version         string
 	GitCommitId     string
-	Ip string
-	HostName string
+	Ip              string
+	HostName        string
 }
 
-var appLevel *ApplicationMetricLevel
+var applicationName string
+var applicationVersion string
+
 // cannot import rootConfig,may cause cycle import,so be it
-func SetApplicationLevel(app *ApplicationMetricLevel) {
-	appLevel = app
+func InitAppInfo(appName string, appVersion string) {
+	applicationName = appName
+	applicationVersion = appVersion
 }
 
 func GetApplicationLevel() *ApplicationMetricLevel {
-	return appLevel
+	return &ApplicationMetricLevel{
+		ApplicationName: applicationName,
+		Version:         applicationVersion,
+		Ip:              common.GetLocalIp(),
+		HostName:        common.GetLocalHostName(),
+		GitCommitId:     "",
+	}
 }
 
 func (m *ApplicationMetricLevel) Tags() map[string]string {
@@ -70,10 +82,7 @@ func NewServiceMetric(interfaceName string) *ServiceMetricLevel {
 }
 
 func (m ServiceMetricLevel) Tags() map[string]string {
-	tags := make(map[string]string)
-	for k,v := range m.ApplicationMetricLevel.Tags() {
-		tags[k] = v
-	}
+	tags := m.ApplicationMetricLevel.Tags()
 	tags[constant.InterfaceKey] = m.Interface
 	return tags
 }
@@ -95,23 +104,23 @@ func (m MethodMetricLevel) Tags() map[string]string {
 
 type ConfigCenterLevel struct {
 	ApplicationName string
-	Ip string
-	HostName string
-	Key string
-	Group string
-	ConfigCenter string
-	ChangeType string
+	Ip              string
+	HostName        string
+	Key             string
+	Group           string
+	ConfigCenter    string
+	ChangeType      string
 }
 
 func NewConfigCenterLevel(key string, group string, configCenter string, changeType string) *ConfigCenterLevel {
 	return &ConfigCenterLevel{
-		ApplicationName: appLevel.ApplicationName,
-		Ip: appLevel.Ip,
-		HostName: appLevel.HostName,
-		Key: key,
-		Group: group,
-		ConfigCenter: configCenter,
-		ChangeType: changeType,
+		ApplicationName: applicationName,
+		Ip:              common.GetLocalIp(),
+		HostName:        common.GetLocalHostName(),
+		Key:             key,
+		Group:           group,
+		ConfigCenter:    configCenter,
+		ChangeType:      changeType,
 	}
 }
 

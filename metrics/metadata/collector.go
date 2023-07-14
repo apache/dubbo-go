@@ -19,7 +19,9 @@ package metadata
 
 import (
 	"time"
+)
 
+import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 )
@@ -30,26 +32,27 @@ var ch = make(chan metrics.MetricsEvent, 10)
 
 func init() {
 	metrics.AddCollector("metadata", func(mr metrics.MetricRegistry, rc *metrics.ReporterConfig) {
-		l := &MetadataMetricCollector{}
+		l := &MetadataMetricCollector{r: mr}
 		l.start()
 	})
 }
 
 type MetadataMetricCollector struct {
+	r metrics.MetricRegistry
 }
 
-func (*MetadataMetricCollector) start() {
+func (c *MetadataMetricCollector) start() {
 	metrics.Subscribe(eventType, ch)
 	go func() {
 		for e := range ch {
 			if event, ok := e.(*MetadataMetricEvent); ok {
 				switch event.Name {
 				case StoreProvider:
-					handleStoreProvider(event)
+					c.handleStoreProvider(event)
 				case MetadataPush:
-					handleMetadataPush(event)
+					c.handleMetadataPush(event)
 				case MetadataSub:
-					handleMetadataSub(event)
+					c.handleMetadataSub(event)
 				default:
 				}
 			}
@@ -57,30 +60,31 @@ func (*MetadataMetricCollector) start() {
 	}()
 }
 
-func handleMetadataPush(event *MetadataMetricEvent) {
-	m := newStatesMetricFunc(metadataPushNum, metadataPushNumSucceed, metadataPushNumFailed, metrics.GetApplicationLevel())
+func (c *MetadataMetricCollector) handleMetadataPush(event *MetadataMetricEvent) {
+	m := newStatesMetricFunc(metadataPushNum, metadataPushNumSucceed, metadataPushNumFailed, metrics.GetApplicationLevel(), c.r)
 	m.Inc(event.Succ)
 	// TODO add RT metric dubbo_push_rt_milliseconds
 }
 
-func handleMetadataSub(event *MetadataMetricEvent) {
-	m := newStatesMetricFunc(metadataSubNum, metadataSubNumSucceed, metadataSubNumFailed, metrics.GetApplicationLevel())
+func (c *MetadataMetricCollector) handleMetadataSub(event *MetadataMetricEvent) {
+	m := newStatesMetricFunc(metadataSubNum, metadataSubNumSucceed, metadataSubNumFailed, metrics.GetApplicationLevel(), c.r)
 	m.Inc(event.Succ)
 	// TODO add RT metric dubbo_subscribe_rt_milliseconds
 }
 
-func handleStoreProvider(event *MetadataMetricEvent) {
+func (c *MetadataMetricCollector) handleStoreProvider(event *MetadataMetricEvent) {
 	level := metrics.NewServiceMetric(event.Attachment[constant.InterfaceKey])
-	m := newStatesMetricFunc(metadataStoreProvider,metadataStoreProviderSucceed, metadataStoreProviderFailed, level)
+	m := newStatesMetricFunc(metadataStoreProvider,metadataStoreProviderSucceed, metadataStoreProviderFailed, level, c.r)
 	m.Inc(event.Succ)
 	// TODO add RT metric dubbo_store_provider_interface_rt_milliseconds
 }
 
-func newStatesMetricFunc(total *metrics.MetricKey, succ *metrics.MetricKey, fail *metrics.MetricKey, level metrics.MetricLevel) metrics.StatesMetrics {
+func newStatesMetricFunc(total *metrics.MetricKey, succ *metrics.MetricKey, fail *metrics.MetricKey, level metrics.MetricLevel, reg metrics.MetricRegistry) metrics.StatesMetrics {
 	return metrics.NewStatesMetrics(
 		func() *metrics.MetricId { return metrics.NewMetricId(total, level) },
 		func() *metrics.MetricId { return metrics.NewMetricId(succ, level) },
 		func() *metrics.MetricId { return metrics.NewMetricId(fail, level) },
+		reg,
 	)
 }
 

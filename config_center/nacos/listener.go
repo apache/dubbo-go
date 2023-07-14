@@ -19,16 +19,21 @@ package nacos
 
 import (
 	"context"
+)
 
+import (
 	"github.com/dubbogo/gost/log/logger"
 
+	constant2 "github.com/nacos-group/nacos-sdk-go/common/constant"
+	"github.com/nacos-group/nacos-sdk-go/vo"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 	metricsConfigCenter "dubbo.apache.org/dubbo-go/v3/metrics/config_center"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
-	constant2 "github.com/nacos-group/nacos-sdk-go/common/constant"
-	"github.com/nacos-group/nacos-sdk-go/vo"
 )
 
 func callback(listener config_center.ConfigurationListener, _, group, dataId, data string) {

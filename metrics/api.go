@@ -24,11 +24,12 @@ var registry MetricRegistry
 // CollectorFunc used to extend more indicators
 type CollectorFunc func(MetricRegistry, *ReporterConfig)
 
+const defaultRegistry = "prometheus"
 // Init Metrics module
 func Init(config *ReporterConfig) {
 	regFunc, ok := registries[config.Protocol]
 	if !ok {
-		regFunc = registries["prometheus"] // default
+		regFunc = registries[defaultRegistry] // default
 	}
 	registry = regFunc(config)
 	for _, co := range collectors {
@@ -53,7 +54,7 @@ type MetricRegistry interface {
 	Gauge(*MetricId) GaugeMetric         // add or update a gauge
 	Histogram(*MetricId) HistogramMetric // add a metric num to a histogram
 	Summary(*MetricId) SummaryMetric     // add a metric num to a summary
-	Export()                             // 数据暴露， 如 Prometheus 是 http 暴露
+	Export()                             // expose metric data， such as Prometheus http exporter
 	// GetMetrics() []*MetricSample // get all metric data
 	// GetMetricsString() (string, error) // get text format metric data
 }
@@ -131,7 +132,7 @@ type SummaryMetric interface {
 	Record(float64)
 }
 
-// StatesMetrics 综合指标，包括总数、成功数，失败数，调用 MetricsRegistry 实现最终暴露
+// StatesMetrics multi metrics，include total,success num, fail num，call MetricsRegistry save data
 type StatesMetrics interface {
 	Success()
 	AddSuccess(float64)
@@ -140,8 +141,8 @@ type StatesMetrics interface {
 	Inc(succ bool)
 }
 
-func NewStatesMetrics(total func() *MetricId, succ func() *MetricId, fail func() *MetricId) StatesMetrics {
-	return &DefaultStatesMetric{total: total, succ: succ, fail: fail, r: registry}
+func NewStatesMetrics(total func() *MetricId, succ func() *MetricId, fail func() *MetricId, reg MetricRegistry) StatesMetrics {
+	return &DefaultStatesMetric{total: total, succ: succ, fail: fail, r: reg}
 }
 
 type DefaultStatesMetric struct {
