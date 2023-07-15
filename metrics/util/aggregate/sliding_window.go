@@ -61,7 +61,7 @@ func (s *slidingWindow) isPaneDeprecated(pane *pane, timeMillis int64) bool {
 	return timeMillis-pane.startInMs > s.intervalInMs
 }
 
-// currentPane get the pane at the specified timestamp in milliseconds.
+// currentPane get the pane at the specified timestamp or create a new one if the pane is deprecated.
 func (s *slidingWindow) currentPane(timeMillis int64, newEmptyValue func() interface{}) *pane {
 	if timeMillis < 0 {
 		return nil
