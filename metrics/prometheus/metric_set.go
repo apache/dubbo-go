@@ -18,6 +18,8 @@
 package prometheus
 
 import (
+	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -49,6 +51,7 @@ type rpcCommonMetrics struct {
 	rtMillisecondsSum       *prometheus.CounterVec
 	rtMillisecondsAvg       *GaugeVecWithSyncMap
 	rtMillisecondsLast      *prometheus.GaugeVec
+	rtMillisecondsQuantiles *quantileGaugeVec
 }
 
 type providerMetrics struct {
@@ -64,6 +67,7 @@ func (pm *providerMetrics) init(reporterConfig *metrics.ReporterConfig) {
 	pm.rtMillisecondsSum = newAutoCounterVec(buildMetricsName(providerField, rtField, milliSecondsField, sumField), reporterConfig.Namespace, labelNames)
 	pm.rtMillisecondsAvg = newAutoGaugeVecWithSyncMap(buildMetricsName(providerField, rtField, milliSecondsField, avgField), reporterConfig.Namespace, labelNames)
 	pm.rtMillisecondsLast = newAutoGaugeVec(buildMetricsName(providerField, rtField, milliSecondsField, lastField), reporterConfig.Namespace, labelNames)
+	pm.rtMillisecondsQuantiles = newQuantileGaugeVec(buildRTQuantilesMetricsNames(providerField, quantiles), reporterConfig.Namespace, labelNames, quantiles)
 }
 
 type consumerMetrics struct {
@@ -79,8 +83,10 @@ func (cm *consumerMetrics) init(reporterConfig *metrics.ReporterConfig) {
 	cm.rtMillisecondsSum = newAutoCounterVec(buildMetricsName(consumerField, rtField, milliSecondsField, sumField), reporterConfig.Namespace, labelNames)
 	cm.rtMillisecondsAvg = newAutoGaugeVecWithSyncMap(buildMetricsName(consumerField, rtField, milliSecondsField, avgField), reporterConfig.Namespace, labelNames)
 	cm.rtMillisecondsLast = newAutoGaugeVec(buildMetricsName(consumerField, rtField, milliSecondsField, lastField), reporterConfig.Namespace, labelNames)
+	cm.rtMillisecondsQuantiles = newQuantileGaugeVec(buildRTQuantilesMetricsNames(consumerField, quantiles), reporterConfig.Namespace, labelNames, quantiles)
 }
 
+// buildMetricsName builds metrics name split by "_".
 func buildMetricsName(args ...string) string {
 	sb := strings.Builder{}
 	for _, arg := range args {
@@ -88,5 +94,16 @@ func buildMetricsName(args ...string) string {
 		sb.WriteString(arg)
 	}
 	res := strings.TrimPrefix(sb.String(), "_")
+	return res
+}
+
+// buildRTQuantilesMetricsNames is only used for building rt quantiles metric names.
+func buildRTQuantilesMetricsNames(role string, quantiles []float64) []string {
+	res := make([]string, 0, len(quantiles))
+	for _, q := range quantiles {
+		quantileField := fmt.Sprintf("p%v", strconv.FormatFloat(q*100, 'f', -1, 64))
+		name := buildMetricsName(role, rtField, milliSecondsField, quantileField)
+		res = append(res, name)
+	}
 	return res
 }

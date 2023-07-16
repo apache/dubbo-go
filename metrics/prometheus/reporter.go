@@ -186,11 +186,13 @@ func (reporter *PrometheusReporter) reportRTMilliseconds(role string, labels *pr
 		go reporter.provider.rtMillisecondsMin.updateMin(labels, costMs)
 		go reporter.provider.rtMillisecondsMax.updateMax(labels, costMs)
 		go reporter.provider.rtMillisecondsAvg.updateAvg(labels, costMs)
+		go reporter.provider.rtMillisecondsQuantiles.updateQuantile(labels, costMs)
 	case consumerField:
 		go reporter.consumer.rtMillisecondsLast.With(*labels).Set(float64(costMs))
 		go reporter.consumer.rtMillisecondsSum.With(*labels).Add(float64(costMs))
 		go reporter.consumer.rtMillisecondsMin.updateMin(labels, costMs)
 		go reporter.consumer.rtMillisecondsMax.updateMax(labels, costMs)
 		go reporter.consumer.rtMillisecondsAvg.updateAvg(labels, costMs)
+		go reporter.consumer.rtMillisecondsQuantiles.updateQuantile(labels, costMs)
 	}
 }

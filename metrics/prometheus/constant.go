@@ -17,7 +17,9 @@
 
 package prometheus
 
-import "dubbo.apache.org/dubbo-go/v3/common/constant"
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+)
 
 const (
 	reporterName       = "prometheus"
@@ -28,7 +30,9 @@ const (
 	ipKey              = constant.IpKey
 	methodKey          = constant.MethodKey
 	versionKey         = constant.VersionKey
+)
 
+const (
 	providerField = "provider"
 	consumerField = "consumer"
 
@@ -46,4 +50,8 @@ const (
 	totalField      = "total"
 	processingField = "processing"
 	succeedField    = "succeed"
+)
+
+var (
+	quantiles = []float64{0.5, 0.9, 0.95, 0.99}
 )

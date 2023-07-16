@@ -15,31 +15,28 @@
  * limitations under the License.
  */
 
-package extension
+package aggregate
 
-import (
-	"github.com/dubbogo/gost/log/logger"
-
-	"github.com/pkg/errors"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/common"
-)
-
-var logs = make(map[string]func(config *common.URL) (logger.Logger, error))
-
-func SetLogger(driver string, log func(config *common.URL) (logger.Logger, error)) {
-	logs[driver] = log
+// pane represents a window over a period of time.
+// It uses interface{} to store any type of value.
+type pane struct {
+	startInMs    int64
+	endInMs      int64
+	intervalInMs int64
+	value        interface{}
 }
 
-func GetLogger(driver string, config *common.URL) (logger.Logger, error) {
-
-	if logs[driver] != nil {
-		return logs[driver](config)
-	} else {
-		return nil, errors.Errorf("logger for %s does not exist. "+
-			"please make sure that you have imported the package "+
-			"dubbo.apache.org/dubbo-go/v3/logger/%s", driver, driver)
+func newPane(intervalInMs, startInMs int64, value interface{}) *pane {
+	return &pane{
+		startInMs:    startInMs,
+		endInMs:      startInMs + intervalInMs,
+		intervalInMs: intervalInMs,
+		value:        value,
 	}
+}
+
+func (p *pane) resetTo(startInMs int64, value interface{}) {
+	p.startInMs = startInMs
+	p.endInMs = startInMs + p.intervalInMs
+	p.value = value
 }
