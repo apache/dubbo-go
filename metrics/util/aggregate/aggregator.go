@@ -20,12 +20,12 @@ package aggregate
 import (
 	"math"
 	"sync"
-	"sync/atomic"
 	"time"
 )
 
 // TimeWindowAggregator wrappers sliding window to aggregate data.
 //
+// It is concurrent-safe.
 // It uses custom struct aggregator to aggregate data.
 // The window is divided into several panes, and each pane's value is an aggregator instance.
 type TimeWindowAggregator struct {
@@ -39,7 +39,7 @@ func NewTimeWindowAggregator(paneCount int, timeWindowSeconds int64) *TimeWindow
 	}
 }
 
-type AggregateResult struct {
+type Result struct {
 	Total float64
 	Min   float64
 	Max   float64
@@ -48,11 +48,11 @@ type AggregateResult struct {
 }
 
 // Result returns the aggregate result of the sliding window by aggregating all panes.
-func (t *TimeWindowAggregator) Result() *AggregateResult {
+func (t *TimeWindowAggregator) Result() *Result {
 	t.mux.RLock()
 	defer t.mux.RUnlock()
 
-	res := &AggregateResult{}
+	res := &Result{}
 
 	total := 0.0
 	count := uint64(0)
@@ -60,10 +60,10 @@ func (t *TimeWindowAggregator) Result() *AggregateResult {
 	min := math.MaxFloat64
 
 	for _, v := range t.window.values(time.Now().UnixMilli()) {
-		total += v.(*aggregator).total.Load().(float64)
-		count += v.(*aggregator).count.Load().(uint64)
-		max = math.Max(max, v.(*aggregator).max.Load().(float64))
-		min = math.Min(min, v.(*aggregator).min.Load().(float64))
+		total += v.(*aggregator).total
+		count += v.(*aggregator).count
+		max = math.Max(max, v.(*aggregator).max)
+		min = math.Min(min, v.(*aggregator).min)
 	}
 
 	if count > 0 {
@@ -86,14 +86,27 @@ func (t *TimeWindowAggregator) Add(v float64) {
 }
 
 func (t *TimeWindowAggregator) newEmptyValue() interface{} {
-	return &aggregator{}
+	return newAggregator()
 }
 
+// aggregator is a custom struct to aggregate data.
+//
+// It is NOT concurrent-safe.
+// It aggregates data by calculating the min, max, total and count.
 type aggregator struct {
-	min   atomic.Value // float64
-	max   atomic.Value // float64
-	total atomic.Value // float64
-	count atomic.Value // uint64
+	min   float64
+	max   float64
+	total float64
+	count uint64
+}
+
+func newAggregator() *aggregator {
+	return &aggregator{
+		min:   math.MaxFloat64,
+		max:   math.SmallestNonzeroFloat64,
+		total: float64(0),
+		count: uint64(0),
+	}
 }
 
 func (a *aggregator) add(v float64) {
@@ -104,61 +117,17 @@ func (a *aggregator) add(v float64) {
 }
 
 func (a *aggregator) updateMin(v float64) {
-	for {
-		store := a.min.Load()
-		if store == nil {
-			if ok := a.min.CompareAndSwap(nil, v); ok {
-				return
-			}
-		} else {
-			if ok := a.min.CompareAndSwap(store, math.Min(store.(float64), v)); ok {
-				return
-			}
-		}
-	}
+	a.min = math.Min(a.min, v)
 }
 
 func (a *aggregator) updateMax(v float64) {
-	for {
-		store := a.max.Load()
-		if store == nil {
-			if ok := a.max.CompareAndSwap(nil, v); ok {
-				return
-			}
-		} else {
-			if ok := a.max.CompareAndSwap(store, math.Max(store.(float64), v)); ok {
-				return
-			}
-		}
-	}
+	a.max = math.Max(a.max, v)
 }
 
 func (a *aggregator) updateTotal(v float64) {
-	for {
-		store := a.total.Load()
-		if store == nil {
-			if ok := a.total.CompareAndSwap(nil, v); ok {
-				return
-			}
-		} else {
-			if ok := a.total.CompareAndSwap(store, store.(float64)+v); ok {
-				return
-			}
-		}
-	}
+	a.total += v
 }
 
 func (a *aggregator) updateCount() {
-	for {
-		store := a.count.Load()
-		if store == nil {
-			if ok := a.count.CompareAndSwap(nil, uint64(1)); ok {
-				return
-			}
-		} else {
-			if ok := a.count.CompareAndSwap(store, store.(uint64)+1); ok {
-				return
-			}
-		}
-	}
+	a.count++
 }

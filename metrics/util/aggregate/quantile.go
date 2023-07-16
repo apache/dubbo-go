@@ -28,6 +28,7 @@ import (
 
 // TimeWindowQuantile wrappers sliding window around T-Digest.
 //
+// It is concurrent safe.
 // It uses T-Digest algorithm to calculate quantile.
 // The window is divided into several panes, and each pane's value is a TDigest instance.
 type TimeWindowQuantile struct {

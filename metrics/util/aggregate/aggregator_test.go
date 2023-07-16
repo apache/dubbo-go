@@ -18,11 +18,13 @@
 package aggregate
 
 import (
+	"math/rand"
 	"reflect"
+	"sync"
 	"testing"
 )
 
-func TestAddAndResult(t *testing.T) {
+func TestTimeWindowAggregatorAddAndResult(t *testing.T) {
 	timeWindowAggregator := NewTimeWindowAggregator(10, 1)
 	timeWindowAggregator.Add(10)
 	timeWindowAggregator.Add(20)
@@ -30,11 +32,11 @@ func TestAddAndResult(t *testing.T) {
 
 	tests := []struct {
 		name string
-		want *AggregateResult
+		want *Result
 	}{
 		{
 			name: "Result",
-			want: &AggregateResult{
+			want: &Result{
 				Total: 60,
 				Min:   10,
 				Max:   30,
@@ -51,4 +53,33 @@ func TestAddAndResult(t *testing.T) {
 			}
 		})
 	}
+}
+
+func BenchmarkTimeWindowAggregatorAdd(b *testing.B) {
+	wg := sync.WaitGroup{}
+	tw := NewTimeWindowAggregator(10, 1)
+	for i := 0; i < b.N; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			tw.Add(rand.Float64() * 100)
+		}()
+	}
+	wg.Wait()
+}
+
+func BenchmarkTimeWindowAggregatorResult(b *testing.B) {
+	wg := sync.WaitGroup{}
+	tw := NewTimeWindowAggregator(10, 1)
+	for i := 0; i < b.N; i++ {
+		wg.Add(1)
+		go func() {
+			tw.Add(rand.Float64() * 100)
+		}()
+		go func() {
+			defer wg.Done()
+			tw.Result()
+		}()
+	}
+	wg.Wait()
 }

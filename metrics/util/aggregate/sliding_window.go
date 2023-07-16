@@ -19,7 +19,7 @@ package aggregate
 
 // SlidingWindow adopts sliding window algorithm for statistics.
 //
-// It is not thread-safe.
+// It is NOT concurrent-safe.
 // A window contains paneCount panes.
 // intervalInMs = paneCount * paneIntervalInMs.
 type slidingWindow struct {
