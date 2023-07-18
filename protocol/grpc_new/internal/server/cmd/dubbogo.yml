@@ -1,0 +1,16 @@
+dubbo:
+  registries:
+    demoZK:
+      protocol: zookeeper
+      address: 127.0.0.1:2181
+  protocols:
+    grpc_new:
+      name: grpc_new
+      port: 20000
+  provider:
+    services:
+      greet.GreetService:
+        interface: greet.GreetService
+        proxy: default
+        protocol-ids:
+          - grpc_new

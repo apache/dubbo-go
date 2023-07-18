@@ -70,6 +70,7 @@ import (
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/dubbo3/health"
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/dubbo3/reflection"
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/grpc"
+	_ "dubbo.apache.org/dubbo-go/v3/protocol/grpc_new"
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/jsonrpc"
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/rest"
 	_ "dubbo.apache.org/dubbo-go/v3/proxy/proxy_factory"
