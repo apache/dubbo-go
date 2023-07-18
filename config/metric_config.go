@@ -69,6 +69,7 @@ func (mc *MetricConfig) Init() error {
 	if err := verify(mc); err != nil {
 		return err
 	}
+	metrics.InitAppInfo(GetRootConfig().Application.Name, GetRootConfig().Application.Version)
 	config := mc.ToReporterConfig()
 	extension.GetMetricReporter(mc.Protocol, config)
 	metrics.Init(config)
