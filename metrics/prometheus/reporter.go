@@ -116,7 +116,7 @@ func (reporter *PrometheusReporter) ReportBeforeInvocation(ctx context.Context, 
 		return
 	}
 	labels := buildLabels(url)
-
+	reporter.incQpsTotal(role, &labels)
 	reporter.incRequestsProcessingTotal(role, &labels)
 }
 
@@ -139,6 +139,15 @@ func (reporter *PrometheusReporter) ReportAfterInvocation(ctx context.Context, i
 	if res != nil && res.Error() == nil {
 		// succeed
 		reporter.incRequestsSucceedTotal(role, &labels)
+	}
+}
+
+func (reporter *PrometheusReporter) incQpsTotal(role string, labels *prometheus.Labels) {
+	switch role {
+	case providerField:
+		reporter.provider.qpsTotal.updateQps(labels)
+	case consumerField:
+		reporter.consumer.qpsTotal.updateQps(labels)
 	}
 }
 

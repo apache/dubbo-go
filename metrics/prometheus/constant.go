@@ -36,6 +36,7 @@ const (
 	providerField = "provider"
 	consumerField = "consumer"
 
+	qpsField      = "qps"
 	requestsField = "requests"
 	rtField       = "rt"
 

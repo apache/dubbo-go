@@ -298,3 +298,29 @@ func (gv *quantileGaugeVec) updateQuantile(labels *prometheus.Labels, curValue i
 		updateFunc(cur)
 	}
 }
+
+type qpsGaugeVec struct {
+	gaugeVec *prometheus.GaugeVec
+	syncMap  *sync.Map // key: labels string, value: TimeWindowCounter
+}
+
+func newQpsGaugeVec(name, namespace string, labels []string) *qpsGaugeVec {
+	return &qpsGaugeVec{
+		gaugeVec: newAutoGaugeVec(name, namespace, labels),
+		syncMap:  &sync.Map{},
+	}
+}
+
+func (cv *qpsGaugeVec) updateQps(labels *prometheus.Labels) {
+	key := convertLabelsToMapKey(*labels)
+	cur := aggregate.NewTimeWindowCounter(10, 120)
+	cur.Inc()
+
+	if actual, loaded := cv.syncMap.LoadOrStore(key, cur); loaded {
+		store := actual.(*aggregate.TimeWindowCounter)
+		store.Inc()
+		cv.gaugeVec.With(*labels).Set(store.Count() / float64(store.LivedSeconds()))
+	} else {
+		cv.gaugeVec.With(*labels).Set(cur.Count() / float64(cur.LivedSeconds()))
+	}
+}

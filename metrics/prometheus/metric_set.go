@@ -43,6 +43,7 @@ func (ms *metricSet) init(reporterConfig *metrics.ReporterConfig) {
 }
 
 type rpcCommonMetrics struct {
+	qpsTotal                *qpsGaugeVec
 	requestsTotal           *prometheus.CounterVec
 	requestsProcessingTotal *prometheus.GaugeVec
 	requestsSucceedTotal    *prometheus.CounterVec
@@ -59,6 +60,7 @@ type providerMetrics struct {
 }
 
 func (pm *providerMetrics) init(reporterConfig *metrics.ReporterConfig) {
+	pm.qpsTotal = newQpsGaugeVec(buildMetricsName(providerField, qpsField, totalField), reporterConfig.Namespace, labelNames)
 	pm.requestsTotal = newAutoCounterVec(buildMetricsName(providerField, requestsField, totalField), reporterConfig.Namespace, labelNames)
 	pm.requestsProcessingTotal = newAutoGaugeVec(buildMetricsName(providerField, requestsField, processingField, totalField), reporterConfig.Namespace, labelNames)
 	pm.requestsSucceedTotal = newAutoCounterVec(buildMetricsName(providerField, requestsField, succeedField, totalField), reporterConfig.Namespace, labelNames)
@@ -75,6 +77,7 @@ type consumerMetrics struct {
 }
 
 func (cm *consumerMetrics) init(reporterConfig *metrics.ReporterConfig) {
+	cm.qpsTotal = newQpsGaugeVec(buildMetricsName(consumerField, qpsField, totalField), reporterConfig.Namespace, labelNames)
 	cm.requestsTotal = newAutoCounterVec(buildMetricsName(consumerField, requestsField, totalField), reporterConfig.Namespace, labelNames)
 	cm.requestsProcessingTotal = newAutoGaugeVec(buildMetricsName(consumerField, requestsField, processingField, totalField), reporterConfig.Namespace, labelNames)
 	cm.requestsSucceedTotal = newAutoCounterVec(buildMetricsName(consumerField, requestsField, succeedField, totalField), reporterConfig.Namespace, labelNames)
