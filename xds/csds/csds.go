@@ -39,7 +39,6 @@ import (
 	v3adminpb "github.com/envoyproxy/go-control-plane/envoy/admin/v3"
 	v2corepb "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	v3corepb "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	v3statusgrpc "github.com/envoyproxy/go-control-plane/envoy/service/status/v3"
 	v3statuspb "github.com/envoyproxy/go-control-plane/envoy/service/status/v3"
 
 	"github.com/golang/protobuf/proto"
@@ -91,7 +90,7 @@ func NewClientStatusDiscoveryServer() (*ClientStatusDiscoveryServer, error) {
 }
 
 // StreamClientStatus implementations interface ClientStatusDiscoveryServiceServer.
-func (s *ClientStatusDiscoveryServer) StreamClientStatus(stream v3statusgrpc.ClientStatusDiscoveryService_StreamClientStatusServer) error {
+func (s *ClientStatusDiscoveryServer) StreamClientStatus(stream v3statuspb.ClientStatusDiscoveryService_StreamClientStatusServer) error {
 	for {
 		req, err := stream.Recv()
 		if err == io.EOF {

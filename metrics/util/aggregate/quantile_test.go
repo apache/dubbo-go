@@ -15,31 +15,46 @@
  * limitations under the License.
  */
 
-package extension
+package aggregate
 
-import (
-	"github.com/dubbogo/gost/log/logger"
+import "testing"
 
-	"github.com/pkg/errors"
-)
+func TestAddAndQuantile(t1 *testing.T) {
+	timeWindowQuantile := NewTimeWindowQuantile(100, 10, 1)
+	for i := 1; i <= 100; i++ {
+		timeWindowQuantile.Add(float64(i))
+	}
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/common"
-)
+	type args struct {
+		q float64
+	}
 
-var logs = make(map[string]func(config *common.URL) (logger.Logger, error))
-
-func SetLogger(driver string, log func(config *common.URL) (logger.Logger, error)) {
-	logs[driver] = log
-}
-
-func GetLogger(driver string, config *common.URL) (logger.Logger, error) {
-
-	if logs[driver] != nil {
-		return logs[driver](config)
-	} else {
-		return nil, errors.Errorf("logger for %s does not exist. "+
-			"please make sure that you have imported the package "+
-			"dubbo.apache.org/dubbo-go/v3/logger/%s", driver, driver)
+	tests := []struct {
+		name string
+		args args
+		want float64
+	}{
+		{
+			name: "Quantile: 0.01",
+			args: args{
+				q: 0.01,
+			},
+			want: 1.5,
+		},
+		{
+			name: "Quantile: 0.99",
+			args: args{
+				q: 0.99,
+			},
+			want: 99.5,
+		},
+	}
+	for _, tt := range tests {
+		t1.Run(tt.name, func(t1 *testing.T) {
+			t := timeWindowQuantile
+			if got := t.Quantile(tt.args.q); got != tt.want {
+				t1.Errorf("Quantile() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }

@@ -27,8 +27,8 @@ import (
 import (
 	gxset "github.com/dubbogo/gost/container/set"
 
-	"github.com/nacos-group/nacos-sdk-go/model"
-	"github.com/nacos-group/nacos-sdk-go/vo"
+	"github.com/nacos-group/nacos-sdk-go/v2/model"
+	"github.com/nacos-group/nacos-sdk-go/v2/vo"
 
 	perrors "github.com/pkg/errors"
 
@@ -165,6 +165,10 @@ type mockClient struct {
 }
 
 func (c mockClient) RegisterInstance(param vo.RegisterInstanceParam) (bool, error) {
+	return true, nil
+}
+
+func (c mockClient) BatchRegisterInstance(param vo.BatchRegisterInstanceParam) (bool, error) {
 	return true, nil
 }
 
