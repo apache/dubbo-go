@@ -49,6 +49,7 @@ const (
 	lastField = "last"
 
 	totalField      = "total"
+	aggregateField  = "aggregate"
 	processingField = "processing"
 	succeedField    = "succeed"
 )

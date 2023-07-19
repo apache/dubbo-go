@@ -53,6 +53,7 @@ type rpcCommonMetrics struct {
 	rtMillisecondsAvg       *GaugeVecWithSyncMap
 	rtMillisecondsLast      *prometheus.GaugeVec
 	rtMillisecondsQuantiles *quantileGaugeVec
+	rtMillisecondsAggregate *aggregatorGaugeVec
 }
 
 type providerMetrics struct {
@@ -70,6 +71,13 @@ func (pm *providerMetrics) init(reporterConfig *metrics.ReporterConfig) {
 	pm.rtMillisecondsAvg = newAutoGaugeVecWithSyncMap(buildMetricsName(providerField, rtField, milliSecondsField, avgField), reporterConfig.Namespace, labelNames)
 	pm.rtMillisecondsLast = newAutoGaugeVec(buildMetricsName(providerField, rtField, milliSecondsField, lastField), reporterConfig.Namespace, labelNames)
 	pm.rtMillisecondsQuantiles = newQuantileGaugeVec(buildRTQuantilesMetricsNames(providerField, quantiles), reporterConfig.Namespace, labelNames, quantiles)
+	pm.rtMillisecondsAggregate = newAggregatorGaugeVec(
+		buildMetricsName(providerField, rtField, minField, milliSecondsField, aggregateField),
+		buildMetricsName(providerField, rtField, maxField, milliSecondsField, aggregateField),
+		buildMetricsName(providerField, rtField, avgField, milliSecondsField, aggregateField),
+		reporterConfig.Namespace,
+		labelNames,
+	)
 }
 
 type consumerMetrics struct {
@@ -87,6 +95,13 @@ func (cm *consumerMetrics) init(reporterConfig *metrics.ReporterConfig) {
 	cm.rtMillisecondsAvg = newAutoGaugeVecWithSyncMap(buildMetricsName(consumerField, rtField, milliSecondsField, avgField), reporterConfig.Namespace, labelNames)
 	cm.rtMillisecondsLast = newAutoGaugeVec(buildMetricsName(consumerField, rtField, milliSecondsField, lastField), reporterConfig.Namespace, labelNames)
 	cm.rtMillisecondsQuantiles = newQuantileGaugeVec(buildRTQuantilesMetricsNames(consumerField, quantiles), reporterConfig.Namespace, labelNames, quantiles)
+	cm.rtMillisecondsAggregate = newAggregatorGaugeVec(
+		buildMetricsName(consumerField, rtField, minField, milliSecondsField, aggregateField),
+		buildMetricsName(consumerField, rtField, maxField, milliSecondsField, aggregateField),
+		buildMetricsName(consumerField, rtField, avgField, milliSecondsField, aggregateField),
+		reporterConfig.Namespace,
+		labelNames,
+	)
 }
 
 // buildMetricsName builds metrics name split by "_".
