@@ -47,6 +47,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/polarismesh/polaris-go v1.3.0
 	github.com/prometheus/client_golang v1.13.0
+	github.com/prometheus/common v0.37.0
 	github.com/rogpeppe/go-internal v1.8.0 // indirect
 	github.com/sirupsen/logrus v1.7.0
 	github.com/stretchr/testify v1.8.2
