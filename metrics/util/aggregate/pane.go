@@ -15,35 +15,28 @@
  * limitations under the License.
  */
 
-package prometheus
+package aggregate
 
-import (
-	"context"
-	"time"
-)
+// pane represents a window over a period of time.
+// It uses interface{} to store any type of value.
+type pane struct {
+	startInMs    int64
+	endInMs      int64
+	intervalInMs int64
+	value        interface{}
+}
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/protocol"
-)
-
-func (reporter *PrometheusReporter) ReportAfterInvocation(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation, cost time.Duration, res protocol.Result) {
-	if !reporter.reporterConfig.Enable {
-		return
+func newPane(intervalInMs, startInMs int64, value interface{}) *pane {
+	return &pane{
+		startInMs:    startInMs,
+		endInMs:      startInMs + intervalInMs,
+		intervalInMs: intervalInMs,
+		value:        value,
 	}
-	url := invoker.GetURL()
+}
 
-	role := getRole(url)
-	if role == "" {
-		return
-	}
-	labels := buildLabels(url)
-
-	reporter.reportRTSummaryVec(role, &labels, cost.Milliseconds())
-	reporter.reportRequestsTotalCounterVec(role, &labels)
-	reporter.decRequestsProcessingTotalGaugeVec(role, &labels)
-
-	if res != nil && res.Error() == nil {
-		// succeed
-		reporter.incRequestsSucceedTotalCounterVec(role, &labels)
-	}
+func (p *pane) resetTo(startInMs int64, value interface{}) {
+	p.startInMs = startInMs
+	p.endInMs = startInMs + p.intervalInMs
+	p.value = value
 }

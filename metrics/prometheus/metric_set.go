@@ -18,6 +18,8 @@
 package prometheus
 
 import (
+	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -29,42 +31,62 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 )
 
-// metricSet is a set of metrics that are reported to prometheus in dubbo go
+// metricSet is a set of metrics that are reported to prometheus in dubbo-go
 type metricSet struct {
-	// report the consumer-side's rt gauge data
-	consumerRTSummaryVec *prometheus.SummaryVec
-	// report the provider-side's rt gauge data
-	providerRTSummaryVec *prometheus.SummaryVec
-
-	// report the provider-side's request total counter data
-	providerRequestsTotalCounterVec *prometheus.CounterVec
-	// report the provider-side's processing request counter data
-	providerRequestsProcessingTotalGaugeVec *prometheus.GaugeVec
-	// The number of requests successfully received by the provider
-	providerRequestsSucceedTotalCounterVec *prometheus.CounterVec
-
-	// report the consumer-side's request total counter data
-	consumerRequestsTotalCounterVec *prometheus.CounterVec
-	// report the consumer-side's processing request counter data
-	consumerRequestsProcessingTotalGaugeVec *prometheus.GaugeVec
-	// The number of successful requests sent by consumers
-	consumerRequestsSucceedTotalCounterVec *prometheus.CounterVec
+	provider providerMetrics
+	consumer consumerMetrics
 }
 
-var labelNames = []string{applicationNameKey, groupKey, hostnameKey, interfaceKey, ipKey, methodKey, versionKey}
-
-// init metric set and register to prometheus
-func (ms *metricSet) initAndRegister(reporterConfig *metrics.ReporterConfig) {
-	ms.consumerRTSummaryVec = newAutoSummaryVec(buildMetricsName(consumerField, rtField, milliSecondsField, summaryField), reporterConfig.Namespace, labelNames, reporterConfig.SummaryMaxAge)
-	ms.providerRTSummaryVec = newAutoSummaryVec(buildMetricsName(providerField, rtField, milliSecondsField, summaryField), reporterConfig.Namespace, labelNames, reporterConfig.SummaryMaxAge)
-	ms.consumerRequestsTotalCounterVec = newAutoCounterVec(buildMetricsName(consumerField, requestsField, totalField), reporterConfig.Namespace, labelNames)
-	ms.providerRequestsTotalCounterVec = newAutoCounterVec(buildMetricsName(providerField, requestsField, totalField), reporterConfig.Namespace, labelNames)
-	ms.consumerRequestsProcessingTotalGaugeVec = newAutoGaugeVec(buildMetricsName(consumerField, requestsField, processingField, totalField), reporterConfig.Namespace, labelNames)
-	ms.providerRequestsProcessingTotalGaugeVec = newAutoGaugeVec(buildMetricsName(providerField, requestsField, processingField, totalField), reporterConfig.Namespace, labelNames)
-	ms.consumerRequestsSucceedTotalCounterVec = newAutoCounterVec(buildMetricsName(consumerField, requestsField, succeedField, totalField), reporterConfig.Namespace, labelNames)
-	ms.providerRequestsSucceedTotalCounterVec = newAutoCounterVec(buildMetricsName(providerField, requestsField, succeedField, totalField), reporterConfig.Namespace, labelNames)
+func (ms *metricSet) init(reporterConfig *metrics.ReporterConfig) {
+	ms.provider.init(reporterConfig)
+	ms.consumer.init(reporterConfig)
 }
 
+type rpcCommonMetrics struct {
+	requestsTotal           *prometheus.CounterVec
+	requestsProcessingTotal *prometheus.GaugeVec
+	requestsSucceedTotal    *prometheus.CounterVec
+	rtMillisecondsMin       *GaugeVecWithSyncMap
+	rtMillisecondsMax       *GaugeVecWithSyncMap
+	rtMillisecondsSum       *prometheus.CounterVec
+	rtMillisecondsAvg       *GaugeVecWithSyncMap
+	rtMillisecondsLast      *prometheus.GaugeVec
+	rtMillisecondsQuantiles *quantileGaugeVec
+}
+
+type providerMetrics struct {
+	rpcCommonMetrics
+}
+
+func (pm *providerMetrics) init(reporterConfig *metrics.ReporterConfig) {
+	pm.requestsTotal = newAutoCounterVec(buildMetricsName(providerField, requestsField, totalField), reporterConfig.Namespace, labelNames)
+	pm.requestsProcessingTotal = newAutoGaugeVec(buildMetricsName(providerField, requestsField, processingField, totalField), reporterConfig.Namespace, labelNames)
+	pm.requestsSucceedTotal = newAutoCounterVec(buildMetricsName(providerField, requestsField, succeedField, totalField), reporterConfig.Namespace, labelNames)
+	pm.rtMillisecondsMin = newAutoGaugeVecWithSyncMap(buildMetricsName(providerField, rtField, milliSecondsField, minField), reporterConfig.Namespace, labelNames)
+	pm.rtMillisecondsMax = newAutoGaugeVecWithSyncMap(buildMetricsName(providerField, rtField, milliSecondsField, maxField), reporterConfig.Namespace, labelNames)
+	pm.rtMillisecondsSum = newAutoCounterVec(buildMetricsName(providerField, rtField, milliSecondsField, sumField), reporterConfig.Namespace, labelNames)
+	pm.rtMillisecondsAvg = newAutoGaugeVecWithSyncMap(buildMetricsName(providerField, rtField, milliSecondsField, avgField), reporterConfig.Namespace, labelNames)
+	pm.rtMillisecondsLast = newAutoGaugeVec(buildMetricsName(providerField, rtField, milliSecondsField, lastField), reporterConfig.Namespace, labelNames)
+	pm.rtMillisecondsQuantiles = newQuantileGaugeVec(buildRTQuantilesMetricsNames(providerField, quantiles), reporterConfig.Namespace, labelNames, quantiles)
+}
+
+type consumerMetrics struct {
+	rpcCommonMetrics
+}
+
+func (cm *consumerMetrics) init(reporterConfig *metrics.ReporterConfig) {
+	cm.requestsTotal = newAutoCounterVec(buildMetricsName(consumerField, requestsField, totalField), reporterConfig.Namespace, labelNames)
+	cm.requestsProcessingTotal = newAutoGaugeVec(buildMetricsName(consumerField, requestsField, processingField, totalField), reporterConfig.Namespace, labelNames)
+	cm.requestsSucceedTotal = newAutoCounterVec(buildMetricsName(consumerField, requestsField, succeedField, totalField), reporterConfig.Namespace, labelNames)
+	cm.rtMillisecondsMin = newAutoGaugeVecWithSyncMap(buildMetricsName(consumerField, rtField, milliSecondsField, minField), reporterConfig.Namespace, labelNames)
+	cm.rtMillisecondsMax = newAutoGaugeVecWithSyncMap(buildMetricsName(consumerField, rtField, milliSecondsField, maxField), reporterConfig.Namespace, labelNames)
+	cm.rtMillisecondsSum = newAutoCounterVec(buildMetricsName(consumerField, rtField, milliSecondsField, sumField), reporterConfig.Namespace, labelNames)
+	cm.rtMillisecondsAvg = newAutoGaugeVecWithSyncMap(buildMetricsName(consumerField, rtField, milliSecondsField, avgField), reporterConfig.Namespace, labelNames)
+	cm.rtMillisecondsLast = newAutoGaugeVec(buildMetricsName(consumerField, rtField, milliSecondsField, lastField), reporterConfig.Namespace, labelNames)
+	cm.rtMillisecondsQuantiles = newQuantileGaugeVec(buildRTQuantilesMetricsNames(consumerField, quantiles), reporterConfig.Namespace, labelNames, quantiles)
+}
+
+// buildMetricsName builds metrics name split by "_".
 func buildMetricsName(args ...string) string {
 	sb := strings.Builder{}
 	for _, arg := range args {
@@ -72,5 +94,16 @@ func buildMetricsName(args ...string) string {
 		sb.WriteString(arg)
 	}
 	res := strings.TrimPrefix(sb.String(), "_")
+	return res
+}
+
+// buildRTQuantilesMetricsNames is only used for building rt quantiles metric names.
+func buildRTQuantilesMetricsNames(role string, quantiles []float64) []string {
+	res := make([]string, 0, len(quantiles))
+	for _, q := range quantiles {
+		quantileField := fmt.Sprintf("p%v", strconv.FormatFloat(q*100, 'f', -1, 64))
+		name := buildMetricsName(role, rtField, milliSecondsField, quantileField)
+		res = append(res, name)
+	}
 	return res
 }

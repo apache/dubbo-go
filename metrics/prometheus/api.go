@@ -20,6 +20,7 @@ package prometheus
 import (
 	"sync"
 )
+
 import (
 	"github.com/prometheus/client_golang/prometheus"
 )

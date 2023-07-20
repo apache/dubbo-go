@@ -36,7 +36,6 @@ import (
 )
 
 import (
-	controllerversion "dubbo.apache.org/dubbo-go/v3/xds/client/controller/version"
 	resourceversion "dubbo.apache.org/dubbo-go/v3/xds/client/controller/version"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/load"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
@@ -380,7 +379,7 @@ func (t *Controller) processAckInfo(ack *ackAction, stream grpc.ClientStream) (t
 
 // reportLoad starts an LRS stream to report load data to the management server.
 // It blocks until the context is canceled.
-func (t *Controller) reportLoad(ctx context.Context, cc *grpc.ClientConn, opts controllerversion.LoadReportingOptions) {
+func (t *Controller) reportLoad(ctx context.Context, cc *grpc.ClientConn, opts resourceversion.LoadReportingOptions) {
 	retries := 0
 	for {
 		if ctx.Err() != nil {

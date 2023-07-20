@@ -29,8 +29,8 @@ import (
 
 	"github.com/golang/mock/gomock"
 
-	"github.com/nacos-group/nacos-sdk-go/model"
-	"github.com/nacos-group/nacos-sdk-go/vo"
+	"github.com/nacos-group/nacos-sdk-go/v2/model"
+	"github.com/nacos-group/nacos-sdk-go/v2/vo"
 )
 
 import (
@@ -60,6 +60,14 @@ func NewMockINamingClient(ctrl *gomock.Controller) *MockINamingClient {
 // EXPECT returns an object that allows the caller to indicate expected use
 func (m *MockINamingClient) EXPECT() *MockINamingClientMockRecorder {
 	return m.recorder
+}
+
+// RegisterInstance mocks base method
+func (m *MockINamingClient) BatchRegisterInstance(param vo.BatchRegisterInstanceParam) (bool, error) {
+	ret := m.ctrl.Call(m, "RegisterInstance", param)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // RegisterInstance mocks base method
