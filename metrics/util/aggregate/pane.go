@@ -15,26 +15,28 @@
  * limitations under the License.
  */
 
-package config
+package aggregate
 
-import (
-	"testing"
-)
+// pane represents a window over a period of time.
+// It uses interface{} to store any type of value.
+type pane struct {
+	startInMs    int64
+	endInMs      int64
+	intervalInMs int64
+	value        interface{}
+}
 
-import (
-	"github.com/stretchr/testify/assert"
-)
+func newPane(intervalInMs, startInMs int64, value interface{}) *pane {
+	return &pane{
+		startInMs:    startInMs,
+		endInMs:      startInMs + intervalInMs,
+		intervalInMs: intervalInMs,
+		value:        value,
+	}
+}
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
-)
-
-func TestTracingConfig(t *testing.T) {
-
-	tracing := &TracingConfig{}
-	err := tracing.Init()
-	assert.Nil(t, err)
-	assert.Equal(t, tracing.Prefix(), constant.TracingConfigPrefix)
-	assert.Equal(t, tracing.Name, "jaeger")
-	assert.Equal(t, *tracing.UseAgent, false)
+func (p *pane) resetTo(startInMs int64, value interface{}) {
+	p.startInMs = startInMs
+	p.endInMs = startInMs + p.intervalInMs
+	p.value = value
 }

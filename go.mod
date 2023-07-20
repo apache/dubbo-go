@@ -3,7 +3,6 @@ module dubbo.apache.org/dubbo-go/v3
 go 1.15
 
 require (
-	contrib.go.opencensus.io/exporter/prometheus v0.4.1
 	github.com/RoaringBitmap/roaring v1.2.3
 	github.com/Workiva/go-datastructures v1.0.52
 	github.com/afex/hystrix-go v0.0.0-20180502004556-fa1af6a1f4f5
@@ -15,7 +14,7 @@ require (
 	github.com/cncf/xds/go v0.0.0-20220314180256-7f1daf1720fc
 	github.com/creasty/defaults v1.5.2
 	github.com/dubbogo/go-zookeeper v1.0.4-0.20211212162352-f9d2183d89d5
-	github.com/dubbogo/gost v1.13.2
+	github.com/dubbogo/gost v1.14.0
 	github.com/dubbogo/grpc-go v1.42.10
 	github.com/dubbogo/triple v1.2.2-rc3
 	github.com/dustin/go-humanize v1.0.1
@@ -32,21 +31,22 @@ require (
 	github.com/gopherjs/gopherjs v0.0.0-20190910122728-9d188e94fb99 // indirect
 	github.com/grpc-ecosystem/grpc-opentracing v0.0.0-20180507213350-8e809c8a8645
 	github.com/hashicorp/vault/sdk v0.7.0
+	github.com/influxdata/tdigest v0.0.1
 	github.com/jinzhu/copier v0.3.5
 	github.com/knadh/koanf v1.5.0
 	github.com/kr/pretty v0.3.0 // indirect
-	github.com/magiconair/properties v1.8.7
+	github.com/magiconair/properties v1.8.1
 	github.com/mattn/go-colorable v0.1.13
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
-	github.com/nacos-group/nacos-sdk-go v1.1.4
+	github.com/nacos-group/nacos-sdk-go/v2 v2.2.2
 	github.com/oliveagle/jsonpath v0.0.0-20180606110733-2e52cf6e6852
 	github.com/opentracing/opentracing-go v1.2.0
 	github.com/pelletier/go-toml v1.9.3 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/polarismesh/polaris-go v1.3.0
-	github.com/prometheus/client_golang v1.12.2
+	github.com/prometheus/client_golang v1.13.0
 	github.com/rogpeppe/go-internal v1.8.0 // indirect
 	github.com/sirupsen/logrus v1.7.0
 	github.com/stretchr/testify v1.8.2

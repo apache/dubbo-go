@@ -88,8 +88,8 @@ func generateConditions(routerConfig *config.RouterConfig) ([]*StateRouter, erro
 			return nil, err
 		}
 		url.AddParam(constant.RuleKey, conditionRule)
-		url.AddParam(constant.ForceKey, strconv.FormatBool(routerConfig.Force))
-		url.AddParam(constant.EnabledKey, strconv.FormatBool(routerConfig.Enabled))
+		url.AddParam(constant.ForceKey, strconv.FormatBool(*routerConfig.Force))
+		url.AddParam(constant.EnabledKey, strconv.FormatBool(*routerConfig.Enabled))
 		conditionRoute, err := NewConditionStateRouter(url)
 		if err != nil {
 			return nil, err

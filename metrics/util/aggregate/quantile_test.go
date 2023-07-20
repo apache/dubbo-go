@@ -15,4 +15,46 @@
  * limitations under the License.
  */
 
-package prometheus
+package aggregate
+
+import "testing"
+
+func TestAddAndQuantile(t1 *testing.T) {
+	timeWindowQuantile := NewTimeWindowQuantile(100, 10, 1)
+	for i := 1; i <= 100; i++ {
+		timeWindowQuantile.Add(float64(i))
+	}
+
+	type args struct {
+		q float64
+	}
+
+	tests := []struct {
+		name string
+		args args
+		want float64
+	}{
+		{
+			name: "Quantile: 0.01",
+			args: args{
+				q: 0.01,
+			},
+			want: 1.5,
+		},
+		{
+			name: "Quantile: 0.99",
+			args: args{
+				q: 0.99,
+			},
+			want: 99.5,
+		},
+	}
+	for _, tt := range tests {
+		t1.Run(tt.name, func(t1 *testing.T) {
+			t := timeWindowQuantile
+			if got := t.Quantile(tt.args.q); got != tt.want {
+				t1.Errorf("Quantile() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

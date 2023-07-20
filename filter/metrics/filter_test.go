@@ -22,13 +22,17 @@ import (
 	"sync"
 	"testing"
 	"time"
+)
 
+import (
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-
 	_ "dubbo.apache.org/dubbo-go/v3/metrics/prometheus"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
@@ -73,6 +77,11 @@ type mockReporter struct {
 }
 
 func (m *mockReporter) ReportAfterInvocation(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation, cost time.Duration, res protocol.Result) {
+	m.Called(ctx, invoker, invocation)
+	m.wg.Done()
+}
+
+func (m *mockReporter) ReportBeforeInvocation(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) {
 	m.Called(ctx, invoker, invocation)
 	m.wg.Done()
 }

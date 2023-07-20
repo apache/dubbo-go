@@ -21,10 +21,15 @@ import (
 	"context"
 	"testing"
 	"time"
+)
 
+import (
+	"github.com/stretchr/testify/assert"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestGetMetricReporter(t *testing.T) {
@@ -40,5 +45,8 @@ func TestGetMetricReporter(t *testing.T) {
 type mockReporter struct{}
 
 // implement the interface of Reporter
-func (m mockReporter) ReportAfterInvocation(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation, cost time.Duration, res protocol.Result) {
+func (m *mockReporter) ReportAfterInvocation(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation, cost time.Duration, res protocol.Result) {
+}
+
+func (m *mockReporter) ReportBeforeInvocation(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) {
 }

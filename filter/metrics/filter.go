@@ -21,7 +21,9 @@ package metrics
 import (
 	"context"
 	"time"
+)
 
+import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
@@ -44,6 +46,11 @@ type Filter struct {
 
 // Invoke collect the duration of invocation and then report the duration by using goroutine
 func (p *Filter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+	go func() {
+		for _, reporter := range p.reporters {
+			reporter.ReportBeforeInvocation(ctx, invoker, invocation)
+		}
+	}()
 	start := time.Now()
 	res := invoker.Invoke(ctx, invocation)
 	end := time.Now()

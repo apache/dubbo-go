@@ -134,7 +134,7 @@ func requestTag(invokers []protocol.Invoker, url *common.URL, invocation protoco
 		}
 	}
 	// returns the result directly
-	if cfg.Force || requestIsForce(url, invocation) {
+	if *cfg.Force || requestIsForce(url, invocation) {
 		return result
 	}
 	if len(result) != 0 {
