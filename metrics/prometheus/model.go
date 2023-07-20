@@ -373,9 +373,10 @@ func (gv *aggregateFunctionsGaugeVec) update(labels *prometheus.Labels, curValue
 	cur.Add(float64(curValue))
 
 	updateFunc := func(aggregator *aggregate.TimeWindowAggregator) {
-		gv.min.With(*labels).Set(aggregator.Result().Min)
-		gv.max.With(*labels).Set(aggregator.Result().Max)
-		gv.avg.With(*labels).Set(aggregator.Result().Avg)
+		result := aggregator.Result()
+		gv.min.With(*labels).Set(result.Min)
+		gv.max.With(*labels).Set(result.Max)
+		gv.avg.With(*labels).Set(result.Avg)
 	}
 
 	if actual, loaded := gv.syncMap.LoadOrStore(key, cur); loaded {
