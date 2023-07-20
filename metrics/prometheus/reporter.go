@@ -155,8 +155,10 @@ func (reporter *PrometheusReporter) incRequestsTotal(role string, labels *promet
 	switch role {
 	case providerField:
 		reporter.provider.requestsTotal.With(*labels).Inc()
+		reporter.provider.requestsTotalAggregate.inc(labels)
 	case consumerField:
 		reporter.consumer.requestsTotal.With(*labels).Inc()
+		reporter.consumer.requestsTotalAggregate.inc(labels)
 	}
 }
 
@@ -182,8 +184,10 @@ func (reporter *PrometheusReporter) incRequestsSucceedTotal(role string, labels 
 	switch role {
 	case providerField:
 		reporter.provider.requestsSucceedTotal.With(*labels).Inc()
+		reporter.provider.requestsSucceedTotalAggregate.inc(labels)
 	case consumerField:
 		reporter.consumer.requestsSucceedTotal.With(*labels).Inc()
+		reporter.consumer.requestsSucceedTotalAggregate.inc(labels)
 	}
 }
 
