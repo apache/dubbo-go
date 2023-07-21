@@ -19,6 +19,7 @@ package delegate
 
 import (
 	"encoding/json"
+	gxset "github.com/dubbogo/gost/container/set"
 	"runtime/debug"
 	"sync"
 	"time"
@@ -310,4 +311,9 @@ func (mr *MetadataReport) doHandlerMetadataCollection(metadataMap map[*identifie
 		}
 	}
 	return false
+}
+
+func (mr *MetadataReport) GetConfigKeysByGroup(group string) (*gxset.HashSet, error) {
+	//TODO implement me
+	panic("implement me")
 }

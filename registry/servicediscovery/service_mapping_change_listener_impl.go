@@ -39,6 +39,8 @@ type ServiceMappingChangedListenerImpl struct {
 	serviceUrl      *common.URL
 	mappingCache    *sync.Map
 	stop            int
+
+	mux sync.Mutex
 }
 
 const (
@@ -63,6 +65,9 @@ func (lstn *ServiceMappingChangedListenerImpl) OnEvent(e observer.Event) error {
 		err error
 		reg registry.Registry
 	)
+
+	lstn.mux.Lock()
+
 	if lstn.stop == ServiceMappingListenerStop {
 		return nil
 	}
@@ -97,8 +102,12 @@ func (lstn *ServiceMappingChangedListenerImpl) OnEvent(e observer.Event) error {
 				sdreg.SubscribeURL(lstn.serviceUrl, lstn.listener, newServiceNames)
 			}
 			lstn.oldServiceNames = newServiceNames
+			break
 		}
 	}
+
+	lstn.mux.Unlock()
+
 	return err
 }
 

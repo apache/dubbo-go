@@ -18,6 +18,7 @@
 package nacos
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/metadata/mapping/metadata"
 	"encoding/json"
 	"net/url"
 	"strings"
@@ -42,6 +43,14 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/metadata/report/factory"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/remoting/nacos"
+)
+
+const (
+	// the number is a little big tricky
+	// it will be used in query which looks up all keys with the target group
+	// now, one key represents one application
+	// so only a group has more than 9999 applications will failed
+	maxKeysNum = 9999
 )
 
 func init() {
@@ -286,6 +295,37 @@ func (n *nacosMetadataReport) GetServiceAppMapping(key string, group string, lis
 		set.Add(e)
 	}
 	return set, nil
+}
+
+// GetConfigKeysByGroup will return all keys with the group
+func (n *nacosMetadataReport) GetConfigKeysByGroup(group string) (*gxset.HashSet, error) {
+	group = n.resolvedGroup(group)
+	page, err := n.client.Client().SearchConfig(vo.SearchConfigParam{
+		Search: "accurate",
+		Group:  group,
+		PageNo: 1,
+		// actually it's impossible for user to create 9999 application under one group
+		PageSize: maxKeysNum,
+	})
+
+	result := gxset.NewSet()
+	if err != nil {
+		return result, perrors.WithMessage(err, "can not find the configClient config")
+	}
+	for _, itm := range page.PageItems {
+		result.Add(itm.DataId)
+	}
+	return result, nil
+}
+
+// resolvedGroup will regular the group. Now, it will replace the '/' with '-'.
+// '/' is a special character for nacos
+func (n *nacosMetadataReport) resolvedGroup(group string) string {
+	if len(group) <= 0 {
+		group = metadata.DefaultGroup
+		return group
+	}
+	return strings.ReplaceAll(group, "/", "-")
 }
 
 // RemoveServiceAppMappingListener remove the serviceMapping listener from metadata center

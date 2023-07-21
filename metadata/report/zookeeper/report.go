@@ -18,6 +18,8 @@
 package zookeeper
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/metadata/mapping/metadata"
+	"dubbo.apache.org/dubbo-go/v3/remoting/zookeeper"
 	"encoding/json"
 	"strings"
 )
@@ -54,8 +56,10 @@ func init() {
 // zookeeperMetadataReport is the implementation of
 // MetadataReport based on zookeeper.
 type zookeeperMetadataReport struct {
-	client  *gxzookeeper.ZookeeperClient
-	rootDir string
+	client        *gxzookeeper.ZookeeperClient
+	rootDir       string
+	listener      *zookeeper.ZkEventListener
+	cacheListener *CacheListener
 }
 
 // GetAppMetadata get metadata info from zookeeper
@@ -157,7 +161,7 @@ func (m *zookeeperMetadataReport) GetServiceDefinition(metadataIdentifier *ident
 
 // RegisterServiceAppMapping map the specified Dubbo service interface to current Dubbo app name
 func (m *zookeeperMetadataReport) RegisterServiceAppMapping(key string, group string, value string) error {
-	path := m.rootDir + group + constant.PathSeparator + key
+	path := m.getPath(key, group)
 	v, state, err := m.client.GetContent(path)
 	if err == zk.ErrNoNode {
 		return m.client.CreateWithValue(path, []byte(value))
@@ -176,6 +180,12 @@ func (m *zookeeperMetadataReport) RegisterServiceAppMapping(key string, group st
 // GetServiceAppMapping get the app names from the specified Dubbo service interface
 func (m *zookeeperMetadataReport) GetServiceAppMapping(key string, group string, listener registry.MappingListener) (*gxset.HashSet, error) {
 	path := m.rootDir + group + constant.PathSeparator + key
+
+	// listen to mapping changes first
+	if listener != nil {
+		m.cacheListener.AddListener(path, listener)
+	}
+
 	v, _, err := m.client.GetContent(path)
 	if err != nil {
 		return nil, err
@@ -188,8 +198,40 @@ func (m *zookeeperMetadataReport) GetServiceAppMapping(key string, group string,
 	return set, nil
 }
 
+// GetConfigKeysByGroup will return all keys with the group
+func (m *zookeeperMetadataReport) GetConfigKeysByGroup(group string) (*gxset.HashSet, error) {
+	path := m.getPath("", group)
+	result, err := m.client.GetChildren(path)
+	if err != nil {
+		return nil, perrors.WithStack(err)
+	}
+
+	if len(result) == 0 {
+		return nil, perrors.New("could not find keys with group: " + group)
+	}
+	set := gxset.NewSet()
+	for _, e := range result {
+		set.Add(e)
+	}
+	return set, nil
+}
+
 func (m *zookeeperMetadataReport) RemoveServiceAppMappingListener(key string, group string) error {
 	return nil
+}
+
+func (m *zookeeperMetadataReport) getPath(key string, group string) string {
+	if len(key) == 0 {
+		return m.buildPath(group)
+	}
+	return m.buildPath(group) + constant.PathSeparator + key
+}
+
+func (m *zookeeperMetadataReport) buildPath(group string) string {
+	if len(group) == 0 {
+		group = metadata.DefaultGroup
+	}
+	return m.rootDir + group
 }
 
 type zookeeperMetadataReportFactory struct{}
@@ -214,5 +256,13 @@ func (mf *zookeeperMetadataReportFactory) CreateMetadataReport(url *common.URL) 
 		rootDir = rootDir + constant.PathSeparator
 	}
 
-	return &zookeeperMetadataReport{client: client, rootDir: rootDir}
+	reporter := &zookeeperMetadataReport{
+		client:   client,
+		rootDir:  rootDir,
+		listener: zookeeper.NewZkEventListener(client),
+	}
+
+	reporter.cacheListener = NewCacheListener(rootDir, reporter.listener)
+	reporter.listener.ListenConfigurationEvent(rootDir+constant.PathSeparator+metadata.DefaultGroup, reporter.cacheListener)
+	return reporter
 }
