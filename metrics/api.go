@@ -17,6 +17,14 @@
 
 package metrics
 
+import (
+	"sync"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/metrics/util/aggregate"
+)
+
 var registries = make(map[string]func(*ReporterConfig) MetricRegistry)
 var collectors = make([]CollectorFunc, 0)
 var registry MetricRegistry
@@ -24,19 +32,19 @@ var registry MetricRegistry
 // CollectorFunc used to extend more indicators
 type CollectorFunc func(MetricRegistry, *ReporterConfig)
 
-const defaultRegistry = "prometheus"
-
 // Init Metrics module
 func Init(config *ReporterConfig) {
-	regFunc, ok := registries[config.Protocol]
-	if !ok {
-		regFunc = registries[defaultRegistry] // default
+	if config.Enable {
+		// defalut protocol is already set in metricConfig
+		regFunc, ok := registries[config.Protocol]
+		if ok {
+			registry = regFunc(config)
+			for _, co := range collectors {
+				co(registry, config)
+			}
+			registry.Export()
+		}
 	}
-	registry = regFunc(config)
-	for _, co := range collectors {
-		co(registry, config)
-	}
-	registry.Export()
 }
 
 // SetRegistry extend more MetricRegistry, default PrometheusRegistry
@@ -44,7 +52,7 @@ func SetRegistry(name string, v func(*ReporterConfig) MetricRegistry) {
 	registries[name] = v
 }
 
-// AddCollector add more indicators, like  metadata、sla、configcenter、metadata etc
+// AddCollector add more indicators, like  metadata、sla、configcenter etc
 func AddCollector(name string, fun func(MetricRegistry, *ReporterConfig)) {
 	collectors = append(collectors, fun)
 }
@@ -142,15 +150,13 @@ type StatesMetrics interface {
 	Inc(succ bool)
 }
 
-func NewStatesMetrics(total func() *MetricId, succ func() *MetricId, fail func() *MetricId, reg MetricRegistry) StatesMetrics {
+func NewStatesMetrics(total *MetricId, succ *MetricId, fail *MetricId, reg MetricRegistry) StatesMetrics {
 	return &DefaultStatesMetric{total: total, succ: succ, fail: fail, r: reg}
 }
 
 type DefaultStatesMetric struct {
-	r     MetricRegistry
-	total func() *MetricId
-	succ  func() *MetricId
-	fail  func() *MetricId
+	r                 MetricRegistry
+	total, succ, fail *MetricId
 }
 
 func (c DefaultStatesMetric) Inc(succ bool) {
@@ -161,32 +167,73 @@ func (c DefaultStatesMetric) Inc(succ bool) {
 	}
 }
 func (c DefaultStatesMetric) Success() {
-	c.r.Counter(c.total()).Inc()
-	c.r.Counter(c.succ()).Inc()
+	c.r.Counter(c.total).Inc()
+	c.r.Counter(c.succ).Inc()
 }
 
 func (c DefaultStatesMetric) AddSuccess(v float64) {
-	c.r.Counter(c.total()).Add(v)
-	c.r.Counter(c.succ()).Add(v)
+	c.r.Counter(c.total).Add(v)
+	c.r.Counter(c.succ).Add(v)
 }
 
 func (c DefaultStatesMetric) Fail() {
-	c.r.Counter(c.total()).Inc()
-	c.r.Counter(c.fail()).Inc()
+	c.r.Counter(c.total).Inc()
+	c.r.Counter(c.fail).Inc()
 }
 
 func (c DefaultStatesMetric) AddFailed(v float64) {
-	c.r.Counter(c.total()).Add(v)
-	c.r.Counter(c.fail()).Add(v)
+	c.r.Counter(c.total).Add(v)
+	c.r.Counter(c.fail).Add(v)
 }
 
-// TimeMetrics muliti metrics, include min(Gauge)、max(Gauge)、avg(Gauge)、sum(Gauge)、last(Gauge)，call MetricRegistry to expose
+// TimeMetric muliti metrics, include min(Gauge)、max(Gauge)、avg(Gauge)、sum(Gauge)、last(Gauge)，call MetricRegistry to expose
 // see dubbo-java org.apache.dubbo.metrics.aggregate.TimeWindowAggregator
-type TimeMetrics interface {
+type TimeMetric interface {
 	Record(float64)
 }
 
-// NewTimeMetrics init and write all data to registry
-func NewTimeMetrics(name string, l MetricLevel) {
+const (
+	defaultBucketNum         = 10
+	defalutTimeWindowSeconds = 120
+)
 
+// NewTimeMetric init and write all data to registry
+func NewTimeMetric(min, max, avg, sum, last *MetricId, mr MetricRegistry) TimeMetric {
+	return &DefaultTimeMetric{r: mr, min: min, max: max, avg: avg, sum: sum, last: last,
+		agg: aggregate.NewTimeWindowAggregator(defaultBucketNum, defalutTimeWindowSeconds)}
+}
+
+type DefaultTimeMetric struct {
+	r                        MetricRegistry
+	agg                      *aggregate.TimeWindowAggregator
+	min, max, avg, sum, last *MetricId
+}
+
+func (m *DefaultTimeMetric) Record(v float64) {
+	m.agg.Add(v)
+	result := m.agg.Result()
+	m.r.Gauge(m.max).Set(result.Max)
+	m.r.Gauge(m.min).Set(result.Min)
+	m.r.Gauge(m.avg).Set(result.Avg)
+	m.r.Gauge(m.sum).Set(result.Total)
+	m.r.Gauge(m.last).Set(v)
+}
+
+// cache if needed,  TimeMetrics must cached
+var metricsCache map[string]interface{} = make(map[string]interface{})
+var metricsCacheMutex sync.RWMutex
+
+func ComputeIfAbsentCache(key string, supplier func() interface{}) interface{} {
+	metricsCacheMutex.RLock()
+	v, ok := metricsCache[key]
+	metricsCacheMutex.RUnlock()
+	if ok {
+		return v
+	} else {
+		metricsCacheMutex.Lock()
+		defer metricsCacheMutex.Unlock()
+		n := supplier()
+		metricsCache[key] = n
+		return n
+	}
 }
