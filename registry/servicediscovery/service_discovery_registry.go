@@ -21,6 +21,7 @@ import (
 	"bytes"
 	"strings"
 	"sync"
+	"time"
 )
 
 import (
@@ -39,6 +40,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
 	"dubbo.apache.org/dubbo-go/v3/metadata/service"
 	"dubbo.apache.org/dubbo-go/v3/metadata/service/local"
+	"dubbo.apache.org/dubbo-go/v3/metrics"
+	metricMetadata "dubbo.apache.org/dubbo-go/v3/metrics/metadata"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	_ "dubbo.apache.org/dubbo-go/v3/registry/event"
 	"dubbo.apache.org/dubbo-go/v3/registry/servicediscovery/synthesizer"
@@ -244,7 +247,12 @@ func (s *ServiceDiscoveryRegistry) SubscribeURL(url *common.URL, notify registry
 	}
 	s.serviceListeners[serviceNamesKey] = listener
 	listener.AddListenerAndNotify(protocolServiceKey, notify)
+	event := metricMetadata.NewMetadataMetricTimeEvent(metricMetadata.SubscribeServiceRt)
 	err = s.serviceDiscovery.AddListener(listener)
+	event.Succ = err != nil
+	event.End = time.Now()
+	event.Attachment[constant.InterfaceKey] = url.Interface()
+	metrics.Publish(event)
 	if err != nil {
 		logger.Errorf("add instance listener catch error,url:%s err:%s", url.String(), err.Error())
 	}

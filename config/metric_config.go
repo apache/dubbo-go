@@ -56,6 +56,7 @@ func (mc *MetricConfig) ToReporterConfig() *metrics.ReporterConfig {
 	defaultMetricsReportConfig.Path = mc.Path
 	defaultMetricsReportConfig.PushGatewayAddress = mc.PushGatewayAddress
 	defaultMetricsReportConfig.SummaryMaxAge = mc.SummaryMaxAge
+	defaultMetricsReportConfig.Protocol = mc.Protocol
 	return defaultMetricsReportConfig
 }
 

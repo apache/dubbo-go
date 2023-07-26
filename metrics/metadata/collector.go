@@ -53,6 +53,8 @@ func (c *MetadataMetricCollector) start() {
 					c.handleMetadataPush(event)
 				case MetadataSub:
 					c.handleMetadataSub(event)
+				case SubscribeServiceRt:
+					c.handleSubscribeService(event)
 				default:
 				}
 			}
@@ -61,31 +63,59 @@ func (c *MetadataMetricCollector) start() {
 }
 
 func (c *MetadataMetricCollector) handleMetadataPush(event *MetadataMetricEvent) {
-	m := newStatesMetricFunc(metadataPushNum, metadataPushNumSucceed, metadataPushNumFailed, metrics.GetApplicationLevel(), c.r)
+	m := metrics.ComputeIfAbsentCache(dubboMetadataPush, func() interface{} {
+		return newStatesMetricFunc(metadataPushNum, metadataPushNumSucceed, metadataPushNumFailed, metrics.GetApplicationLevel(), c.r)
+	}).(metrics.StatesMetrics)
 	m.Inc(event.Succ)
-	// TODO add RT metric dubbo_push_rt_milliseconds
+	metric := metrics.ComputeIfAbsentCache(dubboPushRt, func() interface{} {
+		return newTimeMetrics(pushRtMin, pushRtMax, pushRtAvg, pushRtSum, pushRtLast, metrics.GetApplicationLevel(), c.r)
+	}).(metrics.TimeMetric)
+	metric.Record(event.CostMs())
 }
 
 func (c *MetadataMetricCollector) handleMetadataSub(event *MetadataMetricEvent) {
-	m := newStatesMetricFunc(metadataSubNum, metadataSubNumSucceed, metadataSubNumFailed, metrics.GetApplicationLevel(), c.r)
+	m := metrics.ComputeIfAbsentCache(dubboMetadataSubscribe, func() interface{} {
+		return newStatesMetricFunc(metadataSubNum, metadataSubNumSucceed, metadataSubNumFailed, metrics.GetApplicationLevel(), c.r)
+	}).(metrics.StatesMetrics)
 	m.Inc(event.Succ)
-	// TODO add RT metric dubbo_subscribe_rt_milliseconds
+	metric := metrics.ComputeIfAbsentCache(dubboSubscribeRt, func() interface{} {
+		return newTimeMetrics(subscribeRtMin, subscribeRtMax, subscribeRtAvg, subscribeRtSum, subscribeRtLast, metrics.GetApplicationLevel(), c.r)
+	}).(metrics.TimeMetric)
+	metric.Record(event.CostMs())
 }
 
 func (c *MetadataMetricCollector) handleStoreProvider(event *MetadataMetricEvent) {
-	level := metrics.NewServiceMetric(event.Attachment[constant.InterfaceKey])
-	m := newStatesMetricFunc(metadataStoreProvider, metadataStoreProviderSucceed, metadataStoreProviderFailed, level, c.r)
+	interfaceName := event.Attachment[constant.InterfaceKey]
+	m := metrics.ComputeIfAbsentCache(dubboMetadataStoreProvider+":"+interfaceName, func() interface{} {
+		return newStatesMetricFunc(metadataStoreProvider, metadataStoreProviderSucceed, metadataStoreProviderFailed,
+			metrics.NewServiceMetric(interfaceName), c.r)
+	}).(metrics.StatesMetrics)
 	m.Inc(event.Succ)
-	// TODO add RT metric dubbo_store_provider_interface_rt_milliseconds
+	metric := metrics.ComputeIfAbsentCache(dubboStoreProviderInterfaceRt+":"+interfaceName, func() interface{} {
+		return newTimeMetrics(storeProviderInterfaceRtMin, storeProviderInterfaceRtMax, storeProviderInterfaceRtAvg,
+			storeProviderInterfaceRtSum, storeProviderInterfaceRtLast, metrics.NewServiceMetric(interfaceName), c.r)
+	}).(metrics.TimeMetric)
+	metric.Record(event.CostMs())
 }
 
-func newStatesMetricFunc(total *metrics.MetricKey, succ *metrics.MetricKey, fail *metrics.MetricKey, level metrics.MetricLevel, reg metrics.MetricRegistry) metrics.StatesMetrics {
-	return metrics.NewStatesMetrics(
-		func() *metrics.MetricId { return metrics.NewMetricId(total, level) },
-		func() *metrics.MetricId { return metrics.NewMetricId(succ, level) },
-		func() *metrics.MetricId { return metrics.NewMetricId(fail, level) },
-		reg,
-	)
+func (c *MetadataMetricCollector) handleSubscribeService(event *MetadataMetricEvent) {
+	interfaceName := event.Attachment[constant.InterfaceKey]
+	metric := metrics.ComputeIfAbsentCache(dubboSubscribeServiceRt+":"+interfaceName, func() interface{} {
+		return newTimeMetrics(subscribeServiceRtMin, subscribeServiceRtMax, subscribeServiceRtAvg, subscribeServiceRtSum,
+			subscribeServiceRtLast, metrics.NewServiceMetric(interfaceName), c.r)
+	}).(metrics.TimeMetric)
+	metric.Record(event.CostMs())
+}
+
+func newStatesMetricFunc(total *metrics.MetricKey, succ *metrics.MetricKey, fail *metrics.MetricKey,
+	level metrics.MetricLevel, reg metrics.MetricRegistry) metrics.StatesMetrics {
+	return metrics.NewStatesMetrics(metrics.NewMetricId(total, level), metrics.NewMetricId(succ, level),
+		metrics.NewMetricId(fail, level), reg)
+}
+
+func newTimeMetrics(min, max, avg, sum, last *metrics.MetricKey, level metrics.MetricLevel, mr metrics.MetricRegistry) metrics.TimeMetric {
+	return metrics.NewTimeMetric(metrics.NewMetricId(min, level), metrics.NewMetricId(max, level), metrics.NewMetricId(avg, level),
+		metrics.NewMetricId(sum, level), metrics.NewMetricId(last, level), mr)
 }
 
 type MetadataMetricEvent struct {
@@ -105,5 +135,5 @@ func (e *MetadataMetricEvent) CostMs() float64 {
 }
 
 func NewMetadataMetricTimeEvent(n MetricName) *MetadataMetricEvent {
-	return &MetadataMetricEvent{Name: n, Start: time.Now()}
+	return &MetadataMetricEvent{Name: n, Start: time.Now(), Attachment: make(map[string]string)}
 }

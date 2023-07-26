@@ -42,7 +42,6 @@ func (r *PubMetricEventReport) StoreProviderMetadata(i *identifier.MetadataIdent
 	err := r.MetadataReport.StoreProviderMetadata(i, s)
 	event.Succ = err == nil
 	event.End = time.Now()
-	event.Attachment = make(map[string]string)
 	event.Attachment[constant.InterfaceKey] = i.ServiceInterface
 	metrics.Publish(event)
 	return err
