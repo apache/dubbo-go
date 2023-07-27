@@ -22,6 +22,7 @@ import (
 	"net/url"
 	"os"
 	"sync"
+	"time"
 )
 
 import (
@@ -41,6 +42,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	_ "dubbo.apache.org/dubbo-go/v3/config_center/configurator"
+	"dubbo.apache.org/dubbo-go/v3/metrics"
+	metricsRegistry "dubbo.apache.org/dubbo-go/v3/metrics/registry"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
 	"dubbo.apache.org/dubbo-go/v3/registry"
@@ -97,7 +100,7 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry) (director
 	if err := dir.registry.LoadSubscribeInstances(url.SubURL, dir); err != nil {
 		return nil, err
 	}
-
+	metrics.Publish(metricsRegistry.NewDirectoryEvent(metricsRegistry.NumAllInc))
 	return dir, nil
 }
 
@@ -114,7 +117,9 @@ func (dir *RegistryDirectory) Notify(event *registry.ServiceEvent) {
 	if event == nil {
 		return
 	}
+	start := time.Now()
 	dir.refreshInvokers(event)
+	metrics.Publish(metricsRegistry.NewNotifyEvent(start))
 }
 
 // NotifyAll notify the events that are complete Service Event List.
@@ -430,7 +435,7 @@ func (dir *RegistryDirectory) IsAvailable() bool {
 			return true
 		}
 	}
-
+	metrics.Publish(metricsRegistry.NewDirectoryEvent(metricsRegistry.NumToReconnectTotal))
 	return false
 }
 
@@ -444,6 +449,7 @@ func (dir *RegistryDirectory) Destroy() {
 			ivk.Destroy()
 		}
 	})
+	metrics.Publish(metricsRegistry.NewDirectoryEvent(metricsRegistry.NumAllDec))
 }
 
 func (dir *RegistryDirectory) overrideUrl(targetUrl *common.URL) {

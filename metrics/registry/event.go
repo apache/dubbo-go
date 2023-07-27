@@ -18,34 +18,73 @@
 package registry
 
 import (
+	"time"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/metrics"
 )
 
 type RegistryMetricsEvent struct {
-	//Contains some information, such as time, success, failure
-
-	// PostType MetricKey
-	// FinishType MetricKey
-	// ErrorType MetricKey
-	// Level MetricsLevel
-
-	// Time
-	// Start time.time
-	// End time.time
+	Name       MetricName
+	Succ       bool
+	Start      time.Time
+	End        time.Time
+	Attachment map[string]string
 }
 
 func (r RegistryMetricsEvent) Type() string {
 	return constant.MetricsRegistry
 }
 
-// NewRegistryEvent
+func (r *RegistryMetricsEvent) CostMs() float64 {
+	return float64(r.End.Sub(r.Start)) / float64(time.Millisecond)
+}
 
-// NewSubscribeEvent
+func NewRegisterEvent(succ bool, start time.Time) metrics.MetricsEvent {
+	return &RegistryMetricsEvent{
+		Name:  Reg,
+		Succ:  succ,
+		Start: start,
+		End:   time.Now(),
+	}
+}
 
-// NewNotifyEvent
+func NewSubscribeEvent(succ bool) metrics.MetricsEvent {
+	return &RegistryMetricsEvent{
+		Name: Sub,
+		Succ: succ,
+	}
+}
 
-// NewDirectoryEvent
+func NewNotifyEvent(start time.Time) metrics.MetricsEvent {
+	return &RegistryMetricsEvent{
+		Name:  Notify,
+		Start: start,
+		End:   time.Now(),
+	}
+}
 
-// NewServerRegistryEvent
+func NewDirectoryEvent(dirTyp string) metrics.MetricsEvent {
+	return &RegistryMetricsEvent{
+		Name:       Directory,
+		Attachment: map[string]string{"DirTyp": dirTyp},
+	}
+}
 
-// NewServerSubscribeEvent
+func NewServerRegisterEvent(succ bool, start time.Time) metrics.MetricsEvent {
+	return &RegistryMetricsEvent{
+		Name:  ServerReg,
+		Succ:  succ,
+		Start: start,
+		End:   time.Now(),
+	}
+}
+
+func NewServerSubscribeEvent(succ bool) metrics.MetricsEvent {
+	return &RegistryMetricsEvent{
+		Name: ServerSub,
+		Succ: succ,
+	}
+}

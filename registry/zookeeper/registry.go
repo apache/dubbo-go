@@ -38,6 +38,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/metrics"
+	metricsRegistry "dubbo.apache.org/dubbo-go/v3/metrics/registry"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/remoting/zookeeper"
 )
@@ -153,7 +155,10 @@ func (r *zkRegistry) CreatePath(path string) error {
 
 // DoRegister actually do the register job in the registry center of zookeeper
 func (r *zkRegistry) DoRegister(root string, node string) error {
-	return r.registerTempZookeeperNode(root, node)
+	start := time.Now()
+	err := r.registerTempZookeeperNode(root, node)
+	metrics.Publish(metricsRegistry.NewRegisterEvent(err == nil, start))
+	return err
 }
 
 func (r *zkRegistry) DoUnregister(root string, node string) error {
@@ -167,7 +172,9 @@ func (r *zkRegistry) DoUnregister(root string, node string) error {
 
 // DoSubscribe actually subscribes the provider URL
 func (r *zkRegistry) DoSubscribe(conf *common.URL) (registry.Listener, error) {
-	return r.getListener(conf)
+	listener, err := r.getListener(conf)
+	metrics.Publish(metricsRegistry.NewSubscribeEvent(err == nil))
+	return listener, err
 }
 
 func (r *zkRegistry) DoUnsubscribe(conf *common.URL) (registry.Listener, error) {

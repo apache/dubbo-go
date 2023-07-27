@@ -42,6 +42,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/metadata/service/local"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 	metricMetadata "dubbo.apache.org/dubbo-go/v3/metrics/metadata"
+	metricsRegistry "dubbo.apache.org/dubbo-go/v3/metrics/registry"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	_ "dubbo.apache.org/dubbo-go/v3/registry/event"
 	"dubbo.apache.org/dubbo-go/v3/registry/servicediscovery/synthesizer"
@@ -178,7 +179,10 @@ func (s *ServiceDiscoveryRegistry) Register(url *common.URL) error {
 		return nil
 	}
 	common.HandleRegisterIPAndPort(url)
+
+	start := time.Now()
 	ok, err := s.metaDataService.ExportURL(url)
+	metrics.Publish(metricsRegistry.NewServerRegisterEvent(ok && err == nil, start))
 
 	if err != nil {
 		logger.Errorf("The URL[%s] registry catch error:%s!", url.String(), err.Error())
@@ -253,6 +257,7 @@ func (s *ServiceDiscoveryRegistry) SubscribeURL(url *common.URL, notify registry
 	event.End = time.Now()
 	event.Attachment[constant.InterfaceKey] = url.Interface()
 	metrics.Publish(event)
+	metrics.Publish(metricsRegistry.NewServerSubscribeEvent(err == nil))
 	if err != nil {
 		logger.Errorf("add instance listener catch error,url:%s err:%s", url.String(), err.Error())
 	}
