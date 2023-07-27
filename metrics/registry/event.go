@@ -26,6 +26,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 )
 
+// RegistryMetricsEvent contains info about registration indicators
 type RegistryMetricsEvent struct {
 	Name       MetricName
 	Succ       bool
@@ -42,6 +43,7 @@ func (r *RegistryMetricsEvent) CostMs() float64 {
 	return float64(r.End.Sub(r.Start)) / float64(time.Millisecond)
 }
 
+// NewRegisterEvent for register metrics
 func NewRegisterEvent(succ bool, start time.Time) metrics.MetricsEvent {
 	return &RegistryMetricsEvent{
 		Name:  Reg,
@@ -51,6 +53,7 @@ func NewRegisterEvent(succ bool, start time.Time) metrics.MetricsEvent {
 	}
 }
 
+// NewSubscribeEvent for subscribe metrics
 func NewSubscribeEvent(succ bool) metrics.MetricsEvent {
 	return &RegistryMetricsEvent{
 		Name: Sub,
@@ -58,6 +61,7 @@ func NewSubscribeEvent(succ bool) metrics.MetricsEvent {
 	}
 }
 
+// NewNotifyEvent for notify metrics
 func NewNotifyEvent(start time.Time) metrics.MetricsEvent {
 	return &RegistryMetricsEvent{
 		Name:  Notify,
@@ -66,6 +70,7 @@ func NewNotifyEvent(start time.Time) metrics.MetricsEvent {
 	}
 }
 
+// NewDirectoryEvent for directory metrics
 func NewDirectoryEvent(dirTyp string) metrics.MetricsEvent {
 	return &RegistryMetricsEvent{
 		Name:       Directory,
@@ -73,6 +78,7 @@ func NewDirectoryEvent(dirTyp string) metrics.MetricsEvent {
 	}
 }
 
+// NewServerRegisterEvent for server register metrics
 func NewServerRegisterEvent(succ bool, start time.Time) metrics.MetricsEvent {
 	return &RegistryMetricsEvent{
 		Name:  ServerReg,
@@ -82,6 +88,7 @@ func NewServerRegisterEvent(succ bool, start time.Time) metrics.MetricsEvent {
 	}
 }
 
+// NewServerSubscribeEvent for server subscribe metrics
 func NewServerSubscribeEvent(succ bool) metrics.MetricsEvent {
 	return &RegistryMetricsEvent{
 		Name: ServerSub,

@@ -41,6 +41,7 @@ func init() {
 	go rc.start()
 }
 
+// registryCollector is the registry's metrics collector
 type registryCollector struct {
 	regRegistry metrics.MetricRegistry
 }
@@ -76,6 +77,7 @@ func newTimeMetrics(min, max, avg, sum, last *metrics.MetricKey, level metrics.M
 		metrics.NewMetricId(sum, level), metrics.NewMetricId(last, level), mr)
 }
 
+// regHandler handles register metrics
 func (rc *registryCollector) regHandler(event *RegistryMetricsEvent) {
 	// Event is converted to metrics
 	// Save metrics to the MetricRegistry
@@ -89,6 +91,7 @@ func (rc *registryCollector) regHandler(event *RegistryMetricsEvent) {
 	metric.Record(event.CostMs())
 }
 
+// subHandler handles subscribe metrics
 func (rc *registryCollector) subHandler(event *RegistryMetricsEvent) {
 	// Event is converted to metrics
 	// Save metrics to the MetricRegistry
@@ -96,6 +99,7 @@ func (rc *registryCollector) subHandler(event *RegistryMetricsEvent) {
 	m.Inc(event.Succ)
 }
 
+// notifyHandler handles notify metrics
 func (rc *registryCollector) notifyHandler(event *RegistryMetricsEvent) {
 	// Event is converted to metrics
 	// Save metrics to the MetricRegistry
@@ -107,6 +111,7 @@ func (rc *registryCollector) notifyHandler(event *RegistryMetricsEvent) {
 	metric.Record(event.CostMs())
 }
 
+// directoryHandler handles directory metrics
 func (rc *registryCollector) directoryHandler(event *RegistryMetricsEvent) {
 	// Event is converted to metrics
 	// Save metrics to the MetricRegistry
@@ -128,6 +133,7 @@ func (rc *registryCollector) directoryHandler(event *RegistryMetricsEvent) {
 
 }
 
+// serverRegHandler handles server register metrics
 func (rc *registryCollector) serverRegHandler(event *RegistryMetricsEvent) {
 	// Event is converted to metrics
 	// Save metrics to the MetricRegistry
@@ -141,6 +147,7 @@ func (rc *registryCollector) serverRegHandler(event *RegistryMetricsEvent) {
 	metric.Record(event.CostMs())
 }
 
+// serverSubHandler handles server subscribe metrics
 func (rc *registryCollector) serverSubHandler(event *RegistryMetricsEvent) {
 	// Event is converted to metrics
 	// Save metrics to the MetricRegistry
