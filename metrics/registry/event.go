@@ -26,7 +26,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 )
 
-// RegistryMetricsEvent contains info about registration indicators
+// RegistryMetricsEvent contains info about register metrics
 type RegistryMetricsEvent struct {
 	Name       MetricName
 	Succ       bool
