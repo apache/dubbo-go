@@ -341,6 +341,7 @@ func (dir *RegistryDirectory) uncacheInvokerWithClusterID(clusterID string) []pr
 
 // uncacheInvoker will return abandoned Invoker, if no Invoker to be abandoned, return nil
 func (dir *RegistryDirectory) uncacheInvoker(event *registry.ServiceEvent) []protocol.Invoker {
+	defer metrics.Publish(metricsRegistry.NewDirectoryEvent(metricsRegistry.NumDisableTotal))
 	if clusterID := event.Service.GetParam(constant.MeshClusterIDKey, ""); event.Service.Location == constant.MeshAnyAddrMatcher && clusterID != "" {
 		dir.uncacheInvokerWithClusterID(clusterID)
 	}
@@ -394,6 +395,7 @@ func (dir *RegistryDirectory) doCacheInvoker(newUrl *common.URL, event *registry
 			logger.Warnf("service will be added in cache invokers fail, result is null, invokers url is %+v", newUrl.String())
 		}
 	} else {
+		metrics.Publish(metricsRegistry.NewDirectoryEvent(metricsRegistry.NumValidTotal))
 		// if cached invoker has the same URL with the new URL, then no need to re-refer, and no need to destroy
 		// the old invoker.
 		if common.GetCompareURLEqualFunc()(newUrl, cacheInvoker.(protocol.Invoker).GetURL()) {
