@@ -60,7 +60,7 @@ var (
 	SubscribeMetricNumFailed  = metrics.NewMetricKey("dubbo_registry_subscribe_num_failed_total", "Failed Subscribe Num")
 
 	// directory metrics key
-	DirectoryMetricNumAll         = metrics.NewMetricKey("dubbo_registry_directory_num.all", "All Directory Urls")
+	DirectoryMetricNumAll         = metrics.NewMetricKey("dubbo_registry_directory_num_all", "All Directory Urls")
 	DirectoryMetricNumValid       = metrics.NewMetricKey("dubbo_registry_directory_num_valid_total", "Valid Directory Urls")
 	DirectoryMetricNumToReconnect = metrics.NewMetricKey("dubbo_registry_directory_num_to_reconnect_total", "ToReconnect Directory Urls")
 	DirectoryMetricNumDisable     = metrics.NewMetricKey("dubbo_registry_directory_num_disable_total", "Disable Directory Urls")
