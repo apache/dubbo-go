@@ -18,34 +18,80 @@
 package registry
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"time"
 )
 
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/metrics"
+)
+
+// RegistryMetricsEvent contains info about register metrics
 type RegistryMetricsEvent struct {
-	//Contains some information, such as time, success, failure
-
-	// PostType MetricKey
-	// FinishType MetricKey
-	// ErrorType MetricKey
-	// Level MetricsLevel
-
-	// Time
-	// Start time.time
-	// End time.time
+	Name       MetricName
+	Succ       bool
+	Start      time.Time
+	End        time.Time
+	Attachment map[string]string
 }
 
 func (r RegistryMetricsEvent) Type() string {
 	return constant.MetricsRegistry
 }
 
-// NewRegistryEvent
+func (r *RegistryMetricsEvent) CostMs() float64 {
+	return float64(r.End.Sub(r.Start)) / float64(time.Millisecond)
+}
 
-// NewSubscribeEvent
+// NewRegisterEvent for register metrics
+func NewRegisterEvent(succ bool, start time.Time) metrics.MetricsEvent {
+	return &RegistryMetricsEvent{
+		Name:  Reg,
+		Succ:  succ,
+		Start: start,
+		End:   time.Now(),
+	}
+}
 
-// NewNotifyEvent
+// NewSubscribeEvent for subscribe metrics
+func NewSubscribeEvent(succ bool) metrics.MetricsEvent {
+	return &RegistryMetricsEvent{
+		Name: Sub,
+		Succ: succ,
+	}
+}
 
-// NewDirectoryEvent
+// NewNotifyEvent for notify metrics
+func NewNotifyEvent(start time.Time) metrics.MetricsEvent {
+	return &RegistryMetricsEvent{
+		Name:  Notify,
+		Start: start,
+		End:   time.Now(),
+	}
+}
 
-// NewServerRegistryEvent
+// NewDirectoryEvent for directory metrics
+func NewDirectoryEvent(dirTyp string) metrics.MetricsEvent {
+	return &RegistryMetricsEvent{
+		Name:       Directory,
+		Attachment: map[string]string{"DirTyp": dirTyp},
+	}
+}
 
-// NewServerSubscribeEvent
+// NewServerRegisterEvent for server register metrics
+func NewServerRegisterEvent(succ bool, start time.Time) metrics.MetricsEvent {
+	return &RegistryMetricsEvent{
+		Name:  ServerReg,
+		Succ:  succ,
+		Start: start,
+		End:   time.Now(),
+	}
+}
+
+// NewServerSubscribeEvent for server subscribe metrics
+func NewServerSubscribeEvent(succ bool) metrics.MetricsEvent {
+	return &RegistryMetricsEvent{
+		Name: ServerSub,
+		Succ: succ,
+	}
+}
