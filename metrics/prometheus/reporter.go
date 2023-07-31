@@ -116,7 +116,7 @@ func (reporter *PrometheusReporter) ReportBeforeInvocation(ctx context.Context, 
 		return
 	}
 	labels := buildLabels(url)
-
+	reporter.incQpsTotal(role, &labels)
 	reporter.incRequestsProcessingTotal(role, &labels)
 }
 
@@ -142,12 +142,23 @@ func (reporter *PrometheusReporter) ReportAfterInvocation(ctx context.Context, i
 	}
 }
 
+func (reporter *PrometheusReporter) incQpsTotal(role string, labels *prometheus.Labels) {
+	switch role {
+	case providerField:
+		reporter.provider.qpsTotal.updateQps(labels)
+	case consumerField:
+		reporter.consumer.qpsTotal.updateQps(labels)
+	}
+}
+
 func (reporter *PrometheusReporter) incRequestsTotal(role string, labels *prometheus.Labels) {
 	switch role {
 	case providerField:
 		reporter.provider.requestsTotal.With(*labels).Inc()
+		reporter.provider.requestsTotalAggregate.inc(labels)
 	case consumerField:
 		reporter.consumer.requestsTotal.With(*labels).Inc()
+		reporter.consumer.requestsTotalAggregate.inc(labels)
 	}
 }
 
@@ -173,8 +184,10 @@ func (reporter *PrometheusReporter) incRequestsSucceedTotal(role string, labels 
 	switch role {
 	case providerField:
 		reporter.provider.requestsSucceedTotal.With(*labels).Inc()
+		reporter.provider.requestsSucceedTotalAggregate.inc(labels)
 	case consumerField:
 		reporter.consumer.requestsSucceedTotal.With(*labels).Inc()
+		reporter.consumer.requestsSucceedTotalAggregate.inc(labels)
 	}
 }
 
@@ -187,6 +200,7 @@ func (reporter *PrometheusReporter) reportRTMilliseconds(role string, labels *pr
 		go reporter.provider.rtMillisecondsMax.updateMax(labels, costMs)
 		go reporter.provider.rtMillisecondsAvg.updateAvg(labels, costMs)
 		go reporter.provider.rtMillisecondsQuantiles.updateQuantile(labels, costMs)
+		go reporter.provider.rtMillisecondsAggregate.update(labels, costMs)
 	case consumerField:
 		go reporter.consumer.rtMillisecondsLast.With(*labels).Set(float64(costMs))
 		go reporter.consumer.rtMillisecondsSum.With(*labels).Add(float64(costMs))
@@ -194,5 +208,6 @@ func (reporter *PrometheusReporter) reportRTMilliseconds(role string, labels *pr
 		go reporter.consumer.rtMillisecondsMax.updateMax(labels, costMs)
 		go reporter.consumer.rtMillisecondsAvg.updateAvg(labels, costMs)
 		go reporter.consumer.rtMillisecondsQuantiles.updateQuantile(labels, costMs)
+		go reporter.consumer.rtMillisecondsAggregate.update(labels, costMs)
 	}
 }
