@@ -298,3 +298,92 @@ func (gv *quantileGaugeVec) updateQuantile(labels *prometheus.Labels, curValue i
 		updateFunc(cur)
 	}
 }
+
+type qpsGaugeVec struct {
+	gaugeVec *prometheus.GaugeVec
+	syncMap  *sync.Map // key: labels string, value: TimeWindowCounter
+}
+
+func newQpsGaugeVec(name, namespace string, labels []string) *qpsGaugeVec {
+	return &qpsGaugeVec{
+		gaugeVec: newAutoGaugeVec(name, namespace, labels),
+		syncMap:  &sync.Map{},
+	}
+}
+
+func (gv *qpsGaugeVec) updateQps(labels *prometheus.Labels) {
+	key := convertLabelsToMapKey(*labels)
+	cur := aggregate.NewTimeWindowCounter(10, 120)
+	cur.Inc()
+
+	if actual, loaded := gv.syncMap.LoadOrStore(key, cur); loaded {
+		store := actual.(*aggregate.TimeWindowCounter)
+		store.Inc()
+		gv.gaugeVec.With(*labels).Set(store.Count() / float64(store.LivedSeconds()))
+	} else {
+		gv.gaugeVec.With(*labels).Set(cur.Count() / float64(cur.LivedSeconds()))
+	}
+}
+
+type aggregateCounterGaugeVec struct {
+	gaugeVec *prometheus.GaugeVec
+	syncMap  *sync.Map // key: labels string, value: TimeWindowCounter
+}
+
+func newAggregateCounterGaugeVec(name, namespace string, labels []string) *aggregateCounterGaugeVec {
+	return &aggregateCounterGaugeVec{
+		gaugeVec: newAutoGaugeVec(name, namespace, labels),
+		syncMap:  &sync.Map{},
+	}
+}
+
+func (gv *aggregateCounterGaugeVec) inc(labels *prometheus.Labels) {
+	key := convertLabelsToMapKey(*labels)
+	cur := aggregate.NewTimeWindowCounter(10, 120)
+	cur.Inc()
+
+	if actual, loaded := gv.syncMap.LoadOrStore(key, cur); loaded {
+		store := actual.(*aggregate.TimeWindowCounter)
+		store.Inc()
+		gv.gaugeVec.With(*labels).Set(store.Count())
+	} else {
+		gv.gaugeVec.With(*labels).Set(cur.Count())
+	}
+}
+
+type aggregateFunctionsGaugeVec struct {
+	min     *prometheus.GaugeVec
+	max     *prometheus.GaugeVec
+	avg     *prometheus.GaugeVec
+	syncMap *sync.Map // key: labels string, value: TimeWindowAggregator
+}
+
+func newAggregateFunctionsGaugeVec(minName, maxName, avgName, namespace string, labels []string) *aggregateFunctionsGaugeVec {
+	return &aggregateFunctionsGaugeVec{
+		min:     newAutoGaugeVec(minName, namespace, labels),
+		max:     newAutoGaugeVec(maxName, namespace, labels),
+		avg:     newAutoGaugeVec(avgName, namespace, labels),
+		syncMap: &sync.Map{},
+	}
+}
+
+func (gv *aggregateFunctionsGaugeVec) update(labels *prometheus.Labels, curValue int64) {
+	key := convertLabelsToMapKey(*labels)
+	cur := aggregate.NewTimeWindowAggregator(10, 120)
+	cur.Add(float64(curValue))
+
+	updateFunc := func(aggregator *aggregate.TimeWindowAggregator) {
+		result := aggregator.Result()
+		gv.min.With(*labels).Set(result.Min)
+		gv.max.With(*labels).Set(result.Max)
+		gv.avg.With(*labels).Set(result.Avg)
+	}
+
+	if actual, loaded := gv.syncMap.LoadOrStore(key, cur); loaded {
+		store := actual.(*aggregate.TimeWindowAggregator)
+		store.Add(float64(curValue))
+		updateFunc(store)
+	} else {
+		updateFunc(cur)
+	}
+}

@@ -43,15 +43,19 @@ func (ms *metricSet) init(reporterConfig *metrics.ReporterConfig) {
 }
 
 type rpcCommonMetrics struct {
-	requestsTotal           *prometheus.CounterVec
-	requestsProcessingTotal *prometheus.GaugeVec
-	requestsSucceedTotal    *prometheus.CounterVec
-	rtMillisecondsMin       *GaugeVecWithSyncMap
-	rtMillisecondsMax       *GaugeVecWithSyncMap
-	rtMillisecondsSum       *prometheus.CounterVec
-	rtMillisecondsAvg       *GaugeVecWithSyncMap
-	rtMillisecondsLast      *prometheus.GaugeVec
-	rtMillisecondsQuantiles *quantileGaugeVec
+	qpsTotal                      *qpsGaugeVec
+	requestsTotal                 *prometheus.CounterVec
+	requestsTotalAggregate        *aggregateCounterGaugeVec
+	requestsProcessingTotal       *prometheus.GaugeVec
+	requestsSucceedTotal          *prometheus.CounterVec
+	requestsSucceedTotalAggregate *aggregateCounterGaugeVec
+	rtMillisecondsMin             *GaugeVecWithSyncMap
+	rtMillisecondsMax             *GaugeVecWithSyncMap
+	rtMillisecondsSum             *prometheus.CounterVec
+	rtMillisecondsAvg             *GaugeVecWithSyncMap
+	rtMillisecondsLast            *prometheus.GaugeVec
+	rtMillisecondsQuantiles       *quantileGaugeVec
+	rtMillisecondsAggregate       *aggregateFunctionsGaugeVec
 }
 
 type providerMetrics struct {
@@ -59,15 +63,25 @@ type providerMetrics struct {
 }
 
 func (pm *providerMetrics) init(reporterConfig *metrics.ReporterConfig) {
+	pm.qpsTotal = newQpsGaugeVec(buildMetricsName(providerField, qpsField, totalField), reporterConfig.Namespace, labelNames)
 	pm.requestsTotal = newAutoCounterVec(buildMetricsName(providerField, requestsField, totalField), reporterConfig.Namespace, labelNames)
+	pm.requestsTotalAggregate = newAggregateCounterGaugeVec(buildMetricsName(providerField, requestsField, totalField, aggregateField), reporterConfig.Namespace, labelNames)
 	pm.requestsProcessingTotal = newAutoGaugeVec(buildMetricsName(providerField, requestsField, processingField, totalField), reporterConfig.Namespace, labelNames)
 	pm.requestsSucceedTotal = newAutoCounterVec(buildMetricsName(providerField, requestsField, succeedField, totalField), reporterConfig.Namespace, labelNames)
+	pm.requestsSucceedTotalAggregate = newAggregateCounterGaugeVec(buildMetricsName(providerField, requestsField, succeedField, totalField, aggregateField), reporterConfig.Namespace, labelNames)
 	pm.rtMillisecondsMin = newAutoGaugeVecWithSyncMap(buildMetricsName(providerField, rtField, milliSecondsField, minField), reporterConfig.Namespace, labelNames)
 	pm.rtMillisecondsMax = newAutoGaugeVecWithSyncMap(buildMetricsName(providerField, rtField, milliSecondsField, maxField), reporterConfig.Namespace, labelNames)
 	pm.rtMillisecondsSum = newAutoCounterVec(buildMetricsName(providerField, rtField, milliSecondsField, sumField), reporterConfig.Namespace, labelNames)
 	pm.rtMillisecondsAvg = newAutoGaugeVecWithSyncMap(buildMetricsName(providerField, rtField, milliSecondsField, avgField), reporterConfig.Namespace, labelNames)
 	pm.rtMillisecondsLast = newAutoGaugeVec(buildMetricsName(providerField, rtField, milliSecondsField, lastField), reporterConfig.Namespace, labelNames)
 	pm.rtMillisecondsQuantiles = newQuantileGaugeVec(buildRTQuantilesMetricsNames(providerField, quantiles), reporterConfig.Namespace, labelNames, quantiles)
+	pm.rtMillisecondsAggregate = newAggregateFunctionsGaugeVec(
+		buildMetricsName(providerField, rtField, minField, milliSecondsField, aggregateField),
+		buildMetricsName(providerField, rtField, maxField, milliSecondsField, aggregateField),
+		buildMetricsName(providerField, rtField, avgField, milliSecondsField, aggregateField),
+		reporterConfig.Namespace,
+		labelNames,
+	)
 }
 
 type consumerMetrics struct {
@@ -75,15 +89,25 @@ type consumerMetrics struct {
 }
 
 func (cm *consumerMetrics) init(reporterConfig *metrics.ReporterConfig) {
+	cm.qpsTotal = newQpsGaugeVec(buildMetricsName(consumerField, qpsField, totalField), reporterConfig.Namespace, labelNames)
 	cm.requestsTotal = newAutoCounterVec(buildMetricsName(consumerField, requestsField, totalField), reporterConfig.Namespace, labelNames)
+	cm.requestsTotalAggregate = newAggregateCounterGaugeVec(buildMetricsName(consumerField, requestsField, totalField, aggregateField), reporterConfig.Namespace, labelNames)
 	cm.requestsProcessingTotal = newAutoGaugeVec(buildMetricsName(consumerField, requestsField, processingField, totalField), reporterConfig.Namespace, labelNames)
 	cm.requestsSucceedTotal = newAutoCounterVec(buildMetricsName(consumerField, requestsField, succeedField, totalField), reporterConfig.Namespace, labelNames)
+	cm.requestsSucceedTotalAggregate = newAggregateCounterGaugeVec(buildMetricsName(consumerField, requestsField, succeedField, totalField, aggregateField), reporterConfig.Namespace, labelNames)
 	cm.rtMillisecondsMin = newAutoGaugeVecWithSyncMap(buildMetricsName(consumerField, rtField, milliSecondsField, minField), reporterConfig.Namespace, labelNames)
 	cm.rtMillisecondsMax = newAutoGaugeVecWithSyncMap(buildMetricsName(consumerField, rtField, milliSecondsField, maxField), reporterConfig.Namespace, labelNames)
 	cm.rtMillisecondsSum = newAutoCounterVec(buildMetricsName(consumerField, rtField, milliSecondsField, sumField), reporterConfig.Namespace, labelNames)
 	cm.rtMillisecondsAvg = newAutoGaugeVecWithSyncMap(buildMetricsName(consumerField, rtField, milliSecondsField, avgField), reporterConfig.Namespace, labelNames)
 	cm.rtMillisecondsLast = newAutoGaugeVec(buildMetricsName(consumerField, rtField, milliSecondsField, lastField), reporterConfig.Namespace, labelNames)
 	cm.rtMillisecondsQuantiles = newQuantileGaugeVec(buildRTQuantilesMetricsNames(consumerField, quantiles), reporterConfig.Namespace, labelNames, quantiles)
+	cm.rtMillisecondsAggregate = newAggregateFunctionsGaugeVec(
+		buildMetricsName(consumerField, rtField, minField, milliSecondsField, aggregateField),
+		buildMetricsName(consumerField, rtField, maxField, milliSecondsField, aggregateField),
+		buildMetricsName(consumerField, rtField, avgField, milliSecondsField, aggregateField),
+		reporterConfig.Namespace,
+		labelNames,
+	)
 }
 
 // buildMetricsName builds metrics name split by "_".
