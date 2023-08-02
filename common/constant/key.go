@@ -136,6 +136,11 @@ const (
 	RetryTimesKey                      = "retry.times"
 	CycleReportKey                     = "cycle.report"
 	DefaultBlackListRecoverBlock       = 16
+	ConsumeTypeKey                     = "consume-type"
+	ConsumeUnary                       = "unary"
+	ConsumeClientStream                = "client-stream"
+	ConsumeServerStream                = "server-stream"
+	ConsumeBidiStream                  = "bidi-stream"
 )
 
 const (

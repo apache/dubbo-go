@@ -6,14 +6,12 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
-	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	invocation_impl "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
 	"fmt"
 	"github.com/dubbogo/gost/log/logger"
 	gxstrings "github.com/dubbogo/gost/strings"
-	tripleConstant "github.com/dubbogo/triple/pkg/common/constant"
 	"net/url"
 	"regexp"
 	"strconv"
@@ -22,82 +20,88 @@ import (
 	"time"
 )
 
-type consumer struct {
+type Consumer struct {
 	invokerMap sync.Map
 	opts       *Options
-	rootCfg    *config.RootConfig
-	cfg        *config.ConsumerConfig
 }
 
-func (con *consumer) Consume(ctx context.Context, opts ...ConsumeOption) error {
+func (con *Consumer) consume(ctx context.Context, paramsRawVals []interface{}, interfaceName, methodName, consumeType string, opts ...ConsumeOption) (protocol.Result, error) {
 	// get a default CallOptions
 	// apply CallOption
-	options := con.defConsumeOpts
+	options := newDefaultConsumeOptions()
 	for _, opt := range opts {
 		opt(options)
 	}
-	// todo:// think about a identifier to refer invoker
 
 	var invoker protocol.Invoker
-	val, ok := con.invokerMap.Load("")
+	val, ok := con.invokerMap.Load(interfaceName)
 	if !ok {
-		// create a new invoker and set it to invokerMap
+		return nil, fmt.Errorf("%s interface is not be assembled", interfaceName)
 	}
 	invoker, ok = val.(protocol.Invoker)
 	if !ok {
-		panic("wrong type")
+		panic(fmt.Sprintf("Consumer retrieves %s interface invoker failed", interfaceName))
 	}
-	inv, err := callOptions2Invocation(options)
+	inv, err := generateInvocation(methodName, paramsRawVals, consumeType, options)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	// todo: move timeout into context or invocation
-	res := invoker.Invoke(ctx, inv)
-	// todo: process result and error
+	return invoker.Invoke(ctx, inv), nil
 
 }
 
-func (con *consumer) Assemble(cli interface{}) error {
+func (con *Consumer) ConsumeUnary(ctx context.Context, req, resp interface{}, interfaceName, methodName string, opts ...ConsumeOption) error {
+	res, err := con.consume(ctx, []interface{}{req, resp}, interfaceName, methodName, constant.ConsumeUnary, opts...)
+	if err != nil {
+		return err
+	}
+	return res.Error()
+}
+
+func (con *Consumer) ConsumeClientStream(ctx context.Context, interfaceName, methodName string, opts ...ConsumeOption) (interface{}, error) {
+	res, err := con.consume(ctx, nil, interfaceName, methodName, constant.ConsumeClientStream, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return res.Result(), res.Error()
+}
+
+func (con *Consumer) ConsumeServerStream(ctx context.Context, req interface{}, interfaceName, methodName string, opts ...ConsumeOption) (interface{}, error) {
+	res, err := con.consume(ctx, []interface{}{req}, interfaceName, methodName, constant.ConsumeServerStream, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return res.Result(), res.Error()
+}
+
+func (con *Consumer) ConsumeBidiStream(ctx context.Context, interfaceName, methodName string, opts ...ConsumeOption) (interface{}, error) {
+	res, err := con.consume(ctx, nil, interfaceName, methodName, constant.ConsumeBidiStream, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return res.Result(), res.Error()
+}
+
+func (con *Consumer) Assemble(interfaceName string, methodNames []string, cli interface{}) error {
 	// todo: using ConsumerOptions
 
-	registeredTypeName := ""
 	// todo: move logic from ConsumerConfig.Load to Assemble
 	// todo: move reference config to Consume
-	refConfig, ok := con.cfg.References[registeredTypeName]
-	if !ok {
-		// not found configuration, now new a configuration with default.
-		refConfig = config.NewReferenceConfigBuilder().SetProtocol(tripleConstant.TRIPLE).Build()
-		triplePBService, ok := cli.(common.TriplePBService)
-		if !ok {
-			logger.Errorf("Dubbo-go cannot get interface name with registeredTypeName = %s."+
-				"Please run the command 'go install github.com/dubbogo/dubbogo-cli/cmd/protoc-gen-go-triple@latest' to get the latest "+
-				"protoc-gen-go-triple,  and then re-generate your pb file again by this tool."+
-				"If you are not using pb serialization, please set 'interfaceName' field in reference config to let dubbogo get the interface name.", registeredTypeName)
-			return error()
-		} else {
-			// use interface name defined by pb
-			refConfig.InterfaceName = triplePBService.XXX_InterfaceName()
-		}
-		if err := refConfig.Init(con.rootCfg); err != nil {
-			logger.Errorf(fmt.Sprintf("reference with registeredTypeName = %s init failed! err: %#v", registeredTypeName, err))
-			return err
-		}
-	}
-	// todo: export id
-	con.opts.id = registeredTypeName
-	invoker := con.assemble(cli)
-	con.invokerMap.Store(registeredTypeName, invoker)
+	//con.opts.id = registeredTypeName
+	invoker := con.assemble(cli, interfaceName, methodNames)
+	con.invokerMap.Store(interfaceName, invoker)
 	// todo: add a option to tell Consumer that whether we should inject invocation logic into srv
-	refConfig.Implement(cli)
+	//refConfig.Implement(cli)
 
-	var maxWait int
-
-	if maxWaitDuration, err := time.ParseDuration(con.cfg.MaxWaitTimeForServiceDiscovery); err != nil {
-		logger.Warnf("Invalid consumer max wait time for service discovery: %s, fallback to 3s", con.cfg.MaxWaitTimeForServiceDiscovery)
-		maxWait = 3
-	} else {
-		maxWait = int(maxWaitDuration.Seconds())
-	}
+	//var maxWait int
+	//
+	//if maxWaitDuration, err := time.ParseDuration(con.cfg.MaxWaitTimeForServiceDiscovery); err != nil {
+	//	logger.Warnf("Invalid consumer max wait time for service discovery: %s, fallback to 3s", con.cfg.MaxWaitTimeForServiceDiscovery)
+	//	maxWait = 3
+	//} else {
+	//	maxWait = int(maxWaitDuration.Seconds())
+	//}
 
 	// todo:// just wait for one reference
 
@@ -133,7 +137,7 @@ func (con *consumer) Assemble(cli interface{}) error {
 	return nil
 }
 
-func (con *consumer) assemble(cli interface{}) protocol.Invoker {
+func (con *Consumer) assemble(cli interface{}, interfaceName string, methodNames []string) protocol.Invoker {
 	// todo: move to processing logic
 	// If adaptive service is enabled,
 	// the cluster and load balance should be overridden to "adaptivesvc" and "p2c" respectively.
@@ -144,22 +148,23 @@ func (con *consumer) assemble(cli interface{}) protocol.Invoker {
 
 	// cfgURL is an interface-level invoker url, in the other words, it represents an interface.
 	cfgURL := common.NewURLWithOptions(
-		common.WithPath(con.opts.InterfaceName),
+		common.WithPath(interfaceName),
 		common.WithProtocol(con.opts.Protocol),
-		common.WithParams(con.opts.getURLMap()),
-		common.WithParamsValue(constant.BeanNameKey, con.opts.id),
+		// todo: change from config to string
+		common.WithMethods(methodNames),
+		common.WithParams(getURLMap(interfaceName, con.opts)),
+		common.WithParamsValue(constant.BeanNameKey, interfaceName),
 		common.WithParamsValue(constant.MetadataTypeKey, con.opts.metaDataType),
 	)
 
-	// todo: think about a more efficient way
-	SetConsumerServiceByInterfaceName(con.opts.InterfaceName, cli)
 	if con.opts.ForceTag {
 		cfgURL.AddParam(constant.ForceUseTag, "true")
 	}
-	opts.postProcessConfig(cfgURL)
+	// todo: is there need to process this logic?
+	//opts.postProcessConfig(cfgURL)
 
 	// if mesh-enabled is set
-	updateOrCreateMeshURL(rc)
+	//updateOrCreateMeshURL(rc)
 
 	var urls []*common.URL
 
@@ -187,7 +192,7 @@ func (con *consumer) assemble(cli interface{}) protocol.Invoker {
 				urls = append(urls, serviceURL)
 			} else { // serviceURL in this branch is the target endpoint IP address
 				if serviceURL.Path == "" {
-					serviceURL.Path = "/" + con.opts.InterfaceName
+					serviceURL.Path = "/" + interfaceName
 				}
 				// replace params of serviceURL with params of cfgUrl
 				// other stuff, e.g. IP, port, etc., are same as serviceURL
@@ -198,7 +203,7 @@ func (con *consumer) assemble(cli interface{}) protocol.Invoker {
 		}
 	} else { // use registry configs
 		// todo: move registries of rootConfig to Options
-		urls = loadRegistries(con.opts.RegistryIDs, opts.rootConfig.Registries, common.CONSUMER)
+		urls = loadRegistries(con.opts.RegistryIDs, con.opts.Registries, common.CONSUMER)
 		// set url to regURLs
 		for _, regURL := range urls {
 			regURL.SubURL = cfgURL
@@ -277,23 +282,26 @@ func (con *consumer) assemble(cli interface{}) protocol.Invoker {
 	return finalInvoker
 }
 
-func callOptions2Invocation(opts *ConsumeOptions) (protocol.Invocation, error) {
-	inv := invocation.NewRPCInvocationWithOptions(
-		invocation.WithMethodName(""),
-		invocation.WithArguments(nil),
-		invocation.WithCallBack(nil),
-		invocation.WithParameterValues(nil),
+func generateInvocation(methodName string, paramsRawVals []interface{}, consumeType string, opts *ConsumeOptions) (protocol.Invocation, error) {
+	inv := invocation_impl.NewRPCInvocationWithOptions(
+		invocation_impl.WithMethodName(methodName),
+		//invocation_impl.WithArguments(inIArr),
+		//invocation_impl.WithCallBack(p.callback),
+		// todo:// withParameterTypes
+		invocation_impl.WithParameterRawValues(paramsRawVals),
 	)
+	inv.SetAttribute(constant.ConsumeTypeKey, consumeType)
+
 	return inv, nil
 }
 
-func getURLMap(opts *Options) url.Values {
+func getURLMap(interfaceName string, opts *Options) url.Values {
 	urlMap := url.Values{}
 	// first set user params
 	for k, v := range opts.Params {
 		urlMap.Set(k, v)
 	}
-	urlMap.Set(constant.InterfaceKey, opts.InterfaceName)
+	urlMap.Set(constant.InterfaceKey, interfaceName)
 	urlMap.Set(constant.TimestampKey, strconv.FormatInt(time.Now().Unix(), 10))
 	urlMap.Set(constant.ClusterKey, opts.Cluster)
 	urlMap.Set(constant.LoadbalanceKey, opts.Loadbalance)
@@ -317,13 +325,13 @@ func getURLMap(opts *Options) url.Values {
 	urlMap.Set(constant.StickyKey, strconv.FormatBool(opts.Sticky))
 
 	// applicationConfig info
-	urlMap.Set(constant.ApplicationKey, opts.rootConfig.Application.Name)
-	urlMap.Set(constant.OrganizationKey, opts.rootConfig.Application.Organization)
-	urlMap.Set(constant.NameKey, opts.rootConfig.Application.Name)
-	urlMap.Set(constant.ModuleKey, opts.rootConfig.Application.Module)
-	urlMap.Set(constant.AppVersionKey, opts.rootConfig.Application.Version)
-	urlMap.Set(constant.OwnerKey, opts.rootConfig.Application.Owner)
-	urlMap.Set(constant.EnvironmentKey, opts.rootConfig.Application.Environment)
+	//urlMap.Set(constant.ApplicationKey, opts.rootConfig.Application.Name)
+	//urlMap.Set(constant.OrganizationKey, opts.rootConfig.Application.Organization)
+	//urlMap.Set(constant.NameKey, opts.rootConfig.Application.Name)
+	//urlMap.Set(constant.ModuleKey, opts.rootConfig.Application.Module)
+	//urlMap.Set(constant.AppVersionKey, opts.rootConfig.Application.Version)
+	//urlMap.Set(constant.OwnerKey, opts.rootConfig.Application.Owner)
+	//urlMap.Set(constant.EnvironmentKey, opts.rootConfig.Application.Environment)
 
 	// filter
 	defaultReferenceFilter := constant.DefaultReferenceFilters
@@ -332,14 +340,14 @@ func getURLMap(opts *Options) url.Values {
 	}
 	urlMap.Set(constant.ReferenceFilterKey, mergeValue(opts.Filter, "", defaultReferenceFilter))
 
-	for _, v := range opts.Methods {
-		urlMap.Set("methods."+v.Name+"."+constant.LoadbalanceKey, v.LoadBalance)
-		urlMap.Set("methods."+v.Name+"."+constant.RetriesKey, v.Retries)
-		urlMap.Set("methods."+v.Name+"."+constant.StickyKey, strconv.FormatBool(v.Sticky))
-		if len(v.RequestTimeout) != 0 {
-			urlMap.Set("methods."+v.Name+"."+constant.TimeoutKey, v.RequestTimeout)
-		}
-	}
+	//for _, v := range opts.Methods {
+	//	urlMap.Set("methods."+v.Name+"."+constant.LoadbalanceKey, v.LoadBalance)
+	//	urlMap.Set("methods."+v.Name+"."+constant.RetriesKey, v.Retries)
+	//	urlMap.Set("methods."+v.Name+"."+constant.StickyKey, strconv.FormatBool(v.Sticky))
+	//	if len(v.RequestTimeout) != 0 {
+	//		urlMap.Set("methods."+v.Name+"."+constant.TimeoutKey, v.RequestTimeout)
+	//	}
+	//}
 
 	return urlMap
 }
@@ -382,7 +390,7 @@ func removeMinus(strArr []string) string {
 }
 
 // todo: change RegistryConfig to Options
-func loadRegistries(registryIds []string, registries map[string]*RegistryConfig, roleType common.RoleType) []*common.URL {
+func loadRegistries(registryIds []string, registries map[string]*RegistryOptions, roleType common.RoleType) []*common.URL {
 	var registryURLs []*common.URL
 	//trSlice := strings.Split(targetRegistries, ",")
 
@@ -432,4 +440,15 @@ func publishServiceDefinition(url *common.URL) {
 	if remoteMetadataService, err := extension.GetRemoteMetadataService(); err == nil && remoteMetadataService != nil {
 		remoteMetadataService.PublishServiceDefinition(url)
 	}
+}
+
+func NewConsumer(opts ...Option) (*Consumer, error) {
+	newOpts := &Options{}
+	for _, opt := range opts {
+		opt(newOpts)
+	}
+	return &Consumer{
+		invokerMap: sync.Map{},
+		opts:       newOpts,
+	}, nil
 }
