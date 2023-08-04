@@ -25,6 +25,8 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
+	"dubbo.apache.org/dubbo-go/v3/metrics"
+	metricsConfigCenter "dubbo.apache.org/dubbo-go/v3/metrics/config_center"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 	"dubbo.apache.org/dubbo-go/v3/remoting/zookeeper"
 )
@@ -73,10 +75,12 @@ func (l *CacheListener) DataChange(event remoting.Event) bool {
 		changeType = remoting.EventTypeDel
 	}
 
+	key, group := l.pathToKeyGroup(event.Path)
+	defer metrics.Publish(metricsConfigCenter.NewIncMetricEvent(key, group, changeType, metricsConfigCenter.Zookeeper))
 	if listeners, ok := l.keyListeners.Load(event.Path); ok {
 		for listener := range listeners.(map[config_center.ConfigurationListener]struct{}) {
 			listener.Process(&config_center.ConfigChangeEvent{
-				Key:        l.pathToKey(event.Path),
+				Key:        key,
 				Value:      event.Content,
 				ConfigType: changeType,
 			})
@@ -86,10 +90,11 @@ func (l *CacheListener) DataChange(event remoting.Event) bool {
 	return false
 }
 
-func (l *CacheListener) pathToKey(path string) string {
+func (l *CacheListener) pathToKeyGroup(path string) (string, string) {
 	if len(path) == 0 {
-		return path
+		return path, ""
 	}
 	groupKey := strings.Replace(strings.Replace(path, l.rootPath+constant.PathSeparator, "", -1), constant.PathSeparator, constant.DotSeparator, -1)
-	return groupKey[strings.Index(groupKey, constant.DotSeparator)+1:]
+	index := strings.Index(groupKey, constant.DotSeparator)
+	return groupKey[index+1:], groupKey[0:index]
 }
