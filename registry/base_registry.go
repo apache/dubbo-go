@@ -36,6 +36,8 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/metrics"
+	metricsRegistry "dubbo.apache.org/dubbo-go/v3/metrics/registry"
 )
 
 const (
@@ -131,12 +133,14 @@ func (r *BaseRegistry) Destroy() {
 
 // Register implement interface registry to register
 func (r *BaseRegistry) Register(url *common.URL) error {
+	start := time.Now()
 	// todo bug when provider、consumer simultaneous initialization
 	if _, ok := r.registered.Load(url.Key()); ok {
 		return perrors.Errorf("Service {%s} has been registered", url.Key())
 	}
 
 	err := r.register(url)
+	defer metrics.Publish(metricsRegistry.NewRegisterEvent(err == nil, start))
 	if err == nil {
 		r.registered.Store(url.Key(), url)
 
@@ -152,8 +156,8 @@ func (r *BaseRegistry) UnRegister(url *common.URL) error {
 	if _, ok := r.registered.Load(url.Key()); !ok {
 		return perrors.Errorf("Service {%s} has not registered", url.Key())
 	}
-
 	err := r.unregister(url)
+	metrics.Publish(metricsRegistry.NewSubscribeEvent(err == nil))
 	if err == nil {
 		r.registered.Delete(url.Key())
 	} else {

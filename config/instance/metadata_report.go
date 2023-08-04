@@ -34,11 +34,10 @@ var (
 )
 
 func GetMetadataReportInstance() report.MetadataReport {
-	if instance != nil {
-		return instance
+	if instance == nil {
+		instance = report.NewPubMetricEventReport(GetMetadataReportByRegistryProtocol(""))
 	}
-
-	return GetMetadataReportByRegistryProtocol("")
+	return instance
 }
 
 // SetMetadataReportInstance, init metadat report instance
@@ -49,7 +48,7 @@ func SetMetadataReportInstance(selectiveUrl ...*common.URL) {
 			url = selectiveUrl[0]
 			fac := extension.GetMetadataReportFactory(url.Protocol)
 			if fac != nil {
-				instance = fac.CreateMetadataReport(url)
+				instance = report.NewPubMetricEventReport(fac.CreateMetadataReport(url))
 			}
 			reportUrl = url
 		}
