@@ -38,6 +38,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/metrics"
+	metricsRegistry "dubbo.apache.org/dubbo-go/v3/metrics/registry"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 	"dubbo.apache.org/dubbo-go/v3/remoting/nacos"
@@ -112,11 +114,13 @@ func createRegisterParam(url *common.URL, serviceName string, groupName string) 
 
 // Register will register the service @url to its nacos registry center.
 func (nr *nacosRegistry) Register(url *common.URL) error {
+	start := time.Now()
 	serviceName := getServiceName(url)
 	groupName := nr.URL.GetParam(constant.NacosGroupKey, defaultGroup)
 	param := createRegisterParam(url, serviceName, groupName)
 	logger.Infof("[Nacos Registry] Registry instance with param = %+v", param)
 	isRegistry, err := nr.namingClient.Client().RegisterInstance(param)
+	metrics.Publish(metricsRegistry.NewRegisterEvent(err == nil && isRegistry, start))
 	if err != nil {
 		return err
 	}
@@ -173,6 +177,7 @@ func (nr *nacosRegistry) Subscribe(url *common.URL, notifyListener registry.Noti
 		}
 
 		listener, err := nr.subscribe(url)
+		defer metrics.Publish(metricsRegistry.NewSubscribeEvent(err == nil))
 		if err != nil {
 			if !nr.IsAvailable() {
 				logger.Warnf("event listener game over.")

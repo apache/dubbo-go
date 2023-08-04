@@ -38,6 +38,9 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
+	"dubbo.apache.org/dubbo-go/v3/metrics"
+	metricsConfigCenter "dubbo.apache.org/dubbo-go/v3/metrics/config_center"
+	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
 // CenterConfig is configuration for config center
@@ -146,6 +149,7 @@ func startConfigCenter(rc *RootConfig) error {
 		logger.Warnf("[Config Center] Dynamic config center has started, but config may not be initialized, because: %s", err)
 		return nil
 	}
+	defer metrics.Publish(metricsConfigCenter.NewIncMetricEvent(cc.DataId, cc.Group, remoting.EventTypeAdd, cc.Protocol))
 	if len(strConf) == 0 {
 		logger.Warnf("[Config Center] Dynamic config center has started, but got empty config with config-center configuration %+v\n"+
 			"Please check if your config-center config is correct.", cc)
