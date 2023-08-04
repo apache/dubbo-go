@@ -300,25 +300,23 @@ func (r *zkRegistry) getCloseListener(conf *common.URL) (*RegistryConfigurationL
 		zkListener, _ = configurationListener.(*RegistryConfigurationListener)
 		if zkListener != nil && zkListener.isClosed {
 			r.dataListener.mutex.Unlock()
-			return nil, perrors.New("configListener already been closed")
+			return nil, perrors.New(fmt.Sprintf("configListener for service %s has already been closed", conf.ServiceKey()))
 		}
 	}
 
-	zkListener = r.dataListener.UnSubscribeURL(conf).(*RegistryConfigurationListener)
+	if configurationListener := r.dataListener.UnSubscribeURL(conf); configurationListener != nil {
+		switch v := configurationListener.(type) {
+		case (*RegistryConfigurationListener):
+			if v != nil {
+				zkListener = v
+			}
+		}
+	}
 	r.dataListener.mutex.Unlock()
 
 	if r.listener == nil {
-		return nil, perrors.New("listener is null can not close.")
+		return nil, perrors.New("Zookeeper event listener is null, can not close.")
 	}
-
-	// Interested register to dataconfig.
-	r.listenerLock.Lock()
-	listener := r.listener
-	r.listener = nil
-	r.listenerLock.Unlock()
-
-	r.dataListener.Close()
-	listener.Close()
 
 	return zkListener, nil
 }

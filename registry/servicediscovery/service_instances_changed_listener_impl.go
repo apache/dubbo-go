@@ -18,7 +18,9 @@
 package servicediscovery
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/metadata/service/local"
 	"reflect"
+	"sync"
 )
 
 import (
@@ -42,6 +44,7 @@ type ServiceInstancesChangedListenerImpl struct {
 	serviceUrls        map[string][]*common.URL
 	revisionToMetadata map[string]*common.MetadataInfo
 	allInstances       map[string][]registry.ServiceInstance
+	mutex              sync.Mutex
 }
 
 func NewServiceInstancesChangedListener(services *gxset.HashSet) registry.ServiceInstancesChangedListener {
@@ -61,6 +64,10 @@ func (lstn *ServiceInstancesChangedListenerImpl) OnEvent(e observer.Event) error
 		return nil
 	}
 	var err error
+
+	lstn.mutex.Lock()
+	defer lstn.mutex.Unlock()
+
 	lstn.allInstances[ce.ServiceName] = ce.Instances
 	revisionToInstances := make(map[string][]registry.ServiceInstance)
 	newRevisionToMetadata := make(map[string]*common.MetadataInfo)
@@ -207,6 +214,7 @@ func GetMetadataInfo(instance registry.ServiceInstance, revision string) (*commo
 		var err error
 		proxyFactory := extension.GetMetadataServiceProxyFactory(constant.DefaultKey)
 		metadataService := proxyFactory.GetProxy(instance)
+		defer metadataService.(*local.MetadataServiceProxy).Invoker.Destroy()
 		metadataInfo, err = metadataService.GetMetadataInfo(revision)
 		if err != nil {
 			return nil, err

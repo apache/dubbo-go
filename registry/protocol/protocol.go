@@ -19,6 +19,7 @@ package protocol
 
 import (
 	"context"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -163,7 +164,8 @@ func (proto *registryProtocol) Refer(url *common.URL) protocol.Invoker {
 	}
 	go regDic.Subscribe(registryUrl.SubURL)
 
-	err = reg.Register(serviceUrl)
+	regDic.RegisteredUrl = getConsumerUrlToRegistry(serviceUrl)
+	err = reg.Register(regDic.RegisteredUrl)
 	if err != nil {
 		logger.Errorf("consumer service %v register registry %v error, error message is %s",
 			serviceUrl.String(), registryUrl.String(), err.Error())
@@ -556,4 +558,17 @@ func newServiceConfigurationListener(overrideListener *overrideSubscribeListener
 func (listener *serviceConfigurationListener) Process(event *config_center.ConfigChangeEvent) {
 	listener.BaseConfigurationListener.Process(event)
 	listener.overrideListener.doOverrideIfNecessary()
+}
+
+func getConsumerUrlToRegistry(url *common.URL) *common.URL {
+	// if developer define registry port and ip, use it first.
+	if ipToRegistry := os.Getenv(constant.DubboIpToRegistryKey); len(ipToRegistry) > 0 {
+		url.Ip = ipToRegistry
+	} else {
+		url.Ip = common.GetLocalIp()
+	}
+	if portToRegistry := os.Getenv(constant.DubboPortToRegistryKey); len(portToRegistry) > 0 {
+		url.Port = portToRegistry
+	}
+	return url
 }
