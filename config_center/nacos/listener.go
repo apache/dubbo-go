@@ -31,11 +31,14 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
+	"dubbo.apache.org/dubbo-go/v3/metrics"
+	metricsConfigCenter "dubbo.apache.org/dubbo-go/v3/metrics/config_center"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
-func callback(listener config_center.ConfigurationListener, _, _, dataId, data string) {
+func callback(listener config_center.ConfigurationListener, _, group, dataId, data string) {
 	listener.Process(&config_center.ConfigChangeEvent{Key: dataId, Value: data, ConfigType: remoting.EventTypeUpdate})
+	metrics.Publish(metricsConfigCenter.NewIncMetricEvent(dataId, group, remoting.EventTypeUpdate, metricsConfigCenter.Nacos))
 }
 
 func (n *nacosDynamicConfiguration) addListener(key string, listener config_center.ConfigurationListener) {

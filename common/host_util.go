@@ -23,6 +23,7 @@ import (
 )
 
 import (
+	"github.com/dubbogo/gost/log/logger"
 	gxnet "github.com/dubbogo/gost/net"
 )
 
@@ -31,6 +32,7 @@ import (
 )
 
 var localIp string
+var localHostname string
 
 func GetLocalIp() string {
 	if len(localIp) != 0 {
@@ -38,6 +40,18 @@ func GetLocalIp() string {
 	}
 	localIp, _ = gxnet.GetLocalIP()
 	return localIp
+}
+
+func GetLocalHostName() string {
+	if len(localHostname) != 0 {
+		return localHostname
+	}
+	hostname, err := os.Hostname()
+	if err != nil {
+		logger.Errorf("can not get local hostname")
+	}
+	localHostname = hostname
+	return localHostname
 }
 
 func HandleRegisterIPAndPort(url *URL) {
