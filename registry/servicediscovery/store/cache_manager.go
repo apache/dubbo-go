@@ -57,22 +57,23 @@ func NewCacheManager(name, cacheFile string, cacheExpired time.Duration, maxCach
 		}
 	}
 
-	// Start a routine for cache expiration
 	go func(stop chan struct{}) {
-		for range time.Tick(cm.cacheExpired) {
+		ticker := time.NewTicker(cm.cacheExpired)
+		for {
 			select {
-			case <-stop:
-				return
-			default:
+			case <-ticker.C:
 				// Dump the cache to the file
 				if err := cm.dumpCache(); err != nil {
 					// Handle error
-					logger.Warn(err)
+					logger.Warnf("Failed to dump cache,the err is %v", err)
 				} else {
 					logger.Infof("Dumping [%s] caches, latest entries %d", cm.name, len(cm.lruCache.cache))
 				}
+			case <-stop:
+				return
 			}
 		}
+
 	}(cm.stop)
 
 	return cm, nil
