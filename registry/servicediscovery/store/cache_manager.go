@@ -20,7 +20,6 @@ package store
 import (
 	"encoding/gob"
 	"os"
-	"reflect"
 	"time"
 )
 
