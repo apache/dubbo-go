@@ -68,6 +68,7 @@ func NewCacheManager(name, cacheFile string, cacheExpired time.Duration, maxCach
 					logger.Infof("Dumping [%s] caches, latest entries %d", cm.name, len(cm.lruCache.cache))
 				}
 			case <-stop:
+				ticker.Stop()
 				return
 			}
 		}
@@ -150,7 +151,6 @@ func (cm *CacheManager) dumpCache() error {
 func (cm *CacheManager) destroy() {
 	cm.stop <- struct{}{} // Stop the cache expiration routine
 	cm.lruCache.Clear()   // Clear the cache
-	cm.dumpCache()        // Dump the cache to the file
 
 	// Remove the cache file if it exists
 	if _, err := os.Stat(cm.cacheFile); err == nil {
