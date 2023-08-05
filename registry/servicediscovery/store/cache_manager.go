@@ -20,7 +20,6 @@ package store
 import (
 	"encoding/gob"
 	"os"
-	"reflect"
 	"time"
 )
 
@@ -34,7 +33,6 @@ type CacheManager struct {
 	cacheExpired time.Duration // The duration after which the cache expires
 	stop         chan struct{} // Channel used to stop the cache expiration routine
 	lruCache     *LruCache     // The LRU cache implementation
-	typ          reflect.Type  // The type of the cache items
 }
 
 // NewCacheManager creates a new CacheManager instance.
