@@ -19,6 +19,7 @@ package servicediscovery
 
 import (
 	"reflect"
+	"time"
 )
 
 import (
@@ -32,8 +33,25 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/registry"
+	"dubbo.apache.org/dubbo-go/v3/registry/servicediscovery/store"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
+
+var metaCache *store.CacheManager
+
+const (
+	defaultCacheName = "meta"
+	defaultFileName  = ".matadata"
+	defaultEntrySize = 100
+)
+
+func init() {
+	cache, err := store.NewCacheManager("mata", defaultFileName, 10*time.Second, defaultEntrySize)
+	if err != nil {
+		logger.Warnf("Failed to load %s cache.The err is %v.", defaultCacheName, err)
+	}
+	metaCache = cache
+}
 
 // ServiceInstancesChangedListenerImpl The Service Discovery Changed  Event Listener
 type ServiceInstancesChangedListenerImpl struct {
@@ -187,6 +205,11 @@ func (lstn *ServiceInstancesChangedListenerImpl) GetEventType() reflect.Type {
 
 // GetMetadataInfo get metadata info when MetadataStorageTypePropertyName is null
 func GetMetadataInfo(instance registry.ServiceInstance, revision string) (*common.MetadataInfo, error) {
+
+	if metadataInfo, err := metaCache.Get(instance.GetID()); err == nil {
+		return metadataInfo.(*common.MetadataInfo), err
+	}
+
 	var metadataStorageType string
 	var metadataInfo *common.MetadataInfo
 	if instance.GetMetadata() == nil {
@@ -212,5 +235,6 @@ func GetMetadataInfo(instance registry.ServiceInstance, revision string) (*commo
 			return nil, err
 		}
 	}
+	metaCache.Set(instance.GetID(), metadataInfo)
 	return metadataInfo, nil
 }

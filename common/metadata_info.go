@@ -18,6 +18,7 @@
 package common
 
 import (
+	"encoding/gob"
 	"fmt"
 	"hash/crc32"
 	"net/url"
@@ -47,6 +48,10 @@ var IncludeKeys = gxset.NewSet(
 	constant.WarmupKey,
 	constant.WeightKey,
 	constant.ReleaseKey)
+
+func init() {
+	gob.Register(MetadataInfo{})
+}
 
 // MetadataInfo the metadata information of instance
 type MetadataInfo struct {
