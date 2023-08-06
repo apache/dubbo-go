@@ -49,8 +49,6 @@ type Item struct {
 // NewCacheManager creates a new CacheManager instance.
 // It initializes the cache manager with the provided parameters and starts a routine for cache expiration.
 func NewCacheManager(name, cacheFile string, cacheExpired time.Duration, maxCacheSize int) (*CacheManager, error) {
-	gob.Register(Item{})
-
 	cm := &CacheManager{
 		name:         name,
 		cacheFile:    cacheFile,
