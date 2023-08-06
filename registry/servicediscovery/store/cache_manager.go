@@ -58,8 +58,7 @@ func NewCacheManager(name, cacheFile string, cacheExpired time.Duration, maxCach
 	// Check if the cache file exists and load the cache if it does
 	if _, err := os.Stat(cacheFile); err == nil {
 		if err = cm.loadCache(); err != nil {
-			logger.Warnf("Failed to load the cache file:[%s].", cm.cacheFile)
-			return nil, err
+			logger.Warnf("Failed to load the cache file:[%s].The err is %v", cm.cacheFile, err)
 		}
 	}
 	go cm.RunDumpTask()

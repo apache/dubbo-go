@@ -19,7 +19,6 @@ package servicediscovery
 
 import (
 	"reflect"
-	"sync"
 	"time"
 )
 
@@ -40,8 +39,6 @@ import (
 
 var (
 	metaCache *store.CacheManager
-
-	once sync.Once
 )
 
 const (
@@ -50,12 +47,8 @@ const (
 	defaultEntrySize = 100
 )
 
-func initMetaCache() {
-	cache, err := store.NewCacheManager("mata", defaultFileName, 10*time.Minute, defaultEntrySize)
-	if err != nil {
-		logger.Warnf("Failed to load %s cache.The err is %v.", defaultCacheName, err)
-	}
-	metaCache = cache
+func init() {
+	metaCache, _ = store.NewCacheManager("mata", defaultFileName, 10*time.Minute, defaultEntrySize)
 }
 
 // ServiceInstancesChangedListenerImpl The Service Discovery Changed  Event Listener
@@ -68,9 +61,6 @@ type ServiceInstancesChangedListenerImpl struct {
 }
 
 func NewServiceInstancesChangedListener(services *gxset.HashSet) registry.ServiceInstancesChangedListener {
-
-	once.Do(initMetaCache)
-
 	return &ServiceInstancesChangedListenerImpl{
 		serviceNames:       services,
 		listeners:          make(map[string]registry.NotifyListener),
