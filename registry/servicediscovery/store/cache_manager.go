@@ -28,8 +28,6 @@ import (
 	"github.com/dubbogo/gost/log/logger"
 
 	"github.com/hashicorp/golang-lru"
-
-	"github.com/pkg/errors"
 )
 
 type CacheManager struct {
@@ -89,12 +87,8 @@ func NewCacheManager(name, cacheFile string, cacheExpired time.Duration, maxCach
 }
 
 // Get retrieves the value associated with the given key from the cache.
-func (cm *CacheManager) Get(key string) (interface{}, error) {
-	val, ok := cm.cache.Get(key)
-	if ok {
-		return val, nil
-	}
-	return nil, errors.New("Key not found")
+func (cm *CacheManager) Get(key string) (interface{}, bool) {
+	return cm.cache.Get(key)
 }
 
 // Set sets the value associated with the given key in the cache.

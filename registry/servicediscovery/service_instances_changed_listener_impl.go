@@ -206,8 +206,8 @@ func (lstn *ServiceInstancesChangedListenerImpl) GetEventType() reflect.Type {
 // GetMetadataInfo get metadata info when MetadataStorageTypePropertyName is null
 func GetMetadataInfo(instance registry.ServiceInstance, revision string) (*common.MetadataInfo, error) {
 
-	if metadataInfo, err := metaCache.Get(instance.GetID()); err == nil {
-		return metadataInfo.(*common.MetadataInfo), err
+	if metadataInfo, ok := metaCache.Get(instance.GetID()); ok {
+		return metadataInfo.(*common.MetadataInfo), nil
 	}
 
 	var metadataStorageType string

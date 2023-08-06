@@ -35,8 +35,8 @@ func TestCacheManager(t *testing.T) {
 	// Test Set and Get
 	cm.Set("key1", "value1")
 	cm.Set("key2", "value2")
-	value, err := cm.Get("key1")
-	if err != nil {
+	value, ok := cm.Get("key1")
+	if !ok {
 		t.Errorf("failed to get key1: %v", err)
 	}
 	if value != "value1" {
@@ -45,8 +45,8 @@ func TestCacheManager(t *testing.T) {
 
 	// Test Delete
 	cm.Delete("key2")
-	_, err = cm.Get("key2")
-	if err == nil {
+	_, ok = cm.Get("key2")
+	if ok {
 		t.Errorf("key2 was not removed from cache")
 	}
 
@@ -72,8 +72,8 @@ func TestCacheManager(t *testing.T) {
 	if len(all3) != 1 {
 		t.Errorf("unexpected number of items in cache: got %d, want %d", len(all3), 1)
 	}
-	_, err = cm3.Get("key4")
-	if err != nil {
+	_, ok = cm3.Get("key4")
+	if !ok {
 		t.Errorf("failed to get key4: %v", err)
 	}
 	cm3.destroy()
@@ -101,8 +101,8 @@ func TestMetaInfoCacheManager(t *testing.T) {
 	// Test Set and Get
 	cm.Set("key1", metadataInfo1)
 	cm.Set("key2", metadataInfo2)
-	value, err := cm.Get("key1")
-	if err != nil {
+	value, ok := cm.Get("key1")
+	if !ok {
 		t.Errorf("failed to get key1: %v", err)
 	}
 	if value != metadataInfo1 {
@@ -111,8 +111,8 @@ func TestMetaInfoCacheManager(t *testing.T) {
 
 	// Test Delete
 	cm.Delete("key2")
-	_, err = cm.Get("key2")
-	if err == nil {
+	_, ok = cm.Get("key2")
+	if ok {
 		t.Errorf("key2 was not removed from cache")
 	}
 
@@ -138,8 +138,8 @@ func TestMetaInfoCacheManager(t *testing.T) {
 	if len(all3) != 1 {
 		t.Errorf("unexpected number of items in cache: got %d, want %d", len(all3), 1)
 	}
-	_, err = cm3.Get("key4")
-	if err != nil {
+	_, ok = cm3.Get("key4")
+	if !ok {
 		t.Errorf("failed to get key4: %v", err)
 	}
 	cm3.destroy()
