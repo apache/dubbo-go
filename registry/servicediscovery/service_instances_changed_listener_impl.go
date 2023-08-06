@@ -19,6 +19,7 @@ package servicediscovery
 
 import (
 	"reflect"
+	"sync"
 	"time"
 )
 
@@ -37,7 +38,11 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
-var metaCache *store.CacheManager
+var (
+	metaCache *store.CacheManager
+
+	once sync.Once
+)
 
 const (
 	defaultCacheName = "meta"
@@ -45,7 +50,7 @@ const (
 	defaultEntrySize = 100
 )
 
-func init() {
+func initMetaCache() {
 	cache, err := store.NewCacheManager("mata", defaultFileName, 10*time.Minute, defaultEntrySize)
 	if err != nil {
 		logger.Warnf("Failed to load %s cache.The err is %v.", defaultCacheName, err)
@@ -205,6 +210,8 @@ func (lstn *ServiceInstancesChangedListenerImpl) GetEventType() reflect.Type {
 
 // GetMetadataInfo get metadata info when MetadataStorageTypePropertyName is null
 func GetMetadataInfo(instance registry.ServiceInstance, revision string) (*common.MetadataInfo, error) {
+
+	once.Do(initMetaCache)
 
 	if metadataInfo, ok := metaCache.Get(instance.GetID()); ok {
 		return metadataInfo.(*common.MetadataInfo), nil
