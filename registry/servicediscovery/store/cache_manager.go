@@ -57,31 +57,12 @@ func NewCacheManager(name, cacheFile string, cacheExpired time.Duration, maxCach
 
 	// Check if the cache file exists and load the cache if it does
 	if _, err := os.Stat(cacheFile); err == nil {
-		if err := cm.loadCache(); err != nil {
+		if err = cm.loadCache(); err != nil {
 			logger.Warnf("Failed to load the cache file:[%s].", cm.cacheFile)
 			return nil, err
 		}
 	}
-
-	go func(stop chan struct{}) {
-		ticker := time.NewTicker(cm.cacheExpired)
-		for {
-			select {
-			case <-ticker.C:
-				// Dump the cache to the file
-				if err := cm.dumpCache(); err != nil {
-					// Handle error
-					logger.Warnf("Failed to dump cache,the err is %v", err)
-				} else {
-					logger.Infof("Dumping [%s] caches, latest entries %d", cm.name, cm.cache.Len())
-				}
-			case <-stop:
-				ticker.Stop()
-				return
-			}
-		}
-
-	}(cm.stop)
+	go cm.RunDumpTask()
 
 	return cm, nil
 }
@@ -163,6 +144,25 @@ func (cm *CacheManager) dumpCache() error {
 	}
 	return file.Close()
 
+}
+
+func (cm *CacheManager) RunDumpTask() {
+	ticker := time.NewTicker(cm.cacheExpired)
+	for {
+		select {
+		case <-ticker.C:
+			// Dump the cache to the file
+			if err := cm.dumpCache(); err != nil {
+				// Handle error
+				logger.Warnf("Failed to dump cache,the err is %v", err)
+			} else {
+				logger.Infof("Dumping [%s] caches, latest entries %d", cm.name, cm.cache.Len())
+			}
+		case <-cm.stop:
+			ticker.Stop()
+			return
+		}
+	}
 }
 
 // destroy stops the cache expiration routine, clears the cache and removes the cache file.

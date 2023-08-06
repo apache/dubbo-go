@@ -68,6 +68,9 @@ type ServiceInstancesChangedListenerImpl struct {
 }
 
 func NewServiceInstancesChangedListener(services *gxset.HashSet) registry.ServiceInstancesChangedListener {
+
+	once.Do(initMetaCache)
+
 	return &ServiceInstancesChangedListenerImpl{
 		serviceNames:       services,
 		listeners:          make(map[string]registry.NotifyListener),
@@ -111,9 +114,14 @@ func (lstn *ServiceInstancesChangedListenerImpl) OnEvent(e observer.Event) error
 			revisionToInstances[revision] = append(subInstances, instance)
 			metadataInfo := lstn.revisionToMetadata[revision]
 			if metadataInfo == nil {
-				metadataInfo, err = GetMetadataInfo(instance, revision)
-				if err != nil {
-					return err
+				if val, ok := metaCache.Get(revision); ok {
+					metadataInfo = val.(*common.MetadataInfo)
+				} else {
+					metadataInfo, err = GetMetadataInfo(instance, revision)
+					if err != nil {
+						return err
+					}
+					metaCache.Set(revision, metadataInfo)
 				}
 			}
 			instance.SetServiceMetadata(metadataInfo)
@@ -127,6 +135,9 @@ func (lstn *ServiceInstancesChangedListenerImpl) OnEvent(e observer.Event) error
 			newRevisionToMetadata[revision] = metadataInfo
 		}
 		lstn.revisionToMetadata = newRevisionToMetadata
+		for revision, metadataInfo := range newRevisionToMetadata {
+			metaCache.Set(revision, metadataInfo)
+		}
 
 		for serviceInfo, revisions := range localServiceToRevisions {
 			revisionsToUrls := protocolRevisionsToUrls[serviceInfo.Protocol]
@@ -211,9 +222,7 @@ func (lstn *ServiceInstancesChangedListenerImpl) GetEventType() reflect.Type {
 // GetMetadataInfo get metadata info when MetadataStorageTypePropertyName is null
 func GetMetadataInfo(instance registry.ServiceInstance, revision string) (*common.MetadataInfo, error) {
 
-	once.Do(initMetaCache)
-
-	if metadataInfo, ok := metaCache.Get(instance.GetID()); ok {
+	if metadataInfo, ok := metaCache.Get(revision); ok {
 		return metadataInfo.(*common.MetadataInfo), nil
 	}
 
@@ -242,6 +251,6 @@ func GetMetadataInfo(instance registry.ServiceInstance, revision string) (*commo
 			return nil, err
 		}
 	}
-	metaCache.Set(instance.GetID(), metadataInfo)
+	metaCache.Set(revision, metadataInfo)
 	return metadataInfo, nil
 }
