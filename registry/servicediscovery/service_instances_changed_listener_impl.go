@@ -18,6 +18,7 @@
 package servicediscovery
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/metadata/service"
 	"dubbo.apache.org/dubbo-go/v3/metadata/service/local"
 	"reflect"
 	"sync"
@@ -214,11 +215,24 @@ func GetMetadataInfo(instance registry.ServiceInstance, revision string) (*commo
 		var err error
 		proxyFactory := extension.GetMetadataServiceProxyFactory(constant.DefaultKey)
 		metadataService := proxyFactory.GetProxy(instance)
-		defer metadataService.(*local.MetadataServiceProxy).Invoker.Destroy()
+		defer destroyInvoker(metadataService)
 		metadataInfo, err = metadataService.GetMetadataInfo(revision)
 		if err != nil {
 			return nil, err
 		}
 	}
 	return metadataInfo, nil
+}
+
+func destroyInvoker(metadataService service.MetadataService) {
+	if metadataService == nil {
+		return
+	}
+
+	proxy := metadataService.(*local.MetadataServiceProxy)
+	if proxy.Invoker == nil {
+		return
+	}
+
+	proxy.Invoker.Destroy()
 }
