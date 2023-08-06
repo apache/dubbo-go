@@ -116,7 +116,7 @@ type URL struct {
 	Methods  []string
 	// special for registry
 	SubURL     *URL
-	Attributes sync.Map
+	Attributes sync.Map `json:"-" hessian:"-"`
 }
 
 func (c *URL) AddAttribute(key string, value interface{}) {
