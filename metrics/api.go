@@ -25,9 +25,11 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/metrics/util/aggregate"
 )
 
-var registries = make(map[string]func(*ReporterConfig) MetricRegistry)
-var collectors = make([]CollectorFunc, 0)
-var registry MetricRegistry
+var (
+	registries = make(map[string]func(*ReporterConfig) MetricRegistry)
+	collectors = make([]CollectorFunc, 0)
+	registry MetricRegistry
+)
 
 // CollectorFunc used to extend more indicators
 type CollectorFunc func(MetricRegistry, *ReporterConfig)
@@ -61,8 +63,8 @@ func AddCollector(name string, fun func(MetricRegistry, *ReporterConfig)) {
 type MetricRegistry interface {
 	Counter(*MetricId) CounterMetric     // add or update a counter
 	Gauge(*MetricId) GaugeMetric         // add or update a gauge
-	Histogram(*MetricId) HistogramMetric // add a metric num to a histogram
-	Summary(*MetricId) SummaryMetric     // add a metric num to a summary
+	Histogram(*MetricId) ObservableMetric // add a metric num to a histogram
+	Summary(*MetricId) ObservableMetric     // add a metric num to a summary
 	Export()                             // expose metric data， such as Prometheus http exporter
 	// GetMetrics() []*MetricSample // get all metric data
 	// GetMetricsString() (string, error) // get text format metric data
@@ -130,14 +132,8 @@ type GaugeMetric interface {
 	// Add(float64)
 	// Sub(float64)
 }
-
-// HistogramMetric histogram metric
-type HistogramMetric interface {
-	Record(float64)
-}
-
-// SummaryMetric summary metric
-type SummaryMetric interface {
+// histogram summary rt metric
+type ObservableMetric interface {
 	Record(float64)
 }
 
@@ -232,8 +228,13 @@ func ComputeIfAbsentCache(key string, supplier func() interface{}) interface{} {
 	} else {
 		metricsCacheMutex.Lock()
 		defer metricsCacheMutex.Unlock()
-		n := supplier()
-		metricsCache[key] = n
-		return n
+		v, ok = metricsCache[key] // double check,avoid overwriting
+		if ok {
+			return v
+		} else {
+			n := supplier()
+			metricsCache[key] = n
+			return n
+		}
 	}
 }

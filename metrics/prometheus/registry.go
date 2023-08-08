@@ -86,7 +86,7 @@ func (p *promMetricRegistry) Gauge(m *metrics.MetricId) metrics.GaugeMetric {
 	return &gauge{pg: g}
 }
 
-func (p *promMetricRegistry) Histogram(m *metrics.MetricId) metrics.HistogramMetric {
+func (p *promMetricRegistry) Histogram(m *metrics.MetricId) metrics.ObservableMetric {
 	p.mtx.RLock()
 	vec, ok := p.hvm[m.Name]
 	p.mtx.RUnlock()
@@ -103,7 +103,7 @@ func (p *promMetricRegistry) Histogram(m *metrics.MetricId) metrics.HistogramMet
 	return &histogram{ph: h.(prom.Histogram)}
 }
 
-func (p *promMetricRegistry) Summary(m *metrics.MetricId) metrics.SummaryMetric {
+func (p *promMetricRegistry) Summary(m *metrics.MetricId) metrics.ObservableMetric {
 	p.mtx.RLock()
 	vec, ok := p.svm[m.Name]
 	p.mtx.RUnlock()
