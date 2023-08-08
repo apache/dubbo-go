@@ -31,14 +31,14 @@ import (
 )
 
 var (
-	conServicesLock              = sync.Mutex{}                    // used to guard conServices map.
-	conServices                  = map[string]common.RPCService{}  // service name -> service
-	proServicesLock              = sync.Mutex{}                    // used to guard proServices map
-	proServices                  = map[string]common.RPCService{}  // service name -> service
-	interfaceNameConServicesLock = sync.Mutex{}                    // used to guard interfaceNameConServices map
-	interfaceNameConServices     = map[string]common.RPCService{}  // interfaceName -> service
-	clientInfosLock              = sync.Mutex{}                    // used to guard clientInfos set
-	clientInfos                  = map[string]*client.ClientInfo{} // service name -> ClientInfo
+	conServicesLock              = sync.Mutex{}                               // used to guard conServices map.
+	conServices                  = map[string]common.RPCService{}             // service name -> service
+	proServicesLock              = sync.Mutex{}                               // used to guard proServices map
+	proServices                  = map[string]common.RPCService{}             // service name -> service
+	interfaceNameConServicesLock = sync.Mutex{}                               // used to guard interfaceNameConServices map
+	interfaceNameConServices     = map[string]common.RPCService{}             // interfaceName -> service
+	clientInfoServicesLock       = sync.Mutex{}                               // used to guard clientInfoServices map
+	clientInfoServices           = map[*client.ClientInfo]common.RPCService{} // ClientInfo -> service
 )
 
 // SetConsumerService is called by init() of implement of RPCService
@@ -110,17 +110,17 @@ func GetCallback(name string) func(response common.CallbackResponse) {
 	return nil
 }
 
-// SetClientInfo set new info into clientInfos if new info is not nil
-func SetClientInfo(info *client.ClientInfo) {
-	if info == nil {
+// SetClientInfoService set new info and service into clientInfosServices if new info and service are not nil
+func SetClientInfoService(info *client.ClientInfo, srv common.RPCService) {
+	if info == nil || info.ClientInjectFunc == nil || srv == nil {
 		return
 	}
-	clientInfosLock.Lock()
-	defer clientInfosLock.Unlock()
-	clientInfos[info.InterfaceName] = info
+	clientInfoServicesLock.Lock()
+	defer clientInfoServicesLock.Unlock()
+	clientInfoServices[info] = srv
 }
 
-// GetClientInfosMap returns clientInfos
-func GetClientInfosMap() map[string]*client.ClientInfo {
-	return clientInfos
+// GetClientInfoServicesMap returns clientInfoServices
+func GetClientInfoServicesMap() map[*client.ClientInfo]common.RPCService {
+	return clientInfoServices
 }

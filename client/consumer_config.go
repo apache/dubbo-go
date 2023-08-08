@@ -148,12 +148,19 @@ func (cc *ConsumerConfig) Load() {
 		//refConfig.Implement(refRPCService)
 	}
 
-	for interfaceName, info := range config.GetClientInfosMap() {
-		refConfig, ok := cc.References[interfaceName]
+	for info, srv := range config.GetClientInfoServicesMap() {
+		refConfig, ok := cc.References[info.InterfaceName]
 		if !ok {
-			logger.Errorf("Dubbo-go can not find %s Reference in References config, please check your configuration file", interfaceName)
+			logger.Errorf("Dubbo-go can not find %s Reference in References config, please check your configuration file", info.InterfaceName)
+			continue
 		}
 		refConfig.ReferWithInfo(info)
+		newCli, err := NewClientWithReferenceBase(refConfig)
+		if err != nil {
+			logger.Errorf("Dubbo-go create client for service with ClientInfo failed, err: %s\nplease check your idl file", err)
+			continue
+		}
+		info.ClientInjectFunc(srv, newCli)
 	}
 
 	var maxWait int

@@ -16,9 +16,10 @@ type Client struct {
 }
 
 type ClientInfo struct {
-	InterfaceName string
-	MethodNames   []string
-	Meta          map[string]interface{}
+	InterfaceName    string
+	MethodNames      []string
+	ClientInjectFunc func(dubboCliRaw interface{}, cli *Client)
+	Meta             map[string]interface{}
 }
 
 func (cli *Client) call(ctx context.Context, paramsRawVals []interface{}, interfaceName, methodName, callType string, opts ...CallOption) (protocol.Result, error) {
@@ -104,6 +105,19 @@ func NewClient(opts ...ReferenceOption) (*Client, error) {
 	}
 	return &Client{
 		cfg: newRefCfg,
+	}, nil
+}
+
+// NewClientWithReferenceBase is used by /config/consumer_config, it assumes that refCfg has been init
+func NewClientWithReferenceBase(refCfg *ReferenceConfig, opts ...ReferenceOption) (*Client, error) {
+	if refCfg == nil {
+		return nil, errors.New("ReferenceConfig is nil")
+	}
+	for _, opt := range opts {
+		opt(refCfg)
+	}
+	return &Client{
+		cfg: refCfg,
 	}, nil
 }
 

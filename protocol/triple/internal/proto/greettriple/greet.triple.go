@@ -7,6 +7,7 @@ package greettriple
 import (
 	context "context"
 	client "dubbo.apache.org/dubbo-go/v3/client"
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	proto "dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto"
@@ -68,21 +69,21 @@ func NewGreetServiceClient(cli *client.Client) (GreetServiceClient, error) {
 	if err := cli.Init(&GreetService_ClientInfo); err != nil {
 		return nil, err
 	}
-	return &greetServiceClient{
+	return &GreetServiceClientImpl{
 		cli: cli,
 	}, nil
 }
 
-func SetConsumerService() {
-	config.SetClientInfo(&GreetService_ClientInfo)
+func SetConsumerService(srv common.RPCService) {
+	config.SetClientInfoService(&GreetService_ClientInfo, srv)
 }
 
-// greetServiceClient implements GreetServiceClient.
-type greetServiceClient struct {
+// GreetServiceClient implements GreetServiceClient.
+type GreetServiceClientImpl struct {
 	cli *client.Client
 }
 
-func (c *greetServiceClient) Greet(ctx context.Context, req *proto.GreetRequest, opts ...client.CallOption) (*proto.GreetResponse, error) {
+func (c *GreetServiceClientImpl) Greet(ctx context.Context, req *proto.GreetRequest, opts ...client.CallOption) (*proto.GreetResponse, error) {
 	triReq := triple_protocol.NewRequest(req)
 	resp := new(proto.GreetResponse)
 	triResp := triple_protocol.NewResponse(resp)
@@ -92,7 +93,7 @@ func (c *greetServiceClient) Greet(ctx context.Context, req *proto.GreetRequest,
 	return resp, nil
 }
 
-func (c *greetServiceClient) GreetStream(ctx context.Context, opts ...client.CallOption) (GreetService_GreetStreamClient, error) {
+func (c *GreetServiceClientImpl) GreetStream(ctx context.Context, opts ...client.CallOption) (GreetService_GreetStreamClient, error) {
 	stream, err := c.cli.CallBidiStream(ctx, "greet.GreetService", "GreetStream", opts...)
 	if err != nil {
 		return nil, err
@@ -101,7 +102,7 @@ func (c *greetServiceClient) GreetStream(ctx context.Context, opts ...client.Cal
 	return &greetServiceGreetStreamClient{rawStream}, nil
 }
 
-func (c *greetServiceClient) GreetClientStream(ctx context.Context, opts ...client.CallOption) (GreetService_GreetClientStreamClient, error) {
+func (c *GreetServiceClientImpl) GreetClientStream(ctx context.Context, opts ...client.CallOption) (GreetService_GreetClientStreamClient, error) {
 	stream, err := c.cli.CallClientStream(ctx, "greet.GreetService", "GreetClientStream", opts...)
 	if err != nil {
 		return nil, err
@@ -110,7 +111,7 @@ func (c *greetServiceClient) GreetClientStream(ctx context.Context, opts ...clie
 	return &greetServiceGreetClientStreamClient{rawStream}, nil
 }
 
-func (c *greetServiceClient) GreetServerStream(ctx context.Context, req *proto.GreetServerStreamRequest, opts ...client.CallOption) (GreetService_GreetServerStreamClient, error) {
+func (c *GreetServiceClientImpl) GreetServerStream(ctx context.Context, req *proto.GreetServerStreamRequest, opts ...client.CallOption) (GreetService_GreetServerStreamClient, error) {
 	triReq := triple_protocol.NewRequest(req)
 	stream, err := c.cli.CallServerStream(ctx, triReq, "greet.GreetService", "GreetServerStream", opts...)
 	if err != nil {
@@ -208,6 +209,10 @@ func (cli *greetServiceGreetServerStreamClient) Conn() (triple_protocol.Streamin
 var GreetService_ClientInfo = client.ClientInfo{
 	InterfaceName: "greet.GreetService",
 	MethodNames:   []string{"Greet", "GreetStream", "GreetClientStream", "GreetServerStream"},
+	ClientInjectFunc: func(dubboCliRaw interface{}, cli *client.Client) {
+		dubboCli := dubboCliRaw.(GreetServiceClientImpl)
+		dubboCli.cli = cli
+	},
 }
 
 // GreetServiceHandler is an implementation of the greet.GreetService service.

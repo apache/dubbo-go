@@ -161,6 +161,10 @@ func (rc *ReferenceConfig) ReferWithInfo(info *ClientInfo) {
 	rc.refer(info, nil)
 }
 
+func (rc *ReferenceConfig) ReferWithServiceAndInfo(srv interface{}, info *ClientInfo) {
+	rc.refer(info, srv)
+}
+
 func (rc *ReferenceConfig) refer(info *ClientInfo, srv interface{}) {
 	var methods []string
 	if info != nil {

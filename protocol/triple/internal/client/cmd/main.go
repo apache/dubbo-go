@@ -10,30 +10,35 @@ import (
 )
 
 func main() {
+	//client initialization
 	cli, err := client.NewClient(
 		client.WithURL("127.0.0.1:8080"),
 	)
-	clie, err := greettriple.NewGreetServiceClient(cli)
+	dubboCli, err := greettriple.NewGreetServiceClient(cli)
 	if err != nil {
 		panic(err)
 	}
 
-	if err := testUnary(clie); err != nil {
+	// classic config initialization
+	//dubboCli := new(greettriple.GreetServiceClientImpl)
+	//greettriple.SetConsumerService(dubboCli)
+
+	if err := testUnary(dubboCli); err != nil {
 		logger.Error(err)
 		return
 	}
 
-	if err := testBidiStream(clie); err != nil {
+	if err := testBidiStream(dubboCli); err != nil {
 		logger.Error(err)
 		return
 	}
 
-	if err := testClientStream(clie); err != nil {
+	if err := testClientStream(dubboCli); err != nil {
 		logger.Error(err)
 		return
 	}
 
-	if err := testServerStream(clie); err != nil {
+	if err := testServerStream(dubboCli); err != nil {
 		logger.Error(err)
 		return
 	}
@@ -73,7 +78,7 @@ func testBidiStream(cli greettriple.GreetServiceClient) error {
 }
 
 func testClientStream(cli greettriple.GreetServiceClient) error {
-	logger.Info("start to test TRIPLE client stream")
+	logger.Info("start to test TRIPLE dubboClint stream")
 	stream, err := cli.GreetClientStream(context.Background())
 	if err != nil {
 		return err
@@ -87,7 +92,7 @@ func testClientStream(cli greettriple.GreetServiceClient) error {
 	if err != nil {
 		return err
 	}
-	logger.Infof("TRIPLE client stream resp: %s", resp.Greeting)
+	logger.Infof("TRIPLE dubboClint stream resp: %s", resp.Greeting)
 	return nil
 }
 
