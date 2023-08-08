@@ -5,6 +5,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"fmt"
 	"github.com/dubbogo/gost/log/logger"
 	"sync"
 )
@@ -49,37 +50,36 @@ func (ti *TripleInvoker) Invoke(ctx context.Context, invocation protocol.Invocat
 		result.Err = protocol.ErrClientClosed
 		return &result
 	}
-	consumeTypeRaw, ok := invocation.GetAttribute(constant.ConsumeTypeKey)
+	callTypeRaw, ok := invocation.GetAttribute(constant.CallTypeKey)
 	if !ok {
-		panic("")
+		panic("Miss CallType to invoke TripleInvoker")
 	}
-	consumeType, ok := consumeTypeRaw.(string)
+	callType, ok := callTypeRaw.(string)
 	if !ok {
-		panic("")
+		panic(fmt.Sprintf("CallType should be string, but got %v", callTypeRaw))
 	}
 	inRaw := invocation.ParameterRawValues()
+	inRawLen := len(inRaw)
 	method := invocation.MethodName()
-	switch consumeType {
-	case constant.ConsumeUnary:
+	switch callType {
+	case constant.CallUnary:
 		if len(inRaw) != 2 {
-			panic("")
+			panic(fmt.Sprintf("Wrong parameter Values number for CallUnary, want 2, but got %d", inRawLen))
 		}
 		if err := ti.clientManager.callUnary(ctx, method, inRaw[0], inRaw[1]); err != nil {
-			result.Err = err
+			result.SetError(err)
 			return &result
 		}
-	case constant.ConsumeClientStream:
+	case constant.CallClientStream:
 		stream, err := ti.clientManager.callClientStream(ctx, method)
 		if err != nil {
-			result.Err = err
+			result.SetError(err)
 			return &result
 		}
 		result.SetResult(stream)
-		ReflectResponse(stream, invocation.Reply())
-		return &result
-	case constant.ConsumeServerStream:
-		if len(inRaw) != 1 {
-			panic("")
+	case constant.CallServerStream:
+		if inRawLen != 1 {
+			panic(fmt.Sprintf("Wrong parameter Values number for CallServerStream, want 1, but got %d", inRawLen))
 		}
 		stream, err := ti.clientManager.callServerStream(ctx, method, inRaw[0])
 		if err != nil {
@@ -87,19 +87,15 @@ func (ti *TripleInvoker) Invoke(ctx context.Context, invocation protocol.Invocat
 			return &result
 		}
 		result.SetResult(stream)
-		ReflectResponse(stream, invocation.Reply())
-		return &result
-	case constant.ConsumeBidiStream:
+	case constant.CallBidiStream:
 		stream, err := ti.clientManager.callBidiStream(ctx, method)
 		if err != nil {
 			result.Err = err
 			return &result
 		}
 		result.SetResult(stream)
-		ReflectResponse(stream, invocation.Reply())
-		return &result
 	default:
-		panic("")
+		panic(fmt.Sprintf("Unsupported CallType: %s", callType))
 	}
 
 	return &result

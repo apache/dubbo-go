@@ -172,7 +172,7 @@ func (c *RegistryConfig) toURL(roleType common.RoleType) (*common.URL, error) {
 	)
 }
 
-func (c *RegistryConfig) toURLs(roleType common.RoleType) ([]*common.URL, error) {
+func (c *RegistryConfig) ToURLs(roleType common.RoleType) ([]*common.URL, error) {
 	address := c.translateRegistryAddress()
 	var urls []*common.URL
 	var err error
@@ -233,7 +233,7 @@ func loadRegistries(registryIds []string, registries map[string]*RegistryConfig,
 		}
 
 		if target {
-			if urls, err := registryConf.toURLs(roleType); err != nil {
+			if urls, err := registryConf.ToURLs(roleType); err != nil {
 				logger.Errorf("The registry id: %s url is invalid, error: %#v", k, err)
 				panic(err)
 			} else {

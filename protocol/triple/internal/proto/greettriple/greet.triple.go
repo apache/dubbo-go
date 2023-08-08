@@ -6,11 +6,12 @@ package greettriple
 
 import (
 	context "context"
-	consumer "dubbo.apache.org/dubbo-go/v3/consumer"
-	protocol "dubbo.apache.org/dubbo-go/v3/protocol"
-	invocation "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	client "dubbo.apache.org/dubbo-go/v3/client"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/config"
 	proto "dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto"
 	triple_protocol "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
+	"dubbo.apache.org/dubbo-go/v3/provider"
 	errors "errors"
 	http "net/http"
 )
@@ -50,10 +51,10 @@ const (
 
 // GreetServiceClient is a client for the greet.GreetService service.
 type GreetServiceClient interface {
-	Greet(ctx context.Context, req *proto.GreetRequest, opts ...consumer.ConsumeOption) (*proto.GreetResponse, error)
-	GreetStream(ctx context.Context, opts ...consumer.ConsumeOption) (*triple_protocol.BidiStreamForClient, error)
-	GreetClientStream(ctx context.Context, opts ...consumer.ConsumeOption) (*triple_protocol.ClientStreamForClient, error)
-	GreetServerStream(ctx context.Context, req *proto.GreetServerStreamRequest, opts ...consumer.ConsumeOption) (*triple_protocol.ServerStreamForClient, error)
+	Greet(ctx context.Context, req *proto.GreetRequest, opts ...client.CallOption) (*proto.GreetResponse, error)
+	GreetStream(ctx context.Context, opts ...client.CallOption) (GreetService_GreetStreamClient, error)
+	GreetClientStream(ctx context.Context, opts ...client.CallOption) (GreetService_GreetClientStreamClient, error)
+	GreetServerStream(ctx context.Context, req *proto.GreetServerStreamRequest, opts ...client.CallOption) (GreetService_GreetServerStreamClient, error)
 }
 
 // NewGreetServiceClient constructs a client for the greet.GreetService service. By default, it uses
@@ -63,169 +64,300 @@ type GreetServiceClient interface {
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
-func NewGreetServiceClient(con *consumer.Consumer) (GreetServiceClient, error) {
-	if err := con.Assemble("greet.GreetService", []string{"Greet", "GreetStream", "GreetClientStream", "GreetServerStream"}, nil); err != nil {
+func NewGreetServiceClient(cli *client.Client) (GreetServiceClient, error) {
+	if err := cli.Init(&GreetService_ClientInfo); err != nil {
 		return nil, err
 	}
 	return &greetServiceClient{
-		con: con,
+		cli: cli,
 	}, nil
+}
+
+func SetConsumerService() {
+	config.SetClientInfo(&GreetService_ClientInfo)
 }
 
 // greetServiceClient implements GreetServiceClient.
 type greetServiceClient struct {
-	con *consumer.Consumer
+	cli *client.Client
 }
 
-func (c *greetServiceClient) Greet(ctx context.Context, req *proto.GreetRequest, opts ...consumer.ConsumeOption) (*proto.GreetResponse, error) {
+func (c *greetServiceClient) Greet(ctx context.Context, req *proto.GreetRequest, opts ...client.CallOption) (*proto.GreetResponse, error) {
 	triReq := triple_protocol.NewRequest(req)
 	resp := new(proto.GreetResponse)
 	triResp := triple_protocol.NewResponse(resp)
-	if err := c.con.ConsumeUnary(ctx, triReq, triResp, "greet.GreetService", "Greet", opts...); err != nil {
+	if err := c.cli.CallUnary(ctx, triReq, triResp, "greet.GreetService", "Greet", opts...); err != nil {
 		return nil, err
 	}
 	return resp, nil
 }
 
-func (c *greetServiceClient) GreetStream(ctx context.Context, opts ...consumer.ConsumeOption) (*triple_protocol.BidiStreamForClient, error) {
-	stream, err := c.con.ConsumeBidiStream(ctx, "greet.GreetService", "GreetStream", opts...)
+func (c *greetServiceClient) GreetStream(ctx context.Context, opts ...client.CallOption) (GreetService_GreetStreamClient, error) {
+	stream, err := c.cli.CallBidiStream(ctx, "greet.GreetService", "GreetStream", opts...)
 	if err != nil {
 		return nil, err
 	}
 	rawStream := stream.(*triple_protocol.BidiStreamForClient)
-	return rawStream, nil
+	return &greetServiceGreetStreamClient{rawStream}, nil
 }
 
-func (c *greetServiceClient) GreetClientStream(ctx context.Context, opts ...consumer.ConsumeOption) (*triple_protocol.ClientStreamForClient, error) {
-	stream, err := c.con.ConsumeClientStream(ctx, "greet.GreetService", "GreetClientStream", opts...)
+func (c *greetServiceClient) GreetClientStream(ctx context.Context, opts ...client.CallOption) (GreetService_GreetClientStreamClient, error) {
+	stream, err := c.cli.CallClientStream(ctx, "greet.GreetService", "GreetClientStream", opts...)
 	if err != nil {
 		return nil, err
 	}
 	rawStream := stream.(*triple_protocol.ClientStreamForClient)
-	return rawStream, nil
+	return &greetServiceGreetClientStreamClient{rawStream}, nil
 }
 
-func (c *greetServiceClient) GreetServerStream(ctx context.Context, req *proto.GreetServerStreamRequest, opts ...consumer.ConsumeOption) (*triple_protocol.ServerStreamForClient, error) {
+func (c *greetServiceClient) GreetServerStream(ctx context.Context, req *proto.GreetServerStreamRequest, opts ...client.CallOption) (GreetService_GreetServerStreamClient, error) {
 	triReq := triple_protocol.NewRequest(req)
-	stream, err := c.con.ConsumeServerStream(ctx, triReq, "greet.GreetService", "GreetServerStream", opts...)
+	stream, err := c.cli.CallServerStream(ctx, triReq, "greet.GreetService", "GreetServerStream", opts...)
 	if err != nil {
 		return nil, err
 	}
 	rawStream := stream.(*triple_protocol.ServerStreamForClient)
-	return rawStream, nil
+	return &greetServiceGreetServerStreamClient{rawStream}, nil
+}
+
+type GreetService_GreetStreamClient interface {
+	Spec() triple_protocol.Spec
+	Peer() triple_protocol.Peer
+	Send(*proto.GreetStreamRequest) error
+	RequestHeader() http.Header
+	CloseRequest() error
+	Recv() (*proto.GreetStreamResponse, error)
+	ResponseHeader() http.Header
+	ResponseTrailer() http.Header
+	CloseResponse() error
+}
+
+type greetServiceGreetStreamClient struct {
+	*triple_protocol.BidiStreamForClient
+}
+
+func (cli *greetServiceGreetStreamClient) Send(msg *proto.GreetStreamRequest) error {
+	return cli.BidiStreamForClient.Send(msg)
+}
+
+func (cli *greetServiceGreetStreamClient) Recv() (*proto.GreetStreamResponse, error) {
+	msg := new(proto.GreetStreamResponse)
+	if err := cli.BidiStreamForClient.Receive(msg); err != nil {
+		return nil, err
+	}
+	return msg, nil
+}
+
+type GreetService_GreetClientStreamClient interface {
+	Spec() triple_protocol.Spec
+	Peer() triple_protocol.Peer
+	Send(any) error
+	RequestHeader() http.Header
+	CloseAndRecv() (*proto.GreetClientStreamResponse, error)
+	Conn() (triple_protocol.StreamingClientConn, error)
+}
+
+type greetServiceGreetClientStreamClient struct {
+	*triple_protocol.ClientStreamForClient
+}
+
+func (cli *greetServiceGreetClientStreamClient) CloseAndRecv() (*proto.GreetClientStreamResponse, error) {
+	msg := new(proto.GreetClientStreamResponse)
+	resp := triple_protocol.NewResponse(msg)
+	if err := cli.ClientStreamForClient.CloseAndReceive(resp); err != nil {
+		return nil, err
+	}
+	return msg, nil
+}
+
+func (cli *greetServiceGreetClientStreamClient) Conn() (triple_protocol.StreamingClientConn, error) {
+	return cli.ClientStreamForClient.Conn()
+}
+
+type GreetService_GreetServerStreamClient interface {
+	Recv() bool
+	ResponseHeader() http.Header
+	ResponseTrailer() http.Header
+	Msg() *proto.GreetServerStreamResponse
+	Err() error
+	Conn() (triple_protocol.StreamingClientConn, error)
+	Close() error
+}
+
+type greetServiceGreetServerStreamClient struct {
+	*triple_protocol.ServerStreamForClient
+}
+
+func (cli *greetServiceGreetServerStreamClient) Recv() bool {
+	msg := new(proto.GreetServerStreamResponse)
+	return cli.ServerStreamForClient.Receive(msg)
+}
+
+func (cli *greetServiceGreetServerStreamClient) Msg() *proto.GreetServerStreamResponse {
+	msg := cli.ServerStreamForClient.Msg()
+	if msg == nil {
+		return new(proto.GreetServerStreamResponse)
+	}
+	return msg.(*proto.GreetServerStreamResponse)
+}
+
+func (cli *greetServiceGreetServerStreamClient) Conn() (triple_protocol.StreamingClientConn, error) {
+	return cli.ServerStreamForClient.Conn()
+}
+
+var GreetService_ClientInfo = client.ClientInfo{
+	InterfaceName: "greet.GreetService",
+	MethodNames:   []string{"Greet", "GreetStream", "GreetClientStream", "GreetServerStream"},
 }
 
 // GreetServiceHandler is an implementation of the greet.GreetService service.
 type GreetServiceHandler interface {
 	Greet(context.Context, *proto.GreetRequest) (*proto.GreetResponse, error)
-	GreetStream(context.Context, *triple_protocol.BidiStream) error
-	GreetClientStream(context.Context, *triple_protocol.ClientStream) (*triple_protocol.Response, error)
-	GreetServerStream(context.Context, *triple_protocol.Request, *triple_protocol.ServerStream) error
+	GreetStream(context.Context, GreetService_GreetStreamServer) error
+	GreetClientStream(context.Context, GreetService_GreetClientStreamServer) (*proto.GreetClientStreamResponse, error)
+	GreetServerStream(context.Context, *proto.GreetServerStreamRequest, GreetService_GreetServerStreamServer) error
 }
 
-// NewGreetServiceHandler builds an HTTP handler from the service implementation. It returns the
-// path on which to mount the handler and the handler itself.
-//
-// By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
-// and JSON codecs. They also support gzip compression.
-func NewGreetServiceHandler(svc GreetServiceHandler, opts ...triple_protocol.HandlerOption) (string, http.Handler) {
-	mux := http.NewServeMux()
-	mux.Handle(GreetServiceGreetProcedure, triple_protocol.NewUnaryHandler(
-		GreetServiceGreetProcedure,
-		svc.Greet,
-		opts...,
-	))
-	mux.Handle(GreetServiceGreetStreamProcedure, triple_protocol.NewBidiStreamHandler(
-		GreetServiceGreetStreamProcedure,
-		svc.GreetStream,
-		opts...,
-	))
-	mux.Handle(GreetServiceGreetClientStreamProcedure, triple_protocol.NewClientStreamHandler(
-		GreetServiceGreetClientStreamProcedure,
-		svc.GreetClientStream,
-		opts...,
-	))
-	mux.Handle(GreetServiceGreetServerStreamProcedure, triple_protocol.NewServerStreamHandler(
-		GreetServiceGreetServerStreamProcedure,
-		svc.GreetServerStream,
-		opts...,
-	))
-	return "/greet.GreetService/", mux
+func ProvideGreetServiceHandler(pro *provider.Provider, hdlr GreetServiceHandler) error {
+	return pro.Provide(hdlr, &GreetService_ServiceInfo)
 }
 
-// GreetServiceProviderBase is the Dubbo handler base embedded into user implementation api for the
-// greet.GreetService service.
-type GreetServiceProviderBase struct {
-	proxyImpl protocol.Invoker
+type GreetService_GreetStreamServer interface {
+	Send(*proto.GreetStreamResponse) error
+	Recv() (*proto.GreetStreamRequest, error)
+	Spec() triple_protocol.Spec
+	Peer() triple_protocol.Peer
+	RequestHeader() http.Header
+	ResponseHeader() http.Header
+	ResponseTrailer() http.Header
+	Conn() triple_protocol.StreamingHandlerConn
 }
 
-// SetProxyImpl sets proxy.
-func (s *GreetServiceProviderBase) SetProxyImpl(impl protocol.Invoker) {
-	s.proxyImpl = impl
+type greetServiceGreetStreamServer struct {
+	*triple_protocol.BidiStream
 }
 
-// GetProxyImpl gets proxy.
-func (s *GreetServiceProviderBase) GetProxyImpl() protocol.Invoker {
-	return s.proxyImpl
+func (srv *greetServiceGreetStreamServer) Send(msg *proto.GreetStreamResponse) error {
+	return srv.BidiStream.Send(msg)
 }
 
-// Register
-func (s *GreetServiceProviderBase) BuildHandler(impl interface{}, opts ...triple_protocol.HandlerOption) (string, http.Handler) {
-	_, ok := impl.(GreetServiceHandler)
-	if !ok {
-		panic("impl has not implemented GreetServiceHandler")
+func (srv greetServiceGreetStreamServer) Recv() (*proto.GreetStreamRequest, error) {
+	msg := new(proto.GreetStreamRequest)
+	if err := srv.BidiStream.Receive(msg); err != nil {
+		return nil, err
 	}
-	mux := http.NewServeMux()
-	mux.Handle(GreetServiceGreetProcedure, triple_protocol.NewUnaryHandler(
-		GreetServiceGreetProcedure,
-		func(ctx context.Context, req *triple_protocol.Request[proto.GreetRequest]) (*triple_protocol.Response[proto.GreetResponse], error) {
-			var args []interface{}
-			args = append(args, req)
-			// provider.Serve()
-			invo := invocation.NewRPCInvocation("Greet", args, nil)
-			res := s.proxyImpl.Invoke(ctx, invo)
-			return res.Result().(*triple_protocol.Response[proto.GreetResponse]), res.Error()
-		},
-		opts...,
-	))
-	mux.Handle(GreetServiceGreetStreamProcedure, triple_protocol.NewBidiStreamHandler(
-		GreetServiceGreetStreamProcedure,
-		func(ctx context.Context, stream *triple_protocol.BidiStream[proto.GreetStreamRequest, proto.GreetStreamResponse]) error {
-			var args []interface{}
-			args = append(args, stream)
-			invo := invocation.NewRPCInvocation("GreetStream", args, nil)
-			res := s.proxyImpl.Invoke(ctx, invo)
-			return res.Error()
-		},
-		opts...,
-	))
-	mux.Handle(GreetServiceGreetClientStreamProcedure, triple_protocol.NewClientStreamHandler(
-		GreetServiceGreetClientStreamProcedure,
-		func(ctx context.Context, stream *triple_protocol.ClientStream[proto.GreetClientStreamRequest]) (*triple_protocol.Response[proto.GreetClientStreamResponse], error) {
-			var args []interface{}
-			args = append(args, stream)
-			invo := invocation.NewRPCInvocation("GreetClientStream", args, nil)
-			res := s.proxyImpl.Invoke(ctx, invo)
-			return res.Result().(*triple_protocol.Response[proto.GreetClientStreamResponse]), res.Error()
-		},
-		opts...,
-	))
-	mux.Handle(GreetServiceGreetServerStreamProcedure, triple_protocol.NewServerStreamHandler(
-		GreetServiceGreetServerStreamProcedure,
-		func(ctx context.Context, req *triple_protocol.Request[proto.GreetServerStreamRequest], stream *triple_protocol.ServerStream[proto.GreetServerStreamResponse]) error {
-			var args []interface{}
-			args = append(args, req, stream)
-			invo := invocation.NewRPCInvocation("GreetServerStream", args, nil)
-			res := s.proxyImpl.Invoke(ctx, invo)
-			return res.Error()
-		},
-		opts...,
-	))
-	return "/greet.GreetService/", mux
+	return msg, nil
 }
 
-func (s *GreetServiceProviderBase) Reference() string {
-	return "greet.GreetService"
+type GreetService_GreetClientStreamServer interface {
+	Spec() triple_protocol.Spec
+	Peer() triple_protocol.Peer
+	Recv() bool
+	RequestHeader() http.Header
+	Msg() *proto.GreetClientStreamRequest
+	Err() error
+	Conn() triple_protocol.StreamingHandlerConn
+}
+
+type greetServiceGreetClientStreamServer struct {
+	*triple_protocol.ClientStream
+}
+
+func (srv *greetServiceGreetClientStreamServer) Recv() bool {
+	msg := new(proto.GreetClientStreamRequest)
+	return srv.ClientStream.Receive(msg)
+}
+
+func (srv *greetServiceGreetClientStreamServer) Msg() *proto.GreetClientStreamRequest {
+	msgRaw := srv.ClientStream.Msg()
+	if msgRaw == nil {
+		return new(proto.GreetClientStreamRequest)
+	}
+	return msgRaw.(*proto.GreetClientStreamRequest)
+}
+
+type GreetService_GreetServerStreamServer interface {
+	Send(*proto.GreetServerStreamResponse) error
+	ResponseHeader() http.Header
+	ResponseTrailer() http.Header
+	Conn() triple_protocol.StreamingHandlerConn
+}
+
+type greetServiceGreetServerStreamServer struct {
+	*triple_protocol.ServerStream
+}
+
+func (g greetServiceGreetServerStreamServer) Send(msg *proto.GreetServerStreamResponse) error {
+	return g.ServerStream.Send(msg)
+}
+
+var GreetService_ServiceInfo = provider.ServiceInfo{
+	InterfaceName: "greet.GreetService",
+	ServiceType:   (*GreetServiceHandler)(nil),
+	Methods: []provider.MethodInfo{
+		{
+			Name: "Greet",
+			Type: constant.CallUnary,
+			ReqInitFunc: func() interface{} {
+				return new(proto.GreetRequest)
+			},
+			MethodFunc: func(ctx context.Context, args []interface{}, handler interface{}) (interface{}, error) {
+				req := args[0].(*proto.GreetRequest)
+				res, err := handler.(GreetServiceHandler).Greet(ctx, req)
+				if err != nil {
+					return nil, err
+				}
+				return triple_protocol.NewResponse(res), nil
+			},
+		},
+		{
+			Name: "GreetStream",
+			Type: constant.CallBidiStream,
+			StreamInitFunc: func(baseStream interface{}) interface{} {
+				return greetServiceGreetStreamServer{baseStream.(*triple_protocol.BidiStream)}
+			},
+			MethodFunc: func(ctx context.Context, args []interface{}, handler interface{}) (interface{}, error) {
+				stream := args[0].(GreetService_GreetStreamServer)
+				if err := handler.(GreetServiceHandler).GreetStream(ctx, stream); err != nil {
+					return nil, err
+				}
+				return nil, nil
+			},
+		},
+		{
+			Name: "GreetClientStream",
+			Type: constant.CallClientStream,
+			StreamInitFunc: func(baseStream interface{}) interface{} {
+				return greetServiceGreetClientStreamServer{baseStream.(*triple_protocol.ClientStream)}
+			},
+			MethodFunc: func(ctx context.Context, args []interface{}, handler interface{}) (interface{}, error) {
+				stream := args[0].(GreetService_GreetClientStreamServer)
+				res, err := handler.(GreetServiceHandler).GreetClientStream(ctx, stream)
+				if err != nil {
+					return nil, err
+				}
+				return triple_protocol.NewResponse(res), nil
+			},
+		},
+		{
+			Name: "GreetServerStream",
+			Type: constant.CallServerStream,
+			ReqInitFunc: func() interface{} {
+				return new(proto.GreetClientStreamRequest)
+			},
+			StreamInitFunc: func(baseStream interface{}) interface{} {
+				return greetServiceGreetServerStreamServer{baseStream.(*triple_protocol.ServerStream)}
+			},
+			MethodFunc: func(ctx context.Context, args []interface{}, handler interface{}) (interface{}, error) {
+				req := args[0].(*proto.GreetServerStreamRequest)
+				stream := args[1].(GreetService_GreetServerStreamServer)
+				if err := handler.(GreetServiceHandler).GreetServerStream(ctx, req, stream); err != nil {
+					return nil, err
+				}
+				return nil, nil
+			},
+		},
+	},
 }
 
 // UnimplementedGreetServiceHandler returns CodeUnimplemented from all methods.

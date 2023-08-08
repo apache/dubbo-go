@@ -127,12 +127,12 @@ func (s *ServiceConfig) Init(rc *RootConfig) error {
 	if rc.Provider != nil {
 		s.ProxyFactoryKey = rc.Provider.ProxyFactory
 	}
-	s.RegistryIDs = translateIds(s.RegistryIDs)
+	s.RegistryIDs = TranslateIds(s.RegistryIDs)
 	if len(s.RegistryIDs) <= 0 {
 		s.RegistryIDs = rc.Provider.RegistryIDs
 	}
 
-	s.ProtocolIDs = translateIds(s.ProtocolIDs)
+	s.ProtocolIDs = TranslateIds(s.ProtocolIDs)
 	if len(s.ProtocolIDs) <= 0 {
 		s.ProtocolIDs = rc.Provider.ProtocolIDs
 	}
@@ -266,6 +266,7 @@ func (s *ServiceConfig) Export() error {
 			port = nextPort.Value.(string)
 			nextPort = nextPort.Next()
 		}
+		// URL串联作用，这里面包含几乎绝大部分配置
 		ivkURL := common.NewURLWithOptions(
 			common.WithPath(s.Interface),
 			common.WithProtocol(proto.Name),
@@ -302,7 +303,9 @@ func (s *ServiceConfig) Export() error {
 
 			for _, regUrl := range regUrls {
 				setRegistrySubURL(ivkURL, regUrl)
+				// base invoker
 				invoker := proxyFactory.GetInvoker(regUrl)
+				// 生成invoker 链
 				exporter := s.cacheProtocol.Export(invoker)
 				if exporter == nil {
 					return perrors.New(fmt.Sprintf("Registry protocol new exporter error, registry is {%v}, url is {%v}", regUrl, ivkURL))

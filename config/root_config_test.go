@@ -66,7 +66,7 @@ func TestNewRootConfigBuilder(t *testing.T) {
 		SetProtocols(map[string]*ProtocolConfig{"dubbo": protocolConfig}).
 		SetRegistries(map[string]*RegistryConfig{"nacos": registryConfig}).
 		SetProvider(NewProviderConfigBuilder().Build()).
-		SetConsumer(NewConsumerConfigBuilder().Build()).
+		SetConsumer(NewConsumerConfigsBuilder().Build()).
 		SetMetric(NewMetricConfigBuilder().Build()).
 		SetLogger(NewLoggerConfigBuilder().Build()).
 		SetShutdown(NewShutDownConfigBuilder().Build()).
@@ -77,7 +77,7 @@ func TestNewRootConfigBuilder(t *testing.T) {
 		Build()
 
 	assert.Equal(t, rootConfig.Prefix(), constant.Dubbo)
-	ids := rootConfig.getRegistryIds()
+	ids := rootConfig.GetRegistryIds()
 	assert.Equal(t, ids[0], "nacos")
 
 	down := GetShutDown()

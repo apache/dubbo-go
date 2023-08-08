@@ -18,6 +18,7 @@
 package config
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/client"
 	"sync"
 )
 
@@ -54,7 +55,7 @@ type RootConfig struct {
 	ConfigCenter        *CenterConfig              `yaml:"config-center" json:"config-center,omitempty"`
 	MetadataReport      *MetadataReportConfig      `yaml:"metadata-report" json:"metadata-report,omitempty" property:"metadata-report"`
 	Provider            *ProviderConfig            `yaml:"provider" json:"provider" property:"provider"`
-	Consumer            *ConsumerConfig            `yaml:"consumer" json:"consumer" property:"consumer"`
+	Consumer            *client.ConsumerConfig     `yaml:"consumer" json:"consumer" property:"consumer"`
 	Metric              *MetricConfig              `yaml:"metrics" json:"metrics,omitempty" property:"metrics"`
 	Tracing             map[string]*TracingConfig  `yaml:"tracing" json:"tracing,omitempty" property:"tracing"`
 	Logger              *LoggerConfig              `yaml:"logger" json:"logger,omitempty" property:"logger"`
@@ -87,11 +88,11 @@ func GetProviderConfig() *ProviderConfig {
 	return NewProviderConfigBuilder().Build()
 }
 
-func GetConsumerConfig() *ConsumerConfig {
+func GetConsumerConfig() *client.ConsumerConfig {
 	if err := check(); err == nil && rootConfig.Consumer != nil {
 		return rootConfig.Consumer
 	}
-	return NewConsumerConfigBuilder().Build()
+	return NewConsumerConfigsBuilder().Build()
 }
 
 func GetApplicationConfig() *ApplicationConfig {
@@ -112,8 +113,8 @@ func GetTLSConfig() *TLSConfig {
 	return NewTLSConfigBuilder().Build()
 }
 
-// getRegistryIds get registry ids
-func (rc *RootConfig) getRegistryIds() []string {
+// GetRegistryIds get registry ids
+func (rc *RootConfig) GetRegistryIds() []string {
 	ids := make([]string, 0)
 	for key := range rc.Registries {
 		ids = append(ids, key)
@@ -226,7 +227,7 @@ func newEmptyRootConfig() *RootConfig {
 		Protocols:      make(map[string]*ProtocolConfig),
 		Tracing:        make(map[string]*TracingConfig),
 		Provider:       NewProviderConfigBuilder().Build(),
-		Consumer:       NewConsumerConfigBuilder().Build(),
+		Consumer:       NewConsumerConfigsBuilder().Build(),
 		Metric:         NewMetricConfigBuilder().Build(),
 		Logger:         NewLoggerConfigBuilder().Build(),
 		Custom:         NewCustomConfigBuilder().Build(),
@@ -279,7 +280,7 @@ func (rb *RootConfigBuilder) SetProvider(provider *ProviderConfig) *RootConfigBu
 	return rb
 }
 
-func (rb *RootConfigBuilder) SetConsumer(consumer *ConsumerConfig) *RootConfigBuilder {
+func (rb *RootConfigBuilder) SetConsumer(consumer *client.ConsumerConfig) *RootConfigBuilder {
 	rb.rootConfig.Consumer = consumer
 	return rb
 }

@@ -37,11 +37,10 @@ type Handler struct {
 // NewUnaryHandler constructs a [Handler] for a request-response procedure.
 func NewUnaryHandler(
 	procedure string,
-	reqInitFunc func() *Request,
+	reqInitFunc func() interface{},
 	unary func(context.Context, *Request) (*Response, error),
 	options ...HandlerOption,
 ) *Handler {
-	req := reqInitFunc()
 	// Wrap the strongly-typed implementation so we can apply interceptors.
 	untyped := UnaryHandlerFunc(func(ctx context.Context, request AnyRequest) (AnyResponse, error) {
 		// verify err
@@ -69,15 +68,17 @@ func NewUnaryHandler(
 	// conn should be responsible for marshal and unmarshal
 	// Given a stream, how should we call the unary function?
 	implementation := func(ctx context.Context, conn StreamingHandlerConn) error {
-		if err := conn.Receive(&req.Msg); err != nil {
+		req := reqInitFunc()
+		if err := conn.Receive(&req); err != nil {
 			return err
 		}
 		// wrap the specific msg
-		req.spec = conn.Spec()
-		req.peer = conn.Peer()
-		req.header = conn.RequestHeader()
+		request := NewRequest(req)
+		request.spec = conn.Spec()
+		request.peer = conn.Peer()
+		request.header = conn.RequestHeader()
 
-		response, err := untyped(ctx, req)
+		response, err := untyped(ctx, request)
 		if err != nil {
 			return err
 		}
@@ -128,7 +129,7 @@ func NewClientStreamHandler(
 // NewServerStreamHandler constructs a [Handler] for a server streaming procedure.
 func NewServerStreamHandler(
 	procedure string,
-	reqInitFunc func() *Request,
+	reqInitFunc func() interface{},
 	implementation func(context.Context, *Request, *ServerStream) error,
 	options ...HandlerOption,
 ) *Handler {

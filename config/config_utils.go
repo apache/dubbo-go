@@ -90,8 +90,8 @@ func removeDuplicateElement(items []string) []string {
 	return result
 }
 
-// translateIds string "nacos,zk" => ["nacos","zk"]
-func translateIds(registryIds []string) []string {
+// TranslateIds string "nacos,zk" => ["nacos","zk"]
+func TranslateIds(registryIds []string) []string {
 	ids := make([]string, 0)
 	for _, id := range registryIds {
 

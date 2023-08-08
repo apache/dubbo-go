@@ -79,7 +79,7 @@ func TestConfigUtils(t *testing.T) {
 
 	assert.Equal(t, id, strings.Join([]string{constant.RegistryConfigPrefix, "nacos", "127.0.0.1:8848"}, "-"))
 
-	ids := translateIds([]string{"nacos,zk"})
+	ids := TranslateIds([]string{"nacos,zk"})
 	assert.Equal(t, ids[0], "nacos")
 	assert.Equal(t, ids[1], "zk")
 

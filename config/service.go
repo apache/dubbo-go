@@ -18,6 +18,7 @@
 package config
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/client"
 	"sync"
 )
 
@@ -30,12 +31,14 @@ import (
 )
 
 var (
-	conServicesLock              = sync.Mutex{}                   // used to guard conServices map.
-	conServices                  = map[string]common.RPCService{} // service name -> service
-	proServicesLock              = sync.Mutex{}                   // used to guard proServices map
-	proServices                  = map[string]common.RPCService{} // service name -> service
-	interfaceNameConServicesLock = sync.Mutex{}                   // used to guard interfaceNameConServices map
-	interfaceNameConServices     = map[string]common.RPCService{} // interfaceName -> service
+	conServicesLock              = sync.Mutex{}                    // used to guard conServices map.
+	conServices                  = map[string]common.RPCService{}  // service name -> service
+	proServicesLock              = sync.Mutex{}                    // used to guard proServices map
+	proServices                  = map[string]common.RPCService{}  // service name -> service
+	interfaceNameConServicesLock = sync.Mutex{}                    // used to guard interfaceNameConServices map
+	interfaceNameConServices     = map[string]common.RPCService{}  // interfaceName -> service
+	clientInfosLock              = sync.Mutex{}                    // used to guard clientInfos set
+	clientInfos                  = map[string]*client.ClientInfo{} // service name -> ClientInfo
 )
 
 // SetConsumerService is called by init() of implement of RPCService
@@ -105,4 +108,19 @@ func GetCallback(name string) func(response common.CallbackResponse) {
 		return sv.CallBack
 	}
 	return nil
+}
+
+// SetClientInfo set new info into clientInfos if new info is not nil
+func SetClientInfo(info *client.ClientInfo) {
+	if info == nil {
+		return
+	}
+	clientInfosLock.Lock()
+	defer clientInfosLock.Unlock()
+	clientInfos[info.InterfaceName] = info
+}
+
+// GetClientInfosMap returns clientInfos
+func GetClientInfosMap() map[string]*client.ClientInfo {
+	return clientInfos
 }

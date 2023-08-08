@@ -219,7 +219,7 @@ func handleService2(url *common.URL, mux *http.ServeMux, opts ...tri.HandlerOpti
 		procedure := path.Join(interfaceName, method)
 		typ := types[i]
 		switch typ {
-		case constant.ConsumeUnary:
+		case constant.CallUnary:
 			handler = tri.NewUnaryHandler(
 				procedure,
 				func(ctx context.Context, req *tri.Request) (*tri.Response, error) {
