@@ -22,6 +22,7 @@ import (
 	"net/url"
 	"os"
 	"sync"
+	"time"
 )
 
 import (
@@ -41,6 +42,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	_ "dubbo.apache.org/dubbo-go/v3/config_center/configurator"
+	"dubbo.apache.org/dubbo-go/v3/metrics"
+	metricsRegistry "dubbo.apache.org/dubbo-go/v3/metrics/registry"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
 	"dubbo.apache.org/dubbo-go/v3/registry"
@@ -97,7 +100,7 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry) (director
 	if err := dir.registry.LoadSubscribeInstances(url.SubURL, dir); err != nil {
 		return nil, err
 	}
-
+	metrics.Publish(metricsRegistry.NewDirectoryEvent(metricsRegistry.NumAllInc))
 	return dir, nil
 }
 
@@ -114,7 +117,9 @@ func (dir *RegistryDirectory) Notify(event *registry.ServiceEvent) {
 	if event == nil {
 		return
 	}
+	start := time.Now()
 	dir.refreshInvokers(event)
+	metrics.Publish(metricsRegistry.NewNotifyEvent(start))
 }
 
 // NotifyAll notify the events that are complete Service Event List.
@@ -336,6 +341,7 @@ func (dir *RegistryDirectory) uncacheInvokerWithClusterID(clusterID string) []pr
 
 // uncacheInvoker will return abandoned Invoker, if no Invoker to be abandoned, return nil
 func (dir *RegistryDirectory) uncacheInvoker(event *registry.ServiceEvent) []protocol.Invoker {
+	defer metrics.Publish(metricsRegistry.NewDirectoryEvent(metricsRegistry.NumDisableTotal))
 	if clusterID := event.Service.GetParam(constant.MeshClusterIDKey, ""); event.Service.Location == constant.MeshAnyAddrMatcher && clusterID != "" {
 		dir.uncacheInvokerWithClusterID(clusterID)
 	}
@@ -389,6 +395,7 @@ func (dir *RegistryDirectory) doCacheInvoker(newUrl *common.URL, event *registry
 			logger.Warnf("service will be added in cache invokers fail, result is null, invokers url is %+v", newUrl.String())
 		}
 	} else {
+		metrics.Publish(metricsRegistry.NewDirectoryEvent(metricsRegistry.NumValidTotal))
 		// if cached invoker has the same URL with the new URL, then no need to re-refer, and no need to destroy
 		// the old invoker.
 		if common.GetCompareURLEqualFunc()(newUrl, cacheInvoker.(protocol.Invoker).GetURL()) {
@@ -430,7 +437,7 @@ func (dir *RegistryDirectory) IsAvailable() bool {
 			return true
 		}
 	}
-
+	metrics.Publish(metricsRegistry.NewDirectoryEvent(metricsRegistry.NumToReconnectTotal))
 	return false
 }
 
@@ -444,6 +451,7 @@ func (dir *RegistryDirectory) Destroy() {
 			ivk.Destroy()
 		}
 	})
+	metrics.Publish(metricsRegistry.NewDirectoryEvent(metricsRegistry.NumAllDec))
 }
 
 func (dir *RegistryDirectory) overrideUrl(targetUrl *common.URL) {
