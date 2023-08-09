@@ -19,9 +19,14 @@ package prometheus
 
 import (
 	"sync"
+)
 
-	"dubbo.apache.org/dubbo-go/v3/metrics/util/aggregate"
+import (
 	prom "github.com/prometheus/client_golang/prometheus"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/metrics/util/aggregate"
 )
 
 type rtMetric struct {

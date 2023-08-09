@@ -21,10 +21,16 @@ import (
 	"reflect"
 	"sync"
 	"testing"
+)
 
-	"dubbo.apache.org/dubbo-go/v3/metrics/util/aggregate"
+import (
 	prom "github.com/prometheus/client_golang/prometheus"
+
 	"github.com/stretchr/testify/assert"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/metrics/util/aggregate"
 )
 
 func TestRtVecCollect(t *testing.T) {

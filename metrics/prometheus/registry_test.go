@@ -20,10 +20,16 @@ package prometheus
 import (
 	"sync"
 	"testing"
+)
 
-	"dubbo.apache.org/dubbo-go/v3/metrics"
+import (
 	prom "github.com/prometheus/client_golang/prometheus"
+
 	"github.com/stretchr/testify/assert"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/metrics"
 )
 
 var (
