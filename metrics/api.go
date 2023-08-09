@@ -65,6 +65,7 @@ type MetricRegistry interface {
 	Gauge(*MetricId) GaugeMetric         // add or update a gauge
 	Histogram(*MetricId) ObservableMetric // add a metric num to a histogram
 	Summary(*MetricId) ObservableMetric     // add a metric num to a summary
+	Rt(*MetricId) ObservableMetric     // add a metric num to a rt
 	Export()                             // expose metric data， such as Prometheus http exporter
 	// GetMetrics() []*MetricSample // get all metric data
 	// GetMetricsString() (string, error) // get text format metric data
@@ -134,7 +135,7 @@ type GaugeMetric interface {
 }
 // histogram summary rt metric
 type ObservableMetric interface {
-	Record(float64)
+	Observe(float64)
 }
 
 // StatesMetrics multi metrics，include total,success num, fail num，call MetricsRegistry save data
