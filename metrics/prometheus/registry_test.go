@@ -33,18 +33,17 @@ import (
 )
 
 var (
-	tags = map[string]string{"app": "dubbo", "version": "1.0.0"}
+	tags     = map[string]string{"app": "dubbo", "version": "1.0.0"}
 	metricId = &metrics.MetricId{Name: "dubbo_request", Desc: "request", Tags: tags}
 )
 
-
 func TestPromMetricRegistryCounter(t *testing.T) {
 	p := &promMetricRegistry{r: prom.NewRegistry()}
-	p.Counter(metricId).Inc();
+	p.Counter(metricId).Inc()
 	text, err := p.Scrape()
 	assert.Nil(t, err)
-	assert.Contains(t, text,"# HELP dubbo_request request\n# TYPE dubbo_request counter")
-	assert.Contains(t, text,`dubbo_request{app="dubbo",version="1.0.0"} 1`)
+	assert.Contains(t, text, "# HELP dubbo_request request\n# TYPE dubbo_request counter")
+	assert.Contains(t, text, `dubbo_request{app="dubbo",version="1.0.0"} 1`)
 }
 
 func TestPromMetricRegistryGauge(t *testing.T) {
@@ -80,7 +79,7 @@ func TestPromMetricRegistrySummary(t *testing.T) {
 
 func TestPromMetricRegistryRt(t *testing.T) {
 	p := &promMetricRegistry{r: prom.NewRegistry()}
-	for i := 0; i < 10;i++ {
+	for i := 0; i < 10; i++ {
 		p.Rt(metricId).Observe(10 * float64(i))
 	}
 	text, err := p.Scrape()
@@ -98,13 +97,13 @@ func TestPromMetricRegistryCounterConcurrent(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		wg.Add(1)
 		go func() {
-			p.Counter(metricId).Inc();	
+			p.Counter(metricId).Inc()
 			wg.Done()
 		}()
 	}
 	wg.Wait()
 	text, err := p.Scrape()
 	assert.Nil(t, err)
-	assert.Contains(t, text,"# HELP dubbo_request request\n# TYPE dubbo_request counter")
-	assert.Contains(t, text,`dubbo_request{app="dubbo",version="1.0.0"} 10`)
+	assert.Contains(t, text, "# HELP dubbo_request request\n# TYPE dubbo_request counter")
+	assert.Contains(t, text, `dubbo_request{app="dubbo",version="1.0.0"} 10`)
 }

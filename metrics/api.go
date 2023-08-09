@@ -28,7 +28,7 @@ import (
 var (
 	registries = make(map[string]func(*ReporterConfig) MetricRegistry)
 	collectors = make([]CollectorFunc, 0)
-	registry MetricRegistry
+	registry   MetricRegistry
 )
 
 // CollectorFunc used to extend more indicators
@@ -61,12 +61,12 @@ func AddCollector(name string, fun func(MetricRegistry, *ReporterConfig)) {
 
 // MetricRegistry data container，data compute、expose、agg
 type MetricRegistry interface {
-	Counter(*MetricId) CounterMetric     // add or update a counter
-	Gauge(*MetricId) GaugeMetric         // add or update a gauge
+	Counter(*MetricId) CounterMetric      // add or update a counter
+	Gauge(*MetricId) GaugeMetric          // add or update a gauge
 	Histogram(*MetricId) ObservableMetric // add a metric num to a histogram
-	Summary(*MetricId) ObservableMetric     // add a metric num to a summary
-	Rt(*MetricId) ObservableMetric     // add a metric num to a rt
-	Export()                             // expose metric data， such as Prometheus http exporter
+	Summary(*MetricId) ObservableMetric   // add a metric num to a summary
+	Rt(*MetricId) ObservableMetric        // add a metric num to a rt
+	Export()                              // expose metric data， such as Prometheus http exporter
 	// GetMetrics() []*MetricSample // get all metric data
 	// GetMetricsString() (string, error) // get text format metric data
 }
@@ -133,6 +133,7 @@ type GaugeMetric interface {
 	// Add(float64)
 	// Sub(float64)
 }
+
 // histogram summary rt metric
 type ObservableMetric interface {
 	Observe(float64)

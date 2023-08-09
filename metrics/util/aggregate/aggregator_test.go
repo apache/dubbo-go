@@ -42,7 +42,7 @@ func TestTimeWindowAggregatorAddAndResult(t *testing.T) {
 				Max:   30,
 				Avg:   20,
 				Count: 3,
-				Last: 30,
+				Last:  30,
 			},
 		},
 	}

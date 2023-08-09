@@ -122,7 +122,9 @@ func TestRtVecWith(t *testing.T) {
 		labelNames: []string{"app", "version"},
 	}
 	labels := map[string]string{"app": "dubbo", "version": "1.0.0"}
-	assert.True(t, r.With(labels) == r.With(labels)) // init once
+	first := r.With(labels)
+	second := r.With(labels)
+	assert.True(t, first == second) // init once
 }
 
 func TestRtVecWithConcurrent(t *testing.T) {

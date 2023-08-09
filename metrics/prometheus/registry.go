@@ -39,16 +39,16 @@ func init() {
 }
 
 type promMetricRegistry struct {
-	r prom.Registerer // for convenience of testing
+	r    prom.Registerer // for convenience of testing
 	vecs sync.Map
 }
 
-func (p *promMetricRegistry) getOrComputeVec(key string, supplier func()interface{}) interface{} {
+func (p *promMetricRegistry) getOrComputeVec(key string, supplier func() interface{}) interface{} {
 	v, ok := p.vecs.Load(key)
 	if !ok {
 		v, ok = p.vecs.LoadOrStore(key, supplier())
 		if !ok {
-			p.r.MustRegister(v.(prom.Collector))// only registe collector which stored success
+			p.r.MustRegister(v.(prom.Collector)) // only registe collector which stored success
 		}
 	}
 	return v
@@ -97,9 +97,9 @@ func (p *promMetricRegistry) Summary(m *metrics.MetricId) metrics.ObservableMetr
 func (p *promMetricRegistry) Rt(m *metrics.MetricId) metrics.ObservableMetric {
 	vec := p.getOrComputeVec(m.Name, func() interface{} {
 		return NewRtVec(&RtOpts{
-			Name: m.Name,
-			Help: m.Desc,
-			bucketNum: 10, // TODO configurable
+			Name:              m.Name,
+			Help:              m.Desc,
+			bucketNum:         10,  // TODO configurable
 			timeWindowSeconds: 120, // TODO configurable
 		}, m.TagKeys())
 	}).(*RtVec)
