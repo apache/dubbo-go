@@ -41,14 +41,8 @@ var (
 	metaCache *store.CacheManager
 )
 
-const (
-	defaultCacheName = "meta"
-	defaultFileName  = ".matadata"
-	defaultEntrySize = 100
-)
-
 func init() {
-	metaCache, _ = store.NewCacheManager("mata", defaultFileName, 10*time.Minute, defaultEntrySize)
+	metaCache, _ = store.NewCacheManager(constant.DefaultMetaCacheName, constant.DefaultMetaFileName, 10*time.Minute, constant.DefaultEntrySize)
 }
 
 // ServiceInstancesChangedListenerImpl The Service Discovery Changed  Event Listener

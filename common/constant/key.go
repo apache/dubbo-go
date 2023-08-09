@@ -416,3 +416,10 @@ const (
 	MetricsMetadata = "dubbo.metrics.metadata"
 	MetricApp       = "dubbo.metrics.app"
 )
+
+// default meta cache config
+const (
+	DefaultMetaCacheName = "meta"
+	DefaultMetaFileName  = ".matadata"
+	DefaultEntrySize     = 100
+)
