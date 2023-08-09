@@ -45,6 +45,7 @@ type Result struct {
 	Max   float64
 	Avg   float64
 	Count uint64
+	Last  float64
 }
 
 // Result returns the aggregate result of the sliding window by aggregating all panes.
@@ -58,12 +59,14 @@ func (t *TimeWindowAggregator) Result() *Result {
 	count := uint64(0)
 	max := math.SmallestNonzeroFloat64
 	min := math.MaxFloat64
+	last := math.NaN()
 
 	for _, v := range t.window.values(time.Now().UnixMilli()) {
 		total += v.(*aggregator).total
 		count += v.(*aggregator).count
 		max = math.Max(max, v.(*aggregator).max)
 		min = math.Min(min, v.(*aggregator).min)
+		last = v.(*aggregator).last
 	}
 
 	if count > 0 {
@@ -72,6 +75,7 @@ func (t *TimeWindowAggregator) Result() *Result {
 		res.Total = total
 		res.Max = max
 		res.Min = min
+		res.Last = last
 	}
 
 	return res
@@ -98,6 +102,7 @@ type aggregator struct {
 	max   float64
 	total float64
 	count uint64
+	last  float64
 }
 
 func newAggregator() *aggregator {
@@ -110,24 +115,9 @@ func newAggregator() *aggregator {
 }
 
 func (a *aggregator) add(v float64) {
-	a.updateMin(v)
-	a.updateMax(v)
-	a.updateTotal(v)
-	a.updateCount()
-}
-
-func (a *aggregator) updateMin(v float64) {
 	a.min = math.Min(a.min, v)
-}
-
-func (a *aggregator) updateMax(v float64) {
 	a.max = math.Max(a.max, v)
-}
-
-func (a *aggregator) updateTotal(v float64) {
+	a.last = v
 	a.total += v
-}
-
-func (a *aggregator) updateCount() {
 	a.count++
 }
