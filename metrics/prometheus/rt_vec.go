@@ -18,6 +18,7 @@
 package prometheus
 
 import (
+	"bytes"
 	"sync"
 )
 
@@ -69,19 +70,18 @@ func (v *valueAgg) Observe(val float64) {
 }
 
 func buildKey(m map[string]string, labNames []string) string {
-	var k string
+	var buffer bytes.Buffer
 	for _, label := range labNames {
-		if len(k) == 0 {
-			k += m[label]
-		} else {
-			k += "_" + m[label]
+		if buffer.Len() != 0 {
+			buffer.WriteString("_")
 		}
+		buffer.WriteString(m[label])
 	}
-	return k
+	return buffer.String()
 }
 
 func buildLabelValues(m map[string]string, labNames []string) []string {
-	values := make([]string, len(m))
+	values := make([]string, len(labNames))
 	for i, label := range labNames {
 		values[i] = m[label]
 	}
