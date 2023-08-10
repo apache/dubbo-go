@@ -19,7 +19,6 @@ package servicediscovery
 
 import (
 	"reflect"
-	"time"
 )
 
 import (
@@ -42,7 +41,11 @@ var (
 )
 
 func init() {
-	metaCache, _ = store.NewCacheManager(constant.DefaultMetaCacheName, constant.DefaultMetaFileName, 10*time.Minute, constant.DefaultEntrySize)
+	cache, err := store.NewCacheManager(constant.DefaultMetaCacheName, constant.DefaultMetaFileName, constant.DefaultEntrySize)
+	if err != nil {
+		logger.Fatal("Failed to create cache [%s],the err is %v", constant.DefaultMetaCacheName, err)
+	}
+	metaCache = cache
 }
 
 // ServiceInstancesChangedListenerImpl The Service Discovery Changed  Event Listener
@@ -122,6 +125,7 @@ func (lstn *ServiceInstancesChangedListenerImpl) OnEvent(e observer.Event) error
 		for revision, metadataInfo := range newRevisionToMetadata {
 			metaCache.Set(revision, metadataInfo)
 		}
+		metaCache.DumpCache()
 
 		for serviceInfo, revisions := range localServiceToRevisions {
 			revisionsToUrls := protocolRevisionsToUrls[serviceInfo.Protocol]
@@ -235,6 +239,9 @@ func GetMetadataInfo(instance registry.ServiceInstance, revision string) (*commo
 			return nil, err
 		}
 	}
+
 	metaCache.Set(revision, metadataInfo)
+	metaCache.DumpCache()
+
 	return metadataInfo, nil
 }
