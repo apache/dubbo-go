@@ -84,7 +84,6 @@ type ProxyInvoker struct {
 	protocol.BaseInvoker
 }
 
-// 调用用户传进来的业务逻辑
 // Invoke is used to call service method by invocation
 func (pi *ProxyInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 	result := &protocol.RPCResult{}

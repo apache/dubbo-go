@@ -20,39 +20,40 @@ func main() {
 	cli, err := client.NewClient(
 		client.WithURL("127.0.0.1:8080"),
 	)
-	dubboCli, err := greettriple.NewGreetServiceClient(cli)
+	svc, err := greettriple.NewGreetService(cli)
 	if err != nil {
 		panic(err)
 	}
 
 	// classic config initialization
-	//dubboCli := new(greettriple.GreetServiceClientImpl)
+	//svc := new(greettriple.GreetServiceImpl)
 	//greettriple.SetConsumerService(dubboCli)
+	//config.Load() // need dubbogo.yml
 
-	if err := testUnary(dubboCli); err != nil {
+	if err := testUnary(svc); err != nil {
 		logger.Error(err)
 		return
 	}
 
-	if err := testBidiStream(dubboCli); err != nil {
+	if err := testBidiStream(svc); err != nil {
 		logger.Error(err)
 		return
 	}
 
-	if err := testClientStream(dubboCli); err != nil {
+	if err := testClientStream(svc); err != nil {
 		logger.Error(err)
 		return
 	}
 
-	if err := testServerStream(dubboCli); err != nil {
+	if err := testServerStream(svc); err != nil {
 		logger.Error(err)
 		return
 	}
 }
 
-func testUnary(cli greettriple.GreetServiceClient) error {
+func testUnary(svc greettriple.GreetService) error {
 	logger.Info("start to test TRIPLE unary call")
-	resp, err := cli.Greet(context.Background(), &greet.GreetRequest{Name: "triple"})
+	resp, err := svc.Greet(context.Background(), &greet.GreetRequest{Name: "triple"})
 	if err != nil {
 		return err
 	}
@@ -60,9 +61,9 @@ func testUnary(cli greettriple.GreetServiceClient) error {
 	return nil
 }
 
-func testBidiStream(cli greettriple.GreetServiceClient) error {
+func testBidiStream(svc greettriple.GreetService) error {
 	logger.Info("start to test TRIPLE bidi stream")
-	stream, err := cli.GreetStream(context.Background())
+	stream, err := svc.GreetStream(context.Background())
 	if err != nil {
 		return err
 	}
@@ -83,9 +84,9 @@ func testBidiStream(cli greettriple.GreetServiceClient) error {
 	return nil
 }
 
-func testClientStream(cli greettriple.GreetServiceClient) error {
+func testClientStream(svc greettriple.GreetService) error {
 	logger.Info("start to test TRIPLE dubboClint stream")
-	stream, err := cli.GreetClientStream(context.Background())
+	stream, err := svc.GreetClientStream(context.Background())
 	if err != nil {
 		return err
 	}
@@ -102,9 +103,9 @@ func testClientStream(cli greettriple.GreetServiceClient) error {
 	return nil
 }
 
-func testServerStream(cli greettriple.GreetServiceClient) error {
+func testServerStream(svc greettriple.GreetService) error {
 	logger.Info("start to test TRIPLE server stream")
-	stream, err := cli.GreetServerStream(context.Background(), &greet.GreetServerStreamRequest{Name: "triple"})
+	stream, err := svc.GreetServerStream(context.Background(), &greet.GreetServerStreamRequest{Name: "triple"})
 	if err != nil {
 		return err
 	}

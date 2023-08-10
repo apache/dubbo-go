@@ -53,26 +53,26 @@ const (
 	GreetServiceGreetServerStreamProcedure = "/greet.GreetService/GreetServerStream"
 )
 
-// GreetServiceClient is a client for the greet.GreetService service.
-type GreetServiceClient interface {
+// GreetService is a client for the greet.GreetService service.
+type GreetService interface {
 	Greet(ctx context.Context, req *proto.GreetRequest, opts ...client.CallOption) (*proto.GreetResponse, error)
 	GreetStream(ctx context.Context, opts ...client.CallOption) (GreetService_GreetStreamClient, error)
 	GreetClientStream(ctx context.Context, opts ...client.CallOption) (GreetService_GreetClientStreamClient, error)
 	GreetServerStream(ctx context.Context, req *proto.GreetServerStreamRequest, opts ...client.CallOption) (GreetService_GreetServerStreamClient, error)
 }
 
-// NewGreetServiceClient constructs a client for the greet.GreetService service. By default, it uses
+// NewGreetService constructs a client for the greet.GreetService service. By default, it uses
 // the Connect protocol with the binary Protobuf Codec, asks for gzipped responses, and sends
 // uncompressed requests. To use the gRPC or gRPC-Web protocols, supply the connect.WithGRPC() or
 // connect.WithGRPCWeb() options.
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
-func NewGreetServiceClient(cli *client.Client) (GreetServiceClient, error) {
+func NewGreetService(cli *client.Client) (GreetService, error) {
 	if err := cli.Init(&GreetService_ClientInfo); err != nil {
 		return nil, err
 	}
-	return &GreetServiceClientImpl{
+	return &GreetServiceImpl{
 		cli: cli,
 	}, nil
 }
@@ -81,12 +81,12 @@ func SetConsumerService(srv common.RPCService) {
 	config.SetClientInfoService(&GreetService_ClientInfo, srv)
 }
 
-// GreetServiceClient implements GreetServiceClient.
-type GreetServiceClientImpl struct {
+// GreetServiceImpl implements GreetService.
+type GreetServiceImpl struct {
 	cli *client.Client
 }
 
-func (c *GreetServiceClientImpl) Greet(ctx context.Context, req *proto.GreetRequest, opts ...client.CallOption) (*proto.GreetResponse, error) {
+func (c *GreetServiceImpl) Greet(ctx context.Context, req *proto.GreetRequest, opts ...client.CallOption) (*proto.GreetResponse, error) {
 	triReq := triple_protocol.NewRequest(req)
 	resp := new(proto.GreetResponse)
 	triResp := triple_protocol.NewResponse(resp)
@@ -96,7 +96,7 @@ func (c *GreetServiceClientImpl) Greet(ctx context.Context, req *proto.GreetRequ
 	return resp, nil
 }
 
-func (c *GreetServiceClientImpl) GreetStream(ctx context.Context, opts ...client.CallOption) (GreetService_GreetStreamClient, error) {
+func (c *GreetServiceImpl) GreetStream(ctx context.Context, opts ...client.CallOption) (GreetService_GreetStreamClient, error) {
 	stream, err := c.cli.CallBidiStream(ctx, "greet.GreetService", "GreetStream", opts...)
 	if err != nil {
 		return nil, err
@@ -105,7 +105,7 @@ func (c *GreetServiceClientImpl) GreetStream(ctx context.Context, opts ...client
 	return &greetServiceGreetStreamClient{rawStream}, nil
 }
 
-func (c *GreetServiceClientImpl) GreetClientStream(ctx context.Context, opts ...client.CallOption) (GreetService_GreetClientStreamClient, error) {
+func (c *GreetServiceImpl) GreetClientStream(ctx context.Context, opts ...client.CallOption) (GreetService_GreetClientStreamClient, error) {
 	stream, err := c.cli.CallClientStream(ctx, "greet.GreetService", "GreetClientStream", opts...)
 	if err != nil {
 		return nil, err
@@ -114,7 +114,7 @@ func (c *GreetServiceClientImpl) GreetClientStream(ctx context.Context, opts ...
 	return &greetServiceGreetClientStreamClient{rawStream}, nil
 }
 
-func (c *GreetServiceClientImpl) GreetServerStream(ctx context.Context, req *proto.GreetServerStreamRequest, opts ...client.CallOption) (GreetService_GreetServerStreamClient, error) {
+func (c *GreetServiceImpl) GreetServerStream(ctx context.Context, req *proto.GreetServerStreamRequest, opts ...client.CallOption) (GreetService_GreetServerStreamClient, error) {
 	triReq := triple_protocol.NewRequest(req)
 	stream, err := c.cli.CallServerStream(ctx, triReq, "greet.GreetService", "GreetServerStream", opts...)
 	if err != nil {
@@ -213,7 +213,7 @@ var GreetService_ClientInfo = client.ClientInfo{
 	InterfaceName: "greet.GreetService",
 	MethodNames:   []string{"Greet", "GreetStream", "GreetClientStream", "GreetServerStream"},
 	ClientInjectFunc: func(dubboCliRaw interface{}, cli *client.Client) {
-		dubboCli := dubboCliRaw.(GreetServiceClientImpl)
+		dubboCli := dubboCliRaw.(GreetServiceImpl)
 		dubboCli.cli = cli
 	},
 }
