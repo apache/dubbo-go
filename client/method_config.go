@@ -18,6 +18,7 @@
 package client
 
 import (
+	commonCfg "dubbo.apache.org/dubbo-go/v3/common/config"
 	"fmt"
 	"strconv"
 )
@@ -108,7 +109,7 @@ func (m *MethodConfig) check() error {
 	if err := defaults.Set(m); err != nil {
 		return err
 	}
-	return verify(m)
+	return commonCfg.Verify(m)
 }
 
 type MethodOption func(*MethodConfig)
