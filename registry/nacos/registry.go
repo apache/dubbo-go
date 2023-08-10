@@ -229,7 +229,9 @@ func (nr *nacosRegistry) Subscribe(url *common.URL, notifyListener registry.Noti
 // getAllServices retrieves the list of all services from the registry
 func (nr *nacosRegistry) getAllServices() ([]string, error) {
 	services, err := nr.namingClient.Client().GetAllServicesInfo(vo.GetAllServiceInfoParam{
-		GroupName: nr.Group(),
+		GroupName: nr.GetParam(constant.RegistryGroupKey, defaultGroup),
+		PageNo:    1,
+		PageSize:  10,
 	})
 	return services.Doms, err
 }
