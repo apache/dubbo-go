@@ -18,7 +18,6 @@
 package client
 
 import (
-	commonCfg "dubbo.apache.org/dubbo-go/v3/common/config"
 	"fmt"
 	"strconv"
 )
@@ -28,6 +27,7 @@ import (
 )
 
 import (
+	commonCfg "dubbo.apache.org/dubbo-go/v3/common/config"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 )

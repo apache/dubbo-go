@@ -171,6 +171,8 @@ func WithMeshProviderPort(port int) ReferenceOption {
 	}
 }
 
+// ----------From ApplicationConfig----------
+
 func WithApplication(application *commonCfg.ApplicationConfig) ReferenceOption {
 	return func(cfg *ReferenceConfig) {
 		cfg.application = application
