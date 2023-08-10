@@ -27,7 +27,7 @@ import (
 )
 
 func TestCacheManager(t *testing.T) {
-	cm, err := NewCacheManager("test", "test_cache", 10)
+	cm, err := NewCacheManager("test", "test_cache", time.Second, 10)
 	if err != nil {
 		t.Fatalf("failed to create cache manager: %v", err)
 	}
@@ -58,14 +58,14 @@ func TestCacheManager(t *testing.T) {
 	}
 
 	// Test cache file creation and loading
-	cm2, err := NewCacheManager("test2", "nonexistent_cache", 10)
+	cm2, err := NewCacheManager("test2", "nonexistent_cache", time.Second, 10)
 	if err != nil {
 		t.Fatalf("failed to create cache manager: %v", err)
 	}
 	cm2.Set("key4", "value4")
-	cm2.DumpCache()
+	cm2.dumpCache()
 	time.Sleep(time.Second * 4)
-	cm3, err := NewCacheManager("test3", "nonexistent_cache", 10)
+	cm3, err := NewCacheManager("test3", "nonexistent_cache", time.Second, 10)
 	if err != nil {
 		t.Fatalf("failed to create cache manager: %v", err)
 	}
@@ -94,7 +94,7 @@ func TestMetaInfoCacheManager(t *testing.T) {
 	metadataInfo3 := common.NewMetadataInfo("3", "3", serverInfo)
 	metadataInfo4 := common.NewMetadataInfo("4", "4", serverInfo)
 
-	cm, err := NewCacheManager("metaTest1", "test_meta_cache", 10)
+	cm, err := NewCacheManager("metaTest1", "test_meta_cache", time.Second, 10)
 	if err != nil {
 		t.Fatalf("failed to create cache manager: %v", err)
 	}
@@ -125,14 +125,14 @@ func TestMetaInfoCacheManager(t *testing.T) {
 	}
 
 	// Test cache file creation and loading
-	cm2, err := NewCacheManager("metaTest2", "nonexistent_meta_cache", 10)
+	cm2, err := NewCacheManager("metaTest2", "nonexistent_meta_cache", time.Second, 10)
 	if err != nil {
 		t.Fatalf("failed to create cache manager: %v", err)
 	}
 	cm2.Set("key4", metadataInfo4)
-	cm2.DumpCache()
+	cm2.dumpCache()
 	time.Sleep(time.Second * 4)
-	cm3, err := NewCacheManager("test3", "nonexistent_meta_cache", 10)
+	cm3, err := NewCacheManager("test3", "nonexistent_meta_cache", time.Second, 10)
 	if err != nil {
 		t.Fatalf("failed to create cache manager: %v", err)
 	}
