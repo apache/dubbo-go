@@ -29,7 +29,7 @@ type CollectorFunc func(MetricRegistry, *ReporterConfig)
 // Init Metrics module
 func Init(config *ReporterConfig) {
 	if config.Enable {
-		// defalut protocol is already set in metricConfig
+		// default protocol is already set in metricConfig
 		regFunc, ok := registries[config.Protocol]
 		if ok {
 			registry = regFunc(config)
@@ -46,8 +46,8 @@ func SetRegistry(name string, v func(*ReporterConfig) MetricRegistry) {
 	registries[name] = v
 }
 
-// AddCollector add more indicators, like  metadata、sla、configcenter etc
-func AddCollector(name string, fun func(MetricRegistry, *ReporterConfig)) {
+// AddCollector add more indicators, like metadata, sla, config-center etc.
+func AddCollector(name string, fun CollectorFunc) {
 	collectors = append(collectors, fun)
 }
 
@@ -75,7 +75,7 @@ type RtOpts struct {
 // }
 
 // Type metric type, save with micrometer
-type Type uint8
+type Type uint8 // TODO check if Type is is useful
 
 const (
 	Counter Type = iota
@@ -94,8 +94,8 @@ const (
 type MetricId struct {
 	Name string
 	Desc string
-	Tags map[string]string
-	Type Type
+	Tags map[string]string // also named label
+	Type Type              // TODO check if this field is useful
 }
 
 func (m *MetricId) TagKeys() []string {
@@ -126,10 +126,10 @@ type CounterMetric interface {
 // GaugeMetric gauge metric
 type GaugeMetric interface {
 	Set(float64)
-	// Inc()
-	// Dec()
-	// Add(float64)
-	// Sub(float64)
+	Inc()
+	Dec()
+	Add(float64)
+	Sub(float64)
 }
 
 // histogram summary rt metric
