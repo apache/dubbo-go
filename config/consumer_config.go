@@ -102,6 +102,8 @@ func (cc *ConsumerConfig) Init(rc *RootConfig) error {
 		client.WithMeshEnabled(cc.MeshEnabled),
 		client.WithAdaptiveService(cc.AdaptiveService),
 		client.WithProxyFactory(cc.ProxyFactory),
+		client.WithApplication(rc.Application),
+		client.WithRegistries(rc.Registries),
 	}
 
 	for key, referenceConfig := range cc.References {
