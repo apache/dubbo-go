@@ -2,11 +2,16 @@ package client
 
 import (
 	"context"
+)
+
+import (
+	"github.com/pkg/errors"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	invocation_impl "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
-	"github.com/pkg/errors"
 )
 
 type Client struct {
@@ -94,68 +99,14 @@ func generateInvocation(methodName string, paramsRawVals []interface{}, callType
 
 func NewClient(opts ...ReferenceOption) (*Client, error) {
 	// get default RootConfigs
-	rootCfg := config.NewRootConfigBuilder().Build()
-	rootCfg.Init()
+	//rootCfg := config.NewRootConfigBuilder().Build()
+	//rootCfg.Init()
+	// todo: create a default ReferenceConfig
 	newRefCfg := &ReferenceConfig{}
-	for _, opt := range opts {
-		opt(newRefCfg)
-	}
-	if err := newRefCfg.Init(rootCfg); err != nil {
+	if err := newRefCfg.Init(opts...); err != nil {
 		return nil, err
 	}
 	return &Client{
 		cfg: newRefCfg,
 	}, nil
-}
-
-// NewClientWithReferenceBase is used by /config/consumer_config, it assumes that refCfg has been init
-func NewClientWithReferenceBase(refCfg *ReferenceConfig, opts ...ReferenceOption) (*Client, error) {
-	if refCfg == nil {
-		return nil, errors.New("ReferenceConfig is nil")
-	}
-	for _, opt := range opts {
-		opt(refCfg)
-	}
-	return &Client{
-		cfg: refCfg,
-	}, nil
-}
-
-func NewConsumerConfig(opts ...ConsumerOption) (*ConsumerConfig, error) {
-	rootCfg := config.NewRootConfigBuilder().Build()
-	rootCfg.Init()
-	newConCfg := &ConsumerConfig{}
-	for _, opt := range opts {
-		opt(newConCfg)
-	}
-	if err := newConCfg.Init(rootCfg); err != nil {
-		return nil, err
-	}
-	rootCfg.Consumer = newConCfg
-	return newConCfg, nil
-}
-
-// todo: create NewClientWithRootBase
-func NewClientWithConsumerBase(conCfg *ConsumerConfig, opts ...ReferenceOption) (*Client, error) {
-	newRefCfg := &ReferenceConfig{}
-	for _, opt := range opts {
-		opt(newRefCfg)
-	}
-	if err := newRefCfg.Init(conCfg.rootConfig); err != nil {
-		return nil, err
-	}
-	return &Client{
-		cfg: newRefCfg,
-	}, nil
-}
-
-func NewMethodConfig(opts ...MethodOption) (*MethodConfig, error) {
-	newMethodCfg := &MethodConfig{}
-	for _, opt := range opts {
-		opt(newMethodCfg)
-	}
-	if err := newMethodCfg.Init(); err != nil {
-		return nil, err
-	}
-	return newMethodCfg, nil
 }

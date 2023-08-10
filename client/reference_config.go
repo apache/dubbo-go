@@ -18,63 +18,83 @@
 package client
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/cluster/directory/static"
-	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/config"
-	"dubbo.apache.org/dubbo-go/v3/config/generic"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
-	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
-	"dubbo.apache.org/dubbo-go/v3/proxy"
 	"fmt"
-	"github.com/creasty/defaults"
-	"github.com/dubbogo/gost/log/logger"
-	gxstrings "github.com/dubbogo/gost/strings"
-	constant2 "github.com/dubbogo/triple/pkg/common/constant"
 	"net/url"
 	"os"
 	"strconv"
 	"time"
 )
 
+import (
+	"github.com/creasty/defaults"
+
+	"github.com/dubbogo/gost/log/logger"
+	gxstrings "github.com/dubbogo/gost/strings"
+
+	constant2 "github.com/dubbogo/triple/pkg/common/constant"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/cluster/directory/static"
+	"dubbo.apache.org/dubbo-go/v3/common"
+	commonCfg "dubbo.apache.org/dubbo-go/v3/common/config"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
+	"dubbo.apache.org/dubbo-go/v3/proxy"
+	"dubbo.apache.org/dubbo-go/v3/registry"
+)
+
 // ReferenceConfig is the configuration of service consumer
 type ReferenceConfig struct {
-	pxy              *proxy.Proxy
-	id               string
-	InterfaceName    string            `yaml:"interface"  json:"interface,omitempty" property:"interface"`
-	Check            *bool             `yaml:"check"  json:"check,omitempty" property:"check"`
-	URL              string            `yaml:"url"  json:"url,omitempty" property:"url"`
-	Filter           string            `yaml:"filter" json:"filter,omitempty" property:"filter"`
-	Protocol         string            `yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
-	RegistryIDs      []string          `yaml:"registry-ids"  json:"registry-ids,omitempty"  property:"registry-ids"`
-	Cluster          string            `yaml:"cluster"  json:"cluster,omitempty" property:"cluster"`
-	Loadbalance      string            `yaml:"loadbalance"  json:"loadbalance,omitempty" property:"loadbalance"`
-	Retries          string            `yaml:"retries"  json:"retries,omitempty" property:"retries"`
-	Group            string            `yaml:"group"  json:"group,omitempty" property:"group"`
-	Version          string            `yaml:"version"  json:"version,omitempty" property:"version"`
-	Serialization    string            `yaml:"serialization" json:"serialization" property:"serialization"`
-	ProvidedBy       string            `yaml:"provided_by"  json:"provided_by,omitempty" property:"provided_by"`
-	Methods          []*MethodConfig   `yaml:"methods"  json:"methods,omitempty" property:"methods"`
-	Async            bool              `yaml:"async"  json:"async,omitempty" property:"async"`
-	Params           map[string]string `yaml:"params"  json:"params,omitempty" property:"params"`
-	invoker          protocol.Invoker
-	urls             []*common.URL
-	Generic          string `yaml:"generic"  json:"generic,omitempty" property:"generic"`
-	Sticky           bool   `yaml:"sticky"   json:"sticky,omitempty" property:"sticky"`
-	RequestTimeout   string `yaml:"timeout"  json:"timeout,omitempty" property:"timeout"`
-	ForceTag         bool   `yaml:"force.tag"  json:"force.tag,omitempty" property:"force.tag"`
-	TracingKey       string `yaml:"tracing-key" json:"tracing-key,omitempty" propertiy:"tracing-key"`
-	rootConfig       *config.RootConfig
+	pxy            *proxy.Proxy
+	id             string
+	InterfaceName  string            `yaml:"interface"  json:"interface,omitempty" property:"interface"`
+	Check          *bool             `yaml:"check"  json:"check,omitempty" property:"check"`
+	URL            string            `yaml:"url"  json:"url,omitempty" property:"url"`
+	Filter         string            `yaml:"filter" json:"filter,omitempty" property:"filter"`
+	Protocol       string            `yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
+	RegistryIDs    []string          `yaml:"registry-ids"  json:"registry-ids,omitempty"  property:"registry-ids"`
+	Cluster        string            `yaml:"cluster"  json:"cluster,omitempty" property:"cluster"`
+	Loadbalance    string            `yaml:"loadbalance"  json:"loadbalance,omitempty" property:"loadbalance"`
+	Retries        string            `yaml:"retries"  json:"retries,omitempty" property:"retries"`
+	Group          string            `yaml:"group"  json:"group,omitempty" property:"group"`
+	Version        string            `yaml:"version"  json:"version,omitempty" property:"version"`
+	Serialization  string            `yaml:"serialization" json:"serialization" property:"serialization"`
+	ProvidedBy     string            `yaml:"provided_by"  json:"provided_by,omitempty" property:"provided_by"`
+	Methods        []*MethodConfig   `yaml:"methods"  json:"methods,omitempty" property:"methods"`
+	Async          bool              `yaml:"async"  json:"async,omitempty" property:"async"`
+	Params         map[string]string `yaml:"params"  json:"params,omitempty" property:"params"`
+	invoker        protocol.Invoker
+	urls           []*common.URL
+	Generic        string `yaml:"generic"  json:"generic,omitempty" property:"generic"`
+	Sticky         bool   `yaml:"sticky"   json:"sticky,omitempty" property:"sticky"`
+	RequestTimeout string `yaml:"timeout"  json:"timeout,omitempty" property:"timeout"`
+	ForceTag       bool   `yaml:"force.tag"  json:"force.tag,omitempty" property:"force.tag"`
+	TracingKey     string `yaml:"tracing-key" json:"tracing-key,omitempty" propertiy:"tracing-key"`
+	//rootConfig       *config.RootConfig
 	metaDataType     string
 	MeshProviderPort int `yaml:"mesh-provider-port" json:"mesh-provider-port,omitempty" propertiy:"mesh-provider-port"`
+
+	info *ClientInfo
+
+	// configuration from ConsumerConfig
+	meshEnabled     bool
+	adaptiveService bool
+	proxyFactory    string
+
+	application *commonCfg.ApplicationConfig
+
+	registries map[string]*registry.RegistryConfig
 }
 
 func (rc *ReferenceConfig) Prefix() string {
 	return constant.ReferenceConfigPrefix + rc.InterfaceName + "."
 }
 
-func (rc *ReferenceConfig) Init(root *config.RootConfig) error {
+func (rc *ReferenceConfig) Init(opts ...ReferenceOption) error {
 	for _, method := range rc.Methods {
 		if err := method.Init(); err != nil {
 			return err
@@ -83,38 +103,25 @@ func (rc *ReferenceConfig) Init(root *config.RootConfig) error {
 	if err := defaults.Set(rc); err != nil {
 		return err
 	}
-	rc.rootConfig = root
-	if root.Application != nil {
-		rc.metaDataType = root.Application.MetadataType
+	for _, opt := range opts {
+		opt(rc)
+	}
+	if rc.application != nil {
+		rc.metaDataType = rc.application.MetadataType
 		if rc.Group == "" {
-			rc.Group = root.Application.Group
+			rc.Group = rc.application.Group
 		}
 		if rc.Version == "" {
-			rc.Version = root.Application.Version
+			rc.Version = rc.application.Version
 		}
-	}
-	if rc.Filter == "" {
-		rc.Filter = root.Consumer.Filter
 	}
 	if rc.Cluster == "" {
 		rc.Cluster = "failover"
 	}
-	rc.RegistryIDs = config.TranslateIds(rc.RegistryIDs)
-	if len(rc.RegistryIDs) <= 0 {
-		rc.RegistryIDs = root.Consumer.RegistryIDs
-	}
+	// todo: move to registry package
+	rc.RegistryIDs = commonCfg.TranslateIds(rc.RegistryIDs)
 
-	if rc.Protocol == "" {
-		rc.Protocol = root.Consumer.Protocol
-	}
-
-	if rc.TracingKey == "" {
-		rc.TracingKey = root.Consumer.TracingKey
-	}
-	if rc.Check == nil {
-		rc.Check = &root.Consumer.Check
-	}
-	return verify(rc)
+	return commonCfg.Verify(rc)
 }
 
 func getEnv(key, fallback string) string {
@@ -129,7 +136,7 @@ func updateOrCreateMeshURL(rc *ReferenceConfig) {
 		logger.Infof("URL specified explicitly %v", rc.URL)
 	}
 
-	if !rc.rootConfig.Consumer.MeshEnabled {
+	if !rc.meshEnabled {
 		return
 	}
 	if rc.Protocol != constant2.TRIPLE {
@@ -161,22 +168,19 @@ func (rc *ReferenceConfig) ReferWithInfo(info *ClientInfo) {
 	rc.refer(info, nil)
 }
 
-func (rc *ReferenceConfig) ReferWithServiceAndInfo(srv interface{}, info *ClientInfo) {
-	rc.refer(info, srv)
-}
-
 func (rc *ReferenceConfig) refer(info *ClientInfo, srv interface{}) {
 	var methods []string
 	if info != nil {
 		rc.InterfaceName = info.InterfaceName
 		methods = info.MethodNames
 		rc.id = info.InterfaceName
+		rc.info = info
 	} else {
 		rc.id = common.GetReference(srv)
 	}
 	// If adaptive service is enabled,
 	// the cluster and load balance should be overridden to "adaptivesvc" and "p2c" respectively.
-	if rc.rootConfig.Consumer.AdaptiveService {
+	if rc.adaptiveService {
 		rc.Cluster = constant.ClusterKeyAdaptiveService
 		rc.Loadbalance = constant.LoadBalanceKeyP2C
 	}
@@ -236,7 +240,7 @@ func (rc *ReferenceConfig) refer(info *ClientInfo, srv interface{}) {
 			}
 		}
 	} else { // use registry configs
-		rc.urls = loadRegistries(rc.RegistryIDs, rc.rootConfig.Registries, common.CONSUMER)
+		rc.urls = registry.LoadRegistries(rc.RegistryIDs, rc.registries, common.CONSUMER)
 		// set url to regURLs
 		for _, regURL := range rc.urls {
 			regURL.SubURL = cfgURL
@@ -307,9 +311,9 @@ func (rc *ReferenceConfig) refer(info *ClientInfo, srv interface{}) {
 	if info == nil {
 		if rc.Async {
 			callback := config.GetCallback(rc.id)
-			rc.pxy = extension.GetProxyFactory(rc.rootConfig.Consumer.ProxyFactory).GetAsyncProxy(rc.invoker, callback, cfgURL)
+			rc.pxy = extension.GetProxyFactory(rc.proxyFactory).GetAsyncProxy(rc.invoker, callback, cfgURL)
 		} else {
-			rc.pxy = extension.GetProxyFactory(rc.rootConfig.Consumer.ProxyFactory).GetProxy(rc.invoker, cfgURL)
+			rc.pxy = extension.GetProxyFactory(rc.proxyFactory).GetProxy(rc.invoker, cfgURL)
 		}
 		rc.pxy.Implement(srv)
 	}
@@ -329,7 +333,14 @@ func (rc *ReferenceConfig) CheckAvailable() bool {
 // Implement
 // @v is service provider implemented RPCService
 func (rc *ReferenceConfig) Implement(v common.RPCService) {
-	rc.pxy.Implement(v)
+	if rc.pxy != nil {
+		rc.pxy.Implement(v)
+	} else if rc.info != nil {
+		rc.info.ClientInjectFunc(v, &Client{
+			invoker: rc.invoker,
+			info:    rc.info,
+		})
+	}
 }
 
 // GetRPCService gets RPCService from proxy
@@ -372,20 +383,22 @@ func (rc *ReferenceConfig) getURLMap() url.Values {
 	urlMap.Set(constant.StickyKey, strconv.FormatBool(rc.Sticky))
 
 	// applicationConfig info
-	urlMap.Set(constant.ApplicationKey, rc.rootConfig.Application.Name)
-	urlMap.Set(constant.OrganizationKey, rc.rootConfig.Application.Organization)
-	urlMap.Set(constant.NameKey, rc.rootConfig.Application.Name)
-	urlMap.Set(constant.ModuleKey, rc.rootConfig.Application.Module)
-	urlMap.Set(constant.AppVersionKey, rc.rootConfig.Application.Version)
-	urlMap.Set(constant.OwnerKey, rc.rootConfig.Application.Owner)
-	urlMap.Set(constant.EnvironmentKey, rc.rootConfig.Application.Environment)
+	if rc.application != nil {
+		urlMap.Set(constant.ApplicationKey, rc.application.Name)
+		urlMap.Set(constant.OrganizationKey, rc.application.Organization)
+		urlMap.Set(constant.NameKey, rc.application.Name)
+		urlMap.Set(constant.ModuleKey, rc.application.Module)
+		urlMap.Set(constant.AppVersionKey, rc.application.Version)
+		urlMap.Set(constant.OwnerKey, rc.application.Owner)
+		urlMap.Set(constant.EnvironmentKey, rc.application.Environment)
+	}
 
 	// filter
 	defaultReferenceFilter := constant.DefaultReferenceFilters
 	if rc.Generic != "" {
 		defaultReferenceFilter = constant.GenericFilterKey + "," + defaultReferenceFilter
 	}
-	urlMap.Set(constant.ReferenceFilterKey, mergeValue(rc.Filter, "", defaultReferenceFilter))
+	urlMap.Set(constant.ReferenceFilterKey, commonCfg.MergeValue(rc.Filter, "", defaultReferenceFilter))
 
 	for _, v := range rc.Methods {
 		urlMap.Set("methods."+v.Name+"."+constant.LoadbalanceKey, v.LoadBalance)
@@ -399,14 +412,15 @@ func (rc *ReferenceConfig) getURLMap() url.Values {
 	return urlMap
 }
 
-// GenericLoad ...
-func (rc *ReferenceConfig) GenericLoad(id string) {
-	genericService := generic.NewGenericService(rc.id)
-	config.SetConsumerService(genericService)
-	rc.id = id
-	rc.Refer(genericService)
-	rc.Implement(genericService)
-}
+// todo: figure this out
+//// GenericLoad ...
+//func (rc *ReferenceConfig) GenericLoad(id string) {
+//	genericService := generic.NewGenericService(rc.id)
+//	config.SetConsumerService(genericService)
+//	rc.id = id
+//	rc.Refer(genericService)
+//	rc.Implement(genericService)
+//}
 
 // GetInvoker get invoker from ReferenceConfigs
 func (rc *ReferenceConfig) GetInvoker() protocol.Invoker {
@@ -418,43 +432,6 @@ func (rc *ReferenceConfig) postProcessConfig(url *common.URL) {
 	for _, p := range extension.GetConfigPostProcessors() {
 		p.PostProcessReferenceConfig(url)
 	}
-}
-
-func loadRegistries(registryIds []string, registries map[string]*config.RegistryConfig, roleType common.RoleType) []*common.URL {
-	var registryURLs []*common.URL
-	//trSlice := strings.Split(targetRegistries, ",")
-
-	for k, registryConf := range registries {
-		target := false
-
-		// if user not config targetRegistries, default load all
-		// Notice: in func "func Split(s, sep string) []string" comment:
-		// if s does not contain sep and sep is not empty, SplitAfter returns
-		// a slice of length 1 whose only element is s. So we have to add the
-		// condition when targetRegistries string is not set (it will be "" when not set)
-		if len(registryIds) == 0 || (len(registryIds) == 1 && registryIds[0] == "") {
-			target = true
-		} else {
-			// else if user config targetRegistries
-			for _, tr := range registryIds {
-				if tr == k {
-					target = true
-					break
-				}
-			}
-		}
-
-		if target {
-			if urls, err := registryConf.ToURLs(roleType); err != nil {
-				logger.Errorf("The registry id: %s url is invalid, error: %#v", k, err)
-				panic(err)
-			} else {
-				registryURLs = append(registryURLs, urls...)
-			}
-		}
-	}
-
-	return registryURLs
 }
 
 func publishServiceDefinition(url *common.URL) {

@@ -6,6 +6,11 @@ package greettriple
 
 import (
 	context "context"
+	errors "errors"
+	http "net/http"
+)
+
+import (
 	client "dubbo.apache.org/dubbo-go/v3/client"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
@@ -13,8 +18,6 @@ import (
 	proto "dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto"
 	triple_protocol "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	"dubbo.apache.org/dubbo-go/v3/provider"
-	errors "errors"
-	http "net/http"
 )
 
 // This is a compile-time assertion to ensure that this generated file and the connect package are

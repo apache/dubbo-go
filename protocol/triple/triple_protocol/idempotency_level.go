@@ -14,7 +14,9 @@
 
 package triple_protocol
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // An IdempotencyLevel is a value that declares how "idempotent" an RPC is. This
 // value can affect RPC behaviors, such as determining whether it is safe to

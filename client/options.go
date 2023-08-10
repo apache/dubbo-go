@@ -1,15 +1,15 @@
 package client
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"fmt"
-	"github.com/go-playground/validator/v10"
-	perrors "github.com/pkg/errors"
-	"regexp"
 	"strconv"
-	"strings"
 )
 
+import (
+	commonCfg "dubbo.apache.org/dubbo-go/v3/common/config"
+	"dubbo.apache.org/dubbo-go/v3/registry"
+)
+
+// todo: need to be consistent with MethodConfig
 type CallOptions struct {
 	RequestTimeout string
 	Retries        string
@@ -36,66 +36,16 @@ func WithCallRetries(retries string) CallOption {
 	}
 }
 
-var validate *validator.Validate
-
-func init() {
-	validate = validator.New()
-}
-
-func verify(s interface{}) error {
-	if err := validate.Struct(s); err != nil {
-		errs := err.(validator.ValidationErrors)
-		var slice []string
-		for _, msg := range errs {
-			slice = append(slice, msg.Error())
-		}
-		return perrors.New(strings.Join(slice, ","))
-	}
-	return nil
-}
-
-func mergeValue(str1, str2, def string) string {
-	if str1 == "" && str2 == "" {
-		return def
-	}
-	s1 := strings.Split(str1, ",")
-	s2 := strings.Split(str2, ",")
-	str := "," + strings.Join(append(s1, s2...), ",")
-	defKey := strings.Contains(str, ","+constant.DefaultKey)
-	if !defKey {
-		str = "," + constant.DefaultKey + str
-	}
-	str = strings.TrimPrefix(strings.Replace(str, ","+constant.DefaultKey, ","+def, -1), ",")
-	return removeMinus(strings.Split(str, ","))
-}
-
-func removeMinus(strArr []string) string {
-	if len(strArr) == 0 {
-		return ""
-	}
-	var normalStr string
-	var minusStrArr []string
-	for _, v := range strArr {
-		if strings.HasPrefix(v, "-") {
-			minusStrArr = append(minusStrArr, v[1:])
-		} else {
-			normalStr += fmt.Sprintf(",%s", v)
-		}
-	}
-	normalStr = strings.Trim(normalStr, ",")
-	for _, v := range minusStrArr {
-		normalStr = strings.Replace(normalStr, v, "", 1)
-	}
-	reg := regexp.MustCompile("[,]+")
-	normalStr = reg.ReplaceAllString(strings.Trim(normalStr, ","), ",")
-	return normalStr
-}
-
 // ----------ReferenceOption----------
+
+// For ReferenceOption that needs to check whether configuration field is empty(eg. WithCheck), it means this
+// ReferenceOption maybe used by ConsumerConfig to act as default value.
 
 func WithCheck(check bool) ReferenceOption {
 	return func(cfg *ReferenceConfig) {
-		cfg.Check = &check
+		if cfg.Check == nil {
+			cfg.Check = &check
+		}
 	}
 }
 
@@ -107,20 +57,25 @@ func WithURL(url string) ReferenceOption {
 
 func WithFilter(filter string) ReferenceOption {
 	return func(cfg *ReferenceConfig) {
-		cfg.Filter = filter
+		if cfg.Filter == "" {
+			cfg.Filter = filter
+		}
 	}
 }
 
 func WithProtocol(protocol string) ReferenceOption {
 	return func(cfg *ReferenceConfig) {
-		cfg.Protocol = protocol
+		if cfg.Protocol == "" {
+			cfg.Protocol = protocol
+		}
 	}
 }
 
-// todo: think about a more intuitive way
 func WithRegistryIDs(registryIDs []string) ReferenceOption {
 	return func(cfg *ReferenceConfig) {
-		cfg.RegistryIDs = registryIDs
+		if len(registryIDs) <= 0 {
+			cfg.RegistryIDs = registryIDs
+		}
 	}
 }
 
@@ -204,7 +159,9 @@ func WithForce(force bool) ReferenceOption {
 
 func WithTracingKey(tracingKey string) ReferenceOption {
 	return func(cfg *ReferenceConfig) {
-		cfg.TracingKey = tracingKey
+		if cfg.TracingKey == "" {
+			cfg.TracingKey = tracingKey
+		}
 	}
 }
 
@@ -214,139 +171,36 @@ func WithMeshProviderPort(port int) ReferenceOption {
 	}
 }
 
-// ----------ConsumerOption----------
-
-func WithConsumerFilter(filter string) ConsumerOption {
-	return func(cfg *ConsumerConfig) {
-		cfg.Filter = filter
+func WithApplication(application *commonCfg.ApplicationConfig) ReferenceOption {
+	return func(cfg *ReferenceConfig) {
+		cfg.application = application
 	}
 }
 
-// todo: think about a more intuitive way
-func WithConsumerRegistryIDs(registryIDs []string) ConsumerOption {
-	return func(cfg *ConsumerConfig) {
-		cfg.RegistryIDs = registryIDs
+// ----------From ConsumerConfig----------
+
+func WithMeshEnabled(meshEnabled bool) ReferenceOption {
+	return func(cfg *ReferenceConfig) {
+		cfg.meshEnabled = meshEnabled
 	}
 }
 
-func WithConsumerProtocol(protocol string) ConsumerOption {
-	return func(cfg *ConsumerConfig) {
-		cfg.Protocol = protocol
+func WithAdaptiveService(adaptiveService bool) ReferenceOption {
+	return func(cfg *ReferenceConfig) {
+		cfg.adaptiveService = adaptiveService
 	}
 }
 
-func WithConsumerRequestTimeout(timeout string) ConsumerOption {
-	return func(cfg *ConsumerConfig) {
-		cfg.RequestTimeout = timeout
+func WithProxyFactory(proxyFactory string) ReferenceOption {
+	return func(cfg *ReferenceConfig) {
+		cfg.proxyFactory = proxyFactory
 	}
 }
 
-func WithConsumerProxyFactory(proxyFactory string) ConsumerOption {
-	return func(cfg *ConsumerConfig) {
-		cfg.ProxyFactory = proxyFactory
-	}
-}
+// ----------From RegistryConfig----------
 
-func WithConsumerCheck(check bool) ConsumerOption {
-	return func(cfg *ConsumerConfig) {
-		cfg.Check = check
-	}
-}
-
-func WithConsumerAdaptiveService(adaptiveService bool) ConsumerOption {
-	return func(cfg *ConsumerConfig) {
-		cfg.AdaptiveService = adaptiveService
-	}
-}
-
-func WithConsumerTracingKey(tracingKey string) ConsumerOption {
-	return func(cfg *ConsumerConfig) {
-		cfg.TracingKey = tracingKey
-	}
-}
-
-func WithConsumerFilterConf(filterConf interface{}) ConsumerOption {
-	return func(cfg *ConsumerConfig) {
-		cfg.FilterConf = filterConf
-	}
-}
-
-func WithMaxWaitTimeForServiceDiscovery(maxWaitTime string) ConsumerOption {
-	return func(cfg *ConsumerConfig) {
-		cfg.MaxWaitTimeForServiceDiscovery = maxWaitTime
-	}
-}
-
-func WithConsumerMeshEnabled(meshEnabled bool) ConsumerOption {
-	return func(cfg *ConsumerConfig) {
-		cfg.MeshEnabled = meshEnabled
-	}
-}
-
-// ----------MethodOption----------
-
-func WithMethodName(name string) MethodOption {
-	return func(cfg *MethodConfig) {
-		cfg.Name = name
-	}
-}
-
-func WithMethodRetries(retries int) MethodOption {
-	return func(cfg *MethodConfig) {
-		cfg.Retries = strconv.Itoa(retries)
-	}
-}
-
-func WithMethodLoadBalance(loadBalance string) MethodOption {
-	return func(cfg *MethodConfig) {
-		cfg.LoadBalance = loadBalance
-	}
-}
-
-func WithMethodWeight(weight int64) MethodOption {
-	return func(cfg *MethodConfig) {
-		cfg.Weight = weight
-	}
-}
-
-func WithMethodTpsLimitInterval(interval string) MethodOption {
-	return func(cfg *MethodConfig) {
-		cfg.TpsLimitInterval = interval
-	}
-}
-
-func WithMethodTpsLimitRate(rate string) MethodOption {
-	return func(cfg *MethodConfig) {
-		cfg.TpsLimitRate = rate
-	}
-}
-
-func WithMethodTpsLimitStrategy(strategy string) MethodOption {
-	return func(cfg *MethodConfig) {
-		cfg.TpsLimitStrategy = strategy
-	}
-}
-
-func WithMethodExecuteLimit(limit string) MethodOption {
-	return func(cfg *MethodConfig) {
-		cfg.ExecuteLimit = limit
-	}
-}
-
-func WithMethodExecuteLimitRejectedHandler(handler string) MethodOption {
-	return func(cfg *MethodConfig) {
-		cfg.ExecuteLimitRejectedHandler = handler
-	}
-}
-
-func WithMethodSticky(sticky bool) MethodOption {
-	return func(cfg *MethodConfig) {
-		cfg.Sticky = sticky
-	}
-}
-
-func WithMethodRequestTimeout(timeout string) MethodOption {
-	return func(cfg *MethodConfig) {
-		cfg.RequestTimeout = timeout
+func WithRegistries(registries map[string]*registry.RegistryConfig) ReferenceOption {
+	return func(cfg *ReferenceConfig) {
+		cfg.registries = registries
 	}
 }

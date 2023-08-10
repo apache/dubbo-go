@@ -45,18 +45,25 @@ package main
 
 import (
 	"bytes"
-	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	"fmt"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
 	"unicode/utf8"
+)
 
+import (
 	"google.golang.org/protobuf/compiler/protogen"
+
 	"google.golang.org/protobuf/reflect/protoreflect"
+
 	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/pluginpb"
+)
+
+import (
+	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 )
 
 const (

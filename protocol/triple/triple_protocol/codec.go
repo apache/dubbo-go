@@ -19,9 +19,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+)
 
+import (
 	"google.golang.org/protobuf/encoding/protojson"
+
 	"google.golang.org/protobuf/proto"
+
 	"google.golang.org/protobuf/runtime/protoiface"
 )
 

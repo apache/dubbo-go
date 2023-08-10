@@ -20,13 +20,7 @@ package triple
 import (
 	"context"
 	"crypto/tls"
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/config"
-	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	"errors"
-	"github.com/dubbogo/gost/log/logger"
-	"github.com/dustin/go-humanize"
-	"golang.org/x/net/http2"
 	"net"
 	"net/http"
 	"path"
@@ -34,7 +28,18 @@ import (
 )
 
 import (
+	"github.com/dubbogo/gost/log/logger"
+
+	"github.com/dustin/go-humanize"
+
+	"golang.org/x/net/http2"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/config"
+	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 )
 
 const (

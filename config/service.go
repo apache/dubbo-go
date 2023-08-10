@@ -18,7 +18,6 @@
 package config
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/client"
 	"sync"
 )
 
@@ -27,6 +26,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/client"
 	"dubbo.apache.org/dubbo-go/v3/common"
 )
 

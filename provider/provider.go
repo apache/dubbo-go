@@ -1,6 +1,8 @@
 package provider
 
-import "context"
+import (
+	"context"
+)
 
 type Provider struct {
 }

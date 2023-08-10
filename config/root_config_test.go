@@ -77,7 +77,7 @@ func TestNewRootConfigBuilder(t *testing.T) {
 		Build()
 
 	assert.Equal(t, rootConfig.Prefix(), constant.Dubbo)
-	ids := rootConfig.GetRegistryIds()
+	ids := rootConfig.getRegistryIds()
 	assert.Equal(t, ids[0], "nacos")
 
 	down := GetShutDown()

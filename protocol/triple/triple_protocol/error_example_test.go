@@ -15,9 +15,12 @@
 package triple_protocol_test
 
 import (
-	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	"errors"
 	"fmt"
+)
+
+import (
+	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 )
 
 func ExampleError_Message() {

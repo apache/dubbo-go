@@ -2,12 +2,18 @@ package triple
 
 import (
 	"context"
+	"fmt"
+	"sync"
+)
+
+import (
+	"github.com/dubbogo/gost/log/logger"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
-	"fmt"
-	"github.com/dubbogo/gost/log/logger"
-	"sync"
 )
 
 type TripleInvoker struct {

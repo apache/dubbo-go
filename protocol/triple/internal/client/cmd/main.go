@@ -2,11 +2,17 @@ package main
 
 import (
 	"context"
+)
+
+import (
+	"github.com/dubbogo/gost/log/logger"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/client"
 	_ "dubbo.apache.org/dubbo-go/v3/imports"
 	greet "dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto/greettriple"
-	"github.com/dubbogo/gost/log/logger"
 )
 
 func main() {

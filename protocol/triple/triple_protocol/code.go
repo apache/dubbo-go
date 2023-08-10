@@ -207,8 +207,8 @@ func (c *Code) UnmarshalText(data []byte) error {
 	// UnmarshalText.
 	if strings.HasPrefix(dataStr, "code_") {
 		dataStr = strings.TrimPrefix(dataStr, "code_")
-		code, err := strconv.ParseInt(dataStr, 10 /* base */, 64 /* bitsize */)
-		if err == nil && (code < int64(minCode) || code > int64(maxCode)) {
+		code, err := strconv.ParseUint(dataStr, 10 /* base */, 64 /* bitsize */)
+		if err == nil && (code < uint64(minCode) || code > uint64(maxCode)) {
 			*c = Code(code)
 			return nil
 		}

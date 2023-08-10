@@ -20,11 +20,17 @@ import (
 	"strings"
 	"testing"
 	"time"
+)
 
-	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/assert"
+import (
 	"google.golang.org/protobuf/proto"
+
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/emptypb"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/assert"
 )
 
 func TestErrorNilUnderlying(t *testing.T) {

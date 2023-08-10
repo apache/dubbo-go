@@ -24,8 +24,11 @@ import (
 	"reflect"
 	"regexp"
 	"testing"
+)
 
+import (
 	"github.com/google/go-cmp/cmp"
+
 	"google.golang.org/protobuf/testing/protocmp"
 )
 

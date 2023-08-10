@@ -22,7 +22,6 @@ import (
 )
 
 //////////////////////////////////// reference config api
-
 // newEmptyReferenceConfig returns empty ReferenceConfig
 func newEmptyReferenceConfig() *client.ReferenceConfig {
 	newReferenceConfig := &client.ReferenceConfig{}

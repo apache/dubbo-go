@@ -88,11 +88,11 @@ func (c *ProviderConfig) Init(rc *RootConfig) error {
 	}
 	logger.Debugf("Registered provider services are %v", buildDebugMsg())
 
-	c.RegistryIDs = TranslateIds(c.RegistryIDs)
+	c.RegistryIDs = translateIds(c.RegistryIDs)
 	if len(c.RegistryIDs) <= 0 {
-		c.RegistryIDs = rc.GetRegistryIds()
+		c.RegistryIDs = rc.getRegistryIds()
 	}
-	c.ProtocolIDs = TranslateIds(c.ProtocolIDs)
+	c.ProtocolIDs = translateIds(c.ProtocolIDs)
 
 	if c.TracingKey == "" && len(rc.Tracing) > 0 {
 		for k := range rc.Tracing {

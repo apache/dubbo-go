@@ -2,15 +2,21 @@ package main
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"io"
+	"strings"
+)
+
+import (
+	"github.com/dubbogo/gost/log/logger"
+)
+
+import (
 	_ "dubbo.apache.org/dubbo-go/v3/imports"
 	greet "dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto/greettriple"
 	"dubbo.apache.org/dubbo-go/v3/provider"
-	"errors"
-	"fmt"
-	"github.com/dubbogo/gost/log/logger"
-	"io"
-	"strings"
 )
 
 type GreetConnectServer struct {

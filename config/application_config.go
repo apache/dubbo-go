@@ -18,58 +18,15 @@
 package config
 
 import (
-	"github.com/creasty/defaults"
-
-	"github.com/pkg/errors"
+	commonCfg "dubbo.apache.org/dubbo-go/v3/common/config"
 )
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
-)
-
-// ApplicationConfig is a configuration for current applicationConfig, whether the applicationConfig is a provider or a consumer
-type ApplicationConfig struct {
-	Organization string `default:"dubbo-go" yaml:"organization" json:"organization,omitempty" property:"organization"`
-	Name         string `default:"dubbo.io" yaml:"name" json:"name,omitempty" property:"name"`
-	Module       string `default:"sample" yaml:"module" json:"module,omitempty" property:"module"`
-	Group        string `yaml:"group" json:"group,omitempty" property:"module"`
-	Version      string `yaml:"version" json:"version,omitempty" property:"version"`
-	Owner        string `default:"dubbo-go" yaml:"owner" json:"owner,omitempty" property:"owner"`
-	Environment  string `yaml:"environment" json:"environment,omitempty" property:"environment"`
-	// the metadata type. remote or local
-	MetadataType string `default:"local" yaml:"metadata-type" json:"metadataType,omitempty" property:"metadataType"`
-	Tag          string `yaml:"tag" json:"tag,omitempty" property:"tag"`
-}
-
-// Prefix dubbo.application
-func (ac *ApplicationConfig) Prefix() string {
-	return constant.ApplicationConfigPrefix
-}
-
-// Init  application config and set default value
-func (ac *ApplicationConfig) Init() error {
-	if ac == nil {
-		return errors.New("application is null")
-	}
-	if err := ac.check(); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (ac *ApplicationConfig) check() error {
-	if err := defaults.Set(ac); err != nil {
-		return err
-	}
-	return verify(ac)
-}
 
 func NewApplicationConfigBuilder() *ApplicationConfigBuilder {
-	return &ApplicationConfigBuilder{application: &ApplicationConfig{}}
+	return &ApplicationConfigBuilder{application: &commonCfg.ApplicationConfig{}}
 }
 
 type ApplicationConfigBuilder struct {
-	application *ApplicationConfig
+	application *commonCfg.ApplicationConfig
 }
 
 func (acb *ApplicationConfigBuilder) SetOrganization(organization string) *ApplicationConfigBuilder {
@@ -107,6 +64,6 @@ func (acb *ApplicationConfigBuilder) SetMetadataType(metadataType string) *Appli
 	return acb
 }
 
-func (acb *ApplicationConfigBuilder) Build() *ApplicationConfig {
+func (acb *ApplicationConfigBuilder) Build() *commonCfg.ApplicationConfig {
 	return acb.application
 }

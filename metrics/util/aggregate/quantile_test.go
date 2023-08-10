@@ -17,7 +17,9 @@
 
 package aggregate
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestAddAndQuantile(t1 *testing.T) {
 	timeWindowQuantile := NewTimeWindowQuantile(100, 10, 1)

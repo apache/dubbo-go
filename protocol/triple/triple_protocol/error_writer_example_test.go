@@ -15,11 +15,14 @@
 package triple_protocol_test
 
 import (
-	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	"errors"
 	"io"
 	"log"
 	"net/http"
+)
+
+import (
+	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 )
 
 // NewHelloHandler is an example HTTP handler. In a real application, it might
