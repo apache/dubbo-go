@@ -34,6 +34,8 @@ type Invocation interface {
 	ParameterTypes() []reflect.Type
 	// ParameterValues gets invocation parameter values.
 	ParameterValues() []reflect.Value
+	// ParameterRawValues gets raw invocation parameter values.
+	ParameterRawValues() []interface{}
 	// Arguments gets arguments.
 	Arguments() []interface{}
 	// Reply gets response of request

@@ -32,6 +32,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/client"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
@@ -42,19 +43,21 @@ const (
 
 // ConsumerConfig is Consumer default configuration
 type ConsumerConfig struct {
-	Filter                         string                      `yaml:"filter" json:"filter,omitempty" property:"filter"`
-	RegistryIDs                    []string                    `yaml:"registry-ids" json:"registry-ids,omitempty" property:"registry-ids"`
-	Protocol                       string                      `yaml:"protocol" json:"protocol,omitempty" property:"protocol"`
-	RequestTimeout                 string                      `default:"3s" yaml:"request-timeout" json:"request-timeout,omitempty" property:"request-timeout"`
-	ProxyFactory                   string                      `default:"default" yaml:"proxy" json:"proxy,omitempty" property:"proxy"`
-	Check                          bool                        `yaml:"check" json:"check,omitempty" property:"check"`
-	AdaptiveService                bool                        `default:"false" yaml:"adaptive-service" json:"adaptive-service" property:"adaptive-service"`
-	References                     map[string]*ReferenceConfig `yaml:"references" json:"references,omitempty" property:"references"`
-	TracingKey                     string                      `yaml:"tracing-key" json:"tracing-key" property:"tracing-key"`
-	FilterConf                     interface{}                 `yaml:"filter-conf" json:"filter-conf,omitempty" property:"filter-conf"`
-	MaxWaitTimeForServiceDiscovery string                      `default:"3s" yaml:"max-wait-time-for-service-discovery" json:"max-wait-time-for-service-discovery,omitempty" property:"max-wait-time-for-service-discovery"`
-	MeshEnabled                    bool                        `yaml:"mesh-enabled" json:"mesh-enabled,omitempty" property:"mesh-enabled"`
+	Filter                         string                             `yaml:"filter" json:"filter,omitempty" property:"filter"`
+	RegistryIDs                    []string                           `yaml:"registry-ids" json:"registry-ids,omitempty" property:"registry-ids"`
+	Protocol                       string                             `yaml:"protocol" json:"protocol,omitempty" property:"protocol"`
+	RequestTimeout                 string                             `default:"3s" yaml:"request-timeout" json:"request-timeout,omitempty" property:"request-timeout"`
+	ProxyFactory                   string                             `default:"default" yaml:"proxy" json:"proxy,omitempty" property:"proxy"`
+	Check                          bool                               `yaml:"check" json:"check,omitempty" property:"check"`
+	AdaptiveService                bool                               `default:"false" yaml:"adaptive-service" json:"adaptive-service" property:"adaptive-service"`
+	References                     map[string]*client.ReferenceConfig `yaml:"references" json:"references,omitempty" property:"references"`
+	TracingKey                     string                             `yaml:"tracing-key" json:"tracing-key" property:"tracing-key"`
+	FilterConf                     interface{}                        `yaml:"filter-conf" json:"filter-conf,omitempty" property:"filter-conf"`
+	MaxWaitTimeForServiceDiscovery string                             `default:"3s" yaml:"max-wait-time-for-service-discovery" json:"max-wait-time-for-service-discovery,omitempty" property:"max-wait-time-for-service-discovery"`
+	MeshEnabled                    bool                               `yaml:"mesh-enabled" json:"mesh-enabled,omitempty" property:"mesh-enabled"`
 	rootConfig                     *RootConfig
+
+	refOpts []client.ReferenceOption
 }
 
 // Prefix dubbo.consumer
@@ -89,6 +92,20 @@ func (cc *ConsumerConfig) Init(rc *RootConfig) error {
 			break
 		}
 	}
+
+	cc.refOpts = []client.ReferenceOption{
+		client.WithFilter(cc.Filter),
+		client.WithRegistryIDs(cc.RegistryIDs),
+		client.WithProtocol(cc.Protocol),
+		client.WithTracingKey(cc.TracingKey),
+		client.WithCheck(cc.Check),
+		client.WithMeshEnabled(cc.MeshEnabled),
+		client.WithAdaptiveService(cc.AdaptiveService),
+		client.WithProxyFactory(cc.ProxyFactory),
+		client.WithApplication(rc.Application),
+		client.WithRegistries(rc.Registries),
+	}
+
 	for key, referenceConfig := range cc.References {
 		if referenceConfig.InterfaceName == "" {
 			reference := GetConsumerService(key)
@@ -105,10 +122,11 @@ func (cc *ConsumerConfig) Init(rc *RootConfig) error {
 				referenceConfig.InterfaceName = triplePBService.XXX_InterfaceName()
 			}
 		}
-		if err := referenceConfig.Init(rc); err != nil {
+		if err := referenceConfig.Init(cc.refOpts...); err != nil {
 			return err
 		}
 	}
+	// todo: maybe defaults.Set function should be moved to upper place?
 	if err := defaults.Set(cc); err != nil {
 		return err
 	}
@@ -137,13 +155,22 @@ func (cc *ConsumerConfig) Load() {
 				// use interface name defined by pb
 				refConfig.InterfaceName = triplePBService.XXX_InterfaceName()
 			}
-			if err := refConfig.Init(rootConfig); err != nil {
+			if err := refConfig.Init(cc.refOpts...); err != nil {
 				logger.Errorf(fmt.Sprintf("reference with registeredTypeName = %s init failed! err: %#v", registeredTypeName, err))
 				continue
 			}
 		}
-		refConfig.id = registeredTypeName
 		refConfig.Refer(refRPCService)
+		refConfig.Implement(refRPCService)
+	}
+
+	for info, refRPCService := range GetClientInfoServicesMap() {
+		refConfig, ok := cc.References[info.InterfaceName]
+		if !ok {
+			logger.Errorf("Dubbo-go can not find %s Reference in References config, please check your configuration file", info.InterfaceName)
+			continue
+		}
+		refConfig.ReferWithInfo(info)
 		refConfig.Implement(refRPCService)
 	}
 
@@ -165,7 +192,7 @@ func (cc *ConsumerConfig) Load() {
 				(ref.Check == nil && cc.Check && GetProviderService(key) == nil) ||
 				(ref.Check == nil && GetProviderService(key) == nil) { // default to true
 
-				if ref.invoker != nil && !ref.invoker.IsAvailable() {
+				if !ref.CheckAvailable() {
 					checkok = false
 					count++
 					if count > maxWait {
@@ -175,9 +202,6 @@ func (cc *ConsumerConfig) Load() {
 					}
 					time.Sleep(time.Second * 1)
 					break
-				}
-				if ref.invoker == nil {
-					logger.Warnf("The interface %s invoker not exist, may you should check your interface config.", ref.InterfaceName)
 				}
 			}
 		}
@@ -194,7 +218,7 @@ func SetConsumerConfig(c ConsumerConfig) {
 
 func newEmptyConsumerConfig() *ConsumerConfig {
 	newConsumerConfig := &ConsumerConfig{
-		References:     make(map[string]*ReferenceConfig, 8),
+		References:     make(map[string]*client.ReferenceConfig, 8),
 		RequestTimeout: "3s",
 		Check:          true,
 	}
@@ -239,12 +263,12 @@ func (ccb *ConsumerConfigBuilder) SetCheck(check bool) *ConsumerConfigBuilder {
 	return ccb
 }
 
-func (ccb *ConsumerConfigBuilder) AddReference(referenceKey string, referenceConfig *ReferenceConfig) *ConsumerConfigBuilder {
+func (ccb *ConsumerConfigBuilder) AddReference(referenceKey string, referenceConfig *client.ReferenceConfig) *ConsumerConfigBuilder {
 	ccb.consumerConfig.References[referenceKey] = referenceConfig
 	return ccb
 }
 
-func (ccb *ConsumerConfigBuilder) SetReferences(references map[string]*ReferenceConfig) *ConsumerConfigBuilder {
+func (ccb *ConsumerConfigBuilder) SetReferences(references map[string]*client.ReferenceConfig) *ConsumerConfigBuilder {
 	ccb.consumerConfig.References = references
 	return ccb
 }

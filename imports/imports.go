@@ -73,6 +73,7 @@ import (
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/grpc"
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/jsonrpc"
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/rest"
+	_ "dubbo.apache.org/dubbo-go/v3/protocol/triple"
 	_ "dubbo.apache.org/dubbo-go/v3/proxy/proxy_factory"
 	_ "dubbo.apache.org/dubbo-go/v3/registry/etcdv3"
 	_ "dubbo.apache.org/dubbo-go/v3/registry/nacos"
