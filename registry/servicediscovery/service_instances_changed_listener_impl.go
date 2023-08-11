@@ -19,6 +19,7 @@ package servicediscovery
 
 import (
 	"reflect"
+	"time"
 )
 
 import (
@@ -32,8 +33,21 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/registry"
+	"dubbo.apache.org/dubbo-go/v3/registry/servicediscovery/store"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
+
+var (
+	metaCache *store.CacheManager
+)
+
+func init() {
+	cache, err := store.NewCacheManager(constant.DefaultMetaCacheName, constant.DefaultMetaFileName, time.Minute*10, constant.DefaultEntrySize)
+	if err != nil {
+		logger.Fatal("Failed to create cache [%s],the err is %v", constant.DefaultMetaCacheName, err)
+	}
+	metaCache = cache
+}
 
 // ServiceInstancesChangedListenerImpl The Service Discovery Changed  Event Listener
 type ServiceInstancesChangedListenerImpl struct {
@@ -88,9 +102,14 @@ func (lstn *ServiceInstancesChangedListenerImpl) OnEvent(e observer.Event) error
 			revisionToInstances[revision] = append(subInstances, instance)
 			metadataInfo := lstn.revisionToMetadata[revision]
 			if metadataInfo == nil {
-				metadataInfo, err = GetMetadataInfo(instance, revision)
-				if err != nil {
-					return err
+				if val, ok := metaCache.Get(revision); ok {
+					metadataInfo = val.(*common.MetadataInfo)
+				} else {
+					metadataInfo, err = GetMetadataInfo(instance, revision)
+					if err != nil {
+						return err
+					}
+					metaCache.Set(revision, metadataInfo)
 				}
 			}
 			instance.SetServiceMetadata(metadataInfo)
@@ -104,6 +123,9 @@ func (lstn *ServiceInstancesChangedListenerImpl) OnEvent(e observer.Event) error
 			newRevisionToMetadata[revision] = metadataInfo
 		}
 		lstn.revisionToMetadata = newRevisionToMetadata
+		for revision, metadataInfo := range newRevisionToMetadata {
+			metaCache.Set(revision, metadataInfo)
+		}
 
 		for serviceInfo, revisions := range localServiceToRevisions {
 			revisionsToUrls := protocolRevisionsToUrls[serviceInfo.Protocol]
@@ -187,6 +209,11 @@ func (lstn *ServiceInstancesChangedListenerImpl) GetEventType() reflect.Type {
 
 // GetMetadataInfo get metadata info when MetadataStorageTypePropertyName is null
 func GetMetadataInfo(instance registry.ServiceInstance, revision string) (*common.MetadataInfo, error) {
+
+	if metadataInfo, ok := metaCache.Get(revision); ok {
+		return metadataInfo.(*common.MetadataInfo), nil
+	}
+
 	var metadataStorageType string
 	var metadataInfo *common.MetadataInfo
 	if instance.GetMetadata() == nil {
@@ -212,5 +239,8 @@ func GetMetadataInfo(instance registry.ServiceInstance, revision string) (*commo
 			return nil, err
 		}
 	}
+
+	metaCache.Set(revision, metadataInfo)
+
 	return metadataInfo, nil
 }
