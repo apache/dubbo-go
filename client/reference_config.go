@@ -195,9 +195,6 @@ func (rc *ReferenceConfig) refer(info *ClientInfo, srv interface{}) {
 		common.WithParamsValue(constant.MetadataTypeKey, rc.metaDataType),
 	)
 
-	if info == nil {
-		config.SetConsumerServiceByInterfaceName(rc.InterfaceName, srv)
-	}
 	if rc.ForceTag {
 		cfgURL.AddParam(constant.ForceUseTag, "true")
 	}
@@ -310,6 +307,7 @@ func (rc *ReferenceConfig) refer(info *ClientInfo, srv interface{}) {
 	// create proxy
 	if info == nil {
 		if rc.Async {
+			// todo(DMwangnima) move this func out of config
 			callback := config.GetCallback(rc.id)
 			rc.pxy = extension.GetProxyFactory(rc.proxyFactory).GetAsyncProxy(rc.invoker, callback, cfgURL)
 		} else {

@@ -18,6 +18,7 @@
 package triple
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/server"
 	"sync"
 )
 
@@ -54,14 +55,17 @@ type TripleProtocol struct {
 func (tp *TripleProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	url := invoker.GetURL()
 	serviceKey := url.ServiceKey()
+	// todo: retrieve this info from url
+	info := &server.ServiceInfo{}
 	exporter := NewTripleExporter(serviceKey, invoker, tp.ExporterMap())
 	tp.SetExporterMap(serviceKey, exporter)
 	logger.Infof("[TRIPLE Protocol] Export service: %s", url.String())
-	tp.openServer(url)
+	tp.openServer(invoker, info)
 	return exporter
 }
 
-func (tp *TripleProtocol) openServer(url *common.URL) {
+func (tp *TripleProtocol) openServer(invoker protocol.Invoker, info *server.ServiceInfo) {
+	url := invoker.GetURL()
 	tp.serverLock.Lock()
 	defer tp.serverLock.Unlock()
 
@@ -69,23 +73,17 @@ func (tp *TripleProtocol) openServer(url *common.URL) {
 		return
 	}
 
-	// todo: remove this logic?
 	if _, ok := tp.ExporterMap().Load(url.ServiceKey()); !ok {
-		panic("[GRPC_NEW Protocol]" + url.Key() + "is not existing")
+		panic("[TRIPLE Protocol]" + url.Key() + "is not existing")
 	}
 
 	srv := NewServer()
 	tp.serverMap[url.Location] = srv
-	srv.Start(url)
+	srv.Start(invoker, info)
 }
 
 // Refer a remote triple service
 func (tp *TripleProtocol) Refer(url *common.URL) protocol.Invoker {
-	//client, err := NewClient(url)
-	//if err != nil {
-	//	logger.Warnf("can't dial the server: %s", url.Key())
-	//	return nil
-	//}
 	invoker, err := NewTripleInvoker(url)
 	if err != nil {
 		logger.Warnf("can't dial the server: %s", url.Key())
@@ -97,7 +95,7 @@ func (tp *TripleProtocol) Refer(url *common.URL) protocol.Invoker {
 }
 
 func (tp *TripleProtocol) Destroy() {
-	logger.Infof("GrpcProtocol destroy.")
+	logger.Infof("TripleProtocol destroy.")
 
 	tp.serverLock.Lock()
 	defer tp.serverLock.Unlock()

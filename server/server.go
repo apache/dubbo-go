@@ -1,14 +1,14 @@
-package provider
+package server
 
 import (
 	"context"
 )
 
-type Provider struct {
+type Server struct {
 }
 
-// Provide assemble invoker chains like ProviderConfig.Load, init a service per call
-func (pro *Provider) Provide(handler interface{}, info *ServiceInfo, opts ...Option) error {
+// Register assemble invoker chains like ProviderConfig.Load, init a service per call
+func (pro *Server) Register(handler interface{}, info *ServiceInfo, opts ...Option) error {
 	// put information from info to url
 	// ProviderConfig.Load
 
@@ -33,6 +33,6 @@ type MethodInfo struct {
 	Meta           map[string]interface{}
 }
 
-func NewProvider() (*Provider, error) {
+func NewServer() (*Server, error) {
 	return nil, nil
 }

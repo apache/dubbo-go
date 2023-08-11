@@ -137,14 +137,14 @@ func NewServerStreamHandler(
 		procedure,
 		StreamTypeServer,
 		func(ctx context.Context, conn StreamingHandlerConn) error {
-			msg := reqInitFunc()
-			if err := conn.Receive(&msg); err != nil {
+			req := reqInitFunc()
+			if err := conn.Receive(&req); err != nil {
 				return err
 			}
 			return implementation(
 				ctx,
 				&Request{
-					Msg:    &msg,
+					Msg:    req,
 					spec:   conn.Spec(),
 					peer:   conn.Peer(),
 					header: conn.RequestHeader(),
