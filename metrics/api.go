@@ -17,6 +17,19 @@
 
 package metrics
 
+import (
+	"encoding/json"
+	"sync"
+)
+
+import (
+	"github.com/dubbogo/gost/log/logger"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/metrics/util/aggregate"
+)
+
 var (
 	registries = make(map[string]func(*ReporterConfig) MetricRegistry)
 	collectors = make([]CollectorFunc, 0)
@@ -110,6 +123,10 @@ func NewMetricId(key *MetricKey, level MetricLevel) *MetricId {
 	return &MetricId{Name: key.Name, Desc: key.Desc, Tags: level.Tags()}
 }
 
+func NewMetricIdByLabels(key *MetricKey, labels map[string]string) *MetricId {
+	return &MetricId{Name: key.Name, Desc: key.Desc, Tags: labels}
+}
+
 // MetricSample a metric sample，This is the final data presentation,
 // not an intermediate result(like summary，histogram they will export to a set of MetricSample)
 type MetricSample struct {
@@ -148,4 +165,55 @@ func (c *BaseCollector) StateCount(total, succ, fail *MetricKey, level MetricLev
 	} else {
 		c.R.Counter(NewMetricId(fail, level)).Inc()
 	}
+}
+
+func labelsToString(labels map[string]string) string {
+	labelsJson, err := json.Marshal(labels)
+	if err != nil {
+		logger.Errorf("json.Marshal(labels) = error:%v", err)
+		return ""
+	}
+	return string(labelsJson)
+}
+
+type QpsMetric interface {
+	Record(labels map[string]string)
+}
+
+func NewQpsMetric(metricKey *MetricKey, metricRegistry MetricRegistry) QpsMetric {
+	return &DefaultQpsMetric{
+		metricRegistry: metricRegistry,
+		metricKey:      metricKey,
+		mux:            sync.RWMutex{},
+		cache:          make(map[string]*aggregate.TimeWindowCounter),
+	}
+}
+
+type DefaultQpsMetric struct {
+	metricRegistry MetricRegistry
+	metricKey      *MetricKey
+	mux            sync.RWMutex
+	cache          map[string]*aggregate.TimeWindowCounter // key: metrics labels, value: TimeWindowCounter
+}
+
+func (d *DefaultQpsMetric) Record(labels map[string]string) {
+	key := labelsToString(labels)
+	if key == "" {
+		return
+	}
+	d.mux.RLock()
+	twc, ok := d.cache[key]
+	d.mux.RUnlock()
+	if !ok {
+		d.mux.Lock()
+		twc, ok = d.cache[key]
+		if !ok {
+			twc = aggregate.NewTimeWindowCounter(defaultBucketNum, defaultTimeWindowSeconds)
+			d.cache[key] = twc
+		}
+		d.mux.Unlock()
+	}
+	twc.Inc()
+	d.metricRegistry.Gauge(NewMetricIdByLabels(d.metricKey, labels)).Set(twc.Count() / float64(twc.LivedSeconds()))
+
 }

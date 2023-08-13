@@ -35,11 +35,11 @@ type consumerMetrics struct {
 }
 
 type rpcCommonMetrics struct {
-	//qpsTotal                      *qpsGaugeVec
-	//requestsTotal                 *prometheus.CounterVec
+	qpsTotal      metrics.QpsMetric
+	requestsTotal *metrics.MetricKey
 	//requestsTotalAggregate        *aggregateCounterGaugeVec
 	requestsProcessingTotal *metrics.MetricKey
-	//requestsSucceedTotal          *prometheus.CounterVec
+	requestsSucceedTotal    *metrics.MetricKey
 	//requestsSucceedTotalAggregate *aggregateCounterGaugeVec
 	//rtMillisecondsMin             *GaugeVecWithSyncMap
 	//rtMillisecondsMax             *GaugeVecWithSyncMap
@@ -50,20 +50,26 @@ type rpcCommonMetrics struct {
 	//rtMillisecondsAggregate       *aggregateFunctionsGaugeVec
 }
 
-func buildMetricSet() *metricSet {
+func buildMetricSet(registry metrics.MetricRegistry) *metricSet {
 	ms := &metricSet{
 		provider: &providerMetrics{},
 		consumer: &consumerMetrics{},
 	}
-	ms.provider.init()
-	ms.consumer.init()
+	ms.provider.init(registry)
+	ms.consumer.init(registry)
 	return ms
 }
 
-func (pm *providerMetrics) init() {
+func (pm *providerMetrics) init(registry metrics.MetricRegistry) {
+	pm.qpsTotal = metrics.NewQpsMetric(metrics.NewMetricKey("dubbo_provider_qps_total", "The number of requests received by the provider per second"), registry)
+	pm.requestsTotal = metrics.NewMetricKey("dubbo_provider_requests_total", "The total number of received requests by the provider")
 	pm.requestsProcessingTotal = metrics.NewMetricKey("dubbo_provider_requests_processing_total", "The number of received requests being processed by the provider")
+	pm.requestsSucceedTotal = metrics.NewMetricKey("dubbo_provider_requests_succeed_total", "The number of requests successfully received by the provider")
 }
 
-func (cm *consumerMetrics) init() {
+func (cm *consumerMetrics) init(registry metrics.MetricRegistry) {
+	cm.qpsTotal = metrics.NewQpsMetric(metrics.NewMetricKey("dubbo_consumer_qps_total", "The number of requests sent by consumers per second"), registry)
+	cm.requestsTotal = metrics.NewMetricKey("dubbo_consumer_requests_total", "The total number of sent requests by consumers")
 	cm.requestsProcessingTotal = metrics.NewMetricKey("dubbo_consumer_requests_processing_total", "The number of received requests being processed by the consumer")
+	cm.requestsSucceedTotal = metrics.NewMetricKey("dubbo_consumer_requests_succeed_total", "The number of successful requests sent by consumers")
 }

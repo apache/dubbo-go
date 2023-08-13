@@ -28,10 +28,10 @@ var (
 
 func init() {
 	var collectorFunc metrics.CollectorFunc
-	collectorFunc = func(exporter metrics.MetricRegistry, c *metrics.ReporterConfig) {
+	collectorFunc = func(registry metrics.MetricRegistry, c *metrics.ReporterConfig) {
 		rc := &rpcCollector{
-			exporter:  exporter,
-			metricSet: buildMetricSet(),
+			registry:  registry,
+			metricSet: buildMetricSet(registry),
 		}
 		go rc.start()
 	}
@@ -40,7 +40,7 @@ func init() {
 }
 
 type rpcCollector struct {
-	exporter  metrics.MetricRegistry
+	registry  metrics.MetricRegistry
 	metricSet *metricSet
 }
 
@@ -67,6 +67,7 @@ func (c *rpcCollector) beforeInvokeHandler(event *MetricsEvent) {
 		return
 	}
 	labels := buildLabels(url)
+	c.recordQps(role, labels)
 	c.incRequestsProcessingTotal(role, labels)
 }
 
@@ -78,27 +79,60 @@ func (c *rpcCollector) afterInvokeHandler(event *MetricsEvent) {
 		return
 	}
 	labels := buildLabels(url)
+	c.incRequestsTotal(role, labels)
 	c.decRequestsProcessingTotal(role, labels)
+	if event.result != nil {
+		if event.result.Error() == nil {
+			c.incRequestsSucceedTotal(role, labels)
+		}
+	}
 }
 
 func newMetricId(key *metrics.MetricKey, labels map[string]string) *metrics.MetricId {
 	return &metrics.MetricId{Name: key.Name, Desc: key.Desc, Tags: labels}
 }
 
+func (c *rpcCollector) recordQps(role string, labels map[string]string) {
+	switch role {
+	case providerField:
+		c.metricSet.provider.qpsTotal.Record(labels)
+	case consumerField:
+		c.metricSet.consumer.qpsTotal.Record(labels)
+	}
+}
+
+func (c *rpcCollector) incRequestsTotal(role string, labels map[string]string) {
+	switch role {
+	case providerField:
+		c.registry.Counter(newMetricId(c.metricSet.provider.requestsTotal, labels)).Inc()
+	case consumerField:
+		c.registry.Counter(newMetricId(c.metricSet.consumer.requestsTotal, labels)).Inc()
+	}
+}
+
 func (c *rpcCollector) incRequestsProcessingTotal(role string, labels map[string]string) {
 	switch role {
 	case providerField:
-		c.exporter.Gauge(newMetricId(c.metricSet.provider.requestsProcessingTotal, labels)).Inc()
+		c.registry.Gauge(newMetricId(c.metricSet.provider.requestsProcessingTotal, labels)).Inc()
 	case consumerField:
-		c.exporter.Gauge(newMetricId(c.metricSet.consumer.requestsProcessingTotal, labels)).Inc()
+		c.registry.Gauge(newMetricId(c.metricSet.consumer.requestsProcessingTotal, labels)).Inc()
 	}
 }
 
 func (c *rpcCollector) decRequestsProcessingTotal(role string, labels map[string]string) {
 	switch role {
 	case providerField:
-		c.exporter.Gauge(newMetricId(c.metricSet.provider.requestsProcessingTotal, labels)).Dec()
+		c.registry.Gauge(newMetricId(c.metricSet.provider.requestsProcessingTotal, labels)).Dec()
 	case consumerField:
-		c.exporter.Gauge(newMetricId(c.metricSet.consumer.requestsProcessingTotal, labels)).Dec()
+		c.registry.Gauge(newMetricId(c.metricSet.consumer.requestsProcessingTotal, labels)).Dec()
+	}
+}
+
+func (c *rpcCollector) incRequestsSucceedTotal(role string, labels map[string]string) {
+	switch role {
+	case providerField:
+		c.registry.Counter(newMetricId(c.metricSet.provider.requestsSucceedTotal, labels)).Inc()
+	case consumerField:
+		c.registry.Counter(newMetricId(c.metricSet.consumer.requestsSucceedTotal, labels)).Inc()
 	}
 }

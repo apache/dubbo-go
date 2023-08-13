@@ -29,16 +29,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
-const (
-	applicationNameKey = constant.ApplicationNameKey
-	groupKey           = constant.GroupKey
-	hostnameKey        = constant.HostnameKey
-	interfaceKey       = constant.InterfaceKey
-	ipKey              = constant.IpKey
-	methodKey          = constant.MethodKey
-	versionKey         = constant.VersionKey
-)
-
 func buildLabels(url *common.URL) map[string]string {
 	return map[string]string{
 		applicationNameKey: url.GetParam(constant.ApplicationKey, ""),
@@ -50,11 +40,6 @@ func buildLabels(url *common.URL) map[string]string {
 		methodKey:          url.GetParam(constant.MethodKey, ""),
 	}
 }
-
-const (
-	providerField = "provider"
-	consumerField = "consumer"
-)
 
 func getRole(url *common.URL) (role string) {
 	if isProvider(url) {
