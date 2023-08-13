@@ -104,10 +104,10 @@ func (c *rpcCollector) recordQps(role string, labels map[string]string) {
 func (c *rpcCollector) incRequestsTotal(role string, labels map[string]string) {
 	switch role {
 	case providerField:
-		c.registry.Counter(newMetricId(c.metricSet.provider.requestsTotal, labels)).Inc()
+		c.metricSet.provider.requestsTotal.Inc(labels)
 		c.metricSet.provider.requestsTotalAggregate.Inc(labels)
 	case consumerField:
-		c.registry.Counter(newMetricId(c.metricSet.consumer.requestsTotal, labels)).Inc()
+		c.metricSet.consumer.requestsTotal.Inc(labels)
 		c.metricSet.consumer.requestsTotalAggregate.Inc(labels)
 	}
 }
@@ -115,28 +115,28 @@ func (c *rpcCollector) incRequestsTotal(role string, labels map[string]string) {
 func (c *rpcCollector) incRequestsProcessingTotal(role string, labels map[string]string) {
 	switch role {
 	case providerField:
-		c.registry.Gauge(newMetricId(c.metricSet.provider.requestsProcessingTotal, labels)).Inc()
+		c.metricSet.provider.requestsProcessingTotal.Inc(labels)
 	case consumerField:
-		c.registry.Gauge(newMetricId(c.metricSet.consumer.requestsProcessingTotal, labels)).Inc()
+		c.metricSet.consumer.requestsProcessingTotal.Inc(labels)
 	}
 }
 
 func (c *rpcCollector) decRequestsProcessingTotal(role string, labels map[string]string) {
 	switch role {
 	case providerField:
-		c.registry.Gauge(newMetricId(c.metricSet.provider.requestsProcessingTotal, labels)).Dec()
+		c.metricSet.provider.requestsProcessingTotal.Dec(labels)
 	case consumerField:
-		c.registry.Gauge(newMetricId(c.metricSet.consumer.requestsProcessingTotal, labels)).Dec()
+		c.metricSet.consumer.requestsProcessingTotal.Dec(labels)
 	}
 }
 
 func (c *rpcCollector) incRequestsSucceedTotal(role string, labels map[string]string) {
 	switch role {
 	case providerField:
-		c.registry.Counter(newMetricId(c.metricSet.provider.requestsSucceedTotal, labels)).Inc()
+		c.metricSet.provider.requestsSucceedTotal.Inc(labels)
 		c.metricSet.provider.requestsSucceedTotalAggregate.Inc(labels)
 	case consumerField:
-		c.registry.Counter(newMetricId(c.metricSet.consumer.requestsSucceedTotal, labels)).Inc()
+		c.metricSet.consumer.requestsSucceedTotal.Inc(labels)
 		c.metricSet.consumer.requestsSucceedTotalAggregate.Inc(labels)
 	}
 }

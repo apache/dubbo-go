@@ -167,6 +167,71 @@ func (c *BaseCollector) StateCount(total, succ, fail *MetricKey, level MetricLev
 	}
 }
 
+type CounterVec interface {
+	Inc(labels map[string]string)
+	Add(labels map[string]string, v float64)
+}
+
+func NewCounterVec(metricKey *MetricKey, metricRegistry MetricRegistry) CounterVec {
+	return &DefaultCounterVec{
+		metricRegistry: metricRegistry,
+		metricKey:      metricKey,
+	}
+}
+
+type DefaultCounterVec struct {
+	metricRegistry MetricRegistry
+	metricKey      *MetricKey
+}
+
+func (d *DefaultCounterVec) Inc(labels map[string]string) {
+	d.metricRegistry.Counter(NewMetricIdByLabels(d.metricKey, labels)).Inc()
+}
+
+func (d *DefaultCounterVec) Add(labels map[string]string, v float64) {
+	d.metricRegistry.Counter(NewMetricIdByLabels(d.metricKey, labels)).Add(v)
+}
+
+type GaugeVec interface {
+	Set(labels map[string]string, v float64)
+	Inc(labels map[string]string)
+	Dec(labels map[string]string)
+	Add(labels map[string]string, v float64)
+	Sub(labels map[string]string, v float64)
+}
+
+func NewGaugeVec(metricKey *MetricKey, metricRegistry MetricRegistry) GaugeVec {
+	return &DefaultGaugeVec{
+		metricRegistry: metricRegistry,
+		metricKey:      metricKey,
+	}
+}
+
+type DefaultGaugeVec struct {
+	metricRegistry MetricRegistry
+	metricKey      *MetricKey
+}
+
+func (d *DefaultGaugeVec) Set(labels map[string]string, v float64) {
+	d.metricRegistry.Gauge(NewMetricIdByLabels(d.metricKey, labels)).Set(v)
+}
+
+func (d *DefaultGaugeVec) Inc(labels map[string]string) {
+	d.metricRegistry.Gauge(NewMetricIdByLabels(d.metricKey, labels)).Inc()
+}
+
+func (d *DefaultGaugeVec) Dec(labels map[string]string) {
+	d.metricRegistry.Gauge(NewMetricIdByLabels(d.metricKey, labels)).Dec()
+}
+
+func (d *DefaultGaugeVec) Add(labels map[string]string, v float64) {
+	d.metricRegistry.Gauge(NewMetricIdByLabels(d.metricKey, labels)).Add(v)
+}
+
+func (d *DefaultGaugeVec) Sub(labels map[string]string, v float64) {
+	d.metricRegistry.Gauge(NewMetricIdByLabels(d.metricKey, labels)).Sub(v)
+}
+
 func labelsToString(labels map[string]string) string {
 	labelsJson, err := json.Marshal(labels)
 	if err != nil {

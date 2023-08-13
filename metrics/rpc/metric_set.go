@@ -36,10 +36,10 @@ type consumerMetrics struct {
 
 type rpcCommonMetrics struct {
 	qpsTotal                      metrics.QpsMetric
-	requestsTotal                 *metrics.MetricKey
+	requestsTotal                 metrics.CounterVec
 	requestsTotalAggregate        metrics.AggregateCounterMetric
-	requestsProcessingTotal       *metrics.MetricKey
-	requestsSucceedTotal          *metrics.MetricKey
+	requestsProcessingTotal       metrics.GaugeVec
+	requestsSucceedTotal          metrics.CounterVec
 	requestsSucceedTotalAggregate metrics.AggregateCounterMetric
 	//rtMillisecondsMin             *GaugeVecWithSyncMap
 	//rtMillisecondsMax             *GaugeVecWithSyncMap
@@ -62,18 +62,18 @@ func buildMetricSet(registry metrics.MetricRegistry) *metricSet {
 
 func (pm *providerMetrics) init(registry metrics.MetricRegistry) {
 	pm.qpsTotal = metrics.NewQpsMetric(metrics.NewMetricKey("dubbo_provider_qps_total", "The number of requests received by the provider per second"), registry)
-	pm.requestsTotal = metrics.NewMetricKey("dubbo_provider_requests_total", "The total number of received requests by the provider")
+	pm.requestsTotal = metrics.NewCounterVec(metrics.NewMetricKey("dubbo_provider_requests_total", "The total number of received requests by the provider"), registry)
 	pm.requestsTotalAggregate = metrics.NewAggregateCounterMetric(metrics.NewMetricKey("dubbo_provider_requests_total_aggregate", "The total number of received requests by the provider under the sliding window"), registry)
-	pm.requestsProcessingTotal = metrics.NewMetricKey("dubbo_provider_requests_processing_total", "The number of received requests being processed by the provider")
-	pm.requestsSucceedTotal = metrics.NewMetricKey("dubbo_provider_requests_succeed_total", "The number of requests successfully received by the provider")
+	pm.requestsProcessingTotal = metrics.NewGaugeVec(metrics.NewMetricKey("dubbo_provider_requests_processing_total", "The number of received requests being processed by the provider"), registry)
+	pm.requestsSucceedTotal = metrics.NewCounterVec(metrics.NewMetricKey("dubbo_provider_requests_succeed_total", "The number of requests successfully received by the provider"), registry)
 	pm.requestsSucceedTotalAggregate = metrics.NewAggregateCounterMetric(metrics.NewMetricKey("dubbo_provider_requests_succeed_total_aggregate", "The number of successful requests received by the provider under the sliding window"), registry)
 }
 
 func (cm *consumerMetrics) init(registry metrics.MetricRegistry) {
 	cm.qpsTotal = metrics.NewQpsMetric(metrics.NewMetricKey("dubbo_consumer_qps_total", "The number of requests sent by consumers per second"), registry)
-	cm.requestsTotal = metrics.NewMetricKey("dubbo_consumer_requests_total", "The total number of sent requests by consumers")
+	cm.requestsTotal = metrics.NewCounterVec(metrics.NewMetricKey("dubbo_consumer_requests_total", "The total number of requests sent by consumers"), registry)
 	cm.requestsTotalAggregate = metrics.NewAggregateCounterMetric(metrics.NewMetricKey("dubbo_consumer_requests_total_aggregate", "The total number of requests sent by consumers under the sliding window"), registry)
-	cm.requestsProcessingTotal = metrics.NewMetricKey("dubbo_consumer_requests_processing_total", "The number of received requests being processed by the consumer")
-	cm.requestsSucceedTotal = metrics.NewMetricKey("dubbo_consumer_requests_succeed_total", "The number of successful requests sent by consumers")
+	cm.requestsProcessingTotal = metrics.NewGaugeVec(metrics.NewMetricKey("dubbo_consumer_requests_processing_total", "The number of received requests being processed by the consumer"), registry)
+	cm.requestsSucceedTotal = metrics.NewCounterVec(metrics.NewMetricKey("dubbo_consumer_requests_succeed_total", "The number of successful requests sent by consumers"), registry)
 	cm.requestsSucceedTotalAggregate = metrics.NewAggregateCounterMetric(metrics.NewMetricKey("dubbo_consumer_requests_succeed_total_aggregate", "The number of successful requests sent by consumers under the sliding window"), registry)
 }
