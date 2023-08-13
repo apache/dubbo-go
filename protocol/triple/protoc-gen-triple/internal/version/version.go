@@ -15,10 +15,6 @@
  * limitations under the License.
  */
 
-package main
+package version
 
-import "protoc-gen-triple/cmd"
-
-func main() {
-	cmd.Execute()
-}
+const Version = "1.7.0-dev"

@@ -15,10 +15,29 @@
  * limitations under the License.
  */
 
-package main
+package generator
 
-import "protoc-gen-triple/cmd"
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"protoc-gen-triple/util"
+)
 
-func main() {
-	cmd.Execute()
+func (g *Generator) GenPb() error {
+	pwd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	g.genPbCmd(pwd)
+	output, err := util.Exec(g.ctx.ProtocCmd, pwd)
+	if len(output) > 0 {
+		fmt.Println(output)
+	}
+	return err
+}
+
+func (g *Generator) genPbCmd(goout string) {
+	src := g.ctx.Src
+	g.ctx.ProtocCmd = fmt.Sprintf("protoc %s -I=%s --go_out=%s", filepath.Base(src), filepath.Dir(src), goout)
 }

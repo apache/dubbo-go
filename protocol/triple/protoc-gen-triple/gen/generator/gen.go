@@ -15,10 +15,27 @@
  * limitations under the License.
  */
 
-package main
+package generator
 
-import "protoc-gen-triple/cmd"
+type Generator struct {
+	ctx Context
+}
 
-func main() {
-	cmd.Execute()
+func NewGenerator(ctx Context) *Generator {
+	return &Generator{ctx: ctx}
+}
+
+func (g *Generator) gen() error {
+
+	err := g.GenPb()
+	if err != nil {
+		return err
+	}
+
+	err = g.GenTriple()
+	if err != nil {
+		return err
+	}
+
+	return err
 }

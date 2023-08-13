@@ -15,10 +15,9 @@
  * limitations under the License.
  */
 
-package main
+package generator
 
-import "protoc-gen-triple/cmd"
-
-func main() {
-	cmd.Execute()
-}
+var (
+	ProtocPath string
+	GoOut      string
+)

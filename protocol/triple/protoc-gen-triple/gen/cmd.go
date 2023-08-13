@@ -15,10 +15,21 @@
  * limitations under the License.
  */
 
-package main
+package gen
 
-import "protoc-gen-triple/cmd"
+import (
+	"github.com/spf13/cobra"
+	"protoc-gen-triple/gen/generator"
+)
 
-func main() {
-	cmd.Execute()
+var Cmd = &cobra.Command{
+	Use:  "gen",
+	RunE: generator.Generate,
+}
+
+func init() {
+	flags := Cmd.Flags()
+
+	flags.StringVar(&generator.ProtocPath, "protoPath", ".", "")
+	flags.MarkHidden("protoPath")
 }

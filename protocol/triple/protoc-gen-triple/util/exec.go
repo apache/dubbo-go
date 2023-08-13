@@ -15,10 +15,28 @@
  * limitations under the License.
  */
 
-package main
+package util
 
-import "protoc-gen-triple/cmd"
+import (
+	"fmt"
+	"os/exec"
+	"runtime"
+)
 
-func main() {
-	cmd.Execute()
+func Exec(arg, dir string) (string, error) {
+	osEnv := runtime.GOOS
+	var cmd *exec.Cmd
+	switch osEnv {
+	case "darwin", "linux":
+		cmd = exec.Command("sh", "-c", arg)
+	case "windows":
+		cmd = exec.Command("cmd.exe", "/c", arg)
+	default:
+		return "", fmt.Errorf("unexpected os: %v", osEnv)
+	}
+	if len(dir) > 0 {
+		cmd.Dir = dir
+	}
+	output, err := cmd.CombinedOutput()
+	return string(output), err
 }
