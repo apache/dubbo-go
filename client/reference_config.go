@@ -40,7 +40,6 @@ import (
 	commonCfg "dubbo.apache.org/dubbo-go/v3/common/config"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
 	"dubbo.apache.org/dubbo-go/v3/proxy"
@@ -307,8 +306,10 @@ func (rc *ReferenceConfig) refer(info *ClientInfo, srv interface{}) {
 	// create proxy
 	if info == nil {
 		if rc.Async {
-			// todo(DMwangnima) move this func out of config
-			callback := config.GetCallback(rc.id)
+			var callback common.CallbackResponse
+			if asyncSrv, ok := srv.(common.AsyncCallbackService); ok {
+				callback = asyncSrv.CallBack
+			}
 			rc.pxy = extension.GetProxyFactory(rc.proxyFactory).GetAsyncProxy(rc.invoker, callback, cfgURL)
 		} else {
 			rc.pxy = extension.GetProxyFactory(rc.proxyFactory).GetProxy(rc.invoker, cfgURL)

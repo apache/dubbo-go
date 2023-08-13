@@ -18,7 +18,6 @@
 package triple
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/server"
 	"sync"
 )
 
@@ -30,6 +29,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/server"
 )
 
 const (
