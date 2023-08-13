@@ -169,7 +169,6 @@ func (nr *nacosRegistry) Subscribe(url *common.URL, notifyListener registry.Noti
 	if role != common.CONSUMER {
 		return nil
 	}
-
 	serviceName := getServiceName(url)
 	if serviceName == "*" {
 		// Subscribe to all services
@@ -179,7 +178,7 @@ func (nr *nacosRegistry) Subscribe(url *common.URL, notifyListener registry.Noti
 				return perrors.New("nacosRegistry is not available.")
 			}
 
-			services, err := nr.getAllServices()
+			services, err := nr.getAllSubscribeServiceNames()
 			defer metrics.Publish(metricsRegistry.NewSubscribeEvent(err == nil))
 			if err != nil {
 				if !nr.IsAvailable() {
@@ -209,7 +208,7 @@ func (nr *nacosRegistry) Subscribe(url *common.URL, notifyListener registry.Noti
 				return perrors.New("nacosRegistry is not available.")
 			}
 
-			listener, err := nr.subscribeToService(url, serviceName)
+			listener, err := nr.subscribe(url)
 
 			defer metrics.Publish(metricsRegistry.NewSubscribeEvent(err == nil))
 			if err != nil {
@@ -227,13 +226,20 @@ func (nr *nacosRegistry) Subscribe(url *common.URL, notifyListener registry.Noti
 }
 
 // getAllServices retrieves the list of all services from the registry
-func (nr *nacosRegistry) getAllServices() ([]string, error) {
+func (nr *nacosRegistry) getAllSubscribeServiceNames() ([]string, error) {
 	services, err := nr.namingClient.Client().GetAllServicesInfo(vo.GetAllServiceInfoParam{
 		GroupName: nr.GetParam(constant.RegistryGroupKey, defaultGroup),
 		PageNo:    1,
 		PageSize:  10,
 	})
-	return services.Doms, err
+	subScribeServiceNames := []string{}
+	for _, dom := range services.Doms {
+		if strings.HasPrefix(dom, "providers:") {
+			subScribeServiceNames = append(subScribeServiceNames, dom)
+		}
+	}
+
+	return subScribeServiceNames, err
 }
 
 // subscribeToService subscribes to a specific service in the registry
