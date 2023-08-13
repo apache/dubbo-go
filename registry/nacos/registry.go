@@ -179,7 +179,6 @@ func (nr *nacosRegistry) Subscribe(url *common.URL, notifyListener registry.Noti
 			}
 
 			services, err := nr.getAllSubscribeServiceNames()
-			defer metrics.Publish(metricsRegistry.NewSubscribeEvent(err == nil))
 			if err != nil {
 				if !nr.IsAvailable() {
 					logger.Warnf("event listener game over.")
@@ -192,6 +191,7 @@ func (nr *nacosRegistry) Subscribe(url *common.URL, notifyListener registry.Noti
 
 			for _, service := range services {
 				listener, err := nr.subscribeToService(url, service)
+				metrics.Publish(metricsRegistry.NewSubscribeEvent(err == nil))
 				if err != nil {
 					logger.Warnf("Failed to subscribe to service '%s': %v", service, err)
 					continue
@@ -209,8 +209,7 @@ func (nr *nacosRegistry) Subscribe(url *common.URL, notifyListener registry.Noti
 			}
 
 			listener, err := nr.subscribe(url)
-
-			defer metrics.Publish(metricsRegistry.NewSubscribeEvent(err == nil))
+			metrics.Publish(metricsRegistry.NewSubscribeEvent(err == nil))
 			if err != nil {
 				if !nr.IsAvailable() {
 					logger.Warnf("event listener game over.")
