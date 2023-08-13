@@ -18,10 +18,13 @@
 package generator
 
 import (
-	"github.com/emicklei/proto"
 	"os"
 	"path/filepath"
 	"strings"
+)
+
+import (
+	"github.com/emicklei/proto"
 )
 
 func (g *Generator) GenTriple() error {

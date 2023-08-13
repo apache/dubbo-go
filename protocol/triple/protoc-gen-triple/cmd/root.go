@@ -19,10 +19,15 @@ package cmd
 
 import (
 	"os"
-	"protoc-gen-triple/gen"
-	"protoc-gen-triple/internal/version"
+)
 
+import (
 	"github.com/spf13/cobra"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/protoc-gen-triple/gen"
+	"dubbo.apache.org/dubbo-go/v3/protoc-gen-triple/internal/version"
 )
 
 // rootCmd represents the base command when called without any subcommands

@@ -21,7 +21,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"protoc-gen-triple/util"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/protoc-gen-triple/util"
 )
 
 func (g *Generator) GenPb() error {

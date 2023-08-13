@@ -19,7 +19,10 @@ package gen
 
 import (
 	"github.com/spf13/cobra"
-	"protoc-gen-triple/gen/generator"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/protoc-gen-triple/gen/generator"
 )
 
 var Cmd = &cobra.Command{

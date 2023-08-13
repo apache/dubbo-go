@@ -17,7 +17,9 @@
 
 package main
 
-import "protoc-gen-triple/cmd"
+import (
+	"dubbo.apache.org/dubbo-go/v3/protoc-gen-triple/cmd"
+)
 
 func main() {
 	cmd.Execute()

@@ -18,10 +18,16 @@
 package generator
 
 import (
-	"github.com/spf13/cobra"
 	"path/filepath"
-	"protoc-gen-triple/util"
 	"strings"
+)
+
+import (
+	"github.com/spf13/cobra"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/protoc-gen-triple/util"
 )
 
 type Context struct {
