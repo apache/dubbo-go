@@ -105,8 +105,10 @@ func (c *rpcCollector) incRequestsTotal(role string, labels map[string]string) {
 	switch role {
 	case providerField:
 		c.registry.Counter(newMetricId(c.metricSet.provider.requestsTotal, labels)).Inc()
+		c.metricSet.provider.requestsTotalAggregate.Inc(labels)
 	case consumerField:
 		c.registry.Counter(newMetricId(c.metricSet.consumer.requestsTotal, labels)).Inc()
+		c.metricSet.consumer.requestsTotalAggregate.Inc(labels)
 	}
 }
 
@@ -132,7 +134,9 @@ func (c *rpcCollector) incRequestsSucceedTotal(role string, labels map[string]st
 	switch role {
 	case providerField:
 		c.registry.Counter(newMetricId(c.metricSet.provider.requestsSucceedTotal, labels)).Inc()
+		c.metricSet.provider.requestsSucceedTotalAggregate.Inc(labels)
 	case consumerField:
 		c.registry.Counter(newMetricId(c.metricSet.consumer.requestsSucceedTotal, labels)).Inc()
+		c.metricSet.consumer.requestsSucceedTotalAggregate.Inc(labels)
 	}
 }

@@ -215,5 +215,45 @@ func (d *DefaultQpsMetric) Record(labels map[string]string) {
 	}
 	twc.Inc()
 	d.metricRegistry.Gauge(NewMetricIdByLabels(d.metricKey, labels)).Set(twc.Count() / float64(twc.LivedSeconds()))
+}
 
+type AggregateCounterMetric interface {
+	Inc(labels map[string]string)
+}
+
+func NewAggregateCounterMetric(metricKey *MetricKey, metricRegistry MetricRegistry) AggregateCounterMetric {
+	return &DefaultAggregateCounterMetric{
+		metricRegistry: metricRegistry,
+		metricKey:      metricKey,
+		mux:            sync.RWMutex{},
+		cache:          make(map[string]*aggregate.TimeWindowCounter),
+	}
+}
+
+type DefaultAggregateCounterMetric struct {
+	metricRegistry MetricRegistry
+	metricKey      *MetricKey
+	mux            sync.RWMutex
+	cache          map[string]*aggregate.TimeWindowCounter // key: metrics labels, value: TimeWindowCounter
+}
+
+func (d *DefaultAggregateCounterMetric) Inc(labels map[string]string) {
+	key := labelsToString(labels)
+	if key == "" {
+		return
+	}
+	d.mux.RLock()
+	twc, ok := d.cache[key]
+	d.mux.RUnlock()
+	if !ok {
+		d.mux.Lock()
+		twc, ok = d.cache[key]
+		if !ok {
+			twc = aggregate.NewTimeWindowCounter(defaultBucketNum, defaultTimeWindowSeconds)
+			d.cache[key] = twc
+		}
+		d.mux.Unlock()
+	}
+	twc.Inc()
+	d.metricRegistry.Gauge(NewMetricIdByLabels(d.metricKey, labels)).Set(twc.Count())
 }
