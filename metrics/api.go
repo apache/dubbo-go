@@ -322,3 +322,49 @@ func (d *DefaultAggregateCounterMetric) Inc(labels map[string]string) {
 	twc.Inc()
 	d.metricRegistry.Gauge(NewMetricIdByLabels(d.metricKey, labels)).Set(twc.Count())
 }
+
+type QuantileMetric interface {
+	Record(labels map[string]string, v float64)
+}
+
+func NewQuantileMetric(metricKeys []*MetricKey, quantiles []float64, metricRegistry MetricRegistry) QuantileMetric {
+	return &DefaultQuantileMetric{
+		metricRegistry: metricRegistry,
+		metricKeys:     metricKeys,
+		mux:            sync.RWMutex{},
+		cache:          make(map[string]*aggregate.TimeWindowQuantile),
+		quantiles:      quantiles,
+	}
+}
+
+type DefaultQuantileMetric struct {
+	metricRegistry MetricRegistry
+	metricKeys     []*MetricKey
+	mux            sync.RWMutex
+	cache          map[string]*aggregate.TimeWindowQuantile // key: metrics labels, value: TimeWindowQuantile
+	quantiles      []float64
+}
+
+func (d *DefaultQuantileMetric) Record(labels map[string]string, v float64) {
+	key := labelsToString(labels)
+	if key == "" {
+		return
+	}
+	d.mux.RLock()
+	twq, ok := d.cache[key]
+	d.mux.RUnlock()
+	if !ok {
+		d.mux.Lock()
+		twq, ok = d.cache[key]
+		if !ok {
+			twq = aggregate.NewTimeWindowQuantile(defaultCompression, defaultBucketNum, defaultTimeWindowSeconds)
+			d.cache[key] = twq
+		}
+		d.mux.Unlock()
+	}
+	twq.Add(v)
+
+	for i, q := range twq.Quantiles(d.quantiles) {
+		d.metricRegistry.Gauge(NewMetricIdByLabels(d.metricKeys[i], labels)).Set(q)
+	}
+}

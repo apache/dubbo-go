@@ -46,7 +46,7 @@ type rpcCommonMetrics struct {
 	//rtMillisecondsSum             *prometheus.CounterVec
 	//rtMillisecondsAvg             *GaugeVecWithSyncMap
 	//rtMillisecondsLast            *prometheus.GaugeVec
-	//rtMillisecondsQuantiles       *quantileGaugeVec
+	rtMillisecondsQuantiles metrics.QuantileMetric
 	//rtMillisecondsAggregate       *aggregateFunctionsGaugeVec
 }
 
@@ -67,6 +67,12 @@ func (pm *providerMetrics) init(registry metrics.MetricRegistry) {
 	pm.requestsProcessingTotal = metrics.NewGaugeVec(metrics.NewMetricKey("dubbo_provider_requests_processing_total", "The number of received requests being processed by the provider"), registry)
 	pm.requestsSucceedTotal = metrics.NewCounterVec(metrics.NewMetricKey("dubbo_provider_requests_succeed_total", "The number of requests successfully received by the provider"), registry)
 	pm.requestsSucceedTotalAggregate = metrics.NewAggregateCounterMetric(metrics.NewMetricKey("dubbo_provider_requests_succeed_total_aggregate", "The number of successful requests received by the provider under the sliding window"), registry)
+	pm.rtMillisecondsQuantiles = metrics.NewQuantileMetric([]*metrics.MetricKey{
+		metrics.NewMetricKey("dubbo_provider_rt_milliseconds_p50", "The total response time spent by providers processing 50% of requests"),
+		metrics.NewMetricKey("dubbo_provider_rt_milliseconds_p90", "The total response time spent by providers processing 90% of requests"),
+		metrics.NewMetricKey("dubbo_provider_rt_milliseconds_p95", "The total response time spent by providers processing 95% of requests"),
+		metrics.NewMetricKey("dubbo_provider_rt_milliseconds_p99", "The total response time spent by providers processing 99% of requests"),
+	}, []float64{0.5, 0.9, 0.95, 0.99}, registry)
 }
 
 func (cm *consumerMetrics) init(registry metrics.MetricRegistry) {
@@ -76,4 +82,10 @@ func (cm *consumerMetrics) init(registry metrics.MetricRegistry) {
 	cm.requestsProcessingTotal = metrics.NewGaugeVec(metrics.NewMetricKey("dubbo_consumer_requests_processing_total", "The number of received requests being processed by the consumer"), registry)
 	cm.requestsSucceedTotal = metrics.NewCounterVec(metrics.NewMetricKey("dubbo_consumer_requests_succeed_total", "The number of successful requests sent by consumers"), registry)
 	cm.requestsSucceedTotalAggregate = metrics.NewAggregateCounterMetric(metrics.NewMetricKey("dubbo_consumer_requests_succeed_total_aggregate", "The number of successful requests sent by consumers under the sliding window"), registry)
+	cm.rtMillisecondsQuantiles = metrics.NewQuantileMetric([]*metrics.MetricKey{
+		metrics.NewMetricKey("dubbo_consumer_rt_milliseconds_p50", "The total response time spent by consumers processing 50% of requests"),
+		metrics.NewMetricKey("dubbo_consumer_rt_milliseconds_p90", "The total response time spent by consumers processing 90% of requests"),
+		metrics.NewMetricKey("dubbo_consumer_rt_milliseconds_p95", "The total response time spent by consumers processing 95% of requests"),
+		metrics.NewMetricKey("dubbo_consumer_rt_milliseconds_p99", "The total response time spent by consumers processing 99% of requests"),
+	}, []float64{0.5, 0.9, 0.95, 0.99}, registry)
 }

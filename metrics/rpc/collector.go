@@ -140,3 +140,12 @@ func (c *rpcCollector) incRequestsSucceedTotal(role string, labels map[string]st
 		c.metricSet.consumer.requestsSucceedTotalAggregate.Inc(labels)
 	}
 }
+
+func (c *rpcCollector) reportRTMilliseconds(role string, labels map[string]string, cost int64) {
+	switch role {
+	case providerField:
+		c.metricSet.provider.rtMillisecondsQuantiles.Record(labels, float64(cost))
+	case consumerField:
+		c.metricSet.consumer.rtMillisecondsQuantiles.Record(labels, float64(cost))
+	}
+}
