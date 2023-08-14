@@ -12,14 +12,88 @@ Apache Dubbo is an easy-to-use Web and RPC framework that provides multiple
 language implementations(Go, [Java](https://github.com/apache/dubbo), [Rust](https://github.com/apache/dubbo-rust), [Node.js](https://github.com/apache/dubbo-js), [Web](https://github.com/apache/dubbo-js)) for communication, service discovery, traffic management,
 observability, security, tools, and best practices for building enterprise-ready microservices.
 
-Dubbo-go is the Go implementation of [triple protocol](https://dubbo.apache.org/zh-cn/overview/reference/protocols/triple-spec/)(a fully gRPC compatible and http friendly protocol) and various features for building microservice architecture designed by Dubbo. 
+Dubbo-go is the Go implementation of [triple protocol](https://dubbo.apache.org/zh-cn/overview/reference/protocols/triple-spec/)(a fully gRPC compatible and HTTP-friendly protocol) and the various features for building microservice architecture designed by Dubbo. 
 
 Visit [the official website](https://dubbo.apache.org/) for more information.
 
 ## Getting started
 
+import "dubbo.apache.org/dubbo-go/v3"
 
-[Dubbo-go Samples](https://github.com/apache/dubbo-go-samples): The project gives a series of samples that show each feature available for Dubbo-go and help you know how to integrate Dubbo-go with your system.
+Define service
+```idl
+syntax = "proto3";
+package greet.v1;
+option go_package = "example/gen/greet/v1;greetv1";
+
+message GreetRequest {
+  string name = 1;
+}
+
+message GreetResponse {
+  string greeting = 1;
+}
+
+service GreetService {
+  rpc Greet(GreetRequest) returns (GreetResponse) {}
+}
+```
+
+Generate code
+
+Prerequests
+```shell
+go install github.com/bufbuild/buf/cmd/buf@latest
+go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+go install github.com/apache/dubbo-go/cmd/protoc-gen-dubbo-go@latest
+```
+
+```shell
+$ buf lint
+$ buf generat
+```
+
+```go
+gen
+└── greet
+    └── v1
+        ├── greet.pb.go
+        └── greetv1triple
+            └── greet.triple.go
+```
+
+Provide service implementation and start server.
+
+```go
+type GreeterServer struct {
+	greet.UnimplementedGreeterServer
+}
+
+func (s *GreeterServer) SayHello(ctx context.Context, in *greet.HelloRequest) (*greet.User, error) {
+	return &greet.User{Name: "Hello " + in.Name, Id: "12345", Age: 21}, nil
+}
+```
+
+```go
+func main() {
+	s := config.NewServer()
+
+	s.RegisterService(&GreeterServer{})
+	s.Init() //config.WithXxxOption()
+
+	s.Serve(net.Listen("tcp", ":50051"))
+}
+```
+
+Call it via cURL
+
+curl -XPOST \
+     -H 'Content-Type: application/json' \
+     -H 'Micro-Endpoint: Helloworld.Greeting' \
+     -d '{"name": "alice"}' \
+      http://localhost:8080
+
+See the [samples](https://github.com/apache/dubbo-go-samples) for detailed information on usage. Next, learn how to [deploy](), [monitor]() and [manage the traffic]() of your dubbo-go application.
 
 ## Features
 
