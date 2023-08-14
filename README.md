@@ -18,7 +18,7 @@ Visit [the official website](https://dubbo.apache.org/) for more information.
 
 ## Getting started
 
-You can learn how to develop a dubbo-go RPC application step by step in 5 minutes by following our [quick start]() demo. It's as simple as the code shown below, you define a service with Protobuf, provide your own service implementation, register it to a server, and start the server.
+You can learn how to develop a dubbo-go RPC application step by step in 5 minutes by following our [Quick Start]() demo. It's as simple as the code shown below, you define a service with Protobuf, provide your own service implementation, register it to a server, and start the server.
 
 ```go
 func (s *GreeterServer) SayHello(ctx context.Context, in *greet.HelloRequest) (*greet.User, error) {
