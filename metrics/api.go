@@ -172,7 +172,7 @@ type CounterVec interface {
 	Add(labels map[string]string, v float64)
 }
 
-func NewCounterVec(metricKey *MetricKey, metricRegistry MetricRegistry) CounterVec {
+func NewCounterVec(metricRegistry MetricRegistry, metricKey *MetricKey) CounterVec {
 	return &DefaultCounterVec{
 		metricRegistry: metricRegistry,
 		metricKey:      metricKey,
@@ -200,7 +200,7 @@ type GaugeVec interface {
 	Sub(labels map[string]string, v float64)
 }
 
-func NewGaugeVec(metricKey *MetricKey, metricRegistry MetricRegistry) GaugeVec {
+func NewGaugeVec(metricRegistry MetricRegistry, metricKey *MetricKey) GaugeVec {
 	return &DefaultGaugeVec{
 		metricRegistry: metricRegistry,
 		metricKey:      metricKey,
@@ -245,7 +245,7 @@ type QpsMetric interface {
 	Record(labels map[string]string)
 }
 
-func NewQpsMetric(metricKey *MetricKey, metricRegistry MetricRegistry) QpsMetric {
+func NewQpsMetric(metricRegistry MetricRegistry, metricKey *MetricKey) QpsMetric {
 	return &DefaultQpsMetric{
 		metricRegistry: metricRegistry,
 		metricKey:      metricKey,
@@ -286,7 +286,7 @@ type AggregateCounterMetric interface {
 	Inc(labels map[string]string)
 }
 
-func NewAggregateCounterMetric(metricKey *MetricKey, metricRegistry MetricRegistry) AggregateCounterMetric {
+func NewAggregateCounterMetric(metricRegistry MetricRegistry, metricKey *MetricKey) AggregateCounterMetric {
 	return &DefaultAggregateCounterMetric{
 		metricRegistry: metricRegistry,
 		metricKey:      metricKey,
@@ -327,7 +327,7 @@ type QuantileMetric interface {
 	Record(labels map[string]string, v float64)
 }
 
-func NewQuantileMetric(metricKeys []*MetricKey, quantiles []float64, metricRegistry MetricRegistry) QuantileMetric {
+func NewQuantileMetric(metricRegistry MetricRegistry, metricKeys []*MetricKey, quantiles []float64) QuantileMetric {
 	return &DefaultQuantileMetric{
 		metricRegistry: metricRegistry,
 		metricKeys:     metricKeys,
