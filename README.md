@@ -87,11 +87,13 @@ func main() {
 
 Call it via cURL
 
+```
 curl -XPOST \
      -H 'Content-Type: application/json' \
      -H 'Micro-Endpoint: Helloworld.Greeting' \
      -d '{"name": "alice"}' \
       http://localhost:8080
+```
 
 See the [samples](https://github.com/apache/dubbo-go-samples) for detailed information on usage. Next, learn how to [deploy](), [monitor]() and [manage the traffic]() of your dubbo-go application.
 
