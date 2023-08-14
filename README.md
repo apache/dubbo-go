@@ -18,74 +18,21 @@ Visit [the official website](https://dubbo.apache.org/) for more information.
 
 ## Getting started
 
-import "dubbo.apache.org/dubbo-go/v3"
-
-Define service
-```idl
-syntax = "proto3";
-package greet.v1;
-option go_package = "example/gen/greet/v1;greetv1";
-
-message GreetRequest {
-  string name = 1;
-}
-
-message GreetResponse {
-  string greeting = 1;
-}
-
-service GreetService {
-  rpc Greet(GreetRequest) returns (GreetResponse) {}
-}
-```
-
-Generate code
-
-Prerequests
-```shell
-go install github.com/bufbuild/buf/cmd/buf@latest
-go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
-go install github.com/apache/dubbo-go/cmd/protoc-gen-dubbo-go@latest
-```
-
-```shell
-$ buf lint
-$ buf generat
-```
+You can learn how to develop a dubbo-go RPC application step by step in 5 minutes by following our [quick start]() demo. It's as simple as the code shown below, you define a service with Protobuf, provide your own service implementation, register it to a server, and start the server.
 
 ```go
-gen
-└── greet
-    └── v1
-        ├── greet.pb.go
-        └── greetv1triple
-            └── greet.triple.go
-```
-
-Provide service implementation and start server.
-
-```go
-type GreeterServer struct {
-	greet.UnimplementedGreeterServer
-}
-
 func (s *GreeterServer) SayHello(ctx context.Context, in *greet.HelloRequest) (*greet.User, error) {
-	return &greet.User{Name: "Hello " + in.Name, Id: "12345", Age: 21}, nil
+    return &greet.User{Name: "Hello " + in.Name, Id: "12345", Age: 21}, nil
 }
-```
 
-```go
 func main() {
 	s := config.NewServer()
-
 	s.RegisterService(&GreeterServer{})
-	s.Init() //config.WithXxxOption()
-
 	s.Serve(net.Listen("tcp", ":50051"))
 }
 ```
 
-Call it via cURL
+After the server is up and running, call your service via cURL:
 
 ```
 curl -XPOST \
@@ -108,7 +55,14 @@ See the [samples](https://github.com/apache/dubbo-go-samples) for detailed infor
 - **Configuration**: yaml file, dynamic configuration(Nacos, Zookeeper, etc.).
 - **Observability**: metrics(Prometheus, Grafana) and tracing(Jaeger, Zipkin).
 - **HA Strategy**: Failover, Failfast, Failsafe/Failback, Available, Broadcast, Forking
-  
+
+## Ecosystem
+- [CLI]()
+- [Console]()
+- [Samples]()
+- [Generator]()
+- [Interoperability with Dubbo2 (tcp + hessian2)]()
+
 ## Contributing
 
 Please visit [CONTRIBUTING](./CONTRIBUTING.md) for details on submitting patches and the contribution workflow.
