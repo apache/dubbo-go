@@ -1,4 +1,4 @@
-package provider
+package server
 
 type Options struct {
 }
