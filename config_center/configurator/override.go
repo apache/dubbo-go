@@ -67,7 +67,7 @@ func (c *overrideConfigurator) Configure(url *common.URL) {
 			host = url.Ip
 		}
 
-		if strings.HasPrefix(apiVersion, constant.ApiVersion) {
+		if strings.HasPrefix(apiVersion, constant.APIVersion) {
 			c.configureIfMatchV3(host, url)
 		} else {
 			c.configureIfMatch(host, url)
@@ -83,7 +83,7 @@ func (c *overrideConfigurator) configureIfMatchV3(host string, url *common.URL) 
 	conditionKeys := getConditionKeys()
 	matcher := c.configuratorUrl.GetAttribute(constant.MatchCondition)
 	if matcher != nil {
-		conditionMatcher := matcher.(parser.ConditionMatch)
+		conditionMatcher := matcher.(*parser.ConditionMatch)
 		if conditionMatcher.IsMatch(host, url) {
 			configUrl := c.configuratorUrl.CloneExceptParams(conditionKeys)
 			url.SetParams(configUrl.GetParams())

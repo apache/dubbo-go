@@ -99,7 +99,7 @@ func requestTag(invokers []protocol.Invoker, url *common.URL, invocation protoco
 	var (
 		addresses []string
 		result    []protocol.Invoker
-		match     []common.ParamMatch
+		match     []*common.ParamMatch
 	)
 	for _, tagCfg := range cfg.Tags {
 		if tagCfg.Name == tag {
@@ -111,7 +111,7 @@ func requestTag(invokers []protocol.Invoker, url *common.URL, invocation protoco
 	// only one of 'match' and 'addresses' will take effect if both are specified.
 	if len(match) != 0 {
 		result = filterInvokers(invokers, match, func(invoker protocol.Invoker, match interface{}) bool {
-			matches := match.([]common.ParamMatch)
+			matches := match.([]*common.ParamMatch)
 			for _, m := range matches {
 				if !m.IsMatch(invoker.GetURL()) {
 					return true

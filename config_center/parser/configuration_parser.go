@@ -70,18 +70,18 @@ type ConfigItem struct {
 	Applications      []string          `yaml:"applications"`
 	Parameters        map[string]string `yaml:"parameters"`
 	Side              string            `yaml:"side"`
-	Match             ConditionMatch    `yaml:"match"`
+	Match             *ConditionMatch   `yaml:"match"`
 }
 
 type ConditionMatch struct {
-	Address         common.AddressMatch    `yaml:"address"`
-	ProviderAddress common.AddressMatch    `yaml:"providerAddress"`
-	Service         common.ListStringMatch `yaml:"service"`
-	App             common.ListStringMatch `yaml:"app"`
-	Param           []common.ParamMatch    `yaml:"param"`
+	Address         *common.AddressMatch    `yaml:"address"`
+	ProviderAddress *common.AddressMatch    `yaml:"providerAddress"`
+	Service         *common.ListStringMatch `yaml:"service"`
+	App             *common.ListStringMatch `yaml:"app"`
+	Param           []*common.ParamMatch    `yaml:"param"`
 }
 
-func (c ConditionMatch) IsMatch(host string, url *common.URL) bool {
+func (c *ConditionMatch) IsMatch(host string, url *common.URL) bool {
 	if !c.Address.IsMatch(host) {
 		return false
 	}

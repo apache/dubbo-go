@@ -30,7 +30,7 @@ type ParamMatch struct {
 	Value StringMatch `yaml:"value" json:"value,omitempty" property:"value"`
 }
 
-func (p ParamMatch) IsMatch(url *URL) bool {
+func (p *ParamMatch) IsMatch(url *URL) bool {
 	return p.Value.IsMatch(url.GetParam(p.Key, ""))
 }
 
@@ -43,7 +43,7 @@ type StringMatch struct {
 	Wildcard string `yaml:"wildcard" json:"wildcard,omitempty" property:"wildcard"`
 }
 
-func (p StringMatch) IsMatch(value string) bool {
+func (p *StringMatch) IsMatch(value string) bool {
 	if p.Exact != "" {
 		return p.Exact == value
 	} else if p.Prefix != "" {
@@ -67,7 +67,7 @@ type AddressMatch struct {
 	Exact    string `yaml:"exact" json:"exact,omitempty" property:"exact"`
 }
 
-func (p AddressMatch) IsMatch(value string) bool {
+func (p *AddressMatch) IsMatch(value string) bool {
 	if p.Cird != "" && value != "" {
 		_, ipnet, err := net.ParseCIDR(p.Cird)
 		if err != nil {
@@ -92,7 +92,7 @@ type ListStringMatch struct {
 	Oneof []StringMatch `yaml:"oneof" json:"oneof,omitempty" property:"oneof"`
 }
 
-func (p ListStringMatch) IsMatch(value string) bool {
+func (p *ListStringMatch) IsMatch(value string) bool {
 	for _, match := range p.Oneof {
 		if match.IsMatch(value) {
 			return true

@@ -35,5 +35,5 @@ const (
 
 const (
 	MatchCondition = "MATCH_CONDITION"
-	ApiVersion     = "v3.0"
+	APIVersion     = "v3.0"
 )
