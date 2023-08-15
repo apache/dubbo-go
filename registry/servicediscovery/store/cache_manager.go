@@ -134,6 +134,7 @@ func (cm *CacheManager) dumpCache() error {
 	if err != nil {
 		return err
 	}
+	defer file.Close()
 
 	encoder := gob.NewEncoder(file)
 	for k, v := range items {
@@ -146,7 +147,7 @@ func (cm *CacheManager) dumpCache() error {
 			return err
 		}
 	}
-	return file.Close()
+	return nil
 }
 
 func (cm *CacheManager) RunDumpTask() {
