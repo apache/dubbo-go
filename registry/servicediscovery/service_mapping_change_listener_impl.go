@@ -67,6 +67,7 @@ func (lstn *ServiceMappingChangedListenerImpl) OnEvent(e observer.Event) error {
 	)
 
 	lstn.mux.Lock()
+	defer lstn.mux.Unlock()
 
 	if lstn.stop == ServiceMappingListenerStop {
 		return nil
@@ -105,8 +106,6 @@ func (lstn *ServiceMappingChangedListenerImpl) OnEvent(e observer.Event) error {
 			break
 		}
 	}
-
-	lstn.mux.Unlock()
 
 	return err
 }
