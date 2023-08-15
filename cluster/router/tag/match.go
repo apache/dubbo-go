@@ -112,13 +112,12 @@ func requestTag(invokers []protocol.Invoker, url *common.URL, invocation protoco
 	if len(match) != 0 {
 		result = filterInvokers(invokers, match, func(invoker protocol.Invoker, match interface{}) bool {
 			matches := match.([]common.ParamMatch)
-			isMatch := true
 			for _, m := range matches {
 				if !m.IsMatch(invoker.GetURL()) {
-					isMatch = false
+					return true
 				}
 			}
-			return !isMatch
+			return false
 		})
 	} else {
 		if len(addresses) == 0 {
