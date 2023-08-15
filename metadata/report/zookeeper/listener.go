@@ -18,15 +18,18 @@
 package zookeeper
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/registry"
-	gxset "github.com/dubbogo/gost/container/set"
-	"github.com/dubbogo/gost/log/logger"
 	"strings"
 	"sync"
 )
 
 import (
+	gxset "github.com/dubbogo/gost/container/set"
+	"github.com/dubbogo/gost/log/logger"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 	"dubbo.apache.org/dubbo-go/v3/remoting/zookeeper"
 )
