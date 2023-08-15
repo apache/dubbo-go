@@ -27,7 +27,7 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/protoc-gen-triple/util"
+	"dubbo.apache.org/dubbo-go/v3/triple-tool/util"
 )
 
 func (g *Generator) GenPb() error {

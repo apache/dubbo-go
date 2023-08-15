@@ -1,11 +1,13 @@
-module dubbo.apache.org/dubbo-go/v3/protoc-gen-triple
+module dubbo.apache.org/dubbo-go/v3/triple-tool
 
 go 1.20
 
 require (
 	github.com/emicklei/proto v1.12.1
+	github.com/golang/protobuf v1.5.0
 	github.com/spf13/cobra v1.7.0
 	github.com/stretchr/testify v1.8.4
+	google.golang.org/protobuf v1.31.0
 )
 
 require (

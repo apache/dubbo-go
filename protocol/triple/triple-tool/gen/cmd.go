@@ -22,7 +22,7 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/protoc-gen-triple/gen/generator"
+	"dubbo.apache.org/dubbo-go/v3/triple-tool/gen/generator"
 )
 
 var Cmd = &cobra.Command{

@@ -15,11 +15,10 @@
  * limitations under the License.
  */
 
-package generator
+package cmd
 
 import (
 	"os"
-	"path/filepath"
 )
 
 import (
@@ -27,44 +26,26 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/protoc-gen-triple/util"
+	"dubbo.apache.org/dubbo-go/v3/triple-tool/gen"
+	"dubbo.apache.org/dubbo-go/v3/triple-tool/internal/version"
 )
 
-type Context struct {
-	Src          string
-	ProtocCmd    string
-	GoOpts       []string
-	GoOut        string
-	GoModuleName string
-	Pwd          string
+// rootCmd represents the base command when called without any subcommands
+var rootCmd = &cobra.Command{
+	Use: "triple-tool",
 }
 
-func newContext(cmd *cobra.Command, args []string) (Context, error) {
-	var ctx Context
-	pwd, err := os.Getwd()
+// Execute adds all child commands to the root command and sets flags appropriately.
+// This is called by main.main(). It only needs to happen once to the rootCmd.
+func Execute() {
+	err := rootCmd.Execute()
 	if err != nil {
-		return ctx, err
+		os.Exit(1)
 	}
-	ctx.Pwd = pwd
-	src, err := filepath.Abs(ProtocPath)
-	if err != nil {
-		return ctx, err
-	}
-	ctx.Src = src
-	ctx.GoOut = filepath.Dir(src)
-	module, err := util.GetModuleName()
-	if err != nil {
-		return ctx, err
-	}
-	ctx.GoModuleName = module
-	ctx.GoOpts = GoOpts
-	return ctx, nil
 }
 
-func Generate(cmd *cobra.Command, args []string) error {
-	ctx, err := newContext(cmd, args)
-	if err != nil {
-		return err
-	}
-	return NewGenerator(ctx).gen()
+func init() {
+	rootCmd.Version = version.Version
+
+	rootCmd.AddCommand(gen.Cmd)
 }
