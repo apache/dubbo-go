@@ -37,6 +37,7 @@ type CacheManager struct {
 	stop         chan struct{} // Channel used to stop the cache expiration routine
 	cache        *lru.Cache    // The LRU cache implementation
 	lock         sync.Mutex
+	enableDump   bool
 }
 
 type Item struct {
@@ -45,13 +46,14 @@ type Item struct {
 }
 
 // NewCacheManager creates a new CacheManager instance.
-// It initializes the cache manager with the provided parameters and starts a routine for cache expiration.
-func NewCacheManager(name, cacheFile string, dumpInterval time.Duration, maxCacheSize int) (*CacheManager, error) {
+// It initializes the cache manager with the provided parameters and starts a routine for cache dumping.
+func NewCacheManager(name, cacheFile string, dumpInterval time.Duration, maxCacheSize int, enableDump bool) (*CacheManager, error) {
 	cm := &CacheManager{
 		name:         name,
 		cacheFile:    cacheFile,
 		dumpInterval: dumpInterval,
 		stop:         make(chan struct{}),
+		enableDump:   enableDump,
 	}
 	cache, err := lru.New(maxCacheSize)
 	if err != nil {
@@ -66,7 +68,9 @@ func NewCacheManager(name, cacheFile string, dumpInterval time.Duration, maxCach
 		}
 	}
 
-	go cm.RunDumpTask()
+	if enableDump {
+		cm.runDumpTask()
+	}
 
 	return cm, nil
 }
@@ -150,29 +154,40 @@ func (cm *CacheManager) dumpCache() error {
 	return nil
 }
 
-func (cm *CacheManager) RunDumpTask() {
-	ticker := time.NewTicker(cm.dumpInterval)
-	for {
-		select {
-		case <-ticker.C:
-			// Dump the cache to the file
-			if err := cm.dumpCache(); err != nil {
-				// Handle error
-				logger.Warnf("Failed to dump cache,the err is %v", err)
-			} else {
-				logger.Infof("Dumping [%s] caches, latest entries %d", cm.name, cm.cache.Len())
+func (cm *CacheManager) runDumpTask() {
+	go func() {
+		ticker := time.NewTicker(cm.dumpInterval)
+		for {
+			select {
+			case <-ticker.C:
+				// Dump the cache to the file
+				if err := cm.dumpCache(); err != nil {
+					// Handle error
+					logger.Warnf("Failed to dump cache,the err is %v", err)
+				} else {
+					logger.Infof("Dumping [%s] caches, latest entries %d", cm.name, cm.cache.Len())
+				}
+			case <-cm.stop:
+				ticker.Stop()
+				return
 			}
-		case <-cm.stop:
-			ticker.Stop()
-			return
 		}
+	}()
+}
+
+func (cm *CacheManager) StopDump() {
+	cm.lock.Lock()
+	defer cm.lock.Unlock()
+	if cm.enableDump {
+		cm.stop <- struct{}{} // Stop the cache dump routine
+		cm.enableDump = false
 	}
 }
 
 // destroy stops the cache dump routine, clears the cache and removes the cache file.
 func (cm *CacheManager) destroy() {
-	cm.stop <- struct{}{} // Stop the cache dump routine
-	cm.cache.Purge()      // Clear the cache
+	cm.StopDump()    // Stop the cache dump routine
+	cm.cache.Purge() // Clear the cache
 
 	// Delete the cache file if it exists
 	if _, err := os.Stat(cm.cacheFile); err == nil {

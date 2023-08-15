@@ -42,7 +42,7 @@ var (
 )
 
 func init() {
-	cache, err := store.NewCacheManager(constant.DefaultMetaCacheName, constant.DefaultMetaFileName, time.Minute*10, constant.DefaultEntrySize)
+	cache, err := store.NewCacheManager(constant.DefaultMetaCacheName, constant.DefaultMetaFileName, time.Minute*10, constant.DefaultEntrySize, true)
 	if err != nil {
 		logger.Fatal("Failed to create cache [%s],the err is %v", constant.DefaultMetaCacheName, err)
 	}
