@@ -19,5 +19,4 @@ package generator
 
 var (
 	ProtocPath string
-	GoOut      string
 )

@@ -15,47 +15,16 @@
  * limitations under the License.
  */
 
-package generator
+package util
 
-import (
-	"path/filepath"
-)
+import "strings"
 
-import (
-	"github.com/spf13/cobra"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/protoc-gen-triple/util"
-)
-
-type Context struct {
-	Src          string
-	ProtocCmd    string
-	GoOut        string
-	GoModuleName string
-}
-
-func newContext(cmd *cobra.Command, args []string) (Context, error) {
-	var ctx Context
-	src, err := filepath.Abs(ProtocPath)
+func GetModuleName() (string, error) {
+	output, err := Exec("go list -m", "./")
 	if err != nil {
-		return ctx, err
+		return "", err
 	}
-	ctx.Src = src
-	ctx.GoOut = filepath.Dir(src)
-	module, err := util.GetModuleName()
-	if err != nil {
-		return ctx, err
-	}
-	ctx.GoModuleName = module
-	return ctx, nil
-}
 
-func Generate(cmd *cobra.Command, args []string) error {
-	ctx, err := newContext(cmd, args)
-	if err != nil {
-		return err
-	}
-	return NewGenerator(ctx).gen()
+	moduleName := strings.TrimSpace(string(output))
+	return moduleName, nil
 }
