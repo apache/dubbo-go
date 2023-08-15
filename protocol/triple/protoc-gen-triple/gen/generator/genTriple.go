@@ -98,7 +98,7 @@ func (g *Generator) parseProtoToTriple(p *proto.Proto) (TripleGo, error) {
 				if strings.Contains(i, g.ctx.GoModuleName) {
 					tripleGo.Import = strings.Split(i, ";")[0]
 				} else {
-					tripleGo.Import = g.ctx.GoModuleName + "/" + strings.Split(p.Constant.Source, ";")[0]
+					tripleGo.Import = g.ctx.GoModuleName + "/" + strings.Split(i, ";")[0]
 				}
 			}
 		}),
