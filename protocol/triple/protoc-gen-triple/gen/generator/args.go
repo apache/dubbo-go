@@ -19,4 +19,5 @@ package generator
 
 var (
 	ProtocPath string
+	GoOpts     []string
 )

@@ -19,8 +19,8 @@ package generator
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
+	"strings"
 )
 
 import (
@@ -28,10 +28,7 @@ import (
 )
 
 func (g *Generator) GenPb() error {
-	pwd, err := os.Getwd()
-	if err != nil {
-		return err
-	}
+	pwd := g.ctx.Pwd
 	g.genPbCmd(pwd)
 	output, err := util.Exec(g.ctx.ProtocCmd, pwd)
 	if len(output) > 0 {
@@ -42,5 +39,9 @@ func (g *Generator) GenPb() error {
 
 func (g *Generator) genPbCmd(goout string) {
 	src := g.ctx.Src
-	g.ctx.ProtocCmd = fmt.Sprintf("protoc %s -I=%s --go_out=%s", filepath.Base(src), filepath.Dir(src), goout)
+	g.ctx.ProtocCmd = fmt.Sprintf("protoc %s -I=%s --go_out=%s --go_opt=module=%s", filepath.Base(src), filepath.Dir(src), goout, g.ctx.GoModuleName)
+
+	if len(g.ctx.GoOpts) > 0 {
+		g.ctx.ProtocCmd += " --go_opt=" + strings.Join(g.ctx.GoOpts, ",")
+	}
 }

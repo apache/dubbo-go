@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package greet;
 
-option go_package = "/internal/proto;greet";
+option go_package = "dubbo.apache.org/dubbo-go/v3/protoc-gen-triple/internal/proto;greet";
 
 message GreetRequest {
   string name = 1;

@@ -18,6 +18,7 @@
 package generator
 
 import (
+	"os"
 	"path/filepath"
 )
 
@@ -32,12 +33,19 @@ import (
 type Context struct {
 	Src          string
 	ProtocCmd    string
+	GoOpts       []string
 	GoOut        string
 	GoModuleName string
+	Pwd          string
 }
 
 func newContext(cmd *cobra.Command, args []string) (Context, error) {
 	var ctx Context
+	pwd, err := os.Getwd()
+	if err != nil {
+		return ctx, err
+	}
+	ctx.Pwd = pwd
 	src, err := filepath.Abs(ProtocPath)
 	if err != nil {
 		return ctx, err
@@ -49,6 +57,7 @@ func newContext(cmd *cobra.Command, args []string) (Context, error) {
 		return ctx, err
 	}
 	ctx.GoModuleName = module
+	ctx.GoOpts = GoOpts
 	return ctx, nil
 }
 

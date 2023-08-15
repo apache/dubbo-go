@@ -34,5 +34,7 @@ func init() {
 	flags := Cmd.Flags()
 
 	flags.StringVar(&generator.ProtocPath, "protoPath", ".", "")
+	flags.StringSliceVar(&generator.GoOpts, "go_opt", []string{}, "")
 	flags.MarkHidden("protoPath")
+	flags.MarkHidden("go_opt")
 }

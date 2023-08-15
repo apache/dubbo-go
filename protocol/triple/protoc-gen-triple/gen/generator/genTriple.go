@@ -120,7 +120,8 @@ func (g *Generator) parseTripleToString(t TripleGo) (string, error) {
 }
 
 func (g *Generator) parseGOOut(triple TripleGo) {
-	g.ctx.GoOut = filepath.Join(g.ctx.GoOut, triple.Package+"/"+triple.ProtoPackage+".triple.go")
+	prefix := strings.TrimPrefix(triple.Import, g.ctx.GoModuleName)
+	g.ctx.GoOut = filepath.Join(g.ctx.Pwd, filepath.Join(prefix, triple.Package+"/"+triple.ProtoPackage+".triple.go"))
 }
 
 func (g *Generator) generateToFile(filePath string, data []byte) error {
