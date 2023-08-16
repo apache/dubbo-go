@@ -50,8 +50,8 @@ type Result struct {
 
 func NewResult() *Result {
 	return &Result{
-		Min: math.MaxFloat64,
-		Max: math.SmallestNonzeroFloat64,
+		Min:  math.MaxFloat64,
+		Max:  math.SmallestNonzeroFloat64,
 		Last: math.NaN(),
 	}
 }

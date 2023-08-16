@@ -109,7 +109,7 @@ func TestValueObserve(t *testing.T) {
 		Max:   1,
 		Count: 1,
 		Total: 1,
-		Last: 1,
+		Last:  1,
 	}
 	for i, v := range rts {
 		v.Observe(float64(1))
