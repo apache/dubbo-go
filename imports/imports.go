@@ -66,6 +66,7 @@ import (
 	_ "dubbo.apache.org/dubbo-go/v3/metadata/service/remote"
 	_ "dubbo.apache.org/dubbo-go/v3/metrics/app_info"
 	_ "dubbo.apache.org/dubbo-go/v3/metrics/prometheus"
+	_ "dubbo.apache.org/dubbo-go/v3/otel/trace/jaeger"
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/dubbo"
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/dubbo3"
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/dubbo3/health"

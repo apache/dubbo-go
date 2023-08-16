@@ -15,6 +15,22 @@
  * limitations under the License.
  */
 
-// Package jaeger instruments dubbogo with open-telemetry
-// (https://github.com/open-telemetry/opentelemetry-go).
-package trace
+package extension
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/otel/trace"
+)
+
+var traceProviderMap = make(map[string]func(config *trace.TraceProviderConfig) error, 4)
+
+func SetTraceProvider(name string, f func(config *trace.TraceProviderConfig) error) {
+	traceProviderMap[name] = f
+}
+
+func GetTraceProvider(name string, config *trace.TraceProviderConfig) error {
+	f, ok := traceProviderMap[name]
+	if !ok {
+		panic("Cannot find the trace provider with name " + name)
+	}
+	return f(config)
+}

@@ -38,10 +38,11 @@ import (
 )
 
 const (
-	instrumentationName = "dubbo.apache.org/dubbo-go/v3/oteldubbo"
+	instrumentationName = "dubbo.apache.org/dubbo-go/v3/otel"
 )
 
 func init() {
+	// TODO: use single filter to simplify filter field in configuration
 	extension.SetFilter(constant.OTELServerTraceKey, func() filter.Filter {
 		return &otelServerFilter{
 			Propagators:    otel.GetTextMapPropagator(),

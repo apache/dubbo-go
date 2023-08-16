@@ -15,6 +15,11 @@
  * limitations under the License.
  */
 
-// Package jaeger instruments dubbogo with open-telemetry
-// (https://github.com/open-telemetry/opentelemetry-go).
 package trace
+
+type TraceProviderConfig struct {
+	Exporter    string
+	Endpoint    string
+	SampleMode  string
+	SampleRatio float64
+}
