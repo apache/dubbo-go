@@ -40,7 +40,10 @@ func (m *rtMetric) desc(opts *RtOpts, labels []string) *prom.Desc {
 	return prom.NewDesc(prom.BuildFQName(opts.Namespace, opts.Subsystem, opts.Name+m.nameSuffix), m.helpPrefix+opts.Help, labels, opts.ConstLabels)
 }
 
-var rtMetrics = make([]*rtMetric, 5)
+var (
+	rtMetrics  = make([]*rtMetric, 5)
+	aggMetrics = make([]*rtMetric, 3)
+)
 
 func init() {
 	rtMetrics[0] = &rtMetric{nameSuffix: "_sum", helpPrefix: "Sum ", valueFunc: func(r *aggregate.Result) float64 { return r.Total }}
@@ -48,6 +51,10 @@ func init() {
 	rtMetrics[2] = &rtMetric{nameSuffix: "_min", helpPrefix: "Min ", valueFunc: func(r *aggregate.Result) float64 { return r.Min }}
 	rtMetrics[3] = &rtMetric{nameSuffix: "_max", helpPrefix: "Max ", valueFunc: func(r *aggregate.Result) float64 { return r.Max }}
 	rtMetrics[4] = &rtMetric{nameSuffix: "_avg", helpPrefix: "Average ", valueFunc: func(r *aggregate.Result) float64 { return r.Avg }}
+
+	aggMetrics[0] = &rtMetric{nameSuffix: "_avg_milliseconds_aggregate", helpPrefix: "The average ", valueFunc: func(r *aggregate.Result) float64 { return r.Avg }}
+	aggMetrics[1] = &rtMetric{nameSuffix: "_min_milliseconds_aggregate", helpPrefix: "The minimum ", valueFunc: func(r *aggregate.Result) float64 { return r.Min }}
+	aggMetrics[2] = &rtMetric{nameSuffix: "_max_milliseconds_aggregate", helpPrefix: "The maximum ", valueFunc: func(r *aggregate.Result) float64 { return r.Max }}
 }
 
 type RtOpts struct {
@@ -56,17 +63,53 @@ type RtOpts struct {
 	Name              string
 	Help              string
 	ConstLabels       prom.Labels
-	bucketNum         int
-	timeWindowSeconds int64
+	bucketNum         int   // only for aggRt
+	timeWindowSeconds int64 // only for aggRt
 }
 
-type valueAgg struct {
+type observer interface {
+	Observe(val float64)
+	result() *aggregate.Result
+}
+
+type aggResult struct {
+	agg *aggregate.TimeWindowAggregator
+}
+
+func (r *aggResult) Observe(val float64) {
+	r.agg.Add(val)
+}
+
+func (r *aggResult) result() *aggregate.Result {
+	return r.agg.Result()
+}
+
+type valueResult struct {
+	mtx sync.RWMutex
+	val *aggregate.Result
+}
+
+func (r *valueResult) Observe(val float64) {
+	r.mtx.Lock()
+	defer r.mtx.Unlock()
+	r.val.Update(val)
+}
+
+func (r *valueResult) result() *aggregate.Result {
+	res := aggregate.NewResult()
+	r.mtx.RLock()
+	res.Merge(r.val)
+	r.mtx.RUnlock()
+	return res.Get()
+}
+
+type Rt struct {
 	tags map[string]string
-	agg  *aggregate.TimeWindowAggregator
+	obs  observer
 }
 
-func (v *valueAgg) Observe(val float64) {
-	v.agg.Add(val)
+func (r *Rt) Observe(val float64) {
+	r.obs.Observe(val)
 }
 
 func buildKey(m map[string]string, labNames []string) string {
@@ -92,38 +135,58 @@ type RtVec struct {
 	opts       *RtOpts
 	labelNames []string
 	aggMap     sync.Map
+	initFunc   func(tags map[string]string) *Rt
+	metrics    []*rtMetric
 }
 
 func NewRtVec(opts *RtOpts, labNames []string) *RtVec {
 	return &RtVec{
 		opts:       opts,
 		labelNames: labNames,
+		metrics:    rtMetrics,
+		initFunc: func(tags map[string]string) *Rt {
+			return &Rt{
+				tags: tags,
+				obs:  &valueResult{val: aggregate.NewResult()},
+			}
+		},
+	}
+}
+
+func NewAggRtVec(opts *RtOpts, labNames []string) *RtVec {
+	return &RtVec{
+		opts:       opts,
+		labelNames: labNames,
+		metrics:    aggMetrics,
+		initFunc: func(tags map[string]string) *Rt {
+			return &Rt{
+				tags: tags,
+				obs:  &aggResult{agg: aggregate.NewTimeWindowAggregator(opts.bucketNum, opts.timeWindowSeconds)},
+			}
+		},
 	}
 }
 
 func (r *RtVec) With(tags map[string]string) prom.Observer {
 	k := buildKey(tags, r.labelNames)
-	return r.computeIfAbsent(k, func() *valueAgg {
-		return &valueAgg{
-			tags: tags,
-			agg:  aggregate.NewTimeWindowAggregator(r.opts.bucketNum, r.opts.timeWindowSeconds),
-		}
+	return r.computeIfAbsent(k, func() *Rt {
+		return r.initFunc(tags)
 	})
 }
 
-func (r *RtVec) computeIfAbsent(k string, supplier func() *valueAgg) *valueAgg {
+func (r *RtVec) computeIfAbsent(k string, supplier func() *Rt) *Rt {
 	v, ok := r.aggMap.Load(k)
 	if !ok {
 		v, _ = r.aggMap.LoadOrStore(k, supplier())
 	}
-	return v.(*valueAgg)
+	return v.(*Rt)
 }
 
 func (r *RtVec) Collect(ch chan<- prom.Metric) {
-	r.aggMap.Range(func(key, val interface{}) bool {
-		v := val.(*valueAgg)
-		res := v.agg.Result()
-		for _, m := range rtMetrics {
+	r.aggMap.Range(func(_, val interface{}) bool {
+		v := val.(*Rt)
+		res := v.obs.result()
+		for _, m := range r.metrics {
 			ch <- prom.MustNewConstMetric(m.desc(r.opts, r.labelNames), prom.GaugeValue, m.valueFunc(res), buildLabelValues(v.tags, r.labelNames)...)
 		}
 		return true
@@ -131,7 +194,7 @@ func (r *RtVec) Collect(ch chan<- prom.Metric) {
 }
 
 func (r *RtVec) Describe(ch chan<- *prom.Desc) {
-	for _, m := range rtMetrics {
+	for _, m := range r.metrics {
 		ch <- m.desc(r.opts, r.labelNames)
 	}
 }

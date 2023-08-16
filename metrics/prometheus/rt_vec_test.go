@@ -34,119 +34,133 @@ import (
 )
 
 func TestRtVecCollect(t *testing.T) {
-	r := &RtVec{
-		opts: &RtOpts{
-			Name:              "request_num",
-			bucketNum:         10,
-			timeWindowSeconds: 120,
-			Help:              "Request cost",
-		},
-		labelNames: []string{"app", "version"},
+	opts := &RtOpts{
+		Name:              "request_num",
+		bucketNum:         10,
+		timeWindowSeconds: 120,
+		Help:              "Request cost",
 	}
-	labels := map[string]string{"app": "dubbo", "version": "1.0.0"}
-	r.With(labels).Observe(100)
-	ch := make(chan prom.Metric, len(rtMetrics))
-	r.Collect(ch)
-	close(ch)
-	assert.Equal(t, len(ch), len(rtMetrics))
-	for _, m := range rtMetrics {
-		metric, ok := <-ch
-		if !ok {
-			t.Error("not enough metrics")
-		} else {
-			str := metric.Desc().String()
-			assert.Contains(t, str, m.nameSuffix)
-			assert.Contains(t, str, m.helpPrefix)
-			assert.Contains(t, str, "app")
-			assert.Contains(t, str, "version")
+	labels := []string{"app", "version"}
+	vecs := [2]*RtVec{NewRtVec(opts, labels), NewAggRtVec(opts, labels)}
+	for _, r := range vecs {
+		r.With(map[string]string{"app": "dubbo", "version": "1.0.0"}).Observe(100)
+		ch := make(chan prom.Metric, len(r.metrics))
+		r.Collect(ch)
+		close(ch)
+		assert.Equal(t, len(ch), len(r.metrics))
+		for _, m := range r.metrics {
+			metric, ok := <-ch
+			if !ok {
+				t.Error("not enough metrics")
+			} else {
+				str := metric.Desc().String()
+				assert.Contains(t, str, m.nameSuffix)
+				assert.Contains(t, str, m.helpPrefix)
+				assert.Contains(t, str, "app")
+				assert.Contains(t, str, "version")
+			}
 		}
 	}
 }
 
 func TestRtVecDescribe(t *testing.T) {
-	r := &RtVec{
-		opts: &RtOpts{
-			Name:              "request_num",
-			bucketNum:         10,
-			timeWindowSeconds: 120,
-			Help:              "Request cost",
-		},
-		labelNames: []string{"app", "version"},
+	opts := &RtOpts{
+		Name:              "request_num",
+		bucketNum:         10,
+		timeWindowSeconds: 120,
+		Help:              "Request cost",
 	}
-	ch := make(chan *prom.Desc, len(rtMetrics))
-	r.Describe(ch)
-	close(ch)
-	assert.Equal(t, len(ch), len(rtMetrics))
-	for _, m := range rtMetrics {
-		desc, ok := <-ch
-		if !ok {
-			t.Error(t, "not enough desc")
-		} else {
-			str := desc.String()
-			assert.Contains(t, str, m.nameSuffix)
-			assert.Contains(t, str, m.helpPrefix)
-			assert.Contains(t, str, "app")
-			assert.Contains(t, str, "version")
+	labels := []string{"app", "version"}
+	vecs := [2]*RtVec{NewRtVec(opts, labels), NewAggRtVec(opts, labels)}
+	for _, r := range vecs {
+		ch := make(chan *prom.Desc, len(r.metrics))
+		r.Describe(ch)
+		close(ch)
+		assert.Equal(t, len(ch), len(r.metrics))
+		for _, m := range r.metrics {
+			desc, ok := <-ch
+			if !ok {
+				t.Error(t, "not enough desc")
+			} else {
+				str := desc.String()
+				assert.Contains(t, str, m.nameSuffix)
+				assert.Contains(t, str, m.helpPrefix)
+				assert.Contains(t, str, "app")
+				assert.Contains(t, str, "version")
+			}
 		}
 	}
 }
 
-func TestValueAggObserve(t *testing.T) {
-	v := &valueAgg{
-		tags: map[string]string{},
-		agg:  aggregate.NewTimeWindowAggregator(10, 10),
+func TestValueObserve(t *testing.T) {
+	rts := []*Rt{
+		{
+			tags: map[string]string{},
+			obs:  &aggResult{agg: aggregate.NewTimeWindowAggregator(10, 10)},
+		},
+		{
+			tags: map[string]string{},
+			obs:  &valueResult{val: aggregate.NewResult()},
+		},
 	}
-	v.Observe(float64(1))
-	r := v.agg.Result()
 	want := &aggregate.Result{
 		Avg:   1,
 		Min:   1,
 		Max:   1,
 		Count: 1,
 		Total: 1,
-		Last:  1,
+		Last: 1,
 	}
-	if !reflect.DeepEqual(r, want) {
-		t.Errorf("Result() = %v, want %v", r, want)
+	for i, v := range rts {
+		v.Observe(float64(1))
+		r := v.obs.result()
+		if i == 0 {
+			r.Last = 1 // agg result no Last, value is NaN
+		}
+		if !reflect.DeepEqual(r, want) {
+			t.Errorf("Result() = %v, want %v", r, want)
+		}
 	}
 }
 
 func TestRtVecWith(t *testing.T) {
-	r := &RtVec{
-		opts: &RtOpts{
-			Name:              "request_num",
-			bucketNum:         10,
-			timeWindowSeconds: 120,
-			Help:              "Request cost",
-		},
-		labelNames: []string{"app", "version"},
+	opts := &RtOpts{
+		Name:              "request_num",
+		bucketNum:         10,
+		timeWindowSeconds: 120,
+		Help:              "Request cost",
 	}
-	labels := map[string]string{"app": "dubbo", "version": "1.0.0"}
-	first := r.With(labels)
-	second := r.With(labels)
-	assert.True(t, first == second) // init once
+	labels := []string{"app", "version"}
+	vecs := [2]*RtVec{NewRtVec(opts, labels), NewAggRtVec(opts, labels)}
+	tags := map[string]string{"app": "dubbo", "version": "1.0.0"}
+	for _, r := range vecs {
+		first := r.With(tags)
+		second := r.With(tags)
+		assert.True(t, first == second) // init once
+	}
 }
 
 func TestRtVecWithConcurrent(t *testing.T) {
-	r := &RtVec{
-		opts: &RtOpts{
-			Name:              "request_num",
-			bucketNum:         10,
-			timeWindowSeconds: 120,
-			Help:              "Request cost",
-		},
-		labelNames: []string{"app", "version"},
+	opts := &RtOpts{
+		Name:              "request_num",
+		bucketNum:         10,
+		timeWindowSeconds: 120,
+		Help:              "Request cost",
 	}
-	labels := map[string]string{"app": "dubbo", "version": "1.0.0"}
-	var wg sync.WaitGroup
-	for i := 0; i < 10; i++ {
-		wg.Add(1)
-		go func() {
-			r.With(labels).Observe(100)
-			wg.Done()
-		}()
+	labels := []string{"app", "version"}
+	labelValues := map[string]string{"app": "dubbo", "version": "1.0.0"}
+	vecs := [2]*RtVec{NewRtVec(opts, labels), NewAggRtVec(opts, labels)}
+	for _, r := range vecs {
+		var wg sync.WaitGroup
+		for i := 0; i < 10; i++ {
+			wg.Add(1)
+			go func() {
+				r.With(labelValues).Observe(100)
+				wg.Done()
+			}()
+		}
+		wg.Wait()
+		res := r.With(labelValues).(*Rt).obs.result()
+		assert.True(t, res.Count == uint64(10))
 	}
-	wg.Wait()
-	res := r.With(labels).(*valueAgg).agg.Result()
-	assert.True(t, res.Count == uint64(10))
 }

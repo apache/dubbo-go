@@ -61,14 +61,20 @@ func AddCollector(name string, fun func(MetricRegistry, *ReporterConfig)) {
 
 // MetricRegistry data container，data compute、expose、agg
 type MetricRegistry interface {
-	Counter(*MetricId) CounterMetric      // add or update a counter
-	Gauge(*MetricId) GaugeMetric          // add or update a gauge
-	Histogram(*MetricId) ObservableMetric // add a metric num to a histogram
-	Summary(*MetricId) ObservableMetric   // add a metric num to a summary
-	Rt(*MetricId) ObservableMetric        // add a metric num to a rt
-	Export()                              // expose metric data， such as Prometheus http exporter
+	Counter(*MetricId) CounterMetric        // add or update a counter
+	Gauge(*MetricId) GaugeMetric            // add or update a gauge
+	Histogram(*MetricId) ObservableMetric   // add a metric num to a histogram
+	Summary(*MetricId) ObservableMetric     // add a metric num to a summary
+	Rt(*MetricId, *RtOpts) ObservableMetric // add a metric num to a rt
+	Export()                                // expose metric data， such as Prometheus http exporter
 	// GetMetrics() []*MetricSample // get all metric data
 	// GetMetricsString() (string, error) // get text format metric data
+}
+
+type RtOpts struct {
+	Aggregate         bool
+	BucketNum         int   // only for aggRt
+	TimeWindowSeconds int64 // only for aggRt
 }
 
 // multi registry，like micrometer CompositeMeterRegistry

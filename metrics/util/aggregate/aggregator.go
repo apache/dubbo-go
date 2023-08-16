@@ -48,37 +48,46 @@ type Result struct {
 	Last  float64
 }
 
+func NewResult() *Result {
+	return &Result{
+		Min: math.MaxFloat64,
+		Max: math.SmallestNonzeroFloat64,
+		Last: math.NaN(),
+	}
+}
+
+func (r *Result) Update(v float64) {
+	r.Min = math.Min(r.Min, v)
+	r.Max = math.Max(r.Max, v)
+	r.Last = v
+	r.Total += v
+	r.Count++
+}
+
+func (r *Result) Merge(o *Result) {
+	r.Min = math.Min(r.Min, o.Min)
+	r.Max = math.Max(r.Max, o.Max)
+	r.Total += o.Total
+	r.Count += o.Count
+	r.Last = o.Last
+}
+
+func (r *Result) Get() *Result {
+	if r.Count > 0 {
+		r.Avg = r.Total / float64(r.Count)
+	}
+	return r
+}
+
 // Result returns the aggregate result of the sliding window by aggregating all panes.
 func (t *TimeWindowAggregator) Result() *Result {
 	t.mux.RLock()
 	defer t.mux.RUnlock()
-
-	res := &Result{}
-
-	total := 0.0
-	count := uint64(0)
-	max := math.SmallestNonzeroFloat64
-	min := math.MaxFloat64
-	last := math.NaN()
-
+	res := NewResult()
 	for _, v := range t.window.values(time.Now().UnixMilli()) {
-		total += v.(*aggregator).total
-		count += v.(*aggregator).count
-		max = math.Max(max, v.(*aggregator).max)
-		min = math.Min(min, v.(*aggregator).min)
-		last = v.(*aggregator).last
+		res.Merge(v.(*Result)) // Last not as expect, but agg result has no Last value
 	}
-
-	if count > 0 {
-		res.Avg = total / float64(count)
-		res.Count = count
-		res.Total = total
-		res.Max = max
-		res.Min = min
-		res.Last = last
-	}
-
-	return res
+	return res.Get()
 }
 
 // Add adds a value to the sliding window's current pane.
@@ -86,38 +95,9 @@ func (t *TimeWindowAggregator) Add(v float64) {
 	t.mux.Lock()
 	defer t.mux.Unlock()
 
-	t.window.currentPane(time.Now().UnixMilli(), t.newEmptyValue).value.(*aggregator).add(v)
+	t.window.currentPane(time.Now().UnixMilli(), t.newEmptyValue).value.(*Result).Update(v)
 }
 
 func (t *TimeWindowAggregator) newEmptyValue() interface{} {
-	return newAggregator()
-}
-
-// aggregator is a custom struct to aggregate data.
-//
-// It is NOT concurrent-safe.
-// It aggregates data by calculating the min, max, total and count.
-type aggregator struct {
-	min   float64
-	max   float64
-	total float64
-	count uint64
-	last  float64
-}
-
-func newAggregator() *aggregator {
-	return &aggregator{
-		min:   math.MaxFloat64,
-		max:   math.SmallestNonzeroFloat64,
-		total: float64(0),
-		count: uint64(0),
-	}
-}
-
-func (a *aggregator) add(v float64) {
-	a.min = math.Min(a.min, v)
-	a.max = math.Max(a.max, v)
-	a.last = v
-	a.total += v
-	a.count++
+	return NewResult()
 }

@@ -80,7 +80,7 @@ func TestPromMetricRegistrySummary(t *testing.T) {
 func TestPromMetricRegistryRt(t *testing.T) {
 	p := &promMetricRegistry{r: prom.NewRegistry()}
 	for i := 0; i < 10; i++ {
-		p.Rt(metricId).Observe(10 * float64(i))
+		p.Rt(metricId, &metrics.RtOpts{}).Observe(10 * float64(i))
 	}
 	text, err := p.Scrape()
 	assert.Nil(t, err)
@@ -89,6 +89,16 @@ func TestPromMetricRegistryRt(t *testing.T) {
 	assert.Contains(t, text, "# HELP dubbo_request_max Max request\n# TYPE dubbo_request_max gauge\ndubbo_request_max{app=\"dubbo\",version=\"1.0.0\"} 90")
 	assert.Contains(t, text, "# HELP dubbo_request_min Min request\n# TYPE dubbo_request_min gauge\ndubbo_request_min{app=\"dubbo\",version=\"1.0.0\"} 0")
 	assert.Contains(t, text, "# HELP dubbo_request_sum Sum request\n# TYPE dubbo_request_sum gauge\ndubbo_request_sum{app=\"dubbo\",version=\"1.0.0\"} 450")
+
+	p = &promMetricRegistry{r: prom.NewRegistry()}
+	for i := 0; i < 10; i++ {
+		p.Rt(metricId, &metrics.RtOpts{Aggregate: true, BucketNum: 10, TimeWindowSeconds: 60}).Observe(10 * float64(i))
+	}
+	text, err = p.Scrape()
+	assert.Nil(t, err)
+	assert.Contains(t, text, "# HELP dubbo_request_avg_milliseconds_aggregate The average request\n# TYPE dubbo_request_avg_milliseconds_aggregate gauge\ndubbo_request_avg_milliseconds_aggregate{app=\"dubbo\",version=\"1.0.0\"} 45")
+	assert.Contains(t, text, "# HELP dubbo_request_max_milliseconds_aggregate The maximum request\n# TYPE dubbo_request_max_milliseconds_aggregate gauge\ndubbo_request_max_milliseconds_aggregate{app=\"dubbo\",version=\"1.0.0\"} 90")
+	assert.Contains(t, text, "# HELP dubbo_request_min_milliseconds_aggregate The minimum request\n# TYPE dubbo_request_min_milliseconds_aggregate gauge\ndubbo_request_min_milliseconds_aggregate{app=\"dubbo\",version=\"1.0.0\"} 0")
 }
 
 func TestPromMetricRegistryCounterConcurrent(t *testing.T) {

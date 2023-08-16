@@ -42,14 +42,15 @@ func TestTimeWindowAggregatorAddAndResult(t *testing.T) {
 				Max:   30,
 				Avg:   20,
 				Count: 3,
-				Last:  30,
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := timeWindowAggregator.Result(); !reflect.DeepEqual(got, tt.want) {
+			got := timeWindowAggregator.Result()
+			got.Last = 0 // NaN can not equal
+			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Result() = %v, want %v", got, tt.want)
 			}
 		})
