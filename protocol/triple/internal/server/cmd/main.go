@@ -16,7 +16,7 @@ import (
 	_ "dubbo.apache.org/dubbo-go/v3/imports"
 	greet "dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto/greettriple"
-	"dubbo.apache.org/dubbo-go/v3/provider"
+	"dubbo.apache.org/dubbo-go/v3/server"
 )
 
 type GreetConnectServer struct {
@@ -64,11 +64,11 @@ func (srv *GreetConnectServer) GreetServerStream(ctx context.Context, req *greet
 }
 
 func main() {
-	pro, err := provider.NewProvider()
+	srv, err := server.NewServer()
 	if err != nil {
 		panic(err)
 	}
-	if err := greettriple.ProvideGreetServiceHandler(pro, &GreetConnectServer{}); err != nil {
+	if err := greettriple.RegisterGreetServiceHandler(srv, &GreetConnectServer{}); err != nil {
 		panic(err)
 	}
 	select {}

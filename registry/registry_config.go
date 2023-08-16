@@ -83,7 +83,7 @@ func (c *RegistryConfig) getUrlMap(roleType common.RoleType) url.Values {
 	urlMap.Set(constant.RegistryKey+"."+constant.RegistryZoneKey, c.Zone)
 	urlMap.Set(constant.RegistryKey+"."+constant.WeightKey, strconv.FormatInt(c.Weight, 10))
 	urlMap.Set(constant.RegistryTTLKey, c.TTL)
-	urlMap.Set(constant.ClientNameKey, commonCfg.ClientNameID(c, c.Protocol, c.Address))
+	urlMap.Set(constant.ClientNameKey, ClientNameID(c, c.Protocol, c.Address))
 
 	for k, v := range c.Params {
 		urlMap.Set(k, v)
@@ -111,7 +111,7 @@ func (c *RegistryConfig) toMetadataReportUrl() (*common.URL, error) {
 		common.WithUsername(c.Username),
 		common.WithPassword(c.Password),
 		common.WithParamsValue(constant.TimeoutKey, c.Timeout),
-		common.WithParamsValue(constant.ClientNameKey, commonCfg.ClientNameID(c, c.Protocol, c.Address)),
+		common.WithParamsValue(constant.ClientNameKey, ClientNameID(c, c.Protocol, c.Address)),
 		common.WithParamsValue(constant.MetadataReportGroupKey, c.Group),
 		common.WithParamsValue(constant.MetadataReportNamespaceKey, c.Namespace),
 	)
@@ -243,6 +243,11 @@ func LoadRegistries(registryIds []string, registries map[string]*RegistryConfig,
 	}
 
 	return registryURLs
+}
+
+// ClientNameID unique identifier id for client
+func ClientNameID(config *RegistryConfig, protocol, address string) string {
+	return strings.Join([]string{config.Prefix(), protocol, address}, "-")
 }
 
 func (c *RegistryConfig) createNewURL(protocol string, address string, roleType common.RoleType) (*common.URL, error) {

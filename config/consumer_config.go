@@ -162,6 +162,7 @@ func (cc *ConsumerConfig) Load() {
 		}
 		refConfig.Refer(refRPCService)
 		refConfig.Implement(refRPCService)
+		SetConsumerServiceByInterfaceName(refConfig.InterfaceName, refRPCService)
 	}
 
 	for info, refRPCService := range GetClientInfoServicesMap() {
