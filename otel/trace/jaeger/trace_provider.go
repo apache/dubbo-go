@@ -24,9 +24,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/dubbogo/gost/log/logger"
-	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/jaeger"
-	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
@@ -42,7 +40,7 @@ func init() {
 	extension.SetTraceProvider("jaeger", newJaegerTraceProvider)
 }
 
-func newJaegerTraceProvider(config *trace.TraceProviderConfig) error {
+func newJaegerTraceProvider(config *trace.TraceProviderConfig) (*sdktrace.TracerProvider, error) {
 	var initError error
 	if traceProviderInstance == nil {
 		initOnce.Do(func() {
@@ -74,13 +72,9 @@ func newJaegerTraceProvider(config *trace.TraceProviderConfig) error {
 					semconv.ServiceNameKey.String("oteldubbo"),
 				)),
 			)
-			otel.SetTracerProvider(traceProviderInstance)
-			logger.Infof("%s trace provider with endpoint: %s, sampleMode: %s, sampleRatio: %v", config.Exporter, config.Endpoint, config.SampleMode, config.SampleRatio)
-			// TODO: support B3 propagation
-			otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
 		})
 	}
-	return initError
+	return traceProviderInstance, initError
 }
 
 // Shutdown shutdowns the jaeger provider after all the tracing data is exported.

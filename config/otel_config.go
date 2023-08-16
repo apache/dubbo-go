@@ -18,8 +18,13 @@
 package config
 
 import (
+	"fmt"
 	"github.com/creasty/defaults"
+	"github.com/dubbogo/gost/log/logger"
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/contrib/propagators/b3"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
 )
 
 import (
@@ -33,8 +38,9 @@ type OtelConfig struct {
 
 type OtelTraceConfig struct {
 	Enable      *bool   `default:"false" yaml:"enable" json:"enable,omitempty" property:"enable"`
-	Exporter    string  `default:"jaeger" yaml:"exporter" json:"exporter,omitempty" property:"exporter"`
+	Exporter    string  `default:"jaeger" yaml:"exporter" json:"exporter,omitempty" property:"exporter"` // jaeger, zipkin, OTLP
 	Endpoint    string  `default:"http://localhost:14268/api/traces" yaml:"endpoint" json:"endpoint,omitempty" property:"endpoint"`
+	Propagator  string  `default:"w3c" yaml:"propagator" json:"propagator,omitempty" property:"propagator"`       // one of w3c(standard), b3(for zipkin),
 	SampleMode  string  `default:"ratio" yaml:"sample-mode" json:"sample-mode,omitempty" property:"sample-mode"`  // one of always, never, ratio
 	SampleRatio float64 `default:"0.5" yaml:"sample-ratio" json:"sample-ratio,omitempty" property:"sample-ratio"` // [0.0, 1.0]
 }
@@ -49,19 +55,48 @@ func (oc *OtelConfig) Init() error {
 	if err := verify(oc); err != nil {
 		return err
 	}
-	if !*oc.TraceConfig.Enable {
-		return nil
+	if *oc.TraceConfig.Enable {
+		return oc.TraceConfig.init()
 	}
 
-	return extension.GetTraceProvider(oc.TraceConfig.Exporter, oc.TraceConfig.toTraceProviderConfig())
+	return nil
 }
 
-func (oc *OtelTraceConfig) toTraceProviderConfig() *trace.TraceProviderConfig {
+func (c *OtelTraceConfig) init() error {
+	// set trace provider
+	tp, err := extension.GetTraceProvider(c.Exporter, c.toTraceProviderConfig())
+	if err != nil {
+		return err
+	}
+	otel.SetTracerProvider(tp)
+
+	// set propagator
+	switch c.Propagator {
+	case "w3c":
+		otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
+	case "b3":
+		b3Propagator := b3.New(b3.WithInjectEncoding(b3.B3MultipleHeader | b3.B3SingleHeader))
+		otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(b3Propagator, propagation.Baggage{}))
+	default:
+		return errors.New(fmt.Sprintf("otel trace propagator %s not supported", c.Propagator))
+	}
+
+	// print trace configuration
+	logger.Infof("%s trace provider with endpoint: %s, propagator: %s", c.Exporter, c.Endpoint, c.Propagator)
+	logger.Infof("sample mode: %s", c.SampleMode)
+	if c.SampleMode == "ratio" {
+		logger.Infof("sample ratio: %.2f", c.SampleRatio)
+	}
+
+	return nil
+}
+
+func (c *OtelTraceConfig) toTraceProviderConfig() *trace.TraceProviderConfig {
 	tpc := &trace.TraceProviderConfig{
-		Exporter:    oc.Exporter,
-		Endpoint:    oc.Endpoint,
-		SampleMode:  oc.SampleMode,
-		SampleRatio: oc.SampleRatio,
+		Exporter:    c.Exporter,
+		Endpoint:    c.Endpoint,
+		SampleMode:  c.SampleMode,
+		SampleRatio: c.SampleRatio,
 	}
 	return tpc
 }
