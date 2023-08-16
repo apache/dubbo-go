@@ -31,6 +31,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/gopherjs/gopherjs v0.0.0-20190910122728-9d188e94fb99 // indirect
 	github.com/grpc-ecosystem/grpc-opentracing v0.0.0-20180507213350-8e809c8a8645
+	github.com/hashicorp/golang-lru v0.5.4
 	github.com/hashicorp/vault/sdk v0.7.0
 	github.com/influxdata/tdigest v0.0.1
 	github.com/jinzhu/copier v0.3.5
