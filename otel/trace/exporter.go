@@ -18,46 +18,35 @@
 package trace
 
 import (
-	"testing"
+	"go.opentelemetry.io/otel/propagation"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
-)
-
-type filed struct {
-	name string
-	want string
+type ExporterConfig struct {
+	Exporter         string
+	Endpoint         string
+	SampleMode       string
+	SampleRatio      float64
+	Propagator       string
+	ServiceNamespace string
+	ServiceName      string
+	ServiceVersion   string
 }
 
-func TestSemVersion(t *testing.T) {
-	tests := []filed{
-		{
-			name: "test",
-			want: "semver:" + constant.Version,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := SemVersion(); got != tt.want {
-				t.Errorf("SemVersion() = %v, want %v", got, tt.want)
-			}
-		})
-	}
+type Exporter interface {
+	GetTracerProvider() *sdktrace.TracerProvider
+	GetPropagator() propagation.TextMapPropagator
 }
 
-func TestVersion(t *testing.T) {
-	tests := []filed{
-		{
-			name: "test",
-			want: constant.Version,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := Version(); got != tt.want {
-				t.Errorf("Version() = %v, want %v", got, tt.want)
-			}
-		})
-	}
+type DefaultExporter struct {
+	TraceProvider *sdktrace.TracerProvider
+	Propagator    propagation.TextMapPropagator
+}
+
+func (e *DefaultExporter) GetTracerProvider() *sdktrace.TracerProvider {
+	return e.TraceProvider
+}
+
+func (e *DefaultExporter) GetPropagator() propagation.TextMapPropagator {
+	return e.Propagator
 }

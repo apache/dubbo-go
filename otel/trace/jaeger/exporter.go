@@ -18,13 +18,14 @@
 package jaeger
 
 import (
-	"context"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/otel/trace"
 	"errors"
 	"fmt"
 	"github.com/dubbogo/gost/log/logger"
+	"go.opentelemetry.io/contrib/propagators/b3"
 	"go.opentelemetry.io/otel/exporters/jaeger"
+	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
@@ -32,17 +33,21 @@ import (
 )
 
 var (
-	initOnce              sync.Once
-	traceProviderInstance *sdktrace.TracerProvider
+	initOnce sync.Once
+	instance *Exporter
 )
 
 func init() {
-	extension.SetTraceProvider("jaeger", newJaegerTraceProvider)
+	extension.SetTraceExporter("jaeger", newJaegerExporter)
 }
 
-func newJaegerTraceProvider(config *trace.TraceProviderConfig) (*sdktrace.TracerProvider, error) {
+type Exporter struct {
+	*trace.DefaultExporter
+}
+
+func newJaegerExporter(config *trace.ExporterConfig) (trace.Exporter, error) {
 	var initError error
-	if traceProviderInstance == nil {
+	if instance == nil {
 		initOnce.Do(func() {
 			exporter, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(config.Endpoint)))
 			if err != nil {
@@ -65,7 +70,7 @@ func newJaegerTraceProvider(config *trace.TraceProviderConfig) (*sdktrace.Tracer
 				return
 			}
 
-			traceProviderInstance = sdktrace.NewTracerProvider(
+			traceProvider := sdktrace.NewTracerProvider(
 				samplerOption,
 				sdktrace.WithBatcher(exporter),
 				sdktrace.WithResource(resource.NewSchemaless(
@@ -74,16 +79,29 @@ func newJaegerTraceProvider(config *trace.TraceProviderConfig) (*sdktrace.Tracer
 					semconv.ServiceVersionKey.String(config.ServiceVersion),
 				)),
 			)
+
+			var propagator propagation.TextMapPropagator
+			switch config.Propagator {
+			case "w3c":
+				propagator = propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{})
+			case "b3":
+				b3Propagator := b3.New(b3.WithInjectEncoding(b3.B3MultipleHeader | b3.B3SingleHeader))
+				propagator = propagation.NewCompositeTextMapPropagator(b3Propagator, propagation.Baggage{})
+			}
+
+			instance = &Exporter{
+				DefaultExporter: &trace.DefaultExporter{
+					TraceProvider: traceProvider,
+					Propagator:    propagator,
+				},
+			}
 		})
 	}
-	return traceProviderInstance, initError
+	return instance, initError
 }
 
 // Shutdown shutdowns the jaeger provider after all the tracing data is exported.
 // TODO: add it to graceful shutdown
 func Shutdown() error {
-	if traceProviderInstance != nil {
-		return traceProviderInstance.Shutdown(context.TODO())
-	}
 	return nil
 }

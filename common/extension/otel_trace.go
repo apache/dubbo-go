@@ -19,19 +19,18 @@ package extension
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/otel/trace"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
-var traceProviderMap = make(map[string]func(config *trace.TraceProviderConfig) (*sdktrace.TracerProvider, error), 4)
+var traceExporterMap = make(map[string]func(config *trace.ExporterConfig) (trace.Exporter, error), 4)
 
-func SetTraceProvider(name string, f func(config *trace.TraceProviderConfig) (*sdktrace.TracerProvider, error)) {
-	traceProviderMap[name] = f
+func SetTraceExporter(name string, createFunc func(config *trace.ExporterConfig) (trace.Exporter, error)) {
+	traceExporterMap[name] = createFunc
 }
 
-func GetTraceProvider(name string, config *trace.TraceProviderConfig) (*sdktrace.TracerProvider, error) {
-	f, ok := traceProviderMap[name]
+func GetTraceExporter(name string, config *trace.ExporterConfig) (trace.Exporter, error) {
+	createFunc, ok := traceExporterMap[name]
 	if !ok {
 		panic("Cannot find the trace provider with name " + name)
 	}
-	return f(config)
+	return createFunc(config)
 }

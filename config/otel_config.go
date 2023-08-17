@@ -18,13 +18,10 @@
 package config
 
 import (
-	"fmt"
 	"github.com/creasty/defaults"
 	"github.com/dubbogo/gost/log/logger"
 	"github.com/pkg/errors"
-	"go.opentelemetry.io/contrib/propagators/b3"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/propagation"
 )
 
 import (
@@ -63,25 +60,14 @@ func (oc *OtelConfig) Init(appConfig *ApplicationConfig) error {
 }
 
 func (c *OtelTraceConfig) init(appConfig *ApplicationConfig) error {
-	// set trace provider
-	tp, err := extension.GetTraceProvider(c.Exporter, c.toTraceProviderConfig(appConfig))
+	exporter, err := extension.GetTraceExporter(c.Exporter, c.toTraceProviderConfig(appConfig))
 	if err != nil {
 		return err
 	}
-	otel.SetTracerProvider(tp)
+	otel.SetTracerProvider(exporter.GetTracerProvider())
+	otel.SetTextMapPropagator(exporter.GetPropagator())
 
-	// set propagator
-	switch c.Propagator {
-	case "w3c":
-		otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
-	case "b3":
-		b3Propagator := b3.New(b3.WithInjectEncoding(b3.B3MultipleHeader | b3.B3SingleHeader))
-		otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(b3Propagator, propagation.Baggage{}))
-	default:
-		return errors.New(fmt.Sprintf("otel trace propagator %s not supported", c.Propagator))
-	}
-
-	// print trace configuration
+	// print trace exporter configuration
 	logger.Infof("%s trace provider with endpoint: %s, propagator: %s", c.Exporter, c.Endpoint, c.Propagator)
 	logger.Infof("sample mode: %s", c.SampleMode)
 	if c.SampleMode == "ratio" {
@@ -91,12 +77,13 @@ func (c *OtelTraceConfig) init(appConfig *ApplicationConfig) error {
 	return nil
 }
 
-func (c *OtelTraceConfig) toTraceProviderConfig(a *ApplicationConfig) *trace.TraceProviderConfig {
-	tpc := &trace.TraceProviderConfig{
+func (c *OtelTraceConfig) toTraceProviderConfig(a *ApplicationConfig) *trace.ExporterConfig {
+	tpc := &trace.ExporterConfig{
 		Exporter:         c.Exporter,
 		Endpoint:         c.Endpoint,
 		SampleMode:       c.SampleMode,
 		SampleRatio:      c.SampleRatio,
+		Propagator:       c.Propagator,
 		ServiceNamespace: a.Organization,
 		ServiceName:      a.Name,
 		ServiceVersion:   a.Version,
