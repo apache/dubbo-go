@@ -18,7 +18,9 @@
 package extension
 
 import (
+	"context"
 	"dubbo.apache.org/dubbo-go/v3/otel/trace"
+	"github.com/dubbogo/gost/log/logger"
 )
 
 var traceExporterMap = make(map[string]func(config *trace.ExporterConfig) (trace.Exporter, error), 4)
@@ -33,4 +35,18 @@ func GetTraceExporter(name string, config *trace.ExporterConfig) (trace.Exporter
 		panic("Cannot find the trace provider with name " + name)
 	}
 	return createFunc(config)
+}
+
+func GetTraceShutdownCallback() func() {
+	return func() {
+		for name, createFunc := range traceExporterMap {
+			if exporter, err := createFunc(nil); err == nil {
+				if err := exporter.GetTracerProvider().Shutdown(context.Background()); err != nil {
+					logger.Errorf("Graceful shutdown --- Failed to shutdown trace provider %s, error: %s", name, err.Error())
+				} else {
+					logger.Infof("Graceful shutdown --- Tracer provider of %s", name)
+				}
+			}
+		}
+	}
 }

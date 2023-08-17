@@ -49,6 +49,11 @@ func newJaegerExporter(config *trace.ExporterConfig) (trace.Exporter, error) {
 	var initError error
 	if instance == nil {
 		initOnce.Do(func() {
+			if config == nil {
+				initError = errors.New("otel jaeger exporter config is nil")
+				return
+			}
+
 			exporter, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(config.Endpoint)))
 			if err != nil {
 				logger.Errorf("failed to create jaeger exporter: %v", err)
@@ -98,10 +103,4 @@ func newJaegerExporter(config *trace.ExporterConfig) (trace.Exporter, error) {
 		})
 	}
 	return instance, initError
-}
-
-// Shutdown shutdowns the jaeger provider after all the tracing data is exported.
-// TODO: add it to graceful shutdown
-func Shutdown() error {
-	return nil
 }

@@ -53,6 +53,7 @@ func (oc *OtelConfig) Init(appConfig *ApplicationConfig) error {
 		return err
 	}
 	if *oc.TraceConfig.Enable {
+		extension.AddCustomShutdownCallback(extension.GetTraceShutdownCallback())
 		return oc.TraceConfig.init(appConfig)
 	}
 
