@@ -69,7 +69,9 @@ func newJaegerTraceProvider(config *trace.TraceProviderConfig) (*sdktrace.Tracer
 				samplerOption,
 				sdktrace.WithBatcher(exporter),
 				sdktrace.WithResource(resource.NewSchemaless(
-					semconv.ServiceNameKey.String("oteldubbo"),
+					semconv.ServiceNamespaceKey.String(config.ServiceNamespace),
+					semconv.ServiceNameKey.String(config.ServiceName),
+					semconv.ServiceVersionKey.String(config.ServiceVersion),
 				)),
 			)
 		})

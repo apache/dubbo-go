@@ -37,10 +37,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
-const (
-	instrumentationName = "dubbo.apache.org/dubbo-go/v3/otel"
-)
-
 func init() {
 	// TODO: use single filter to simplify filter field in configuration
 	extension.SetFilter(constant.OTELServerTraceKey, func() filter.Filter {
@@ -72,8 +68,8 @@ func (f *otelServerFilter) Invoke(ctx context.Context, invoker protocol.Invoker,
 	ctx = baggage.ContextWithBaggage(ctx, bags)
 
 	tracer := f.TracerProvider.Tracer(
-		instrumentationName,
-		trace.WithInstrumentationVersion(SemVersion()),
+		constant.OtelPackageName,
+		trace.WithInstrumentationVersion(constant.OtelPackageVersion),
 	)
 
 	ctx, span := tracer.Start(
@@ -109,8 +105,8 @@ func (f *otelClientFilter) OnResponse(ctx context.Context, result protocol.Resul
 
 func (f *otelClientFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	tracer := f.TracerProvider.Tracer(
-		instrumentationName,
-		trace.WithInstrumentationVersion(SemVersion()),
+		constant.OtelPackageName,
+		trace.WithInstrumentationVersion(constant.OtelPackageVersion),
 	)
 
 	var span trace.Span

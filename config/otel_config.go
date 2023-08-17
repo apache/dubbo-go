@@ -45,7 +45,7 @@ type OtelTraceConfig struct {
 	SampleRatio float64 `default:"0.5" yaml:"sample-ratio" json:"sample-ratio,omitempty" property:"sample-ratio"` // [0.0, 1.0]
 }
 
-func (oc *OtelConfig) Init() error {
+func (oc *OtelConfig) Init(appConfig *ApplicationConfig) error {
 	if oc == nil {
 		return errors.New("otel config is nil")
 	}
@@ -56,15 +56,15 @@ func (oc *OtelConfig) Init() error {
 		return err
 	}
 	if *oc.TraceConfig.Enable {
-		return oc.TraceConfig.init()
+		return oc.TraceConfig.init(appConfig)
 	}
 
 	return nil
 }
 
-func (c *OtelTraceConfig) init() error {
+func (c *OtelTraceConfig) init(appConfig *ApplicationConfig) error {
 	// set trace provider
-	tp, err := extension.GetTraceProvider(c.Exporter, c.toTraceProviderConfig())
+	tp, err := extension.GetTraceProvider(c.Exporter, c.toTraceProviderConfig(appConfig))
 	if err != nil {
 		return err
 	}
@@ -91,12 +91,15 @@ func (c *OtelTraceConfig) init() error {
 	return nil
 }
 
-func (c *OtelTraceConfig) toTraceProviderConfig() *trace.TraceProviderConfig {
+func (c *OtelTraceConfig) toTraceProviderConfig(a *ApplicationConfig) *trace.TraceProviderConfig {
 	tpc := &trace.TraceProviderConfig{
-		Exporter:    c.Exporter,
-		Endpoint:    c.Endpoint,
-		SampleMode:  c.SampleMode,
-		SampleRatio: c.SampleRatio,
+		Exporter:         c.Exporter,
+		Endpoint:         c.Endpoint,
+		SampleMode:       c.SampleMode,
+		SampleRatio:      c.SampleRatio,
+		ServiceNamespace: a.Organization,
+		ServiceName:      a.Name,
+		ServiceVersion:   a.Version,
 	}
 	return tpc
 }

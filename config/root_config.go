@@ -179,7 +179,7 @@ func (rc *RootConfig) Init() error {
 	if err := rc.MetadataReport.Init(rc); err != nil {
 		return err
 	}
-	if err := rc.Otel.Init(); err != nil {
+	if err := rc.Otel.Init(rc.Application); err != nil {
 		return err
 	}
 	if err := rc.Metric.Init(); err != nil {

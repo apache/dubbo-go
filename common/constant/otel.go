@@ -15,15 +15,9 @@
  * limitations under the License.
  */
 
-package trace
+package constant
 
-type TraceProviderConfig struct {
-	Exporter    string
-	Endpoint    string
-	SampleMode  string
-	SampleRatio float64
-
-	ServiceNamespace string
-	ServiceName      string
-	ServiceVersion   string
-}
+const (
+	OtelPackageName    = "go.opentelemetry.io/otel"
+	OtelPackageVersion = "v1.16.0"
+)
