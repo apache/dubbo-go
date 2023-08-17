@@ -18,8 +18,14 @@
 package trace
 
 import (
+	"errors"
+	"fmt"
+	"github.com/dubbogo/gost/log/logger"
+	"go.opentelemetry.io/contrib/propagators/b3"
 	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
 )
 
 type ExporterConfig struct {
@@ -39,14 +45,61 @@ type Exporter interface {
 }
 
 type DefaultExporter struct {
-	TraceProvider *sdktrace.TracerProvider
-	Propagator    propagation.TextMapPropagator
+	TracerProvider *sdktrace.TracerProvider
+	Propagator     propagation.TextMapPropagator
 }
 
 func (e *DefaultExporter) GetTracerProvider() *sdktrace.TracerProvider {
-	return e.TraceProvider
+	return e.TracerProvider
 }
 
 func (e *DefaultExporter) GetPropagator() propagation.TextMapPropagator {
 	return e.Propagator
+}
+
+func NewExporter(config *ExporterConfig, customFunc func() (sdktrace.SpanExporter, error)) (tracerProvider *sdktrace.TracerProvider, propagator propagation.TextMapPropagator, err error) {
+	if config == nil {
+		err = errors.New("otel exporter config is nil")
+		return
+	}
+
+	exporter, err := customFunc()
+	if err != nil {
+		return
+	}
+
+	var samplerOption sdktrace.TracerProviderOption
+	switch config.SampleMode {
+	case "ratio":
+		samplerOption = sdktrace.WithSampler(sdktrace.ParentBased(sdktrace.TraceIDRatioBased(config.SampleRatio)))
+	case "always":
+		samplerOption = sdktrace.WithSampler(sdktrace.ParentBased(sdktrace.AlwaysSample()))
+	case "never":
+		samplerOption = sdktrace.WithSampler(sdktrace.ParentBased(sdktrace.NeverSample()))
+	default:
+		msg := fmt.Sprintf("otel sample mode %s not supported", config.SampleMode)
+		logger.Error(msg)
+		err = errors.New(msg)
+		return
+	}
+
+	tracerProvider = sdktrace.NewTracerProvider(
+		samplerOption,
+		sdktrace.WithBatcher(exporter),
+		sdktrace.WithResource(resource.NewSchemaless(
+			semconv.ServiceNamespaceKey.String(config.ServiceNamespace),
+			semconv.ServiceNameKey.String(config.ServiceName),
+			semconv.ServiceVersionKey.String(config.ServiceVersion),
+		)),
+	)
+
+	switch config.Propagator {
+	case "w3c":
+		propagator = propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{})
+	case "b3":
+		b3Propagator := b3.New(b3.WithInjectEncoding(b3.B3MultipleHeader | b3.B3SingleHeader))
+		propagator = propagation.NewCompositeTextMapPropagator(b3Propagator, propagation.Baggage{})
+	}
+
+	return tracerProvider, propagator, nil
 }

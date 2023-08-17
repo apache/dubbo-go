@@ -20,15 +20,9 @@ package jaeger
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/otel/trace"
-	"errors"
-	"fmt"
 	"github.com/dubbogo/gost/log/logger"
-	"go.opentelemetry.io/contrib/propagators/b3"
 	"go.opentelemetry.io/otel/exporters/jaeger"
-	"go.opentelemetry.io/otel/propagation"
-	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
 	"sync"
 )
 
@@ -49,55 +43,23 @@ func newJaegerExporter(config *trace.ExporterConfig) (trace.Exporter, error) {
 	var initError error
 	if instance == nil {
 		initOnce.Do(func() {
-			if config == nil {
-				initError = errors.New("otel jaeger exporter config is nil")
-				return
+			customFunc := func() (sdktrace.SpanExporter, error) {
+				exporter, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(config.Endpoint)))
+				if err != nil {
+					logger.Errorf("failed to create jaeger exporter: %v", err)
+				}
+				return exporter, err
 			}
 
-			exporter, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(config.Endpoint)))
+			tracerProvider, propagator, err := trace.NewExporter(config, customFunc)
 			if err != nil {
-				logger.Errorf("failed to create jaeger exporter: %v", err)
-				initError = err
-			}
-
-			var samplerOption sdktrace.TracerProviderOption
-			switch config.SampleMode {
-			case "ratio":
-				samplerOption = sdktrace.WithSampler(sdktrace.ParentBased(sdktrace.TraceIDRatioBased(config.SampleRatio)))
-			case "always":
-				samplerOption = sdktrace.WithSampler(sdktrace.ParentBased(sdktrace.AlwaysSample()))
-			case "never":
-				samplerOption = sdktrace.WithSampler(sdktrace.ParentBased(sdktrace.NeverSample()))
-			default:
-				msg := fmt.Sprintf("otel jaeger sample mode %s not supported", config.SampleMode)
-				logger.Error(msg)
-				initError = errors.New(msg)
 				return
-			}
-
-			traceProvider := sdktrace.NewTracerProvider(
-				samplerOption,
-				sdktrace.WithBatcher(exporter),
-				sdktrace.WithResource(resource.NewSchemaless(
-					semconv.ServiceNamespaceKey.String(config.ServiceNamespace),
-					semconv.ServiceNameKey.String(config.ServiceName),
-					semconv.ServiceVersionKey.String(config.ServiceVersion),
-				)),
-			)
-
-			var propagator propagation.TextMapPropagator
-			switch config.Propagator {
-			case "w3c":
-				propagator = propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{})
-			case "b3":
-				b3Propagator := b3.New(b3.WithInjectEncoding(b3.B3MultipleHeader | b3.B3SingleHeader))
-				propagator = propagation.NewCompositeTextMapPropagator(b3Propagator, propagation.Baggage{})
 			}
 
 			instance = &Exporter{
 				DefaultExporter: &trace.DefaultExporter{
-					TraceProvider: traceProvider,
-					Propagator:    propagator,
+					TracerProvider: tracerProvider,
+					Propagator:     propagator,
 				},
 			}
 		})
