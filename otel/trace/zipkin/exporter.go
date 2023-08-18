@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-package jaeger
+package zipkin
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/otel/trace"
-	"go.opentelemetry.io/otel/exporters/jaeger"
+	"go.opentelemetry.io/otel/exporters/zipkin"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"sync"
 )
@@ -31,19 +31,19 @@ var (
 )
 
 func init() {
-	extension.SetTraceExporter("jaeger", newJaegerExporter)
+	extension.SetTraceExporter("zipkin", newZipkinExporter)
 }
 
 type Exporter struct {
 	*trace.DefaultExporter
 }
 
-func newJaegerExporter(config *trace.ExporterConfig) (trace.Exporter, error) {
+func newZipkinExporter(config *trace.ExporterConfig) (trace.Exporter, error) {
 	var initError error
 	if instance == nil {
 		initOnce.Do(func() {
 			customFunc := func() (sdktrace.SpanExporter, error) {
-				return jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(config.Endpoint)))
+				return zipkin.New(config.Endpoint)
 			}
 
 			tracerProvider, propagator, err := trace.NewExporter(config, customFunc)

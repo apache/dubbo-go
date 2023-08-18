@@ -35,7 +35,7 @@ type OtelConfig struct {
 
 type OtelTraceConfig struct {
 	Enable      *bool   `default:"false" yaml:"enable" json:"enable,omitempty" property:"enable"`
-	Exporter    string  `default:"jaeger" yaml:"exporter" json:"exporter,omitempty" property:"exporter"` // jaeger, zipkin, OTLP
+	Exporter    string  `default:"jaeger" yaml:"exporter" json:"exporter,omitempty" property:"exporter"` // jaeger, zipkin, otlp-http, otlp-grpc
 	Endpoint    string  `default:"http://localhost:14268/api/traces" yaml:"endpoint" json:"endpoint,omitempty" property:"endpoint"`
 	Propagator  string  `default:"w3c" yaml:"propagator" json:"propagator,omitempty" property:"propagator"`       // one of w3c(standard), b3(for zipkin),
 	SampleMode  string  `default:"ratio" yaml:"sample-mode" json:"sample-mode,omitempty" property:"sample-mode"`  // one of always, never, ratio
