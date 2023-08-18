@@ -18,11 +18,17 @@
 package jaeger
 
 import (
+	"sync"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/otel/trace"
+)
+
+import (
 	"go.opentelemetry.io/otel/exporters/jaeger"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	"sync"
 )
 
 var (

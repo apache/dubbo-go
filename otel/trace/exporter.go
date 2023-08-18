@@ -20,6 +20,9 @@ package trace
 import (
 	"errors"
 	"fmt"
+)
+
+import (
 	"github.com/dubbogo/gost/log/logger"
 	"go.opentelemetry.io/contrib/propagators/b3"
 	"go.opentelemetry.io/otel/propagation"
@@ -57,6 +60,7 @@ func (e *DefaultExporter) GetPropagator() propagation.TextMapPropagator {
 	return e.Propagator
 }
 
+// NewExporter is an absolute function with @customFunc to create a spec exporter
 func NewExporter(config *ExporterConfig, customFunc func() (sdktrace.SpanExporter, error)) (tracerProvider *sdktrace.TracerProvider, propagator propagation.TextMapPropagator, err error) {
 	if config == nil {
 		err = errors.New("otel exporter config is nil")

@@ -19,7 +19,13 @@ package extension
 
 import (
 	"context"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/otel/trace"
+)
+
+import (
 	"github.com/dubbogo/gost/log/logger"
 )
 

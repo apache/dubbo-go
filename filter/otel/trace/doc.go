@@ -15,6 +15,6 @@
  * limitations under the License.
  */
 
-// Package jaeger instruments dubbogo with open-telemetry
+// Package trace instruments dubbogo with open-telemetry
 // (https://github.com/open-telemetry/opentelemetry-go).
 package trace
