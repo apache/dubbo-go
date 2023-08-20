@@ -35,8 +35,8 @@ type OtelConfig struct {
 
 type OtelTraceConfig struct {
 	Enable      *bool   `default:"false" yaml:"enable" json:"enable,omitempty" property:"enable"`
-	Exporter    string  `default:"jaeger" yaml:"exporter" json:"exporter,omitempty" property:"exporter"` // jaeger, zipkin, otlp-http, otlp-grpc
-	Endpoint    string  `default:"http://localhost:14268/api/traces" yaml:"endpoint" json:"endpoint,omitempty" property:"endpoint"`
+	Exporter    string  `default:"stdout" yaml:"exporter" json:"exporter,omitempty" property:"exporter"` // stdout, jaeger, zipkin, otlp-http, otlp-grpc
+	Endpoint    string  `default:"" yaml:"endpoint" json:"endpoint,omitempty" property:"endpoint"`
 	Propagator  string  `default:"w3c" yaml:"propagator" json:"propagator,omitempty" property:"propagator"`       // one of w3c(standard), b3(for zipkin),
 	SampleMode  string  `default:"ratio" yaml:"sample-mode" json:"sample-mode,omitempty" property:"sample-mode"`  // one of always, never, ratio
 	SampleRatio float64 `default:"0.5" yaml:"sample-ratio" json:"sample-ratio,omitempty" property:"sample-ratio"` // [0.0, 1.0]
@@ -69,7 +69,11 @@ func (c *OtelTraceConfig) init(appConfig *ApplicationConfig) error {
 	otel.SetTextMapPropagator(exporter.GetPropagator())
 
 	// print trace exporter configuration
-	logger.Infof("%s trace provider with endpoint: %s, propagator: %s", c.Exporter, c.Endpoint, c.Propagator)
+	if c.Exporter == "stdout" {
+		logger.Infof("enable %s trace provider with propagator: %s", c.Exporter, c.Propagator)
+	} else {
+		logger.Infof("enable %s trace provider with endpoint: %s, propagator: %s", c.Exporter, c.Endpoint, c.Propagator)
+	}
 	logger.Infof("sample mode: %s", c.SampleMode)
 	if c.SampleMode == "ratio" {
 		logger.Infof("sample ratio: %.2f", c.SampleRatio)
