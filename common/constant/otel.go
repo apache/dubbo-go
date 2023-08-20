@@ -19,5 +19,5 @@ package constant
 
 const (
 	OtelPackageName    = "go.opentelemetry.io/otel"
-	OtelPackageVersion = "v1.16.0"
+	OtelPackageVersion = "v1.10.0"
 )
