@@ -123,7 +123,7 @@ func (sc *subConn) setState(s connectivity.State) {
 	defer sc.mu.Unlock()
 	switch s {
 	case connectivity.Idle:
-		// Trigger Connect() if new state is Idle, and there is a queued connect.
+		// Trigger Connect() if new state is Idle, and there is a queued triple.
 		if sc.connectQueued {
 			sc.connectQueued = false
 			sc.sc.Connect()
@@ -167,7 +167,7 @@ func (sc *subConn) queueConnect() {
 		sc.sc.Connect()
 		return
 	}
-	// Queue this connect, and when this SubConn switches back to Idle (happens
+	// Queue this triple, and when this SubConn switches back to Idle (happens
 	// after backoff in TransientFailure), it will Connect().
 	sc.connectQueued = true
 }

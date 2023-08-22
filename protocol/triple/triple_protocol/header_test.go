@@ -16,13 +16,10 @@ package triple_protocol
 
 import (
 	"bytes"
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/assert"
 	"net/http"
 	"testing"
 	"testing/quick"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/assert"
 )
 
 func TestBinaryEncodingQuick(t *testing.T) {

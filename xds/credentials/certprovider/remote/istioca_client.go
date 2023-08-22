@@ -84,8 +84,8 @@ func NewCitadelClient(opts *Options) (*CitadelClient, error) {
 	conn, err := c.buildConnection()
 
 	if err != nil {
-		log.Printf("Failed to connect to endpoint %s: %v", opts.CAEndpoint, err)
-		return nil, fmt.Errorf("failed to connect to endpoint %s", opts.CAEndpoint)
+		log.Printf("Failed to triple to endpoint %s: %v", opts.CAEndpoint, err)
+		return nil, fmt.Errorf("failed to triple to endpoint %s", opts.CAEndpoint)
 	}
 	c.conn = conn
 	c.client = v1alpha1.NewIstioCertificateServiceClient(conn)
@@ -197,8 +197,8 @@ func (c *CitadelClient) buildConnection() (*grpc.ClientConn, error) {
 
 	conn, err := grpc.Dial(c.opts.CAEndpoint, ol...)
 	if err != nil {
-		log.Printf("Failed to connect to endpoint %s: %v", c.opts.CAEndpoint, err)
-		return nil, fmt.Errorf("failed to connect to endpoint %s", c.opts.CAEndpoint)
+		log.Printf("Failed to triple to endpoint %s: %v", c.opts.CAEndpoint, err)
+		return nil, fmt.Errorf("failed to triple to endpoint %s", c.opts.CAEndpoint)
 	}
 
 	return conn, nil

@@ -17,6 +17,7 @@ package triple_protocol
 import (
 	"bufio"
 	"context"
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/proto/connectext/grpc/status/v1"
 	"errors"
 	"fmt"
 	"io"
@@ -28,10 +29,6 @@ import (
 	"strings"
 	"time"
 	"unicode/utf8"
-)
-
-import (
-	statusv1 "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/proto/connectext/grpc/status/v1"
 )
 
 // protocol specification headers

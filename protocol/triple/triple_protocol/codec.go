@@ -220,7 +220,7 @@ func (m *codecMap) Names() []string {
 
 func errNotProto(message any) error {
 	if _, ok := message.(protoiface.MessageV1); ok {
-		return fmt.Errorf("%T uses github.com/golang/protobuf, but connect-go only supports google.golang.org/protobuf: see https://go.dev/blog/protobuf-apiv2", message)
+		return fmt.Errorf("%T uses github.com/golang/protobuf, but triple-go only supports google.golang.org/protobuf: see https://go.dev/blog/protobuf-apiv2", message)
 	}
 	return fmt.Errorf("%T doesn't implement proto.Message", message)
 }

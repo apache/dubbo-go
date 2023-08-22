@@ -113,7 +113,7 @@ type priorityBalancer struct {
 	childToPriority map[string]int
 	// children is a map from child name to sub-balancers.
 	children map[string]*childBalancer
-	// The timer to give a priority some time to connect. And if the priority
+	// The timer to give a priority some time to triple. And if the priority
 	// doesn't go into Ready/Failure, the next priority will be started.
 	//
 	// One timer is enough because there can be at most one priority in init

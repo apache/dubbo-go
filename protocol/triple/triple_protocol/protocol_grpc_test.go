@@ -15,6 +15,7 @@
 package triple_protocol
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/assert"
 	"errors"
 	"math"
 	"net/http"
@@ -28,10 +29,6 @@ import (
 
 import (
 	"github.com/google/go-cmp/cmp"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/assert"
 )
 
 func TestGRPCHandlerSender(t *testing.T) {

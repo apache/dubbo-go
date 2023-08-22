@@ -15,6 +15,7 @@
 package triple_protocol
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/assert"
 	"errors"
 	"fmt"
 	"strings"
@@ -27,10 +28,6 @@ import (
 
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/emptypb"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/assert"
 )
 
 func TestErrorNilUnderlying(t *testing.T) {

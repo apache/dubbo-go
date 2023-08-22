@@ -76,7 +76,7 @@ func (c *clientImpl) findAuthority(n *resource.Name) (_ *authority, unref func()
 		dubbogoLogger.Errorf(`[XDS Authority] new authority failed with error = %s, please makesure you have imported 
 	_ "dubbo.apache.org/dubbo-go/v3/xds/client/controller/version/v2"
 	_ "dubbo.apache.org/dubbo-go/v3/xds/client/controller/version/v3"`, err)
-		return nil, nil, fmt.Errorf("xds: failed to connect to the control plane for authority %q: %v", authority, err)
+		return nil, nil, fmt.Errorf("xds: failed to triple to the control plane for authority %q: %v", authority, err)
 	}
 	// All returned authority from this function will be used by a watch,
 	// holding the ref here.

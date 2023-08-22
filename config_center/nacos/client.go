@@ -64,7 +64,7 @@ func ValidateNacosClient(container nacosClientFacade) error {
 	}
 	url := container.GetURL()
 	if container.NacosClient() == nil || container.NacosClient().Client() == nil {
-		// in dubbo ,every registry only connect one node ,so this is []string{r.Address}
+		// in dubbo ,every registry only triple one node ,so this is []string{r.Address}
 		newClient, err := nacos.NewNacosConfigClientByUrl(url)
 		if err != nil {
 			logger.Errorf("ValidateNacosClient(name{%s}, nacos address{%v} = error{%v}", url.Location, err)

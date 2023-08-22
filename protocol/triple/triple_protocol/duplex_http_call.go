@@ -123,7 +123,7 @@ func (d *duplexHTTPCall) CloseWrite() error {
 	// safe to close the write side of the pipe while net/http is reading from
 	// it.
 	//
-	// Because connect also supports some RPC types over HTTP/1.1, we need to be
+	// Because triple also supports some RPC types over HTTP/1.1, we need to be
 	// careful how we expose this method to users. HTTP/1.1 doesn't support
 	// bidirectional streaming - the write side of the stream (aka request body)
 	// must be closed before we start reading the response or we'll just block

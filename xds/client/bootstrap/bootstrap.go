@@ -73,10 +73,10 @@ var gRPCVersion = fmt.Sprintf("%s %s", gRPCUserAgentName, grpc.Version)
 // For overriding in unit tests.
 var bootstrapFileReadFunc = ioutil.ReadFile
 
-// ServerConfig contains the configuration to connect to a server, including
+// ServerConfig contains the configuration to triple to a server, including
 // URI, creds, and transport API version (e.g. v2 or v3).
 type ServerConfig struct {
-	// ServerURI is the management server to connect to.
+	// ServerURI is the management server to triple to.
 	//
 	// The bootstrap file contains an ordered list of xDS servers to contact for
 	// this authority. The first one is picked.
@@ -127,7 +127,7 @@ func (sc *ServerConfig) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("xds: json.Unmarshal(data) for field xds_servers failed during bootstrap: %v", err)
 	}
 	if len(servers) < 1 {
-		return fmt.Errorf("xds: bootstrap file parsing failed during bootstrap: file doesn't contain any management server to connect to")
+		return fmt.Errorf("xds: bootstrap file parsing failed during bootstrap: file doesn't contain any management server to triple to")
 	}
 	xs := servers[0]
 	sc.ServerURI = xs.ServerURI
@@ -167,7 +167,7 @@ type Authority struct {
 	// If not present in the bootstrap file, defaults to
 	// "xdstp://<authority_name>/envoy.config.listener.v3.Listener/%s".
 	ClientListenerResourceNameTemplate string
-	// XDSServer contains the management server and config to connect to for
+	// XDSServer contains the management server and config to triple to for
 	// this authority.
 	XDSServer *ServerConfig
 }
@@ -198,7 +198,7 @@ func (a *Authority) UnmarshalJSON(data []byte) error {
 // requires in its interaction with the management server. The Config is
 // initialized from the bootstrap file.
 type Config struct {
-	// XDSServer is the management server to connect to.
+	// XDSServer is the management server to triple to.
 	//
 	// The bootstrap file contains a list of servers (with name+creds), but we
 	// pick the first one.

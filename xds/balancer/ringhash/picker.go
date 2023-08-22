@@ -99,7 +99,7 @@ func (p *picker) Pick(info balancer.PickInfo) (balancer.PickResult, error) {
 }
 
 func (p *picker) handleTransientFailure(e *ringEntry) (balancer.PickResult, error) {
-	// Queue a connect on the first picked SubConn.
+	// Queue a triple on the first picked SubConn.
 	e.sc.queueConnect()
 
 	// Find next entry in the ring, skipping duplicate SubConns.
@@ -115,7 +115,7 @@ func (p *picker) handleTransientFailure(e *ringEntry) (balancer.PickResult, erro
 		return hr.pr, hr.err
 	}
 
-	// The second SubConn is also in TransientFailure. Queue a connect on it.
+	// The second SubConn is also in TransientFailure. Queue a triple on it.
 	e2.sc.queueConnect()
 
 	// If it gets here, this is after the second SubConn, and the second SubConn
@@ -137,7 +137,7 @@ func (p *picker) handleTransientFailure(e *ringEntry) (balancer.PickResult, erro
 			continue
 		}
 		if scState == connectivity.TransientFailure {
-			// This will queue a connect.
+			// This will queue a triple.
 			ee.sc.queueConnect()
 			continue
 		}
