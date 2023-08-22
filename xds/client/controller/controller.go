@@ -21,7 +21,7 @@
  *
  */
 
-// Package controller contains implementation to connect to the control plane.
+// Package controller contains implementation to triple to the control plane.
 // Including starting the ClientConn, starting the xDS stream, and
 // sending/receiving messages.
 //

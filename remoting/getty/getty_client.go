@@ -174,7 +174,7 @@ func (c *Client) Connect(url *common.URL) error {
 	c.addr = url.Location
 	_, _, err := c.selectSession(c.addr)
 	if err != nil {
-		logger.Errorf("try to connect server %v failed for : %v", url.Location, err)
+		logger.Errorf("try to triple server %v failed for : %v", url.Location, err)
 	}
 	return err
 }

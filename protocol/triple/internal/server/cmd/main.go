@@ -31,10 +31,10 @@ func (srv *GreetConnectServer) GreetStream(ctx context.Context, stream greettrip
 	for {
 		req, err := stream.Recv()
 		if err != nil {
-			return fmt.Errorf("connect recv error: %s", err)
+			return fmt.Errorf("triple recv error: %s", err)
 		}
 		if err := stream.Send(&greet.GreetStreamResponse{Greeting: "hello " + req.Name}); err != nil {
-			return fmt.Errorf("connect send error: %s", err)
+			return fmt.Errorf("triple send error: %s", err)
 		}
 	}
 }

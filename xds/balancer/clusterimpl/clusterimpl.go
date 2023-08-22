@@ -357,7 +357,7 @@ func (b *clusterImplBalancer) ExitIdle() {
 		ei.ExitIdle()
 		return
 	}
-	// Fallback for children that don't support ExitIdle -- connect to all
+	// Fallback for children that don't support ExitIdle -- triple to all
 	// SubConns.
 	for _, sc := range b.scWrappers {
 		sc.Connect()

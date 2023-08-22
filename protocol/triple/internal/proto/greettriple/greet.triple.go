@@ -20,10 +20,10 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/server"
 )
 
-// This is a compile-time assertion to ensure that this generated file and the connect package are
+// This is a compile-time assertion to ensure that this generated file and the triple package are
 // compatible. If you get a compiler error that this constant is not defined, this code was
-// generated with a version of connect newer than the one compiled into your binary. You can fix the
-// problem by either regenerating this code with an older version of connect or updating the connect
+// generated with a version of triple newer than the one compiled into your binary. You can fix the
+// problem by either regenerating this code with an older version of triple or updating the triple
 // version compiled into your binary.
 const _ = triple_protocol.IsAtLeastVersion0_1_0
 
@@ -63,8 +63,8 @@ type GreetService interface {
 
 // NewGreetService constructs a client for the greet.GreetService service. By default, it uses
 // the Connect protocol with the binary Protobuf Codec, asks for gzipped responses, and sends
-// uncompressed requests. To use the gRPC or gRPC-Web protocols, supply the connect.WithGRPC() or
-// connect.WithGRPCWeb() options.
+// uncompressed requests. To use the gRPC or gRPC-Web protocols, supply the triple.WithGRPC() or
+// triple.WithGRPCWeb() options.
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).

@@ -40,7 +40,7 @@ import (
 //
 // SetExchangeClient method sets a ExchangeClient instance.
 //
-// Connect method is to connect url.
+// Connect method is to triple url.
 //
 // Close method is for destroy.
 //
@@ -88,8 +88,8 @@ func (cl *ExchangeClient) doInit(url *common.URL) error {
 		// retry for a while
 		time.Sleep(100 * time.Millisecond)
 		if cl.client.Connect(url) != nil {
-			logger.Errorf("Failed to connect server %+v " + url.Location)
-			return errors.New("Failed to connect server " + url.Location)
+			logger.Errorf("Failed to triple server %+v " + url.Location)
+			return errors.New("Failed to triple server " + url.Location)
 		}
 	}
 	// FIXME atomic operation

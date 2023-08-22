@@ -96,7 +96,7 @@ func (invoker *failoverClusterInvoker) Invoke(ctx context.Context, invocation pr
 	if ivk == nil {
 		logger.Errorf("Failed to invoke the method %s of the service %s .No provider is available.", methodName, invokerSvc)
 		return &protocol.RPCResult{
-			Err: perrors.Errorf("Failed to invoke the method %s of the service %s .No provider is available because can't connect server.",
+			Err: perrors.Errorf("Failed to invoke the method %s of the service %s .No provider is available because can't triple server.",
 				methodName, invokerSvc),
 		}
 	}

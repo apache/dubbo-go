@@ -7,7 +7,7 @@ config_type:
 
 # client
 request_timeout : "100ms"
-# connect timeout
+# triple timeout
 connect_timeout : "100ms"
 check: true
 rest_server: "resty"

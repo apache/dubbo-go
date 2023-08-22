@@ -46,7 +46,7 @@ func ValidateZookeeperClient(container ZkClientFacade, zkName string) error {
 	defer lock.Unlock()
 
 	if container.ZkClient() == nil {
-		// in dubbo, every registry only connect one node, so this is []string{r.Address}
+		// in dubbo, every registry only triple one node, so this is []string{r.Address}
 		timeout := url.GetParamDuration(constant.ConfigTimeoutKey, constant.DefaultRegTimeout)
 
 		zkAddresses := strings.Split(url.Location, ",")
