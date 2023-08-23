@@ -30,6 +30,12 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/metrics/util/aggregate"
 )
 
+const (
+	DefaultCompression       = 100
+	DefaultBucketNum         = 10
+	DefaultTimeWindowSeconds = 120
+)
+
 var (
 	registries = make(map[string]func(*ReporterConfig) MetricRegistry)
 	collectors = make([]CollectorFunc, 0)
@@ -232,6 +238,28 @@ func (d *DefaultGaugeVec) Sub(labels map[string]string, v float64) {
 	d.metricRegistry.Gauge(NewMetricIdByLabels(d.metricKey, labels)).Sub(v)
 }
 
+type RtVec interface {
+	Record(labels map[string]string, v float64)
+}
+
+func NewRtVec(metricRegistry MetricRegistry, metricKey *MetricKey, rtOpts *RtOpts) RtVec {
+	return &DefaultRtVec{
+		metricRegistry: metricRegistry,
+		metricKey:      metricKey,
+		rtOpts:         rtOpts,
+	}
+}
+
+type DefaultRtVec struct {
+	metricRegistry MetricRegistry
+	metricKey      *MetricKey
+	rtOpts         *RtOpts
+}
+
+func (d *DefaultRtVec) Record(labels map[string]string, v float64) {
+	d.metricRegistry.Rt(NewMetricIdByLabels(d.metricKey, labels), d.rtOpts).Observe(v)
+}
+
 func labelsToString(labels map[string]string) string {
 	labelsJson, err := json.Marshal(labels)
 	if err != nil {
@@ -273,7 +301,7 @@ func (d *DefaultQpsMetricVec) Record(labels map[string]string) {
 		d.mux.Lock()
 		twc, ok = d.cache[key]
 		if !ok {
-			twc = aggregate.NewTimeWindowCounter(defaultBucketNum, defaultTimeWindowSeconds)
+			twc = aggregate.NewTimeWindowCounter(DefaultBucketNum, DefaultTimeWindowSeconds)
 			d.cache[key] = twc
 		}
 		d.mux.Unlock()
@@ -314,7 +342,7 @@ func (d *DefaultAggregateCounterVec) Inc(labels map[string]string) {
 		d.mux.Lock()
 		twc, ok = d.cache[key]
 		if !ok {
-			twc = aggregate.NewTimeWindowCounter(defaultBucketNum, defaultTimeWindowSeconds)
+			twc = aggregate.NewTimeWindowCounter(DefaultBucketNum, DefaultTimeWindowSeconds)
 			d.cache[key] = twc
 		}
 		d.mux.Unlock()
@@ -357,7 +385,7 @@ func (d *DefaultQuantileMetricVec) Record(labels map[string]string, v float64) {
 		d.mux.Lock()
 		twq, ok = d.cache[key]
 		if !ok {
-			twq = aggregate.NewTimeWindowQuantile(defaultCompression, defaultBucketNum, defaultTimeWindowSeconds)
+			twq = aggregate.NewTimeWindowQuantile(DefaultCompression, DefaultBucketNum, DefaultTimeWindowSeconds)
 			d.cache[key] = twq
 		}
 		d.mux.Unlock()
