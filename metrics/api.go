@@ -241,12 +241,12 @@ func labelsToString(labels map[string]string) string {
 	return string(labelsJson)
 }
 
-type QpsMetric interface {
+type QpsMetricVec interface {
 	Record(labels map[string]string)
 }
 
-func NewQpsMetric(metricRegistry MetricRegistry, metricKey *MetricKey) QpsMetric {
-	return &DefaultQpsMetric{
+func NewQpsMetricVec(metricRegistry MetricRegistry, metricKey *MetricKey) QpsMetricVec {
+	return &DefaultQpsMetricVec{
 		metricRegistry: metricRegistry,
 		metricKey:      metricKey,
 		mux:            sync.RWMutex{},
@@ -254,14 +254,14 @@ func NewQpsMetric(metricRegistry MetricRegistry, metricKey *MetricKey) QpsMetric
 	}
 }
 
-type DefaultQpsMetric struct {
+type DefaultQpsMetricVec struct {
 	metricRegistry MetricRegistry
 	metricKey      *MetricKey
 	mux            sync.RWMutex
 	cache          map[string]*aggregate.TimeWindowCounter // key: metrics labels, value: TimeWindowCounter
 }
 
-func (d *DefaultQpsMetric) Record(labels map[string]string) {
+func (d *DefaultQpsMetricVec) Record(labels map[string]string) {
 	key := labelsToString(labels)
 	if key == "" {
 		return
@@ -282,12 +282,12 @@ func (d *DefaultQpsMetric) Record(labels map[string]string) {
 	d.metricRegistry.Gauge(NewMetricIdByLabels(d.metricKey, labels)).Set(twc.Count() / float64(twc.LivedSeconds()))
 }
 
-type AggregateCounterMetric interface {
+type AggregateCounterVec interface {
 	Inc(labels map[string]string)
 }
 
-func NewAggregateCounterMetric(metricRegistry MetricRegistry, metricKey *MetricKey) AggregateCounterMetric {
-	return &DefaultAggregateCounterMetric{
+func NewAggregateCounterVec(metricRegistry MetricRegistry, metricKey *MetricKey) AggregateCounterVec {
+	return &DefaultAggregateCounterVec{
 		metricRegistry: metricRegistry,
 		metricKey:      metricKey,
 		mux:            sync.RWMutex{},
@@ -295,14 +295,14 @@ func NewAggregateCounterMetric(metricRegistry MetricRegistry, metricKey *MetricK
 	}
 }
 
-type DefaultAggregateCounterMetric struct {
+type DefaultAggregateCounterVec struct {
 	metricRegistry MetricRegistry
 	metricKey      *MetricKey
 	mux            sync.RWMutex
 	cache          map[string]*aggregate.TimeWindowCounter // key: metrics labels, value: TimeWindowCounter
 }
 
-func (d *DefaultAggregateCounterMetric) Inc(labels map[string]string) {
+func (d *DefaultAggregateCounterVec) Inc(labels map[string]string) {
 	key := labelsToString(labels)
 	if key == "" {
 		return
@@ -323,12 +323,12 @@ func (d *DefaultAggregateCounterMetric) Inc(labels map[string]string) {
 	d.metricRegistry.Gauge(NewMetricIdByLabels(d.metricKey, labels)).Set(twc.Count())
 }
 
-type QuantileMetric interface {
+type QuantileMetricVec interface {
 	Record(labels map[string]string, v float64)
 }
 
-func NewQuantileMetric(metricRegistry MetricRegistry, metricKeys []*MetricKey, quantiles []float64) QuantileMetric {
-	return &DefaultQuantileMetric{
+func NewQuantileMetricVec(metricRegistry MetricRegistry, metricKeys []*MetricKey, quantiles []float64) QuantileMetricVec {
+	return &DefaultQuantileMetricVec{
 		metricRegistry: metricRegistry,
 		metricKeys:     metricKeys,
 		mux:            sync.RWMutex{},
@@ -337,7 +337,7 @@ func NewQuantileMetric(metricRegistry MetricRegistry, metricKeys []*MetricKey, q
 	}
 }
 
-type DefaultQuantileMetric struct {
+type DefaultQuantileMetricVec struct {
 	metricRegistry MetricRegistry
 	metricKeys     []*MetricKey
 	mux            sync.RWMutex
@@ -345,7 +345,7 @@ type DefaultQuantileMetric struct {
 	quantiles      []float64
 }
 
-func (d *DefaultQuantileMetric) Record(labels map[string]string, v float64) {
+func (d *DefaultQuantileMetricVec) Record(labels map[string]string, v float64) {
 	key := labelsToString(labels)
 	if key == "" {
 		return
