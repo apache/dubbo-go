@@ -19,12 +19,7 @@ package metrics
 
 import (
 	"context"
-
 	"testing"
-)
-
-import (
-	"github.com/stretchr/testify/assert"
 )
 
 import (
@@ -33,6 +28,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestMetricsFilterInvoke(t *testing.T) {

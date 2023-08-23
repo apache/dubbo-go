@@ -18,12 +18,12 @@
 package rpc
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/metrics"
 	"time"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/metrics"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 

@@ -17,7 +17,9 @@
 
 package rpc
 
-import "dubbo.apache.org/dubbo-go/v3/common/constant"
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+)
 
 const (
 	applicationNameKey = constant.ApplicationNameKey

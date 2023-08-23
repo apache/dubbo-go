@@ -23,13 +23,11 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/metrics"
+
 	prom "github.com/prometheus/client_golang/prometheus"
 
 	"github.com/prometheus/common/expfmt"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/metrics"
 )
 
 func init() {
