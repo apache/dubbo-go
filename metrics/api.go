@@ -198,13 +198,13 @@ type TimeMetric interface {
 
 const (
 	defaultBucketNum         = 10
-	defalutTimeWindowSeconds = 120
+	defaultTimeWindowSeconds = 120
 )
 
 // NewTimeMetric init and write all data to registry
 func NewTimeMetric(min, max, avg, sum, last *MetricId, mr MetricRegistry) TimeMetric {
 	return &DefaultTimeMetric{r: mr, min: min, max: max, avg: avg, sum: sum, last: last,
-		agg: aggregate.NewTimeWindowAggregator(defaultBucketNum, defalutTimeWindowSeconds)}
+		agg: aggregate.NewTimeWindowAggregator(defaultBucketNum, defaultTimeWindowSeconds)}
 }
 
 type DefaultTimeMetric struct {
