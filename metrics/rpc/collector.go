@@ -20,6 +20,7 @@ package rpc
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
+	"github.com/dubbogo/gost/log/logger"
 )
 
 var (
@@ -47,7 +48,7 @@ type rpcCollector struct {
 func (c *rpcCollector) start() {
 	metrics.Subscribe(constant.MetricsRpc, rpcMetricsChan)
 	for event := range rpcMetricsChan {
-		if rpcEvent, ok := event.(*MetricsEvent); ok {
+		if rpcEvent, ok := event.(*metricsEvent); ok {
 			switch rpcEvent.name {
 			case BeforeInvoke:
 				c.beforeInvokeHandler(rpcEvent)
@@ -55,30 +56,32 @@ func (c *rpcCollector) start() {
 				c.afterInvokeHandler(rpcEvent)
 			default:
 			}
+		} else {
+			logger.Error("Bad metrics event found in RPC collector")
 		}
 	}
 }
 
-func (c *rpcCollector) beforeInvokeHandler(event *MetricsEvent) {
+func (c *rpcCollector) beforeInvokeHandler(event *metricsEvent) {
 	url := event.invoker.GetURL()
 	role := getRole(url)
 
 	if role == "" {
 		return
 	}
-	labels := buildLabels(url)
+	labels := buildLabels(url, event.invocation)
 	c.recordQps(role, labels)
 	c.incRequestsProcessingTotal(role, labels)
 }
 
-func (c *rpcCollector) afterInvokeHandler(event *MetricsEvent) {
+func (c *rpcCollector) afterInvokeHandler(event *metricsEvent) {
 	url := event.invoker.GetURL()
 	role := getRole(url)
 
 	if role == "" {
 		return
 	}
-	labels := buildLabels(url)
+	labels := buildLabels(url, event.invocation)
 	c.incRequestsTotal(role, labels)
 	c.decRequestsProcessingTotal(role, labels)
 	if event.result != nil {
@@ -86,6 +89,7 @@ func (c *rpcCollector) afterInvokeHandler(event *MetricsEvent) {
 			c.incRequestsSucceedTotal(role, labels)
 		}
 	}
+	c.reportRTMilliseconds(role, labels, event.costTime.Milliseconds())
 }
 
 func newMetricId(key *metrics.MetricKey, labels map[string]string) *metrics.MetricId {

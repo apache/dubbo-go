@@ -17,14 +17,17 @@
 
 package rpc
 
-import "time"
+import (
+	"dubbo.apache.org/dubbo-go/v3/metrics"
+	"time"
+)
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
-type MetricsEvent struct {
+type metricsEvent struct {
 	name       metricsName
 	invoker    protocol.Invoker
 	invocation protocol.Invocation
@@ -32,7 +35,7 @@ type MetricsEvent struct {
 	result     protocol.Result
 }
 
-func (m MetricsEvent) Type() string {
+func (m metricsEvent) Type() string {
 	return constant.MetricsRpc
 }
 
@@ -43,16 +46,16 @@ const (
 	AfterInvoke
 )
 
-func NewBeforeInvokeEvent(invoker protocol.Invoker, invocation protocol.Invocation) MetricsEvent {
-	return MetricsEvent{
+func NewBeforeInvokeEvent(invoker protocol.Invoker, invocation protocol.Invocation) metrics.MetricsEvent {
+	return &metricsEvent{
 		name:       BeforeInvoke,
 		invoker:    invoker,
 		invocation: invocation,
 	}
 }
 
-func NewAfterInvokeEvent(invoker protocol.Invoker, invocation protocol.Invocation, costTime time.Duration, result protocol.Result) MetricsEvent {
-	return MetricsEvent{
+func NewAfterInvokeEvent(invoker protocol.Invoker, invocation protocol.Invocation, costTime time.Duration, result protocol.Result) metrics.MetricsEvent {
+	return &metricsEvent{
 		name:       AfterInvoke,
 		invoker:    invoker,
 		invocation: invocation,

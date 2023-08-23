@@ -27,17 +27,18 @@ import "github.com/dubbogo/gost/log/logger"
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
-func buildLabels(url *common.URL) map[string]string {
+func buildLabels(url *common.URL, invocation protocol.Invocation) map[string]string {
 	return map[string]string{
 		applicationNameKey: url.GetParam(constant.ApplicationKey, ""),
 		groupKey:           url.Group(),
-		hostnameKey:        "not implemented yet",
+		hostnameKey:        common.GetLocalHostName(),
 		interfaceKey:       url.Service(),
 		ipKey:              common.GetLocalIp(),
 		versionKey:         url.GetParam(constant.AppVersionKey, ""),
-		methodKey:          url.GetParam(constant.MethodKey, ""),
+		methodKey:          invocation.MethodName(),
 	}
 }
 
