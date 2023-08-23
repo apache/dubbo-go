@@ -49,7 +49,7 @@ func init() {
 	extension.SetMetricReporter(reporterName, newPrometheusReporter)
 }
 
-// reporter will collect the data for Prometheus
+// reporter will export the metrics to Prometheus
 // if you want to use this feature, you need to initialize your prometheus.
 // https://prometheus.io/docs/guides/go-application/
 type reporter struct {
@@ -58,8 +58,7 @@ type reporter struct {
 	namespace      string
 }
 
-// newPrometheusReporter create new prometheusReporter
-// it will register the metrics into prometheus
+// newPrometheusReporter create a new prometheus server or push gateway reporter
 func newPrometheusReporter(reporterConfig *metrics.ReporterConfig) metrics.Reporter {
 	if reporterInstance == nil {
 		reporterInitOnce.Do(func() {

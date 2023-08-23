@@ -27,6 +27,7 @@ var (
 	rpcMetricsChan = make(chan metrics.MetricsEvent, 1024)
 )
 
+// init will add the rpc collectorFunc to metrics.collectors slice, and lazy start the rpc collector goroutine
 func init() {
 	var collectorFunc metrics.CollectorFunc
 	collectorFunc = func(registry metrics.MetricRegistry, c *metrics.ReporterConfig) {
@@ -40,11 +41,13 @@ func init() {
 	metrics.AddCollector("rpc", collectorFunc)
 }
 
+// rpcCollector is a collector which will collect the rpc metrics
 type rpcCollector struct {
 	registry  metrics.MetricRegistry
-	metricSet *metricSet
+	metricSet *metricSet // metricSet is a struct which contains all metrics about rpc
 }
 
+// start will subscribe the rpc.metricsEvent from channel rpcMetricsChan, and handle the event from the channel
 func (c *rpcCollector) start() {
 	metrics.Subscribe(constant.MetricsRpc, rpcMetricsChan)
 	for event := range rpcMetricsChan {
@@ -90,10 +93,6 @@ func (c *rpcCollector) afterInvokeHandler(event *metricsEvent) {
 		}
 	}
 	c.reportRTMilliseconds(role, labels, event.costTime.Milliseconds())
-}
-
-func newMetricId(key *metrics.MetricKey, labels map[string]string) *metrics.MetricId {
-	return &metrics.MetricId{Name: key.Name, Desc: key.Desc, Tags: labels}
 }
 
 func (c *rpcCollector) recordQps(role string, labels map[string]string) {

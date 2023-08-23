@@ -129,6 +129,7 @@ func NewMetricId(key *MetricKey, level MetricLevel) *MetricId {
 	return &MetricId{Name: key.Name, Desc: key.Desc, Tags: level.Tags()}
 }
 
+// NewMetricIdByLabels create a MetricId by key and labels
 func NewMetricIdByLabels(key *MetricKey, labels map[string]string) *MetricId {
 	return &MetricId{Name: key.Name, Desc: key.Desc, Tags: labels}
 }
@@ -173,11 +174,13 @@ func (c *BaseCollector) StateCount(total, succ, fail *MetricKey, level MetricLev
 	}
 }
 
+// CounterVec means a set of counters with the same metricKey but different labels
 type CounterVec interface {
 	Inc(labels map[string]string)
 	Add(labels map[string]string, v float64)
 }
 
+// NewCounterVec create a CounterVec default implementation.
 func NewCounterVec(metricRegistry MetricRegistry, metricKey *MetricKey) CounterVec {
 	return &DefaultCounterVec{
 		metricRegistry: metricRegistry,
@@ -185,6 +188,7 @@ func NewCounterVec(metricRegistry MetricRegistry, metricKey *MetricKey) CounterV
 	}
 }
 
+// DefaultCounterVec is a default CounterVec implementation.
 type DefaultCounterVec struct {
 	metricRegistry MetricRegistry
 	metricKey      *MetricKey
@@ -198,6 +202,7 @@ func (d *DefaultCounterVec) Add(labels map[string]string, v float64) {
 	d.metricRegistry.Counter(NewMetricIdByLabels(d.metricKey, labels)).Add(v)
 }
 
+// GaugeVec means a set of gauges with the same metricKey but different labels
 type GaugeVec interface {
 	Set(labels map[string]string, v float64)
 	Inc(labels map[string]string)
@@ -206,6 +211,7 @@ type GaugeVec interface {
 	Sub(labels map[string]string, v float64)
 }
 
+// NewGaugeVec create a GaugeVec default implementation.
 func NewGaugeVec(metricRegistry MetricRegistry, metricKey *MetricKey) GaugeVec {
 	return &DefaultGaugeVec{
 		metricRegistry: metricRegistry,
@@ -213,6 +219,7 @@ func NewGaugeVec(metricRegistry MetricRegistry, metricKey *MetricKey) GaugeVec {
 	}
 }
 
+// DefaultGaugeVec is a default GaugeVec implementation.
 type DefaultGaugeVec struct {
 	metricRegistry MetricRegistry
 	metricKey      *MetricKey
@@ -238,10 +245,12 @@ func (d *DefaultGaugeVec) Sub(labels map[string]string, v float64) {
 	d.metricRegistry.Gauge(NewMetricIdByLabels(d.metricKey, labels)).Sub(v)
 }
 
+// RtVec means a set of rt metrics with the same metricKey but different labels
 type RtVec interface {
 	Record(labels map[string]string, v float64)
 }
 
+// NewRtVec create a RtVec default implementation DefaultRtVec.
 func NewRtVec(metricRegistry MetricRegistry, metricKey *MetricKey, rtOpts *RtOpts) RtVec {
 	return &DefaultRtVec{
 		metricRegistry: metricRegistry,
@@ -250,6 +259,10 @@ func NewRtVec(metricRegistry MetricRegistry, metricKey *MetricKey, rtOpts *RtOpt
 	}
 }
 
+// DefaultRtVec is a default RtVec implementation.
+//
+// If rtOpts.Aggregate is true, it will use the aggregate.TimeWindowAggregator with local aggregation,
+// else it will use the aggregate.Result without aggregation.
 type DefaultRtVec struct {
 	metricRegistry MetricRegistry
 	metricKey      *MetricKey
@@ -260,6 +273,7 @@ func (d *DefaultRtVec) Record(labels map[string]string, v float64) {
 	d.metricRegistry.Rt(NewMetricIdByLabels(d.metricKey, labels), d.rtOpts).Observe(v)
 }
 
+// labelsToString convert @labels to json format string for cache key
 func labelsToString(labels map[string]string) string {
 	labelsJson, err := json.Marshal(labels)
 	if err != nil {
@@ -269,6 +283,7 @@ func labelsToString(labels map[string]string) string {
 	return string(labelsJson)
 }
 
+// QpsMetricVec means a set of qps metrics with the same metricKey but different labels.
 type QpsMetricVec interface {
 	Record(labels map[string]string)
 }
@@ -282,6 +297,9 @@ func NewQpsMetricVec(metricRegistry MetricRegistry, metricKey *MetricKey) QpsMet
 	}
 }
 
+// DefaultQpsMetricVec is a default QpsMetricVec implementation.
+//
+// It is concurrent safe, and it uses the aggregate.TimeWindowCounter to store and calculate the qps metrics.
 type DefaultQpsMetricVec struct {
 	metricRegistry MetricRegistry
 	metricKey      *MetricKey
@@ -310,6 +328,7 @@ func (d *DefaultQpsMetricVec) Record(labels map[string]string) {
 	d.metricRegistry.Gauge(NewMetricIdByLabels(d.metricKey, labels)).Set(twc.Count() / float64(twc.LivedSeconds()))
 }
 
+// AggregateCounterVec means a set of aggregate counter metrics with the same metricKey but different labels.
 type AggregateCounterVec interface {
 	Inc(labels map[string]string)
 }
@@ -323,6 +342,9 @@ func NewAggregateCounterVec(metricRegistry MetricRegistry, metricKey *MetricKey)
 	}
 }
 
+// DefaultAggregateCounterVec is a default AggregateCounterVec implementation.
+//
+// It is concurrent safe, and it uses the aggregate.TimeWindowCounter to store and calculate the aggregate counter metrics.
 type DefaultAggregateCounterVec struct {
 	metricRegistry MetricRegistry
 	metricKey      *MetricKey
@@ -351,6 +373,7 @@ func (d *DefaultAggregateCounterVec) Inc(labels map[string]string) {
 	d.metricRegistry.Gauge(NewMetricIdByLabels(d.metricKey, labels)).Set(twc.Count())
 }
 
+// QuantileMetricVec means a set of quantile metrics with the same metricKey but different labels.
 type QuantileMetricVec interface {
 	Record(labels map[string]string, v float64)
 }
@@ -365,6 +388,9 @@ func NewQuantileMetricVec(metricRegistry MetricRegistry, metricKeys []*MetricKey
 	}
 }
 
+// DefaultQuantileMetricVec is a default QuantileMetricVec implementation.
+//
+// It is concurrent safe, and it uses the aggregate.TimeWindowQuantile to store and calculate the quantile metrics.
 type DefaultQuantileMetricVec struct {
 	metricRegistry MetricRegistry
 	metricKeys     []*MetricKey

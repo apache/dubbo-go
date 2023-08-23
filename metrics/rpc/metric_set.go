@@ -21,6 +21,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 )
 
+// metricSet is the metric set for rpc
 type metricSet struct {
 	provider *providerMetrics
 	consumer *consumerMetrics
@@ -34,6 +35,7 @@ type consumerMetrics struct {
 	rpcCommonMetrics
 }
 
+// rpcCommonMetrics is the common metrics for both provider and consumer
 type rpcCommonMetrics struct {
 	qpsTotal                      metrics.QpsMetricVec
 	requestsTotal                 metrics.CounterVec
@@ -46,6 +48,7 @@ type rpcCommonMetrics struct {
 	rtMillisecondsAggregate       metrics.RtVec
 }
 
+// buildMetricSet will call init functions to initialize the metricSet
 func buildMetricSet(registry metrics.MetricRegistry) *metricSet {
 	ms := &metricSet{
 		provider: &providerMetrics{},

@@ -32,21 +32,4 @@ const (
 const (
 	providerField = "provider"
 	consumerField = "consumer"
-
-	qpsField      = "qps"
-	requestsField = "requests"
-	rtField       = "rt"
-
-	milliSecondsField = "milliseconds"
-
-	minField  = "min"
-	maxField  = "max"
-	sumField  = "sum"
-	avgField  = "avg"
-	lastField = "last"
-
-	totalField      = "total"
-	aggregateField  = "aggregate"
-	processingField = "processing"
-	succeedField    = "succeed"
 )

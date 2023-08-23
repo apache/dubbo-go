@@ -19,33 +19,26 @@ package metrics
 
 import (
 	"context"
-	"sync"
+
 	"testing"
-	"time"
 )
 
 import (
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
-	_ "dubbo.apache.org/dubbo-go/v3/metrics/prometheus"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
 func TestMetricsFilterInvoke(t *testing.T) {
-	// prepare the mock reporter
-	mk := &mockReporter{}
-	extension.SetMetricReporter("mock", func(config *metrics.ReporterConfig) metrics.Reporter {
-		return mk
-	})
-
-	instance := newFilter()
+	mockChan := make(chan metrics.MetricsEvent, 10)
+	defer close(mockChan)
+	metrics.Subscribe(constant.MetricsRpc, mockChan)
 
 	url, _ := common.NewURL(
 		"dubbo://:20000/UserProvider?app.version=0.0.1&application=BDTService&bean.name=UserProvider" +
@@ -57,31 +50,14 @@ func TestMetricsFilterInvoke(t *testing.T) {
 
 	attach := make(map[string]interface{}, 10)
 	inv := invocation.NewRPCInvocation("MethodName", []interface{}{"OK", "Hello"}, attach)
-
 	ctx := context.Background()
 
-	mk.On("Report", ctx, invoker, inv).Return(true, nil)
-
-	mk.wg.Add(1)
-	result := instance.Invoke(ctx, invoker, inv)
+	filter := newFilter()
+	result := filter.Invoke(ctx, invoker, inv)
 	assert.NotNil(t, result)
-	mk.AssertNotCalled(t, "Report", 1)
-	// it will do nothing
-	result = instance.OnResponse(ctx, nil, invoker, inv)
+	result = filter.OnResponse(ctx, nil, invoker, inv)
 	assert.Nil(t, result)
-}
 
-type mockReporter struct {
-	mock.Mock
-	wg sync.WaitGroup
-}
-
-func (m *mockReporter) ReportAfterInvocation(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation, cost time.Duration, res protocol.Result) {
-	m.Called(ctx, invoker, invocation)
-	m.wg.Done()
-}
-
-func (m *mockReporter) ReportBeforeInvocation(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) {
-	m.Called(ctx, invoker, invocation)
-	m.wg.Done()
+	assert.Equal(t, 2, len(mockChan))
+	assert.Equal(t, constant.MetricsRpc, (<-mockChan).Type())
 }

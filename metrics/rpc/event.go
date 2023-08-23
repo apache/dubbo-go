@@ -27,6 +27,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
+// metricsEvent is the event defined for rpc metrics
 type metricsEvent struct {
 	name       metricsName
 	invoker    protocol.Invoker
@@ -35,6 +36,7 @@ type metricsEvent struct {
 	result     protocol.Result
 }
 
+// Type returns the type of the event, it is used for metrics bus to dispatch the event to rpc collector
 func (m metricsEvent) Type() string {
 	return constant.MetricsRpc
 }

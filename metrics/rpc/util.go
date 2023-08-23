@@ -30,6 +30,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
+// buildLabels will build the labels for the rpc metrics
 func buildLabels(url *common.URL, invocation protocol.Invocation) map[string]string {
 	return map[string]string{
 		applicationNameKey: url.GetParam(constant.ApplicationKey, ""),
@@ -42,6 +43,7 @@ func buildLabels(url *common.URL, invocation protocol.Invocation) map[string]str
 	}
 }
 
+// getRole will get the application role from the url
 func getRole(url *common.URL) (role string) {
 	if isProvider(url) {
 		role = providerField
