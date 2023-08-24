@@ -99,7 +99,7 @@ func (d *ErrorDetail) Value() (proto.Message, error) {
 //
 // Service implementations and interceptors should return errors that can be
 // cast to an [*Error] (using the standard library's [errors.As]). If the returned
-// error can't be cast to an [*Error], connect will use [CodeUnknown] and the
+// error can't be cast to an [*Error], triple will use [CodeUnknown] and the
 // returned error's message.
 //
 // Error details are an optional mechanism for servers, interceptors, and
@@ -223,7 +223,7 @@ func errorf(c Code, template string, args ...any) *Error {
 	return NewError(c, fmt.Errorf(template, args...))
 }
 
-// asError uses errors.As to unwrap any error and look for a connect *Error.
+// asError uses errors.As to unwrap any error and look for a triple *Error.
 func asError(err error) (*Error, bool) {
 	var connectErr *Error
 	ok := errors.As(err, &connectErr)
@@ -292,7 +292,7 @@ func wrapIfLikelyH2CNotConfiguredError(request *http.Request, err error) error {
 }
 
 // wrapIfLikelyWithGRPCNotUsedError adds a wrapping error that has a message
-// telling the caller that they likely forgot to use connect.WithGRPC().
+// telling the caller that they likely forgot to use triple.WithGRPC().
 //
 // This happens when running a gRPC-only server.
 // This is fragile and may break over time, and this should be considered a best-effort.
@@ -309,7 +309,7 @@ func wrapIfLikelyWithGRPCNotUsedError(err error) error {
 	if errString := err.Error(); strings.HasPrefix(errString, `Post "`) &&
 		strings.Contains(errString, `http2: Transport: cannot retry err`) &&
 		strings.HasSuffix(errString, `after Request.Body was written; define Request.GetBody to avoid this error`) {
-		return fmt.Errorf("possible missing connect.WithGPRC() client option when talking to gRPC server, see %s: %w", commonErrorsURL, err)
+		return fmt.Errorf("possible missing triple.WithGPRC() client option when talking to gRPC server, see %s: %w", commonErrorsURL, err)
 	}
 	return err
 }

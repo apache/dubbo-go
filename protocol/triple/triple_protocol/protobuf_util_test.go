@@ -15,11 +15,8 @@
 package triple_protocol
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/assert"
 	"testing"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/assert"
 )
 
 func TestParseProtobufURL(t *testing.T) {

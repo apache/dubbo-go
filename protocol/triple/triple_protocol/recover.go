@@ -60,6 +60,25 @@ func (i *recoverHandlerInterceptor) WrapUnary(next UnaryFunc) UnaryFunc {
 	}
 }
 
+func (i *recoverHandlerInterceptor) WrapUnaryHandler(next UnaryHandlerFunc) UnaryHandlerFunc {
+	return func(ctx context.Context, request AnyRequest) (resp AnyResponse, retErr error) {
+		panicked := true
+		defer func() {
+			if panicked {
+				r := recover()
+				// net/http checks for ErrAbortHandler with ==, so we should too.
+				if r == http.ErrAbortHandler { //nolint:errorlint,goerr113
+					panic(r) //nolint:forbidigo
+				}
+				retErr = i.handle(ctx, request.Spec(), request.Header(), r)
+			}
+		}()
+		response, retErr := next(ctx, request)
+		panicked = false
+		return response, retErr
+	}
+}
+
 func (i *recoverHandlerInterceptor) WrapStreamingHandler(next StreamingHandlerFunc) StreamingHandlerFunc {
 	return func(ctx context.Context, conn StreamingHandlerConn) (retErr error) {
 		panicked := true
