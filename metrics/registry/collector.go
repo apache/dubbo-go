@@ -101,7 +101,7 @@ func (rc *registryCollector) notifyHandler(event *RegistryMetricsEvent) {
 	// Event is converted to metrics
 	// Save metrics to the MetricRegistry
 	rc.regRegistry.Counter(metrics.NewMetricId(NotifyMetricRequests, metrics.GetApplicationLevel())).Inc()
-	rc.regRegistry.Histogram(metrics.NewMetricId(NotifyMetricNumLast, metrics.GetApplicationLevel())).Record(float64(event.End.UnixNano()) / float64(time.Second))
+	rc.regRegistry.Histogram(metrics.NewMetricId(NotifyMetricNumLast, metrics.GetApplicationLevel())).Observe(float64(event.End.UnixNano()) / float64(time.Second))
 	metric := metrics.ComputeIfAbsentCache(dubboNotifyRt, func() interface{} {
 		return newTimeMetrics(NotifyRtMillisecondsMin, NotifyRtMillisecondsMax, NotifyRtMillisecondsAvg, NotifyRtMillisecondsSum, NotifyRtMillisecondsLast, metrics.GetApplicationLevel(), rc.regRegistry)
 	}).(metrics.TimeMetric)
