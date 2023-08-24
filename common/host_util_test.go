@@ -34,6 +34,10 @@ func TestGetLocalIp(t *testing.T) {
 	assert.NotNil(t, GetLocalIp())
 }
 
+func TestGetLocalHostName(t *testing.T) {
+	assert.NotNil(t, GetLocalHostName())
+}
+
 func TestHandleRegisterIPAndPort(t *testing.T) {
 	url := NewURLWithOptions(WithIp("1.2.3.4"), WithPort("20000"))
 	HandleRegisterIPAndPort(url)

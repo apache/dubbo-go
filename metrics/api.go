@@ -25,9 +25,11 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/metrics/util/aggregate"
 )
 
-var registries = make(map[string]func(*ReporterConfig) MetricRegistry)
-var collectors = make([]CollectorFunc, 0)
-var registry MetricRegistry
+var (
+	registries = make(map[string]func(*ReporterConfig) MetricRegistry)
+	collectors = make([]CollectorFunc, 0)
+	registry   MetricRegistry
+)
 
 // CollectorFunc used to extend more indicators
 type CollectorFunc func(MetricRegistry, *ReporterConfig)
@@ -59,13 +61,20 @@ func AddCollector(name string, fun func(MetricRegistry, *ReporterConfig)) {
 
 // MetricRegistry data container，data compute、expose、agg
 type MetricRegistry interface {
-	Counter(*MetricId) CounterMetric     // add or update a counter
-	Gauge(*MetricId) GaugeMetric         // add or update a gauge
-	Histogram(*MetricId) HistogramMetric // add a metric num to a histogram
-	Summary(*MetricId) SummaryMetric     // add a metric num to a summary
-	Export()                             // expose metric data， such as Prometheus http exporter
+	Counter(*MetricId) CounterMetric        // add or update a counter
+	Gauge(*MetricId) GaugeMetric            // add or update a gauge
+	Histogram(*MetricId) ObservableMetric   // add a metric num to a histogram
+	Summary(*MetricId) ObservableMetric     // add a metric num to a summary
+	Rt(*MetricId, *RtOpts) ObservableMetric // add a metric num to a rt
+	Export()                                // expose metric data， such as Prometheus http exporter
 	// GetMetrics() []*MetricSample // get all metric data
 	// GetMetricsString() (string, error) // get text format metric data
+}
+
+type RtOpts struct {
+	Aggregate         bool
+	BucketNum         int   // only for aggRt
+	TimeWindowSeconds int64 // only for aggRt
 }
 
 // multi registry，like micrometer CompositeMeterRegistry
@@ -131,14 +140,9 @@ type GaugeMetric interface {
 	// Sub(float64)
 }
 
-// HistogramMetric histogram metric
-type HistogramMetric interface {
-	Record(float64)
-}
-
-// SummaryMetric summary metric
-type SummaryMetric interface {
-	Record(float64)
+// histogram summary rt metric
+type ObservableMetric interface {
+	Observe(float64)
 }
 
 // StatesMetrics multi metrics，include total,success num, fail num，call MetricsRegistry save data
@@ -194,13 +198,13 @@ type TimeMetric interface {
 
 const (
 	defaultBucketNum         = 10
-	defalutTimeWindowSeconds = 120
+	defaultTimeWindowSeconds = 120
 )
 
 // NewTimeMetric init and write all data to registry
 func NewTimeMetric(min, max, avg, sum, last *MetricId, mr MetricRegistry) TimeMetric {
 	return &DefaultTimeMetric{r: mr, min: min, max: max, avg: avg, sum: sum, last: last,
-		agg: aggregate.NewTimeWindowAggregator(defaultBucketNum, defalutTimeWindowSeconds)}
+		agg: aggregate.NewTimeWindowAggregator(defaultBucketNum, defaultTimeWindowSeconds)}
 }
 
 type DefaultTimeMetric struct {
@@ -232,8 +236,13 @@ func ComputeIfAbsentCache(key string, supplier func() interface{}) interface{} {
 	} else {
 		metricsCacheMutex.Lock()
 		defer metricsCacheMutex.Unlock()
-		n := supplier()
-		metricsCache[key] = n
-		return n
+		v, ok = metricsCache[key] // double check,avoid overwriting
+		if ok {
+			return v
+		} else {
+			n := supplier()
+			metricsCache[key] = n
+			return n
+		}
 	}
 }
