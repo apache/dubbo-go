@@ -17,14 +17,15 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
-	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
-	pingv1 "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/gen/proto/connect/ping/v1"
 	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
+	pingv1 "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/gen/proto/connect/ping/v1"
 
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/assert"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/gen/proto/connect/ping/v1/pingv1connect"

@@ -15,8 +15,9 @@
 package triple_protocol
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/assert"
 	"testing"
+
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/assert"
 )
 
 func TestCanonicalizeContentType(t *testing.T) {

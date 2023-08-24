@@ -15,12 +15,13 @@ package triple_protocol_test
 
 import (
 	"context"
-	triple "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	triple "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/assert"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/gen/proto/connect/ping/v1/pingv1connect"

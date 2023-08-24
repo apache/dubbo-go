@@ -18,7 +18,6 @@ import (
 	"compress/flate"
 	"compress/gzip"
 	"context"
-	triple "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -29,6 +28,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	triple "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/assert"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/gen/proto/connect/import/v1/importv1connect"
@@ -368,9 +369,9 @@ func TestServer(t *testing.T) {
 			t.Helper()
 			client := pingv1connect.NewPingServiceClient(server.Client(), server.URL, opts...)
 			testPing(t, client)
-			//testSum(t, client)
-			//testCountUp(t, client)
-			//testCumSum(t, client, bidi)
+			// testSum(t, client)
+			// testCountUp(t, client)
+			// testCumSum(t, client, bidi)
 			testErrors(t, client)
 		}
 		t.Run("triple", func(t *testing.T) {

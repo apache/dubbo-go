@@ -437,8 +437,7 @@ func (o *idempotencyOption) applyToHandler(config *handlerConfig) {
 	config.IdempotencyLevel = o.idempotencyLevel
 }
 
-type grpcOption struct {
-}
+type grpcOption struct{}
 
 func (o *grpcOption) applyToClient(config *clientConfig) {
 	config.Protocol = &protocolGRPC{}

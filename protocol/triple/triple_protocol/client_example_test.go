@@ -15,11 +15,12 @@ package triple_protocol_test
 
 import (
 	"context"
+	"log"
+	"os"
+
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	pingv1 "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/gen/proto/connect/ping/v1"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/gen/proto/connect/ping/v1/pingv1connect"
-	"log"
-	"os"
 )
 
 func Example_client() {
@@ -28,7 +29,7 @@ func Example_client() {
 	// network. To keep this example runnable, we'll use an HTTP server and
 	// client that communicate over in-memory pipes. The client is still a plain
 	// *http.Client!
-	var httpClient = examplePingServer.Client()
+	httpClient := examplePingServer.Client()
 
 	// By default, clients use the Triple protocol. Add triple.WithGRPC() or
 	// triple.WithGRPCWeb() to switch protocols.

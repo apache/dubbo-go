@@ -15,10 +15,11 @@ package triple_protocol_test
 
 import (
 	"context"
+	"net/http"
+
 	triple "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	pingv1 "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/gen/proto/connect/ping/v1"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/gen/proto/connect/ping/v1/pingv1connect"
-	"net/http"
 )
 
 // ExamplePingServer implements some trivial business logic. The Protobuf

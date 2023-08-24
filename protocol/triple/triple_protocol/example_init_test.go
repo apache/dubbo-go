@@ -15,12 +15,13 @@ package triple_protocol_test
 
 import (
 	"context"
-	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/gen/proto/connect/ping/v1/pingv1connect"
 	"errors"
 	"net"
 	"net/http"
 	"net/http/httptest"
 	"sync"
+
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/gen/proto/connect/ping/v1/pingv1connect"
 )
 
 var examplePingServer *inMemoryServer

@@ -16,14 +16,15 @@ package triple_protocol_test
 
 import (
 	"context"
-	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
-	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/assert"
-	pingv1 "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/gen/proto/connect/ping/v1"
-	pingv1triple "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/gen/proto/connect/ping/v1/pingv1connect"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/assert"
+	pingv1 "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/gen/proto/connect/ping/v1"
+	pingv1triple "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/gen/proto/connect/ping/v1/pingv1connect"
 )
 
 type panicPingServer struct {
@@ -90,9 +91,9 @@ func TestWithRecover(t *testing.T) {
 		err := client.Ping(context.Background(), triple_protocol.NewRequest(&pingv1.PingRequest{}), triple_protocol.NewResponse(&pingv1.PingResponse{}))
 		assertHandled(err)
 
-		//stream, err := client.CountUp(context.Background(), triple_protocol.NewRequest(&pingv1.CountUpRequest{}))
-		//assert.Nil(t, err)
-		//assertHandled(drainStream(stream))
+		// stream, err := client.CountUp(context.Background(), triple_protocol.NewRequest(&pingv1.CountUpRequest{}))
+		// assert.Nil(t, err)
+		// assertHandled(drainStream(stream))
 	}
 
 	pinger.panicWith = http.ErrAbortHandler
@@ -100,7 +101,7 @@ func TestWithRecover(t *testing.T) {
 	err := client.Ping(context.Background(), triple_protocol.NewRequest(&pingv1.PingRequest{}), triple_protocol.NewResponse(&pingv1.PingResponse{}))
 	assertNotHandled(err)
 
-	//stream, err := client.CountUp(context.Background(), triple_protocol.NewRequest(&pingv1.CountUpRequest{}))
-	//assert.Nil(t, err)
-	//assertNotHandled(drainStream(stream))
+	// stream, err := client.CountUp(context.Background(), triple_protocol.NewRequest(&pingv1.CountUpRequest{}))
+	// assert.Nil(t, err)
+	// assertNotHandled(drainStream(stream))
 }

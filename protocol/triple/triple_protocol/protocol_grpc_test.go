@@ -15,7 +15,6 @@
 package triple_protocol
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/assert"
 	"errors"
 	"math"
 	"net/http"
@@ -25,6 +24,8 @@ import (
 	"testing/quick"
 	"time"
 	"unicode/utf8"
+
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/assert"
 )
 
 import (

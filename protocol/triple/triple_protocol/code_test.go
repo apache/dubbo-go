@@ -15,10 +15,11 @@
 package triple_protocol
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/assert"
 	"strconv"
 	"strings"
 	"testing"
+
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/assert"
 )
 
 func TestCode(t *testing.T) {

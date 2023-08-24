@@ -17,7 +17,6 @@ package triple_protocol
 import (
 	"bufio"
 	"context"
-	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/proto/connectext/grpc/status/v1"
 	"errors"
 	"fmt"
 	"io"
@@ -29,6 +28,8 @@ import (
 	"strings"
 	"time"
 	"unicode/utf8"
+
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/proto/connectext/grpc/status/v1"
 )
 
 // protocol specification headers
@@ -85,8 +86,7 @@ func init() {
 	}
 }
 
-type protocolGRPC struct {
-}
+type protocolGRPC struct{}
 
 // for server side
 
