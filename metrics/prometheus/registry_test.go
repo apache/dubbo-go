@@ -23,11 +23,13 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/metrics"
-
 	prom "github.com/prometheus/client_golang/prometheus"
 
 	"github.com/stretchr/testify/assert"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/metrics"
 )
 
 var (

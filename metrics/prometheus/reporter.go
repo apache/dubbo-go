@@ -24,12 +24,14 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/metrics"
-
 	"github.com/dubbogo/gost/log/logger"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/metrics"
 )
 
 var (

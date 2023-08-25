@@ -23,9 +23,11 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/metrics/util/aggregate"
-
 	"github.com/dubbogo/gost/log/logger"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/metrics/util/aggregate"
 )
 
 const (
