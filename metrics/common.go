@@ -66,7 +66,7 @@ func (m *ApplicationMetricLevel) Tags() map[string]string {
 	tags := make(map[string]string)
 	tags[constant.IpKey] = m.Ip
 	tags[constant.HostnameKey] = m.HostName
-	tags[constant.ApplicationKey] = m.ApplicationName
+	tags[constant.ApplicationNameKey] = m.ApplicationName
 	tags[constant.ApplicationVersionKey] = m.Version
 	tags[constant.GitCommitIdKey] = m.GitCommitId
 	return tags
