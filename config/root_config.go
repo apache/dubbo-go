@@ -35,12 +35,10 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	commonCfg "dubbo.apache.org/dubbo-go/v3/common/config"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/metadata/service/exporter"
-	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
 var (
@@ -50,23 +48,23 @@ var (
 
 // RootConfig is the root config
 type RootConfig struct {
-	Application         *commonCfg.ApplicationConfig        `validate:"required" yaml:"application" json:"application,omitempty" property:"application"`
-	Protocols           map[string]*ProtocolConfig          `validate:"required" yaml:"protocols" json:"protocols" property:"protocols"`
-	Registries          map[string]*registry.RegistryConfig `yaml:"registries" json:"registries" property:"registries"`
-	ConfigCenter        *CenterConfig                       `yaml:"config-center" json:"config-center,omitempty"`
-	MetadataReport      *MetadataReportConfig               `yaml:"metadata-report" json:"metadata-report,omitempty" property:"metadata-report"`
-	Provider            *ProviderConfig                     `yaml:"provider" json:"provider" property:"provider"`
-	Consumer            *ConsumerConfig                     `yaml:"consumer" json:"consumer" property:"consumer"`
-	Metric              *MetricConfig                       `yaml:"metrics" json:"metrics,omitempty" property:"metrics"`
-	Tracing             map[string]*TracingConfig           `yaml:"tracing" json:"tracing,omitempty" property:"tracing"`
-	Logger              *LoggerConfig                       `yaml:"logger" json:"logger,omitempty" property:"logger"`
-	Shutdown            *ShutdownConfig                     `yaml:"shutdown" json:"shutdown,omitempty" property:"shutdown"`
-	Router              []*RouterConfig                     `yaml:"router" json:"router,omitempty" property:"router"`
-	EventDispatcherType string                              `default:"direct" yaml:"event-dispatcher-type" json:"event-dispatcher-type,omitempty"`
-	CacheFile           string                              `yaml:"cache_file" json:"cache_file,omitempty" property:"cache_file"`
-	Custom              *CustomConfig                       `yaml:"custom" json:"custom,omitempty" property:"custom"`
-	Profiles            *ProfilesConfig                     `yaml:"profiles" json:"profiles,omitempty" property:"profiles"`
-	TLSConfig           *TLSConfig                          `yaml:"tls_config" json:"tls_config,omitempty" property:"tls_config"`
+	Application         *ApplicationConfig         `validate:"required" yaml:"application" json:"application,omitempty" property:"application"`
+	Protocols           map[string]*ProtocolConfig `validate:"required" yaml:"protocols" json:"protocols" property:"protocols"`
+	Registries          map[string]*RegistryConfig `yaml:"registries" json:"registries" property:"registries"`
+	ConfigCenter        *CenterConfig              `yaml:"config-center" json:"config-center,omitempty"`
+	MetadataReport      *MetadataReportConfig      `yaml:"metadata-report" json:"metadata-report,omitempty" property:"metadata-report"`
+	Provider            *ProviderConfig            `yaml:"provider" json:"provider" property:"provider"`
+	Consumer            *ConsumerConfig            `yaml:"consumer" json:"consumer" property:"consumer"`
+	Metric              *MetricConfig              `yaml:"metrics" json:"metrics,omitempty" property:"metrics"`
+	Tracing             map[string]*TracingConfig  `yaml:"tracing" json:"tracing,omitempty" property:"tracing"`
+	Logger              *LoggerConfig              `yaml:"logger" json:"logger,omitempty" property:"logger"`
+	Shutdown            *ShutdownConfig            `yaml:"shutdown" json:"shutdown,omitempty" property:"shutdown"`
+	Router              []*RouterConfig            `yaml:"router" json:"router,omitempty" property:"router"`
+	EventDispatcherType string                     `default:"direct" yaml:"event-dispatcher-type" json:"event-dispatcher-type,omitempty"`
+	CacheFile           string                     `yaml:"cache_file" json:"cache_file,omitempty" property:"cache_file"`
+	Custom              *CustomConfig              `yaml:"custom" json:"custom,omitempty" property:"custom"`
+	Profiles            *ProfilesConfig            `yaml:"profiles" json:"profiles,omitempty" property:"profiles"`
+	TLSConfig           *TLSConfig                 `yaml:"tls_config" json:"tls_config,omitempty" property:"tls_config"`
 }
 
 func SetRootConfig(r RootConfig) {
@@ -96,7 +94,7 @@ func GetConsumerConfig() *ConsumerConfig {
 	return NewConsumerConfigBuilder().Build()
 }
 
-func GetApplicationConfig() *commonCfg.ApplicationConfig {
+func GetApplicationConfig() *ApplicationConfig {
 	return rootConfig.Application
 }
 
@@ -224,7 +222,7 @@ func newEmptyRootConfig() *RootConfig {
 		ConfigCenter:   NewConfigCenterConfigBuilder().Build(),
 		MetadataReport: NewMetadataReportConfigBuilder().Build(),
 		Application:    NewApplicationConfigBuilder().Build(),
-		Registries:     make(map[string]*registry.RegistryConfig),
+		Registries:     make(map[string]*RegistryConfig),
 		Protocols:      make(map[string]*ProtocolConfig),
 		Tracing:        make(map[string]*TracingConfig),
 		Provider:       NewProviderConfigBuilder().Build(),
@@ -246,7 +244,7 @@ type RootConfigBuilder struct {
 	rootConfig *RootConfig
 }
 
-func (rb *RootConfigBuilder) SetApplication(application *commonCfg.ApplicationConfig) *RootConfigBuilder {
+func (rb *RootConfigBuilder) SetApplication(application *ApplicationConfig) *RootConfigBuilder {
 	rb.rootConfig.Application = application
 	return rb
 }
@@ -256,7 +254,7 @@ func (rb *RootConfigBuilder) AddProtocol(protocolID string, protocolConfig *Prot
 	return rb
 }
 
-func (rb *RootConfigBuilder) AddRegistry(registryID string, registryConfig *registry.RegistryConfig) *RootConfigBuilder {
+func (rb *RootConfigBuilder) AddRegistry(registryID string, registryConfig *RegistryConfig) *RootConfigBuilder {
 	rb.rootConfig.Registries[registryID] = registryConfig
 	return rb
 }
@@ -266,7 +264,7 @@ func (rb *RootConfigBuilder) SetProtocols(protocols map[string]*ProtocolConfig) 
 	return rb
 }
 
-func (rb *RootConfigBuilder) SetRegistries(registries map[string]*registry.RegistryConfig) *RootConfigBuilder {
+func (rb *RootConfigBuilder) SetRegistries(registries map[string]*RegistryConfig) *RootConfigBuilder {
 	rb.rootConfig.Registries = registries
 	return rb
 }

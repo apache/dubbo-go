@@ -30,12 +30,11 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
-	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
 func TestGoConfigProcess(t *testing.T) {
 	rc := &RootConfigBuilder{rootConfig: newEmptyRootConfig()}
-	r := &registry.RegistryConfig{Protocol: "zookeeper", Timeout: "10s", Address: "127.0.0.1:2181"}
+	r := &RegistryConfig{Protocol: "zookeeper", Timeout: "10s", Address: "127.0.0.1:2181"}
 	rc.AddRegistry("demoZK", r)
 
 	// test koan.UnmarshalWithConf error
@@ -65,7 +64,7 @@ func TestNewRootConfigBuilder(t *testing.T) {
 		AddProtocol("dubbo", protocolConfig).
 		AddRegistry("nacos", registryConfig).
 		SetProtocols(map[string]*ProtocolConfig{"dubbo": protocolConfig}).
-		SetRegistries(map[string]*registry.RegistryConfig{"nacos": registryConfig}).
+		SetRegistries(map[string]*RegistryConfig{"nacos": registryConfig}).
 		SetProvider(NewProviderConfigBuilder().Build()).
 		SetConsumer(NewConsumerConfigBuilder().Build()).
 		SetMetric(NewMetricConfigBuilder().Build()).

@@ -93,8 +93,8 @@ func TestNewServiceConfigBuilder(t *testing.T) {
 		assert.Equal(t, serviceConfig.IsExport(), false)
 	})
 
-	t.Run("loadRegistries&loadProtocol&getRandomPort", func(t *testing.T) {
-		registries := loadRegistries(serviceConfig.RegistryIDs, serviceConfig.RCRegistriesMap, common.PROVIDER)
+	t.Run("LoadRegistries&loadProtocol&getRandomPort", func(t *testing.T) {
+		registries := LoadRegistries(serviceConfig.RegistryIDs, serviceConfig.RCRegistriesMap, common.PROVIDER)
 		assert.Equal(t, len(registries), 1)
 		assert.Equal(t, "service-discovery-registry", registries[0].Protocol)
 		assert.Equal(t, registries[0].Port, "8848")

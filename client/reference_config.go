@@ -18,6 +18,7 @@
 package client
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"fmt"
 	"net/url"
 	"os"
@@ -84,9 +85,11 @@ type ReferenceConfig struct {
 	adaptiveService bool
 	proxyFactory    string
 
-	application *commonCfg.ApplicationConfig
+	application       *commonCfg.ApplicationConfig
+	applicationCompat *config.ApplicationConfig
 
-	registries map[string]*registry.RegistryConfig
+	registries       map[string]*registry.RegistryConfig
+	registriesCompat map[string]*config.RegistryConfig
 }
 
 func (rc *ReferenceConfig) Prefix() string {
@@ -94,30 +97,47 @@ func (rc *ReferenceConfig) Prefix() string {
 }
 
 func (rc *ReferenceConfig) Init(opts ...ReferenceOption) error {
-	for _, method := range rc.Methods {
-		if err := method.Init(); err != nil {
-			return err
-		}
-	}
 	if err := defaults.Set(rc); err != nil {
 		return err
 	}
 	for _, opt := range opts {
 		opt(rc)
 	}
-	if rc.application != nil {
-		rc.metaDataType = rc.application.MetadataType
-		if rc.Group == "" {
-			rc.Group = rc.application.Group
-		}
-		if rc.Version == "" {
-			rc.Version = rc.application.Version
+	// init method
+	for _, method := range rc.Methods {
+		if err := method.Init(); err != nil {
+			return err
 		}
 	}
+	// init application
+	if rc.application != nil {
+		rc.applicationCompat = compatApplicationConfig(rc.application)
+		if err := rc.applicationCompat.Init(); err != nil {
+			return err
+		}
+		rc.metaDataType = rc.applicationCompat.MetadataType
+		if rc.Group == "" {
+			rc.Group = rc.applicationCompat.Group
+		}
+		if rc.Version == "" {
+			rc.Version = rc.applicationCompat.Version
+		}
+	}
+	// init cluster
 	if rc.Cluster == "" {
 		rc.Cluster = "failover"
 	}
 	// todo: move to registry package
+	// init registries
+	if rc.registries != nil {
+		rc.registriesCompat = make(map[string]*config.RegistryConfig)
+		for key, reg := range rc.registries {
+			rc.registriesCompat[key] = compatRegistryConfig(reg)
+			if err := rc.registriesCompat[key].Init(); err != nil {
+				return err
+			}
+		}
+	}
 	rc.RegistryIDs = commonCfg.TranslateIds(rc.RegistryIDs)
 
 	return commonCfg.Verify(rc)
@@ -158,16 +178,20 @@ func updateOrCreateMeshURL(rc *ReferenceConfig) {
 	rc.URL = "tri://" + rc.ProvidedBy + "." + podNamespace + constant.SVC + clusterDomain + ":" + strconv.Itoa(meshPort)
 }
 
-// Refer retrieves invokers from urls.
-func (rc *ReferenceConfig) Refer(srv interface{}) {
-	rc.refer(nil, srv)
+// ReferWithService retrieves invokers from urls.
+func (rc *ReferenceConfig) ReferWithService(srv common.RPCService) {
+	rc.refer(srv, nil)
 }
 
 func (rc *ReferenceConfig) ReferWithInfo(info *ClientInfo) {
-	rc.refer(info, nil)
+	rc.refer(nil, info)
 }
 
-func (rc *ReferenceConfig) refer(info *ClientInfo, srv interface{}) {
+func (rc *ReferenceConfig) ReferWithServiceAndInfo(srv common.RPCService, info *ClientInfo) {
+	rc.refer(srv, info)
+}
+
+func (rc *ReferenceConfig) refer(srv common.RPCService, info *ClientInfo) {
 	var methods []string
 	if info != nil {
 		rc.InterfaceName = info.InterfaceName
@@ -236,7 +260,7 @@ func (rc *ReferenceConfig) refer(info *ClientInfo, srv interface{}) {
 			}
 		}
 	} else { // use registry configs
-		rc.urls = registry.LoadRegistries(rc.RegistryIDs, rc.registries, common.CONSUMER)
+		rc.urls = config.LoadRegistries(rc.RegistryIDs, rc.registriesCompat, common.CONSUMER)
 		// set url to regURLs
 		for _, regURL := range rc.urls {
 			regURL.SubURL = cfgURL
@@ -382,14 +406,14 @@ func (rc *ReferenceConfig) getURLMap() url.Values {
 	urlMap.Set(constant.StickyKey, strconv.FormatBool(rc.Sticky))
 
 	// applicationConfig info
-	if rc.application != nil {
-		urlMap.Set(constant.ApplicationKey, rc.application.Name)
-		urlMap.Set(constant.OrganizationKey, rc.application.Organization)
-		urlMap.Set(constant.NameKey, rc.application.Name)
-		urlMap.Set(constant.ModuleKey, rc.application.Module)
-		urlMap.Set(constant.AppVersionKey, rc.application.Version)
-		urlMap.Set(constant.OwnerKey, rc.application.Owner)
-		urlMap.Set(constant.EnvironmentKey, rc.application.Environment)
+	if rc.applicationCompat != nil {
+		urlMap.Set(constant.ApplicationKey, rc.applicationCompat.Name)
+		urlMap.Set(constant.OrganizationKey, rc.applicationCompat.Organization)
+		urlMap.Set(constant.NameKey, rc.applicationCompat.Name)
+		urlMap.Set(constant.ModuleKey, rc.applicationCompat.Module)
+		urlMap.Set(constant.AppVersionKey, rc.applicationCompat.Version)
+		urlMap.Set(constant.OwnerKey, rc.applicationCompat.Owner)
+		urlMap.Set(constant.EnvironmentKey, rc.applicationCompat.Environment)
 	}
 
 	// filter
