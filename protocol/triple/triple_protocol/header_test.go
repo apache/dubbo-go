@@ -19,10 +19,8 @@ import (
 	"net/http"
 	"testing"
 	"testing/quick"
-)
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/assert"
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/assert"
 )
 
 func TestBinaryEncodingQuick(t *testing.T) {

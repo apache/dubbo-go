@@ -17,7 +17,7 @@ syntax = "proto3";
 // This package is for internal use by Connect, and provides no backward
 // compatibility guarantees whatsoever.
 package grpc.status.v1;
-option go_package = "dubbo.apache.org/dubbo-go/v3/protocol/grpc_new/connect/proto/connectext/grpc/status/v1;statusv1";
+option go_package = "dubbo.apache.org/dubbo-go/v3/protocol/grpc_new/triple/proto/connectext/grpc/status/v1;statusv1";
 
 import "google/protobuf/any.proto";
 

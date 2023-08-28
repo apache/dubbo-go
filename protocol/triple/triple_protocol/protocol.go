@@ -48,7 +48,7 @@ var errNoTimeout = errors.New("no timeout")
 // messages. It ties together codecs, compressors, and net/http to produce
 // Senders and Receivers.
 //
-// For example, connect supports the gRPC protocol using this abstraction. Among
+// For example, triple supports the gRPC protocol using this abstraction. Among
 // many other things, the protocol implementation is responsible for
 // translating timeouts from Go contexts to HTTP and vice versa. For gRPC, it
 // converts timeouts to and from strings (for example, 10*time.Second <->
@@ -57,7 +57,7 @@ var errNoTimeout = errors.New("no timeout")
 // header, or ignore them entirely.
 //
 // We don't have any short-term plans to export this interface; it's just here
-// to separate the protocol-specific portions of connect from the
+// to separate the protocol-specific portions of triple from the
 // protocol-agnostic plumbing.
 type protocol interface {
 	NewHandler(*protocolHandlerParams) protocolHandler

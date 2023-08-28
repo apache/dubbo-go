@@ -24,14 +24,12 @@ import (
 	"testing/quick"
 	"time"
 	"unicode/utf8"
+
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/assert"
 )
 
 import (
 	"github.com/google/go-cmp/cmp"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/assert"
 )
 
 func TestGRPCHandlerSender(t *testing.T) {
