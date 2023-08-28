@@ -40,14 +40,6 @@ const (
 	NumValidTotal       = "numValidTotal"
 )
 
-const (
-	dubboRegNum       = "dubbo_registry_register_metrics_num"
-	dubboRegRt        = "dubbo_registry_register_metrics_rt"
-	dubboRegServerNum = "dubbo_registry_register_server_metrics_num"
-	dubboRegServerRt  = "dubbo_registry_register_server_metrics_rt"
-	dubboNotifyRt     = "dubbo_notify_rt"
-)
-
 var (
 	// register metrics key
 	RegisterMetricRequests        = metrics.NewMetricKey("dubbo_registry_register_requests_total", "Total Register Requests")
@@ -79,23 +71,11 @@ var (
 	ServiceSubscribeMetricNumFailed  = metrics.NewMetricKey("dubbo_registry_subscribe_service_num_failed_total", "Failed Service-Level Num")
 
 	// register metrics server rt key
-	RegisterServiceRtMillisecondsAvg  = metrics.NewMetricKey("dubbo_register_service_rt_milliseconds_avg", "Average Service Register Time")
-	RegisterServiceRtMillisecondsLast = metrics.NewMetricKey("dubbo_register_service_rt_milliseconds_last", "Last Service Register Time")
-	RegisterServiceRtMillisecondsMax  = metrics.NewMetricKey("dubbo_register_service_rt_milliseconds_max", "Max Service Register Time")
-	RegisterServiceRtMillisecondsMin  = metrics.NewMetricKey("dubbo_register_service_rt_milliseconds_min", "Min Service Register Time")
-	RegisterServiceRtMillisecondsSum  = metrics.NewMetricKey("dubbo_register_service_rt_milliseconds_sum", "Sum Service Register Time")
+	RegisterServiceRt = metrics.NewMetricKey("dubbo_register_service_rt_milliseconds", "Service Register Time")
 
 	// register metrics rt key
-	RegisterRtMillisecondsMax  = metrics.NewMetricKey("dubbo_register_rt_milliseconds_max", "Max Response Time")
-	RegisterRtMillisecondsLast = metrics.NewMetricKey("dubbo_register_rt_milliseconds_last", "Last Response Time")
-	RegisterRtMillisecondsAvg  = metrics.NewMetricKey("dubbo_register_rt_milliseconds_avg", "Average Response Time")
-	RegisterRtMillisecondsSum  = metrics.NewMetricKey("dubbo_register_rt_milliseconds_sum", "Sum Response Time")
-	RegisterRtMillisecondsMin  = metrics.NewMetricKey("dubbo_register_rt_milliseconds_min", "Min Response Time")
+	RegisterRt = metrics.NewMetricKey("dubbo_register_rt_milliseconds", "Response Time")
 
 	// notify rt key
-	NotifyRtMillisecondsAvg  = metrics.NewMetricKey("dubbo_notify_rt_milliseconds_avg", "Average Notify Time")
-	NotifyRtMillisecondsLast = metrics.NewMetricKey("dubbo_notify_rt_milliseconds_last", "Last Notify Time")
-	NotifyRtMillisecondsMax  = metrics.NewMetricKey("dubbo_notify_rt_milliseconds_max", "Max Notify Time")
-	NotifyRtMillisecondsMin  = metrics.NewMetricKey("dubbo_notify_rt_milliseconds_min", "Min Notify Time")
-	NotifyRtMillisecondsSum  = metrics.NewMetricKey("dubbo_notify_rt_milliseconds_sum", "Sum Notify Time")
+	NotifyRt = metrics.NewMetricKey("dubbo_notify_rt_milliseconds", "Notify Time")
 )

@@ -17,17 +17,11 @@
 
 package metrics
 
-import (
-	"sync"
+var (
+	registries = make(map[string]func(*ReporterConfig) MetricRegistry)
+	collectors = make([]CollectorFunc, 0)
+	registry   MetricRegistry
 )
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/metrics/util/aggregate"
-)
-
-var registries = make(map[string]func(*ReporterConfig) MetricRegistry)
-var collectors = make([]CollectorFunc, 0)
-var registry MetricRegistry
 
 // CollectorFunc used to extend more indicators
 type CollectorFunc func(MetricRegistry, *ReporterConfig)
@@ -59,13 +53,20 @@ func AddCollector(name string, fun func(MetricRegistry, *ReporterConfig)) {
 
 // MetricRegistry data container，data compute、expose、agg
 type MetricRegistry interface {
-	Counter(*MetricId) CounterMetric     // add or update a counter
-	Gauge(*MetricId) GaugeMetric         // add or update a gauge
-	Histogram(*MetricId) HistogramMetric // add a metric num to a histogram
-	Summary(*MetricId) SummaryMetric     // add a metric num to a summary
-	Export()                             // expose metric data， such as Prometheus http exporter
+	Counter(*MetricId) CounterMetric        // add or update a counter
+	Gauge(*MetricId) GaugeMetric            // add or update a gauge
+	Histogram(*MetricId) ObservableMetric   // add a metric num to a histogram
+	Summary(*MetricId) ObservableMetric     // add a metric num to a summary
+	Rt(*MetricId, *RtOpts) ObservableMetric // add a metric num to a rt
+	Export()                                // expose metric data， such as Prometheus http exporter
 	// GetMetrics() []*MetricSample // get all metric data
 	// GetMetricsString() (string, error) // get text format metric data
+}
+
+type RtOpts struct {
+	Aggregate         bool
+	BucketNum         int   // only for aggRt
+	TimeWindowSeconds int64 // only for aggRt
 }
 
 // multi registry，like micrometer CompositeMeterRegistry
@@ -131,109 +132,20 @@ type GaugeMetric interface {
 	// Sub(float64)
 }
 
-// HistogramMetric histogram metric
-type HistogramMetric interface {
-	Record(float64)
+// histogram summary rt metric
+type ObservableMetric interface {
+	Observe(float64)
 }
 
-// SummaryMetric summary metric
-type SummaryMetric interface {
-	Record(float64)
+type BaseCollector struct {
+	R MetricRegistry
 }
 
-// StatesMetrics multi metrics，include total,success num, fail num，call MetricsRegistry save data
-type StatesMetrics interface {
-	Success()
-	AddSuccess(float64)
-	Fail()
-	AddFailed(float64)
-	Inc(succ bool)
-}
-
-func NewStatesMetrics(total *MetricId, succ *MetricId, fail *MetricId, reg MetricRegistry) StatesMetrics {
-	return &DefaultStatesMetric{total: total, succ: succ, fail: fail, r: reg}
-}
-
-type DefaultStatesMetric struct {
-	r                 MetricRegistry
-	total, succ, fail *MetricId
-}
-
-func (c DefaultStatesMetric) Inc(succ bool) {
-	if succ {
-		c.Success()
+func (c *BaseCollector) StateCount(total, succ, fail *MetricKey, level MetricLevel, succed bool) {
+	c.R.Counter(NewMetricId(total, level)).Inc()
+	if succed {
+		c.R.Counter(NewMetricId(succ, level)).Inc()
 	} else {
-		c.Fail()
-	}
-}
-func (c DefaultStatesMetric) Success() {
-	c.r.Counter(c.total).Inc()
-	c.r.Counter(c.succ).Inc()
-}
-
-func (c DefaultStatesMetric) AddSuccess(v float64) {
-	c.r.Counter(c.total).Add(v)
-	c.r.Counter(c.succ).Add(v)
-}
-
-func (c DefaultStatesMetric) Fail() {
-	c.r.Counter(c.total).Inc()
-	c.r.Counter(c.fail).Inc()
-}
-
-func (c DefaultStatesMetric) AddFailed(v float64) {
-	c.r.Counter(c.total).Add(v)
-	c.r.Counter(c.fail).Add(v)
-}
-
-// TimeMetric muliti metrics, include min(Gauge)、max(Gauge)、avg(Gauge)、sum(Gauge)、last(Gauge)，call MetricRegistry to expose
-// see dubbo-java org.apache.dubbo.metrics.aggregate.TimeWindowAggregator
-type TimeMetric interface {
-	Record(float64)
-}
-
-const (
-	defaultBucketNum         = 10
-	defalutTimeWindowSeconds = 120
-)
-
-// NewTimeMetric init and write all data to registry
-func NewTimeMetric(min, max, avg, sum, last *MetricId, mr MetricRegistry) TimeMetric {
-	return &DefaultTimeMetric{r: mr, min: min, max: max, avg: avg, sum: sum, last: last,
-		agg: aggregate.NewTimeWindowAggregator(defaultBucketNum, defalutTimeWindowSeconds)}
-}
-
-type DefaultTimeMetric struct {
-	r                        MetricRegistry
-	agg                      *aggregate.TimeWindowAggregator
-	min, max, avg, sum, last *MetricId
-}
-
-func (m *DefaultTimeMetric) Record(v float64) {
-	m.agg.Add(v)
-	result := m.agg.Result()
-	m.r.Gauge(m.max).Set(result.Max)
-	m.r.Gauge(m.min).Set(result.Min)
-	m.r.Gauge(m.avg).Set(result.Avg)
-	m.r.Gauge(m.sum).Set(result.Total)
-	m.r.Gauge(m.last).Set(v)
-}
-
-// cache if needed,  TimeMetrics must cached
-var metricsCache map[string]interface{} = make(map[string]interface{})
-var metricsCacheMutex sync.RWMutex
-
-func ComputeIfAbsentCache(key string, supplier func() interface{}) interface{} {
-	metricsCacheMutex.RLock()
-	v, ok := metricsCache[key]
-	metricsCacheMutex.RUnlock()
-	if ok {
-		return v
-	} else {
-		metricsCacheMutex.Lock()
-		defer metricsCacheMutex.Unlock()
-		n := supplier()
-		metricsCache[key] = n
-		return n
+		c.R.Counter(NewMetricId(fail, level)).Inc()
 	}
 }

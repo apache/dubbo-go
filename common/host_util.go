@@ -31,8 +31,10 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
-var localIp string
-var localHostname string
+var (
+	localIp       string
+	localHostname string
+)
 
 func GetLocalIp() string {
 	if len(localIp) != 0 {
