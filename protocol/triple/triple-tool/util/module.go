@@ -17,7 +17,9 @@
 
 package util
 
-import "strings"
+import (
+	"strings"
+)
 
 func GetModuleName() (string, error) {
 	output, err := Exec("go list -m", "./")

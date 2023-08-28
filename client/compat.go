@@ -26,7 +26,6 @@ import (
 // these functions are used to resolve circular dependencies temporarily.
 // please refer to issue(https://github.com/apache/dubbo-go/issues/2377)
 // todo(DMwangnima): remove these functions when refactoring dubbo-go
-
 func compatApplicationConfig(c *commonCfg.ApplicationConfig) *config.ApplicationConfig {
 	return &config.ApplicationConfig{
 		Organization: c.Organization,
