@@ -28,10 +28,8 @@ import (
 	"strings"
 	"time"
 	"unicode/utf8"
-)
 
-import (
-	statusv1 "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/proto/connectext/grpc/status/v1"
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/proto/connectext/grpc/status/v1"
 )
 
 // protocol specification headers
@@ -88,8 +86,7 @@ func init() {
 	}
 }
 
-type protocolGRPC struct {
-}
+type protocolGRPC struct{}
 
 // for server side
 

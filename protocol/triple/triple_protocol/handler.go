@@ -55,7 +55,7 @@ func NewUnaryHandler(
 		if res == nil && err == nil {
 			// This is going to panic during serialization. Debugging is much easier
 			// if we panic here instead, so we can include the procedure name.
-			panic(fmt.Sprintf("%s returned nil *connect.Response and nil error", procedure)) //nolint: forbidigo
+			panic(fmt.Sprintf("%s returned nil *triple.Response and nil error", procedure)) //nolint: forbidigo
 		}
 		return res, err
 	})
@@ -69,7 +69,7 @@ func NewUnaryHandler(
 	// Given a stream, how should we call the unary function?
 	implementation := func(ctx context.Context, conn StreamingHandlerConn) error {
 		req := reqInitFunc()
-		if err := conn.Receive(&req); err != nil {
+		if err := conn.Receive(req); err != nil {
 			return err
 		}
 		// wrap the specific msg
@@ -116,7 +116,7 @@ func NewClientStreamHandler(
 			if res == nil {
 				// This is going to panic during serialization. Debugging is much easier
 				// if we panic here instead, so we can include the procedure name.
-				panic(fmt.Sprintf("%s returned nil *connect.Response and nil error", procedure)) //nolint: forbidigo
+				panic(fmt.Sprintf("%s returned nil *triple.Response and nil error", procedure)) //nolint: forbidigo
 			}
 			mergeHeaders(conn.ResponseHeader(), res.header)
 			mergeHeaders(conn.ResponseTrailer(), res.trailer)

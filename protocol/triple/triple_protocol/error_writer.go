@@ -107,8 +107,8 @@ func (w *ErrorWriter) Write(response http.ResponseWriter, request *http.Request,
 }
 
 func (w *ErrorWriter) writeConnectUnary(response http.ResponseWriter, err error) error {
-	if connectErr, ok := asError(err); ok {
-		mergeHeaders(response.Header(), connectErr.meta)
+	if tripleErr, ok := asError(err); ok {
+		mergeHeaders(response.Header(), tripleErr.meta)
 	}
 	response.WriteHeader(tripleCodeToHTTP(CodeOf(err)))
 	data, marshalErr := json.Marshal(newTripleWireError(err))

@@ -16,7 +16,7 @@
 // versions:
 // 	protoc-gen-go v1.30.0
 // 	protoc        v3.17.3
-// source: protocol/grpc_new/connect/proto/connectext/grpc/status/v1/status.proto
+// source: protocol/grpc_new/triple/proto/connectext/grpc/status/v1/status.proto
 
 // This package is for internal use by Connect, and provides no backward
 // compatibility guarantees whatsoever.

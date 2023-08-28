@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package connect is a slim RPC framework built on Protocol Buffers and
+// Package triple is a slim RPC framework built on Protocol Buffers and
 // [net/http]. In addition to supporting its own protocol, Connect handlers and
 // clients are wire-compatible with gRPC and gRPC-Web, including streaming.
 //
@@ -326,15 +326,15 @@ func receiveUnaryResponse(conn StreamingClientConn, response AnyResponse) error 
 		// todo: add a more reasonable sentence
 		panic("wrong type")
 	}
-	if err := conn.Receive(&resp.Msg); err != nil {
+	if err := conn.Receive(resp.Msg); err != nil {
 		return err
 	}
 	// In a well-formed stream, the response message may be followed by a block
 	// of in-stream trailers or HTTP trailers. To ensure that we receive the
 	// trailers, try to read another message from the stream.
-	//if err := conn.Receive(new(T)); err == nil {
+	// if err := conn.Receive(new(T)); err == nil {
 	// todo:// maybe using copy method
-	if err := conn.Receive(&resp.Msg); err == nil {
+	if err := conn.Receive(resp.Msg); err == nil {
 		return NewError(CodeUnknown, errors.New("unary stream has multiple messages"))
 	} else if err != nil && !errors.Is(err, io.EOF) {
 		return NewError(CodeUnknown, err)

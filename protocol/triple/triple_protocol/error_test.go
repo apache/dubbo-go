@@ -20,6 +20,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/assert"
 )
 
 import (
@@ -27,10 +29,6 @@ import (
 
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/emptypb"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/assert"
 )
 
 func TestErrorNilUnderlying(t *testing.T) {
@@ -68,9 +66,9 @@ func TestErrorCode(t *testing.T) {
 		"another: %w",
 		NewError(CodeUnavailable, errors.New("foo")),
 	)
-	connectErr, ok := asError(err)
+	tripleErr, ok := asError(err)
 	assert.True(t, ok)
-	assert.Equal(t, connectErr.Code(), CodeUnavailable)
+	assert.Equal(t, tripleErr.Code(), CodeUnavailable)
 }
 
 func TestCodeOf(t *testing.T) {
@@ -88,11 +86,11 @@ func TestErrorDetails(t *testing.T) {
 	second := durationpb.New(time.Second)
 	detail, err := NewErrorDetail(second)
 	assert.Nil(t, err)
-	connectErr := NewError(CodeUnknown, errors.New("error with details"))
-	assert.Zero(t, connectErr.Details())
-	connectErr.AddDetail(detail)
-	assert.Equal(t, len(connectErr.Details()), 1)
-	unmarshaled, err := connectErr.Details()[0].Value()
+	tripleErr := NewError(CodeUnknown, errors.New("error with details"))
+	assert.Zero(t, tripleErr.Details())
+	tripleErr.AddDetail(detail)
+	assert.Equal(t, len(tripleErr.Details()), 1)
+	unmarshaled, err := tripleErr.Details()[0].Value()
 	assert.Nil(t, err)
 	assert.Equal(t, unmarshaled, proto.Message(second))
 	secondBin, err := proto.Marshal(second)
@@ -109,7 +107,7 @@ func TestErrorIs(t *testing.T) {
 	assert.True(t, errors.Is(err, err))
 	// Our errors should have the same semantics. Note that we'd need to extend
 	// the ErrorDetail interface to support value equality.
-	connectErr := NewError(CodeUnavailable, err)
-	assert.False(t, errors.Is(connectErr, NewError(CodeUnavailable, err)))
-	assert.True(t, errors.Is(connectErr, connectErr))
+	tripleErr := NewError(CodeUnavailable, err)
+	assert.False(t, errors.Is(tripleErr, NewError(CodeUnavailable, err)))
+	assert.True(t, errors.Is(tripleErr, tripleErr))
 }
