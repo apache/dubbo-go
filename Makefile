@@ -68,11 +68,6 @@ license: clean prepareLic
 .PHONY: verify
 verify: clean license test
 
-.PHONE: fmt
-fmt:
-	$(GO_GET) -u github.com/dubbogo/tools/cmd/imports-formatter
-	imports-formatter
-
 .PHONY: clean
 clean: prepare
 	rm -rf coverage.txt
