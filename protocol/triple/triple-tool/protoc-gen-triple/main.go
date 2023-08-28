@@ -18,13 +18,20 @@
 package main
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/triple-tool/gen/generator"
-	"dubbo.apache.org/dubbo-go/v3/triple-tool/internal/version"
 	"fmt"
-	"google.golang.org/protobuf/compiler/protogen"
-	"google.golang.org/protobuf/types/pluginpb"
 	"os"
 	"path/filepath"
+)
+
+import (
+	"google.golang.org/protobuf/compiler/protogen"
+
+	"google.golang.org/protobuf/types/pluginpb"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/triple-tool/gen/generator"
+	"dubbo.apache.org/dubbo-go/v3/triple-tool/internal/version"
 )
 
 const (

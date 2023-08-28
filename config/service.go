@@ -26,19 +26,16 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/client"
 	"dubbo.apache.org/dubbo-go/v3/common"
 )
 
 var (
-	conServicesLock              = sync.Mutex{}                               // used to guard conServices map.
-	conServices                  = map[string]common.RPCService{}             // service name -> service
-	proServicesLock              = sync.Mutex{}                               // used to guard proServices map
-	proServices                  = map[string]common.RPCService{}             // service name -> service
-	interfaceNameConServicesLock = sync.Mutex{}                               // used to guard interfaceNameConServices map
-	interfaceNameConServices     = map[string]common.RPCService{}             // interfaceName -> service
-	clientInfoServicesLock       = sync.Mutex{}                               // used to guard clientInfoServices map
-	clientInfoServices           = map[*client.ClientInfo]common.RPCService{} // ClientInfo -> service
+	conServicesLock              = sync.Mutex{}                   // used to guard conServices map.
+	conServices                  = map[string]common.RPCService{} // service name -> service
+	proServicesLock              = sync.Mutex{}                   // used to guard proServices map
+	proServices                  = map[string]common.RPCService{} // service name -> service
+	interfaceNameConServicesLock = sync.Mutex{}                   // used to guard interfaceNameConServices map
+	interfaceNameConServices     = map[string]common.RPCService{} // interfaceName -> service
 )
 
 // SetConsumerService is called by init() of implement of RPCService
@@ -110,17 +107,9 @@ func GetCallback(name string) func(response common.CallbackResponse) {
 	return nil
 }
 
-// SetClientInfoService set new info and service into clientInfosServices if new info and service are not nil
-func SetClientInfoService(info *client.ClientInfo, srv common.RPCService) {
-	if info == nil || info.ClientInjectFunc == nil || srv == nil {
-		return
-	}
-	clientInfoServicesLock.Lock()
-	defer clientInfoServicesLock.Unlock()
-	clientInfoServices[info] = srv
-}
-
-// GetClientInfoServicesMap returns clientInfoServices
-func GetClientInfoServicesMap() map[*client.ClientInfo]common.RPCService {
-	return clientInfoServices
-}
+// SetClientInfoService is used by new Triple generated code
+// use interface{} to represent info because config package can not depend on client package.
+// When refactoring work finished, this info should be with *client.ClientInfo type and this
+// function would be implemented.
+// todo(DMWangnima): refactor and implement this function
+func SetClientInfoService(info interface{}, service common.RPCService) {}

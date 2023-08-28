@@ -18,8 +18,245 @@
 package config
 
 import (
+	"net/url"
+	"strconv"
+	"strings"
+)
+
+import (
+	"github.com/creasty/defaults"
+
+	"github.com/dubbogo/gost/log/logger"
+
+	perrors "github.com/pkg/errors"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/config/instance"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
+
+// RegistryConfig is the configuration of the registry center
+type RegistryConfig struct {
+	Protocol          string            `validate:"required" yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
+	Timeout           string            `default:"5s" validate:"required" yaml:"timeout" json:"timeout,omitempty" property:"timeout"` // unit: second
+	Group             string            `yaml:"group" json:"group,omitempty" property:"group"`
+	Namespace         string            `yaml:"namespace" json:"namespace,omitempty" property:"namespace"`
+	TTL               string            `default:"15m" yaml:"ttl" json:"ttl,omitempty" property:"ttl"` // unit: minute
+	Address           string            `validate:"required" yaml:"address" json:"address,omitempty" property:"address"`
+	Username          string            `yaml:"username" json:"username,omitempty" property:"username"`
+	Password          string            `yaml:"password" json:"password,omitempty"  property:"password"`
+	Simplified        bool              `yaml:"simplified" json:"simplified,omitempty"  property:"simplified"`
+	Preferred         bool              `yaml:"preferred" json:"preferred,omitempty" property:"preferred"` // Always use this registry first if set to true, useful when subscribe to multiple registriesConfig
+	Zone              string            `yaml:"zone" json:"zone,omitempty" property:"zone"`                // The region where the registry belongs, usually used to isolate traffics
+	Weight            int64             `yaml:"weight" json:"weight,omitempty" property:"weight"`          // Affects traffic distribution among registriesConfig, useful when subscribe to multiple registriesConfig Take effect only when no preferred registry is specified.
+	Params            map[string]string `yaml:"params" json:"params,omitempty" property:"params"`
+	RegistryType      string            `yaml:"registry-type"`
+	UseAsMetaReport   bool              `default:"true" yaml:"use-as-meta-report" json:"use-as-meta-report,omitempty" property:"use-as-meta-report"`
+	UseAsConfigCenter bool              `default:"true" yaml:"use-as-config-center" json:"use-as-config-center,omitempty" property:"use-as-config-center"`
+}
+
+// Prefix dubbo.registries
+func (RegistryConfig) Prefix() string {
+	return constant.RegistryConfigPrefix
+}
+
+func (c *RegistryConfig) Init() error {
+	if err := defaults.Set(c); err != nil {
+		return err
+	}
+	return c.startRegistryConfig()
+}
+
+func (c *RegistryConfig) getUrlMap(roleType common.RoleType) url.Values {
+	urlMap := url.Values{}
+	urlMap.Set(constant.RegistryGroupKey, c.Group)
+	urlMap.Set(constant.RegistryRoleKey, strconv.Itoa(int(roleType)))
+	urlMap.Set(constant.RegistryKey, c.Protocol)
+	urlMap.Set(constant.RegistryTimeoutKey, c.Timeout)
+	// multi registry invoker weight label for load balance
+	urlMap.Set(constant.RegistryKey+"."+constant.RegistryLabelKey, strconv.FormatBool(true))
+	urlMap.Set(constant.RegistryKey+"."+constant.PreferredKey, strconv.FormatBool(c.Preferred))
+	urlMap.Set(constant.RegistryKey+"."+constant.RegistryZoneKey, c.Zone)
+	urlMap.Set(constant.RegistryKey+"."+constant.WeightKey, strconv.FormatInt(c.Weight, 10))
+	urlMap.Set(constant.RegistryTTLKey, c.TTL)
+	urlMap.Set(constant.ClientNameKey, clientNameID(c, c.Protocol, c.Address))
+
+	for k, v := range c.Params {
+		urlMap.Set(k, v)
+	}
+	return urlMap
+}
+
+func (c *RegistryConfig) startRegistryConfig() error {
+	c.translateRegistryAddress()
+	if c.UseAsMetaReport && isValid(c.Address) {
+		if tmpUrl, err := c.toMetadataReportUrl(); err == nil {
+			instance.SetMetadataReportInstanceByReg(tmpUrl)
+		} else {
+			return perrors.Wrap(err, "Start RegistryConfig failed.")
+		}
+	}
+	return verify(c)
+}
+
+// toMetadataReportUrl translate the registry configuration to the metadata reporting url
+func (c *RegistryConfig) toMetadataReportUrl() (*common.URL, error) {
+	res, err := common.NewURL(c.Address,
+		common.WithLocation(c.Address),
+		common.WithProtocol(c.Protocol),
+		common.WithUsername(c.Username),
+		common.WithPassword(c.Password),
+		common.WithParamsValue(constant.TimeoutKey, c.Timeout),
+		common.WithParamsValue(constant.ClientNameKey, clientNameID(c, c.Protocol, c.Address)),
+		common.WithParamsValue(constant.MetadataReportGroupKey, c.Group),
+		common.WithParamsValue(constant.MetadataReportNamespaceKey, c.Namespace),
+	)
+	if err != nil || len(res.Protocol) == 0 {
+		return nil, perrors.New("Invalid Registry Config.")
+	}
+	return res, nil
+}
+
+// translateRegistryAddress translate registry address
+//
+//	eg:address=nacos://127.0.0.1:8848 will return 127.0.0.1:8848 and protocol will set nacos
+func (c *RegistryConfig) translateRegistryAddress() string {
+	if strings.Contains(c.Address, "://") {
+		u, err := url.Parse(c.Address)
+		if err != nil {
+			logger.Errorf("The registry url is invalid, error: %#v", err)
+			panic(err)
+		}
+		c.Protocol = u.Scheme
+		c.Address = strings.Join([]string{u.Host, u.Path}, "")
+	}
+	return c.Address
+}
+
+func (c *RegistryConfig) GetInstance(roleType common.RoleType) (registry.Registry, error) {
+	u, err := c.toURL(roleType)
+	if err != nil {
+		return nil, err
+	}
+	// if the protocol == registry, set protocol the registry value in url.params
+	if u.Protocol == constant.RegistryProtocol {
+		u.Protocol = u.GetParam(constant.RegistryKey, "")
+	}
+	return extension.GetRegistry(u.Protocol, u)
+}
+
+func (c *RegistryConfig) toURL(roleType common.RoleType) (*common.URL, error) {
+	address := c.translateRegistryAddress()
+	var registryURLProtocol string
+	if c.RegistryType == constant.RegistryTypeService {
+		// service discovery protocol
+		registryURLProtocol = constant.ServiceRegistryProtocol
+	} else if c.RegistryType == constant.RegistryTypeInterface {
+		registryURLProtocol = constant.RegistryProtocol
+	} else {
+		registryURLProtocol = constant.ServiceRegistryProtocol
+	}
+	return common.NewURL(registryURLProtocol+"://"+address,
+		common.WithParams(c.getUrlMap(roleType)),
+		common.WithParamsValue(constant.RegistrySimplifiedKey, strconv.FormatBool(c.Simplified)),
+		common.WithParamsValue(constant.RegistryKey, c.Protocol),
+		common.WithParamsValue(constant.RegistryNamespaceKey, c.Namespace),
+		common.WithParamsValue(constant.RegistryTimeoutKey, c.Timeout),
+		common.WithUsername(c.Username),
+		common.WithPassword(c.Password),
+		common.WithLocation(c.Address),
+	)
+}
+
+func (c *RegistryConfig) toURLs(roleType common.RoleType) ([]*common.URL, error) {
+	address := c.translateRegistryAddress()
+	var urls []*common.URL
+	var err error
+	var registryURL *common.URL
+
+	if !isValid(c.Address) {
+		logger.Infof("Empty or N/A registry address found, the process will work with no registry enabled " +
+			"which means that the address of this instance will not be registered and not able to be found by other consumer instances.")
+		return urls, nil
+	}
+
+	if c.RegistryType == constant.RegistryTypeService {
+		// service discovery protocol
+		if registryURL, err = c.createNewURL(constant.ServiceRegistryProtocol, address, roleType); err == nil {
+			urls = append(urls, registryURL)
+		}
+	} else if c.RegistryType == constant.RegistryTypeInterface {
+		if registryURL, err = c.createNewURL(constant.RegistryProtocol, address, roleType); err == nil {
+			urls = append(urls, registryURL)
+		}
+	} else if c.RegistryType == constant.RegistryTypeAll {
+		if registryURL, err = c.createNewURL(constant.ServiceRegistryProtocol, address, roleType); err == nil {
+			urls = append(urls, registryURL)
+		}
+		if registryURL, err = c.createNewURL(constant.RegistryProtocol, address, roleType); err == nil {
+			urls = append(urls, registryURL)
+		}
+	} else {
+		if registryURL, err = c.createNewURL(constant.ServiceRegistryProtocol, address, roleType); err == nil {
+			urls = append(urls, registryURL)
+		}
+	}
+	return urls, err
+}
+
+func LoadRegistries(registryIds []string, registries map[string]*RegistryConfig, roleType common.RoleType) []*common.URL {
+	var registryURLs []*common.URL
+	//trSlice := strings.Split(targetRegistries, ",")
+
+	for k, registryConf := range registries {
+		target := false
+
+		// if user not config targetRegistries, default load all
+		// Notice: in func "func Split(s, sep string) []string" comment:
+		// if s does not contain sep and sep is not empty, SplitAfter returns
+		// a slice of length 1 whose only element is s. So we have to add the
+		// condition when targetRegistries string is not set (it will be "" when not set)
+		if len(registryIds) == 0 || (len(registryIds) == 1 && registryIds[0] == "") {
+			target = true
+		} else {
+			// else if user config targetRegistries
+			for _, tr := range registryIds {
+				if tr == k {
+					target = true
+					break
+				}
+			}
+		}
+
+		if target {
+			if urls, err := registryConf.toURLs(roleType); err != nil {
+				logger.Errorf("The registry id: %s url is invalid, error: %#v", k, err)
+				panic(err)
+			} else {
+				registryURLs = append(registryURLs, urls...)
+			}
+		}
+	}
+
+	return registryURLs
+}
+
+func (c *RegistryConfig) createNewURL(protocol string, address string, roleType common.RoleType) (*common.URL, error) {
+	return common.NewURL(protocol+"://"+address,
+		common.WithParams(c.getUrlMap(roleType)),
+		common.WithParamsValue(constant.RegistrySimplifiedKey, strconv.FormatBool(c.Simplified)),
+		common.WithParamsValue(constant.RegistryKey, c.Protocol),
+		common.WithParamsValue(constant.RegistryNamespaceKey, c.Namespace),
+		common.WithParamsValue(constant.RegistryTimeoutKey, c.Timeout),
+		common.WithUsername(c.Username),
+		common.WithPassword(c.Password),
+		common.WithLocation(c.Address),
+	)
+}
 
 const (
 	defaultZKAddr          = "127.0.0.1:2181" // default registry address of zookeeper
@@ -27,35 +264,35 @@ const (
 	defaultRegistryTimeout = "3s"             // the default registry timeout
 )
 
-type RegistryConfigOpt func(config *registry.RegistryConfig) *registry.RegistryConfig
+type RegistryConfigOpt func(config *RegistryConfig) *RegistryConfig
 
 // NewRegistryConfigWithProtocolDefaultPort New default registry config
 // the input @protocol can only be:
 // "zookeeper" with default addr "127.0.0.1:2181"
 // "nacos" with default addr "127.0.0.1:8848"
-func NewRegistryConfigWithProtocolDefaultPort(protocol string) *registry.RegistryConfig {
+func NewRegistryConfigWithProtocolDefaultPort(protocol string) *RegistryConfig {
 	switch protocol {
 	case "zookeeper":
-		return &registry.RegistryConfig{
+		return &RegistryConfig{
 			Protocol: protocol,
 			Address:  defaultZKAddr,
 			Timeout:  defaultRegistryTimeout,
 		}
 	case "nacos":
-		return &registry.RegistryConfig{
+		return &RegistryConfig{
 			Protocol: protocol,
 			Address:  defaultNacosAddr,
 			Timeout:  defaultRegistryTimeout,
 		}
 	default:
-		return &registry.RegistryConfig{
+		return &RegistryConfig{
 			Protocol: protocol,
 		}
 	}
 }
 
-// NewRegistryConfig creates New registry.RegistryConfig with @opts
-func NewRegistryConfig(opts ...RegistryConfigOpt) *registry.RegistryConfig {
+// NewRegistryConfig creates New RegistryConfig with @opts
+func NewRegistryConfig(opts ...RegistryConfigOpt) *RegistryConfig {
 	newRegistryConfig := NewRegistryConfigWithProtocolDefaultPort("")
 	for _, v := range opts {
 		newRegistryConfig = v(newRegistryConfig)
@@ -65,7 +302,7 @@ func NewRegistryConfig(opts ...RegistryConfigOpt) *registry.RegistryConfig {
 
 // WithRegistryProtocol returns RegistryConfigOpt with given @regProtocol name
 func WithRegistryProtocol(regProtocol string) RegistryConfigOpt {
-	return func(config *registry.RegistryConfig) *registry.RegistryConfig {
+	return func(config *RegistryConfig) *RegistryConfig {
 		config.Protocol = regProtocol
 		return config
 	}
@@ -73,7 +310,7 @@ func WithRegistryProtocol(regProtocol string) RegistryConfigOpt {
 
 // WithRegistryAddress returns RegistryConfigOpt with given @addr registry address
 func WithRegistryAddress(addr string) RegistryConfigOpt {
-	return func(config *registry.RegistryConfig) *registry.RegistryConfig {
+	return func(config *RegistryConfig) *RegistryConfig {
 		config.Address = addr
 		return config
 	}
@@ -81,7 +318,7 @@ func WithRegistryAddress(addr string) RegistryConfigOpt {
 
 // WithRegistryTimeOut returns RegistryConfigOpt with given @timeout registry config
 func WithRegistryTimeOut(timeout string) RegistryConfigOpt {
-	return func(config *registry.RegistryConfig) *registry.RegistryConfig {
+	return func(config *RegistryConfig) *RegistryConfig {
 		config.Timeout = timeout
 		return config
 	}
@@ -89,7 +326,7 @@ func WithRegistryTimeOut(timeout string) RegistryConfigOpt {
 
 // WithRegistryGroup returns RegistryConfigOpt with given @group registry group
 func WithRegistryGroup(group string) RegistryConfigOpt {
-	return func(config *registry.RegistryConfig) *registry.RegistryConfig {
+	return func(config *RegistryConfig) *RegistryConfig {
 		config.Group = group
 		return config
 	}
@@ -97,7 +334,7 @@ func WithRegistryGroup(group string) RegistryConfigOpt {
 
 // WithRegistryTTL returns RegistryConfigOpt with given @ttl registry ttl
 func WithRegistryTTL(ttl string) RegistryConfigOpt {
-	return func(config *registry.RegistryConfig) *registry.RegistryConfig {
+	return func(config *RegistryConfig) *RegistryConfig {
 		config.TTL = ttl
 		return config
 	}
@@ -105,7 +342,7 @@ func WithRegistryTTL(ttl string) RegistryConfigOpt {
 
 // WithRegistryUserName returns RegistryConfigOpt with given @userName registry userName
 func WithRegistryUserName(userName string) RegistryConfigOpt {
-	return func(config *registry.RegistryConfig) *registry.RegistryConfig {
+	return func(config *RegistryConfig) *RegistryConfig {
 		config.Username = userName
 		return config
 	}
@@ -113,7 +350,7 @@ func WithRegistryUserName(userName string) RegistryConfigOpt {
 
 // WithRegistryPassword returns RegistryConfigOpt with given @psw registry password
 func WithRegistryPassword(psw string) RegistryConfigOpt {
-	return func(config *registry.RegistryConfig) *registry.RegistryConfig {
+	return func(config *RegistryConfig) *RegistryConfig {
 		config.Password = psw
 		return config
 	}
@@ -121,15 +358,15 @@ func WithRegistryPassword(psw string) RegistryConfigOpt {
 
 // WithRegistrySimplified returns RegistryConfigOpt with given @simplified registry simplified flag
 func WithRegistrySimplified(simplified bool) RegistryConfigOpt {
-	return func(config *registry.RegistryConfig) *registry.RegistryConfig {
+	return func(config *RegistryConfig) *RegistryConfig {
 		config.Simplified = simplified
 		return config
 	}
 }
 
-// WithRegistryPreferred returns registry.RegistryConfig with given @preferred registry preferred flag
+// WithRegistryPreferred returns RegistryConfig with given @preferred registry preferred flag
 func WithRegistryPreferred(preferred bool) RegistryConfigOpt {
-	return func(config *registry.RegistryConfig) *registry.RegistryConfig {
+	return func(config *RegistryConfig) *RegistryConfig {
 		config.Preferred = preferred
 		return config
 	}
@@ -137,7 +374,7 @@ func WithRegistryPreferred(preferred bool) RegistryConfigOpt {
 
 // WithRegistryWeight returns RegistryConfigOpt with given @weight registry weight flag
 func WithRegistryWeight(weight int64) RegistryConfigOpt {
-	return func(config *registry.RegistryConfig) *registry.RegistryConfig {
+	return func(config *RegistryConfig) *RegistryConfig {
 		config.Weight = weight
 		return config
 	}
@@ -145,7 +382,7 @@ func WithRegistryWeight(weight int64) RegistryConfigOpt {
 
 // WithRegistryParams returns RegistryConfigOpt with given registry @params
 func WithRegistryParams(params map[string]string) RegistryConfigOpt {
-	return func(config *registry.RegistryConfig) *registry.RegistryConfig {
+	return func(config *RegistryConfig) *RegistryConfig {
 		config.Params = params
 		return config
 	}
@@ -153,12 +390,12 @@ func WithRegistryParams(params map[string]string) RegistryConfigOpt {
 
 func NewRegistryConfigBuilder() *RegistryConfigBuilder {
 	return &RegistryConfigBuilder{
-		registryConfig: &registry.RegistryConfig{},
+		registryConfig: &RegistryConfig{},
 	}
 }
 
 type RegistryConfigBuilder struct {
-	registryConfig *registry.RegistryConfig
+	registryConfig *RegistryConfig
 }
 
 func (rcb *RegistryConfigBuilder) SetProtocol(protocol string) *RegistryConfigBuilder {
@@ -239,9 +476,18 @@ func (rcb *RegistryConfigBuilder) SetRegistryType(registryType string) *Registry
 	return rcb
 }
 
-func (rcb *RegistryConfigBuilder) Build() *registry.RegistryConfig {
+func (rcb *RegistryConfigBuilder) Build() *RegistryConfig {
 	if err := rcb.registryConfig.Init(); err != nil {
 		panic(err)
 	}
 	return rcb.registryConfig
+}
+
+// DynamicUpdateProperties update registry
+func (c *RegistryConfig) DynamicUpdateProperties(updateRegistryConfig *RegistryConfig) {
+	// if nacos's registry timeout not equal local root config's registry timeout , update.
+	if updateRegistryConfig != nil && updateRegistryConfig.Timeout != c.Timeout {
+		c.Timeout = updateRegistryConfig.Timeout
+		logger.Infof("RegistryConfigs Timeout was dynamically updated, new value:%v", c.Timeout)
+	}
 }

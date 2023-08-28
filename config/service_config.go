@@ -209,7 +209,12 @@ func (s *ServiceConfig) IsExport() bool {
 func getRandomPort(protocolConfigs []*ProtocolConfig) *list.List {
 	ports := list.New()
 	for _, proto := range protocolConfigs {
-		if len(proto.Port) > 0 {
+		if port, err := strconv.Atoi(proto.Port); err != nil {
+			logger.Infof(
+				"%s will be assgined to a random port, since the port is an invalid number",
+				proto.Name,
+			)
+		} else if port > 0 {
 			continue
 		}
 
@@ -238,7 +243,7 @@ func (s *ServiceConfig) Export() error {
 
 	regUrls := make([]*common.URL, 0)
 	if !s.NotRegister {
-		regUrls = loadRegistries(s.RegistryIDs, s.RCRegistriesMap, common.PROVIDER)
+		regUrls = LoadRegistries(s.RegistryIDs, s.RCRegistriesMap, common.PROVIDER)
 	}
 
 	urlMap := s.getUrlMap()

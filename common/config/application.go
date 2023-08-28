@@ -17,15 +17,7 @@
 
 package config
 
-import (
-	"github.com/creasty/defaults"
-
-	"github.com/pkg/errors"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
-)
+// todo(DMwangnima): think about the location of this type of configuration.
 
 // ApplicationConfig is a configuration for current applicationConfig, whether the applicationConfig is a provider or a consumer
 type ApplicationConfig struct {
@@ -39,29 +31,6 @@ type ApplicationConfig struct {
 	// the metadata type. remote or local
 	MetadataType string `default:"local" yaml:"metadata-type" json:"metadataType,omitempty" property:"metadataType"`
 	Tag          string `yaml:"tag" json:"tag,omitempty" property:"tag"`
-}
-
-// Prefix dubbo.application
-func (ac *ApplicationConfig) Prefix() string {
-	return constant.ApplicationConfigPrefix
-}
-
-// Init  application config and set default value
-func (ac *ApplicationConfig) Init() error {
-	if ac == nil {
-		return errors.New("application is null")
-	}
-	if err := ac.check(); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (ac *ApplicationConfig) check() error {
-	if err := defaults.Set(ac); err != nil {
-		return err
-	}
-	return Verify(ac)
 }
 
 type ApplicationOption func(*ApplicationConfig)
