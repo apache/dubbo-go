@@ -75,6 +75,20 @@ func NewNacosListener(url, regURL *common.URL, namingClient *nacosClient.NacosNa
 	return listener, err
 }
 
+// NewNacosListener creates a data listener for nacos
+func NewNacosListenerWithServiceName(serviceName string, url, regURL *common.URL, namingClient *nacosClient.NacosNamingClient) (*nacosListener, error) {
+	listener := &nacosListener{
+		namingClient: namingClient,
+		listenURL:    url,
+		regURL:       regURL,
+		events:       gxchan.NewUnboundedChan(32),
+		instanceMap:  map[string]model.Instance{},
+		done:         make(chan struct{}),
+	}
+	err := listener.startListenWithServiceName(serviceName)
+	return listener, err
+}
+
 func generateUrl(instance model.Instance) *common.URL {
 	if instance.Metadata == nil {
 		logger.Errorf("nacos instance metadata is empty,instance:%+v", instance)
@@ -179,6 +193,23 @@ func (nl *nacosListener) startListen() error {
 		return perrors.New("nacos naming namingClient stopped")
 	}
 	nl.subscribeParam = createSubscribeParam(nl.listenURL, nl.regURL, nl.Callback)
+	if nl.subscribeParam == nil {
+		return perrors.New("create nacos subscribeParam failed")
+	}
+	go func() {
+		err := nl.namingClient.Client().Subscribe(nl.subscribeParam)
+		if err == nil {
+			listenerCache.Store(nl.subscribeParam.ServiceName+nl.subscribeParam.GroupName, nl)
+		}
+	}()
+	return nil
+}
+
+func (nl *nacosListener) startListenWithServiceName(serviceName string) error {
+	if nl.namingClient == nil {
+		return perrors.New("nacos naming namingClient stopped")
+	}
+	nl.subscribeParam = createSubscribeParamWithServiceName(serviceName, nl.regURL, nl.Callback)
 	if nl.subscribeParam == nil {
 		return perrors.New("create nacos subscribeParam failed")
 	}
