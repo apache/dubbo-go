@@ -11,6 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 package triple_protocol_test
 
 import (
@@ -48,6 +49,28 @@ func TestNewClient_InitFailure(t *testing.T) {
 		err := client.Ping(context.Background(), triple.NewRequest(&pingv1.PingRequest{}), triple.NewResponse(&pingv1.PingResponse{}))
 		validateExpectedError(t, err)
 	})
+
+	t.Run("bidi", func(t *testing.T) {
+		t.Parallel()
+		bidiStream, err := client.CumSum(context.Background())
+		validateExpectedError(t, err)
+		err = bidiStream.Send(&pingv1.CumSumRequest{})
+		validateExpectedError(t, err)
+	})
+
+	t.Run("client_stream", func(t *testing.T) {
+		t.Parallel()
+		clientStream, err := client.Sum(context.Background())
+		validateExpectedError(t, err)
+		err = clientStream.Send(&pingv1.SumRequest{})
+		validateExpectedError(t, err)
+	})
+
+	t.Run("server_stream", func(t *testing.T) {
+		t.Parallel()
+		_, err := client.CountUp(context.Background(), triple.NewRequest(&pingv1.CountUpRequest{Number: 3}))
+		validateExpectedError(t, err)
+	})
 }
 
 func TestClientPeer(t *testing.T) {
@@ -59,7 +82,7 @@ func TestClientPeer(t *testing.T) {
 	server.StartTLS()
 	t.Cleanup(server.Close)
 
-	run := func(t *testing.T, opts ...triple.ClientOption) {
+	run := func(t *testing.T, streamFlag bool, opts ...triple.ClientOption) {
 		t.Helper()
 		client := pingv1connect.NewPingServiceClient(
 			server.Client(),
@@ -69,51 +92,55 @@ func TestClientPeer(t *testing.T) {
 		)
 		ctx := context.Background()
 		// unary
-		var message *pingv1.PingRequest
-		err := client.Ping(ctx, triple.NewRequest(message), triple.NewResponse(&pingv1.PingResponse{}))
+		err := client.Ping(ctx, triple.NewRequest(&pingv1.PingRequest{}), triple.NewResponse(&pingv1.PingResponse{}))
 		assert.Nil(t, err)
 		text := strings.Repeat(".", 256)
-		msg := &pingv1.PingResponse{}
-		err = client.Ping(ctx, triple.NewRequest(&pingv1.PingRequest{Text: text}), triple.NewResponse(msg))
+		resp := &pingv1.PingResponse{}
+		err = client.Ping(ctx, triple.NewRequest(&pingv1.PingRequest{Text: text}), triple.NewResponse(resp))
 		assert.Nil(t, err)
-		assert.Equal(t, msg.Text, text)
-		////client streaming
-		//clientStream, err := client.Sum(ctx)
-		//assert.Nil(t, err)
-		//t.Cleanup(func() {
-		//	closeErr := clientStream.CloseAndReceive(triple.NewResponse(&pingv1.SumResponse{}))
-		//	assert.Nil(t, closeErr)
-		//})
-		//assert.NotZero(t, clientStream.Peer().Addr)
-		//assert.NotZero(t, clientStream.Peer().Protocol)
-		//err = clientStream.Send(&pingv1.SumRequest{})
-		//assert.Nil(t, err)
-		////server streaming
-		//serverStream, err := client.CountUp(ctx, triple.NewRequest(&pingv1.CountUpRequest{}))
-		//t.Cleanup(func() {
-		//	assert.Nil(t, serverStream.Close())
-		//})
-		//assert.Nil(t, err)
-		//// bidi streaming
-		//bidiStream, err := client.CumSum(ctx)
-		//assert.Nil(t, err)
-		//t.Cleanup(func() {
-		//	assert.Nil(t, bidiStream.CloseRequest())
-		//	assert.Nil(t, bidiStream.CloseResponse())
-		//})
-		//assert.NotZero(t, bidiStream.Peer().Addr)
-		//assert.NotZero(t, bidiStream.Peer().Protocol)
-		//err = bidiStream.Send(&pingv1.CumSumRequest{})
-		//assert.Nil(t, err)
+		assert.Equal(t, resp.Text, text)
+		// protocol does not support stream just need to test unary
+		if !streamFlag {
+			return
+		}
+
+		//client streaming
+		clientStream, err := client.Sum(ctx)
+		assert.Nil(t, err)
+		t.Cleanup(func() {
+			closeErr := clientStream.CloseAndReceive(triple.NewResponse(&pingv1.SumResponse{}))
+			assert.Nil(t, closeErr)
+		})
+		assert.NotZero(t, clientStream.Peer().Addr)
+		assert.NotZero(t, clientStream.Peer().Protocol)
+		err = clientStream.Send(&pingv1.SumRequest{})
+		assert.Nil(t, err)
+		//server streaming
+		serverStream, err := client.CountUp(ctx, triple.NewRequest(&pingv1.CountUpRequest{}))
+		t.Cleanup(func() {
+			assert.Nil(t, serverStream.Close())
+		})
+		assert.Nil(t, err)
+		// bidi streaming
+		bidiStream, err := client.CumSum(ctx)
+		assert.Nil(t, err)
+		t.Cleanup(func() {
+			assert.Nil(t, bidiStream.CloseRequest())
+			assert.Nil(t, bidiStream.CloseResponse())
+		})
+		assert.NotZero(t, bidiStream.Peer().Addr)
+		assert.NotZero(t, bidiStream.Peer().Protocol)
+		err = bidiStream.Send(&pingv1.CumSumRequest{})
+		assert.Nil(t, err)
 	}
 
 	t.Run("triple", func(t *testing.T) {
 		t.Parallel()
-		run(t)
+		run(t /*streamFlag*/, false, triple.WithTriple())
 	})
 	t.Run("grpc", func(t *testing.T) {
 		t.Parallel()
-		run(t, triple.WithGRPC())
+		run(t, true)
 	})
 }
 

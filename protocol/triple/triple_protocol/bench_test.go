@@ -11,6 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 package triple_protocol_test
 
 import (
@@ -51,7 +52,6 @@ func BenchmarkTriple(b *testing.B) {
 	client := pingv1connect.NewPingServiceClient(
 		httpClient,
 		server.URL,
-		tri.WithGRPC(),
 		tri.WithSendGzip(),
 	)
 	twoMiB := strings.Repeat("a", 2*1024*1024)

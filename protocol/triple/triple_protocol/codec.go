@@ -49,12 +49,12 @@ type Codec interface {
 	//
 	// Marshal may expect a specific type of message, and will error if this type
 	// is not given.
-	Marshal(any) ([]byte, error)
+	Marshal(interface{}) ([]byte, error)
 	// Unmarshal unmarshals the given message.
 	//
 	// Unmarshal may expect a specific type of message, and will error if this
 	// type is not given.
-	Unmarshal([]byte, any) error
+	Unmarshal([]byte, interface{}) error
 }
 
 // stableCodec is an extension to Codec for serializing with stable output.
@@ -73,7 +73,7 @@ type stableCodec interface {
 	// domain, and it may change in the future with codec updates, but for
 	// any given concrete value and any given version, it should return the
 	// same output.
-	MarshalStable(any) ([]byte, error)
+	MarshalStable(interface{}) ([]byte, error)
 
 	// IsBinary returns true if the marshalled data is binary for this codec.
 	//
@@ -89,7 +89,7 @@ var _ Codec = (*protoBinaryCodec)(nil)
 
 func (c *protoBinaryCodec) Name() string { return codecNameProto }
 
-func (c *protoBinaryCodec) Marshal(message any) ([]byte, error) {
+func (c *protoBinaryCodec) Marshal(message interface{}) ([]byte, error) {
 	protoMessage, ok := message.(proto.Message)
 	if !ok {
 		return nil, errNotProto(message)
@@ -97,7 +97,7 @@ func (c *protoBinaryCodec) Marshal(message any) ([]byte, error) {
 	return proto.Marshal(protoMessage)
 }
 
-func (c *protoBinaryCodec) Unmarshal(data []byte, message any) error {
+func (c *protoBinaryCodec) Unmarshal(data []byte, message interface{}) error {
 	protoMessage, ok := message.(proto.Message)
 	if !ok {
 		return errNotProto(message)
@@ -105,7 +105,7 @@ func (c *protoBinaryCodec) Unmarshal(data []byte, message any) error {
 	return proto.Unmarshal(data, protoMessage)
 }
 
-func (c *protoBinaryCodec) MarshalStable(message any) ([]byte, error) {
+func (c *protoBinaryCodec) MarshalStable(message interface{}) ([]byte, error) {
 	protoMessage, ok := message.(proto.Message)
 	if !ok {
 		return nil, errNotProto(message)
@@ -131,7 +131,7 @@ var _ Codec = (*protoJSONCodec)(nil)
 
 func (c *protoJSONCodec) Name() string { return c.name }
 
-func (c *protoJSONCodec) Marshal(message any) ([]byte, error) {
+func (c *protoJSONCodec) Marshal(message interface{}) ([]byte, error) {
 	protoMessage, ok := message.(proto.Message)
 	if !ok {
 		return nil, errNotProto(message)
@@ -140,7 +140,7 @@ func (c *protoJSONCodec) Marshal(message any) ([]byte, error) {
 	return options.Marshal(protoMessage)
 }
 
-func (c *protoJSONCodec) Unmarshal(binary []byte, message any) error {
+func (c *protoJSONCodec) Unmarshal(binary []byte, message interface{}) error {
 	protoMessage, ok := message.(proto.Message)
 	if !ok {
 		return errNotProto(message)
@@ -152,7 +152,7 @@ func (c *protoJSONCodec) Unmarshal(binary []byte, message any) error {
 	return options.Unmarshal(binary, protoMessage)
 }
 
-func (c *protoJSONCodec) MarshalStable(message any) ([]byte, error) {
+func (c *protoJSONCodec) MarshalStable(message interface{}) ([]byte, error) {
 	// protojson does not offer a "deterministic" field ordering, but fields
 	// are still ordered consistently by their index. However, protojson can
 	// output inconsistent whitespace for some reason, therefore it is
@@ -218,7 +218,7 @@ func (m *codecMap) Names() []string {
 	return names
 }
 
-func errNotProto(message any) error {
+func errNotProto(message interface{}) error {
 	if _, ok := message.(protoiface.MessageV1); ok {
 		return fmt.Errorf("%T uses github.com/golang/protobuf, but triple only supports google.golang.org/protobuf: see https://go.dev/blog/protobuf-apiv2", message)
 	}

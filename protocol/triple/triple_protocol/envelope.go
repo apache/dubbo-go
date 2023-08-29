@@ -58,7 +58,7 @@ type envelopeWriter struct {
 }
 
 // marshal and write to socket
-func (w *envelopeWriter) Marshal(message any) *Error {
+func (w *envelopeWriter) Marshal(message interface{}) *Error {
 	if message == nil {
 		if _, err := w.writer.Write(nil); err != nil {
 			if connectErr, ok := asError(err); ok {
@@ -134,7 +134,7 @@ type envelopeReader struct {
 }
 
 // Unmarshal reads entire envelope and uses codec to unmarshal
-func (r *envelopeReader) Unmarshal(message any) *Error {
+func (r *envelopeReader) Unmarshal(message interface{}) *Error {
 	buffer := r.bufferPool.Get()
 	defer r.bufferPool.Put(buffer)
 

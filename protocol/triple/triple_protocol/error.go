@@ -219,7 +219,7 @@ func (e *Error) detailsAsAny() []*anypb.Any {
 
 // errorf calls fmt.Errorf with the supplied template and arguments, then wraps
 // the resulting error.
-func errorf(c Code, template string, args ...any) *Error {
+func errorf(c Code, template string, args ...interface{}) *Error {
 	return NewError(c, fmt.Errorf(template, args...))
 }
 

@@ -138,7 +138,7 @@ func NewServerStreamHandler(
 		StreamTypeServer,
 		func(ctx context.Context, conn StreamingHandlerConn) error {
 			req := reqInitFunc()
-			if err := conn.Receive(&req); err != nil {
+			if err := conn.Receive(req); err != nil {
 				return err
 			}
 			return implementation(
@@ -293,7 +293,10 @@ func (c *handlerConfig) newSpec(streamType StreamType) Spec {
 
 func (c *handlerConfig) newProtocolHandlers(streamType StreamType) []protocolHandler {
 	// initialize protocol
-	protocols := []protocol{&protocolTriple{}}
+	var protocols []protocol
+	if streamType == StreamTypeUnary {
+		protocols = append(protocols, &protocolTriple{})
+	}
 	if c.HandleGRPC {
 		protocols = append(protocols, &protocolGRPC{})
 	}

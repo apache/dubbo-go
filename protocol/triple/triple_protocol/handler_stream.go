@@ -26,7 +26,7 @@ import (
 // an exported constructor.
 type ClientStream struct {
 	conn StreamingHandlerConn
-	msg  any
+	msg  interface{}
 	err  error
 }
 
@@ -50,7 +50,7 @@ func (c *ClientStream) RequestHeader() http.Header {
 // either by reaching the end or by encountering an unexpected error. After
 // Receive returns false, the Err method will return any unexpected error
 // encountered.
-func (c *ClientStream) Receive(msg any) bool {
+func (c *ClientStream) Receive(msg interface{}) bool {
 	if c.err != nil {
 		return false
 	}
@@ -60,7 +60,7 @@ func (c *ClientStream) Receive(msg any) bool {
 }
 
 // Msg returns the most recent message unmarshaled by a call to Receive.
-func (c *ClientStream) Msg() any {
+func (c *ClientStream) Msg() interface{} {
 	// todo:// process nil pointer
 	//if c.msg == nil {
 	//	c.msg = new(Req)
@@ -110,7 +110,7 @@ func (s *ServerStream) ResponseTrailer() http.Header {
 
 // Send a message to the client. The first call to Send also sends the response
 // headers.
-func (s *ServerStream) Send(msg any) error {
+func (s *ServerStream) Send(msg interface{}) error {
 	if msg == nil {
 		return s.conn.Send(nil)
 	}
@@ -148,8 +148,8 @@ func (b *BidiStream) RequestHeader() http.Header {
 
 // Receive a message. When the client is done sending messages, Receive will
 // return an error that wraps [io.EOF].
-func (b *BidiStream) Receive(msg any) error {
-	if err := b.conn.Receive(&msg); err != nil {
+func (b *BidiStream) Receive(msg interface{}) error {
+	if err := b.conn.Receive(msg); err != nil {
 		return err
 	}
 	return nil
@@ -175,7 +175,7 @@ func (b *BidiStream) ResponseTrailer() http.Header {
 
 // Send a message to the client. The first call to Send also sends the response
 // headers.
-func (b *BidiStream) Send(msg any) error {
+func (b *BidiStream) Send(msg interface{}) error {
 	if msg == nil {
 		return b.conn.Send(nil)
 	}
