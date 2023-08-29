@@ -15,18 +15,25 @@
  * limitations under the License.
  */
 
-package trace
+package config
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"testing"
 )
 
-// Version is the current release version of the dubbogo instrumentation.
-func Version() string {
-	return constant.Version
-}
+import (
+	"github.com/stretchr/testify/assert"
+)
 
-// SemVersion is the semantic version to be supplied to tracer/meter creation.
-func SemVersion() string {
-	return "semver:" + Version()
+func TestNewOtelConfigBuilder(t *testing.T) {
+	config := NewOtelConfigBuilder().Build()
+	assert.NotNil(t, config)
+	assert.NotNil(t, config.TraceConfig)
+
+	ac := NewApplicationConfigBuilder().Build()
+	err := config.Init(ac)
+	assert.NoError(t, err)
+
+	tpc := config.TraceConfig.toTraceProviderConfig(ac)
+	assert.NotNil(t, tpc)
 }
