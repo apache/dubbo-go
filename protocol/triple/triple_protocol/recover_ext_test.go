@@ -29,7 +29,7 @@ import (
 
 type panicPingServer struct {
 	pingv1triple.UnimplementedPingServiceHandler
-	panicWith any
+	panicWith interface{}
 }
 
 func (s *panicPingServer) Ping(
@@ -66,13 +66,13 @@ func TestWithRecover(t *testing.T) {
 		// INTERNAL_ERROR. We should be mapping this back to CodeInternal.
 		assert.Equal(t, triple_protocol.CodeOf(err), triple_protocol.CodeInternal)
 	}
-	//drainStream := func(stream *triple_protocol.ServerStreamForClient) error {
-	//	t.Helper()
-	//	defer stream.Close()
-	//	assert.True(t, stream.Receive(&pingv1.CountUpResponse{}))  // expect one response msg
-	//	assert.False(t, stream.Receive(&pingv1.CountUpResponse{})) // expect panic before second response msg
-	//	return stream.Err()
-	//}
+	drainStream := func(stream *triple_protocol.ServerStreamForClient) error {
+		t.Helper()
+		defer stream.Close()
+		assert.True(t, stream.Receive(&pingv1.CountUpResponse{}))  // expect one response msg
+		assert.False(t, stream.Receive(&pingv1.CountUpResponse{})) // expect panic before second response msg
+		return stream.Err()
+	}
 	pinger := &panicPingServer{}
 	mux := http.NewServeMux()
 	mux.Handle(pingv1triple.NewPingServiceHandler(pinger, triple_protocol.WithRecover(handle)))
@@ -91,9 +91,9 @@ func TestWithRecover(t *testing.T) {
 		err := client.Ping(context.Background(), triple_protocol.NewRequest(&pingv1.PingRequest{}), triple_protocol.NewResponse(&pingv1.PingResponse{}))
 		assertHandled(err)
 
-		// stream, err := client.CountUp(context.Background(), triple_protocol.NewRequest(&pingv1.CountUpRequest{}))
-		// assert.Nil(t, err)
-		// assertHandled(drainStream(stream))
+		stream, err := client.CountUp(context.Background(), triple_protocol.NewRequest(&pingv1.CountUpRequest{}))
+		assert.Nil(t, err)
+		assertHandled(drainStream(stream))
 	}
 
 	pinger.panicWith = http.ErrAbortHandler
@@ -101,7 +101,7 @@ func TestWithRecover(t *testing.T) {
 	err := client.Ping(context.Background(), triple_protocol.NewRequest(&pingv1.PingRequest{}), triple_protocol.NewResponse(&pingv1.PingResponse{}))
 	assertNotHandled(err)
 
-	// stream, err := client.CountUp(context.Background(), triple_protocol.NewRequest(&pingv1.CountUpRequest{}))
-	// assert.Nil(t, err)
-	// assertNotHandled(drainStream(stream))
+	stream, err := client.CountUp(context.Background(), triple_protocol.NewRequest(&pingv1.CountUpRequest{}))
+	assert.Nil(t, err)
+	assertNotHandled(drainStream(stream))
 }

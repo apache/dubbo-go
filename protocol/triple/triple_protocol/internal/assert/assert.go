@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package assert is a minimal assert package using generics.
+// Package assert is a minimal assert package using reflection.
 //
 // This prevents triple from needing additional dependencies.
 package assert
@@ -41,7 +41,7 @@ func Equal(tb testing.TB, got, want interface{}, options ...Option) bool {
 	return false
 }
 
-// NotEqual asserts that two values aren't equal.
+// NotEqual asserts that two values are not equal.
 func NotEqual(tb testing.TB, got, want interface{}, options ...Option) bool {
 	tb.Helper()
 	if !cmpEqual(got, want) {
@@ -75,6 +75,9 @@ func NotNil(tb testing.TB, got interface{}, options ...Option) bool {
 func Zero(tb testing.TB, got interface{}, options ...Option) bool {
 	tb.Helper()
 	typ := reflect.TypeOf(got)
+	if typ == nil {
+		return true
+	}
 	want := reflect.Zero(typ).Interface()
 	if cmpEqual(got, want) {
 		return true
@@ -86,7 +89,11 @@ func Zero(tb testing.TB, got interface{}, options ...Option) bool {
 // NotZero asserts that the value is non-zero.
 func NotZero(tb testing.TB, got interface{}, options ...Option) bool {
 	tb.Helper()
-	var want interface{}
+	typ := reflect.TypeOf(got)
+	if typ == nil {
+		return false
+	}
+	want := reflect.Zero(typ).Interface()
 	if !cmpEqual(got, want) {
 		return true
 	}

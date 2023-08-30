@@ -11,6 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 package triple_protocol_test
 
 import (
@@ -31,8 +32,8 @@ func Example_client() {
 	// *http.Client!
 	httpClient := examplePingServer.Client()
 
-	// By default, clients use the Triple protocol. Add triple.WithGRPC() or
-	// triple.WithGRPCWeb() to switch protocols.
+	// By default, clients use the GRPC protocol. Add triple_protocol.WithTriple() or
+	// triple_protocol.WithGRPCWeb() to switch protocols.
 	client := pingv1connect.NewPingServiceClient(
 		httpClient,
 		examplePingServer.URL(),
@@ -50,6 +51,6 @@ func Example_client() {
 	logger.Println("response message:", response.Msg)
 
 	// Output:
-	// response content-type: application/proto
+	// response content-type: application/grpc+proto
 	// response message: number:42
 }

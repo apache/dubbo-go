@@ -70,10 +70,10 @@ func newCompressionPool(
 	}
 	return &compressionPool{
 		decompressors: sync.Pool{
-			New: func() any { return newDecompressor() },
+			New: func() interface{} { return newDecompressor() },
 		},
 		compressors: sync.Pool{
-			New: func() any { return newCompressor() },
+			New: func() interface{} { return newCompressor() },
 		},
 	}
 }

@@ -40,7 +40,7 @@ func TestAssertions(t *testing.T) {
 
 		NotNil(t, make(chan int))
 		NotNil(t, func() {})
-		NotNil(t, any(1))
+		NotNil(t, interface{}(1))
 		NotNil(t, make(map[int]int))
 		NotNil(t, &pair{})
 		NotNil(t, make([]int, 0))
@@ -63,7 +63,9 @@ func TestAssertions(t *testing.T) {
 		Zero(t, s)
 		var m map[string]string
 		Zero(t, m)
-		NotZero(t, 3)
+		var nilIntf interface{}
+		Zero(t, nilIntf)
+		NotZero(t, nilIntf)
 	})
 
 	t.Run("error chain", func(t *testing.T) {
@@ -72,9 +74,9 @@ func TestAssertions(t *testing.T) {
 		ErrorIs(t, fmt.Errorf("context: %w", want), want)
 	})
 
-	t.Run("unexported fields", func(t *testing.T) {
+	t.Run("exported fields", func(t *testing.T) {
 		t.Parallel()
-		// Two pairs differ only in an unexported field.
+		// NotEqual can only handle exported fields.
 		p1 := pair{1, 2}
 		p2 := pair{1, 3}
 		NotEqual(t, p1, p2)

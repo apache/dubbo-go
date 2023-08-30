@@ -49,12 +49,12 @@ const (
 	PingServicePingProcedure = "/connect.ping.v1.PingService/Ping"
 	// PingServiceFailProcedure is the fully-qualified name of the PingService's Fail RPC.
 	PingServiceFailProcedure = "/connect.ping.v1.PingService/Fail"
-	//// PingServiceSumProcedure is the fully-qualified name of the PingService's Sum RPC.
-	//PingServiceSumProcedure = "/connect.ping.v1.PingService/Sum"
-	//// PingServiceCountUpProcedure is the fully-qualified name of the PingService's CountUp RPC.
-	//PingServiceCountUpProcedure = "/connect.ping.v1.PingService/CountUp"
-	//// PingServiceCumSumProcedure is the fully-qualified name of the PingService's CumSum RPC.
-	//PingServiceCumSumProcedure = "/connect.ping.v1.PingService/CumSum"
+	// PingServiceSumProcedure is the fully-qualified name of the PingService's Sum RPC.
+	PingServiceSumProcedure = "/connect.ping.v1.PingService/Sum"
+	// PingServiceCountUpProcedure is the fully-qualified name of the PingService's CountUp RPC.
+	PingServiceCountUpProcedure = "/connect.ping.v1.PingService/CountUp"
+	// PingServiceCumSumProcedure is the fully-qualified name of the PingService's CumSum RPC.
+	PingServiceCumSumProcedure = "/connect.ping.v1.PingService/CumSum"
 )
 
 // PingServiceClient is a client for the connect.ping.v1.PingService service.
@@ -63,12 +63,12 @@ type PingServiceClient interface {
 	Ping(context.Context, *triple_protocol.Request, *triple_protocol.Response) error
 	// Fail always fails.
 	Fail(context.Context, *triple_protocol.Request, *triple_protocol.Response) error
-	//// Sum calculates the sum of the numbers sent on the stream.
-	//Sum(context.Context) (*triple_protocol.ClientStreamForClient,error)
-	//// CountUp returns a stream of the numbers up to the given request.
-	//CountUp(context.Context, *triple_protocol.Request) (*triple_protocol.ServerStreamForClient, error)
-	//// CumSum determines the cumulative sum of all the numbers sent on the stream.
-	//CumSum(context.Context) (*triple_protocol.BidiStreamForClient,error)
+	// Sum calculates the sum of the numbers sent on the stream.
+	Sum(context.Context) (*triple_protocol.ClientStreamForClient,error)
+	// CountUp returns a stream of the numbers up to the given request.
+	CountUp(context.Context, *triple_protocol.Request) (*triple_protocol.ServerStreamForClient, error)
+	// CumSum determines the cumulative sum of all the numbers sent on the stream.
+	CumSum(context.Context) (*triple_protocol.BidiStreamForClient,error)
 }
 
 // NewPingServiceClient constructs a client for the connect.ping.v1.PingService service. By default,
@@ -92,21 +92,21 @@ func NewPingServiceClient(httpClient triple_protocol.HTTPClient, baseURL string,
 			baseURL+PingServiceFailProcedure,
 			opts...,
 		),
-		//sum: triple_protocol.NewClient(
-		//	httpClient,
-		//	baseURL+PingServiceSumProcedure,
-		//	opts...,
-		//),
-		//countUp: triple_protocol.NewClient(
-		//	httpClient,
-		//	baseURL+PingServiceCountUpProcedure,
-		//	opts...,
-		//),
-		//cumSum: triple_protocol.NewClient(
-		//	httpClient,
-		//	baseURL+PingServiceCumSumProcedure,
-		//	opts...,
-		//),
+		sum: triple_protocol.NewClient(
+			httpClient,
+			baseURL+PingServiceSumProcedure,
+			opts...,
+		),
+		countUp: triple_protocol.NewClient(
+			httpClient,
+			baseURL+PingServiceCountUpProcedure,
+			opts...,
+		),
+		cumSum: triple_protocol.NewClient(
+			httpClient,
+			baseURL+PingServiceCumSumProcedure,
+			opts...,
+		),
 	}
 }
 
@@ -130,20 +130,20 @@ func (c *pingServiceClient) Fail(ctx context.Context, req *triple_protocol.Reque
 	return c.fail.CallUnary(ctx, req, res)
 }
 
-//// Sum calls connect.ping.v1.PingService.Sum.
-//func (c *pingServiceClient) Sum(ctx context.Context) (*triple_protocol.ClientStreamForClient,error) {
-//	return c.sum.CallClientStream(ctx)
-//}
-//
-//// CountUp calls connect.ping.v1.PingService.CountUp.
-//func (c *pingServiceClient) CountUp(ctx context.Context, req *triple_protocol.Request) (*triple_protocol.ServerStreamForClient, error) {
-//	return c.countUp.CallServerStream(ctx, req)
-//}
-//
-//// CumSum calls connect.ping.v1.PingService.CumSum.
-//func (c *pingServiceClient) CumSum(ctx context.Context) (*triple_protocol.BidiStreamForClient,error) {
-//	return c.cumSum.CallBidiStream(ctx)
-//}
+// Sum calls connect.ping.v1.PingService.Sum.
+func (c *pingServiceClient) Sum(ctx context.Context) (*triple_protocol.ClientStreamForClient,error) {
+	return c.sum.CallClientStream(ctx)
+}
+
+// CountUp calls connect.ping.v1.PingService.CountUp.
+func (c *pingServiceClient) CountUp(ctx context.Context, req *triple_protocol.Request) (*triple_protocol.ServerStreamForClient, error) {
+	return c.countUp.CallServerStream(ctx, req)
+}
+
+// CumSum calls connect.ping.v1.PingService.CumSum.
+func (c *pingServiceClient) CumSum(ctx context.Context) (*triple_protocol.BidiStreamForClient,error) {
+	return c.cumSum.CallBidiStream(ctx)
+}
 
 // PingServiceHandler is an implementation of the connect.ping.v1.PingService service.
 type PingServiceHandler interface {
@@ -151,12 +151,12 @@ type PingServiceHandler interface {
 	Ping(context.Context, *triple_protocol.Request) (*triple_protocol.Response, error)
 	// Fail always fails.
 	Fail(context.Context, *triple_protocol.Request) (*triple_protocol.Response, error)
-	//// Sum calculates the sum of the numbers sent on the stream.
-	//Sum(context.Context, *triple_protocol.ClientStream) (*triple_protocol.Response, error)
-	//// CountUp returns a stream of the numbers up to the given request.
-	//CountUp(context.Context, *triple_protocol.Request, *triple_protocol.ServerStream) error
-	//// CumSum determines the cumulative sum of all the numbers sent on the stream.
-	//CumSum(context.Context, *triple_protocol.BidiStream) error
+	// Sum calculates the sum of the numbers sent on the stream.
+	Sum(context.Context, *triple_protocol.ClientStream) (*triple_protocol.Response, error)
+	// CountUp returns a stream of the numbers up to the given request.
+	CountUp(context.Context, *triple_protocol.Request, *triple_protocol.ServerStream) error
+	// CumSum determines the cumulative sum of all the numbers sent on the stream.
+	CumSum(context.Context, *triple_protocol.BidiStream) error
 }
 
 // NewPingServiceHandler builds an HTTP handler from the service implementation. It returns the path
@@ -181,35 +181,35 @@ func NewPingServiceHandler(svc PingServiceHandler, opts ...triple_protocol.Handl
 		svc.Fail,
 		opts...,
 	)
-	//pingServiceSumHandler := triple_protocol.NewClientStreamHandler(
-	//	PingServiceSumProcedure,
-	//	svc.Sum,
-	//	opts...,
-	//)
-	//pingServiceCountUpHandler := triple_protocol.NewServerStreamHandler(
-	//	PingServiceCountUpProcedure,func() interface{} {
-	//		return &pingv1.PingRequest{}
-	//	},
-	//	svc.CountUp,
-	//	opts...,
-	//)
-	//pingServiceCumSumHandler := triple_protocol.NewBidiStreamHandler(
-	//	PingServiceCumSumProcedure,
-	//	svc.CumSum,
-	//	opts...,
-	//)
+	pingServiceSumHandler := triple_protocol.NewClientStreamHandler(
+		PingServiceSumProcedure,
+		svc.Sum,
+		opts...,
+	)
+	pingServiceCountUpHandler := triple_protocol.NewServerStreamHandler(
+		PingServiceCountUpProcedure,func() interface{} {
+			return &pingv1.CountUpRequest{}
+		},
+		svc.CountUp,
+		opts...,
+	)
+	pingServiceCumSumHandler := triple_protocol.NewBidiStreamHandler(
+		PingServiceCumSumProcedure,
+		svc.CumSum,
+		opts...,
+	)
 	return "/connect.ping.v1.PingService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case PingServicePingProcedure:
 			pingServicePingHandler.ServeHTTP(w, r)
 		case PingServiceFailProcedure:
 			pingServiceFailHandler.ServeHTTP(w, r)
-		//case PingServiceSumProcedure:
-		//	pingServiceSumHandler.ServeHTTP(w, r)
-		//case PingServiceCountUpProcedure:
-		//	pingServiceCountUpHandler.ServeHTTP(w, r)
-		//case PingServiceCumSumProcedure:
-		//	pingServiceCumSumHandler.ServeHTTP(w, r)
+		case PingServiceSumProcedure:
+			pingServiceSumHandler.ServeHTTP(w, r)
+		case PingServiceCountUpProcedure:
+			pingServiceCountUpHandler.ServeHTTP(w, r)
+		case PingServiceCumSumProcedure:
+			pingServiceCumSumHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -227,14 +227,14 @@ func (UnimplementedPingServiceHandler) Fail(context.Context, *triple_protocol.Re
 	return nil, triple_protocol.NewError(triple_protocol.CodeUnimplemented, errors.New("connect.ping.v1.PingService.Fail is not implemented"))
 }
 
-//func (UnimplementedPingServiceHandler) Sum(context.Context, *triple_protocol.ClientStream) (*triple_protocol.Response, error) {
-//	return nil, triple_protocol.NewError(triple_protocol.CodeUnimplemented, errors.New("connect.ping.v1.PingService.Sum is not implemented"))
-//}
-//
-//func (UnimplementedPingServiceHandler) CountUp(context.Context, *triple_protocol.Request, *triple_protocol.ServerStream) error {
-//	return triple_protocol.NewError(triple_protocol.CodeUnimplemented, errors.New("connect.ping.v1.PingService.CountUp is not implemented"))
-//}
-//
-//func (UnimplementedPingServiceHandler) CumSum(context.Context, *triple_protocol.BidiStream) error {
-//	return triple_protocol.NewError(triple_protocol.CodeUnimplemented, errors.New("connect.ping.v1.PingService.CumSum is not implemented"))
-//}
+func (UnimplementedPingServiceHandler) Sum(context.Context, *triple_protocol.ClientStream) (*triple_protocol.Response, error) {
+	return nil, triple_protocol.NewError(triple_protocol.CodeUnimplemented, errors.New("connect.ping.v1.PingService.Sum is not implemented"))
+}
+
+func (UnimplementedPingServiceHandler) CountUp(context.Context, *triple_protocol.Request, *triple_protocol.ServerStream) error {
+	return triple_protocol.NewError(triple_protocol.CodeUnimplemented, errors.New("connect.ping.v1.PingService.CountUp is not implemented"))
+}
+
+func (UnimplementedPingServiceHandler) CumSum(context.Context, *triple_protocol.BidiStream) error {
+	return triple_protocol.NewError(triple_protocol.CodeUnimplemented, errors.New("connect.ping.v1.PingService.CumSum is not implemented"))
+}

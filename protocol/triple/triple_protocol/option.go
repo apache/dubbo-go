@@ -61,9 +61,9 @@ func WithClientOptions(options ...ClientOption) ClientOption {
 	return &clientOptionsOption{options}
 }
 
-// WithGRPC configures clients to use the HTTP/2 gRPC protocol.
-func WithGRPC() ClientOption {
-	return &grpcOption{}
+// WithTriple configures clients to use the Triple protocol.
+func WithTriple() ClientOption {
+	return &tripleOption{}
 }
 
 // WithProtoJSON configures a client to send JSON-encoded data instead of
@@ -145,7 +145,7 @@ func WithHandlerOptions(options ...HandlerOption) HandlerOption {
 // usually necessary to prevent crashes. Instead, it helps servers collect
 // RPC-specific data during panics and send a more detailed error to
 // clients.
-func WithRecover(handle func(context.Context, Spec, http.Header, any) error) HandlerOption {
+func WithRecover(handle func(context.Context, Spec, http.Header, interface{}) error) HandlerOption {
 	return WithInterceptors(&recoverHandlerInterceptor{handle: handle})
 }
 
@@ -437,10 +437,10 @@ func (o *idempotencyOption) applyToHandler(config *handlerConfig) {
 	config.IdempotencyLevel = o.idempotencyLevel
 }
 
-type grpcOption struct{}
+type tripleOption struct{}
 
-func (o *grpcOption) applyToClient(config *clientConfig) {
-	config.Protocol = &protocolGRPC{}
+func (o *tripleOption) applyToClient(config *clientConfig) {
+	config.Protocol = &protocolTriple{}
 }
 
 type enableGet struct{}

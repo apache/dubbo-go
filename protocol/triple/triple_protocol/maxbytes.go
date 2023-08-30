@@ -22,7 +22,7 @@ import (
 	"net/http"
 )
 
-func asMaxBytesError(err error, tmpl string, args ...any) *Error {
+func asMaxBytesError(err error, tmpl string, args ...interface{}) *Error {
 	var maxBytesErr *http.MaxBytesError
 	if ok := errors.As(err, &maxBytesErr); !ok {
 		return nil

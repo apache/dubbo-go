@@ -11,6 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 package triple_protocol_test
 
 import (
@@ -248,7 +249,7 @@ type headerInspectingHandlerConn struct {
 	inspectResponseHeader func(triple.Spec, http.Header)
 }
 
-func (hc *headerInspectingHandlerConn) Send(msg any) error {
+func (hc *headerInspectingHandlerConn) Send(msg interface{}) error {
 	if !hc.inspectedResponse {
 		hc.inspectResponseHeader(hc.Spec(), hc.ResponseHeader())
 		hc.inspectedResponse = true
@@ -265,7 +266,7 @@ type headerInspectingClientConn struct {
 	inspectResponseHeader func(triple.Spec, http.Header)
 }
 
-func (cc *headerInspectingClientConn) Send(msg any) error {
+func (cc *headerInspectingClientConn) Send(msg interface{}) error {
 	if !cc.inspectedRequest {
 		cc.inspectRequestHeader(cc.Spec(), cc.RequestHeader())
 		cc.inspectedRequest = true
@@ -273,7 +274,7 @@ func (cc *headerInspectingClientConn) Send(msg any) error {
 	return cc.StreamingClientConn.Send(msg)
 }
 
-func (cc *headerInspectingClientConn) Receive(msg any) error {
+func (cc *headerInspectingClientConn) Receive(msg interface{}) error {
 	err := cc.StreamingClientConn.Receive(msg)
 	if !cc.inspectedResponse {
 		cc.inspectResponseHeader(cc.Spec(), cc.ResponseHeader())

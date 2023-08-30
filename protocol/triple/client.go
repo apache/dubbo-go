@@ -118,7 +118,6 @@ func (cm *clientManager) close() {
 	// todo: close connection and release resources
 }
 
-// NewClient creates a new GRPC_NEW client.
 func newClientManager(url *common.URL) (*clientManager, error) {
 	// If global trace instance was set, it means trace function enabled.
 	// If not, will return NoopTracer.
@@ -185,11 +184,11 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 	// todo: set timeout
 	var transport http.RoundTripper
 	switch ref.Protocol {
-	case "http1":
+	case "http":
 		transport = &http.Transport{
 			TLSClientConfig: cfg,
 		}
-		triClientOpts = append(triClientOpts, tri.WithHTTPGet())
+		triClientOpts = append(triClientOpts, tri.WithTriple())
 	case TRIPLE:
 		if tlsFlag {
 			transport = &http2.Transport{
@@ -203,7 +202,7 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 				AllowHTTP: true,
 			}
 		}
-		triClientOpts = append(triClientOpts, tri.WithGRPC())
+		triClientOpts = append(triClientOpts)
 	}
 	httpClient := &http.Client{
 		Transport: transport,

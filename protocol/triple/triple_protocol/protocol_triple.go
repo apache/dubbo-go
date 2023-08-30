@@ -309,7 +309,7 @@ func (cc *tripleUnaryClientConn) Peer() Peer {
 	return cc.peer
 }
 
-func (cc *tripleUnaryClientConn) Send(msg any) error {
+func (cc *tripleUnaryClientConn) Send(msg interface{}) error {
 	if err := cc.marshaler.Marshal(msg); err != nil {
 		return err
 	}
@@ -324,7 +324,7 @@ func (cc *tripleUnaryClientConn) CloseRequest() error {
 	return cc.duplexCall.CloseWrite()
 }
 
-func (cc *tripleUnaryClientConn) Receive(msg any) error {
+func (cc *tripleUnaryClientConn) Receive(msg interface{}) error {
 	cc.duplexCall.BlockUntilResponseReady()
 	if err := cc.unmarshaler.Unmarshal(msg); err != nil {
 		return err
@@ -409,7 +409,7 @@ func (hc *tripleUnaryHandlerConn) Peer() Peer {
 	return hc.peer
 }
 
-func (hc *tripleUnaryHandlerConn) Receive(msg any) error {
+func (hc *tripleUnaryHandlerConn) Receive(msg interface{}) error {
 	if err := hc.unmarshaler.Unmarshal(msg); err != nil {
 		return err
 	}
@@ -420,7 +420,7 @@ func (hc *tripleUnaryHandlerConn) RequestHeader() http.Header {
 	return hc.request.Header
 }
 
-func (hc *tripleUnaryHandlerConn) Send(msg any) error {
+func (hc *tripleUnaryHandlerConn) Send(msg interface{}) error {
 	hc.wroteBody = true
 	hc.writeResponseHeader(nil /* error */)
 	if err := hc.marshaler.Marshal(msg); err != nil {
@@ -482,7 +482,7 @@ type tripleUnaryMarshaler struct {
 	sendMaxBytes     int
 }
 
-func (m *tripleUnaryMarshaler) Marshal(message any) *Error {
+func (m *tripleUnaryMarshaler) Marshal(message interface{}) *Error {
 	if message == nil {
 		return m.write(nil)
 	}
@@ -528,7 +528,7 @@ type tripleUnaryRequestMarshaler struct {
 	duplexCall  *duplexHTTPCall
 }
 
-func (m *tripleUnaryRequestMarshaler) Marshal(message any) *Error {
+func (m *tripleUnaryRequestMarshaler) Marshal(message interface{}) *Error {
 	return m.tripleUnaryMarshaler.Marshal(message)
 }
 
@@ -541,11 +541,11 @@ type tripleUnaryUnmarshaler struct {
 	readMaxBytes    int
 }
 
-func (u *tripleUnaryUnmarshaler) Unmarshal(message any) *Error {
+func (u *tripleUnaryUnmarshaler) Unmarshal(message interface{}) *Error {
 	return u.UnmarshalFunc(message, u.codec.Unmarshal)
 }
 
-func (u *tripleUnaryUnmarshaler) UnmarshalFunc(message any, unmarshal func([]byte, any) error) *Error {
+func (u *tripleUnaryUnmarshaler) UnmarshalFunc(message interface{}, unmarshal func([]byte, interface{}) error) *Error {
 	if u.alreadyRead {
 		return NewError(CodeInternal, io.EOF)
 	}
