@@ -40,3 +40,101 @@ type RegistryConfig struct {
 	UseAsMetaReport   bool              `default:"true" yaml:"use-as-meta-report" json:"use-as-meta-report,omitempty" property:"use-as-meta-report"`
 	UseAsConfigCenter bool              `default:"true" yaml:"use-as-config-center" json:"use-as-config-center,omitempty" property:"use-as-config-center"`
 }
+
+type RegistryOption func(*RegistryConfig)
+
+func WithProtocol(protocol string) RegistryOption {
+	return func(cfg *RegistryConfig) {
+		cfg.Protocol = protocol
+	}
+}
+
+func WithTimeout(timeout string) RegistryOption {
+	return func(cfg *RegistryConfig) {
+		cfg.Timeout = timeout
+	}
+}
+
+func WithGroup(group string) RegistryOption {
+	return func(cfg *RegistryConfig) {
+		cfg.Group = group
+	}
+}
+
+func WithNamespace(namespace string) RegistryOption {
+	return func(cfg *RegistryConfig) {
+		cfg.Namespace = namespace
+	}
+}
+
+func WithTTL(ttl string) RegistryOption {
+	return func(cfg *RegistryConfig) {
+		cfg.TTL = ttl
+	}
+}
+
+func WithAddress(address string) RegistryOption {
+	return func(cfg *RegistryConfig) {
+		cfg.Address = address
+	}
+}
+
+func WithUsername(name string) RegistryOption {
+	return func(cfg *RegistryConfig) {
+		cfg.Username = name
+	}
+}
+
+func WithPassword(password string) RegistryOption {
+	return func(cfg *RegistryConfig) {
+		cfg.Password = password
+	}
+}
+
+func WithSimplified(flag bool) RegistryOption {
+	return func(cfg *RegistryConfig) {
+		cfg.Simplified = flag
+	}
+}
+
+func WithPreferred(flag bool) RegistryOption {
+	return func(cfg *RegistryConfig) {
+		cfg.Preferred = flag
+	}
+}
+
+func WithZone(zone string) RegistryOption {
+	return func(cfg *RegistryConfig) {
+		cfg.Zone = zone
+	}
+}
+
+func WithWeight(weight int64) RegistryOption {
+	return func(cfg *RegistryConfig) {
+		cfg.Weight = weight
+	}
+}
+
+func WithParams(params map[string]string) RegistryOption {
+	return func(cfg *RegistryConfig) {
+		cfg.Params = params
+	}
+}
+
+func WithRegistryType(typ string) RegistryOption {
+	return func(cfg *RegistryConfig) {
+		cfg.RegistryType = typ
+	}
+}
+
+func WithUseAsMetaReport(flag bool) RegistryOption {
+	return func(cfg *RegistryConfig) {
+		cfg.UseAsMetaReport = flag
+	}
+}
+
+func WithUseAsConfigCenter(flag bool) RegistryOption {
+	return func(cfg *RegistryConfig) {
+		cfg.UseAsConfigCenter = flag
+	}
+}
