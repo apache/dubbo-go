@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package metrics
+package config
 
 import (
 	"testing"
@@ -25,30 +25,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var mockChan = make(chan MetricsEvent, 16)
+func TestNewOtelConfigBuilder(t *testing.T) {
+	config := NewOtelConfigBuilder().Build()
+	assert.NotNil(t, config)
+	assert.NotNil(t, config.TraceConfig)
 
-type MockEvent struct {
-}
+	ac := NewApplicationConfigBuilder().Build()
+	err := config.Init(ac)
+	assert.NoError(t, err)
 
-func (m MockEvent) Type() string {
-	return "dubbo.metrics.mock"
-}
-
-func NewEmptyMockEvent() *MockEvent {
-	return &MockEvent{}
-}
-
-func init() {
-	Subscribe("dubbo.metrics.mock", mockChan)
-	Publish(NewEmptyMockEvent())
-}
-
-func TestBusPublish(t *testing.T) {
-	t.Run("testBusPublish", func(t *testing.T) {
-		event := <-mockChan
-
-		if event, ok := event.(MockEvent); ok {
-			assert.Equal(t, event, NewEmptyMockEvent())
-		}
-	})
+	tpc := config.TraceConfig.toTraceProviderConfig(ac)
+	assert.NotNil(t, tpc)
 }

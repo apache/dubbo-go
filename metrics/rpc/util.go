@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package prometheus
+package rpc
 
 import (
 	"strconv"
@@ -24,32 +24,28 @@ import (
 
 import (
 	"github.com/dubbogo/gost/log/logger"
-	"github.com/prometheus/client_golang/prometheus"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
-var (
-	labelNames             = []string{applicationNameKey, groupKey, hostnameKey, interfaceKey, ipKey, methodKey, versionKey}
-	defaultHistogramBucket = []float64{10, 50, 100, 200, 500, 1000, 10000}
-)
-
-func buildLabels(url *common.URL) prometheus.Labels {
-	return prometheus.Labels{
+// buildLabels will build the labels for the rpc metrics
+func buildLabels(url *common.URL, invocation protocol.Invocation) map[string]string {
+	return map[string]string{
 		applicationNameKey: url.GetParam(constant.ApplicationKey, ""),
 		groupKey:           url.Group(),
-		hostnameKey:        "not implemented yet",
+		hostnameKey:        common.GetLocalHostName(),
 		interfaceKey:       url.Service(),
 		ipKey:              common.GetLocalIp(),
 		versionKey:         url.GetParam(constant.AppVersionKey, ""),
-		methodKey:          url.GetParam(constant.MethodKey, ""),
+		methodKey:          invocation.MethodName(),
 	}
 }
 
-// return the role of the application, provider or consumer, if the url is not a valid one, return empty string
+// getRole will get the application role from the url
 func getRole(url *common.URL) (role string) {
 	if isProvider(url) {
 		role = providerField

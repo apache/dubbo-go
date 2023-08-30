@@ -73,7 +73,7 @@ func Inject(ctx context.Context, metadata map[string]interface{}, propagators pr
 	})
 }
 
-// Extract returns the correlation context and span context that
+// Extract returns the baggage and span context that
 // another service encoded in the dubbo metadata object with Inject.
 // This function is meant to be used on incoming requests.
 func Extract(ctx context.Context, metadata map[string]interface{}, propagators propagation.TextMapPropagator) (baggage.Baggage, trace.SpanContext) {

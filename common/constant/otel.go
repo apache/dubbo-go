@@ -15,18 +15,9 @@
  * limitations under the License.
  */
 
-package trace
+package constant
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
+const (
+	OtelPackageName    = "go.opentelemetry.io/otel"
+	OtelPackageVersion = "v1.10.0"
 )
-
-// Version is the current release version of the dubbogo instrumentation.
-func Version() string {
-	return constant.Version
-}
-
-// SemVersion is the semantic version to be supplied to tracer/meter creation.
-func SemVersion() string {
-	return "semver:" + Version()
-}

@@ -15,49 +15,23 @@
  * limitations under the License.
  */
 
-package trace
-
-import (
-	"testing"
-)
+package rpc
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
-type filed struct {
-	name string
-	want string
-}
+const (
+	applicationNameKey = constant.ApplicationNameKey
+	groupKey           = constant.GroupKey
+	hostnameKey        = constant.HostnameKey
+	interfaceKey       = constant.InterfaceKey
+	ipKey              = constant.IpKey
+	methodKey          = constant.MethodKey
+	versionKey         = constant.VersionKey
+)
 
-func TestSemVersion(t *testing.T) {
-	tests := []filed{
-		{
-			name: "test",
-			want: "semver:" + constant.Version,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := SemVersion(); got != tt.want {
-				t.Errorf("SemVersion() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestVersion(t *testing.T) {
-	tests := []filed{
-		{
-			name: "test",
-			want: constant.Version,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := Version(); got != tt.want {
-				t.Errorf("Version() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
+const (
+	providerField = "provider"
+	consumerField = "consumer"
+)
