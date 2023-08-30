@@ -412,6 +412,7 @@ const (
 
 // metrics key
 const (
+	MetricsRpc      = "dubbo.metrics.rpc"
 	MetricsRegistry = "dubbo.metrics.registry"
 	MetricsMetadata = "dubbo.metrics.metadata"
 	MetricApp       = "dubbo.metrics.app"

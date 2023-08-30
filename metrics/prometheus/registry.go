@@ -95,8 +95,10 @@ func (p *promMetricRegistry) Summary(m *metrics.MetricId) metrics.ObservableMetr
 }
 
 func (p *promMetricRegistry) Rt(m *metrics.MetricId, opts *metrics.RtOpts) metrics.ObservableMetric {
+	key := m.Name
 	var supplier func() interface{}
 	if opts != nil && opts.Aggregate {
+		key += "_aggregate"
 		supplier = func() interface{} {
 			// TODO set default aggregate config from config
 			return NewAggRtVec(&RtOpts{
@@ -114,7 +116,7 @@ func (p *promMetricRegistry) Rt(m *metrics.MetricId, opts *metrics.RtOpts) metri
 			}, m.TagKeys())
 		}
 	}
-	vec := p.getOrComputeVec(m.Name, supplier).(*RtVec)
+	vec := p.getOrComputeVec(key, supplier).(*RtVec)
 	return vec.With(m.Tags)
 }
 

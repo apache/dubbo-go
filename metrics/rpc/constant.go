@@ -15,14 +15,13 @@
  * limitations under the License.
  */
 
-package prometheus
+package rpc
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
 const (
-	reporterName       = "prometheus"
 	applicationNameKey = constant.ApplicationNameKey
 	groupKey           = constant.GroupKey
 	hostnameKey        = constant.HostnameKey
@@ -35,25 +34,4 @@ const (
 const (
 	providerField = "provider"
 	consumerField = "consumer"
-
-	qpsField      = "qps"
-	requestsField = "requests"
-	rtField       = "rt"
-
-	milliSecondsField = "milliseconds"
-
-	minField  = "min"
-	maxField  = "max"
-	sumField  = "sum"
-	avgField  = "avg"
-	lastField = "last"
-
-	totalField      = "total"
-	aggregateField  = "aggregate"
-	processingField = "processing"
-	succeedField    = "succeed"
-)
-
-var (
-	quantiles = []float64{0.5, 0.9, 0.95, 0.99}
 )
