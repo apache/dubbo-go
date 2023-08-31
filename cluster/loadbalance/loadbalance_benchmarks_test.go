@@ -55,26 +55,26 @@ func Benchloadbalace(b *testing.B, lb loadbalance.LoadBalance) {
 	}
 }
 
-func Benchmark_Roudrobin_Loadbalace(b *testing.B) {
+func BenchmarkRoudrobinLoadbalace(b *testing.B) {
 	Benchloadbalace(b, extension.GetLoadbalance(constant.LoadBalanceKeyRoundRobin))
 }
 
-func Benchmark_Leastative_Loadbalace(b *testing.B) {
+func BenchmarkLeastativeLoadbalace(b *testing.B) {
 	Benchloadbalace(b, extension.GetLoadbalance(constant.LoadBalanceKeyLeastActive))
 }
 
-func Benchmark_Consistenthashing_Loadbalace(b *testing.B) {
+func BenchmarkConsistenthashingLoadbalace(b *testing.B) {
 	Benchloadbalace(b, extension.GetLoadbalance(constant.LoadBalanceKeyConsistentHashing))
 }
 
-func Benchmark_P2C_Loadbalace(b *testing.B) {
+func BenchmarkP2CLoadbalace(b *testing.B) {
 	Benchloadbalace(b, extension.GetLoadbalance(constant.LoadBalanceKeyP2C))
 }
 
-func Benchmark_InterleavedWeightedRoundRobin_Loadbalace(b *testing.B) {
+func BenchmarkInterleavedWeightedRoundRobinLoadbalace(b *testing.B) {
 	Benchloadbalace(b, extension.GetLoadbalance(constant.LoadBalanceKeyInterleavedWeightedRoundRobin))
 }
 
-func Benchmark_Random_Loadbalace(b *testing.B) {
+func BenchmarkRandomLoadbalace(b *testing.B) {
 	Benchloadbalace(b, extension.GetLoadbalance(constant.LoadBalanceKeyRandom))
 }
