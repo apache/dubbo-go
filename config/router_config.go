@@ -57,7 +57,7 @@ func (c *RouterConfig) Init() error {
 	return verify(c)
 }
 
-func InitRouterConfig(rc *RootConfig) error {
+func initRouterConfig(rc *RootConfig) error {
 	routers := rc.Router
 	if len(routers) > 0 {
 		for _, r := range routers {

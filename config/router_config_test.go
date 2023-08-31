@@ -83,7 +83,7 @@ func TestNewRouterConfigBuilder(t *testing.T) {
 		AddTag(tag).
 		Build()
 
-	err := InitRouterConfig(rc)
+	err := initRouterConfig(rc)
 	assert.NoError(t, err)
 	err = config.Init()
 	assert.NoError(t, err)
