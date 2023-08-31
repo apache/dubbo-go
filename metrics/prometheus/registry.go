@@ -29,11 +29,13 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 )
 
 func init() {
-	metrics.SetRegistry("prometheus", func(rc *metrics.ReporterConfig) metrics.MetricRegistry {
+	metrics.SetRegistry(constant.ProtocolPrometheus, func(url *common.URL) metrics.MetricRegistry {
 		return &promMetricRegistry{r: prom.DefaultRegisterer}
 	})
 }

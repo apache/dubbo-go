@@ -27,6 +27,8 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/metrics/util/aggregate"
 )
 
@@ -37,31 +39,33 @@ const (
 )
 
 var (
-	registries = make(map[string]func(*ReporterConfig) MetricRegistry)
+	registries = make(map[string]func(*common.URL) MetricRegistry)
 	collectors = make([]CollectorFunc, 0)
 	registry   MetricRegistry
+	once       sync.Once
 )
 
 // CollectorFunc used to extend more indicators
-type CollectorFunc func(MetricRegistry, *ReporterConfig)
+type CollectorFunc func(MetricRegistry, *common.URL)
 
 // Init Metrics module
-func Init(config *ReporterConfig) {
-	if config.Enable {
+func Init(url *common.URL) {
+	once.Do(func() {
+		InitAppInfo(url.GetParam(constant.ApplicationKey, ""), url.GetParam(constant.AppVersionKey, ""))
 		// default protocol is already set in metricConfig
-		regFunc, ok := registries[config.Protocol]
+		regFunc, ok := registries[url.Protocol]
 		if ok {
-			registry = regFunc(config)
+			registry = regFunc(url)
 			for _, co := range collectors {
-				co(registry, config)
+				co(registry, url)
 			}
 			registry.Export()
 		}
-	}
+	})
 }
 
 // SetRegistry extend more MetricRegistry, default PrometheusRegistry
-func SetRegistry(name string, v func(*ReporterConfig) MetricRegistry) {
+func SetRegistry(name string, v func(*common.URL) MetricRegistry) {
 	registries[name] = v
 }
 
@@ -93,7 +97,7 @@ type RtOpts struct {
 // 	rs []MetricRegistry
 // }
 
-// Type metric type, save with micrometer
+// Type metric type, same with micrometer
 type Type uint8 // TODO check if Type is is useful
 
 const (
