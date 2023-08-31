@@ -95,6 +95,9 @@ func (c *rpcCollector) afterInvokeHandler(event *metricsEvent) {
 	if event.result != nil {
 		if event.result.Error() == nil {
 			c.incRequestsSucceedTotal(role, labels)
+		} else {
+			// TODO: Breaking down RPC exceptions further
+			c.incRequestsFailedTotal(role, labels)
 		}
 	}
 	c.reportRTMilliseconds(role, labels, event.costTime.Milliseconds())
@@ -146,6 +149,17 @@ func (c *rpcCollector) incRequestsSucceedTotal(role string, labels map[string]st
 	case constant.SideConsumer:
 		c.metricSet.consumer.requestsSucceedTotal.Inc(labels)
 		c.metricSet.consumer.requestsSucceedTotalAggregate.Inc(labels)
+	}
+}
+
+func (c *rpcCollector) incRequestsFailedTotal(role string, labels map[string]string) {
+	switch role {
+	case providerField:
+		c.metricSet.provider.requestsFailedTotal.Inc(labels)
+		c.metricSet.provider.requestsFailedTotalAggregate.Inc(labels)
+	case consumerField:
+		c.metricSet.consumer.requestsFailedTotal.Inc(labels)
+		c.metricSet.consumer.requestsFailedTotalAggregate.Inc(labels)
 	}
 }
 
