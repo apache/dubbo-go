@@ -18,7 +18,6 @@
 package dubbo
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/metadata/report"
@@ -32,21 +31,19 @@ type RootConfig struct {
 	Protocols           map[string]*protocol.ProtocolConfig `validate:"required" yaml:"protocols" json:"protocols" property:"protocols"`
 	Registries          map[string]*registry.RegistryConfig `yaml:"registries" json:"registries" property:"registries"`
 	ConfigCenter        *config_center.CenterConfig         `yaml:"config-center" json:"config-center,omitempty"`
-	configCenterCompat  *config.CenterConfig
-	MetadataReport      *report.MetadataReportConfig     `yaml:"metadata-report" json:"metadata-report,omitempty" property:"metadata-report"`
-	Provider            *global.ProviderConfig           `yaml:"provider" json:"provider" property:"provider"`
-	Consumer            *global.ConsumerConfig           `yaml:"consumer" json:"consumer" property:"consumer"`
-	Metric              *metrics.MetricConfig            `yaml:"metrics" json:"metrics,omitempty" property:"metrics"`
-	Tracing             map[string]*global.TracingConfig `yaml:"tracing" json:"tracing,omitempty" property:"tracing"`
-	Logger              *global.LoggerConfig             `yaml:"logger" json:"logger,omitempty" property:"logger"`
-	loggerCompat        *config.LoggerConfig
-	Shutdown            *global.ShutdownConfig `yaml:"shutdown" json:"shutdown,omitempty" property:"shutdown"`
-	Router              []*RouterConfig        `yaml:"router" json:"router,omitempty" property:"router"`
-	EventDispatcherType string                 `default:"direct" yaml:"event-dispatcher-type" json:"event-dispatcher-type,omitempty"`
-	CacheFile           string                 `yaml:"cache_file" json:"cache_file,omitempty" property:"cache_file"`
-	Custom              *global.CustomConfig   `yaml:"custom" json:"custom,omitempty" property:"custom"`
-	Profiles            *global.ProfilesConfig `yaml:"profiles" json:"profiles,omitempty" property:"profiles"`
-	TLSConfig           *global.TLSConfig      `yaml:"tls_config" json:"tls_config,omitempty" property:"tls_config"`
+	MetadataReport      *report.MetadataReportConfig        `yaml:"metadata-report" json:"metadata-report,omitempty" property:"metadata-report"`
+	Provider            *global.ProviderConfig              `yaml:"provider" json:"provider" property:"provider"`
+	Consumer            *global.ConsumerConfig              `yaml:"consumer" json:"consumer" property:"consumer"`
+	Metric              *metrics.MetricConfig               `yaml:"metrics" json:"metrics,omitempty" property:"metrics"`
+	Tracing             map[string]*global.TracingConfig    `yaml:"tracing" json:"tracing,omitempty" property:"tracing"`
+	Logger              *global.LoggerConfig                `yaml:"logger" json:"logger,omitempty" property:"logger"`
+	Shutdown            *global.ShutdownConfig              `yaml:"shutdown" json:"shutdown,omitempty" property:"shutdown"`
+	Router              []*RouterConfig                     `yaml:"router" json:"router,omitempty" property:"router"`
+	EventDispatcherType string                              `default:"direct" yaml:"event-dispatcher-type" json:"event-dispatcher-type,omitempty"`
+	CacheFile           string                              `yaml:"cache_file" json:"cache_file,omitempty" property:"cache_file"`
+	Custom              *global.CustomConfig                `yaml:"custom" json:"custom,omitempty" property:"custom"`
+	Profiles            *global.ProfilesConfig              `yaml:"profiles" json:"profiles,omitempty" property:"profiles"`
+	TLSConfig           *global.TLSConfig                   `yaml:"tls_config" json:"tls_config,omitempty" property:"tls_config"`
 }
 
 func defaultRootConfig() *RootConfig {
