@@ -27,8 +27,6 @@ type TracingConfig struct {
 
 type TracingOption func(*TracingConfig)
 
-// ---------- TracingOption ----------
-
 func WithTracing_Name(name string) TracingOption {
 	return func(cfg *TracingConfig) {
 		cfg.Name = name

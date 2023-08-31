@@ -64,8 +64,6 @@ func DefaultLoggerConfig() *LoggerConfig {
 
 type LoggerOption func(*LoggerConfig)
 
-// ---------- LoggerOption ----------
-
 func WithLogger_Driver(driver string) LoggerOption {
 	return func(cfg *LoggerConfig) {
 		cfg.Driver = driver

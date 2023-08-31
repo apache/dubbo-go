@@ -27,8 +27,6 @@ func DefaultCustomConfig() *CustomConfig {
 
 type CustomOption func(*CustomConfig)
 
-// ---------- CustomOption ----------
-
 func WithCustom_ConfigMap(cfgMap map[string]interface{}) CustomOption {
 	return func(cfg *CustomConfig) {
 		cfg.ConfigMap = cfgMap

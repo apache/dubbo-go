@@ -31,8 +31,6 @@ func DefaultTLSConfig() *TLSConfig {
 
 type TLSOption func(*TLSConfig)
 
-// ---------- TLSOption ----------
-
 func WithTLS_CACertFile(file string) TLSOption {
 	return func(cfg *TLSConfig) {
 		cfg.CACertFile = file

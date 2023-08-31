@@ -28,8 +28,6 @@ func DefaultProfilesConfig() *ProfilesConfig {
 
 type ProfilesOption func(*ProfilesConfig)
 
-// ---------- ProfilesOption ----------
-
 func WithProfiles_Active(active string) ProfilesOption {
 	return func(cfg *ProfilesConfig) {
 		cfg.Active = active
