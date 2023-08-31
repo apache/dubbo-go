@@ -196,6 +196,60 @@ func WithApplication(application *commonCfg.ApplicationConfig) ReferenceOption {
 	}
 }
 
+func WithApplicationOrganization(organization string) ReferenceOption {
+	return func(cfg *ReferenceConfig) {
+		cfg.applicationOrganization = organization
+	}
+}
+
+func WithApplicationName(name string) ReferenceOption {
+	return func(cfg *ReferenceConfig) {
+		cfg.applicationName = name
+	}
+}
+
+func WithApplicationModule(module string) ReferenceOption {
+	return func(cfg *ReferenceConfig) {
+		cfg.applicationModule = module
+	}
+}
+
+func WithApplicationGroup(group string) ReferenceOption {
+	return func(cfg *ReferenceConfig) {
+		cfg.applicationGroup = group
+	}
+}
+
+func WithApplicationVersion(version string) ReferenceOption {
+	return func(cfg *ReferenceConfig) {
+		cfg.applicationVersion = version
+	}
+}
+
+func WithApplicationOwner(owner string) ReferenceOption {
+	return func(cfg *ReferenceConfig) {
+		cfg.applicationOwner = owner
+	}
+}
+
+func WithApplicationEnvironment(environment string) ReferenceOption {
+	return func(cfg *ReferenceConfig) {
+		cfg.applicationEnvironment = environment
+	}
+}
+
+func WithApplicationMetadataType(typ string) ReferenceOption {
+	return func(cfg *ReferenceConfig) {
+		cfg.applicationMetadataType = typ
+	}
+}
+
+func WithApplicationTag(tag string) ReferenceOption {
+	return func(cfg *ReferenceConfig) {
+		cfg.applicationTag = tag
+	}
+}
+
 // ----------From ConsumerConfig----------
 
 func WithMeshEnabled(meshEnabled bool) ReferenceOption {

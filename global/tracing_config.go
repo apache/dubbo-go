@@ -1,0 +1,54 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package global
+
+// TracingConfig is the configuration of the tracing.
+type TracingConfig struct {
+	Name        string `default:"jaeger" yaml:"name" json:"name,omitempty" property:"name"` // jaeger or zipkin(todo)
+	ServiceName string `yaml:"serviceName" json:"serviceName,omitempty" property:"serviceName"`
+	Address     string `yaml:"address" json:"address,omitempty" property:"address"`
+	UseAgent    *bool  `default:"false" yaml:"use-agent" json:"use-agent,omitempty" property:"use-agent"`
+}
+
+type TracingOption func(*TracingConfig)
+
+// ---------- TracingOption ----------
+
+func WithTracing_Name(name string) TracingOption {
+	return func(cfg *TracingConfig) {
+		cfg.Name = name
+	}
+}
+
+func WithTracing_ServiceName(name string) TracingOption {
+	return func(cfg *TracingConfig) {
+		cfg.ServiceName = name
+	}
+}
+
+func WithTracing_Address(address string) TracingOption {
+	return func(cfg *TracingConfig) {
+		cfg.Address = address
+	}
+}
+
+func WithTracing_UseAgent(flag bool) TracingOption {
+	return func(cfg *TracingConfig) {
+		cfg.UseAgent = &flag
+	}
+}

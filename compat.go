@@ -3,6 +3,7 @@ package dubbo
 import (
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
+	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/metadata/report"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
@@ -10,7 +11,44 @@ import (
 	"go.uber.org/atomic"
 )
 
-func compatApplicationConfig(c *ApplicationConfig) *config.ApplicationConfig {
+func compatRootConfig(c *RootConfig) *config.RootConfig {
+	proCompat := make(map[string]*config.ProtocolConfig)
+	for k, v := range c.Protocols {
+		proCompat[k] = compatProtocolConfig(v)
+	}
+
+	regCompat := make(map[string]*config.RegistryConfig)
+	for k, v := range c.Registries {
+		regCompat[k] = compatRegistryConfig(v)
+	}
+
+	traCompat := make(map[string]*config.TracingConfig)
+	for k, v := range c.Tracing {
+		traCompat[k] = compatTracingConfig(v)
+	}
+
+	return &config.RootConfig{
+		Application:         compatApplicationConfig(c.Application),
+		Protocols:           proCompat,
+		Registries:          regCompat,
+		ConfigCenter:        compatCenterConfig(c.ConfigCenter),
+		MetadataReport:      compatMetadataReportConfig(c.MetadataReport),
+		Provider:            compatProviderConfig(c.Provider),
+		Consumer:            compatConsumerConfig(c.Consumer),
+		Metric:              compatMetricConfig(c.Metric),
+		Tracing:             traCompat,
+		Logger:              compatLoggerConfig(c.Logger),
+		Shutdown:            compatShutdownConfig(c.Shutdown),
+		Router:              ,
+		EventDispatcherType: c.EventDispatcherType,
+		CacheFile:           c.CacheFile,
+		Custom:              compatCustomConfig(c.Custom),
+		Profiles:            compatProfilesConfig(c.Profiles),
+		TLSConfig:           compatTLSConfig(c.TLSConfig),
+	}
+}
+
+func compatApplicationConfig(c *global.ApplicationConfig) *config.ApplicationConfig {
 	return &config.ApplicationConfig{
 		Organization: c.Organization,
 		Name:         c.Name,
@@ -85,8 +123,22 @@ func compatMetadataReportConfig(c *report.MetadataReportConfig) *config.Metadata
 	}
 }
 
-// todo:(DMwangnima): is there any need to compat ConsumerConfig?
-func compatConsumerConfig(c *ConsumerConfig) *config.ConsumerConfig {
+func compatProviderConfig(c *global.ProviderConfig) *config.ProviderConfig {
+	return &config.ProviderConfig{
+		Filter:                 c.Filter,
+		Register:               c.Register,
+		RegistryIDs:            c.RegistryIDs,
+		ProtocolIDs:            c.ProtocolIDs,
+		TracingKey:             c.TracingKey,
+		ProxyFactory:           c.ProxyFactory,
+		FilterConf:             c.FilterConf,
+		ConfigType:             c.ConfigType,
+		AdaptiveService:        c.AdaptiveService,
+		AdaptiveServiceVerbose: c.AdaptiveServiceVerbose,
+	}
+}
+
+func compatConsumerConfig(c *global.ConsumerConfig) *config.ConsumerConfig {
 	return &config.ConsumerConfig{
 		Filter:          c.Filter,
 		RegistryIDs:     c.RegistryIDs,
@@ -95,7 +147,6 @@ func compatConsumerConfig(c *ConsumerConfig) *config.ConsumerConfig {
 		ProxyFactory:    c.ProxyFactory,
 		Check:           c.Check,
 		AdaptiveService: c.AdaptiveService,
-		//References:                     c.References,
 		TracingKey:                     c.TracingKey,
 		FilterConf:                     c.FilterConf,
 		MaxWaitTimeForServiceDiscovery: c.MaxWaitTimeForServiceDiscovery,
@@ -116,7 +167,7 @@ func compatMetricConfig(c *metrics.MetricConfig) *config.MetricConfig {
 	}
 }
 
-func compatTracingConfig(c *TracingConfig) *config.TracingConfig {
+func compatTracingConfig(c *global.TracingConfig) *config.TracingConfig {
 	return &config.TracingConfig{
 		Name:        c.Name,
 		ServiceName: c.ServiceName,
@@ -125,7 +176,7 @@ func compatTracingConfig(c *TracingConfig) *config.TracingConfig {
 	}
 }
 
-func compatLoggerConfig(c *LoggerConfig) *config.LoggerConfig {
+func compatLoggerConfig(c *global.LoggerConfig) *config.LoggerConfig {
 	return &config.LoggerConfig{
 		Driver:   c.Driver,
 		Level:    c.Level,
@@ -135,7 +186,7 @@ func compatLoggerConfig(c *LoggerConfig) *config.LoggerConfig {
 	}
 }
 
-func compatFile(c *File) *config.File {
+func compatFile(c *global.File) *config.File {
 	return &config.File{
 		Name:       c.Name,
 		MaxSize:    c.MaxSize,
@@ -145,7 +196,7 @@ func compatFile(c *File) *config.File {
 	}
 }
 
-func compatShutdownConfig(c *ShutdownConfig) *config.ShutdownConfig {
+func compatShutdownConfig(c *global.ShutdownConfig) *config.ShutdownConfig {
 	cfg := &config.ShutdownConfig{
 		Timeout:                     c.Timeout,
 		StepTimeout:                 c.StepTimeout,
@@ -160,19 +211,19 @@ func compatShutdownConfig(c *ShutdownConfig) *config.ShutdownConfig {
 	return cfg
 }
 
-func compatCustomConfig(c *CustomConfig) *config.CustomConfig {
+func compatCustomConfig(c *global.CustomConfig) *config.CustomConfig {
 	return &config.CustomConfig{
 		ConfigMap: c.ConfigMap,
 	}
 }
 
-func compatProfilesConfig(c *ProfilesConfig) *config.ProfilesConfig {
+func compatProfilesConfig(c *global.ProfilesConfig) *config.ProfilesConfig {
 	return &config.ProfilesConfig{
 		Active: c.Active,
 	}
 }
 
-func compatTLSConfig(c *TLSConfig) *config.TLSConfig {
+func compatTLSConfig(c *global.TLSConfig) *config.TLSConfig {
 	return &config.TLSConfig{
 		CACertFile:    c.CACertFile,
 		TLSCertFile:   c.TLSCertFile,

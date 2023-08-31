@@ -18,9 +18,9 @@
 package dubbo
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
+	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/metadata/report"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
@@ -28,24 +28,44 @@ import (
 )
 
 type RootConfig struct {
-	Application         *ApplicationConfig                  `validate:"required" yaml:"application" json:"application,omitempty" property:"application"`
+	Application         *global.ApplicationConfig           `validate:"required" yaml:"application" json:"application,omitempty" property:"application"`
 	Protocols           map[string]*protocol.ProtocolConfig `validate:"required" yaml:"protocols" json:"protocols" property:"protocols"`
 	Registries          map[string]*registry.RegistryConfig `yaml:"registries" json:"registries" property:"registries"`
 	ConfigCenter        *config_center.CenterConfig         `yaml:"config-center" json:"config-center,omitempty"`
-	MetadataReport      *report.MetadataReportConfig        `yaml:"metadata-report" json:"metadata-report,omitempty" property:"metadata-report"`
-	Provider            *ProviderConfig                     `yaml:"provider" json:"provider" property:"provider"`
-	Consumer            *ConsumerConfig                     `yaml:"consumer" json:"consumer" property:"consumer"`
-	Metric              *metrics.MetricConfig               `yaml:"metrics" json:"metrics,omitempty" property:"metrics"`
-	Tracing             map[string]*TracingConfig           `yaml:"tracing" json:"tracing,omitempty" property:"tracing"`
-	Logger              *LoggerConfig                       `yaml:"logger" json:"logger,omitempty" property:"logger"`
+	configCenterCompat  *config.CenterConfig
+	MetadataReport      *report.MetadataReportConfig     `yaml:"metadata-report" json:"metadata-report,omitempty" property:"metadata-report"`
+	Provider            *global.ProviderConfig           `yaml:"provider" json:"provider" property:"provider"`
+	Consumer            *global.ConsumerConfig           `yaml:"consumer" json:"consumer" property:"consumer"`
+	Metric              *metrics.MetricConfig            `yaml:"metrics" json:"metrics,omitempty" property:"metrics"`
+	Tracing             map[string]*global.TracingConfig `yaml:"tracing" json:"tracing,omitempty" property:"tracing"`
+	Logger              *global.LoggerConfig             `yaml:"logger" json:"logger,omitempty" property:"logger"`
 	loggerCompat        *config.LoggerConfig
-	Shutdown            *ShutdownConfig `yaml:"shutdown" json:"shutdown,omitempty" property:"shutdown"`
-	Router              []*RouterConfig `yaml:"router" json:"router,omitempty" property:"router"`
-	EventDispatcherType string          `default:"direct" yaml:"event-dispatcher-type" json:"event-dispatcher-type,omitempty"`
-	CacheFile           string          `yaml:"cache_file" json:"cache_file,omitempty" property:"cache_file"`
-	Custom              *CustomConfig   `yaml:"custom" json:"custom,omitempty" property:"custom"`
-	Profiles            *ProfilesConfig `yaml:"profiles" json:"profiles,omitempty" property:"profiles"`
-	TLSConfig           *TLSConfig      `yaml:"tls_config" json:"tls_config,omitempty" property:"tls_config"`
+	Shutdown            *global.ShutdownConfig `yaml:"shutdown" json:"shutdown,omitempty" property:"shutdown"`
+	Router              []*RouterConfig        `yaml:"router" json:"router,omitempty" property:"router"`
+	EventDispatcherType string                 `default:"direct" yaml:"event-dispatcher-type" json:"event-dispatcher-type,omitempty"`
+	CacheFile           string                 `yaml:"cache_file" json:"cache_file,omitempty" property:"cache_file"`
+	Custom              *global.CustomConfig   `yaml:"custom" json:"custom,omitempty" property:"custom"`
+	Profiles            *global.ProfilesConfig `yaml:"profiles" json:"profiles,omitempty" property:"profiles"`
+	TLSConfig           *global.TLSConfig      `yaml:"tls_config" json:"tls_config,omitempty" property:"tls_config"`
+}
+
+func defaultRootConfig() *RootConfig {
+	return &RootConfig{
+		Application:    global.DefaultApplicationConfig(),
+		Protocols:      make(map[string]*protocol.ProtocolConfig),
+		Registries:     make(map[string]*registry.RegistryConfig),
+		ConfigCenter:   config_center.DefaultCenterConfig(),
+		MetadataReport: report.DefaultMetadataReportConfig(),
+		Provider:       global.DefaultProviderConfig(),
+		Consumer:       global.DefaultConsumerConfig(),
+		Metric:         metrics.DefaultMetricConfig(),
+		Tracing:        make(map[string]*global.TracingConfig),
+		Logger:         global.DefaultLoggerConfig(),
+		Shutdown:       global.DefaultShutdownConfig(),
+		Custom:         global.DefaultCustomConfig(),
+		Profiles:       global.DefaultProfilesConfig(),
+		TLSConfig:      global.DefaultTLSConfig(),
+	}
 }
 
 func (rc *RootConfig) Init(opts ...RootOption) error {
@@ -53,91 +73,18 @@ func (rc *RootConfig) Init(opts ...RootOption) error {
 		opt(rc)
 	}
 
-	registerPOJO()
-	if rc.Logger != nil {
-
-	}
-	if err := rc.Logger.Init(); err != nil { // init default logger
-		return err
-	}
-	if err := rc.ConfigCenter.Init(rc); err != nil {
-		logger.Infof("[Config Center] Config center doesn't start")
-		logger.Debugf("config center doesn't start because %s", err)
-	} else {
-		if err = rc.Logger.Init(); err != nil { // init logger using config from config center again
-			return err
-		}
-	}
-
-	if err := rc.Application.Init(); err != nil {
+	rcCompat := compatRootConfig(rc)
+	if err := rcCompat.Init(); err != nil {
 		return err
 	}
 
-	// init user define
-	if err := rc.Custom.Init(); err != nil {
-		return err
-	}
-
-	// init protocol
-	protocols := rc.Protocols
-	if len(protocols) <= 0 {
-		protocol := &ProtocolConfig{}
-		protocols = make(map[string]*ProtocolConfig, 1)
-		protocols[constant.Dubbo] = protocol
-		rc.Protocols = protocols
-	}
-	for _, protocol := range protocols {
-		if err := protocol.Init(); err != nil {
-			return err
-		}
-	}
-
-	// init registry
-	registries := rc.Registries
-	if registries != nil {
-		for _, reg := range registries {
-			if err := reg.Init(); err != nil {
-				return err
-			}
-		}
-	}
-
-	if err := rc.MetadataReport.Init(rc); err != nil {
-		return err
-	}
-	if err := rc.Metric.Init(); err != nil {
-		return err
-	}
-	for _, t := range rc.Tracing {
-		if err := t.Init(); err != nil {
-			return err
-		}
-	}
-	if err := initRouterConfig(rc); err != nil {
-		return err
-	}
-	// provider、consumer must last init
-	if err := rc.Provider.Init(rc); err != nil {
-		return err
-	}
-	if err := rc.Consumer.Init(rc); err != nil {
-		return err
-	}
-	if err := rc.Shutdown.Init(); err != nil {
-		return err
-	}
-	SetRootConfig(*rc)
-	// todo if we can remove this from Init in the future?
-	rc.Start()
 	return nil
 }
 
 type RootOption func(*RootConfig)
 
-// ---------- RootOption ----------
-
-func WithApplication(opts ...ApplicationOption) RootOption {
-	appCfg := new(ApplicationConfig)
+func WithApplication(opts ...global.ApplicationOption) RootOption {
+	appCfg := new(global.ApplicationConfig)
 	for _, opt := range opts {
 		opt(appCfg)
 	}
@@ -197,8 +144,8 @@ func WithMetadataReport(opts ...report.MetadataReportOption) RootOption {
 	}
 }
 
-func WithConsumer(opts ...ConsumerOption) RootOption {
-	conCfg := new(ConsumerConfig)
+func WithConsumer(opts ...global.ConsumerOption) RootOption {
+	conCfg := new(global.ConsumerConfig)
 	for _, opt := range opts {
 		opt(conCfg)
 	}
@@ -219,22 +166,22 @@ func WithMetric(opts ...metrics.MetricOption) RootOption {
 	}
 }
 
-func WithTracing(key string, opts ...TracingOption) RootOption {
-	traCfg := new(TracingConfig)
+func WithTracing(key string, opts ...global.TracingOption) RootOption {
+	traCfg := new(global.TracingConfig)
 	for _, opt := range opts {
 		opt(traCfg)
 	}
 
 	return func(cfg *RootConfig) {
 		if cfg.Tracing == nil {
-			cfg.Tracing = make(map[string]*TracingConfig)
+			cfg.Tracing = make(map[string]*global.TracingConfig)
 		}
 		cfg.Tracing[key] = traCfg
 	}
 }
 
-func WithLogger(opts ...LoggerOption) RootOption {
-	logCfg := new(LoggerConfig)
+func WithLogger(opts ...global.LoggerOption) RootOption {
+	logCfg := new(global.LoggerConfig)
 	for _, opt := range opts {
 		opt(logCfg)
 	}
@@ -244,8 +191,8 @@ func WithLogger(opts ...LoggerOption) RootOption {
 	}
 }
 
-func WithShutdown(opts ...ShutdownOption) RootOption {
-	sdCfg := new(ShutdownConfig)
+func WithShutdown(opts ...global.ShutdownOption) RootOption {
+	sdCfg := new(global.ShutdownConfig)
 	for _, opt := range opts {
 		opt(sdCfg)
 	}
@@ -267,8 +214,8 @@ func WithCacheFile(file string) RootOption {
 	}
 }
 
-func WithCustom(opts ...CustomOption) RootOption {
-	cusCfg := new(CustomConfig)
+func WithCustom(opts ...global.CustomOption) RootOption {
+	cusCfg := new(global.CustomConfig)
 	for _, opt := range opts {
 		opt(cusCfg)
 	}
@@ -278,8 +225,8 @@ func WithCustom(opts ...CustomOption) RootOption {
 	}
 }
 
-func WithProfiles(opts ...ProfilesOption) RootOption {
-	proCfg := new(ProfilesConfig)
+func WithProfiles(opts ...global.ProfilesOption) RootOption {
+	proCfg := new(global.ProfilesConfig)
 	for _, opt := range opts {
 		opt(proCfg)
 	}
@@ -289,8 +236,8 @@ func WithProfiles(opts ...ProfilesOption) RootOption {
 	}
 }
 
-func WithTLS(opts ...TLSOption) RootOption {
-	tlsCfg := new(TLSConfig)
+func WithTLS(opts ...global.TLSOption) RootOption {
+	tlsCfg := new(global.TLSConfig)
 	for _, opt := range opts {
 		opt(tlsCfg)
 	}

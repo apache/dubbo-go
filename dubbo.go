@@ -17,29 +17,60 @@
 
 package dubbo
 
-import "dubbo.apache.org/dubbo-go/v3/client"
+import (
+	"dubbo.apache.org/dubbo-go/v3/client"
+	"github.com/pkg/errors"
+)
 
+// Instance is the highest layer conception that user could touch. It is mapped from RootConfig.
+// When users want to inject global configurations and configure common modules for client layer
+// and server layer, user-side code would be like this:
+//
+// ins, err := NewInstance()
+// cli, err := ins.NewClient()
 type Instance struct {
-	rc *RootConfig
+	rootCfg *RootConfig
 }
 
+// NewInstance receives RootOption and initializes RootConfig. There are some processing
+// tasks during initialization.
 func NewInstance(opts ...RootOption) (*Instance, error) {
-	rootCfg := new(RootConfig)
-	for _, opt := range opts {
-		opt(rootCfg)
+	rootCfg := defaultRootConfig()
+	if err := rootCfg.Init(opts...); err != nil {
+		return nil, err
 	}
-	// use compatible function
 
+	return &Instance{rootCfg: rootCfg}, nil
 }
 
-// todo: create a default RootConfig
-
-func defaultRootConfig() *RootConfig {
-	return &RootConfig{}
-}
-
+// NewClient is like client.NewClient, but inject configurations from RootConfig and
+// ConsumerConfig
 func (ins *Instance) NewClient(opts ...client.ReferenceOption) (*client.Client, error) {
-	cli, err := client.NewClient(opts...)
+	if ins == nil || ins.rootCfg == nil {
+		return nil, errors.New("Instance has not been initialized")
+	}
+
+	var refOpts []client.ReferenceOption
+	conCfg := ins.rootCfg.Consumer
+	if conCfg != nil {
+		// these options come from Consumer and Root.
+		// for dubbo-go developers, referring config/ConsumerConfig.Init and config/ReferenceConfig
+		refOpts = append(refOpts,
+			client.WithFilter(conCfg.Filter),
+			client.WithRegistryIDs(conCfg.RegistryIDs),
+			client.WithProtocol(conCfg.Protocol),
+			client.WithTracingKey(conCfg.TracingKey),
+			client.WithCheck(conCfg.Check),
+			client.WithMeshEnabled(conCfg.MeshEnabled),
+			client.WithAdaptiveService(conCfg.AdaptiveService),
+			client.WithProxyFactory(conCfg.ProxyFactory),
+			client.WithApplication(ins.rootCfg.Application),
+			client.WithRegistries(ins.rootCfg.Registries),
+		)
+	}
+	refOpts = append(refOpts, opts...)
+
+	cli, err := client.NewClient(refOpts...)
 	if err != nil {
 		return nil, err
 	}

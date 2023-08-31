@@ -30,6 +30,11 @@ type MetadataReportConfig struct {
 	metadataType string
 }
 
+func DefaultMetadataReportConfig() *MetadataReportConfig {
+	// return a new config without setting any field means there is not any default value for initialization
+	return &MetadataReportConfig{}
+}
+
 type MetadataReportOption func(*MetadataReportConfig)
 
 func WithProtocol(protocol string) MetadataReportOption {

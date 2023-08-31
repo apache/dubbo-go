@@ -29,6 +29,11 @@ type MetricConfig struct {
 	Protocol           string `default:"prometheus" yaml:"protocol" json:"protocol,omitempty" property:"protocol"`
 }
 
+func DefaultMetricConfig() *MetricConfig {
+	// return a new config without setting any field means there is not any default value for initialization
+	return &MetricConfig{}
+}
+
 type MetricOption func(*MetricConfig)
 
 func WithMode(mode string) MetricOption {

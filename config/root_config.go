@@ -186,7 +186,7 @@ func (rc *RootConfig) Init() error {
 			return err
 		}
 	}
-	if err := initRouterConfig(rc); err != nil {
+	if err := InitRouterConfig(rc); err != nil {
 		return err
 	}
 	// provider、consumer must last init

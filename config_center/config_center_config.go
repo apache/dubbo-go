@@ -24,6 +24,12 @@ type CenterConfig struct {
 	FileExtension string `default:"yaml" yaml:"file-extension" json:"file-extension" `
 }
 
+func DefaultCenterConfig() *CenterConfig {
+	return &CenterConfig{
+		Params: make(map[string]string),
+	}
+}
+
 type CenterOption func(*CenterConfig)
 
 func WithProtocol(protocol string) CenterOption {
@@ -90,7 +96,12 @@ func WithTimeout_(timeout string) CenterOption {
 
 func WithParams(params map[string]string) CenterOption {
 	return func(cfg *CenterConfig) {
-		cfg.Params = params
+		if cfg.Params == nil {
+			cfg.Params = make(map[string]string)
+		}
+		for k, v := range params {
+			cfg.Params[k] = v
+		}
 	}
 }
 
