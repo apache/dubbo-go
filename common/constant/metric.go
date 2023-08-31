@@ -55,3 +55,8 @@ const (
 	PrometheusDefaultJobName            = "default_dubbo_job"
 	MetricFilterStartTime               = "metric_filter_start_time"
 )
+
+const (
+	SideProvider = "provider"
+	SideConsumer = "consumer"
+)
