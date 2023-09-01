@@ -56,7 +56,6 @@ func compatRootConfig(c *RootConfig) *config.RootConfig {
 		Tracing:             traCompat,
 		Logger:              compatLoggerConfig(c.Logger),
 		Shutdown:            compatShutdownConfig(c.Shutdown),
-		Router:              ,
 		EventDispatcherType: c.EventDispatcherType,
 		CacheFile:           c.CacheFile,
 		Custom:              compatCustomConfig(c.Custom),
