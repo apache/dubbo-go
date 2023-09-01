@@ -18,44 +18,40 @@
 package dubbo
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/global"
-	"dubbo.apache.org/dubbo-go/v3/metadata/report"
-	"dubbo.apache.org/dubbo-go/v3/metrics"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
-	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
 type RootConfig struct {
-	Application         *global.ApplicationConfig           `validate:"required" yaml:"application" json:"application,omitempty" property:"application"`
-	Protocols           map[string]*protocol.ProtocolConfig `validate:"required" yaml:"protocols" json:"protocols" property:"protocols"`
-	Registries          map[string]*registry.RegistryConfig `yaml:"registries" json:"registries" property:"registries"`
-	ConfigCenter        *config_center.CenterConfig         `yaml:"config-center" json:"config-center,omitempty"`
-	MetadataReport      *report.MetadataReportConfig        `yaml:"metadata-report" json:"metadata-report,omitempty" property:"metadata-report"`
-	Provider            *global.ProviderConfig              `yaml:"provider" json:"provider" property:"provider"`
-	Consumer            *global.ConsumerConfig              `yaml:"consumer" json:"consumer" property:"consumer"`
-	Metric              *metrics.MetricConfig               `yaml:"metrics" json:"metrics,omitempty" property:"metrics"`
-	Tracing             map[string]*global.TracingConfig    `yaml:"tracing" json:"tracing,omitempty" property:"tracing"`
-	Logger              *global.LoggerConfig                `yaml:"logger" json:"logger,omitempty" property:"logger"`
-	Shutdown            *global.ShutdownConfig              `yaml:"shutdown" json:"shutdown,omitempty" property:"shutdown"`
-	Router              []*RouterConfig                     `yaml:"router" json:"router,omitempty" property:"router"`
-	EventDispatcherType string                              `default:"direct" yaml:"event-dispatcher-type" json:"event-dispatcher-type,omitempty"`
-	CacheFile           string                              `yaml:"cache_file" json:"cache_file,omitempty" property:"cache_file"`
-	Custom              *global.CustomConfig                `yaml:"custom" json:"custom,omitempty" property:"custom"`
-	Profiles            *global.ProfilesConfig              `yaml:"profiles" json:"profiles,omitempty" property:"profiles"`
-	TLSConfig           *global.TLSConfig                   `yaml:"tls_config" json:"tls_config,omitempty" property:"tls_config"`
+	Application    *global.ApplicationConfig         `validate:"required" yaml:"application" json:"application,omitempty" property:"application"`
+	Protocols      map[string]*global.ProtocolConfig `validate:"required" yaml:"protocols" json:"protocols" property:"protocols"`
+	Registries     map[string]*global.RegistryConfig `yaml:"registries" json:"registries" property:"registries"`
+	ConfigCenter   *global.CenterConfig              `yaml:"config-center" json:"config-center,omitempty"`
+	MetadataReport *global.MetadataReportConfig      `yaml:"metadata-report" json:"metadata-report,omitempty" property:"metadata-report"`
+	Provider       *global.ProviderConfig            `yaml:"provider" json:"provider" property:"provider"`
+	Consumer       *global.ConsumerConfig            `yaml:"consumer" json:"consumer" property:"consumer"`
+	Metric         *global.MetricConfig              `yaml:"metrics" json:"metrics,omitempty" property:"metrics"`
+	Tracing        map[string]*global.TracingConfig  `yaml:"tracing" json:"tracing,omitempty" property:"tracing"`
+	Logger         *global.LoggerConfig              `yaml:"logger" json:"logger,omitempty" property:"logger"`
+	Shutdown       *global.ShutdownConfig            `yaml:"shutdown" json:"shutdown,omitempty" property:"shutdown"`
+	// todo(DMwangnima): router feature would be supported in the future
+	//Router              []*RouterConfig                   `yaml:"router" json:"router,omitempty" property:"router"`
+	EventDispatcherType string                 `default:"direct" yaml:"event-dispatcher-type" json:"event-dispatcher-type,omitempty"`
+	CacheFile           string                 `yaml:"cache_file" json:"cache_file,omitempty" property:"cache_file"`
+	Custom              *global.CustomConfig   `yaml:"custom" json:"custom,omitempty" property:"custom"`
+	Profiles            *global.ProfilesConfig `yaml:"profiles" json:"profiles,omitempty" property:"profiles"`
+	TLSConfig           *global.TLSConfig      `yaml:"tls_config" json:"tls_config,omitempty" property:"tls_config"`
 }
 
 func defaultRootConfig() *RootConfig {
 	return &RootConfig{
 		Application:    global.DefaultApplicationConfig(),
-		Protocols:      make(map[string]*protocol.ProtocolConfig),
-		Registries:     make(map[string]*registry.RegistryConfig),
-		ConfigCenter:   config_center.DefaultCenterConfig(),
-		MetadataReport: report.DefaultMetadataReportConfig(),
+		Protocols:      make(map[string]*global.ProtocolConfig),
+		Registries:     make(map[string]*global.RegistryConfig),
+		ConfigCenter:   global.DefaultCenterConfig(),
+		MetadataReport: global.DefaultMetadataReportConfig(),
 		Provider:       global.DefaultProviderConfig(),
 		Consumer:       global.DefaultConsumerConfig(),
-		Metric:         metrics.DefaultMetricConfig(),
+		Metric:         global.DefaultMetricConfig(),
 		Tracing:        make(map[string]*global.TracingConfig),
 		Logger:         global.DefaultLoggerConfig(),
 		Shutdown:       global.DefaultShutdownConfig(),
@@ -91,36 +87,36 @@ func WithApplication(opts ...global.ApplicationOption) RootOption {
 	}
 }
 
-func WithProtocol(key string, opts ...protocol.ProtocolOption) RootOption {
-	proCfg := new(protocol.ProtocolConfig)
+func WithProtocol(key string, opts ...global.ProtocolOption) RootOption {
+	proCfg := new(global.ProtocolConfig)
 	for _, opt := range opts {
 		opt(proCfg)
 	}
 
 	return func(cfg *RootConfig) {
 		if cfg.Protocols == nil {
-			cfg.Protocols = make(map[string]*protocol.ProtocolConfig)
+			cfg.Protocols = make(map[string]*global.ProtocolConfig)
 		}
 		cfg.Protocols[key] = proCfg
 	}
 }
 
-func WithRegistry(key string, opts ...registry.RegistryOption) RootOption {
-	regCfg := new(registry.RegistryConfig)
+func WithRegistry(key string, opts ...global.RegistryOption) RootOption {
+	regCfg := new(global.RegistryConfig)
 	for _, opt := range opts {
 		opt(regCfg)
 	}
 
 	return func(cfg *RootConfig) {
 		if cfg.Registries == nil {
-			cfg.Registries = make(map[string]*registry.RegistryConfig)
+			cfg.Registries = make(map[string]*global.RegistryConfig)
 		}
 		cfg.Registries[key] = regCfg
 	}
 }
 
-func WithConfigCenter(opts ...config_center.CenterOption) RootOption {
-	ccCfg := new(config_center.CenterConfig)
+func WithConfigCenter(opts ...global.CenterOption) RootOption {
+	ccCfg := new(global.CenterConfig)
 	for _, opt := range opts {
 		opt(ccCfg)
 	}
@@ -130,8 +126,8 @@ func WithConfigCenter(opts ...config_center.CenterOption) RootOption {
 	}
 }
 
-func WithMetadataReport(opts ...report.MetadataReportOption) RootOption {
-	mrCfg := new(report.MetadataReportConfig)
+func WithMetadataReport(opts ...global.MetadataReportOption) RootOption {
+	mrCfg := new(global.MetadataReportConfig)
 	for _, opt := range opts {
 		opt(mrCfg)
 	}
@@ -152,8 +148,8 @@ func WithConsumer(opts ...global.ConsumerOption) RootOption {
 	}
 }
 
-func WithMetric(opts ...metrics.MetricOption) RootOption {
-	meCfg := new(metrics.MetricConfig)
+func WithMetric(opts ...global.MetricOption) RootOption {
+	meCfg := new(global.MetricConfig)
 	for _, opt := range opts {
 		opt(meCfg)
 	}
