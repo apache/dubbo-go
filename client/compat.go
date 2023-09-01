@@ -18,15 +18,15 @@
 package client
 
 import (
-	commonCfg "dubbo.apache.org/dubbo-go/v3/common/config"
 	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
 // these functions are used to resolve circular dependencies temporarily.
 // please refer to issue(https://github.com/apache/dubbo-go/issues/2377)
 // todo(DMwangnima): remove these functions when refactoring dubbo-go
-func compatApplicationConfig(c *commonCfg.ApplicationConfig) *config.ApplicationConfig {
+func compatApplicationConfig(c *global.ApplicationConfig) *config.ApplicationConfig {
 	return &config.ApplicationConfig{
 		Organization: c.Organization,
 		Name:         c.Name,

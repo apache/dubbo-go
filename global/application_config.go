@@ -15,9 +15,7 @@
  * limitations under the License.
  */
 
-package config
-
-// todo(DMwangnima): think about the location of this type of configuration.
+package global
 
 // ApplicationConfig is a configuration for current applicationConfig, whether the applicationConfig is a provider or a consumer
 type ApplicationConfig struct {
@@ -33,57 +31,62 @@ type ApplicationConfig struct {
 	Tag          string `yaml:"tag" json:"tag,omitempty" property:"tag"`
 }
 
+func DefaultApplicationConfig() *ApplicationConfig {
+	// return a new config without setting any field means there is not any default value for initialization
+	return &ApplicationConfig{}
+}
+
 type ApplicationOption func(*ApplicationConfig)
 
-func WithOrganization(organization string) ApplicationOption {
+func WithApplication_Organization(organization string) ApplicationOption {
 	return func(cfg *ApplicationConfig) {
 		cfg.Organization = organization
 	}
 }
 
-func WithName(name string) ApplicationOption {
+func WithApplication_Name(name string) ApplicationOption {
 	return func(cfg *ApplicationConfig) {
 		cfg.Name = name
 	}
 }
 
-func WithModule(module string) ApplicationOption {
+func WithApplication_Module(module string) ApplicationOption {
 	return func(cfg *ApplicationConfig) {
 		cfg.Module = module
 	}
 }
 
-func WithGroup(group string) ApplicationOption {
+func WithApplication_Group(group string) ApplicationOption {
 	return func(cfg *ApplicationConfig) {
 		cfg.Group = group
 	}
 }
 
-func WithVersion(version string) ApplicationOption {
+func WithApplication_Version(version string) ApplicationOption {
 	return func(cfg *ApplicationConfig) {
 		cfg.Version = version
 	}
 }
 
-func WithOwner(owner string) ApplicationOption {
+func WithApplication_Owner(owner string) ApplicationOption {
 	return func(cfg *ApplicationConfig) {
 		cfg.Owner = owner
 	}
 }
 
-func WithEnvironment(environment string) ApplicationOption {
+func WithApplication_Environment(environment string) ApplicationOption {
 	return func(cfg *ApplicationConfig) {
 		cfg.Environment = environment
 	}
 }
 
-func WithMetadataType(metadataType string) ApplicationOption {
+func WithApplication_MetadataType(metadataType string) ApplicationOption {
 	return func(cfg *ApplicationConfig) {
 		cfg.MetadataType = metadataType
 	}
 }
 
-func WithTag(tag string) ApplicationOption {
+func WithApplication_Tag(tag string) ApplicationOption {
 	return func(cfg *ApplicationConfig) {
 		cfg.Tag = tag
 	}
