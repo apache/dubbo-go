@@ -18,11 +18,11 @@
 package client
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/global"
 	"strconv"
 )
 
 import (
-	commonCfg "dubbo.apache.org/dubbo-go/v3/common/config"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
@@ -190,7 +190,7 @@ func WithMeshProviderPort(port int) ReferenceOption {
 
 // ----------From ApplicationConfig----------
 
-func WithApplication(application *commonCfg.ApplicationConfig) ReferenceOption {
+func WithApplication(application *global.ApplicationConfig) ReferenceOption {
 	return func(cfg *ReferenceConfig) {
 		cfg.application = application
 	}

@@ -18,6 +18,7 @@
 package client
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/global"
 	"fmt"
 	"net/url"
 	"os"
@@ -85,7 +86,7 @@ type ReferenceConfig struct {
 	adaptiveService bool
 	proxyFactory    string
 
-	application       *commonCfg.ApplicationConfig
+	application       *global.ApplicationConfig
 	applicationCompat *config.ApplicationConfig
 
 	registries       map[string]*registry.RegistryConfig
