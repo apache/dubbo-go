@@ -182,7 +182,7 @@ func (rc *RootConfig) Init() error {
 	if err := rc.Otel.Init(rc.Application); err != nil {
 		return err
 	}
-	if err := rc.Metric.Init(); err != nil {
+	if err := rc.Metric.Init(rc); err != nil {
 		return err
 	}
 	for _, t := range rc.Tracing {

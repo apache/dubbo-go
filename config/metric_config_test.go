@@ -27,7 +27,7 @@ import (
 
 func TestMetricConfigBuilder(t *testing.T) {
 	config := NewMetricConfigBuilder().Build()
-	err := config.Init()
+	err := config.Init(&RootConfig{Application: &ApplicationConfig{Name: "dubbo", Version: "1.0.0"}})
 	assert.NoError(t, err)
 	reporterConfig := config.ToReporterConfig()
 	assert.Equal(t, string(reporterConfig.Mode), "pull")
