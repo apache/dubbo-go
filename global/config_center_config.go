@@ -1,4 +1,4 @@
-package config_center
+package global
 
 // CenterConfig is configuration for config center
 //
@@ -32,69 +32,67 @@ func DefaultCenterConfig() *CenterConfig {
 
 type CenterOption func(*CenterConfig)
 
-func WithProtocol(protocol string) CenterOption {
+func WithCenter_Protocol(protocol string) CenterOption {
 	return func(cfg *CenterConfig) {
 		cfg.Protocol = protocol
 	}
 }
 
-func WithAddress(address string) CenterOption {
+func WithCenter_Address(address string) CenterOption {
 	return func(cfg *CenterConfig) {
 		cfg.Address = address
 	}
 }
 
-func WithDataID(id string) CenterOption {
+func WithCenter_DataID(id string) CenterOption {
 	return func(cfg *CenterConfig) {
 		cfg.DataId = id
 	}
 }
 
-func WithCluster(cluster string) CenterOption {
+func WithCenter_Cluster(cluster string) CenterOption {
 	return func(cfg *CenterConfig) {
 		cfg.Cluster = cluster
 	}
 }
 
-// todo: think about changing the name of another WithGroup in this package
-func WithGroup_(group string) CenterOption {
+func WithCenter_Group(group string) CenterOption {
 	return func(cfg *CenterConfig) {
 		cfg.Group = group
 	}
 }
 
-func WithUsername(name string) CenterOption {
+func WithCenter_Username(name string) CenterOption {
 	return func(cfg *CenterConfig) {
 		cfg.Username = name
 	}
 }
 
-func WithPassword(password string) CenterOption {
+func WithCenter_Password(password string) CenterOption {
 	return func(cfg *CenterConfig) {
 		cfg.Password = password
 	}
 }
 
-func WithNamespace(namespace string) CenterOption {
+func WithCenter_Namespace(namespace string) CenterOption {
 	return func(cfg *CenterConfig) {
 		cfg.Namespace = namespace
 	}
 }
 
-func WithAppID(id string) CenterOption {
+func WithCenter_AppID(id string) CenterOption {
 	return func(cfg *CenterConfig) {
 		cfg.AppID = id
 	}
 }
 
-// todo: think about changing the name of another WithTimeout in this package
-func WithTimeout_(timeout string) CenterOption {
+func WithCenter_Timeout(timeout string) CenterOption {
 	return func(cfg *CenterConfig) {
 		cfg.Timeout = timeout
 	}
 }
 
-func WithParams(params map[string]string) CenterOption {
+func WithCenter_Params(params map[string]string) CenterOption {
 	return func(cfg *CenterConfig) {
 		if cfg.Params == nil {
 			cfg.Params = make(map[string]string)
@@ -105,7 +103,7 @@ func WithParams(params map[string]string) CenterOption {
 	}
 }
 
-func WithFileExtension(extension string) CenterOption {
+func WithCenter_FileExtension(extension string) CenterOption {
 	return func(cfg *CenterConfig) {
 		cfg.FileExtension = extension
 	}

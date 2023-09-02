@@ -45,7 +45,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
 	"dubbo.apache.org/dubbo-go/v3/proxy"
-	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
 // ReferenceConfig is the configuration of service consumer
@@ -89,7 +88,7 @@ type ReferenceConfig struct {
 	application       *global.ApplicationConfig
 	applicationCompat *config.ApplicationConfig
 
-	registries       map[string]*registry.RegistryConfig
+	registries       map[string]*global.RegistryConfig
 	registriesCompat map[string]*config.RegistryConfig
 }
 

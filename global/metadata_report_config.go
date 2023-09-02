@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package report
+package global
 
 // MetadataReportConfig is app level configuration
 type MetadataReportConfig struct {
@@ -37,43 +37,43 @@ func DefaultMetadataReportConfig() *MetadataReportConfig {
 
 type MetadataReportOption func(*MetadataReportConfig)
 
-func WithProtocol(protocol string) MetadataReportOption {
+func WithMetadataReport_Protocol(protocol string) MetadataReportOption {
 	return func(cfg *MetadataReportConfig) {
 		cfg.Protocol = protocol
 	}
 }
 
-func WithAddress(address string) MetadataReportOption {
+func WithMetadataReport_Address(address string) MetadataReportOption {
 	return func(cfg *MetadataReportConfig) {
 		cfg.Address = address
 	}
 }
 
-func WithUsername(username string) MetadataReportOption {
+func WithMetadataReport_Username(username string) MetadataReportOption {
 	return func(cfg *MetadataReportConfig) {
 		cfg.Username = username
 	}
 }
 
-func WithPassword(password string) MetadataReportOption {
+func WithMetadataReport_Password(password string) MetadataReportOption {
 	return func(cfg *MetadataReportConfig) {
 		cfg.Password = password
 	}
 }
 
-func WithTimeout(timeout string) MetadataReportOption {
+func WithMetadataReport_Timeout(timeout string) MetadataReportOption {
 	return func(cfg *MetadataReportConfig) {
 		cfg.Timeout = timeout
 	}
 }
 
-func WithGroup(group string) MetadataReportOption {
+func WithMetadataReport_Group(group string) MetadataReportOption {
 	return func(cfg *MetadataReportConfig) {
 		cfg.Group = group
 	}
 }
 
-func WithNamespace(namespace string) MetadataReportOption {
+func WithMetadataReport_Namespace(namespace string) MetadataReportOption {
 	return func(cfg *MetadataReportConfig) {
 		cfg.Namespace = namespace
 	}

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package registry
+package global
 
 // todo(DMwangnima): finish refactoring and move related logic from config package to this file.
 // This RegistryConfig is a copy of /config/RegistryConfig right now.
@@ -43,97 +43,97 @@ type RegistryConfig struct {
 
 type RegistryOption func(*RegistryConfig)
 
-func WithProtocol(protocol string) RegistryOption {
+func WithRegistry_Protocol(protocol string) RegistryOption {
 	return func(cfg *RegistryConfig) {
 		cfg.Protocol = protocol
 	}
 }
 
-func WithTimeout(timeout string) RegistryOption {
+func WithRegistry_Timeout(timeout string) RegistryOption {
 	return func(cfg *RegistryConfig) {
 		cfg.Timeout = timeout
 	}
 }
 
-func WithGroup(group string) RegistryOption {
+func WithRegistry_Group(group string) RegistryOption {
 	return func(cfg *RegistryConfig) {
 		cfg.Group = group
 	}
 }
 
-func WithNamespace(namespace string) RegistryOption {
+func WithRegistry_Namespace(namespace string) RegistryOption {
 	return func(cfg *RegistryConfig) {
 		cfg.Namespace = namespace
 	}
 }
 
-func WithTTL(ttl string) RegistryOption {
+func WithRegistry_TTL(ttl string) RegistryOption {
 	return func(cfg *RegistryConfig) {
 		cfg.TTL = ttl
 	}
 }
 
-func WithAddress(address string) RegistryOption {
+func WithRegistry_Address(address string) RegistryOption {
 	return func(cfg *RegistryConfig) {
 		cfg.Address = address
 	}
 }
 
-func WithUsername(name string) RegistryOption {
+func WithRegistry_Username(name string) RegistryOption {
 	return func(cfg *RegistryConfig) {
 		cfg.Username = name
 	}
 }
 
-func WithPassword(password string) RegistryOption {
+func WithRegistry_Password(password string) RegistryOption {
 	return func(cfg *RegistryConfig) {
 		cfg.Password = password
 	}
 }
 
-func WithSimplified(flag bool) RegistryOption {
+func WithRegistry_Simplified(flag bool) RegistryOption {
 	return func(cfg *RegistryConfig) {
 		cfg.Simplified = flag
 	}
 }
 
-func WithPreferred(flag bool) RegistryOption {
+func WithRegistry_Preferred(flag bool) RegistryOption {
 	return func(cfg *RegistryConfig) {
 		cfg.Preferred = flag
 	}
 }
 
-func WithZone(zone string) RegistryOption {
+func WithRegistry_Zone(zone string) RegistryOption {
 	return func(cfg *RegistryConfig) {
 		cfg.Zone = zone
 	}
 }
 
-func WithWeight(weight int64) RegistryOption {
+func WithRegistry_Weight(weight int64) RegistryOption {
 	return func(cfg *RegistryConfig) {
 		cfg.Weight = weight
 	}
 }
 
-func WithParams(params map[string]string) RegistryOption {
+func WithRegistry_Params(params map[string]string) RegistryOption {
 	return func(cfg *RegistryConfig) {
 		cfg.Params = params
 	}
 }
 
-func WithRegistryType(typ string) RegistryOption {
+func WithRegistry_RegistryType(typ string) RegistryOption {
 	return func(cfg *RegistryConfig) {
 		cfg.RegistryType = typ
 	}
 }
 
-func WithUseAsMetaReport(flag bool) RegistryOption {
+func WithRegistry_UseAsMetaReport(flag bool) RegistryOption {
 	return func(cfg *RegistryConfig) {
 		cfg.UseAsMetaReport = flag
 	}
 }
 
-func WithUseAsConfigCenter(flag bool) RegistryOption {
+func WithRegistry_UseAsConfigCenter(flag bool) RegistryOption {
 	return func(cfg *RegistryConfig) {
 		cfg.UseAsConfigCenter = flag
 	}

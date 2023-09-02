@@ -19,6 +19,9 @@ package client
 
 import (
 	"context"
+	commonCfg "dubbo.apache.org/dubbo-go/v3/common/config"
+	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/global"
 )
 
 import (
@@ -35,6 +38,8 @@ type Client struct {
 	invoker protocol.Invoker
 	info    *ClientInfo
 	cfg     *ReferenceConfig
+
+	cliOpts *ClientOptions
 }
 
 type ClientInfo struct {
@@ -42,6 +47,57 @@ type ClientInfo struct {
 	MethodNames      []string
 	ClientInjectFunc func(dubboCliRaw interface{}, cli *Client)
 	Meta             map[string]interface{}
+}
+
+func (cli *Client) init(opts ...global.ReferenceOption) error {
+	refCfg := global.DefaultReferenceConfig()
+	for _, opt := range opts {
+		opt(refCfg)
+	}
+
+	// init method
+	if length := len(refCfg.Methods); length > 0 {
+		cli.methodsCompat = make([]*config.MethodConfig, length)
+		for i, method := range refCfg.Methods {
+			cli.methodsCompat[i] = compatMethodConfig(method)
+			if err := cli.methodsCompat[i].Init(); err != nil {
+				return err
+			}
+		}
+
+	}
+	// init application
+	if refCfg.pplication != nil {
+		rc.applicationCompat = compatApplicationConfig(rc.application)
+		if err := rc.applicationCompat.Init(); err != nil {
+			return err
+		}
+		rc.metaDataType = rc.applicationCompat.MetadataType
+		if rc.Group == "" {
+			rc.Group = rc.applicationCompat.Group
+		}
+		if rc.Version == "" {
+			rc.Version = rc.applicationCompat.Version
+		}
+	}
+	// init cluster
+	if rc.Cluster == "" {
+		rc.Cluster = "failover"
+	}
+	// todo: move to registry package
+	// init registries
+	if rc.registries != nil {
+		rc.registriesCompat = make(map[string]*config.RegistryConfig)
+		for key, reg := range rc.registries {
+			rc.registriesCompat[key] = compatRegistryConfig(reg)
+			if err := rc.registriesCompat[key].Init(); err != nil {
+				return err
+			}
+		}
+	}
+	rc.RegistryIDs = commonCfg.TranslateIds(rc.RegistryIDs)
+
+	return commonCfg.Verify(rc)
 }
 
 func (cli *Client) call(ctx context.Context, paramsRawVals []interface{}, interfaceName, methodName, callType string, opts ...CallOption) (protocol.Result, error) {

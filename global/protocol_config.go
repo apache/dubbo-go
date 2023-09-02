@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package protocol
+package global
 
 // ProtocolConfig is protocol configuration
 type ProtocolConfig struct {
@@ -33,37 +33,37 @@ type ProtocolConfig struct {
 
 type ProtocolOption func(*ProtocolConfig)
 
-func WithName(name string) ProtocolOption {
+func WithProtocol_Name(name string) ProtocolOption {
 	return func(cfg *ProtocolConfig) {
 		cfg.Name = name
 	}
 }
 
-func WithIp(ip string) ProtocolOption {
+func WithProtocol_Ip(ip string) ProtocolOption {
 	return func(cfg *ProtocolConfig) {
 		cfg.Ip = ip
 	}
 }
 
-func WithPort(port string) ProtocolOption {
+func WithProtocol_Port(port string) ProtocolOption {
 	return func(cfg *ProtocolConfig) {
 		cfg.Port = port
 	}
 }
 
-func WithParam(param interface{}) ProtocolOption {
+func WithProtocol_Param(param interface{}) ProtocolOption {
 	return func(cfg *ProtocolConfig) {
 		cfg.Params = param
 	}
 }
 
-func WithMaxServerSendMsgSize(size string) ProtocolOption {
+func WithProtocol_MaxServerSendMsgSize(size string) ProtocolOption {
 	return func(cfg *ProtocolConfig) {
 		cfg.MaxServerSendMsgSize = size
 	}
 }
 
-func WithMaxServerRecvMsgSize(size string) ProtocolOption {
+func WithProtocol_MaxServerRecvMsgSize(size string) ProtocolOption {
 	return func(cfg *ProtocolConfig) {
 		cfg.MaxServerRecvMsgSize = size
 	}

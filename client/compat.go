@@ -20,7 +20,6 @@ package client
 import (
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/global"
-	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
 // these functions are used to resolve circular dependencies temporarily.
@@ -40,7 +39,7 @@ func compatApplicationConfig(c *global.ApplicationConfig) *config.ApplicationCon
 	}
 }
 
-func compatRegistryConfig(c *registry.RegistryConfig) *config.RegistryConfig {
+func compatRegistryConfig(c *global.RegistryConfig) *config.RegistryConfig {
 	return &config.RegistryConfig{
 		Protocol:          c.Protocol,
 		Timeout:           c.Timeout,
@@ -58,5 +57,23 @@ func compatRegistryConfig(c *registry.RegistryConfig) *config.RegistryConfig {
 		RegistryType:      c.RegistryType,
 		UseAsMetaReport:   c.UseAsMetaReport,
 		UseAsConfigCenter: c.UseAsConfigCenter,
+	}
+}
+
+func compatMethodConfig(c *global.MethodConfig) *config.MethodConfig {
+	return &config.MethodConfig{
+		InterfaceId:                 c.InterfaceId,
+		InterfaceName:               c.InterfaceName,
+		Name:                        c.Name,
+		Retries:                     c.Retries,
+		LoadBalance:                 c.LoadBalance,
+		Weight:                      c.Weight,
+		TpsLimitInterval:            c.TpsLimitInterval,
+		TpsLimitRate:                c.TpsLimitRate,
+		TpsLimitStrategy:            c.TpsLimitStrategy,
+		ExecuteLimit:                c.ExecuteLimit,
+		ExecuteLimitRejectedHandler: c.ExecuteLimitRejectedHandler,
+		Sticky:                      c.Sticky,
+		RequestTimeout:              c.RequestTimeout,
 	}
 }

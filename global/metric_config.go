@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package metrics
+package global
 
 // MetricConfig This is the config struct for all metrics implementation
 type MetricConfig struct {
@@ -36,49 +36,49 @@ func DefaultMetricConfig() *MetricConfig {
 
 type MetricOption func(*MetricConfig)
 
-func WithMode(mode string) MetricOption {
+func WithMetric_Mode(mode string) MetricOption {
 	return func(cfg *MetricConfig) {
 		cfg.Mode = mode
 	}
 }
 
-func WithNamespace(namespace string) MetricOption {
+func WithMetric_Namespace(namespace string) MetricOption {
 	return func(cfg *MetricConfig) {
 		cfg.Namespace = namespace
 	}
 }
 
-func WithEnable(enable bool) MetricOption {
+func WithMetric_Enable(enable bool) MetricOption {
 	return func(cfg *MetricConfig) {
 		cfg.Enable = &enable
 	}
 }
 
-func WithPort(port string) MetricOption {
+func WithMetric_Port(port string) MetricOption {
 	return func(cfg *MetricConfig) {
 		cfg.Port = port
 	}
 }
 
-func WithPath(path string) MetricOption {
+func WithMetric_Path(path string) MetricOption {
 	return func(cfg *MetricConfig) {
 		cfg.Path = path
 	}
 }
 
-func WithPushGatewayAddress(address string) MetricOption {
+func WithMetric_PushGatewayAddress(address string) MetricOption {
 	return func(cfg *MetricConfig) {
 		cfg.PushGatewayAddress = address
 	}
 }
 
-func WithSummaryMaxAge(age int64) MetricOption {
+func WithMetric_SummaryMaxAge(age int64) MetricOption {
 	return func(cfg *MetricConfig) {
 		cfg.SummaryMaxAge = age
 	}
 }
 
-func WithProtocol(protocol string) MetricOption {
+func WithMetric_Protocol(protocol string) MetricOption {
 	return func(cfg *MetricConfig) {
 		cfg.Protocol = protocol
 	}

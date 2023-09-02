@@ -19,12 +19,7 @@ package dubbo
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/config"
-	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/global"
-	"dubbo.apache.org/dubbo-go/v3/metadata/report"
-	"dubbo.apache.org/dubbo-go/v3/metrics"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
-	"dubbo.apache.org/dubbo-go/v3/registry"
 	"go.uber.org/atomic"
 )
 
@@ -78,7 +73,7 @@ func compatApplicationConfig(c *global.ApplicationConfig) *config.ApplicationCon
 	}
 }
 
-func compatProtocolConfig(c *protocol.ProtocolConfig) *config.ProtocolConfig {
+func compatProtocolConfig(c *global.ProtocolConfig) *config.ProtocolConfig {
 	return &config.ProtocolConfig{
 		Name:                 c.Name,
 		Ip:                   c.Ip,
@@ -89,7 +84,7 @@ func compatProtocolConfig(c *protocol.ProtocolConfig) *config.ProtocolConfig {
 	}
 }
 
-func compatRegistryConfig(c *registry.RegistryConfig) *config.RegistryConfig {
+func compatRegistryConfig(c *global.RegistryConfig) *config.RegistryConfig {
 	return &config.RegistryConfig{
 		Protocol:          c.Protocol,
 		Timeout:           c.Timeout,
@@ -110,7 +105,7 @@ func compatRegistryConfig(c *registry.RegistryConfig) *config.RegistryConfig {
 	}
 }
 
-func compatCenterConfig(c *config_center.CenterConfig) *config.CenterConfig {
+func compatCenterConfig(c *global.CenterConfig) *config.CenterConfig {
 	return &config.CenterConfig{
 		Protocol:      c.Protocol,
 		Address:       c.Address,
@@ -127,7 +122,7 @@ func compatCenterConfig(c *config_center.CenterConfig) *config.CenterConfig {
 	}
 }
 
-func compatMetadataReportConfig(c *report.MetadataReportConfig) *config.MetadataReportConfig {
+func compatMetadataReportConfig(c *global.MetadataReportConfig) *config.MetadataReportConfig {
 	return &config.MetadataReportConfig{
 		Protocol:  c.Protocol,
 		Address:   c.Address,
@@ -156,13 +151,13 @@ func compatProviderConfig(c *global.ProviderConfig) *config.ProviderConfig {
 
 func compatConsumerConfig(c *global.ConsumerConfig) *config.ConsumerConfig {
 	return &config.ConsumerConfig{
-		Filter:          c.Filter,
-		RegistryIDs:     c.RegistryIDs,
-		Protocol:        c.Protocol,
-		RequestTimeout:  c.RequestTimeout,
-		ProxyFactory:    c.ProxyFactory,
-		Check:           c.Check,
-		AdaptiveService: c.AdaptiveService,
+		Filter:                         c.Filter,
+		RegistryIDs:                    c.RegistryIDs,
+		Protocol:                       c.Protocol,
+		RequestTimeout:                 c.RequestTimeout,
+		ProxyFactory:                   c.ProxyFactory,
+		Check:                          c.Check,
+		AdaptiveService:                c.AdaptiveService,
 		TracingKey:                     c.TracingKey,
 		FilterConf:                     c.FilterConf,
 		MaxWaitTimeForServiceDiscovery: c.MaxWaitTimeForServiceDiscovery,
@@ -170,7 +165,7 @@ func compatConsumerConfig(c *global.ConsumerConfig) *config.ConsumerConfig {
 	}
 }
 
-func compatMetricConfig(c *metrics.MetricConfig) *config.MetricConfig {
+func compatMetricConfig(c *global.MetricConfig) *config.MetricConfig {
 	return &config.MetricConfig{
 		Mode:               c.Mode,
 		Namespace:          c.Namespace,

@@ -18,13 +18,109 @@
 package client
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
+	commonCfg "dubbo.apache.org/dubbo-go/v3/common/config"
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/global"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/proxy"
+	"github.com/creasty/defaults"
 	"strconv"
 )
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/registry"
-)
+type ClientOptions struct {
+	Application *global.ApplicationConfig
+	Consumer    *global.ConsumerConfig
+	Reference   *global.ReferenceConfig
+	Registries  map[string]*global.RegistryConfig
+
+	pxy          *proxy.Proxy
+	id           string
+	invoker      protocol.Invoker
+	urls         []*common.URL
+	metaDataType string
+	info         *ClientInfo
+
+	methodsCompat []*config.MethodConfig
+}
+
+func (cliOpts *ClientOptions) init() error {
+	if err := defaults.Set(cliOpts); err != nil {
+		return err
+	}
+
+	// init method
+	methods := cliOpts.Reference.Methods
+	if length := len(methods); length > 0 {
+		cliOpts.methodsCompat = make([]*config.MethodConfig, length)
+		for i, method := range methods {
+			cliOpts.methodsCompat[i] = compatMethodConfig(method)
+			if err := cliOpts.methodsCompat[i].Init(); err != nil {
+				return err
+			}
+		}
+
+	}
+
+	// init application
+	if rc.application != nil {
+		rc.applicationCompat = compatApplicationConfig(rc.application)
+		if err := rc.applicationCompat.Init(); err != nil {
+			return err
+		}
+		rc.metaDataType = rc.applicationCompat.MetadataType
+		if rc.Group == "" {
+			rc.Group = rc.applicationCompat.Group
+		}
+		if rc.Version == "" {
+			rc.Version = rc.applicationCompat.Version
+		}
+	}
+	// init cluster
+	if rc.Cluster == "" {
+		rc.Cluster = "failover"
+	}
+	// todo: move to registry package
+	// init registries
+	if rc.registries != nil {
+		rc.registriesCompat = make(map[string]*config.RegistryConfig)
+		for key, reg := range rc.registries {
+			rc.registriesCompat[key] = compatRegistryConfig(reg)
+			if err := rc.registriesCompat[key].Init(); err != nil {
+				return err
+			}
+		}
+	}
+	rc.RegistryIDs = commonCfg.TranslateIds(rc.RegistryIDs)
+
+	return commonCfg.Verify(rc)
+}
+
+type ClientOption func(*ClientOptions)
+
+func WithApplication(application *global.ApplicationConfig) ClientOption {
+	return func(opts *ClientOptions) {
+		opts.Application = application
+	}
+}
+
+func WithConsumer(consumer *global.ConsumerConfig) ClientOption {
+	return func(opts *ClientOptions) {
+		opts.Consumer = consumer
+	}
+}
+
+func WithReference(reference *global.ReferenceConfig) ClientOption {
+	return func(opts *ClientOptions) {
+		opts.Reference = reference
+	}
+}
+
+func WithRegistries(registries map[string]*global.RegistryConfig) ClientOption {
+	return func(opts *ClientOptions) {
+		opts.Registries = registries
+	}
+}
 
 // todo: need to be consistent with MethodConfig
 type CallOptions struct {
@@ -218,7 +314,7 @@ func WithProxyFactory(proxyFactory string) ReferenceOption {
 
 // ----------From RegistryConfig----------
 
-func WithRegistries(registries map[string]*registry.RegistryConfig) ReferenceOption {
+func WithRegistries(registries map[string]*global.RegistryConfig) ReferenceOption {
 	return func(cfg *ReferenceConfig) {
 		cfg.registries = registries
 	}
