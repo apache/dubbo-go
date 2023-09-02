@@ -41,16 +41,29 @@ type ClientOptions struct {
 	metaDataType string
 	info         *ClientInfo
 
-	methodsCompat []*config.MethodConfig
+	methodsCompat     []*config.MethodConfig
+	applicationCompat *config.ApplicationConfig
+	registriesCompat  map[string]*config.RegistryConfig
 }
 
-func (cliOpts *ClientOptions) init() error {
+func defaultClientOptions() *ClientOptions {
+	return &ClientOptions{
+		Reference: global.DefaultReferenceConfig(),
+	}
+}
+
+func (cliOpts *ClientOptions) init(opts ...ClientOption) error {
+	for _, opt := range opts {
+		opt(cliOpts)
+	}
 	if err := defaults.Set(cliOpts); err != nil {
 		return err
 	}
 
+	ref := cliOpts.Reference
+
 	// init method
-	methods := cliOpts.Reference.Methods
+	methods := ref.Methods
 	if length := len(methods); length > 0 {
 		cliOpts.methodsCompat = make([]*config.MethodConfig, length)
 		for i, method := range methods {
@@ -63,62 +76,214 @@ func (cliOpts *ClientOptions) init() error {
 	}
 
 	// init application
-	if rc.application != nil {
-		rc.applicationCompat = compatApplicationConfig(rc.application)
-		if err := rc.applicationCompat.Init(); err != nil {
+	application := cliOpts.Application
+	if application != nil {
+		cliOpts.applicationCompat = compatApplicationConfig(application)
+		if err := cliOpts.applicationCompat.Init(); err != nil {
 			return err
 		}
-		rc.metaDataType = rc.applicationCompat.MetadataType
-		if rc.Group == "" {
-			rc.Group = rc.applicationCompat.Group
+		cliOpts.metaDataType = cliOpts.applicationCompat.MetadataType
+		if ref.Group == "" {
+			ref.Group = cliOpts.applicationCompat.Group
 		}
-		if rc.Version == "" {
-			rc.Version = rc.applicationCompat.Version
+		if ref.Version == "" {
+			ref.Version = cliOpts.applicationCompat.Version
 		}
 	}
 	// init cluster
-	if rc.Cluster == "" {
-		rc.Cluster = "failover"
+	if ref.Cluster == "" {
+		ref.Cluster = "failover"
 	}
-	// todo: move to registry package
+
+	// todo(DMwangnima): move to registry package
 	// init registries
-	if rc.registries != nil {
-		rc.registriesCompat = make(map[string]*config.RegistryConfig)
-		for key, reg := range rc.registries {
-			rc.registriesCompat[key] = compatRegistryConfig(reg)
-			if err := rc.registriesCompat[key].Init(); err != nil {
+	regs := cliOpts.Registries
+	if regs != nil {
+		cliOpts.registriesCompat = make(map[string]*config.RegistryConfig)
+		for key, reg := range regs {
+			cliOpts.registriesCompat[key] = compatRegistryConfig(reg)
+			if err := cliOpts.registriesCompat[key].Init(); err != nil {
 				return err
 			}
 		}
 	}
-	rc.RegistryIDs = commonCfg.TranslateIds(rc.RegistryIDs)
+	ref.RegistryIDs = commonCfg.TranslateIds(ref.RegistryIDs)
 
-	return commonCfg.Verify(rc)
+	return commonCfg.Verify(cliOpts)
 }
 
 type ClientOption func(*ClientOptions)
 
-func WithApplication(application *global.ApplicationConfig) ClientOption {
+// ---------- For user ----------
+
+func WithCheck(check bool) ClientOption {
 	return func(opts *ClientOptions) {
-		opts.Application = application
+		opts.Reference.Check = &check
 	}
 }
 
-func WithConsumer(consumer *global.ConsumerConfig) ClientOption {
+func WithURL(url string) ClientOption {
 	return func(opts *ClientOptions) {
-		opts.Consumer = consumer
+		opts.Reference.URL = url
 	}
 }
 
-func WithReference(reference *global.ReferenceConfig) ClientOption {
+func WithFilter(filter string) ClientOption {
 	return func(opts *ClientOptions) {
-		opts.Reference = reference
+		opts.Reference.Filter = filter
 	}
 }
 
-func WithRegistries(registries map[string]*global.RegistryConfig) ClientOption {
+func WithProtocol(protocol string) ClientOption {
 	return func(opts *ClientOptions) {
-		opts.Registries = registries
+		opts.Reference.Protocol = protocol
+	}
+}
+
+func WithRegistryIDs(registryIDs []string) ClientOption {
+	return func(opts *ClientOptions) {
+		if len(registryIDs) > 0 {
+			opts.Reference.RegistryIDs = registryIDs
+		}
+	}
+}
+
+func WithCluster(cluster string) ClientOption {
+	return func(opts *ClientOptions) {
+		opts.Reference.Cluster = cluster
+	}
+}
+
+func WithLoadBalance(loadBalance string) ClientOption {
+	return func(opts *ClientOptions) {
+		opts.Reference.Loadbalance = loadBalance
+	}
+}
+
+func WithRetries(retries int) ClientOption {
+	return func(opts *ClientOptions) {
+		opts.Reference.Retries = strconv.Itoa(retries)
+	}
+}
+
+func WithGroup(group string) ClientOption {
+	return func(opts *ClientOptions) {
+		opts.Reference.Group = group
+	}
+}
+
+func WithVersion(version string) ClientOption {
+	return func(opts *ClientOptions) {
+		opts.Reference.Version = version
+	}
+}
+
+func WithSerialization(serialization string) ClientOption {
+	return func(opts *ClientOptions) {
+		opts.Reference.Serialization = serialization
+	}
+}
+
+func WithProviderBy(providedBy string) ClientOption {
+	return func(opts *ClientOptions) {
+		opts.Reference.ProvidedBy = providedBy
+	}
+}
+
+func WithAsync(async bool) ClientOption {
+	return func(opts *ClientOptions) {
+		opts.Reference.Async = async
+	}
+}
+
+func WithParams(params map[string]string) ClientOption {
+	return func(opts *ClientOptions) {
+		opts.Reference.Params = params
+	}
+}
+
+func WithGeneric(generic string) ClientOption {
+	return func(opts *ClientOptions) {
+		opts.Reference.Generic = generic
+	}
+}
+
+func WithSticky(sticky bool) ClientOption {
+	return func(opts *ClientOptions) {
+		opts.Reference.Sticky = sticky
+	}
+}
+
+func WithRequestTimeout(timeout string) ClientOption {
+	return func(opts *ClientOptions) {
+		opts.Reference.RequestTimeout = timeout
+	}
+}
+
+func WithForce(force bool) ClientOption {
+	return func(opts *ClientOptions) {
+		opts.Reference.ForceTag = force
+	}
+}
+
+func WithTracingKey(tracingKey string) ClientOption {
+	return func(opts *ClientOptions) {
+		opts.Reference.TracingKey = tracingKey
+	}
+}
+
+func WithMeshProviderPort(port int) ClientOption {
+	return func(opts *ClientOptions) {
+		opts.Reference.MeshProviderPort = port
+	}
+}
+
+// ---------- For framework ----------
+
+func WithRegistryConfig(key string, opts ...global.RegistryOption) ClientOption {
+	regCfg := new(global.RegistryConfig)
+	for _, opt := range opts {
+		opt(regCfg)
+	}
+
+	return func(opts *ClientOptions) {
+		if opts.Registries == nil {
+			opts.Registries = make(map[string]*global.RegistryConfig)
+		}
+		opts.Registries[key] = regCfg
+	}
+}
+
+func WithApplicationConfig(opts ...global.ApplicationOption) ClientOption {
+	appCfg := new(global.ApplicationConfig)
+	for _, opt := range opts {
+		opt(appCfg)
+	}
+
+	return func(opts *ClientOptions) {
+		opts.Application = appCfg
+	}
+}
+
+func WithConsumerConfig(opts ...global.ConsumerOption) ClientOption {
+	conCfg := new(global.ConsumerConfig)
+	for _, opt := range opts {
+		opt(conCfg)
+	}
+
+	return func(opts *ClientOptions) {
+		opts.Consumer = conCfg
+	}
+}
+
+func WithReferenceConfig(opts ...global.ReferenceOption) ClientOption {
+	refCfg := new(global.ReferenceConfig)
+	for _, opt := range opts {
+		opt(refCfg)
+	}
+
+	return func(opts *ClientOptions) {
+		opts.Reference = refCfg
 	}
 }
 
@@ -146,176 +311,5 @@ func WithCallRequestTimeout(timeout string) CallOption {
 func WithCallRetries(retries string) CallOption {
 	return func(opts *CallOptions) {
 		opts.Retries = retries
-	}
-}
-
-// ----------ReferenceOption----------
-
-// For ReferenceOption that needs to check whether configuration field is empty(eg. WithCheck), it means this
-// ReferenceOption maybe used by ConsumerConfig to act as default value.
-
-func WithCheck(check bool) ReferenceOption {
-	return func(cfg *ReferenceConfig) {
-		if cfg.Check == nil {
-			cfg.Check = &check
-		}
-	}
-}
-
-func WithURL(url string) ReferenceOption {
-	return func(cfg *ReferenceConfig) {
-		cfg.URL = url
-	}
-}
-
-func WithFilter(filter string) ReferenceOption {
-	return func(cfg *ReferenceConfig) {
-		if cfg.Filter == "" {
-			cfg.Filter = filter
-		}
-	}
-}
-
-func WithProtocol(protocol string) ReferenceOption {
-	return func(cfg *ReferenceConfig) {
-		if cfg.Protocol == "" {
-			cfg.Protocol = protocol
-		}
-	}
-}
-
-func WithRegistryIDs(registryIDs []string) ReferenceOption {
-	return func(cfg *ReferenceConfig) {
-		if len(registryIDs) <= 0 {
-			cfg.RegistryIDs = registryIDs
-		}
-	}
-}
-
-func WithCluster(cluster string) ReferenceOption {
-	return func(cfg *ReferenceConfig) {
-		cfg.Cluster = cluster
-	}
-}
-
-func WithLoadBalance(loadBalance string) ReferenceOption {
-	return func(cfg *ReferenceConfig) {
-		cfg.Loadbalance = loadBalance
-	}
-}
-
-func WithRetries(retries int) ReferenceOption {
-	return func(cfg *ReferenceConfig) {
-		cfg.Retries = strconv.Itoa(retries)
-	}
-}
-
-func WithGroup(group string) ReferenceOption {
-	return func(cfg *ReferenceConfig) {
-		cfg.Group = group
-	}
-}
-
-func WithVersion(version string) ReferenceOption {
-	return func(cfg *ReferenceConfig) {
-		cfg.Version = version
-	}
-}
-
-func WithSerialization(serialization string) ReferenceOption {
-	return func(cfg *ReferenceConfig) {
-		cfg.Serialization = serialization
-	}
-}
-
-func WithProviderBy(providedBy string) ReferenceOption {
-	return func(cfg *ReferenceConfig) {
-		cfg.ProvidedBy = providedBy
-	}
-}
-
-func WithAsync(async bool) ReferenceOption {
-	return func(cfg *ReferenceConfig) {
-		cfg.Async = async
-	}
-}
-
-func WithParams(params map[string]string) ReferenceOption {
-	return func(cfg *ReferenceConfig) {
-		cfg.Params = params
-	}
-}
-
-func WithGeneric(generic string) ReferenceOption {
-	return func(cfg *ReferenceConfig) {
-		cfg.Generic = generic
-	}
-}
-
-func WithSticky(sticky bool) ReferenceOption {
-	return func(cfg *ReferenceConfig) {
-		cfg.Sticky = sticky
-	}
-}
-
-func WithRequestTimeout(timeout string) ReferenceOption {
-	return func(cfg *ReferenceConfig) {
-		cfg.RequestTimeout = timeout
-	}
-}
-
-func WithForce(force bool) ReferenceOption {
-	return func(cfg *ReferenceConfig) {
-		cfg.ForceTag = force
-	}
-}
-
-func WithTracingKey(tracingKey string) ReferenceOption {
-	return func(cfg *ReferenceConfig) {
-		if cfg.TracingKey == "" {
-			cfg.TracingKey = tracingKey
-		}
-	}
-}
-
-func WithMeshProviderPort(port int) ReferenceOption {
-	return func(cfg *ReferenceConfig) {
-		cfg.MeshProviderPort = port
-	}
-}
-
-// ----------From ApplicationConfig----------
-
-func WithApplication(application *global.ApplicationConfig) ReferenceOption {
-	return func(cfg *ReferenceConfig) {
-		cfg.application = application
-	}
-}
-
-// ----------From ConsumerConfig----------
-
-func WithMeshEnabled(meshEnabled bool) ReferenceOption {
-	return func(cfg *ReferenceConfig) {
-		cfg.meshEnabled = meshEnabled
-	}
-}
-
-func WithAdaptiveService(adaptiveService bool) ReferenceOption {
-	return func(cfg *ReferenceConfig) {
-		cfg.adaptiveService = adaptiveService
-	}
-}
-
-func WithProxyFactory(proxyFactory string) ReferenceOption {
-	return func(cfg *ReferenceConfig) {
-		cfg.proxyFactory = proxyFactory
-	}
-}
-
-// ----------From RegistryConfig----------
-
-func WithRegistries(registries map[string]*global.RegistryConfig) ReferenceOption {
-	return func(cfg *ReferenceConfig) {
-		cfg.registries = registries
 	}
 }

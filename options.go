@@ -21,7 +21,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/global"
 )
 
-type RootConfig struct {
+type InstanceOptions struct {
 	Application    *global.ApplicationConfig         `validate:"required" yaml:"application" json:"application,omitempty" property:"application"`
 	Protocols      map[string]*global.ProtocolConfig `validate:"required" yaml:"protocols" json:"protocols" property:"protocols"`
 	Registries     map[string]*global.RegistryConfig `yaml:"registries" json:"registries" property:"registries"`
@@ -42,8 +42,8 @@ type RootConfig struct {
 	TLSConfig           *global.TLSConfig      `yaml:"tls_config" json:"tls_config,omitempty" property:"tls_config"`
 }
 
-func defaultRootConfig() *RootConfig {
-	return &RootConfig{
+func defaultInstanceOptions() *InstanceOptions {
+	return &InstanceOptions{
 		Application:    global.DefaultApplicationConfig(),
 		Protocols:      make(map[string]*global.ProtocolConfig),
 		Registries:     make(map[string]*global.RegistryConfig),
@@ -61,7 +61,7 @@ func defaultRootConfig() *RootConfig {
 	}
 }
 
-func (rc *RootConfig) Init(opts ...RootOption) error {
+func (rc *InstanceOptions) init(opts ...InstanceOption) error {
 	for _, opt := range opts {
 		opt(rc)
 	}
@@ -74,26 +74,26 @@ func (rc *RootConfig) Init(opts ...RootOption) error {
 	return nil
 }
 
-type RootOption func(*RootConfig)
+type InstanceOption func(*InstanceOptions)
 
-func WithApplication(opts ...global.ApplicationOption) RootOption {
+func WithApplication(opts ...global.ApplicationOption) InstanceOption {
 	appCfg := new(global.ApplicationConfig)
 	for _, opt := range opts {
 		opt(appCfg)
 	}
 
-	return func(cfg *RootConfig) {
+	return func(cfg *InstanceOptions) {
 		cfg.Application = appCfg
 	}
 }
 
-func WithProtocol(key string, opts ...global.ProtocolOption) RootOption {
+func WithProtocol(key string, opts ...global.ProtocolOption) InstanceOption {
 	proCfg := new(global.ProtocolConfig)
 	for _, opt := range opts {
 		opt(proCfg)
 	}
 
-	return func(cfg *RootConfig) {
+	return func(cfg *InstanceOptions) {
 		if cfg.Protocols == nil {
 			cfg.Protocols = make(map[string]*global.ProtocolConfig)
 		}
@@ -101,13 +101,13 @@ func WithProtocol(key string, opts ...global.ProtocolOption) RootOption {
 	}
 }
 
-func WithRegistry(key string, opts ...global.RegistryOption) RootOption {
+func WithRegistry(key string, opts ...global.RegistryOption) InstanceOption {
 	regCfg := new(global.RegistryConfig)
 	for _, opt := range opts {
 		opt(regCfg)
 	}
 
-	return func(cfg *RootConfig) {
+	return func(cfg *InstanceOptions) {
 		if cfg.Registries == nil {
 			cfg.Registries = make(map[string]*global.RegistryConfig)
 		}
@@ -115,57 +115,57 @@ func WithRegistry(key string, opts ...global.RegistryOption) RootOption {
 	}
 }
 
-func WithConfigCenter(opts ...global.CenterOption) RootOption {
+func WithConfigCenter(opts ...global.CenterOption) InstanceOption {
 	ccCfg := new(global.CenterConfig)
 	for _, opt := range opts {
 		opt(ccCfg)
 	}
 
-	return func(cfg *RootConfig) {
+	return func(cfg *InstanceOptions) {
 		cfg.ConfigCenter = ccCfg
 	}
 }
 
-func WithMetadataReport(opts ...global.MetadataReportOption) RootOption {
+func WithMetadataReport(opts ...global.MetadataReportOption) InstanceOption {
 	mrCfg := new(global.MetadataReportConfig)
 	for _, opt := range opts {
 		opt(mrCfg)
 	}
 
-	return func(cfg *RootConfig) {
+	return func(cfg *InstanceOptions) {
 		cfg.MetadataReport = mrCfg
 	}
 }
 
-func WithConsumer(opts ...global.ConsumerOption) RootOption {
+func WithConsumer(opts ...global.ConsumerOption) InstanceOption {
 	conCfg := new(global.ConsumerConfig)
 	for _, opt := range opts {
 		opt(conCfg)
 	}
 
-	return func(cfg *RootConfig) {
+	return func(cfg *InstanceOptions) {
 		cfg.Consumer = conCfg
 	}
 }
 
-func WithMetric(opts ...global.MetricOption) RootOption {
+func WithMetric(opts ...global.MetricOption) InstanceOption {
 	meCfg := new(global.MetricConfig)
 	for _, opt := range opts {
 		opt(meCfg)
 	}
 
-	return func(cfg *RootConfig) {
+	return func(cfg *InstanceOptions) {
 		cfg.Metric = meCfg
 	}
 }
 
-func WithTracing(key string, opts ...global.TracingOption) RootOption {
+func WithTracing(key string, opts ...global.TracingOption) InstanceOption {
 	traCfg := new(global.TracingConfig)
 	for _, opt := range opts {
 		opt(traCfg)
 	}
 
-	return func(cfg *RootConfig) {
+	return func(cfg *InstanceOptions) {
 		if cfg.Tracing == nil {
 			cfg.Tracing = make(map[string]*global.TracingConfig)
 		}
@@ -173,69 +173,69 @@ func WithTracing(key string, opts ...global.TracingOption) RootOption {
 	}
 }
 
-func WithLogger(opts ...global.LoggerOption) RootOption {
+func WithLogger(opts ...global.LoggerOption) InstanceOption {
 	logCfg := new(global.LoggerConfig)
 	for _, opt := range opts {
 		opt(logCfg)
 	}
 
-	return func(cfg *RootConfig) {
+	return func(cfg *InstanceOptions) {
 		cfg.Logger = logCfg
 	}
 }
 
-func WithShutdown(opts ...global.ShutdownOption) RootOption {
+func WithShutdown(opts ...global.ShutdownOption) InstanceOption {
 	sdCfg := new(global.ShutdownConfig)
 	for _, opt := range opts {
 		opt(sdCfg)
 	}
 
-	return func(cfg *RootConfig) {
+	return func(cfg *InstanceOptions) {
 		cfg.Shutdown = sdCfg
 	}
 }
 
-func WithEventDispatcherType(typ string) RootOption {
-	return func(cfg *RootConfig) {
+func WithEventDispatcherType(typ string) InstanceOption {
+	return func(cfg *InstanceOptions) {
 		cfg.EventDispatcherType = typ
 	}
 }
 
-func WithCacheFile(file string) RootOption {
-	return func(cfg *RootConfig) {
+func WithCacheFile(file string) InstanceOption {
+	return func(cfg *InstanceOptions) {
 		cfg.CacheFile = file
 	}
 }
 
-func WithCustom(opts ...global.CustomOption) RootOption {
+func WithCustom(opts ...global.CustomOption) InstanceOption {
 	cusCfg := new(global.CustomConfig)
 	for _, opt := range opts {
 		opt(cusCfg)
 	}
 
-	return func(cfg *RootConfig) {
+	return func(cfg *InstanceOptions) {
 		cfg.Custom = cusCfg
 	}
 }
 
-func WithProfiles(opts ...global.ProfilesOption) RootOption {
+func WithProfiles(opts ...global.ProfilesOption) InstanceOption {
 	proCfg := new(global.ProfilesConfig)
 	for _, opt := range opts {
 		opt(proCfg)
 	}
 
-	return func(cfg *RootConfig) {
+	return func(cfg *InstanceOptions) {
 		cfg.Profiles = proCfg
 	}
 }
 
-func WithTLS(opts ...global.TLSOption) RootOption {
+func WithTLS(opts ...global.TLSOption) InstanceOption {
 	tlsCfg := new(global.TLSConfig)
 	for _, opt := range opts {
 		opt(tlsCfg)
 	}
 
-	return func(cfg *RootConfig) {
+	return func(cfg *InstanceOptions) {
 		cfg.TLSConfig = tlsCfg
 	}
 }
