@@ -20,6 +20,8 @@ package triple
 import (
 	"context"
 	"crypto/tls"
+	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo3"
+	"fmt"
 	"net/http"
 	"path"
 	"sync"
@@ -124,6 +126,8 @@ func (s *Server) Start(invoker protocol.Invoker, info *server.ServiceInfo) {
 		mux := http.NewServeMux()
 		if info != nil {
 			handleServiceWithInfo(invoker, info, mux)
+		} else {
+			compatHandleService(invoker, mux)
 		}
 		// todo: figure it out this process
 		//reflection.Register(server)
@@ -172,32 +176,68 @@ func waitTripleExporter(providerServices map[string]*config.ServiceConfig) {
 	}
 }
 
-//// handleService injects invoker and creates handler based on ServiceConfig and provider service.
-//func handleService(providerServices map[string]*config.ServiceConfig, mux *http.ServeMux, opts ...tri.HandlerOption) {
-//	for key, providerService := range providerServices {
-//		service := config.GetProviderService(key)
-//		ds, ok := service.(TripleService)
-//		if !ok {
-//			panic("illegal service type registered")
-//		}
-//
-//		serviceKey := common.ServiceKey(providerService.Interface, providerService.Group, providerService.Version)
-//		exporter, _ := tripleProtocol.ExporterMap().Load(serviceKey)
-//		if exporter == nil {
-//			panic(fmt.Sprintf("no exporter found for servicekey: %v", serviceKey))
-//		}
-//		invoker := exporter.(protocol.Exporter).GetInvoker()
-//		if invoker == nil {
-//			panic(fmt.Sprintf("no invoker found for servicekey: %v", serviceKey))
-//		}
-//
-//		// inject invoker, it has all invocation logics
-//		ds.SetProxyImpl(invoker)
-//		path, handler := ds.BuildHandler(service, opts...)
-//		mux.Handle(path, tri.New)
-//		mux.Handle(path, handler)
-//	}
-//}
+// *Important*, this function is responsible for being compatible with old triple-gen code
+// compatHandleService injects invoker and creates handler based on ServiceConfig and provider service.
+func compatHandleService(invoker protocol.Invoker, mux *http.ServeMux, opts ...tri.HandlerOption) {
+	providerServices := config.GetProviderConfig().Services
+	if len(providerServices) == 0 {
+		panic("Provider service map is null")
+	}
+	waitTripleExporter(providerServices)
+	for key, providerService := range providerServices {
+		service := config.GetProviderService(key)
+		ds, ok := service.(dubbo3.Dubbo3GrpcService)
+		if !ok {
+			panic("illegal service type registered")
+		}
+
+		serviceKey := common.ServiceKey(providerService.Interface, providerService.Group, providerService.Version)
+		exporter, _ := tripleProtocol.ExporterMap().Load(serviceKey)
+		if exporter == nil {
+			panic(fmt.Sprintf("no exporter found for servicekey: %v", serviceKey))
+		}
+		invoker := exporter.(protocol.Exporter).GetInvoker()
+		if invoker == nil {
+			panic(fmt.Sprintf("no invoker found for servicekey: %v", serviceKey))
+		}
+
+		// inject invoker, it has all invocation logics
+		ds.XXX_SetProxyImpl(invoker)
+		path, handler := compatBuildHandler(ds, opts...)
+		mux.Handle(path, handler)
+	}
+}
+
+func compatBuildHandler(svc dubbo3.Dubbo3GrpcService, opts ...tri.HandlerOption) (string, http.Handler) {
+	// todo(DMwangnima): add / to path
+	mux := http.NewServeMux()
+	desc := svc.XXX_ServiceDesc()
+	basePath := desc.ServiceName
+	// init unary handlers
+	for _, method := range desc.Methods {
+		procedure := path.Join(desc.ServiceName, method.MethodName)
+		handler := tri.NewCompatUnaryHandler(procedure, svc, tri.MethodHandler(method.Handler), opts...)
+		mux.Handle(procedure, handler)
+	}
+
+	// init stream handlers
+	for _, stream := range desc.Streams {
+		procedure := path.Join(desc.ServiceName, stream.StreamName)
+		var typ tri.StreamType
+		switch {
+		case stream.ClientStreams && stream.ServerStreams:
+			typ = tri.StreamTypeBidi
+		case stream.ClientStreams:
+			typ = tri.StreamTypeClient
+		case stream.ServerStreams:
+			typ = tri.StreamTypeServer
+		}
+		handler := tri.NewCompatStreamHandler(procedure, svc, typ, stream.Handler, opts...)
+		mux.Handle(procedure, handler)
+	}
+
+	return basePath, mux
+}
 
 // handleServiceWithInfo injects invoker and create handler based on ServiceInfo
 func handleServiceWithInfo(invoker protocol.Invoker, info *server.ServiceInfo, mux *http.ServeMux, opts ...tri.HandlerOption) {
