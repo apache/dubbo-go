@@ -18,10 +18,7 @@
 package registry
 
 import (
-	"time"
-)
-
-import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 )
@@ -31,15 +28,15 @@ var (
 )
 
 func init() {
-	metrics.AddCollector("registry", func(m metrics.MetricRegistry, c *metrics.ReporterConfig) {
-		rc := &registryCollector{regRegistry: m}
+	metrics.AddCollector("registry", func(m metrics.MetricRegistry, _ *common.URL) {
+		rc := &registryCollector{metrics.BaseCollector{R: m}}
 		go rc.start()
 	})
 }
 
 // registryCollector is the registry's metrics collector
 type registryCollector struct {
-	regRegistry metrics.MetricRegistry
+	metrics.BaseCollector
 }
 
 func (rc *registryCollector) start() {
@@ -63,49 +60,31 @@ func (rc *registryCollector) start() {
 	}
 }
 
-func newStatesMetricFunc(total *metrics.MetricKey, succ *metrics.MetricKey, fail *metrics.MetricKey,
-	level metrics.MetricLevel, reg metrics.MetricRegistry) metrics.StatesMetrics {
-	return metrics.NewStatesMetrics(metrics.NewMetricId(total, level), metrics.NewMetricId(succ, level),
-		metrics.NewMetricId(fail, level), reg)
-}
-
-func newTimeMetrics(min, max, avg, sum, last *metrics.MetricKey, level metrics.MetricLevel, mr metrics.MetricRegistry) metrics.TimeMetric {
-	return metrics.NewTimeMetric(metrics.NewMetricId(min, level), metrics.NewMetricId(max, level), metrics.NewMetricId(avg, level),
-		metrics.NewMetricId(sum, level), metrics.NewMetricId(last, level), mr)
-}
-
 // regHandler handles register metrics
 func (rc *registryCollector) regHandler(event *RegistryMetricsEvent) {
 	// Event is converted to metrics
 	// Save metrics to the MetricRegistry
-	m := metrics.ComputeIfAbsentCache(dubboRegNum, func() interface{} {
-		return newStatesMetricFunc(RegisterMetricRequests, RegisterMetricRequestsSucceed, RegisterMetricRequestsFailed, metrics.GetApplicationLevel(), rc.regRegistry)
-	}).(metrics.StatesMetrics)
-	m.Inc(event.Succ)
-	metric := metrics.ComputeIfAbsentCache(dubboRegRt, func() interface{} {
-		return newTimeMetrics(RegisterRtMillisecondsMin, RegisterRtMillisecondsMax, RegisterRtMillisecondsAvg, RegisterRtMillisecondsSum, RegisterRtMillisecondsLast, metrics.GetApplicationLevel(), rc.regRegistry)
-	}).(metrics.TimeMetric)
-	metric.Record(event.CostMs())
+	level := metrics.GetApplicationLevel()
+	rc.StateCount(RegisterMetricRequests, RegisterMetricRequestsSucceed, RegisterMetricRequestsFailed, level, event.Succ)
+	rc.R.Rt(metrics.NewMetricId(RegisterRt, level), &metrics.RtOpts{}).Observe(event.CostMs())
 }
 
 // subHandler handles subscribe metrics
 func (rc *registryCollector) subHandler(event *RegistryMetricsEvent) {
 	// Event is converted to metrics
 	// Save metrics to the MetricRegistry
-	m := newStatesMetricFunc(SubscribeMetricNum, SubscribeMetricNumSucceed, SubscribeMetricNumFailed, metrics.GetApplicationLevel(), rc.regRegistry)
-	m.Inc(event.Succ)
+	level := metrics.GetApplicationLevel()
+	rc.StateCount(SubscribeMetricNum, SubscribeMetricNumSucceed, SubscribeMetricNumFailed, level, event.Succ)
 }
 
 // notifyHandler handles notify metrics
 func (rc *registryCollector) notifyHandler(event *RegistryMetricsEvent) {
 	// Event is converted to metrics
 	// Save metrics to the MetricRegistry
-	rc.regRegistry.Counter(metrics.NewMetricId(NotifyMetricRequests, metrics.GetApplicationLevel())).Inc()
-	rc.regRegistry.Histogram(metrics.NewMetricId(NotifyMetricNumLast, metrics.GetApplicationLevel())).Observe(float64(event.End.UnixNano()) / float64(time.Second))
-	metric := metrics.ComputeIfAbsentCache(dubboNotifyRt, func() interface{} {
-		return newTimeMetrics(NotifyRtMillisecondsMin, NotifyRtMillisecondsMax, NotifyRtMillisecondsAvg, NotifyRtMillisecondsSum, NotifyRtMillisecondsLast, metrics.GetApplicationLevel(), rc.regRegistry)
-	}).(metrics.TimeMetric)
-	metric.Record(event.CostMs())
+	level := metrics.GetApplicationLevel()
+	rc.R.Counter(metrics.NewMetricId(NotifyMetricRequests, level)).Inc()
+	rc.R.Gauge(metrics.NewMetricId(NotifyMetricNumLast, level)).Set(event.CostMs())
+	rc.R.Rt(metrics.NewMetricId(NotifyRt, level), &metrics.RtOpts{}).Observe(event.CostMs())
 }
 
 // directoryHandler handles directory metrics
@@ -116,15 +95,15 @@ func (rc *registryCollector) directoryHandler(event *RegistryMetricsEvent) {
 	typ := event.Attachment["DirTyp"]
 	switch typ {
 	case NumAllInc:
-		rc.regRegistry.Counter(metrics.NewMetricId(DirectoryMetricNumAll, level)).Inc()
+		rc.R.Counter(metrics.NewMetricId(DirectoryMetricNumAll, level)).Inc()
 	case NumAllDec:
-		rc.regRegistry.Counter(metrics.NewMetricId(DirectoryMetricNumAll, level)).Add(-1)
+		rc.R.Counter(metrics.NewMetricId(DirectoryMetricNumAll, level)).Add(-1)
 	case NumDisableTotal:
-		rc.regRegistry.Counter(metrics.NewMetricId(DirectoryMetricNumDisable, level)).Inc()
+		rc.R.Counter(metrics.NewMetricId(DirectoryMetricNumDisable, level)).Inc()
 	case NumToReconnectTotal:
-		rc.regRegistry.Counter(metrics.NewMetricId(DirectoryMetricNumToReconnect, level)).Inc()
+		rc.R.Counter(metrics.NewMetricId(DirectoryMetricNumToReconnect, level)).Inc()
 	case NumValidTotal:
-		rc.regRegistry.Counter(metrics.NewMetricId(DirectoryMetricNumValid, level)).Inc()
+		rc.R.Counter(metrics.NewMetricId(DirectoryMetricNumValid, level)).Inc()
 	default:
 	}
 
@@ -134,20 +113,15 @@ func (rc *registryCollector) directoryHandler(event *RegistryMetricsEvent) {
 func (rc *registryCollector) serverRegHandler(event *RegistryMetricsEvent) {
 	// Event is converted to metrics
 	// Save metrics to the MetricRegistry
-	m := metrics.ComputeIfAbsentCache(dubboRegServerNum, func() interface{} {
-		return newStatesMetricFunc(ServiceRegisterMetricRequests, ServiceRegisterMetricRequestsSucceed, ServiceRegisterMetricRequestsFailed, metrics.GetApplicationLevel(), rc.regRegistry)
-	}).(metrics.StatesMetrics)
-	m.Inc(event.Succ)
-	metric := metrics.ComputeIfAbsentCache(dubboRegServerRt, func() interface{} {
-		return newTimeMetrics(RegisterServiceRtMillisecondsMin, RegisterServiceRtMillisecondsMax, RegisterServiceRtMillisecondsAvg, RegisterServiceRtMillisecondsSum, RegisterServiceRtMillisecondsLast, metrics.GetApplicationLevel(), rc.regRegistry)
-	}).(metrics.TimeMetric)
-	metric.Record(event.CostMs())
+	level := metrics.GetApplicationLevel()
+	rc.StateCount(ServiceRegisterMetricRequests, ServiceRegisterMetricRequestsSucceed, ServiceRegisterMetricRequestsFailed, level, event.Succ)
+	rc.R.Rt(metrics.NewMetricId(RegisterServiceRt, level), &metrics.RtOpts{}).Observe(event.CostMs())
 }
 
 // serverSubHandler handles server subscribe metrics
 func (rc *registryCollector) serverSubHandler(event *RegistryMetricsEvent) {
 	// Event is converted to metrics
 	// Save metrics to the MetricRegistry
-	m := newStatesMetricFunc(ServiceSubscribeMetricNum, ServiceSubscribeMetricNumSucceed, ServiceSubscribeMetricNumFailed, metrics.GetApplicationLevel(), rc.regRegistry)
-	m.Inc(event.Succ)
+	level := metrics.GetApplicationLevel()
+	rc.StateCount(ServiceSubscribeMetricNum, ServiceSubscribeMetricNumSucceed, ServiceSubscribeMetricNumFailed, level, event.Succ)
 }

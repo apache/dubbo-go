@@ -29,11 +29,13 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 )
 
 func init() {
-	metrics.SetRegistry("prometheus", func(rc *metrics.ReporterConfig) metrics.MetricRegistry {
+	metrics.SetRegistry(constant.ProtocolPrometheus, func(url *common.URL) metrics.MetricRegistry {
 		return &promMetricRegistry{r: prom.DefaultRegisterer}
 	})
 }
@@ -95,8 +97,10 @@ func (p *promMetricRegistry) Summary(m *metrics.MetricId) metrics.ObservableMetr
 }
 
 func (p *promMetricRegistry) Rt(m *metrics.MetricId, opts *metrics.RtOpts) metrics.ObservableMetric {
+	key := m.Name
 	var supplier func() interface{}
 	if opts != nil && opts.Aggregate {
+		key += "_aggregate"
 		supplier = func() interface{} {
 			// TODO set default aggregate config from config
 			return NewAggRtVec(&RtOpts{
@@ -114,7 +118,7 @@ func (p *promMetricRegistry) Rt(m *metrics.MetricId, opts *metrics.RtOpts) metri
 			}, m.TagKeys())
 		}
 	}
-	vec := p.getOrComputeVec(m.Name, supplier).(*RtVec)
+	vec := p.getOrComputeVec(key, supplier).(*RtVec)
 	return vec.With(m.Tags)
 }
 

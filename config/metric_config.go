@@ -18,6 +18,10 @@
 package config
 
 import (
+	"strconv"
+)
+
+import (
 	"github.com/creasty/defaults"
 
 	"github.com/dubbogo/gost/log/logger"
@@ -26,6 +30,8 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 )
@@ -40,6 +46,7 @@ type MetricConfig struct {
 	PushGatewayAddress string `default:"" yaml:"push-gateway-address" json:"push-gateway-address,omitempty" property:"push-gateway-address"`
 	SummaryMaxAge      int64  `default:"600000000000" yaml:"summary-max-age" json:"summary-max-age,omitempty" property:"summary-max-age"`
 	Protocol           string `default:"prometheus" yaml:"protocol" json:"protocol,omitempty" property:"protocol"`
+	rootConfig         *RootConfig
 }
 
 func (mc *MetricConfig) ToReporterConfig() *metrics.ReporterConfig {
@@ -60,7 +67,7 @@ func (mc *MetricConfig) ToReporterConfig() *metrics.ReporterConfig {
 	return defaultMetricsReportConfig
 }
 
-func (mc *MetricConfig) Init() error {
+func (mc *MetricConfig) Init(rc *RootConfig) error {
 	if mc == nil {
 		return errors.New("metrics config is null")
 	}
@@ -70,10 +77,10 @@ func (mc *MetricConfig) Init() error {
 	if err := verify(mc); err != nil {
 		return err
 	}
-	metrics.InitAppInfo(GetRootConfig().Application.Name, GetRootConfig().Application.Version)
+	mc.rootConfig = rc
 	config := mc.ToReporterConfig()
 	extension.GetMetricReporter(mc.Protocol, config)
-	metrics.Init(config)
+	metrics.Init(mc.toURL())
 	return nil
 }
 
@@ -99,4 +106,15 @@ func (mc *MetricConfig) DynamicUpdateProperties(newMetricConfig *MetricConfig) {
 			extension.GetMetricReporter(mc.Protocol, mc.ToReporterConfig())
 		}
 	}
+}
+
+// prometheus://localhost:9090?&histogram.enabled=false&prometheus.exporter.enabled=false
+func (mc *MetricConfig) toURL() *common.URL {
+	url, _ := common.NewURL("localhost", common.WithProtocol(mc.Protocol))
+	url.SetParam(constant.PrometheusExporterEnabledKey, strconv.FormatBool(*mc.Enable))
+	url.SetParam(constant.PrometheusExporterMetricsPortKey, mc.Port)
+	url.SetParam(constant.PrometheusExporterMetricsPathKey, mc.Path)
+	url.SetParam(constant.ApplicationKey, mc.rootConfig.Application.Name)
+	url.SetParam(constant.AppVersionKey, mc.rootConfig.Application.Version)
+	return url
 }
