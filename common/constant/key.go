@@ -420,6 +420,6 @@ const (
 // default meta cache config
 const (
 	DefaultMetaCacheName = "dubbo.meta"
-	DefaultMetaFileName  = "dubbo.metadata"
+	DefaultMetaFileName  = "dubbo.metadata."
 	DefaultEntrySize     = 100
 )
