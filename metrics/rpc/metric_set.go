@@ -75,7 +75,7 @@ func (pm *providerMetrics) init(registry metrics.MetricRegistry) {
 		&metrics.RtOpts{Aggregate: false},
 	)
 	pm.rtMillisecondsAggregate = metrics.NewRtVec(registry,
-		metrics.NewMetricKey("dubbo_provider_rt_milliseconds", "response time of the provider under the sliding window"),
+		metrics.NewMetricKey("dubbo_provider_rt", "response time of the provider under the sliding window"),
 		&metrics.RtOpts{Aggregate: true, BucketNum: metrics.DefaultBucketNum, TimeWindowSeconds: metrics.DefaultTimeWindowSeconds},
 	)
 	pm.rtMillisecondsQuantiles = metrics.NewQuantileMetricVec(registry, []*metrics.MetricKey{
@@ -100,7 +100,7 @@ func (cm *consumerMetrics) init(registry metrics.MetricRegistry) {
 		&metrics.RtOpts{Aggregate: false},
 	)
 	cm.rtMillisecondsAggregate = metrics.NewRtVec(registry,
-		metrics.NewMetricKey("dubbo_consumer_rt_milliseconds", "response time of the consumer under the sliding window"),
+		metrics.NewMetricKey("dubbo_consumer_rt", "response time of the consumer under the sliding window"),
 		&metrics.RtOpts{Aggregate: true, BucketNum: metrics.DefaultBucketNum, TimeWindowSeconds: metrics.DefaultTimeWindowSeconds},
 	)
 	cm.rtMillisecondsQuantiles = metrics.NewQuantileMetricVec(registry, []*metrics.MetricKey{
