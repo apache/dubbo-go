@@ -155,7 +155,7 @@ func (cli *greetServiceGreetStreamClient) Recv() (*proto.GreetStreamResponse, er
 type GreetService_GreetClientStreamClient interface {
 	Spec() triple_protocol.Spec
 	Peer() triple_protocol.Peer
-	Send(any) error
+	Send(interface{}) error
 	RequestHeader() http.Header
 	CloseAndRecv() (*proto.GreetClientStreamResponse, error)
 	Conn() (triple_protocol.StreamingClientConn, error)

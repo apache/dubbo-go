@@ -19,6 +19,7 @@ package dubbo
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/client"
+	"dubbo.apache.org/dubbo-go/v3/global"
 	"github.com/pkg/errors"
 )
 
@@ -29,48 +30,92 @@ import (
 // ins, err := NewInstance()
 // cli, err := ins.NewClient()
 type Instance struct {
-	rootCfg *RootConfig
+	insOpts *InstanceOptions
 }
 
-// NewInstance receives RootOption and initializes RootConfig. There are some processing
+// NewInstance receives InstanceOption and initializes RootConfig. There are some processing
 // tasks during initialization.
-func NewInstance(opts ...RootOption) (*Instance, error) {
-	rootCfg := defaultRootConfig()
-	if err := rootCfg.Init(opts...); err != nil {
+func NewInstance(opts ...InstanceOption) (*Instance, error) {
+	newInsOpts := defaultInstanceOptions()
+	if err := newInsOpts.init(opts...); err != nil {
 		return nil, err
 	}
 
-	return &Instance{rootCfg: rootCfg}, nil
+	return &Instance{insOpts: newInsOpts}, nil
 }
 
 // NewClient is like client.NewClient, but inject configurations from RootConfig and
 // ConsumerConfig
-func (ins *Instance) NewClient(opts ...client.ReferenceOption) (*client.Client, error) {
-	if ins == nil || ins.rootCfg == nil {
+func (ins *Instance) NewClient(opts ...client.ClientOption) (*client.Client, error) {
+	if ins == nil || ins.insOpts == nil {
 		return nil, errors.New("Instance has not been initialized")
 	}
 
-	var refOpts []client.ReferenceOption
-	conCfg := ins.rootCfg.Consumer
+	var cliOpts []client.ClientOption
+	conCfg := ins.insOpts.Consumer
+	appCfg := ins.insOpts.Application
+	regsCfg := ins.insOpts.Registries
+	// todo(DMwangnima): use slices to maintain options
 	if conCfg != nil {
 		// these options come from Consumer and Root.
 		// for dubbo-go developers, referring config/ConsumerConfig.Init and config/ReferenceConfig
-		refOpts = append(refOpts,
-			client.WithFilter(conCfg.Filter),
-			client.WithRegistryIDs(conCfg.RegistryIDs),
-			client.WithProtocol(conCfg.Protocol),
-			client.WithTracingKey(conCfg.TracingKey),
-			client.WithCheck(conCfg.Check),
-			client.WithMeshEnabled(conCfg.MeshEnabled),
-			client.WithAdaptiveService(conCfg.AdaptiveService),
-			client.WithProxyFactory(conCfg.ProxyFactory),
-			client.WithApplication(ins.rootCfg.Application),
-			client.WithRegistries(ins.rootCfg.Registries),
+		cliOpts = append(cliOpts,
+			client.WithReferenceConfig(
+				global.WithReference_Filter(conCfg.Filter),
+				global.WithReference_RegistryIDs(conCfg.RegistryIDs),
+				global.WithReference_Protocol(conCfg.Protocol),
+				global.WithReference_TracingKey(conCfg.TracingKey),
+				global.WithReference_Check(conCfg.Check),
+			),
+			client.WithConsumerConfig(
+				global.WithConsumer_MeshEnabled(conCfg.MeshEnabled),
+				global.WithConsumer_AdaptiveService(conCfg.AdaptiveService),
+				global.WithConsumer_ProxyFactory(conCfg.ProxyFactory),
+			),
 		)
 	}
-	refOpts = append(refOpts, opts...)
+	if appCfg != nil {
+		cliOpts = append(cliOpts,
+			client.WithApplicationConfig(
+				global.WithApplication_Name(appCfg.Name),
+				global.WithApplication_Organization(appCfg.Organization),
+				global.WithApplication_Module(appCfg.Module),
+				global.WithApplication_Version(appCfg.Version),
+				global.WithApplication_Owner(appCfg.Owner),
+				global.WithApplication_Environment(appCfg.Environment),
+				global.WithApplication_Group(appCfg.Group),
+				global.WithApplication_MetadataType(appCfg.MetadataType),
+			),
+		)
+	}
+	if regsCfg != nil {
+		for key, reg := range regsCfg {
+			cliOpts = append(cliOpts,
+				client.WithRegistryConfig(key,
+					global.WithRegistry_Protocol(reg.Protocol),
+					global.WithRegistry_Timeout(reg.Timeout),
+					global.WithRegistry_Group(reg.Group),
+					global.WithRegistry_Namespace(reg.Namespace),
+					global.WithRegistry_TTL(reg.TTL),
+					global.WithRegistry_Address(reg.Address),
+					global.WithRegistry_Username(reg.Username),
+					global.WithRegistry_Password(reg.Password),
+					global.WithRegistry_Simplified(reg.Simplified),
+					global.WithRegistry_Preferred(reg.Preferred),
+					global.WithRegistry_Zone(reg.Zone),
+					global.WithRegistry_Weight(reg.Weight),
+					global.WithRegistry_Params(reg.Params),
+					global.WithRegistry_RegistryType(reg.RegistryType),
+					global.WithRegistry_UseAsMetaReport(reg.UseAsMetaReport),
+					global.WithRegistry_UseAsConfigCenter(reg.UseAsConfigCenter),
+				),
+			)
+		}
+	}
+	// options passed by users has higher priority
+	cliOpts = append(cliOpts, opts...)
 
-	cli, err := client.NewClient(refOpts...)
+	cli, err := client.NewClient(cliOpts...)
 	if err != nil {
 		return nil, err
 	}
