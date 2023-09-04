@@ -167,12 +167,9 @@ func (rc *RootConfig) Init() error {
 	}
 
 	// init registry
-	registries := rc.Registries
-	if registries != nil {
-		for _, reg := range registries {
-			if err := reg.Init(); err != nil {
-				return err
-			}
+	for _, reg := range rc.Registries {
+		if err := reg.Init(); err != nil {
+			return err
 		}
 	}
 
@@ -182,7 +179,7 @@ func (rc *RootConfig) Init() error {
 	if err := rc.Otel.Init(rc.Application); err != nil {
 		return err
 	}
-	if err := rc.Metric.Init(); err != nil {
+	if err := rc.Metric.Init(rc); err != nil {
 		return err
 	}
 	for _, t := range rc.Tracing {

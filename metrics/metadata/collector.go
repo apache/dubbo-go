@@ -22,6 +22,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 )
@@ -31,7 +32,7 @@ const eventType = constant.MetricsMetadata
 var ch = make(chan metrics.MetricsEvent, 10)
 
 func init() {
-	metrics.AddCollector("metadata", func(mr metrics.MetricRegistry, rc *metrics.ReporterConfig) {
+	metrics.AddCollector("metadata", func(mr metrics.MetricRegistry, _ *common.URL) {
 		l := &MetadataMetricCollector{metrics.BaseCollector{R: mr}}
 		l.start()
 	})
