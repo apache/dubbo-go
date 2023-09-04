@@ -26,9 +26,45 @@ import (
 )
 
 func TestMetricConfigBuilder(t *testing.T) {
-	config := NewMetricConfigBuilder().Build()
-	err := config.Init(&RootConfig{Application: &ApplicationConfig{Name: "dubbo", Version: "1.0.0"}})
-	assert.NoError(t, err)
-	reporterConfig := config.ToReporterConfig()
-	assert.Equal(t, string(reporterConfig.Mode), "pull")
+	config := NewMetricConfigBuilder().
+		SetEnable(true).
+		SetProrocol("prom").
+		SetPath("/path").
+		SetPort(9092).
+		SetAggregationEnabled(true).
+		SetAggregationBucketNum(30).
+		SetAggregationTimeWindowSeconds(300).
+		SetPrometheusExporterEnabled(true).
+		SetPrometheusPushEnabled(true).
+		SetPrometheusPushBaseUrl("localhost:9990").
+		SetPrometheusPushInterval(10).
+		SetPrometheusPushJob("job").
+		SetPrometheusPushUserName("dubbo").
+		SetPrometheusPushPassword("1234").
+		Build()
+	enable := true
+	assert.Equal(t, &MetricConfig{
+		Enable:   &enable,
+		Protocol: "prom",
+		Path:     "/path",
+		Port:     "9092",
+		Aggregation: &AggregateConfig{
+			Enabled:           &enable,
+			BucketNum:         30,
+			TimeWindowSeconds: 300,
+		},
+		Prometheus: &PrometheusConfig{
+			Exporter: &ExporterConfig{
+				Enabled: &enable,
+			},
+			Pushgateway: &PushgatewayConfig{
+				Enabled:      &enable,
+				BaseUrl:      "localhost:9990",
+				PushInterval: 10,
+				Job:          "job",
+				Username:     "dubbo",
+				Password:     "1234",
+			},
+		},
+	}, config)
 }

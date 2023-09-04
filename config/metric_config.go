@@ -51,11 +51,11 @@ type AggregateConfig struct {
 }
 
 type PrometheusConfig struct {
-	Exporter    *Exporter          `yaml:"exporter" json:"exporter,omitempty" property:"exporter"`
+	Exporter    *ExporterConfig    `yaml:"exporter" json:"exporter,omitempty" property:"exporter"`
 	Pushgateway *PushgatewayConfig `yaml:"pushgateway" json:"pushgateway,omitempty" property:"pushgateway"`
 }
 
-type Exporter struct {
+type ExporterConfig struct {
 	Enabled *bool `default:"false" yaml:"enabled" json:"enabled,omitempty" property:"enabled"`
 }
 
@@ -66,16 +66,6 @@ type PushgatewayConfig struct {
 	Username     string `default:"" yaml:"username" json:"username,omitempty" property:"username"`
 	Password     string `default:"" yaml:"password" json:"password,omitempty" property:"password"`
 	PushInterval int    `default:"30" yaml:"push-interval" json:"push-interval,omitempty" property:"push-interval"`
-}
-
-func (mc *MetricConfig) ToReporterConfig() *metrics.ReporterConfig {
-	defaultMetricsReportConfig := metrics.NewReporterConfig()
-
-	defaultMetricsReportConfig.Enable = *mc.Enable
-	defaultMetricsReportConfig.Port = mc.Port
-	defaultMetricsReportConfig.Path = mc.Path
-	defaultMetricsReportConfig.Protocol = mc.Protocol
-	return defaultMetricsReportConfig
 }
 
 func (mc *MetricConfig) Init(rc *RootConfig) error {
@@ -98,7 +88,85 @@ type MetricConfigBuilder struct {
 }
 
 func NewMetricConfigBuilder() *MetricConfigBuilder {
-	return &MetricConfigBuilder{metricConfig: &MetricConfig{}}
+	return &MetricConfigBuilder{
+		metricConfig: &MetricConfig{
+			Aggregation: &AggregateConfig{},
+			Prometheus: &PrometheusConfig{
+				Exporter:    &ExporterConfig{},
+				Pushgateway: &PushgatewayConfig{},
+			},
+		},
+	}
+}
+
+func (mcb *MetricConfigBuilder) SetEnable(enable bool) *MetricConfigBuilder {
+	mcb.metricConfig.Enable = &enable
+	return mcb
+}
+
+func (mcb *MetricConfigBuilder) SetPort(port int) *MetricConfigBuilder {
+	mcb.metricConfig.Port = strconv.Itoa(port)
+	return mcb
+}
+
+func (mcb *MetricConfigBuilder) SetPath(path string) *MetricConfigBuilder {
+	mcb.metricConfig.Path = path
+	return mcb
+}
+
+func (mcb *MetricConfigBuilder) SetProrocol(protocol string) *MetricConfigBuilder {
+	mcb.metricConfig.Protocol = protocol
+	return mcb
+}
+
+func (mcb *MetricConfigBuilder) SetAggregationEnabled(enabled bool) *MetricConfigBuilder {
+	mcb.metricConfig.Aggregation.Enabled = &enabled
+	return mcb
+}
+
+func (mcb *MetricConfigBuilder) SetAggregationBucketNum(num int) *MetricConfigBuilder {
+	mcb.metricConfig.Aggregation.BucketNum = num
+	return mcb
+}
+
+func (mcb *MetricConfigBuilder) SetAggregationTimeWindowSeconds(timeWindowSeconds int) *MetricConfigBuilder {
+	mcb.metricConfig.Aggregation.TimeWindowSeconds = timeWindowSeconds
+	return mcb
+}
+
+func (mcb *MetricConfigBuilder) SetPrometheusExporterEnabled(enabled bool) *MetricConfigBuilder {
+	mcb.metricConfig.Prometheus.Exporter.Enabled = &enabled
+	return mcb
+}
+
+func (mcb *MetricConfigBuilder) SetPrometheusPushEnabled(enabled bool) *MetricConfigBuilder {
+	mcb.metricConfig.Prometheus.Pushgateway.Enabled = &enabled
+	return mcb
+}
+
+func (mcb *MetricConfigBuilder) SetPrometheusPushBaseUrl(baseUrl string) *MetricConfigBuilder {
+	mcb.metricConfig.Prometheus.Pushgateway.BaseUrl = baseUrl
+	return mcb
+}
+
+func (mcb *MetricConfigBuilder) SetPrometheusPushJob(jobName string) *MetricConfigBuilder {
+	mcb.metricConfig.Prometheus.Pushgateway.Job = jobName
+	return mcb
+}
+
+func (mcb *MetricConfigBuilder) SetPrometheusPushInterval(interval int) *MetricConfigBuilder {
+	mcb.metricConfig.Prometheus.Pushgateway.PushInterval = interval
+	return mcb
+}
+
+func (mcb *MetricConfigBuilder) SetPrometheusPushUserName(username string) *MetricConfigBuilder {
+	mcb.metricConfig.Prometheus.Pushgateway.Username = username
+	return mcb
+}
+
+func (mcb *MetricConfigBuilder) SetPrometheusPushPassword(password string) *MetricConfigBuilder {
+	mcb.metricConfig.Prometheus.Pushgateway.Password = password
+	return mcb
 }
 
 func (mcb *MetricConfigBuilder) Build() *MetricConfig {

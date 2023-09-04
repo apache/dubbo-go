@@ -160,14 +160,14 @@ func (p *promMetricRegistry) Export() {
 			})
 			logger.Infof("prometheus endpoint :%s%s", port, path)
 			if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed { // except Shutdown or Close
-				logger.Errorf("new prometheus server with error = %v", err)
+				logger.Errorf("new prometheus server with error: %v", err)
 			}
 		}()
 	}
 	if p.url.GetParamBool(constant.PrometheusPushgatewayEnabledKey, false) {
 		baseUrl, exist := p.url.GetNonDefaultParam(constant.PrometheusPushgatewayBaseUrlKey)
 		if !exist {
-			logger.Error("no pushgateway url found in config path: metrics.prometheus.pushgateway.bash-url, please check your config file")
+			logger.Error("no pushgateway base url found in config path: metrics.prometheus.pushgateway.base-url, please check your config")
 			return
 		}
 		username := p.url.GetParam(constant.PrometheusPushgatewayBaseUrlKey, "")
@@ -184,7 +184,7 @@ func (p *promMetricRegistry) Export() {
 			for range ticker.C {
 				err := pusher.Add()
 				if err != nil {
-					logger.Errorf("push metric data to prometheus push gateway error", err)
+					logger.Errorf("push metric data to prometheus pushgateway error: %v", err)
 				} else {
 					logger.Debugf("prometheus pushgateway push to %s success", baseUrl)
 				}
