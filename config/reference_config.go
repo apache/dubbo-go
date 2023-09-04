@@ -74,6 +74,7 @@ type ReferenceConfig struct {
 	TracingKey       string `yaml:"tracing-key" json:"tracing-key,omitempty" propertiy:"tracing-key"`
 	rootConfig       *RootConfig
 	metaDataType     string
+	metricsEnable    bool
 	MeshProviderPort int `yaml:"mesh-provider-port" json:"mesh-provider-port,omitempty" propertiy:"mesh-provider-port"`
 }
 
@@ -117,6 +118,9 @@ func (rc *ReferenceConfig) Init(root *RootConfig) error {
 
 	if rc.TracingKey == "" {
 		rc.TracingKey = root.Consumer.TracingKey
+	}
+	if root.Metric.Enable != nil {
+		rc.metricsEnable = *root.Metric.Enable
 	}
 	if rc.Check == nil {
 		rc.Check = &root.Consumer.Check
@@ -354,6 +358,9 @@ func (rc *ReferenceConfig) getURLMap() url.Values {
 	defaultReferenceFilter := constant.DefaultReferenceFilters
 	if rc.Generic != "" {
 		defaultReferenceFilter = constant.GenericFilterKey + "," + defaultReferenceFilter
+	}
+	if rc.metricsEnable {
+		defaultReferenceFilter += fmt.Sprintf(",%s", constant.MetricsFilterKey)
 	}
 	urlMap.Set(constant.ReferenceFilterKey, mergeValue(rc.Filter, "", defaultReferenceFilter))
 
