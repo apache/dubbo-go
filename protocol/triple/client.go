@@ -21,9 +21,9 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
+	"fmt"
 	"net"
 	"net/http"
-	"path"
 	"strings"
 )
 
@@ -69,8 +69,8 @@ func (cm *clientManager) callUnary(ctx context.Context, method string, req, resp
 		return err
 	}
 	// todo: compiler generate tri.Request and tri.Response
-	triReq := req.(*tri.Request)
-	triResp := resp.(*tri.Response)
+	triReq := tri.NewRequest(req)
+	triResp := tri.NewResponse(resp)
 	if err := triClient.CallUnary(ctx, triReq, triResp); err != nil {
 		return err
 	}
@@ -94,7 +94,7 @@ func (cm *clientManager) callServerStream(ctx context.Context, method string, re
 	if err != nil {
 		return nil, err
 	}
-	triReq := req.(*tri.Request)
+	triReq := tri.NewRequest(req)
 	stream, err := triClient.CallServerStream(ctx, triReq)
 	if err != nil {
 		return nil, err
@@ -175,21 +175,22 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 
 	// todo: using option to represent whether using http1 or http2, and whether to use grpc
 
-	key := url.GetParam(constant.InterfaceKey, "")
-	conRefs := config.GetConsumerConfig().References
-	ref, ok := conRefs[key]
-	if !ok {
-		panic("no reference")
-	}
+	//key := url.GetParam(constant.InterfaceKey, "")
+	//conRefs := config.GetConsumerConfig().References
+	//ref, ok := conRefs[key]
+	//if !ok {
+	//	panic("no reference")
+	//}
 	// todo: set timeout
 	var transport http.RoundTripper
-	switch ref.Protocol {
-	case "http":
+	callType := url.GetParam(constant.CallHTTPTypeKey, constant.CallHTTP2)
+	switch callType {
+	case constant.CallHTTP:
 		transport = &http.Transport{
 			TLSClientConfig: cfg,
 		}
 		triClientOpts = append(triClientOpts, tri.WithTriple())
-	case TRIPLE:
+	case constant.CallHTTP2:
 		if tlsFlag {
 			transport = &http2.Transport{
 				TLSClientConfig: cfg,
@@ -203,6 +204,8 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 			}
 		}
 		triClientOpts = append(triClientOpts)
+	default:
+		panic(fmt.Sprintf("Unsupported type: %s", callType))
 	}
 	httpClient := &http.Client{
 		Transport: transport,
@@ -218,7 +221,8 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 	}
 	triClients := make(map[string]*tri.Client)
 	for _, method := range url.Methods {
-		triUrl := path.Join(baseTriUrl, url.Interface(), method)
+		triUrl := baseTriUrl + "/" + url.Interface() + "/" + method
+		//triUrl := path.Join(baseTriUrl, url.Interface(), method)
 		triClient := tri.NewClient(httpClient, triUrl, triClientOpts...)
 		triClients[method] = triClient
 	}

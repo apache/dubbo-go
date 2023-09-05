@@ -127,7 +127,7 @@ func (s *Server) Start(invoker protocol.Invoker, info *server.ServiceInfo) {
 		if info != nil {
 			handleServiceWithInfo(invoker, info, mux)
 		} else {
-			compatHandleService(invoker, mux)
+			compatHandleService(mux)
 		}
 		// todo: figure it out this process
 		//reflection.Register(server)
@@ -177,8 +177,8 @@ func waitTripleExporter(providerServices map[string]*config.ServiceConfig) {
 }
 
 // *Important*, this function is responsible for being compatible with old triple-gen code
-// compatHandleService injects invoker and creates handler based on ServiceConfig and provider service.
-func compatHandleService(invoker protocol.Invoker, mux *http.ServeMux, opts ...tri.HandlerOption) {
+// compatHandleService creates handler based on ServiceConfig and provider service.
+func compatHandleService(mux *http.ServeMux, opts ...tri.HandlerOption) {
 	providerServices := config.GetProviderConfig().Services
 	if len(providerServices) == 0 {
 		panic("Provider service map is null")
@@ -243,7 +243,9 @@ func compatBuildHandler(svc dubbo3.Dubbo3GrpcService, opts ...tri.HandlerOption)
 func handleServiceWithInfo(invoker protocol.Invoker, info *server.ServiceInfo, mux *http.ServeMux, opts ...tri.HandlerOption) {
 	for _, method := range info.Methods {
 		var handler http.Handler
-		procedure := path.Join(info.InterfaceName, method.Name)
+		methodName := method.Name
+		procedure := "/" + info.InterfaceName + "/" + method.Name
+		//procedure := path.Join(info.InterfaceName, method.Name)
 		switch method.Type {
 		case constant.CallUnary:
 			handler = tri.NewUnaryHandler(
@@ -253,8 +255,9 @@ func handleServiceWithInfo(invoker protocol.Invoker, info *server.ServiceInfo, m
 					var args []interface{}
 					args = append(args, req.Msg)
 					// todo: inject method.Meta to attachments
-					invo := invocation.NewRPCInvocation(method.Name, args, nil)
+					invo := invocation.NewRPCInvocation(methodName, args, nil)
 					res := invoker.Invoke(ctx, invo)
+					// todo(DMwangnima): if we do not use MethodInfo.MethodFunc, create Response manually
 					return res.Result().(*tri.Response), res.Error()
 				},
 				opts...,
@@ -265,7 +268,7 @@ func handleServiceWithInfo(invoker protocol.Invoker, info *server.ServiceInfo, m
 				func(ctx context.Context, stream *tri.ClientStream) (*tri.Response, error) {
 					var args []interface{}
 					args = append(args, method.StreamInitFunc(stream))
-					invo := invocation.NewRPCInvocation(method.Name, args, nil)
+					invo := invocation.NewRPCInvocation(methodName, args, nil)
 					res := invoker.Invoke(ctx, invo)
 					return res.Result().(*tri.Response), res.Error()
 				},
@@ -277,7 +280,7 @@ func handleServiceWithInfo(invoker protocol.Invoker, info *server.ServiceInfo, m
 				func(ctx context.Context, request *tri.Request, stream *tri.ServerStream) error {
 					var args []interface{}
 					args = append(args, request.Msg, method.StreamInitFunc(stream))
-					invo := invocation.NewRPCInvocation(method.Name, args, nil)
+					invo := invocation.NewRPCInvocation(methodName, args, nil)
 					res := invoker.Invoke(ctx, invo)
 					return res.Error()
 				},
@@ -288,7 +291,7 @@ func handleServiceWithInfo(invoker protocol.Invoker, info *server.ServiceInfo, m
 				func(ctx context.Context, stream *tri.BidiStream) error {
 					var args []interface{}
 					args = append(args, method.StreamInitFunc(stream))
-					invo := invocation.NewRPCInvocation(method.Name, args, nil)
+					invo := invocation.NewRPCInvocation(methodName, args, nil)
 					res := invoker.Invoke(ctx, invo)
 					return res.Error()
 				},
