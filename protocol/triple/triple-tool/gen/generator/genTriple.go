@@ -18,7 +18,6 @@
 package generator
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -178,8 +177,6 @@ func ProcessProtoFile(file *descriptor.FileDescriptorProto) (TripleGo, error) {
 	} else {
 		tripleGo.Import = moduleName + "/" + strings.Split(goPkg, ";")[0]
 	}
-
-	fmt.Printf("%+v", tripleGo)
 
 	return tripleGo, nil
 }
