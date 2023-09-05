@@ -167,12 +167,9 @@ func (rc *RootConfig) Init() error {
 	}
 
 	// init registry
-	registries := rc.Registries
-	if registries != nil {
-		for _, reg := range registries {
-			if err := reg.Init(); err != nil {
-				return err
-			}
+	for _, reg := range rc.Registries {
+		if err := reg.Init(); err != nil {
+			return err
 		}
 	}
 
