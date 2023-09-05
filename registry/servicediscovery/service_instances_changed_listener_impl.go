@@ -47,7 +47,8 @@ var (
 
 func initCache() {
 	gob.Register(&common.MetadataInfo{})
-	cache, err := store.NewCacheManager(constant.DefaultMetaCacheName, constant.DefaultMetaFileName+config.GetApplicationConfig().Name, time.Minute*10, constant.DefaultEntrySize, true)
+	fileName := constant.DefaultMetaFileName + config.GetApplicationConfig().Name
+	cache, err := store.NewCacheManager(constant.DefaultMetaCacheName, fileName, time.Minute*10, constant.DefaultEntrySize, true)
 	if err != nil {
 		logger.Fatal("Failed to create cache [%s],the err is %v", constant.DefaultMetaCacheName, err)
 	}
