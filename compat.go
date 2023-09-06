@@ -23,7 +23,7 @@ import (
 	"go.uber.org/atomic"
 )
 
-func compatRootConfig(c *RootConfig) *config.RootConfig {
+func compatRootConfig(c *InstanceOptions) *config.RootConfig {
 	proCompat := make(map[string]*config.ProtocolConfig)
 	for k, v := range c.Protocols {
 		proCompat[k] = compatProtocolConfig(v)

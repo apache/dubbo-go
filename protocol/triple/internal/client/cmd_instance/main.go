@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"dubbo.apache.org/dubbo-go/v3"
+	dubbo "dubbo.apache.org/dubbo-go/v3"
 	"dubbo.apache.org/dubbo-go/v3/client"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	greet "dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto"
