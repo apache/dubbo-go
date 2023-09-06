@@ -18,12 +18,12 @@
 package main
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto/triple_gen/greettriple"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/server/api"
 )
 
 import (
 	_ "dubbo.apache.org/dubbo-go/v3/imports"
-	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto/greettriple"
 	"dubbo.apache.org/dubbo-go/v3/server"
 )
 
@@ -32,7 +32,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	if err := greettriple.RegisterGreetServiceHandler(srv, &api.GreetConnectServer{}); err != nil {
+	if err := greettriple.RegisterGreetServiceHandler(srv, &api.GreetTripleServer{}); err != nil {
 		panic(err)
 	}
 	select {}

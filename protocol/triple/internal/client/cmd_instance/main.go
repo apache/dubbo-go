@@ -6,7 +6,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/client"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	greet "dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto"
-	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto/greettriple"
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto/triple_gen/greettriple"
 	"fmt"
 )
 

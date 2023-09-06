@@ -19,6 +19,7 @@ package triple_protocol
 
 import (
 	"context"
+	dubbo_protocol "dubbo.apache.org/dubbo-go/v3/protocol"
 	"fmt"
 	"github.com/dubbogo/grpc-go"
 	"net/http"
@@ -49,14 +50,18 @@ func (t *tripleCompatInterceptor) compatUnaryServerInterceptor(ctx context.Conte
 		if !ok {
 			return nil, errorf(CodeInternal, "unexpected handler request type %T", request)
 		}
-		resp, err := handler(ctx, typed.Any())
-		if resp == nil && err == nil {
+		respRaw, err := handler(ctx, typed.Any())
+		if respRaw == nil && err == nil {
 			// This is going to panic during serialization. Debugging is much easier
 			// if we panic here instead, so we can include the procedure name.
 			panic(fmt.Sprintf("%s returned nil resp and nil error", t.procedure)) //nolint: forbidigo
 		}
+		resp, ok := respRaw.(*dubbo_protocol.RPCResult)
+		if !ok {
+			panic(fmt.Sprintf("%+v is not of type *RPCResult", respRaw))
+		}
 		// todo(DMwangnima): expose API for users to write response headers and trailers
-		return NewResponse(resp), err
+		return NewResponse(resp.Rest), err
 	}
 
 	if t.interceptor != nil {
@@ -88,6 +93,7 @@ func NewCompatUnaryHandler(
 			}
 			return nil
 		}
+		ctx = context.WithValue(ctx, "XXX_TRIPLE_GO_INTERFACE_NAME", config.Procedure)
 		respRaw, err := unary(srv, ctx, decodeFunc, compatInterceptor.compatUnaryServerInterceptor)
 		if err != nil {
 			return err

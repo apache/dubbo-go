@@ -6,6 +6,7 @@ package greettriple
 
 import (
 	context "context"
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto"
 	errors "errors"
 	http "net/http"
 )
@@ -15,7 +16,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
-	proto "dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto"
 	triple_protocol "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	"dubbo.apache.org/dubbo-go/v3/server"
 )
@@ -102,7 +102,7 @@ func (c *GreetServiceImpl) GreetStream(ctx context.Context, opts ...client.CallO
 		return nil, err
 	}
 	rawStream := stream.(*triple_protocol.BidiStreamForClient)
-	return &greetServiceGreetStreamClient{rawStream}, nil
+	return &GreetServiceGreetStreamClient{rawStream}, nil
 }
 
 func (c *GreetServiceImpl) GreetClientStream(ctx context.Context, opts ...client.CallOption) (GreetService_GreetClientStreamClient, error) {
@@ -111,7 +111,7 @@ func (c *GreetServiceImpl) GreetClientStream(ctx context.Context, opts ...client
 		return nil, err
 	}
 	rawStream := stream.(*triple_protocol.ClientStreamForClient)
-	return &greetServiceGreetClientStreamClient{rawStream}, nil
+	return &GreetServiceGreetClientStreamClient{rawStream}, nil
 }
 
 func (c *GreetServiceImpl) GreetServerStream(ctx context.Context, req *proto.GreetServerStreamRequest, opts ...client.CallOption) (GreetService_GreetServerStreamClient, error) {
@@ -121,7 +121,7 @@ func (c *GreetServiceImpl) GreetServerStream(ctx context.Context, req *proto.Gre
 		return nil, err
 	}
 	rawStream := stream.(*triple_protocol.ServerStreamForClient)
-	return &greetServiceGreetServerStreamClient{rawStream}, nil
+	return &GreetServiceGreetServerStreamClient{rawStream}, nil
 }
 
 type GreetService_GreetStreamClient interface {
@@ -136,15 +136,15 @@ type GreetService_GreetStreamClient interface {
 	CloseResponse() error
 }
 
-type greetServiceGreetStreamClient struct {
+type GreetServiceGreetStreamClient struct {
 	*triple_protocol.BidiStreamForClient
 }
 
-func (cli *greetServiceGreetStreamClient) Send(msg *proto.GreetStreamRequest) error {
+func (cli *GreetServiceGreetStreamClient) Send(msg *proto.GreetStreamRequest) error {
 	return cli.BidiStreamForClient.Send(msg)
 }
 
-func (cli *greetServiceGreetStreamClient) Recv() (*proto.GreetStreamResponse, error) {
+func (cli *GreetServiceGreetStreamClient) Recv() (*proto.GreetStreamResponse, error) {
 	msg := new(proto.GreetStreamResponse)
 	if err := cli.BidiStreamForClient.Receive(msg); err != nil {
 		return nil, err
@@ -155,17 +155,21 @@ func (cli *greetServiceGreetStreamClient) Recv() (*proto.GreetStreamResponse, er
 type GreetService_GreetClientStreamClient interface {
 	Spec() triple_protocol.Spec
 	Peer() triple_protocol.Peer
-	Send(any) error
+	Send(*proto.GreetClientStreamRequest) error
 	RequestHeader() http.Header
 	CloseAndRecv() (*proto.GreetClientStreamResponse, error)
 	Conn() (triple_protocol.StreamingClientConn, error)
 }
 
-type greetServiceGreetClientStreamClient struct {
+type GreetServiceGreetClientStreamClient struct {
 	*triple_protocol.ClientStreamForClient
 }
 
-func (cli *greetServiceGreetClientStreamClient) CloseAndRecv() (*proto.GreetClientStreamResponse, error) {
+func (cli *GreetServiceGreetClientStreamClient) Send(msg *proto.GreetClientStreamRequest) error {
+	return cli.ClientStreamForClient.Send(msg)
+}
+
+func (cli *GreetServiceGreetClientStreamClient) CloseAndRecv() (*proto.GreetClientStreamResponse, error) {
 	msg := new(proto.GreetClientStreamResponse)
 	resp := triple_protocol.NewResponse(msg)
 	if err := cli.ClientStreamForClient.CloseAndReceive(resp); err != nil {
@@ -174,7 +178,7 @@ func (cli *greetServiceGreetClientStreamClient) CloseAndRecv() (*proto.GreetClie
 	return msg, nil
 }
 
-func (cli *greetServiceGreetClientStreamClient) Conn() (triple_protocol.StreamingClientConn, error) {
+func (cli *GreetServiceGreetClientStreamClient) Conn() (triple_protocol.StreamingClientConn, error) {
 	return cli.ClientStreamForClient.Conn()
 }
 
@@ -188,16 +192,16 @@ type GreetService_GreetServerStreamClient interface {
 	Close() error
 }
 
-type greetServiceGreetServerStreamClient struct {
+type GreetServiceGreetServerStreamClient struct {
 	*triple_protocol.ServerStreamForClient
 }
 
-func (cli *greetServiceGreetServerStreamClient) Recv() bool {
+func (cli *GreetServiceGreetServerStreamClient) Recv() bool {
 	msg := new(proto.GreetServerStreamResponse)
 	return cli.ServerStreamForClient.Receive(msg)
 }
 
-func (cli *greetServiceGreetServerStreamClient) Msg() *proto.GreetServerStreamResponse {
+func (cli *GreetServiceGreetServerStreamClient) Msg() *proto.GreetServerStreamResponse {
 	msg := cli.ServerStreamForClient.Msg()
 	if msg == nil {
 		return new(proto.GreetServerStreamResponse)
@@ -205,7 +209,7 @@ func (cli *greetServiceGreetServerStreamClient) Msg() *proto.GreetServerStreamRe
 	return msg.(*proto.GreetServerStreamResponse)
 }
 
-func (cli *greetServiceGreetServerStreamClient) Conn() (triple_protocol.StreamingClientConn, error) {
+func (cli *GreetServiceGreetServerStreamClient) Conn() (triple_protocol.StreamingClientConn, error) {
 	return cli.ServerStreamForClient.Conn()
 }
 

@@ -4,7 +4,7 @@ import (
 	"context"
 	"dubbo.apache.org/dubbo-go/v3/client"
 	greet "dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto"
-	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto/greettriple"
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto/triple_gen/greettriple"
 	"fmt"
 )
 

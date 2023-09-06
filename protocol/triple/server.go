@@ -23,7 +23,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo3"
 	"fmt"
 	"net/http"
-	"path"
 	"sync"
 	"time"
 )
@@ -115,14 +114,6 @@ func (s *Server) Start(invoker protocol.Invoker, info *server.ServiceInfo) {
 	s.httpServer = srv
 
 	go func() {
-		//providerServices := config.GetProviderConfig().Services
-		//
-		//if len(providerServices) == 0 {
-		//	panic("provider service map is null")
-		//}
-		// todo: remove this logic?
-		// wait all exporter ready , then set proxy impl and grpc registerService
-		//waitTripleExporter(providerServices)
 		mux := http.NewServeMux()
 		if info != nil {
 			handleServiceWithInfo(invoker, info, mux)
@@ -183,8 +174,9 @@ func compatHandleService(mux *http.ServeMux, opts ...tri.HandlerOption) {
 	if len(providerServices) == 0 {
 		panic("Provider service map is null")
 	}
-	waitTripleExporter(providerServices)
+	//waitTripleExporter(providerServices)
 	for key, providerService := range providerServices {
+		// todo(DMwangnima): judge protocol type
 		service := config.GetProviderService(key)
 		ds, ok := service.(dubbo3.Dubbo3GrpcService)
 		if !ok {
@@ -215,14 +207,14 @@ func compatBuildHandler(svc dubbo3.Dubbo3GrpcService, opts ...tri.HandlerOption)
 	basePath := desc.ServiceName
 	// init unary handlers
 	for _, method := range desc.Methods {
-		procedure := path.Join(desc.ServiceName, method.MethodName)
+		procedure := "/" + desc.ServiceName + "/" + method.MethodName
 		handler := tri.NewCompatUnaryHandler(procedure, svc, tri.MethodHandler(method.Handler), opts...)
 		mux.Handle(procedure, handler)
 	}
 
 	// init stream handlers
 	for _, stream := range desc.Streams {
-		procedure := path.Join(desc.ServiceName, stream.StreamName)
+		procedure := "/" + desc.ServiceName + "/" + stream.StreamName
 		var typ tri.StreamType
 		switch {
 		case stream.ClientStreams && stream.ServerStreams:
@@ -236,7 +228,7 @@ func compatBuildHandler(svc dubbo3.Dubbo3GrpcService, opts ...tri.HandlerOption)
 		mux.Handle(procedure, handler)
 	}
 
-	return basePath, mux
+	return "/" + basePath + "/", mux
 }
 
 // handleServiceWithInfo injects invoker and create handler based on ServiceInfo
