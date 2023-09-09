@@ -6,7 +6,6 @@ package greettriple
 
 import (
 	context "context"
-	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto"
 	errors "errors"
 	http "net/http"
 )
@@ -16,6 +15,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto"
 	triple_protocol "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	"dubbo.apache.org/dubbo-go/v3/server"
 )
@@ -299,7 +299,7 @@ type greetServiceGreetServerStreamServer struct {
 	*triple_protocol.ServerStream
 }
 
-func (g greetServiceGreetServerStreamServer) Send(msg *proto.GreetServerStreamResponse) error {
+func (g *greetServiceGreetServerStreamServer) Send(msg *proto.GreetServerStreamResponse) error {
 	return g.ServerStream.Send(msg)
 }
 
@@ -326,7 +326,7 @@ var GreetService_ServiceInfo = server.ServiceInfo{
 			Name: "GreetStream",
 			Type: constant.CallBidiStream,
 			StreamInitFunc: func(baseStream interface{}) interface{} {
-				return greetServiceGreetStreamServer{baseStream.(*triple_protocol.BidiStream)}
+				return &greetServiceGreetStreamServer{baseStream.(*triple_protocol.BidiStream)}
 			},
 			MethodFunc: func(ctx context.Context, args []interface{}, handler interface{}) (interface{}, error) {
 				stream := args[0].(GreetService_GreetStreamServer)
@@ -340,7 +340,7 @@ var GreetService_ServiceInfo = server.ServiceInfo{
 			Name: "GreetClientStream",
 			Type: constant.CallClientStream,
 			StreamInitFunc: func(baseStream interface{}) interface{} {
-				return greetServiceGreetClientStreamServer{baseStream.(*triple_protocol.ClientStream)}
+				return &greetServiceGreetClientStreamServer{baseStream.(*triple_protocol.ClientStream)}
 			},
 			MethodFunc: func(ctx context.Context, args []interface{}, handler interface{}) (interface{}, error) {
 				stream := args[0].(GreetService_GreetClientStreamServer)
@@ -355,10 +355,10 @@ var GreetService_ServiceInfo = server.ServiceInfo{
 			Name: "GreetServerStream",
 			Type: constant.CallServerStream,
 			ReqInitFunc: func() interface{} {
-				return new(proto.GreetClientStreamRequest)
+				return new(proto.GreetServerStreamRequest)
 			},
 			StreamInitFunc: func(baseStream interface{}) interface{} {
-				return greetServiceGreetServerStreamServer{baseStream.(*triple_protocol.ServerStream)}
+				return &greetServiceGreetServerStreamServer{baseStream.(*triple_protocol.ServerStream)}
 			},
 			MethodFunc: func(ctx context.Context, args []interface{}, handler interface{}) (interface{}, error) {
 				req := args[0].(*proto.GreetServerStreamRequest)

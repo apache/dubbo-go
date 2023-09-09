@@ -21,7 +21,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"sync"
+)
 
+import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/gen/proto/connect/ping/v1/pingv1connect"
 )
 

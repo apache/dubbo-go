@@ -21,9 +21,10 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+)
 
+import (
 	triple "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
-
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/assert"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/gen/proto/connect/ping/v1/pingv1connect"
 )

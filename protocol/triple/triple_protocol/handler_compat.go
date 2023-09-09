@@ -19,10 +19,16 @@ package triple_protocol
 
 import (
 	"context"
-	dubbo_protocol "dubbo.apache.org/dubbo-go/v3/protocol"
 	"fmt"
-	"github.com/dubbogo/grpc-go"
 	"net/http"
+)
+
+import (
+	"github.com/dubbogo/grpc-go"
+)
+
+import (
+	dubbo_protocol "dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
 type MethodHandler func(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error)

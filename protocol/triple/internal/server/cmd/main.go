@@ -18,12 +18,9 @@
 package main
 
 import (
+	_ "dubbo.apache.org/dubbo-go/v3/imports"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto/triple_gen/greettriple"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/server/api"
-)
-
-import (
-	_ "dubbo.apache.org/dubbo-go/v3/imports"
 	"dubbo.apache.org/dubbo-go/v3/server"
 )
 

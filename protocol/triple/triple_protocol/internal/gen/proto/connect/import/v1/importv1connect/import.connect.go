@@ -19,10 +19,13 @@
 package importv1connect
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
-	_ "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/gen/proto/connect/import/v1"
 	http "net/http"
 	strings "strings"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
+	_ "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/gen/proto/connect/import/v1"
 )
 
 // This is a compile-time assertion to ensure that this generated file and the connect package are
@@ -30,7 +33,6 @@ import (
 // generated with a version of connect newer than the one compiled into your binary. You can fix the
 // problem by either regenerating this code with an older version of connect or updating the connect
 // version compiled into your binary.
-
 const (
 	// ImportServiceName is the fully-qualified name of the ImportService service.
 	ImportServiceName = "connect.import.v1.ImportService"

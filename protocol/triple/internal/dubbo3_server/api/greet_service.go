@@ -19,13 +19,18 @@ package api
 
 import (
 	"context"
-	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto"
-	greet "dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto/dubbo3_gen"
 	"fmt"
-	"github.com/dubbogo/gost/log/logger"
-	"github.com/pkg/errors"
 	"io"
 	"strings"
+)
+
+import (
+	"github.com/pkg/errors"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto"
+	greet "dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto/dubbo3_gen"
 )
 
 type GreetDubbo3Server struct {
@@ -43,12 +48,10 @@ func (srv *GreetDubbo3Server) GreetStream(stream greet.GreetService_GreetStreamS
 			if errors.Is(err, io.EOF) {
 				break
 			}
-			logger.Errorf("Stream Recv unexpected err: %s", err)
-			return fmt.Errorf("dubbo3 recv error: %s", err)
+			return fmt.Errorf("dubbo3 Bidistream recv error: %s", err)
 		}
 		if err := stream.Send(&proto.GreetStreamResponse{Greeting: req.Name}); err != nil {
-			logger.Errorf("Stream Send unexpected err: %s", err)
-			return fmt.Errorf("dubbo3 send error: %s", err)
+			return fmt.Errorf("dubbo3 Bidistream send error: %s", err)
 		}
 	}
 	return nil
@@ -62,8 +65,7 @@ func (srv *GreetDubbo3Server) GreetClientStream(stream greet.GreetService_GreetC
 			if errors.Is(err, io.EOF) {
 				break
 			}
-			logger.Errorf("ClientStream Recv unexpected err: %s", err)
-			return fmt.Errorf("dubbo3 recv error: %s", err)
+			return fmt.Errorf("dubbo3 ClientStream recv error: %s", err)
 		}
 		reqs = append(reqs, req.Name)
 	}
@@ -77,8 +79,7 @@ func (srv *GreetDubbo3Server) GreetClientStream(stream greet.GreetService_GreetC
 func (srv *GreetDubbo3Server) GreetServerStream(req *proto.GreetServerStreamRequest, stream greet.GreetService_GreetServerStreamServer) error {
 	for i := 0; i < 5; i++ {
 		if err := stream.Send(&proto.GreetServerStreamResponse{Greeting: req.Name}); err != nil {
-			logger.Errorf("ServerStream Send unexpected err: %s", err)
-			return err
+			return fmt.Errorf("dubbo3 ServerStream send error: %s", err)
 		}
 	}
 	return nil

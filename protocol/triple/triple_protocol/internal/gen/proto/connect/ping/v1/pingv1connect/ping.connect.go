@@ -25,11 +25,14 @@ package pingv1connect
 
 import (
 	context "context"
-	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
-	pingv1 "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/gen/proto/connect/ping/v1"
 	errors "errors"
 	http "net/http"
 	strings "strings"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
+	pingv1 "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/gen/proto/connect/ping/v1"
 )
 
 const (

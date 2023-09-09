@@ -19,9 +19,14 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+)
 
-	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/assert"
+import (
 	"google.golang.org/protobuf/types/known/emptypb"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/assert"
 )
 
 func TestAcceptEncodingOrdering(t *testing.T) {
