@@ -290,7 +290,7 @@ func (cli *{{lower $s.ServiceName}}{{.MethodName}}Client) Recv() (*proto.{{.Retu
 type {{$s.ServiceName}}_{{.MethodName}}Client interface {
 	Spec() triple_protocol.Spec
 	Peer() triple_protocol.Peer
-	Send(interface{}) error
+	Send(*proto.{{.RequestType}}) error
 	RequestHeader() http.Header
 	CloseAndRecv() (*proto.{{.ReturnType}}, error)
 	Conn() (triple_protocol.StreamingClientConn, error)
@@ -298,6 +298,10 @@ type {{$s.ServiceName}}_{{.MethodName}}Client interface {
 
 type {{lower $s.ServiceName}}{{.MethodName}}Client struct {
 	*triple_protocol.ClientStreamForClient
+}
+
+func (cli *{{lower $s.ServiceName}}{{.MethodName}}Client) Send(msg *proto.GreetClientStreamRequest) error {
+	return cli.ClientStreamForClient.Send(msg)
 }
 
 func (cli *{{lower $s.ServiceName}}{{.MethodName}}Client) CloseAndRecv() (*proto.{{.ReturnType}}, error) {
@@ -436,7 +440,7 @@ type {{lower $s.ServiceName}}{{.MethodName}}Server struct {
 	*triple_protocol.ServerStream
 }
 
-func (g {{lower $s.ServiceName}}{{.MethodName}}Server) Send(msg *proto.{{.ReturnType}}) error {
+func (g *{{lower $s.ServiceName}}{{.MethodName}}Server) Send(msg *proto.{{.ReturnType}}) error {
 	return g.ServerStream.Send(msg)
 }
 {{end}}{{end}}{{end}}`
@@ -449,7 +453,7 @@ const ServiceInfoTpl = `{{$t := .}}{{range $s := .Services}}var {{.ServiceName}}
 			Name : "{{.MethodName}}",
 			Type : constant.CallBidiStream,
 			StreamInitFunc : func(baseStream interface{}) interface{} {
-				return {{lower $s.ServiceName}}{{.MethodName}}Server{baseStream.(*triple_protocol.BidiStream)}
+				return &{{lower $s.ServiceName}}{{.MethodName}}Server{baseStream.(*triple_protocol.BidiStream)}
 			},
 			MethodFunc : func(ctx context.Context, args []interface{}, handler interface{}) (interface{}, error) {
 				stream := args[0].({{$s.ServiceName}}_{{.MethodName}}Server)
@@ -463,7 +467,7 @@ const ServiceInfoTpl = `{{$t := .}}{{range $s := .Services}}var {{.ServiceName}}
 			Name : "{{.MethodName}}",
 			Type : constant.CallClientStream,
 			StreamInitFunc: func(baseStream interface{}) interface{} {
-				return {{lower $s.ServiceName}}{{.MethodName}}Server{baseStream.(*triple_protocol.ClientStream)}
+				return &{{lower $s.ServiceName}}{{.MethodName}}Server{baseStream.(*triple_protocol.ClientStream)}
 			},
 			MethodFunc : func(ctx context.Context, args []interface{}, handler interface{}) (interface{}, error) {
 				stream := args[0].({{$s.ServiceName}}_{{.MethodName}}Server)
@@ -481,7 +485,7 @@ const ServiceInfoTpl = `{{$t := .}}{{range $s := .Services}}var {{.ServiceName}}
 				return new(proto.{{.RequestType}})
 			},
 			StreamInitFunc : func(baseStream interface{}) interface{} {
-				return {{lower $s.ServiceName}}{{.MethodName}}Server{baseStream.(*triple_protocol.ServerStream)}
+				return &{{lower $s.ServiceName}}{{.MethodName}}Server{baseStream.(*triple_protocol.ServerStream)}
 			},
 			MethodFunc : func(ctx context.Context, args []interface{}, handler interface{}) (interface{}, error) {
 				req := args[0].(*proto.{{.RequestType}})

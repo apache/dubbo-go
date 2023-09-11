@@ -41,5 +41,4 @@ service GreetService {
   rpc GreetStream(stream GreetStreamRequest) returns (stream GreetStreamResponse) {}
   rpc GreetClientStream(stream GreetClientStreamRequest) returns (GreetClientStreamResponse) {}
   rpc GreetServerStream(GreetServerStreamRequest) returns (stream GreetServerStreamResponse) {}
-  rpc Hello(GreetRequest) returns (GreetResponse);
 }

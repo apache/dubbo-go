@@ -41,11 +41,11 @@ func (g *Generator) GenTriple() error {
 	if err != nil {
 		return err
 	}
-	bastPath, err := os.Getwd()
+	basePath, err := os.Getwd()
 	if err != nil {
 		return err
 	}
-	triple.Source, err = filepath.Rel(bastPath, g.ctx.Src)
+	triple.Source, err = filepath.Rel(basePath, g.ctx.Src)
 	if err != nil {
 		return err
 	}
