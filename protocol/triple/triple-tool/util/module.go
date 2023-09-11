@@ -27,6 +27,6 @@ func GetModuleName() (string, error) {
 		return "", err
 	}
 
-	moduleName := strings.TrimSpace(string(output))
+	moduleName := strings.TrimSpace(output)
 	return moduleName, nil
 }

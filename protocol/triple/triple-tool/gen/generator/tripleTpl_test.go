@@ -371,7 +371,7 @@ func (cli *greetServiceGreetStreamClient) Recv() (*proto.GreetStreamResponse, er
 type GreetService_GreetClientStreamClient interface {
 	Spec() triple_protocol.Spec
 	Peer() triple_protocol.Peer
-	Send(interface{}) error
+	Send(*proto.GreetClientStreamRequest) error
 	RequestHeader() http.Header
 	CloseAndRecv() (*proto.GreetClientStreamResponse, error)
 	Conn() (triple_protocol.StreamingClientConn, error)
@@ -379,6 +379,10 @@ type GreetService_GreetClientStreamClient interface {
 
 type greetServiceGreetClientStreamClient struct {
 	*triple_protocol.ClientStreamForClient
+}
+
+func (cli *greetServiceGreetClientStreamClient) Send(msg *proto.GreetClientStreamRequest) error {
+	return cli.ClientStreamForClient.Send(msg)
 }
 
 func (cli *greetServiceGreetClientStreamClient) CloseAndRecv() (*proto.GreetClientStreamResponse, error) {
@@ -463,7 +467,7 @@ type greetServiceGreetServer struct {
 	*triple_protocol.ServerStream
 }
 
-func (g greetServiceGreetServer) Send(msg *proto.GreetResponse) error {
+func (g *greetServiceGreetServer) Send(msg *proto.GreetResponse) error {
 	return g.ServerStream.Send(msg)
 }
 
@@ -532,7 +536,7 @@ type greetServiceGreetServerStreamServer struct {
 	*triple_protocol.ServerStream
 }
 
-func (g greetServiceGreetServerStreamServer) Send(msg *proto.GreetServerStreamResponse) error {
+func (g *greetServiceGreetServerStreamServer) Send(msg *proto.GreetServerStreamResponse) error {
 	return g.ServerStream.Send(msg)
 }
 var GreetService_ServiceInfo = provider.ServiceInfo{
@@ -558,7 +562,7 @@ var GreetService_ServiceInfo = provider.ServiceInfo{
 			Name : "GreetStream",
 			Type : constant.CallBidiStream,
 			StreamInitFunc : func(baseStream interface{}) interface{} {
-				return greetServiceGreetStreamServer{baseStream.(*triple_protocol.BidiStream)}
+				return &greetServiceGreetStreamServer{baseStream.(*triple_protocol.BidiStream)}
 			},
 			MethodFunc : func(ctx context.Context, args []interface{}, handler interface{}) (interface{}, error) {
 				stream := args[0].(GreetService_GreetStreamServer)
@@ -572,7 +576,7 @@ var GreetService_ServiceInfo = provider.ServiceInfo{
 			Name : "GreetClientStream",
 			Type : constant.CallClientStream,
 			StreamInitFunc: func(baseStream interface{}) interface{} {
-				return greetServiceGreetClientStreamServer{baseStream.(*triple_protocol.ClientStream)}
+				return &greetServiceGreetClientStreamServer{baseStream.(*triple_protocol.ClientStream)}
 			},
 			MethodFunc : func(ctx context.Context, args []interface{}, handler interface{}) (interface{}, error) {
 				stream := args[0].(GreetService_GreetClientStreamServer)
@@ -590,7 +594,7 @@ var GreetService_ServiceInfo = provider.ServiceInfo{
 				return new(proto.GreetServerStreamRequest)
 			},
 			StreamInitFunc : func(baseStream interface{}) interface{} {
-				return greetServiceGreetServerStreamServer{baseStream.(*triple_protocol.ServerStream)}
+				return &greetServiceGreetServerStreamServer{baseStream.(*triple_protocol.ServerStream)}
 			},
 			MethodFunc : func(ctx context.Context, args []interface{}, handler interface{}) (interface{}, error) {
 				req := args[0].(*proto.GreetServerStreamRequest)
