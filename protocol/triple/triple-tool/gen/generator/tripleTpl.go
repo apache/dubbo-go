@@ -300,7 +300,7 @@ type {{lower $s.ServiceName}}{{.MethodName}}Client struct {
 	*triple_protocol.ClientStreamForClient
 }
 
-func (cli *{{lower $s.ServiceName}}{{.MethodName}}Client) Send(msg *proto.GreetClientStreamRequest) error {
+func (cli *{{lower $s.ServiceName}}{{.MethodName}}Client) Send(msg *proto.{{.RequestType}}) error {
 	return cli.ClientStreamForClient.Send(msg)
 }
 
