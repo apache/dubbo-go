@@ -213,6 +213,7 @@ func (s *ServerOptions) export(info *ServiceInfo) error {
 			for _, info := range methodInfos {
 				methods += info.Name + ","
 			}
+			methods = strings.TrimSuffix(methods, ",")
 		} else {
 			// registry the service reflect
 			var err error
@@ -239,6 +240,7 @@ func (s *ServerOptions) export(info *ServiceInfo) error {
 			common.WithParamsValue(constant.BeanNameKey, s.Id),
 			//common.WithParamsValue(constant.SslEnabledKey, strconv.FormatBool(config.GetSslEnabled())),
 			common.WithMethods(strings.Split(methods, ",")),
+			// todo(DMwangnima): remove this
 			common.WithMethodInfos(methodInfos),
 			common.WithToken(srv.Token),
 			common.WithParamsValue(constant.MetadataTypeKey, s.metadataType),
