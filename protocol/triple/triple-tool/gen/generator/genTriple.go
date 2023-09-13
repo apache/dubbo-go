@@ -25,6 +25,11 @@ import (
 
 import (
 	"github.com/emicklei/proto"
+	"github.com/golang/protobuf/protoc-gen-go/descriptor"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/triple-tool/util"
 )
 
 func (g *Generator) GenTriple() error {
@@ -36,11 +41,11 @@ func (g *Generator) GenTriple() error {
 	if err != nil {
 		return err
 	}
-	bastPath, err := os.Getwd()
+	basePath, err := os.Getwd()
 	if err != nil {
 		return err
 	}
-	triple.Source, err = filepath.Rel(bastPath, g.ctx.Src)
+	triple.Source, err = filepath.Rel(basePath, g.ctx.Src)
 	if err != nil {
 		return err
 	}
@@ -48,7 +53,7 @@ func (g *Generator) GenTriple() error {
 	if err != nil {
 		return err
 	}
-	g.parseGOOut(triple)
+	g.parseGOout(triple)
 	return g.generateToFile(g.ctx.GoOut, []byte(data))
 }
 
@@ -119,7 +124,7 @@ func (g *Generator) parseTripleToString(t TripleGo) (string, error) {
 	return builder.String(), nil
 }
 
-func (g *Generator) parseGOOut(triple TripleGo) {
+func (g *Generator) parseGOout(triple TripleGo) {
 	prefix := strings.TrimPrefix(triple.Import, g.ctx.GoModuleName)
 	g.ctx.GoOut = filepath.Join(g.ctx.Pwd, filepath.Join(prefix, triple.Package+"/"+triple.ProtoPackage+".triple.go"))
 }
@@ -130,6 +135,70 @@ func (g *Generator) generateToFile(filePath string, data []byte) error {
 		return err
 	}
 	return os.WriteFile(filePath, data, 0666)
+}
+
+func ProcessProtoFile(file *descriptor.FileDescriptorProto) (TripleGo, error) {
+	tripleGo := TripleGo{
+		Source:       file.GetName(),
+		Package:      file.GetPackage() + "triple",
+		ProtoPackage: file.GetPackage(),
+		Services:     make([]Service, 0),
+	}
+
+	for _, service := range file.GetService() {
+		serviceMethods := make([]Method, 0)
+
+		for _, method := range service.GetMethod() {
+			serviceMethods = append(serviceMethods, Method{
+				MethodName:     method.GetName(),
+				RequestType:    strings.Split(method.GetInputType(), ".")[len(strings.Split(method.GetInputType(), "."))-1],
+				StreamsRequest: method.GetClientStreaming(),
+				ReturnType:     strings.Split(method.GetOutputType(), ".")[len(strings.Split(method.GetOutputType(), "."))-1],
+				StreamsReturn:  method.GetServerStreaming(),
+			})
+		}
+
+		tripleGo.Services = append(tripleGo.Services, Service{
+			ServiceName: service.GetName(),
+			Methods:     serviceMethods,
+		})
+	}
+
+	goPkg := file.Options.GetGoPackage()
+	goPkg = strings.Split(goPkg, ";")[0]
+	goPkg = strings.Trim(goPkg, "/")
+	moduleName, err := util.GetModuleName()
+	if err != nil {
+		return tripleGo, err
+	}
+
+	if strings.Contains(goPkg, moduleName) {
+		tripleGo.Import = strings.Split(goPkg, ";")[0]
+	} else {
+		tripleGo.Import = moduleName + "/" + strings.Split(goPkg, ";")[0]
+	}
+
+	return tripleGo, nil
+}
+
+func GenTripleFile(triple TripleGo) error {
+	module, err := util.GetModuleName()
+	if err != nil {
+		return err
+	}
+	prefix := strings.TrimPrefix(triple.Import, module)
+	pwd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	GoOut := filepath.Join(pwd, filepath.Join(prefix, triple.Package+"/"+triple.ProtoPackage+".triple.go"))
+
+	g := &Generator{}
+	data, err := g.parseTripleToString(triple)
+	if err != nil {
+		return err
+	}
+	return g.generateToFile(GoOut, []byte(data))
 }
 
 type TripleGo struct {
