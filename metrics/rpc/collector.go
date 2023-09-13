@@ -33,12 +33,14 @@ var (
 
 // init will add the rpc collectorFunc to metrics.collectors slice, and lazy start the rpc collector goroutine
 func init() {
-	collectorFunc := func(registry metrics.MetricRegistry, c *common.URL) {
-		rc := &rpcCollector{
-			registry:  registry,
-			metricSet: buildMetricSet(registry),
+	collectorFunc := func(registry metrics.MetricRegistry, url *common.URL) {
+		if url.GetParamBool(constant.RpcEnabledKey, true) {
+			rc := &rpcCollector{
+				registry:  registry,
+				metricSet: buildMetricSet(registry),
+			}
+			go rc.start()
 		}
-		go rc.start()
 	}
 
 	metrics.AddCollector("rpc", collectorFunc)
