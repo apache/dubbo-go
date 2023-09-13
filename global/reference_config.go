@@ -17,7 +17,9 @@
 
 package global
 
-import "strconv"
+import (
+	"strconv"
+)
 
 // ReferenceConfig is the configuration of service consumer
 type ReferenceConfig struct {

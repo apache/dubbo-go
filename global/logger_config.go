@@ -17,7 +17,9 @@
 
 package global
 
-import "github.com/creasty/defaults"
+import (
+	"github.com/creasty/defaults"
+)
 
 type LoggerConfig struct {
 	// logger driver default zap

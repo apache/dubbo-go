@@ -20,10 +20,10 @@ package triple
 import (
 	"context"
 	"crypto/tls"
-	"errors"
+	"fmt"
 	"net"
 	"net/http"
-	"path"
+	url_package "net/url"
 	"strings"
 )
 
@@ -49,7 +49,7 @@ const (
 
 // clientManager wraps triple clients and is responsible for find concrete triple client to invoke
 // callUnary, callClientStream, callServerStream, callBidiStream.
-// An Interface has a clientManager.
+// A Reference has a clientManager.
 type clientManager struct {
 	// triple_protocol clients, key is method name
 	triClients map[string]*tri.Client
@@ -58,7 +58,7 @@ type clientManager struct {
 func (cm *clientManager) getClient(method string) (*tri.Client, error) {
 	triClient, ok := cm.triClients[method]
 	if !ok {
-		return nil, errors.New("missing triple client")
+		return nil, fmt.Errorf("missing triple client for method: %s", method)
 	}
 	return triClient, nil
 }
@@ -68,9 +68,8 @@ func (cm *clientManager) callUnary(ctx context.Context, method string, req, resp
 	if err != nil {
 		return err
 	}
-	// todo: compiler generate tri.Request and tri.Response
-	triReq := req.(*tri.Request)
-	triResp := resp.(*tri.Response)
+	triReq := tri.NewRequest(req)
+	triResp := tri.NewResponse(resp)
 	if err := triClient.CallUnary(ctx, triReq, triResp); err != nil {
 		return err
 	}
@@ -94,7 +93,7 @@ func (cm *clientManager) callServerStream(ctx context.Context, method string, re
 	if err != nil {
 		return nil, err
 	}
-	triReq := req.(*tri.Request)
+	triReq := tri.NewRequest(req)
 	stream, err := triClient.CallServerStream(ctx, triReq)
 	if err != nil {
 		return nil, err
@@ -114,8 +113,10 @@ func (cm *clientManager) callBidiStream(ctx context.Context, method string) (int
 	return stream, nil
 }
 
-func (cm *clientManager) close() {
-	// todo: close connection and release resources
+func (cm *clientManager) close() error {
+	// There is no need to release resources right now.
+	// But we leave this function here for future use.
+	return nil
 }
 
 func newClientManager(url *common.URL) (*clientManager, error) {
@@ -173,23 +174,23 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 		tlsFlag = true
 	}
 
-	// todo: using option to represent whether using http1 or http2, and whether to use grpc
-
-	key := url.GetParam(constant.InterfaceKey, "")
-	conRefs := config.GetConsumerConfig().References
-	ref, ok := conRefs[key]
-	if !ok {
-		panic("no reference")
-	}
+	// todo(DMwangnima): this code fragment would be used to be compatible with old triple client
+	//key := url.GetParam(constant.InterfaceKey, "")
+	//conRefs := config.GetConsumerConfig().References
+	//ref, ok := conRefs[key]
+	//if !ok {
+	//	panic("no reference")
+	//}
 	// todo: set timeout
 	var transport http.RoundTripper
-	switch ref.Protocol {
-	case "http":
+	callType := url.GetParam(constant.CallHTTPTypeKey, constant.CallHTTP2)
+	switch callType {
+	case constant.CallHTTP:
 		transport = &http.Transport{
 			TLSClientConfig: cfg,
 		}
 		triClientOpts = append(triClientOpts, tri.WithTriple())
-	case TRIPLE:
+	case constant.CallHTTP2:
 		if tlsFlag {
 			transport = &http2.Transport{
 				TLSClientConfig: cfg,
@@ -203,23 +204,28 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 			}
 		}
 		triClientOpts = append(triClientOpts)
+	default:
+		panic(fmt.Sprintf("Unsupported type: %s", callType))
 	}
 	httpClient := &http.Client{
 		Transport: transport,
 	}
 
-	var baseTriUrl string
-	baseTriUrl = strings.TrimPrefix(url.Location, httpPrefix)
-	baseTriUrl = strings.TrimPrefix(url.Location, httpsPrefix)
+	var baseTriURL string
+	baseTriURL = strings.TrimPrefix(url.Location, httpPrefix)
+	baseTriURL = strings.TrimPrefix(url.Location, httpsPrefix)
 	if tlsFlag {
-		baseTriUrl = httpsPrefix + baseTriUrl
+		baseTriURL = httpsPrefix + baseTriURL
 	} else {
-		baseTriUrl = httpPrefix + baseTriUrl
+		baseTriURL = httpPrefix + baseTriURL
 	}
 	triClients := make(map[string]*tri.Client)
 	for _, method := range url.Methods {
-		triUrl := path.Join(baseTriUrl, url.Interface(), method)
-		triClient := tri.NewClient(httpClient, triUrl, triClientOpts...)
+		triURL, err := url_package.JoinPath(baseTriURL, url.Interface(), method)
+		if err != nil {
+			return nil, fmt.Errorf("JoinPath failed for base %s, interface %s, method %s", baseTriURL, url.Interface(), method)
+		}
+		triClient := tri.NewClient(httpClient, triURL, triClientOpts...)
 		triClients[method] = triClient
 	}
 

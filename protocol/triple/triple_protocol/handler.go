@@ -77,6 +77,8 @@ func NewUnaryHandler(
 		request.spec = conn.Spec()
 		request.peer = conn.Peer()
 		request.header = conn.RequestHeader()
+		// embed header in context so that user logic could process them via FromIncomingContext
+		ctx = newIncomingContext(ctx, conn.RequestHeader())
 
 		response, err := untyped(ctx, request)
 		if err != nil {
@@ -109,6 +111,8 @@ func NewClientStreamHandler(
 		StreamTypeClient,
 		func(ctx context.Context, conn StreamingHandlerConn) error {
 			stream := &ClientStream{conn: conn}
+			// embed header in context so that user logic could process them via FromIncomingContext
+			ctx = newIncomingContext(ctx, conn.RequestHeader())
 			res, err := implementation(ctx, stream)
 			if err != nil {
 				return err
@@ -141,6 +145,8 @@ func NewServerStreamHandler(
 			if err := conn.Receive(req); err != nil {
 				return err
 			}
+			// embed header in context so that user logic could process them via FromIncomingContext
+			ctx = newIncomingContext(ctx, conn.RequestHeader())
 			return implementation(
 				ctx,
 				&Request{
@@ -166,6 +172,8 @@ func NewBidiStreamHandler(
 		procedure,
 		StreamTypeBidi,
 		func(ctx context.Context, conn StreamingHandlerConn) error {
+			// embed header in context so that user logic could process them via FromIncomingContext
+			ctx = newIncomingContext(ctx, conn.RequestHeader())
 			return implementation(
 				ctx,
 				&BidiStream{conn: conn},

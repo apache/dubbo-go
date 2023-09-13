@@ -18,9 +18,12 @@
 package dubbo
 
 import (
+	"github.com/pkg/errors"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/client"
 	"dubbo.apache.org/dubbo-go/v3/global"
-	"github.com/pkg/errors"
 )
 
 // Instance is the highest layer conception that user could touch. It is mapped from RootConfig.

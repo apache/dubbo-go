@@ -19,9 +19,14 @@ import (
 	"strings"
 	"testing"
 	"time"
+)
 
-	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/assert"
+import (
 	"google.golang.org/protobuf/types/known/durationpb"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/assert"
 )
 
 func TestTripleErrorDetailMarshaling(t *testing.T) {

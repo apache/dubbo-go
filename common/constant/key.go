@@ -141,6 +141,9 @@ const (
 	CallClientStream                   = "client-stream"
 	CallServerStream                   = "server-stream"
 	CallBidiStream                     = "bidi-stream"
+	CallHTTPTypeKey                    = "call-http-type"
+	CallHTTP                           = "http"
+	CallHTTP2                          = "http2"
 )
 
 const (
