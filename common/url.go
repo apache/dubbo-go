@@ -44,6 +44,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/server"
 )
 
 // dubbo role type constant
@@ -110,10 +111,11 @@ type URL struct {
 	paramsLock sync.RWMutex
 	params     url.Values
 
-	Path     string // like  /com.ikurento.dubbo.UserProvider
-	Username string
-	Password string
-	Methods  []string
+	Path       string // like  /com.ikurento.dubbo.UserProvider
+	Username   string
+	Password   string
+	Methods    []string
+	MethodInfo []server.MethodInfo
 	// special for registry
 	SubURL *URL
 }
@@ -215,6 +217,13 @@ func WithToken(token string) Option {
 			}
 			url.SetParam(constant.TokenKey, value)
 		}
+	}
+}
+
+// WithMethodInfos sets methodInfos for URL
+func WithMethodInfos(methodInfos []server.MethodInfo) Option {
+	return func(url *URL) {
+		url.MethodInfo = methodInfos
 	}
 }
 
