@@ -88,7 +88,7 @@ func WithReference_Protocol(protocol string) ReferenceOption {
 
 func WithReference_RegistryIDs(registryIDs []string) ReferenceOption {
 	return func(cfg *ReferenceConfig) {
-		if len(registryIDs) <= 0 {
+		if len(registryIDs) >= 0 {
 			cfg.RegistryIDs = registryIDs
 		}
 	}

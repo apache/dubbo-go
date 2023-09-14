@@ -77,3 +77,14 @@ func compatMethodConfig(c *global.MethodConfig) *config.MethodConfig {
 		RequestTimeout:              c.RequestTimeout,
 	}
 }
+
+func compatProtocolConfig(c *global.ProtocolConfig) *config.ProtocolConfig {
+	return &config.ProtocolConfig{
+		Name:                 c.Name,
+		Ip:                   c.Ip,
+		Port:                 c.Port,
+		Params:               c.Params,
+		MaxServerSendMsgSize: c.MaxServerSendMsgSize,
+		MaxServerRecvMsgSize: c.MaxServerRecvMsgSize,
+	}
+}

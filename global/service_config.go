@@ -29,14 +29,20 @@ type ServiceConfig struct {
 	ParamSign                   string            `yaml:"param.sign" json:"param.sign,omitempty" property:"param.sign"`
 	Tag                         string            `yaml:"tag" json:"tag,omitempty" property:"tag"`
 	TracingKey                  string            `yaml:"tracing-key" json:"tracing-key,omitempty" propertiy:"tracing-key"`
+
+	RCProtocolsMap  map[string]*ProtocolConfig
+	RCRegistriesMap map[string]*RegistryConfig
+	ProxyFactoryKey string
 }
 
 type ServiceOption func(*ServiceConfig)
 
 func DefaultServiceConfig() *ServiceConfig {
 	return &ServiceConfig{
-		Methods: make([]*MethodConfig, 0, 8),
-		Params:  make(map[string]string, 8),
+		Methods:         make([]*MethodConfig, 0, 8),
+		Params:          make(map[string]string, 8),
+		RCProtocolsMap:  make(map[string]*ProtocolConfig),
+		RCRegistriesMap: make(map[string]*RegistryConfig),
 	}
 }
 
@@ -203,5 +209,29 @@ func WithService_Tag(tag string) ServiceOption {
 func WithService_TracingKey(tracingKey string) ServiceOption {
 	return func(cfg *ServiceConfig) {
 		cfg.TracingKey = tracingKey
+	}
+}
+
+func WithService_RCProtocol(name string, protocol *ProtocolConfig) ServiceOption {
+	return func(cfg *ServiceConfig) {
+		if cfg.RCProtocolsMap == nil {
+			cfg.RCProtocolsMap = make(map[string]*ProtocolConfig)
+		}
+		cfg.RCProtocolsMap[name] = protocol
+	}
+}
+
+func WithService_RCRegistry(name string, registry *RegistryConfig) ServiceOption {
+	return func(cfg *ServiceConfig) {
+		if cfg.RCRegistriesMap == nil {
+			cfg.RCRegistriesMap = make(map[string]*RegistryConfig)
+		}
+		cfg.RCRegistriesMap[name] = registry
+	}
+}
+
+func WithService_ProxyFactoryKey(factory string) ServiceOption {
+	return func(cfg *ServiceConfig) {
+		cfg.ProxyFactoryKey = factory
 	}
 }

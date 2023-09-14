@@ -19,7 +19,9 @@ package server
 
 import (
 	"context"
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"fmt"
 )
 
 type Server struct {
@@ -37,14 +39,76 @@ type ServiceInfo struct {
 	Meta          map[string]interface{}
 }
 
+type infoInvoker struct {
+	url       *common.URL
+	base      *protocol.BaseInvoker
+	info      *ServiceInfo
+	svc       common.RPCService
+	methodMap map[string]*MethodInfo
+}
+
+func (ii *infoInvoker) init() {
+	url := ii.base.GetURL()
+	if url.SubURL != nil {
+		url = url.SubURL
+	}
+	ii.url = url
+	methodMap := make(map[string]*MethodInfo)
+	for i := range ii.info.Methods {
+		methodMap[ii.info.Methods[i].Name] = &ii.info.Methods[i]
+	}
+	ii.methodMap = methodMap
+}
+
+func (ii *infoInvoker) GetURL() *common.URL {
+	return ii.base.GetURL()
+}
+
+func (ii *infoInvoker) IsAvailable() bool {
+	return ii.base.IsAvailable()
+}
+
+func (ii *infoInvoker) Destroy() {
+	ii.base.Destroy()
+}
+
+func (ii *infoInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
+	name := invocation.MethodName()
+	args := invocation.Arguments()
+	result := new(protocol.RPCResult)
+	if method, ok := ii.methodMap[name]; ok {
+		res, err := method.MethodFunc(ctx, args, ii.svc)
+		result.SetResult(res)
+		result.SetError(err)
+		return result
+	}
+	result.SetError(fmt.Errorf("no match method for %s", name))
+
+	return result
+}
+
+func newInfoInvoker(url *common.URL, info *ServiceInfo, svc common.RPCService) protocol.Invoker {
+	invoker := &infoInvoker{
+		base: protocol.NewBaseInvoker(url),
+		info: info,
+		svc:  svc,
+	}
+	invoker.init()
+	return invoker
+}
+
 // Register assemble invoker chains like ProviderConfig.Load, init a service per call
-func (s *Server) Register(handler interface{}, info *ServiceInfo, opts ...ServerOption) error {
-	for _, opt := range opts {
-		opt(s.cfg)
+func (s *Server) Register(handler interface{}, info *ServiceInfo, opts ...ServiceOption) error {
+	// todo(DMwangnima): record the registered service
+	newSvcOpts := defaultServiceOptions()
+	if err := newSvcOpts.init(opts...); err != nil {
+		return err
+	}
+	newSvcOpts.Implement(handler)
+	if err := newSvcOpts.ExportWithInfo(info); err != nil {
+		return err
 	}
 
-	// ProviderConfig.Load
-	// url
 	return nil
 }
 
