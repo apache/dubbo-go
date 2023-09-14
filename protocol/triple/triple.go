@@ -18,6 +18,8 @@
 package triple
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"fmt"
 	"sync"
 )
 
@@ -56,10 +58,11 @@ func (tp *TripleProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	url := invoker.GetURL()
 	serviceKey := url.ServiceKey()
 	// todo: retrieve this info from url
-	info := &server.ServiceInfo{
-		InterfaceName: url.Path,
-		Methods:       url.MethodInfo,
+	infoRaw, ok := url.Attributes[constant.ServiceInfoKey]
+	if !ok {
+		panic(fmt.Sprintf("ServiceInfo for %s Interface is missing", url.Interface()))
 	}
+	info := infoRaw.(*server.ServiceInfo)
 	exporter := NewTripleExporter(serviceKey, invoker, tp.ExporterMap())
 	tp.SetExporterMap(serviceKey, exporter)
 	logger.Infof("[TRIPLE Protocol] Export service: %s", url.String())

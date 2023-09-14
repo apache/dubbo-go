@@ -18,6 +18,8 @@
 package main
 
 import (
+	"dubbo.apache.org/dubbo-go/v3"
+	"dubbo.apache.org/dubbo-go/v3/global"
 	_ "dubbo.apache.org/dubbo-go/v3/imports"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto/triple_gen/greettriple"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/server/api"
@@ -25,11 +27,32 @@ import (
 )
 
 func main() {
-	srv, err := server.NewServer()
+	// global conception
+	// configure global configurations and common modules
+	ins, err := dubbo.NewInstance(
+		dubbo.WithApplication(
+			global.WithApplication_Name("dubbo_test"),
+		),
+		//dubbo.WithRegistry("nacos",
+		//	global.WithRegistry_Address("127.0.0.1:8848"),
+		//),
+		dubbo.WithMetric(
+			global.WithMetric_Enable(true),
+		),
+	)
+	srv, err := ins.NewServer(
+		server.WithServer_ProtocolConfig("triple",
+			global.WithProtocol_Ip("0.0.0.0"),
+			global.WithProtocol_Port("20000"),
+			global.WithProtocol_Name("triple"),
+		))
 	if err != nil {
 		panic(err)
 	}
-	if err := greettriple.RegisterGreetServiceHandler(srv, &api.GreetTripleServer{}); err != nil {
+	if err := greettriple.RegisterGreetServiceHandler(srv, &api.GreetTripleServer{},
+		server.WithProtocolIDs([]string{"triple"}),
+		server.WithNotRegister(true),
+	); err != nil {
 		panic(err)
 	}
 	select {}

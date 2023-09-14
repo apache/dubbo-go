@@ -134,10 +134,8 @@ func (svcOpts *ServiceOptions) ExportWithInfo(info *ServiceInfo) error {
 func (svcOpts *ServiceOptions) export(info *ServiceInfo) error {
 	srv := svcOpts.Service
 
-	var methodInfos []MethodInfo
 	if info != nil {
 		srv.Interface = info.InterfaceName
-		methodInfos = info.Methods
 		svcOpts.Id = info.InterfaceName
 		svcOpts.info = info
 	}
@@ -197,7 +195,7 @@ func (svcOpts *ServiceOptions) export(info *ServiceInfo) error {
 			//common.WithParamsValue(constant.SslEnabledKey, strconv.FormatBool(config.GetSslEnabled())),
 			common.WithMethods(strings.Split(methods, ",")),
 			// todo(DMwangnima): remove this
-			common.WithMethodInfos(methodInfos),
+			common.WithAttribute(constant.ServiceInfoKey, info),
 			common.WithToken(srv.Token),
 			common.WithParamsValue(constant.MetadataTypeKey, svcOpts.metadataType),
 			// fix https://github.com/apache/dubbo-go/issues/2176

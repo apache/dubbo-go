@@ -93,20 +93,21 @@ func (s *Server) Start(invoker protocol.Invoker, info *server.ServiceInfo) {
 	//	grpc.MaxSendMsgSize(maxServerSendMsgSize),
 	//)
 	var cfg *tls.Config
-	tlsConfig := config.GetRootConfig().TLSConfig
-	if tlsConfig != nil {
-		cfg, err = config.GetServerTlsConfig(&config.TLSConfig{
-			CACertFile:    tlsConfig.CACertFile,
-			TLSCertFile:   tlsConfig.TLSCertFile,
-			TLSKeyFile:    tlsConfig.TLSKeyFile,
-			TLSServerName: tlsConfig.TLSServerName,
-		})
-		if err != nil {
-			return
-		}
-		logger.Infof("Triple Server initialized the TLSConfig configuration")
-	}
-	srv.TLSConfig = cfg
+	// todo(DMwangnima): think about a more elegant way to configure tls
+	//tlsConfig := config.GetRootConfig().TLSConfig
+	//if tlsConfig != nil {
+	//	cfg, err = config.GetServerTlsConfig(&config.TLSConfig{
+	//		CACertFile:    tlsConfig.CACertFile,
+	//		TLSCertFile:   tlsConfig.TLSCertFile,
+	//		TLSKeyFile:    tlsConfig.TLSKeyFile,
+	//		TLSServerName: tlsConfig.TLSServerName,
+	//	})
+	//	if err != nil {
+	//		return
+	//	}
+	//	logger.Infof("Triple Server initialized the TLSConfig configuration")
+	//}
+	//srv.TLSConfig = cfg
 
 	// todo:// open tracing
 	hanOpts = append(hanOpts, tri.WithInterceptors())

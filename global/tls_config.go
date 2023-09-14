@@ -26,7 +26,7 @@ type TLSConfig struct {
 }
 
 func DefaultTLSConfig() *TLSConfig {
-	return nil
+	return &TLSConfig{}
 }
 
 type TLSOption func(*TLSConfig)

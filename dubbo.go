@@ -18,6 +18,7 @@
 package dubbo
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/server"
 	"github.com/pkg/errors"
 )
 
@@ -124,4 +125,89 @@ func (ins *Instance) NewClient(opts ...client.ClientOption) (*client.Client, err
 	}
 
 	return cli, nil
+}
+
+// NewServer is like server.NewServer, but inject configurations from RootConfig.
+func (ins *Instance) NewServer(opts ...server.ServerOption) (*server.Server, error) {
+	if ins == nil || ins.insOpts == nil {
+		return nil, errors.New("Instance has not been initialized")
+	}
+
+	var srvOpts []server.ServerOption
+	appCfg := ins.insOpts.Application
+	regsCfg := ins.insOpts.Registries
+	prosCfg := ins.insOpts.Protocols
+	trasCfg := ins.insOpts.Tracing
+	if appCfg != nil {
+		srvOpts = append(srvOpts,
+			server.WithServer_ApplicationConfig(
+				global.WithApplication_Name(appCfg.Name),
+				global.WithApplication_Organization(appCfg.Organization),
+				global.WithApplication_Module(appCfg.Module),
+				global.WithApplication_Version(appCfg.Version),
+				global.WithApplication_Owner(appCfg.Owner),
+				global.WithApplication_Environment(appCfg.Environment),
+			),
+		)
+	}
+	if regsCfg != nil {
+		for key, reg := range regsCfg {
+			srvOpts = append(srvOpts,
+				server.WithServer_RegistryConfig(key,
+					global.WithRegistry_Protocol(reg.Protocol),
+					global.WithRegistry_Timeout(reg.Timeout),
+					global.WithRegistry_Group(reg.Group),
+					global.WithRegistry_Namespace(reg.Namespace),
+					global.WithRegistry_TTL(reg.TTL),
+					global.WithRegistry_Address(reg.Address),
+					global.WithRegistry_Username(reg.Username),
+					global.WithRegistry_Password(reg.Password),
+					global.WithRegistry_Simplified(reg.Simplified),
+					global.WithRegistry_Preferred(reg.Preferred),
+					global.WithRegistry_Zone(reg.Zone),
+					global.WithRegistry_Weight(reg.Weight),
+					global.WithRegistry_Params(reg.Params),
+					global.WithRegistry_RegistryType(reg.RegistryType),
+					global.WithRegistry_UseAsMetaReport(reg.UseAsMetaReport),
+					global.WithRegistry_UseAsConfigCenter(reg.UseAsConfigCenter),
+				),
+			)
+		}
+	}
+	if prosCfg != nil {
+		for key, pro := range prosCfg {
+			srvOpts = append(srvOpts,
+				server.WithServer_ProtocolConfig(key,
+					global.WithProtocol_Name(pro.Name),
+					global.WithProtocol_Ip(pro.Ip),
+					global.WithProtocol_Port(pro.Port),
+					global.WithProtocol_Params(pro.Params),
+					global.WithProtocol_MaxServerSendMsgSize(pro.MaxServerSendMsgSize),
+					global.WithProtocol_MaxServerRecvMsgSize(pro.MaxServerRecvMsgSize),
+				),
+			)
+		}
+	}
+	if trasCfg != nil {
+		for key, tra := range trasCfg {
+			srvOpts = append(srvOpts,
+				server.WithServer_TracingConfig(key,
+					global.WithTracing_Name(tra.Name),
+					global.WithTracing_ServiceName(tra.ServiceName),
+					global.WithTracing_Address(tra.Address),
+					global.WithTracing_UseAgent(*tra.UseAgent),
+				),
+			)
+		}
+	}
+
+	// options passed by users has higher priority
+	srvOpts = append(srvOpts, opts...)
+
+	srv, err := server.NewServer(srvOpts...)
+	if err != nil {
+		return nil, err
+	}
+
+	return srv, nil
 }

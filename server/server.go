@@ -20,6 +20,7 @@ package server
 import (
 	"context"
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"fmt"
 )
@@ -101,6 +102,56 @@ func newInfoInvoker(url *common.URL, info *ServiceInfo, svc common.RPCService) p
 func (s *Server) Register(handler interface{}, info *ServiceInfo, opts ...ServiceOption) error {
 	// todo(DMwangnima): record the registered service
 	newSvcOpts := defaultServiceOptions()
+	// todo(DMwangnima): use a more elegant way to initialize
+	opts = append(opts,
+		WithApplicationConfig(
+			global.WithApplication_Name(s.cfg.Application.Name),
+			global.WithApplication_Organization(s.cfg.Application.Organization),
+			global.WithApplication_Module(s.cfg.Application.Module),
+			global.WithApplication_Version(s.cfg.Application.Version),
+			global.WithApplication_Owner(s.cfg.Application.Owner),
+			global.WithApplication_Environment(s.cfg.Application.Environment),
+		),
+		WithProviderConfig(
+			global.WithProvider_RegistryIDs(s.cfg.Provider.RegistryIDs),
+			global.WithProvider_ProtocolIDs(s.cfg.Provider.ProtocolIDs),
+			global.WithProvider_TracingKey(s.cfg.Provider.TracingKey),
+		),
+	)
+	for key, pro := range s.cfg.Protocols {
+		opts = append(opts,
+			WithProtocolConfig(key,
+				global.WithProtocol_Name(pro.Name),
+				global.WithProtocol_Ip(pro.Ip),
+				global.WithProtocol_Port(pro.Port),
+				global.WithProtocol_Params(pro.Params),
+				global.WithProtocol_MaxServerSendMsgSize(pro.MaxServerSendMsgSize),
+				global.WithProtocol_MaxServerRecvMsgSize(pro.MaxServerRecvMsgSize),
+			),
+		)
+	}
+	for key, reg := range s.cfg.Registries {
+		opts = append(opts,
+			WithRegistryConfig(key,
+				global.WithRegistry_Protocol(reg.Protocol),
+				global.WithRegistry_Timeout(reg.Timeout),
+				global.WithRegistry_Group(reg.Group),
+				global.WithRegistry_Namespace(reg.Namespace),
+				global.WithRegistry_TTL(reg.TTL),
+				global.WithRegistry_Address(reg.Address),
+				global.WithRegistry_Username(reg.Username),
+				global.WithRegistry_Password(reg.Password),
+				global.WithRegistry_Simplified(reg.Simplified),
+				global.WithRegistry_Preferred(reg.Preferred),
+				global.WithRegistry_Zone(reg.Zone),
+				global.WithRegistry_Weight(reg.Weight),
+				global.WithRegistry_Params(reg.Params),
+				global.WithRegistry_RegistryType(reg.RegistryType),
+				global.WithRegistry_UseAsMetaReport(reg.UseAsMetaReport),
+				global.WithRegistry_UseAsConfigCenter(reg.UseAsConfigCenter),
+			),
+		)
+	}
 	if err := newSvcOpts.init(opts...); err != nil {
 		return err
 	}

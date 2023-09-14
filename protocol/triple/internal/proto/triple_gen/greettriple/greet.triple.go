@@ -230,8 +230,8 @@ type GreetServiceHandler interface {
 	GreetServerStream(context.Context, *proto.GreetServerStreamRequest, GreetService_GreetServerStreamServer) error
 }
 
-func RegisterGreetServiceHandler(srv *server.Server, hdlr GreetServiceHandler) error {
-	return srv.Register(hdlr, &GreetService_ServiceInfo)
+func RegisterGreetServiceHandler(srv *server.Server, hdlr GreetServiceHandler, opts ...server.ServiceOption) error {
+	return srv.Register(hdlr, &GreetService_ServiceInfo, opts...)
 }
 
 type GreetService_GreetStreamServer interface {

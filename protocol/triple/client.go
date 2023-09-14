@@ -28,8 +28,6 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/log/logger"
-
 	"github.com/dustin/go-humanize"
 
 	"golang.org/x/net/http2"
@@ -38,7 +36,6 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 )
 
@@ -68,8 +65,8 @@ func (cm *clientManager) callUnary(ctx context.Context, method string, req, resp
 	if err != nil {
 		return err
 	}
-	triReq := tri.NewRequest(req)
-	triResp := tri.NewResponse(resp)
+	triReq := req.(*tri.Request)
+	triResp := resp.(*tri.Response)
 	if err := triClient.CallUnary(ctx, triReq, triResp); err != nil {
 		return err
 	}
@@ -93,7 +90,7 @@ func (cm *clientManager) callServerStream(ctx context.Context, method string, re
 	if err != nil {
 		return nil, err
 	}
-	triReq := tri.NewRequest(req)
+	triReq := req.(*tri.Request)
 	stream, err := triClient.CallServerStream(ctx, triReq)
 	if err != nil {
 		return nil, err
@@ -157,22 +154,22 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 	// )
 	var cfg *tls.Config
 	var tlsFlag bool
-	var err error
+	//var err error
 
-	// todo: move TLSConfig from root to consumer
-	if tlsConfig := config.GetRootConfig().TLSConfig; tlsConfig != nil {
-		cfg, err = config.GetClientTlsConfig(&config.TLSConfig{
-			CACertFile:    tlsConfig.CACertFile,
-			TLSCertFile:   tlsConfig.TLSCertFile,
-			TLSKeyFile:    tlsConfig.TLSKeyFile,
-			TLSServerName: tlsConfig.TLSServerName,
-		})
-		if err != nil {
-			return nil, err
-		}
-		logger.Infof("TRIPLE clientManager initialized the TLSConfig configuration successfully")
-		tlsFlag = true
-	}
+	// todo: think about a more elegant way to configure tls
+	//if tlsConfig := config.GetRootConfig().TLSConfig; tlsConfig != nil {
+	//	cfg, err = config.GetClientTlsConfig(&config.TLSConfig{
+	//		CACertFile:    tlsConfig.CACertFile,
+	//		TLSCertFile:   tlsConfig.TLSCertFile,
+	//		TLSKeyFile:    tlsConfig.TLSKeyFile,
+	//		TLSServerName: tlsConfig.TLSServerName,
+	//	})
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//	logger.Infof("TRIPLE clientManager initialized the TLSConfig configuration successfully")
+	//	tlsFlag = true
+	//}
 
 	// todo(DMwangnima): this code fragment would be used to be compatible with old triple client
 	//key := url.GetParam(constant.InterfaceKey, "")

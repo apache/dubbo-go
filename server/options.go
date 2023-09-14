@@ -32,17 +32,19 @@ import (
 )
 
 type ServerOptions struct {
-	Provider   *global.ProviderConfig
-	Registries map[string]*global.RegistryConfig
-	Protocols  map[string]*global.ProtocolConfig
-	Tracings   map[string]*global.TracingConfig
+	Provider    *global.ProviderConfig
+	Application *global.ApplicationConfig
+	Registries  map[string]*global.RegistryConfig
+	Protocols   map[string]*global.ProtocolConfig
+	Tracings    map[string]*global.TracingConfig
 
 	providerCompat *config.ProviderConfig
 }
 
 func defaultServerOptions() *ServerOptions {
 	return &ServerOptions{
-		Provider: global.DefaultProviderConfig(),
+		Application: global.DefaultApplicationConfig(),
+		Provider:    global.DefaultProviderConfig(),
 	}
 }
 
@@ -156,6 +158,17 @@ func WithServer_AdaptiveServiceVerbose(flag bool) ServerOption {
 	}
 }
 
+func WithServer_ApplicationConfig(opts ...global.ApplicationOption) ServerOption {
+	appCfg := new(global.ApplicationConfig)
+	for _, opt := range opts {
+		opt(appCfg)
+	}
+
+	return func(opts *ServerOptions) {
+		opts.Application = appCfg
+	}
+}
+
 func WithServer_RegistryConfig(key string, opts ...global.RegistryOption) ServerOption {
 	regCfg := new(global.RegistryConfig)
 	for _, opt := range opts {
@@ -227,10 +240,11 @@ type ServiceOptions struct {
 
 func defaultServiceOptions() *ServiceOptions {
 	return &ServiceOptions{
-		Service:    global.DefaultServiceConfig(),
-		unexported: atomic.NewBool(false),
-		exported:   atomic.NewBool(false),
-		needExport: true,
+		Service:     global.DefaultServiceConfig(),
+		Application: global.DefaultApplicationConfig(),
+		unexported:  atomic.NewBool(false),
+		exported:    atomic.NewBool(false),
+		needExport:  true,
 	}
 }
 
