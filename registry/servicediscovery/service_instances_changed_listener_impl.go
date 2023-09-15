@@ -42,7 +42,7 @@ import (
 
 var (
 	metaCache *store.CacheManager
-	one       sync.Once
+	cacheOnce sync.Once
 )
 
 func initCache() {
@@ -65,7 +65,7 @@ type ServiceInstancesChangedListenerImpl struct {
 }
 
 func NewServiceInstancesChangedListener(services *gxset.HashSet) registry.ServiceInstancesChangedListener {
-	one.Do(initCache)
+	cacheOnce.Do(initCache)
 	return &ServiceInstancesChangedListenerImpl{
 		serviceNames:       services,
 		listeners:          make(map[string]registry.NotifyListener),
@@ -216,7 +216,7 @@ func (lstn *ServiceInstancesChangedListenerImpl) GetEventType() reflect.Type {
 
 // GetMetadataInfo get metadata info when MetadataStorageTypePropertyName is null
 func GetMetadataInfo(instance registry.ServiceInstance, revision string) (*common.MetadataInfo, error) {
-	one.Do(initCache)
+	cacheOnce.Do(initCache)
 	if metadataInfo, ok := metaCache.Get(revision); ok {
 		return metadataInfo.(*common.MetadataInfo), nil
 	}
