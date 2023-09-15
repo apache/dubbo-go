@@ -103,7 +103,10 @@ func (g *Generator) parseProtoToTriple(p *proto.Proto) (TripleGo, error) {
 				if strings.Contains(i, g.ctx.GoModuleName) {
 					tripleGo.Import = strings.Split(i, ";")[0]
 				} else {
-					tripleGo.Import = g.ctx.GoModuleName + "/" + strings.Split(i, ";")[0]
+					tripleGo.Import = g.ctx.GoModuleName
+					if imp := strings.Split(i, ";")[0]; imp != "." {
+						tripleGo.Import += "/" + imp
+					}
 				}
 			}
 		}),
@@ -175,7 +178,10 @@ func ProcessProtoFile(file *descriptor.FileDescriptorProto) (TripleGo, error) {
 	if strings.Contains(goPkg, moduleName) {
 		tripleGo.Import = strings.Split(goPkg, ";")[0]
 	} else {
-		tripleGo.Import = moduleName + "/" + strings.Split(goPkg, ";")[0]
+		tripleGo.Import = moduleName
+		if imp := strings.Split(goPkg, ";")[0]; imp != "." {
+			tripleGo.Import += "/" + imp
+		}
 	}
 
 	return tripleGo, nil
