@@ -41,16 +41,15 @@ func main() {
 		),
 	)
 	srv, err := ins.NewServer(
-		server.WithServer_ProtocolConfig("triple",
-			global.WithProtocol_Ip("0.0.0.0"),
+		server.WithServer_ProtocolConfig("tri",
 			global.WithProtocol_Port("20000"),
-			global.WithProtocol_Name("triple"),
+			global.WithProtocol_Name("tri"),
 		))
 	if err != nil {
 		panic(err)
 	}
 	if err := greettriple.RegisterGreetServiceHandler(srv, &api.GreetTripleServer{},
-		server.WithProtocolIDs([]string{"triple"}),
+		server.WithProtocolIDs([]string{"tri"}),
 		server.WithNotRegister(true),
 	); err != nil {
 		panic(err)

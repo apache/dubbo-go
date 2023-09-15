@@ -18,6 +18,7 @@
 package dubbo
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/global"
 )
 
@@ -72,6 +73,10 @@ func (rc *InstanceOptions) init(opts ...InstanceOption) error {
 	}
 
 	return nil
+}
+
+func (rc *InstanceOptions) Prefix() string {
+	return constant.Dubbo
 }
 
 type InstanceOption func(*InstanceOptions)

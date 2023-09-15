@@ -35,7 +35,6 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory/static"
 	"dubbo.apache.org/dubbo-go/v3/common"
-	commonCfg "dubbo.apache.org/dubbo-go/v3/common/config"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/config"
@@ -332,12 +331,13 @@ func (opts *ClientOptions) getURLMap() url.Values {
 		urlMap.Set(constant.EnvironmentKey, app.Environment)
 	}
 
+	// todo(DMwangnima): think about a ideal way to configure GracefulShutdown
 	// filter
-	defaultReferenceFilter := constant.DefaultReferenceFilters
-	if ref.Generic != "" {
-		defaultReferenceFilter = constant.GenericFilterKey + "," + defaultReferenceFilter
-	}
-	urlMap.Set(constant.ReferenceFilterKey, commonCfg.MergeValue(ref.Filter, "", defaultReferenceFilter))
+	//defaultReferenceFilter := constant.DefaultReferenceFilters
+	//if ref.Generic != "" {
+	//	defaultReferenceFilter = constant.GenericFilterKey + "," + defaultReferenceFilter
+	//}
+	//urlMap.Set(constant.ReferenceFilterKey, commonCfg.MergeValue(ref.Filter, "", defaultReferenceFilter))
 
 	for _, v := range ref.Methods {
 		urlMap.Set("methods."+v.Name+"."+constant.LoadbalanceKey, v.LoadBalance)

@@ -65,8 +65,8 @@ func (cm *clientManager) callUnary(ctx context.Context, method string, req, resp
 	if err != nil {
 		return err
 	}
-	triReq := req.(*tri.Request)
-	triResp := resp.(*tri.Response)
+	triReq := tri.NewRequest(req)
+	triResp := tri.NewResponse(resp)
 	if err := triClient.CallUnary(ctx, triReq, triResp); err != nil {
 		return err
 	}
@@ -90,7 +90,7 @@ func (cm *clientManager) callServerStream(ctx context.Context, method string, re
 	if err != nil {
 		return nil, err
 	}
-	triReq := req.(*tri.Request)
+	triReq := tri.NewRequest(req)
 	stream, err := triClient.CallServerStream(ctx, triReq)
 	if err != nil {
 		return nil, err

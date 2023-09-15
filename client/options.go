@@ -54,7 +54,9 @@ type ClientOptions struct {
 
 func defaultClientOptions() *ClientOptions {
 	return &ClientOptions{
-		Reference: global.DefaultReferenceConfig(),
+		Application: global.DefaultApplicationConfig(),
+		Consumer:    global.DefaultConsumerConfig(),
+		Reference:   global.DefaultReferenceConfig(),
 	}
 }
 
