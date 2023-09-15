@@ -199,7 +199,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config"
 	proto "protoc-gen-triple/proto"
 	triple_protocol "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
-	"dubbo.apache.org/dubbo-go/v3/provider"
+	"dubbo.apache.org/dubbo-go/v3/server"
 )
 
 // This is a compile-time assertion to ensure that this generated file and the connect package are
@@ -324,7 +324,7 @@ type greetServiceGreetClient struct {
 }
 
 func (cli *greetServiceGreetClient) Recv() bool {
-	msg := new(proto.GreetServerStreamResponse)
+	msg := new(proto.GreetResponse)
 	return cli.ServerStreamForClient.Receive(msg)
 }
 
@@ -452,12 +452,12 @@ type GreetServiceHandler interface {
 	
 }
 
-func ProvideGreetServiceHandler(pro *provider.Provider, hdlr GreetServiceHandler) error {
-	return pro.Provide(hdlr, &GreetService_ServiceInfo)
+func RegisterGreetServiceHandler(srv *server.Server, hdlr GreetServiceHandler) error {
+	return srv.Register(hdlr, &GreetService_ServiceInfo)
 }
 
 type GreetService_GreetServer interface {
-	Send(*proto.GreetServerStreamResponse) error
+	Send(*proto.GreetResponse) error
 	ResponseHeader() http.Header
 	ResponseTrailer() http.Header
 	Conn() triple_protocol.StreamingHandlerConn
@@ -539,10 +539,10 @@ type greetServiceGreetServerStreamServer struct {
 func (g *greetServiceGreetServerStreamServer) Send(msg *proto.GreetServerStreamResponse) error {
 	return g.ServerStream.Send(msg)
 }
-var GreetService_ServiceInfo = provider.ServiceInfo{
+var GreetService_ServiceInfo = server.ServiceInfo{
 	InterfaceName: "greet.GreetService",
 	ServiceType:   (*GreetServiceHandler)(nil),
-	Methods: []provider.MethodInfo{
+	Methods: []server.MethodInfo{
 		{
 			Name : "Greet",
 			Type : constant.CallUnary,
