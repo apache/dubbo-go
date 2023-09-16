@@ -344,16 +344,17 @@ func (svcOpts *ServiceOptions) getUrlMap() url.Values {
 	urlMap.Set(constant.EnvironmentKey, app.Environment)
 
 	// filter
-	var filters string
-	if srv.Filter == "" {
-		filters = constant.DefaultServiceFilters
-	} else {
-		filters = srv.Filter
-	}
-	if svcOpts.adaptiveService {
-		filters += fmt.Sprintf(",%svcOpts", constant.AdaptiveServiceProviderFilterKey)
-	}
-	urlMap.Set(constant.ServiceFilterKey, filters)
+	// todo(DMwangnima): think about an ideal way to configure GracefulShutdown
+	//var filters string
+	//if srv.Filter == "" {
+	//	filters = constant.DefaultServiceFilters
+	//} else {
+	//	filters = srv.Filter
+	//}
+	//if svcOpts.adaptiveService {
+	//	filters += fmt.Sprintf(",%svcOpts", constant.AdaptiveServiceProviderFilterKey)
+	//}
+	//urlMap.Set(constant.ServiceFilterKey, filters)
 
 	// filter special config
 	urlMap.Set(constant.AccessLogFilterKey, srv.AccessLog)

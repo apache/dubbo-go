@@ -187,7 +187,9 @@ func compatHandleService(mux *http.ServeMux, opts ...tri.HandlerOption) {
 		serviceKey := common.ServiceKey(providerService.Interface, providerService.Group, providerService.Version)
 		exporter, _ := tripleProtocol.ExporterMap().Load(serviceKey)
 		if exporter == nil {
-			panic(fmt.Sprintf("no exporter found for servicekey: %v", serviceKey))
+			// todo(DMwangnima): handler reflection Service and health Service
+			continue
+			//panic(fmt.Sprintf("no exporter found for servicekey: %v", serviceKey))
 		}
 		invoker := exporter.(protocol.Exporter).GetInvoker()
 		if invoker == nil {
