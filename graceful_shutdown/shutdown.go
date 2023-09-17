@@ -1,10 +1,26 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package graceful_shutdown
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/config"
-	"dubbo.apache.org/dubbo-go/v3/global"
 	"github.com/dubbogo/gost/log/logger"
 	"os"
 	"os/signal"
@@ -14,10 +30,16 @@ import (
 )
 
 const (
+	// todo(DMwangnima): these descriptions and defaults could be wrapped by functions of Options
 	defaultTimeout                     = 60 * time.Second
 	defaultStepTimeout                 = 3 * time.Second
 	defaultConsumerUpdateWaitTime      = 3 * time.Second
 	defaultOfflineRequestWindowTimeout = 3 * time.Second
+
+	timeoutDesc                     = "Timeout"
+	stepTimeoutDesc                 = "StepTimeout"
+	consumerUpdateWaitTimeDesc      = "ConsumerUpdateWaitTime"
+	offlineRequestWindowTimeoutDesc = "OfflineRequestWindowTimeout"
 )
 
 var (
@@ -28,52 +50,60 @@ var (
 	protocols map[string]struct{}
 )
 
-func Init(cfg *global.ShutdownConfig) {
-	compatShutdown = compatShutdownConfig(cfg)
-	// retrieve ShutdownConfig for gracefulShutdownFilter
-	cGracefulShutdownFilter, existcGracefulShutdownFilter := extension.GetFilter(constant.GracefulShutdownConsumerFilterKey)
-	if !existcGracefulShutdownFilter {
-		return
-	}
-	sGracefulShutdownFilter, existsGracefulShutdownFilter := extension.GetFilter(constant.GracefulShutdownProviderFilterKey)
-	if !existsGracefulShutdownFilter {
-		return
-	}
-	if filter, ok := cGracefulShutdownFilter.(config.Setter); ok {
-		filter.Set(constant.GracefulShutdownFilterShutdownConfig, compatShutdown)
-	}
+func Init(opts ...Option) {
+	initOnce.Do(func() {
+		newOpts := defaultOptions()
+		for _, opt := range opts {
+			opt(newOpts)
+		}
+		compatShutdown = compatShutdownConfig(newOpts.shutdown)
+		// retrieve ShutdownConfig for gracefulShutdownFilter
+		cGracefulShutdownFilter, existcGracefulShutdownFilter := extension.GetFilter(constant.GracefulShutdownConsumerFilterKey)
+		if !existcGracefulShutdownFilter {
+			return
+		}
+		sGracefulShutdownFilter, existsGracefulShutdownFilter := extension.GetFilter(constant.GracefulShutdownProviderFilterKey)
+		if !existsGracefulShutdownFilter {
+			return
+		}
+		if filter, ok := cGracefulShutdownFilter.(config.Setter); ok {
+			filter.Set(constant.GracefulShutdownFilterShutdownConfig, compatShutdown)
+		}
 
-	if filter, ok := sGracefulShutdownFilter.(config.Setter); ok {
-		filter.Set(constant.GracefulShutdownFilterShutdownConfig, compatShutdown)
-	}
+		if filter, ok := sGracefulShutdownFilter.(config.Setter); ok {
+			filter.Set(constant.GracefulShutdownFilterShutdownConfig, compatShutdown)
+		}
 
-	if compatShutdown.InternalSignal != nil && *compatShutdown.InternalSignal {
-		signals := make(chan os.Signal, 1)
-		signal.Notify(signals, ShutdownSignals...)
+		if compatShutdown.InternalSignal != nil && *compatShutdown.InternalSignal {
+			signals := make(chan os.Signal, 1)
+			signal.Notify(signals, ShutdownSignals...)
 
-		go func() {
-			select {
-			case sig := <-signals:
-				logger.Infof("get signal %s, applicationConfig will shutdown.", sig)
-				// gracefulShutdownOnce.Do(func() {
-				time.AfterFunc(totalTimeout(), func() {
-					logger.Warn("Shutdown gracefully timeout, applicationConfig will shutdown immediately. ")
-					os.Exit(0)
-				})
-				beforeShutdown()
-				// those signals' original behavior is exit with dump ths stack, so we try to keep the behavior
-				for _, dumpSignal := range DumpHeapShutdownSignals {
-					if sig == dumpSignal {
-						debug.WriteHeapDump(os.Stdout.Fd())
+			go func() {
+				select {
+				case sig := <-signals:
+					logger.Infof("get signal %s, applicationConfig will shutdown.", sig)
+					// gracefulShutdownOnce.Do(func() {
+					time.AfterFunc(totalTimeout(), func() {
+						logger.Warn("Shutdown gracefully timeout, applicationConfig will shutdown immediately. ")
+						os.Exit(0)
+					})
+					beforeShutdown()
+					// those signals' original behavior is exit with dump ths stack, so we try to keep the behavior
+					for _, dumpSignal := range DumpHeapShutdownSignals {
+						if sig == dumpSignal {
+							debug.WriteHeapDump(os.Stdout.Fd())
+						}
 					}
+					os.Exit(0)
 				}
-				os.Exit(0)
-			}
-		}()
-	}
+			}()
+		}
+	})
 }
 
-// RegisterProtocol registers protocol which would be destroyed before shutdown
+// RegisterProtocol registers protocol which would be destroyed before shutdown.
+// Please make sure that Init function has been invoked before, otherwise this
+// function would not make any sense.
 func RegisterProtocol(name string) {
 	proMu.Lock()
 	protocols[name] = struct{}{}
@@ -81,17 +111,12 @@ func RegisterProtocol(name string) {
 }
 
 func totalTimeout() time.Duration {
-	result, err := time.ParseDuration(compatShutdown.Timeout)
-	if err != nil {
-		logger.Errorf("The Timeout configuration is invalid: %s, and we will use the default value: %s, err: %v",
-			compatShutdown.Timeout, defaultTimeout.String(), err)
-		result = defaultTimeout
-	}
-	if result <= defaultTimeout {
-		result = defaultTimeout
+	timeout := parseDuration(compatShutdown.Timeout, timeoutDesc, defaultTimeout)
+	if timeout < defaultTimeout {
+		timeout = defaultTimeout
 	}
 
-	return result
+	return timeout
 }
 
 func beforeShutdown() {
@@ -123,37 +148,22 @@ func destroyRegistries() {
 func waitAndAcceptNewRequests() {
 	logger.Info("Graceful shutdown --- Keep waiting and accept new requests for a short time. ")
 
-	waitTime, err := time.ParseDuration(compatShutdown.ConsumerUpdateWaitTime)
-	if err != nil {
-		logger.Errorf("The ConsumerUpdateTimeout configuration is invalid: %s, and we will use the default value: %s, err: %v",
-			compatShutdown.ConsumerActiveCount.Load(), defaultConsumerUpdateWaitTime.String(), err)
-		waitTime = defaultConsumerUpdateWaitTime
-	}
-	time.Sleep(waitTime)
+	updateWaitTime := parseDuration(compatShutdown.ConsumerUpdateWaitTime, consumerUpdateWaitTimeDesc, defaultConsumerUpdateWaitTime)
+	time.Sleep(updateWaitTime)
 
-	timeout, err := time.ParseDuration(compatShutdown.StepTimeout)
-	if err != nil {
-		logger.Errorf("The StepTimeout configuration is invalid: %s, and we will use the default value: %s, err: %v",
-			compatShutdown.StepTimeout, defaultStepTimeout.String(), err)
-		timeout = defaultStepTimeout
-	}
+	stepTimeout := parseDuration(compatShutdown.StepTimeout, stepTimeoutDesc, defaultStepTimeout)
 
 	// ignore this step
-	if timeout < 0 {
+	if stepTimeout < 0 {
 		return
 	}
-	waitingProviderProcessedTimeout(timeout)
+	waitingProviderProcessedTimeout(stepTimeout)
 }
 
 func waitingProviderProcessedTimeout(timeout time.Duration) {
 	deadline := time.Now().Add(timeout)
 
-	offlineRequestWindowTimeout, err := time.ParseDuration(compatShutdown.OfflineRequestWindowTimeout)
-	if err != nil {
-		logger.Errorf("The OfflineRequestWindowTimeout configuration is invalid: %s, and we will use the default value: %s, err: %v",
-			compatShutdown.OfflineRequestWindowTimeout, defaultOfflineRequestWindowTimeout.String(), err)
-		offlineRequestWindowTimeout = defaultOfflineRequestWindowTimeout
-	}
+	offlineRequestWindowTimeout := parseDuration(compatShutdown.OfflineRequestWindowTimeout, offlineRequestWindowTimeoutDesc, defaultOfflineRequestWindowTimeout)
 
 	for time.Now().Before(deadline) &&
 		(compatShutdown.ProviderActiveCount.Load() > 0 || time.Now().Before(compatShutdown.ProviderLastReceivedRequestTime.Load().Add(offlineRequestWindowTimeout))) {
@@ -172,16 +182,12 @@ func waitForSendingAndReceivingRequests() {
 }
 
 func waitingConsumerProcessedTimeout() {
-	timeout, err := time.ParseDuration(compatShutdown.StepTimeout)
-	if err != nil {
-		logger.Errorf("The StepTimeout configuration is invalid: %s, and we will use the default value: %s, err: %v",
-			compatShutdown.StepTimeout, defaultStepTimeout.String(), err)
-		timeout = defaultStepTimeout
-	}
-	if timeout <= 0 {
+	stepTimeout := parseDuration(compatShutdown.StepTimeout, stepTimeoutDesc, defaultStepTimeout)
+
+	if stepTimeout <= 0 {
 		return
 	}
-	deadline := time.Now().Add(timeout)
+	deadline := time.Now().Add(stepTimeout)
 
 	for time.Now().Before(deadline) && compatShutdown.ConsumerActiveCount.Load() > 0 {
 		// sleep 10 ms and then we check it again

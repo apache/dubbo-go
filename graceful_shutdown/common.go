@@ -18,24 +18,17 @@
 package graceful_shutdown
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/config"
-	"dubbo.apache.org/dubbo-go/v3/global"
-	"go.uber.org/atomic"
+	"github.com/dubbogo/gost/log/logger"
+	"time"
 )
 
-func compatShutdownConfig(c *global.ShutdownConfig) *config.ShutdownConfig {
-	if c == nil {
-		return nil
+func parseDuration(timeout string, desc string, def time.Duration) time.Duration {
+	res, err := time.ParseDuration(timeout)
+	if err != nil {
+		logger.Errorf("The %s configuration is invalid: %s, and we will use the default value: %s, err: %v",
+			desc, timeout, def.String(), err)
+		res = def
 	}
-	cfg := &config.ShutdownConfig{
-		Timeout:                     c.Timeout,
-		StepTimeout:                 c.StepTimeout,
-		ConsumerUpdateWaitTime:      c.ConsumerUpdateWaitTime,
-		RejectRequestHandler:        c.RejectRequestHandler,
-		InternalSignal:              c.InternalSignal,
-		OfflineRequestWindowTimeout: c.OfflineRequestWindowTimeout,
-		RejectRequest:               atomic.Bool{},
-	}
-	cfg.RejectRequest.Store(c.RejectRequest.Load())
-	return cfg
+
+	return res
 }
