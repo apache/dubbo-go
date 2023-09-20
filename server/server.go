@@ -21,7 +21,9 @@ import (
 	"context"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/global"
+	"dubbo.apache.org/dubbo-go/v3/metadata"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
+	registry_exposed "dubbo.apache.org/dubbo-go/v3/registry/exposed_tmp"
 	"fmt"
 )
 
@@ -160,6 +162,13 @@ func (s *Server) Register(handler interface{}, info *ServiceInfo, opts ...Servic
 		return err
 	}
 
+	return nil
+}
+
+func (s *Server) Serve() error {
+	metadata.ExportMetadataService()
+	registry_exposed.RegisterServiceInstance(s.cfg.Application.Name, s.cfg.Application.Tag, s.cfg.Application.MetadataType)
+	select {}
 	return nil
 }
 
