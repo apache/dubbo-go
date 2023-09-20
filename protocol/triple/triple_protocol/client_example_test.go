@@ -18,7 +18,9 @@ import (
 	"context"
 	"log"
 	"os"
+)
 
+import (
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	pingv1 "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/gen/proto/connect/ping/v1"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/gen/proto/connect/ping/v1/pingv1connect"

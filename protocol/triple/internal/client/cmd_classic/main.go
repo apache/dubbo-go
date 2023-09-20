@@ -2,14 +2,14 @@ package main
 
 import (
 	"context"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"fmt"
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/config"
 	_ "dubbo.apache.org/dubbo-go/v3/imports"
 	greet "dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto"
-	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto/greettriple"
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto/triple_gen/greettriple"
 )
 
 func main() {

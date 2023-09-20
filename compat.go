@@ -18,9 +18,12 @@
 package dubbo
 
 import (
+	"go.uber.org/atomic"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/global"
-	"go.uber.org/atomic"
 )
 
 func compatRootConfig(c *InstanceOptions) *config.RootConfig {

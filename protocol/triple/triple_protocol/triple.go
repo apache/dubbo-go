@@ -343,3 +343,9 @@ func receiveUnaryResponse(conn StreamingClientConn, response AnyResponse) error 
 	resp.trailer = conn.ResponseTrailer()
 	return nil
 }
+
+// IsEnded is a convenient function indicating the end of stream. It is introduced to not expose
+// io.EOF to beginners. Please refer to https://github.com/apache/dubbo-go/pull/2416#discussion_r1318558801
+func IsEnded(err error) bool {
+	return errors.Is(err, io.EOF)
+}

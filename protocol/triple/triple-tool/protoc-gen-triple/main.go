@@ -20,7 +20,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 )
 
 import (
@@ -57,16 +56,11 @@ func main() {
 			plugin.SupportedFeatures = uint64(pluginpb.CodeGeneratorResponse_FEATURE_PROTO3_OPTIONAL)
 			for _, file := range plugin.Files {
 				if file.Generate {
-					abs, err := filepath.Abs(file.Desc.Path())
+					tripleGo, err := generator.ProcessProtoFile(file.Proto)
 					if err != nil {
 						return err
 					}
-					ctx, err := generator.NewContextForProtoc(abs)
-					if err != nil {
-						return err
-					}
-					g := generator.NewGenerator(ctx)
-					return g.GenTriple()
+					return generator.GenTripleFile(tripleGo)
 				}
 			}
 			return nil

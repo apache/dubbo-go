@@ -20,8 +20,8 @@ package triple
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 	"net/http"
-	"path"
 	"sync"
 	"time"
 )
@@ -40,6 +40,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo3"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	"dubbo.apache.org/dubbo-go/v3/server"
@@ -60,23 +61,23 @@ func (s *Server) Start(invoker protocol.Invoker, info *server.ServiceInfo) {
 	var (
 		addr    string
 		err     error
-		url     *common.URL
+		URL     *common.URL
 		hanOpts []tri.HandlerOption
 	)
-	url = invoker.GetURL()
-	addr = url.Location
+	URL = invoker.GetURL()
+	addr = URL.Location
 	srv := &http.Server{
 		Addr: addr,
 	}
 
 	maxServerRecvMsgSize := constant.DefaultMaxServerRecvMsgSize
-	if recvMsgSize, convertErr := humanize.ParseBytes(url.GetParam(constant.MaxServerRecvMsgSize, "")); convertErr == nil && recvMsgSize != 0 {
+	if recvMsgSize, convertErr := humanize.ParseBytes(URL.GetParam(constant.MaxServerRecvMsgSize, "")); convertErr == nil && recvMsgSize != 0 {
 		maxServerRecvMsgSize = int(recvMsgSize)
 	}
 	hanOpts = append(hanOpts, tri.WithReadMaxBytes(maxServerRecvMsgSize))
 
 	maxServerSendMsgSize := constant.DefaultMaxServerSendMsgSize
-	if sendMsgSize, convertErr := humanize.ParseBytes(url.GetParam(constant.MaxServerSendMsgSize, "")); err == convertErr && sendMsgSize != 0 {
+	if sendMsgSize, convertErr := humanize.ParseBytes(URL.GetParam(constant.MaxServerSendMsgSize, "")); err == convertErr && sendMsgSize != 0 {
 		maxServerSendMsgSize = int(sendMsgSize)
 	}
 	hanOpts = append(hanOpts, tri.WithSendMaxBytes(maxServerSendMsgSize))
@@ -113,17 +114,11 @@ func (s *Server) Start(invoker protocol.Invoker, info *server.ServiceInfo) {
 	s.httpServer = srv
 
 	go func() {
-		//providerServices := config.GetProviderConfig().Services
-		//
-		//if len(providerServices) == 0 {
-		//	panic("provider service map is null")
-		//}
-		// todo: remove this logic?
-		// wait all exporter ready , then set proxy impl and grpc registerService
-		//waitTripleExporter(providerServices)
 		mux := http.NewServeMux()
 		if info != nil {
 			handleServiceWithInfo(invoker, info, mux)
+		} else {
+			compatHandleService(mux)
 		}
 		// todo: figure it out this process
 		//reflection.Register(server)
@@ -172,49 +167,91 @@ func waitTripleExporter(providerServices map[string]*config.ServiceConfig) {
 	}
 }
 
-//// handleService injects invoker and creates handler based on ServiceConfig and provider service.
-//func handleService(providerServices map[string]*config.ServiceConfig, mux *http.ServeMux, opts ...tri.HandlerOption) {
-//	for key, providerService := range providerServices {
-//		service := config.GetProviderService(key)
-//		ds, ok := service.(TripleService)
-//		if !ok {
-//			panic("illegal service type registered")
-//		}
-//
-//		serviceKey := common.ServiceKey(providerService.Interface, providerService.Group, providerService.Version)
-//		exporter, _ := tripleProtocol.ExporterMap().Load(serviceKey)
-//		if exporter == nil {
-//			panic(fmt.Sprintf("no exporter found for servicekey: %v", serviceKey))
-//		}
-//		invoker := exporter.(protocol.Exporter).GetInvoker()
-//		if invoker == nil {
-//			panic(fmt.Sprintf("no invoker found for servicekey: %v", serviceKey))
-//		}
-//
-//		// inject invoker, it has all invocation logics
-//		ds.SetProxyImpl(invoker)
-//		path, handler := ds.BuildHandler(service, opts...)
-//		mux.Handle(path, tri.New)
-//		mux.Handle(path, handler)
-//	}
-//}
+// *Important*, this function is responsible for being compatible with old triple-gen code
+// compatHandleService creates handler based on ServiceConfig and provider service.
+func compatHandleService(mux *http.ServeMux, opts ...tri.HandlerOption) {
+	providerServices := config.GetProviderConfig().Services
+	if len(providerServices) == 0 {
+		panic("Provider service map is null")
+	}
+	//waitTripleExporter(providerServices)
+	for key, providerService := range providerServices {
+		// todo(DMwangnima): judge protocol type
+		service := config.GetProviderService(key)
+		ds, ok := service.(dubbo3.Dubbo3GrpcService)
+		if !ok {
+			panic("illegal service type registered")
+		}
+
+		serviceKey := common.ServiceKey(providerService.Interface, providerService.Group, providerService.Version)
+		exporter, _ := tripleProtocol.ExporterMap().Load(serviceKey)
+		if exporter == nil {
+			panic(fmt.Sprintf("no exporter found for servicekey: %v", serviceKey))
+		}
+		invoker := exporter.(protocol.Exporter).GetInvoker()
+		if invoker == nil {
+			panic(fmt.Sprintf("no invoker found for servicekey: %v", serviceKey))
+		}
+
+		// inject invoker, it has all invocation logics
+		ds.XXX_SetProxyImpl(invoker)
+		path, handler := compatBuildHandler(ds, opts...)
+		mux.Handle(path, handler)
+	}
+}
+
+func compatBuildHandler(svc dubbo3.Dubbo3GrpcService, opts ...tri.HandlerOption) (string, http.Handler) {
+	mux := http.NewServeMux()
+	desc := svc.XXX_ServiceDesc()
+	basePath := desc.ServiceName
+	// init unary handlers
+	for _, method := range desc.Methods {
+		// please refer to protocol/triple/internal/proto/triple_gen/greettriple for procedure examples
+		// error could be ignored because base is empty string
+		procedure := joinProcedure(desc.ServiceName, method.MethodName)
+		handler := tri.NewCompatUnaryHandler(procedure, svc, tri.MethodHandler(method.Handler), opts...)
+		mux.Handle(procedure, handler)
+	}
+
+	// init stream handlers
+	for _, stream := range desc.Streams {
+		// please refer to protocol/triple/internal/proto/triple_gen/greettriple for procedure examples
+		// error could be ignored because base is empty string
+		procedure := joinProcedure(desc.ServiceName, stream.StreamName)
+		var typ tri.StreamType
+		switch {
+		case stream.ClientStreams && stream.ServerStreams:
+			typ = tri.StreamTypeBidi
+		case stream.ClientStreams:
+			typ = tri.StreamTypeClient
+		case stream.ServerStreams:
+			typ = tri.StreamTypeServer
+		}
+		handler := tri.NewCompatStreamHandler(procedure, svc, typ, stream.Handler, opts...)
+		mux.Handle(procedure, handler)
+	}
+
+	return "/" + basePath + "/", mux
+}
 
 // handleServiceWithInfo injects invoker and create handler based on ServiceInfo
 func handleServiceWithInfo(invoker protocol.Invoker, info *server.ServiceInfo, mux *http.ServeMux, opts ...tri.HandlerOption) {
 	for _, method := range info.Methods {
+		m := method
 		var handler http.Handler
-		procedure := path.Join(info.InterfaceName, method.Name)
-		switch method.Type {
+		procedure := joinProcedure(info.InterfaceName, method.Name)
+		switch m.Type {
 		case constant.CallUnary:
 			handler = tri.NewUnaryHandler(
 				procedure,
-				method.ReqInitFunc,
+				m.ReqInitFunc,
 				func(ctx context.Context, req *tri.Request) (*tri.Response, error) {
 					var args []interface{}
 					args = append(args, req.Msg)
 					// todo: inject method.Meta to attachments
-					invo := invocation.NewRPCInvocation(method.Name, args, nil)
+					invo := invocation.NewRPCInvocation(m.Name, args, nil)
 					res := invoker.Invoke(ctx, invo)
+					// todo(DMwangnima): if we do not use MethodInfo.MethodFunc, create Response manually
 					return res.Result().(*tri.Response), res.Error()
 				},
 				opts...,
@@ -224,8 +261,8 @@ func handleServiceWithInfo(invoker protocol.Invoker, info *server.ServiceInfo, m
 				procedure,
 				func(ctx context.Context, stream *tri.ClientStream) (*tri.Response, error) {
 					var args []interface{}
-					args = append(args, method.StreamInitFunc(stream))
-					invo := invocation.NewRPCInvocation(method.Name, args, nil)
+					args = append(args, m.StreamInitFunc(stream))
+					invo := invocation.NewRPCInvocation(m.Name, args, nil)
 					res := invoker.Invoke(ctx, invo)
 					return res.Result().(*tri.Response), res.Error()
 				},
@@ -233,11 +270,11 @@ func handleServiceWithInfo(invoker protocol.Invoker, info *server.ServiceInfo, m
 		case constant.CallServerStream:
 			handler = tri.NewServerStreamHandler(
 				procedure,
-				method.ReqInitFunc,
+				m.ReqInitFunc,
 				func(ctx context.Context, request *tri.Request, stream *tri.ServerStream) error {
 					var args []interface{}
-					args = append(args, request.Msg, method.StreamInitFunc(stream))
-					invo := invocation.NewRPCInvocation(method.Name, args, nil)
+					args = append(args, request.Msg, m.StreamInitFunc(stream))
+					invo := invocation.NewRPCInvocation(m.Name, args, nil)
 					res := invoker.Invoke(ctx, invo)
 					return res.Error()
 				},
@@ -247,8 +284,8 @@ func handleServiceWithInfo(invoker protocol.Invoker, info *server.ServiceInfo, m
 				procedure,
 				func(ctx context.Context, stream *tri.BidiStream) error {
 					var args []interface{}
-					args = append(args, method.StreamInitFunc(stream))
-					invo := invocation.NewRPCInvocation(method.Name, args, nil)
+					args = append(args, m.StreamInitFunc(stream))
+					invo := invocation.NewRPCInvocation(m.Name, args, nil)
 					res := invoker.Invoke(ctx, invo)
 					return res.Error()
 				},

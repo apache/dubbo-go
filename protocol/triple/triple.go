@@ -56,7 +56,23 @@ func (tp *TripleProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	url := invoker.GetURL()
 	serviceKey := url.ServiceKey()
 	// todo: retrieve this info from url
-	info := &server.ServiceInfo{}
+	info := &server.ServiceInfo{
+		InterfaceName: url.Path,
+		Methods:       url.MethodInfo,
+	}
+	exporter := NewTripleExporter(serviceKey, invoker, tp.ExporterMap())
+	tp.SetExporterMap(serviceKey, exporter)
+	logger.Infof("[TRIPLE Protocol] Export service: %s", url.String())
+	tp.openServer(invoker, info)
+	return exporter
+}
+
+// *Important*. This function is only for testing. When server package is finished, remove this function
+// and modify related tests.
+func (tp *TripleProtocol) exportForTest(invoker protocol.Invoker, info *server.ServiceInfo) protocol.Exporter {
+	url := invoker.GetURL()
+	serviceKey := url.ServiceKey()
+	// todo: retrieve this info from url
 	exporter := NewTripleExporter(serviceKey, invoker, tp.ExporterMap())
 	tp.SetExporterMap(serviceKey, exporter)
 	logger.Infof("[TRIPLE Protocol] Export service: %s", url.String())

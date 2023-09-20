@@ -15,7 +15,9 @@
 package triple_protocol
 
 import (
+	"context"
 	"encoding/base64"
+	"fmt"
 	"net/http"
 )
 
@@ -84,4 +86,89 @@ func delHeaderCanonical(h http.Header, key string) {
 // know the key is already in canonical form.
 func addHeaderCanonical(h http.Header, key, value string) {
 	h[key] = append(h[key], value)
+}
+
+type headerIncomingKey struct{}
+type headerOutgoingKey struct{}
+type handlerOutgoingKey struct{}
+
+func newIncomingContext(ctx context.Context, header http.Header) context.Context {
+	return context.WithValue(ctx, headerIncomingKey{}, header)
+}
+
+// NewOutgoingContext sets headers entirely. If there are existing headers, they would be replaced.
+// It is used for passing headers to server-side.
+// It is like grpc.NewOutgoingContext.
+// Please refer to https://github.com/grpc/grpc-go/blob/master/Documentation/grpc-metadata.md#sending-metadata.
+func NewOutgoingContext(ctx context.Context, header http.Header) context.Context {
+	return context.WithValue(ctx, headerOutgoingKey{}, header)
+}
+
+// AppendToOutgoingContext merges kv pairs from user and existing headers.
+// It is used for passing headers to server-side.
+// It is like grpc.AppendToOutgoingContext.
+// Please refer to https://github.com/grpc/grpc-go/blob/master/Documentation/grpc-metadata.md#sending-metadata.
+func AppendToOutgoingContext(ctx context.Context, kv ...string) context.Context {
+	if len(kv)%2 == 1 {
+		panic(fmt.Sprintf("AppendToOutgoingContext got an odd number of input pairs for header: %d", len(kv)))
+	}
+	var header http.Header
+	headerRaw := ctx.Value(headerOutgoingKey{})
+	if headerRaw == nil {
+		header = make(http.Header)
+	} else {
+		header = headerRaw.(http.Header)
+	}
+	for i := 0; i < len(kv); i += 2 {
+		// todo(DMwangnima): think about lowering
+		header.Add(kv[i], kv[i+1])
+	}
+	return context.WithValue(ctx, headerOutgoingKey{}, header)
+}
+
+// FromIncomingContext retrieves headers passed by client-side. It is like grpc.FromIncomingContext.
+// Please refer to https://github.com/grpc/grpc-go/blob/master/Documentation/grpc-metadata.md#receiving-metadata-1.
+func FromIncomingContext(ctx context.Context) (http.Header, bool) {
+	header, ok := ctx.Value(headerIncomingKey{}).(http.Header)
+	if !ok {
+		return nil, false
+	}
+	return header, true
+}
+
+// SetHeader is used for setting response header in server-side. It is like grpc.SendHeader(ctx, header) but
+// not send header.
+// Please refer to https://github.com/grpc/grpc-go/blob/master/Documentation/grpc-metadata.md#unary-call-2.
+func SetHeader(ctx context.Context, header http.Header) error {
+	conn, ok := ctx.Value(handlerOutgoingKey{}).(StreamingHandlerConn)
+	if !ok {
+		// todo(DMwangnima): return standard error
+		return fmt.Errorf("triple: failed to fetch the connection from the context %v", ctx)
+	}
+	mergeHeaders(conn.ResponseHeader(), header)
+	return nil
+}
+
+// SetTrailer is used for setting response trailers in server-side. It is like grpc.SetTrailer(ctx, header).
+// Please refer to https://github.com/grpc/grpc-go/blob/master/Documentation/grpc-metadata.md#unary-call-2.
+func SetTrailer(ctx context.Context, trailer http.Header) error {
+	conn, ok := ctx.Value(handlerOutgoingKey{}).(StreamingHandlerConn)
+	if !ok {
+		// todo(DMwangnima): return standard error
+		return fmt.Errorf("triple: failed to fetch the connection from the context %v", ctx)
+	}
+	mergeHeaders(conn.ResponseTrailer(), trailer)
+	return nil
+}
+
+// SendHeader is used for setting response headers in server-side and send them directly. It is like grpc.SendHeader(ctx, header).
+// Please refer to https://github.com/grpc/grpc-go/blob/master/Documentation/grpc-metadata.md#unary-call-2.
+func SendHeader(ctx context.Context, header http.Header) error {
+	conn, ok := ctx.Value(handlerOutgoingKey{}).(StreamingHandlerConn)
+	if !ok {
+		// todo(DMwangnima): return standard error
+		return fmt.Errorf("triple: failed to fetch the connection from the context %v", ctx)
+	}
+	mergeHeaders(conn.RequestHeader(), header)
+	return conn.Send(nil)
 }

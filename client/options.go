@@ -18,14 +18,20 @@
 package client
 
 import (
+	"strconv"
+)
+
+import (
+	"github.com/creasty/defaults"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	commonCfg "dubbo.apache.org/dubbo-go/v3/common/config"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/proxy"
-	"github.com/creasty/defaults"
-	"strconv"
 )
 
 type ClientOptions struct {
