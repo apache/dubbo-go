@@ -17,7 +17,9 @@
 
 package graceful_shutdown
 
-import "dubbo.apache.org/dubbo-go/v3/global"
+import (
+	"dubbo.apache.org/dubbo-go/v3/global"
+)
 
 var (
 	defOpts = &Options{

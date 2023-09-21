@@ -18,13 +18,13 @@
 package dubbo
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/server"
 	"github.com/pkg/errors"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/client"
 	"dubbo.apache.org/dubbo-go/v3/global"
+	"dubbo.apache.org/dubbo-go/v3/server"
 )
 
 // Instance is the highest layer conception that user could touch. It is mapped from RootConfig.

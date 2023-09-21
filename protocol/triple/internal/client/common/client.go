@@ -19,9 +19,15 @@ package common
 
 import (
 	"context"
+)
+
+import (
+	"github.com/dubbogo/gost/log/logger"
+)
+
+import (
 	greet "dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto/triple_gen/greettriple"
-	"github.com/dubbogo/gost/log/logger"
 )
 
 func TestClient(cli greettriple.GreetService) {

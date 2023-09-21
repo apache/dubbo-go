@@ -18,6 +18,20 @@
 package server
 
 import (
+	"sync"
+)
+
+import (
+	"github.com/creasty/defaults"
+
+	"github.com/dubbogo/gost/log/logger"
+
+	perrors "github.com/pkg/errors"
+
+	"go.uber.org/atomic"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	commonCfg "dubbo.apache.org/dubbo-go/v3/common/config"
 	"dubbo.apache.org/dubbo-go/v3/config"
@@ -25,11 +39,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
-	"github.com/creasty/defaults"
-	"github.com/dubbogo/gost/log/logger"
-	perrors "github.com/pkg/errors"
-	"go.uber.org/atomic"
-	"sync"
 )
 
 type ServerOptions struct {

@@ -18,14 +18,21 @@
 package exposed_tmp
 
 import (
+	"reflect"
+	"strconv"
+)
+
+import (
+	"github.com/dubbogo/gost/log/logger"
+
+	perrors "github.com/pkg/errors"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/registry"
-	"github.com/dubbogo/gost/log/logger"
-	perrors "github.com/pkg/errors"
-	"reflect"
-	"strconv"
 )
 
 // RegisterServiceInstance register service instance

@@ -18,13 +18,10 @@
 package main
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/client/common"
-	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto/triple_gen/greettriple"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/client"
 	_ "dubbo.apache.org/dubbo-go/v3/imports"
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/client/common"
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto/triple_gen/greettriple"
 )
 
 func main() {

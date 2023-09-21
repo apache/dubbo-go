@@ -18,7 +18,6 @@
 package client
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
 	"strconv"
 )
 
@@ -31,6 +30,7 @@ import (
 	commonCfg "dubbo.apache.org/dubbo-go/v3/common/config"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/global"
+	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/proxy"
 )

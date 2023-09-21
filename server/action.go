@@ -19,9 +19,6 @@ package server
 
 import (
 	"container/list"
-	"dubbo.apache.org/dubbo-go/v3/global"
-	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"fmt"
 	"net/url"
 	"os"
@@ -44,6 +41,9 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/global"
+	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
 )
 

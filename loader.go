@@ -18,22 +18,30 @@
 package dubbo
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/common/constant/file"
-	"dubbo.apache.org/dubbo-go/v3/config/parsers/properties"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+	"runtime"
+	"strings"
+)
+
+import (
 	"github.com/dubbogo/gost/log/logger"
+
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/json"
 	"github.com/knadh/koanf/parsers/toml"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/confmap"
 	"github.com/knadh/koanf/providers/rawbytes"
+
 	"github.com/pkg/errors"
-	"io/ioutil"
-	"os"
-	"path/filepath"
-	"runtime"
-	"strings"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/constant/file"
+	"dubbo.apache.org/dubbo-go/v3/config/parsers/properties"
 )
 
 var (

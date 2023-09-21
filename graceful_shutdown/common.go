@@ -18,10 +18,17 @@
 package graceful_shutdown
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common"
-	hessian "github.com/apache/dubbo-go-hessian2"
-	"github.com/dubbogo/gost/log/logger"
 	"time"
+)
+
+import (
+	hessian "github.com/apache/dubbo-go-hessian2"
+
+	"github.com/dubbogo/gost/log/logger"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 )
 
 func init() {

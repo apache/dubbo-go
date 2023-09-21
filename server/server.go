@@ -19,12 +19,15 @@ package server
 
 import (
 	"context"
+	"fmt"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/metadata"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	registry_exposed "dubbo.apache.org/dubbo-go/v3/registry/exposed_tmp"
-	"fmt"
 )
 
 type Server struct {
