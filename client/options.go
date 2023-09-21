@@ -18,6 +18,7 @@
 package client
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
 	"strconv"
 )
 
@@ -39,6 +40,7 @@ type ClientOptions struct {
 	Consumer    *global.ConsumerConfig
 	Reference   *global.ReferenceConfig
 	Registries  map[string]*global.RegistryConfig
+	Shutdown    *global.ShutdownConfig
 
 	pxy          *proxy.Proxy
 	id           string
@@ -57,6 +59,7 @@ func defaultClientOptions() *ClientOptions {
 		Application: global.DefaultApplicationConfig(),
 		Consumer:    global.DefaultConsumerConfig(),
 		Reference:   global.DefaultReferenceConfig(),
+		Shutdown:    global.DefaultShutdownConfig(),
 	}
 }
 
@@ -105,6 +108,10 @@ func (cliOpts *ClientOptions) init(opts ...ClientOption) error {
 
 	// todo(DMwangnima): move to registry package
 	// init registries
+	var emptyRegIDsFlag bool
+	if ref.RegistryIDs == nil || len(ref.RegistryIDs) <= 0 {
+		emptyRegIDsFlag = true
+	}
 	regs := cliOpts.Registries
 	if regs != nil {
 		cliOpts.registriesCompat = make(map[string]*config.RegistryConfig)
@@ -113,9 +120,15 @@ func (cliOpts *ClientOptions) init(opts ...ClientOption) error {
 			if err := cliOpts.registriesCompat[key].Init(); err != nil {
 				return err
 			}
+			if emptyRegIDsFlag {
+				ref.RegistryIDs = append(ref.RegistryIDs, key)
+			}
 		}
 	}
 	ref.RegistryIDs = commonCfg.TranslateIds(ref.RegistryIDs)
+
+	// init graceful_shutdown
+	graceful_shutdown.Init(graceful_shutdown.WithShutdown_Config(cliOpts.Shutdown))
 
 	return commonCfg.Verify(cliOpts)
 }
@@ -292,6 +305,17 @@ func WithReferenceConfig(opts ...global.ReferenceOption) ClientOption {
 
 	return func(opts *ClientOptions) {
 		opts.Reference = refCfg
+	}
+}
+
+func WithShutdownConfig(opts ...global.ShutdownOption) ClientOption {
+	sdCfg := new(global.ShutdownConfig)
+	for _, opt := range opts {
+		opt(sdCfg)
+	}
+
+	return func(opts *ClientOptions) {
+		opts.Shutdown = sdCfg
 	}
 }
 

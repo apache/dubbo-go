@@ -18,28 +18,37 @@
 package main
 
 import (
-	"context"
-	"fmt"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3"
+	"dubbo.apache.org/dubbo-go/v3/global"
 	_ "dubbo.apache.org/dubbo-go/v3/imports"
-	greet "dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto/triple_gen/greettriple"
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/server/api"
 )
 
 func main() {
-	svc := new(greettriple.GreetServiceImpl)
-	greettriple.SetConsumerService(svc)
-	if err := config.Load(); err != nil {
-		panic(err)
-	}
-
-	resp, err := svc.Greet(context.Background(), &greet.GreetRequest{Name: "dubbo"})
+	// global conception
+	// configure global configurations and common modules
+	ins, err := dubbo.NewInstance(
+		dubbo.WithMetric(
+			global.WithMetric_Enable(true),
+		),
+		dubbo.WithRegistry("zk",
+			global.WithRegistry_Protocol("zookeeper"),
+			global.WithRegistry_Address("127.0.0.1:2181"),
+		),
+		dubbo.WithProtocol("tri",
+			global.WithProtocol_Port("20000"),
+			global.WithProtocol_Name("tri"),
+		),
+	)
+	srv, err := ins.NewServer()
 	if err != nil {
 		panic(err)
 	}
-
-	fmt.Println(resp.Greeting)
+	if err := greettriple.RegisterGreetServiceHandler(srv, &api.GreetTripleServer{}); err != nil {
+		panic(err)
+	}
+	if err := srv.Serve(); err != nil {
+		panic(err)
+	}
 }

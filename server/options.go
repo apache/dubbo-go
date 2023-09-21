@@ -23,6 +23,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config"
 	aslimiter "dubbo.apache.org/dubbo-go/v3/filter/adaptivesvc/limiter"
 	"dubbo.apache.org/dubbo-go/v3/global"
+	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"github.com/creasty/defaults"
 	"github.com/dubbogo/gost/log/logger"
@@ -37,6 +38,7 @@ type ServerOptions struct {
 	Registries  map[string]*global.RegistryConfig
 	Protocols   map[string]*global.ProtocolConfig
 	Tracings    map[string]*global.TracingConfig
+	Shutdown    *global.ShutdownConfig
 
 	providerCompat *config.ProviderConfig
 }
@@ -45,6 +47,7 @@ func defaultServerOptions() *ServerOptions {
 	return &ServerOptions{
 		Application: global.DefaultApplicationConfig(),
 		Provider:    global.DefaultProviderConfig(),
+		Shutdown:    global.DefaultShutdownConfig(),
 	}
 }
 
@@ -87,6 +90,9 @@ func (srvOpts *ServerOptions) init(opts ...ServerOption) error {
 		logger.Debugf("debug-level info could be shown.")
 		aslimiter.Verbose = true
 	}
+
+	// init graceful_shutdown
+	graceful_shutdown.Init(graceful_shutdown.WithShutdown_Config(srvOpts.Shutdown))
 
 	return nil
 }
@@ -211,6 +217,17 @@ func WithServer_TracingConfig(key string, opts ...global.TracingOption) ServerOp
 	}
 }
 
+func WithServer_ShutdownConfig(opts ...global.ShutdownOption) ServerOption {
+	sdCfg := new(global.ShutdownConfig)
+	for _, opt := range opts {
+		opt(sdCfg)
+	}
+
+	return func(opts *ServerOptions) {
+		opts.Shutdown = sdCfg
+	}
+}
+
 type ServiceOptions struct {
 	Application *global.ApplicationConfig
 	Provider    *global.ProviderConfig
@@ -266,6 +283,10 @@ func (svcOpts *ServiceOptions) init(opts ...ServiceOption) error {
 		if err := svcOpts.applicationCompat.Init(); err != nil {
 			return err
 		}
+		// todo(DMwangnima): make this clearer
+		// this statement is responsible for setting rootConfig.Application
+		// since many modules would retrieve this information directly.
+		config.GetRootConfig().Application = svcOpts.applicationCompat
 		svcOpts.metadataType = svcOpts.applicationCompat.MetadataType
 		if srv.Group == "" {
 			srv.Group = svcOpts.applicationCompat.Group
@@ -305,8 +326,11 @@ func (svcOpts *ServiceOptions) init(opts ...ServiceOption) error {
 	}
 
 	srv.RegistryIDs = commonCfg.TranslateIds(srv.RegistryIDs)
-	if len(srv.RegistryIDs) < 0 {
+	if len(srv.RegistryIDs) <= 0 {
 		srv.RegistryIDs = svcOpts.Provider.RegistryIDs
+	}
+	if srv.RegistryIDs == nil || len(srv.RegistryIDs) <= 0 {
+		srv.NotRegister = true
 	}
 
 	srv.ProtocolIDs = commonCfg.TranslateIds(srv.ProtocolIDs)

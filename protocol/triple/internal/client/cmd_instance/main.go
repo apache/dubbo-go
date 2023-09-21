@@ -18,14 +18,11 @@
 package main
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/client/common"
-)
-
-import (
-	dubbo "dubbo.apache.org/dubbo-go/v3"
+	"dubbo.apache.org/dubbo-go/v3"
 	"dubbo.apache.org/dubbo-go/v3/client"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	_ "dubbo.apache.org/dubbo-go/v3/imports"
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/client/common"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto/triple_gen/greettriple"
 )
 
@@ -36,9 +33,6 @@ func main() {
 		dubbo.WithApplication(
 			global.WithApplication_Name("dubbo_test"),
 		),
-		//dubbo.WithRegistry("nacos",
-		//	global.WithRegistry_Address("127.0.0.1:8848"),
-		//),
 		dubbo.WithMetric(
 			global.WithMetric_Enable(true),
 		),
@@ -48,8 +42,6 @@ func main() {
 	}
 	// configure the params that only client layer cares
 	cli, err := ins.NewClient(
-		client.WithProtocol("tri"),
-		client.WithRetries(3),
 		client.WithURL("tri://127.0.0.1:20000"),
 	)
 	if err != nil {

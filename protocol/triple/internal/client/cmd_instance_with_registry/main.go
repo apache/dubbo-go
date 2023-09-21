@@ -18,28 +18,45 @@
 package main
 
 import (
-	"context"
-	"fmt"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3"
+	"dubbo.apache.org/dubbo-go/v3/client"
+	"dubbo.apache.org/dubbo-go/v3/global"
 	_ "dubbo.apache.org/dubbo-go/v3/imports"
-	greet "dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto"
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/client/common"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto/triple_gen/greettriple"
 )
 
 func main() {
-	svc := new(greettriple.GreetServiceImpl)
-	greettriple.SetConsumerService(svc)
-	if err := config.Load(); err != nil {
+	// global conception
+	// configure global configurations and common modules
+	ins, err := dubbo.NewInstance(
+		dubbo.WithApplication(
+			global.WithApplication_Name("dubbo.io"),
+		),
+		dubbo.WithRegistry("zk",
+			global.WithRegistry_Protocol("zookeeper"),
+			global.WithRegistry_Address("127.0.0.1:2181"),
+		),
+		dubbo.WithMetric(
+			global.WithMetric_Enable(true),
+		),
+	)
+	if err != nil {
 		panic(err)
 	}
-
-	resp, err := svc.Greet(context.Background(), &greet.GreetRequest{Name: "dubbo"})
+	// configure the params that only client layer cares
+	cli, err := ins.NewClient(
+		client.WithProtocol("tri"),
+		client.WithRegistryIDs([]string{"zk"}),
+	)
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Println(resp.Greeting)
+	svc, err := greettriple.NewGreetService(cli)
+	if err != nil {
+		panic(err)
+	}
+
+	common.TestClient(svc)
 }

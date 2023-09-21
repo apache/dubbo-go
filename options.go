@@ -19,7 +19,9 @@ package dubbo
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/global"
+	"github.com/dubbogo/gost/log/logger"
 )
 
 type InstanceOptions struct {
@@ -67,10 +69,87 @@ func (rc *InstanceOptions) init(opts ...InstanceOption) error {
 		opt(rc)
 	}
 
+	// remaining procedure is like RootConfig.Init() without RootConfig.Start()
+	// tasks of RootConfig.Start() would be decomposed to Client and Server
 	rcCompat := compatRootConfig(rc)
-	if err := rcCompat.Init(); err != nil {
+	if err := rcCompat.Logger.Init(); err != nil { // init default logger
 		return err
 	}
+	if err := rcCompat.ConfigCenter.Init(rcCompat); err != nil {
+		logger.Infof("[Config Center] Config center doesn't start")
+		logger.Debugf("config center doesn't start because %s", err)
+	} else {
+		if err = rcCompat.Logger.Init(); err != nil { // init logger using config from config center again
+			return err
+		}
+	}
+
+	if err := rcCompat.Application.Init(); err != nil {
+		return err
+	}
+
+	// init user define
+	if err := rcCompat.Custom.Init(); err != nil {
+		return err
+	}
+
+	// init protocol
+	protocols := rcCompat.Protocols
+	if len(protocols) <= 0 {
+		protocol := &config.ProtocolConfig{}
+		protocols = make(map[string]*config.ProtocolConfig, 1)
+		protocols[constant.Dubbo] = protocol
+		rcCompat.Protocols = protocols
+	}
+	for _, protocol := range protocols {
+		if err := protocol.Init(); err != nil {
+			return err
+		}
+	}
+
+	// init registry
+	registries := rcCompat.Registries
+	if registries != nil {
+		for _, reg := range registries {
+			if err := reg.Init(); err != nil {
+				return err
+			}
+		}
+	}
+
+	if err := rcCompat.MetadataReport.Init(rcCompat); err != nil {
+		return err
+	}
+	if err := rcCompat.Metric.Init(); err != nil {
+		return err
+	}
+	for _, t := range rcCompat.Tracing {
+		if err := t.Init(); err != nil {
+			return err
+		}
+	}
+
+	routers := rcCompat.Router
+	if len(routers) > 0 {
+		for _, r := range routers {
+			if err := r.Init(); err != nil {
+				return err
+			}
+		}
+		rcCompat.Router = routers
+	}
+
+	// provider、consumer must last init
+	if err := rcCompat.Provider.Init(rcCompat); err != nil {
+		return err
+	}
+	if err := rcCompat.Consumer.Init(rcCompat); err != nil {
+		return err
+	}
+	if err := rcCompat.Shutdown.Init(); err != nil {
+		return err
+	}
+	config.SetRootConfig(*rcCompat)
 
 	return nil
 }

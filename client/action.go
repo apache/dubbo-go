@@ -19,6 +19,7 @@ package client
 
 import (
 	commonCfg "dubbo.apache.org/dubbo-go/v3/common/config"
+	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
 	"fmt"
 	"net/url"
 	"os"
@@ -252,6 +253,9 @@ func (opts *ClientOptions) refer(srv common.RPCService, info *ClientInfo) {
 		}
 		opts.pxy.Implement(srv)
 	}
+	// this protocol would be destroyed in graceful_shutdown
+	// please refer to (https://github.com/apache/dubbo-go/issues/2429)
+	graceful_shutdown.RegisterProtocol(ref.Protocol)
 }
 
 func (opts *ClientOptions) CheckAvailable() bool {

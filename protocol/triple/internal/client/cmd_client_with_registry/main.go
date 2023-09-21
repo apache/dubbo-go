@@ -18,28 +18,33 @@
 package main
 
 import (
-	"context"
-	"fmt"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/config"
-	_ "dubbo.apache.org/dubbo-go/v3/imports"
-	greet "dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto"
+	"dubbo.apache.org/dubbo-go/v3/global"
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/client/common"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto/triple_gen/greettriple"
 )
 
+import (
+	"dubbo.apache.org/dubbo-go/v3/client"
+	_ "dubbo.apache.org/dubbo-go/v3/imports"
+)
+
 func main() {
-	svc := new(greettriple.GreetServiceImpl)
-	greettriple.SetConsumerService(svc)
-	if err := config.Load(); err != nil {
+	// for the most brief RPC case with Registry
+
+	cli, err := client.NewClient(
+		client.WithProtocol("tri"),
+		client.WithRegistryConfig("zk",
+			global.WithRegistry_Protocol("zookeeper"),
+			global.WithRegistry_Address("127.0.0.1:2181"),
+		),
+	)
+	if err != nil {
 		panic(err)
 	}
-
-	resp, err := svc.Greet(context.Background(), &greet.GreetRequest{Name: "dubbo"})
+	svc, err := greettriple.NewGreetService(cli)
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Println(resp.Greeting)
+	common.TestClient(svc)
 }

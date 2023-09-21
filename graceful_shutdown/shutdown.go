@@ -52,6 +52,7 @@ var (
 
 func Init(opts ...Option) {
 	initOnce.Do(func() {
+		protocols = make(map[string]struct{})
 		newOpts := defaultOptions()
 		for _, opt := range opts {
 			opt(newOpts)

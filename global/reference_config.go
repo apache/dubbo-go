@@ -51,8 +51,10 @@ type ReferenceOption func(*ReferenceConfig)
 
 func DefaultReferenceConfig() *ReferenceConfig {
 	return &ReferenceConfig{
-		Methods: make([]*MethodConfig, 0, 8),
-		Params:  make(map[string]string, 8),
+		// use Triple protocol by default
+		Protocol: "tri",
+		Methods:  make([]*MethodConfig, 0, 8),
+		Params:   make(map[string]string, 8),
 	}
 }
 

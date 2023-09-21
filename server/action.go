@@ -20,6 +20,7 @@ package server
 import (
 	"container/list"
 	"dubbo.apache.org/dubbo-go/v3/global"
+	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"fmt"
 	"net/url"
@@ -257,6 +258,9 @@ func (svcOpts *ServiceOptions) export(info *ServiceInfo) error {
 			svcOpts.exporters = append(svcOpts.exporters, exporter)
 		}
 		publishServiceDefinition(ivkURL)
+		// this protocol would be destroyed in graceful_shutdown
+		// please refer to (https://github.com/apache/dubbo-go/issues/2429)
+		graceful_shutdown.RegisterProtocol(proto.Name)
 	}
 	svcOpts.exported.Store(true)
 	return nil
@@ -343,18 +347,17 @@ func (svcOpts *ServiceOptions) getUrlMap() url.Values {
 	urlMap.Set(constant.OwnerKey, app.Owner)
 	urlMap.Set(constant.EnvironmentKey, app.Environment)
 
-	// filter
-	// todo(DMwangnima): think about an ideal way to configure GracefulShutdown
-	//var filters string
-	//if srv.Filter == "" {
-	//	filters = constant.DefaultServiceFilters
-	//} else {
-	//	filters = srv.Filter
-	//}
-	//if svcOpts.adaptiveService {
-	//	filters += fmt.Sprintf(",%svcOpts", constant.AdaptiveServiceProviderFilterKey)
-	//}
-	//urlMap.Set(constant.ServiceFilterKey, filters)
+	//filter
+	var filters string
+	if srv.Filter == "" {
+		filters = constant.DefaultServiceFilters
+	} else {
+		filters = srv.Filter
+	}
+	if svcOpts.adaptiveService {
+		filters += fmt.Sprintf(",%svcOpts", constant.AdaptiveServiceProviderFilterKey)
+	}
+	urlMap.Set(constant.ServiceFilterKey, filters)
 
 	// filter special config
 	urlMap.Set(constant.AccessLogFilterKey, srv.AccessLog)

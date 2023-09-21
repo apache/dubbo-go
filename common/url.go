@@ -110,11 +110,12 @@ type URL struct {
 	paramsLock sync.RWMutex
 	params     url.Values
 
-	Path       string // like  /com.ikurento.dubbo.UserProvider
-	Username   string
-	Password   string
-	Methods    []string
-	Attributes map[string]interface{}
+	Path     string // like  /com.ikurento.dubbo.UserProvider
+	Username string
+	Password string
+	Methods  []string
+	// Attributes should not be transported
+	Attributes map[string]interface{} `hessian:"-"`
 	// special for registry
 	SubURL *URL
 }
