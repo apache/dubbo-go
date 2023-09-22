@@ -113,24 +113,21 @@ type ServerOption func(*ServerOptions)
 
 // ---------- For user ----------
 
+// todo(DMwangnima): change Filter Option like Cluster and LoadBalance
 func WithServer_Filter(filter string) ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.Filter = filter
 	}
 }
 
-func WithServer_Register(flag bool) ServerOption {
-	return func(opts *ServerOptions) {
-		opts.Provider.Register = flag
-	}
-}
-
+// todo(DMwangnima): think about a more ideal configuration style
 func WithServer_RegistryIDs(registryIDs []string) ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.RegistryIDs = registryIDs
 	}
 }
 
+// todo(DMwangnima): think about a more ideal configuration style
 func WithServer_ProtocolIDs(protocolIDs []string) ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.ProtocolIDs = protocolIDs
@@ -143,38 +140,27 @@ func WithServer_TracingKey(tracingKey string) ServerOption {
 	}
 }
 
-func WithServer_ProxyFactory(factory string) ServerOption {
-	return func(opts *ServerOptions) {
-		opts.Provider.ProxyFactory = factory
-	}
-}
-
+// todo(DMwangnima): this configuration would be used by filter/hystrix
+// think about a more ideal way to configure
 func WithServer_FilterConf(conf interface{}) ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.FilterConf = conf
 	}
 }
 
-func WithServer_ConfigType(key, value string) ServerOption {
+func WithServer_AdaptiveService() ServerOption {
 	return func(opts *ServerOptions) {
-		if opts.Provider.ConfigType == nil {
-			opts.Provider.ConfigType = make(map[string]string)
-		}
-		opts.Provider.ConfigType[key] = value
+		opts.Provider.AdaptiveService = true
 	}
 }
 
-func WithServer_AdaptiveService(flag bool) ServerOption {
+func WithServer_AdaptiveServiceVerbose() ServerOption {
 	return func(opts *ServerOptions) {
-		opts.Provider.AdaptiveService = flag
+		opts.Provider.AdaptiveServiceVerbose = true
 	}
 }
 
-func WithServer_AdaptiveServiceVerbose(flag bool) ServerOption {
-	return func(opts *ServerOptions) {
-		opts.Provider.AdaptiveServiceVerbose = flag
-	}
-}
+// ========== For framework ==========
 
 func WithServer_ApplicationConfig(opts ...global.ApplicationOption) ServerOption {
 	appCfg := new(global.ApplicationConfig)
