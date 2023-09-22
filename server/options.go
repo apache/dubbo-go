@@ -18,7 +18,10 @@
 package server
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"strconv"
 	"sync"
+	"time"
 )
 
 import (
@@ -368,6 +371,7 @@ type ServiceOption func(*ServiceOptions)
 
 // ---------- For user ----------
 
+// todo(DMwangnima): think about a more ideal configuration style
 func WithRegistryIDs(registryIDs []string) ServiceOption {
 	return func(cfg *ServiceOptions) {
 		if len(registryIDs) <= 0 {
@@ -376,12 +380,14 @@ func WithRegistryIDs(registryIDs []string) ServiceOption {
 	}
 }
 
+// todo(DMwangnima): change Filter Option like Cluster and LoadBalance
 func WithFilter(filter string) ServiceOption {
 	return func(cfg *ServiceOptions) {
 		cfg.Service.Filter = filter
 	}
 }
 
+// todo(DMwangnima): think about a more ideal configuration style
 func WithProtocolIDs(protocolIDs []string) ServiceOption {
 	return func(cfg *ServiceOptions) {
 		if len(protocolIDs) <= 0 {
@@ -396,21 +402,105 @@ func WithTracingKey(tracingKey string) ServiceOption {
 	}
 }
 
-func WithLoadBalance(loadBalance string) ServiceOption {
-	return func(cfg *ServiceOptions) {
-		cfg.Service.Loadbalance = loadBalance
+// ========== LoadBalance Strategy ==========
+
+func WithLoadBalanceConsistentHashing() ServiceOption {
+	return func(opts *ServiceOptions) {
+		opts.Service.Loadbalance = constant.LoadBalanceKeyConsistentHashing
 	}
 }
 
-func WithWarmUp(warmUp string) ServiceOption {
-	return func(cfg *ServiceOptions) {
-		cfg.Service.Warmup = warmUp
+func WithLoadBalanceLeastActive() ServiceOption {
+	return func(opts *ServiceOptions) {
+		opts.Service.Loadbalance = constant.LoadBalanceKeyLeastActive
 	}
 }
 
-func WithCluster(cluster string) ServiceOption {
-	return func(cfg *ServiceOptions) {
-		cfg.Service.Cluster = cluster
+func WithLoadBalanceRandom() ServiceOption {
+	return func(opts *ServiceOptions) {
+		opts.Service.Loadbalance = constant.LoadBalanceKeyRandom
+	}
+}
+
+func WithLoadBalanceRoundRobin() ServiceOption {
+	return func(opts *ServiceOptions) {
+		opts.Service.Loadbalance = constant.LoadBalanceKeyRoundRobin
+	}
+}
+
+func WithLoadBalanceP2C() ServiceOption {
+	return func(opts *ServiceOptions) {
+		opts.Service.Loadbalance = constant.LoadBalanceKeyP2C
+	}
+}
+
+func WithLoadBalanceXDSRingHash() ServiceOption {
+	return func(opts *ServiceOptions) {
+		opts.Service.Loadbalance = constant.LoadBalanceKeyLeastActive
+	}
+}
+
+// warmUp is in seconds
+func WithWarmUp(warmUp time.Duration) ServiceOption {
+	return func(opts *ServiceOptions) {
+		warmUpSec := int(warmUp / time.Second)
+		opts.Service.Warmup = strconv.Itoa(warmUpSec)
+	}
+}
+
+// ========== Cluster Strategy ==========
+
+func WithClusterAvailable() ServiceOption {
+	return func(opts *ServiceOptions) {
+		opts.Service.Cluster = constant.ClusterKeyAvailable
+	}
+}
+
+func WithClusterBroadcast() ServiceOption {
+	return func(opts *ServiceOptions) {
+		opts.Service.Cluster = constant.ClusterKeyBroadcast
+	}
+}
+
+func WithClusterFailBack() ServiceOption {
+	return func(opts *ServiceOptions) {
+		opts.Service.Cluster = constant.ClusterKeyFailback
+	}
+}
+
+func WithClusterFailFast() ServiceOption {
+	return func(opts *ServiceOptions) {
+		opts.Service.Cluster = constant.ClusterKeyFailfast
+	}
+}
+
+func WithClusterFailOver() ServiceOption {
+	return func(opts *ServiceOptions) {
+		opts.Service.Cluster = constant.ClusterKeyFailover
+	}
+}
+
+func WithClusterFailSafe() ServiceOption {
+	return func(opts *ServiceOptions) {
+		opts.Service.Cluster = constant.ClusterKeyFailsafe
+	}
+}
+
+func WithClusterForking() ServiceOption {
+	return func(opts *ServiceOptions) {
+		opts.Service.Cluster = constant.ClusterKeyForking
+	}
+}
+
+func WithClusterZoneAware() ServiceOption {
+	return func(opts *ServiceOptions) {
+		opts.Service.Cluster = constant.ClusterKeyZoneAware
+	}
+}
+
+func WithClusterAdaptiveService() ServiceOption {
+	return func(opts *ServiceOptions) {
+		opts.Service.Cluster = constant.ClusterKeyAdaptiveService
 	}
 }
 
@@ -426,15 +516,15 @@ func WithVersion(version string) ServiceOption {
 	}
 }
 
-func WithSerialization(serialization string) ServiceOption {
-	return func(cfg *ServiceOptions) {
-		cfg.Service.Serialization = serialization
+func WithJSON() ServiceOption {
+	return func(opts *ServiceOptions) {
+		opts.Service.Serialization = constant.JSONSerialization
 	}
 }
 
-func WithNotRegister(flag bool) ServiceOption {
+func WithNotRegister() ServiceOption {
 	return func(cfg *ServiceOptions) {
-		cfg.Service.NotRegister = flag
+		cfg.Service.NotRegister = true
 	}
 }
 

@@ -134,6 +134,16 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 	}
 	triClientOpts = append(triClientOpts, tri.WithSendMaxBytes(maxCallSendMsgSize))
 
+	// set serialization
+	serialization := url.GetParam(constant.SerializationKey, constant.ProtobufSerialization)
+	switch serialization {
+	case constant.ProtobufSerialization:
+	case constant.JSONSerialization:
+		triClientOpts = append(triClientOpts, tri.WithProtoJSON())
+	default:
+		panic(fmt.Sprintf("Unsupported serialization: %s", serialization))
+	}
+
 	// todo:// process timeout
 	// consumer config client connectTimeout
 	//connectTimeout := config.GetConsumerConfig().ConnectTimeout
@@ -202,7 +212,7 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 		}
 		triClientOpts = append(triClientOpts)
 	default:
-		panic(fmt.Sprintf("Unsupported type: %s", callType))
+		panic(fmt.Sprintf("Unsupported callType: %s", callType))
 	}
 	httpClient := &http.Client{
 		Transport: transport,

@@ -82,6 +82,14 @@ func (s *Server) Start(invoker protocol.Invoker, info *server.ServiceInfo) {
 	}
 	hanOpts = append(hanOpts, tri.WithSendMaxBytes(maxServerSendMsgSize))
 
+	serialization := URL.GetParam(constant.SerializationKey, constant.ProtobufSerialization)
+	switch serialization {
+	case constant.ProtobufSerialization:
+	case constant.JSONSerialization:
+	default:
+		panic(fmt.Sprintf("Unsupported serialization: %s", serialization))
+	}
+
 	// todo: implement interceptor
 	// If global trace instance was set, then server tracer instance
 	// can be get. If not, will return NoopTracer.

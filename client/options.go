@@ -18,7 +18,9 @@
 package client
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"strconv"
+	"time"
 )
 
 import (
@@ -149,18 +151,14 @@ func WithURL(url string) ClientOption {
 	}
 }
 
+// todo(DMwangnima): change Filter Option like Cluster and LoadBalance
 func WithFilter(filter string) ClientOption {
 	return func(opts *ClientOptions) {
 		opts.Reference.Filter = filter
 	}
 }
 
-func WithProtocol(protocol string) ClientOption {
-	return func(opts *ClientOptions) {
-		opts.Reference.Protocol = protocol
-	}
-}
-
+// todo(DMwangnima): think about a more ideal configuration style
 func WithRegistryIDs(registryIDs []string) ClientOption {
 	return func(opts *ClientOptions) {
 		if len(registryIDs) > 0 {
@@ -169,15 +167,97 @@ func WithRegistryIDs(registryIDs []string) ClientOption {
 	}
 }
 
-func WithCluster(cluster string) ClientOption {
+// ========== Cluster Strategy ==========
+
+func WithClusterAvailable() ClientOption {
 	return func(opts *ClientOptions) {
-		opts.Reference.Cluster = cluster
+		opts.Reference.Cluster = constant.ClusterKeyAvailable
 	}
 }
 
-func WithLoadBalance(loadBalance string) ClientOption {
+func WithClusterBroadcast() ClientOption {
 	return func(opts *ClientOptions) {
-		opts.Reference.Loadbalance = loadBalance
+		opts.Reference.Cluster = constant.ClusterKeyBroadcast
+	}
+}
+
+func WithClusterFailBack() ClientOption {
+	return func(opts *ClientOptions) {
+		opts.Reference.Cluster = constant.ClusterKeyFailback
+	}
+}
+
+func WithClusterFailFast() ClientOption {
+	return func(opts *ClientOptions) {
+		opts.Reference.Cluster = constant.ClusterKeyFailfast
+	}
+}
+
+func WithClusterFailOver() ClientOption {
+	return func(opts *ClientOptions) {
+		opts.Reference.Cluster = constant.ClusterKeyFailover
+	}
+}
+
+func WithClusterFailSafe() ClientOption {
+	return func(opts *ClientOptions) {
+		opts.Reference.Cluster = constant.ClusterKeyFailsafe
+	}
+}
+
+func WithClusterForking() ClientOption {
+	return func(opts *ClientOptions) {
+		opts.Reference.Cluster = constant.ClusterKeyForking
+	}
+}
+
+func WithClusterZoneAware() ClientOption {
+	return func(opts *ClientOptions) {
+		opts.Reference.Cluster = constant.ClusterKeyZoneAware
+	}
+}
+
+func WithClusterAdaptiveService() ClientOption {
+	return func(opts *ClientOptions) {
+		opts.Reference.Cluster = constant.ClusterKeyAdaptiveService
+	}
+}
+
+// ========== LoadBalance Strategy ==========
+
+func WithLoadBalanceConsistentHashing() ClientOption {
+	return func(opts *ClientOptions) {
+		opts.Reference.Loadbalance = constant.LoadBalanceKeyConsistentHashing
+	}
+}
+
+func WithLoadBalanceLeastActive() ClientOption {
+	return func(opts *ClientOptions) {
+		opts.Reference.Loadbalance = constant.LoadBalanceKeyLeastActive
+	}
+}
+
+func WithLoadBalanceRandom() ClientOption {
+	return func(opts *ClientOptions) {
+		opts.Reference.Loadbalance = constant.LoadBalanceKeyRandom
+	}
+}
+
+func WithLoadBalanceRoundRobin() ClientOption {
+	return func(opts *ClientOptions) {
+		opts.Reference.Loadbalance = constant.LoadBalanceKeyRoundRobin
+	}
+}
+
+func WithLoadBalanceP2C() ClientOption {
+	return func(opts *ClientOptions) {
+		opts.Reference.Loadbalance = constant.LoadBalanceKeyP2C
+	}
+}
+
+func WithLoadBalanceXDSRingHash() ClientOption {
+	return func(opts *ClientOptions) {
+		opts.Reference.Loadbalance = constant.LoadBalanceKeyLeastActive
 	}
 }
 
@@ -199,13 +279,13 @@ func WithVersion(version string) ClientOption {
 	}
 }
 
-func WithSerialization(serialization string) ClientOption {
+func WithJSON() ClientOption {
 	return func(opts *ClientOptions) {
-		opts.Reference.Serialization = serialization
+		opts.Reference.Serialization = constant.JSONSerialization
 	}
 }
 
-func WithProviderBy(providedBy string) ClientOption {
+func WithProvidedBy(providedBy string) ClientOption {
 	return func(opts *ClientOptions) {
 		opts.Reference.ProvidedBy = providedBy
 	}
@@ -223,9 +303,13 @@ func WithParams(params map[string]string) ClientOption {
 	}
 }
 
-func WithGeneric(generic string) ClientOption {
+func WithGeneric(generic bool) ClientOption {
 	return func(opts *ClientOptions) {
-		opts.Reference.Generic = generic
+		if generic {
+			opts.Reference.Generic = "true"
+		} else {
+			opts.Reference.Generic = "false"
+		}
 	}
 }
 
@@ -235,9 +319,9 @@ func WithSticky(sticky bool) ClientOption {
 	}
 }
 
-func WithRequestTimeout(timeout string) ClientOption {
+func WithRequestTimeout(timeout time.Duration) ClientOption {
 	return func(opts *ClientOptions) {
-		opts.Reference.RequestTimeout = timeout
+		opts.Reference.RequestTimeout = timeout.String()
 	}
 }
 

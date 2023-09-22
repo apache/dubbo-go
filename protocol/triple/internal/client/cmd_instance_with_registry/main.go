@@ -46,7 +46,6 @@ func main() {
 	}
 	// configure the params that only client layer cares
 	cli, err := ins.NewClient(
-		client.WithProtocol("tri"),
 		client.WithRegistryIDs([]string{"zk"}),
 	)
 	if err != nil {
