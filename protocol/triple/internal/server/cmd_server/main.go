@@ -18,8 +18,8 @@
 package main
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/global"
 	_ "dubbo.apache.org/dubbo-go/v3/imports"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto/triple_gen/greettriple"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/server/api"
 	"dubbo.apache.org/dubbo-go/v3/server"
@@ -27,9 +27,9 @@ import (
 
 func main() {
 	srv, err := server.NewServer(
-		server.WithServer_ProtocolConfig("tri",
-			global.WithProtocol_Port("20000"),
-			global.WithProtocol_Name("tri"),
+		server.WithServer_Protocol("tri",
+			protocol.WithTriple(),
+			protocol.WithPort(20000),
 		),
 	)
 	if err != nil {

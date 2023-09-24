@@ -20,7 +20,6 @@ package main
 import (
 	"dubbo.apache.org/dubbo-go/v3"
 	"dubbo.apache.org/dubbo-go/v3/client"
-	"dubbo.apache.org/dubbo-go/v3/global"
 	_ "dubbo.apache.org/dubbo-go/v3/imports"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/client/common"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto/triple_gen/greettriple"
@@ -30,12 +29,7 @@ func main() {
 	// global conception
 	// configure global configurations and common modules
 	ins, err := dubbo.NewInstance(
-		dubbo.WithApplication(
-			global.WithApplication_Name("dubbo_test"),
-		),
-		dubbo.WithMetric(
-			global.WithMetric_Enable(true),
-		),
+		dubbo.WithName("dubbo_test"),
 	)
 	if err != nil {
 		panic(err)

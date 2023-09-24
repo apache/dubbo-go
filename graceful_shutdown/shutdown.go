@@ -59,11 +59,11 @@ var (
 func Init(opts ...Option) {
 	initOnce.Do(func() {
 		protocols = make(map[string]struct{})
-		newOpts := defaultOptions()
+		newOpts := DefaultOptions()
 		for _, opt := range opts {
 			opt(newOpts)
 		}
-		compatShutdown = compatShutdownConfig(newOpts.shutdown)
+		compatShutdown = compatShutdownConfig(newOpts.Shutdown)
 		// retrieve ShutdownConfig for gracefulShutdownFilter
 		cGracefulShutdownFilter, existcGracefulShutdownFilter := extension.GetFilter(constant.GracefulShutdownConsumerFilterKey)
 		if !existcGracefulShutdownFilter {

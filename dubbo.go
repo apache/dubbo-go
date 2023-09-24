@@ -59,7 +59,6 @@ func (ins *Instance) NewClient(opts ...client.ClientOption) (*client.Client, err
 	conCfg := ins.insOpts.Consumer
 	appCfg := ins.insOpts.Application
 	regsCfg := ins.insOpts.Registries
-	// todo(DMwangnima): use slices to maintain options
 	if conCfg != nil {
 		// these options come from Consumer and Root.
 		// for dubbo-go developers, referring config/ConsumerConfig.Init and config/ReferenceConfig
@@ -79,42 +78,10 @@ func (ins *Instance) NewClient(opts ...client.ClientOption) (*client.Client, err
 		)
 	}
 	if appCfg != nil {
-		cliOpts = append(cliOpts,
-			client.WithApplicationConfig(
-				global.WithApplication_Name(appCfg.Name),
-				global.WithApplication_Organization(appCfg.Organization),
-				global.WithApplication_Module(appCfg.Module),
-				global.WithApplication_Version(appCfg.Version),
-				global.WithApplication_Owner(appCfg.Owner),
-				global.WithApplication_Environment(appCfg.Environment),
-				global.WithApplication_Group(appCfg.Group),
-				global.WithApplication_MetadataType(appCfg.MetadataType),
-			),
-		)
+		cliOpts = append(cliOpts, client.SetApplication(appCfg))
 	}
 	if regsCfg != nil {
-		for key, reg := range regsCfg {
-			cliOpts = append(cliOpts,
-				client.WithRegistryConfig(key,
-					global.WithRegistry_Protocol(reg.Protocol),
-					global.WithRegistry_Timeout(reg.Timeout),
-					global.WithRegistry_Group(reg.Group),
-					global.WithRegistry_Namespace(reg.Namespace),
-					global.WithRegistry_TTL(reg.TTL),
-					global.WithRegistry_Address(reg.Address),
-					global.WithRegistry_Username(reg.Username),
-					global.WithRegistry_Password(reg.Password),
-					global.WithRegistry_Simplified(reg.Simplified),
-					global.WithRegistry_Preferred(reg.Preferred),
-					global.WithRegistry_Zone(reg.Zone),
-					global.WithRegistry_Weight(reg.Weight),
-					global.WithRegistry_Params(reg.Params),
-					global.WithRegistry_RegistryType(reg.RegistryType),
-					global.WithRegistry_UseAsMetaReport(reg.UseAsMetaReport),
-					global.WithRegistry_UseAsConfigCenter(reg.UseAsConfigCenter),
-				),
-			)
-		}
+		cliOpts = append(cliOpts, client.SetRegistries(regsCfg))
 	}
 	// options passed by users has higher priority
 	cliOpts = append(cliOpts, opts...)
@@ -151,42 +118,10 @@ func (ins *Instance) NewServer(opts ...server.ServerOption) (*server.Server, err
 		)
 	}
 	if regsCfg != nil {
-		for key, reg := range regsCfg {
-			srvOpts = append(srvOpts,
-				server.WithServer_RegistryConfig(key,
-					global.WithRegistry_Protocol(reg.Protocol),
-					global.WithRegistry_Timeout(reg.Timeout),
-					global.WithRegistry_Group(reg.Group),
-					global.WithRegistry_Namespace(reg.Namespace),
-					global.WithRegistry_TTL(reg.TTL),
-					global.WithRegistry_Address(reg.Address),
-					global.WithRegistry_Username(reg.Username),
-					global.WithRegistry_Password(reg.Password),
-					global.WithRegistry_Simplified(reg.Simplified),
-					global.WithRegistry_Preferred(reg.Preferred),
-					global.WithRegistry_Zone(reg.Zone),
-					global.WithRegistry_Weight(reg.Weight),
-					global.WithRegistry_Params(reg.Params),
-					global.WithRegistry_RegistryType(reg.RegistryType),
-					global.WithRegistry_UseAsMetaReport(reg.UseAsMetaReport),
-					global.WithRegistry_UseAsConfigCenter(reg.UseAsConfigCenter),
-				),
-			)
-		}
+		srvOpts = append(srvOpts, server.SetServer_Registries(regsCfg))
 	}
 	if prosCfg != nil {
-		for key, pro := range prosCfg {
-			srvOpts = append(srvOpts,
-				server.WithServer_ProtocolConfig(key,
-					global.WithProtocol_Name(pro.Name),
-					global.WithProtocol_Ip(pro.Ip),
-					global.WithProtocol_Port(pro.Port),
-					global.WithProtocol_Params(pro.Params),
-					global.WithProtocol_MaxServerSendMsgSize(pro.MaxServerSendMsgSize),
-					global.WithProtocol_MaxServerRecvMsgSize(pro.MaxServerRecvMsgSize),
-				),
-			)
-		}
+		srvOpts = append(srvOpts, server.SetServer_Protocols(prosCfg))
 	}
 	if trasCfg != nil {
 		for key, tra := range trasCfg {

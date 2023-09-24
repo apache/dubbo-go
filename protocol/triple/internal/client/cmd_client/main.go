@@ -26,8 +26,6 @@ import (
 
 func main() {
 	// for the most brief RPC case
-
-	// todo: set triple protocol as default protocol
 	cli, err := client.NewClient(
 		client.WithURL("tri://127.0.0.1:20000"),
 	)

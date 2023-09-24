@@ -18,7 +18,6 @@
 package client
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"strconv"
 	"time"
 )
@@ -30,11 +29,13 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	commonCfg "dubbo.apache.org/dubbo-go/v3/common/config"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/proxy"
+	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
 type ClientOptions struct {
@@ -139,8 +140,9 @@ type ClientOption func(*ClientOptions)
 
 // ---------- For user ----------
 
-func WithCheck(check bool) ClientOption {
+func WithCheck() ClientOption {
 	return func(opts *ClientOptions) {
+		check := true
 		opts.Reference.Check = &check
 	}
 }
@@ -164,6 +166,20 @@ func WithRegistryIDs(registryIDs []string) ClientOption {
 		if len(registryIDs) > 0 {
 			opts.Reference.RegistryIDs = registryIDs
 		}
+	}
+}
+
+func WithRegistry(key string, opts ...registry.Option) ClientOption {
+	regOpts := registry.DefaultOptions()
+	for _, opt := range opts {
+		opt(regOpts)
+	}
+
+	return func(cliOpts *ClientOptions) {
+		if cliOpts.Registries == nil {
+			cliOpts.Registries = make(map[string]*global.RegistryConfig)
+		}
+		cliOpts.Registries[key] = regOpts.Registry
 	}
 }
 
@@ -291,11 +307,12 @@ func WithProvidedBy(providedBy string) ClientOption {
 	}
 }
 
-func WithAsync(async bool) ClientOption {
-	return func(opts *ClientOptions) {
-		opts.Reference.Async = async
-	}
-}
+// todo(DMwangnima): implement this functionality
+//func WithAsync() ClientOption {
+//	return func(opts *ClientOptions) {
+//		opts.Reference.Async = true
+//	}
+//}
 
 func WithParams(params map[string]string) ClientOption {
 	return func(opts *ClientOptions) {
@@ -303,15 +320,16 @@ func WithParams(params map[string]string) ClientOption {
 	}
 }
 
-func WithGeneric(generic bool) ClientOption {
-	return func(opts *ClientOptions) {
-		if generic {
-			opts.Reference.Generic = "true"
-		} else {
-			opts.Reference.Generic = "false"
-		}
-	}
-}
+// todo(DMwangnima): implement this functionality
+//func WithGeneric(generic bool) ClientOption {
+//	return func(opts *ClientOptions) {
+//		if generic {
+//			opts.Reference.Generic = "true"
+//		} else {
+//			opts.Reference.Generic = "false"
+//		}
+//	}
+//}
 
 func WithSticky(sticky bool) ClientOption {
 	return func(opts *ClientOptions) {
@@ -345,28 +363,15 @@ func WithMeshProviderPort(port int) ClientOption {
 
 // ---------- For framework ----------
 
-func WithRegistryConfig(key string, opts ...global.RegistryOption) ClientOption {
-	regCfg := new(global.RegistryConfig)
-	for _, opt := range opts {
-		opt(regCfg)
-	}
-
+func SetRegistries(regs map[string]*global.RegistryConfig) ClientOption {
 	return func(opts *ClientOptions) {
-		if opts.Registries == nil {
-			opts.Registries = make(map[string]*global.RegistryConfig)
-		}
-		opts.Registries[key] = regCfg
+		opts.Registries = regs
 	}
 }
 
-func WithApplicationConfig(opts ...global.ApplicationOption) ClientOption {
-	appCfg := new(global.ApplicationConfig)
-	for _, opt := range opts {
-		opt(appCfg)
-	}
-
+func SetApplication(application *global.ApplicationConfig) ClientOption {
 	return func(opts *ClientOptions) {
-		opts.Application = appCfg
+		opts.Application = application
 	}
 }
 

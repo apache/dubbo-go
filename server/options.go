@@ -18,7 +18,6 @@
 package server
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"strconv"
 	"sync"
 	"time"
@@ -37,11 +36,13 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	commonCfg "dubbo.apache.org/dubbo-go/v3/common/config"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	aslimiter "dubbo.apache.org/dubbo-go/v3/filter/adaptivesvc/limiter"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
 type ServerOptions struct {
@@ -127,10 +128,38 @@ func WithServer_RegistryIDs(registryIDs []string) ServerOption {
 	}
 }
 
+func WithServer_Registry(key string, opts ...registry.Option) ServerOption {
+	regOpts := registry.DefaultOptions()
+	for _, opt := range opts {
+		opt(regOpts)
+	}
+
+	return func(srvOpts *ServerOptions) {
+		if srvOpts.Registries == nil {
+			srvOpts.Registries = make(map[string]*global.RegistryConfig)
+		}
+		srvOpts.Registries[key] = regOpts.Registry
+	}
+}
+
 // todo(DMwangnima): think about a more ideal configuration style
 func WithServer_ProtocolIDs(protocolIDs []string) ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.ProtocolIDs = protocolIDs
+	}
+}
+
+func WithServer_Protocol(key string, opts ...protocol.Option) ServerOption {
+	proOpts := protocol.DefaultOptions()
+	for _, opt := range opts {
+		opt(proOpts)
+	}
+
+	return func(srvOpts *ServerOptions) {
+		if srvOpts.Protocols == nil {
+			srvOpts.Protocols = make(map[string]*global.ProtocolConfig)
+		}
+		srvOpts.Protocols[key] = proOpts.Protocol
 	}
 }
 
@@ -173,31 +202,15 @@ func WithServer_ApplicationConfig(opts ...global.ApplicationOption) ServerOption
 	}
 }
 
-func WithServer_RegistryConfig(key string, opts ...global.RegistryOption) ServerOption {
-	regCfg := new(global.RegistryConfig)
-	for _, opt := range opts {
-		opt(regCfg)
-	}
-
+func SetServer_Registries(regs map[string]*global.RegistryConfig) ServerOption {
 	return func(opts *ServerOptions) {
-		if opts.Registries == nil {
-			opts.Registries = make(map[string]*global.RegistryConfig)
-		}
-		opts.Registries[key] = regCfg
+		opts.Registries = regs
 	}
 }
 
-func WithServer_ProtocolConfig(key string, opts ...global.ProtocolOption) ServerOption {
-	proCfg := new(global.ProtocolConfig)
-	for _, opt := range opts {
-		opt(proCfg)
-	}
-
+func SetServer_Protocols(pros map[string]*global.ProtocolConfig) ServerOption {
 	return func(opts *ServerOptions) {
-		if opts.Protocols == nil {
-			opts.Protocols = make(map[string]*global.ProtocolConfig)
-		}
-		opts.Protocols[key] = proCfg
+		opts.Protocols = pros
 	}
 }
 

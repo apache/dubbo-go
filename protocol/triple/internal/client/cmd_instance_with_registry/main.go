@@ -20,25 +20,20 @@ package main
 import (
 	"dubbo.apache.org/dubbo-go/v3"
 	"dubbo.apache.org/dubbo-go/v3/client"
-	"dubbo.apache.org/dubbo-go/v3/global"
 	_ "dubbo.apache.org/dubbo-go/v3/imports"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/client/common"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto/triple_gen/greettriple"
+	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
 func main() {
 	// global conception
 	// configure global configurations and common modules
 	ins, err := dubbo.NewInstance(
-		dubbo.WithApplication(
-			global.WithApplication_Name("dubbo.io"),
-		),
+		dubbo.WithName("dubbo_test"),
 		dubbo.WithRegistry("zk",
-			global.WithRegistry_Protocol("zookeeper"),
-			global.WithRegistry_Address("127.0.0.1:2181"),
-		),
-		dubbo.WithMetric(
-			global.WithMetric_Enable(true),
+			registry.WithZookeeper(),
+			registry.WithAddress("127.0.0.1:2181"),
 		),
 	)
 	if err != nil {

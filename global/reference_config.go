@@ -47,8 +47,6 @@ type ReferenceConfig struct {
 	MeshProviderPort int               `yaml:"mesh-provider-port" json:"mesh-provider-port,omitempty" propertiy:"mesh-provider-port"`
 }
 
-type ReferenceOption func(*ReferenceConfig)
-
 func DefaultReferenceConfig() *ReferenceConfig {
 	return &ReferenceConfig{
 		// use Triple protocol by default
@@ -57,6 +55,8 @@ func DefaultReferenceConfig() *ReferenceConfig {
 		Params:   make(map[string]string, 8),
 	}
 }
+
+type ReferenceOption func(*ReferenceConfig)
 
 func WithReference_InterfaceName(name string) ReferenceOption {
 	return func(cfg *ReferenceConfig) {

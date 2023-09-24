@@ -41,6 +41,10 @@ type RegistryConfig struct {
 	UseAsConfigCenter bool              `default:"true" yaml:"use-as-config-center" json:"use-as-config-center,omitempty" property:"use-as-config-center"`
 }
 
+func DefaultRegistryConfig() *RegistryConfig {
+	return &RegistryConfig{}
+}
+
 type RegistryOption func(*RegistryConfig)
 
 func WithRegistry_Protocol(protocol string) RegistryOption {
