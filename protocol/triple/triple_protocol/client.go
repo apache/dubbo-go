@@ -105,6 +105,9 @@ func NewClient(httpClient HTTPClient, url string, options ...ClientOption) *Clie
 		// add them here.
 		request.spec = unarySpec
 		request.peer = client.protocolClient.Peer()
+		// userHeader contains user-defined headers and Triple-unique headers
+		userHeader := retrieveFromOutgoingContext(ctx)
+		mergeHeaders(request.Header(), userHeader)
 		protocolClient.WriteRequestHeader(StreamTypeUnary, request.Header())
 		if err := unaryFunc(ctx, request, response); err != nil {
 			return err

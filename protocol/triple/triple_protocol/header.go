@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"github.com/dubbogo/triple/pkg/common/constant"
 	"net/http"
 )
 
@@ -89,19 +90,23 @@ func addHeaderCanonical(h http.Header, key, value string) {
 }
 
 type headerIncomingKey struct{}
-type headerOutgoingKey struct{}
+type clientOutgoingKey struct{}
 type handlerOutgoingKey struct{}
 
 func newIncomingContext(ctx context.Context, header http.Header) context.Context {
 	return context.WithValue(ctx, headerIncomingKey{}, header)
 }
 
+// todo(DMwangnima): maybe we should provide Header type for future performance improvement?
 // NewOutgoingContext sets headers entirely. If there are existing headers, they would be replaced.
 // It is used for passing headers to server-side.
 // It is like grpc.NewOutgoingContext.
 // Please refer to https://github.com/grpc/grpc-go/blob/master/Documentation/grpc-metadata.md#sending-metadata.
 func NewOutgoingContext(ctx context.Context, header http.Header) context.Context {
-	return context.WithValue(ctx, headerOutgoingKey{}, header)
+	if header == nil {
+		return ctx
+	}
+	return context.WithValue(ctx, clientOutgoingKey{}, header)
 }
 
 // AppendToOutgoingContext merges kv pairs from user and existing headers.
@@ -109,11 +114,14 @@ func NewOutgoingContext(ctx context.Context, header http.Header) context.Context
 // It is like grpc.AppendToOutgoingContext.
 // Please refer to https://github.com/grpc/grpc-go/blob/master/Documentation/grpc-metadata.md#sending-metadata.
 func AppendToOutgoingContext(ctx context.Context, kv ...string) context.Context {
+	if len(kv) == 0 {
+		return ctx
+	}
 	if len(kv)%2 == 1 {
 		panic(fmt.Sprintf("AppendToOutgoingContext got an odd number of input pairs for header: %d", len(kv)))
 	}
 	var header http.Header
-	headerRaw := ctx.Value(headerOutgoingKey{})
+	headerRaw := ctx.Value(clientOutgoingKey{})
 	if headerRaw == nil {
 		header = make(http.Header)
 	} else {
@@ -121,9 +129,48 @@ func AppendToOutgoingContext(ctx context.Context, kv ...string) context.Context 
 	}
 	for i := 0; i < len(kv); i += 2 {
 		// todo(DMwangnima): think about lowering
-		header.Add(kv[i], kv[i+1])
+		header[kv[i]] = append(header[kv[i]], kv[i+1])
 	}
-	return context.WithValue(ctx, headerOutgoingKey{}, header)
+	return context.WithValue(ctx, clientOutgoingKey{}, header)
+}
+
+func retrieveFromOutgoingContext(ctx context.Context) http.Header {
+	headerRaw := ctx.Value(clientOutgoingKey{})
+	if headerRaw == nil {
+		return nil
+	}
+	return headerRaw.(http.Header)
+}
+
+// todo(DMwangnima): move this version to Options
+func AppendTripleServiceVersion(ctx context.Context, version string) context.Context {
+	return AppendToOutgoingContext(ctx, constant.TripleServiceVersion, version)
+}
+
+// todo(DMwangnima): move this group to Options
+func AppendTripleServiceGroup(ctx context.Context, group string) context.Context {
+	return AppendToOutgoingContext(ctx, constant.TripleServiceGroup, group)
+}
+
+// todo(DMwangnima): consider the type of ID
+func AppendTripleRequestID(ctx context.Context, ID string) context.Context {
+	return AppendToOutgoingContext(ctx, constant.TripleRequestID, ID)
+}
+
+func AppendTripleTraceID(ctx context.Context, ID string) context.Context {
+	return AppendToOutgoingContext(ctx, constant.TripleTraceID, ID)
+}
+
+func AppendTripleTraceRPCID(ctx context.Context, ID string) context.Context {
+	return AppendToOutgoingContext(ctx, constant.TripleTraceRPCID, ID)
+}
+
+func AppendTripleTraceProtoBin(ctx context.Context, bin string) context.Context {
+	return AppendToOutgoingContext(ctx, constant.TripleTraceProtoBin, bin)
+}
+
+func AppendTripleUnitInfo(ctx context.Context, info string) context.Context {
+	return AppendToOutgoingContext(ctx, constant.TripleUnitInfo, info)
 }
 
 // FromIncomingContext retrieves headers passed by client-side. It is like grpc.FromIncomingContext.

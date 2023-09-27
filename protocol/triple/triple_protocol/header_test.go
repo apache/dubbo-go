@@ -16,6 +16,7 @@ package triple_protocol
 
 import (
 	"bytes"
+	"context"
 	"net/http"
 	"testing"
 	"testing/quick"
@@ -57,4 +58,101 @@ func TestHeaderMerge(t *testing.T) {
 		"Baz": nil,
 	}
 	assert.Equal(t, header, expect)
+}
+
+func TestNewOutgoingContext(t *testing.T) {
+	tests := []struct {
+		desc   string
+		header http.Header
+	}{
+		{
+			desc:   "nil",
+			header: nil,
+		},
+		{
+			desc:   "empty Header",
+			header: http.Header{},
+		},
+		{
+			desc: "normal Header",
+			header: http.Header{
+				"test-key": []string{
+					"test-val",
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.desc, func(t *testing.T) {
+			ctx := context.Background()
+			ctx = NewOutgoingContext(ctx, test.header)
+			header := retrieveFromOutgoingContext(ctx)
+			assert.Equal(t, header, test.header)
+			mergeHeaders(test.header, header)
+		})
+	}
+}
+
+func TestAppendToOutgoingContext(t *testing.T) {
+	tests := []struct {
+		desc        string
+		kvs         []string
+		expect      http.Header
+		expectPanic bool
+	}{
+		{
+			desc: "keys and vals do not come in pairs",
+			kvs: []string{
+				"key",
+			},
+			expectPanic: true,
+		},
+		{
+			desc:   "nil kvs",
+			kvs:    nil,
+			expect: nil,
+		},
+		{
+			desc: "normal key and val",
+			kvs: []string{
+				"key",
+				"val",
+			},
+			expect: http.Header{
+				"key": []string{
+					"val",
+				},
+			},
+		},
+		{
+			desc: "a key with multiple vals",
+			kvs: []string{
+				"key",
+				"val0",
+				"key",
+				"val1",
+			},
+			expect: http.Header{
+				"key": []string{
+					"val0",
+					"val1",
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.desc, func(t *testing.T) {
+			defer func() {
+				if e := recover(); e != nil && !test.expectPanic {
+					t.Fatal(e)
+				}
+			}()
+
+			ctx := AppendToOutgoingContext(context.Background(), test.kvs...)
+			header := retrieveFromOutgoingContext(ctx)
+			assert.Equal(t, header, test.expect)
+		})
+	}
 }
