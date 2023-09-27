@@ -271,7 +271,7 @@ func (s *ServiceConfig) Export() error {
 		}
 
 		port := proto.Port
-		if len(proto.Port) == 0 {
+		if num, err := strconv.Atoi(proto.Port); err != nil || num <= 0 {
 			port = nextPort.Value.(string)
 			nextPort = nextPort.Next()
 		}
