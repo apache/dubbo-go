@@ -20,6 +20,9 @@ package server
 import (
 	"context"
 	"fmt"
+)
+
+import (
 	"github.com/pkg/errors"
 )
 
