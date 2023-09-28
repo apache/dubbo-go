@@ -183,6 +183,17 @@ func WithRegistry(key string, opts ...registry.Option) ClientOption {
 	}
 }
 
+func WithShutdown(opts ...graceful_shutdown.Option) ClientOption {
+	sdOpts := graceful_shutdown.DefaultOptions()
+	for _, opt := range opts {
+		opt(sdOpts)
+	}
+
+	return func(cliOpts *ClientOptions) {
+		cliOpts.Shutdown = sdOpts.Shutdown
+	}
+}
+
 // ========== Cluster Strategy ==========
 
 func WithClusterAvailable() ClientOption {
@@ -362,6 +373,7 @@ func WithMeshProviderPort(port int) ClientOption {
 }
 
 // ---------- For framework ----------
+// These functions should not be invoked by users
 
 func SetRegistries(regs map[string]*global.RegistryConfig) ClientOption {
 	return func(opts *ClientOptions) {
@@ -375,36 +387,21 @@ func SetApplication(application *global.ApplicationConfig) ClientOption {
 	}
 }
 
-func WithConsumerConfig(opts ...global.ConsumerOption) ClientOption {
-	conCfg := new(global.ConsumerConfig)
-	for _, opt := range opts {
-		opt(conCfg)
-	}
-
+func SetConsumer(consumer *global.ConsumerConfig) ClientOption {
 	return func(opts *ClientOptions) {
-		opts.Consumer = conCfg
+		opts.Consumer = consumer
 	}
 }
 
-func WithReferenceConfig(opts ...global.ReferenceOption) ClientOption {
-	refCfg := new(global.ReferenceConfig)
-	for _, opt := range opts {
-		opt(refCfg)
-	}
-
+func SetReference(reference *global.ReferenceConfig) ClientOption {
 	return func(opts *ClientOptions) {
-		opts.Reference = refCfg
+		opts.Reference = reference
 	}
 }
 
-func WithShutdownConfig(opts ...global.ShutdownOption) ClientOption {
-	sdCfg := new(global.ShutdownConfig)
-	for _, opt := range opts {
-		opt(sdCfg)
-	}
-
+func SetShutdown(shutdown *global.ShutdownConfig) ClientOption {
 	return func(opts *ClientOptions) {
-		opts.Shutdown = sdCfg
+		opts.Shutdown = shutdown
 	}
 }
 

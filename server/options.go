@@ -190,15 +190,11 @@ func WithServer_AdaptiveServiceVerbose() ServerOption {
 }
 
 // ========== For framework ==========
+// These functions should not be invoked by users
 
-func WithServer_ApplicationConfig(opts ...global.ApplicationOption) ServerOption {
-	appCfg := new(global.ApplicationConfig)
-	for _, opt := range opts {
-		opt(appCfg)
-	}
-
+func SetServer_Application(application *global.ApplicationConfig) ServerOption {
 	return func(opts *ServerOptions) {
-		opts.Application = appCfg
+		opts.Application = application
 	}
 }
 
@@ -214,28 +210,15 @@ func SetServer_Protocols(pros map[string]*global.ProtocolConfig) ServerOption {
 	}
 }
 
-func WithServer_TracingConfig(key string, opts ...global.TracingOption) ServerOption {
-	traCfg := new(global.TracingConfig)
-	for _, opt := range opts {
-		opt(traCfg)
-	}
-
+func SetServer_Tracings(tras map[string]*global.TracingConfig) ServerOption {
 	return func(opts *ServerOptions) {
-		if opts.Tracings == nil {
-			opts.Tracings = make(map[string]*global.TracingConfig)
-		}
-		opts.Tracings[key] = traCfg
+		opts.Tracings = tras
 	}
 }
 
-func WithServer_ShutdownConfig(opts ...global.ShutdownOption) ServerOption {
-	sdCfg := new(global.ShutdownConfig)
-	for _, opt := range opts {
-		opt(sdCfg)
-	}
-
+func SetServer_Shutdown(shutdown *global.ShutdownConfig) ServerOption {
 	return func(opts *ServerOptions) {
-		opts.Shutdown = sdCfg
+		opts.Shutdown = shutdown
 	}
 }
 
@@ -527,65 +510,35 @@ func WithNotRegister() ServiceOption {
 	}
 }
 
-// ----------From framework----------
+// ----------For framework----------
+// These functions should not be invoked by users
 
-func WithApplicationConfig(opts ...global.ApplicationOption) ServiceOption {
-	appCfg := new(global.ApplicationConfig)
-	for _, opt := range opts {
-		opt(appCfg)
-	}
-
+func SetApplication(application *global.ApplicationConfig) ServiceOption {
 	return func(opts *ServiceOptions) {
-		opts.Application = appCfg
+		opts.Application = application
 	}
 }
 
-func WithProviderConfig(opts ...global.ProviderOption) ServiceOption {
-	providerCfg := new(global.ProviderConfig)
-	for _, opt := range opts {
-		opt(providerCfg)
-	}
-
+func SetProvider(provider *global.ProviderConfig) ServiceOption {
 	return func(opts *ServiceOptions) {
-		opts.Provider = providerCfg
+		opts.Provider = provider
 	}
 }
 
-func WithServiceConfig(opts ...global.ServiceOption) ServiceOption {
-	serviceCfg := new(global.ServiceConfig)
-	for _, opt := range opts {
-		opt(serviceCfg)
-	}
-
+func SetService(service *global.ServiceConfig) ServiceOption {
 	return func(opts *ServiceOptions) {
-		opts.Service = serviceCfg
+		opts.Service = service
 	}
 }
 
-func WithRegistryConfig(key string, opts ...global.RegistryOption) ServiceOption {
-	regCfg := new(global.RegistryConfig)
-	for _, opt := range opts {
-		opt(regCfg)
-	}
-
+func SetRegistries(regs map[string]*global.RegistryConfig) ServiceOption {
 	return func(opts *ServiceOptions) {
-		if opts.Registries == nil {
-			opts.Registries = make(map[string]*global.RegistryConfig)
-		}
-		opts.Registries[key] = regCfg
+		opts.Registries = regs
 	}
 }
 
-func WithProtocolConfig(key string, opts ...global.ProtocolOption) ServiceOption {
-	proCfg := new(global.ProtocolConfig)
-	for _, opt := range opts {
-		opt(proCfg)
-	}
-
+func SetProtocols(pros map[string]*global.ProtocolConfig) ServiceOption {
 	return func(opts *ServiceOptions) {
-		if opts.Protocols == nil {
-			opts.Protocols = make(map[string]*global.ProtocolConfig)
-		}
-		opts.Protocols[key] = proCfg
+		opts.Protocols = pros
 	}
 }

@@ -59,22 +59,20 @@ func (ins *Instance) NewClient(opts ...client.ClientOption) (*client.Client, err
 	conCfg := ins.insOpts.Consumer
 	appCfg := ins.insOpts.Application
 	regsCfg := ins.insOpts.Registries
+	sdCfg := ins.insOpts.Shutdown
 	if conCfg != nil {
+		refCfg := &global.ReferenceConfig{
+			Check:       &conCfg.Check,
+			Filter:      conCfg.Filter,
+			Protocol:    conCfg.Protocol,
+			RegistryIDs: conCfg.RegistryIDs,
+			TracingKey:  conCfg.TracingKey,
+		}
 		// these options come from Consumer and Root.
 		// for dubbo-go developers, referring config/ConsumerConfig.Init and config/ReferenceConfig
 		cliOpts = append(cliOpts,
-			client.WithReferenceConfig(
-				global.WithReference_Filter(conCfg.Filter),
-				global.WithReference_RegistryIDs(conCfg.RegistryIDs),
-				global.WithReference_Protocol(conCfg.Protocol),
-				global.WithReference_TracingKey(conCfg.TracingKey),
-				global.WithReference_Check(conCfg.Check),
-			),
-			client.WithConsumerConfig(
-				global.WithConsumer_MeshEnabled(conCfg.MeshEnabled),
-				global.WithConsumer_AdaptiveService(conCfg.AdaptiveService),
-				global.WithConsumer_ProxyFactory(conCfg.ProxyFactory),
-			),
+			client.SetReference(refCfg),
+			client.SetConsumer(conCfg),
 		)
 	}
 	if appCfg != nil {
@@ -82,6 +80,9 @@ func (ins *Instance) NewClient(opts ...client.ClientOption) (*client.Client, err
 	}
 	if regsCfg != nil {
 		cliOpts = append(cliOpts, client.SetRegistries(regsCfg))
+	}
+	if sdCfg != nil {
+		cliOpts = append(cliOpts, client.SetShutdown(sdCfg))
 	}
 	// options passed by users has higher priority
 	cliOpts = append(cliOpts, opts...)
@@ -105,16 +106,18 @@ func (ins *Instance) NewServer(opts ...server.ServerOption) (*server.Server, err
 	regsCfg := ins.insOpts.Registries
 	prosCfg := ins.insOpts.Protocols
 	trasCfg := ins.insOpts.Tracing
+	sdCfg := ins.insOpts.Shutdown
 	if appCfg != nil {
 		srvOpts = append(srvOpts,
-			server.WithServer_ApplicationConfig(
-				global.WithApplication_Name(appCfg.Name),
-				global.WithApplication_Organization(appCfg.Organization),
-				global.WithApplication_Module(appCfg.Module),
-				global.WithApplication_Version(appCfg.Version),
-				global.WithApplication_Owner(appCfg.Owner),
-				global.WithApplication_Environment(appCfg.Environment),
-			),
+			server.SetServer_Application(appCfg),
+			//server.WithServer_ApplicationConfig(
+			//	global.WithApplication_Name(appCfg.Name),
+			//	global.WithApplication_Organization(appCfg.Organization),
+			//	global.WithApplication_Module(appCfg.Module),
+			//	global.WithApplication_Version(appCfg.Version),
+			//	global.WithApplication_Owner(appCfg.Owner),
+			//	global.WithApplication_Environment(appCfg.Environment),
+			//),
 		)
 	}
 	if regsCfg != nil {
@@ -124,19 +127,13 @@ func (ins *Instance) NewServer(opts ...server.ServerOption) (*server.Server, err
 		srvOpts = append(srvOpts, server.SetServer_Protocols(prosCfg))
 	}
 	if trasCfg != nil {
-		for key, tra := range trasCfg {
-			srvOpts = append(srvOpts,
-				server.WithServer_TracingConfig(key,
-					global.WithTracing_Name(tra.Name),
-					global.WithTracing_ServiceName(tra.ServiceName),
-					global.WithTracing_Address(tra.Address),
-					global.WithTracing_UseAgent(*tra.UseAgent),
-				),
-			)
-		}
+		srvOpts = append(srvOpts, server.SetServer_Tracings(trasCfg))
+	}
+	if sdCfg != nil {
+		srvOpts = append(srvOpts, server.SetServer_Shutdown(sdCfg))
 	}
 
-	// options passed by users has higher priority
+	// options passed by users have higher priority
 	srvOpts = append(srvOpts, opts...)
 
 	srv, err := server.NewServer(srvOpts...)
