@@ -89,12 +89,12 @@ func addHeaderCanonical(h http.Header, key, value string) {
 	h[key] = append(h[key], value)
 }
 
-type headerIncomingKey struct{}
 type clientOutgoingKey struct{}
+type handlerIncomingKey struct{}
 type handlerOutgoingKey struct{}
 
 func newIncomingContext(ctx context.Context, header http.Header) context.Context {
-	return context.WithValue(ctx, headerIncomingKey{}, header)
+	return context.WithValue(ctx, handlerIncomingKey{}, header)
 }
 
 // todo(DMwangnima): maybe we should provide Header type for future performance improvement?
@@ -176,7 +176,7 @@ func AppendTripleUnitInfo(ctx context.Context, info string) context.Context {
 // FromIncomingContext retrieves headers passed by client-side. It is like grpc.FromIncomingContext.
 // Please refer to https://github.com/grpc/grpc-go/blob/master/Documentation/grpc-metadata.md#receiving-metadata-1.
 func FromIncomingContext(ctx context.Context) (http.Header, bool) {
-	header, ok := ctx.Value(headerIncomingKey{}).(http.Header)
+	header, ok := ctx.Value(handlerIncomingKey{}).(http.Header)
 	if !ok {
 		return nil, false
 	}
