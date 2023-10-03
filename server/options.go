@@ -504,6 +504,13 @@ func WithJSON() ServiceOption {
 	}
 }
 
+// WithToken should be used with WithFilter("token")
+func WithToken(token string) ServiceOption {
+	return func(opts *ServiceOptions) {
+		opts.Service.Token = token
+	}
+}
+
 func WithNotRegister() ServiceOption {
 	return func(cfg *ServiceOptions) {
 		cfg.Service.NotRegister = true
