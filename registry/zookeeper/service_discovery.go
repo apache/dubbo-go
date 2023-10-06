@@ -64,9 +64,10 @@ type zookeeperServiceDiscovery struct {
 
 // newZookeeperServiceDiscovery the constructor of newZookeeperServiceDiscovery
 func newZookeeperServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, error) {
+	rp := url.GetParam(constant.ZookeeperRootPath, rootPath)
 	zksd := &zookeeperServiceDiscovery{
 		url:                 url,
-		rootPath:            rootPath,
+		rootPath:            rp,
 		instanceListenerMap: make(map[string]*gxset.HashSet),
 	}
 	if err := zookeeper.ValidateZookeeperClient(zksd, url.Location); err != nil {
@@ -74,7 +75,7 @@ func newZookeeperServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, e
 	}
 	zksd.WaitGroup().Add(1) // zk client start successful, then wg +1
 	go zookeeper.HandleClientRestart(zksd)
-	zksd.csd = curator_discovery.NewServiceDiscovery(zksd.client, rootPath)
+	zksd.csd = curator_discovery.NewServiceDiscovery(zksd.client, rp)
 	return zksd, nil
 }
 
