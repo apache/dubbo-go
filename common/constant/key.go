@@ -274,7 +274,7 @@ const (
 
 const (
 	ZookeeperKey      = "zookeeper"
-	ZookeeperRootPath = "rootPath"
+	ZookeeperRootPath = "zookeeper.rootPath"
 )
 
 const (
