@@ -126,7 +126,7 @@ func (rc *InstanceOptions) init(opts ...InstanceOption) error {
 	if err := rcCompat.MetadataReport.Init(rcCompat); err != nil {
 		return err
 	}
-	if err := rcCompat.Metric.Init(); err != nil {
+	if err := rcCompat.Metric.Init(rcCompat); err != nil {
 		return err
 	}
 	for _, t := range rcCompat.Tracing {

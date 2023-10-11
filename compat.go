@@ -273,14 +273,12 @@ func compatMetricConfig(c *global.MetricConfig) *config.MetricConfig {
 		return nil
 	}
 	return &config.MetricConfig{
-		Mode:               c.Mode,
-		Namespace:          c.Namespace,
-		Enable:             c.Enable,
-		Port:               c.Port,
-		Path:               c.Path,
-		PushGatewayAddress: c.PushGatewayAddress,
-		SummaryMaxAge:      c.SummaryMaxAge,
-		Protocol:           c.Protocol,
+		Enable:      c.Enable,
+		Port:        c.Port,
+		Path:        c.Path,
+		Prometheus:  compatMetricPrometheusConfig(c.Prometheus),
+		Aggregation: compatMetricAggregationConfig(c.Aggregation),
+		Protocol:    c.Protocol,
 	}
 }
 
@@ -367,5 +365,49 @@ func compatTLSConfig(c *global.TLSConfig) *config.TLSConfig {
 		TLSCertFile:   c.TLSCertFile,
 		TLSKeyFile:    c.TLSKeyFile,
 		TLSServerName: c.TLSServerName,
+	}
+}
+
+func compatMetricAggregationConfig(a *global.AggregateConfig) *config.AggregateConfig {
+	if a == nil {
+		return nil
+	}
+	return &config.AggregateConfig{
+		Enabled:           a.Enabled,
+		BucketNum:         a.BucketNum,
+		TimeWindowSeconds: a.TimeWindowSeconds,
+	}
+}
+
+func compatMetricPrometheusConfig(c *global.PrometheusConfig) *config.PrometheusConfig {
+	if c == nil {
+		return nil
+	}
+	return &config.PrometheusConfig{
+		Exporter:    compatMetricPrometheusExporter(c.Exporter),
+		Pushgateway: compatMetricPrometheusGateway(c.Pushgateway),
+	}
+}
+
+func compatMetricPrometheusExporter(e *global.Exporter) *config.Exporter {
+	if e == nil {
+		return nil
+	}
+	return &config.Exporter{
+		Enabled: e.Enabled,
+	}
+}
+
+func compatMetricPrometheusGateway(g *global.PushgatewayConfig) *config.PushgatewayConfig {
+	if g == nil {
+		return nil
+	}
+	return &config.PushgatewayConfig{
+		Enabled:      g.Enabled,
+		BaseUrl:      g.BaseUrl,
+		Job:          g.Job,
+		Username:     g.Username,
+		Password:     g.Password,
+		PushInterval: g.PushInterval,
 	}
 }
