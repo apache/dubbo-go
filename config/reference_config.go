@@ -74,6 +74,7 @@ type ReferenceConfig struct {
 	TracingKey       string `yaml:"tracing-key" json:"tracing-key,omitempty" propertiy:"tracing-key"`
 	rootConfig       *RootConfig
 	metaDataType     string
+	metricsEnable    bool
 	MeshProviderPort int `yaml:"mesh-provider-port" json:"mesh-provider-port,omitempty" propertiy:"mesh-provider-port"`
 }
 
@@ -100,27 +101,31 @@ func (rc *ReferenceConfig) Init(root *RootConfig) error {
 			rc.Version = root.Application.Version
 		}
 	}
-	if rc.Filter == "" {
-		rc.Filter = root.Consumer.Filter
+	rc.RegistryIDs = translateIds(rc.RegistryIDs)
+	if root.Consumer != nil {
+		if rc.Filter == "" {
+			rc.Filter = root.Consumer.Filter
+		}
+		if len(rc.RegistryIDs) <= 0 {
+			rc.RegistryIDs = root.Consumer.RegistryIDs
+		}
+		if rc.Protocol == "" {
+			rc.Protocol = root.Consumer.Protocol
+		}
+		if rc.TracingKey == "" {
+			rc.TracingKey = root.Consumer.TracingKey
+		}
+		if rc.Check == nil {
+			rc.Check = &root.Consumer.Check
+		}
 	}
 	if rc.Cluster == "" {
 		rc.Cluster = "failover"
 	}
-	rc.RegistryIDs = translateIds(rc.RegistryIDs)
-	if len(rc.RegistryIDs) <= 0 {
-		rc.RegistryIDs = root.Consumer.RegistryIDs
+	if root.Metric.Enable != nil {
+		rc.metricsEnable = *root.Metric.Enable
 	}
 
-	if rc.Protocol == "" {
-		rc.Protocol = root.Consumer.Protocol
-	}
-
-	if rc.TracingKey == "" {
-		rc.TracingKey = root.Consumer.TracingKey
-	}
-	if rc.Check == nil {
-		rc.Check = &root.Consumer.Check
-	}
 	return verify(rc)
 }
 
@@ -354,6 +359,9 @@ func (rc *ReferenceConfig) getURLMap() url.Values {
 	defaultReferenceFilter := constant.DefaultReferenceFilters
 	if rc.Generic != "" {
 		defaultReferenceFilter = constant.GenericFilterKey + "," + defaultReferenceFilter
+	}
+	if rc.metricsEnable {
+		defaultReferenceFilter += fmt.Sprintf(",%s", constant.MetricsFilterKey)
 	}
 	urlMap.Set(constant.ReferenceFilterKey, mergeValue(rc.Filter, "", defaultReferenceFilter))
 

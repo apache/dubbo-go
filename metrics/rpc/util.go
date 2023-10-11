@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package prometheus
+package rpc
 
 import (
 	"strconv"
@@ -24,38 +24,34 @@ import (
 
 import (
 	"github.com/dubbogo/gost/log/logger"
-
-	"github.com/prometheus/client_golang/prometheus"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
-var (
-	labelNames             = []string{applicationNameKey, groupKey, hostnameKey, interfaceKey, ipKey, methodKey, versionKey}
-	defaultHistogramBucket = []float64{10, 50, 100, 200, 500, 1000, 10000}
-)
-
-func buildLabels(url *common.URL) prometheus.Labels {
-	return prometheus.Labels{
-		applicationNameKey: url.GetParam(constant.ApplicationKey, ""),
-		groupKey:           url.Group(),
-		hostnameKey:        "not implemented yet",
-		interfaceKey:       url.Service(),
-		ipKey:              common.GetLocalIp(),
-		versionKey:         url.GetParam(constant.AppVersionKey, ""),
-		methodKey:          url.GetParam(constant.MethodKey, ""),
+// buildLabels will build the labels for the rpc metrics
+func buildLabels(url *common.URL, invocation protocol.Invocation) map[string]string {
+	return map[string]string{
+		constant.TagApplicationName:    url.GetParam(constant.ApplicationKey, ""),
+		constant.TagApplicationVersion: url.GetParam(constant.AppVersionKey, ""),
+		constant.TagHostname:           common.GetLocalHostName(),
+		constant.TagIp:                 common.GetLocalIp(),
+		constant.TagInterface:          url.Service(),
+		constant.TagMethod:             invocation.MethodName(),
+		constant.TagGroup:              url.Group(),
+		constant.TagVersion:            url.GetParam(constant.VersionKey, ""),
 	}
 }
 
-// return the role of the application, provider or consumer, if the url is not a valid one, return empty string
+// getRole will get the application role from the url
 func getRole(url *common.URL) (role string) {
 	if isProvider(url) {
-		role = providerField
+		role = constant.SideProvider
 	} else if isConsumer(url) {
-		role = consumerField
+		role = constant.SideConsumer
 	} else {
 		logger.Warnf("The url belongs neither the consumer nor the provider, "+
 			"so the invocation will be ignored. url: %s", url.String())

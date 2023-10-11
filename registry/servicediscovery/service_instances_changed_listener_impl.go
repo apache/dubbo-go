@@ -18,7 +18,10 @@
 package servicediscovery
 
 import (
+	"encoding/gob"
 	"reflect"
+	"sync"
+	"time"
 )
 
 import (
@@ -31,9 +34,26 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/registry"
+	"dubbo.apache.org/dubbo-go/v3/registry/servicediscovery/store"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
+
+var (
+	metaCache *store.CacheManager
+	cacheOnce sync.Once
+)
+
+func initCache() {
+	gob.Register(&common.MetadataInfo{})
+	fileName := constant.DefaultMetaFileName + config.GetApplicationConfig().Name
+	cache, err := store.NewCacheManager(constant.DefaultMetaCacheName, fileName, time.Minute*10, constant.DefaultEntrySize, true)
+	if err != nil {
+		logger.Fatal("Failed to create cache [%s],the err is %v", constant.DefaultMetaCacheName, err)
+	}
+	metaCache = cache
+}
 
 // ServiceInstancesChangedListenerImpl The Service Discovery Changed  Event Listener
 type ServiceInstancesChangedListenerImpl struct {
@@ -45,6 +65,7 @@ type ServiceInstancesChangedListenerImpl struct {
 }
 
 func NewServiceInstancesChangedListener(services *gxset.HashSet) registry.ServiceInstancesChangedListener {
+	cacheOnce.Do(initCache)
 	return &ServiceInstancesChangedListenerImpl{
 		serviceNames:       services,
 		listeners:          make(map[string]registry.NotifyListener),
@@ -88,9 +109,14 @@ func (lstn *ServiceInstancesChangedListenerImpl) OnEvent(e observer.Event) error
 			revisionToInstances[revision] = append(subInstances, instance)
 			metadataInfo := lstn.revisionToMetadata[revision]
 			if metadataInfo == nil {
-				metadataInfo, err = GetMetadataInfo(instance, revision)
-				if err != nil {
-					return err
+				if val, ok := metaCache.Get(revision); ok {
+					metadataInfo = val.(*common.MetadataInfo)
+				} else {
+					metadataInfo, err = GetMetadataInfo(instance, revision)
+					if err != nil {
+						return err
+					}
+					metaCache.Set(revision, metadataInfo)
 				}
 			}
 			instance.SetServiceMetadata(metadataInfo)
@@ -104,6 +130,9 @@ func (lstn *ServiceInstancesChangedListenerImpl) OnEvent(e observer.Event) error
 			newRevisionToMetadata[revision] = metadataInfo
 		}
 		lstn.revisionToMetadata = newRevisionToMetadata
+		for revision, metadataInfo := range newRevisionToMetadata {
+			metaCache.Set(revision, metadataInfo)
+		}
 
 		for serviceInfo, revisions := range localServiceToRevisions {
 			revisionsToUrls := protocolRevisionsToUrls[serviceInfo.Protocol]
@@ -187,6 +216,11 @@ func (lstn *ServiceInstancesChangedListenerImpl) GetEventType() reflect.Type {
 
 // GetMetadataInfo get metadata info when MetadataStorageTypePropertyName is null
 func GetMetadataInfo(instance registry.ServiceInstance, revision string) (*common.MetadataInfo, error) {
+	cacheOnce.Do(initCache)
+	if metadataInfo, ok := metaCache.Get(revision); ok {
+		return metadataInfo.(*common.MetadataInfo), nil
+	}
+
 	var metadataStorageType string
 	var metadataInfo *common.MetadataInfo
 	if instance.GetMetadata() == nil {
@@ -212,5 +246,8 @@ func GetMetadataInfo(instance registry.ServiceInstance, revision string) (*commo
 			return nil, err
 		}
 	}
+
+	metaCache.Set(revision, metadataInfo)
+
 	return metadataInfo, nil
 }

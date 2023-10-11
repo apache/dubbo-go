@@ -18,54 +18,78 @@
 package metrics
 
 import (
+	"encoding/json"
 	"sync"
 )
 
 import (
+	"github.com/dubbogo/gost/log/logger"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/metrics/util/aggregate"
 )
 
-var registries = make(map[string]func(*ReporterConfig) MetricRegistry)
-var collectors = make([]CollectorFunc, 0)
-var registry MetricRegistry
+const (
+	DefaultCompression       = 100
+	DefaultBucketNum         = 10
+	DefaultTimeWindowSeconds = 120
+)
+
+var (
+	registries = make(map[string]func(*common.URL) MetricRegistry)
+	collectors = make([]CollectorFunc, 0)
+	registry   MetricRegistry
+	once       sync.Once
+)
 
 // CollectorFunc used to extend more indicators
-type CollectorFunc func(MetricRegistry, *ReporterConfig)
+type CollectorFunc func(MetricRegistry, *common.URL)
 
 // Init Metrics module
-func Init(config *ReporterConfig) {
-	if config.Enable {
-		// defalut protocol is already set in metricConfig
-		regFunc, ok := registries[config.Protocol]
+func Init(url *common.URL) {
+	once.Do(func() {
+		InitAppInfo(url.GetParam(constant.ApplicationKey, ""), url.GetParam(constant.AppVersionKey, ""))
+		// default protocol is already set in metricConfig
+		regFunc, ok := registries[url.Protocol]
 		if ok {
-			registry = regFunc(config)
+			registry = regFunc(url)
 			for _, co := range collectors {
-				co(registry, config)
+				co(registry, url)
 			}
 			registry.Export()
 		}
-	}
+	})
 }
 
 // SetRegistry extend more MetricRegistry, default PrometheusRegistry
-func SetRegistry(name string, v func(*ReporterConfig) MetricRegistry) {
+func SetRegistry(name string, v func(*common.URL) MetricRegistry) {
 	registries[name] = v
 }
 
-// AddCollector add more indicators, like  metadata、sla、configcenter etc
-func AddCollector(name string, fun func(MetricRegistry, *ReporterConfig)) {
+// AddCollector add more indicators, like metadata, sla, config-center etc.
+func AddCollector(name string, fun CollectorFunc) {
 	collectors = append(collectors, fun)
 }
 
 // MetricRegistry data container，data compute、expose、agg
 type MetricRegistry interface {
-	Counter(*MetricId) CounterMetric     // add or update a counter
-	Gauge(*MetricId) GaugeMetric         // add or update a gauge
-	Histogram(*MetricId) HistogramMetric // add a metric num to a histogram
-	Summary(*MetricId) SummaryMetric     // add a metric num to a summary
-	Export()                             // expose metric data， such as Prometheus http exporter
+	Counter(*MetricId) CounterMetric        // add or update a counter
+	Gauge(*MetricId) GaugeMetric            // add or update a gauge
+	Histogram(*MetricId) ObservableMetric   // add a metric num to a histogram
+	Summary(*MetricId) ObservableMetric     // add a metric num to a summary
+	Rt(*MetricId, *RtOpts) ObservableMetric // add a metric num to a rt
+	Export()                                // expose metric data， such as Prometheus http exporter
 	// GetMetrics() []*MetricSample // get all metric data
 	// GetMetricsString() (string, error) // get text format metric data
+}
+
+type RtOpts struct {
+	Aggregate         bool
+	BucketNum         int   // only for aggRt
+	TimeWindowSeconds int64 // only for aggRt
 }
 
 // multi registry，like micrometer CompositeMeterRegistry
@@ -73,8 +97,8 @@ type MetricRegistry interface {
 // 	rs []MetricRegistry
 // }
 
-// Type metric type, save with micrometer
-type Type uint8
+// Type metric type, same with micrometer
+type Type uint8 // TODO check if Type is is useful
 
 const (
 	Counter Type = iota
@@ -93,8 +117,8 @@ const (
 type MetricId struct {
 	Name string
 	Desc string
-	Tags map[string]string
-	Type Type
+	Tags map[string]string // also named label
+	Type Type              // TODO check if this field is useful
 }
 
 func (m *MetricId) TagKeys() []string {
@@ -107,6 +131,11 @@ func (m *MetricId) TagKeys() []string {
 
 func NewMetricId(key *MetricKey, level MetricLevel) *MetricId {
 	return &MetricId{Name: key.Name, Desc: key.Desc, Tags: level.Tags()}
+}
+
+// NewMetricIdByLabels create a MetricId by key and labels
+func NewMetricIdByLabels(key *MetricKey, labels map[string]string) *MetricId {
+	return &MetricId{Name: key.Name, Desc: key.Desc, Tags: labels}
 }
 
 // MetricSample a metric sample，This is the final data presentation,
@@ -125,115 +154,275 @@ type CounterMetric interface {
 // GaugeMetric gauge metric
 type GaugeMetric interface {
 	Set(float64)
-	// Inc()
-	// Dec()
-	// Add(float64)
-	// Sub(float64)
+	Inc()
+	Dec()
+	Add(float64)
+	Sub(float64)
 }
 
-// HistogramMetric histogram metric
-type HistogramMetric interface {
-	Record(float64)
+// histogram summary rt metric
+type ObservableMetric interface {
+	Observe(float64)
 }
 
-// SummaryMetric summary metric
-type SummaryMetric interface {
-	Record(float64)
+type BaseCollector struct {
+	R MetricRegistry
 }
 
-// StatesMetrics multi metrics，include total,success num, fail num，call MetricsRegistry save data
-type StatesMetrics interface {
-	Success()
-	AddSuccess(float64)
-	Fail()
-	AddFailed(float64)
-	Inc(succ bool)
-}
-
-func NewStatesMetrics(total *MetricId, succ *MetricId, fail *MetricId, reg MetricRegistry) StatesMetrics {
-	return &DefaultStatesMetric{total: total, succ: succ, fail: fail, r: reg}
-}
-
-type DefaultStatesMetric struct {
-	r                 MetricRegistry
-	total, succ, fail *MetricId
-}
-
-func (c DefaultStatesMetric) Inc(succ bool) {
-	if succ {
-		c.Success()
+func (c *BaseCollector) StateCount(total, succ, fail *MetricKey, level MetricLevel, succed bool) {
+	c.R.Counter(NewMetricId(total, level)).Inc()
+	if succed {
+		c.R.Counter(NewMetricId(succ, level)).Inc()
 	} else {
-		c.Fail()
+		c.R.Counter(NewMetricId(fail, level)).Inc()
 	}
 }
-func (c DefaultStatesMetric) Success() {
-	c.r.Counter(c.total).Inc()
-	c.r.Counter(c.succ).Inc()
+
+// CounterVec means a set of counters with the same metricKey but different labels
+type CounterVec interface {
+	Inc(labels map[string]string)
+	Add(labels map[string]string, v float64)
 }
 
-func (c DefaultStatesMetric) AddSuccess(v float64) {
-	c.r.Counter(c.total).Add(v)
-	c.r.Counter(c.succ).Add(v)
+// NewCounterVec create a CounterVec default implementation.
+func NewCounterVec(metricRegistry MetricRegistry, metricKey *MetricKey) CounterVec {
+	return &DefaultCounterVec{
+		metricRegistry: metricRegistry,
+		metricKey:      metricKey,
+	}
 }
 
-func (c DefaultStatesMetric) Fail() {
-	c.r.Counter(c.total).Inc()
-	c.r.Counter(c.fail).Inc()
+// DefaultCounterVec is a default CounterVec implementation.
+type DefaultCounterVec struct {
+	metricRegistry MetricRegistry
+	metricKey      *MetricKey
 }
 
-func (c DefaultStatesMetric) AddFailed(v float64) {
-	c.r.Counter(c.total).Add(v)
-	c.r.Counter(c.fail).Add(v)
+func (d *DefaultCounterVec) Inc(labels map[string]string) {
+	d.metricRegistry.Counter(NewMetricIdByLabels(d.metricKey, labels)).Inc()
 }
 
-// TimeMetric muliti metrics, include min(Gauge)、max(Gauge)、avg(Gauge)、sum(Gauge)、last(Gauge)，call MetricRegistry to expose
-// see dubbo-java org.apache.dubbo.metrics.aggregate.TimeWindowAggregator
-type TimeMetric interface {
-	Record(float64)
+func (d *DefaultCounterVec) Add(labels map[string]string, v float64) {
+	d.metricRegistry.Counter(NewMetricIdByLabels(d.metricKey, labels)).Add(v)
 }
 
-const (
-	defaultBucketNum         = 10
-	defalutTimeWindowSeconds = 120
-)
-
-// NewTimeMetric init and write all data to registry
-func NewTimeMetric(min, max, avg, sum, last *MetricId, mr MetricRegistry) TimeMetric {
-	return &DefaultTimeMetric{r: mr, min: min, max: max, avg: avg, sum: sum, last: last,
-		agg: aggregate.NewTimeWindowAggregator(defaultBucketNum, defalutTimeWindowSeconds)}
+// GaugeVec means a set of gauges with the same metricKey but different labels
+type GaugeVec interface {
+	Set(labels map[string]string, v float64)
+	Inc(labels map[string]string)
+	Dec(labels map[string]string)
+	Add(labels map[string]string, v float64)
+	Sub(labels map[string]string, v float64)
 }
 
-type DefaultTimeMetric struct {
-	r                        MetricRegistry
-	agg                      *aggregate.TimeWindowAggregator
-	min, max, avg, sum, last *MetricId
+// NewGaugeVec create a GaugeVec default implementation.
+func NewGaugeVec(metricRegistry MetricRegistry, metricKey *MetricKey) GaugeVec {
+	return &DefaultGaugeVec{
+		metricRegistry: metricRegistry,
+		metricKey:      metricKey,
+	}
 }
 
-func (m *DefaultTimeMetric) Record(v float64) {
-	m.agg.Add(v)
-	result := m.agg.Result()
-	m.r.Gauge(m.max).Set(result.Max)
-	m.r.Gauge(m.min).Set(result.Min)
-	m.r.Gauge(m.avg).Set(result.Avg)
-	m.r.Gauge(m.sum).Set(result.Total)
-	m.r.Gauge(m.last).Set(v)
+// DefaultGaugeVec is a default GaugeVec implementation.
+type DefaultGaugeVec struct {
+	metricRegistry MetricRegistry
+	metricKey      *MetricKey
 }
 
-// cache if needed,  TimeMetrics must cached
-var metricsCache map[string]interface{} = make(map[string]interface{})
-var metricsCacheMutex sync.RWMutex
+func (d *DefaultGaugeVec) Set(labels map[string]string, v float64) {
+	d.metricRegistry.Gauge(NewMetricIdByLabels(d.metricKey, labels)).Set(v)
+}
 
-func ComputeIfAbsentCache(key string, supplier func() interface{}) interface{} {
-	metricsCacheMutex.RLock()
-	v, ok := metricsCache[key]
-	metricsCacheMutex.RUnlock()
-	if ok {
-		return v
-	} else {
-		metricsCacheMutex.Lock()
-		defer metricsCacheMutex.Unlock()
-		n := supplier()
-		metricsCache[key] = n
-		return n
+func (d *DefaultGaugeVec) Inc(labels map[string]string) {
+	d.metricRegistry.Gauge(NewMetricIdByLabels(d.metricKey, labels)).Inc()
+}
+
+func (d *DefaultGaugeVec) Dec(labels map[string]string) {
+	d.metricRegistry.Gauge(NewMetricIdByLabels(d.metricKey, labels)).Dec()
+}
+
+func (d *DefaultGaugeVec) Add(labels map[string]string, v float64) {
+	d.metricRegistry.Gauge(NewMetricIdByLabels(d.metricKey, labels)).Add(v)
+}
+
+func (d *DefaultGaugeVec) Sub(labels map[string]string, v float64) {
+	d.metricRegistry.Gauge(NewMetricIdByLabels(d.metricKey, labels)).Sub(v)
+}
+
+// RtVec means a set of rt metrics with the same metricKey but different labels
+type RtVec interface {
+	Record(labels map[string]string, v float64)
+}
+
+// NewRtVec create a RtVec default implementation DefaultRtVec.
+func NewRtVec(metricRegistry MetricRegistry, metricKey *MetricKey, rtOpts *RtOpts) RtVec {
+	return &DefaultRtVec{
+		metricRegistry: metricRegistry,
+		metricKey:      metricKey,
+		rtOpts:         rtOpts,
+	}
+}
+
+// DefaultRtVec is a default RtVec implementation.
+//
+// If rtOpts.Aggregate is true, it will use the aggregate.TimeWindowAggregator with local aggregation,
+// else it will use the aggregate.Result without aggregation.
+type DefaultRtVec struct {
+	metricRegistry MetricRegistry
+	metricKey      *MetricKey
+	rtOpts         *RtOpts
+}
+
+func (d *DefaultRtVec) Record(labels map[string]string, v float64) {
+	d.metricRegistry.Rt(NewMetricIdByLabels(d.metricKey, labels), d.rtOpts).Observe(v)
+}
+
+// labelsToString convert @labels to json format string for cache key
+func labelsToString(labels map[string]string) string {
+	labelsJson, err := json.Marshal(labels)
+	if err != nil {
+		logger.Errorf("json.Marshal(labels) = error:%v", err)
+		return ""
+	}
+	return string(labelsJson)
+}
+
+// QpsMetricVec means a set of qps metrics with the same metricKey but different labels.
+type QpsMetricVec interface {
+	Record(labels map[string]string)
+}
+
+func NewQpsMetricVec(metricRegistry MetricRegistry, metricKey *MetricKey) QpsMetricVec {
+	return &DefaultQpsMetricVec{
+		metricRegistry: metricRegistry,
+		metricKey:      metricKey,
+		mux:            sync.RWMutex{},
+		cache:          make(map[string]*aggregate.TimeWindowCounter),
+	}
+}
+
+// DefaultQpsMetricVec is a default QpsMetricVec implementation.
+//
+// It is concurrent safe, and it uses the aggregate.TimeWindowCounter to store and calculate the qps metrics.
+type DefaultQpsMetricVec struct {
+	metricRegistry MetricRegistry
+	metricKey      *MetricKey
+	mux            sync.RWMutex
+	cache          map[string]*aggregate.TimeWindowCounter // key: metrics labels, value: TimeWindowCounter
+}
+
+func (d *DefaultQpsMetricVec) Record(labels map[string]string) {
+	key := labelsToString(labels)
+	if key == "" {
+		return
+	}
+	d.mux.RLock()
+	twc, ok := d.cache[key]
+	d.mux.RUnlock()
+	if !ok {
+		d.mux.Lock()
+		twc, ok = d.cache[key]
+		if !ok {
+			twc = aggregate.NewTimeWindowCounter(DefaultBucketNum, DefaultTimeWindowSeconds)
+			d.cache[key] = twc
+		}
+		d.mux.Unlock()
+	}
+	twc.Inc()
+	d.metricRegistry.Gauge(NewMetricIdByLabels(d.metricKey, labels)).Set(twc.Count() / float64(twc.LivedSeconds()))
+}
+
+// AggregateCounterVec means a set of aggregate counter metrics with the same metricKey but different labels.
+type AggregateCounterVec interface {
+	Inc(labels map[string]string)
+}
+
+func NewAggregateCounterVec(metricRegistry MetricRegistry, metricKey *MetricKey) AggregateCounterVec {
+	return &DefaultAggregateCounterVec{
+		metricRegistry: metricRegistry,
+		metricKey:      metricKey,
+		mux:            sync.RWMutex{},
+		cache:          make(map[string]*aggregate.TimeWindowCounter),
+	}
+}
+
+// DefaultAggregateCounterVec is a default AggregateCounterVec implementation.
+//
+// It is concurrent safe, and it uses the aggregate.TimeWindowCounter to store and calculate the aggregate counter metrics.
+type DefaultAggregateCounterVec struct {
+	metricRegistry MetricRegistry
+	metricKey      *MetricKey
+	mux            sync.RWMutex
+	cache          map[string]*aggregate.TimeWindowCounter // key: metrics labels, value: TimeWindowCounter
+}
+
+func (d *DefaultAggregateCounterVec) Inc(labels map[string]string) {
+	key := labelsToString(labels)
+	if key == "" {
+		return
+	}
+	d.mux.RLock()
+	twc, ok := d.cache[key]
+	d.mux.RUnlock()
+	if !ok {
+		d.mux.Lock()
+		twc, ok = d.cache[key]
+		if !ok {
+			twc = aggregate.NewTimeWindowCounter(DefaultBucketNum, DefaultTimeWindowSeconds)
+			d.cache[key] = twc
+		}
+		d.mux.Unlock()
+	}
+	twc.Inc()
+	d.metricRegistry.Gauge(NewMetricIdByLabels(d.metricKey, labels)).Set(twc.Count())
+}
+
+// QuantileMetricVec means a set of quantile metrics with the same metricKey but different labels.
+type QuantileMetricVec interface {
+	Record(labels map[string]string, v float64)
+}
+
+func NewQuantileMetricVec(metricRegistry MetricRegistry, metricKeys []*MetricKey, quantiles []float64) QuantileMetricVec {
+	return &DefaultQuantileMetricVec{
+		metricRegistry: metricRegistry,
+		metricKeys:     metricKeys,
+		mux:            sync.RWMutex{},
+		cache:          make(map[string]*aggregate.TimeWindowQuantile),
+		quantiles:      quantiles,
+	}
+}
+
+// DefaultQuantileMetricVec is a default QuantileMetricVec implementation.
+//
+// It is concurrent safe, and it uses the aggregate.TimeWindowQuantile to store and calculate the quantile metrics.
+type DefaultQuantileMetricVec struct {
+	metricRegistry MetricRegistry
+	metricKeys     []*MetricKey
+	mux            sync.RWMutex
+	cache          map[string]*aggregate.TimeWindowQuantile // key: metrics labels, value: TimeWindowQuantile
+	quantiles      []float64
+}
+
+func (d *DefaultQuantileMetricVec) Record(labels map[string]string, v float64) {
+	key := labelsToString(labels)
+	if key == "" {
+		return
+	}
+	d.mux.RLock()
+	twq, ok := d.cache[key]
+	d.mux.RUnlock()
+	if !ok {
+		d.mux.Lock()
+		twq, ok = d.cache[key]
+		if !ok {
+			twq = aggregate.NewTimeWindowQuantile(DefaultCompression, DefaultBucketNum, DefaultTimeWindowSeconds)
+			d.cache[key] = twq
+		}
+		d.mux.Unlock()
+	}
+	twq.Add(v)
+
+	for i, q := range twq.Quantiles(d.quantiles) {
+		d.metricRegistry.Gauge(NewMetricIdByLabels(d.metricKeys[i], labels)).Set(q)
 	}
 }

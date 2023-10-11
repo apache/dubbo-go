@@ -185,10 +185,6 @@ const (
 
 const (
 	ApplicationKey         = "application"
-	ApplicationNameKey     = "application_name"
-	ApplicationVersionKey  = "application_version"
-	HostnameKey            = "hostname"
-	IpKey                  = "ip"
 	OrganizationKey        = "organization"
 	NameKey                = "name"
 	ModuleKey              = "module"
@@ -207,10 +203,6 @@ const (
 	ProvidersCategory      = "providers"
 	RouterKey              = "router"
 	ExportKey              = "export"
-	GitCommitIdKey         = "git_commit_id"
-	ConfigCenterKey        = "config_center"
-	ChangeTypeKey          = "change_type"
-	KeyKey                 = "key"
 )
 
 // config center keys
@@ -421,7 +413,24 @@ const (
 
 // metrics key
 const (
-	MetricsRegistry = "dubbo.metrics.registry"
-	MetricsMetadata = "dubbo.metrics.metadata"
-	MetricApp       = "dubbo.metrics.app"
+	AggregationEnabledKey                = "aggregation.enabled"
+	AggregationBucketNumKey              = "aggregation.bucket.num"
+	AggregationTimeWindowSecondsKey      = "aggregation.time.window.seconds"
+	HistogramEnabledKey                  = "histogram.enabled"
+	PrometheusExporterEnabledKey         = "prometheus.exporter.enabled"
+	PrometheusExporterMetricsPortKey     = "prometheus.exporter.metrics.port"
+	PrometheusExporterMetricsPathKey     = "prometheus.exporter.metrics.path"
+	PrometheusPushgatewayEnabledKey      = "prometheus.pushgateway.enabled"
+	PrometheusPushgatewayBaseUrlKey      = "prometheus.pushgateway.base.url"
+	PrometheusPushgatewayUsernameKey     = "prometheus.pushgateway.username"
+	PrometheusPushgatewayPasswordKey     = "prometheus.pushgateway.password"
+	PrometheusPushgatewayPushIntervalKey = "prometheus.pushgateway.push.interval"
+	PrometheusPushgatewayJobKey          = "prometheus.pushgateway.job"
+)
+
+// default meta cache config
+const (
+	DefaultMetaCacheName = "dubbo.meta"
+	DefaultMetaFileName  = "dubbo.metadata."
+	DefaultEntrySize     = 100
 )

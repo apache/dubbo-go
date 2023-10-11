@@ -55,6 +55,7 @@ type RootConfig struct {
 	MetadataReport      *MetadataReportConfig      `yaml:"metadata-report" json:"metadata-report,omitempty" property:"metadata-report"`
 	Provider            *ProviderConfig            `yaml:"provider" json:"provider" property:"provider"`
 	Consumer            *ConsumerConfig            `yaml:"consumer" json:"consumer" property:"consumer"`
+	Otel                *OtelConfig                `yaml:"otel" json:"otel,omitempty" property:"otel"`
 	Metric              *MetricConfig              `yaml:"metrics" json:"metrics,omitempty" property:"metrics"`
 	Tracing             map[string]*TracingConfig  `yaml:"tracing" json:"tracing,omitempty" property:"tracing"`
 	Logger              *LoggerConfig              `yaml:"logger" json:"logger,omitempty" property:"logger"`
@@ -166,19 +167,19 @@ func (rc *RootConfig) Init() error {
 	}
 
 	// init registry
-	registries := rc.Registries
-	if registries != nil {
-		for _, reg := range registries {
-			if err := reg.Init(); err != nil {
-				return err
-			}
+	for _, reg := range rc.Registries {
+		if err := reg.Init(); err != nil {
+			return err
 		}
 	}
 
 	if err := rc.MetadataReport.Init(rc); err != nil {
 		return err
 	}
-	if err := rc.Metric.Init(); err != nil {
+	if err := rc.Otel.Init(rc.Application); err != nil {
+		return err
+	}
+	if err := rc.Metric.Init(rc); err != nil {
 		return err
 	}
 	for _, t := range rc.Tracing {
@@ -227,6 +228,7 @@ func newEmptyRootConfig() *RootConfig {
 		Tracing:        make(map[string]*TracingConfig),
 		Provider:       NewProviderConfigBuilder().Build(),
 		Consumer:       NewConsumerConfigBuilder().Build(),
+		Otel:           NewOtelConfigBuilder().Build(),
 		Metric:         NewMetricConfigBuilder().Build(),
 		Logger:         NewLoggerConfigBuilder().Build(),
 		Custom:         NewCustomConfigBuilder().Build(),
@@ -281,6 +283,11 @@ func (rb *RootConfigBuilder) SetProvider(provider *ProviderConfig) *RootConfigBu
 
 func (rb *RootConfigBuilder) SetConsumer(consumer *ConsumerConfig) *RootConfigBuilder {
 	rb.rootConfig.Consumer = consumer
+	return rb
+}
+
+func (rb *RootConfigBuilder) SetOtel(otel *OtelConfig) *RootConfigBuilder {
+	rb.rootConfig.Otel = otel
 	return rb
 }
 

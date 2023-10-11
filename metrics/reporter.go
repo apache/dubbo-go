@@ -17,15 +17,6 @@
 
 package metrics
 
-import (
-	"context"
-	"time"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/protocol"
-)
-
 const DefMaxAge = 600000000000
 
 type ReporterConfig struct {
@@ -36,7 +27,7 @@ type ReporterConfig struct {
 	Path               string
 	PushGatewayAddress string
 	SummaryMaxAge      int64
-	Protocol           string // MetricsRegistry 扩展配置 ，如：prometheus
+	Protocol           string // exporters, like prometheus
 }
 
 type ReportMode string
@@ -58,11 +49,8 @@ func NewReporterConfig() *ReporterConfig {
 	}
 }
 
-// Reporter is the interface which will be used to report the invocation's duration
-//
-// Report method reports the duration of an invocation.
+// Reporter is an interface used to represent the backend of metrics to be exported
 type Reporter interface {
-	ReportAfterInvocation(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation,
-		cost time.Duration, res protocol.Result)
-	ReportBeforeInvocation(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation)
+	StartServer(config *ReporterConfig)
+	ShutdownServer()
 }

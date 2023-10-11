@@ -291,6 +291,9 @@ func NewURL(urlString string, opts ...Option) (*URL, error) {
 	for _, opt := range opts {
 		opt(&s)
 	}
+	if s.params.Get(constant.RegistryGroupKey) != "" {
+		s.PrimitiveURL = strings.Join([]string{s.PrimitiveURL, s.params.Get(constant.RegistryGroupKey)}, constant.PathSeparator)
+	}
 	return &s, nil
 }
 
