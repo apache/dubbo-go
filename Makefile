@@ -73,6 +73,22 @@ fmt:
 	$(GO_GET) -u github.com/dubbogo/tools/cmd/imports-formatter
 	imports-formatter
 
+LOCALBIN ?= $(shell pwd)/bin
+$(LOCALBIN):
+	mkdir -p $(LOCALBIN)
+GOLANG_LINT_VERSION ?= v1.44.2
+GOLANG_LINT ?= $(LOCALBIN)/golangci-lint
+GOLANG_LINT_INSTALL_SCRIPT ?= "https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh"
+
+.PHONY: golangci-lint-install
+golangci-lint-install: $(LOCALBIN) ## Download golangci lint locally if necessary.
+	test -s $(LOCALBIN)/golangci-lint  && $(LOCALBIN)/golangci-lint --version | grep -q $(GOLANG_LINT_VERSION) || \
+	GOBIN=$(LOCALBIN) go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANG_LINT_VERSION)
+
+.PHONY: lint
+lint: golangci-lint-install  ## Run golang lint against code
+	GO111MODULE=on $(GOLANG_LINT) run ./... --timeout=30m -v
+
 .PHONY: clean
 clean: prepare
 	rm -rf coverage.txt
