@@ -53,7 +53,7 @@ type RegistryConfig struct {
 	Preferred         bool              `yaml:"preferred" json:"preferred,omitempty" property:"preferred"` // Always use this registry first if set to true, useful when subscribe to multiple registriesConfig
 	Zone              string            `yaml:"zone" json:"zone,omitempty" property:"zone"`                // The region where the registry belongs, usually used to isolate traffics
 	Weight            int64             `yaml:"weight" json:"weight,omitempty" property:"weight"`          // Affects traffic distribution among registriesConfig, useful when subscribe to multiple registriesConfig Take effect only when no preferred registry is specified.
-	Params            map[string]string `yaml:"params" json:"params,omitempty" property:"params"`          // Used to configure some advanced feature parameters. For example, "zookeeper.rootPath" can set the path prefix registered to zk. For more information, refer to the newXxxServiceDiscovery method in service_discovery.go
+	Params            map[string]string `yaml:"params" json:"params,omitempty" property:"params"`
 	RegistryType      string            `yaml:"registry-type"`
 	UseAsMetaReport   bool              `default:"true" yaml:"use-as-meta-report" json:"use-as-meta-report,omitempty" property:"use-as-meta-report"`
 	UseAsConfigCenter bool              `default:"true" yaml:"use-as-config-center" json:"use-as-config-center,omitempty" property:"use-as-config-center"`

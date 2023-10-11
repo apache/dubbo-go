@@ -273,8 +273,7 @@ const (
 )
 
 const (
-	ZookeeperKey      = "zookeeper"
-	ZookeeperRootPath = "zookeeper.rootPath"
+	ZookeeperKey = "zookeeper"
 )
 
 const (
