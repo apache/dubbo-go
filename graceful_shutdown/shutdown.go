@@ -18,15 +18,21 @@
 package graceful_shutdown
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/config"
-	"github.com/dubbogo/gost/log/logger"
 	"os"
 	"os/signal"
 	"runtime/debug"
 	"sync"
 	"time"
+)
+
+import (
+	"github.com/dubbogo/gost/log/logger"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/config"
 )
 
 const (
@@ -52,11 +58,12 @@ var (
 
 func Init(opts ...Option) {
 	initOnce.Do(func() {
-		newOpts := defaultOptions()
+		protocols = make(map[string]struct{})
+		newOpts := DefaultOptions()
 		for _, opt := range opts {
 			opt(newOpts)
 		}
-		compatShutdown = compatShutdownConfig(newOpts.shutdown)
+		compatShutdown = compatShutdownConfig(newOpts.Shutdown)
 		// retrieve ShutdownConfig for gracefulShutdownFilter
 		cGracefulShutdownFilter, existcGracefulShutdownFilter := extension.GetFilter(constant.GracefulShutdownConsumerFilterKey)
 		if !existcGracefulShutdownFilter {

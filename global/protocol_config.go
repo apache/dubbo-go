@@ -31,6 +31,10 @@ type ProtocolConfig struct {
 	MaxServerRecvMsgSize string `default:"4mib" yaml:"max-server-recv-msg-size" json:"max-server-recv-msg-size,omitempty"`
 }
 
+func DefaultProtocolConfig() *ProtocolConfig {
+	return &ProtocolConfig{}
+}
+
 type ProtocolOption func(*ProtocolConfig)
 
 func WithProtocol_Name(name string) ProtocolOption {
@@ -51,9 +55,9 @@ func WithProtocol_Port(port string) ProtocolOption {
 	}
 }
 
-func WithProtocol_Param(param interface{}) ProtocolOption {
+func WithProtocol_Params(params interface{}) ProtocolOption {
 	return func(cfg *ProtocolConfig) {
-		cfg.Params = param
+		cfg.Params = params
 	}
 }
 

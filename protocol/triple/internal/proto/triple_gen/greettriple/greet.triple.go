@@ -87,10 +87,8 @@ type GreetServiceImpl struct {
 }
 
 func (c *GreetServiceImpl) Greet(ctx context.Context, req *proto.GreetRequest, opts ...client.CallOption) (*proto.GreetResponse, error) {
-	triReq := triple_protocol.NewRequest(req)
 	resp := new(proto.GreetResponse)
-	triResp := triple_protocol.NewResponse(resp)
-	if err := c.cli.CallUnary(ctx, triReq, triResp, "greet.GreetService", "Greet", opts...); err != nil {
+	if err := c.cli.CallUnary(ctx, req, resp, "greet.GreetService", "Greet", opts...); err != nil {
 		return nil, err
 	}
 	return resp, nil
@@ -115,8 +113,7 @@ func (c *GreetServiceImpl) GreetClientStream(ctx context.Context, opts ...client
 }
 
 func (c *GreetServiceImpl) GreetServerStream(ctx context.Context, req *proto.GreetServerStreamRequest, opts ...client.CallOption) (GreetService_GreetServerStreamClient, error) {
-	triReq := triple_protocol.NewRequest(req)
-	stream, err := c.cli.CallServerStream(ctx, triReq, "greet.GreetService", "GreetServerStream", opts...)
+	stream, err := c.cli.CallServerStream(ctx, req, "greet.GreetService", "GreetServerStream", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -230,8 +227,8 @@ type GreetServiceHandler interface {
 	GreetServerStream(context.Context, *proto.GreetServerStreamRequest, GreetService_GreetServerStreamServer) error
 }
 
-func RegisterGreetServiceHandler(srv *server.Server, hdlr GreetServiceHandler) error {
-	return srv.Register(hdlr, &GreetService_ServiceInfo)
+func RegisterGreetServiceHandler(srv *server.Server, hdlr GreetServiceHandler, opts ...server.ServiceOption) error {
+	return srv.Register(hdlr, &GreetService_ServiceInfo, opts...)
 }
 
 type GreetService_GreetStreamServer interface {

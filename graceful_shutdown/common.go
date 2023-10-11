@@ -18,9 +18,24 @@
 package graceful_shutdown
 
 import (
-	"github.com/dubbogo/gost/log/logger"
 	"time"
 )
+
+import (
+	hessian "github.com/apache/dubbo-go-hessian2"
+
+	"github.com/dubbogo/gost/log/logger"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common"
+)
+
+func init() {
+	hessian.RegisterPOJO(&common.MetadataInfo{})
+	hessian.RegisterPOJO(&common.ServiceInfo{})
+	hessian.RegisterPOJO(&common.URL{})
+}
 
 func parseDuration(timeout string, desc string, def time.Duration) time.Duration {
 	res, err := time.ParseDuration(timeout)

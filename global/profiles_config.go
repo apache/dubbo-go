@@ -23,7 +23,7 @@ type ProfilesConfig struct {
 }
 
 func DefaultProfilesConfig() *ProfilesConfig {
-	return nil
+	return &ProfilesConfig{}
 }
 
 type ProfilesOption func(*ProfilesConfig)

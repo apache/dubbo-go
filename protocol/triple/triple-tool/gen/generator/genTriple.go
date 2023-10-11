@@ -25,6 +25,7 @@ import (
 
 import (
 	"github.com/emicklei/proto"
+
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 )
 

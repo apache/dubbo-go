@@ -23,6 +23,7 @@ import (
 	_ "dubbo.apache.org/dubbo-go/v3/imports"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/client/common"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto/triple_gen/greettriple"
+	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
 func main() {
@@ -30,13 +31,17 @@ func main() {
 	// configure global configurations and common modules
 	ins, err := dubbo.NewInstance(
 		dubbo.WithName("dubbo_test"),
+		dubbo.WithRegistry("zk",
+			registry.WithZookeeper(),
+			registry.WithAddress("127.0.0.1:2181"),
+		),
 	)
 	if err != nil {
 		panic(err)
 	}
 	// configure the params that only client layer cares
 	cli, err := ins.NewClient(
-		client.WithURL("tri://127.0.0.1:20000"),
+		client.WithRegistryIDs([]string{"zk"}),
 	)
 	if err != nil {
 		panic(err)

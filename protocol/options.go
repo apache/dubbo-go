@@ -15,80 +15,82 @@
  * limitations under the License.
  */
 
-package graceful_shutdown
+package protocol
 
 import (
-	"time"
+	"strconv"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/global"
 )
 
-var (
-	defOpts = &Options{
-		Shutdown: global.DefaultShutdownConfig(),
-	}
-)
-
 type Options struct {
-	Shutdown *global.ShutdownConfig
+	Protocol *global.ProtocolConfig
 }
 
 func DefaultOptions() *Options {
-	return defOpts
+	return &Options{Protocol: global.DefaultProtocolConfig()}
 }
 
 type Option func(*Options)
 
-func WithTimeout(timeout time.Duration) Option {
+func WithDubbo() Option {
 	return func(opts *Options) {
-		opts.Shutdown.Timeout = timeout.String()
+		opts.Protocol.Name = "dubbo"
 	}
 }
 
-func WithStepTimeout(timeout time.Duration) Option {
+func WithGRPC() Option {
 	return func(opts *Options) {
-		opts.Shutdown.StepTimeout = timeout.String()
+		opts.Protocol.Name = "grpc"
 	}
 }
 
-func WithConsumerUpdateWaitTime(duration time.Duration) Option {
+func WithJSONRPC() Option {
 	return func(opts *Options) {
-		opts.Shutdown.ConsumerUpdateWaitTime = duration.String()
+		opts.Protocol.Name = "jsonrpc"
 	}
 }
 
-// todo(DMwangnima): add more specified configuration API
-//func WithRejectRequestHandler(handler string) Option {
-//	return func(opts *Options) {
-//		opts.Shutdown.RejectRequestHandler = handler
-//	}
-//}
-
-func WithoutInternalSignal() Option {
+func WithREST() Option {
 	return func(opts *Options) {
-		signal := false
-		opts.Shutdown.InternalSignal = &signal
+		opts.Protocol.Name = "rest"
 	}
 }
 
-func WithOfflineRequestWindowTimeout(timeout time.Duration) Option {
+func WithTriple() Option {
 	return func(opts *Options) {
-		opts.Shutdown.OfflineRequestWindowTimeout = timeout.String()
+		opts.Protocol.Name = "tri"
 	}
 }
 
-func WithRejectRequest() Option {
+func WithIp(ip string) Option {
 	return func(opts *Options) {
-		opts.Shutdown.RejectRequest.Store(true)
+		opts.Protocol.Ip = ip
 	}
 }
 
-// ---------- For framework ----------
-
-func WithShutdown_Config(cfg *global.ShutdownConfig) Option {
+func WithPort(port int) Option {
 	return func(opts *Options) {
-		opts.Shutdown = cfg
+		opts.Protocol.Port = strconv.Itoa(port)
+	}
+}
+
+func WithParams(params interface{}) Option {
+	return func(opts *Options) {
+		opts.Protocol.Params = params
+	}
+}
+
+func WithMaxServerSendMsgSize(size int) Option {
+	return func(opts *Options) {
+		opts.Protocol.MaxServerSendMsgSize = strconv.Itoa(size)
+	}
+}
+
+func WithMaxServerRecvMsgSize(size int) Option {
+	return func(opts *Options) {
+		opts.Protocol.MaxServerRecvMsgSize = strconv.Itoa(size)
 	}
 }

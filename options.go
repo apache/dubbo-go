@@ -18,7 +18,16 @@
 package dubbo
 
 import (
+	"github.com/dubbogo/gost/log/logger"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/global"
+	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
 type InstanceOptions struct {
@@ -66,176 +75,301 @@ func (rc *InstanceOptions) init(opts ...InstanceOption) error {
 		opt(rc)
 	}
 
+	// remaining procedure is like RootConfig.Init() without RootConfig.Start()
+	// tasks of RootConfig.Start() would be decomposed to Client and Server
 	rcCompat := compatRootConfig(rc)
-	if err := rcCompat.Init(); err != nil {
+	if err := rcCompat.Logger.Init(); err != nil { // init default logger
 		return err
 	}
+	if err := rcCompat.ConfigCenter.Init(rcCompat); err != nil {
+		logger.Infof("[Config Center] Config center doesn't start")
+		logger.Debugf("config center doesn't start because %s", err)
+	} else {
+		if err = rcCompat.Logger.Init(); err != nil { // init logger using config from config center again
+			return err
+		}
+	}
+
+	if err := rcCompat.Application.Init(); err != nil {
+		return err
+	}
+
+	// init user define
+	if err := rcCompat.Custom.Init(); err != nil {
+		return err
+	}
+
+	// init protocol
+	protocols := rcCompat.Protocols
+	if len(protocols) <= 0 {
+		protocol := &config.ProtocolConfig{}
+		protocols = make(map[string]*config.ProtocolConfig, 1)
+		protocols[constant.Dubbo] = protocol
+		rcCompat.Protocols = protocols
+	}
+	for _, protocol := range protocols {
+		if err := protocol.Init(); err != nil {
+			return err
+		}
+	}
+
+	// init registry
+	registries := rcCompat.Registries
+	if registries != nil {
+		for _, reg := range registries {
+			if err := reg.Init(); err != nil {
+				return err
+			}
+		}
+	}
+
+	if err := rcCompat.MetadataReport.Init(rcCompat); err != nil {
+		return err
+	}
+	if err := rcCompat.Metric.Init(); err != nil {
+		return err
+	}
+	for _, t := range rcCompat.Tracing {
+		if err := t.Init(); err != nil {
+			return err
+		}
+	}
+
+	routers := rcCompat.Router
+	if len(routers) > 0 {
+		for _, r := range routers {
+			if err := r.Init(); err != nil {
+				return err
+			}
+		}
+		rcCompat.Router = routers
+	}
+
+	// provider、consumer must last init
+	if err := rcCompat.Provider.Init(rcCompat); err != nil {
+		return err
+	}
+	if err := rcCompat.Consumer.Init(rcCompat); err != nil {
+		return err
+	}
+	if err := rcCompat.Shutdown.Init(); err != nil {
+		return err
+	}
+	config.SetRootConfig(*rcCompat)
 
 	return nil
 }
 
+func (rc *InstanceOptions) Prefix() string {
+	return constant.Dubbo
+}
+
 type InstanceOption func(*InstanceOptions)
 
-func WithApplication(opts ...global.ApplicationOption) InstanceOption {
-	appCfg := new(global.ApplicationConfig)
-	for _, opt := range opts {
-		opt(appCfg)
-	}
-
-	return func(cfg *InstanceOptions) {
-		cfg.Application = appCfg
+func WithOrganization(organization string) InstanceOption {
+	return func(opts *InstanceOptions) {
+		opts.Application.Organization = organization
 	}
 }
 
-func WithProtocol(key string, opts ...global.ProtocolOption) InstanceOption {
-	proCfg := new(global.ProtocolConfig)
+func WithName(name string) InstanceOption {
+	return func(opts *InstanceOptions) {
+		opts.Application.Name = name
+	}
+}
+
+func WithModule(module string) InstanceOption {
+	return func(opts *InstanceOptions) {
+		opts.Application.Module = module
+	}
+}
+
+func WithGroup(group string) InstanceOption {
+	return func(opts *InstanceOptions) {
+		opts.Application.Group = group
+	}
+}
+
+func WithVersion(version string) InstanceOption {
+	return func(opts *InstanceOptions) {
+		opts.Application.Version = version
+	}
+}
+
+func WithOwner(owner string) InstanceOption {
+	return func(opts *InstanceOptions) {
+		opts.Application.Owner = owner
+	}
+}
+
+func WithEnvironment(environment string) InstanceOption {
+	return func(opts *InstanceOptions) {
+		opts.Application.Environment = environment
+	}
+}
+
+func WithRemoteMetadata() InstanceOption {
+	return func(opts *InstanceOptions) {
+		opts.Application.MetadataType = constant.RemoteMetadataStorageType
+	}
+}
+
+func WithTag(tag string) InstanceOption {
+	return func(opts *InstanceOptions) {
+		opts.Application.Tag = tag
+	}
+}
+
+func WithProtocol(key string, opts ...protocol.Option) InstanceOption {
+	proOpts := protocol.DefaultOptions()
 	for _, opt := range opts {
-		opt(proCfg)
+		opt(proOpts)
 	}
 
-	return func(cfg *InstanceOptions) {
-		if cfg.Protocols == nil {
-			cfg.Protocols = make(map[string]*global.ProtocolConfig)
+	return func(insOpts *InstanceOptions) {
+		if insOpts.Protocols == nil {
+			insOpts.Protocols = make(map[string]*global.ProtocolConfig)
 		}
-		cfg.Protocols[key] = proCfg
+		insOpts.Protocols[key] = proOpts.Protocol
 	}
 }
 
-func WithRegistry(key string, opts ...global.RegistryOption) InstanceOption {
-	regCfg := new(global.RegistryConfig)
+func WithRegistry(key string, opts ...registry.Option) InstanceOption {
+	regOpts := registry.DefaultOptions()
 	for _, opt := range opts {
-		opt(regCfg)
+		opt(regOpts)
 	}
 
-	return func(cfg *InstanceOptions) {
-		if cfg.Registries == nil {
-			cfg.Registries = make(map[string]*global.RegistryConfig)
+	return func(insOpts *InstanceOptions) {
+		if insOpts.Registries == nil {
+			insOpts.Registries = make(map[string]*global.RegistryConfig)
 		}
-		cfg.Registries[key] = regCfg
+		insOpts.Registries[key] = regOpts.Registry
 	}
 }
 
-func WithConfigCenter(opts ...global.CenterOption) InstanceOption {
-	ccCfg := new(global.CenterConfig)
+//func WithConfigCenter(opts ...global.CenterOption) InstanceOption {
+//	ccCfg := new(global.CenterConfig)
+//	for _, opt := range opts {
+//		opt(ccCfg)
+//	}
+//
+//	return func(cfg *InstanceOptions) {
+//		cfg.ConfigCenter = ccCfg
+//	}
+//}
+
+//func WithMetadataReport(opts ...global.MetadataReportOption) InstanceOption {
+//	mrCfg := new(global.MetadataReportConfig)
+//	for _, opt := range opts {
+//		opt(mrCfg)
+//	}
+//
+//	return func(cfg *InstanceOptions) {
+//		cfg.MetadataReport = mrCfg
+//	}
+//}
+
+//func WithConsumer(opts ...global.ConsumerOption) InstanceOption {
+//	conCfg := new(global.ConsumerConfig)
+//	for _, opt := range opts {
+//		opt(conCfg)
+//	}
+//
+//	return func(cfg *InstanceOptions) {
+//		cfg.Consumer = conCfg
+//	}
+//}
+
+//func WithMetric(opts ...global.MetricOption) InstanceOption {
+//	meCfg := new(global.MetricConfig)
+//	for _, opt := range opts {
+//		opt(meCfg)
+//	}
+//
+//	return func(cfg *InstanceOptions) {
+//		cfg.Metric = meCfg
+//	}
+//}
+
+//func WithTracing(key string, opts ...global.TracingOption) InstanceOption {
+//	traCfg := new(global.TracingConfig)
+//	for _, opt := range opts {
+//		opt(traCfg)
+//	}
+//
+//	return func(cfg *InstanceOptions) {
+//		if cfg.Tracing == nil {
+//			cfg.Tracing = make(map[string]*global.TracingConfig)
+//		}
+//		cfg.Tracing[key] = traCfg
+//	}
+//}
+
+//func WithLogger(opts ...global.LoggerOption) InstanceOption {
+//	logCfg := new(global.LoggerConfig)
+//	for _, opt := range opts {
+//		opt(logCfg)
+//	}
+//
+//	return func(cfg *InstanceOptions) {
+//		cfg.Logger = logCfg
+//	}
+//}
+
+func WithShutdown(opts ...graceful_shutdown.Option) InstanceOption {
+	sdOpts := graceful_shutdown.DefaultOptions()
 	for _, opt := range opts {
-		opt(ccCfg)
+		opt(sdOpts)
 	}
 
-	return func(cfg *InstanceOptions) {
-		cfg.ConfigCenter = ccCfg
+	return func(insOpts *InstanceOptions) {
+		insOpts.Shutdown = sdOpts.Shutdown
 	}
 }
 
-func WithMetadataReport(opts ...global.MetadataReportOption) InstanceOption {
-	mrCfg := new(global.MetadataReportConfig)
-	for _, opt := range opts {
-		opt(mrCfg)
-	}
+// todo(DMwangnima): enumerate specific EventDispatcherType
+//func WithEventDispatcherType(typ string) InstanceOption {
+//	return func(cfg *InstanceOptions) {
+//		cfg.EventDispatcherType = typ
+//	}
+//}
 
-	return func(cfg *InstanceOptions) {
-		cfg.MetadataReport = mrCfg
-	}
-}
+//func WithCacheFile(file string) InstanceOption {
+//	return func(cfg *InstanceOptions) {
+//		cfg.CacheFile = file
+//	}
+//}
 
-func WithConsumer(opts ...global.ConsumerOption) InstanceOption {
-	conCfg := new(global.ConsumerConfig)
-	for _, opt := range opts {
-		opt(conCfg)
-	}
+//func WithCustom(opts ...global.CustomOption) InstanceOption {
+//	cusCfg := new(global.CustomConfig)
+//	for _, opt := range opts {
+//		opt(cusCfg)
+//	}
+//
+//	return func(cfg *InstanceOptions) {
+//		cfg.Custom = cusCfg
+//	}
+//}
 
-	return func(cfg *InstanceOptions) {
-		cfg.Consumer = conCfg
-	}
-}
+//func WithProfiles(opts ...global.ProfilesOption) InstanceOption {
+//	proCfg := new(global.ProfilesConfig)
+//	for _, opt := range opts {
+//		opt(proCfg)
+//	}
+//
+//	return func(cfg *InstanceOptions) {
+//		cfg.Profiles = proCfg
+//	}
+//}
 
-func WithMetric(opts ...global.MetricOption) InstanceOption {
-	meCfg := new(global.MetricConfig)
-	for _, opt := range opts {
-		opt(meCfg)
-	}
-
-	return func(cfg *InstanceOptions) {
-		cfg.Metric = meCfg
-	}
-}
-
-func WithTracing(key string, opts ...global.TracingOption) InstanceOption {
-	traCfg := new(global.TracingConfig)
-	for _, opt := range opts {
-		opt(traCfg)
-	}
-
-	return func(cfg *InstanceOptions) {
-		if cfg.Tracing == nil {
-			cfg.Tracing = make(map[string]*global.TracingConfig)
-		}
-		cfg.Tracing[key] = traCfg
-	}
-}
-
-func WithLogger(opts ...global.LoggerOption) InstanceOption {
-	logCfg := new(global.LoggerConfig)
-	for _, opt := range opts {
-		opt(logCfg)
-	}
-
-	return func(cfg *InstanceOptions) {
-		cfg.Logger = logCfg
-	}
-}
-
-func WithShutdown(opts ...global.ShutdownOption) InstanceOption {
-	sdCfg := new(global.ShutdownConfig)
-	for _, opt := range opts {
-		opt(sdCfg)
-	}
-
-	return func(cfg *InstanceOptions) {
-		cfg.Shutdown = sdCfg
-	}
-}
-
-func WithEventDispatcherType(typ string) InstanceOption {
-	return func(cfg *InstanceOptions) {
-		cfg.EventDispatcherType = typ
-	}
-}
-
-func WithCacheFile(file string) InstanceOption {
-	return func(cfg *InstanceOptions) {
-		cfg.CacheFile = file
-	}
-}
-
-func WithCustom(opts ...global.CustomOption) InstanceOption {
-	cusCfg := new(global.CustomConfig)
-	for _, opt := range opts {
-		opt(cusCfg)
-	}
-
-	return func(cfg *InstanceOptions) {
-		cfg.Custom = cusCfg
-	}
-}
-
-func WithProfiles(opts ...global.ProfilesOption) InstanceOption {
-	proCfg := new(global.ProfilesConfig)
-	for _, opt := range opts {
-		opt(proCfg)
-	}
-
-	return func(cfg *InstanceOptions) {
-		cfg.Profiles = proCfg
-	}
-}
-
-func WithTLS(opts ...global.TLSOption) InstanceOption {
-	tlsCfg := new(global.TLSConfig)
-	for _, opt := range opts {
-		opt(tlsCfg)
-	}
-
-	return func(cfg *InstanceOptions) {
-		cfg.TLSConfig = tlsCfg
-	}
-}
+//func WithTLS(opts ...global.TLSOption) InstanceOption {
+//	tlsCfg := new(global.TLSConfig)
+//	for _, opt := range opts {
+//		opt(tlsCfg)
+//	}
+//
+//	return func(cfg *InstanceOptions) {
+//		cfg.TLSConfig = tlsCfg
+//	}
+//}

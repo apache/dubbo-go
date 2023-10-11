@@ -44,7 +44,6 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/server"
 )
 
 // dubbo role type constant
@@ -111,11 +110,12 @@ type URL struct {
 	paramsLock sync.RWMutex
 	params     url.Values
 
-	Path       string // like  /com.ikurento.dubbo.UserProvider
-	Username   string
-	Password   string
-	Methods    []string
-	MethodInfo []server.MethodInfo
+	Path     string // like  /com.ikurento.dubbo.UserProvider
+	Username string
+	Password string
+	Methods  []string
+	// Attributes should not be transported
+	Attributes map[string]interface{} `hessian:"-"`
 	// special for registry
 	SubURL *URL
 }
@@ -220,10 +220,13 @@ func WithToken(token string) Option {
 	}
 }
 
-// WithMethodInfos sets methodInfos for URL
-func WithMethodInfos(methodInfos []server.MethodInfo) Option {
+// WithAttribute sets attribute for URL
+func WithAttribute(key string, attribute interface{}) Option {
 	return func(url *URL) {
-		url.MethodInfo = methodInfos
+		if url.Attributes == nil {
+			url.Attributes = make(map[string]interface{})
+		}
+		url.Attributes[key] = attribute
 	}
 }
 
@@ -778,7 +781,8 @@ func MergeURL(serviceURL *URL, referenceURL *URL) *URL {
 	}
 
 	// finally execute methodConfigMergeFcn
-	for _, method := range referenceURL.Methods {
+	mergedURL.Methods = make([]string, len(referenceURL.Methods))
+	for i, method := range referenceURL.Methods {
 		for _, paramKey := range []string{constant.LoadbalanceKey, constant.ClusterKey, constant.RetriesKey, constant.TimeoutKey} {
 			if v := referenceURL.GetParam(paramKey, ""); len(v) > 0 {
 				params[paramKey] = []string{v}
@@ -790,6 +794,7 @@ func MergeURL(serviceURL *URL, referenceURL *URL) *URL {
 				params[methodsKey] = []string{v}
 			}
 			//}
+			mergedURL.Methods[i] = method
 		}
 	}
 	// In this way, we will raise some performance.

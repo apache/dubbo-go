@@ -27,6 +27,9 @@ import (
 )
 
 func compatRootConfig(c *InstanceOptions) *config.RootConfig {
+	if c == nil {
+		return nil
+	}
 	proCompat := make(map[string]*config.ProtocolConfig)
 	for k, v := range c.Protocols {
 		proCompat[k] = compatProtocolConfig(v)
@@ -63,6 +66,9 @@ func compatRootConfig(c *InstanceOptions) *config.RootConfig {
 }
 
 func compatApplicationConfig(c *global.ApplicationConfig) *config.ApplicationConfig {
+	if c == nil {
+		return nil
+	}
 	return &config.ApplicationConfig{
 		Organization: c.Organization,
 		Name:         c.Name,
@@ -77,6 +83,9 @@ func compatApplicationConfig(c *global.ApplicationConfig) *config.ApplicationCon
 }
 
 func compatProtocolConfig(c *global.ProtocolConfig) *config.ProtocolConfig {
+	if c == nil {
+		return nil
+	}
 	return &config.ProtocolConfig{
 		Name:                 c.Name,
 		Ip:                   c.Ip,
@@ -88,6 +97,9 @@ func compatProtocolConfig(c *global.ProtocolConfig) *config.ProtocolConfig {
 }
 
 func compatRegistryConfig(c *global.RegistryConfig) *config.RegistryConfig {
+	if c == nil {
+		return nil
+	}
 	return &config.RegistryConfig{
 		Protocol:          c.Protocol,
 		Timeout:           c.Timeout,
@@ -109,6 +121,9 @@ func compatRegistryConfig(c *global.RegistryConfig) *config.RegistryConfig {
 }
 
 func compatCenterConfig(c *global.CenterConfig) *config.CenterConfig {
+	if c == nil {
+		return nil
+	}
 	return &config.CenterConfig{
 		Protocol:      c.Protocol,
 		Address:       c.Address,
@@ -126,6 +141,9 @@ func compatCenterConfig(c *global.CenterConfig) *config.CenterConfig {
 }
 
 func compatMetadataReportConfig(c *global.MetadataReportConfig) *config.MetadataReportConfig {
+	if c == nil {
+		return nil
+	}
 	return &config.MetadataReportConfig{
 		Protocol:  c.Protocol,
 		Address:   c.Address,
@@ -138,12 +156,20 @@ func compatMetadataReportConfig(c *global.MetadataReportConfig) *config.Metadata
 }
 
 func compatProviderConfig(c *global.ProviderConfig) *config.ProviderConfig {
+	if c == nil {
+		return nil
+	}
+	services := make(map[string]*config.ServiceConfig)
+	for key, svc := range c.Services {
+		services[key] = compatServiceConfig(svc)
+	}
 	return &config.ProviderConfig{
 		Filter:                 c.Filter,
 		Register:               c.Register,
 		RegistryIDs:            c.RegistryIDs,
 		ProtocolIDs:            c.ProtocolIDs,
 		TracingKey:             c.TracingKey,
+		Services:               services,
 		ProxyFactory:           c.ProxyFactory,
 		FilterConf:             c.FilterConf,
 		ConfigType:             c.ConfigType,
@@ -152,7 +178,81 @@ func compatProviderConfig(c *global.ProviderConfig) *config.ProviderConfig {
 	}
 }
 
+func compatServiceConfig(c *global.ServiceConfig) *config.ServiceConfig {
+	if c == nil {
+		return nil
+	}
+	methods := make([]*config.MethodConfig, len(c.Methods))
+	for i, method := range c.Methods {
+		methods[i] = compatMethodConfig(method)
+	}
+	protocols := make(map[string]*config.ProtocolConfig)
+	for key, pro := range c.RCProtocolsMap {
+		protocols[key] = compatProtocolConfig(pro)
+	}
+	registries := make(map[string]*config.RegistryConfig)
+	for key, reg := range c.RCRegistriesMap {
+		registries[key] = compatRegistryConfig(reg)
+	}
+	return &config.ServiceConfig{
+		Filter:                      c.Filter,
+		ProtocolIDs:                 c.ProtocolIDs,
+		Interface:                   c.Interface,
+		RegistryIDs:                 c.RegistryIDs,
+		Cluster:                     c.Cluster,
+		Loadbalance:                 c.Loadbalance,
+		Group:                       c.Group,
+		Version:                     c.Version,
+		Methods:                     methods,
+		Warmup:                      c.Warmup,
+		Retries:                     c.Retries,
+		Serialization:               c.Serialization,
+		Params:                      c.Params,
+		Token:                       c.Token,
+		AccessLog:                   c.AccessLog,
+		TpsLimiter:                  c.TpsLimiter,
+		TpsLimitInterval:            c.TpsLimitInterval,
+		TpsLimitRate:                c.TpsLimitRate,
+		TpsLimitStrategy:            c.TpsLimitStrategy,
+		TpsLimitRejectedHandler:     c.TpsLimitRejectedHandler,
+		ExecuteLimit:                c.ExecuteLimit,
+		ExecuteLimitRejectedHandler: c.ExecuteLimitRejectedHandler,
+		Auth:                        c.Auth,
+		NotRegister:                 c.NotRegister,
+		ParamSign:                   c.ParamSign,
+		Tag:                         c.Tag,
+		TracingKey:                  c.TracingKey,
+		RCProtocolsMap:              protocols,
+		RCRegistriesMap:             registries,
+		ProxyFactoryKey:             c.ProxyFactoryKey,
+	}
+}
+
+func compatMethodConfig(c *global.MethodConfig) *config.MethodConfig {
+	if c == nil {
+		return nil
+	}
+	return &config.MethodConfig{
+		InterfaceId:                 c.InterfaceId,
+		InterfaceName:               c.InterfaceName,
+		Name:                        c.Name,
+		Retries:                     c.Retries,
+		LoadBalance:                 c.LoadBalance,
+		Weight:                      c.Weight,
+		TpsLimitInterval:            c.TpsLimitInterval,
+		TpsLimitRate:                c.TpsLimitRate,
+		TpsLimitStrategy:            c.TpsLimitStrategy,
+		ExecuteLimit:                c.ExecuteLimit,
+		ExecuteLimitRejectedHandler: c.ExecuteLimitRejectedHandler,
+		Sticky:                      c.Sticky,
+		RequestTimeout:              c.RequestTimeout,
+	}
+}
+
 func compatConsumerConfig(c *global.ConsumerConfig) *config.ConsumerConfig {
+	if c == nil {
+		return nil
+	}
 	return &config.ConsumerConfig{
 		Filter:                         c.Filter,
 		RegistryIDs:                    c.RegistryIDs,
@@ -169,6 +269,9 @@ func compatConsumerConfig(c *global.ConsumerConfig) *config.ConsumerConfig {
 }
 
 func compatMetricConfig(c *global.MetricConfig) *config.MetricConfig {
+	if c == nil {
+		return nil
+	}
 	return &config.MetricConfig{
 		Mode:               c.Mode,
 		Namespace:          c.Namespace,
@@ -182,6 +285,9 @@ func compatMetricConfig(c *global.MetricConfig) *config.MetricConfig {
 }
 
 func compatTracingConfig(c *global.TracingConfig) *config.TracingConfig {
+	if c == nil {
+		return nil
+	}
 	return &config.TracingConfig{
 		Name:        c.Name,
 		ServiceName: c.ServiceName,
@@ -191,6 +297,9 @@ func compatTracingConfig(c *global.TracingConfig) *config.TracingConfig {
 }
 
 func compatLoggerConfig(c *global.LoggerConfig) *config.LoggerConfig {
+	if c == nil {
+		return nil
+	}
 	return &config.LoggerConfig{
 		Driver:   c.Driver,
 		Level:    c.Level,
@@ -201,6 +310,9 @@ func compatLoggerConfig(c *global.LoggerConfig) *config.LoggerConfig {
 }
 
 func compatFile(c *global.File) *config.File {
+	if c == nil {
+		return nil
+	}
 	return &config.File{
 		Name:       c.Name,
 		MaxSize:    c.MaxSize,
@@ -211,6 +323,9 @@ func compatFile(c *global.File) *config.File {
 }
 
 func compatShutdownConfig(c *global.ShutdownConfig) *config.ShutdownConfig {
+	if c == nil {
+		return nil
+	}
 	cfg := &config.ShutdownConfig{
 		Timeout:                     c.Timeout,
 		StepTimeout:                 c.StepTimeout,
@@ -226,18 +341,27 @@ func compatShutdownConfig(c *global.ShutdownConfig) *config.ShutdownConfig {
 }
 
 func compatCustomConfig(c *global.CustomConfig) *config.CustomConfig {
+	if c == nil {
+		return nil
+	}
 	return &config.CustomConfig{
 		ConfigMap: c.ConfigMap,
 	}
 }
 
 func compatProfilesConfig(c *global.ProfilesConfig) *config.ProfilesConfig {
+	if c == nil {
+		return nil
+	}
 	return &config.ProfilesConfig{
 		Active: c.Active,
 	}
 }
 
 func compatTLSConfig(c *global.TLSConfig) *config.TLSConfig {
+	if c == nil {
+		return nil
+	}
 	return &config.TLSConfig{
 		CACertFile:    c.CACertFile,
 		TLSCertFile:   c.TLSCertFile,

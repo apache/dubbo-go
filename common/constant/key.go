@@ -144,6 +144,7 @@ const (
 	CallHTTPTypeKey                    = "call-http-type"
 	CallHTTP                           = "http"
 	CallHTTP2                          = "http2"
+	ServiceInfoKey                     = "service-info"
 )
 
 const (

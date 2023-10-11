@@ -29,11 +29,11 @@ type ProviderConfig struct {
 	// TracingKey is tracing ids list
 	TracingKey string `yaml:"tracing-key" json:"tracing-key" property:"tracing-key"`
 	// there is no need to configure Services
-	//// Services services
-	//Services     map[string]*server.ServiceConfig `yaml:"services" json:"services,omitempty" property:"services"`
-	ProxyFactory string            `default:"default" yaml:"proxy" json:"proxy,omitempty" property:"proxy"`
-	FilterConf   interface{}       `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf"`
-	ConfigType   map[string]string `yaml:"config_type" json:"config_type,omitempty" property:"config_type"`
+	// Services services
+	Services     map[string]*ServiceConfig `yaml:"services" json:"services,omitempty" property:"services"`
+	ProxyFactory string                    `default:"default" yaml:"proxy" json:"proxy,omitempty" property:"proxy"`
+	FilterConf   interface{}               `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf"`
+	ConfigType   map[string]string         `yaml:"config_type" json:"config_type,omitempty" property:"config_type"`
 	// adaptive service
 	AdaptiveService        bool `yaml:"adaptive-service" json:"adaptive-service" property:"adaptive-service"`
 	AdaptiveServiceVerbose bool `yaml:"adaptive-service-verbose" json:"adaptive-service-verbose" property:"adaptive-service-verbose"`
@@ -43,6 +43,7 @@ func DefaultProviderConfig() *ProviderConfig {
 	return &ProviderConfig{
 		RegistryIDs: make([]string, 8),
 		ProtocolIDs: make([]string, 8),
+		Services:    make(map[string]*ServiceConfig),
 	}
 }
 

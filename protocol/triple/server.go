@@ -82,6 +82,14 @@ func (s *Server) Start(invoker protocol.Invoker, info *server.ServiceInfo) {
 	}
 	hanOpts = append(hanOpts, tri.WithSendMaxBytes(maxServerSendMsgSize))
 
+	serialization := URL.GetParam(constant.SerializationKey, constant.ProtobufSerialization)
+	switch serialization {
+	case constant.ProtobufSerialization:
+	case constant.JSONSerialization:
+	default:
+		panic(fmt.Sprintf("Unsupported serialization: %s", serialization))
+	}
+
 	// todo: implement interceptor
 	// If global trace instance was set, then server tracer instance
 	// can be get. If not, will return NoopTracer.
@@ -93,20 +101,21 @@ func (s *Server) Start(invoker protocol.Invoker, info *server.ServiceInfo) {
 	//	grpc.MaxSendMsgSize(maxServerSendMsgSize),
 	//)
 	var cfg *tls.Config
-	tlsConfig := config.GetRootConfig().TLSConfig
-	if tlsConfig != nil {
-		cfg, err = config.GetServerTlsConfig(&config.TLSConfig{
-			CACertFile:    tlsConfig.CACertFile,
-			TLSCertFile:   tlsConfig.TLSCertFile,
-			TLSKeyFile:    tlsConfig.TLSKeyFile,
-			TLSServerName: tlsConfig.TLSServerName,
-		})
-		if err != nil {
-			return
-		}
-		logger.Infof("Triple Server initialized the TLSConfig configuration")
-	}
-	srv.TLSConfig = cfg
+	// todo(DMwangnima): think about a more elegant way to configure tls
+	//tlsConfig := config.GetRootConfig().TLSConfig
+	//if tlsConfig != nil {
+	//	cfg, err = config.GetServerTlsConfig(&config.TLSConfig{
+	//		CACertFile:    tlsConfig.CACertFile,
+	//		TLSCertFile:   tlsConfig.TLSCertFile,
+	//		TLSKeyFile:    tlsConfig.TLSKeyFile,
+	//		TLSServerName: tlsConfig.TLSServerName,
+	//	})
+	//	if err != nil {
+	//		return
+	//	}
+	//	logger.Infof("Triple Server initialized the TLSConfig configuration")
+	//}
+	//srv.TLSConfig = cfg
 
 	// todo:// open tracing
 	hanOpts = append(hanOpts, tri.WithInterceptors())
@@ -186,7 +195,9 @@ func compatHandleService(mux *http.ServeMux, opts ...tri.HandlerOption) {
 		serviceKey := common.ServiceKey(providerService.Interface, providerService.Group, providerService.Version)
 		exporter, _ := tripleProtocol.ExporterMap().Load(serviceKey)
 		if exporter == nil {
-			panic(fmt.Sprintf("no exporter found for servicekey: %v", serviceKey))
+			// todo(DMwangnima): handler reflection Service and health Service
+			continue
+			//panic(fmt.Sprintf("no exporter found for servicekey: %v", serviceKey))
 		}
 		invoker := exporter.(protocol.Exporter).GetInvoker()
 		if invoker == nil {

@@ -19,7 +19,6 @@ package server
 
 import (
 	"container/list"
-
 	"fmt"
 	"net/url"
 	"os"
@@ -29,8 +28,6 @@ import (
 )
 
 import (
-	"github.com/creasty/defaults"
-
 	"github.com/dubbogo/gost/log/logger"
 	gxnet "github.com/dubbogo/gost/net"
 
@@ -41,58 +38,22 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	commonCfg "dubbo.apache.org/dubbo-go/v3/common/config"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/global"
+	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
 )
 
 // Prefix returns dubbo.service.${InterfaceName}.
-func (s *ServerOptions) Prefix() string {
-	return strings.Join([]string{constant.ServiceConfigPrefix, s.Id}, ".")
+func (svcOpts *ServiceOptions) Prefix() string {
+	return strings.Join([]string{constant.ServiceConfigPrefix, svcOpts.Id}, ".")
 }
 
-func (s *ServerOptions) Init(opts ...ServerOption) error {
-	for _, opt := range opts {
-		opt(s)
-	}
-	if err := defaults.Set(s); err != nil {
-		return err
-	}
-	for _, opt := range opts {
-		opt(s)
-	}
-
-	srv := s.Server
-
-	s.exported = atomic.NewBool(false)
-
-	application := s.Application
-	if application != nil {
-		s.applicationCompat = compatApplicationConfig(application)
-		if err := s.applicationCompat.Init(); err != nil {
-			return err
-		}
-		s.metadataType = s.applicationCompat.MetadataType
-		if srv.Group == "" {
-			srv.Group = s.applicationCompat.Group
-		}
-		if srv.Version == "" {
-			srv.Version = s.applicationCompat.Version
-		}
-	}
-	s.unexported = atomic.NewBool(false)
-	err := s.check()
-	if err != nil {
-		panic(err)
-	}
-	s.Export = true
-	return commonCfg.Verify(s)
-}
-
-func (s *ServerOptions) check() error {
-	srv := s.Server
+func (svcOpts *ServiceOptions) check() error {
+	srv := svcOpts.Service
 	// check if the limiter has been imported
 	if srv.TpsLimiter != "" {
 		_, err := extension.GetTpsLimiter(srv.TpsLimiter)
@@ -116,33 +77,33 @@ func (s *ServerOptions) check() error {
 	if srv.TpsLimitInterval != "" {
 		tpsLimitInterval, err := strconv.ParseInt(srv.TpsLimitInterval, 0, 0)
 		if err != nil {
-			return fmt.Errorf("[ServiceConfig] Cannot parse the configuration tps.limit.interval for service %s, please check your configuration", srv.Interface)
+			return fmt.Errorf("[ServiceConfig] Cannot parse the configuration tps.limit.interval for service %svcOpts, please check your configuration", srv.Interface)
 		}
 		if tpsLimitInterval < 0 {
-			return fmt.Errorf("[ServiceConfig] The configuration tps.limit.interval for service %s must be positive, please check your configuration", srv.Interface)
+			return fmt.Errorf("[ServiceConfig] The configuration tps.limit.interval for service %svcOpts must be positive, please check your configuration", srv.Interface)
 		}
 	}
 
 	if srv.TpsLimitRate != "" {
 		tpsLimitRate, err := strconv.ParseInt(srv.TpsLimitRate, 0, 0)
 		if err != nil {
-			return fmt.Errorf("[ServiceConfig] Cannot parse the configuration tps.limit.rate for service %s, please check your configuration", srv.Interface)
+			return fmt.Errorf("[ServiceConfig] Cannot parse the configuration tps.limit.rate for service %svcOpts, please check your configuration", srv.Interface)
 		}
 		if tpsLimitRate < 0 {
-			return fmt.Errorf("[ServiceConfig] The configuration tps.limit.rate for service %s must be positive, please check your configuration", srv.Interface)
+			return fmt.Errorf("[ServiceConfig] The configuration tps.limit.rate for service %svcOpts must be positive, please check your configuration", srv.Interface)
 		}
 	}
 	return nil
 }
 
 // InitExported will set exported as false atom bool
-func (s *ServerOptions) InitExported() {
-	s.exported = atomic.NewBool(false)
+func (svcOpts *ServiceOptions) InitExported() {
+	svcOpts.exported = atomic.NewBool(false)
 }
 
 // IsExport will return whether the service config is exported or not
-func (s *ServerOptions) IsExport() bool {
-	return s.exported.Load()
+func (svcOpts *ServiceOptions) IsExport() bool {
+	return svcOpts.exported.Load()
 }
 
 // Get Random Port
@@ -163,66 +124,61 @@ func getRandomPort(protocolConfigs []*config.ProtocolConfig) *list.List {
 	return ports
 }
 
-func (s *ServerOptions) ExportWithoutInfo() error {
-	return s.export(nil)
+func (svcOpts *ServiceOptions) ExportWithoutInfo() error {
+	return svcOpts.export(nil)
 }
 
-func (s *ServerOptions) ExportWithInfo(info *ServiceInfo) error {
-	return s.export(info)
+func (svcOpts *ServiceOptions) ExportWithInfo(info *ServiceInfo) error {
+	return svcOpts.export(info)
 }
 
-func (s *ServerOptions) export(info *ServiceInfo) error {
-	srv := s.Server
+func (svcOpts *ServiceOptions) export(info *ServiceInfo) error {
+	srv := svcOpts.Service
 
-	var methodInfos []MethodInfo
-	var methods string
 	if info != nil {
 		srv.Interface = info.InterfaceName
-		methodInfos = info.Methods
-		s.Id = info.InterfaceName
-		s.info = info
+		svcOpts.Id = info.InterfaceName
+		svcOpts.info = info
 	}
-	// TODO: delay export
-	if s.unexported != nil && s.unexported.Load() {
+	// TODO: delay needExport
+	if svcOpts.unexported != nil && svcOpts.unexported.Load() {
 		err := perrors.Errorf("The service %v has already unexported!", srv.Interface)
 		logger.Errorf(err.Error())
 		return err
 	}
-	if s.exported != nil && s.exported.Load() {
+	if svcOpts.exported != nil && svcOpts.exported.Load() {
 		logger.Warnf("The service %v has already exported!", srv.Interface)
 		return nil
 	}
 
 	regUrls := make([]*common.URL, 0)
 	if !srv.NotRegister {
-		regUrls = config.LoadRegistries(srv.RegistryIDs, s.registriesCompat, common.PROVIDER)
+		regUrls = config.LoadRegistries(srv.RegistryIDs, svcOpts.registriesCompat, common.PROVIDER)
 	}
 
-	urlMap := s.getUrlMap()
-	protocolConfigs := loadProtocol(srv.ProtocolIDs, s.protocolCompat)
+	urlMap := svcOpts.getUrlMap()
+	protocolConfigs := loadProtocol(srv.ProtocolIDs, svcOpts.protocolsCompat)
 	if len(protocolConfigs) == 0 {
-		logger.Warnf("The service %v's '%v' protocols don't has right protocolConfigs, Please check your configuration center and transfer protocol ", srv.Interface, srv.ProtocolIDs)
+		logger.Warnf("The service %v'svcOpts '%v' protocols don't has right protocolConfigs, Please check your configuration center and transfer protocol ", srv.Interface, srv.ProtocolIDs)
 		return nil
 	}
 
+	var invoker protocol.Invoker
 	ports := getRandomPort(protocolConfigs)
 	nextPort := ports.Front()
-	proxyFactory := extension.GetProxyFactory(s.ProxyFactoryKey)
+	proxyFactory := extension.GetProxyFactory(svcOpts.ProxyFactoryKey)
 	for _, proto := range protocolConfigs {
-		if info != nil {
-			for _, info := range methodInfos {
-				methods += info.Name + ","
-			}
-		} else {
-			// registry the service reflect
-			var err error
-			methods, err = common.ServiceMap.Register(srv.Interface, proto.Name, srv.Group, srv.Version, s.rpcService)
-			if err != nil {
-				formatErr := perrors.Errorf("The service %v export the protocol %v error! Error message is %v.",
-					srv.Interface, proto.Name, err.Error())
-				logger.Errorf(formatErr.Error())
-				return formatErr
-			}
+		// *important* Register should have been replaced by processing of ServiceInfo.
+		// but many modules like metadata need to make use of information from ServiceMap.
+		// todo(DMwangnimg): finish replacing procedure
+
+		// registry the service reflect
+		methods, err := common.ServiceMap.Register(srv.Interface, proto.Name, srv.Group, srv.Version, svcOpts.rpcService)
+		if err != nil {
+			formatErr := perrors.Errorf("The service %v needExport the protocol %v error! Error message is %v.",
+				srv.Interface, proto.Name, err.Error())
+			logger.Errorf(formatErr.Error())
+			return formatErr
 		}
 
 		port := proto.Port
@@ -236,12 +192,13 @@ func (s *ServerOptions) export(info *ServiceInfo) error {
 			common.WithIp(proto.Ip),
 			common.WithPort(port),
 			common.WithParams(urlMap),
-			common.WithParamsValue(constant.BeanNameKey, s.Id),
+			common.WithParamsValue(constant.BeanNameKey, svcOpts.Id),
 			//common.WithParamsValue(constant.SslEnabledKey, strconv.FormatBool(config.GetSslEnabled())),
 			common.WithMethods(strings.Split(methods, ",")),
-			common.WithMethodInfos(methodInfos),
+			// todo(DMwangnima): remove this
+			common.WithAttribute(constant.ServiceInfoKey, info),
 			common.WithToken(srv.Token),
-			common.WithParamsValue(constant.MetadataTypeKey, s.metadataType),
+			common.WithParamsValue(constant.MetadataTypeKey, svcOpts.metadataType),
 			// fix https://github.com/apache/dubbo-go/issues/2176
 			common.WithParamsValue(constant.MaxServerSendMsgSize, proto.MaxServerSendMsgSize),
 			common.WithParamsValue(constant.MaxServerRecvMsgSize, proto.MaxServerRecvMsgSize),
@@ -251,50 +208,61 @@ func (s *ServerOptions) export(info *ServiceInfo) error {
 		}
 
 		// post process the URL to be exported
-		s.postProcessConfig(ivkURL)
-		// config post processor may set "export" to false
+		svcOpts.postProcessConfig(ivkURL)
+		// config post processor may set "needExport" to false
 		if !ivkURL.GetParamBool(constant.ExportKey, true) {
 			return nil
 		}
 
 		if len(regUrls) > 0 {
-			s.cacheMutex.Lock()
-			if s.cacheProtocol == nil {
+			svcOpts.cacheMutex.Lock()
+			if svcOpts.cacheProtocol == nil {
 				logger.Debugf(fmt.Sprintf("First load the registry protocol, url is {%v}!", ivkURL))
-				s.cacheProtocol = extension.GetProtocol(constant.RegistryProtocol)
+				svcOpts.cacheProtocol = extension.GetProtocol(constant.RegistryProtocol)
 			}
-			s.cacheMutex.Unlock()
+			svcOpts.cacheMutex.Unlock()
 
 			for _, regUrl := range regUrls {
 				setRegistrySubURL(ivkURL, regUrl)
-				invoker := proxyFactory.GetInvoker(regUrl)
-				exporter := s.cacheProtocol.Export(invoker)
+				if info == nil {
+					invoker = proxyFactory.GetInvoker(regUrl)
+				} else {
+					invoker = newInfoInvoker(regUrl, info, svcOpts.rpcService)
+				}
+				exporter := svcOpts.cacheProtocol.Export(invoker)
 				if exporter == nil {
 					return perrors.New(fmt.Sprintf("Registry protocol new exporter error, registry is {%v}, url is {%v}", regUrl, ivkURL))
 				}
-				s.exporters = append(s.exporters, exporter)
+				svcOpts.exporters = append(svcOpts.exporters, exporter)
 			}
 		} else {
 			if ivkURL.GetParam(constant.InterfaceKey, "") == constant.MetadataServiceName {
 				ms, err := extension.GetLocalMetadataService("")
 				if err != nil {
-					logger.Warnf("export org.apache.dubbo.metadata.MetadataService failed beacause of %s ! pls check if you import _ \"dubbo.apache.org/dubbo-go/v3/metadata/service/local\"", err)
+					logger.Warnf("needExport org.apache.dubbo.metadata.MetadataService failed beacause of %svcOpts ! pls check if you import _ \"dubbo.apache.org/dubbo-go/v3/metadata/service/local\"", err)
 					return nil
 				}
 				if err := ms.SetMetadataServiceURL(ivkURL); err != nil {
-					logger.Warnf("SetMetadataServiceURL error = %s", err)
+					logger.Warnf("SetMetadataServiceURL error = %svcOpts", err)
 				}
 			}
-			invoker := proxyFactory.GetInvoker(ivkURL)
+			if info == nil {
+				invoker = proxyFactory.GetInvoker(ivkURL)
+			} else {
+				invoker = newInfoInvoker(ivkURL, info, svcOpts.rpcService)
+			}
 			exporter := extension.GetProtocol(protocolwrapper.FILTER).Export(invoker)
 			if exporter == nil {
 				return perrors.New(fmt.Sprintf("Filter protocol without registry new exporter error, url is {%v}", ivkURL))
 			}
-			s.exporters = append(s.exporters, exporter)
+			svcOpts.exporters = append(svcOpts.exporters, exporter)
 		}
 		publishServiceDefinition(ivkURL)
+		// this protocol would be destroyed in graceful_shutdown
+		// please refer to (https://github.com/apache/dubbo-go/issues/2429)
+		graceful_shutdown.RegisterProtocol(proto.Name)
 	}
-	s.exported.Store(true)
+	svcOpts.exported.Store(true)
 	return nil
 }
 
@@ -318,35 +286,35 @@ func loadProtocol(protocolIds []string, protocols map[string]*config.ProtocolCon
 }
 
 // Unexport will call unexport of all exporters service config exported
-func (s *ServerOptions) Unexport() {
-	if !s.exported.Load() {
+func (svcOpts *ServiceOptions) Unexport() {
+	if !svcOpts.exported.Load() {
 		return
 	}
-	if s.unexported.Load() {
+	if svcOpts.unexported.Load() {
 		return
 	}
 
 	func() {
-		s.exportersLock.Lock()
-		defer s.exportersLock.Unlock()
-		for _, exporter := range s.exporters {
+		svcOpts.exportersLock.Lock()
+		defer svcOpts.exportersLock.Unlock()
+		for _, exporter := range svcOpts.exporters {
 			exporter.UnExport()
 		}
-		s.exporters = nil
+		svcOpts.exporters = nil
 	}()
 
-	s.exported.Store(false)
-	s.unexported.Store(true)
+	svcOpts.exported.Store(false)
+	svcOpts.unexported.Store(true)
 }
 
 // Implement only store the @s and return
-func (s *ServerOptions) Implement(rpcService common.RPCService) {
-	s.rpcService = rpcService
+func (svcOpts *ServiceOptions) Implement(rpcService common.RPCService) {
+	svcOpts.rpcService = rpcService
 }
 
-func (s *ServerOptions) getUrlMap() url.Values {
-	srv := s.Server
-	app := s.applicationCompat
+func (svcOpts *ServiceOptions) getUrlMap() url.Values {
+	srv := svcOpts.Service
+	app := svcOpts.applicationCompat
 
 	urlMap := url.Values{}
 	// first set user params
@@ -379,15 +347,15 @@ func (s *ServerOptions) getUrlMap() url.Values {
 	urlMap.Set(constant.OwnerKey, app.Owner)
 	urlMap.Set(constant.EnvironmentKey, app.Environment)
 
-	// filter
+	//filter
 	var filters string
 	if srv.Filter == "" {
 		filters = constant.DefaultServiceFilters
 	} else {
 		filters = srv.Filter
 	}
-	if s.adaptiveService {
-		filters += fmt.Sprintf(",%s", constant.AdaptiveServiceProviderFilterKey)
+	if svcOpts.adaptiveService {
+		filters += fmt.Sprintf(",%svcOpts", constant.AdaptiveServiceProviderFilterKey)
 	}
 	urlMap.Set(constant.ServiceFilterKey, filters)
 
@@ -409,8 +377,8 @@ func (s *ServerOptions) getUrlMap() url.Values {
 	urlMap.Set(constant.ServiceAuthKey, srv.Auth)
 	urlMap.Set(constant.ParameterSignatureEnableKey, srv.ParamSign)
 
-	// whether to export or not
-	urlMap.Set(constant.ExportKey, strconv.FormatBool(s.Export))
+	// whether to needExport or not
+	urlMap.Set(constant.ExportKey, strconv.FormatBool(svcOpts.needExport))
 	urlMap.Set(constant.PIDKey, fmt.Sprintf("%d", os.Getpid()))
 
 	for _, v := range srv.Methods {
@@ -431,10 +399,10 @@ func (s *ServerOptions) getUrlMap() url.Values {
 }
 
 // GetExportedUrls will return the url in service config's exporter
-func (s *ServerOptions) GetExportedUrls() []*common.URL {
-	if s.exported.Load() {
+func (svcOpts *ServiceOptions) GetExportedUrls() []*common.URL {
+	if svcOpts.exported.Load() {
 		var urls []*common.URL
-		for _, exporter := range s.exporters {
+		for _, exporter := range svcOpts.exporters {
 			urls = append(urls, exporter.GetInvoker().GetURL())
 		}
 		return urls
@@ -443,7 +411,7 @@ func (s *ServerOptions) GetExportedUrls() []*common.URL {
 }
 
 // postProcessConfig asks registered ConfigPostProcessor to post-process the current ServiceConfig.
-func (s *ServerOptions) postProcessConfig(url *common.URL) {
+func (svcOpts *ServiceOptions) postProcessConfig(url *common.URL) {
 	for _, p := range extension.GetConfigPostProcessors() {
 		p.PostProcessServiceConfig(url)
 	}
@@ -462,4 +430,26 @@ func publishServiceDefinition(url *common.URL) {
 	if remoteMetadataService, err := extension.GetRemoteMetadataService(); err == nil && remoteMetadataService != nil {
 		remoteMetadataService.PublishServiceDefinition(url)
 	}
+}
+
+// todo(DMwangnima): think about moving this function to a common place(e.g. /common/config)
+func getRegistryIds(registries map[string]*global.RegistryConfig) []string {
+	ids := make([]string, 0)
+	for key := range registries {
+		ids = append(ids, key)
+	}
+	return removeDuplicateElement(ids)
+}
+
+// removeDuplicateElement remove duplicate element
+func removeDuplicateElement(items []string) []string {
+	result := make([]string, 0, len(items))
+	temp := map[string]struct{}{}
+	for _, item := range items {
+		if _, ok := temp[item]; !ok && item != "" {
+			temp[item] = struct{}{}
+			result = append(result, item)
+		}
+	}
+	return result
 }

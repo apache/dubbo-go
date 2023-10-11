@@ -24,6 +24,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/client"
 	"dubbo.apache.org/dubbo-go/v3/global"
+	"dubbo.apache.org/dubbo-go/v3/server"
 )
 
 // Instance is the highest layer conception that user could touch. It is mapped from RootConfig.
@@ -58,62 +59,30 @@ func (ins *Instance) NewClient(opts ...client.ClientOption) (*client.Client, err
 	conCfg := ins.insOpts.Consumer
 	appCfg := ins.insOpts.Application
 	regsCfg := ins.insOpts.Registries
-	// todo(DMwangnima): use slices to maintain options
+	sdCfg := ins.insOpts.Shutdown
 	if conCfg != nil {
+		refCfg := &global.ReferenceConfig{
+			Check:       &conCfg.Check,
+			Filter:      conCfg.Filter,
+			Protocol:    conCfg.Protocol,
+			RegistryIDs: conCfg.RegistryIDs,
+			TracingKey:  conCfg.TracingKey,
+		}
 		// these options come from Consumer and Root.
 		// for dubbo-go developers, referring config/ConsumerConfig.Init and config/ReferenceConfig
 		cliOpts = append(cliOpts,
-			client.WithReferenceConfig(
-				global.WithReference_Filter(conCfg.Filter),
-				global.WithReference_RegistryIDs(conCfg.RegistryIDs),
-				global.WithReference_Protocol(conCfg.Protocol),
-				global.WithReference_TracingKey(conCfg.TracingKey),
-				global.WithReference_Check(conCfg.Check),
-			),
-			client.WithConsumerConfig(
-				global.WithConsumer_MeshEnabled(conCfg.MeshEnabled),
-				global.WithConsumer_AdaptiveService(conCfg.AdaptiveService),
-				global.WithConsumer_ProxyFactory(conCfg.ProxyFactory),
-			),
+			client.SetReference(refCfg),
+			client.SetConsumer(conCfg),
 		)
 	}
 	if appCfg != nil {
-		cliOpts = append(cliOpts,
-			client.WithApplicationConfig(
-				global.WithApplication_Name(appCfg.Name),
-				global.WithApplication_Organization(appCfg.Organization),
-				global.WithApplication_Module(appCfg.Module),
-				global.WithApplication_Version(appCfg.Version),
-				global.WithApplication_Owner(appCfg.Owner),
-				global.WithApplication_Environment(appCfg.Environment),
-				global.WithApplication_Group(appCfg.Group),
-				global.WithApplication_MetadataType(appCfg.MetadataType),
-			),
-		)
+		cliOpts = append(cliOpts, client.SetApplication(appCfg))
 	}
 	if regsCfg != nil {
-		for key, reg := range regsCfg {
-			cliOpts = append(cliOpts,
-				client.WithRegistryConfig(key,
-					global.WithRegistry_Protocol(reg.Protocol),
-					global.WithRegistry_Timeout(reg.Timeout),
-					global.WithRegistry_Group(reg.Group),
-					global.WithRegistry_Namespace(reg.Namespace),
-					global.WithRegistry_TTL(reg.TTL),
-					global.WithRegistry_Address(reg.Address),
-					global.WithRegistry_Username(reg.Username),
-					global.WithRegistry_Password(reg.Password),
-					global.WithRegistry_Simplified(reg.Simplified),
-					global.WithRegistry_Preferred(reg.Preferred),
-					global.WithRegistry_Zone(reg.Zone),
-					global.WithRegistry_Weight(reg.Weight),
-					global.WithRegistry_Params(reg.Params),
-					global.WithRegistry_RegistryType(reg.RegistryType),
-					global.WithRegistry_UseAsMetaReport(reg.UseAsMetaReport),
-					global.WithRegistry_UseAsConfigCenter(reg.UseAsConfigCenter),
-				),
-			)
-		}
+		cliOpts = append(cliOpts, client.SetRegistries(regsCfg))
+	}
+	if sdCfg != nil {
+		cliOpts = append(cliOpts, client.SetShutdown(sdCfg))
 	}
 	// options passed by users has higher priority
 	cliOpts = append(cliOpts, opts...)
@@ -124,4 +93,53 @@ func (ins *Instance) NewClient(opts ...client.ClientOption) (*client.Client, err
 	}
 
 	return cli, nil
+}
+
+// NewServer is like server.NewServer, but inject configurations from RootConfig.
+func (ins *Instance) NewServer(opts ...server.ServerOption) (*server.Server, error) {
+	if ins == nil || ins.insOpts == nil {
+		return nil, errors.New("Instance has not been initialized")
+	}
+
+	var srvOpts []server.ServerOption
+	appCfg := ins.insOpts.Application
+	regsCfg := ins.insOpts.Registries
+	prosCfg := ins.insOpts.Protocols
+	trasCfg := ins.insOpts.Tracing
+	sdCfg := ins.insOpts.Shutdown
+	if appCfg != nil {
+		srvOpts = append(srvOpts,
+			server.SetServer_Application(appCfg),
+			//server.WithServer_ApplicationConfig(
+			//	global.WithApplication_Name(appCfg.Name),
+			//	global.WithApplication_Organization(appCfg.Organization),
+			//	global.WithApplication_Module(appCfg.Module),
+			//	global.WithApplication_Version(appCfg.Version),
+			//	global.WithApplication_Owner(appCfg.Owner),
+			//	global.WithApplication_Environment(appCfg.Environment),
+			//),
+		)
+	}
+	if regsCfg != nil {
+		srvOpts = append(srvOpts, server.SetServer_Registries(regsCfg))
+	}
+	if prosCfg != nil {
+		srvOpts = append(srvOpts, server.SetServer_Protocols(prosCfg))
+	}
+	if trasCfg != nil {
+		srvOpts = append(srvOpts, server.SetServer_Tracings(trasCfg))
+	}
+	if sdCfg != nil {
+		srvOpts = append(srvOpts, server.SetServer_Shutdown(sdCfg))
+	}
+
+	// options passed by users have higher priority
+	srvOpts = append(srvOpts, opts...)
+
+	srv, err := server.NewServer(srvOpts...)
+	if err != nil {
+		return nil, err
+	}
+
+	return srv, nil
 }

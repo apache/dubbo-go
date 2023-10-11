@@ -19,7 +19,18 @@ package server
 
 import (
 	"context"
+	"fmt"
+)
+
+import (
+	"github.com/pkg/errors"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/metadata"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
+	registry_exposed "dubbo.apache.org/dubbo-go/v3/registry/exposed_tmp"
 )
 
 type Server struct {
@@ -37,14 +48,114 @@ type ServiceInfo struct {
 	Meta          map[string]interface{}
 }
 
+type infoInvoker struct {
+	url       *common.URL
+	base      *protocol.BaseInvoker
+	info      *ServiceInfo
+	svc       common.RPCService
+	methodMap map[string]*MethodInfo
+}
+
+func (ii *infoInvoker) init() {
+	url := ii.base.GetURL()
+	if url.SubURL != nil {
+		url = url.SubURL
+	}
+	ii.url = url
+	methodMap := make(map[string]*MethodInfo)
+	for i := range ii.info.Methods {
+		methodMap[ii.info.Methods[i].Name] = &ii.info.Methods[i]
+	}
+	ii.methodMap = methodMap
+}
+
+func (ii *infoInvoker) GetURL() *common.URL {
+	return ii.base.GetURL()
+}
+
+func (ii *infoInvoker) IsAvailable() bool {
+	return ii.base.IsAvailable()
+}
+
+func (ii *infoInvoker) Destroy() {
+	ii.base.Destroy()
+}
+
+func (ii *infoInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
+	name := invocation.MethodName()
+	args := invocation.Arguments()
+	result := new(protocol.RPCResult)
+	if method, ok := ii.methodMap[name]; ok {
+		res, err := method.MethodFunc(ctx, args, ii.svc)
+		result.SetResult(res)
+		result.SetError(err)
+		return result
+	}
+	result.SetError(fmt.Errorf("no match method for %s", name))
+
+	return result
+}
+
+func newInfoInvoker(url *common.URL, info *ServiceInfo, svc common.RPCService) protocol.Invoker {
+	invoker := &infoInvoker{
+		base: protocol.NewBaseInvoker(url),
+		info: info,
+		svc:  svc,
+	}
+	invoker.init()
+	return invoker
+}
+
 // Register assemble invoker chains like ProviderConfig.Load, init a service per call
-func (s *Server) Register(handler interface{}, info *ServiceInfo, opts ...ServerOption) error {
-	for _, opt := range opts {
-		opt(s.cfg)
+func (s *Server) Register(handler interface{}, info *ServiceInfo, opts ...ServiceOption) error {
+	if s.cfg == nil {
+		return errors.New("Server has not been initialized, please use NewServer() to create Server")
+	}
+	var svcOpts []ServiceOption
+	appCfg := s.cfg.Application
+	proCfg := s.cfg.Provider
+	prosCfg := s.cfg.Protocols
+	regsCfg := s.cfg.Registries
+	// todo(DMwangnima): record the registered service
+	newSvcOpts := defaultServiceOptions()
+	if appCfg != nil {
+		svcOpts = append(svcOpts,
+			SetApplication(s.cfg.Application),
+		)
+	}
+	if proCfg != nil {
+		svcOpts = append(svcOpts,
+			SetProvider(proCfg),
+		)
+	}
+	if prosCfg != nil {
+		svcOpts = append(svcOpts,
+			SetProtocols(prosCfg),
+		)
+	}
+	if regsCfg != nil {
+		svcOpts = append(svcOpts,
+			SetRegistries(regsCfg),
+		)
 	}
 
-	// ProviderConfig.Load
-	// url
+	// options passed by users have higher priority
+	svcOpts = append(svcOpts, opts...)
+	if err := newSvcOpts.init(svcOpts...); err != nil {
+		return err
+	}
+	newSvcOpts.Implement(handler)
+	if err := newSvcOpts.ExportWithInfo(info); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *Server) Serve() error {
+	metadata.ExportMetadataService()
+	registry_exposed.RegisterServiceInstance(s.cfg.Application.Name, s.cfg.Application.Tag, s.cfg.Application.MetadataType)
+	select {}
 	return nil
 }
 
