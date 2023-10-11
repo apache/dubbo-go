@@ -462,8 +462,8 @@ func TestNewReferenceConfigBuilder(t *testing.T) {
 }
 
 func TestReferenceConfigInitWithoutConsumerConfig(t *testing.T) {
-	rootConfig := NewRootConfigBuilder().Build()
-	rootConfig.Consumer = nil
-	err := NewReferenceConfigBuilder().Build().Init(rootConfig)
+	testRootConfig := NewRootConfigBuilder().Build()
+	testRootConfig.Consumer = nil
+	err := NewReferenceConfigBuilder().Build().Init(testRootConfig)
 	assert.Nil(t, err)
 }
