@@ -30,7 +30,7 @@ func main() {
 	// configure global configurations and common modules
 	ins, err := dubbo.NewInstance(
 		dubbo.WithName("dubbo_test"),
-		dubbo.WithProtocol("tri",
+		dubbo.WithProtocol(
 			protocol.WithTriple(),
 			protocol.WithPort(20000),
 		),

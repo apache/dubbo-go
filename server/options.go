@@ -128,17 +128,14 @@ func WithServer_RegistryIDs(registryIDs []string) ServerOption {
 	}
 }
 
-func WithServer_Registry(key string, opts ...registry.Option) ServerOption {
-	regOpts := registry.DefaultOptions()
-	for _, opt := range opts {
-		opt(regOpts)
-	}
+func WithServer_Registry(opts ...registry.Option) ServerOption {
+	regOpts := registry.NewOptions(opts...)
 
 	return func(srvOpts *ServerOptions) {
 		if srvOpts.Registries == nil {
 			srvOpts.Registries = make(map[string]*global.RegistryConfig)
 		}
-		srvOpts.Registries[key] = regOpts.Registry
+		srvOpts.Registries[regOpts.ID] = regOpts.Registry
 	}
 }
 
@@ -149,17 +146,14 @@ func WithServer_ProtocolIDs(protocolIDs []string) ServerOption {
 	}
 }
 
-func WithServer_Protocol(key string, opts ...protocol.Option) ServerOption {
-	proOpts := protocol.DefaultOptions()
-	for _, opt := range opts {
-		opt(proOpts)
-	}
+func WithServer_Protocol(opts ...protocol.Option) ServerOption {
+	proOpts := protocol.NewOptions(opts...)
 
 	return func(srvOpts *ServerOptions) {
 		if srvOpts.Protocols == nil {
 			srvOpts.Protocols = make(map[string]*global.ProtocolConfig)
 		}
-		srvOpts.Protocols[key] = proOpts.Protocol
+		srvOpts.Protocols[proOpts.ID] = proOpts.Protocol
 	}
 }
 

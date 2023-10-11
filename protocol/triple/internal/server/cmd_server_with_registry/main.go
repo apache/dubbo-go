@@ -28,11 +28,11 @@ import (
 
 func main() {
 	srv, err := server.NewServer(
-		server.WithServer_Registry("zk",
+		server.WithServer_Registry(
 			registry.WithZookeeper(),
 			registry.WithAddress("127.0.0.1:2181"),
 		),
-		server.WithServer_Protocol("tri",
+		server.WithServer_Protocol(
 			protocol.WithTriple(),
 			protocol.WithPort(20000),
 		),

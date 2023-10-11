@@ -18,6 +18,7 @@
 package registry
 
 import (
+	"fmt"
 	"time"
 )
 
@@ -26,12 +27,34 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/global"
 )
 
+var defaultIDMap = map[string]string{}
+
 type Options struct {
 	Registry *global.RegistryConfig
+
+	ID string
 }
 
-func DefaultOptions() *Options {
-	return &Options{Registry: global.DefaultRegistryConfig()}
+func defaultOptions() *Options {
+	return &Options{
+		Registry: global.DefaultRegistryConfig(),
+	}
+}
+
+func NewOptions(opts ...Option) *Options {
+	defOpts := defaultOptions()
+	for _, opt := range opts {
+		opt(defOpts)
+	}
+
+	if defOpts.Registry.Protocol == "" {
+		panic(fmt.Sprintf("Please specify registry, eg. WithZookeeper()"))
+	}
+	if defOpts.ID == "" {
+		defOpts.ID = defOpts.Registry.Protocol
+	}
+
+	return defOpts
 }
 
 type Option func(*Options)
@@ -40,6 +63,7 @@ func WithEtcdV3() Option {
 	return func(opts *Options) {
 		// todo(DMwangnima): move etcdv3 to constant
 		opts.Registry.Protocol = "etcdv3"
+
 	}
 }
 
@@ -65,6 +89,14 @@ func WithZookeeper() Option {
 	return func(opts *Options) {
 		// todo(DMwangnima): move zookeeper to constant
 		opts.Registry.Protocol = "zookeeper"
+	}
+}
+
+// WithID specifies the id of registry.Options. Then you could configure client.WithRegistryIDs and
+// server.WithServer_RegistryIDs to specify which registry you need to use in multi-registries scenario.
+func WithID(id string) Option {
+	return func(opts *Options) {
+		opts.ID = id
 	}
 }
 
