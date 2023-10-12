@@ -15,10 +15,10 @@
  * limitations under the License.
  */
 
-package protocol
+package trace
 
 import (
-	"strconv"
+	"fmt"
 )
 
 import (
@@ -26,13 +26,13 @@ import (
 )
 
 type Options struct {
-	Protocol *global.ProtocolConfig
+	Tracing *global.TracingConfig
 
 	ID string
 }
 
 func defaultOptions() *Options {
-	return &Options{Protocol: global.DefaultProtocolConfig()}
+	return &Options{Tracing: &global.TracingConfig{}}
 }
 
 func NewOptions(opts ...Option) *Options {
@@ -41,13 +41,11 @@ func NewOptions(opts ...Option) *Options {
 		opt(defOpts)
 	}
 
+	if defOpts.Tracing.Name == "" {
+		panic(fmt.Sprintf("Please specify the tracing system to use, eg. WithZipkin()"))
+	}
 	if defOpts.ID == "" {
-		if defOpts.Protocol.Name == "" {
-			// should be the same as default value of config.ProtocolConfig.Protocol
-			defOpts.ID = "tri"
-		} else {
-			defOpts.ID = defOpts.Protocol.Name
-		}
+		defOpts.ID = defOpts.Tracing.Name
 	}
 
 	return defOpts
@@ -55,64 +53,51 @@ func NewOptions(opts ...Option) *Options {
 
 type Option func(*Options)
 
-func WithDubbo() Option {
-	return func(opts *Options) {
-		opts.Protocol.Name = "dubbo"
-	}
-}
-
-func WithJSONRPC() Option {
-	return func(opts *Options) {
-		opts.Protocol.Name = "jsonrpc"
-	}
-}
-
-func WithREST() Option {
-	return func(opts *Options) {
-		opts.Protocol.Name = "rest"
-	}
-}
-
-func WithTriple() Option {
-	return func(opts *Options) {
-		opts.Protocol.Name = "tri"
-	}
-}
-
-// WithID specifies the id of protocol.Options. Then you could configure server.WithProtocolIDs and
-// server.WithServer_ProtocolIDs to specify which protocol you need to use in multi-protocols scenario.
 func WithID(id string) Option {
 	return func(opts *Options) {
 		opts.ID = id
 	}
 }
 
-func WithIp(ip string) Option {
+func WithZipkin() Option {
 	return func(opts *Options) {
-		opts.Protocol.Ip = ip
+		opts.Tracing.Name = "zipkin"
 	}
 }
 
-func WithPort(port int) Option {
+func WithJaeger() Option {
 	return func(opts *Options) {
-		opts.Protocol.Port = strconv.Itoa(port)
+		opts.Tracing.Name = "jaeger"
 	}
 }
 
-func WithParams(params interface{}) Option {
+func WithOltp() Option {
 	return func(opts *Options) {
-		opts.Protocol.Params = params
+		opts.Tracing.Name = "oltp"
 	}
 }
 
-func WithMaxServerSendMsgSize(size int) Option {
+func WithStdout() Option {
 	return func(opts *Options) {
-		opts.Protocol.MaxServerSendMsgSize = strconv.Itoa(size)
+		opts.Tracing.Name = "stdout"
 	}
 }
 
-func WithMaxServerRecvMsgSize(size int) Option {
+func WithServiceName(name string) Option {
 	return func(opts *Options) {
-		opts.Protocol.MaxServerRecvMsgSize = strconv.Itoa(size)
+		opts.Tracing.ServiceName = name
+	}
+}
+
+func WithAddress(address string) Option {
+	return func(opts *Options) {
+		opts.Tracing.Address = address
+	}
+}
+
+func WithUseAgent() Option {
+	return func(opts *Options) {
+		b := true
+		opts.Tracing.UseAgent = &b
 	}
 }

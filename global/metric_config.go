@@ -53,117 +53,13 @@ type PushgatewayConfig struct {
 
 func DefaultMetricConfig() *MetricConfig {
 	// return a new config without setting any field means there is not any default value for initialization
-	return &MetricConfig{}
+	return &MetricConfig{Prometheus: defaultPrometheusConfig(), Aggregation: defaultAggregateConfig()}
 }
 
 func defaultPrometheusConfig() *PrometheusConfig {
 	return &PrometheusConfig{Exporter: &Exporter{}, Pushgateway: &PushgatewayConfig{}}
 }
 
-type MetricOption func(*MetricConfig)
-
-func WithMetric_AggregateEnabled() MetricOption {
-	return func(cfg *MetricConfig) {
-		if cfg.Aggregation == nil {
-			cfg.Aggregation = &AggregateConfig{}
-		}
-		enabled := true
-		cfg.Aggregation.Enabled = &enabled
-	}
-}
-
-func WithMetric_AggregateBucketNum(num int) MetricOption {
-	return func(cfg *MetricConfig) {
-		if cfg.Aggregation == nil {
-			cfg.Aggregation = &AggregateConfig{}
-		}
-		cfg.Aggregation.BucketNum = num
-	}
-}
-
-func WithMetric_AggregateTimeWindowSeconds(seconds int) MetricOption {
-	return func(cfg *MetricConfig) {
-		if cfg.Aggregation == nil {
-			cfg.Aggregation = &AggregateConfig{}
-		}
-		cfg.Aggregation.TimeWindowSeconds = seconds
-	}
-}
-
-func WithMetric_PrometheusEnabled() MetricOption {
-	return func(cfg *MetricConfig) {
-		if cfg.Prometheus == nil {
-			cfg.Prometheus.Exporter = &Exporter{}
-		}
-		enabled := true
-		cfg.Prometheus.Exporter.Enabled = &enabled
-	}
-}
-
-func WithMetric_PrometheusGatewayUrl(url string) MetricOption {
-	return func(cfg *MetricConfig) {
-		if cfg.Prometheus == nil {
-			cfg.Prometheus = defaultPrometheusConfig()
-		}
-		cfg.Prometheus.Pushgateway.BaseUrl = url
-	}
-}
-
-func WithMetric_PrometheusGatewayJob(job string) MetricOption {
-	return func(cfg *MetricConfig) {
-		if cfg.Prometheus == nil {
-			cfg.Prometheus = defaultPrometheusConfig()
-		}
-		cfg.Prometheus.Pushgateway.Job = job
-	}
-}
-
-func WithMetric_PrometheusGatewayUsername(username string) MetricOption {
-	return func(cfg *MetricConfig) {
-		if cfg.Prometheus == nil {
-			cfg.Prometheus = defaultPrometheusConfig()
-		}
-		cfg.Prometheus.Pushgateway.Username = username
-	}
-}
-
-func WithMetric_PrometheusGatewayPassword(password string) MetricOption {
-	return func(cfg *MetricConfig) {
-		if cfg.Prometheus == nil {
-			cfg.Prometheus = defaultPrometheusConfig()
-		}
-		cfg.Prometheus.Pushgateway.Password = password
-	}
-}
-func WithMetric_PrometheusGatewayInterval(interval int) MetricOption {
-	return func(cfg *MetricConfig) {
-		if cfg.Prometheus == nil {
-			cfg.Prometheus = defaultPrometheusConfig()
-		}
-		cfg.Prometheus.Pushgateway.PushInterval = interval
-	}
-}
-
-func WithMetric_Enable(enable bool) MetricOption {
-	return func(cfg *MetricConfig) {
-		cfg.Enable = &enable
-	}
-}
-
-func WithMetric_Port(port string) MetricOption {
-	return func(cfg *MetricConfig) {
-		cfg.Port = port
-	}
-}
-
-func WithMetric_Path(path string) MetricOption {
-	return func(cfg *MetricConfig) {
-		cfg.Path = path
-	}
-}
-
-func WithMetric_Protocol(protocol string) MetricOption {
-	return func(cfg *MetricConfig) {
-		cfg.Protocol = protocol
-	}
+func defaultAggregateConfig() *AggregateConfig {
+	return &AggregateConfig{}
 }

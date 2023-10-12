@@ -15,104 +15,88 @@
  * limitations under the License.
  */
 
-package protocol
+package metadata
 
 import (
-	"strconv"
+	"strings"
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/global"
 )
 
 type Options struct {
-	Protocol *global.ProtocolConfig
-
-	ID string
+	Metadata *global.MetadataReportConfig
 }
 
 func defaultOptions() *Options {
-	return &Options{Protocol: global.DefaultProtocolConfig()}
+	return &Options{Metadata: global.DefaultMetadataReportConfig()}
 }
 
 func NewOptions(opts ...Option) *Options {
-	defOpts := defaultOptions()
+	metaOptions := defaultOptions()
 	for _, opt := range opts {
-		opt(defOpts)
+		opt(metaOptions)
 	}
-
-	if defOpts.ID == "" {
-		if defOpts.Protocol.Name == "" {
-			// should be the same as default value of config.ProtocolConfig.Protocol
-			defOpts.ID = "tri"
-		} else {
-			defOpts.ID = defOpts.Protocol.Name
-		}
-	}
-
-	return defOpts
+	return metaOptions
 }
 
 type Option func(*Options)
 
-func WithDubbo() Option {
+func WithZookeeper() Option {
 	return func(opts *Options) {
-		opts.Protocol.Name = "dubbo"
+		opts.Metadata.Protocol = constant.ZookeeperKey
 	}
 }
 
-func WithJSONRPC() Option {
+func WithNacos() Option {
 	return func(opts *Options) {
-		opts.Protocol.Name = "jsonrpc"
+		opts.Metadata.Protocol = constant.NacosKey
 	}
 }
 
-func WithREST() Option {
+func WithEtcd() Option {
 	return func(opts *Options) {
-		opts.Protocol.Name = "rest"
+		opts.Metadata.Protocol = constant.EtcdV3Key
 	}
 }
 
-func WithTriple() Option {
+func WithAddress(address string) Option {
 	return func(opts *Options) {
-		opts.Protocol.Name = "tri"
+		if i := strings.Index(address, "://"); i > 0 {
+			opts.Metadata.Protocol = address[1:i]
+		}
+		opts.Metadata.Address = address
 	}
 }
 
-// WithID specifies the id of protocol.Options. Then you could configure server.WithProtocolIDs and
-// server.WithServer_ProtocolIDs to specify which protocol you need to use in multi-protocols scenario.
-func WithID(id string) Option {
+func WithUsername(username string) Option {
 	return func(opts *Options) {
-		opts.ID = id
+		opts.Metadata.Username = username
 	}
 }
 
-func WithIp(ip string) Option {
+func WithPassword(password string) Option {
 	return func(opts *Options) {
-		opts.Protocol.Ip = ip
+		opts.Metadata.Password = password
 	}
 }
 
-func WithPort(port int) Option {
+func WithTimeout(timeout string) Option {
 	return func(opts *Options) {
-		opts.Protocol.Port = strconv.Itoa(port)
+		opts.Metadata.Timeout = timeout
 	}
 }
 
-func WithParams(params interface{}) Option {
+func WithGroup(group string) Option {
 	return func(opts *Options) {
-		opts.Protocol.Params = params
+		opts.Metadata.Group = group
 	}
 }
 
-func WithMaxServerSendMsgSize(size int) Option {
+func WithNamespace(namespace string) Option {
 	return func(opts *Options) {
-		opts.Protocol.MaxServerSendMsgSize = strconv.Itoa(size)
-	}
-}
-
-func WithMaxServerRecvMsgSize(size int) Option {
-	return func(opts *Options) {
-		opts.Protocol.MaxServerRecvMsgSize = strconv.Itoa(size)
+		opts.Metadata.Namespace = namespace
 	}
 }

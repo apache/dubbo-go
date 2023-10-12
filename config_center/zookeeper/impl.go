@@ -123,16 +123,13 @@ func (c *zookeeperDynamicConfiguration) RemoveListener(key string, listener conf
 }
 
 func (c *zookeeperDynamicConfiguration) GetProperties(key string, opts ...config_center.Option) (string, error) {
-	tmpOpts := &config_center.Options{}
-	for _, opt := range opts {
-		opt(tmpOpts)
-	}
+	tmpOpts := config_center.NewOptions(opts...)
 	/**
 	 * when group is not null, we are getting startup configs from Config Center, for example:
 	 * group=dubbo, key=dubbo.properties
 	 */
-	if len(tmpOpts.Group) != 0 {
-		key = tmpOpts.Group + "/" + key
+	if len(tmpOpts.Center.Group) != 0 {
+		key = tmpOpts.Center.Group + "/" + key
 	} else {
 		key = c.GetURL().GetParam(constant.ConfigNamespaceKey, config_center.DefaultGroup) + "/" + key
 	}
