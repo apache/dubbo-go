@@ -414,12 +414,14 @@ func newDefaultCallOptions() *CallOptions {
 	}
 }
 
+// WithCallRequestTimeout the maximum waiting time for one specific call, only works for 'tri' and 'dubbo' protocol
 func WithCallRequestTimeout(timeout string) CallOption {
 	return func(opts *CallOptions) {
 		opts.RequestTimeout = timeout
 	}
 }
 
+// WithCallRetries the maximum retry times on request failure for one specific call, only works for 'tri' and 'dubbo' protocol
 func WithCallRetries(retries string) CallOption {
 	return func(opts *CallOptions) {
 		opts.Retries = retries
