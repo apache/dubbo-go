@@ -18,6 +18,7 @@
 package config_center
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant/file"
 	"strconv"
 	"strings"
 	"time"
@@ -55,12 +56,6 @@ func WithZookeeper() Option {
 func WithNacos() Option {
 	return func(opts *Options) {
 		opts.Center.Protocol = constant.NacosKey
-	}
-}
-
-func WithFile() Option {
-	return func(opts *Options) {
-		opts.Center.Protocol = constant.FileKey
 	}
 }
 
@@ -127,8 +122,38 @@ func WithParams(params map[string]string) Option {
 	}
 }
 
-func WithFileExtension(extension string) Option {
+func WithFile() Option {
 	return func(opts *Options) {
-		opts.Center.FileExtension = extension
+		opts.Center.Protocol = constant.FileKey
+	}
+}
+
+func WithFileExtJson() Option {
+	return func(opts *Options) {
+		opts.Center.FileExtension = string(file.JSON)
+	}
+}
+
+func WithFileExtToml() Option {
+	return func(opts *Options) {
+		opts.Center.FileExtension = string(file.TOML)
+	}
+}
+
+func WithFileExtYaml() Option {
+	return func(opts *Options) {
+		opts.Center.FileExtension = string(file.YAML)
+	}
+}
+
+func WithFileExtYml() Option {
+	return func(opts *Options) {
+		opts.Center.FileExtension = string(file.YML)
+	}
+}
+
+func WithFileExtProperties() Option {
+	return func(opts *Options) {
+		opts.Center.FileExtension = string(file.PROPERTIES)
 	}
 }
