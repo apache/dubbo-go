@@ -18,8 +18,11 @@
 package metrics
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/global"
 	"time"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/global"
 )
 
 type Options struct {

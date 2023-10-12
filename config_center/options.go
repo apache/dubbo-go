@@ -18,7 +18,6 @@
 package config_center
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant/file"
 	"strconv"
 	"strings"
 	"time"
@@ -26,6 +25,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/constant/file"
 	"dubbo.apache.org/dubbo-go/v3/global"
 )
 
