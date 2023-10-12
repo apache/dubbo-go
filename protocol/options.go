@@ -18,6 +18,7 @@
 package protocol
 
 import (
+	"fmt"
 	"strconv"
 )
 
@@ -27,10 +28,28 @@ import (
 
 type Options struct {
 	Protocol *global.ProtocolConfig
+
+	ID string
 }
 
-func DefaultOptions() *Options {
+func defaultOptions() *Options {
 	return &Options{Protocol: global.DefaultProtocolConfig()}
+}
+
+func NewOptions(opts ...Option) *Options {
+	defOpts := defaultOptions()
+	for _, opt := range opts {
+		opt(defOpts)
+	}
+
+	if defOpts.Protocol.Name == "" {
+		panic(fmt.Sprintf("Please specify registry, eg. WithTriple()"))
+	}
+	if defOpts.ID == "" {
+		defOpts.ID = defOpts.Protocol.Name
+	}
+
+	return defOpts
 }
 
 type Option func(*Options)
@@ -62,6 +81,14 @@ func WithREST() Option {
 func WithTriple() Option {
 	return func(opts *Options) {
 		opts.Protocol.Name = "tri"
+	}
+}
+
+// WithID specifies the id of protocol.Options. Then you could configure server.WithProtocolIDs and
+// server.WithServer_ProtocolIDs to specify which protocol you need to use in multi-protocols scenario.
+func WithID(id string) Option {
+	return func(opts *Options) {
+		opts.ID = id
 	}
 }
 

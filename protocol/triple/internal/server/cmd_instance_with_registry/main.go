@@ -31,11 +31,11 @@ func main() {
 	// configure global configurations and common modules
 	ins, err := dubbo.NewInstance(
 		dubbo.WithName("dubbo_test"),
-		dubbo.WithRegistry("zk",
+		dubbo.WithRegistry(
 			registry.WithZookeeper(),
 			registry.WithAddress("127.0.0.1:2181"),
 		),
-		dubbo.WithProtocol("tri",
+		dubbo.WithProtocol(
 			protocol.WithTriple(),
 			protocol.WithPort(20000),
 		),

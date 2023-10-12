@@ -169,25 +169,19 @@ func WithRegistryIDs(registryIDs []string) ClientOption {
 	}
 }
 
-func WithRegistry(key string, opts ...registry.Option) ClientOption {
-	regOpts := registry.DefaultOptions()
-	for _, opt := range opts {
-		opt(regOpts)
-	}
+func WithRegistry(opts ...registry.Option) ClientOption {
+	regOpts := registry.NewOptions(opts...)
 
 	return func(cliOpts *ClientOptions) {
 		if cliOpts.Registries == nil {
 			cliOpts.Registries = make(map[string]*global.RegistryConfig)
 		}
-		cliOpts.Registries[key] = regOpts.Registry
+		cliOpts.Registries[regOpts.ID] = regOpts.Registry
 	}
 }
 
 func WithShutdown(opts ...graceful_shutdown.Option) ClientOption {
-	sdOpts := graceful_shutdown.DefaultOptions()
-	for _, opt := range opts {
-		opt(sdOpts)
-	}
+	sdOpts := graceful_shutdown.NewOptions(opts...)
 
 	return func(cliOpts *ClientOptions) {
 		cliOpts.Shutdown = sdOpts.Shutdown

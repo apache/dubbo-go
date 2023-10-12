@@ -25,17 +25,22 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/global"
 )
 
-var (
-	defOpts = &Options{
-		Shutdown: global.DefaultShutdownConfig(),
-	}
-)
-
 type Options struct {
 	Shutdown *global.ShutdownConfig
 }
 
-func DefaultOptions() *Options {
+func defaultOptions() *Options {
+	return &Options{
+		Shutdown: global.DefaultShutdownConfig(),
+	}
+}
+
+func NewOptions(opts ...Option) *Options {
+	defOpts := defaultOptions()
+	for _, opt := range opts {
+		opt(defOpts)
+	}
+
 	return defOpts
 }
 

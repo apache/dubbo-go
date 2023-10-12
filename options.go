@@ -220,31 +220,25 @@ func WithTag(tag string) InstanceOption {
 	}
 }
 
-func WithProtocol(key string, opts ...protocol.Option) InstanceOption {
-	proOpts := protocol.DefaultOptions()
-	for _, opt := range opts {
-		opt(proOpts)
-	}
+func WithProtocol(opts ...protocol.Option) InstanceOption {
+	proOpts := protocol.NewOptions(opts...)
 
 	return func(insOpts *InstanceOptions) {
 		if insOpts.Protocols == nil {
 			insOpts.Protocols = make(map[string]*global.ProtocolConfig)
 		}
-		insOpts.Protocols[key] = proOpts.Protocol
+		insOpts.Protocols[proOpts.ID] = proOpts.Protocol
 	}
 }
 
-func WithRegistry(key string, opts ...registry.Option) InstanceOption {
-	regOpts := registry.DefaultOptions()
-	for _, opt := range opts {
-		opt(regOpts)
-	}
+func WithRegistry(opts ...registry.Option) InstanceOption {
+	regOpts := registry.NewOptions(opts...)
 
 	return func(insOpts *InstanceOptions) {
 		if insOpts.Registries == nil {
 			insOpts.Registries = make(map[string]*global.RegistryConfig)
 		}
-		insOpts.Registries[key] = regOpts.Registry
+		insOpts.Registries[regOpts.ID] = regOpts.Registry
 	}
 }
 
@@ -318,10 +312,7 @@ func WithRegistry(key string, opts ...registry.Option) InstanceOption {
 //}
 
 func WithShutdown(opts ...graceful_shutdown.Option) InstanceOption {
-	sdOpts := graceful_shutdown.DefaultOptions()
-	for _, opt := range opts {
-		opt(sdOpts)
-	}
+	sdOpts := graceful_shutdown.NewOptions(opts...)
 
 	return func(insOpts *InstanceOptions) {
 		insOpts.Shutdown = sdOpts.Shutdown

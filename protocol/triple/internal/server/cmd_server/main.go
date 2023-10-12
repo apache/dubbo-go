@@ -27,7 +27,7 @@ import (
 
 func main() {
 	srv, err := server.NewServer(
-		server.WithServer_Protocol("tri",
+		server.WithServer_Protocol(
 			protocol.WithTriple(),
 			protocol.WithPort(20000),
 		),
