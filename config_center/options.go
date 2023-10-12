@@ -18,7 +18,9 @@
 package config_center
 
 import (
+	"strconv"
 	"strings"
+	"time"
 )
 
 import (
@@ -65,7 +67,7 @@ func WithFile() Option {
 func WithAddress(address string) Option {
 	return func(opts *Options) {
 		if i := strings.Index(address, "://"); i > 0 {
-			opts.Center.Protocol = address[1:i]
+			opts.Center.Protocol = address[0:i]
 		}
 		opts.Center.Address = address
 	}
@@ -113,9 +115,9 @@ func WithAppID(id string) Option {
 	}
 }
 
-func WithTimeout(timeout string) Option {
+func WithTimeout(timeout time.Duration) Option {
 	return func(opts *Options) {
-		opts.Center.Timeout = timeout
+		opts.Center.Timeout = strconv.Itoa(int(timeout.Milliseconds()))
 	}
 }
 

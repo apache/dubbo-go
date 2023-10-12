@@ -43,12 +43,13 @@ type Exporter struct {
 }
 
 type PushgatewayConfig struct {
-	Enabled      *bool  `default:"false" yaml:"enabled" json:"enabled,omitempty" property:"enabled"`
-	BaseUrl      string `default:"" yaml:"base-url" json:"base-url,omitempty" property:"base-url"`
-	Job          string `default:"default_dubbo_job" yaml:"job" json:"job,omitempty" property:"job"`
-	Username     string `default:"" yaml:"username" json:"username,omitempty" property:"username"`
-	Password     string `default:"" yaml:"password" json:"password,omitempty" property:"password"`
-	PushInterval int    `default:"30" yaml:"push-interval" json:"push-interval,omitempty" property:"push-interval"`
+	Enabled  *bool  `default:"false" yaml:"enabled" json:"enabled,omitempty" property:"enabled"`
+	BaseUrl  string `default:"" yaml:"base-url" json:"base-url,omitempty" property:"base-url"`
+	Job      string `default:"default_dubbo_job" yaml:"job" json:"job,omitempty" property:"job"`
+	Username string `default:"" yaml:"username" json:"username,omitempty" property:"username"`
+	Password string `default:"" yaml:"password" json:"password,omitempty" property:"password"`
+	// seconds
+	PushInterval int `default:"30" yaml:"push-interval" json:"push-interval,omitempty" property:"push-interval"`
 }
 
 func DefaultMetricConfig() *MetricConfig {

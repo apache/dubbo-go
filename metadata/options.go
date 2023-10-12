@@ -18,7 +18,9 @@
 package metadata
 
 import (
+	"strconv"
 	"strings"
+	"time"
 )
 
 import (
@@ -56,7 +58,7 @@ func WithNacos() Option {
 	}
 }
 
-func WithEtcd() Option {
+func WithEtcdV3() Option {
 	return func(opts *Options) {
 		opts.Metadata.Protocol = constant.EtcdV3Key
 	}
@@ -65,7 +67,7 @@ func WithEtcd() Option {
 func WithAddress(address string) Option {
 	return func(opts *Options) {
 		if i := strings.Index(address, "://"); i > 0 {
-			opts.Metadata.Protocol = address[1:i]
+			opts.Metadata.Protocol = address[0:i]
 		}
 		opts.Metadata.Address = address
 	}
@@ -83,9 +85,9 @@ func WithPassword(password string) Option {
 	}
 }
 
-func WithTimeout(timeout string) Option {
+func WithTimeout(timeout time.Duration) Option {
 	return func(opts *Options) {
-		opts.Metadata.Timeout = timeout
+		opts.Metadata.Timeout = strconv.Itoa(int(timeout.Milliseconds()))
 	}
 }
 

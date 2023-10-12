@@ -19,6 +19,7 @@ package metrics
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/global"
+	"time"
 )
 
 type Options struct {
@@ -58,7 +59,13 @@ func WithAggregationTimeWindowSeconds(seconds int) Option {
 	}
 }
 
-func WithPrometheusEnabled() Option {
+func WithPrometheus() Option {
+	return func(opts *Options) {
+		opts.Metric.Protocol = "prometheus"
+	}
+}
+
+func WithPrometheusExporterEnabled() Option {
 	return func(opts *Options) {
 		enabled := true
 		opts.Metric.Prometheus.Exporter.Enabled = &enabled
@@ -88,9 +95,9 @@ func WithPrometheusGatewayPassword(password string) Option {
 		opts.Metric.Prometheus.Pushgateway.Password = password
 	}
 }
-func WithPrometheusGatewayInterval(interval int) Option {
+func WithPrometheusGatewayInterval(interval time.Duration) Option {
 	return func(opts *Options) {
-		opts.Metric.Prometheus.Pushgateway.PushInterval = interval
+		opts.Metric.Prometheus.Pushgateway.PushInterval = int(interval.Seconds())
 	}
 }
 
@@ -110,11 +117,5 @@ func WithPort(port string) Option {
 func WithPath(path string) Option {
 	return func(opts *Options) {
 		opts.Metric.Path = path
-	}
-}
-
-func WithProtocol(protocol string) Option {
-	return func(opts *Options) {
-		opts.Metric.Protocol = protocol
 	}
 }

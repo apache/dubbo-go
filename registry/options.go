@@ -124,7 +124,7 @@ func WithTTL(ttl time.Duration) Option {
 func WithAddress(address string) Option {
 	return func(opts *Options) {
 		if i := strings.Index(address, "://"); i > 0 {
-			opts.Registry.Protocol = address[1:i]
+			opts.Registry.Protocol = address[0:i]
 		}
 		opts.Registry.Address = address
 	}

@@ -51,57 +51,21 @@ func WithZap() Option {
 	}
 }
 
-func WithLevelDebug() Option {
+func WithLevel(level string) Option {
 	return func(opts *Options) {
-		opts.Logger.Level = "debug"
+		opts.Logger.Level = level
 	}
 }
 
-func WithLevelInfo() Option {
+func WithFormat(format string) Option {
 	return func(opts *Options) {
-		opts.Logger.Level = "info"
+		opts.Logger.Format = format
 	}
 }
 
-func WithLevelWarn(level string) Option {
+func WithAppender(appender string) Option {
 	return func(opts *Options) {
-		opts.Logger.Level = "warn"
-	}
-}
-
-func WithLevelError() Option {
-	return func(opts *Options) {
-		opts.Logger.Level = "error"
-	}
-}
-
-func WithLevelFatal() Option {
-	return func(opts *Options) {
-		opts.Logger.Level = "fatal"
-	}
-}
-
-func WithFormatText() Option {
-	return func(opts *Options) {
-		opts.Logger.Format = "text"
-	}
-}
-
-func WithFormatJson() Option {
-	return func(opts *Options) {
-		opts.Logger.Format = "json"
-	}
-}
-
-func WithAppenderConsole() Option {
-	return func(opts *Options) {
-		opts.Logger.Appender = "console"
-	}
-}
-
-func WithAppenderFile() Option {
-	return func(opts *Options) {
-		opts.Logger.Appender = "file"
+		opts.Logger.Appender = appender
 	}
 }
 
