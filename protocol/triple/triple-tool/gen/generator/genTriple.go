@@ -79,7 +79,7 @@ func (g *Generator) parseProtoToTriple(p *proto.Proto) (TripleGo, error) {
 		p,
 		proto.WithPackage(func(p *proto.Package) {
 			tripleGo.ProtoPackage = p.Name
-			tripleGo.Package = p.Name + "triple"
+			tripleGo.Package = p.Name
 		}),
 		proto.WithService(func(p *proto.Service) {
 			s := Service{ServiceName: p.Name}
@@ -127,7 +127,7 @@ func (g *Generator) parseTripleToString(t TripleGo) (string, error) {
 
 func (g *Generator) parseGOout(triple TripleGo) {
 	prefix := strings.TrimPrefix(triple.Import, g.ctx.GoModuleName)
-	g.ctx.GoOut = filepath.Join(g.ctx.Pwd, filepath.Join(prefix, triple.Package+"/"+triple.ProtoPackage+".triple.go"))
+	g.ctx.GoOut = filepath.Join(g.ctx.ModuleDir, filepath.Join(prefix, triple.Package+"triple/"+triple.ProtoPackage+".triple.go"))
 }
 
 func (g *Generator) generateToFile(filePath string, data []byte) error {
@@ -141,11 +141,10 @@ func (g *Generator) generateToFile(filePath string, data []byte) error {
 func ProcessProtoFile(file *descriptor.FileDescriptorProto) (TripleGo, error) {
 	tripleGo := TripleGo{
 		Source:       file.GetName(),
-		Package:      file.GetPackage() + "triple",
+		Package:      file.GetPackage(),
 		ProtoPackage: file.GetPackage(),
 		Services:     make([]Service, 0),
 	}
-
 	for _, service := range file.GetService() {
 		serviceMethods := make([]Method, 0)
 
@@ -188,12 +187,11 @@ func GenTripleFile(triple TripleGo) error {
 		return err
 	}
 	prefix := strings.TrimPrefix(triple.Import, module)
-	pwd, err := os.Getwd()
+	moduleDir, err := util.GetModuleDir()
 	if err != nil {
 		return err
 	}
-	GoOut := filepath.Join(pwd, filepath.Join(prefix, triple.Package+"/"+triple.ProtoPackage+".triple.go"))
-
+	GoOut := filepath.Join(moduleDir, filepath.Join(prefix, triple.Package+"triple/"+triple.ProtoPackage+".triple.go"))
 	g := &Generator{}
 	data, err := g.parseTripleToString(triple)
 	if err != nil {

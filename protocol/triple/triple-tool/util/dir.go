@@ -15,55 +15,23 @@
  * limitations under the License.
  */
 
-package generator
+package util
 
 import (
-	"path/filepath"
+	"strings"
 )
 
-import (
-	"github.com/spf13/cobra"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/triple-tool/util"
-)
-
-type Context struct {
-	Src          string
-	ProtocCmd    string
-	GoOpts       []string
-	GoOut        string
-	GoModuleName string
-	ModuleDir    string
-}
-
-func newContext(cmd *cobra.Command, args []string) (Context, error) {
-	var ctx Context
-	moduleDir, err := util.GetModuleDir()
+func GetModuleDir() (string, error) {
+	output, err := Exec("go list -m -f '{{.Dir}}'", "./")
 	if err != nil {
-		return ctx, err
+		output, err = Exec("go list -m -f '{{.Module.Dir}}'", "./")
 	}
-	ctx.ModuleDir = moduleDir
-	src, err := filepath.Abs(ProtocPath)
-	if err != nil {
-		return ctx, err
-	}
-	ctx.Src = src
-	ctx.GoOut = filepath.Dir(src)
-	module, err := util.GetModuleName()
-	if err != nil {
-		return ctx, err
-	}
-	ctx.GoModuleName = module
-	ctx.GoOpts = GoOpts
-	return ctx, nil
-}
 
-func Generate(cmd *cobra.Command, args []string) error {
-	ctx, err := newContext(cmd, args)
 	if err != nil {
-		return err
+		return "", err
 	}
-	return NewGenerator(ctx).gen()
+
+	moduleDir := strings.TrimSpace(output)
+	moduleDir = strings.Trim(moduleDir, "'")
+	return moduleDir, nil
 }

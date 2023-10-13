@@ -156,7 +156,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config"
 	proto "{{.Import}}"
 	triple_protocol "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
-	"dubbo.apache.org/dubbo-go/v3/provider"
+	"dubbo.apache.org/dubbo-go/v3/server"
 )
 
 `
@@ -238,8 +238,7 @@ func (c *{{$s.ServiceName}}ClientImpl) {{.MethodName}}(ctx context.Context, opts
 	return &{{lower $s.ServiceName}}{{.MethodName}}Client{rawStream}, nil
 }{{end}}{{else}}{{if .StreamsReturn}}
 func (c *{{$s.ServiceName}}ClientImpl) {{.MethodName}}(ctx context.Context, req *proto.{{.RequestType}}, opts ...client.CallOption) ({{$s.ServiceName}}_{{.MethodName}}Client, error) {
-	triReq := triple_protocol.NewRequest(req)
-	stream, err := c.cli.CallServerStream(ctx, triReq, "{{$t.ProtoPackage}}.{{$s.ServiceName}}", "{{.MethodName}}", opts...)
+	stream, err := c.cli.CallServerStream(ctx, req, "{{$t.ProtoPackage}}.{{$s.ServiceName}}", "{{.MethodName}}", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -247,10 +246,8 @@ func (c *{{$s.ServiceName}}ClientImpl) {{.MethodName}}(ctx context.Context, req 
 	return &{{lower $s.ServiceName}}{{.MethodName}}Client{rawStream}, nil
 }{{else}}
 func (c *{{$s.ServiceName}}ClientImpl) {{.MethodName}}(ctx context.Context, req *proto.{{.RequestType}}, opts ...client.CallOption) (*proto.{{.ReturnType}}, error) {
-	triReq := triple_protocol.NewRequest(req)
 	resp := new(proto.{{.ReturnType}})
-	triResp := triple_protocol.NewResponse(resp)
-	if err := c.cli.CallUnary(ctx, triReq, triResp, "{{$t.ProtoPackage}}.{{$s.ServiceName}}", "{{.MethodName}}", opts...); err != nil {
+	if err := c.cli.CallUnary(ctx, req, resp, "{{$t.ProtoPackage}}.{{$s.ServiceName}}", "{{.MethodName}}", opts...); err != nil {
 		return nil, err
 	}
 	return resp, nil
@@ -332,7 +329,7 @@ type {{lower $s.ServiceName}}{{.MethodName}}Client struct {
 }
 
 func (cli *{{lower $s.ServiceName}}{{.MethodName}}Client) Recv() bool {
-	msg := new(proto.GreetServerStreamResponse)
+	msg := new(proto.{{.ReturnType}})
 	return cli.ServerStreamForClient.Receive(msg)
 }
 
@@ -369,8 +366,8 @@ type {{.ServiceName}}Handler interface {
 	{{end}}
 }
 
-func Provide{{.ServiceName}}Handler(pro *provider.Provider, hdlr {{.ServiceName}}Handler) error {
-	return pro.Provide(hdlr, &{{.ServiceName}}_ServiceInfo)
+func Register{{.ServiceName}}Handler(srv *server.Server, hdlr {{.ServiceName}}Handler, opts ...server.ServiceOption) error {
+	return srv.Register(hdlr, &{{.ServiceName}}_ServiceInfo, opts...)
 }{{end}}
 `
 
@@ -417,7 +414,7 @@ type {{lower $s.ServiceName}}{{.MethodName}}Server struct {
 }
 
 func (srv *{{lower $s.ServiceName}}{{.MethodName}}Server) Recv() bool {
-	msg := new(proto.GreetClientStreamRequest)
+	msg := new(proto.{{.RequestType}})
 	return srv.ClientStream.Receive(msg)
 }
 
@@ -430,7 +427,7 @@ func (srv *{{lower $s.ServiceName}}{{.MethodName}}Server) Msg() *proto.{{.Reques
 }
 {{end}}{{else}}
 type {{$s.ServiceName}}_{{.MethodName}}Server interface {
-	Send(*proto.GreetServerStreamResponse) error
+	Send(*proto.{{.ReturnType}}) error
 	ResponseHeader() http.Header
 	ResponseTrailer() http.Header
 	Conn() triple_protocol.StreamingHandlerConn
@@ -445,10 +442,10 @@ func (g *{{lower $s.ServiceName}}{{.MethodName}}Server) Send(msg *proto.{{.Retur
 }
 {{end}}{{end}}{{end}}`
 
-const ServiceInfoTpl = `{{$t := .}}{{range $s := .Services}}var {{.ServiceName}}_ServiceInfo = provider.ServiceInfo{
+const ServiceInfoTpl = `{{$t := .}}{{range $s := .Services}}var {{.ServiceName}}_ServiceInfo = server.ServiceInfo{
 	InterfaceName: "{{$t.ProtoPackage}}.{{.ServiceName}}",
 	ServiceType:   (*{{.ServiceName}}Handler)(nil),
-	Methods: []provider.MethodInfo{ {{- range .Methods}}{{if .StreamsRequest}}{{if .StreamsReturn}}
+	Methods: []server.MethodInfo{ {{- range .Methods}}{{if .StreamsRequest}}{{if .StreamsReturn}}
 		{
 			Name : "{{.MethodName}}",
 			Type : constant.CallBidiStream,
