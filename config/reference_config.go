@@ -101,30 +101,31 @@ func (rc *ReferenceConfig) Init(root *RootConfig) error {
 			rc.Version = root.Application.Version
 		}
 	}
-	if rc.Filter == "" {
-		rc.Filter = root.Consumer.Filter
+	rc.RegistryIDs = translateIds(rc.RegistryIDs)
+	if root.Consumer != nil {
+		if rc.Filter == "" {
+			rc.Filter = root.Consumer.Filter
+		}
+		if len(rc.RegistryIDs) <= 0 {
+			rc.RegistryIDs = root.Consumer.RegistryIDs
+		}
+		if rc.Protocol == "" {
+			rc.Protocol = root.Consumer.Protocol
+		}
+		if rc.TracingKey == "" {
+			rc.TracingKey = root.Consumer.TracingKey
+		}
+		if rc.Check == nil {
+			rc.Check = &root.Consumer.Check
+		}
 	}
 	if rc.Cluster == "" {
 		rc.Cluster = "failover"
 	}
-	rc.RegistryIDs = translateIds(rc.RegistryIDs)
-	if len(rc.RegistryIDs) <= 0 {
-		rc.RegistryIDs = root.Consumer.RegistryIDs
-	}
-
-	if rc.Protocol == "" {
-		rc.Protocol = root.Consumer.Protocol
-	}
-
-	if rc.TracingKey == "" {
-		rc.TracingKey = root.Consumer.TracingKey
-	}
 	if root.Metric.Enable != nil {
 		rc.metricsEnable = *root.Metric.Enable
 	}
-	if rc.Check == nil {
-		rc.Check = &root.Consumer.Check
-	}
+
 	return verify(rc)
 }
 
