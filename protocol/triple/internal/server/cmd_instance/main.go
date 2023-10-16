@@ -35,6 +35,9 @@ func main() {
 			protocol.WithPort(20000),
 		),
 	)
+	if err != nil {
+		panic(err)
+	}
 	srv, err := ins.NewServer()
 	if err != nil {
 		panic(err)

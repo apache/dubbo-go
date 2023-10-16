@@ -217,14 +217,14 @@ func (h *Handler) ServeHTTP(responseWriter http.ResponseWriter, request *http.Re
 
 	// inspect contentType
 	// Find our implementation of the RPC protocol in use.
-	var protocolHandler protocolHandler
+	var protocolHdl protocolHandler
 	for _, handler := range protocolHandlers {
 		if handler.CanHandlePayload(request, contentType) {
-			protocolHandler = handler
+			protocolHdl = handler
 			break
 		}
 	}
-	if protocolHandler == nil {
+	if protocolHdl == nil {
 		responseWriter.Header().Set("Accept-Post", h.acceptPost)
 		responseWriter.WriteHeader(http.StatusUnsupportedMediaType)
 		return
@@ -233,7 +233,7 @@ func (h *Handler) ServeHTTP(responseWriter http.ResponseWriter, request *http.Re
 	// Establish a stream and serve the RPC.
 	setHeaderCanonical(request.Header, headerContentType, contentType)
 	// process context
-	ctx, cancel, timeoutErr := protocolHandler.SetTimeout(request) //nolint: contextcheck
+	ctx, cancel, timeoutErr := protocolHdl.SetTimeout(request) //nolint: contextcheck
 	if timeoutErr != nil {
 		ctx = request.Context()
 	}
@@ -241,7 +241,7 @@ func (h *Handler) ServeHTTP(responseWriter http.ResponseWriter, request *http.Re
 		defer cancel()
 	}
 	// create stream
-	connCloser, ok := protocolHandler.NewConn(
+	connCloser, ok := protocolHdl.NewConn(
 		responseWriter,
 		request.WithContext(ctx),
 	)

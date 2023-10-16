@@ -156,7 +156,6 @@ func (s *Server) Serve() error {
 	metadata.ExportMetadataService()
 	registry_exposed.RegisterServiceInstance(s.cfg.Application.Name, s.cfg.Application.Tag, s.cfg.Application.MetadataType)
 	select {}
-	return nil
 }
 
 type MethodInfo struct {

@@ -209,7 +209,6 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 				AllowHTTP: true,
 			}
 		}
-		triClientOpts = append(triClientOpts)
 	default:
 		panic(fmt.Sprintf("Unsupported callType: %s", callType))
 	}
@@ -219,7 +218,7 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 
 	var baseTriURL string
 	baseTriURL = strings.TrimPrefix(url.Location, httpPrefix)
-	baseTriURL = strings.TrimPrefix(url.Location, httpsPrefix)
+	baseTriURL = strings.TrimPrefix(baseTriURL, httpsPrefix)
 	if tlsFlag {
 		baseTriURL = httpsPrefix + baseTriURL
 	} else {

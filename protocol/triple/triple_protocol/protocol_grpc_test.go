@@ -196,6 +196,6 @@ func TestGRPCWebTrailerMarshalling(t *testing.T) {
 	err := marshaler.MarshalWebTrailers(trailer)
 	assert.Nil(t, err)
 	responseWriter.Body.Next(5) // skip flags and message length
-	marshalled := responseWriter.Body.String()
-	assert.Equal(t, marshalled, "grpc-message: Foo\r\ngrpc-status: 0\r\nuser-provided: bar\r\n")
+	marshaled := responseWriter.Body.String()
+	assert.Equal(t, marshaled, "grpc-message: Foo\r\ngrpc-status: 0\r\nuser-provided: bar\r\n")
 }

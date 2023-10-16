@@ -64,7 +64,7 @@ type stableCodec interface {
 	// MarshalStable marshals the given message with stable field ordering.
 	//
 	// MarshalStable should return the same output for a given input. Although
-	// it is not guaranteed to be canonicalized, the marshalling routine for
+	// it is not guaranteed to be canonicalized, the marshaling routine for
 	// MarshalStable will opt for the most normalized output available for a
 	// given serialization.
 	//
@@ -75,7 +75,7 @@ type stableCodec interface {
 	// same output.
 	MarshalStable(interface{}) ([]byte, error)
 
-	// IsBinary returns true if the marshalled data is binary for this codec.
+	// IsBinary returns true if the marshaled data is binary for this codec.
 	//
 	// If this function returns false, the data returned from Marshal and
 	// MarshalStable are considered valid text and may be used in contexts

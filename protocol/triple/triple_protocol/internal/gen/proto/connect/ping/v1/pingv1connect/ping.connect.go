@@ -67,11 +67,11 @@ type PingServiceClient interface {
 	// Fail always fails.
 	Fail(context.Context, *triple_protocol.Request, *triple_protocol.Response) error
 	// Sum calculates the sum of the numbers sent on the stream.
-	Sum(context.Context) (*triple_protocol.ClientStreamForClient,error)
+	Sum(context.Context) (*triple_protocol.ClientStreamForClient, error)
 	// CountUp returns a stream of the numbers up to the given request.
 	CountUp(context.Context, *triple_protocol.Request) (*triple_protocol.ServerStreamForClient, error)
 	// CumSum determines the cumulative sum of all the numbers sent on the stream.
-	CumSum(context.Context) (*triple_protocol.BidiStreamForClient,error)
+	CumSum(context.Context) (*triple_protocol.BidiStreamForClient, error)
 }
 
 // NewPingServiceClient constructs a client for the connect.ping.v1.PingService service. By default,
@@ -134,7 +134,7 @@ func (c *pingServiceClient) Fail(ctx context.Context, req *triple_protocol.Reque
 }
 
 // Sum calls connect.ping.v1.PingService.Sum.
-func (c *pingServiceClient) Sum(ctx context.Context) (*triple_protocol.ClientStreamForClient,error) {
+func (c *pingServiceClient) Sum(ctx context.Context) (*triple_protocol.ClientStreamForClient, error) {
 	return c.sum.CallClientStream(ctx)
 }
 
@@ -144,7 +144,7 @@ func (c *pingServiceClient) CountUp(ctx context.Context, req *triple_protocol.Re
 }
 
 // CumSum calls connect.ping.v1.PingService.CumSum.
-func (c *pingServiceClient) CumSum(ctx context.Context) (*triple_protocol.BidiStreamForClient,error) {
+func (c *pingServiceClient) CumSum(ctx context.Context) (*triple_protocol.BidiStreamForClient, error) {
 	return c.cumSum.CallBidiStream(ctx)
 }
 
@@ -190,7 +190,7 @@ func NewPingServiceHandler(svc PingServiceHandler, opts ...triple_protocol.Handl
 		opts...,
 	)
 	pingServiceCountUpHandler := triple_protocol.NewServerStreamHandler(
-		PingServiceCountUpProcedure,func() interface{} {
+		PingServiceCountUpProcedure, func() interface{} {
 			return &pingv1.CountUpRequest{}
 		},
 		svc.CountUp,
