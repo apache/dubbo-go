@@ -105,7 +105,7 @@ func (srvOpts *ServerOptions) init(opts ...ServerOption) error {
 	}
 
 	// init graceful_shutdown
-	graceful_shutdown.Init(graceful_shutdown.WithShutdown_Config(srvOpts.Shutdown))
+	graceful_shutdown.Init(graceful_shutdown.SetShutdown_Config(srvOpts.Shutdown))
 
 	return nil
 }
@@ -115,20 +115,20 @@ type ServerOption func(*ServerOptions)
 // ---------- For user ----------
 
 // todo(DMwangnima): change Filter Option like Cluster and LoadBalance
-func WithServer_Filter(filter string) ServerOption {
+func WithServerFilter(filter string) ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.Filter = filter
 	}
 }
 
 // todo(DMwangnima): think about a more ideal configuration style
-func WithServer_RegistryIDs(registryIDs []string) ServerOption {
+func WithServerRegistryIDs(registryIDs []string) ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.RegistryIDs = registryIDs
 	}
 }
 
-func WithServer_Registry(opts ...registry.Option) ServerOption {
+func WithServerRegistry(opts ...registry.Option) ServerOption {
 	regOpts := registry.NewOptions(opts...)
 
 	return func(srvOpts *ServerOptions) {
@@ -140,13 +140,13 @@ func WithServer_Registry(opts ...registry.Option) ServerOption {
 }
 
 // todo(DMwangnima): think about a more ideal configuration style
-func WithServer_ProtocolIDs(protocolIDs []string) ServerOption {
+func WithServerProtocolIDs(protocolIDs []string) ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.ProtocolIDs = protocolIDs
 	}
 }
 
-func WithServer_Protocol(opts ...protocol.Option) ServerOption {
+func WithServerProtocol(opts ...protocol.Option) ServerOption {
 	proOpts := protocol.NewOptions(opts...)
 
 	return func(srvOpts *ServerOptions) {
@@ -157,7 +157,7 @@ func WithServer_Protocol(opts ...protocol.Option) ServerOption {
 	}
 }
 
-func WithServer_TracingKey(tracingKey string) ServerOption {
+func WithServerTracingKey(tracingKey string) ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.TracingKey = tracingKey
 	}
@@ -165,19 +165,19 @@ func WithServer_TracingKey(tracingKey string) ServerOption {
 
 // todo(DMwangnima): this configuration would be used by filter/hystrix
 // think about a more ideal way to configure
-func WithServer_FilterConf(conf interface{}) ServerOption {
+func WithServerFilterConf(conf interface{}) ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.FilterConf = conf
 	}
 }
 
-func WithServer_AdaptiveService() ServerOption {
+func WithServerAdaptiveService() ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.AdaptiveService = true
 	}
 }
 
-func WithServer_AdaptiveServiceVerbose() ServerOption {
+func WithServerAdaptiveServiceVerbose() ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.AdaptiveServiceVerbose = true
 	}
