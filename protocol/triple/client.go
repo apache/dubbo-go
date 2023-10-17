@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	url_package "net/url"
 	"strings"
 )
 
@@ -210,7 +209,6 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 				AllowHTTP: true,
 			}
 		}
-		triClientOpts = append(triClientOpts)
 	default:
 		panic(fmt.Sprintf("Unsupported callType: %s", callType))
 	}
@@ -220,7 +218,7 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 
 	var baseTriURL string
 	baseTriURL = strings.TrimPrefix(url.Location, httpPrefix)
-	baseTriURL = strings.TrimPrefix(url.Location, httpsPrefix)
+	baseTriURL = strings.TrimPrefix(baseTriURL, httpsPrefix)
 	if tlsFlag {
 		baseTriURL = httpsPrefix + baseTriURL
 	} else {
@@ -228,7 +226,7 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 	}
 	triClients := make(map[string]*tri.Client)
 	for _, method := range url.Methods {
-		triURL, err := url_package.JoinPath(baseTriURL, url.Interface(), method)
+		triURL, err := joinPath(baseTriURL, url.Interface(), method)
 		if err != nil {
 			return nil, fmt.Errorf("JoinPath failed for base %s, interface %s, method %s", baseTriURL, url.Interface(), method)
 		}

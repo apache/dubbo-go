@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -148,6 +149,7 @@ func TestMain(m *testing.M) {
 	)
 	time.Sleep(3 * time.Second)
 	m.Run()
+	os.Exit(0)
 }
 
 func TestInvoke(t *testing.T) {

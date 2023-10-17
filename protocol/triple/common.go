@@ -1,3 +1,6 @@
+//go:build go1.19
+// +build go1.19
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -22,6 +25,10 @@ import (
 )
 
 func joinProcedure(interfaceName, methodName string) string {
-	procedure, _ := url.JoinPath("", interfaceName, methodName)
+	procedure, _ := joinPath("", interfaceName, methodName)
 	return "/" + procedure
+}
+
+func joinPath(base string, elem ...string) (result string, err error) {
+	return url.JoinPath(base, elem...)
 }

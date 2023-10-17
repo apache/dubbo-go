@@ -48,7 +48,7 @@ func NewClient(httpClient HTTPClient, url string, options ...ClientOption) *Clie
 		return client
 	}
 	client.config = config
-	protocolClient, protocolErr := client.config.Protocol.NewClient(
+	protocolCli, protocolErr := client.config.Protocol.NewClient(
 		&protocolClientParams{
 			CompressionName: config.RequestCompressionName,
 			CompressionPools: newReadOnlyCompressionPools(
@@ -72,7 +72,7 @@ func NewClient(httpClient HTTPClient, url string, options ...ClientOption) *Clie
 		client.err = protocolErr
 		return client
 	}
-	client.protocolClient = protocolClient
+	client.protocolClient = protocolCli
 	// Rather than applying unary interceptors along the hot path, we can do it
 	// once at client creation.
 	unarySpec := config.newSpec(StreamTypeUnary)
@@ -105,7 +105,7 @@ func NewClient(httpClient HTTPClient, url string, options ...ClientOption) *Clie
 		// add them here.
 		request.spec = unarySpec
 		request.peer = client.protocolClient.Peer()
-		protocolClient.WriteRequestHeader(StreamTypeUnary, request.Header())
+		protocolCli.WriteRequestHeader(StreamTypeUnary, request.Header())
 		if err := unaryFunc(ctx, request, response); err != nil {
 			return err
 		}

@@ -26,7 +26,7 @@ import (
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 
-	"google.golang.org/grpc/encoding"
+	grpcEncoding "google.golang.org/grpc/encoding"
 )
 
 const (
@@ -35,7 +35,7 @@ const (
 )
 
 func init() {
-	encoding.RegisterCodec(grpcJson{
+	grpcEncoding.RegisterCodec(grpcJson{
 		Marshaler: jsonpb.Marshaler{
 			EmitDefaults: true,
 			OrigName:     true,

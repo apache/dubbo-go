@@ -104,7 +104,7 @@ func BenchmarkREST(b *testing.B) {
 			b.Fatalf("read body: %v", err)
 		}
 		var pingRequest ping
-		if err := json.Unmarshal(raw, &pingRequest); err != nil {
+		if marshalErr := json.Unmarshal(raw, &pingRequest); marshalErr != nil {
 			b.Fatalf("json unmarshal: %v", err)
 		}
 		bs, err := json.Marshal(&pingRequest)
@@ -157,8 +157,8 @@ func unaryRESTIteration(b *testing.B, client *http.Client, url string, text stri
 		b.Fatalf("do request: %v", err)
 	}
 	defer func() {
-		_, err := io.Copy(io.Discard, response.Body)
-		assert.Nil(b, err)
+		_, copyErr := io.Copy(io.Discard, response.Body)
+		assert.Nil(b, copyErr)
 	}()
 	if response.StatusCode != http.StatusOK {
 		b.Fatalf("response status: %v", response.Status)

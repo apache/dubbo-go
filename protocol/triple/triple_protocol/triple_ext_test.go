@@ -133,8 +133,8 @@ func TestServer(t *testing.T) {
 			assert.Nil(t, err)
 			stream.RequestHeader().Set(clientHeader, headerValue)
 			for i := int64(1); i <= upTo; i++ {
-				err := stream.Send(&pingv1.SumRequest{Number: i})
-				assert.Nil(t, err, assert.Sprintf("send %d", i))
+				sendErr := stream.Send(&pingv1.SumRequest{Number: i})
+				assert.Nil(t, sendErr, assert.Sprintf("send %d", i))
 			}
 			msg := &pingv1.SumResponse{}
 			response := triple.NewResponse(msg)
@@ -147,7 +147,7 @@ func TestServer(t *testing.T) {
 		t.Run("sum_error", func(t *testing.T) {
 			stream, err := client.Sum(context.Background())
 			assert.Nil(t, err)
-			if err := stream.Send(&pingv1.SumRequest{Number: 1}); err != nil {
+			if sendErr := stream.Send(&pingv1.SumRequest{Number: 1}); sendErr != nil {
 				assert.ErrorIs(t, err, io.EOF)
 				assert.Equal(t, triple.CodeOf(err), triple.CodeUnknown)
 			}
@@ -256,7 +256,7 @@ func TestServer(t *testing.T) {
 				failNoHTTP2(t, stream)
 				return
 			}
-			if err := stream.Send(&pingv1.CumSumRequest{Number: 42}); err != nil {
+			if sendErr := stream.Send(&pingv1.CumSumRequest{Number: 42}); sendErr != nil {
 				assert.ErrorIs(t, err, io.EOF)
 				assert.Equal(t, triple.CodeOf(err), triple.CodeUnknown)
 			}
@@ -295,7 +295,7 @@ func TestServer(t *testing.T) {
 			}
 			var got []int64
 			expect := []int64{42}
-			if err := stream.Send(&pingv1.CumSumRequest{Number: 42}); err != nil {
+			if sendErr := stream.Send(&pingv1.CumSumRequest{Number: 42}); sendErr != nil {
 				assert.ErrorIs(t, err, io.EOF)
 				assert.Equal(t, triple.CodeOf(err), triple.CodeUnknown)
 			}
@@ -1059,7 +1059,7 @@ func TestHandlerWithHTTPMaxBytes(t *testing.T) {
 	const readMaxBytes = 128
 	mux := http.NewServeMux()
 	pingRoute, pingHandler := pingv1connect.NewPingServiceHandler(pingServer{})
-	mux.Handle(pingRoute, http.MaxBytesHandler(pingHandler, readMaxBytes))
+	mux.Handle(pingRoute, triple.MaxBytesHandler(pingHandler, readMaxBytes))
 	run := func(t *testing.T, client pingv1connect.PingServiceClient, compressed bool) {
 		t.Helper()
 		t.Run("below_read_max", func(t *testing.T) {
@@ -1941,7 +1941,7 @@ func TestBidiOverHTTP1(t *testing.T) {
 	client := pingv1connect.NewPingServiceClient(server.Client(), server.URL)
 	stream, err := client.CumSum(context.Background())
 	assert.Nil(t, err)
-	if err := stream.Send(&pingv1.CumSumRequest{Number: 2}); err != nil {
+	if sendErr := stream.Send(&pingv1.CumSumRequest{Number: 2}); sendErr != nil {
 		assert.ErrorIs(t, err, io.EOF)
 	}
 	err = stream.Receive(&pingv1.CumSumResponse{})
