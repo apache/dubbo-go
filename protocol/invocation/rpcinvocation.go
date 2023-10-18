@@ -335,6 +335,16 @@ func WithAttachments(attachments map[string]interface{}) option {
 	}
 }
 
+// WithAttachment put a key-value pair into attachments.
+func WithAttachment(k string, v interface{}) option {
+	return func(invo *RPCInvocation) {
+		if invo.attachments == nil {
+			invo.attachments = make(map[string]interface{})
+		}
+		invo.attachments[k] = v
+	}
+}
+
 // WithInvoker creates option with @invoker.
 func WithInvoker(invoker protocol.Invoker) option {
 	return func(invo *RPCInvocation) {

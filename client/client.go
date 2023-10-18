@@ -108,7 +108,8 @@ func (cli *Client) Init(info *ClientInfo) error {
 func generateInvocation(methodName string, paramsRawVals []interface{}, callType string, opts *CallOptions) (protocol.Invocation, error) {
 	inv := invocation_impl.NewRPCInvocationWithOptions(
 		invocation_impl.WithMethodName(methodName),
-		// todo: process opts
+		invocation_impl.WithAttachment(constant.TimeoutKey, opts.RequestTimeout),
+		invocation_impl.WithAttachment(constant.RetriesKey, opts.Retries),
 		invocation_impl.WithParameterRawValues(paramsRawVals),
 	)
 	inv.SetAttribute(constant.CallTypeKey, callType)
