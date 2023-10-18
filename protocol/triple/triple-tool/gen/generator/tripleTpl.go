@@ -131,6 +131,7 @@ func init() {
 	Tpls = append(Tpls, TplPackage)
 	Tpls = append(Tpls, TplImport)
 	Tpls = append(Tpls, TplTotal)
+	Tpls = append(Tpls, TplTypeCheck)
 	Tpls = append(Tpls, TplClientInterface)
 	Tpls = append(Tpls, TplClientInterfaceImpl)
 	Tpls = append(Tpls, TplClientImpl)
@@ -196,18 +197,17 @@ const (
 
 `
 
-const TypeCheckTpl = `
-var({{$t := .}}{{range $s := .Services}}
+const TypeCheckTpl = `var({{$t := .}}{{range $s := .Services}}
 	_ {{.ServiceName}} = (*{{.ServiceName}}Impl)(nil)	
 	{{range $s.Methods}}{{if or .StreamsReturn .StreamsRequest}}
-	_ {{$s.ServiceName}}_{{.MethodName}}Client = (*{{$s.ServiceName}}{{.MethodName}}Client)(nil)
-	_ {{$s.ServiceName}}_{{.MethodName}}Server = (*{{$s.ServiceName}}{{.MethodName}}Server)(nil)
-	{{end}}
-	{{end}}{{end}}
-)		
+	_ {{$s.ServiceName}}_{{.MethodName}}Client = (*{{$s.ServiceName}}{{.MethodName}}Client)(nil){{end}}{{end}}
+	{{range $s.Methods}}{{if or .StreamsReturn .StreamsRequest}}
+	_ {{$s.ServiceName}}_{{.MethodName}}Server = (*{{$s.ServiceName}}{{.MethodName}}Server)(nil){{end}}{{end}}{{end}}
+)	
+
 `
 
-const InterfaceTpl = `//{{$t := .}}{{range $s := .Services}}{{.ServiceName}}Client is a client for the {{$t.ProtoPackage}}.{{$s.ServiceName}} service.
+const InterfaceTpl = `//{{$t := .}}{{range $s := .Services}}{{.ServiceName}} is a client for the {{$t.ProtoPackage}}.{{$s.ServiceName}} service.
 type {{$s.ServiceName}} interface {
 	{{range $s.Methods}}
 		{{.MethodName}}(ctx context.Context{{if .StreamsRequest}}{{else}}, req *proto.{{.RequestType}}{{end}}, opt ...client.CallOption) {{if or .StreamsReturn .StreamsRequest}}({{$s.ServiceName}}_{{.MethodName}}Client, error){{else}}(*proto.{{.ReturnType}}, error){{end}}

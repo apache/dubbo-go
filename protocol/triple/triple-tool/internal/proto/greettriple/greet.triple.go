@@ -51,7 +51,19 @@ const (
 	GreetServiceGreetServerStreamProcedure = "/greet.GreetService/GreetServerStream"
 )
 
-//GreetServiceClient is a client for the greet.GreetService service.
+var (
+	_ GreetService = (*GreetServiceImpl)(nil)
+
+	_ GreetService_GreetStreamClient       = (*GreetServiceGreetStreamClient)(nil)
+	_ GreetService_GreetClientStreamClient = (*GreetServiceGreetClientStreamClient)(nil)
+	_ GreetService_GreetServerStreamClient = (*GreetServiceGreetServerStreamClient)(nil)
+
+	_ GreetService_GreetStreamServer       = (*GreetServiceGreetStreamServer)(nil)
+	_ GreetService_GreetClientStreamServer = (*GreetServiceGreetClientStreamServer)(nil)
+	_ GreetService_GreetServerStreamServer = (*GreetServiceGreetServerStreamServer)(nil)
+)
+
+//GreetService is a client for the greet.GreetService service.
 type GreetService interface {
 	Greet(ctx context.Context, req *proto.GreetRequest, opt ...client.CallOption) (*proto.GreetResponse, error)
 
