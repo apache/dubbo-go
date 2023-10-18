@@ -144,16 +144,16 @@ type GreetService_GreetClient interface {
 	Close() error
 }
 
-type greetServiceGreetClient struct {
+type GreetServiceGreetClient struct {
 	*triple_protocol.ServerStreamForClient
 }
 
-func (cli *greetServiceGreetClient) Recv() bool {
+func (cli *GreetServiceGreetClient) Recv() bool {
 	msg := new(proto.GreetResponse)
 	return cli.ServerStreamForClient.Receive(msg)
 }
 
-func (cli *greetServiceGreetClient) Msg() *proto.GreetResponse {
+func (cli *GreetServiceGreetClient) Msg() *proto.GreetResponse {
 	msg := cli.ServerStreamForClient.Msg()
 	if msg == nil {
 		return new(proto.GreetResponse)
@@ -161,7 +161,7 @@ func (cli *greetServiceGreetClient) Msg() *proto.GreetResponse {
 	return msg.(*proto.GreetResponse)
 }
 
-func (cli *greetServiceGreetClient) Conn() (triple_protocol.StreamingClientConn, error) {
+func (cli *GreetServiceGreetClient) Conn() (triple_protocol.StreamingClientConn, error) {
 	return cli.ServerStreamForClient.Conn()
 }
 
@@ -177,15 +177,15 @@ type GreetService_GreetStreamClient interface {
 	CloseResponse() error
 }
 
-type greetServiceGreetStreamClient struct {
+type GreetServiceGreetStreamClient struct {
 	*triple_protocol.BidiStreamForClient
 }
 
-func (cli *greetServiceGreetStreamClient) Send(msg *proto.GreetStreamRequest) error {
+func (cli *GreetServiceGreetStreamClient) Send(msg *proto.GreetStreamRequest) error {
 	return cli.BidiStreamForClient.Send(msg)
 }
 
-func (cli *greetServiceGreetStreamClient) Recv() (*proto.GreetStreamResponse, error) {
+func (cli *GreetServiceGreetStreamClient) Recv() (*proto.GreetStreamResponse, error) {
 	msg := new(proto.GreetStreamResponse)
 	if err := cli.BidiStreamForClient.Receive(msg); err != nil {
 		return nil, err
@@ -202,15 +202,15 @@ type GreetService_GreetClientStreamClient interface {
 	Conn() (triple_protocol.StreamingClientConn, error)
 }
 
-type greetServiceGreetClientStreamClient struct {
+type GreetServiceGreetClientStreamClient struct {
 	*triple_protocol.ClientStreamForClient
 }
 
-func (cli *greetServiceGreetClientStreamClient) Send(msg *proto.GreetClientStreamRequest) error {
+func (cli *GreetServiceGreetClientStreamClient) Send(msg *proto.GreetClientStreamRequest) error {
 	return cli.ClientStreamForClient.Send(msg)
 }
 
-func (cli *greetServiceGreetClientStreamClient) CloseAndRecv() (*proto.GreetClientStreamResponse, error) {
+func (cli *GreetServiceGreetClientStreamClient) CloseAndRecv() (*proto.GreetClientStreamResponse, error) {
 	msg := new(proto.GreetClientStreamResponse)
 	resp := triple_protocol.NewResponse(msg)
 	if err := cli.ClientStreamForClient.CloseAndReceive(resp); err != nil {
@@ -219,7 +219,7 @@ func (cli *greetServiceGreetClientStreamClient) CloseAndRecv() (*proto.GreetClie
 	return msg, nil
 }
 
-func (cli *greetServiceGreetClientStreamClient) Conn() (triple_protocol.StreamingClientConn, error) {
+func (cli *GreetServiceGreetClientStreamClient) Conn() (triple_protocol.StreamingClientConn, error) {
 	return cli.ClientStreamForClient.Conn()
 }
 
@@ -233,16 +233,16 @@ type GreetService_GreetServerStreamClient interface {
 	Close() error
 }
 
-type greetServiceGreetServerStreamClient struct {
+type GreetServiceGreetServerStreamClient struct {
 	*triple_protocol.ServerStreamForClient
 }
 
-func (cli *greetServiceGreetServerStreamClient) Recv() bool {
+func (cli *GreetServiceGreetServerStreamClient) Recv() bool {
 	msg := new(proto.GreetServerStreamResponse)
 	return cli.ServerStreamForClient.Receive(msg)
 }
 
-func (cli *greetServiceGreetServerStreamClient) Msg() *proto.GreetServerStreamResponse {
+func (cli *GreetServiceGreetServerStreamClient) Msg() *proto.GreetServerStreamResponse {
 	msg := cli.ServerStreamForClient.Msg()
 	if msg == nil {
 		return new(proto.GreetServerStreamResponse)
@@ -250,7 +250,7 @@ func (cli *greetServiceGreetServerStreamClient) Msg() *proto.GreetServerStreamRe
 	return msg.(*proto.GreetServerStreamResponse)
 }
 
-func (cli *greetServiceGreetServerStreamClient) Conn() (triple_protocol.StreamingClientConn, error) {
+func (cli *GreetServiceGreetServerStreamClient) Conn() (triple_protocol.StreamingClientConn, error) {
 	return cli.ServerStreamForClient.Conn()
 }
 

@@ -288,15 +288,15 @@ type {{$s.ServiceName}}_{{.MethodName}}Client interface {
 	CloseResponse() error
 }
 
-type {{lower $s.ServiceName}}{{.MethodName}}Client struct {
+type {{$s.ServiceName}}{{.MethodName}}Client struct {
 	*triple_protocol.BidiStreamForClient
 }
 
-func (cli *{{lower $s.ServiceName}}{{.MethodName}}Client) Send(msg *proto.{{.RequestType}}) error {
+func (cli *{{$s.ServiceName}}{{.MethodName}}Client) Send(msg *proto.{{.RequestType}}) error {
 	return cli.BidiStreamForClient.Send(msg)
 }
 
-func (cli *{{lower $s.ServiceName}}{{.MethodName}}Client) Recv() (*proto.{{.ReturnType}}, error) {
+func (cli *{{$s.ServiceName}}{{.MethodName}}Client) Recv() (*proto.{{.ReturnType}}, error) {
 	msg := new(proto.{{.ReturnType}})
 	if err := cli.BidiStreamForClient.Receive(msg); err != nil {
 		return nil, err
@@ -313,15 +313,15 @@ type {{$s.ServiceName}}_{{.MethodName}}Client interface {
 	Conn() (triple_protocol.StreamingClientConn, error)
 }
 
-type {{lower $s.ServiceName}}{{.MethodName}}Client struct {
+type {{$s.ServiceName}}{{.MethodName}}Client struct {
 	*triple_protocol.ClientStreamForClient
 }
 
-func (cli *{{lower $s.ServiceName}}{{.MethodName}}Client) Send(msg *proto.{{.RequestType}}) error {
+func (cli *{{$s.ServiceName}}{{.MethodName}}Client) Send(msg *proto.{{.RequestType}}) error {
 	return cli.ClientStreamForClient.Send(msg)
 }
 
-func (cli *{{lower $s.ServiceName}}{{.MethodName}}Client) CloseAndRecv() (*proto.{{.ReturnType}}, error) {
+func (cli *{{$s.ServiceName}}{{.MethodName}}Client) CloseAndRecv() (*proto.{{.ReturnType}}, error) {
 	msg := new(proto.{{.ReturnType}})
 	resp := triple_protocol.NewResponse(msg)
 	if err := cli.ClientStreamForClient.CloseAndReceive(resp); err != nil {
@@ -330,7 +330,7 @@ func (cli *{{lower $s.ServiceName}}{{.MethodName}}Client) CloseAndRecv() (*proto
 	return msg, nil
 }
 
-func (cli *{{lower $s.ServiceName}}{{.MethodName}}Client) Conn() (triple_protocol.StreamingClientConn, error) {
+func (cli *{{$s.ServiceName}}{{.MethodName}}Client) Conn() (triple_protocol.StreamingClientConn, error) {
 	return cli.ClientStreamForClient.Conn()
 }
 {{end}}{{else}}
@@ -344,16 +344,16 @@ type {{$s.ServiceName}}_{{.MethodName}}Client interface {
 	Close() error
 }
 
-type {{lower $s.ServiceName}}{{.MethodName}}Client struct {
+type {{$s.ServiceName}}{{.MethodName}}Client struct {
 	*triple_protocol.ServerStreamForClient
 }
 
-func (cli *{{lower $s.ServiceName}}{{.MethodName}}Client) Recv() bool {
+func (cli *{{$s.ServiceName}}{{.MethodName}}Client) Recv() bool {
 	msg := new(proto.{{.ReturnType}})
 	return cli.ServerStreamForClient.Receive(msg)
 }
 
-func (cli *{{lower $s.ServiceName}}{{.MethodName}}Client) Msg() *proto.{{.ReturnType}} {
+func (cli *{{$s.ServiceName}}{{.MethodName}}Client) Msg() *proto.{{.ReturnType}} {
 	msg := cli.ServerStreamForClient.Msg()
 	if msg == nil {
 		return new(proto.{{.ReturnType}})
@@ -361,7 +361,7 @@ func (cli *{{lower $s.ServiceName}}{{.MethodName}}Client) Msg() *proto.{{.Return
 	return msg.(*proto.{{.ReturnType}})
 }
 
-func (cli *{{lower $s.ServiceName}}{{.MethodName}}Client) Conn() (triple_protocol.StreamingClientConn, error) {
+func (cli *{{$s.ServiceName}}{{.MethodName}}Client) Conn() (triple_protocol.StreamingClientConn, error) {
 	return cli.ServerStreamForClient.Conn()
 }
 {{end}}{{end}}{{end}}
@@ -460,7 +460,8 @@ type {{$s.ServiceName}}{{.MethodName}}Server struct {
 func (g *{{$s.ServiceName}}{{.MethodName}}Server) Send(msg *proto.{{.ReturnType}}) error {
 	return g.ServerStream.Send(msg)
 }
-{{end}}{{end}}{{end}}`
+{{end}}{{end}}{{end}}
+`
 
 const ServiceInfoTpl = `{{$t := .}}{{range $s := .Services}}var {{.ServiceName}}_ServiceInfo = server.ServiceInfo{
 	InterfaceName: "{{$t.ProtoPackage}}.{{.ServiceName}}",
