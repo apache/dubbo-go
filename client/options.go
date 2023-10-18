@@ -131,7 +131,7 @@ func (cliOpts *ClientOptions) init(opts ...ClientOption) error {
 	ref.RegistryIDs = commonCfg.TranslateIds(ref.RegistryIDs)
 
 	// init graceful_shutdown
-	graceful_shutdown.Init(graceful_shutdown.WithShutdown_Config(cliOpts.Shutdown))
+	graceful_shutdown.Init(graceful_shutdown.SetShutdown_Config(cliOpts.Shutdown))
 
 	return commonCfg.Verify(cliOpts)
 }
@@ -415,15 +415,15 @@ func newDefaultCallOptions() *CallOptions {
 }
 
 // WithCallRequestTimeout the maximum waiting time for one specific call, only works for 'tri' and 'dubbo' protocol
-func WithCallRequestTimeout(timeout string) CallOption {
+func WithCallRequestTimeout(timeout time.Duration) CallOption {
 	return func(opts *CallOptions) {
-		opts.RequestTimeout = timeout
+		opts.RequestTimeout = timeout.String()
 	}
 }
 
 // WithCallRetries the maximum retry times on request failure for one specific call, only works for 'tri' and 'dubbo' protocol
-func WithCallRetries(retries string) CallOption {
+func WithCallRetries(retries int) CallOption {
 	return func(opts *CallOptions) {
-		opts.Retries = retries
+		opts.Retries = strconv.Itoa(retries)
 	}
 }

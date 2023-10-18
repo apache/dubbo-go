@@ -92,7 +92,7 @@ func WithRejectRequest() Option {
 
 // ---------- For framework ----------
 
-func WithShutdown_Config(cfg *global.ShutdownConfig) Option {
+func SetShutdown_Config(cfg *global.ShutdownConfig) Option {
 	return func(opts *Options) {
 		opts.Shutdown = cfg
 	}
