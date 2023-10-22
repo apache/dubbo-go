@@ -281,8 +281,8 @@ func negotiateCompression( //nolint:nonamedreturns
 		} else {
 			// To comply with
 			// https://github.com/grpc/grpc/blob/master/doc/compression.md and the
-			// Connect protocol, we should return CodeUnimplemented and specify
-			// acceptable compression(s) (in addition to setting the a
+			// Triple protocol, we should return CodeUnimplemented and specify
+			// acceptable compression(s) (in addition to setting the
 			// protocol-specific accept-encoding header).
 			return "", "", errorf(
 				CodeUnimplemented,

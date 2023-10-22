@@ -13,15 +13,15 @@
 // limitations under the License.
 
 // Package triple is a slim RPC framework built on Protocol Buffers and
-// [net/http]. In addition to supporting its own protocol, Connect handlers and
-// clients are wire-compatible with gRPC and gRPC-Web, including streaming.
+// [net/http]. In addition to supporting its own protocol, Triple handlers and
+// clients are wire-compatible with gRPC, including streaming.
 //
 // This documentation is intended to explain each type and function in
 // isolation. Walkthroughs, FAQs, and other narrative docs are available on the
-// [Connect website], and there's a working [demonstration service] on Github.
+// [dubbo-go website], and there's a working [demonstration service] on Github.
 //
-// [Connect website]: https://connect.build
-// [demonstration service]: https://github.com/bufbuild/connect-demo
+// [dubbo-go website]: https://cn.dubbo.apache.org/zh-cn/overview/mannual/golang-sdk/
+// [demonstration service]: https://github.com/apache/dubbo-go-samples
 package triple_protocol
 
 import (
@@ -32,7 +32,7 @@ import (
 )
 
 // Version is the semantic version of the triple module.
-const Version = "1.7.0-dev"
+const Version = "0.1.0"
 
 // These constants are used in compile-time handshakes with triple's generated
 // code.
