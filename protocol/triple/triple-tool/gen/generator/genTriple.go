@@ -135,7 +135,11 @@ func (g *Generator) generateToFile(filePath string, data []byte) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(filePath, data, 0666)
+	err = os.WriteFile(filePath, data, 0666)
+	if err != nil {
+		return err
+	}
+	return util.GoFmtFile(filePath)
 }
 
 func ProcessProtoFile(file *descriptor.FileDescriptorProto) (TripleGo, error) {

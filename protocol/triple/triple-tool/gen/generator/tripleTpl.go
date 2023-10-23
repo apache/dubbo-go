@@ -197,7 +197,7 @@ const (
 
 `
 
-const TypeCheckTpl = `var({{$t := .}}{{range $s := .Services}}
+const TypeCheckTpl = `var ({{$t := .}}{{range $s := .Services}}
 	_ {{.ServiceName}} = (*{{.ServiceName}}Impl)(nil)	
 	{{range $s.Methods}}{{if or .StreamsReturn .StreamsRequest}}
 	_ {{$s.ServiceName}}_{{.MethodName}}Client = (*{{$s.ServiceName}}{{.MethodName}}Client)(nil){{end}}{{end}}
@@ -208,10 +208,8 @@ const TypeCheckTpl = `var({{$t := .}}{{range $s := .Services}}
 `
 
 const InterfaceTpl = `//{{$t := .}}{{range $s := .Services}}{{.ServiceName}} is a client for the {{$t.ProtoPackage}}.{{$s.ServiceName}} service.
-type {{$s.ServiceName}} interface {
-	{{range $s.Methods}}
-		{{.MethodName}}(ctx context.Context{{if .StreamsRequest}}{{else}}, req *proto.{{.RequestType}}{{end}}, opt ...client.CallOption) {{if or .StreamsReturn .StreamsRequest}}({{$s.ServiceName}}_{{.MethodName}}Client, error){{else}}(*proto.{{.ReturnType}}, error){{end}}
-	{{end}}
+type {{$s.ServiceName}} interface { {{- range $s.Methods}}
+	{{.MethodName}}(ctx context.Context{{if .StreamsRequest}}{{else}}, req *proto.{{.RequestType}}{{end}}, opt ...client.CallOption) {{if or .StreamsReturn .StreamsRequest}}({{$s.ServiceName}}_{{.MethodName}}Client, error){{else}}(*proto.{{.ReturnType}}, error){{end}}{{end}}
 }{{end}}
 
 `
@@ -241,14 +239,15 @@ type {{.ServiceName}}Impl struct {
 	cli *client.Client
 }
 {{range .Methods}}{{if .StreamsRequest}}{{if .StreamsReturn}}
-func (c *{{$s.ServiceName}}Impl) {{.MethodName}}(ctx context.Context, opts ...client.CallOption)({{$s.ServiceName}}_{{.MethodName}}Client,error) {
+func (c *{{$s.ServiceName}}Impl) {{.MethodName}}(ctx context.Context, opts ...client.CallOption) ({{$s.ServiceName}}_{{.MethodName}}Client, error) {
 	stream, err := c.cli.CallBidiStream(ctx, "{{$t.ProtoPackage}}.{{$s.ServiceName}}", "{{.MethodName}}", opts...)
 	if err != nil {
 		return nil, err
 	}
 	rawStream := stream.(*triple_protocol.BidiStreamForClient)
 	return &{{$s.ServiceName}}{{.MethodName}}Client{rawStream}, nil
-}{{else}}
+}
+{{else}}
 func (c *{{$s.ServiceName}}Impl) {{.MethodName}}(ctx context.Context, opts ...client.CallOption) ({{$s.ServiceName}}_{{.MethodName}}Client, error) {
 	stream, err := c.cli.CallClientStream(ctx, "{{$t.ProtoPackage}}.{{$s.ServiceName}}", "{{.MethodName}}", opts...)
 	if err != nil {
@@ -256,7 +255,8 @@ func (c *{{$s.ServiceName}}Impl) {{.MethodName}}(ctx context.Context, opts ...cl
 	}
 	rawStream := stream.(*triple_protocol.ClientStreamForClient)
 	return &{{$s.ServiceName}}{{.MethodName}}Client{rawStream}, nil
-}{{end}}{{else}}{{if .StreamsReturn}}
+}
+{{end}}{{else}}{{if .StreamsReturn}}
 func (c *{{$s.ServiceName}}Impl) {{.MethodName}}(ctx context.Context, req *proto.{{.RequestType}}, opts ...client.CallOption) ({{$s.ServiceName}}_{{.MethodName}}Client, error) {
 	stream, err := c.cli.CallServerStream(ctx, req, "{{$t.ProtoPackage}}.{{$s.ServiceName}}", "{{.MethodName}}", opts...)
 	if err != nil {
@@ -264,18 +264,19 @@ func (c *{{$s.ServiceName}}Impl) {{.MethodName}}(ctx context.Context, req *proto
 	}
 	rawStream := stream.(*triple_protocol.ServerStreamForClient)
 	return &{{$s.ServiceName}}{{.MethodName}}Client{rawStream}, nil
-}{{else}}
+}
+{{else}}
 func (c *{{$s.ServiceName}}Impl) {{.MethodName}}(ctx context.Context, req *proto.{{.RequestType}}, opts ...client.CallOption) (*proto.{{.ReturnType}}, error) {
 	resp := new(proto.{{.ReturnType}})
 	if err := c.cli.CallUnary(ctx, req, resp, "{{$t.ProtoPackage}}.{{$s.ServiceName}}", "{{.MethodName}}", opts...); err != nil {
 		return nil, err
 	}
 	return resp, nil
-}{{end}}{{end}}
-{{end}}{{end}}
+}
+{{end}}{{end}}{{end}}{{end}}
 `
 
-const ClientImplTpl = `{{$t := .}}{{range $s := .Services}}{{range .Methods}}{{if .StreamsRequest}}{{if .StreamsReturn}} 
+const ClientImplTpl = `{{$t := .}}{{range $s := .Services}}{{range .Methods}}{{if .StreamsRequest}}{{if .StreamsReturn}}
 type {{$s.ServiceName}}_{{.MethodName}}Client interface {
 	Spec() triple_protocol.Spec
 	Peer() triple_protocol.Peer
@@ -363,15 +364,14 @@ func (cli *{{$s.ServiceName}}{{.MethodName}}Client) Msg() *proto.{{.ReturnType}}
 
 func (cli *{{$s.ServiceName}}{{.MethodName}}Client) Conn() (triple_protocol.StreamingClientConn, error) {
 	return cli.ServerStreamForClient.Conn()
-}
-{{end}}{{end}}{{end}}{{end}}
+}{{end}}{{end}}{{end}}{{end}}
 
 `
 
 const MethodInfoTpl = `{{$t := .}}{{range $i, $s := .Services}}var {{.ServiceName}}_ClientInfo = client.ClientInfo{
-	InterfaceName : "{{$t.Package}}.{{.ServiceName}}",
-	MethodNames :   []string{ {{- range $j, $m := .Methods}}"{{.MethodName}}"{{if last $j (len $s.Methods)}}{{else}},{{end}}{{end -}} },
-	ClientInjectFunc : func(dubboCliRaw interface{}, cli *client.Client) {
+	InterfaceName: "{{$t.Package}}.{{.ServiceName}}",
+	MethodNames:   []string{ {{- range $j, $m := .Methods}}"{{.MethodName}}"{{if last $j (len $s.Methods)}}{{else}},{{end}}{{end -}} },
+	ClientInjectFunc: func(dubboCliRaw interface{}, cli *client.Client) {
 		dubboCli := dubboCliRaw.({{$s.ServiceName}}Impl)
 		dubboCli.cli = cli
 	},
@@ -380,10 +380,8 @@ const MethodInfoTpl = `{{$t := .}}{{range $i, $s := .Services}}var {{.ServiceNam
 `
 
 const HandlerTpl = `{{$t := .}}{{range $s := .Services}}// {{.ServiceName}}Handler is an implementation of the {{$t.ProtoPackage}}.{{.ServiceName}} service.
-type {{.ServiceName}}Handler interface {
-	{{range $s.Methods}}
-		{{.MethodName}}(context.Context, {{if .StreamsRequest}}{{$s.ServiceName}}_{{.MethodName}}Server{{else}}*proto.{{.RequestType}}{{if .StreamsReturn}},{{$s.ServiceName}}_{{.MethodName}}Server{{end}}{{end}}) {{if .StreamsReturn}}error{{else}}(*proto.{{.ReturnType}}, error){{end}}
-	{{end}}
+type {{.ServiceName}}Handler interface { {{- range $s.Methods}}
+	{{.MethodName}}(context.Context, {{if .StreamsRequest}}{{$s.ServiceName}}_{{.MethodName}}Server{{else}}*proto.{{.RequestType}}{{if .StreamsReturn}}, {{$s.ServiceName}}_{{.MethodName}}Server{{end}}{{end}}) {{if .StreamsReturn}}error{{else}}(*proto.{{.ReturnType}}, error){{end}}{{end}}
 }
 
 func Register{{.ServiceName}}Handler(srv *server.Server, hdlr {{.ServiceName}}Handler, opts ...server.ServiceOption) error {
@@ -468,12 +466,12 @@ const ServiceInfoTpl = `{{$t := .}}{{range $s := .Services}}var {{.ServiceName}}
 	ServiceType:   (*{{.ServiceName}}Handler)(nil),
 	Methods: []server.MethodInfo{ {{- range .Methods}}{{if .StreamsRequest}}{{if .StreamsReturn}}
 		{
-			Name : "{{.MethodName}}",
-			Type : constant.CallBidiStream,
-			StreamInitFunc : func(baseStream interface{}) interface{} {
+			Name: "{{.MethodName}}",
+			Type: constant.CallBidiStream,
+			StreamInitFunc: func(baseStream interface{}) interface{} {
 				return &{{$s.ServiceName}}{{.MethodName}}Server{baseStream.(*triple_protocol.BidiStream)}
 			},
-			MethodFunc : func(ctx context.Context, args []interface{}, handler interface{}) (interface{}, error) {
+			MethodFunc: func(ctx context.Context, args []interface{}, handler interface{}) (interface{}, error) {
 				stream := args[0].({{$s.ServiceName}}_{{.MethodName}}Server)
 				if err := handler.({{$s.ServiceName}}Handler).{{.MethodName}}(ctx, stream); err != nil {
 					return nil, err
@@ -482,12 +480,12 @@ const ServiceInfoTpl = `{{$t := .}}{{range $s := .Services}}var {{.ServiceName}}
 			},
 		},{{else}}
 		{
-			Name : "{{.MethodName}}",
-			Type : constant.CallClientStream,
+			Name: "{{.MethodName}}",
+			Type: constant.CallClientStream,
 			StreamInitFunc: func(baseStream interface{}) interface{} {
 				return &{{$s.ServiceName}}{{.MethodName}}Server{baseStream.(*triple_protocol.ClientStream)}
 			},
-			MethodFunc : func(ctx context.Context, args []interface{}, handler interface{}) (interface{}, error) {
+			MethodFunc: func(ctx context.Context, args []interface{}, handler interface{}) (interface{}, error) {
 				stream := args[0].({{$s.ServiceName}}_{{.MethodName}}Server)
 				res, err := handler.({{$s.ServiceName}}Handler).{{.MethodName}}(ctx, stream)
 				if err != nil {
@@ -497,15 +495,15 @@ const ServiceInfoTpl = `{{$t := .}}{{range $s := .Services}}var {{.ServiceName}}
 			},
 		},{{end}}{{else}}{{if .StreamsReturn}}
 		{
-			Name : "{{.MethodName}}",
-			Type : constant.CallServerStream,
-			ReqInitFunc : func() interface{} {
+			Name: "{{.MethodName}}",
+			Type: constant.CallServerStream,
+			ReqInitFunc: func() interface{} {
 				return new(proto.{{.RequestType}})
 			},
-			StreamInitFunc : func(baseStream interface{}) interface{} {
+			StreamInitFunc: func(baseStream interface{}) interface{} {
 				return &{{$s.ServiceName}}{{.MethodName}}Server{baseStream.(*triple_protocol.ServerStream)}
 			},
-			MethodFunc : func(ctx context.Context, args []interface{}, handler interface{}) (interface{}, error) {
+			MethodFunc: func(ctx context.Context, args []interface{}, handler interface{}) (interface{}, error) {
 				req := args[0].(*proto.{{.RequestType}})
 				stream := args[1].({{$s.ServiceName}}_{{.MethodName}}Server)
 				if err := handler.({{$s.ServiceName}}Handler).{{.MethodName}}(ctx, req, stream); err != nil {
@@ -515,12 +513,12 @@ const ServiceInfoTpl = `{{$t := .}}{{range $s := .Services}}var {{.ServiceName}}
 			},
 		},{{else}}
 		{
-			Name : "{{.MethodName}}",
-			Type : constant.CallUnary,
-			ReqInitFunc : func() interface{} {
+			Name: "{{.MethodName}}",
+			Type: constant.CallUnary,
+			ReqInitFunc: func() interface{} {
 				return new(proto.{{.RequestType}})
 			},
-			MethodFunc : func(ctx context.Context, args []interface{}, handler interface{}) (interface{}, error) {
+			MethodFunc: func(ctx context.Context, args []interface{}, handler interface{}) (interface{}, error) {
 				req := args[0].(*proto.{{.RequestType}})
 				res, err := handler.({{$s.ServiceName}}Handler).{{.MethodName}}(ctx, req)
 				if err != nil {
