@@ -63,6 +63,7 @@ func newDuplexHTTPCall(
 	url = cloneURL(url)
 	pipeReader, pipeWriter := io.Pipe()
 
+	// todo(DMwangnima): remove cloneURL logic in WithContext
 	// This is mirroring what http.NewRequestContext did, but
 	// using an already parsed url.URL object, rather than a string
 	// and parsing it again. This is a bit funny with HTTP/1.1

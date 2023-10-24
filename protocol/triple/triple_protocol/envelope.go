@@ -22,22 +22,22 @@ import (
 )
 
 // flagEnvelopeCompressed indicates that the data is compressed. It has the
-// same meaning in the gRPC-Web, gRPC-HTTP2, and Connect protocols.
+// same meaning in the gRPC-Web, gRPC-HTTP2, and Triple protocols.
 const flagEnvelopeCompressed = 0b00000001
 
 var errSpecialEnvelope = errorf(
 	CodeUnknown,
 	"final message has protocol-specific flags: %w",
-	// User code checks for end of stream with errors.Is(err, io.EOF).
+	// User code checks for end of stream with errors.Is(err, io.EOF) or triple.IsEnded(err).
 	io.EOF,
 )
 
-// envelope is a block of arbitrary bytes wrapped in gRPC and Connect's framing
+// envelope is a block of arbitrary bytes wrapped in gRPC and Triple's framing
 // protocol.
 //
 // Each message is preceded by a 5-byte prefix. The first byte is a uint8 used
 // as a set of bitwise flags, and the remainder is a uint32 indicating the
-// message length. gRPC and Connect interpret the bitwise flags differently, so
+// message length. gRPC and Triple interpret the bitwise flags differently, so
 // envelope leaves their interpretation up to the caller.
 type envelope struct {
 	Data  *bytes.Buffer
@@ -113,8 +113,8 @@ func (w *envelopeWriter) write(env *envelope) *Error {
 	prefix[0] = env.Flags
 	binary.BigEndian.PutUint32(prefix[1:5], uint32(env.Data.Len()))
 	if _, err := w.writer.Write(prefix[:]); err != nil {
-		if connectErr, ok := asError(err); ok {
-			return connectErr
+		if tripleErr, ok := asError(err); ok {
+			return tripleErr
 		}
 		return errorf(CodeUnknown, "write envelope: %w", err)
 	}
@@ -213,8 +213,8 @@ func (r *envelopeReader) Read(env *envelope) *Error {
 		return NewError(CodeUnknown, err)
 	case err != nil || prefixBytesRead < 5:
 		// Something else has gone wrong - the stream didn't end cleanly.
-		if connectErr, ok := asError(err); ok {
-			return connectErr
+		if tripleErr, ok := asError(err); ok {
+			return tripleErr
 		}
 		if maxBytesErr := asMaxBytesError(err, "read 5 byte message prefix"); maxBytesErr != nil {
 			// We're reading from an http.MaxBytesHandler, and we've exceeded the read limit.
