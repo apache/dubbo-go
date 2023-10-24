@@ -30,9 +30,11 @@ var ch = make(chan metrics.MetricsEvent, 10)
 var info = metrics.NewMetricKey("dubbo_configcenter_total", "Config Changed Total")
 
 func init() {
-	metrics.AddCollector("config_center", func(mr metrics.MetricRegistry, _ *common.URL) {
-		c := &configCenterCollector{r: mr}
-		c.start()
+	metrics.AddCollector("config_center", func(mr metrics.MetricRegistry, url *common.URL) {
+		if url.GetParamBool(constant.ConfigCenterEnabledKey, true) {
+			c := &configCenterCollector{r: mr}
+			c.start()
+		}
 	})
 }
 

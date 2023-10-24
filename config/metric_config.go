@@ -35,13 +35,17 @@ import (
 
 // MetricConfig This is the config struct for all metrics implementation
 type MetricConfig struct {
-	Enable      *bool             `default:"false" yaml:"enable" json:"enable,omitempty" property:"enable"`
-	Port        string            `default:"9090" yaml:"port" json:"port,omitempty" property:"port"`
-	Path        string            `default:"/metrics" yaml:"path" json:"path,omitempty" property:"path"`
-	Protocol    string            `default:"prometheus" yaml:"protocol" json:"protocol,omitempty" property:"protocol"`
-	Prometheus  *PrometheusConfig `yaml:"prometheus" json:"prometheus" property:"prometheus"`
-	Aggregation *AggregateConfig  `yaml:"aggregation" json:"aggregation" property:"aggregation"`
-	rootConfig  *RootConfig
+	Enable             *bool             `default:"false" yaml:"enable" json:"enable,omitempty" property:"enable"`
+	Port               string            `default:"9090" yaml:"port" json:"port,omitempty" property:"port"`
+	Path               string            `default:"/metrics" yaml:"path" json:"path,omitempty" property:"path"`
+	Protocol           string            `default:"prometheus" yaml:"protocol" json:"protocol,omitempty" property:"protocol"`
+	EnableMetadata     *bool             `default:"true" yaml:"enable-metadata" json:"enable-metadata,omitempty" property:"enable-metadata"`
+	EnableRegistry     *bool             `default:"true" yaml:"enable-registry" json:"enable-registry,omitempty" property:"enable-registry"`
+	EnableConfigCenter *bool             `default:"true" yaml:"enable-config-center" json:"enable-config-center,omitempty" property:"enable-config-center"`
+	EnableRpc          *bool             `default:"true" yaml:"enable-rpc" json:"enable-rpc,omitempty" property:"enable-rpc"`
+	Prometheus         *PrometheusConfig `yaml:"prometheus" json:"prometheus" property:"prometheus"`
+	Aggregation        *AggregateConfig  `yaml:"aggregation" json:"aggregation" property:"aggregation"`
+	rootConfig         *RootConfig
 }
 
 type AggregateConfig struct {
@@ -101,6 +105,26 @@ func NewMetricConfigBuilder() *MetricConfigBuilder {
 	return &MetricConfigBuilder{metricConfig: &MetricConfig{}}
 }
 
+func (mcb *MetricConfigBuilder) SetMetadataEnabled(enabled bool) *MetricConfigBuilder {
+	mcb.metricConfig.EnableMetadata = &enabled
+	return mcb
+}
+
+func (mcb *MetricConfigBuilder) SetRegistryEnabled(enabled bool) *MetricConfigBuilder {
+	mcb.metricConfig.EnableRegistry = &enabled
+	return mcb
+}
+
+func (mcb *MetricConfigBuilder) SetConfigCenterEnabled(enabled bool) *MetricConfigBuilder {
+	mcb.metricConfig.EnableConfigCenter = &enabled
+	return mcb
+}
+
+func (mcb *MetricConfigBuilder) SetRpcEnabled(enabled bool) *MetricConfigBuilder {
+	mcb.metricConfig.EnableRpc = &enabled
+	return mcb
+}
+
 func (mcb *MetricConfigBuilder) Build() *MetricConfig {
 	return mcb.metricConfig
 }
@@ -113,11 +137,15 @@ func (mc *MetricConfig) DynamicUpdateProperties(newMetricConfig *MetricConfig) {
 // prometheus://localhost:9090?&histogram.enabled=false&prometheus.exporter.enabled=false
 func (mc *MetricConfig) toURL() *common.URL {
 	url, _ := common.NewURL("localhost", common.WithProtocol(mc.Protocol))
-	url.SetParam(constant.PrometheusExporterEnabledKey, strconv.FormatBool(*mc.Enable))
+	url.SetParam(constant.PrometheusExporterEnabledKey, strconv.FormatBool(*mc.Enable)) // for compatibility
 	url.SetParam(constant.PrometheusExporterMetricsPortKey, mc.Port)
 	url.SetParam(constant.PrometheusExporterMetricsPathKey, mc.Path)
 	url.SetParam(constant.ApplicationKey, mc.rootConfig.Application.Name)
 	url.SetParam(constant.AppVersionKey, mc.rootConfig.Application.Version)
+	url.SetParam(constant.MetadataEnabledKey, strconv.FormatBool(*mc.EnableMetadata))
+	url.SetParam(constant.RegistryEnabledKey, strconv.FormatBool(*mc.EnableRegistry))
+	url.SetParam(constant.ConfigCenterEnabledKey, strconv.FormatBool(*mc.EnableConfigCenter))
+	url.SetParam(constant.RpcEnabledKey, strconv.FormatBool(*mc.EnableRpc))
 	if mc.Aggregation != nil {
 		url.SetParam(constant.AggregationEnabledKey, strconv.FormatBool(*mc.Aggregation.Enabled))
 		url.SetParam(constant.AggregationBucketNumKey, strconv.Itoa(mc.Aggregation.BucketNum))
