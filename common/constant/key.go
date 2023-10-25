@@ -19,6 +19,8 @@ package constant
 
 type DubboCtxKey string
 
+type TripleCtxKey string
+
 const (
 	AsyncKey = "async" // it's value should be "true" or "false" of string type
 )
@@ -433,4 +435,9 @@ const (
 	DefaultMetaCacheName = "dubbo.meta"
 	DefaultMetaFileName  = "dubbo.metadata."
 	DefaultEntrySize     = 100
+)
+
+// Triple key
+const (
+	TripleGoInterfaceNameKey TripleCtxKey = "XXX_TRIPLE_GO_INTERFACE_NAME"
 )
