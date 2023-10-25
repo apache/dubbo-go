@@ -10,9 +10,7 @@ import (
 
 import (
 	client "dubbo.apache.org/dubbo-go/v3/client"
-	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	triple_protocol "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	"dubbo.apache.org/dubbo-go/v3/server"
 )
@@ -85,10 +83,6 @@ func NewGreetService(cli *client.Client) (GreetService, error) {
 	return &GreetServiceImpl{
 		cli: cli,
 	}, nil
-}
-
-func SetConsumerService(srv common.RPCService) {
-	config.SetClientInfoService(&GreetService_ClientInfo, srv)
 }
 
 // GreetServiceClientImpl implements GreetServiceClient.

@@ -195,9 +195,7 @@ import (
 
 import (
 	client "dubbo.apache.org/dubbo-go/v3/client"
-	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	triple_protocol "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	"dubbo.apache.org/dubbo-go/v3/server"
 )
@@ -270,10 +268,6 @@ func NewGreetService(cli *client.Client) (GreetService, error) {
 	return &GreetServiceImpl{
 		cli: cli,
 	}, nil
-}
-
-func SetConsumerService(srv common.RPCService) {
-	config.SetClientInfoService(&GreetService_ClientInfo, srv)
 }
 
 // GreetServiceClientImpl implements GreetServiceClient.
@@ -419,6 +413,7 @@ var GreetService_ClientInfo = client.ClientInfo{
 type GreetServiceHandler interface {
 	Greet(context.Context, *proto.GreetRequest) (*proto.GreetResponse, error)
 	GreetStream(context.Context, GreetService_GreetStreamServer) error
+
 	GreetClientStream(context.Context, GreetService_GreetClientStreamServer) (*proto.GreetClientStreamResponse, error)
 	GreetServerStream(context.Context, *proto.GreetServerStreamRequest, GreetService_GreetServerStreamServer) error
 }
