@@ -413,7 +413,6 @@ var GreetService_ClientInfo = client.ClientInfo{
 type GreetServiceHandler interface {
 	Greet(context.Context, *proto.GreetRequest) (*proto.GreetResponse, error)
 	GreetStream(context.Context, GreetService_GreetStreamServer) error
-
 	GreetClientStream(context.Context, GreetService_GreetClientStreamServer) (*proto.GreetClientStreamResponse, error)
 	GreetServerStream(context.Context, *proto.GreetServerStreamRequest, GreetService_GreetServerStreamServer) error
 }
