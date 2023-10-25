@@ -28,6 +28,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	dubbo_protocol "dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
@@ -99,7 +100,7 @@ func NewCompatUnaryHandler(
 			}
 			return nil
 		}
-		ctx = context.WithValue(ctx, "XXX_TRIPLE_GO_INTERFACE_NAME", config.Procedure)
+		ctx = context.WithValue(ctx, constant.TripleGoInterfaceNameKey, config.Procedure)
 		respRaw, err := unary(srv, ctx, decodeFunc, compatInterceptor.compatUnaryServerInterceptor)
 		if err != nil {
 			return err

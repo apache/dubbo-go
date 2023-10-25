@@ -125,7 +125,7 @@ func (s *Server) Start(invoker protocol.Invoker, info *server.ServiceInfo) {
 	go func() {
 		mux := http.NewServeMux()
 		if info != nil {
-			handleServiceWithInfo(invoker, info, mux)
+			handleServiceWithInfo(invoker, info, mux, hanOpts...)
 		} else {
 			compatHandleService(mux)
 		}
