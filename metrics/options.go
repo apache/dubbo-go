@@ -18,6 +18,7 @@
 package metrics
 
 import (
+	"strconv"
 	"time"
 )
 
@@ -105,9 +106,9 @@ func WithEnabled() Option {
 	}
 }
 
-func WithPort(port string) Option {
+func WithPort(port int) Option {
 	return func(opts *Options) {
-		opts.Metric.Port = port
+		opts.Metric.Port = strconv.Itoa(port)
 	}
 }
 
