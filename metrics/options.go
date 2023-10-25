@@ -69,6 +69,13 @@ func WithPrometheus() Option {
 	}
 }
 
+func WithPrometheusExporterEnabled() Option {
+	return func(opts *Options) {
+		enabled := true
+		opts.Metric.Prometheus.Exporter.Enabled = &enabled
+	}
+}
+
 func WithPrometheusGatewayUrl(url string) Option {
 	return func(opts *Options) {
 		opts.Metric.Prometheus.Pushgateway.BaseUrl = url
@@ -102,7 +109,6 @@ func WithEnabled() Option {
 	return func(opts *Options) {
 		b := true
 		opts.Metric.Enable = &b
-		opts.Metric.Prometheus.Exporter.Enabled = &b
 	}
 }
 
