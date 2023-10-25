@@ -5,7 +5,7 @@ go 1.15
 replace dubbo.apache.org/dubbo-go/v3 => ../../../../dubbo-go
 
 require (
-	dubbo.apache.org/dubbo-go/v3 v3.0.6-0.20230714083639-412bf7b2f36a
+	dubbo.apache.org/dubbo-go/v3 v3.0.6
 	github.com/emicklei/proto v1.12.1
 	github.com/golang/protobuf v1.5.3
 	github.com/spf13/cobra v1.7.0

@@ -171,7 +171,7 @@ import (
 
 const TotalTpl = `// This is a compile-time assertion to ensure that this generated file and the Triple package
 // are compatible. If you get a compiler error that this constant is not defined, this code was
-// generated with a version ofTtriple newer than the one compiled into your binary. You can fix the
+// generated with a version of Triple newer than the one compiled into your binary. You can fix the
 // problem by either regenerating this code with an older version of Triple or updating the Triple
 // version compiled into your binary.
 const _ = triple_protocol.IsAtLeastVersion0_1_0
@@ -182,7 +182,7 @@ const (
 )
 
 // These constants are the fully-qualified names of the RPCs defined in this package. They're
-// exposed at runtime as Spec.Procedure and as the final two segments of the HTTP route.
+// exposed at runtime as procedure and as the final two segments of the HTTP route.
 //
 // Note that these are different from the fully-qualified method names used by
 // google.golang.org/protobuf/reflect/protoreflect. To convert from these constants to
@@ -205,20 +205,14 @@ const TypeCheckTpl = `var ({{$t := .}}{{range $s := .Services}}
 
 `
 
-const InterfaceTpl = `//{{$t := .}}{{range $s := .Services}}{{.ServiceName}} is a client for the {{$t.ProtoPackage}}.{{$s.ServiceName}} service.
+const InterfaceTpl = `// {{$t := .}}{{range $s := .Services}}{{.ServiceName}} is a client for the {{$t.ProtoPackage}}.{{$s.ServiceName}} service.
 type {{$s.ServiceName}} interface { {{- range $s.Methods}}
-	{{.MethodName}}(ctx context.Context{{if .StreamsRequest}}{{else}}, req *proto.{{.RequestType}}{{end}}, opt ...client.CallOption) {{if or .StreamsReturn .StreamsRequest}}({{$s.ServiceName}}_{{.MethodName}}Client, error){{else}}(*proto.{{.ReturnType}}, error){{end}}{{end}}
+	{{.MethodName}}(ctx context.Context{{if .StreamsRequest}}{{else}}, req *proto.{{.RequestType}}{{end}}, opts ...client.CallOption) {{if or .StreamsReturn .StreamsRequest}}({{$s.ServiceName}}_{{.MethodName}}Client, error){{else}}(*proto.{{.ReturnType}}, error){{end}}{{end}}
 }{{end}}
 
 `
 
-const InterfaceImplTpl = `{{$t := .}}{{range $s := .Services}}// New{{.ServiceName}} constructs a client for the {{$t.Package}}.{{.ServiceName}} service. By default, it uses
-// the Connect protocol with the binary Protobuf Codec, asks for gzipped responses, and sends
-// uncompressed requests. To use the gRPC or gRPC-Web protocols, supply the connect.WithGRPC() or
-// connect.WithGRPCWeb() options.
-//
-// The URL supplied here should be the base URL for the Triple server (for example,
-// http://api.acme.com or https://acme.com/grpc).
+const InterfaceImplTpl = `{{$t := .}}{{range $s := .Services}}// New{{.ServiceName}} constructs a client for the {{$t.Package}}.{{.ServiceName}} service. 
 func New{{.ServiceName}}(cli *client.Client) ({{.ServiceName}}, error) {
 	if err := cli.Init(&{{.ServiceName}}_ClientInfo); err != nil {
 		return nil, err
@@ -228,7 +222,7 @@ func New{{.ServiceName}}(cli *client.Client) ({{.ServiceName}}, error) {
 	}, nil
 }
 
-// {{.ServiceName}}ClientImpl implements {{.ServiceName}}Client.
+// {{.ServiceName}}Impl implements {{.ServiceName}}.
 type {{.ServiceName}}Impl struct {
 	cli *client.Client
 }
