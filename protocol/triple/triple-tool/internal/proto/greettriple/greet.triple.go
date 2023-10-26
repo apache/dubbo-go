@@ -4,7 +4,7 @@
 package greettriple
 
 import (
-	context "context"
+	"context"
 	"net/http"
 )
 

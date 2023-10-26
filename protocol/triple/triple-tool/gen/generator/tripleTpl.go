@@ -152,7 +152,7 @@ const PackageTpl = `package {{.Package}}triple`
 const ImportTpl = `
 
 import (
-	context "context"
+	"context"
 	{{if .IsStream}}"net/http"{{end}}
 )
 
