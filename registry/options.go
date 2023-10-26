@@ -19,6 +19,7 @@ package registry
 
 import (
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -26,8 +27,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/global"
 )
-
-var defaultIDMap = map[string]string{}
 
 type Options struct {
 	Registry *global.RegistryConfig
@@ -63,7 +62,6 @@ func WithEtcdV3() Option {
 	return func(opts *Options) {
 		// todo(DMwangnima): move etcdv3 to constant
 		opts.Registry.Protocol = "etcdv3"
-
 	}
 }
 
@@ -87,8 +85,7 @@ func WithXDS() Option {
 
 func WithZookeeper() Option {
 	return func(opts *Options) {
-		// todo(DMwangnima): move zookeeper to constant
-		opts.Registry.Protocol = "zookeeper"
+		opts.Registry.Protocol = constant.ZookeeperKey
 	}
 }
 
@@ -126,6 +123,9 @@ func WithTTL(ttl time.Duration) Option {
 
 func WithAddress(address string) Option {
 	return func(opts *Options) {
+		if i := strings.Index(address, "://"); i > 0 {
+			opts.Registry.Protocol = address[0:i]
+		}
 		opts.Registry.Address = address
 	}
 }

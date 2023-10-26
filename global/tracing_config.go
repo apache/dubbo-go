@@ -24,29 +24,3 @@ type TracingConfig struct {
 	Address     string `yaml:"address" json:"address,omitempty" property:"address"`
 	UseAgent    *bool  `default:"false" yaml:"use-agent" json:"use-agent,omitempty" property:"use-agent"`
 }
-
-type TracingOption func(*TracingConfig)
-
-func WithTracing_Name(name string) TracingOption {
-	return func(cfg *TracingConfig) {
-		cfg.Name = name
-	}
-}
-
-func WithTracing_ServiceName(name string) TracingOption {
-	return func(cfg *TracingConfig) {
-		cfg.ServiceName = name
-	}
-}
-
-func WithTracing_Address(address string) TracingOption {
-	return func(cfg *TracingConfig) {
-		cfg.Address = address
-	}
-}
-
-func WithTracing_UseAgent(flag bool) TracingOption {
-	return func(cfg *TracingConfig) {
-		cfg.UseAgent = &flag
-	}
-}
