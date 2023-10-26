@@ -26,7 +26,7 @@ import (
 	"strings"
 )
 
-// The names of the Connect, gRPC, and gRPC-Web protocols (as exposed by
+// The names of the Triple, gRPC, and gRPC-Web protocols (as exposed by
 // [Peer.Protocol]). Additional protocols may be added in the future.
 const (
 	ProtocolTriple  = "triple"

@@ -30,6 +30,7 @@ import (
 )
 
 const (
+	// todo(DMwangnima): add common errors documentation
 	commonErrorsURL          = "https://connect.build/docs/go/common-errors"
 	defaultAnyResolverPrefix = "type.googleapis.com/"
 )
@@ -107,6 +108,7 @@ func (d *ErrorDetail) Value() (proto.Message, error) {
 // They're a clearer and more performant alternative to HTTP header
 // microformats. See [the documentation on errors] for more details.
 //
+// todo(DMwangnima): add error documentation to dubbo-go official website
 // [the documentation on errors]: https://connect.build/docs/go/errors
 type Error struct {
 	code    Code

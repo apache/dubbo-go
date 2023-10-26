@@ -23,7 +23,7 @@ import (
 // A Handler is the server-side implementation of a single RPC defined by a
 // service schema.
 //
-// By default, Handlers support the Connect, gRPC, and gRPC-Web protocols with
+// By default, Handlers support the Triple, gRPC, and gRPC-Web protocols with
 // the binary Protobuf and JSON codecs. They support gzip compression using the
 // standard library's [compress/gzip].
 type Handler struct {
@@ -259,18 +259,18 @@ func (h *Handler) ServeHTTP(responseWriter http.ResponseWriter, request *http.Re
 }
 
 type handlerConfig struct {
-	CompressionPools             map[string]*compressionPool
-	CompressionNames             []string
-	Codecs                       map[string]Codec
-	CompressMinBytes             int
-	Interceptor                  Interceptor
-	Procedure                    string
-	HandleGRPC                   bool
-	RequireConnectProtocolHeader bool
-	IdempotencyLevel             IdempotencyLevel
-	BufferPool                   *bufferPool
-	ReadMaxBytes                 int
-	SendMaxBytes                 int
+	CompressionPools            map[string]*compressionPool
+	CompressionNames            []string
+	Codecs                      map[string]Codec
+	CompressMinBytes            int
+	Interceptor                 Interceptor
+	Procedure                   string
+	HandleGRPC                  bool
+	RequireTripleProtocolHeader bool
+	IdempotencyLevel            IdempotencyLevel
+	BufferPool                  *bufferPool
+	ReadMaxBytes                int
+	SendMaxBytes                int
 }
 
 func newHandlerConfig(procedure string, options []HandlerOption) *handlerConfig {
@@ -326,7 +326,7 @@ func (c *handlerConfig) newProtocolHandlers(streamType StreamType) []protocolHan
 			BufferPool:                  c.BufferPool,
 			ReadMaxBytes:                c.ReadMaxBytes,
 			SendMaxBytes:                c.SendMaxBytes,
-			RequireTripleProtocolHeader: c.RequireConnectProtocolHeader,
+			RequireTripleProtocolHeader: c.RequireTripleProtocolHeader,
 			IdempotencyLevel:            c.IdempotencyLevel,
 		}))
 	}

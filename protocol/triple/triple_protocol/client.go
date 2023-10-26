@@ -28,10 +28,9 @@ import (
 // Depending on the procedure's type, use the CallUnary, CallClientStream,
 // CallServerStream, or CallBidiStream method.
 //
-// todo:// modify comment
-// By default, clients use the Connect protocol with the binary Protobuf Codec,
-// ask for gzipped responses, and send uncompressed requests. To use the gRPC
-// or gRPC-Web protocols, use the [WithGRPC] or [WithGRPCWeb] options.
+// By default, clients use the gRPC protocol with the binary Protobuf Codec,
+// ask for gzipped responses, and send uncompressed requests. To use the Triple,
+// use the [WithTriple] options.
 type Client struct {
 	config         *clientConfig
 	callUnary      func(context.Context, *Request, *Response) error
@@ -63,9 +62,11 @@ func NewClient(httpClient HTTPClient, url string, options ...ClientOption) *Clie
 			BufferPool:       config.BufferPool,
 			ReadMaxBytes:     config.ReadMaxBytes,
 			SendMaxBytes:     config.SendMaxBytes,
-			EnableGet:        config.EnableGet,
-			GetURLMaxBytes:   config.GetURLMaxBytes,
-			GetUseFallback:   config.GetUseFallback,
+			// todo(DMwangnima): remove this option and related logic
+			EnableGet:      config.EnableGet,
+			GetURLMaxBytes: config.GetURLMaxBytes,
+			// todo(DMwangnima): remove this option and related logic
+			GetUseFallback: config.GetUseFallback,
 		},
 	)
 	if protocolErr != nil {
@@ -82,6 +83,8 @@ func NewClient(httpClient HTTPClient, url string, options ...ClientOption) *Clie
 		// We want the user to continue to call Receive in those cases to get the
 		// full error from the server-side.
 		if err := conn.Send(request.Any()); err != nil && !errors.Is(err, io.EOF) {
+			// for HTTP/1.1 case, CloseRequest must happen before CloseResponse
+			// since HTTP/1.1 is of request-response type
 			_ = conn.CloseRequest()
 			_ = conn.CloseResponse()
 			return err
@@ -109,10 +112,7 @@ func NewClient(httpClient HTTPClient, url string, options ...ClientOption) *Clie
 		if err := unaryFunc(ctx, request, response); err != nil {
 			return err
 		}
-		//typed, ok := response.(*Response[Res])
-		//if !ok {
-		//	return nil, errorf(CodeInternal, "unexpected client response type %T", response)
-		//}
+
 		return nil
 	}
 	return client
@@ -203,13 +203,16 @@ func newClientConfig(rawURL string, options []ClientOption) (*clientConfig, *Err
 	}
 	protoPath := extractProtoPath(url.Path)
 	config := clientConfig{
-		URL:              url,
+		URL: url,
+		// use gRPC by default
 		Protocol:         &protocolGRPC{},
 		Procedure:        protoPath,
 		CompressionPools: make(map[string]*compressionPool),
 		BufferPool:       newBufferPool(),
 	}
+	// use proto binary by default
 	withProtoBinaryCodec().applyToClient(&config)
+	// use gzip by default
 	withGzip().applyToClient(&config)
 	for _, opt := range options {
 		opt.applyToClient(&config)

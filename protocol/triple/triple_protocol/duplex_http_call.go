@@ -113,7 +113,7 @@ func (d *duplexHTTPCall) Write(data []byte) (int, error) {
 	return bytesWritten, err
 }
 
-// Close the request body. Callers *must* call CloseWrite before Read when
+// CloseWrite closes the request body. Callers *must* call CloseWrite before Read when
 // using HTTP/1.x.
 func (d *duplexHTTPCall) CloseWrite() error {
 	// Even if Write was never called, we need to make an HTTP request. This

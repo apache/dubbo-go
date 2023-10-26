@@ -61,8 +61,8 @@ type envelopeWriter struct {
 func (w *envelopeWriter) Marshal(message interface{}) *Error {
 	if message == nil {
 		if _, err := w.writer.Write(nil); err != nil {
-			if connectErr, ok := asError(err); ok {
-				return connectErr
+			if tripleErr, ok := asError(err); ok {
+				return tripleErr
 			}
 			return NewError(CodeUnknown, err)
 		}
