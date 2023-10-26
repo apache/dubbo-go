@@ -153,7 +153,7 @@ const ImportTpl = `
 
 import (
 	context "context"
-	"net/http"
+	{{if .IsStream}}"net/http"{{end}}
 )
 
 import (
