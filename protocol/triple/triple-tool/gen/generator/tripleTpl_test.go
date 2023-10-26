@@ -190,7 +190,7 @@ package greettriple
 
 import (
 	context "context"
-	http "net/http"
+	"net/http"
 )
 
 import (
