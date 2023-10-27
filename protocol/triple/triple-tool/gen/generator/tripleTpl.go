@@ -152,14 +152,14 @@ const PackageTpl = `package {{.Package}}triple`
 const ImportTpl = `
 
 import (
-	context "context"
-	http "net/http"
+	"context"
+	{{if .IsStream}}"net/http"{{end}}
 )
 
 import (
-	client "dubbo.apache.org/dubbo-go/v3/client"
+	"dubbo.apache.org/dubbo-go/v3/client"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	triple_protocol "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	"dubbo.apache.org/dubbo-go/v3/server"
 )
 
