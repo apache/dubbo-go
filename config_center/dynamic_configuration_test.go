@@ -34,7 +34,7 @@ func TestWithTimeout(t *testing.T) {
 	fa := WithTimeout(12 * time.Second)
 	opt := &Options{}
 	fa(opt)
-	assert.Equal(t, 12*time.Second, opt.Timeout)
+	assert.Equal(t, 12*time.Second, opt.Center.Timeout)
 }
 
 func TestGetRuleKey(t *testing.T) {
