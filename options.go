@@ -18,14 +18,19 @@
 package dubbo
 
 import (
-	"github.com/dubbogo/gost/log/logger"
+	log "github.com/dubbogo/gost/log/logger"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
+	"dubbo.apache.org/dubbo-go/v3/logger"
+	"dubbo.apache.org/dubbo-go/v3/metadata"
+	"dubbo.apache.org/dubbo-go/v3/metrics"
+	"dubbo.apache.org/dubbo-go/v3/otel/trace"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
@@ -82,8 +87,8 @@ func (rc *InstanceOptions) init(opts ...InstanceOption) error {
 		return err
 	}
 	if err := rcCompat.ConfigCenter.Init(rcCompat); err != nil {
-		logger.Infof("[Config Center] Config center doesn't start")
-		logger.Debugf("config center doesn't start because %s", err)
+		log.Infof("[Config Center] Config center doesn't start")
+		log.Debugf("config center doesn't start because %s", err)
 	} else {
 		if err = rcCompat.Logger.Init(); err != nil { // init logger using config from config center again
 			return err
@@ -242,74 +247,48 @@ func WithRegistry(opts ...registry.Option) InstanceOption {
 	}
 }
 
-//func WithConfigCenter(opts ...global.CenterOption) InstanceOption {
-//	ccCfg := new(global.CenterConfig)
-//	for _, opt := range opts {
-//		opt(ccCfg)
-//	}
-//
-//	return func(cfg *InstanceOptions) {
-//		cfg.ConfigCenter = ccCfg
-//	}
-//}
+func WithTracing(opts ...trace.Option) InstanceOption {
+	traceOpts := trace.NewOptions(opts...)
 
-//func WithMetadataReport(opts ...global.MetadataReportOption) InstanceOption {
-//	mrCfg := new(global.MetadataReportConfig)
-//	for _, opt := range opts {
-//		opt(mrCfg)
-//	}
-//
-//	return func(cfg *InstanceOptions) {
-//		cfg.MetadataReport = mrCfg
-//	}
-//}
+	return func(insOpts *InstanceOptions) {
+		if insOpts.Tracing == nil {
+			insOpts.Tracing = make(map[string]*global.TracingConfig)
+		}
+		insOpts.Tracing[traceOpts.ID] = traceOpts.Tracing
+	}
+}
 
-//func WithConsumer(opts ...global.ConsumerOption) InstanceOption {
-//	conCfg := new(global.ConsumerConfig)
-//	for _, opt := range opts {
-//		opt(conCfg)
-//	}
-//
-//	return func(cfg *InstanceOptions) {
-//		cfg.Consumer = conCfg
-//	}
-//}
+func WithConfigCenter(opts ...config_center.Option) InstanceOption {
+	configOpts := config_center.NewOptions(opts...)
 
-//func WithMetric(opts ...global.MetricOption) InstanceOption {
-//	meCfg := new(global.MetricConfig)
-//	for _, opt := range opts {
-//		opt(meCfg)
-//	}
-//
-//	return func(cfg *InstanceOptions) {
-//		cfg.Metric = meCfg
-//	}
-//}
+	return func(cfg *InstanceOptions) {
+		cfg.ConfigCenter = configOpts.Center
+	}
+}
 
-//func WithTracing(key string, opts ...global.TracingOption) InstanceOption {
-//	traCfg := new(global.TracingConfig)
-//	for _, opt := range opts {
-//		opt(traCfg)
-//	}
-//
-//	return func(cfg *InstanceOptions) {
-//		if cfg.Tracing == nil {
-//			cfg.Tracing = make(map[string]*global.TracingConfig)
-//		}
-//		cfg.Tracing[key] = traCfg
-//	}
-//}
+func WithMetadataReport(opts ...metadata.Option) InstanceOption {
+	metadataOpts := metadata.NewOptions(opts...)
 
-//func WithLogger(opts ...global.LoggerOption) InstanceOption {
-//	logCfg := new(global.LoggerConfig)
-//	for _, opt := range opts {
-//		opt(logCfg)
-//	}
-//
-//	return func(cfg *InstanceOptions) {
-//		cfg.Logger = logCfg
-//	}
-//}
+	return func(cfg *InstanceOptions) {
+		cfg.MetadataReport = metadataOpts.Metadata
+	}
+}
+
+func WithMetric(opts ...metrics.Option) InstanceOption {
+	metricOpts := metrics.NewOptions(opts...)
+
+	return func(cfg *InstanceOptions) {
+		cfg.Metric = metricOpts.Metric
+	}
+}
+
+func WithLogger(opts ...logger.Option) InstanceOption {
+	loggerOpts := logger.NewOptions(opts...)
+
+	return func(cfg *InstanceOptions) {
+		cfg.Logger = loggerOpts.Logger
+	}
+}
 
 func WithShutdown(opts ...graceful_shutdown.Option) InstanceOption {
 	sdOpts := graceful_shutdown.NewOptions(opts...)

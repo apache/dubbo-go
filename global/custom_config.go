@@ -17,6 +17,12 @@
 
 package global
 
+// CustomConfig
+//
+// # Experimental
+//
+// Notice: This struct is EXPERIMENTAL and may be changed or removed in a
+// later release.
 type CustomConfig struct {
 	ConfigMap map[string]interface{} `yaml:"config-map" json:"config-map,omitempty" property:"config-map"`
 }

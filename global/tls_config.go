@@ -18,6 +18,11 @@
 package global
 
 // TLSConfig tls config
+//
+// # Experimental
+//
+// Notice: This struct is EXPERIMENTAL and may be changed or removed in a
+// later release.
 type TLSConfig struct {
 	CACertFile    string `yaml:"ca-cert-file" json:"ca-cert-file" property:"ca-cert-file"`
 	TLSCertFile   string `yaml:"tls-cert-file" json:"tls-cert-file" property:"tls-cert-file"`

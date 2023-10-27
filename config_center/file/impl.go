@@ -103,35 +103,26 @@ func (fsdc *FileSystemDynamicConfiguration) SetParser(p parser.ConfigurationPars
 // AddListener Add listener
 func (fsdc *FileSystemDynamicConfiguration) AddListener(key string, listener config_center.ConfigurationListener,
 	opts ...config_center.Option) {
-	tmpOpts := &config_center.Options{}
-	for _, opt := range opts {
-		opt(tmpOpts)
-	}
+	tmpOpts := config_center.NewOptions(opts...)
 
-	tmpPath := fsdc.GetPath(key, tmpOpts.Group)
+	tmpPath := fsdc.GetPath(key, tmpOpts.Center.Group)
 	fsdc.cacheListener.AddListener(tmpPath, listener)
 }
 
 // RemoveListener Remove listener
 func (fsdc *FileSystemDynamicConfiguration) RemoveListener(key string, listener config_center.ConfigurationListener,
 	opts ...config_center.Option) {
-	tmpOpts := &config_center.Options{}
-	for _, opt := range opts {
-		opt(tmpOpts)
-	}
+	tmpOpts := config_center.NewOptions(opts...)
 
-	tmpPath := fsdc.GetPath(key, tmpOpts.Group)
+	tmpPath := fsdc.GetPath(key, tmpOpts.Center.Group)
 	fsdc.cacheListener.RemoveListener(tmpPath, listener)
 }
 
 // GetProperties get properties file
 func (fsdc *FileSystemDynamicConfiguration) GetProperties(key string, opts ...config_center.Option) (string, error) {
-	tmpOpts := &config_center.Options{}
-	for _, opt := range opts {
-		opt(tmpOpts)
-	}
+	tmpOpts := config_center.NewOptions(opts...)
 
-	tmpPath := fsdc.GetPath(key, tmpOpts.Group)
+	tmpPath := fsdc.GetPath(key, tmpOpts.Center.Group)
 	file, err := ioutil.ReadFile(tmpPath)
 	if err != nil {
 		return "", perrors.WithStack(err)
