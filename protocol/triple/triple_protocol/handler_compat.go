@@ -28,11 +28,16 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	dubbo_protocol "dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
+type TripleCtxKey string
+
 type MethodHandler func(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error)
+
+const (
+	TripleGoInterfaceNameKey TripleCtxKey = "XXX_TRIPLE_GO_INTERFACE_NAME"
+)
 
 type tripleCompatInterceptor struct {
 	spec        Spec
@@ -100,7 +105,7 @@ func NewCompatUnaryHandler(
 			}
 			return nil
 		}
-		ctx = context.WithValue(ctx, constant.TripleGoInterfaceNameKey, config.Procedure)
+		ctx = context.WithValue(ctx, TripleGoInterfaceNameKey, config.Procedure)
 		respRaw, err := unary(srv, ctx, decodeFunc, compatInterceptor.compatUnaryServerInterceptor)
 		if err != nil {
 			return err
