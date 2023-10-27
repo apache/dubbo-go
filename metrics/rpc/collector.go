@@ -154,10 +154,10 @@ func (c *rpcCollector) incRequestsSucceedTotal(role string, labels map[string]st
 
 func (c *rpcCollector) incRequestsFailedTotal(role string, labels map[string]string) {
 	switch role {
-	case providerField:
+	case constant.SideProvider:
 		c.metricSet.provider.requestsFailedTotal.Inc(labels)
 		c.metricSet.provider.requestsFailedTotalAggregate.Inc(labels)
-	case consumerField:
+	case constant.SideConsumer:
 		c.metricSet.consumer.requestsFailedTotal.Inc(labels)
 		c.metricSet.consumer.requestsFailedTotalAggregate.Inc(labels)
 	}
