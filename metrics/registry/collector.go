@@ -28,9 +28,11 @@ var (
 )
 
 func init() {
-	metrics.AddCollector("registry", func(m metrics.MetricRegistry, _ *common.URL) {
-		rc := &registryCollector{metrics.BaseCollector{R: m}}
-		go rc.start()
+	metrics.AddCollector("registry", func(m metrics.MetricRegistry, url *common.URL) {
+		if url.GetParamBool(constant.RegistryEnabledKey, true) {
+			rc := &registryCollector{metrics.BaseCollector{R: m}}
+			go rc.start()
+		}
 	})
 }
 
