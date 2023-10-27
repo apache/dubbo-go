@@ -93,6 +93,9 @@ func (g *Generator) parseProtoToTriple(p *proto.Proto) (TripleGo, error) {
 						StreamsReturn:  vi.StreamsReturns,
 					}
 					s.Methods = append(s.Methods, md)
+					if md.StreamsRequest || md.StreamsReturn {
+						tripleGo.IsStream = true
+					}
 				}
 			}
 			tripleGo.Services = append(tripleGo.Services, s)
@@ -160,6 +163,9 @@ func ProcessProtoFile(file *descriptor.FileDescriptorProto) (TripleGo, error) {
 				ReturnType:     strings.Split(method.GetOutputType(), ".")[len(strings.Split(method.GetOutputType(), "."))-1],
 				StreamsReturn:  method.GetServerStreaming(),
 			})
+			if method.GetClientStreaming() || method.GetServerStreaming() {
+				tripleGo.IsStream = true
+			}
 		}
 
 		tripleGo.Services = append(tripleGo.Services, Service{
@@ -210,6 +216,7 @@ type TripleGo struct {
 	Import       string
 	ProtoPackage string
 	Services     []Service
+	IsStream     bool
 }
 
 type Service struct {
