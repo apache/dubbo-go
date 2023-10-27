@@ -247,10 +247,10 @@ func WithRegistry(opts ...registry.Option) InstanceOption {
 
 // WithTracing otel configuration, currently only supports tracing
 func WithTracing(opts ...trace.Option) InstanceOption {
-	otelOpts := trace.NewOptions(opts...)
+	traceOpts := trace.NewOptions(opts...)
 
 	return func(insOpts *InstanceOptions) {
-		insOpts.Otel.TraceConfig = otelOpts.Otel.TraceConfig
+		insOpts.Otel.TraceConfig = traceOpts.Otel.TraceConfig
 	}
 }
 
