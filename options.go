@@ -44,7 +44,7 @@ type InstanceOptions struct {
 	Provider       *global.ProviderConfig            `yaml:"provider" json:"provider" property:"provider"`
 	Consumer       *global.ConsumerConfig            `yaml:"consumer" json:"consumer" property:"consumer"`
 	Metric         *global.MetricConfig              `yaml:"metrics" json:"metrics,omitempty" property:"metrics"`
-	Tracing        map[string]*global.TracingConfig  `yaml:"tracing" json:"tracing,omitempty" property:"tracing"`
+	Otel           *global.OtelConfig                `yaml:"otel" json:"otel,omitempty" property:"otel"`
 	Logger         *global.LoggerConfig              `yaml:"logger" json:"logger,omitempty" property:"logger"`
 	Shutdown       *global.ShutdownConfig            `yaml:"shutdown" json:"shutdown,omitempty" property:"shutdown"`
 	// todo(DMwangnima): router feature would be supported in the future
@@ -66,7 +66,7 @@ func defaultInstanceOptions() *InstanceOptions {
 		Provider:       global.DefaultProviderConfig(),
 		Consumer:       global.DefaultConsumerConfig(),
 		Metric:         global.DefaultMetricConfig(),
-		Tracing:        make(map[string]*global.TracingConfig),
+		Otel:           global.DefaultOtelConfig(),
 		Logger:         global.DefaultLoggerConfig(),
 		Shutdown:       global.DefaultShutdownConfig(),
 		Custom:         global.DefaultCustomConfig(),
@@ -134,10 +134,8 @@ func (rc *InstanceOptions) init(opts ...InstanceOption) error {
 	if err := rcCompat.Metric.Init(rcCompat); err != nil {
 		return err
 	}
-	for _, t := range rcCompat.Tracing {
-		if err := t.Init(); err != nil {
-			return err
-		}
+	if err := rcCompat.Otel.Init(rcCompat.Application); err != nil {
+		return err
 	}
 
 	routers := rcCompat.Router
@@ -247,14 +245,12 @@ func WithRegistry(opts ...registry.Option) InstanceOption {
 	}
 }
 
+// WithTracing otel configuration, currently only supports tracing
 func WithTracing(opts ...trace.Option) InstanceOption {
-	traceOpts := trace.NewOptions(opts...)
+	otelOpts := trace.NewOptions(opts...)
 
 	return func(insOpts *InstanceOptions) {
-		if insOpts.Tracing == nil {
-			insOpts.Tracing = make(map[string]*global.TracingConfig)
-		}
-		insOpts.Tracing[traceOpts.ID] = traceOpts.Tracing
+		insOpts.Otel.TraceConfig = otelOpts.Otel.TraceConfig
 	}
 }
 

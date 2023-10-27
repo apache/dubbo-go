@@ -354,12 +354,6 @@ func WithForce(force bool) ClientOption {
 	}
 }
 
-func WithTracingKey(tracingKey string) ClientOption {
-	return func(opts *ClientOptions) {
-		opts.Reference.TracingKey = tracingKey
-	}
-}
-
 func WithMeshProviderPort(port int) ClientOption {
 	return func(opts *ClientOptions) {
 		opts.Reference.MeshProviderPort = port

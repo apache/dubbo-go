@@ -105,6 +105,28 @@ func WithPrometheusGatewayInterval(interval time.Duration) Option {
 	}
 }
 
+func WithConfigCenterEnabled() Option {
+	return func(opts *Options) {
+		b := true
+		opts.Metric.EnableConfigCenter = &b
+	}
+}
+
+func WithMetadataEnabled() Option {
+	return func(opts *Options) {
+		b := true
+		opts.Metric.EnableMetadata = &b
+	}
+}
+
+func WithRegistryEnabled() Option {
+	return func(opts *Options) {
+		b := true
+		opts.Metric.EnableRegistry = &b
+	}
+}
+
+// WithEnabled this will enable rpc and tracing by default, config-center, metadata and registry metrics will still be in disable state.
 func WithEnabled() Option {
 	return func(opts *Options) {
 		b := true
