@@ -93,7 +93,7 @@ func (g *Generator) parseProtoToTriple(p *proto.Proto) (TripleGo, error) {
 						StreamsReturn:  vi.StreamsReturns,
 					}
 					s.Methods = append(s.Methods, md)
-					if md.StreamsReturn || md.StreamsReturn {
+					if md.StreamsRequest || md.StreamsReturn {
 						tripleGo.IsStream = true
 					}
 				}
