@@ -413,6 +413,10 @@ const (
 
 // metrics key
 const (
+	MetadataEnabledKey                   = "metrics.metadata.enabled"
+	RegistryEnabledKey                   = "metrics.registry.enabled"
+	ConfigCenterEnabledKey               = "metrics.config-center.enabled"
+	RpcEnabledKey                        = "metrics.rpc.enabled"
 	AggregationEnabledKey                = "aggregation.enabled"
 	AggregationBucketNumKey              = "aggregation.bucket.num"
 	AggregationTimeWindowSecondsKey      = "aggregation.time.window.seconds"

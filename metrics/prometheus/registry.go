@@ -143,54 +143,60 @@ func (p *promMetricRegistry) Rt(m *metrics.MetricId, opts *metrics.RtOpts) metri
 
 func (p *promMetricRegistry) Export() {
 	if p.url.GetParamBool(constant.PrometheusExporterEnabledKey, false) {
-		go func() {
-			mux := http.NewServeMux()
-			path := p.url.GetParam(constant.PrometheusDefaultMetricsPath, constant.PrometheusDefaultMetricsPath)
-			port := p.url.GetParam(constant.PrometheusExporterMetricsPortKey, constant.PrometheusDefaultMetricsPort)
-			mux.Handle(path, promhttp.InstrumentMetricHandler(p.r, promhttp.HandlerFor(p.gather, promhttp.HandlerOpts{})))
-			srv := &http.Server{Addr: ":" + port, Handler: mux}
-			extension.AddCustomShutdownCallback(func() {
-				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-				defer cancel()
-				if err := srv.Shutdown(ctx); nil != err {
-					logger.Fatalf("prometheus server shutdown failed, err: %v", err)
-				} else {
-					logger.Info("prometheus server gracefully shutdown success")
-				}
-			})
-			logger.Infof("prometheus endpoint :%s%s", port, path)
-			if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed { // except Shutdown or Close
-				logger.Errorf("new prometheus server with error = %v", err)
-			}
-		}()
+		go p.exportHttp()
 	}
 	if p.url.GetParamBool(constant.PrometheusPushgatewayEnabledKey, false) {
-		baseUrl, exist := p.url.GetNonDefaultParam(constant.PrometheusPushgatewayBaseUrlKey)
-		if !exist {
-			logger.Error("no pushgateway url found in config path: metrics.prometheus.pushgateway.bash-url, please check your config file")
-			return
-		}
-		username := p.url.GetParam(constant.PrometheusPushgatewayBaseUrlKey, "")
-		password := p.url.GetParam(constant.PrometheusPushgatewayBaseUrlKey, "")
-		job := p.url.GetParam(constant.PrometheusPushgatewayJobKey, constant.PrometheusDefaultJobName)
-		pushInterval := p.url.GetParamByIntValue(constant.PrometheusPushgatewayPushIntervalKey, constant.PrometheusDefaultPushInterval)
-		pusher := push.New(baseUrl, job).Gatherer(p.gather)
-		if len(username) != 0 {
-			pusher.BasicAuth(username, password)
-		}
-		logger.Infof("prometheus pushgateway will push to %s every %d seconds", baseUrl, pushInterval)
-		ticker := time.NewTicker(time.Duration(pushInterval) * time.Second)
-		go func() {
-			for range ticker.C {
-				err := pusher.Add()
-				if err != nil {
-					logger.Errorf("push metric data to prometheus push gateway error", err)
-				} else {
-					logger.Debugf("prometheus pushgateway push to %s success", baseUrl)
-				}
-			}
-		}()
+		p.exportPushgateway()
 	}
+}
+
+func (p *promMetricRegistry) exportHttp() {
+	mux := http.NewServeMux()
+	path := p.url.GetParam(constant.PrometheusDefaultMetricsPath, constant.PrometheusDefaultMetricsPath)
+	port := p.url.GetParam(constant.PrometheusExporterMetricsPortKey, constant.PrometheusDefaultMetricsPort)
+	mux.Handle(path, promhttp.InstrumentMetricHandler(p.r, promhttp.HandlerFor(p.gather, promhttp.HandlerOpts{})))
+	srv := &http.Server{Addr: ":" + port, Handler: mux}
+	extension.AddCustomShutdownCallback(func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := srv.Shutdown(ctx); nil != err {
+			logger.Fatalf("prometheus server shutdown failed, err: %v", err)
+		} else {
+			logger.Info("prometheus server gracefully shutdown success")
+		}
+	})
+	logger.Infof("prometheus endpoint :%s%s", port, path)
+	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed { // except Shutdown or Close
+		logger.Errorf("new prometheus server with error: %v", err)
+	}
+}
+
+func (p *promMetricRegistry) exportPushgateway() {
+	baseUrl, exist := p.url.GetNonDefaultParam(constant.PrometheusPushgatewayBaseUrlKey)
+	if !exist {
+		logger.Error("no pushgateway base url found in config path: metrics.prometheus.pushgateway.base-url, please check your config")
+		return
+	}
+	username := p.url.GetParam(constant.PrometheusPushgatewayBaseUrlKey, "")
+	password := p.url.GetParam(constant.PrometheusPushgatewayBaseUrlKey, "")
+	job := p.url.GetParam(constant.PrometheusPushgatewayJobKey, constant.PrometheusDefaultJobName)
+	pushInterval := p.url.GetParamByIntValue(constant.PrometheusPushgatewayPushIntervalKey, constant.PrometheusDefaultPushInterval)
+	pusher := push.New(baseUrl, job).Gatherer(p.gather)
+	if len(username) != 0 {
+		pusher.BasicAuth(username, password)
+	}
+	logger.Infof("prometheus pushgateway will push to %s every %d seconds", baseUrl, pushInterval)
+	ticker := time.NewTicker(time.Duration(pushInterval) * time.Second)
+	go func() {
+		for range ticker.C {
+			err := pusher.Add()
+			if err != nil {
+				logger.Errorf("push metric data to prometheus pushgateway error: %v", err)
+			} else {
+				logger.Debugf("prometheus pushgateway push to %s success", baseUrl)
+			}
+		}
+	}()
 }
 
 func (p *promMetricRegistry) Scrape() (string, error) {
