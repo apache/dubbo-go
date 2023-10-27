@@ -39,10 +39,9 @@ type MetricConfig struct {
 	Port               string            `default:"9090" yaml:"port" json:"port,omitempty" property:"port"`
 	Path               string            `default:"/metrics" yaml:"path" json:"path,omitempty" property:"path"`
 	Protocol           string            `default:"prometheus" yaml:"protocol" json:"protocol,omitempty" property:"protocol"`
-	EnableMetadata     *bool             `default:"true" yaml:"enable-metadata" json:"enable-metadata,omitempty" property:"enable-metadata"`
-	EnableRegistry     *bool             `default:"true" yaml:"enable-registry" json:"enable-registry,omitempty" property:"enable-registry"`
-	EnableConfigCenter *bool             `default:"true" yaml:"enable-config-center" json:"enable-config-center,omitempty" property:"enable-config-center"`
-	EnableRpc          *bool             `default:"true" yaml:"enable-rpc" json:"enable-rpc,omitempty" property:"enable-rpc"`
+	EnableMetadata     *bool             `default:"false" yaml:"enable-metadata" json:"enable-metadata,omitempty" property:"enable-metadata"`
+	EnableRegistry     *bool             `default:"false" yaml:"enable-registry" json:"enable-registry,omitempty" property:"enable-registry"`
+	EnableConfigCenter *bool             `default:"false" yaml:"enable-config-center" json:"enable-config-center,omitempty" property:"enable-config-center"`
 	Prometheus         *PrometheusConfig `yaml:"prometheus" json:"prometheus" property:"prometheus"`
 	Aggregation        *AggregateConfig  `yaml:"aggregation" json:"aggregation" property:"aggregation"`
 	rootConfig         *RootConfig
@@ -60,7 +59,7 @@ type PrometheusConfig struct {
 }
 
 type Exporter struct {
-	Enabled *bool `default:"false" yaml:"enabled" json:"enabled,omitempty" property:"enabled"`
+	Enabled *bool `default:"true" yaml:"enabled" json:"enabled,omitempty" property:"enabled"`
 }
 
 type PushgatewayConfig struct {
@@ -93,7 +92,9 @@ func (mc *MetricConfig) Init(rc *RootConfig) error {
 		return err
 	}
 	mc.rootConfig = rc
-	metrics.Init(mc.toURL())
+	if *mc.Enable {
+		metrics.Init(mc.toURL())
+	}
 	return nil
 }
 
@@ -120,11 +121,6 @@ func (mcb *MetricConfigBuilder) SetConfigCenterEnabled(enabled bool) *MetricConf
 	return mcb
 }
 
-func (mcb *MetricConfigBuilder) SetRpcEnabled(enabled bool) *MetricConfigBuilder {
-	mcb.metricConfig.EnableRpc = &enabled
-	return mcb
-}
-
 func (mcb *MetricConfigBuilder) Build() *MetricConfig {
 	return mcb.metricConfig
 }
@@ -142,10 +138,10 @@ func (mc *MetricConfig) toURL() *common.URL {
 	url.SetParam(constant.PrometheusExporterMetricsPathKey, mc.Path)
 	url.SetParam(constant.ApplicationKey, mc.rootConfig.Application.Name)
 	url.SetParam(constant.AppVersionKey, mc.rootConfig.Application.Version)
+	url.SetParam(constant.RpcEnabledKey, strconv.FormatBool(*mc.Enable))
 	url.SetParam(constant.MetadataEnabledKey, strconv.FormatBool(*mc.EnableMetadata))
 	url.SetParam(constant.RegistryEnabledKey, strconv.FormatBool(*mc.EnableRegistry))
 	url.SetParam(constant.ConfigCenterEnabledKey, strconv.FormatBool(*mc.EnableConfigCenter))
-	url.SetParam(constant.RpcEnabledKey, strconv.FormatBool(*mc.EnableRpc))
 	if mc.Aggregation != nil {
 		url.SetParam(constant.AggregationEnabledKey, strconv.FormatBool(*mc.Aggregation.Enabled))
 		url.SetParam(constant.AggregationBucketNumKey, strconv.Itoa(mc.Aggregation.BucketNum))
