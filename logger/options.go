@@ -15,104 +15,87 @@
  * limitations under the License.
  */
 
-package protocol
-
-import (
-	"strconv"
-)
+package logger
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/global"
 )
 
 type Options struct {
-	Protocol *global.ProtocolConfig
-
-	ID string
+	Logger *global.LoggerConfig
 }
 
 func defaultOptions() *Options {
-	return &Options{Protocol: global.DefaultProtocolConfig()}
+	return &Options{Logger: global.DefaultLoggerConfig()}
 }
 
 func NewOptions(opts ...Option) *Options {
-	defOpts := defaultOptions()
+	Options := defaultOptions()
 	for _, opt := range opts {
-		opt(defOpts)
+		opt(Options)
 	}
-
-	if defOpts.ID == "" {
-		if defOpts.Protocol.Name == "" {
-			// should be the same as default value of config.ProtocolConfig.Protocol
-			defOpts.ID = "tri"
-		} else {
-			defOpts.ID = defOpts.Protocol.Name
-		}
-	}
-
-	return defOpts
+	return Options
 }
 
 type Option func(*Options)
 
-func WithDubbo() Option {
+func WithLogrus() Option {
 	return func(opts *Options) {
-		opts.Protocol.Name = "dubbo"
+		opts.Logger.Driver = "logrus"
 	}
 }
 
-func WithJSONRPC() Option {
+func WithZap() Option {
 	return func(opts *Options) {
-		opts.Protocol.Name = "jsonrpc"
+		opts.Logger.Driver = "zap"
 	}
 }
 
-func WithREST() Option {
+func WithLevel(level string) Option {
 	return func(opts *Options) {
-		opts.Protocol.Name = "rest"
+		opts.Logger.Level = level
 	}
 }
 
-func WithTriple() Option {
+func WithFormat(format string) Option {
 	return func(opts *Options) {
-		opts.Protocol.Name = "tri"
+		opts.Logger.Format = format
 	}
 }
 
-// WithID specifies the id of protocol.Options. Then you could configure server.WithProtocolIDs and
-// server.WithServer_ProtocolIDs to specify which protocol you need to use in multi-protocols scenario.
-func WithID(id string) Option {
+func WithAppender(appender string) Option {
 	return func(opts *Options) {
-		opts.ID = id
+		opts.Logger.Appender = appender
 	}
 }
 
-func WithIp(ip string) Option {
+func WithFileName(name string) Option {
 	return func(opts *Options) {
-		opts.Protocol.Ip = ip
+		opts.Logger.File.Name = name
 	}
 }
 
-func WithPort(port int) Option {
+func WithFileMaxSize(size int) Option {
 	return func(opts *Options) {
-		opts.Protocol.Port = strconv.Itoa(port)
+		opts.Logger.File.MaxSize = size
 	}
 }
 
-func WithParams(params interface{}) Option {
+func WithFileMaxBackups(backups int) Option {
 	return func(opts *Options) {
-		opts.Protocol.Params = params
+		opts.Logger.File.MaxBackups = backups
 	}
 }
 
-func WithMaxServerSendMsgSize(size int) Option {
+func WithFileMaxAge(age int) Option {
 	return func(opts *Options) {
-		opts.Protocol.MaxServerSendMsgSize = strconv.Itoa(size)
+		opts.Logger.File.MaxAge = age
 	}
 }
 
-func WithMaxServerRecvMsgSize(size int) Option {
+func WithFileCompress() Option {
 	return func(opts *Options) {
-		opts.Protocol.MaxServerRecvMsgSize = strconv.Itoa(size)
+		b := true
+		opts.Logger.File.Compress = &b
 	}
 }

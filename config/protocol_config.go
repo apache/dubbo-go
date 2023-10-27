@@ -27,9 +27,9 @@ import (
 
 // ProtocolConfig is protocol configuration
 type ProtocolConfig struct {
-	Name   string      `default:"dubbo" validate:"required" yaml:"name" json:"name,omitempty" property:"name"`
+	Name   string      `default:"tri" validate:"required" yaml:"name" json:"name,omitempty" property:"name"`
 	Ip     string      `yaml:"ip"  json:"ip,omitempty" property:"ip"`
-	Port   string      `default:"20000" yaml:"port" json:"port,omitempty" property:"port"`
+	Port   string      `default:"50051" yaml:"port" json:"port,omitempty" property:"port"`
 	Params interface{} `yaml:"params" json:"params,omitempty" property:"params"`
 
 	// MaxServerSendMsgSize max size of server send message, 1mb=1000kb=1000000b 1mib=1024kb=1048576b.
