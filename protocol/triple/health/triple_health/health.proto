@@ -20,9 +20,9 @@
 
 syntax = "proto3";
 
-package dubbogo.health.v1;
+package health;
 
-option go_package = "github.com/dubbogo/grpc-go/health/triple_health_v1";
+option go_package = "dubbo.apache.org/dubbo-go/v3/protocol/triple/health;health";
 
 message HealthCheckRequest {
   string service = 1;
@@ -38,7 +38,7 @@ message HealthCheckResponse {
   ServingStatus status = 1;
 }
 
-service Health {
+service HealthService {
   // If the requested service is unknown, the call will fail with status
   // NOT_FOUND.
   rpc Check(HealthCheckRequest) returns (HealthCheckResponse);

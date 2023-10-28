@@ -30,6 +30,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/health"
 	"dubbo.apache.org/dubbo-go/v3/server"
 )
 
@@ -64,6 +65,7 @@ func (tp *TripleProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	}
 	exporter := NewTripleExporter(serviceKey, invoker, tp.ExporterMap())
 	tp.SetExporterMap(serviceKey, exporter)
+	health.SetServingStatusServing(url.GetParam(constant.InterfaceKey, ""))
 	logger.Infof("[TRIPLE Protocol] Export service: %s", url.String())
 	tp.openServer(invoker, info)
 	return exporter

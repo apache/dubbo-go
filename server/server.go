@@ -56,6 +56,12 @@ type infoInvoker struct {
 	methodMap map[string]*MethodInfo
 }
 
+type ServiceDefinition struct {
+	Handler interface{}
+	Info    *ServiceInfo
+	Opts    []ServiceOption
+}
+
 func (ii *infoInvoker) init() {
 	url := ii.base.GetURL()
 	if url.SubURL != nil {
