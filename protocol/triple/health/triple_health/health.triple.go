@@ -40,8 +40,8 @@ import (
 const _ = triple_protocol.IsAtLeastVersion0_1_0
 
 const (
-	// HealthServiceName is the fully-qualified name of the HealthService service.
-	HealthServiceName = "health.HealthService"
+	// HealthName is the fully-qualified name of the Health service.
+	HealthName = "grpc.health.v1.Health"
 )
 
 // These constants are the fully-qualified names of the RPCs defined in this package. They're
@@ -52,59 +52,59 @@ const (
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
-	// HealthServiceCheckProcedure is the fully-qualified name of the HealthService's Check RPC.
-	HealthServiceCheckProcedure = "/health.HealthService/Check"
-	// HealthServiceWatchProcedure is the fully-qualified name of the HealthService's Watch RPC.
-	HealthServiceWatchProcedure = "/health.HealthService/Watch"
+	// HealthCheckProcedure is the fully-qualified name of the Health's Check RPC.
+	HealthCheckProcedure = "/grpc.health.v1.Health/Check"
+	// HealthWatchProcedure is the fully-qualified name of the Health's Watch RPC.
+	HealthWatchProcedure = "/grpc.health.v1.Health/Watch"
 )
 
 var (
-	_ HealthService = (*HealthServiceImpl)(nil)
+	_ Health = (*HealthImpl)(nil)
 
-	_ HealthService_WatchClient = (*HealthServiceWatchClient)(nil)
+	_ Health_WatchClient = (*HealthWatchClient)(nil)
 
-	_ HealthService_WatchServer = (*HealthServiceWatchServer)(nil)
+	_ Health_WatchServer = (*HealthWatchServer)(nil)
 )
 
-// HealthService is a client for the health.HealthService service.
-type HealthService interface {
+// Health is a client for the grpc.health.v1.Health service.
+type Health interface {
 	Check(ctx context.Context, req *HealthCheckRequest, opts ...client.CallOption) (*HealthCheckResponse, error)
-	Watch(ctx context.Context, req *HealthCheckRequest, opts ...client.CallOption) (HealthService_WatchClient, error)
+	Watch(ctx context.Context, req *HealthCheckRequest, opts ...client.CallOption) (Health_WatchClient, error)
 }
 
-// NewHealthService constructs a client for the health.HealthService service.
-func NewHealthService(cli *client.Client) (HealthService, error) {
-	if err := cli.Init(&HealthService_ClientInfo); err != nil {
+// NewHealth constructs a client for the grpc.health.v1.Health service.
+func NewHealth(cli *client.Client) (Health, error) {
+	if err := cli.Init(&Health_ClientInfo); err != nil {
 		return nil, err
 	}
-	return &HealthServiceImpl{
+	return &HealthImpl{
 		cli: cli,
 	}, nil
 }
 
-// HealthServiceImpl implements HealthService.
-type HealthServiceImpl struct {
+// HealthImpl implements Health.
+type HealthImpl struct {
 	cli *client.Client
 }
 
-func (c *HealthServiceImpl) Check(ctx context.Context, req *HealthCheckRequest, opts ...client.CallOption) (*HealthCheckResponse, error) {
+func (c *HealthImpl) Check(ctx context.Context, req *HealthCheckRequest, opts ...client.CallOption) (*HealthCheckResponse, error) {
 	resp := new(HealthCheckResponse)
-	if err := c.cli.CallUnary(ctx, req, resp, "health.HealthService", "Check", opts...); err != nil {
+	if err := c.cli.CallUnary(ctx, req, resp, "grpc.health.v1.Health", "Check", opts...); err != nil {
 		return nil, err
 	}
 	return resp, nil
 }
 
-func (c *HealthServiceImpl) Watch(ctx context.Context, req *HealthCheckRequest, opts ...client.CallOption) (HealthService_WatchClient, error) {
-	stream, err := c.cli.CallServerStream(ctx, req, "health.HealthService", "Watch", opts...)
+func (c *HealthImpl) Watch(ctx context.Context, req *HealthCheckRequest, opts ...client.CallOption) (Health_WatchClient, error) {
+	stream, err := c.cli.CallServerStream(ctx, req, "grpc.health.v1.Health", "Watch", opts...)
 	if err != nil {
 		return nil, err
 	}
 	rawStream := stream.(*triple_protocol.ServerStreamForClient)
-	return &HealthServiceWatchClient{rawStream}, nil
+	return &HealthWatchClient{rawStream}, nil
 }
 
-type HealthService_WatchClient interface {
+type Health_WatchClient interface {
 	Recv() bool
 	ResponseHeader() http.Header
 	ResponseTrailer() http.Header
@@ -114,16 +114,16 @@ type HealthService_WatchClient interface {
 	Close() error
 }
 
-type HealthServiceWatchClient struct {
+type HealthWatchClient struct {
 	*triple_protocol.ServerStreamForClient
 }
 
-func (cli *HealthServiceWatchClient) Recv() bool {
+func (cli *HealthWatchClient) Recv() bool {
 	msg := new(HealthCheckResponse)
 	return cli.ServerStreamForClient.Receive(msg)
 }
 
-func (cli *HealthServiceWatchClient) Msg() *HealthCheckResponse {
+func (cli *HealthWatchClient) Msg() *HealthCheckResponse {
 	msg := cli.ServerStreamForClient.Msg()
 	if msg == nil {
 		return new(HealthCheckResponse)
@@ -131,47 +131,47 @@ func (cli *HealthServiceWatchClient) Msg() *HealthCheckResponse {
 	return msg.(*HealthCheckResponse)
 }
 
-func (cli *HealthServiceWatchClient) Conn() (triple_protocol.StreamingClientConn, error) {
+func (cli *HealthWatchClient) Conn() (triple_protocol.StreamingClientConn, error) {
 	return cli.ServerStreamForClient.Conn()
 }
 
-var HealthService_ClientInfo = client.ClientInfo{
-	InterfaceName: "health.HealthService",
+var Health_ClientInfo = client.ClientInfo{
+	InterfaceName: "grpc.health.v1.Health",
 	MethodNames:   []string{"Check", "Watch"},
 	ClientInjectFunc: func(dubboCliRaw interface{}, cli *client.Client) {
-		dubboCli := dubboCliRaw.(HealthServiceImpl)
+		dubboCli := dubboCliRaw.(HealthImpl)
 		dubboCli.cli = cli
 	},
 }
 
-// HealthServiceHandler is an implementation of the health.HealthService service.
-type HealthServiceHandler interface {
+// HealthHandler is an implementation of the grpc.health.v1.Health service.
+type HealthHandler interface {
 	Check(context.Context, *HealthCheckRequest) (*HealthCheckResponse, error)
-	Watch(context.Context, *HealthCheckRequest, HealthService_WatchServer) error
+	Watch(context.Context, *HealthCheckRequest, Health_WatchServer) error
 }
 
-func RegisterHealthServiceHandler(srv *server.Server, hdlr HealthServiceHandler, opts ...server.ServiceOption) error {
-	return srv.Register(hdlr, &HealthService_ServiceInfo, opts...)
+func RegisterHealthHandler(srv *server.Server, hdlr HealthHandler, opts ...server.ServiceOption) error {
+	return srv.Register(hdlr, &Health_ServiceInfo, opts...)
 }
 
-type HealthService_WatchServer interface {
+type Health_WatchServer interface {
 	Send(*HealthCheckResponse) error
 	ResponseHeader() http.Header
 	ResponseTrailer() http.Header
 	Conn() triple_protocol.StreamingHandlerConn
 }
 
-type HealthServiceWatchServer struct {
+type HealthWatchServer struct {
 	*triple_protocol.ServerStream
 }
 
-func (g *HealthServiceWatchServer) Send(msg *HealthCheckResponse) error {
+func (g *HealthWatchServer) Send(msg *HealthCheckResponse) error {
 	return g.ServerStream.Send(msg)
 }
 
-var HealthService_ServiceInfo = server.ServiceInfo{
-	InterfaceName: "health.HealthService",
-	ServiceType:   (*HealthServiceHandler)(nil),
+var Health_ServiceInfo = server.ServiceInfo{
+	InterfaceName: "grpc.health.v1.Health",
+	ServiceType:   (*HealthHandler)(nil),
 	Methods: []server.MethodInfo{
 		{
 			Name: "Check",
@@ -181,7 +181,7 @@ var HealthService_ServiceInfo = server.ServiceInfo{
 			},
 			MethodFunc: func(ctx context.Context, args []interface{}, handler interface{}) (interface{}, error) {
 				req := args[0].(*HealthCheckRequest)
-				res, err := handler.(HealthServiceHandler).Check(ctx, req)
+				res, err := handler.(HealthHandler).Check(ctx, req)
 				if err != nil {
 					return nil, err
 				}
@@ -195,12 +195,12 @@ var HealthService_ServiceInfo = server.ServiceInfo{
 				return new(HealthCheckRequest)
 			},
 			StreamInitFunc: func(baseStream interface{}) interface{} {
-				return &HealthServiceWatchServer{baseStream.(*triple_protocol.ServerStream)}
+				return &HealthWatchServer{baseStream.(*triple_protocol.ServerStream)}
 			},
 			MethodFunc: func(ctx context.Context, args []interface{}, handler interface{}) (interface{}, error) {
 				req := args[0].(*HealthCheckRequest)
-				stream := args[1].(HealthService_WatchServer)
-				if err := handler.(HealthServiceHandler).Watch(ctx, req, stream); err != nil {
+				stream := args[1].(Health_WatchServer)
+				if err := handler.(HealthHandler).Watch(ctx, req, stream); err != nil {
 					return nil, err
 				}
 				return nil, nil

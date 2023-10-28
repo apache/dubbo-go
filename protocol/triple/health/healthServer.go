@@ -42,7 +42,7 @@ type HealthTripleServer struct {
 	shutdown bool
 	// statusMap stores the serving status of the services this Server monitors.
 	statusMap map[string]triple_health.HealthCheckResponse_ServingStatus
-	updates   map[string]map[triple_health.HealthService_WatchServer]chan triple_health.HealthCheckResponse_ServingStatus
+	updates   map[string]map[triple_health.Health_WatchServer]chan triple_health.HealthCheckResponse_ServingStatus
 }
 
 var healthServer *HealthTripleServer
@@ -50,7 +50,7 @@ var healthServer *HealthTripleServer
 func NewServer() *HealthTripleServer {
 	return &HealthTripleServer{
 		statusMap: map[string]triple_health.HealthCheckResponse_ServingStatus{"": triple_health.HealthCheckResponse_NOT_SERVING},
-		updates:   make(map[string]map[triple_health.HealthService_WatchServer]chan triple_health.HealthCheckResponse_ServingStatus),
+		updates:   make(map[string]map[triple_health.Health_WatchServer]chan triple_health.HealthCheckResponse_ServingStatus),
 	}
 }
 
@@ -65,7 +65,7 @@ func (srv *HealthTripleServer) Check(ctx context.Context, req *triple_health.Hea
 	return nil, status.Error(codes.NotFound, "unknown service")
 }
 
-func (srv *HealthTripleServer) Watch(ctx context.Context, request *triple_health.HealthCheckRequest, server triple_health.HealthService_WatchServer) error {
+func (srv *HealthTripleServer) Watch(ctx context.Context, request *triple_health.HealthCheckRequest, server triple_health.Health_WatchServer) error {
 	service := request.Service
 	// update channel is used for getting service status updates.
 	update := make(chan triple_health.HealthCheckResponse_ServingStatus, 1)
@@ -79,7 +79,7 @@ func (srv *HealthTripleServer) Watch(ctx context.Context, request *triple_health
 
 	// Registers the update channel to the correct place in the updates map.
 	if _, ok := srv.updates[service]; !ok {
-		srv.updates[service] = make(map[triple_health.HealthService_WatchServer]chan triple_health.HealthCheckResponse_ServingStatus)
+		srv.updates[service] = make(map[triple_health.Health_WatchServer]chan triple_health.HealthCheckResponse_ServingStatus)
 	}
 	srv.updates[service][server] = update
 	defer func() {
@@ -168,7 +168,7 @@ func init() {
 	healthServer = NewServer()
 	dubbo.SetProServices(&server.ServiceDefinition{
 		Handler: healthServer,
-		Info:    &triple_health.HealthService_ServiceInfo,
+		Info:    &triple_health.Health_ServiceInfo,
 	})
 }
 
