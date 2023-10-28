@@ -36,7 +36,7 @@ echo "github pull request base branch -> $3"
 echo "github pull request head branch -> ${GITHUB_HEAD_REF}"
 
 echo "use dubbo-go-samples $3 branch for integration testing"
-git clone -b master https://github.com/apache/dubbo-go-samples.git samples && cd samples
+git clone -b $3 https://github.com/apache/dubbo-go-samples.git samples && cd samples
 
 # update dubbo-go to current commit id
 go mod edit -replace=dubbo.apache.org/dubbo-go/v3=github.com/"$1"/v3@"$2"

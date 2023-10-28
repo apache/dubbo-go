@@ -2,7 +2,9 @@ name: CI
 
 on:
   push:
-    branches: "*"
+    branches:
+      - main
+      - 'release-*'
   pull_request:
     branches: "*"
 
@@ -66,7 +68,6 @@ jobs:
     - name: Format code
       run: |
         go fmt ./... && git status && [[ -z `git status -s` ]]
-        # diff -u <(echo -n) <(gofmt -d -s .)
 
     - name: Verify
       run: |
