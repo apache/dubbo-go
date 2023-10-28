@@ -77,12 +77,10 @@ jobs:
       run: |
         if [ "$GITHUB_EVENT_NAME" == "pull_request" ]; then
           chmod +x integrate_test.sh \
-            && [[ -n "${{github.event.pull_request.head.repo.full_name}}" ]] \
-            && [[ -n "${{github.event.pull_request.head.sha}}" ]] \
-            && [[ -n "${{github.base_ref}}" ]] \
             && ./integrate_test.sh ${{github.event.pull_request.head.repo.full_name}} ${{github.event.pull_request.head.sha}} ${{github.base_ref}}
         elif [ "$GITHUB_EVENT_NAME" == "push" ]; then
-          chmod +x integrate_test.sh && ./integrate_test.sh $GITHUB_REPOSITORY $GITHUB_SHA $GITHUB_BASE_REF
+          chmod +x integrate_test.sh  \
+            && ./integrate_test.sh $GITHUB_REPOSITORY $GITHUB_SHA $GITHUB_REF_NAME
         else
           echo "$GITHUB_EVENT_NAME is an unsupported event type."
           exit 1
