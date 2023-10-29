@@ -133,7 +133,6 @@ func (mc *MetricConfig) DynamicUpdateProperties(newMetricConfig *MetricConfig) {
 // prometheus://localhost:9090?&histogram.enabled=false&prometheus.exporter.enabled=false
 func (mc *MetricConfig) toURL() *common.URL {
 	url, _ := common.NewURL("localhost", common.WithProtocol(mc.Protocol))
-	url.SetParam(constant.PrometheusExporterEnabledKey, strconv.FormatBool(*mc.Enable)) // for compatibility
 	url.SetParam(constant.PrometheusExporterMetricsPortKey, mc.Port)
 	url.SetParam(constant.PrometheusExporterMetricsPathKey, mc.Path)
 	url.SetParam(constant.ApplicationKey, mc.rootConfig.Application.Name)
@@ -150,7 +149,7 @@ func (mc *MetricConfig) toURL() *common.URL {
 	if mc.Prometheus != nil {
 		if mc.Prometheus.Exporter != nil {
 			exporter := mc.Prometheus.Exporter
-			url.SetParam(constant.PrometheusExporterEnabledKey, strconv.FormatBool(*exporter.Enabled || *mc.Enable)) // for compatibility
+			url.SetParam(constant.PrometheusExporterEnabledKey, strconv.FormatBool(*exporter.Enabled))
 		}
 		if mc.Prometheus.Pushgateway != nil {
 			pushGateWay := mc.Prometheus.Pushgateway
