@@ -15,12 +15,9 @@
  * limitations under the License.
  */
 
-package global
+package util
 
-// TracingConfig is the configuration of the tracing.
-type TracingConfig struct {
-	Name        string `default:"jaeger" yaml:"name" json:"name,omitempty" property:"name"` // jaeger or zipkin(todo)
-	ServiceName string `yaml:"serviceName" json:"serviceName,omitempty" property:"serviceName"`
-	Address     string `yaml:"address" json:"address,omitempty" property:"address"`
-	UseAgent    *bool  `default:"false" yaml:"use-agent" json:"use-agent,omitempty" property:"use-agent"`
+func GoFmtFile(filePath string) error {
+	_, err := Exec("go fmt "+filePath, "./")
+	return err
 }

@@ -31,7 +31,7 @@ import (
 )
 
 func (g *Generator) GenPb() error {
-	pwd := g.ctx.Pwd
+	pwd := g.ctx.ModuleDir
 	g.genPbCmd(pwd)
 	output, err := util.Exec(g.ctx.ProtocCmd, pwd)
 	if len(output) > 0 {

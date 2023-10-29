@@ -15,12 +15,23 @@
  * limitations under the License.
  */
 
-package global
+package util
 
-// TracingConfig is the configuration of the tracing.
-type TracingConfig struct {
-	Name        string `default:"jaeger" yaml:"name" json:"name,omitempty" property:"name"` // jaeger or zipkin(todo)
-	ServiceName string `yaml:"serviceName" json:"serviceName,omitempty" property:"serviceName"`
-	Address     string `yaml:"address" json:"address,omitempty" property:"address"`
-	UseAgent    *bool  `default:"false" yaml:"use-agent" json:"use-agent,omitempty" property:"use-agent"`
+import (
+	"strings"
+)
+
+func GetModuleDir() (string, error) {
+	output, err := Exec("go list -m -f '{{.Dir}}'", "./")
+	if err != nil {
+		output, err = Exec("go list -m -f '{{.Module.Dir}}'", "./")
+	}
+
+	if err != nil {
+		return "", err
+	}
+
+	moduleDir := strings.TrimSpace(output)
+	moduleDir = strings.Trim(moduleDir, "'")
+	return moduleDir, nil
 }
