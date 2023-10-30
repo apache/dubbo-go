@@ -40,7 +40,6 @@ import (
 	_ "dubbo.apache.org/dubbo-go/v3/config_center/configurator"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
-	"dubbo.apache.org/dubbo-go/v3/protocol/triple/health"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/registry/directory"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
@@ -200,7 +199,7 @@ func (proto *registryProtocol) Export(originInvoker protocol.Invoker) protocol.E
 	exporter := proto.doLocalExport(originInvoker, providerUrl)
 
 	// update health status
-	health.SetServingStatusServing(registryUrl.Service())
+	//health.SetServingStatusServing(registryUrl.Service())
 
 	if len(registryUrl.Protocol) > 0 {
 		// url to registry
