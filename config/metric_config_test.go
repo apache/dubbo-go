@@ -30,13 +30,11 @@ func TestMetricConfigBuilder(t *testing.T) {
 		SetConfigCenterEnabled(false).
 		SetMetadataEnabled(false).
 		SetRegistryEnabled(false).
-		SetRpcEnabled(false).
 		Build()
 	enable := false
 	assert.Equal(t, &MetricConfig{
 		EnableConfigCenter: &enable,
 		EnableMetadata:     &enable,
 		EnableRegistry:     &enable,
-		EnableRpc:          &enable,
 	}, config)
 }
