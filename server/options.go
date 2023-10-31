@@ -50,7 +50,6 @@ type ServerOptions struct {
 	Application *global.ApplicationConfig
 	Registries  map[string]*global.RegistryConfig
 	Protocols   map[string]*global.ProtocolConfig
-	Tracings    map[string]*global.TracingConfig
 	Shutdown    *global.ShutdownConfig
 
 	providerCompat *config.ProviderConfig
@@ -81,13 +80,6 @@ func (srvOpts *ServerOptions) init(opts ...ServerOption) error {
 	}
 
 	prov.ProtocolIDs = commonCfg.TranslateIds(prov.ProtocolIDs)
-
-	if prov.TracingKey == "" && len(srvOpts.Tracings) > 0 {
-		for key := range srvOpts.Tracings {
-			prov.TracingKey = key
-			break
-		}
-	}
 
 	if err := commonCfg.Verify(prov); err != nil {
 		return err
@@ -157,12 +149,6 @@ func WithServerProtocol(opts ...protocol.Option) ServerOption {
 	}
 }
 
-func WithServerTracingKey(tracingKey string) ServerOption {
-	return func(opts *ServerOptions) {
-		opts.Provider.TracingKey = tracingKey
-	}
-}
-
 // todo(DMwangnima): this configuration would be used by filter/hystrix
 // think about a more ideal way to configure
 func WithServerFilterConf(conf interface{}) ServerOption {
@@ -201,12 +187,6 @@ func SetServer_Registries(regs map[string]*global.RegistryConfig) ServerOption {
 func SetServer_Protocols(pros map[string]*global.ProtocolConfig) ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Protocols = pros
-	}
-}
-
-func SetServer_Tracings(tras map[string]*global.TracingConfig) ServerOption {
-	return func(opts *ServerOptions) {
-		opts.Tracings = tras
 	}
 }
 
@@ -369,12 +349,6 @@ func WithProtocolIDs(protocolIDs []string) ServiceOption {
 		if len(protocolIDs) <= 0 {
 			cfg.Service.ProtocolIDs = protocolIDs
 		}
-	}
-}
-
-func WithTracingKey(tracingKey string) ServiceOption {
-	return func(cfg *ServiceOptions) {
-		cfg.Service.TracingKey = tracingKey
 	}
 }
 

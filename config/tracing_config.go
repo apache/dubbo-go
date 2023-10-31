@@ -26,6 +26,7 @@ import (
 )
 
 // TracingConfig is the configuration of the tracing.
+// It's designed to be replaced with config.OtelConfig
 type TracingConfig struct {
 	Name        string `default:"jaeger" yaml:"name" json:"name,omitempty" property:"name"` // jaeger or zipkin(todo)
 	ServiceName string `yaml:"serviceName" json:"serviceName,omitempty" property:"serviceName"`

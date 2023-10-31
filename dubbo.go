@@ -105,7 +105,6 @@ func (ins *Instance) NewServer(opts ...server.ServerOption) (*server.Server, err
 	appCfg := ins.insOpts.Application
 	regsCfg := ins.insOpts.Registries
 	prosCfg := ins.insOpts.Protocols
-	trasCfg := ins.insOpts.Tracing
 	sdCfg := ins.insOpts.Shutdown
 	if appCfg != nil {
 		srvOpts = append(srvOpts,
@@ -125,9 +124,6 @@ func (ins *Instance) NewServer(opts ...server.ServerOption) (*server.Server, err
 	}
 	if prosCfg != nil {
 		srvOpts = append(srvOpts, server.SetServer_Protocols(prosCfg))
-	}
-	if trasCfg != nil {
-		srvOpts = append(srvOpts, server.SetServer_Tracings(trasCfg))
 	}
 	if sdCfg != nil {
 		srvOpts = append(srvOpts, server.SetServer_Shutdown(sdCfg))

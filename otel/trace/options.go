@@ -18,21 +18,15 @@
 package trace
 
 import (
-	"fmt"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/global"
 )
 
 type Options struct {
-	Tracing *global.TracingConfig
-
-	ID string
+	Otel *global.OtelConfig
 }
 
 func defaultOptions() *Options {
-	return &Options{Tracing: &global.TracingConfig{}}
+	return &Options{Otel: global.DefaultOtelConfig()}
 }
 
 func NewOptions(opts ...Option) *Options {
@@ -40,64 +34,89 @@ func NewOptions(opts ...Option) *Options {
 	for _, opt := range opts {
 		opt(defOpts)
 	}
-
-	if defOpts.Tracing.Name == "" {
-		panic(fmt.Sprintf("Please specify the tracing system to use, eg. WithZipkin()"))
-	}
-	if defOpts.ID == "" {
-		defOpts.ID = defOpts.Tracing.Name
-	}
-
 	return defOpts
 }
 
 type Option func(*Options)
 
-func WithID(id string) Option {
-	return func(opts *Options) {
-		opts.ID = id
-	}
-}
-
-func WithZipkin() Option {
-	return func(opts *Options) {
-		opts.Tracing.Name = "zipkin"
-	}
-}
-
-func WithJaeger() Option {
-	return func(opts *Options) {
-		opts.Tracing.Name = "jaeger"
-	}
-}
-
-func WithOltp() Option {
-	return func(opts *Options) {
-		opts.Tracing.Name = "oltp"
-	}
-}
-
-func WithStdout() Option {
-	return func(opts *Options) {
-		opts.Tracing.Name = "stdout"
-	}
-}
-
-func WithServiceName(name string) Option {
-	return func(opts *Options) {
-		opts.Tracing.ServiceName = name
-	}
-}
-
-func WithAddress(address string) Option {
-	return func(opts *Options) {
-		opts.Tracing.Address = address
-	}
-}
-
-func WithUseAgent() Option {
+func WithEnabled() Option {
 	return func(opts *Options) {
 		b := true
-		opts.Tracing.UseAgent = &b
+		opts.Otel.TraceConfig.Enable = &b
+	}
+}
+
+func WithStdoutExporter() Option {
+	return func(opts *Options) {
+		opts.Otel.TraceConfig.Exporter = "stdout"
+	}
+}
+
+func WithJaegerExporter() Option {
+	return func(opts *Options) {
+		opts.Otel.TraceConfig.Exporter = "jaeger"
+	}
+}
+
+func WithZipkinExporter() Option {
+	return func(opts *Options) {
+		opts.Otel.TraceConfig.Exporter = "zipkin"
+	}
+}
+
+func WithOtlpHttpExporter() Option {
+	return func(opts *Options) {
+		opts.Otel.TraceConfig.Exporter = "otlp-http"
+	}
+}
+
+func WithOtlpGrpcExporter() Option {
+	return func(opts *Options) {
+		opts.Otel.TraceConfig.Exporter = "otlp-grpc"
+	}
+}
+
+// WithW3cPropagator w3c(standard)
+func WithW3cPropagator() Option {
+	return func(opts *Options) {
+		opts.Otel.TraceConfig.Propagator = "w3c"
+	}
+}
+
+// WithB3Propagator b3(for zipkin)
+func WithB3Propagator() Option {
+	return func(opts *Options) {
+		opts.Otel.TraceConfig.Propagator = "b3"
+	}
+}
+
+// WithRatio only takes effect when WithRatioMode is set
+func WithRatio(ratio float64) Option {
+	return func(opts *Options) {
+		opts.Otel.TraceConfig.SampleRatio = ratio
+	}
+}
+
+func WithRatioMode() Option {
+	return func(opts *Options) {
+		opts.Otel.TraceConfig.Propagator = "ratio"
+	}
+}
+
+func WithAlwaysMode() Option {
+	return func(opts *Options) {
+		opts.Otel.TraceConfig.Propagator = "always"
+	}
+}
+
+func WithNeverMode() Option {
+	return func(opts *Options) {
+		opts.Otel.TraceConfig.Propagator = "never"
+	}
+}
+
+func WithEndpoint(endpoint string) Option {
+	return func(opts *Options) {
+		opts.Otel.TraceConfig.Endpoint = endpoint
 	}
 }
