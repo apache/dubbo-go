@@ -30,7 +30,6 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/health/triple_health"
 	"dubbo.apache.org/dubbo-go/v3/server"
 )
@@ -166,7 +165,7 @@ func (srv *HealthTripleServer) Resume() {
 
 func init() {
 	healthServer = NewServer()
-	dubbo.SetProServices(&server.ServiceDefinition{
+	server.SetProServices(&server.ServiceDefinition{
 		Handler: healthServer,
 		Info:    &triple_health.Health_ServiceInfo,
 	})

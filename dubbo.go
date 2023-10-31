@@ -27,8 +27,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/server"
 )
 
-var proServices = map[string]*server.ServiceDefinition{}
-
 // Instance is the highest layer conception that user could touch. It is mapped from RootConfig.
 // When users want to inject global configurations and configure common modules for client layer
 // and server layer, user-side code would be like this:
@@ -140,19 +138,8 @@ func (ins *Instance) NewServer(opts ...server.ServerOption) (*server.Server, err
 
 	srv, err := server.NewServer(srvOpts...)
 
-	for _, service := range proServices {
-		err = srv.Register(service.Handler, service.Info, service.Opts...)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	if err != nil {
 		return nil, err
 	}
 	return srv, nil
-}
-
-func SetProServices(sd *server.ServiceDefinition) {
-	proServices[sd.Info.InterfaceName] = sd
 }
