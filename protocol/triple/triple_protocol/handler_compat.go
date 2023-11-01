@@ -105,7 +105,7 @@ func NewCompatUnaryHandler(
 			}
 			return nil
 		}
-		ctx = context.WithValue(ctx, TripleGoInterfaceNameKey, config.Procedure)
+		ctx = context.WithValue(ctx, "XXX_TRIPLE_GO_INTERFACE_NAME", config.Procedure)
 		respRaw, err := unary(srv, ctx, decodeFunc, compatInterceptor.compatUnaryServerInterceptor)
 		if err != nil {
 			return err

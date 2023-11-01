@@ -143,14 +143,14 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 		panic(fmt.Sprintf("Unsupported serialization: %s", serialization))
 	}
 
-	// todo:// process timeout
-	// consumer config client connectTimeout
-	//connectTimeout := config.GetConsumerConfig().ConnectTimeout
+	// set timeout
+	timeout := url.GetParamDuration(constant.TimeoutKey, "")
+	triClientOpts = append(triClientOpts, tri.WithTimeout(timeout))
 
 	// dialOpts = append(dialOpts,
 	//
 	//	grpc.WithBlock(),
-	//	// todo config network timeout
+	//	// todo config tracing
 	//	grpc.WithTimeout(time.Second*3),
 	//	grpc.WithUnaryInterceptor(otgrpc.OpenTracingClientInterceptor(tracer, otgrpc.LogPayloads())),
 	//	grpc.WithStreamInterceptor(otgrpc.OpenTracingStreamClientInterceptor(tracer, otgrpc.LogPayloads())),
@@ -180,14 +180,6 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 	//	tlsFlag = true
 	//}
 
-	// todo(DMwangnima): this code fragment would be used to be compatible with old triple client
-	//key := url.GetParam(constant.InterfaceKey, "")
-	//conRefs := config.GetConsumerConfig().References
-	//ref, ok := conRefs[key]
-	//if !ok {
-	//	panic("no reference")
-	//}
-	// todo: set timeout
 	var transport http.RoundTripper
 	callType := url.GetParam(constant.CallHTTPTypeKey, constant.CallHTTP2)
 	switch callType {

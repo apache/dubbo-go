@@ -2072,6 +2072,59 @@ func TestBlankImportCodeGeneration(t *testing.T) {
 	assert.NotNil(t, desc)
 }
 
+func TestDefaultTimeout(t *testing.T) {
+	t.Parallel()
+	mux := http.NewServeMux()
+	mux.Handle(pingv1connect.NewPingServiceHandler(pingServer{}))
+	server := httptest.NewUnstartedServer(mux)
+	server.EnableHTTP2 = true
+	server.StartTLS()
+	t.Cleanup(server.Close)
+
+	defaultTimeout := 3 * time.Second
+	serverTimeout := 2 * time.Second
+	tests := []struct {
+		desc    string
+		cliOpts []triple.ClientOption
+	}{
+		{
+			desc: "Triple protocol",
+			cliOpts: []triple.ClientOption{
+				triple.WithTriple(),
+				triple.WithTimeout(defaultTimeout),
+			},
+		},
+		{
+			desc: "gRPC protocol",
+			cliOpts: []triple.ClientOption{
+				triple.WithTimeout(defaultTimeout),
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.desc, func(t *testing.T) {
+			client := pingv1connect.NewPingServiceClient(server.Client(), server.URL, test.cliOpts...)
+			request := triple.NewRequest(&pingv1.PingRequest{})
+			request.Header().Set(clientHeader, headerValue)
+			// tell server to mock timeout
+			request.Header().Set(clientTimeoutHeader, (serverTimeout).String())
+			err := client.Ping(context.Background(), request, triple.NewResponse(&pingv1.PingResponse{}))
+			assert.Nil(t, err)
+
+			// specify timeout to override default timeout
+			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+			defer cancel()
+			newRequest := triple.NewRequest(&pingv1.PingRequest{})
+			newRequest.Header().Set(clientHeader, headerValue)
+			// tell server to mock timeout
+			newRequest.Header().Set(clientTimeoutHeader, (serverTimeout).String())
+			newErr := client.Ping(ctx, request, triple.NewResponse(&pingv1.PingResponse{}))
+			assert.Equal(t, triple.CodeOf(newErr), triple.CodeDeadlineExceeded)
+		})
+	}
+}
+
 type unflushableWriter struct {
 	w http.ResponseWriter
 }

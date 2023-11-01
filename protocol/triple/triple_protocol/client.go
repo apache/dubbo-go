@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 )
 
 // Client is a reusable, concurrency-safe client for a single procedure.
@@ -62,11 +63,7 @@ func NewClient(httpClient HTTPClient, url string, options ...ClientOption) *Clie
 			BufferPool:       config.BufferPool,
 			ReadMaxBytes:     config.ReadMaxBytes,
 			SendMaxBytes:     config.SendMaxBytes,
-			// todo(DMwangnima): remove this option and related logic
-			EnableGet:      config.EnableGet,
-			GetURLMaxBytes: config.GetURLMaxBytes,
-			// todo(DMwangnima): remove this option and related logic
-			GetUseFallback: config.GetUseFallback,
+			GetURLMaxBytes:   config.GetURLMaxBytes,
 		},
 	)
 	if protocolErr != nil {
@@ -122,6 +119,10 @@ func NewClient(httpClient HTTPClient, url string, options ...ClientOption) *Clie
 func (c *Client) CallUnary(ctx context.Context, request *Request, response *Response) error {
 	if c.err != nil {
 		return c.err
+	}
+	ctx, flag, cancel := applyDefaultTimeout(ctx, c.config.Timeout)
+	if flag {
+		defer cancel()
 	}
 	return c.callUnary(ctx, request, response)
 }
@@ -190,10 +191,10 @@ type clientConfig struct {
 	BufferPool             *bufferPool
 	ReadMaxBytes           int
 	SendMaxBytes           int
-	EnableGet              bool
 	GetURLMaxBytes         int
 	GetUseFallback         bool
 	IdempotencyLevel       IdempotencyLevel
+	Timeout                time.Duration
 }
 
 func newClientConfig(rawURL string, options []ClientOption) (*clientConfig, *Error) {
@@ -265,4 +266,16 @@ func parseRequestURL(rawURL string) (*url.URL, *Error) {
 		)
 	}
 	return nil, NewError(CodeUnavailable, err)
+}
+
+func applyDefaultTimeout(ctx context.Context, timeout time.Duration) (context.Context, bool, context.CancelFunc) {
+	var cancel context.CancelFunc
+	var applyFlag bool
+	_, ok := ctx.Deadline()
+	if !ok && timeout != 0 {
+		ctx, cancel = context.WithTimeout(ctx, timeout)
+		applyFlag = true
+	}
+
+	return ctx, applyFlag, cancel
 }

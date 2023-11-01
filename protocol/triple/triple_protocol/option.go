@@ -19,6 +19,7 @@ import (
 	"context"
 	"io"
 	"net/http"
+	"time"
 )
 
 // A ClientOption configures a [Client].
@@ -93,6 +94,13 @@ func WithSendCompression(name string) ClientOption {
 // requests.
 func WithSendGzip() ClientOption {
 	return WithSendCompression(compressionGzip)
+}
+
+// WithTimeout configures the default timeout of client call including unary
+// and stream. If you want to specify the timeout of a specific request, please
+// use context.WithTimeout, then default timeout would be overridden.
+func WithTimeout(timeout time.Duration) ClientOption {
+	return &timeoutOption{Timeout: timeout}
 }
 
 // A HandlerOption configures a [Handler].
@@ -475,6 +483,14 @@ type sendCompressionOption struct {
 
 func (o *sendCompressionOption) applyToClient(config *clientConfig) {
 	config.RequestCompressionName = o.Name
+}
+
+type timeoutOption struct {
+	Timeout time.Duration
+}
+
+func (o *timeoutOption) applyToClient(config *clientConfig) {
+	config.Timeout = o.Timeout
 }
 
 func withGzip() Option {

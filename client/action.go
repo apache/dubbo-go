@@ -124,6 +124,7 @@ func (opts *ClientOptions) refer(srv common.RPCService, info *ClientInfo) {
 		common.WithParams(opts.getURLMap()),
 		common.WithParamsValue(constant.BeanNameKey, opts.id),
 		common.WithParamsValue(constant.MetadataTypeKey, opts.metaDataType),
+		common.WithAttribute(constant.ClientInfoKey, info),
 	)
 
 	if ref.ForceTag {
