@@ -26,9 +26,15 @@ import (
 )
 
 func TestMetricConfigBuilder(t *testing.T) {
-	config := NewMetricConfigBuilder().Build()
-	err := config.Init(&RootConfig{Application: &ApplicationConfig{Name: "dubbo", Version: "1.0.0"}})
-	assert.NoError(t, err)
-	reporterConfig := config.ToReporterConfig()
-	assert.Equal(t, string(reporterConfig.Mode), "pull")
+	config := NewMetricConfigBuilder().
+		SetConfigCenterEnabled(false).
+		SetMetadataEnabled(false).
+		SetRegistryEnabled(false).
+		Build()
+	enable := false
+	assert.Equal(t, &MetricConfig{
+		EnableConfigCenter: &enable,
+		EnableMetadata:     &enable,
+		EnableRegistry:     &enable,
+	}, config)
 }
