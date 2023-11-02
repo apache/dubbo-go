@@ -17,29 +17,22 @@
 #!/bin/bash
 
 set -e
-set -x
 
-echo 'start integrate-test'
+echo "start integrate-test: repo = $1, SHA = $2, branch = $3"
 
 # set root workspace
 ROOT_DIR=$(pwd)
 echo "integrate-test root work-space -> ${ROOT_DIR}"
 
-# show all github-env
-echo "github current commit id  -> $2"
-echo "github pull request branch -> ${GITHUB_REF}"
-echo "github pull request slug -> ${GITHUB_REPOSITORY}"
-echo "github pull request repo slug -> ${GITHUB_REPOSITORY}"
-echo "github pull request actor -> ${GITHUB_ACTOR}"
-echo "github pull request repo param -> $1"
-echo "github pull request base branch -> $3"
-echo "github pull request head branch -> ${GITHUB_HEAD_REF}"
-
 echo "use dubbo-go-samples $3 branch for integration testing"
-git clone -b master https://github.com/apache/dubbo-go-samples.git samples && cd samples
+git clone -b $3 https://github.com/apache/dubbo-go-samples.git samples && cd samples
 
 # update dubbo-go to current commit id
-go mod edit -replace=dubbo.apache.org/dubbo-go/v3=github.com/"$1"/v3@"$2"
+if [ "$1" == "apache/dubbo-go" ]; then
+    go mod edit -replace=dubbo.apache.org/dubbo-go/v3=dubbo.apache.org/dubbo-go/v3@"$2"
+else
+    go mod edit -replace=dubbo.apache.org/dubbo-go/v3=github.com/"$1"/v3@"$2"
+fi
 
 go mod tidy
 

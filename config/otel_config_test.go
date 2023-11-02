@@ -15,38 +15,25 @@
  * limitations under the License.
  */
 
-package extension
+package config
 
 import (
-	"context"
 	"testing"
-	"time"
 )
 
 import (
 	"github.com/stretchr/testify/assert"
 )
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/metrics"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
-)
+func TestNewOtelConfigBuilder(t *testing.T) {
+	config := NewOtelConfigBuilder().Build()
+	assert.NotNil(t, config)
+	assert.NotNil(t, config.TraceConfig)
 
-func TestGetMetricReporter(t *testing.T) {
-	reporter := &mockReporter{}
-	name := "mock"
-	SetMetricReporter(name, func(config *metrics.ReporterConfig) metrics.Reporter {
-		return reporter
-	})
-	res := GetMetricReporter(name, metrics.NewReporterConfig())
-	assert.Equal(t, reporter, res)
-}
+	ac := NewApplicationConfigBuilder().Build()
+	err := config.Init(ac)
+	assert.NoError(t, err)
 
-type mockReporter struct{}
-
-// implement the interface of Reporter
-func (m *mockReporter) ReportAfterInvocation(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation, cost time.Duration, res protocol.Result) {
-}
-
-func (m *mockReporter) ReportBeforeInvocation(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) {
+	tpc := config.TraceConfig.toTraceProviderConfig(ac)
+	assert.NotNil(t, tpc)
 }

@@ -18,6 +18,7 @@
 package servicediscovery
 
 import (
+	"encoding/gob"
 	"reflect"
 	"sync"
 	"time"
@@ -35,6 +36,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/metadata/service"
 	"dubbo.apache.org/dubbo-go/v3/metadata/service/local"
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/registry/servicediscovery/store"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
@@ -42,10 +44,13 @@ import (
 
 var (
 	metaCache *store.CacheManager
+	cacheOnce sync.Once
 )
 
-func init() {
-	cache, err := store.NewCacheManager(constant.DefaultMetaCacheName, constant.DefaultMetaFileName, time.Minute*10, constant.DefaultEntrySize, true)
+func initCache() {
+	gob.Register(&common.MetadataInfo{})
+	fileName := constant.DefaultMetaFileName + config.GetApplicationConfig().Name
+	cache, err := store.NewCacheManager(constant.DefaultMetaCacheName, fileName, time.Minute*10, constant.DefaultEntrySize, true)
 	if err != nil {
 		logger.Fatal("Failed to create cache [%s],the err is %v", constant.DefaultMetaCacheName, err)
 	}
@@ -63,6 +68,7 @@ type ServiceInstancesChangedListenerImpl struct {
 }
 
 func NewServiceInstancesChangedListener(services *gxset.HashSet) registry.ServiceInstancesChangedListener {
+	cacheOnce.Do(initCache)
 	return &ServiceInstancesChangedListenerImpl{
 		serviceNames:       services,
 		listeners:          make(map[string]registry.NotifyListener),
@@ -217,7 +223,7 @@ func (lstn *ServiceInstancesChangedListenerImpl) GetEventType() reflect.Type {
 
 // GetMetadataInfo get metadata info when MetadataStorageTypePropertyName is null
 func GetMetadataInfo(instance registry.ServiceInstance, revision string) (*common.MetadataInfo, error) {
-
+	cacheOnce.Do(initCache)
 	if metadataInfo, ok := metaCache.Get(revision); ok {
 		return metadataInfo.(*common.MetadataInfo), nil
 	}

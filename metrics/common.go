@@ -64,11 +64,11 @@ func GetApplicationLevel() *ApplicationMetricLevel {
 
 func (m *ApplicationMetricLevel) Tags() map[string]string {
 	tags := make(map[string]string)
-	tags[constant.IpKey] = m.Ip
-	tags[constant.HostnameKey] = m.HostName
-	tags[constant.ApplicationKey] = m.ApplicationName
-	tags[constant.ApplicationVersionKey] = m.Version
-	tags[constant.GitCommitIdKey] = m.GitCommitId
+	tags[constant.TagIp] = m.Ip
+	tags[constant.TagHostname] = m.HostName
+	tags[constant.TagApplicationName] = m.ApplicationName
+	tags[constant.TagApplicationVersion] = m.Version
+	tags[constant.TagGitCommitId] = m.GitCommitId
 	return tags
 }
 
@@ -83,7 +83,7 @@ func NewServiceMetric(interfaceName string) *ServiceMetricLevel {
 
 func (m ServiceMetricLevel) Tags() map[string]string {
 	tags := m.ApplicationMetricLevel.Tags()
-	tags[constant.InterfaceKey] = m.Interface
+	tags[constant.TagInterface] = m.Interface
 	return tags
 }
 
@@ -96,9 +96,9 @@ type MethodMetricLevel struct {
 
 func (m MethodMetricLevel) Tags() map[string]string {
 	tags := m.ServiceMetricLevel.Tags()
-	tags[constant.MethodKey] = m.Method
-	tags[constant.GroupKey] = m.Group
-	tags[constant.VersionKey] = m.Version
+	tags[constant.TagMethod] = m.Method
+	tags[constant.TagGroup] = m.Group
+	tags[constant.TagVersion] = m.Version
 	return tags
 }
 
@@ -126,12 +126,12 @@ func NewConfigCenterLevel(key string, group string, configCenter string, changeT
 
 func (l ConfigCenterLevel) Tags() map[string]string {
 	tags := make(map[string]string)
-	tags[constant.ApplicationKey] = l.ApplicationName
-	tags[constant.IpKey] = l.Ip
-	tags[constant.HostnameKey] = l.HostName
-	tags[constant.KeyKey] = l.Key
-	tags[constant.GroupKey] = l.Group
-	tags[constant.ConfigCenterKey] = l.ConfigCenter
-	tags[constant.ChangeTypeKey] = l.ChangeType
+	tags[constant.TagApplicationName] = l.ApplicationName
+	tags[constant.TagIp] = l.Ip
+	tags[constant.TagHostname] = l.HostName
+	tags[constant.TagKey] = l.Key
+	tags[constant.TagGroup] = l.Group
+	tags[constant.TagConfigCenter] = l.ConfigCenter
+	tags[constant.TagChangeType] = l.ChangeType
 	return tags
 }
