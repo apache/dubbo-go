@@ -36,7 +36,8 @@ import (
 
 // MockDynamicConfigurationFactory defines content
 type MockDynamicConfigurationFactory struct {
-	Content string
+	Content             string
+	ConfiguratorContent string
 }
 
 const (
@@ -79,18 +80,11 @@ func (f *MockDynamicConfigurationFactory) GetDynamicConfiguration(_ *common.URL)
 	dubbo.protocols.jsonrpc1.ip=127.0.0.1
 	dubbo.protocols.jsonrpc1.port=20001
 `
-
-		dynamicConfiguration.yamlConfigurator = `
----
-configVersion: v2.7
-scope: application
-key: governance-appoverride-provider
-enabled: true
-...
-`
 	})
 	if len(f.Content) != 0 {
 		dynamicConfiguration.content = f.Content
+	} else if len(f.ConfiguratorContent) != 0 {
+		dynamicConfiguration.content = f.ConfiguratorContent
 	}
 	return dynamicConfiguration, err
 }
@@ -108,10 +102,9 @@ func (c *MockDynamicConfiguration) GetConfigKeysByGroup(group string) (*gxset.Ha
 // MockDynamicConfiguration uses to parse content and defines listener
 type MockDynamicConfiguration struct {
 	BaseDynamicConfiguration
-	parser           parser.ConfigurationParser
-	content          string
-	yamlConfigurator string
-	listener         map[string]ConfigurationListener
+	parser   parser.ConfigurationParser
+	content  string
+	listener map[string]ConfigurationListener
 }
 
 // AddListener adds a listener for MockDynamicConfiguration
@@ -156,7 +149,7 @@ func (c *MockDynamicConfiguration) GetInternalProperty(key string, opts ...Optio
 
 // GetRule gets properties of MockDynamicConfiguration
 func (c *MockDynamicConfiguration) GetRule(key string, opts ...Option) (string, error) {
-	return c.yamlConfigurator, nil
+	return c.GetProperties(key, opts...)
 }
 
 // MockServiceConfigEvent returns ConfiguratorConfig
