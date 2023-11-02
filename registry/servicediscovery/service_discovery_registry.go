@@ -235,11 +235,11 @@ func (s *ServiceDiscoveryRegistry) SubscribeURL(url *common.URL, notify registry
 	protocolServiceKey := url.ServiceKey() + ":" + protocol
 	listener := s.serviceListeners[serviceNamesKey]
 	if listener == nil {
-		listener = NewServiceInstancesChangedListener(services)
+		listener = NewServiceInstancesChangedListener(url.GetParam(constant.ApplicationKey, ""), services)
 		for _, serviceNameTmp := range services.Values() {
 			serviceName := serviceNameTmp.(string)
 			instances := s.serviceDiscovery.GetInstances(serviceName)
-			logger.Infof("Synchronized instance notification on subscription, instance list size %s", len(instances))
+			logger.Infof("Synchronized instance notification on subscription, instance list size for application %s is %d", serviceName, len(instances))
 			err = listener.OnEvent(&registry.ServiceInstancesChangedEvent{
 				ServiceName: serviceName,
 				Instances:   instances,
@@ -281,7 +281,7 @@ func (s *ServiceDiscoveryRegistry) LoadSubscribeInstances(url *common.URL, notif
 			logger.Infof("Find instance without valid service metadata: %s", instance.GetHost())
 			continue
 		}
-		metadataInfo, err := GetMetadataInfo(instance, revision)
+		metadataInfo, err := GetMetadataInfo(url.GetParam(constant.ApplicationKey, ""), instance, revision)
 		if err != nil {
 			return err
 		}
