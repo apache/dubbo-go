@@ -52,12 +52,14 @@ import (
 
 func init() {
 	extension.SetDefaultRegistryDirectory(NewRegistryDirectory)
+	extension.SetDirectory(constant.RegistryProtocol, NewRegistryDirectory)
+	extension.SetDirectory(constant.ServiceRegistryProtocol, NewServiceDiscoveryRegistryDirectory)
 }
 
 // RegistryDirectory implementation of Directory:
 // Invoker list returned from this Directory's list method have been filtered by Routers
 type RegistryDirectory struct {
-	base.Directory
+	*base.Directory
 	cacheInvokers                  []protocol.Invoker
 	invokersLock                   sync.RWMutex
 	serviceType                    string
@@ -106,10 +108,13 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry) (director
 
 // subscribe from registry
 func (dir *RegistryDirectory) Subscribe(url *common.URL) {
-	logger.Debugf("subscribe service :%s for RegistryDirectory.", url.Key())
-	if err := dir.registry.Subscribe(url, dir); err != nil {
-		logger.Error("registry.Subscribe(url:%v, dir:%v) = error:%v", url, dir, err)
-	}
+	logger.Infof("Start subscribing for service :%s with a new go routine.", url.Key())
+
+	go func() {
+		if err := dir.registry.Subscribe(url, dir); err != nil {
+			logger.Error("registry.Subscribe(url:%v, dir:%v) = error:%v", url, dir, err)
+		}
+	}()
 }
 
 // Notify monitor changes from registry,and update the cacheServices
@@ -428,8 +433,8 @@ func (dir *RegistryDirectory) List(invocation protocol.Invocation) []protocol.In
 
 // IsAvailable  whether the directory is available
 func (dir *RegistryDirectory) IsAvailable() bool {
-	if !dir.Directory.IsAvailable() {
-		return dir.Directory.IsAvailable()
+	if dir.Directory.IsDestroyed() {
+		return false
 	}
 
 	for _, ivk := range dir.cacheInvokers {
@@ -444,7 +449,7 @@ func (dir *RegistryDirectory) IsAvailable() bool {
 // Destroy method
 func (dir *RegistryDirectory) Destroy() {
 	// TODO:unregister & unsubscribe
-	dir.Directory.Destroy(func() {
+	dir.Directory.DoDestroy(func() {
 		invokers := dir.cacheInvokers
 		dir.cacheInvokers = []protocol.Invoker{}
 		for _, ivk := range invokers {
@@ -533,4 +538,33 @@ func (l *consumerConfigurationListener) Process(event *config_center.ConfigChang
 	l.BaseConfigurationListener.Process(event)
 	// FIXME: this doesn't trigger dir.overrideUrl()
 	l.directory.refreshInvokers(nil)
+}
+
+// ServiceDiscoveryRegistryDirectory implementation of Directory:
+// Invoker list returned from this Directory's list method have been filtered by Routers
+type ServiceDiscoveryRegistryDirectory struct {
+	*base.Directory
+	*RegistryDirectory
+}
+
+// NewServiceDiscoveryRegistryDirectory will create a new ServiceDiscoveryRegistryDirectory
+func NewServiceDiscoveryRegistryDirectory(url *common.URL, registry registry.Registry) (directory.Directory, error) {
+	dic, err := NewRegistryDirectory(url, registry)
+	registryDirectory, _ := dic.(*RegistryDirectory)
+	return &ServiceDiscoveryRegistryDirectory{
+		Directory:         registryDirectory.Directory,
+		RegistryDirectory: registryDirectory,
+	}, err
+}
+
+// Subscribe do subscribe from registry
+func (dir *ServiceDiscoveryRegistryDirectory) Subscribe(url *common.URL) {
+	if err := dir.registry.Subscribe(url, dir); err != nil {
+		logger.Error("registry.Subscribe(url:%v, dir:%v) = error:%v", url, dir, err)
+	}
+}
+
+// List selected protocol invokers from the directory
+func (dir *ServiceDiscoveryRegistryDirectory) List(invocation protocol.Invocation) []protocol.Invoker {
+	return dir.RegistryDirectory.List(invocation)
 }

@@ -21,21 +21,41 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/registry"
+	"github.com/dubbogo/gost/log/logger"
 )
 
 type registryDirectory func(url *common.URL, registry registry.Registry) (directory.Directory, error)
 
-var defaultRegistry registryDirectory
+var directories = make(map[string]registryDirectory)
+var defaultDirectory registryDirectory
 
 // SetDefaultRegistryDirectory sets the default registryDirectory
 func SetDefaultRegistryDirectory(v registryDirectory) {
-	defaultRegistry = v
+	defaultDirectory = v
+}
+
+// SetDirectory sets the default registryDirectory
+func SetDirectory(key string, v registryDirectory) {
+	directories[key] = v
 }
 
 // GetDefaultRegistryDirectory finds the registryDirectory with url and registry
 func GetDefaultRegistryDirectory(config *common.URL, registry registry.Registry) (directory.Directory, error) {
-	if defaultRegistry == nil {
+	if defaultDirectory == nil {
 		panic("registry directory is not existing, make sure you have import the package.")
 	}
-	return defaultRegistry(config, registry)
+	return defaultDirectory(config, registry)
+}
+
+// GetDirectoryInstance finds the registryDirectory with url and registry
+func GetDirectoryInstance(config *common.URL, registry registry.Registry) (directory.Directory, error) {
+	key := config.Protocol
+	if key == "" {
+		return GetDefaultRegistryDirectory(config, registry)
+	}
+	if directories[key] == nil {
+		logger.Warn("registry directory " + key + " does not exist, make sure you have import the package.")
+		return nil, nil
+	}
+	return directories[key](config, registry)
 }

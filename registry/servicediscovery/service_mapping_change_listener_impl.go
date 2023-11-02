@@ -18,6 +18,7 @@
 package servicediscovery
 
 import (
+	"github.com/dubbogo/gost/log/logger"
 	"sync"
 )
 
@@ -88,6 +89,7 @@ func (lstn *ServiceMappingChangedListenerImpl) OnEvent(e observer.Event) error {
 	}
 	for _, service := range newServiceNames.Values() {
 		if !oldServiceNames.Contains(service) {
+			logger.Infof("Service-application mapping changed for service: %s, new applications: %q, old applications: %q.", lstn.serviceUrl.ServiceKey(), oldServiceNames, newServiceNames)
 			lstn.mappingCache.Delete(oldServiceNames.String())
 			lstn.mappingCache.Store(newServiceNames.String(), newServiceNames)
 			if reg, err = extension.GetRegistry(lstn.registryUrl.Protocol, lstn.registryUrl); err != nil {
@@ -97,6 +99,7 @@ func (lstn *ServiceMappingChangedListenerImpl) OnEvent(e observer.Event) error {
 				sdreg.SubscribeURL(lstn.serviceUrl, lstn.listener, newServiceNames)
 			}
 			lstn.oldServiceNames = newServiceNames
+			break
 		}
 	}
 	return err

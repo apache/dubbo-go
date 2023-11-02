@@ -29,7 +29,7 @@ import (
 )
 
 type directory struct {
-	base.Directory
+	*base.Directory
 	invokers []protocol.Invoker
 }
 
@@ -51,6 +51,10 @@ func NewDirectory(invokers []protocol.Invoker) *directory {
 
 // for-loop invokers ,if all invokers is available ,then it means directory is available
 func (dir *directory) IsAvailable() bool {
+	if dir.Directory.IsDestroyed() {
+		return false
+	}
+
 	if len(dir.invokers) == 0 {
 		return false
 	}
@@ -78,7 +82,7 @@ func (dir *directory) List(invocation protocol.Invocation) []protocol.Invoker {
 
 // Destroy Destroy
 func (dir *directory) Destroy() {
-	dir.Directory.Destroy(func() {
+	dir.Directory.DoDestroy(func() {
 		for _, ivk := range dir.invokers {
 			ivk.Destroy()
 		}
@@ -98,4 +102,8 @@ func (dir *directory) BuildRouterChain(invokers []protocol.Invoker) error {
 	routerChain.SetInvokers(dir.invokers)
 	dir.SetRouterChain(routerChain)
 	return nil
+}
+
+func (dir *directory) Subscribe(url *common.URL) {
+	panic("Static directory does not support subscribing to registry.")
 }

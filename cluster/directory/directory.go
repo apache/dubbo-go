@@ -22,8 +22,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
-// Directory
-// Extension - Directory
+// Directory implementations include RegistryDirectory, ServiceDiscoveryRegistryDirectory, StaticDirectory
 type Directory interface {
 	common.Node
 
@@ -32,4 +31,7 @@ type Directory interface {
 	// implementation for the sake of performance consideration. This requires the caller of List() shouldn't modify
 	// the return result directly.
 	List(invocation protocol.Invocation) []protocol.Invoker
+
+	// Subscribe listen to registry instances
+	Subscribe(url *common.URL)
 }
