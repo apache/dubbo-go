@@ -54,8 +54,8 @@ func GetDirectoryInstance(config *common.URL, registry registry.Registry) (direc
 		return GetDefaultRegistryDirectory(config, registry)
 	}
 	if directories[key] == nil {
-		logger.Warn("registry directory " + key + " does not exist, make sure you have import the package.")
-		return nil, nil
+		logger.Warn("registry directory " + key + " does not exist, make sure you have import the package, will use the default directory type.")
+		return GetDefaultRegistryDirectory(config, registry)
 	}
 	return directories[key](config, registry)
 }
