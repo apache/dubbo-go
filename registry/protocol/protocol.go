@@ -545,7 +545,7 @@ type serviceConfigurationListener struct {
 func newServiceConfigurationListener(overrideListener *overrideSubscribeListener, providerUrl *common.URL) *serviceConfigurationListener {
 	listener := &serviceConfigurationListener{overrideListener: overrideListener, providerUrl: providerUrl}
 	listener.InitWith(
-		providerUrl.EncodedServiceKey()+constant.ConfiguratorSuffix,
+		providerUrl.ColonSeparatedKey()+constant.ConfiguratorSuffix,
 		listener,
 		extension.GetDefaultConfiguratorFunc(),
 	)

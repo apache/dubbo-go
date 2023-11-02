@@ -99,22 +99,38 @@ func requestTag(invokers []protocol.Invoker, url *common.URL, invocation protoco
 	var (
 		addresses []string
 		result    []protocol.Invoker
+		match     []*common.ParamMatch
 	)
 	for _, tagCfg := range cfg.Tags {
 		if tagCfg.Name == tag {
 			addresses = tagCfg.Addresses
+			match = tagCfg.Match
 		}
 	}
-	if len(addresses) == 0 {
-		// filter tag does not match
-		result = filterInvokers(invokers, tag, func(invoker protocol.Invoker, tag interface{}) bool {
-			return invoker.GetURL().GetParam(constant.Tagkey, "") != tag
+
+	// only one of 'match' and 'addresses' will take effect if both are specified.
+	if len(match) != 0 {
+		result = filterInvokers(invokers, match, func(invoker protocol.Invoker, match interface{}) bool {
+			matches := match.([]*common.ParamMatch)
+			for _, m := range matches {
+				if !m.IsMatch(invoker.GetURL()) {
+					return true
+				}
+			}
+			return false
 		})
-		logger.Debugf("[tag router] filter dynamic tag, tag=%s, invokers=%+v", tag, result)
 	} else {
-		// filter address does not match
-		result = filterInvokers(invokers, addresses, getAddressPredicate(false))
-		logger.Debugf("[tag router] filter dynamic tag address, invokers=%+v", result)
+		if len(addresses) == 0 {
+			// filter tag does not match
+			result = filterInvokers(invokers, tag, func(invoker protocol.Invoker, tag interface{}) bool {
+				return invoker.GetURL().GetParam(constant.Tagkey, "") != tag
+			})
+			logger.Debugf("[tag router] filter dynamic tag, tag=%s, invokers=%+v", tag, result)
+		} else {
+			// filter address does not match
+			result = filterInvokers(invokers, addresses, getAddressPredicate(false))
+			logger.Debugf("[tag router] filter dynamic tag address, invokers=%+v", result)
+		}
 	}
 	// returns the result directly
 	if *cfg.Force || requestIsForce(url, invocation) {
@@ -135,6 +151,7 @@ func requestTag(invokers []protocol.Invoker, url *common.URL, invocation protoco
 	return result
 }
 
+// filterInvokers remove invokers that match with predicate from the original input.
 func filterInvokers(invokers []protocol.Invoker, param interface{}, predicate predicate) []protocol.Invoker {
 	result := make([]protocol.Invoker, len(invokers))
 	copy(result, invokers)
