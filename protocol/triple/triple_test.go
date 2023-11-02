@@ -19,8 +19,6 @@ package triple
 
 import (
 	"context"
-	"dubbo.apache.org/dubbo-go/v3/client"
-	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	"errors"
 	"fmt"
 	"io"
@@ -38,6 +36,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/client"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
@@ -49,6 +48,7 @@ import (
 	dubbo3_greet "dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto/dubbo3_gen"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto/triple_gen/greettriple"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/server/api"
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	_ "dubbo.apache.org/dubbo-go/v3/proxy/proxy_factory"
 	"dubbo.apache.org/dubbo-go/v3/server"
 )
@@ -57,6 +57,7 @@ const (
 	triplePort = "20000"
 	dubbo3Port = "20001"
 	listenAddr = "0.0.0.0"
+	localAddr  = "127.0.0.1"
 	name       = "triple"
 )
 
@@ -395,24 +396,24 @@ func TestInvoke(t *testing.T) {
 	}
 
 	t.Run("triple2triple", func(t *testing.T) {
-		invoker, err := tripleInvokerInit("127.0.0.1", triplePort, greettriple.GreetService_ClientInfo.InterfaceName, greettriple.GreetService_ClientInfo.MethodNames, &greettriple.GreetService_ClientInfo)
+		invoker, err := tripleInvokerInit(localAddr, triplePort, greettriple.GreetService_ClientInfo.InterfaceName, greettriple.GreetService_ClientInfo.MethodNames, &greettriple.GreetService_ClientInfo)
 		assert.Nil(t, err)
 		invokeTripleCodeFunc(t, invoker)
 	})
 	t.Run("triple2dubbo3", func(t *testing.T) {
-		invoker, err := tripleInvokerInit("127.0.0.1", dubbo3Port, greettriple.GreetService_ClientInfo.InterfaceName, greettriple.GreetService_ClientInfo.MethodNames, &greettriple.GreetService_ClientInfo)
+		invoker, err := tripleInvokerInit(localAddr, dubbo3Port, greettriple.GreetService_ClientInfo.InterfaceName, greettriple.GreetService_ClientInfo.MethodNames, &greettriple.GreetService_ClientInfo)
 		assert.Nil(t, err)
 		invokeTripleCodeFunc(t, invoker)
 	})
 	t.Run("dubbo32triple", func(t *testing.T) {
 		svc := new(dubbo3_greet.GreetServiceClientImpl)
-		invoker, err := dubbo3InvokerInit("127.0.0.1", triplePort, dubbo3_greet.GreetService_ServiceDesc.ServiceName, svc)
+		invoker, err := dubbo3InvokerInit(localAddr, triplePort, dubbo3_greet.GreetService_ServiceDesc.ServiceName, svc)
 		assert.Nil(t, err)
 		invokeDubbo3CodeFunc(t, invoker, svc)
 	})
 	t.Run("dubbo32dubbo3", func(t *testing.T) {
 		svc := new(dubbo3_greet.GreetServiceClientImpl)
-		invoker, err := dubbo3InvokerInit("127.0.0.1", dubbo3Port, dubbo3_greet.GreetService_ServiceDesc.ServiceName, svc)
+		invoker, err := dubbo3InvokerInit(localAddr, dubbo3Port, dubbo3_greet.GreetService_ServiceDesc.ServiceName, svc)
 		assert.Nil(t, err)
 		invokeDubbo3CodeFunc(t, invoker, svc)
 	})

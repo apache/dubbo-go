@@ -114,8 +114,10 @@ type URL struct {
 	Username string
 	Password string
 	Methods  []string
-	// Attributes should not be transported
-	Attributes map[string]interface{} `hessian:"-"`
+
+	attributesLock sync.RWMutex
+	// attributes should not be transported
+	attributes map[string]interface{} `hessian:"-"`
 	// special for registry
 	SubURL *URL
 }
@@ -223,10 +225,10 @@ func WithToken(token string) Option {
 // WithAttribute sets attribute for URL
 func WithAttribute(key string, attribute interface{}) Option {
 	return func(url *URL) {
-		if url.Attributes == nil {
-			url.Attributes = make(map[string]interface{})
+		if url.attributes == nil {
+			url.attributes = make(map[string]interface{})
 		}
-		url.Attributes[key] = attribute
+		url.attributes[key] = attribute
 	}
 }
 
@@ -530,6 +532,22 @@ func (c *URL) SetParam(key string, value string) {
 		c.params = url.Values{}
 	}
 	c.params.Set(key, value)
+}
+
+func (c *URL) SetAttribute(key string, value interface{}) {
+	c.attributesLock.Lock()
+	defer c.attributesLock.Unlock()
+	if c.attributes == nil {
+		c.attributes = make(map[string]interface{})
+	}
+	c.attributes[key] = value
+}
+
+func (c *URL) GetAttribute(key string) (interface{}, bool) {
+	c.attributesLock.RLock()
+	defer c.attributesLock.RUnlock()
+	r, ok := c.attributes[key]
+	return r, ok
 }
 
 // DelParam will delete the given key from the URL
