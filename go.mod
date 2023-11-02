@@ -31,7 +31,7 @@ require (
 	github.com/golang/mock v1.6.0
 	github.com/golang/protobuf v1.5.3
 	github.com/google/go-cmp v0.5.9
-	github.com/google/uuid v1.3.0
+	github.com/google/uuid v1.4.0
 	github.com/gopherjs/gopherjs v0.0.0-20190910122728-9d188e94fb99 // indirect
 	github.com/grpc-ecosystem/grpc-opentracing v0.0.0-20180507213350-8e809c8a8645
 	github.com/hashicorp/golang-lru v0.5.4
