@@ -22,6 +22,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 )
@@ -31,14 +32,16 @@ const eventType = constant.MetricsMetadata
 var ch = make(chan metrics.MetricsEvent, 10)
 
 func init() {
-	metrics.AddCollector("metadata", func(mr metrics.MetricRegistry, rc *metrics.ReporterConfig) {
-		l := &MetadataMetricCollector{r: mr}
-		l.start()
+	metrics.AddCollector("metadata", func(mr metrics.MetricRegistry, url *common.URL) {
+		if url.GetParamBool(constant.MetadataEnabledKey, true) {
+			l := &MetadataMetricCollector{metrics.BaseCollector{R: mr}}
+			l.start()
+		}
 	})
 }
 
 type MetadataMetricCollector struct {
-	r metrics.MetricRegistry
+	metrics.BaseCollector
 }
 
 func (c *MetadataMetricCollector) start() {
@@ -63,59 +66,26 @@ func (c *MetadataMetricCollector) start() {
 }
 
 func (c *MetadataMetricCollector) handleMetadataPush(event *MetadataMetricEvent) {
-	m := metrics.ComputeIfAbsentCache(dubboMetadataPush, func() interface{} {
-		return newStatesMetricFunc(metadataPushNum, metadataPushNumSucceed, metadataPushNumFailed, metrics.GetApplicationLevel(), c.r)
-	}).(metrics.StatesMetrics)
-	m.Inc(event.Succ)
-	metric := metrics.ComputeIfAbsentCache(dubboPushRt, func() interface{} {
-		return newTimeMetrics(pushRtMin, pushRtMax, pushRtAvg, pushRtSum, pushRtLast, metrics.GetApplicationLevel(), c.r)
-	}).(metrics.TimeMetric)
-	metric.Record(event.CostMs())
+	level := metrics.GetApplicationLevel()
+	c.StateCount(metadataPushNum, metadataPushSucceed, metadataPushFailed, level, event.Succ)
+	c.R.Rt(metrics.NewMetricId(pushRt, level), &metrics.RtOpts{}).Observe(event.CostMs())
 }
 
 func (c *MetadataMetricCollector) handleMetadataSub(event *MetadataMetricEvent) {
-	m := metrics.ComputeIfAbsentCache(dubboMetadataSubscribe, func() interface{} {
-		return newStatesMetricFunc(metadataSubNum, metadataSubNumSucceed, metadataSubNumFailed, metrics.GetApplicationLevel(), c.r)
-	}).(metrics.StatesMetrics)
-	m.Inc(event.Succ)
-	metric := metrics.ComputeIfAbsentCache(dubboSubscribeRt, func() interface{} {
-		return newTimeMetrics(subscribeRtMin, subscribeRtMax, subscribeRtAvg, subscribeRtSum, subscribeRtLast, metrics.GetApplicationLevel(), c.r)
-	}).(metrics.TimeMetric)
-	metric.Record(event.CostMs())
+	level := metrics.GetApplicationLevel()
+	c.StateCount(metadataSubNum, metadataSubSucceed, metadataSubFailed, level, event.Succ)
+	c.R.Rt(metrics.NewMetricId(subscribeRt, level), &metrics.RtOpts{}).Observe(event.CostMs())
 }
 
 func (c *MetadataMetricCollector) handleStoreProvider(event *MetadataMetricEvent) {
-	interfaceName := event.Attachment[constant.InterfaceKey]
-	m := metrics.ComputeIfAbsentCache(dubboMetadataStoreProvider+":"+interfaceName, func() interface{} {
-		return newStatesMetricFunc(metadataStoreProvider, metadataStoreProviderSucceed, metadataStoreProviderFailed,
-			metrics.NewServiceMetric(interfaceName), c.r)
-	}).(metrics.StatesMetrics)
-	m.Inc(event.Succ)
-	metric := metrics.ComputeIfAbsentCache(dubboStoreProviderInterfaceRt+":"+interfaceName, func() interface{} {
-		return newTimeMetrics(storeProviderInterfaceRtMin, storeProviderInterfaceRtMax, storeProviderInterfaceRtAvg,
-			storeProviderInterfaceRtSum, storeProviderInterfaceRtLast, metrics.NewServiceMetric(interfaceName), c.r)
-	}).(metrics.TimeMetric)
-	metric.Record(event.CostMs())
+	level := metrics.NewServiceMetric(event.Attachment[constant.InterfaceKey])
+	c.StateCount(metadataStoreProviderNum, metadataStoreProviderSucceed, metadataStoreProviderFailed, level, event.Succ)
+	c.R.Rt(metrics.NewMetricId(storeProviderInterfaceRt, level), &metrics.RtOpts{}).Observe(event.CostMs())
 }
 
 func (c *MetadataMetricCollector) handleSubscribeService(event *MetadataMetricEvent) {
-	interfaceName := event.Attachment[constant.InterfaceKey]
-	metric := metrics.ComputeIfAbsentCache(dubboSubscribeServiceRt+":"+interfaceName, func() interface{} {
-		return newTimeMetrics(subscribeServiceRtMin, subscribeServiceRtMax, subscribeServiceRtAvg, subscribeServiceRtSum,
-			subscribeServiceRtLast, metrics.NewServiceMetric(interfaceName), c.r)
-	}).(metrics.TimeMetric)
-	metric.Record(event.CostMs())
-}
-
-func newStatesMetricFunc(total *metrics.MetricKey, succ *metrics.MetricKey, fail *metrics.MetricKey,
-	level metrics.MetricLevel, reg metrics.MetricRegistry) metrics.StatesMetrics {
-	return metrics.NewStatesMetrics(metrics.NewMetricId(total, level), metrics.NewMetricId(succ, level),
-		metrics.NewMetricId(fail, level), reg)
-}
-
-func newTimeMetrics(min, max, avg, sum, last *metrics.MetricKey, level metrics.MetricLevel, mr metrics.MetricRegistry) metrics.TimeMetric {
-	return metrics.NewTimeMetric(metrics.NewMetricId(min, level), metrics.NewMetricId(max, level), metrics.NewMetricId(avg, level),
-		metrics.NewMetricId(sum, level), metrics.NewMetricId(last, level), mr)
+	level := metrics.NewServiceMetric(event.Attachment[constant.InterfaceKey])
+	c.R.Rt(metrics.NewMetricId(subscribeServiceRt, level), &metrics.RtOpts{}).Observe(event.CostMs())
 }
 
 type MetadataMetricEvent struct {

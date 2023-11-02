@@ -18,8 +18,11 @@
 package metrics
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+)
+
+import (
+	"github.com/stretchr/testify/assert"
 )
 
 var mockChan = make(chan MetricsEvent, 16)

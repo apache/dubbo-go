@@ -15,49 +15,9 @@
  * limitations under the License.
  */
 
-package trace
+package constant
 
-import (
-	"testing"
+const (
+	OtelPackageName    = "go.opentelemetry.io/otel"
+	OtelPackageVersion = "v1.10.0"
 )
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
-)
-
-type filed struct {
-	name string
-	want string
-}
-
-func TestSemVersion(t *testing.T) {
-	tests := []filed{
-		{
-			name: "test",
-			want: "semver:" + constant.Version,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := SemVersion(); got != tt.want {
-				t.Errorf("SemVersion() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestVersion(t *testing.T) {
-	tests := []filed{
-		{
-			name: "test",
-			want: constant.Version,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := Version(); got != tt.want {
-				t.Errorf("Version() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}

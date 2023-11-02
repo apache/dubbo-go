@@ -82,6 +82,7 @@ type ServiceConfig struct {
 	RCRegistriesMap map[string]*RegistryConfig
 	ProxyFactoryKey string
 	adaptiveService bool
+	metricsEnable   bool // whether append metrics filter to filter chain
 	unexported      *atomic.Bool
 	exported        *atomic.Bool
 	export          bool // a flag to control whether the current service should export or not
@@ -143,6 +144,9 @@ func (s *ServiceConfig) Init(rc *RootConfig) error {
 	}
 	if s.TracingKey == "" {
 		s.TracingKey = rc.Provider.TracingKey
+	}
+	if rc.Metric.Enable != nil {
+		s.metricsEnable = *rc.Metric.Enable
 	}
 	err := s.check()
 	if err != nil {
@@ -267,7 +271,7 @@ func (s *ServiceConfig) Export() error {
 		}
 
 		port := proto.Port
-		if len(proto.Port) == 0 {
+		if num, err := strconv.Atoi(proto.Port); err != nil || num <= 0 {
 			port = nextPort.Value.(string)
 			nextPort = nextPort.Next()
 		}
@@ -426,6 +430,9 @@ func (s *ServiceConfig) getUrlMap() url.Values {
 	}
 	if s.adaptiveService {
 		filters += fmt.Sprintf(",%s", constant.AdaptiveServiceProviderFilterKey)
+	}
+	if s.metricsEnable {
+		filters += fmt.Sprintf(",%s", constant.MetricsFilterKey)
 	}
 	urlMap.Set(constant.ServiceFilterKey, filters)
 
