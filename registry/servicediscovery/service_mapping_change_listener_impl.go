@@ -18,13 +18,13 @@
 package servicediscovery
 
 import (
-	"github.com/dubbogo/gost/log/logger"
 	"sync"
 )
 
 import (
 	gxset "github.com/dubbogo/gost/container/set"
 	"github.com/dubbogo/gost/gof/observer"
+	"github.com/dubbogo/gost/log/logger"
 )
 
 import (

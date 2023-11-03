@@ -18,7 +18,6 @@
 package protocol
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/registry/directory"
 	"testing"
 	"time"
 )
@@ -41,6 +40,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
 	"dubbo.apache.org/dubbo-go/v3/registry"
+	"dubbo.apache.org/dubbo-go/v3/registry/directory"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
