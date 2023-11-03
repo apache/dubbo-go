@@ -34,7 +34,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/metadata/service"
+	"dubbo.apache.org/dubbo-go/v3/metadata/service/local"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/registry/servicediscovery/store"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
@@ -45,9 +46,9 @@ var (
 	cacheOnce sync.Once
 )
 
-func initCache() {
+func initCache(app string) {
 	gob.Register(&common.MetadataInfo{})
-	fileName := constant.DefaultMetaFileName + config.GetApplicationConfig().Name
+	fileName := constant.DefaultMetaFileName + app
 	cache, err := store.NewCacheManager(constant.DefaultMetaCacheName, fileName, time.Minute*10, constant.DefaultEntrySize, true)
 	if err != nil {
 		logger.Fatal("Failed to create cache [%s],the err is %v", constant.DefaultMetaCacheName, err)
@@ -57,16 +58,21 @@ func initCache() {
 
 // ServiceInstancesChangedListenerImpl The Service Discovery Changed  Event Listener
 type ServiceInstancesChangedListenerImpl struct {
+	app                string
 	serviceNames       *gxset.HashSet
 	listeners          map[string]registry.NotifyListener
 	serviceUrls        map[string][]*common.URL
 	revisionToMetadata map[string]*common.MetadataInfo
 	allInstances       map[string][]registry.ServiceInstance
+	mutex              sync.Mutex
 }
 
-func NewServiceInstancesChangedListener(services *gxset.HashSet) registry.ServiceInstancesChangedListener {
-	cacheOnce.Do(initCache)
+func NewServiceInstancesChangedListener(app string, services *gxset.HashSet) registry.ServiceInstancesChangedListener {
+	cacheOnce.Do(func() {
+		initCache(app)
+	})
 	return &ServiceInstancesChangedListenerImpl{
+		app:                app,
 		serviceNames:       services,
 		listeners:          make(map[string]registry.NotifyListener),
 		serviceUrls:        make(map[string][]*common.URL),
@@ -82,6 +88,10 @@ func (lstn *ServiceInstancesChangedListenerImpl) OnEvent(e observer.Event) error
 		return nil
 	}
 	var err error
+
+	lstn.mutex.Lock()
+	defer lstn.mutex.Unlock()
+
 	lstn.allInstances[ce.ServiceName] = ce.Instances
 	revisionToInstances := make(map[string][]registry.ServiceInstance)
 	newRevisionToMetadata := make(map[string]*common.MetadataInfo)
@@ -112,7 +122,7 @@ func (lstn *ServiceInstancesChangedListenerImpl) OnEvent(e observer.Event) error
 				if val, ok := metaCache.Get(revision); ok {
 					metadataInfo = val.(*common.MetadataInfo)
 				} else {
-					metadataInfo, err = GetMetadataInfo(instance, revision)
+					metadataInfo, err = GetMetadataInfo(lstn.app, instance, revision)
 					if err != nil {
 						return err
 					}
@@ -215,8 +225,10 @@ func (lstn *ServiceInstancesChangedListenerImpl) GetEventType() reflect.Type {
 }
 
 // GetMetadataInfo get metadata info when MetadataStorageTypePropertyName is null
-func GetMetadataInfo(instance registry.ServiceInstance, revision string) (*common.MetadataInfo, error) {
-	cacheOnce.Do(initCache)
+func GetMetadataInfo(app string, instance registry.ServiceInstance, revision string) (*common.MetadataInfo, error) {
+	cacheOnce.Do(func() {
+		initCache(app)
+	})
 	if metadataInfo, ok := metaCache.Get(revision); ok {
 		return metadataInfo.(*common.MetadataInfo), nil
 	}
@@ -241,6 +253,7 @@ func GetMetadataInfo(instance registry.ServiceInstance, revision string) (*commo
 		var err error
 		proxyFactory := extension.GetMetadataServiceProxyFactory(constant.DefaultKey)
 		metadataService := proxyFactory.GetProxy(instance)
+		defer destroyInvoker(metadataService)
 		metadataInfo, err = metadataService.GetMetadataInfo(revision)
 		if err != nil {
 			return nil, err
@@ -250,4 +263,17 @@ func GetMetadataInfo(instance registry.ServiceInstance, revision string) (*commo
 	metaCache.Set(revision, metadataInfo)
 
 	return metadataInfo, nil
+}
+
+func destroyInvoker(metadataService service.MetadataService) {
+	if metadataService == nil {
+		return
+	}
+
+	proxy := metadataService.(*local.MetadataServiceProxy)
+	if proxy.Invoker == nil {
+		return
+	}
+
+	proxy.Invoker.Destroy()
 }

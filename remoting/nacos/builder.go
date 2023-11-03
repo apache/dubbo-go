@@ -103,7 +103,7 @@ func GetNacosConfig(url *common.URL) ([]nacosConstant.ServerConfig, nacosConstan
 		NotLoadCacheAtStart:  url.GetParamBool(constant.NacosNotLoadLocalCache, true),
 		LogDir:               url.GetParam(constant.NacosLogDirKey, ""),
 		LogLevel:             url.GetParam(constant.NacosLogLevelKey, "info"),
-		UpdateCacheWhenEmpty: url.GetParamBool(constant.NacosUpdateCacheWhenEmpty, false),
+		UpdateCacheWhenEmpty: url.GetParamBool(constant.NacosUpdateCacheWhenEmpty, true),
 	}
 	return serverConfigs, clientConfig, nil
 }

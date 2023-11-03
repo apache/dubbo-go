@@ -68,7 +68,7 @@ func createProxy(ins registry.ServiceInstance) service.MetadataService {
 	p := extension.GetProtocol(u.Protocol)
 	invoker := p.Refer(u)
 	return &MetadataServiceProxy{
-		invkr: invoker,
+		Invoker: invoker,
 	}
 }
 

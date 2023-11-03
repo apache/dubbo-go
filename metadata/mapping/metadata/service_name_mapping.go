@@ -40,7 +40,7 @@ import (
 )
 
 const (
-	defaultGroup = "mapping"
+	DefaultGroup = "mapping"
 	slash        = "/"
 )
 
@@ -68,7 +68,7 @@ func (d *MetadataServiceNameMapping) Map(url *common.URL) error {
 	if metadataReport == nil {
 		logger.Info("get metadata report instance is nil, metadata service will be enabled!")
 	} else {
-		err := metadataReport.RegisterServiceAppMapping(serviceInterface, defaultGroup, appName)
+		err := metadataReport.RegisterServiceAppMapping(serviceInterface, DefaultGroup, appName)
 		if err != nil {
 			return perrors.WithStack(err)
 		}
@@ -80,20 +80,20 @@ func (d *MetadataServiceNameMapping) Map(url *common.URL) error {
 func (d *MetadataServiceNameMapping) Get(url *common.URL, listener registry.MappingListener) (*gxset.HashSet, error) {
 	serviceInterface := url.GetParam(constant.InterfaceKey, "")
 	metadataReport := instance.GetMetadataReportInstance()
-	return metadataReport.GetServiceAppMapping(serviceInterface, defaultGroup, listener)
+	return metadataReport.GetServiceAppMapping(serviceInterface, DefaultGroup, listener)
 }
 
 func (d *MetadataServiceNameMapping) Remove(url *common.URL) error {
 	serviceInterface := url.GetParam(constant.InterfaceKey, "")
 	metadataReport := instance.GetMetadataReportInstance()
-	return metadataReport.RemoveServiceAppMappingListener(serviceInterface, defaultGroup)
+	return metadataReport.RemoveServiceAppMappingListener(serviceInterface, DefaultGroup)
 }
 
-// buildMappingKey will return mapping key, it looks like defaultGroup/serviceInterface
+// buildMappingKey will return mapping key, it looks like DefaultGroup/serviceInterface
 func (d *MetadataServiceNameMapping) buildMappingKey(serviceInterface string) string {
 	// the issue : https://github.com/apache/dubbo/issues/4671
 	// so other params are ignored and remove, including group string, version string, protocol string
-	return defaultGroup + slash + serviceInterface
+	return DefaultGroup + slash + serviceInterface
 }
 
 var (
