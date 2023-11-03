@@ -493,7 +493,7 @@ type referenceConfigurationListener struct {
 func newReferenceConfigurationListener(dir *RegistryDirectory, url *common.URL) *referenceConfigurationListener {
 	listener := &referenceConfigurationListener{directory: dir, url: url}
 	listener.InitWith(
-		url.EncodedServiceKey()+constant.ConfiguratorSuffix,
+		url.ColonSeparatedKey()+constant.ConfiguratorSuffix,
 		listener,
 		extension.GetDefaultConfiguratorFunc(),
 	)
