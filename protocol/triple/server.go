@@ -72,19 +72,6 @@ func (s *Server) Start(invoker protocol.Invoker, info *server.ServiceInfo) {
 	srv := &http.Server{
 		Addr: addr,
 	}
-
-	maxServerRecvMsgSize := constant.DefaultMaxServerRecvMsgSize
-	if recvMsgSize, convertErr := humanize.ParseBytes(URL.GetParam(constant.MaxServerRecvMsgSize, "")); convertErr == nil && recvMsgSize != 0 {
-		maxServerRecvMsgSize = int(recvMsgSize)
-	}
-	hanOpts = append(hanOpts, tri.WithReadMaxBytes(maxServerRecvMsgSize))
-
-	maxServerSendMsgSize := constant.DefaultMaxServerSendMsgSize
-	if sendMsgSize, convertErr := humanize.ParseBytes(URL.GetParam(constant.MaxServerSendMsgSize, "")); err == convertErr && sendMsgSize != 0 {
-		maxServerSendMsgSize = int(sendMsgSize)
-	}
-	hanOpts = append(hanOpts, tri.WithSendMaxBytes(maxServerSendMsgSize))
-
 	serialization := URL.GetParam(constant.SerializationKey, constant.ProtobufSerialization)
 	switch serialization {
 	case constant.ProtobufSerialization:
@@ -92,7 +79,6 @@ func (s *Server) Start(invoker protocol.Invoker, info *server.ServiceInfo) {
 	default:
 		panic(fmt.Sprintf("Unsupported serialization: %s", serialization))
 	}
-
 	// todo: implement interceptor
 	// If global trace instance was set, then server tracer instance
 	// can be get. If not, will return NoopTracer.
@@ -120,9 +106,7 @@ func (s *Server) Start(invoker protocol.Invoker, info *server.ServiceInfo) {
 	//}
 	//srv.TLSConfig = cfg
 
-	// todo:// open tracing
-	hanOpts = append(hanOpts, tri.WithInterceptors())
-	// todo:// move tls config to handleService
+	hanOpts = getHanOpts(URL)
 	s.httpServer = srv
 
 	go func() {
@@ -150,24 +134,10 @@ func (s *Server) Start(invoker protocol.Invoker, info *server.ServiceInfo) {
 // RefreshService refreshes Triple Service
 func (s *Server) RefreshService(invoker protocol.Invoker, info *server.ServiceInfo) {
 	var (
-		err     error
 		URL     *common.URL
 		hanOpts []tri.HandlerOption
 	)
 	URL = invoker.GetURL()
-
-	maxServerRecvMsgSize := constant.DefaultMaxServerRecvMsgSize
-	if recvMsgSize, convertErr := humanize.ParseBytes(URL.GetParam(constant.MaxServerRecvMsgSize, "")); convertErr == nil && recvMsgSize != 0 {
-		maxServerRecvMsgSize = int(recvMsgSize)
-	}
-	hanOpts = append(hanOpts, tri.WithReadMaxBytes(maxServerRecvMsgSize))
-
-	maxServerSendMsgSize := constant.DefaultMaxServerSendMsgSize
-	if sendMsgSize, convertErr := humanize.ParseBytes(URL.GetParam(constant.MaxServerSendMsgSize, "")); err == convertErr && sendMsgSize != 0 {
-		maxServerSendMsgSize = int(sendMsgSize)
-	}
-	hanOpts = append(hanOpts, tri.WithSendMaxBytes(maxServerSendMsgSize))
-
 	serialization := URL.GetParam(constant.SerializationKey, constant.ProtobufSerialization)
 	switch serialization {
 	case constant.ProtobufSerialization:
@@ -175,14 +145,33 @@ func (s *Server) RefreshService(invoker protocol.Invoker, info *server.ServiceIn
 	default:
 		panic(fmt.Sprintf("Unsupported serialization: %s", serialization))
 	}
-	hanOpts = append(hanOpts, tri.WithInterceptors())
-
+	hanOpts = getHanOpts(URL)
 	mux := s.handler
 	if info != nil {
 		handleServiceWithInfo(invoker, info, mux, hanOpts...)
 	} else {
 		compatHandleService(mux)
 	}
+}
+
+func getHanOpts(url *common.URL) (hanOpts []tri.HandlerOption) {
+	var err error
+	maxServerRecvMsgSize := constant.DefaultMaxServerRecvMsgSize
+	if recvMsgSize, convertErr := humanize.ParseBytes(url.GetParam(constant.MaxServerRecvMsgSize, "")); convertErr == nil && recvMsgSize != 0 {
+		maxServerRecvMsgSize = int(recvMsgSize)
+	}
+	hanOpts = append(hanOpts, tri.WithReadMaxBytes(maxServerRecvMsgSize))
+
+	maxServerSendMsgSize := constant.DefaultMaxServerSendMsgSize
+	if sendMsgSize, convertErr := humanize.ParseBytes(url.GetParam(constant.MaxServerSendMsgSize, "")); err == convertErr && sendMsgSize != 0 {
+		maxServerSendMsgSize = int(sendMsgSize)
+	}
+	hanOpts = append(hanOpts, tri.WithSendMaxBytes(maxServerSendMsgSize))
+
+	// todo:// open tracing
+	hanOpts = append(hanOpts, tri.WithInterceptors())
+	// todo:// move tls config to handleService
+	return hanOpts
 }
 
 // getSyncMapLen gets sync map len

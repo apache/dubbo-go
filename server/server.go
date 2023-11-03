@@ -153,7 +153,7 @@ func (s *Server) Register(handler interface{}, info *ServiceInfo, opts ...Servic
 	return nil
 }
 
-func (s *Server) exportService() (err error) {
+func (s *Server) exportServices() (err error) {
 	s.svcOptsMap.Range(func(newSvcOpts, info interface{}) bool {
 		err = newSvcOpts.(*ServiceOptions).ExportWithInfo(info.(*ServiceInfo))
 		if err != nil {
@@ -165,8 +165,7 @@ func (s *Server) exportService() (err error) {
 }
 
 func (s *Server) Serve() error {
-	err := s.exportService()
-	if err != nil {
+	if err := s.exportServices(); err != nil {
 		return err
 	}
 	metadata.ExportMetadataService()
