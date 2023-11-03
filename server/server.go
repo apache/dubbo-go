@@ -20,6 +20,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"sync"
 )
 
 import (
@@ -38,6 +39,8 @@ type Server struct {
 	info    *ServiceInfo
 
 	cfg *ServerOptions
+
+	svcOptsMap sync.Map
 }
 
 // ServiceInfo is meta info of a service
@@ -145,14 +148,27 @@ func (s *Server) Register(handler interface{}, info *ServiceInfo, opts ...Servic
 		return err
 	}
 	newSvcOpts.Implement(handler)
-	if err := newSvcOpts.ExportWithInfo(info); err != nil {
-		return err
-	}
+	s.svcOptsMap.Store(newSvcOpts, info)
 
 	return nil
 }
 
+func (s *Server) exportService() (err error) {
+	s.svcOptsMap.Range(func(newSvcOpts, info interface{}) bool {
+		err = newSvcOpts.(*ServiceOptions).ExportWithInfo(info.(*ServiceInfo))
+		if err != nil {
+			return false
+		}
+		return true
+	})
+	return err
+}
+
 func (s *Server) Serve() error {
+	err := s.exportService()
+	if err != nil {
+		return err
+	}
 	metadata.ExportMetadataService()
 	registry_exposed.RegisterServiceInstance(s.cfg.Application.Name, s.cfg.Application.Tag, s.cfg.Application.MetadataType)
 	select {}

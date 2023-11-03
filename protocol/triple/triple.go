@@ -88,6 +88,7 @@ func (tp *TripleProtocol) openServer(invoker protocol.Invoker, info *server.Serv
 	defer tp.serverLock.Unlock()
 
 	if _, ok := tp.serverMap[url.Location]; ok {
+		tp.serverMap[url.Location].RefreshService(invoker, info)
 		return
 	}
 
