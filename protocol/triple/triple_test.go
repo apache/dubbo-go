@@ -54,8 +54,8 @@ import (
 )
 
 const (
-	triplePort = "20000"
-	dubbo3Port = "20001"
+	triplePort = "21000"
+	dubbo3Port = "21001"
 	listenAddr = "0.0.0.0"
 	localAddr  = "127.0.0.1"
 	name       = "triple"
