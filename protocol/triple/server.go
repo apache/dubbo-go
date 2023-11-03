@@ -105,6 +105,7 @@ func (s *Server) Start(invoker protocol.Invoker, info *server.ServiceInfo) {
 	//	logger.Infof("Triple Server initialized the TLSConfig configuration")
 	//}
 	//srv.TLSConfig = cfg
+	// todo:// move tls config to handleService
 
 	hanOpts = getHanOpts(URL)
 	s.httpServer = srv
@@ -170,7 +171,6 @@ func getHanOpts(url *common.URL) (hanOpts []tri.HandlerOption) {
 
 	// todo:// open tracing
 	hanOpts = append(hanOpts, tri.WithInterceptors())
-	// todo:// move tls config to handleService
 	return hanOpts
 }
 
