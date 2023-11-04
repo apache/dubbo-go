@@ -93,11 +93,6 @@ func (tp *TripleProtocol) openServer(invoker protocol.Invoker, info *server.Serv
 		tp.serverMap[url.Location].RefreshService(invoker, info)
 		return
 	}
-	//if server, ok := tp.serverMap[url.Location]; ok {
-	//	mergeInvoke(server,invoke)
-	//	return
-	//}
-
 	if _, ok := tp.ExporterMap().Load(url.ServiceKey()); !ok {
 		panic("[TRIPLE Protocol]" + url.Key() + "is not existing")
 	}
