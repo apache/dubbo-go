@@ -33,5 +33,5 @@ type Directory interface {
 	List(invocation protocol.Invocation) []protocol.Invoker
 
 	// Subscribe listen to registry instances
-	Subscribe(url *common.URL)
+	Subscribe(url *common.URL) error
 }

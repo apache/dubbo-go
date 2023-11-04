@@ -42,8 +42,8 @@ type Directory struct {
 }
 
 // NewDirectory Create BaseDirectory with URL
-func NewDirectory(url *common.URL) *Directory {
-	return &Directory{
+func NewDirectory(url *common.URL) Directory {
+	return Directory{
 		url:         url,
 		destroyed:   atomic.NewBool(false),
 		routerChain: &chain.RouterChain{},

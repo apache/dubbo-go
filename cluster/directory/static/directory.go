@@ -29,7 +29,7 @@ import (
 )
 
 type directory struct {
-	*base.Directory
+	base.Directory
 	invokers []protocol.Invoker
 }
 
@@ -104,6 +104,6 @@ func (dir *directory) BuildRouterChain(invokers []protocol.Invoker) error {
 	return nil
 }
 
-func (dir *directory) Subscribe(url *common.URL) {
+func (dir *directory) Subscribe(url *common.URL) error {
 	panic("Static directory does not support subscribing to registry.")
 }

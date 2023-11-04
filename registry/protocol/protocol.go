@@ -19,8 +19,6 @@ package protocol
 
 import (
 	"context"
-	"dubbo.apache.org/dubbo-go/v3/registry/directory"
-	"os"
 	"strings"
 	"sync"
 	"time"
@@ -158,14 +156,8 @@ func (proto *registryProtocol) Refer(url *common.URL) protocol.Invoker {
 	}
 
 	// This will start a new routine and listen to instance changes.
-	dic.Subscribe(registryUrl.SubURL)
+	err = dic.Subscribe(registryUrl.SubURL)
 
-	urlToReg := getConsumerUrlToRegistry(serviceUrl)
-	if regDic, ok := dic.(*directory.RegistryDirectory); ok {
-		regDic.RegisteredUrl = urlToReg
-	}
-
-	err = reg.Register(urlToReg)
 	if err != nil {
 		logger.Errorf("consumer service %v register registry %v error, error message is %s",
 			serviceUrl.String(), registryUrl.String(), err.Error())
@@ -558,17 +550,4 @@ func newServiceConfigurationListener(overrideListener *overrideSubscribeListener
 func (listener *serviceConfigurationListener) Process(event *config_center.ConfigChangeEvent) {
 	listener.BaseConfigurationListener.Process(event)
 	listener.overrideListener.doOverrideIfNecessary()
-}
-
-func getConsumerUrlToRegistry(url *common.URL) *common.URL {
-	// if developer define registry port and ip, use it first.
-	if ipToRegistry := os.Getenv(constant.DubboIpToRegistryKey); len(ipToRegistry) > 0 {
-		url.Ip = ipToRegistry
-	} else {
-		url.Ip = common.GetLocalIp()
-	}
-	if portToRegistry := os.Getenv(constant.DubboPortToRegistryKey); len(portToRegistry) > 0 {
-		url.Port = portToRegistry
-	}
-	return url
 }

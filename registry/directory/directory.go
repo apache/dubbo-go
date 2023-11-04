@@ -59,7 +59,7 @@ func init() {
 // RegistryDirectory implementation of Directory:
 // Invoker list returned from this Directory's list method have been filtered by Routers
 type RegistryDirectory struct {
-	*base.Directory
+	base.Directory
 	cacheInvokers                  []protocol.Invoker
 	invokersLock                   sync.RWMutex
 	serviceType                    string
@@ -109,7 +109,7 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry) (director
 }
 
 // subscribe from registry
-func (dir *RegistryDirectory) Subscribe(url *common.URL) {
+func (dir *RegistryDirectory) Subscribe(url *common.URL) error {
 	logger.Infof("Start subscribing for service :%s with a new go routine.", url.Key())
 
 	go func() {
@@ -117,7 +117,16 @@ func (dir *RegistryDirectory) Subscribe(url *common.URL) {
 		if err := dir.registry.Subscribe(url, dir); err != nil {
 			logger.Error("registry.Subscribe(url:%v, dir:%v) = error:%v", url, dir, err)
 		}
+
+		urlToReg := getConsumerUrlToRegistry(url)
+		err := dir.registry.Register(urlToReg)
+		if err != nil {
+			logger.Errorf("consumer service %v register registry %v error, error message is %s",
+				url.String(), dir.registry.GetURL().String(), err.Error())
+		}
 	}()
+
+	return nil
 }
 
 // Notify monitor changes from registry,and update the cacheServices
@@ -560,8 +569,8 @@ func (l *consumerConfigurationListener) Process(event *config_center.ConfigChang
 // ServiceDiscoveryRegistryDirectory implementation of Directory:
 // Invoker list returned from this Directory's list method have been filtered by Routers
 type ServiceDiscoveryRegistryDirectory struct {
-	*base.Directory
-	*RegistryDirectory
+	base.Directory
+	RegistryDirectory
 }
 
 // NewServiceDiscoveryRegistryDirectory will create a new ServiceDiscoveryRegistryDirectory
@@ -570,18 +579,41 @@ func NewServiceDiscoveryRegistryDirectory(url *common.URL, registry registry.Reg
 	registryDirectory, _ := dic.(*RegistryDirectory)
 	return &ServiceDiscoveryRegistryDirectory{
 		Directory:         registryDirectory.Directory,
-		RegistryDirectory: registryDirectory,
+		RegistryDirectory: *registryDirectory,
 	}, err
 }
 
 // Subscribe do subscribe from registry
-func (dir *ServiceDiscoveryRegistryDirectory) Subscribe(url *common.URL) {
+func (dir *ServiceDiscoveryRegistryDirectory) Subscribe(url *common.URL) error {
 	if err := dir.registry.Subscribe(url, dir); err != nil {
 		logger.Error("registry.Subscribe(url:%v, dir:%v) = error:%v", url, dir, err)
+		return err
 	}
+
+	urlToReg := getConsumerUrlToRegistry(url)
+	err := dir.RegistryDirectory.registry.Register(urlToReg)
+	if err != nil {
+		logger.Errorf("consumer service %v register registry %v error, error message is %s",
+			url.String(), dir.registry.GetURL().String(), err.Error())
+		return err
+	}
+	return nil
 }
 
 // List selected protocol invokers from the directory
 func (dir *ServiceDiscoveryRegistryDirectory) List(invocation protocol.Invocation) []protocol.Invoker {
 	return dir.RegistryDirectory.List(invocation)
+}
+
+func getConsumerUrlToRegistry(url *common.URL) *common.URL {
+	// if developer define registry port and ip, use it first.
+	if ipToRegistry := os.Getenv(constant.DubboIpToRegistryKey); len(ipToRegistry) > 0 {
+		url.Ip = ipToRegistry
+	} else {
+		url.Ip = common.GetLocalIp()
+	}
+	if portToRegistry := os.Getenv(constant.DubboPortToRegistryKey); len(portToRegistry) > 0 {
+		url.Port = portToRegistry
+	}
+	return url
 }
