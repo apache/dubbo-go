@@ -71,6 +71,8 @@ type RegistryDirectory struct {
 	consumerConfigurationListener  *consumerConfigurationListener
 	referenceConfigurationListener *referenceConfigurationListener
 	registerLock                   sync.Mutex // this lock if for register
+	SubscribedUrl                  *common.URL
+	RegisteredUrl                  *common.URL
 }
 
 // NewRegistryDirectory will create a new RegistryDirectory
@@ -111,6 +113,7 @@ func (dir *RegistryDirectory) Subscribe(url *common.URL) {
 	logger.Infof("Start subscribing for service :%s with a new go routine.", url.Key())
 
 	go func() {
+		dir.SubscribedUrl = url
 		if err := dir.registry.Subscribe(url, dir); err != nil {
 			logger.Error("registry.Subscribe(url:%v, dir:%v) = error:%v", url, dir, err)
 		}
@@ -450,6 +453,16 @@ func (dir *RegistryDirectory) IsAvailable() bool {
 func (dir *RegistryDirectory) Destroy() {
 	// TODO:unregister & unsubscribe
 	dir.Directory.DoDestroy(func() {
+		err := dir.registry.UnRegister(dir.RegisteredUrl)
+		if err != nil {
+			logger.Warnf("Unregister consumer url failed, %s", dir.RegisteredUrl.String(), err)
+		}
+
+		err = dir.registry.UnSubscribe(dir.SubscribedUrl, dir)
+		if err != nil {
+			logger.Warnf("Unsubscribe consumer url failed, %s", dir.RegisteredUrl.String(), err)
+		}
+
 		invokers := dir.cacheInvokers
 		dir.cacheInvokers = []protocol.Invoker{}
 		for _, ivk := range invokers {
@@ -498,7 +511,7 @@ type referenceConfigurationListener struct {
 func newReferenceConfigurationListener(dir *RegistryDirectory, url *common.URL) *referenceConfigurationListener {
 	listener := &referenceConfigurationListener{directory: dir, url: url}
 	listener.InitWith(
-		url.EncodedServiceKey()+constant.ConfiguratorSuffix,
+		url.ColonSeparatedKey()+constant.ConfiguratorSuffix,
 		listener,
 		extension.GetDefaultConfiguratorFunc(),
 	)

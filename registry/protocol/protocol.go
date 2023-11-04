@@ -19,6 +19,7 @@ package protocol
 
 import (
 	"context"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -158,7 +159,8 @@ func (proto *registryProtocol) Refer(url *common.URL) protocol.Invoker {
 	// This will start a new routine and listen to instance changes.
 	dic.Subscribe(registryUrl.SubURL)
 
-	err = reg.Register(serviceUrl)
+	regDic.RegisteredUrl = getConsumerUrlToRegistry(serviceUrl)
+	err = reg.Register(regDic.RegisteredUrl)
 	if err != nil {
 		logger.Errorf("consumer service %v register registry %v error, error message is %s",
 			serviceUrl.String(), registryUrl.String(), err.Error())
@@ -540,7 +542,7 @@ type serviceConfigurationListener struct {
 func newServiceConfigurationListener(overrideListener *overrideSubscribeListener, providerUrl *common.URL) *serviceConfigurationListener {
 	listener := &serviceConfigurationListener{overrideListener: overrideListener, providerUrl: providerUrl}
 	listener.InitWith(
-		providerUrl.EncodedServiceKey()+constant.ConfiguratorSuffix,
+		providerUrl.ColonSeparatedKey()+constant.ConfiguratorSuffix,
 		listener,
 		extension.GetDefaultConfiguratorFunc(),
 	)
@@ -551,4 +553,17 @@ func newServiceConfigurationListener(overrideListener *overrideSubscribeListener
 func (listener *serviceConfigurationListener) Process(event *config_center.ConfigChangeEvent) {
 	listener.BaseConfigurationListener.Process(event)
 	listener.overrideListener.doOverrideIfNecessary()
+}
+
+func getConsumerUrlToRegistry(url *common.URL) *common.URL {
+	// if developer define registry port and ip, use it first.
+	if ipToRegistry := os.Getenv(constant.DubboIpToRegistryKey); len(ipToRegistry) > 0 {
+		url.Ip = ipToRegistry
+	} else {
+		url.Ip = common.GetLocalIp()
+	}
+	if portToRegistry := os.Getenv(constant.DubboPortToRegistryKey); len(portToRegistry) > 0 {
+		url.Port = portToRegistry
+	}
+	return url
 }

@@ -95,7 +95,7 @@ func TestFunction(t *testing.T) {
 	hs := gxset.NewSet()
 	hs.Add(testName)
 
-	sicl := servicediscovery.NewServiceInstancesChangedListener(hs)
+	sicl := servicediscovery.NewServiceInstancesChangedListener("test_app", hs)
 	sicl.AddListenerAndNotify(testName, tn)
 	err = sd.AddListener(sicl)
 	assert.NoError(t, err)

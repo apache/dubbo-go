@@ -236,7 +236,7 @@ func (s *ServiceDiscoveryRegistry) SubscribeURL(url *common.URL, notify registry
 	protocolServiceKey := url.ServiceKey() + ":" + protocol
 	listener := s.serviceListeners[serviceNamesKey]
 	if listener == nil {
-		listener = NewServiceInstancesChangedListener(services)
+		listener = NewServiceInstancesChangedListener(url.GetParam(constant.ApplicationKey, ""), services)
 		for _, serviceNameTmp := range services.Values() {
 			serviceName := serviceNameTmp.(string)
 			instances := s.serviceDiscovery.GetInstances(serviceName)

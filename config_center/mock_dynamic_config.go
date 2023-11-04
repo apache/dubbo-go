@@ -171,7 +171,7 @@ func (c *MockDynamicConfiguration) MockServiceConfigEvent() {
 		},
 	}
 	value, _ := yaml.Marshal(config)
-	key := "group*" + mockServiceName + ":1.0.0" + constant.ConfiguratorSuffix
+	key := mockServiceName + ":1.0.0:group" + constant.ConfiguratorSuffix
 	c.listener[key].Process(&ConfigChangeEvent{Key: key, Value: string(value), ConfigType: remoting.EventTypeAdd})
 }
 
