@@ -18,7 +18,6 @@
 package configurator
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/config_center/parser"
 	"strings"
 )
 
@@ -31,6 +30,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
+	"dubbo.apache.org/dubbo-go/v3/config_center/parser"
 )
 
 func init() {
