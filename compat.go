@@ -40,11 +40,6 @@ func compatRootConfig(c *InstanceOptions) *config.RootConfig {
 		regCompat[k] = compatRegistryConfig(v)
 	}
 
-	traCompat := make(map[string]*config.TracingConfig)
-	for k, v := range c.Tracing {
-		traCompat[k] = compatTracingConfig(v)
-	}
-
 	return &config.RootConfig{
 		Application:         compatApplicationConfig(c.Application),
 		Protocols:           proCompat,
@@ -54,7 +49,7 @@ func compatRootConfig(c *InstanceOptions) *config.RootConfig {
 		Provider:            compatProviderConfig(c.Provider),
 		Consumer:            compatConsumerConfig(c.Consumer),
 		Metric:              compatMetricConfig(c.Metric),
-		Tracing:             traCompat,
+		Otel:                compatOtelConfig(c.Otel),
 		Logger:              compatLoggerConfig(c.Logger),
 		Shutdown:            compatShutdownConfig(c.Shutdown),
 		EventDispatcherType: c.EventDispatcherType,
@@ -273,24 +268,32 @@ func compatMetricConfig(c *global.MetricConfig) *config.MetricConfig {
 		return nil
 	}
 	return &config.MetricConfig{
-		Enable:      c.Enable,
-		Port:        c.Port,
-		Path:        c.Path,
-		Prometheus:  compatMetricPrometheusConfig(c.Prometheus),
-		Aggregation: compatMetricAggregationConfig(c.Aggregation),
-		Protocol:    c.Protocol,
+		Enable:             c.Enable,
+		Port:               c.Port,
+		Path:               c.Path,
+		Prometheus:         compatMetricPrometheusConfig(c.Prometheus),
+		Aggregation:        compatMetricAggregationConfig(c.Aggregation),
+		Protocol:           c.Protocol,
+		EnableMetadata:     c.EnableMetadata,
+		EnableRegistry:     c.EnableRegistry,
+		EnableConfigCenter: c.EnableConfigCenter,
+		EnableRpc:          c.EnableRpc,
 	}
 }
 
-func compatTracingConfig(c *global.TracingConfig) *config.TracingConfig {
+func compatOtelConfig(c *global.OtelConfig) *config.OtelConfig {
 	if c == nil {
 		return nil
 	}
-	return &config.TracingConfig{
-		Name:        c.Name,
-		ServiceName: c.ServiceName,
-		Address:     c.Address,
-		UseAgent:    c.UseAgent,
+	return &config.OtelConfig{
+		TraceConfig: &config.OtelTraceConfig{
+			Enable:      c.TraceConfig.Enable,
+			Exporter:    c.TraceConfig.Exporter,
+			Endpoint:    c.TraceConfig.Endpoint,
+			Propagator:  c.TraceConfig.Propagator,
+			SampleMode:  c.TraceConfig.SampleMode,
+			SampleRatio: c.TraceConfig.SampleRatio,
+		},
 	}
 }
 
