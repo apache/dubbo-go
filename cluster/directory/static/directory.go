@@ -29,7 +29,7 @@ import (
 )
 
 type directory struct {
-	base.Directory
+	*base.Directory
 	invokers []protocol.Invoker
 }
 

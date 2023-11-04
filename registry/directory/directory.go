@@ -59,7 +59,7 @@ func init() {
 // RegistryDirectory implementation of Directory:
 // Invoker list returned from this Directory's list method have been filtered by Routers
 type RegistryDirectory struct {
-	base.Directory
+	*base.Directory
 	cacheInvokers                  []protocol.Invoker
 	invokersLock                   sync.RWMutex
 	serviceType                    string
@@ -569,8 +569,8 @@ func (l *consumerConfigurationListener) Process(event *config_center.ConfigChang
 // ServiceDiscoveryRegistryDirectory implementation of Directory:
 // Invoker list returned from this Directory's list method have been filtered by Routers
 type ServiceDiscoveryRegistryDirectory struct {
-	base.Directory
-	RegistryDirectory
+	*base.Directory
+	*RegistryDirectory
 }
 
 // NewServiceDiscoveryRegistryDirectory will create a new ServiceDiscoveryRegistryDirectory
@@ -579,7 +579,7 @@ func NewServiceDiscoveryRegistryDirectory(url *common.URL, registry registry.Reg
 	registryDirectory, _ := dic.(*RegistryDirectory)
 	return &ServiceDiscoveryRegistryDirectory{
 		Directory:         registryDirectory.Directory,
-		RegistryDirectory: *registryDirectory,
+		RegistryDirectory: registryDirectory,
 	}, err
 }
 
