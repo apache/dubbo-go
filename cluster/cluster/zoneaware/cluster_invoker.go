@@ -37,7 +37,7 @@ import (
 // 3. Evenly balance traffic between all registries based on each registry's weight.
 // 4. Pick anyone that's available.
 type zoneawareClusterInvoker struct {
-	base.BaseClusterInvoker
+	*base.BaseClusterInvoker
 }
 
 func newZoneawareClusterInvoker(directory directory.Directory) protocol.Invoker {

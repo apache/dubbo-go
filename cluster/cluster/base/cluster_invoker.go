@@ -42,8 +42,8 @@ type BaseClusterInvoker struct {
 	StickyInvoker  protocol.Invoker
 }
 
-func NewBaseClusterInvoker(directory directory.Directory) BaseClusterInvoker {
-	return BaseClusterInvoker{
+func NewBaseClusterInvoker(directory directory.Directory) *BaseClusterInvoker {
+	return &BaseClusterInvoker{
 		Directory:      directory,
 		AvailableCheck: true,
 		Destroyed:      atomic.NewBool(false),

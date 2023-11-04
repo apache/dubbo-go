@@ -32,7 +32,7 @@ import (
 )
 
 type broadcastClusterInvoker struct {
-	base.BaseClusterInvoker
+	*base.BaseClusterInvoker
 }
 
 func newBroadcastClusterInvoker(directory directory.Directory) protocol.Invoker {
