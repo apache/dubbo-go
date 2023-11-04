@@ -135,44 +135,8 @@ func (opts *ClientOptions) refer(srv common.RPCService, info *ClientInfo) {
 	updateOrCreateMeshURL(opts)
 
 	// retrieving urls from config, and appending the urls to opts.urls
-	if ref.URL != "" { // use user-specific urls
-		/*
-			 Two types of URL are allowed for opts.URL:
-				1. direct url: server IP, that is, no need for a registry anymore
-				2. registry url
-			 They will be handled in different ways:
-			 For example, we have a direct url and a registry url:
-				1. "tri://localhost:10000" is a direct url
-				2. "registry://localhost:2181" is a registry url.
-			 Then, opts.URL looks like a string separated by semicolon: "tri://localhost:10000;registry://localhost:2181".
-			 The result of urlStrings is a string array: []string{"tri://localhost:10000", "registry://localhost:2181"}.
-		*/
-		urlStrings := gxstrings.RegSplit(ref.URL, "\\s*[;]+\\s*")
-		for _, urlStr := range urlStrings {
-			serviceURL, err := common.NewURL(urlStr)
-			if err != nil {
-				panic(fmt.Sprintf("url configuration error,  please check your configuration, user specified URL %v refer error, error message is %v ", urlStr, err.Error()))
-			}
-			if serviceURL.Protocol == constant.RegistryProtocol { // serviceURL in this branch is a registry protocol
-				serviceURL.SubURL = cfgURL
-				opts.urls = append(opts.urls, serviceURL)
-			} else { // serviceURL in this branch is the target endpoint IP address
-				if serviceURL.Path == "" {
-					serviceURL.Path = "/" + ref.InterfaceName
-				}
-				// replace params of serviceURL with params of cfgUrl
-				// other stuff, e.g. IP, port, etc., are same as serviceURL
-				newURL := common.MergeURL(serviceURL, cfgURL)
-				newURL.AddParam("peer", "true")
-				opts.urls = append(opts.urls, newURL)
-			}
-		}
-	} else { // use registry configs
-		opts.urls = config.LoadRegistries(ref.RegistryIDs, opts.registriesCompat, common.CONSUMER)
-		// set url to regURLs
-		for _, regURL := range opts.urls {
-			regURL.SubURL = cfgURL
-		}
+	if err := opts.processURL(cfgURL); err != nil {
+		panic(err)
 	}
 
 	// Get invokers according to opts.urls
@@ -256,6 +220,50 @@ func (opts *ClientOptions) refer(srv common.RPCService, info *ClientInfo) {
 	// this protocol would be destroyed in graceful_shutdown
 	// please refer to (https://github.com/apache/dubbo-go/issues/2429)
 	graceful_shutdown.RegisterProtocol(ref.Protocol)
+}
+
+func (opts *ClientOptions) processURL(cfgURL *common.URL) error {
+	ref := opts.Reference
+	if ref.URL != "" { // use user-specific urls
+		/*
+			 Two types of URL are allowed for opts.URL:
+				1. direct url: server IP, that is, no need for a registry anymore
+				2. registry url
+			 They will be handled in different ways:
+			 For example, we have a direct url and a registry url:
+				1. "tri://localhost:10000" is a direct url
+				2. "registry://localhost:2181" is a registry url.
+			 Then, opts.URL looks like a string separated by semicolon: "tri://localhost:10000;registry://localhost:2181".
+			 The result of urlStrings is a string array: []string{"tri://localhost:10000", "registry://localhost:2181"}.
+		*/
+		urlStrings := gxstrings.RegSplit(ref.URL, "\\s*[;]+\\s*")
+		for _, urlStr := range urlStrings {
+			serviceURL, err := common.NewURL(urlStr, common.WithProtocol(ref.Protocol))
+			if err != nil {
+				return fmt.Errorf(fmt.Sprintf("url configuration error,  please check your configuration, user specified URL %v refer error, error message is %v ", urlStr, err.Error()))
+			}
+			if serviceURL.Protocol == constant.RegistryProtocol { // serviceURL in this branch is a registry protocol
+				serviceURL.SubURL = cfgURL
+				opts.urls = append(opts.urls, serviceURL)
+			} else { // serviceURL in this branch is the target endpoint IP address
+				if serviceURL.Path == "" {
+					serviceURL.Path = "/" + ref.InterfaceName
+				}
+				// replace params of serviceURL with params of cfgUrl
+				// other stuff, e.g. IP, port, etc., are same as serviceURL
+				newURL := common.MergeURL(serviceURL, cfgURL)
+				newURL.AddParam("peer", "true")
+				opts.urls = append(opts.urls, newURL)
+			}
+		}
+	} else { // use registry configs
+		opts.urls = config.LoadRegistries(ref.RegistryIDs, opts.registriesCompat, common.CONSUMER)
+		// set url to regURLs
+		for _, regURL := range opts.urls {
+			regURL.SubURL = cfgURL
+		}
+	}
+	return nil
 }
 
 func (opts *ClientOptions) CheckAvailable() bool {

@@ -23,7 +23,6 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/client"
-	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/server"
 )
 
@@ -61,17 +60,16 @@ func (ins *Instance) NewClient(opts ...client.ClientOption) (*client.Client, err
 	regsCfg := ins.insOpts.Registries
 	sdCfg := ins.insOpts.Shutdown
 	if conCfg != nil {
-		refCfg := &global.ReferenceConfig{
-			Check:       &conCfg.Check,
-			Filter:      conCfg.Filter,
-			Protocol:    conCfg.Protocol,
-			RegistryIDs: conCfg.RegistryIDs,
-			TracingKey:  conCfg.TracingKey,
+		if conCfg.Check {
+			cliOpts = append(cliOpts, client.WithCheck())
 		}
 		// these options come from Consumer and Root.
 		// for dubbo-go developers, referring config/ConsumerConfig.Init and config/ReferenceConfig
 		cliOpts = append(cliOpts,
-			client.SetReference(refCfg),
+			client.WithFilter(conCfg.Filter),
+			// todo(DMwangnima): deal with Protocol
+			client.WithRegistryIDs(conCfg.RegistryIDs),
+			// todo(DMwangnima): deal with TracingKey
 			client.SetConsumer(conCfg),
 		)
 	}

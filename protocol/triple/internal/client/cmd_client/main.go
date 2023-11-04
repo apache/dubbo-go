@@ -27,7 +27,7 @@ import (
 func main() {
 	// for the most brief RPC case
 	cli, err := client.NewClient(
-		client.WithURL("tri://127.0.0.1:20000"),
+		client.WithURL("127.0.0.1:20000"),
 	)
 	if err != nil {
 		panic(err)
