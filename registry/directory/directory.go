@@ -453,14 +453,18 @@ func (dir *RegistryDirectory) IsAvailable() bool {
 func (dir *RegistryDirectory) Destroy() {
 	// TODO:unregister & unsubscribe
 	dir.Directory.DoDestroy(func() {
-		err := dir.registry.UnRegister(dir.RegisteredUrl)
-		if err != nil {
-			logger.Warnf("Unregister consumer url failed, %s", dir.RegisteredUrl.String(), err)
+		if dir.RegisteredUrl != nil {
+			err := dir.registry.UnRegister(dir.RegisteredUrl)
+			if err != nil {
+				logger.Warnf("Unregister consumer url failed, %s", dir.RegisteredUrl.String(), err)
+			}
 		}
 
-		err = dir.registry.UnSubscribe(dir.SubscribedUrl, dir)
-		if err != nil {
-			logger.Warnf("Unsubscribe consumer url failed, %s", dir.RegisteredUrl.String(), err)
+		if dir.SubscribedUrl != nil {
+			err := dir.registry.UnSubscribe(dir.SubscribedUrl, dir)
+			if err != nil {
+				logger.Warnf("Unsubscribe consumer url failed, %s", dir.RegisteredUrl.String(), err)
+			}
 		}
 
 		invokers := dir.cacheInvokers

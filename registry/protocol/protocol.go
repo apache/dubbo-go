@@ -19,6 +19,7 @@ package protocol
 
 import (
 	"context"
+	"dubbo.apache.org/dubbo-go/v3/registry/directory"
 	"os"
 	"strings"
 	"sync"
@@ -159,8 +160,12 @@ func (proto *registryProtocol) Refer(url *common.URL) protocol.Invoker {
 	// This will start a new routine and listen to instance changes.
 	dic.Subscribe(registryUrl.SubURL)
 
-	regDic.RegisteredUrl = getConsumerUrlToRegistry(serviceUrl)
-	err = reg.Register(regDic.RegisteredUrl)
+	urlToReg := getConsumerUrlToRegistry(serviceUrl)
+	if regDic, ok := dic.(*directory.RegistryDirectory); ok {
+		regDic.RegisteredUrl = urlToReg
+	}
+
+	err = reg.Register(urlToReg)
 	if err != nil {
 		logger.Errorf("consumer service %v register registry %v error, error message is %s",
 			serviceUrl.String(), registryUrl.String(), err.Error())
