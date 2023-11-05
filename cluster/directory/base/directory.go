@@ -42,8 +42,8 @@ type Directory struct {
 }
 
 // NewDirectory Create BaseDirectory with URL
-func NewDirectory(url *common.URL) Directory {
-	return Directory{
+func NewDirectory(url *common.URL) *Directory {
+	return &Directory{
 		url:         url,
 		destroyed:   atomic.NewBool(false),
 		routerChain: &chain.RouterChain{},
@@ -91,8 +91,8 @@ func (dir *Directory) isProperRouter(url *common.URL) bool {
 	return false
 }
 
-// Destroy Destroy
-func (dir *Directory) Destroy(doDestroy func()) {
+// DoDestroy stop directory
+func (dir *Directory) DoDestroy(doDestroy func()) {
 	if dir.destroyed.CAS(false, true) {
 		dir.mutex.Lock()
 		doDestroy()
@@ -100,7 +100,7 @@ func (dir *Directory) Destroy(doDestroy func()) {
 	}
 }
 
-// IsAvailable Once directory init finish, it will change to true
-func (dir *Directory) IsAvailable() bool {
-	return !dir.destroyed.Load()
+// IsDestroyed Once directory init finish, it will change to true
+func (dir *Directory) IsDestroyed() bool {
+	return dir.destroyed.Load()
 }
