@@ -173,6 +173,11 @@ func (rc *RootConfig) Init() error {
 		}
 	}
 
+	// A unique application name must be set if registry enables
+	if len(rc.Registries) > 0 && constant.DefaultDubboApp == rc.Application.Name {
+		panic("Service discovery is enabled, a unique application name must be set.")
+	}
+
 	if err := rc.MetadataReport.Init(rc); err != nil {
 		return err
 	}
