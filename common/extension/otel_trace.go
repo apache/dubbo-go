@@ -22,11 +22,11 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/otel/trace"
+	"github.com/dubbogo/gost/log/logger"
 )
 
 import (
-	"github.com/dubbogo/gost/log/logger"
+	"dubbo.apache.org/dubbo-go/v3/otel/trace"
 )
 
 var traceExporterMap = make(map[string]func(config *trace.ExporterConfig) (trace.Exporter, error), 4)
