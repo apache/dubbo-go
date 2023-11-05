@@ -133,16 +133,7 @@ func (r *BaseRegistry) Destroy() {
 
 // Register implement interface registry to register
 func (r *BaseRegistry) Register(url *common.URL) error {
-	// if developer define registry port and ip, use it first.
 	start := time.Now()
-	if ipToRegistry := os.Getenv(constant.DubboIpToRegistryKey); len(ipToRegistry) > 0 {
-		url.Ip = ipToRegistry
-	} else {
-		url.Ip = common.GetLocalIp()
-	}
-	if portToRegistry := os.Getenv(constant.DubboPortToRegistryKey); len(portToRegistry) > 0 {
-		url.Port = portToRegistry
-	}
 	// todo bug when provider、consumer simultaneous initialization
 	if _, ok := r.registered.Load(url.Key()); ok {
 		return perrors.Errorf("Service {%s} has been registered", url.Key())
@@ -348,9 +339,7 @@ func sleepWait(n int) {
 
 // Subscribe :subscribe from registry, event will notify by notifyListener
 func (r *BaseRegistry) Subscribe(url *common.URL, notifyListener NotifyListener) error {
-	n := 0
 	for {
-		n++
 		if !r.IsAvailable() {
 			logger.Warnf("event listener game over.")
 			return perrors.New("BaseRegistry is not available.")
@@ -371,13 +360,12 @@ func (r *BaseRegistry) Subscribe(url *common.URL, notifyListener NotifyListener)
 			if serviceEvent, err := listener.Next(); err != nil {
 				logger.Warnf("Selector.watch() = error{%v}", perrors.WithStack(err))
 				listener.Close()
-				break
+				return nil
 			} else {
-				logger.Debugf("[Zookeeper Registry] update begin, service event: %v", serviceEvent.String())
+				logger.Debugf("[Registry] update begin, service event: %v", serviceEvent.String())
 				notifyListener.Notify(serviceEvent)
 			}
 		}
-		sleepWait(n)
 	}
 }
 
@@ -398,16 +386,10 @@ func (r *BaseRegistry) UnSubscribe(url *common.URL, notifyListener NotifyListene
 		return perrors.WithStack(err)
 	}
 
-	for {
-		if serviceEvent, err := listener.Next(); err != nil {
-			logger.Warnf("Selector.watch() = error{%v}", perrors.WithStack(err))
-			listener.Close()
-			break
-		} else {
-			logger.Debugf("[Zookeeper Registry] update begin, service event: %v", serviceEvent.String())
-			notifyListener.Notify(serviceEvent)
-		}
+	if listener != nil {
+		listener.Close()
 	}
+
 	return nil
 }
 

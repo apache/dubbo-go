@@ -54,6 +54,11 @@ type etcdMetadataReport struct {
 	root   string
 }
 
+func (e *etcdMetadataReport) GetConfigKeysByGroup(group string) (*gxset.HashSet, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 // GetAppMetadata get metadata info from etcd
 func (e *etcdMetadataReport) GetAppMetadata(metadataIdentifier *identifier.SubscriberMetadataIdentifier) (*common.MetadataInfo, error) {
 	key := e.getNodeKey(metadataIdentifier)
