@@ -99,19 +99,19 @@ func WithRatio(ratio float64) Option {
 
 func WithRatioMode() Option {
 	return func(opts *Options) {
-		opts.Otel.TraceConfig.Propagator = "ratio"
+		opts.Otel.TraceConfig.SampleMode = "ratio"
 	}
 }
 
 func WithAlwaysMode() Option {
 	return func(opts *Options) {
-		opts.Otel.TraceConfig.Propagator = "always"
+		opts.Otel.TraceConfig.SampleMode = "always"
 	}
 }
 
 func WithNeverMode() Option {
 	return func(opts *Options) {
-		opts.Otel.TraceConfig.Propagator = "never"
+		opts.Otel.TraceConfig.SampleMode = "never"
 	}
 }
 
