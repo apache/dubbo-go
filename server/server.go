@@ -34,6 +34,8 @@ import (
 	registry_exposed "dubbo.apache.org/dubbo-go/v3/registry/exposed_tmp"
 )
 
+var proServices = map[string]*ServiceDefinition{}
+
 type Server struct {
 	invoker protocol.Invoker
 	info    *ServiceInfo
@@ -57,6 +59,12 @@ type infoInvoker struct {
 	info      *ServiceInfo
 	svc       common.RPCService
 	methodMap map[string]*MethodInfo
+}
+
+type ServiceDefinition struct {
+	Handler interface{}
+	Info    *ServiceInfo
+	Opts    []ServiceOption
 }
 
 func (ii *infoInvoker) init() {
@@ -187,7 +195,21 @@ func NewServer(opts ...ServerOption) (*Server, error) {
 	if err := newSrvOpts.init(opts...); err != nil {
 		return nil, err
 	}
-	return &Server{
+
+	srv := &Server{
 		cfg: newSrvOpts,
-	}, nil
+	}
+
+	for _, service := range proServices {
+		err := srv.Register(service.Handler, service.Info, service.Opts...)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return srv, nil
+}
+
+func SetProServices(sd *ServiceDefinition) {
+	proServices[sd.Info.InterfaceName] = sd
 }

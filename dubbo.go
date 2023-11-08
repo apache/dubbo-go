@@ -131,9 +131,9 @@ func (ins *Instance) NewServer(opts ...server.ServerOption) (*server.Server, err
 	srvOpts = append(srvOpts, opts...)
 
 	srv, err := server.NewServer(srvOpts...)
+
 	if err != nil {
 		return nil, err
 	}
-
 	return srv, nil
 }
