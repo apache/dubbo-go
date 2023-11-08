@@ -30,6 +30,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
+	"dubbo.apache.org/dubbo-go/v3/config_center/parser"
 )
 
 func init() {
@@ -57,13 +58,19 @@ func (c *overrideConfigurator) Configure(url *common.URL) {
 	// branch for version 2.7.x
 	apiVersion := c.configuratorUrl.GetParam(constant.ConfigVersionKey, "")
 	if len(apiVersion) != 0 {
+		var host string
 		currentSide := url.GetParam(constant.SideKey, "")
 		configuratorSide := c.configuratorUrl.GetParam(constant.SideKey, "")
-		if currentSide == configuratorSide && common.DubboRole[common.CONSUMER] == currentSide && c.configuratorUrl.Port == "0" {
-			localIP := common.GetLocalIp()
-			c.configureIfMatch(localIP, url)
-		} else if currentSide == configuratorSide && common.DubboRole[common.PROVIDER] == currentSide && c.configuratorUrl.Port == url.Port {
-			c.configureIfMatch(url.Ip, url)
+		if currentSide == configuratorSide && common.DubboRole[common.CONSUMER] == currentSide {
+			host = common.GetLocalIp()
+		} else if currentSide == configuratorSide && common.DubboRole[common.PROVIDER] == currentSide {
+			host = url.Ip
+		}
+
+		if strings.HasPrefix(apiVersion, constant.APIVersion) {
+			c.configureIfMatchV3(host, url)
+		} else {
+			c.configureIfMatch(host, url)
 		}
 	} else {
 		// branch for version 2.6.x and less
@@ -71,20 +78,43 @@ func (c *overrideConfigurator) Configure(url *common.URL) {
 	}
 }
 
+// configureIfMatch
+func (c *overrideConfigurator) configureIfMatchV3(host string, url *common.URL) {
+	conditionKeys := getConditionKeys()
+	matcher := c.configuratorUrl.GetAttribute(constant.MatchCondition)
+	if matcher != nil {
+		conditionMatcher := matcher.(*parser.ConditionMatch)
+		if conditionMatcher.IsMatch(host, url) {
+			configUrl := c.configuratorUrl.CloneExceptParams(conditionKeys)
+			url.SetParams(configUrl.GetParams())
+		}
+	}
+}
+
+func (c *overrideConfigurator) configureDeprecated(url *common.URL) {
+	// If override url has port, means it is a provider address. We want to control a specific provider with this override url, it may take effect on the specific provider instance or on consumers holding this provider instance.
+	if c.configuratorUrl.Port != "0" {
+		if url.Port == c.configuratorUrl.Port {
+			c.configureIfMatch(url.Ip, url)
+		}
+	} else {
+		// override url don't have a port, means the ip override url specify is a consumer address or 0.0.0.0
+		// 1.If it is a consumer ip address, the intention is to control a specific consumer instance, it must takes effect at the consumer side, any provider received this override url should ignore;
+		// 2.If the ip is 0.0.0.0, this override url can be used on consumer, and also can be used on provider
+		if url.GetParam(constant.SideKey, "") == common.DubboRole[common.CONSUMER] {
+			localIP := common.GetLocalIp()
+			c.configureIfMatch(localIP, url)
+		} else {
+			c.configureIfMatch(constant.AnyHostValue, url)
+		}
+	}
+}
+
 func (c *overrideConfigurator) configureIfMatchInternal(url *common.URL) {
 	configApp := c.configuratorUrl.GetParam(constant.ApplicationKey, c.configuratorUrl.Username)
 	currentApp := url.GetParam(constant.ApplicationKey, url.Username)
 	if len(configApp) == 0 || constant.AnyValue == configApp || configApp == currentApp {
-		conditionKeys := gxset.NewSet()
-		conditionKeys.Add(constant.CategoryKey)
-		conditionKeys.Add(constant.CheckKey)
-		conditionKeys.Add(constant.EnabledKey)
-		conditionKeys.Add(constant.GroupKey)
-		conditionKeys.Add(constant.VersionKey)
-		conditionKeys.Add(constant.ApplicationKey)
-		conditionKeys.Add(constant.SideKey)
-		conditionKeys.Add(constant.ConfigVersionKey)
-		conditionKeys.Add(constant.CompatibleConfigKey)
+		conditionKeys := getConditionKeys()
 		returnUrl := false
 		c.configuratorUrl.RangeParams(func(k, _ string) bool {
 			value := c.configuratorUrl.GetParam(k, "")
@@ -115,21 +145,16 @@ func (c *overrideConfigurator) configureIfMatch(host string, url *common.URL) {
 	}
 }
 
-func (c *overrideConfigurator) configureDeprecated(url *common.URL) {
-	// If override url has port, means it is a provider address. We want to control a specific provider with this override url, it may take effect on the specific provider instance or on consumers holding this provider instance.
-	if c.configuratorUrl.Port != "0" {
-		if url.Port == c.configuratorUrl.Port {
-			c.configureIfMatch(url.Ip, url)
-		}
-	} else {
-		// override url don't have a port, means the ip override url specify is a consumer address or 0.0.0.0
-		// 1.If it is a consumer ip address, the intention is to control a specific consumer instance, it must takes effect at the consumer side, any provider received this override url should ignore;
-		// 2.If the ip is 0.0.0.0, this override url can be used on consumer, and also can be used on provider
-		if url.GetParam(constant.SideKey, "") == common.DubboRole[common.CONSUMER] {
-			localIP := common.GetLocalIp()
-			c.configureIfMatch(localIP, url)
-		} else {
-			c.configureIfMatch(constant.AnyHostValue, url)
-		}
-	}
+func getConditionKeys() *gxset.HashSet {
+	conditionKeys := gxset.NewSet()
+	conditionKeys.Add(constant.CategoryKey)
+	conditionKeys.Add(constant.CheckKey)
+	conditionKeys.Add(constant.EnabledKey)
+	conditionKeys.Add(constant.GroupKey)
+	conditionKeys.Add(constant.VersionKey)
+	conditionKeys.Add(constant.ApplicationKey)
+	conditionKeys.Add(constant.SideKey)
+	conditionKeys.Add(constant.ConfigVersionKey)
+	conditionKeys.Add(constant.CompatibleConfigKey)
+	return conditionKeys
 }
