@@ -1,0 +1,10 @@
+# dubbo server yaml configure file
+dubbo:
+  registries:
+    demoZK:
+      protocol: zookeeper
+      address: 127.0.0.1:2181
+  protocols:
+    tripleProtocol:
+      name: tri
+      port: 20000

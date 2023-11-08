@@ -66,9 +66,8 @@ func Load(opts ...LoaderConfOption) error {
 	if err := instanceOptions.init(); err != nil {
 		return err
 	}
-
-	// todo(DMwangnima): use independent Consumer and Provider logic
-	return nil
+	instance := &Instance{insOpts: instanceOptions}
+	return instance.Start()
 }
 
 type loaderConf struct {

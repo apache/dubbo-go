@@ -194,7 +194,9 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3"
 	"dubbo.apache.org/dubbo-go/v3/client"
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	"dubbo.apache.org/dubbo-go/v3/server"
@@ -262,6 +264,10 @@ func NewGreetService(cli *client.Client) (GreetService, error) {
 	return &GreetServiceImpl{
 		cli: cli,
 	}, nil
+}
+
+func SetConsumerService(srv common.RPCService) {
+	dubbo.SetConsumerServiceWithInfo(srv,&GreetService_ClientInfo)
 }
 
 // GreetServiceImpl implements GreetService.
@@ -398,7 +404,7 @@ var GreetService_ClientInfo = client.ClientInfo{
 	InterfaceName: "greet.GreetService",
 	MethodNames:   []string{"Greet","GreetStream","GreetClientStream","GreetServerStream"},
 	ClientInjectFunc: func(dubboCliRaw interface{}, cli *client.Client) {
-		dubboCli := dubboCliRaw.(GreetServiceImpl)
+		dubboCli := dubboCliRaw.(*GreetServiceImpl)
 		dubboCli.cli = cli
 	},
 }
@@ -413,6 +419,10 @@ type GreetServiceHandler interface {
 
 func RegisterGreetServiceHandler(srv *server.Server, hdlr GreetServiceHandler, opts ...server.ServiceOption) error {
 	return srv.Register(hdlr, &GreetService_ServiceInfo, opts...)
+}
+
+func SetProviderService(srv common.RPCService)  {
+	dubbo.SetProviderServiceWithInfo(srv,&GreetService_ServiceInfo)
 }
 
 type GreetService_GreetStreamServer interface {

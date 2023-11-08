@@ -161,7 +161,9 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3"
 	"dubbo.apache.org/dubbo-go/v3/client"
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	"dubbo.apache.org/dubbo-go/v3/server"
@@ -224,6 +226,10 @@ func New{{.ServiceName}}(cli *client.Client) ({{.ServiceName}}, error) {
 	return &{{.ServiceName}}Impl{
 		cli: cli,
 	}, nil
+}
+
+func SetConsumerService(srv common.RPCService) {
+	dubbo.SetConsumerServiceWithInfo(srv,&{{.ServiceName}}_ClientInfo)
 }
 
 // {{.ServiceName}}Impl implements {{.ServiceName}}.
@@ -364,7 +370,7 @@ const MethodInfoTpl = `{{$t := .}}{{range $i, $s := .Services}}var {{.ServiceNam
 	InterfaceName: "{{$t.Package}}.{{.ServiceName}}",
 	MethodNames:   []string{ {{- range $j, $m := .Methods}}"{{.MethodName}}"{{if last $j (len $s.Methods)}}{{else}},{{end}}{{end -}} },
 	ClientInjectFunc: func(dubboCliRaw interface{}, cli *client.Client) {
-		dubboCli := dubboCliRaw.({{$s.ServiceName}}Impl)
+		dubboCli := dubboCliRaw.(*{{$s.ServiceName}}Impl)
 		dubboCli.cli = cli
 	},
 }{{end}}
@@ -378,6 +384,10 @@ type {{.ServiceName}}Handler interface { {{- range $s.Methods}}
 
 func Register{{.ServiceName}}Handler(srv *server.Server, hdlr {{.ServiceName}}Handler, opts ...server.ServiceOption) error {
 	return srv.Register(hdlr, &{{.ServiceName}}_ServiceInfo, opts...)
+}
+
+func SetProviderService(srv common.RPCService)  {
+	dubbo.SetProviderServiceWithInfo(srv,&{{.ServiceName}}_ServiceInfo)
 }{{end}}
 `
 

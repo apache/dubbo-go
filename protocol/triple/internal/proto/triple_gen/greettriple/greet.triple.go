@@ -27,10 +27,10 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3"
 	client "dubbo.apache.org/dubbo-go/v3/client"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto"
 	triple_protocol "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	"dubbo.apache.org/dubbo-go/v3/server"
@@ -38,7 +38,7 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file and the Triple package
 // are compatible. If you get a compiler error that this constant is not defined, this code was
-// generated with a version ofTtriple newer than the one compiled into your binary. You can fix the
+// generated with a version of Triple newer than the one compiled into your binary. You can fix the
 // problem by either regenerating this code with an older version of Triple or updating the Triple
 // version compiled into your binary.
 const _ = triple_protocol.IsAtLeastVersion0_1_0
@@ -49,7 +49,7 @@ const (
 )
 
 // These constants are the fully-qualified names of the RPCs defined in this package. They're
-// exposed at runtime as Spec.Procedure and as the final two segments of the HTTP route.
+// exposed at runtime as procedure and as the final two segments of the HTTP route.
 //
 // Note that these are different from the fully-qualified method names used by
 // google.golang.org/protobuf/reflect/protoreflect. To convert from these constants to
@@ -58,22 +58,20 @@ const (
 const (
 	// GreetServiceGreetProcedure is the fully-qualified name of the GreetService's Greet RPC.
 	GreetServiceGreetProcedure = "/greet.GreetService/Greet"
-	// GreetServiceGreetStreamProcedure is the fully-qualified name of the GreetService's GreetStream
-	// RPC.
+	// GreetServiceGreetStreamProcedure is the fully-qualified name of the GreetService's GreetStream RPC.
 	GreetServiceGreetStreamProcedure = "/greet.GreetService/GreetStream"
-	// GreetServiceGreetClientStreamProcedure is the fully-qualified name of the GreetService's
-	// GreetClientStream RPC.
+	// GreetServiceGreetClientStreamProcedure is the fully-qualified name of the GreetService's GreetClientStream RPC.
 	GreetServiceGreetClientStreamProcedure = "/greet.GreetService/GreetClientStream"
-	// GreetServiceGreetServerStreamProcedure is the fully-qualified name of the GreetService's
-	// GreetServerStream RPC.
+	// GreetServiceGreetServerStreamProcedure is the fully-qualified name of the GreetService's GreetServerStream RPC.
 	GreetServiceGreetServerStreamProcedure = "/greet.GreetService/GreetServerStream"
 )
 
 var (
+	_ GreetService = (*GreetServiceImpl)(nil)
+
 	_ GreetService_GreetStreamClient       = (*GreetServiceGreetStreamClient)(nil)
 	_ GreetService_GreetClientStreamClient = (*GreetServiceGreetClientStreamClient)(nil)
 	_ GreetService_GreetServerStreamClient = (*GreetServiceGreetServerStreamClient)(nil)
-	_ GreetService                         = (*GreetServiceImpl)(nil)
 
 	_ GreetService_GreetStreamServer       = (*GreetServiceGreetStreamServer)(nil)
 	_ GreetService_GreetClientStreamServer = (*GreetServiceGreetClientStreamServer)(nil)
@@ -89,9 +87,6 @@ type GreetService interface {
 }
 
 // NewGreetService constructs a client for the greet.GreetService service.
-//
-// The URL supplied here should be the base URL for the Triple server (for example,
-// http://api.acme.com or https://acme.com/grpc).
 func NewGreetService(cli *client.Client) (GreetService, error) {
 	if err := cli.Init(&GreetService_ClientInfo); err != nil {
 		return nil, err
@@ -102,7 +97,7 @@ func NewGreetService(cli *client.Client) (GreetService, error) {
 }
 
 func SetConsumerService(srv common.RPCService) {
-	config.SetClientInfoService(&GreetService_ClientInfo, srv)
+	dubbo.SetConsumerServiceWithInfo(srv, &GreetService_ClientInfo)
 }
 
 // GreetServiceImpl implements GreetService.
@@ -238,7 +233,7 @@ var GreetService_ClientInfo = client.ClientInfo{
 	InterfaceName: "greet.GreetService",
 	MethodNames:   []string{"Greet", "GreetStream", "GreetClientStream", "GreetServerStream"},
 	ClientInjectFunc: func(dubboCliRaw interface{}, cli *client.Client) {
-		dubboCli := dubboCliRaw.(GreetServiceImpl)
+		dubboCli := dubboCliRaw.(*GreetServiceImpl)
 		dubboCli.cli = cli
 	},
 }
@@ -253,6 +248,10 @@ type GreetServiceHandler interface {
 
 func RegisterGreetServiceHandler(srv *server.Server, hdlr GreetServiceHandler, opts ...server.ServiceOption) error {
 	return srv.Register(hdlr, &GreetService_ServiceInfo, opts...)
+}
+
+func SetProviderService(srv common.RPCService) {
+	dubbo.SetProviderServiceWithInfo(srv, &GreetService_ServiceInfo)
 }
 
 type GreetService_GreetStreamServer interface {
