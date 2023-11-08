@@ -277,7 +277,6 @@ func compatMetricConfig(c *global.MetricConfig) *config.MetricConfig {
 		EnableMetadata:     c.EnableMetadata,
 		EnableRegistry:     c.EnableRegistry,
 		EnableConfigCenter: c.EnableConfigCenter,
-		EnableRpc:          c.EnableRpc,
 	}
 }
 
