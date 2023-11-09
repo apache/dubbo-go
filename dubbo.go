@@ -148,7 +148,6 @@ func (ins *Instance) NewServer(opts ...server.ServerOption) (*server.Server, err
 
 func (ins *Instance) start() (err error) {
 	startOnce.Do(func() {
-		// todo gracefulShutdown
 		if err = ins.loadConsumer(); err != nil {
 			return
 		}
@@ -171,7 +170,8 @@ func (ins *Instance) loadProvider() error {
 			return err
 		}
 	}
-	return srv.Start()
+	go srv.Serve()
+	return err
 }
 
 // LoadConsumer loads the service consumer.
