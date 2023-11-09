@@ -67,7 +67,7 @@ func Load(opts ...LoaderConfOption) error {
 		return err
 	}
 	instance := &Instance{insOpts: instanceOptions}
-	return instance.Start()
+	return instance.start()
 }
 
 type loaderConf struct {

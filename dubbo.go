@@ -146,13 +146,13 @@ func (ins *Instance) NewServer(opts ...server.ServerOption) (*server.Server, err
 	return srv, nil
 }
 
-func (ins *Instance) Start() (err error) {
+func (ins *Instance) start() (err error) {
 	startOnce.Do(func() {
 		// todo gracefulShutdown
-		if err = ins.LoadConsumer(); err != nil {
+		if err = ins.loadConsumer(); err != nil {
 			return
 		}
-		if err = ins.LoadProvider(); err != nil {
+		if err = ins.loadProvider(); err != nil {
 			return
 		}
 	})
@@ -160,7 +160,7 @@ func (ins *Instance) Start() (err error) {
 }
 
 // LoadProvider loads the service provider.
-func (ins *Instance) LoadProvider() error {
+func (ins *Instance) loadProvider() error {
 	srv, err := ins.NewServer()
 	if err != nil {
 		return err
@@ -175,7 +175,7 @@ func (ins *Instance) LoadProvider() error {
 }
 
 // LoadConsumer loads the service consumer.
-func (ins *Instance) LoadConsumer() error {
+func (ins *Instance) loadConsumer() error {
 	cli, err := ins.NewClient()
 	if err != nil {
 		return err
