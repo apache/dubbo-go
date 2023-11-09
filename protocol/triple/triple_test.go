@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -35,6 +36,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/client"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
@@ -52,9 +54,10 @@ import (
 )
 
 const (
-	triplePort = "20000"
-	dubbo3Port = "20001"
+	triplePort = "21000"
+	dubbo3Port = "21001"
 	listenAddr = "0.0.0.0"
+	localAddr  = "127.0.0.1"
 	name       = "triple"
 )
 
@@ -153,47 +156,81 @@ func TestMain(m *testing.M) {
 }
 
 func TestInvoke(t *testing.T) {
-	invokeFunc := func(t *testing.T, port string, interfaceName string, methods []string) {
-		url := common.NewURLWithOptions(
+	tripleInvokerInit := func(location string, port string, interfaceName string, methods []string, info *client.ClientInfo) (protocol.Invoker, error) {
+		newURL := common.NewURLWithOptions(
 			common.WithInterface(interfaceName),
-			common.WithLocation("127.0.0.1"),
+			common.WithLocation(location),
 			common.WithPort(port),
 			common.WithMethods(methods),
-			common.WithProtocol(TRIPLE),
+			common.WithAttribute(constant.ClientInfoKey, info),
 		)
-		invoker, err := NewTripleInvoker(url)
-		if err != nil {
-			t.Fatal(err)
+		return NewTripleInvoker(newURL)
+	}
+	dubbo3InvokerInit := func(location string, port string, interfaceName string, svc common.RPCService) (protocol.Invoker, error) {
+		newURL := common.NewURLWithOptions(
+			common.WithInterface(interfaceName),
+			common.WithLocation(location),
+			common.WithPort(port),
+		)
+		// dubbo3 needs to retrieve ConsumerService directly
+		config.SetConsumerServiceByInterfaceName(interfaceName, svc)
+		return NewDubbo3Invoker(newURL)
+	}
+	tripleInvocationInit := func(methodName string, rawParams []interface{}, callType string) protocol.Invocation {
+		newInv := invocation_impl.NewRPCInvocationWithOptions(
+			invocation_impl.WithMethodName(methodName),
+			invocation_impl.WithParameterRawValues(rawParams),
+		)
+		newInv.SetAttribute(constant.CallTypeKey, callType)
+		return newInv
+	}
+	dubbo3InvocationInit := func(methodName string, params []reflect.Value, reply interface{}) protocol.Invocation {
+		newInv := invocation_impl.NewRPCInvocationWithOptions(
+			invocation_impl.WithMethodName(methodName),
+			invocation_impl.WithParameterValues(params),
+		)
+		newInv.SetReply(reply)
+		return newInv
+	}
+	dubbo3ReplyInit := func(fieldType reflect.Type) interface{} {
+		var reply reflect.Value
+		replyType := fieldType.Out(0)
+		if replyType.Kind() == reflect.Ptr {
+			reply = reflect.New(replyType.Elem())
+		} else {
+			reply = reflect.New(replyType)
 		}
+		return reply.Interface()
+	}
+
+	invokeTripleCodeFunc := func(t *testing.T, invoker protocol.Invoker) {
 		tests := []struct {
-			desc       string
 			methodName string
-			params     []interface{}
-			invoke     func(t *testing.T, params []interface{}, res protocol.Result)
 			callType   string
+			rawParams  []interface{}
+			validate   func(t *testing.T, rawParams []interface{}, res protocol.Result)
 		}{
 			{
-				desc:       "Unary",
 				methodName: "Greet",
-				params: []interface{}{
+				callType:   constant.CallUnary,
+				rawParams: []interface{}{
 					&greet.GreetRequest{
 						Name: name,
 					},
 					&greet.GreetResponse{},
 				},
-				invoke: func(t *testing.T, params []interface{}, res protocol.Result) {
+				validate: func(t *testing.T, params []interface{}, res protocol.Result) {
 					assert.Nil(t, res.Result())
 					assert.Nil(t, res.Error())
 					req := params[0].(*greet.GreetRequest)
 					resp := params[1].(*greet.GreetResponse)
 					assert.Equal(t, req.Name, resp.Greeting)
 				},
-				callType: constant.CallUnary,
 			},
 			{
-				desc:       "ClientStream",
 				methodName: "GreetClientStream",
-				invoke: func(t *testing.T, params []interface{}, res protocol.Result) {
+				callType:   constant.CallClientStream,
+				validate: func(t *testing.T, params []interface{}, res protocol.Result) {
 					assert.Nil(t, res.Error())
 					streamRaw, ok := res.Result().(*triple_protocol.ClientStreamForClient)
 					assert.True(t, ok)
@@ -211,17 +248,16 @@ func TestInvoke(t *testing.T) {
 					assert.Nil(t, err)
 					assert.Equal(t, expectStr, resp.Greeting)
 				},
-				callType: constant.CallClientStream,
 			},
 			{
-				desc:       "ServerStream",
 				methodName: "GreetServerStream",
-				params: []interface{}{
+				callType:   constant.CallServerStream,
+				rawParams: []interface{}{
 					&greet.GreetServerStreamRequest{
 						Name: "dubbo",
 					},
 				},
-				invoke: func(t *testing.T, params []interface{}, res protocol.Result) {
+				validate: func(t *testing.T, params []interface{}, res protocol.Result) {
 					assert.Nil(t, res.Error())
 					req := params[0].(*greet.GreetServerStreamRequest)
 					streamRaw, ok := res.Result().(*triple_protocol.ServerStreamForClient)
@@ -236,12 +272,11 @@ func TestInvoke(t *testing.T) {
 						assert.True(t, true, errors.Is(stream.Err(), io.EOF))
 					}
 				},
-				callType: constant.CallServerStream,
 			},
 			{
-				desc:       "BidiStream",
 				methodName: "GreetStream",
-				invoke: func(t *testing.T, params []interface{}, res protocol.Result) {
+				callType:   constant.CallBidiStream,
+				validate: func(t *testing.T, params []interface{}, res protocol.Result) {
 					assert.Nil(t, res.Error())
 					streamRaw, ok := res.Result().(*triple_protocol.BidiStreamForClient)
 					assert.True(t, ok)
@@ -256,37 +291,130 @@ func TestInvoke(t *testing.T) {
 					assert.Nil(t, stream.CloseRequest())
 					assert.Nil(t, stream.CloseResponse())
 				},
-				callType: constant.CallBidiStream,
 			},
 		}
 
 		for _, test := range tests {
-			t.Run(test.desc, func(t *testing.T) {
-				inv := invocation_impl.NewRPCInvocationWithOptions(
-					invocation_impl.WithMethodName(test.methodName),
-					// todo: process opts
-					invocation_impl.WithParameterRawValues(test.params),
-				)
-				inv.SetAttribute(constant.CallTypeKey, test.callType)
+			t.Run(test.methodName, func(t *testing.T) {
+				inv := tripleInvocationInit(test.methodName, test.rawParams, test.callType)
 				res := invoker.Invoke(context.Background(), inv)
-				test.invoke(t, test.params, res)
+				test.validate(t, test.rawParams, res)
 			})
 		}
 	}
-	t.Run("invoke server code generated by triple", func(t *testing.T) {
-		invokeFunc(t, triplePort, greettriple.GreetService_ClientInfo.InterfaceName, greettriple.GreetService_ClientInfo.MethodNames)
-	})
-	t.Run("invoke server code generated by dubbo3", func(t *testing.T) {
-		desc := dubbo3_greet.GreetService_ServiceDesc
-		var methods []string
-		for _, method := range desc.Methods {
-			methods = append(methods, method.MethodName)
-		}
-		for _, stream := range desc.Streams {
-			methods = append(methods, stream.StreamName)
+	invokeDubbo3CodeFunc := func(t *testing.T, invoker protocol.Invoker, svc common.RPCService) {
+		tests := []struct {
+			methodName string
+			params     []reflect.Value
+			validate   func(t *testing.T, params []reflect.Value, res protocol.Result)
+		}{
+			{
+				methodName: "Greet",
+				params: []reflect.Value{
+					reflect.ValueOf(&greet.GreetRequest{
+						Name: name,
+					}),
+				},
+				validate: func(t *testing.T, Params []reflect.Value, res protocol.Result) {
+					assert.Nil(t, res.Error())
+					req := Params[0].Interface().(*greet.GreetRequest)
+					resp := res.Result().(*greet.GreetResponse)
+					assert.Equal(t, req.Name, resp.Greeting)
+				},
+			},
+			{
+				methodName: "GreetClientStream",
+				validate: func(t *testing.T, reflectParams []reflect.Value, res protocol.Result) {
+					assert.Nil(t, res.Error())
+					stream, ok := res.Result().(*dubbo3_greet.GreetService_GreetClientStreamClient)
+					assert.True(t, ok)
+
+					var expectRes []string
+					times := 5
+					for i := 1; i <= times; i++ {
+						expectRes = append(expectRes, name)
+						err := (*stream).Send(&greet.GreetClientStreamRequest{Name: name})
+						assert.Nil(t, err)
+					}
+					expectStr := strings.Join(expectRes, ",")
+					resp, err := (*stream).CloseAndRecv()
+					assert.Nil(t, err)
+					assert.Equal(t, expectStr, resp.Greeting)
+				},
+			},
+			{
+				methodName: "GreetServerStream",
+				params: []reflect.Value{
+					reflect.ValueOf(&greet.GreetServerStreamRequest{
+						Name: "dubbo",
+					}),
+				},
+				validate: func(t *testing.T, params []reflect.Value, res protocol.Result) {
+					assert.Nil(t, res.Error())
+					req := params[0].Interface().(*greet.GreetServerStreamRequest)
+					stream, ok := res.Result().(*dubbo3_greet.GreetService_GreetServerStreamClient)
+					assert.True(t, ok)
+					times := 5
+					for i := 1; i <= times; i++ {
+						msg, err := (*stream).Recv()
+						assert.Nil(t, err)
+						assert.Equal(t, req.Name, msg.Greeting)
+					}
+				},
+			},
+			{
+				methodName: "GreetStream",
+				validate: func(t *testing.T, params []reflect.Value, res protocol.Result) {
+					assert.Nil(t, res.Error())
+					stream, ok := res.Result().(*dubbo3_greet.GreetService_GreetStreamClient)
+					assert.True(t, ok)
+					for i := 1; i <= 5; i++ {
+						err := (*stream).Send(&greet.GreetStreamRequest{Name: name})
+						assert.Nil(t, err)
+						resp, err := (*stream).Recv()
+						assert.Nil(t, err)
+						assert.Equal(t, name, resp.Greeting)
+					}
+					assert.Nil(t, (*stream).CloseSend())
+				},
+			},
 		}
 
-		invokeFunc(t, dubbo3Port, desc.ServiceName, methods)
-	})
+		svcPtrVal := reflect.ValueOf(svc)
+		svcVal := svcPtrVal.Elem()
+		svcType := svcVal.Type()
+		for _, test := range tests {
+			t.Run(test.methodName, func(t *testing.T) {
+				funcField, ok := svcType.FieldByName(test.methodName)
+				assert.True(t, ok)
+				reply := dubbo3ReplyInit(funcField.Type)
+				inv := dubbo3InvocationInit(test.methodName, test.params, reply)
+				res := invoker.Invoke(context.Background(), inv)
+				test.validate(t, test.params, res)
+			})
+		}
+	}
 
+	t.Run("triple2triple", func(t *testing.T) {
+		invoker, err := tripleInvokerInit(localAddr, triplePort, greettriple.GreetService_ClientInfo.InterfaceName, greettriple.GreetService_ClientInfo.MethodNames, &greettriple.GreetService_ClientInfo)
+		assert.Nil(t, err)
+		invokeTripleCodeFunc(t, invoker)
+	})
+	t.Run("triple2dubbo3", func(t *testing.T) {
+		invoker, err := tripleInvokerInit(localAddr, dubbo3Port, greettriple.GreetService_ClientInfo.InterfaceName, greettriple.GreetService_ClientInfo.MethodNames, &greettriple.GreetService_ClientInfo)
+		assert.Nil(t, err)
+		invokeTripleCodeFunc(t, invoker)
+	})
+	t.Run("dubbo32triple", func(t *testing.T) {
+		svc := new(dubbo3_greet.GreetServiceClientImpl)
+		invoker, err := dubbo3InvokerInit(localAddr, triplePort, dubbo3_greet.GreetService_ServiceDesc.ServiceName, svc)
+		assert.Nil(t, err)
+		invokeDubbo3CodeFunc(t, invoker, svc)
+	})
+	t.Run("dubbo32dubbo3", func(t *testing.T) {
+		svc := new(dubbo3_greet.GreetServiceClientImpl)
+		invoker, err := dubbo3InvokerInit(localAddr, dubbo3Port, dubbo3_greet.GreetService_ServiceDesc.ServiceName, svc)
+		assert.Nil(t, err)
+		invokeDubbo3CodeFunc(t, invoker, svc)
+	})
 }

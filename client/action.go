@@ -125,6 +125,9 @@ func (opts *ClientOptions) refer(srv common.RPCService, info *ClientInfo) {
 		common.WithParamsValue(constant.BeanNameKey, opts.id),
 		common.WithParamsValue(constant.MetadataTypeKey, opts.metaDataType),
 	)
+	if info != nil {
+		cfgURL.SetAttribute(constant.ClientInfoKey, info)
+	}
 
 	if ref.ForceTag {
 		cfgURL.AddParam(constant.ForceUseTag, "true")

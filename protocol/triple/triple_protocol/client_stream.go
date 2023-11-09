@@ -47,6 +47,8 @@ func (c *ClientStreamForClient) Peer() Peer {
 // Triple and gRPC protocols. Applications shouldn't write them.
 func (c *ClientStreamForClient) RequestHeader() http.Header {
 	if c.err != nil {
+		// todo(DMwangnima): since there is error in ClientStreamForClient, maybe we should tell user other than
+		// returning a empty Header
 		return http.Header{}
 	}
 	return c.conn.RequestHeader()
@@ -56,12 +58,13 @@ func (c *ClientStreamForClient) RequestHeader() http.Header {
 // headers.
 //
 // If the server returns an error, Send returns an error that wraps [io.EOF].
-// Clients should check for case using the standard library's [errors.Is] and
-// unmarshal the error using CloseAndReceive.
+// Clients should check for case using the standard library's [errors.Is] or
+// [IsEnded] and unmarshal the error using CloseAndReceive.
 func (c *ClientStreamForClient) Send(request interface{}) error {
 	if c.err != nil {
 		return c.err
 	}
+	// todo(DMwangnima): remove this redundant statement
 	if request == nil {
 		return c.conn.Send(nil)
 	}
@@ -109,6 +112,7 @@ type ServerStreamForClient struct {
 // either by reaching the end or by encountering an unexpected error. After
 // Receive returns false, the Err method will return any unexpected error
 // encountered.
+// todo(DMwangnima): add classic usage
 func (s *ServerStreamForClient) Receive(msg interface{}) bool {
 	if s.constructErr != nil || s.receiveErr != nil {
 		return false
@@ -120,7 +124,7 @@ func (s *ServerStreamForClient) Receive(msg interface{}) bool {
 
 // Msg returns the most recent message unmarshaled by a call to Receive.
 func (s *ServerStreamForClient) Msg() interface{} {
-	// todo:// processing nil pointer
+	// todo(DMwangnima): processing nil pointer
 	//if s.msg == nil {
 	//	s.msg = new(Res)
 	//}
@@ -142,6 +146,8 @@ func (s *ServerStreamForClient) Err() error {
 // the first call to Receive returns.
 func (s *ServerStreamForClient) ResponseHeader() http.Header {
 	if s.constructErr != nil {
+		// todo(DMwangnima): since there is error in ServerStreamForClient, maybe we should tell user other than
+		// returning an empty Header
 		return http.Header{}
 	}
 	return s.conn.ResponseHeader()
@@ -151,6 +157,8 @@ func (s *ServerStreamForClient) ResponseHeader() http.Header {
 // aren't fully populated until Receive() returns an error wrapping io.EOF.
 func (s *ServerStreamForClient) ResponseTrailer() http.Header {
 	if s.constructErr != nil {
+		// todo(DMwangnima): since there is error in ServerStreamForClient, maybe we should tell user other than
+		// returning an empty Header
 		return http.Header{}
 	}
 	return s.conn.ResponseTrailer()
@@ -197,13 +205,15 @@ func (b *BidiStreamForClient) Peer() Peer {
 // Triple and gRPC protocols. Applications shouldn't write them.
 func (b *BidiStreamForClient) RequestHeader() http.Header {
 	if b.err != nil {
+		// todo(DMwangnima): since there is error in BidiStreamForClient, maybe we should tell user other than
+		// returning an empty Header
 		return http.Header{}
 	}
 	return b.conn.RequestHeader()
 }
 
 // Send a message to the server. The first call to Send also sends the request
-// headers. To send just the request headers, without a body, call Send with a
+// headers. To send just the request headers without a body, call Send with a
 // nil pointer.
 //
 // If the server returns an error, Send returns an error that wraps [io.EOF].
@@ -213,6 +223,7 @@ func (b *BidiStreamForClient) Send(msg interface{}) error {
 	if b.err != nil {
 		return b.err
 	}
+	// todo(DMwangnima): remove this redundant statement
 	if msg == nil {
 		return b.conn.Send(nil)
 	}
@@ -251,6 +262,8 @@ func (b *BidiStreamForClient) CloseResponse() error {
 // the first call to Receive returns.
 func (b *BidiStreamForClient) ResponseHeader() http.Header {
 	if b.err != nil {
+		// todo(DMwangnima): since there is error in BidiStreamForClient, maybe we should tell user other than
+		// returning an empty Header
 		return http.Header{}
 	}
 	return b.conn.ResponseHeader()
@@ -260,6 +273,8 @@ func (b *BidiStreamForClient) ResponseHeader() http.Header {
 // aren't fully populated until Receive() returns an error wrapping [io.EOF].
 func (b *BidiStreamForClient) ResponseTrailer() http.Header {
 	if b.err != nil {
+		// todo(DMwangnima): since there is error in BidiStreamForClient, maybe we should tell user other than
+		// returning an empty Header
 		return http.Header{}
 	}
 	return b.conn.ResponseTrailer()

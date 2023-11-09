@@ -40,7 +40,7 @@ const (
 	tripleUnaryTrailerPrefix           = "Trailer-"
 	tripleHeaderTimeout                = "Triple-Timeout-Ms"
 	tripleHeaderProtocolVersion        = "Triple-Protocol-Version"
-	tripleProtocolVersion              = "1"
+	tripleProtocolVersion              = "0.1.0"
 
 	tripleUnaryContentTypePrefix = "application/"
 	tripleUnaryContentTypeJSON   = tripleUnaryContentTypePrefix + "json"
@@ -235,9 +235,8 @@ func (c *tripleClient) WriteRequestHeader(streamType StreamType, header http.Hea
 	header[headerContentType] = []string{
 		tripleContentTypeFromCodecName(streamType, c.Codec.Name()),
 	}
-	acceptCompressionHeader := tripleUnaryHeaderAcceptCompression
 	if acceptCompression := c.CompressionPools.CommaSeparatedNames(); acceptCompression != "" {
-		header[acceptCompressionHeader] = []string{acceptCompression}
+		header[tripleUnaryHeaderAcceptCompression] = []string{acceptCompression}
 	}
 }
 
@@ -256,7 +255,6 @@ func (c *tripleClient) NewConn(
 		}
 	}
 	duplexCall := newDuplexHTTPCall(ctx, c.HTTPClient, c.URL, spec, header)
-	var conn StreamingClientConn
 	unaryConn := &tripleUnaryClientConn{
 		spec:             spec,
 		peer:             c.Peer(),
@@ -284,9 +282,8 @@ func (c *tripleClient) NewConn(
 		responseHeader:  make(http.Header),
 		responseTrailer: make(http.Header),
 	}
-	conn = unaryConn
 	duplexCall.SetValidateResponse(unaryConn.validateResponse)
-	return wrapClientConnWithCodedErrors(conn)
+	return wrapClientConnWithCodedErrors(unaryConn)
 }
 
 type tripleUnaryClientConn struct {
@@ -557,6 +554,7 @@ func (u *tripleUnaryUnmarshaler) UnmarshalFunc(message interface{}, unmarshal fu
 		reader = io.LimitReader(u.reader, int64(u.readMaxBytes)+1)
 	}
 	// ReadFrom ignores io.EOF, so any error here is real.
+	// use io.LimitReader to prevent ReadFrom from panic
 	bytesRead, err := data.ReadFrom(reader)
 	if err != nil {
 		if tripleErr, ok := asError(err); ok {
@@ -568,7 +566,7 @@ func (u *tripleUnaryUnmarshaler) UnmarshalFunc(message interface{}, unmarshal fu
 		return errorf(CodeUnknown, "read message: %w", err)
 	}
 	if u.readMaxBytes > 0 && bytesRead > int64(u.readMaxBytes) {
-		// Attempt to read to end in order to allow tripleion re-use
+		// Attempt to read to end in order to allow connection re-use
 		discardedBytes, err := io.Copy(io.Discard, u.reader)
 		if err != nil {
 			return errorf(CodeResourceExhausted, "message is larger than configured max %d - unable to determine message size: %w", u.readMaxBytes, err)
