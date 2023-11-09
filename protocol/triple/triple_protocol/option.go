@@ -19,6 +19,7 @@ import (
 	"context"
 	"io"
 	"net/http"
+	"time"
 )
 
 // A ClientOption configures a [Client].
@@ -95,6 +96,13 @@ func WithSendGzip() ClientOption {
 	return WithSendCompression(compressionGzip)
 }
 
+// WithTimeout configures the default timeout of client call including unary
+// and stream. If you want to specify the timeout of a specific request, please
+// use context.WithTimeout, then default timeout would be overridden.
+func WithTimeout(timeout time.Duration) ClientOption {
+	return &timeoutOption{Timeout: timeout}
+}
+
 // A HandlerOption configures a [Handler].
 //
 // In addition to any options grouped in the documentation below, remember that
@@ -106,7 +114,7 @@ type HandlerOption interface {
 // WithCompression configures handlers to support a compression algorithm.
 // Clients may send messages compressed with that algorithm and/or request
 // compressed responses. The [Compressor] and [Decompressor] produced by the
-// supplied constructors must use the same algorithm. Internally, Connect pools
+// supplied constructors must use the same algorithm. Internally, Triple pools
 // compressors and decompressors.
 //
 // By default, handlers support gzip using the standard library's
@@ -149,16 +157,16 @@ func WithRecover(handle func(context.Context, Spec, http.Header, interface{}) er
 	return WithInterceptors(&recoverHandlerInterceptor{handle: handle})
 }
 
-// WithRequireConnectProtocolHeader configures the Handler to require requests
-// using the Connect RPC protocol to include the Connect-Protocol-Version
+// WithRequireTripleProtocolHeader configures the Handler to require requests
+// using the Triple RPC protocol to include the Triple-Protocol-Version
 // header. This ensures that HTTP proxies and net/http middleware can easily
-// identify valid Connect requests, even if they use a common Content-Type like
+// identify valid Triple requests, even if they use a common Content-Type like
 // application/json. However, it makes ad-hoc requests with tools like cURL
 // more laborious.
 //
 // This option has no effect if the client uses the gRPC or gRPC-Web protocols.
-func WithRequireConnectProtocolHeader() HandlerOption {
-	return &requireConnectProtocolHeaderOption{}
+func WithRequireTripleProtocolHeader() HandlerOption {
+	return &requireTripleProtocolHeaderOption{}
 }
 
 // Option implements both [ClientOption] and [HandlerOption], so it can be
@@ -207,7 +215,7 @@ func WithCompressMinBytes(min int) Option {
 // handlers default to allowing any request size.
 //
 // Handlers may also use [http.MaxBytesHandler] to limit the total size of the
-// HTTP request stream (rather than the per-message size). Connect handles
+// HTTP request stream (rather than the per-message size). Triple handles
 // [http.MaxBytesError] specially, so clients still receive errors with the
 // appropriate error code and informative messages.
 func WithReadMaxBytes(max int) Option {
@@ -226,6 +234,7 @@ func WithSendMaxBytes(max int) Option {
 	return &sendMaxBytesOption{Max: max}
 }
 
+// todo(DMwangnima): consider how to expose this functionality to users
 // WithIdempotency declares the idempotency of the procedure. This can determine
 // whether a procedure call can safely be retried, and may affect which request
 // modalities are allowed for a given procedure call.
@@ -238,22 +247,6 @@ func WithSendMaxBytes(max int) Option {
 //	}
 func WithIdempotency(idempotencyLevel IdempotencyLevel) Option {
 	return &idempotencyOption{idempotencyLevel: idempotencyLevel}
-}
-
-// WithHTTPGet allows Connect-protocol clients to use HTTP GET requests for
-// side-effect free unary RPC calls. Typically, the service schema indicates
-// which procedures are idempotent (see [WithIdempotency] for an example
-// protobuf schema). The gRPC and gRPC-Web protocols are POST-only, so this
-// option has no effect when combined with [WithGRPC] or [WithGRPCWeb].
-//
-// Using HTTP GET requests makes it easier to take advantage of CDNs, caching
-// reverse proxies, and browsers' built-in caching. Note, however, that servers
-// don't automatically set any cache headers; you can set cache headers using
-// interceptors or by adding headers in individual procedure implementations.
-//
-// By default, all requests are made as HTTP POSTs.
-func WithHTTPGet() ClientOption {
-	return &enableGet{}
 }
 
 // WithInterceptors configures a client or handler's interceptor stack. Repeated
@@ -419,10 +412,10 @@ func (o *handlerOptionsOption) applyToHandler(config *handlerConfig) {
 	}
 }
 
-type requireConnectProtocolHeaderOption struct{}
+type requireTripleProtocolHeaderOption struct{}
 
-func (o *requireConnectProtocolHeaderOption) applyToHandler(config *handlerConfig) {
-	config.RequireConnectProtocolHeader = true
+func (o *requireTripleProtocolHeaderOption) applyToHandler(config *handlerConfig) {
+	config.RequireTripleProtocolHeader = true
 }
 
 type idempotencyOption struct {
@@ -441,44 +434,6 @@ type tripleOption struct{}
 
 func (o *tripleOption) applyToClient(config *clientConfig) {
 	config.Protocol = &protocolTriple{}
-}
-
-type enableGet struct{}
-
-func (o *enableGet) applyToClient(config *clientConfig) {
-	config.EnableGet = true
-}
-
-// withHTTPGetMaxURLSize sets the maximum allowable URL length for GET requests
-// made using the Connect protocol. It has no effect on gRPC or gRPC-Web
-// clients, since those protocols are POST-only.
-//
-// Limiting the URL size is useful as most user agents, proxies, and servers
-// have limits on the allowable length of a URL. For example, Apache and Nginx
-// limit the size of a request line to around 8 KiB, meaning that maximum
-// length of a URL is a bit smaller than this. If you run into URL size
-// limitations imposed by your network infrastructure and don't know the
-// maximum allowable size, or if you'd prefer to be cautious from the start, a
-// 4096 byte (4 KiB) limit works with most common proxies and CDNs.
-//
-// If fallback is set to true and the URL would be longer than the configured
-// maximum value, the request will be sent as an HTTP POST instead. If fallback
-// is set to false, the request will fail with [CodeResourceExhausted].
-//
-// By default, Connect-protocol clients with GET requests enabled may send a
-// URL of any size.
-func withHTTPGetMaxURLSize(bytes int, fallback bool) ClientOption {
-	return &getURLMaxBytes{Max: bytes, Fallback: fallback}
-}
-
-type getURLMaxBytes struct {
-	Max      int
-	Fallback bool
-}
-
-func (o *getURLMaxBytes) applyToClient(config *clientConfig) {
-	config.GetURLMaxBytes = o.Max
-	config.GetUseFallback = o.Fallback
 }
 
 type interceptorsOption struct {
@@ -528,6 +483,14 @@ type sendCompressionOption struct {
 
 func (o *sendCompressionOption) applyToClient(config *clientConfig) {
 	config.RequestCompressionName = o.Name
+}
+
+type timeoutOption struct {
+	Timeout time.Duration
+}
+
+func (o *timeoutOption) applyToClient(config *clientConfig) {
+	config.Timeout = o.Timeout
 }
 
 func withGzip() Option {

@@ -13,26 +13,27 @@
 // limitations under the License.
 
 // Package triple is a slim RPC framework built on Protocol Buffers and
-// [net/http]. In addition to supporting its own protocol, Connect handlers and
-// clients are wire-compatible with gRPC and gRPC-Web, including streaming.
+// [net/http]. In addition to supporting its own protocol, Triple handlers and
+// clients are wire-compatible with gRPC, including streaming.
 //
 // This documentation is intended to explain each type and function in
 // isolation. Walkthroughs, FAQs, and other narrative docs are available on the
-// [Connect website], and there's a working [demonstration service] on Github.
+// [dubbo-go website], and there's a working [demonstration service] on Github.
 //
-// [Connect website]: https://connect.build
-// [demonstration service]: https://github.com/bufbuild/connect-demo
+// [dubbo-go website]: https://cn.dubbo.apache.org/zh-cn/overview/mannual/golang-sdk/
+// [demonstration service]: https://github.com/apache/dubbo-go-samples
 package triple_protocol
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 )
 
 // Version is the semantic version of the triple module.
-const Version = "1.7.0-dev"
+const Version = "0.1.0"
 
 // These constants are used in compile-time handshakes with triple's generated
 // code.
@@ -85,16 +86,16 @@ type StreamingHandlerConn interface {
 }
 
 // StreamingClientConn is the client's view of a bidirectional message exchange.
-// Interceptors for streaming RPCs may wrap StreamingClientConns.
+// Interceptors for streaming RPCs may wrap StreamingClientConn.
 //
-// StreamingClientConns write request headers to the network with the first
+// StreamingClientConn write request headers to the network with the first
 // call to Send. Any subsequent mutations are effectively no-ops. When the
 // server is done sending data, the StreamingClientConn's Receive method
 // returns an error wrapping [io.EOF]. Clients should check for this using the
-// standard library's [errors.Is]. If the server encounters an error during
-// processing, subsequent calls to the StreamingClientConn's Send method will
-// return an error wrapping [io.EOF]; clients may then call Receive to unmarshal
-// the error.
+// standard library's [errors.Is] or [IsEnded]. If the server encounters an error
+// during processing, subsequent calls to the StreamingClientConn's Send method
+// will return an error wrapping [io.EOF]; clients may then call Receive to
+// unmarshal the error.
 //
 // Headers and trailers beginning with "Triple-" and "Grpc-" are reserved for
 // use by the gRPC and Triple protocols: applications may read them but
@@ -318,13 +319,12 @@ type handlerConnCloser interface {
 
 // receiveUnaryResponse unmarshals a message from a StreamingClientConn, then
 // envelopes the message and attaches headers and trailers. It attempts to
-// consume the response stream and isn't appropriate when receiving multiple
+// consume the response stream and is not appropriate when receiving multiple
 // messages.
 func receiveUnaryResponse(conn StreamingClientConn, response AnyResponse) error {
 	resp, ok := response.(*Response)
 	if !ok {
-		// todo: add a more reasonable sentence
-		panic("wrong type")
+		panic(fmt.Sprintf("response %T is not of Response type", response))
 	}
 	if err := conn.Receive(resp.Msg); err != nil {
 		return err
@@ -332,8 +332,6 @@ func receiveUnaryResponse(conn StreamingClientConn, response AnyResponse) error 
 	// In a well-formed stream, the response message may be followed by a block
 	// of in-stream trailers or HTTP trailers. To ensure that we receive the
 	// trailers, try to read another message from the stream.
-	// if err := conn.Receive(new(T)); err == nil {
-	// todo:// maybe using copy method
 	if err := conn.Receive(resp.Msg); err == nil {
 		return NewError(CodeUnknown, errors.New("unary stream has multiple messages"))
 	} else if err != nil && !errors.Is(err, io.EOF) {

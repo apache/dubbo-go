@@ -28,9 +28,7 @@ import (
 
 import (
 	client "dubbo.apache.org/dubbo-go/v3/client"
-	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto"
 	triple_protocol "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	"dubbo.apache.org/dubbo-go/v3/server"
@@ -38,7 +36,7 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file and the Triple package
 // are compatible. If you get a compiler error that this constant is not defined, this code was
-// generated with a version ofTtriple newer than the one compiled into your binary. You can fix the
+// generated with a version of Triple newer than the one compiled into your binary. You can fix the
 // problem by either regenerating this code with an older version of Triple or updating the Triple
 // version compiled into your binary.
 const _ = triple_protocol.IsAtLeastVersion0_1_0
@@ -49,7 +47,7 @@ const (
 )
 
 // These constants are the fully-qualified names of the RPCs defined in this package. They're
-// exposed at runtime as Spec.Procedure and as the final two segments of the HTTP route.
+// exposed at runtime as procedure and as the final two segments of the HTTP route.
 //
 // Note that these are different from the fully-qualified method names used by
 // google.golang.org/protobuf/reflect/protoreflect. To convert from these constants to
@@ -89,9 +87,6 @@ type GreetService interface {
 }
 
 // NewGreetService constructs a client for the greet.GreetService service.
-//
-// The URL supplied here should be the base URL for the Triple server (for example,
-// http://api.acme.com or https://acme.com/grpc).
 func NewGreetService(cli *client.Client) (GreetService, error) {
 	if err := cli.Init(&GreetService_ClientInfo); err != nil {
 		return nil, err
@@ -99,10 +94,6 @@ func NewGreetService(cli *client.Client) (GreetService, error) {
 	return &GreetServiceImpl{
 		cli: cli,
 	}, nil
-}
-
-func SetConsumerService(srv common.RPCService) {
-	config.SetClientInfoService(&GreetService_ClientInfo, srv)
 }
 
 // GreetServiceImpl implements GreetService.

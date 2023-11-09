@@ -22,7 +22,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"math"
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
@@ -52,12 +51,18 @@ const errorMessage = "oh no"
 // client doesn't set a header, and the server sets headers and trailers on the
 // response.
 const (
-	headerValue                 = "some header value"
-	trailerValue                = "some trailer value"
-	clientHeader                = "Connect-Client-Header"
-	handlerHeader               = "Connect-Handler-Header"
-	handlerTrailer              = "Connect-Handler-Trailer"
-	clientMiddlewareErrorHeader = "Connect-Trigger-HTTP-Error"
+	headerValue  = "some header value"
+	trailerValue = "some trailer value"
+	clientHeader = "Triple-Client-Header"
+	// use this header to tell server to mock timeout scenario
+	clientTimeoutHeader         = "Triple-Client-Timeout-Header"
+	handlerHeader               = "Triple-Handler-Header"
+	handlerTrailer              = "Triple-Handler-Trailer"
+	clientMiddlewareErrorHeader = "Triple-Trigger-HTTP-Error"
+
+	// since there is no math.MaxInt for go1.16, we need to define it for compatibility
+	intSize = 32 << (^uint(0) >> 63) // 32 or 64
+	maxInt  = 1<<(intSize-1) - 1
 )
 
 func TestServer(t *testing.T) {
@@ -107,6 +112,8 @@ func TestServer(t *testing.T) {
 			assert.Equal(t, response.Trailer().Values(handlerTrailer), []string{trailerValue})
 		})
 		t.Run("ping_error", func(t *testing.T) {
+			// please see pingServer.Ping().
+			// if we do not send clientHeader: headerValue to pingServer.Ping(), it would return error
 			err := client.Ping(
 				context.Background(),
 				triple.NewRequest(&pingv1.PingRequest{}),
@@ -114,11 +121,23 @@ func TestServer(t *testing.T) {
 			)
 			assert.Equal(t, triple.CodeOf(err), triple.CodeInvalidArgument)
 		})
-		t.Run("ping_timeout", func(t *testing.T) {
+		t.Run("ping_invalid_timeout", func(t *testing.T) {
+			// invalid Deadline
 			ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(-time.Second))
 			defer cancel()
 			request := triple.NewRequest(&pingv1.PingRequest{})
 			request.Header().Set(clientHeader, headerValue)
+			// since we would inspect ctx error before sending request, this invocation would return DeadlineExceeded directly
+			err := client.Ping(ctx, request, triple.NewResponse(&pingv1.PingResponse{}))
+			assert.Equal(t, triple.CodeOf(err), triple.CodeDeadlineExceeded)
+		})
+		t.Run("ping_timeout", func(t *testing.T) {
+			ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(time.Second))
+			defer cancel()
+			request := triple.NewRequest(&pingv1.PingRequest{})
+			request.Header().Set(clientHeader, headerValue)
+			// tell server to mock timeout
+			request.Header().Set(clientTimeoutHeader, (2 * time.Second).String())
 			err := client.Ping(ctx, request, triple.NewResponse(&pingv1.PingResponse{}))
 			assert.Equal(t, triple.CodeOf(err), triple.CodeDeadlineExceeded)
 		})
@@ -165,6 +184,31 @@ func TestServer(t *testing.T) {
 			assert.Equal(t, msg, &pingv1.SumResponse{}) // receive header only stream
 			assert.Equal(t, got.Header().Values(handlerHeader), []string{headerValue})
 		})
+		t.Run("sum_invalid_timeout", func(t *testing.T) {
+			ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(-time.Second))
+			defer cancel()
+			stream, err := client.Sum(ctx)
+			assert.Nil(t, err)
+			stream.RequestHeader().Set(clientHeader, headerValue)
+			msg := &pingv1.SumResponse{}
+			got := triple.NewResponse(msg)
+			err = stream.CloseAndReceive(got)
+			// todo(DMwangnima): for now, invalid timeout would be encoded as "Grpc-Timeout: 0n".
+			// it would not inspect err like unary call. We should refer to grpc-go.
+			assert.Equal(t, triple.CodeOf(err), triple.CodeDeadlineExceeded)
+		})
+		t.Run("sum_timeout", func(t *testing.T) {
+			ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(time.Second))
+			defer cancel()
+			stream, err := client.Sum(ctx)
+			assert.Nil(t, err)
+			stream.RequestHeader().Set(clientHeader, headerValue)
+			stream.RequestHeader().Set(clientTimeoutHeader, (2 * time.Second).String())
+			msg := &pingv1.SumResponse{}
+			got := triple.NewResponse(msg)
+			err = stream.CloseAndReceive(got)
+			assert.Equal(t, triple.CodeOf(err), triple.CodeDeadlineExceeded)
+		})
 	}
 	testCountUp := func(t *testing.T, client pingv1connect.PingServiceClient) { //nolint:thelper
 		t.Run("count_up", func(t *testing.T) {
@@ -195,18 +239,37 @@ func TestServer(t *testing.T) {
 			for stream.Receive(&pingv1.CountUpResponse{}) {
 				t.Fatalf("expected error, shouldn't receive any messages")
 			}
-			assert.Equal(
-				t,
-				triple.CodeOf(stream.Err()),
-				triple.CodeInvalidArgument,
-			)
+			assert.Equal(t, triple.CodeOf(stream.Err()), triple.CodeInvalidArgument)
 		})
-		t.Run("count_up_timeout", func(t *testing.T) {
+		t.Run("count_up_invalid_argument", func(t *testing.T) {
+			request := triple.NewRequest(&pingv1.CountUpRequest{Number: -1})
+			request.Header().Set(clientHeader, headerValue)
+			stream, err := client.CountUp(context.Background(), request)
+			assert.Nil(t, err)
+			for stream.Receive(&pingv1.CountUpResponse{}) {
+				t.Fatalf("expected error, shouldn't receive any messages")
+			}
+			assert.Equal(t, triple.CodeOf(stream.Err()), triple.CodeInvalidArgument)
+		})
+		t.Run("count_up_invalid_timeout", func(t *testing.T) {
 			ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(-time.Second))
 			defer cancel()
 			_, err := client.CountUp(ctx, triple.NewRequest(&pingv1.CountUpRequest{Number: 1}))
 			assert.NotNil(t, err)
 			assert.Equal(t, triple.CodeOf(err), triple.CodeDeadlineExceeded)
+		})
+		t.Run("count_up_timeout", func(t *testing.T) {
+			ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(time.Second))
+			defer cancel()
+			request := triple.NewRequest(&pingv1.CountUpRequest{Number: 1})
+			request.Header().Set(clientHeader, headerValue)
+			request.Header().Set(clientTimeoutHeader, (2 * time.Second).String())
+			stream, err := client.CountUp(ctx, request)
+			assert.Nil(t, err)
+			for stream.Receive(&pingv1.CountUpResponse{}) {
+				t.Fatalf("expected error, shouldn't receive any messages")
+			}
+			assert.Equal(t, triple.CodeOf(stream.Err()), triple.CodeDeadlineExceeded)
 		})
 	}
 	testCumSum := func(t *testing.T, client pingv1connect.PingServiceClient, expectSuccess bool) { //nolint:thelper
@@ -1138,7 +1201,7 @@ func TestClientWithReadMaxBytes(t *testing.T) {
 		if enableCompression {
 			compressionOption = triple.WithCompressMinBytes(1)
 		} else {
-			compressionOption = triple.WithCompressMinBytes(math.MaxInt)
+			compressionOption = triple.WithCompressMinBytes(maxInt)
 		}
 		mux.Handle(pingv1connect.NewPingServiceHandler(pingServer{}, compressionOption))
 		server := httptest.NewUnstartedServer(mux)
@@ -1273,7 +1336,7 @@ func TestHandlerWithSendMaxBytes(t *testing.T) {
 		if compressed {
 			options = append(options, triple.WithCompressMinBytes(1))
 		} else {
-			options = append(options, triple.WithCompressMinBytes(math.MaxInt))
+			options = append(options, triple.WithCompressMinBytes(maxInt))
 		}
 		mux.Handle(pingv1connect.NewPingServiceHandler(
 			pingServer{},
@@ -1614,14 +1677,14 @@ func TestStreamForServer(t *testing.T) {
 	})
 }
 
-func TestConnectHTTPErrorCodes(t *testing.T) {
+func TestTripleHTTPErrorCodes(t *testing.T) {
 	t.Parallel()
-	checkHTTPStatus := func(t *testing.T, connectCode triple.Code, wantHttpStatus int) {
+	checkHTTPStatus := func(t *testing.T, tripleCode triple.Code, wantHttpStatus int) {
 		t.Helper()
 		mux := http.NewServeMux()
 		pluggableServer := &pluggablePingServer{
 			ping: func(_ context.Context, _ *triple.Request) (*triple.Response, error) {
-				return nil, triple.NewError(connectCode, errors.New("error"))
+				return nil, triple.NewError(tripleCode, errors.New("error"))
 			},
 		}
 		mux.Handle(pingv1connect.NewPingServiceHandler(pluggableServer))
@@ -1758,6 +1821,7 @@ func TestUnflushableResponseWriter(t *testing.T) {
 		assert.Equal(t, triple.CodeOf(err), triple.CodeInternal, assert.Sprintf("got %v", err))
 		assert.True(
 			t,
+			// please see checkServerStreamsCanFlush() for detail
 			strings.HasSuffix(err.Error(), "unflushableWriter does not implement http.Flusher"),
 			assert.Sprintf("error doesn't reference http.Flusher: %s", err.Error()),
 		)
@@ -1779,8 +1843,8 @@ func TestUnflushableResponseWriter(t *testing.T) {
 	}{
 		{"grpc", nil},
 	}
-	for _, tt := range tests {
-		tt := tt
+	for _, test := range tests {
+		tt := test
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			pingclient := pingv1connect.NewPingServiceClient(server.Client(), server.URL, tt.options...)
@@ -1834,14 +1898,14 @@ func TestGRPCErrorMetadataIsTrailersOnly(t *testing.T) {
 	_, err = io.Copy(io.Discard, res.Body)
 	assert.Nil(t, err)
 	assert.Nil(t, res.Body.Close())
-	assert.NotZero(t, res.Trailer.Get(handlerHeader))
-	assert.NotZero(t, res.Trailer.Get(handlerTrailer))
+	assert.Equal(t, res.Trailer.Get(handlerHeader), headerValue)
+	assert.Equal(t, res.Trailer.Get(handlerTrailer), trailerValue)
 }
 
-func TestConnectProtocolHeaderSentByDefault(t *testing.T) {
+func TestTripleProtocolHeaderSentByDefault(t *testing.T) {
 	t.Parallel()
 	mux := http.NewServeMux()
-	mux.Handle(pingv1connect.NewPingServiceHandler(pingServer{}, triple.WithRequireConnectProtocolHeader()))
+	mux.Handle(pingv1connect.NewPingServiceHandler(pingServer{}, triple.WithRequireTripleProtocolHeader()))
 	server := httptest.NewUnstartedServer(mux)
 	server.EnableHTTP2 = true
 	server.StartTLS()
@@ -1860,23 +1924,25 @@ func TestConnectProtocolHeaderSentByDefault(t *testing.T) {
 	assert.Nil(t, stream.CloseResponse())
 }
 
-func TestConnectProtocolHeaderRequired(t *testing.T) {
+// todo(DMwangnima): we need to expose this functionality as a configuration to dubbo-go
+func TestTripleProtocolHeaderRequired(t *testing.T) {
 	t.Parallel()
 	mux := http.NewServeMux()
 	mux.Handle(pingv1connect.NewPingServiceHandler(
 		pingServer{},
-		triple.WithRequireConnectProtocolHeader(),
+		triple.WithRequireTripleProtocolHeader(),
 	))
 	server := httptest.NewServer(mux)
 	t.Cleanup(server.Close)
 
 	tests := []struct {
+		desc    string
 		headers http.Header
 	}{
-		{http.Header{}},
-		{http.Header{"Connect-Protocol-Version": []string{"0"}}},
+		{"empty header", http.Header{}},
+		{"invalid version", http.Header{"Triple-Protocol-Version": []string{"0"}}},
 	}
-	for _, tcase := range tests {
+	for _, test := range tests {
 		req, err := http.NewRequestWithContext(
 			context.Background(),
 			http.MethodPost,
@@ -1885,7 +1951,7 @@ func TestConnectProtocolHeaderRequired(t *testing.T) {
 		)
 		assert.Nil(t, err)
 		req.Header.Set("Content-Type", "application/json")
-		for k, v := range tcase.headers {
+		for k, v := range test.headers {
 			req.Header[k] = v
 		}
 		response, err := server.Client().Do(req)
@@ -1916,11 +1982,11 @@ func TestAllowCustomUserAgent(t *testing.T) {
 		protocol string
 		opts     []triple.ClientOption
 	}{
-		{"triple", nil},
+		{"triple", []triple.ClientOption{triple.WithTriple()}},
 		{"grpc", nil},
 	}
-	for _, testCase := range tests {
-		client := pingv1connect.NewPingServiceClient(server.Client(), server.URL, testCase.opts...)
+	for _, test := range tests {
+		client := pingv1connect.NewPingServiceClient(server.Client(), server.URL, test.opts...)
 		req := triple.NewRequest(&pingv1.PingRequest{Number: 42})
 		req.Header().Set("User-Agent", customAgent)
 		err := client.Ping(context.Background(), req, triple.NewResponse(&pingv1.PingResponse{}))
@@ -2004,6 +2070,59 @@ func TestBlankImportCodeGeneration(t *testing.T) {
 	desc, err := protoregistry.GlobalFiles.FindDescriptorByName(importv1connect.ImportServiceName)
 	assert.Nil(t, err)
 	assert.NotNil(t, desc)
+}
+
+func TestDefaultTimeout(t *testing.T) {
+	t.Parallel()
+	mux := http.NewServeMux()
+	mux.Handle(pingv1connect.NewPingServiceHandler(pingServer{}))
+	server := httptest.NewUnstartedServer(mux)
+	server.EnableHTTP2 = true
+	server.StartTLS()
+	t.Cleanup(server.Close)
+
+	defaultTimeout := 3 * time.Second
+	serverTimeout := 2 * time.Second
+	tests := []struct {
+		desc    string
+		cliOpts []triple.ClientOption
+	}{
+		{
+			desc: "Triple protocol",
+			cliOpts: []triple.ClientOption{
+				triple.WithTriple(),
+				triple.WithTimeout(defaultTimeout),
+			},
+		},
+		{
+			desc: "gRPC protocol",
+			cliOpts: []triple.ClientOption{
+				triple.WithTimeout(defaultTimeout),
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.desc, func(t *testing.T) {
+			client := pingv1connect.NewPingServiceClient(server.Client(), server.URL, test.cliOpts...)
+			request := triple.NewRequest(&pingv1.PingRequest{})
+			request.Header().Set(clientHeader, headerValue)
+			// tell server to mock timeout
+			request.Header().Set(clientTimeoutHeader, (serverTimeout).String())
+			err := client.Ping(context.Background(), request, triple.NewResponse(&pingv1.PingResponse{}))
+			assert.Nil(t, err)
+
+			// specify timeout to override default timeout
+			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+			defer cancel()
+			newRequest := triple.NewRequest(&pingv1.PingRequest{})
+			newRequest.Header().Set(clientHeader, headerValue)
+			// tell server to mock timeout
+			newRequest.Header().Set(clientTimeoutHeader, (serverTimeout).String())
+			newErr := client.Ping(ctx, request, triple.NewResponse(&pingv1.PingResponse{}))
+			assert.Equal(t, triple.CodeOf(newErr), triple.CodeDeadlineExceeded)
+		})
+	}
 }
 
 type unflushableWriter struct {
@@ -2132,6 +2251,11 @@ func (p pingServer) Ping(ctx context.Context, request *triple.Request) (*triple.
 	if err := expectClientHeader(p.checkMetadata, request); err != nil {
 		return nil, err
 	}
+	if timeoutStr := request.Header().Get(clientTimeoutHeader); timeoutStr != "" {
+		// got timeout instruction
+		timeout, _ := time.ParseDuration(timeoutStr)
+		time.Sleep(timeout)
+	}
 	if request.Peer().Addr == "" {
 		return nil, triple.NewError(triple.CodeInternal, errors.New("no peer address"))
 	}
@@ -2176,6 +2300,11 @@ func (p pingServer) Sum(
 			return nil, err
 		}
 	}
+	if timeoutStr := stream.RequestHeader().Get(clientTimeoutHeader); timeoutStr != "" {
+		// got timeout instruction
+		timeout, _ := time.ParseDuration(timeoutStr)
+		time.Sleep(timeout)
+	}
 	if stream.Peer().Addr == "" {
 		return nil, triple.NewError(triple.CodeInternal, errors.New("no peer address"))
 	}
@@ -2204,6 +2333,11 @@ func (p pingServer) CountUp(
 ) error {
 	if err := expectClientHeader(p.checkMetadata, request); err != nil {
 		return err
+	}
+	if timeoutStr := request.Header().Get(clientTimeoutHeader); timeoutStr != "" {
+		// got timeout instruction
+		timeout, _ := time.ParseDuration(timeoutStr)
+		time.Sleep(timeout)
 	}
 	if request.Peer().Addr == "" {
 		return triple.NewError(triple.CodeInternal, errors.New("no peer address"))

@@ -15,7 +15,10 @@
 package triple_protocol
 
 import (
+	"compress/gzip"
+	"encoding/binary"
 	"errors"
+	"io"
 	"math"
 	"net/http"
 	"net/http/httptest"
@@ -33,6 +36,46 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/assert"
 )
+
+func TestGRPCClient_WriteRequestHeader(t *testing.T) {
+	tests := []struct {
+		desc   string
+		params protocolClientParams
+		input  http.Header
+		expect http.Header
+	}{
+		{
+			params: protocolClientParams{
+				Codec:           &protoJSONCodec{codecNameJSON},
+				CompressionName: compressionGzip,
+				CompressionPools: newReadOnlyCompressionPools(map[string]*compressionPool{
+					compressionGzip: newCompressionPool(
+						func() Decompressor { return &gzip.Reader{} },
+						func() Compressor { return gzip.NewWriter(io.Discard) },
+					),
+				}, []string{compressionGzip}),
+			},
+			input: map[string][]string{},
+			// todo(DMwangnima): add const for these literals
+			expect: map[string][]string{
+				headerUserAgent:             {defaultGrpcUserAgent},
+				headerContentType:           {grpcContentTypePrefix + codecNameJSON},
+				"Accept-Encoding":           {compressionIdentity},
+				grpcHeaderCompression:       {compressionGzip},
+				grpcHeaderAcceptCompression: {compressionGzip},
+				"Te":                        {"trailers"},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		cli := &grpcClient{
+			protocolClientParams: test.params,
+		}
+		cli.WriteRequestHeader(StreamType(4), test.input)
+		assert.Equal(t, test.input, test.expect)
+	}
+}
 
 func TestGRPCHandlerSender(t *testing.T) {
 	t.Parallel()
@@ -116,7 +159,7 @@ func TestGRPCParseTimeout(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, duration, 45*time.Second)
 
-	const long = "99999999S"
+	var long = "99999999S"
 	duration, err = grpcParseTimeout(long) // 8 digits, shouldn't overflow
 	assert.Nil(t, err)
 	assert.Equal(t, duration, 99999999*time.Second)
@@ -195,7 +238,8 @@ func TestGRPCWebTrailerMarshalling(t *testing.T) {
 	trailer.Add("User-Provided", "bar")
 	err := marshaler.MarshalWebTrailers(trailer)
 	assert.Nil(t, err)
-	responseWriter.Body.Next(5) // skip flags and message length
+	assert.Equal(t, responseWriter.Body.Next(1)[0], byte(grpcFlagEnvelopeTrailer))
+	assert.Equal(t, binary.BigEndian.Uint32(responseWriter.Body.Next(4)), uint32(55))
 	marshaled := responseWriter.Body.String()
 	assert.Equal(t, marshaled, "grpc-message: Foo\r\ngrpc-status: 0\r\nuser-provided: bar\r\n")
 }
