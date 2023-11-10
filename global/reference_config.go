@@ -18,6 +18,7 @@
 package global
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"strconv"
 )
 
@@ -54,6 +55,10 @@ func DefaultReferenceConfig() *ReferenceConfig {
 		Methods:  make([]*MethodConfig, 0, 8),
 		Params:   make(map[string]string, 8),
 	}
+}
+
+func (rc *ReferenceConfig) ServiceKey() string {
+	return common.ServiceKey(rc.InterfaceName, rc.Group, rc.Version)
 }
 
 type ReferenceOption func(*ReferenceConfig)

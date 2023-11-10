@@ -19,6 +19,7 @@ package global
 
 // ProviderConfig is the default configuration of service provider
 type ProviderConfig struct {
+	ServiceConfig
 	Filter string `yaml:"filter" json:"filter,omitempty" property:"filter"`
 	// Deprecated Register whether registration is required
 	Register bool `yaml:"register" json:"register" property:"register"`
@@ -44,67 +45,5 @@ func DefaultProviderConfig() *ProviderConfig {
 		RegistryIDs: make([]string, 8),
 		ProtocolIDs: make([]string, 8),
 		Services:    make(map[string]*ServiceConfig),
-	}
-}
-
-type ProviderOption func(*ProviderConfig)
-
-func WithProvider_Filter(filter string) ProviderOption {
-	return func(cfg *ProviderConfig) {
-		cfg.Filter = filter
-	}
-}
-
-func WithProvider_Register(flag bool) ProviderOption {
-	return func(cfg *ProviderConfig) {
-		cfg.Register = flag
-	}
-}
-
-func WithProvider_RegistryIDs(ids []string) ProviderOption {
-	return func(cfg *ProviderConfig) {
-		cfg.RegistryIDs = ids
-	}
-}
-
-func WithProvider_ProtocolIDs(ids []string) ProviderOption {
-	return func(cfg *ProviderConfig) {
-		cfg.ProtocolIDs = ids
-	}
-}
-
-func WithProvider_TracingKey(key string) ProviderOption {
-	return func(cfg *ProviderConfig) {
-		cfg.TracingKey = key
-	}
-}
-
-func WithProvider_ProxyFactory(factory string) ProviderOption {
-	return func(cfg *ProviderConfig) {
-		cfg.ProxyFactory = factory
-	}
-}
-
-func WithProvider_FilterConf(conf []interface{}) ProviderOption {
-	return func(cfg *ProviderConfig) {
-		cfg.FilterConf = conf
-	}
-}
-
-func WithProvider_ConfigType(typ map[string]string) ProviderOption {
-	return func(cfg *ProviderConfig) {
-		cfg.ConfigType = typ
-	}
-}
-
-func WithProvider_AdaptiveService(flag bool) ProviderOption {
-	return func(cfg *ProviderConfig) {
-		cfg.AdaptiveService = flag
-	}
-}
-
-func WithProvider_AdaptiveServiceVerbose(flag bool) ProviderOption {
-	return func(cfg *ProviderConfig) {
-		cfg.AdaptiveServiceVerbose = flag
 	}
 }

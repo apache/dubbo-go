@@ -36,6 +36,7 @@ type Client struct {
 	info    *ClientInfo
 
 	cliOpts *ClientOptions
+	refOpts map[string]*ReferenceOptions
 }
 
 type ClientInfo struct {
@@ -45,7 +46,7 @@ type ClientInfo struct {
 	Meta             map[string]interface{}
 }
 
-func (cli *Client) call(ctx context.Context, paramsRawVals []interface{}, interfaceName, methodName, callType string, opts ...CallOption) (protocol.Result, error) {
+func (cli *Client) call(ctx context.Context, invoker protocol.Invoker, paramsRawVals []interface{}, interfaceName, methodName, callType string, opts ...CallOption) (protocol.Result, error) {
 	// get a default CallOptions
 	// apply CallOption
 	options := newDefaultCallOptions()
@@ -58,51 +59,58 @@ func (cli *Client) call(ctx context.Context, paramsRawVals []interface{}, interf
 		return nil, err
 	}
 	// todo: move timeout into context or invocation
-	return cli.invoker.Invoke(ctx, inv), nil
+	return invoker.Invoke(ctx, inv), nil
 
 }
 
-func (cli *Client) CallUnary(ctx context.Context, req, resp interface{}, interfaceName, methodName string, opts ...CallOption) error {
-	res, err := cli.call(ctx, []interface{}{req, resp}, interfaceName, methodName, constant.CallUnary, opts...)
+func (cli *Client) CallUnary(ctx context.Context, invoker protocol.Invoker, req, resp interface{}, interfaceName, methodName string, opts ...CallOption) error {
+	res, err := cli.call(ctx, invoker, []interface{}{req, resp}, interfaceName, methodName, constant.CallUnary, opts...)
 	if err != nil {
 		return err
 	}
 	return res.Error()
 }
 
-func (cli *Client) CallClientStream(ctx context.Context, interfaceName, methodName string, opts ...CallOption) (interface{}, error) {
-	res, err := cli.call(ctx, nil, interfaceName, methodName, constant.CallClientStream, opts...)
+func (cli *Client) CallClientStream(ctx context.Context, invoker protocol.Invoker, interfaceName, methodName string, opts ...CallOption) (interface{}, error) {
+	res, err := cli.call(ctx, invoker, nil, interfaceName, methodName, constant.CallClientStream, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return res.Result(), res.Error()
 }
 
-func (cli *Client) CallServerStream(ctx context.Context, req interface{}, interfaceName, methodName string, opts ...CallOption) (interface{}, error) {
-	res, err := cli.call(ctx, []interface{}{req}, interfaceName, methodName, constant.CallServerStream, opts...)
+func (cli *Client) CallServerStream(ctx context.Context, invoker protocol.Invoker, req interface{}, interfaceName, methodName string, opts ...CallOption) (interface{}, error) {
+	res, err := cli.call(ctx, invoker, []interface{}{req}, interfaceName, methodName, constant.CallServerStream, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return res.Result(), res.Error()
 }
 
-func (cli *Client) CallBidiStream(ctx context.Context, interfaceName, methodName string, opts ...CallOption) (interface{}, error) {
-	res, err := cli.call(ctx, nil, interfaceName, methodName, constant.CallBidiStream, opts...)
+func (cli *Client) CallBidiStream(ctx context.Context, invoker protocol.Invoker, interfaceName, methodName string, opts ...CallOption) (interface{}, error) {
+	res, err := cli.call(ctx, invoker, nil, interfaceName, methodName, constant.CallBidiStream, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return res.Result(), res.Error()
 }
 
-func (cli *Client) Init(info *ClientInfo) error {
+func (cli *Client) Init(info *ClientInfo, opts ...ReferenceOption) (protocol.Invoker, error) {
 	if info == nil {
-		return errors.New("ClientInfo is nil")
+		return nil, errors.New("ClientInfo is nil")
 	}
 
-	cli.cliOpts.ReferWithInfo(info)
-	cli.invoker = cli.cliOpts.invoker
+	newRefOptions := defaultReferenceOptions()
+	err := newRefOptions.init(cli, opts...)
+	if err != nil {
+		return nil, err
+	}
 
-	return nil
+	cli.refOpts[newRefOptions.Reference.ServiceKey()] = newRefOptions
+
+	newRefOptions.ReferWithInfo(info)
+
+	return newRefOptions.invoker, nil
 }
 
 func generateInvocation(methodName string, paramsRawVals []interface{}, callType string, opts *CallOptions) (protocol.Invocation, error) {
