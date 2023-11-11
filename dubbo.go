@@ -158,7 +158,7 @@ func (ins *Instance) start() (err error) {
 	return err
 }
 
-// LoadProvider loads the service provider.
+// loadProvider loads the service provider.
 func (ins *Instance) loadProvider() error {
 	srv, err := ins.NewServer()
 	if err != nil {
@@ -170,11 +170,10 @@ func (ins *Instance) loadProvider() error {
 			return err
 		}
 	}
-	go srv.Serve()
-	return err
+	return srv.ServeWithNoBlocking()
 }
 
-// LoadConsumer loads the service consumer.
+// loadConsumer loads the service consumer.
 func (ins *Instance) loadConsumer() error {
 	cli, err := ins.NewClient()
 	if err != nil {
