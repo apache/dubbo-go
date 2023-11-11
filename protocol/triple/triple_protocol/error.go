@@ -30,6 +30,7 @@ import (
 )
 
 const (
+	// todo(DMwangnima): add common errors documentation
 	commonErrorsURL          = "https://connect.build/docs/go/common-errors"
 	defaultAnyResolverPrefix = "type.googleapis.com/"
 )
@@ -107,6 +108,7 @@ func (d *ErrorDetail) Value() (proto.Message, error) {
 // They're a clearer and more performant alternative to HTTP header
 // microformats. See [the documentation on errors] for more details.
 //
+// todo(DMwangnima): add error documentation to dubbo-go official website
 // [the documentation on errors]: https://connect.build/docs/go/errors
 type Error struct {
 	code    Code
@@ -225,9 +227,9 @@ func errorf(c Code, template string, args ...interface{}) *Error {
 
 // asError uses errors.As to unwrap any error and look for a triple *Error.
 func asError(err error) (*Error, bool) {
-	var connectErr *Error
-	ok := errors.As(err, &connectErr)
-	return connectErr, ok
+	var tripleErr *Error
+	ok := errors.As(err, &tripleErr)
+	return tripleErr, ok
 }
 
 // wrapIfUncoded ensures that all errors are wrapped. It leaves already-wrapped
@@ -264,7 +266,7 @@ func wrapIfContextError(err error) error {
 	return err
 }
 
-// wrapIfLikelyWithGRPCNotUsedError adds a wrapping error that has a message
+// wrapIfLikelyH2CNotConfiguredError adds a wrapping error that has a message
 // telling the caller that they likely need to use h2c but are using a raw http.Client{}.
 //
 // This happens when running a gRPC-only server.
@@ -276,7 +278,7 @@ func wrapIfLikelyH2CNotConfiguredError(request *http.Request, err error) error {
 	if _, ok := asError(err); ok {
 		return err
 	}
-	if url := request.URL; url != nil && url.Scheme != "http" {
+	if reqUrl := request.URL; reqUrl != nil && reqUrl.Scheme != "http" {
 		// If the scheme is not http, we definitely do not have an h2c error, so just return.
 		return err
 	}
@@ -292,7 +294,7 @@ func wrapIfLikelyH2CNotConfiguredError(request *http.Request, err error) error {
 }
 
 // wrapIfLikelyWithGRPCNotUsedError adds a wrapping error that has a message
-// telling the caller that they likely forgot to use triple.WithGRPC().
+// telling the caller that the server side does not use gRPC.
 //
 // This happens when running a gRPC-only server.
 // This is fragile and may break over time, and this should be considered a best-effort.

@@ -115,7 +115,7 @@ func (s *Server) Start(invoker protocol.Invoker, info *server.ServiceInfo) {
 		if info != nil {
 			handleServiceWithInfo(invoker, info, mux, hanOpts...)
 		} else {
-			compatHandleService(mux)
+			compatHandleService(URL, mux)
 		}
 		// todo: figure it out this process
 		//reflection.Register(server)
@@ -151,7 +151,7 @@ func (s *Server) RefreshService(invoker protocol.Invoker, info *server.ServiceIn
 	if info != nil {
 		handleServiceWithInfo(invoker, info, mux, hanOpts...)
 	} else {
-		compatHandleService(mux)
+		compatHandleService(URL, mux)
 	}
 }
 
@@ -208,13 +208,16 @@ func waitTripleExporter(providerServices map[string]*config.ServiceConfig) {
 
 // *Important*, this function is responsible for being compatible with old triple-gen code
 // compatHandleService creates handler based on ServiceConfig and provider service.
-func compatHandleService(mux *http.ServeMux, opts ...tri.HandlerOption) {
+func compatHandleService(url *common.URL, mux *http.ServeMux, opts ...tri.HandlerOption) {
 	providerServices := config.GetProviderConfig().Services
 	if len(providerServices) == 0 {
 		panic("Provider service map is null")
 	}
 	//waitTripleExporter(providerServices)
 	for key, providerService := range providerServices {
+		if providerService.Interface != url.Interface() {
+			continue
+		}
 		// todo(DMwangnima): judge protocol type
 		service := config.GetProviderService(key)
 		ds, ok := service.(dubbo3.Dubbo3GrpcService)

@@ -20,22 +20,23 @@ import (
 	"strings"
 )
 
-// A Code is one of the Connect protocol's error codes. There are no user-defined
+// A Code is one of the Triple protocol's error codes. There are no user-defined
 // codes, so only the codes enumerated below are valid. In both name and
 // semantics, these codes match the gRPC status codes.
 //
 // The descriptions below are optimized for brevity rather than completeness.
-// See the [Connect protocol specification] for detailed descriptions of each
+// See the [Triple protocol specification] for detailed descriptions of each
 // code and example usage.
 //
-// [Connect protocol specification]: https://connect.build/docs/protocol
+// todo(DMwangnima): add specification to dubbo-go official site
+// [Triple protocol specification]: https://connect.build/docs/protocol
 type Code uint32
 
 const (
 	// The zero code in gRPC is OK, which indicates that the operation was a
 	// success. We don't define a constant for it because it overlaps awkwardly
 	// with Go's error semantics: what does it mean to have a non-nil error with
-	// an OK status? (Also, the Connect protocol doesn't use a code for
+	// an OK status? (Also, the Triple protocol doesn't use a code for
 	// successes.)
 
 	// CodeCanceled indicates that the operation was canceled, typically by the
@@ -219,8 +220,8 @@ func (c *Code) UnmarshalText(data []byte) error {
 // CodeOf returns the error's status code if it is or wraps an [*Error] and
 // [CodeUnknown] otherwise.
 func CodeOf(err error) Code {
-	if connectErr, ok := asError(err); ok {
-		return connectErr.Code()
+	if tripleErr, ok := asError(err); ok {
+		return tripleErr.Code()
 	}
 	return CodeUnknown
 }

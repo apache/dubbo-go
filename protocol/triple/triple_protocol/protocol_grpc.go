@@ -500,7 +500,7 @@ func (hc *grpcHandlerConn) Close(err error) (retErr error) {
 		mergeHeaders(hc.responseWriter.Header(), hc.responseHeader)
 	}
 	// gRPC always sends the error's code, message, details, and metadata as
-	// trailing metadata. The Connect protocol doesn't do this, so we don't want
+	// trailing metadata. The Triple protocol doesn't do this, so we don't want
 	// to mutate the trailers map that the user sees.
 	mergedTrailers := make(
 		http.Header,
@@ -827,8 +827,8 @@ func grpcErrorToTrailer(bufferPool *bufferPool, trailer http.Header, protobuf Co
 		)
 		return
 	}
-	if connectErr, ok := asError(err); ok {
-		mergeHeaders(trailer, connectErr.meta)
+	if tripleErr, ok := asError(err); ok {
+		mergeHeaders(trailer, tripleErr.meta)
 	}
 	setHeaderCanonical(trailer, grpcHeaderStatus, code)
 	setHeaderCanonical(trailer, grpcHeaderMessage, grpcPercentEncode(bufferPool, status.Message))
@@ -840,10 +840,10 @@ func grpcStatusFromError(err error) *statusv1.Status {
 		Code:    int32(CodeUnknown),
 		Message: err.Error(),
 	}
-	if connectErr, ok := asError(err); ok {
-		status.Code = int32(connectErr.Code())
-		status.Message = connectErr.Message()
-		status.Details = connectErr.detailsAsAny()
+	if tripleErr, ok := asError(err); ok {
+		status.Code = int32(tripleErr.Code())
+		status.Message = tripleErr.Message()
+		status.Details = tripleErr.detailsAsAny()
 	}
 	return status
 }
