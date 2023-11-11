@@ -119,19 +119,7 @@ type URL struct {
 	// attributes should not be transported
 	attributes map[string]interface{} `hessian:"-"`
 	// special for registry
-	SubURL     *URL
-	attributes sync.Map
-}
-
-func (c *URL) AddAttribute(key string, value interface{}) {
-	if value != nil {
-		c.attributes.Store(key, value)
-	}
-}
-
-func (c *URL) GetAttribute(key string) interface{} {
-	v, _ := c.attributes.Load(key)
-	return v
+	SubURL *URL
 }
 
 // JavaClassName POJO for URL
