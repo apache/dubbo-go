@@ -120,6 +120,7 @@ func runOldTripleServer(addr string, desc *grpc_go.ServiceDesc) {
 		common.WithLocation(addr),
 		common.WithPort(dubbo3Port),
 		common.WithProtocol(TRIPLE),
+		common.WithInterface(desc.ServiceName),
 	)
 	srv := new(dubbo3_api.GreetDubbo3Server)
 	// todo(DMwangnima): add protocol config
