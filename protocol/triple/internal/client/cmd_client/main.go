@@ -19,26 +19,38 @@ package main
 
 import (
 	"context"
+	"dubbo.apache.org/dubbo-go/v3"
 	"dubbo.apache.org/dubbo-go/v3/client"
 	_ "dubbo.apache.org/dubbo-go/v3/imports"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/client/common"
 	greet "dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto/triple_gen/greettriple"
+	"dubbo.apache.org/dubbo-go/v3/registry"
 	"time"
 )
 
 func main() {
-	// for the most brief RPC case
-	cli, err := client.NewClient(
-		client.WithClientURL("127.0.0.1:20000"),
-		client.WithClientProtocolDubbo(),
+	ins, err := dubbo.NewInstance(
+		dubbo.WithName("dubbo_test"),
+		dubbo.WithRegistry(
+			registry.WithID("zk"),
+			registry.WithZookeeper(),
+			registry.WithAddress("127.0.0.1:2181"),
+		),
 	)
+
+	// for the most brief RPC case
+	cli, err := ins.NewClient(
+		client.WithClientURL(""),
+	)
+
 	if err != nil {
 		panic(err)
 	}
-	svc, err := greettriple.NewGreetService(cli, client.WithCheck(), client.WithProtocolDubbo())
+	svc, err := greettriple.NewGreetService(cli)
 
-	svc2, err := greettriple.NewGreetService(cli, client.WithCheck(), client.WithProtocolDubbo())
+	svc2, err := greettriple.NewGreetService(cli)
+
 	if err != nil {
 		panic(err)
 	}

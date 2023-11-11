@@ -43,6 +43,7 @@ type ReferenceOptions struct {
 	Application *global.ApplicationConfig
 	Registries  map[string]*global.RegistryConfig
 	Shutdown    *global.ShutdownConfig
+	cliOpts     *ClientOptions
 
 	pxy          *proxy.Proxy
 	id           string

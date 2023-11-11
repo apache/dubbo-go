@@ -19,6 +19,8 @@ package client
 
 import (
 	"context"
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"fmt"
 )
 
 import (
@@ -32,8 +34,7 @@ import (
 )
 
 type Client struct {
-	invoker protocol.Invoker
-	info    *ClientInfo
+	info *ClientInfo
 
 	cliOpts *ClientOptions
 	refOpts map[string]*ReferenceOptions
@@ -46,7 +47,7 @@ type ClientInfo struct {
 	Meta             map[string]interface{}
 }
 
-func (cli *Client) call(ctx context.Context, invoker protocol.Invoker, paramsRawVals []interface{}, interfaceName, methodName, callType string, opts ...CallOption) (protocol.Result, error) {
+func (cli *Client) call(ctx context.Context, paramsRawVals []interface{}, interfaceName, methodName, group, version, callType string, opts ...CallOption) (protocol.Result, error) {
 	// get a default CallOptions
 	// apply CallOption
 	options := newDefaultCallOptions()
@@ -58,59 +59,64 @@ func (cli *Client) call(ctx context.Context, invoker protocol.Invoker, paramsRaw
 	if err != nil {
 		return nil, err
 	}
+
+	refOption := cli.refOpts[common.ServiceKey(interfaceName, group, version)]
+	if refOption == nil {
+		return nil, fmt.Errorf("no service found for %s/%s:%s, please check if the service has been registered", group, interfaceName, version)
+	}
 	// todo: move timeout into context or invocation
-	return invoker.Invoke(ctx, inv), nil
+	return refOption.invoker.Invoke(ctx, inv), nil
 
 }
 
-func (cli *Client) CallUnary(ctx context.Context, invoker protocol.Invoker, req, resp interface{}, interfaceName, methodName string, opts ...CallOption) error {
-	res, err := cli.call(ctx, invoker, []interface{}{req, resp}, interfaceName, methodName, constant.CallUnary, opts...)
+func (cli *Client) CallUnary(ctx context.Context, req, resp interface{}, interfaceName, methodName string, group string, version string, opts ...CallOption) error {
+	res, err := cli.call(ctx, []interface{}{req, resp}, interfaceName, methodName, group, version, constant.CallUnary, opts...)
 	if err != nil {
 		return err
 	}
 	return res.Error()
 }
 
-func (cli *Client) CallClientStream(ctx context.Context, invoker protocol.Invoker, interfaceName, methodName string, opts ...CallOption) (interface{}, error) {
-	res, err := cli.call(ctx, invoker, nil, interfaceName, methodName, constant.CallClientStream, opts...)
+func (cli *Client) CallClientStream(ctx context.Context, interfaceName, methodName, group, version string, opts ...CallOption) (interface{}, error) {
+	res, err := cli.call(ctx, nil, interfaceName, methodName, group, version, constant.CallClientStream, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return res.Result(), res.Error()
 }
 
-func (cli *Client) CallServerStream(ctx context.Context, invoker protocol.Invoker, req interface{}, interfaceName, methodName string, opts ...CallOption) (interface{}, error) {
-	res, err := cli.call(ctx, invoker, []interface{}{req}, interfaceName, methodName, constant.CallServerStream, opts...)
+func (cli *Client) CallServerStream(ctx context.Context, req interface{}, interfaceName, methodName, group, version string, opts ...CallOption) (interface{}, error) {
+	res, err := cli.call(ctx, []interface{}{req}, interfaceName, methodName, group, version, constant.CallServerStream, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return res.Result(), res.Error()
 }
 
-func (cli *Client) CallBidiStream(ctx context.Context, invoker protocol.Invoker, interfaceName, methodName string, opts ...CallOption) (interface{}, error) {
-	res, err := cli.call(ctx, invoker, nil, interfaceName, methodName, constant.CallBidiStream, opts...)
+func (cli *Client) CallBidiStream(ctx context.Context, interfaceName, methodName, group, version string, opts ...CallOption) (interface{}, error) {
+	res, err := cli.call(ctx, nil, interfaceName, methodName, group, version, constant.CallBidiStream, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return res.Result(), res.Error()
 }
 
-func (cli *Client) Init(info *ClientInfo, opts ...ReferenceOption) (protocol.Invoker, error) {
+func (cli *Client) Init(info *ClientInfo, opts ...ReferenceOption) (string, string, error) {
 	if info == nil {
-		return nil, errors.New("ClientInfo is nil")
+		return "", "", errors.New("ClientInfo is nil")
 	}
 
 	newRefOptions := defaultReferenceOptions()
 	err := newRefOptions.init(cli, opts...)
 	if err != nil {
-		return nil, err
+		return "", "", err
 	}
 
 	cli.refOpts[newRefOptions.Reference.ServiceKey()] = newRefOptions
 
 	newRefOptions.ReferWithInfo(info)
 
-	return newRefOptions.invoker, nil
+	return newRefOptions.Reference.Group, newRefOptions.Reference.Version, nil
 }
 
 func generateInvocation(methodName string, paramsRawVals []interface{}, callType string, opts *CallOptions) (protocol.Invocation, error) {
@@ -132,5 +138,6 @@ func NewClient(opts ...ClientOption) (*Client, error) {
 	}
 	return &Client{
 		cliOpts: newCliOpts,
+		refOpts: make(map[string]*ReferenceOptions),
 	}, nil
 }

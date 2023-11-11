@@ -54,7 +54,7 @@ func getEnv(key, fallback string) string {
 
 func updateOrCreateMeshURL(opts *ReferenceOptions) {
 	ref := opts.Reference
-	con := opts.Consumer
+	con := opts.cliOpts.Consumer
 
 	if ref.URL != "" {
 		logger.Infof("URL specified explicitly %v", ref.URL)
@@ -98,7 +98,8 @@ func (refOpts *ReferenceOptions) ReferWithServiceAndInfo(srv common.RPCService, 
 
 func (refOpts *ReferenceOptions) refer(srv common.RPCService, info *ClientInfo) {
 	ref := refOpts.Reference
-	con := refOpts.Consumer
+	clientOpts := refOpts.cliOpts
+	con := clientOpts.Consumer
 
 	var methods []string
 	if info != nil {
@@ -288,8 +289,9 @@ func (refOpts *ReferenceOptions) Implement(v common.RPCService) {
 		refOpts.pxy.Implement(v)
 	} else if refOpts.info != nil {
 		refOpts.info.ClientInjectFunc(v, &Client{
-			invoker: refOpts.invoker,
+			cliOpts: refOpts.cliOpts,
 			info:    refOpts.info,
+			refOpts: map[string]*ReferenceOptions{},
 		})
 	}
 }
