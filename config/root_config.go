@@ -155,9 +155,10 @@ func (rc *RootConfig) Init() error {
 	// init protocol
 	protocols := rc.Protocols
 	if len(protocols) <= 0 {
-		protocol := &ProtocolConfig{}
+		protocol := ProtocolConfig{}
 		protocols = make(map[string]*ProtocolConfig, 1)
-		protocols[constant.Dubbo] = protocol
+		// todo, default value should be determined in a unified way
+		protocols["tri"] = &protocol
 		rc.Protocols = protocols
 	}
 	for _, protocol := range protocols {
