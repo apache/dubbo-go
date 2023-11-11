@@ -177,7 +177,7 @@ func serviceItemToUrls(item ConfigItem, config ConfiguratorConfig) ([]*common.UR
 				if err != nil {
 					return nil, perrors.WithStack(err)
 				}
-				url.AddAttribute(constant.MatchCondition, item.Match)
+				url.SetAttribute(constant.MatchCondition, item.Match)
 				urls = append(urls, url)
 			}
 		} else {
@@ -185,7 +185,7 @@ func serviceItemToUrls(item ConfigItem, config ConfiguratorConfig) ([]*common.UR
 			if err != nil {
 				return nil, perrors.WithStack(err)
 			}
-			url.AddAttribute(constant.MatchCondition, item.Match)
+			url.SetAttribute(constant.MatchCondition, item.Match)
 			urls = append(urls, url)
 		}
 	}
@@ -227,7 +227,7 @@ func appItemToUrls(item ConfigItem, config ConfiguratorConfig) ([]*common.URL, e
 			if err != nil {
 				return nil, perrors.WithStack(err)
 			}
-			url.AddAttribute(constant.MatchCondition, item.Match)
+			url.SetAttribute(constant.MatchCondition, item.Match)
 			urls = append(urls, url)
 		}
 	}

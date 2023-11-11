@@ -81,8 +81,7 @@ func (c *overrideConfigurator) Configure(url *common.URL) {
 // configureIfMatch
 func (c *overrideConfigurator) configureIfMatchV3(host string, url *common.URL) {
 	conditionKeys := getConditionKeys()
-	matcher := c.configuratorUrl.GetAttribute(constant.MatchCondition)
-	if matcher != nil {
+	if matcher, ok := c.configuratorUrl.GetAttribute(constant.MatchCondition); ok {
 		conditionMatcher := matcher.(*parser.ConditionMatch)
 		if conditionMatcher.IsMatch(host, url) {
 			configUrl := c.configuratorUrl.CloneExceptParams(conditionKeys)
