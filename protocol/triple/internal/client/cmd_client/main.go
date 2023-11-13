@@ -24,7 +24,6 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3"
 	"dubbo.apache.org/dubbo-go/v3/client"
 	_ "dubbo.apache.org/dubbo-go/v3/imports"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/client/common"
@@ -33,12 +32,8 @@ import (
 )
 
 func main() {
-	ins, err := dubbo.NewInstance(
-		dubbo.WithName("dubbo_test"),
-	)
-
 	// for the most brief RPC case
-	cli, err := ins.NewClient(
+	cli, err := client.NewClient(
 		client.WithClientURL("127.0.0.1:20000"),
 	)
 
