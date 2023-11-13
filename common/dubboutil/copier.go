@@ -17,7 +17,9 @@
 
 package dubboutil
 
-import "reflect"
+import (
+	"reflect"
+)
 
 func CopyFields(sourceValue reflect.Value, targetValue reflect.Value) {
 	for i := 0; i < sourceValue.NumField(); i++ {
