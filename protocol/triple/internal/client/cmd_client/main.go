@@ -25,23 +25,18 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/client/common"
 	greet "dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto/triple_gen/greettriple"
-	"dubbo.apache.org/dubbo-go/v3/registry"
+	"fmt"
 	"time"
 )
 
 func main() {
 	ins, err := dubbo.NewInstance(
 		dubbo.WithName("dubbo_test"),
-		dubbo.WithRegistry(
-			registry.WithID("zk"),
-			registry.WithZookeeper(),
-			registry.WithAddress("127.0.0.1:2181"),
-		),
 	)
 
 	// for the most brief RPC case
 	cli, err := ins.NewClient(
-		client.WithClientURL(""),
+		client.WithClientURL("127.0.0.1:20000"),
 	)
 
 	if err != nil {
@@ -49,14 +44,16 @@ func main() {
 	}
 	svc, err := greettriple.NewGreetService(cli)
 
-	svc2, err := greettriple.NewGreetService(cli)
-
 	if err != nil {
 		panic(err)
 	}
 
-	svc.Greet(context.Background(), &greet.GreetRequest{Name: "greet"}, client.WithCallRequestTimeout(5*time.Second))
-	svc2.Greet(context.Background(), &greet.GreetRequest{Name: "greet"}, client.WithCallRequestTimeout(5*time.Second))
+	response, err := svc.Greet(context.Background(), &greet.GreetRequest{Name: "greet"}, client.WithCallRequestTimeout(5*time.Second))
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Printf("result: %s", response.Greeting)
 
 	common.TestClient(svc)
 }

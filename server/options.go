@@ -18,6 +18,8 @@
 package server
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/dubboutil"
+	"reflect"
 	"strconv"
 	"sync"
 	"time"
@@ -105,6 +107,139 @@ func (srvOpts *ServerOptions) init(opts ...ServerOption) error {
 type ServerOption func(*ServerOptions)
 
 // ---------- For user ----------
+
+// ========== LoadBalance Strategy ==========
+
+func WithServerLoadBalanceConsistentHashing() ServerOption {
+	return func(opts *ServerOptions) {
+		opts.Provider.Loadbalance = constant.LoadBalanceKeyConsistentHashing
+	}
+}
+
+func WithServerLoadBalanceLeastActive() ServerOption {
+	return func(opts *ServerOptions) {
+		opts.Provider.Loadbalance = constant.LoadBalanceKeyLeastActive
+	}
+}
+
+func WithServerLoadBalanceRandom() ServerOption {
+	return func(opts *ServerOptions) {
+		opts.Provider.Loadbalance = constant.LoadBalanceKeyRandom
+	}
+}
+
+func WithServerLoadBalanceRoundRobin() ServerOption {
+	return func(opts *ServerOptions) {
+		opts.Provider.Loadbalance = constant.LoadBalanceKeyRoundRobin
+	}
+}
+
+func WithServerLoadBalanceP2C() ServerOption {
+	return func(opts *ServerOptions) {
+		opts.Provider.Loadbalance = constant.LoadBalanceKeyP2C
+	}
+}
+
+func WithServerLoadBalanceXDSRingHash() ServerOption {
+	return func(opts *ServerOptions) {
+		opts.Provider.Loadbalance = constant.LoadBalanceKeyLeastActive
+	}
+}
+
+// warmUp is in seconds
+func WithServerWarmUp(warmUp time.Duration) ServerOption {
+	return func(opts *ServerOptions) {
+		warmUpSec := int(warmUp / time.Second)
+		opts.Provider.Warmup = strconv.Itoa(warmUpSec)
+	}
+}
+
+// ========== Cluster Strategy ==========
+
+func WithServerClusterAvailable() ServerOption {
+	return func(opts *ServerOptions) {
+		opts.Provider.Cluster = constant.ClusterKeyAvailable
+	}
+}
+
+func WithServerClusterBroadcast() ServerOption {
+	return func(opts *ServerOptions) {
+		opts.Provider.Cluster = constant.ClusterKeyBroadcast
+	}
+}
+
+func WithServerClusterFailBack() ServerOption {
+	return func(opts *ServerOptions) {
+		opts.Provider.Cluster = constant.ClusterKeyFailback
+	}
+}
+
+func WithServerClusterFailFast() ServerOption {
+	return func(opts *ServerOptions) {
+		opts.Provider.Cluster = constant.ClusterKeyFailfast
+	}
+}
+
+func WithServerClusterFailOver() ServerOption {
+	return func(opts *ServerOptions) {
+		opts.Provider.Cluster = constant.ClusterKeyFailover
+	}
+}
+
+func WithServerClusterFailSafe() ServerOption {
+	return func(opts *ServerOptions) {
+		opts.Provider.Cluster = constant.ClusterKeyFailsafe
+	}
+}
+
+func WithServerClusterForking() ServerOption {
+	return func(opts *ServerOptions) {
+		opts.Provider.Cluster = constant.ClusterKeyForking
+	}
+}
+
+func WithServerClusterZoneAware() ServerOption {
+	return func(opts *ServerOptions) {
+		opts.Provider.Cluster = constant.ClusterKeyZoneAware
+	}
+}
+
+func WithServerClusterAdaptiveService() ServerOption {
+	return func(opts *ServerOptions) {
+		opts.Provider.Cluster = constant.ClusterKeyAdaptiveService
+	}
+}
+
+func WithServerGroup(group string) ServerOption {
+	return func(opts *ServerOptions) {
+		opts.Provider.Group = group
+	}
+}
+
+func WithServerVersion(version string) ServerOption {
+	return func(opts *ServerOptions) {
+		opts.Provider.Version = version
+	}
+}
+
+func WithServerJSON() ServerOption {
+	return func(opts *ServerOptions) {
+		opts.Provider.Serialization = constant.JSONSerialization
+	}
+}
+
+// WithToken should be used with WithFilter("token")
+func WithServerToken(token string) ServerOption {
+	return func(opts *ServerOptions) {
+		opts.Provider.Token = token
+	}
+}
+
+func WithServerNotRegister() ServerOption {
+	return func(opts *ServerOptions) {
+		opts.Provider.NotRegister = true
+	}
+}
 
 // todo(DMwangnima): change Filter Option like Cluster and LoadBalance
 func WithServerFilter(filter string) ServerOption {
@@ -233,7 +368,7 @@ func defaultServiceOptions() *ServiceOptions {
 	}
 }
 
-func (svcOpts *ServiceOptions) init(opts ...ServiceOption) error {
+func (svcOpts *ServiceOptions) init(srv *Server, opts ...ServiceOption) error {
 	for _, opt := range opts {
 		opt(svcOpts)
 	}
@@ -241,7 +376,8 @@ func (svcOpts *ServiceOptions) init(opts ...ServiceOption) error {
 		return err
 	}
 
-	srv := svcOpts.Service
+	svc := svcOpts.Service
+	dubboutil.CopyFields(reflect.ValueOf(srv.cfg.Provider).Elem(), reflect.ValueOf(svc).Elem())
 
 	svcOpts.exported = atomic.NewBool(false)
 
@@ -256,22 +392,22 @@ func (svcOpts *ServiceOptions) init(opts ...ServiceOption) error {
 		// since many modules would retrieve this information directly.
 		config.GetRootConfig().Application = svcOpts.applicationCompat
 		svcOpts.metadataType = svcOpts.applicationCompat.MetadataType
-		if srv.Group == "" {
-			srv.Group = svcOpts.applicationCompat.Group
+		if svc.Group == "" {
+			svc.Group = svcOpts.applicationCompat.Group
 		}
-		if srv.Version == "" {
-			srv.Version = svcOpts.applicationCompat.Version
+		if svc.Version == "" {
+			svc.Version = svcOpts.applicationCompat.Version
 		}
 	}
 	svcOpts.unexported = atomic.NewBool(false)
 
 	// initialize Registries
-	if len(srv.RCRegistriesMap) == 0 {
-		srv.RCRegistriesMap = svcOpts.Registries
+	if len(svc.RCRegistriesMap) == 0 {
+		svc.RCRegistriesMap = svcOpts.Registries
 	}
-	if len(srv.RCRegistriesMap) > 0 {
+	if len(svc.RCRegistriesMap) > 0 {
 		svcOpts.registriesCompat = make(map[string]*config.RegistryConfig)
-		for key, reg := range srv.RCRegistriesMap {
+		for key, reg := range svc.RCRegistriesMap {
 			svcOpts.registriesCompat[key] = compatRegistryConfig(reg)
 			if err := svcOpts.registriesCompat[key].Init(); err != nil {
 				return err
@@ -280,12 +416,12 @@ func (svcOpts *ServiceOptions) init(opts ...ServiceOption) error {
 	}
 
 	// initialize Protocols
-	if len(srv.RCProtocolsMap) == 0 {
-		srv.RCProtocolsMap = svcOpts.Protocols
+	if len(svc.RCProtocolsMap) == 0 {
+		svc.RCProtocolsMap = svcOpts.Protocols
 	}
-	if len(srv.RCProtocolsMap) > 0 {
+	if len(svc.RCProtocolsMap) > 0 {
 		svcOpts.protocolsCompat = make(map[string]*config.ProtocolConfig)
-		for key, pro := range srv.RCProtocolsMap {
+		for key, pro := range svc.RCProtocolsMap {
 			svcOpts.protocolsCompat[key] = compatProtocolConfig(pro)
 			if err := svcOpts.protocolsCompat[key].Init(); err != nil {
 				return err
@@ -293,26 +429,26 @@ func (svcOpts *ServiceOptions) init(opts ...ServiceOption) error {
 		}
 	}
 
-	srv.RegistryIDs = commonCfg.TranslateIds(srv.RegistryIDs)
-	if len(srv.RegistryIDs) <= 0 {
-		srv.RegistryIDs = svcOpts.Provider.RegistryIDs
+	svc.RegistryIDs = commonCfg.TranslateIds(svc.RegistryIDs)
+	if len(svc.RegistryIDs) <= 0 {
+		svc.RegistryIDs = svcOpts.Provider.RegistryIDs
 	}
-	if srv.RegistryIDs == nil || len(srv.RegistryIDs) <= 0 {
-		srv.NotRegister = true
+	if svc.RegistryIDs == nil || len(svc.RegistryIDs) <= 0 {
+		svc.NotRegister = true
 	}
 
-	srv.ProtocolIDs = commonCfg.TranslateIds(srv.ProtocolIDs)
-	if len(srv.ProtocolIDs) <= 0 {
-		srv.ProtocolIDs = svcOpts.Provider.ProtocolIDs
+	svc.ProtocolIDs = commonCfg.TranslateIds(svc.ProtocolIDs)
+	if len(svc.ProtocolIDs) <= 0 {
+		svc.ProtocolIDs = svcOpts.Provider.ProtocolIDs
 	}
-	if len(srv.ProtocolIDs) <= 0 {
+	if len(svc.ProtocolIDs) <= 0 {
 		for name := range svcOpts.Protocols {
-			srv.ProtocolIDs = append(srv.ProtocolIDs, name)
+			svc.ProtocolIDs = append(svc.ProtocolIDs, name)
 		}
 	}
 
-	if srv.TracingKey == "" {
-		srv.TracingKey = svcOpts.Provider.TracingKey
+	if svc.TracingKey == "" {
+		svc.TracingKey = svcOpts.Provider.TracingKey
 	}
 
 	err := svcOpts.check()

@@ -61,14 +61,14 @@ func (ins *Instance) NewClient(opts ...client.ClientOption) (*client.Client, err
 	sdCfg := ins.insOpts.Shutdown
 	if conCfg != nil {
 		if conCfg.Check {
-			cliOpts = append(cliOpts, client.WithCheck())
+			cliOpts = append(cliOpts, client.WithClientCheck())
 		}
 		// these options come from Consumer and Root.
 		// for dubbo-go developers, referring config/ConsumerConfig.Init and config/ReferenceConfig
 		cliOpts = append(cliOpts,
-			client.WithFilter(conCfg.Filter),
+			client.WithClientFilter(conCfg.Filter),
 			// todo(DMwangnima): deal with Protocol
-			client.WithRegistryIDs(conCfg.RegistryIDs),
+			client.WithClientRegistryIDs(conCfg.RegistryIDs),
 			// todo(DMwangnima): deal with TracingKey
 			client.SetConsumer(conCfg),
 		)
@@ -77,7 +77,7 @@ func (ins *Instance) NewClient(opts ...client.ClientOption) (*client.Client, err
 		cliOpts = append(cliOpts, client.SetApplication(appCfg))
 	}
 	if regsCfg != nil {
-		cliOpts = append(cliOpts, client.SetRegistries(regsCfg))
+		cliOpts = append(cliOpts, client.SetClientRegistries(regsCfg))
 	}
 	if sdCfg != nil {
 		cliOpts = append(cliOpts, client.SetShutdown(sdCfg))

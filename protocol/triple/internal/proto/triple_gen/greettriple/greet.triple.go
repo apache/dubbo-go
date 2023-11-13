@@ -88,7 +88,7 @@ type GreetService interface {
 
 // NewGreetService constructs a client for the greet.GreetService service.
 func NewGreetService(cli *client.Client, opts ...client.ReferenceOption) (GreetService, error) {
-	group, version, err := cli.Init(&GreetService_ClientInfo, opts...)
+	group, version, err := cli.Init("greet.GreetService", &GreetService_ClientInfo, opts...)
 	if err != nil {
 		return nil, err
 	}

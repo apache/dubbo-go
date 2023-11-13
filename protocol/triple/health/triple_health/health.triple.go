@@ -73,30 +73,36 @@ type Health interface {
 }
 
 // NewHealth constructs a client for the grpc.health.v1.Health service.
-func NewHealth(cli *client.Client) (Health, error) {
-	if err := cli.Init(&Health_ClientInfo); err != nil {
+func NewHealth(cli *client.Client, opts ...client.ReferenceOption) (Health, error) {
+	group, version, err := cli.Init("grpc.health.v1.Health", &Health_ClientInfo, opts...)
+	if err != nil {
 		return nil, err
 	}
+
 	return &HealthImpl{
-		cli: cli,
+		cli:     cli,
+		group:   group,
+		version: version,
 	}, nil
 }
 
 // HealthImpl implements Health.
 type HealthImpl struct {
-	cli *client.Client
+	cli     *client.Client
+	group   string
+	version string
 }
 
 func (c *HealthImpl) Check(ctx context.Context, req *HealthCheckRequest, opts ...client.CallOption) (*HealthCheckResponse, error) {
 	resp := new(HealthCheckResponse)
-	if err := c.cli.CallUnary(ctx, req, resp, "grpc.health.v1.Health", "Check", opts...); err != nil {
+	if err := c.cli.CallUnary(ctx, req, resp, "grpc.health.v1.Health", "Check", c.group, c.version, opts...); err != nil {
 		return nil, err
 	}
 	return resp, nil
 }
 
 func (c *HealthImpl) Watch(ctx context.Context, req *HealthCheckRequest, opts ...client.CallOption) (Health_WatchClient, error) {
-	stream, err := c.cli.CallServerStream(ctx, req, "grpc.health.v1.Health", "Watch", opts...)
+	stream, err := c.cli.CallServerStream(ctx, req, "grpc.health.v1.Health", "Watch", c.group, c.version, opts...)
 	if err != nil {
 		return nil, err
 	}

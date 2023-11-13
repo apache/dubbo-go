@@ -15,33 +15,26 @@
  * limitations under the License.
  */
 
-package main
+package dubboutil
 
-import (
-	_ "dubbo.apache.org/dubbo-go/v3/imports"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
-	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto/triple_gen/greettriple"
-	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/server/api"
-	"dubbo.apache.org/dubbo-go/v3/server"
-)
+import "reflect"
 
-func main() {
-	srv, err := server.NewServer(
-		server.WithServerProtocol(
-			protocol.WithTriple(),
-			protocol.WithPort(20000),
-		),
-		server.WithServerVersion("1.0.0"),
-	)
+func CopyFields(sourceValue reflect.Value, targetValue reflect.Value) {
+	for i := 0; i < sourceValue.NumField(); i++ {
+		sourceField := sourceValue.Type().Field(i)
+		sourceFieldValue := sourceValue.Field(i)
 
-	if err != nil {
-		panic(err)
-	}
-	if err := greettriple.RegisterGreetServiceHandler(srv, &api.GreetTripleServer{}); err != nil {
-		panic(err)
-	}
+		// embedded ReferenceConfig
+		if sourceFieldValue.Kind() == reflect.Struct && sourceField.Anonymous {
+			CopyFields(sourceFieldValue, targetValue)
+			continue
+		}
 
-	if err := srv.Serve(); err != nil {
-		panic(err)
+		if sourceFieldValue.CanInterface() && sourceFieldValue.CanSet() {
+			targetField := targetValue.FieldByName(sourceField.Name)
+			if targetField.IsValid() && targetField.CanSet() && targetField.Type() == sourceFieldValue.Type() && targetField.IsZero() {
+				targetField.Set(sourceFieldValue)
+			}
+		}
 	}
 }
