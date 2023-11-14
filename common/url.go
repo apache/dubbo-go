@@ -818,13 +818,14 @@ func MergeURL(serviceURL *URL, referenceURL *URL) *URL {
 			mergedURL.Methods[i] = method
 		}
 	}
-
 	// merge attributes
 	if mergedURL.attributes == nil {
 		mergedURL.attributes = make(map[string]interface{}, len(referenceURL.attributes))
 	}
 	for attrK, attrV := range referenceURL.attributes {
-		mergedURL.attributes[attrK] = attrV
+		if _, ok := mergedURL.GetAttribute(attrK); !ok {
+			mergedURL.attributes[attrK] = attrV
+		}
 	}
 	// In this way, we will raise some performance.
 	mergedURL.ReplaceParams(params)
