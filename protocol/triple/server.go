@@ -21,6 +21,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"github.com/dubbogo/grpc-go"
 	"net/http"
 	"sync"
 	"time"
@@ -40,11 +41,20 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
-	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo3"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	"dubbo.apache.org/dubbo-go/v3/server"
 )
+
+// Dubbo3GrpcService is gRPC service
+type Dubbo3GrpcService interface {
+	// SetProxyImpl sets proxy.
+	XXX_SetProxyImpl(impl protocol.Invoker)
+	// GetProxyImpl gets proxy.
+	XXX_GetProxyImpl() protocol.Invoker
+	// ServiceDesc gets an RPC service's specification.
+	XXX_ServiceDesc() *grpc.ServiceDesc
+}
 
 // Server is TRIPLE server
 type Server struct {
@@ -220,7 +230,7 @@ func compatHandleService(url *common.URL, mux *http.ServeMux, opts ...tri.Handle
 		}
 		// todo(DMwangnima): judge protocol type
 		service := config.GetProviderService(key)
-		ds, ok := service.(dubbo3.Dubbo3GrpcService)
+		ds, ok := service.(Dubbo3GrpcService)
 		if !ok {
 			panic("illegal service type registered")
 		}
@@ -244,7 +254,7 @@ func compatHandleService(url *common.URL, mux *http.ServeMux, opts ...tri.Handle
 	}
 }
 
-func compatBuildHandler(svc dubbo3.Dubbo3GrpcService, opts ...tri.HandlerOption) (string, http.Handler) {
+func compatBuildHandler(svc Dubbo3GrpcService, opts ...tri.HandlerOption) (string, http.Handler) {
 	mux := http.NewServeMux()
 	desc := svc.XXX_ServiceDesc()
 	basePath := desc.ServiceName
