@@ -18,11 +18,14 @@
 package common
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"fmt"
 	"net"
 	"regexp"
 	"strings"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
 type ParamMatch struct {

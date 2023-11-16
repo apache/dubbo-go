@@ -55,7 +55,7 @@ func (bcl *BaseConfigurationListener) InitWith(key string, listener config_cente
 	}
 	bcl.defaultConfiguratorFunc = f
 	bcl.dynamicConfiguration.AddListener(key, listener)
-	if rawConfig, err := bcl.dynamicConfiguration.GetInternalProperty(key,
+	if rawConfig, err := bcl.dynamicConfiguration.GetRule(key,
 		config_center.WithGroup(constant.Dubbo)); err != nil {
 		//set configurators to empty
 		bcl.configurators = []config_center.Configurator{}

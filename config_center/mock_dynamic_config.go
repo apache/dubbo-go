@@ -36,7 +36,8 @@ import (
 
 // MockDynamicConfigurationFactory defines content
 type MockDynamicConfigurationFactory struct {
-	Content string
+	Content             string
+	ConfiguratorContent string
 }
 
 const (
@@ -82,6 +83,8 @@ func (f *MockDynamicConfigurationFactory) GetDynamicConfiguration(_ *common.URL)
 	})
 	if len(f.Content) != 0 {
 		dynamicConfiguration.content = f.Content
+	} else if len(f.ConfiguratorContent) != 0 {
+		dynamicConfiguration.content = f.ConfiguratorContent
 	}
 	return dynamicConfiguration, err
 }

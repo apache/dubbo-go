@@ -42,7 +42,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo3/health"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
 	"dubbo.apache.org/dubbo-go/v3/registry"
-	"dubbo.apache.org/dubbo-go/v3/registry/directory"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
@@ -149,21 +148,16 @@ func (proto *registryProtocol) Refer(url *common.URL) protocol.Invoker {
 	reg := proto.getRegistry(url)
 
 	// new registry directory for store service url from registry
-	dic, err := extension.GetDefaultRegistryDirectory(registryUrl, reg)
+	dic, err := extension.GetDirectoryInstance(registryUrl, reg)
 	if err != nil {
 		logger.Errorf("consumer service %v create registry directory error, error message is %s, and will return nil invoker!",
 			serviceUrl.String(), err.Error())
 		return nil
 	}
-	// TODO, refactor to avoid type conversion
-	regDic, ok := dic.(*directory.RegistryDirectory)
-	if !ok {
-		logger.Errorf("Directory %v is expected to implement Directory, and will return nil invoker!", dic)
-		return nil
-	}
-	go regDic.Subscribe(registryUrl.SubURL)
 
-	err = reg.Register(serviceUrl)
+	// This will start a new routine and listen to instance changes.
+	err = dic.Subscribe(registryUrl.SubURL)
+
 	if err != nil {
 		logger.Errorf("consumer service %v register registry %v error, error message is %s",
 			serviceUrl.String(), registryUrl.String(), err.Error())

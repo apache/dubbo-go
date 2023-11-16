@@ -67,9 +67,8 @@ import (
 	_ "dubbo.apache.org/dubbo-go/v3/metrics/app_info"
 	_ "dubbo.apache.org/dubbo-go/v3/metrics/prometheus"
 	_ "dubbo.apache.org/dubbo-go/v3/otel/trace/jaeger"
-	_ "dubbo.apache.org/dubbo-go/v3/otel/trace/zipkin"
-	//_ "dubbo.apache.org/dubbo-go/v3/otel/trace/otlp" // FIXME: otlp-grpc use grpc health check which has the namespace conflict with dubbo3 protocol
 	_ "dubbo.apache.org/dubbo-go/v3/otel/trace/stdout"
+	_ "dubbo.apache.org/dubbo-go/v3/otel/trace/zipkin"
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/dubbo"
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/dubbo3"
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/dubbo3/health"
@@ -78,6 +77,7 @@ import (
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/jsonrpc"
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/rest"
 	_ "dubbo.apache.org/dubbo-go/v3/proxy/proxy_factory"
+	_ "dubbo.apache.org/dubbo-go/v3/registry/directory"
 	_ "dubbo.apache.org/dubbo-go/v3/registry/etcdv3"
 	_ "dubbo.apache.org/dubbo-go/v3/registry/nacos"
 	_ "dubbo.apache.org/dubbo-go/v3/registry/polaris"

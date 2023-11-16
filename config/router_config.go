@@ -18,12 +18,12 @@
 package config
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common"
 	"github.com/creasty/defaults"
 )
 
 import (
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/router/chain"
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	_ "dubbo.apache.org/dubbo-go/v3/metrics/prometheus"
 )
