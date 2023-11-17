@@ -677,13 +677,13 @@ func SetApplication(application *global.ApplicationConfig) ClientOption {
 	}
 }
 
-func SetConsumer(consumer *global.ConsumerConfig) ClientOption {
+func SetClientConsumer(consumer *global.ConsumerConfig) ClientOption {
 	return func(opts *ClientOptions) {
 		opts.Consumer = consumer
 	}
 }
 
-func SetShutdown(shutdown *global.ShutdownConfig) ClientOption {
+func SetClientShutdown(shutdown *global.ShutdownConfig) ClientOption {
 	return func(opts *ClientOptions) {
 		opts.Shutdown = shutdown
 	}
@@ -693,15 +693,14 @@ func SetShutdown(shutdown *global.ShutdownConfig) ClientOption {
 type CallOptions struct {
 	RequestTimeout string
 	Retries        string
+	Group          string
+	Version        string
 }
 
 type CallOption func(*CallOptions)
 
 func newDefaultCallOptions() *CallOptions {
-	return &CallOptions{
-		RequestTimeout: "",
-		Retries:        "",
-	}
+	return &CallOptions{}
 }
 
 // WithCallRequestTimeout the maximum waiting time for one specific call, only works for 'tri' and 'dubbo' protocol
@@ -715,5 +714,17 @@ func WithCallRequestTimeout(timeout time.Duration) CallOption {
 func WithCallRetries(retries int) CallOption {
 	return func(opts *CallOptions) {
 		opts.Retries = strconv.Itoa(retries)
+	}
+}
+
+func WithCallGroup(group string) CallOption {
+	return func(opts *CallOptions) {
+		opts.Group = group
+	}
+}
+
+func WithCallVersion(version string) CallOption {
+	return func(opts *CallOptions) {
+		opts.Version = version
 	}
 }

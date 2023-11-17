@@ -109,14 +109,16 @@ type GreetServiceImpl struct {
 
 func (c *GreetServiceImpl) Greet(ctx context.Context, req *proto.GreetRequest, opts ...client.CallOption) (*proto.GreetResponse, error) {
 	resp := new(proto.GreetResponse)
-	if err := c.cli.CallUnary(ctx, req, resp, "greet.GreetService", "Greet", c.group, c.version, opts...); err != nil {
+	opts = appendGroupVersion(opts, c)
+	if err := c.cli.CallUnary(ctx, req, resp, "greet.GreetService", "Greet", opts...); err != nil {
 		return nil, err
 	}
 	return resp, nil
 }
 
 func (c *GreetServiceImpl) GreetStream(ctx context.Context, opts ...client.CallOption) (GreetService_GreetStreamClient, error) {
-	stream, err := c.cli.CallBidiStream(ctx, "greet.GreetService", "GreetStream", c.group, c.version, opts...)
+	opts = appendGroupVersion(opts, c)
+	stream, err := c.cli.CallBidiStream(ctx, "greet.GreetService", "GreetStream", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +127,8 @@ func (c *GreetServiceImpl) GreetStream(ctx context.Context, opts ...client.CallO
 }
 
 func (c *GreetServiceImpl) GreetClientStream(ctx context.Context, opts ...client.CallOption) (GreetService_GreetClientStreamClient, error) {
-	stream, err := c.cli.CallClientStream(ctx, "greet.GreetService", "GreetClientStream", c.group, c.version, opts...)
+	opts = appendGroupVersion(opts, c)
+	stream, err := c.cli.CallClientStream(ctx, "greet.GreetService", "GreetClientStream", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -134,12 +137,19 @@ func (c *GreetServiceImpl) GreetClientStream(ctx context.Context, opts ...client
 }
 
 func (c *GreetServiceImpl) GreetServerStream(ctx context.Context, req *proto.GreetServerStreamRequest, opts ...client.CallOption) (GreetService_GreetServerStreamClient, error) {
-	stream, err := c.cli.CallServerStream(ctx, req, "greet.GreetService", "GreetServerStream", c.group, c.version, opts...)
+	opts = appendGroupVersion(opts, c)
+	stream, err := c.cli.CallServerStream(ctx, req, "greet.GreetService", "GreetServerStream", opts...)
 	if err != nil {
 		return nil, err
 	}
 	rawStream := stream.(*triple_protocol.ServerStreamForClient)
 	return &GreetServiceGreetServerStreamClient{rawStream}, nil
+}
+
+func appendGroupVersion(opts []client.CallOption, c *GreetServiceImpl) []client.CallOption {
+	opts = append(opts, client.WithCallGroup(c.group))
+	opts = append(opts, client.WithCallVersion(c.version))
+	return opts
 }
 
 type GreetService_GreetStreamClient interface {

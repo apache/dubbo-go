@@ -47,7 +47,7 @@ type ClientInfo struct {
 	Meta             map[string]interface{}
 }
 
-func (cli *Client) call(ctx context.Context, paramsRawVals []interface{}, interfaceName, methodName, group, version, callType string, opts ...CallOption) (protocol.Result, error) {
+func (cli *Client) call(ctx context.Context, paramsRawVals []interface{}, interfaceName, methodName, callType string, opts ...CallOption) (protocol.Result, error) {
 	// get a default CallOptions
 	// apply CallOption
 	options := newDefaultCallOptions()
@@ -60,41 +60,41 @@ func (cli *Client) call(ctx context.Context, paramsRawVals []interface{}, interf
 		return nil, err
 	}
 
-	refOption := cli.refOpts[common.ServiceKey(interfaceName, group, version)]
+	refOption := cli.refOpts[common.ServiceKey(interfaceName, options.Group, options.Version)]
 	if refOption == nil {
-		return nil, fmt.Errorf("no service found for %s/%s:%s, please check if the service has been registered", group, interfaceName, version)
+		return nil, fmt.Errorf("no service found for %s/%s:%s, please check if the service has been registered", options.Group, interfaceName, options.Version)
 	}
-	// todo: move timeout into context or invocation
+
 	return refOption.invoker.Invoke(ctx, inv), nil
 
 }
 
-func (cli *Client) CallUnary(ctx context.Context, req, resp interface{}, interfaceName, methodName string, group string, version string, opts ...CallOption) error {
-	res, err := cli.call(ctx, []interface{}{req, resp}, interfaceName, methodName, group, version, constant.CallUnary, opts...)
+func (cli *Client) CallUnary(ctx context.Context, req, resp interface{}, interfaceName, methodName string, opts ...CallOption) error {
+	res, err := cli.call(ctx, []interface{}{req, resp}, interfaceName, methodName, constant.CallUnary, opts...)
 	if err != nil {
 		return err
 	}
 	return res.Error()
 }
 
-func (cli *Client) CallClientStream(ctx context.Context, interfaceName, methodName, group, version string, opts ...CallOption) (interface{}, error) {
-	res, err := cli.call(ctx, nil, interfaceName, methodName, group, version, constant.CallClientStream, opts...)
+func (cli *Client) CallClientStream(ctx context.Context, interfaceName, methodName string, opts ...CallOption) (interface{}, error) {
+	res, err := cli.call(ctx, nil, interfaceName, methodName, constant.CallClientStream, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return res.Result(), res.Error()
 }
 
-func (cli *Client) CallServerStream(ctx context.Context, req interface{}, interfaceName, methodName, group, version string, opts ...CallOption) (interface{}, error) {
-	res, err := cli.call(ctx, []interface{}{req}, interfaceName, methodName, group, version, constant.CallServerStream, opts...)
+func (cli *Client) CallServerStream(ctx context.Context, req interface{}, interfaceName, methodName string, opts ...CallOption) (interface{}, error) {
+	res, err := cli.call(ctx, []interface{}{req}, interfaceName, methodName, constant.CallServerStream, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return res.Result(), res.Error()
 }
 
-func (cli *Client) CallBidiStream(ctx context.Context, interfaceName, methodName, group, version string, opts ...CallOption) (interface{}, error) {
-	res, err := cli.call(ctx, nil, interfaceName, methodName, group, version, constant.CallBidiStream, opts...)
+func (cli *Client) CallBidiStream(ctx context.Context, interfaceName, methodName string, opts ...CallOption) (interface{}, error) {
+	res, err := cli.call(ctx, nil, interfaceName, methodName, constant.CallBidiStream, opts...)
 	if err != nil {
 		return nil, err
 	}

@@ -70,7 +70,7 @@ func (ins *Instance) NewClient(opts ...client.ClientOption) (*client.Client, err
 			// todo(DMwangnima): deal with Protocol
 			client.WithClientRegistryIDs(conCfg.RegistryIDs),
 			// todo(DMwangnima): deal with TracingKey
-			client.SetConsumer(conCfg),
+			client.SetClientConsumer(conCfg),
 		)
 	}
 	if appCfg != nil {
@@ -80,7 +80,7 @@ func (ins *Instance) NewClient(opts ...client.ClientOption) (*client.Client, err
 		cliOpts = append(cliOpts, client.SetClientRegistries(regsCfg))
 	}
 	if sdCfg != nil {
-		cliOpts = append(cliOpts, client.SetShutdown(sdCfg))
+		cliOpts = append(cliOpts, client.SetClientShutdown(sdCfg))
 	}
 	// options passed by users has higher priority
 	cliOpts = append(cliOpts, opts...)
