@@ -94,20 +94,28 @@ type HealthImpl struct {
 }
 
 func (c *HealthImpl) Check(ctx context.Context, req *HealthCheckRequest, opts ...client.CallOption) (*HealthCheckResponse, error) {
+	opts = appendGroupVersion(opts, c)
 	resp := new(HealthCheckResponse)
-	if err := c.cli.CallUnary(ctx, req, resp, "grpc.health.v1.Health", "Check", c.group, c.version, opts...); err != nil {
+	if err := c.cli.CallUnary(ctx, req, resp, "grpc.health.v1.Health", "Check", opts...); err != nil {
 		return nil, err
 	}
 	return resp, nil
 }
 
 func (c *HealthImpl) Watch(ctx context.Context, req *HealthCheckRequest, opts ...client.CallOption) (Health_WatchClient, error) {
-	stream, err := c.cli.CallServerStream(ctx, req, "grpc.health.v1.Health", "Watch", c.group, c.version, opts...)
+	opts = appendGroupVersion(opts, c)
+	stream, err := c.cli.CallServerStream(ctx, req, "grpc.health.v1.Health", "Watch", opts...)
 	if err != nil {
 		return nil, err
 	}
 	rawStream := stream.(*triple_protocol.ServerStreamForClient)
 	return &HealthWatchClient{rawStream}, nil
+}
+
+func appendGroupVersion(opts []client.CallOption, c *HealthImpl) []client.CallOption {
+	opts = append(opts, client.WithCallGroup(c.group))
+	opts = append(opts, client.WithCallVersion(c.version))
+	return opts
 }
 
 type Health_WatchClient interface {
