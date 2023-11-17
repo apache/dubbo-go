@@ -74,7 +74,7 @@ type Health interface {
 
 // NewHealth constructs a client for the grpc.health.v1.Health service.
 func NewHealth(cli *client.Client, opts ...client.ReferenceOption) (Health, error) {
-	group, version, err := cli.Init("grpc.health.v1.Health", &Health_ClientInfo, opts...)
+	group, version, err := cli.Init(&Health_ClientInfo, opts...)
 	if err != nil {
 		return nil, err
 	}

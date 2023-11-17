@@ -101,7 +101,7 @@ func (cli *Client) CallBidiStream(ctx context.Context, interfaceName, methodName
 	return res.Result(), res.Error()
 }
 
-func (cli *Client) Init(interfaceName string, info *ClientInfo, opts ...ReferenceOption) (string, string, error) {
+func (cli *Client) Init(info *ClientInfo, opts ...ReferenceOption) (string, string, error) {
 	if info == nil {
 		return "", "", errors.New("ClientInfo is nil")
 	}
@@ -113,7 +113,7 @@ func (cli *Client) Init(interfaceName string, info *ClientInfo, opts ...Referenc
 	}
 
 	ref := newRefOptions.Reference
-	cli.refOpts[common.ServiceKey(interfaceName, ref.Group, ref.Version)] = newRefOptions
+	cli.refOpts[common.ServiceKey(info.InterfaceName, ref.Group, ref.Version)] = newRefOptions
 
 	newRefOptions.ReferWithInfo(info)
 
