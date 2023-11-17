@@ -21,7 +21,6 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"github.com/dubbogo/grpc-go"
 	"net/http"
 	"sync"
 	"time"
@@ -29,6 +28,8 @@ import (
 
 import (
 	"github.com/dubbogo/gost/log/logger"
+
+	"github.com/dubbogo/grpc-go"
 
 	"github.com/dustin/go-humanize"
 
