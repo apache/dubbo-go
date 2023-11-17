@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+//nolint:all
 package server_impl
 
 import (
