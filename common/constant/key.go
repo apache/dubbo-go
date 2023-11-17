@@ -100,7 +100,6 @@ const (
 	TokenFilterKey                       = "token"
 	TpsLimitFilterKey                    = "tps"
 	TracingFilterKey                     = "tracing"
-	XdsCircuitBreakerKey                 = "xds_circuit_reaker"
 	OTELServerTraceKey                   = "otelServerTrace"
 	OTELClientTraceKey                   = "otelClientTrace"
 )
@@ -284,10 +283,6 @@ const (
 
 const (
 	ZookeeperKey = "zookeeper"
-)
-
-const (
-	XDSRegistryKey = "xds"
 )
 
 const (

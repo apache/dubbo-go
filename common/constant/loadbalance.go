@@ -23,5 +23,4 @@ const (
 	LoadBalanceKeyRandom            = "random"
 	LoadBalanceKeyRoundRobin        = "roundrobin"
 	LoadBalanceKeyP2C               = "p2c"
-	LoadXDSRingHash                 = "xdsringhash"
 )

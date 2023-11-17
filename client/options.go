@@ -276,12 +276,6 @@ func WithLoadBalanceP2C() ClientOption {
 	}
 }
 
-func WithLoadBalanceXDSRingHash() ClientOption {
-	return func(opts *ClientOptions) {
-		opts.Reference.Loadbalance = constant.LoadBalanceKeyLeastActive
-	}
-}
-
 func WithRetries(retries int) ClientOption {
 	return func(opts *ClientOptions) {
 		opts.Reference.Retries = strconv.Itoa(retries)

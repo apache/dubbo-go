@@ -77,12 +77,6 @@ func WithPolaris() Option {
 	}
 }
 
-func WithXDS() Option {
-	return func(opts *Options) {
-		opts.Registry.Protocol = constant.XDSRegistryKey
-	}
-}
-
 func WithZookeeper() Option {
 	return func(opts *Options) {
 		opts.Registry.Protocol = constant.ZookeeperKey

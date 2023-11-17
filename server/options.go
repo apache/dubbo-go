@@ -384,12 +384,6 @@ func WithLoadBalanceP2C() ServiceOption {
 	}
 }
 
-func WithLoadBalanceXDSRingHash() ServiceOption {
-	return func(opts *ServiceOptions) {
-		opts.Service.Loadbalance = constant.LoadBalanceKeyLeastActive
-	}
-}
-
 // warmUp is in seconds
 func WithWarmUp(warmUp time.Duration) ServiceOption {
 	return func(opts *ServiceOptions) {
