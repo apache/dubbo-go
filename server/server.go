@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+// Package server provides APIs for registering services and starting an RPC server.
 package server
 
 import (

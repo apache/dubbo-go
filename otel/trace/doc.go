@@ -15,14 +15,5 @@
  * limitations under the License.
  */
 
-// Package cluster provides various LoadBalance and Cluster policies for client-side traffic management.
-package cluster
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
-)
-
-type Cluster interface {
-	Join(directory.Directory) protocol.Invoker
-}
+// Package trace is for collecting tracing data and adapting with backend tracing systems.
+package trace

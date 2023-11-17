@@ -15,26 +15,9 @@
  * limitations under the License.
  */
 
-package gen
+/*
+Package dubbo provides the Go implementation for Dubbo, an RPC and microservice framework.
 
-import (
-	"github.com/spf13/cobra"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/triple-tool/gen/generator"
-)
-
-var Cmd = &cobra.Command{
-	Use:  "gen",
-	RunE: generator.Generate,
-}
-
-func init() {
-	flags := Cmd.Flags()
-
-	flags.StringVar(&generator.ProtocPath, "protoPath", ".", "")
-	flags.StringSliceVar(&generator.GoOpts, "go_opt", []string{}, "")
-	flags.MarkHidden("protoPath")
-	flags.MarkHidden("go_opt")
-}
+See dubbo.apache.org for more information about Dubbo.
+*/
+package dubbo // import "dubbo.apache.org/dubbo-go/v3"

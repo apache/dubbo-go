@@ -15,14 +15,36 @@
  * limitations under the License.
  */
 
-// Package cluster provides various LoadBalance and Cluster policies for client-side traffic management.
-package cluster
+package cmd
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"os"
 )
 
-type Cluster interface {
-	Join(directory.Directory) protocol.Invoker
+import (
+	"github.com/spf13/cobra"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/cmd/protoc-gen-go-triple/internal/version"
+)
+
+// rootCmd represents the base command when called without any subcommands
+var rootCmd = &cobra.Command{
+	Use: "triple-tool",
+}
+
+// Execute adds all child commands to the root command and sets flags appropriately.
+// This is called by main.main(). It only needs to happen once to the rootCmd.
+func Execute() {
+	err := rootCmd.Execute()
+	if err != nil {
+		os.Exit(1)
+	}
+}
+
+func init() {
+	rootCmd.Version = version.Version
+
+	rootCmd.AddCommand(Cmd)
 }

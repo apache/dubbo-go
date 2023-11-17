@@ -18,34 +18,23 @@
 package cmd
 
 import (
-	"os"
-)
-
-import (
 	"github.com/spf13/cobra"
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/triple-tool/gen"
-	"dubbo.apache.org/dubbo-go/v3/triple-tool/internal/version"
+	"dubbo.apache.org/dubbo-go/v3/cmd/protoc-gen-go-triple/gen/generator"
 )
 
-// rootCmd represents the base command when called without any subcommands
-var rootCmd = &cobra.Command{
-	Use: "triple-tool",
-}
-
-// Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute() {
-	err := rootCmd.Execute()
-	if err != nil {
-		os.Exit(1)
-	}
+var Cmd = &cobra.Command{
+	Use:  "gen",
+	RunE: generator.Generate,
 }
 
 func init() {
-	rootCmd.Version = version.Version
+	flags := Cmd.Flags()
 
-	rootCmd.AddCommand(gen.Cmd)
+	flags.StringVar(&generator.ProtocPath, "protoPath", ".", "")
+	flags.StringSliceVar(&generator.GoOpts, "go_opt", []string{}, "")
+	flags.MarkHidden("protoPath")
+	flags.MarkHidden("go_opt")
 }
