@@ -17,7 +17,6 @@ require (
 	github.com/dubbogo/go-zookeeper v1.0.4-0.20211212162352-f9d2183d89d5
 	github.com/dubbogo/gost v1.14.0
 	github.com/dubbogo/grpc-go v1.42.10
-	github.com/dubbogo/tools v1.0.9 // indirect
 	github.com/dubbogo/triple v1.2.2-rc3
 	github.com/dustin/go-humanize v1.0.1
 	github.com/emicklei/go-restful/v3 v3.10.1
@@ -34,7 +33,6 @@ require (
 	github.com/google/go-cmp v0.5.9
 	github.com/google/uuid v1.3.0
 	github.com/gopherjs/gopherjs v0.0.0-20190910122728-9d188e94fb99 // indirect
-	github.com/grpc-ecosystem/grpc-opentracing v0.0.0-20180507213350-8e809c8a8645
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/hashicorp/vault/sdk v0.7.0
 	github.com/influxdata/tdigest v0.0.1
