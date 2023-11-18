@@ -15,12 +15,9 @@
  * limitations under the License.
  */
 
-package main
+/*
+Package dubbo provides the Go implementation for Dubbo, an RPC and microservice framework.
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/triple-tool/cmd"
-)
-
-func main() {
-	cmd.Execute()
-}
+See dubbo.apache.org for more information about Dubbo.
+*/
+package dubbo // import "dubbo.apache.org/dubbo-go/v3"

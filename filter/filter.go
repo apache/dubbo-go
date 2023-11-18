@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+// Package filter provides Filter definition and implementations for RPC call interception.
 package filter
 
 import (
