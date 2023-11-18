@@ -160,7 +160,11 @@ func (ins *Instance) start() (err error) {
 
 // loadProvider loads the service provider.
 func (ins *Instance) loadProvider() error {
-	srv, err := ins.NewServer()
+	var srvOpts []server.ServerOption
+	if ins.insOpts.Provider != nil {
+		srvOpts = append(srvOpts, server.SetServer_Provider(ins.insOpts.Provider))
+	}
+	srv, err := ins.NewServer(srvOpts...)
 	if err != nil {
 		return err
 	}
@@ -175,7 +179,11 @@ func (ins *Instance) loadProvider() error {
 
 // loadConsumer loads the service consumer.
 func (ins *Instance) loadConsumer() error {
-	cli, err := ins.NewClient()
+	var conOpts []client.ClientOption
+	if ins.insOpts.Consumer != nil {
+		conOpts = append(conOpts, client.SetConsumer(ins.insOpts.Consumer))
+	}
+	cli, err := ins.NewClient(conOpts...)
 	if err != nil {
 		return err
 	}

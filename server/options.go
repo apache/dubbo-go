@@ -196,6 +196,12 @@ func SetServer_Shutdown(shutdown *global.ShutdownConfig) ServerOption {
 	}
 }
 
+func SetServer_Provider(provider *global.ProviderConfig) ServerOption {
+	return func(opts *ServerOptions) {
+		opts.Provider = provider
+	}
+}
+
 type ServiceOptions struct {
 	Application *global.ApplicationConfig
 	Provider    *global.ProviderConfig
