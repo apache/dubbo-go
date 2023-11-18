@@ -29,7 +29,7 @@ import (
 import (
 	"github.com/dubbogo/gost/log/logger"
 
-	"github.com/emicklei/go-restful/v3"
+	restful "github.com/emicklei/go-restful/v3"
 
 	perrors "github.com/pkg/errors"
 )

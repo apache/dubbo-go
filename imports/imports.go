@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+// Package imports is a one-stop collection of Dubbo SPI implementations that aims to help users with plugin installation
+// by leveraging Go package initialization.
 package imports
 
 import (
