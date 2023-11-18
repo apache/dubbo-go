@@ -24,96 +24,12 @@ import (
 )
 
 import (
-	"github.com/emicklei/proto"
-
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/cmd/protoc-gen-go-triple/util"
 )
-
-func (g *Generator) GenTriple() error {
-	p, err := g.parseFileToProto(g.ctx.Src)
-	if err != nil {
-		return err
-	}
-	triple, err := g.parseProtoToTriple(p)
-	if err != nil {
-		return err
-	}
-	basePath, err := os.Getwd()
-	if err != nil {
-		return err
-	}
-	triple.Source, err = filepath.Rel(basePath, g.ctx.Src)
-	if err != nil {
-		return err
-	}
-	data, err := g.parseTripleToString(triple)
-	if err != nil {
-		return err
-	}
-	g.parseGOout(triple)
-	return g.generateToFile(g.ctx.GoOut, []byte(data))
-}
-
-func (g *Generator) parseFileToProto(filePath string) (*proto.Proto, error) {
-	file, err := os.Open(filePath)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-
-	parser := proto.NewParser(file)
-	p, err := parser.Parse()
-	if err != nil {
-		return nil, err
-	}
-	return p, nil
-}
-
-func (g *Generator) parseProtoToTriple(p *proto.Proto) (TripleGo, error) {
-	var tripleGo TripleGo
-	proto.Walk(
-		p,
-		proto.WithPackage(func(p *proto.Package) {
-			tripleGo.ProtoPackage = p.Name
-			tripleGo.Package = p.Name
-		}),
-		proto.WithService(func(p *proto.Service) {
-			s := Service{ServiceName: p.Name}
-			for _, visitee := range p.Elements {
-				if vi, ok := visitee.(*proto.RPC); ok {
-					md := Method{
-						MethodName:     vi.Name,
-						RequestType:    vi.RequestType,
-						StreamsRequest: vi.StreamsRequest,
-						ReturnType:     vi.ReturnsType,
-						StreamsReturn:  vi.StreamsReturns,
-					}
-					s.Methods = append(s.Methods, md)
-					if md.StreamsRequest || md.StreamsReturn {
-						tripleGo.IsStream = true
-					}
-				}
-			}
-			tripleGo.Services = append(tripleGo.Services, s)
-		}),
-		proto.WithOption(func(p *proto.Option) {
-			if p.Name == "go_package" {
-				i := p.Constant.Source
-				i = strings.Trim(i, "/")
-				if strings.Contains(i, g.ctx.GoModuleName) {
-					tripleGo.Import = strings.Split(i, ";")[0]
-				} else {
-					tripleGo.Import = g.ctx.GoModuleName + "/" + strings.Split(i, ";")[0]
-				}
-			}
-		}),
-	)
-	return tripleGo, nil
-}
 
 func (g *Generator) parseTripleToString(t TripleGo) (string, error) {
 	var builder strings.Builder
@@ -126,11 +42,6 @@ func (g *Generator) parseTripleToString(t TripleGo) (string, error) {
 	}
 
 	return builder.String(), nil
-}
-
-func (g *Generator) parseGOout(triple TripleGo) {
-	prefix := strings.TrimPrefix(triple.Import, g.ctx.GoModuleName)
-	g.ctx.GoOut = filepath.Join(g.ctx.ModuleDir, filepath.Join(prefix, triple.Package+"triple/"+triple.ProtoPackage+".triple.go"))
 }
 
 func (g *Generator) generateToFile(filePath string, data []byte) error {
