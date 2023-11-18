@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+// Package client provides APIs for starting RPC calls.
 package client
 
 import (

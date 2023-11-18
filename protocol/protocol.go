@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+// Package protocol provides Protocol definition and core RPC protocol implementations
 package protocol
 
 import (

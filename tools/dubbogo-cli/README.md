@@ -7,7 +7,7 @@ dubbogo-cli is a sub-project of the Apach/dubbo-go ecosystem. It provides develo
 Execute the following command to install dubbogo-cli to $GOPATH/bin
 
 ```
-go install dubbo.apache.org/dubbo-go/v3/dubbogo-cli@latest
+go install dubbo.apache.org/dubbo-go/v3/tools/dubbogo-cli@latest
 ```
 
 ## 2. Feature Overview

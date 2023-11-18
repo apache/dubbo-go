@@ -18,7 +18,7 @@
 package common
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/dubbogo-cli/internal/protocol"
+	"dubbo.apache.org/dubbo-go/v3/tools/dubbogo-cli/internal/protocol"
 )
 
 var protocols = make(map[string]func() protocol.Protocol, 8)
