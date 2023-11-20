@@ -310,6 +310,7 @@ func (refOpts *ReferenceOptions) getURLMap() url.Values {
 	ref := refOpts.Reference
 	app := refOpts.applicationCompat
 	metrics := refOpts.cliOpts.Metrics
+	tracing := refOpts.cliOpts.Otel.TracingConfig
 
 	urlMap := url.Values{}
 	// first set user params
@@ -357,6 +358,9 @@ func (refOpts *ReferenceOptions) getURLMap() url.Values {
 	}
 	if metrics.Enable != nil && *metrics.Enable {
 		defaultReferenceFilter += fmt.Sprintf(",%s", constant.MetricsFilterKey)
+	}
+	if tracing.Enable != nil && *tracing.Enable {
+		defaultReferenceFilter += fmt.Sprintf(",%s", constant.OTELClientTraceKey)
 	}
 	urlMap.Set(constant.ReferenceFilterKey, commonCfg.MergeValue(ref.Filter, "", defaultReferenceFilter))
 
