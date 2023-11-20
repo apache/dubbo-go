@@ -48,7 +48,7 @@ func compatRootConfig(c *InstanceOptions) *config.RootConfig {
 		MetadataReport:      compatMetadataReportConfig(c.MetadataReport),
 		Provider:            compatProviderConfig(c.Provider),
 		Consumer:            compatConsumerConfig(c.Consumer),
-		Metric:              compatMetricConfig(c.Metrics),
+		Metrics:             compatMetricConfig(c.Metrics),
 		Otel:                compatOtelConfig(c.Otel),
 		Logger:              compatLoggerConfig(c.Logger),
 		Shutdown:            compatShutdownConfig(c.Shutdown),
@@ -264,11 +264,11 @@ func compatConsumerConfig(c *global.ConsumerConfig) *config.ConsumerConfig {
 	}
 }
 
-func compatMetricConfig(c *global.MetricsConfig) *config.MetricConfig {
+func compatMetricConfig(c *global.MetricsConfig) *config.MetricsConfig {
 	if c == nil {
 		return nil
 	}
-	return &config.MetricConfig{
+	return &config.MetricsConfig{
 		Enable:             c.Enable,
 		Port:               c.Port,
 		Path:               c.Path,

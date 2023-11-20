@@ -123,8 +123,8 @@ func (rc *ReferenceConfig) Init(root *RootConfig) error {
 	if rc.Cluster == "" {
 		rc.Cluster = "failover"
 	}
-	if root.Metric.Enable != nil {
-		rc.metricsEnable = *root.Metric.Enable
+	if root.Metrics.Enable != nil {
+		rc.metricsEnable = *root.Metrics.Enable
 	}
 
 	return verify(rc)

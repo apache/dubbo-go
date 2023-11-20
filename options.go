@@ -131,7 +131,7 @@ func (rc *InstanceOptions) init(opts ...InstanceOption) error {
 	if err := rcCompat.MetadataReport.Init(rcCompat); err != nil {
 		return err
 	}
-	if err := rcCompat.Metric.Init(rcCompat); err != nil {
+	if err := rcCompat.Metrics.Init(rcCompat); err != nil {
 		return err
 	}
 	if err := rcCompat.Otel.Init(rcCompat.Application); err != nil {
