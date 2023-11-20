@@ -43,8 +43,8 @@ func TestLoadRegistries(t *testing.T) {
 			Password: "pwd1",
 		},
 	}
-	urls := loadRegistries(target, regs, common.CONSUMER)
-	t.Logf("loadRegistries() = urls:%v", urls)
+	urls := LoadRegistries(target, regs, common.CONSUMER)
+	t.Logf("LoadRegistries() = urls:%v", urls)
 	assert.Equal(t, "127.0.0.2:2181,128.0.0.1:2181", urls[0].Location)
 	assert.Equal(t, "service-discovery-registry://127.0.0.2:2181,128.0.0.1:2181/shanghai_idc", urls[0].PrimitiveURL)
 }
@@ -62,8 +62,8 @@ func TestLoadRegistries1(t *testing.T) {
 			Password: "pwd1",
 		},
 	}
-	urls := loadRegistries(target, regs, common.CONSUMER)
-	t.Logf("loadRegistries() = urls:%v", urls)
+	urls := LoadRegistries(target, regs, common.CONSUMER)
+	t.Logf("LoadRegistries() = urls:%v", urls)
 	assert.Equal(t, "127.0.0.2:2181", urls[0].Location)
 	assert.Equal(t, "service-discovery-registry://127.0.0.2:2181/shanghai_idc", urls[0].PrimitiveURL)
 }
@@ -77,7 +77,7 @@ func TestRegistryTypeAll(t *testing.T) {
 			RegistryType: constant.RegistryTypeAll,
 		},
 	}
-	urls := loadRegistries(target, regs, common.PROVIDER)
+	urls := LoadRegistries(target, regs, common.PROVIDER)
 	assert.Equal(t, 2, len(urls))
 	assert.Equal(t, "service-discovery-registry://127.0.0.2:2181", urls[0].PrimitiveURL)
 }

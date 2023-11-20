@@ -1,0 +1,32 @@
+// Copyright 2021-2023 Buf Technologies, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+// This package is for internal use by Connect, and provides no backward
+// compatibility guarantees whatsoever.
+package grpc.status.v1;
+option go_package = "dubbo.apache.org/dubbo-go/v3/protocol/grpc_new/triple/proto/connectext/grpc/status/v1;statusv1";
+
+import "google/protobuf/any.proto";
+
+// See https://cloud.google.com/apis/design/errors.
+//
+// This struct must remain binary-compatible with
+// https://github.com/googleapis/googleapis/blob/master/google/rpc/status.proto.
+message Status {
+  int32 code = 1; // a google.rpc.Code
+  string message = 2; // developer-facing, English (localize in details or client-side)
+  repeated google.protobuf.Any details = 3;
+}

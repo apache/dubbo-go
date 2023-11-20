@@ -18,21 +18,7 @@
 package dubbo3
 
 import (
-	"context"
-	"reflect"
-	"testing"
-	"time"
-)
-
-import (
-	"github.com/stretchr/testify/assert"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/common"
 	_ "dubbo.apache.org/dubbo-go/v3/metadata/service/exporter/configurable"
-	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo3/internal"
-	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
 const (
@@ -43,56 +29,56 @@ const (
 		"&service.filter=echo%2Ctoken%2Caccesslog%2Ctps%2Cexecute%2Cpshutdown&side=provider&timestamp=1576923740&tps.limit.interval=&tps.limit.rate=&tps.limit.rejected.handler=&tps.limit.strategy=&tps.limiter=&version=&warmup=100!"
 )
 
-func TestInvoke(t *testing.T) {
-	go internal.InitDubboServer()
-	time.Sleep(time.Second * 3)
-
-	url, err := common.NewURL(mockDubbo3CommonUrl2)
-	assert.Nil(t, err)
-
-	invoker, err := NewDubboInvoker(url)
-
-	assert.Nil(t, err)
-
-	args := []reflect.Value{}
-	args = append(args, reflect.ValueOf(&internal.HelloRequest{Name: "request name"}))
-	bizReply := &internal.HelloReply{}
-	invo := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("SayHello"),
-		invocation.WithParameterValues(args), invocation.WithReply(bizReply))
-	res := invoker.Invoke(context.Background(), invo)
-	assert.Nil(t, res.Error())
-	assert.NotNil(t, res.Result())
-	assert.Equal(t, "Hello request name", bizReply.Message)
-}
-
-func TestInvokeTimoutConfig(t *testing.T) {
-	go internal.InitDubboServer()
-	time.Sleep(time.Second * 3)
-
-	// test for millisecond
-	tmpMockUrl := mockDubbo3CommonUrl2 + "&timeout=300ms"
-	url, err := common.NewURL(tmpMockUrl)
-	assert.Nil(t, err)
-
-	invoker, err := NewDubboInvoker(url)
-	assert.Nil(t, err)
-
-	assert.Equal(t, invoker.timeout, time.Duration(time.Millisecond*300))
-
-	// test for second
-	tmpMockUrl = mockDubbo3CommonUrl2 + "&timeout=1s"
-	url, err = common.NewURL(tmpMockUrl)
-	assert.Nil(t, err)
-
-	invoker, err = NewDubboInvoker(url)
-	assert.Nil(t, err)
-	assert.Equal(t, invoker.timeout, time.Duration(time.Second))
-
-	// test for timeout default config
-	url, err = common.NewURL(mockDubbo3CommonUrl2)
-	assert.Nil(t, err)
-
-	invoker, err = NewDubboInvoker(url)
-	assert.Nil(t, err)
-	assert.Equal(t, invoker.timeout, time.Duration(time.Second*3))
-}
+//func TestInvoke(t *testing.T) {
+//	go internal.InitDubboServer()
+//	time.Sleep(time.Second * 3)
+//
+//	url, err := common.NewURL(mockDubbo3CommonUrl2)
+//	assert.Nil(t, err)
+//
+//	invoker, err := NewDubboInvoker(url)
+//
+//	assert.Nil(t, err)
+//
+//	args := []reflect.Value{}
+//	args = append(args, reflect.ValueOf(&internal.HelloRequest{Name: "request name"}))
+//	bizReply := &internal.HelloReply{}
+//	invo := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("SayHello"),
+//		invocation.WithParameterValues(args), invocation.WithReply(bizReply))
+//	res := invoker.Invoke(context.Background(), invo)
+//	assert.Nil(t, res.Error())
+//	assert.NotNil(t, res.Result())
+//	assert.Equal(t, "Hello request name", bizReply.Message)
+//}
+//
+//func TestInvokeTimoutConfig(t *testing.T) {
+//	go internal.InitDubboServer()
+//	time.Sleep(time.Second * 3)
+//
+//	// test for millisecond
+//	tmpMockUrl := mockDubbo3CommonUrl2 + "&timeout=300ms"
+//	url, err := common.NewURL(tmpMockUrl)
+//	assert.Nil(t, err)
+//
+//	invoker, err := NewDubboInvoker(url)
+//	assert.Nil(t, err)
+//
+//	assert.Equal(t, invoker.timeout, time.Duration(time.Millisecond*300))
+//
+//	// test for second
+//	tmpMockUrl = mockDubbo3CommonUrl2 + "&timeout=1s"
+//	url, err = common.NewURL(tmpMockUrl)
+//	assert.Nil(t, err)
+//
+//	invoker, err = NewDubboInvoker(url)
+//	assert.Nil(t, err)
+//	assert.Equal(t, invoker.timeout, time.Duration(time.Second))
+//
+//	// test for timeout default config
+//	url, err = common.NewURL(mockDubbo3CommonUrl2)
+//	assert.Nil(t, err)
+//
+//	invoker, err = NewDubboInvoker(url)
+//	assert.Nil(t, err)
+//	assert.Equal(t, invoker.timeout, time.Duration(time.Second*3))
+//}

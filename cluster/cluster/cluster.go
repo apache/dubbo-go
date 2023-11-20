@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+// Package cluster provides various LoadBalance and Cluster policies for client-side traffic management.
 package cluster
 
 import (

@@ -247,7 +247,7 @@ func (s *ServiceConfig) Export() error {
 
 	regUrls := make([]*common.URL, 0)
 	if !s.NotRegister {
-		regUrls = loadRegistries(s.RegistryIDs, s.RCRegistriesMap, common.PROVIDER)
+		regUrls = LoadRegistries(s.RegistryIDs, s.RCRegistriesMap, common.PROVIDER)
 	}
 
 	urlMap := s.getUrlMap()

@@ -225,7 +225,7 @@ func (rc *ReferenceConfig) Refer(srv interface{}) {
 			}
 		}
 	} else { // use registry configs
-		rc.urls = loadRegistries(rc.RegistryIDs, rc.rootConfig.Registries, common.CONSUMER)
+		rc.urls = LoadRegistries(rc.RegistryIDs, rc.rootConfig.Registries, common.CONSUMER)
 		// set url to regURLs
 		for _, regURL := range rc.urls {
 			regURL.SubURL = cfgURL

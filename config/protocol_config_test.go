@@ -33,9 +33,9 @@ func TestGetProtocolsConfig(t *testing.T) {
 		protocols := rootConfig.Protocols
 		assert.NotNil(t, protocols)
 		// default
-		assert.Equal(t, "dubbo", protocols["dubbo"].Name)
-		assert.Equal(t, string("20000"), protocols["dubbo"].Port)
-		assert.Equal(t, "4mib", protocols["dubbo"].MaxServerRecvMsgSize)
+		assert.Equal(t, "tri", protocols["tri"].Name)
+		assert.Equal(t, string("50051"), protocols["tri"].Port)
+		assert.Equal(t, "4mib", protocols["tri"].MaxServerRecvMsgSize)
 	})
 
 	t.Run("use config", func(t *testing.T) {

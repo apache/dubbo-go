@@ -67,6 +67,7 @@ var (
 func GetLocalMetadataService() (service.MetadataService, error) {
 	metadataServiceInitOnce.Do(func() {
 		metadataServiceInstance = &MetadataService{
+			// todo(DMwangnima): use external config
 			BaseMetadataService:   service.NewBaseMetadataService(config.GetApplicationConfig().Name),
 			exportedServiceURLs:   &sync.Map{},
 			subscribedServiceURLs: &sync.Map{},

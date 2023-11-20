@@ -114,20 +114,12 @@ type URL struct {
 	Username string
 	Password string
 	Methods  []string
+
+	attributesLock sync.RWMutex
+	// attributes should not be transported
+	attributes map[string]interface{} `hessian:"-"`
 	// special for registry
-	SubURL     *URL
-	attributes sync.Map
-}
-
-func (c *URL) AddAttribute(key string, value interface{}) {
-	if value != nil {
-		c.attributes.Store(key, value)
-	}
-}
-
-func (c *URL) GetAttribute(key string) interface{} {
-	v, _ := c.attributes.Load(key)
-	return v
+	SubURL *URL
 }
 
 // JavaClassName POJO for URL
@@ -227,6 +219,16 @@ func WithToken(token string) Option {
 			}
 			url.SetParam(constant.TokenKey, value)
 		}
+	}
+}
+
+// WithAttribute sets attribute for URL
+func WithAttribute(key string, attribute interface{}) Option {
+	return func(url *URL) {
+		if url.attributes == nil {
+			url.attributes = make(map[string]interface{})
+		}
+		url.attributes[key] = attribute
 	}
 }
 
@@ -532,6 +534,22 @@ func (c *URL) SetParam(key string, value string) {
 	c.params.Set(key, value)
 }
 
+func (c *URL) SetAttribute(key string, value interface{}) {
+	c.attributesLock.Lock()
+	defer c.attributesLock.Unlock()
+	if c.attributes == nil {
+		c.attributes = make(map[string]interface{})
+	}
+	c.attributes[key] = value
+}
+
+func (c *URL) GetAttribute(key string) (interface{}, bool) {
+	c.attributesLock.RLock()
+	defer c.attributesLock.RUnlock()
+	r, ok := c.attributes[key]
+	return r, ok
+}
+
 // DelParam will delete the given key from the URL
 func (c *URL) DelParam(key string) {
 	c.paramsLock.Lock()
@@ -784,7 +802,8 @@ func MergeURL(serviceURL *URL, referenceURL *URL) *URL {
 	}
 
 	// finally execute methodConfigMergeFcn
-	for _, method := range referenceURL.Methods {
+	mergedURL.Methods = make([]string, len(referenceURL.Methods))
+	for i, method := range referenceURL.Methods {
 		for _, paramKey := range []string{constant.LoadbalanceKey, constant.ClusterKey, constant.RetriesKey, constant.TimeoutKey} {
 			if v := referenceURL.GetParam(paramKey, ""); len(v) > 0 {
 				params[paramKey] = []string{v}
@@ -796,7 +815,16 @@ func MergeURL(serviceURL *URL, referenceURL *URL) *URL {
 				params[methodsKey] = []string{v}
 			}
 			//}
+			mergedURL.Methods[i] = method
 		}
+	}
+
+	// merge attributes
+	if mergedURL.attributes == nil {
+		mergedURL.attributes = make(map[string]interface{}, len(referenceURL.attributes))
+	}
+	for attrK, attrV := range referenceURL.attributes {
+		mergedURL.attributes[attrK] = attrV
 	}
 	// In this way, we will raise some performance.
 	mergedURL.ReplaceParams(params)
