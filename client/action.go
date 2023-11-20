@@ -309,6 +309,7 @@ func (refOpts *ReferenceOptions) GetProxy() *proxy.Proxy {
 func (refOpts *ReferenceOptions) getURLMap() url.Values {
 	ref := refOpts.Reference
 	app := refOpts.applicationCompat
+	metrics := refOpts.cliOpts.Metrics
 
 	urlMap := url.Values{}
 	// first set user params
@@ -353,6 +354,9 @@ func (refOpts *ReferenceOptions) getURLMap() url.Values {
 	defaultReferenceFilter := constant.DefaultReferenceFilters
 	if ref.Generic != "" {
 		defaultReferenceFilter = constant.GenericFilterKey + "," + defaultReferenceFilter
+	}
+	if metrics.Enable != nil && *metrics.Enable {
+		defaultReferenceFilter += fmt.Sprintf(",%s", constant.MetricsFilterKey)
 	}
 	urlMap.Set(constant.ReferenceFilterKey, commonCfg.MergeValue(ref.Filter, "", defaultReferenceFilter))
 

@@ -48,7 +48,7 @@ func compatRootConfig(c *InstanceOptions) *config.RootConfig {
 		MetadataReport:      compatMetadataReportConfig(c.MetadataReport),
 		Provider:            compatProviderConfig(c.Provider),
 		Consumer:            compatConsumerConfig(c.Consumer),
-		Metric:              compatMetricConfig(c.Metric),
+		Metric:              compatMetricConfig(c.Metrics),
 		Otel:                compatOtelConfig(c.Otel),
 		Logger:              compatLoggerConfig(c.Logger),
 		Shutdown:            compatShutdownConfig(c.Shutdown),
@@ -263,7 +263,7 @@ func compatConsumerConfig(c *global.ConsumerConfig) *config.ConsumerConfig {
 	}
 }
 
-func compatMetricConfig(c *global.MetricConfig) *config.MetricConfig {
+func compatMetricConfig(c *global.MetricsConfig) *config.MetricConfig {
 	if c == nil {
 		return nil
 	}
@@ -286,12 +286,12 @@ func compatOtelConfig(c *global.OtelConfig) *config.OtelConfig {
 	}
 	return &config.OtelConfig{
 		TraceConfig: &config.OtelTraceConfig{
-			Enable:      c.TraceConfig.Enable,
-			Exporter:    c.TraceConfig.Exporter,
-			Endpoint:    c.TraceConfig.Endpoint,
-			Propagator:  c.TraceConfig.Propagator,
-			SampleMode:  c.TraceConfig.SampleMode,
-			SampleRatio: c.TraceConfig.SampleRatio,
+			Enable:      c.TracingConfig.Enable,
+			Exporter:    c.TracingConfig.Exporter,
+			Endpoint:    c.TracingConfig.Endpoint,
+			Propagator:  c.TracingConfig.Propagator,
+			SampleMode:  c.TracingConfig.SampleMode,
+			SampleRatio: c.TracingConfig.SampleRatio,
 		},
 	}
 }

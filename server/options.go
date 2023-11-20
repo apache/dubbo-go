@@ -53,6 +53,8 @@ type ServerOptions struct {
 	Registries  map[string]*global.RegistryConfig
 	Protocols   map[string]*global.ProtocolConfig
 	Shutdown    *global.ShutdownConfig
+	Metrics     *global.MetricsConfig
+	Otel        *global.OtelConfig
 
 	providerCompat *config.ProviderConfig
 }
@@ -62,6 +64,8 @@ func defaultServerOptions() *ServerOptions {
 		Application: global.DefaultApplicationConfig(),
 		Provider:    global.DefaultProviderConfig(),
 		Shutdown:    global.DefaultShutdownConfig(),
+		Metrics:     global.DefaultMetricsConfig(),
+		Otel:        global.DefaultOtelConfig(),
 	}
 }
 
@@ -140,9 +144,9 @@ func WithServerLoadBalanceP2C() ServerOption {
 	}
 }
 
-func WithServerLoadBalanceXDSRingHash() ServerOption {
+func WithServerLoadBalance(lb string) ServerOption {
 	return func(opts *ServerOptions) {
-		opts.Provider.Loadbalance = constant.LoadBalanceKeyLeastActive
+		opts.Provider.Loadbalance = lb
 	}
 }
 
@@ -210,6 +214,12 @@ func WithServerClusterAdaptiveService() ServerOption {
 	}
 }
 
+func WithServerCluster(cluster string) ServerOption {
+	return func(opts *ServerOptions) {
+		opts.Provider.Cluster = cluster
+	}
+}
+
 func WithServerGroup(group string) ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.Group = group
@@ -238,6 +248,93 @@ func WithServerToken(token string) ServerOption {
 func WithServerNotRegister() ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.NotRegister = true
+	}
+}
+
+func WithServerWarmup(milliSeconds time.Duration) ServerOption {
+	return func(opts *ServerOptions) {
+		opts.Provider.Warmup = milliSeconds.String()
+	}
+}
+
+func WithServerRetries(retries int) ServerOption {
+	return func(opts *ServerOptions) {
+		opts.Provider.Retries = strconv.Itoa(retries)
+	}
+}
+
+func WithServerSerialization(ser string) ServerOption {
+	return func(opts *ServerOptions) {
+		opts.Provider.Serialization = ser
+	}
+}
+
+func WithServerAccesslog(accesslog string) ServerOption {
+	return func(opts *ServerOptions) {
+		opts.Provider.AccessLog = accesslog
+	}
+}
+
+func WithServerTpsLimiter(limiter string) ServerOption {
+	return func(opts *ServerOptions) {
+		opts.Provider.TpsLimiter = limiter
+	}
+}
+
+func WithServerTpsLimitRate(rate int) ServerOption {
+	return func(opts *ServerOptions) {
+		opts.Provider.TpsLimitRate = strconv.Itoa(rate)
+	}
+}
+
+func WithServerTpsLimitStrategy(strategy string) ServerOption {
+	return func(opts *ServerOptions) {
+		opts.Provider.TpsLimitStrategy = strategy
+	}
+}
+
+func WithServerTpsLimitRejectedHandler(rejHandler string) ServerOption {
+	return func(opts *ServerOptions) {
+		opts.Provider.TpsLimitRejectedHandler = rejHandler
+	}
+}
+
+func WithServerExecuteLimit(exeLimit string) ServerOption {
+	return func(opts *ServerOptions) {
+		opts.Provider.ExecuteLimit = exeLimit
+	}
+}
+
+func WithServerExecuteLimitRejectedHandler(exeRejHandler string) ServerOption {
+	return func(opts *ServerOptions) {
+		opts.Provider.ExecuteLimitRejectedHandler = exeRejHandler
+	}
+}
+
+func WithServerAuth(auth string) ServerOption {
+	return func(opts *ServerOptions) {
+		opts.Provider.Auth = auth
+	}
+}
+
+func WithServerParamSign(paramSign string) ServerOption {
+	return func(opts *ServerOptions) {
+		opts.Provider.ParamSign = paramSign
+	}
+}
+
+func WithServerTag(tag string) ServerOption {
+	return func(opts *ServerOptions) {
+		opts.Provider.Tag = tag
+	}
+}
+
+func WithServerParam(k, v string) ServerOption {
+	return func(opts *ServerOptions) {
+		if opts.Provider.Params == nil {
+			opts.Provider.Params = make(map[string]string)
+		}
+		opts.Provider.Params[k] = v
 	}
 }
 
@@ -307,27 +404,39 @@ func WithServerAdaptiveServiceVerbose() ServerOption {
 // ========== For framework ==========
 // These functions should not be invoked by users
 
-func SetServer_Application(application *global.ApplicationConfig) ServerOption {
+func SetServerApplication(application *global.ApplicationConfig) ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Application = application
 	}
 }
 
-func SetServer_Registries(regs map[string]*global.RegistryConfig) ServerOption {
+func SetServerRegistries(regs map[string]*global.RegistryConfig) ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Registries = regs
 	}
 }
 
-func SetServer_Protocols(pros map[string]*global.ProtocolConfig) ServerOption {
+func SetServerProtocols(pros map[string]*global.ProtocolConfig) ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Protocols = pros
 	}
 }
 
-func SetServer_Shutdown(shutdown *global.ShutdownConfig) ServerOption {
+func SetServerShutdown(shutdown *global.ShutdownConfig) ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Shutdown = shutdown
+	}
+}
+
+func SetServerMetrics(metrics *global.MetricsConfig) ServerOption {
+	return func(opts *ServerOptions) {
+		opts.Metrics = metrics
+	}
+}
+
+func SetServerOtel(otel *global.OtelConfig) ServerOption {
+	return func(opts *ServerOptions) {
+		opts.Otel = otel
 	}
 }
 
@@ -337,6 +446,8 @@ type ServiceOptions struct {
 	Service     *global.ServiceConfig
 	Registries  map[string]*global.RegistryConfig
 	Protocols   map[string]*global.ProtocolConfig
+
+	srvOpts *ServerOptions
 
 	Id              string
 	unexported      *atomic.Bool
@@ -376,6 +487,7 @@ func (svcOpts *ServiceOptions) init(srv *Server, opts ...ServiceOption) error {
 		return err
 	}
 
+	svcOpts.srvOpts = srv.cfg
 	svc := svcOpts.Service
 	dubboutil.CopyFields(reflect.ValueOf(srv.cfg.Provider).Elem(), reflect.ValueOf(svc).Elem())
 
@@ -520,9 +632,9 @@ func WithLoadBalanceP2C() ServiceOption {
 	}
 }
 
-func WithLoadBalanceXDSRingHash() ServiceOption {
+func WithLoadBalance(lb string) ServiceOption {
 	return func(opts *ServiceOptions) {
-		opts.Service.Loadbalance = constant.LoadBalanceKeyLeastActive
+		opts.Service.Loadbalance = lb
 	}
 }
 
@@ -590,6 +702,12 @@ func WithClusterAdaptiveService() ServiceOption {
 	}
 }
 
+func WithCluster(cluster string) ServiceOption {
+	return func(opts *ServiceOptions) {
+		opts.Service.Cluster = cluster
+	}
+}
+
 func WithGroup(group string) ServiceOption {
 	return func(cfg *ServiceOptions) {
 		cfg.Service.Group = group
@@ -618,6 +736,126 @@ func WithToken(token string) ServiceOption {
 func WithNotRegister() ServiceOption {
 	return func(cfg *ServiceOptions) {
 		cfg.Service.NotRegister = true
+	}
+}
+
+func WithWarmup(milliSeconds time.Duration) ServiceOption {
+	return func(opts *ServiceOptions) {
+		opts.Service.Warmup = milliSeconds.String()
+	}
+}
+
+func WithRetries(retries int) ServiceOption {
+	return func(opts *ServiceOptions) {
+		opts.Service.Retries = strconv.Itoa(retries)
+	}
+}
+
+func WithSerialization(ser string) ServiceOption {
+	return func(opts *ServiceOptions) {
+		opts.Service.Serialization = ser
+	}
+}
+
+func WithAccesslog(accesslog string) ServiceOption {
+	return func(opts *ServiceOptions) {
+		opts.Service.AccessLog = accesslog
+	}
+}
+
+func WithTpsLimiter(limiter string) ServiceOption {
+	return func(opts *ServiceOptions) {
+		opts.Service.TpsLimiter = limiter
+	}
+}
+
+func WithTpsLimitRate(rate int) ServiceOption {
+	return func(opts *ServiceOptions) {
+		opts.Service.TpsLimitRate = strconv.Itoa(rate)
+	}
+}
+
+func WithTpsLimitStrategy(strategy string) ServiceOption {
+	return func(opts *ServiceOptions) {
+		opts.Service.TpsLimitStrategy = strategy
+	}
+}
+
+func WithTpsLimitRejectedHandler(rejHandler string) ServiceOption {
+	return func(opts *ServiceOptions) {
+		opts.Service.TpsLimitRejectedHandler = rejHandler
+	}
+}
+
+func WithExecuteLimit(exeLimit string) ServiceOption {
+	return func(opts *ServiceOptions) {
+		opts.Service.ExecuteLimit = exeLimit
+	}
+}
+
+func WithExecuteLimitRejectedHandler(exeRejHandler string) ServiceOption {
+	return func(opts *ServiceOptions) {
+		opts.Service.ExecuteLimitRejectedHandler = exeRejHandler
+	}
+}
+
+func WithAuth(auth string) ServiceOption {
+	return func(opts *ServiceOptions) {
+		opts.Service.Auth = auth
+	}
+}
+
+func WithParamSign(paramSign string) ServiceOption {
+	return func(opts *ServiceOptions) {
+		opts.Service.ParamSign = paramSign
+	}
+}
+
+func WithTag(tag string) ServiceOption {
+	return func(opts *ServiceOptions) {
+		opts.Service.Tag = tag
+	}
+}
+
+func WithProtocol(opts ...protocol.Option) ServiceOption {
+	proOpts := protocol.NewOptions(opts...)
+
+	return func(opts *ServiceOptions) {
+		if opts.Protocols == nil {
+			opts.Protocols = make(map[string]*global.ProtocolConfig)
+		}
+		opts.Protocols[proOpts.ID] = proOpts.Protocol
+	}
+}
+
+func WithRegistry(opts ...registry.Option) ServiceOption {
+	regOpts := registry.NewOptions(opts...)
+
+	return func(opts *ServiceOptions) {
+		if opts.Registries == nil {
+			opts.Registries = make(map[string]*global.RegistryConfig)
+		}
+		opts.Registries[regOpts.ID] = regOpts.Registry
+	}
+}
+
+func WithMethod(opts ...global.MethodOption) ServiceOption {
+	regOpts := global.NewMethodOptions(opts...)
+
+	return func(opts *ServiceOptions) {
+		if len(opts.Service.Methods) == 0 {
+			opts.Service.Methods = make([]*global.MethodConfig, 0)
+		}
+		opts.Service.Methods = append(opts.Service.Methods, regOpts.Method)
+	}
+}
+
+func WithParam(k, v string) ServiceOption {
+	return func(opts *ServiceOptions) {
+		if opts.Service.Params == nil {
+			opts.Service.Params = make(map[string]string)
+		}
+		opts.Service.Params[k] = v
 	}
 }
 

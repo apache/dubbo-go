@@ -64,6 +64,12 @@ func WithEtcdV3() Option {
 	}
 }
 
+func WithMetadata(meta string) Option {
+	return func(opts *Options) {
+		opts.Metadata.Protocol = meta
+	}
+}
+
 func WithAddress(address string) Option {
 	return func(opts *Options) {
 		if i := strings.Index(address, "://"); i > 0 {

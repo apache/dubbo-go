@@ -59,6 +59,9 @@ func (ins *Instance) NewClient(opts ...client.ClientOption) (*client.Client, err
 	appCfg := ins.insOpts.Application
 	regsCfg := ins.insOpts.Registries
 	sdCfg := ins.insOpts.Shutdown
+	metricsCfg := ins.insOpts.Metrics
+	otelCfg := ins.insOpts.Otel
+
 	if conCfg != nil {
 		if conCfg.Check {
 			cliOpts = append(cliOpts, client.WithClientCheck())
@@ -82,6 +85,13 @@ func (ins *Instance) NewClient(opts ...client.ClientOption) (*client.Client, err
 	if sdCfg != nil {
 		cliOpts = append(cliOpts, client.SetClientShutdown(sdCfg))
 	}
+	if metricsCfg != nil {
+		cliOpts = append(cliOpts, client.SetClientMetrics(metricsCfg))
+	}
+	if otelCfg != nil {
+		cliOpts = append(cliOpts, client.SetClientOtel(otelCfg))
+	}
+
 	// options passed by users has higher priority
 	cliOpts = append(cliOpts, opts...)
 
@@ -104,9 +114,12 @@ func (ins *Instance) NewServer(opts ...server.ServerOption) (*server.Server, err
 	regsCfg := ins.insOpts.Registries
 	prosCfg := ins.insOpts.Protocols
 	sdCfg := ins.insOpts.Shutdown
+	metricsCfg := ins.insOpts.Metrics
+	otelCfg := ins.insOpts.Otel
+
 	if appCfg != nil {
 		srvOpts = append(srvOpts,
-			server.SetServer_Application(appCfg),
+			server.SetServerApplication(appCfg),
 			//server.WithServer_ApplicationConfig(
 			//	global.WithApplication_Name(appCfg.Name),
 			//	global.WithApplication_Organization(appCfg.Organization),
@@ -118,13 +131,19 @@ func (ins *Instance) NewServer(opts ...server.ServerOption) (*server.Server, err
 		)
 	}
 	if regsCfg != nil {
-		srvOpts = append(srvOpts, server.SetServer_Registries(regsCfg))
+		srvOpts = append(srvOpts, server.SetServerRegistries(regsCfg))
 	}
 	if prosCfg != nil {
-		srvOpts = append(srvOpts, server.SetServer_Protocols(prosCfg))
+		srvOpts = append(srvOpts, server.SetServerProtocols(prosCfg))
 	}
 	if sdCfg != nil {
-		srvOpts = append(srvOpts, server.SetServer_Shutdown(sdCfg))
+		srvOpts = append(srvOpts, server.SetServerShutdown(sdCfg))
+	}
+	if metricsCfg != nil {
+		srvOpts = append(srvOpts, server.SetServerMetrics(metricsCfg))
+	}
+	if otelCfg != nil {
+		srvOpts = append(srvOpts, server.SetServerOtel(otelCfg))
 	}
 
 	// options passed by users have higher priority

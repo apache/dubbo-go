@@ -27,11 +27,11 @@ import (
 )
 
 type Options struct {
-	Metric *global.MetricConfig
+	Metrics *global.MetricsConfig
 }
 
 func defaultOptions() *Options {
-	return &Options{Metric: global.DefaultMetricConfig()}
+	return &Options{Metrics: global.DefaultMetricsConfig()}
 }
 
 func NewOptions(opts ...Option) *Options {
@@ -47,82 +47,82 @@ type Option func(*Options)
 func WithAggregationEnabled() Option {
 	return func(opts *Options) {
 		enabled := true
-		opts.Metric.Aggregation.Enabled = &enabled
+		opts.Metrics.Aggregation.Enabled = &enabled
 	}
 }
 
 func WithAggregationBucketNum(num int) Option {
 	return func(opts *Options) {
-		opts.Metric.Aggregation.BucketNum = num
+		opts.Metrics.Aggregation.BucketNum = num
 	}
 }
 
 func WithAggregationTimeWindowSeconds(seconds int) Option {
 	return func(opts *Options) {
-		opts.Metric.Aggregation.TimeWindowSeconds = seconds
+		opts.Metrics.Aggregation.TimeWindowSeconds = seconds
 	}
 }
 
 func WithPrometheus() Option {
 	return func(opts *Options) {
-		opts.Metric.Protocol = "prometheus"
+		opts.Metrics.Protocol = "prometheus"
 	}
 }
 
 func WithPrometheusExporterEnabled() Option {
 	return func(opts *Options) {
 		enabled := true
-		opts.Metric.Prometheus.Exporter.Enabled = &enabled
+		opts.Metrics.Prometheus.Exporter.Enabled = &enabled
 	}
 }
 
 func WithPrometheusGatewayUrl(url string) Option {
 	return func(opts *Options) {
-		opts.Metric.Prometheus.Pushgateway.BaseUrl = url
+		opts.Metrics.Prometheus.Pushgateway.BaseUrl = url
 	}
 }
 
 func WithPrometheusGatewayJob(job string) Option {
 	return func(opts *Options) {
-		opts.Metric.Prometheus.Pushgateway.Job = job
+		opts.Metrics.Prometheus.Pushgateway.Job = job
 	}
 }
 
 func WithPrometheusGatewayUsername(username string) Option {
 	return func(opts *Options) {
-		opts.Metric.Prometheus.Pushgateway.Username = username
+		opts.Metrics.Prometheus.Pushgateway.Username = username
 	}
 }
 
 func WithPrometheusGatewayPassword(password string) Option {
 	return func(opts *Options) {
-		opts.Metric.Prometheus.Pushgateway.Password = password
+		opts.Metrics.Prometheus.Pushgateway.Password = password
 	}
 }
 func WithPrometheusGatewayInterval(interval time.Duration) Option {
 	return func(opts *Options) {
-		opts.Metric.Prometheus.Pushgateway.PushInterval = int(interval.Seconds())
+		opts.Metrics.Prometheus.Pushgateway.PushInterval = int(interval.Seconds())
 	}
 }
 
 func WithConfigCenterEnabled() Option {
 	return func(opts *Options) {
 		b := true
-		opts.Metric.EnableConfigCenter = &b
+		opts.Metrics.EnableConfigCenter = &b
 	}
 }
 
 func WithMetadataEnabled() Option {
 	return func(opts *Options) {
 		b := true
-		opts.Metric.EnableMetadata = &b
+		opts.Metrics.EnableMetadata = &b
 	}
 }
 
 func WithRegistryEnabled() Option {
 	return func(opts *Options) {
 		b := true
-		opts.Metric.EnableRegistry = &b
+		opts.Metrics.EnableRegistry = &b
 	}
 }
 
@@ -130,18 +130,18 @@ func WithRegistryEnabled() Option {
 func WithEnabled() Option {
 	return func(opts *Options) {
 		b := true
-		opts.Metric.Enable = &b
+		opts.Metrics.Enable = &b
 	}
 }
 
 func WithPort(port int) Option {
 	return func(opts *Options) {
-		opts.Metric.Port = strconv.Itoa(port)
+		opts.Metrics.Port = strconv.Itoa(port)
 	}
 }
 
 func WithPath(path string) Option {
 	return func(opts *Options) {
-		opts.Metric.Path = path
+		opts.Metrics.Path = path
 	}
 }

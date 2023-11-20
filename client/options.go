@@ -235,6 +235,12 @@ func WithClusterAdaptiveService() ReferenceOption {
 	}
 }
 
+func WithCluster(cluster string) ReferenceOption {
+	return func(opts *ReferenceOptions) {
+		opts.Reference.Cluster = cluster
+	}
+}
+
 // ========== LoadBalance Strategy ==========
 
 func WithLoadBalanceConsistentHashing() ReferenceOption {
@@ -267,9 +273,9 @@ func WithLoadBalanceP2C() ReferenceOption {
 	}
 }
 
-func WithLoadBalanceXDSRingHash() ReferenceOption {
+func WithLoadBalance(lb string) ReferenceOption {
 	return func(opts *ReferenceOptions) {
-		opts.Reference.Loadbalance = constant.LoadBalanceKeyLeastActive
+		opts.Reference.Loadbalance = lb
 	}
 }
 
@@ -303,12 +309,11 @@ func WithProvidedBy(providedBy string) ReferenceOption {
 	}
 }
 
-// todo(DMwangnima): implement this functionality
-//func WithAsync() ReferenceOption {
-//	return func(opts *ReferenceOptions) {
-//		opts.Reference.Async = true
-//	}
-//}
+func WithAsync() ReferenceOption {
+	return func(opts *ReferenceOptions) {
+		opts.Reference.Async = true
+	}
+}
 
 func WithParams(params map[string]string) ReferenceOption {
 	return func(opts *ReferenceOptions) {
@@ -316,16 +321,11 @@ func WithParams(params map[string]string) ReferenceOption {
 	}
 }
 
-// todo(DMwangnima): implement this functionality
-//func WithGeneric(generic bool) ReferenceOption {
-//	return func(opts *ReferenceOptions) {
-//		if generic {
-//			opts.Reference.Generic = "true"
-//		} else {
-//			opts.Reference.Generic = "false"
-//		}
-//	}
-//}
+func WithGeneric() ReferenceOption {
+	return func(opts *ReferenceOptions) {
+		opts.Reference.Generic = "true"
+	}
+}
 
 func WithSticky(sticky bool) ReferenceOption {
 	return func(opts *ReferenceOptions) {
@@ -365,15 +365,35 @@ func WithRequestTimeout(timeout time.Duration) ReferenceOption {
 	}
 }
 
-func WithForce(force bool) ReferenceOption {
+func WithForceTag() ReferenceOption {
 	return func(opts *ReferenceOptions) {
-		opts.Reference.ForceTag = force
+		opts.Reference.ForceTag = true
 	}
 }
 
 func WithMeshProviderPort(port int) ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		opts.Reference.MeshProviderPort = port
+	}
+}
+
+func WithMethod(opts ...global.MethodOption) ReferenceOption {
+	regOpts := global.NewMethodOptions(opts...)
+
+	return func(opts *ReferenceOptions) {
+		if len(opts.Reference.Methods) == 0 {
+			opts.Reference.Methods = make([]*global.MethodConfig, 0)
+		}
+		opts.Reference.Methods = append(opts.Reference.Methods, regOpts.Method)
+	}
+}
+
+func WithParam(k, v string) ReferenceOption {
+	return func(opts *ReferenceOptions) {
+		if opts.Reference.Params == nil {
+			opts.Reference.Params = make(map[string]string)
+		}
+		opts.Reference.Params[k] = v
 	}
 }
 
@@ -397,6 +417,8 @@ type ClientOptions struct {
 	Application *global.ApplicationConfig
 	Registries  map[string]*global.RegistryConfig
 	Shutdown    *global.ShutdownConfig
+	Metrics     *global.MetricsConfig
+	Otel        *global.OtelConfig
 }
 
 func defaultClientOptions() *ClientOptions {
@@ -405,6 +427,8 @@ func defaultClientOptions() *ClientOptions {
 		Registries:  make(map[string]*global.RegistryConfig),
 		Application: global.DefaultApplicationConfig(),
 		Shutdown:    global.DefaultShutdownConfig(),
+		Metrics:     global.DefaultMetricsConfig(),
+		Otel:        global.DefaultOtelConfig(),
 	}
 }
 
@@ -459,13 +483,13 @@ func WithClientRegistry(opts ...registry.Option) ClientOption {
 	}
 }
 
-//func WithClientShutdown(opts ...graceful_shutdown.Option) ClientOption {
-//	sdOpts := graceful_shutdown.NewOptions(opts...)
-//
-//	return func(cliOpts *ClientOptions) {
-//		cliOpts.Shutdown = sdOpts.Shutdown
-//	}
-//}
+func WithClientShutdown(opts ...graceful_shutdown.Option) ClientOption {
+	sdOpts := graceful_shutdown.NewOptions(opts...)
+
+	return func(cliOpts *ClientOptions) {
+		cliOpts.Shutdown = sdOpts.Shutdown
+	}
+}
 
 // ========== Cluster Strategy ==========
 
@@ -555,9 +579,9 @@ func WithClientLoadBalanceP2C() ClientOption {
 	}
 }
 
-func WithClientLoadBalanceXDSRingHash() ClientOption {
+func WithClientLoadBalance(lb string) ClientOption {
 	return func(opts *ClientOptions) {
-		opts.Consumer.Loadbalance = constant.LoadBalanceKeyLeastActive
+		opts.Consumer.Loadbalance = lb
 	}
 }
 
@@ -579,9 +603,15 @@ func WithClientVersion(version string) ClientOption {
 	}
 }
 
-func WithClientJSON() ClientOption {
+func WithClientSerializationJSON() ClientOption {
 	return func(opts *ClientOptions) {
 		opts.Consumer.Serialization = constant.JSONSerialization
+	}
+}
+
+func WithClientSerialization(ser string) ClientOption {
+	return func(opts *ClientOptions) {
+		opts.Consumer.Serialization = ser
 	}
 }
 
@@ -601,6 +631,15 @@ func WithClientProvidedBy(providedBy string) ClientOption {
 func WithClientParams(params map[string]string) ClientOption {
 	return func(opts *ClientOptions) {
 		opts.Consumer.Params = params
+	}
+}
+
+func WithClientParam(k, v string) ClientOption {
+	return func(opts *ClientOptions) {
+		if opts.Consumer.Params == nil {
+			opts.Consumer.Params = make(map[string]string)
+		}
+		opts.Consumer.Params[k] = v
 	}
 }
 
@@ -653,9 +692,9 @@ func WithClientRequestTimeout(timeout time.Duration) ClientOption {
 	}
 }
 
-func WithClientForce(force bool) ClientOption {
+func WithClientForceTag() ClientOption {
 	return func(opts *ClientOptions) {
-		opts.Consumer.ForceTag = force
+		opts.Consumer.ForceTag = true
 	}
 }
 
@@ -686,6 +725,18 @@ func SetClientConsumer(consumer *global.ConsumerConfig) ClientOption {
 func SetClientShutdown(shutdown *global.ShutdownConfig) ClientOption {
 	return func(opts *ClientOptions) {
 		opts.Shutdown = shutdown
+	}
+}
+
+func SetClientMetrics(metrics *global.MetricsConfig) ClientOption {
+	return func(opts *ClientOptions) {
+		opts.Metrics = metrics
+	}
+}
+
+func SetClientOtel(otel *global.OtelConfig) ClientOption {
+	return func(opts *ClientOptions) {
+		opts.Otel = otel
 	}
 }
 

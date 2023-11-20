@@ -315,6 +315,7 @@ func (svcOpts *ServiceOptions) Implement(rpcService common.RPCService) {
 func (svcOpts *ServiceOptions) getUrlMap() url.Values {
 	srv := svcOpts.Service
 	app := svcOpts.applicationCompat
+	metrics := svcOpts.srvOpts.Metrics
 
 	urlMap := url.Values{}
 	// first set user params
@@ -355,7 +356,10 @@ func (svcOpts *ServiceOptions) getUrlMap() url.Values {
 		filters = srv.Filter
 	}
 	if svcOpts.adaptiveService {
-		filters += fmt.Sprintf(",%svcOpts", constant.AdaptiveServiceProviderFilterKey)
+		filters += fmt.Sprintf(",%s", constant.AdaptiveServiceProviderFilterKey)
+	}
+	if metrics.Enable != nil && *metrics.Enable {
+		filters += fmt.Sprintf(",%s", constant.MetricsFilterKey)
 	}
 	urlMap.Set(constant.ServiceFilterKey, filters)
 
