@@ -147,6 +147,7 @@ func compatMetadataReportConfig(c *global.MetadataReportConfig) *config.Metadata
 		Timeout:   c.Timeout,
 		Group:     c.Group,
 		Namespace: c.Namespace,
+		Params:    c.Params,
 	}
 }
 

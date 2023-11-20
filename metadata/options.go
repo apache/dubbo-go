@@ -108,3 +108,9 @@ func WithNamespace(namespace string) Option {
 		opts.Metadata.Namespace = namespace
 	}
 }
+
+func WithParams(params map[string]string) Option {
+	return func(opts *Options) {
+		opts.Metadata.Params = params
+	}
+}

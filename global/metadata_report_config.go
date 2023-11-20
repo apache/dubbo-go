@@ -19,18 +19,19 @@ package global
 
 // MetadataReportConfig is app level configuration
 type MetadataReportConfig struct {
-	Protocol  string `required:"true"  yaml:"protocol"  json:"protocol,omitempty"`
-	Address   string `required:"true" yaml:"address" json:"address"`
-	Username  string `yaml:"username" json:"username,omitempty"`
-	Password  string `yaml:"password" json:"password,omitempty"`
-	Timeout   string `yaml:"timeout" json:"timeout,omitempty"`
-	Group     string `yaml:"group" json:"group,omitempty"`
-	Namespace string `yaml:"namespace" json:"namespace,omitempty"`
+	Protocol  string            `required:"true"  yaml:"protocol"  json:"protocol,omitempty"`
+	Address   string            `required:"true" yaml:"address" json:"address"`
+	Username  string            `yaml:"username" json:"username,omitempty"`
+	Password  string            `yaml:"password" json:"password,omitempty"`
+	Timeout   string            `yaml:"timeout" json:"timeout,omitempty"`
+	Group     string            `yaml:"group" json:"group,omitempty"`
+	Namespace string            `yaml:"namespace" json:"namespace,omitempty"`
+	Params    map[string]string `yaml:"params"  json:"parameters,omitempty"`
 	// metadataType of this application is defined by application config, local or remote
 	metadataType string
 }
 
 func DefaultMetadataReportConfig() *MetadataReportConfig {
 	// return a new config without setting any field means there is not any default value for initialization
-	return &MetadataReportConfig{}
+	return &MetadataReportConfig{Params: map[string]string{}}
 }
