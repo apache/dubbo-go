@@ -15,26 +15,5 @@
  * limitations under the License.
  */
 
-package gen
-
-import (
-	"github.com/spf13/cobra"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/triple-tool/gen/generator"
-)
-
-var Cmd = &cobra.Command{
-	Use:  "gen",
-	RunE: generator.Generate,
-}
-
-func init() {
-	flags := Cmd.Flags()
-
-	flags.StringVar(&generator.ProtocPath, "protoPath", ".", "")
-	flags.StringSliceVar(&generator.GoOpts, "go_opt", []string{}, "")
-	flags.MarkHidden("protoPath")
-	flags.MarkHidden("go_opt")
-}
+// Package global defines XxxConfigs for collecting Dubbo configurations and is for internal use only.
+package global
