@@ -18,24 +18,4 @@
 package generator
 
 type Generator struct {
-	ctx Context
-}
-
-func NewGenerator(ctx Context) *Generator {
-	return &Generator{ctx: ctx}
-}
-
-func (g *Generator) gen() error {
-
-	err := g.GenPb()
-	if err != nil {
-		return err
-	}
-
-	err = g.GenTriple()
-	if err != nil {
-		return err
-	}
-
-	return err
 }
