@@ -33,7 +33,7 @@ import (
 )
 
 type OtelConfig struct {
-	TraceConfig *OtelTraceConfig `yaml:"trace" json:"trace,omitempty" property:"trace"`
+	TraceConfig *OtelTraceConfig `yaml:"tracing" json:"trace,omitempty" property:"trace"`
 }
 
 type OtelTraceConfig struct {

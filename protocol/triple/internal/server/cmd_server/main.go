@@ -31,13 +31,16 @@ func main() {
 			protocol.WithTriple(),
 			protocol.WithPort(20000),
 		),
+		server.WithServerVersion("1.0.0"),
 	)
+
 	if err != nil {
 		panic(err)
 	}
 	if err := greettriple.RegisterGreetServiceHandler(srv, &api.GreetTripleServer{}); err != nil {
 		panic(err)
 	}
+
 	if err := srv.Serve(); err != nil {
 		panic(err)
 	}

@@ -73,21 +73,28 @@ type Health interface {
 }
 
 // NewHealth constructs a client for the grpc.health.v1.Health service.
-func NewHealth(cli *client.Client) (Health, error) {
-	if err := cli.Init(&Health_ClientInfo); err != nil {
+func NewHealth(cli *client.Client, opts ...client.ReferenceOption) (Health, error) {
+	group, version, err := cli.Init(&Health_ClientInfo, opts...)
+	if err != nil {
 		return nil, err
 	}
+
 	return &HealthImpl{
-		cli: cli,
+		cli:     cli,
+		group:   group,
+		version: version,
 	}, nil
 }
 
 // HealthImpl implements Health.
 type HealthImpl struct {
-	cli *client.Client
+	cli     *client.Client
+	group   string
+	version string
 }
 
 func (c *HealthImpl) Check(ctx context.Context, req *HealthCheckRequest, opts ...client.CallOption) (*HealthCheckResponse, error) {
+	opts = appendGroupVersion(opts, c)
 	resp := new(HealthCheckResponse)
 	if err := c.cli.CallUnary(ctx, req, resp, "grpc.health.v1.Health", "Check", opts...); err != nil {
 		return nil, err
@@ -96,12 +103,19 @@ func (c *HealthImpl) Check(ctx context.Context, req *HealthCheckRequest, opts ..
 }
 
 func (c *HealthImpl) Watch(ctx context.Context, req *HealthCheckRequest, opts ...client.CallOption) (Health_WatchClient, error) {
+	opts = appendGroupVersion(opts, c)
 	stream, err := c.cli.CallServerStream(ctx, req, "grpc.health.v1.Health", "Watch", opts...)
 	if err != nil {
 		return nil, err
 	}
 	rawStream := stream.(*triple_protocol.ServerStreamForClient)
 	return &HealthWatchClient{rawStream}, nil
+}
+
+func appendGroupVersion(opts []client.CallOption, c *HealthImpl) []client.CallOption {
+	opts = append(opts, client.WithCallGroup(c.group))
+	opts = append(opts, client.WithCallVersion(c.version))
+	return opts
 }
 
 type Health_WatchClient interface {

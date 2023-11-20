@@ -18,24 +18,40 @@
 package main
 
 import (
+	"context"
+	"fmt"
+	"time"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/client"
 	_ "dubbo.apache.org/dubbo-go/v3/imports"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/client/common"
+	greet "dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto/triple_gen/greettriple"
 )
 
 func main() {
 	// for the most brief RPC case
 	cli, err := client.NewClient(
-		client.WithURL("127.0.0.1:20000"),
+		client.WithClientURL("127.0.0.1:20000"),
 	)
+
 	if err != nil {
 		panic(err)
 	}
 	svc, err := greettriple.NewGreetService(cli)
+
 	if err != nil {
 		panic(err)
 	}
+
+	response, err := svc.Greet(context.Background(), &greet.GreetRequest{Name: "greet"}, client.WithCallRequestTimeout(5*time.Second))
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Printf("result: %s", response.Greeting)
 
 	common.TestClient(svc)
 }
