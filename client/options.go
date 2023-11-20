@@ -377,8 +377,8 @@ func WithMeshProviderPort(port int) ReferenceOption {
 	}
 }
 
-func WithMethod(opts ...global.MethodOption) ReferenceOption {
-	regOpts := global.NewMethodOptions(opts...)
+func WithMethod(opts ...config.MethodOption) ReferenceOption {
+	regOpts := config.NewMethodOptions(opts...)
 
 	return func(opts *ReferenceOptions) {
 		if len(opts.Reference.Methods) == 0 {

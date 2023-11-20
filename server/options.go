@@ -839,8 +839,8 @@ func WithRegistry(opts ...registry.Option) ServiceOption {
 	}
 }
 
-func WithMethod(opts ...global.MethodOption) ServiceOption {
-	regOpts := global.NewMethodOptions(opts...)
+func WithMethod(opts ...config.MethodOption) ServiceOption {
+	regOpts := config.NewMethodOptions(opts...)
 
 	return func(opts *ServiceOptions) {
 		if len(opts.Service.Methods) == 0 {
