@@ -46,7 +46,7 @@ jobs:
       - name: Create package
         id: package
         run: |
-          PACKAGE_NAME=protoc-gen-go-triple.${GITHUB_REF#refs/tags/cmd/protoc-gen-go-grpc/}.${{ matrix.goos }}.${{ matrix.goarch }}.tar.gz
+          PACKAGE_NAME=protoc-gen-go-triple.${GITHUB_REF#refs/tags/cmd/protoc-gen-go-triple/}.${{ matrix.goos }}.${{ matrix.goarch }}.tar.gz
           tar -czvf $PACKAGE_NAME -C build .
           echo "name=${PACKAGE_NAME}" >> $GITHUB_OUTPUT
 
