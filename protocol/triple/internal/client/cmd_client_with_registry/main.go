@@ -29,7 +29,7 @@ func main() {
 	// for the most brief RPC case with Registry
 
 	cli, err := client.NewClient(
-		client.WithRegistry(
+		client.WithClientRegistry(
 			registry.WithZookeeper(),
 			registry.WithAddress("127.0.0.1:2181"),
 		),

@@ -59,6 +59,12 @@ func WithNacos() Option {
 	}
 }
 
+func WithConfigCenter(cc string) Option {
+	return func(opts *Options) {
+		opts.Center.Protocol = cc
+	}
+}
+
 func WithAddress(address string) Option {
 	return func(opts *Options) {
 		if i := strings.Index(address, "://"); i > 0 {

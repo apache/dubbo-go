@@ -33,8 +33,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 )
 
-// MetricConfig This is the config struct for all metrics implementation
-type MetricConfig struct {
+// MetricsConfig This is the config struct for all metrics implementation
+type MetricsConfig struct {
 	Enable             *bool             `default:"false" yaml:"enable" json:"enable,omitempty" property:"enable"`
 	Port               string            `default:"9090" yaml:"port" json:"port,omitempty" property:"port"`
 	Path               string            `default:"/metrics" yaml:"path" json:"path,omitempty" property:"path"`
@@ -71,7 +71,7 @@ type PushgatewayConfig struct {
 	PushInterval int    `default:"30" yaml:"push-interval" json:"push-interval,omitempty" property:"push-interval"`
 }
 
-func (mc *MetricConfig) ToReporterConfig() *metrics.ReporterConfig {
+func (mc *MetricsConfig) ToReporterConfig() *metrics.ReporterConfig {
 	defaultMetricsReportConfig := metrics.NewReporterConfig()
 
 	defaultMetricsReportConfig.Enable = *mc.Enable
@@ -81,7 +81,7 @@ func (mc *MetricConfig) ToReporterConfig() *metrics.ReporterConfig {
 	return defaultMetricsReportConfig
 }
 
-func (mc *MetricConfig) Init(rc *RootConfig) error {
+func (mc *MetricsConfig) Init(rc *RootConfig) error {
 	if mc == nil {
 		return errors.New("metrics config is null")
 	}
@@ -99,11 +99,11 @@ func (mc *MetricConfig) Init(rc *RootConfig) error {
 }
 
 type MetricConfigBuilder struct {
-	metricConfig *MetricConfig
+	metricConfig *MetricsConfig
 }
 
 func NewMetricConfigBuilder() *MetricConfigBuilder {
-	return &MetricConfigBuilder{metricConfig: &MetricConfig{}}
+	return &MetricConfigBuilder{metricConfig: &MetricsConfig{}}
 }
 
 func (mcb *MetricConfigBuilder) SetMetadataEnabled(enabled bool) *MetricConfigBuilder {
@@ -121,17 +121,17 @@ func (mcb *MetricConfigBuilder) SetConfigCenterEnabled(enabled bool) *MetricConf
 	return mcb
 }
 
-func (mcb *MetricConfigBuilder) Build() *MetricConfig {
+func (mcb *MetricConfigBuilder) Build() *MetricsConfig {
 	return mcb.metricConfig
 }
 
 // DynamicUpdateProperties dynamically update properties.
-func (mc *MetricConfig) DynamicUpdateProperties(newMetricConfig *MetricConfig) {
+func (mc *MetricsConfig) DynamicUpdateProperties(newMetricConfig *MetricsConfig) {
 	// TODO update
 }
 
 // prometheus://localhost:9090?&histogram.enabled=false&prometheus.exporter.enabled=false
-func (mc *MetricConfig) toURL() *common.URL {
+func (mc *MetricsConfig) toURL() *common.URL {
 	url, _ := common.NewURL("localhost", common.WithProtocol(mc.Protocol))
 	url.SetParam(constant.PrometheusExporterMetricsPortKey, mc.Port)
 	url.SetParam(constant.PrometheusExporterMetricsPathKey, mc.Path)

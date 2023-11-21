@@ -42,7 +42,7 @@ func main() {
 	}
 	// configure the params that only client layer cares
 	cli, err := ins.NewClient(
-		client.WithRegistryIDs([]string{"zk"}),
+		client.WithClientRegistryIDs([]string{"zk"}),
 	)
 	if err != nil {
 		panic(err)

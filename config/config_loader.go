@@ -158,22 +158,22 @@ func RPCService(service common.RPCService) {
 	rootConfig.Consumer.References[ref].Implement(service)
 }
 
-// GetMetricConfig find the MetricConfig
+// GetMetricConfig find the MetricsConfig
 // if it is nil, create a new one
 // we use double-check to reduce race condition
 // In general, it will be locked 0 or 1 time.
 // So you don't need to worry about the race condition
-func GetMetricConfig() *MetricConfig {
+func GetMetricConfig() *MetricsConfig {
 	// todo
-	//if GetBaseConfig().Metric == nil {
+	//if GetBaseConfig().Metrics == nil {
 	//	configAccessMutex.Lock()
 	//	defer configAccessMutex.Unlock()
-	//	if GetBaseConfig().Metric == nil {
-	//		GetBaseConfig().Metric = &metric.Metric{}
+	//	if GetBaseConfig().Metrics == nil {
+	//		GetBaseConfig().Metrics = &metric.Metrics{}
 	//	}
 	//}
-	//return GetBaseConfig().Metric
-	return rootConfig.Metric
+	//return GetBaseConfig().Metrics
+	return rootConfig.Metrics
 }
 
 func GetTracingConfig(tracingKey string) *TracingConfig {
