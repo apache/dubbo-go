@@ -210,21 +210,27 @@ type {{$s.ServiceName}} interface { {{- range $s.Methods}}
 `
 
 const InterfaceImplTpl = `{{$t := .}}{{range $s := .Services}}// New{{.ServiceName}} constructs a client for the {{$t.Package}}.{{.ServiceName}} service. 
-func New{{.ServiceName}}(cli *client.Client) ({{.ServiceName}}, error) {
-	if err := cli.Init(&{{.ServiceName}}_ClientInfo); err != nil {
+func New{{.ServiceName}}(cli *client.Client, opts ...client.ReferenceOption) ({{.ServiceName}}, error) {
+	group, version, err := cli.Init(&{{.ServiceName}}_ClientInfo, opts...)
+	if err != nil {
 		return nil, err
 	}
 	return &{{.ServiceName}}Impl{
-		cli: cli,
+		cli:     cli,
+		group:   group,
+		version: version,
 	}, nil
 }
 
 // {{.ServiceName}}Impl implements {{.ServiceName}}.
 type {{.ServiceName}}Impl struct {
-	cli *client.Client
+	cli     *client.Client
+	group   string
+	version string
 }
 {{range .Methods}}{{if .StreamsRequest}}{{if .StreamsReturn}}
 func (c *{{$s.ServiceName}}Impl) {{.MethodName}}(ctx context.Context, opts ...client.CallOption) ({{$s.ServiceName}}_{{.MethodName}}Client, error) {
+	opts = appendGroupVersion(opts, c)
 	stream, err := c.cli.CallBidiStream(ctx, "{{$t.ProtoPackage}}.{{$s.ServiceName}}", "{{.MethodName}}", opts...)
 	if err != nil {
 		return nil, err
@@ -234,6 +240,7 @@ func (c *{{$s.ServiceName}}Impl) {{.MethodName}}(ctx context.Context, opts ...cl
 }
 {{else}}
 func (c *{{$s.ServiceName}}Impl) {{.MethodName}}(ctx context.Context, opts ...client.CallOption) ({{$s.ServiceName}}_{{.MethodName}}Client, error) {
+	opts = appendGroupVersion(opts, c)
 	stream, err := c.cli.CallClientStream(ctx, "{{$t.ProtoPackage}}.{{$s.ServiceName}}", "{{.MethodName}}", opts...)
 	if err != nil {
 		return nil, err
@@ -243,6 +250,7 @@ func (c *{{$s.ServiceName}}Impl) {{.MethodName}}(ctx context.Context, opts ...cl
 }
 {{end}}{{else}}{{if .StreamsReturn}}
 func (c *{{$s.ServiceName}}Impl) {{.MethodName}}(ctx context.Context, req *proto.{{.RequestType}}, opts ...client.CallOption) ({{$s.ServiceName}}_{{.MethodName}}Client, error) {
+	opts = appendGroupVersion(opts, c)
 	stream, err := c.cli.CallServerStream(ctx, req, "{{$t.ProtoPackage}}.{{$s.ServiceName}}", "{{.MethodName}}", opts...)
 	if err != nil {
 		return nil, err
@@ -252,13 +260,20 @@ func (c *{{$s.ServiceName}}Impl) {{.MethodName}}(ctx context.Context, req *proto
 }
 {{else}}
 func (c *{{$s.ServiceName}}Impl) {{.MethodName}}(ctx context.Context, req *proto.{{.RequestType}}, opts ...client.CallOption) (*proto.{{.ReturnType}}, error) {
+	opts = appendGroupVersion(opts, c)
 	resp := new(proto.{{.ReturnType}})
 	if err := c.cli.CallUnary(ctx, req, resp, "{{$t.ProtoPackage}}.{{$s.ServiceName}}", "{{.MethodName}}", opts...); err != nil {
 		return nil, err
 	}
 	return resp, nil
 }
-{{end}}{{end}}{{end}}{{end}}
+{{end}}{{end}}{{end}}
+func appendGroupVersion(opts []client.CallOption, c *{{.ServiceName}}) []client.CallOption {
+	opts = append(opts, client.WithCallGroup(c.group))
+	opts = append(opts, client.WithCallVersion(c.version))
+	return opts
+}
+{{end}}
 `
 
 const ClientImplTpl = `{{$t := .}}{{range $s := .Services}}{{range .Methods}}{{if .StreamsRequest}}{{if .StreamsReturn}}
