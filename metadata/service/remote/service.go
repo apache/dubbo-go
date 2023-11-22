@@ -15,130 +15,77 @@
  * limitations under the License.
  */
 
-package remote
+package client
 
 import (
-	"sync"
-)
-
-import (
-	"github.com/dubbogo/gost/log/logger"
-
-	"go.uber.org/atomic"
+	"context"
+	"strconv"
+	"time"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/metadata/definition"
-	"dubbo.apache.org/dubbo-go/v3/metadata/identifier"
-	"dubbo.apache.org/dubbo-go/v3/metadata/report/delegate"
-	"dubbo.apache.org/dubbo-go/v3/metadata/service"
-	"dubbo.apache.org/dubbo-go/v3/metadata/service/local"
+	"dubbo.apache.org/dubbo-go/v3/metadata/info"
+	metadataInstance "dubbo.apache.org/dubbo-go/v3/metadata/report/instance"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
-type MetadataService struct {
-	*local.MetadataService
-	exportedRevision   atomic.String
-	subscribedRevision atomic.String
-	delegateReport     *delegate.MetadataReport
-}
-
-var (
-	metadataServiceOnce           sync.Once
-	remoteMetadataServiceInstance service.RemoteMetadataService
-)
-
-func init() {
-	extension.SetRemoteMetadataService(GetRemoteMetadataService)
-}
-
-// GetRemoteMetadataService will create a new remote MetadataService instance
-func GetRemoteMetadataService() (service.RemoteMetadataService, error) {
-	var err error
-	metadataServiceOnce.Do(func() {
-		var mr *delegate.MetadataReport
-		mr, err = delegate.NewMetadataReport()
-		if err != nil {
-			return
-		}
-		// it will never return error
-		inms, _ := local.GetLocalMetadataService()
-		remoteMetadataServiceInstance = &MetadataService{
-			// todo serviceName
-			//BaseMetadataService:     service.NewBaseMetadataService(""),
-			MetadataService: inms.(*local.MetadataService),
-			delegateReport:  mr,
-		}
-	})
-	return remoteMetadataServiceInstance, err
-}
-
-// PublishMetadata publishes the metadata info of @service to remote metadata center
-func (s *MetadataService) PublishMetadata(service string) {
-	info, err := s.MetadataService.GetMetadataInfo("")
-	if err != nil {
-		logger.Errorf("GetMetadataInfo error[%v]", err)
-		return
-	}
-	if info.HasReported() {
-		return
-	}
-	id := identifier.NewSubscriberMetadataIdentifier(service, info.CalAndGetRevision())
-	err = s.delegateReport.PublishAppMetadata(id, info)
-	if err != nil {
-		logger.Errorf("Publishing metadata to error[%v]", err)
-		return
-	}
-	info.MarkReported()
-}
-
 // GetMetadata get the medata info of service from report
-func (s *MetadataService) GetMetadata(instance registry.ServiceInstance) (*common.MetadataInfo, error) {
-	revision := instance.GetMetadata()[constant.ExportedServicesRevisionPropertyName]
-	id := identifier.NewSubscriberMetadataIdentifier(instance.GetServiceName(), revision)
-	return s.delegateReport.GetAppMetadata(id)
+func GetRemoteMetadata(revision string, instance registry.ServiceInstance) (*info.MetadataInfo, error) {
+	meta, err := getMetadataFromCache(revision, instance)
+	if err != nil || meta == nil {
+		meta, err = getMetadataFromMetadataReport(revision, instance)
+		if err != nil || meta == nil {
+			meta, err = getMetadataFromRpc(revision, instance)
+		}
+		// TODO: need to update cache
+	}
+	return meta, err
 }
 
-// PublishServiceDefinition will call remote metadata's StoreProviderMetadata to store url info and service definition
-func (s *MetadataService) PublishServiceDefinition(url *common.URL) error {
-	interfaceName := url.GetParam(constant.InterfaceKey, "")
-	isGeneric := url.GetParamBool(constant.GenericKey, false)
-	if common.RoleType(common.PROVIDER).Role() == url.GetParam(constant.SideKey, "") {
-		if len(interfaceName) > 0 && !isGeneric {
-			sv := common.ServiceMap.GetServiceByServiceKey(url.Protocol, url.ServiceKey())
-			sd := definition.BuildFullDefinition(*sv, url)
-			id := &identifier.MetadataIdentifier{
-				BaseMetadataIdentifier: identifier.BaseMetadataIdentifier{
-					ServiceInterface: interfaceName,
-					Version:          url.GetParam(constant.VersionKey, ""),
-					Group:            url.GetParam(constant.GroupKey, constant.Dubbo),
-					Side:             url.GetParam(constant.SideKey, constant.ProviderProtocol),
-				},
-			}
-			s.delegateReport.StoreProviderMetadata(id, sd)
-			return nil
-		}
-		logger.Errorf("publishProvider interfaceName is empty . providerUrl:%v ", url)
-	} else {
-		params := make(map[string]string, len(url.GetParams()))
-		url.RangeParams(func(key, value string) bool {
-			params[key] = value
-			return true
-		})
-		id := &identifier.MetadataIdentifier{
-			BaseMetadataIdentifier: identifier.BaseMetadataIdentifier{
-				ServiceInterface: interfaceName,
-				Version:          url.GetParam(constant.VersionKey, ""),
-				Group:            url.GetParam(constant.GroupKey, constant.Dubbo),
-				Side:             url.GetParam(constant.SideKey, "consumer"),
-			},
-		}
-		s.delegateReport.StoreConsumerMetadata(id, params)
-		return nil
-	}
+func getMetadataFromCache(revision string, instance registry.ServiceInstance) (*info.MetadataInfo, error) {
+	// TODO
+	return nil, nil
+}
 
-	return nil
+func getMetadataFromMetadataReport(revision string, instance registry.ServiceInstance) (*info.MetadataInfo, error) {
+	report := metadataInstance.GetMetadataReport()
+	return report.GetAppMetadata(instance.GetServiceName(), revision)
+}
+
+func getMetadataFromRpc(revision string, instance registry.ServiceInstance) (*info.MetadataInfo, error) {
+	url := common.NewURLWithOptions(
+		common.WithProtocol(constant.Dubbo),
+		common.WithIp(instance.GetHost()),
+		common.WithPort(strconv.Itoa(instance.GetPort())),
+	)
+	url.SetParam(constant.SideKey, constant.Consumer)
+	url.SetParam(constant.VersionKey, "1.0.0")
+	url.SetParam(constant.InterfaceKey, constant.MetadataServiceName)
+	url.SetParam(constant.GroupKey, instance.GetServiceName())
+	service, err := createRpcClient(url)
+	if err != nil {
+		return nil, err
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(5000))
+	defer cancel()
+	return service.GetMetadataInfo(ctx, revision)
+}
+
+type metadataService struct {
+	GetExportedURLs       func(context context.Context, serviceInterface string, group string, version string, protocol string) ([]*common.URL, error) `dubbo:"getExportedURLs"`
+	GetMetadataInfo       func(context context.Context, revision string) (*info.MetadataInfo, error)                                                   `dubbo:"getMetadataInfo"`
+	GetMetadataServiceURL func(context context.Context) (*common.URL, error)
+	GetSubscribedURLs     func(context context.Context) ([]*common.URL, error)
+	Version               func(context context.Context) (string, error)
+}
+
+func createRpcClient(url *common.URL) (*metadataService, error) {
+	rpcService := &metadataService{}
+	invoker := extension.GetProtocol(constant.Dubbo).Refer(url)
+	proxy := extension.GetProxyFactory("").GetProxy(invoker, url)
+	proxy.Implement(rpcService)
+	return rpcService, nil
 }

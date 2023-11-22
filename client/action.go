@@ -154,8 +154,6 @@ func (refOpts *ReferenceOptions) refer(srv common.RPCService, info *ClientInfo) 
 	refOpts.urls = urls
 	refOpts.invoker = invoker
 
-	// publish consumer's metadata
-	publishServiceDefinition(cfgURL)
 	// create proxy
 	if info == nil && srv != nil {
 		if ref.Async {

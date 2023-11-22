@@ -39,7 +39,6 @@ func TestNewMetadataReportConfigBuilder(t *testing.T) {
 		SetGroup("dubbo").
 		Build()
 
-	assert.Equal(t, config.IsValid(), true)
 	assert.Equal(t, config.Prefix(), constant.MetadataReportPrefix)
 
 	url, err := config.ToUrl()

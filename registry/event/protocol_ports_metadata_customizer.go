@@ -29,7 +29,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/metadata/service/local"
+	metadataService "dubbo.apache.org/dubbo-go/v3/metadata/service"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
@@ -48,24 +48,15 @@ func (p *ProtocolPortsMetadataCustomizer) GetPriority() int {
 
 // Customize put the the string like [{"protocol": "dubbo", "port": 123}] into instance's metadata
 func (p *ProtocolPortsMetadataCustomizer) Customize(instance registry.ServiceInstance) {
-	metadataService, err := local.GetLocalMetadataService()
-	if err != nil {
-		logger.Errorf("Could not init the MetadataService", err)
+	list := metadataService.GlobalMetadataService.GetExportedServiceURLs()
+	if list == nil || len(list) == 0 {
+		logger.Warn("Could not find exported urls")
 		return
 	}
-
 	// 4 is enough... we don't have many protocol
 	protocolMap := make(map[string]int, 4)
-
-	list, err := metadataService.GetExportedServiceURLs()
-	if list == nil || len(list) == 0 || err != nil {
-		logger.Debugf("Could not find exported urls", err)
-		return
-	}
-
 	for _, u := range list {
-		if err != nil || len(u.Protocol) == 0 {
-			logger.Errorf("the url string is invalid: %s", u, err)
+		if len(u.Protocol) == 0 {
 			continue
 		}
 

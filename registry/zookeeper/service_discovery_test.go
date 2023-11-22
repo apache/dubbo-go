@@ -136,13 +136,10 @@ func (m *mockInvoker) Destroy() {
 }
 
 func (m *mockInvoker) Invoke(context.Context, protocol.Invocation) protocol.Result {
-	// for getMetadataInfo and ServiceInstancesChangedListenerImpl onEvent
-	serviceInfo := &common.ServiceInfo{ServiceKey: "test", MatchKey: "test"}
-	services := make(map[string]*common.ServiceInfo)
-	services["test"] = serviceInfo
 	return &protocol.RPCResult{
-		Rest: &common.MetadataInfo{
-			Services: services,
-		},
+		Rest: &mockResult{},
 	}
+}
+
+type mockResult struct {
 }

@@ -233,16 +233,6 @@ func (svcOpts *ServiceOptions) export(info *ServiceInfo) error {
 				svcOpts.exporters = append(svcOpts.exporters, exporter)
 			}
 		} else {
-			if ivkURL.GetParam(constant.InterfaceKey, "") == constant.MetadataServiceName {
-				ms, err := extension.GetLocalMetadataService("")
-				if err != nil {
-					logger.Warnf("needExport org.apache.dubbo.metadata.MetadataService failed beacause of %svcOpts ! pls check if you import _ \"dubbo.apache.org/dubbo-go/v3/metadata/service/local\"", err)
-					return nil
-				}
-				if err := ms.SetMetadataServiceURL(ivkURL); err != nil {
-					logger.Warnf("SetMetadataServiceURL error = %svcOpts", err)
-				}
-			}
 			invoker = svcOpts.generatorInvoker(ivkURL, info)
 			exporter := extension.GetProtocol(protocolwrapper.FILTER).Export(invoker)
 			if exporter == nil {
@@ -250,7 +240,6 @@ func (svcOpts *ServiceOptions) export(info *ServiceInfo) error {
 			}
 			svcOpts.exporters = append(svcOpts.exporters, exporter)
 		}
-		publishServiceDefinition(ivkURL)
 		// this protocol would be destroyed in graceful_shutdown
 		// please refer to (https://github.com/apache/dubbo-go/issues/2429)
 		graceful_shutdown.RegisterProtocol(proto.Name)

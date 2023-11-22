@@ -77,18 +77,20 @@ func newPolarisServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, err
 	descriptor := fmt.Sprintf("polaris-service-discovery[%s]", discoveryURL.Location)
 
 	newInstance := &polarisServiceDiscovery{
-		namespace:         discoveryURL.GetParam(constant.RegistryNamespaceKey, constant.PolarisDefaultNamespace),
-		descriptor:        descriptor,
-		consumer:          consumerApi,
-		provider:          providerApi,
-		services:          gxset.NewSet(),
-		registryInstances: make(map[string]*PolarisInstanceInfo),
-		watchers:          make(map[string]*PolarisServiceWatcher),
+		BaseServiceDiscovery: registry.NewBaseServiceDiscovery(url.GetParam(constant.ApplicationKey, "")),
+		namespace:            discoveryURL.GetParam(constant.RegistryNamespaceKey, constant.PolarisDefaultNamespace),
+		descriptor:           descriptor,
+		consumer:             consumerApi,
+		provider:             providerApi,
+		services:             gxset.NewSet(),
+		registryInstances:    make(map[string]*PolarisInstanceInfo),
+		watchers:             make(map[string]*PolarisServiceWatcher),
 	}
 	return newInstance, nil
 }
 
 type polarisServiceDiscovery struct {
+	registry.BaseServiceDiscovery
 	namespace         string
 	descriptor        string
 	provider          api.ProviderAPI

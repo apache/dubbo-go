@@ -33,10 +33,9 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/config"
-	"dubbo.apache.org/dubbo-go/v3/config/instance"
 	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
 	"dubbo.apache.org/dubbo-go/v3/metadata/report"
-	"dubbo.apache.org/dubbo-go/v3/registry"
+	"dubbo.apache.org/dubbo-go/v3/metadata/report/instance"
 )
 
 const (
@@ -62,7 +61,7 @@ func (d *MetadataServiceNameMapping) Map(url *common.URL) error {
 		return nil
 	}
 
-	appName := config.GetApplicationConfig().Name
+	appName := url.GetParam(constant.ApplicationKey, "")
 
 	metadataReport := getMetaDataReport(url.GetParam(constant.RegistryKey, ""))
 	if metadataReport == nil {
@@ -77,15 +76,15 @@ func (d *MetadataServiceNameMapping) Map(url *common.URL) error {
 }
 
 // Get will return the application-level services. If not found, the empty set will be returned.
-func (d *MetadataServiceNameMapping) Get(url *common.URL, listener registry.MappingListener) (*gxset.HashSet, error) {
+func (d *MetadataServiceNameMapping) Get(url *common.URL, listener mapping.MappingListener) (*gxset.HashSet, error) {
 	serviceInterface := url.GetParam(constant.InterfaceKey, "")
-	metadataReport := instance.GetMetadataReportInstance()
+	metadataReport := instance.GetMetadataReport()
 	return metadataReport.GetServiceAppMapping(serviceInterface, DefaultGroup, listener)
 }
 
 func (d *MetadataServiceNameMapping) Remove(url *common.URL) error {
 	serviceInterface := url.GetParam(constant.InterfaceKey, "")
-	metadataReport := instance.GetMetadataReportInstance()
+	metadataReport := instance.GetMetadataReport()
 	return metadataReport.RemoveServiceAppMappingListener(serviceInterface, DefaultGroup)
 }
 
@@ -114,8 +113,8 @@ func GetNameMappingInstance() mapping.ServiceNameMapping {
 func getMetaDataReport(protocol string) report.MetadataReport {
 	var metadataReport report.MetadataReport
 	if config.GetApplicationConfig().MetadataType == constant.RemoteMetadataStorageType {
-		metadataReport = instance.GetMetadataReportInstance()
+		metadataReport = instance.GetMetadataReport()
 		return metadataReport
 	}
-	return instance.GetMetadataReportByRegistryProtocol(protocol)
+	return instance.GetMetadataReport()
 }

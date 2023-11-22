@@ -187,7 +187,7 @@ func (s *Server) Serve() error {
 	if err := s.exportServices(); err != nil {
 		return err
 	}
-	metadata.ExportMetadataService()
+	metadata.ExportMetadataService(s.cfg.Application.Name, s.cfg.Application.MetadataType)
 	registry_exposed.RegisterServiceInstance(s.cfg.Application.Name, s.cfg.Application.Tag, s.cfg.Application.MetadataType)
 	select {}
 }

@@ -50,6 +50,7 @@ func init() {
 }
 
 type zookeeperServiceDiscovery struct {
+	registry.BaseServiceDiscovery
 	client              *gxzookeeper.ZookeeperClient
 	csd                 *curator_discovery.ServiceDiscovery
 	url                 *common.URL
@@ -70,9 +71,10 @@ func newZookeeperServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, e
 	}
 
 	zksd := &zookeeperServiceDiscovery{
-		url:                 url,
-		rootPath:            group,
-		instanceListenerMap: make(map[string]*gxset.HashSet),
+		BaseServiceDiscovery: registry.NewBaseServiceDiscovery(url.GetParam(constant.ApplicationKey, "")),
+		url:                  url,
+		rootPath:             group,
+		instanceListenerMap:  make(map[string]*gxset.HashSet),
 	}
 	if err := zookeeper.ValidateZookeeperClient(zksd, url.Location); err != nil {
 		return nil, err

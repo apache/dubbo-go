@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package common
+package info
 
 import (
 	"fmt"
@@ -26,12 +26,20 @@ import (
 )
 
 import (
+	hessian "github.com/apache/dubbo-go-hessian2"
+
 	gxset "github.com/dubbogo/gost/container/set"
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
+
+func init() {
+	hessian.RegisterPOJO(&MetadataInfo{})
+	hessian.RegisterPOJO(&ServiceInfo{})
+}
 
 var IncludeKeys = gxset.NewSet(
 	constant.ApplicationKey,
@@ -50,10 +58,12 @@ var IncludeKeys = gxset.NewSet(
 
 // MetadataInfo the metadata information of instance
 type MetadataInfo struct {
-	Reported bool                    `json:"-"`
-	App      string                  `json:"app,omitempty"`
-	Revision string                  `json:"revision,omitempty"`
-	Services map[string]*ServiceInfo `json:"services,omitempty"`
+	Reported              bool                     `json:"-"`
+	App                   string                   `json:"app,omitempty" hessian:"app"`
+	Revision              string                   `json:"revision,omitempty" hessian:"revision"`
+	Services              map[string]*ServiceInfo  `json:"services,omitempty" hessian:"services"`
+	exportedServiceURLs   map[string][]*common.URL // server exported service urls
+	subscribedServiceURLs map[string][]*common.URL // client subscribed service urls
 }
 
 // nolint
@@ -126,37 +136,79 @@ func (mi *MetadataInfo) MarkReported() {
 }
 
 // nolint
-func (mi *MetadataInfo) AddService(service *ServiceInfo) {
-	if service == nil {
-		return
-	}
+// AddService add provider service info to MetadataInfo
+func (mi *MetadataInfo) AddService(url *common.URL) {
+	service := NewServiceInfoWithURL(url)
 	mi.Services[service.GetMatchKey()] = service
+	addUrl(mi.exportedServiceURLs, url)
+}
+
+func addUrl(m map[string][]*common.URL, url *common.URL) {
+	if _, ok := m[url.ServiceKey()]; !ok {
+		m[url.ServiceKey()] = make([]*common.URL, 0)
+	}
+	m[url.ServiceKey()] = append(m[url.ServiceKey()], url)
+}
+
+func removeUrl(m map[string][]*common.URL, url *common.URL) {
+	// if _, ok := m[url.ServiceKey()]; ok {
+	// 	m[url.ServiceKey()].Remove(url)
+	// 	if m[url.ServiceKey()].Size() == 0 {
+	// 		delete(m, url.ServiceKey())
+	// 	}
+	// }
 }
 
 // nolint
-func (mi *MetadataInfo) RemoveService(service *ServiceInfo) {
-	if service == nil {
-		return
+func (mi *MetadataInfo) RemoveService(url *common.URL) {
+	service := NewServiceInfoWithURL(url)
+	delete(mi.Services, service.GetMatchKey())
+	removeUrl(mi.exportedServiceURLs, url)
+}
+
+// 客户端 订阅一个 服务的 url 元数据
+func (info *MetadataInfo) AddSubscribeURL(url *common.URL) {
+	addUrl(info.subscribedServiceURLs, url)
+}
+
+// 客户端 删除一个订阅的服务 url 元数据
+func (info *MetadataInfo) RemoveSubscribeURL(url *common.URL) {
+	removeUrl(info.subscribedServiceURLs, url)
+}
+
+func (info *MetadataInfo) GetExportedServiceURLs() []*common.URL {
+	res := make([]*common.URL, 0)
+	for _, urls := range info.exportedServiceURLs {
+		res = append(res, urls...)
 	}
-	delete(mi.Services, service.MatchKey)
+	return res
+}
+
+func (info *MetadataInfo) GetSubscribedURLs() []*common.URL {
+	res := make([]*common.URL, 0)
+	for _, urls := range info.subscribedServiceURLs {
+		res = append(res, urls...)
+	}
+	return res
 }
 
 // ServiceInfo the information of service
 type ServiceInfo struct {
-	Name     string            `json:"name,omitempty"`
-	Group    string            `json:"group,omitempty"`
-	Version  string            `json:"version,omitempty"`
-	Protocol string            `json:"protocol,omitempty"`
-	Path     string            `json:"path,omitempty"`
-	Params   map[string]string `json:"params,omitempty"`
+	Name     string            `json:"name,omitempty" hessian:"name"`
+	Group    string            `json:"group,omitempty" hessian:"group"`
+	Version  string            `json:"version,omitempty" hessian:"version"`
+	Protocol string            `json:"protocol,omitempty" hessian:"protocol"`
+	Port     int               `json:"port,omitempty" hessian:"port"`
+	Path     string            `json:"path,omitempty" hessian:"path"`
+	Params   map[string]string `json:"params,omitempty" hessian:"params"`
 
-	ServiceKey string `json:"-"`
-	MatchKey   string `json:"-"`
-	URL        *URL   `json:"-"`
+	ServiceKey string      `json:"-"`
+	MatchKey   string      `json:"-"`
+	URL        *common.URL `json:"-"`
 }
 
 // nolint
-func NewServiceInfoWithURL(url *URL) *ServiceInfo {
+func NewServiceInfoWithURL(url *common.URL) *ServiceInfo {
 	service := NewServiceInfo(url.Service(), url.Group(), url.Version(), url.Protocol, url.Path, nil)
 	service.URL = url
 	// TODO includeKeys load dynamic
@@ -180,8 +232,8 @@ func NewServiceInfoWithURL(url *URL) *ServiceInfo {
 
 // nolint
 func NewServiceInfo(name, group, version, protocol, path string, params map[string]string) *ServiceInfo {
-	serviceKey := ServiceKey(name, group, version)
-	matchKey := MatchKey(serviceKey, protocol)
+	serviceKey := common.ServiceKey(name, group, version)
+	matchKey := common.MatchKey(serviceKey, protocol)
 	return &ServiceInfo{
 		Name:       name,
 		Group:      group,
@@ -235,7 +287,7 @@ func (si *ServiceInfo) GetMatchKey() string {
 		return si.MatchKey
 	}
 	serviceKey := si.GetServiceKey()
-	si.MatchKey = MatchKey(serviceKey, si.Protocol)
+	si.MatchKey = common.MatchKey(serviceKey, si.Protocol)
 	return si.MatchKey
 }
 
@@ -244,6 +296,6 @@ func (si *ServiceInfo) GetServiceKey() string {
 	if si.ServiceKey != "" {
 		return si.ServiceKey
 	}
-	si.ServiceKey = ServiceKey(si.Name, si.Group, si.Version)
+	si.ServiceKey = common.ServiceKey(si.Name, si.Group, si.Version)
 	return si.ServiceKey
 }

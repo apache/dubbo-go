@@ -53,6 +53,7 @@ func init() {
 
 // new etcd service discovery struct
 type etcdV3ServiceDiscovery struct {
+	registry.BaseServiceDiscovery
 	// descriptor is a short string about the basic information of this instance
 	descriptor string
 	// client is current Etcdv3 client
@@ -318,10 +319,11 @@ func newEtcdV3ServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, erro
 	descriptor := fmt.Sprintf("etcd-service-discovery[%s]", url.Location)
 
 	return &etcdV3ServiceDiscovery{
-		descriptor:          descriptor,
-		client:              client,
-		serviceInstance:     nil,
-		services:            gxset.NewSet(),
-		childListenerMap:    make(map[string]*etcdv3.EventListener),
-		instanceListenerMap: make(map[string]*gxset.HashSet)}, nil
+		BaseServiceDiscovery: registry.NewBaseServiceDiscovery(url.GetParam(constant.ApplicationKey, "")),
+		descriptor:           descriptor,
+		client:               client,
+		serviceInstance:      nil,
+		services:             gxset.NewSet(),
+		childListenerMap:     make(map[string]*etcdv3.EventListener),
+		instanceListenerMap:  make(map[string]*gxset.HashSet)}, nil
 }

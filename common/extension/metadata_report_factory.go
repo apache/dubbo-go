@@ -18,18 +18,18 @@
 package extension
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/metadata/report/factory"
+	"dubbo.apache.org/dubbo-go/v3/metadata/report"
 )
 
-var metaDataReportFactories = make(map[string]func() factory.MetadataReportFactory, 8)
+var metaDataReportFactories = make(map[string]func() report.MetadataReportFactory, 8)
 
 // SetMetadataReportFactory sets the MetadataReportFactory with @name
-func SetMetadataReportFactory(name string, v func() factory.MetadataReportFactory) {
+func SetMetadataReportFactory(name string, v func() report.MetadataReportFactory) {
 	metaDataReportFactories[name] = v
 }
 
 // GetMetadataReportFactory finds the MetadataReportFactory with @name
-func GetMetadataReportFactory(name string) factory.MetadataReportFactory {
+func GetMetadataReportFactory(name string) report.MetadataReportFactory {
 	if metaDataReportFactories[name] == nil {
 		return nil
 	}

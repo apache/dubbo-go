@@ -23,7 +23,7 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/metadata/info"
 )
 
 var defaultTime = time.Second * 3
@@ -86,15 +86,15 @@ func TestCacheManager(t *testing.T) {
 
 func TestMetaInfoCacheManager(t *testing.T) {
 
-	serverInfo := make(map[string]*common.ServiceInfo)
-	serverInfo["1"] = common.NewServiceInfo("1", "1", "1", "1", "1", make(map[string]string))
-	serverInfo["2"] = common.NewServiceInfo("2", "2", "2", "2", "2", make(map[string]string))
-	serverInfo["3"] = common.NewServiceInfo("3", "3", "3", "3", "3", make(map[string]string))
+	serverInfo := make(map[string]*info.ServiceInfo)
+	serverInfo["1"] = info.NewServiceInfo("1", "1", "1", "1", "1", make(map[string]string))
+	serverInfo["2"] = info.NewServiceInfo("2", "2", "2", "2", "2", make(map[string]string))
+	serverInfo["3"] = info.NewServiceInfo("3", "3", "3", "3", "3", make(map[string]string))
 
-	metadataInfo1 := common.NewMetadataInfo("1", "1", serverInfo)
-	metadataInfo2 := common.NewMetadataInfo("2", "2", serverInfo)
-	metadataInfo3 := common.NewMetadataInfo("3", "3", serverInfo)
-	metadataInfo4 := common.NewMetadataInfo("4", "4", serverInfo)
+	metadataInfo1 := info.NewMetadataInfo("1", "1", serverInfo)
+	metadataInfo2 := info.NewMetadataInfo("2", "2", serverInfo)
+	metadataInfo3 := info.NewMetadataInfo("3", "3", serverInfo)
+	metadataInfo4 := info.NewMetadataInfo("4", "4", serverInfo)
 
 	cm, err := NewCacheManager("metaTest1", "test_meta_cache", defaultTime, 10, true)
 	if err != nil {

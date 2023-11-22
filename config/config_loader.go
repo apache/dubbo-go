@@ -36,6 +36,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/logger/zap"
+	"dubbo.apache.org/dubbo-go/v3/metadata/service"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
@@ -104,12 +105,21 @@ func registerServiceInstance() {
 			panic(err)
 		}
 	}
-	// publish metadata to remote
-	if GetApplicationConfig().MetadataType == constant.RemoteMetadataStorageType {
-		if remoteMetadataService, err := extension.GetRemoteMetadataService(); err == nil && remoteMetadataService != nil {
-			remoteMetadataService.PublishMetadata(GetApplicationConfig().Name)
+}
+func selectMetadataServiceExportedURL() *common.URL {
+	var selectedUrl *common.URL
+	urlList := service.GlobalMetadataService.GetExportedServiceURLs()
+	if len(urlList) == 0 {
+		return nil
+	}
+	for _, url := range urlList {
+		selectedUrl = url
+		// rest first
+		if url.Protocol == "rest" {
+			break
 		}
 	}
+	return selectedUrl
 }
 
 // // nolint

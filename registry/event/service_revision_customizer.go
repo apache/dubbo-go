@@ -24,14 +24,10 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/log/logger"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/metadata/service/local"
+	metadataService "dubbo.apache.org/dubbo-go/v3/metadata/service"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
@@ -51,16 +47,7 @@ func (e *exportedServicesRevisionMetadataCustomizer) GetPriority() int {
 
 // Customize calculate the revision for exported urls and then put it into instance metadata
 func (e *exportedServicesRevisionMetadataCustomizer) Customize(instance registry.ServiceInstance) {
-	ms, err := local.GetLocalMetadataService()
-	if err != nil {
-		logger.Errorf("could not get metadata service", err)
-		return
-	}
-
-	urls, err := ms.GetExportedURLs(constant.AnyValue, constant.AnyValue, constant.AnyValue, constant.AnyValue)
-	if err != nil {
-		logger.Errorf("could not find the exported url", err)
-	}
+	urls := metadataService.GlobalMetadataService.GetExportedServiceURLs()
 
 	revision := resolveRevision(urls)
 	if len(revision) == 0 {
@@ -78,17 +65,7 @@ func (e *subscribedServicesRevisionMetadataCustomizer) GetPriority() int {
 
 // Customize calculate the revision for subscribed urls and then put it into instance metadata
 func (e *subscribedServicesRevisionMetadataCustomizer) Customize(instance registry.ServiceInstance) {
-	ms, err := local.GetLocalMetadataService()
-	if err != nil {
-		logger.Errorf("could not get metadata service", err)
-		return
-	}
-
-	urls, err := ms.GetSubscribedURLs()
-	if err != nil {
-		logger.Errorf("could not find the subscribed url", err)
-	}
-
+	urls := metadataService.GlobalMetadataService.GetSubscribedURLs()
 	revision := resolveRevision(urls)
 	if len(revision) == 0 {
 		revision = defaultRevision

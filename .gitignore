@@ -41,3 +41,4 @@ metadata/report/zookeeper/zookeeper-4unittest/
 
 # macOS
 .DS_Store
+.history

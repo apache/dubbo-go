@@ -23,7 +23,6 @@ require (
 	github.com/envoyproxy/go-control-plane v0.11.0
 	github.com/envoyproxy/protoc-gen-validate v0.10.0 // indirect
 	github.com/fsnotify/fsnotify v1.6.0
-	github.com/go-co-op/gocron v1.9.0
 	github.com/go-logr/logr v1.2.4 // indirect
 	github.com/go-playground/validator/v10 v10.12.0
 	github.com/go-resty/resty/v2 v2.7.0

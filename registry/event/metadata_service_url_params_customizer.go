@@ -30,7 +30,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/metadata/service/local"
+	"dubbo.apache.org/dubbo-go/v3/metadata/info"
+	metadataService "dubbo.apache.org/dubbo-go/v3/metadata/service"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
@@ -55,13 +56,8 @@ func (m *metadataServiceURLParamsMetadataCustomizer) GetPriority() int {
 }
 
 func (m *metadataServiceURLParamsMetadataCustomizer) Customize(instance registry.ServiceInstance) {
-	ms, err := local.GetLocalMetadataService()
-	if err != nil {
-		logger.Errorf("could not find the metadata service", err)
-		return
-	}
-	url, err := ms.GetMetadataServiceURL()
-	if url == nil || err != nil {
+	url := metadataService.GlobalMetadataService.GetMetadataServiceURL()
+	if url == nil {
 		logger.Errorf("the metadata service url is nil")
 		return
 	}
@@ -79,7 +75,7 @@ func (m *metadataServiceURLParamsMetadataCustomizer) convertToParams(url *common
 	p := make(map[string]string, len(url.GetParams()))
 	for k, v := range url.GetParams() {
 		// we will ignore that
-		if !common.IncludeKeys.Contains(k) || len(v) == 0 || len(v[0]) == 0 {
+		if !info.IncludeKeys.Contains(k) || len(v) == 0 || len(v[0]) == 0 {
 			continue
 		}
 		p[k] = v[0]

@@ -32,6 +32,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	metadataService "dubbo.apache.org/dubbo-go/v3/metadata/service"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
@@ -62,12 +63,6 @@ func RegisterServiceInstance(applicationName string, tag string, metadataType st
 		err := sdr.GetServiceDiscovery().Register(instance)
 		if err != nil {
 			panic(err)
-		}
-	}
-	// publish metadata to remote
-	if metadataType == constant.RemoteMetadataStorageType {
-		if remoteMetadataService, err := extension.GetRemoteMetadataService(); err == nil && remoteMetadataService != nil {
-			remoteMetadataService.PublishMetadata(applicationName)
 		}
 	}
 }
@@ -109,15 +104,7 @@ func createInstance(url *common.URL, applicationName string, tag string, metadat
 // selectMetadataServiceExportedURL get already be exported url
 func selectMetadataServiceExportedURL() *common.URL {
 	var selectedUrl *common.URL
-	metaDataService, err := extension.GetLocalMetadataService(constant.DefaultKey)
-	if err != nil {
-		logger.Warnf("get metadata service exporter failed, pls check if you import _ \"dubbo.apache.org/dubbo-go/v3/metadata/service/local\"")
-		return nil
-	}
-	urlList, err := metaDataService.GetExportedURLs(constant.AnyValue, constant.AnyValue, constant.AnyValue, constant.AnyValue)
-	if err != nil {
-		panic(err)
-	}
+	urlList := metadataService.GlobalMetadataService.GetExportedServiceURLs()
 	if len(urlList) == 0 {
 		return nil
 	}
