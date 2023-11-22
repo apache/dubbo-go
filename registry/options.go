@@ -89,6 +89,12 @@ func WithZookeeper() Option {
 	}
 }
 
+func WithRegistry(r string) Option {
+	return func(opts *Options) {
+		opts.Registry.Protocol = r
+	}
+}
+
 // WithID specifies the id of registry.Options. Then you could configure client.WithRegistryIDs and
 // server.WithServer_RegistryIDs to specify which registry you need to use in multi-registries scenario.
 func WithID(id string) Option {

@@ -15,18 +15,28 @@
  * limitations under the License.
  */
 
-package global
+package dubboutil
 
-// CustomConfig
-//
-// # Experimental
-//
-// Notice: This struct is EXPERIMENTAL and may be changed or removed in a
-// later release.
-type CustomConfig struct {
-	ConfigMap map[string]interface{} `yaml:"config-map" json:"config-map,omitempty" property:"config-map"`
-}
+import (
+	"reflect"
+)
 
-func DefaultCustomConfig() *CustomConfig {
-	return &CustomConfig{}
+func CopyFields(sourceValue reflect.Value, targetValue reflect.Value) {
+	for i := 0; i < sourceValue.NumField(); i++ {
+		sourceField := sourceValue.Type().Field(i)
+		sourceFieldValue := sourceValue.Field(i)
+
+		// embedded ReferenceConfig
+		if sourceFieldValue.Kind() == reflect.Struct && sourceField.Anonymous {
+			CopyFields(sourceFieldValue, targetValue)
+			continue
+		}
+
+		if sourceFieldValue.CanInterface() && sourceFieldValue.CanSet() {
+			targetField := targetValue.FieldByName(sourceField.Name)
+			if targetField.IsValid() && targetField.CanSet() && targetField.Type() == sourceFieldValue.Type() && targetField.IsZero() {
+				targetField.Set(sourceFieldValue)
+			}
+		}
+	}
 }

@@ -145,8 +145,8 @@ func (s *ServiceConfig) Init(rc *RootConfig) error {
 	if s.TracingKey == "" {
 		s.TracingKey = rc.Provider.TracingKey
 	}
-	if rc.Metric.Enable != nil {
-		s.metricsEnable = *rc.Metric.Enable
+	if rc.Metrics.Enable != nil {
+		s.metricsEnable = *rc.Metrics.Enable
 	}
 	err := s.check()
 	if err != nil {

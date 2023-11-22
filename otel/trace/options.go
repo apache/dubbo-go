@@ -42,81 +42,99 @@ type Option func(*Options)
 func WithEnabled() Option {
 	return func(opts *Options) {
 		b := true
-		opts.Otel.TraceConfig.Enable = &b
+		opts.Otel.TracingConfig.Enable = &b
 	}
 }
 
 func WithStdoutExporter() Option {
 	return func(opts *Options) {
-		opts.Otel.TraceConfig.Exporter = "stdout"
+		opts.Otel.TracingConfig.Exporter = "stdout"
 	}
 }
 
 func WithJaegerExporter() Option {
 	return func(opts *Options) {
-		opts.Otel.TraceConfig.Exporter = "jaeger"
+		opts.Otel.TracingConfig.Exporter = "jaeger"
 	}
 }
 
 func WithZipkinExporter() Option {
 	return func(opts *Options) {
-		opts.Otel.TraceConfig.Exporter = "zipkin"
+		opts.Otel.TracingConfig.Exporter = "zipkin"
 	}
 }
 
 func WithOtlpHttpExporter() Option {
 	return func(opts *Options) {
-		opts.Otel.TraceConfig.Exporter = "otlp-http"
+		opts.Otel.TracingConfig.Exporter = "otlp-http"
 	}
 }
 
 func WithOtlpGrpcExporter() Option {
 	return func(opts *Options) {
-		opts.Otel.TraceConfig.Exporter = "otlp-grpc"
+		opts.Otel.TracingConfig.Exporter = "otlp-grpc"
+	}
+}
+
+func WithExporter(exporter string) Option {
+	return func(opts *Options) {
+		opts.Otel.TracingConfig.Exporter = exporter
 	}
 }
 
 // WithW3cPropagator w3c(standard)
 func WithW3cPropagator() Option {
 	return func(opts *Options) {
-		opts.Otel.TraceConfig.Propagator = "w3c"
+		opts.Otel.TracingConfig.Propagator = "w3c"
 	}
 }
 
 // WithB3Propagator b3(for zipkin)
 func WithB3Propagator() Option {
 	return func(opts *Options) {
-		opts.Otel.TraceConfig.Propagator = "b3"
+		opts.Otel.TracingConfig.Propagator = "b3"
+	}
+}
+
+func WithPropagator(propagator string) Option {
+	return func(opts *Options) {
+		opts.Otel.TracingConfig.Propagator = propagator
 	}
 }
 
 // WithRatio only takes effect when WithRatioMode is set
 func WithRatio(ratio float64) Option {
 	return func(opts *Options) {
-		opts.Otel.TraceConfig.SampleRatio = ratio
+		opts.Otel.TracingConfig.SampleRatio = ratio
 	}
 }
 
 func WithRatioMode() Option {
 	return func(opts *Options) {
-		opts.Otel.TraceConfig.SampleMode = "ratio"
+		opts.Otel.TracingConfig.SampleMode = "ratio"
 	}
 }
 
 func WithAlwaysMode() Option {
 	return func(opts *Options) {
-		opts.Otel.TraceConfig.SampleMode = "always"
+		opts.Otel.TracingConfig.SampleMode = "always"
 	}
 }
 
 func WithNeverMode() Option {
 	return func(opts *Options) {
-		opts.Otel.TraceConfig.SampleMode = "never"
+		opts.Otel.TracingConfig.SampleMode = "never"
+	}
+}
+
+func WithMode(mode string) Option {
+	return func(opts *Options) {
+		opts.Otel.TracingConfig.SampleMode = mode
 	}
 }
 
 func WithEndpoint(endpoint string) Option {
 	return func(opts *Options) {
-		opts.Otel.TraceConfig.Endpoint = endpoint
+		opts.Otel.TracingConfig.Endpoint = endpoint
 	}
 }

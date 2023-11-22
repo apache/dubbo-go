@@ -17,8 +17,8 @@
 
 package global
 
-// MetricConfig This is the config struct for all metrics implementation
-type MetricConfig struct {
+// MetricsConfig This is the config struct for all metrics implementation
+type MetricsConfig struct {
 	Enable             *bool             `default:"false" yaml:"enable" json:"enable,omitempty" property:"enable"`
 	Port               string            `default:"9090" yaml:"port" json:"port,omitempty" property:"port"`
 	Path               string            `default:"/metrics" yaml:"path" json:"path,omitempty" property:"path"`
@@ -55,9 +55,9 @@ type PushgatewayConfig struct {
 	PushInterval int `default:"30" yaml:"push-interval" json:"push-interval,omitempty" property:"push-interval"`
 }
 
-func DefaultMetricConfig() *MetricConfig {
+func DefaultMetricsConfig() *MetricsConfig {
 	// return a new config without setting any field means there is not any default value for initialization
-	return &MetricConfig{Prometheus: defaultPrometheusConfig(), Aggregation: defaultAggregateConfig()}
+	return &MetricsConfig{Prometheus: defaultPrometheusConfig(), Aggregation: defaultAggregateConfig()}
 }
 
 func defaultPrometheusConfig() *PrometheusConfig {

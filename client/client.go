@@ -20,6 +20,7 @@ package client
 
 import (
 	"context"
+	"fmt"
 )
 
 import (
@@ -27,16 +28,17 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	invocation_impl "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
 type Client struct {
-	invoker protocol.Invoker
-	info    *ClientInfo
+	info *ClientInfo
 
 	cliOpts *ClientOptions
+	refOpts map[string]*ReferenceOptions
 }
 
 type ClientInfo struct {
@@ -58,8 +60,13 @@ func (cli *Client) call(ctx context.Context, paramsRawVals []interface{}, interf
 	if err != nil {
 		return nil, err
 	}
-	// todo: move timeout into context or invocation
-	return cli.invoker.Invoke(ctx, inv), nil
+
+	refOption := cli.refOpts[common.ServiceKey(interfaceName, options.Group, options.Version)]
+	if refOption == nil {
+		return nil, fmt.Errorf("no service found for %s/%s:%s, please check if the service has been registered", options.Group, interfaceName, options.Version)
+	}
+
+	return refOption.invoker.Invoke(ctx, inv), nil
 
 }
 
@@ -95,15 +102,23 @@ func (cli *Client) CallBidiStream(ctx context.Context, interfaceName, methodName
 	return res.Result(), res.Error()
 }
 
-func (cli *Client) Init(info *ClientInfo) error {
+func (cli *Client) Init(info *ClientInfo, opts ...ReferenceOption) (string, string, error) {
 	if info == nil {
-		return errors.New("ClientInfo is nil")
+		return "", "", errors.New("ClientInfo is nil")
 	}
 
-	cli.cliOpts.ReferWithInfo(info)
-	cli.invoker = cli.cliOpts.invoker
+	newRefOptions := defaultReferenceOptions()
+	err := newRefOptions.init(cli, opts...)
+	if err != nil {
+		return "", "", err
+	}
 
-	return nil
+	ref := newRefOptions.Reference
+	cli.refOpts[common.ServiceKey(info.InterfaceName, ref.Group, ref.Version)] = newRefOptions
+
+	newRefOptions.ReferWithInfo(info)
+
+	return ref.Group, ref.Version, nil
 }
 
 func generateInvocation(methodName string, paramsRawVals []interface{}, callType string, opts *CallOptions) (protocol.Invocation, error) {
@@ -125,5 +140,6 @@ func NewClient(opts ...ClientOption) (*Client, error) {
 	}
 	return &Client{
 		cliOpts: newCliOpts,
+		refOpts: make(map[string]*ReferenceOptions),
 	}, nil
 }

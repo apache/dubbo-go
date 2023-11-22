@@ -79,6 +79,12 @@ func WithTriple() Option {
 	}
 }
 
+func WithProtocol(p string) Option {
+	return func(opts *Options) {
+		opts.Protocol.Name = p
+	}
+}
+
 // WithID specifies the id of protocol.Options. Then you could configure server.WithProtocolIDs and
 // server.WithServer_ProtocolIDs to specify which protocol you need to use in multi-protocols scenario.
 func WithID(id string) Option {

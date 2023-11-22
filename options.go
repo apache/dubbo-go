@@ -43,7 +43,7 @@ type InstanceOptions struct {
 	MetadataReport *global.MetadataReportConfig      `yaml:"metadata-report" json:"metadata-report,omitempty" property:"metadata-report"`
 	Provider       *global.ProviderConfig            `yaml:"provider" json:"provider" property:"provider"`
 	Consumer       *global.ConsumerConfig            `yaml:"consumer" json:"consumer" property:"consumer"`
-	Metric         *global.MetricConfig              `yaml:"metrics" json:"metrics,omitempty" property:"metrics"`
+	Metrics        *global.MetricsConfig             `yaml:"metrics" json:"metrics,omitempty" property:"metrics"`
 	Otel           *global.OtelConfig                `yaml:"otel" json:"otel,omitempty" property:"otel"`
 	Logger         *global.LoggerConfig              `yaml:"logger" json:"logger,omitempty" property:"logger"`
 	Shutdown       *global.ShutdownConfig            `yaml:"shutdown" json:"shutdown,omitempty" property:"shutdown"`
@@ -65,7 +65,7 @@ func defaultInstanceOptions() *InstanceOptions {
 		MetadataReport: global.DefaultMetadataReportConfig(),
 		Provider:       global.DefaultProviderConfig(),
 		Consumer:       global.DefaultConsumerConfig(),
-		Metric:         global.DefaultMetricConfig(),
+		Metrics:        global.DefaultMetricsConfig(),
 		Otel:           global.DefaultOtelConfig(),
 		Logger:         global.DefaultLoggerConfig(),
 		Shutdown:       global.DefaultShutdownConfig(),
@@ -131,7 +131,7 @@ func (rc *InstanceOptions) init(opts ...InstanceOption) error {
 	if err := rcCompat.MetadataReport.Init(rcCompat); err != nil {
 		return err
 	}
-	if err := rcCompat.Metric.Init(rcCompat); err != nil {
+	if err := rcCompat.Metrics.Init(rcCompat); err != nil {
 		return err
 	}
 	if err := rcCompat.Otel.Init(rcCompat.Application); err != nil {
@@ -250,7 +250,7 @@ func WithTracing(opts ...trace.Option) InstanceOption {
 	traceOpts := trace.NewOptions(opts...)
 
 	return func(insOpts *InstanceOptions) {
-		insOpts.Otel.TraceConfig = traceOpts.Otel.TraceConfig
+		insOpts.Otel.TracingConfig = traceOpts.Otel.TracingConfig
 	}
 }
 
@@ -270,11 +270,11 @@ func WithMetadataReport(opts ...metadata.Option) InstanceOption {
 	}
 }
 
-func WithMetric(opts ...metrics.Option) InstanceOption {
+func WithMetrics(opts ...metrics.Option) InstanceOption {
 	metricOpts := metrics.NewOptions(opts...)
 
 	return func(cfg *InstanceOptions) {
-		cfg.Metric = metricOpts.Metric
+		cfg.Metrics = metricOpts.Metrics
 	}
 }
 
