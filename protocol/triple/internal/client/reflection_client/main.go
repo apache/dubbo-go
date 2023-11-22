@@ -54,12 +54,16 @@ func testReflection(stream reflection.ServerReflection_ServerReflectionInfoClien
 	if err := testFileByFilename(stream); err != nil {
 		logger.Error(err)
 	}
-
 	if err := testFileContainingSymbol(stream); err != nil {
 		logger.Error(err)
 	}
-
 	if err := testListServices(stream); err != nil {
+		logger.Error(err)
+	}
+	if err := stream.CloseRequest(); err != nil {
+		logger.Error(err)
+	}
+	if err := stream.CloseRequest(); err != nil {
 		logger.Error(err)
 	}
 }
