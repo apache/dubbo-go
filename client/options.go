@@ -114,7 +114,13 @@ func (refOpts *ReferenceOptions) init(cli *Client, opts ...ReferenceOption) erro
 	if ref.RegistryIDs == nil || len(ref.RegistryIDs) <= 0 {
 		emptyRegIDsFlag = true
 	}
+
+	// set client level as default registry
 	regs := refOpts.Registries
+	if regs == nil {
+		regs = cli.cliOpts.Registries
+	}
+
 	if regs != nil {
 		refOpts.registriesCompat = make(map[string]*config.RegistryConfig)
 		for key, reg := range regs {
