@@ -33,6 +33,8 @@ import (
 
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
+
+	"google.golang.org/grpc"
 )
 
 import (
@@ -42,6 +44,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo3"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/reflection"
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	"dubbo.apache.org/dubbo-go/v3/server"
 )
@@ -50,6 +53,8 @@ import (
 type Server struct {
 	httpServer *http.Server
 	handler    *http.ServeMux
+	services   map[string]grpc.ServiceInfo
+	mu         sync.RWMutex
 }
 
 // NewServer creates a new TRIPLE server
@@ -118,7 +123,8 @@ func (s *Server) Start(invoker protocol.Invoker, info *server.ServiceInfo) {
 			compatHandleService(URL, mux)
 		}
 		// todo: figure it out this process
-		//reflection.Register(server)
+		s.saveServiceInfo(info)
+		reflection.Register(s)
 		// todo: without tls
 		if cfg == nil {
 			srv.Handler = h2c.NewHandler(mux, &http2.Server{})
@@ -153,6 +159,7 @@ func (s *Server) RefreshService(invoker protocol.Invoker, info *server.ServiceIn
 	} else {
 		compatHandleService(URL, mux)
 	}
+	s.saveServiceInfo(info)
 }
 
 func getHanOpts(url *common.URL) (hanOpts []tri.HandlerOption) {
@@ -337,6 +344,43 @@ func handleServiceWithInfo(invoker protocol.Invoker, info *server.ServiceInfo, m
 		}
 		mux.Handle(procedure, handler)
 	}
+}
+
+func (s *Server) saveServiceInfo(info *server.ServiceInfo) {
+	ret := grpc.ServiceInfo{}
+	ret.Methods = make([]grpc.MethodInfo, 0, len(info.Methods))
+	for _, method := range info.Methods {
+		md := grpc.MethodInfo{}
+		md.Name = method.Name
+		switch method.Type {
+		case constant.CallUnary:
+			md.IsClientStream = false
+			md.IsServerStream = false
+		case constant.CallBidiStream:
+			md.IsClientStream = true
+			md.IsServerStream = true
+		case constant.CallClientStream:
+			md.IsClientStream = true
+			md.IsServerStream = false
+		case constant.CallServerStream:
+			md.IsClientStream = false
+			md.IsServerStream = true
+		}
+		ret.Methods = append(ret.Methods, md)
+	}
+	ret.Metadata = info
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.services == nil {
+		s.services = make(map[string]grpc.ServiceInfo)
+	}
+	s.services[info.InterfaceName] = ret
+}
+
+func (s *Server) GetServiceInfo() map[string]grpc.ServiceInfo {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.services
 }
 
 // Stop TRIPLE server

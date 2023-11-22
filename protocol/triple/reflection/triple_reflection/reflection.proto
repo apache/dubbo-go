@@ -19,7 +19,7 @@
 
 syntax = "proto3";
 
-package rpc.reflection.v1alpha.ServerReflection;
+package rpc.reflection.v1alpha;
 
 option go_package = "dubbo.apache.org/dubbo-go/v3/protocol/triple/reflection/triple_reflection";
 
