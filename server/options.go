@@ -440,6 +440,12 @@ func SetServerOtel(otel *global.OtelConfig) ServerOption {
 	}
 }
 
+func SetServerProvider(provider *global.ProviderConfig) ServerOption {
+	return func(opts *ServerOptions) {
+		opts.Provider = provider
+	}
+}
+
 type ServiceOptions struct {
 	Application *global.ApplicationConfig
 	Provider    *global.ProviderConfig

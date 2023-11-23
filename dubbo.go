@@ -18,12 +18,23 @@
 package dubbo
 
 import (
+	"sync"
+)
+
+import (
 	"github.com/pkg/errors"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/client"
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/server"
+)
+
+var (
+	consumerServices = map[string]*client.ClientDefinition{}
+	providerServices = map[string]*server.ServiceDefinition{}
+	startOnce        sync.Once
 )
 
 // Instance is the highest layer conception that user could touch. It is mapped from RootConfig.
@@ -155,4 +166,67 @@ func (ins *Instance) NewServer(opts ...server.ServerOption) (*server.Server, err
 		return nil, err
 	}
 	return srv, nil
+}
+
+func (ins *Instance) start() (err error) {
+	startOnce.Do(func() {
+		if err = ins.loadConsumer(); err != nil {
+			return
+		}
+		if err = ins.loadProvider(); err != nil {
+			return
+		}
+	})
+	return err
+}
+
+// loadProvider loads the service provider.
+func (ins *Instance) loadProvider() error {
+	var srvOpts []server.ServerOption
+	if ins.insOpts.Provider != nil {
+		srvOpts = append(srvOpts, server.SetServerProvider(ins.insOpts.Provider))
+	}
+	srv, err := ins.NewServer(srvOpts...)
+	if err != nil {
+		return err
+	}
+	// register services
+	for _, definition := range providerServices {
+		if err = srv.Register(definition.Handler, definition.Info, definition.Opts...); err != nil {
+			return err
+		}
+	}
+	return srv.ServeWithNoBlocking()
+}
+
+// loadConsumer loads the service consumer.
+func (ins *Instance) loadConsumer() error {
+	cli, err := ins.NewClient()
+	if err != nil {
+		return err
+	}
+	// refer services
+	for _, definition := range consumerServices {
+		if _, _, err = cli.Init(definition.Info); err != nil {
+			return err
+		}
+		definition.Info.ClientInjectFunc(definition.Svc, cli)
+	}
+	return err
+}
+
+// SetConsumerServiceWithInfo sets the consumer service with the client information.
+func SetConsumerServiceWithInfo(svc common.RPCService, info *client.ClientInfo) {
+	consumerServices[info.InterfaceName] = &client.ClientDefinition{
+		Svc:  svc,
+		Info: info,
+	}
+}
+
+// SetProviderServiceWithInfo sets the provider service with the server information.
+func SetProviderServiceWithInfo(svc common.RPCService, info *server.ServiceInfo) {
+	providerServices[info.InterfaceName] = &server.ServiceDefinition{
+		Handler: svc,
+		Info:    info,
+	}
 }

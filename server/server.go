@@ -35,6 +35,7 @@ import (
 	registry_exposed "dubbo.apache.org/dubbo-go/v3/registry/exposed_tmp"
 )
 
+// proServices are for internal services
 var proServices = map[string]*ServiceDefinition{}
 
 type Server struct {
@@ -180,6 +181,15 @@ func (s *Server) Serve() error {
 	metadata.ExportMetadataService()
 	registry_exposed.RegisterServiceInstance(s.cfg.Application.Name, s.cfg.Application.Tag, s.cfg.Application.MetadataType)
 	select {}
+}
+
+func (s *Server) ServeWithNoBlocking() error {
+	if err := s.exportServices(); err != nil {
+		return err
+	}
+	metadata.ExportMetadataService()
+	registry_exposed.RegisterServiceInstance(s.cfg.Application.Name, s.cfg.Application.Tag, s.cfg.Application.MetadataType)
+	return nil
 }
 
 type MethodInfo struct {
