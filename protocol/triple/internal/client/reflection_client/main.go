@@ -47,6 +47,9 @@ func main() {
 		panic(err)
 	}
 	stream, err := svc.ServerReflectionInfo(context.Background())
+	if err != nil {
+		panic(err)
+	}
 	testReflection(stream)
 }
 
