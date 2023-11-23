@@ -117,7 +117,7 @@ func (s *ReflectionServer) fileDescWithDependencies(fd protoreflect.FileDescript
 
 // fileDescEncodingContainingSymbol finds the file descriptor containing the
 // given symbol, finds all of its previously unsent transitive dependencies,
-// does marshaling on them, and returns the marshalled result. The given symbol
+// does marshaling on them, and returns the marshaled result. The given symbol
 // can be a type, a service or a method.
 func (s *ReflectionServer) fileDescEncodingContainingSymbol(name string, sentFileDescriptors map[string]bool) ([][]byte, error) {
 	d, err := s.descResolver.FindDescriptorByName(protoreflect.FullName(name))
@@ -129,7 +129,7 @@ func (s *ReflectionServer) fileDescEncodingContainingSymbol(name string, sentFil
 
 // fileDescEncodingContainingExtension finds the file descriptor containing
 // given extension, finds all of its previously unsent transitive dependencies,
-// does marshaling on them, and returns the marshalled result.
+// does marshaling on them, and returns the marshaled result.
 func (s *ReflectionServer) fileDescEncodingContainingExtension(typeName string, extNum int32, sentFileDescriptors map[string]bool) ([][]byte, error) {
 	xt, err := s.extResolver.FindExtensionByNumber(protoreflect.FullName(typeName), protoreflect.FieldNumber(extNum))
 	if err != nil {
