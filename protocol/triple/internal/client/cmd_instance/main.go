@@ -36,7 +36,7 @@ func main() {
 	}
 	// configure the params that only client layer cares
 	cli, err := ins.NewClient(
-		client.WithURL("127.0.0.1:20000"),
+		client.WithClientURL("127.0.0.1:20000"),
 	)
 	if err != nil {
 		panic(err)

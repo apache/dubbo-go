@@ -30,11 +30,3 @@ type CustomConfig struct {
 func DefaultCustomConfig() *CustomConfig {
 	return &CustomConfig{}
 }
-
-type CustomOption func(*CustomConfig)
-
-func WithCustom_ConfigMap(cfgMap map[string]interface{}) CustomOption {
-	return func(cfg *CustomConfig) {
-		cfg.ConfigMap = cfgMap
-	}
-}

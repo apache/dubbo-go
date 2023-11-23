@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+// Package metadata collects and exposes information of all services for service discovery purpose.
 package metadata
 
 import (

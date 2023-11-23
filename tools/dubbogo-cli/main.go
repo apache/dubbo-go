@@ -15,10 +15,13 @@
  * limitations under the License.
  */
 
+// dubbogo-cli is a cli tool for initializing dubbo-go project, test service, etc.
+//
+// Deprecated: github.com/apache/dubbo-kubernetes will serve as the successor of this tool
 package main
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/dubbogo-cli/cmd"
+	"dubbo.apache.org/dubbo-go/v3/tools/dubbogo-cli/cmd"
 )
 
 func main() {

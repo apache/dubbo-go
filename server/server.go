@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+// Package server provides APIs for registering services and starting an RPC server.
 package server
 
 import (
@@ -152,7 +153,7 @@ func (s *Server) Register(handler interface{}, info *ServiceInfo, opts ...Servic
 
 	// options passed by users have higher priority
 	svcOpts = append(svcOpts, opts...)
-	if err := newSvcOpts.init(svcOpts...); err != nil {
+	if err := newSvcOpts.init(s, svcOpts...); err != nil {
 		return err
 	}
 	newSvcOpts.Implement(handler)

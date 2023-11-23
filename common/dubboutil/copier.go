@@ -15,12 +15,28 @@
  * limitations under the License.
  */
 
-package main
+package dubboutil
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/triple-tool/cmd"
+	"reflect"
 )
 
-func main() {
-	cmd.Execute()
+func CopyFields(sourceValue reflect.Value, targetValue reflect.Value) {
+	for i := 0; i < sourceValue.NumField(); i++ {
+		sourceField := sourceValue.Type().Field(i)
+		sourceFieldValue := sourceValue.Field(i)
+
+		// embedded ReferenceConfig
+		if sourceFieldValue.Kind() == reflect.Struct && sourceField.Anonymous {
+			CopyFields(sourceFieldValue, targetValue)
+			continue
+		}
+
+		if sourceFieldValue.CanInterface() && sourceFieldValue.CanSet() {
+			targetField := targetValue.FieldByName(sourceField.Name)
+			if targetField.IsValid() && targetField.CanSet() && targetField.Type() == sourceFieldValue.Type() && targetField.IsZero() {
+				targetField.Set(sourceFieldValue)
+			}
+		}
+	}
 }

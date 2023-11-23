@@ -19,7 +19,7 @@ package global
 
 // OtelConfig is the configuration of the tracing.
 type OtelConfig struct {
-	TraceConfig *OtelTraceConfig `yaml:"trace" json:"trace,omitempty" property:"trace"`
+	TracingConfig *OtelTraceConfig `yaml:"tracing" json:"trace,omitempty" property:"trace"`
 }
 
 type OtelTraceConfig struct {
@@ -33,6 +33,6 @@ type OtelTraceConfig struct {
 
 func DefaultOtelConfig() *OtelConfig {
 	return &OtelConfig{
-		TraceConfig: &OtelTraceConfig{},
+		TracingConfig: &OtelTraceConfig{},
 	}
 }

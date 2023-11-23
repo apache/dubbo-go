@@ -18,6 +18,7 @@
 package global
 
 type ConsumerConfig struct {
+	ReferenceConfig
 	Filter          string   `yaml:"filter" json:"filter,omitempty" property:"filter"`
 	RegistryIDs     []string `yaml:"registry-ids" json:"registry-ids,omitempty" property:"registry-ids"`
 	Protocol        string   `yaml:"protocol" json:"protocol,omitempty" property:"protocol"`
@@ -37,73 +38,5 @@ func DefaultConsumerConfig() *ConsumerConfig {
 	return &ConsumerConfig{
 		RequestTimeout: "3s",
 		Check:          true,
-	}
-}
-
-type ConsumerOption func(*ConsumerConfig)
-
-func WithConsumer_Filter(filter string) ConsumerOption {
-	return func(cfg *ConsumerConfig) {
-		cfg.Filter = filter
-	}
-}
-
-func WithConsumer_RegistryIDs(ids []string) ConsumerOption {
-	return func(cfg *ConsumerConfig) {
-		cfg.RegistryIDs = ids
-	}
-}
-
-func WithConsumer_Protocol(protocol string) ConsumerOption {
-	return func(cfg *ConsumerConfig) {
-		cfg.Protocol = protocol
-	}
-}
-
-func WithConsumer_RequestTimeout(timeout string) ConsumerOption {
-	return func(cfg *ConsumerConfig) {
-		cfg.RequestTimeout = timeout
-	}
-}
-
-func WithConsumer_ProxyFactory(factory string) ConsumerOption {
-	return func(cfg *ConsumerConfig) {
-		cfg.ProxyFactory = factory
-	}
-}
-
-func WithConsumer_Check(flag bool) ConsumerOption {
-	return func(cfg *ConsumerConfig) {
-		cfg.Check = flag
-	}
-}
-
-func WithConsumer_AdaptiveService(flag bool) ConsumerOption {
-	return func(cfg *ConsumerConfig) {
-		cfg.AdaptiveService = flag
-	}
-}
-
-func WithConsumer_TracingKey(key string) ConsumerOption {
-	return func(cfg *ConsumerConfig) {
-		cfg.TracingKey = key
-	}
-}
-
-func WithConsumer_FilterConf(conf interface{}) ConsumerOption {
-	return func(cfg *ConsumerConfig) {
-		cfg.FilterConf = conf
-	}
-}
-
-func WithConsumer_MaxWaitTimeForServiceDiscovery(time string) ConsumerOption {
-	return func(cfg *ConsumerConfig) {
-		cfg.MaxWaitTimeForServiceDiscovery = time
-	}
-}
-
-func WithConsumer_MeshEnabled(flag bool) ConsumerOption {
-	return func(cfg *ConsumerConfig) {
-		cfg.MeshEnabled = flag
 	}
 }

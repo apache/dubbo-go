@@ -15,9 +15,9 @@
  * limitations under the License.
  */
 
-package generator
+/*
+Package dubbo provides the Go implementation for Dubbo, an RPC and microservice framework.
 
-var (
-	ProtocPath string
-	GoOpts     []string
-)
+See dubbo.apache.org for more information about Dubbo.
+*/
+package dubbo // import "dubbo.apache.org/dubbo-go/v3"
