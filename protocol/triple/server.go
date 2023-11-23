@@ -380,7 +380,11 @@ func (s *Server) saveServiceInfo(info *server.ServiceInfo) {
 func (s *Server) GetServiceInfo() map[string]grpc.ServiceInfo {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	return s.services
+	res := make(map[string]grpc.ServiceInfo, len(s.services))
+	for k, v := range s.services {
+		res[k] = v
+	}
+	return res
 }
 
 // Stop TRIPLE server
