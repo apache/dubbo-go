@@ -119,11 +119,11 @@ func (s *Server) Start(invoker protocol.Invoker, info *server.ServiceInfo) {
 		mux := s.handler
 		if info != nil {
 			handleServiceWithInfo(invoker, info, mux, hanOpts...)
+			s.saveServiceInfo(info)
 		} else {
 			compatHandleService(URL, mux)
 		}
 		// todo: figure it out this process
-		s.saveServiceInfo(info)
 		reflection.Register(s)
 		// todo: without tls
 		if cfg == nil {
@@ -156,10 +156,10 @@ func (s *Server) RefreshService(invoker protocol.Invoker, info *server.ServiceIn
 	mux := s.handler
 	if info != nil {
 		handleServiceWithInfo(invoker, info, mux, hanOpts...)
+		s.saveServiceInfo(info)
 	} else {
 		compatHandleService(URL, mux)
 	}
-	s.saveServiceInfo(info)
 }
 
 func getHanOpts(url *common.URL) (hanOpts []tri.HandlerOption) {
