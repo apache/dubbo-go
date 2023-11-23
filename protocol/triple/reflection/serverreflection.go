@@ -275,6 +275,7 @@ func init() {
 	server.SetProServices(&server.ServiceDefinition{
 		Handler: reflectionServe,
 		Info:    &rpb.ServerReflection_ServiceInfo,
+		Opts:    []server.ServiceOption{server.WithNotRegister()},
 	})
 }
 
