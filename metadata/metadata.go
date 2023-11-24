@@ -26,21 +26,30 @@ import (
 	"github.com/dubbogo/gost/log/logger"
 )
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/metadata/service"
+var (
+	GlobalMetadataService MetadataService = &metadataService{}
+	exportOnce            sync.Once
+	Factory               ExporterFactory
 )
 
-var (
-	exportOnce sync.Once
-)
+// ExporterFactory to create MetadataServiceExporter, avoid cycle import
+type ExporterFactory func(app, metadataType string) MetadataServiceExporter
+
+func SetExporterFactory(factory ExporterFactory) {
+	Factory = factory
+}
 
 func ExportMetadataService(app, metadataType string) {
-	exportOnce.Do(func() {
-		err := service.Exporter.Export(app, metadataType)
-		if err != nil {
-			logger.Errorf("export metadata service failed, got error %#v", err)
-		}
-	})
+	if Factory != nil {
+		exportOnce.Do(func() {
+			err := Factory(app, metadataType).Export()
+			if err != nil {
+				logger.Errorf("export metadata service failed, got error %#v", err)
+			}
+		})
+	} else {
+		logger.Warn("no metadata service exporter found, MetadataService will not be Exported")
+	}
 
 	// err = publishMapping(expt)
 	// if err != nil {

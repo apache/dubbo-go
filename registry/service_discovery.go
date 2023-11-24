@@ -28,7 +28,6 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
-	metadataInstance "dubbo.apache.org/dubbo-go/v3/metadata/report/instance"
 )
 
 const DefaultPageSize = 100
@@ -74,44 +73,11 @@ type ServiceDiscovery interface {
 	// AddListener adds a new ServiceInstancesChangedListenerImpl
 	// see addServiceInstancesChangedListener in Java
 	AddListener(listener ServiceInstancesChangedListener) error
+}
 
+type ServiceDiscoveryMetadata interface {
 	// GetLocalMetadata get local metadata info
 	GetLocalMetadata() *info.MetadataInfo
 	// GetRemoteMetadata  get remote server metadata info
-	GetRemoteMetadata(revision string) *info.MetadataInfo
-}
-
-type BaseServiceDiscovery struct {
-	metadataInfo *info.MetadataInfo
-}
-
-func NewBaseServiceDiscovery(app string) BaseServiceDiscovery {
-	return BaseServiceDiscovery{metadataInfo: info.NewMetadataInfWithApp(app)}
-}
-
-func (sd *BaseServiceDiscovery) GetLocalMetadata() *info.MetadataInfo {
-	return sd.metadataInfo
-}
-
-func (sd *BaseServiceDiscovery) GetRemoteMetadata(revision string) *info.MetadataInfo {
-	return sd.metadataInfo
-}
-
-func (sd *BaseServiceDiscovery) Register(instance ServiceInstance) error {
-	revisionUpdated := sd.calOrUpdateInstanceRevision(instance)
-	if revisionUpdated {
-		err := metadataInstance.GetMetadataReport().PublishAppMetadata(sd.metadataInfo.App, sd.metadataInfo.Revision, sd.metadataInfo)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (sd *BaseServiceDiscovery) Unregister(instance ServiceInstance) error {
-	return nil
-}
-
-func (sd *BaseServiceDiscovery) calOrUpdateInstanceRevision(instance ServiceInstance) bool {
-	return true
+	GetRemoteMetadata(revision string, instance ServiceInstance) (*info.MetadataInfo, error)
 }

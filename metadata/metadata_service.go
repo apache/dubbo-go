@@ -15,11 +15,7 @@
  * limitations under the License.
  */
 
-package service
-
-import (
-	"sync"
-)
+package metadata
 
 import (
 	"github.com/dubbogo/gost/log/logger"
@@ -29,9 +25,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
-	_ "dubbo.apache.org/dubbo-go/v3/protocol/dubbo"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
@@ -41,15 +35,36 @@ const (
 	allServiceInterfaces = "*"
 )
 
-var (
-	metadataServiceUrl    *common.URL
-	GlobalMetadataService MetadataService = &metadataService{}
-	Exporter                              = &MetadataServiceExporter{}
-)
+// MetadataService is used to define meta data related behaviors
+// usually the implementation should be singleton
+type MetadataService interface {
+	// GetExportedURLs will get the target exported url in metadata, the url should be unique
+	GetExportedURLs(serviceInterface string, group string, version string, protocol string) []*common.URL
+	// GetExportedServiceURLs will return exported service urls
+	GetExportedServiceURLs() []*common.URL
+	// GetSubscribedURLs will get the exported urls in metadata
+	GetSubscribedURLs() []*common.URL
+	Version() string
+	// GetMetadataInfo will return metadata info
+	GetMetadataInfo(revision string) *info.MetadataInfo
+	// GetMetadataServiceURL will return the url of metadata service
+	GetMetadataServiceURL() *common.URL
+	// SetMetadataServiceURL exporter to set url of metadata service
+	SetMetadataServiceURL(*common.URL)
+}
+
+type MetadataServiceExporter interface {
+	Export() error
+	UnExport()
+}
 
 // MetadataService is store and query the metadata info in memory when each service registry
 type metadataService struct {
-	BaseMetadataService
+	url *common.URL
+}
+
+func (mts *metadataService) SetMetadataServiceURL(url *common.URL) {
+	mts.url = url
 }
 
 // GetExportedURLs get all exported urls
@@ -85,13 +100,13 @@ func (mts *metadataService) GetMetadataInfo(revision string) *info.MetadataInfo 
 	return nil
 }
 
-func (mts *metadataService) getServiceDiscoveries() []registry.ServiceDiscovery {
-	sds := make([]registry.ServiceDiscovery, 0)
+func (mts *metadataService) getServiceDiscoveries() []registry.ServiceDiscoveryMetadata {
+	sds := make([]registry.ServiceDiscoveryMetadata, 0)
 	p := extension.GetProtocol(constant.RegistryProtocol)
 	if factory, ok := p.(registry.RegistryFactory); ok {
 		for _, v := range factory.GetRegistries() {
 			if sd, ok := v.(registry.ServiceDiscoveryHolder); ok {
-				sds = append(sds, sd.GetServiceDiscovery())
+				sds = append(sds, sd.GetServiceDiscoverMetadata())
 			}
 		}
 	}
@@ -114,7 +129,7 @@ func (mts *metadataService) Version() string {
 
 // GetMetadataServiceURL get url of MetadataService
 func (mts *metadataService) GetMetadataServiceURL() *common.URL {
-	return metadataServiceUrl
+	return mts.url
 }
 
 func (mts *metadataService) GetSubscribedURLs() []*common.URL {
@@ -125,50 +140,10 @@ func (mts *metadataService) GetSubscribedURLs() []*common.URL {
 	return urls
 }
 
-// MetadataServiceExporter is the ConfigurableMetadataServiceExporter which implement MetadataServiceExporter interface
-type MetadataServiceExporter struct {
-	ServiceConfig *config.ServiceConfig
-	lock          sync.RWMutex
-}
-
-// Export will export the metadataService
-func (exporter *MetadataServiceExporter) Export(app, metadataType string) error {
-	if !exporter.IsExported() {
-		exporter.lock.Lock()
-		defer exporter.lock.Unlock()
-		exporter.ServiceConfig = config.NewServiceConfigBuilder().
-			SetServiceID(constant.SimpleMetadataServiceName).
-			SetProtocolIDs(constant.DefaultProtocol).
-			AddRCProtocol(constant.DefaultProtocol, config.NewProtocolConfigBuilder().
-				SetName(constant.DefaultProtocol).
-				Build()).
-			SetRegistryIDs("N/A").
-			SetInterface(constant.MetadataServiceName).
-			SetGroup(app).
-			SetVersion(version).
-			SetProxyFactoryKey(constant.DefaultKey).
-			SetMetadataType(metadataType).
-			Build()
-		exporter.ServiceConfig.Implement(GlobalMetadataService)
-		err := exporter.ServiceConfig.Export()
-		metadataServiceUrl = exporter.ServiceConfig.GetExportedUrls()[0]
-		logger.Infof("[Metadata Service] The MetadataService exports urls : %v ", exporter.ServiceConfig.GetExportedUrls())
-		return err
+// MethodMapper only for rename exported function, for example: rename the function GetMetadataInfo to getMetadataInfo
+func (mts *metadataService) MethodMapper() map[string]string {
+	return map[string]string{
+		"GetExportedURLs": "getExportedURLs",
+		"GetMetadataInfo": "getMetadataInfo",
 	}
-	logger.Warnf("[Metadata Service] The MetadataService has been exported : %v ", exporter.ServiceConfig.GetExportedUrls())
-	return nil
-}
-
-// UnExport will unExport the metadataService
-func (exporter *MetadataServiceExporter) UnExport() {
-	if exporter.IsExported() {
-		exporter.ServiceConfig.Unexport()
-	}
-}
-
-// IsExported will return is metadataServiceExporter exported or not
-func (exporter *MetadataServiceExporter) IsExported() bool {
-	exporter.lock.RLock()
-	defer exporter.lock.RUnlock()
-	return exporter.ServiceConfig != nil && exporter.ServiceConfig.IsExport()
 }

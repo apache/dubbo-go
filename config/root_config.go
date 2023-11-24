@@ -203,7 +203,6 @@ func (rc *RootConfig) Start() {
 		gracefulShutdownInit()
 		rc.Consumer.Load()
 		rc.Provider.Load()
-		registerServiceInstance()
 	})
 }
 

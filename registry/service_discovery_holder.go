@@ -22,4 +22,5 @@ package registry
 type ServiceDiscoveryHolder interface {
 	// GetServiceDiscovery get service discovery
 	GetServiceDiscovery() ServiceDiscovery
+	GetServiceDiscoverMetadata() ServiceDiscoveryMetadata
 }

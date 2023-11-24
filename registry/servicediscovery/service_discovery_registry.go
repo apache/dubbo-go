@@ -37,8 +37,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/metadata"
 	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
-	metadataService "dubbo.apache.org/dubbo-go/v3/metadata/service"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 	metricMetadata "dubbo.apache.org/dubbo-go/v3/metrics/metadata"
 	metricsRegistry "dubbo.apache.org/dubbo-go/v3/metrics/registry"
@@ -53,16 +53,16 @@ func init() {
 
 // ServiceDiscoveryRegistry is the implementation of application-level registry.
 // It's completely different from other registry implementations
-// This implementation is based on ServiceDiscovery abstraction and ServiceNameMapping
+// This implementation is based on ServiceDiscovery abstraction and ServiceNameMapping and metadata
 // In order to keep compatible with interface-level registry，
-// this implementation is
+// ServiceDiscoveryRegistry = ServiceDiscovery + metadata
 type ServiceDiscoveryRegistry struct {
 	lock                             sync.RWMutex
 	url                              *common.URL
 	serviceDiscovery                 registry.ServiceDiscovery
 	subscribedServices               *gxset.HashSet
 	serviceNameMapping               mapping.ServiceNameMapping
-	metaDataService                  metadataService.MetadataService
+	metaDataService                  metadata.MetadataService
 	registeredListeners              *gxset.HashSet
 	subscribedURLsSynthesizers       []synthesizer.SubscribedURLsSynthesizer
 	serviceRevisionExportedURLsCache map[string]map[string][]*common.URL

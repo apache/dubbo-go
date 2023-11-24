@@ -18,6 +18,7 @@
 package event
 
 import (
+	metadataService "dubbo.apache.org/dubbo-go/v3/metadata"
 	"fmt"
 	"hash/crc32"
 	"sort"
@@ -27,7 +28,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	metadataService "dubbo.apache.org/dubbo-go/v3/metadata/service"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
