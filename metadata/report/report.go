@@ -35,13 +35,11 @@ type MetadataReport interface {
 	PublishAppMetadata(application, revision string, info *info.MetadataInfo) error
 
 	// RegisterServiceAppMapping map the specified Dubbo service interface to current Dubbo app name
-	RegisterServiceAppMapping(string, string, string) error
+	RegisterServiceAppMapping(interfaceName, group string, application string) error
 
 	// GetServiceAppMapping get the app names from the specified Dubbo service interface
-	GetServiceAppMapping(string, string, mapping.MappingListener) (*gxset.HashSet, error)
+	GetServiceAppMapping(interfaceName, group string, l mapping.MappingListener) (*gxset.HashSet, error)
 
 	// RemoveServiceAppMappingListener remove the serviceMapping listener by key and group
-	RemoveServiceAppMappingListener(string, string) error
-
-	GetConfigKeysByGroup(group string) (*gxset.HashSet, error)
+	RemoveServiceAppMappingListener(interfaceName, group string) error
 }

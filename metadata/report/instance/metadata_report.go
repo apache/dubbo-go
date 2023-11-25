@@ -39,12 +39,14 @@ import (
 )
 
 var (
-	instances = make(map[string]report.MetadataReport)
-	once      sync.Once
+	instances    = make(map[string]report.MetadataReport)
+	once         sync.Once
+	metadataType string
 )
 
-func Init(urls []*common.URL) {
+func Init(urls []*common.URL, metaType string) {
 	once.Do(func() {
+		metadataType = metaType
 		if len(urls) == 0 {
 			for _, url := range urls {
 				fac := extension.GetMetadataReportFactory(url.Protocol)
@@ -60,21 +62,36 @@ func Init(urls []*common.URL) {
 }
 
 func GetMetadataReport() report.MetadataReport {
-	if len(instances) > 0 {
-		for _, v := range instances {
-			return v
-		}
+	for _, v := range instances {
+		return v
 	}
 	return nil
 }
 
-func GetMetadataReports() []report.MetadataReport {
-	reports := make([]report.MetadataReport, len(instances))
-	for _, metadataReport := range instances {
-		reports = append(reports, metadataReport)
+func GetMetadataReportByRegistry(registry string) report.MetadataReport {
+	if len(registry) == 0 {
+		registry = constant.DefaultKey
 	}
-	return reports
+	if r, ok := instances[registry]; ok {
+		return r
+	}
+	for _, r := range instances {
+		return r
+	}
+	return nil
 }
+
+func GetMetadataType() string {
+	return metadataType
+}
+
+//func GetMetadataReports() []report.MetadataReport {
+//	reports := make([]report.MetadataReport, len(instances))
+//	for _, metadataReport := range instances {
+//		reports = append(reports, metadataReport)
+//	}
+//	return reports
+//}
 
 // DelegateMetadataReport is a absolute delegate for DelegateMetadataReport
 type DelegateMetadataReport struct {
@@ -101,18 +118,14 @@ func (d *DelegateMetadataReport) GetAppMetadata(application, revision string) (*
 	return meta, err
 }
 
-func (d *DelegateMetadataReport) GetServiceAppMapping(application string, p1 string, p2 mapping.MappingListener) (*gxset.HashSet, error) {
-	panic("TODO")
+func (d *DelegateMetadataReport) GetServiceAppMapping(application string, group string, listener mapping.MappingListener) (*gxset.HashSet, error) {
+	return d.instance.GetServiceAppMapping(application, group, listener)
 }
 
-func (d *DelegateMetadataReport) RegisterServiceAppMapping(p0 string, p1 string, p2 string) error {
-	panic("TODO")
+func (d *DelegateMetadataReport) RegisterServiceAppMapping(interfaceName, group string, application string) error {
+	return d.instance.RegisterServiceAppMapping(interfaceName, group, application)
 }
 
-func (d *DelegateMetadataReport) RemoveServiceAppMappingListener(p0 string, p1 string) error {
-	panic("TODO")
-}
-
-func (d *DelegateMetadataReport) GetConfigKeysByGroup(group string) (*gxset.HashSet, error) {
-	panic("TODO: Implement")
+func (d *DelegateMetadataReport) RemoveServiceAppMappingListener(interfaceName, group string) error {
+	return d.instance.RemoveServiceAppMappingListener(interfaceName, group)
 }

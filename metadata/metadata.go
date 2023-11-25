@@ -19,6 +19,7 @@
 package metadata
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"sync"
 )
 
@@ -32,8 +33,8 @@ var (
 	Factory               ExporterFactory
 )
 
-// ExporterFactory to create MetadataServiceExporter, avoid cycle import
-type ExporterFactory func(app, metadataType string) MetadataServiceExporter
+// ExporterFactory to create ServiceExporter, avoid cycle import
+type ExporterFactory func(app, metadataType string) ServiceExporter
 
 func SetExporterFactory(factory ExporterFactory) {
 	Factory = factory
@@ -42,30 +43,14 @@ func SetExporterFactory(factory ExporterFactory) {
 func ExportMetadataService(app, metadataType string) {
 	if Factory != nil {
 		exportOnce.Do(func() {
-			err := Factory(app, metadataType).Export()
-			if err != nil {
-				logger.Errorf("export metadata service failed, got error %#v", err)
+			if metadataType != constant.RemoteMetadataStorageType {
+				err := Factory(app, metadataType).Export()
+				if err != nil {
+					logger.Errorf("export metadata service failed, got error %#v", err)
+				}
 			}
 		})
 	} else {
 		logger.Warn("no metadata service exporter found, MetadataService will not be Exported")
 	}
-
-	// err = publishMapping(expt)
-	// if err != nil {
-	// 	logger.Errorf("Publish interface-application mapping failed, got error %#v", err)
-	// }
 }
-
-// OnEvent only handle ServiceConfigExportedEvent
-// func publishMapping(sc exporter.MetadataServiceExporter) error {
-// 	urls := sc.GetExportedURLs()
-
-// 	for _, u := range urls {
-// 		err := extension.GetGlobalServiceNameMapping().Map(u)
-// 		if err != nil {
-// 			return perrors.WithMessage(err, "could not map the service: "+u.String())
-// 		}
-// 	}
-// 	return nil
-// }

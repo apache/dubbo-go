@@ -17,7 +17,7 @@ type MetadataServiceExporter struct {
 	ServiceConfig     *config.ServiceConfig
 }
 
-func NewMetadataServiceExporter(app, metadataType string) metadata.MetadataServiceExporter {
+func NewMetadataServiceExporter(app, metadataType string) metadata.ServiceExporter {
 	return &MetadataServiceExporter{app: app, metadataType: metadataType}
 }
 

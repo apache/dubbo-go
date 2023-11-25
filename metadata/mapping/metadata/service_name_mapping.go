@@ -24,97 +24,75 @@ import (
 import (
 	gxset "github.com/dubbogo/gost/container/set"
 	"github.com/dubbogo/gost/log/logger"
-
-	perrors "github.com/pkg/errors"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
-	"dubbo.apache.org/dubbo-go/v3/metadata/report"
 	"dubbo.apache.org/dubbo-go/v3/metadata/report/instance"
 )
 
 const (
 	DefaultGroup = "mapping"
 	slash        = "/"
+	retryTimes   = 10
 )
 
 func init() {
 	extension.SetGlobalServiceNameMapping(GetNameMappingInstance)
 }
 
-// MetadataServiceNameMapping is the implementation based on metadata report
-// it's a singleton
-type MetadataServiceNameMapping struct {
-}
-
-// Map will map the service to this application-level service
-func (d *MetadataServiceNameMapping) Map(url *common.URL) error {
-	serviceInterface := url.GetParam(constant.InterfaceKey, "")
-	// metadata service is admin service, should not be mapped
-	if constant.MetadataServiceName == serviceInterface {
-		logger.Debug("try to map the metadata service, will be ignored")
-		return nil
-	}
-
-	appName := url.GetParam(constant.ApplicationKey, "")
-
-	metadataReport := getMetaDataReport(url.GetParam(constant.RegistryKey, ""))
-	if metadataReport == nil {
-		logger.Info("get metadata report instance is nil, metadata service will be enabled!")
-	} else {
-		err := metadataReport.RegisterServiceAppMapping(serviceInterface, DefaultGroup, appName)
-		if err != nil {
-			return perrors.WithStack(err)
-		}
-	}
-	return nil
-}
-
-// Get will return the application-level services. If not found, the empty set will be returned.
-func (d *MetadataServiceNameMapping) Get(url *common.URL, listener mapping.MappingListener) (*gxset.HashSet, error) {
-	serviceInterface := url.GetParam(constant.InterfaceKey, "")
-	metadataReport := instance.GetMetadataReport()
-	return metadataReport.GetServiceAppMapping(serviceInterface, DefaultGroup, listener)
-}
-
-func (d *MetadataServiceNameMapping) Remove(url *common.URL) error {
-	serviceInterface := url.GetParam(constant.InterfaceKey, "")
-	metadataReport := instance.GetMetadataReport()
-	return metadataReport.RemoveServiceAppMappingListener(serviceInterface, DefaultGroup)
-}
-
-// buildMappingKey will return mapping key, it looks like DefaultGroup/serviceInterface
-func (d *MetadataServiceNameMapping) buildMappingKey(serviceInterface string) string {
-	// the issue : https://github.com/apache/dubbo/issues/4671
-	// so other params are ignored and remove, including group string, version string, protocol string
-	return DefaultGroup + slash + serviceInterface
-}
-
 var (
-	serviceNameMappingInstance *MetadataServiceNameMapping
+	serviceNameMappingInstance *ServiceNameMapping
 	serviceNameMappingOnce     sync.Once
 )
 
 // GetNameMappingInstance return an instance, if not found, it creates one
 func GetNameMappingInstance() mapping.ServiceNameMapping {
 	serviceNameMappingOnce.Do(func() {
-		serviceNameMappingInstance = &MetadataServiceNameMapping{}
+		serviceNameMappingInstance = &ServiceNameMapping{}
 	})
 	return serviceNameMappingInstance
 }
 
-// getMetaDataReport obtain metadata reporting instances through registration protocol
-// if the metadata type is remote, obtain the instance from the metadata report configuration
-func getMetaDataReport(protocol string) report.MetadataReport {
-	var metadataReport report.MetadataReport
-	if config.GetApplicationConfig().MetadataType == constant.RemoteMetadataStorageType {
-		metadataReport = instance.GetMetadataReport()
-		return metadataReport
+// ServiceNameMapping is the implementation based on metadata report
+// it's a singleton
+type ServiceNameMapping struct {
+}
+
+// Map will map the service to this application-level service
+func (d *ServiceNameMapping) Map(url *common.URL) error {
+	serviceInterface := url.GetParam(constant.InterfaceKey, "")
+	appName := url.GetParam(constant.ApplicationKey, "")
+	metadataReport := instance.GetMetadataReportByRegistry(url.GetParam(constant.RegistryKey, ""))
+	if metadataReport == nil {
+		logger.Warn("get metadata report instance is nil")
+	} else {
+		var err error
+		for i := 0; i < retryTimes; i++ {
+			err = metadataReport.RegisterServiceAppMapping(serviceInterface, DefaultGroup, appName)
+			if err == nil {
+				break
+			}
+		}
+		if err != nil {
+			logger.Errorf("Failed registering mapping to remote, &v", err)
+		}
 	}
-	return instance.GetMetadataReport()
+	return nil
+}
+
+// Get will return the application-level services. If not found, the empty set will be returned.
+func (d *ServiceNameMapping) Get(url *common.URL, listener mapping.MappingListener) (*gxset.HashSet, error) {
+	serviceInterface := url.GetParam(constant.InterfaceKey, "")
+	metadataReport := instance.GetMetadataReport()
+	return metadataReport.GetServiceAppMapping(serviceInterface, DefaultGroup, listener)
+}
+
+func (d *ServiceNameMapping) Remove(url *common.URL) error {
+	serviceInterface := url.GetParam(constant.InterfaceKey, "")
+	metadataReport := instance.GetMetadataReport()
+	return metadataReport.RemoveServiceAppMappingListener(serviceInterface, DefaultGroup)
 }

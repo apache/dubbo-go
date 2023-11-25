@@ -20,6 +20,7 @@ package server
 
 import (
 	"context"
+	"dubbo.apache.org/dubbo-go/v3/registry/servicediscovery"
 	"fmt"
 	"sync"
 )
@@ -187,7 +188,10 @@ func (s *Server) Serve() error {
 		return err
 	}
 	metadata.ExportMetadataService(s.cfg.Application.Name, s.cfg.Application.MetadataType)
-	//registry_exposed.RegisterServiceInstance(s.cfg.Application.Name, s.cfg.Application.Tag, s.cfg.Application.MetadataType)
+	err := servicediscovery.RegisterServiceInstance()
+	if err != nil {
+		return err
+	}
 	select {}
 }
 

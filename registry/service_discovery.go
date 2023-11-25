@@ -75,7 +75,11 @@ type ServiceDiscovery interface {
 	AddListener(listener ServiceInstancesChangedListener) error
 }
 
-type ServiceDiscoveryMetadata interface {
+type ServiceDiscoveryRegistry interface {
+	// RegisterService register service instance use metadata info
+	RegisterService() error
+	// UnRegisterService unregister service instance
+	UnRegisterService() error
 	// GetLocalMetadata get local metadata info
 	GetLocalMetadata() *info.MetadataInfo
 	// GetRemoteMetadata  get remote server metadata info

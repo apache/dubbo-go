@@ -55,7 +55,6 @@ func init() {
 // There is a problem, the go namingClient for nacos does not support the id field.
 // we will use the metadata to store the id of ServiceInstance
 type nacosServiceDiscovery struct {
-	registry.BaseServiceDiscovery
 	group string
 	// descriptor is a short string about the basic information of this instance
 	descriptor string
@@ -348,12 +347,11 @@ func newNacosServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, error
 
 	group := url.GetParam(constant.RegistryGroupKey, defaultGroup)
 	newInstance := &nacosServiceDiscovery{
-		BaseServiceDiscovery: registry.NewBaseServiceDiscovery(url.GetParam(constant.ApplicationKey, "")),
-		group:                group,
-		namingClient:         client,
-		descriptor:           descriptor,
-		registryInstances:    []registry.ServiceInstance{},
-		instanceListenerMap:  make(map[string]*gxset.HashSet),
+		group:               group,
+		namingClient:        client,
+		descriptor:          descriptor,
+		registryInstances:   []registry.ServiceInstance{},
+		instanceListenerMap: make(map[string]*gxset.HashSet),
 	}
 	return newInstance, nil
 }

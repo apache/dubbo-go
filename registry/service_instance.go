@@ -72,6 +72,7 @@ type ServiceInstance interface {
 
 	// SetServiceMetadata saves metadata in instance
 	SetServiceMetadata(info *info.MetadataInfo)
+	GetServiceMetadata() *info.MetadataInfo
 
 	// GetTag will return the tag of the instance
 	GetTag() string
@@ -146,6 +147,11 @@ func (d *DefaultServiceInstance) GetAddress() string {
 // SetServiceMetadata save metadata in instance
 func (d *DefaultServiceInstance) SetServiceMetadata(m *info.MetadataInfo) {
 	d.ServiceMetadata = m
+}
+
+// GetServiceMetadata save metadata in instance
+func (d *DefaultServiceInstance) GetServiceMetadata() *info.MetadataInfo {
+	return d.ServiceMetadata
 }
 
 func (d *DefaultServiceInstance) GetTag() string {

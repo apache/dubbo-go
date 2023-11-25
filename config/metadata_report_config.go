@@ -60,7 +60,7 @@ func (mc *MetadataReportConfig) Init(rc *RootConfig) error {
 			return err
 		}
 		// if metadata report config is avaible, then init metadata report instance
-		instance.Init([]*common.URL{tmpUrl})
+		instance.Init([]*common.URL{tmpUrl}, mc.metadataType)
 		return nil
 	}
 	if rc.Registries != nil && len(rc.Registries) > 0 {
@@ -77,7 +77,7 @@ func (mc *MetadataReportConfig) Init(rc *RootConfig) error {
 			}
 		}
 		if len(urls) > 0 {
-			instance.Init(urls)
+			instance.Init(urls, mc.metadataType)
 		} else {
 			logger.Warnf("No metadata report config found, skip init metadata report instance.")
 		}

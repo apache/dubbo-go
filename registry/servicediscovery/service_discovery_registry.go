@@ -19,6 +19,7 @@ package servicediscovery
 
 import (
 	"bytes"
+	"dubbo.apache.org/dubbo-go/v3/metadata/info"
 	"strings"
 	"sync"
 	"time"
@@ -29,15 +30,12 @@ import (
 	"github.com/dubbogo/gost/log/logger"
 
 	perrors "github.com/pkg/errors"
-
-	"go.uber.org/atomic"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/metadata"
 	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 	metricMetadata "dubbo.apache.org/dubbo-go/v3/metrics/metadata"
@@ -51,23 +49,37 @@ func init() {
 	extension.SetRegistry(constant.ServiceRegistryProtocol, newServiceDiscoveryRegistry)
 }
 
-// ServiceDiscoveryRegistry is the implementation of application-level registry.
+func RegisterServiceInstance() error {
+	protocol := extension.GetProtocol(constant.RegistryKey)
+	if rf, ok := protocol.(registry.RegistryFactory); ok {
+		for _, r := range rf.GetRegistries() {
+			if sdr, ok := r.(registry.ServiceDiscoveryRegistry); ok {
+				err := sdr.RegisterService()
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
+}
+
+// serviceDiscoveryRegistry is the implementation of application-level registry.
 // It's completely different from other registry implementations
 // This implementation is based on ServiceDiscovery abstraction and ServiceNameMapping and metadata
 // In order to keep compatible with interface-level registry，
-// ServiceDiscoveryRegistry = ServiceDiscovery + metadata
-type ServiceDiscoveryRegistry struct {
-	lock                             sync.RWMutex
-	url                              *common.URL
-	serviceDiscovery                 registry.ServiceDiscovery
-	subscribedServices               *gxset.HashSet
-	serviceNameMapping               mapping.ServiceNameMapping
-	metaDataService                  metadata.MetadataService
-	registeredListeners              *gxset.HashSet
-	subscribedURLsSynthesizers       []synthesizer.SubscribedURLsSynthesizer
-	serviceRevisionExportedURLsCache map[string]map[string][]*common.URL
-	serviceListeners                 map[string]registry.ServiceInstancesChangedListener
-	serviceMappingListeners          map[string]mapping.MappingListener
+// serviceDiscoveryRegistry = ServiceDiscovery + metadata
+type serviceDiscoveryRegistry struct {
+	lock                       sync.RWMutex
+	url                        *common.URL
+	serviceDiscovery           registry.ServiceDiscovery
+	serviceMeta                *serviceMeta
+	subscribedServices         *gxset.HashSet
+	serviceNameMapping         mapping.ServiceNameMapping
+	registeredListeners        *gxset.HashSet
+	subscribedURLsSynthesizers []synthesizer.SubscribedURLsSynthesizer
+	serviceListeners           map[string]registry.ServiceInstancesChangedListener
+	serviceMappingListeners    map[string]mapping.MappingListener
 }
 
 func newServiceDiscoveryRegistry(url *common.URL) (registry.Registry, error) {
@@ -78,38 +90,53 @@ func newServiceDiscoveryRegistry(url *common.URL) (registry.Registry, error) {
 	subscribedServices := parseServices(url.GetParam(constant.SubscribedServiceNamesKey, ""))
 	subscribedURLsSynthesizers := synthesizer.GetAllSynthesizer()
 	serviceNameMapping := extension.GetGlobalServiceNameMapping()
-	// metaDataService, err := local.GetLocalMetadataService()
 	if err != nil {
 		return nil, perrors.WithMessage(err, "could not init metadata service")
 	}
-	return &ServiceDiscoveryRegistry{
-		url:                              url,
-		serviceDiscovery:                 serviceDiscovery,
-		subscribedServices:               subscribedServices,
-		subscribedURLsSynthesizers:       subscribedURLsSynthesizers,
-		registeredListeners:              gxset.NewSet(),
-		serviceRevisionExportedURLsCache: make(map[string]map[string][]*common.URL, 8),
-		serviceNameMapping:               serviceNameMapping,
-		// metaDataService:                  metaDataService,
-		serviceListeners: make(map[string]registry.ServiceInstancesChangedListener),
+	return &serviceDiscoveryRegistry{
+		url:                        url,
+		serviceDiscovery:           serviceDiscovery,
+		serviceMeta:                NewServiceMeta(url.GetParam(constant.ApplicationKey, "")),
+		subscribedServices:         subscribedServices,
+		subscribedURLsSynthesizers: subscribedURLsSynthesizers,
+		registeredListeners:        gxset.NewSet(),
+		serviceNameMapping:         serviceNameMapping,
+		serviceListeners:           make(map[string]registry.ServiceInstancesChangedListener),
 		// cache for mapping listener
 		serviceMappingListeners: make(map[string]mapping.MappingListener),
 	}, nil
 }
 
-func (s *ServiceDiscoveryRegistry) UnRegister(url *common.URL) error {
+func (s *serviceDiscoveryRegistry) RegisterService() error {
+	s.serviceMeta.createInstance()
+	return s.serviceDiscovery.Register(s.serviceMeta.instance)
+}
+
+func (s *serviceDiscoveryRegistry) UnRegisterService() error {
+	return s.serviceDiscovery.Unregister(s.serviceMeta.instance)
+}
+
+func (s *serviceDiscoveryRegistry) GetLocalMetadata() *info.MetadataInfo {
+	return s.serviceMeta.metadataInfo
+}
+
+func (s *serviceDiscoveryRegistry) GetRemoteMetadata(revision string, instance registry.ServiceInstance) (*info.MetadataInfo, error) {
+	return s.serviceMeta.GetRemoteMetadata(revision, instance)
+}
+
+func (s *serviceDiscoveryRegistry) UnRegister(url *common.URL) error {
 	if !shouldRegister(url) {
 		return nil
 	}
-	s.serviceDiscovery.GetLocalMetadata().RemoveService(url)
+	s.serviceMeta.GetLocalMetadata().RemoveService(url)
 	return nil
 }
 
-func (s *ServiceDiscoveryRegistry) UnSubscribe(url *common.URL, listener registry.NotifyListener) error {
+func (s *serviceDiscoveryRegistry) UnSubscribe(url *common.URL, listener registry.NotifyListener) error {
 	if !shouldSubscribe(url) {
 		return nil
 	}
-	s.serviceDiscovery.GetLocalMetadata().RemoveSubscribeURL(url)
+	s.serviceMeta.GetLocalMetadata().RemoveSubscribeURL(url)
 	services := s.getServices(url, nil)
 	if services == nil {
 		return nil
@@ -129,7 +156,7 @@ func (s *ServiceDiscoveryRegistry) UnSubscribe(url *common.URL, listener registr
 func creatServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, error) {
 	originServiceDiscovery, err := extension.GetServiceDiscovery(url)
 	if err != nil {
-		return nil, perrors.WithMessage(err, "Create service discovery fialed")
+		return nil, perrors.WithMessage(err, "Create service discovery failed")
 	}
 	return originServiceDiscovery, nil
 }
@@ -148,34 +175,34 @@ func parseServices(literalServices string) *gxset.HashSet {
 	return set
 }
 
-func (s *ServiceDiscoveryRegistry) GetServiceDiscovery() registry.ServiceDiscovery {
+func (s *serviceDiscoveryRegistry) GetServiceDiscovery() registry.ServiceDiscovery {
 	return s.serviceDiscovery
 }
 
-func (s *ServiceDiscoveryRegistry) GetURL() *common.URL {
+func (s *serviceDiscoveryRegistry) GetURL() *common.URL {
 	return s.url
 }
 
-func (s *ServiceDiscoveryRegistry) IsAvailable() bool {
+func (s *serviceDiscoveryRegistry) IsAvailable() bool {
 	if s.serviceDiscovery.GetServices() == nil {
 		return false
 	}
 	return len(s.serviceDiscovery.GetServices().Values()) > 0
 }
 
-func (s *ServiceDiscoveryRegistry) Destroy() {
+func (s *serviceDiscoveryRegistry) Destroy() {
 	err := s.serviceDiscovery.Destroy()
 	if err != nil {
 		logger.Errorf("destroy serviceDiscovery catch error:%s", err.Error())
 	}
 }
 
-func (s *ServiceDiscoveryRegistry) Register(url *common.URL) error {
+func (s *serviceDiscoveryRegistry) Register(url *common.URL) error {
 	if !shouldRegister(url) {
 		return nil
 	}
 	common.HandleRegisterIPAndPort(url)
-	s.serviceDiscovery.GetLocalMetadata().AddService(url)
+	s.serviceMeta.GetLocalMetadata().AddService(url)
 	metrics.Publish(metricsRegistry.NewServerRegisterEvent(true, time.Now()))
 	return s.serviceNameMapping.Map(url)
 }
@@ -189,12 +216,12 @@ func shouldRegister(url *common.URL) bool {
 	return false
 }
 
-func (s *ServiceDiscoveryRegistry) Subscribe(url *common.URL, notify registry.NotifyListener) error {
+func (s *serviceDiscoveryRegistry) Subscribe(url *common.URL, notify registry.NotifyListener) error {
 	if !shouldSubscribe(url) {
 		logger.Infof("Service %s is set to not subscribe to instances.", url.ServiceKey())
 		return nil
 	}
-	s.serviceDiscovery.GetLocalMetadata().AddSubscribeURL(url)
+	s.serviceMeta.GetLocalMetadata().AddSubscribeURL(url)
 	mappingListener := NewMappingListener(s.url, url, s.subscribedServices, notify)
 	services := s.getServices(url, mappingListener)
 	if services.Empty() {
@@ -207,7 +234,7 @@ func (s *ServiceDiscoveryRegistry) Subscribe(url *common.URL, notify registry.No
 	return nil
 }
 
-func (s *ServiceDiscoveryRegistry) SubscribeURL(url *common.URL, notify registry.NotifyListener, services *gxset.HashSet) {
+func (s *serviceDiscoveryRegistry) SubscribeURL(url *common.URL, notify registry.NotifyListener, services *gxset.HashSet) {
 	// FIXME ServiceNames.String() is not good
 	var err error
 	serviceNamesKey := services.String()
@@ -228,7 +255,7 @@ func (s *ServiceDiscoveryRegistry) SubscribeURL(url *common.URL, notify registry
 				Instances:   instances,
 			})
 			if err != nil {
-				logger.Warnf("[ServiceDiscoveryRegistry] ServiceInstancesChangedListenerImpl handle error:%v", err)
+				logger.Warnf("[serviceDiscoveryRegistry] ServiceInstancesChangedListenerImpl handle error:%v", err)
 			}
 		}
 	}
@@ -251,7 +278,7 @@ func (s *ServiceDiscoveryRegistry) SubscribeURL(url *common.URL, notify registry
 }
 
 // LoadSubscribeInstances load subscribe instance
-func (s *ServiceDiscoveryRegistry) LoadSubscribeInstances(url *common.URL, notify registry.NotifyListener) error {
+func (s *serviceDiscoveryRegistry) LoadSubscribeInstances(url *common.URL, notify registry.NotifyListener) error {
 	return nil
 }
 
@@ -283,7 +310,7 @@ func appendParam(buffer bytes.Buffer, paramKey string, url *common.URL) {
 	buffer.WriteString(url.GetParam(paramKey, ""))
 }
 
-func (s *ServiceDiscoveryRegistry) synthesizeSubscribedURLs(subscribedURL *common.URL, serviceInstances []registry.ServiceInstance) []*common.URL {
+func (s *serviceDiscoveryRegistry) synthesizeSubscribedURLs(subscribedURL *common.URL, serviceInstances []registry.ServiceInstance) []*common.URL {
 	var urls []*common.URL
 	for _, syn := range s.subscribedURLsSynthesizers {
 		if syn.Support(subscribedURL) {
@@ -297,7 +324,7 @@ func shouldSubscribe(url *common.URL) bool {
 	return !shouldRegister(url)
 }
 
-func (s *ServiceDiscoveryRegistry) getServices(url *common.URL, listener mapping.MappingListener) *gxset.HashSet {
+func (s *serviceDiscoveryRegistry) getServices(url *common.URL, listener mapping.MappingListener) *gxset.HashSet {
 	services := gxset.NewSet()
 	serviceNames := url.GetParam(constant.ProvidedBy, "")
 	if len(serviceNames) > 0 {
@@ -312,7 +339,7 @@ func (s *ServiceDiscoveryRegistry) getServices(url *common.URL, listener mapping
 	return services
 }
 
-func (s *ServiceDiscoveryRegistry) findMappedServices(url *common.URL, listener mapping.MappingListener) *gxset.HashSet {
+func (s *serviceDiscoveryRegistry) findMappedServices(url *common.URL, listener mapping.MappingListener) *gxset.HashSet {
 	serviceNames, err := s.serviceNameMapping.Get(url, listener)
 	if err != nil {
 		logger.Errorf("get service names catch error, url:%s, err:%s ", url.String(), err.Error())
@@ -325,11 +352,7 @@ func (s *ServiceDiscoveryRegistry) findMappedServices(url *common.URL, listener 
 	return serviceNames
 }
 
-var (
-	exporting = &atomic.Bool{}
-)
-
-func (s *ServiceDiscoveryRegistry) stopListen(url *common.URL) {
+func (s *serviceDiscoveryRegistry) stopListen(url *common.URL) {
 	protocolServiceKey := url.ServiceKey() + ":" + url.Protocol
 	listener := s.serviceMappingListeners[protocolServiceKey]
 	if listener != nil {

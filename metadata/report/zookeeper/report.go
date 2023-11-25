@@ -130,24 +130,6 @@ func (m *zookeeperMetadataReport) GetServiceAppMapping(key string, group string,
 	return set, nil
 }
 
-// GetConfigKeysByGroup will return all keys with the group
-func (m *zookeeperMetadataReport) GetConfigKeysByGroup(group string) (*gxset.HashSet, error) {
-	path := m.rootDir + group
-	result, err := m.client.GetChildren(path)
-	if err != nil {
-		return nil, perrors.WithStack(err)
-	}
-
-	if len(result) == 0 {
-		return nil, perrors.New("could not find keys with group: " + group)
-	}
-	set := gxset.NewSet()
-	for _, e := range result {
-		set.Add(e)
-	}
-	return set, nil
-}
-
 func (m *zookeeperMetadataReport) RemoveServiceAppMappingListener(key string, group string) error {
 	return nil
 }

@@ -53,11 +53,6 @@ type etcdMetadataReport struct {
 	rootDir string
 }
 
-func (e *etcdMetadataReport) GetConfigKeysByGroup(group string) (*gxset.HashSet, error) {
-	//TODO implement me
-	panic("implement me")
-}
-
 // GetAppMetadata get metadata info from etcd
 func (e *etcdMetadataReport) GetAppMetadata(application, revision string) (*info.MetadataInfo, error) {
 	key := e.rootDir + application + constant.PathSeparator + revision

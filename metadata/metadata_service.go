@@ -53,7 +53,7 @@ type MetadataService interface {
 	SetMetadataServiceURL(*common.URL)
 }
 
-type MetadataServiceExporter interface {
+type ServiceExporter interface {
 	Export() error
 	UnExport()
 }
@@ -90,7 +90,7 @@ func (mts *metadataService) GetMetadataInfo(revision string) *info.MetadataInfo 
 	if revision == "" {
 		return nil
 	}
-	for _, sd := range mts.getServiceDiscoveries() {
+	for _, sd := range mts.getServiceDiscoveryMetadata() {
 		meta := sd.GetLocalMetadata()
 		if meta.Revision == revision {
 			return meta
@@ -100,13 +100,13 @@ func (mts *metadataService) GetMetadataInfo(revision string) *info.MetadataInfo 
 	return nil
 }
 
-func (mts *metadataService) getServiceDiscoveries() []registry.ServiceDiscoveryMetadata {
-	sds := make([]registry.ServiceDiscoveryMetadata, 0)
+func (mts *metadataService) getServiceDiscoveryMetadata() []registry.ServiceDiscoveryRegistry {
+	sds := make([]registry.ServiceDiscoveryRegistry, 0)
 	p := extension.GetProtocol(constant.RegistryProtocol)
 	if factory, ok := p.(registry.RegistryFactory); ok {
 		for _, v := range factory.GetRegistries() {
-			if sd, ok := v.(registry.ServiceDiscoveryHolder); ok {
-				sds = append(sds, sd.GetServiceDiscoverMetadata())
+			if sd, ok := v.(registry.ServiceDiscoveryRegistry); ok {
+				sds = append(sds, sd)
 			}
 		}
 	}
@@ -116,7 +116,7 @@ func (mts *metadataService) getServiceDiscoveries() []registry.ServiceDiscoveryM
 // GetExportedServiceURLs get exported service urls
 func (mts *metadataService) GetExportedServiceURLs() []*common.URL {
 	urls := make([]*common.URL, 0)
-	for _, sd := range mts.getServiceDiscoveries() {
+	for _, sd := range mts.getServiceDiscoveryMetadata() {
 		urls = append(urls, sd.GetLocalMetadata().GetExportedServiceURLs()...)
 	}
 	return urls
@@ -134,7 +134,7 @@ func (mts *metadataService) GetMetadataServiceURL() *common.URL {
 
 func (mts *metadataService) GetSubscribedURLs() []*common.URL {
 	urls := make([]*common.URL, 0)
-	for _, sd := range mts.getServiceDiscoveries() {
+	for _, sd := range mts.getServiceDiscoveryMetadata() {
 		urls = append(urls, sd.GetLocalMetadata().GetSubscribedURLs()...)
 	}
 	return urls
