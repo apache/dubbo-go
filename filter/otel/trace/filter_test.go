@@ -131,6 +131,17 @@ func (mr *MockInvocationMockRecorder) ParameterValues() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ParameterValues", reflect.TypeOf((*MockInvocation)(nil).ParameterValues))
 }
 
+func (m *MockInvocation) ParameterRawValues() []interface{} {
+	ret := m.ctrl.Call(m, "ParameterRawValues")
+	ret0, _ := ret[0].([]interface{})
+	return ret0
+}
+
+// ParameterValues indicates an expected call of ParameterValues
+func (mr *MockInvocationMockRecorder) ParameterRawValues() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ParameterRawValues", reflect.TypeOf((*MockInvocation)(nil).ParameterRawValues))
+}
+
 // Arguments mocks base method
 func (m *MockInvocation) Arguments() []interface{} {
 	ret := m.ctrl.Call(m, "Arguments")

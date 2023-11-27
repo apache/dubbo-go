@@ -28,13 +28,16 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/global"
 )
 
 func TestWithTimeout(t *testing.T) {
 	fa := WithTimeout(12 * time.Second)
-	opt := &Options{}
+	opt := &Options{
+		Center: &global.CenterConfig{},
+	}
 	fa(opt)
-	assert.Equal(t, 12*time.Second, opt.Timeout)
+	assert.Equal(t, "12000", opt.Center.Timeout)
 }
 
 func TestGetRuleKey(t *testing.T) {

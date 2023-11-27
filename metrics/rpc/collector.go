@@ -22,6 +22,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 )
@@ -32,13 +33,14 @@ var (
 
 // init will add the rpc collectorFunc to metrics.collectors slice, and lazy start the rpc collector goroutine
 func init() {
-	var collectorFunc metrics.CollectorFunc
-	collectorFunc = func(registry metrics.MetricRegistry, c *metrics.ReporterConfig) {
-		rc := &rpcCollector{
-			registry:  registry,
-			metricSet: buildMetricSet(registry),
+	collectorFunc := func(registry metrics.MetricRegistry, url *common.URL) {
+		if url.GetParamBool(constant.RpcEnabledKey, true) {
+			rc := &rpcCollector{
+				registry:  registry,
+				metricSet: buildMetricSet(registry),
+			}
+			go rc.start()
 		}
-		go rc.start()
 	}
 
 	metrics.AddCollector("rpc", collectorFunc)
@@ -93,6 +95,9 @@ func (c *rpcCollector) afterInvokeHandler(event *metricsEvent) {
 	if event.result != nil {
 		if event.result.Error() == nil {
 			c.incRequestsSucceedTotal(role, labels)
+		} else {
+			// TODO: Breaking down RPC exceptions further
+			c.incRequestsFailedTotal(role, labels)
 		}
 	}
 	c.reportRTMilliseconds(role, labels, event.costTime.Milliseconds())
@@ -100,19 +105,19 @@ func (c *rpcCollector) afterInvokeHandler(event *metricsEvent) {
 
 func (c *rpcCollector) recordQps(role string, labels map[string]string) {
 	switch role {
-	case providerField:
+	case constant.SideProvider:
 		c.metricSet.provider.qpsTotal.Record(labels)
-	case consumerField:
+	case constant.SideConsumer:
 		c.metricSet.consumer.qpsTotal.Record(labels)
 	}
 }
 
 func (c *rpcCollector) incRequestsTotal(role string, labels map[string]string) {
 	switch role {
-	case providerField:
+	case constant.SideProvider:
 		c.metricSet.provider.requestsTotal.Inc(labels)
 		c.metricSet.provider.requestsTotalAggregate.Inc(labels)
-	case consumerField:
+	case constant.SideConsumer:
 		c.metricSet.consumer.requestsTotal.Inc(labels)
 		c.metricSet.consumer.requestsTotalAggregate.Inc(labels)
 	}
@@ -120,40 +125,51 @@ func (c *rpcCollector) incRequestsTotal(role string, labels map[string]string) {
 
 func (c *rpcCollector) incRequestsProcessingTotal(role string, labels map[string]string) {
 	switch role {
-	case providerField:
+	case constant.SideProvider:
 		c.metricSet.provider.requestsProcessingTotal.Inc(labels)
-	case consumerField:
+	case constant.SideConsumer:
 		c.metricSet.consumer.requestsProcessingTotal.Inc(labels)
 	}
 }
 
 func (c *rpcCollector) decRequestsProcessingTotal(role string, labels map[string]string) {
 	switch role {
-	case providerField:
+	case constant.SideProvider:
 		c.metricSet.provider.requestsProcessingTotal.Dec(labels)
-	case consumerField:
+	case constant.SideConsumer:
 		c.metricSet.consumer.requestsProcessingTotal.Dec(labels)
 	}
 }
 
 func (c *rpcCollector) incRequestsSucceedTotal(role string, labels map[string]string) {
 	switch role {
-	case providerField:
+	case constant.SideProvider:
 		c.metricSet.provider.requestsSucceedTotal.Inc(labels)
 		c.metricSet.provider.requestsSucceedTotalAggregate.Inc(labels)
-	case consumerField:
+	case constant.SideConsumer:
 		c.metricSet.consumer.requestsSucceedTotal.Inc(labels)
 		c.metricSet.consumer.requestsSucceedTotalAggregate.Inc(labels)
 	}
 }
 
+func (c *rpcCollector) incRequestsFailedTotal(role string, labels map[string]string) {
+	switch role {
+	case constant.SideProvider:
+		c.metricSet.provider.requestsFailedTotal.Inc(labels)
+		c.metricSet.provider.requestsFailedTotalAggregate.Inc(labels)
+	case constant.SideConsumer:
+		c.metricSet.consumer.requestsFailedTotal.Inc(labels)
+		c.metricSet.consumer.requestsFailedTotalAggregate.Inc(labels)
+	}
+}
+
 func (c *rpcCollector) reportRTMilliseconds(role string, labels map[string]string, cost int64) {
 	switch role {
-	case providerField:
+	case constant.SideProvider:
 		c.metricSet.provider.rtMilliseconds.Record(labels, float64(cost))
 		c.metricSet.provider.rtMillisecondsAggregate.Record(labels, float64(cost))
 		c.metricSet.provider.rtMillisecondsQuantiles.Record(labels, float64(cost))
-	case consumerField:
+	case constant.SideConsumer:
 		c.metricSet.consumer.rtMilliseconds.Record(labels, float64(cost))
 		c.metricSet.consumer.rtMillisecondsAggregate.Record(labels, float64(cost))
 		c.metricSet.consumer.rtMillisecondsQuantiles.Record(labels, float64(cost))

@@ -18,10 +18,6 @@
 package config_center
 
 import (
-	"time"
-)
-
-import (
 	gxset "github.com/dubbogo/gost/container/set"
 )
 
@@ -60,29 +56,6 @@ type DynamicConfiguration interface {
 
 	// GetConfigKeysByGroup will return all keys with the group
 	GetConfigKeysByGroup(group string) (*gxset.HashSet, error)
-}
-
-// Options ...
-type Options struct {
-	Group   string
-	Timeout time.Duration
-}
-
-// Option ...
-type Option func(*Options)
-
-// WithGroup assigns group to opt.Group
-func WithGroup(group string) Option {
-	return func(opt *Options) {
-		opt.Group = group
-	}
-}
-
-// WithTimeout assigns time to opt.Timeout
-func WithTimeout(time time.Duration) Option {
-	return func(opt *Options) {
-		opt.Timeout = time
-	}
 }
 
 // GetRuleKey The format is '{interfaceName}:[version]:[group]'

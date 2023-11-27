@@ -40,6 +40,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
 	"dubbo.apache.org/dubbo-go/v3/registry"
+	"dubbo.apache.org/dubbo-go/v3/registry/directory"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
@@ -55,6 +56,7 @@ func referNormal(t *testing.T, regProtocol *registryProtocol) {
 	extension.SetRegistry("mock", registry.NewMockRegistry)
 	extension.SetProtocol(protocolwrapper.FILTER, protocolwrapper.NewMockProtocolFilter)
 	extension.SetCluster("mock", cluster.NewMockCluster)
+	extension.SetDirectory("mock", directory.NewRegistryDirectory)
 
 	url, _ := common.NewURL("mock://127.0.0.1:1111")
 	suburl, _ := common.NewURL(

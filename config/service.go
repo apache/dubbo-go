@@ -106,3 +106,10 @@ func GetCallback(name string) func(response common.CallbackResponse) {
 	}
 	return nil
 }
+
+// SetClientInfoService is used by new Triple generated code
+// use interface{} to represent info because config package can not depend on client package.
+// When refactoring work finished, this info should be with *client.ClientInfo type and this
+// function would be implemented.
+// todo(DMWangnima): refactor and implement this function
+func SetClientInfoService(info interface{}, service common.RPCService) {}

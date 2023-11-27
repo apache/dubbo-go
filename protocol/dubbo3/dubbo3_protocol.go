@@ -40,7 +40,6 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
@@ -49,7 +48,8 @@ import (
 var protocolOnce sync.Once
 
 func init() {
-	extension.SetProtocol(tripleConstant.TRIPLE, GetProtocol)
+	// todo(DMwangnima): deprecated
+	//extension.SetProtocol(tripleConstant.TRIPLE, GetProtocol)
 	protocolOnce = sync.Once{}
 }
 

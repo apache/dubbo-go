@@ -460,3 +460,10 @@ func TestNewReferenceConfigBuilder(t *testing.T) {
 	invoker := config.GetInvoker()
 	assert.Nil(t, invoker)
 }
+
+func TestReferenceConfigInitWithoutConsumerConfig(t *testing.T) {
+	testRootConfig := NewRootConfigBuilder().Build()
+	testRootConfig.Consumer = nil
+	err := NewReferenceConfigBuilder().Build().Init(testRootConfig)
+	assert.Nil(t, err)
+}

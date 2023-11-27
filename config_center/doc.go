@@ -15,5 +15,5 @@
  * limitations under the License.
  */
 
-// Package config_center defines interfaces to be implemented by Config Center driver.
+// Package config_center provides Config Center definition and implementations for listening service governance rules.
 package config_center

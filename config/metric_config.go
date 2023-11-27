@@ -18,49 +18,70 @@
 package config
 
 import (
-	"github.com/creasty/defaults"
+	"strconv"
+)
 
-	"github.com/dubbogo/gost/log/logger"
+import (
+	"github.com/creasty/defaults"
 
 	"github.com/pkg/errors"
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 )
 
-// MetricConfig This is the config struct for all metrics implementation
-type MetricConfig struct {
-	Mode               string `default:"pull" yaml:"mode" json:"mode,omitempty" property:"mode"` // push or pull,
-	Namespace          string `default:"dubbo" yaml:"namespace" json:"namespace,omitempty" property:"namespace"`
-	Enable             *bool  `default:"false" yaml:"enable" json:"enable,omitempty" property:"enable"`
-	Port               string `default:"9090" yaml:"port" json:"port,omitempty" property:"port"`
-	Path               string `default:"/metrics" yaml:"path" json:"path,omitempty" property:"path"`
-	PushGatewayAddress string `default:"" yaml:"push-gateway-address" json:"push-gateway-address,omitempty" property:"push-gateway-address"`
-	SummaryMaxAge      int64  `default:"600000000000" yaml:"summary-max-age" json:"summary-max-age,omitempty" property:"summary-max-age"`
-	Protocol           string `default:"prometheus" yaml:"protocol" json:"protocol,omitempty" property:"protocol"`
+// MetricsConfig This is the config struct for all metrics implementation
+type MetricsConfig struct {
+	Enable             *bool             `default:"false" yaml:"enable" json:"enable,omitempty" property:"enable"`
+	Port               string            `default:"9090" yaml:"port" json:"port,omitempty" property:"port"`
+	Path               string            `default:"/metrics" yaml:"path" json:"path,omitempty" property:"path"`
+	Protocol           string            `default:"prometheus" yaml:"protocol" json:"protocol,omitempty" property:"protocol"`
+	EnableMetadata     *bool             `default:"false" yaml:"enable-metadata" json:"enable-metadata,omitempty" property:"enable-metadata"`
+	EnableRegistry     *bool             `default:"false" yaml:"enable-registry" json:"enable-registry,omitempty" property:"enable-registry"`
+	EnableConfigCenter *bool             `default:"false" yaml:"enable-config-center" json:"enable-config-center,omitempty" property:"enable-config-center"`
+	Prometheus         *PrometheusConfig `yaml:"prometheus" json:"prometheus" property:"prometheus"`
+	Aggregation        *AggregateConfig  `yaml:"aggregation" json:"aggregation" property:"aggregation"`
+	rootConfig         *RootConfig
 }
 
-func (mc *MetricConfig) ToReporterConfig() *metrics.ReporterConfig {
+type AggregateConfig struct {
+	Enabled           *bool `default:"false" yaml:"enabled" json:"enabled,omitempty" property:"enabled"`
+	BucketNum         int   `default:"10" yaml:"bucket-num" json:"bucket-num,omitempty" property:"bucket-num"`
+	TimeWindowSeconds int   `default:"120" yaml:"time-window-seconds" json:"time-window-seconds,omitempty" property:"time-window-seconds"`
+}
+
+type PrometheusConfig struct {
+	Exporter    *Exporter          `yaml:"exporter" json:"exporter,omitempty" property:"exporter"`
+	Pushgateway *PushgatewayConfig `yaml:"pushgateway" json:"pushgateway,omitempty" property:"pushgateway"`
+}
+
+type Exporter struct {
+	Enabled *bool `default:"true" yaml:"enabled" json:"enabled,omitempty" property:"enabled"`
+}
+
+type PushgatewayConfig struct {
+	Enabled      *bool  `default:"false" yaml:"enabled" json:"enabled,omitempty" property:"enabled"`
+	BaseUrl      string `default:"" yaml:"base-url" json:"base-url,omitempty" property:"base-url"`
+	Job          string `default:"default_dubbo_job" yaml:"job" json:"job,omitempty" property:"job"`
+	Username     string `default:"" yaml:"username" json:"username,omitempty" property:"username"`
+	Password     string `default:"" yaml:"password" json:"password,omitempty" property:"password"`
+	PushInterval int    `default:"30" yaml:"push-interval" json:"push-interval,omitempty" property:"push-interval"`
+}
+
+func (mc *MetricsConfig) ToReporterConfig() *metrics.ReporterConfig {
 	defaultMetricsReportConfig := metrics.NewReporterConfig()
-	if mc.Mode == metrics.ReportModePush {
-		defaultMetricsReportConfig.Mode = metrics.ReportModePush
-	}
-	if mc.Namespace != "" {
-		defaultMetricsReportConfig.Namespace = mc.Namespace
-	}
 
 	defaultMetricsReportConfig.Enable = *mc.Enable
 	defaultMetricsReportConfig.Port = mc.Port
 	defaultMetricsReportConfig.Path = mc.Path
-	defaultMetricsReportConfig.PushGatewayAddress = mc.PushGatewayAddress
-	defaultMetricsReportConfig.SummaryMaxAge = mc.SummaryMaxAge
 	defaultMetricsReportConfig.Protocol = mc.Protocol
 	return defaultMetricsReportConfig
 }
 
-func (mc *MetricConfig) Init() error {
+func (mc *MetricsConfig) Init(rc *RootConfig) error {
 	if mc == nil {
 		return errors.New("metrics config is null")
 	}
@@ -70,33 +91,75 @@ func (mc *MetricConfig) Init() error {
 	if err := verify(mc); err != nil {
 		return err
 	}
-	metrics.InitAppInfo(GetRootConfig().Application.Name, GetRootConfig().Application.Version)
-	config := mc.ToReporterConfig()
-	extension.GetMetricReporter(mc.Protocol, config)
-	metrics.Init(config)
+	mc.rootConfig = rc
+	if *mc.Enable {
+		metrics.Init(mc.toURL())
+	}
 	return nil
 }
 
 type MetricConfigBuilder struct {
-	metricConfig *MetricConfig
+	metricConfig *MetricsConfig
 }
 
 func NewMetricConfigBuilder() *MetricConfigBuilder {
-	return &MetricConfigBuilder{metricConfig: &MetricConfig{}}
+	return &MetricConfigBuilder{metricConfig: &MetricsConfig{}}
 }
 
-func (mcb *MetricConfigBuilder) Build() *MetricConfig {
+func (mcb *MetricConfigBuilder) SetMetadataEnabled(enabled bool) *MetricConfigBuilder {
+	mcb.metricConfig.EnableMetadata = &enabled
+	return mcb
+}
+
+func (mcb *MetricConfigBuilder) SetRegistryEnabled(enabled bool) *MetricConfigBuilder {
+	mcb.metricConfig.EnableRegistry = &enabled
+	return mcb
+}
+
+func (mcb *MetricConfigBuilder) SetConfigCenterEnabled(enabled bool) *MetricConfigBuilder {
+	mcb.metricConfig.EnableConfigCenter = &enabled
+	return mcb
+}
+
+func (mcb *MetricConfigBuilder) Build() *MetricsConfig {
 	return mcb.metricConfig
 }
 
 // DynamicUpdateProperties dynamically update properties.
-func (mc *MetricConfig) DynamicUpdateProperties(newMetricConfig *MetricConfig) {
-	if newMetricConfig != nil {
-		if newMetricConfig.Enable != mc.Enable {
-			mc.Enable = newMetricConfig.Enable
-			logger.Infof("MetricConfig's Enable was dynamically updated, new value:%v", mc.Enable)
+func (mc *MetricsConfig) DynamicUpdateProperties(newMetricConfig *MetricsConfig) {
+	// TODO update
+}
 
-			extension.GetMetricReporter(mc.Protocol, mc.ToReporterConfig())
+// prometheus://localhost:9090?&histogram.enabled=false&prometheus.exporter.enabled=false
+func (mc *MetricsConfig) toURL() *common.URL {
+	url, _ := common.NewURL("localhost", common.WithProtocol(mc.Protocol))
+	url.SetParam(constant.PrometheusExporterMetricsPortKey, mc.Port)
+	url.SetParam(constant.PrometheusExporterMetricsPathKey, mc.Path)
+	url.SetParam(constant.ApplicationKey, mc.rootConfig.Application.Name)
+	url.SetParam(constant.AppVersionKey, mc.rootConfig.Application.Version)
+	url.SetParam(constant.RpcEnabledKey, strconv.FormatBool(*mc.Enable))
+	url.SetParam(constant.MetadataEnabledKey, strconv.FormatBool(*mc.EnableMetadata))
+	url.SetParam(constant.RegistryEnabledKey, strconv.FormatBool(*mc.EnableRegistry))
+	url.SetParam(constant.ConfigCenterEnabledKey, strconv.FormatBool(*mc.EnableConfigCenter))
+	if mc.Aggregation != nil {
+		url.SetParam(constant.AggregationEnabledKey, strconv.FormatBool(*mc.Aggregation.Enabled))
+		url.SetParam(constant.AggregationBucketNumKey, strconv.Itoa(mc.Aggregation.BucketNum))
+		url.SetParam(constant.AggregationTimeWindowSecondsKey, strconv.Itoa(mc.Aggregation.TimeWindowSeconds))
+	}
+	if mc.Prometheus != nil {
+		if mc.Prometheus.Exporter != nil {
+			exporter := mc.Prometheus.Exporter
+			url.SetParam(constant.PrometheusExporterEnabledKey, strconv.FormatBool(*exporter.Enabled))
+		}
+		if mc.Prometheus.Pushgateway != nil {
+			pushGateWay := mc.Prometheus.Pushgateway
+			url.SetParam(constant.PrometheusPushgatewayEnabledKey, strconv.FormatBool(*pushGateWay.Enabled))
+			url.SetParam(constant.PrometheusPushgatewayBaseUrlKey, pushGateWay.BaseUrl)
+			url.SetParam(constant.PrometheusPushgatewayUsernameKey, pushGateWay.Username)
+			url.SetParam(constant.PrometheusPushgatewayPasswordKey, pushGateWay.Password)
+			url.SetParam(constant.PrometheusPushgatewayPushIntervalKey, strconv.Itoa(pushGateWay.PushInterval))
+			url.SetParam(constant.PrometheusPushgatewayJobKey, pushGateWay.Job)
 		}
 	}
+	return url
 }

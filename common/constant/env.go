@@ -19,6 +19,7 @@ package constant
 
 // nolint
 const (
+	DefaultDubboApp      = "dubbo.io"
 	ConfigFileEnvKey     = "DUBBO_GO_CONFIG_PATH" // key of environment variable dubbogo configure file path
 	AppLogConfFile       = "AppLogConfFile"
 	PodNameEnvKey        = "POD_NAME"

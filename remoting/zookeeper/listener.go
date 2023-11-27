@@ -69,10 +69,10 @@ func (l *ZkEventListener) ListenServiceNodeEvent(zkPath string, listener remotin
 		defer l.wg.Done()
 		if l.listenServiceNodeEvent(zkPath, listener) {
 			listener.DataChange(remoting.Event{Path: zkPath, Action: remoting.EventTypeDel})
-			l.pathMapLock.Lock()
-			delete(l.pathMap, zkPath)
-			l.pathMapLock.Unlock()
 		}
+		l.pathMapLock.Lock()
+		delete(l.pathMap, zkPath)
+		l.pathMapLock.Unlock()
 		logger.Warnf("ListenServiceNodeEvent->listenSelf(zk path{%s}) goroutine exit now", zkPath)
 	}(zkPath, listener)
 }
@@ -130,7 +130,6 @@ func (l *ZkEventListener) ListenConfigurationEvent(zkPath string, listener remot
 
 // nolint
 func (l *ZkEventListener) listenServiceNodeEvent(zkPath string, listener ...remoting.DataListener) bool {
-
 	l.pathMapLock.Lock()
 	a, ok := l.pathMap[zkPath]
 	if !ok || a.Load() > 1 {
@@ -220,10 +219,10 @@ func (l *ZkEventListener) handleZkNodeEvent(zkPath string, children []string, li
 			if l.listenServiceNodeEvent(node, listener) {
 				logger.Warnf("delete zkNode{%s}", node)
 				listener.DataChange(remoting.Event{Path: node, Action: remoting.EventTypeDel})
-				l.pathMapLock.Lock()
-				delete(l.pathMap, zkPath)
-				l.pathMapLock.Unlock()
 			}
+			l.pathMapLock.Lock()
+			delete(l.pathMap, zkPath)
+			l.pathMapLock.Unlock()
 			logger.Debugf("handleZkNodeEvent->listenSelf(zk path{%s}) goroutine exit now", node)
 		}(newNode, listener)
 	}
@@ -379,6 +378,17 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkRootPath string, li
 			l.pathMapLock.Unlock()
 			if ok {
 				logger.Warnf("[Zookeeper EventListener][listenDirEvent] The child with zk path {%s} has already been listened.", zkNodePath)
+				l.Client.RLock()
+				if l.Client.Conn == nil {
+					l.Client.RUnlock()
+					break
+				}
+				content, _, err := l.Client.Conn.Get(zkNodePath)
+				l.Client.RUnlock()
+				if err != nil {
+					logger.Errorf("[Zookeeper EventListener][listenDirEvent] Get content of the child node {%v} failed, the error is %+v", zkNodePath, perrors.WithStack(err))
+				}
+				listener.DataChange(remoting.Event{Path: zkNodePath, Action: remoting.EventTypeAdd, Content: string(content)})
 				continue
 			}
 			// When Zk disconnected, the Conn will be set to nil, so here need check the value of Conn
@@ -402,10 +412,10 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkRootPath string, li
 				defer l.wg.Done()
 				if l.listenServiceNodeEvent(zkPath, listener) {
 					listener.DataChange(remoting.Event{Path: zkPath, Action: remoting.EventTypeDel})
-					l.pathMapLock.Lock()
-					delete(l.pathMap, zkPath)
-					l.pathMapLock.Unlock()
 				}
+				l.pathMapLock.Lock()
+				delete(l.pathMap, zkPath)
+				l.pathMapLock.Unlock()
 				logger.Warnf("listenDirEvent->listenSelf(zk path{%s}) goroutine exit now", zkPath)
 			}(zkNodePath, listener)
 		}

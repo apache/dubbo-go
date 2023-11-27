@@ -15,35 +15,32 @@
  * limitations under the License.
  */
 
-package extension
+package main
 
 import (
-	"testing"
+	"dubbo.apache.org/dubbo-go/v3/client"
+	_ "dubbo.apache.org/dubbo-go/v3/imports"
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/client/common"
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto/triple_gen/greettriple"
+	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
-import (
-	"github.com/stretchr/testify/assert"
-)
+func main() {
+	// for the most brief RPC case with Registry
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/metrics"
-)
+	cli, err := client.NewClient(
+		client.WithClientRegistry(
+			registry.WithZookeeper(),
+			registry.WithAddress("127.0.0.1:2181"),
+		),
+	)
+	if err != nil {
+		panic(err)
+	}
+	svc, err := greettriple.NewGreetService(cli)
+	if err != nil {
+		panic(err)
+	}
 
-func TestGetMetricReporter(t *testing.T) {
-	reporter := &mockReporter{}
-	name := "mock"
-	SetMetricReporter(name, func(config *metrics.ReporterConfig) metrics.Reporter {
-		return reporter
-	})
-	res := GetMetricReporter(name, metrics.NewReporterConfig())
-	assert.Equal(t, reporter, res)
-}
-
-type mockReporter struct{}
-
-// implement the interface of Reporter
-func (m *mockReporter) StartServer(config *metrics.ReporterConfig) {
-}
-
-func (m *mockReporter) ShutdownServer() {
+	common.TestClient(svc)
 }
