@@ -74,15 +74,17 @@ func NewMetadataInfWithApp(app string) *MetadataInfo {
 // nolint
 func NewMetadataInfo(app string, revision string, services map[string]*ServiceInfo) *MetadataInfo {
 	return &MetadataInfo{
-		App:      app,
-		Revision: revision,
-		Services: services,
-		Reported: false,
+		App:                   app,
+		Revision:              revision,
+		Services:              services,
+		Reported:              false,
+		exportedServiceURLs:   make(map[string][]*common.URL),
+		subscribedServiceURLs: make(map[string][]*common.URL),
 	}
 }
 
 // nolint
-func (mi *MetadataInfo) JavaClassName() string {
+func (info *MetadataInfo) JavaClassName() string {
 	return "org.apache.dubbo.metadata.MetadataInfo"
 }
 
@@ -90,16 +92,16 @@ func (mi *MetadataInfo) JavaClassName() string {
 // so that we should use interface + method name as identifier and ignore the method params
 // in my opinion, it's enough because Dubbo actually ignore the URL params.
 // please refer org.apache.dubbo.common.URL#toParameterString(java.lang.String...)
-func (mi *MetadataInfo) CalAndGetRevision() string {
-	if mi.Revision != "" && mi.Reported {
-		return mi.Revision
+func (info *MetadataInfo) CalAndGetRevision() string {
+	if info.Revision != "" && info.Reported {
+		return info.Revision
 	}
-	if len(mi.Services) == 0 {
+	if len(info.Services) == 0 {
 		return "0"
 	}
 	candidates := make([]string, 0, 8)
 
-	for _, s := range mi.Services {
+	for _, s := range info.Services {
 		iface := s.URL.GetParam(constant.InterfaceKey, "")
 		ms := s.URL.Methods
 		if len(ms) == 0 {
@@ -120,27 +122,29 @@ func (mi *MetadataInfo) CalAndGetRevision() string {
 	for _, c := range candidates {
 		res += uint64(crc32.ChecksumIEEE([]byte(c)))
 	}
-	mi.Revision = fmt.Sprint(res)
-	return mi.Revision
+	info.Revision = fmt.Sprint(res)
+	return info.Revision
 
 }
 
 // nolint
-func (mi *MetadataInfo) HasReported() bool {
-	return mi.Reported
+func (info *MetadataInfo) HasReported() bool {
+	return info.Reported
 }
 
 // nolint
-func (mi *MetadataInfo) MarkReported() {
-	mi.Reported = true
+func (info *MetadataInfo) MarkReported() {
+	info.Reported = true
 }
 
-// nolint
 // AddService add provider service info to MetadataInfo
-func (mi *MetadataInfo) AddService(url *common.URL) {
+func (info *MetadataInfo) AddService(url *common.URL) {
 	service := NewServiceInfoWithURL(url)
-	mi.Services[service.GetMatchKey()] = service
-	addUrl(mi.exportedServiceURLs, url)
+	info.Services[service.GetMatchKey()] = service
+	addUrl(info.exportedServiceURLs, url)
+	if info.App == "" {
+		info.App = url.GetParam(constant.ApplicationKey, "")
+	}
 }
 
 func addUrl(m map[string][]*common.URL, url *common.URL) {
@@ -151,27 +155,37 @@ func addUrl(m map[string][]*common.URL, url *common.URL) {
 }
 
 func removeUrl(m map[string][]*common.URL, url *common.URL) {
-	// if _, ok := m[url.ServiceKey()]; ok {
-	// 	m[url.ServiceKey()].Remove(url)
-	// 	if m[url.ServiceKey()].Size() == 0 {
-	// 		delete(m, url.ServiceKey())
-	// 	}
-	// }
+	if urls, ok := m[url.ServiceKey()]; ok {
+		for i, u := range urls {
+			if u == url {
+				m[url.ServiceKey()] = deleteItem(urls, i)
+				break
+			}
+		}
+		if len(m[url.ServiceKey()]) == 0 {
+			delete(m, url.ServiceKey())
+		}
+	}
 }
 
-// nolint
-func (mi *MetadataInfo) RemoveService(url *common.URL) {
+func deleteItem(slice []*common.URL, index int) []*common.URL {
+	copy(slice[index:], slice[index+1:])
+	slice = slice[:len(slice)-1]
+	return slice
+}
+
+func (info *MetadataInfo) RemoveService(url *common.URL) {
 	service := NewServiceInfoWithURL(url)
-	delete(mi.Services, service.GetMatchKey())
-	removeUrl(mi.exportedServiceURLs, url)
+	delete(info.Services, service.GetMatchKey())
+	removeUrl(info.exportedServiceURLs, url)
 }
 
-// 客户端 订阅一个 服务的 url 元数据
+// AddSubscribeURL client subscribe a service url
 func (info *MetadataInfo) AddSubscribeURL(url *common.URL) {
 	addUrl(info.subscribedServiceURLs, url)
 }
 
-// 客户端 删除一个订阅的服务 url 元数据
+// RemoveSubscribeURL client unsubscribe a service url
 func (info *MetadataInfo) RemoveSubscribeURL(url *common.URL) {
 	removeUrl(info.subscribedServiceURLs, url)
 }

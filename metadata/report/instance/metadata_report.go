@@ -47,7 +47,7 @@ var (
 func Init(urls []*common.URL, metaType string) {
 	once.Do(func() {
 		metadataType = metaType
-		if len(urls) == 0 {
+		if len(urls) != 0 {
 			for _, url := range urls {
 				fac := extension.GetMetadataReportFactory(url.Protocol)
 				if fac != nil {

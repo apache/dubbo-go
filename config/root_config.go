@@ -18,6 +18,7 @@
 package config
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/registry/servicediscovery"
 	"sync"
 )
 
@@ -33,6 +34,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
+	"dubbo.apache.org/dubbo-go/v3/metadata"
 )
 
 var (
@@ -203,6 +205,11 @@ func (rc *RootConfig) Start() {
 		gracefulShutdownInit()
 		rc.Consumer.Load()
 		rc.Provider.Load()
+		metadata.ExportMetadataService(rc.Application.Name, rc.Application.MetadataType)
+		err := servicediscovery.RegisterServiceInstance()
+		if err != nil {
+			panic(err)
+		}
 	})
 }
 

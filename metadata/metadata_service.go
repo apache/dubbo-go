@@ -39,16 +39,16 @@ const (
 // usually the implementation should be singleton
 type MetadataService interface {
 	// GetExportedURLs will get the target exported url in metadata, the url should be unique
-	GetExportedURLs(serviceInterface string, group string, version string, protocol string) []*common.URL
+	GetExportedURLs(serviceInterface string, group string, version string, protocol string) ([]*common.URL, error)
 	// GetExportedServiceURLs will return exported service urls
-	GetExportedServiceURLs() []*common.URL
+	GetExportedServiceURLs() ([]*common.URL, error)
 	// GetSubscribedURLs will get the exported urls in metadata
-	GetSubscribedURLs() []*common.URL
-	Version() string
+	GetSubscribedURLs() ([]*common.URL, error)
+	Version() (string, error)
 	// GetMetadataInfo will return metadata info
-	GetMetadataInfo(revision string) *info.MetadataInfo
+	GetMetadataInfo(revision string) (*info.MetadataInfo, error)
 	// GetMetadataServiceURL will return the url of metadata service
-	GetMetadataServiceURL() *common.URL
+	GetMetadataServiceURL() (*common.URL, error)
 	// SetMetadataServiceURL exporter to set url of metadata service
 	SetMetadataServiceURL(*common.URL)
 }
@@ -59,20 +59,23 @@ type ServiceExporter interface {
 }
 
 // MetadataService is store and query the metadata info in memory when each service registry
-type metadataService struct {
+type DefaultMetadataService struct {
 	url *common.URL
 }
 
-func (mts *metadataService) SetMetadataServiceURL(url *common.URL) {
+func (mts *DefaultMetadataService) SetMetadataServiceURL(url *common.URL) {
 	mts.url = url
 }
 
 // GetExportedURLs get all exported urls
-func (mts *metadataService) GetExportedURLs(serviceInterface string, group string, version string, protocol string) []*common.URL {
+func (mts *DefaultMetadataService) GetExportedURLs(serviceInterface string, group string, version string, protocol string) ([]*common.URL, error) {
 	if allServiceInterfaces == serviceInterface {
 		return mts.GetExportedServiceURLs()
 	}
-	all := mts.GetExportedServiceURLs()
+	all, err := mts.GetExportedServiceURLs()
+	if err != nil {
+		return nil, err
+	}
 	urls := make([]*common.URL, 0)
 	for _, url := range all {
 		if url.GetParam(constant.InterfaceKey, "") == serviceInterface &&
@@ -82,25 +85,25 @@ func (mts *metadataService) GetExportedURLs(serviceInterface string, group strin
 			urls = append(urls, url)
 		}
 	}
-	return urls
+	return urls, nil
 }
 
 // GetMetadataInfo can get metadata in memory
-func (mts *metadataService) GetMetadataInfo(revision string) *info.MetadataInfo {
+func (mts *DefaultMetadataService) GetMetadataInfo(revision string) (*info.MetadataInfo, error) {
 	if revision == "" {
-		return nil
+		return nil, nil
 	}
 	for _, sd := range mts.getServiceDiscoveryMetadata() {
 		meta := sd.GetLocalMetadata()
 		if meta.Revision == revision {
-			return meta
+			return meta, nil
 		}
 	}
 	logger.Warnf("metadata not found for revision: %s", revision)
-	return nil
+	return nil, nil
 }
 
-func (mts *metadataService) getServiceDiscoveryMetadata() []registry.ServiceDiscoveryRegistry {
+func (mts *DefaultMetadataService) getServiceDiscoveryMetadata() []registry.ServiceDiscoveryRegistry {
 	sds := make([]registry.ServiceDiscoveryRegistry, 0)
 	p := extension.GetProtocol(constant.RegistryProtocol)
 	if factory, ok := p.(registry.RegistryFactory); ok {
@@ -114,34 +117,34 @@ func (mts *metadataService) getServiceDiscoveryMetadata() []registry.ServiceDisc
 }
 
 // GetExportedServiceURLs get exported service urls
-func (mts *metadataService) GetExportedServiceURLs() []*common.URL {
+func (mts *DefaultMetadataService) GetExportedServiceURLs() ([]*common.URL, error) {
 	urls := make([]*common.URL, 0)
 	for _, sd := range mts.getServiceDiscoveryMetadata() {
 		urls = append(urls, sd.GetLocalMetadata().GetExportedServiceURLs()...)
 	}
-	return urls
+	return urls, nil
 }
 
 // Version will return the version of metadata service
-func (mts *metadataService) Version() string {
-	return version
+func (mts *DefaultMetadataService) Version() (string, error) {
+	return version, nil
 }
 
 // GetMetadataServiceURL get url of MetadataService
-func (mts *metadataService) GetMetadataServiceURL() *common.URL {
-	return mts.url
+func (mts *DefaultMetadataService) GetMetadataServiceURL() (*common.URL, error) {
+	return mts.url, nil
 }
 
-func (mts *metadataService) GetSubscribedURLs() []*common.URL {
+func (mts *DefaultMetadataService) GetSubscribedURLs() ([]*common.URL, error) {
 	urls := make([]*common.URL, 0)
 	for _, sd := range mts.getServiceDiscoveryMetadata() {
 		urls = append(urls, sd.GetLocalMetadata().GetSubscribedURLs()...)
 	}
-	return urls
+	return urls, nil
 }
 
 // MethodMapper only for rename exported function, for example: rename the function GetMetadataInfo to getMetadataInfo
-func (mts *metadataService) MethodMapper() map[string]string {
+func (mts *DefaultMetadataService) MethodMapper() map[string]string {
 	return map[string]string{
 		"GetExportedURLs": "getExportedURLs",
 		"GetMetadataInfo": "getMetadataInfo",

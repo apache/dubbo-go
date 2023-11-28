@@ -28,13 +28,13 @@ import (
 )
 
 var (
-	GlobalMetadataService MetadataService = &metadataService{}
+	GlobalMetadataService MetadataService = &DefaultMetadataService{}
 	exportOnce            sync.Once
 	Factory               ExporterFactory
 )
 
 // ExporterFactory to create ServiceExporter, avoid cycle import
-type ExporterFactory func(app, metadataType string) ServiceExporter
+type ExporterFactory func(app, metadataType string, service MetadataService) ServiceExporter
 
 func SetExporterFactory(factory ExporterFactory) {
 	Factory = factory
@@ -44,7 +44,7 @@ func ExportMetadataService(app, metadataType string) {
 	if Factory != nil {
 		exportOnce.Do(func() {
 			if metadataType != constant.RemoteMetadataStorageType {
-				err := Factory(app, metadataType).Export()
+				err := Factory(app, metadataType, GlobalMetadataService).Export()
 				if err != nil {
 					logger.Errorf("export metadata service failed, got error %#v", err)
 				}

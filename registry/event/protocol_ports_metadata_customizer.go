@@ -48,7 +48,11 @@ func (p *ProtocolPortsMetadataCustomizer) GetPriority() int {
 
 // Customize put the the string like [{"protocol": "dubbo", "port": 123}] into instance's metadata
 func (p *ProtocolPortsMetadataCustomizer) Customize(instance registry.ServiceInstance) {
-	list := metadataService.GlobalMetadataService.GetExportedServiceURLs()
+	list, err := metadataService.GlobalMetadataService.GetExportedServiceURLs()
+	if err != nil {
+		logger.Errorf("get metadata exported service url is error, %v", err)
+		return
+	}
 	if list == nil || len(list) == 0 {
 		logger.Warn("Could not find exported urls")
 		return

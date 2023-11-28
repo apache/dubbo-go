@@ -20,6 +20,7 @@ package servicediscovery
 import (
 	"bytes"
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
+	"dubbo.apache.org/dubbo-go/v3/metadata/report/instance"
 	"strings"
 	"sync"
 	"time"
@@ -108,6 +109,12 @@ func newServiceDiscoveryRegistry(url *common.URL) (registry.Registry, error) {
 }
 
 func (s *serviceDiscoveryRegistry) RegisterService() error {
+	meta := s.serviceMeta.metadataInfo
+	meta.CalAndGetRevision()
+	err := instance.GetMetadataReport().PublishAppMetadata(meta.App, meta.Revision, meta)
+	if err != nil {
+		return err
+	}
 	s.serviceMeta.createInstance()
 	return s.serviceDiscovery.Register(s.serviceMeta.instance)
 }
@@ -146,7 +153,7 @@ func (s *serviceDiscoveryRegistry) UnSubscribe(url *common.URL, listener registr
 	l := s.serviceListeners[serviceNamesKey]
 	l.RemoveListener(url.ServiceKey())
 	s.stopListen(url)
-	err := s.serviceNameMapping.Remove(url)
+	err := s.serviceNameMapping.Remove(url) // TODO check is right
 	if err != nil {
 		return err
 	}
