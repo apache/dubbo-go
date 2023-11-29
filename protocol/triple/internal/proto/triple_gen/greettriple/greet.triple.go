@@ -105,7 +105,7 @@ func SetConsumerService(srv common.RPCService) {
 
 // GreetServiceImpl implements GreetService.
 type GreetServiceImpl struct {
-	conn    *client.Connection
+	conn *client.Connection
 }
 
 func (c *GreetServiceImpl) Greet(ctx context.Context, req *proto.GreetRequest, opts ...client.CallOption) (*proto.GreetResponse, error) {
