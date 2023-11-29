@@ -39,6 +39,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
@@ -54,7 +55,7 @@ func getEnv(key, fallback string) string {
 
 func updateOrCreateMeshURL(opts *ReferenceOptions) {
 	ref := opts.Reference
-	con := opts.cliOpts.Consumer
+	con := opts.Consumer
 
 	if ref.URL != "" {
 		logger.Infof("URL specified explicitly %v", ref.URL)
@@ -98,8 +99,7 @@ func (refOpts *ReferenceOptions) ReferWithServiceAndInfo(srv common.RPCService, 
 
 func (refOpts *ReferenceOptions) refer(srv common.RPCService, info *ClientInfo) {
 	ref := refOpts.Reference
-	clientOpts := refOpts.cliOpts
-	con := clientOpts.Consumer
+	con := refOpts.Consumer
 
 	var methods []string
 	if info != nil {
@@ -107,8 +107,10 @@ func (refOpts *ReferenceOptions) refer(srv common.RPCService, info *ClientInfo) 
 		methods = info.MethodNames
 		refOpts.id = info.InterfaceName
 		refOpts.info = info
-	} else {
+	} else if srv != nil {
 		refOpts.id = common.GetReference(srv)
+	} else {
+		refOpts.id = ref.InterfaceName
 	}
 	// If adaptive service is enabled,
 	// the cluster and load balance should be overridden to "adaptivesvc" and "p2c" respectively.
@@ -139,77 +141,23 @@ func (refOpts *ReferenceOptions) refer(srv common.RPCService, info *ClientInfo) 
 	updateOrCreateMeshURL(refOpts)
 
 	// retrieving urls from config, and appending the urls to refOpts.urls
-	if err := refOpts.processURL(cfgURL); err != nil {
+	urls, err := processURL(ref, refOpts.registriesCompat, cfgURL)
+	if err != nil {
 		panic(err)
 	}
 
-	// Get invokers according to refOpts.urls
-	var (
-		invoker protocol.Invoker
-		regURL  *common.URL
-	)
-	invokers := make([]protocol.Invoker, len(refOpts.urls))
-	for i, u := range refOpts.urls {
-		if u.Protocol == constant.ServiceRegistryProtocol {
-			invoker = extension.GetProtocol(constant.RegistryProtocol).Refer(u)
-		} else {
-			invoker = extension.GetProtocol(u.Protocol).Refer(u)
-		}
-
-		if ref.URL != "" {
-			invoker = protocolwrapper.BuildInvokerChain(invoker, constant.ReferenceFilterKey)
-		}
-
-		invokers[i] = invoker
-		if u.Protocol == constant.RegistryProtocol {
-			regURL = u
-		}
+	// build invoker according to urls
+	invoker, err := buildInvoker(urls, ref)
+	if err != nil {
+		panic(err)
 	}
-
-	// TODO(hxmhlt): decouple from directory, config should not depend on directory module
-	if len(invokers) == 1 {
-		refOpts.invoker = invokers[0]
-		if ref.URL != "" {
-			hitClu := constant.ClusterKeyFailover
-			if u := refOpts.invoker.GetURL(); u != nil {
-				hitClu = u.GetParam(constant.ClusterKey, constant.ClusterKeyZoneAware)
-			}
-			cluster, err := extension.GetCluster(hitClu)
-			if err != nil {
-				panic(err)
-			} else {
-				refOpts.invoker = cluster.Join(static.NewDirectory(invokers))
-			}
-		}
-	} else {
-		var hitClu string
-		if regURL != nil {
-			// for multi-subscription scenario, use 'zone-aware' policy by default
-			hitClu = constant.ClusterKeyZoneAware
-		} else {
-			// not a registry url, must be direct invoke.
-			hitClu = constant.ClusterKeyFailover
-			if u := invokers[0].GetURL(); u != nil {
-				hitClu = u.GetParam(constant.ClusterKey, constant.ClusterKeyZoneAware)
-			}
-		}
-		cluster, err := extension.GetCluster(hitClu)
-		if err != nil {
-			panic(err)
-		} else {
-			refOpts.invoker = cluster.Join(static.NewDirectory(invokers))
-		}
-	}
+	refOpts.urls = urls
+	refOpts.invoker = invoker
 
 	// publish consumer's metadata
 	publishServiceDefinition(cfgURL)
 	// create proxy
-	if info == nil {
-		// todo(DMwangnima): think about a more ideal way
-		if con == nil {
-			panic("client must be configured with ConsumerConfig when using config.Load")
-		}
-
+	if info == nil && srv != nil {
 		if ref.Async {
 			var callback common.CallbackResponse
 			if asyncSrv, ok := srv.(common.AsyncCallbackService); ok {
@@ -226,8 +174,8 @@ func (refOpts *ReferenceOptions) refer(srv common.RPCService, info *ClientInfo) 
 	graceful_shutdown.RegisterProtocol(ref.Protocol)
 }
 
-func (refOpts *ReferenceOptions) processURL(cfgURL *common.URL) error {
-	ref := refOpts.Reference
+func processURL(ref *global.ReferenceConfig, regsCompat map[string]*config.RegistryConfig, cfgURL *common.URL) ([]*common.URL, error) {
+	var urls []*common.URL
 	if ref.URL != "" { // use user-specific urls
 		/*
 			 Two types of URL are allowed for refOpts.URL:
@@ -244,11 +192,11 @@ func (refOpts *ReferenceOptions) processURL(cfgURL *common.URL) error {
 		for _, urlStr := range urlStrings {
 			serviceURL, err := common.NewURL(urlStr, common.WithProtocol(ref.Protocol))
 			if err != nil {
-				return fmt.Errorf(fmt.Sprintf("url configuration error,  please check your configuration, user specified URL %v refer error, error message is %v ", urlStr, err.Error()))
+				return nil, fmt.Errorf(fmt.Sprintf("url configuration error,  please check your configuration, user specified URL %v refer error, error message is %v ", urlStr, err.Error()))
 			}
 			if serviceURL.Protocol == constant.RegistryProtocol { // serviceURL in this branch is a registry protocol
 				serviceURL.SubURL = cfgURL
-				refOpts.urls = append(refOpts.urls, serviceURL)
+				urls = append(urls, serviceURL)
 			} else { // serviceURL in this branch is the target endpoint IP address
 				if serviceURL.Path == "" {
 					serviceURL.Path = "/" + ref.InterfaceName
@@ -257,17 +205,93 @@ func (refOpts *ReferenceOptions) processURL(cfgURL *common.URL) error {
 				// other stuff, e.g. IP, port, etc., are same as serviceURL
 				newURL := common.MergeURL(serviceURL, cfgURL)
 				newURL.AddParam("peer", "true")
-				refOpts.urls = append(refOpts.urls, newURL)
+				urls = append(urls, newURL)
 			}
 		}
 	} else { // use registry configs
-		refOpts.urls = config.LoadRegistries(ref.RegistryIDs, refOpts.registriesCompat, common.CONSUMER)
+		urls = config.LoadRegistries(ref.RegistryIDs, regsCompat, common.CONSUMER)
 		// set url to regURLs
-		for _, regURL := range refOpts.urls {
+		for _, regURL := range urls {
 			regURL.SubURL = cfgURL
 		}
 	}
-	return nil
+	return urls, nil
+}
+
+func buildInvoker(urls []*common.URL, ref *global.ReferenceConfig) (protocol.Invoker, error) {
+	var (
+		invoker protocol.Invoker
+		regURL  *common.URL
+	)
+	invokers := make([]protocol.Invoker, len(urls))
+	for i, u := range urls {
+		if u.Protocol == constant.ServiceRegistryProtocol {
+			invoker = extension.GetProtocol(constant.RegistryProtocol).Refer(u)
+		} else {
+			invoker = extension.GetProtocol(u.Protocol).Refer(u)
+		}
+
+		if ref.URL != "" {
+			invoker = protocolwrapper.BuildInvokerChain(invoker, constant.ReferenceFilterKey)
+		}
+
+		if u.Protocol == constant.RegistryProtocol {
+			regURL = u
+		}
+		invokers[i] = invoker
+	}
+
+	var resInvoker protocol.Invoker
+	// TODO(hxmhlt): decouple from directory, config should not depend on directory module
+	if len(invokers) == 1 {
+		resInvoker = invokers[0]
+		if ref.URL != "" {
+			hitClu := constant.ClusterKeyFailover
+			if u := resInvoker.GetURL(); u != nil {
+				hitClu = u.GetParam(constant.ClusterKey, constant.ClusterKeyZoneAware)
+			}
+			cluster, err := extension.GetCluster(hitClu)
+			if err != nil {
+				return nil, err
+			}
+			resInvoker = cluster.Join(static.NewDirectory(invokers))
+		}
+		return resInvoker, nil
+	}
+
+	var hitClu string
+	if regURL != nil {
+		// for multi-subscription scenario, use 'zone-aware' policy by default
+		hitClu = constant.ClusterKeyZoneAware
+	} else {
+		// not a registry url, must be direct invoke.
+		hitClu = constant.ClusterKeyFailover
+		if u := invokers[0].GetURL(); u != nil {
+			hitClu = u.GetParam(constant.ClusterKey, constant.ClusterKeyZoneAware)
+		}
+	}
+	cluster, err := extension.GetCluster(hitClu)
+	if err != nil {
+		return nil, err
+	}
+	resInvoker = cluster.Join(static.NewDirectory(invokers))
+
+	return resInvoker, nil
+}
+
+func publishServiceDefinition(url *common.URL) {
+	localService, err := extension.GetLocalMetadataService(constant.DefaultKey)
+	if err != nil {
+		logger.Warnf("get local metadata service failed, please check if you have imported _ \"dubbo.apache.org/dubbo-go/v3/metadata/service/local\"")
+		return
+	}
+	localService.PublishServiceDefinition(url)
+	if url.GetParam(constant.MetadataTypeKey, "") != constant.RemoteMetadataStorageType {
+		return
+	}
+	if remoteMetadataService, err := extension.GetRemoteMetadataService(); err == nil && remoteMetadataService != nil {
+		remoteMetadataService.PublishServiceDefinition(url)
+	}
 }
 
 func (refOpts *ReferenceOptions) CheckAvailable() bool {
@@ -288,10 +312,8 @@ func (refOpts *ReferenceOptions) Implement(v common.RPCService) {
 	if refOpts.pxy != nil {
 		refOpts.pxy.Implement(v)
 	} else if refOpts.info != nil {
-		refOpts.info.ClientInjectFunc(v, &Client{
-			cliOpts: refOpts.cliOpts,
-			info:    refOpts.info,
-			refOpts: map[string]*ReferenceOptions{},
+		refOpts.info.ConnectionInjectFunc(v, &Connection{
+			refOpts: refOpts,
 		})
 	}
 }
@@ -309,8 +331,8 @@ func (refOpts *ReferenceOptions) GetProxy() *proxy.Proxy {
 func (refOpts *ReferenceOptions) getURLMap() url.Values {
 	ref := refOpts.Reference
 	app := refOpts.applicationCompat
-	metrics := refOpts.cliOpts.Metrics
-	tracing := refOpts.cliOpts.Otel.TracingConfig
+	metrics := refOpts.Metrics
+	tracing := refOpts.Otel.TracingConfig
 
 	urlMap := url.Values{}
 	// first set user params
@@ -395,20 +417,5 @@ func (refOpts *ReferenceOptions) GetInvoker() protocol.Invoker {
 func (refOpts *ReferenceOptions) postProcessConfig(url *common.URL) {
 	for _, p := range extension.GetConfigPostProcessors() {
 		p.PostProcessReferenceConfig(url)
-	}
-}
-
-func publishServiceDefinition(url *common.URL) {
-	localService, err := extension.GetLocalMetadataService(constant.DefaultKey)
-	if err != nil {
-		logger.Warnf("get local metadata service failed, please check if you have imported _ \"dubbo.apache.org/dubbo-go/v3/metadata/service/local\"")
-		return
-	}
-	localService.PublishServiceDefinition(url)
-	if url.GetParam(constant.MetadataTypeKey, "") != constant.RemoteMetadataStorageType {
-		return
-	}
-	if remoteMetadataService, err := extension.GetRemoteMetadataService(); err == nil && remoteMetadataService != nil {
-		remoteMetadataService.PublishServiceDefinition(url)
 	}
 }

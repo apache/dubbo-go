@@ -50,9 +50,9 @@ type ReferenceConfig struct {
 func DefaultReferenceConfig() *ReferenceConfig {
 	return &ReferenceConfig{
 		// use Triple protocol by default
-		Protocol: "tri",
-		Methods:  make([]*MethodConfig, 0, 8),
-		Params:   make(map[string]string, 8),
+		//Protocol: "tri",
+		Methods: make([]*MethodConfig, 0, 8),
+		//Params:   make(map[string]string, 8),
 	}
 }
 

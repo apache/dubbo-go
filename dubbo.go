@@ -71,7 +71,7 @@ func (ins *Instance) NewClient(opts ...client.ClientOption) (*client.Client, err
 		cliOpts = append(cliOpts,
 			client.WithClientFilter(conCfg.Filter),
 			// todo(DMwangnima): deal with Protocol
-			client.WithClientRegistryIDs(conCfg.RegistryIDs),
+			client.WithClientRegistryIDs(conCfg.RegistryIDs...),
 			// todo(DMwangnima): deal with TracingKey
 			client.SetClientConsumer(conCfg),
 		)

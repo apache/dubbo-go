@@ -18,7 +18,6 @@
 package global
 
 type ConsumerConfig struct {
-	ReferenceConfig
 	Filter          string   `yaml:"filter" json:"filter,omitempty" property:"filter"`
 	RegistryIDs     []string `yaml:"registry-ids" json:"registry-ids,omitempty" property:"registry-ids"`
 	Protocol        string   `yaml:"protocol" json:"protocol,omitempty" property:"protocol"`
@@ -27,16 +26,17 @@ type ConsumerConfig struct {
 	Check           bool     `yaml:"check" json:"check,omitempty" property:"check"`
 	AdaptiveService bool     `default:"false" yaml:"adaptive-service" json:"adaptive-service" property:"adaptive-service"`
 	// there is no need to configure References, it will be replaced by instance.NewClient
-	//References                     map[string]*client.ReferenceConfig `yaml:"references" json:"references,omitempty" property:"references"`
-	TracingKey                     string      `yaml:"tracing-key" json:"tracing-key" property:"tracing-key"`
-	FilterConf                     interface{} `yaml:"filter-conf" json:"filter-conf,omitempty" property:"filter-conf"`
-	MaxWaitTimeForServiceDiscovery string      `default:"3s" yaml:"max-wait-time-for-service-discovery" json:"max-wait-time-for-service-discovery,omitempty" property:"max-wait-time-for-service-discovery"`
-	MeshEnabled                    bool        `yaml:"mesh-enabled" json:"mesh-enabled,omitempty" property:"mesh-enabled"`
+	References                     map[string]*ReferenceConfig `yaml:"references" json:"references,omitempty" property:"references"`
+	TracingKey                     string                      `yaml:"tracing-key" json:"tracing-key" property:"tracing-key"`
+	FilterConf                     interface{}                 `yaml:"filter-conf" json:"filter-conf,omitempty" property:"filter-conf"`
+	MaxWaitTimeForServiceDiscovery string                      `default:"3s" yaml:"max-wait-time-for-service-discovery" json:"max-wait-time-for-service-discovery,omitempty" property:"max-wait-time-for-service-discovery"`
+	MeshEnabled                    bool                        `yaml:"mesh-enabled" json:"mesh-enabled,omitempty" property:"mesh-enabled"`
 }
 
 func DefaultConsumerConfig() *ConsumerConfig {
 	return &ConsumerConfig{
 		RequestTimeout: "3s",
 		Check:          true,
+		References:     make(map[string]*ReferenceConfig),
 	}
 }
