@@ -122,7 +122,6 @@ func (s *Server) Start(invoker protocol.Invoker, info *server.ServiceInfo) {
 			s.saveServiceInfo(info)
 		} else {
 			compatHandleService(URL, mux)
-			//todo: save compatServiceInfo
 		}
 		// todo: figure it out this process
 		reflection.Register(s)
@@ -160,7 +159,6 @@ func (s *Server) RefreshService(invoker protocol.Invoker, info *server.ServiceIn
 		s.saveServiceInfo(info)
 	} else {
 		compatHandleService(URL, mux)
-		//todo: save compatServiceInfo
 	}
 }
 

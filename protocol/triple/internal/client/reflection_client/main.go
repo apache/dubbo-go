@@ -66,7 +66,7 @@ func testReflection(stream reflection.ServerReflection_ServerReflectionInfoClien
 	if err := stream.CloseRequest(); err != nil {
 		logger.Error(err)
 	}
-	if err := stream.CloseRequest(); err != nil {
+	if err := stream.CloseResponse(); err != nil {
 		logger.Error(err)
 	}
 }
