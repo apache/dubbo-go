@@ -33,7 +33,9 @@ import (
 
 var (
 	consumerServices = map[string]*client.ClientDefinition{}
+	conLock          sync.RWMutex
 	providerServices = map[string]*server.ServiceDefinition{}
+	proLock          sync.RWMutex
 	startOnce        sync.Once
 )
 
@@ -191,6 +193,8 @@ func (ins *Instance) loadProvider() error {
 		return err
 	}
 	// register services
+	proLock.RLock()
+	defer proLock.RUnlock()
 	for _, definition := range providerServices {
 		if err = srv.Register(definition.Handler, definition.Info, definition.Opts...); err != nil {
 			return err
@@ -206,6 +210,8 @@ func (ins *Instance) loadConsumer() error {
 		return err
 	}
 	// refer services
+	conLock.RLock()
+	defer conLock.RUnlock()
 	for _, definition := range consumerServices {
 		if _, _, err = cli.Init(definition.Info); err != nil {
 			return err
@@ -217,6 +223,8 @@ func (ins *Instance) loadConsumer() error {
 
 // SetConsumerServiceWithInfo sets the consumer service with the client information.
 func SetConsumerServiceWithInfo(svc common.RPCService, info *client.ClientInfo) {
+	conLock.Lock()
+	defer conLock.Unlock()
 	consumerServices[info.InterfaceName] = &client.ClientDefinition{
 		Svc:  svc,
 		Info: info,
@@ -225,6 +233,8 @@ func SetConsumerServiceWithInfo(svc common.RPCService, info *client.ClientInfo) 
 
 // SetProviderServiceWithInfo sets the provider service with the server information.
 func SetProviderServiceWithInfo(svc common.RPCService, info *server.ServiceInfo) {
+	proLock.Lock()
+	defer proLock.Unlock()
 	providerServices[info.InterfaceName] = &server.ServiceDefinition{
 		Handler: svc,
 		Info:    info,
