@@ -18,11 +18,11 @@
 package dubbo
 
 import (
-	"github.com/dubbogo/gost/log/logger"
 	"sync"
 )
 
 import (
+	"github.com/dubbogo/gost/log/logger"
 	"github.com/pkg/errors"
 )
 
