@@ -35,6 +35,7 @@ import (
 	registry_exposed "dubbo.apache.org/dubbo-go/v3/registry/exposed_tmp"
 )
 
+// proServices are for internal services
 var proServices = map[string]*ServiceDefinition{}
 
 type Server struct {

@@ -48,6 +48,11 @@ type ClientInfo struct {
 	Meta             map[string]interface{}
 }
 
+type ClientDefinition struct {
+	Svc  interface{}
+	Info *ClientInfo
+}
+
 func (cli *Client) call(ctx context.Context, paramsRawVals []interface{}, interfaceName, methodName, callType string, opts ...CallOption) (protocol.Result, error) {
 	// get a default CallOptions
 	// apply CallOption
