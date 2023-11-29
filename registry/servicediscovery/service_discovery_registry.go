@@ -39,10 +39,10 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
 	"dubbo.apache.org/dubbo-go/v3/metadata/report/instance"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
-	metricMetadata "dubbo.apache.org/dubbo-go/v3/metrics/metadata"
+	metricsMetadata "dubbo.apache.org/dubbo-go/v3/metrics/metadata"
 	metricsRegistry "dubbo.apache.org/dubbo-go/v3/metrics/registry"
 	"dubbo.apache.org/dubbo-go/v3/registry"
-	_ "dubbo.apache.org/dubbo-go/v3/registry/event"
+	_ "dubbo.apache.org/dubbo-go/v3/registry/servicediscovery/customizer"
 	"dubbo.apache.org/dubbo-go/v3/registry/servicediscovery/synthesizer"
 )
 
@@ -243,7 +243,7 @@ func (s *serviceDiscoveryRegistry) SubscribeURL(url *common.URL, notify registry
 	}
 	s.serviceListeners[serviceNamesKey] = listener
 	listener.AddListenerAndNotify(protocolServiceKey, notify)
-	event := metricMetadata.NewMetadataMetricTimeEvent(metricMetadata.SubscribeServiceRt)
+	event := metricsMetadata.NewMetadataMetricTimeEvent(metricsMetadata.SubscribeServiceRt)
 
 	logger.Infof("Start subscribing to registry for applications :%s with a new go routine.", serviceNamesKey)
 	go func() {
