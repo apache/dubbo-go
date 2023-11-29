@@ -178,6 +178,7 @@ func TestWithClientRegistry(t *testing.T) {
 				_, ok = cli.cliOpts.registriesCompat[constant.ZookeeperKey]
 				assert.False(t, ok)
 				ncCompat, ok := cli.cliOpts.registriesCompat["nacos_test"]
+				assert.True(t, ok)
 				assert.Equal(t, "127.0.0.1:8848", ncCompat.Address)
 			},
 		},

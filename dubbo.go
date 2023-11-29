@@ -207,7 +207,7 @@ func (ins *Instance) loadProvider() error {
 			logger.Fatalf("Failed to start server, err: %v", err)
 		}
 	}()
-	return err
+	return nil
 }
 
 // loadConsumer loads the service consumer.
@@ -220,13 +220,13 @@ func (ins *Instance) loadConsumer() error {
 	conLock.RLock()
 	defer conLock.RUnlock()
 	for intfName, definition := range consumerServices {
-		conn, err := cli.DialWithInfo(intfName, definition.Info)
-		if err != nil {
-			return err
+		conn, dialErr := cli.DialWithInfo(intfName, definition.Info)
+		if dialErr != nil {
+			return dialErr
 		}
 		definition.Info.ConnectionInjectFunc(definition.Svc, conn)
 	}
-	return err
+	return nil
 }
 
 // SetConsumerServiceWithInfo sets the consumer service with the client information.
