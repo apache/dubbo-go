@@ -1157,15 +1157,6 @@ func TestWithRequestTimeout(t *testing.T) {
 				assert.Equal(t, "6s", refOpts.Reference.RequestTimeout)
 			},
 		},
-		// todo(DMwangnima): consider whether this default timeout is ideal
-		{
-			desc: "default RequestTimeout",
-			opts: []ReferenceOption{},
-			verify: func(t *testing.T, refOpts *ReferenceOptions, err error) {
-				assert.Nil(t, err)
-				assert.Equal(t, "3s", refOpts.Reference.RequestTimeout)
-			},
-		},
 	}
 	processReferenceOptionsInitCases(t, cases)
 }

@@ -15,22 +15,19 @@
  * limitations under the License.
  */
 
-package constant
+package main
 
-// nolint
-const (
-	DefaultDubboApp      = "dubbo.io"
-	ConfigFileEnvKey     = "DUBBO_GO_CONFIG_PATH" // key of environment variable dubbogo configure file path
-	AppLogConfFile       = "AppLogConfFile"
-	PodNameEnvKey        = "POD_NAME"
-	PodNamespaceEnvKey   = "POD_NAMESPACE"
-	ClusterDomainKey     = "CLUSTER_DOMAIN"
-	DefaultClusterDomain = "cluster.local"
-	DefaultNamespace     = "default"
-	SVC                  = "svc"
-	DefaultMeshPort      = 80
-
-	DubboIpToRegistryKey       = "DUBBO_IP_TO_REGISTRY"
-	DubboPortToRegistryKey     = "DUBBO_PORT_TO_REGISTRY"
-	DubboDefaultPortToRegistry = "80"
+import (
+	"dubbo.apache.org/dubbo-go/v3"
+	_ "dubbo.apache.org/dubbo-go/v3/imports"
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto/triple_gen/greettriple"
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/server/api"
 )
+
+func main() {
+	greettriple.SetProviderService(&api.GreetTripleServer{})
+	if err := dubbo.Load(); err != nil {
+		panic(err)
+	}
+	select {}
+}

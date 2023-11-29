@@ -123,8 +123,11 @@ func (refOpts *ReferenceOptions) init(opts ...ReferenceOption) error {
 	}
 
 	// init protocol
-	if ref.Protocol == "" && refOpts.Consumer != nil {
-		ref.Protocol = refOpts.Consumer.Protocol
+	if ref.Protocol == "" {
+		ref.Protocol = "tri"
+		if refOpts.Consumer != nil && refOpts.Consumer.Protocol != "" {
+			ref.Protocol = refOpts.Consumer.Protocol
+		}
 	}
 
 	// init serialization
@@ -310,6 +313,9 @@ func WithAsync() ReferenceOption {
 
 func WithParams(params map[string]string) ReferenceOption {
 	return func(opts *ReferenceOptions) {
+		if len(params) <= 0 {
+			return
+		}
 		opts.Reference.Params = params
 	}
 }

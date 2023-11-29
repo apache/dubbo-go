@@ -203,7 +203,7 @@ func processURL(ref *global.ReferenceConfig, regsCompat map[string]*config.Regis
 				}
 				// replace params of serviceURL with params of cfgUrl
 				// other stuff, e.g. IP, port, etc., are same as serviceURL
-				newURL := common.MergeURL(serviceURL, cfgURL)
+				newURL := serviceURL.MergeURL(cfgURL)
 				newURL.AddParam("peer", "true")
 				urls = append(urls, newURL)
 			}

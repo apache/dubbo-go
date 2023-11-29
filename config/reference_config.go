@@ -220,7 +220,7 @@ func (rc *ReferenceConfig) Refer(srv interface{}) {
 				}
 				// replace params of serviceURL with params of cfgUrl
 				// other stuff, e.g. IP, port, etc., are same as serviceURL
-				newURL := common.MergeURL(serviceURL, cfgURL)
+				newURL := serviceURL.MergeURL(cfgURL)
 				newURL.AddParam("peer", "true")
 				rc.urls = append(rc.urls, newURL)
 			}

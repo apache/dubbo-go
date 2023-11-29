@@ -54,6 +54,9 @@ func (ac *ApplicationConfig) Init() error {
 	if err := ac.check(); err != nil {
 		return err
 	}
+	if ac.Name == "" {
+		ac.Name = constant.DefaultDubboApp
+	}
 	return nil
 }
 

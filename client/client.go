@@ -40,6 +40,11 @@ type ClientInfo struct {
 	Meta                 map[string]interface{}
 }
 
+type ClientDefinition struct {
+	Svc  interface{}
+	Info *ClientInfo
+}
+
 // InterfaceName/group/version /ReferenceConfig
 type Connection struct {
 	refOpts *ReferenceOptions
