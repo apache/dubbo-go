@@ -20,7 +20,6 @@ package server
 
 import (
 	"context"
-	"dubbo.apache.org/dubbo-go/v3/registry/servicediscovery"
 	"fmt"
 	"sync"
 )
@@ -35,6 +34,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/metadata"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/registry/servicediscovery"
 )
 
 // proServices are for internal services

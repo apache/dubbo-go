@@ -2,30 +2,33 @@ package servicediscovery
 
 import (
 	"context"
+	"strconv"
+	"time"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
 	metadataInstance "dubbo.apache.org/dubbo-go/v3/metadata/report/instance"
 	"dubbo.apache.org/dubbo-go/v3/registry"
-	"strconv"
-	"time"
 )
 
-type serviceMeta struct {
+type ServiceMeta struct {
 	metadataInfo *info.MetadataInfo
 	instance     registry.ServiceInstance
 }
 
-func NewServiceMeta(app string) *serviceMeta {
-	return &serviceMeta{metadataInfo: info.NewMetadataInfWithApp(app)}
+func NewServiceMeta() *ServiceMeta {
+	return &ServiceMeta{metadataInfo: info.NewMetadataInfWithApp()}
 }
 
-func (sd *serviceMeta) GetLocalMetadata() *info.MetadataInfo {
+func (sd *ServiceMeta) GetLocalMetadata() *info.MetadataInfo {
 	return sd.metadataInfo
 }
 
-func (sd *serviceMeta) GetRemoteMetadata(revision string, instance registry.ServiceInstance) (*info.MetadataInfo, error) {
+func (sd *ServiceMeta) GetRemoteMetadata(revision string, instance registry.ServiceInstance) (*info.MetadataInfo, error) {
 	meta, err := getMetadataFromCache(revision)
 	if err != nil || meta == nil {
 		meta, err = getMetadataFromMetadataReport(revision, instance)
@@ -37,7 +40,7 @@ func (sd *serviceMeta) GetRemoteMetadata(revision string, instance registry.Serv
 	return meta, err
 }
 
-func (sd *serviceMeta) createInstance() {
+func (sd *ServiceMeta) createInstance() registry.ServiceInstance {
 	metadata := make(map[string]string, 8)
 	metadata[constant.MetadataStorageTypePropertyName] = metadataInstance.GetMetadataType()
 	instance := &registry.DefaultServiceInstance{
@@ -52,9 +55,10 @@ func (sd *serviceMeta) createInstance() {
 		cus.Customize(instance)
 	}
 	sd.instance = instance
+	return instance
 }
 
-//func (sd *serviceMeta) calOrUpdateInstanceRevision(instance registry.ServiceInstance) bool {
+//func (sd *ServiceMeta) calOrUpdateInstanceRevision(instance registry.ServiceInstance) bool {
 //	oldRevision := getRevision(instance)
 //	newRevision := instance.GetServiceMetadata().CalAndGetRevision()
 //	if oldRevision != newRevision {

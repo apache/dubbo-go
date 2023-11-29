@@ -18,7 +18,6 @@
 package event
 
 import (
-	metadataService "dubbo.apache.org/dubbo-go/v3/metadata"
 	"encoding/json"
 	"strconv"
 )
@@ -30,6 +29,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/metadata"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
@@ -48,7 +48,7 @@ func (p *ProtocolPortsMetadataCustomizer) GetPriority() int {
 
 // Customize put the the string like [{"protocol": "dubbo", "port": 123}] into instance's metadata
 func (p *ProtocolPortsMetadataCustomizer) Customize(instance registry.ServiceInstance) {
-	list, err := metadataService.GlobalMetadataService.GetExportedServiceURLs()
+	list, err := metadata.GlobalMetadataService.GetExportedServiceURLs()
 	if err != nil {
 		logger.Errorf("get metadata exported service url is error, %v", err)
 		return

@@ -82,6 +82,4 @@ type ServiceDiscoveryRegistry interface {
 	UnRegisterService() error
 	// GetLocalMetadata get local metadata info
 	GetLocalMetadata() *info.MetadataInfo
-	// GetRemoteMetadata  get remote server metadata info
-	GetRemoteMetadata(revision string, instance ServiceInstance) (*info.MetadataInfo, error)
 }

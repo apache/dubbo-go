@@ -58,7 +58,6 @@ var IncludeKeys = gxset.NewSet(
 
 // MetadataInfo the metadata information of instance
 type MetadataInfo struct {
-	Reported              bool                     `json:"-"`
 	App                   string                   `json:"app,omitempty" hessian:"app"`
 	Revision              string                   `json:"revision,omitempty" hessian:"revision"`
 	Services              map[string]*ServiceInfo  `json:"services,omitempty" hessian:"services"`
@@ -66,24 +65,20 @@ type MetadataInfo struct {
 	subscribedServiceURLs map[string][]*common.URL // client subscribed service urls
 }
 
-// nolint
-func NewMetadataInfWithApp(app string) *MetadataInfo {
-	return NewMetadataInfo(app, "", make(map[string]*ServiceInfo))
+func NewMetadataInfWithApp() *MetadataInfo {
+	return NewMetadataInfo("", "", make(map[string]*ServiceInfo))
 }
 
-// nolint
 func NewMetadataInfo(app string, revision string, services map[string]*ServiceInfo) *MetadataInfo {
 	return &MetadataInfo{
 		App:                   app,
 		Revision:              revision,
 		Services:              services,
-		Reported:              false,
 		exportedServiceURLs:   make(map[string][]*common.URL),
 		subscribedServiceURLs: make(map[string][]*common.URL),
 	}
 }
 
-// nolint
 func (info *MetadataInfo) JavaClassName() string {
 	return "org.apache.dubbo.metadata.MetadataInfo"
 }
@@ -93,7 +88,7 @@ func (info *MetadataInfo) JavaClassName() string {
 // in my opinion, it's enough because Dubbo actually ignore the URL params.
 // please refer org.apache.dubbo.common.URL#toParameterString(java.lang.String...)
 func (info *MetadataInfo) CalAndGetRevision() string {
-	if info.Revision != "" && info.Reported {
+	if info.Revision != "" {
 		return info.Revision
 	}
 	if len(info.Services) == 0 {
@@ -125,16 +120,6 @@ func (info *MetadataInfo) CalAndGetRevision() string {
 	info.Revision = fmt.Sprint(res)
 	return info.Revision
 
-}
-
-// nolint
-func (info *MetadataInfo) HasReported() bool {
-	return info.Reported
-}
-
-// nolint
-func (info *MetadataInfo) MarkReported() {
-	info.Reported = true
 }
 
 // AddService add provider service info to MetadataInfo

@@ -18,17 +18,20 @@
 package event
 
 import (
-	metadataService "dubbo.apache.org/dubbo-go/v3/metadata"
 	"fmt"
-	"github.com/dubbogo/gost/log/logger"
 	"hash/crc32"
 	"sort"
+)
+
+import (
+	"github.com/dubbogo/gost/log/logger"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/metadata"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
@@ -48,7 +51,7 @@ func (e *exportedServicesRevisionMetadataCustomizer) GetPriority() int {
 
 // Customize calculate the revision for exported urls and then put it into instance metadata
 func (e *exportedServicesRevisionMetadataCustomizer) Customize(instance registry.ServiceInstance) {
-	urls, err := metadataService.GlobalMetadataService.GetExportedServiceURLs()
+	urls, err := metadata.GlobalMetadataService.GetExportedServiceURLs()
 	if err != nil {
 		logger.Errorf("get metadata service url is error, %v", err)
 		return
@@ -69,7 +72,7 @@ func (e *subscribedServicesRevisionMetadataCustomizer) GetPriority() int {
 
 // Customize calculate the revision for subscribed urls and then put it into instance metadata
 func (e *subscribedServicesRevisionMetadataCustomizer) Customize(instance registry.ServiceInstance) {
-	urls, err := metadataService.GlobalMetadataService.GetSubscribedURLs()
+	urls, err := metadata.GlobalMetadataService.GetSubscribedURLs()
 	if err != nil {
 		logger.Errorf("get metadata subscribed url is error, %v", err)
 		return

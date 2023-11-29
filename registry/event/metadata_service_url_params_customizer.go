@@ -18,7 +18,6 @@
 package event
 
 import (
-	metadataService "dubbo.apache.org/dubbo-go/v3/metadata"
 	"encoding/json"
 )
 
@@ -31,6 +30,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/metadata"
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
@@ -56,7 +56,7 @@ func (m *metadataServiceURLParamsMetadataCustomizer) GetPriority() int {
 }
 
 func (m *metadataServiceURLParamsMetadataCustomizer) Customize(instance registry.ServiceInstance) {
-	url, err := metadataService.GlobalMetadataService.GetMetadataServiceURL()
+	url, err := metadata.GlobalMetadataService.GetMetadataServiceURL()
 	if err != nil {
 		logger.Errorf("get metadata service url is error, %v", err)
 		return

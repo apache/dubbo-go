@@ -58,7 +58,7 @@ type ServiceExporter interface {
 	UnExport()
 }
 
-// MetadataService is store and query the metadata info in memory when each service registry
+// DefaultMetadataService is store and query the metadata info in memory when each service registry
 type DefaultMetadataService struct {
 	url *common.URL
 }
