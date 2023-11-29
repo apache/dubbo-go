@@ -200,7 +200,12 @@ func (ins *Instance) loadProvider() error {
 			return err
 		}
 	}
-	return srv.ServeWithNoBlocking()
+	go func() {
+		if err = srv.Serve(); err != nil {
+			panic(err)
+		}
+	}()
+	return err
 }
 
 // loadConsumer loads the service consumer.
