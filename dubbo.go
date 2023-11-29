@@ -18,6 +18,7 @@
 package dubbo
 
 import (
+	"github.com/dubbogo/gost/log/logger"
 	"sync"
 )
 
@@ -202,7 +203,7 @@ func (ins *Instance) loadProvider() error {
 	}
 	go func() {
 		if err = srv.Serve(); err != nil {
-			panic(err)
+			logger.Fatalf("Failed to start server, err: %v", err)
 		}
 	}()
 	return err
