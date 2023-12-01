@@ -30,6 +30,7 @@ import (
 	healthpb "dubbo.apache.org/dubbo-go/v3/protocol/triple/health/triple_health"
 )
 
+// If there is a conflict between the healthCheck of Dubbo and the healthCheck of gRPC, an error will occur.
 func TestProtoConflict(t *testing.T) {
 }
 
