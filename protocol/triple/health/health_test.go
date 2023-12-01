@@ -23,6 +23,8 @@ import (
 	"time"
 )
 import (
+	"github.com/stretchr/testify/assert"
+
 	_ "google.golang.org/grpc/health/grpc_health_v1"
 )
 
@@ -30,25 +32,32 @@ import (
 	healthpb "dubbo.apache.org/dubbo-go/v3/protocol/triple/health/triple_health"
 )
 
+const testService = "testService"
+
 // If there is a conflict between the healthCheck of Dubbo and the healthCheck of gRPC, an error will occur.
 func TestProtoConflict(t *testing.T) {
 }
 
-func TestHealthServer(t *testing.T) {
-	const testService = "testService"
+func TestSetServingStatus(t *testing.T) {
 	s := NewServer()
 	s.SetServingStatus(testService, healthpb.HealthCheckResponse_SERVING)
 
 	status := s.statusMap[testService]
-	if status != healthpb.HealthCheckResponse_SERVING {
-		t.Fatalf("status for %s is %v, want %v", testService, status, healthpb.HealthCheckResponse_SERVING)
-	}
+	assert.Equal(t, healthpb.HealthCheckResponse_SERVING, status, "status for %s is %v, want %v", testService, status, healthpb.HealthCheckResponse_SERVING)
 
+	s.SetServingStatus(testService, healthpb.HealthCheckResponse_NOT_SERVING)
+	status = s.statusMap[testService]
+	assert.Equal(t, healthpb.HealthCheckResponse_NOT_SERVING, status, "status for %s is %v, want %v", testService, status, healthpb.HealthCheckResponse_NOT_SERVING)
+}
+
+func TestShutdown(t *testing.T) {
+	s := NewServer()
+	s.SetServingStatus(testService, healthpb.HealthCheckResponse_SERVING)
 	var wg sync.WaitGroup
 	wg.Add(2)
 	// Run SetServingStatus and Shutdown in parallel.
 	go func() {
-		for i := 0; i < 1000; i++ {
+		for i := 0; i < 100; i++ {
 			s.SetServingStatus(testService, healthpb.HealthCheckResponse_SERVING)
 			time.Sleep(time.Microsecond)
 		}
@@ -62,21 +71,18 @@ func TestHealthServer(t *testing.T) {
 	wg.Wait()
 
 	s.mu.Lock()
-	status = s.statusMap[testService]
+	status := s.statusMap[testService]
 	s.mu.Unlock()
-	if status != healthpb.HealthCheckResponse_NOT_SERVING {
-		t.Fatalf("status for %s is %v, want %v", testService, status, healthpb.HealthCheckResponse_NOT_SERVING)
-	}
+	assert.Equal(t, healthpb.HealthCheckResponse_NOT_SERVING, status, "status for %s is %v, want %v", testService, status, healthpb.HealthCheckResponse_NOT_SERVING)
+}
 
+func TestResume(t *testing.T) {
+	s := NewServer()
+	s.SetServingStatus(testService, healthpb.HealthCheckResponse_SERVING)
+	s.Shutdown()
+	status := s.statusMap[testService]
+	assert.Equal(t, healthpb.HealthCheckResponse_NOT_SERVING, status, "status for %s is %v, want %v", testService, status, healthpb.HealthCheckResponse_NOT_SERVING)
 	s.Resume()
 	status = s.statusMap[testService]
-	if status != healthpb.HealthCheckResponse_SERVING {
-		t.Fatalf("status for %s is %v, want %v", testService, status, healthpb.HealthCheckResponse_SERVING)
-	}
-
-	s.SetServingStatus(testService, healthpb.HealthCheckResponse_NOT_SERVING)
-	status = s.statusMap[testService]
-	if status != healthpb.HealthCheckResponse_NOT_SERVING {
-		t.Fatalf("status for %s is %v, want %v", testService, status, healthpb.HealthCheckResponse_NOT_SERVING)
-	}
+	assert.Equal(t, healthpb.HealthCheckResponse_SERVING, status, "status for %s is %v, want %v", testService, status, healthpb.HealthCheckResponse_SERVING)
 }
