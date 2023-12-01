@@ -93,7 +93,7 @@ func testFileByFilename(stream reflection.ServerReflection_ServerReflectionInfoC
 func testFileContainingSymbol(stream reflection.ServerReflection_ServerReflectionInfoClient) error {
 	logger.Info("start to test call FileContainingSymbol")
 	if err := stream.Send(&reflection.ServerReflectionRequest{
-		MessageRequest: &reflection.ServerReflectionRequest_FileContainingSymbol{FileContainingSymbol: "rpc.reflection.v1alpha.ServerReflection"},
+		MessageRequest: &reflection.ServerReflectionRequest_FileContainingSymbol{FileContainingSymbol: "dubbo.reflection.v1alpha.ServerReflection"},
 	}); err != nil {
 		return err
 	}

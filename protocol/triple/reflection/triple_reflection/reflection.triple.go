@@ -41,7 +41,7 @@ const _ = triple_protocol.IsAtLeastVersion0_1_0
 
 const (
 	// ServerReflectionName is the fully-qualified name of the ServerReflection service.
-	ServerReflectionName = "rpc.reflection.v1alpha.ServerReflection"
+	ServerReflectionName = "dubbo.reflection.v1alpha.ServerReflection"
 )
 
 // These constants are the fully-qualified names of the RPCs defined in this package. They're
@@ -53,7 +53,7 @@ const (
 // period.
 const (
 	// ServerReflectionServerReflectionInfoProcedure is the fully-qualified name of the ServerReflection's ServerReflectionInfo RPC.
-	ServerReflectionServerReflectionInfoProcedure = "/rpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo"
+	ServerReflectionServerReflectionInfoProcedure = "/dubbo.reflection.v1alpha.ServerReflection/ServerReflectionInfo"
 )
 
 var (
@@ -64,12 +64,12 @@ var (
 	_ ServerReflection_ServerReflectionInfoServer = (*ServerReflectionServerReflectionInfoServer)(nil)
 )
 
-// ServerReflection is a client for the rpc.reflection.v1alpha.ServerReflection service.
+// ServerReflection is a client for the dubbo.reflection.v1alpha.ServerReflection service.
 type ServerReflection interface {
 	ServerReflectionInfo(ctx context.Context, opts ...client.CallOption) (ServerReflection_ServerReflectionInfoClient, error)
 }
 
-// NewServerReflection constructs a client for the rpc.reflection.v1alpha.ServerReflection service.
+// NewServerReflection constructs a client for the dubbo.reflection.v1alpha.ServerReflection service.
 func NewServerReflection(cli *client.Client, opts ...client.ReferenceOption) (ServerReflection, error) {
 	group, version, err := cli.Init(&ServerReflection_ClientInfo, opts...)
 	if err != nil {
@@ -91,7 +91,7 @@ type ServerReflectionImpl struct {
 
 func (c *ServerReflectionImpl) ServerReflectionInfo(ctx context.Context, opts ...client.CallOption) (ServerReflection_ServerReflectionInfoClient, error) {
 	opts = appendGroupVersion(opts, c)
-	stream, err := c.cli.CallBidiStream(ctx, "rpc.reflection.v1alpha.ServerReflection", "ServerReflectionInfo", opts...)
+	stream, err := c.cli.CallBidiStream(ctx, "dubbo.reflection.v1alpha.ServerReflection", "ServerReflectionInfo", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +134,7 @@ func (cli *ServerReflectionServerReflectionInfoClient) Recv() (*ServerReflection
 }
 
 var ServerReflection_ClientInfo = client.ClientInfo{
-	InterfaceName: "rpc.reflection.v1alpha.ServerReflection",
+	InterfaceName: "dubbo.reflection.v1alpha.ServerReflection",
 	MethodNames:   []string{"ServerReflectionInfo"},
 	ClientInjectFunc: func(dubboCliRaw interface{}, cli *client.Client) {
 		dubboCli := dubboCliRaw.(ServerReflectionImpl)
@@ -142,7 +142,7 @@ var ServerReflection_ClientInfo = client.ClientInfo{
 	},
 }
 
-// ServerReflectionHandler is an implementation of the rpc.reflection.v1alpha.ServerReflection service.
+// ServerReflectionHandler is an implementation of the dubbo.reflection.v1alpha.ServerReflection service.
 type ServerReflectionHandler interface {
 	ServerReflectionInfo(context.Context, ServerReflection_ServerReflectionInfoServer) error
 }
@@ -179,7 +179,7 @@ func (srv ServerReflectionServerReflectionInfoServer) Recv() (*ServerReflectionR
 }
 
 var ServerReflection_ServiceInfo = server.ServiceInfo{
-	InterfaceName: "rpc.reflection.v1alpha.ServerReflection",
+	InterfaceName: "dubbo.reflection.v1alpha.ServerReflection",
 	ServiceType:   (*ServerReflectionHandler)(nil),
 	Methods: []server.MethodInfo{
 		{
