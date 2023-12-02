@@ -61,15 +61,15 @@ type MetadataInfo struct {
 	App                   string                   `json:"app,omitempty" hessian:"app"`
 	Revision              string                   `json:"revision,omitempty" hessian:"revision"`
 	Services              map[string]*ServiceInfo  `json:"services,omitempty" hessian:"services"`
-	exportedServiceURLs   map[string][]*common.URL // server exported service urls
-	subscribedServiceURLs map[string][]*common.URL // client subscribed service urls
+	exportedServiceURLs   map[string][]*common.URL `hessian:"-"` // server exported service urls
+	subscribedServiceURLs map[string][]*common.URL `hessian:"-"` // client subscribed service urls
 }
 
-func NewMetadataInfWithApp() *MetadataInfo {
-	return NewMetadataInfo("", "", make(map[string]*ServiceInfo))
+func NewMetadataInfo() *MetadataInfo {
+	return NewMetadataInfoWithParams("", "", make(map[string]*ServiceInfo))
 }
 
-func NewMetadataInfo(app string, revision string, services map[string]*ServiceInfo) *MetadataInfo {
+func NewMetadataInfoWithParams(app string, revision string, services map[string]*ServiceInfo) *MetadataInfo {
 	return &MetadataInfo{
 		App:                   app,
 		Revision:              revision,
@@ -201,9 +201,9 @@ type ServiceInfo struct {
 	Path     string            `json:"path,omitempty" hessian:"path"`
 	Params   map[string]string `json:"params,omitempty" hessian:"params"`
 
-	ServiceKey string      `json:"-"`
-	MatchKey   string      `json:"-"`
-	URL        *common.URL `json:"-"`
+	ServiceKey string      `json:"-" hessian:"-"`
+	MatchKey   string      `json:"-" hessian:"-"`
+	URL        *common.URL `json:"-" hessian:"-"`
 }
 
 // nolint

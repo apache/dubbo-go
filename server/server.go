@@ -34,7 +34,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/metadata"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
-	"dubbo.apache.org/dubbo-go/v3/registry/servicediscovery"
+	"dubbo.apache.org/dubbo-go/v3/registry/exposed_tmp"
 )
 
 // proServices are for internal services
@@ -188,7 +188,7 @@ func (s *Server) Serve() error {
 		return err
 	}
 	metadata.ExportMetadataService(s.cfg.Application.Name, s.cfg.Application.MetadataType)
-	err := servicediscovery.RegisterServiceInstance()
+	err := exposed_tmp.RegisterServiceInstance()
 	if err != nil {
 		return err
 	}

@@ -233,45 +233,23 @@ func GetMetadataInfo(app string, instance registry.ServiceInstance, revision str
 
 	var metadataStorageType string
 	var metadataInfo *info.MetadataInfo
+	var err error
 	if instance.GetMetadata() == nil {
 		metadataStorageType = constant.DefaultMetadataStorageType
 	} else {
 		metadataStorageType = instance.GetMetadata()[constant.MetadataStorageTypePropertyName]
 	}
 	if metadataStorageType == constant.RemoteMetadataStorageType {
-		// 		remoteMetadataServiceImpl, err := extension.GetRemoteMetadataService()
-		// 		if err != nil {
-		// 			return nil, err
-		// 		}
-		// 		metadataInfo, err = remoteMetadataServiceImpl.GetMetadata(instance)
-		// 		if err != nil {
-		// 			return nil, err
-		// 		}
-		// 	} else {
-		// 		var err error
-		// 		proxyFactory := extension.GetMetadataServiceProxyFactory(constant.DefaultKey)
-		// 		metadataService := proxyFactory.GetProxy(instance)
-		// 		defer destroyInvoker(metadataService)
-		// 		metadataInfo, err = metadataService.GetMetadataInfo(revision)
-		// 		if err != nil {
-		// 			return nil, err
-		// 		}
+		metadataInfo, err = getMetadataFromMetadataReport(revision, instance)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		metadataInfo, err = getMetadataFromRpc(revision, instance)
+		if err != nil {
+			return nil, err
+		}
 	}
-
 	metaCache.Set(revision, metadataInfo)
-
 	return metadataInfo, nil
 }
-
-// func destroyInvoker(metadataService service.MetadataService) {
-// 	if metadataService == nil {
-// 		return
-// 	}
-
-// 	proxy := metadataService.(*local.MetadataServiceProxy)
-// 	if proxy.Invoker == nil {
-// 		return
-// 	}
-
-// 	proxy.Invoker.Destroy()
-// }

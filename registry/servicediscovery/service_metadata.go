@@ -19,8 +19,12 @@ package servicediscovery
 
 import (
 	"context"
-	"strconv"
+	"encoding/json"
 	"time"
+)
+
+import (
+	"github.com/dubbogo/gost/log/logger"
 )
 
 import (
@@ -29,6 +33,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
 	metadataInstance "dubbo.apache.org/dubbo-go/v3/metadata/report/instance"
+	_ "dubbo.apache.org/dubbo-go/v3/protocol/dubbo"
+	_ "dubbo.apache.org/dubbo-go/v3/proxy/proxy_factory"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
@@ -38,23 +44,11 @@ type ServiceMeta struct {
 }
 
 func NewServiceMeta() *ServiceMeta {
-	return &ServiceMeta{metadataInfo: info.NewMetadataInfWithApp()}
+	return &ServiceMeta{metadataInfo: info.NewMetadataInfo()}
 }
 
 func (sd *ServiceMeta) GetLocalMetadata() *info.MetadataInfo {
 	return sd.metadataInfo
-}
-
-func (sd *ServiceMeta) GetRemoteMetadata(revision string, instance registry.ServiceInstance) (*info.MetadataInfo, error) {
-	meta, err := getMetadataFromCache(revision)
-	if err != nil || meta == nil {
-		meta, err = getMetadataFromMetadataReport(revision, instance)
-		if err != nil || meta == nil {
-			meta, err = getMetadataFromRpc(revision, instance)
-		}
-		// TODO : need to update cache
-	}
-	return meta, err
 }
 
 func (sd *ServiceMeta) createInstance() registry.ServiceInstance {
@@ -92,11 +86,6 @@ func (sd *ServiceMeta) createInstance() registry.ServiceInstance {
 //	return instance.GetMetadata()[constant.ExportedServicesRevisionPropertyName]
 //}
 
-func getMetadataFromCache(revision string) (*info.MetadataInfo, error) {
-	// TODO metadata cache
-	return nil, nil
-}
-
 func getMetadataFromMetadataReport(revision string, instance registry.ServiceInstance) (*info.MetadataInfo, error) {
 	report := metadataInstance.GetMetadataReport()
 	return report.GetAppMetadata(instance.GetServiceName(), revision)
@@ -119,15 +108,12 @@ type metadataService struct {
 }
 
 func createRpcClient(instance registry.ServiceInstance) (*metadataService, func()) {
-	url := common.NewURLWithOptions(
-		common.WithProtocol(constant.Dubbo),
-		common.WithIp(instance.GetHost()),
-		common.WithPort(strconv.Itoa(instance.GetPort())),
-	)
-	url.SetParam(constant.SideKey, constant.Consumer)
-	url.SetParam(constant.VersionKey, "1.0.0")
-	url.SetParam(constant.InterfaceKey, constant.MetadataServiceName)
-	url.SetParam(constant.GroupKey, instance.GetServiceName())
+	params := getMetadataServiceUrlParams(instance.GetMetadata()[constant.MetadataServiceURLParamsPropertyName])
+	url := buildMetadataServiceURL(instance.GetServiceName(), instance.GetHost(), params)
+	return createRpcClientByUrl(url)
+}
+
+func createRpcClientByUrl(url *common.URL) (*metadataService, func()) {
 	rpcService := &metadataService{}
 	invoker := extension.GetProtocol(constant.Dubbo).Refer(url)
 	proxy := extension.GetProxyFactory("").GetProxy(invoker, url)
@@ -136,4 +122,38 @@ func createRpcClient(instance registry.ServiceInstance) (*metadataService, func(
 		invoker.Destroy()
 	}
 	return rpcService, destroy
+}
+
+// buildMetadataServiceURL will use standard format to build the metadata service url.
+func buildMetadataServiceURL(serviceName string, host string, ps map[string]string) *common.URL {
+	if ps[constant.ProtocolKey] == "" {
+		return nil
+	}
+	convertedParams := make(map[string][]string, len(ps))
+	for k, v := range ps {
+		convertedParams[k] = []string{v}
+	}
+	u := common.NewURLWithOptions(common.WithIp(host),
+		common.WithPath(constant.MetadataServiceName),
+		common.WithProtocol(ps[constant.ProtocolKey]),
+		common.WithPort(ps[constant.PortKey]),
+		common.WithParams(convertedParams),
+		common.WithParamsValue(constant.GroupKey, serviceName),
+		common.WithParamsValue(constant.InterfaceKey, constant.MetadataServiceName))
+
+	return u
+}
+
+// getMetadataServiceUrlParams this will convert the metadata service url parameters to map structure
+// it looks like:
+// {"dubbo":{"timeout":"10000","version":"1.0.0","dubbo":"2.0.2","release":"2.7.6","port":"20880"}}
+func getMetadataServiceUrlParams(jsonStr string) map[string]string {
+	res := make(map[string]string, 2)
+	if len(jsonStr) > 0 {
+		err := json.Unmarshal([]byte(jsonStr), &res)
+		if err != nil {
+			logger.Errorf("could not parse the metadata service url parameters to map", err)
+		}
+	}
+	return res
 }

@@ -15,44 +15,26 @@
  * limitations under the License.
  */
 
-package customizer
+package exposed_tmp
 
 import (
-	"strconv"
-)
-
-import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
-func init() {
-	extension.AddCustomizers(&hostPortCustomizer{})
-}
-
-type hostPortCustomizer struct{}
-
-// GetPriority will return 1 so that it will be invoked in front of user defining Customizer
-func (e *hostPortCustomizer) GetPriority() int {
-	return 1
-}
-
-// Customize calculate the revision for exported urls and then put it into instance metadata
-func (e *hostPortCustomizer) Customize(instance registry.ServiceInstance) {
-	if instance.GetPort() > 0 {
-		return
-	}
-	if instance.GetServiceMetadata() == nil || len(instance.GetServiceMetadata().GetExportedServiceURLs()) == 0 {
-		return
-	}
-	for _, url := range instance.GetServiceMetadata().GetExportedServiceURLs() {
-		if ins, ok := instance.(*registry.DefaultServiceInstance); ok {
-			ins.Host = url.Ip
-			p, err := strconv.Atoi(url.Port)
-			if err == nil {
-				ins.Port = p
+// RegisterServiceInstance register service instance
+func RegisterServiceInstance() error {
+	protocol := extension.GetProtocol(constant.RegistryKey)
+	if rf, ok := protocol.(registry.RegistryFactory); ok {
+		for _, r := range rf.GetRegistries() {
+			if sdr, ok := r.(registry.ServiceDiscoveryRegistry); ok {
+				err := sdr.RegisterService()
+				if err != nil {
+					return err
+				}
 			}
-			break
 		}
 	}
+	return nil
 }

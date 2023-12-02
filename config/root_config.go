@@ -34,7 +34,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/metadata"
-	"dubbo.apache.org/dubbo-go/v3/registry/servicediscovery"
+	"dubbo.apache.org/dubbo-go/v3/registry/exposed_tmp"
 )
 
 var (
@@ -206,7 +206,7 @@ func (rc *RootConfig) Start() {
 		rc.Consumer.Load()
 		rc.Provider.Load()
 		metadata.ExportMetadataService(rc.Application.Name, rc.Application.MetadataType)
-		err := servicediscovery.RegisterServiceInstance()
+		err := exposed_tmp.RegisterServiceInstance()
 		if err != nil {
 			panic(err)
 		}

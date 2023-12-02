@@ -88,11 +88,17 @@ func (d *ServiceNameMapping) Map(url *common.URL) error {
 func (d *ServiceNameMapping) Get(url *common.URL, listener mapping.MappingListener) (*gxset.HashSet, error) {
 	serviceInterface := url.GetParam(constant.InterfaceKey, "")
 	metadataReport := instance.GetMetadataReport()
+	if metadataReport == nil {
+		return gxset.NewSet(), nil
+	}
 	return metadataReport.GetServiceAppMapping(serviceInterface, DefaultGroup, listener)
 }
 
 func (d *ServiceNameMapping) Remove(url *common.URL) error {
 	serviceInterface := url.GetParam(constant.InterfaceKey, "")
 	metadataReport := instance.GetMetadataReport()
+	if metadataReport == nil {
+		return nil
+	}
 	return metadataReport.RemoveServiceAppMappingListener(serviceInterface, DefaultGroup)
 }

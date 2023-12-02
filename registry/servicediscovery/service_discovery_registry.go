@@ -50,21 +50,6 @@ func init() {
 	extension.SetRegistry(constant.ServiceRegistryProtocol, newServiceDiscoveryRegistry)
 }
 
-func RegisterServiceInstance() error {
-	protocol := extension.GetProtocol(constant.RegistryKey)
-	if rf, ok := protocol.(registry.RegistryFactory); ok {
-		for _, r := range rf.GetRegistries() {
-			if sdr, ok := r.(registry.ServiceDiscoveryRegistry); ok {
-				err := sdr.RegisterService()
-				if err != nil {
-					return err
-				}
-			}
-		}
-	}
-	return nil
-}
-
 // serviceDiscoveryRegistry is the implementation of application-level registry.
 // It's completely different from other registry implementations
 // This implementation is based on ServiceDiscovery abstraction and ServiceNameMapping and metadata
@@ -97,13 +82,21 @@ func newServiceDiscoveryRegistry(url *common.URL) (registry.Registry, error) {
 }
 
 func (s *serviceDiscoveryRegistry) RegisterService() error {
-	meta := s.serviceMeta.metadataInfo
-	meta.CalAndGetRevision()
-	err := instance.GetMetadataReport().PublishAppMetadata(meta.App, meta.Revision, meta)
-	if err != nil {
-		return err
+	serviceInstance := s.serviceMeta.createInstance()
+	// consumer has not host and port, so it will not register service
+	if serviceInstance.GetHost() != "" && serviceInstance.GetPort() != 0 {
+		meta := s.serviceMeta.metadataInfo
+		meta.CalAndGetRevision()
+		metadataReport := instance.GetMetadataReport()
+		if metadataReport != nil {
+			err := metadataReport.PublishAppMetadata(meta.App, meta.Revision, meta)
+			if err != nil {
+				return err
+			}
+		}
+		return s.serviceDiscovery.Register(serviceInstance)
 	}
-	return s.serviceDiscovery.Register(s.serviceMeta.createInstance())
+	return nil
 }
 
 func (s *serviceDiscoveryRegistry) UnRegisterService() error {

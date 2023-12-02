@@ -22,6 +22,8 @@ import (
 )
 
 import (
+	hessian "github.com/apache/dubbo-go-hessian2"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -44,4 +46,25 @@ func TestMetadataInfoAddService(t *testing.T) {
 	metadataInfo.RemoveService(url)
 	assert.True(t, len(metadataInfo.Services) == 0)
 	assert.True(t, len(metadataInfo.exportedServiceURLs) == 0)
+}
+
+func TestHessian(t *testing.T) {
+	metadataInfo := &MetadataInfo{
+		App:                   "test",
+		Revision:              "1",
+		Services:              make(map[string]*ServiceInfo),
+		exportedServiceURLs:   make(map[string][]*common.URL),
+		subscribedServiceURLs: make(map[string][]*common.URL),
+	}
+	metadataInfo.Services["1"] = NewServiceInfo("dubbo.io", "default", "1.0.0", "dubbo", "", make(map[string]string))
+	e := hessian.NewEncoder()
+	err := e.Encode(metadataInfo)
+	if err != nil {
+		panic(err)
+	}
+	obj, err := hessian.NewDecoder(e.Buffer()).Decode()
+	if err != nil {
+		panic(err)
+	}
+	t.Log(obj)
 }
