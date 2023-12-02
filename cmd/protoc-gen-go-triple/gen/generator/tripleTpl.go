@@ -220,6 +220,10 @@ func New{{.ServiceName}}(cli *client.Client, opts ...client.ReferenceOption) ({{
 	}, nil
 }
 
+func SetConsumerService(srv common.RPCService) {
+	dubbo.SetConsumerServiceWithInfo(srv,&{{.ServiceName}}_ClientInfo)
+}
+
 // {{.ServiceName}}Impl implements {{.ServiceName}}.
 type {{.ServiceName}}Impl struct {
 	conn *client.Connection
@@ -358,7 +362,7 @@ const MethodInfoTpl = `{{$t := .}}{{range $i, $s := .Services}}var {{.ServiceNam
 	InterfaceName: "{{$t.Package}}.{{.ServiceName}}",
 	MethodNames:   []string{ {{- range $j, $m := .Methods}}"{{.MethodName}}"{{if last $j (len $s.Methods)}}{{else}},{{end}}{{end -}} },
 	ConnectionInjectFunc: func(dubboCliRaw interface{}, conn *client.Connection) {
-		dubboCli := dubboCliRaw.({{$s.ServiceName}}Impl)
+		dubboCli := dubboCliRaw.(*{{$s.ServiceName}}Impl)
 		dubboCli.conn = conn
 	},
 }{{end}}
@@ -372,6 +376,10 @@ type {{.ServiceName}}Handler interface { {{- range $s.Methods}}
 
 func Register{{.ServiceName}}Handler(srv *server.Server, hdlr {{.ServiceName}}Handler, opts ...server.ServiceOption) error {
 	return srv.Register(hdlr, &{{.ServiceName}}_ServiceInfo, opts...)
+}
+
+func SetProviderService(srv common.RPCService)  {
+	dubbo.SetProviderServiceWithInfo(srv,&{{.ServiceName}}_ServiceInfo)
 }{{end}}
 `
 
