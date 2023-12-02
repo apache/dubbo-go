@@ -18,12 +18,27 @@
 package dubbo
 
 import (
+	"sync"
+)
+
+import (
+	"github.com/dubbogo/gost/log/logger"
+
 	"github.com/pkg/errors"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/client"
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/server"
+)
+
+var (
+	consumerServices = map[string]*client.ClientDefinition{}
+	conLock          sync.RWMutex
+	providerServices = map[string]*server.ServiceDefinition{}
+	proLock          sync.RWMutex
+	startOnce        sync.Once
 )
 
 // Instance is the highest layer conception that user could touch. It is mapped from RootConfig.
@@ -71,7 +86,7 @@ func (ins *Instance) NewClient(opts ...client.ClientOption) (*client.Client, err
 		cliOpts = append(cliOpts,
 			client.WithClientFilter(conCfg.Filter),
 			// todo(DMwangnima): deal with Protocol
-			client.WithClientRegistryIDs(conCfg.RegistryIDs),
+			client.WithClientRegistryIDs(conCfg.RegistryIDs...),
 			// todo(DMwangnima): deal with TracingKey
 			client.SetClientConsumer(conCfg),
 		)
@@ -155,4 +170,81 @@ func (ins *Instance) NewServer(opts ...server.ServerOption) (*server.Server, err
 		return nil, err
 	}
 	return srv, nil
+}
+
+func (ins *Instance) start() (err error) {
+	startOnce.Do(func() {
+		if err = ins.loadConsumer(); err != nil {
+			return
+		}
+		if err = ins.loadProvider(); err != nil {
+			return
+		}
+	})
+	return err
+}
+
+// loadProvider loads the service provider.
+func (ins *Instance) loadProvider() error {
+	var srvOpts []server.ServerOption
+	if ins.insOpts.Provider != nil {
+		srvOpts = append(srvOpts, server.SetServerProvider(ins.insOpts.Provider))
+	}
+	srv, err := ins.NewServer(srvOpts...)
+	if err != nil {
+		return err
+	}
+	// register services
+	proLock.RLock()
+	defer proLock.RUnlock()
+	for _, definition := range providerServices {
+		if err = srv.Register(definition.Handler, definition.Info, definition.Opts...); err != nil {
+			return err
+		}
+	}
+	go func() {
+		if err = srv.Serve(); err != nil {
+			logger.Fatalf("Failed to start server, err: %v", err)
+		}
+	}()
+	return nil
+}
+
+// loadConsumer loads the service consumer.
+func (ins *Instance) loadConsumer() error {
+	cli, err := ins.NewClient()
+	if err != nil {
+		return err
+	}
+	// refer services
+	conLock.RLock()
+	defer conLock.RUnlock()
+	for intfName, definition := range consumerServices {
+		conn, dialErr := cli.DialWithInfo(intfName, definition.Info)
+		if dialErr != nil {
+			return dialErr
+		}
+		definition.Info.ConnectionInjectFunc(definition.Svc, conn)
+	}
+	return nil
+}
+
+// SetConsumerServiceWithInfo sets the consumer service with the client information.
+func SetConsumerServiceWithInfo(svc common.RPCService, info *client.ClientInfo) {
+	conLock.Lock()
+	defer conLock.Unlock()
+	consumerServices[info.InterfaceName] = &client.ClientDefinition{
+		Svc:  svc,
+		Info: info,
+	}
+}
+
+// SetProviderServiceWithInfo sets the provider service with the server information.
+func SetProviderServiceWithInfo(svc common.RPCService, info *server.ServiceInfo) {
+	proLock.Lock()
+	defer proLock.Unlock()
+	providerServices[info.InterfaceName] = &server.ServiceDefinition{
+		Handler: svc,
+		Info:    info,
+	}
 }

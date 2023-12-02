@@ -25,6 +25,8 @@ import (
 )
 
 import (
+	"github.com/dubbogo/gost/log/logger"
+
 	"github.com/pkg/errors"
 )
 
@@ -35,6 +37,7 @@ import (
 	registry_exposed "dubbo.apache.org/dubbo-go/v3/registry/exposed_tmp"
 )
 
+// proServices are for internal services
 var proServices = map[string]*ServiceDefinition{}
 
 type Server struct {
@@ -163,9 +166,16 @@ func (s *Server) Register(handler interface{}, info *ServiceInfo, opts ...Servic
 }
 
 func (s *Server) exportServices() (err error) {
-	s.svcOptsMap.Range(func(newSvcOpts, info interface{}) bool {
-		err = newSvcOpts.(*ServiceOptions).ExportWithInfo(info.(*ServiceInfo))
+	s.svcOptsMap.Range(func(svcOptsRaw, infoRaw interface{}) bool {
+		svcOpts := svcOptsRaw.(*ServiceOptions)
+		if infoRaw == nil {
+			err = svcOpts.ExportWithoutInfo()
+		} else {
+			info := infoRaw.(*ServiceInfo)
+			err = svcOpts.ExportWithInfo(info)
+		}
 		if err != nil {
+			logger.Errorf("export %s service failed, err: %s", svcOpts.Service.Interface, err)
 			return false
 		}
 		return true

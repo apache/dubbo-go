@@ -18,7 +18,6 @@
 package client
 
 import (
-	"reflect"
 	"strconv"
 	"time"
 )
@@ -31,7 +30,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	commonCfg "dubbo.apache.org/dubbo-go/v3/common/config"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/common/dubboutil"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
@@ -41,9 +39,10 @@ import (
 )
 
 type ReferenceOptions struct {
-	Reference  *global.ReferenceConfig
-	cliOpts    *ClientOptions
-	Registries map[string]*global.RegistryConfig
+	Reference *global.ReferenceConfig
+	Consumer  *global.ConsumerConfig
+	Metrics   *global.MetricsConfig
+	Otel      *global.OtelConfig
 
 	pxy          *proxy.Proxy
 	id           string
@@ -60,10 +59,12 @@ type ReferenceOptions struct {
 func defaultReferenceOptions() *ReferenceOptions {
 	return &ReferenceOptions{
 		Reference: global.DefaultReferenceConfig(),
+		Metrics:   global.DefaultMetricsConfig(),
+		Otel:      global.DefaultOtelConfig(),
 	}
 }
 
-func (refOpts *ReferenceOptions) init(cli *Client, opts ...ReferenceOption) error {
+func (refOpts *ReferenceOptions) init(opts ...ReferenceOption) error {
 	for _, opt := range opts {
 		opt(refOpts)
 	}
@@ -71,10 +72,18 @@ func (refOpts *ReferenceOptions) init(cli *Client, opts ...ReferenceOption) erro
 		return err
 	}
 
-	refOpts.cliOpts = cli.cliOpts
-	dubboutil.CopyFields(reflect.ValueOf(refOpts.cliOpts.Consumer).Elem(), reflect.ValueOf(refOpts.Reference).Elem())
-
 	ref := refOpts.Reference
+
+	app := refOpts.applicationCompat
+	if app != nil {
+		refOpts.metaDataType = app.MetadataType
+		if ref.Group == "" {
+			ref.Group = app.Group
+		}
+		if ref.Version == "" {
+			ref.Version = app.Version
+		}
+	}
 
 	// init method
 	methods := ref.Methods
@@ -88,55 +97,43 @@ func (refOpts *ReferenceOptions) init(cli *Client, opts ...ReferenceOption) erro
 		}
 	}
 
-	// init application
-	application := refOpts.cliOpts.Application
-	if application != nil {
-		refOpts.applicationCompat = compatApplicationConfig(application)
-		if err := refOpts.applicationCompat.Init(); err != nil {
-			return err
-		}
-		refOpts.metaDataType = refOpts.applicationCompat.MetadataType
-		if ref.Group == "" {
-			ref.Group = refOpts.applicationCompat.Group
-		}
-		if ref.Version == "" {
-			ref.Version = refOpts.applicationCompat.Version
-		}
-	}
 	// init cluster
 	if ref.Cluster == "" {
 		ref.Cluster = "failover"
 	}
 
-	// todo(DMwangnima): move to registry package
 	// init registries
-	var emptyRegIDsFlag bool
-	if ref.RegistryIDs == nil || len(ref.RegistryIDs) <= 0 {
-		emptyRegIDsFlag = true
-	}
-
-	// set client level as default registry
-	regs := refOpts.Registries
-	if regs == nil {
-		regs = cli.cliOpts.Registries
-	}
-
-	if regs != nil {
-		refOpts.registriesCompat = make(map[string]*config.RegistryConfig)
-		for key, reg := range regs {
-			refOpts.registriesCompat[key] = compatRegistryConfig(reg)
-			if err := refOpts.registriesCompat[key].Init(); err != nil {
-				return err
-			}
-			if emptyRegIDsFlag {
+	if len(refOpts.registriesCompat) > 0 {
+		regs := refOpts.registriesCompat
+		if len(ref.RegistryIDs) <= 0 {
+			ref.RegistryIDs = make([]string, len(regs))
+			for key := range regs {
 				ref.RegistryIDs = append(ref.RegistryIDs, key)
 			}
 		}
-	}
-	ref.RegistryIDs = commonCfg.TranslateIds(ref.RegistryIDs)
+		ref.RegistryIDs = commonCfg.TranslateIds(ref.RegistryIDs)
 
-	// init graceful_shutdown
-	graceful_shutdown.Init(graceful_shutdown.SetShutdown_Config(refOpts.cliOpts.Shutdown))
+		newRegs := make(map[string]*config.RegistryConfig)
+		for _, id := range ref.RegistryIDs {
+			if reg, ok := regs[id]; ok {
+				newRegs[id] = reg
+			}
+		}
+		refOpts.registriesCompat = newRegs
+	}
+
+	// init protocol
+	if ref.Protocol == "" {
+		ref.Protocol = "tri"
+		if refOpts.Consumer != nil && refOpts.Consumer.Protocol != "" {
+			ref.Protocol = refOpts.Consumer.Protocol
+		}
+	}
+
+	// init serialization
+	if ref.Serialization == "" {
+		ref.Serialization = constant.ProtobufSerialization
+	}
 
 	return commonCfg.Verify(refOpts)
 }
@@ -158,30 +155,17 @@ func WithURL(url string) ReferenceOption {
 	}
 }
 
-// todo(DMwangnima): change Filter Option like Cluster and LoadBalance
 func WithFilter(filter string) ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		opts.Reference.Filter = filter
 	}
 }
 
-// todo(DMwangnima): think about a more ideal configuration style
-func WithRegistryIDs(registryIDs []string) ReferenceOption {
+func WithRegistryIDs(registryIDs ...string) ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		if len(registryIDs) > 0 {
 			opts.Reference.RegistryIDs = registryIDs
 		}
-	}
-}
-
-func WithRegistry(opts ...registry.Option) ReferenceOption {
-	regOpts := registry.NewOptions(opts...)
-
-	return func(refOpts *ReferenceOptions) {
-		if refOpts.Registries == nil {
-			refOpts.Registries = make(map[string]*global.RegistryConfig)
-		}
-		refOpts.Registries[regOpts.ID] = regOpts.Registry
 	}
 }
 
@@ -303,9 +287,15 @@ func WithVersion(version string) ReferenceOption {
 	}
 }
 
-func WithJSON() ReferenceOption {
+func WithSerializationJSON() ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		opts.Reference.Serialization = constant.JSONSerialization
+	}
+}
+
+func WithSerialization(serialization string) ReferenceOption {
+	return func(opts *ReferenceOptions) {
+		opts.Reference.Serialization = serialization
 	}
 }
 
@@ -323,6 +313,9 @@ func WithAsync() ReferenceOption {
 
 func WithParams(params map[string]string) ReferenceOption {
 	return func(opts *ReferenceOptions) {
+		if len(params) <= 0 {
+			return
+		}
 		opts.Reference.Params = params
 	}
 }
@@ -333,9 +326,9 @@ func WithGeneric() ReferenceOption {
 	}
 }
 
-func WithSticky(sticky bool) ReferenceOption {
+func WithSticky() ReferenceOption {
 	return func(opts *ReferenceOptions) {
-		opts.Reference.Sticky = sticky
+		opts.Reference.Sticky = true
 	}
 }
 
@@ -406,15 +399,33 @@ func WithParam(k, v string) ReferenceOption {
 // ---------- For framework ----------
 // These functions should not be invoked by users
 
-func SetRegistries(regs map[string]*global.RegistryConfig) ReferenceOption {
+func setReference(reference *global.ReferenceConfig) ReferenceOption {
 	return func(opts *ReferenceOptions) {
-		opts.Registries = regs
+		opts.Reference = reference
 	}
 }
 
-func SetReference(reference *global.ReferenceConfig) ReferenceOption {
+func setInterfaceName(interfaceName string) ReferenceOption {
 	return func(opts *ReferenceOptions) {
-		opts.Reference = reference
+		opts.Reference.InterfaceName = interfaceName
+	}
+}
+
+func setApplicationCompat(app *config.ApplicationConfig) ReferenceOption {
+	return func(opts *ReferenceOptions) {
+		opts.applicationCompat = app
+	}
+}
+
+func setRegistriesCompat(regs map[string]*config.RegistryConfig) ReferenceOption {
+	return func(opts *ReferenceOptions) {
+		opts.registriesCompat = regs
+	}
+}
+
+func setConsumer(consumer *global.ConsumerConfig) ReferenceOption {
+	return func(opts *ReferenceOptions) {
+		opts.Consumer = consumer
 	}
 }
 
@@ -425,16 +436,21 @@ type ClientOptions struct {
 	Shutdown    *global.ShutdownConfig
 	Metrics     *global.MetricsConfig
 	Otel        *global.OtelConfig
+
+	overallReference  *global.ReferenceConfig
+	applicationCompat *config.ApplicationConfig
+	registriesCompat  map[string]*config.RegistryConfig
 }
 
 func defaultClientOptions() *ClientOptions {
 	return &ClientOptions{
-		Consumer:    global.DefaultConsumerConfig(),
-		Registries:  make(map[string]*global.RegistryConfig),
-		Application: global.DefaultApplicationConfig(),
-		Shutdown:    global.DefaultShutdownConfig(),
-		Metrics:     global.DefaultMetricsConfig(),
-		Otel:        global.DefaultOtelConfig(),
+		Consumer:         global.DefaultConsumerConfig(),
+		Registries:       make(map[string]*global.RegistryConfig),
+		Application:      global.DefaultApplicationConfig(),
+		Shutdown:         global.DefaultShutdownConfig(),
+		Metrics:          global.DefaultMetricsConfig(),
+		Otel:             global.DefaultOtelConfig(),
+		overallReference: global.DefaultReferenceConfig(),
 	}
 }
 
@@ -445,6 +461,59 @@ func (cliOpts *ClientOptions) init(opts ...ClientOption) error {
 	if err := defaults.Set(cliOpts); err != nil {
 		return err
 	}
+
+	con := cliOpts.Consumer
+
+	// init application
+	application := cliOpts.Application
+	if application != nil {
+		cliOpts.applicationCompat = compatApplicationConfig(application)
+		if err := cliOpts.applicationCompat.Init(); err != nil {
+			return err
+		}
+	}
+
+	// init registries
+	regs := cliOpts.Registries
+	if regs != nil {
+		cliOpts.registriesCompat = make(map[string]*config.RegistryConfig)
+		if len(con.RegistryIDs) <= 0 {
+			con.RegistryIDs = make([]string, len(regs))
+			for key := range regs {
+				con.RegistryIDs = append(con.RegistryIDs, key)
+			}
+		}
+		con.RegistryIDs = commonCfg.TranslateIds(con.RegistryIDs)
+
+		for _, id := range con.RegistryIDs {
+			if reg, ok := regs[id]; ok {
+				cliOpts.registriesCompat[id] = compatRegistryConfig(reg)
+				if err := cliOpts.registriesCompat[id].Init(); err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	// init cluster
+	if cliOpts.overallReference.Cluster == "" {
+		cliOpts.overallReference.Cluster = constant.ClusterKeyFailover
+	}
+
+	// init protocol
+	if cliOpts.Consumer.Protocol == "" {
+		cliOpts.Consumer.Protocol = "tri"
+	}
+
+	// init serialization
+	if cliOpts.overallReference.Serialization == "" {
+		cliOpts.overallReference.Serialization = constant.ProtobufSerialization
+	}
+
+	// todo(DMwangnima): is there any part that we should do compatibility processing?
+
+	// init graceful_shutdown
+	graceful_shutdown.Init(graceful_shutdown.SetShutdown_Config(cliOpts.Shutdown))
 	return nil
 }
 
@@ -458,19 +527,20 @@ func WithClientCheck() ClientOption {
 
 func WithClientURL(url string) ClientOption {
 	return func(opts *ClientOptions) {
-		opts.Consumer.URL = url
+		opts.overallReference.URL = url
 	}
 }
 
 // todo(DMwangnima): change Filter Option like Cluster and LoadBalance
 func WithClientFilter(filter string) ClientOption {
 	return func(opts *ClientOptions) {
+		// todo: move this to overallReference
 		opts.Consumer.Filter = filter
 	}
 }
 
 // todo(DMwangnima): think about a more ideal configuration style
-func WithClientRegistryIDs(registryIDs []string) ClientOption {
+func WithClientRegistryIDs(registryIDs ...string) ClientOption {
 	return func(opts *ClientOptions) {
 		if len(registryIDs) > 0 {
 			opts.Consumer.RegistryIDs = registryIDs
@@ -482,9 +552,6 @@ func WithClientRegistry(opts ...registry.Option) ClientOption {
 	regOpts := registry.NewOptions(opts...)
 
 	return func(cliOpts *ClientOptions) {
-		if cliOpts.Registries == nil {
-			cliOpts.Registries = make(map[string]*global.RegistryConfig)
-		}
 		cliOpts.Registries[regOpts.ID] = regOpts.Registry
 	}
 }
@@ -501,55 +568,61 @@ func WithClientShutdown(opts ...graceful_shutdown.Option) ClientOption {
 
 func WithClientClusterAvailable() ClientOption {
 	return func(opts *ClientOptions) {
-		opts.Consumer.Cluster = constant.ClusterKeyAvailable
+		opts.overallReference.Cluster = constant.ClusterKeyAvailable
 	}
 }
 
 func WithClientClusterBroadcast() ClientOption {
 	return func(opts *ClientOptions) {
-		opts.Consumer.Cluster = constant.ClusterKeyBroadcast
+		opts.overallReference.Cluster = constant.ClusterKeyBroadcast
 	}
 }
 
 func WithClientClusterFailBack() ClientOption {
 	return func(opts *ClientOptions) {
-		opts.Consumer.Cluster = constant.ClusterKeyFailback
+		opts.overallReference.Cluster = constant.ClusterKeyFailback
 	}
 }
 
 func WithClientClusterFailFast() ClientOption {
 	return func(opts *ClientOptions) {
-		opts.Consumer.Cluster = constant.ClusterKeyFailfast
+		opts.overallReference.Cluster = constant.ClusterKeyFailfast
 	}
 }
 
 func WithClientClusterFailOver() ClientOption {
 	return func(opts *ClientOptions) {
-		opts.Consumer.Cluster = constant.ClusterKeyFailover
+		opts.overallReference.Cluster = constant.ClusterKeyFailover
 	}
 }
 
 func WithClientClusterFailSafe() ClientOption {
 	return func(opts *ClientOptions) {
-		opts.Consumer.Cluster = constant.ClusterKeyFailsafe
+		opts.overallReference.Cluster = constant.ClusterKeyFailsafe
 	}
 }
 
 func WithClientClusterForking() ClientOption {
 	return func(opts *ClientOptions) {
-		opts.Consumer.Cluster = constant.ClusterKeyForking
+		opts.overallReference.Cluster = constant.ClusterKeyForking
 	}
 }
 
 func WithClientClusterZoneAware() ClientOption {
 	return func(opts *ClientOptions) {
-		opts.Consumer.Cluster = constant.ClusterKeyZoneAware
+		opts.overallReference.Cluster = constant.ClusterKeyZoneAware
 	}
 }
 
 func WithClientClusterAdaptiveService() ClientOption {
 	return func(opts *ClientOptions) {
-		opts.Consumer.Cluster = constant.ClusterKeyAdaptiveService
+		opts.overallReference.Cluster = constant.ClusterKeyAdaptiveService
+	}
+}
+
+func WithClientClusterStrategy(strategy string) ClientOption {
+	return func(opts *ClientOptions) {
+		opts.overallReference.Cluster = strategy
 	}
 }
 
@@ -557,73 +630,75 @@ func WithClientClusterAdaptiveService() ClientOption {
 
 func WithClientLoadBalanceConsistentHashing() ClientOption {
 	return func(opts *ClientOptions) {
-		opts.Consumer.Loadbalance = constant.LoadBalanceKeyConsistentHashing
+		opts.overallReference.Loadbalance = constant.LoadBalanceKeyConsistentHashing
 	}
 }
 
 func WithClientLoadBalanceLeastActive() ClientOption {
 	return func(opts *ClientOptions) {
-		opts.Consumer.Loadbalance = constant.LoadBalanceKeyLeastActive
+		opts.overallReference.Loadbalance = constant.LoadBalanceKeyLeastActive
 	}
 }
 
 func WithClientLoadBalanceRandom() ClientOption {
 	return func(opts *ClientOptions) {
-		opts.Consumer.Loadbalance = constant.LoadBalanceKeyRandom
+		opts.overallReference.Loadbalance = constant.LoadBalanceKeyRandom
 	}
 }
 
 func WithClientLoadBalanceRoundRobin() ClientOption {
 	return func(opts *ClientOptions) {
-		opts.Consumer.Loadbalance = constant.LoadBalanceKeyRoundRobin
+		opts.overallReference.Loadbalance = constant.LoadBalanceKeyRoundRobin
 	}
 }
 
 func WithClientLoadBalanceP2C() ClientOption {
 	return func(opts *ClientOptions) {
-		opts.Consumer.Loadbalance = constant.LoadBalanceKeyP2C
+		opts.overallReference.Loadbalance = constant.LoadBalanceKeyP2C
 	}
 }
 
 func WithClientLoadBalance(lb string) ClientOption {
 	return func(opts *ClientOptions) {
-		opts.Consumer.Loadbalance = lb
+		opts.overallReference.Loadbalance = lb
 	}
 }
 
 func WithClientRetries(retries int) ClientOption {
 	return func(opts *ClientOptions) {
-		opts.Consumer.Retries = strconv.Itoa(retries)
+		opts.overallReference.Retries = strconv.Itoa(retries)
 	}
 }
 
+// is this needed?
 func WithClientGroup(group string) ClientOption {
 	return func(opts *ClientOptions) {
-		opts.Consumer.Group = group
+		opts.overallReference.Group = group
 	}
 }
 
+// is this needed?
 func WithClientVersion(version string) ClientOption {
 	return func(opts *ClientOptions) {
-		opts.Consumer.Version = version
+		opts.overallReference.Version = version
 	}
 }
 
 func WithClientSerializationJSON() ClientOption {
 	return func(opts *ClientOptions) {
-		opts.Consumer.Serialization = constant.JSONSerialization
+		opts.overallReference.Serialization = constant.JSONSerialization
 	}
 }
 
 func WithClientSerialization(ser string) ClientOption {
 	return func(opts *ClientOptions) {
-		opts.Consumer.Serialization = ser
+		opts.overallReference.Serialization = ser
 	}
 }
 
 func WithClientProvidedBy(providedBy string) ClientOption {
 	return func(opts *ClientOptions) {
-		opts.Consumer.ProvidedBy = providedBy
+		opts.overallReference.ProvidedBy = providedBy
 	}
 }
 
@@ -636,16 +711,19 @@ func WithClientProvidedBy(providedBy string) ClientOption {
 
 func WithClientParams(params map[string]string) ClientOption {
 	return func(opts *ClientOptions) {
-		opts.Consumer.Params = params
+		if len(params) <= 0 {
+			return
+		}
+		opts.overallReference.Params = params
 	}
 }
 
 func WithClientParam(k, v string) ClientOption {
 	return func(opts *ClientOptions) {
-		if opts.Consumer.Params == nil {
-			opts.Consumer.Params = make(map[string]string)
+		if opts.overallReference.Params == nil {
+			opts.overallReference.Params = make(map[string]string, 8)
 		}
-		opts.Consumer.Params[k] = v
+		opts.overallReference.Params[k] = v
 	}
 }
 
@@ -660,9 +738,9 @@ func WithClientParam(k, v string) ClientOption {
 //	}
 //}
 
-func WithClientSticky(sticky bool) ClientOption {
+func WithClientSticky() ClientOption {
 	return func(opts *ClientOptions) {
-		opts.Consumer.Sticky = sticky
+		opts.overallReference.Sticky = true
 	}
 }
 
@@ -700,13 +778,13 @@ func WithClientRequestTimeout(timeout time.Duration) ClientOption {
 
 func WithClientForceTag() ClientOption {
 	return func(opts *ClientOptions) {
-		opts.Consumer.ForceTag = true
+		opts.overallReference.ForceTag = true
 	}
 }
 
 func WithClientMeshProviderPort(port int) ClientOption {
 	return func(opts *ClientOptions) {
-		opts.Consumer.MeshProviderPort = port
+		opts.overallReference.MeshProviderPort = port
 	}
 }
 
@@ -750,8 +828,6 @@ func SetClientOtel(otel *global.OtelConfig) ClientOption {
 type CallOptions struct {
 	RequestTimeout string
 	Retries        string
-	Group          string
-	Version        string
 }
 
 type CallOption func(*CallOptions)
@@ -771,17 +847,5 @@ func WithCallRequestTimeout(timeout time.Duration) CallOption {
 func WithCallRetries(retries int) CallOption {
 	return func(opts *CallOptions) {
 		opts.Retries = strconv.Itoa(retries)
-	}
-}
-
-func WithCallGroup(group string) CallOption {
-	return func(opts *CallOptions) {
-		opts.Group = group
-	}
-}
-
-func WithCallVersion(version string) CallOption {
-	return func(opts *CallOptions) {
-		opts.Version = version
 	}
 }

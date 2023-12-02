@@ -440,6 +440,12 @@ func SetServerOtel(otel *global.OtelConfig) ServerOption {
 	}
 }
 
+func SetServerProvider(provider *global.ProviderConfig) ServerOption {
+	return func(opts *ServerOptions) {
+		opts.Provider = provider
+	}
+}
+
 type ServiceOptions struct {
 	Application *global.ApplicationConfig
 	Provider    *global.ProviderConfig
@@ -574,6 +580,12 @@ func (svcOpts *ServiceOptions) init(srv *Server, opts ...ServiceOption) error {
 type ServiceOption func(*ServiceOptions)
 
 // ---------- For user ----------
+
+func WithInterface(intf string) ServiceOption {
+	return func(opts *ServiceOptions) {
+		opts.Service.Interface = intf
+	}
+}
 
 // todo(DMwangnima): think about a more ideal configuration style
 func WithRegistryIDs(registryIDs []string) ServiceOption {

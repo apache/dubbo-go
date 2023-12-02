@@ -19,7 +19,6 @@ package dubbo
 
 import (
 	"bytes"
-	"strconv"
 	"time"
 )
 
@@ -70,11 +69,12 @@ func (c *DubboCodec) EncodeRequest(request *remoting.Request) (*bytes.Buffer, er
 	svc.Version = invocation.GetAttachmentWithDefaultValue(constant.VersionKey, "")
 	svc.Group = invocation.GetAttachmentWithDefaultValue(constant.GroupKey, "")
 	svc.Method = invocation.MethodName()
-	timeout, err := strconv.Atoi(invocation.GetAttachmentWithDefaultValue(constant.TimeoutKey, strconv.Itoa(constant.DefaultRemotingTimeout)))
-	if err != nil {
-		// it will be wrapped in readwrite.Write .
-		return nil, perrors.WithStack(err)
-	}
+	//timeout, err := strconv.Atoi(invocation.GetAttachmentWithDefaultValue(constant.TimeoutKey, strconv.Itoa(constant.DefaultRemotingTimeout)))
+	timeout := 300000
+	//if err != nil {
+	//	// it will be wrapped in readwrite.Write .
+	//	return nil, perrors.WithStack(err)
+	//}
 	svc.Timeout = time.Duration(timeout)
 
 	header := impl.DubboHeader{}

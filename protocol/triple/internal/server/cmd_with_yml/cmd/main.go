@@ -19,39 +19,15 @@ package main
 
 import (
 	"dubbo.apache.org/dubbo-go/v3"
-	"dubbo.apache.org/dubbo-go/v3/client"
 	_ "dubbo.apache.org/dubbo-go/v3/imports"
-	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/client/common"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto/triple_gen/greettriple"
-	"dubbo.apache.org/dubbo-go/v3/registry"
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/server/api"
 )
 
 func main() {
-	// global conception
-	// configure global configurations and common modules
-	ins, err := dubbo.NewInstance(
-		dubbo.WithName("dubbo_test"),
-		dubbo.WithRegistry(
-			registry.WithID("zk"),
-			registry.WithZookeeper(),
-			registry.WithAddress("127.0.0.1:2181"),
-		),
-	)
-	if err != nil {
+	greettriple.SetProviderService(&api.GreetTripleServer{})
+	if err := dubbo.Load(); err != nil {
 		panic(err)
 	}
-	// configure the params that only client layer cares
-	cli, err := ins.NewClient(
-		client.WithClientRegistryIDs("zk"),
-	)
-	if err != nil {
-		panic(err)
-	}
-
-	svc, err := greettriple.NewGreetService(cli)
-	if err != nil {
-		panic(err)
-	}
-
-	common.TestClient(svc)
+	select {}
 }

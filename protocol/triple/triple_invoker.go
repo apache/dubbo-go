@@ -85,6 +85,7 @@ func (ti *TripleInvoker) Invoke(ctx context.Context, invocation protocol.Invocat
 	// e.g. Client.CallUnary(... req, resp []interface, ...)
 	// inRaw represents req and resp, inRawLen represents 2.
 	inRaw := invocation.ParameterRawValues()
+	invocation.Reply()
 	inRawLen := len(inRaw)
 	method := invocation.MethodName()
 	// todo(DMwangnima): process headers(metadata) passed in
