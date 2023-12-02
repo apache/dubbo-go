@@ -76,7 +76,7 @@ type Health interface {
 
 // NewHealth constructs a client for the dubbo.health.v1.Health service.
 func NewHealth(cli *client.Client, opts ...client.ReferenceOption) (Health, error) {
-	conn, err := cli.Dial("grpc.health.v1.Health", opts...)
+	conn, err := cli.DialWithInfo("dubbo.health.v1.Health", &Health_ClientInfo, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +146,7 @@ var Health_ClientInfo = client.ClientInfo{
 	InterfaceName: "dubbo.health.v1.Health",
 	MethodNames:   []string{"Check", "Watch"},
 	ConnectionInjectFunc: func(dubboCliRaw interface{}, conn *client.Connection) {
-		dubboCli := dubboCliRaw.(HealthImpl)
+		dubboCli := dubboCliRaw.(*HealthImpl)
 		dubboCli.conn = conn
 	},
 }
