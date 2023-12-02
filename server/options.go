@@ -581,6 +581,12 @@ type ServiceOption func(*ServiceOptions)
 
 // ---------- For user ----------
 
+func WithInterface(intf string) ServiceOption {
+	return func(opts *ServiceOptions) {
+		opts.Service.Interface = intf
+	}
+}
+
 // todo(DMwangnima): think about a more ideal configuration style
 func WithRegistryIDs(registryIDs []string) ServiceOption {
 	return func(cfg *ServiceOptions) {

@@ -18,40 +18,35 @@
 package main
 
 import (
-	"dubbo.apache.org/dubbo-go/v3"
+	"context"
+)
+
+import (
+	"github.com/dubbogo/gost/log/logger"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/client"
 	_ "dubbo.apache.org/dubbo-go/v3/imports"
-	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/client/common"
-	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto/triple_gen/greettriple"
-	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
 func main() {
-	// global conception
-	// configure global configurations and common modules
-	ins, err := dubbo.NewInstance(
-		dubbo.WithName("dubbo_test"),
-		dubbo.WithRegistry(
-			registry.WithID("zk"),
-			registry.WithZookeeper(),
-			registry.WithAddress("127.0.0.1:2181"),
-		),
+	cli, err := client.NewClient(
+		client.WithClientProtocolDubbo(),
 	)
 	if err != nil {
 		panic(err)
 	}
-	// configure the params that only client layer cares
-	cli, err := ins.NewClient(
-		client.WithClientRegistryIDs("zk"),
+	conn, err := cli.Dial("GreetProvider",
+		client.WithURL("127.0.0.1:20000"),
 	)
 	if err != nil {
 		panic(err)
 	}
-
-	svc, err := greettriple.NewGreetService(cli)
-	if err != nil {
-		panic(err)
+	var resp string
+	if err := conn.CallUnary(context.Background(), []interface{}{"hello", "new", "dubbo"}, &resp, "Greet"); err != nil {
+		logger.Errorf("GreetProvider.Greet err: %s", err)
+		return
 	}
-
-	common.TestClient(svc)
+	logger.Infof("Get Response: %s", resp)
 }
