@@ -26,7 +26,9 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3"
 	"dubbo.apache.org/dubbo-go/v3/client"
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	"dubbo.apache.org/dubbo-go/v3/server"
@@ -74,47 +76,39 @@ type Health interface {
 
 // NewHealth constructs a client for the dubbo.health.v1.Health service.
 func NewHealth(cli *client.Client, opts ...client.ReferenceOption) (Health, error) {
-	group, version, err := cli.Init(&Health_ClientInfo, opts...)
+	conn, err := cli.DialWithInfo("dubbo.health.v1.Health", &Health_ClientInfo, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return &HealthImpl{
-		cli:     cli,
-		group:   group,
-		version: version,
+		conn: conn,
 	}, nil
+}
+
+func SetConsumerService(srv common.RPCService) {
+	dubbo.SetConsumerServiceWithInfo(srv, &Health_ClientInfo)
 }
 
 // HealthImpl implements Health.
 type HealthImpl struct {
-	cli     *client.Client
-	group   string
-	version string
+	conn *client.Connection
 }
 
 func (c *HealthImpl) Check(ctx context.Context, req *HealthCheckRequest, opts ...client.CallOption) (*HealthCheckResponse, error) {
-	opts = appendGroupVersion(opts, c)
 	resp := new(HealthCheckResponse)
-	if err := c.cli.CallUnary(ctx, req, resp, "dubbo.health.v1.Health", "Check", opts...); err != nil {
+	if err := c.conn.CallUnary(ctx, []interface{}{req}, resp, "Check", opts...); err != nil {
 		return nil, err
 	}
 	return resp, nil
 }
 
 func (c *HealthImpl) Watch(ctx context.Context, req *HealthCheckRequest, opts ...client.CallOption) (Health_WatchClient, error) {
-	opts = appendGroupVersion(opts, c)
-	stream, err := c.cli.CallServerStream(ctx, req, "dubbo.health.v1.Health", "Watch", opts...)
+	stream, err := c.conn.CallServerStream(ctx, req, "Watch", opts...)
 	if err != nil {
 		return nil, err
 	}
 	rawStream := stream.(*triple_protocol.ServerStreamForClient)
 	return &HealthWatchClient{rawStream}, nil
-}
-
-func appendGroupVersion(opts []client.CallOption, c *HealthImpl) []client.CallOption {
-	opts = append(opts, client.WithCallGroup(c.group))
-	opts = append(opts, client.WithCallVersion(c.version))
-	return opts
 }
 
 type Health_WatchClient interface {
@@ -151,9 +145,9 @@ func (cli *HealthWatchClient) Conn() (triple_protocol.StreamingClientConn, error
 var Health_ClientInfo = client.ClientInfo{
 	InterfaceName: "dubbo.health.v1.Health",
 	MethodNames:   []string{"Check", "Watch"},
-	ClientInjectFunc: func(dubboCliRaw interface{}, cli *client.Client) {
-		dubboCli := dubboCliRaw.(HealthImpl)
-		dubboCli.cli = cli
+	ConnectionInjectFunc: func(dubboCliRaw interface{}, conn *client.Connection) {
+		dubboCli := dubboCliRaw.(*HealthImpl)
+		dubboCli.conn = conn
 	},
 }
 
@@ -165,6 +159,10 @@ type HealthHandler interface {
 
 func RegisterHealthHandler(srv *server.Server, hdlr HealthHandler, opts ...server.ServiceOption) error {
 	return srv.Register(hdlr, &Health_ServiceInfo, opts...)
+}
+
+func SetProviderService(srv common.RPCService) {
+	dubbo.SetProviderServiceWithInfo(srv, &Health_ServiceInfo)
 }
 
 type Health_WatchServer interface {
