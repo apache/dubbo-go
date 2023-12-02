@@ -133,33 +133,35 @@ func (svcOpts *ServiceOptions) ExportWithInfo(info *ServiceInfo) error {
 }
 
 func (svcOpts *ServiceOptions) export(info *ServiceInfo) error {
-	srv := svcOpts.Service
+	svc := svcOpts.Service
 
 	if info != nil {
-		srv.Interface = info.InterfaceName
+		if svc.Interface == "" {
+			svc.Interface = info.InterfaceName
+		}
 		svcOpts.Id = info.InterfaceName
 		svcOpts.info = info
 	}
 	// TODO: delay needExport
 	if svcOpts.unexported != nil && svcOpts.unexported.Load() {
-		err := perrors.Errorf("The service %v has already unexported!", srv.Interface)
+		err := perrors.Errorf("The service %v has already unexported!", svc.Interface)
 		logger.Errorf(err.Error())
 		return err
 	}
 	if svcOpts.exported != nil && svcOpts.exported.Load() {
-		logger.Warnf("The service %v has already exported!", srv.Interface)
+		logger.Warnf("The service %v has already exported!", svc.Interface)
 		return nil
 	}
 
 	regUrls := make([]*common.URL, 0)
-	if !srv.NotRegister {
-		regUrls = config.LoadRegistries(srv.RegistryIDs, svcOpts.registriesCompat, common.PROVIDER)
+	if !svc.NotRegister {
+		regUrls = config.LoadRegistries(svc.RegistryIDs, svcOpts.registriesCompat, common.PROVIDER)
 	}
 
 	urlMap := svcOpts.getUrlMap()
-	protocolConfigs := loadProtocol(srv.ProtocolIDs, svcOpts.protocolsCompat)
+	protocolConfigs := loadProtocol(svc.ProtocolIDs, svcOpts.protocolsCompat)
 	if len(protocolConfigs) == 0 {
-		logger.Warnf("The service %v'svcOpts '%v' protocols don't has right protocolConfigs, Please check your configuration center and transfer protocol ", srv.Interface, srv.ProtocolIDs)
+		logger.Warnf("The service %v'svcOpts '%v' protocols don't has right protocolConfigs, Please check your configuration center and transfer protocol ", svc.Interface, svc.ProtocolIDs)
 		return nil
 	}
 
@@ -173,10 +175,10 @@ func (svcOpts *ServiceOptions) export(info *ServiceInfo) error {
 		// todo(DMwangnimg): finish replacing procedure
 
 		// registry the service reflect
-		methods, err := common.ServiceMap.Register(srv.Interface, proto.Name, srv.Group, srv.Version, svcOpts.rpcService)
+		methods, err := common.ServiceMap.Register(svc.Interface, proto.Name, svc.Group, svc.Version, svcOpts.rpcService)
 		if err != nil {
 			formatErr := perrors.Errorf("The service %v needExport the protocol %v error! Error message is %v.",
-				srv.Interface, proto.Name, err.Error())
+				svc.Interface, proto.Name, err.Error())
 			logger.Errorf(formatErr.Error())
 			return formatErr
 		}
@@ -187,7 +189,7 @@ func (svcOpts *ServiceOptions) export(info *ServiceInfo) error {
 			nextPort = nextPort.Next()
 		}
 		ivkURL := common.NewURLWithOptions(
-			common.WithPath(srv.Interface),
+			common.WithPath(svc.Interface),
 			common.WithProtocol(proto.Name),
 			common.WithIp(proto.Ip),
 			common.WithPort(port),
@@ -197,14 +199,14 @@ func (svcOpts *ServiceOptions) export(info *ServiceInfo) error {
 			common.WithMethods(strings.Split(methods, ",")),
 			// todo(DMwangnima): remove this
 			common.WithAttribute(constant.ServiceInfoKey, info),
-			common.WithToken(srv.Token),
+			common.WithToken(svc.Token),
 			common.WithParamsValue(constant.MetadataTypeKey, svcOpts.metadataType),
 			// fix https://github.com/apache/dubbo-go/issues/2176
 			common.WithParamsValue(constant.MaxServerSendMsgSize, proto.MaxServerSendMsgSize),
 			common.WithParamsValue(constant.MaxServerRecvMsgSize, proto.MaxServerRecvMsgSize),
 		)
-		if len(srv.Tag) > 0 {
-			ivkURL.AddParam(constant.Tagkey, srv.Tag)
+		if len(svc.Tag) > 0 {
+			ivkURL.AddParam(constant.Tagkey, svc.Tag)
 		}
 
 		// post process the URL to be exported

@@ -18,40 +18,32 @@
 package main
 
 import (
-	"dubbo.apache.org/dubbo-go/v3"
-	"dubbo.apache.org/dubbo-go/v3/client"
 	_ "dubbo.apache.org/dubbo-go/v3/imports"
-	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/client/common"
-	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto/triple_gen/greettriple"
-	"dubbo.apache.org/dubbo-go/v3/registry"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/server"
 )
 
+type GreetProvider struct {
+}
+
+func (*GreetProvider) Greet(req string, req1 string, req2 string) (string, error) {
+	return req + req1 + req2, nil
+}
+
 func main() {
-	// global conception
-	// configure global configurations and common modules
-	ins, err := dubbo.NewInstance(
-		dubbo.WithName("dubbo_test"),
-		dubbo.WithRegistry(
-			registry.WithID("zk"),
-			registry.WithZookeeper(),
-			registry.WithAddress("127.0.0.1:2181"),
+	srv, err := server.NewServer(
+		server.WithServerProtocol(
+			protocol.WithDubbo(),
+			protocol.WithPort(20000),
 		),
 	)
 	if err != nil {
 		panic(err)
 	}
-	// configure the params that only client layer cares
-	cli, err := ins.NewClient(
-		client.WithClientRegistryIDs("zk"),
-	)
-	if err != nil {
+	if err := srv.Register(&GreetProvider{}, nil, server.WithInterface("GreetProvider")); err != nil {
 		panic(err)
 	}
-
-	svc, err := greettriple.NewGreetService(cli)
-	if err != nil {
+	if err := srv.Serve(); err != nil {
 		panic(err)
 	}
-
-	common.TestClient(svc)
 }

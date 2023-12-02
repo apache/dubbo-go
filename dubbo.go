@@ -23,6 +23,7 @@ import (
 
 import (
 	"github.com/dubbogo/gost/log/logger"
+
 	"github.com/pkg/errors"
 )
 
@@ -85,7 +86,7 @@ func (ins *Instance) NewClient(opts ...client.ClientOption) (*client.Client, err
 		cliOpts = append(cliOpts,
 			client.WithClientFilter(conCfg.Filter),
 			// todo(DMwangnima): deal with Protocol
-			client.WithClientRegistryIDs(conCfg.RegistryIDs),
+			client.WithClientRegistryIDs(conCfg.RegistryIDs...),
 			// todo(DMwangnima): deal with TracingKey
 			client.SetClientConsumer(conCfg),
 		)
@@ -206,7 +207,7 @@ func (ins *Instance) loadProvider() error {
 			logger.Fatalf("Failed to start server, err: %v", err)
 		}
 	}()
-	return err
+	return nil
 }
 
 // loadConsumer loads the service consumer.
@@ -218,13 +219,14 @@ func (ins *Instance) loadConsumer() error {
 	// refer services
 	conLock.RLock()
 	defer conLock.RUnlock()
-	for _, definition := range consumerServices {
-		if _, _, err = cli.Init(definition.Info); err != nil {
-			return err
+	for intfName, definition := range consumerServices {
+		conn, dialErr := cli.DialWithInfo(intfName, definition.Info)
+		if dialErr != nil {
+			return dialErr
 		}
-		definition.Info.ClientInjectFunc(definition.Svc, cli)
+		definition.Info.ConnectionInjectFunc(definition.Svc, conn)
 	}
-	return err
+	return nil
 }
 
 // SetConsumerServiceWithInfo sets the consumer service with the client information.
