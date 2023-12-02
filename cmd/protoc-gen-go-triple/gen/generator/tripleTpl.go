@@ -154,7 +154,9 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3"
 	"dubbo.apache.org/dubbo-go/v3/client"
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	"dubbo.apache.org/dubbo-go/v3/server"
@@ -210,22 +212,27 @@ type {{$s.ServiceName}} interface { {{- range $s.Methods}}
 `
 
 const InterfaceImplTpl = `{{$t := .}}{{range $s := .Services}}// New{{.ServiceName}} constructs a client for the {{$t.Package}}.{{.ServiceName}} service. 
-func New{{.ServiceName}}(cli *client.Client) ({{.ServiceName}}, error) {
-	if err := cli.Init(&{{.ServiceName}}_ClientInfo); err != nil {
+func New{{.ServiceName}}(cli *client.Client, opts ...client.ReferenceOption) ({{.ServiceName}}, error) {
+	conn, err := cli.DialWithInfo("{{$t.ProtoPackage}}.{{.ServiceName}}", &{{.ServiceName}}_ClientInfo, opts...)
+	if err != nil {
 		return nil, err
 	}
 	return &{{.ServiceName}}Impl{
-		cli: cli,
+		conn: conn,
 	}, nil
+}
+
+func SetConsumerService(srv common.RPCService) {
+	dubbo.SetConsumerServiceWithInfo(srv,&{{.ServiceName}}_ClientInfo)
 }
 
 // {{.ServiceName}}Impl implements {{.ServiceName}}.
 type {{.ServiceName}}Impl struct {
-	cli *client.Client
+	conn *client.Connection
 }
 {{range .Methods}}{{if .StreamsRequest}}{{if .StreamsReturn}}
 func (c *{{$s.ServiceName}}Impl) {{.MethodName}}(ctx context.Context, opts ...client.CallOption) ({{$s.ServiceName}}_{{.MethodName}}Client, error) {
-	stream, err := c.cli.CallBidiStream(ctx, "{{$t.ProtoPackage}}.{{$s.ServiceName}}", "{{.MethodName}}", opts...)
+	stream, err := c.conn.CallBidiStream(ctx, "{{.MethodName}}", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -234,7 +241,7 @@ func (c *{{$s.ServiceName}}Impl) {{.MethodName}}(ctx context.Context, opts ...cl
 }
 {{else}}
 func (c *{{$s.ServiceName}}Impl) {{.MethodName}}(ctx context.Context, opts ...client.CallOption) ({{$s.ServiceName}}_{{.MethodName}}Client, error) {
-	stream, err := c.cli.CallClientStream(ctx, "{{$t.ProtoPackage}}.{{$s.ServiceName}}", "{{.MethodName}}", opts...)
+	stream, err := c.conn.CallClientStream(ctx, "{{.MethodName}}", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -243,7 +250,7 @@ func (c *{{$s.ServiceName}}Impl) {{.MethodName}}(ctx context.Context, opts ...cl
 }
 {{end}}{{else}}{{if .StreamsReturn}}
 func (c *{{$s.ServiceName}}Impl) {{.MethodName}}(ctx context.Context, req *proto.{{.RequestType}}, opts ...client.CallOption) ({{$s.ServiceName}}_{{.MethodName}}Client, error) {
-	stream, err := c.cli.CallServerStream(ctx, req, "{{$t.ProtoPackage}}.{{$s.ServiceName}}", "{{.MethodName}}", opts...)
+	stream, err := c.conn.CallServerStream(ctx, req, "{{.MethodName}}", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -253,7 +260,7 @@ func (c *{{$s.ServiceName}}Impl) {{.MethodName}}(ctx context.Context, req *proto
 {{else}}
 func (c *{{$s.ServiceName}}Impl) {{.MethodName}}(ctx context.Context, req *proto.{{.RequestType}}, opts ...client.CallOption) (*proto.{{.ReturnType}}, error) {
 	resp := new(proto.{{.ReturnType}})
-	if err := c.cli.CallUnary(ctx, req, resp, "{{$t.ProtoPackage}}.{{$s.ServiceName}}", "{{.MethodName}}", opts...); err != nil {
+	if err := c.conn.CallUnary(ctx, []interface{}{req}, resp, "{{.MethodName}}", opts...); err != nil {
 		return nil, err
 	}
 	return resp, nil
@@ -356,9 +363,9 @@ func (cli *{{$s.ServiceName}}{{.MethodName}}Client) Conn() (triple_protocol.Stre
 const MethodInfoTpl = `{{$t := .}}{{range $i, $s := .Services}}var {{.ServiceName}}_ClientInfo = client.ClientInfo{
 	InterfaceName: "{{$t.Package}}.{{.ServiceName}}",
 	MethodNames:   []string{ {{- range $j, $m := .Methods}}"{{.MethodName}}"{{if last $j (len $s.Methods)}}{{else}},{{end}}{{end -}} },
-	ClientInjectFunc: func(dubboCliRaw interface{}, cli *client.Client) {
-		dubboCli := dubboCliRaw.({{$s.ServiceName}}Impl)
-		dubboCli.cli = cli
+	ConnectionInjectFunc: func(dubboCliRaw interface{}, conn *client.Connection) {
+		dubboCli := dubboCliRaw.(*{{$s.ServiceName}}Impl)
+		dubboCli.conn = conn
 	},
 }{{end}}
 
@@ -371,6 +378,10 @@ type {{.ServiceName}}Handler interface { {{- range $s.Methods}}
 
 func Register{{.ServiceName}}Handler(srv *server.Server, hdlr {{.ServiceName}}Handler, opts ...server.ServiceOption) error {
 	return srv.Register(hdlr, &{{.ServiceName}}_ServiceInfo, opts...)
+}
+
+func SetProviderService(srv common.RPCService)  {
+	dubbo.SetProviderServiceWithInfo(srv,&{{.ServiceName}}_ServiceInfo)
 }{{end}}
 `
 
