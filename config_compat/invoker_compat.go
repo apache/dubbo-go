@@ -22,5 +22,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
-// these functions are used to resolve circular dependencies temporarily.
+// NewInfoInvoker is used to resolve circular dependencies temporarily.
+// source: server/compat.go func compatNewInfoInvoker(url *common.URL, info interface{}, svc common.RPCService) protocol.Invoker
 var NewInfoInvoker func(url *common.URL, info interface{}, svc common.RPCService) protocol.Invoker
