@@ -240,12 +240,12 @@ func GetMetadataInfo(app string, instance registry.ServiceInstance, revision str
 		metadataStorageType = instance.GetMetadata()[constant.MetadataStorageTypePropertyName]
 	}
 	if metadataStorageType == constant.RemoteMetadataStorageType {
-		metadataInfo, err = getMetadataFromMetadataReport(revision, instance)
+		metadataInfo, err = client.GetMetadataFromMetadataReport(revision, instance)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		metadataInfo, err = getMetadataFromRpc(revision, instance)
+		metadataInfo, err = client.GetMetadataFromRpc(revision, instance)
 		if err != nil {
 			return nil, err
 		}
