@@ -43,6 +43,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/config_compat"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
 )
@@ -257,6 +258,7 @@ func (s *ServiceConfig) Export() error {
 		return nil
 	}
 
+	var invoker protocol.Invoker
 	ports := getRandomPort(protocolConfigs)
 	nextPort := ports.Front()
 	proxyFactory := extension.GetProxyFactory(s.ProxyFactoryKey)
@@ -290,7 +292,8 @@ func (s *ServiceConfig) Export() error {
 			common.WithParamsValue(constant.MaxServerSendMsgSize, proto.MaxServerSendMsgSize),
 			common.WithParamsValue(constant.MaxServerRecvMsgSize, proto.MaxServerRecvMsgSize),
 		)
-		if info := GetProviderServiceInfo(s.id); info != nil {
+		info := GetProviderServiceInfo(s.id)
+		if info != nil {
 			ivkURL.SetAttribute(constant.ServiceInfoKey, info)
 		}
 
@@ -315,7 +318,11 @@ func (s *ServiceConfig) Export() error {
 
 			for _, regUrl := range regUrls {
 				setRegistrySubURL(ivkURL, regUrl)
-				invoker := proxyFactory.GetInvoker(regUrl)
+				if info == nil {
+					invoker = proxyFactory.GetInvoker(regUrl)
+				} else {
+					invoker = config_compat.NewInfoInvoker(regUrl, info, s.rpcService)
+				}
 				exporter := s.cacheProtocol.Export(invoker)
 				if exporter == nil {
 					return perrors.New(fmt.Sprintf("Registry protocol new exporter error, registry is {%v}, url is {%v}", regUrl, ivkURL))
@@ -333,7 +340,11 @@ func (s *ServiceConfig) Export() error {
 					logger.Warnf("SetMetadataServiceURL error = %s", err)
 				}
 			}
-			invoker := proxyFactory.GetInvoker(ivkURL)
+			if info == nil {
+				invoker = proxyFactory.GetInvoker(ivkURL)
+			} else {
+				invoker = config_compat.NewInfoInvoker(ivkURL, info, s.rpcService)
+			}
 			exporter := extension.GetProtocol(protocolwrapper.FILTER).Export(invoker)
 			if exporter == nil {
 				return perrors.New(fmt.Sprintf("Filter protocol without registry new exporter error, url is {%v}", ivkURL))
