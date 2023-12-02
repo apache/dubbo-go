@@ -56,7 +56,7 @@ func main() {
 		logger.Info("greet.GreetService's health", check.String())
 	}
 
-	watch, err := svc.Watch(context.Background(), &health.HealthCheckRequest{Service: "grpc.health.v1.Health"})
+	watch, err := svc.Watch(context.Background(), &health.HealthCheckRequest{Service: "dubbo.health.v1.Health"})
 	if err != nil {
 		logger.Error(err)
 	} else {

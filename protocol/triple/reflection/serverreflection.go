@@ -37,6 +37,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/config"
 	rpb "dubbo.apache.org/dubbo-go/v3/protocol/triple/reflection/triple_reflection"
 	"dubbo.apache.org/dubbo-go/v3/server"
 )
@@ -269,17 +270,20 @@ func (s *ReflectionServer) ServerReflectionInfo(ctx context.Context, stream rpb.
 	}
 }
 
-var reflectionServe *ReflectionServer
+var reflectionServer *ReflectionServer
 
 func init() {
-	reflectionServe = NewServer()
+	reflectionServer = NewServer()
 	server.SetProServices(&server.ServiceDefinition{
-		Handler: reflectionServe,
+		Handler: reflectionServer,
 		Info:    &rpb.ServerReflection_ServiceInfo,
 		Opts:    []server.ServiceOption{server.WithNotRegister()},
 	})
+	// In order to adapt config.Load
+	// Plans for future removal
+	config.SetProviderServiceWithInfo(reflectionServer, &rpb.ServerReflection_ServiceInfo)
 }
 
 func Register(s ServiceInfoProvider) {
-	reflectionServe.s = s
+	reflectionServer.s = s
 }

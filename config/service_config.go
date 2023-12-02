@@ -290,6 +290,10 @@ func (s *ServiceConfig) Export() error {
 			common.WithParamsValue(constant.MaxServerSendMsgSize, proto.MaxServerSendMsgSize),
 			common.WithParamsValue(constant.MaxServerRecvMsgSize, proto.MaxServerRecvMsgSize),
 		)
+		if info := GetProviderServiceInfo(s.id); info != nil {
+			ivkURL.SetAttribute(constant.ServiceInfoKey, info)
+		}
+
 		if len(s.Tag) > 0 {
 			ivkURL.AddParam(constant.Tagkey, s.Tag)
 		}
