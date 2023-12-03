@@ -390,7 +390,7 @@ const (
 // reflection service
 const (
 	ReflectionServiceTypeName  = "ReflectionServer"
-	ReflectionServiceInterface = "grpc.reflection.v1alpha.ReflectionServer"
+	ReflectionServiceInterface = "grpc.reflection.v1alpha.ServerReflection"
 )
 
 // healthcheck service
