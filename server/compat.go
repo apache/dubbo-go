@@ -20,7 +20,6 @@ package server
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/config"
-	"dubbo.apache.org/dubbo-go/v3/config_compat"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
@@ -93,7 +92,7 @@ func compatProtocolConfig(c *global.ProtocolConfig) *config.ProtocolConfig {
 }
 
 func init() {
-	config_compat.NewInfoInvoker = compatNewInfoInvoker
+	config.NewInfoInvoker = compatNewInfoInvoker
 }
 
 // these functions are used to resolve circular dependencies temporarily.

@@ -395,7 +395,7 @@ const (
 
 // healthcheck service
 const (
-	HealthCheckServiceTypeName  = "HealthTripleServer"
+	HealthCheckServiceTypeName  = "HealthCheckServer"
 	HealthCheckServiceInterface = "dubbo.health.v1.Health"
 )
 

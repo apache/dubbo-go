@@ -43,7 +43,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/config_compat"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
 )
@@ -321,7 +320,7 @@ func (s *ServiceConfig) Export() error {
 				if info == nil {
 					invoker = proxyFactory.GetInvoker(regUrl)
 				} else {
-					invoker = config_compat.NewInfoInvoker(regUrl, info, s.rpcService)
+					invoker = NewInfoInvoker(regUrl, info, s.rpcService)
 				}
 				exporter := s.cacheProtocol.Export(invoker)
 				if exporter == nil {
@@ -343,7 +342,7 @@ func (s *ServiceConfig) Export() error {
 			if info == nil {
 				invoker = proxyFactory.GetInvoker(ivkURL)
 			} else {
-				invoker = config_compat.NewInfoInvoker(ivkURL, info, s.rpcService)
+				invoker = NewInfoInvoker(ivkURL, info, s.rpcService)
 			}
 			exporter := extension.GetProtocol(protocolwrapper.FILTER).Export(invoker)
 			if exporter == nil {

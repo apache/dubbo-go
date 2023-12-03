@@ -37,6 +37,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	rpb "dubbo.apache.org/dubbo-go/v3/protocol/triple/reflection/triple_reflection"
 	"dubbo.apache.org/dubbo-go/v3/server"
@@ -81,6 +82,10 @@ type ReflectionServer struct {
 	s            ServiceInfoProvider
 	descResolver protodesc.Resolver
 	extResolver  ExtensionResolver
+}
+
+func (srv *ReflectionServer) Reference() string {
+	return constant.ReflectionServiceTypeName
 }
 
 // fileDescWithDependencies returns a slice of serialized fileDescriptors in

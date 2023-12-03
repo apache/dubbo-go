@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package config_compat
+package config
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
