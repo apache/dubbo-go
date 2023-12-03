@@ -174,7 +174,8 @@ func init() {
 	server.SetProServices(&server.ServiceDefinition{
 		Handler: healthServer,
 		Info:    &triple_health.Health_ServiceInfo,
-		Opts:    []server.ServiceOption{server.WithNotRegister()},
+		Opts: []server.ServiceOption{server.WithNotRegister(),
+			server.WithInterface(constant.HealthCheckServiceInterface)},
 	})
 
 	// In order to adapt config.Load

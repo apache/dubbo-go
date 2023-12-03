@@ -282,7 +282,8 @@ func init() {
 	server.SetProServices(&server.ServiceDefinition{
 		Handler: reflectionServer,
 		Info:    &rpb.ServerReflection_ServiceInfo,
-		Opts:    []server.ServiceOption{server.WithNotRegister()},
+		Opts: []server.ServiceOption{server.WithNotRegister(),
+			server.WithInterface(constant.ReflectionServiceInterface)},
 	})
 	// In order to adapt config.Load
 	// Plans for future removal

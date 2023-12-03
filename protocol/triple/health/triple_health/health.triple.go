@@ -43,7 +43,7 @@ const _ = triple_protocol.IsAtLeastVersion0_1_0
 
 const (
 	// HealthName is the fully-qualified name of the Health service.
-	HealthName = "dubbo.health.v1.Health"
+	HealthName = "grpc.health.v1.Health"
 )
 
 // These constants are the fully-qualified names of the RPCs defined in this package. They're
@@ -55,9 +55,9 @@ const (
 // period.
 const (
 	// HealthCheckProcedure is the fully-qualified name of the Health's Check RPC.
-	HealthCheckProcedure = "/dubbo.health.v1.Health/Check"
+	HealthCheckProcedure = "/grpc.health.v1.Health/Check"
 	// HealthWatchProcedure is the fully-qualified name of the Health's Watch RPC.
-	HealthWatchProcedure = "/dubbo.health.v1.Health/Watch"
+	HealthWatchProcedure = "/grpc.health.v1.Health/Watch"
 )
 
 var (
@@ -68,15 +68,15 @@ var (
 	_ Health_WatchServer = (*HealthWatchServer)(nil)
 )
 
-// Health is a client for the dubbo.health.v1.Health service.
+// Health is a client for the grpc.health.v1.Health service.
 type Health interface {
 	Check(ctx context.Context, req *HealthCheckRequest, opts ...client.CallOption) (*HealthCheckResponse, error)
 	Watch(ctx context.Context, req *HealthCheckRequest, opts ...client.CallOption) (Health_WatchClient, error)
 }
 
-// NewHealth constructs a client for the dubbo.health.v1.Health service.
+// NewHealth constructs a client for the grpc.health.v1.Health service.
 func NewHealth(cli *client.Client, opts ...client.ReferenceOption) (Health, error) {
-	conn, err := cli.DialWithInfo("dubbo.health.v1.Health", &Health_ClientInfo, opts...)
+	conn, err := cli.DialWithInfo("grpc.health.v1.Health", &Health_ClientInfo, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -143,7 +143,7 @@ func (cli *HealthWatchClient) Conn() (triple_protocol.StreamingClientConn, error
 }
 
 var Health_ClientInfo = client.ClientInfo{
-	InterfaceName: "dubbo.health.v1.Health",
+	InterfaceName: "grpc.health.v1.Health",
 	MethodNames:   []string{"Check", "Watch"},
 	ConnectionInjectFunc: func(dubboCliRaw interface{}, conn *client.Connection) {
 		dubboCli := dubboCliRaw.(*HealthImpl)
@@ -151,7 +151,7 @@ var Health_ClientInfo = client.ClientInfo{
 	},
 }
 
-// HealthHandler is an implementation of the dubbo.health.v1.Health service.
+// HealthHandler is an implementation of the grpc.health.v1.Health service.
 type HealthHandler interface {
 	Check(context.Context, *HealthCheckRequest) (*HealthCheckResponse, error)
 	Watch(context.Context, *HealthCheckRequest, Health_WatchServer) error
@@ -181,7 +181,7 @@ func (g *HealthWatchServer) Send(msg *HealthCheckResponse) error {
 }
 
 var Health_ServiceInfo = server.ServiceInfo{
-	InterfaceName: "dubbo.health.v1.Health",
+	InterfaceName: "grpc.health.v1.Health",
 	ServiceType:   (*HealthHandler)(nil),
 	Methods: []server.MethodInfo{
 		{
