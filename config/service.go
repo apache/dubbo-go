@@ -32,7 +32,7 @@ import (
 var (
 	conServicesLock              = sync.Mutex{}                   // used to guard conServices map.
 	conServices                  = map[string]common.RPCService{} // service name -> service
-	proServicesLock              = sync.Mutex{}                   // used to guard proServices map
+	proServicesLock              = sync.Mutex{}                   // used to guard proServices map and proServicesInfo map
 	proServices                  = map[string]common.RPCService{} // service name -> service
 	proServicesInfo              = map[string]interface{}{}       // service name -> service info
 	interfaceNameConServicesLock = sync.Mutex{}                   // used to guard interfaceNameConServices map
@@ -50,7 +50,7 @@ func SetConsumerService(service common.RPCService) {
 	conServices[ref] = service
 }
 
-// SetProviderService is called by init() of implement of RPCService
+// SetProviderService is called by init() of implementation of RPCService
 func SetProviderService(service common.RPCService) {
 	ref := common.GetReference(service)
 	proServicesLock.Lock()
@@ -61,7 +61,7 @@ func SetProviderService(service common.RPCService) {
 	proServices[ref] = service
 }
 
-// SetProviderServiceWithInfo is called by init() of implement of RPCService
+// SetProviderServiceWithInfo is called by init() of implementation of RPCService
 func SetProviderServiceWithInfo(service common.RPCService, info interface{}) {
 	ref := common.GetReference(service)
 	proServicesLock.Lock()
