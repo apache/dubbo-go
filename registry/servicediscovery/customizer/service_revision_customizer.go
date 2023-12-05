@@ -51,7 +51,7 @@ func (e *exportedServicesRevisionMetadataCustomizer) GetPriority() int {
 
 // Customize calculate the revision for exported urls and then put it into instance metadata
 func (e *exportedServicesRevisionMetadataCustomizer) Customize(instance registry.ServiceInstance) {
-	urls, err := metadata.GlobalMetadataService.GetExportedServiceURLs()
+	urls, err := metadata.GetMetadataService().GetExportedServiceURLs()
 	if err != nil {
 		logger.Errorf("get metadata service url is error, %v", err)
 		return
@@ -72,7 +72,7 @@ func (e *subscribedServicesRevisionMetadataCustomizer) GetPriority() int {
 
 // Customize calculate the revision for subscribed urls and then put it into instance metadata
 func (e *subscribedServicesRevisionMetadataCustomizer) Customize(instance registry.ServiceInstance) {
-	urls, err := metadata.GlobalMetadataService.GetSubscribedURLs()
+	urls, err := metadata.GetMetadataService().GetSubscribedURLs()
 	if err != nil {
 		logger.Errorf("get metadata subscribed url is error, %v", err)
 		return

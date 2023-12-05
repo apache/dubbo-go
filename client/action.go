@@ -277,21 +277,6 @@ func buildInvoker(urls []*common.URL, ref *global.ReferenceConfig) (protocol.Inv
 	return resInvoker, nil
 }
 
-func publishServiceDefinition(url *common.URL) {
-	localService, err := extension.GetLocalMetadataService(constant.DefaultKey)
-	if err != nil {
-		logger.Warnf("get local metadata service failed, please check if you have imported _ \"dubbo.apache.org/dubbo-go/v3/metadata/service/local\"")
-		return
-	}
-	localService.PublishServiceDefinition(url)
-	if url.GetParam(constant.MetadataTypeKey, "") != constant.RemoteMetadataStorageType {
-		return
-	}
-	if remoteMetadataService, err := extension.GetRemoteMetadataService(); err == nil && remoteMetadataService != nil {
-		remoteMetadataService.PublishServiceDefinition(url)
-	}
-}
-
 func (refOpts *ReferenceOptions) CheckAvailable() bool {
 	ref := refOpts.Reference
 	if refOpts.invoker == nil {

@@ -32,29 +32,32 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
-	metadataInstance "dubbo.apache.org/dubbo-go/v3/metadata/report/instance"
+	reportInstance "dubbo.apache.org/dubbo-go/v3/metadata/report/instance"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
+const metadataProxyDefaultTimeout = 5000
+
+// GetMetadataFromMetadataReport test depends on dubbo protocol, if dubbo not dependent on config package, can move to metadata dir
 func GetMetadataFromMetadataReport(revision string, instance registry.ServiceInstance) (*info.MetadataInfo, error) {
-	report := metadataInstance.GetMetadataReport()
+	report := reportInstance.GetMetadataReport()
 	return report.GetAppMetadata(instance.GetServiceName(), revision)
 }
 
 func GetMetadataFromRpc(revision string, instance registry.ServiceInstance) (*info.MetadataInfo, error) {
 	service, destroy := createRpcClient(instance)
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(5000))
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(metadataProxyDefaultTimeout))
 	defer cancel()
 	defer destroy()
 	return service.GetMetadataInfo(ctx, revision)
 }
 
 type metadataService struct {
-	GetExportedURLs       func(context context.Context, serviceInterface string, group string, version string, protocol string) ([]*common.URL, error) `dubbo:"getExportedURLs"`
-	GetMetadataInfo       func(context context.Context, revision string) (*info.MetadataInfo, error)                                                   `dubbo:"getMetadataInfo"`
-	GetMetadataServiceURL func(context context.Context) (*common.URL, error)
-	GetSubscribedURLs     func(context context.Context) ([]*common.URL, error)
-	Version               func(context context.Context) (string, error)
+	//GetExportedURLs       func(context context.Context, serviceInterface string, group string, version string, protocol string) ([]*common.URL, error) `dubbo:"getExportedURLs"`
+	GetMetadataInfo func(context context.Context, revision string) (*info.MetadataInfo, error) `dubbo:"getMetadataInfo"`
+	//GetMetadataServiceURL func(context context.Context) (*common.URL, error)
+	//GetSubscribedURLs     func(context context.Context) ([]*common.URL, error)
+	//Version               func(context context.Context) (string, error)
 }
 
 func createRpcClient(instance registry.ServiceInstance) (*metadataService, func()) {
@@ -75,18 +78,18 @@ func createRpcClientByUrl(url *common.URL) (*metadataService, func()) {
 }
 
 // buildMetadataServiceURL will use standard format to build the metadata service url.
-func buildMetadataServiceURL(serviceName string, host string, ps map[string]string) *common.URL {
-	if ps[constant.ProtocolKey] == "" {
+func buildMetadataServiceURL(serviceName string, host string, params map[string]string) *common.URL {
+	if params[constant.ProtocolKey] == "" {
 		return nil
 	}
-	convertedParams := make(map[string][]string, len(ps))
-	for k, v := range ps {
+	convertedParams := make(map[string][]string, len(params))
+	for k, v := range params {
 		convertedParams[k] = []string{v}
 	}
 	u := common.NewURLWithOptions(common.WithIp(host),
 		common.WithPath(constant.MetadataServiceName),
-		common.WithProtocol(ps[constant.ProtocolKey]),
-		common.WithPort(ps[constant.PortKey]),
+		common.WithProtocol(params[constant.ProtocolKey]),
+		common.WithPort(params[constant.PortKey]),
 		common.WithParams(convertedParams),
 		common.WithParamsValue(constant.GroupKey, serviceName),
 		common.WithParamsValue(constant.InterfaceKey, constant.MetadataServiceName))

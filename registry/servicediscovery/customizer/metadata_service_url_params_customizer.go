@@ -56,7 +56,7 @@ func (m *metadataServiceURLParamsMetadataCustomizer) GetPriority() int {
 }
 
 func (m *metadataServiceURLParamsMetadataCustomizer) Customize(instance registry.ServiceInstance) {
-	url, err := metadata.GlobalMetadataService.GetMetadataServiceURL()
+	url, err := metadata.GetMetadataService().GetMetadataServiceURL()
 	if err != nil {
 		logger.Errorf("get metadata service url is error, %v", err)
 		return

@@ -327,7 +327,7 @@ func (s *ServiceConfig) Export() error {
 				s.exporters = append(s.exporters, exporter)
 			}
 		} else {
-			invoker := proxyFactory.GetInvoker(ivkURL)
+			invoker = s.generatorInvoker(ivkURL, info)
 			exporter := extension.GetProtocol(protocolwrapper.FILTER).Export(invoker)
 			if exporter == nil {
 				return perrors.New(fmt.Sprintf("Filter protocol without registry new exporter error, url is {%v}", ivkURL))

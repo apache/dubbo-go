@@ -225,6 +225,7 @@ func NewServiceInfoWithURL(url *common.URL) *ServiceInfo {
 			}
 		}
 	}
+	p[constant.MethodsKey] = strings.Join(url.Methods, ",")
 	service.Params = p
 	return service
 }
@@ -245,33 +246,26 @@ func NewServiceInfo(name, group, version, protocol, path string, params map[stri
 	}
 }
 
-// nolint
 func (si *ServiceInfo) JavaClassName() string {
 	return "org.apache.dubbo.metadata.MetadataInfo$ServiceInfo"
 }
 
-// nolint
 func (si *ServiceInfo) GetMethods() []string {
-	if si.Params[constant.MethodsKey] != "" {
-		s := si.Params[constant.MethodsKey]
-		return strings.Split(s, ",")
-	}
-	methods := make([]string, 0, 8)
-	for k, _ := range si.Params {
-		ms := strings.Index(k, ".")
-		if ms > 0 {
-			methods = append(methods, k[0:ms])
-		}
-	}
-	return methods
+	s := si.Params[constant.MethodsKey]
+	return strings.Split(s, ",")
 }
 
 // nolint
 func (si *ServiceInfo) GetParams() url.Values {
 	v := url.Values{}
+	methodNames := si.Params[constant.MethodsKey]
+	if len(methodNames) == 0 {
+		return v
+	}
+	methods := gxset.NewSet(strings.Split(si.Params[constant.MethodsKey], ","))
 	for k, p := range si.Params {
 		ms := strings.Index(k, ".")
-		if ms > 0 {
+		if ms > 0 && methods.Contains(k[0:ms]) {
 			v.Set("methods."+k, p)
 		} else {
 			v.Set(k, p)

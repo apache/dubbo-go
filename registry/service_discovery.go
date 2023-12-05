@@ -37,7 +37,7 @@ type ServiceDiscovery interface {
 	fmt.Stringer
 
 	// Destroy will destroy the service discovery.
-	// If the discovery cannot be destroy, it will return an error.
+	// If the discovery cannot be destroyed, it will return an error.
 	Destroy() error
 
 	// Register will register an instance of ServiceInstance to registry

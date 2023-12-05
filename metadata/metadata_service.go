@@ -49,7 +49,7 @@ type MetadataService interface {
 	GetMetadataInfo(revision string) (*info.MetadataInfo, error)
 	// GetMetadataServiceURL will return the url of metadata service
 	GetMetadataServiceURL() (*common.URL, error)
-	// SetMetadataServiceURL exporter to set url of metadata service
+	// SetMetadataServiceURL exporter to set url of metadata service, will not be exported by exporter,cause no error return
 	SetMetadataServiceURL(*common.URL)
 }
 
@@ -93,23 +93,22 @@ func (mts *DefaultMetadataService) GetMetadataInfo(revision string) (*info.Metad
 	if revision == "" {
 		return nil, nil
 	}
-	for _, sd := range mts.getServiceDiscoveryMetadata() {
-		meta := sd.GetLocalMetadata()
-		if meta.Revision == revision {
-			return meta, nil
+	for _, metadataInfo := range mts.getAllMetadata() {
+		if metadataInfo.Revision == revision {
+			return metadataInfo, nil
 		}
 	}
 	logger.Warnf("metadata not found for revision: %s", revision)
 	return nil, nil
 }
 
-func (mts *DefaultMetadataService) getServiceDiscoveryMetadata() []registry.ServiceDiscoveryRegistry {
-	sds := make([]registry.ServiceDiscoveryRegistry, 0)
+func (mts *DefaultMetadataService) getAllMetadata() []*info.MetadataInfo {
+	sds := make([]*info.MetadataInfo, 0)
 	p := extension.GetProtocol(constant.RegistryProtocol)
 	if factory, ok := p.(registry.RegistryFactory); ok {
 		for _, v := range factory.GetRegistries() {
 			if sd, ok := v.(registry.ServiceDiscoveryRegistry); ok {
-				sds = append(sds, sd)
+				sds = append(sds, sd.GetLocalMetadata())
 			}
 		}
 	}
@@ -119,8 +118,8 @@ func (mts *DefaultMetadataService) getServiceDiscoveryMetadata() []registry.Serv
 // GetExportedServiceURLs get exported service urls
 func (mts *DefaultMetadataService) GetExportedServiceURLs() ([]*common.URL, error) {
 	urls := make([]*common.URL, 0)
-	for _, sd := range mts.getServiceDiscoveryMetadata() {
-		urls = append(urls, sd.GetLocalMetadata().GetExportedServiceURLs()...)
+	for _, metadataInfo := range mts.getAllMetadata() {
+		urls = append(urls, metadataInfo.GetExportedServiceURLs()...)
 	}
 	return urls, nil
 }
@@ -137,8 +136,8 @@ func (mts *DefaultMetadataService) GetMetadataServiceURL() (*common.URL, error) 
 
 func (mts *DefaultMetadataService) GetSubscribedURLs() ([]*common.URL, error) {
 	urls := make([]*common.URL, 0)
-	for _, sd := range mts.getServiceDiscoveryMetadata() {
-		urls = append(urls, sd.GetLocalMetadata().GetSubscribedURLs()...)
+	for _, metadataInfo := range mts.getAllMetadata() {
+		urls = append(urls, metadataInfo.GetSubscribedURLs()...)
 	}
 	return urls, nil
 }

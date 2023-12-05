@@ -18,11 +18,14 @@
 package client
 
 import (
+	"reflect"
+	"testing"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
 	"dubbo.apache.org/dubbo-go/v3/registry"
-	"reflect"
-	"testing"
 )
 
 func TestCreateRpcClientByUrl(t *testing.T) {

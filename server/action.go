@@ -415,21 +415,6 @@ func (svcOpts *ServiceOptions) postProcessConfig(url *common.URL) {
 	}
 }
 
-func publishServiceDefinition(url *common.URL) {
-	localService, err := extension.GetLocalMetadataService(constant.DefaultKey)
-	if err != nil {
-		logger.Warnf("get local metadata service failed, please check if you have imported _ \"dubbo.apache.org/dubbo-go/v3/metadata/service/local\"")
-		return
-	}
-	localService.PublishServiceDefinition(url)
-	if url.GetParam(constant.MetadataTypeKey, "") != constant.RemoteMetadataStorageType {
-		return
-	}
-	if remoteMetadataService, err := extension.GetRemoteMetadataService(); err == nil && remoteMetadataService != nil {
-		remoteMetadataService.PublishServiceDefinition(url)
-	}
-}
-
 // todo(DMwangnima): think about moving this function to a common place(e.g. /common/config)
 func getRegistryIds(registries map[string]*global.RegistryConfig) []string {
 	ids := make([]string, 0)

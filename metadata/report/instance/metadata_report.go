@@ -41,7 +41,7 @@ import (
 var (
 	instances    = make(map[string]report.MetadataReport)
 	once         sync.Once
-	metadataType string
+	metadataType = constant.DefaultMetadataStorageType
 )
 
 func Init(urls []*common.URL, metaType string) {
