@@ -43,7 +43,7 @@ const _ = triple_protocol.IsAtLeastVersion0_1_0
 
 const (
 	// ServerReflectionName is the fully-qualified name of the ServerReflection service.
-	ServerReflectionName = "dubbo.reflection.v1alpha.ServerReflection"
+	ServerReflectionName = "grpc.reflection.v1alpha.ServerReflection"
 )
 
 // These constants are the fully-qualified names of the RPCs defined in this package. They're
@@ -55,7 +55,7 @@ const (
 // period.
 const (
 	// ServerReflectionServerReflectionInfoProcedure is the fully-qualified name of the ServerReflection's ServerReflectionInfo RPC.
-	ServerReflectionServerReflectionInfoProcedure = "/dubbo.reflection.v1alpha.ServerReflection/ServerReflectionInfo"
+	ServerReflectionServerReflectionInfoProcedure = "/grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo"
 )
 
 var (
@@ -66,14 +66,14 @@ var (
 	_ ServerReflection_ServerReflectionInfoServer = (*ServerReflectionServerReflectionInfoServer)(nil)
 )
 
-// ServerReflection is a client for the dubbo.reflection.v1alpha.ServerReflection service.
+// ServerReflection is a client for the grpc.reflection.v1alpha.ServerReflection service.
 type ServerReflection interface {
 	ServerReflectionInfo(ctx context.Context, opts ...client.CallOption) (ServerReflection_ServerReflectionInfoClient, error)
 }
 
-// NewServerReflection constructs a client for the dubbo.reflection.v1alpha.ServerReflection service.
+// NewServerReflection constructs a client for the grpc.reflection.v1alpha.ServerReflection service.
 func NewServerReflection(cli *client.Client, opts ...client.ReferenceOption) (ServerReflection, error) {
-	conn, err := cli.DialWithInfo("dubbo.reflection.v1alpha.ServerReflection", &ServerReflection_ClientInfo, opts...)
+	conn, err := cli.DialWithInfo("grpc.reflection.v1alpha.ServerReflection", &ServerReflection_ClientInfo, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -129,7 +129,7 @@ func (cli *ServerReflectionServerReflectionInfoClient) Recv() (*ServerReflection
 }
 
 var ServerReflection_ClientInfo = client.ClientInfo{
-	InterfaceName: "dubbo.reflection.v1alpha.ServerReflection",
+	InterfaceName: "grpc.reflection.v1alpha.ServerReflection",
 	MethodNames:   []string{"ServerReflectionInfo"},
 	ConnectionInjectFunc: func(dubboCliRaw interface{}, conn *client.Connection) {
 		dubboCli := dubboCliRaw.(*ServerReflectionImpl)
@@ -137,7 +137,7 @@ var ServerReflection_ClientInfo = client.ClientInfo{
 	},
 }
 
-// ServerReflectionHandler is an implementation of the dubbo.reflection.v1alpha.ServerReflection service.
+// ServerReflectionHandler is an implementation of the grpc.reflection.v1alpha.ServerReflection service.
 type ServerReflectionHandler interface {
 	ServerReflectionInfo(context.Context, ServerReflection_ServerReflectionInfoServer) error
 }
@@ -178,7 +178,7 @@ func (srv ServerReflectionServerReflectionInfoServer) Recv() (*ServerReflectionR
 }
 
 var ServerReflection_ServiceInfo = server.ServiceInfo{
-	InterfaceName: "dubbo.reflection.v1alpha.ServerReflection",
+	InterfaceName: "grpc.reflection.v1alpha.ServerReflection",
 	ServiceType:   (*ServerReflectionHandler)(nil),
 	Methods: []server.MethodInfo{
 		{

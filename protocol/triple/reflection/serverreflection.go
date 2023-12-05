@@ -37,6 +37,8 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/config"
 	rpb "dubbo.apache.org/dubbo-go/v3/protocol/triple/reflection/triple_reflection"
 	"dubbo.apache.org/dubbo-go/v3/server"
 )
@@ -80,6 +82,10 @@ type ReflectionServer struct {
 	s            ServiceInfoProvider
 	descResolver protodesc.Resolver
 	extResolver  ExtensionResolver
+}
+
+func (srv *ReflectionServer) Reference() string {
+	return constant.ReflectionServiceTypeName
 }
 
 // fileDescWithDependencies returns a slice of serialized fileDescriptors in
@@ -269,17 +275,21 @@ func (s *ReflectionServer) ServerReflectionInfo(ctx context.Context, stream rpb.
 	}
 }
 
-var reflectionServe *ReflectionServer
+var reflectionServer *ReflectionServer
 
 func init() {
-	reflectionServe = NewServer()
+	reflectionServer = NewServer()
 	server.SetProServices(&server.ServiceDefinition{
-		Handler: reflectionServe,
+		Handler: reflectionServer,
 		Info:    &rpb.ServerReflection_ServiceInfo,
-		Opts:    []server.ServiceOption{server.WithNotRegister()},
+		Opts: []server.ServiceOption{server.WithNotRegister(),
+			server.WithInterface(constant.ReflectionServiceInterface)},
 	})
+	// In order to adapt config.Load
+	// Plans for future removal
+	config.SetProviderServiceWithInfo(reflectionServer, &rpb.ServerReflection_ServiceInfo)
 }
 
 func Register(s ServiceInfoProvider) {
-	reflectionServe.s = s
+	reflectionServer.s = s
 }
