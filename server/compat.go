@@ -18,8 +18,10 @@
 package server
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/global"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
 // these functions are used to resolve circular dependencies temporarily.
@@ -87,4 +89,13 @@ func compatProtocolConfig(c *global.ProtocolConfig) *config.ProtocolConfig {
 		MaxServerSendMsgSize: c.MaxServerSendMsgSize,
 		MaxServerRecvMsgSize: c.MaxServerRecvMsgSize,
 	}
+}
+
+func init() {
+	config.NewInfoInvoker = compatNewInfoInvoker
+}
+
+// these functions are used to resolve circular dependencies temporarily.
+func compatNewInfoInvoker(url *common.URL, info interface{}, svc common.RPCService) protocol.Invoker {
+	return newInfoInvoker(url, info.(*ServiceInfo), svc)
 }

@@ -257,9 +257,10 @@ func (s *ServiceConfig) Export() error {
 		return nil
 	}
 
+	var invoker protocol.Invoker
 	ports := getRandomPort(protocolConfigs)
 	nextPort := ports.Front()
-	proxyFactory := extension.GetProxyFactory(s.ProxyFactoryKey)
+
 	for _, proto := range protocolConfigs {
 		// registry the service reflect
 		methods, err := common.ServiceMap.Register(s.Interface, proto.Name, s.Group, s.Version, s.rpcService)
@@ -290,6 +291,11 @@ func (s *ServiceConfig) Export() error {
 			common.WithParamsValue(constant.MaxServerSendMsgSize, proto.MaxServerSendMsgSize),
 			common.WithParamsValue(constant.MaxServerRecvMsgSize, proto.MaxServerRecvMsgSize),
 		)
+		info := GetProviderServiceInfo(s.id)
+		if info != nil {
+			ivkURL.SetAttribute(constant.ServiceInfoKey, info)
+		}
+
 		if len(s.Tag) > 0 {
 			ivkURL.AddParam(constant.Tagkey, s.Tag)
 		}
@@ -311,7 +317,9 @@ func (s *ServiceConfig) Export() error {
 
 			for _, regUrl := range regUrls {
 				setRegistrySubURL(ivkURL, regUrl)
-				invoker := proxyFactory.GetInvoker(regUrl)
+
+				invoker = s.generatorInvoker(regUrl, info)
+
 				exporter := s.cacheProtocol.Export(invoker)
 				if exporter == nil {
 					return perrors.New(fmt.Sprintf("Registry protocol new exporter error, registry is {%v}, url is {%v}", regUrl, ivkURL))
@@ -329,7 +337,7 @@ func (s *ServiceConfig) Export() error {
 					logger.Warnf("SetMetadataServiceURL error = %s", err)
 				}
 			}
-			invoker := proxyFactory.GetInvoker(ivkURL)
+			s.generatorInvoker(ivkURL, info)
 			exporter := extension.GetProtocol(protocolwrapper.FILTER).Export(invoker)
 			if exporter == nil {
 				return perrors.New(fmt.Sprintf("Filter protocol without registry new exporter error, url is {%v}", ivkURL))
@@ -340,6 +348,14 @@ func (s *ServiceConfig) Export() error {
 	}
 	s.exported.Store(true)
 	return nil
+}
+
+func (s *ServiceConfig) generatorInvoker(regUrl *common.URL, info interface{}) protocol.Invoker {
+	proxyFactory := extension.GetProxyFactory(s.ProxyFactoryKey)
+	if info == nil {
+		return proxyFactory.GetInvoker(regUrl)
+	}
+	return NewInfoInvoker(regUrl, info, s.rpcService)
 }
 
 // setRegistrySubURL set registry sub url is ivkURl

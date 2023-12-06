@@ -32,8 +32,9 @@ import (
 var (
 	conServicesLock              = sync.Mutex{}                   // used to guard conServices map.
 	conServices                  = map[string]common.RPCService{} // service name -> service
-	proServicesLock              = sync.Mutex{}                   // used to guard proServices map
+	proServicesLock              = sync.Mutex{}                   // used to guard proServices map and proServicesInfo map
 	proServices                  = map[string]common.RPCService{} // service name -> service
+	proServicesInfo              = map[string]interface{}{}       // service name -> service info
 	interfaceNameConServicesLock = sync.Mutex{}                   // used to guard interfaceNameConServices map
 	interfaceNameConServices     = map[string]common.RPCService{} // interfaceName -> service
 )
@@ -49,7 +50,7 @@ func SetConsumerService(service common.RPCService) {
 	conServices[ref] = service
 }
 
-// SetProviderService is called by init() of implement of RPCService
+// SetProviderService is called by init() of implementation of RPCService
 func SetProviderService(service common.RPCService) {
 	ref := common.GetReference(service)
 	proServicesLock.Lock()
@@ -58,6 +59,18 @@ func SetProviderService(service common.RPCService) {
 		logger.Debugf("A provider service %s was registered successfully.", ref)
 	}()
 	proServices[ref] = service
+}
+
+// SetProviderServiceWithInfo is called by init() of implementation of RPCService
+func SetProviderServiceWithInfo(service common.RPCService, info interface{}) {
+	ref := common.GetReference(service)
+	proServicesLock.Lock()
+	defer func() {
+		proServicesLock.Unlock()
+		logger.Debugf("A provider service %s was registered successfully.", ref)
+	}()
+	proServices[ref] = service
+	proServicesInfo[ref] = info
 }
 
 // GetConsumerService gets ConsumerService by @name
@@ -77,6 +90,12 @@ func GetProviderService(name string) common.RPCService {
 // GetProviderServiceMap gets ProviderServiceMap
 func GetProviderServiceMap() map[string]common.RPCService {
 	return proServices
+}
+
+func GetProviderServiceInfo(name string) interface{} {
+	proServicesLock.Lock()
+	defer proServicesLock.Unlock()
+	return proServicesInfo[name]
 }
 
 // GetConsumerServiceMap gets ProviderServiceMap

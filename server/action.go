@@ -168,7 +168,6 @@ func (svcOpts *ServiceOptions) export(info *ServiceInfo) error {
 	var invoker protocol.Invoker
 	ports := getRandomPort(protocolConfigs)
 	nextPort := ports.Front()
-	proxyFactory := extension.GetProxyFactory(svcOpts.ProxyFactoryKey)
 	for _, proto := range protocolConfigs {
 		// *important* Register should have been replaced by processing of ServiceInfo.
 		// but many modules like metadata need to make use of information from ServiceMap.
@@ -226,11 +225,7 @@ func (svcOpts *ServiceOptions) export(info *ServiceInfo) error {
 
 			for _, regUrl := range regUrls {
 				setRegistrySubURL(ivkURL, regUrl)
-				if info == nil {
-					invoker = proxyFactory.GetInvoker(regUrl)
-				} else {
-					invoker = newInfoInvoker(regUrl, info, svcOpts.rpcService)
-				}
+				svcOpts.generatorInvoker(regUrl, info)
 				exporter := svcOpts.cacheProtocol.Export(invoker)
 				if exporter == nil {
 					return perrors.New(fmt.Sprintf("Registry protocol new exporter error, registry is {%v}, url is {%v}", regUrl, ivkURL))
@@ -248,11 +243,7 @@ func (svcOpts *ServiceOptions) export(info *ServiceInfo) error {
 					logger.Warnf("SetMetadataServiceURL error = %svcOpts", err)
 				}
 			}
-			if info == nil {
-				invoker = proxyFactory.GetInvoker(ivkURL)
-			} else {
-				invoker = newInfoInvoker(ivkURL, info, svcOpts.rpcService)
-			}
+			svcOpts.generatorInvoker(ivkURL, info)
 			exporter := extension.GetProtocol(protocolwrapper.FILTER).Export(invoker)
 			if exporter == nil {
 				return perrors.New(fmt.Sprintf("Filter protocol without registry new exporter error, url is {%v}", ivkURL))
@@ -266,6 +257,14 @@ func (svcOpts *ServiceOptions) export(info *ServiceInfo) error {
 	}
 	svcOpts.exported.Store(true)
 	return nil
+}
+
+func (svcOpts *ServiceOptions) generatorInvoker(url *common.URL, info *ServiceInfo) protocol.Invoker {
+	proxyFactory := extension.GetProxyFactory(svcOpts.ProxyFactoryKey)
+	if info == nil {
+		return proxyFactory.GetInvoker(url)
+	}
+	return newInfoInvoker(url, info, svcOpts.rpcService)
 }
 
 // setRegistrySubURL set registry sub url is ivkURl

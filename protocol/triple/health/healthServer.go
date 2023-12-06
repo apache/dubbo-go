@@ -30,6 +30,8 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/health/triple_health"
 	"dubbo.apache.org/dubbo-go/v3/server"
 )
@@ -51,6 +53,10 @@ func NewServer() *HealthTripleServer {
 		statusMap: map[string]triple_health.HealthCheckResponse_ServingStatus{"": triple_health.HealthCheckResponse_NOT_SERVING},
 		updates:   make(map[string]map[triple_health.Health_WatchServer]chan triple_health.HealthCheckResponse_ServingStatus),
 	}
+}
+
+func (srv *HealthTripleServer) Reference() string {
+	return constant.HealthCheckServiceTypeName
 }
 
 func (srv *HealthTripleServer) Check(ctx context.Context, req *triple_health.HealthCheckRequest) (*triple_health.HealthCheckResponse, error) {
@@ -168,8 +174,13 @@ func init() {
 	server.SetProServices(&server.ServiceDefinition{
 		Handler: healthServer,
 		Info:    &triple_health.Health_ServiceInfo,
-		Opts:    []server.ServiceOption{server.WithNotRegister()},
+		Opts: []server.ServiceOption{server.WithNotRegister(),
+			server.WithInterface(constant.HealthCheckServiceInterface)},
 	})
+
+	// In order to adapt config.Load
+	// Plans for future removal
+	config.SetProviderServiceWithInfo(healthServer, &triple_health.Health_ServiceInfo)
 }
 
 func SetServingStatusServing(service string) {
