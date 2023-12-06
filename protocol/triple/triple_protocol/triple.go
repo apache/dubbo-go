@@ -54,6 +54,11 @@ const (
 	StreamTypeBidi              = StreamTypeClient | StreamTypeServer
 )
 
+const (
+	tripleServiceGroup   = "tri-service-group"
+	tripleServiceVersion = "tri-service-version"
+)
+
 // StreamingHandlerConn is the server's view of a bidirectional message
 // exchange. Interceptors for streaming RPCs may wrap StreamingHandlerConns.
 //

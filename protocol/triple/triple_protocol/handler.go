@@ -20,6 +20,10 @@ import (
 	"net/http"
 )
 
+const (
+	defaultImplementationsSize = 4
+)
+
 // A Handler is the server-side implementation of a single RPC defined by a
 // service schema.
 //
@@ -27,8 +31,9 @@ import (
 // the binary Protobuf and JSON codecs. They support gzip compression using the
 // standard library's [compress/gzip].
 type Handler struct {
-	spec             Spec
-	implementation   StreamingHandlerFunc
+	spec Spec
+	// key is group/version
+	implementations  map[string]StreamingHandlerFunc
 	protocolHandlers []protocolHandler
 	allowMethod      string // Allow header
 	acceptPost       string // Accept-Post header
@@ -41,6 +46,27 @@ func NewUnaryHandler(
 	unary func(context.Context, *Request) (*Response, error),
 	options ...HandlerOption,
 ) *Handler {
+	config := newHandlerConfig(procedure, options)
+	implementation := generateUnaryHandlerFunc(procedure, reqInitFunc, unary, config.Interceptor)
+	protocolHandlers := config.newProtocolHandlers(StreamTypeUnary)
+
+	hdl := &Handler{
+		spec:             config.newSpec(StreamTypeUnary),
+		implementations:  make(map[string]StreamingHandlerFunc, defaultImplementationsSize),
+		protocolHandlers: protocolHandlers,
+		allowMethod:      sortedAllowMethodValue(protocolHandlers),
+		acceptPost:       sortedAcceptPostValue(protocolHandlers),
+	}
+	hdl.processImplementation(getIdentifier(config.Group, config.Version), implementation)
+	return hdl
+}
+
+func generateUnaryHandlerFunc(
+	procedure string,
+	reqInitFunc func() interface{},
+	unary func(context.Context, *Request) (*Response, error),
+	interceptor Interceptor,
+) StreamingHandlerFunc {
 	// Wrap the strongly-typed implementation so we can apply interceptors.
 	untyped := UnaryHandlerFunc(func(ctx context.Context, request AnyRequest) (AnyResponse, error) {
 		// verify err
@@ -60,8 +86,7 @@ func NewUnaryHandler(
 		return res, err
 	})
 	// todo: modify server func
-	config := newHandlerConfig(procedure, options)
-	if interceptor := config.Interceptor; interceptor != nil {
+	if interceptor != nil {
 		untyped = interceptor.WrapUnaryHandler(untyped)
 	}
 	// receive and send
@@ -90,97 +115,158 @@ func NewUnaryHandler(
 		return conn.Send(response.Any())
 	}
 
-	protocolHandlers := config.newProtocolHandlers(StreamTypeUnary)
-	return &Handler{
-		spec:             config.newSpec(StreamTypeUnary),
-		implementation:   implementation,
-		protocolHandlers: protocolHandlers,
-		allowMethod:      sortedAllowMethodValue(protocolHandlers),
-		acceptPost:       sortedAcceptPostValue(protocolHandlers),
-	}
+	return implementation
 }
 
 // NewClientStreamHandler constructs a [Handler] for a client streaming procedure.
 func NewClientStreamHandler(
 	procedure string,
-	implementation func(context.Context, *ClientStream) (*Response, error),
+	streamFunc func(context.Context, *ClientStream) (*Response, error),
 	options ...HandlerOption,
 ) *Handler {
-	return newStreamHandler(
-		procedure,
-		StreamTypeClient,
-		func(ctx context.Context, conn StreamingHandlerConn) error {
-			stream := &ClientStream{conn: conn}
-			// embed header in context so that user logic could process them via FromIncomingContext
-			ctx = newIncomingContext(ctx, conn.RequestHeader())
-			res, err := implementation(ctx, stream)
-			if err != nil {
-				return err
-			}
-			if res == nil {
-				// This is going to panic during serialization. Debugging is much easier
-				// if we panic here instead, so we can include the procedure name.
-				panic(fmt.Sprintf("%s returned nil *triple.Response and nil error", procedure)) //nolint: forbidigo
-			}
-			mergeHeaders(conn.ResponseHeader(), res.header)
-			mergeHeaders(conn.ResponseTrailer(), res.trailer)
-			return conn.Send(res.Msg)
-		},
-		options...,
-	)
+	config := newHandlerConfig(procedure, options)
+	implementation := generateClientStreamHandlerFunc(procedure, streamFunc, config.Interceptor)
+	protocolHandlers := config.newProtocolHandlers(StreamTypeClient)
+
+	hdl := &Handler{
+		spec:             config.newSpec(StreamTypeClient),
+		implementations:  make(map[string]StreamingHandlerFunc, defaultImplementationsSize),
+		protocolHandlers: protocolHandlers,
+		allowMethod:      sortedAllowMethodValue(protocolHandlers),
+		acceptPost:       sortedAcceptPostValue(protocolHandlers),
+	}
+	hdl.processImplementation(getIdentifier(config.Group, config.Version), implementation)
+
+	return hdl
+}
+
+func generateClientStreamHandlerFunc(
+	procedure string,
+	streamFunc func(context.Context, *ClientStream) (*Response, error),
+	interceptor Interceptor,
+) StreamingHandlerFunc {
+	implementation := func(ctx context.Context, conn StreamingHandlerConn) error {
+		stream := &ClientStream{conn: conn}
+		// embed header in context so that user logic could process them via FromIncomingContext
+		ctx = newIncomingContext(ctx, conn.RequestHeader())
+		res, err := streamFunc(ctx, stream)
+		if err != nil {
+			return err
+		}
+		if res == nil {
+			// This is going to panic during serialization. Debugging is much easier
+			// if we panic here instead, so we can include the procedure name.
+			panic(fmt.Sprintf("%s returned nil *triple.Response and nil error", procedure)) //nolint: forbidigo
+		}
+		mergeHeaders(conn.ResponseHeader(), res.header)
+		mergeHeaders(conn.ResponseTrailer(), res.trailer)
+		return conn.Send(res.Msg)
+	}
+	if interceptor != nil {
+		implementation = interceptor.WrapStreamingHandler(implementation)
+	}
+
+	return implementation
 }
 
 // NewServerStreamHandler constructs a [Handler] for a server streaming procedure.
 func NewServerStreamHandler(
 	procedure string,
 	reqInitFunc func() interface{},
-	implementation func(context.Context, *Request, *ServerStream) error,
+	streamFunc func(context.Context, *Request, *ServerStream) error,
 	options ...HandlerOption,
 ) *Handler {
-	return newStreamHandler(
-		procedure,
-		StreamTypeServer,
-		func(ctx context.Context, conn StreamingHandlerConn) error {
-			req := reqInitFunc()
-			if err := conn.Receive(req); err != nil {
-				return err
-			}
-			// embed header in context so that user logic could process them via FromIncomingContext
-			ctx = newIncomingContext(ctx, conn.RequestHeader())
-			return implementation(
-				ctx,
-				&Request{
-					Msg:    req,
-					spec:   conn.Spec(),
-					peer:   conn.Peer(),
-					header: conn.RequestHeader(),
-				},
-				&ServerStream{conn: conn},
-			)
-		},
-		options...,
-	)
+	config := newHandlerConfig(procedure, options)
+	implementation := generateServerStreamHandlerFunc(procedure, reqInitFunc, streamFunc, config.Interceptor)
+	protocolHandlers := config.newProtocolHandlers(StreamTypeServer)
+
+	hdl := &Handler{
+		spec:             config.newSpec(StreamTypeServer),
+		implementations:  make(map[string]StreamingHandlerFunc, defaultImplementationsSize),
+		protocolHandlers: protocolHandlers,
+		allowMethod:      sortedAllowMethodValue(protocolHandlers),
+		acceptPost:       sortedAcceptPostValue(protocolHandlers),
+	}
+	hdl.processImplementation(getIdentifier(config.Group, config.Version), implementation)
+
+	return hdl
+}
+
+func generateServerStreamHandlerFunc(
+	procedure string,
+	reqInitFunc func() interface{},
+	streamFunc func(context.Context, *Request, *ServerStream) error,
+	interceptor Interceptor,
+) StreamingHandlerFunc {
+	implementation := func(ctx context.Context, conn StreamingHandlerConn) error {
+		req := reqInitFunc()
+		if err := conn.Receive(req); err != nil {
+			return err
+		}
+		// embed header in context so that user logic could process them via FromIncomingContext
+		ctx = newIncomingContext(ctx, conn.RequestHeader())
+		return streamFunc(
+			ctx,
+			&Request{
+				Msg:    req,
+				spec:   conn.Spec(),
+				peer:   conn.Peer(),
+				header: conn.RequestHeader(),
+			},
+			&ServerStream{conn: conn},
+		)
+	}
+	if interceptor != nil {
+		implementation = interceptor.WrapStreamingHandler(implementation)
+	}
+
+	return implementation
 }
 
 // NewBidiStreamHandler constructs a [Handler] for a bidirectional streaming procedure.
 func NewBidiStreamHandler(
 	procedure string,
-	implementation func(context.Context, *BidiStream) error,
+	streamFunc func(context.Context, *BidiStream) error,
 	options ...HandlerOption,
 ) *Handler {
-	return newStreamHandler(
-		procedure,
-		StreamTypeBidi,
-		func(ctx context.Context, conn StreamingHandlerConn) error {
-			// embed header in context so that user logic could process them via FromIncomingContext
-			ctx = newIncomingContext(ctx, conn.RequestHeader())
-			return implementation(
-				ctx,
-				&BidiStream{conn: conn},
-			)
-		},
-		options...,
-	)
+	config := newHandlerConfig(procedure, options)
+	implementation := generateBidiStreamHandlerFunc(procedure, streamFunc, config.Interceptor)
+	protocolHandlers := config.newProtocolHandlers(StreamTypeBidi)
+
+	hdl := &Handler{
+		spec:             config.newSpec(StreamTypeBidi),
+		implementations:  make(map[string]StreamingHandlerFunc, defaultImplementationsSize),
+		protocolHandlers: protocolHandlers,
+		allowMethod:      sortedAllowMethodValue(protocolHandlers),
+		acceptPost:       sortedAcceptPostValue(protocolHandlers),
+	}
+	hdl.processImplementation(getIdentifier(config.Group, config.Version), implementation)
+
+	return hdl
+}
+
+func generateBidiStreamHandlerFunc(
+	procedure string,
+	streamFunc func(context.Context, *BidiStream) error,
+	interceptor Interceptor,
+) StreamingHandlerFunc {
+	implementation := func(ctx context.Context, conn StreamingHandlerConn) error {
+		// embed header in context so that user logic could process them via FromIncomingContext
+		ctx = newIncomingContext(ctx, conn.RequestHeader())
+		return streamFunc(
+			ctx,
+			&BidiStream{conn: conn},
+		)
+	}
+	if interceptor != nil {
+		implementation = interceptor.WrapStreamingHandler(implementation)
+	}
+
+	return implementation
+}
+
+func (h *Handler) processImplementation(identifier string, implementation StreamingHandlerFunc) {
+	h.implementations[identifier] = implementation
 }
 
 // ServeHTTP implements [http.Handler].
@@ -255,7 +341,11 @@ func (h *Handler) ServeHTTP(responseWriter http.ResponseWriter, request *http.Re
 		return
 	}
 	// invoke implementation
-	_ = connCloser.Close(h.implementation(ctx, connCloser))
+	svcGroup := request.Header.Get(tripleServiceGroup)
+	svcVersion := request.Header.Get(tripleServiceVersion)
+	implementation := h.implementations[getIdentifier(svcGroup, svcVersion)]
+	// todo(DMwangnima): inspect ok
+	_ = connCloser.Close(implementation(ctx, connCloser))
 }
 
 type handlerConfig struct {
@@ -271,6 +361,8 @@ type handlerConfig struct {
 	BufferPool                  *bufferPool
 	ReadMaxBytes                int
 	SendMaxBytes                int
+	Group                       string
+	Version                     string
 }
 
 func newHandlerConfig(procedure string, options []HandlerOption) *handlerConfig {
@@ -333,6 +425,10 @@ func (c *handlerConfig) newProtocolHandlers(streamType StreamType) []protocolHan
 	return handlers
 }
 
+func getIdentifier(group, version string) string {
+	return group + "/" + version
+}
+
 func newStreamHandler(
 	procedure string,
 	streamType StreamType,
@@ -344,11 +440,15 @@ func newStreamHandler(
 		implementation = ic.WrapStreamingHandler(implementation)
 	}
 	protocolHandlers := config.newProtocolHandlers(streamType)
-	return &Handler{
+
+	hdl := &Handler{
 		spec:             config.newSpec(streamType),
-		implementation:   implementation,
+		implementations:  make(map[string]StreamingHandlerFunc, defaultImplementationsSize),
 		protocolHandlers: protocolHandlers,
 		allowMethod:      sortedAllowMethodValue(protocolHandlers),
 		acceptPost:       sortedAcceptPostValue(protocolHandlers),
 	}
+	hdl.processImplementation(getIdentifier(config.Group, config.Version), implementation)
+
+	return hdl
 }

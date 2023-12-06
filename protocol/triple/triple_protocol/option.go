@@ -169,6 +169,14 @@ func WithRequireTripleProtocolHeader() HandlerOption {
 	return &requireTripleProtocolHeaderOption{}
 }
 
+func WithGroup(group string) HandlerOption {
+	return &groupOption{group}
+}
+
+func WithVersion(version string) HandlerOption {
+	return &versionOption{version}
+}
+
 // Option implements both [ClientOption] and [HandlerOption], so it can be
 // applied both client-side and server-side.
 type Option interface {
@@ -416,6 +424,22 @@ type requireTripleProtocolHeaderOption struct{}
 
 func (o *requireTripleProtocolHeaderOption) applyToHandler(config *handlerConfig) {
 	config.RequireTripleProtocolHeader = true
+}
+
+type groupOption struct {
+	Group string
+}
+
+func (o *groupOption) applyToHandler(config *handlerConfig) {
+	config.Group = o.Group
+}
+
+type versionOption struct {
+	Version string
+}
+
+func (o *versionOption) applyToHandler(config *handlerConfig) {
+	config.Version = o.Version
 }
 
 type idempotencyOption struct {
