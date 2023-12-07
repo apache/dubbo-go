@@ -225,7 +225,7 @@ func (svcOpts *ServiceOptions) export(info *ServiceInfo) error {
 
 			for _, regUrl := range regUrls {
 				setRegistrySubURL(ivkURL, regUrl)
-				svcOpts.generatorInvoker(regUrl, info)
+				invoker = svcOpts.generatorInvoker(regUrl, info)
 				exporter := svcOpts.cacheProtocol.Export(invoker)
 				if exporter == nil {
 					return perrors.New(fmt.Sprintf("Registry protocol new exporter error, registry is {%v}, url is {%v}", regUrl, ivkURL))
@@ -243,7 +243,7 @@ func (svcOpts *ServiceOptions) export(info *ServiceInfo) error {
 					logger.Warnf("SetMetadataServiceURL error = %svcOpts", err)
 				}
 			}
-			svcOpts.generatorInvoker(ivkURL, info)
+			invoker = svcOpts.generatorInvoker(ivkURL, info)
 			exporter := extension.GetProtocol(protocolwrapper.FILTER).Export(invoker)
 			if exporter == nil {
 				return perrors.New(fmt.Sprintf("Filter protocol without registry new exporter error, url is {%v}", ivkURL))
