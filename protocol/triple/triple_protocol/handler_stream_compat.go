@@ -62,19 +62,41 @@ func NewCompatStreamHandler(
 	procedure string,
 	srv interface{},
 	typ StreamType,
-	implementation func(srv interface{}, stream grpc.ServerStream) error,
+	streamFunc func(srv interface{}, stream grpc.ServerStream) error,
 	options ...HandlerOption,
 ) *Handler {
-	return newStreamHandler(
-		procedure,
-		typ,
-		func(ctx context.Context, conn StreamingHandlerConn) error {
-			stream := &compatHandlerStream{
-				ctx:  ctx,
-				conn: conn,
-			}
-			return implementation(srv, stream)
-		},
-		options...,
-	)
+	config := newHandlerConfig(procedure, options)
+	implementation := generateCompatStreamHandlerFunc(procedure, srv, streamFunc, config.Interceptor)
+	protocolHandlers := config.newProtocolHandlers(typ)
+
+	hdl := &Handler{
+		spec:             config.newSpec(typ),
+		implementations:  make(map[string]StreamingHandlerFunc, defaultImplementationsSize),
+		protocolHandlers: protocolHandlers,
+		allowMethod:      sortedAllowMethodValue(protocolHandlers),
+		acceptPost:       sortedAcceptPostValue(protocolHandlers),
+	}
+	hdl.processImplementation(getIdentifier(config.Group, config.Version), implementation)
+
+	return hdl
+}
+
+func generateCompatStreamHandlerFunc(
+	procedure string,
+	srv interface{},
+	streamFunc func(interface{}, grpc.ServerStream) error,
+	interceptor Interceptor,
+) StreamingHandlerFunc {
+	implementation := func(ctx context.Context, conn StreamingHandlerConn) error {
+		stream := &compatHandlerStream{
+			ctx:  ctx,
+			conn: conn,
+		}
+		return streamFunc(srv, stream)
+	}
+	if interceptor != nil {
+		implementation = interceptor.WrapStreamingHandler(implementation)
+	}
+
+	return implementation
 }

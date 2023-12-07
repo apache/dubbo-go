@@ -29,8 +29,7 @@ import (
 	triple "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 )
 
-type GreetTripleServer struct {
-}
+type GreetTripleServer struct{}
 
 func (srv *GreetTripleServer) Greet(ctx context.Context, req *greet.GreetRequest) (*greet.GreetResponse, error) {
 	resp := &greet.GreetResponse{Greeting: req.Name}
@@ -71,6 +70,57 @@ func (srv *GreetTripleServer) GreetClientStream(ctx context.Context, stream gree
 func (srv *GreetTripleServer) GreetServerStream(ctx context.Context, req *greet.GreetServerStreamRequest, stream greettriple.GreetService_GreetServerStreamServer) error {
 	for i := 0; i < 5; i++ {
 		if err := stream.Send(&greet.GreetServerStreamResponse{Greeting: req.Name}); err != nil {
+			return fmt.Errorf("triple ServerStream send err: %s", err)
+		}
+	}
+	return nil
+}
+
+const (
+	GroupVersionIdentifier = "g1v1"
+)
+
+type GreetTripleServerGroup1Version1 struct{}
+
+func (g *GreetTripleServerGroup1Version1) Greet(ctx context.Context, req *greet.GreetRequest) (*greet.GreetResponse, error) {
+	resp := &greet.GreetResponse{Greeting: GroupVersionIdentifier + req.Name}
+	return resp, nil
+}
+
+func (g *GreetTripleServerGroup1Version1) GreetStream(ctx context.Context, stream greettriple.GreetService_GreetStreamServer) error {
+	for {
+		req, err := stream.Recv()
+		if err != nil {
+			if triple.IsEnded(err) {
+				break
+			}
+			return fmt.Errorf("triple BidiStream recv error: %s", err)
+		}
+		if err := stream.Send(&greet.GreetStreamResponse{Greeting: GroupVersionIdentifier + req.Name}); err != nil {
+			return fmt.Errorf("triple BidiStream send error: %s", err)
+		}
+	}
+	return nil
+}
+
+func (g *GreetTripleServerGroup1Version1) GreetClientStream(ctx context.Context, stream greettriple.GreetService_GreetClientStreamServer) (*greet.GreetClientStreamResponse, error) {
+	var reqs []string
+	for stream.Recv() {
+		reqs = append(reqs, GroupVersionIdentifier+stream.Msg().Name)
+	}
+	if stream.Err() != nil && !triple.IsEnded(stream.Err()) {
+		return nil, fmt.Errorf("triple ClientStream recv err: %s", stream.Err())
+	}
+	resp := &greet.GreetClientStreamResponse{
+		Greeting: strings.Join(reqs, ","),
+	}
+
+	return resp, nil
+}
+
+func (g *GreetTripleServerGroup1Version1) GreetServerStream(ctx context.Context, req *greet.GreetServerStreamRequest, stream greettriple.GreetService_GreetServerStreamServer) error {
+	for i := 0; i < 5; i++ {
+		if err := stream.Send(&greet.GreetServerStreamResponse{Greeting: GroupVersionIdentifier + req.Name}); err != nil {
 			return fmt.Errorf("triple ServerStream send err: %s", err)
 		}
 	}

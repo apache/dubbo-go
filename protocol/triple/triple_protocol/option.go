@@ -169,11 +169,11 @@ func WithRequireTripleProtocolHeader() HandlerOption {
 	return &requireTripleProtocolHeaderOption{}
 }
 
-func WithGroup(group string) HandlerOption {
+func WithGroup(group string) Option {
 	return &groupOption{group}
 }
 
-func WithVersion(version string) HandlerOption {
+func WithVersion(version string) Option {
 	return &versionOption{version}
 }
 
@@ -430,12 +430,20 @@ type groupOption struct {
 	Group string
 }
 
+func (o *groupOption) applyToClient(config *clientConfig) {
+	config.Group = o.Group
+}
+
 func (o *groupOption) applyToHandler(config *handlerConfig) {
 	config.Group = o.Group
 }
 
 type versionOption struct {
 	Version string
+}
+
+func (o *versionOption) applyToClient(config *clientConfig) {
+	config.Version = o.Version
 }
 
 func (o *versionOption) applyToHandler(config *handlerConfig) {

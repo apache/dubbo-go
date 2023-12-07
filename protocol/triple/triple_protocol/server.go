@@ -19,12 +19,17 @@ package triple_protocol
 
 import (
 	"context"
+	"github.com/dubbogo/grpc-go"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
+	"net/http"
 	"sync"
 )
 
 type Server struct {
 	mu       sync.Mutex
 	handlers map[string]*Handler
+	httpSrv  *http.Server
 }
 
 func (s *Server) RegisterUnaryHandler(
@@ -99,4 +104,72 @@ func (s *Server) RegisterBidiStreamHandler(
 	}
 
 	return nil
+}
+
+func (s *Server) RegisterCompatUnaryHandler(
+	procedure string,
+	srv interface{},
+	unary MethodHandler,
+	options ...HandlerOption,
+) error {
+	hdl, ok := s.handlers[procedure]
+	if !ok {
+		hdl = NewCompatUnaryHandler(procedure, srv, unary, options...)
+		s.handlers[procedure] = hdl
+	} else {
+		config := newHandlerConfig(procedure, options)
+		implementation := generateCompatUnaryHandlerFunc(procedure, srv, unary, config.Interceptor)
+		hdl.processImplementation(getIdentifier(config.Group, config.Version), implementation)
+	}
+
+	return nil
+}
+
+func (s *Server) RegisterCompatStreamHandler(
+	procedure string,
+	srv interface{},
+	typ StreamType,
+	streamFunc func(srv interface{}, stream grpc.ServerStream) error,
+	options ...HandlerOption,
+) error {
+	hdl, ok := s.handlers[procedure]
+	if !ok {
+		hdl = NewCompatStreamHandler(procedure, srv, typ, streamFunc, options...)
+		s.handlers[procedure] = hdl
+	} else {
+		config := newHandlerConfig(procedure, options)
+		implementation := generateCompatStreamHandlerFunc(procedure, srv, streamFunc, config.Interceptor)
+		hdl.processImplementation(getIdentifier(config.Group, config.Version), implementation)
+	}
+
+	return nil
+}
+
+func (s *Server) Run() error {
+	mux := http.NewServeMux()
+	for procedure, hdl := range s.handlers {
+		mux.Handle(procedure, hdl)
+	}
+	// todo(DMwangnima): deal with TLS
+	s.httpSrv.Handler = h2c.NewHandler(mux, &http2.Server{})
+
+	if err := s.httpSrv.ListenAndServe(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Server) Stop() error {
+	return s.httpSrv.Close()
+}
+
+func (s *Server) GracefulStop(ctx context.Context) error {
+	return s.httpSrv.Shutdown(ctx)
+}
+
+func NewServer(addr string) *Server {
+	return &Server{
+		handlers: make(map[string]*Handler),
+		httpSrv:  &http.Server{Addr: addr},
+	}
 }
