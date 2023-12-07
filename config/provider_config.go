@@ -27,9 +27,9 @@ import (
 
 	"github.com/dubbogo/gost/log/logger"
 
-	perrors "github.com/pkg/errors"
-
 	tripleConstant "github.com/dubbogo/triple/pkg/common/constant"
+
+	perrors "github.com/pkg/errors"
 )
 
 import (

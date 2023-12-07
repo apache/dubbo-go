@@ -19,11 +19,15 @@ package triple_protocol
 
 import (
 	"context"
-	"github.com/dubbogo/grpc-go"
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
 	"net/http"
 	"sync"
+)
+
+import (
+	"github.com/dubbogo/grpc-go"
+
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 )
 
 type Server struct {
