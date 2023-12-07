@@ -22,77 +22,15 @@ import (
 )
 
 import (
-	gxset "github.com/dubbogo/gost/container/set"
 	"github.com/dubbogo/gost/log/logger"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/client"
-	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/config"
-	"dubbo.apache.org/dubbo-go/v3/config_center"
-	"dubbo.apache.org/dubbo-go/v3/config_center/parser"
 	_ "dubbo.apache.org/dubbo-go/v3/imports"
 )
 
-type noOpConf struct {
-}
-
-func (n *noOpConf) Parser() parser.ConfigurationParser {
-	return nil
-}
-
-func (n *noOpConf) SetParser(parser parser.ConfigurationParser) {
-	return
-}
-
-func (n *noOpConf) AddListener(s string, listener config_center.ConfigurationListener, option ...config_center.Option) {
-	return
-}
-
-func (n *noOpConf) RemoveListener(s string, listener config_center.ConfigurationListener, option ...config_center.Option) {
-	return
-}
-
-func (n *noOpConf) GetProperties(s string, option ...config_center.Option) (string, error) {
-	return "", nil
-}
-
-func (n *noOpConf) GetRule(s string, option ...config_center.Option) (string, error) {
-	return "", nil
-}
-
-func (n *noOpConf) GetInternalProperty(s string, option ...config_center.Option) (string, error) {
-	return "", nil
-}
-
-func (n *noOpConf) PublishConfig(s string, s2 string, s3 string) error {
-	return nil
-}
-
-func (n *noOpConf) RemoveConfig(s string, s2 string) error {
-	return nil
-}
-
-func (n *noOpConf) GetConfigKeysByGroup(group string) (*gxset.HashSet, error) {
-	return nil, nil
-}
-
-type noOpConfFactory struct{}
-
-// GetDynamicConfiguration Get Configuration with URL
-func (f *noOpConfFactory) GetDynamicConfiguration(url *common.URL) (config_center.DynamicConfiguration, error) {
-	return &noOpConf{}, nil
-}
-
 func main() {
-	extension.SetConfigCenterFactory("no-op", func() config_center.DynamicConfigurationFactory {
-		return &noOpConfFactory{}
-	})
-	if err := config.Load(); err != nil {
-		panic(err)
-	}
 	cli, err := client.NewClient(
 		client.WithClientProtocolDubbo(),
 	)

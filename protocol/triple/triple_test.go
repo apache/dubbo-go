@@ -135,7 +135,7 @@ func runOldTripleServer(interfaceName string, group string, version string, addr
 			SetProvider(
 				config.NewProviderConfigBuilder().
 					AddService(common.GetReference(svc), config.NewServiceConfigBuilder().
-						SetInterface(desc.ServiceName).
+						SetInterface(interfaceName).
 						SetGroup(group).
 						SetVersion(version).
 						Build()).

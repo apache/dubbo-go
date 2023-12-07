@@ -35,6 +35,8 @@ import (
 
 const testService = "testService"
 
+// If there is a conflict between the healthCheck of Dubbo and the healthCheck of gRPC, an error will occur.
+
 func TestSetServingStatus(t *testing.T) {
 	s := NewServer()
 	s.SetServingStatus(testService, healthpb.HealthCheckResponse_SERVING)

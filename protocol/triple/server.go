@@ -117,28 +117,6 @@ func (s *Server) Start(invoker protocol.Invoker, info *server.ServiceInfo) {
 			logger.Errorf("server serve failed with err: %v", runErr)
 		}
 	}()
-
-	//go func() {
-	//	mux := s.handler
-	//	if info != nil {
-	//		handleServiceWithInfo(invoker, info, mux, hanOpts...)
-	//		s.saveServiceInfo(info)
-	//	} else {
-	//		compatHandleService(URL, mux)
-	//	}
-	//	// todo: figure it out this process
-	//	reflection.Register(s)
-	//	// todo: without tls
-	//	if cfg == nil {
-	//		srv.Handler = h2c.NewHandler(mux, &http2.Server{})
-	//	} else {
-	//		srv.Handler = mux
-	//	}
-	//
-	//	if err = srv.ListenAndServe(); err != nil {
-	//		logger.Errorf("server serve failed with err: %v", err)
-	//	}
-	//}()
 }
 
 // RefreshService refreshes Triple Service
@@ -258,7 +236,6 @@ func (s *Server) compatHandleService(url *common.URL, opts ...tri.HandlerOption)
 
 func (s *Server) compatRegisterHandler(svc dubbo3.Dubbo3GrpcService, opts ...tri.HandlerOption) {
 	desc := svc.XXX_ServiceDesc()
-	//basePath := desc.ServiceName
 	// init unary handlers
 	for _, method := range desc.Methods {
 		// please refer to protocol/triple/internal/proto/triple_gen/greettriple for procedure examples
