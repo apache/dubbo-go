@@ -64,9 +64,9 @@ func (tp *TripleProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	}
 	exporter := NewTripleExporter(serviceKey, invoker, tp.ExporterMap())
 	tp.SetExporterMap(serviceKey, exporter)
-	health.SetServingStatusServing(url.Service())
 	logger.Infof("[TRIPLE Protocol] Export service: %s", url.String())
 	tp.openServer(invoker, info)
+	health.SetServingStatusServing(url.Service())
 	return exporter
 }
 

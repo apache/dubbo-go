@@ -19,9 +19,7 @@ package triple
 
 import (
 	"context"
-	"crypto/tls"
 	"fmt"
-	"net/http"
 	"sync"
 	"time"
 )
@@ -30,9 +28,6 @@ import (
 	"github.com/dubbogo/gost/log/logger"
 
 	"github.com/dustin/go-humanize"
-
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
 
 	"google.golang.org/grpc"
 )
@@ -51,16 +46,15 @@ import (
 
 // Server is TRIPLE server
 type Server struct {
-	httpServer *http.Server
-	handler    *http.ServeMux
-	services   map[string]grpc.ServiceInfo
-	mu         sync.RWMutex
+	triServer *tri.Server
+	services  map[string]grpc.ServiceInfo
+	mu        sync.RWMutex
 }
 
 // NewServer creates a new TRIPLE server
 func NewServer() *Server {
 	return &Server{
-		handler: http.NewServeMux(),
+		services: make(map[string]grpc.ServiceInfo),
 	}
 }
 
@@ -68,15 +62,12 @@ func NewServer() *Server {
 func (s *Server) Start(invoker protocol.Invoker, info *server.ServiceInfo) {
 	var (
 		addr    string
-		err     error
 		URL     *common.URL
 		hanOpts []tri.HandlerOption
 	)
 	URL = invoker.GetURL()
 	addr = URL.Location
-	srv := &http.Server{
-		Addr: addr,
-	}
+	s.triServer = tri.NewServer(addr)
 	serialization := URL.GetParam(constant.SerializationKey, constant.ProtobufSerialization)
 	switch serialization {
 	case constant.ProtobufSerialization:
@@ -94,7 +85,7 @@ func (s *Server) Start(invoker protocol.Invoker, info *server.ServiceInfo) {
 	//	grpc.MaxRecvMsgSize(maxServerRecvMsgSize),
 	//	grpc.MaxSendMsgSize(maxServerSendMsgSize),
 	//)
-	var cfg *tls.Config
+	//var cfg *tls.Config
 	// todo(DMwangnima): think about a more elegant way to configure tls
 	//tlsConfig := config.GetRootConfig().TLSConfig
 	//if tlsConfig != nil {
@@ -113,27 +104,17 @@ func (s *Server) Start(invoker protocol.Invoker, info *server.ServiceInfo) {
 	// todo:// move tls config to handleService
 
 	hanOpts = getHanOpts(URL)
-	s.httpServer = srv
+	if info != nil {
+		s.handleServiceWithInfo(invoker, info, hanOpts...)
+		s.saveServiceInfo(info)
+	} else {
+		s.compatHandleService(URL, hanOpts...)
+	}
+	reflection.Register(s)
 
 	go func() {
-		mux := s.handler
-		if info != nil {
-			handleServiceWithInfo(invoker, info, mux, hanOpts...)
-			s.saveServiceInfo(info)
-		} else {
-			compatHandleService(URL, mux)
-		}
-		// todo: figure it out this process
-		reflection.Register(s)
-		// todo: without tls
-		if cfg == nil {
-			srv.Handler = h2c.NewHandler(mux, &http2.Server{})
-		} else {
-			srv.Handler = mux
-		}
-
-		if err = srv.ListenAndServe(); err != nil {
-			logger.Errorf("server serve failed with err: %v", err)
+		if runErr := s.triServer.Run(); runErr != nil {
+			logger.Errorf("server serve failed with err: %v", runErr)
 		}
 	}()
 }
@@ -153,12 +134,11 @@ func (s *Server) RefreshService(invoker protocol.Invoker, info *server.ServiceIn
 		panic(fmt.Sprintf("Unsupported serialization: %s", serialization))
 	}
 	hanOpts = getHanOpts(URL)
-	mux := s.handler
 	if info != nil {
-		handleServiceWithInfo(invoker, info, mux, hanOpts...)
+		s.handleServiceWithInfo(invoker, info, hanOpts...)
 		s.saveServiceInfo(info)
 	} else {
-		compatHandleService(URL, mux)
+		s.compatHandleService(URL, hanOpts...)
 	}
 }
 
@@ -178,6 +158,10 @@ func getHanOpts(url *common.URL) (hanOpts []tri.HandlerOption) {
 
 	// todo:// open tracing
 	hanOpts = append(hanOpts, tri.WithInterceptors())
+
+	group := url.GetParam(constant.GroupKey, "")
+	version := url.GetParam(constant.VersionKey, "")
+	hanOpts = append(hanOpts, tri.WithGroup(group), tri.WithVersion(version))
 	return hanOpts
 }
 
@@ -214,11 +198,11 @@ func waitTripleExporter(providerServices map[string]*config.ServiceConfig) {
 }
 
 // *Important*, this function is responsible for being compatible with old triple-gen code
-// compatHandleService creates handler based on ServiceConfig and provider service.
-func compatHandleService(url *common.URL, mux *http.ServeMux, opts ...tri.HandlerOption) {
+// compatHandleService registers handler based on ServiceConfig and provider service.
+func (s *Server) compatHandleService(url *common.URL, opts ...tri.HandlerOption) {
 	providerServices := config.GetProviderConfig().Services
 	if len(providerServices) == 0 {
-		panic("Provider service map is null")
+		logger.Info("Provider service map is null")
 	}
 	//waitTripleExporter(providerServices)
 	for key, providerService := range providerServices {
@@ -246,22 +230,18 @@ func compatHandleService(url *common.URL, mux *http.ServeMux, opts ...tri.Handle
 
 		// inject invoker, it has all invocation logics
 		ds.XXX_SetProxyImpl(invoker)
-		path, handler := compatBuildHandler(ds, opts...)
-		mux.Handle(path, handler)
+		s.compatRegisterHandler(ds, opts...)
 	}
 }
 
-func compatBuildHandler(svc dubbo3.Dubbo3GrpcService, opts ...tri.HandlerOption) (string, http.Handler) {
-	mux := http.NewServeMux()
+func (s *Server) compatRegisterHandler(svc dubbo3.Dubbo3GrpcService, opts ...tri.HandlerOption) {
 	desc := svc.XXX_ServiceDesc()
-	basePath := desc.ServiceName
 	// init unary handlers
 	for _, method := range desc.Methods {
 		// please refer to protocol/triple/internal/proto/triple_gen/greettriple for procedure examples
 		// error could be ignored because base is empty string
 		procedure := joinProcedure(desc.ServiceName, method.MethodName)
-		handler := tri.NewCompatUnaryHandler(procedure, svc, tri.MethodHandler(method.Handler), opts...)
-		mux.Handle(procedure, handler)
+		_ = s.triServer.RegisterCompatUnaryHandler(procedure, svc, tri.MethodHandler(method.Handler), opts...)
 	}
 
 	// init stream handlers
@@ -278,22 +258,18 @@ func compatBuildHandler(svc dubbo3.Dubbo3GrpcService, opts ...tri.HandlerOption)
 		case stream.ServerStreams:
 			typ = tri.StreamTypeServer
 		}
-		handler := tri.NewCompatStreamHandler(procedure, svc, typ, stream.Handler, opts...)
-		mux.Handle(procedure, handler)
+		_ = s.triServer.RegisterCompatStreamHandler(procedure, svc, typ, stream.Handler, opts...)
 	}
-
-	return "/" + basePath + "/", mux
 }
 
 // handleServiceWithInfo injects invoker and create handler based on ServiceInfo
-func handleServiceWithInfo(invoker protocol.Invoker, info *server.ServiceInfo, mux *http.ServeMux, opts ...tri.HandlerOption) {
+func (s *Server) handleServiceWithInfo(invoker protocol.Invoker, info *server.ServiceInfo, opts ...tri.HandlerOption) {
 	for _, method := range info.Methods {
 		m := method
-		var handler http.Handler
 		procedure := joinProcedure(info.InterfaceName, method.Name)
 		switch m.Type {
 		case constant.CallUnary:
-			handler = tri.NewUnaryHandler(
+			_ = s.triServer.RegisterUnaryHandler(
 				procedure,
 				m.ReqInitFunc,
 				func(ctx context.Context, req *tri.Request) (*tri.Response, error) {
@@ -308,7 +284,7 @@ func handleServiceWithInfo(invoker protocol.Invoker, info *server.ServiceInfo, m
 				opts...,
 			)
 		case constant.CallClientStream:
-			handler = tri.NewClientStreamHandler(
+			_ = s.triServer.RegisterClientStreamHandler(
 				procedure,
 				func(ctx context.Context, stream *tri.ClientStream) (*tri.Response, error) {
 					var args []interface{}
@@ -317,9 +293,10 @@ func handleServiceWithInfo(invoker protocol.Invoker, info *server.ServiceInfo, m
 					res := invoker.Invoke(ctx, invo)
 					return res.Result().(*tri.Response), res.Error()
 				},
+				opts...,
 			)
 		case constant.CallServerStream:
-			handler = tri.NewServerStreamHandler(
+			_ = s.triServer.RegisterServerStreamHandler(
 				procedure,
 				m.ReqInitFunc,
 				func(ctx context.Context, request *tri.Request, stream *tri.ServerStream) error {
@@ -329,9 +306,10 @@ func handleServiceWithInfo(invoker protocol.Invoker, info *server.ServiceInfo, m
 					res := invoker.Invoke(ctx, invo)
 					return res.Error()
 				},
+				opts...,
 			)
 		case constant.CallBidiStream:
-			handler = tri.NewBidiStreamHandler(
+			_ = s.triServer.RegisterBidiStreamHandler(
 				procedure,
 				func(ctx context.Context, stream *tri.BidiStream) error {
 					var args []interface{}
@@ -340,9 +318,9 @@ func handleServiceWithInfo(invoker protocol.Invoker, info *server.ServiceInfo, m
 					res := invoker.Invoke(ctx, invo)
 					return res.Error()
 				},
+				opts...,
 			)
 		}
-		mux.Handle(procedure, handler)
 	}
 }
 
@@ -371,9 +349,6 @@ func (s *Server) saveServiceInfo(info *server.ServiceInfo) {
 	ret.Metadata = info
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.services == nil {
-		s.services = make(map[string]grpc.ServiceInfo)
-	}
 	s.services[info.InterfaceName] = ret
 }
 
@@ -389,12 +364,10 @@ func (s *Server) GetServiceInfo() map[string]grpc.ServiceInfo {
 
 // Stop TRIPLE server
 func (s *Server) Stop() {
-	// todo: process error
-	s.httpServer.Close()
+	_ = s.triServer.Stop()
 }
 
 // GracefulStop TRIPLE server
 func (s *Server) GracefulStop() {
-	// todo: process error and use timeout
-	s.httpServer.Shutdown(context.Background())
+	_ = s.triServer.GracefulStop(context.Background())
 }

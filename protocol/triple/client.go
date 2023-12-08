@@ -119,33 +119,37 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 	// If global trace instance was set, it means trace function enabled.
 	// If not, will return NoopTracer.
 	// tracer := opentracing.GlobalTracer()
-	var triClientOpts []tri.ClientOption
+	var cliOpts []tri.ClientOption
 
 	// set max send and recv msg size
 	maxCallRecvMsgSize := constant.DefaultMaxCallRecvMsgSize
 	if recvMsgSize, err := humanize.ParseBytes(url.GetParam(constant.MaxCallRecvMsgSize, "")); err == nil && recvMsgSize > 0 {
 		maxCallRecvMsgSize = int(recvMsgSize)
 	}
-	triClientOpts = append(triClientOpts, tri.WithReadMaxBytes(maxCallRecvMsgSize))
+	cliOpts = append(cliOpts, tri.WithReadMaxBytes(maxCallRecvMsgSize))
 	maxCallSendMsgSize := constant.DefaultMaxCallSendMsgSize
 	if sendMsgSize, err := humanize.ParseBytes(url.GetParam(constant.MaxCallSendMsgSize, "")); err == nil && sendMsgSize > 0 {
 		maxCallSendMsgSize = int(sendMsgSize)
 	}
-	triClientOpts = append(triClientOpts, tri.WithSendMaxBytes(maxCallSendMsgSize))
+	cliOpts = append(cliOpts, tri.WithSendMaxBytes(maxCallSendMsgSize))
 
 	// set serialization
 	serialization := url.GetParam(constant.SerializationKey, constant.ProtobufSerialization)
 	switch serialization {
 	case constant.ProtobufSerialization:
 	case constant.JSONSerialization:
-		triClientOpts = append(triClientOpts, tri.WithProtoJSON())
+		cliOpts = append(cliOpts, tri.WithProtoJSON())
 	default:
 		panic(fmt.Sprintf("Unsupported serialization: %s", serialization))
 	}
 
 	// set timeout
 	timeout := url.GetParamDuration(constant.TimeoutKey, "")
-	triClientOpts = append(triClientOpts, tri.WithTimeout(timeout))
+	cliOpts = append(cliOpts, tri.WithTimeout(timeout))
+
+	group := url.GetParam(constant.GroupKey, "")
+	version := url.GetParam(constant.VersionKey, "")
+	cliOpts = append(cliOpts, tri.WithGroup(group), tri.WithVersion(version))
 
 	// dialOpts = append(dialOpts,
 	//
@@ -187,7 +191,7 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 		transport = &http.Transport{
 			TLSClientConfig: cfg,
 		}
-		triClientOpts = append(triClientOpts, tri.WithTriple())
+		cliOpts = append(cliOpts, tri.WithTriple())
 	case constant.CallHTTP2:
 		if tlsFlag {
 			transport = &http2.Transport{
@@ -222,7 +226,7 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 		if err != nil {
 			return nil, fmt.Errorf("JoinPath failed for base %s, interface %s, method %s", baseTriURL, url.Interface(), method)
 		}
-		triClient := tri.NewClient(httpClient, triURL, triClientOpts...)
+		triClient := tri.NewClient(httpClient, triURL, cliOpts...)
 		triClients[method] = triClient
 	}
 

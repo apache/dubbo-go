@@ -22,10 +22,10 @@ import (
 	"testing"
 	"time"
 )
+
 import (
 	"github.com/stretchr/testify/assert"
 
-	// If there is a conflict between the healthCheck of Dubbo and the healthCheck of gRPC, an error will occur.
 	_ "google.golang.org/grpc/health/grpc_health_v1"
 )
 
@@ -34,6 +34,8 @@ import (
 )
 
 const testService = "testService"
+
+// If there is a conflict between the healthCheck of Dubbo and the healthCheck of gRPC, an error will occur.
 
 func TestSetServingStatus(t *testing.T) {
 	s := NewServer()

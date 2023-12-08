@@ -124,6 +124,7 @@ func (c *Client) CallUnary(ctx context.Context, request *Request, response *Resp
 	if flag {
 		defer cancel()
 	}
+	applyGroupVersionHeaders(request.Header(), c.config)
 	return c.callUnary(ctx, request, response)
 }
 
@@ -169,6 +170,7 @@ func (c *Client) CallBidiStream(ctx context.Context) (*BidiStreamForClient, erro
 func (c *Client) newConn(ctx context.Context, streamType StreamType) StreamingClientConn {
 	newConn := func(ctx context.Context, spec Spec) StreamingClientConn {
 		header := make(http.Header, 8) // arbitrary power of two, prevent immediate resizing
+		applyGroupVersionHeaders(header, c.config)
 		c.protocolClient.WriteRequestHeader(streamType, header)
 		return c.protocolClient.NewConn(ctx, spec, header)
 	}
@@ -195,6 +197,8 @@ type clientConfig struct {
 	GetUseFallback         bool
 	IdempotencyLevel       IdempotencyLevel
 	Timeout                time.Duration
+	Group                  string
+	Version                string
 }
 
 func newClientConfig(rawURL string, options []ClientOption) (*clientConfig, *Error) {
@@ -278,4 +282,13 @@ func applyDefaultTimeout(ctx context.Context, timeout time.Duration) (context.Co
 	}
 
 	return ctx, applyFlag, cancel
+}
+
+func applyGroupVersionHeaders(header http.Header, cfg *clientConfig) {
+	if cfg.Group != "" {
+		header.Set(tripleServiceGroup, cfg.Group)
+	}
+	if cfg.Version != "" {
+		header.Set(tripleServiceVersion, cfg.Version)
+	}
 }
