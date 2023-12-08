@@ -19,12 +19,15 @@ package triple_protocol
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"github.com/golang/protobuf/proto"
 	"net/http"
 )
 
 import (
 	"github.com/dubbogo/grpc-go"
+	"github.com/dubbogo/grpc-go/status"
 )
 
 import (
@@ -65,6 +68,10 @@ func (t *tripleCompatInterceptor) compatUnaryServerInterceptor(ctx context.Conte
 		resp, ok := respRaw.(*dubbo_protocol.RPCResult)
 		if !ok {
 			panic(fmt.Sprintf("%+v is not of type *RPCResult", respRaw))
+		}
+		triErr, ok := compatError(err)
+		if ok {
+			err = triErr
 		}
 		// todo(DMwangnima): expose API for users to write response headers and trailers
 		return NewResponse(resp.Rest), err
@@ -132,4 +139,23 @@ func generateCompatUnaryHandlerFunc(
 		mergeHeaders(conn.ResponseTrailer(), resp.Trailer())
 		return conn.Send(resp.Any())
 	}
+}
+
+func compatError(err error) (*Error, bool) {
+	s, ok := status.FromError(err)
+	if !ok {
+		return nil, ok
+	}
+
+	triErr := NewError(Code(s.Code()), errors.New(s.Message()))
+	for _, detail := range s.Details() {
+		// dubbo3 detail use MessageV1, we need to convert it to MessageV2
+		errDetail, e := NewErrorDetail(proto.MessageV2(detail.(proto.Message)))
+		if e != nil {
+			return nil, false
+		}
+		triErr.AddDetail(errDetail)
+	}
+
+	return triErr, ok
 }
