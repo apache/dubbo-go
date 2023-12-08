@@ -337,7 +337,7 @@ func (s *ServiceConfig) Export() error {
 					logger.Warnf("SetMetadataServiceURL error = %s", err)
 				}
 			}
-			s.generatorInvoker(ivkURL, info)
+			invoker = s.generatorInvoker(ivkURL, info)
 			exporter := extension.GetProtocol(protocolwrapper.FILTER).Export(invoker)
 			if exporter == nil {
 				return perrors.New(fmt.Sprintf("Filter protocol without registry new exporter error, url is {%v}", ivkURL))
