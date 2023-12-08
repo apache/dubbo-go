@@ -32,6 +32,7 @@ import (
 
 type Server struct {
 	mu       sync.Mutex
+	mux      *http.ServeMux
 	handlers map[string]*Handler
 	httpSrv  *http.Server
 }
@@ -52,6 +53,8 @@ func (s *Server) RegisterUnaryHandler(
 		hdl.processImplementation(getIdentifier(config.Group, config.Version), implementation)
 	}
 
+	s.mux.Handle(procedure, hdl)
+
 	return nil
 }
 
@@ -69,6 +72,8 @@ func (s *Server) RegisterClientStreamHandler(
 		implementation := generateClientStreamHandlerFunc(procedure, stream, config.Interceptor)
 		hdl.processImplementation(getIdentifier(config.Group, config.Version), implementation)
 	}
+
+	s.mux.Handle(procedure, hdl)
 
 	return nil
 }
@@ -89,6 +94,8 @@ func (s *Server) RegisterServerStreamHandler(
 		hdl.processImplementation(getIdentifier(config.Group, config.Version), implementation)
 	}
 
+	s.mux.Handle(procedure, hdl)
+
 	return nil
 }
 
@@ -106,6 +113,8 @@ func (s *Server) RegisterBidiStreamHandler(
 		implementation := generateBidiStreamHandlerFunc(procedure, stream, config.Interceptor)
 		hdl.processImplementation(getIdentifier(config.Group, config.Version), implementation)
 	}
+
+	s.mux.Handle(procedure, hdl)
 
 	return nil
 }
@@ -125,6 +134,8 @@ func (s *Server) RegisterCompatUnaryHandler(
 		implementation := generateCompatUnaryHandlerFunc(procedure, srv, unary, config.Interceptor)
 		hdl.processImplementation(getIdentifier(config.Group, config.Version), implementation)
 	}
+
+	s.mux.Handle(procedure, hdl)
 
 	return nil
 }
@@ -146,16 +157,14 @@ func (s *Server) RegisterCompatStreamHandler(
 		hdl.processImplementation(getIdentifier(config.Group, config.Version), implementation)
 	}
 
+	s.mux.Handle(procedure, hdl)
+
 	return nil
 }
 
 func (s *Server) Run() error {
-	mux := http.NewServeMux()
-	for procedure, hdl := range s.handlers {
-		mux.Handle(procedure, hdl)
-	}
 	// todo(DMwangnima): deal with TLS
-	s.httpSrv.Handler = h2c.NewHandler(mux, &http2.Server{})
+	s.httpSrv.Handler = h2c.NewHandler(s.mux, &http2.Server{})
 
 	if err := s.httpSrv.ListenAndServe(); err != nil {
 		return err
@@ -173,6 +182,7 @@ func (s *Server) GracefulStop(ctx context.Context) error {
 
 func NewServer(addr string) *Server {
 	return &Server{
+		mux:      http.NewServeMux(),
 		handlers: make(map[string]*Handler),
 		httpSrv:  &http.Server{Addr: addr},
 	}
