@@ -139,7 +139,7 @@ func (svcOpts *ServiceOptions) export(info *ServiceInfo) error {
 		if svc.Interface == "" {
 			svc.Interface = info.InterfaceName
 		}
-		svcOpts.Id = info.InterfaceName
+		svcOpts.Id = common.GetReference(svcOpts.rpcService)
 		svcOpts.info = info
 	}
 	// TODO: delay needExport

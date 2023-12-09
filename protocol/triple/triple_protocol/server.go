@@ -47,13 +47,12 @@ func (s *Server) RegisterUnaryHandler(
 	if !ok {
 		hdl = NewUnaryHandler(procedure, reqInitFunc, unary, options...)
 		s.handlers[procedure] = hdl
+		s.mux.Handle(procedure, hdl)
 	} else {
 		config := newHandlerConfig(procedure, options)
 		implementation := generateUnaryHandlerFunc(procedure, reqInitFunc, unary, config.Interceptor)
 		hdl.processImplementation(getIdentifier(config.Group, config.Version), implementation)
 	}
-
-	s.mux.Handle(procedure, hdl)
 
 	return nil
 }
@@ -67,13 +66,12 @@ func (s *Server) RegisterClientStreamHandler(
 	if !ok {
 		hdl = NewClientStreamHandler(procedure, stream, options...)
 		s.handlers[procedure] = hdl
+		s.mux.Handle(procedure, hdl)
 	} else {
 		config := newHandlerConfig(procedure, options)
 		implementation := generateClientStreamHandlerFunc(procedure, stream, config.Interceptor)
 		hdl.processImplementation(getIdentifier(config.Group, config.Version), implementation)
 	}
-
-	s.mux.Handle(procedure, hdl)
 
 	return nil
 }
@@ -88,13 +86,12 @@ func (s *Server) RegisterServerStreamHandler(
 	if !ok {
 		hdl = NewServerStreamHandler(procedure, reqInitFunc, stream, options...)
 		s.handlers[procedure] = hdl
+		s.mux.Handle(procedure, hdl)
 	} else {
 		config := newHandlerConfig(procedure, options)
 		implementation := generateServerStreamHandlerFunc(procedure, reqInitFunc, stream, config.Interceptor)
 		hdl.processImplementation(getIdentifier(config.Group, config.Version), implementation)
 	}
-
-	s.mux.Handle(procedure, hdl)
 
 	return nil
 }
@@ -108,13 +105,12 @@ func (s *Server) RegisterBidiStreamHandler(
 	if !ok {
 		hdl = NewBidiStreamHandler(procedure, stream, options...)
 		s.handlers[procedure] = hdl
+		s.mux.Handle(procedure, hdl)
 	} else {
 		config := newHandlerConfig(procedure, options)
 		implementation := generateBidiStreamHandlerFunc(procedure, stream, config.Interceptor)
 		hdl.processImplementation(getIdentifier(config.Group, config.Version), implementation)
 	}
-
-	s.mux.Handle(procedure, hdl)
 
 	return nil
 }
@@ -129,13 +125,12 @@ func (s *Server) RegisterCompatUnaryHandler(
 	if !ok {
 		hdl = NewCompatUnaryHandler(procedure, srv, unary, options...)
 		s.handlers[procedure] = hdl
+		s.mux.Handle(procedure, hdl)
 	} else {
 		config := newHandlerConfig(procedure, options)
 		implementation := generateCompatUnaryHandlerFunc(procedure, srv, unary, config.Interceptor)
 		hdl.processImplementation(getIdentifier(config.Group, config.Version), implementation)
 	}
-
-	s.mux.Handle(procedure, hdl)
 
 	return nil
 }
@@ -151,13 +146,12 @@ func (s *Server) RegisterCompatStreamHandler(
 	if !ok {
 		hdl = NewCompatStreamHandler(procedure, srv, typ, streamFunc, options...)
 		s.handlers[procedure] = hdl
+		s.mux.Handle(procedure, hdl)
 	} else {
 		config := newHandlerConfig(procedure, options)
 		implementation := generateCompatStreamHandlerFunc(procedure, srv, streamFunc, config.Interceptor)
 		hdl.processImplementation(getIdentifier(config.Group, config.Version), implementation)
 	}
-
-	s.mux.Handle(procedure, hdl)
 
 	return nil
 }

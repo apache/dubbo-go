@@ -61,9 +61,8 @@ func NewServer() *Server {
 // Start TRIPLE server
 func (s *Server) Start(invoker protocol.Invoker, info *server.ServiceInfo) {
 	var (
-		addr    string
-		URL     *common.URL
-		hanOpts []tri.HandlerOption
+		addr string
+		URL  *common.URL
 	)
 	URL = invoker.GetURL()
 	addr = URL.Location
@@ -103,12 +102,13 @@ func (s *Server) Start(invoker protocol.Invoker, info *server.ServiceInfo) {
 	//srv.TLSConfig = cfg
 	// todo:// move tls config to handleService
 
-	hanOpts = getHanOpts(URL)
+	hanOpts := getHanOpts(URL)
+	intfName := URL.Interface()
 	if info != nil {
-		s.handleServiceWithInfo(invoker, info, hanOpts...)
-		s.saveServiceInfo(info)
+		s.handleServiceWithInfo(intfName, invoker, info, hanOpts...)
+		s.saveServiceInfo(intfName, info)
 	} else {
-		s.compatHandleService(URL, hanOpts...)
+		s.compatHandleService(intfName, hanOpts...)
 	}
 	reflection.Register(s)
 
@@ -134,11 +134,12 @@ func (s *Server) RefreshService(invoker protocol.Invoker, info *server.ServiceIn
 		panic(fmt.Sprintf("Unsupported serialization: %s", serialization))
 	}
 	hanOpts = getHanOpts(URL)
+	intfName := URL.Interface()
 	if info != nil {
-		s.handleServiceWithInfo(invoker, info, hanOpts...)
-		s.saveServiceInfo(info)
+		s.handleServiceWithInfo(intfName, invoker, info, hanOpts...)
+		s.saveServiceInfo(intfName, info)
 	} else {
-		s.compatHandleService(URL, hanOpts...)
+		s.compatHandleService(intfName, hanOpts...)
 	}
 }
 
@@ -199,14 +200,14 @@ func waitTripleExporter(providerServices map[string]*config.ServiceConfig) {
 
 // *Important*, this function is responsible for being compatible with old triple-gen code
 // compatHandleService registers handler based on ServiceConfig and provider service.
-func (s *Server) compatHandleService(url *common.URL, opts ...tri.HandlerOption) {
+func (s *Server) compatHandleService(intefaceName string, opts ...tri.HandlerOption) {
 	providerServices := config.GetProviderConfig().Services
 	if len(providerServices) == 0 {
 		logger.Info("Provider service map is null")
 	}
 	//waitTripleExporter(providerServices)
 	for key, providerService := range providerServices {
-		if providerService.Interface != url.Interface() {
+		if providerService.Interface != intefaceName {
 			continue
 		}
 		// todo(DMwangnima): judge protocol type
@@ -230,17 +231,17 @@ func (s *Server) compatHandleService(url *common.URL, opts ...tri.HandlerOption)
 
 		// inject invoker, it has all invocation logics
 		ds.XXX_SetProxyImpl(invoker)
-		s.compatRegisterHandler(ds, opts...)
+		s.compatRegisterHandler(intefaceName, ds, opts...)
 	}
 }
 
-func (s *Server) compatRegisterHandler(svc dubbo3.Dubbo3GrpcService, opts ...tri.HandlerOption) {
+func (s *Server) compatRegisterHandler(interfaceName string, svc dubbo3.Dubbo3GrpcService, opts ...tri.HandlerOption) {
 	desc := svc.XXX_ServiceDesc()
 	// init unary handlers
 	for _, method := range desc.Methods {
 		// please refer to protocol/triple/internal/proto/triple_gen/greettriple for procedure examples
 		// error could be ignored because base is empty string
-		procedure := joinProcedure(desc.ServiceName, method.MethodName)
+		procedure := joinProcedure(interfaceName, method.MethodName)
 		_ = s.triServer.RegisterCompatUnaryHandler(procedure, svc, tri.MethodHandler(method.Handler), opts...)
 	}
 
@@ -248,7 +249,7 @@ func (s *Server) compatRegisterHandler(svc dubbo3.Dubbo3GrpcService, opts ...tri
 	for _, stream := range desc.Streams {
 		// please refer to protocol/triple/internal/proto/triple_gen/greettriple for procedure examples
 		// error could be ignored because base is empty string
-		procedure := joinProcedure(desc.ServiceName, stream.StreamName)
+		procedure := joinProcedure(interfaceName, stream.StreamName)
 		var typ tri.StreamType
 		switch {
 		case stream.ClientStreams && stream.ServerStreams:
@@ -263,10 +264,10 @@ func (s *Server) compatRegisterHandler(svc dubbo3.Dubbo3GrpcService, opts ...tri
 }
 
 // handleServiceWithInfo injects invoker and create handler based on ServiceInfo
-func (s *Server) handleServiceWithInfo(invoker protocol.Invoker, info *server.ServiceInfo, opts ...tri.HandlerOption) {
+func (s *Server) handleServiceWithInfo(interfaceName string, invoker protocol.Invoker, info *server.ServiceInfo, opts ...tri.HandlerOption) {
 	for _, method := range info.Methods {
 		m := method
-		procedure := joinProcedure(info.InterfaceName, method.Name)
+		procedure := joinProcedure(interfaceName, method.Name)
 		switch m.Type {
 		case constant.CallUnary:
 			_ = s.triServer.RegisterUnaryHandler(
@@ -324,7 +325,7 @@ func (s *Server) handleServiceWithInfo(invoker protocol.Invoker, info *server.Se
 	}
 }
 
-func (s *Server) saveServiceInfo(info *server.ServiceInfo) {
+func (s *Server) saveServiceInfo(interfaceName string, info *server.ServiceInfo) {
 	ret := grpc.ServiceInfo{}
 	ret.Methods = make([]grpc.MethodInfo, 0, len(info.Methods))
 	for _, method := range info.Methods {
@@ -349,7 +350,7 @@ func (s *Server) saveServiceInfo(info *server.ServiceInfo) {
 	ret.Metadata = info
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.services[info.InterfaceName] = ret
+	s.services[interfaceName] = ret
 }
 
 func (s *Server) GetServiceInfo() map[string]grpc.ServiceInfo {

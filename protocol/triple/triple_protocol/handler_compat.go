@@ -142,9 +142,12 @@ func generateCompatUnaryHandlerFunc(
 }
 
 func compatError(err error) (*Error, bool) {
+	if err == nil {
+		return nil, false
+	}
 	s, ok := status.FromError(err)
 	if !ok {
-		return nil, ok
+		return nil, false
 	}
 
 	triErr := NewError(Code(s.Code()), errors.New(s.Message()))
