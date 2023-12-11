@@ -209,7 +209,7 @@ func (s *Server) exportInternalServices() error {
 	cfg.Protocols = s.cfg.Protocols
 	cfg.Registries = s.cfg.Registries
 
-	services := make([]*InternalService, len(proServices))
+	services := make([]*InternalService, 0, len(proServices))
 
 	for _, service := range proServices {
 		sd, ok := service.Init(cfg)
@@ -225,15 +225,21 @@ func (s *Server) exportInternalServices() error {
 		services = append(services, service)
 	}
 
-	sortInternalService(services)
+	sort.Slice(services, func(i, j int) bool {
+		return services[i].Priority > services[j].Priority
+	})
 
 	for _, service := range services {
-		service.BeforeExport(service.svcOpts)
+		if service.BeforeExport != nil {
+			service.BeforeExport(service.svcOpts)
+		}
 		if err := service.svcOpts.ExportWithInfo(service.info); err != nil {
 			logger.Errorf("export %s internal service failed, err: %s", service.svcOpts.Service.Interface, err)
 			return err
 		}
-		service.AfterExport(service.svcOpts)
+		if service.AfterExport != nil {
+			service.AfterExport(service.svcOpts)
+		}
 	}
 
 	return nil
@@ -276,13 +282,3 @@ func NewServer(opts ...ServerOption) (*Server, error) {
 func SetProServices(sd *InternalService) {
 	proServices = append(proServices, sd)
 }
-
-func sortInternalService(services []*InternalService) {
-	sort.Stable(byPriority(services))
-}
-
-type byPriority []*InternalService
-
-func (a byPriority) Len() int           { return len(a) }
-func (a byPriority) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a byPriority) Less(i, j int) bool { return a[i].Priority > a[j].Priority }
