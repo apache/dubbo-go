@@ -171,11 +171,15 @@ func (srv *HealthTripleServer) Resume() {
 
 func init() {
 	healthServer = NewServer()
-	server.SetProServices(&server.ServiceDefinition{
-		Handler: healthServer,
-		Info:    &triple_health.Health_ServiceInfo,
-		Opts: []server.ServiceOption{server.WithNotRegister(),
-			server.WithInterface(constant.HealthCheckServiceInterface)},
+	server.SetProServices(&server.InternalService{
+		Init: func(options server.ServiceOptions) (*server.ServiceDefinition, bool) {
+			return &server.ServiceDefinition{
+				Handler: healthServer,
+				Info:    &triple_health.Health_ServiceInfo,
+				Opts: []server.ServiceOption{server.WithNotRegister(),
+					server.WithInterface(constant.HealthCheckServiceInterface)},
+			}, true
+		},
 	})
 
 	// In order to adapt config.Load
