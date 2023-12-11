@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package client
+package metadata
 
 import (
 	"reflect"

@@ -33,7 +33,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/metadata/client"
+	"dubbo.apache.org/dubbo-go/v3/metadata"
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/registry/servicediscovery/store"
@@ -241,12 +241,12 @@ func GetMetadataInfo(app string, instance registry.ServiceInstance, revision str
 		metadataStorageType = instance.GetMetadata()[constant.MetadataStorageTypePropertyName]
 	}
 	if metadataStorageType == constant.RemoteMetadataStorageType {
-		metadataInfo, err = client.GetMetadataFromMetadataReport(revision, instance)
+		metadataInfo, err = metadata.GetMetadataFromMetadataReport(revision, instance)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		metadataInfo, err = client.GetMetadataFromRpc(revision, instance)
+		metadataInfo, err = metadata.GetMetadataFromRpc(revision, instance)
 		if err != nil {
 			return nil, err
 		}

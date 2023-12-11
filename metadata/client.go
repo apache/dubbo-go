@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package client
+package metadata
 
 import (
 	"context"
@@ -52,7 +52,7 @@ func GetMetadataFromRpc(revision string, instance registry.ServiceInstance) (*in
 	return service.GetMetadataInfo(ctx, revision)
 }
 
-type metadataService struct {
+type remoteMetadataService struct {
 	//GetExportedURLs       func(context context.Context, serviceInterface string, group string, version string, protocol string) ([]*common.URL, error) `dubbo:"getExportedURLs"`
 	GetMetadataInfo func(context context.Context, revision string) (*info.MetadataInfo, error) `dubbo:"getMetadataInfo"`
 	//GetMetadataServiceURL func(context context.Context) (*common.URL, error)
@@ -60,14 +60,14 @@ type metadataService struct {
 	//Version               func(context context.Context) (string, error)
 }
 
-func createRpcClient(instance registry.ServiceInstance) (*metadataService, func()) {
+func createRpcClient(instance registry.ServiceInstance) (*remoteMetadataService, func()) {
 	params := getMetadataServiceUrlParams(instance.GetMetadata()[constant.MetadataServiceURLParamsPropertyName])
 	url := buildMetadataServiceURL(instance.GetServiceName(), instance.GetHost(), params)
 	return createRpcClientByUrl(url)
 }
 
-func createRpcClientByUrl(url *common.URL) (*metadataService, func()) {
-	rpcService := &metadataService{}
+func createRpcClientByUrl(url *common.URL) (*remoteMetadataService, func()) {
+	rpcService := &remoteMetadataService{}
 	invoker := extension.GetProtocol(constant.Dubbo).Refer(url)
 	proxy := extension.GetProxyFactory("").GetProxy(invoker, url)
 	proxy.Implement(rpcService)
