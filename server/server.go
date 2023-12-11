@@ -203,7 +203,7 @@ func (s *Server) Serve() error {
 }
 
 func (s *Server) exportInternalServices() error {
-	var cfg ServiceOptions
+	var cfg *ServiceOptions
 	cfg.Application = s.cfg.Application
 	cfg.Provider = s.cfg.Provider
 	cfg.Protocols = s.cfg.Protocols
@@ -250,7 +250,7 @@ type InternalService struct {
 	svcOpts *ServiceOptions
 	info    *ServiceInfo
 	// Returns serviceDefinition and bool, where bool indicates whether it is exported
-	Init         func(options ServiceOptions) (*ServiceDefinition, bool)
+	Init         func(options *ServiceOptions) (*ServiceDefinition, bool)
 	BeforeExport func(options *ServiceOptions)
 	AfterExport  func(options *ServiceOptions)
 	// Large numbers have higher priority

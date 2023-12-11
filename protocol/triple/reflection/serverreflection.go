@@ -280,7 +280,7 @@ var reflectionServer *ReflectionServer
 func init() {
 	reflectionServer = NewServer()
 	server.SetProServices(&server.InternalService{
-		Init: func(options server.ServiceOptions) (*server.ServiceDefinition, bool) {
+		Init: func(options *server.ServiceOptions) (*server.ServiceDefinition, bool) {
 			return &server.ServiceDefinition{
 				Handler: reflectionServer,
 				Info:    &rpb.ServerReflection_ServiceInfo,
