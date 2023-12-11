@@ -35,6 +35,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/metadata"
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
 	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
 	reportInstance "dubbo.apache.org/dubbo-go/v3/metadata/report/instance"
@@ -59,7 +60,6 @@ type serviceDiscoveryRegistry struct {
 	lock                    sync.RWMutex
 	url                     *common.URL
 	serviceDiscovery        registry.ServiceDiscovery
-	metadataInfo            *info.MetadataInfo
 	instance                registry.ServiceInstance
 	serviceNameMapping      mapping.ServiceNameMapping
 	serviceListeners        map[string]registry.ServiceInstancesChangedListener
@@ -74,7 +74,6 @@ func newServiceDiscoveryRegistry(url *common.URL) (registry.Registry, error) {
 	return &serviceDiscoveryRegistry{
 		url:                url,
 		serviceDiscovery:   serviceDiscovery,
-		metadataInfo:       info.NewMetadataInfo(),
 		serviceNameMapping: extension.GetGlobalServiceNameMapping(),
 		serviceListeners:   make(map[string]registry.ServiceInstancesChangedListener),
 		// cache for mapping listener
@@ -83,14 +82,17 @@ func newServiceDiscoveryRegistry(url *common.URL) (registry.Registry, error) {
 }
 
 func (s *serviceDiscoveryRegistry) RegisterService() error {
-	s.instance = createInstance(s.metadataInfo)
+	metaInfo := metadata.GetMetadataInfo(s.url.GetParam(constant.RegistryIdKey, ""))
+	if metaInfo == nil {
+		panic("no metada info found of registry id " + s.url.GetParam(constant.RegistryIdKey, ""))
+	}
+	s.instance = createInstance(metaInfo)
 	// consumer has no host and port, so it will not register service
 	if s.instance.GetHost() != "" && s.instance.GetPort() != 0 {
-		meta := s.metadataInfo
-		meta.CalAndGetRevision()
+		metaInfo.CalAndGetRevision()
 		metadataReport := reportInstance.GetMetadataReport()
 		if metadataReport != nil {
-			err := metadataReport.PublishAppMetadata(meta.App, meta.Revision, meta)
+			err := metadataReport.PublishAppMetadata(metaInfo.App, metaInfo.Revision, metaInfo)
 			if err != nil {
 				return err
 			}
@@ -101,14 +103,15 @@ func (s *serviceDiscoveryRegistry) RegisterService() error {
 }
 
 func createInstance(meta *info.MetadataInfo) registry.ServiceInstance {
-	metadata := make(map[string]string, 8)
-	metadata[constant.MetadataStorageTypePropertyName] = reportInstance.GetMetadataType()
+	params := make(map[string]string, 8)
+	params[constant.MetadataStorageTypePropertyName] = reportInstance.GetMetadataType()
 	instance := &registry.DefaultServiceInstance{
 		ServiceName:     meta.App,
 		Enable:          true,
 		Healthy:         true,
-		Metadata:        metadata,
+		Metadata:        params,
 		ServiceMetadata: meta,
+		Tag:             meta.Tag,
 	}
 
 	for _, cus := range extension.GetCustomizers() {
@@ -121,15 +124,10 @@ func (s *serviceDiscoveryRegistry) UnRegisterService() error {
 	return s.serviceDiscovery.Unregister(s.instance)
 }
 
-func (s *serviceDiscoveryRegistry) GetLocalMetadata() *info.MetadataInfo {
-	return s.metadataInfo
-}
-
 func (s *serviceDiscoveryRegistry) UnRegister(url *common.URL) error {
 	if !shouldRegister(url) {
 		return nil
 	}
-	s.GetLocalMetadata().RemoveService(url)
 	return nil
 }
 
@@ -137,7 +135,6 @@ func (s *serviceDiscoveryRegistry) UnSubscribe(url *common.URL, listener registr
 	if !shouldSubscribe(url) {
 		return nil
 	}
-	s.GetLocalMetadata().RemoveSubscribeURL(url)
 	services := s.getServices(url, nil)
 	if services == nil {
 		return nil
@@ -195,7 +192,9 @@ func (s *serviceDiscoveryRegistry) Register(url *common.URL) error {
 		return nil
 	}
 	common.HandleRegisterIPAndPort(url)
-	s.GetLocalMetadata().AddService(url)
+	if id, exist := s.url.GetNonDefaultParam(constant.RegistryIdKey); exist {
+		metadata.AddService(id, url)
+	}
 	metrics.Publish(metricsRegistry.NewServerRegisterEvent(true, time.Now()))
 	return s.serviceNameMapping.Map(url)
 }
@@ -214,7 +213,9 @@ func (s *serviceDiscoveryRegistry) Subscribe(url *common.URL, notify registry.No
 		logger.Infof("Service %s is set to not subscribe to instances.", url.ServiceKey())
 		return nil
 	}
-	s.GetLocalMetadata().AddSubscribeURL(url)
+	if id, exist := s.url.GetNonDefaultParam(constant.RegistryIdKey); exist {
+		metadata.AddSubscribeURL(id, url)
+	}
 	mappingListener := NewMappingListener(s.url, url, parseServices(url.GetParam(constant.ProvidedBy, "")), notify)
 	services := s.getServices(url, mappingListener)
 	if services.Empty() {

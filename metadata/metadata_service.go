@@ -18,24 +18,13 @@
 package metadata
 
 import (
-	"fmt"
-	"strings"
-)
-
-import (
 	"github.com/dubbogo/gost/log/logger"
-	gxnet "github.com/dubbogo/gost/net"
-
-	perrors "github.com/pkg/errors"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
-	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
 // version will be used by Version func
@@ -44,7 +33,10 @@ const (
 	allServiceInterfaces = "*"
 )
 
-var metadataUrl *common.URL
+var (
+	appMetadataInfoMap = make(map[string]*info.MetadataInfo)
+	metadataUrl        *common.URL
+)
 
 // MetadataService is used to define meta data related behaviors
 // usually the implementation should be singleton
@@ -92,7 +84,7 @@ func (mts *DefaultMetadataService) GetMetadataInfo(revision string) (*info.Metad
 	if revision == "" {
 		return nil, nil
 	}
-	for _, metadataInfo := range mts.getAllMetadata() {
+	for _, metadataInfo := range appMetadataInfoMap {
 		if metadataInfo.Revision == revision {
 			return metadataInfo, nil
 		}
@@ -101,23 +93,10 @@ func (mts *DefaultMetadataService) GetMetadataInfo(revision string) (*info.Metad
 	return nil, nil
 }
 
-func (mts *DefaultMetadataService) getAllMetadata() []*info.MetadataInfo {
-	sds := make([]*info.MetadataInfo, 0)
-	p := extension.GetProtocol(constant.RegistryProtocol)
-	if factory, ok := p.(registry.RegistryFactory); ok {
-		for _, v := range factory.GetRegistries() {
-			if sd, ok := v.(registry.ServiceDiscoveryRegistry); ok {
-				sds = append(sds, sd.GetLocalMetadata())
-			}
-		}
-	}
-	return sds
-}
-
 // GetExportedServiceURLs get exported service urls
 func (mts *DefaultMetadataService) GetExportedServiceURLs() ([]*common.URL, error) {
 	urls := make([]*common.URL, 0)
-	for _, metadataInfo := range mts.getAllMetadata() {
+	for _, metadataInfo := range appMetadataInfoMap {
 		urls = append(urls, metadataInfo.GetExportedServiceURLs()...)
 	}
 	return urls, nil
@@ -135,7 +114,7 @@ func (mts *DefaultMetadataService) GetMetadataServiceURL() (*common.URL, error) 
 
 func (mts *DefaultMetadataService) GetSubscribedURLs() ([]*common.URL, error) {
 	urls := make([]*common.URL, 0)
-	for _, metadataInfo := range mts.getAllMetadata() {
+	for _, metadataInfo := range appMetadataInfoMap {
 		urls = append(urls, metadataInfo.GetSubscribedURLs()...)
 	}
 	return urls, nil
@@ -149,49 +128,26 @@ func (mts *DefaultMetadataService) MethodMapper() map[string]string {
 	}
 }
 
-// ServiceExporter is the ConfigurableMetadataServiceExporter which implement MetadataServiceExporter interface
-type ServiceExporter struct {
-	app, metadataType string
-	service           MetadataService
-	protocolExporter  protocol.Exporter
+func GetMetadataInfo(id string) *info.MetadataInfo {
+	return appMetadataInfoMap[id]
 }
 
-// Export will export the metadataService
-func (exporter *ServiceExporter) Export() error {
-	version, _ := exporter.service.Version()
-	tcp, err := gxnet.ListenOnTCPRandomPort("")
-	if err != nil {
-		panic(perrors.New(fmt.Sprintf("Get tcp port error, err is {%v}", err)))
+func AddService(registryId string, url *common.URL) {
+	if _, exist := appMetadataInfoMap[registryId]; !exist {
+		appMetadataInfoMap[registryId] = info.NewMetadataInfo(
+			url.GetParam(constant.ApplicationKey, ""),
+			url.GetParam(constant.ApplicationTagKey, ""),
+		)
 	}
-	ivkURL := common.NewURLWithOptions(
-		common.WithPath(constant.MetadataServiceName),
-		common.WithProtocol(constant.DefaultProtocol),
-		common.WithPort(strings.Split(tcp.Addr().String(), ":")[1]),
-		common.WithParamsValue(constant.GroupKey, exporter.app),
-		common.WithParamsValue(constant.SerializationKey, constant.Hessian2Serialization),
-		common.WithParamsValue(constant.ReleaseKey, constant.Version),
-		common.WithParamsValue(constant.VersionKey, version),
-		common.WithParamsValue(constant.InterfaceKey, constant.MetadataServiceName),
-		common.WithParamsValue(constant.BeanNameKey, constant.SimpleMetadataServiceName),
-		common.WithParamsValue(constant.MetadataTypeKey, exporter.metadataType),
-	)
-	methods, err := common.ServiceMap.Register(ivkURL.Interface(), ivkURL.Protocol, ivkURL.Group(), ivkURL.Version(), exporter.service)
-	if err != nil {
-		formatErr := perrors.Errorf("The service %v needExport the protocol %v error! Error message is %v.",
-			ivkURL.Interface(), ivkURL.Protocol, err.Error())
-		logger.Errorf(formatErr.Error())
-		return formatErr
-	}
-	ivkURL.Methods = strings.Split(methods, ",")
-	proxyFactory := extension.GetProxyFactory("")
-	invoker := proxyFactory.GetInvoker(ivkURL)
-	exporter.protocolExporter = extension.GetProtocol(ivkURL.Protocol).Export(invoker)
-	metadataUrl = exporter.protocolExporter.GetInvoker().GetURL()
-	logger.Infof("[Metadata Service] The MetadataService exports urls : %v ", exporter.protocolExporter.GetInvoker().GetURL())
-	return nil
+	appMetadataInfoMap[registryId].AddService(url)
 }
 
-// UnExport will unExport the metadataService
-func (exporter *ServiceExporter) UnExport() {
-	exporter.protocolExporter.UnExport()
+func AddSubscribeURL(registryId string, url *common.URL) {
+	if _, exist := appMetadataInfoMap[registryId]; !exist {
+		appMetadataInfoMap[registryId] = info.NewMetadataInfo(
+			url.GetParam(constant.ApplicationKey, ""),
+			url.GetParam(constant.ApplicationTagKey, ""),
+		)
+	}
+	appMetadataInfoMap[registryId].AddSubscribeURL(url)
 }

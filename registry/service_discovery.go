@@ -26,10 +26,6 @@ import (
 	gxpage "github.com/dubbogo/gost/hash/page"
 )
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/metadata/info"
-)
-
 const DefaultPageSize = 100
 
 // ServiceDiscovery is the interface that wraps common operations of Service Discovery
@@ -80,6 +76,4 @@ type ServiceDiscoveryRegistry interface {
 	RegisterService() error
 	// UnRegisterService unregister service instance
 	UnRegisterService() error
-	// GetLocalMetadata get local metadata info
-	GetLocalMetadata() *info.MetadataInfo
 }

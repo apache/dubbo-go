@@ -91,10 +91,10 @@ func TestMetaInfoCacheManager(t *testing.T) {
 	serverInfo["2"] = info.NewServiceInfo("2", "2", "2", "2", "2", make(map[string]string))
 	serverInfo["3"] = info.NewServiceInfo("3", "3", "3", "3", "3", make(map[string]string))
 
-	metadataInfo1 := info.NewMetadataInfo("1", "1", serverInfo)
-	metadataInfo2 := info.NewMetadataInfo("2", "2", serverInfo)
-	metadataInfo3 := info.NewMetadataInfo("3", "3", serverInfo)
-	metadataInfo4 := info.NewMetadataInfo("4", "4", serverInfo)
+	metadataInfo1 := info.NewMetadataInfoWithParams("1", "1", serverInfo)
+	metadataInfo2 := info.NewMetadataInfoWithParams("2", "2", serverInfo)
+	metadataInfo3 := info.NewMetadataInfoWithParams("3", "3", serverInfo)
+	metadataInfo4 := info.NewMetadataInfoWithParams("4", "4", serverInfo)
 
 	cm, err := NewCacheManager("metaTest1", "test_meta_cache", defaultTime, 10, true)
 	if err != nil {

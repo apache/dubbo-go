@@ -93,6 +93,7 @@ type ServiceConfig struct {
 	exporters       []protocol.Exporter
 
 	metadataType string
+	rc           *RootConfig
 }
 
 // Prefix returns dubbo.service.${InterfaceName}.
@@ -101,6 +102,7 @@ func (s *ServiceConfig) Prefix() string {
 }
 
 func (s *ServiceConfig) Init(rc *RootConfig) error {
+	s.rc = rc
 	if err := initProviderMethodConfig(s); err != nil {
 		return err
 	}
@@ -283,6 +285,7 @@ func (s *ServiceConfig) Export() error {
 			common.WithPort(port),
 			common.WithParams(urlMap),
 			common.WithParamsValue(constant.BeanNameKey, s.id),
+			common.WithParamsValue(constant.ApplicationTagKey, s.rc.Application.Tag),
 			//common.WithParamsValue(constant.SslEnabledKey, strconv.FormatBool(config.GetSslEnabled())),
 			common.WithMethods(strings.Split(methods, ",")),
 			common.WithToken(s.Token),

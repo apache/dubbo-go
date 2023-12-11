@@ -194,6 +194,7 @@ func (svcOpts *ServiceOptions) export(info *ServiceInfo) error {
 			common.WithPort(port),
 			common.WithParams(urlMap),
 			common.WithParamsValue(constant.BeanNameKey, svcOpts.Id),
+			common.WithParamsValue(constant.ApplicationTagKey, svcOpts.Application.Tag),
 			//common.WithParamsValue(constant.SslEnabledKey, strconv.FormatBool(config.GetSslEnabled())),
 			common.WithMethods(strings.Split(methods, ",")),
 			// todo(DMwangnima): remove this
