@@ -17,6 +17,10 @@
 
 package constant
 
+import (
+	"math"
+)
+
 type DubboCtxKey string
 
 const (
@@ -438,4 +442,11 @@ const (
 	DefaultMetaCacheName = "dubbo.meta"
 	DefaultMetaFileName  = "dubbo.metadata."
 	DefaultEntrySize     = 100
+)
+
+const (
+	DefaultPriority = 0
+	HighestPriority = math.MinInt32
+	// LowestPriority for metadata service
+	LowestPriority = math.MaxInt32
 )

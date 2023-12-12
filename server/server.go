@@ -21,6 +21,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"sort"
 	"sync"
 )
 
@@ -38,7 +39,7 @@ import (
 )
 
 // proServices are for internal services
-var proServices = map[string]*ServiceDefinition{}
+var proServices = make([]*InternalService, 0, 16)
 
 type Server struct {
 	invoker protocol.Invoker
@@ -123,8 +124,17 @@ func newInfoInvoker(url *common.URL, info *ServiceInfo, svc common.RPCService) p
 
 // Register assemble invoker chains like ProviderConfig.Load, init a service per call
 func (s *Server) Register(handler interface{}, info *ServiceInfo, opts ...ServiceOption) error {
+	newSvcOpts, err := s.genSvcOpts(handler, opts...)
+	if err != nil {
+		return err
+	}
+	s.svcOptsMap.Store(newSvcOpts, info)
+	return nil
+}
+
+func (s *Server) genSvcOpts(handler interface{}, opts ...ServiceOption) (*ServiceOptions, error) {
 	if s.cfg == nil {
-		return errors.New("Server has not been initialized, please use NewServer() to create Server")
+		return nil, errors.New("Server has not been initialized, please use NewServer() to create Server")
 	}
 	var svcOpts []ServiceOption
 	appCfg := s.cfg.Application
@@ -153,16 +163,13 @@ func (s *Server) Register(handler interface{}, info *ServiceInfo, opts ...Servic
 			SetRegistries(regsCfg),
 		)
 	}
-
 	// options passed by users have higher priority
 	svcOpts = append(svcOpts, opts...)
 	if err := newSvcOpts.init(s, svcOpts...); err != nil {
-		return err
+		return nil, err
 	}
 	newSvcOpts.Implement(handler)
-	s.svcOptsMap.Store(newSvcOpts, info)
-
-	return nil
+	return newSvcOpts, nil
 }
 
 func (s *Server) exportServices() (err error) {
@@ -187,9 +194,72 @@ func (s *Server) Serve() error {
 	if err := s.exportServices(); err != nil {
 		return err
 	}
+	if err := s.exportInternalServices(); err != nil {
+		return err
+	}
 	metadata.ExportMetadataService()
 	registry_exposed.RegisterServiceInstance(s.cfg.Application.Name, s.cfg.Application.Tag, s.cfg.Application.MetadataType)
 	select {}
+}
+
+// In order to expose internal services
+func (s *Server) exportInternalServices() error {
+	cfg := &ServiceOptions{}
+	cfg.Application = s.cfg.Application
+	cfg.Provider = s.cfg.Provider
+	cfg.Protocols = s.cfg.Protocols
+	cfg.Registries = s.cfg.Registries
+
+	services := make([]*InternalService, 0, len(proServices))
+
+	for _, service := range proServices {
+		sd, ok := service.Init(cfg)
+		if !ok {
+			continue
+		}
+		newSvcOpts, err := s.genSvcOpts(sd.Handler, sd.Opts...)
+		if err != nil {
+			return err
+		}
+		service.svcOpts = newSvcOpts
+		service.info = sd.Info
+		services = append(services, service)
+	}
+
+	sort.Slice(services, func(i, j int) bool {
+		return services[i].Priority < services[j].Priority
+	})
+
+	for _, service := range services {
+		if service.BeforeExport != nil {
+			service.BeforeExport(service.svcOpts)
+		}
+		err := service.svcOpts.ExportWithInfo(service.info)
+		if service.AfterExport != nil {
+			service.AfterExport(service.svcOpts, err)
+		}
+		if err != nil {
+			logger.Errorf("export %s internal service failed, err: %s", service.svcOpts.Service.Interface, err)
+			return err
+		}
+	}
+
+	return nil
+}
+
+// InternalService for dubbo internal services
+type InternalService struct {
+	svcOpts *ServiceOptions
+	info    *ServiceInfo
+	// Returns serviceDefinition and bool, where bool indicates whether it is exported
+	Init         func(options *ServiceOptions) (*ServiceDefinition, bool)
+	BeforeExport func(options *ServiceOptions)
+	AfterExport  func(options *ServiceOptions, err error)
+	// Priority of service exposure
+	// Lower numbers have the higher priority
+	// The default priority is 0
+	// The metadata service is exposed at the end
+	Priority int
 }
 
 type MethodInfo struct {
@@ -210,17 +280,9 @@ func NewServer(opts ...ServerOption) (*Server, error) {
 	srv := &Server{
 		cfg: newSrvOpts,
 	}
-
-	for _, service := range proServices {
-		err := srv.Register(service.Handler, service.Info, service.Opts...)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	return srv, nil
 }
 
-func SetProServices(sd *ServiceDefinition) {
-	proServices[sd.Info.InterfaceName] = sd
+func SetProServices(sd *InternalService) {
+	proServices = append(proServices, sd)
 }
