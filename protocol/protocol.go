@@ -139,7 +139,7 @@ func (de *BaseExporter) GetInvoker() Invoker {
 
 // UnExport un export service.
 func (de *BaseExporter) UnExport() {
-	logger.Infof("Exporter unexport.")
+	logger.Info("Exporter unexport.")
 	de.invoker.Destroy()
 	de.exporterMap.Delete(de.key)
 }

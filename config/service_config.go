@@ -214,10 +214,7 @@ func getRandomPort(protocolConfigs []*ProtocolConfig) *list.List {
 	ports := list.New()
 	for _, proto := range protocolConfigs {
 		if port, err := strconv.Atoi(proto.Port); err != nil {
-			logger.Infof(
-				"%s will be assgined to a random port, since the port is an invalid number",
-				proto.Name,
-			)
+			logger.Infof("%s will be assgined to a random port, since the port is an invalid number", proto.Name)
 		} else if port > 0 {
 			continue
 		}
@@ -226,7 +223,7 @@ func getRandomPort(protocolConfigs []*ProtocolConfig) *list.List {
 		if err != nil {
 			panic(perrors.New(fmt.Sprintf("Get tcp port error, err is {%v}", err)))
 		}
-		defer tcp.Close()
+		tcp.Close()
 		ports.PushBack(strings.Split(tcp.Addr().String(), ":")[1])
 	}
 	return ports

@@ -18,6 +18,7 @@
 package configurable
 
 import (
+	"strconv"
 	"sync"
 )
 
@@ -61,12 +62,19 @@ func (exporter *MetadataServiceExporter) Export(url *common.URL) error {
 		version, _ := exporter.metadataService.Version()
 		exporter.lock.Lock()
 		defer exporter.lock.Unlock()
+
+		protocolConfig, ok := config.GetRootConfig().Protocols[constant.DefaultProtocol]
+		if !ok {
+			protocolConfig = config.NewProtocolConfigBuilder().
+				SetName(constant.DefaultProtocol).
+				SetPort(strconv.Itoa(config.GetApplicationConfig().MetadataServicePort)).
+				Build()
+		}
+
 		exporter.ServiceConfig = config.NewServiceConfigBuilder().
 			SetServiceID(constant.SimpleMetadataServiceName).
 			SetProtocolIDs(constant.DefaultProtocol).
-			AddRCProtocol(constant.DefaultProtocol, config.NewProtocolConfigBuilder().
-				SetName(constant.DefaultProtocol).
-				Build()).
+			AddRCProtocol(constant.DefaultProtocol, protocolConfig).
 			SetRegistryIDs("N/A").
 			SetInterface(constant.MetadataServiceName).
 			SetGroup(config.GetApplicationConfig().Name).

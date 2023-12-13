@@ -102,7 +102,7 @@ func (dp *DubboProtocol) Refer(url *common.URL) protocol.Invoker {
 
 // Destroy destroy dubbo service.
 func (dp *DubboProtocol) Destroy() {
-	logger.Infof("DubboProtocol destroy.")
+	logger.Info("DubboProtocol destroy.")
 
 	dp.BaseProtocol.Destroy()
 
@@ -148,7 +148,7 @@ func doHandleRequest(rpcInvocation *invocation.RPCInvocation) protocol.RPCResult
 	result := protocol.RPCResult{}
 	if exporter == nil {
 		err := fmt.Errorf("don't have this exporter, key: %s", rpcInvocation.ServiceKey())
-		logger.Errorf(err.Error())
+		logger.Error(err.Error())
 		result.Err = err
 		// reply(session, p, hessian.PackageResponse)
 		return result
