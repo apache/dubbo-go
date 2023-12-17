@@ -71,6 +71,7 @@ func (s *Server) Start(invoker protocol.Invoker, info *server.ServiceInfo) {
 	switch serialization {
 	case constant.ProtobufSerialization:
 	case constant.JSONSerialization:
+	case constant.Hessian2Serialization:
 	default:
 		panic(fmt.Sprintf("Unsupported serialization: %s", serialization))
 	}

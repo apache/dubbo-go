@@ -19,6 +19,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	hessian "github.com/apache/dubbo-go-hessian2"
+	"github.com/dubbogo/grpc-go/encoding/tools"
 )
 
 import (
@@ -32,6 +34,7 @@ import (
 const (
 	codecNameProto           = "proto"
 	codecNameJSON            = "json"
+	codecNameHessian2        = "hessian2"
 	codecNameJSONCharsetUTF8 = codecNameJSON + "; charset=utf-8"
 )
 
@@ -171,6 +174,30 @@ func (c *protoJSONCodec) MarshalStable(message interface{}) ([]byte, error) {
 
 func (c *protoJSONCodec) IsBinary() bool {
 	return false
+}
+
+// todo(DMwangnima): add unit tests
+type hessian2Codec struct{}
+
+func (h *hessian2Codec) Name() string {
+	return codecNameHessian2
+}
+
+func (h *hessian2Codec) Marshal(message interface{}) ([]byte, error) {
+	encoder := hessian.NewEncoder()
+	if err := encoder.Encode(message); err != nil {
+		return nil, err
+	}
+	return encoder.Buffer(), nil
+}
+
+func (h *hessian2Codec) Unmarshal(binary []byte, message interface{}) error {
+	decoder := hessian.NewDecoder(binary)
+	rawMessage, err := decoder.Decode()
+	if err != nil {
+		return err
+	}
+	return tools.ReflectResponse(rawMessage, message)
 }
 
 // readOnlyCodecs is a read-only interface to a map of named codecs.
