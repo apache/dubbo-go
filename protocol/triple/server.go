@@ -120,6 +120,7 @@ func (s *Server) Start(invoker protocol.Invoker, info *server.ServiceInfo) {
 	}()
 }
 
+// todo(DMwangnima): extract a common function
 // RefreshService refreshes Triple Service
 func (s *Server) RefreshService(invoker protocol.Invoker, info *server.ServiceInfo) {
 	var (
@@ -131,6 +132,7 @@ func (s *Server) RefreshService(invoker protocol.Invoker, info *server.ServiceIn
 	switch serialization {
 	case constant.ProtobufSerialization:
 	case constant.JSONSerialization:
+	case constant.Hessian2Serialization:
 	default:
 		panic(fmt.Sprintf("Unsupported serialization: %s", serialization))
 	}
