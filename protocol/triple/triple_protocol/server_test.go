@@ -62,7 +62,7 @@ func TestServer_RegisterMuxHandle(t *testing.T) {
 			desc: "RegisterCompatUnaryHandler_MuxHandle",
 			path: "/CompatUnary",
 			registerFunc: func(srv *Server, path string) error {
-				return srv.RegisterCompatUnaryHandler(path, nil, nil)
+				return srv.RegisterCompatUnaryHandler(path, "", nil, nil)
 			},
 		},
 		{

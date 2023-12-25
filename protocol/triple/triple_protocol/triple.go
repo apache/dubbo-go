@@ -84,6 +84,7 @@ type StreamingHandlerConn interface {
 
 	Receive(interface{}) error
 	RequestHeader() http.Header
+	ExportableHeader() http.Header
 
 	Send(interface{}) error
 	ResponseHeader() http.Header

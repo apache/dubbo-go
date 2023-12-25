@@ -117,18 +117,19 @@ func (s *Server) RegisterBidiStreamHandler(
 
 func (s *Server) RegisterCompatUnaryHandler(
 	procedure string,
+	method string,
 	srv interface{},
 	unary MethodHandler,
 	options ...HandlerOption,
 ) error {
 	hdl, ok := s.handlers[procedure]
 	if !ok {
-		hdl = NewCompatUnaryHandler(procedure, srv, unary, options...)
+		hdl = NewCompatUnaryHandler(procedure, method, srv, unary, options...)
 		s.handlers[procedure] = hdl
 		s.mux.Handle(procedure, hdl)
 	} else {
 		config := newHandlerConfig(procedure, options)
-		implementation := generateCompatUnaryHandlerFunc(procedure, srv, unary, config.Interceptor)
+		implementation := generateCompatUnaryHandlerFunc(procedure, method, srv, unary, config.Interceptor)
 		hdl.processImplementation(getIdentifier(config.Group, config.Version), implementation)
 	}
 

@@ -122,9 +122,11 @@ func TestHandler_ServeHTTP(t *testing.T) {
 		assert.Equal(t, resp.StatusCode, http.StatusUnsupportedMediaType)
 		assert.Equal(t, resp.Header.Get("Accept-Post"), strings.Join([]string{
 			"application/grpc",
+			"application/grpc+hessian2",
 			"application/grpc+json",
 			"application/grpc+json; charset=utf-8",
 			"application/grpc+proto",
+			"application/hessian2",
 			"application/json",
 			"application/json; charset=utf-8",
 			"application/proto",

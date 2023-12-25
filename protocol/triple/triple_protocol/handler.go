@@ -340,11 +340,12 @@ func (h *Handler) ServeHTTP(responseWriter http.ResponseWriter, request *http.Re
 		_ = connCloser.Close(timeoutErr)
 		return
 	}
+
 	// invoke implementation
 	svcGroup := request.Header.Get(tripleServiceGroup)
 	svcVersion := request.Header.Get(tripleServiceVersion)
-	implementation := h.implementations[getIdentifier(svcGroup, svcVersion)]
 	// todo(DMwangnima): inspect ok
+	implementation := h.implementations[getIdentifier(svcGroup, svcVersion)]
 	_ = connCloser.Close(implementation(ctx, connCloser))
 }
 

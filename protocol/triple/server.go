@@ -245,7 +245,7 @@ func (s *Server) compatRegisterHandler(interfaceName string, svc dubbo3.Dubbo3Gr
 		// please refer to protocol/triple/internal/proto/triple_gen/greettriple for procedure examples
 		// error could be ignored because base is empty string
 		procedure := joinProcedure(interfaceName, method.MethodName)
-		_ = s.triServer.RegisterCompatUnaryHandler(procedure, svc, tri.MethodHandler(method.Handler), opts...)
+		_ = s.triServer.RegisterCompatUnaryHandler(procedure, method.MethodName, svc, tri.MethodHandler(method.Handler), opts...)
 	}
 
 	// init stream handlers
