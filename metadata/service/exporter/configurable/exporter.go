@@ -93,7 +93,7 @@ func getMetadataPort() string {
 		if ok {
 			port = protocolConfig.Port
 		} else {
-			logger.Warnf("[Metadata Service] Dubbo-go %s version's MetadataService does not support triple protocol,"+
+			logger.Warnf("[Metadata Service] Dubbo-go %s version's MetadataService only support dubbo protocol,"+
 				"MetadataService will use random port",
 				dubbo.Version)
 		}
