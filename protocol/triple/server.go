@@ -279,12 +279,22 @@ func (s *Server) handleServiceWithInfo(interfaceName string, invoker protocol.In
 				m.ReqInitFunc,
 				func(ctx context.Context, req *tri.Request) (*tri.Response, error) {
 					var args []interface{}
-					args = append(args, req.Msg)
+					if argsRaw, ok := req.Msg.([]interface{}); ok {
+						for _, argRaw := range argsRaw {
+							args = append(args, reflect.ValueOf(argRaw).Elem().Interface())
+						}
+					} else {
+						args = append(args, req.Msg)
+					}
 					// todo: inject method.Meta to attachments
 					invo := invocation.NewRPCInvocation(m.Name, args, nil)
 					res := invoker.Invoke(ctx, invo)
+					if triResp, ok := res.Result().(*tri.Response); ok {
+						return triResp, res.Error()
+					}
+					triResp := tri.NewResponse([]interface{}{res.Result()})
 					// todo(DMwangnima): if we do not use MethodInfo.MethodFunc, create Response manually
-					return res.Result().(*tri.Response), res.Error()
+					return triResp, res.Error()
 				},
 				opts...,
 			)
@@ -390,17 +400,17 @@ func createServiceInfoWithReflection(svc common.RPCService) *server.ServiceInfo 
 		}
 		paramsNum := methodType.Type.NumIn()
 		// ignore ctx
-		paramsTypes := make([]reflect.Type, paramsNum-1)
-		for j := 1; j < paramsNum; j++ {
-			paramsTypes[j-1] = methodType.Type.In(j)
+		paramsTypes := make([]reflect.Type, paramsNum-2)
+		for j := 2; j < paramsNum; j++ {
+			paramsTypes[j-2] = methodType.Type.In(j)
 		}
 		methodInfo := server.MethodInfo{
 			Name: methodType.Name,
 			Type: constant.CallUnary,
 			ReqInitFunc: func() interface{} {
 				params := make([]interface{}, len(paramsTypes))
-				for i, paramType := range paramsTypes {
-					params[i] = reflect.New(paramType).Interface()
+				for k, paramType := range paramsTypes {
+					params[k] = reflect.New(paramType).Interface()
 				}
 				return params
 			},
