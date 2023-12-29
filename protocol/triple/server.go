@@ -230,6 +230,7 @@ func (s *Server) compatHandleService(interfaceName string, opts ...tri.HandlerOp
 		if !ok {
 			info := createServiceInfoWithReflection(service)
 			s.handleServiceWithInfo(interfaceName, invoker, info, opts...)
+			continue
 		}
 
 		// inject invoker, it has all invocation logics
