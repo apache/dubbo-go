@@ -378,6 +378,7 @@ func newHandlerConfig(procedure string, options []HandlerOption) *handlerConfig 
 	withProtoBinaryCodec().applyToHandler(&config)
 	withProtoJSONCodecs().applyToHandler(&config)
 	withHessian2Codec().applyToHandler(&config)
+	withMsgPackCodec().applyToHandler(&config)
 	withGzip().applyToHandler(&config)
 	for _, opt := range options {
 		opt.applyToHandler(&config)

@@ -78,7 +78,11 @@ func WithProtoJSON() ClientOption {
 
 // todo(DMwangnima): add comment
 func WithHessian2() ClientOption {
-	return WithCodec(&hessian2Codec{})
+	return WithCodec(newProtoWrapperCodec(&hessian2Codec{}))
+}
+
+func WithMsgPack() ClientOption {
+	return WithCodec(newProtoWrapperCodec(&msgpackCodec{}))
 }
 
 // WithSendCompression configures the client to use the specified algorithm to
@@ -552,5 +556,9 @@ func withProtoJSONCodecs() HandlerOption {
 }
 
 func withHessian2Codec() Option {
-	return WithCodec(&hessian2Codec{})
+	return WithCodec(newProtoWrapperCodec(&hessian2Codec{}))
+}
+
+func withMsgPackCodec() Option {
+	return WithCodec(newProtoWrapperCodec(&msgpackCodec{}))
 }

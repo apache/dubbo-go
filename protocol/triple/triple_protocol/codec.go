@@ -31,12 +31,15 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"google.golang.org/protobuf/runtime/protoiface"
+
+	msgpack "github.com/ugorji/go/codec"
 )
 
 const (
 	codecNameProto           = "proto"
 	codecNameJSON            = "json"
 	codecNameHessian2        = "hessian2"
+	codecNameMsgPack         = "msgpack"
 	codecNameJSONCharsetUTF8 = codecNameJSON + "; charset=utf-8"
 )
 
@@ -179,56 +182,108 @@ func (c *protoJSONCodec) IsBinary() bool {
 }
 
 // todo(DMwangnima): add unit tests
+type protoWrapperCodec struct {
+	innerCodec Codec
+}
+
+func (c *protoWrapperCodec) Name() string {
+	return c.innerCodec.Name()
+}
+
+func (c *protoWrapperCodec) Marshal(message interface{}) ([]byte, error) {
+	reqs, ok := message.([]interface{})
+	if !ok {
+		return c.innerCodec.Marshal(message)
+	}
+	reqsLen := len(reqs)
+	reqsBytes := make([][]byte, reqsLen)
+	reqsTypes := make([]string, reqsLen)
+	for i, req := range reqs {
+		reqBytes, err := c.innerCodec.Marshal(req)
+		if err != nil {
+			return nil, err
+		}
+		reqsBytes[i] = reqBytes
+		reqsTypes[i] = encoding.GetArgType(req)
+	}
+
+	wrapperReq := &proto_wrapper_api.TripleRequestWrapper{
+		SerializeType: c.innerCodec.Name(),
+		Args:          reqsBytes,
+		ArgTypes:      reqsTypes,
+	}
+
+	return proto.Marshal(wrapperReq)
+}
+
+func (c *protoWrapperCodec) Unmarshal(binary []byte, message interface{}) error {
+	params, ok := message.([]interface{})
+	if !ok {
+		return c.innerCodec.Unmarshal(binary, message)
+	}
+
+	var wrapperReq proto_wrapper_api.TripleRequestWrapper
+	if err := proto.Unmarshal(binary, &wrapperReq); err != nil {
+		return err
+	}
+	if len(wrapperReq.Args) != len(params) {
+		return fmt.Errorf("error, request params len is %d, but has %d actually", len(wrapperReq.Args), len(params))
+	}
+
+	for i, arg := range wrapperReq.Args {
+		if err := c.innerCodec.Unmarshal(arg, params[i]); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func newProtoWrapperCodec(innerCodec Codec) *protoWrapperCodec {
+	return &protoWrapperCodec{innerCodec: innerCodec}
+}
+
+// todo(DMwangnima): add unit tests
 type hessian2Codec struct{}
 
 func (h *hessian2Codec) Name() string {
 	return codecNameHessian2
 }
 
-func (h *hessian2Codec) Marshal(message interface{}) ([]byte, error) {
+func (c *hessian2Codec) Marshal(message interface{}) ([]byte, error) {
 	encoder := hessian.NewEncoder()
-	reqs := message.([]interface{})
-	args := make([][]byte, 0, len(reqs))
-	argsTypes := make([]string, 0, len(reqs))
-	for _, req := range reqs {
-		if err := encoder.Encode(req); err != nil {
-			return nil, err
-		}
-		args = append(args, encoder.Buffer())
-		argsTypes = append(argsTypes, encoding.GetArgType(req))
-		encoder.Clean()
+	if err := encoder.Encode(message); err != nil {
+		return nil, err
 	}
 
-	wrapperReq := &proto_wrapper_api.TripleRequestWrapper{
-		SerializeType: codecNameHessian2,
-		Args:          args,
-		ArgTypes:      argsTypes,
-	}
-	return proto.Marshal(wrapperReq)
+	return encoder.Buffer(), nil
 }
 
-func (h *hessian2Codec) Unmarshal(binary []byte, message interface{}) error {
-	var wrapperReq proto_wrapper_api.TripleRequestWrapper
-	if err := proto.Unmarshal(binary, &wrapperReq); err != nil {
+func (c *hessian2Codec) Unmarshal(binary []byte, message interface{}) error {
+	decoder := hessian.NewDecoder(binary)
+	val, err := decoder.Decode()
+	if err != nil {
 		return err
 	}
+	return tools.ReflectResponse(val, message)
+}
 
-	params := message.([]interface{})
-	if len(wrapperReq.Args) != len(params) {
-		return fmt.Errorf("error ,request params len is %d, but exported method has %d", len(wrapperReq.Args), len(params))
-	}
+// todo(DMwangnima): add unit tests
+type msgpackCodec struct{}
 
-	for i, arg := range wrapperReq.Args {
-		decoder := hessian.NewDecoder(arg)
-		param, err := decoder.Decode()
-		if err != nil {
-			return err
-		}
-		if err := tools.ReflectResponse(param, params[i]); err != nil {
-			return err
-		}
-	}
-	return nil
+func (c *msgpackCodec) Name() string {
+	return codecNameMsgPack
+}
+
+func (c *msgpackCodec) Marshal(message interface{}) ([]byte, error) {
+	var out []byte
+	encoder := msgpack.NewEncoderBytes(&out, new(msgpack.MsgpackHandle))
+	return out, encoder.Encode(message)
+}
+
+func (c *msgpackCodec) Unmarshal(binary []byte, message interface{}) error {
+	decoder := msgpack.NewDecoderBytes(binary, new(msgpack.MsgpackHandle))
+	return decoder.Decode(message)
 }
 
 // readOnlyCodecs is a read-only interface to a map of named codecs.
