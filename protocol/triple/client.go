@@ -144,6 +144,8 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 		cliOpts = append(cliOpts, tri.WithProtoJSON())
 	case constant.Hessian2Serialization:
 		cliOpts = append(cliOpts, tri.WithHessian2())
+	case constant.MsgpackSerialization:
+		cliOpts = append(cliOpts, tri.WithMsgPack())
 	default:
 		panic(fmt.Sprintf("Unsupported serialization: %s", serialization))
 	}
