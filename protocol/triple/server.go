@@ -377,7 +377,7 @@ func (s *Server) GracefulStop() {
 }
 
 func createServiceInfoWithReflection(svc common.RPCService) *server.ServiceInfo {
-	var info *server.ServiceInfo
+	var info server.ServiceInfo
 	val := reflect.ValueOf(svc)
 	typ := reflect.TypeOf(svc)
 	methodNum := val.NumMethod()
@@ -408,5 +408,5 @@ func createServiceInfoWithReflection(svc common.RPCService) *server.ServiceInfo 
 	}
 	info.Methods = methodInfos
 
-	return info
+	return &info
 }
