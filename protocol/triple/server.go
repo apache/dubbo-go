@@ -406,6 +406,7 @@ func createServiceInfoWithReflection(svc common.RPCService) *server.ServiceInfo 
 		}
 		methodInfos[i] = methodInfo
 	}
+	info.Methods = methodInfos
 
 	return info
 }
