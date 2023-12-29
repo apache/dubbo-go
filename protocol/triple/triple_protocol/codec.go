@@ -20,6 +20,8 @@ import (
 	"errors"
 	"fmt"
 	hessian "github.com/apache/dubbo-go-hessian2"
+	"github.com/dubbogo/grpc-go/encoding"
+	"github.com/dubbogo/grpc-go/encoding/proto_wrapper_api"
 	"github.com/dubbogo/grpc-go/encoding/tools"
 )
 
@@ -185,19 +187,48 @@ func (h *hessian2Codec) Name() string {
 
 func (h *hessian2Codec) Marshal(message interface{}) ([]byte, error) {
 	encoder := hessian.NewEncoder()
-	if err := encoder.Encode(message); err != nil {
-		return nil, err
+	reqs := message.([]interface{})
+	args := make([][]byte, 0, len(reqs))
+	argsTypes := make([]string, 0, len(reqs))
+	for _, req := range reqs {
+		if err := encoder.Encode(req); err != nil {
+			return nil, err
+		}
+		args = append(args, encoder.Buffer())
+		argsTypes = append(argsTypes, encoding.GetArgType(req))
+		encoder.Clean()
 	}
-	return encoder.Buffer(), nil
+
+	wrapperReq := &proto_wrapper_api.TripleRequestWrapper{
+		SerializeType: codecNameHessian2,
+		Args:          args,
+		ArgTypes:      argsTypes,
+	}
+	return proto.Marshal(wrapperReq)
 }
 
 func (h *hessian2Codec) Unmarshal(binary []byte, message interface{}) error {
-	decoder := hessian.NewDecoder(binary)
-	rawMessage, err := decoder.Decode()
-	if err != nil {
+	var wrapperReq proto_wrapper_api.TripleRequestWrapper
+	if err := proto.Unmarshal(binary, &wrapperReq); err != nil {
 		return err
 	}
-	return tools.ReflectResponse(rawMessage, message)
+
+	params := message.([]interface{})
+	if len(wrapperReq.Args) != len(params) {
+		return fmt.Errorf("error ,request params len is %d, but exported method has %d", len(wrapperReq.Args), len(params))
+	}
+
+	for i, arg := range wrapperReq.Args {
+		decoder := hessian.NewDecoder(arg)
+		param, err := decoder.Decode()
+		if err != nil {
+			return err
+		}
+		if err := tools.ReflectResponse(param, params[i]); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // readOnlyCodecs is a read-only interface to a map of named codecs.

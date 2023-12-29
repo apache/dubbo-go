@@ -47,6 +47,7 @@ const (
 // callUnary, callClientStream, callServerStream, callBidiStream.
 // A Reference has a clientManager.
 type clientManager struct {
+	isIDL bool
 	// triple_protocol clients, key is method name
 	triClients map[string]*tri.Client
 }
@@ -133,10 +134,12 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 	}
 	cliOpts = append(cliOpts, tri.WithSendMaxBytes(maxCallSendMsgSize))
 
+	var isIDL bool
 	// set serialization
 	serialization := url.GetParam(constant.SerializationKey, constant.ProtobufSerialization)
 	switch serialization {
 	case constant.ProtobufSerialization:
+		isIDL = true
 	case constant.JSONSerialization:
 		cliOpts = append(cliOpts, tri.WithProtoJSON())
 	case constant.Hessian2Serialization:
@@ -233,6 +236,7 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 	}
 
 	return &clientManager{
+		isIDL:      isIDL,
 		triClients: triClients,
 	}, nil
 }

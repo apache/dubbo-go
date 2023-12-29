@@ -20,6 +20,7 @@ package triple
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"sync"
 	"time"
 )
@@ -203,27 +204,21 @@ func waitTripleExporter(providerServices map[string]*config.ServiceConfig) {
 
 // *Important*, this function is responsible for being compatible with old triple-gen code
 // compatHandleService registers handler based on ServiceConfig and provider service.
-func (s *Server) compatHandleService(intefaceName string, opts ...tri.HandlerOption) {
+func (s *Server) compatHandleService(interfaceName string, opts ...tri.HandlerOption) {
 	providerServices := config.GetProviderConfig().Services
 	if len(providerServices) == 0 {
 		logger.Info("Provider service map is null")
 	}
 	//waitTripleExporter(providerServices)
 	for key, providerService := range providerServices {
-		if providerService.Interface != intefaceName {
+		if providerService.Interface != interfaceName {
 			continue
 		}
 		// todo(DMwangnima): judge protocol type
 		service := config.GetProviderService(key)
-		ds, ok := service.(dubbo3.Dubbo3GrpcService)
-		if !ok {
-			panic("illegal service type registered")
-		}
-
 		serviceKey := common.ServiceKey(providerService.Interface, providerService.Group, providerService.Version)
 		exporter, _ := tripleProtocol.ExporterMap().Load(serviceKey)
 		if exporter == nil {
-			// todo(DMwangnima): handler reflection Service and health Service
 			continue
 			//panic(fmt.Sprintf("no exporter found for servicekey: %v", serviceKey))
 		}
@@ -231,10 +226,15 @@ func (s *Server) compatHandleService(intefaceName string, opts ...tri.HandlerOpt
 		if invoker == nil {
 			panic(fmt.Sprintf("no invoker found for servicekey: %v", serviceKey))
 		}
+		ds, ok := service.(dubbo3.Dubbo3GrpcService)
+		if !ok {
+			info := createServiceInfoWithReflection(service)
+			s.handleServiceWithInfo(interfaceName, invoker, info, opts...)
+		}
 
 		// inject invoker, it has all invocation logics
 		ds.XXX_SetProxyImpl(invoker)
-		s.compatRegisterHandler(intefaceName, ds, opts...)
+		s.compatRegisterHandler(interfaceName, ds, opts...)
 	}
 }
 
@@ -374,4 +374,38 @@ func (s *Server) Stop() {
 // GracefulStop TRIPLE server
 func (s *Server) GracefulStop() {
 	_ = s.triServer.GracefulStop(context.Background())
+}
+
+func createServiceInfoWithReflection(svc common.RPCService) *server.ServiceInfo {
+	var info *server.ServiceInfo
+	val := reflect.ValueOf(svc)
+	typ := reflect.TypeOf(svc)
+	methodNum := val.NumMethod()
+	methodInfos := make([]server.MethodInfo, methodNum)
+	for i := 0; i < methodNum; i++ {
+		methodType := typ.Method(i)
+		if methodType.Name == "Reference" {
+			continue
+		}
+		paramsNum := methodType.Type.NumIn()
+		// ignore ctx
+		paramsTypes := make([]reflect.Type, paramsNum-1)
+		for j := 1; j < paramsNum; j++ {
+			paramsTypes[j-1] = methodType.Type.In(j)
+		}
+		methodInfo := server.MethodInfo{
+			Name: methodType.Name,
+			Type: constant.CallUnary,
+			ReqInitFunc: func() interface{} {
+				params := make([]interface{}, len(paramsTypes))
+				for i, paramType := range paramsTypes {
+					params[i] = reflect.New(paramType).Interface()
+				}
+				return params
+			},
+		}
+		methodInfos[i] = methodInfo
+	}
+
+	return info
 }
