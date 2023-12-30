@@ -87,7 +87,7 @@ func (t *tripleInvoker) Destroy() {
 func (t *tripleInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 	name := invocation.MethodName()
 	args := invocation.Arguments()
-	// todo(DMwangnima): user map to represent Methods
+	// todo(DMwangnima): use map to represent Methods
 	for _, method := range t.info.Methods {
 		if method.Name == name {
 			res, err := method.MethodFunc(ctx, args, t.handler)

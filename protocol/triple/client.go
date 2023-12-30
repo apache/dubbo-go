@@ -116,10 +116,8 @@ func (cm *clientManager) close() error {
 	return nil
 }
 
+// newClientManager extracts configurations from url and builds clientManager
 func newClientManager(url *common.URL) (*clientManager, error) {
-	// If global trace instance was set, it means trace function enabled.
-	// If not, will return NoopTracer.
-	// tracer := opentracing.GlobalTracer()
 	var cliOpts []tri.ClientOption
 
 	// set max send and recv msg size
@@ -154,42 +152,16 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 	timeout := url.GetParamDuration(constant.TimeoutKey, "")
 	cliOpts = append(cliOpts, tri.WithTimeout(timeout))
 
+	// set service group and version
 	group := url.GetParam(constant.GroupKey, "")
 	version := url.GetParam(constant.VersionKey, "")
 	cliOpts = append(cliOpts, tri.WithGroup(group), tri.WithVersion(version))
 
-	// dialOpts = append(dialOpts,
-	//
-	//	grpc.WithBlock(),
-	//	// todo config tracing
-	//	grpc.WithTimeout(time.Second*3),
-	//	grpc.WithUnaryInterceptor(otgrpc.OpenTracingClientInterceptor(tracer, otgrpc.LogPayloads())),
-	//	grpc.WithStreamInterceptor(otgrpc.OpenTracingStreamClientInterceptor(tracer, otgrpc.LogPayloads())),
-	//	grpc.WithDefaultCallOptions(
-	//		grpc.CallContentSubtype(clientConf.ContentSubType),
-	//		grpc.MaxCallRecvMsgSize(maxCallRecvMsgSize),
-	//		grpc.MaxCallSendMsgSize(maxCallSendMsgSize),
-	//	),
-	//
-	// )
+	// todo(DMwangnima): support opentracing
+
+	// todo(DMwangnima): support TLS in an ideal way
 	var cfg *tls.Config
 	var tlsFlag bool
-	//var err error
-
-	// todo: think about a more elegant way to configure tls
-	//if tlsConfig := config.GetRootConfig().TLSConfig; tlsConfig != nil {
-	//	cfg, err = config.GetClientTlsConfig(&config.TLSConfig{
-	//		CACertFile:    tlsConfig.CACertFile,
-	//		TLSCertFile:   tlsConfig.TLSCertFile,
-	//		TLSKeyFile:    tlsConfig.TLSKeyFile,
-	//		TLSServerName: tlsConfig.TLSServerName,
-	//	})
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//	logger.Infof("TRIPLE clientManager initialized the TLSConfig configuration successfully")
-	//	tlsFlag = true
-	//}
 
 	var transport http.RoundTripper
 	callType := url.GetParam(constant.CallHTTPTypeKey, constant.CallHTTP2)
