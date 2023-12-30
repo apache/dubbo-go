@@ -125,10 +125,12 @@ func TestHandler_ServeHTTP(t *testing.T) {
 			"application/grpc+hessian2",
 			"application/grpc+json",
 			"application/grpc+json; charset=utf-8",
+			"application/grpc+msgpack",
 			"application/grpc+proto",
 			"application/hessian2",
 			"application/json",
 			"application/json; charset=utf-8",
+			"application/msgpack",
 			"application/proto",
 		}, ", "))
 	})
