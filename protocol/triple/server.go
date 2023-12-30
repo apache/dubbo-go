@@ -355,8 +355,8 @@ func createServiceInfoWithReflection(svc common.RPCService) *server.ServiceInfo 
 		paramsNum := methodType.Type.NumIn()
 		// the first param is receiver itself, the second param is ctx
 		// just ignore them
-		if paramsNum <= 2 {
-			logger.Fatalf("TRIPLE does not support %s method that only has ctx parameter or does not have any parameter", methodType.Name)
+		if paramsNum < 2 {
+			logger.Fatalf("TRIPLE does not support %s method that does not have any parameter", methodType.Name)
 			continue
 		}
 		paramsTypes := make([]reflect.Type, paramsNum-2)
