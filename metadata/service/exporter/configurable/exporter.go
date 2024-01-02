@@ -26,7 +26,6 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
@@ -95,7 +94,7 @@ func getMetadataPort() string {
 		} else {
 			logger.Warnf("[Metadata Service] Dubbo-go %s version's MetadataService only support dubbo protocol,"+
 				"MetadataService will use random port",
-				dubbo.Version)
+				constant.Version)
 		}
 	}
 	return port
