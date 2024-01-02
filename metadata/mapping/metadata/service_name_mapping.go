@@ -66,7 +66,7 @@ type ServiceNameMapping struct {
 func (d *ServiceNameMapping) Map(url *common.URL) error {
 	serviceInterface := url.GetParam(constant.InterfaceKey, "")
 	appName := url.GetParam(constant.ApplicationKey, "")
-	metadataReport := instance.GetMetadataReportByRegistry(url.GetParam(constant.RegistryKey, ""))
+	metadataReport := instance.GetMetadataReportByRegistry(url.GetParam(constant.RegistryIdKey, ""))
 	if metadataReport == nil {
 		logger.Warn("get metadata report instance is nil")
 	} else {
@@ -87,7 +87,7 @@ func (d *ServiceNameMapping) Map(url *common.URL) error {
 // Get will return the application-level services. If not found, the empty set will be returned.
 func (d *ServiceNameMapping) Get(url *common.URL, listener mapping.MappingListener) (*gxset.HashSet, error) {
 	serviceInterface := url.GetParam(constant.InterfaceKey, "")
-	metadataReport := instance.GetMetadataReport()
+	metadataReport := instance.GetMetadataReportByRegistry(url.GetParam(constant.RegistryIdKey, ""))
 	if metadataReport == nil {
 		return gxset.NewSet(), nil
 	}
@@ -96,7 +96,7 @@ func (d *ServiceNameMapping) Get(url *common.URL, listener mapping.MappingListen
 
 func (d *ServiceNameMapping) Remove(url *common.URL) error {
 	serviceInterface := url.GetParam(constant.InterfaceKey, "")
-	metadataReport := instance.GetMetadataReport()
+	metadataReport := instance.GetMetadataReportByRegistry(url.GetParam(constant.RegistryIdKey, ""))
 	if metadataReport == nil {
 		return nil
 	}

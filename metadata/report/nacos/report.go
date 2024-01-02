@@ -61,6 +61,11 @@ func (n *nacosMetadataReport) GetAppMetadata(application, revision string) (*inf
 	data, err := n.getConfig(vo.ConfigParam{
 		DataId: application + constant.PathSeparator + revision,
 	})
+	// TODO java impl as below
+	//data, err = n.getConfig(vo.ConfigParam{
+	//	DataId: application,
+	//	Group:  revision,
+	//})
 	if err != nil {
 		return nil, err
 	}

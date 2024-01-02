@@ -38,6 +38,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/metadata"
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
 	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
+	"dubbo.apache.org/dubbo-go/v3/metadata/report"
 	reportInstance "dubbo.apache.org/dubbo-go/v3/metadata/report/instance"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 	metricsMetadata "dubbo.apache.org/dubbo-go/v3/metrics/metadata"
@@ -62,6 +63,7 @@ type serviceDiscoveryRegistry struct {
 	serviceDiscovery        registry.ServiceDiscovery
 	instance                registry.ServiceInstance
 	serviceNameMapping      mapping.ServiceNameMapping
+	metadataReport          report.MetadataReport
 	serviceListeners        map[string]registry.ServiceInstancesChangedListener
 	serviceMappingListeners map[string]mapping.MappingListener
 }
@@ -75,6 +77,7 @@ func newServiceDiscoveryRegistry(url *common.URL) (registry.Registry, error) {
 		url:                url,
 		serviceDiscovery:   serviceDiscovery,
 		serviceNameMapping: extension.GetGlobalServiceNameMapping(),
+		metadataReport:     reportInstance.GetMetadataReportByRegistry(url.GetParam(constant.RegistryIdKey, "")),
 		serviceListeners:   make(map[string]registry.ServiceInstancesChangedListener),
 		// cache for mapping listener
 		serviceMappingListeners: make(map[string]mapping.MappingListener),
@@ -90,9 +93,8 @@ func (s *serviceDiscoveryRegistry) RegisterService() error {
 	// consumer has no host and port, so it will not register service
 	if s.instance.GetHost() != "" && s.instance.GetPort() != 0 {
 		metaInfo.CalAndGetRevision()
-		metadataReport := reportInstance.GetMetadataReport()
-		if metadataReport != nil {
-			err := metadataReport.PublishAppMetadata(metaInfo.App, metaInfo.Revision, metaInfo)
+		if s.metadataReport != nil {
+			err := s.metadataReport.PublishAppMetadata(metaInfo.App, metaInfo.Revision, metaInfo)
 			if err != nil {
 				return err
 			}

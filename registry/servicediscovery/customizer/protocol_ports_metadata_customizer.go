@@ -54,7 +54,7 @@ func (p *ProtocolPortsMetadataCustomizer) Customize(instance registry.ServiceIns
 		return
 	}
 	if list == nil || len(list) == 0 {
-		logger.Warn("Could not find exported urls")
+		// client side
 		return
 	}
 	// 4 is enough... we don't have many protocol
