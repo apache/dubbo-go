@@ -27,6 +27,8 @@ import (
 import (
 	"github.com/dubbogo/gost/log/logger"
 
+	grpc_go "github.com/dubbogo/grpc-go"
+
 	"github.com/dustin/go-humanize"
 
 	"google.golang.org/grpc"
@@ -218,6 +220,7 @@ func (s *Server) compatHandleService(url *common.URL, opts ...tri.HandlerOption)
 
 		serviceKey := common.ServiceKey(providerService.Interface, providerService.Group, providerService.Version)
 		exporter, _ := tripleProtocol.ExporterMap().Load(serviceKey)
+		s.compatSaveServiceInfo(ds.XXX_ServiceDesc())
 		if exporter == nil {
 			// todo(DMwangnima): handler reflection Service and health Service
 			continue
@@ -350,6 +353,31 @@ func (s *Server) saveServiceInfo(info *server.ServiceInfo) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.services[info.InterfaceName] = ret
+}
+
+func (s *Server) compatSaveServiceInfo(desc *grpc_go.ServiceDesc) {
+	ret := grpc.ServiceInfo{}
+	ret.Methods = make([]grpc.MethodInfo, 0, len(desc.Streams)+len(desc.Methods))
+	for _, method := range desc.Methods {
+		md := grpc.MethodInfo{
+			Name:           method.MethodName,
+			IsClientStream: false,
+			IsServerStream: false,
+		}
+		ret.Methods = append(ret.Methods, md)
+	}
+	for _, stream := range desc.Streams {
+		md := grpc.MethodInfo{
+			Name:           stream.StreamName,
+			IsClientStream: stream.ClientStreams,
+			IsServerStream: stream.ServerStreams,
+		}
+		ret.Methods = append(ret.Methods, md)
+	}
+	ret.Metadata = desc.Metadata
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.services[desc.ServiceName] = ret
 }
 
 func (s *Server) GetServiceInfo() map[string]grpc.ServiceInfo {
