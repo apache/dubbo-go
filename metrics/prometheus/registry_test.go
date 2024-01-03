@@ -43,8 +43,8 @@ var (
 	url      = common.NewURLWithOptions(
 		common.WithProtocol(constant.ProtocolPrometheus),
 		common.WithParamsValue(constant.PrometheusExporterEnabledKey, "true"),
-		common.WithParamsValue(constant.PrometheusExporterMetricsPortKey, constant.PrometheusDefaultMetricsPort),
-		common.WithParamsValue(constant.PrometheusExporterMetricsPathKey, constant.PrometheusDefaultMetricsPath),
+		common.WithParamsValue(constant.PrometheusExporterMetricsPortKey, "9999"),
+		common.WithParamsValue(constant.PrometheusExporterMetricsPathKey, "/prometheus"),
 		common.WithParamsValue(constant.ApplicationKey, "dubbo"),
 		common.WithParamsValue(constant.AppVersionKey, "1.0.0"),
 		common.WithParamsValue(constant.PrometheusPushgatewayEnabledKey, "true"),
