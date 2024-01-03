@@ -357,7 +357,7 @@ func (cli *{{$s.ServiceName}}{{.MethodName}}Client) Conn() (triple_protocol.Stre
 `
 
 const MethodInfoTpl = `{{$t := .}}{{range $i, $s := .Services}}var {{.ServiceName}}_ClientInfo = client.ClientInfo{
-	InterfaceName: "{{$t.Package}}.{{.ServiceName}}",
+	InterfaceName: "{{$t.ProtoPackage}}.{{.ServiceName}}",
 	MethodNames:   []string{ {{- range $j, $m := .Methods}}"{{.MethodName}}"{{if last $j (len $s.Methods)}}{{else}},{{end}}{{end -}} },
 	ConnectionInjectFunc: func(dubboCliRaw interface{}, conn *client.Connection) {
 		dubboCli := dubboCliRaw.(*{{$s.ServiceName}}Impl)
