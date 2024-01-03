@@ -25,6 +25,7 @@ import (
 
 import (
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
+	"github.com/pkg/errors"
 )
 
 import (
@@ -59,7 +60,6 @@ func (g *Generator) generateToFile(filePath string, data []byte) error {
 func ProcessProtoFile(file *descriptor.FileDescriptorProto) (TripleGo, error) {
 	tripleGo := TripleGo{
 		Source:       file.GetName(),
-		Package:      file.GetPackage(),
 		ProtoPackage: file.GetPackage(),
 		Services:     make([]Service, 0),
 	}
@@ -84,35 +84,32 @@ func ProcessProtoFile(file *descriptor.FileDescriptorProto) (TripleGo, error) {
 			Methods:     serviceMethods,
 		})
 	}
-
-	goPkg := file.Options.GetGoPackage()
-	goPkg = strings.Split(goPkg, ";")[0]
+	pkgs := strings.Split(file.Options.GetGoPackage(), ";")
+	if len(pkgs) < 2 || pkgs[1] == "" {
+		return tripleGo, errors.New("need to set the package name in go_package")
+	}
+	tripleGo.Package = pkgs[1]
+	goPkg := pkgs[0]
 	goPkg = strings.Trim(goPkg, "/")
 	moduleName, err := util.GetModuleName()
 	if err != nil {
 		return tripleGo, err
 	}
-
 	if strings.Contains(goPkg, moduleName) {
-		tripleGo.Import = strings.Split(goPkg, ";")[0]
+		tripleGo.Path = strings.TrimPrefix(goPkg, moduleName)
 	} else {
-		tripleGo.Import = moduleName + "/" + strings.Split(goPkg, ";")[0]
+		tripleGo.Path = goPkg
 	}
-
+	tripleGo.FileName = strings.Split(file.GetName(), ".")[0]
 	return tripleGo, nil
 }
 
 func GenTripleFile(triple TripleGo) error {
-	module, err := util.GetModuleName()
-	if err != nil {
-		return err
-	}
-	prefix := strings.TrimPrefix(triple.Import, module)
 	moduleDir, err := util.GetModuleDir()
 	if err != nil {
 		return err
 	}
-	GoOut := filepath.Join(moduleDir, filepath.Join(prefix, triple.Package+"triple/"+triple.ProtoPackage+".triple.go"))
+	GoOut := filepath.Join(moduleDir, filepath.Join(triple.Path, triple.FileName+".triple.go"))
 	g := &Generator{}
 	data, err := g.parseTripleToString(triple)
 	if err != nil {
@@ -124,7 +121,8 @@ func GenTripleFile(triple TripleGo) error {
 type TripleGo struct {
 	Source       string
 	Package      string
-	Import       string
+	Path         string
+	FileName     string
 	ProtoPackage string
 	Services     []Service
 	IsStream     bool
