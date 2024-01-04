@@ -124,7 +124,7 @@ func (s *ServiceRouter) Notify(invokers []protocol.Invoker) {
 
 	dynamicConfiguration := conf.GetEnvInstance().GetDynamicConfiguration()
 	if dynamicConfiguration == nil {
-		logger.Warnf("config center does not start, please check if the configuration center has been properly configured in dubbogo.yml")
+		logger.Infof("Config center does not start, Condition router will not be enabled")
 		return
 	}
 	key := strings.Join([]string{url.ColonSeparatedKey(), constant.ConditionRouterRuleSuffix}, "")
@@ -183,7 +183,7 @@ func (a *ApplicationRouter) Notify(invokers []protocol.Invoker) {
 	if providerApplicaton != a.application {
 		dynamicConfiguration := conf.GetEnvInstance().GetDynamicConfiguration()
 		if dynamicConfiguration == nil {
-			logger.Warnf("config center does not start, please check if the configuration center has been properly configured in dubbogo.yml")
+			logger.Infof("Config center does not start, Condition router will not be enabled")
 			return
 		}
 
