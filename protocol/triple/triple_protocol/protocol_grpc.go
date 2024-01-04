@@ -461,6 +461,62 @@ func (hc *grpcHandlerConn) RequestHeader() http.Header {
 	return hc.request.Header
 }
 
+func (hc *grpcHandlerConn) ExportableHeader() http.Header {
+	// todo(DMwangnima): check out whether res should be cached
+	res := make(http.Header)
+	hdr := hc.request.Header
+	for key, vals := range hdr {
+		key = strings.ToLower(key)
+		if isReservedHeader(key) && !isWhitelistedHeader(key) {
+			continue
+		}
+		cloneVals := make([]string, len(vals))
+		for i, val := range vals {
+			cloneVals[i] = val
+		}
+		res[key] = cloneVals
+	}
+
+	return res
+}
+
+// isReservedHeader checks whether hdr belongs to HTTP2 headers
+// reserved by gRPC protocol. Any other headers are classified as the
+// user-specified metadata.
+func isReservedHeader(hdr string) bool {
+	if hdr != "" && hdr[0] == ':' {
+		return true
+	}
+	switch hdr {
+	case "content-type",
+		"user-agent",
+		"grpc-message-type",
+		"grpc-encoding",
+		"grpc-message",
+		"grpc-status",
+		"grpc-timeout",
+		"grpc-status-details-bin",
+		// Intentionally exclude grpc-previous-rpc-attempts and
+		// grpc-retry-pushback-ms, which are "reserved", but their API
+		// intentionally works via metadata.
+		"te":
+		return true
+	default:
+		return false
+	}
+}
+
+// isWhitelistedHeader checks whether hdr should be propagated into metadata
+// visible to users, even though it is classified as "reserved", above.
+func isWhitelistedHeader(hdr string) bool {
+	switch hdr {
+	case ":authority", "user-agent":
+		return true
+	default:
+		return false
+	}
+}
+
 func (hc *grpcHandlerConn) Send(msg interface{}) error {
 	defer flushResponseWriter(hc.responseWriter)
 	if !hc.wroteToBody {

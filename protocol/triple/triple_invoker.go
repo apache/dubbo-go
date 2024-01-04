@@ -40,18 +40,18 @@ type TripleInvoker struct {
 	clientManager *clientManager
 }
 
-func (gni *TripleInvoker) setClientManager(cm *clientManager) {
-	gni.clientGuard.Lock()
-	defer gni.clientGuard.Unlock()
+func (ti *TripleInvoker) setClientManager(cm *clientManager) {
+	ti.clientGuard.Lock()
+	defer ti.clientGuard.Unlock()
 
-	gni.clientManager = cm
+	ti.clientManager = cm
 }
 
-func (gni *TripleInvoker) getClientManager() *clientManager {
-	gni.clientGuard.RLock()
-	defer gni.clientGuard.RUnlock()
+func (ti *TripleInvoker) getClientManager() *clientManager {
+	ti.clientGuard.RLock()
+	defer ti.clientGuard.RUnlock()
 
-	return gni.clientManager
+	return ti.clientManager
 }
 
 // Invoke is used to call client-side method.
@@ -89,6 +89,18 @@ func (ti *TripleInvoker) Invoke(ctx context.Context, invocation protocol.Invocat
 	inRawLen := len(inRaw)
 	method := invocation.MethodName()
 	// todo(DMwangnima): process headers(metadata) passed in
+	if !ti.clientManager.isIDL {
+		switch callType {
+		case constant.CallUnary:
+			// todo(DMwangnima): consider inRawLen == 0
+			if err := ti.clientManager.callUnary(ctx, method, inRaw[0:inRawLen-1], inRaw[inRawLen-1]); err != nil {
+				result.SetError(err)
+			}
+		default:
+			panic("Triple only supports Unary Invocation for Non-IDL mode")
+		}
+		return &result
+	}
 	switch callType {
 	case constant.CallUnary:
 		if len(inRaw) != 2 {
@@ -96,13 +108,11 @@ func (ti *TripleInvoker) Invoke(ctx context.Context, invocation protocol.Invocat
 		}
 		if err := ti.clientManager.callUnary(ctx, method, inRaw[0], inRaw[1]); err != nil {
 			result.SetError(err)
-			return &result
 		}
 	case constant.CallClientStream:
 		stream, err := ti.clientManager.callClientStream(ctx, method)
 		if err != nil {
 			result.SetError(err)
-			return &result
 		}
 		result.SetResult(stream)
 	case constant.CallServerStream:
@@ -112,14 +122,12 @@ func (ti *TripleInvoker) Invoke(ctx context.Context, invocation protocol.Invocat
 		stream, err := ti.clientManager.callServerStream(ctx, method, inRaw[0])
 		if err != nil {
 			result.Err = err
-			return &result
 		}
 		result.SetResult(stream)
 	case constant.CallBidiStream:
 		stream, err := ti.clientManager.callBidiStream(ctx, method)
 		if err != nil {
 			result.Err = err
-			return &result
 		}
 		result.SetResult(stream)
 	default:
@@ -130,18 +138,18 @@ func (ti *TripleInvoker) Invoke(ctx context.Context, invocation protocol.Invocat
 }
 
 // IsAvailable get available status
-func (gni *TripleInvoker) IsAvailable() bool {
-	if gni.getClientManager() != nil {
-		return gni.BaseInvoker.IsAvailable()
+func (ti *TripleInvoker) IsAvailable() bool {
+	if ti.getClientManager() != nil {
+		return ti.BaseInvoker.IsAvailable()
 	}
 
 	return false
 }
 
 // IsDestroyed get destroyed status
-func (gni *TripleInvoker) IsDestroyed() bool {
-	if gni.getClientManager() != nil {
-		return gni.BaseInvoker.IsDestroyed()
+func (ti *TripleInvoker) IsDestroyed() bool {
+	if ti.getClientManager() != nil {
+		return ti.BaseInvoker.IsDestroyed()
 	}
 
 	return false

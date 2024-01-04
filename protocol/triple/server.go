@@ -20,8 +20,8 @@ package triple
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"sync"
-	"time"
 )
 
 import (
@@ -44,14 +44,16 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/server"
 )
 
-// Server is TRIPLE server
+// Server is TRIPLE adaptation layer representation. It makes use of tri.Server to
+// provide functionality.
 type Server struct {
 	triServer *tri.Server
-	services  map[string]grpc.ServiceInfo
 	mu        sync.RWMutex
+	services  map[string]grpc.ServiceInfo
 }
 
-// NewServer creates a new TRIPLE server
+// NewServer creates a new TRIPLE server.
+// triServer would not be initialized since we could not get configurations here.
 func NewServer() *Server {
 	return &Server{
 		services: make(map[string]grpc.ServiceInfo),
@@ -60,55 +62,35 @@ func NewServer() *Server {
 
 // Start TRIPLE server
 func (s *Server) Start(invoker protocol.Invoker, info *server.ServiceInfo) {
-	var (
-		addr    string
-		URL     *common.URL
-		hanOpts []tri.HandlerOption
-	)
-	URL = invoker.GetURL()
-	addr = URL.Location
+	URL := invoker.GetURL()
+	addr := URL.Location
+	// initialize tri.Server
 	s.triServer = tri.NewServer(addr)
+
 	serialization := URL.GetParam(constant.SerializationKey, constant.ProtobufSerialization)
 	switch serialization {
 	case constant.ProtobufSerialization:
 	case constant.JSONSerialization:
+	case constant.Hessian2Serialization:
+	case constant.MsgpackSerialization:
 	default:
 		panic(fmt.Sprintf("Unsupported serialization: %s", serialization))
 	}
-	// todo: implement interceptor
-	// If global trace instance was set, then server tracer instance
-	// can be get. If not, will return NoopTracer.
-	//tracer := opentracing.GlobalTracer()
-	//serverOpts = append(serverOpts,
-	//	grpc.UnaryInterceptor(otgrpc.OpenTracingServerInterceptor(tracer)),
-	//	grpc.StreamInterceptor(otgrpc.OpenTracingStreamServerInterceptor(tracer)),
-	//	grpc.MaxRecvMsgSize(maxServerRecvMsgSize),
-	//	grpc.MaxSendMsgSize(maxServerSendMsgSize),
-	//)
-	//var cfg *tls.Config
+	// todo: support opentracing interceptor
+
 	// todo(DMwangnima): think about a more elegant way to configure tls
-	//tlsConfig := config.GetRootConfig().TLSConfig
-	//if tlsConfig != nil {
-	//	cfg, err = config.GetServerTlsConfig(&config.TLSConfig{
-	//		CACertFile:    tlsConfig.CACertFile,
-	//		TLSCertFile:   tlsConfig.TLSCertFile,
-	//		TLSKeyFile:    tlsConfig.TLSKeyFile,
-	//		TLSServerName: tlsConfig.TLSServerName,
-	//	})
-	//	if err != nil {
-	//		return
-	//	}
-	//	logger.Infof("Triple Server initialized the TLSConfig configuration")
-	//}
-	//srv.TLSConfig = cfg
+
 	// todo:// move tls config to handleService
 
-	hanOpts = getHanOpts(URL)
+	hanOpts := getHanOpts(URL)
+	intfName := URL.Interface()
 	if info != nil {
-		s.handleServiceWithInfo(invoker, info, hanOpts...)
-		s.saveServiceInfo(info)
+		// new triple idl mode
+		s.handleServiceWithInfo(intfName, invoker, info, hanOpts...)
+		s.saveServiceInfo(intfName, info)
 	} else {
-		s.compatHandleService(URL, hanOpts...)
+		// old triple idl mode and non-idl mode
+		s.compatHandleService(intfName, URL.Group(), URL.Version(), hanOpts...)
 	}
 	reflection.Register(s)
 
@@ -119,26 +101,26 @@ func (s *Server) Start(invoker protocol.Invoker, info *server.ServiceInfo) {
 	}()
 }
 
+// todo(DMwangnima): extract a common function
 // RefreshService refreshes Triple Service
 func (s *Server) RefreshService(invoker protocol.Invoker, info *server.ServiceInfo) {
-	var (
-		URL     *common.URL
-		hanOpts []tri.HandlerOption
-	)
-	URL = invoker.GetURL()
+	URL := invoker.GetURL()
 	serialization := URL.GetParam(constant.SerializationKey, constant.ProtobufSerialization)
 	switch serialization {
 	case constant.ProtobufSerialization:
 	case constant.JSONSerialization:
+	case constant.Hessian2Serialization:
+	case constant.MsgpackSerialization:
 	default:
 		panic(fmt.Sprintf("Unsupported serialization: %s", serialization))
 	}
-	hanOpts = getHanOpts(URL)
+	hanOpts := getHanOpts(URL)
+	intfName := URL.Interface()
 	if info != nil {
-		s.handleServiceWithInfo(invoker, info, hanOpts...)
-		s.saveServiceInfo(info)
+		s.handleServiceWithInfo(intfName, invoker, info, hanOpts...)
+		s.saveServiceInfo(intfName, info)
 	} else {
-		s.compatHandleService(URL, hanOpts...)
+		s.compatHandleService(intfName, URL.Group(), URL.Version(), hanOpts...)
 	}
 }
 
@@ -157,7 +139,6 @@ func getHanOpts(url *common.URL) (hanOpts []tri.HandlerOption) {
 	hanOpts = append(hanOpts, tri.WithSendMaxBytes(maxServerSendMsgSize))
 
 	// todo:// open tracing
-	hanOpts = append(hanOpts, tri.WithInterceptors())
 
 	group := url.GetParam(constant.GroupKey, "")
 	version := url.GetParam(constant.VersionKey, "")
@@ -165,90 +146,58 @@ func getHanOpts(url *common.URL) (hanOpts []tri.HandlerOption) {
 	return hanOpts
 }
 
-// getSyncMapLen gets sync map len
-func getSyncMapLen(m *sync.Map) int {
-	length := 0
-
-	m.Range(func(_, _ interface{}) bool {
-		length++
-		return true
-	})
-	return length
-}
-
-// waitTripleExporter wait until len(providerServices) = len(ExporterMap)
-func waitTripleExporter(providerServices map[string]*config.ServiceConfig) {
-	t := time.NewTicker(50 * time.Millisecond)
-	defer t.Stop()
-	pLen := len(providerServices)
-	ta := time.NewTimer(10 * time.Second)
-	defer ta.Stop()
-
-	for {
-		select {
-		case <-t.C:
-			mLen := getSyncMapLen(tripleProtocol.ExporterMap())
-			if pLen == mLen {
-				return
-			}
-		case <-ta.C:
-			panic("wait Triple exporter timeout when start GRPC_NEW server")
-		}
-	}
-}
-
-// *Important*, this function is responsible for being compatible with old triple-gen code
+// *Important*, this function is responsible for being compatible with old triple-gen code and non-idl code
 // compatHandleService registers handler based on ServiceConfig and provider service.
-func (s *Server) compatHandleService(url *common.URL, opts ...tri.HandlerOption) {
+func (s *Server) compatHandleService(interfaceName string, group, version string, opts ...tri.HandlerOption) {
 	providerServices := config.GetProviderConfig().Services
 	if len(providerServices) == 0 {
-		logger.Info("Provider service map is null")
+		logger.Info("Provider service map is null, please register ProviderServices")
+		return
 	}
-	//waitTripleExporter(providerServices)
 	for key, providerService := range providerServices {
-		if providerService.Interface != url.Interface() {
+		if providerService.Interface != interfaceName || providerService.Group != group || providerService.Version != version {
 			continue
 		}
 		// todo(DMwangnima): judge protocol type
 		service := config.GetProviderService(key)
-		ds, ok := service.(dubbo3.Dubbo3GrpcService)
-		if !ok {
-			panic("illegal service type registered")
-		}
-
 		serviceKey := common.ServiceKey(providerService.Interface, providerService.Group, providerService.Version)
 		exporter, _ := tripleProtocol.ExporterMap().Load(serviceKey)
 		if exporter == nil {
-			// todo(DMwangnima): handler reflection Service and health Service
+			logger.Warnf("no exporter found for serviceKey: %v", serviceKey)
 			continue
-			//panic(fmt.Sprintf("no exporter found for servicekey: %v", serviceKey))
 		}
 		invoker := exporter.(protocol.Exporter).GetInvoker()
 		if invoker == nil {
 			panic(fmt.Sprintf("no invoker found for servicekey: %v", serviceKey))
 		}
+		ds, ok := service.(dubbo3.Dubbo3GrpcService)
+		if !ok {
+			info := createServiceInfoWithReflection(service)
+			s.handleServiceWithInfo(interfaceName, invoker, info, opts...)
+			continue
+		}
 
 		// inject invoker, it has all invocation logics
 		ds.XXX_SetProxyImpl(invoker)
-		s.compatRegisterHandler(ds, opts...)
+		s.compatRegisterHandler(interfaceName, ds, opts...)
 	}
 }
 
-func (s *Server) compatRegisterHandler(svc dubbo3.Dubbo3GrpcService, opts ...tri.HandlerOption) {
+func (s *Server) compatRegisterHandler(interfaceName string, svc dubbo3.Dubbo3GrpcService, opts ...tri.HandlerOption) {
 	desc := svc.XXX_ServiceDesc()
 	// init unary handlers
 	for _, method := range desc.Methods {
 		// please refer to protocol/triple/internal/proto/triple_gen/greettriple for procedure examples
 		// error could be ignored because base is empty string
-		procedure := joinProcedure(desc.ServiceName, method.MethodName)
-		_ = s.triServer.RegisterCompatUnaryHandler(procedure, svc, tri.MethodHandler(method.Handler), opts...)
+		procedure := joinProcedure(interfaceName, method.MethodName)
+		_ = s.triServer.RegisterCompatUnaryHandler(procedure, method.MethodName, svc, tri.MethodHandler(method.Handler), opts...)
 	}
 
 	// init stream handlers
 	for _, stream := range desc.Streams {
 		// please refer to protocol/triple/internal/proto/triple_gen/greettriple for procedure examples
 		// error could be ignored because base is empty string
-		procedure := joinProcedure(desc.ServiceName, stream.StreamName)
+		procedure := joinProcedure(interfaceName, stream.StreamName)
 		var typ tri.StreamType
 		switch {
 		case stream.ClientStreams && stream.ServerStreams:
@@ -263,10 +212,10 @@ func (s *Server) compatRegisterHandler(svc dubbo3.Dubbo3GrpcService, opts ...tri
 }
 
 // handleServiceWithInfo injects invoker and create handler based on ServiceInfo
-func (s *Server) handleServiceWithInfo(invoker protocol.Invoker, info *server.ServiceInfo, opts ...tri.HandlerOption) {
+func (s *Server) handleServiceWithInfo(interfaceName string, invoker protocol.Invoker, info *server.ServiceInfo, opts ...tri.HandlerOption) {
 	for _, method := range info.Methods {
 		m := method
-		procedure := joinProcedure(info.InterfaceName, method.Name)
+		procedure := joinProcedure(interfaceName, method.Name)
 		switch m.Type {
 		case constant.CallUnary:
 			_ = s.triServer.RegisterUnaryHandler(
@@ -274,12 +223,28 @@ func (s *Server) handleServiceWithInfo(invoker protocol.Invoker, info *server.Se
 				m.ReqInitFunc,
 				func(ctx context.Context, req *tri.Request) (*tri.Response, error) {
 					var args []interface{}
-					args = append(args, req.Msg)
+					if argsRaw, ok := req.Msg.([]interface{}); ok {
+						// non-idl mode, req.Msg consists of many arguments
+						for _, argRaw := range argsRaw {
+							// refer to createServiceInfoWithReflection, in ReqInitFunc, argRaw is a pointer to real arg.
+							// so we have to invoke Elem to get the real arg.
+							args = append(args, reflect.ValueOf(argRaw).Elem().Interface())
+						}
+					} else {
+						// triple idl mode and old triple idl mode
+						args = append(args, req.Msg)
+					}
 					// todo: inject method.Meta to attachments
 					invo := invocation.NewRPCInvocation(m.Name, args, nil)
 					res := invoker.Invoke(ctx, invo)
-					// todo(DMwangnima): if we do not use MethodInfo.MethodFunc, create Response manually
-					return res.Result().(*tri.Response), res.Error()
+					// todo(DMwangnima): modify InfoInvoker to get a unified processing logic
+					// please refer to server/InfoInvoker.Invoke()
+					if triResp, ok := res.Result().(*tri.Response); ok {
+						return triResp, res.Error()
+					}
+					// please refer to proxy/proxy_factory/ProxyInvoker.Invoke
+					triResp := tri.NewResponse([]interface{}{res.Result()})
+					return triResp, res.Error()
 				},
 				opts...,
 			)
@@ -324,7 +289,7 @@ func (s *Server) handleServiceWithInfo(invoker protocol.Invoker, info *server.Se
 	}
 }
 
-func (s *Server) saveServiceInfo(info *server.ServiceInfo) {
+func (s *Server) saveServiceInfo(interfaceName string, info *server.ServiceInfo) {
 	ret := grpc.ServiceInfo{}
 	ret.Methods = make([]grpc.MethodInfo, 0, len(info.Methods))
 	for _, method := range info.Methods {
@@ -349,7 +314,8 @@ func (s *Server) saveServiceInfo(info *server.ServiceInfo) {
 	ret.Metadata = info
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.services[info.InterfaceName] = ret
+	// todo(DMwangnima): using interfaceName is not enough, we need to consider group and version
+	s.services[interfaceName] = ret
 }
 
 func (s *Server) GetServiceInfo() map[string]grpc.ServiceInfo {
@@ -370,4 +336,48 @@ func (s *Server) Stop() {
 // GracefulStop TRIPLE server
 func (s *Server) GracefulStop() {
 	_ = s.triServer.GracefulStop(context.Background())
+}
+
+// createServiceInfoWithReflection is for non-idl scenario.
+// It makes use of reflection to extract method parameters information and create ServiceInfo.
+// As a result, Server could use this ServiceInfo to register.
+func createServiceInfoWithReflection(svc common.RPCService) *server.ServiceInfo {
+	var info server.ServiceInfo
+	val := reflect.ValueOf(svc)
+	typ := reflect.TypeOf(svc)
+	methodNum := val.NumMethod()
+	methodInfos := make([]server.MethodInfo, methodNum)
+	for i := 0; i < methodNum; i++ {
+		methodType := typ.Method(i)
+		if methodType.Name == "Reference" {
+			continue
+		}
+		paramsNum := methodType.Type.NumIn()
+		// the first param is receiver itself, the second param is ctx
+		// just ignore them
+		if paramsNum < 2 {
+			logger.Fatalf("TRIPLE does not support %s method that does not have any parameter", methodType.Name)
+			continue
+		}
+		paramsTypes := make([]reflect.Type, paramsNum-2)
+		for j := 2; j < paramsNum; j++ {
+			paramsTypes[j-2] = methodType.Type.In(j)
+		}
+		methodInfo := server.MethodInfo{
+			Name: methodType.Name,
+			// only support Unary invocation now
+			Type: constant.CallUnary,
+			ReqInitFunc: func() interface{} {
+				params := make([]interface{}, len(paramsTypes))
+				for k, paramType := range paramsTypes {
+					params[k] = reflect.New(paramType).Interface()
+				}
+				return params
+			},
+		}
+		methodInfos[i] = methodInfo
+	}
+	info.Methods = methodInfos
+
+	return &info
 }

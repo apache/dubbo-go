@@ -417,6 +417,11 @@ func (hc *tripleUnaryHandlerConn) RequestHeader() http.Header {
 	return hc.request.Header
 }
 
+func (hc *tripleUnaryHandlerConn) ExportableHeader() http.Header {
+	// by now, there are no reserved headers
+	return hc.request.Header
+}
+
 func (hc *tripleUnaryHandlerConn) Send(msg interface{}) error {
 	hc.wroteBody = true
 	hc.writeResponseHeader(nil /* error */)
