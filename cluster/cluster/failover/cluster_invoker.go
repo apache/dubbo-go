@@ -20,7 +20,6 @@ package failover
 import (
 	"context"
 	"fmt"
-	"strconv"
 )
 
 import (
@@ -114,23 +113,7 @@ func getRetries(invokers []protocol.Invoker, methodName string) int {
 	if len(invokers) <= 0 {
 		return constant.DefaultRetriesInt
 	}
-
 	url := invokers[0].GetURL()
-	// get reties
-	retriesConfig := url.GetParam(constant.RetriesKey, constant.DefaultRetries)
-	// Get the service method loadbalance config if have
-	if v := url.GetMethodParam(methodName, constant.RetriesKey, ""); len(v) != 0 {
-		retriesConfig = v
-	}
-
-	retries, err := strconv.Atoi(retriesConfig)
-	if err != nil || retries < 0 {
-		logger.Error("Your retries config is invalid,pls do a check. And will use the default retries configuration instead.")
-		retries = constant.DefaultRetriesInt
-	}
-
-	if retries > len(invokers) {
-		retries = len(invokers)
-	}
-	return retries
+	return url.GetMethodParamIntValue(methodName, constant.RetriesKey,
+		url.GetParamByIntValue(constant.RetriesKey, constant.DefaultRetriesInt))
 }
