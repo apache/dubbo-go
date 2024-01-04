@@ -32,6 +32,7 @@ import (
 
 type Server struct {
 	mu       sync.Mutex
+	mux      *http.ServeMux
 	handlers map[string]*Handler
 	httpSrv  *http.Server
 }
@@ -46,6 +47,7 @@ func (s *Server) RegisterUnaryHandler(
 	if !ok {
 		hdl = NewUnaryHandler(procedure, reqInitFunc, unary, options...)
 		s.handlers[procedure] = hdl
+		s.mux.Handle(procedure, hdl)
 	} else {
 		config := newHandlerConfig(procedure, options)
 		implementation := generateUnaryHandlerFunc(procedure, reqInitFunc, unary, config.Interceptor)
@@ -64,6 +66,7 @@ func (s *Server) RegisterClientStreamHandler(
 	if !ok {
 		hdl = NewClientStreamHandler(procedure, stream, options...)
 		s.handlers[procedure] = hdl
+		s.mux.Handle(procedure, hdl)
 	} else {
 		config := newHandlerConfig(procedure, options)
 		implementation := generateClientStreamHandlerFunc(procedure, stream, config.Interceptor)
@@ -83,6 +86,7 @@ func (s *Server) RegisterServerStreamHandler(
 	if !ok {
 		hdl = NewServerStreamHandler(procedure, reqInitFunc, stream, options...)
 		s.handlers[procedure] = hdl
+		s.mux.Handle(procedure, hdl)
 	} else {
 		config := newHandlerConfig(procedure, options)
 		implementation := generateServerStreamHandlerFunc(procedure, reqInitFunc, stream, config.Interceptor)
@@ -101,6 +105,7 @@ func (s *Server) RegisterBidiStreamHandler(
 	if !ok {
 		hdl = NewBidiStreamHandler(procedure, stream, options...)
 		s.handlers[procedure] = hdl
+		s.mux.Handle(procedure, hdl)
 	} else {
 		config := newHandlerConfig(procedure, options)
 		implementation := generateBidiStreamHandlerFunc(procedure, stream, config.Interceptor)
@@ -112,17 +117,19 @@ func (s *Server) RegisterBidiStreamHandler(
 
 func (s *Server) RegisterCompatUnaryHandler(
 	procedure string,
+	method string,
 	srv interface{},
 	unary MethodHandler,
 	options ...HandlerOption,
 ) error {
 	hdl, ok := s.handlers[procedure]
 	if !ok {
-		hdl = NewCompatUnaryHandler(procedure, srv, unary, options...)
+		hdl = NewCompatUnaryHandler(procedure, method, srv, unary, options...)
 		s.handlers[procedure] = hdl
+		s.mux.Handle(procedure, hdl)
 	} else {
 		config := newHandlerConfig(procedure, options)
-		implementation := generateCompatUnaryHandlerFunc(procedure, srv, unary, config.Interceptor)
+		implementation := generateCompatUnaryHandlerFunc(procedure, method, srv, unary, config.Interceptor)
 		hdl.processImplementation(getIdentifier(config.Group, config.Version), implementation)
 	}
 
@@ -140,6 +147,7 @@ func (s *Server) RegisterCompatStreamHandler(
 	if !ok {
 		hdl = NewCompatStreamHandler(procedure, srv, typ, streamFunc, options...)
 		s.handlers[procedure] = hdl
+		s.mux.Handle(procedure, hdl)
 	} else {
 		config := newHandlerConfig(procedure, options)
 		implementation := generateCompatStreamHandlerFunc(procedure, srv, streamFunc, config.Interceptor)
@@ -150,12 +158,8 @@ func (s *Server) RegisterCompatStreamHandler(
 }
 
 func (s *Server) Run() error {
-	mux := http.NewServeMux()
-	for procedure, hdl := range s.handlers {
-		mux.Handle(procedure, hdl)
-	}
 	// todo(DMwangnima): deal with TLS
-	s.httpSrv.Handler = h2c.NewHandler(mux, &http2.Server{})
+	s.httpSrv.Handler = h2c.NewHandler(s.mux, &http2.Server{})
 
 	if err := s.httpSrv.ListenAndServe(); err != nil {
 		return err
@@ -173,6 +177,7 @@ func (s *Server) GracefulStop(ctx context.Context) error {
 
 func NewServer(addr string) *Server {
 	return &Server{
+		mux:      http.NewServeMux(),
 		handlers: make(map[string]*Handler),
 		httpSrv:  &http.Server{Addr: addr},
 	}

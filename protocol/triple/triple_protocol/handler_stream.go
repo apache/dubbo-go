@@ -146,6 +146,11 @@ func (b *BidiStream) RequestHeader() http.Header {
 	return b.conn.RequestHeader()
 }
 
+// ExportableHeader returns the headers could be exported to users.
+func (b *BidiStream) ExportableHeader() http.Header {
+	return b.conn.ExportableHeader()
+}
+
 // Receive a message. When the client is done sending messages, Receive will
 // return an error that wraps [io.EOF].
 func (b *BidiStream) Receive(msg interface{}) error {
