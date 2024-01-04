@@ -164,7 +164,6 @@ func (s *Server) compatHandleService(interfaceName string, group, version string
 		service := config.GetProviderService(key)
 		serviceKey := common.ServiceKey(providerService.Interface, providerService.Group, providerService.Version)
 		exporter, _ := tripleProtocol.ExporterMap().Load(serviceKey)
-		s.compatSaveServiceInfo(ds.XXX_ServiceDesc())
 		if exporter == nil {
 			logger.Warnf("no exporter found for serviceKey: %v", serviceKey)
 			continue
@@ -177,9 +176,10 @@ func (s *Server) compatHandleService(interfaceName string, group, version string
 		if !ok {
 			info := createServiceInfoWithReflection(service)
 			s.handleServiceWithInfo(interfaceName, invoker, info, opts...)
+			s.saveServiceInfo(interfaceName, info)
 			continue
 		}
-
+		s.compatSaveServiceInfo(ds.XXX_ServiceDesc())
 		// inject invoker, it has all invocation logics
 		ds.XXX_SetProxyImpl(invoker)
 		s.compatRegisterHandler(interfaceName, ds, opts...)
