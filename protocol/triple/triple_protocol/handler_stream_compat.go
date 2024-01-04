@@ -50,6 +50,10 @@ func (c *compatHandlerStream) Context() context.Context {
 	return c.ctx
 }
 
+func (c *compatHandlerStream) SetContext(ctx context.Context) {
+	c.ctx = ctx
+}
+
 func (c *compatHandlerStream) SendMsg(m interface{}) error {
 	return c.conn.Send(m)
 }

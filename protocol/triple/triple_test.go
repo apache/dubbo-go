@@ -54,13 +54,15 @@ import (
 )
 
 const (
-	triplePort = "21000"
-	dubbo3Port = "21001"
-	listenAddr = "0.0.0.0"
-	localAddr  = "127.0.0.1"
-	name       = "triple"
-	group      = "g1"
-	version    = "v1"
+	triplePort                = "21000"
+	dubbo3Port                = "21001"
+	listenAddr                = "0.0.0.0"
+	localAddr                 = "127.0.0.1"
+	name                      = "triple"
+	group                     = "g1"
+	version                   = "v1"
+	customTripleInterfaceName = "apache.dubbo.org.triple"
+	customDubbo3InterfaceName = "apache.dubbo.org.dubbo3"
 )
 
 type tripleInvoker struct {
@@ -85,7 +87,7 @@ func (t *tripleInvoker) Destroy() {
 func (t *tripleInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 	name := invocation.MethodName()
 	args := invocation.Arguments()
-	// todo(DMwangnima): user map to represent Methods
+	// todo(DMwangnima): use map to represent Methods
 	for _, method := range t.info.Methods {
 		if method.Name == name {
 			res, err := method.MethodFunc(ctx, args, t.handler)
@@ -103,6 +105,8 @@ func runTripleServer(interfaceName string, group string, version string, addr st
 		common.WithPath(interfaceName),
 		common.WithLocation(addr),
 		common.WithPort(triplePort),
+		common.WithProtocol(TRIPLE),
+		common.WithInterface(interfaceName),
 	)
 	url.SetParam(constant.GroupKey, group)
 	url.SetParam(constant.VersionKey, version)
@@ -121,7 +125,7 @@ func runTripleServer(interfaceName string, group string, version string, addr st
 func runOldTripleServer(interfaceName string, group string, version string, addr string, desc *grpc_go.ServiceDesc, svc common.RPCService) {
 	url := common.NewURLWithOptions(
 		// todo(DMwangnima): figure this out
-		common.WithPath(desc.ServiceName),
+		common.WithPath(interfaceName),
 		common.WithLocation(addr),
 		common.WithPort(dubbo3Port),
 		common.WithProtocol(TRIPLE),
@@ -143,14 +147,14 @@ func runOldTripleServer(interfaceName string, group string, version string, addr
 					Build()).
 			Build())
 	config.SetProviderService(svc)
-	common.ServiceMap.Register(desc.ServiceName, TRIPLE, group, version, svc)
+	common.ServiceMap.Register(interfaceName, TRIPLE, group, version, svc)
 	invoker := extension.GetProxyFactory("default").GetInvoker(url)
 	GetProtocol().(*TripleProtocol).exportForTest(invoker, nil)
 }
 
 func TestMain(m *testing.M) {
 	runTripleServer(
-		greettriple.GreetServiceName,
+		customTripleInterfaceName,
 		"",
 		"",
 		listenAddr,
@@ -158,7 +162,7 @@ func TestMain(m *testing.M) {
 		new(api.GreetTripleServer),
 	)
 	runTripleServer(
-		greettriple.GreetServiceName,
+		customTripleInterfaceName,
 		group,
 		version,
 		listenAddr,
@@ -166,7 +170,7 @@ func TestMain(m *testing.M) {
 		new(api.GreetTripleServerGroup1Version1),
 	)
 	runOldTripleServer(
-		dubbo3_greet.GreetService_ServiceDesc.ServiceName,
+		customDubbo3InterfaceName,
 		"",
 		"",
 		listenAddr,
@@ -174,7 +178,7 @@ func TestMain(m *testing.M) {
 		new(dubbo3_api.GreetDubbo3Server),
 	)
 	runOldTripleServer(
-		dubbo3_greet.GreetService_ServiceDesc.ServiceName,
+		customDubbo3InterfaceName,
 		group,
 		version,
 		listenAddr,
@@ -431,46 +435,46 @@ func TestInvoke(t *testing.T) {
 	}
 
 	t.Run("triple2triple", func(t *testing.T) {
-		invoker, err := tripleInvokerInit(localAddr, triplePort, greettriple.GreetService_ClientInfo.InterfaceName, "", "", greettriple.GreetService_ClientInfo.MethodNames, &greettriple.GreetService_ClientInfo)
+		invoker, err := tripleInvokerInit(localAddr, triplePort, customTripleInterfaceName, "", "", greettriple.GreetService_ClientInfo.MethodNames, &greettriple.GreetService_ClientInfo)
 		assert.Nil(t, err)
 		invokeTripleCodeFunc(t, invoker, "")
 	})
 	t.Run("triple2triple_Group1Version1", func(t *testing.T) {
-		invoker, err := tripleInvokerInit(localAddr, triplePort, greettriple.GreetService_ClientInfo.InterfaceName, group, version, greettriple.GreetService_ClientInfo.MethodNames, &greettriple.GreetService_ClientInfo)
+		invoker, err := tripleInvokerInit(localAddr, triplePort, customTripleInterfaceName, group, version, greettriple.GreetService_ClientInfo.MethodNames, &greettriple.GreetService_ClientInfo)
 		assert.Nil(t, err)
 		invokeTripleCodeFunc(t, invoker, api.GroupVersionIdentifier)
 	})
 	t.Run("triple2dubbo3", func(t *testing.T) {
-		invoker, err := tripleInvokerInit(localAddr, dubbo3Port, greettriple.GreetService_ClientInfo.InterfaceName, "", "", greettriple.GreetService_ClientInfo.MethodNames, &greettriple.GreetService_ClientInfo)
+		invoker, err := tripleInvokerInit(localAddr, dubbo3Port, customDubbo3InterfaceName, "", "", greettriple.GreetService_ClientInfo.MethodNames, &greettriple.GreetService_ClientInfo)
 		assert.Nil(t, err)
 		invokeTripleCodeFunc(t, invoker, "")
 	})
 	t.Run("triple2dubbo3_Group1Version1", func(t *testing.T) {
-		invoker, err := tripleInvokerInit(localAddr, dubbo3Port, greettriple.GreetService_ClientInfo.InterfaceName, group, version, greettriple.GreetService_ClientInfo.MethodNames, &greettriple.GreetService_ClientInfo)
+		invoker, err := tripleInvokerInit(localAddr, dubbo3Port, customDubbo3InterfaceName, group, version, greettriple.GreetService_ClientInfo.MethodNames, &greettriple.GreetService_ClientInfo)
 		assert.Nil(t, err)
 		invokeTripleCodeFunc(t, invoker, dubbo3_api.GroupVersionIdentifier)
 	})
 	t.Run("dubbo32triple", func(t *testing.T) {
 		svc := new(dubbo3_greet.GreetServiceClientImpl)
-		invoker, err := dubbo3InvokerInit(localAddr, triplePort, dubbo3_greet.GreetService_ServiceDesc.ServiceName, "", "", svc)
+		invoker, err := dubbo3InvokerInit(localAddr, triplePort, customTripleInterfaceName, "", "", svc)
 		assert.Nil(t, err)
 		invokeDubbo3CodeFunc(t, invoker, svc, "")
 	})
 	t.Run("dubbo32triple_Group1Version1", func(t *testing.T) {
 		svc := new(dubbo3_greet.GreetServiceClientImpl)
-		invoker, err := dubbo3InvokerInit(localAddr, triplePort, dubbo3_greet.GreetService_ServiceDesc.ServiceName, group, version, svc)
+		invoker, err := dubbo3InvokerInit(localAddr, triplePort, customTripleInterfaceName, group, version, svc)
 		assert.Nil(t, err)
 		invokeDubbo3CodeFunc(t, invoker, svc, api.GroupVersionIdentifier)
 	})
 	t.Run("dubbo32dubbo3", func(t *testing.T) {
 		svc := new(dubbo3_greet.GreetServiceClientImpl)
-		invoker, err := dubbo3InvokerInit(localAddr, dubbo3Port, dubbo3_greet.GreetService_ServiceDesc.ServiceName, "", "", svc)
+		invoker, err := dubbo3InvokerInit(localAddr, dubbo3Port, customDubbo3InterfaceName, "", "", svc)
 		assert.Nil(t, err)
 		invokeDubbo3CodeFunc(t, invoker, svc, "")
 	})
 	t.Run("dubbo32dubbo3_Group1Version1", func(t *testing.T) {
 		svc := new(dubbo3_greet.GreetServiceClientImpl)
-		invoker, err := dubbo3InvokerInit(localAddr, dubbo3Port, dubbo3_greet.GreetService_ServiceDesc.ServiceName, group, version, svc)
+		invoker, err := dubbo3InvokerInit(localAddr, dubbo3Port, customDubbo3InterfaceName, group, version, svc)
 		assert.Nil(t, err)
 		invokeDubbo3CodeFunc(t, invoker, svc, dubbo3_api.GroupVersionIdentifier)
 	})

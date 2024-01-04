@@ -76,6 +76,15 @@ func WithProtoJSON() ClientOption {
 	return WithCodec(&protoJSONCodec{codecNameJSON})
 }
 
+// todo(DMwangnima): add comment
+func WithHessian2() ClientOption {
+	return WithCodec(newProtoWrapperCodec(&hessian2Codec{}))
+}
+
+func WithMsgPack() ClientOption {
+	return WithCodec(newProtoWrapperCodec(&msgpackCodec{}))
+}
+
 // WithSendCompression configures the client to use the specified algorithm to
 // compress request messages. If the algorithm has not been registered using
 // [WithAcceptCompression], the client will return errors at runtime.
@@ -544,4 +553,12 @@ func withProtoJSONCodecs() HandlerOption {
 		WithCodec(&protoJSONCodec{codecNameJSON}),
 		WithCodec(&protoJSONCodec{codecNameJSONCharsetUTF8}),
 	)
+}
+
+func withHessian2Codec() Option {
+	return WithCodec(newProtoWrapperCodec(&hessian2Codec{}))
+}
+
+func withMsgPackCodec() Option {
+	return WithCodec(newProtoWrapperCodec(&msgpackCodec{}))
 }

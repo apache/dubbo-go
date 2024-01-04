@@ -80,6 +80,7 @@ func (tp *TripleProtocol) exportForTest(invoker protocol.Invoker, info *server.S
 	tp.SetExporterMap(serviceKey, exporter)
 	logger.Infof("[TRIPLE Protocol] Export service: %s", url.String())
 	tp.openServer(invoker, info)
+	health.SetServingStatusServing(url.Service())
 	return exporter
 }
 
@@ -98,8 +99,8 @@ func (tp *TripleProtocol) openServer(invoker protocol.Invoker, info *server.Serv
 	}
 
 	srv := NewServer()
-	tp.serverMap[url.Location] = srv
 	srv.Start(invoker, info)
+	tp.serverMap[url.Location] = srv
 }
 
 // Refer a remote triple service

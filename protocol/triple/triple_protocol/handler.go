@@ -340,11 +340,12 @@ func (h *Handler) ServeHTTP(responseWriter http.ResponseWriter, request *http.Re
 		_ = connCloser.Close(timeoutErr)
 		return
 	}
+
 	// invoke implementation
 	svcGroup := request.Header.Get(tripleServiceGroup)
 	svcVersion := request.Header.Get(tripleServiceVersion)
-	implementation := h.implementations[getIdentifier(svcGroup, svcVersion)]
 	// todo(DMwangnima): inspect ok
+	implementation := h.implementations[getIdentifier(svcGroup, svcVersion)]
 	_ = connCloser.Close(implementation(ctx, connCloser))
 }
 
@@ -376,6 +377,8 @@ func newHandlerConfig(procedure string, options []HandlerOption) *handlerConfig 
 	}
 	withProtoBinaryCodec().applyToHandler(&config)
 	withProtoJSONCodecs().applyToHandler(&config)
+	withHessian2Codec().applyToHandler(&config)
+	withMsgPackCodec().applyToHandler(&config)
 	withGzip().applyToHandler(&config)
 	for _, opt := range options {
 		opt.applyToHandler(&config)
