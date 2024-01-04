@@ -56,7 +56,7 @@ type RootConfig struct {
 	Provider            *ProviderConfig            `yaml:"provider" json:"provider" property:"provider"`
 	Consumer            *ConsumerConfig            `yaml:"consumer" json:"consumer" property:"consumer"`
 	Otel                *OtelConfig                `yaml:"otel" json:"otel,omitempty" property:"otel"`
-	Metric              *MetricConfig              `yaml:"metrics" json:"metrics,omitempty" property:"metrics"`
+	Metrics             *MetricsConfig             `yaml:"metrics" json:"metrics,omitempty" property:"metrics"`
 	Tracing             map[string]*TracingConfig  `yaml:"tracing" json:"tracing,omitempty" property:"tracing"`
 	Logger              *LoggerConfig              `yaml:"logger" json:"logger,omitempty" property:"logger"`
 	Shutdown            *ShutdownConfig            `yaml:"shutdown" json:"shutdown,omitempty" property:"shutdown"`
@@ -155,9 +155,10 @@ func (rc *RootConfig) Init() error {
 	// init protocol
 	protocols := rc.Protocols
 	if len(protocols) <= 0 {
-		protocol := &ProtocolConfig{}
+		protocol := ProtocolConfig{}
 		protocols = make(map[string]*ProtocolConfig, 1)
-		protocols[constant.Dubbo] = protocol
+		// todo, default value should be determined in a unified way
+		protocols["tri"] = &protocol
 		rc.Protocols = protocols
 	}
 	for _, protocol := range protocols {
@@ -179,7 +180,7 @@ func (rc *RootConfig) Init() error {
 	if err := rc.Otel.Init(rc.Application); err != nil {
 		return err
 	}
-	if err := rc.Metric.Init(rc); err != nil {
+	if err := rc.Metrics.Init(rc); err != nil {
 		return err
 	}
 	for _, t := range rc.Tracing {
@@ -229,7 +230,7 @@ func newEmptyRootConfig() *RootConfig {
 		Provider:       NewProviderConfigBuilder().Build(),
 		Consumer:       NewConsumerConfigBuilder().Build(),
 		Otel:           NewOtelConfigBuilder().Build(),
-		Metric:         NewMetricConfigBuilder().Build(),
+		Metrics:        NewMetricConfigBuilder().Build(),
 		Logger:         NewLoggerConfigBuilder().Build(),
 		Custom:         NewCustomConfigBuilder().Build(),
 		Shutdown:       NewShutDownConfigBuilder().Build(),
@@ -291,8 +292,8 @@ func (rb *RootConfigBuilder) SetOtel(otel *OtelConfig) *RootConfigBuilder {
 	return rb
 }
 
-func (rb *RootConfigBuilder) SetMetric(metric *MetricConfig) *RootConfigBuilder {
-	rb.rootConfig.Metric = metric
+func (rb *RootConfigBuilder) SetMetric(metric *MetricsConfig) *RootConfigBuilder {
+	rb.rootConfig.Metrics = metric
 	return rb
 }
 
@@ -419,5 +420,5 @@ func (rc *RootConfig) Process(event *config_center.ConfigChangeEvent) {
 	rc.Logger.DynamicUpdateProperties(updateRootConfig.Logger)
 
 	// dynamically update metric
-	rc.Metric.DynamicUpdateProperties(updateRootConfig.Metric)
+	rc.Metrics.DynamicUpdateProperties(updateRootConfig.Metrics)
 }

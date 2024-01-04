@@ -44,11 +44,12 @@ type RPCInvocation struct {
 	parameterTypeNames []string
 	parameterTypes     []reflect.Type
 
-	parameterValues []reflect.Value
-	arguments       []interface{}
-	reply           interface{}
-	callBack        interface{}
-	attachments     map[string]interface{}
+	parameterValues    []reflect.Value
+	parameterRawValues []interface{}
+	arguments          []interface{}
+	reply              interface{}
+	callBack           interface{}
+	attachments        map[string]interface{}
 	// Refer to dubbo 2.7.6.  It is different from attachment. It is used in internal process.
 	attributes map[string]interface{}
 	invoker    protocol.Invoker
@@ -112,6 +113,10 @@ func (r *RPCInvocation) ParameterTypeNames() []string {
 // ParameterValues gets RPC invocation parameter values.
 func (r *RPCInvocation) ParameterValues() []reflect.Value {
 	return r.parameterValues
+}
+
+func (r *RPCInvocation) ParameterRawValues() []interface{} {
+	return r.parameterRawValues
 }
 
 // Arguments gets RPC arguments.
@@ -295,6 +300,13 @@ func WithParameterValues(parameterValues []reflect.Value) option {
 	}
 }
 
+// WithParameterRawValues creates option with @parameterRawValues
+func WithParameterRawValues(parameterRawValues []interface{}) option {
+	return func(invo *RPCInvocation) {
+		invo.parameterRawValues = parameterRawValues
+	}
+}
+
 // WithArguments creates option with @arguments function.
 func WithArguments(arguments []interface{}) option {
 	return func(invo *RPCInvocation) {
@@ -320,6 +332,16 @@ func WithCallBack(callBack interface{}) option {
 func WithAttachments(attachments map[string]interface{}) option {
 	return func(invo *RPCInvocation) {
 		invo.attachments = attachments
+	}
+}
+
+// WithAttachment put a key-value pair into attachments.
+func WithAttachment(k string, v interface{}) option {
+	return func(invo *RPCInvocation) {
+		if invo.attachments == nil {
+			invo.attachments = make(map[string]interface{})
+		}
+		invo.attachments[k] = v
 	}
 }
 

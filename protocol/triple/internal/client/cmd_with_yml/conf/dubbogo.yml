@@ -1,0 +1,7 @@
+# dubbo client yaml configure file
+dubbo:
+  registries:
+    demoZK:
+      protocol: zookeeper
+      timeout: 3s
+      address: 127.0.0.1:2181

@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+// Package imports is a one-stop collection of Dubbo SPI implementations that aims to help users with plugin installation
+// by leveraging Go package initialization.
 package imports
 
 import (
@@ -70,12 +72,11 @@ import (
 	_ "dubbo.apache.org/dubbo-go/v3/otel/trace/stdout"
 	_ "dubbo.apache.org/dubbo-go/v3/otel/trace/zipkin"
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/dubbo"
-	_ "dubbo.apache.org/dubbo-go/v3/protocol/dubbo3"
-	_ "dubbo.apache.org/dubbo-go/v3/protocol/dubbo3/health"
-	_ "dubbo.apache.org/dubbo-go/v3/protocol/dubbo3/reflection"
-	_ "dubbo.apache.org/dubbo-go/v3/protocol/grpc"
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/jsonrpc"
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/rest"
+	_ "dubbo.apache.org/dubbo-go/v3/protocol/triple"
+	_ "dubbo.apache.org/dubbo-go/v3/protocol/triple/health"
+	_ "dubbo.apache.org/dubbo-go/v3/protocol/triple/reflection"
 	_ "dubbo.apache.org/dubbo-go/v3/proxy/proxy_factory"
 	_ "dubbo.apache.org/dubbo-go/v3/registry/directory"
 	_ "dubbo.apache.org/dubbo-go/v3/registry/etcdv3"

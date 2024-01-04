@@ -136,6 +136,16 @@ const (
 	RetryTimesKey                      = "retry.times"
 	CycleReportKey                     = "cycle.report"
 	DefaultBlackListRecoverBlock       = 16
+	CallTypeKey                        = "call-type"
+	CallUnary                          = "unary"
+	CallClientStream                   = "client-stream"
+	CallServerStream                   = "server-stream"
+	CallBidiStream                     = "bidi-stream"
+	CallHTTPTypeKey                    = "call-http-type"
+	CallHTTP                           = "http"
+	CallHTTP2                          = "http2"
+	ServiceInfoKey                     = "service-info"
+	ClientInfoKey                      = "client-info"
 )
 
 const (
@@ -379,13 +389,13 @@ const (
 
 // reflection service
 const (
-	ReflectionServiceTypeName  = "DubbogoServerReflectionServer"
+	ReflectionServiceTypeName  = "ReflectionServer"
 	ReflectionServiceInterface = "grpc.reflection.v1alpha.ServerReflection"
 )
 
 // healthcheck service
 const (
-	HealthCheckServiceTypeName  = "DubbogoHealthServer"
+	HealthCheckServiceTypeName  = "HealthCheckServer"
 	HealthCheckServiceInterface = "grpc.health.v1.Health"
 )
 

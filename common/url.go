@@ -114,20 +114,12 @@ type URL struct {
 	Username string
 	Password string
 	Methods  []string
+
+	attributesLock sync.RWMutex
+	// attributes should not be transported
+	attributes map[string]interface{} `hessian:"-"`
 	// special for registry
-	SubURL     *URL
-	attributes sync.Map
-}
-
-func (c *URL) AddAttribute(key string, value interface{}) {
-	if value != nil {
-		c.attributes.Store(key, value)
-	}
-}
-
-func (c *URL) GetAttribute(key string) interface{} {
-	v, _ := c.attributes.Load(key)
-	return v
+	SubURL *URL
 }
 
 // JavaClassName POJO for URL
@@ -227,6 +219,16 @@ func WithToken(token string) Option {
 			}
 			url.SetParam(constant.TokenKey, value)
 		}
+	}
+}
+
+// WithAttribute sets attribute for URL
+func WithAttribute(key string, attribute interface{}) Option {
+	return func(url *URL) {
+		if url.attributes == nil {
+			url.attributes = make(map[string]interface{})
+		}
+		url.attributes[key] = attribute
 	}
 }
 
@@ -532,6 +534,22 @@ func (c *URL) SetParam(key string, value string) {
 	c.params.Set(key, value)
 }
 
+func (c *URL) SetAttribute(key string, value interface{}) {
+	c.attributesLock.Lock()
+	defer c.attributesLock.Unlock()
+	if c.attributes == nil {
+		c.attributes = make(map[string]interface{})
+	}
+	c.attributes[key] = value
+}
+
+func (c *URL) GetAttribute(key string) (interface{}, bool) {
+	c.attributesLock.RLock()
+	defer c.attributesLock.RUnlock()
+	r, ok := c.attributes[key]
+	return r, ok
+}
+
 // DelParam will delete the given key from the URL
 func (c *URL) DelParam(key string) {
 	c.paramsLock.Lock()
@@ -754,20 +772,20 @@ func (c *URL) ToMap() map[string]string {
 // TODO configuration merge, in the future , the configuration center's config should merge too.
 
 // MergeURL will merge those two URL
-// the result is based on serviceURL, and the key which si only contained in referenceURL
+// the result is based on c, and the key which si only contained in anotherUrl
 // will be added into result.
-// for example, if serviceURL contains params (a1->v1, b1->v2) and referenceURL contains params(a2->v3, b1 -> v4)
+// for example, if c contains params (a1->v1, b1->v2) and anotherUrl contains params(a2->v3, b1 -> v4)
 // the params of result will be (a1->v1, b1->v2, a2->v3).
 // You should notice that the value of b1 is v2, not v4
 // except constant.LoadbalanceKey, constant.ClusterKey, constant.RetriesKey, constant.TimeoutKey.
 // due to URL is not thread-safe, so this method is not thread-safe
-func MergeURL(serviceURL *URL, referenceURL *URL) *URL {
+func (c *URL) MergeURL(anotherUrl *URL) *URL {
 	// After Clone, it is a new URL that there is no thread safe issue.
-	mergedURL := serviceURL.Clone()
+	mergedURL := c.Clone()
 	params := mergedURL.GetParams()
-	// iterator the referenceURL if serviceURL not have the key ,merge in
-	// referenceURL usually will not changed. so change RangeParams to GetParams to avoid the string value copy.// Group get group
-	for key, value := range referenceURL.GetParams() {
+	// iterator the anotherUrl if c not have the key ,merge in
+	// anotherUrl usually will not changed. so change RangeParams to GetParams to avoid the string value copy.// Group get group
+	for key, value := range anotherUrl.GetParams() {
 		if _, ok := mergedURL.GetNonDefaultParam(key); !ok {
 			if len(value) > 0 {
 				params[key] = value
@@ -778,24 +796,35 @@ func MergeURL(serviceURL *URL, referenceURL *URL) *URL {
 	}
 
 	// remote timestamp
-	if v, ok := serviceURL.GetNonDefaultParam(constant.TimestampKey); !ok {
+	if v, ok := c.GetNonDefaultParam(constant.TimestampKey); !ok {
 		params[constant.RemoteTimestampKey] = []string{v}
-		params[constant.TimestampKey] = []string{referenceURL.GetParam(constant.TimestampKey, "")}
+		params[constant.TimestampKey] = []string{anotherUrl.GetParam(constant.TimestampKey, "")}
 	}
 
 	// finally execute methodConfigMergeFcn
-	for _, method := range referenceURL.Methods {
+	mergedURL.Methods = make([]string, len(anotherUrl.Methods))
+	for i, method := range anotherUrl.Methods {
 		for _, paramKey := range []string{constant.LoadbalanceKey, constant.ClusterKey, constant.RetriesKey, constant.TimeoutKey} {
-			if v := referenceURL.GetParam(paramKey, ""); len(v) > 0 {
+			if v := anotherUrl.GetParam(paramKey, ""); len(v) > 0 {
 				params[paramKey] = []string{v}
 			}
 
 			methodsKey := "methods." + method + "." + paramKey
 			//if len(mergedURL.GetParam(methodsKey, "")) == 0 {
-			if v := referenceURL.GetParam(methodsKey, ""); len(v) > 0 {
+			if v := anotherUrl.GetParam(methodsKey, ""); len(v) > 0 {
 				params[methodsKey] = []string{v}
 			}
 			//}
+			mergedURL.Methods[i] = method
+		}
+	}
+	// merge attributes
+	if mergedURL.attributes == nil {
+		mergedURL.attributes = make(map[string]interface{}, len(anotherUrl.attributes))
+	}
+	for attrK, attrV := range anotherUrl.attributes {
+		if _, ok := mergedURL.GetAttribute(attrK); !ok {
+			mergedURL.attributes[attrK] = attrV
 		}
 	}
 	// In this way, we will raise some performance.

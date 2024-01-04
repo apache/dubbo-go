@@ -63,7 +63,7 @@ deps: prepare
 
 .PHONY: license
 license: clean prepareLic
-	$(GO_LICENSE_CHECKER) -v -a -r -i vendor $(LICENSE_DIR)/license.txt . go && [[ -z `git status -s` ]]
+	$(GO_LICENSE_CHECKER) -v -a -r -i vendor,protocol/triple/triple_protocol,protocol/triple/reflection,cmd/protoc-gen-go-triple/internal $(LICENSE_DIR)/license.txt . go && [[ -z `git status -s` ]]
 
 .PHONY: verify
 verify: clean license test
@@ -72,6 +72,22 @@ verify: clean license test
 fmt:
 	$(GO_GET) -u github.com/dubbogo/tools/cmd/imports-formatter
 	imports-formatter
+
+LOCALBIN ?= $(shell pwd)/bin
+$(LOCALBIN):
+	mkdir -p $(LOCALBIN)
+GOLANG_LINT_VERSION ?= v1.44.2
+GOLANG_LINT ?= $(LOCALBIN)/golangci-lint
+GOLANG_LINT_INSTALL_SCRIPT ?= "https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh"
+
+.PHONY: golangci-lint-install
+golangci-lint-install: $(LOCALBIN) ## Download golangci lint locally if necessary.
+	test -s $(LOCALBIN)/golangci-lint  && $(LOCALBIN)/golangci-lint --version | grep -q $(GOLANG_LINT_VERSION) || \
+	GOBIN=$(LOCALBIN) go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANG_LINT_VERSION)
+
+.PHONY: lint
+lint: golangci-lint-install  ## Run golang lint against code
+	GO111MODULE=on $(GOLANG_LINT) run ./... --timeout=30m -v
 
 .PHONY: clean
 clean: prepare

@@ -18,10 +18,11 @@
 package constant
 
 const (
-	LoadBalanceKeyConsistentHashing = "consistenthashing"
-	LoadBalanceKeyLeastActive       = "leastactive"
-	LoadBalanceKeyRandom            = "random"
-	LoadBalanceKeyRoundRobin        = "roundrobin"
-	LoadBalanceKeyP2C               = "p2c"
-	LoadXDSRingHash                 = "xdsringhash"
+	LoadBalanceKeyConsistentHashing             = "consistenthashing"
+	LoadBalanceKeyLeastActive                   = "leastactive"
+	LoadBalanceKeyRandom                        = "random"
+	LoadBalanceKeyRoundRobin                    = "roundrobin"
+	LoadBalanceKeyP2C                           = "p2c"
+	LoadXDSRingHash                             = "xdsringhash"
+	LoadBalanceKeyInterleavedWeightedRoundRobin = "interleavedweightedroundrobin"
 )

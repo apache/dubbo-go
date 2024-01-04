@@ -184,7 +184,7 @@ func (dir *RegistryDirectory) refreshAllInvokers(events []*registry.ServiceEvent
 		// Originally it will Merge URL many times, now we just execute once.
 		// MergeURL is executed once and put the result into Event. After this, the key will get from Event.Key().
 		newUrl := dir.convertUrl(event)
-		newUrl = common.MergeURL(newUrl, referenceUrl)
+		newUrl = newUrl.MergeURL(referenceUrl)
 		dir.overrideUrl(newUrl)
 		event.Update(newUrl)
 	}
@@ -249,7 +249,7 @@ func (dir *RegistryDirectory) invokerCacheKey(event *registry.ServiceEvent) stri
 		return event.Key()
 	}
 	referenceUrl := dir.GetDirectoryUrl().SubURL
-	newUrl := common.MergeURL(event.Service, referenceUrl)
+	newUrl := event.Service.MergeURL(referenceUrl)
 	event.Update(newUrl)
 	return event.Key()
 }
@@ -391,7 +391,7 @@ func (dir *RegistryDirectory) cacheInvoker(url *common.URL, event *registry.Serv
 	}
 	// check the url's protocol is equal to the protocol which is configured in reference config or referenceUrl is not care about protocol
 	if url.Protocol == referenceUrl.Protocol || referenceUrl.Protocol == "" {
-		newUrl := common.MergeURL(url, referenceUrl)
+		newUrl := url.MergeURL(referenceUrl)
 		dir.overrideUrl(newUrl)
 		event.Update(newUrl)
 		if v, ok := dir.doCacheInvoker(newUrl, event); ok {
