@@ -21,10 +21,19 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/registry"
+	"github.com/dubbogo/gost/log/logger"
 )
 
 // RegisterServiceInstance register service instance
 func RegisterServiceInstance() error {
+	defer func() {
+		// TODO remove this recover func,this just to avoid some unit test failed,this will not happen in user side mostly
+		// config test -> metadata exporter -> dubbo protocol/remoting -> config,cycle import will occur
+		// some day we fix the cycle import then can remove this recover
+		if err := recover(); err != nil {
+			logger.Errorf("register service instance failed,please check if registry protocol is imported, error: %v", err)
+		}
+	}()
 	protocol := extension.GetProtocol(constant.RegistryKey)
 	if rf, ok := protocol.(registry.RegistryFactory); ok {
 		for _, r := range rf.GetRegistries() {

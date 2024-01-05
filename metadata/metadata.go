@@ -42,6 +42,14 @@ func ExportMetadataService(app, metadataType string) {
 	exportOnce.Do(func() {
 		if metadataType != constant.RemoteMetadataStorageType {
 			exporter := &ServiceExporter{app: app, metadataType: metadataType, service: metadataService}
+			defer func() {
+				// TODO remove this recover func,this just to avoid some unit test failed,this will not happen in user side mostly
+				// config test -> metadata exporter -> dubbo protocol/remoting -> config,cycle import will occur
+				// some day we fix the cycle import then can remove this recover
+				if err := recover(); err != nil {
+					logger.Errorf("metadata export failed,please check if dubbo protocol is imported, error: %v", err)
+				}
+			}()
 			err := exporter.Export()
 			if err != nil {
 				logger.Errorf("export metadata service failed, got error %#v", err)
