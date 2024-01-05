@@ -101,10 +101,19 @@ func (n *nacosMetadataReport) PublishAppMetadata(metadataIdentifier *identifier.
 	if err != nil {
 		return err
 	}
-	// same with java impl
-	return n.storeMetadata(vo.ConfigParam{
+	// compatible with java impl
+	err = n.storeMetadata(vo.ConfigParam{
 		DataId:  metadataIdentifier.Application,
 		Group:   metadataIdentifier.Revision,
+		Content: string(data),
+	})
+	if err != nil {
+		return err
+	}
+	// compatible with dubbo-go 3.1.x before
+	return n.storeMetadata(vo.ConfigParam{
+		DataId:  metadataIdentifier.GetIdentifierKey(),
+		Group:   n.group,
 		Content: string(data),
 	})
 }
