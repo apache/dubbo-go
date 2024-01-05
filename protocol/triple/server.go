@@ -27,6 +27,8 @@ import (
 import (
 	"github.com/dubbogo/gost/log/logger"
 
+	grpc_go "github.com/dubbogo/grpc-go"
+
 	"github.com/dustin/go-humanize"
 
 	"google.golang.org/grpc"
@@ -174,9 +176,10 @@ func (s *Server) compatHandleService(interfaceName string, group, version string
 		if !ok {
 			info := createServiceInfoWithReflection(service)
 			s.handleServiceWithInfo(interfaceName, invoker, info, opts...)
+			s.saveServiceInfo(interfaceName, info)
 			continue
 		}
-
+		s.compatSaveServiceInfo(ds.XXX_ServiceDesc())
 		// inject invoker, it has all invocation logics
 		ds.XXX_SetProxyImpl(invoker)
 		s.compatRegisterHandler(interfaceName, ds, opts...)
@@ -316,6 +319,31 @@ func (s *Server) saveServiceInfo(interfaceName string, info *server.ServiceInfo)
 	defer s.mu.Unlock()
 	// todo(DMwangnima): using interfaceName is not enough, we need to consider group and version
 	s.services[interfaceName] = ret
+}
+
+func (s *Server) compatSaveServiceInfo(desc *grpc_go.ServiceDesc) {
+	ret := grpc.ServiceInfo{}
+	ret.Methods = make([]grpc.MethodInfo, 0, len(desc.Streams)+len(desc.Methods))
+	for _, method := range desc.Methods {
+		md := grpc.MethodInfo{
+			Name:           method.MethodName,
+			IsClientStream: false,
+			IsServerStream: false,
+		}
+		ret.Methods = append(ret.Methods, md)
+	}
+	for _, stream := range desc.Streams {
+		md := grpc.MethodInfo{
+			Name:           stream.StreamName,
+			IsClientStream: stream.ClientStreams,
+			IsServerStream: stream.ServerStreams,
+		}
+		ret.Methods = append(ret.Methods, md)
+	}
+	ret.Metadata = desc.Metadata
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.services[desc.ServiceName] = ret
 }
 
 func (s *Server) GetServiceInfo() map[string]grpc.ServiceInfo {
