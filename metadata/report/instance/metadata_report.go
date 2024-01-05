@@ -54,7 +54,7 @@ func Init(urls []*common.URL, metaType string) {
 					key := url.GetParam(constant.RegistryKey, constant.DefaultKey)
 					instances[key] = &DelegateMetadataReport{instance: fac.CreateMetadataReport(url)}
 				} else {
-					logger.Warnf("metadata report instance is not found, url: %s", url.String())
+					logger.Warnf("metadata report factory is not found, url: %s", url.String())
 				}
 			}
 		}
