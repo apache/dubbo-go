@@ -263,7 +263,10 @@ func (si *ServiceInfo) GetParams() url.Values {
 	if len(methodNames) == 0 {
 		return v
 	}
-	methods := gxset.NewSet(strings.Split(si.Params[constant.MethodsKey], ","))
+	methods := gxset.NewSet()
+	for _, method := range strings.Split(si.Params[constant.MethodsKey], ",") {
+		methods.Add(method)
+	}
 	for k, p := range si.Params {
 		ms := strings.Index(k, ".")
 		if ms > 0 && methods.Contains(k[0:ms]) {
