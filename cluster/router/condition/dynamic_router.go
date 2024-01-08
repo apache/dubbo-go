@@ -124,7 +124,7 @@ func (s *ServiceRouter) Notify(invokers []protocol.Invoker) {
 
 	dynamicConfiguration := conf.GetEnvInstance().GetDynamicConfiguration()
 	if dynamicConfiguration == nil {
-		logger.Warnf("config center does not start, please check if the configuration center has been properly configured in dubbogo.yml")
+		logger.Infof("Config center does not start, Condition router will not be enabled")
 		return
 	}
 	key := strings.Join([]string{url.ColonSeparatedKey(), constant.ConditionRouterRuleSuffix}, "")
@@ -171,6 +171,13 @@ func (a *ApplicationRouter) Notify(invokers []protocol.Invoker) {
 		logger.Error("Failed to notify a dynamically condition rule, because url is empty")
 		return
 	}
+
+	dynamicConfiguration := conf.GetEnvInstance().GetDynamicConfiguration()
+	if dynamicConfiguration == nil {
+		logger.Infof("Config center does not start, Condition router will not be enabled")
+		return
+	}
+
 	providerApplicaton := url.GetParam("application", "")
 	if providerApplicaton == "" || providerApplicaton == a.currentApplication {
 		logger.Warn("condition router get providerApplication is empty, will not subscribe to provider app rules.")
@@ -181,12 +188,6 @@ func (a *ApplicationRouter) Notify(invokers []protocol.Invoker) {
 	defer a.mu.Unlock()
 
 	if providerApplicaton != a.application {
-		dynamicConfiguration := conf.GetEnvInstance().GetDynamicConfiguration()
-		if dynamicConfiguration == nil {
-			logger.Warnf("config center does not start, please check if the configuration center has been properly configured in dubbogo.yml")
-			return
-		}
-
 		if a.application != "" {
 			dynamicConfiguration.RemoveListener(strings.Join([]string{a.application, constant.ConditionRouterRuleSuffix}, ""), a)
 		}
