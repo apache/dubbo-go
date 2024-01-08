@@ -24,6 +24,8 @@ import (
 import (
 	gxset "github.com/dubbogo/gost/container/set"
 	"github.com/dubbogo/gost/log/logger"
+
+	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -36,7 +38,6 @@ import (
 
 const (
 	DefaultGroup = "mapping"
-	slash        = "/"
 	retryTimes   = 10
 )
 
@@ -66,19 +67,23 @@ type ServiceNameMapping struct {
 func (d *ServiceNameMapping) Map(url *common.URL) error {
 	serviceInterface := url.GetParam(constant.InterfaceKey, "")
 	appName := url.GetParam(constant.ApplicationKey, "")
-	metadataReport := instance.GetMetadataReportByRegistry(url.GetParam(constant.RegistryIdKey, ""))
-	if metadataReport == nil {
-		logger.Warn("get metadata report instance is nil")
+	// url is the service url,not the registry url,this url has no registry id info,can not got where to write mapping,so write all
+	// if the mapping can hold a report instance, it can write once
+	metadataReports := instance.GetMetadataReports()
+	if len(metadataReports) == 0 {
+		return perrors.New("can not registering mapping to remote cause no metadata report instance found")
 	} else {
-		var err error
-		for i := 0; i < retryTimes; i++ {
-			err = metadataReport.RegisterServiceAppMapping(serviceInterface, DefaultGroup, appName)
-			if err == nil {
-				break
+		for _, metadataReport := range metadataReports {
+			var err error
+			for i := 0; i < retryTimes; i++ {
+				err = metadataReport.RegisterServiceAppMapping(serviceInterface, DefaultGroup, appName)
+				if err == nil {
+					break
+				}
 			}
-		}
-		if err != nil {
-			logger.Errorf("Failed registering mapping to remote, &v", err)
+			if err != nil {
+				logger.Errorf("Failed registering mapping to remote, &v", err)
+			}
 		}
 	}
 	return nil
@@ -87,18 +92,18 @@ func (d *ServiceNameMapping) Map(url *common.URL) error {
 // Get will return the application-level services. If not found, the empty set will be returned.
 func (d *ServiceNameMapping) Get(url *common.URL, listener mapping.MappingListener) (*gxset.HashSet, error) {
 	serviceInterface := url.GetParam(constant.InterfaceKey, "")
-	metadataReport := instance.GetMetadataReportByRegistry(url.GetParam(constant.RegistryIdKey, ""))
+	metadataReport := instance.GetMetadataReport()
 	if metadataReport == nil {
-		return gxset.NewSet(), nil
+		return nil, perrors.New("can not get mapping in remote cause no metadata report instance found")
 	}
 	return metadataReport.GetServiceAppMapping(serviceInterface, DefaultGroup, listener)
 }
 
 func (d *ServiceNameMapping) Remove(url *common.URL) error {
 	serviceInterface := url.GetParam(constant.InterfaceKey, "")
-	metadataReport := instance.GetMetadataReportByRegistry(url.GetParam(constant.RegistryIdKey, ""))
+	metadataReport := instance.GetMetadataReport()
 	if metadataReport == nil {
-		return nil
+		return perrors.New("can not remove mapping in remote cause no metadata report instance found")
 	}
 	return metadataReport.RemoveServiceAppMappingListener(serviceInterface, DefaultGroup)
 }

@@ -188,8 +188,7 @@ func (s *Server) Serve() error {
 		return err
 	}
 	metadata.ExportMetadataService(s.cfg.Application.Name, s.cfg.Application.MetadataType)
-	err := exposed_tmp.RegisterServiceInstance()
-	if err != nil {
+	if err := exposed_tmp.RegisterServiceInstance(); err != nil {
 		return err
 	}
 	select {}

@@ -31,7 +31,7 @@ type MetadataReport interface {
 	// GetAppMetadata get metadata info from report
 	GetAppMetadata(application, revision string) (*info.MetadataInfo, error)
 
-	// PublishAppMetadata publish metadata info to reportss
+	// PublishAppMetadata publish metadata info to report
 	PublishAppMetadata(application, revision string, info *info.MetadataInfo) error
 
 	// RegisterServiceAppMapping map the specified Dubbo service interface to current Dubbo app name

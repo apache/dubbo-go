@@ -93,7 +93,10 @@ func (s *serviceDiscoveryRegistry) RegisterService() error {
 	// consumer has no host and port, so it will not register service
 	if s.instance.GetHost() != "" && s.instance.GetPort() != 0 {
 		metaInfo.CalAndGetRevision()
-		if s.metadataReport != nil {
+		if reportInstance.GetMetadataType() == constant.RemoteMetadataStorageType {
+			if s.metadataReport == nil {
+				return perrors.New("can not publish app metadata cause report instance not found")
+			}
 			err := s.metadataReport.PublishAppMetadata(metaInfo.App, metaInfo.Revision, metaInfo)
 			if err != nil {
 				return err

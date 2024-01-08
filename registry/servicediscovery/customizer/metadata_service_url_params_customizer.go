@@ -56,13 +56,9 @@ func (m *metadataServiceURLParamsMetadataCustomizer) GetPriority() int {
 }
 
 func (m *metadataServiceURLParamsMetadataCustomizer) Customize(instance registry.ServiceInstance) {
-	url, err := metadata.GetMetadataService().GetMetadataServiceURL()
-	if err != nil {
-		logger.Errorf("get metadata service url is error, %v", err)
-		return
-	}
+	url, _ := metadata.GetMetadataService().GetMetadataServiceURL()
 	if url == nil {
-		logger.Errorf("the metadata service url is nil")
+		// when metadata service is not exported the url will be nil,this is because metadata type is remote
 		return
 	}
 	ps := m.convertToParams(url)

@@ -18,6 +18,7 @@
 package info
 
 import (
+	"encoding/json"
 	"testing"
 )
 
@@ -59,12 +60,10 @@ func TestHessian(t *testing.T) {
 	metadataInfo.Services["1"] = NewServiceInfo("dubbo.io", "default", "1.0.0", "dubbo", "", make(map[string]string))
 	e := hessian.NewEncoder()
 	err := e.Encode(metadataInfo)
-	if err != nil {
-		panic(err)
-	}
+	assert.Nil(t, err)
 	obj, err := hessian.NewDecoder(e.Buffer()).Decode()
-	if err != nil {
-		panic(err)
-	}
-	t.Log(obj)
+	assert.Nil(t, err)
+	objJson, _ := json.Marshal(obj)
+	metaJson, _ := json.Marshal(metadataInfo)
+	assert.Equal(t, objJson, metaJson)
 }

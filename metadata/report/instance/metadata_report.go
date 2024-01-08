@@ -75,10 +75,15 @@ func GetMetadataReportByRegistry(registry string) report.MetadataReport {
 	if r, ok := instances[registry]; ok {
 		return r
 	}
+	return GetMetadataReport()
+}
+
+func GetMetadataReports() []report.MetadataReport {
+	reports := make([]report.MetadataReport, 0)
 	for _, r := range instances {
-		return r
+		reports = append(reports, r)
 	}
-	return nil
+	return reports
 }
 
 func GetMetadataType() string {
