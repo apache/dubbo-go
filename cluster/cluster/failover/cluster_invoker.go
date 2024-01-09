@@ -20,15 +20,10 @@ package failover
 import (
 	"context"
 	"fmt"
-)
 
-import (
 	"github.com/dubbogo/gost/log/logger"
-
 	perrors "github.com/pkg/errors"
-)
 
-import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/cluster/base"
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
 	"dubbo.apache.org/dubbo-go/v3/common"
@@ -114,6 +109,12 @@ func getRetries(invokers []protocol.Invoker, methodName string) int {
 		return constant.DefaultRetriesInt
 	}
 	url := invokers[0].GetURL()
-	return url.GetMethodParamIntValue(methodName, constant.RetriesKey,
+
+	retries := url.GetMethodParamIntValue(methodName, constant.RetriesKey,
 		url.GetParamByIntValue(constant.RetriesKey, constant.DefaultRetriesInt))
+
+	if retries <= 0 {
+		return constant.DefaultRetriesInt
+	}
+	return retries
 }
