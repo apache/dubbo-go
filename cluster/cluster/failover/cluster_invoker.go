@@ -113,7 +113,7 @@ func getRetries(invokers []protocol.Invoker, methodName string) int {
 	retries := url.GetMethodParamIntValue(methodName, constant.RetriesKey,
 		url.GetParamByIntValue(constant.RetriesKey, constant.DefaultRetriesInt))
 
-	if retries <= 0 {
+	if retries < 0 {
 		return constant.DefaultRetriesInt
 	}
 	return retries
