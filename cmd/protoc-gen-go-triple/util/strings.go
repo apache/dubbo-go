@@ -26,3 +26,11 @@ func ToUpper(s string) string {
 	}
 	return strings.ToUpper(s[:1]) + s[1:]
 }
+
+// ToLower will lowercase the first character
+func ToLower(s string) string {
+	if s == "" {
+		return ""
+	}
+	return strings.ToLower(s[:1]) + s[1:]
+}

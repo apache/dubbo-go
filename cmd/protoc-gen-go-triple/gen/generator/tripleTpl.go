@@ -23,6 +23,10 @@ import (
 	"strings"
 )
 
+import (
+	"dubbo.apache.org/dubbo-go/v3/cmd/protoc-gen-go-triple/util"
+)
+
 var (
 	Tpls                   []*template.Template
 	TplPreamble            *template.Template
@@ -66,40 +70,20 @@ func init() {
 		log.Fatal(err)
 	}
 	TplClientInterface, err = template.New("clientInterface").Funcs(template.FuncMap{
-		"upper": func(s string) string {
-			if s == "" {
-				return ""
-			}
-			return strings.ToUpper(s[:1]) + s[1:]
-		},
+		"upper": util.ToUpper,
 	}).Parse(InterfaceTpl)
 	if err != nil {
 		log.Fatal(err)
 	}
 	TplClientInterfaceImpl, err = template.New("clientInterfaceImpl").Funcs(template.FuncMap{
-		"lower": func(s string) string {
-			if s == "" {
-				return ""
-			}
-			return strings.ToLower(s[:1]) + s[1:]
-		},
-		"upper": func(s string) string {
-			if s == "" {
-				return ""
-			}
-			return strings.ToUpper(s[:1]) + s[1:]
-		},
+		"lower": util.ToLower,
+		"upper": util.ToUpper,
 	}).Parse(InterfaceImplTpl)
 	if err != nil {
 		log.Fatal(err)
 	}
 	TplClientImpl, err = template.New("clientImpl").Funcs(template.FuncMap{
-		"lower": func(s string) string {
-			if s == "" {
-				return ""
-			}
-			return strings.ToLower(s[:1]) + s[1:]
-		},
+		"lower": util.ToLower,
 	}).Parse(ClientImplTpl)
 	if err != nil {
 		log.Fatal(err)
@@ -113,40 +97,20 @@ func init() {
 		log.Fatal(err)
 	}
 	TplHandler, err = template.New("handler").Funcs(template.FuncMap{
-		"upper": func(s string) string {
-			if s == "" {
-				return ""
-			}
-			return strings.ToUpper(s[:1]) + s[1:]
-		},
+		"upper": util.ToUpper,
 	}).Parse(HandlerTpl)
 	if err != nil {
 		log.Fatal(err)
 	}
 	TplServerImpl, err = template.New("serverImpl").Funcs(template.FuncMap{
-		"lower": func(s string) string {
-			if s == "" {
-				return ""
-			}
-			return strings.ToLower(s[:1]) + s[1:]
-		},
+		"lower": util.ToLower,
 	}).Parse(ServerImplTpl)
 	if err != nil {
 		log.Fatal(err)
 	}
 	TplServerInfo, err = template.New("serverInfo").Funcs(template.FuncMap{
-		"lower": func(s string) string {
-			if s == "" {
-				return ""
-			}
-			return strings.ToLower(s[:1]) + s[1:]
-		},
-		"upper": func(s string) string {
-			if s == "" {
-				return ""
-			}
-			return strings.ToUpper(s[:1]) + s[1:]
-		},
+		"lower": util.ToLower,
+		"upper": util.ToUpper,
 	}).Parse(ServiceInfoTpl)
 	if err != nil {
 		log.Fatal(err)
