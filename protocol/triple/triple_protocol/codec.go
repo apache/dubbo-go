@@ -21,7 +21,7 @@ import (
 	"fmt"
 	hessian "github.com/apache/dubbo-go-hessian2"
 	"github.com/dubbogo/grpc-go/encoding"
-	"github.com/dubbogo/grpc-go/encoding/proto_wrapper_api"
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/interoperability"
 	"github.com/dubbogo/grpc-go/encoding/tools"
 )
 
@@ -207,7 +207,7 @@ func (c *protoWrapperCodec) Marshal(message interface{}) ([]byte, error) {
 		reqsTypes[i] = encoding.GetArgType(req)
 	}
 
-	wrapperReq := &proto_wrapper_api.TripleRequestWrapper{
+	wrapperReq := &interoperability.TripleRequestWrapper{
 		SerializeType: c.innerCodec.Name(),
 		Args:          reqsBytes,
 		ArgTypes:      reqsTypes,
@@ -222,7 +222,7 @@ func (c *protoWrapperCodec) Unmarshal(binary []byte, message interface{}) error 
 		return c.innerCodec.Unmarshal(binary, message)
 	}
 
-	var wrapperReq proto_wrapper_api.TripleRequestWrapper
+	var wrapperReq interoperability.TripleRequestWrapper
 	if err := proto.Unmarshal(binary, &wrapperReq); err != nil {
 		return err
 	}
