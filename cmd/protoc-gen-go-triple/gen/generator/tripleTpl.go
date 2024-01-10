@@ -65,7 +65,14 @@ func init() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	TplClientInterface, err = template.New("clientInterface").Parse(InterfaceTpl)
+	TplClientInterface, err = template.New("clientInterface").Funcs(template.FuncMap{
+		"upper": func(s string) string {
+			if s == "" {
+				return ""
+			}
+			return strings.ToUpper(s[:1]) + s[1:]
+		},
+	}).Parse(InterfaceTpl)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -75,6 +82,12 @@ func init() {
 				return ""
 			}
 			return strings.ToLower(s[:1]) + s[1:]
+		},
+		"upper": func(s string) string {
+			if s == "" {
+				return ""
+			}
+			return strings.ToUpper(s[:1]) + s[1:]
 		},
 	}).Parse(InterfaceImplTpl)
 	if err != nil {
@@ -99,7 +112,14 @@ func init() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	TplHandler, err = template.New("handler").Parse(HandlerTpl)
+	TplHandler, err = template.New("handler").Funcs(template.FuncMap{
+		"upper": func(s string) string {
+			if s == "" {
+				return ""
+			}
+			return strings.ToUpper(s[:1]) + s[1:]
+		},
+	}).Parse(HandlerTpl)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -120,6 +140,12 @@ func init() {
 				return ""
 			}
 			return strings.ToLower(s[:1]) + s[1:]
+		},
+		"upper": func(s string) string {
+			if s == "" {
+				return ""
+			}
+			return strings.ToUpper(s[:1]) + s[1:]
 		},
 	}).Parse(ServiceInfoTpl)
 	if err != nil {
@@ -202,7 +228,7 @@ const TypeCheckTpl = `var ({{$t := .}}{{range $s := .Services}}
 
 const InterfaceTpl = `// {{$t := .}}{{range $s := .Services}}{{.ServiceName}} is a client for the {{$t.ProtoPackage}}.{{$s.ServiceName}} service.
 type {{$s.ServiceName}} interface { {{- range $s.Methods}}
-	{{.MethodName}}(ctx context.Context{{if .StreamsRequest}}{{else}}, req *{{.RequestType}}{{end}}, opts ...client.CallOption) {{if or .StreamsReturn .StreamsRequest}}({{$s.ServiceName}}_{{.MethodName}}Client, error){{else}}(*{{.ReturnType}}, error){{end}}{{end}}
+	{{upper .MethodName}}(ctx context.Context{{if .StreamsRequest}}{{else}}, req *{{.RequestType}}{{end}}, opts ...client.CallOption) {{if or .StreamsReturn .StreamsRequest}}({{$s.ServiceName}}_{{.MethodName}}Client, error){{else}}(*{{.ReturnType}}, error){{end}}{{end}}
 }{{end}}
 
 `
@@ -227,7 +253,7 @@ type {{.ServiceName}}Impl struct {
 	conn *client.Connection
 }
 {{range .Methods}}{{if .StreamsRequest}}{{if .StreamsReturn}}
-func (c *{{$s.ServiceName}}Impl) {{.MethodName}}(ctx context.Context, opts ...client.CallOption) ({{$s.ServiceName}}_{{.MethodName}}Client, error) {
+func (c *{{$s.ServiceName}}Impl) {{upper .MethodName}}(ctx context.Context, opts ...client.CallOption) ({{$s.ServiceName}}_{{.MethodName}}Client, error) {
 	stream, err := c.conn.CallBidiStream(ctx, "{{.MethodName}}", opts...)
 	if err != nil {
 		return nil, err
@@ -236,7 +262,7 @@ func (c *{{$s.ServiceName}}Impl) {{.MethodName}}(ctx context.Context, opts ...cl
 	return &{{$s.ServiceName}}{{.MethodName}}Client{rawStream}, nil
 }
 {{else}}
-func (c *{{$s.ServiceName}}Impl) {{.MethodName}}(ctx context.Context, opts ...client.CallOption) ({{$s.ServiceName}}_{{.MethodName}}Client, error) {
+func (c *{{$s.ServiceName}}Impl) {{upper .MethodName}}(ctx context.Context, opts ...client.CallOption) ({{$s.ServiceName}}_{{.MethodName}}Client, error) {
 	stream, err := c.conn.CallClientStream(ctx, "{{.MethodName}}", opts...)
 	if err != nil {
 		return nil, err
@@ -245,7 +271,7 @@ func (c *{{$s.ServiceName}}Impl) {{.MethodName}}(ctx context.Context, opts ...cl
 	return &{{$s.ServiceName}}{{.MethodName}}Client{rawStream}, nil
 }
 {{end}}{{else}}{{if .StreamsReturn}}
-func (c *{{$s.ServiceName}}Impl) {{.MethodName}}(ctx context.Context, req *{{.RequestType}}, opts ...client.CallOption) ({{$s.ServiceName}}_{{.MethodName}}Client, error) {
+func (c *{{$s.ServiceName}}Impl) {{upper .MethodName}}(ctx context.Context, req *{{.RequestType}}, opts ...client.CallOption) ({{$s.ServiceName}}_{{.MethodName}}Client, error) {
 	stream, err := c.conn.CallServerStream(ctx, req, "{{.MethodName}}", opts...)
 	if err != nil {
 		return nil, err
@@ -254,7 +280,7 @@ func (c *{{$s.ServiceName}}Impl) {{.MethodName}}(ctx context.Context, req *{{.Re
 	return &{{$s.ServiceName}}{{.MethodName}}Client{rawStream}, nil
 }
 {{else}}
-func (c *{{$s.ServiceName}}Impl) {{.MethodName}}(ctx context.Context, req *{{.RequestType}}, opts ...client.CallOption) (*{{.ReturnType}}, error) {
+func (c *{{$s.ServiceName}}Impl) {{upper .MethodName}}(ctx context.Context, req *{{.RequestType}}, opts ...client.CallOption) (*{{.ReturnType}}, error) {
 	resp := new({{.ReturnType}})
 	if err := c.conn.CallUnary(ctx, []interface{}{req}, resp, "{{.MethodName}}", opts...); err != nil {
 		return nil, err
@@ -369,7 +395,7 @@ const MethodInfoTpl = `{{$t := .}}{{range $i, $s := .Services}}var {{.ServiceNam
 
 const HandlerTpl = `{{$t := .}}{{range $s := .Services}}// {{.ServiceName}}Handler is an implementation of the {{$t.ProtoPackage}}.{{.ServiceName}} service.
 type {{.ServiceName}}Handler interface { {{- range $s.Methods}}
-	{{.MethodName}}(context.Context, {{if .StreamsRequest}}{{$s.ServiceName}}_{{.MethodName}}Server{{else}}*{{.RequestType}}{{if .StreamsReturn}}, {{$s.ServiceName}}_{{.MethodName}}Server{{end}}{{end}}) {{if .StreamsReturn}}error{{else}}(*{{.ReturnType}}, error){{end}}{{end}}
+	{{upper .MethodName}}(context.Context, {{if .StreamsRequest}}{{$s.ServiceName}}_{{.MethodName}}Server{{else}}*{{.RequestType}}{{if .StreamsReturn}}, {{$s.ServiceName}}_{{.MethodName}}Server{{end}}{{end}}) {{if .StreamsReturn}}error{{else}}(*{{.ReturnType}}, error){{end}}{{end}}
 }
 
 func Register{{.ServiceName}}Handler(srv *server.Server, hdlr {{.ServiceName}}Handler, opts ...server.ServiceOption) error {
@@ -465,7 +491,7 @@ const ServiceInfoTpl = `{{$t := .}}{{range $s := .Services}}var {{.ServiceName}}
 			},
 			MethodFunc: func(ctx context.Context, args []interface{}, handler interface{}) (interface{}, error) {
 				stream := args[0].({{$s.ServiceName}}_{{.MethodName}}Server)
-				if err := handler.({{$s.ServiceName}}Handler).{{.MethodName}}(ctx, stream); err != nil {
+				if err := handler.({{$s.ServiceName}}Handler).{{upper .MethodName}}(ctx, stream); err != nil {
 					return nil, err
 				}
 				return nil, nil
@@ -479,7 +505,7 @@ const ServiceInfoTpl = `{{$t := .}}{{range $s := .Services}}var {{.ServiceName}}
 			},
 			MethodFunc: func(ctx context.Context, args []interface{}, handler interface{}) (interface{}, error) {
 				stream := args[0].({{$s.ServiceName}}_{{.MethodName}}Server)
-				res, err := handler.({{$s.ServiceName}}Handler).{{.MethodName}}(ctx, stream)
+				res, err := handler.({{$s.ServiceName}}Handler).{{upper .MethodName}}(ctx, stream)
 				if err != nil {
 					return nil, err
 				}
@@ -498,7 +524,7 @@ const ServiceInfoTpl = `{{$t := .}}{{range $s := .Services}}var {{.ServiceName}}
 			MethodFunc: func(ctx context.Context, args []interface{}, handler interface{}) (interface{}, error) {
 				req := args[0].(*{{.RequestType}})
 				stream := args[1].({{$s.ServiceName}}_{{.MethodName}}Server)
-				if err := handler.({{$s.ServiceName}}Handler).{{.MethodName}}(ctx, req, stream); err != nil {
+				if err := handler.({{$s.ServiceName}}Handler).{{upper .MethodName}}(ctx, req, stream); err != nil {
 					return nil, err
 				}
 				return nil, nil
@@ -512,7 +538,7 @@ const ServiceInfoTpl = `{{$t := .}}{{range $s := .Services}}var {{.ServiceName}}
 			},
 			MethodFunc: func(ctx context.Context, args []interface{}, handler interface{}) (interface{}, error) {
 				req := args[0].(*{{.RequestType}})
-				res, err := handler.({{$s.ServiceName}}Handler).{{.MethodName}}(ctx, req)
+				res, err := handler.({{$s.ServiceName}}Handler).{{upper .MethodName}}(ctx, req)
 				if err != nil {
 					return nil, err
 				}
