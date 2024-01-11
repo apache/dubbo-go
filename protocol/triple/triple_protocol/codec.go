@@ -205,7 +205,7 @@ func (c *protoWrapperCodec) Marshal(message interface{}) ([]byte, error) {
 			return nil, err
 		}
 		reqsBytes[i] = reqBytes
-		reqsTypes[i] = GetArgType(req)
+		reqsTypes[i] = getArgType(req)
 	}
 
 	wrapperReq := &interoperability.TripleRequestWrapper{
@@ -266,7 +266,7 @@ func (c *hessian2Codec) Unmarshal(binary []byte, message interface{}) error {
 	if err != nil {
 		return err
 	}
-	return ReflectResponse(val, message)
+	return reflectResponse(val, message)
 }
 
 // todo(DMwangnima): add unit tests
@@ -340,7 +340,7 @@ func errNotProto(message interface{}) error {
 }
 
 // Definitions from dubbogo/grpc-go
-func GetArgType(v interface{}) string {
+func getArgType(v interface{}) string {
 	if v == nil {
 		return "V"
 	}
@@ -431,7 +431,7 @@ func GetArgType(v interface{}) string {
 	}
 }
 
-func ReflectResponse(in interface{}, out interface{}) error {
+func reflectResponse(in interface{}, out interface{}) error {
 	if in == nil {
 		return perrors.Errorf("@in is nil")
 	}
@@ -454,9 +454,9 @@ func ReflectResponse(in interface{}, out interface{}) error {
 
 	switch inValue.Type().Kind() {
 	case reflect.Slice, reflect.Array:
-		return CopySlice(inValue, outValue)
+		return copySlice(inValue, outValue)
 	case reflect.Map:
-		return CopyMap(inValue, outValue)
+		return copyMap(inValue, outValue)
 	default:
 		hessian.SetValue(outValue, inValue)
 	}
@@ -464,8 +464,8 @@ func ReflectResponse(in interface{}, out interface{}) error {
 	return nil
 }
 
-// CopySlice copy from inSlice to outSlice
-func CopySlice(inSlice, outSlice reflect.Value) error {
+// copySlice copy from inSlice to outSlice
+func copySlice(inSlice, outSlice reflect.Value) error {
 	if inSlice.IsNil() {
 		return perrors.New("@in is nil")
 	}
@@ -492,8 +492,8 @@ func CopySlice(inSlice, outSlice reflect.Value) error {
 	return nil
 }
 
-// CopyMap copy from in map to out map
-func CopyMap(inMapValue, outMapValue reflect.Value) error {
+// copyMap copy from in map to out map
+func copyMap(inMapValue, outMapValue reflect.Value) error {
 	if inMapValue.IsNil() {
 		return perrors.New("@in is nil")
 	}
