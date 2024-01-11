@@ -16,13 +16,14 @@ package triple_protocol
 
 import (
 	"bytes"
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/interoperability"
 	"encoding/json"
 	"errors"
 	"fmt"
 	hessian "github.com/apache/dubbo-go-hessian2"
-	"github.com/dubbogo/grpc-go/encoding"
-	"github.com/dubbogo/grpc-go/encoding/proto_wrapper_api"
-	"github.com/dubbogo/grpc-go/encoding/tools"
+	perrors "github.com/pkg/errors"
+	"reflect"
+	"time"
 )
 
 import (
@@ -204,10 +205,10 @@ func (c *protoWrapperCodec) Marshal(message interface{}) ([]byte, error) {
 			return nil, err
 		}
 		reqsBytes[i] = reqBytes
-		reqsTypes[i] = encoding.GetArgType(req)
+		reqsTypes[i] = getArgType(req)
 	}
 
-	wrapperReq := &proto_wrapper_api.TripleRequestWrapper{
+	wrapperReq := &interoperability.TripleRequestWrapper{
 		SerializeType: c.innerCodec.Name(),
 		Args:          reqsBytes,
 		ArgTypes:      reqsTypes,
@@ -222,7 +223,7 @@ func (c *protoWrapperCodec) Unmarshal(binary []byte, message interface{}) error 
 		return c.innerCodec.Unmarshal(binary, message)
 	}
 
-	var wrapperReq proto_wrapper_api.TripleRequestWrapper
+	var wrapperReq interoperability.TripleRequestWrapper
 	if err := proto.Unmarshal(binary, &wrapperReq); err != nil {
 		return err
 	}
@@ -265,7 +266,7 @@ func (c *hessian2Codec) Unmarshal(binary []byte, message interface{}) error {
 	if err != nil {
 		return err
 	}
-	return tools.ReflectResponse(val, message)
+	return reflectResponse(val, message)
 }
 
 // todo(DMwangnima): add unit tests
@@ -336,4 +337,194 @@ func errNotProto(message interface{}) error {
 		return fmt.Errorf("%T uses github.com/golang/protobuf, but triple only supports google.golang.org/protobuf: see https://go.dev/blog/protobuf-apiv2", message)
 	}
 	return fmt.Errorf("%T doesn't implement proto.Message", message)
+}
+
+// Definitions from dubbogo/grpc-go
+func getArgType(v interface{}) string {
+	if v == nil {
+		return "V"
+	}
+
+	switch v.(type) {
+	// Serialized tags for base types
+	case nil:
+		return "V"
+	case bool:
+		return "boolean"
+	case []bool:
+		return "[Z"
+	case byte:
+		return "byte"
+	case []byte:
+		return "[B"
+	case int8:
+		return "byte"
+	case []int8:
+		return "[B"
+	case int16:
+		return "short"
+	case []int16:
+		return "[S"
+	case uint16: // Equivalent to Char of Java
+		return "char"
+	case []uint16:
+		return "[C"
+	case int: // Equivalent to Long of Java
+		return "long"
+	case []int:
+		return "[J"
+	case int32:
+		return "int"
+	case []int32:
+		return "[I"
+	case int64:
+		return "long"
+	case []int64:
+		return "[J"
+	case time.Time:
+		return "java.util.Date"
+	case []time.Time:
+		return "[Ljava.util.Date"
+	case float32:
+		return "float"
+	case []float32:
+		return "[F"
+	case float64:
+		return "double"
+	case []float64:
+		return "[D"
+	case string:
+		return "java.lang.String"
+	case []string:
+		return "[Ljava.lang.String;"
+	case []hessian.Object:
+		return "[Ljava.lang.Object;"
+	case map[interface{}]interface{}:
+		// return  "java.util.HashMap"
+		return "java.util.Map"
+	case hessian.POJOEnum:
+		return v.(hessian.POJOEnum).JavaClassName()
+	//  Serialized tags for complex types
+	default:
+		t := reflect.TypeOf(v)
+		if reflect.Ptr == t.Kind() {
+			t = t.Elem()
+		}
+		switch t.Kind() {
+		case reflect.Struct:
+			v, ok := v.(hessian.POJO)
+			if ok {
+				return v.JavaClassName()
+			}
+			return "java.lang.Object"
+		case reflect.Slice, reflect.Array:
+			if t.Elem().Kind() == reflect.Struct {
+				return "[Ljava.lang.Object;"
+			}
+			// return "java.util.ArrayList"
+			return "java.util.List"
+		case reflect.Map: // Enter here, map may be map[string]int
+			return "java.util.Map"
+		default:
+			return ""
+		}
+	}
+}
+
+func reflectResponse(in interface{}, out interface{}) error {
+	if in == nil {
+		return perrors.Errorf("@in is nil")
+	}
+
+	if out == nil {
+		return perrors.Errorf("@out is nil")
+	}
+	if reflect.TypeOf(out).Kind() != reflect.Ptr {
+		return perrors.Errorf("@out should be a pointer")
+	}
+
+	inValue := hessian.EnsurePackValue(in)
+	outValue := hessian.EnsurePackValue(out)
+
+	outType := outValue.Type().String()
+	if outType == "interface {}" || outType == "*interface {}" {
+		hessian.SetValue(outValue, inValue)
+		return nil
+	}
+
+	switch inValue.Type().Kind() {
+	case reflect.Slice, reflect.Array:
+		return copySlice(inValue, outValue)
+	case reflect.Map:
+		return copyMap(inValue, outValue)
+	default:
+		hessian.SetValue(outValue, inValue)
+	}
+
+	return nil
+}
+
+// copySlice copy from inSlice to outSlice
+func copySlice(inSlice, outSlice reflect.Value) error {
+	if inSlice.IsNil() {
+		return perrors.New("@in is nil")
+	}
+	if inSlice.Kind() != reflect.Slice {
+		return perrors.Errorf("@in is not slice, but %v", inSlice.Kind())
+	}
+
+	for outSlice.Kind() == reflect.Ptr {
+		outSlice = outSlice.Elem()
+	}
+
+	size := inSlice.Len()
+	outSlice.Set(reflect.MakeSlice(outSlice.Type(), size, size))
+
+	for i := 0; i < size; i++ {
+		inSliceValue := inSlice.Index(i)
+		if !inSliceValue.Type().AssignableTo(outSlice.Index(i).Type()) {
+			return perrors.Errorf("in element type [%s] can not assign to out element type [%s]",
+				inSliceValue.Type().String(), outSlice.Type().String())
+		}
+		outSlice.Index(i).Set(inSliceValue)
+	}
+
+	return nil
+}
+
+// copyMap copy from in map to out map
+func copyMap(inMapValue, outMapValue reflect.Value) error {
+	if inMapValue.IsNil() {
+		return perrors.New("@in is nil")
+	}
+	if !inMapValue.CanInterface() {
+		return perrors.New("@in's Interface can not be used.")
+	}
+	if inMapValue.Kind() != reflect.Map {
+		return perrors.Errorf("@in is not map, but %v", inMapValue.Kind())
+	}
+
+	outMapType := hessian.UnpackPtrType(outMapValue.Type())
+	hessian.SetValue(outMapValue, reflect.MakeMap(outMapType))
+
+	outKeyType := outMapType.Key()
+
+	outMapValue = hessian.UnpackPtrValue(outMapValue)
+	outValueType := outMapValue.Type().Elem()
+
+	for _, inKey := range inMapValue.MapKeys() {
+		inValue := inMapValue.MapIndex(inKey)
+
+		if !inKey.Type().AssignableTo(outKeyType) {
+			return perrors.Errorf("in Key:{type:%s, value:%#v} can not assign to out Key:{type:%s} ",
+				inKey.Type().String(), inKey, outKeyType.String())
+		}
+		if !inValue.Type().AssignableTo(outValueType) {
+			return perrors.Errorf("in Value:{type:%s, value:%#v} can not assign to out value:{type:%s}",
+				inValue.Type().String(), inValue, outValueType.String())
+		}
+		outMapValue.SetMapIndex(inKey, inValue)
+	}
+
+	return nil
 }
