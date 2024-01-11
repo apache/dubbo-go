@@ -17,7 +17,7 @@ syntax = "proto3";
 
 package interoperability;
 
-option go_package = "../interoperability";
+option go_package = "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/interoperability;interoperability";
 
 
 message TripleRequestWrapper {
