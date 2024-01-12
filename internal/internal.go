@@ -26,8 +26,8 @@ import (
 
 var (
 	// HealthSetServingStatusServing is used to set service serving status
-	HealthSetServingStatusServing func(service string)
+	HealthSetServingStatusServing = func(service string) {}
 	// ReflectionRegister is used to register reflection service provider
-	ReflectionRegister func(reflection reflection.ServiceInfoProvider)
+	ReflectionRegister = func(reflection reflection.ServiceInfoProvider) {}
 	// todo: add metadata func
 )
