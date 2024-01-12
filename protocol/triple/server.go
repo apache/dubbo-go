@@ -38,10 +38,10 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/internal"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo3"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
-	"dubbo.apache.org/dubbo-go/v3/protocol/triple/reflection"
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	"dubbo.apache.org/dubbo-go/v3/server"
 )
@@ -94,7 +94,7 @@ func (s *Server) Start(invoker protocol.Invoker, info *server.ServiceInfo) {
 		// old triple idl mode and non-idl mode
 		s.compatHandleService(intfName, URL.Group(), URL.Version(), hanOpts...)
 	}
-	reflection.Register(s)
+	internal.ReflectionRegister(s)
 
 	go func() {
 		if runErr := s.triServer.Run(); runErr != nil {
