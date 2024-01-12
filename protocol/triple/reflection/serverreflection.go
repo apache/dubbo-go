@@ -279,11 +279,16 @@ var reflectionServer *ReflectionServer
 
 func init() {
 	reflectionServer = NewServer()
-	server.SetProServices(&server.ServiceDefinition{
-		Handler: reflectionServer,
-		Info:    &rpb.ServerReflection_ServiceInfo,
-		Opts: []server.ServiceOption{server.WithNotRegister(),
-			server.WithInterface(constant.ReflectionServiceInterface)},
+	server.SetProServices(&server.InternalService{
+		Init: func(options *server.ServiceOptions) (*server.ServiceDefinition, bool) {
+			return &server.ServiceDefinition{
+				Handler: reflectionServer,
+				Info:    &rpb.ServerReflection_ServiceInfo,
+				Opts: []server.ServiceOption{server.WithNotRegister(),
+					server.WithInterface(constant.ReflectionServiceInterface)},
+			}, true
+		},
+		Priority: constant.DefaultPriority,
 	})
 	// In order to adapt config.Load
 	// Plans for future removal
