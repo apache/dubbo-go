@@ -16,8 +16,8 @@
  */
 
 // Package internal contains dubbo-go-internal code, to avoid polluting
-// the top-level dubbo-go package.  It must not import any dubbo-go except internal
-// symbols to avoid circular dependencies.
+// the top-level dubbo-go package.  It must not import any dubbo-go symbols
+// except internal symbols to avoid circular dependencies.
 package internal
 
 import (
