@@ -216,6 +216,9 @@ func (s *Server) exportInternalServices() error {
 	proLock.Lock()
 	defer proLock.Unlock()
 	for _, service := range proServices {
+		if service.Init == nil {
+			return errors.New("internal service init func is empty, please set the init func correctly ")
+		}
 		sd, ok := service.Init(cfg)
 		if !ok {
 			continue
@@ -254,6 +257,7 @@ func (s *Server) exportInternalServices() error {
 type InternalService struct {
 	svcOpts *ServiceOptions
 	info    *ServiceInfo
+	// This is required
 	// Return serviceDefinition and bool, where bool indicates whether it is exported
 	Init         func(options *ServiceOptions) (*ServiceDefinition, bool)
 	BeforeExport func(options *ServiceOptions)
