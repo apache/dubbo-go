@@ -163,21 +163,22 @@ func (di *DubboInvoker) Invoke(ctx context.Context, ivc protocol.Invocation) pro
 
 // get timeout including methodConfig
 func (di *DubboInvoker) getTimeout(ivc *invocation.RPCInvocation) time.Duration {
-	methodName := ivc.MethodName()
-	if di.GetURL().GetParamBool(constant.GenericKey, false) {
-		methodName = ivc.Arguments()[0].(string)
-	}
-	timeout := di.GetURL().GetParam(strings.Join([]string{constant.MethodKeys, methodName, constant.TimeoutKey}, "."), "")
-	if len(timeout) != 0 {
-		if t, err := time.ParseDuration(timeout); err == nil {
-			// config timeout into attachment
-			ivc.SetAttachment(constant.TimeoutKey, strconv.Itoa(int(t.Milliseconds())))
-			return t
+	timeout := di.timeout                                                //default timeout
+	if attachTimeout, ok := ivc.GetAttachment(constant.TimeoutKey); ok { //check invocation timeout
+		timeout, _ = time.ParseDuration(attachTimeout)
+	} else { // check method timeout
+		methodName := ivc.MethodName()
+		if di.GetURL().GetParamBool(constant.GenericKey, false) {
+			methodName = ivc.Arguments()[0].(string)
+		}
+		mTimeout := di.GetURL().GetParam(strings.Join([]string{constant.MethodKeys, methodName, constant.TimeoutKey}, "."), "")
+		if len(mTimeout) != 0 {
+			timeout, _ = time.ParseDuration(mTimeout)
 		}
 	}
-	// set timeout into invocation at method level
-	ivc.SetAttachment(constant.TimeoutKey, strconv.Itoa(int(di.timeout.Milliseconds())))
-	return di.timeout
+	// set timeout into invocation
+	ivc.SetAttachment(constant.TimeoutKey, strconv.Itoa(int(timeout.Nanoseconds())))
+	return timeout
 }
 
 func (di *DubboInvoker) IsAvailable() bool {
