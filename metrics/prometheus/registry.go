@@ -152,7 +152,7 @@ func (p *promMetricRegistry) Export() {
 
 func (p *promMetricRegistry) exportHttp() {
 	mux := http.NewServeMux()
-	path := p.url.GetParam(constant.PrometheusDefaultMetricsPath, constant.PrometheusDefaultMetricsPath)
+	path := p.url.GetParam(constant.PrometheusExporterMetricsPathKey, constant.PrometheusDefaultMetricsPath)
 	port := p.url.GetParam(constant.PrometheusExporterMetricsPortKey, constant.PrometheusDefaultMetricsPort)
 	mux.Handle(path, promhttp.InstrumentMetricHandler(p.r, promhttp.HandlerFor(p.gather, promhttp.HandlerOpts{})))
 	srv := &http.Server{Addr: ":" + port, Handler: mux}
