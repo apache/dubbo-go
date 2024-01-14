@@ -27,9 +27,9 @@ import (
 var (
 	// HealthSetServingStatusServing is used to set service serving status
 	// the initialization place is in /protocol/triple/health/healthServer.go
-	HealthSetServingStatusServing func(service string)
+	HealthSetServingStatusServing = func(service string) {}
 	// ReflectionRegister is used to register reflection service provider
 	// the initialization place is in /protocol/triple/reflection/serverreflection.go
-	ReflectionRegister func(reflection reflection.ServiceInfoProvider)
+	ReflectionRegister = func(reflection reflection.ServiceInfoProvider) {}
 	// todo: add metadata func
 )
