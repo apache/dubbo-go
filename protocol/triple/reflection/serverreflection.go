@@ -25,12 +25,9 @@ import (
 )
 
 import (
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-
 	"google.golang.org/protobuf/proto"
-
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
@@ -39,25 +36,11 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/internal"
+	"dubbo.apache.org/dubbo-go/v3/internal/reflection"
 	rpb "dubbo.apache.org/dubbo-go/v3/protocol/triple/reflection/triple_reflection"
 	"dubbo.apache.org/dubbo-go/v3/server"
 )
-
-// ServiceInfoProvider is an interface used to retrieve metadata about the
-// services to expose.
-//
-// The reflection service is only interested in the service names, but the
-// signature is this way so that *grpc.Server implements it. So it is okay
-// for a custom implementation to return zero values for the
-// grpc.ServiceInfo values in the map.
-//
-// # Experimental
-//
-// Notice: This type is EXPERIMENTAL and may be changed or removed in a
-// later release.
-type ServiceInfoProvider interface {
-	GetServiceInfo() map[string]grpc.ServiceInfo
-}
 
 // ExtensionResolver is the interface used to query details about extensions.
 // This interface is satisfied by protoregistry.GlobalTypes.
@@ -79,7 +62,7 @@ func NewServer() *ReflectionServer {
 }
 
 type ReflectionServer struct {
-	s            ServiceInfoProvider
+	s            reflection.ServiceInfoProvider
 	descResolver protodesc.Resolver
 	extResolver  ExtensionResolver
 }
@@ -279,6 +262,7 @@ var reflectionServer *ReflectionServer
 
 func init() {
 	reflectionServer = NewServer()
+	internal.ReflectionRegister = Register
 	server.SetProServices(&server.ServiceDefinition{
 		Handler: reflectionServer,
 		Info:    &rpb.ServerReflection_ServiceInfo,
@@ -290,6 +274,6 @@ func init() {
 	config.SetProviderServiceWithInfo(reflectionServer, &rpb.ServerReflection_ServiceInfo)
 }
 
-func Register(s ServiceInfoProvider) {
+func Register(s reflection.ServiceInfoProvider) {
 	reflectionServer.s = s
 }
