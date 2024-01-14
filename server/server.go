@@ -217,10 +217,11 @@ func (s *Server) exportInternalServices() error {
 	defer proLock.Unlock()
 	for _, service := range proServices {
 		if service.Init == nil {
-			return errors.New("internal service init func is empty, please set the init func correctly ")
+			return errors.New("[internal service]internal service init func is empty, please set the init func correctly")
 		}
 		sd, ok := service.Init(cfg)
 		if !ok {
+			logger.Infof("[internal service]%s service will not expose", service.Name)
 			continue
 		}
 		newSvcOpts, err := s.genSvcOpts(sd.Handler, sd.Opts...)
@@ -245,7 +246,7 @@ func (s *Server) exportInternalServices() error {
 			service.AfterExport(service.svcOpts, err)
 		}
 		if err != nil {
-			logger.Errorf("export %s internal service failed, err: %s", service.svcOpts.Service.Interface, err)
+			logger.Errorf("[internal service]export %s service failed, err: %s", service.Name, err)
 			return err
 		}
 	}
@@ -255,6 +256,9 @@ func (s *Server) exportInternalServices() error {
 
 // InternalService for dubbo internal services
 type InternalService struct {
+	// This is required
+	// internal service name
+	Name    string
 	svcOpts *ServiceOptions
 	info    *ServiceInfo
 	// This is required
@@ -295,6 +299,9 @@ func NewServer(opts ...ServerOption) (*Server, error) {
 }
 
 func SetProServices(sd *InternalService) {
+	if sd.Name == "" {
+		logger.Warnf("[internal service]internal name is empty, please set internal name")
+	}
 	proLock.Lock()
 	defer proLock.Unlock()
 	proServices = append(proServices, sd)
