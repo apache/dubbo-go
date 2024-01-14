@@ -301,6 +301,7 @@ func NewServer(opts ...ServerOption) (*Server, error) {
 func SetProServices(sd *InternalService) {
 	if sd.Name == "" {
 		logger.Warnf("[internal service]internal name is empty, please set internal name")
+		return
 	}
 	proLock.Lock()
 	defer proLock.Unlock()
