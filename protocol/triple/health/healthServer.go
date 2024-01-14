@@ -32,6 +32,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/internal"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/health/triple_health"
 	"dubbo.apache.org/dubbo-go/v3/server"
 )
@@ -171,6 +172,7 @@ func (srv *HealthTripleServer) Resume() {
 
 func init() {
 	healthServer = NewServer()
+	internal.HealthSetServingStatusServing = SetServingStatusServing
 	server.SetProServices(&server.InternalService{
 		Name: "healthCheck",
 		Init: func(options *server.ServiceOptions) (*server.ServiceDefinition, bool) {
