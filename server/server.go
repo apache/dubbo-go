@@ -258,10 +258,13 @@ type InternalService struct {
 	svcOpts *ServiceOptions
 	info    *ServiceInfo
 	// This is required
+	// This options is service configuration
 	// Return serviceDefinition and bool, where bool indicates whether it is exported
-	Init         func(options *ServiceOptions) (*ServiceDefinition, bool)
+	Init func(options *ServiceOptions) (*ServiceDefinition, bool)
+	// This options is InternalService.svcOpts itself
 	BeforeExport func(options *ServiceOptions)
-	AfterExport  func(options *ServiceOptions, err error)
+	// This options is InternalService.svcOpts itself
+	AfterExport func(options *ServiceOptions, err error)
 	// Priority of service exposure
 	// Lower numbers have the higher priority
 	// The default priority is 0
