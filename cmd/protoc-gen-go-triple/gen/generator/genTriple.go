@@ -69,9 +69,9 @@ func ProcessProtoFile(file *descriptor.FileDescriptorProto) (TripleGo, error) {
 		for _, method := range service.GetMethod() {
 			serviceMethods = append(serviceMethods, Method{
 				MethodName:     method.GetName(),
-				RequestType:    strings.Split(method.GetInputType(), ".")[len(strings.Split(method.GetInputType(), "."))-1],
+				RequestType:    util.ToUpper(strings.Split(method.GetInputType(), ".")[len(strings.Split(method.GetInputType(), "."))-1]),
 				StreamsRequest: method.GetClientStreaming(),
-				ReturnType:     strings.Split(method.GetOutputType(), ".")[len(strings.Split(method.GetOutputType(), "."))-1],
+				ReturnType:     util.ToUpper(strings.Split(method.GetOutputType(), ".")[len(strings.Split(method.GetOutputType(), "."))-1]),
 				StreamsReturn:  method.GetServerStreaming(),
 			})
 			if method.GetClientStreaming() || method.GetServerStreaming() {
@@ -100,7 +100,8 @@ func ProcessProtoFile(file *descriptor.FileDescriptorProto) (TripleGo, error) {
 	} else {
 		tripleGo.Path = goPkg
 	}
-	tripleGo.FileName = strings.Split(file.GetName(), ".")[0]
+	_, fileName := filepath.Split(file.GetName())
+	tripleGo.FileName = strings.Split(fileName, ".")[0]
 	return tripleGo, nil
 }
 

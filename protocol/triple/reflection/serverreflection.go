@@ -280,6 +280,6 @@ func init() {
 	config.SetProviderServiceWithInfo(reflectionServer, &rpb.ServerReflection_ServiceInfo)
 }
 
-func Register(s ServiceInfoProvider) {
+func Register(s reflection.ServiceInfoProvider) {
 	reflectionServer.s = s
 }

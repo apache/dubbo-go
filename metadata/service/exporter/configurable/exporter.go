@@ -65,7 +65,7 @@ func (exporter *MetadataServiceExporter) Export(url *common.URL) error {
 			SetServiceID(constant.SimpleMetadataServiceName).
 			SetProtocolIDs(constant.DefaultProtocol).
 			AddRCProtocol(constant.DefaultProtocol, config.NewProtocolConfigBuilder().
-				SetName(constant.DefaultProtocol).
+				SetName(constant.DefaultProtocol).SetPort(getMetadataPort()).
 				Build()).
 			SetRegistryIDs("N/A").
 			SetInterface(constant.MetadataServiceName).
@@ -82,6 +82,22 @@ func (exporter *MetadataServiceExporter) Export(url *common.URL) error {
 	}
 	logger.Warnf("[Metadata Service] The MetadataService has been exported : %v ", exporter.ServiceConfig.GetExportedUrls())
 	return nil
+}
+
+func getMetadataPort() string {
+	rootConfig := config.GetRootConfig()
+	port := rootConfig.Application.MetadataServicePort
+	if port == "" {
+		protocolConfig, ok := rootConfig.Protocols[constant.DefaultProtocol]
+		if ok {
+			port = protocolConfig.Port
+		} else {
+			logger.Warnf("[Metadata Service] Dubbo-go %s version's MetadataService only support dubbo protocol,"+
+				"MetadataService will use random port",
+				constant.Version)
+		}
+	}
+	return port
 }
 
 // Unexport will unexport the metadataService

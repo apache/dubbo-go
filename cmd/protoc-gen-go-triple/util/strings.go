@@ -15,10 +15,22 @@
  * limitations under the License.
  */
 
-package constant
+package util
 
-const (
-	Version = "3.2.0"     // apache/dubbo-go version
-	Name    = "dubbogo"   // module name
-	DATE    = "2024/1/10" // release date
-)
+import "strings"
+
+// ToUpper will capitalize the first character
+func ToUpper(s string) string {
+	if s == "" {
+		return ""
+	}
+	return strings.ToUpper(s[:1]) + s[1:]
+}
+
+// ToLower will lowercase the first character
+func ToLower(s string) string {
+	if s == "" {
+		return ""
+	}
+	return strings.ToLower(s[:1]) + s[1:]
+}
