@@ -41,8 +41,7 @@ func RegisterServiceInstance() error {
 	if rf, ok := protocol.(registry.RegistryFactory); ok {
 		for _, r := range rf.GetRegistries() {
 			if sdr, ok := r.(registry.ServiceDiscoveryRegistry); ok {
-				err := sdr.RegisterService()
-				if err != nil {
+				if err := sdr.RegisterService(); err != nil {
 					return err
 				}
 			}

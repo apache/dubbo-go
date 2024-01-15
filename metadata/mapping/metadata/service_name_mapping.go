@@ -72,18 +72,16 @@ func (d *ServiceNameMapping) Map(url *common.URL) error {
 	metadataReports := instance.GetMetadataReports()
 	if len(metadataReports) == 0 {
 		return perrors.New("can not registering mapping to remote cause no metadata report instance found")
-	} else {
-		for _, metadataReport := range metadataReports {
-			var err error
-			for i := 0; i < retryTimes; i++ {
-				err = metadataReport.RegisterServiceAppMapping(serviceInterface, DefaultGroup, appName)
-				if err == nil {
-					break
-				}
+	}
+	for _, metadataReport := range metadataReports {
+		var err error
+		for i := 0; i < retryTimes; i++ {
+			if err = metadataReport.RegisterServiceAppMapping(serviceInterface, DefaultGroup, appName); err == nil {
+				break
 			}
-			if err != nil {
-				logger.Errorf("Failed registering mapping to remote, &v", err)
-			}
+		}
+		if err != nil {
+			logger.Errorf("Failed registering mapping to remote, &v", err)
 		}
 	}
 	return nil

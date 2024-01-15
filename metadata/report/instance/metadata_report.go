@@ -50,12 +50,12 @@ func Init(urls []*common.URL, metaType string) {
 		if len(urls) != 0 {
 			for _, url := range urls {
 				fac := extension.GetMetadataReportFactory(url.Protocol)
-				if fac != nil {
-					key := url.GetParam(constant.RegistryKey, constant.DefaultKey)
-					instances[key] = &DelegateMetadataReport{instance: fac.CreateMetadataReport(url)}
-				} else {
-					logger.Warnf("metadata report factory is not found, url: %s", url.String())
+				if fac == nil {
+					logger.Warnf("no metadata report factory of protocol %s found!", url.Protocol)
+					continue
 				}
+				key := url.GetParam(constant.RegistryKey, constant.DefaultKey)
+				instances[key] = &DelegateMetadataReport{instance: fac.CreateMetadataReport(url)}
 			}
 		}
 	})
@@ -79,9 +79,11 @@ func GetMetadataReportByRegistry(registry string) report.MetadataReport {
 }
 
 func GetMetadataReports() []report.MetadataReport {
-	reports := make([]report.MetadataReport, 0)
+	reports := make([]report.MetadataReport, len(instances))
+	index := 0
 	for _, r := range instances {
-		reports = append(reports, r)
+		reports[index] = r
+		index++
 	}
 	return reports
 }
@@ -89,14 +91,6 @@ func GetMetadataReports() []report.MetadataReport {
 func GetMetadataType() string {
 	return metadataType
 }
-
-//func GetMetadataReports() []report.MetadataReport {
-//	reports := make([]report.MetadataReport, len(instances))
-//	for _, metadataReport := range instances {
-//		reports = append(reports, metadataReport)
-//	}
-//	return reports
-//}
 
 // DelegateMetadataReport is a absolute delegate for DelegateMetadataReport
 type DelegateMetadataReport struct {
