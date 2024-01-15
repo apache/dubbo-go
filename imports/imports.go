@@ -69,6 +69,7 @@ import (
 	_ "dubbo.apache.org/dubbo-go/v3/metrics/app_info"
 	_ "dubbo.apache.org/dubbo-go/v3/metrics/prometheus"
 	_ "dubbo.apache.org/dubbo-go/v3/otel/trace/jaeger"
+	_ "dubbo.apache.org/dubbo-go/v3/otel/trace/otlp"
 	_ "dubbo.apache.org/dubbo-go/v3/otel/trace/stdout"
 	_ "dubbo.apache.org/dubbo-go/v3/otel/trace/zipkin"
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/dubbo"
