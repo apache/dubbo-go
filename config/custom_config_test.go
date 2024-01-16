@@ -28,6 +28,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	_ "dubbo.apache.org/dubbo-go/v3/metadata/report/zookeeper"
 )
 
 func TestCustomInit(t *testing.T) {
