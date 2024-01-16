@@ -26,8 +26,6 @@ import (
 
 import (
 	"github.com/dubbogo/gost/log/logger"
-
-	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -107,7 +105,8 @@ type ReportOptions struct {
 func (opts *ReportOptions) Init() error {
 	fac := extension.GetMetadataReportFactory(opts.Protocol)
 	if fac == nil {
-		return perrors.Errorf("no metadata report factory of protocol %s found!", opts.Protocol)
+		logger.Errorf("no metadata report factory of protocol %s found!", opts.Protocol)
+		return nil
 	}
 	url, err := toUrl(opts)
 	if err != nil {
