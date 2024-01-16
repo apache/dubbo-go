@@ -18,6 +18,10 @@
 package dubbo
 
 import (
+	"time"
+)
+
+import (
 	log "github.com/dubbogo/gost/log/logger"
 )
 
@@ -128,9 +132,6 @@ func (rc *InstanceOptions) init(opts ...InstanceOption) error {
 		}
 	}
 
-	if err := rcCompat.MetadataReport.Init(rcCompat); err != nil {
-		return err
-	}
 	if err := rcCompat.Metrics.Init(rcCompat); err != nil {
 		return err
 	}
@@ -160,7 +161,86 @@ func (rc *InstanceOptions) init(opts ...InstanceOption) error {
 	}
 	config.SetRootConfig(*rcCompat)
 
+	if err := rc.initMetadataReport(); err != nil {
+		return err
+	}
+	if err := rc.initRegistryMetadataReport(); err != nil {
+		return err
+	}
+
 	return nil
+}
+
+func (rc *InstanceOptions) initMetadataReport() error {
+	if rc.MetadataReport.Address != "" {
+		opts, err := reportConfigToReportOptions(rc.MetadataReport)
+		if err != nil {
+			return err
+		}
+		if err := opts.Init(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func reportConfigToReportOptions(mc *global.MetadataReportConfig) (*metadata.ReportOptions, error) {
+	opts := metadata.NewReportOptions(
+		metadata.WithRegistryId(constant.DefaultKey),
+		metadata.WithProtocol(mc.Protocol),
+		metadata.WithAddress(mc.Address),
+		metadata.WithUsername(mc.Username),
+		metadata.WithPassword(mc.Password),
+		metadata.WithGroup(mc.Group),
+		metadata.WithNamespace(mc.Namespace),
+		metadata.WithParams(mc.Params),
+	)
+	if mc.Timeout != "" {
+		timeout, err := time.ParseDuration(mc.Timeout)
+		if err != nil {
+			return nil, err
+		}
+		metadata.WithTimeout(timeout)(opts)
+	}
+	return opts, nil
+}
+
+func (rc *InstanceOptions) initRegistryMetadataReport() error {
+	if len(rc.Registries) > 0 {
+		for id, reg := range rc.Registries {
+			if reg.UseAsMetaReport {
+				opts, err := registryToReportOptions(id, reg)
+				if err != nil {
+					return err
+				}
+				if err := opts.Init(); err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func registryToReportOptions(id string, rc *global.RegistryConfig) (*metadata.ReportOptions, error) {
+	opts := metadata.NewReportOptions(
+		metadata.WithRegistryId(id),
+		metadata.WithProtocol(rc.Protocol),
+		metadata.WithAddress(rc.Address),
+		metadata.WithUsername(rc.Username),
+		metadata.WithPassword(rc.Password),
+		metadata.WithGroup(rc.Group),
+		metadata.WithNamespace(rc.Namespace),
+		metadata.WithParams(rc.Params),
+	)
+	if rc.Timeout != "" {
+		timeout, err := time.ParseDuration(rc.Timeout)
+		if err != nil {
+			return nil, err
+		}
+		metadata.WithTimeout(timeout)(opts)
+	}
+	return opts, nil
 }
 
 func (rc *InstanceOptions) Prefix() string {
@@ -262,11 +342,11 @@ func WithConfigCenter(opts ...config_center.Option) InstanceOption {
 	}
 }
 
-func WithMetadataReport(opts ...metadata.Option) InstanceOption {
-	metadataOpts := metadata.NewOptions(opts...)
+func WithMetadataReport(opts ...metadata.ReportOption) InstanceOption {
+	metadataOpts := metadata.NewReportOptions(opts...)
 
 	return func(cfg *InstanceOptions) {
-		cfg.MetadataReport = metadataOpts.Metadata
+		cfg.MetadataReport = metadataOpts.MetadataReportConfig
 	}
 }
 

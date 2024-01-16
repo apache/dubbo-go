@@ -34,7 +34,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
-	reportInstance "dubbo.apache.org/dubbo-go/v3/metadata/report/instance"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
@@ -42,7 +41,7 @@ const metadataProxyDefaultTimeout = 5000
 
 // GetMetadataFromMetadataReport test depends on dubbo protocol, if dubbo not dependent on config package, can move to metadata dir
 func GetMetadataFromMetadataReport(revision string, instance registry.ServiceInstance) (*info.MetadataInfo, error) {
-	report := reportInstance.GetMetadataReport()
+	report := GetMetadataReport()
 	return report.GetAppMetadata(instance.GetServiceName(), revision)
 }
 

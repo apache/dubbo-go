@@ -42,5 +42,5 @@ type RegistryConfig struct {
 }
 
 func DefaultRegistryConfig() *RegistryConfig {
-	return &RegistryConfig{}
+	return &RegistryConfig{UseAsMetaReport: true, UseAsConfigCenter: true, Timeout: "5s", TTL: "15m"}
 }

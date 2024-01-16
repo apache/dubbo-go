@@ -32,8 +32,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/metadata"
 	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
-	"dubbo.apache.org/dubbo-go/v3/metadata/report/instance"
 )
 
 const (
@@ -67,9 +67,9 @@ type ServiceNameMapping struct {
 func (d *ServiceNameMapping) Map(url *common.URL) error {
 	serviceInterface := url.GetParam(constant.InterfaceKey, "")
 	appName := url.GetParam(constant.ApplicationKey, "")
-	// url is the service url,not the registry url,this url has no registry id info,can not got where to write mapping,so write all
+	// url is the service url,not the registry url,this url has no registry id info,can not get where to write mapping,so write all
 	// if the mapping can hold a report instance, it can write once
-	metadataReports := instance.GetMetadataReports()
+	metadataReports := metadata.GetMetadataReports()
 	if len(metadataReports) == 0 {
 		return perrors.New("can not registering mapping to remote cause no metadata report instance found")
 	}
@@ -82,6 +82,7 @@ func (d *ServiceNameMapping) Map(url *common.URL) error {
 		}
 		if err != nil {
 			logger.Errorf("Failed registering mapping to remote, &v", err)
+			return err
 		}
 	}
 	return nil
@@ -90,7 +91,7 @@ func (d *ServiceNameMapping) Map(url *common.URL) error {
 // Get will return the application-level services. If not found, the empty set will be returned.
 func (d *ServiceNameMapping) Get(url *common.URL, listener mapping.MappingListener) (*gxset.HashSet, error) {
 	serviceInterface := url.GetParam(constant.InterfaceKey, "")
-	metadataReport := instance.GetMetadataReport()
+	metadataReport := metadata.GetMetadataReport()
 	if metadataReport == nil {
 		return nil, perrors.New("can not get mapping in remote cause no metadata report instance found")
 	}
@@ -99,7 +100,7 @@ func (d *ServiceNameMapping) Get(url *common.URL, listener mapping.MappingListen
 
 func (d *ServiceNameMapping) Remove(url *common.URL) error {
 	serviceInterface := url.GetParam(constant.InterfaceKey, "")
-	metadataReport := instance.GetMetadataReport()
+	metadataReport := metadata.GetMetadataReport()
 	if metadataReport == nil {
 		return perrors.New("can not remove mapping in remote cause no metadata report instance found")
 	}

@@ -15,22 +15,22 @@
  * limitations under the License.
  */
 
-package instance
+package metadata
 
 import (
-	"sync"
+	"strings"
 	"time"
 )
 
 import (
 	"github.com/dubbogo/gost/container/set"
-	"github.com/dubbogo/gost/log/logger"
+
+	perrors "github.com/pkg/errors"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
 	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
 	"dubbo.apache.org/dubbo-go/v3/metadata/report"
@@ -39,26 +39,28 @@ import (
 )
 
 var (
-	instances    = make(map[string]report.MetadataReport)
-	once         sync.Once
-	metadataType = constant.DefaultMetadataStorageType
+	instances = make(map[string]report.MetadataReport)
 )
 
-func Init(urls []*common.URL, metaType string) {
-	once.Do(func() {
-		metadataType = metaType
-		if len(urls) != 0 {
-			for _, url := range urls {
-				fac := extension.GetMetadataReportFactory(url.Protocol)
-				if fac == nil {
-					logger.Warnf("no metadata report factory of protocol %s found!", url.Protocol)
-					continue
-				}
-				key := url.GetParam(constant.RegistryKey, constant.DefaultKey)
-				instances[key] = &DelegateMetadataReport{instance: fac.CreateMetadataReport(url)}
-			}
-		}
-	})
+func toUrl(opts *ReportOptions) (*common.URL, error) {
+	res, err := common.NewURL(opts.Address,
+		common.WithUsername(opts.Username),
+		common.WithPassword(opts.Password),
+		common.WithLocation(opts.Address),
+		common.WithProtocol(opts.Protocol),
+		common.WithParamsValue(constant.TimeoutKey, opts.Timeout),
+		common.WithParamsValue(constant.MetadataReportGroupKey, opts.Group),
+		common.WithParamsValue(constant.MetadataReportNamespaceKey, opts.Namespace),
+		common.WithParamsValue(constant.ClientNameKey, strings.Join([]string{constant.MetadataReportPrefix, opts.Protocol, opts.Address}, "-")),
+	)
+	if err != nil || len(res.Protocol) == 0 {
+		return nil, perrors.New("Invalid MetadataReport Config.")
+	}
+	res.SetParam("metadata", res.Protocol)
+	for key, val := range opts.Params {
+		res.SetParam(key, val)
+	}
+	return res, nil
 }
 
 func GetMetadataReport() report.MetadataReport {
@@ -89,7 +91,7 @@ func GetMetadataReports() []report.MetadataReport {
 }
 
 func GetMetadataType() string {
-	return metadataType
+	return metadataOptions.metadataType
 }
 
 // DelegateMetadataReport is a absolute delegate for DelegateMetadataReport

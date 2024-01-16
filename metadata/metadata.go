@@ -19,14 +19,6 @@
 package metadata
 
 import (
-	"sync"
-)
-
-import (
-	"github.com/dubbogo/gost/log/logger"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
@@ -34,29 +26,8 @@ import (
 
 var (
 	metadataService    MetadataService = &DefaultMetadataService{}
-	exportOnce         sync.Once
-	appMetadataInfoMap = make(map[string]*info.MetadataInfo)
+	appMetadataInfoMap                 = make(map[string]*info.MetadataInfo)
 )
-
-func ExportMetadataService(app, metadataType string) {
-	exportOnce.Do(func() {
-		if metadataType != constant.RemoteMetadataStorageType {
-			exporter := &ServiceExporter{app: app, metadataType: metadataType, service: metadataService}
-			defer func() {
-				// TODO remove this recover func,this just to avoid some unit test failed,this will not happen in user side mostly
-				// config test -> metadata exporter -> dubbo protocol/remoting -> config,cycle import will occur
-				// some day we fix the cycle import then can remove this recover
-				if err := recover(); err != nil {
-					logger.Errorf("metadata export failed,please check if dubbo protocol is imported, error: %v", err)
-				}
-			}()
-			err := exporter.Export()
-			if err != nil {
-				logger.Errorf("export metadata service failed, got error %#v", err)
-			}
-		}
-	})
-}
 
 func GetMetadataService() MetadataService {
 	return metadataService

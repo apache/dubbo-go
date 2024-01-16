@@ -33,7 +33,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
-	"dubbo.apache.org/dubbo-go/v3/metadata"
 	"dubbo.apache.org/dubbo-go/v3/registry/exposed_tmp"
 )
 
@@ -205,9 +204,10 @@ func (rc *RootConfig) Start() {
 		gracefulShutdownInit()
 		rc.Consumer.Load()
 		rc.Provider.Load()
-		metadata.ExportMetadataService(rc.Application.Name, rc.Application.MetadataType)
-		err := exposed_tmp.RegisterServiceInstance()
-		if err != nil {
+		if err := initMetadata(rc); err != nil {
+			panic(err)
+		}
+		if err := exposed_tmp.RegisterServiceInstance(); err != nil {
 			panic(err)
 		}
 	})

@@ -39,7 +39,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
 	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
 	"dubbo.apache.org/dubbo-go/v3/metadata/report"
-	reportInstance "dubbo.apache.org/dubbo-go/v3/metadata/report/instance"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 	metricsMetadata "dubbo.apache.org/dubbo-go/v3/metrics/metadata"
 	metricsRegistry "dubbo.apache.org/dubbo-go/v3/metrics/registry"
@@ -77,7 +76,7 @@ func newServiceDiscoveryRegistry(url *common.URL) (registry.Registry, error) {
 		url:                url,
 		serviceDiscovery:   serviceDiscovery,
 		serviceNameMapping: extension.GetGlobalServiceNameMapping(),
-		metadataReport:     reportInstance.GetMetadataReportByRegistry(url.GetParam(constant.RegistryIdKey, "")),
+		metadataReport:     metadata.GetMetadataReportByRegistry(url.GetParam(constant.RegistryIdKey, "")),
 		serviceListeners:   make(map[string]registry.ServiceInstancesChangedListener),
 		// cache for mapping listener
 		serviceMappingListeners: make(map[string]mapping.MappingListener),
@@ -93,7 +92,7 @@ func (s *serviceDiscoveryRegistry) RegisterService() error {
 	// consumer has no host and port, so it will not register service
 	if s.instance.GetHost() != "" && s.instance.GetPort() != 0 {
 		metaInfo.CalAndGetRevision()
-		if reportInstance.GetMetadataType() == constant.RemoteMetadataStorageType {
+		if metadata.GetMetadataType() == constant.RemoteMetadataStorageType {
 			if s.metadataReport == nil {
 				return perrors.New("can not publish app metadata cause report instance not found")
 			}
@@ -109,7 +108,7 @@ func (s *serviceDiscoveryRegistry) RegisterService() error {
 
 func createInstance(meta *info.MetadataInfo) registry.ServiceInstance {
 	params := make(map[string]string, 8)
-	params[constant.MetadataStorageTypePropertyName] = reportInstance.GetMetadataType()
+	params[constant.MetadataStorageTypePropertyName] = metadata.GetMetadataType()
 	instance := &registry.DefaultServiceInstance{
 		ServiceName:     meta.App,
 		Enable:          true,
@@ -149,7 +148,7 @@ func (s *serviceDiscoveryRegistry) UnSubscribe(url *common.URL, listener registr
 	l := s.serviceListeners[serviceNamesKey]
 	l.RemoveListener(url.ServiceKey())
 	s.stopListen(url)
-	err := s.serviceNameMapping.Remove(url) // TODO check is right
+	err := s.serviceNameMapping.Remove(url)
 	if err != nil {
 		return err
 	}

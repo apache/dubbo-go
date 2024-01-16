@@ -19,6 +19,7 @@ package metadata
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -142,34 +143,31 @@ func (mts *DefaultMetadataService) MethodMapper() map[string]string {
 
 // ServiceExporter is the ConfigurableMetadataServiceExporter which implement MetadataServiceExporter interface
 type ServiceExporter struct {
-	app, metadataType string
-	service           MetadataService
-	protocolExporter  protocol.Exporter
+	opts             *Options
+	service          MetadataService
+	protocolExporter protocol.Exporter
 }
 
 // Export will export the metadataService
 func (e *ServiceExporter) Export() error {
 	version, _ := e.service.Version()
-	tcp, err := gxnet.ListenOnTCPRandomPort("")
-	if err != nil {
-		panic(perrors.New(fmt.Sprintf("Get tcp port error, err is {%v}", err)))
+	var port string
+	if e.opts.port == 0 {
+		port = randomPort()
+	} else {
+		port = strconv.Itoa(e.opts.port)
 	}
-	err = tcp.Close()
-	if err != nil {
-		panic(perrors.New(fmt.Sprintf("Close tcp port error, err is {%v}", err)))
-	}
-	port := strings.Split(tcp.Addr().String(), ":")[1]
 	ivkURL := common.NewURLWithOptions(
 		common.WithPath(constant.MetadataServiceName),
 		common.WithProtocol(constant.DefaultProtocol),
 		common.WithPort(port),
-		common.WithParamsValue(constant.GroupKey, e.app),
+		common.WithParamsValue(constant.GroupKey, e.opts.appName),
 		common.WithParamsValue(constant.SerializationKey, constant.Hessian2Serialization),
 		common.WithParamsValue(constant.ReleaseKey, constant.Version),
 		common.WithParamsValue(constant.VersionKey, version),
 		common.WithParamsValue(constant.InterfaceKey, constant.MetadataServiceName),
 		common.WithParamsValue(constant.BeanNameKey, constant.SimpleMetadataServiceName),
-		common.WithParamsValue(constant.MetadataTypeKey, e.metadataType),
+		common.WithParamsValue(constant.MetadataTypeKey, e.opts.metadataType),
 		common.WithParamsValue(constant.SideKey, constant.SideProvider),
 	)
 	methods, err := common.ServiceMap.Register(ivkURL.Interface(), ivkURL.Protocol, ivkURL.Group(), ivkURL.Version(), e.service)
@@ -186,6 +184,18 @@ func (e *ServiceExporter) Export() error {
 	e.service.SetMetadataServiceURL(ivkURL)
 	logger.Infof("[Metadata Service] The MetadataService exports urls : %v ", ivkURL)
 	return nil
+}
+
+func randomPort() string {
+	tcp, err := gxnet.ListenOnTCPRandomPort("")
+	if err != nil {
+		panic(perrors.New(fmt.Sprintf("Get tcp port error, err is {%v}", err)))
+	}
+	err = tcp.Close()
+	if err != nil {
+		panic(perrors.New(fmt.Sprintf("Close tcp port error, err is {%v}", err)))
+	}
+	return strings.Split(tcp.Addr().String(), ":")[1]
 }
 
 // UnExport will unExport the metadataService

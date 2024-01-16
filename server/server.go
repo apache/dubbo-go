@@ -21,7 +21,9 @@ package server
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"sync"
+	"time"
 )
 
 import (
@@ -32,6 +34,8 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/metadata"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/registry/exposed_tmp"
@@ -184,14 +188,88 @@ func (s *Server) exportServices() (err error) {
 }
 
 func (s *Server) Serve() error {
+	// the registryConfig in ServiceOptions and ServerOptions all need to init a metadataReporter,
+	// when ServiceOptions.init() is called we don't know if a new registry config is set in the future use serviceOption
+	if err := s.initRegistryMetadataReport(); err != nil {
+		return err
+	}
+	opts := metadata.NewOptions(
+		metadata.WithAppName(s.cfg.Application.Name),
+		metadata.WithMetadataType(s.cfg.Application.MetadataType),
+		metadata.WithPort(getMetadataPort(s.cfg)),
+	)
+	if err := opts.Init(); err != nil {
+		return err
+	}
 	if err := s.exportServices(); err != nil {
 		return err
 	}
-	metadata.ExportMetadataService(s.cfg.Application.Name, s.cfg.Application.MetadataType)
+
 	if err := exposed_tmp.RegisterServiceInstance(); err != nil {
 		return err
 	}
 	select {}
+}
+
+func getMetadataPort(opts *ServerOptions) int {
+	port := opts.Application.MetadataServicePort
+	if port == "" {
+		protocolConfig, ok := opts.Protocols[constant.DefaultProtocol]
+		if ok {
+			port = protocolConfig.Port
+		} else {
+			logger.Warnf("[Metadata Service] Dubbo-go %s version's MetadataService only support dubbo protocol,"+
+				"MetadataService will use random port",
+				constant.Version)
+		}
+	}
+	if port == "" {
+		return 0
+	}
+	p, err := strconv.Atoi(port)
+	if err != nil {
+		logger.Error("MetadataService port parse error %v, MetadataService will use random port", err)
+		return 0
+	}
+	return p
+}
+
+func (s *Server) initRegistryMetadataReport() error {
+	if len(s.cfg.Registries) > 0 {
+		for id, reg := range s.cfg.Registries {
+			if reg.UseAsMetaReport {
+				opts, err := registryToReportOptions(id, reg)
+				if err != nil {
+					return err
+				}
+				if err := opts.Init(); err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func registryToReportOptions(id string, rc *global.RegistryConfig) (*metadata.ReportOptions, error) {
+	opts := metadata.NewReportOptions(
+		metadata.WithRegistryId(id),
+		metadata.WithProtocol(rc.Protocol),
+		metadata.WithAddress(rc.Address),
+		metadata.WithUsername(rc.Username),
+		metadata.WithPassword(rc.Password),
+		metadata.WithGroup(rc.Group),
+		metadata.WithNamespace(rc.Namespace),
+		metadata.WithParams(rc.Params),
+	)
+	if rc.Timeout != "" {
+		timeout, err := time.ParseDuration(rc.Timeout)
+		if err != nil {
+			return nil, err
+		}
+		metadata.WithTimeout(timeout)(opts)
+	}
+	return opts, nil
 }
 
 type MethodInfo struct {

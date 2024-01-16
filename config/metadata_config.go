@@ -18,7 +18,12 @@
 package config
 
 import (
-	"github.com/nacos-group/nacos-sdk-go/v2/common/logger"
+	"strconv"
+	"time"
+)
+
+import (
+	"github.com/dubbogo/gost/log/logger"
 
 	perrors "github.com/pkg/errors"
 )
@@ -26,7 +31,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/metadata/report/instance"
+	"dubbo.apache.org/dubbo-go/v3/metadata"
 )
 
 // MetadataReportConfig is app level configuration
@@ -43,9 +48,86 @@ type MetadataReportConfig struct {
 	metadataType string
 }
 
+func initMetadata(rc *RootConfig) error {
+	opts := metadata.NewOptions(
+		metadata.WithAppName(rc.Application.Name),
+		metadata.WithMetadataType(rc.Application.MetadataType),
+		metadata.WithPort(getMetadataPort(rc)),
+	)
+	if err := opts.Init(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func getMetadataPort(rc *RootConfig) int {
+	port := rc.Application.MetadataServicePort
+	if port == "" {
+		protocolConfig, ok := rootConfig.Protocols[constant.DefaultProtocol]
+		if ok {
+			port = protocolConfig.Port
+		} else {
+			logger.Warnf("[Metadata Service] Dubbo-go %s version's MetadataService only support dubbo protocol,"+
+				"MetadataService will use random port",
+				constant.Version)
+		}
+	}
+	if port == "" {
+		return 0
+	}
+	p, err := strconv.Atoi(port)
+	if err != nil {
+		logger.Error("MetadataService port parse error %v, MetadataService will use random port", err)
+		return 0
+	}
+	return p
+}
+
 // Prefix dubbo.consumer
-func (MetadataReportConfig) Prefix() string {
+func (*MetadataReportConfig) Prefix() string {
 	return constant.MetadataReportPrefix
+}
+
+func (mc *MetadataReportConfig) toReportOptions() (*metadata.ReportOptions, error) {
+	opts := metadata.NewReportOptions(
+		metadata.WithRegistryId(constant.DefaultKey),
+		metadata.WithProtocol(mc.Protocol),
+		metadata.WithAddress(mc.Address),
+		metadata.WithUsername(mc.Username),
+		metadata.WithPassword(mc.Password),
+		metadata.WithGroup(mc.Group),
+		metadata.WithNamespace(mc.Namespace),
+		metadata.WithParams(mc.Params),
+	)
+	if mc.Timeout != "" {
+		timeout, err := time.ParseDuration(mc.Timeout)
+		if err != nil {
+			return nil, err
+		}
+		metadata.WithTimeout(timeout)(opts)
+	}
+	return opts, nil
+}
+
+func registryToReportOptions(id string, rc *RegistryConfig) (*metadata.ReportOptions, error) {
+	opts := metadata.NewReportOptions(
+		metadata.WithRegistryId(id),
+		metadata.WithProtocol(rc.Protocol),
+		metadata.WithAddress(rc.Address),
+		metadata.WithUsername(rc.Username),
+		metadata.WithPassword(rc.Password),
+		metadata.WithGroup(rc.Group),
+		metadata.WithNamespace(rc.Namespace),
+		metadata.WithParams(rc.Params),
+	)
+	if rc.Timeout != "" {
+		timeout, err := time.ParseDuration(rc.Timeout)
+		if err != nil {
+			return nil, err
+		}
+		metadata.WithTimeout(timeout)(opts)
+	}
+	return opts, nil
 }
 
 func (mc *MetadataReportConfig) Init(rc *RootConfig) error {
@@ -54,32 +136,25 @@ func (mc *MetadataReportConfig) Init(rc *RootConfig) error {
 	}
 	mc.metadataType = rc.Application.MetadataType
 	if mc.Address != "" {
-		tmpUrl, err := mc.ToUrl()
+		// if metadata report config is avaible, then init metadata report instance
+		opts, err := mc.toReportOptions()
 		if err != nil {
-			logger.Errorf("MetadataReport init failed, err: %v", err)
 			return err
 		}
-		// if metadata report config is avaible, then init metadata report instance
-		instance.Init([]*common.URL{tmpUrl}, mc.metadataType)
-		return nil
+		return opts.Init()
 	}
 	if rc.Registries != nil && len(rc.Registries) > 0 {
 		// if metadata report config is not avaible, then init metadata report instance with registries
-		urls := make([]*common.URL, 0)
 		for id, reg := range rc.Registries {
 			if reg.UseAsMetaReport && isValid(reg.Address) {
-				if tmpUrl, err := reg.toMetadataReportUrl(); err == nil {
-					tmpUrl.AddParam(constant.RegistryKey, id)
-					urls = append(urls, tmpUrl)
-				} else {
-					logger.Warnf("use registry as metadata report failed, err: %v", err)
+				opts, err := registryToReportOptions(id, reg)
+				if err != nil {
+					return err
+				}
+				if err = opts.Init(); err != nil {
+					return err
 				}
 			}
-		}
-		if len(urls) > 0 {
-			instance.Init(urls, mc.metadataType)
-		} else {
-			logger.Warnf("No metadata report config found, skip init metadata report instance.")
 		}
 	}
 	return nil
