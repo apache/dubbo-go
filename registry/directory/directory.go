@@ -142,7 +142,7 @@ func (dir *RegistryDirectory) Notify(event *registry.ServiceEvent) {
 // NotifyAll notify the events that are complete Service Event List.
 // After notify the address, the callback func will be invoked.
 func (dir *RegistryDirectory) NotifyAll(events []*registry.ServiceEvent, callback func()) {
-	go dir.refreshAllInvokers(events, callback)
+	dir.refreshAllInvokers(events, callback)
 }
 
 // refreshInvokers refreshes service's events.
