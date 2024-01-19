@@ -212,7 +212,7 @@ func Test_nacosMetadataReport_GetAppMetadata(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	mnc := NewMockIConfigClient(ctrl)
-	mnc.EXPECT().GetConfig(gomock.Any()).Return(string(data), nil)
+	mnc.EXPECT().GetConfig(gomock.Any()).MaxTimes(2).Return(string(data), nil)
 	nc := &nacosClient.NacosConfigClient{}
 	nc.SetClient(mnc)
 
@@ -253,7 +253,7 @@ func Test_nacosMetadataReport_GetAppMetadata(t *testing.T) {
 func Test_nacosMetadataReport_PublishAppMetadata(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	mnc := NewMockIConfigClient(ctrl)
-	mnc.EXPECT().PublishConfig(gomock.Any()).Return(true, nil)
+	mnc.EXPECT().PublishConfig(gomock.Any()).Times(2).Return(true, nil)
 	nc := &nacosClient.NacosConfigClient{}
 	nc.SetClient(mnc)
 
