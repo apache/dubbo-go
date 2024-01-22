@@ -155,6 +155,8 @@ func WithProtocol(meta string) ReportOption {
 	}
 }
 
+// WithAddress address metadata report will to use, if a URL schema is set,this will also set the protocol,
+// such as WithAddress("zookeeper://127.0.0.1") will set address to "127.0.0.1" and protocol to "zookeeper"
 func WithAddress(address string) ReportOption {
 	return func(opts *ReportOptions) {
 		if i := strings.Index(address, "://"); i > 0 {
