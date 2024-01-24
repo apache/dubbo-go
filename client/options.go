@@ -429,6 +429,18 @@ func setConsumer(consumer *global.ConsumerConfig) ReferenceOption {
 	}
 }
 
+func setMetrics(mc *global.MetricsConfig) ReferenceOption {
+	return func(opts *ReferenceOptions) {
+		opts.Metrics = mc
+	}
+}
+
+func setOtel(oc *global.OtelConfig) ReferenceOption {
+	return func(opts *ReferenceOptions) {
+		opts.Otel = oc
+	}
+}
+
 type ClientOptions struct {
 	Consumer    *global.ConsumerConfig
 	Application *global.ApplicationConfig
@@ -703,11 +715,11 @@ func WithClientProvidedBy(providedBy string) ClientOption {
 }
 
 // todo(DMwangnima): implement this functionality
-//func WithAsync() ClientOption {
+// func WithAsync() ClientOption {
 //	return func(opts *ClientOptions) {
 //		opts.Consumer.Async = true
 //	}
-//}
+// }
 
 func WithClientParams(params map[string]string) ClientOption {
 	return func(opts *ClientOptions) {
@@ -728,7 +740,7 @@ func WithClientParam(k, v string) ClientOption {
 }
 
 // todo(DMwangnima): implement this functionality
-//func WithClientGeneric(generic bool) ClientOption {
+// func WithClientGeneric(generic bool) ClientOption {
 //	return func(opts *ClientOptions) {
 //		if generic {
 //			opts.Consumer.Generic = "true"
@@ -736,7 +748,7 @@ func WithClientParam(k, v string) ClientOption {
 //			opts.Consumer.Generic = "false"
 //		}
 //	}
-//}
+// }
 
 func WithClientSticky() ClientOption {
 	return func(opts *ClientOptions) {
