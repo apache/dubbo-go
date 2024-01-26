@@ -172,14 +172,18 @@ func (srv *HealthTripleServer) Resume() {
 
 func init() {
 	healthServer = NewServer()
-
 	internal.HealthSetServingStatusServing = SetServingStatusServing
-
-	server.SetProServices(&server.ServiceDefinition{
-		Handler: healthServer,
-		Info:    &triple_health.Health_ServiceInfo,
-		Opts: []server.ServiceOption{server.WithNotRegister(),
-			server.WithInterface(constant.HealthCheckServiceInterface)},
+	server.SetProServices(&server.InternalService{
+		Name: "healthCheck",
+		Init: func(options *server.ServiceOptions) (*server.ServiceDefinition, bool) {
+			return &server.ServiceDefinition{
+				Handler: healthServer,
+				Info:    &triple_health.Health_ServiceInfo,
+				Opts: []server.ServiceOption{server.WithNotRegister(),
+					server.WithInterface(constant.HealthCheckServiceInterface)},
+			}, true
+		},
+		Priority: constant.DefaultPriority,
 	})
 
 	// In order to adapt config.Load
