@@ -21,6 +21,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strconv"
 	"sync"
 	"time"
@@ -42,7 +43,8 @@ import (
 )
 
 // proServices are for internal services
-var proServices = map[string]*ServiceDefinition{}
+var proServices = make([]*InternalService, 0, 16)
+var proLock sync.Mutex
 
 type Server struct {
 	invoker protocol.Invoker
@@ -127,8 +129,17 @@ func newInfoInvoker(url *common.URL, info *ServiceInfo, svc common.RPCService) p
 
 // Register assemble invoker chains like ProviderConfig.Load, init a service per call
 func (s *Server) Register(handler interface{}, info *ServiceInfo, opts ...ServiceOption) error {
+	newSvcOpts, err := s.genSvcOpts(handler, opts...)
+	if err != nil {
+		return err
+	}
+	s.svcOptsMap.Store(newSvcOpts, info)
+	return nil
+}
+
+func (s *Server) genSvcOpts(handler interface{}, opts ...ServiceOption) (*ServiceOptions, error) {
 	if s.cfg == nil {
-		return errors.New("Server has not been initialized, please use NewServer() to create Server")
+		return nil, errors.New("Server has not been initialized, please use NewServer() to create Server")
 	}
 	var svcOpts []ServiceOption
 	appCfg := s.cfg.Application
@@ -157,16 +168,13 @@ func (s *Server) Register(handler interface{}, info *ServiceInfo, opts ...Servic
 			SetRegistries(regsCfg),
 		)
 	}
-
 	// options passed by users have higher priority
 	svcOpts = append(svcOpts, opts...)
 	if err := newSvcOpts.init(s, svcOpts...); err != nil {
-		return err
+		return nil, err
 	}
 	newSvcOpts.Implement(handler)
-	s.svcOptsMap.Store(newSvcOpts, info)
-
-	return nil
+	return newSvcOpts, nil
 }
 
 func (s *Server) exportServices() (err error) {
@@ -204,11 +212,87 @@ func (s *Server) Serve() error {
 	if err := s.exportServices(); err != nil {
 		return err
 	}
-
+	if err := s.exportInternalServices(); err != nil {
+		return err
+	}
 	if err := exposed_tmp.RegisterServiceInstance(); err != nil {
 		return err
 	}
 	select {}
+}
+
+// In order to expose internal services
+func (s *Server) exportInternalServices() error {
+	cfg := &ServiceOptions{}
+	cfg.Application = s.cfg.Application
+	cfg.Provider = s.cfg.Provider
+	cfg.Protocols = s.cfg.Protocols
+	cfg.Registries = s.cfg.Registries
+
+	services := make([]*InternalService, 0, len(proServices))
+
+	proLock.Lock()
+	defer proLock.Unlock()
+	for _, service := range proServices {
+		if service.Init == nil {
+			return errors.New("[internal service]internal service init func is empty, please set the init func correctly")
+		}
+		sd, ok := service.Init(cfg)
+		if !ok {
+			logger.Infof("[internal service]%s service will not expose", service.Name)
+			continue
+		}
+		newSvcOpts, err := s.genSvcOpts(sd.Handler, sd.Opts...)
+		if err != nil {
+			return err
+		}
+		service.svcOpts = newSvcOpts
+		service.info = sd.Info
+		services = append(services, service)
+	}
+
+	sort.Slice(services, func(i, j int) bool {
+		return services[i].Priority < services[j].Priority
+	})
+
+	for _, service := range services {
+		if service.BeforeExport != nil {
+			service.BeforeExport(service.svcOpts)
+		}
+		err := service.svcOpts.ExportWithInfo(service.info)
+		if service.AfterExport != nil {
+			service.AfterExport(service.svcOpts, err)
+		}
+		if err != nil {
+			logger.Errorf("[internal service]export %s service failed, err: %s", service.Name, err)
+			return err
+		}
+	}
+
+	return nil
+}
+
+// InternalService for dubbo internal services
+type InternalService struct {
+	// This is required
+	// internal service name
+	Name    string
+	svcOpts *ServiceOptions
+	info    *ServiceInfo
+	// This is required
+	// This options is service configuration
+	// Return serviceDefinition and bool, where bool indicates whether it is exported
+	Init func(options *ServiceOptions) (*ServiceDefinition, bool)
+	// This options is InternalService.svcOpts itself
+	BeforeExport func(options *ServiceOptions)
+	// This options is InternalService.svcOpts itself
+	AfterExport func(options *ServiceOptions, err error)
+	// Priority of service exposure
+	// Lower numbers have the higher priority
+	// The default priority is 0
+	// The metadata service is exposed at the end
+	// If you have no requirements for the order of service exposure, you can use the default priority or not set
+	Priority int
 }
 
 func getMetadataPort(opts *ServerOptions) int {
@@ -290,17 +374,15 @@ func NewServer(opts ...ServerOption) (*Server, error) {
 	srv := &Server{
 		cfg: newSrvOpts,
 	}
-
-	for _, service := range proServices {
-		err := srv.Register(service.Handler, service.Info, service.Opts...)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	return srv, nil
 }
 
-func SetProServices(sd *ServiceDefinition) {
-	proServices[sd.Info.InterfaceName] = sd
+func SetProServices(sd *InternalService) {
+	if sd.Name == "" {
+		logger.Warnf("[internal service]internal name is empty, please set internal name")
+		return
+	}
+	proLock.Lock()
+	defer proLock.Unlock()
+	proServices = append(proServices, sd)
 }

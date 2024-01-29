@@ -40,10 +40,10 @@ Make sure to add the resulting binary to your system's PATH.
 To generate Triple code from your Protocol Buffer files, use the `protoc` compiler with the `protoc-gen-go-triple` plugin. Here's an example command:
 
 ```shell
-protoc --go_out=. --go_opt=paths=source_relative --triple-go_out=. your_file.proto
+protoc --go_out=. --go_opt=paths=source_relative --go-triple_out=. your_file.proto
 ```
 
-Both the `--go_out` flag and `--triple-go_out` flag should be set to `.`. Please set the generated file path in the proto file using the `go_package` option.
+Both the `--go_out` flag and `--go-triple_out` flag should be set to `.`. Please set the generated file path in the proto file using the `go_package` option.
 
 ## Example
 
@@ -94,7 +94,7 @@ The package for `greet.pb.go` and `greet.triple.go` are `greet`
 You can use the following command to generate the Go code:
 
 ```shell
-protoc --go_out=. --go_opt=paths=source_relative --triple-go_out=. greet.proto
+protoc --go_out=. --go_opt=paths=source_relative --go-triple_out=. greet.proto
 ```
 
 This will generate the Go code for the Protobuf code in `greet.pb.go` and the Triple code in `greet.triple.go`.
