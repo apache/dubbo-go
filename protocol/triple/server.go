@@ -241,6 +241,7 @@ func (s *Server) handleServiceWithInfo(interfaceName string, invoker protocol.In
 					for key, val := range req.Header() {
 						attachments[key] = val
 					}
+					ctx = context.WithValue(ctx, constant.AttachmentKey, attachments)
 					invo := invocation.NewRPCInvocation(m.Name, args, attachments)
 					res := invoker.Invoke(ctx, invo)
 					// todo(DMwangnima): modify InfoInvoker to get a unified processing logic
@@ -264,6 +265,7 @@ func (s *Server) handleServiceWithInfo(interfaceName string, invoker protocol.In
 					for key, val := range stream.RequestHeader() {
 						attachments[key] = val
 					}
+					ctx = context.WithValue(ctx, constant.AttachmentKey, attachments)
 					invo := invocation.NewRPCInvocation(m.Name, args, attachments)
 					res := invoker.Invoke(ctx, invo)
 					return res.Result().(*tri.Response), res.Error()
@@ -281,6 +283,7 @@ func (s *Server) handleServiceWithInfo(interfaceName string, invoker protocol.In
 					for key, val := range request.Header() {
 						attachments[key] = val
 					}
+					ctx = context.WithValue(ctx, constant.AttachmentKey, attachments)
 					invo := invocation.NewRPCInvocation(m.Name, args, attachments)
 					res := invoker.Invoke(ctx, invo)
 					return res.Error()
@@ -297,6 +300,7 @@ func (s *Server) handleServiceWithInfo(interfaceName string, invoker protocol.In
 					for key, val := range stream.RequestHeader() {
 						attachments[key] = val
 					}
+					ctx = context.WithValue(ctx, constant.AttachmentKey, attachments)
 					invo := invocation.NewRPCInvocation(m.Name, args, attachments)
 					res := invoker.Invoke(ctx, invo)
 					return res.Error()
