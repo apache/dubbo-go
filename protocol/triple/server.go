@@ -237,8 +237,11 @@ func (s *Server) handleServiceWithInfo(interfaceName string, invoker protocol.In
 						// triple idl mode and old triple idl mode
 						args = append(args, req.Msg)
 					}
-					// todo: inject method.Meta to attachments
-					invo := invocation.NewRPCInvocation(m.Name, args, nil)
+					attachments := make(map[string]interface{}, len(req.Header()))
+					for key, val := range req.Header() {
+						attachments[key] = val
+					}
+					invo := invocation.NewRPCInvocation(m.Name, args, attachments)
 					res := invoker.Invoke(ctx, invo)
 					// todo(DMwangnima): modify InfoInvoker to get a unified processing logic
 					// please refer to server/InfoInvoker.Invoke()
@@ -257,7 +260,11 @@ func (s *Server) handleServiceWithInfo(interfaceName string, invoker protocol.In
 				func(ctx context.Context, stream *tri.ClientStream) (*tri.Response, error) {
 					var args []interface{}
 					args = append(args, m.StreamInitFunc(stream))
-					invo := invocation.NewRPCInvocation(m.Name, args, nil)
+					attachments := make(map[string]interface{}, len(stream.RequestHeader()))
+					for key, val := range stream.RequestHeader() {
+						attachments[key] = val
+					}
+					invo := invocation.NewRPCInvocation(m.Name, args, attachments)
 					res := invoker.Invoke(ctx, invo)
 					return res.Result().(*tri.Response), res.Error()
 				},
@@ -270,7 +277,11 @@ func (s *Server) handleServiceWithInfo(interfaceName string, invoker protocol.In
 				func(ctx context.Context, request *tri.Request, stream *tri.ServerStream) error {
 					var args []interface{}
 					args = append(args, request.Msg, m.StreamInitFunc(stream))
-					invo := invocation.NewRPCInvocation(m.Name, args, nil)
+					attachments := make(map[string]interface{}, len(request.Header()))
+					for key, val := range request.Header() {
+						attachments[key] = val
+					}
+					invo := invocation.NewRPCInvocation(m.Name, args, attachments)
 					res := invoker.Invoke(ctx, invo)
 					return res.Error()
 				},
@@ -282,7 +293,11 @@ func (s *Server) handleServiceWithInfo(interfaceName string, invoker protocol.In
 				func(ctx context.Context, stream *tri.BidiStream) error {
 					var args []interface{}
 					args = append(args, m.StreamInitFunc(stream))
-					invo := invocation.NewRPCInvocation(m.Name, args, nil)
+					attachments := make(map[string]interface{}, len(stream.RequestHeader()))
+					for key, val := range stream.RequestHeader() {
+						attachments[key] = val
+					}
+					invo := invocation.NewRPCInvocation(m.Name, args, attachments)
 					res := invoker.Invoke(ctx, invo)
 					return res.Error()
 				},

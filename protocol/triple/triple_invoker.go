@@ -21,6 +21,8 @@ import (
 	"context"
 	"fmt"
 	"sync"
+
+	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 )
 
 import (
@@ -32,6 +34,10 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
+
+var triAttachmentKeys = []string{
+	constant.InterfaceKey, constant.TokenKey, constant.TimeoutKey,
+}
 
 type TripleInvoker struct {
 	protocol.BaseInvoker
@@ -85,10 +91,31 @@ func (ti *TripleInvoker) Invoke(ctx context.Context, invocation protocol.Invocat
 	// e.g. Client.CallUnary(... req, resp []interface, ...)
 	// inRaw represents req and resp, inRawLen represents 2.
 	inRaw := invocation.ParameterRawValues()
-	invocation.Reply()
 	inRawLen := len(inRaw)
 	method := invocation.MethodName()
 	// todo(DMwangnima): process headers(metadata) passed in
+
+	// set attachments
+	for _, key := range triAttachmentKeys {
+		if val := ti.GetURL().GetParam(key, ""); len(val) > 0 {
+			invocation.SetAttachment(key, val)
+		}
+	}
+	// inject attachments
+	for key, valRaw := range invocation.Attachments() {
+		if str, ok := valRaw.(string); ok {
+			ctx = tri.AppendToOutgoingContext(ctx, key, str)
+			continue
+		}
+		if strs, ok := valRaw.([]string); ok {
+			for _, str := range strs {
+				ctx = tri.AppendToOutgoingContext(ctx, key, str)
+			}
+			continue
+		}
+		logger.Warnf("[Triple Protocol]Triple attachment value with key = %s is invalid, which should be string or []string", key)
+	}
+
 	if !ti.clientManager.isIDL {
 		switch callType {
 		case constant.CallUnary:
