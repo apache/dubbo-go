@@ -93,9 +93,17 @@ func (ti *TripleInvoker) Invoke(ctx context.Context, invocation protocol.Invocat
 	inRaw := invocation.ParameterRawValues()
 	inRawLen := len(inRaw)
 	method := invocation.MethodName()
-	// todo(DMwangnima): process headers(metadata) passed in
 
-	// set attachments
+	// retrieve users passed-in attachment
+	attaRaw := ctx.Value(constant.AttachmentKey)
+	if attaRaw != nil {
+		if userAtta, ok := attaRaw.(map[string]interface{}); ok {
+			for key, val := range userAtta {
+				invocation.SetAttachment(key, val)
+			}
+		}
+	}
+	// set pre-defined attachments
 	for _, key := range triAttachmentKeys {
 		if val := ti.GetURL().GetParam(key, ""); len(val) > 0 {
 			invocation.SetAttachment(key, val)
