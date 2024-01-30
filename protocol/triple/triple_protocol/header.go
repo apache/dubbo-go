@@ -126,7 +126,7 @@ func AppendToOutgoingContext(ctx context.Context, kv ...string) context.Context 
 	return context.WithValue(ctx, headerOutgoingKey{}, header)
 }
 
-func extractHeaderFromOutgoingContext(ctx context.Context) http.Header {
+func ExtractFromOutgoingContext(ctx context.Context) http.Header {
 	headerRaw := ctx.Value(headerOutgoingKey{})
 	if headerRaw == nil {
 		return nil
