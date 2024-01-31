@@ -45,7 +45,7 @@ func Generate() []protocol.Invoker {
 	return invokers
 }
 
-func Benchloadbalace(b *testing.B, lb loadbalance.LoadBalance) {
+func Benchloadbalance(b *testing.B, lb loadbalance.LoadBalance) {
 	b.Helper()
 	invokers := Generate()
 	b.ReportAllocs()
@@ -55,26 +55,26 @@ func Benchloadbalace(b *testing.B, lb loadbalance.LoadBalance) {
 	}
 }
 
-func BenchmarkRoudrobinLoadbalace(b *testing.B) {
-	Benchloadbalace(b, extension.GetLoadbalance(constant.LoadBalanceKeyRoundRobin))
+func BenchmarkRoudrobinLoadbalance(b *testing.B) {
+	Benchloadbalance(b, extension.GetLoadbalance(constant.LoadBalanceKeyRoundRobin))
 }
 
-func BenchmarkLeastativeLoadbalace(b *testing.B) {
-	Benchloadbalace(b, extension.GetLoadbalance(constant.LoadBalanceKeyLeastActive))
+func BenchmarkLeastativeLoadbalance(b *testing.B) {
+	Benchloadbalance(b, extension.GetLoadbalance(constant.LoadBalanceKeyLeastActive))
 }
 
-func BenchmarkConsistenthashingLoadbalace(b *testing.B) {
-	Benchloadbalace(b, extension.GetLoadbalance(constant.LoadBalanceKeyConsistentHashing))
+func BenchmarkConsistenthashingLoadbalance(b *testing.B) {
+	Benchloadbalance(b, extension.GetLoadbalance(constant.LoadBalanceKeyConsistentHashing))
 }
 
-func BenchmarkP2CLoadbalace(b *testing.B) {
-	Benchloadbalace(b, extension.GetLoadbalance(constant.LoadBalanceKeyP2C))
+func BenchmarkP2CLoadbalance(b *testing.B) {
+	Benchloadbalance(b, extension.GetLoadbalance(constant.LoadBalanceKeyP2C))
 }
 
-func BenchmarkInterleavedWeightedRoundRobinLoadbalace(b *testing.B) {
-	Benchloadbalace(b, extension.GetLoadbalance(constant.LoadBalanceKeyInterleavedWeightedRoundRobin))
+func BenchmarkInterleavedWeightedRoundRobinLoadbalance(b *testing.B) {
+	Benchloadbalance(b, extension.GetLoadbalance(constant.LoadBalanceKeyInterleavedWeightedRoundRobin))
 }
 
-func BenchmarkRandomLoadbalace(b *testing.B) {
-	Benchloadbalace(b, extension.GetLoadbalance(constant.LoadBalanceKeyRandom))
+func BenchmarkRandomLoadbalance(b *testing.B) {
+	Benchloadbalance(b, extension.GetLoadbalance(constant.LoadBalanceKeyRandom))
 }
