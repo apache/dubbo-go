@@ -109,6 +109,8 @@ func (cli *Client) dial(interfaceName string, info *ClientInfo, opts ...Referenc
 		setApplicationCompat(cli.cliOpts.applicationCompat),
 		setRegistriesCompat(cli.cliOpts.registriesCompat),
 		setConsumer(cli.cliOpts.Consumer),
+		setMetrics(cli.cliOpts.Metrics),
+		setOtel(cli.cliOpts.Otel),
 		// this config must be set after Reference initialized
 		setInterfaceName(interfaceName),
 	}
