@@ -124,6 +124,7 @@ func (c *Client) CallUnary(ctx context.Context, request *Request, response *Resp
 	if flag {
 		defer cancel()
 	}
+	mergeHeaders(request.Header(), ExtractFromOutgoingContext(ctx))
 	applyGroupVersionHeaders(request.Header(), c.config)
 	return c.callUnary(ctx, request, response)
 }
@@ -170,6 +171,7 @@ func (c *Client) CallBidiStream(ctx context.Context) (*BidiStreamForClient, erro
 func (c *Client) newConn(ctx context.Context, streamType StreamType) StreamingClientConn {
 	newConn := func(ctx context.Context, spec Spec) StreamingClientConn {
 		header := make(http.Header, 8) // arbitrary power of two, prevent immediate resizing
+		mergeHeaders(header, ExtractFromOutgoingContext(ctx))
 		applyGroupVersionHeaders(header, c.config)
 		c.protocolClient.WriteRequestHeader(streamType, header)
 		return c.protocolClient.NewConn(ctx, spec, header)

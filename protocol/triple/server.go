@@ -20,7 +20,9 @@ package triple
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"reflect"
+	"strings"
 	"sync"
 )
 
@@ -237,8 +239,10 @@ func (s *Server) handleServiceWithInfo(interfaceName string, invoker protocol.In
 						// triple idl mode and old triple idl mode
 						args = append(args, req.Msg)
 					}
-					// todo: inject method.Meta to attachments
-					invo := invocation.NewRPCInvocation(m.Name, args, nil)
+					attachments := generateAttachments(req.Header())
+					// inject attachments
+					ctx = context.WithValue(ctx, constant.AttachmentKey, attachments)
+					invo := invocation.NewRPCInvocation(m.Name, args, attachments)
 					res := invoker.Invoke(ctx, invo)
 					// todo(DMwangnima): modify InfoInvoker to get a unified processing logic
 					// please refer to server/InfoInvoker.Invoke()
@@ -257,7 +261,10 @@ func (s *Server) handleServiceWithInfo(interfaceName string, invoker protocol.In
 				func(ctx context.Context, stream *tri.ClientStream) (*tri.Response, error) {
 					var args []interface{}
 					args = append(args, m.StreamInitFunc(stream))
-					invo := invocation.NewRPCInvocation(m.Name, args, nil)
+					attachments := generateAttachments(stream.RequestHeader())
+					// inject attachments
+					ctx = context.WithValue(ctx, constant.AttachmentKey, attachments)
+					invo := invocation.NewRPCInvocation(m.Name, args, attachments)
 					res := invoker.Invoke(ctx, invo)
 					return res.Result().(*tri.Response), res.Error()
 				},
@@ -267,10 +274,13 @@ func (s *Server) handleServiceWithInfo(interfaceName string, invoker protocol.In
 			_ = s.triServer.RegisterServerStreamHandler(
 				procedure,
 				m.ReqInitFunc,
-				func(ctx context.Context, request *tri.Request, stream *tri.ServerStream) error {
+				func(ctx context.Context, req *tri.Request, stream *tri.ServerStream) error {
 					var args []interface{}
-					args = append(args, request.Msg, m.StreamInitFunc(stream))
-					invo := invocation.NewRPCInvocation(m.Name, args, nil)
+					args = append(args, req.Msg, m.StreamInitFunc(stream))
+					attachments := generateAttachments(req.Header())
+					// inject attachments
+					ctx = context.WithValue(ctx, constant.AttachmentKey, attachments)
+					invo := invocation.NewRPCInvocation(m.Name, args, attachments)
 					res := invoker.Invoke(ctx, invo)
 					return res.Error()
 				},
@@ -282,7 +292,10 @@ func (s *Server) handleServiceWithInfo(interfaceName string, invoker protocol.In
 				func(ctx context.Context, stream *tri.BidiStream) error {
 					var args []interface{}
 					args = append(args, m.StreamInitFunc(stream))
-					invo := invocation.NewRPCInvocation(m.Name, args, nil)
+					attachments := generateAttachments(stream.RequestHeader())
+					// inject attachments
+					ctx = context.WithValue(ctx, constant.AttachmentKey, attachments)
+					invo := invocation.NewRPCInvocation(m.Name, args, attachments)
 					res := invoker.Invoke(ctx, invo)
 					return res.Error()
 				},
@@ -408,4 +421,15 @@ func createServiceInfoWithReflection(svc common.RPCService) *server.ServiceInfo 
 	info.Methods = methodInfos
 
 	return &info
+}
+
+// generateAttachments transfer http.Header to map[string]interface{} and make all keys lowercase
+func generateAttachments(header http.Header) map[string]interface{} {
+	attachments := make(map[string]interface{}, len(header))
+	for key, val := range header {
+		lowerKey := strings.ToLower(key)
+		attachments[lowerKey] = val
+	}
+
+	return attachments
 }

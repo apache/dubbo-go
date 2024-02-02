@@ -126,6 +126,15 @@ func AppendToOutgoingContext(ctx context.Context, kv ...string) context.Context 
 	return context.WithValue(ctx, headerOutgoingKey{}, header)
 }
 
+func ExtractFromOutgoingContext(ctx context.Context) http.Header {
+	headerRaw := ctx.Value(headerOutgoingKey{})
+	if headerRaw == nil {
+		return nil
+	}
+	// since headerOutgoingKey is only used in triple_protocol package, we need not verify the type
+	return headerRaw.(http.Header)
+}
+
 // FromIncomingContext retrieves headers passed by client-side. It is like grpc.FromIncomingContext.
 // Please refer to https://github.com/grpc/grpc-go/blob/master/Documentation/grpc-metadata.md#receiving-metadata-1.
 func FromIncomingContext(ctx context.Context) (http.Header, bool) {
