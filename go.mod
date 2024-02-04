@@ -1,6 +1,6 @@
 module dubbo.apache.org/dubbo-go/v3
 
-go 1.15
+go 1.16
 
 require (
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
