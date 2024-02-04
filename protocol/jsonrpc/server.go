@@ -22,7 +22,6 @@ import (
 	"bytes"
 	"context"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"runtime"
@@ -100,7 +99,7 @@ func (s *Server) handlePkg(conn net.Conn) {
 			ProtoMajor:    1,
 			ProtoMinor:    1,
 			ContentLength: int64(len(body)),
-			Body:          ioutil.NopCloser(bytes.NewReader(body)),
+			Body:          io.NopCloser(bytes.NewReader(body)),
 		}
 		rsp.Header.Del("Content-Type")
 		rsp.Header.Del("Content-Length")
@@ -271,7 +270,7 @@ func serveRequest(ctx context.Context, header map[string]string, body []byte, co
 			ProtoMajor:    1,
 			ProtoMinor:    1,
 			ContentLength: int64(len(body)),
-			Body:          ioutil.NopCloser(bytes.NewReader(body)),
+			Body:          io.NopCloser(bytes.NewReader(body)),
 		}
 		rsp.Header.Del("Content-Type")
 		rsp.Header.Del("Content-Length")
@@ -297,7 +296,7 @@ func serveRequest(ctx context.Context, header map[string]string, body []byte, co
 			ProtoMajor:    1,
 			ProtoMinor:    1,
 			ContentLength: int64(len(body)),
-			Body:          ioutil.NopCloser(bytes.NewReader(body)),
+			Body:          io.NopCloser(bytes.NewReader(body)),
 		}
 		rsp.Header.Del("Content-Type")
 		rsp.Header.Del("Content-Length")
