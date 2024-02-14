@@ -40,3 +40,29 @@ func DefaultConsumerConfig() *ConsumerConfig {
 		References:     make(map[string]*ReferenceConfig),
 	}
 }
+
+// Clone a new ConsumerConfig
+func (c *ConsumerConfig) Clone() *ConsumerConfig {
+	newRegistryIDs := make([]string, len(c.RegistryIDs))
+	copy(newRegistryIDs, c.RegistryIDs)
+
+	newReferences := make(map[string]*ReferenceConfig, len(c.References))
+	for k, v := range c.References {
+		newReferences[k] = v.Clone()
+	}
+
+	return &ConsumerConfig{
+		Filter:                         c.Filter,
+		RegistryIDs:                    c.RegistryIDs,
+		Protocol:                       c.Protocol,
+		RequestTimeout:                 c.RequestTimeout,
+		ProxyFactory:                   c.ProxyFactory,
+		Check:                          c.Check,
+		AdaptiveService:                c.AdaptiveService,
+		References:                     newReferences,
+		TracingKey:                     c.TracingKey,
+		FilterConf:                     c.FilterConf,
+		MaxWaitTimeForServiceDiscovery: c.MaxWaitTimeForServiceDiscovery,
+		MeshEnabled:                    c.MeshEnabled,
+	}
+}

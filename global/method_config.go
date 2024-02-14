@@ -33,3 +33,20 @@ type MethodConfig struct {
 	Sticky                      bool   `yaml:"sticky"   json:"sticky,omitempty" property:"sticky"`
 	RequestTimeout              string `yaml:"timeout"  json:"timeout,omitempty" property:"timeout"`
 }
+
+// Clone a new MethodConfig
+func (c *MethodConfig) Clone() *MethodConfig {
+	return &MethodConfig{
+		Name:                        c.Name,
+		Retries:                     c.Retries,
+		LoadBalance:                 c.LoadBalance,
+		Weight:                      c.Weight,
+		TpsLimitInterval:            c.TpsLimitInterval,
+		TpsLimitRate:                c.TpsLimitRate,
+		TpsLimitStrategy:            c.TpsLimitStrategy,
+		ExecuteLimit:                c.ExecuteLimit,
+		ExecuteLimitRejectedHandler: c.ExecuteLimitRejectedHandler,
+		Sticky:                      c.Sticky,
+		RequestTimeout:              c.RequestTimeout,
+	}
+}

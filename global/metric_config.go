@@ -60,10 +60,64 @@ func DefaultMetricsConfig() *MetricsConfig {
 	return &MetricsConfig{Prometheus: defaultPrometheusConfig(), Aggregation: defaultAggregateConfig()}
 }
 
+// Clone a new MetricsConfig
+func (c *MetricsConfig) Clone() *MetricsConfig {
+	var newEnabled *bool
+	if c.Enable != nil {
+		newEnabled = new(bool)
+		*newEnabled = *c.Enable
+	}
+
+	var newEnableMetadata *bool
+	if c.EnableMetadata != nil {
+		newEnableMetadata = new(bool)
+		*newEnableMetadata = *c.EnableMetadata
+	}
+
+	var newEnableRegistry *bool
+	if c.EnableRegistry != nil {
+		newEnableRegistry = new(bool)
+		*newEnableRegistry = *c.EnableRegistry
+	}
+
+	var newEnableConfigCenter *bool
+	if c.EnableConfigCenter != nil {
+		newEnableConfigCenter = new(bool)
+		*newEnableConfigCenter = *c.EnableConfigCenter
+	}
+
+	return &MetricsConfig{
+		Enable:             c.Enable,
+		Port:               c.Port,
+		Path:               c.Path,
+		Protocol:           c.Protocol,
+		Prometheus:         c.Prometheus.Clone(),
+		Aggregation:        c.Aggregation.Clone(),
+		EnableMetadata:     newEnableMetadata,
+		EnableRegistry:     newEnableRegistry,
+		EnableConfigCenter: newEnableConfigCenter,
+	}
+}
+
 func defaultPrometheusConfig() *PrometheusConfig {
 	return &PrometheusConfig{Exporter: &Exporter{}, Pushgateway: &PushgatewayConfig{}}
 }
 
+func (c *PrometheusConfig) Clone() *PrometheusConfig {
+	return &PrometheusConfig{
+		Exporter:    c.Exporter,
+		Pushgateway: c.Pushgateway,
+	}
+}
+
 func defaultAggregateConfig() *AggregateConfig {
 	return &AggregateConfig{}
+}
+
+func (c *AggregateConfig) Clone() *AggregateConfig {
+	return &AggregateConfig{
+		Enabled:           c.Enabled,
+		BucketNum:         c.BucketNum,
+		TimeWindowSeconds: c.TimeWindowSeconds,
+	}
 }

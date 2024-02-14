@@ -46,3 +46,26 @@ func DefaultCenterConfig() *CenterConfig {
 		Params: make(map[string]string),
 	}
 }
+
+// Clone a new CenterConfig
+func (c *CenterConfig) Clone() *CenterConfig {
+	newParams := make(map[string]string, len(c.Params))
+	for k, v := range c.Params {
+		newParams[k] = v
+	}
+
+	return &CenterConfig{
+		Protocol:      c.Protocol,
+		Address:       c.Address,
+		DataId:        c.DataId,
+		Cluster:       c.Cluster,
+		Group:         c.Group,
+		Username:      c.Username,
+		Password:      c.Password,
+		Namespace:     c.Namespace,
+		AppID:         c.AppID,
+		Timeout:       c.Timeout,
+		Params:        newParams,
+		FileExtension: c.FileExtension,
+	}
+}

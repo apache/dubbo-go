@@ -44,3 +44,30 @@ type RegistryConfig struct {
 func DefaultRegistryConfig() *RegistryConfig {
 	return &RegistryConfig{}
 }
+
+// Clone a new RegistryConfig
+func (c *RegistryConfig) Clone() *RegistryConfig {
+	newParams := make(map[string]string, len(c.Params))
+	for k, v := range c.Params {
+		newParams[k] = v
+	}
+
+	return &RegistryConfig{
+		Protocol:          c.Protocol,
+		Timeout:           c.Timeout,
+		Group:             c.Group,
+		Namespace:         c.Namespace,
+		TTL:               c.TTL,
+		Address:           c.Address,
+		Username:          c.Username,
+		Password:          c.Password,
+		Simplified:        c.Simplified,
+		Preferred:         c.Preferred,
+		Zone:              c.Zone,
+		Weight:            c.Weight,
+		Params:            newParams,
+		RegistryType:      c.RegistryType,
+		UseAsMetaReport:   c.UseAsMetaReport,
+		UseAsConfigCenter: c.UseAsConfigCenter,
+	}
+}

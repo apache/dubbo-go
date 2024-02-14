@@ -167,6 +167,70 @@ func (rc *InstanceOptions) Prefix() string {
 	return constant.Dubbo
 }
 
+func (rc *InstanceOptions) CloneApplication() *global.ApplicationConfig {
+	return rc.Application.Clone()
+}
+
+func (rc *InstanceOptions) CloneProtocols() map[string]*global.ProtocolConfig {
+	protocols := make(map[string]*global.ProtocolConfig, len(rc.Protocols))
+	for k, v := range rc.Protocols {
+		protocols[k] = v.Clone()
+	}
+	return protocols
+}
+
+func (rc *InstanceOptions) CloneRegistries() map[string]*global.RegistryConfig {
+	registries := make(map[string]*global.RegistryConfig, len(rc.Registries))
+	for k, v := range rc.Registries {
+		registries[k] = v.Clone()
+	}
+	return registries
+}
+
+func (rc *InstanceOptions) CloneConfigCenter() *global.CenterConfig {
+	return rc.ConfigCenter.Clone()
+}
+
+func (rc *InstanceOptions) CloneMetadataReport() *global.MetadataReportConfig {
+	return rc.MetadataReport.Clone()
+}
+
+func (rc *InstanceOptions) CloneProvider() *global.ProviderConfig {
+	return rc.Provider.Clone()
+}
+
+func (rc *InstanceOptions) CloneConsumer() *global.ConsumerConfig {
+	return rc.Consumer.Clone()
+}
+
+func (rc *InstanceOptions) CloneMetrics() *global.MetricsConfig {
+	return rc.Metrics.Clone()
+}
+
+func (rc *InstanceOptions) CloneOtel() *global.OtelConfig {
+	return rc.Otel.Clone()
+}
+
+func (rc *InstanceOptions) CloneLogger() *global.LoggerConfig {
+	return rc.Logger.Clone()
+}
+
+func (rc *InstanceOptions) CloneShutdown() *global.ShutdownConfig {
+	return rc.Shutdown.Clone()
+}
+
+func (rc *InstanceOptions) CloneCustom() *global.CustomConfig {
+	return rc.Custom.Clone()
+}
+
+func (rc *InstanceOptions) CloneProfiles() *global.ProfilesConfig {
+	return rc.Profiles.Clone()
+}
+
+func (rc *InstanceOptions) CloneTLSConfig() *global.TLSConfig {
+	return rc.TLSConfig.Clone()
+}
+
 type InstanceOption func(*InstanceOptions)
 
 func WithOrganization(organization string) InstanceOption {

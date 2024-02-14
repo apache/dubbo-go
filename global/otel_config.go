@@ -36,3 +36,28 @@ func DefaultOtelConfig() *OtelConfig {
 		TracingConfig: &OtelTraceConfig{},
 	}
 }
+
+// Clone a new OtelConfig
+func (c *OtelConfig) Clone() *OtelConfig {
+	return &OtelConfig{
+		TracingConfig: c.TracingConfig.Clone(),
+	}
+}
+
+// Clone a new OtelTraceConfig
+func (c *OtelTraceConfig) Clone() *OtelTraceConfig {
+	var newEnabled *bool
+	if c.Enable != nil {
+		newEnabled = new(bool)
+		*newEnabled = *c.Enable
+	}
+
+	return &OtelTraceConfig{
+		Enable:      c.Enable,
+		Exporter:    c.Exporter,
+		Endpoint:    c.Endpoint,
+		Propagator:  c.Propagator,
+		SampleMode:  c.SampleMode,
+		SampleRatio: c.SampleRatio,
+	}
+}

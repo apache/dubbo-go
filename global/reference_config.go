@@ -56,6 +56,51 @@ func DefaultReferenceConfig() *ReferenceConfig {
 	}
 }
 
+// Clone a new ReferenceConfig
+func (c *ReferenceConfig) Clone() *ReferenceConfig {
+	var newCheck *bool
+	if c.Check != nil {
+		check := *c.Check
+		newCheck = &check
+	}
+
+	newRegistryIDs := make([]string, len(c.RegistryIDs))
+	copy(newRegistryIDs, c.RegistryIDs)
+
+	var newMethods []*MethodConfig
+	if c.Methods != nil {
+		newMethods = make([]*MethodConfig, 0, len(c.Methods))
+		for _, method := range c.Methods {
+			newMethods = append(newMethods, method.Clone())
+		}
+	}
+
+	return &ReferenceConfig{
+		InterfaceName:    c.InterfaceName,
+		Check:            newCheck,
+		URL:              c.URL,
+		Filter:           c.Filter,
+		Protocol:         c.Protocol,
+		RegistryIDs:      newRegistryIDs,
+		Cluster:          c.Cluster,
+		Loadbalance:      c.Loadbalance,
+		Retries:          c.Retries,
+		Group:            c.Group,
+		Version:          c.Version,
+		Serialization:    c.Serialization,
+		ProvidedBy:       c.ProvidedBy,
+		Methods:          newMethods,
+		Async:            c.Async,
+		Params:           c.Params,
+		Generic:          c.Generic,
+		Sticky:           c.Sticky,
+		RequestTimeout:   c.RequestTimeout,
+		ForceTag:         c.ForceTag,
+		TracingKey:       c.TracingKey,
+		MeshProviderPort: c.MeshProviderPort,
+	}
+}
+
 type ReferenceOption func(*ReferenceConfig)
 
 func WithReference_InterfaceName(name string) ReferenceOption {

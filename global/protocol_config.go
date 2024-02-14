@@ -34,3 +34,15 @@ type ProtocolConfig struct {
 func DefaultProtocolConfig() *ProtocolConfig {
 	return &ProtocolConfig{}
 }
+
+// Clone a new ProtocolConfig
+func (c *ProtocolConfig) Clone() *ProtocolConfig {
+	return &ProtocolConfig{
+		Name:                 c.Name,
+		Ip:                   c.Ip,
+		Port:                 c.Port,
+		Params:               c.Params,
+		MaxServerSendMsgSize: c.MaxServerSendMsgSize,
+		MaxServerRecvMsgSize: c.MaxServerRecvMsgSize,
+	}
+}
