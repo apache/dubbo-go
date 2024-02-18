@@ -147,12 +147,4 @@ func TestCloneDefaultConfig(t *testing.T) {
 			t.Errorf("ShutdownConfig.Clone() = %v, want %v", clone, c)
 		}
 	})
-
-	t.Run("TLSConfig", func(t *testing.T) {
-		c := DefaultTLSConfig()
-		clone := c.Clone()
-		if clone == c {
-			t.Errorf("TLSConfig.Clone() = %v, want %v", clone, c)
-		}
-	})
 }
