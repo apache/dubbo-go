@@ -87,7 +87,6 @@ func (t *tripleInvoker) Destroy() {
 func (t *tripleInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 	name := invocation.MethodName()
 	args := invocation.Arguments()
-	// todo(DMwangnima): use map to represent Methods
 	for _, method := range t.info.Methods {
 		if method.Name == name {
 			res, err := method.MethodFunc(ctx, args, t.handler)
@@ -124,7 +123,6 @@ func runTripleServer(interfaceName string, group string, version string, addr st
 
 func runOldTripleServer(interfaceName string, group string, version string, addr string, desc *grpc_go.ServiceDesc, svc common.RPCService) {
 	url := common.NewURLWithOptions(
-		// todo(DMwangnima): figure this out
 		common.WithPath(interfaceName),
 		common.WithLocation(addr),
 		common.WithPort(dubbo3Port),
