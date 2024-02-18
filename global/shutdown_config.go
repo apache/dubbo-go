@@ -71,8 +71,11 @@ func DefaultShutdownConfig() *ShutdownConfig {
 
 // Clone a new ShutdownConfig
 func (c *ShutdownConfig) Clone() *ShutdownConfig {
-	newInternalSignal := new(bool)
-	*newInternalSignal = *c.InternalSignal
+	var newInternalSignal *bool
+	if c.InternalSignal != nil {
+		newInternalSignal = new(bool)
+		*newInternalSignal = *c.InternalSignal
+	}
 
 	newShutdownConfig := &ShutdownConfig{
 		Timeout:                     c.Timeout,

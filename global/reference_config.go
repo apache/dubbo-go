@@ -75,6 +75,11 @@ func (c *ReferenceConfig) Clone() *ReferenceConfig {
 		}
 	}
 
+	newParams := make(map[string]string, len(c.Params))
+	for k, v := range c.Params {
+		newParams[k] = v
+	}
+
 	return &ReferenceConfig{
 		InterfaceName:    c.InterfaceName,
 		Check:            newCheck,
@@ -91,7 +96,7 @@ func (c *ReferenceConfig) Clone() *ReferenceConfig {
 		ProvidedBy:       c.ProvidedBy,
 		Methods:          newMethods,
 		Async:            c.Async,
-		Params:           c.Params,
+		Params:           newParams,
 		Generic:          c.Generic,
 		Sticky:           c.Sticky,
 		RequestTimeout:   c.RequestTimeout,

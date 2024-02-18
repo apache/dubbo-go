@@ -62,10 +62,10 @@ func DefaultMetricsConfig() *MetricsConfig {
 
 // Clone a new MetricsConfig
 func (c *MetricsConfig) Clone() *MetricsConfig {
-	var newEnabled *bool
+	var newEnable *bool
 	if c.Enable != nil {
-		newEnabled = new(bool)
-		*newEnabled = *c.Enable
+		newEnable = new(bool)
+		*newEnable = *c.Enable
 	}
 
 	var newEnableMetadata *bool
@@ -87,7 +87,7 @@ func (c *MetricsConfig) Clone() *MetricsConfig {
 	}
 
 	return &MetricsConfig{
-		Enable:             c.Enable,
+		Enable:             newEnable,
 		Port:               c.Port,
 		Path:               c.Path,
 		Protocol:           c.Protocol,
@@ -105,8 +105,37 @@ func defaultPrometheusConfig() *PrometheusConfig {
 
 func (c *PrometheusConfig) Clone() *PrometheusConfig {
 	return &PrometheusConfig{
-		Exporter:    c.Exporter,
-		Pushgateway: c.Pushgateway,
+		Exporter:    c.Exporter.Clone(),
+		Pushgateway: c.Pushgateway.Clone(),
+	}
+}
+
+func (c *Exporter) Clone() *Exporter {
+	var newEnabled *bool
+	if c.Enabled != nil {
+		newEnabled = new(bool)
+		*newEnabled = *c.Enabled
+	}
+
+	return &Exporter{
+		Enabled: newEnabled,
+	}
+}
+
+func (c *PushgatewayConfig) Clone() *PushgatewayConfig {
+	var newEnabled *bool
+	if c.Enabled != nil {
+		newEnabled = new(bool)
+		*newEnabled = *c.Enabled
+	}
+
+	return &PushgatewayConfig{
+		Enabled:      newEnabled,
+		BaseUrl:      c.BaseUrl,
+		Job:          c.Job,
+		Username:     c.Username,
+		Password:     c.Password,
+		PushInterval: c.PushInterval,
 	}
 }
 
@@ -115,8 +144,14 @@ func defaultAggregateConfig() *AggregateConfig {
 }
 
 func (c *AggregateConfig) Clone() *AggregateConfig {
+	var newEnabled *bool
+	if c.Enabled != nil {
+		newEnabled = new(bool)
+		*newEnabled = *c.Enabled
+	}
+
 	return &AggregateConfig{
-		Enabled:           c.Enabled,
+		Enabled:           newEnabled,
 		BucketNum:         c.BucketNum,
 		TimeWindowSeconds: c.TimeWindowSeconds,
 	}

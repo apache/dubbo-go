@@ -53,7 +53,7 @@ func (c *ConsumerConfig) Clone() *ConsumerConfig {
 
 	return &ConsumerConfig{
 		Filter:                         c.Filter,
-		RegistryIDs:                    c.RegistryIDs,
+		RegistryIDs:                    newRegistryIDs,
 		Protocol:                       c.Protocol,
 		RequestTimeout:                 c.RequestTimeout,
 		ProxyFactory:                   c.ProxyFactory,

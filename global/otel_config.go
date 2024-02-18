@@ -46,14 +46,14 @@ func (c *OtelConfig) Clone() *OtelConfig {
 
 // Clone a new OtelTraceConfig
 func (c *OtelTraceConfig) Clone() *OtelTraceConfig {
-	var newEnabled *bool
+	var newEnable *bool
 	if c.Enable != nil {
-		newEnabled = new(bool)
-		*newEnabled = *c.Enable
+		newEnable = new(bool)
+		*newEnable = *c.Enable
 	}
 
 	return &OtelTraceConfig{
-		Enable:      c.Enable,
+		Enable:      newEnable,
 		Exporter:    c.Exporter,
 		Endpoint:    c.Endpoint,
 		Propagator:  c.Propagator,

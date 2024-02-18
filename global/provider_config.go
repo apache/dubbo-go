@@ -76,7 +76,7 @@ func (c *ProviderConfig) Clone() *ProviderConfig {
 		Services:               newServices,
 		ProxyFactory:           c.ProxyFactory,
 		FilterConf:             c.FilterConf,
-		ConfigType:             c.ConfigType,
+		ConfigType:             newConfigType,
 		AdaptiveService:        c.AdaptiveService,
 		AdaptiveServiceVerbose: c.AdaptiveServiceVerbose,
 	}
