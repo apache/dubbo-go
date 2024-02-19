@@ -20,23 +20,19 @@ package mapping
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
+	"os"
 	"sync"
 	"time"
-)
 
-import (
 	"github.com/dubbogo/gost/log/logger"
 
 	structpb "github.com/golang/protobuf/ptypes/struct"
 
-	perrors "github.com/pkg/errors"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/remoting/xds/common"
 	"dubbo.apache.org/dubbo-go/v3/xds/client"
+	perrors "github.com/pkg/errors"
 )
 
 const (
@@ -125,7 +121,7 @@ func (i *InterfaceMapHandlerImpl) GetHostAddrMap(serviceUniqueKey string) (strin
 func (i *InterfaceMapHandlerImpl) getServiceUniqueKeyHostAddrMapFromPilot() (map[string]string, error) {
 	req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("http://%s/debug/adsz", i.istioDebugAddr.String()), nil)
 	if !i.localDebugMode {
-		token, err := ioutil.ReadFile(i.istioTokenPath)
+		token, err := os.ReadFile(i.istioTokenPath)
 		if err != nil {
 			return nil, err
 		}
@@ -138,7 +134,7 @@ func (i *InterfaceMapHandlerImpl) getServiceUniqueKeyHostAddrMapFromPilot() (map
 		return nil, err
 	}
 
-	data, err := ioutil.ReadAll(rsp.Body)
+	data, err := io.ReadAll(rsp.Body)
 	if err != nil {
 		return nil, err
 	}
