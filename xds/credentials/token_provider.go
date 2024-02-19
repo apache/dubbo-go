@@ -19,7 +19,7 @@ package credentials
 
 import (
 	"context"
-	"io/ioutil"
+	"os"
 )
 
 // provide k8s service account
@@ -30,7 +30,7 @@ type saTokenProvider struct {
 
 // NewSaTokenProvider return a provider
 func NewSaTokenProvider(tokenPath string) (*saTokenProvider, error) {
-	sa, err := ioutil.ReadFile(tokenPath)
+	sa, err := os.ReadFile(tokenPath)
 	if err != nil {
 		return nil, err
 	}
