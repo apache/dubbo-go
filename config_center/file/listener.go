@@ -18,20 +18,14 @@
 package file
 
 import (
-	"io/ioutil"
+	"os"
 	"sync"
-)
 
-import (
-	"github.com/dubbogo/gost/log/logger"
-
-	"github.com/fsnotify/fsnotify"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
+	"github.com/dubbogo/gost/log/logger"
+	"github.com/fsnotify/fsnotify"
 )
 
 // CacheListener is file watcher
@@ -154,7 +148,7 @@ func (cl *CacheListener) RemoveListener(key string, listener config_center.Confi
 }
 
 func getFileContent(path string) string {
-	c, err := ioutil.ReadFile(path)
+	c, err := os.ReadFile(path)
 	if err != nil {
 		logger.Errorf("read file path:%s err:%v", path, err)
 		return ""

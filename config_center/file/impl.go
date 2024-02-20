@@ -20,25 +20,19 @@ package file
 import (
 	"bytes"
 	"errors"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"os/user"
 	"path/filepath"
 	"runtime"
 	"strings"
-)
 
-import (
 	gxset "github.com/dubbogo/gost/container/set"
 
-	perrors "github.com/pkg/errors"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/config_center/parser"
+	perrors "github.com/pkg/errors"
 )
 
 var osType = runtime.GOOS
@@ -132,7 +126,7 @@ func (fsdc *FileSystemDynamicConfiguration) GetProperties(key string, opts ...co
 	}
 
 	tmpPath := fsdc.GetPath(key, tmpOpts.Group)
-	file, err := ioutil.ReadFile(tmpPath)
+	file, err := os.ReadFile(tmpPath)
 	if err != nil {
 		return "", perrors.WithStack(err)
 	}
@@ -161,7 +155,7 @@ func (fsdc *FileSystemDynamicConfiguration) GetConfigKeysByGroup(group string) (
 	tmpPath := fsdc.GetPath("", group)
 	r := gxset.NewSet()
 
-	fileInfo, _ := ioutil.ReadDir(tmpPath)
+	fileInfo, _ := os.ReadDir(tmpPath)
 
 	for _, file := range fileInfo {
 		// list file
@@ -217,7 +211,7 @@ func (fsdc *FileSystemDynamicConfiguration) write2File(fp string, value string) 
 		return perrors.WithStack(err)
 	}
 
-	return ioutil.WriteFile(fp, []byte(value), os.ModePerm)
+	return os.WriteFile(fp, []byte(value), os.ModePerm)
 }
 
 func forceMkdirParent(fp string) error {

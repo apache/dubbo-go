@@ -22,7 +22,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
@@ -30,19 +30,13 @@ import (
 	"strings"
 	"sync/atomic"
 	"time"
-)
 
-import (
 	"github.com/dubbogo/gost/log/logger"
-
 	"github.com/opentracing/opentracing-go"
 
-	perrors "github.com/pkg/errors"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	perrors "github.com/pkg/errors"
 )
 
 // Request is HTTP protocol request
@@ -194,7 +188,7 @@ func (c *HTTPClient) Do(addr, path string, httpHeader http.Header, body []byte) 
 	}
 	defer httpRsp.Body.Close()
 
-	b, err := ioutil.ReadAll(httpRsp.Body)
+	b, err := io.ReadAll(httpRsp.Body)
 	if err != nil {
 		return nil, perrors.WithStack(err)
 	}

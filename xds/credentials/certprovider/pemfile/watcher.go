@@ -32,17 +32,12 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"time"
-)
 
-import (
-	"github.com/dubbogo/grpc-go/grpclog"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/xds/credentials/certprovider"
+	"github.com/dubbogo/grpc-go/grpclog"
 )
 
 const defaultCertRefreshDuration = 1 * time.Hour
@@ -159,12 +154,12 @@ func (w *watcher) updateIdentityDistributor() {
 		return
 	}
 
-	certFileContents, err := ioutil.ReadFile(w.opts.CertFile)
+	certFileContents, err := os.ReadFile(w.opts.CertFile)
 	if err != nil {
 		logger.Warningf("certFile (%s) read failed: %v", w.opts.CertFile, err)
 		return
 	}
-	keyFileContents, err := ioutil.ReadFile(w.opts.KeyFile)
+	keyFileContents, err := os.ReadFile(w.opts.KeyFile)
 	if err != nil {
 		logger.Warningf("keyFile (%s) read failed: %v", w.opts.KeyFile, err)
 		return
@@ -196,7 +191,7 @@ func (w *watcher) updateRootDistributor() {
 		return
 	}
 
-	rootFileContents, err := ioutil.ReadFile(w.opts.RootFile)
+	rootFileContents, err := os.ReadFile(w.opts.RootFile)
 	if err != nil {
 		logger.Warningf("rootFile (%s) read failed: %v", w.opts.RootFile, err)
 		return
