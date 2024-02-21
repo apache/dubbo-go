@@ -39,6 +39,10 @@ func DefaultOtelConfig() *OtelConfig {
 
 // Clone a new OtelConfig
 func (c *OtelConfig) Clone() *OtelConfig {
+	if c == nil {
+		return nil
+	}
+
 	return &OtelConfig{
 		TracingConfig: c.TracingConfig.Clone(),
 	}
@@ -46,6 +50,10 @@ func (c *OtelConfig) Clone() *OtelConfig {
 
 // Clone a new OtelTraceConfig
 func (c *OtelTraceConfig) Clone() *OtelTraceConfig {
+	if c == nil {
+		return nil
+	}
+
 	var newEnable *bool
 	if c.Enable != nil {
 		newEnable = new(bool)

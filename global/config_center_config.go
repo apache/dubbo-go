@@ -49,6 +49,10 @@ func DefaultCenterConfig() *CenterConfig {
 
 // Clone a new CenterConfig
 func (c *CenterConfig) Clone() *CenterConfig {
+	if c == nil {
+		return nil
+	}
+
 	newParams := make(map[string]string, len(c.Params))
 	for k, v := range c.Params {
 		newParams[k] = v

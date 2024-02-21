@@ -38,19 +38,24 @@ func DefaultMetadataReportConfig() *MetadataReportConfig {
 
 // Clone a new MetadataReportConfig
 func (c *MetadataReportConfig) Clone() *MetadataReportConfig {
+	if c == nil {
+		return nil
+	}
+
 	newParams := make(map[string]string, len(c.Params))
 	for k, v := range c.Params {
 		newParams[k] = v
 	}
 
 	return &MetadataReportConfig{
-		Protocol:  c.Protocol,
-		Address:   c.Address,
-		Username:  c.Username,
-		Password:  c.Password,
-		Timeout:   c.Timeout,
-		Group:     c.Group,
-		Namespace: c.Namespace,
-		Params:    newParams,
+		Protocol:     c.Protocol,
+		Address:      c.Address,
+		Username:     c.Username,
+		Password:     c.Password,
+		Timeout:      c.Timeout,
+		Group:        c.Group,
+		Namespace:    c.Namespace,
+		Params:       newParams,
+		metadataType: c.metadataType,
 	}
 }

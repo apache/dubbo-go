@@ -65,6 +65,10 @@ func DefaultServiceConfig() *ServiceConfig {
 
 // Clone a new ServiceConfig
 func (c *ServiceConfig) Clone() *ServiceConfig {
+	if c == nil {
+		return nil
+	}
+
 	newProtocolIDs := make([]string, len(c.ProtocolIDs))
 	copy(newProtocolIDs, c.ProtocolIDs)
 

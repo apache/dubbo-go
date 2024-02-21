@@ -28,6 +28,10 @@ func DefaultProfilesConfig() *ProfilesConfig {
 
 // Clone a new ProfilesConfig
 func (c *ProfilesConfig) Clone() *ProfilesConfig {
+	if c == nil {
+		return nil
+	}
+
 	return &ProfilesConfig{
 		Active: c.Active,
 	}

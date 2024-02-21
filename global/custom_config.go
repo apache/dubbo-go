@@ -35,6 +35,10 @@ func DefaultCustomConfig() *CustomConfig {
 
 // Clone a new CustomConfig
 func (c *CustomConfig) Clone() *CustomConfig {
+	if c == nil {
+		return nil
+	}
+
 	newConfigMap := make(map[string]interface{}, len(c.ConfigMap))
 	for k, v := range c.ConfigMap {
 		newConfigMap[k] = v

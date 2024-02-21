@@ -71,6 +71,10 @@ func DefaultShutdownConfig() *ShutdownConfig {
 
 // Clone a new ShutdownConfig
 func (c *ShutdownConfig) Clone() *ShutdownConfig {
+	if c == nil {
+		return nil
+	}
+
 	var newInternalSignal *bool
 	if c.InternalSignal != nil {
 		newInternalSignal = new(bool)

@@ -43,6 +43,10 @@ func DefaultConsumerConfig() *ConsumerConfig {
 
 // Clone a new ConsumerConfig
 func (c *ConsumerConfig) Clone() *ConsumerConfig {
+	if c == nil {
+		return nil
+	}
+
 	newRegistryIDs := make([]string, len(c.RegistryIDs))
 	copy(newRegistryIDs, c.RegistryIDs)
 

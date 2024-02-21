@@ -36,7 +36,13 @@ type MethodConfig struct {
 
 // Clone a new MethodConfig
 func (c *MethodConfig) Clone() *MethodConfig {
+	if c == nil {
+		return nil
+	}
+
 	return &MethodConfig{
+		InterfaceId:                 c.InterfaceId,
+		InterfaceName:               c.InterfaceName,
 		Name:                        c.Name,
 		Retries:                     c.Retries,
 		LoadBalance:                 c.LoadBalance,

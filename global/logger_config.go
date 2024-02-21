@@ -66,9 +66,8 @@ func DefaultLoggerConfig() *LoggerConfig {
 
 // Clone a new LoggerConfig
 func (c *LoggerConfig) Clone() *LoggerConfig {
-	var newFile *File
-	if c.File != nil {
-		newFile = c.File.Clone()
+	if c == nil {
+		return nil
 	}
 
 	return &LoggerConfig{
@@ -76,12 +75,16 @@ func (c *LoggerConfig) Clone() *LoggerConfig {
 		Level:    c.Level,
 		Format:   c.Format,
 		Appender: c.Appender,
-		File:     newFile,
+		File:     c.File.Clone(),
 	}
 }
 
 // Clone a new File
 func (f *File) Clone() *File {
+	if f == nil {
+		return nil
+	}
+
 	var newCompress *bool
 	if f.Compress != nil {
 		newCompress = new(bool)

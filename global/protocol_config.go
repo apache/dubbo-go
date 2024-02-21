@@ -37,6 +37,10 @@ func DefaultProtocolConfig() *ProtocolConfig {
 
 // Clone a new ProtocolConfig
 func (c *ProtocolConfig) Clone() *ProtocolConfig {
+	if c == nil {
+		return nil
+	}
+
 	return &ProtocolConfig{
 		Name:                 c.Name,
 		Ip:                   c.Ip,

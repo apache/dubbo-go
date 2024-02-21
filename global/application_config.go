@@ -38,6 +38,10 @@ func DefaultApplicationConfig() *ApplicationConfig {
 
 // Clone a new ApplicationConfig
 func (c *ApplicationConfig) Clone() *ApplicationConfig {
+	if c == nil {
+		return nil
+	}
+
 	return &ApplicationConfig{
 		Organization: c.Organization,
 		Name:         c.Name,

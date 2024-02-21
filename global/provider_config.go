@@ -50,6 +50,10 @@ func DefaultProviderConfig() *ProviderConfig {
 
 // Clone a new ProviderConfig
 func (c *ProviderConfig) Clone() *ProviderConfig {
+	if c == nil {
+		return nil
+	}
+
 	newRegistryIDs := make([]string, len(c.RegistryIDs))
 	copy(newRegistryIDs, c.RegistryIDs)
 

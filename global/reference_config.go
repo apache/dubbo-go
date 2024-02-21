@@ -58,6 +58,10 @@ func DefaultReferenceConfig() *ReferenceConfig {
 
 // Clone a new ReferenceConfig
 func (c *ReferenceConfig) Clone() *ReferenceConfig {
+	if c == nil {
+		return nil
+	}
+
 	var newCheck *bool
 	if c.Check != nil {
 		check := *c.Check

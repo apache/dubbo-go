@@ -47,6 +47,10 @@ func DefaultRegistryConfig() *RegistryConfig {
 
 // Clone a new RegistryConfig
 func (c *RegistryConfig) Clone() *RegistryConfig {
+	if c == nil {
+		return nil
+	}
+
 	newParams := make(map[string]string, len(c.Params))
 	for k, v := range c.Params {
 		newParams[k] = v

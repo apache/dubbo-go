@@ -62,6 +62,10 @@ func DefaultMetricsConfig() *MetricsConfig {
 
 // Clone a new MetricsConfig
 func (c *MetricsConfig) Clone() *MetricsConfig {
+	if c == nil {
+		return nil
+	}
+
 	var newEnable *bool
 	if c.Enable != nil {
 		newEnable = new(bool)
@@ -104,6 +108,10 @@ func defaultPrometheusConfig() *PrometheusConfig {
 }
 
 func (c *PrometheusConfig) Clone() *PrometheusConfig {
+	if c == nil {
+		return nil
+	}
+
 	return &PrometheusConfig{
 		Exporter:    c.Exporter.Clone(),
 		Pushgateway: c.Pushgateway.Clone(),
@@ -111,6 +119,10 @@ func (c *PrometheusConfig) Clone() *PrometheusConfig {
 }
 
 func (c *Exporter) Clone() *Exporter {
+	if c == nil {
+		return nil
+	}
+
 	var newEnabled *bool
 	if c.Enabled != nil {
 		newEnabled = new(bool)
@@ -123,6 +135,10 @@ func (c *Exporter) Clone() *Exporter {
 }
 
 func (c *PushgatewayConfig) Clone() *PushgatewayConfig {
+	if c == nil {
+		return nil
+	}
+
 	var newEnabled *bool
 	if c.Enabled != nil {
 		newEnabled = new(bool)
@@ -144,6 +160,10 @@ func defaultAggregateConfig() *AggregateConfig {
 }
 
 func (c *AggregateConfig) Clone() *AggregateConfig {
+	if c == nil {
+		return nil
+	}
+
 	var newEnabled *bool
 	if c.Enabled != nil {
 		newEnabled = new(bool)

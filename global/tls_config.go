@@ -37,6 +37,10 @@ func DefaultTLSConfig() *TLSConfig {
 
 // Clone a new TLSConfig
 func (c *TLSConfig) Clone() *TLSConfig {
+	if c == nil {
+		return nil
+	}
+
 	return &TLSConfig{
 		CACertFile:    c.CACertFile,
 		TLSCertFile:   c.TLSCertFile,
