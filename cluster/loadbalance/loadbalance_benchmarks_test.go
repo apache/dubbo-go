@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
+	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/aliasmethod"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/consistenthashing"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/interleavedweightedroundrobin"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/leastactive"
@@ -29,7 +30,6 @@ import (
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/random"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/ringhash"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/roundrobin"
-	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/weightedrandomwithaliasmethod"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
@@ -80,6 +80,6 @@ func BenchmarkRandomLoadbalance(b *testing.B) {
 	Benchloadbalance(b, extension.GetLoadbalance(constant.LoadBalanceKeyRandom))
 }
 
-func BenchmarkWeightedRandomWithAliasMethodLoadbalance(b *testing.B) {
-	Benchloadbalance(b, extension.GetLoadbalance(constant.LoadBalanceKeyWeightedRandomWithAliasMethod))
+func BenchmarkAliasMethodLoadbalance(b *testing.B) {
+	Benchloadbalance(b, extension.GetLoadbalance(constant.LoadBalanceKeyAliasMethod))
 }

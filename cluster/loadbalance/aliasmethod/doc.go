@@ -15,5 +15,5 @@
  * limitations under the License.
  */
 
-// Package wram implements alias-method algorithm load balance strategy.
-package wram // weighted random with alias-method algorithm
+// Package aliasmethod implements alias-method algorithm load balance strategy.
+package aliasmethod // weighted random with alias-method algorithm

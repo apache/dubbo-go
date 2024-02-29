@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package wram
+package aliasmethod
 
 import (
 	"fmt"

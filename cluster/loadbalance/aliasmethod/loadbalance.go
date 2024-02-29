@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-// Package wram implements alias-method algorithm load balance strategy.
-package wram // weighted random with alias-method algorithm
+// Package aliasmethod implements alias-method algorithm load balance strategy.
+package aliasmethod // weighted random with alias-method algorithm
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
@@ -26,7 +26,7 @@ import (
 )
 
 func init() {
-	extension.SetLoadbalance(constant.LoadBalanceKeyWeightedRandomWithAliasMethod, newWeightedRandomWithAliasMethodBalance)
+	extension.SetLoadbalance(constant.LoadBalanceKeyAliasMethod, newWeightedRandomWithAliasMethodBalance)
 }
 
 type weightedRandomWithAliasMethodBalance struct{}
