@@ -29,6 +29,7 @@ import (
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/random"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/ringhash"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/roundrobin"
+	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/weightedrandomwithaliasmethod"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
@@ -77,4 +78,8 @@ func BenchmarkInterleavedWeightedRoundRobinLoadbalance(b *testing.B) {
 
 func BenchmarkRandomLoadbalance(b *testing.B) {
 	Benchloadbalance(b, extension.GetLoadbalance(constant.LoadBalanceKeyRandom))
+}
+
+func BenchmarkWeightedRandomWithAliasMethodLoadbalance(b *testing.B) {
+	Benchloadbalance(b, extension.GetLoadbalance(constant.LoadBalanceKeyWeightedRandomWithAliasMethod))
 }
