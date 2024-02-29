@@ -60,10 +60,119 @@ func DefaultMetricsConfig() *MetricsConfig {
 	return &MetricsConfig{Prometheus: defaultPrometheusConfig(), Aggregation: defaultAggregateConfig()}
 }
 
+// Clone a new MetricsConfig
+func (c *MetricsConfig) Clone() *MetricsConfig {
+	if c == nil {
+		return nil
+	}
+
+	var newEnable *bool
+	if c.Enable != nil {
+		newEnable = new(bool)
+		*newEnable = *c.Enable
+	}
+
+	var newEnableMetadata *bool
+	if c.EnableMetadata != nil {
+		newEnableMetadata = new(bool)
+		*newEnableMetadata = *c.EnableMetadata
+	}
+
+	var newEnableRegistry *bool
+	if c.EnableRegistry != nil {
+		newEnableRegistry = new(bool)
+		*newEnableRegistry = *c.EnableRegistry
+	}
+
+	var newEnableConfigCenter *bool
+	if c.EnableConfigCenter != nil {
+		newEnableConfigCenter = new(bool)
+		*newEnableConfigCenter = *c.EnableConfigCenter
+	}
+
+	return &MetricsConfig{
+		Enable:             newEnable,
+		Port:               c.Port,
+		Path:               c.Path,
+		Protocol:           c.Protocol,
+		Prometheus:         c.Prometheus.Clone(),
+		Aggregation:        c.Aggregation.Clone(),
+		EnableMetadata:     newEnableMetadata,
+		EnableRegistry:     newEnableRegistry,
+		EnableConfigCenter: newEnableConfigCenter,
+	}
+}
+
 func defaultPrometheusConfig() *PrometheusConfig {
 	return &PrometheusConfig{Exporter: &Exporter{}, Pushgateway: &PushgatewayConfig{}}
 }
 
+func (c *PrometheusConfig) Clone() *PrometheusConfig {
+	if c == nil {
+		return nil
+	}
+
+	return &PrometheusConfig{
+		Exporter:    c.Exporter.Clone(),
+		Pushgateway: c.Pushgateway.Clone(),
+	}
+}
+
+func (c *Exporter) Clone() *Exporter {
+	if c == nil {
+		return nil
+	}
+
+	var newEnabled *bool
+	if c.Enabled != nil {
+		newEnabled = new(bool)
+		*newEnabled = *c.Enabled
+	}
+
+	return &Exporter{
+		Enabled: newEnabled,
+	}
+}
+
+func (c *PushgatewayConfig) Clone() *PushgatewayConfig {
+	if c == nil {
+		return nil
+	}
+
+	var newEnabled *bool
+	if c.Enabled != nil {
+		newEnabled = new(bool)
+		*newEnabled = *c.Enabled
+	}
+
+	return &PushgatewayConfig{
+		Enabled:      newEnabled,
+		BaseUrl:      c.BaseUrl,
+		Job:          c.Job,
+		Username:     c.Username,
+		Password:     c.Password,
+		PushInterval: c.PushInterval,
+	}
+}
+
 func defaultAggregateConfig() *AggregateConfig {
 	return &AggregateConfig{}
+}
+
+func (c *AggregateConfig) Clone() *AggregateConfig {
+	if c == nil {
+		return nil
+	}
+
+	var newEnabled *bool
+	if c.Enabled != nil {
+		newEnabled = new(bool)
+		*newEnabled = *c.Enabled
+	}
+
+	return &AggregateConfig{
+		Enabled:           newEnabled,
+		BucketNum:         c.BucketNum,
+		TimeWindowSeconds: c.TimeWindowSeconds,
+	}
 }

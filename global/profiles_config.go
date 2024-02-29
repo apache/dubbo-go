@@ -26,6 +26,17 @@ func DefaultProfilesConfig() *ProfilesConfig {
 	return &ProfilesConfig{}
 }
 
+// Clone a new ProfilesConfig
+func (c *ProfilesConfig) Clone() *ProfilesConfig {
+	if c == nil {
+		return nil
+	}
+
+	return &ProfilesConfig{
+		Active: c.Active,
+	}
+}
+
 type ProfilesOption func(*ProfilesConfig)
 
 func WithProfiles_Active(active string) ProfilesOption {
