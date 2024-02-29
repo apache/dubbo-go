@@ -78,8 +78,8 @@ jobs:
       run: |
         if [ "$GITHUB_EVENT_NAME" == "pull_request" ]; then
           chmod +x integrate_test.sh \
-            && ./integrate_test.sh ${{github.event.pull_request.head.repo.full_name}} ${{github.event.pull_request.head.sha}} ${{github.base_ref}}
-        elif [ "$GITHUB_EVENT_NAME" == "push" ]; then
+            && ./integrate_test.sh ${{github.event.pull_request.head.repo.full_name}} ${{github.event.pull_request.head.sha}} main
+        elif [ "$GITHUB_EVENT_NAME" == "push" ]; the
           chmod +x integrate_test.sh \
             && ./integrate_test.sh $GITHUB_REPOSITORY $GITHUB_SHA $GITHUB_REF_NAME
         else
