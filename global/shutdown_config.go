@@ -68,3 +68,32 @@ func DefaultShutdownConfig() *ShutdownConfig {
 
 	return cfg
 }
+
+// Clone a new ShutdownConfig
+func (c *ShutdownConfig) Clone() *ShutdownConfig {
+	if c == nil {
+		return nil
+	}
+
+	var newInternalSignal *bool
+	if c.InternalSignal != nil {
+		newInternalSignal = new(bool)
+		*newInternalSignal = *c.InternalSignal
+	}
+
+	newShutdownConfig := &ShutdownConfig{
+		Timeout:                     c.Timeout,
+		StepTimeout:                 c.StepTimeout,
+		ConsumerUpdateWaitTime:      c.ConsumerUpdateWaitTime,
+		RejectRequestHandler:        c.RejectRequestHandler,
+		InternalSignal:              newInternalSignal,
+		OfflineRequestWindowTimeout: c.OfflineRequestWindowTimeout,
+	}
+
+	newShutdownConfig.RejectRequest.Store(c.RejectRequest.Load())
+	newShutdownConfig.ConsumerActiveCount.Store(c.ConsumerActiveCount.Load())
+	newShutdownConfig.ProviderActiveCount.Store(c.ProviderActiveCount.Load())
+	newShutdownConfig.ProviderLastReceivedRequestTime.Store(c.ProviderLastReceivedRequestTime.Load())
+
+	return newShutdownConfig
+}

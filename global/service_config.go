@@ -62,3 +62,69 @@ func DefaultServiceConfig() *ServiceConfig {
 		RCRegistriesMap: make(map[string]*RegistryConfig),
 	}
 }
+
+// Clone a new ServiceConfig
+func (c *ServiceConfig) Clone() *ServiceConfig {
+	if c == nil {
+		return nil
+	}
+
+	newProtocolIDs := make([]string, len(c.ProtocolIDs))
+	copy(newProtocolIDs, c.ProtocolIDs)
+
+	newRegistryIDs := make([]string, len(c.RegistryIDs))
+	copy(newRegistryIDs, c.RegistryIDs)
+
+	newMethods := make([]*MethodConfig, len(c.Methods))
+	for i, v := range c.Methods {
+		newMethods[i] = v.Clone()
+	}
+
+	newParams := make(map[string]string, len(c.Params))
+	for k, v := range c.Params {
+		newParams[k] = v
+	}
+
+	newRCProtocolsMap := make(map[string]*ProtocolConfig, len(c.RCProtocolsMap))
+	for k, v := range c.RCProtocolsMap {
+		newRCProtocolsMap[k] = v.Clone()
+	}
+
+	newRCRegistriesMap := make(map[string]*RegistryConfig, len(c.RCRegistriesMap))
+	for k, v := range c.RCRegistriesMap {
+		newRCRegistriesMap[k] = v.Clone()
+	}
+
+	return &ServiceConfig{
+		Filter:                      c.Filter,
+		ProtocolIDs:                 newProtocolIDs,
+		Interface:                   c.Interface,
+		RegistryIDs:                 newRegistryIDs,
+		Cluster:                     c.Cluster,
+		Loadbalance:                 c.Loadbalance,
+		Group:                       c.Group,
+		Version:                     c.Version,
+		Methods:                     newMethods,
+		Warmup:                      c.Warmup,
+		Retries:                     c.Retries,
+		Serialization:               c.Serialization,
+		Params:                      newParams,
+		Token:                       c.Token,
+		AccessLog:                   c.AccessLog,
+		TpsLimiter:                  c.TpsLimiter,
+		TpsLimitInterval:            c.TpsLimitInterval,
+		TpsLimitRate:                c.TpsLimitRate,
+		TpsLimitStrategy:            c.TpsLimitStrategy,
+		TpsLimitRejectedHandler:     c.TpsLimitRejectedHandler,
+		ExecuteLimit:                c.ExecuteLimit,
+		ExecuteLimitRejectedHandler: c.ExecuteLimitRejectedHandler,
+		Auth:                        c.Auth,
+		RCProtocolsMap:              newRCProtocolsMap,
+		RCRegistriesMap:             newRCRegistriesMap,
+		ProxyFactoryKey:             c.ProxyFactoryKey,
+		NotRegister:                 c.NotRegister,
+		ParamSign:                   c.ParamSign,
+		Tag:                         c.Tag,
+		TracingKey:                  c.TracingKey,
+	}
+}

@@ -70,12 +70,12 @@ func (ins *Instance) NewClient(opts ...client.ClientOption) (*client.Client, err
 	}
 
 	var cliOpts []client.ClientOption
-	conCfg := ins.insOpts.Consumer
-	appCfg := ins.insOpts.Application
-	regsCfg := ins.insOpts.Registries
-	sdCfg := ins.insOpts.Shutdown
-	metricsCfg := ins.insOpts.Metrics
-	otelCfg := ins.insOpts.Otel
+	conCfg := ins.insOpts.CloneConsumer()
+	appCfg := ins.insOpts.CloneApplication()
+	regsCfg := ins.insOpts.CloneRegistries()
+	sdCfg := ins.insOpts.CloneShutdown()
+	metricsCfg := ins.insOpts.CloneMetrics()
+	otelCfg := ins.insOpts.CloneOtel()
 
 	if conCfg != nil {
 		if conCfg.Check {
@@ -125,12 +125,12 @@ func (ins *Instance) NewServer(opts ...server.ServerOption) (*server.Server, err
 	}
 
 	var srvOpts []server.ServerOption
-	appCfg := ins.insOpts.Application
-	regsCfg := ins.insOpts.Registries
-	prosCfg := ins.insOpts.Protocols
-	sdCfg := ins.insOpts.Shutdown
-	metricsCfg := ins.insOpts.Metrics
-	otelCfg := ins.insOpts.Otel
+	appCfg := ins.insOpts.CloneApplication()
+	regsCfg := ins.insOpts.CloneRegistries()
+	prosCfg := ins.insOpts.CloneProtocols()
+	sdCfg := ins.insOpts.CloneShutdown()
+	metricsCfg := ins.insOpts.CloneMetrics()
+	otelCfg := ins.insOpts.CloneOtel()
 
 	if appCfg != nil {
 		srvOpts = append(srvOpts,

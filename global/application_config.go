@@ -35,3 +35,22 @@ func DefaultApplicationConfig() *ApplicationConfig {
 	// return a new config without setting any field means there is not any default value for initialization
 	return &ApplicationConfig{}
 }
+
+// Clone a new ApplicationConfig
+func (c *ApplicationConfig) Clone() *ApplicationConfig {
+	if c == nil {
+		return nil
+	}
+
+	return &ApplicationConfig{
+		Organization: c.Organization,
+		Name:         c.Name,
+		Module:       c.Module,
+		Group:        c.Group,
+		Version:      c.Version,
+		Owner:        c.Owner,
+		Environment:  c.Environment,
+		MetadataType: c.MetadataType,
+		Tag:          c.Tag,
+	}
+}
