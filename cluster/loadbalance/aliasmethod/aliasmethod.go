@@ -59,6 +59,10 @@ func (am *aliasMethodPicker) init(invocation protocol.Invocation) {
 		weights[i] = weight
 		totalWeight += weight
 	}
+	// when invoker weight all zero
+	if totalWeight <= 0 {
+		totalWeight = int64(1)
+	}
 	am.weightSum = totalWeight
 
 	for i, weight := range weights {
