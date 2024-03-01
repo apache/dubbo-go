@@ -35,13 +35,11 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"math/big"
+	"os"
 	"strings"
 	"time"
-)
 
-import (
 	"github.com/dubbogo/gost/log/logger"
 )
 
@@ -242,12 +240,12 @@ func GenCertFromCSR(csr *x509.CertificateRequest, signingCert *x509.Certificate,
 //	signerCertFile: cert file name
 //	signerPrivFile: private key file name
 func LoadSignerCredsFromFiles(signerCertFile string, signerPrivFile string) (*x509.Certificate, crypto.PrivateKey, error) {
-	signerCertBytes, err := ioutil.ReadFile(signerCertFile)
+	signerCertBytes, err := os.ReadFile(signerCertFile)
 	if err != nil {
 		return nil, nil, fmt.Errorf("certificate file reading failure (%v)", err)
 	}
 
-	signerPrivBytes, err := ioutil.ReadFile(signerPrivFile)
+	signerPrivBytes, err := os.ReadFile(signerPrivFile)
 	if err != nil {
 		return nil, nil, fmt.Errorf("private key file reading failure (%v)", err)
 	}
