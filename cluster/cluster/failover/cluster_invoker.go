@@ -116,8 +116,7 @@ func getRetries(invokers []protocol.Invoker, invocation protocol.Invocation, met
 	// Get CallOpt first
 	if callRetries, ok := invocation.GetAttachment(constant.RetriesKey); ok {
 		retries, _ = strconv.Atoi(callRetries)
-		//
-		if retries < 0 {
+		if retries < 0 || callRetries == "" {
 			retries = clientRetries
 		}
 	}
