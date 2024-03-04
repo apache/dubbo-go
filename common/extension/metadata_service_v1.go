@@ -17,39 +17,34 @@
 
 package extension
 
-import (
-	"fmt"
-)
+// import (
+// 	"fmt"
 
-import (
-	perrors "github.com/pkg/errors"
-)
+// 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+// 	"dubbo.apache.org/dubbo-go/v3/metadata/service"
+// 	perrors "github.com/pkg/errors"
+// )
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/metadata/service"
-)
+// type localMetadataServiceCreatorV1 func() (service.MetadataServiceV1, error)
 
-type localMetadataServiceCreatorV1 func() (service.MetadataServiceV1, error)
+// var (
+// 	localMetadataServiceInsMapV1 = make(map[string]localMetadataServiceCreatorV1, 2)
+// )
 
-var (
-	localMetadataServiceInsMapV1 = make(map[string]localMetadataServiceCreatorV1, 2)
-)
+// // SetLocalMetadataService will store the msType => creator pair
+// func SetLocalMetadataServiceV1(key string, creator localMetadataServiceCreatorV1) {
+// 	localMetadataServiceInsMapV1[key] = creator
+// }
 
-// SetLocalMetadataService will store the msType => creator pair
-func SetLocalMetadataServiceV1(key string, creator localMetadataServiceCreatorV1) {
-	localMetadataServiceInsMapV1[key] = creator
-}
-
-// GetLocalMetadataService will create a local MetadataService instance
-func GetLocalMetadataServiceV1(key string) (service.MetadataServiceV1, error) {
-	if key == "" {
-		key = constant.DefaultKey
-	}
-	if creator, ok := localMetadataServiceInsMapV1[key]; ok {
-		return creator()
-	}
-	return nil, perrors.New(fmt.Sprintf("could not find the metadata service creator for metadataType: local, " +
-		"please check whether you have imported relative packages, " +
-		"local - dubbo.apache.org/dubbo-go/v3/metadata/service/local"))
-}
+// // GetLocalMetadataService will create a local MetadataService instance
+// func GetLocalMetadataServiceV1(key string) (service.MetadataServiceV1, error) {
+// 	if key == "" {
+// 		key = constant.DefaultKey
+// 	}
+// 	if creator, ok := localMetadataServiceInsMapV1[key]; ok {
+// 		return creator()
+// 	}
+// 	return nil, perrors.New(fmt.Sprintf("could not find the metadata service creator for metadataType: local, " +
+// 		"please check whether you have imported relative packages, " +
+// 		"local - dubbo.apache.org/dubbo-go/v3/metadata/service/local"))
+// }

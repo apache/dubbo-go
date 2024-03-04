@@ -31,6 +31,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/metadata/info"
 )
 
 // ServiceInstance is the interface  which is used for service registration and discovery.
@@ -58,7 +59,7 @@ type ServiceInstance interface {
 	GetMetadata() map[string]string
 
 	// ToURLs will return a list of url
-	ToURLs(service *common.ServiceInfo) []*common.URL
+	ToURLs(service *info.ServiceInfo) []*common.URL
 
 	// GetEndPoints will get end points from metadata
 	GetEndPoints() []*Endpoint
@@ -70,7 +71,8 @@ type ServiceInstance interface {
 	GetAddress() string
 
 	// SetServiceMetadata saves metadata in instance
-	SetServiceMetadata(info *common.MetadataInfo)
+	SetServiceMetadata(info *info.MetadataInfo)
+	GetServiceMetadata() *info.MetadataInfo
 
 	// GetTag will return the tag of the instance
 	GetTag() string
@@ -92,7 +94,7 @@ type DefaultServiceInstance struct {
 	Enable          bool
 	Healthy         bool
 	Metadata        map[string]string
-	ServiceMetadata *common.MetadataInfo
+	ServiceMetadata *info.MetadataInfo
 	Address         string
 	GroupName       string
 	endpoints       []*Endpoint `json:"-"`
@@ -143,8 +145,13 @@ func (d *DefaultServiceInstance) GetAddress() string {
 }
 
 // SetServiceMetadata save metadata in instance
-func (d *DefaultServiceInstance) SetServiceMetadata(m *common.MetadataInfo) {
+func (d *DefaultServiceInstance) SetServiceMetadata(m *info.MetadataInfo) {
 	d.ServiceMetadata = m
+}
+
+// GetServiceMetadata save metadata in instance
+func (d *DefaultServiceInstance) GetServiceMetadata() *info.MetadataInfo {
+	return d.ServiceMetadata
 }
 
 func (d *DefaultServiceInstance) GetTag() string {
@@ -152,7 +159,7 @@ func (d *DefaultServiceInstance) GetTag() string {
 }
 
 // ToURLs return a list of url.
-func (d *DefaultServiceInstance) ToURLs(service *common.ServiceInfo) []*common.URL {
+func (d *DefaultServiceInstance) ToURLs(service *info.ServiceInfo) []*common.URL {
 	urls := make([]*common.URL, 0, 8)
 	if d.endpoints == nil {
 		err := json.Unmarshal([]byte(d.Metadata[constant.ServiceInstanceEndpoints]), &d.endpoints)

@@ -20,11 +20,14 @@ package client
 
 import (
 	"context"
+	"time"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/global"
+	"dubbo.apache.org/dubbo-go/v3/metadata"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	invocation_impl "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
@@ -118,6 +121,9 @@ func (cli *Client) DialWithDefinition(interfaceName string, definition *ClientDe
 }
 
 func (cli *Client) dial(interfaceName string, info *ClientInfo, opts ...ReferenceOption) (*Connection, error) {
+	if err := cli.initRegistryMetadataReport(); err != nil {
+		return nil, err
+	}
 	newRefOpts := defaultReferenceOptions()
 	finalOpts := []ReferenceOption{
 		setReference(cli.cliOpts.overallReference),
@@ -136,6 +142,44 @@ func (cli *Client) dial(interfaceName string, info *ClientInfo, opts ...Referenc
 	newRefOpts.ReferWithInfo(info)
 
 	return &Connection{refOpts: newRefOpts}, nil
+}
+
+func (cli *Client) initRegistryMetadataReport() error {
+	if len(cli.cliOpts.Registries) > 0 {
+		for id, reg := range cli.cliOpts.Registries {
+			if reg.UseAsMetaReport == "true" {
+				opts, err := registryToReportOptions(id, reg)
+				if err != nil {
+					return err
+				}
+				if err := opts.Init(); err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func registryToReportOptions(id string, rc *global.RegistryConfig) (*metadata.ReportOptions, error) {
+	opts := metadata.NewReportOptions(
+		metadata.WithRegistryId(id),
+		metadata.WithProtocol(rc.Protocol),
+		metadata.WithAddress(rc.Address),
+		metadata.WithUsername(rc.Username),
+		metadata.WithPassword(rc.Password),
+		metadata.WithGroup(rc.Group),
+		metadata.WithNamespace(rc.Namespace),
+		metadata.WithParams(rc.Params),
+	)
+	if rc.Timeout != "" {
+		timeout, err := time.ParseDuration(rc.Timeout)
+		if err != nil {
+			return nil, err
+		}
+		metadata.WithTimeout(timeout)(opts)
+	}
+	return opts, nil
 }
 
 func generateInvocation(methodName string, reqs []interface{}, resp interface{}, callType string, opts *CallOptions) (protocol.Invocation, error) {
