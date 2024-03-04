@@ -22,13 +22,7 @@ import (
 	"fmt"
 	"net/url"
 	"testing"
-)
 
-import (
-	"github.com/stretchr/testify/assert"
-)
-
-import (
 	clusterpkg "dubbo.apache.org/dubbo-go/v3/cluster/cluster"
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory/static"
 	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/random"
@@ -37,6 +31,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"github.com/stretchr/testify/assert"
 )
 
 // nolint
@@ -75,7 +70,8 @@ func TestFailoverInvokeFail(t *testing.T) {
 }
 
 // nolint
-func TestFailoverInvoke1(t *testing.T) {
+// Test client retries opt
+func TestFailoverRetries1(t *testing.T) {
 	urlParams := url.Values{}
 	urlParams.Set(constant.RetriesKey, "3")
 	result := normalInvoke(4, urlParams)
@@ -84,13 +80,27 @@ func TestFailoverInvoke1(t *testing.T) {
 }
 
 // nolint
-func TestFailoverInvoke2(t *testing.T) {
+// Test client retries opt
+func TestFailoverRetries2(t *testing.T) {
 	urlParams := url.Values{}
 	urlParams.Set(constant.RetriesKey, "2")
 	urlParams.Set("methods.test."+constant.RetriesKey, "3")
 
 	ivc := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("test"))
 	result := normalInvoke(4, urlParams, ivc)
+	assert.NoError(t, result.Error())
+	clusterpkg.Count = 0
+}
+
+// nolint
+// Test call retries opt
+func TestFailoverRetries3(t *testing.T) {
+	urlParams := url.Values{}
+	urlParams.Set(constant.RetriesKey, "2")
+	urlParams.Set("methods.test."+constant.RetriesKey, "3")
+
+	ivc := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("test"), invocation.WithAttachment(constant.RetriesKey, "4"))
+	result := normalInvoke(5, urlParams, ivc)
 	assert.NoError(t, result.Error())
 	clusterpkg.Count = 0
 }

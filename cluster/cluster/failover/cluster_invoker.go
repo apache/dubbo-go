@@ -20,6 +20,7 @@ package failover
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/dubbogo/gost/log/logger"
 	perrors "github.com/pkg/errors"
@@ -55,7 +56,7 @@ func (invoker *failoverClusterInvoker) Invoke(ctx context.Context, invocation pr
 	}
 
 	methodName := invocation.ActualMethodName()
-	retries := getRetries(invokers, methodName)
+	retries := getRetries(invokers, invocation, methodName)
 	loadBalance := base.GetLoadBalance(invokers[0], methodName)
 
 	for i := 0; i <= retries; i++ {
@@ -104,17 +105,25 @@ func (invoker *failoverClusterInvoker) Invoke(ctx context.Context, invocation pr
 	}
 }
 
-func getRetries(invokers []protocol.Invoker, methodName string) int {
+func getRetries(invokers []protocol.Invoker, invocation protocol.Invocation, methodName string) int {
 	if len(invokers) <= 0 {
 		return constant.DefaultRetriesInt
 	}
 	url := invokers[0].GetURL()
-
-	retries := url.GetMethodParamIntValue(methodName, constant.RetriesKey,
+	clientRetries := url.GetMethodParamIntValue(methodName, constant.RetriesKey,
 		url.GetParamByIntValue(constant.RetriesKey, constant.DefaultRetriesInt))
+	retries := clientRetries
+	// Get CallOpt first
+	if callRetries, ok := invocation.GetAttachment(constant.RetriesKey); ok {
+		retries, _ = strconv.Atoi(callRetries)
+		if retries < 0 || callRetries == "" {
+			retries = clientRetries
+		}
+	}
 
 	if retries < 0 {
 		return constant.DefaultRetriesInt
 	}
+
 	return retries
 }

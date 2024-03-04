@@ -22,21 +22,15 @@ import (
 	"strconv"
 	"sync"
 	"time"
-)
 
-import (
-	"github.com/Workiva/go-datastructures/queue"
-
-	"github.com/dubbogo/gost/log/logger"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/cluster/base"
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
 	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"github.com/Workiva/go-datastructures/queue"
+	"github.com/dubbogo/gost/log/logger"
 )
 
 /**
@@ -212,7 +206,7 @@ func newRetryTimerTask(loadbalance loadbalance.LoadBalance, invocation protocol.
 		clusterInvoker: cInvoker,
 	}
 
-	if retries, ok := invocation.GetAttachment(constant.RetriesKey); ok {
+	if retries, ok := invocation.GetAttachment(constant.RetriesKey); ok && retries != "" {
 		rInt, _ := strconv.Atoi(retries)
 		task.maxRetries = int64(rInt)
 	} else {
