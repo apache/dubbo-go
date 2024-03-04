@@ -2,7 +2,7 @@ dubbo:
   registries:
     nacos:
       timeout: 3s
-      address: naocs://127.0.0.1:8848
+      address: nacos://127.0.0.1:8848
   provider:
     registry-ids: nacos
     services:

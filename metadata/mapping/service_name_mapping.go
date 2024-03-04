@@ -19,20 +19,24 @@ package mapping
 
 import (
 	gxset "github.com/dubbogo/gost/container/set"
+	"github.com/dubbogo/gost/gof/observer"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
 // ServiceNameMapping  is the interface which trys to build the mapping between application-level service and interface-level service.
-//
-// # Map method will map the service to this application-level service
-//
-// Get method will return the application-level services
 type ServiceNameMapping interface {
+	// Map the service to this application-level service, store the mapping
 	Map(url *common.URL) error
-	Get(url *common.URL, listener registry.MappingListener) (*gxset.HashSet, error)
+	// Get the application-level services which are mapped to this service
+	Get(url *common.URL, listener MappingListener) (*gxset.HashSet, error)
+	// Remove the mapping between application-level service and interface-level service
 	Remove(url *common.URL) error
+}
+
+type MappingListener interface {
+	OnEvent(e observer.Event) error
+	Stop()
 }

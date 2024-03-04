@@ -18,6 +18,11 @@
 package config
 
 import (
+	"strconv"
+	"time"
+)
+
+import (
 	"github.com/dubbogo/gost/log/logger"
 
 	perrors "github.com/pkg/errors"
@@ -26,8 +31,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/config/instance"
+	"dubbo.apache.org/dubbo-go/v3/metadata"
 )
 
 // MetadataReportConfig is app level configuration
@@ -44,9 +48,86 @@ type MetadataReportConfig struct {
 	metadataType string
 }
 
+func initMetadata(rc *RootConfig) error {
+	opts := metadata.NewOptions(
+		metadata.WithAppName(rc.Application.Name),
+		metadata.WithMetadataType(rc.Application.MetadataType),
+		metadata.WithPort(getMetadataPort(rc)),
+	)
+	if err := opts.Init(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func getMetadataPort(rc *RootConfig) int {
+	port := rc.Application.MetadataServicePort
+	if port == "" {
+		protocolConfig, ok := rootConfig.Protocols[constant.DefaultProtocol]
+		if ok {
+			port = protocolConfig.Port
+		} else {
+			logger.Warnf("[Metadata Service] Dubbo-go %s version's MetadataService only support dubbo protocol,"+
+				"MetadataService will use random port",
+				constant.Version)
+		}
+	}
+	if port == "" {
+		return 0
+	}
+	p, err := strconv.Atoi(port)
+	if err != nil {
+		logger.Error("MetadataService port parse error %v, MetadataService will use random port", err)
+		return 0
+	}
+	return p
+}
+
 // Prefix dubbo.consumer
-func (MetadataReportConfig) Prefix() string {
+func (*MetadataReportConfig) Prefix() string {
 	return constant.MetadataReportPrefix
+}
+
+func (mc *MetadataReportConfig) toReportOptions() (*metadata.ReportOptions, error) {
+	opts := metadata.NewReportOptions(
+		metadata.WithRegistryId(constant.DefaultKey),
+		metadata.WithProtocol(mc.Protocol),
+		metadata.WithAddress(mc.Address),
+		metadata.WithUsername(mc.Username),
+		metadata.WithPassword(mc.Password),
+		metadata.WithGroup(mc.Group),
+		metadata.WithNamespace(mc.Namespace),
+		metadata.WithParams(mc.Params),
+	)
+	if mc.Timeout != "" {
+		timeout, err := time.ParseDuration(mc.Timeout)
+		if err != nil {
+			return nil, err
+		}
+		metadata.WithTimeout(timeout)(opts)
+	}
+	return opts, nil
+}
+
+func registryToReportOptions(id string, rc *RegistryConfig) (*metadata.ReportOptions, error) {
+	opts := metadata.NewReportOptions(
+		metadata.WithRegistryId(id),
+		metadata.WithProtocol(rc.Protocol),
+		metadata.WithAddress(rc.Address),
+		metadata.WithUsername(rc.Username),
+		metadata.WithPassword(rc.Password),
+		metadata.WithGroup(rc.Group),
+		metadata.WithNamespace(rc.Namespace),
+		metadata.WithParams(rc.Params),
+	)
+	if rc.Timeout != "" {
+		timeout, err := time.ParseDuration(rc.Timeout)
+		if err != nil {
+			return nil, err
+		}
+		metadata.WithTimeout(timeout)(opts)
+	}
+	return opts, nil
 }
 
 func (mc *MetadataReportConfig) Init(rc *RootConfig) error {
@@ -54,7 +135,29 @@ func (mc *MetadataReportConfig) Init(rc *RootConfig) error {
 		return nil
 	}
 	mc.metadataType = rc.Application.MetadataType
-	return mc.StartMetadataReport()
+	if mc.Address != "" {
+		// if metadata report config is avaible, then init metadata report instance
+		opts, err := mc.toReportOptions()
+		if err != nil {
+			return err
+		}
+		return opts.Init()
+	}
+	if rc.Registries != nil && len(rc.Registries) > 0 {
+		// if metadata report config is not avaible, then init metadata report instance with registries
+		for id, reg := range rc.Registries {
+			if reg.UseAsMetaReport && isValid(reg.Address) {
+				opts, err := registryToReportOptions(id, reg)
+				if err != nil {
+					return err
+				}
+				if err = opts.Init(); err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
 }
 
 func (mc *MetadataReportConfig) ToUrl() (*common.URL, error) {
@@ -77,63 +180,6 @@ func (mc *MetadataReportConfig) ToUrl() (*common.URL, error) {
 		res.SetParam(key, val)
 	}
 	return res, nil
-}
-
-func (mc *MetadataReportConfig) IsValid() bool {
-	return len(mc.Protocol) != 0
-}
-
-// StartMetadataReport  The entry of metadata report start
-func (mc *MetadataReportConfig) StartMetadataReport() error {
-	if mc == nil || !mc.IsValid() {
-		return nil
-	}
-	if tmpUrl, err := mc.ToUrl(); err == nil {
-		instance.SetMetadataReportInstance(tmpUrl)
-		return nil
-	} else {
-		return perrors.Wrap(err, "Start MetadataReport failed.")
-	}
-}
-
-func publishServiceDefinition(url *common.URL) {
-	localService, err := extension.GetLocalMetadataService(constant.DefaultKey)
-	if err != nil {
-		logger.Warnf("get local metadata service failed, please check if you have imported _ \"dubbo.apache.org/dubbo-go/v3/metadata/service/local\"")
-		return
-	}
-	localService.PublishServiceDefinition(url)
-	if url.GetParam(constant.MetadataTypeKey, "") != constant.RemoteMetadataStorageType {
-		return
-	}
-	if remoteMetadataService, err := extension.GetRemoteMetadataService(); err == nil && remoteMetadataService != nil {
-		remoteMetadataService.PublishServiceDefinition(url)
-	}
-}
-
-// selectMetadataServiceExportedURL get already be exported url
-func selectMetadataServiceExportedURL() *common.URL {
-	var selectedUrl *common.URL
-	metaDataService, err := extension.GetLocalMetadataService(constant.DefaultKey)
-	if err != nil {
-		logger.Warnf("get metadata service exporter failed, pls check if you import _ \"dubbo.apache.org/dubbo-go/v3/metadata/service/local\"")
-		return nil
-	}
-	urlList, err := metaDataService.GetExportedURLs(constant.AnyValue, constant.AnyValue, constant.AnyValue, constant.AnyValue)
-	if err != nil {
-		panic(err)
-	}
-	if len(urlList) == 0 {
-		return nil
-	}
-	for _, url := range urlList {
-		selectedUrl = url
-		// rest first
-		if url.Protocol == "rest" {
-			break
-		}
-	}
-	return selectedUrl
 }
 
 type MetadataReportConfigBuilder struct {

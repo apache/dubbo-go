@@ -27,6 +27,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	_ "dubbo.apache.org/dubbo-go/v3/metadata/report/nacos"
 )
 
 func TestProviderConfigEmptyRegistry(t *testing.T) {

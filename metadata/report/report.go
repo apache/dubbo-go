@@ -22,60 +22,24 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/metadata/identifier"
-	"dubbo.apache.org/dubbo-go/v3/registry"
+	"dubbo.apache.org/dubbo-go/v3/metadata/info"
+	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
 )
 
 // MetadataReport is an interface of remote metadata report.
 type MetadataReport interface {
-	// StoreProviderMetadata stores the metadata.
-	// Metadata includes the basic info of the server,
-	// provider info, and other user custom info.
-	StoreProviderMetadata(*identifier.MetadataIdentifier, string) error
-
-	// StoreConsumerMetadata stores the metadata.
-	// Metadata includes the basic info of the server,
-	// consumer info, and other user custom info.
-	StoreConsumerMetadata(*identifier.MetadataIdentifier, string) error
-
-	// SaveServiceMetadata saves the metadata.
-	// Metadata includes the basic info of the server,
-	// service info, and other user custom info.
-	SaveServiceMetadata(*identifier.ServiceMetadataIdentifier, *common.URL) error
-
-	// RemoveServiceMetadata removes the metadata.
-	RemoveServiceMetadata(*identifier.ServiceMetadataIdentifier) error
-
-	// GetExportedURLs gets the urls.
-	// If not found, an empty list will be returned.
-	GetExportedURLs(*identifier.ServiceMetadataIdentifier) ([]string, error)
-
-	// SaveSubscribedData saves the urls.
-	// If not found, an empty str will be returned.
-	SaveSubscribedData(*identifier.SubscriberMetadataIdentifier, string) error
-
-	// GetSubscribedURLs gets the urls.
-	// If not found, an empty list will be returned.
-	GetSubscribedURLs(*identifier.SubscriberMetadataIdentifier) ([]string, error)
-
-	// GetServiceDefinition gets the service definition.
-	GetServiceDefinition(*identifier.MetadataIdentifier) (string, error)
-
 	// GetAppMetadata get metadata info from report
-	GetAppMetadata(*identifier.SubscriberMetadataIdentifier) (*common.MetadataInfo, error)
+	GetAppMetadata(application, revision string) (*info.MetadataInfo, error)
 
-	// PublishAppMetadata publish metadata info to reportss
-	PublishAppMetadata(*identifier.SubscriberMetadataIdentifier, *common.MetadataInfo) error
+	// PublishAppMetadata publish metadata info to report
+	PublishAppMetadata(application, revision string, info *info.MetadataInfo) error
 
 	// RegisterServiceAppMapping map the specified Dubbo service interface to current Dubbo app name
-	RegisterServiceAppMapping(string, string, string) error
+	RegisterServiceAppMapping(interfaceName, group string, application string) error
 
 	// GetServiceAppMapping get the app names from the specified Dubbo service interface
-	GetServiceAppMapping(string, string, registry.MappingListener) (*gxset.HashSet, error)
+	GetServiceAppMapping(interfaceName, group string, l mapping.MappingListener) (*gxset.HashSet, error)
 
 	// RemoveServiceAppMappingListener remove the serviceMapping listener by key and group
-	RemoveServiceAppMappingListener(string, string) error
-
-	GetConfigKeysByGroup(group string) (*gxset.HashSet, error)
+	RemoveServiceAppMappingListener(interfaceName, group string) error
 }

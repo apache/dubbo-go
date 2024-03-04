@@ -291,8 +291,6 @@ func (rc *ReferenceConfig) Refer(srv interface{}) {
 		}
 	}
 
-	// publish consumer's metadata
-	publishServiceDefinition(cfgURL)
 	// create proxy
 	if rc.Async {
 		callback := GetCallback(rc.id)

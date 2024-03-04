@@ -194,6 +194,7 @@ func (svcOpts *ServiceOptions) export(info *ServiceInfo) error {
 			common.WithPort(port),
 			common.WithParams(urlMap),
 			common.WithParamsValue(constant.BeanNameKey, svcOpts.Id),
+			common.WithParamsValue(constant.ApplicationTagKey, svcOpts.Application.Tag),
 			//common.WithParamsValue(constant.SslEnabledKey, strconv.FormatBool(config.GetSslEnabled())),
 			common.WithMethods(strings.Split(methods, ",")),
 			// todo(DMwangnima): remove this
@@ -233,16 +234,6 @@ func (svcOpts *ServiceOptions) export(info *ServiceInfo) error {
 				svcOpts.exporters = append(svcOpts.exporters, exporter)
 			}
 		} else {
-			if ivkURL.GetParam(constant.InterfaceKey, "") == constant.MetadataServiceName {
-				ms, err := extension.GetLocalMetadataService("")
-				if err != nil {
-					logger.Warnf("needExport org.apache.dubbo.metadata.MetadataService failed beacause of %svcOpts ! pls check if you import _ \"dubbo.apache.org/dubbo-go/v3/metadata/service/local\"", err)
-					return nil
-				}
-				if err := ms.SetMetadataServiceURL(ivkURL); err != nil {
-					logger.Warnf("SetMetadataServiceURL error = %svcOpts", err)
-				}
-			}
 			invoker = svcOpts.generatorInvoker(ivkURL, info)
 			exporter := extension.GetProtocol(protocolwrapper.FILTER).Export(invoker)
 			if exporter == nil {
@@ -250,7 +241,6 @@ func (svcOpts *ServiceOptions) export(info *ServiceInfo) error {
 			}
 			svcOpts.exporters = append(svcOpts.exporters, exporter)
 		}
-		publishServiceDefinition(ivkURL)
 		// this protocol would be destroyed in graceful_shutdown
 		// please refer to (https://github.com/apache/dubbo-go/issues/2429)
 		graceful_shutdown.RegisterProtocol(proto.Name)
@@ -423,21 +413,6 @@ func (svcOpts *ServiceOptions) GetExportedUrls() []*common.URL {
 func (svcOpts *ServiceOptions) postProcessConfig(url *common.URL) {
 	for _, p := range extension.GetConfigPostProcessors() {
 		p.PostProcessServiceConfig(url)
-	}
-}
-
-func publishServiceDefinition(url *common.URL) {
-	localService, err := extension.GetLocalMetadataService(constant.DefaultKey)
-	if err != nil {
-		logger.Warnf("get local metadata service failed, please check if you have imported _ \"dubbo.apache.org/dubbo-go/v3/metadata/service/local\"")
-		return
-	}
-	localService.PublishServiceDefinition(url)
-	if url.GetParam(constant.MetadataTypeKey, "") != constant.RemoteMetadataStorageType {
-		return
-	}
-	if remoteMetadataService, err := extension.GetRemoteMetadataService(); err == nil && remoteMetadataService != nil {
-		remoteMetadataService.PublishServiceDefinition(url)
 	}
 }
 

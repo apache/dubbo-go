@@ -33,7 +33,7 @@ type ServiceDiscovery interface {
 	fmt.Stringer
 
 	// Destroy will destroy the service discovery.
-	// If the discovery cannot be destroy, it will return an error.
+	// If the discovery cannot be destroyed, it will return an error.
 	Destroy() error
 
 	// Register will register an instance of ServiceInstance to registry
@@ -69,4 +69,11 @@ type ServiceDiscovery interface {
 	// AddListener adds a new ServiceInstancesChangedListenerImpl
 	// see addServiceInstancesChangedListener in Java
 	AddListener(listener ServiceInstancesChangedListener) error
+}
+
+type ServiceDiscoveryRegistry interface {
+	// RegisterService register service instance use metadata info
+	RegisterService() error
+	// UnRegisterService unregister service instance
+	UnRegisterService() error
 }

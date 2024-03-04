@@ -20,7 +20,6 @@ package nacos
 import (
 	"encoding/json"
 	"reflect"
-	"strconv"
 	"testing"
 )
 
@@ -34,35 +33,8 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/metadata/identifier"
+	"dubbo.apache.org/dubbo-go/v3/metadata/info"
 )
-
-func newServiceMetadataIdentifier() *identifier.ServiceMetadataIdentifier {
-	return &identifier.ServiceMetadataIdentifier{
-		Protocol: "nacos",
-		Revision: "a",
-		BaseMetadataIdentifier: identifier.BaseMetadataIdentifier{
-			ServiceInterface: "com.test.MyTest",
-			Version:          "1.0.0",
-			Group:            "test_group",
-			Side:             "service",
-		},
-	}
-}
-
-func newMetadataIdentifier(side string) *identifier.MetadataIdentifier {
-	return &identifier.MetadataIdentifier{
-		Application: "test",
-		BaseMetadataIdentifier: identifier.BaseMetadataIdentifier{
-			ServiceInterface: "com.test.MyTest",
-			Version:          "1.0.0",
-			Group:            "test_group",
-			Side:             side,
-		},
-	}
-}
 
 // MockIConfigClient is a mock of IConfigClient interface
 type MockIConfigClient struct {
@@ -184,18 +156,12 @@ type fields struct {
 	client *nacosClient.NacosConfigClient
 }
 type args struct {
-	subscriberMetadataIdentifier *identifier.SubscriberMetadataIdentifier
-	info                         *common.MetadataInfo
-	providerIdentifier           *identifier.MetadataIdentifier
-	serviceDefinitions           string
-	consumerMetadataIdentifier   *identifier.MetadataIdentifier
-	serviceParameterString       string
-	url                          *common.URL
-	serviceMetadataIdentifier    *identifier.ServiceMetadataIdentifier
-	urls                         string
-	key                          string
-	group                        string
-	value                        string
+	application string
+	revision    string
+	info        *info.MetadataInfo
+	key         string
+	group       string
+	value       string
 }
 
 func newNacosMetadataReport(f fields) *nacosMetadataReport {
@@ -205,7 +171,7 @@ func newNacosMetadataReport(f fields) *nacosMetadataReport {
 }
 
 func Test_nacosMetadataReport_GetAppMetadata(t *testing.T) {
-	mi := common.MetadataInfo{
+	mi := info.MetadataInfo{
 		App: "GetAppMetadata",
 	}
 	data, _ := json.Marshal(mi)
@@ -220,7 +186,7 @@ func Test_nacosMetadataReport_GetAppMetadata(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    *common.MetadataInfo
+		want    *info.MetadataInfo
 		wantErr bool
 	}{
 		{
@@ -229,7 +195,8 @@ func Test_nacosMetadataReport_GetAppMetadata(t *testing.T) {
 				client: nc,
 			},
 			args: args{
-				subscriberMetadataIdentifier: &identifier.SubscriberMetadataIdentifier{},
+				application: "dubbo",
+				revision:    "revision",
 			},
 			want:    &mi,
 			wantErr: false,
@@ -238,7 +205,7 @@ func Test_nacosMetadataReport_GetAppMetadata(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			n := newNacosMetadataReport(tt.fields)
-			got, err := n.GetAppMetadata(tt.args.subscriberMetadataIdentifier)
+			got, err := n.GetAppMetadata(tt.args.application, tt.args.revision)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetAppMetadata() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -269,8 +236,9 @@ func Test_nacosMetadataReport_PublishAppMetadata(t *testing.T) {
 				client: nc,
 			},
 			args: args{
-				subscriberMetadataIdentifier: &identifier.SubscriberMetadataIdentifier{},
-				info: &common.MetadataInfo{
+				application: "PublishAppMetadata",
+				revision:    "PublishAppMetadata",
+				info: &info.MetadataInfo{
 					App: "PublishAppMetadata",
 				},
 			},
@@ -280,186 +248,8 @@ func Test_nacosMetadataReport_PublishAppMetadata(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			n := newNacosMetadataReport(tt.fields)
-			if err := n.PublishAppMetadata(tt.args.subscriberMetadataIdentifier, tt.args.info); (err != nil) != tt.wantErr {
+			if err := n.PublishAppMetadata(tt.args.application, tt.args.revision, tt.args.info); (err != nil) != tt.wantErr {
 				t.Errorf("PublishAppMetadata() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-func Test_nacosMetadataReport_StoreProviderMetadata(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	mnc := NewMockIConfigClient(ctrl)
-	mnc.EXPECT().PublishConfig(gomock.Any()).Return(true, nil)
-	nc := &nacosClient.NacosConfigClient{}
-	nc.SetClient(mnc)
-
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "test",
-			fields: fields{
-				client: nc,
-			},
-			args: args{
-				providerIdentifier: newMetadataIdentifier("provider"),
-				serviceDefinitions: "provider",
-			},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			n := newNacosMetadataReport(tt.fields)
-			if err := n.StoreProviderMetadata(tt.args.providerIdentifier, tt.args.serviceDefinitions); (err != nil) != tt.wantErr {
-				t.Errorf("StoreProviderMetadata() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-func Test_nacosMetadataReport_StoreConsumerMetadata(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	mnc := NewMockIConfigClient(ctrl)
-	mnc.EXPECT().PublishConfig(gomock.Any()).Return(true, nil)
-	nc := &nacosClient.NacosConfigClient{}
-	nc.SetClient(mnc)
-
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "test",
-			fields: fields{
-				client: nc,
-			},
-			args: args{
-				consumerMetadataIdentifier: newMetadataIdentifier("conusmer"),
-				serviceParameterString:     "conusmer",
-			},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			n := newNacosMetadataReport(tt.fields)
-			if err := n.StoreConsumerMetadata(tt.args.consumerMetadataIdentifier, tt.args.serviceParameterString); (err != nil) != tt.wantErr {
-				t.Errorf("StoreConsumerMetadata() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-func Test_nacosMetadataReport_SaveServiceMetadata(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	mnc := NewMockIConfigClient(ctrl)
-	mnc.EXPECT().PublishConfig(gomock.Any()).Return(true, nil)
-	nc := &nacosClient.NacosConfigClient{}
-	nc.SetClient(mnc)
-
-	serviceURL, _ := common.NewURL("registry://test.nacos.io:80",
-		common.WithParamsValue(constant.RegistryRoleKey, strconv.Itoa(common.PROVIDER)),
-		common.WithParamsValue(constant.ClientNameKey, "nacos-client"))
-
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "test",
-			fields: fields{
-				client: nc,
-			},
-			args: args{
-				serviceMetadataIdentifier: newServiceMetadataIdentifier(),
-				url:                       serviceURL,
-			},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			n := newNacosMetadataReport(tt.fields)
-			if err := n.SaveServiceMetadata(tt.args.serviceMetadataIdentifier, tt.args.url); (err != nil) != tt.wantErr {
-				t.Errorf("SaveServiceMetadata() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-func Test_nacosMetadataReport_RemoveServiceMetadata(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	mnc := NewMockIConfigClient(ctrl)
-	mnc.EXPECT().DeleteConfig(gomock.Any()).Return(true, nil)
-	nc := &nacosClient.NacosConfigClient{}
-	nc.SetClient(mnc)
-
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "test",
-			fields: fields{
-				client: nc,
-			},
-			args: args{
-				serviceMetadataIdentifier: newServiceMetadataIdentifier(),
-			},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			n := newNacosMetadataReport(tt.fields)
-			if err := n.RemoveServiceMetadata(tt.args.serviceMetadataIdentifier); (err != nil) != tt.wantErr {
-				t.Errorf("RemoveServiceMetadata() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-func Test_nacosMetadataReport_SaveSubscribedData(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	mnc := NewMockIConfigClient(ctrl)
-	mnc.EXPECT().PublishConfig(gomock.Any()).Return(true, nil)
-	nc := &nacosClient.NacosConfigClient{}
-	nc.SetClient(mnc)
-
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "test",
-			fields: fields{
-				client: nc,
-			},
-			args: args{
-				subscriberMetadataIdentifier: &identifier.SubscriberMetadataIdentifier{},
-				urls:                         "urls",
-			},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			n := newNacosMetadataReport(tt.fields)
-			if err := n.SaveSubscribedData(tt.args.subscriberMetadataIdentifier, tt.args.urls); (err != nil) != tt.wantErr {
-				t.Errorf("SaveSubscribedData() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

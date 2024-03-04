@@ -19,24 +19,17 @@ package config
 
 import (
 	"errors"
-	"reflect"
-	"strconv"
 )
 
 import (
 	"github.com/dubbogo/gost/log/logger"
 
 	"github.com/knadh/koanf"
-
-	perrors "github.com/pkg/errors"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/logger/zap"
-	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
 var (
@@ -73,78 +66,6 @@ func check() error {
 		return errors.New("execute the config.Load() method first")
 	}
 	return nil
-}
-
-// registerServiceInstance register service instance
-func registerServiceInstance() {
-	url := selectMetadataServiceExportedURL()
-	if url == nil {
-		return
-	}
-	instance, err := createInstance(url)
-	if err != nil {
-		panic(err)
-	}
-	p := extension.GetProtocol(constant.RegistryProtocol)
-	var rp registry.RegistryFactory
-	var ok bool
-	if rp, ok = p.(registry.RegistryFactory); !ok {
-		panic("dubbo registry protocol{" + reflect.TypeOf(p).String() + "} is invalid")
-	}
-	rs := rp.GetRegistries()
-	for _, r := range rs {
-		var sdr registry.ServiceDiscoveryHolder
-		if sdr, ok = r.(registry.ServiceDiscoveryHolder); !ok {
-			continue
-		}
-		// publish app level data to registry
-		logger.Infof("Starting register instance address %v", instance)
-		err := sdr.GetServiceDiscovery().Register(instance)
-		if err != nil {
-			panic(err)
-		}
-	}
-	// publish metadata to remote
-	if GetApplicationConfig().MetadataType == constant.RemoteMetadataStorageType {
-		if remoteMetadataService, err := extension.GetRemoteMetadataService(); err == nil && remoteMetadataService != nil {
-			remoteMetadataService.PublishMetadata(GetApplicationConfig().Name)
-		}
-	}
-}
-
-// // nolint
-func createInstance(url *common.URL) (registry.ServiceInstance, error) {
-	appConfig := GetApplicationConfig()
-	port, err := strconv.ParseInt(url.Port, 10, 32)
-	if err != nil {
-		return nil, perrors.WithMessage(err, "invalid port: "+url.Port)
-	}
-
-	host := url.Ip
-	if len(host) == 0 {
-		host = common.GetLocalIp()
-	}
-
-	// usually we will add more metadata
-	metadata := make(map[string]string, 8)
-	metadata[constant.MetadataStorageTypePropertyName] = appConfig.MetadataType
-
-	instance := &registry.DefaultServiceInstance{
-		ServiceName: appConfig.Name,
-		Host:        host,
-		Port:        int(port),
-		ID:          host + constant.KeySeparator + url.Port,
-		Enable:      true,
-		Healthy:     true,
-		Metadata:    metadata,
-		Tag:         appConfig.Tag,
-	}
-
-	for _, cus := range extension.GetCustomizers() {
-		cus.Customize(instance)
-	}
-
-	return instance, nil
 }
 
 // GetRPCService get rpc service for consumer

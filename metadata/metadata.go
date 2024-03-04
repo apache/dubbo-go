@@ -19,69 +19,40 @@
 package metadata
 
 import (
-	"github.com/dubbogo/gost/log/logger"
-
-	perrors "github.com/pkg/errors"
-
-	"go.uber.org/atomic"
-)
-
-import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/metadata/service/exporter"
+	"dubbo.apache.org/dubbo-go/v3/metadata/info"
 )
 
 var (
-	exporting = &atomic.Bool{}
+	metadataService    MetadataService = &DefaultMetadataService{}
+	appMetadataInfoMap                 = make(map[string]*info.MetadataInfo)
 )
 
-func ExportMetadataService() {
-	ms, err := extension.GetLocalMetadataService(constant.DefaultKey)
-	if err != nil {
-		logger.Warnf("could not init metadata service", err)
-		return
-	}
-
-	if exporting.Load() {
-		return
-	}
-
-	// In theory, we can use sync.Once
-	// But sync.Once is not reentrant.
-	// Now the invocation chain is createRegistry -> tryInitMetadataService -> metadataServiceExporter.export
-	// -> createRegistry -> initMetadataService...
-	// So using sync.Once will result in dead lock
-	exporting.Store(true)
-
-	expt := extension.GetMetadataServiceExporter(constant.DefaultKey, ms)
-	if expt == nil {
-		logger.Warnf("get metadata service exporter failed, pls check if you import _ \"dubbo.apache.org/dubbo-go/v3/metadata/service/exporter/configurable\"")
-		return
-	}
-
-	err = expt.Export(nil)
-	if err != nil {
-		logger.Errorf("could not export the metadata service, err = %s", err.Error())
-		return
-	}
-
-	// report interface-app mapping
-	err = publishMapping(expt)
-	if err != nil {
-		logger.Errorf("Publish interface-application mapping failed, got error %#v", err)
-	}
+func GetMetadataService() MetadataService {
+	return metadataService
 }
 
-// OnEvent only handle ServiceConfigExportedEvent
-func publishMapping(sc exporter.MetadataServiceExporter) error {
-	urls := sc.GetExportedURLs()
+func GetMetadataInfo(registryId string) *info.MetadataInfo {
+	return appMetadataInfoMap[registryId]
+}
 
-	for _, u := range urls {
-		err := extension.GetGlobalServiceNameMapping().Map(u)
-		if err != nil {
-			return perrors.WithMessage(err, "could not map the service: "+u.String())
-		}
+func AddService(registryId string, url *common.URL) {
+	if _, exist := appMetadataInfoMap[registryId]; !exist {
+		appMetadataInfoMap[registryId] = info.NewMetadataInfo(
+			url.GetParam(constant.ApplicationKey, ""),
+			url.GetParam(constant.ApplicationTagKey, ""),
+		)
 	}
-	return nil
+	appMetadataInfoMap[registryId].AddService(url)
+}
+
+func AddSubscribeURL(registryId string, url *common.URL) {
+	if _, exist := appMetadataInfoMap[registryId]; !exist {
+		appMetadataInfoMap[registryId] = info.NewMetadataInfo(
+			url.GetParam(constant.ApplicationKey, ""),
+			url.GetParam(constant.ApplicationTagKey, ""),
+		)
+	}
+	appMetadataInfoMap[registryId].AddSubscribeURL(url)
 }

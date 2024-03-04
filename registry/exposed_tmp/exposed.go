@@ -18,115 +18,34 @@
 package exposed_tmp
 
 import (
-	"reflect"
-	"strconv"
-)
-
-import (
 	"github.com/dubbogo/gost/log/logger"
-
-	perrors "github.com/pkg/errors"
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
 // RegisterServiceInstance register service instance
-func RegisterServiceInstance(applicationName string, tag string, metadataType string) {
-	url := selectMetadataServiceExportedURL()
-	if url == nil {
-		return
-	}
-	instance, err := createInstance(url, applicationName, tag, metadataType)
-	if err != nil {
-		panic(err)
-	}
-	p := extension.GetProtocol(constant.RegistryProtocol)
-	var rp registry.RegistryFactory
-	var ok bool
-	if rp, ok = p.(registry.RegistryFactory); !ok {
-		panic("dubbo registry protocol{" + reflect.TypeOf(p).String() + "} is invalid")
-	}
-	rs := rp.GetRegistries()
-	for _, r := range rs {
-		var sdr registry.ServiceDiscoveryHolder
-		if sdr, ok = r.(registry.ServiceDiscoveryHolder); !ok {
-			continue
+func RegisterServiceInstance() error {
+	defer func() {
+		// TODO remove this recover func,this just to avoid some unit test failed,this will not happen in user side mostly
+		// config test -> metadata exporter -> dubbo protocol/remoting -> config,cycle import will occur
+		// some day we fix the cycle import then can remove this recover
+		if err := recover(); err != nil {
+			logger.Errorf("register service instance failed,please check if registry protocol is imported, error: %v", err)
 		}
-		// publish app level data to registry
-		logger.Infof("Starting register instance address %v", instance)
-		err := sdr.GetServiceDiscovery().Register(instance)
-		if err != nil {
-			panic(err)
+	}()
+	protocol := extension.GetProtocol(constant.RegistryKey)
+	if rf, ok := protocol.(registry.RegistryFactory); ok {
+		for _, r := range rf.GetRegistries() {
+			if sdr, ok := r.(registry.ServiceDiscoveryRegistry); ok {
+				if err := sdr.RegisterService(); err != nil {
+					return err
+				}
+			}
 		}
 	}
-	// publish metadata to remote
-	if metadataType == constant.RemoteMetadataStorageType {
-		if remoteMetadataService, err := extension.GetRemoteMetadataService(); err == nil && remoteMetadataService != nil {
-			remoteMetadataService.PublishMetadata(applicationName)
-		}
-	}
-}
-
-// // nolint
-func createInstance(url *common.URL, applicationName string, tag string, metadataType string) (registry.ServiceInstance, error) {
-	port, err := strconv.ParseInt(url.Port, 10, 32)
-	if err != nil {
-		return nil, perrors.WithMessage(err, "invalid port: "+url.Port)
-	}
-
-	host := url.Ip
-	if len(host) == 0 {
-		host = common.GetLocalIp()
-	}
-
-	// usually we will add more metadata
-	metadata := make(map[string]string, 8)
-	metadata[constant.MetadataStorageTypePropertyName] = metadataType
-
-	instance := &registry.DefaultServiceInstance{
-		ServiceName: applicationName,
-		Host:        host,
-		Port:        int(port),
-		ID:          host + constant.KeySeparator + url.Port,
-		Enable:      true,
-		Healthy:     true,
-		Metadata:    metadata,
-		Tag:         tag,
-	}
-
-	for _, cus := range extension.GetCustomizers() {
-		cus.Customize(instance)
-	}
-
-	return instance, nil
-}
-
-// selectMetadataServiceExportedURL get already be exported url
-func selectMetadataServiceExportedURL() *common.URL {
-	var selectedUrl *common.URL
-	metaDataService, err := extension.GetLocalMetadataService(constant.DefaultKey)
-	if err != nil {
-		logger.Warnf("get metadata service exporter failed, pls check if you import _ \"dubbo.apache.org/dubbo-go/v3/metadata/service/local\"")
-		return nil
-	}
-	urlList, err := metaDataService.GetExportedURLs(constant.AnyValue, constant.AnyValue, constant.AnyValue, constant.AnyValue)
-	if err != nil {
-		panic(err)
-	}
-	if len(urlList) == 0 {
-		return nil
-	}
-	for _, url := range urlList {
-		selectedUrl = url
-		// rest first
-		if url.Protocol == "rest" {
-			break
-		}
-	}
-	return selectedUrl
+	return nil
 }

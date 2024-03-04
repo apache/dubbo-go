@@ -87,7 +87,7 @@ func (lstn *ServiceMappingChangedListenerImpl) OnEvent(e observer.Event) error {
 		if reg, err = extension.GetRegistry(lstn.registryUrl.Protocol, lstn.registryUrl); err != nil {
 			return err
 		}
-		if sdreg, ok := reg.(*ServiceDiscoveryRegistry); ok {
+		if sdreg, ok := reg.(*serviceDiscoveryRegistry); ok {
 			sdreg.SubscribeURL(lstn.serviceUrl, lstn.listener, newServiceNames)
 		}
 		lstn.oldServiceNames = newServiceNames
@@ -101,7 +101,7 @@ func (lstn *ServiceMappingChangedListenerImpl) OnEvent(e observer.Event) error {
 			if reg, err = extension.GetRegistry(lstn.registryUrl.Protocol, lstn.registryUrl); err != nil {
 				return err
 			}
-			if sdreg, ok := reg.(*ServiceDiscoveryRegistry); ok {
+			if sdreg, ok := reg.(*serviceDiscoveryRegistry); ok {
 				sdreg.SubscribeURL(lstn.serviceUrl, lstn.listener, newServiceNames)
 			}
 			lstn.oldServiceNames = newServiceNames
