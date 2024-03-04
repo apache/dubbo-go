@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
+	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/aliasmethod"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/consistenthashing"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/interleavedweightedroundrobin"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/leastactive"
@@ -77,4 +78,8 @@ func BenchmarkInterleavedWeightedRoundRobinLoadbalance(b *testing.B) {
 
 func BenchmarkRandomLoadbalance(b *testing.B) {
 	Benchloadbalance(b, extension.GetLoadbalance(constant.LoadBalanceKeyRandom))
+}
+
+func BenchmarkAliasMethodLoadbalance(b *testing.B) {
+	Benchloadbalance(b, extension.GetLoadbalance(constant.LoadBalanceKeyAliasMethod))
 }

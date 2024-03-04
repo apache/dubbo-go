@@ -15,15 +15,5 @@
  * limitations under the License.
  */
 
-package constant
-
-const (
-	LoadBalanceKeyConsistentHashing             = "consistenthashing"
-	LoadBalanceKeyLeastActive                   = "leastactive"
-	LoadBalanceKeyRandom                        = "random"
-	LoadBalanceKeyRoundRobin                    = "roundrobin"
-	LoadBalanceKeyP2C                           = "p2c"
-	LoadXDSRingHash                             = "xdsringhash"
-	LoadBalanceKeyInterleavedWeightedRoundRobin = "interleavedweightedroundrobin"
-	LoadBalanceKeyAliasMethod                   = "aliasmethod"
-)
+// Package aliasmethod implements alias-method algorithm load balance strategy.
+package aliasmethod // weighted random with alias-method algorithm
