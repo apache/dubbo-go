@@ -19,6 +19,7 @@ package servicediscovery
 
 import (
 	"encoding/gob"
+	"errors"
 	"reflect"
 	"sync"
 	"time"
@@ -253,6 +254,9 @@ func GetMetadataInfo(app string, instance registry.ServiceInstance, revision str
 		var err error
 		proxyFactory := extension.GetMetadataServiceProxyFactory(constant.DefaultKey)
 		metadataService := proxyFactory.GetProxy(instance)
+		if metadataService == nil {
+			return nil, errors.New("get remote metadata error please check instance " + instance.GetHost() + " is alive")
+		}
 		defer destroyInvoker(metadataService)
 		metadataInfo, err = metadataService.GetMetadataInfo(revision)
 		if err != nil {
