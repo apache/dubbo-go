@@ -29,30 +29,24 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"strings"
-)
 
-import (
 	dubbogoLogger "github.com/dubbogo/gost/log/logger"
 
 	v2corepb "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	v3corepb "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 
-	"github.com/golang/protobuf/jsonpb"
-	"github.com/golang/protobuf/proto"
-
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/google"
-	"google.golang.org/grpc/credentials/insecure"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource/version"
 	"dubbo.apache.org/dubbo-go/v3/xds/credentials/certprovider"
 	"dubbo.apache.org/dubbo-go/v3/xds/internal"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/envconfig"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/pretty"
+	v3corepb "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	"github.com/golang/protobuf/jsonpb"
+	"github.com/golang/protobuf/proto"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/google"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 const (
@@ -71,7 +65,7 @@ const (
 var gRPCVersion = fmt.Sprintf("%s %s", gRPCUserAgentName, grpc.Version)
 
 // For overriding in unit tests.
-var bootstrapFileReadFunc = ioutil.ReadFile
+var bootstrapFileReadFunc = os.ReadFile
 
 // ServerConfig contains the configuration to connect to a server, including
 // URI, creds, and transport API version (e.g. v2 or v3).

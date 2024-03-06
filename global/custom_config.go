@@ -28,5 +28,23 @@ type CustomConfig struct {
 }
 
 func DefaultCustomConfig() *CustomConfig {
-	return &CustomConfig{}
+	return &CustomConfig{
+		ConfigMap: make(map[string]interface{}),
+	}
+}
+
+// Clone a new CustomConfig
+func (c *CustomConfig) Clone() *CustomConfig {
+	if c == nil {
+		return nil
+	}
+
+	newConfigMap := make(map[string]interface{}, len(c.ConfigMap))
+	for k, v := range c.ConfigMap {
+		newConfigMap[k] = v
+	}
+
+	return &CustomConfig{
+		ConfigMap: newConfigMap,
+	}
 }

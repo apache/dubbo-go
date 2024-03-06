@@ -24,18 +24,11 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
 	"time"
-)
 
-import (
-	"github.com/dubbogo/gost/log/logger"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/xds/client/bootstrap"
 	"dubbo.apache.org/dubbo-go/v3/xds/credentials/certgenerate"
 	"dubbo.apache.org/dubbo-go/v3/xds/credentials/certprovider"
@@ -43,6 +36,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/xds/credentials/certprovider/remote"
 	"dubbo.apache.org/dubbo-go/v3/xds/internal"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/envconfig"
+	"github.com/dubbogo/gost/log/logger"
 )
 
 func init() {
@@ -162,7 +156,7 @@ func (c *CACertManager) GetRootCertificate() (*x509.CertPool, error) {
 
 // UpdateRoot update root cert
 func (c *CACertManager) UpdateRoot() error {
-	rootFileContents, err := ioutil.ReadFile(c.rootPath)
+	rootFileContents, err := os.ReadFile(c.rootPath)
 	if err != nil {
 		return err
 	}

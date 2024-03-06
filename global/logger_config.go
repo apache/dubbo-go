@@ -63,3 +63,39 @@ func DefaultLoggerConfig() *LoggerConfig {
 
 	return cfg
 }
+
+// Clone a new LoggerConfig
+func (c *LoggerConfig) Clone() *LoggerConfig {
+	if c == nil {
+		return nil
+	}
+
+	return &LoggerConfig{
+		Driver:   c.Driver,
+		Level:    c.Level,
+		Format:   c.Format,
+		Appender: c.Appender,
+		File:     c.File.Clone(),
+	}
+}
+
+// Clone a new File
+func (f *File) Clone() *File {
+	if f == nil {
+		return nil
+	}
+
+	var newCompress *bool
+	if f.Compress != nil {
+		newCompress = new(bool)
+		*newCompress = *f.Compress
+	}
+
+	return &File{
+		Name:       f.Name,
+		MaxSize:    f.MaxSize,
+		MaxBackups: f.MaxBackups,
+		MaxAge:     f.MaxAge,
+		Compress:   f.Compress,
+	}
+}

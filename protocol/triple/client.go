@@ -139,6 +139,7 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 	case constant.ProtobufSerialization:
 		isIDL = true
 	case constant.JSONSerialization:
+		isIDL = true
 		cliOpts = append(cliOpts, tri.WithProtoJSON())
 	case constant.Hessian2Serialization:
 		cliOpts = append(cliOpts, tri.WithHessian2())

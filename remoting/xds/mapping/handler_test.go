@@ -18,23 +18,17 @@
 package mapping
 
 import (
-	"io/ioutil"
 	"net/http"
+	"os"
 	"testing"
 	"time"
-)
 
-import (
-	structpb "github.com/golang/protobuf/ptypes/struct"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/remoting/xds/common"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/mocks"
+	structpb "github.com/golang/protobuf/ptypes/struct"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 const (
@@ -125,5 +119,5 @@ func getMatchFunction(metadata string) func(abc *structpb.Struct) bool {
 }
 
 func generateMockToken() error {
-	return ioutil.WriteFile(istioTokenPathFoo, []byte(istioTokenFoo), 0777)
+	return os.WriteFile(istioTokenPathFoo, []byte(istioTokenFoo), 0777)
 }

@@ -20,10 +20,8 @@ package config
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"io/ioutil"
-)
+	"os"
 
-import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
@@ -50,7 +48,7 @@ func GetServerTlsConfig(opt *TLSConfig) (*tls.Config, error) {
 	//need mTLS
 	if opt.CACertFile != "" {
 		ca = x509.NewCertPool()
-		caBytes, err := ioutil.ReadFile(opt.CACertFile)
+		caBytes, err := os.ReadFile(opt.CACertFile)
 		if err != nil {
 			return nil, err
 		}
@@ -80,7 +78,7 @@ func GetClientTlsConfig(opt *TLSConfig) (*tls.Config, error) {
 		ServerName: opt.TLSServerName,
 	}
 	ca := x509.NewCertPool()
-	caBytes, err := ioutil.ReadFile(opt.CACertFile)
+	caBytes, err := os.ReadFile(opt.CACertFile)
 	if err != nil {
 		return nil, err
 	}

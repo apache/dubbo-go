@@ -47,3 +47,41 @@ func DefaultProviderConfig() *ProviderConfig {
 		Services:    make(map[string]*ServiceConfig),
 	}
 }
+
+// Clone a new ProviderConfig
+func (c *ProviderConfig) Clone() *ProviderConfig {
+	if c == nil {
+		return nil
+	}
+
+	newRegistryIDs := make([]string, len(c.RegistryIDs))
+	copy(newRegistryIDs, c.RegistryIDs)
+
+	newProtocolIDs := make([]string, len(c.ProtocolIDs))
+	copy(newProtocolIDs, c.ProtocolIDs)
+
+	newServices := make(map[string]*ServiceConfig, len(c.Services))
+	for k, v := range c.Services {
+		newServices[k] = v.Clone()
+	}
+
+	newConfigType := make(map[string]string, len(c.ConfigType))
+	for k, v := range c.ConfigType {
+		newConfigType[k] = v
+	}
+
+	return &ProviderConfig{
+		ServiceConfig:          *c.ServiceConfig.Clone(),
+		Filter:                 c.Filter,
+		Register:               c.Register,
+		RegistryIDs:            newRegistryIDs,
+		ProtocolIDs:            newProtocolIDs,
+		TracingKey:             c.TracingKey,
+		Services:               newServices,
+		ProxyFactory:           c.ProxyFactory,
+		FilterConf:             c.FilterConf,
+		ConfigType:             newConfigType,
+		AdaptiveService:        c.AdaptiveService,
+		AdaptiveServiceVerbose: c.AdaptiveServiceVerbose,
+	}
+}

@@ -76,6 +76,13 @@ func WithPrometheusExporterEnabled() Option {
 	}
 }
 
+func WithPrometheusPushgatewayEnabled() Option {
+	return func(opts *Options) {
+		enabled := true
+		opts.Metrics.Prometheus.Pushgateway.Enabled = &enabled
+	}
+}
+
 func WithPrometheusGatewayUrl(url string) Option {
 	return func(opts *Options) {
 		opts.Metrics.Prometheus.Pushgateway.BaseUrl = url
