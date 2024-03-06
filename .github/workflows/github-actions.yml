@@ -20,7 +20,7 @@ jobs:
       # If you want to matrix build , you can append the following list.
       matrix:
         go_version:
-          - 1.17
+          - 1.22.1
         os:
           - ubuntu-latest
 
