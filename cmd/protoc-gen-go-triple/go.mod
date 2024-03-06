@@ -1,6 +1,6 @@
 module dubbo.apache.org/dubbo-go/v3/cmd/protoc-gen-go-triple
 
-go 1.22.1
+go 1.22
 
 require (
 	github.com/golang/protobuf v1.5.3
