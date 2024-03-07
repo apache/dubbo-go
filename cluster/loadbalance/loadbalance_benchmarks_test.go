@@ -24,7 +24,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/aliasmethod"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/consistenthashing"
-	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/interleavedweightedroundrobin"
+	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/iwrr"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/leastactive"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/p2c"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/random"

@@ -16,4 +16,6 @@
  */
 
 // Package aliasmethod implements alias-method algorithm load balance strategy.
+// Alias Method: https://en.wikipedia.org/wiki/Alias_method
+// It needs O(n) time and O(n) memory to initialize and O(1) time to generate a random number.
 package aliasmethod // weighted random with alias-method algorithm
