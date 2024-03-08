@@ -19,8 +19,6 @@ jobs:
       matrix:
         golang:
           - '1.20'
-          - '1.21'
-          - '1.22'
     steps:
       - uses: actions/setup-go@v3
         with:
