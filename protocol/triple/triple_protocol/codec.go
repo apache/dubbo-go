@@ -275,7 +275,6 @@ func (c *hessian2Codec) Unmarshal(binary []byte, message interface{}) error {
 	return reflectResponse(val, message)
 }
 
-// todo(DMwangnima): add unit tests
 type msgpackCodec struct{}
 
 func (c *msgpackCodec) Name() string {

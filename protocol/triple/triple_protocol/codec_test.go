@@ -116,3 +116,18 @@ func TestJSONCodec(t *testing.T) {
 		assert.Sprintf(`error message should explain that "" is not a valid JSON object`),
 	)
 }
+
+func TestMsgpackCodec(t *testing.T) {
+	t.Parallel()
+
+	want := &pingv1.PingRequest{
+		Number: 1234,
+		Text:   "5678",
+	}
+	codec := &msgpackCodec{}
+	binary, err := codec.Marshal(want)
+	assert.Nil(t, err)
+	var got pingv1.PingRequest
+	err = codec.Unmarshal(binary, &got)
+	assert.Equal(t, got, want)
+}
