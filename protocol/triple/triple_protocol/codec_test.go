@@ -129,6 +129,7 @@ func TestMsgpackCodec(t *testing.T) {
 	assert.Nil(t, err)
 	var got pingv1.PingRequest
 	err = codec.Unmarshal(binary, &got)
+	assert.Nil(t, err)
 	assert.Equal(t, got.Number, want.Number)
 	assert.Equal(t, got.Text, want.Text)
 }
