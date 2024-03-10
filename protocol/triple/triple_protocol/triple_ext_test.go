@@ -320,7 +320,7 @@ func TestServer(t *testing.T) {
 				return
 			}
 			if sendErr := stream.Send(&pingv1.CumSumRequest{Number: 42}); sendErr != nil {
-				assert.ErrorIs(t, err, io.EOF)
+				assert.ErrorIs(t, sendErr, io.EOF)
 				assert.Equal(t, triple.CodeOf(err), triple.CodeUnknown)
 			}
 			// We didn't send the headers the server expects, so we should now get an
@@ -2008,7 +2008,7 @@ func TestBidiOverHTTP1(t *testing.T) {
 	stream, err := client.CumSum(context.Background())
 	assert.Nil(t, err)
 	if sendErr := stream.Send(&pingv1.CumSumRequest{Number: 2}); sendErr != nil {
-		assert.ErrorIs(t, err, io.EOF)
+		assert.ErrorIs(t, sendErr, io.EOF)
 	}
 	err = stream.Receive(&pingv1.CumSumResponse{})
 	assert.NotNil(t, err)
