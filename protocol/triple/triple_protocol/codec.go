@@ -16,14 +16,15 @@ package triple_protocol
 
 import (
 	"bytes"
-	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/interoperability"
 	"encoding/json"
 	"errors"
 	"fmt"
-	hessian "github.com/apache/dubbo-go-hessian2"
-	perrors "github.com/pkg/errors"
 	"reflect"
 	"time"
+
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/interoperability"
+	hessian "github.com/apache/dubbo-go-hessian2"
+	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -192,10 +193,13 @@ func (c *protoWrapperCodec) Name() string {
 }
 
 func (c *protoWrapperCodec) Marshal(message interface{}) ([]byte, error) {
-	reqs, ok := message.([]interface{})
+	var reqs []interface{}
+	var ok bool
+	reqs, ok = message.([]interface{})
 	if !ok {
-		return c.innerCodec.Marshal(message)
+		reqs = []interface{}{message}
 	}
+
 	reqsLen := len(reqs)
 	reqsBytes := make([][]byte, reqsLen)
 	reqsTypes := make([]string, reqsLen)
@@ -218,9 +222,11 @@ func (c *protoWrapperCodec) Marshal(message interface{}) ([]byte, error) {
 }
 
 func (c *protoWrapperCodec) Unmarshal(binary []byte, message interface{}) error {
-	params, ok := message.([]interface{})
+	var params []interface{}
+	var ok bool
+	params, ok = message.([]interface{})
 	if !ok {
-		return c.innerCodec.Unmarshal(binary, message)
+		params = []interface{}{message}
 	}
 
 	var wrapperReq interoperability.TripleRequestWrapper
@@ -269,7 +275,6 @@ func (c *hessian2Codec) Unmarshal(binary []byte, message interface{}) error {
 	return reflectResponse(val, message)
 }
 
-// todo(DMwangnima): add unit tests
 type msgpackCodec struct{}
 
 func (c *msgpackCodec) Name() string {
