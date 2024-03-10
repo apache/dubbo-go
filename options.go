@@ -90,6 +90,7 @@ func (rc *InstanceOptions) init(opts ...InstanceOption) error {
 		log.Infof("[Config Center] Config center doesn't start")
 		log.Debugf("config center doesn't start because %s", err)
 	} else {
+		compatInstanceOptions(rcCompat, rc)
 		if err = rcCompat.Logger.Init(); err != nil { // init logger using config from config center again
 			return err
 		}
