@@ -69,14 +69,24 @@ type nacosMetadataReport struct {
 
 // GetAppMetadata get metadata info from nacos
 func (n *nacosMetadataReport) GetAppMetadata(metadataIdentifier *identifier.SubscriberMetadataIdentifier) (*common.MetadataInfo, error) {
+	// compatible with java impl first
 	data, err := n.getConfig(vo.ConfigParam{
-		DataId: metadataIdentifier.GetIdentifierKey(),
-		Group:  n.group,
+		DataId: metadataIdentifier.Application,
+		Group:  metadataIdentifier.Revision,
 	})
 	if err != nil {
 		return nil, err
 	}
-
+	if data == "" {
+		// compatible with dubbo-go 3.1.x before
+		data, err = n.getConfig(vo.ConfigParam{
+			DataId: metadataIdentifier.GetIdentifierKey(),
+			Group:  n.group,
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
 	var metadataInfo common.MetadataInfo
 	err = json.Unmarshal([]byte(data), &metadataInfo)
 	if err != nil {
@@ -91,7 +101,16 @@ func (n *nacosMetadataReport) PublishAppMetadata(metadataIdentifier *identifier.
 	if err != nil {
 		return err
 	}
-
+	// compatible with java impl
+	err = n.storeMetadata(vo.ConfigParam{
+		DataId:  metadataIdentifier.Application,
+		Group:   metadataIdentifier.Revision,
+		Content: string(data),
+	})
+	if err != nil {
+		return err
+	}
+	// compatible with dubbo-go 3.1.x before
 	return n.storeMetadata(vo.ConfigParam{
 		DataId:  metadataIdentifier.GetIdentifierKey(),
 		Group:   n.group,
