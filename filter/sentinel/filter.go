@@ -52,6 +52,10 @@ func init() {
 	}
 }
 
+var (
+	initOnce sync.Once
+)
+
 type DubboLoggerWrapper struct {
 	logger.Logger
 }
@@ -88,19 +92,6 @@ func (d DubboLoggerWrapper) ErrorEnabled() bool {
 	return true
 }
 
-func sentinelExit(ctx context.Context, result protocol.Result) {
-	if methodEntry := ctx.Value(MethodEntryKey); methodEntry != nil {
-		e := methodEntry.(*base.SentinelEntry)
-		sentinel.TraceError(e, result.Error())
-		e.Exit()
-	}
-	if interfaceEntry := ctx.Value(InterfaceEntryKey); interfaceEntry != nil {
-		e := interfaceEntry.(*base.SentinelEntry)
-		sentinel.TraceError(e, result.Error())
-		e.Exit()
-	}
-}
-
 var (
 	providerOnce     sync.Once
 	sentinelProvider *sentinelProviderFilter
@@ -110,6 +101,12 @@ type sentinelProviderFilter struct{}
 
 func newSentinelProviderFilter() filter.Filter {
 	if sentinelProvider == nil {
+		initOnce.Do(func() {
+			err := sentinel.InitDefault()
+			if err != nil {
+				panic(err)
+			}
+		})
 		providerOnce.Do(func() {
 			sentinelProvider = &sentinelProviderFilter{}
 		})
@@ -129,8 +126,9 @@ func (d *sentinelProviderFilter) Invoke(ctx context.Context, invoker protocol.In
 	if b != nil {
 		// interface blocked
 		return sentinelDubboProviderFallback(ctx, invoker, invocation, b)
+	} else {
+		defer interfaceEntry.Exit()
 	}
-	ctx = context.WithValue(ctx, InterfaceEntryKey, interfaceEntry)
 
 	methodEntry, b = sentinel.Entry(methodResourceName,
 		sentinel.WithResourceType(base.ResTypeRPC),
@@ -139,13 +137,19 @@ func (d *sentinelProviderFilter) Invoke(ctx context.Context, invoker protocol.In
 	if b != nil {
 		// method blocked
 		return sentinelDubboProviderFallback(ctx, invoker, invocation, b)
+	} else {
+		defer methodEntry.Exit()
 	}
-	ctx = context.WithValue(ctx, MethodEntryKey, methodEntry)
-	return invoker.Invoke(ctx, invocation)
+	result := invoker.Invoke(ctx, invocation)
+	if result.Error() != nil {
+		sentinel.TraceError(interfaceEntry, result.Error())
+		sentinel.TraceError(methodEntry, result.Error())
+	}
+
+	return result
 }
 
 func (d *sentinelProviderFilter) OnResponse(ctx context.Context, result protocol.Result, _ protocol.Invoker, _ protocol.Invocation) protocol.Result {
-	sentinelExit(ctx, result)
 	return result
 }
 
@@ -158,6 +162,12 @@ type sentinelConsumerFilter struct{}
 
 func newSentinelConsumerFilter() filter.Filter {
 	if sentinelConsumer == nil {
+		initOnce.Do(func() {
+			err := sentinel.InitDefault()
+			if err != nil {
+				panic(err)
+			}
+		})
 		consumerOnce.Do(func() {
 			sentinelConsumer = &sentinelConsumerFilter{}
 		})
@@ -177,22 +187,23 @@ func (d *sentinelConsumerFilter) Invoke(ctx context.Context, invoker protocol.In
 	if b != nil {
 		// interface blocked
 		return sentinelDubboConsumerFallback(ctx, invoker, invocation, b)
+	} else {
+		defer interfaceEntry.Exit()
 	}
-	ctx = context.WithValue(ctx, InterfaceEntryKey, interfaceEntry)
 
 	methodEntry, b = sentinel.Entry(methodResourceName, sentinel.WithResourceType(base.ResTypeRPC),
 		sentinel.WithTrafficType(base.Outbound), sentinel.WithArgs(invocation.Arguments()...))
 	if b != nil {
 		// method blocked
 		return sentinelDubboConsumerFallback(ctx, invoker, invocation, b)
+	} else {
+		defer methodEntry.Exit()
 	}
-	ctx = context.WithValue(ctx, MethodEntryKey, methodEntry)
 
 	return invoker.Invoke(ctx, invocation)
 }
 
 func (d *sentinelConsumerFilter) OnResponse(ctx context.Context, result protocol.Result, _ protocol.Invoker, _ protocol.Invocation) protocol.Result {
-	sentinelExit(ctx, result)
 	return result
 }
 
@@ -220,9 +231,6 @@ func getDefaultDubboFallback() DubboFallback {
 const (
 	DefaultProviderPrefix = "dubbo:provider:"
 	DefaultConsumerPrefix = "dubbo:consumer:"
-
-	MethodEntryKey    = constant.DubboCtxKey("$$sentinelMethodEntry")
-	InterfaceEntryKey = constant.DubboCtxKey("$$sentinelInterfaceEntry")
 )
 
 func getResourceName(invoker protocol.Invoker, invocation protocol.Invocation, prefix string) (interfaceResourceName, methodResourceName string) {
