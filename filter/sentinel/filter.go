@@ -199,8 +199,12 @@ func (d *sentinelConsumerFilter) Invoke(ctx context.Context, invoker protocol.In
 	} else {
 		defer methodEntry.Exit()
 	}
-
-	return invoker.Invoke(ctx, invocation)
+	result := invoker.Invoke(ctx, invocation)
+	if result.Error() != nil {
+		sentinel.TraceError(interfaceEntry, result.Error())
+		sentinel.TraceError(methodEntry, result.Error())
+	}
+	return result
 }
 
 func (d *sentinelConsumerFilter) OnResponse(ctx context.Context, result protocol.Result, _ protocol.Invoker, _ protocol.Invocation) protocol.Result {
