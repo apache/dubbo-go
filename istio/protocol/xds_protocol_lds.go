@@ -3,9 +3,11 @@ package protocol
 import (
 	"dubbo.apache.org/dubbo-go/v3/istio/channel"
 	"dubbo.apache.org/dubbo-go/v3/istio/resources"
+	"dubbo.apache.org/dubbo-go/v3/istio/utils"
 	"github.com/dubbogo/gost/log/logger"
 	listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	http_connection_manager_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	sockets_tls_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	v3discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	"github.com/golang/protobuf/ptypes"
 	"sync"
@@ -39,7 +41,8 @@ func (lds *LdsProtocol) ProcessProtocol(resp *v3discovery.DiscoveryResponse, xds
 	if resp.GetTypeUrl() != lds.GetTypeUrl() {
 		return nil
 	}
-	xdsListeners := make([]resources.EnvoyListener, 0)
+	//logger.Infof("DiscoveryResponse: %s", utils.ConvertJsonString(resp))
+	xdsListeners := make([]resources.XdsListener, 0)
 	rdsResourceNames := make([]string, 0)
 	for _, resource := range resp.GetResources() {
 		ldsResource := &listener.Listener{}
@@ -47,9 +50,10 @@ func (lds *LdsProtocol) ProcessProtocol(resp *v3discovery.DiscoveryResponse, xds
 			logger.Errorf("fail to extract listener: %v", err)
 			continue
 		}
+		logger.Infof("Listener: %s", utils.ConvertJsonString(ldsResource))
 		xdsListener, _ := lds.parseListener(ldsResource)
-		if xdsListener.IsRds {
-			rdsResourceNames = append(rdsResourceNames, xdsListener.RdsResourceName)
+		if xdsListener.HasRds {
+			rdsResourceNames = append(rdsResourceNames, xdsListener.RdsResourceNames...)
 		}
 		xdsListeners = append(xdsListeners, xdsListener)
 	}
@@ -77,11 +81,101 @@ func (lds *LdsProtocol) ProcessProtocol(resp *v3discovery.DiscoveryResponse, xds
 	return nil
 }
 
-func (lds *LdsProtocol) parseListener(listener *listener.Listener) (resources.EnvoyListener, error) {
-	envoyListener := resources.EnvoyListener{}
+func (lds *LdsProtocol) parseListener(listener *listener.Listener) (resources.XdsListener, error) {
+
+	envoyListener := resources.XdsListener{
+		//FilterChains:     make([]resources.XdsFilterChain, 0),
+		RdsResourceNames: make([]string, 0),
+	}
 	envoyListener.Name = listener.Name
+	// inbound15006 tls mode and downstream transport socket
+	inboundTlsMode := resources.XdsTlsMode{}
+	inboundDownstreamTransportSocket := resources.XdsDownstreamTransportSocket{}
+	isVirtualInbound := false
+
+	// get 15006 and traffic direction
+	if listener.GetAddress() != nil {
+		if listener.GetAddress().GetSocketAddress() != nil {
+			port := listener.GetAddress().GetSocketAddress().GetPortValue()
+			if port == 15006 && listener.Name == "virtualInbound" {
+				isVirtualInbound = true
+			}
+		}
+	}
+	envoyListener.IsVirtualInbound = isVirtualInbound
+	envoyListener.TrafficDirection = listener.GetTrafficDirection().String()
+
 	for _, filterChain := range listener.GetFilterChains() {
+
+		envoyFilterChain := resources.XdsFilterChain{}
+		envoyFilterChain.Name = filterChain.Name
+		// is inboud filterChain?
+		foundInboundFilterChain := false
+		foundInboundDownstreamTransportSocket := false
+
+		if filterChain.Name == "virtualInbound" {
+			foundInboundFilterChain = true
+		}
+		// get transport
+		envoyFilterChainMatch := resources.XdsFilterChainMatch{}
+		envoyDownstreamTransportSocket := resources.XdsDownstreamTransportSocket{}
+
+		// get listener inboundTlsMode
+		if filterChain.GetFilterChainMatch() != nil {
+			filterChainMatch := filterChain.GetFilterChainMatch()
+			if len(filterChainMatch.GetTransportProtocol()) > 0 {
+				envoyFilterChainMatch.TransportProtocol = filterChainMatch.GetTransportProtocol()
+				if filterChainMatch.GetTransportProtocol() == "tls" && foundInboundFilterChain && isVirtualInbound {
+					inboundTlsMode.IsTls = true
+				}
+				if filterChainMatch.GetTransportProtocol() == "raw_buffer" && foundInboundFilterChain && isVirtualInbound {
+					inboundTlsMode.IsRawBuffer = true
+				}
+			}
+		}
+		// parse downstream transport socket
+		if filterChain.GetTransportSocket() != nil {
+			var tlsContext sockets_tls_v3.DownstreamTlsContext
+			transportSocket := filterChain.GetTransportSocket()
+			typeUrl := transportSocket.GetTypedConfig().GetTypeUrl()
+			if typeUrl == "type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext" {
+				err := transportSocket.GetTypedConfig().UnmarshalTo(&tlsContext)
+				if err != nil {
+					logger.Errorf("can not parse to downstream tls context")
+					continue
+				}
+				foundInboundDownstreamTransportSocket = true
+				envoyDownstreamTransportSocket.RequireClientCertificate = tlsContext.RequireClientCertificate.GetValue()
+				matchers := tlsContext.CommonTlsContext.GetCombinedValidationContext().DefaultValidationContext.GetMatchSubjectAltNames()
+				for _, matcher := range matchers {
+					if len(matcher.GetExact()) > 0 {
+						envoyDownstreamTransportSocket.SubjectAltNamesMatch = "exact"
+						envoyDownstreamTransportSocket.SubjectAltNamesValue = matcher.GetExact()
+					}
+					if len(matcher.GetPrefix()) > 0 {
+						envoyDownstreamTransportSocket.SubjectAltNamesMatch = "prefix"
+						envoyDownstreamTransportSocket.SubjectAltNamesValue = matcher.GetPrefix()
+					}
+					if len(matcher.GetContains()) > 0 {
+						envoyDownstreamTransportSocket.SubjectAltNamesMatch = "contains"
+						envoyDownstreamTransportSocket.SubjectAltNamesValue = matcher.GetContains()
+					}
+				}
+			}
+		}
+
+		// found inbound TransportSocket
+		if isVirtualInbound && foundInboundFilterChain && foundInboundDownstreamTransportSocket {
+			inboundDownstreamTransportSocket = envoyDownstreamTransportSocket
+		}
+
+		envoyFilterChain.FilterChainMatch = envoyFilterChainMatch
+		envoyFilterChain.TransportSocket = envoyDownstreamTransportSocket
+		envoyFilterChain.Filters = make([]resources.XdsFilter, 0)
+		// Get Rds and filters
 		for _, filter := range filterChain.GetFilters() {
+			envoyFilter := resources.XdsFilter{}
+			envoyFilter.Name = filter.Name
 			if filter.GetTypedConfig().GetTypeUrl() == "type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager" {
 				// check is rds
 				httpConnectionManager := &http_connection_manager_v3.HttpConnectionManager{}
@@ -89,12 +183,23 @@ func (lds *LdsProtocol) parseListener(listener *listener.Listener) (resources.En
 					logger.Errorf("can not parse to Http Connection Manager")
 					continue
 				}
+				envoyFilter.IncludeHttpConnectionManager = true
 				if httpConnectionManager.GetRds() != nil {
-					envoyListener.IsRds = true
-					envoyListener.RdsResourceName = httpConnectionManager.GetRds().RouteConfigName
+					envoyFilter.HasRds = true
+					envoyFilter.RdsResourceName = httpConnectionManager.GetRds().RouteConfigName
+					envoyListener.HasRds = true
+					envoyListener.RdsResourceNames = append(envoyListener.RdsResourceNames, httpConnectionManager.GetRds().RouteConfigName)
 				}
 			}
+			envoyFilterChain.Filters = append(envoyFilterChain.Filters, envoyFilter)
 		}
+
+		//envoyListener.FilterChains = append(envoyListener.FilterChains, envoyFilterChain)
+
+		// Set envoy listener
+		envoyListener.InboundTlsMode = inboundTlsMode
+		envoyListener.InboundDownstreamTransportSocket = inboundDownstreamTransportSocket
 	}
+
 	return envoyListener, nil
 }

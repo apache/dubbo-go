@@ -41,7 +41,7 @@ func (cds *CdsProtocol) ProcessProtocol(resp *v3discovery.DiscoveryResponse, xds
 		return nil
 	}
 
-	xdsClusters := make([]resources.EnvoyCluster, 0)
+	xdsClusters := make([]resources.XdsCluster, 0)
 	clusterNames := make([]string, 0)
 	for _, resource := range resp.GetResources() {
 		cdsResource := &cluster.Cluster{}
@@ -82,14 +82,15 @@ func (cds *CdsProtocol) ProcessProtocol(resp *v3discovery.DiscoveryResponse, xds
 	return nil
 }
 
-func (cds *CdsProtocol) parseCluster(cluster *cluster.Cluster) (resources.EnvoyCluster, error) {
+func (cds *CdsProtocol) parseCluster(cluster *cluster.Cluster) (resources.XdsCluster, error) {
 	clusterName := cluster.Name
-	xdsCluster := resources.EnvoyCluster{
+	xdsCluster := resources.XdsCluster{
 		Name: clusterName,
 		Type: cluster.GetType().String(),
 	}
 	// Parse Tls
-	clusterTlsMode := resources.EnvoyClusterTlsMode{}
+	clusterUpstreamTransportSocket := resources.XdsUpstreamTransportSocket{}
+	clusterTlsMode := resources.XdsTlsMode{}
 	if cluster.GetTransportSocketMatches() == nil {
 		clusterTlsMode.IsTls = false
 		clusterTlsMode.IsRawBuffer = true
@@ -107,16 +108,16 @@ func (cds *CdsProtocol) parseCluster(cluster *cluster.Cluster) (resources.EnvoyC
 				matchers := tlsContext.CommonTlsContext.GetCombinedValidationContext().DefaultValidationContext.GetMatchSubjectAltNames()
 				for _, matcher := range matchers {
 					if len(matcher.GetExact()) > 0 {
-						clusterTlsMode.SubjectAltNamesMatch = "exact"
-						clusterTlsMode.SubjectAltNamesValue = matcher.GetExact()
+						clusterUpstreamTransportSocket.SubjectAltNamesMatch = "exact"
+						clusterUpstreamTransportSocket.SubjectAltNamesValue = matcher.GetExact()
 					}
 					if len(matcher.GetPrefix()) > 0 {
-						clusterTlsMode.SubjectAltNamesMatch = "prefix"
-						clusterTlsMode.SubjectAltNamesValue = matcher.GetPrefix()
+						clusterUpstreamTransportSocket.SubjectAltNamesMatch = "prefix"
+						clusterUpstreamTransportSocket.SubjectAltNamesValue = matcher.GetPrefix()
 					}
 					if len(matcher.GetContains()) > 0 {
-						clusterTlsMode.SubjectAltNamesMatch = "contains"
-						clusterTlsMode.SubjectAltNamesValue = matcher.GetContains()
+						clusterUpstreamTransportSocket.SubjectAltNamesMatch = "contains"
+						clusterUpstreamTransportSocket.SubjectAltNamesValue = matcher.GetContains()
 					}
 				}
 			}
@@ -125,6 +126,7 @@ func (cds *CdsProtocol) parseCluster(cluster *cluster.Cluster) (resources.EnvoyC
 			}
 		}
 	}
+	xdsCluster.TransportSocket = clusterUpstreamTransportSocket
 	xdsCluster.TlsMode = clusterTlsMode
 	return xdsCluster, nil
 }

@@ -14,7 +14,7 @@ type XdsUpdateEvent struct {
 	Object interface{}
 }
 
-type EnvoyEndpoint struct {
+type XdsEndpoint struct {
 	ClusterName string
 	Protocol    string
 	Address     string
@@ -23,44 +23,75 @@ type EnvoyEndpoint struct {
 	Weight      int
 }
 
-type EnvoyClusterWeight struct {
+type XdsClusterWeight struct {
 	Name   string
 	Weight uint32
 }
 
-type EnvoyRoute struct {
+type XdsRoute struct {
 	Name   string
-	Match  EnvoyRouteMatch
-	Action EnvoyRouteAction
+	Match  XdsRouteMatch
+	Action XdsRouteAction
 }
 
-type EnvoyRouteMatch struct {
+type XdsRouteMatch struct {
 	Path          string
 	Prefix        string
 	Regex         string
 	CaseSensitive bool
 }
 
-type EnvoyRouteAction struct {
+type XdsRouteAction struct {
 	Cluster        string
-	ClusterWeights []EnvoyClusterWeight
+	ClusterWeights []XdsClusterWeight
 }
 
-type EnvoyVirtualHost struct {
+type XdsVirtualHost struct {
 	Name    string
 	Domains []string
-	Routes  []EnvoyRoute
+	Routes  []XdsRoute
 }
 
-type EnvoyRouteConfig struct {
+type XdsRouteConfig struct {
 	Name         string
-	VirtualHosts map[string]EnvoyVirtualHost
+	VirtualHosts map[string]XdsVirtualHost
 }
 
-type EnvoyListener struct {
-	Name                  string
-	IsRds                 bool
-	RdsResourceName       string
-	IsVirtualInbound      bool
-	IsVirtualInbound15006 bool
+type XdsListener struct {
+	Name             string
+	HasRds           bool
+	RdsResourceNames []string
+	TrafficDirection string
+	// virtual inbound 15006 listener
+	IsVirtualInbound bool
+	//FilterChains     []XdsFilterChain
+	// virtual inbound 15006 listener tls and downstream transport socket which is for mtls
+	InboundTlsMode                   XdsTlsMode
+	InboundDownstreamTransportSocket XdsDownstreamTransportSocket
+}
+
+type XdsDownstreamTransportSocket struct {
+	SubjectAltNamesMatch string // exact, prefix
+	SubjectAltNamesValue string
+	//tlsContext               sockets_tls_v3.DownstreamTlsContext
+	RequireClientCertificate bool
+}
+
+type XdsFilterChain struct {
+	Name             string
+	FilterChainMatch XdsFilterChainMatch
+	TransportSocket  XdsDownstreamTransportSocket
+	Filters          []XdsFilter
+}
+
+type XdsFilterChainMatch struct {
+	DestinationPort   uint32
+	TransportProtocol string
+}
+
+type XdsFilter struct {
+	Name                         string
+	IncludeHttpConnectionManager bool
+	HasRds                       bool
+	RdsResourceName              string
 }

@@ -15,11 +15,11 @@ func TestGetPilotAgent(t *testing.T) {
 	bootstrapInfo.SdsGrpcPath = "/Users/jun/GolandProjects/dubbo/dubbo-mesh/var/run/dubbomesh/workload-spiffe-uds/socket"
 	bootstrapInfo.XdsGrpcPath = "/Users/jun/GolandProjects/dubbo/dubbo-mesh/var/run/dubbomesh/proxy/XDS"
 	pilotAgent, _ := GetPilotAgent()
-	OnRdsChangeListener := func(serviceName string, xdsVirtualHost resources.EnvoyVirtualHost) error {
+	OnRdsChangeListener := func(serviceName string, xdsVirtualHost resources.XdsVirtualHost) error {
 		logger.Infof("OnRdsChangeListener serviceName %s with rds = %s", serviceName, utils.ConvertJsonString(xdsVirtualHost))
 		return nil
 	}
-	OnEdsChangeListener := func(clusterName string, xdsCluster resources.EnvoyCluster, xdsClusterEndpoint resources.EnvoyClusterEndpoint) error {
+	OnEdsChangeListener := func(clusterName string, xdsCluster resources.XdsCluster, xdsClusterEndpoint resources.XdsClusterEndpoint) error {
 		logger.Infof("OnEdsChangeListener clusterName %s with cluster = %s and  eds = %s", clusterName, utils.ConvertJsonString(xdsCluster), utils.ConvertJsonString(xdsClusterEndpoint))
 		return nil
 	}

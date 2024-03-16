@@ -39,7 +39,7 @@ func (rds *RdsProtocol) ProcessProtocol(resp *v3discovery.DiscoveryResponse, xds
 		return nil
 	}
 
-	xdsRouteConfigurations := make([]resources.EnvoyRouteConfig, 0)
+	xdsRouteConfigurations := make([]resources.XdsRouteConfig, 0)
 	resourceNames := make([]string, 0)
 
 	for _, resource := range resp.GetResources() {
@@ -71,18 +71,18 @@ func (rds *RdsProtocol) ProcessProtocol(resp *v3discovery.DiscoveryResponse, xds
 	return nil
 }
 
-func (rds *RdsProtocol) parseRoute(route *route.RouteConfiguration) resources.EnvoyRouteConfig {
-	envoyRouteConfig := resources.EnvoyRouteConfig{
+func (rds *RdsProtocol) parseRoute(route *route.RouteConfiguration) resources.XdsRouteConfig {
+	envoyRouteConfig := resources.XdsRouteConfig{
 		Name:         route.Name,
-		VirtualHosts: make(map[string]resources.EnvoyVirtualHost, 0),
+		VirtualHosts: make(map[string]resources.XdsVirtualHost, 0),
 	}
 	envoyRouteConfig.Name = route.Name
 	for _, vh := range route.GetVirtualHosts() {
 		// virtual host
-		envoyVirtualHost := resources.EnvoyVirtualHost{
+		envoyVirtualHost := resources.XdsVirtualHost{
 			Name:    vh.Name,
 			Domains: make([]string, 0),
-			Routes:  make([]resources.EnvoyRoute, 0),
+			Routes:  make([]resources.XdsRoute, 0),
 		}
 		// domains
 		for _, domain := range vh.GetDomains() {
@@ -90,10 +90,10 @@ func (rds *RdsProtocol) parseRoute(route *route.RouteConfiguration) resources.En
 		}
 		// routes
 		for _, vhRoute := range vh.GetRoutes() {
-			envoyRoute := resources.EnvoyRoute{}
+			envoyRoute := resources.XdsRoute{}
 			envoyRoute.Name = vhRoute.Name
 			// route match
-			envoyRouteMatch := resources.EnvoyRouteMatch{}
+			envoyRouteMatch := resources.XdsRouteMatch{}
 			if len(vhRoute.Match.GetPath()) > 0 {
 				envoyRouteMatch.Path = vhRoute.Match.GetPath()
 			}
@@ -108,14 +108,14 @@ func (rds *RdsProtocol) parseRoute(route *route.RouteConfiguration) resources.En
 			}
 			envoyRoute.Match = envoyRouteMatch
 			// route
-			envoyRouteAction := resources.EnvoyRouteAction{
+			envoyRouteAction := resources.XdsRouteAction{
 				Cluster:        vhRoute.GetRoute().GetCluster(),
-				ClusterWeights: make([]resources.EnvoyClusterWeight, 0),
+				ClusterWeights: make([]resources.XdsClusterWeight, 0),
 			}
 			envoyRouteAction.Cluster = vhRoute.GetRoute().GetCluster()
 			if vhRoute.GetRoute().GetWeightedClusters() != nil {
 				for _, clusterWeight := range vhRoute.GetRoute().GetWeightedClusters().GetClusters() {
-					envoyClusterWeight := resources.EnvoyClusterWeight{}
+					envoyClusterWeight := resources.XdsClusterWeight{}
 					envoyClusterWeight.Name = clusterWeight.Name
 					envoyClusterWeight.Weight = clusterWeight.Weight.Value
 					envoyRouteAction.ClusterWeights = append(envoyRouteAction.ClusterWeights, envoyClusterWeight)

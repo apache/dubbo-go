@@ -2,7 +2,6 @@ package resources
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
-	sockets_tls_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 )
 
 // MutualTLSMode is the mutual TLS mode specified by authentication policy.
@@ -22,37 +21,12 @@ const (
 	MTLSStrict
 )
 
-type EnvoyCluster struct {
-	Type     string
-	Name     string
-	LbPolicy string
-	//Endpoints []EnvoyEndpoint
-	Invokers []protocol.Invoker
-	Service  EnvoyClusterService
-	TlsMode  EnvoyClusterTlsMode
+type XdsTlsMode struct {
+	IsTls       bool
+	IsRawBuffer bool
 }
 
-type EnvoyClusterEndpoint struct {
-	Name      string
-	Endpoints []EnvoyEndpoint
-}
-
-// filter from metadata
-type EnvoyClusterService struct {
-	Name      string
-	Namespace string
-	Host      string
-}
-
-type EnvoyClusterTlsMode struct {
-	SubjectAltNamesMatch string // exact, prefix
-	SubjectAltNamesValue string
-	IsTls                bool
-	IsRawBuffer          bool
-	tlsContext           sockets_tls_v3.UpstreamTlsContext
-}
-
-func (t EnvoyClusterTlsMode) GetMutualTLSMode() MutualTLSMode {
+func (t XdsTlsMode) GetMutualTLSMode() MutualTLSMode {
 	if t.IsTls && t.IsRawBuffer {
 		return MTLSPermissive
 	}
@@ -62,4 +36,32 @@ func (t EnvoyClusterTlsMode) GetMutualTLSMode() MutualTLSMode {
 	}
 
 	return MTLSDisable
+}
+
+type XdsCluster struct {
+	Type            string
+	Name            string
+	LbPolicy        string
+	Invokers        []protocol.Invoker
+	Service         XdsClusterService
+	TransportSocket XdsUpstreamTransportSocket
+	TlsMode         XdsTlsMode
+}
+
+type XdsClusterEndpoint struct {
+	Name      string
+	Endpoints []XdsEndpoint
+}
+
+// filter from metadata
+type XdsClusterService struct {
+	Name      string
+	Namespace string
+	Host      string
+}
+
+type XdsUpstreamTransportSocket struct {
+	SubjectAltNamesMatch string // exact, prefix,  contains
+	SubjectAltNamesValue string
+	//tlsContext           sockets_tls_v3.UpstreamTlsContext
 }

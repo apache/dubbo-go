@@ -40,7 +40,7 @@ func (eds *EdsProtocol) ProcessProtocol(resp *v3discovery.DiscoveryResponse, xds
 		return nil
 	}
 
-	xdsClusterEndpoints := make([]resources.EnvoyClusterEndpoint, 0)
+	xdsClusterEndpoints := make([]resources.XdsClusterEndpoint, 0)
 
 	for _, resource := range resp.GetResources() {
 		edsResource := &envoyendpoint.ClusterLoadAssignment{}
@@ -69,15 +69,15 @@ func (eds *EdsProtocol) ProcessProtocol(resp *v3discovery.DiscoveryResponse, xds
 	return nil
 }
 
-func (eds *EdsProtocol) parseEds(edsResource *envoyendpoint.ClusterLoadAssignment) (resources.EnvoyClusterEndpoint, error) {
+func (eds *EdsProtocol) parseEds(edsResource *envoyendpoint.ClusterLoadAssignment) (resources.XdsClusterEndpoint, error) {
 	clusterName := edsResource.ClusterName
-	xdsClusterEndpoint := resources.EnvoyClusterEndpoint{
+	xdsClusterEndpoint := resources.XdsClusterEndpoint{
 		Name: clusterName,
 	}
-	endPoints := make([]resources.EnvoyEndpoint, 0)
+	endPoints := make([]resources.XdsEndpoint, 0)
 	for _, lbeps := range edsResource.Endpoints {
 		for _, ep := range lbeps.LbEndpoints {
-			endpoint := resources.EnvoyEndpoint{}
+			endpoint := resources.XdsEndpoint{}
 			endpoint.Address = ep.GetEndpoint().Address.GetSocketAddress().Address
 			endpoint.Port = ep.GetEndpoint().Address.GetSocketAddress().GetPortValue()
 			endpoint.ClusterName = clusterName

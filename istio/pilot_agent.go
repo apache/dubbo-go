@@ -23,8 +23,8 @@ const (
 	pilotAgentWaitTimeout = 10 * time.Second
 )
 
-type OnRdsChangeListener func(serviceName string, xdsVirtualHost resources.EnvoyVirtualHost) error
-type OnEdsChangeListener func(clusterName string, xdsCluster resources.EnvoyCluster, xdsClusterEndpoint resources.EnvoyClusterEndpoint) error
+type OnRdsChangeListener func(serviceName string, xdsVirtualHost resources.XdsVirtualHost) error
+type OnEdsChangeListener func(clusterName string, xdsCluster resources.XdsCluster, xdsClusterEndpoint resources.XdsClusterEndpoint) error
 
 type PilotAgent struct {
 	bootstrapInfo    *bootstrap.BootstrapInfo
@@ -155,7 +155,7 @@ func (p *PilotAgent) startUpdateEventLoop() {
 
 			switch event.Type {
 			case resources.XdsEventUpdateCDS:
-				if xdsClusters, ok := event.Object.([]resources.EnvoyCluster); ok {
+				if xdsClusters, ok := event.Object.([]resources.XdsCluster); ok {
 					logger.Infof("pilot agent cds event update with cds = %s", utils.ConvertJsonString(xdsClusters))
 					for _, xdsCluster := range xdsClusters {
 						p.envoyClusterMap.Store(xdsCluster.Name, xdsCluster)
@@ -164,7 +164,7 @@ func (p *PilotAgent) startUpdateEventLoop() {
 				}
 
 			case resources.XdsEventUpdateEDS:
-				if xdsClusterEndpoints, ok := event.Object.([]resources.EnvoyClusterEndpoint); ok {
+				if xdsClusterEndpoints, ok := event.Object.([]resources.XdsClusterEndpoint); ok {
 					logger.Infof("pilot agent eds event update with eds = %s", utils.ConvertJsonString(xdsClusterEndpoints))
 					for _, xdsClusterEndpoint := range xdsClusterEndpoints {
 						p.envoyClusterEndpointMap.Store(xdsClusterEndpoint.Name, xdsClusterEndpoint)
@@ -173,14 +173,14 @@ func (p *PilotAgent) startUpdateEventLoop() {
 				}
 
 			case resources.XdsEventUpdateLDS:
-				if xdsListeners, ok := event.Object.([]resources.EnvoyListener); ok {
+				if xdsListeners, ok := event.Object.([]resources.XdsListener); ok {
 					logger.Infof("pilot agent lds event update with lds = %s", utils.ConvertJsonString(xdsListeners))
 					for _, xdsListener := range xdsListeners {
 						p.envoyClusterMap.Store(xdsListener.Name, xdsListener)
 					}
 				}
 			case resources.XdsEventUpdateRDS:
-				if xdsRouteConfigurations, ok := event.Object.([]resources.EnvoyRouteConfig); ok {
+				if xdsRouteConfigurations, ok := event.Object.([]resources.XdsRouteConfig); ok {
 					logger.Infof("pilot agent rds event update with rds = %s", utils.ConvertJsonString(xdsRouteConfigurations))
 					for _, xdsRouteConfiguration := range xdsRouteConfigurations {
 						for _, xdsVirtualHost := range xdsRouteConfiguration.VirtualHosts {
@@ -205,14 +205,14 @@ func (p *PilotAgent) callEdsChange(clusterName string) {
 	if listeners, ok := p.OnCdsChangeListeners[clusterName]; ok {
 		for listenerName, listener := range listeners {
 			if ok1 && ok2 {
-				logger.Infof("pilot agent callEdsChange clusterName %s listener %s with cluster = %s and  eds = %s", clusterName, listenerName, utils.ConvertJsonString(xdsCluster.(resources.EnvoyCluster)), utils.ConvertJsonString(xdsClusterEndpoint.(resources.EnvoyClusterEndpoint)))
-				listener(clusterName, xdsCluster.(resources.EnvoyCluster), xdsClusterEndpoint.(resources.EnvoyClusterEndpoint))
+				logger.Infof("pilot agent callEdsChange clusterName %s listener %s with cluster = %s and  eds = %s", clusterName, listenerName, utils.ConvertJsonString(xdsCluster.(resources.XdsCluster)), utils.ConvertJsonString(xdsClusterEndpoint.(resources.XdsClusterEndpoint)))
+				listener(clusterName, xdsCluster.(resources.XdsCluster), xdsClusterEndpoint.(resources.XdsClusterEndpoint))
 			}
 		}
 	}
 }
 
-func (p *PilotAgent) callRdsChange(serviceName string, xdsVirtualHost resources.EnvoyVirtualHost) {
+func (p *PilotAgent) callRdsChange(serviceName string, xdsVirtualHost resources.XdsVirtualHost) {
 	p.listenerMutex.RLock()
 	defer p.listenerMutex.RUnlock()
 	if listeners, ok := p.OnRdsChangeListeners[serviceName]; ok {
@@ -238,8 +238,8 @@ func (p *PilotAgent) SubscribeRds(serviceName, listenerName string, listener OnR
 	}()
 
 	if xdsVirtualHost, ok := p.envoyVirtualHostMap.Load(serviceName); ok {
-		logger.Infof("pilot agent callRdsChange serviceName, listener %s with rds = %s", serviceName, listenerName, utils.ConvertJsonString(xdsVirtualHost.(resources.EnvoyVirtualHost)))
-		listener(serviceName, xdsVirtualHost.(resources.EnvoyVirtualHost))
+		logger.Infof("pilot agent callRdsChange serviceName, listener %s with rds = %s", serviceName, listenerName, utils.ConvertJsonString(xdsVirtualHost.(resources.XdsVirtualHost)))
+		listener(serviceName, xdsVirtualHost.(resources.XdsVirtualHost))
 	}
 }
 
@@ -272,8 +272,8 @@ func (p *PilotAgent) SubscribeCds(clusterName, listenerName string, listener OnE
 	xdsCluster, ok1 := p.envoyClusterMap.Load(clusterName)
 	xdsClusterEndpoint, ok2 := p.envoyClusterEndpointMap.Load(clusterName)
 	if ok1 && ok2 {
-		logger.Infof("pilot agent callEdsChange clusterName %s listener %s with cluster = %s and  eds = %s", clusterName, listenerName, utils.ConvertJsonString(xdsCluster.(resources.EnvoyCluster)), utils.ConvertJsonString(xdsClusterEndpoint.(resources.EnvoyClusterEndpoint)))
-		listener(clusterName, xdsCluster.(resources.EnvoyCluster), xdsClusterEndpoint.(resources.EnvoyClusterEndpoint))
+		logger.Infof("pilot agent callEdsChange clusterName %s listener %s with cluster = %s and  eds = %s", clusterName, listenerName, utils.ConvertJsonString(xdsCluster.(resources.XdsCluster)), utils.ConvertJsonString(xdsClusterEndpoint.(resources.XdsClusterEndpoint)))
+		listener(clusterName, xdsCluster.(resources.XdsCluster), xdsClusterEndpoint.(resources.XdsClusterEndpoint))
 	}
 }
 
