@@ -1,0 +1,93 @@
+{
+  "node": {
+    "id": "sidecar~10.10.241.72~.~.svc.cluster.local",
+    "cluster": "istio-proxy.foo",
+    "locality": {
+    },
+    "metadata": {"ENVOY_PROMETHEUS_PORT":15090,"ENVOY_STATUS_PORT":15021,"INSTANCE_IPS":"10.10.241.72,192.168.31.72,192.168.64.1,fdde:51fd:f598:5892:a8:625f:d2e6:37e9","ISTIO_VERSION":"unknown","NAME":"httpbin","NAMESPACE":"foo","PILOT_SAN":["istiod.istio-system.svc"],"PROXY_CONFIG":{"binaryPath":"/usr/local/bin/envoy","configPath":"./var/run/dubbomesh/proxy","controlPlaneAuthPolicy":"MUTUAL_TLS","discoveryAddress":"istiod.istio-system.svc:15012","drainDuration":"45s","proxyAdminPort":15000,"serviceCluster":"istio-proxy","statNameLength":189,"statusPort":15020,"terminationDrainDuration":"5s","tracing":{"zipkin":{"address":"zipkin.istio-system:9411"}}},"SERVICE_ACCOUNT":"foo"}
+  },
+  "static_resources": {
+    "clusters": [
+      {
+        "name": "sds-grpc",
+        "type": "STATIC",
+        "typed_extension_protocol_options": {
+          "envoy.extensions.upstreams.http.v3.HttpProtocolOptions": {
+           "@type": "type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions",
+           "explicit_http_config": {
+            "http2_protocol_options": {}
+           }
+          }
+        },
+        "connect_timeout": "1s",
+        "lb_policy": "ROUND_ROBIN",
+        "load_assignment": {
+          "cluster_name": "sds-grpc",
+          "endpoints": [{
+            "lb_endpoints": [{
+              "endpoint": {
+                "address":{
+                  "pipe": {
+                    "path": "./var/run/dubbomesh/workload-spiffe-uds/socket"
+                  }
+                }
+              }
+            }]
+          }]
+        }
+      },
+      {
+        "name": "xds-grpc",
+        "type" : "STATIC",
+        "connect_timeout": "1s",
+        "lb_policy": "ROUND_ROBIN",
+        "load_assignment": {
+          "cluster_name": "xds-grpc",
+          "endpoints": [{
+            "lb_endpoints": [{
+              "endpoint": {
+                "address":{
+                  "pipe": {
+                    "path": "./var/run/dubbomesh/proxy/XDS"
+                  }
+                }
+              }
+            }]
+          }]
+        },
+        "circuit_breakers": {
+          "thresholds": [
+            {
+              "priority": "DEFAULT",
+              "max_connections": 100000,
+              "max_pending_requests": 100000,
+              "max_requests": 100000
+            },
+            {
+              "priority": "HIGH",
+              "max_connections": 100000,
+              "max_pending_requests": 100000,
+              "max_requests": 100000
+            }
+          ]
+        },
+        "upstream_connection_options": {
+          "tcp_keepalive": {
+            "keepalive_time": 300
+          }
+        },
+        "max_requests_per_connection": 1,
+        "typed_extension_protocol_options": {
+          "envoy.extensions.upstreams.http.v3.HttpProtocolOptions": {
+           "@type": "type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions",
+           "explicit_http_config": {
+            "http2_protocol_options": {}
+           }
+          }
+        }
+      }
+
+    ]
+
+  }
+}
