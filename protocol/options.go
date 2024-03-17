@@ -122,3 +122,9 @@ func WithMaxServerRecvMsgSize(size int) Option {
 		opts.Protocol.MaxServerRecvMsgSize = strconv.Itoa(size)
 	}
 }
+
+func WithTlsProvider(tlsProvider string) Option {
+	return func(opts *Options) {
+		opts.Protocol.TLsProvider = tlsProvider
+	}
+}

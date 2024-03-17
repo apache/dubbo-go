@@ -401,6 +401,12 @@ func WithServerAdaptiveServiceVerbose() ServerOption {
 	}
 }
 
+func WithServerXds() ServerOption {
+	return func(opts *ServerOptions) {
+		opts.Provider.Xds = true
+	}
+}
+
 // ========== For framework ==========
 // These functions should not be invoked by users
 
