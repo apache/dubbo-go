@@ -95,3 +95,9 @@ type XdsFilter struct {
 	HasRds                       bool
 	RdsResourceName              string
 }
+
+type XdsHostInboundListener struct {
+	MutualTLSMode   MutualTLSMode
+	TransportSocket XdsDownstreamTransportSocket
+	// other host inbound info for protocol export here
+}

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"github.com/dubbogo/gost/log/logger"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -43,10 +44,14 @@ type PilotAgent struct {
 	OnRdsChangeListeners map[string]map[string]OnRdsChangeListener
 	OnCdsChangeListeners map[string]map[string]OnEdsChangeListener
 
+	// vhs,cluster,endpoint, listener from xds
 	envoyVirtualHostMap     sync.Map
 	envoyClusterMap         sync.Map
 	envoyClusterEndpointMap sync.Map
 	envoyListenerMap        sync.Map
+
+	// host inbound for protocol export
+	xdsHostInboundListenerAtomic atomic.Value
 }
 
 func init() {
@@ -70,6 +75,7 @@ func NewPilotAgent() (*PilotAgent, error) {
 		return nil, err
 	}
 
+	//TODO need to get stopChan from caller for shutdown graceful
 	stopChan := make(chan struct{})
 
 	updateChan := make(chan resources.XdsUpdateEvent, 8)
@@ -124,6 +130,8 @@ func (p *PilotAgent) initAndWait() error {
 	delayRead := 10 * time.Millisecond
 	for {
 		select {
+		case <-p.stopChan:
+			return nil
 		case <-time.After(delayRead):
 			if p.secretCache.GetRoot() != nil && p.secretCache.GetWorkload() != nil {
 				return nil
@@ -177,6 +185,14 @@ func (p *PilotAgent) startUpdateEventLoop() {
 					logger.Infof("pilot agent lds event update with lds = %s", utils.ConvertJsonString(xdsListeners))
 					for _, xdsListener := range xdsListeners {
 						p.envoyClusterMap.Store(xdsListener.Name, xdsListener)
+						if xdsListener.IsVirtualInbound {
+							// store host inbound listener
+							xdsHostInboundListener := &resources.XdsHostInboundListener{
+								MutualTLSMode:   xdsListener.InboundTlsMode.GetMutualTLSMode(),
+								TransportSocket: xdsListener.InboundDownstreamTransportSocket,
+							}
+							p.SetHostInboundListener(xdsHostInboundListener)
+						}
 					}
 				}
 			case resources.XdsEventUpdateRDS:
@@ -287,6 +303,20 @@ func (p *PilotAgent) UnsubscribeCds(clusterName, listenerName string) {
 			delete(p.OnCdsChangeListeners, clusterName)
 		}
 	}
+}
+
+func (p *PilotAgent) SetHostInboundListener(xdsHostInboundListener *resources.XdsHostInboundListener) {
+	p.xdsHostInboundListenerAtomic.Store(xdsHostInboundListener)
+}
+
+func (p *PilotAgent) GetHostInboundListener() *resources.XdsHostInboundListener {
+	value := p.xdsHostInboundListenerAtomic.Load()
+	if value != nil {
+		if xdsHostInboundListener, ok := value.(*resources.XdsHostInboundListener); ok {
+			return xdsHostInboundListener
+		}
+	}
+	return nil
 }
 
 func (p *PilotAgent) Stop() {
