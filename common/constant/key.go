@@ -60,6 +60,7 @@ const (
 	SslEnabledKey          = "ssl-enabled"
 	ParamsTypeKey          = "parameter-type-names" // key used in pass through invoker factory, to define param type
 	MetadataTypeKey        = "metadata-type"
+	TLSProvider            = "tls-provider"
 	MaxCallSendMsgSize     = "max-call-send-msg-size"
 	MaxServerSendMsgSize   = "max-server-send-msg-size"
 	MaxCallRecvMsgSize     = "max-call-recv-msg-size"
@@ -210,6 +211,7 @@ const (
 	ProvidersCategory      = "providers"
 	RouterKey              = "router"
 	ExportKey              = "export"
+	XdsKey                 = "xds"
 )
 
 // config center keys

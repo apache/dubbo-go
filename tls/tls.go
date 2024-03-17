@@ -1,6 +1,6 @@
 package tls
 
-type TlsProvider interface {
+type TLSProvider interface {
 	GetServerWorkLoadTlsConfig() error
 	GetClientWorkLoadTlsConfig() error
 }

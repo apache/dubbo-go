@@ -89,7 +89,7 @@ func (lds *LdsProtocol) parseListener(listener *listener.Listener) (resources.Xd
 	}
 	envoyListener.Name = listener.Name
 	// inbound15006 tls mode and downstream transport socket
-	inboundTlsMode := resources.XdsTlsMode{}
+	inboundTlsMode := resources.XdsTLSMode{}
 	inboundDownstreamTransportSocket := resources.XdsDownstreamTransportSocket{}
 	isVirtualInbound := false
 
@@ -197,7 +197,7 @@ func (lds *LdsProtocol) parseListener(listener *listener.Listener) (resources.Xd
 		//envoyListener.FilterChains = append(envoyListener.FilterChains, envoyFilterChain)
 
 		// Set envoy listener
-		envoyListener.InboundTlsMode = inboundTlsMode
+		envoyListener.InboundTLSMode = inboundTlsMode
 		envoyListener.InboundDownstreamTransportSocket = inboundDownstreamTransportSocket
 	}
 

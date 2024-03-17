@@ -20,6 +20,13 @@ var (
 	pilotAgentErr   error
 )
 
+type PilotAgentType int32
+
+const (
+	PilotAgentTypeServerWorkload PilotAgentType = iota
+	PilotAgentTypeClientWorkload
+)
+
 const (
 	pilotAgentWaitTimeout = 10 * time.Second
 )
@@ -59,16 +66,16 @@ func init() {
 	EnableDubboMesh = true
 }
 
-func GetPilotAgent() (*PilotAgent, error) {
+func GetPilotAgent(agentType PilotAgentType) (*PilotAgent, error) {
 	if pilotAgent == nil && EnableDubboMesh {
 		pilotAgentMutex.Do(func() {
-			pilotAgent, pilotAgentErr = NewPilotAgent()
+			pilotAgent, pilotAgentErr = NewPilotAgent(agentType)
 		})
 	}
 	return pilotAgent, pilotAgentErr
 }
 
-func NewPilotAgent() (*PilotAgent, error) {
+func NewPilotAgent(agentType PilotAgentType) (*PilotAgent, error) {
 	// Get bootstrap info
 	bootstrapInfo, err := bootstrap.GetBootStrapInfo()
 	if err != nil {
@@ -113,11 +120,11 @@ func NewPilotAgent() (*PilotAgent, error) {
 		cdsProtocol:      cdsProtocol,
 	}
 	// Start xds/sds and wait
-	go pilotAgent.initAndWait()
+	go pilotAgent.initAndWait(agentType)
 	return pilotAgent, nil
 }
 
-func (p *PilotAgent) initAndWait() error {
+func (p *PilotAgent) initAndWait(agentType PilotAgentType) error {
 	// Get secrets
 	p.sdsClientChannel.InitSds()
 	// Load XdsChannel.
@@ -133,10 +140,17 @@ func (p *PilotAgent) initAndWait() error {
 		case <-p.stopChan:
 			return nil
 		case <-time.After(delayRead):
-			if p.secretCache.GetRoot() != nil && p.secretCache.GetWorkload() != nil {
+			isReady := true
+			if p.secretCache.GetRoot() == nil || p.secretCache.GetWorkload() == nil {
+				isReady = false
+			}
+			if agentType == PilotAgentTypeServerWorkload && pilotAgent.GetHostInboundListener() == nil {
+				isReady = false
+			}
+			if isReady {
 				return nil
 			} else {
-				logger.Infof("try to get pilot agent secret again and delay %d milliseconds", delayRead.Milliseconds())
+				logger.Infof("try to get pilot agent secret or pilot agent inboundListener again and delay %d milliseconds", delayRead.Milliseconds())
 				delayRead = 2 * delayRead
 			}
 
@@ -188,7 +202,7 @@ func (p *PilotAgent) startUpdateEventLoop() {
 						if xdsListener.IsVirtualInbound {
 							// store host inbound listener
 							xdsHostInboundListener := &resources.XdsHostInboundListener{
-								MutualTLSMode:   xdsListener.InboundTlsMode.GetMutualTLSMode(),
+								MutualTLSMode:   xdsListener.InboundTLSMode.GetMutualTLSMode(),
 								TransportSocket: xdsListener.InboundDownstreamTransportSocket,
 							}
 							p.SetHostInboundListener(xdsHostInboundListener)

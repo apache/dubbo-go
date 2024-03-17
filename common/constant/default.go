@@ -63,6 +63,8 @@ const (
 		GenericServiceFilterKey + "," + ExecuteLimitFilterKey + "," + GracefulShutdownProviderFilterKey
 
 	DefaultReferenceFilters = GracefulShutdownConsumerFilterKey
+
+	DefaultXdsFilters = MtlsFilterKey + "," + JwtFilterKey + "," + AuthnFilterKey + "," + RbacFilterKey
 )
 
 const (

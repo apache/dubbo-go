@@ -14,7 +14,7 @@ func TestGetPilotAgent(t *testing.T) {
 	fmt.Sprintf("bootstrapinfo %v", bootstrapInfo)
 	bootstrapInfo.SdsGrpcPath = "/Users/jun/GolandProjects/dubbo/dubbo-mesh/var/run/dubbomesh/workload-spiffe-uds/socket"
 	bootstrapInfo.XdsGrpcPath = "/Users/jun/GolandProjects/dubbo/dubbo-mesh/var/run/dubbomesh/proxy/XDS"
-	pilotAgent, _ := GetPilotAgent()
+	pilotAgent, _ := GetPilotAgent(PilotAgentTypeServerWorkload)
 	OnRdsChangeListener := func(serviceName string, xdsVirtualHost resources.XdsVirtualHost) error {
 		logger.Infof("OnRdsChangeListener serviceName %s with rds = %s", serviceName, utils.ConvertJsonString(xdsVirtualHost))
 		return nil

@@ -66,7 +66,7 @@ type XdsListener struct {
 	IsVirtualInbound bool
 	//FilterChains     []XdsFilterChain
 	// virtual inbound 15006 listener tls and downstream transport socket which is for mtls
-	InboundTlsMode                   XdsTlsMode
+	InboundTLSMode                   XdsTLSMode
 	InboundDownstreamTransportSocket XdsDownstreamTransportSocket
 }
 

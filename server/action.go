@@ -201,6 +201,7 @@ func (svcOpts *ServiceOptions) export(info *ServiceInfo) error {
 			common.WithToken(svc.Token),
 			common.WithParamsValue(constant.MetadataTypeKey, svcOpts.metadataType),
 			// fix https://github.com/apache/dubbo-go/issues/2176
+			common.WithParamsValue(constant.TLSProvider, proto.TLSProvider),
 			common.WithParamsValue(constant.MaxServerSendMsgSize, proto.MaxServerSendMsgSize),
 			common.WithParamsValue(constant.MaxServerRecvMsgSize, proto.MaxServerRecvMsgSize),
 		)
@@ -318,6 +319,7 @@ func (svcOpts *ServiceOptions) getUrlMap() url.Values {
 	app := svcOpts.applicationCompat
 	metrics := svcOpts.srvOpts.Metrics
 	tracing := svcOpts.srvOpts.Otel.TracingConfig
+	xds := svcOpts.srvOpts.Provider.Xds
 
 	urlMap := url.Values{}
 	// first set user params
@@ -357,6 +359,12 @@ func (svcOpts *ServiceOptions) getUrlMap() url.Values {
 	} else {
 		filters = srv.Filter
 	}
+	// xds
+	if xds {
+		urlMap.Set(constant.XdsKey, "true")
+		filters = fmt.Sprintf("%s,%s", constant.DefaultXdsFilters, filters)
+	}
+
 	if svcOpts.adaptiveService {
 		filters += fmt.Sprintf(",%s", constant.AdaptiveServiceProviderFilterKey)
 	}

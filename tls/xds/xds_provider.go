@@ -34,7 +34,7 @@ func NewXdsTlsProvider() *XdsTlsProvider {
 	return &XdsTlsProvider{}
 }
 
-func GetXdsTlsProvider() tls.TlsProvider {
+func GetXdsTlsProvider() tls.TLSProvider {
 	if xdsTlsProvider == nil {
 		xdsTlsProvider = NewXdsTlsProvider()
 	}

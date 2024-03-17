@@ -21,12 +21,12 @@ const (
 	MTLSStrict
 )
 
-type XdsTlsMode struct {
+type XdsTLSMode struct {
 	IsTls       bool
 	IsRawBuffer bool
 }
 
-func (t XdsTlsMode) GetMutualTLSMode() MutualTLSMode {
+func (t XdsTLSMode) GetMutualTLSMode() MutualTLSMode {
 	if t.IsTls && t.IsRawBuffer {
 		return MTLSPermissive
 	}
@@ -45,7 +45,7 @@ type XdsCluster struct {
 	Invokers        []protocol.Invoker
 	Service         XdsClusterService
 	TransportSocket XdsUpstreamTransportSocket
-	TlsMode         XdsTlsMode
+	TlsMode         XdsTLSMode
 }
 
 type XdsClusterEndpoint struct {

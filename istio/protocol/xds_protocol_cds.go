@@ -90,7 +90,7 @@ func (cds *CdsProtocol) parseCluster(cluster *cluster.Cluster) (resources.XdsClu
 	}
 	// Parse Tls
 	clusterUpstreamTransportSocket := resources.XdsUpstreamTransportSocket{}
-	clusterTlsMode := resources.XdsTlsMode{}
+	clusterTlsMode := resources.XdsTLSMode{}
 	if cluster.GetTransportSocketMatches() == nil {
 		clusterTlsMode.IsTls = false
 		clusterTlsMode.IsRawBuffer = true
