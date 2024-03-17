@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	XdsProvider = "xds-tls-provider"
+	XdsProvider = "xds-provider"
 )
 
 var (
