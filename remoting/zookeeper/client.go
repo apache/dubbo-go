@@ -53,7 +53,7 @@ func ValidateZookeeperClient(container ZkClientFacade, zkName string) error {
 		logger.Infof("[Zookeeper Client] New zookeeper client with name = %s, zkAddress = %s, timeout = %s", zkName, url.Location, timeout.String())
 		newClient, cltErr := gxzookeeper.NewZookeeperClient(zkName, zkAddresses, true, gxzookeeper.WithZkTimeOut(timeout))
 		if cltErr != nil {
-			logger.Warnf("newZookeeperClient(name{%s}, zk address{%v}, timeout{%d}) = error{%v}",
+			logger.Warnf("newZookeeperClient(name{%s}, zk address{%v}, timeout{%s}) = error{%v}",
 				zkName, url.Location, timeout.String(), cltErr)
 			return perrors.WithMessagef(cltErr, "newZookeeperClient(address:%+v)", url.Location)
 		}
