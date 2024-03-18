@@ -193,8 +193,8 @@ func (s *Server) Run() error {
 	if s.httpLn == nil && httpOn {
 		httpLn, err := net.Listen("tcp", httpAddr)
 		if err != nil {
-			return err
 			httpLn.Close()
+			return err
 		}
 		s.httpLn = httpLn
 		s.httpSrv = &http.Server{Handler: handler}
@@ -228,6 +228,9 @@ func (s *Server) Stop() error {
 }
 
 func (s *Server) GracefulStop(ctx context.Context) error {
+	if s.httpsSrv != nil {
+		s.httpsSrv.Shutdown(ctx)
+	}
 	return s.httpSrv.Shutdown(ctx)
 }
 
