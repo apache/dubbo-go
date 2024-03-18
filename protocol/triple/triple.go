@@ -19,6 +19,7 @@ package triple
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/istio"
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	"sync"
 )
 
@@ -78,10 +79,18 @@ func (tp *TripleProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 			tp.pliotAgent = pilotAgent
 		}
 	}
+
+	tlsProviderName := url.GetParam(constant.TLSProvider, "")
+	var tlsConfigProvider triple_protocol.TLSConfigProvider
+	if len(tlsProviderName) > 0 {
+		tlsProvider := extension.GetTLSProvider(tlsProviderName)
+		tlsConfigProvider = tlsProvider.GetServerWorkLoadTLSConfig
+	}
+
 	exporter := NewTripleExporter(serviceKey, invoker, tp.ExporterMap())
 	tp.SetExporterMap(serviceKey, exporter)
 	logger.Infof("[TRIPLE Protocol] Export service: %s", url.String())
-	tp.openServer(invoker, info)
+	tp.openServer(invoker, info, tlsConfigProvider)
 	internal.HealthSetServingStatusServing(url.Service())
 	return exporter
 }
@@ -95,12 +104,12 @@ func (tp *TripleProtocol) exportForTest(invoker protocol.Invoker, info *server.S
 	exporter := NewTripleExporter(serviceKey, invoker, tp.ExporterMap())
 	tp.SetExporterMap(serviceKey, exporter)
 	logger.Infof("[TRIPLE Protocol] Export service: %s", url.String())
-	tp.openServer(invoker, info)
+	tp.openServer(invoker, info, nil)
 	internal.HealthSetServingStatusServing(url.Service())
 	return exporter
 }
 
-func (tp *TripleProtocol) openServer(invoker protocol.Invoker, info *server.ServiceInfo) {
+func (tp *TripleProtocol) openServer(invoker protocol.Invoker, info *server.ServiceInfo, tlsConfigProvider triple_protocol.TLSConfigProvider) {
 	url := invoker.GetURL()
 	tp.serverLock.Lock()
 	defer tp.serverLock.Unlock()
@@ -115,7 +124,7 @@ func (tp *TripleProtocol) openServer(invoker protocol.Invoker, info *server.Serv
 	}
 
 	// TODO Set tlsprovider and mutualTLSMode here
-	srv := NewServer()
+	srv := NewServer(tlsConfigProvider)
 	srv.Start(invoker, info)
 
 	tp.serverMap[url.Location] = srv

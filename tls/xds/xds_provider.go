@@ -3,6 +3,8 @@ package xds
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"dubbo.apache.org/dubbo-go/v3/istio/resources"
+	"fmt"
 
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/istio"
@@ -31,7 +33,7 @@ func (x *XdsTLSProvider) GetServerWorkLoadTLSConfig() (*tls.Config, error) {
 	cfg := &tls.Config{
 		GetCertificate: x.GetWorkloadCertificate,
 		ClientAuth:     tls.VerifyClientCertIfGiven, // for test only
-		//ClientAuth:     tls.RequireAndVerifyClientCert, // for prod
+		//ClientAuth: tls.RequireAndVerifyClientCert, // for prod
 		ClientCAs: x.GetCACertPool(),
 		VerifyPeerCertificate: func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
 			err := x.VerifyPeerCert(rawCerts, verifiedChains)
@@ -50,7 +52,52 @@ func (x *XdsTLSProvider) GetServerWorkLoadTLSConfig() (*tls.Config, error) {
 
 func (x *XdsTLSProvider) VerifyPeerCert(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
 	logger.Infof("[xds tls] verifiy peer cert")
-	return nil
+	if len(rawCerts) == 0 {
+		// Peer doesn't present a certificate. Just skip. Other authn methods may be used.
+		return nil
+	}
+	var peerCert *x509.Certificate
+	intCertPool := x509.NewCertPool()
+	for id, rawCert := range rawCerts {
+		cert, err := x509.ParseCertificate(rawCert)
+		if err != nil {
+			return err
+		}
+		if id == 0 {
+			peerCert = cert
+		} else {
+			intCertPool.AddCert(cert)
+		}
+	}
+	if len(peerCert.URIs) != 1 {
+		return fmt.Errorf("peer certificate does not contain 1 URI type SAN, detected %d", len(peerCert.URIs))
+	}
+	spiffe := peerCert.URIs[0].String()
+	_, err := resources.ParseIdentity(spiffe)
+	if err != nil {
+		return err
+	}
+	secretCache := x.pilotAgent.GetSecretCache()
+	hostInboundListener := x.pilotAgent.GetHostInboundListener()
+	if hostInboundListener == nil {
+		return fmt.Errorf("can not get xds inbound listner info")
+	}
+
+	spiffeMatch := hostInboundListener.TransportSocket.SubjectAltNamesMatch
+	spiffeValue := hostInboundListener.TransportSocket.SubjectAltNamesValue
+	ok := x.matchSpiffeUrl(spiffe, spiffeMatch, spiffeValue)
+	if !ok {
+		return fmt.Errorf("client spiffe urll %s can not match %s:%s", spiffe, spiffeMatch, spiffeValue)
+	}
+	rootCertPool, err := secretCache.GetCACertPool()
+	if err != nil {
+		return fmt.Errorf("no cert pool found ")
+	}
+	_, err = peerCert.Verify(x509.VerifyOptions{
+		Roots:         rootCertPool,
+		Intermediates: intCertPool,
+	})
+	return err
 }
 
 func (x *XdsTLSProvider) GetClientWorkLoadTLSConfig() (*tls.Config, error) {
@@ -58,21 +105,38 @@ func (x *XdsTLSProvider) GetClientWorkLoadTLSConfig() (*tls.Config, error) {
 	panic("implement me")
 }
 
-func (x *XdsTLSProvider) GetWorkloadCertificate(*tls.ClientHelloInfo) (*tls.Certificate, error) {
+func (x *XdsTLSProvider) GetWorkloadCertificate(helloInfo *tls.ClientHelloInfo) (*tls.Certificate, error) {
 	logger.Infof("[xds tls] get workload certificate")
-	return nil, nil
+	secretCache := x.pilotAgent.GetSecretCache()
+	tlsCertifcate, err := secretCache.GetWorkloadCertificate(helloInfo)
+	if err != nil {
+		logger.Errorf("[xds tls] get workload certifcate fail: %v", err)
+		return nil, err
+	}
+	return tlsCertifcate, nil
 }
 
 func (x *XdsTLSProvider) GetCACertPool() *x509.CertPool {
 	logger.Infof("[xds tls] get ca cert pool")
-	return nil
+	secretCache := x.pilotAgent.GetSecretCache()
+	certPool, err := secretCache.GetCACertPool()
+	if err != nil {
+		logger.Errorf("[xds tls] CA cert pool fail: %v", err)
+		return nil
+	}
+	return certPool
+}
+
+func (x *XdsTLSProvider) matchSpiffeUrl(spiffe string, match string, value string) bool {
+	//TODO match XdsDownstreamTransportSocket
+	return true
 }
 
 func NewXdsTlsProvider() *XdsTLSProvider {
 	logger.Infof("[xds tls] init pilot agent")
 	pilotAgent, err := istio.GetPilotAgent(istio.PilotAgentTypeServerWorkload)
 	if err != nil {
-		logger.Error("[xds tls] init pilot agent err:%", err)
+		logger.Errorf("[xds tls] init pilot agent err:%", err)
 	}
 	return &XdsTLSProvider{
 		pilotAgent: pilotAgent,

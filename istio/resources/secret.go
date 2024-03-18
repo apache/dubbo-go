@@ -75,11 +75,11 @@ func (s *SecretCache) GetWorkloadCertificate(*tls.ClientHelloInfo) (*tls.Certifi
 	if s.workload == nil {
 		return nil, fmt.Errorf("can not find workload certifcate")
 	}
-
-	return &tls.Certificate{
-		Certificate: [][]byte{s.workload.CertificateChain},
-		PrivateKey:  s.workload.PrivateKey,
-	}, nil
+	certificate, err := tls.X509KeyPair(s.workload.CertificateChain, s.workload.PrivateKey)
+	if err != nil {
+		return nil, err
+	}
+	return &certificate, nil
 }
 
 func (s *SecretCache) GetCACertPool() (*x509.CertPool, error) {
