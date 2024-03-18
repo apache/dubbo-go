@@ -19,6 +19,8 @@ package triple
 
 import (
 	"context"
+	"dubbo.apache.org/dubbo-go/v3/istio/resources"
+	"dubbo.apache.org/dubbo-go/v3/tls"
 	"fmt"
 	"net/http"
 	"reflect"
@@ -51,9 +53,11 @@ import (
 // Server is TRIPLE adaptation layer representation. It makes use of tri.Server to
 // provide functionality.
 type Server struct {
-	triServer *tri.Server
-	mu        sync.RWMutex
-	services  map[string]grpc.ServiceInfo
+	triServer     *tri.Server
+	mu            sync.RWMutex
+	services      map[string]grpc.ServiceInfo
+	tlsProvider   tls.TLSProvider
+	mutualTLSMode resources.MutualTLSMode
 }
 
 // NewServer creates a new TRIPLE server.

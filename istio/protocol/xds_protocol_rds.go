@@ -45,7 +45,7 @@ func (rds *RdsProtocol) ProcessProtocol(resp *v3discovery.DiscoveryResponse, xds
 	for _, resource := range resp.GetResources() {
 		rdsResource := &route.RouteConfiguration{}
 		if err := ptypes.UnmarshalAny(resource, rdsResource); err != nil {
-			logger.Errorf("fail to extract route configuration: %v", err)
+			logger.Errorf("[Xds Protocol] fail to extract route configuration: %v", err)
 			continue
 		}
 		xdsRouteConfiguration := rds.parseRoute(rdsResource)

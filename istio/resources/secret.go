@@ -1,6 +1,9 @@
 package resources
 
 import (
+	"crypto/tls"
+	"crypto/x509"
+	"fmt"
 	"sync"
 	"time"
 )
@@ -14,6 +17,11 @@ type SecretCache struct {
 	mu       sync.RWMutex
 	workload *SecretItem
 	certRoot []byte
+}
+
+func NewSecretCache() *SecretCache {
+	secretCache := &SecretCache{}
+	return secretCache
 }
 
 // SecretItem is the cached item in in-memory secret store.
@@ -59,4 +67,28 @@ func (s *SecretCache) SetWorkload(value *SecretItem) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.workload = value
+}
+
+func (s *SecretCache) GetWorkloadCertificate(*tls.ClientHelloInfo) (*tls.Certificate, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	if s.workload == nil {
+		return nil, fmt.Errorf("can not find workload certifcate")
+	}
+
+	return &tls.Certificate{
+		Certificate: [][]byte{s.workload.CertificateChain},
+		PrivateKey:  s.workload.PrivateKey,
+	}, nil
+}
+
+func (s *SecretCache) GetCACertPool() (*x509.CertPool, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	if s.GetRoot() == nil {
+		return nil, fmt.Errorf("can not find root certifcate")
+	}
+	pool := x509.NewCertPool()
+	pool.AppendCertsFromPEM(s.GetRoot())
+	return pool, nil
 }

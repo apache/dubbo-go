@@ -107,9 +107,6 @@ func parseBootstrap(path string) (*BootstrapInfo, error) {
 	xdsGrpcPath := ""
 
 	for _, cluster := range config.StaticResources.Clusters {
-		if cluster.Name == "sds-grpc" || cluster.Name == "xds-grpc" {
-			logger.Infof("BootstrapCluster Name: %s\nType: %s\nPipe Path: %s\n", cluster.Name, cluster.Type, cluster.LoadAssignment.Endpoints[0].LbEndpoints[0].Endpoint.Address.Pipe.Path)
-		}
 		if cluster.Name == "sds-grpc" {
 			sdsGrpcPath = cluster.LoadAssignment.Endpoints[0].LbEndpoints[0].Endpoint.Address.Pipe.Path
 		}
@@ -166,12 +163,12 @@ func getBootstrapContentTimeout(path string) (string, error) {
 			if content, err := getBootstrapContent(path); err == nil {
 				return content, nil
 			} else {
-				logger.Infof("try to read bootstrap file again and delay %d milliseconds", delayRead.Milliseconds())
+				logger.Infof("[Xds Bootstrap] try to read bootstrap file %s and delay %d milliseconds", envoyBootstrapJsonPath, delayRead.Milliseconds())
 				delayRead = 2 * delayRead
 			}
 
 		case <-time.After(enovyBootstrapWaitTimeout):
-			return "", fmt.Errorf("read bootstrap content timeout %f seconds", enovyBootstrapWaitTimeout.Seconds())
+			return "", fmt.Errorf("[Xds Bootstrap] read bootstrap content timeout %f seconds", enovyBootstrapWaitTimeout.Seconds())
 		}
 	}
 

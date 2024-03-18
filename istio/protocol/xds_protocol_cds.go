@@ -46,7 +46,7 @@ func (cds *CdsProtocol) ProcessProtocol(resp *v3discovery.DiscoveryResponse, xds
 	for _, resource := range resp.GetResources() {
 		cdsResource := &cluster.Cluster{}
 		if err := ptypes.UnmarshalAny(resource, cdsResource); err != nil {
-			logger.Errorf("fail to extract endpoint: %v", err)
+			logger.Errorf("[Xds Protocol] fail to extract endpoint: %v", err)
 			continue
 		}
 		clusterName := cdsResource.Name
@@ -101,7 +101,7 @@ func (cds *CdsProtocol) parseCluster(cluster *cluster.Cluster) (resources.XdsClu
 			if typeUrl == "type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext" {
 				err := transportSocketMatch.GetTransportSocket().GetTypedConfig().UnmarshalTo(&tlsContext)
 				if err != nil {
-					logger.Errorf("can not parse to upstream tls context")
+					logger.Errorf("[Xds Protocol] can not parse to upstream tls context")
 					continue
 				}
 				clusterTlsMode.IsTls = true

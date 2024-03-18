@@ -18,6 +18,7 @@
 package triple
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/istio"
 	"sync"
 )
 
@@ -51,6 +52,7 @@ type TripleProtocol struct {
 	protocol.BaseProtocol
 	serverLock sync.Mutex
 	serverMap  map[string]*Server
+	pliotAgent *istio.PilotAgent
 }
 
 // Export TRIPLE service for remote invocation
@@ -61,6 +63,20 @@ func (tp *TripleProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	infoRaw, ok := url.GetAttribute(constant.ServiceInfoKey)
 	if ok {
 		info = infoRaw.(*server.ServiceInfo)
+	}
+
+	xds := url.GetParam(constant.XdsKey, "false")
+	if xds == "true" {
+		logger.Infof("[TRIPLE Protocol] Run xds pilot agent: %s", url.String())
+		pilotAgent, err := istio.GetPilotAgent(istio.PilotAgentTypeServerWorkload)
+		if err != nil {
+			logger.Errorf("[TRIPLE Protocol] Get pilot agent error:%v", err)
+		}
+		if pilotAgent == nil {
+			logger.Errorf("[TRIPLE Protocol] Get pilot agent is nil")
+		} else {
+			tp.pliotAgent = pilotAgent
+		}
 	}
 	exporter := NewTripleExporter(serviceKey, invoker, tp.ExporterMap())
 	tp.SetExporterMap(serviceKey, exporter)
@@ -98,8 +114,10 @@ func (tp *TripleProtocol) openServer(invoker protocol.Invoker, info *server.Serv
 		panic("[TRIPLE Protocol]" + url.Key() + "is not existing")
 	}
 
+	// TODO Set tlsprovider and mutualTLSMode here
 	srv := NewServer()
 	srv.Start(invoker, info)
+
 	tp.serverMap[url.Location] = srv
 }
 
@@ -136,6 +154,10 @@ func (tp *TripleProtocol) Destroy() {
 	}
 
 	tp.BaseProtocol.Destroy()
+
+	if tp.pliotAgent != nil {
+		tp.pliotAgent.Stop()
+	}
 }
 
 func NewTripleProtocol() *TripleProtocol {

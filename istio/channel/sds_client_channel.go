@@ -20,7 +20,7 @@ var (
 	DefaultSecretResourceNames = []string{"default", "ROOTCA"}
 )
 
-type SecretUpdateListener func(*tls.Secret) error
+type SecretUpdateListener func(secret *tls.Secret) error
 
 type SdsClientChannel struct {
 	udsPath               string

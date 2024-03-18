@@ -45,7 +45,7 @@ func (eds *EdsProtocol) ProcessProtocol(resp *v3discovery.DiscoveryResponse, xds
 	for _, resource := range resp.GetResources() {
 		edsResource := &envoyendpoint.ClusterLoadAssignment{}
 		if err := ptypes.UnmarshalAny(resource, edsResource); err != nil {
-			logger.Errorf("fail to extract endpoint: %v", err)
+			logger.Errorf("[Xds Protocol] fail to extract endpoint: %v", err)
 			continue
 		}
 		xdsClusterEndpoint, _ := eds.parseEds(edsResource)
