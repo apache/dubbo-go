@@ -102,8 +102,7 @@ type sentinelProviderFilter struct{}
 func newSentinelProviderFilter() filter.Filter {
 	if sentinelProvider == nil {
 		initOnce.Do(func() {
-			err := sentinel.InitDefault()
-			if err != nil {
+			if err := sentinel.InitDefault(); err != nil {
 				panic(err)
 			}
 		})
@@ -126,9 +125,8 @@ func (d *sentinelProviderFilter) Invoke(ctx context.Context, invoker protocol.In
 	if b != nil {
 		// interface blocked
 		return sentinelDubboProviderFallback(ctx, invoker, invocation, b)
-	} else {
-		defer interfaceEntry.Exit()
 	}
+	defer interfaceEntry.Exit()
 
 	methodEntry, b = sentinel.Entry(methodResourceName,
 		sentinel.WithResourceType(base.ResTypeRPC),
@@ -137,9 +135,9 @@ func (d *sentinelProviderFilter) Invoke(ctx context.Context, invoker protocol.In
 	if b != nil {
 		// method blocked
 		return sentinelDubboProviderFallback(ctx, invoker, invocation, b)
-	} else {
-		defer methodEntry.Exit()
 	}
+	defer methodEntry.Exit()
+
 	result := invoker.Invoke(ctx, invocation)
 	if result.Error() != nil {
 		sentinel.TraceError(interfaceEntry, result.Error())
@@ -163,8 +161,7 @@ type sentinelConsumerFilter struct{}
 func newSentinelConsumerFilter() filter.Filter {
 	if sentinelConsumer == nil {
 		initOnce.Do(func() {
-			err := sentinel.InitDefault()
-			if err != nil {
+			if err := sentinel.InitDefault(); err != nil {
 				panic(err)
 			}
 		})
@@ -187,18 +184,17 @@ func (d *sentinelConsumerFilter) Invoke(ctx context.Context, invoker protocol.In
 	if b != nil {
 		// interface blocked
 		return sentinelDubboConsumerFallback(ctx, invoker, invocation, b)
-	} else {
-		defer interfaceEntry.Exit()
 	}
+	defer interfaceEntry.Exit()
 
 	methodEntry, b = sentinel.Entry(methodResourceName, sentinel.WithResourceType(base.ResTypeRPC),
 		sentinel.WithTrafficType(base.Outbound), sentinel.WithArgs(invocation.Arguments()...))
 	if b != nil {
 		// method blocked
 		return sentinelDubboConsumerFallback(ctx, invoker, invocation, b)
-	} else {
-		defer methodEntry.Exit()
 	}
+	defer methodEntry.Exit()
+
 	result := invoker.Invoke(ctx, invocation)
 	if result.Error() != nil {
 		sentinel.TraceError(interfaceEntry, result.Error())
