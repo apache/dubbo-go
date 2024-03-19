@@ -2,6 +2,7 @@ package tls
 
 import (
 	"crypto/tls"
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"github.com/klauspost/cpuid/v2"
 )
 
@@ -32,6 +33,6 @@ func PreferredDefaultCipherSuites() []uint16 {
 }
 
 type TLSProvider interface {
-	GetServerWorkLoadTLSConfig() (*tls.Config, error)
-	GetClientWorkLoadTLSConfig() (*tls.Config, error)
+	GetServerWorkLoadTLSConfig(url *common.URL) (*tls.Config, error)
+	GetClientWorkLoadTLSConfig(url *common.URL) (*tls.Config, error)
 }

@@ -211,7 +211,15 @@ const (
 	ProvidersCategory      = "providers"
 	RouterKey              = "router"
 	ExportKey              = "export"
-	XdsKey                 = "xds"
+)
+
+// xds keys
+const (
+	XdsKey                     = "xds"
+	MutualTLSModeKey           = "mtls"
+	TLSSubjectAltNamesMatchKey = "tls.subjectAltNameMatch"
+	TLSSubjectAltNamesValueKey = "tls.subjectAltNameValue"
+	ClusterIDKey               = "clusterID"
 )
 
 // config center keys
@@ -332,6 +340,7 @@ const (
 	Scope                            = "scope"
 	Wildcard                         = "wildcard"
 	MeshRouterFactoryKey             = "mesh"
+	XdsRouterFactoryKey              = "xds"
 )
 
 // Auth filter

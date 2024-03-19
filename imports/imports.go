@@ -63,6 +63,7 @@ import (
 	_ "dubbo.apache.org/dubbo-go/v3/filter/tps/limiter"
 	_ "dubbo.apache.org/dubbo-go/v3/filter/tps/strategy"
 	_ "dubbo.apache.org/dubbo-go/v3/filter/tracing"
+	_ "dubbo.apache.org/dubbo-go/v3/istio/processor"
 	_ "dubbo.apache.org/dubbo-go/v3/metadata/mapping/metadata"
 	_ "dubbo.apache.org/dubbo-go/v3/metadata/report/etcd"
 	_ "dubbo.apache.org/dubbo-go/v3/metadata/report/nacos"

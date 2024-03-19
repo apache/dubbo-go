@@ -3,11 +3,12 @@ package xds
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"dubbo.apache.org/dubbo-go/v3/istio/resources"
 	"fmt"
 
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/istio"
+	"dubbo.apache.org/dubbo-go/v3/istio/resources"
 	tlsprovider "dubbo.apache.org/dubbo-go/v3/tls"
 	"github.com/dubbogo/gost/log/logger"
 )
@@ -28,7 +29,7 @@ type XdsTLSProvider struct {
 	pilotAgent *istio.PilotAgent
 }
 
-func (x *XdsTLSProvider) GetServerWorkLoadTLSConfig() (*tls.Config, error) {
+func (x *XdsTLSProvider) GetServerWorkLoadTLSConfig(url *common.URL) (*tls.Config, error) {
 
 	cfg := &tls.Config{
 		GetCertificate: x.GetWorkloadCertificate,
@@ -100,7 +101,7 @@ func (x *XdsTLSProvider) VerifyPeerCert(rawCerts [][]byte, verifiedChains [][]*x
 	return err
 }
 
-func (x *XdsTLSProvider) GetClientWorkLoadTLSConfig() (*tls.Config, error) {
+func (x *XdsTLSProvider) GetClientWorkLoadTLSConfig(url *common.URL) (*tls.Config, error) {
 	//TODO implement me
 	panic("implement me")
 }

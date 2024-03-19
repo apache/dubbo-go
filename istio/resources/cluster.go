@@ -2,6 +2,7 @@ package resources
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"strings"
 )
 
 // MutualTLSMode is the mutual TLS mode specified by authentication policy.
@@ -20,6 +21,36 @@ const (
 	// MTLSStrict if authentication policy enable mTLS in strict mode.
 	MTLSStrict
 )
+
+var MutualTLSModeToStringMap = map[MutualTLSMode]string{
+	MTLSUnknown:    "UNKNOWN",
+	MTLSDisable:    "DISABLE",
+	MTLSPermissive: "PERMISSIVE",
+	MTLSStrict:     "STRICT",
+}
+
+var MutualTLSModeFromStringMap = map[string]MutualTLSMode{
+	"UNKNOWN":    MTLSUnknown,
+	"DISABLE":    MTLSDisable,
+	"PERMISSIVE": MTLSPermissive,
+	"STRICT":     MTLSStrict,
+}
+
+func MutualTLSModeToString(mode MutualTLSMode) string {
+	str, ok := MutualTLSModeToStringMap[mode]
+	if !ok {
+		return "UNKNOWN"
+	}
+	return str
+}
+
+func StringToMutualTLSMode(str string) MutualTLSMode {
+	mode, ok := MutualTLSModeFromStringMap[strings.ToUpper(str)]
+	if !ok {
+		return MTLSUnknown
+	}
+	return mode
+}
 
 type XdsTLSMode struct {
 	IsTls       bool

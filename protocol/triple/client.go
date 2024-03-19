@@ -117,7 +117,7 @@ func (cm *clientManager) close() error {
 }
 
 // newClientManager extracts configurations from url and builds clientManager
-func newClientManager(url *common.URL) (*clientManager, error) {
+func newClientManager(url *common.URL, tlsConfigProvider tri.TLSConfigProvider) (*clientManager, error) {
 	var cliOpts []tri.ClientOption
 
 	// set max send and recv msg size
@@ -163,6 +163,12 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 	// todo(DMwangnima): support TLS in an ideal way
 	var cfg *tls.Config
 	var tlsFlag bool
+	if tlsConfigProvider != nil {
+		cfg, _ = tlsConfigProvider()
+		if cfg != nil {
+			tlsFlag = true
+		}
+	}
 
 	var transport http.RoundTripper
 	callType := url.GetParam(constant.CallHTTPTypeKey, constant.CallHTTP2)
