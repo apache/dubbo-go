@@ -11,7 +11,6 @@ import (
 	resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"github.com/golang/protobuf/ptypes"
 	"google.golang.org/grpc"
-	"io"
 	"sync"
 	"time"
 )
@@ -79,40 +78,44 @@ func (sds *SdsClientChannel) startListening() {
 			case <-sds.stopChan:
 				return
 			default:
-				resp, err := sds.streamSecretsClient.Recv()
 
-				if err != nil && err != io.EOF {
-					logger.Errorf("[sds channel] sds.recv.error error: %v", err)
-					if err := sds.reconnect(); err != nil {
-						logger.Errorf("[sds channel] sds.reconnect.error: %v", err)
-						continue
-					} else {
-						// need to subscribe all resources again
-						if err2 := sds.Send(DefaultSecretResourceNames); err2 != nil {
-							logger.Errorf("[sds channel] sds.send resource names:%v failed: %v", DefaultSecretResourceNames, err2)
-						}
-					}
-					continue
-				}
-
-				if err == io.EOF {
-					continue
-				}
-
-				logger.Infof("[sds channel] sds recv resp: %v", resp)
-
-				for _, res := range resp.Resources {
-					if res.GetTypeUrl() == resource.SecretType {
-						secret := &tls.Secret{}
-						if err := ptypes.UnmarshalAny(res, secret); err != nil {
-							logger.Errorf("[sds channel] fail to extract secret name: %v", err)
-							continue
-						}
-						sds.updateChan <- secret
-					}
-				}
-				sds.AckResponse(resp)
 			}
+
+			if sds.streamSecretsClient == nil {
+				continue
+			}
+			resp, err := sds.streamSecretsClient.Recv()
+			if err != nil {
+				logger.Errorf("[sds channel] sds.recv.error error: %v", err)
+				if err := sds.reconnect(); err != nil {
+					logger.Errorf("[sds channel] sds.reconnect.error: %v", err)
+					continue
+				} else {
+					// need to subscribe all resources again
+					if err2 := sds.Send(DefaultSecretResourceNames); err2 != nil {
+						logger.Errorf("[sds channel] sds.send resource names:%v failed: %v", DefaultSecretResourceNames, err2)
+					}
+				}
+				continue
+			}
+
+			//if err == io.EOF {
+			//	continue
+			//}
+
+			logger.Infof("[sds channel] sds recv resp: %v", resp)
+
+			for _, res := range resp.Resources {
+				if res.GetTypeUrl() == resource.SecretType {
+					secret := &tls.Secret{}
+					if err := ptypes.UnmarshalAny(res, secret); err != nil {
+						logger.Errorf("[sds channel] fail to extract secret name: %v", err)
+						continue
+					}
+					sds.updateChan <- secret
+				}
+			}
+			sds.AckResponse(resp)
 		}
 	}()
 
@@ -142,12 +145,9 @@ func (sds *SdsClientChannel) startListening() {
 
 func (sds *SdsClientChannel) reconnect() error {
 	sds.closeConnection()
-
 	select {
-	case <-sds.stopChan:
-		return fmt.Errorf("[sds channel] stop chan stoped")
-	case <-time.After(2 * time.Second):
-		logger.Infof("[sds channel] dealy 2 seconds to reconnect sds server")
+	case <-time.After(1 * time.Second):
+		logger.Infof("[sds channel] dealy 1 seconds to reconnect sds server")
 	}
 
 	newConn, err := grpc.Dial(

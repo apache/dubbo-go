@@ -1,6 +1,7 @@
 package bootstrap
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/istio/utils"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -94,6 +95,7 @@ type BootstrapPipe struct {
 }
 
 func parseBootstrap(path string) (*BootstrapInfo, error) {
+	logger.Infof("[Xds Bootstrap] read bootstrap file:%s", path)
 	jsonData, err := getBootstrapContentTimeout(path)
 	if err != nil {
 		return nil, err
@@ -147,7 +149,7 @@ func parseBootstrap(path string) (*BootstrapInfo, error) {
 		SdsGrpcPath:     sdsGrpcPath,
 		XdsGrpcPath:     xdsGrpcPath,
 	}
-
+	logger.Infof("[Xds Bootstrap] get bootstrap info:%s", utils.ConvertJsonString(bootstrapInfo))
 	return bootstrapInfo, nil
 
 }

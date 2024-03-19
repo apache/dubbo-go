@@ -6,7 +6,6 @@ import (
 	"fmt"
 	v3discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	v3resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
-	"io"
 	"sync"
 	"time"
 
@@ -129,29 +128,34 @@ func (xds *XdsClientChannel) startListeningAndProcessingUpdates() {
 			case <-xds.stopChan:
 				return
 			default:
-				resp, err := xds.streamAdsClient.Recv()
-				if err != nil && err != io.EOF {
-					logger.Errorf("xds.recv.error", "[xds][recv] error receiving resources: %v", err)
-					if err2 := xds.reconnect(); err2 != nil {
-						logger.Errorf("xds.reconnect.error", "[xds][reconnect] failed to reconnect: %v", err2)
-						continue
-					} else {
-						// TODO need to subscribe all resources again!!!
-					}
-					continue
-				}
-
-				if err == io.EOF {
-					continue
-				}
-
-				logger.Infof("xds recv resp = %s", utils.ConvertResponseToString(resp))
-				if resp.GetTypeUrl() == v3resource.ListenerType || resp.GetTypeUrl() == v3resource.RouteType ||
-					resp.GetTypeUrl() == v3resource.ClusterType || resp.GetTypeUrl() == v3resource.EndpointType {
-					xds.updateChan <- resp
-				}
-				// TODO need to ack response
 			}
+
+			if xds.streamAdsClient == nil {
+				continue
+			}
+			resp, err := xds.streamAdsClient.Recv()
+			if err != nil {
+				//if err != nil && err != io.EOF {
+				logger.Errorf("xds.recv.error", "[xds][recv] error receiving resources: %v", err)
+				if err2 := xds.reconnect(); err2 != nil {
+					logger.Errorf("xds.reconnect.error", "[xds][reconnect] failed to reconnect: %v", err2)
+					continue
+				} else {
+					// TODO need to subscribe all resources again!!!
+				}
+				continue
+			}
+
+			//if err == io.EOF {
+			//	continue
+			//}
+
+			logger.Infof("xds recv resp = %s", utils.ConvertResponseToString(resp))
+			if resp.GetTypeUrl() == v3resource.ListenerType || resp.GetTypeUrl() == v3resource.RouteType ||
+				resp.GetTypeUrl() == v3resource.ClusterType || resp.GetTypeUrl() == v3resource.EndpointType {
+				xds.updateChan <- resp
+			}
+			// TODO need to ack response
 		}
 	}()
 
@@ -160,12 +164,11 @@ func (xds *XdsClientChannel) startListeningAndProcessingUpdates() {
 
 func (xds *XdsClientChannel) reconnect() error {
 	xds.closeConnection()
-
+	
 	select {
-	case <-xds.stopChan:
-		return fmt.Errorf("stop chan stoped")
-	case <-time.After(2 * time.Second):
-		logger.Infof("delay 2 seconds to reconnect sds server")
+	case <-time.After(1 * time.Second):
+		logger.Infof("delay 1 seconds to reconnect sds server")
+
 	}
 
 	newConn, err := grpc.Dial(
@@ -192,7 +195,6 @@ func (xds *XdsClientChannel) listenForResourceUpdates() {
 	for {
 		select {
 		case <-xds.stopChan:
-			xds.Stop()
 			return
 		case resp, ok := <-xds.updateChan:
 			if !ok {
@@ -261,6 +263,7 @@ func (xds *XdsClientChannel) closeConnection() {
 }
 
 func (xds *XdsClientChannel) Stop() {
+	logger.Infof("[xds channel] Stop now...")
 	xds.closeConnection()
 	close(xds.updateChan)
 }

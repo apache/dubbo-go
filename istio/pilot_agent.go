@@ -1,6 +1,7 @@
 package istio
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/istio/bootstrap"
 	"dubbo.apache.org/dubbo-go/v3/istio/channel"
 	"dubbo.apache.org/dubbo-go/v3/istio/protocol"
@@ -135,7 +136,11 @@ func NewPilotAgent(agentType PilotAgentType) (*PilotAgent, error) {
 	}
 	// Start xds/sds and wait
 	go pilotAgent.initAndWait(agentType)
+	// Reset running status
 	pilotAgent.runningStatus.Store(true)
+	// Add graceful shutdown call back
+	extension.AddCustomShutdownCallback(pilotAgent.Stop)
+
 	return pilotAgent, nil
 }
 
@@ -356,7 +361,7 @@ func (p *PilotAgent) Stop() {
 	if runningStatus := p.runningStatus.Load(); runningStatus {
 		// make sure stop once
 		p.runningStatus.Store(false)
-		logger.Infof("[Pilot Agent] Stop pilot agent now...")
+		logger.Infof("[Pilot Agent] Stop now...")
 		close(p.stopChan)
 		close(p.updateChan)
 	}
