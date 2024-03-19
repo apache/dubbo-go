@@ -6,7 +6,10 @@ import (
 	"fmt"
 	v3discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	v3resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/dubbogo/gost/log/logger"
@@ -38,6 +41,8 @@ type XdsClientChannel struct {
 	listeners       map[ResourceType]map[string]XdsUpdateListener
 	listenerMutex   sync.RWMutex
 	ApiStore        *ApiStore
+	// stop or not
+	runningStatus atomic.Bool
 }
 
 func NewXdsClientChannel(stopChan chan struct{}, xdsUdsPath string, node *v3configcore.Node) (*XdsClientChannel, error) {
@@ -121,11 +126,13 @@ func (xds *XdsClientChannel) AckResponse(resp *v3discovery.DiscoveryResponse) {
 }
 
 func (xds *XdsClientChannel) startListeningAndProcessingUpdates() {
+	xds.runningStatus.Store(true)
 	go xds.listenForResourceUpdates()
 	go func() {
 		for {
 			select {
 			case <-xds.stopChan:
+				xds.Stop()
 				return
 			default:
 			}
@@ -135,6 +142,11 @@ func (xds *XdsClientChannel) startListeningAndProcessingUpdates() {
 			}
 			resp, err := xds.streamAdsClient.Recv()
 			if err != nil {
+				st, ok := status.FromError(err)
+				if ok && st.Code() == codes.Canceled {
+					logger.Infof("[xds channel] xds channel context was canceled")
+					return
+				}
 				//if err != nil && err != io.EOF {
 				logger.Errorf("xds.recv.error", "[xds][recv] error receiving resources: %v", err)
 				if err2 := xds.reconnect(); err2 != nil {
@@ -164,7 +176,7 @@ func (xds *XdsClientChannel) startListeningAndProcessingUpdates() {
 
 func (xds *XdsClientChannel) reconnect() error {
 	xds.closeConnection()
-	
+
 	select {
 	case <-time.After(1 * time.Second):
 		logger.Infof("delay 1 seconds to reconnect sds server")
@@ -263,9 +275,14 @@ func (xds *XdsClientChannel) closeConnection() {
 }
 
 func (xds *XdsClientChannel) Stop() {
-	logger.Infof("[xds channel] Stop now...")
-	xds.closeConnection()
-	close(xds.updateChan)
+	if runningStatus := xds.runningStatus.Load(); runningStatus {
+		// make sure stop once
+		xds.runningStatus.Store(false)
+		logger.Infof("[xds channel] Stop now...")
+		xds.closeConnection()
+		close(xds.updateChan)
+	}
+
 }
 
 func (xds *XdsClientChannel) InitXds() error {

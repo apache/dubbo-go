@@ -364,5 +364,7 @@ func (p *PilotAgent) Stop() {
 		logger.Infof("[Pilot Agent] Stop now...")
 		close(p.stopChan)
 		close(p.updateChan)
+		p.sdsClientChannel.Stop()
+		p.xdsClientChannel.Stop()
 	}
 }

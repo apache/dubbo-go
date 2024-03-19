@@ -11,7 +11,10 @@ import (
 	resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"github.com/golang/protobuf/ptypes"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -32,6 +35,8 @@ type SdsClientChannel struct {
 	node                  *v3configcore.Node
 	listeners             map[string]SecretUpdateListener
 	listenerMutex         sync.RWMutex
+	// stop or not
+	runningStatus atomic.Bool
 }
 
 func NewSdsClientChannel(stopChan chan struct{}, sdsUdsPath string, node *v3configcore.Node) (*SdsClientChannel, error) {
@@ -68,6 +73,7 @@ func NewSdsClientChannel(stopChan chan struct{}, sdsUdsPath string, node *v3conf
 }
 
 func (sds *SdsClientChannel) startListening() {
+	sds.runningStatus.Store(true)
 	go func() {
 		// need to subscribe all resources
 		//if err := sds.Send([]string{"default", "ROOTCA"}); err != nil {
@@ -76,6 +82,7 @@ func (sds *SdsClientChannel) startListening() {
 		for {
 			select {
 			case <-sds.stopChan:
+				sds.Stop()
 				return
 			default:
 
@@ -86,6 +93,11 @@ func (sds *SdsClientChannel) startListening() {
 			}
 			resp, err := sds.streamSecretsClient.Recv()
 			if err != nil {
+				st, ok := status.FromError(err)
+				if ok && st.Code() == codes.Canceled {
+					logger.Infof("[sds channel] sds channel context was canceled")
+					return
+				}
 				logger.Errorf("[sds channel] sds.recv.error error: %v", err)
 				if err := sds.reconnect(); err != nil {
 					logger.Errorf("[sds channel] sds.reconnect.error: %v", err)
@@ -248,6 +260,11 @@ func (sds *SdsClientChannel) closeConnection() {
 }
 
 func (sds *SdsClientChannel) Stop() {
-	sds.closeConnection()
-	close(sds.updateChan)
+	if runningStatus := sds.runningStatus.Load(); runningStatus {
+		// make sure stop once
+		sds.runningStatus.Store(false)
+		logger.Infof("[sds channel] Stop now...")
+		sds.closeConnection()
+		close(sds.updateChan)
+	}
 }
