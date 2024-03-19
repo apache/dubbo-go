@@ -22,6 +22,7 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -51,6 +52,40 @@ func getEnv(key, fallback string) string {
 		return value
 	}
 	return fallback
+}
+
+func updateOrCreateXdsURL(opts *ReferenceOptions, url *common.URL) {
+	ref := opts.Reference
+	orgiUrl, _ := common.NewURL(ref.URL)
+	if strings.ToLower(orgiUrl.Protocol) != "xds" {
+		return
+	}
+	url.SetParam(constant.XdsKey, "true")
+	logger.Infof("[xds client] URL specified explicitly by xds: %v", ref.URL)
+
+	providedByHost := orgiUrl.Ip
+	providedByPort := orgiUrl.Port
+	if providedByPort == "" {
+		providedByPort = "80" // Default HTTP port
+	}
+
+	podNamespace := getEnv(constant.PodNamespaceEnvKey, constant.DefaultNamespace)
+	clusterDomain := getEnv(constant.ClusterDomainKey, constant.DefaultClusterDomain)
+	if strings.HasSuffix(providedByHost, ".svc") {
+		// a.b.svc
+		providedByHost = fmt.Sprintf("%s.%s", providedByHost, clusterDomain)
+	} else {
+		// exclude a.b.svc.c.com
+		if !strings.Contains(providedByHost, ".svc.") {
+			if !strings.HasSuffix(providedByHost, fmt.Sprintf(".svc.%s", clusterDomain)) {
+				providedByHost = fmt.Sprintf("%s.%s.svc.%s", providedByHost, podNamespace, clusterDomain)
+			}
+		}
+	}
+	providedBy := fmt.Sprintf("%s:%s", providedByHost, providedByPort)
+	logger.Infof("[xds client] URL provideby is : %s", providedBy)
+	ref.ProvidedBy = providedBy
+	ref.URL = "tri://" + ref.ProvidedBy
 }
 
 func updateOrCreateMeshURL(opts *ReferenceOptions) {
@@ -135,6 +170,9 @@ func (refOpts *ReferenceOptions) refer(srv common.RPCService, info *ClientInfo) 
 	if ref.ForceTag {
 		cfgURL.AddParam(constant.ForceUseTag, "true")
 	}
+	// check xds
+	updateOrCreateXdsURL(refOpts, cfgURL)
+
 	refOpts.postProcessConfig(cfgURL)
 
 	// if mesh-enabled is set

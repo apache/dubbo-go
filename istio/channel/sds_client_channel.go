@@ -42,7 +42,7 @@ func NewSdsClientChannel(stopChan chan struct{}, sdsUdsPath string, node *v3conf
 		grpc.WithInsecure(),
 	)
 	if err != nil {
-		logger.Errorf("sds.subscribe.stream [sds][subscribe] dial grpc server failed %v", err)
+		logger.Errorf("[sds channel] dial grpc server failed %v", err)
 		return nil, err
 	}
 	sdsServiceClient := v3secret.NewSecretDiscoveryServiceClient(conn)
@@ -60,7 +60,7 @@ func NewSdsClientChannel(stopChan chan struct{}, sdsUdsPath string, node *v3conf
 	}
 	sdsStreamClient.streamSecretsClient, err = sdsServiceClient.StreamSecrets(ctx)
 	if err != nil {
-		logger.Errorf("sds.subscribe.stream [sds][subscribe] get sds stream secret fail %v", err)
+		logger.Errorf("[sds channel] sds.subscribe.stream get sds stream secret fail %v", err)
 		conn.Close()
 		return nil, err
 	}
@@ -82,14 +82,14 @@ func (sds *SdsClientChannel) startListening() {
 				resp, err := sds.streamSecretsClient.Recv()
 
 				if err != nil && err != io.EOF {
-					logger.Errorf("sds.recv.error [sds][recv] error receiving secrets: %v", err)
+					logger.Errorf("[sds channel] sds.recv.error error: %v", err)
 					if err := sds.reconnect(); err != nil {
-						logger.Errorf("sds.reconnect.error [sds][reconnect] failed to reconnect: %v", err)
+						logger.Errorf("[sds channel] sds.reconnect.error: %v", err)
 						continue
 					} else {
 						// need to subscribe all resources again
 						if err2 := sds.Send(DefaultSecretResourceNames); err2 != nil {
-							logger.Errorf("sds.send.error [sds][send] resource names:%v failed: %v", DefaultSecretResourceNames, err2)
+							logger.Errorf("[sds channel] sds.send resource names:%v failed: %v", DefaultSecretResourceNames, err2)
 						}
 					}
 					continue
@@ -99,13 +99,13 @@ func (sds *SdsClientChannel) startListening() {
 					continue
 				}
 
-				logger.Infof("sds recv resp %v", resp)
+				logger.Infof("[sds channel] sds recv resp: %v", resp)
 
 				for _, res := range resp.Resources {
 					if res.GetTypeUrl() == resource.SecretType {
 						secret := &tls.Secret{}
 						if err := ptypes.UnmarshalAny(res, secret); err != nil {
-							logger.Errorf("fail to extract secret name: %v", err)
+							logger.Errorf("[sds channel] fail to extract secret name: %v", err)
 							continue
 						}
 						sds.updateChan <- secret
@@ -129,7 +129,7 @@ func (sds *SdsClientChannel) startListening() {
 				for name, listener := range sds.listeners {
 					err := listener(secret)
 					if err != nil {
-						logger.Errorf("sds call listener %s error:%v", name, err)
+						logger.Errorf("[sds channel] sds.call.listener %s error:%v", name, err)
 					}
 				}
 			}
@@ -145,9 +145,9 @@ func (sds *SdsClientChannel) reconnect() error {
 
 	select {
 	case <-sds.stopChan:
-		return fmt.Errorf("stop chan stoped")
+		return fmt.Errorf("[sds channel] stop chan stoped")
 	case <-time.After(2 * time.Second):
-		logger.Infof("dealy 2 seconds to reconnect sds server")
+		logger.Infof("[sds channel] dealy 2 seconds to reconnect sds server")
 	}
 
 	newConn, err := grpc.Dial(
@@ -178,7 +178,7 @@ func (sds *SdsClientChannel) Send(names []string) error {
 		ErrorDetail:   nil,
 		Node:          sds.node,
 	}
-	logger.Infof("sds send request = %v ", request)
+	logger.Infof("[sds channel] sds.send request = %v ", request)
 	return sds.streamSecretsClient.Send(request)
 }
 
@@ -205,9 +205,9 @@ func (sds *SdsClientChannel) AckResponse(resp interface{}) {
 	if !ok {
 		return
 	}
-	logger.Infof("sds send ack respoonse = %v ", xdsresp)
+	logger.Infof("[sds channel]  sds.send ack respoonse = %v ", xdsresp)
 	if err := sds.ackResponse(xdsresp); err != nil {
-		logger.Errorf("sds send ack response  fail: %v", err)
+		logger.Errorf("[sds channel] sds.send ack response  fail: %v", err)
 	}
 
 }
@@ -220,7 +220,7 @@ func (sds *SdsClientChannel) ackResponse(resp *v3discovery.DiscoveryResponse) er
 		}
 		secret := &tls.Secret{}
 		if err := ptypes.UnmarshalAny(resource, secret); err != nil {
-			logger.Errorf("fail to extract secret name: %v", err)
+			logger.Errorf("[sds channel] fail to extract secret name: %v", err)
 			continue
 		}
 		secretNames = append(secretNames, secret.GetName())
@@ -235,7 +235,7 @@ func (sds *SdsClientChannel) ackResponse(resp *v3discovery.DiscoveryResponse) er
 		Node:          sds.node,
 	}
 
-	logger.Infof("send a ack request to server: %v", req)
+	logger.Infof("[sds channel] sds.send a ack request to server: %v", req)
 	return sds.streamSecretsClient.Send(req)
 }
 

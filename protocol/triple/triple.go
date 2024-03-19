@@ -71,7 +71,8 @@ func (tp *TripleProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 		tlsProvider := extension.GetTLSProvider(tlsProviderName)
 		tlsConfigProvider = func() (*tls.Config, error) {
 			callUrl := url
-			return tlsProvider.GetServerWorkLoadTLSConfig(callUrl)
+			callProvider := tlsProvider
+			return callProvider.GetServerWorkLoadTLSConfig(callUrl)
 		}
 	}
 
@@ -129,7 +130,8 @@ func (tp *TripleProtocol) Refer(url *common.URL) protocol.Invoker {
 		tlsProvider := extension.GetTLSProvider(tlsProviderName)
 		tlsConfigProvider = func() (*tls.Config, error) {
 			callUrl := url
-			return tlsProvider.GetClientWorkLoadTLSConfig(callUrl)
+			callProvider := tlsProvider
+			return callProvider.GetClientWorkLoadTLSConfig(callUrl)
 		}
 	}
 

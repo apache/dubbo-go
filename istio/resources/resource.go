@@ -1,5 +1,7 @@
 package resources
 
+import "strings"
+
 type XdsEventUpdateType uint32
 
 const (
@@ -100,4 +102,20 @@ type XdsHostInboundListener struct {
 	MutualTLSMode   MutualTLSMode
 	TransportSocket XdsDownstreamTransportSocket
 	// other host inbound info for protocol export here
+}
+
+func MatchSpiffe(spiffee, action, value string) bool {
+	spiffee = strings.ToLower(spiffee)
+	value = strings.ToLower(value)
+	if action == "exact" {
+		return spiffee == value
+	}
+	if action == "prefix" {
+		return strings.HasPrefix(spiffee, value)
+	}
+	if action == "contains" {
+		return strings.Contains(spiffee, value)
+	}
+
+	return false
 }

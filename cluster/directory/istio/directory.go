@@ -125,9 +125,11 @@ func (dir *directory) changeClusterSubscribe(oldCluster, newCluster []string) {
 
 func (dir *directory) OnEdsChangeListener(clusterName string, xdsCluster resources.XdsCluster, xdsClusterEndpoint resources.XdsClusterEndpoint) error {
 
-	// Get lbPolicy and xdsEndpoints
-	//lbPolicy := xdsCluster.LbPolicy
 	mutualTLSMode := xdsCluster.TlsMode.GetMutualTLSMode()
+	reqMutualTLSMode := resources.MTLSDisable
+	if mutualTLSMode == resources.MTLSStrict || mutualTLSMode == resources.MTLSPermissive {
+		reqMutualTLSMode = resources.MTLSStrict
+	}
 	xdsEndpoints := xdsClusterEndpoint.Endpoints
 
 	// Create a list to hold invokers
@@ -137,7 +139,15 @@ func (dir *directory) OnEdsChangeListener(clusterName string, xdsCluster resourc
 	// Iterate through xdsEndpoints
 	for _, e := range xdsEndpoints {
 		ip := e.Address
-		port := e.Port
+
+		// determine the request which is https or http
+		httpPort := e.Port
+		httpsPort := httpPort + 1
+		port := httpPort
+		if reqMutualTLSMode == resources.MTLSStrict {
+			port = httpsPort
+		}
+
 		// Construct URL for invoker
 		url := common.NewURLWithOptions(
 			common.WithProtocol(dir.protocolName),
@@ -147,11 +157,12 @@ func (dir *directory) OnEdsChangeListener(clusterName string, xdsCluster resourc
 			common.WithParamsValue(constant.InterfaceKey, dir.serviceInterface),
 			// load balance here
 			//common.WithParamsValue(constant.LoadbalanceKey, ""),
-			// xds and MutualTLSMode
+			// set xds and MutualTLSMode
 			common.WithParamsValue(constant.XdsKey, "true"),
-			common.WithParamsValue(constant.MutualTLSModeKey, resources.MutualTLSModeToString(mutualTLSMode)),
+			common.WithParamsValue(constant.MutualTLSModeKey, resources.MutualTLSModeToString(reqMutualTLSMode)),
 			common.WithParamsValue(constant.ClusterIDKey, xdsCluster.Name),
-			// client spiffe match
+			//set tls provider and  client spiffe match and value
+			common.WithParamsValue(constant.TLSProvider, "xds-provider"),
 			common.WithParamsValue(constant.TLSSubjectAltNamesMatchKey, xdsCluster.TransportSocket.SubjectAltNamesMatch),
 			common.WithParamsValue(constant.TLSSubjectAltNamesValueKey, xdsCluster.TransportSocket.SubjectAltNamesValue),
 		)
@@ -159,9 +170,6 @@ func (dir *directory) OnEdsChangeListener(clusterName string, xdsCluster resourc
 		invoker := dir.protocol.Refer(url)
 		invokers = append(invokers, invoker)
 	}
-	// Add invokers to directory's invoker list
-	dir.invokers = append(dir.invokers, invokers...)
-
 	// Set invokers for xdsCluster
 	xdsCluster.Invokers = invokers
 	// Update xdsClusterMap

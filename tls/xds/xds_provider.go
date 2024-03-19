@@ -3,6 +3,7 @@ package xds
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"fmt"
 
 	"dubbo.apache.org/dubbo-go/v3/common"
@@ -37,9 +38,9 @@ func (x *XdsTLSProvider) GetServerWorkLoadTLSConfig(url *common.URL) (*tls.Confi
 		//ClientAuth: tls.RequireAndVerifyClientCert, // for prod
 		ClientCAs: x.GetCACertPool(),
 		VerifyPeerCertificate: func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
-			err := x.VerifyPeerCert(rawCerts, verifiedChains)
+			err := x.VerifyPeerCertByServer(rawCerts, verifiedChains)
 			if err != nil {
-				logger.Errorf("Could not verify certificate: %v", err)
+				logger.Errorf("Could not verify client certificate: %v", err)
 			}
 			return err
 		},
@@ -51,8 +52,8 @@ func (x *XdsTLSProvider) GetServerWorkLoadTLSConfig(url *common.URL) (*tls.Confi
 	return cfg, nil
 }
 
-func (x *XdsTLSProvider) VerifyPeerCert(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
-	logger.Infof("[xds tls] verifiy peer cert")
+func (x *XdsTLSProvider) VerifyPeerCertByServer(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
+	logger.Infof("[xds tls] server verifiy peer cert")
 	if len(rawCerts) == 0 {
 		// Peer doesn't present a certificate. Just skip. Other authn methods may be used.
 		return nil
@@ -102,8 +103,75 @@ func (x *XdsTLSProvider) VerifyPeerCert(rawCerts [][]byte, verifiedChains [][]*x
 }
 
 func (x *XdsTLSProvider) GetClientWorkLoadTLSConfig(url *common.URL) (*tls.Config, error) {
-	//TODO implement me
-	panic("implement me")
+
+	verifyMap := make(map[string]string, 0)
+	verifyMap["SubjectAltNamesMatch"] = url.GetParam(constant.TLSSubjectAltNamesMatchKey, "")
+	verifyMap["SubjectAltNamesValue"] = url.GetParam(constant.TLSSubjectAltNamesValueKey, "")
+
+	cfg := &tls.Config{
+		GetCertificate:     x.GetWorkloadCertificate,
+		InsecureSkipVerify: false,
+		RootCAs:            x.GetCACertPool(),
+		VerifyPeerCertificate: func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
+			certVerifyMap := verifyMap
+			err := x.VerifyPeerCertByClient(rawCerts, verifiedChains, certVerifyMap)
+			if err != nil {
+				logger.Errorf("Could not verify server certificate: %v", err)
+			}
+			return err
+		},
+		MinVersion:               tls.VersionTLS12,
+		CipherSuites:             tlsprovider.PreferredDefaultCipherSuites(),
+		PreferServerCipherSuites: true,
+	}
+
+	return cfg, nil
+
+}
+
+func (x *XdsTLSProvider) VerifyPeerCertByClient(rawCerts [][]byte, verifiedChains [][]*x509.Certificate, certVerifyMap map[string]string) error {
+	logger.Infof("[xds tls] client verifiy peer cert")
+	if len(rawCerts) == 0 {
+		// Peer doesn't present a certificate. Just skip. Other authn methods may be used.
+		return nil
+	}
+	var peerCert *x509.Certificate
+	intCertPool := x509.NewCertPool()
+	for id, rawCert := range rawCerts {
+		cert, err := x509.ParseCertificate(rawCert)
+		if err != nil {
+			return err
+		}
+		if id == 0 {
+			peerCert = cert
+		} else {
+			intCertPool.AddCert(cert)
+		}
+	}
+	if len(peerCert.URIs) != 1 {
+		return fmt.Errorf("peer certificate does not contain 1 URI type SAN, detected %d", len(peerCert.URIs))
+	}
+	spiffe := peerCert.URIs[0].String()
+	_, err := resources.ParseIdentity(spiffe)
+	if err != nil {
+		return err
+	}
+	secretCache := x.pilotAgent.GetSecretCache()
+	spiffeMatch := certVerifyMap["SubjectAltNamesMatch"]
+	spiffeValue := certVerifyMap["SubjectAltNamesValue"]
+	ok := x.matchSpiffeUrl(spiffe, spiffeMatch, spiffeValue)
+	if !ok {
+		return fmt.Errorf("client spiffe urll %s can not match %s:%s", spiffe, spiffeMatch, spiffeValue)
+	}
+	rootCertPool, err := secretCache.GetCACertPool()
+	if err != nil {
+		return fmt.Errorf("no cert pool found ")
+	}
+	_, err = peerCert.Verify(x509.VerifyOptions{
+		Roots:         rootCertPool,
+		Intermediates: intCertPool,
+	})
+	return err
 }
 
 func (x *XdsTLSProvider) GetWorkloadCertificate(helloInfo *tls.ClientHelloInfo) (*tls.Certificate, error) {
@@ -129,8 +197,7 @@ func (x *XdsTLSProvider) GetCACertPool() *x509.CertPool {
 }
 
 func (x *XdsTLSProvider) matchSpiffeUrl(spiffe string, match string, value string) bool {
-	//TODO match XdsDownstreamTransportSocket
-	return true
+	return resources.MatchSpiffe(spiffe, match, value)
 }
 
 func NewXdsTlsProvider() *XdsTLSProvider {
