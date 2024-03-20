@@ -2,6 +2,7 @@ package istio
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/istio"
 	"dubbo.apache.org/dubbo-go/v3/istio/resources"
 	"github.com/dubbogo/gost/log/logger"
@@ -28,15 +29,8 @@ type directory struct {
 	xdsVirtualHostMap sync.Map
 	xdsClusterMap     sync.Map
 	serviceInterface  string
+	clientInfo        interface{}
 }
-
-//super(directory.getConsumerUrl(), true);
-//this.serviceType = directory.getInterface();
-//this.url = directory.getConsumerUrl();
-//this.applicationNames = url.getParameter("provided-by").split(",");
-//this.protocolName = url.getParameter("protocol", "dubbo");
-//this.protocol = directory.getProtocol();
-//super.routerChain = directory.getRouterChain();
 
 // NewDirectory Create a new staticDirectory with invokers
 func NewDirectory(invokers []protocol.Invoker) *directory {
@@ -50,11 +44,13 @@ func NewDirectory(invokers []protocol.Invoker) *directory {
 	serviceNames := strings.Split(url.GetParam(constant.ProvidedBy, ""), ",")
 	//protocolName := url.GetParam(constant.ProtocolKey, "tri")
 	protocolName := "tri"
+
 	pilotAgent, err := istio.GetPilotAgent(istio.PilotAgentTypeClientWorkload)
 	if err != nil {
 		logger.Errorf("[xds directory] can not get pilot agent")
 	}
 
+	clientInfo, _ := url.GetAttribute(constant.ClientInfoKey)
 	dir := &directory{
 		Directory:        base.NewDirectory(url),
 		invokers:         invokers,
@@ -62,6 +58,8 @@ func NewDirectory(invokers []protocol.Invoker) *directory {
 		serviceNames:     serviceNames,
 		protocolName:     protocolName,
 		pilotAgent:       pilotAgent,
+		protocol:         extension.GetProtocol(protocolName),
+		clientInfo:       clientInfo,
 	}
 	for _, serviceName := range serviceNames {
 		pilotAgent.SubscribeRds(serviceName, "rdsDirectory", dir.OnRdsChangeListener)
@@ -71,6 +69,7 @@ func NewDirectory(invokers []protocol.Invoker) *directory {
 }
 
 func (dir *directory) OnRdsChangeListener(serviceName string, xdsVirtualHost resources.XdsVirtualHost) error {
+	logger.Infof("[Xds directory] OnRdsChangeListener recv serviceName:%s, xdsVirtualHost:%+v", serviceName, xdsVirtualHost)
 	// Get old clusters
 	oldClusters := dir.getAllClusters()
 	// Update xdsVirtualHostMap
@@ -119,12 +118,12 @@ func (dir *directory) changeClusterSubscribe(oldCluster, newCluster []string) {
 
 	// Add subscription for new clusters
 	for _, cluster := range addSubscribe {
-		dir.pilotAgent.SubscribeCds(cluster, "rdsDirectory", dir.OnEdsChangeListener)
+		dir.pilotAgent.SubscribeCds(cluster, "rdsdirectory", dir.OnEdsChangeListener)
 	}
 }
 
 func (dir *directory) OnEdsChangeListener(clusterName string, xdsCluster resources.XdsCluster, xdsClusterEndpoint resources.XdsClusterEndpoint) error {
-
+	logger.Infof("[Xds directory] OnEdsChangeListener recv clusterName:%s, xdsCluster:%+v, xdsCluserEndpoint:%+v", clusterName, xdsCluster, xdsClusterEndpoint)
 	mutualTLSMode := xdsCluster.TlsMode.GetMutualTLSMode()
 	reqMutualTLSMode := resources.MTLSDisable
 	if mutualTLSMode == resources.MTLSStrict || mutualTLSMode == resources.MTLSPermissive {
@@ -166,6 +165,7 @@ func (dir *directory) OnEdsChangeListener(clusterName string, xdsCluster resourc
 			common.WithParamsValue(constant.TLSSubjectAltNamesMatchKey, xdsCluster.TransportSocket.SubjectAltNamesMatch),
 			common.WithParamsValue(constant.TLSSubjectAltNamesValueKey, xdsCluster.TransportSocket.SubjectAltNamesValue),
 		)
+		url.SetAttribute(constant.ClientInfoKey, dir.clientInfo)
 		// Refer to the protocol to create an invoker
 		invoker := dir.protocol.Refer(url)
 		invokers = append(invokers, invoker)
@@ -174,6 +174,7 @@ func (dir *directory) OnEdsChangeListener(clusterName string, xdsCluster resourc
 	xdsCluster.Invokers = invokers
 	// Update xdsClusterMap
 	dir.xdsClusterMap.Store(clusterName, xdsCluster)
+	dir.invokers = invokers
 	return nil
 }
 

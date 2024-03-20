@@ -18,6 +18,7 @@
 package client
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/cluster/directory/istio"
 	"fmt"
 	"net/url"
 	"os"
@@ -83,6 +84,7 @@ func updateOrCreateXdsURL(opts *ReferenceOptions, url *common.URL) {
 		}
 	}
 	providedBy := fmt.Sprintf("%s:%s", providedByHost, providedByPort)
+	url.SetParam(constant.ProvidedBy, providedBy)
 	logger.Infof("[xds client] URL provideby is : %s", providedBy)
 	ref.ProvidedBy = providedBy
 	ref.URL = "tri://" + ref.ProvidedBy
@@ -262,7 +264,13 @@ func buildInvoker(urls []*common.URL, ref *global.ReferenceConfig) (protocol.Inv
 		regURL  *common.URL
 	)
 	invokers := make([]protocol.Invoker, len(urls))
+
+	isXdsDirectory := false
+
 	for i, u := range urls {
+		if u.GetParamBool(constant.XdsKey, false) {
+			isXdsDirectory = true
+		}
 		if u.Protocol == constant.ServiceRegistryProtocol {
 			invoker = extension.GetProtocol(constant.RegistryProtocol).Refer(u)
 		} else {
@@ -292,7 +300,11 @@ func buildInvoker(urls []*common.URL, ref *global.ReferenceConfig) (protocol.Inv
 			if err != nil {
 				return nil, err
 			}
-			resInvoker = cluster.Join(static.NewDirectory(invokers))
+			if isXdsDirectory {
+				resInvoker = cluster.Join(istio.NewDirectory(invokers))
+			} else {
+				resInvoker = cluster.Join(static.NewDirectory(invokers))
+			}
 		}
 		return resInvoker, nil
 	}
@@ -312,8 +324,11 @@ func buildInvoker(urls []*common.URL, ref *global.ReferenceConfig) (protocol.Inv
 	if err != nil {
 		return nil, err
 	}
-	resInvoker = cluster.Join(static.NewDirectory(invokers))
-
+	if isXdsDirectory {
+		resInvoker = cluster.Join(istio.NewDirectory(invokers))
+	} else {
+		resInvoker = cluster.Join(static.NewDirectory(invokers))
+	}
 	return resInvoker, nil
 }
 

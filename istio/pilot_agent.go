@@ -47,7 +47,8 @@ type PilotAgent struct {
 	stopChan         chan struct{}
 	updateChan       chan resources.XdsUpdateEvent
 
-	listenerMutex sync.RWMutex
+	listenerMutex    sync.RWMutex
+	listenerCDSMutex sync.RWMutex
 	// serviceName -> listenerName, listener
 	OnRdsChangeListeners map[string]map[string]OnRdsChangeListener
 	OnCdsChangeListeners map[string]map[string]OnEdsChangeListener
@@ -251,49 +252,49 @@ func (p *PilotAgent) GetSecretCache() *resources.SecretCache {
 }
 
 func (p *PilotAgent) callEdsChange(clusterName string) {
+	logger.Infof("[Pilot Agent] callEdsChange clusterName:%s", clusterName)
 	p.listenerMutex.RLock()
 	defer p.listenerMutex.RUnlock()
-	xdsCluster, ok1 := p.envoyClusterMap.Load(clusterName)
-	xdsClusterEndpoint, ok2 := p.envoyClusterEndpointMap.Load(clusterName)
-
 	if listeners, ok := p.OnCdsChangeListeners[clusterName]; ok {
+		xdsCluster, ok1 := p.envoyClusterMap.Load(clusterName)
+		xdsClusterEndpoint, ok2 := p.envoyClusterEndpointMap.Load(clusterName)
 		for listenerName, listener := range listeners {
 			if ok1 && ok2 {
 				logger.Infof("[Pilot Agent] callEdsChange clusterName %s listener %s with cluster = %s and  eds = %s", clusterName, listenerName, utils.ConvertJsonString(xdsCluster.(resources.XdsCluster)), utils.ConvertJsonString(xdsClusterEndpoint.(resources.XdsClusterEndpoint)))
-				listener(clusterName, xdsCluster.(resources.XdsCluster), xdsClusterEndpoint.(resources.XdsClusterEndpoint))
+				go listener(clusterName, xdsCluster.(resources.XdsCluster), xdsClusterEndpoint.(resources.XdsClusterEndpoint))
 			}
 		}
 	}
 }
 
 func (p *PilotAgent) callRdsChange(serviceName string, xdsVirtualHost resources.XdsVirtualHost) {
+	logger.Infof("[Pilot Agent] callEdsChange serivceName:%s", serviceName)
 	p.listenerMutex.RLock()
 	defer p.listenerMutex.RUnlock()
 	if listeners, ok := p.OnRdsChangeListeners[serviceName]; ok {
 		for listenerName, listener := range listeners {
 			logger.Infof("[Pilot Agent] callRdsChange serviceName %s istener %s with rds = %s", serviceName, listenerName, utils.ConvertJsonString(xdsVirtualHost))
-			listener(serviceName, xdsVirtualHost)
+			go listener(serviceName, xdsVirtualHost)
 		}
 	}
 }
 
 func (p *PilotAgent) SubscribeRds(serviceName, listenerName string, listener OnRdsChangeListener) {
-	func() {
-		p.listenerMutex.Lock()
-		defer p.listenerMutex.Unlock()
+	logger.Infof("[Pilot Agent] recv SubscribeRds serviceName:%s, listenerName:%s", serviceName, listenerName)
+	p.listenerMutex.Lock()
+	defer p.listenerMutex.Unlock()
 
-		if p.OnRdsChangeListeners == nil {
-			p.OnRdsChangeListeners = make(map[string]map[string]OnRdsChangeListener)
-		}
-		if p.OnRdsChangeListeners[serviceName] == nil {
-			p.OnRdsChangeListeners[serviceName] = make(map[string]OnRdsChangeListener)
-		}
-		p.OnRdsChangeListeners[serviceName][listenerName] = listener
-	}()
+	if p.OnRdsChangeListeners == nil {
+		p.OnRdsChangeListeners = make(map[string]map[string]OnRdsChangeListener)
+	}
+	if p.OnRdsChangeListeners[serviceName] == nil {
+		p.OnRdsChangeListeners[serviceName] = make(map[string]OnRdsChangeListener)
+	}
+	p.OnRdsChangeListeners[serviceName][listenerName] = listener
 
 	if xdsVirtualHost, ok := p.envoyVirtualHostMap.Load(serviceName); ok {
 		logger.Infof("[Pilot Agent] callRdsChange serviceName, listener %s with rds = %s", serviceName, listenerName, utils.ConvertJsonString(xdsVirtualHost.(resources.XdsVirtualHost)))
-		listener(serviceName, xdsVirtualHost.(resources.XdsVirtualHost))
+		go listener(serviceName, xdsVirtualHost.(resources.XdsVirtualHost))
 	}
 }
 
@@ -310,30 +311,28 @@ func (p *PilotAgent) UnsubscribeRds(serviceName, listenerName string) {
 }
 
 func (p *PilotAgent) SubscribeCds(clusterName, listenerName string, listener OnEdsChangeListener) {
-	func() {
-		p.listenerMutex.Lock()
-		defer p.listenerMutex.Unlock()
-
-		if p.OnCdsChangeListeners == nil {
-			p.OnCdsChangeListeners = make(map[string]map[string]OnEdsChangeListener)
-		}
-		if p.OnCdsChangeListeners[clusterName] == nil {
-			p.OnCdsChangeListeners[clusterName] = make(map[string]OnEdsChangeListener)
-		}
-		p.OnCdsChangeListeners[clusterName][listenerName] = listener
-	}()
+	logger.Infof("[Pilot Agent] recv SubscribeCds clusterName:%s, listenerName:%s", clusterName, listenerName)
+	p.listenerCDSMutex.Lock()
+	defer p.listenerCDSMutex.Unlock()
+	if p.OnCdsChangeListeners == nil {
+		p.OnCdsChangeListeners = make(map[string]map[string]OnEdsChangeListener)
+	}
+	if p.OnCdsChangeListeners[clusterName] == nil {
+		p.OnCdsChangeListeners[clusterName] = make(map[string]OnEdsChangeListener)
+	}
+	p.OnCdsChangeListeners[clusterName][listenerName] = listener
 
 	xdsCluster, ok1 := p.envoyClusterMap.Load(clusterName)
 	xdsClusterEndpoint, ok2 := p.envoyClusterEndpointMap.Load(clusterName)
 	if ok1 && ok2 {
 		logger.Infof("[Pilot Agent] callEdsChange clusterName %s listener %s with cluster = %s and  eds = %s", clusterName, listenerName, utils.ConvertJsonString(xdsCluster.(resources.XdsCluster)), utils.ConvertJsonString(xdsClusterEndpoint.(resources.XdsClusterEndpoint)))
-		listener(clusterName, xdsCluster.(resources.XdsCluster), xdsClusterEndpoint.(resources.XdsClusterEndpoint))
+		go listener(clusterName, xdsCluster.(resources.XdsCluster), xdsClusterEndpoint.(resources.XdsClusterEndpoint))
 	}
 }
 
 func (p *PilotAgent) UnsubscribeCds(clusterName, listenerName string) {
-	p.listenerMutex.Lock()
-	defer p.listenerMutex.Unlock()
+	p.listenerCDSMutex.Lock()
+	defer p.listenerCDSMutex.Unlock()
 
 	if listeners, ok := p.OnCdsChangeListeners[clusterName]; ok {
 		delete(listeners, listenerName)
