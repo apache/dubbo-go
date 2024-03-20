@@ -108,7 +108,7 @@ func (l *Logger) Debug(args ...interface{}) {
 }
 
 func (l *Logger) Debugf(template string, args ...interface{}) {
-	l.lg.Debugf(template, args)
+	l.lg.Debugf(template, args...)
 }
 
 func (l *Logger) Info(args ...interface{}) {
@@ -116,7 +116,7 @@ func (l *Logger) Info(args ...interface{}) {
 }
 
 func (l *Logger) Infof(template string, args ...interface{}) {
-	l.lg.Infof(template, args)
+	l.lg.Infof(template, args...)
 }
 
 func (l *Logger) Warn(args ...interface{}) {
@@ -124,7 +124,7 @@ func (l *Logger) Warn(args ...interface{}) {
 }
 
 func (l *Logger) Warnf(template string, args ...interface{}) {
-	l.lg.Warnf(template, args)
+	l.lg.Warnf(template, args...)
 }
 
 func (l *Logger) Error(args ...interface{}) {
@@ -132,7 +132,7 @@ func (l *Logger) Error(args ...interface{}) {
 }
 
 func (l *Logger) Errorf(template string, args ...interface{}) {
-	l.lg.Errorf(template, args)
+	l.lg.Errorf(template, args...)
 }
 
 func (l *Logger) Fatal(args ...interface{}) {
@@ -140,7 +140,7 @@ func (l *Logger) Fatal(args ...interface{}) {
 }
 
 func (l *Logger) Fatalf(fmt string, args ...interface{}) {
-	l.lg.Fatalf(fmt, args)
+	l.lg.Fatalf(fmt, args...)
 }
 
 func encoderConfig() zapcore.EncoderConfig {
