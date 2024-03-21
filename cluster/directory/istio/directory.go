@@ -5,6 +5,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/istio"
 	"dubbo.apache.org/dubbo-go/v3/istio/resources"
+	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
 	"github.com/dubbogo/gost/log/logger"
 	perrors "github.com/pkg/errors"
 	"strconv"
@@ -137,9 +138,12 @@ func (dir *directory) OnEdsChangeListener(clusterName string, xdsCluster resourc
 
 	// Iterate through xdsEndpoints
 	for _, e := range xdsEndpoints {
+		//ip := "127.0.0.1"
+		//fmt.Sprintf("ip address:%s", e.Address)
 		ip := e.Address
 
 		// determine the request which is https or http
+		//httpPort := 20000
 		httpPort := e.Port
 		httpsPort := httpPort + 1
 		port := httpPort
@@ -148,33 +152,37 @@ func (dir *directory) OnEdsChangeListener(clusterName string, xdsCluster resourc
 		}
 
 		// Construct URL for invoker
+
 		url := common.NewURLWithOptions(
 			common.WithProtocol(dir.protocolName),
 			common.WithIp(ip),
 			common.WithPort(strconv.Itoa(int(port))),
 			common.WithPath(baseUrl.Path),
-			common.WithParamsValue(constant.InterfaceKey, dir.serviceInterface),
-			// load balance here
-			//common.WithParamsValue(constant.LoadbalanceKey, ""),
-			// set xds and MutualTLSMode
-			common.WithParamsValue(constant.XdsKey, "true"),
-			common.WithParamsValue(constant.MutualTLSModeKey, resources.MutualTLSModeToString(reqMutualTLSMode)),
-			common.WithParamsValue(constant.ClusterIDKey, xdsCluster.Name),
-			//set tls provider and  client spiffe match and value
-			common.WithParamsValue(constant.TLSProvider, "xds-provider"),
-			common.WithParamsValue(constant.TLSSubjectAltNamesMatchKey, xdsCluster.TransportSocket.SubjectAltNamesMatch),
-			common.WithParamsValue(constant.TLSSubjectAltNamesValueKey, xdsCluster.TransportSocket.SubjectAltNamesValue),
 		)
-		url.SetAttribute(constant.ClientInfoKey, dir.clientInfo)
+
+		newUrl := url.MergeURL(dir.GetURL())
+
+		newUrl.SetParam(constant.XdsKey, "true")
+		newUrl.SetParam(constant.MutualTLSModeKey, resources.MutualTLSModeToString(reqMutualTLSMode))
+		newUrl.SetParam(constant.ClusterIDKey, xdsCluster.Name)
+		newUrl.SetParam(constant.TLSProvider, "xds-provider")
+		newUrl.SetParam(constant.TLSSubjectAltNamesMatchKey, xdsCluster.TransportSocket.SubjectAltNamesMatch)
+		newUrl.SetParam(constant.TLSSubjectAltNamesValueKey, xdsCluster.TransportSocket.SubjectAltNamesValue)
+
+		newUrl.SetAttribute(constant.ClientInfoKey, dir.clientInfo)
 		// Refer to the protocol to create an invoker
-		invoker := dir.protocol.Refer(url)
+		invoker := dir.protocol.Refer(newUrl)
+		// rebuild invoker chain again
+		invoker = protocolwrapper.BuildInvokerChain(invoker, constant.ReferenceFilterKey)
 		invokers = append(invokers, invoker)
 	}
 	// Set invokers for xdsCluster
 	xdsCluster.Invokers = invokers
 	// Update xdsClusterMap
 	dir.xdsClusterMap.Store(clusterName, xdsCluster)
-	dir.invokers = invokers
+	//dir.invokers = invokers
+	// just for test only here
+	dir.RouterChain().SetInvokers(invokers)
 	return nil
 }
 

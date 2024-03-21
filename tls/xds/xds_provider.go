@@ -46,6 +46,7 @@ func (x *XdsTLSProvider) GetServerWorkLoadTLSConfig(url *common.URL) (*tls.Confi
 		},
 		MinVersion:               tls.VersionTLS12,
 		CipherSuites:             tlsprovider.PreferredDefaultCipherSuites(),
+		NextProtos:               []string{"h2", "http/1.1"},
 		PreferServerCipherSuites: true,
 	}
 
@@ -110,7 +111,7 @@ func (x *XdsTLSProvider) GetClientWorkLoadTLSConfig(url *common.URL) (*tls.Confi
 
 	cfg := &tls.Config{
 		GetCertificate:     x.GetWorkloadCertificate,
-		InsecureSkipVerify: false,
+		InsecureSkipVerify: true,
 		RootCAs:            x.GetCACertPool(),
 		VerifyPeerCertificate: func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
 			certVerifyMap := verifyMap
@@ -122,6 +123,7 @@ func (x *XdsTLSProvider) GetClientWorkLoadTLSConfig(url *common.URL) (*tls.Confi
 		},
 		MinVersion:               tls.VersionTLS12,
 		CipherSuites:             tlsprovider.PreferredDefaultCipherSuites(),
+		NextProtos:               []string{"h2", "http/1.1"},
 		PreferServerCipherSuites: true,
 	}
 
@@ -130,7 +132,7 @@ func (x *XdsTLSProvider) GetClientWorkLoadTLSConfig(url *common.URL) (*tls.Confi
 }
 
 func (x *XdsTLSProvider) VerifyPeerCertByClient(rawCerts [][]byte, verifiedChains [][]*x509.Certificate, certVerifyMap map[string]string) error {
-	logger.Infof("[xds tls] client verifiy peer cert")
+	logger.Infof("[xds tls] client verifiy peer cert by certVerifyMap:%v", certVerifyMap)
 	if len(rawCerts) == 0 {
 		// Peer doesn't present a certificate. Just skip. Other authn methods may be used.
 		return nil
@@ -197,6 +199,7 @@ func (x *XdsTLSProvider) GetCACertPool() *x509.CertPool {
 }
 
 func (x *XdsTLSProvider) matchSpiffeUrl(spiffe string, match string, value string) bool {
+	logger.Infof("[xds tls] matchSpiffeUrl: %s with match %s and value %s", spiffe, match, value)
 	return resources.MatchSpiffe(spiffe, match, value)
 }
 

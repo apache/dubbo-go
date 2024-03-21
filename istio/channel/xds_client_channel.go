@@ -180,7 +180,7 @@ func (xds *XdsClientChannel) reconnect() error {
 	select {
 	case <-time.After(1 * time.Second):
 		logger.Infof("delay 1 seconds to reconnect sds server")
-
+		break
 	}
 
 	newConn, err := grpc.Dial(

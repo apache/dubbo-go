@@ -160,6 +160,7 @@ func (sds *SdsClientChannel) reconnect() error {
 	select {
 	case <-time.After(1 * time.Second):
 		logger.Infof("[sds channel] dealy 1 seconds to reconnect sds server")
+		break
 	}
 
 	newConn, err := grpc.Dial(
