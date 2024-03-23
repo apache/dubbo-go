@@ -1,8 +1,9 @@
 package channel
 
 import (
-	"github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"sync"
+
+	"github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 )
 
 type ResponseInfo struct {

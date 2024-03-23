@@ -18,13 +18,14 @@
 package client
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/cluster/directory/istio"
 	"fmt"
 	"net/url"
 	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	"dubbo.apache.org/dubbo-go/v3/cluster/directory/istio"
 )
 
 import (

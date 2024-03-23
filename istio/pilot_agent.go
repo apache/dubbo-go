@@ -1,17 +1,18 @@
 package istio
 
 import (
+	"fmt"
+	"sync"
+	"sync/atomic"
+	"time"
+
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/istio/bootstrap"
 	"dubbo.apache.org/dubbo-go/v3/istio/channel"
 	"dubbo.apache.org/dubbo-go/v3/istio/protocol"
 	"dubbo.apache.org/dubbo-go/v3/istio/resources"
 	"dubbo.apache.org/dubbo-go/v3/istio/utils"
-	"fmt"
 	"github.com/dubbogo/gost/log/logger"
-	"sync"
-	"sync/atomic"
-	"time"
 )
 
 var (

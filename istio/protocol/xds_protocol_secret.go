@@ -1,11 +1,12 @@
 package protocol
 
 import (
+	"time"
+
 	"dubbo.apache.org/dubbo-go/v3/istio/resources"
 	"dubbo.apache.org/dubbo-go/v3/istio/utils"
 	"github.com/dubbogo/gost/log/logger"
 	tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
-	"time"
 )
 
 type SecretProtocol struct {

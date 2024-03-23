@@ -1,13 +1,14 @@
 package protocol
 
 import (
+	"sync"
+
 	"dubbo.apache.org/dubbo-go/v3/istio/channel"
 	"dubbo.apache.org/dubbo-go/v3/istio/resources"
 	"github.com/dubbogo/gost/log/logger"
 	route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	v3discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	"github.com/golang/protobuf/ptypes"
-	"sync"
 )
 
 type RdsProtocol struct {

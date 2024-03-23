@@ -1,11 +1,11 @@
 package protocol
 
 import (
-	"github.com/golang/protobuf/ptypes/wrappers"
 	"testing"
 
 	"dubbo.apache.org/dubbo-go/v3/istio/resources"
 	route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/stretchr/testify/assert"
 )
 

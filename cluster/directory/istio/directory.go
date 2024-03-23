@@ -1,6 +1,10 @@
 package istio
 
 import (
+	"strconv"
+	"strings"
+	"sync"
+
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/istio"
@@ -8,9 +12,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
 	"github.com/dubbogo/gost/log/logger"
 	perrors "github.com/pkg/errors"
-	"strconv"
-	"strings"
-	"sync"
 )
 
 import (

@@ -1,6 +1,8 @@
 package protocol
 
 import (
+	"sync"
+
 	"dubbo.apache.org/dubbo-go/v3/istio/channel"
 	"dubbo.apache.org/dubbo-go/v3/istio/resources"
 	"dubbo.apache.org/dubbo-go/v3/istio/utils"
@@ -11,7 +13,6 @@ import (
 	sockets_tls_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	v3discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	"github.com/golang/protobuf/ptypes"
-	"sync"
 )
 
 type LdsProtocol struct {

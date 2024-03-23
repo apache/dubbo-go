@@ -1,10 +1,10 @@
 package protocol
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/istio/utils"
-	"github.com/dubbogo/gost/log/logger"
 	"sync"
 
+	"dubbo.apache.org/dubbo-go/v3/istio/utils"
+	"github.com/dubbogo/gost/log/logger"
 	envoy_admin_v3 "github.com/envoyproxy/go-control-plane/envoy/admin/v3"
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"

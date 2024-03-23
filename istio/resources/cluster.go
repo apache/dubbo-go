@@ -1,8 +1,9 @@
 package resources
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"strings"
+
+	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
 // MutualTLSMode is the mutual TLS mode specified by authentication policy.

@@ -1,13 +1,13 @@
 package bootstrap
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/istio/utils"
 	"encoding/json"
 	"fmt"
 	"os"
 	"sync"
 	"time"
 
+	"dubbo.apache.org/dubbo-go/v3/istio/utils"
 	"github.com/dubbogo/gost/log/logger"
 	v3corepb "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"github.com/golang/protobuf/jsonpb"
