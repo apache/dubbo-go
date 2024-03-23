@@ -95,6 +95,9 @@ func ConvertResponseToString(discoveryResponse *v3.DiscoveryResponse) string {
 }
 
 func ConvertJsonString(data interface{}) string {
+	//if bytes, err := json.Marshal(data); err == nil {
+	//	return string(bytes)
+	//}
 	if bytes, err := json.MarshalIndent(data, "", "  "); err == nil {
 		return string(bytes)
 	}

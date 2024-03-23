@@ -165,7 +165,10 @@ func (dir *directory) OnEdsChangeListener(clusterName string, xdsCluster resourc
 		newUrl.SetParam(constant.XdsKey, "true")
 		newUrl.SetParam(constant.MutualTLSModeKey, resources.MutualTLSModeToString(reqMutualTLSMode))
 		newUrl.SetParam(constant.ClusterIDKey, xdsCluster.Name)
-		newUrl.SetParam(constant.TLSProvider, "xds-provider")
+		if reqMutualTLSMode == resources.MTLSStrict {
+			// tls transport
+			newUrl.SetParam(constant.TLSProvider, "xds-provider")
+		}
 		newUrl.SetParam(constant.TLSSubjectAltNamesMatchKey, xdsCluster.TransportSocket.SubjectAltNamesMatch)
 		newUrl.SetParam(constant.TLSSubjectAltNamesValueKey, xdsCluster.TransportSocket.SubjectAltNamesValue)
 

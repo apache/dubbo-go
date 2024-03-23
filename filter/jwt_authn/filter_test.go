@@ -33,7 +33,7 @@ import (
 )
 
 func TestFilterInvoke(t *testing.T) {
-	filter := &jwtFilter{}
+	filter := &jwtAuthnFilter{}
 	result := filter.Invoke(context.Background(), protocol.NewBaseInvoker(&common.URL{}), invocation.NewRPCInvocation("$echo", []interface{}{"OK"}, nil))
 	assert.Equal(t, "OK", result.Result())
 

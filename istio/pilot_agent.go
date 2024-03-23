@@ -176,6 +176,7 @@ func (p *PilotAgent) initAndWait(agentType PilotAgentType) error {
 			}
 
 		case <-time.After(pilotAgentWaitTimeout):
+			logger.Errorf("pilot agent init and wait timeout %f seconds", pilotAgentWaitTimeout.Seconds())
 			return fmt.Errorf("pilot agent init and wait timeout %f seconds", pilotAgentWaitTimeout.Seconds())
 		}
 	}
@@ -354,6 +355,16 @@ func (p *PilotAgent) GetHostInboundListener() *resources.XdsHostInboundListener 
 		}
 	}
 	return nil
+}
+
+func (p *PilotAgent) GetHostInboundMutualTLSMode() resources.MutualTLSMode {
+	value := p.xdsHostInboundListenerAtomic.Load()
+	if value != nil {
+		if xdsHostInboundListener, ok := value.(*resources.XdsHostInboundListener); ok {
+			return xdsHostInboundListener.MutualTLSMode
+		}
+	}
+	return resources.MTLSUnknown
 }
 
 func (p *PilotAgent) Stop() {

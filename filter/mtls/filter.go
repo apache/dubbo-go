@@ -22,6 +22,9 @@ package echo
 
 import (
 	"context"
+	"dubbo.apache.org/dubbo-go/v3/istio"
+	"dubbo.apache.org/dubbo-go/v3/istio/resources"
+	"fmt"
 	"github.com/dubbogo/gost/log/logger"
 	"sync"
 )
@@ -42,12 +45,22 @@ func init() {
 	extension.SetFilter(constant.MtlsFilterKey, newMtlsFilter)
 }
 
-type mtlsFilter struct{}
+type mtlsFilter struct {
+	pilotAgent    *istio.PilotAgent
+	mutualTLSMode resources.MutualTLSMode
+}
 
 func newMtlsFilter() filter.Filter {
 	if mtls == nil {
 		once.Do(func() {
-			mtls = &mtlsFilter{}
+			pilotAgent, err := istio.GetPilotAgent(istio.PilotAgentTypeServerWorkload)
+			if err != nil {
+				logger.Errorf("[mtls filter] can not get pilot agent")
+			}
+			mtls = &mtlsFilter{
+				pilotAgent:    pilotAgent,
+				mutualTLSMode: resources.MTLSUnknown,
+			}
 		})
 	}
 	return mtls
@@ -55,7 +68,42 @@ func newMtlsFilter() filter.Filter {
 
 // Invoke response to the callers with its first argument.
 func (f *mtlsFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
-	if invocation.MethodName() == constant.Echo && len(invocation.Arguments()) == 1 {
+	// can not get if the current request is HTTPS or HTTP.
+	// get request schema
+
+	for key, attachment := range invocation.Attachments() {
+		logger.Infof("get invocation attachment key %s = %+v", key, attachment)
+	}
+
+	attachments := ctx.Value(constant.AttachmentKey).(map[string]interface{})
+	for key, attachment := range attachments {
+		logger.Infof("get triple attachment key %s = %s", key, attachment.([]string)[0])
+	}
+
+	logger.Infof("get url %s", invoker.GetURL().String())
+	logger.Infof("get path %s", fmt.Sprintf("%s/%s", invoker.GetURL().Path, invocation.MethodName()))
+	// get newest mutualTLSMode
+	mutualTLSMode := resources.MTLSUnknown
+	reqOK := true
+	reqMsg := ""
+	if f.pilotAgent == nil {
+		reqOK = false
+		reqMsg = "pilot agent is not ready"
+	} else {
+		mutualTLSMode = f.pilotAgent.GetHostInboundMutualTLSMode()
+	}
+
+	f.mutualTLSMode = mutualTLSMode
+
+	switch mutualTLSMode {
+	case resources.MTLSUnknown:
+	case resources.MTLSPermissive:
+	case resources.MTLSStrict:
+	case resources.MTLSDisable:
+	default:
+	}
+	logger.Infof("get mutualTLSMode: %d ,reqOk:%t, reqMsg:%s", mutualTLSMode, reqOK, reqMsg)
+	if !reqOK {
 		return &protocol.RPCResult{
 			Rest:  invocation.Arguments()[0],
 			Attrs: invocation.Attachments(),
@@ -67,8 +115,8 @@ func (f *mtlsFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invoc
 }
 
 // OnResponse dummy process, returns the result directly
-func (f *mtlsFilter) OnResponse(_ context.Context, result protocol.Result, _ protocol.Invoker,
-	_ protocol.Invocation) protocol.Result {
-
+func (f *mtlsFilter) OnResponse(ctx context.Context, result protocol.Result, _ protocol.Invoker,
+	invocation protocol.Invocation) protocol.Result {
+	invocation.SetAttachment("mutual-tls-mode", []string{resources.MutualTLSModeToString(f.mutualTLSMode)})
 	return result
 }

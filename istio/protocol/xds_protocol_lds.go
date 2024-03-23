@@ -6,6 +6,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/istio/utils"
 	"github.com/dubbogo/gost/log/logger"
 	listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	jwtauthnv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/jwt_authn/v3"
 	http_connection_manager_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	sockets_tls_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	v3discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
@@ -82,7 +83,7 @@ func (lds *LdsProtocol) ProcessProtocol(resp *v3discovery.DiscoveryResponse, xds
 }
 
 func (lds *LdsProtocol) parseListener(listener *listener.Listener) (resources.XdsListener, error) {
-
+	logger.Infof("parse listner:%s", utils.ConvertJsonString(listener))
 	envoyListener := resources.XdsListener{
 		//FilterChains:     make([]resources.XdsFilterChain, 0),
 		RdsResourceNames: make([]string, 0),
@@ -102,6 +103,7 @@ func (lds *LdsProtocol) parseListener(listener *listener.Listener) (resources.Xd
 			}
 		}
 	}
+
 	envoyListener.IsVirtualInbound = isVirtualInbound
 	envoyListener.TrafficDirection = listener.GetTrafficDirection().String()
 
@@ -109,12 +111,17 @@ func (lds *LdsProtocol) parseListener(listener *listener.Listener) (resources.Xd
 
 		envoyFilterChain := resources.XdsFilterChain{}
 		envoyFilterChain.Name = filterChain.Name
-		// is inboud filterChain?
+		// find inboud filterChain
 		foundInboundFilterChain := false
+		// find catch all filterchain
+		foundInboundFilterChainCatchAll := false
 		foundInboundDownstreamTransportSocket := false
 
 		if filterChain.Name == "virtualInbound" {
 			foundInboundFilterChain = true
+		}
+		if filterChain.Name == "virtualInbound-catchall-http" {
+			foundInboundFilterChainCatchAll = true
 		}
 		// get transport
 		envoyFilterChainMatch := resources.XdsFilterChainMatch{}
@@ -190,6 +197,30 @@ func (lds *LdsProtocol) parseListener(listener *listener.Listener) (resources.Xd
 					envoyListener.HasRds = true
 					envoyListener.RdsResourceNames = append(envoyListener.RdsResourceNames, httpConnectionManager.GetRds().RouteConfigName)
 				}
+
+				for _, httpFilter := range httpConnectionManager.HttpFilters {
+					if httpFilter.GetTypedConfig().GetTypeUrl() == "type.googleapis.com/envoy.extensions.filters.http.jwt_authn.v3.JwtAuthentication" && foundInboundFilterChainCatchAll {
+						// parse jwt authn here
+						jwtAuthentication := &jwtauthnv3.JwtAuthentication{}
+						if err := httpFilter.GetTypedConfig().UnmarshalTo(jwtAuthentication); err != nil {
+							logger.Errorf("can not parse to Http JwtAuthnFilter")
+							continue
+						}
+						jwtAuthnFilter, err := lds.parseJwtAuthnFilter(httpFilter.Name, jwtAuthentication)
+						if err != nil {
+							logger.Errorf("can not convert to JwtAuthnFilter ")
+							continue
+						}
+						envoyListener.JwtAuthnFilter = jwtAuthnFilter
+					}
+
+					if httpFilter.GetTypedConfig().GetTypeUrl() == "type.googleapis.com/istio.envoy.config.filter.http.authn.v2alpha1.FilterConfig" && foundInboundFilterChainCatchAll {
+						// parse istio authn here
+					}
+
+					// parse rbac filter here
+
+				}
 			}
 			envoyFilterChain.Filters = append(envoyFilterChain.Filters, envoyFilter)
 		}
@@ -202,4 +233,137 @@ func (lds *LdsProtocol) parseListener(listener *listener.Listener) (resources.Xd
 	}
 
 	return envoyListener, nil
+}
+
+func (lds *LdsProtocol) parseJwtAuthnFilter(name string, envoyAuthentication *jwtauthnv3.JwtAuthentication) (*resources.JwtAuthnFilter, error) {
+	jwtAuthnFilter := &resources.JwtAuthnFilter{
+		Name: name,
+	}
+	jwtAuthentication := &resources.JwtAuthentication{
+		Providers: make(map[string]*resources.JwtProvider),
+		Rules:     make([]*resources.JwtRequirementRule, 0),
+	}
+
+	// parse providers
+	for providerName, envoyProvider := range envoyAuthentication.Providers {
+		jwtProvider := &resources.JwtProvider{
+			ProviderName:         providerName,
+			Issuer:               envoyProvider.Issuer,
+			Audiences:            envoyProvider.Audiences,
+			Forward:              envoyProvider.Forward,
+			ForwardPayloadHeader: envoyProvider.ForwardPayloadHeader,
+		}
+		// parse from_headers
+		if len(envoyProvider.FromHeaders) > 0 {
+			jwtProvider.FromHeaders = make([]resources.JwtHeader, len(envoyProvider.FromHeaders))
+			for i, header := range envoyProvider.FromHeaders {
+				jwtProvider.FromHeaders[i] = resources.JwtHeader{
+					Name:        header.Name,
+					ValuePrefix: header.ValuePrefix,
+				}
+			}
+		} else {
+			// Add default from header
+			jwtProvider.FromHeaders[0] = resources.JwtHeader{
+				Name:        "Authorization",
+				ValuePrefix: "Bearer ",
+			}
+		}
+		// parse localjwks
+		if localJwks := envoyProvider.GetLocalJwks(); localJwks != nil {
+			// only get from linlineString or inlinebytes
+			inLineString := ""
+			if len(localJwks.GetInlineString()) > 0 {
+				inLineString = localJwks.GetInlineString()
+			}
+			if localJwks.GetInlineBytes() != nil {
+				inLineString = string(localJwks.GetInlineBytes())
+			}
+			jwkSet, err := resources.UnmarshalJwks(inLineString)
+			if err != nil {
+				return nil, err
+			}
+			jwtProvider.LocalJwks = &resources.LocalJwks{
+				InlineString: inLineString,
+				Keys:         jwkSet,
+			}
+		}
+		jwtAuthentication.Providers[jwtProvider.ProviderName] = jwtProvider
+	}
+	// parse rules
+	for _, rule := range envoyAuthentication.Rules {
+		jwtRequirementRule := &resources.JwtRequirementRule{}
+		// get routematch
+		routeMatch := &resources.JwtRouteMatch{}
+		if len(rule.GetMatch().GetPrefix()) > 0 {
+			routeMatch.Action = "prefix"
+			routeMatch.Value = rule.GetMatch().GetPrefix()
+		}
+		if len(rule.GetMatch().GetPath()) > 0 {
+			routeMatch.Action = "path"
+			routeMatch.Value = rule.GetMatch().GetPath()
+		}
+		if rule.GetMatch().GetSafeRegex() != nil {
+			routeMatch.Action = "saferegex"
+			routeMatch.Value = rule.GetMatch().GetSafeRegex().GetRegex()
+		}
+		if rule.GetMatch().GetCaseSensitive() != nil {
+			routeMatch.CaseSensitive = rule.GetMatch().GetCaseSensitive().Value
+		}
+		jwtRequirementRule.Match = routeMatch
+		// get requirement
+		if rule.GetRequirementName() != "" {
+			jwtRequirementRule.RequirementName = rule.GetRequirementName()
+		}
+		// parse requires
+		if rule.GetRequires() != nil {
+			jwtRequirement := &resources.SimpleJwtRequirement{}
+			requires := rule.GetRequires()
+			nextNames, m, f := getRequiresProviderNames(requires)
+			jwtRequirement.ProviderNames = nextNames
+			jwtRequirement.AllowMissing = m
+			jwtRequirement.AllowMissingOrFailed = f
+			if requires.GetAllowMissing() != nil {
+				jwtRequirement.AllowMissing = true
+			}
+			if requires.GetAllowMissingOrFailed() != nil {
+				jwtRequirement.AllowMissingOrFailed = true
+			}
+			jwtRequirementRule.Requires = jwtRequirement
+		}
+
+	}
+	return jwtAuthnFilter, nil
+}
+
+func getRequiresProviderNames(requires *jwtauthnv3.JwtRequirement) ([]string, bool, bool) {
+	providerNames := make([]string, 0)
+	AllowMissing := false
+	AllowMissingOrFailed := false
+	if requires.GetProviderName() != "" {
+		providerNames = append(providerNames, requires.GetProviderName())
+	}
+	if requires.GetRequiresAny() != nil {
+		for _, anyRequires := range requires.GetRequiresAny().GetRequirements() {
+			nextNames, m, f := getRequiresProviderNames(anyRequires)
+			providerNames = append(providerNames, nextNames...)
+			AllowMissing = m
+			AllowMissingOrFailed = f
+		}
+	}
+	if requires.GetRequiresAll() != nil {
+		for _, anyRequires := range requires.GetRequiresAll().GetRequirements() {
+			nextNames, m, f := getRequiresProviderNames(anyRequires)
+			providerNames = append(providerNames, nextNames...)
+			AllowMissing = m
+			AllowMissingOrFailed = f
+		}
+	}
+	if requires.GetAllowMissing() != nil {
+		AllowMissing = true
+	}
+	if requires.GetAllowMissingOrFailed() != nil {
+		AllowMissingOrFailed = true
+	}
+	return providerNames, AllowMissing, AllowMissingOrFailed
 }
