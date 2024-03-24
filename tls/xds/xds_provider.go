@@ -27,7 +27,7 @@ func init() {
 }
 
 type XdsTLSProvider struct {
-	pilotAgent *istio.PilotAgent
+	pilotAgent istio.XdsAgent
 }
 
 func (x *XdsTLSProvider) GetServerWorkLoadTLSConfig(url *common.URL) (*tls.Config, error) {
@@ -80,7 +80,7 @@ func (x *XdsTLSProvider) VerifyPeerCertByServer(rawCerts [][]byte, verifiedChain
 	if err != nil {
 		return err
 	}
-	secretCache := x.pilotAgent.GetSecretCache()
+	secretCache := x.pilotAgent.GetWorkloadCertificateProvider()
 	hostInboundListener := x.pilotAgent.GetHostInboundListener()
 	if hostInboundListener == nil {
 		return fmt.Errorf("can not get xds inbound listner info")
@@ -158,7 +158,7 @@ func (x *XdsTLSProvider) VerifyPeerCertByClient(rawCerts [][]byte, verifiedChain
 	if err != nil {
 		return err
 	}
-	secretCache := x.pilotAgent.GetSecretCache()
+	secretCache := x.pilotAgent.GetWorkloadCertificateProvider()
 	spiffeMatch := certVerifyMap["SubjectAltNamesMatch"]
 	spiffeValue := certVerifyMap["SubjectAltNamesValue"]
 	ok := x.matchSpiffeUrl(spiffe, spiffeMatch, spiffeValue)
@@ -178,7 +178,7 @@ func (x *XdsTLSProvider) VerifyPeerCertByClient(rawCerts [][]byte, verifiedChain
 
 func (x *XdsTLSProvider) GetWorkloadCertificate(helloInfo *tls.ClientHelloInfo) (*tls.Certificate, error) {
 	logger.Infof("[xds tls] get workload certificate")
-	secretCache := x.pilotAgent.GetSecretCache()
+	secretCache := x.pilotAgent.GetWorkloadCertificateProvider()
 	tlsCertifcate, err := secretCache.GetWorkloadCertificate(helloInfo)
 	if err != nil {
 		logger.Errorf("[xds tls] get workload certifcate fail: %v", err)
@@ -189,7 +189,7 @@ func (x *XdsTLSProvider) GetWorkloadCertificate(helloInfo *tls.ClientHelloInfo) 
 
 func (x *XdsTLSProvider) GetCACertPool() *x509.CertPool {
 	logger.Infof("[xds tls] get ca cert pool")
-	secretCache := x.pilotAgent.GetSecretCache()
+	secretCache := x.pilotAgent.GetWorkloadCertificateProvider()
 	certPool, err := secretCache.GetCACertPool()
 	if err != nil {
 		logger.Errorf("[xds tls] CA cert pool fail: %v", err)

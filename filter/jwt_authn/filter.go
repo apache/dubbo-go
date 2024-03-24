@@ -46,7 +46,7 @@ func init() {
 }
 
 type jwtAuthnFilter struct {
-	pilotAgent *istio.PilotAgent
+	pilotAgent istio.XdsAgent
 }
 
 func newJwtAuthnFilter() filter.Filter {
@@ -73,13 +73,14 @@ func (f *jwtAuthnFilter) Invoke(ctx context.Context, invoker protocol.Invoker, i
 	if f.pilotAgent.GetHostInboundListener() == nil {
 		return &protocol.RPCResult{Err: fmt.Errorf("can not get HostInboundListener in pilot agent")}
 	}
-	if f.pilotAgent.GetHostInboundListener().JwtAuthnFilter.JwtAuthentication == nil {
+
+	JwtAuthentication := f.pilotAgent.GetHostInboundJwtAuthentication()
+	if JwtAuthentication == nil {
 		// there is no jwt authn filter
 		return invoker.Invoke(ctx, invocation)
 	}
 
 	requestInfo := buildRequestInfoFromCtx(ctx, invoker, invocation)
-	JwtAuthentication := f.pilotAgent.GetHostInboundListener().JwtAuthnFilter.JwtAuthentication
 	providers := JwtAuthentication.Providers
 
 	for _, rule := range JwtAuthentication.Rules {

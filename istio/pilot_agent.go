@@ -1,6 +1,10 @@
 package istio
 
-import "dubbo.apache.org/dubbo-go/v3/istio/resources"
+import (
+	"crypto/tls"
+	"crypto/x509"
+	"dubbo.apache.org/dubbo-go/v3/istio/resources"
+)
 
 type PilotAgentType int32
 
@@ -14,7 +18,7 @@ type OnEdsChangeListener func(clusterName string, xdsCluster resources.XdsCluste
 
 type XdsAgent interface {
 	Run(pilotAgentType PilotAgentType) error
-	GetSecretCache() *resources.SecretCache
+	GetWorkloadCertificateProvider() WorkloadCertificateProvider
 	SubscribeRds(serviceName, listenerName string, listener OnRdsChangeListener)
 	UnsubscribeRds(serviceName, listenerName string)
 	SubscribeCds(clusterName, listenerName string, listener OnEdsChangeListener)
@@ -23,4 +27,9 @@ type XdsAgent interface {
 	GetHostInboundMutualTLSMode() resources.MutualTLSMode
 	GetHostInboundJwtAuthentication() *resources.JwtAuthentication
 	Stop()
+}
+
+type WorkloadCertificateProvider interface {
+	GetWorkloadCertificate(*tls.ClientHelloInfo) (*tls.Certificate, error)
+	GetCACertPool() (*x509.CertPool, error)
 }

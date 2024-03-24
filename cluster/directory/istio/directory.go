@@ -27,7 +27,7 @@ type directory struct {
 	serviceNames      []string
 	protocolName      string
 	protocol          protocol.Protocol
-	pilotAgent        *istio.PilotAgent
+	pilotAgent        istio.XdsAgent
 	xdsVirtualHostMap sync.Map
 	xdsClusterMap     sync.Map
 	serviceInterface  string

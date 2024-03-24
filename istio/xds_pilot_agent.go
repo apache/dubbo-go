@@ -17,7 +17,7 @@ import (
 
 var (
 	EnableDubboMesh bool
-	pilotAgent      *PilotAgent
+	pilotAgent      XdsAgent
 	pilotAgentMutex sync.Once
 	pilotAgentErr   error
 )
@@ -65,7 +65,7 @@ func init() {
 	EnableDubboMesh = true
 }
 
-func GetPilotAgent(agentType PilotAgentType) (*PilotAgent, error) {
+func GetPilotAgent(agentType PilotAgentType) (XdsAgent, error) {
 	if pilotAgent == nil {
 		pilotAgentMutex.Do(func() {
 			pilotAgent, pilotAgentErr = NewPilotAgent(agentType)
@@ -74,7 +74,7 @@ func GetPilotAgent(agentType PilotAgentType) (*PilotAgent, error) {
 	return pilotAgent, pilotAgentErr
 }
 
-func NewPilotAgent(agentType PilotAgentType) (*PilotAgent, error) {
+func NewPilotAgent(agentType PilotAgentType) (XdsAgent, error) {
 	// Get bootstrap info
 	bootstrapInfo, err := bootstrap.GetBootStrapInfo()
 	if err != nil {
@@ -114,7 +114,7 @@ func NewPilotAgent(agentType PilotAgentType) (*PilotAgent, error) {
 	xdsClientChannel.AddListener(edsProtocol.ProcessProtocol, "eds", channel.EndpointType)
 
 	// Init pilot agent
-	pilotAgent := &PilotAgent{
+	agent := &PilotAgent{
 		bootstrapInfo:    bootstrapInfo,
 		sdsClientChannel: sdsClientChannel,
 		xdsClientChannel: xdsClientChannel,
@@ -127,11 +127,11 @@ func NewPilotAgent(agentType PilotAgentType) (*PilotAgent, error) {
 		secretCache:      secretCache,
 	}
 	// Start xds/sds and wait
-	go pilotAgent.Run(agentType)
+	go agent.Run(agentType)
 	// Add graceful shutdown call back
-	extension.AddCustomShutdownCallback(pilotAgent.Stop)
+	extension.AddCustomShutdownCallback(agent.Stop)
 
-	return pilotAgent, nil
+	return agent, nil
 }
 
 func (p *PilotAgent) Run(agentType PilotAgentType) error {
@@ -140,7 +140,7 @@ func (p *PilotAgent) Run(agentType PilotAgentType) error {
 		return nil
 	}
 	// Reset running status
-	pilotAgent.runningStatus.Store(true)
+	p.runningStatus.Store(true)
 	// Get secrets
 	p.sdsClientChannel.InitSds()
 	// Load XdsChannel.
@@ -244,7 +244,11 @@ func (p *PilotAgent) startUpdateEventLoop() {
 	}
 }
 
-func (p *PilotAgent) GetSecretCache() *resources.SecretCache {
+//func (p *PilotAgent) GetSecretCache() *resources.SecretCache {
+//	return p.secretCache
+//}
+
+func (p *PilotAgent) GetWorkloadCertificateProvider() WorkloadCertificateProvider {
 	return p.secretCache
 }
 

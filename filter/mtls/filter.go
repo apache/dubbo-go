@@ -49,7 +49,7 @@ func init() {
 }
 
 type mtlsFilter struct {
-	pilotAgent *istio.PilotAgent
+	pilotAgent istio.XdsAgent
 }
 
 func newMtlsFilter() filter.Filter {
