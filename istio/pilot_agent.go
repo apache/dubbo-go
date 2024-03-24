@@ -227,6 +227,7 @@ func (p *PilotAgent) startUpdateEventLoop() {
 							xdsHostInboundListener := &resources.XdsHostInboundListener{
 								MutualTLSMode:   xdsListener.InboundTLSMode.GetMutualTLSMode(),
 								TransportSocket: xdsListener.InboundDownstreamTransportSocket,
+								JwtAuthnFilter:  xdsListener.JwtAuthnFilter,
 							}
 							p.SetHostInboundListener(xdsHostInboundListener)
 						}

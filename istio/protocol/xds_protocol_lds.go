@@ -236,8 +236,8 @@ func (lds *LdsProtocol) parseListener(listener *listener.Listener) (resources.Xd
 	return envoyListener, nil
 }
 
-func (lds *LdsProtocol) parseJwtAuthnFilter(name string, envoyAuthentication *jwtauthnv3.JwtAuthentication) (*resources.JwtAuthnFilter, error) {
-	jwtAuthnFilter := &resources.JwtAuthnFilter{
+func (lds *LdsProtocol) parseJwtAuthnFilter(name string, envoyAuthentication *jwtauthnv3.JwtAuthentication) (resources.JwtAuthnFilter, error) {
+	jwtAuthnFilter := resources.JwtAuthnFilter{
 		Name: name,
 	}
 	jwtAuthentication := &resources.JwtAuthentication{
@@ -282,7 +282,7 @@ func (lds *LdsProtocol) parseJwtAuthnFilter(name string, envoyAuthentication *jw
 			}
 			jwkSet, err := resources.UnmarshalJwks(inLineString)
 			if err != nil {
-				return nil, err
+				return jwtAuthnFilter, err
 			}
 			jwtProvider.LocalJwks = &resources.LocalJwks{
 				InlineString: inLineString,

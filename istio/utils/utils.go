@@ -114,3 +114,16 @@ func ConvertTypesStruct(s *structpb.Struct) map[string]string {
 	}
 	return meta
 }
+
+func ConvertAttachmentsToMap(attachments map[string]interface{}) map[string]string {
+	dataMap := make(map[string]string, 0)
+	for k, attachment := range attachments {
+		if v, ok := attachment.([]string); ok {
+			dataMap[k] = v[0]
+		}
+		if v, ok := attachment.(string); ok {
+			dataMap[k] = v
+		}
+	}
+	return dataMap
+}

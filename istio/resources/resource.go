@@ -70,7 +70,7 @@ type XdsListener struct {
 	// virtual inbound 15006 listener tls and downstream transport socket which is for mtls
 	InboundTLSMode                   XdsTLSMode
 	InboundDownstreamTransportSocket XdsDownstreamTransportSocket
-	JwtAuthnFilter                   *JwtAuthnFilter
+	JwtAuthnFilter                   JwtAuthnFilter
 }
 
 type XdsDownstreamTransportSocket struct {
