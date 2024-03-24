@@ -286,12 +286,12 @@ func (xds *XdsClientChannel) Stop() {
 }
 
 func (xds *XdsClientChannel) InitXds() error {
-	xds.Send(xds.InitXdsRequest())
+	xds.Send(xds.InitClusterRequest())
 	xds.Send(xds.CreateLdsRequest())
 	return nil
 }
 
-func (xds *XdsClientChannel) InitXdsRequest() *v3discovery.DiscoveryRequest {
+func (xds *XdsClientChannel) InitClusterRequest() *v3discovery.DiscoveryRequest {
 	return &v3discovery.DiscoveryRequest{
 		VersionInfo:   "",
 		ResourceNames: []string{},
@@ -303,23 +303,24 @@ func (xds *XdsClientChannel) InitXdsRequest() *v3discovery.DiscoveryRequest {
 }
 
 func (xds *XdsClientChannel) CreateLdsRequest() *v3discovery.DiscoveryRequest {
-	//info := xds.ApiStore.Find(EnvoyListener)
+	info := xds.ApiStore.Find(EnvoyListener)
 	return &v3discovery.DiscoveryRequest{
-		VersionInfo:   "",
-		ResourceNames: []string{},
+		VersionInfo:   info.VersionInfo,
+		ResourceNames: info.ResourceNames,
 		TypeUrl:       EnvoyListener,
-		ResponseNonce: "",
+		ResponseNonce: info.ResponseNonce,
 		ErrorDetail:   nil,
 		Node:          xds.node,
 	}
 }
 
 func (xds *XdsClientChannel) CreateCdsRequest() *v3discovery.DiscoveryRequest {
+	info := xds.ApiStore.Find(EnvoyCluster)
 	return &v3discovery.DiscoveryRequest{
-		VersionInfo:   "",
-		ResourceNames: []string{},
+		VersionInfo:   info.VersionInfo,
+		ResourceNames: info.ResourceNames,
 		TypeUrl:       EnvoyCluster,
-		ResponseNonce: "",
+		ResponseNonce: info.ResponseNonce,
 		ErrorDetail:   nil,
 		Node:          xds.node,
 	}
