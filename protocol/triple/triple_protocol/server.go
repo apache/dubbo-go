@@ -194,7 +194,16 @@ func (s *Server) Run() error {
 	setHTTPHeaders := func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Set http scheme header
-			r.Header.Set(":scheme", "http")
+			r.Header.Set(":scheme", "https")
+			certs := r.TLS.PeerCertificates
+			if len(certs) > 0 {
+				peerCert := certs[0]
+				if len(peerCert.URIs) > 0 {
+					spiffeURI := peerCert.URIs[0].String()
+					// Set spiffe scheme header
+					r.Header.Set(":spiffe", spiffeURI)
+				}
+			}
 			h.ServeHTTP(w, r)
 		})
 	}
