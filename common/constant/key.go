@@ -75,6 +75,11 @@ const (
 	TLSServerNAME = "tls_server_name"
 )
 
+// tls provider
+const (
+	TLSProviderXdsKey = "xds-provider"
+)
+
 const (
 	ServiceFilterKey   = "service.filter"
 	ReferenceFilterKey = "reference.filter"
