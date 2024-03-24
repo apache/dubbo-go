@@ -363,6 +363,16 @@ func (p *PilotAgent) GetHostInboundMutualTLSMode() resources.MutualTLSMode {
 	return resources.MTLSUnknown
 }
 
+func (p *PilotAgent) GetHostInboundJwtAuthentication() *resources.JwtAuthentication {
+	value := p.xdsHostInboundListenerAtomic.Load()
+	if value != nil {
+		if xdsHostInboundListener, ok := value.(*resources.XdsHostInboundListener); ok {
+			return xdsHostInboundListener.JwtAuthnFilter.JwtAuthentication
+		}
+	}
+	return nil
+}
+
 func (p *PilotAgent) Stop() {
 	if runningStatus := p.runningStatus.Load(); runningStatus {
 		// make sure stop once

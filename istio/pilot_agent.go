@@ -21,5 +21,6 @@ type XdsAgent interface {
 	UnsubscribeCds(clusterName, listenerName string)
 	GetHostInboundListener() *resources.XdsHostInboundListener
 	GetHostInboundMutualTLSMode() resources.MutualTLSMode
+	GetHostInboundJwtAuthentication() *resources.JwtAuthentication
 	Stop()
 }
