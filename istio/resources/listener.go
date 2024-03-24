@@ -2,29 +2,6 @@ package resources
 
 import "strings"
 
-type XdsEventUpdateType uint32
-
-const (
-	XdsEventUpdateLDS XdsEventUpdateType = iota
-	XdsEventUpdateRDS
-	XdsEventUpdateCDS
-	XdsEventUpdateEDS
-)
-
-type XdsUpdateEvent struct {
-	Type   XdsEventUpdateType
-	Object interface{}
-}
-
-type XdsEndpoint struct {
-	ClusterName string
-	Protocol    string
-	Address     string
-	Port        uint32
-	Healthy     bool
-	Weight      int
-}
-
 type XdsClusterWeight struct {
 	Name   string
 	Weight uint32
