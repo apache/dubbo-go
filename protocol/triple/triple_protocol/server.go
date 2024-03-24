@@ -190,6 +190,23 @@ func (s *Server) Run() error {
 	}
 
 	handler := h2c.NewHandler(s.mux, &http2.Server{})
+
+	setHTTPHeaders := func(h http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Set http scheme header
+			r.Header.Set(":scheme", "http")
+			h.ServeHTTP(w, r)
+		})
+	}
+
+	setHTTPSHeaders := func(h http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Set http scheme header
+			r.Header.Set(":scheme", "https")
+			h.ServeHTTP(w, r)
+		})
+	}
+
 	if s.httpLn == nil && httpOn {
 		httpLn, err := net.Listen("tcp", httpAddr)
 		if err != nil {
@@ -197,7 +214,7 @@ func (s *Server) Run() error {
 			return err
 		}
 		s.httpLn = httpLn
-		s.httpSrv = &http.Server{Handler: handler}
+		s.httpSrv = &http.Server{Handler: setHTTPHeaders(handler)}
 
 	}
 	if s.httpsLn == nil && httpsOn {
@@ -211,7 +228,7 @@ func (s *Server) Run() error {
 			return err
 		}
 		s.httpsLn = httpsLn
-		s.httpsSrv = &http.Server{Handler: handler}
+		s.httpsSrv = &http.Server{Handler: setHTTPSHeaders(handler)}
 	}
 	if httpsOn {
 		go s.httpsSrv.Serve(s.httpsLn)
