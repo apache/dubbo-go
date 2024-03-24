@@ -195,6 +195,20 @@ func (s *Server) Run() error {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Set http scheme header
 			r.Header.Set(":x-scheme", "https")
+			r.Header.Set(":x-host", r.Host)
+			r.Header.Set(":x-path", r.RequestURI)
+			r.Header.Set(":x-method", r.Method)
+			h.ServeHTTP(w, r)
+		})
+	}
+
+	setHTTPSHeaders := func(h http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Set http scheme header
+			r.Header.Set(":x-scheme", "https")
+			r.Header.Set(":x-host", r.Host)
+			r.Header.Set(":x-path", r.RequestURI)
+			r.Header.Set(":x-method", r.Method)
 			certs := r.TLS.PeerCertificates
 			if len(certs) > 0 {
 				peerCert := certs[0]
@@ -204,14 +218,6 @@ func (s *Server) Run() error {
 					r.Header.Set(":x-spiffe", spiffeURI)
 				}
 			}
-			h.ServeHTTP(w, r)
-		})
-	}
-
-	setHTTPSHeaders := func(h http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Set http scheme header
-			r.Header.Set(":x-scheme", "https")
 			h.ServeHTTP(w, r)
 		})
 	}
