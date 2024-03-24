@@ -194,7 +194,7 @@ func (s *Server) Run() error {
 	setHTTPHeaders := func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Set http scheme header
-			r.Header.Set(":x-scheme", "https")
+			r.Header.Set(":x-scheme", "http")
 			r.Header.Set(":x-host", r.Host)
 			r.Header.Set(":x-path", r.RequestURI)
 			r.Header.Set(":x-method", r.Method)
