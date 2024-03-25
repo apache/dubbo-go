@@ -69,7 +69,7 @@ func NewXdsClientChannel(stopChan chan struct{}, xdsUdsPath string, node *v3conf
 		grpc.WithInsecure(),
 	)
 	if err != nil {
-		logger.Errorf("xds.subscribe.stream", "[xds][subscribe] dial grpc server failed: %v", err)
+		logger.Errorf("[xds channel] xds.subscribe.stream dial grpc server failed: %v", err)
 		return nil, err
 	}
 
@@ -91,7 +91,7 @@ func NewXdsClientChannel(stopChan chan struct{}, xdsUdsPath string, node *v3conf
 	}
 
 	if xdsClient.streamAdsClient, err = adsClient.StreamAggregatedResources(ctx); err != nil {
-		logger.Errorf("xds.subscribe.stream", "[xds][subscribe] get ADS stream fail: %v", err)
+		logger.Errorf("[xds channel] xds.subscribe.stream get ADS stream fail: %v", err)
 		conn.Close()
 		return nil, err
 	}
@@ -105,7 +105,7 @@ func (xds *XdsClientChannel) Send(req *v3discovery.DiscoveryRequest) error {
 	if req == nil {
 		return nil
 	}
-	logger.Infof("xds send xds request = %s ", utils.GetJsonString(req))
+	logger.Infof("[xds channel] xds send xds request = %s ", utils.GetJsonString(req))
 	return xds.streamAdsClient.Send(req)
 }
 
@@ -118,9 +118,9 @@ func (xds *XdsClientChannel) SendWithTypeUrlAndResourceNames(typeUrl string, res
 		ErrorDetail:   nil,
 		Node:          xds.node,
 	}
-	logger.Infof("xds send xds request typeurl = %s request = %s ", typeUrl, utils.GetJsonString(request))
+	logger.Infof("[xds channel] xds send xds request typeurl = %s request = %s ", typeUrl, utils.GetJsonString(request))
 	if err := xds.streamAdsClient.Send(request); err != nil {
-		logger.Errorf("send typeurl %s with resourceNames %v failed, error: %v", typeUrl, resourceNames, err)
+		logger.Errorf("[xds channel] send typeurl %s with resourceNames %v failed, error: %v", typeUrl, resourceNames, err)
 		return err
 	}
 	return nil
@@ -136,7 +136,7 @@ func (xds *XdsClientChannel) AckResponse(resp *v3discovery.DiscoveryResponse) {
 		ErrorDetail:   nil,
 		Node:          xds.node,
 	}
-	logger.Infof("xds send ack response = %s ", utils.GetJsonString(ack))
+	logger.Infof("[xds channel] xds send ack response = %s ", utils.GetJsonString(ack))
 	if err := xds.streamAdsClient.Send(ack); err != nil {
 		logger.Errorf("response %s ack failed, error: %v", resp.TypeUrl, err)
 	}
@@ -153,7 +153,6 @@ func (xds *XdsClientChannel) startListeningAndProcessingUpdates() {
 				return
 			default:
 			}
-
 			if xds.streamAdsClient == nil {
 				continue
 			}
@@ -164,27 +163,24 @@ func (xds *XdsClientChannel) startListeningAndProcessingUpdates() {
 					logger.Infof("[xds channel] xds channel context was canceled")
 					return
 				}
-				//if err != nil && err != io.EOF {
-				logger.Errorf("xds.recv.error", "[xds][recv] error receiving resources: %v", err)
+				logger.Errorf("[xds channel] xds.recv.error: %v", err)
 				if err2 := xds.reconnect(); err2 != nil {
-					logger.Errorf("xds.reconnect.error", "[xds][reconnect] failed to reconnect: %v", err2)
+					logger.Errorf("[xds channel] xds.reconnect.error: %v", err2)
 					continue
 				} else {
-					// TODO need to subscribe all resources again!!!
+					logger.Info("[xds channel] subscribe all resources again")
+					xds.Send(xds.CreateCdsRequest())
+					xds.Send(xds.CreateLdsRequest())
 				}
 				continue
 			}
 
-			//if err == io.EOF {
-			//	continue
-			//}
-
-			logger.Infof("xds recv resp = %s", utils.ConvertResponseToString(resp))
+			logger.Infof("[xds channel] xds recv resp = %s", utils.ConvertResponseToString(resp))
 			if resp.GetTypeUrl() == v3resource.ListenerType || resp.GetTypeUrl() == v3resource.RouteType ||
 				resp.GetTypeUrl() == v3resource.ClusterType || resp.GetTypeUrl() == v3resource.EndpointType {
 				xds.updateChan <- resp
 			}
-			// TODO need to ack response
+			// Ack response move to protocol handler
 		}
 	}()
 
@@ -192,19 +188,19 @@ func (xds *XdsClientChannel) startListeningAndProcessingUpdates() {
 }
 
 func (xds *XdsClientChannel) reconnect() error {
-	xds.closeConnection()
-
+	logger.Info("[xds channel] delay 1 seconds to reconnect xds server")
 	select {
 	case <-time.After(1 * time.Second):
-		logger.Infof("delay 1 seconds to reconnect sds server")
-		break
+		logger.Info("[xds channel] dealy 1 seconds to reconnect xds server")
 	}
-
+	logger.Info("[xds channel] reconnect xds server now")
+	xds.closeConnection()
 	newConn, err := grpc.Dial(
 		xds.udsPath,
 		grpc.WithInsecure(),
 	)
 	if err != nil {
+		logger.Info("[xds channel] reconnect xds server fail")
 		return fmt.Errorf("[xds][reconnect] dial grpc server failed: %w", err)
 	}
 
@@ -212,11 +208,12 @@ func (xds *XdsClientChannel) reconnect() error {
 	xds.adsClient = v3discovery.NewAggregatedDiscoveryServiceClient(newConn)
 	ctx, cancel := context.WithCancel(context.Background())
 	xds.cancel = cancel
-
-	if xds.streamAdsClient, err = xds.adsClient.StreamAggregatedResources(ctx); err != nil {
+	streamAdsClient, err := xds.adsClient.StreamAggregatedResources(ctx)
+	if err != nil {
 		return fmt.Errorf("[xds][reconnect] get ADS stream fail: %w", err)
 	}
-
+	xds.streamAdsClient = streamAdsClient
+	logger.Info("[xds channel] reconnect xds server end")
 	return nil
 }
 
@@ -260,7 +257,7 @@ func getResourceTypeFromTypeUrl(typeUrl string) ResourceType {
 	case v3resource.EndpointType:
 		return EndpointType
 	default:
-		logger.Errorf("Unsupported resource type: %d", typeUrl)
+		logger.Errorf("[xds channel] Unsupported resource type: %d", typeUrl)
 		return UnSupportType
 	}
 }

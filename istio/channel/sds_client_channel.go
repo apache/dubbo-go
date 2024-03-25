@@ -174,13 +174,12 @@ func (sds *SdsClientChannel) startListening() {
 }
 
 func (sds *SdsClientChannel) reconnect() error {
-	sds.closeConnection()
 	select {
 	case <-time.After(1 * time.Second):
 		logger.Infof("[sds channel] dealy 1 seconds to reconnect sds server")
-		break
 	}
-
+	logger.Info("[sds channel] reconnect sds server now")
+	sds.closeConnection()
 	newConn, err := grpc.Dial(
 		sds.udsPath,
 		grpc.WithInsecure(),
@@ -191,12 +190,14 @@ func (sds *SdsClientChannel) reconnect() error {
 
 	sds.conn = newConn
 	sds.secretDiscoveryClient = v3secret.NewSecretDiscoveryServiceClient(newConn)
-	streamSecretsClient, err := sds.secretDiscoveryClient.StreamSecrets(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
+	sds.cancel = cancel
+	streamSecretsClient, err := sds.secretDiscoveryClient.StreamSecrets(ctx)
 	if err != nil {
 		return fmt.Errorf("[sds][reconnect] get sds stream secret fail: %w", err)
 	}
 	sds.streamSecretsClient = streamSecretsClient
-
+	logger.Info("[sds channel] reconnect sds server end")
 	return nil
 }
 
