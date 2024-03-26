@@ -18,9 +18,15 @@
 package resources
 
 import (
-	"testing"
-
+	"crypto/rand"
+	"crypto/rsa"
+	"fmt"
+	"github.com/lestrrat-go/jwx/v2/jwa"
+	"github.com/lestrrat-go/jwx/v2/jwk"
+	"github.com/lestrrat-go/jwx/v2/jwt"
 	"github.com/stretchr/testify/assert"
+	"testing"
+	"time"
 )
 
 func TestUnmarshalJwks(t *testing.T) {
@@ -43,6 +49,168 @@ func TestUnmarshalJwks(t *testing.T) {
 			if err != nil {
 				assert.Error(t, err)
 				return
+			}
+		})
+	}
+}
+
+func TestJwtRouteMatch_Match(t *testing.T) {
+	tests := []struct {
+		name        string
+		matchConfig JwtRouteMatch
+		path        string
+		expected    bool
+	}{
+		{
+			name: "Case-sensitive path match",
+			matchConfig: JwtRouteMatch{
+				Action:        "path",
+				Value:         "/api/v1/users",
+				CaseSensitive: true,
+			},
+			path:     "/api/v1/users",
+			expected: true,
+		},
+		{
+			name: "Case-sensitive path mismatch",
+			matchConfig: JwtRouteMatch{
+				Action:        "path",
+				Value:         "/api/v1/users",
+				CaseSensitive: true,
+			},
+			path:     "/API/V1/users",
+			expected: false,
+		},
+		{
+			name: "Case-insensitive path match",
+			matchConfig: JwtRouteMatch{
+				Action:        "path",
+				Value:         "/api/v1/users",
+				CaseSensitive: false,
+			},
+			path:     "/API/V1/users",
+			expected: true,
+		},
+		{
+			name: "Prefix match (case-sensitive)",
+			matchConfig: JwtRouteMatch{
+				Action:        "prefix",
+				Value:         "/api",
+				CaseSensitive: true,
+			},
+			path:     "/api/v1/users",
+			expected: true,
+		},
+		{
+			name: "Prefix mismatch (case-sensitive)",
+			matchConfig: JwtRouteMatch{
+				Action:        "prefix",
+				Value:         "/api",
+				CaseSensitive: true,
+			},
+			path:     "/API/v1/users",
+			expected: false,
+		},
+		{
+			name: "Prefix match (case-insensitive)",
+			matchConfig: JwtRouteMatch{
+				Action:        "prefix",
+				Value:         "/api",
+				CaseSensitive: false,
+			},
+			path:     "/API/v1/users",
+			expected: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			actual := tc.matchConfig.Match(tc.path)
+			assert.Equal(t, tc.expected, actual, "Expected Match result does not match for %s", tc.path)
+		})
+	}
+}
+
+func TestValidateAndParseJWT(t *testing.T) {
+	const aLongLongTimeAgo = 233431200
+	token := jwt.New()
+	token.Set(jwt.SubjectKey, `https://github.com/lestrrat-go/jwx/v2/jwt`)
+	token.Set(jwt.AudienceKey, `Golang Users`)
+	token.Set(jwt.IssuedAtKey, time.Unix(aLongLongTimeAgo, 0))
+	token.Set(`userid`, `Hello, World!`)
+	privKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Errorf("failed to generate private key: %s", err)
+		return
+	}
+	// This is the key we will use to sign
+	realKey, err := jwk.FromRaw(privKey)
+	if err != nil {
+		t.Errorf("failed to create JWK: %s\n", err)
+		return
+	}
+	realKey.Set(jwk.KeyIDKey, `mykey`)
+	realKey.Set(jwk.AlgorithmKey, jwa.RS256)
+	// For demonstration purposes, we also create a bogus key
+	bogusKey, err := jwk.FromRaw([]byte("bogus"))
+	if err != nil {
+		fmt.Printf("failed to create bogus JWK: %s\n", err)
+		return
+	}
+	bogusKey.Set(jwk.AlgorithmKey, jwa.NoSignature)
+	bogusKey.Set(jwk.KeyIDKey, "otherkey")
+
+	signingKey := realKey
+	privset := jwk.NewSet()
+	privset.AddKey(realKey)
+	privset.AddKey(bogusKey)
+	keySet, err := jwk.PublicSetOf(privset)
+	if err != nil {
+		fmt.Printf("failed to create public JWKS: %s\n", err)
+		return
+	}
+	// Sign the token and generate a JWS message
+	signed, err := jwt.Sign(token, jwt.WithKey(jwa.RS256, signingKey))
+	if err != nil {
+		fmt.Printf("failed to generate signed serialized: %s\n", err)
+		return
+	}
+	signedToken := string(signed)
+
+	// Test cases
+	tests := []struct {
+		name        string
+		token       string
+		keySet      jwk.Set
+		expectedErr bool
+	}{
+		{
+			name:        "Valid JWT with correct key set",
+			token:       signedToken,
+			keySet:      keySet,
+			expectedErr: false,
+		},
+		{
+			name:        "Invalid JWT",
+			token:       "invalid.jwt.token",
+			keySet:      keySet,
+			expectedErr: true,
+		},
+		{
+			name:        "Valid JWT with incorrect key set",
+			token:       signedToken,
+			keySet:      jwk.NewSet(), // Empty key set
+			expectedErr: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := ValidateAndParseJWT(tc.token, tc.keySet)
+			if tc.expectedErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
 			}
 		})
 	}

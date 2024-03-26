@@ -77,8 +77,8 @@ func (f *mtlsFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invoc
 		logger.Infof("[mtls filter] invocation attachment key %s = %s", key, attachment)
 	}
 	scheme := "https"
-	if _, ok := attachments[":x-scheme"]; ok {
-		scheme = strings.ToLower(attachments[":x-scheme"])
+	if _, ok := attachments[constant.HttpHeaderXSchemeName]; ok {
+		scheme = strings.ToLower(attachments[constant.HttpHeaderXSchemeName])
 	}
 
 	// get newest mutualTLSMode

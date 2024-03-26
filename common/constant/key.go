@@ -227,6 +227,16 @@ const (
 	ClusterIDKey               = "clusterID"
 )
 
+// http header keys
+const (
+	HttpHeaderXSchemeName    = ":x-scheme"
+	HttpHeaderXMethodName    = ":x-method"
+	HttpHeaderXPathName      = ":x-path"
+	HttpHeaderXHostName      = ":x-host"
+	HttpHeaderXSpiffeName    = ":x-spiffe"
+	HttpHeaderXJwtClaimsName = ":x-jwt-claims"
+)
+
 // config center keys
 const (
 	ConfigNamespaceKey        = "config-center.namespace"

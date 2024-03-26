@@ -18,6 +18,7 @@
 package resources
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -128,14 +129,6 @@ type ProviderWithAudiences struct {
 	Audiences    []string `json:"audiences,omitempty"`
 }
 
-type JwtVerfiyStatus int32
-
-const (
-	JwtVerfiyStatusOK JwtVerfiyStatus = iota
-	JwtVerfiyStatusMissing
-	JwtVerfiyStatusFailed
-)
-
 type RequirementType uint32
 
 const (
@@ -189,11 +182,16 @@ type JwtRouteMatch struct {
 }
 
 func (m JwtRouteMatch) Match(path string) bool {
+	value := m.Value
+	if !m.CaseSensitive {
+		value = strings.ToLower(value)
+		path = strings.ToLower(path)
+	}
 	switch m.Action {
 	case "prefix":
-		return strings.HasPrefix(path, m.Value)
+		return strings.HasPrefix(path, value)
 	case "path":
-		return path == m.Value
+		return path == value
 	}
 	return false
 }
@@ -216,6 +214,50 @@ func ValidateAndParseJWT(token string, keySet jwk.Set) (jwt.Token, error) {
 	return tokenObj, nil
 }
 
+func ValidateJwtTokenByIssuer(issuer string, jwtToken jwt.Token) bool {
+	issuerVerified := true
+	if len(issuer) > 0 {
+		issuerVerified = false
+		if jwtToken.Issuer() == issuer {
+			issuerVerified = true
+		}
+	}
+	return issuerVerified
+}
+
+func ValidateJwtTokenByAudiences(audiences []string, jwtToken jwt.Token) bool {
+	audVerfiyed := true
+	if len(audiences) > 0 {
+		audVerfiyed = false
+		for _, aud := range audiences {
+			for _, tAud := range jwtToken.Audience() {
+				if aud == tAud {
+					audVerfiyed = true
+					break
+				}
+			}
+		}
+	}
+	return audVerfiyed
+}
+
+func ConvertJwtTokenToJwtClaimsJson(jwtToken jwt.Token) (string, error) {
+	jwtClaims := ConvertJwtToClaims(jwtToken)
+	bytes, err := json.Marshal(jwtClaims)
+	if err != nil {
+		return "", fmt.Errorf("failed to convert JWT token: %v", err)
+	}
+	return string(bytes), nil
+}
+
+func ParseFromJsonToJwtClaims(jsonString string) (*JwtClaims, error) {
+	jwtClaims := JwtClaims{}
+	if err := json.Unmarshal([]byte(jsonString), &jwtClaims); err != nil {
+		return nil, fmt.Errorf("failed to convert json %s to JwtClaims: %v", jsonString, err)
+	}
+	return &jwtClaims, nil
+}
+
 // JwtClaims defines the standard claims found in a JWT payload.
 type JwtClaims struct {
 	Issuer        string                 `json:"iss,omitempty"`            // Issuer of the JWT
@@ -234,6 +276,9 @@ func ConvertJwtToClaims(jwt jwt.Token) JwtClaims {
 		PrivateClaims: make(map[string]interface{}, 0),
 	}
 	copy(jwtClaims.Audience, jwt.Audience())
+	for k, v := range jwt.PrivateClaims() {
+		jwtClaims.PrivateClaims[k] = v
+	}
 	jwtClaims.Issuer = jwt.Issuer()
 	jwtClaims.IssuedAt = jwt.IssuedAt()
 	jwtClaims.JWTID = jwt.JwtID()

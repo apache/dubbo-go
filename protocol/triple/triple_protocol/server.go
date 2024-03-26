@@ -20,6 +20,7 @@ package triple_protocol
 import (
 	"context"
 	"crypto/tls"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"github.com/dubbogo/gost/log/logger"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
@@ -194,28 +195,28 @@ func (s *Server) Run() error {
 	setHTTPHeaders := func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Set http scheme header
-			r.Header.Set(":x-scheme", "http")
-			r.Header.Set(":x-host", r.Host)
-			r.Header.Set(":x-path", r.RequestURI)
-			r.Header.Set(":x-method", r.Method)
+			r.Header.Set(constant.HttpHeaderXSchemeName, "http")
+			r.Header.Set(constant.HttpHeaderXHostName, r.Host)
+			r.Header.Set(constant.HttpHeaderXPathName, r.RequestURI)
+			r.Header.Set(constant.HttpHeaderXMethodName, r.Method)
 			h.ServeHTTP(w, r)
 		})
 	}
 
 	setHTTPSHeaders := func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Set http scheme header
-			r.Header.Set(":x-scheme", "https")
-			r.Header.Set(":x-host", r.Host)
-			r.Header.Set(":x-path", r.RequestURI)
-			r.Header.Set(":x-method", r.Method)
+			// Set https scheme header
+			r.Header.Set(constant.HttpHeaderXSchemeName, "http")
+			r.Header.Set(constant.HttpHeaderXHostName, r.Host)
+			r.Header.Set(constant.HttpHeaderXPathName, r.RequestURI)
+			r.Header.Set(constant.HttpHeaderXMethodName, r.Method)
 			certs := r.TLS.PeerCertificates
 			if len(certs) > 0 {
 				peerCert := certs[0]
 				if len(peerCert.URIs) > 0 {
 					spiffeURI := peerCert.URIs[0].String()
 					// Set spiffe scheme header
-					r.Header.Set(":x-spiffe", spiffeURI)
+					r.Header.Set(constant.HttpHeaderXSpiffeName, spiffeURI)
 				}
 			}
 			h.ServeHTTP(w, r)

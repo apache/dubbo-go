@@ -22,9 +22,11 @@ package echo
 
 import (
 	"context"
+	istiofilter "dubbo.apache.org/dubbo-go/v3/istio/filter"
+	"dubbo.apache.org/dubbo-go/v3/istio/utils"
+	"encoding/base64"
+	"errors"
 	"fmt"
-	jwt2 "github.com/lestrrat-go/jwx/v2/jwt"
-	"strings"
 	"sync"
 
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
@@ -74,44 +76,64 @@ func (f *jwtAuthnFilter) Invoke(ctx context.Context, invoker protocol.Invoker, i
 		return &protocol.RPCResult{Err: fmt.Errorf("can not get HostInboundListener in pilot agent")}
 	}
 
-	JwtAuthentication := f.pilotAgent.GetHostInboundJwtAuthentication()
-	if JwtAuthentication == nil {
+	jwtAuthentication := f.pilotAgent.GetHostInboundJwtAuthentication()
+	if jwtAuthentication == nil {
 		// there is no jwt authn filter
+		logger.Info("[jwt authn filter] skip jwt authn because there is no jwt authentication found.")
 		return invoker.Invoke(ctx, invocation)
 	}
 
-	requestInfo := buildRequestInfoFromCtx(ctx, invoker, invocation)
-	providers := JwtAuthentication.Providers
+	headers := buildRequestHeadersFromCtx(ctx, invoker, invocation)
+	jwtAuthnFilterEngine := istiofilter.NewJwtAuthnFilterEngine(headers, jwtAuthentication)
+	jwtAuthnResult, err := jwtAuthnFilterEngine.Filter()
+	if err != nil {
+		result := &protocol.RPCResult{}
+		result.SetResult(nil)
+		result.SetError(err)
+		return result
+	}
 
-	for _, rule := range JwtAuthentication.Rules {
-		if matcheRule(requestInfo, rule) {
-			requires := rule.Requires
-			// get all provider names
-			allProviderNames := requires.ProviderNames
-			allowMissingOrFailed := requires.AllowMissing
-			allowMissing := requires.AllowMissingOrFailed
-			jwtToken, findProviderName, findHeadName, tokenExists, tokenVerified := verifyByProviderNames(allProviderNames, providers, requestInfo)
-			if jwtToken == nil {
-				if tokenVerified && !allowMissingOrFailed {
-					// return fail result
-				}
-				if !tokenExists && !allowMissing {
-					// return fail result
-				}
-			}
-			// handle jwtToken
-			findProvider := providers[findProviderName]
-			if !findProvider.Forward {
-				// clear token
-				delete(invocation.Attachments(), findHeadName)
-			}
-			//
+	jwtVerifyStatus := jwtAuthnResult.JwtVerfiyStatus
+	logger.Infof("[jwt authn filter] final jwt verify status: %t", jwtVerifyStatus)
+	// check final result
+	if jwtVerifyStatus == istiofilter.JwtVerfiyStatusMissing {
+		result := &protocol.RPCResult{}
+		result.SetResult(nil)
+		result.SetError(errors.New("jwt token is missing"))
+		return result
+	}
 
-			break
+	if jwtVerifyStatus == istiofilter.JwtVerfiyStatusFailed {
+		result := &protocol.RPCResult{}
+		result.SetResult(nil)
+		result.SetError(errors.New("jwt token verify fail"))
+		return result
+	}
+
+	findProviderName := jwtAuthnResult.FindProviderName
+	findHeaderName := jwtAuthnResult.FindHeaderName
+	jwtToken := jwtAuthnResult.JwtToken
+	providers := jwtAuthentication.Providers
+	// handle jwtToken
+	if len(findProviderName) > 0 && jwtToken != nil {
+		findProvider := providers[findProviderName]
+		if !findProvider.Forward {
+			// clear token in attachments
+			delete(invocation.Attachments(), findHeaderName)
+		}
+
+		if jwtJsonClaims, err := resources.ConvertJwtTokenToJwtClaimsJson(jwtToken); err != nil {
+			logger.Errorf("[jwt authn filter]  can not convert from jwt token to jwt claims, err:%v", err)
+		} else {
+			if len(findProvider.ForwardPayloadHeader) > 0 {
+				invocation.SetAttachment(findProvider.ForwardPayloadHeader, []string{base64.URLEncoding.EncodeToString([]byte(jwtJsonClaims))})
+			}
+			// add new attachment named x-jwt-claims
+			logger.Infof("[jwt authn filter] add attachment k: %s, v: %s", constant.HttpHeaderXJwtClaimsName, jwtJsonClaims)
+			invocation.SetAttachment(constant.HttpHeaderXJwtClaimsName, []string{jwtJsonClaims})
 		}
 	}
 
-	logger.Infof("jwt filter invoker:%v invocation:%v", invoker, invocation)
 	return invoker.Invoke(ctx, invocation)
 }
 
@@ -121,120 +143,6 @@ func (f *jwtAuthnFilter) OnResponse(_ context.Context, result protocol.Result, _
 	return result
 }
 
-func matcheRule(requestInfo map[string]string, rule *resources.JwtRequirementRule) bool {
-	path := requestInfo[":path"]
-	return rule.Match.Match(path)
-}
-
-func extractJWTFromRequest(requestInfo map[string]string, fromHeaders []resources.JwtHeader) (string, string, error) {
-	for _, header := range fromHeaders {
-		name := header.Name
-		valuePrefix := header.ValuePrefix
-		name = strings.ToLower(name)
-		if v, ok := requestInfo[name]; ok {
-			// find token
-			if len(valuePrefix) > 0 {
-				if strings.HasPrefix(v, valuePrefix) {
-					return strings.TrimPrefix(v, valuePrefix), name, nil
-				} else {
-					return "", "", fmt.Errorf("invalid authorization header format")
-				}
-			}
-			return v, name, nil
-		}
-	}
-	return "", "", nil
-}
-
-func buildRequestInfoFromCtx(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) map[string]string {
-	// get headers
-	attachments := ctx.Value(constant.AttachmentKey).(map[string]interface{})
-	requestInfo := make(map[string]string, 0)
-	for key, attachment := range attachments {
-		requestInfo[key] = attachment.([]string)[0]
-	}
-	// get request path
-	requestInfo[":path"] = fmt.Sprintf("%s/%s", invoker.GetURL().Path, invocation.MethodName())
-	return requestInfo
-}
-
-func verifyByProviderNames(allProviderNames []string, providers map[string]*resources.JwtProvider, requestInfo map[string]string) (jwt2.Token, string, string, bool, bool) {
-	var (
-		tokenExists   bool
-		tokenVerified bool
-	)
-	findProviderName := ""
-	findHeaderName := ""
-	for _, providerName := range allProviderNames {
-		provider, ok := providers[providerName]
-		findProviderName = providerName
-		if !ok {
-			continue
-		}
-		if provider.LocalJwks.Keys == nil {
-			continue
-		}
-
-		token, headName, tokenErr := extractJWTFromRequest(requestInfo, provider.FromHeaders)
-		if tokenErr != nil {
-			tokenExists = true
-			continue
-		}
-		if len(token) == 0 {
-			tokenExists = false
-			continue
-		}
-
-		findHeaderName = headName
-		tokenExists = true
-
-		// verify token
-		jwtToken, err := resources.ValidateAndParseJWT(token, provider.LocalJwks.Keys)
-		if err != nil {
-			tokenVerified = false
-			continue
-		}
-
-		tokenVerified = true
-		// todo check jwt issuer
-		issuerVerified := true
-		if len(provider.Issuer) > 0 {
-			issuerVerified = false
-			if jwtToken.Issuer() == provider.Issuer {
-				issuerVerified = true
-			}
-		}
-		if !issuerVerified {
-			tokenVerified = false
-			continue
-		}
-
-		// todo check jwt aud
-		audVerfiyed := true
-		if len(provider.Audiences) > 0 {
-			audVerfiyed = false
-			for _, aud := range provider.Audiences {
-				for _, tAud := range jwtToken.Audience() {
-					if aud == tAud {
-						audVerfiyed = true
-						break
-					}
-				}
-			}
-		}
-		if !audVerfiyed {
-			tokenVerified = false
-			continue
-		}
-
-		tokenVerified = true
-
-		if jwtToken != nil {
-			return jwtToken, findProviderName, findHeaderName, tokenExists, tokenVerified
-		}
-
-		jwtToken.PrivateClaims()
-
-	}
-	return nil, findProviderName, findHeaderName, tokenExists, tokenVerified
+func buildRequestHeadersFromCtx(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) map[string]string {
+	return utils.ConvertAttachmentsToMap(invocation.Attachments())
 }
