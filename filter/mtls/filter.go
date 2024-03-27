@@ -22,21 +22,18 @@ package echo
 
 import (
 	"context"
-	"dubbo.apache.org/dubbo-go/v3/istio"
-	"dubbo.apache.org/dubbo-go/v3/istio/resources"
-	"dubbo.apache.org/dubbo-go/v3/istio/utils"
 	"errors"
-	"fmt"
-	"github.com/dubbogo/gost/log/logger"
-	"strings"
 	"sync"
-)
 
-import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
+	"dubbo.apache.org/dubbo-go/v3/istio"
+	istiofilter "dubbo.apache.org/dubbo-go/v3/istio/filter"
+	"dubbo.apache.org/dubbo-go/v3/istio/resources"
+	"dubbo.apache.org/dubbo-go/v3/istio/utils"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"github.com/dubbogo/gost/log/logger"
 )
 
 var (
@@ -69,56 +66,31 @@ func newMtlsFilter() filter.Filter {
 
 // Invoke response to the callers with its first argument.
 func (f *mtlsFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
-	// can not get if the current request is HTTPS or HTTP.
-	// get request schema
 	logger.Infof("[mtls filter] url: %s", invoker.GetURL().String())
-	attachments := utils.ConvertAttachmentsToMap(invocation.Attachments())
-	for key, attachment := range attachments {
+	headers := utils.ConvertAttachmentsToMap(invocation.Attachments())
+	for key, attachment := range headers {
 		logger.Infof("[mtls filter] invocation attachment key %s = %s", key, attachment)
 	}
-	scheme := "https"
-	if _, ok := attachments[constant.HttpHeaderXSchemeName]; ok {
-		scheme = strings.ToLower(attachments[constant.HttpHeaderXSchemeName])
-	}
 
-	// get newest mutualTLSMode
-	mutualTLSMode := resources.MTLSUnknown
-	reqOK := true
-	reqMsg := ""
 	if f.pilotAgent == nil {
-		reqOK = false
-		reqMsg = "pilot agent is not ready"
-	} else {
-		reqOK = true
-		mutualTLSMode = f.pilotAgent.GetHostInboundMutualTLSMode()
-		reqMsg = fmt.Sprintf("%s request on mtls %s mode is granted", scheme, resources.MutualTLSModeToString(mutualTLSMode))
-	}
-
-	switch mutualTLSMode {
-	case resources.MTLSUnknown:
-		reqOK = false
-		reqMsg = "request on mtls unknown mode is forbidden"
-	case resources.MTLSPermissive:
-		reqOK = true
-	case resources.MTLSStrict:
-		if scheme == "http" {
-			reqOK = false
-			reqMsg = "http request on mtls strict mode is forbidden"
-		}
-	case resources.MTLSDisable:
-		if scheme == "https" {
-			reqOK = false
-			reqMsg = "https request on mtls disable mode is forbidden"
-		}
-	default:
-	}
-	logger.Infof("[mtls filter] scheme:%s, mutualTLSMode:%s ,reqOk:%t, reqMsg:%s", scheme, resources.MutualTLSModeToString(mutualTLSMode), reqOK, reqMsg)
-	if !reqOK {
 		result := &protocol.RPCResult{}
 		result.SetResult(nil)
-		result.SetError(errors.New(reqMsg))
+		result.SetError(errors.New("pilot agent is not ready"))
 		return result
 	}
+	// filer request
+	mutualTLSMode := f.pilotAgent.GetHostInboundMutualTLSMode()
+	mtlsFilterEngine := istiofilter.NewMTLSFilterEngine(headers, mutualTLSMode)
+	mtlsResult, _ := mtlsFilterEngine.Filter()
+	logger.Infof("[mtls filter] %s", mtlsResult.ReqMsg)
+
+	if !mtlsResult.ReqOK {
+		result := &protocol.RPCResult{}
+		result.SetResult(nil)
+		result.SetError(errors.New(mtlsResult.ReqMsg))
+		return result
+	}
+
 	invocation.SetAttachment(":mutual-tls-mode", []string{resources.MutualTLSModeToString(mutualTLSMode)})
 	return invoker.Invoke(ctx, invocation)
 }
