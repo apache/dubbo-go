@@ -55,14 +55,8 @@ func newAuthnFilter() filter.Filter {
 
 // Invoke response to the callers with its first argument.
 func (f *authnFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
-	if invocation.MethodName() == constant.Echo && len(invocation.Arguments()) == 1 {
-		return &protocol.RPCResult{
-			Rest:  invocation.Arguments()[0],
-			Attrs: invocation.Attachments(),
-		}
-	}
-	// TODO it just now echo logger, and implement mtls support check later
-	logger.Infof("authn filter invoker:%v invocation:%v", invoker, invocation)
+	// Deprecated. Please use security/v1beta1/PeerAuthentication instead.
+	logger.Infof("[authn filter] invoker")
 	return invoker.Invoke(ctx, invocation)
 }
 
