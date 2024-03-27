@@ -350,7 +350,10 @@ func (lds *LdsProtocol) parseJwtAuthnFilter(name string, envoyAuthentication *jw
 			jwtRequirementRule.Requires = jwtRequirement
 		}
 
+		jwtAuthentication.Rules = append(jwtAuthentication.Rules, jwtRequirementRule)
+
 	}
+	jwtAuthnFilter.JwtAuthentication = jwtAuthentication
 	return jwtAuthnFilter, nil
 }
 

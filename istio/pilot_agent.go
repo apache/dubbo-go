@@ -241,6 +241,7 @@ func (p *PilotAgent) startUpdateEventLoop() {
 								TransportSocket: xdsListener.InboundDownstreamTransportSocket,
 								JwtAuthnFilter:  xdsListener.JwtAuthnFilter,
 							}
+							logger.Infof("[Pilot Agent] update InboundListener :%s", utils.ConvertJsonString(xdsHostInboundListener))
 							p.SetHostInboundListener(xdsHostInboundListener)
 						}
 					}

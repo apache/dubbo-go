@@ -20,6 +20,7 @@ package resources
 import (
 	"crypto/rand"
 	"crypto/rsa"
+	"encoding/json"
 	"fmt"
 	"github.com/lestrrat-go/jwx/v2/jwa"
 	"github.com/lestrrat-go/jwx/v2/jwk"
@@ -132,12 +133,30 @@ func TestJwtRouteMatch_Match(t *testing.T) {
 }
 
 func TestValidateAndParseJWT(t *testing.T) {
-	const aLongLongTimeAgo = 233431200
+	now := time.Now()
+	exp := now.Add(10 * 365 * 24 * time.Hour)
+
 	token := jwt.New()
-	token.Set(jwt.SubjectKey, `https://github.com/lestrrat-go/jwx/v2/jwt`)
-	token.Set(jwt.AudienceKey, `Golang Users`)
-	token.Set(jwt.IssuedAtKey, time.Unix(aLongLongTimeAgo, 0))
-	token.Set(`userid`, `Hello, World!`)
+	token.Set(jwt.SubjectKey, `spiffe://cluster.local/ns/foo/sa/httpbin`)
+	token.Set(jwt.IssuerKey, "https://dubbo.apache.org/")
+	token.Set(jwt.AudienceKey, `dev`)
+	token.Set(jwt.IssuedAtKey, now)
+	token.Set(jwt.ExpirationKey, exp)
+
+	token2 := jwt.New()
+	token2.Set(jwt.SubjectKey, `spiffe://cluster.local/ns/foo/sa/httpbin`)
+	token2.Set(jwt.IssuerKey, "https://dubbo.apache.org/")
+	token2.Set(jwt.AudienceKey, `test`)
+	token2.Set(jwt.IssuedAtKey, now)
+	token2.Set(jwt.ExpirationKey, exp)
+
+	token3 := jwt.New()
+	token3.Set(jwt.SubjectKey, `spiffe://cluster.local/ns/foo/sa/sleep`)
+	token3.Set(jwt.IssuerKey, "https://dubbo.apache.org/")
+	token3.Set(jwt.AudienceKey, `sleep`)
+	token3.Set(jwt.IssuedAtKey, now)
+	token3.Set(jwt.ExpirationKey, exp)
+
 	privKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		t.Errorf("failed to generate private key: %s", err)
@@ -149,8 +168,9 @@ func TestValidateAndParseJWT(t *testing.T) {
 		t.Errorf("failed to create JWK: %s\n", err)
 		return
 	}
-	realKey.Set(jwk.KeyIDKey, `mykey`)
+	realKey.Set(jwk.KeyIDKey, `key1`)
 	realKey.Set(jwk.AlgorithmKey, jwa.RS256)
+
 	// For demonstration purposes, we also create a bogus key
 	bogusKey, err := jwk.FromRaw([]byte("bogus"))
 	if err != nil {
@@ -158,9 +178,10 @@ func TestValidateAndParseJWT(t *testing.T) {
 		return
 	}
 	bogusKey.Set(jwk.AlgorithmKey, jwa.NoSignature)
-	bogusKey.Set(jwk.KeyIDKey, "otherkey")
+	bogusKey.Set(jwk.KeyIDKey, "key2")
 
 	signingKey := realKey
+
 	privset := jwk.NewSet()
 	privset.AddKey(realKey)
 	privset.AddKey(bogusKey)
@@ -169,6 +190,7 @@ func TestValidateAndParseJWT(t *testing.T) {
 		fmt.Printf("failed to create public JWKS: %s\n", err)
 		return
 	}
+
 	// Sign the token and generate a JWS message
 	signed, err := jwt.Sign(token, jwt.WithKey(jwa.RS256, signingKey))
 	if err != nil {
@@ -176,6 +198,26 @@ func TestValidateAndParseJWT(t *testing.T) {
 		return
 	}
 	signedToken := string(signed)
+
+	signed2, err := jwt.Sign(token2, jwt.WithKey(jwa.RS256, signingKey))
+	if err != nil {
+		fmt.Printf("failed to generate signed serialized: %s\n", err)
+		return
+	}
+	signedToken2 := string(signed2)
+
+	signed3, err := jwt.Sign(token3, jwt.WithKey(jwa.RS256, signingKey))
+	if err != nil {
+		fmt.Printf("failed to generate signed serialized: %s\n", err)
+		return
+	}
+	signedToken3 := string(signed3)
+
+	fmt.Printf("token1: %s\n", signedToken)
+	fmt.Printf("token2: %s\n", signedToken2)
+	fmt.Printf("token3: %s\n", signedToken3)
+	jsonbuf, err := json.Marshal(keySet)
+	fmt.Printf("keyset: %s\n", string(jsonbuf))
 
 	// Test cases
 	tests := []struct {

@@ -76,8 +76,8 @@ func (e *JwtAuthnFilterEngine) Filter() (*JwtAuthnResult, error) {
 			requires := rule.Requires
 			// get all provider names
 			allProviderNames := requires.ProviderNames
-			allowMissingOrFailed := requires.AllowMissing
-			allowMissing := requires.AllowMissingOrFailed
+			allowMissingOrFailed := requires.AllowMissingOrFailed
+			allowMissing := requires.AllowMissing
 			jwtToken, findProviderName, findHeaderName, findToken, tokenExists, tokenVerified = verifyByProviderNames(allProviderNames, providers, e.headers)
 			logger.Infof("[jwt authn filter] match result: provider name: %s, header name: %s, tokenExists: %t, tokenVerified :%t", findProviderName, findHeaderName, tokenExists, tokenVerified)
 			logger.Infof("[jwt authn filter] match result: found token: %s", findToken)
@@ -85,8 +85,8 @@ func (e *JwtAuthnFilterEngine) Filter() (*JwtAuthnResult, error) {
 				if !tokenExists && !allowMissing {
 					jwtVerifyStatus = JwtVerfiyStatusMissing
 				}
-				if !tokenVerified && !allowMissingOrFailed {
-					jwtVerifyStatus = JwtVerfiyStatusMissing
+				if tokenExists && !tokenVerified && !allowMissingOrFailed {
+					jwtVerifyStatus = JwtVerfiyStatusFailed
 				}
 			}
 			break
@@ -102,7 +102,7 @@ func (e *JwtAuthnFilterEngine) Filter() (*JwtAuthnResult, error) {
 		TokenExists:      tokenExists,
 		TokenVerified:    tokenVerified,
 	}
-	logger.Infof("[jwt authn filter] final jwt verify result: %v", jwtAuthnResult)
+	logger.Infof("[jwt authn filter] final jwt verify result: %s", utils.ConvertJsonString(jwtAuthnResult))
 	return jwtAuthnResult, nil
 }
 

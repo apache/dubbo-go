@@ -4,22 +4,26 @@ metadata:
   name: "httpbin-demo1"
   namespace: foo
 spec:
-  selector:
-    matchLabels:
-      app: httpbin
+#  selector:
+#    matchLabels:
+#      app: httpbin
   jwtRules:
-    - issuer: "testing@secure.istio.io"
+    - issuer: "https://dubbo.apache.org/"
+      audiences:
+        - dev
+        - test
       fromHeaders:
-        - name: my-token
-          prefix: test
+        - name: "Authorization"
+          prefix: "Bearer "
       jwks: |
-        { "keys":
-           [
-             {
-               "e":"AQAB",
-               "kid":"DHFbpoIUqrY8t2zpA2qXfCmr5VO5ZEr4RzHU_-envvQ",
-               "kty":"RSA",
-               "n":"xAE7eB6qugXyCAG3yhh7pkDkT65pHymX-P7KfIupjf59vsdo91bSP9C8H07pSAGQO1MV_xFj9VswgsCg4R6otmg5PV2He95lZdHtOcU5DXIg_pbhLdKXbi66GlVeK6ABZOUW3WYtnNHD-91gVuoeJT_DwtGGcp4ignkgXfkiEm4sw-4sfb4qdt5oLbyVpmW6x9cfa7vs2WTfURiCrBoUqgBo_-4WTiULmmHSGZHOjzwa8WtrtOQGsAFjIbno85jp6MnGGGZPYZbDAa_b3y5u-YpW7ypZrvD8BgtKVjgtQgZhLAGezMt0ua3DRrWnKqTZ0BJ_EyxOGuHJrLsn00fnMQ"
-             }
-           ]
+        {
+          "keys": [
+            {
+              "alg": "RS256",
+              "e": "AQAB",
+              "kid": "key1",
+              "kty": "RSA",
+              "n": "tI4hr2gYjv1YJ98eVn5IGyCqH7ylXOdx-QSwb-ERxvweJDUMZcLx62dIELXwM8Jv1iOl3pDRBvk6Gl7CYSqNblsXvtnKwCUBAkv7IKGjlIjZSIBhO6J7n33M3T-BDf0YBWHpHAEuOXOwIn19w0jeGSTgTF6u3AuGXa6lZMqtxKbaWsA2c621LB8hB2s6aAOe01FEl3-e037lsuIgMKYQJUBGfoGy4OlIukVZz3M3BwbJiuuIUVl_JjVR0Nt-FuM8rXOdjWFOgn1XUz269dUv22dm3u1EJ3wpJ12rfUDtANrosk-2d32qURLwkb7DeALj8pTCayT0Qz44YjBEtROo1w"
+            }
+          ]
         }
