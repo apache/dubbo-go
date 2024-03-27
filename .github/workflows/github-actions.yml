@@ -20,7 +20,7 @@ jobs:
       # If you want to matrix build , you can append the following list.
       matrix:
         go_version:
-          - 1.17
+          - '1.20'
         os:
           - ubuntu-latest
 
@@ -72,6 +72,7 @@ jobs:
 
     - name: Verify
       run: |
+        go mod tidy
         make verify
 
     - name: Integration Testing

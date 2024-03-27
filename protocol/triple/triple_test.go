@@ -189,7 +189,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestInvoke(t *testing.T) {
-	tripleInvokerInit := func(location string, port string, interfaceName string, group string, version string, methods []string, info *client.ClientInfo) (protocol.Invoker, error) {
+	tripleInvokerInit := func(location string, port string, interfaceName string, group string, version string, methods []string, serialization string, info *client.ClientInfo) (protocol.Invoker, error) {
 		newURL := common.NewURLWithOptions(
 			common.WithInterface(interfaceName),
 			common.WithLocation(location),
@@ -199,6 +199,7 @@ func TestInvoke(t *testing.T) {
 		)
 		newURL.SetParam(constant.GroupKey, group)
 		newURL.SetParam(constant.VersionKey, version)
+		newURL.SetParam(constant.SerializationKey, serialization)
 		return NewTripleInvoker(newURL)
 	}
 	dubbo3InvokerInit := func(location string, port string, interfaceName string, group string, version string, svc common.RPCService) (protocol.Invoker, error) {
@@ -240,11 +241,12 @@ func TestInvoke(t *testing.T) {
 		return reply.Interface()
 	}
 
-	invokeTripleCodeFunc := func(t *testing.T, invoker protocol.Invoker, identifier string) {
+	invokeTripleCodeFunc := func(t *testing.T, invoker protocol.Invoker, identifier string, isIDL bool) {
 		tests := []struct {
 			methodName string
 			callType   string
 			rawParams  []interface{}
+			needIDL    bool
 			validate   func(t *testing.T, rawParams []interface{}, res protocol.Result)
 		}{
 			{
@@ -267,6 +269,7 @@ func TestInvoke(t *testing.T) {
 			{
 				methodName: "GreetClientStream",
 				callType:   constant.CallClientStream,
+				needIDL:    true,
 				validate: func(t *testing.T, params []interface{}, res protocol.Result) {
 					assert.Nil(t, res.Error())
 					streamRaw, ok := res.Result().(*triple_protocol.ClientStreamForClient)
@@ -294,6 +297,7 @@ func TestInvoke(t *testing.T) {
 						Name: "dubbo",
 					},
 				},
+				needIDL: true,
 				validate: func(t *testing.T, params []interface{}, res protocol.Result) {
 					assert.Nil(t, res.Error())
 					req := params[0].(*greet.GreetServerStreamRequest)
@@ -313,6 +317,7 @@ func TestInvoke(t *testing.T) {
 			{
 				methodName: "GreetStream",
 				callType:   constant.CallBidiStream,
+				needIDL:    true,
 				validate: func(t *testing.T, params []interface{}, res protocol.Result) {
 					assert.Nil(t, res.Error())
 					streamRaw, ok := res.Result().(*triple_protocol.BidiStreamForClient)
@@ -332,6 +337,9 @@ func TestInvoke(t *testing.T) {
 		}
 
 		for _, test := range tests {
+			if test.needIDL && !isIDL {
+				continue
+			}
 			t.Run(test.methodName, func(t *testing.T) {
 				inv := tripleInvocationInit(test.methodName, test.rawParams, test.callType)
 				res := invoker.Invoke(context.Background(), inv)
@@ -433,24 +441,34 @@ func TestInvoke(t *testing.T) {
 	}
 
 	t.Run("triple2triple", func(t *testing.T) {
-		invoker, err := tripleInvokerInit(localAddr, triplePort, customTripleInterfaceName, "", "", greettriple.GreetService_ClientInfo.MethodNames, &greettriple.GreetService_ClientInfo)
+		invoker, err := tripleInvokerInit(localAddr, triplePort, customTripleInterfaceName, "", "", greettriple.GreetService_ClientInfo.MethodNames, "", &greettriple.GreetService_ClientInfo)
 		assert.Nil(t, err)
-		invokeTripleCodeFunc(t, invoker, "")
+		invokeTripleCodeFunc(t, invoker, "", true)
+	})
+	t.Run("triple2triple_JsonSerialization", func(t *testing.T) {
+		invoker, err := tripleInvokerInit(localAddr, triplePort, customTripleInterfaceName, "", "", greettriple.GreetService_ClientInfo.MethodNames, constant.JSONSerialization, &greettriple.GreetService_ClientInfo)
+		assert.Nil(t, err)
+		invokeTripleCodeFunc(t, invoker, "", true)
+	})
+	t.Run("triple2triple_MsgpackSerialization", func(t *testing.T) {
+		invoker, err := tripleInvokerInit(localAddr, triplePort, customTripleInterfaceName, "", "", greettriple.GreetService_ClientInfo.MethodNames, constant.MsgpackSerialization, &greettriple.GreetService_ClientInfo)
+		assert.Nil(t, err)
+		invokeTripleCodeFunc(t, invoker, "", false)
 	})
 	t.Run("triple2triple_Group1Version1", func(t *testing.T) {
-		invoker, err := tripleInvokerInit(localAddr, triplePort, customTripleInterfaceName, group, version, greettriple.GreetService_ClientInfo.MethodNames, &greettriple.GreetService_ClientInfo)
+		invoker, err := tripleInvokerInit(localAddr, triplePort, customTripleInterfaceName, group, version, greettriple.GreetService_ClientInfo.MethodNames, "", &greettriple.GreetService_ClientInfo)
 		assert.Nil(t, err)
-		invokeTripleCodeFunc(t, invoker, api.GroupVersionIdentifier)
+		invokeTripleCodeFunc(t, invoker, api.GroupVersionIdentifier, true)
 	})
 	t.Run("triple2dubbo3", func(t *testing.T) {
-		invoker, err := tripleInvokerInit(localAddr, dubbo3Port, customDubbo3InterfaceName, "", "", greettriple.GreetService_ClientInfo.MethodNames, &greettriple.GreetService_ClientInfo)
+		invoker, err := tripleInvokerInit(localAddr, dubbo3Port, customDubbo3InterfaceName, "", "", greettriple.GreetService_ClientInfo.MethodNames, "", &greettriple.GreetService_ClientInfo)
 		assert.Nil(t, err)
-		invokeTripleCodeFunc(t, invoker, "")
+		invokeTripleCodeFunc(t, invoker, "", true)
 	})
 	t.Run("triple2dubbo3_Group1Version1", func(t *testing.T) {
-		invoker, err := tripleInvokerInit(localAddr, dubbo3Port, customDubbo3InterfaceName, group, version, greettriple.GreetService_ClientInfo.MethodNames, &greettriple.GreetService_ClientInfo)
+		invoker, err := tripleInvokerInit(localAddr, dubbo3Port, customDubbo3InterfaceName, group, version, greettriple.GreetService_ClientInfo.MethodNames, "", &greettriple.GreetService_ClientInfo)
 		assert.Nil(t, err)
-		invokeTripleCodeFunc(t, invoker, dubbo3_api.GroupVersionIdentifier)
+		invokeTripleCodeFunc(t, invoker, dubbo3_api.GroupVersionIdentifier, true)
 	})
 	t.Run("dubbo32triple", func(t *testing.T) {
 		svc := new(dubbo3_greet.GreetServiceClientImpl)

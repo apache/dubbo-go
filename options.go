@@ -94,6 +94,7 @@ func (rc *InstanceOptions) init(opts ...InstanceOption) error {
 		log.Infof("[Config Center] Config center doesn't start")
 		log.Debugf("config center doesn't start because %s", err)
 	} else {
+		compatInstanceOptions(rcCompat, rc)
 		if err = rcCompat.Logger.Init(); err != nil { // init logger using config from config center again
 			return err
 		}
@@ -245,6 +246,112 @@ func registryToReportOptions(id string, rc *global.RegistryConfig) (*metadata.Re
 
 func (rc *InstanceOptions) Prefix() string {
 	return constant.Dubbo
+}
+
+func (rc *InstanceOptions) CloneApplication() *global.ApplicationConfig {
+	if rc.Application == nil {
+		return nil
+	}
+	return rc.Application.Clone()
+}
+
+func (rc *InstanceOptions) CloneProtocols() map[string]*global.ProtocolConfig {
+	if rc.Protocols == nil {
+		return nil
+	}
+	protocols := make(map[string]*global.ProtocolConfig, len(rc.Protocols))
+	for k, v := range rc.Protocols {
+		protocols[k] = v.Clone()
+	}
+	return protocols
+}
+
+func (rc *InstanceOptions) CloneRegistries() map[string]*global.RegistryConfig {
+	if rc.Registries == nil {
+		return nil
+	}
+	registries := make(map[string]*global.RegistryConfig, len(rc.Registries))
+	for k, v := range rc.Registries {
+		registries[k] = v.Clone()
+	}
+	return registries
+}
+
+func (rc *InstanceOptions) CloneConfigCenter() *global.CenterConfig {
+	if rc.ConfigCenter == nil {
+		return nil
+	}
+	return rc.ConfigCenter.Clone()
+}
+
+func (rc *InstanceOptions) CloneMetadataReport() *global.MetadataReportConfig {
+	if rc.MetadataReport == nil {
+		return nil
+	}
+	return rc.MetadataReport.Clone()
+}
+
+func (rc *InstanceOptions) CloneProvider() *global.ProviderConfig {
+	if rc.Provider == nil {
+		return nil
+	}
+	return rc.Provider.Clone()
+}
+
+func (rc *InstanceOptions) CloneConsumer() *global.ConsumerConfig {
+	if rc.Consumer == nil {
+		return nil
+	}
+	return rc.Consumer.Clone()
+}
+
+func (rc *InstanceOptions) CloneMetrics() *global.MetricsConfig {
+	if rc.Metrics == nil {
+		return nil
+	}
+	return rc.Metrics.Clone()
+}
+
+func (rc *InstanceOptions) CloneOtel() *global.OtelConfig {
+	if rc.Otel == nil {
+		return nil
+	}
+	return rc.Otel.Clone()
+}
+
+func (rc *InstanceOptions) CloneLogger() *global.LoggerConfig {
+	if rc.Logger == nil {
+		return nil
+	}
+	return rc.Logger.Clone()
+}
+
+func (rc *InstanceOptions) CloneShutdown() *global.ShutdownConfig {
+	if rc.Shutdown == nil {
+		return nil
+	}
+	return rc.Shutdown.Clone()
+}
+
+func (rc *InstanceOptions) CloneCustom() *global.CustomConfig {
+	if rc.Custom == nil {
+		return nil
+	}
+	return rc.Custom.Clone()
+}
+
+func (rc *InstanceOptions) CloneProfiles() *global.ProfilesConfig {
+	if rc.Profiles == nil {
+		return nil
+	}
+	return rc.Profiles.Clone()
+}
+
+func (rc *InstanceOptions) CloneTLSConfig() *global.TLSConfig {
+	if rc.TLSConfig == nil {
+		return nil
+	}
+	return rc.TLSConfig.Clone()
 }
 
 type InstanceOption func(*InstanceOptions)

@@ -98,7 +98,7 @@ func (lstn *ServiceInstancesChangedListenerImpl) OnEvent(e observer.Event) error
 	protocolRevisionsToUrls := make(map[string]map[*gxset.HashSet][]*common.URL)
 	newServiceURLs := make(map[string][]*common.URL)
 
-	logger.Infof("Received instance notification event of service %s, instance list size %s", ce.ServiceName, len(ce.Instances))
+	logger.Infof("Received instance notification event of service %s, instance list size %d", ce.ServiceName, len(ce.Instances))
 
 	for _, instances := range lstn.allInstances {
 		for _, instance := range instances {

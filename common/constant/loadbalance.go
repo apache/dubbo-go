@@ -25,4 +25,5 @@ const (
 	LoadBalanceKeyP2C                           = "p2c"
 	LoadXDSRingHash                             = "xdsringhash"
 	LoadBalanceKeyInterleavedWeightedRoundRobin = "interleavedweightedroundrobin"
+	LoadBalanceKeyAliasMethod                   = "aliasmethod"
 )

@@ -18,24 +18,16 @@
 package config
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
-)
 
-import (
-	"github.com/dubbogo/gost/log/logger"
-
-	"github.com/knadh/koanf"
-
-	"github.com/pkg/errors"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/constant/file"
+	"github.com/dubbogo/gost/log/logger"
+	"github.com/knadh/koanf"
+	"github.com/pkg/errors"
 )
 
 type loaderConf struct {
@@ -66,7 +58,7 @@ func NewLoaderConf(opts ...LoaderConfOption) *loaderConf {
 		return conf
 	}
 	if len(conf.bytes) <= 0 {
-		if bytes, err := ioutil.ReadFile(conf.path); err != nil {
+		if bytes, err := os.ReadFile(conf.path); err != nil {
 			panic(err)
 		} else {
 			conf.bytes = bytes
@@ -108,7 +100,7 @@ func WithSuffix(suffix file.Suffix) LoaderConfOption {
 func WithPath(path string) LoaderConfOption {
 	return loaderConfigFunc(func(conf *loaderConf) {
 		conf.path = absolutePath(path)
-		if bytes, err := ioutil.ReadFile(conf.path); err != nil {
+		if bytes, err := os.ReadFile(conf.path); err != nil {
 			panic(err)
 		} else {
 			conf.bytes = bytes
