@@ -21,6 +21,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"dubbo.apache.org/dubbo-go/v3/istio/resources"
+	rbacv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/rbac/v3"
 )
 
 type PilotAgentType int32
@@ -43,6 +44,7 @@ type XdsAgent interface {
 	GetHostInboundListener() *resources.XdsHostInboundListener
 	GetHostInboundMutualTLSMode() resources.MutualTLSMode
 	GetHostInboundJwtAuthentication() *resources.JwtAuthentication
+	GetHostInboundRBAC() *rbacv3.RBAC
 	Stop()
 }
 

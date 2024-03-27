@@ -30,6 +30,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/istio/resources"
 	"dubbo.apache.org/dubbo-go/v3/istio/utils"
 	"github.com/dubbogo/gost/log/logger"
+	rbacv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/rbac/v3"
 )
 
 var (
@@ -240,6 +241,7 @@ func (p *PilotAgent) startUpdateEventLoop() {
 								MutualTLSMode:   xdsListener.InboundTLSMode.GetMutualTLSMode(),
 								TransportSocket: xdsListener.InboundDownstreamTransportSocket,
 								JwtAuthnFilter:  xdsListener.JwtAuthnFilter,
+								RBACFilter:      xdsListener.RBACFilter,
 							}
 							logger.Infof("[Pilot Agent] update InboundListener :%s", utils.ConvertJsonString(xdsHostInboundListener))
 							p.SetHostInboundListener(xdsHostInboundListener)
@@ -391,6 +393,16 @@ func (p *PilotAgent) GetHostInboundJwtAuthentication() *resources.JwtAuthenticat
 	if value != nil {
 		if xdsHostInboundListener, ok := value.(*resources.XdsHostInboundListener); ok {
 			return xdsHostInboundListener.JwtAuthnFilter.JwtAuthentication
+		}
+	}
+	return nil
+}
+
+func (p *PilotAgent) GetHostInboundRBAC() *rbacv3.RBAC {
+	value := p.xdsHostInboundListenerAtomic.Load()
+	if value != nil {
+		if xdsHostInboundListener, ok := value.(*resources.XdsHostInboundListener); ok {
+			return xdsHostInboundListener.RBACFilter.RBAC
 		}
 	}
 	return nil

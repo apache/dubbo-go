@@ -65,6 +65,7 @@ type XdsListener struct {
 	InboundTLSMode                   XdsTLSMode
 	InboundDownstreamTransportSocket XdsDownstreamTransportSocket
 	JwtAuthnFilter                   JwtAuthnFilter
+	RBACFilter                       RBACFilter
 }
 
 type XdsDownstreamTransportSocket struct {
@@ -97,6 +98,7 @@ type XdsHostInboundListener struct {
 	MutualTLSMode   MutualTLSMode
 	TransportSocket XdsDownstreamTransportSocket
 	JwtAuthnFilter  JwtAuthnFilter
+	RBACFilter      RBACFilter
 	// other host inbound info for protocol export here
 }
 

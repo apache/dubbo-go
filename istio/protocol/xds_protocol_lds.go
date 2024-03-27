@@ -26,6 +26,7 @@ import (
 	"github.com/dubbogo/gost/log/logger"
 	listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	jwtauthnv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/jwt_authn/v3"
+	rbacv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/rbac/v3"
 	http_connection_manager_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	sockets_tls_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	v3discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
@@ -232,10 +233,24 @@ func (lds *LdsProtocol) parseListener(listener *listener.Listener) (resources.Xd
 						envoyListener.JwtAuthnFilter = jwtAuthnFilter
 					}
 
-					if httpFilter.GetTypedConfig().GetTypeUrl() == "type.googleapis.com/istio.envoy.config.filter.http.authn.v2alpha1.FilterConfig" && foundInboundFilterChainCatchAll {
-						// parse istio authn here
-					}
+					//if httpFilter.GetTypedConfig().GetTypeUrl() == "type.googleapis.com/istio.envoy.config.filter.http.authn.v2alpha1.FilterConfig" && foundInboundFilterChainCatchAll {
+					//	// parse istio authn here
+					//}
 
+					if httpFilter.GetTypedConfig().GetTypeUrl() == "type.googleapis.com/envoy.extensions.filters.http.rbac.v3.RBAC" && foundInboundFilterChainCatchAll {
+						// parse istio authn here
+						rbacEnvoyFilter := &rbacv3.RBAC{}
+						if err := httpFilter.GetTypedConfig().UnmarshalTo(rbacEnvoyFilter); err != nil {
+							logger.Errorf("can not parse to Http rbacFilter")
+							continue
+						}
+
+						rbacFilter := resources.RBACFilter{
+							Name: httpFilter.Name,
+							RBAC: rbacEnvoyFilter,
+						}
+						envoyListener.RBACFilter = rbacFilter
+					}
 					// parse rbac filter here
 
 				}
