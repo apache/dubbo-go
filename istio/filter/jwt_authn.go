@@ -60,6 +60,7 @@ func NewJwtAuthnFilterEngine(headers map[string]string, authentication *resource
 }
 
 func (e *JwtAuthnFilterEngine) Filter() (*JwtAuthnResult, error) {
+	logger.Infof("[jwt authn filter] authentication: %s", utils.ConvertJsonString(e.authentication))
 	providers := e.authentication.Providers
 	path := e.headers[constant.HttpHeaderXPathName]
 	var (

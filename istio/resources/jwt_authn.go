@@ -113,8 +113,8 @@ type RemoteJwks struct {
 
 // LocalJwks defines the local inline jwks
 type LocalJwks struct {
-	InlineString string
-	Keys         jwk.Set
+	InlineString string  `json:"inline_string,omitempty"`
+	Keys         jwk.Set `json:"keys,omitempty"`
 }
 
 // JwksAsyncFetch defines the behavior of asynchronously fetching JWKS on the main thread.
