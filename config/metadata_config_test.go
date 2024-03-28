@@ -15,31 +15,33 @@
  * limitations under the License.
  */
 
-package mapping
+package config
 
 import (
-	gxset "github.com/dubbogo/gost/container/set"
+	"testing"
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/registry"
+	"github.com/stretchr/testify/assert"
 )
 
-type MockServiceNameMapping struct{}
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+)
 
-func NewMockServiceNameMapping() *MockServiceNameMapping {
-	return &MockServiceNameMapping{}
-}
+func TestNewMetadataReportConfigBuilder(t *testing.T) {
+	config := NewMetadataReportConfigBuilder().
+		SetProtocol("nacos").
+		SetAddress("127.0.0.1:8848").
+		SetUsername("nacos").
+		SetPassword("123456").
+		SetTimeout("10s").
+		SetGroup("dubbo").
+		Build()
 
-func (m *MockServiceNameMapping) Map(*common.URL) error {
-	return nil
-}
+	assert.Equal(t, config.Prefix(), constant.MetadataReportPrefix)
 
-func (m *MockServiceNameMapping) Get(*common.URL, registry.MappingListener) (*gxset.HashSet, error) {
-	panic("implement me")
-}
-
-func (m *MockServiceNameMapping) Remove(*common.URL) error {
-	panic("implement me")
+	url, err := config.ToUrl()
+	assert.NoError(t, err)
+	assert.Equal(t, url.GetParam(constant.TimeoutKey, "3s"), "10s")
 }

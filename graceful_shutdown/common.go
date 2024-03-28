@@ -32,8 +32,6 @@ import (
 )
 
 func init() {
-	hessian.RegisterPOJO(&common.MetadataInfo{})
-	hessian.RegisterPOJO(&common.ServiceInfo{})
 	hessian.RegisterPOJO(&common.URL{})
 }
 

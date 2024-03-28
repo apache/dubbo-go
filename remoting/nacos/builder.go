@@ -36,7 +36,6 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/config"
 )
 
 // NewNacosConfigClientByUrl read the config from url and build an instance
@@ -106,24 +105,6 @@ func GetNacosConfig(url *common.URL) ([]nacosConstant.ServerConfig, nacosConstan
 		UpdateCacheWhenEmpty: url.GetParamBool(constant.NacosUpdateCacheWhenEmpty, true),
 	}
 	return serverConfigs, clientConfig, nil
-}
-
-// NewNacosClient create an instance with the config
-func NewNacosClient(rc *config.RemoteConfig) (*nacosClient.NacosNamingClient, error) {
-	url, err := rc.ToURL()
-	if err != nil {
-		return nil, err
-	}
-	scs, cc, err := GetNacosConfig(url)
-
-	if err != nil {
-		return nil, err
-	}
-	clientName := url.GetParam(constant.ClientNameKey, "")
-	if len(clientName) <= 0 {
-		return nil, perrors.New("nacos client name must set")
-	}
-	return nacosClient.NewNacosNamingClient(clientName, true, scs, cc)
 }
 
 // NewNacosClientByURL created

@@ -306,7 +306,7 @@ func (r *zkRegistry) getCloseListener(conf *common.URL) (*RegistryConfigurationL
 
 	if configurationListener := r.dataListener.UnSubscribeURL(conf); configurationListener != nil {
 		switch v := configurationListener.(type) {
-		case (*RegistryConfigurationListener):
+		case *RegistryConfigurationListener:
 			if v != nil {
 				zkListener = v
 			}

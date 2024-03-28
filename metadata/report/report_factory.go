@@ -15,34 +15,15 @@
  * limitations under the License.
  */
 
-package config
+package report
 
 import (
-	"testing"
+	"dubbo.apache.org/dubbo-go/v3/common"
 )
 
-import (
-	"github.com/stretchr/testify/assert"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
-)
-
-func TestNewMetadataReportConfigBuilder(t *testing.T) {
-	config := NewMetadataReportConfigBuilder().
-		SetProtocol("nacos").
-		SetAddress("127.0.0.1:8848").
-		SetUsername("nacos").
-		SetPassword("123456").
-		SetTimeout("10s").
-		SetGroup("dubbo").
-		Build()
-
-	assert.Equal(t, config.IsValid(), true)
-	assert.Equal(t, config.Prefix(), constant.MetadataReportPrefix)
-
-	url, err := config.ToUrl()
-	assert.NoError(t, err)
-	assert.Equal(t, url.GetParam(constant.TimeoutKey, "3s"), "10s")
+// MetadataReportFactory interface will create metadata report
+type MetadataReportFactory interface {
+	CreateMetadataReport(*common.URL) MetadataReport
 }
+
+type BaseMetadataReportFactory struct{}

@@ -35,7 +35,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/config/instance"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
@@ -93,13 +92,6 @@ func (c *RegistryConfig) getUrlMap(roleType common.RoleType) url.Values {
 
 func (c *RegistryConfig) startRegistryConfig() error {
 	c.translateRegistryAddress()
-	if c.UseAsMetaReport && isValid(c.Address) {
-		if tmpUrl, err := c.toMetadataReportUrl(); err == nil {
-			instance.SetMetadataReportInstanceByReg(tmpUrl)
-		} else {
-			return perrors.Wrap(err, "Start RegistryConfig failed.")
-		}
-	}
 	return verify(c)
 }
 
@@ -237,6 +229,9 @@ func LoadRegistries(registryIds []string, registries map[string]*RegistryConfig,
 				logger.Errorf("The registry id: %s url is invalid, error: %#v", k, err)
 				panic(err)
 			} else {
+				for _, u := range urls {
+					u.AddParam(constant.RegistryIdKey, k)
+				}
 				registryURLs = append(registryURLs, urls...)
 			}
 		}
