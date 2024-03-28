@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package echo
+package authn
 
 import (
 	"context"
