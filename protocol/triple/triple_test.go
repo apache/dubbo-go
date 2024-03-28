@@ -200,7 +200,7 @@ func TestInvoke(t *testing.T) {
 		newURL.SetParam(constant.GroupKey, group)
 		newURL.SetParam(constant.VersionKey, version)
 		newURL.SetParam(constant.SerializationKey, serialization)
-		return NewTripleInvoker(newURL)
+		return NewTripleInvoker(newURL, nil)
 	}
 	dubbo3InvokerInit := func(location string, port string, interfaceName string, group string, version string, svc common.RPCService) (protocol.Invoker, error) {
 		newURL := common.NewURLWithOptions(
