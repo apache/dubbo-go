@@ -1,0 +1,24 @@
+{
+  "version": "app1_version_1",
+  "rules": {
+    "action": "DENY",
+    "policies": {
+      "header-present-match": {
+        "permissions": [
+          {
+            "any": true
+          }
+        ],
+        "principals": [
+          {
+            "header": {
+              "name": "X-Custom-Header",
+              "presentMatch": true
+            }
+          }
+        ]
+      }
+    }
+  },
+  "shadowRules": {}
+}

@@ -22,6 +22,10 @@ package echo
 
 import (
 	"context"
+	"dubbo.apache.org/dubbo-go/v3/istio"
+	istiofilter "dubbo.apache.org/dubbo-go/v3/istio/filter"
+	"dubbo.apache.org/dubbo-go/v3/istio/utils"
+	"fmt"
 	"github.com/dubbogo/gost/log/logger"
 	"sync"
 )
@@ -39,15 +43,23 @@ var (
 )
 
 func init() {
-	extension.SetFilter(constant.RbacFilterKey, newRbacFilter)
+	extension.SetFilter(constant.RBACFilterKey, newRBACFilter)
 }
 
-type rbacFilter struct{}
+type rbacFilter struct {
+	pilotAgent istio.XdsAgent
+}
 
-func newRbacFilter() filter.Filter {
+func newRBACFilter() filter.Filter {
 	if rbac == nil {
 		once.Do(func() {
-			rbac = &rbacFilter{}
+			pilotAgent, err := istio.GetPilotAgent(istio.PilotAgentTypeServerWorkload)
+			if err != nil {
+				logger.Errorf("[rbac filter] can't get pilot agent err:%v", err)
+			}
+			rbac = &rbacFilter{
+				pilotAgent: pilotAgent,
+			}
 		})
 	}
 	return rbac
@@ -55,15 +67,37 @@ func newRbacFilter() filter.Filter {
 
 // Invoke response to the callers with its first argument.
 func (f *rbacFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
-	if invocation.MethodName() == constant.Echo && len(invocation.Arguments()) == 1 {
-		return &protocol.RPCResult{
-			Rest:  invocation.Arguments()[0],
-			Attrs: invocation.Attachments(),
-		}
+	logger.Infof("[rbac filter] invoker")
+	if f.pilotAgent == nil {
+		return &protocol.RPCResult{Err: fmt.Errorf("can not get pilot agent")}
 	}
-	// TODO it just now echo logger, and implement mtls support check later
-	logger.Infof("rbac filter invoker:%v invocation:%v", invoker, invocation)
+	if f.pilotAgent.GetHostInboundListener() == nil {
+		return &protocol.RPCResult{Err: fmt.Errorf("can not get HostInboundListener in pilot agent")}
+	}
+
+	v3RBAC := f.pilotAgent.GetHostInboundRBAC()
+	if v3RBAC == nil {
+		// there is no jwt authn filter
+		logger.Info("[rbac filter] skip rbac filter because there is no rbac configuration found.")
+		return invoker.Invoke(ctx, invocation)
+	}
+
+	headers := buildRequestHeadersFromCtx(ctx, invoker, invocation)
+	rbacFilterEngine := istiofilter.NewRBACFilterEngine(headers, v3RBAC)
+	rbacResult, err := rbacFilterEngine.Filter()
+	if err != nil {
+		result := &protocol.RPCResult{}
+		result.SetResult(nil)
+		result.SetError(err)
+		return result
+	}
+
+	logger.Infof("[rbac filter] rbac result: %s", utils.ConvertJsonString(rbacResult))
 	return invoker.Invoke(ctx, invocation)
+}
+
+func buildRequestHeadersFromCtx(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) map[string]string {
+	return utils.ConvertAttachmentsToMap(invocation.Attachments())
 }
 
 // OnResponse dummy process, returns the result directly

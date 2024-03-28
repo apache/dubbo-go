@@ -1,0 +1,37 @@
+{
+  "version": "app1_version_1",
+  "rules": {
+    "action": "DENY",
+    "policies": {
+      "deny-all": {
+        "permissions": [
+          {
+            "any": true
+          }
+        ],
+        "principals": [
+          {
+            "any": true
+          }
+        ]
+      }
+    }
+  },
+  "shadow_rules": {
+    "action": "DENY",
+    "policies": {
+      "deny-all": {
+        "permissions": [
+          {
+            "any": true
+          }
+        ],
+        "principals": [
+          {
+            "any": true
+          }
+        ]
+      }
+    }
+  }
+}

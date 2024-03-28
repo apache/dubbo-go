@@ -42,14 +42,14 @@ var (
 )
 
 func init() {
-	extension.SetFilter(constant.MtlsFilterKey, newMtlsFilter)
+	extension.SetFilter(constant.MTLSFilterKey, newMTLSFilter)
 }
 
 type mtlsFilter struct {
 	pilotAgent istio.XdsAgent
 }
 
-func newMtlsFilter() filter.Filter {
+func newMTLSFilter() filter.Filter {
 	if mtls == nil {
 		once.Do(func() {
 			pilotAgent, err := istio.GetPilotAgent(istio.PilotAgentTypeServerWorkload)

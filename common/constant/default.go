@@ -64,7 +64,7 @@ const (
 
 	DefaultReferenceFilters = GracefulShutdownConsumerFilterKey
 
-	DefaultXdsFilters = MtlsFilterKey + "," + JwtFilterKey + "," + AuthnFilterKey + "," + RbacFilterKey
+	DefaultXdsFilters = MTLSFilterKey + "," + JwtFilterKey + "," + AuthnFilterKey + "," + RBACFilterKey
 )
 
 const (

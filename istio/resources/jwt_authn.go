@@ -28,8 +28,8 @@ import (
 	"github.com/lestrrat-go/jwx/v2/jwt"
 )
 
-// JwtAuthnFilter definine jwt authn filter configuration
-type JwtAuthnFilter struct {
+// JwtAuthnEnovyFilter definine jwt authn filter configuration
+type JwtAuthnEnovyFilter struct {
 	Name              string
 	JwtAuthentication *JwtAuthentication
 }

@@ -64,8 +64,8 @@ type XdsListener struct {
 	// virtual inbound 15006 listener tls and downstream transport socket which is for mtls
 	InboundTLSMode                   XdsTLSMode
 	InboundDownstreamTransportSocket XdsDownstreamTransportSocket
-	JwtAuthnFilter                   JwtAuthnFilter
-	RBACFilter                       RBACFilter
+	JwtAuthnFilter                   JwtAuthnEnovyFilter
+	RBACFilter                       RBACEnvoyFilter
 }
 
 type XdsDownstreamTransportSocket struct {
@@ -97,8 +97,8 @@ type XdsFilter struct {
 type XdsHostInboundListener struct {
 	MutualTLSMode   MutualTLSMode
 	TransportSocket XdsDownstreamTransportSocket
-	JwtAuthnFilter  JwtAuthnFilter
-	RBACFilter      RBACFilter
+	JwtAuthnFilter  JwtAuthnEnovyFilter
+	RBACFilter      RBACEnvoyFilter
 	// other host inbound info for protocol export here
 }
 

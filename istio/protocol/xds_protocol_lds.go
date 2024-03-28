@@ -222,12 +222,12 @@ func (lds *LdsProtocol) parseListener(listener *listener.Listener) (resources.Xd
 						// parse jwt authn here
 						jwtAuthentication := &jwtauthnv3.JwtAuthentication{}
 						if err := httpFilter.GetTypedConfig().UnmarshalTo(jwtAuthentication); err != nil {
-							logger.Errorf("can not parse to Http JwtAuthnFilter")
+							logger.Errorf("can not parse to Http JwtAuthnEnovyFilter")
 							continue
 						}
 						jwtAuthnFilter, err := lds.parseJwtAuthnFilter(httpFilter.Name, jwtAuthentication)
 						if err != nil {
-							logger.Errorf("can not convert to JwtAuthnFilter ")
+							logger.Errorf("can not convert to JwtAuthnEnovyFilter ")
 							continue
 						}
 						envoyListener.JwtAuthnFilter = jwtAuthnFilter
@@ -245,7 +245,7 @@ func (lds *LdsProtocol) parseListener(listener *listener.Listener) (resources.Xd
 							continue
 						}
 
-						rbacFilter := resources.RBACFilter{
+						rbacFilter := resources.RBACEnvoyFilter{
 							Name: httpFilter.Name,
 							RBAC: rbacEnvoyFilter,
 						}
@@ -268,8 +268,8 @@ func (lds *LdsProtocol) parseListener(listener *listener.Listener) (resources.Xd
 	return envoyListener, nil
 }
 
-func (lds *LdsProtocol) parseJwtAuthnFilter(name string, envoyAuthentication *jwtauthnv3.JwtAuthentication) (resources.JwtAuthnFilter, error) {
-	jwtAuthnFilter := resources.JwtAuthnFilter{
+func (lds *LdsProtocol) parseJwtAuthnFilter(name string, envoyAuthentication *jwtauthnv3.JwtAuthentication) (resources.JwtAuthnEnovyFilter, error) {
+	jwtAuthnFilter := resources.JwtAuthnEnovyFilter{
 		Name: name,
 	}
 	jwtAuthentication := &resources.JwtAuthentication{

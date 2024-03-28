@@ -1,0 +1,25 @@
+{
+  "version": "app1_version_1",
+  "rules": {
+    "action": "DENY",
+    "policies": {
+      "path-match": {
+        "permissions": [
+          {
+            "url_path": {
+              "path": {
+                "exact": "/deny"
+              }
+            }
+          }
+        ],
+        "principals": [
+          {
+            "any": true
+          }
+        ]
+      }
+    }
+  },
+  "shadowRules": {}
+}

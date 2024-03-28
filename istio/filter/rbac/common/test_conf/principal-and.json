@@ -1,0 +1,30 @@
+{
+  "version": "app1_version_1",
+  "rules": {
+    "action": "DENY",
+    "policies": {
+      "and-match": {
+        "permissions": [
+          {
+            "any": true
+          }
+        ],
+        "principals": [
+          {
+            "and_ids": {
+              "ids": [
+                {
+                  "any": true
+                },
+                {
+                  "any": false
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  },
+  "shadowRules": {}
+}

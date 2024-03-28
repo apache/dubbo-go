@@ -1,0 +1,57 @@
+{
+  "version": "app1_version_1",
+  "rules": {
+    "action": "DENY",
+    "policies": {
+      "header-regex-match": {
+        "permissions": [
+          {
+            "any": true
+          }
+        ],
+        "principals": [
+          {
+            "orIds": {
+              "ids": [
+                {
+                  "header": {
+                    "name": ":path",
+                    "regexMatch": "\/deny.*"
+                  }
+                },
+                {
+                  "header": {
+                    "name": ":method",
+                    "exactMatch": "HEAD"
+                  }
+                },
+                {
+                  "header": {
+                    "name": ":path",
+                    "prefixMatch": "/control-api"
+                  }
+                },
+                {
+                  "header": {
+                    "name": ":path",
+                    "suffixMatch": ".java"
+                  }
+                },
+                {
+                  "header": {
+                    "name": "X-Timeout",
+                    "rangeMatch": {
+                      "start": 100,
+                      "end": 999999
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  },
+  "shadowRules": {}
+}

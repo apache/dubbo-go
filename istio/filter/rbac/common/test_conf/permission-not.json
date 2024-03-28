@@ -1,0 +1,23 @@
+{
+  "version": "app1_version_1",
+  "rules": {
+    "action": "ALLOW",
+    "policies": {
+      "not-match": {
+        "permissions": [
+          {
+            "not_rule": {
+              "any": true
+            }
+          }
+        ],
+        "principals": [
+          {
+            "any": true
+          }
+        ]
+      }
+    }
+  },
+  "shadowRules": {}
+}
