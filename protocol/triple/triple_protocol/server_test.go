@@ -74,7 +74,7 @@ func TestServer_RegisterMuxHandle(t *testing.T) {
 		},
 	}
 
-	srv := NewServer("127.0.0.1:20000")
+	srv := NewServer("127.0.0.1:20000", nil)
 	for _, test := range tests {
 		err := srv.RegisterUnaryHandler(test.path, nil, nil)
 		assert.Nil(t, err)

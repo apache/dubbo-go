@@ -1,0 +1,24 @@
+{
+  "version": "app1_version_1",
+  "rules": {
+    "action": "ALLOW",
+    "policies": {
+      "or-match": {
+        "permissions": [
+          {
+            "destination_ip": {
+              "addressPrefix": "1.2.3.4",
+              "prefixLen": 24
+            }
+          }
+        ],
+        "principals": [
+          {
+            "any": true
+          }
+        ]
+      }
+    }
+  },
+  "shadowRules": {}
+}

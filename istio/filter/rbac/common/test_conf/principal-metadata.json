@@ -1,0 +1,36 @@
+{
+  "version": "app1_version_1",
+  "rules": {
+    "action": "DENY",
+    "policies": {
+      "metadata-match": {
+        "permissions": [
+          {
+            "any": true
+          }
+        ],
+        "principals": [
+          {
+            "metadata": {
+              "filter": "istio_authn",
+              "path": [
+                {
+                  "key": "source.principal"
+                }
+              ],
+              "value": {
+                "string_match": {
+                  "safe_regex": {
+                    "google_re2": {},
+                    "regex": ".*/ns/default/.*"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "shadowRules": {}
+}
