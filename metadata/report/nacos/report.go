@@ -54,20 +54,28 @@ func init() {
 // of MetadataReport based on nacos.
 type nacosMetadataReport struct {
 	client *nacosClient.NacosConfigClient
+	group  string
 }
 
 // GetAppMetadata get metadata info from nacos
 func (n *nacosMetadataReport) GetAppMetadata(application, revision string) (*info.MetadataInfo, error) {
+	// compatible with java impl first
 	data, err := n.getConfig(vo.ConfigParam{
-		DataId: application + constant.PathSeparator + revision,
+		DataId: application,
+		Group:  revision,
 	})
-	// TODO java impl as below
-	//data, err = n.getConfig(vo.ConfigParam{
-	//	DataId: application,
-	//	Group:  revision,
-	//})
 	if err != nil {
 		return nil, err
+	}
+	if data == "" {
+		// compatible with dubbo-go 3.1.x before
+		data, err = n.getConfig(vo.ConfigParam{
+			DataId: application + constant.KeySeparator + revision,
+			Group:  n.group,
+		})
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	var metadataInfo info.MetadataInfo
@@ -84,9 +92,19 @@ func (n *nacosMetadataReport) PublishAppMetadata(application, revision string, m
 	if err != nil {
 		return err
 	}
-
+	// compatible with java impl
+	err = n.storeMetadata(vo.ConfigParam{
+		DataId:  application,
+		Group:   revision,
+		Content: string(data),
+	})
+	if err != nil {
+		return err
+	}
+	// compatible with dubbo-go 3.1.x before
 	return n.storeMetadata(vo.ConfigParam{
-		DataId:  application + constant.PathSeparator + revision,
+		DataId:  application + constant.KeySeparator + revision,
+		Group:   n.group,
 		Content: string(data),
 	})
 }
@@ -212,5 +230,5 @@ func (n *nacosMetadataReportFactory) CreateMetadataReport(url *common.URL) repor
 		logger.Errorf("Could not create nacos metadata report. URL: %s", url.String())
 		return nil
 	}
-	return &nacosMetadataReport{client: client}
+	return &nacosMetadataReport{client: client, group: group}
 }
