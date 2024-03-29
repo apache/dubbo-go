@@ -16,14 +16,14 @@ type HeaderMatcher interface {
 	//*HeaderMatcher_SuffixMatch
 	//*HeaderMatcher_SafeRegexMatch
 	isHeaderMatcher()
-	Equal(string) bool
+	Match(string) bool
 }
 
 type HeaderMatcherPresentMatch struct {
 	PresentMatch bool
 }
 
-func (m *HeaderMatcherPresentMatch) Equal(targetValue string) bool {
+func (m *HeaderMatcherPresentMatch) Match(targetValue string) bool {
 	return m.PresentMatch
 }
 
