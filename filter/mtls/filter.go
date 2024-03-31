@@ -15,10 +15,7 @@
  * limitations under the License.
  */
 
-// Package echo providers health check filter.
-// RPCService need a Echo method in consumer, if you want to use Filter
-// eg: Echo func(ctx context.Context, arg interface{}, rsp *Xxx) error
-package echo
+package mtls
 
 import (
 	"context"
@@ -64,7 +61,9 @@ func newMTLSFilter() filter.Filter {
 	return mtls
 }
 
-// Invoke response to the callers with its first argument.
+// Invoke processes the request based on mTLS mode and returns the result.
+// If the request fails the mTLS filtering, it returns an error result.
+// Otherwise, it sets the corresponding mTLS mode attachment and invokes the next Invoker to handle the request.
 func (f *mtlsFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	logger.Infof("[mtls filter] url: %s", invoker.GetURL().String())
 	headers := utils.ConvertAttachmentsToMap(invocation.Attachments())

@@ -15,26 +15,21 @@
  * limitations under the License.
  */
 
-// Package echo providers health check filter.
-// RPCService need a Echo method in consumer, if you want to use Filter
-// eg: Echo func(ctx context.Context, arg interface{}, rsp *Xxx) error
-package echo
+package rbac
 
 import (
 	"context"
-	"dubbo.apache.org/dubbo-go/v3/istio"
-	istioengine "dubbo.apache.org/dubbo-go/v3/istio/engine"
-	"dubbo.apache.org/dubbo-go/v3/istio/utils"
 	"fmt"
-	"github.com/dubbogo/gost/log/logger"
 	"sync"
-)
 
-import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
+	"dubbo.apache.org/dubbo-go/v3/istio"
+	istioengine "dubbo.apache.org/dubbo-go/v3/istio/engine"
+	"dubbo.apache.org/dubbo-go/v3/istio/utils"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"github.com/dubbogo/gost/log/logger"
 )
 
 var (
@@ -65,7 +60,7 @@ func newRBACFilter() filter.Filter {
 	return rbac
 }
 
-// Invoke response to the callers with its first argument.
+// Invoke processes the request and returns the result based on RBAC configuration.
 func (f *rbacFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	logger.Infof("[rbac filter] invoker")
 	if f.pilotAgent == nil {

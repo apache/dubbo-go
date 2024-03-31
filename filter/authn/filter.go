@@ -15,9 +15,6 @@
  * limitations under the License.
  */
 
-// Package echo providers health check filter.
-// RPCService need a Echo method in consumer, if you want to use Filter
-// eg: Echo func(ctx context.Context, arg interface{}, rsp *Xxx) error
 package authn
 
 import (
@@ -53,9 +50,9 @@ func newAuthnFilter() filter.Filter {
 	return authn
 }
 
-// Invoke response to the callers with its first argument.
+// Invoke processes the request and returns the result.
+// Deprecated. Please use security/v1beta1/PeerAuthentication instead.
 func (f *authnFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
-	// Deprecated. Please use security/v1beta1/PeerAuthentication instead.
 	logger.Infof("[authn filter] invoker")
 	return invoker.Invoke(ctx, invocation)
 }

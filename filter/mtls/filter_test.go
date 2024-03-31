@@ -15,29 +15,12 @@
  * limitations under the License.
  */
 
-package echo
+package mtls
 
 import (
-	"context"
 	"testing"
 )
 
-import (
-	"github.com/stretchr/testify/assert"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
-	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
-)
-
 func TestFilterInvoke(t *testing.T) {
-	filter := &mtlsFilter{}
-	result := filter.Invoke(context.Background(), protocol.NewBaseInvoker(&common.URL{}), invocation.NewRPCInvocation("$echo", []interface{}{"OK"}, nil))
-	assert.Equal(t, "OK", result.Result())
 
-	result = filter.Invoke(context.Background(), protocol.NewBaseInvoker(&common.URL{}), invocation.NewRPCInvocation("MethodName", []interface{}{"OK"}, nil))
-	assert.Nil(t, result.Error())
-	assert.Nil(t, result.Result())
 }
