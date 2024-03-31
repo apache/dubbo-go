@@ -78,8 +78,8 @@ func (f *rbacFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invoc
 	}
 
 	headers := buildRequestHeadersFromCtx(ctx, invoker, invocation)
-	rbacFilterEngine := istioengine.NewRBACFilterEngine(headers, v3RBAC)
-	rbacResult, err := rbacFilterEngine.Filter()
+	rbacFilterEngine := istioengine.NewRBACFilterEngine(v3RBAC)
+	rbacResult, err := rbacFilterEngine.Filter(headers)
 	if err != nil {
 		result := &protocol.RPCResult{}
 		result.SetResult(nil)

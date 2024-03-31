@@ -82,8 +82,8 @@ func (f *jwtAuthnFilter) Invoke(ctx context.Context, invoker protocol.Invoker, i
 	}
 
 	headers := buildRequestHeadersFromCtx(ctx, invoker, invocation)
-	jwtAuthnFilterEngine := istioengine.NewJwtAuthnFilterEngine(headers, jwtAuthentication)
-	jwtAuthnResult, err := jwtAuthnFilterEngine.Filter()
+	jwtAuthnFilterEngine := istioengine.NewJwtAuthnFilterEngine(jwtAuthentication)
+	jwtAuthnResult, err := jwtAuthnFilterEngine.Filter(headers)
 	if err != nil {
 		result := &protocol.RPCResult{}
 		result.SetResult(nil)

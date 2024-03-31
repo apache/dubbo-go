@@ -31,23 +31,21 @@ type MTLSResult struct {
 }
 
 type MTLSFilterEngine struct {
-	headers       map[string]string
 	mutualTLSMode resources.MutualTLSMode
 }
 
-func NewMTLSFilterEngine(headers map[string]string, mutualTLSMode resources.MutualTLSMode) *MTLSFilterEngine {
+func NewMTLSFilterEngine(mutualTLSMode resources.MutualTLSMode) *MTLSFilterEngine {
 	mtlsEngine := &MTLSFilterEngine{
-		headers:       headers,
 		mutualTLSMode: mutualTLSMode,
 	}
 	return mtlsEngine
 }
 
-func (m *MTLSFilterEngine) Filter() (*MTLSResult, error) {
+func (m *MTLSFilterEngine) Filter(headers map[string]string) (*MTLSResult, error) {
 
 	scheme := "https"
-	if _, ok := m.headers[constant.HttpHeaderXSchemeName]; ok {
-		scheme = strings.ToLower(m.headers[constant.HttpHeaderXSchemeName])
+	if _, ok := headers[constant.HttpHeaderXSchemeName]; ok {
+		scheme = strings.ToLower(headers[constant.HttpHeaderXSchemeName])
 	}
 
 	reqOKMsg := fmt.Sprintf("%s request on mtls %s mode is granted", scheme, resources.MutualTLSModeToString(m.mutualTLSMode))

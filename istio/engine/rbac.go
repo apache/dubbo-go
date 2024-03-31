@@ -8,19 +8,17 @@ type RBACResult struct {
 }
 
 type RBACFilterEngine struct {
-	headers map[string]string
-	RBAC    *rbacv3.RBAC
+	RBAC *rbacv3.RBAC
 }
 
-func NewRBACFilterEngine(headers map[string]string, rbac *rbacv3.RBAC) *RBACFilterEngine {
+func NewRBACFilterEngine(rbac *rbacv3.RBAC) *RBACFilterEngine {
 	rbacFilterEngine := &RBACFilterEngine{
-		headers: headers,
-		RBAC:    rbac,
+		RBAC: rbac,
 	}
 	return rbacFilterEngine
 }
 
-func (r *RBACFilterEngine) Filter() (*RBACResult, error) {
+func (r *RBACFilterEngine) Filter(headers map[string]string) (*RBACResult, error) {
 
 	return nil, nil
 }

@@ -47,22 +47,20 @@ type JwtAuthnResult struct {
 }
 
 type JwtAuthnFilterEngine struct {
-	headers        map[string]string
 	authentication *resources.JwtAuthentication
 }
 
-func NewJwtAuthnFilterEngine(headers map[string]string, authentication *resources.JwtAuthentication) *JwtAuthnFilterEngine {
+func NewJwtAuthnFilterEngine(authentication *resources.JwtAuthentication) *JwtAuthnFilterEngine {
 	jwtAuthnFilterEngine := &JwtAuthnFilterEngine{
-		headers:        headers,
 		authentication: authentication,
 	}
 	return jwtAuthnFilterEngine
 }
 
-func (e *JwtAuthnFilterEngine) Filter() (*JwtAuthnResult, error) {
+func (e *JwtAuthnFilterEngine) Filter(headers map[string]string) (*JwtAuthnResult, error) {
 	logger.Infof("[jwt authn filter] authentication: %s", utils.ConvertJsonString(e.authentication))
 	providers := e.authentication.Providers
-	path := e.headers[constant.HttpHeaderXPathName]
+	path := headers[constant.HttpHeaderXPathName]
 	var (
 		jwtToken                                    jwt2.Token
 		findProviderName, findHeaderName, findToken string
@@ -79,7 +77,7 @@ func (e *JwtAuthnFilterEngine) Filter() (*JwtAuthnResult, error) {
 			allProviderNames := requires.ProviderNames
 			allowMissingOrFailed := requires.AllowMissingOrFailed
 			allowMissing := requires.AllowMissing
-			jwtToken, findProviderName, findHeaderName, findToken, tokenExists, tokenVerified = verifyByProviderNames(allProviderNames, providers, e.headers)
+			jwtToken, findProviderName, findHeaderName, findToken, tokenExists, tokenVerified = verifyByProviderNames(allProviderNames, providers, headers)
 			logger.Infof("[jwt authn filter] match result: provider name: %s, header name: %s, tokenExists: %t, tokenVerified :%t", findProviderName, findHeaderName, tokenExists, tokenVerified)
 			logger.Infof("[jwt authn filter] match result: found token: %s", findToken)
 			if jwtToken == nil {

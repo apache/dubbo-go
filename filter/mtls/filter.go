@@ -79,8 +79,8 @@ func (f *mtlsFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invoc
 	}
 	// filer request
 	mutualTLSMode := f.pilotAgent.GetHostInboundMutualTLSMode()
-	mtlsFilterEngine := istioengine.NewMTLSFilterEngine(headers, mutualTLSMode)
-	mtlsResult, _ := mtlsFilterEngine.Filter()
+	mtlsFilterEngine := istioengine.NewMTLSFilterEngine(mutualTLSMode)
+	mtlsResult, _ := mtlsFilterEngine.Filter(headers)
 	logger.Infof("[mtls filter] %s", mtlsResult.ReqMsg)
 
 	if !mtlsResult.ReqOK {
