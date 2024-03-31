@@ -190,7 +190,8 @@ const TypeCheckTpl = `var ({{$t := .}}{{range $s := .Services}}
 
 `
 
-const InterfaceTpl = `// {{$t := .}}{{range $s := .Services}}{{.ServiceName}} is a client for the {{$t.ProtoPackage}}.{{$s.ServiceName}} service.
+const InterfaceTpl = `{{$t := .}}{{range $s := .Services}}
+// {{.ServiceName}} is a client for the {{$t.ProtoPackage}}.{{$s.ServiceName}} service.
 type {{$s.ServiceName}} interface { {{- range $s.Methods}}
 	{{upper .MethodName}}(ctx context.Context{{if .StreamsRequest}}{{else}}, req *{{.RequestType}}{{end}}, opts ...client.CallOption) {{if or .StreamsReturn .StreamsRequest}}({{$s.ServiceName}}_{{.MethodName}}Client, error){{else}}(*{{.ReturnType}}, error){{end}}{{end}}
 }{{end}}
@@ -208,7 +209,7 @@ func New{{.ServiceName}}(cli *client.Client, opts ...client.ReferenceOption) ({{
 	}, nil
 }
 
-func SetConsumerService(srv common.RPCService) {
+func SetConsumer{{.ServiceName}}(srv common.RPCService) {
 	dubbo.SetConsumerServiceWithInfo(srv,&{{.ServiceName}}_ClientInfo)
 }
 
@@ -346,7 +347,8 @@ func (cli *{{$s.ServiceName}}{{.MethodName}}Client) Conn() (triple_protocol.Stre
 
 `
 
-const MethodInfoTpl = `{{$t := .}}{{range $i, $s := .Services}}var {{.ServiceName}}_ClientInfo = client.ClientInfo{
+const MethodInfoTpl = `{{$t := .}}{{range $i, $s := .Services}}
+var {{.ServiceName}}_ClientInfo = client.ClientInfo{
 	InterfaceName: "{{$t.ProtoPackage}}.{{.ServiceName}}",
 	MethodNames:   []string{ {{- range $j, $m := .Methods}}"{{.MethodName}}"{{if last $j (len $s.Methods)}}{{else}},{{end}}{{end -}} },
 	ConnectionInjectFunc: func(dubboCliRaw interface{}, conn *client.Connection) {
@@ -354,10 +356,10 @@ const MethodInfoTpl = `{{$t := .}}{{range $i, $s := .Services}}var {{.ServiceNam
 		dubboCli.conn = conn
 	},
 }{{end}}
-
 `
 
-const HandlerTpl = `{{$t := .}}{{range $s := .Services}}// {{.ServiceName}}Handler is an implementation of the {{$t.ProtoPackage}}.{{.ServiceName}} service.
+const HandlerTpl = `{{$t := .}}{{range $s := .Services}}
+// {{.ServiceName}}Handler is an implementation of the {{$t.ProtoPackage}}.{{.ServiceName}} service.
 type {{.ServiceName}}Handler interface { {{- range $s.Methods}}
 	{{upper .MethodName}}(context.Context, {{if .StreamsRequest}}{{$s.ServiceName}}_{{.MethodName}}Server{{else}}*{{.RequestType}}{{if .StreamsReturn}}, {{$s.ServiceName}}_{{.MethodName}}Server{{end}}{{end}}) {{if .StreamsReturn}}error{{else}}(*{{.ReturnType}}, error){{end}}{{end}}
 }
@@ -366,7 +368,7 @@ func Register{{.ServiceName}}Handler(srv *server.Server, hdlr {{.ServiceName}}Ha
 	return srv.Register(hdlr, &{{.ServiceName}}_ServiceInfo, opts...)
 }
 
-func SetProviderService(srv common.RPCService)  {
+func SetProvider{{.ServiceName}}(srv common.RPCService)  {
 	dubbo.SetProviderServiceWithInfo(srv,&{{.ServiceName}}_ServiceInfo)
 }{{end}}
 `
@@ -443,7 +445,8 @@ func (g *{{$s.ServiceName}}{{.MethodName}}Server) Send(msg *{{.ReturnType}}) err
 {{end}}{{end}}{{end}}{{end}}
 `
 
-const ServiceInfoTpl = `{{$t := .}}{{range $s := .Services}}var {{.ServiceName}}_ServiceInfo = server.ServiceInfo{
+const ServiceInfoTpl = `{{$t := .}}{{range $s := .Services}}
+var {{.ServiceName}}_ServiceInfo = server.ServiceInfo{
 	InterfaceName: "{{$t.ProtoPackage}}.{{.ServiceName}}",
 	ServiceType:   (*{{.ServiceName}}Handler)(nil),
 	Methods: []server.MethodInfo{ {{- range .Methods}}{{if .StreamsRequest}}{{if .StreamsReturn}}
