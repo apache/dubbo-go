@@ -1,4 +1,4 @@
-package filter
+package engine
 
 import (
 	rbacv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/rbac/v3"

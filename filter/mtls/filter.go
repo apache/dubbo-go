@@ -29,7 +29,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/istio"
-	istiofilter "dubbo.apache.org/dubbo-go/v3/istio/filter"
+	istioengine "dubbo.apache.org/dubbo-go/v3/istio/engine"
 	"dubbo.apache.org/dubbo-go/v3/istio/resources"
 	"dubbo.apache.org/dubbo-go/v3/istio/utils"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
@@ -80,7 +80,7 @@ func (f *mtlsFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invoc
 	}
 	// filer request
 	mutualTLSMode := f.pilotAgent.GetHostInboundMutualTLSMode()
-	mtlsFilterEngine := istiofilter.NewMTLSFilterEngine(headers, mutualTLSMode)
+	mtlsFilterEngine := istioengine.NewMTLSFilterEngine(headers, mutualTLSMode)
 	mtlsResult, _ := mtlsFilterEngine.Filter()
 	logger.Infof("[mtls filter] %s", mtlsResult.ReqMsg)
 
@@ -91,7 +91,7 @@ func (f *mtlsFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invoc
 		return result
 	}
 
-	invocation.SetAttachment(":mutual-tls-mode", []string{resources.MutualTLSModeToString(mutualTLSMode)})
+	invocation.SetAttachment(constant.HttpHeaderXMTLSMode, []string{resources.MutualTLSModeToString(mutualTLSMode)})
 	return invoker.Invoke(ctx, invocation)
 }
 

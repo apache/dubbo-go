@@ -31,7 +31,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/istio"
-	istiofilter "dubbo.apache.org/dubbo-go/v3/istio/filter"
+	istioengine "dubbo.apache.org/dubbo-go/v3/istio/engine"
 	"dubbo.apache.org/dubbo-go/v3/istio/resources"
 	"dubbo.apache.org/dubbo-go/v3/istio/utils"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
@@ -84,7 +84,7 @@ func (f *jwtAuthnFilter) Invoke(ctx context.Context, invoker protocol.Invoker, i
 	}
 
 	headers := buildRequestHeadersFromCtx(ctx, invoker, invocation)
-	jwtAuthnFilterEngine := istiofilter.NewJwtAuthnFilterEngine(headers, jwtAuthentication)
+	jwtAuthnFilterEngine := istioengine.NewJwtAuthnFilterEngine(headers, jwtAuthentication)
 	jwtAuthnResult, err := jwtAuthnFilterEngine.Filter()
 	if err != nil {
 		result := &protocol.RPCResult{}
@@ -96,14 +96,14 @@ func (f *jwtAuthnFilter) Invoke(ctx context.Context, invoker protocol.Invoker, i
 	jwtVerifyStatus := jwtAuthnResult.JwtVerfiyStatus
 	logger.Infof("[jwt authn filter] final jwt verify status: %t", jwtVerifyStatus)
 	// check final result
-	if jwtVerifyStatus == istiofilter.JwtVerfiyStatusMissing {
+	if jwtVerifyStatus == istioengine.JwtVerfiyStatusMissing {
 		result := &protocol.RPCResult{}
 		result.SetResult(nil)
 		result.SetError(errors.New("jwt token is missing"))
 		return result
 	}
 
-	if jwtVerifyStatus == istiofilter.JwtVerfiyStatusFailed {
+	if jwtVerifyStatus == istioengine.JwtVerfiyStatusFailed {
 		result := &protocol.RPCResult{}
 		result.SetResult(nil)
 		result.SetError(errors.New("jwt token verify fail"))

@@ -23,7 +23,7 @@ package echo
 import (
 	"context"
 	"dubbo.apache.org/dubbo-go/v3/istio"
-	istiofilter "dubbo.apache.org/dubbo-go/v3/istio/filter"
+	istioengine "dubbo.apache.org/dubbo-go/v3/istio/engine"
 	"dubbo.apache.org/dubbo-go/v3/istio/utils"
 	"fmt"
 	"github.com/dubbogo/gost/log/logger"
@@ -83,7 +83,7 @@ func (f *rbacFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invoc
 	}
 
 	headers := buildRequestHeadersFromCtx(ctx, invoker, invocation)
-	rbacFilterEngine := istiofilter.NewRBACFilterEngine(headers, v3RBAC)
+	rbacFilterEngine := istioengine.NewRBACFilterEngine(headers, v3RBAC)
 	rbacResult, err := rbacFilterEngine.Filter()
 	if err != nil {
 		result := &protocol.RPCResult{}

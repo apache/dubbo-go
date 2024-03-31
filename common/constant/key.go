@@ -236,7 +236,8 @@ const (
 	HttpHeaderXPathName      = ":x-path"
 	HttpHeaderXHostName      = ":x-host"
 	HttpHeaderXSpiffeName    = ":x-spiffe"
-	HttpHeaderXJwtClaimsName = ":x-jwt-claims"
+	HttpHeaderXJwtClaimsName = ":x-auth"
+	HttpHeaderXMTLSMode      = ":x-mtls-mode"
 )
 
 // config center keys
