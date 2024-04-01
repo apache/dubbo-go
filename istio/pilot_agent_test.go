@@ -36,11 +36,11 @@ func TestGetPilotAgent(t *testing.T) {
 		logger.Infof("OnRdsChangeListener serviceName %s with rds = %s", serviceName, utils.ConvertJsonString(xdsVirtualHost))
 		return nil
 	}
-	OnEdsChangeListener := func(clusterName string, xdsCluster resources.XdsCluster, xdsClusterEndpoint resources.XdsClusterEndpoint) error {
-		logger.Infof("OnEdsChangeListener clusterName %s with cluster = %s and  eds = %s", clusterName, utils.ConvertJsonString(xdsCluster), utils.ConvertJsonString(xdsClusterEndpoint))
+	OnCdsChangeListener := func(clusterName string, xdsCluster resources.XdsCluster, xdsClusterEndpoint resources.XdsClusterEndpoint) error {
+		logger.Infof("OnCdsChangeListener clusterName %s with cluster = %s and  eds = %s", clusterName, utils.ConvertJsonString(xdsCluster), utils.ConvertJsonString(xdsClusterEndpoint))
 		return nil
 	}
-	pilotAgent.SubscribeCds("outbound|8000||httpbin.foo.svc.cluster.local", "eds", OnEdsChangeListener)
+	pilotAgent.SubscribeCds("outbound|8000||httpbin.foo.svc.cluster.local", "cds", OnCdsChangeListener)
 	pilotAgent.SubscribeRds("8000", "rds", OnRdsChangeListener)
 	select {}
 

@@ -35,8 +35,8 @@ const (
 // OnRdsChangeListener defines the signature for RDS change listeners.
 type OnRdsChangeListener func(serviceName string, xdsVirtualHost resources.XdsVirtualHost) error
 
-// OnEdsChangeListener defines the signature for EDS change listeners.
-type OnEdsChangeListener func(clusterName string, xdsCluster resources.XdsCluster, xdsClusterEndpoint resources.XdsClusterEndpoint) error
+// OnCdsChangeListener defines the signature for CDS change listeners.
+type OnCdsChangeListener func(clusterName string, xdsCluster resources.XdsCluster, xdsClusterEndpoint resources.XdsClusterEndpoint) error
 
 // XdsAgent is the interface for managing xDS agents.
 type XdsAgent interface {
@@ -53,7 +53,7 @@ type XdsAgent interface {
 	UnsubscribeRds(serviceName, listenerName string)
 
 	// SubscribeCds subscribes to changes in the Endpoint Discovery Service (EDS) for the given cluster name.
-	SubscribeCds(clusterName, listenerName string, listener OnEdsChangeListener)
+	SubscribeCds(clusterName, listenerName string, listener OnCdsChangeListener)
 
 	// UnsubscribeCds unsubscribes the listener from changes in the Endpoint Discovery Service (EDS) for the given cluster name.
 	UnsubscribeCds(clusterName, listenerName string)

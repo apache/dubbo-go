@@ -142,7 +142,7 @@ func (dir *directory) changeClusterSubscribe(oldCluster, newCluster []string) {
 }
 
 func (dir *directory) OnEdsChangeListener(clusterName string, xdsCluster resources.XdsCluster, xdsClusterEndpoint resources.XdsClusterEndpoint) error {
-	logger.Infof("[Xds directory] OnEdsChangeListener recv clusterName:%s, xdsCluster:%+v, xdsCluserEndpoint:%+v", clusterName, xdsCluster, xdsClusterEndpoint)
+	logger.Infof("[Xds directory] OnCdsChangeListener recv clusterName:%s, xdsCluster:%+v, xdsCluserEndpoint:%+v", clusterName, xdsCluster, xdsClusterEndpoint)
 	mutualTLSMode := xdsCluster.TlsMode.GetMutualTLSMode()
 	reqMutualTLSMode := resources.MTLSDisable
 	if mutualTLSMode == resources.MTLSStrict || mutualTLSMode == resources.MTLSPermissive {

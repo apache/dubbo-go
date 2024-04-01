@@ -60,7 +60,7 @@ type PilotAgent struct {
 	listenerCDSMutex sync.RWMutex
 	// serviceName -> listenerName, listener
 	OnRdsChangeListeners map[string]map[string]OnRdsChangeListener
-	OnCdsChangeListeners map[string]map[string]OnEdsChangeListener
+	OnCdsChangeListeners map[string]map[string]OnCdsChangeListener
 
 	// vhs,cluster,endpoint, listener from xds
 	envoyVirtualHostMap     sync.Map
@@ -217,7 +217,7 @@ func (p *PilotAgent) startUpdateEventLoop() {
 					logger.Infof("[Pilot Agent] cds event update with cds = %s", utils.ConvertJsonString(xdsClusters))
 					for _, xdsCluster := range xdsClusters {
 						p.envoyClusterMap.Store(xdsCluster.Name, xdsCluster)
-						p.callEdsChange(xdsCluster.Name)
+						p.callCdsChange(xdsCluster.Name)
 					}
 				}
 
@@ -226,7 +226,7 @@ func (p *PilotAgent) startUpdateEventLoop() {
 					logger.Infof("[Pilot Agent] eds event update with eds = %s", utils.ConvertJsonString(xdsClusterEndpoints))
 					for _, xdsClusterEndpoint := range xdsClusterEndpoints {
 						p.envoyClusterEndpointMap.Store(xdsClusterEndpoint.Name, xdsClusterEndpoint)
-						p.callEdsChange(xdsClusterEndpoint.Name)
+						p.callCdsChange(xdsClusterEndpoint.Name)
 					}
 				}
 
@@ -273,8 +273,8 @@ func (p *PilotAgent) GetWorkloadCertificateProvider() WorkloadCertificateProvide
 	return p.secretCache
 }
 
-func (p *PilotAgent) callEdsChange(clusterName string) {
-	logger.Infof("[Pilot Agent] callEdsChange clusterName:%s", clusterName)
+func (p *PilotAgent) callCdsChange(clusterName string) {
+	logger.Infof("[Pilot Agent] callCdsChange clusterName:%s", clusterName)
 	p.listenerMutex.RLock()
 	defer p.listenerMutex.RUnlock()
 	if listeners, ok := p.OnCdsChangeListeners[clusterName]; ok {
@@ -282,7 +282,7 @@ func (p *PilotAgent) callEdsChange(clusterName string) {
 		xdsClusterEndpoint, ok2 := p.envoyClusterEndpointMap.Load(clusterName)
 		for listenerName, listener := range listeners {
 			if ok1 && ok2 {
-				logger.Infof("[Pilot Agent] callEdsChange clusterName %s listener %s with cluster = %s and  eds = %s", clusterName, listenerName, utils.ConvertJsonString(xdsCluster.(resources.XdsCluster)), utils.ConvertJsonString(xdsClusterEndpoint.(resources.XdsClusterEndpoint)))
+				logger.Infof("[Pilot Agent] callCdsChange clusterName %s listener %s with cluster = %s and  eds = %s", clusterName, listenerName, utils.ConvertJsonString(xdsCluster.(resources.XdsCluster)), utils.ConvertJsonString(xdsClusterEndpoint.(resources.XdsClusterEndpoint)))
 				go listener(clusterName, xdsCluster.(resources.XdsCluster), xdsClusterEndpoint.(resources.XdsClusterEndpoint))
 			}
 		}
@@ -290,7 +290,7 @@ func (p *PilotAgent) callEdsChange(clusterName string) {
 }
 
 func (p *PilotAgent) callRdsChange(serviceName string, xdsVirtualHost resources.XdsVirtualHost) {
-	logger.Infof("[Pilot Agent] callEdsChange serivceName:%s", serviceName)
+	logger.Infof("[Pilot Agent] callCdsChange serivceName:%s", serviceName)
 	p.listenerMutex.RLock()
 	defer p.listenerMutex.RUnlock()
 	if listeners, ok := p.OnRdsChangeListeners[serviceName]; ok {
@@ -332,22 +332,22 @@ func (p *PilotAgent) UnsubscribeRds(serviceName, listenerName string) {
 	}
 }
 
-func (p *PilotAgent) SubscribeCds(clusterName, listenerName string, listener OnEdsChangeListener) {
+func (p *PilotAgent) SubscribeCds(clusterName, listenerName string, listener OnCdsChangeListener) {
 	logger.Infof("[Pilot Agent] recv SubscribeCds clusterName:%s, listenerName:%s", clusterName, listenerName)
 	p.listenerCDSMutex.Lock()
 	defer p.listenerCDSMutex.Unlock()
 	if p.OnCdsChangeListeners == nil {
-		p.OnCdsChangeListeners = make(map[string]map[string]OnEdsChangeListener)
+		p.OnCdsChangeListeners = make(map[string]map[string]OnCdsChangeListener)
 	}
 	if p.OnCdsChangeListeners[clusterName] == nil {
-		p.OnCdsChangeListeners[clusterName] = make(map[string]OnEdsChangeListener)
+		p.OnCdsChangeListeners[clusterName] = make(map[string]OnCdsChangeListener)
 	}
 	p.OnCdsChangeListeners[clusterName][listenerName] = listener
 
 	xdsCluster, ok1 := p.envoyClusterMap.Load(clusterName)
 	xdsClusterEndpoint, ok2 := p.envoyClusterEndpointMap.Load(clusterName)
 	if ok1 && ok2 {
-		logger.Infof("[Pilot Agent] callEdsChange clusterName %s listener %s with cluster = %s and  eds = %s", clusterName, listenerName, utils.ConvertJsonString(xdsCluster.(resources.XdsCluster)), utils.ConvertJsonString(xdsClusterEndpoint.(resources.XdsClusterEndpoint)))
+		logger.Infof("[Pilot Agent] callCdsChange clusterName %s listener %s with cluster = %s and  eds = %s", clusterName, listenerName, utils.ConvertJsonString(xdsCluster.(resources.XdsCluster)), utils.ConvertJsonString(xdsClusterEndpoint.(resources.XdsClusterEndpoint)))
 		go listener(clusterName, xdsCluster.(resources.XdsCluster), xdsClusterEndpoint.(resources.XdsClusterEndpoint))
 	}
 }
