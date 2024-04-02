@@ -192,16 +192,16 @@ func (s *Server) Run() error {
 
 	handler := h2c.NewHandler(s.mux, &http2.Server{})
 
-	setHTTPHeaders := func(h http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Set http scheme header
-			r.Header.Set(constant.HttpHeaderXSchemeName, "http")
-			r.Header.Set(constant.HttpHeaderXHostName, r.Host)
-			r.Header.Set(constant.HttpHeaderXPathName, r.RequestURI)
-			r.Header.Set(constant.HttpHeaderXMethodName, r.Method)
-			h.ServeHTTP(w, r)
-		})
-	}
+	//setHTTPHeaders := func(h http.Handler) http.Handler {
+	//	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	//		// Set http scheme header
+	//		r.Header.Set(constant.HttpHeaderXSchemeName, "http")
+	//		r.Header.Set(constant.HttpHeaderXHostName, r.Host)
+	//		r.Header.Set(constant.HttpHeaderXPathName, r.RequestURI)
+	//		r.Header.Set(constant.HttpHeaderXMethodName, r.Method)
+	//		h.ServeHTTP(w, r)
+	//	})
+	//}
 
 	setHTTPSHeaders := func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -230,7 +230,7 @@ func (s *Server) Run() error {
 			return err
 		}
 		s.httpLn = httpLn
-		s.httpSrv = &http.Server{Handler: setHTTPHeaders(handler)}
+		s.httpSrv = &http.Server{Handler: handler}
 
 	}
 	if s.httpsLn == nil && httpsOn {

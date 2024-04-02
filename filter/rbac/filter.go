@@ -78,6 +78,9 @@ func (f *rbacFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invoc
 	}
 
 	headers := buildRequestHeadersFromCtx(ctx, invoker, invocation)
+	for key, attachment := range headers {
+		logger.Infof("[rbac filter] invocation attachment key %s = %s", key, attachment)
+	}
 	rbacFilterEngine := istioengine.NewRBACFilterEngine(v3RBAC)
 	rbacResult, err := rbacFilterEngine.Filter(headers)
 	if err != nil {

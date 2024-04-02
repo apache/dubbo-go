@@ -64,9 +64,9 @@ func newXdsTLSProvider() tlsprovider.TLSProvider {
 func (x *xdsTLSProvider) GetServerWorkLoadTLSConfig(url *common.URL) (*tls.Config, error) {
 	cfg := &tls.Config{
 		GetCertificate: x.GetWorkloadCertificate,
-		ClientAuth:     tls.VerifyClientCertIfGiven, // for test only
-		//ClientAuth: tls.RequireAndVerifyClientCert, // for prod
-		ClientCAs: x.GetCACertPool(),
+		//ClientAuth:     tls.VerifyClientCertIfGiven, // for test only
+		ClientAuth: tls.RequireAndVerifyClientCert, // for prod
+		ClientCAs:  x.GetCACertPool(),
 		VerifyPeerCertificate: func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
 			err := x.VerifyPeerCertByServer(rawCerts, verifiedChains)
 			if err != nil {

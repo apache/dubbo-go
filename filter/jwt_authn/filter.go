@@ -82,6 +82,9 @@ func (f *jwtAuthnFilter) Invoke(ctx context.Context, invoker protocol.Invoker, i
 	}
 
 	headers := buildRequestHeadersFromCtx(ctx, invoker, invocation)
+	for key, attachment := range headers {
+		logger.Infof("[jwt authn filter] invocation attachment key %s = %s", key, attachment)
+	}
 	jwtAuthnFilterEngine := istioengine.NewJwtAuthnFilterEngine(jwtAuthentication)
 	jwtAuthnResult, err := jwtAuthnFilterEngine.Filter(headers)
 	if err != nil {

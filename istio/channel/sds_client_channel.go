@@ -133,7 +133,7 @@ func (sds *SdsClientChannel) startListening() {
 			//	continue
 			//}
 
-			logger.Infof("[sds channel] sds recv resp: %v", resp)
+			logger.Debugf("[sds channel] sds recv resp: %v", resp)
 
 			for _, res := range resp.Resources {
 				if res.GetTypeUrl() == resource.SecretType {

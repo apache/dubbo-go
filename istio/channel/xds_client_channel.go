@@ -175,7 +175,7 @@ func (xds *XdsClientChannel) startListeningAndProcessingUpdates() {
 				continue
 			}
 
-			logger.Infof("[xds channel] xds recv resp = %s", utils.ConvertResponseToString(resp))
+			logger.Debugf("[xds channel] xds recv resp = %s", utils.ConvertResponseToString(resp))
 			if resp.GetTypeUrl() == v3resource.ListenerType || resp.GetTypeUrl() == v3resource.RouteType ||
 				resp.GetTypeUrl() == v3resource.ClusterType || resp.GetTypeUrl() == v3resource.EndpointType {
 				xds.updateChan <- resp

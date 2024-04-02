@@ -20,6 +20,7 @@ package mtls
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
@@ -66,9 +67,14 @@ func newMTLSFilter() filter.Filter {
 // Otherwise, it sets the corresponding mTLS mode attachment and invokes the next Invoker to handle the request.
 func (f *mtlsFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
 	logger.Infof("[mtls filter] url: %s", invoker.GetURL().String())
-	headers := utils.ConvertAttachmentsToMap(invocation.Attachments())
+	headers := f.buildHeadersFromCtx(ctx, invoker, invocation)
 	for key, attachment := range headers {
 		logger.Infof("[mtls filter] invocation attachment key %s = %s", key, attachment)
+	}
+
+	headers2 := utils.ConvertAttachmentsToMap(ctx.Value(constant.AttachmentKey).(map[string]interface{}))
+	for key, attachment := range headers2 {
+		logger.Infof("[mtls filter] ctx attachment key %s = %s", key, attachment)
 	}
 
 	if f.pilotAgent == nil {
@@ -92,6 +98,32 @@ func (f *mtlsFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invoc
 
 	invocation.SetAttachment(constant.HttpHeaderXMTLSMode, []string{resources.MutualTLSModeToString(mutualTLSMode)})
 	return invoker.Invoke(ctx, invocation)
+}
+
+func (f *mtlsFilter) buildHeadersFromCtx(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) map[string]string {
+	headers := utils.ConvertAttachmentsToMap(invocation.Attachments())
+	// build :x-path
+	xpath := headers[constant.HttpHeaderXPathName]
+	if len(xpath) == 0 {
+		xpath = fmt.Sprintf("/%s/%s", invoker.GetURL().GetParam(constant.InterfaceKey, ""), invocation.MethodName())
+		headers[constant.HttpHeaderXPathName] = xpath
+		invocation.SetAttachment(constant.HttpHeaderXPathName, []string{xpath})
+	}
+	// build :x-scheme
+	xscheme := headers[constant.HttpHeaderXSchemeName]
+	if len(xscheme) == 0 {
+		xscheme = "http"
+		headers[constant.HttpHeaderXSchemeName] = xscheme
+		invocation.SetAttachment(constant.HttpHeaderXSchemeName, []string{xscheme})
+	}
+	// build :x-method
+	xmethod := headers[constant.HttpHeaderXMethodName]
+	if len(xmethod) == 0 {
+		xmethod = "POST"
+		headers[constant.HttpHeaderXMethodName] = xmethod
+		invocation.SetAttachment(constant.HttpHeaderXMethodName, []string{xmethod})
+	}
+	return headers
 }
 
 // OnResponse dummy process, returns the result directly
