@@ -63,10 +63,10 @@ func newXdsTLSProvider() tlsprovider.TLSProvider {
 
 func (x *xdsTLSProvider) GetServerWorkLoadTLSConfig(url *common.URL) (*tls.Config, error) {
 	cfg := &tls.Config{
-		GetCertificate: x.GetWorkloadCertificate,
-		//ClientAuth:     tls.VerifyClientCertIfGiven, // for test only
-		ClientAuth: tls.RequireAndVerifyClientCert, // for prod
-		ClientCAs:  x.GetCACertPool(),
+		GetCertificate: x.GetServerWorkloadCertificate,
+		ClientAuth:     tls.VerifyClientCertIfGiven, // for test only
+		//ClientAuth:         tls.RequireAndVerifyClientCert, // for prod
+		ClientCAs: x.GetCACertPool(),
 		VerifyPeerCertificate: func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
 			err := x.VerifyPeerCertByServer(rawCerts, verifiedChains)
 			if err != nil {
@@ -74,10 +74,9 @@ func (x *xdsTLSProvider) GetServerWorkLoadTLSConfig(url *common.URL) (*tls.Confi
 			}
 			return err
 		},
-		MinVersion:               tls.VersionTLS12,
-		CipherSuites:             tlsprovider.PreferredDefaultCipherSuites(),
-		NextProtos:               []string{"h2", "http/1.1"},
-		PreferServerCipherSuites: true,
+		MinVersion:   tls.VersionTLS12,
+		CipherSuites: tlsprovider.PreferredDefaultCipherSuites(),
+		NextProtos:   []string{"h2", "http/1.1"},
 	}
 
 	return cfg, nil
@@ -103,11 +102,13 @@ func (x *xdsTLSProvider) VerifyPeerCertByServer(rawCerts [][]byte, verifiedChain
 		}
 	}
 	if len(peerCert.URIs) != 1 {
+		logger.Errorf("[xds tls] peer certificate does not contain 1 URI type SAN, detected %d", len(peerCert.URIs))
 		return fmt.Errorf("peer certificate does not contain 1 URI type SAN, detected %d", len(peerCert.URIs))
 	}
 	spiffe := peerCert.URIs[0].String()
 	_, err := resources.ParseIdentity(spiffe)
 	if err != nil {
+		logger.Errorf("[xds tls] can not ParseIdentity %s, error :%v", spiffe, err)
 		return err
 	}
 	secretCache := x.pilotAgent.GetWorkloadCertificateProvider()
@@ -124,12 +125,18 @@ func (x *xdsTLSProvider) VerifyPeerCertByServer(rawCerts [][]byte, verifiedChain
 	}
 	rootCertPool, err := secretCache.GetCACertPool()
 	if err != nil {
+		logger.Errorf("[xds tls] can not get ca cert pool:%v", err)
 		return fmt.Errorf("no cert pool found ")
 	}
 	_, err = peerCert.Verify(x509.VerifyOptions{
 		Roots:         rootCertPool,
 		Intermediates: intCertPool,
 	})
+	if err != nil {
+		logger.Errorf("[xds tls] server verifiy peer cert err: %v", err)
+	} else {
+		logger.Infof("[xds tls] server verifiy peer cert ok")
+	}
 	return err
 }
 
@@ -140,9 +147,9 @@ func (x *xdsTLSProvider) GetClientWorkLoadTLSConfig(url *common.URL) (*tls.Confi
 	verifyMap["SubjectAltNamesValue"] = url.GetParam(constant.TLSSubjectAltNamesValueKey, "")
 
 	cfg := &tls.Config{
-		GetCertificate:     x.GetWorkloadCertificate,
-		InsecureSkipVerify: true,
-		RootCAs:            x.GetCACertPool(),
+		GetClientCertificate: x.GetClientWorkloadCertificate,
+		InsecureSkipVerify:   true,
+		RootCAs:              x.GetCACertPool(),
 		VerifyPeerCertificate: func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
 			certVerifyMap := verifyMap
 			err := x.VerifyPeerCertByClient(rawCerts, verifiedChains, certVerifyMap)
@@ -151,10 +158,9 @@ func (x *xdsTLSProvider) GetClientWorkLoadTLSConfig(url *common.URL) (*tls.Confi
 			}
 			return err
 		},
-		MinVersion:               tls.VersionTLS12,
-		CipherSuites:             tlsprovider.PreferredDefaultCipherSuites(),
-		NextProtos:               []string{"h2", "http/1.1"},
-		PreferServerCipherSuites: true,
+		MinVersion:   tls.VersionTLS12,
+		CipherSuites: tlsprovider.PreferredDefaultCipherSuites(),
+		NextProtos:   []string{"h2", "http/1.1"},
 	}
 
 	return cfg, nil
@@ -203,15 +209,31 @@ func (x *xdsTLSProvider) VerifyPeerCertByClient(rawCerts [][]byte, verifiedChain
 		Roots:         rootCertPool,
 		Intermediates: intCertPool,
 	})
+	if err != nil {
+		logger.Errorf("[xds tls] client verifiy peer cert err: %v", err)
+	} else {
+		logger.Infof("[xds tls] client verifiy peer cert ok")
+	}
 	return err
 }
 
-func (x *xdsTLSProvider) GetWorkloadCertificate(helloInfo *tls.ClientHelloInfo) (*tls.Certificate, error) {
-	logger.Infof("[xds tls] get workload certificate")
+func (x *xdsTLSProvider) GetServerWorkloadCertificate(helloInfo *tls.ClientHelloInfo) (*tls.Certificate, error) {
+	logger.Infof("[xds tls] get server workload certificate")
 	secretCache := x.pilotAgent.GetWorkloadCertificateProvider()
-	tlsCertifcate, err := secretCache.GetWorkloadCertificate(helloInfo)
+	tlsCertifcate, err := secretCache.GetServerWorkloadCertificate(helloInfo)
 	if err != nil {
-		logger.Errorf("[xds tls] get workload certifcate fail: %v", err)
+		logger.Errorf("[xds tls] get server workload certifcate fail: %v", err)
+		return nil, err
+	}
+	return tlsCertifcate, nil
+}
+
+func (x *xdsTLSProvider) GetClientWorkloadCertificate(requestInfo *tls.CertificateRequestInfo) (*tls.Certificate, error) {
+	logger.Infof("[xds tls] get client workload certificate")
+	secretCache := x.pilotAgent.GetWorkloadCertificateProvider()
+	tlsCertifcate, err := secretCache.GetClientWorkloadCertificate(requestInfo)
+	if err != nil {
+		logger.Errorf("[xds tls] get client workload certifcate fail: %v", err)
 		return nil, err
 	}
 	return tlsCertifcate, nil

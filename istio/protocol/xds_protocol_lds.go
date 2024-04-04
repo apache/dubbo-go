@@ -67,10 +67,10 @@ func (lds *LdsProtocol) ProcessProtocol(resp *v3discovery.DiscoveryResponse, xds
 	for _, resource := range resp.GetResources() {
 		ldsResource := &listener.Listener{}
 		if err := ptypes.UnmarshalAny(resource, ldsResource); err != nil {
-			logger.Errorf("[Xds Protocol] fail to extract listener: %v", err)
+			logger.Errorf("[lds Protocol] fail to extract listener: %v", err)
 			continue
 		}
-		logger.Infof("[Xds Protocol] Listener: %s", utils.ConvertJsonString(ldsResource))
+		logger.Debugf("[lds Protocol] Listener: %s", utils.ConvertJsonString(ldsResource))
 		xdsListener, _ := lds.parseListener(ldsResource)
 		if xdsListener.HasRds {
 			rdsResourceNames = append(rdsResourceNames, xdsListener.RdsResourceNames...)
@@ -102,7 +102,6 @@ func (lds *LdsProtocol) ProcessProtocol(resp *v3discovery.DiscoveryResponse, xds
 }
 
 func (lds *LdsProtocol) parseListener(listener *listener.Listener) (resources.XdsListener, error) {
-	logger.Infof("parse listner:%s", utils.ConvertJsonString(listener))
 	envoyListener := resources.XdsListener{
 		//FilterChains:     make([]resources.XdsFilterChain, 0),
 		RdsResourceNames: make([]string, 0),

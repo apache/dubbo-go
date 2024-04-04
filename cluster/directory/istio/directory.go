@@ -201,7 +201,7 @@ func (dir *directory) OnEdsChangeListener(clusterName string, xdsCluster resourc
 	xdsCluster.Invokers = invokers
 	// Update xdsClusterMap
 	dir.xdsClusterMap.Store(clusterName, xdsCluster)
-	//dir.invokers = invokers
+	dir.invokers = invokers
 	// just for test only here
 	dir.RouterChain().SetInvokers(invokers)
 	return nil

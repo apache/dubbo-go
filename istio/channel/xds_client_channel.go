@@ -105,7 +105,7 @@ func (xds *XdsClientChannel) Send(req *v3discovery.DiscoveryRequest) error {
 	if req == nil {
 		return nil
 	}
-	logger.Infof("[xds channel] xds send xds request = %s ", utils.GetJsonString(req))
+	logger.Debugf("[xds channel] xds send xds request = %s ", utils.GetJsonString(req))
 	return xds.streamAdsClient.Send(req)
 }
 
@@ -136,7 +136,7 @@ func (xds *XdsClientChannel) AckResponse(resp *v3discovery.DiscoveryResponse) {
 		ErrorDetail:   nil,
 		Node:          xds.node,
 	}
-	logger.Infof("[xds channel] xds send ack response = %s ", utils.GetJsonString(ack))
+	logger.Debugf("[xds channel] xds send ack response = %s ", utils.GetJsonString(ack))
 	if err := xds.streamAdsClient.Send(ack); err != nil {
 		logger.Errorf("response %s ack failed, error: %v", resp.TypeUrl, err)
 	}

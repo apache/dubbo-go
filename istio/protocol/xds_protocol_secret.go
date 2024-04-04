@@ -38,7 +38,7 @@ func NewSecretProtocol(secretCache *resources.SecretCache) (*SecretProtocol, err
 }
 
 func (s *SecretProtocol) ProcessSecret(secret *tls.Secret) error {
-	logger.Infof("[secret protocol] parse envoy tls secret:%s", utils.ConvertJsonString(secret))
+	logger.Debugf("[secret protocol] parse envoy tls secret:%s", utils.ConvertJsonString(secret))
 	if secret.GetName() == resources.DefaultSecretName {
 		if secret.GetTlsCertificate() != nil {
 			certificateChain := secret.GetTlsCertificate().GetCertificateChain().GetInlineBytes()
@@ -51,6 +51,10 @@ func (s *SecretProtocol) ProcessSecret(secret *tls.Secret) error {
 				// TODO parse ROOTCA and expire time
 			}
 			s.secretCache.SetWorkload(item)
+			certChainPEM, _ := s.secretCache.GetCertificateChainPEM()
+			logger.Infof("[secret protocol] Certificate Chain PEM:\n%s", certChainPEM)
+			privateKeyPEM, _ := s.secretCache.GetPrivateKeyPEM()
+			logger.Infof("[secret protocol] Private Key PEM:\n%s", privateKeyPEM)
 		}
 	}
 
@@ -58,8 +62,9 @@ func (s *SecretProtocol) ProcessSecret(secret *tls.Secret) error {
 		if secret.GetValidationContext() != nil {
 			rootCA := secret.GetValidationContext().GetTrustedCa().GetInlineBytes()
 			s.secretCache.SetRoot(rootCA)
+			rootCertPEM, _ := s.secretCache.GetRootCertPEM()
+			logger.Infof("[secret protocol] Root Cert PEM:\n%s", rootCertPEM)
 		}
 	}
-
 	return nil
 }

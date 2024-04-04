@@ -166,7 +166,7 @@ func parseBootstrap(path string) (*BootstrapInfo, error) {
 		SdsGrpcPath:     sdsGrpcPath,
 		XdsGrpcPath:     xdsGrpcPath,
 	}
-	logger.Infof("[Xds Bootstrap] get bootstrap info:%s", utils.ConvertJsonString(bootstrapInfo))
+	logger.Debugf("[Xds Bootstrap] get bootstrap info:%s", utils.ConvertJsonString(bootstrapInfo))
 	return bootstrapInfo, nil
 
 }

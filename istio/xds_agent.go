@@ -76,10 +76,15 @@ type XdsAgent interface {
 
 // WorkloadCertificateProvider is the interface for providing workload certificates.
 type WorkloadCertificateProvider interface {
-	// GetWorkloadCertificate returns the TLS certificate for the given ClientHelloInfo.
+	// GetServerWorkloadCertificate returns the TLS certificate for the given ClientHelloInfo.
 	// This method is responsible for providing certificates based on the information
 	// available in the ClientHelloInfo, such as SNI (Server Name Indication).
-	GetWorkloadCertificate(*tls.ClientHelloInfo) (*tls.Certificate, error)
+	GetServerWorkloadCertificate(*tls.ClientHelloInfo) (*tls.Certificate, error)
+
+	// GetClientWorkloadCertificate returns the TLS certificate for the given ClientHelloInfo.
+	// This method is responsible for providing certificates based on the information
+	// available in the requestInfo.
+	GetClientWorkloadCertificate(requestInfo *tls.CertificateRequestInfo) (*tls.Certificate, error)
 
 	// GetCACertPool returns the root CA certificate pool.
 	// This method is responsible for providing the root CA certificate pool
