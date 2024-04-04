@@ -150,7 +150,7 @@ func NewPilotAgent(agentType PilotAgentType) (XdsAgent, error) {
 	}
 	agent.runningStatus.Store(false)
 	// Start xds/sds and wait
-	go agent.Run(agentType)
+	agent.Run(agentType)
 	// Add graceful shutdown call back
 	extension.AddCustomShutdownCallback(agent.Stop)
 
@@ -183,7 +183,7 @@ func (p *PilotAgent) Run(agentType PilotAgentType) error {
 			if p.secretCache.GetRoot() == nil || p.secretCache.GetWorkload() == nil {
 				isReady = false
 			}
-			if agentType == PilotAgentTypeServerWorkload && pilotAgent.GetHostInboundListener() == nil {
+			if agentType == PilotAgentTypeServerWorkload && p.GetHostInboundListener() == nil {
 				isReady = false
 			}
 			if isReady {

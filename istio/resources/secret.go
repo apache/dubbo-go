@@ -21,7 +21,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/pem"
-	"errors"
 	"fmt"
 	"github.com/dubbogo/gost/log/logger"
 	"os"
@@ -125,85 +124,96 @@ func (s *SecretCache) SetWorkload(value *SecretItem) {
 func (s *SecretCache) GetServerWorkloadCertificate(helloInfo *tls.ClientHelloInfo) (*tls.Certificate, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
+	return s.getWorkloadCertificate()
+}
+
+func (s *SecretCache) getWorkloadCertificate() (*tls.Certificate, error) {
 	if s.workload == nil {
-		return nil, fmt.Errorf("can not find workload certifcate")
+		return nil, fmt.Errorf("workload certificate is missing")
 	}
-	certificate, err := tls.X509KeyPair(s.workload.CertificateChain, s.workload.PrivateKey)
+	// decode certificate pem block
+	var certs []*x509.Certificate
+	certificateChain := s.workload.CertificateChain
+
+	for len(certificateChain) > 0 {
+		var certBlock *pem.Block
+		certBlock, certificateChain = pem.Decode(certificateChain)
+		if certBlock == nil {
+			break
+		}
+		if certBlock.Type == "CERTIFICATE" {
+			cert, err := x509.ParseCertificate(certBlock.Bytes)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse certificate from PEM: %w", err)
+			}
+			certs = append(certs, cert)
+		}
+	}
+	if len(certs) == 0 {
+		return nil, fmt.Errorf("no certificates found in PEM certificate chain")
+	}
+
+	// decode private key pem block
+	var privKey interface{}
+	var err error
+	privBlock, _ := pem.Decode(s.workload.PrivateKey)
+	if privBlock == nil {
+		return nil, fmt.Errorf("no private key found in PEM data")
+	}
+
+	switch privBlock.Type {
+	case "RSA PRIVATE KEY":
+		privKey, err = x509.ParsePKCS1PrivateKey(privBlock.Bytes)
+	case "EC PRIVATE KEY":
+		privKey, err = x509.ParseECPrivateKey(privBlock.Bytes)
+	case "PRIVATE KEY":
+		// PKCS8 formate
+		privKey, err = x509.ParsePKCS8PrivateKey(privBlock.Bytes)
+	default:
+		return nil, fmt.Errorf("unknown private key type in PEM: %q", privBlock.Type)
+	}
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to parse private key from PEM: %w", err)
 	}
-	return &certificate, nil
+
+	// here can only use first certificate in certificate chain
+	tlsCert := tls.Certificate{
+		Certificate: [][]byte{certs[0].Raw},
+		PrivateKey:  privKey,
+	}
+	return &tlsCert, nil
 }
 
 func (s *SecretCache) GetClientWorkloadCertificate(requestInfo *tls.CertificateRequestInfo) (*tls.Certificate, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	if s.workload == nil {
-		return nil, fmt.Errorf("can not find workload certifcate")
-	}
-	// get certificate chain and private key bytes
-	certPEMBlock := s.workload.CertificateChain
-	keyPEMBlock := s.workload.PrivateKey
-	// decode pem block
-	var certificates []*x509.Certificate
-	for len(certPEMBlock) > 0 {
-		var block *pem.Block
-		block, certPEMBlock = pem.Decode(certPEMBlock)
-		if block == nil {
-			return nil, errors.New("can not decode pem block")
-		}
-		certificate, err := x509.ParseCertificate(block.Bytes)
-		if err != nil {
-			return nil, errors.New("can not parse certificate")
-		}
-		certificates = append(certificates, certificate)
-	}
-	// decode private key pem block
-	keyBlock, _ := pem.Decode(keyPEMBlock)
-	if keyBlock == nil {
-		return nil, errors.New("can not decode private key pem block")
-	}
-
-	// parse private key
-	privateKey, err := x509.ParsePKCS1PrivateKey(keyBlock.Bytes)
-	if err != nil {
-		return nil, errors.New("can not parse private key")
-	}
-	// create tls.Certificate
-	certificate := &tls.Certificate{
-		Certificate: [][]byte{certPEMBlock},
-		PrivateKey:  privateKey,
-		Leaf:        certificates[0], // first certificate of chain
-	}
-	return certificate, nil
-
+	return s.getWorkloadCertificate()
 }
 
 func (s *SecretCache) GetCACertPool() (*x509.CertPool, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	if s.GetRoot() == nil {
-		return nil, fmt.Errorf("can not find root certifcate")
+	if len(s.certRoot) == 0 {
+		return nil, fmt.Errorf("root cert is empty")
 	}
-	pool := x509.NewCertPool()
-	block, rest := pem.Decode(s.GetRoot())
-	var blockBytes []byte
-
-	// Loop while there are no block are found
-	for block != nil {
-		blockBytes = append(blockBytes, block.Bytes...)
-		block, rest = pem.Decode(rest)
+	// 创建一个新的证书池
+	certPool := x509.NewCertPool()
+	// 解析 PEM 编码的根证书
+	pemBlock, _ := pem.Decode(s.certRoot)
+	if pemBlock == nil {
+		return nil, fmt.Errorf("failed to decode PEM block from root cert")
 	}
-
-	rootCAs, err := x509.ParseCertificates(blockBytes)
-	if err != nil {
-		return nil, fmt.Errorf("parse certificate from rootPEM got error: %v", err)
+	if pemBlock.Type != "CERTIFICATE" {
+		return nil, fmt.Errorf("expected PEM block of type CERTIFICATE, got %s", pemBlock.Type)
 	}
 
-	for _, ca := range rootCAs {
-		pool.AddCert(ca)
+	// 将根证书加入到证书池
+	if !certPool.AppendCertsFromPEM(s.certRoot) {
+		return nil, fmt.Errorf("failed to append root cert to cert pool")
 	}
-	return pool, nil
+
+	// 返回证书池
+	return certPool, nil
 
 }
 
