@@ -150,7 +150,9 @@ func NewPilotAgent(agentType PilotAgentType) (XdsAgent, error) {
 	}
 	agent.runningStatus.Store(false)
 	// Start xds/sds and wait
-	agent.Run(agentType)
+	if err := agent.Run(agentType); err != nil {
+		return agent, err
+	}
 	// Add graceful shutdown call back
 	extension.AddCustomShutdownCallback(agent.Stop)
 
@@ -198,8 +200,6 @@ func (p *PilotAgent) Run(agentType PilotAgentType) error {
 			return fmt.Errorf("pilot agent init and wait timeout %f seconds", pilotAgentWaitTimeout.Seconds())
 		}
 	}
-
-	<-p.stopChan
 
 	return nil
 }
