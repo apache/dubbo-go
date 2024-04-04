@@ -58,6 +58,13 @@ func TestMatchSpiffe(t *testing.T) {
 			value:    "something",
 			expected: false,
 		},
+		{
+			name:     "empty action",
+			spiffee:  "spiffe://example.org/ns/my-ns/sa/default",
+			action:   "",
+			value:    "something",
+			expected: true,
+		},
 	}
 
 	for _, tt := range tests {

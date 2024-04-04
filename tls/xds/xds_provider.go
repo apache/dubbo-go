@@ -114,19 +114,19 @@ func (x *xdsTLSProvider) VerifyPeerCertByServer(rawCerts [][]byte, verifiedChain
 	secretCache := x.pilotAgent.GetWorkloadCertificateProvider()
 	hostInboundListener := x.pilotAgent.GetHostInboundListener()
 	if hostInboundListener == nil {
-		return fmt.Errorf("can not get xds inbound listner info")
+		return fmt.Errorf("can not get xds inbound listener info")
 	}
 
 	spiffeMatch := hostInboundListener.TransportSocket.SubjectAltNamesMatch
 	spiffeValue := hostInboundListener.TransportSocket.SubjectAltNamesValue
 	ok := x.matchSpiffeUrl(spiffe, spiffeMatch, spiffeValue)
 	if !ok {
-		return fmt.Errorf("client spiffe urll %s can not match %s:%s", spiffe, spiffeMatch, spiffeValue)
+		return fmt.Errorf("client spiffe url: %s can not match action: %s value: %s", spiffe, spiffeMatch, spiffeValue)
 	}
 	rootCertPool, err := secretCache.GetCACertPool()
 	if err != nil {
 		logger.Errorf("[xds tls] can not get ca cert pool:%v", err)
-		return fmt.Errorf("no cert pool found ")
+		return fmt.Errorf("no cert pool found")
 	}
 	_, err = peerCert.Verify(x509.VerifyOptions{
 		Roots:         rootCertPool,
@@ -251,6 +251,6 @@ func (x *xdsTLSProvider) GetCACertPool() *x509.CertPool {
 }
 
 func (x *xdsTLSProvider) matchSpiffeUrl(spiffe string, match string, value string) bool {
-	logger.Infof("[xds tls] matchSpiffeUrl: %s with match %s and value %s", spiffe, match, value)
+	logger.Infof("[xds tls] matchSpiffeUrl: %s with match :%s and value :%s", spiffe, match, value)
 	return resources.MatchSpiffe(spiffe, match, value)
 }

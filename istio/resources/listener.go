@@ -105,6 +105,10 @@ type XdsHostInboundListener struct {
 func MatchSpiffe(spiffee, action, value string) bool {
 	spiffee = strings.ToLower(spiffee)
 	value = strings.ToLower(value)
+	action = strings.ToLower(action)
+	if len(action) == 0 {
+		return true
+	}
 	if action == "exact" {
 		return spiffee == value
 	}
@@ -114,6 +118,5 @@ func MatchSpiffe(spiffee, action, value string) bool {
 	if action == "contains" {
 		return strings.Contains(spiffee, value)
 	}
-
 	return false
 }
