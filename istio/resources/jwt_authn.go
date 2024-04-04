@@ -275,7 +275,9 @@ func ConvertJwtToClaims(jwt jwt.Token) JwtClaims {
 		Audience:      make([]string, 0),
 		PrivateClaims: make(map[string]interface{}, 0),
 	}
-	copy(jwtClaims.Audience, jwt.Audience())
+	for _, aud := range jwt.Audience() {
+		jwtClaims.Audience = append(jwtClaims.Audience, aud)
+	}
 	for k, v := range jwt.PrivateClaims() {
 		jwtClaims.PrivateClaims[k] = v
 	}
@@ -285,6 +287,5 @@ func ConvertJwtToClaims(jwt jwt.Token) JwtClaims {
 	jwtClaims.Subject = jwt.Subject()
 	jwtClaims.Expiration = jwt.Expiration()
 	jwtClaims.NotBefore = jwt.NotBefore()
-	jwtClaims.PrivateClaims = jwt.PrivateClaims()
 	return jwtClaims
 }

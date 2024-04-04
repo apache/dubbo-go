@@ -137,23 +137,23 @@ func TestValidateAndParseJWT(t *testing.T) {
 	exp := now.Add(10 * 365 * 24 * time.Hour)
 
 	token := jwt.New()
-	token.Set(jwt.SubjectKey, `spiffe://cluster.local/ns/foo/sa/httpbin`)
-	token.Set(jwt.IssuerKey, "https://dubbo.apache.org/")
-	token.Set(jwt.AudienceKey, `dev`)
+	token.Set(jwt.SubjectKey, "spiffe://cluster.local/ns/dubbo/sa/dubboclient")
+	token.Set(jwt.IssuerKey, "dubbo.apache.org")
+	token.Set(jwt.AudienceKey, "dev")
 	token.Set(jwt.IssuedAtKey, now)
 	token.Set(jwt.ExpirationKey, exp)
 
 	token2 := jwt.New()
-	token2.Set(jwt.SubjectKey, `spiffe://cluster.local/ns/foo/sa/httpbin`)
-	token2.Set(jwt.IssuerKey, "https://dubbo.apache.org/")
-	token2.Set(jwt.AudienceKey, `test`)
+	token2.Set(jwt.SubjectKey, "spiffe://cluster.local/ns/dubbo/sa/httpbin")
+	token2.Set(jwt.IssuerKey, "dubbo.apache.org")
+	token2.Set(jwt.AudienceKey, "test")
 	token2.Set(jwt.IssuedAtKey, now)
 	token2.Set(jwt.ExpirationKey, exp)
 
 	token3 := jwt.New()
-	token3.Set(jwt.SubjectKey, `spiffe://cluster.local/ns/foo/sa/sleep`)
-	token3.Set(jwt.IssuerKey, "https://dubbo.apache.org/")
-	token3.Set(jwt.AudienceKey, `sleep`)
+	token3.Set(jwt.SubjectKey, "spiffe://cluster.local/ns/dubbo/sa/marketing")
+	token3.Set(jwt.IssuerKey, "dubbo.apache.org")
+	token3.Set(jwt.AudienceKey, `marketing`)
 	token3.Set(jwt.IssuedAtKey, now)
 	token3.Set(jwt.ExpirationKey, exp)
 
@@ -184,7 +184,7 @@ func TestValidateAndParseJWT(t *testing.T) {
 
 	privset := jwk.NewSet()
 	privset.AddKey(realKey)
-	privset.AddKey(bogusKey)
+	//privset.AddKey(bogusKey)
 	keySet, err := jwk.PublicSetOf(privset)
 	if err != nil {
 		fmt.Printf("failed to create public JWKS: %s\n", err)
