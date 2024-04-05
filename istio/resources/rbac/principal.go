@@ -1,13 +1,14 @@
 package rbac
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"fmt"
-	rbacconfigv3 "github.com/envoyproxy/go-control-plane/envoy/config/rbac/v3"
-	matcherv3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"net"
 	"reflect"
 	"strconv"
+
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	envoyrbacconfigv3 "github.com/envoyproxy/go-control-plane/envoy/config/rbac/v3"
+	envoymatcherv3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 )
 
 type Principal interface {
@@ -25,7 +26,7 @@ func (p *PrincipalAny) Match(headers map[string]string) bool {
 	return p.Any
 }
 
-func NewPrincipalAny(principal *rbacconfigv3.Principal_Any) (*PrincipalAny, error) {
+func NewPrincipalAny(principal *envoyrbacconfigv3.Principal_Any) (*PrincipalAny, error) {
 	return &PrincipalAny{
 		Any: principal.Any,
 	}, nil
@@ -53,7 +54,7 @@ func (p *PrincipalDirectRemoteIp) Match(headers map[string]string) bool {
 	return true
 }
 
-func NewPrincipalDirectRemoteIp(principal *rbacconfigv3.Principal_DirectRemoteIp) (*PrincipalDirectRemoteIp, error) {
+func NewPrincipalDirectRemoteIp(principal *envoyrbacconfigv3.Principal_DirectRemoteIp) (*PrincipalDirectRemoteIp, error) {
 	addressPrefix := principal.DirectRemoteIp.AddressPrefix
 	prefixLen := principal.DirectRemoteIp.PrefixLen.GetValue()
 	if _, ipNet, err := net.ParseCIDR(addressPrefix + "/" + strconv.Itoa(int(prefixLen))); err != nil {
@@ -89,7 +90,7 @@ func (p *PrincipalSourceIp) Match(headers map[string]string) bool {
 	return true
 }
 
-func NewPrincipalSourceIp(principal *rbacconfigv3.Principal_SourceIp) (*PrincipalSourceIp, error) {
+func NewPrincipalSourceIp(principal *envoyrbacconfigv3.Principal_SourceIp) (*PrincipalSourceIp, error) {
 	addressPrefix := principal.SourceIp.AddressPrefix
 	prefixLen := principal.SourceIp.PrefixLen.GetValue()
 	if _, ipNet, err := net.ParseCIDR(addressPrefix + "/" + strconv.Itoa(int(prefixLen))); err != nil {
@@ -130,7 +131,7 @@ func (p *PrincipalHeader) Match(headers map[string]string) bool {
 	}
 }
 
-func NewPrincipalHeader(principal *rbacconfigv3.Principal_Header) (*PrincipalHeader, error) {
+func NewPrincipalHeader(principal *envoyrbacconfigv3.Principal_Header) (*PrincipalHeader, error) {
 	principalHeader := &PrincipalHeader{}
 	principalHeader.Target = principal.Header.Name
 	principalHeader.InvertMatch = principal.Header.InvertMatch
@@ -159,7 +160,7 @@ func (p *PrincipalAndIds) Match(headers map[string]string) bool {
 	return true
 }
 
-func NewPrincipalAndIds(principal *rbacconfigv3.Principal_AndIds) (*PrincipalAndIds, error) {
+func NewPrincipalAndIds(principal *envoyrbacconfigv3.Principal_AndIds) (*PrincipalAndIds, error) {
 	principalIds := &PrincipalAndIds{}
 	principalIds.AndIds = make([]Principal, len(principal.AndIds.Ids))
 	for idx, subPrincipal := range principal.AndIds.Ids {
@@ -176,7 +177,7 @@ type PrincipalOrIds struct {
 	OrIds []Principal
 }
 
-func NewPrincipalOrIds(principal *rbacconfigv3.Principal_OrIds) (*PrincipalOrIds, error) {
+func NewPrincipalOrIds(principal *envoyrbacconfigv3.Principal_OrIds) (*PrincipalOrIds, error) {
 	principalOrIds := &PrincipalOrIds{}
 	principalOrIds.OrIds = make([]Principal, len(principal.OrIds.Ids))
 	for idx, subPrincipal := range principal.OrIds.Ids {
@@ -206,7 +207,7 @@ type PrincipalNotId struct {
 	NotId Principal
 }
 
-func NewPrincipalNotId(principal *rbacconfigv3.Principal_NotId) (*PrincipalNotId, error) {
+func NewPrincipalNotId(principal *envoyrbacconfigv3.Principal_NotId) (*PrincipalNotId, error) {
 	principalNotId := &PrincipalNotId{}
 	subPermission := principal.NotId
 	if subInheritPermission, err := NewPrincipal(subPermission); err != nil {
@@ -230,7 +231,7 @@ type PrincipalMetadata struct {
 	Matcher StringMatcher
 }
 
-func NewPrincipalMetadata(principal *rbacconfigv3.Principal_Metadata) (*PrincipalMetadata, error) {
+func NewPrincipalMetadata(principal *envoyrbacconfigv3.Principal_Metadata) (*PrincipalMetadata, error) {
 	if principal.Metadata == nil || principal.Metadata.Value == nil {
 		return nil, fmt.Errorf("unsupported Principal_Metadata Metadata nil: %v", principal)
 	}
@@ -241,7 +242,7 @@ func NewPrincipalMetadata(principal *rbacconfigv3.Principal_Metadata) (*Principa
 	if len(path) == 0 || path[0].GetKey() != "source.principal" {
 		return nil, fmt.Errorf("unsupported Principal_Metadata path: %v", path)
 	}
-	matcher, ok := principal.Metadata.Value.MatchPattern.(*matcherv3.ValueMatcher_StringMatch)
+	matcher, ok := principal.Metadata.Value.MatchPattern.(*envoymatcherv3.ValueMatcher_StringMatch)
 	if !ok {
 		return nil, fmt.Errorf("unsupported Principal_Metadata matcher: %s", reflect.TypeOf(principal.Metadata.Value))
 	}
@@ -269,26 +270,26 @@ func (p *PrincipalMetadata) Match(header map[string]string) bool {
 	return true
 }
 
-func NewPrincipal(principal *rbacconfigv3.Principal) (Principal, error) {
+func NewPrincipal(principal *envoyrbacconfigv3.Principal) (Principal, error) {
 
 	switch principal.Identifier.(type) {
-	case *rbacconfigv3.Principal_Any:
-		return NewPrincipalAny(principal.Identifier.(*rbacconfigv3.Principal_Any))
-	case *rbacconfigv3.Principal_DirectRemoteIp:
-		return NewPrincipalDirectRemoteIp(principal.Identifier.(*rbacconfigv3.Principal_DirectRemoteIp))
-	case *rbacconfigv3.Principal_SourceIp:
-		return NewPrincipalSourceIp(principal.Identifier.(*rbacconfigv3.Principal_SourceIp))
-	case *rbacconfigv3.Principal_RemoteIp:
-	case *rbacconfigv3.Principal_Header:
-		return NewPrincipalHeader(principal.Identifier.(*rbacconfigv3.Principal_Header))
-	case *rbacconfigv3.Principal_AndIds:
-		return NewPrincipalAndIds(principal.Identifier.(*rbacconfigv3.Principal_AndIds))
-	case *rbacconfigv3.Principal_OrIds:
-		return NewPrincipalOrIds(principal.Identifier.(*rbacconfigv3.Principal_OrIds))
-	case *rbacconfigv3.Principal_NotId:
-		return NewPrincipalNotId(principal.Identifier.(*rbacconfigv3.Principal_NotId))
-	case *rbacconfigv3.Principal_Metadata:
-		return NewPrincipalMetadata(principal.Identifier.(*rbacconfigv3.Principal_Metadata))
+	case *envoyrbacconfigv3.Principal_Any:
+		return NewPrincipalAny(principal.Identifier.(*envoyrbacconfigv3.Principal_Any))
+	case *envoyrbacconfigv3.Principal_DirectRemoteIp:
+		return NewPrincipalDirectRemoteIp(principal.Identifier.(*envoyrbacconfigv3.Principal_DirectRemoteIp))
+	case *envoyrbacconfigv3.Principal_SourceIp:
+		return NewPrincipalSourceIp(principal.Identifier.(*envoyrbacconfigv3.Principal_SourceIp))
+	case *envoyrbacconfigv3.Principal_RemoteIp:
+	case *envoyrbacconfigv3.Principal_Header:
+		return NewPrincipalHeader(principal.Identifier.(*envoyrbacconfigv3.Principal_Header))
+	case *envoyrbacconfigv3.Principal_AndIds:
+		return NewPrincipalAndIds(principal.Identifier.(*envoyrbacconfigv3.Principal_AndIds))
+	case *envoyrbacconfigv3.Principal_OrIds:
+		return NewPrincipalOrIds(principal.Identifier.(*envoyrbacconfigv3.Principal_OrIds))
+	case *envoyrbacconfigv3.Principal_NotId:
+		return NewPrincipalNotId(principal.Identifier.(*envoyrbacconfigv3.Principal_NotId))
+	case *envoyrbacconfigv3.Principal_Metadata:
+		return NewPrincipalMetadata(principal.Identifier.(*envoyrbacconfigv3.Principal_Metadata))
 	default:
 		return nil, fmt.Errorf("[NewPrincipal] not supported Principal.Identifier type found, detail: %v",
 			reflect.TypeOf(principal.Identifier))

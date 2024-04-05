@@ -1,7 +1,7 @@
 package rbac
 
 import (
-	rbacconfigv3 "github.com/envoyproxy/go-control-plane/envoy/config/rbac/v3"
+	envoyrbacconfigv3 "github.com/envoyproxy/go-control-plane/envoy/config/rbac/v3"
 )
 
 type Policy struct {
@@ -9,7 +9,7 @@ type Policy struct {
 	Principals  []Principal
 }
 
-func NewPolicy(rbacPolicy *rbacconfigv3.Policy) (*Policy, error) {
+func NewPolicy(rbacPolicy *envoyrbacconfigv3.Policy) (*Policy, error) {
 	policy := &Policy{}
 
 	policy.Principals = make([]Principal, 0)
@@ -32,4 +32,23 @@ func NewPolicy(rbacPolicy *rbacconfigv3.Policy) (*Policy, error) {
 	}
 
 	return policy, nil
+}
+
+func (p *Policy) Match(headers map[string]string) bool {
+	permissionMatch, principalMatch := false, false
+	for _, permission := range p.Permissions {
+		if permission.Match(headers) {
+			permissionMatch = true
+			break
+		}
+	}
+
+	for _, principal := range p.Principals {
+		if principal.Match(headers) {
+			principalMatch = true
+			break
+		}
+	}
+
+	return permissionMatch && principalMatch
 }

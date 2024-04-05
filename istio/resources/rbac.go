@@ -2,19 +2,21 @@ package resources
 
 import (
 	"bytes"
-	
-	rbacv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/rbac/v3"
+
+	"dubbo.apache.org/dubbo-go/v3/istio/resources/rbac"
+	envoyrbacv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/rbac/v3"
 	jsonp "github.com/golang/protobuf/jsonpb"
 )
 
 // RBACEnvoyFilter definine RBAC filter configuration
 type RBACEnvoyFilter struct {
-	Name string
-	RBAC *rbacv3.RBAC
+	Name          string
+	RBAC          *envoyrbacv3.RBAC
+	Authorization *rbac.Authorization
 }
 
-func ParseJsonToRBAC(jsonConf string) (*rbacv3.RBAC, error) {
-	rbac := rbacv3.RBAC{}
+func ParseJsonToRBAC(jsonConf string) (*envoyrbacv3.RBAC, error) {
+	rbac := envoyrbacv3.RBAC{}
 	un := jsonp.Unmarshaler{
 		AllowUnknownFields: true,
 	}

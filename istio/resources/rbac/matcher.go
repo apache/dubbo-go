@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	matcherv3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
+	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoymatcherv3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 )
 
 type StringMatcher interface {
@@ -71,27 +71,27 @@ func (m *RegexStringMatcher) Match(targetValue string) bool {
 	return m.RegexMatch.MatchString(targetValue)
 }
 
-func NewStringMatcher(match *matcherv3.StringMatcher) (StringMatcher, error) {
+func NewStringMatcher(match *envoymatcherv3.StringMatcher) (StringMatcher, error) {
 	switch match.MatchPattern.(type) {
-	case *matcherv3.StringMatcher_Exact:
+	case *envoymatcherv3.StringMatcher_Exact:
 		return &ExactStringMatcher{
-			ExactMatch: match.MatchPattern.(*matcherv3.StringMatcher_Exact).Exact,
+			ExactMatch: match.MatchPattern.(*envoymatcherv3.StringMatcher_Exact).Exact,
 		}, nil
-	case *matcherv3.StringMatcher_Prefix:
+	case *envoymatcherv3.StringMatcher_Prefix:
 		return &PrefixStringMatcher{
-			PrefixMatch: match.MatchPattern.(*matcherv3.StringMatcher_Prefix).Prefix,
+			PrefixMatch: match.MatchPattern.(*envoymatcherv3.StringMatcher_Prefix).Prefix,
 		}, nil
-	case *matcherv3.StringMatcher_Suffix:
+	case *envoymatcherv3.StringMatcher_Suffix:
 		return &SuffixStringMatcher{
-			SuffixMatch: match.MatchPattern.(*matcherv3.StringMatcher_Suffix).Suffix,
+			SuffixMatch: match.MatchPattern.(*envoymatcherv3.StringMatcher_Suffix).Suffix,
 		}, nil
-	case *matcherv3.StringMatcher_SafeRegex:
+	case *envoymatcherv3.StringMatcher_SafeRegex:
 		return &RegexStringMatcher{
-			RegexMatch: regexp.MustCompile(match.MatchPattern.(*matcherv3.StringMatcher_SafeRegex).SafeRegex.Regex),
+			RegexMatch: regexp.MustCompile(match.MatchPattern.(*envoymatcherv3.StringMatcher_SafeRegex).SafeRegex.Regex),
 		}, nil
-	case *matcherv3.StringMatcher_Contains:
+	case *envoymatcherv3.StringMatcher_Contains:
 		return &ContainsStringMatcher{
-			ContainsMatch: match.MatchPattern.(*matcherv3.StringMatcher_Contains).Contains,
+			ContainsMatch: match.MatchPattern.(*envoymatcherv3.StringMatcher_Contains).Contains,
 		}, nil
 
 	default:
@@ -146,21 +146,21 @@ func (m *PrefixStringMatcher) isHeaderMatcher() {}
 func (m *SuffixStringMatcher) isHeaderMatcher() {}
 func (m *RegexStringMatcher) isHeaderMatcher()  {}
 
-func NewHeaderMatcher(header *routev3.HeaderMatcher) (HeaderMatcher, error) {
+func NewHeaderMatcher(header *envoyroutev3.HeaderMatcher) (HeaderMatcher, error) {
 	switch header.HeaderMatchSpecifier.(type) {
-	case *routev3.HeaderMatcher_ExactMatch:
+	case *envoyroutev3.HeaderMatcher_ExactMatch:
 		return &HeaderMatcherPresentMatch{}, nil
-	case *routev3.HeaderMatcher_PrefixMatch:
+	case *envoyroutev3.HeaderMatcher_PrefixMatch:
 		return &PrefixStringMatcher{
-			PrefixMatch: header.HeaderMatchSpecifier.(*routev3.HeaderMatcher_PrefixMatch).PrefixMatch,
+			PrefixMatch: header.HeaderMatchSpecifier.(*envoyroutev3.HeaderMatcher_PrefixMatch).PrefixMatch,
 		}, nil
-	case *routev3.HeaderMatcher_SuffixMatch:
+	case *envoyroutev3.HeaderMatcher_SuffixMatch:
 		return &SuffixStringMatcher{
-			SuffixMatch: header.HeaderMatchSpecifier.(*routev3.HeaderMatcher_SuffixMatch).SuffixMatch,
+			SuffixMatch: header.HeaderMatchSpecifier.(*envoyroutev3.HeaderMatcher_SuffixMatch).SuffixMatch,
 		}, nil
-	case *routev3.HeaderMatcher_SafeRegexMatch:
-		re := header.HeaderMatchSpecifier.(*routev3.HeaderMatcher_SafeRegexMatch).SafeRegexMatch
-		if _, ok := re.EngineType.(*matcherv3.RegexMatcher_GoogleRe2); !ok {
+	case *envoyroutev3.HeaderMatcher_SafeRegexMatch:
+		re := header.HeaderMatchSpecifier.(*envoyroutev3.HeaderMatcher_SafeRegexMatch).SafeRegexMatch
+		if _, ok := re.EngineType.(*envoymatcherv3.RegexMatcher_GoogleRe2); !ok {
 			return nil, fmt.Errorf("[NewHeaderMatcher] failed to build regex, unsupported engine type: %v", reflect.TypeOf(re.EngineType))
 		}
 		if rePattern, err := regexp.Compile(re.Regex); err != nil {
@@ -170,14 +170,14 @@ func NewHeaderMatcher(header *routev3.HeaderMatcher) (HeaderMatcher, error) {
 				RegexMatch: rePattern,
 			}, nil
 		}
-	case *routev3.HeaderMatcher_PresentMatch:
+	case *envoyroutev3.HeaderMatcher_PresentMatch:
 		return &HeaderMatcherPresentMatch{
-			PresentMatch: header.HeaderMatchSpecifier.(*routev3.HeaderMatcher_PresentMatch).PresentMatch,
+			PresentMatch: header.HeaderMatchSpecifier.(*envoyroutev3.HeaderMatcher_PresentMatch).PresentMatch,
 		}, nil
-	case *routev3.HeaderMatcher_RangeMatch:
+	case *envoyroutev3.HeaderMatcher_RangeMatch:
 		return &HeaderMatcherRangeMatch{
-			Start: header.HeaderMatchSpecifier.(*routev3.HeaderMatcher_RangeMatch).RangeMatch.Start,
-			End:   header.HeaderMatchSpecifier.(*routev3.HeaderMatcher_RangeMatch).RangeMatch.End,
+			Start: header.HeaderMatchSpecifier.(*envoyroutev3.HeaderMatcher_RangeMatch).RangeMatch.Start,
+			End:   header.HeaderMatchSpecifier.(*envoyroutev3.HeaderMatcher_RangeMatch).RangeMatch.End,
 		}, nil
 	default:
 		return nil, fmt.Errorf(
@@ -204,10 +204,10 @@ func (m *DefaultUrlPathMatcher) Match(targetValue string) bool {
 	return m.Matcher.Match(targetValue)
 }
 
-func NewUrlPathMatcher(urlPath *matcherv3.PathMatcher) (UrlPathMatcher, error) {
+func NewUrlPathMatcher(urlPath *envoymatcherv3.PathMatcher) (UrlPathMatcher, error) {
 	switch urlPath.Rule.(type) {
-	case *matcherv3.PathMatcher_Path:
-		m, err := NewStringMatcher(urlPath.Rule.(*matcherv3.PathMatcher_Path).Path)
+	case *envoymatcherv3.PathMatcher_Path:
+		m, err := NewStringMatcher(urlPath.Rule.(*envoymatcherv3.PathMatcher_Path).Path)
 		return &DefaultUrlPathMatcher{
 			Matcher: m,
 		}, err
