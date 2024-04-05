@@ -296,6 +296,7 @@ func (lds *LdsProtocol) parseJwtAuthnFilter(name string, envoyAuthentication *jw
 			}
 		} else {
 			// Add default from header
+			jwtProvider.FromHeaders = make([]resources.JwtHeader, 1)
 			jwtProvider.FromHeaders[0] = resources.JwtHeader{
 				Name:        "Authorization",
 				ValuePrefix: "Bearer ",
