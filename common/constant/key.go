@@ -231,13 +231,14 @@ const (
 
 // http header keys
 const (
-	HttpHeaderXSchemeName    = ":x-scheme"
-	HttpHeaderXMethodName    = ":x-method"
-	HttpHeaderXPathName      = ":x-path"
-	HttpHeaderXHostName      = ":x-host"
-	HttpHeaderXSpiffeName    = ":x-spiffe"
-	HttpHeaderXJwtClaimsName = ":x-auth"
-	HttpHeaderXMTLSMode      = ":x-mtls-mode"
+	HttpHeaderXSchemeName    = ":scheme"
+	HttpHeaderXMethodName    = ":method"
+	HttpHeaderXPathName      = ":path"
+	HttpHeaderXHostName      = ":authority"
+	HttpHeaderXSpiffeName    = ":spiffe"
+	HttpHeaderXJwtClaimsName = ":auth"
+	HttpHeaderXMTLSMode      = ":mtls-mode"
+	HttpHeaderXRemoteIp      = ":remote-ip"
 )
 
 // config center keys
