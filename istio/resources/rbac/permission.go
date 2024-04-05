@@ -109,16 +109,16 @@ type PermissionAndRules struct {
 }
 
 func NewPermissionAndRules(permission *envoyrbacconfigv3.Permission_AndRules) (*PermissionAndRules, error) {
-	ermissionAndRules := &PermissionAndRules{}
-	ermissionAndRules.AndRules = make([]Permission, len(permission.AndRules.Rules))
+	permissionAndRules := &PermissionAndRules{}
+	permissionAndRules.AndRules = make([]Permission, len(permission.AndRules.Rules))
 	for idx, subPermission := range permission.AndRules.Rules {
 		if subInheritPermission, err := NewPermission(subPermission); err != nil {
 			return nil, err
 		} else {
-			ermissionAndRules.AndRules[idx] = subInheritPermission
+			permissionAndRules.AndRules[idx] = subInheritPermission
 		}
 	}
-	return ermissionAndRules, nil
+	return permissionAndRules, nil
 }
 func (p *PermissionAndRules) isPermission() {}
 func (p *PermissionAndRules) Match(headers map[string]string) bool {

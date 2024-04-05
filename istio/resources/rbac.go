@@ -12,7 +12,7 @@ import (
 type RBACEnvoyFilter struct {
 	Name          string
 	RBAC          *envoyrbacv3.RBAC
-	Authorization *rbac.Authorization
+	Authorization *rbac.Rules
 }
 
 func ParseJsonToRBAC(jsonConf string) (*envoyrbacv3.RBAC, error) {
