@@ -19,9 +19,12 @@ package sentinel
 
 import (
 	"context"
+	"github.com/alibaba/sentinel-golang/core/circuitbreaker"
+	"github.com/pkg/errors"
 	"sync"
 	"sync/atomic"
 	"testing"
+	"time"
 )
 
 import (
@@ -83,6 +86,74 @@ func TestSentinelFilter_QPS(t *testing.T) {
 	// todo sentinel can't assure the passed count is 100, sometimes is 101
 	assert.True(t, atomic.LoadInt64(&pass) <= 105 && atomic.LoadInt64(&pass) >= 95)
 	assert.True(t, atomic.LoadInt64(&block) <= 205 && atomic.LoadInt64(&block) >= 195)
+}
+
+type ErrInvoker struct {
+	*protocol.BaseInvoker
+}
+
+func (ei *ErrInvoker) Invoke(context context.Context, invocation protocol.Invocation) protocol.Result {
+	invoke := ei.BaseInvoker.Invoke(context, invocation)
+	invoke.SetError(errors.New("error"))
+	return invoke
+}
+
+type stateChangeTestListener struct {
+	OnTransformToOpenChan chan struct{}
+}
+
+func (s *stateChangeTestListener) OnTransformToClosed(prev circuitbreaker.State, rule circuitbreaker.Rule) {
+}
+
+func (s *stateChangeTestListener) OnTransformToOpen(prev circuitbreaker.State, rule circuitbreaker.Rule, snapshot interface{}) {
+	s.OnTransformToOpenChan <- struct{}{}
+}
+
+func (s *stateChangeTestListener) OnTransformToHalfOpen(prev circuitbreaker.State, rule circuitbreaker.Rule) {
+}
+
+func TestSentinelFilter_ErrorCount(t *testing.T) {
+	url, err := common.NewURL("dubbo://127.0.0.1:20000/UserProvider?anyhost=true&" +
+		"version=1.0.0&group=myGroup&" +
+		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
+		"environment=dev&interface=com.test.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
+		"module=dubbogo+user-info+server&org=test.com&owner=ZX&pid=1447&revision=0.0.1&" +
+		"side=provider&timeout=3000&timestamp=1556509797245&bean.name=UserProvider")
+	assert.NoError(t, err)
+	mockInvoker := &ErrInvoker{protocol.NewBaseInvoker(url)}
+	_, methodResourceName := getResourceName(mockInvoker,
+		invocation.NewRPCInvocation("hi", []interface{}{"OK"}, make(map[string]interface{})), DefaultProviderPrefix)
+	mockInvocation := invocation.NewRPCInvocation("hi", []interface{}{"OK"}, make(map[string]interface{}))
+
+	// Register a state change listener so that we could observe the state change of the internal circuit breaker.
+	listener := &stateChangeTestListener{}
+	listener.OnTransformToOpenChan = make(chan struct{}, 1)
+	circuitbreaker.RegisterStateChangeListeners(listener)
+	_, err = circuitbreaker.LoadRules([]*circuitbreaker.Rule{
+		// Statistic time span=0.9s, recoveryTimeout=3s, maxErrorCount=50
+		{
+			Resource:                     methodResourceName,
+			Strategy:                     circuitbreaker.ErrorCount,
+			RetryTimeoutMs:               3000,
+			MinRequestAmount:             10,
+			StatIntervalMs:               900,
+			StatSlidingWindowBucketCount: 10,
+			Threshold:                    50,
+		},
+	})
+	assert.NoError(t, err)
+
+	f := &sentinelProviderFilter{}
+	for i := 0; i < 50; i++ {
+		result := f.Invoke(context.TODO(), mockInvoker, mockInvocation)
+		assert.Error(t, result.Error())
+	}
+	select {
+	case <-time.After(time.Second):
+		t.Error()
+	case <-listener.OnTransformToOpenChan:
+	}
+
 }
 
 func TestConsumerFilter_Invoke(t *testing.T) {
