@@ -71,12 +71,6 @@ func (f *mtlsFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invoc
 	for key, attachment := range headers {
 		logger.Infof("[mtls filter] invocation attachment key %s = %s", key, attachment)
 	}
-
-	headers2 := utils.ConvertAttachmentsToMap(ctx.Value(constant.AttachmentKey).(map[string]interface{}))
-	for key, attachment := range headers2 {
-		logger.Infof("[mtls filter] ctx attachment key %s = %s", key, attachment)
-	}
-
 	if f.pilotAgent == nil {
 		result := &protocol.RPCResult{}
 		result.SetResult(nil)
@@ -102,21 +96,21 @@ func (f *mtlsFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invoc
 
 func (f *mtlsFilter) buildHeadersFromCtx(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) map[string]string {
 	headers := utils.ConvertAttachmentsToMap(invocation.Attachments())
-	// build :x-path
+	// build :path
 	xpath := headers[constant.HttpHeaderXPathName]
 	if len(xpath) == 0 {
 		xpath = fmt.Sprintf("/%s/%s", invoker.GetURL().GetParam(constant.InterfaceKey, ""), invocation.MethodName())
 		headers[constant.HttpHeaderXPathName] = xpath
 		invocation.SetAttachment(constant.HttpHeaderXPathName, []string{xpath})
 	}
-	// build :x-scheme
+	// build :scheme
 	xscheme := headers[constant.HttpHeaderXSchemeName]
 	if len(xscheme) == 0 {
 		xscheme = "http"
 		headers[constant.HttpHeaderXSchemeName] = xscheme
 		invocation.SetAttachment(constant.HttpHeaderXSchemeName, []string{xscheme})
 	}
-	// build :x-method
+	// build :method
 	xmethod := headers[constant.HttpHeaderXMethodName]
 	if len(xmethod) == 0 {
 		xmethod = "POST"
