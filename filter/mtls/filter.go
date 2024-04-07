@@ -91,6 +91,7 @@ func (f *mtlsFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invoc
 	}
 
 	invocation.SetAttachment(constant.HttpHeaderXMTLSMode, []string{resources.MutualTLSModeToString(mutualTLSMode)})
+	invocation.SetAttachment(constant.HttpHeaderXSourcePrincipal, []string{headers[constant.HttpHeaderXSpiffeName]})
 	return invoker.Invoke(ctx, invocation)
 }
 

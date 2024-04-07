@@ -283,6 +283,18 @@ func (j *JwtClaims) FlattenMap() map[string]string {
 	return flat
 }
 
+func FlattenJwtTokenMap(jwt jwt.Token) map[string]string {
+	flat := make(map[string]string)
+	utils.FlattenMap(":request.auth.claims.", jwt.PrivateClaims(), flat, 0, 1)
+	flat[":request.auth.claims.iss"] = jwt.Issuer()
+	flat[":request.auth.claims.sub"] = jwt.Subject()
+	flat[":request.auth.claims.aud"] = strings.Join(jwt.Audience(), ",")
+	flat[":request.auth.claims.jti"] = jwt.JwtID()
+	flat[":request.auth.principal"] = fmt.Sprintf("%s/%s", jwt.Issuer(), jwt.Subject())
+	flat[":request.auth.audiences"] = strings.Join(jwt.Audience(), ",")
+	return flat
+}
+
 func ConvertJwtToClaims(jwt jwt.Token) JwtClaims {
 	jwtClaims := JwtClaims{
 		Audience:      make([]string, 0),
