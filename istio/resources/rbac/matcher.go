@@ -567,8 +567,6 @@ func NewValueMatcher(value *envoymatcherv3.ValueMatcher) (*ValueMatcher, error) 
 				"[NewValueMatcher] not support ListMatcher type found, error: %v",
 				reflect.TypeOf(matcher.ListMatch))
 		}
-
-		return nil, nil
 	default:
 		return nil, fmt.Errorf(
 			"[NewValueMatcher] not support ValueMatcher type found, error: %v",

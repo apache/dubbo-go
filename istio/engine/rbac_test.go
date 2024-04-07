@@ -1,6 +1,8 @@
 package engine
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/istio/utils"
+	"fmt"
 	"os"
 	"testing"
 
@@ -332,6 +334,22 @@ func TestRBACFilterEngine_Filter(t *testing.T) {
 			},
 			wantErr: false,
 		},
+
+		{
+			name: "principal meta data auth",
+			file: "./testdata/principal-metadata-auth.json",
+			headers: map[string]string{
+				"x-request-id":             "123456",
+				":request.auth.claims.aud": "dev",
+				":method":                  "POST",
+				":source.principal":        "spiffe://cluster.local/ns/dubbo/sa/dubboclient",
+			},
+			want: &RBACResult{
+				ReqOK:           true,
+				MatchPolicyName: "ns[foo]-policy[httpbin]-rule[0]",
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -341,7 +359,7 @@ func TestRBACFilterEngine_Filter(t *testing.T) {
 				t.Errorf("ParseJsonToRBAC error %v", err)
 			}
 			rbac, err := rbac.NewRBAC(envoyRBAC)
-			//fmt.Printf("rbac :%s", utils.ConvertJsonString(rbac))
+			fmt.Printf("rbac :%s", utils.ConvertJsonString(rbac))
 			if err != nil {
 				t.Errorf("rbac.NewRBAC error %v", err)
 			}
