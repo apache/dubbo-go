@@ -55,11 +55,15 @@ func main() {
 		func(gen *protogen.Plugin) error {
 			gen.SupportedFeatures = uint64(pluginpb.CodeGeneratorResponse_FEATURE_PROTO3_OPTIONAL)
 			for _, f := range gen.Files {
-				if f.Generate {
+				if f.Generate && !isExtendProto(f) {
 					generate.GenHessian2(gen, f)
 				}
 			}
 			return nil
 		},
 	)
+}
+
+func isExtendProto(file *protogen.File) bool {
+	return file.Proto.Package != nil && *file.Proto.Package == "dubbo_extend"
 }

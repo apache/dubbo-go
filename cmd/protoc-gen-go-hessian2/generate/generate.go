@@ -18,13 +18,22 @@
 package generate
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/cmd/protoc-gen-go-hessian2/proto/hessian2_extend"
 	"fmt"
 )
 
 import (
+	"github.com/golang/protobuf/proto"
+	"github.com/pkg/errors"
+
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
+)
+
+var (
+	ErrNoJavaClassName        = "should extend java class name to generate hessian2 code"
+	ErrExtendedOptionNotMatch = "extended options not match"
 )
 
 func GenHessian2(gen *protogen.Plugin, file *protogen.File) {
@@ -83,8 +92,17 @@ func genMessageField(g *protogen.GeneratedFile, m *protogen.Message, field *prot
 
 func genMessageRelatedMethods(g *protogen.GeneratedFile, m *protogen.Message) {
 	g.P("func ", "(x *", m.GoIdent.GoName, ")", "JavaClassName() string {")
-	// TODO(Yuukirn): get class name by extend field
-	g.P("	return ", "\"org.test.service.", m.GoIdent.GoName, "\"")
+	opts := m.Desc.Options().(*descriptorpb.MessageOptions)
+	ext, err := proto.GetExtension(opts, hessian2_extend.E_MessageExtend)
+	if errors.Is(err, proto.ErrMissingExtension) || ext == nil {
+		panic(ErrNoJavaClassName)
+	}
+	hessian2MsgOpts, ok := ext.(*hessian2_extend.Hessian2MessageOptions)
+	if !ok {
+		panic(ErrExtendedOptionNotMatch)
+	}
+
+	g.P("	return \"", hessian2MsgOpts.JavaClassName, "\"")
 	g.P("}")
 
 	g.P()
