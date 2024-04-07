@@ -89,6 +89,40 @@ func (m *RegexStringMatcher) Match(IgnoreCase bool, targetValue string) bool {
 	return m.RegexMatch.MatchString(targetValue)
 }
 
+func NewStringMatcherMatchPattern(mather *envoymatcherv3.StringMatcher) (*StringMatcher, error) {
+	stringMatcher := &StringMatcher{
+		IgnoreCase: mather.IgnoreCase,
+	}
+	switch mather.MatchPattern.(type) {
+	case *envoymatcherv3.StringMatcher_Exact:
+		stringMatcher.MatchPattern = &ExactStringMatcher{
+			ExactMatch: mather.MatchPattern.(*envoymatcherv3.StringMatcher_Exact).Exact,
+		}
+	case *envoymatcherv3.StringMatcher_Prefix:
+		stringMatcher.MatchPattern = &PrefixStringMatcher{
+			PrefixMatch: mather.MatchPattern.(*envoymatcherv3.StringMatcher_Prefix).Prefix,
+		}
+	case *envoymatcherv3.StringMatcher_Suffix:
+		stringMatcher.MatchPattern = &SuffixStringMatcher{
+			SuffixMatch: mather.MatchPattern.(*envoymatcherv3.StringMatcher_Suffix).Suffix,
+		}
+	case *envoymatcherv3.StringMatcher_SafeRegex:
+		stringMatcher.MatchPattern = &RegexStringMatcher{
+			RegexMatch: regexp.MustCompile(mather.MatchPattern.(*envoymatcherv3.StringMatcher_SafeRegex).SafeRegex.Regex),
+		}
+	case *envoymatcherv3.StringMatcher_Contains:
+		stringMatcher.MatchPattern = &ContainsStringMatcher{
+			ContainsMatch: mather.MatchPattern.(*envoymatcherv3.StringMatcher_Contains).Contains,
+		}
+	default:
+		return nil, fmt.Errorf(
+			"[NewStringMatcher] not support StringMatcher type found, detail: %v",
+			reflect.TypeOf(mather.MatchPattern))
+	}
+
+	return stringMatcher, nil
+}
+
 func NewStringMatcher(mather *envoymatcherv3.StringMatcher) (*StringMatcher, error) {
 	stringMatcher := &StringMatcher{
 		IgnoreCase: mather.IgnoreCase,
@@ -431,22 +465,12 @@ func (d *DoubleExactValueMatcher) Match(targetValue string) bool {
 }
 
 type StringValueMatcher struct {
-	// Types that are assignable to MatchPattern:
-	//	*StringMatcher_Exact
-	//	*StringMatcher_Prefix
-	//	*StringMatcher_Suffix
-	//	*StringMatcher_SafeRegex
-	//	*StringMatcher_Contains
-	MatchPattern StringMatcherMatchPattern
-	// If true, indicates the exact/prefix/suffix/contains matching should be case insensitive. This
-	// has no effect for the safe_regex match.
-	// For example, the matcher ``data`` will match both input string ``Data`` and ``data`` if set to true.
-	IgnoreCase bool
+	StringMatch *StringMatcher
 }
 
 func (s *StringValueMatcher) isValueMatcher() {}
 func (s *StringValueMatcher) Match(targetValue string) bool {
-	return s.MatchPattern.Match(s.IgnoreCase, targetValue)
+	return s.StringMatch.Match(targetValue)
 }
 
 type BoolValueMatcher struct {
@@ -516,7 +540,11 @@ func NewValueMatcher(value *envoymatcherv3.ValueMatcher) (*ValueMatcher, error) 
 				reflect.TypeOf(matcher.DoubleMatch))
 		}
 	case *envoymatcherv3.ValueMatcher_StringMatch:
-		return nil, nil
+		stringValueMatcher, err := NewStringMatcher(value.MatchPattern.(*envoymatcherv3.ValueMatcher_StringMatch).StringMatch)
+		if err != nil {
+			return nil, err
+		}
+		valueMatcher.MatchPattern = &StringValueMatcher{StringMatch: stringValueMatcher}
 	case *envoymatcherv3.ValueMatcher_BoolMatch:
 		valueMatcher.MatchPattern = &BoolValueMatcher{}
 	case *envoymatcherv3.ValueMatcher_PresentMatch:
