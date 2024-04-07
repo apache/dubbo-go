@@ -310,7 +310,9 @@ func NewHeaderMatcher(header *envoyroutev3.HeaderMatcher) (*HeaderMatcher, error
 	}
 	switch header.HeaderMatchSpecifier.(type) {
 	case *envoyroutev3.HeaderMatcher_ExactMatch:
-		headerMatcher.HeaderMatchSpecifier = &HeaderMatcherPresent{}
+		headerMatcher.HeaderMatchSpecifier = &HeaderMatcherExact{
+			ExactMatch: header.HeaderMatchSpecifier.(*envoyroutev3.HeaderMatcher_ExactMatch).ExactMatch,
+		}
 	case *envoyroutev3.HeaderMatcher_PrefixMatch:
 		headerMatcher.HeaderMatchSpecifier = &HeaderMatcherPrefix{
 			PrefixMatch: header.HeaderMatchSpecifier.(*envoyroutev3.HeaderMatcher_PrefixMatch).PrefixMatch,

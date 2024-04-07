@@ -1,11 +1,12 @@
 package engine
 
 import (
+	"os"
+	"testing"
+
 	"dubbo.apache.org/dubbo-go/v3/istio/resources"
 	"dubbo.apache.org/dubbo-go/v3/istio/resources/rbac"
 	"github.com/stretchr/testify/assert"
-	"os"
-	"testing"
 )
 
 func TestRBACFilterEngine_Filter(t *testing.T) {
@@ -17,6 +18,7 @@ func TestRBACFilterEngine_Filter(t *testing.T) {
 		want    *RBACResult
 		wantErr bool
 	}{
+		// deny all
 		{
 			name: "deny all",
 			file: "./testdata/deny-all.json",
@@ -30,8 +32,10 @@ func TestRBACFilterEngine_Filter(t *testing.T) {
 			wantErr: false,
 		},
 
+		// principal tests
+
 		{
-			name: "meta deny default namespace",
+			name: "principal metadata deny default namespace",
 			file: "./testdata/principal-metadata.json",
 			headers: map[string]string{
 				"x-request-id":      "123456",
@@ -45,7 +49,7 @@ func TestRBACFilterEngine_Filter(t *testing.T) {
 		},
 
 		{
-			name: "meta allow foo namespace",
+			name: "principal metadata allow foo namespace",
 			file: "./testdata/principal-metadata.json",
 			headers: map[string]string{
 				"x-request-id":      "123456",
@@ -137,6 +141,194 @@ func TestRBACFilterEngine_Filter(t *testing.T) {
 			want: &RBACResult{
 				ReqOK:           false,
 				MatchPolicyName: "header-regex-match",
+			},
+			wantErr: false,
+		},
+
+		{
+			name: "principal and",
+			file: "./testdata/principal-and.json",
+			headers: map[string]string{
+				"x-request-id": "123456",
+			},
+			want: &RBACResult{
+				ReqOK:           true,
+				MatchPolicyName: "",
+			},
+			wantErr: false,
+		},
+
+		{
+			name: "principal or",
+			file: "./testdata/principal-or.json",
+			headers: map[string]string{
+				"x-request-id": "123456",
+			},
+			want: &RBACResult{
+				ReqOK:           false,
+				MatchPolicyName: "or-match",
+			},
+			wantErr: false,
+		},
+
+		{
+			name: "principal not",
+			file: "./testdata/principal-not.json",
+			headers: map[string]string{
+				"x-request-id": "123456",
+			},
+			want: &RBACResult{
+				ReqOK:           false,
+				MatchPolicyName: "",
+			},
+			wantErr: false,
+		},
+		{
+			name: "principal headers present",
+			file: "./testdata/principal-headers-present.json",
+			headers: map[string]string{
+				"x-request-id":    "123456",
+				"x-custom-header": "xx",
+			},
+			want: &RBACResult{
+				ReqOK:           false,
+				MatchPolicyName: "header-present-match",
+			},
+			wantErr: false,
+		},
+
+		// permission tests
+
+		{
+			name: "permission and",
+			file: "./testdata/permission-and.json",
+			headers: map[string]string{
+				"x-request-id": "123456",
+			},
+			want: &RBACResult{
+				ReqOK:           true,
+				MatchPolicyName: "",
+			},
+			wantErr: false,
+		},
+
+		{
+			name: "permission header present",
+			file: "./testdata/permission-headers-present.json",
+			headers: map[string]string{
+				"x-request-id":    "123456",
+				"x-custom-header": "xx",
+			},
+			want: &RBACResult{
+				ReqOK:           false,
+				MatchPolicyName: "header-present-match",
+			},
+			wantErr: false,
+		},
+
+		{
+			name: "permission header value default",
+			file: "./testdata/permission-headers-value.json",
+			headers: map[string]string{
+				"x-request-id": "123456",
+			},
+			want: &RBACResult{
+				ReqOK:           true,
+				MatchPolicyName: "",
+			},
+			wantErr: false,
+		},
+
+		{
+			name: "permission header value authority match",
+			file: "./testdata/permission-headers-value.json",
+			headers: map[string]string{
+				"x-request-id": "123456",
+				":authority":   "example.org",
+			},
+			want: &RBACResult{
+				ReqOK:           false,
+				MatchPolicyName: "header-regex-match",
+			},
+			wantErr: false,
+		},
+
+		{
+			name: "permission header value path prefix match",
+			file: "./testdata/permission-headers-value.json",
+			headers: map[string]string{
+				"x-request-id": "123456",
+				":path":        "/control-api/hello",
+			},
+			want: &RBACResult{
+				ReqOK:           false,
+				MatchPolicyName: "header-regex-match",
+			},
+			wantErr: false,
+		},
+
+		{
+			name: "permission header value path method match",
+			file: "./testdata/permission-headers-value.json",
+			headers: map[string]string{
+				"x-request-id": "123456",
+				":method":      "HEAD",
+			},
+			want: &RBACResult{
+				ReqOK:           false,
+				MatchPolicyName: "header-regex-match",
+			},
+			wantErr: false,
+		},
+
+		{
+			name: "permission not",
+			file: "./testdata/permission-not.json",
+			headers: map[string]string{
+				"x-request-id": "123456",
+			},
+			want: &RBACResult{
+				ReqOK:           false,
+				MatchPolicyName: "",
+			},
+			wantErr: false,
+		},
+
+		{
+			name: "permission or",
+			file: "./testdata/permission-or.json",
+			headers: map[string]string{
+				"x-request-id": "123456",
+			},
+			want: &RBACResult{
+				ReqOK:           false,
+				MatchPolicyName: "or-match",
+			},
+			wantErr: false,
+		},
+
+		{
+			name: "permission and",
+			file: "./testdata/permission-and.json",
+			headers: map[string]string{
+				"x-request-id": "123456",
+			},
+			want: &RBACResult{
+				ReqOK:           true,
+				MatchPolicyName: "",
+			},
+			wantErr: false,
+		},
+		{
+			name: "permission path",
+			file: "./testdata/permission-path.json",
+			headers: map[string]string{
+				"x-request-id": "123456",
+				":path":        "/deny",
+			},
+			want: &RBACResult{
+				ReqOK:           false,
+				MatchPolicyName: "path-match",
 			},
 			wantErr: false,
 		},

@@ -11,7 +11,12 @@
                 {
                   "header": {
                     "name": ":path",
-                    "hidden_envoy_deprecated_regex_match": "\/deny.*"
+                    "string_match": {
+                      "safe_regex": {
+                        "google_re2": {},
+                        "regex": ".*/deny.*"
+                      }
+                    }
                   }
                 },
                 {

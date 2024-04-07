@@ -22,6 +22,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
@@ -130,12 +131,12 @@ func (f *jwtAuthnFilter) Invoke(ctx context.Context, invoker protocol.Invoker, i
 				invocation.SetAttachment(findProvider.ForwardPayloadHeader, []string{base64.URLEncoding.EncodeToString([]byte(jwtJsonClaims))})
 			}
 			// add new attachment named :auth
-			logger.Infof("[jwt authn filter] add attachment k: %s, v: %s", constant.HttpHeaderXJwtClaimsName, jwtJsonClaims)
-			invocation.SetAttachment(constant.HttpHeaderXJwtClaimsName, []string{jwtJsonClaims})
+			logger.Infof("[jwt authn filter] add attachment k: %s, v: %s", constant.HttpHeaderXAuthName, jwtJsonClaims)
+			invocation.SetAttachment(constant.HttpHeaderXAuthName, []string{jwtJsonClaims})
 			//todo add request auth headers here
 			authHeaders := resources.FlattenJwtTokenMap(jwtToken)
 			for key, value := range authHeaders {
-				invocation.SetAttachment(key, []string{value})
+				invocation.SetAttachment(strings.ToLower(key), []string{value})
 			}
 		}
 	}

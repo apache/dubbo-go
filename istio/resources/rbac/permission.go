@@ -17,12 +17,13 @@ type Permission interface {
 }
 
 type PermissionAny struct {
+	// When any is set, it matches any action.
 	Any bool
 }
 
 func (p *PermissionAny) isPermission() {}
 func (p *PermissionAny) Match(headers map[string]string) bool {
-	return true
+	return p.Any
 }
 
 func NewPermissionAny(permission *envoyrbacconfigv3.Permission_Any) (*PermissionAny, error) {

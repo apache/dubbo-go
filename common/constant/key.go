@@ -236,7 +236,7 @@ const (
 	HttpHeaderXPathName        = ":path"
 	HttpHeaderXHostName        = ":authority"
 	HttpHeaderXSpiffeName      = ":spiffe"
-	HttpHeaderXJwtClaimsName   = ":auth"
+	HttpHeaderXAuthName        = ":auth"
 	HttpHeaderXMTLSMode        = ":mtls-mode"
 	HttpHeaderXSourceIp        = ":source.ip"
 	HttpHeaderXSourcePrincipal = ":source.principal"
