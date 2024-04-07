@@ -17,18 +17,18 @@ func TestRBACFilterEngine_Filter(t *testing.T) {
 		want    *RBACResult
 		wantErr bool
 	}{
-		//{
-		//	name: "deny all",
-		//	file: "./testdata/deny-all.json",
-		//	headers: map[string]string{
-		//		"x-request-id": "123456",
-		//	},
-		//	want: &RBACResult{
-		//		ReqOK:           false,
-		//		MatchPolicyName: "deny-all",
-		//	},
-		//	wantErr: false,
-		//},
+		{
+			name: "deny all",
+			file: "./testdata/deny-all.json",
+			headers: map[string]string{
+				"x-request-id": "123456",
+			},
+			want: &RBACResult{
+				ReqOK:           false,
+				MatchPolicyName: "deny-all",
+			},
+			wantErr: false,
+		},
 
 		{
 			name: "meta deny default namespace",
@@ -54,6 +54,89 @@ func TestRBACFilterEngine_Filter(t *testing.T) {
 			want: &RBACResult{
 				ReqOK:           true,
 				MatchPolicyName: "",
+			},
+			wantErr: false,
+		},
+
+		{
+			name: "path deny",
+			file: "./testdata/permission-path.json",
+			headers: map[string]string{
+				"x-request-id": "123456",
+				":path":        "/deny",
+			},
+			want: &RBACResult{
+				ReqOK:           false,
+				MatchPolicyName: "path-match",
+			},
+			wantErr: false,
+		},
+
+		{
+			name: "path allow",
+			file: "./testdata/permission-path.json",
+			headers: map[string]string{
+				"x-request-id": "123456",
+				":path":        "/hello",
+			},
+			want: &RBACResult{
+				ReqOK:           true,
+				MatchPolicyName: "",
+			},
+			wantErr: false,
+		},
+		{
+			name: "principal header value regex-match deny",
+			file: "./testdata/principal-headers-value.json",
+			headers: map[string]string{
+				"x-request-id": "123456",
+				":path":        "/deny/me/ok",
+			},
+			want: &RBACResult{
+				ReqOK:           false,
+				MatchPolicyName: "header-regex-match",
+			},
+			wantErr: false,
+		},
+
+		{
+			name: "principal header value prefixMatch deny",
+			file: "./testdata/principal-headers-value.json",
+			headers: map[string]string{
+				"x-request-id": "123456",
+				":path":        "/control-api/hello",
+			},
+			want: &RBACResult{
+				ReqOK:           false,
+				MatchPolicyName: "header-regex-match",
+			},
+			wantErr: false,
+		},
+
+		{
+			name: "principal header value suffixMatch deny",
+			file: "./testdata/principal-headers-value.json",
+			headers: map[string]string{
+				"x-request-id": "123456",
+				":path":        "/api/a.html",
+			},
+			want: &RBACResult{
+				ReqOK:           false,
+				MatchPolicyName: "header-regex-match",
+			},
+			wantErr: false,
+		},
+
+		{
+			name: "principal header value rangeMatch deny",
+			file: "./testdata/principal-headers-value.json",
+			headers: map[string]string{
+				"x-request-id": "123456",
+				"x-timeout":    "101",
+			},
+			want: &RBACResult{
+				ReqOK:           false,
+				MatchPolicyName: "header-regex-match",
 			},
 			wantErr: false,
 		},

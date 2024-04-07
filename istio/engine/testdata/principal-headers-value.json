@@ -16,7 +16,12 @@
                 {
                   "header": {
                     "name": ":path",
-                    "regexMatch": "\/deny.*"
+                    "string_match": {
+                      "safe_regex": {
+                        "google_re2": {},
+                        "regex": ".*/deny.*"
+                      }
+                    }
                   }
                 },
                 {
@@ -34,7 +39,7 @@
                 {
                   "header": {
                     "name": ":path",
-                    "suffixMatch": ".java"
+                    "suffixMatch": ".html"
                   }
                 },
                 {
