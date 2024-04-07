@@ -18,6 +18,7 @@
 package resources
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/istio/utils"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -268,6 +269,18 @@ type JwtClaims struct {
 	JWTID         string                 `json:"jti,omitempty"`            // Unique identifier for the JWT
 	NotBefore     time.Time              `json:"nbf,omitempty"`            // Not before or time before which the JWT is not valid
 	PrivateClaims map[string]interface{} `json:"private_claims,omitempty"` // Private claims that may not appear directly in the JSON
+}
+
+func (j *JwtClaims) FlattenMap() map[string]string {
+	flat := make(map[string]string)
+	utils.FlattenMap(":request.auth.claims.", j.PrivateClaims, flat, 0, 1)
+	flat[":request.auth.claims.iss"] = j.Issuer
+	flat[":request.auth.claims.sub"] = j.Subject
+	flat[":request.auth.claims.aud"] = strings.Join(j.Audience, ",")
+	flat[":request.auth.claims.jti"] = j.JWTID
+	flat[":request.auth.principal"] = fmt.Sprintf("%s/%s", j.Issuer, j.Subject)
+	flat[":request.auth.audiences"] = strings.Join(j.Audience, ",")
+	return flat
 }
 
 func ConvertJwtToClaims(jwt jwt.Token) JwtClaims {

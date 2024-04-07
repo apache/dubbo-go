@@ -69,15 +69,11 @@ func NewPermissionDestinationPort(permission *envoyrbacconfigv3.Permission_Desti
 }
 
 type PermissionHeader struct {
-	Target      string
-	Matcher     HeaderMatcher
-	InvertMatch bool
+	Matcher *HeaderMatcher
 }
 
 func NewPermissionHeader(permission *envoyrbacconfigv3.Permission_Header) (*PermissionHeader, error) {
 	permissionHeader := &PermissionHeader{}
-	permissionHeader.Target = permission.Header.Name
-	permissionHeader.InvertMatch = permission.Header.InvertMatch
 	if headerMatcher, err := NewHeaderMatcher(permission.Header); err != nil {
 		return nil, err
 	} else {
@@ -88,20 +84,7 @@ func NewPermissionHeader(permission *envoyrbacconfigv3.Permission_Header) (*Perm
 
 func (p *PermissionHeader) isPermission() {}
 func (p *PermissionHeader) Match(headers map[string]string) bool {
-	targetValue, found := getHeader(p.Target, headers)
-	// HeaderMatcherPresentMatch is a little special
-	if matcher, ok := p.Matcher.(*HeaderMatcherPresentMatch); ok {
-		isMatch := found && matcher.PresentMatch
-		return p.InvertMatch != isMatch
-	}
-	// return false when targetValue is not found, except matcher is `HeaderMatcherPresentMatch`
-	if !found {
-		return false
-	} else {
-		isMatch := p.Matcher.Match(targetValue)
-		// permission.InvertMatch xor isMatch
-		return p.InvertMatch != isMatch
-	}
+	return p.Matcher.Match(headers)
 }
 
 type PermissionAndRules struct {

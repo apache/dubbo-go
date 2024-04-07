@@ -18,18 +18,19 @@
 package protocol
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/istio/resources/rbac"
 	"sync"
 
 	"dubbo.apache.org/dubbo-go/v3/istio/channel"
 	"dubbo.apache.org/dubbo-go/v3/istio/resources"
 	"dubbo.apache.org/dubbo-go/v3/istio/utils"
 	"github.com/dubbogo/gost/log/logger"
-	listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	listenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	jwtauthnv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/jwt_authn/v3"
-	rbacv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/rbac/v3"
-	http_connection_manager_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	envoyrbacv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/rbac/v3"
+	hcmv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	sockets_tls_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
-	v3discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
+	discoveryv3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	"github.com/golang/protobuf/ptypes"
 )
 
@@ -57,7 +58,7 @@ func (lds *LdsProtocol) SubscribeResource(resourceNames []string) error {
 	return lds.xdsClientChannel.SendWithTypeUrlAndResourceNames(lds.GetTypeUrl(), resourceNames)
 }
 
-func (lds *LdsProtocol) ProcessProtocol(resp *v3discovery.DiscoveryResponse, xdsClientChannel *channel.XdsClientChannel) error {
+func (lds *LdsProtocol) ProcessProtocol(resp *discoveryv3.DiscoveryResponse, xdsClientChannel *channel.XdsClientChannel) error {
 	if resp.GetTypeUrl() != lds.GetTypeUrl() {
 		return nil
 	}
@@ -65,7 +66,7 @@ func (lds *LdsProtocol) ProcessProtocol(resp *v3discovery.DiscoveryResponse, xds
 	xdsListeners := make([]resources.XdsListener, 0)
 	rdsResourceNames := make([]string, 0)
 	for _, resource := range resp.GetResources() {
-		ldsResource := &listener.Listener{}
+		ldsResource := &listenerv3.Listener{}
 		if err := ptypes.UnmarshalAny(resource, ldsResource); err != nil {
 			logger.Errorf("[lds Protocol] fail to extract listener: %v", err)
 			continue
@@ -101,7 +102,7 @@ func (lds *LdsProtocol) ProcessProtocol(resp *v3discovery.DiscoveryResponse, xds
 	return nil
 }
 
-func (lds *LdsProtocol) parseListener(listener *listener.Listener) (resources.XdsListener, error) {
+func (lds *LdsProtocol) parseListener(listener *listenerv3.Listener) (resources.XdsListener, error) {
 	envoyListener := resources.XdsListener{
 		//FilterChains:     make([]resources.XdsFilterChain, 0),
 		RdsResourceNames: make([]string, 0),
@@ -203,7 +204,7 @@ func (lds *LdsProtocol) parseListener(listener *listener.Listener) (resources.Xd
 			envoyFilter.Name = filter.Name
 			if filter.GetTypedConfig().GetTypeUrl() == "type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager" {
 				// check is rds
-				httpConnectionManager := &http_connection_manager_v3.HttpConnectionManager{}
+				httpConnectionManager := &hcmv3.HttpConnectionManager{}
 				if err := filter.GetTypedConfig().UnmarshalTo(httpConnectionManager); err != nil {
 					logger.Errorf("can not parse to Http Connection Manager")
 					continue
@@ -226,7 +227,7 @@ func (lds *LdsProtocol) parseListener(listener *listener.Listener) (resources.Xd
 						}
 						jwtAuthnFilter, err := lds.parseJwtAuthnFilter(httpFilter.Name, jwtAuthentication)
 						if err != nil {
-							logger.Errorf("can not convert to JwtAuthnEnovyFilter ")
+							logger.Errorf("can not convert to JwtAuthnEnovyFilter, error:%v", err)
 							continue
 						}
 						envoyListener.JwtAuthnFilter = jwtAuthnFilter
@@ -237,21 +238,20 @@ func (lds *LdsProtocol) parseListener(listener *listener.Listener) (resources.Xd
 					//}
 
 					if httpFilter.GetTypedConfig().GetTypeUrl() == "type.googleapis.com/envoy.extensions.filters.http.rbac.v3.RBAC" && foundInboundFilterChainCatchAll {
-						// parse istio authn here
-						rbacEnvoyFilter := &rbacv3.RBAC{}
+						// parse rbac filter here
+						rbacEnvoyFilter := &envoyrbacv3.RBAC{}
 						if err := httpFilter.GetTypedConfig().UnmarshalTo(rbacEnvoyFilter); err != nil {
 							logger.Errorf("can not parse to Http rbacFilter")
 							continue
 						}
 
-						rbacFilter := resources.RBACEnvoyFilter{
-							Name: httpFilter.Name,
-							RBAC: rbacEnvoyFilter,
+						rbacFilter, err := lds.parseRBACFilter(httpFilter.Name, rbacEnvoyFilter)
+						if err != nil {
+							logger.Errorf("can not convert to RBACEnovyFilter, error: %v", err)
+							continue
 						}
 						envoyListener.RBACFilter = rbacFilter
 					}
-					// parse rbac filter here
-
 				}
 			}
 			envoyFilterChain.Filters = append(envoyFilterChain.Filters, envoyFilter)
@@ -265,6 +265,19 @@ func (lds *LdsProtocol) parseListener(listener *listener.Listener) (resources.Xd
 	}
 
 	return envoyListener, nil
+}
+
+func (lds *LdsProtocol) parseRBACFilter(name string, envoyRBAC *envoyrbacv3.RBAC) (resources.RBACEnvoyFilter, error) {
+	logger.Infof("[lds Protocol] RBAC Filter: %s", utils.ConvertJsonString(envoyRBAC))
+	rbacEnvoyFilter := resources.RBACEnvoyFilter{
+		Name: name,
+	}
+	rbac, err := rbac.NewRBAC(envoyRBAC)
+	if err != nil {
+		return rbacEnvoyFilter, err
+	}
+	rbacEnvoyFilter.RBAC = rbac
+	return rbacEnvoyFilter, nil
 }
 
 func (lds *LdsProtocol) parseJwtAuthnFilter(name string, envoyAuthentication *jwtauthnv3.JwtAuthentication) (resources.JwtAuthnEnovyFilter, error) {

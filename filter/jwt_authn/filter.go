@@ -132,6 +132,8 @@ func (f *jwtAuthnFilter) Invoke(ctx context.Context, invoker protocol.Invoker, i
 			// add new attachment named x-jwt-claims
 			logger.Infof("[jwt authn filter] add attachment k: %s, v: %s", constant.HttpHeaderXJwtClaimsName, jwtJsonClaims)
 			invocation.SetAttachment(constant.HttpHeaderXJwtClaimsName, []string{jwtJsonClaims})
+			// add request auth headers
+
 		}
 	}
 

@@ -5,10 +5,10 @@ import (
 	"net"
 	"reflect"
 	"strconv"
+	"strings"
 
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	envoyrbacconfigv3 "github.com/envoyproxy/go-control-plane/envoy/config/rbac/v3"
-	envoymatcherv3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 )
 
 type Principal interface {
@@ -39,7 +39,7 @@ type PrincipalDirectRemoteIp struct {
 func (p *PrincipalDirectRemoteIp) isPrincipal() {}
 
 func (p *PrincipalDirectRemoteIp) Match(headers map[string]string) bool {
-	ip := headers[constant.HttpHeaderXRemoteIp]
+	ip := headers[constant.HttpHeaderXSourceIp]
 	if len(ip) == 0 {
 		return false
 	}
@@ -75,7 +75,7 @@ type PrincipalSourceIp struct {
 func (p *PrincipalSourceIp) isPrincipal() {}
 
 func (p *PrincipalSourceIp) Match(headers map[string]string) bool {
-	ip := headers[constant.HttpHeaderXRemoteIp]
+	ip := headers[constant.HttpHeaderXSourceIp]
 	if len(ip) == 0 {
 		return false
 	}
@@ -105,30 +105,14 @@ func NewPrincipalSourceIp(principal *envoyrbacconfigv3.Principal_SourceIp) (*Pri
 
 type PrincipalHeader struct {
 	Target      string
-	Matcher     HeaderMatcher
+	Matcher     *HeaderMatcher
 	InvertMatch bool
 }
 
 func (p *PrincipalHeader) isPrincipal() {}
 
 func (p *PrincipalHeader) Match(headers map[string]string) bool {
-	targetValue, found := getHeader(p.Target, headers)
-
-	// HeaderMatcherPresentMatch is a little special
-	if matcher, ok := p.Matcher.(*HeaderMatcherPresentMatch); ok {
-		// HeaderMatcherPresentMatch matches if and only if header found and PresentMatch is true
-		isMatch := found && matcher.PresentMatch
-		return p.InvertMatch != isMatch
-	}
-
-	// return false when targetValue is not found, except matcher is `HeaderMatcherPresentMatch`
-	if !found {
-		return false
-	} else {
-		isMatch := p.Matcher.Match(targetValue)
-		// principal.InvertMatch xor isMatch
-		return p.InvertMatch != isMatch
-	}
+	return p.Matcher.Match(headers)
 }
 
 func NewPrincipalHeader(principal *envoyrbacconfigv3.Principal_Header) (*PrincipalHeader, error) {
@@ -227,8 +211,9 @@ func (p *PrincipalNotId) Match(headers map[string]string) bool {
 
 type PrincipalMetadata struct {
 	Filter  string
-	Path    string
-	Matcher StringMatcher
+	Path    []string
+	Matcher *ValueMatcher
+	Invert  bool
 }
 
 func NewPrincipalMetadata(principal *envoyrbacconfigv3.Principal_Metadata) (*PrincipalMetadata, error) {
@@ -238,36 +223,65 @@ func NewPrincipalMetadata(principal *envoyrbacconfigv3.Principal_Metadata) (*Pri
 	if principal.Metadata.Filter != "istio_authn" {
 		return nil, fmt.Errorf("unsupported Principal_Metadata filter: %s", principal.Metadata.Filter)
 	}
-	path := principal.Metadata.Path
-	if len(path) == 0 || path[0].GetKey() != "source.principal" {
-		return nil, fmt.Errorf("unsupported Principal_Metadata path: %v", path)
+	filter := principal.Metadata.Filter
+	path := make([]string, 0)
+	for _, pathSegment := range principal.Metadata.Path {
+		if len(pathSegment.GetKey()) > 0 {
+			path = append(path, pathSegment.GetKey())
+		}
 	}
-	matcher, ok := principal.Metadata.Value.MatchPattern.(*envoymatcherv3.ValueMatcher_StringMatch)
-	if !ok {
-		return nil, fmt.Errorf("unsupported Principal_Metadata matcher: %s", reflect.TypeOf(principal.Metadata.Value))
-	}
-	stringMatcher, err := NewStringMatcher(matcher.StringMatch)
+	invert := principal.Metadata.Invert
+	value, err := NewValueMatcher(principal.Metadata.Value)
 	if err != nil {
 		return nil, err
 	}
 
 	return &PrincipalMetadata{
-		Filter:  principal.Metadata.Filter,
-		Path:    path[0].GetKey(),
-		Matcher: stringMatcher,
+		Filter:  filter,
+		Path:    path,
+		Matcher: value,
+		Invert:  invert,
 	}, nil
 }
 func (p *PrincipalMetadata) isPrincipal() {}
 
-func (p *PrincipalMetadata) Match(header map[string]string) bool {
+func (p *PrincipalMetadata) Match(headers map[string]string) bool {
 	if p.Filter != "istio_authn" {
 		return false
 	}
-	if p.Path != "source.principal" {
+	if len(p.Path) == 0 {
 		return false
 	}
-	//todo check principal
-	return true
+	headerKey := strings.Join(p.Path, ".")
+	targetValue, ok := getHeader(headerKey, headers)
+	if !ok {
+		return false
+	}
+	return p.Matcher.Match(targetValue)
+}
+
+type PrincipalAuthenticated struct {
+	PrincipalName *StringMatcher
+}
+
+func (p *PrincipalAuthenticated) isPrincipal() {}
+
+func (p *PrincipalAuthenticated) Match(headers map[string]string) bool {
+	sourcePrincipal, ok := getHeader(constant.HttpHeaderXSourcePrincipal, headers)
+	if !ok {
+		return false
+	}
+	return p.PrincipalName.Match(sourcePrincipal)
+}
+
+func NewPrincipalAuthenticated(principal *envoyrbacconfigv3.Principal_Authenticated_) (*PrincipalAuthenticated, error) {
+	stringMatcher, err := NewStringMatcher(principal.Authenticated.PrincipalName)
+	if err != nil {
+		return nil, err
+	}
+	return &PrincipalAuthenticated{
+		PrincipalName: stringMatcher,
+	}, nil
 }
 
 func NewPrincipal(principal *envoyrbacconfigv3.Principal) (Principal, error) {
@@ -280,6 +294,8 @@ func NewPrincipal(principal *envoyrbacconfigv3.Principal) (Principal, error) {
 	case *envoyrbacconfigv3.Principal_SourceIp:
 		return NewPrincipalSourceIp(principal.Identifier.(*envoyrbacconfigv3.Principal_SourceIp))
 	case *envoyrbacconfigv3.Principal_RemoteIp:
+		// it is same as source ip
+		return NewPrincipalSourceIp(principal.Identifier.(*envoyrbacconfigv3.Principal_SourceIp))
 	case *envoyrbacconfigv3.Principal_Header:
 		return NewPrincipalHeader(principal.Identifier.(*envoyrbacconfigv3.Principal_Header))
 	case *envoyrbacconfigv3.Principal_AndIds:
@@ -290,6 +306,8 @@ func NewPrincipal(principal *envoyrbacconfigv3.Principal) (Principal, error) {
 		return NewPrincipalNotId(principal.Identifier.(*envoyrbacconfigv3.Principal_NotId))
 	case *envoyrbacconfigv3.Principal_Metadata:
 		return NewPrincipalMetadata(principal.Identifier.(*envoyrbacconfigv3.Principal_Metadata))
+	case *envoyrbacconfigv3.Principal_Authenticated_:
+		return NewPrincipalAuthenticated(principal.Identifier.(*envoyrbacconfigv3.Principal_Authenticated_))
 	default:
 		return nil, fmt.Errorf("[NewPrincipal] not supported Principal.Identifier type found, detail: %v",
 			reflect.TypeOf(principal.Identifier))

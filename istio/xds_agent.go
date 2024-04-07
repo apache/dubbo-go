@@ -21,7 +21,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"dubbo.apache.org/dubbo-go/v3/istio/resources"
-	rbacv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/rbac/v3"
+	"dubbo.apache.org/dubbo-go/v3/istio/resources/rbac"
 )
 
 // PilotAgentType represents the type of Pilot agent, either server workload or client workload.
@@ -68,7 +68,7 @@ type XdsAgent interface {
 	GetHostInboundJwtAuthentication() *resources.JwtAuthentication
 
 	// GetHostInboundRBAC returns the RBAC (Role-Based Access Control) configuration for host inbound connections.
-	GetHostInboundRBAC() *rbacv3.RBAC
+	GetHostInboundRBAC() *rbac.RBAC
 
 	// Stop stops the xDS agent.
 	Stop()

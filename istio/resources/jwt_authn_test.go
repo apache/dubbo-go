@@ -257,3 +257,68 @@ func TestValidateAndParseJWT(t *testing.T) {
 		})
 	}
 }
+
+func TestJwtClaims_FlattenMap(t *testing.T) {
+	// Example JWT Claims instance
+	jc := &JwtClaims{
+		Issuer:     "issuer",
+		Subject:    "subject",
+		Expiration: time.Date(2023, time.January, 1, 0, 0, 0, 0, time.UTC),
+		Audience:   []string{"audience1", "audience2"},
+		IssuedAt:   time.Date(2022, time.December, 1, 0, 0, 0, 0, time.UTC),
+		JWTID:      "unique-jti",
+		NotBefore:  time.Date(2022, time.November, 1, 0, 0, 0, 0, time.UTC),
+		PrivateClaims: map[string]interface{}{
+			"nested": map[string]interface{}{
+				"key1": "value1",
+				"key2": "value2",
+				"key3": true,
+				"key4": 100,
+				"key5": map[string]interface{}{
+					"key51": "hello",
+					"key52": true,
+				},
+			},
+			"simple_key": "simple_value",
+		},
+	}
+
+	tests := []struct {
+		name string
+		jc   *JwtClaims
+		want map[string]string
+	}{
+		{
+			name: "Basic FlattenMap Test",
+			jc:   jc,
+			want: map[string]string{
+				":request.auth.claims.iss":         "issuer",
+				":request.auth.claims.sub":         "subject",
+				":request.auth.claims.aud":         "audience1,audience2",
+				":request.auth.claims.jti":         "unique-jti",
+				":request.auth.principal":          "issuer/subject",
+				":request.auth.audiences":          "audience1,audience2",
+				":request.auth.claims.nested.key1": "value1",
+				":request.auth.claims.nested.key2": "value2",
+				":request.auth.claims.nested.key3": "true",
+				":request.auth.claims.nested.key4": "100",
+				":request.auth.claims.simple_key":  "simple_value",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.jc.FlattenMap()
+			if len(got) != len(tt.want) {
+				t.Errorf("FlattenMap() length mismatch; got %d, want %d", len(got), len(tt.want))
+			}
+
+			for k, v := range tt.want {
+				if gotV, ok := got[k]; !ok || gotV != v {
+					t.Errorf("FlattenMap()[%q] = %v, want %v", k, gotV, v)
+				}
+			}
+		})
+	}
+}

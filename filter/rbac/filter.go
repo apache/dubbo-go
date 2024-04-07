@@ -90,6 +90,13 @@ func (f *rbacFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invoc
 		return result
 	}
 
+	if !rbacResult.ReqOK {
+		result := &protocol.RPCResult{}
+		result.SetResult(nil)
+		result.SetError(fmt.Errorf("request deny by rbac filter policy: %s", rbacResult.MatchPolicyName))
+		return result
+	}
+
 	logger.Infof("[rbac filter] rbac result: %s", utils.ConvertJsonString(rbacResult))
 	return invoker.Invoke(ctx, invocation)
 }

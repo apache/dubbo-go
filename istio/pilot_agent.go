@@ -18,6 +18,7 @@
 package istio
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/istio/resources/rbac"
 	"fmt"
 	"sync"
 	"sync/atomic"
@@ -30,7 +31,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/istio/resources"
 	"dubbo.apache.org/dubbo-go/v3/istio/utils"
 	"github.com/dubbogo/gost/log/logger"
-	rbacv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/rbac/v3"
 )
 
 var (
@@ -402,7 +402,7 @@ func (p *PilotAgent) GetHostInboundJwtAuthentication() *resources.JwtAuthenticat
 	return nil
 }
 
-func (p *PilotAgent) GetHostInboundRBAC() *rbacv3.RBAC {
+func (p *PilotAgent) GetHostInboundRBAC() *rbac.RBAC {
 	value := p.xdsHostInboundListenerAtomic.Load()
 	if value != nil {
 		if xdsHostInboundListener, ok := value.(*resources.XdsHostInboundListener); ok {

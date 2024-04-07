@@ -24,6 +24,199 @@ var (
 	}
 )
 
+// Rules define the set of policies to be applied to incoming requests.
+// See istio define documents for more details. https://istio.io/latest/docs/reference/config/security/authorization-policy/#Rule
+// See istio define rule condition for detials. https://istio.io/latest/docs/reference/config/security/conditions/
+// And there is an example rule define as bellow:
+/* an example rule
+rules:
+  policies:
+    ns[foo]-policy[httpbin]-rule[0]:
+      permissions:
+      - Rule:
+          AndRules:
+            rules:
+            - Rule:
+                OrRules:
+                  rules:
+                  - Rule:
+                      Header:
+                        name: ":method"
+                        HeaderMatchSpecifier:
+                          StringMatch:
+                            MatchPattern:
+                              Exact: "GET"
+            - Rule:
+                OrRules:
+                  rules:
+                  - Rule:
+                      UrlPath:
+                        Rule:
+                          Path:
+                            MatchPattern:
+                              Prefix: "/info"
+      principals:
+      - Identifier:
+          AndIds:
+            ids:
+            - Identifier:
+                OrIds:
+                  ids:
+                  - Identifier:
+                      Authenticated:
+                        principal_name:
+                          MatchPattern:
+                            Exact: "spiffe://cluster.local/ns/default/sa/sleep"
+            - Identifier:
+                OrIds:
+                  ids:
+                  - Identifier:
+                      Metadata:
+                        filter: "istio_authn"
+                        path:
+                        - Segment:
+                            Key: "request.auth.claims"
+                        - Segment:
+                            Key: "iss"
+                        value:
+                          MatchPattern:
+                            ListMatch:
+                              MatchPattern:
+                                OneOf:
+                                  MatchPattern:
+                                    StringMatch:
+                                      MatchPattern:
+                                        Exact: "dubbo.apache.org"
+            - Identifier:
+                OrIds:
+                  ids:
+                  - Identifier:
+                      Header:
+                        name: "User-Agent"
+                        HeaderMatchSpecifier:
+                          StringMatch:
+                            MatchPattern:
+                              Prefix: "Mozilla/"
+            - Identifier:
+                OrIds:
+                  ids:
+                  - Identifier:
+                      DirectRemoteIp:
+                        address_prefix: "10.1.2.3"
+                        prefix_len:
+                          value: 32
+                  - Identifier:
+                      DirectRemoteIp:
+                        address_prefix: "10.2.0.0"
+                        prefix_len:
+                          value: 16
+            - Identifier:
+                OrIds:
+                  ids:
+                  - Identifier:
+                      Metadata:
+                        filter: "istio_authn"
+                        path:
+                        - Segment:
+                            Key: "request.auth.principal"
+                        value:
+                          MatchPattern:
+                            StringMatch:
+                              Exact: "issuer.example.com/subject-admin"
+            - Identifier:
+                OrIds:
+                  ids:
+                  - Identifier:
+                      Authenticated:
+                        principal_name:
+                          MatchPattern:
+                            Exact: "spiffe://cluster.local/ns/default/sa/productpage"
+            - Identifier:
+                OrIds:
+                  ids:
+                  - Identifier:
+                      Metadata:
+                        filter: "istio_authn"
+                        path:
+                        - Segment:
+                            Key: "request.auth.audiences"
+                        value:
+                          MatchPattern:
+                            StringMatch:
+                              Exact: "a.example.com"
+                  - Identifier:
+                      Metadata:
+                        filter: "istio_authn"
+                        path:
+                        - Segment:
+                            Key: "request.auth.audiences"
+                        value:
+                          MatchPattern:
+                            StringMatch:
+                              Exact: "b.example.com"
+            - Identifier:
+                OrIds:
+                  ids:
+                  - Identifier:
+                      Metadata:
+                        filter: "istio_authn"
+                        path:
+                        - Segment:
+                            Key: "request.auth.claims"
+                        - Segment:
+                            Key: "iss"
+                        value:
+                          MatchPattern:
+                            ListMatch:
+                              MatchPattern:
+                                OneOf:
+                                  MatchPattern:
+                                    StringMatch:
+                                      MatchPattern:
+                                        Suffix: "@foo.com"
+            - Identifier:
+                OrIds:
+                  ids:
+                  - Identifier:
+                      Metadata:
+                        filter: "istio_authn"
+                        path:
+                        - Segment:
+                            Key: "request.auth.claims"
+                        - Segment:
+                            Key: "nestedkey1"
+                        - Segment:
+                            Key: "nestedkey2"
+                        value:
+                          MatchPattern:
+                            ListMatch:
+                              MatchPattern:
+                                OneOf:
+                                  MatchPattern:
+                                    StringMatch:
+                                      MatchPattern:
+                                        Exact: "some-value1"
+                  - Identifier:
+                      Metadata:
+                        filter: "istio_authn"
+                        path:
+                        - Segment:
+                            Key: "request.auth.claims"
+                        - Segment:
+                            Key: "nestedkey1"
+                        - Segment:
+                            Key: "nestedkey2"
+                        value:
+                          MatchPattern:
+                            ListMatch:
+                              MatchPattern:
+                                OneOf:
+                                  MatchPattern:
+                                    StringMatch:
+                                      MatchPattern:
+                                        Exact: "some-value2"
+*/
+
 type Rules struct {
 	Action   RuleAction
 	Policies map[string]*Policy
@@ -54,6 +247,9 @@ func (r *Rules) Match(headers map[string]string) (bool, string, error) {
 }
 
 func NewRules(rbac *envoyrbacconfigv3.RBAC) (*Rules, error) {
+	if rbac == nil {
+		return nil, nil
+	}
 	rules := &Rules{
 		Policies: make(map[string]*Policy, 0),
 	}

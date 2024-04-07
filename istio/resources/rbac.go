@@ -10,9 +10,8 @@ import (
 
 // RBACEnvoyFilter definine RBAC filter configuration
 type RBACEnvoyFilter struct {
-	Name          string
-	RBAC          *envoyrbacv3.RBAC
-	Authorization *rbac.Rules
+	Name string
+	RBAC *rbac.RBAC
 }
 
 func ParseJsonToRBAC(jsonConf string) (*envoyrbacv3.RBAC, error) {

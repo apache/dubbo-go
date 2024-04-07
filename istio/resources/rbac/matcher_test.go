@@ -45,7 +45,7 @@ func TestExactStringMatcher_Match(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			actualBool := tc.matcher.Match(tc.targetValue)
+			actualBool := tc.matcher.Match(false, tc.targetValue)
 			if actualBool != tc.expectedBool {
 				t.Errorf("Expected %t for targetValue '%s' and ExactMatch '%s', but got %t", tc.expectedBool, tc.targetValue, tc.matcher.ExactMatch, actualBool)
 			}
@@ -100,7 +100,7 @@ func TestPrefixStringMatcher_Match(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			result := tc.prefixField.Match(tc.target)
+			result := tc.prefixField.Match(false, tc.target)
 
 			if result != tc.expected {
 				t.Errorf("PrefixStringMatcher.Match(%v, %s) = %t, expected %t", tc.prefixField, tc.target, result, tc.expected)
@@ -151,7 +151,7 @@ func TestSuffixStringMatcher_Match(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			matcher := &SuffixStringMatcher{SuffixMatch: tc.suffix}
-			actualBool := matcher.Match(tc.targetValue)
+			actualBool := matcher.Match(false, tc.targetValue)
 
 			if actualBool != tc.expectedBool {
 				t.Errorf("Match() failed for case '%s'. Expected: %v, but got: %v", tc.name, tc.expectedBool, actualBool)
@@ -189,7 +189,7 @@ func TestContainsStringMatcher_Match(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := tc.m.Match(tc.value)
+			got := tc.m.Match(false, tc.value)
 			if got != tc.want {
 				t.Errorf("Match() = %v, want %v", got, tc.want)
 			}

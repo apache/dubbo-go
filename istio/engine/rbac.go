@@ -1,19 +1,19 @@
 package engine
 
 import (
-	envoyrbacv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/rbac/v3"
+	"dubbo.apache.org/dubbo-go/v3/istio/resources/rbac"
 )
 
 type RBACResult struct {
-	ReqOK      bool
-	PolicyName string
+	ReqOK           bool
+	MatchPolicyName string
 }
 
 type RBACFilterEngine struct {
-	RBAC *envoyrbacv3.RBAC
+	RBAC *rbac.RBAC
 }
 
-func NewRBACFilterEngine(rbac *envoyrbacv3.RBAC) *RBACFilterEngine {
+func NewRBACFilterEngine(rbac *rbac.RBAC) *RBACFilterEngine {
 	rbacFilterEngine := &RBACFilterEngine{
 		RBAC: rbac,
 	}
@@ -21,5 +21,25 @@ func NewRBACFilterEngine(rbac *envoyrbacv3.RBAC) *RBACFilterEngine {
 }
 
 func (r *RBACFilterEngine) Filter(headers map[string]string) (*RBACResult, error) {
-	return nil, nil
+	var allowed bool
+	var matchPolicyName string
+	var err error
+
+	// rbac shadow rules handle
+	if r.RBAC.ShadowRules != nil {
+		allowed, matchPolicyName, err = r.RBAC.ShadowRules.Match(headers)
+	}
+
+	// rbac rules handle
+	if r.RBAC.Rules != nil {
+		allowed, matchPolicyName, err = r.RBAC.Rules.Match(headers)
+	} else {
+		allowed = true
+		err = nil
+	}
+
+	return &RBACResult{
+		ReqOK:           allowed,
+		MatchPolicyName: matchPolicyName,
+	}, err
 }

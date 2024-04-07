@@ -24,6 +24,7 @@ import (
 	"github.com/golang/protobuf/ptypes"
 	"google.golang.org/protobuf/types/known/structpb"
 	"net"
+	"strconv"
 
 	v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 
@@ -143,4 +144,72 @@ func ConvertAttachmentsToMap(attachments map[string]interface{}) map[string]stri
 		}
 	}
 	return dataMap
+}
+
+func FlattenMap(prefix string, source map[string]interface{}, dest map[string]string, depth int, maxDepth int) error {
+	if depth > maxDepth {
+		return nil // Stop recursion beyond the maximum depth
+	}
+
+	for k, v := range source {
+		key := prefix + k
+
+		switch v.(type) {
+		case string:
+			dest[key] = v.(string)
+		case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
+			dest[key] = strconv.FormatInt(toInt64(v), 10)
+		case float32, float64:
+			dest[key] = strconv.FormatFloat(toFloat64(v), 'f', -1, 64)
+		case bool:
+			dest[key] = strconv.FormatBool(v.(bool))
+		case map[string]interface{}:
+			err := FlattenMap(key+".", v.(map[string]interface{}), dest, depth+1, maxDepth)
+			if err != nil {
+				return err
+			}
+		default:
+			//return fmt.Errorf("unsupported type encountered while flattening map: %T", value)
+		}
+	}
+
+	return nil
+}
+
+func toInt64(v interface{}) int64 {
+	switch v := v.(type) {
+	case int:
+		return int64(v)
+	case int8:
+		return int64(v)
+	case int16:
+		return int64(v)
+	case int32:
+		return int64(v)
+	case int64:
+		return v
+	case uint:
+		return int64(v)
+	case uint8:
+		return int64(v)
+	case uint16:
+		return int64(v)
+	case uint32:
+		return int64(v)
+	case uint64:
+		return int64(v)
+	default:
+		panic(fmt.Sprintf("unexpected type passed to toInt64: %T", v))
+	}
+}
+
+func toFloat64(v interface{}) float64 {
+	switch v := v.(type) {
+	case float32:
+		return float64(v)
+	case float64:
+		return v
+	default:
+		panic(fmt.Sprintf("unexpected type passed to toFloat64: %T", v))
+	}
 }
