@@ -142,7 +142,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/client"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo/hessian2"
 	"dubbo.apache.org/dubbo-go/v3/server"
 )
 
@@ -249,10 +248,7 @@ func SetProviderService(srv common.RPCService)  {
 			MethodFunc: func(ctx context.Context, args []interface{}, handler interface{}) (interface{}, error) {
 				req := args[0].(*{{.RequestType}})
 				res, err := handler.({{$s.ServiceName}}Handler).{{upper .MethodName}}(ctx, req)
-				if err != nil {
-					return nil, err
-				}
-				return hessian2.NewResponse(res, err, nil), nil
+				return res, err
 			},
 		},{{end}}
 	},
