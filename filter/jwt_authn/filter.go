@@ -133,7 +133,7 @@ func (f *jwtAuthnFilter) Invoke(ctx context.Context, invoker protocol.Invoker, i
 			// add new attachment named :auth
 			logger.Infof("[jwt authn filter] add attachment k: %s, v: %s", constant.HttpHeaderXAuthName, jwtJsonClaims)
 			invocation.SetAttachment(constant.HttpHeaderXAuthName, []string{jwtJsonClaims})
-			//todo add request auth headers here
+			// add request auth headers here
 			authHeaders := resources.FlattenJwtTokenMap(jwtToken)
 			for key, value := range authHeaders {
 				invocation.SetAttachment(strings.ToLower(key), []string{value})
