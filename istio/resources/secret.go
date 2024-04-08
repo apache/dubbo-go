@@ -193,9 +193,7 @@ func (s *SecretCache) GetCACertPool() (*x509.CertPool, error) {
 	if len(s.certRoot) == 0 {
 		return nil, fmt.Errorf("root cert is empty")
 	}
-	// 创建一个新的证书池
 	certPool := x509.NewCertPool()
-	// 解析 PEM 编码的根证书
 	pemBlock, _ := pem.Decode(s.certRoot)
 	if pemBlock == nil {
 		return nil, fmt.Errorf("failed to decode PEM block from root cert")
@@ -203,15 +201,10 @@ func (s *SecretCache) GetCACertPool() (*x509.CertPool, error) {
 	if pemBlock.Type != "CERTIFICATE" {
 		return nil, fmt.Errorf("expected PEM block of type CERTIFICATE, got %s", pemBlock.Type)
 	}
-
-	// 将根证书加入到证书池
 	if !certPool.AppendCertsFromPEM(s.certRoot) {
 		return nil, fmt.Errorf("failed to append root cert to cert pool")
 	}
-
-	// 返回证书池
 	return certPool, nil
-
 }
 
 func (s *SecretCache) GetCertificateChainPEM() (string, error) {
