@@ -50,7 +50,7 @@ spec:
         version: v1
     spec:
       containers:
-        - image: registry.cn-hangzhou.aliyuncs.com/2456868764/dubbo-httpbin:1.2.7
+        - image: registry.cn-hangzhou.aliyuncs.com/2456868764/dubbo-httpbin:1.3.1
           imagePullPolicy: IfNotPresent
           name: httpbin
           ports:
