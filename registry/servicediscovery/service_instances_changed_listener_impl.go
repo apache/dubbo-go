@@ -234,9 +234,11 @@ func GetMetadataInfo(app string, instance registry.ServiceInstance, revision str
 		metadataStorageType = instance.GetMetadata()[constant.MetadataStorageTypePropertyName]
 	}
 	if metadataStorageType == constant.RemoteMetadataStorageType {
-		remoteMetadataServiceImpl, err := extension.GetRemoteMetadataService()
-		if err == nil {
+		remoteMetadataServiceImpl, remoteMetadataErr := extension.GetRemoteMetadataService()
+		if remoteMetadataErr == nil {
 			metadataInfo, err = remoteMetadataServiceImpl.GetMetadata(instance)
+		} else {
+			err = remoteMetadataErr
 		}
 	} else {
 		proxyFactory := extension.GetMetadataServiceProxyFactory(constant.DefaultKey)
