@@ -18,7 +18,6 @@
 package generate
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/cmd/protoc-gen-go-hessian2/proto/hessian2_extend"
 	"fmt"
 )
 
@@ -29,6 +28,10 @@ import (
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/proto/hessian2_extend"
 )
 
 var (

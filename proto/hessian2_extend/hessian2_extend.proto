@@ -19,7 +19,7 @@ syntax = "proto3";
 
 package hessian2_extend;
 
-option go_package = "dubbo.apache.org/dubbo-go/v3/cmd/protoc-gen-go-hessian2/proto/hessian2_extend;hessian2_extend";
+option go_package = "dubbo.apache.org/dubbo-go/v3/cmd/proto/hessian2_extend;hessian2_extend";
 
 import "google/protobuf/descriptor.proto";
 
