@@ -180,16 +180,13 @@ func parseInvocation(ctx context.Context, url *common.URL, invocation protocol.I
 		return "", nil, "", errors.New("miss MethodName in invocation to invoke TripleInvoker")
 	}
 
-	err := parseAttachments(ctx, url, invocation)
-	if err != nil {
-		return "", nil, "", err
-	}
+	parseAttachments(ctx, url, invocation)
 
 	return callType, inRaw, method, nil
 }
 
 // parseAttachments retrieves attachments from users passed-in and URL, then injects them into ctx
-func parseAttachments(ctx context.Context, url *common.URL, invocation protocol.Invocation) error {
+func parseAttachments(ctx context.Context, url *common.URL, invocation protocol.Invocation) {
 	// retrieve users passed-in attachment
 	attaRaw := ctx.Value(constant.AttachmentKey)
 	if attaRaw != nil {
@@ -205,7 +202,6 @@ func parseAttachments(ctx context.Context, url *common.URL, invocation protocol.
 			invocation.SetAttachment(key, val)
 		}
 	}
-	return nil
 }
 
 // IsAvailable get available status

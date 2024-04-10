@@ -117,13 +117,22 @@ func NewOutgoingContext(ctx context.Context, data interface{}) (context.Context,
 	header := make(http.Header)
 	if inputData, ok := data.(map[string]string); ok {
 		for k, v := range inputData {
-
 			header.Add(k, v)
 		}
 	} else if inputData, ok := data.(map[string][]string); ok {
 		header = inputData
 	} else if inputData, ok := data.(http.Header); ok {
 		header = inputData
+	} else if inputData, ok := data.(map[string]interface{}); ok {
+		for k, v := range inputData {
+			if val, ok := v.(string); ok {
+				header[k] = []string{val}
+			} else if val, ok := v.([]string); ok {
+				header[k] = val
+			} else {
+				return ctx, errors.New("IncomingContext data must be map[string]string or map[string][]string")
+			}
+		}
 	} else {
 		return ctx, errors.New("IncomingContext data must be map[string]string or map[string][]string")
 	}

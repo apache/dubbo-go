@@ -19,7 +19,6 @@ package triple
 
 import (
 	"context"
-	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	"net/http"
 	"testing"
 
@@ -27,6 +26,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -160,8 +160,8 @@ func Test_parseAttachments(t *testing.T) {
 		t.Run(test.desc, func(t *testing.T) {
 			ctx := test.ctx()
 			inv := test.invo()
-			err := parseAttachments(ctx, test.url, inv)
-			ctx, err = mergeAttachmentToOutgoing(ctx, inv.Attachments())
+			parseAttachments(ctx, test.url, inv)
+			ctx, err := mergeAttachmentToOutgoing(ctx, inv.Attachments())
 			test.expect(t, ctx, err)
 		})
 	}
