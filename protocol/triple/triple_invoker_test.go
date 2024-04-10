@@ -19,13 +19,13 @@ package triple
 
 import (
 	"context"
+	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	"testing"
 
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
-	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -35,7 +35,7 @@ func Test_parseInvocation(t *testing.T) {
 		ctx    func() context.Context
 		url    *common.URL
 		invo   func() protocol.Invocation
-		expect func(t *testing.T, ctx context.Context, callType string, inRaw []interface{}, methodName string, err error)
+		expect func(t *testing.T, callType string, inRaw []interface{}, methodName string, err error)
 	}{
 		{
 			desc: "miss callType",
@@ -46,7 +46,7 @@ func Test_parseInvocation(t *testing.T) {
 			invo: func() protocol.Invocation {
 				return invocation.NewRPCInvocationWithOptions()
 			},
-			expect: func(t *testing.T, ctx context.Context, callType string, inRaw []interface{}, methodName string, err error) {
+			expect: func(t *testing.T, callType string, inRaw []interface{}, methodName string, err error) {
 				assert.NotNil(t, err)
 			},
 		},
@@ -61,7 +61,7 @@ func Test_parseInvocation(t *testing.T) {
 				iv.SetAttribute(constant.CallTypeKey, 1)
 				return iv
 			},
-			expect: func(t *testing.T, ctx context.Context, callType string, inRaw []interface{}, methodName string, err error) {
+			expect: func(t *testing.T, callType string, inRaw []interface{}, methodName string, err error) {
 				assert.NotNil(t, err)
 			},
 		},
@@ -76,7 +76,7 @@ func Test_parseInvocation(t *testing.T) {
 				iv.SetAttribute(constant.CallTypeKey, constant.CallUnary)
 				return iv
 			},
-			expect: func(t *testing.T, ctx context.Context, callType string, inRaw []interface{}, methodName string, err error) {
+			expect: func(t *testing.T, callType string, inRaw []interface{}, methodName string, err error) {
 				assert.NotNil(t, err)
 			},
 		},
@@ -84,8 +84,8 @@ func Test_parseInvocation(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
-			ctx, callType, inRaw, methodName, err := parseInvocation(test.ctx(), test.url, test.invo())
-			test.expect(t, ctx, callType, inRaw, methodName, err)
+			callType, inRaw, methodName, err := parseInvocation(test.ctx(), test.url, test.invo())
+			test.expect(t, callType, inRaw, methodName, err)
 		})
 	}
 }
@@ -157,7 +157,10 @@ func Test_parseAttachments(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
-			ctx, err := parseAttachments(test.ctx(), test.url, test.invo())
+			ctx := test.ctx()
+			inv := test.invo()
+			err := parseAttachments(ctx, test.url, inv)
+			ctx, err = mergeAttachmentToOutgoing(ctx, inv.Attachments())
 			test.expect(t, ctx, err)
 		})
 	}
