@@ -146,12 +146,12 @@ func (ti *TripleInvoker) Invoke(ctx context.Context, invocation protocol.Invocat
 func mergeAttachmentToOutgoing(ctx context.Context, attachments map[string]interface{}) (context.Context, error) {
 	for key, valRaw := range attachments {
 		if str, ok := valRaw.(string); ok {
-			ctx = tri.AppendToOutgoingContext(ctx, key, str)
+			ctx, _ = tri.AppendToOutgoingContext(ctx, key, str)
 			continue
 		}
 		if strs, ok := valRaw.([]string); ok {
 			for _, str := range strs {
-				ctx = tri.AppendToOutgoingContext(ctx, key, str)
+				ctx, _ = tri.AppendToOutgoingContext(ctx, key, str)
 			}
 			continue
 		}

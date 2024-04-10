@@ -112,6 +112,10 @@ func generateUnaryHandlerFunc(
 		// merge headers
 		mergeHeaders(conn.ResponseHeader(), response.Header())
 		mergeHeaders(conn.ResponseTrailer(), response.Trailer())
+		//Write the server-side return-attachment-data in the tailer to send to the caller
+		if data := ExtractFromOutgoingContext(ctx); data != nil {
+			mergeHeaders(conn.ResponseTrailer(), data)
+		}
 		return conn.Send(response.Any())
 	}
 

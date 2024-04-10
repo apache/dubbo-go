@@ -18,7 +18,9 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"github.com/pkg/errors"
 	"net/http"
+	"strings"
 )
 
 // EncodeBinaryHeader base64-encodes the data. It always emits unpadded values.
@@ -88,61 +90,100 @@ func addHeaderCanonical(h http.Header, key, value string) {
 	h[key] = append(h[key], value)
 }
 
-type headerIncomingKey struct{}
-type headerOutgoingKey struct{}
+type extraDataKey struct{}
+
+const headerIncomingKey string = "headerIncomingKey"
+const headerOutgoingKey string = "headerOutgoingKey"
+
 type handlerOutgoingKey struct{}
 
 func newIncomingContext(ctx context.Context, header http.Header) context.Context {
-	return context.WithValue(ctx, headerIncomingKey{}, header)
+	extraData, ok := ctx.Value(extraDataKey{}).(map[string]http.Header)
+	if !ok {
+		extraData = map[string]http.Header{}
+	}
+	if header == nil {
+		header = make(http.Header)
+	}
+	extraData[headerIncomingKey] = header
+	return context.WithValue(ctx, extraDataKey{}, extraData)
 }
 
 // NewOutgoingContext sets headers entirely. If there are existing headers, they would be replaced.
 // It is used for passing headers to server-side.
 // It is like grpc.NewOutgoingContext.
 // Please refer to https://github.com/grpc/grpc-go/blob/master/Documentation/grpc-metadata.md#sending-metadata.
-func NewOutgoingContext(ctx context.Context, header http.Header) context.Context {
-	return context.WithValue(ctx, headerOutgoingKey{}, header)
+func NewOutgoingContext(ctx context.Context, data interface{}) (context.Context, error) {
+	header := make(http.Header)
+	if inputData, ok := data.(map[string]string); ok {
+		for k, v := range inputData {
+
+			header.Add(k, v)
+		}
+	} else if inputData, ok := data.(map[string][]string); ok {
+		header = inputData
+	} else if inputData, ok := data.(http.Header); ok {
+		header = inputData
+	} else {
+		return ctx, errors.New("IncomingContext data must be map[string]string or map[string][]string")
+	}
+
+	extraData, ok := ctx.Value(extraDataKey{}).(map[string]http.Header)
+	if !ok {
+		extraData = map[string]http.Header{}
+	}
+	extraData[headerOutgoingKey] = header
+	return context.WithValue(ctx, extraDataKey{}, extraData), nil
 }
 
 // AppendToOutgoingContext merges kv pairs from user and existing headers.
 // It is used for passing headers to server-side.
 // It is like grpc.AppendToOutgoingContext.
 // Please refer to https://github.com/grpc/grpc-go/blob/master/Documentation/grpc-metadata.md#sending-metadata.
-func AppendToOutgoingContext(ctx context.Context, kv ...string) context.Context {
+func AppendToOutgoingContext(ctx context.Context, kv ...string) (context.Context, error) {
 	if len(kv)%2 == 1 {
 		panic(fmt.Sprintf("AppendToOutgoingContext got an odd number of input pairs for header: %d", len(kv)))
 	}
-	var header http.Header
-	headerRaw := ctx.Value(headerOutgoingKey{})
-	if headerRaw == nil {
+	extraData, ok := ctx.Value(extraDataKey{}).(map[string]http.Header)
+	if !ok {
+		extraData = map[string]http.Header{}
+		ctx = context.WithValue(ctx, extraDataKey{}, extraData)
+	}
+	header, ok := extraData[headerOutgoingKey]
+	if !ok {
 		header = make(http.Header)
-	} else {
-		header = headerRaw.(http.Header)
+		extraData[headerOutgoingKey] = header
 	}
 	for i := 0; i < len(kv); i += 2 {
 		// todo(DMwangnima): think about lowering
 		header.Add(kv[i], kv[i+1])
 	}
-	return context.WithValue(ctx, headerOutgoingKey{}, header)
+	return ctx, nil
 }
 
-func ExtractFromOutgoingContext(ctx context.Context) http.Header {
-	headerRaw := ctx.Value(headerOutgoingKey{})
-	if headerRaw == nil {
+func ExtractFromOutgoingContext(ctx context.Context) map[string][]string {
+	extraData, ok := ctx.Value(extraDataKey{}).(map[string]http.Header)
+	if !ok {
 		return nil
+	} else if outGoingDataHeader, ok := extraData[headerOutgoingKey]; !ok {
+		return nil
+	} else {
+		return outGoingDataHeader
 	}
-	// since headerOutgoingKey is only used in triple_protocol package, we need not verify the type
-	return headerRaw.(http.Header)
 }
 
 // FromIncomingContext retrieves headers passed by client-side. It is like grpc.FromIncomingContext.
+// it must call after append/setOutgoingContext to return current value
 // Please refer to https://github.com/grpc/grpc-go/blob/master/Documentation/grpc-metadata.md#receiving-metadata-1.
-func FromIncomingContext(ctx context.Context) (http.Header, bool) {
-	header, ok := ctx.Value(headerIncomingKey{}).(http.Header)
+func FromIncomingContext(ctx context.Context) (map[string][]string, bool) {
+	data, ok := ctx.Value(extraDataKey{}).(map[string]http.Header)
 	if !ok {
 		return nil, false
+	} else if incomingDataHeader, ok := data[headerIncomingKey]; !ok {
+		return nil, false
+	} else {
+		return incomingDataHeader, true
 	}
-	return header, true
 }
 
 // SetHeader is used for setting response header in server-side. It is like grpc.SendHeader(ctx, header) but
@@ -180,4 +221,12 @@ func SendHeader(ctx context.Context, header http.Header) error {
 	}
 	mergeHeaders(conn.RequestHeader(), header)
 	return conn.Send(nil)
+}
+
+func outGoingKeyCheck(key string) bool {
+	if len(key) < 1 {
+		return false
+	}
+	firstLetter := string(key[0])
+	return firstLetter == strings.ToUpper(firstLetter)
 }

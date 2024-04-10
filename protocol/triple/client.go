@@ -20,7 +20,6 @@ package triple
 import (
 	"context"
 	"crypto/tls"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"fmt"
 	"net"
 	"net/http"
@@ -70,13 +69,6 @@ func (cm *clientManager) callUnary(ctx context.Context, method string, req, resp
 	triResp := tri.NewResponse(resp)
 	if err := triClient.CallUnary(ctx, triReq, triResp); err != nil {
 		return err
-	}
-	if _, ok := protocol.GetOutgoingData(ctx); ok {
-		rtExtraData := map[string]interface{}{}
-		for k, v := range triResp.Trailer() {
-			rtExtraData[k] = v
-		}
-		protocol.SetIncomingData(ctx, rtExtraData)
 	}
 	return nil
 }

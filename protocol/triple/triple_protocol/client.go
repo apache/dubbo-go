@@ -94,7 +94,11 @@ func NewClient(httpClient HTTPClient, url string, options ...ClientOption) *Clie
 			_ = conn.CloseResponse()
 			return err
 		}
-		return conn.CloseResponse()
+		err := conn.CloseResponse()
+		if err == nil && ExtractFromOutgoingContext(ctx) != nil {
+			newIncomingContext(ctx, conn.ResponseTrailer())
+		}
+		return err
 	})
 	if interceptor := config.Interceptor; interceptor != nil {
 		unaryFunc = interceptor.WrapUnary(unaryFunc)

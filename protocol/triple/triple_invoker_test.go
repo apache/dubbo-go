@@ -20,6 +20,7 @@ package triple
 import (
 	"context"
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
+	"net/http"
 	"testing"
 
 	"dubbo.apache.org/dubbo-go/v3/common"
@@ -112,7 +113,7 @@ func Test_parseAttachments(t *testing.T) {
 			},
 			expect: func(t *testing.T, ctx context.Context, err error) {
 				assert.Nil(t, err)
-				header := tri.ExtractFromOutgoingContext(ctx)
+				header := http.Header(tri.ExtractFromOutgoingContext(ctx))
 				assert.NotNil(t, header)
 				assert.Equal(t, "interface", header.Get(constant.InterfaceKey))
 				assert.Equal(t, "token", header.Get(constant.TokenKey))
@@ -132,7 +133,7 @@ func Test_parseAttachments(t *testing.T) {
 			},
 			expect: func(t *testing.T, ctx context.Context, err error) {
 				assert.Nil(t, err)
-				header := tri.ExtractFromOutgoingContext(ctx)
+				header := http.Header(tri.ExtractFromOutgoingContext(ctx))
 				assert.NotNil(t, header)
 				assert.Equal(t, "val1", header.Get("key1"))
 				assert.Equal(t, []string{"key2_1", "key2_2"}, header.Values("key2"))

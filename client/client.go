@@ -20,7 +20,6 @@ package client
 
 import (
 	"context"
-	"errors"
 )
 
 import (
@@ -59,12 +58,6 @@ func (conn *Connection) call(ctx context.Context, reqs []interface{}, resp inter
 	inv, err := generateInvocation(methodName, reqs, resp, callType, options)
 	if err != nil {
 		return nil, err
-	}
-	if userData, ok := protocol.GetOutgoingData(ctx); ok {
-		err = addClientExtraDataToInvocation(inv, userData)
-		if err != nil {
-			return nil, err
-		}
 	}
 	res := conn.refOpts.invoker.Invoke(ctx, inv)
 	return res, nil
@@ -160,17 +153,4 @@ func NewClient(opts ...ClientOption) (*Client, error) {
 	return &Client{
 		cliOpts: newCliOpts,
 	}, nil
-}
-
-func addClientExtraDataToInvocation(inv protocol.Invocation, data map[string]interface{}) error {
-	for k, v := range data {
-		if str, ok := v.(string); ok {
-			inv.SetAttachment(k, []string{str})
-		} else if strs, ok := v.([]string); ok {
-			inv.SetAttachment(k, strs)
-		} else {
-			return errors.New("ExtraData's type needs to be string or []string")
-		}
-	}
-	return nil
 }
