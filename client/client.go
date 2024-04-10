@@ -20,6 +20,7 @@ package client
 
 import (
 	"context"
+	"errors"
 )
 
 import (
@@ -59,7 +60,14 @@ func (conn *Connection) call(ctx context.Context, reqs []interface{}, resp inter
 	if err != nil {
 		return nil, err
 	}
-	return conn.refOpts.invoker.Invoke(ctx, inv), nil
+	if userData, ok := protocol.GetOutgoingData(ctx); ok {
+		err = addClientExtraDataToInvocation(inv, userData)
+		if err != nil {
+			return nil, err
+		}
+	}
+	res := conn.refOpts.invoker.Invoke(ctx, inv)
+	return res, nil
 }
 
 func (conn *Connection) CallUnary(ctx context.Context, reqs []interface{}, resp interface{}, methodName string, opts ...CallOption) error {
@@ -122,6 +130,7 @@ func (cli *Client) dial(interfaceName string, info *ClientInfo, opts ...Referenc
 
 	return &Connection{refOpts: newRefOpts}, nil
 }
+
 func generateInvocation(methodName string, reqs []interface{}, resp interface{}, callType string, opts *CallOptions) (protocol.Invocation, error) {
 	var paramsRawVals []interface{}
 	for _, req := range reqs {
@@ -151,4 +160,17 @@ func NewClient(opts ...ClientOption) (*Client, error) {
 	return &Client{
 		cliOpts: newCliOpts,
 	}, nil
+}
+
+func addClientExtraDataToInvocation(inv protocol.Invocation, data map[string]interface{}) error {
+	for k, v := range data {
+		if str, ok := v.(string); ok {
+			inv.SetAttachment(k, []string{str})
+		} else if strs, ok := v.([]string); ok {
+			inv.SetAttachment(k, strs)
+		} else {
+			return errors.New("ExtraData's type needs to be string or []string")
+		}
+	}
+	return nil
 }
