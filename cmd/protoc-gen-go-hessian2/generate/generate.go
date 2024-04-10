@@ -143,6 +143,13 @@ func genMessage(g *protogen.GeneratedFile, m *protogen.Message, f *protogen.File
 	g.P()
 
 	genMessageRelatedMethods(g, m, f)
+	genNestedMessage(g, m, f)
+}
+
+func genNestedMessage(g *protogen.GeneratedFile, m *protogen.Message, f *protogen.File) {
+	for _, msg := range m.Messages {
+		genMessage(g, msg, f)
+	}
 }
 
 func genMessageFields(g *protogen.GeneratedFile, m *protogen.Message) {
@@ -215,6 +222,9 @@ func genRegisterInitFunc(g *protogen.GeneratedFile, f *protogen.File) {
 	g.P("func init() {")
 	for _, message := range f.Messages {
 		g.P("hessian.RegisterPOJO(new(", message.GoIdent.GoName, "))")
+		for _, inner := range message.Messages {
+			g.P("hessian.RegisterPOJO(new(", inner.GoIdent.GoName, "))")
+		}
 	}
 	g.P("}")
 	g.P()
