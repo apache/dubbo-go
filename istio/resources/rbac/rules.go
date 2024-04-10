@@ -226,7 +226,7 @@ func (r *Rules) Match(headers map[string]string) (bool, string, error) {
 	if r.Action == RuleActionLog {
 		return true, "", nil
 	} else if r.Action == RuleActionAllow {
-		// when engine action is ALLOW, return allowed if matched any policy
+		// when action is ALLOW, return allowed if matched any policy
 		for name, policy := range r.Policies {
 			if policy.Match(headers) {
 				return true, name, nil
@@ -234,7 +234,7 @@ func (r *Rules) Match(headers map[string]string) (bool, string, error) {
 		}
 		return false, "", nil
 	} else if r.Action == RuleActionDeny {
-		// when engine action is DENY, return allowed if not matched any policy
+		// when action is DENY, return allowed if not matched any policy
 		for name, policy := range r.Policies {
 			if policy.Match(headers) {
 				return false, name, nil
