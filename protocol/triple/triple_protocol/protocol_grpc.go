@@ -410,7 +410,9 @@ func (cc *grpcClientConn) CloseResponse() error {
 	if err != nil {
 		return err
 	}
-	cc.responseTrailer = cc.duplexCall.response.Trailer.Clone()
+	if cc.duplexCall.response != nil && cc.duplexCall.response.Trailer != nil {
+		cc.responseTrailer = cc.duplexCall.response.Trailer.Clone()
+	}
 	return nil
 }
 
