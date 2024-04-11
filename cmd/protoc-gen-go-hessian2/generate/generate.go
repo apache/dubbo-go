@@ -20,6 +20,7 @@ package generate
 import (
 	"fmt"
 	"strconv"
+	"strings"
 )
 
 import (
@@ -36,19 +37,43 @@ import (
 )
 
 var (
+	javaTypes = []string{"java_sql_time.Time", "java_sql_time.Date"}
+)
+
+var (
 	ErrNoJavaClassName        = "should extend java class name to generate hessian2 code"
 	ErrExtendedOptionNotMatch = "extended options not match"
 )
 
 func GenHessian2(gen *protogen.Plugin, file *protogen.File) {
+	//file.Desc.Imports().Get(0)
+	for i, imps := 0, file.Desc.Imports(); i < imps.Len(); i++ {
+		println("import: ", imps.Get(i).Name())
+		println("isWeak?: ", imps.Get(i).IsWeak)
+		println("isPublic?: ", imps.Get(i).IsPublic)
+	}
+
 	filename := file.GeneratedFilenamePrefix + ".hessian2.go"
 	g := gen.NewGeneratedFile(filename, file.GoImportPath)
 
 	g.P("package ", file.GoPackageName)
 	g.P()
 
-	g.P("import hessian \"github.com/apache/dubbo-go-hessian2\"")
-	g.P()
+	content, _ := g.Content()
+	println("first: ", string(content))
+
+	g.P("import (")
+	for imp := range scanForImports(g, file) {
+		g.P(imp)
+	}
+	g.P(")")
+
+	g.Skip()
+
+	content, _ = g.Content()
+	println("second: ", string(content))
+
+	g.Skip()
 
 	for _, enum := range file.Enums {
 		genEnum(g, enum)
@@ -58,6 +83,31 @@ func GenHessian2(gen *protogen.Plugin, file *protogen.File) {
 		genMessage(g, message, file)
 	}
 	genRegisterInitFunc(g, file)
+}
+
+func scanForImports(g *protogen.GeneratedFile, f *protogen.File) map[string]bool {
+	imps := make(map[string]bool)
+	imps[`hessian "github.com/apache/dubbo-go-hessian2"`] = true
+
+	for _, msg := range f.Messages {
+		for _, field := range msg.Fields {
+			goType := strings.TrimPrefix(getGoType(g, field), "*")
+			if isJavaTypes(goType) {
+				pkg := strings.Split(goType, ".")[0]
+				imps[fmt.Sprintf(`"github.com/apache/dubbo-go-hessian2/%s"`, pkg)] = true
+			}
+		}
+	}
+	return imps
+}
+
+func isJavaTypes(goType string) bool {
+	for _, typ := range javaTypes {
+		if typ == goType {
+			return true
+		}
+	}
+	return false
 }
 
 func genEnum(g *protogen.GeneratedFile, e *protogen.Enum) {

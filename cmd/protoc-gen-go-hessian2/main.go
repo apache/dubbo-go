@@ -65,5 +65,6 @@ func main() {
 }
 
 func isExtendProto(file *protogen.File) bool {
-	return file.Proto.Package != nil && *file.Proto.Package == "dubbo_extend"
+	return file.Proto.Package != nil &&
+		(*file.Proto.Package == "hessian2_extend" || *file.Proto.Package == "java_sql_time")
 }
