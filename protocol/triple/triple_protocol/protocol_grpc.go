@@ -406,7 +406,12 @@ func (cc *grpcClientConn) ResponseTrailer() http.Header {
 }
 
 func (cc *grpcClientConn) CloseResponse() error {
-	return cc.duplexCall.CloseRead()
+	err := cc.duplexCall.CloseRead()
+	if err != nil {
+		return err
+	}
+	cc.responseTrailer = cc.duplexCall.response.Trailer.Clone()
+	return nil
 }
 
 func (cc *grpcClientConn) validateResponse(response *http.Response) *Error {
