@@ -69,7 +69,7 @@ func (exporter *MetadataServiceExporter) Export(url *common.URL) error {
 				Build()).
 			SetRegistryIDs("N/A").
 			SetInterface(constant.MetadataServiceName).
-			SetGroup(config.GetApplicationConfig().Name).
+			SetGroup(config.GetApplicationConfig().Group).
 			SetVersion(version).
 			SetProxyFactoryKey(constant.DefaultKey).
 			SetMetadataType(config.GetApplicationConfig().MetadataType).
