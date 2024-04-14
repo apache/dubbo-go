@@ -1,0 +1,196 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+*/
+
+syntax = "proto3";
+
+package java_exception;
+
+option go_package = "dubbo.apache.org/dubbo-go/v3/proto/java_exception;java_exception";
+
+message Exception {}
+
+message AnnotationTypeMismatchException {}
+
+message ArithmeticException {}
+
+message ArrayIndexOutOfBoundsException {}
+
+message ArrayStoreException {}
+
+message BackingStoreException {}
+
+message BrokenBarrierException {}
+
+message CancellationException {}
+
+message ClassNotFoundException {}
+
+message ClassCastException {}
+
+message CloneNotSupportedException {}
+
+message CompletionException {}
+
+message ConcurrentModificationException {}
+
+message DataFormatException {}
+
+message DateTimeException {}
+
+message DateTimeParseException {}
+
+message DubboGenericException {}
+
+message DuplicateFormatFlagsException {}
+
+message EmptyStackException {}
+
+message EnumConstantNotPresentException {}
+
+message EOFException {}
+
+message ExecutionException {}
+
+message FileNotFoundException {}
+
+message FormatterClosedException {}
+
+message IllegalAccessException {}
+
+message IllegalArgumentException {}
+
+message IllegalClassFormatException {}
+
+message IllegalFormatCodePointException {}
+
+message IllegalFormatConversionException {}
+
+message IllegalFormatFlagsException {}
+
+message IllegalFormatPrecisionException {}
+
+message IllegalFormatWidthException {}
+
+message IllegalMonitorStateException {}
+
+message IllegalStateException {}
+
+message IllegalThreadStateException {}
+
+message IllformedLocaleException {}
+
+message IncompleteAnnotationException {}
+
+message IndexOutOfBoundsException {}
+
+message InputMismatchException {}
+
+message InstantiationException {}
+
+message InterruptedException {}
+
+message InterruptedIOException {}
+
+message InvalidClassException {}
+
+message InvalidObjectException {}
+
+message InvalidPreferencesFormatException {}
+
+message InvalidPropertiesFormatException {}
+
+message InvocationTargetException {}
+
+message IOException {}
+
+message JarException {}
+
+message LambdaConversionException {}
+
+message MalformedParameterizedTypeException {}
+
+message MalformedParametersException {}
+
+message MissingFormatArgumentException {}
+
+message MissingFormatWidthException {}
+
+message MissingResourceException {}
+
+message NegativeArraySizeException {}
+
+message NoSuchElementException {}
+
+message NoSuchFieldException {}
+
+message NoSuchMethodException {}
+
+message NotActiveException {}
+
+message NotSerializableException {}
+
+message NullPointerException {}
+
+message NumberFormatException {}
+
+message ObjectStreamException {}
+
+message OptionalDataException {}
+
+message ReflectiveOperationException {}
+
+message RejectedExecutionException {}
+
+message RuntimeException {}
+
+message SecurityException {}
+
+message StreamCorruptedException {}
+
+message StringIndexOutOfBoundsException {}
+
+message SyncFailedException {}
+
+message TimeoutException {}
+
+message TooManyListenersException {}
+
+message TypeNotPresentException {}
+
+message UncheckedIOException {}
+
+message UndeclaredThrowableException {}
+
+message UnknownFormatConversionException {}
+
+message UnknownFormatFlagsException {}
+
+message UnmodifiableClassException {}
+
+message UnsupportedOperationException {}
+
+message UnsupportedTemporalTypeException {}
+
+message UTFDataFormatException {}
+
+message WriteAbortedException {}
+
+message WrongMethodTypeException {}
+
+message ZipException {}
+
+message ZoneRulesException{}

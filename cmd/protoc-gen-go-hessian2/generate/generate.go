@@ -20,7 +20,6 @@ package generate
 import (
 	"fmt"
 	"strconv"
-	"strings"
 )
 
 import (
@@ -34,10 +33,6 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/proto/hessian2_extend"
-)
-
-var (
-	javaTypes = []string{"java_sql_time.Time", "java_sql_time.Date"}
 )
 
 var (
@@ -65,37 +60,6 @@ func GenHessian2(gen *protogen.Plugin, file *protogen.File) {
 		genMessage(g, message, file)
 	}
 	genRegisterInitFunc(g, file)
-}
-
-func scanForImports(g *protogen.GeneratedFile, f *protogen.File) map[protogen.GoIdent]bool {
-	imps := make(map[protogen.GoIdent]bool)
-	imps[protogen.GoIdent{
-		GoName:       "dubbo-go-hessian2",
-		GoImportPath: "github.com/apache/dubbo-go-hessian2",
-	}] = true
-
-	for _, msg := range f.Messages {
-		for _, field := range msg.Fields {
-			goType := strings.TrimPrefix(getGoType(g, field), "*")
-			if isJavaTypes(goType) {
-				pkg := strings.Split(goType, ".")[0]
-				imps[protogen.GoIdent{
-					GoName:       pkg,
-					GoImportPath: protogen.GoImportPath(fmt.Sprintf(`github.com/apache/dubbo-go-hessian2/%s`, pkg)),
-				}] = true
-			}
-		}
-	}
-	return imps
-}
-
-func isJavaTypes(goType string) bool {
-	for _, typ := range javaTypes {
-		if typ == goType {
-			return true
-		}
-	}
-	return false
 }
 
 func genEnum(g *protogen.GeneratedFile, e *protogen.Enum) {

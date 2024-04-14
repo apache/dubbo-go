@@ -18,6 +18,7 @@
 package main
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/cmd/protoc-gen-go-hessian2/internal"
 	"fmt"
 	"os"
 )
@@ -52,8 +53,8 @@ func main() {
 	}
 
 	importRewriteFunc := func(path protogen.GoImportPath) protogen.GoImportPath {
-		if string(path) == "dubbo.apache.org/dubbo-go/v3/proto/java_sql_time" {
-			return "github.com/apache/dubbo-go-hessian2/java_sql_time"
+		if v, ok := internal.PathMap[string(path)]; ok {
+			return protogen.GoImportPath(v)
 		}
 		return path
 	}
