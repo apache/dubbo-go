@@ -51,7 +51,16 @@ func main() {
 		os.Exit(1)
 	}
 
-	protogen.Options{}.Run(
+	importRewriteFunc := func(path protogen.GoImportPath) protogen.GoImportPath {
+		if string(path) == "dubbo.apache.org/dubbo-go/v3/proto/java_sql_time" {
+			return "github.com/apache/dubbo-go-hessian2/java_sql_time"
+		}
+		return path
+	}
+
+	protogen.Options{
+		ImportRewriteFunc: importRewriteFunc,
+	}.Run(
 		func(gen *protogen.Plugin) error {
 			gen.SupportedFeatures = uint64(pluginpb.CodeGeneratorResponse_FEATURE_PROTO3_OPTIONAL)
 			for _, f := range gen.Files {

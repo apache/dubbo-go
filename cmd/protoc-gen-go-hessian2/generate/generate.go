@@ -46,34 +46,16 @@ var (
 )
 
 func GenHessian2(gen *protogen.Plugin, file *protogen.File) {
-	//file.Desc.Imports().Get(0)
-	for i, imps := 0, file.Desc.Imports(); i < imps.Len(); i++ {
-		println("import: ", imps.Get(i).Name())
-		println("isWeak?: ", imps.Get(i).IsWeak)
-		println("isPublic?: ", imps.Get(i).IsPublic)
-	}
-
 	filename := file.GeneratedFilenamePrefix + ".hessian2.go"
 	g := gen.NewGeneratedFile(filename, file.GoImportPath)
 
 	g.P("package ", file.GoPackageName)
 	g.P()
 
-	content, _ := g.Content()
-	println("first: ", string(content))
-
-	g.P("import (")
-	for imp := range scanForImports(g, file) {
-		g.P(imp)
-	}
-	g.P(")")
-
-	g.Skip()
-
-	content, _ = g.Content()
-	println("second: ", string(content))
-
-	g.Skip()
+	g.QualifiedGoIdent(protogen.GoIdent{
+		GoName:       "dubbo-go-hessian2",
+		GoImportPath: "github.com/apache/dubbo-go-hessian2",
+	})
 
 	for _, enum := range file.Enums {
 		genEnum(g, enum)
@@ -85,16 +67,22 @@ func GenHessian2(gen *protogen.Plugin, file *protogen.File) {
 	genRegisterInitFunc(g, file)
 }
 
-func scanForImports(g *protogen.GeneratedFile, f *protogen.File) map[string]bool {
-	imps := make(map[string]bool)
-	imps[`hessian "github.com/apache/dubbo-go-hessian2"`] = true
+func scanForImports(g *protogen.GeneratedFile, f *protogen.File) map[protogen.GoIdent]bool {
+	imps := make(map[protogen.GoIdent]bool)
+	imps[protogen.GoIdent{
+		GoName:       "dubbo-go-hessian2",
+		GoImportPath: "github.com/apache/dubbo-go-hessian2",
+	}] = true
 
 	for _, msg := range f.Messages {
 		for _, field := range msg.Fields {
 			goType := strings.TrimPrefix(getGoType(g, field), "*")
 			if isJavaTypes(goType) {
 				pkg := strings.Split(goType, ".")[0]
-				imps[fmt.Sprintf(`"github.com/apache/dubbo-go-hessian2/%s"`, pkg)] = true
+				imps[protogen.GoIdent{
+					GoName:       pkg,
+					GoImportPath: protogen.GoImportPath(fmt.Sprintf(`github.com/apache/dubbo-go-hessian2/%s`, pkg)),
+				}] = true
 			}
 		}
 	}
@@ -237,7 +225,7 @@ func genMessageRelatedMethods(g *protogen.GeneratedFile, m *protogen.Message, f 
 	g.P()
 
 	g.P("func ", "(x *", m.GoIdent.GoName, ")", "String() string {")
-	g.P("	e := hessian.NewEncoder()")
+	g.P("	e := dubbo_go_hessian2.NewEncoder()")
 	g.P("	err := e.Encode(x)")
 	g.P("	if err != nil {")
 	g.P("		return \"\"")
@@ -271,9 +259,9 @@ func genFieldGetterMethod(g *protogen.GeneratedFile, field *protogen.Field, m *p
 func genRegisterInitFunc(g *protogen.GeneratedFile, f *protogen.File) {
 	g.P("func init() {")
 	for _, message := range f.Messages {
-		g.P("hessian.RegisterPOJO(new(", message.GoIdent.GoName, "))")
+		g.P("dubbo_go_hessian2.RegisterPOJO(new(", message.GoIdent.GoName, "))")
 		for _, inner := range message.Messages {
-			g.P("hessian.RegisterPOJO(new(", inner.GoIdent.GoName, "))")
+			g.P("dubbo_go_hessian2.RegisterPOJO(new(", inner.GoIdent.GoName, "))")
 		}
 	}
 	g.P("}")
