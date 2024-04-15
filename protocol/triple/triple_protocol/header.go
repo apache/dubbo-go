@@ -18,7 +18,6 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"github.com/pkg/errors"
 	"net/http"
 	"strings"
 )
@@ -113,30 +112,13 @@ func newIncomingContext(ctx context.Context, header http.Header) context.Context
 // It is used for passing headers to server-side.
 // It is like grpc.NewOutgoingContext.
 // Please refer to https://github.com/grpc/grpc-go/blob/master/Documentation/grpc-metadata.md#sending-metadata.
-func NewOutgoingContext(ctx context.Context, data interface{}) (context.Context, error) {
-	header := make(http.Header)
-	if inputData, ok := data.(map[string]string); ok {
-		for k, v := range inputData {
-			header.Add(k, v)
-		}
-	} else if inputData, ok := data.(map[string][]string); ok {
-		header = inputData
-	} else if inputData, ok := data.(http.Header); ok {
-		header = inputData
-	} else if inputData, ok := data.(map[string]interface{}); ok {
-		for k, v := range inputData {
-			if val, ok := v.(string); ok {
-				header[k] = []string{val}
-			} else if val, ok := v.([]string); ok {
-				header[k] = val
-			} else {
-				return ctx, errors.New("IncomingContext data must be map[string]string or map[string][]string")
-			}
-		}
+func NewOutgoingContext(ctx context.Context, data http.Header) (context.Context, error) {
+	var header http.Header
+	if data == nil {
+		header = make(http.Header)
 	} else {
-		return ctx, errors.New("IncomingContext data must be map[string]string or map[string][]string")
+		header = data.Clone()
 	}
-
 	extraData, ok := ctx.Value(extraDataKey{}).(map[string]http.Header)
 	if !ok {
 		extraData = map[string]http.Header{}
@@ -170,7 +152,7 @@ func AppendToOutgoingContext(ctx context.Context, kv ...string) (context.Context
 	return ctx, nil
 }
 
-func ExtractFromOutgoingContext(ctx context.Context) map[string][]string {
+func ExtractFromOutgoingContext(ctx context.Context) http.Header {
 	extraData, ok := ctx.Value(extraDataKey{}).(map[string]http.Header)
 	if !ok {
 		return nil
@@ -184,7 +166,7 @@ func ExtractFromOutgoingContext(ctx context.Context) map[string][]string {
 // FromIncomingContext retrieves headers passed by client-side. It is like grpc.FromIncomingContext.
 // it must call after append/setOutgoingContext to return current value
 // Please refer to https://github.com/grpc/grpc-go/blob/master/Documentation/grpc-metadata.md#receiving-metadata-1.
-func FromIncomingContext(ctx context.Context) (map[string][]string, bool) {
+func FromIncomingContext(ctx context.Context) (http.Header, bool) {
 	data, ok := ctx.Value(extraDataKey{}).(map[string]http.Header)
 	if !ok {
 		return nil, false

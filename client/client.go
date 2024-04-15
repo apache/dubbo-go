@@ -59,8 +59,7 @@ func (conn *Connection) call(ctx context.Context, reqs []interface{}, resp inter
 	if err != nil {
 		return nil, err
 	}
-	res := conn.refOpts.invoker.Invoke(ctx, inv)
-	return res, nil
+	return conn.refOpts.invoker.Invoke(ctx, inv), nil
 }
 
 func (conn *Connection) CallUnary(ctx context.Context, reqs []interface{}, resp interface{}, methodName string, opts ...CallOption) error {
