@@ -25,6 +25,8 @@ import "google/protobuf/descriptor.proto";
 
 message Hessian2MessageOptions {
   string java_class_name = 1;
+  string reference_path = 2;
+  bool is_inheritance = 3;
 }
 
 extend google.protobuf.MessageOptions {
@@ -37,4 +39,12 @@ message Hessian2MethodOptions {
 
 extend google.protobuf.MethodOptions {
   optional Hessian2MethodOptions method_extend = 12345;
+}
+
+message Hessian2EnumOptions {
+  string java_class_name = 1;
+}
+
+extend google.protobuf.EnumOptions {
+  optional Hessian2EnumOptions enum_extend = 12345;
 }

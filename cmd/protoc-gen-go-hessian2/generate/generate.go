@@ -20,6 +20,7 @@ package generate
 import (
 	"fmt"
 	"strconv"
+	"strings"
 )
 
 import (
@@ -63,12 +64,18 @@ func GenHessian2(gen *protogen.Plugin, file *protogen.File) {
 }
 
 func genEnum(g *protogen.GeneratedFile, e *protogen.Enum) {
-	g.P("type ", e.GoIdent.GoName, " int32")
+	javaClassName := getEnumJavaClassName(e)
+
+	if javaClassName != "" {
+		g.P("type ", e.GoIdent.GoName, " dubbo_go_hessian2.JavaEnum")
+	} else {
+		g.P("type ", e.GoIdent.GoName, " int32")
+	}
 	g.P()
 
 	genEnumValues(g, e)
 	genEnumMaps(g, e)
-	genEnumRelatedMethods(g, e)
+	genEnumRelatedMethods(g, e, javaClassName)
 }
 
 func genEnumValues(g *protogen.GeneratedFile, e *protogen.Enum) {
@@ -89,28 +96,16 @@ func genEnumMaps(g *protogen.GeneratedFile, e *protogen.Enum) {
 	}
 	g.P("}")
 
-	g.P(e.GoIdent.GoName, "_enum_name = map[", e.GoIdent.GoName, "]string {")
-	for _, v := range e.Values {
-		g.P(v.GoIdent.GoName, ": \"", v.GoIdent.GoName, "\",")
-	}
-	g.P("}")
-
 	g.P(e.GoIdent.GoName, "_value = map[string]int32 {")
 	for i, v := range e.Values {
 		g.P("\"", v.GoIdent.GoName, "\": ", i, ",")
 	}
 	g.P("}")
 
-	g.P(e.GoIdent.GoName, "_enum_value = map[string]", e.GoIdent.GoName, "{")
-	for _, v := range e.Values {
-		g.P("\"", v.GoIdent.GoName, "\": ", v.GoIdent.GoName, ",")
-	}
-	g.P("}")
-
 	g.P(")")
 }
 
-func genEnumRelatedMethods(g *protogen.GeneratedFile, e *protogen.Enum) {
+func genEnumRelatedMethods(g *protogen.GeneratedFile, e *protogen.Enum, className string) {
 	g.P("func (x ", e.GoIdent.GoName, ") Enum() *", e.GoIdent.GoName, " {")
 	g.P("p := new(", e.GoIdent.GoName, ")")
 	g.P("*p = x")
@@ -119,7 +114,7 @@ func genEnumRelatedMethods(g *protogen.GeneratedFile, e *protogen.Enum) {
 	g.P()
 
 	g.P("func (x ", e.GoIdent.GoName, ") String() string {")
-	g.P("return ", e.GoIdent.GoName, "_enum_name[x]")
+	g.P("return ", e.GoIdent.GoName, "_name[int32(x)]")
 	g.P("}")
 	g.P()
 
@@ -127,6 +122,18 @@ func genEnumRelatedMethods(g *protogen.GeneratedFile, e *protogen.Enum) {
 	g.P("return ", e.GoIdent.GoName, "_value[x.String()]")
 	g.P("}")
 	g.P()
+
+	if className != "" {
+		g.P("func (x ", e.GoIdent.GoName, ") EnumValue(s string) dubbo_go_hessian2.JavaEnum {")
+		g.P("return dubbo_go_hessian2.JavaEnum(", e.GoIdent.GoName, "_value[x.String()])")
+		g.P("}")
+		g.P()
+
+		g.P("func (x ", e.GoIdent.GoName, ") JavaClassName() string {")
+		g.P("return \"", className, "\"")
+		g.P("}")
+		g.P()
+	}
 }
 
 func genMessage(g *protogen.GeneratedFile, m *protogen.Message, f *protogen.File) {
@@ -154,7 +161,22 @@ func genNestedMessage(g *protogen.GeneratedFile, m *protogen.Message, f *protoge
 	}
 }
 
+func genInheritance(g *protogen.GeneratedFile, m *protogen.Message) {
+	opts := m.Desc.Options().(*descriptorpb.MessageOptions)
+	ext, err := proto.GetExtension(opts, hessian2_extend.E_MessageExtend)
+	if err != nil || ext == nil {
+		return
+	}
+	hessian2MsgOpts, _ := ext.(*hessian2_extend.Hessian2MessageOptions)
+	if hessian2MsgOpts != nil && hessian2MsgOpts.IsInheritance {
+		g.P(m.GoIdent.GoName)
+	}
+}
+
 func genMessageFields(g *protogen.GeneratedFile, m *protogen.Message) {
+	for _, msg := range m.Messages {
+		genInheritance(g, msg)
+	}
 	for _, field := range m.Fields {
 		genMessageField(g, m, field)
 	}
@@ -162,6 +184,21 @@ func genMessageFields(g *protogen.GeneratedFile, m *protogen.Message) {
 
 func genMessageField(g *protogen.GeneratedFile, m *protogen.Message, field *protogen.Field) {
 	goType := getGoType(g, field)
+
+	if field.Message != nil {
+		opts := field.Message.Desc.Options().(*descriptorpb.MessageOptions)
+		ext, _ := proto.GetExtension(opts, hessian2_extend.E_MessageExtend)
+		if ext != nil {
+			hessian2MsgOpts, _ := ext.(*hessian2_extend.Hessian2MessageOptions)
+			if hessian2MsgOpts != nil && hessian2MsgOpts.ReferencePath != "" {
+				split := strings.Split(hessian2MsgOpts.ReferencePath, "/")
+				g.QualifiedGoIdent(protogen.GoIdent{
+					GoName:       split[len(split)-1],
+					GoImportPath: protogen.GoImportPath(hessian2MsgOpts.ReferencePath),
+				})
+			}
+		}
+	}
 
 	name := field.GoName
 	g.AnnotateSymbol(m.GoIdent.GoName+"."+name, protogen.Annotation{
@@ -223,13 +260,45 @@ func genFieldGetterMethod(g *protogen.GeneratedFile, field *protogen.Field, m *p
 func genRegisterInitFunc(g *protogen.GeneratedFile, f *protogen.File) {
 	g.P("func init() {")
 	for _, message := range f.Messages {
+		if message.Desc.IsMapEntry() {
+			continue
+		}
 		g.P("dubbo_go_hessian2.RegisterPOJO(new(", message.GoIdent.GoName, "))")
 		for _, inner := range message.Messages {
+			if inner.Desc.IsMapEntry() {
+				continue
+			}
 			g.P("dubbo_go_hessian2.RegisterPOJO(new(", inner.GoIdent.GoName, "))")
+		}
+	}
+	g.P()
+
+	for _, e := range f.Enums {
+		javaClassName := getEnumJavaClassName(e)
+		if javaClassName != "" {
+			g.P("for v := range ", e.GoIdent.GoName, "_name {")
+			for range e.Values {
+				g.P("dubbo_go_hessian2.RegisterJavaEnum(", e.GoIdent.GoName, "(v))")
+			}
+			g.P("}")
 		}
 	}
 	g.P("}")
 	g.P()
+}
+
+func getEnumJavaClassName(e *protogen.Enum) string {
+	opts := e.Desc.Options().(*descriptorpb.EnumOptions)
+	ext, err := proto.GetExtension(opts, hessian2_extend.E_EnumExtend)
+	if err != nil || ext == nil {
+		return ""
+	}
+
+	hessian2EnumOpts, ok := ext.(*hessian2_extend.Hessian2EnumOptions)
+	if !ok {
+		return ""
+	}
+	return hessian2EnumOpts.JavaClassName
 }
 
 func getGoType(g *protogen.GeneratedFile, field *protogen.Field) (goType string) {
