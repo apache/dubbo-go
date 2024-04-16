@@ -96,13 +96,14 @@ const headerOutgoingKey string = "headerOutgoingKey"
 
 type handlerOutgoingKey struct{}
 
-func newIncomingContext(ctx context.Context, header http.Header) context.Context {
+func newIncomingContext(ctx context.Context, data http.Header) context.Context {
+	var header = http.Header{}
 	extraData, ok := ctx.Value(extraDataKey{}).(map[string]http.Header)
 	if !ok {
 		extraData = map[string]http.Header{}
 	}
-	if header == nil {
-		header = make(http.Header)
+	for key, vals := range data {
+		header[strings.ToLower(key)] = vals
 	}
 	extraData[headerIncomingKey] = header
 	return context.WithValue(ctx, extraDataKey{}, extraData)
@@ -113,11 +114,9 @@ func newIncomingContext(ctx context.Context, header http.Header) context.Context
 // It is like grpc.NewOutgoingContext.
 // Please refer to https://github.com/grpc/grpc-go/blob/master/Documentation/grpc-metadata.md#sending-metadata.
 func NewOutgoingContext(ctx context.Context, data http.Header) (context.Context, error) {
-	var header http.Header
-	if data == nil {
-		header = make(http.Header)
-	} else {
-		header = data.Clone()
+	var header = http.Header{}
+	for key, vals := range data {
+		header[strings.ToLower(key)] = vals
 	}
 	extraData, ok := ctx.Value(extraDataKey{}).(map[string]http.Header)
 	if !ok {
@@ -147,7 +146,7 @@ func AppendToOutgoingContext(ctx context.Context, kv ...string) (context.Context
 	}
 	for i := 0; i < len(kv); i += 2 {
 		// todo(DMwangnima): think about lowering
-		header.Add(kv[i], kv[i+1])
+		header.Add(strings.ToLower(kv[i]), kv[i+1])
 	}
 	return ctx, nil
 }
