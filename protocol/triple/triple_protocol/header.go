@@ -115,7 +115,7 @@ func newIncomingContext(ctx context.Context, data http.Header) context.Context {
 // It is used for passing headers to server-side.
 // It is like grpc.NewOutgoingContext.
 // Please refer to https://github.com/grpc/grpc-go/blob/master/Documentation/grpc-metadata.md#sending-metadata.
-func NewOutgoingContext(ctx context.Context, data http.Header) (context.Context, error) {
+func NewOutgoingContext(ctx context.Context, data http.Header) context.Context {
 	var header = http.Header{}
 	if data != nil {
 		for key, vals := range data {
@@ -127,14 +127,14 @@ func NewOutgoingContext(ctx context.Context, data http.Header) (context.Context,
 		extraData = map[string]http.Header{}
 	}
 	extraData[headerOutgoingKey] = header
-	return context.WithValue(ctx, extraDataKey{}, extraData), nil
+	return context.WithValue(ctx, extraDataKey{}, extraData)
 }
 
 // AppendToOutgoingContext merges kv pairs from user and existing headers.
 // It is used for passing headers to server-side.
 // It is like grpc.AppendToOutgoingContext.
 // Please refer to https://github.com/grpc/grpc-go/blob/master/Documentation/grpc-metadata.md#sending-metadata.
-func AppendToOutgoingContext(ctx context.Context, kv ...string) (context.Context, error) {
+func AppendToOutgoingContext(ctx context.Context, kv ...string) context.Context {
 	if len(kv)%2 == 1 {
 		panic(fmt.Sprintf("AppendToOutgoingContext got an odd number of input pairs for header: %d", len(kv)))
 	}
@@ -152,7 +152,7 @@ func AppendToOutgoingContext(ctx context.Context, kv ...string) (context.Context
 		// todo(DMwangnima): think about lowering
 		header.Add(strings.ToLower(kv[i]), kv[i+1])
 	}
-	return ctx, nil
+	return ctx
 }
 
 func ExtractFromOutgoingContext(ctx context.Context) http.Header {

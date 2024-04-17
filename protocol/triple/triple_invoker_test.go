@@ -161,7 +161,7 @@ func Test_parseAttachments(t *testing.T) {
 			ctx := test.ctx()
 			inv := test.invo()
 			parseAttachments(ctx, test.url, inv)
-			ctx, err := mergeAttachmentToOutgoing(ctx, inv.Attachments())
+			ctx, err := mergeAttachmentToOutgoing(ctx, inv)
 			test.expect(t, ctx, err)
 		})
 	}
