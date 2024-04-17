@@ -18,6 +18,8 @@
 package metadata
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
+	perrors "github.com/pkg/errors"
 	"strconv"
 	"strings"
 	"sync"
@@ -30,7 +32,6 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/global"
 )
 
@@ -103,18 +104,33 @@ type ReportOptions struct {
 }
 
 func (opts *ReportOptions) Init() error {
-	fac := extension.GetMetadataReportFactory(opts.Protocol)
-	if fac == nil {
-		logger.Errorf("no metadata report factory of protocol %s found!", opts.Protocol)
-		return nil
-	}
-	url, err := toUrl(opts)
+	url, err := opts.toUrl()
 	if err != nil {
 		logger.Errorf("metadata report create error %v", err)
 		return err
 	}
-	instances[opts.registryId] = &DelegateMetadataReport{instance: fac.CreateMetadataReport(url)}
-	return nil
+	return addMetadataReport(opts.registryId, url)
+}
+
+func (opts *ReportOptions) toUrl() (*common.URL, error) {
+	res, err := common.NewURL(opts.Address,
+		common.WithUsername(opts.Username),
+		common.WithPassword(opts.Password),
+		common.WithLocation(opts.Address),
+		common.WithProtocol(opts.Protocol),
+		common.WithParamsValue(constant.TimeoutKey, opts.Timeout),
+		common.WithParamsValue(constant.MetadataReportGroupKey, opts.Group),
+		common.WithParamsValue(constant.MetadataReportNamespaceKey, opts.Namespace),
+		common.WithParamsValue(constant.ClientNameKey, strings.Join([]string{constant.MetadataReportPrefix, opts.Protocol, opts.Address}, "-")),
+	)
+	if err != nil || len(res.Protocol) == 0 {
+		return nil, perrors.New("Invalid MetadataReport Config.")
+	}
+	res.SetParam("metadata", res.Protocol)
+	for key, val := range opts.Params {
+		res.SetParam(key, val)
+	}
+	return res, nil
 }
 
 func defaultReportOptions() *ReportOptions {
