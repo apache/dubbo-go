@@ -33,6 +33,7 @@ import (
 )
 
 const (
+	// TODO(Yuukirn): add usage
 	usage = ""
 )
 
@@ -59,7 +60,7 @@ func main() {
 func genDubbo(plugin *protogen.Plugin) error {
 	for _, file := range plugin.Files {
 		if file.Generate {
-			dubboGo, err := generator.ProcessProtoFile(file.Proto)
+			dubboGo, err := generator.ProcessProtoFile(file)
 			if err != nil {
 				return err
 			}

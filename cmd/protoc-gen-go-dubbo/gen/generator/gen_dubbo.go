@@ -18,18 +18,22 @@
 package generator
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 )
 
 import (
-	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"github.com/pkg/errors"
+
+	"google.golang.org/protobuf/compiler/protogen"
+	"google.golang.org/protobuf/proto"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/cmd/protoc-gen-go-dubbo/util"
+	"dubbo.apache.org/dubbo-go/v3/proto/hessian2_extend"
 )
 
 type DubboGo struct {
@@ -42,41 +46,58 @@ type DubboGo struct {
 }
 
 type Service struct {
-	ServiceName string
-	Methods     []Method
+	ServiceName   string
+	InterfaceName string
+	Methods       []Method
 }
 
 type Method struct {
 	MethodName  string
+	InvokeName  string
 	RequestType string
 	ReturnType  string
 }
 
-func ProcessProtoFile(file *descriptor.FileDescriptorProto) (DubboGo, error) {
+func ProcessProtoFile(file *protogen.File) (DubboGo, error) {
+	desc := file.Proto
 	dubboGo := DubboGo{
-		Source:       file.GetName(),
-		ProtoPackage: file.GetPackage(),
+		Source:       desc.GetName(),
+		ProtoPackage: desc.GetPackage(),
 		Services:     make([]Service, 0),
 	}
-	for _, service := range file.GetService() {
+
+	for _, service := range desc.GetService() {
 		serviceMethods := make([]Method, 0)
 
 		for _, method := range service.GetMethod() {
 			// TODO(Yuukirn): handle stream -> error
+			methodOpt, ok := proto.GetExtension(method.GetOptions(), hessian2_extend.E_MethodExtend).(*hessian2_extend.Hessian2MethodOptions)
+			invokeName := util.ToLower(method.GetName())
+			if ok && methodOpt != nil {
+				invokeName = methodOpt.MethodName
+			}
+
 			serviceMethods = append(serviceMethods, Method{
 				MethodName:  method.GetName(),
+				InvokeName:  invokeName,
 				RequestType: util.ToUpper(strings.Split(method.GetInputType(), ".")[len(strings.Split(method.GetInputType(), "."))-1]),
 				ReturnType:  util.ToUpper(strings.Split(method.GetOutputType(), ".")[len(strings.Split(method.GetOutputType(), "."))-1]),
 			})
 		}
 
+		serviceOpt, ok := proto.GetExtension(service.GetOptions(), hessian2_extend.E_ServiceExtend).(*hessian2_extend.Hessian2ServiceOptions)
+		interfaceName := fmt.Sprintf("%s.%s", dubboGo.ProtoPackage, service.GetName())
+		if ok && serviceOpt != nil {
+			interfaceName = serviceOpt.InterfaceName
+		}
 		dubboGo.Services = append(dubboGo.Services, Service{
-			ServiceName: service.GetName(),
-			Methods:     serviceMethods,
+			ServiceName:   service.GetName(),
+			Methods:       serviceMethods,
+			InterfaceName: interfaceName,
 		})
 	}
 
-	pkgs := strings.Split(file.Options.GetGoPackage(), ";")
+	pkgs := strings.Split(desc.Options.GetGoPackage(), ";")
 	if len(pkgs) < 2 || pkgs[1] == "" {
 		return dubboGo, errors.New("need to set the package name in go_package")
 	}
@@ -92,7 +113,7 @@ func ProcessProtoFile(file *descriptor.FileDescriptorProto) (DubboGo, error) {
 	} else {
 		dubboGo.Path = goPkg
 	}
-	_, fileName := filepath.Split(file.GetName())
+	_, fileName := filepath.Split(desc.GetName())
 	dubboGo.FileName = strings.Split(fileName, ".")[0]
 	return dubboGo, nil
 }

@@ -151,7 +151,7 @@ import (
 {{$t := .}}{{range $s := .Services}}
 const (
 	// {{$s.ServiceName}}Name is the fully-qualified name of the {{$s.ServiceName}} service.
-	{{$s.ServiceName}}Name = "{{$t.ProtoPackage}}.{{$s.ServiceName}}"
+	{{$s.ServiceName}}Name = "{{$s.InterfaceName}}"
 )
 
 // These constants are the fully-qualified names of the RPCs defined in this package. They're
@@ -163,7 +163,7 @@ const (
 // period.
 const (
 {{range $s.Methods}}	// {{$s.ServiceName}}{{.MethodName}}Procedure is the fully-qualified name of the {{$s.ServiceName}}'s {{.MethodName}} RPC.
-	{{$s.ServiceName}}{{.MethodName}}Procedure = "/{{$t.ProtoPackage}}.{{$s.ServiceName}}/{{.MethodName}}"
+	{{$s.ServiceName}}{{.MethodName}}Procedure = "/{{$s.InterfaceName}}/{{.InvokeName}}"
 {{end}}){{end}}
 
 `
@@ -173,7 +173,7 @@ const (
 
 `
 
-	InterfaceTpl = `// {{$t := .}}{{range $s := .Services}}{{.ServiceName}} is a client for the {{$t.ProtoPackage}}.{{$s.ServiceName}} service.
+	InterfaceTpl = `// {{$t := .}}{{range $s := .Services}}{{.ServiceName}} is a client for the {{$s.InterfaceName}} service.
 type {{$s.ServiceName}} interface { {{- range $s.Methods}}
 	{{upper .MethodName}}(ctx context.Context, req *{{.RequestType}}, opts ...client.CallOption) (*{{.ReturnType}}, error){{end}}
 }{{end}}
@@ -182,7 +182,7 @@ type {{$s.ServiceName}} interface { {{- range $s.Methods}}
 
 	InterfaceImplTpl = `{{$t := .}}{{range $s := .Services}}// New{{.ServiceName}} constructs a client for the {{$t.Package}}.{{.ServiceName}} service. 
 func New{{.ServiceName}}(cli *client.Client, opts ...client.ReferenceOption) ({{.ServiceName}}, error) {
-	conn, err := cli.DialWithInfo("{{$t.ProtoPackage}}.{{.ServiceName}}", &{{.ServiceName}}_ClientInfo, opts...)
+	conn, err := cli.DialWithInfo("{{.InterfaceName}}", &{{.ServiceName}}_ClientInfo, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -202,7 +202,7 @@ type {{.ServiceName}}Impl struct {
 {{range .Methods}}
 func (c *{{$s.ServiceName}}Impl) {{upper .MethodName}}(ctx context.Context, req *{{.RequestType}}, opts ...client.CallOption) (*{{.ReturnType}}, error) {
 	resp := new({{.ReturnType}})
-	if err := c.conn.CallUnary(ctx, []interface{}{req}, resp, "{{.MethodName}}", opts...); err != nil {
+	if err := c.conn.CallUnary(ctx, []interface{}{req}, resp, "{{.InvokeName}}", opts...); err != nil {
 		return nil, err
 	}
 	return resp, nil
@@ -211,8 +211,8 @@ func (c *{{$s.ServiceName}}Impl) {{upper .MethodName}}(ctx context.Context, req 
 `
 
 	MethodInfoTpl = `{{$t := .}}{{range $i, $s := .Services}}var {{.ServiceName}}_ClientInfo = client.ClientInfo{
-	InterfaceName: "{{$t.ProtoPackage}}.{{.ServiceName}}",
-	MethodNames:   []string{ {{- range $j, $m := .Methods}}"{{.MethodName}}"{{if last $j (len $s.Methods)}}{{else}},{{end}}{{end -}} },
+	InterfaceName: "{{.InterfaceName}}",
+	MethodNames:   []string{ {{- range $j, $m := .Methods}}"{{.InvokeName}}"{{if last $j (len $s.Methods)}}{{else}},{{end}}{{end -}} },
 	ConnectionInjectFunc: func(dubboCliRaw interface{}, conn *client.Connection) {
 		dubboCli := dubboCliRaw.(*{{$s.ServiceName}}Impl)
 		dubboCli.conn = conn
@@ -221,7 +221,7 @@ func (c *{{$s.ServiceName}}Impl) {{upper .MethodName}}(ctx context.Context, req 
 
 `
 
-	HandlerTpl = `{{$t := .}}{{range $s := .Services}}// {{.ServiceName}}Handler is an implementation of the {{$t.ProtoPackage}}.{{.ServiceName}} service.
+	HandlerTpl = `{{$t := .}}{{range $s := .Services}}// {{.ServiceName}}Handler is an implementation of the {{.InterfaceName}} service.
 type {{.ServiceName}}Handler interface { {{- range $s.Methods}}
 	{{upper .MethodName}}(context.Context, *{{.RequestType}}) (*{{.ReturnType}}, error){{end}}
 }
@@ -236,11 +236,11 @@ func SetProviderService(srv common.RPCService)  {
 `
 
 	ServiceInfoTpl = `{{$t := .}}{{range $s := .Services}}var {{.ServiceName}}_ServiceInfo = server.ServiceInfo{
-	InterfaceName: "{{$t.ProtoPackage}}.{{.ServiceName}}",
+	InterfaceName: "{{.InterfaceName}}",
 	ServiceType:   (*{{.ServiceName}}Handler)(nil),
 	Methods: []server.MethodInfo{ {{- range .Methods}}
 		{
-			Name: "{{.MethodName}}",
+			Name: "{{.InvokeName}}",
 			Type: constant.CallUnary,
 			ReqInitFunc: func() interface{} {
 				return new({{.RequestType}})
