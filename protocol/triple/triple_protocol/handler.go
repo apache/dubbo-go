@@ -164,6 +164,9 @@ func generateClientStreamHandlerFunc(
 		}
 		mergeHeaders(conn.ResponseHeader(), res.header)
 		mergeHeaders(conn.ResponseTrailer(), res.trailer)
+		if outgoingData := ExtractFromOutgoingContext(ctx); outgoingData != nil {
+			mergeHeaders(conn.ResponseTrailer(), outgoingData)
+		}
 		return conn.Send(res.Msg)
 	}
 	if interceptor != nil {
@@ -209,7 +212,7 @@ func generateServerStreamHandlerFunc(
 		}
 		// embed header in context so that user logic could process them via FromIncomingContext
 		ctx = newIncomingContext(ctx, conn.RequestHeader())
-		return streamFunc(
+		err := streamFunc(
 			ctx,
 			&Request{
 				Msg:    req,
@@ -219,6 +222,13 @@ func generateServerStreamHandlerFunc(
 			},
 			&ServerStream{conn: conn},
 		)
+		if err != nil {
+			return err
+		}
+		if outgoingData := ExtractFromOutgoingContext(ctx); outgoingData != nil {
+			mergeHeaders(conn.ResponseTrailer(), outgoingData)
+		}
+		return nil
 	}
 	if interceptor != nil {
 		implementation = interceptor.WrapStreamingHandler(implementation)
@@ -257,10 +267,14 @@ func generateBidiStreamHandlerFunc(
 	implementation := func(ctx context.Context, conn StreamingHandlerConn) error {
 		// embed header in context so that user logic could process them via FromIncomingContext
 		ctx = newIncomingContext(ctx, conn.RequestHeader())
-		return streamFunc(
-			ctx,
-			&BidiStream{conn: conn},
-		)
+		err := streamFunc(ctx, &BidiStream{conn: conn})
+		if err != nil {
+			return err
+		}
+		if outgoingData := ExtractFromOutgoingContext(ctx); outgoingData != nil {
+			mergeHeaders(conn.ResponseTrailer(), outgoingData)
+		}
+		return nil
 	}
 	if interceptor != nil {
 		implementation = interceptor.WrapStreamingHandler(implementation)

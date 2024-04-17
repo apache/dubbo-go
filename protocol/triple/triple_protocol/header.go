@@ -102,8 +102,10 @@ func newIncomingContext(ctx context.Context, data http.Header) context.Context {
 	if !ok {
 		extraData = map[string]http.Header{}
 	}
-	for key, vals := range data {
-		header[strings.ToLower(key)] = vals
+	if data != nil {
+		for key, vals := range data {
+			header[strings.ToLower(key)] = vals
+		}
 	}
 	extraData[headerIncomingKey] = header
 	return context.WithValue(ctx, extraDataKey{}, extraData)
@@ -115,8 +117,10 @@ func newIncomingContext(ctx context.Context, data http.Header) context.Context {
 // Please refer to https://github.com/grpc/grpc-go/blob/master/Documentation/grpc-metadata.md#sending-metadata.
 func NewOutgoingContext(ctx context.Context, data http.Header) (context.Context, error) {
 	var header = http.Header{}
-	for key, vals := range data {
-		header[strings.ToLower(key)] = vals
+	if data != nil {
+		for key, vals := range data {
+			header[strings.ToLower(key)] = vals
+		}
 	}
 	extraData, ok := ctx.Value(extraDataKey{}).(map[string]http.Header)
 	if !ok {
@@ -155,7 +159,8 @@ func ExtractFromOutgoingContext(ctx context.Context) http.Header {
 	extraData, ok := ctx.Value(extraDataKey{}).(map[string]http.Header)
 	if !ok {
 		return nil
-	} else if outGoingDataHeader, ok := extraData[headerOutgoingKey]; !ok {
+	}
+	if outGoingDataHeader, ok := extraData[headerOutgoingKey]; !ok {
 		return nil
 	} else {
 		return outGoingDataHeader
@@ -211,12 +216,4 @@ func SendHeader(ctx context.Context, header http.Header) error {
 	}
 	mergeHeaders(conn.RequestHeader(), header)
 	return conn.Send(nil)
-}
-
-func outGoingKeyCheck(key string) bool {
-	if len(key) < 1 {
-		return false
-	}
-	firstLetter := string(key[0])
-	return firstLetter == strings.ToUpper(firstLetter)
 }

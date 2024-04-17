@@ -184,6 +184,10 @@ func (d *duplexHTTPCall) CloseRead() error {
 	if err := discard(d.response.Body); err != nil {
 		return wrapIfRSTError(err)
 	}
+	// Return incoming data via context, if set outgoing data.
+	if ExtractFromOutgoingContext(d.ctx) != nil {
+		newIncomingContext(d.ctx, d.ResponseTrailer())
+	}
 	return wrapIfRSTError(d.response.Body.Close())
 }
 
