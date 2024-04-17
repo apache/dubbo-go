@@ -167,8 +167,8 @@ func TestServer(t *testing.T) {
 			stream, err := client.Sum(context.Background())
 			assert.Nil(t, err)
 			if sendErr := stream.Send(&pingv1.SumRequest{Number: 1}); sendErr != nil {
-				assert.ErrorIs(t, err, io.EOF)
-				assert.Equal(t, triple.CodeOf(err), triple.CodeUnknown)
+				assert.ErrorIs(t, sendErr, io.EOF)
+				assert.Equal(t, triple.CodeOf(sendErr), triple.CodeUnknown)
 			}
 			err = stream.CloseAndReceive(triple.NewResponse(&pingv1.SumResponse{}))
 			assert.Equal(t, triple.CodeOf(err), triple.CodeInvalidArgument)
