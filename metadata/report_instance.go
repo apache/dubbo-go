@@ -78,6 +78,9 @@ func GetMetadataReports() []report.MetadataReport {
 }
 
 func GetMetadataType() string {
+	if metadataOptions == nil || metadataOptions.metadataType == "" {
+		return constant.DefaultMetadataStorageType
+	}
 	return metadataOptions.metadataType
 }
 

@@ -23,8 +23,6 @@ import (
 
 import (
 	gxset "github.com/dubbogo/gost/container/set"
-	"github.com/dubbogo/gost/log/logger"
-
 	perrors "github.com/pkg/errors"
 )
 
@@ -81,7 +79,6 @@ func (d *ServiceNameMapping) Map(url *common.URL) error {
 			}
 		}
 		if err != nil {
-			logger.Errorf("Failed registering mapping to remote, &v", err)
 			return err
 		}
 	}

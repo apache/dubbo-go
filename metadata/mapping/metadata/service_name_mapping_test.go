@@ -8,10 +8,11 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
 	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
 	"dubbo.apache.org/dubbo-go/v3/metadata/report"
+	"errors"
 	gxset "github.com/dubbogo/gost/container/set"
 	"github.com/dubbogo/gost/gof/observer"
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"testing"
 )
 
@@ -42,14 +43,20 @@ func TestServiceNameMappingGet(t *testing.T) {
 		common.WithInterface("org.apache.dubbo.samples.proto.GreetService"),
 		common.WithParamsValue(constant.ApplicationKey, "dubbo"),
 	)
-	_, err := initMock()
+	mockReport, err := initMock()
 	assert.Nil(t, err)
-	apps, err := ins.Get(serviceUrl, lis)
-	assert.True(t, apps.Empty(), "test with report instance and no app")
-	err = ins.Map(serviceUrl)
-	assert.Nil(t, err)
-	apps, err = ins.Get(serviceUrl, lis)
-	assert.True(t, !apps.Empty(), "test with report instance and app")
+	t.Run("test normal", func(t *testing.T) {
+		mockReport.On("GetServiceAppMapping").Return(gxset.NewSet("dubbo"), nil).Once()
+		apps, err := ins.Get(serviceUrl, lis)
+		assert.Nil(t, err)
+		assert.True(t, !apps.Empty())
+	})
+	t.Run("test error", func(t *testing.T) {
+		mockReport.On("GetServiceAppMapping").Return(gxset.NewSet(), errors.New("mock error")).Once()
+		_, err = ins.Get(serviceUrl, lis)
+		assert.NotNil(t, err)
+	})
+	mockReport.AssertExpectations(t)
 }
 
 func TestServiceNameMappingMap(t *testing.T) {
@@ -58,16 +65,19 @@ func TestServiceNameMappingMap(t *testing.T) {
 		common.WithInterface("org.apache.dubbo.samples.proto.GreetService"),
 		common.WithParamsValue(constant.ApplicationKey, "dubbo"),
 	)
-	reportIns, err := initMock()
+	mockReport, err := initMock()
 	assert.Nil(t, err)
-	err = ins.Map(serviceUrl)
-	assert.Nil(t, err, "test with report instance")
-	assert.Equal(t, reportIns.(*mockMetadataReport).app, serviceUrl.GetParam(constant.ApplicationKey, ""))
-	assert.Equal(t, reportIns.(*mockMetadataReport).interfaceName, serviceUrl.Interface())
-	assert.Equal(t, reportIns.(*mockMetadataReport).group, DefaultGroup)
-	reportIns.(*mockMetadataReport).thr = true
-	err = ins.Map(serviceUrl)
-	assert.NotNil(t, err, "test mapping error")
+	t.Run("test normal", func(t *testing.T) {
+		mockReport.On("RegisterServiceAppMapping").Return(nil).Once()
+		err = ins.Map(serviceUrl)
+		assert.Nil(t, err)
+	})
+	t.Run("test error", func(t *testing.T) {
+		mockReport.On("RegisterServiceAppMapping").Return(errors.New("mock error")).Times(retryTimes)
+		err = ins.Map(serviceUrl)
+		assert.NotNil(t, err, "test mapping error")
+	})
+	mockReport.AssertExpectations(t)
 }
 
 func TestServiceNameMappingRemove(t *testing.T) {
@@ -76,18 +86,23 @@ func TestServiceNameMappingRemove(t *testing.T) {
 		common.WithInterface("org.apache.dubbo.samples.proto.GreetService"),
 		common.WithParamsValue(constant.ApplicationKey, "dubbo"),
 	)
-	reportIns, err := initMock()
-	err = ins.Map(serviceUrl)
+	mockReport, err := initMock()
 	assert.Nil(t, err)
-	err = ins.Remove(serviceUrl)
-	assert.Nil(t, err)
-	assert.Nil(t, reportIns.(*mockMetadataReport).listener)
-	assert.Equal(t, reportIns.(*mockMetadataReport).group, "")
-	assert.Equal(t, reportIns.(*mockMetadataReport).interfaceName, "")
+	t.Run("test normal", func(t *testing.T) {
+		mockReport.On("RemoveServiceAppMappingListener").Return(nil).Once()
+		err = ins.Remove(serviceUrl)
+		assert.Nil(t, err)
+	})
+	t.Run("test error", func(t *testing.T) {
+		mockReport.On("RemoveServiceAppMappingListener").Return(errors.New("mock error")).Once()
+		err = ins.Remove(serviceUrl)
+		assert.NotNil(t, err)
+	})
+	mockReport.AssertExpectations(t)
 }
 
-func initMock() (report.MetadataReport, error) {
-	metadataReport := &mockMetadataReport{mapping: make(map[string]string, 0)}
+func initMock() (*mockMetadataReport, error) {
+	metadataReport := new(mockMetadataReport)
 	extension.SetMetadataReportFactory("mock", func() report.MetadataReportFactory {
 		return metadataReport
 	})
@@ -110,61 +125,34 @@ func (l listener) Stop() {
 }
 
 type mockMetadataReport struct {
-	app           string
-	group         string
-	revision      string
-	interfaceName string
-	info          *info.MetadataInfo
-	mapping       map[string]string
-	listener      mapping.MappingListener
-	thr           bool // test register map error
+	mock.Mock
 }
 
-func (m *mockMetadataReport) CreateMetadataReport(url *common.URL) report.MetadataReport {
+func (m *mockMetadataReport) CreateMetadataReport(*common.URL) report.MetadataReport {
 	return m
 }
 
-func (m *mockMetadataReport) GetAppMetadata(application, revision string) (*info.MetadataInfo, error) {
-	m.app = application
-	m.revision = revision
-	return m.info, nil
+func (m *mockMetadataReport) GetAppMetadata(string, string) (*info.MetadataInfo, error) {
+	args := m.Called()
+	return args.Get(0).(*info.MetadataInfo), args.Error(1)
 }
 
-func (m *mockMetadataReport) PublishAppMetadata(application, revision string, info *info.MetadataInfo) error {
-	m.app = application
-	m.revision = revision
-	m.info = info
-	return nil
+func (m *mockMetadataReport) PublishAppMetadata(string, string, *info.MetadataInfo) error {
+	args := m.Called()
+	return args.Error(0)
 }
 
-func (m *mockMetadataReport) RegisterServiceAppMapping(interfaceName, group string, application string) error {
-	if m.thr {
-		return errors.New("write mapping error")
-	}
-	m.app = application
-	m.group = group
-	m.interfaceName = interfaceName
-	if m.mapping == nil {
-		m.mapping = make(map[string]string, 0)
-	}
-	m.mapping[interfaceName] = application
-	return nil
+func (m *mockMetadataReport) RegisterServiceAppMapping(string, string, string) error {
+	args := m.Called()
+	return args.Error(0)
 }
 
-func (m *mockMetadataReport) GetServiceAppMapping(interfaceName, group string, l mapping.MappingListener) (*gxset.HashSet, error) {
-	m.interfaceName = interfaceName
-	m.group = group
-	set := gxset.NewSet()
-	if v, ok := m.mapping[interfaceName]; ok {
-		set.Add(v)
-	}
-	m.listener = l
-	return set, nil
+func (m *mockMetadataReport) GetServiceAppMapping(string, string, mapping.MappingListener) (*gxset.HashSet, error) {
+	args := m.Called()
+	return args.Get(0).(*gxset.HashSet), args.Error(1)
 }
 
-func (m *mockMetadataReport) RemoveServiceAppMappingListener(interfaceName, group string) error {
-	m.interfaceName = ""
-	m.group = ""
-	m.listener = nil
-	return nil
+func (m *mockMetadataReport) RemoveServiceAppMappingListener(string, string) error {
+	args := m.Called()
+	return args.Error(0)
 }
