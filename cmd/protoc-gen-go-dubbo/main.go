@@ -51,21 +51,20 @@ func main() {
 		os.Exit(1)
 	}
 
-	protogen.Options{}.Run(func(plugin *protogen.Plugin) error {
-		plugin.SupportedFeatures = uint64(pluginpb.CodeGeneratorResponse_FEATURE_PROTO3_OPTIONAL)
-		return genDubbo(plugin)
-	})
-}
+	protogen.Options{}.Run(func(gen *protogen.Plugin) error {
+		gen.SupportedFeatures = uint64(pluginpb.CodeGeneratorResponse_FEATURE_PROTO3_OPTIONAL)
+		for _, file := range gen.Files {
+			if file.Generate {
+				filename := file.GeneratedFilenamePrefix + ".dubbo.go"
+				g := gen.NewGeneratedFile(filename, file.GoImportPath)
 
-func genDubbo(plugin *protogen.Plugin) error {
-	for _, file := range plugin.Files {
-		if file.Generate {
-			dubboGo, err := generator.ProcessProtoFile(file)
-			if err != nil {
-				return err
+				dubboGo, err := generator.ProcessProtoFile(g, file)
+				if err != nil {
+					return err
+				}
+				generator.GenDubbo(g, dubboGo)
 			}
-			return generator.GenDubboFile(dubboGo)
 		}
-	}
-	return nil
+		return nil
+	})
 }

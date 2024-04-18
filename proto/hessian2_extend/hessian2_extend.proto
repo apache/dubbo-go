@@ -27,6 +27,7 @@ message Hessian2MessageOptions {
   string java_class_name = 1;
   string reference_path = 2;
   bool is_inheritance = 3;
+  bool extend_args = 4;
 }
 
 extend google.protobuf.MessageOptions {
@@ -39,6 +40,14 @@ message Hessian2MethodOptions {
 
 extend google.protobuf.MethodOptions {
   optional Hessian2MethodOptions method_extend = 12345;
+}
+
+message Hessian2ServiceOptions {
+  string interface_name = 1;
+}
+
+extend google.protobuf.ServiceOptions {
+  optional Hessian2ServiceOptions service_extend = 12345;
 }
 
 message Hessian2EnumOptions {

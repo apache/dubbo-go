@@ -19,9 +19,6 @@ package generator
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
-	"strings"
 )
 
 import (
@@ -36,124 +33,107 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/proto/hessian2_extend"
 )
 
+var (
+	ErrStreamMethod               = errors.New("dubbo doesn't support stream method")
+	ErrMoreExtendArgsRespFieldNum = errors.New("extend args for response message should only has 1 field")
+	ErrNoExtendArgsRespFieldNum   = errors.New("extend args for response message should has a field")
+)
+
 type DubboGo struct {
+	*protogen.File
+
 	Source       string
-	Package      string
-	Path         string
-	FileName     string
 	ProtoPackage string
-	Services     []Service
+	Services     []*Service
 }
 
 type Service struct {
 	ServiceName   string
 	InterfaceName string
-	Methods       []Method
+	Methods       []*Method
 }
 
 type Method struct {
-	MethodName  string
-	InvokeName  string
-	RequestType string
-	ReturnType  string
+	MethodName string
+	InvokeName string
+
+	// empty when RequestExtendArgs is true
+	RequestType       string
+	RequestExtendArgs bool
+	ArgsType          []string
+	ArgsName          []string
+
+	ResponseExtendArgs bool
+	ReturnType         string
 }
 
-func ProcessProtoFile(file *protogen.File) (DubboGo, error) {
+func ProcessProtoFile(g *protogen.GeneratedFile, file *protogen.File) (*DubboGo, error) {
 	desc := file.Proto
-	dubboGo := DubboGo{
+	dubboGo := &DubboGo{
+		File:         file,
 		Source:       desc.GetName(),
 		ProtoPackage: desc.GetPackage(),
-		Services:     make([]Service, 0),
+		Services:     make([]*Service, 0),
 	}
 
-	for _, service := range desc.GetService() {
-		serviceMethods := make([]Method, 0)
+	for _, service := range file.Services {
+		serviceMethods := make([]*Method, 0)
+		for _, method := range service.Methods {
+			if method.Desc.IsStreamingClient() || method.Desc.IsStreamingServer() {
+				return nil, ErrStreamMethod
+			}
+			m := &Method{
+				MethodName: method.GoName,
+				// TODO(Yuukirn): import message from other proto file, maybe need to split GoName by `.`
+				RequestType: util.ToUpper(method.Input.GoIdent.GoName),
+				ReturnType:  util.ToUpper(method.Output.GoIdent.GoName),
+			}
 
-		for _, method := range service.GetMethod() {
-			// TODO(Yuukirn): handle stream -> error
-			methodOpt, ok := proto.GetExtension(method.GetOptions(), hessian2_extend.E_MethodExtend).(*hessian2_extend.Hessian2MethodOptions)
-			invokeName := util.ToLower(method.GetName())
+			methodOpt, ok := proto.GetExtension(method.Desc.Options(), hessian2_extend.E_MethodExtend).(*hessian2_extend.Hessian2MethodOptions)
+			invokeName := util.ToLower(method.GoName)
 			if ok && methodOpt != nil {
 				invokeName = methodOpt.MethodName
 			}
+			m.InvokeName = invokeName
 
-			serviceMethods = append(serviceMethods, Method{
-				MethodName:  method.GetName(),
-				InvokeName:  invokeName,
-				RequestType: util.ToUpper(strings.Split(method.GetInputType(), ".")[len(strings.Split(method.GetInputType(), "."))-1]),
-				ReturnType:  util.ToUpper(strings.Split(method.GetOutputType(), ".")[len(strings.Split(method.GetOutputType(), "."))-1]),
-			})
+			inputOpt, ok := proto.GetExtension(method.Input.Desc.Options(), hessian2_extend.E_MessageExtend).(*hessian2_extend.Hessian2MessageOptions)
+			if ok && inputOpt.ExtendArgs {
+				m.RequestExtendArgs = true
+				for _, field := range method.Input.Fields {
+					// TODO(Yuukirn): auto import go_package may be caused by fieldGoType
+					goType, _ := util.FieldGoType(g, field)
+					m.ArgsType = append(m.ArgsType, goType)
+					m.ArgsName = append(m.ArgsName, util.ToLower(field.GoName))
+				}
+			}
+
+			outputOpt, ok := proto.GetExtension(method.Output.Desc.Options(), hessian2_extend.E_MessageExtend).(*hessian2_extend.Hessian2MessageOptions)
+			if ok && outputOpt != nil && outputOpt.ExtendArgs {
+				m.ResponseExtendArgs = true
+				if len(method.Output.Fields) == 0 {
+					return nil, ErrNoExtendArgsRespFieldNum
+				}
+				if len(method.Output.Fields) != 1 {
+					return nil, ErrMoreExtendArgsRespFieldNum
+				}
+				goType, _ := util.FieldGoType(g, method.Output.Fields[0])
+				m.ReturnType = goType
+			}
+
+			serviceMethods = append(serviceMethods, m)
 		}
 
-		serviceOpt, ok := proto.GetExtension(service.GetOptions(), hessian2_extend.E_ServiceExtend).(*hessian2_extend.Hessian2ServiceOptions)
-		interfaceName := fmt.Sprintf("%s.%s", dubboGo.ProtoPackage, service.GetName())
+		serviceOpt, ok := proto.GetExtension(service.Desc.Options(), hessian2_extend.E_ServiceExtend).(*hessian2_extend.Hessian2ServiceOptions)
+		interfaceName := fmt.Sprintf("%s.%s", dubboGo.ProtoPackage, service.GoName)
 		if ok && serviceOpt != nil {
 			interfaceName = serviceOpt.InterfaceName
 		}
-		dubboGo.Services = append(dubboGo.Services, Service{
-			ServiceName:   service.GetName(),
+		dubboGo.Services = append(dubboGo.Services, &Service{
+			ServiceName:   service.GoName,
 			Methods:       serviceMethods,
 			InterfaceName: interfaceName,
 		})
 	}
 
-	pkgs := strings.Split(desc.Options.GetGoPackage(), ";")
-	if len(pkgs) < 2 || pkgs[1] == "" {
-		return dubboGo, errors.New("need to set the package name in go_package")
-	}
-	dubboGo.Package = pkgs[1]
-	goPkg := strings.Trim(pkgs[0], "/")
-	moduleName, err := util.GetModuleName()
-	if err != nil {
-		return dubboGo, err
-	}
-
-	if strings.Contains(goPkg, moduleName) {
-		dubboGo.Path = strings.TrimPrefix(goPkg, moduleName)
-	} else {
-		dubboGo.Path = goPkg
-	}
-	_, fileName := filepath.Split(desc.GetName())
-	dubboGo.FileName = strings.Split(fileName, ".")[0]
 	return dubboGo, nil
-}
-
-func GenDubboFile(dubbo DubboGo) error {
-	moduleDir, err := util.GetModuleDir()
-	if err != nil {
-		return err
-	}
-
-	goOut := filepath.Join(moduleDir, dubbo.Path, util.AddDubboGoPrefix(dubbo.FileName))
-	data, err := parseDubboToString(dubbo)
-	if err != nil {
-		return err
-	}
-	return generateToFile(goOut, []byte(data))
-}
-
-func parseDubboToString(dubbo DubboGo) (string, error) {
-	var builder strings.Builder
-
-	for _, tpl := range Tpls {
-		err := tpl.Execute(&builder, dubbo)
-		if err != nil {
-			return "", err
-		}
-	}
-
-	return builder.String(), nil
-}
-
-func generateToFile(filePath string, data []byte) error {
-	err := os.MkdirAll(filepath.Dir(filePath), os.ModePerm)
-	if err != nil {
-		return err
-	}
-	err = os.WriteFile(filePath, data, 0666)
-	if err != nil {
-		return err
-	}
-
-	return util.GoFmtFile(filePath)
 }
