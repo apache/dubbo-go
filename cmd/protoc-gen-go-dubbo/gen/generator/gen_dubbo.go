@@ -83,10 +83,9 @@ func ProcessProtoFile(g *protogen.GeneratedFile, file *protogen.File) (*DubboGo,
 				return nil, ErrStreamMethod
 			}
 			m := &Method{
-				MethodName: method.GoName,
-				// TODO(Yuukirn): import message from other proto file, maybe need to split GoName by `.`
-				RequestType: util.ToUpper(method.Input.GoIdent.GoName),
-				ReturnType:  util.ToUpper(method.Output.GoIdent.GoName),
+				MethodName:  method.GoName,
+				RequestType: g.QualifiedGoIdent(method.Input.GoIdent),
+				ReturnType:  g.QualifiedGoIdent(method.Output.GoIdent),
 			}
 
 			methodOpt, ok := proto.GetExtension(method.Desc.Options(), hessian2_extend.E_MethodExtend).(*hessian2_extend.Hessian2MethodOptions)
