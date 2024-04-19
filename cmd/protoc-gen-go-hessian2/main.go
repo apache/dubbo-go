@@ -18,7 +18,6 @@
 package main
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/cmd/protoc-gen-go-hessian2/internal"
 	"fmt"
 	"os"
 )
@@ -29,7 +28,8 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/cmd/protoc-gen-go-hessian2/generate"
+	"dubbo.apache.org/dubbo-go/v3/cmd/protoc-gen-go-hessian2/generator"
+	"dubbo.apache.org/dubbo-go/v3/cmd/protoc-gen-go-hessian2/internal"
 	"dubbo.apache.org/dubbo-go/v3/cmd/protoc-gen-go-hessian2/internal/version"
 )
 
@@ -66,7 +66,15 @@ func main() {
 			gen.SupportedFeatures = uint64(pluginpb.CodeGeneratorResponse_FEATURE_PROTO3_OPTIONAL)
 			for _, f := range gen.Files {
 				if f.Generate {
-					generate.GenHessian2(gen, f)
+					filename := f.GeneratedFilenamePrefix + ".hessian2.go"
+					g := gen.NewGeneratedFile(filename, f.GoImportPath)
+
+					hessian2Go, err := generator.ProcessProtoFile(g, f)
+					if err != nil {
+						return err
+					}
+
+					generator.GenHessian2(g, hessian2Go)
 				}
 			}
 			return nil

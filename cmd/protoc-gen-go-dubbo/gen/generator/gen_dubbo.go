@@ -99,7 +99,6 @@ func ProcessProtoFile(g *protogen.GeneratedFile, file *protogen.File) (*DubboGo,
 			if ok && inputOpt.ExtendArgs {
 				m.RequestExtendArgs = true
 				for _, field := range method.Input.Fields {
-					// TODO(Yuukirn): auto import go_package may be caused by fieldGoType
 					goType, _ := util.FieldGoType(g, field)
 					m.ArgsType = append(m.ArgsType, goType)
 					m.ArgsName = append(m.ArgsName, util.ToLower(field.GoName))

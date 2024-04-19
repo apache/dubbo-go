@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-package internal
+syntax = "proto3";
 
-var PathMap = map[string]string{
-	"dubbo.apache.org/dubbo-go/v3/proto/java_sql_time":  "github.com/apache/dubbo-go-hessian2/java_sql_time",
-	"dubbo.apache.org/dubbo-go/v3/proto/java8_time":     "github.com/apache/dubbo-go-hessian2/java8_time",
-	"dubbo.apache.org/dubbo-go/v3/proto/java_util":      "github.com/apache/dubbo-go-hessian2/java_util",
-	"dubbo.apache.org/dubbo-go/v3/proto/java_exception": "github.com/apache/dubbo-go-hessian2/java_exception",
-	"dubbo.apache.org/dubbo-go/v3/proto/java_math":      "github.com/dubbogo/gost/math/big",
-}
+package java_math;
+
+option go_package = "dubbo.apache.org/dubbo-go/v3/proto/java_math;java_math";
+
+message Decimal {}
+
+message Integer {}
