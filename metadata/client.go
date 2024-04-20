@@ -20,7 +20,6 @@ package metadata
 import (
 	"context"
 	"encoding/json"
-	"time"
 )
 
 import (
@@ -37,47 +36,33 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
-const metadataProxyDefaultTimeout = 5000
+const defaultTimeout = "5s" // s
 
-// GetMetadataFromMetadataReport test depends on dubbo protocol, if dubbo not dependent on config package, can move to metadata dir
 func GetMetadataFromMetadataReport(revision string, instance registry.ServiceInstance) (*info.MetadataInfo, error) {
 	report := GetMetadataReport()
+	if report == nil {
+		return nil, perrors.New("no metadata report instance found,please check ")
+	}
 	return report.GetAppMetadata(instance.GetServiceName(), revision)
 }
 
 func GetMetadataFromRpc(revision string, instance registry.ServiceInstance) (*info.MetadataInfo, error) {
-	service, destroy, err := createRpcClient(instance)
-	if err != nil {
-		return nil, err
+	params := getMetadataServiceUrlParams(instance.GetMetadata()[constant.MetadataServiceURLParamsPropertyName])
+	url := buildMetadataServiceURL(instance.GetServiceName(), instance.GetHost(), params)
+	url.SetParam(constant.TimeoutKey, defaultTimeout)
+	rpcService := &remoteMetadataService{}
+	invoker := extension.GetProtocol(constant.Dubbo).Refer(url)
+	if invoker == nil {
+		return nil, perrors.New("create invoker error, can not connect to the metadata report server: " + url.Ip + ":" + url.Port)
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(metadataProxyDefaultTimeout))
-	defer cancel()
-	defer destroy()
-	return service.GetMetadataInfo(ctx, revision)
+	proxy := extension.GetProxyFactory(constant.DefaultKey).GetProxy(invoker, url)
+	proxy.Implement(rpcService)
+	defer invoker.Destroy()
+	return rpcService.GetMetadataInfo(context.TODO(), revision)
 }
 
 type remoteMetadataService struct {
 	GetMetadataInfo func(context context.Context, revision string) (*info.MetadataInfo, error) `dubbo:"getMetadataInfo"`
-}
-
-func createRpcClient(instance registry.ServiceInstance) (*remoteMetadataService, func(), error) {
-	params := getMetadataServiceUrlParams(instance.GetMetadata()[constant.MetadataServiceURLParamsPropertyName])
-	url := buildMetadataServiceURL(instance.GetServiceName(), instance.GetHost(), params)
-	return createRpcClientByUrl(url)
-}
-
-func createRpcClientByUrl(url *common.URL) (*remoteMetadataService, func(), error) {
-	rpcService := &remoteMetadataService{}
-	invoker := extension.GetProtocol(constant.Dubbo).Refer(url)
-	if invoker == nil {
-		return nil, nil, perrors.New("create invoker error, can not connect to the metadata report server: " + url.Ip + ":" + url.Port)
-	}
-	proxy := extension.GetProxyFactory(constant.DefaultKey).GetProxy(invoker, url)
-	proxy.Implement(rpcService)
-	destroy := func() {
-		invoker.Destroy()
-	}
-	return rpcService, destroy, nil
 }
 
 // buildMetadataServiceURL will use standard format to build the metadata service url.
@@ -108,7 +93,7 @@ func getMetadataServiceUrlParams(jsonStr string) map[string]string {
 	if len(jsonStr) > 0 {
 		err := json.Unmarshal([]byte(jsonStr), &res)
 		if err != nil {
-			logger.Errorf("could not parse the metadata service url parameters to map", err)
+			logger.Errorf("could not parse the metadata service url parameters '%s' to map", jsonStr)
 		}
 	}
 	return res

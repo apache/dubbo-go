@@ -63,7 +63,7 @@ func (opts *Options) Init() error {
 	var err error
 	exportOnce.Do(func() {
 		if opts.metadataType != constant.RemoteMetadataStorageType {
-			exporter := &ServiceExporter{service: metadataService, opts: opts}
+			exporter := &serviceExporter{service: metadataService, opts: opts}
 			defer func() {
 				// TODO remove this recover func,this just to avoid some unit test failed,this will not happen in user side mostly
 				// config test -> metadata exporter -> dubbo protocol/remoting -> config,cycle import will occur

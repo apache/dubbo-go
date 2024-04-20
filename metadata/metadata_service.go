@@ -97,7 +97,7 @@ func (mts *DefaultMetadataService) GetMetadataInfo(revision string) (*info.Metad
 	if revision == "" {
 		return nil, nil
 	}
-	for _, metadataInfo := range appMetadataInfoMap {
+	for _, metadataInfo := range registryMetadataInfo {
 		if metadataInfo.Revision == revision {
 			return metadataInfo, nil
 		}
@@ -109,7 +109,7 @@ func (mts *DefaultMetadataService) GetMetadataInfo(revision string) (*info.Metad
 // GetExportedServiceURLs get exported service urls
 func (mts *DefaultMetadataService) GetExportedServiceURLs() ([]*common.URL, error) {
 	urls := make([]*common.URL, 0)
-	for _, metadataInfo := range appMetadataInfoMap {
+	for _, metadataInfo := range registryMetadataInfo {
 		urls = append(urls, metadataInfo.GetExportedServiceURLs()...)
 	}
 	return urls, nil
@@ -127,7 +127,7 @@ func (mts *DefaultMetadataService) GetMetadataServiceURL() (*common.URL, error) 
 
 func (mts *DefaultMetadataService) GetSubscribedURLs() ([]*common.URL, error) {
 	urls := make([]*common.URL, 0)
-	for _, metadataInfo := range appMetadataInfoMap {
+	for _, metadataInfo := range registryMetadataInfo {
 		urls = append(urls, metadataInfo.GetSubscribedURLs()...)
 	}
 	return urls, nil
@@ -141,15 +141,15 @@ func (mts *DefaultMetadataService) MethodMapper() map[string]string {
 	}
 }
 
-// ServiceExporter is the ConfigurableMetadataServiceExporter which implement MetadataServiceExporter interface
-type ServiceExporter struct {
+// serviceExporter export MetadataService with dubbo protocol
+type serviceExporter struct {
 	opts             *Options
 	service          MetadataService
 	protocolExporter protocol.Exporter
 }
 
 // Export will export the metadataService
-func (e *ServiceExporter) Export() error {
+func (e *serviceExporter) Export() error {
 	version, _ := e.service.Version()
 	var port string
 	if e.opts.port == 0 {
@@ -199,6 +199,6 @@ func randomPort() string {
 }
 
 // UnExport will unExport the metadataService
-func (e *ServiceExporter) UnExport() {
+func (e *serviceExporter) UnExport() {
 	e.protocolExporter.UnExport()
 }
