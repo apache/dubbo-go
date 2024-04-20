@@ -147,6 +147,7 @@ func TestDelegateMetadataReportRemoveServiceAppMappingListener(t *testing.T) {
 }
 
 func TestGetMetadataReport(t *testing.T) {
+	instances = make(map[string]report.MetadataReport)
 	assert.Nil(t, GetMetadataReport())
 	instances["default"] = new(mockMetadataReport)
 	assert.NotNil(t, GetMetadataReport())

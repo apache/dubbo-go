@@ -60,6 +60,7 @@ func TestGetMetadataFromRpc(t *testing.T) {
 	mockInvoker := new(mockInvoker)
 	defer mockInvoker.AssertExpectations(t)
 	mockProtocol := new(mockProtocol)
+	defer mockProtocol.AssertExpectations(t)
 	extension.SetProtocol("dubbo", func() protocol.Protocol {
 		return mockProtocol
 	})
@@ -199,7 +200,8 @@ type mockProtocol struct {
 }
 
 func (m mockProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
-	return nil
+	args := m.Called()
+	return args.Get(0).(protocol.Exporter)
 }
 
 func (m mockProtocol) Refer(url *common.URL) protocol.Invoker {
@@ -238,4 +240,17 @@ func (m mockInvoker) Invoke(ctx context.Context, inv protocol.Invocation) protoc
 	reply.Revision = meta.Revision
 	reply.Services = meta.Services
 	return args.Get(0).(protocol.Result)
+}
+
+type mockExporter struct {
+	mock.Mock
+}
+
+func (m mockExporter) GetInvoker() protocol.Invoker {
+	args := m.Called()
+	return args.Get(0).(protocol.Invoker)
+}
+
+func (m mockExporter) UnExport() {
+	m.Called()
 }

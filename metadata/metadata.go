@@ -25,8 +25,8 @@ import (
 )
 
 var (
-	metadataService      MetadataService = &DefaultMetadataService{}
 	registryMetadataInfo                 = make(map[string]*info.MetadataInfo)
+	metadataService      MetadataService = &DefaultMetadataService{metadataMap: registryMetadataInfo}
 )
 
 func GetMetadataService() MetadataService {

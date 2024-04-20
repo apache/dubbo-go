@@ -40,8 +40,8 @@ import (
 
 // version will be used by Version func
 const (
-	version              = "1.0.0"
-	allServiceInterfaces = "*"
+	version  = "1.0.0"
+	allMatch = "*"
 )
 
 // MetadataService is used to define meta data related behaviors
@@ -58,12 +58,11 @@ type MetadataService interface {
 	GetMetadataInfo(revision string) (*info.MetadataInfo, error)
 	// GetMetadataServiceURL will return the url of metadata service
 	GetMetadataServiceURL() (*common.URL, error)
-	// SetMetadataServiceURL exporter to set url of metadata service, will not be exported by exporter,cause no error return
-	SetMetadataServiceURL(*common.URL)
 }
 
 // DefaultMetadataService is store and query the metadata info in memory when each service registry
 type DefaultMetadataService struct {
+	metadataMap map[string]*info.MetadataInfo
 	metadataUrl *common.URL
 }
 
@@ -73,19 +72,16 @@ func (mts *DefaultMetadataService) SetMetadataServiceURL(url *common.URL) {
 
 // GetExportedURLs get all exported urls
 func (mts *DefaultMetadataService) GetExportedURLs(serviceInterface string, group string, version string, protocol string) ([]*common.URL, error) {
-	if allServiceInterfaces == serviceInterface {
-		return mts.GetExportedServiceURLs()
-	}
 	all, err := mts.GetExportedServiceURLs()
 	if err != nil {
 		return nil, err
 	}
 	urls := make([]*common.URL, 0)
 	for _, url := range all {
-		if url.GetParam(constant.InterfaceKey, "") == serviceInterface &&
-			url.GetParam(constant.GroupKey, "") == group &&
-			url.GetParam(constant.ProtocolKey, "") == protocol &&
-			url.GetParam(constant.VersionKey, "") == version {
+		if (url.Interface() == serviceInterface || serviceInterface == allMatch) &&
+			(url.Group() == group || group == allMatch) &&
+			(url.Protocol == protocol || protocol == allMatch) &&
+			(url.Version() == version || version == allMatch) {
 			urls = append(urls, url)
 		}
 	}
@@ -97,7 +93,7 @@ func (mts *DefaultMetadataService) GetMetadataInfo(revision string) (*info.Metad
 	if revision == "" {
 		return nil, nil
 	}
-	for _, metadataInfo := range registryMetadataInfo {
+	for _, metadataInfo := range mts.metadataMap {
 		if metadataInfo.Revision == revision {
 			return metadataInfo, nil
 		}
@@ -109,7 +105,7 @@ func (mts *DefaultMetadataService) GetMetadataInfo(revision string) (*info.Metad
 // GetExportedServiceURLs get exported service urls
 func (mts *DefaultMetadataService) GetExportedServiceURLs() ([]*common.URL, error) {
 	urls := make([]*common.URL, 0)
-	for _, metadataInfo := range registryMetadataInfo {
+	for _, metadataInfo := range mts.metadataMap {
 		urls = append(urls, metadataInfo.GetExportedServiceURLs()...)
 	}
 	return urls, nil
@@ -127,7 +123,7 @@ func (mts *DefaultMetadataService) GetMetadataServiceURL() (*common.URL, error) 
 
 func (mts *DefaultMetadataService) GetSubscribedURLs() ([]*common.URL, error) {
 	urls := make([]*common.URL, 0)
-	for _, metadataInfo := range registryMetadataInfo {
+	for _, metadataInfo := range mts.metadataMap {
 		urls = append(urls, metadataInfo.GetSubscribedURLs()...)
 	}
 	return urls, nil
@@ -181,7 +177,7 @@ func (e *serviceExporter) Export() error {
 	proxyFactory := extension.GetProxyFactory("")
 	invoker := proxyFactory.GetInvoker(ivkURL)
 	e.protocolExporter = extension.GetProtocol(ivkURL.Protocol).Export(invoker)
-	e.service.SetMetadataServiceURL(ivkURL)
+	e.service.(*DefaultMetadataService).SetMetadataServiceURL(ivkURL)
 	logger.Infof("[Metadata Service] The MetadataService exports urls : %v ", ivkURL)
 	return nil
 }
