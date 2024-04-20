@@ -23,11 +23,11 @@ import (
 
 import (
 	"google.golang.org/protobuf/compiler/protogen"
+
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 // below is helper func that copy from protobuf-gen-go
-
 // FieldGoType returns the Go type used for a field.
 //
 // If it returns pointer=true, the struct field is a pointer to the type.

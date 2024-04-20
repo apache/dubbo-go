@@ -22,15 +22,14 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/proto/hessian2_extend"
 	"github.com/pkg/errors"
-
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/cmd/protoc-gen-go-dubbo/util"
-	"dubbo.apache.org/dubbo-go/v3/proto/hessian2_extend"
 )
 
 var (
@@ -39,7 +38,7 @@ var (
 	ErrNoExtendArgsRespFieldNum   = errors.New("extend args for response message should has a field")
 )
 
-type DubboGo struct {
+type Dubbogo struct {
 	*protogen.File
 
 	Source       string
@@ -67,9 +66,9 @@ type Method struct {
 	ReturnType         string
 }
 
-func ProcessProtoFile(g *protogen.GeneratedFile, file *protogen.File) (*DubboGo, error) {
+func ProcessProtoFile(g *protogen.GeneratedFile, file *protogen.File) (*Dubbogo, error) {
 	desc := file.Proto
-	dubboGo := &DubboGo{
+	dubboGo := &Dubbogo{
 		File:         file,
 		Source:       desc.GetName(),
 		ProtoPackage: desc.GetPackage(),

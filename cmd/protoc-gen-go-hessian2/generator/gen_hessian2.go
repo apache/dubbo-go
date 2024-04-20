@@ -18,16 +18,9 @@
 package generator
 
 import (
-	"strings"
-)
-
-import (
+	"dubbo.apache.org/dubbo-go/v3/proto/hessian2_extend"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/proto/hessian2_extend"
 )
 
 type Hessian2Go struct {
@@ -132,9 +125,8 @@ func processProtoMessage(g *protogen.GeneratedFile, file *protogen.File, m *prot
 			if ext != nil {
 				opts, _ := ext.(*hessian2_extend.Hessian2MessageOptions)
 				if opts != nil && opts.ReferencePath != "" {
-					split := strings.Split(opts.ReferencePath, "/")
 					typ = "*" + g.QualifiedGoIdent(protogen.GoIdent{
-						GoName:       split[len(split)-1],
+						GoName:       field.Message.GoIdent.GoName,
 						GoImportPath: protogen.GoImportPath(opts.ReferencePath),
 					})
 				}

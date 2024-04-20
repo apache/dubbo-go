@@ -24,16 +24,12 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/proto/hessian2_extend"
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
-
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/proto/hessian2_extend"
 )
 
 var (
@@ -147,7 +143,7 @@ func genEnumRelatedMethods(g *protogen.GeneratedFile, e *Enum) {
 }
 
 func genMessage(g *protogen.GeneratedFile, m *Message) {
-	if m.Desc.IsMapEntry() {
+	if m.Desc.IsMapEntry() || m.ExtendArgs {
 		return
 	}
 	g.AnnotateSymbol(m.GoIdent.String(), protogen.Annotation{
@@ -246,7 +242,7 @@ func genFieldGetterMethod(g *protogen.GeneratedFile, field *Field, m *Message) {
 func genRegisterInitFunc(g *protogen.GeneratedFile, hessian2Go *Hessian2Go) {
 	g.P("func init() {")
 	for _, message := range hessian2Go.Messages {
-		if message.Desc.IsMapEntry() {
+		if message.Desc.IsMapEntry() || message.ExtendArgs {
 			continue
 		}
 		g.P("dubbo_go_hessian2.RegisterPOJO(new(", message.GoIdent.GoName, "))")
