@@ -216,12 +216,12 @@ type mockProtocol struct {
 	mock.Mock
 }
 
-func (m mockProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
+func (m *mockProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	args := m.Called()
 	return args.Get(0).(protocol.Exporter)
 }
 
-func (m mockProtocol) Refer(url *common.URL) protocol.Invoker {
+func (m *mockProtocol) Refer(url *common.URL) protocol.Invoker {
 	args := m.Called()
 	if args.Get(0) == nil {
 		return nil
@@ -229,26 +229,26 @@ func (m mockProtocol) Refer(url *common.URL) protocol.Invoker {
 	return args.Get(0).(protocol.Invoker)
 }
 
-func (m mockProtocol) Destroy() {
+func (m *mockProtocol) Destroy() {
 }
 
 type mockInvoker struct {
 	mock.Mock
 }
 
-func (m mockInvoker) GetURL() *common.URL {
+func (m *mockInvoker) GetURL() *common.URL {
 	return nil
 }
 
-func (m mockInvoker) IsAvailable() bool {
+func (m *mockInvoker) IsAvailable() bool {
 	return true
 }
 
-func (m mockInvoker) Destroy() {
+func (m *mockInvoker) Destroy() {
 	m.Called()
 }
 
-func (m mockInvoker) Invoke(ctx context.Context, inv protocol.Invocation) protocol.Result {
+func (m *mockInvoker) Invoke(ctx context.Context, inv protocol.Invocation) protocol.Result {
 	args := m.Mock.Called()
 	meta := args.Get(0).(protocol.Result).Result().(*info.MetadataInfo)
 	reply := inv.Reply().(*info.MetadataInfo)
@@ -263,11 +263,11 @@ type mockExporter struct {
 	mock.Mock
 }
 
-func (m mockExporter) GetInvoker() protocol.Invoker {
+func (m *mockExporter) GetInvoker() protocol.Invoker {
 	args := m.Called()
 	return args.Get(0).(protocol.Invoker)
 }
 
-func (m mockExporter) UnExport() {
+func (m *mockExporter) UnExport() {
 	m.Called()
 }
