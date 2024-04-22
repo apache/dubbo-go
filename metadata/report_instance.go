@@ -20,7 +20,7 @@ package metadata
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	perrors "github.com/pkg/errors"
+	"github.com/dubbogo/gost/log/logger"
 	"time"
 )
 
@@ -44,7 +44,8 @@ var (
 func addMetadataReport(registryId string, url *common.URL) error {
 	fac := extension.GetMetadataReportFactory(url.Protocol)
 	if fac == nil {
-		return perrors.Errorf("no metadata report factory of protocol %s found! please check you config", url.Protocol)
+		logger.Warnf("no metadata report factory of protocol %s found, please check if the metadata report factory is imported", url.Protocol)
+		return nil
 	}
 	instances[registryId] = &DelegateMetadataReport{instance: fac.CreateMetadataReport(url)}
 	return nil

@@ -201,7 +201,8 @@ func TestAddMetadataReport(t *testing.T) {
 		common.WithProtocol("registryId"),
 	)
 	err := addMetadataReport("registryId", url)
-	assert.NotNil(t, err)
+	assert.Nil(t, err)
+	assert.True(t, instances["registryId"] == nil)
 	mockReport := new(mockMetadataReport)
 	extension.SetMetadataReportFactory("registryId", func() report.MetadataReportFactory {
 		return mockReport
