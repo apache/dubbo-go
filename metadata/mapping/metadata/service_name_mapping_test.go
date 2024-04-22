@@ -64,8 +64,8 @@ func TestServiceNameMappingGet(t *testing.T) {
 	assert.Nil(t, err)
 	t.Run("test normal", func(t *testing.T) {
 		mockReport.On("GetServiceAppMapping").Return(gxset.NewSet("dubbo"), nil).Once()
-		apps, err := ins.Get(serviceUrl, lis)
-		assert.Nil(t, err)
+		apps, er := ins.Get(serviceUrl, lis)
+		assert.Nil(t, er)
 		assert.True(t, !apps.Empty())
 	})
 	t.Run("test error", func(t *testing.T) {
