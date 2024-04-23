@@ -45,7 +45,7 @@ var (
 
 func init() {
 	extension.SetTraceExporter("otlp-http", newHttpExporter)
-	extension.SetTraceExporter("otlp-grpc", newHttpExporter)
+	extension.SetTraceExporter("otlp-grpc", newGrpcExporter)
 }
 
 type Exporter struct {
