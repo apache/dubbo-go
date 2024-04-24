@@ -18,6 +18,21 @@
 package metadata
 
 import (
+	"reflect"
+	"testing"
+)
+
+import (
+	gxset "github.com/dubbogo/gost/container/set"
+	"github.com/dubbogo/gost/gof/observer"
+
+	"github.com/pkg/errors"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
@@ -26,13 +41,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/metadata/report"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 	metricsMetadata "dubbo.apache.org/dubbo-go/v3/metrics/metadata"
-	gxset "github.com/dubbogo/gost/container/set"
-	"github.com/dubbogo/gost/gof/observer"
-	"github.com/pkg/errors"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-	"reflect"
-	"testing"
 )
 
 func TestDelegateMetadataReportGetAppMetadata(t *testing.T) {

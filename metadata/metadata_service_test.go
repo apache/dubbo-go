@@ -18,15 +18,21 @@
 package metadata
 
 import (
+	"strconv"
+	"testing"
+)
+
+import (
+	"github.com/stretchr/testify/assert"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	_ "dubbo.apache.org/dubbo-go/v3/proxy/proxy_factory"
-	"github.com/stretchr/testify/assert"
-	"strconv"
-	"testing"
 )
 
 var (

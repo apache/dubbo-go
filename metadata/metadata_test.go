@@ -18,12 +18,18 @@
 package metadata
 
 import (
+	"reflect"
+	"testing"
+)
+
+import (
+	"github.com/stretchr/testify/assert"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
-	"github.com/stretchr/testify/assert"
-	"reflect"
-	"testing"
 )
 
 func TestAddService(t *testing.T) {
