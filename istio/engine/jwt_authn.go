@@ -126,10 +126,8 @@ func extractJWTFromRequest(requestInfo map[string]string, fromHeaders []resource
 }
 
 func verifyByProviderNames(allProviderNames []string, providers map[string]*resources.JwtProvider, requestInfo map[string]string) (jwt2.Token, string, string, string, bool, bool) {
-	var (
-		tokenExists   bool
-		tokenVerified bool
-	)
+	tokenExists := false
+	tokenVerified := false
 	findProviderName := ""
 	findHeaderName := ""
 	findToken := ""
@@ -146,7 +144,6 @@ func verifyByProviderNames(allProviderNames []string, providers map[string]*reso
 		}
 
 		// extract token from headers
-		tokenExists = false
 		token, headName, tokenErr := extractJWTFromRequest(requestInfo, provider.FromHeaders)
 		if tokenErr != nil {
 			tokenExists = true
@@ -161,7 +158,6 @@ func verifyByProviderNames(allProviderNames []string, providers map[string]*reso
 		findHeaderName = headName
 
 		// verify token and return jwt token
-		tokenVerified = false
 		jwtToken, err := resources.ValidateAndParseJWT(token, provider.LocalJwks.Keys)
 		if err != nil {
 			tokenVerified = false

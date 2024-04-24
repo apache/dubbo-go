@@ -20,18 +20,16 @@ package triple_protocol
 import (
 	"context"
 	"crypto/tls"
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"github.com/dubbogo/gost/log/logger"
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
 	"net"
 	"net/http"
 	"strconv"
 	"sync"
-)
 
-import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"github.com/dubbogo/gost/log/logger"
 	"github.com/dubbogo/grpc-go"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 )
 
 type TLSConfigProvider func() (*tls.Config, error)
@@ -169,10 +167,7 @@ func (s *Server) RegisterCompatStreamHandler(
 }
 
 func (s *Server) getHTTPSAddress(addr string) string {
-	host, port, err := net.SplitHostPort(addr)
-	if err != nil {
-		// Handle error
-	}
+	host, port, _ := net.SplitHostPort(addr)
 	portNum, _ := strconv.Atoi(port)
 	portNum++
 	return net.JoinHostPort(host, strconv.Itoa(portNum))

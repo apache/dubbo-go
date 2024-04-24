@@ -12,12 +12,6 @@
 
 Apache Dubbo-go, a Dubbo implementation written in Golang, is born to bridge the gap between Java/Dubbo and Go/X. Please visit our [Dubbo official website](https://dubbo.apache.org/zh/docs3-v2/golang-sdk/) for the quick start and documentation.
 
-## 设计并实现一套零信任安全机制
-
-- [设计并实现一套零信任安全机制技术文档](./deploy/dubbo.pdf)
-- [设计并实现一套零信任安全机制完整用户手册](./deploy/httpbin/README.md)
-- [设计并实现一套零信任安全机制完整 dubbo pilot-agent 和测试代码仓库](https://github.com/2456868764/dubbo-mesh)
-
 ## RPC invocation
 
 <img src="https://dubbo-go-pixiu.github.io/img/pixiu-dubbo-ecosystem.png" height="400px" display="display: block, margin: auto" />

@@ -190,9 +190,6 @@ func getBootstrapContentTimeout(path string) (string, error) {
 			return "", fmt.Errorf("[Xds Bootstrap] read bootstrap content timeout %f seconds", enovyBootstrapWaitTimeout.Seconds())
 		}
 	}
-
-	return "", fmt.Errorf("read bootstrap content timeout")
-
 }
 
 func getBootstrapContent(path string) (string, error) {
@@ -205,5 +202,4 @@ func getBootstrapContent(path string) (string, error) {
 	} else {
 		return "", err
 	}
-	return "", fmt.Errorf("read bootstrap error")
 }

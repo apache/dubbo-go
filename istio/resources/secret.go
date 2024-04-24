@@ -37,37 +37,6 @@ type SecretCache struct {
 	certRoot []byte
 }
 
-//func InitSecretCacheFromFile() *SecretCache {
-//	certRootPath := "/Users/jun/GolandProjects/dubbo/dubbo-mesh/external/dubbo-go/istio/resources"
-//	certificateChainBytes, err := os.ReadFile(filepath.Join(certRootPath, "./testdata/tls.crt"))
-//	if err != nil {
-//		logger.Errorf("failed to read certificate chain file: %v", err)
-//		return nil
-//	}
-//
-//	// Example: Load private key bytes from a file
-//	privateKeyBytes, err := os.ReadFile(filepath.Join(certRootPath, "./testdata/tls.key"))
-//	if err != nil {
-//		logger.Errorf("failed to read private key file: %v", err)
-//		return nil
-//	}
-//	// Example: Load root cert bytes from a file
-//	rootCertBytes, err := os.ReadFile(filepath.Join(certRootPath, "./testdata/ca.crt"))
-//	if err != nil {
-//		logger.Errorf("failed to read root cert file: %v", err)
-//		return nil
-//	}
-//	secretCache := &SecretCache{}
-//	// Set certificate chain, private key, and root cert bytes in SecretCache
-//	secretCache.workload = &SecretItem{
-//		CertificateChain: certificateChainBytes,
-//		PrivateKey:       privateKeyBytes,
-//	}
-//	secretCache.certRoot = rootCertBytes
-//
-//	return secretCache
-//}
-
 func NewSecretCache() *SecretCache {
 	secretCache := &SecretCache{}
 	return secretCache

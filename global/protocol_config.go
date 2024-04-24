@@ -49,5 +49,6 @@ func (c *ProtocolConfig) Clone() *ProtocolConfig {
 		Params:               c.Params,
 		MaxServerSendMsgSize: c.MaxServerSendMsgSize,
 		MaxServerRecvMsgSize: c.MaxServerRecvMsgSize,
+		TLsProvider:          c.TLsProvider,
 	}
 }

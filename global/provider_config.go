@@ -85,5 +85,6 @@ func (c *ProviderConfig) Clone() *ProviderConfig {
 		ConfigType:             newConfigType,
 		AdaptiveService:        c.AdaptiveService,
 		AdaptiveServiceVerbose: c.AdaptiveServiceVerbose,
+		Xds:                    c.Xds,
 	}
 }

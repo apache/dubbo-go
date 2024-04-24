@@ -200,8 +200,6 @@ func (p *PilotAgent) Run(agentType PilotAgentType) error {
 			return fmt.Errorf("pilot agent init and wait timeout %f seconds", pilotAgentWaitTimeout.Seconds())
 		}
 	}
-
-	return nil
 }
 
 func (p *PilotAgent) startUpdateEventLoop() {
