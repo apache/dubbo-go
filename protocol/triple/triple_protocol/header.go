@@ -19,6 +19,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/http"
+	"strings"
 )
 
 // EncodeBinaryHeader base64-encodes the data. It always emits unpadded values.
@@ -88,20 +89,45 @@ func addHeaderCanonical(h http.Header, key, value string) {
 	h[key] = append(h[key], value)
 }
 
-type headerIncomingKey struct{}
-type headerOutgoingKey struct{}
+type extraDataKey struct{}
+
+const headerIncomingKey string = "headerIncomingKey"
+const headerOutgoingKey string = "headerOutgoingKey"
+
 type handlerOutgoingKey struct{}
 
-func newIncomingContext(ctx context.Context, header http.Header) context.Context {
-	return context.WithValue(ctx, headerIncomingKey{}, header)
+func newIncomingContext(ctx context.Context, data http.Header) context.Context {
+	var header = http.Header{}
+	extraData, ok := ctx.Value(extraDataKey{}).(map[string]http.Header)
+	if !ok {
+		extraData = map[string]http.Header{}
+	}
+	if data != nil {
+		for key, vals := range data {
+			header[strings.ToLower(key)] = vals
+		}
+	}
+	extraData[headerIncomingKey] = header
+	return context.WithValue(ctx, extraDataKey{}, extraData)
 }
 
 // NewOutgoingContext sets headers entirely. If there are existing headers, they would be replaced.
 // It is used for passing headers to server-side.
 // It is like grpc.NewOutgoingContext.
 // Please refer to https://github.com/grpc/grpc-go/blob/master/Documentation/grpc-metadata.md#sending-metadata.
-func NewOutgoingContext(ctx context.Context, header http.Header) context.Context {
-	return context.WithValue(ctx, headerOutgoingKey{}, header)
+func NewOutgoingContext(ctx context.Context, data http.Header) context.Context {
+	var header = http.Header{}
+	if data != nil {
+		for key, vals := range data {
+			header[strings.ToLower(key)] = vals
+		}
+	}
+	extraData, ok := ctx.Value(extraDataKey{}).(map[string]http.Header)
+	if !ok {
+		extraData = map[string]http.Header{}
+	}
+	extraData[headerOutgoingKey] = header
+	return context.WithValue(ctx, extraDataKey{}, extraData)
 }
 
 // AppendToOutgoingContext merges kv pairs from user and existing headers.
@@ -112,37 +138,47 @@ func AppendToOutgoingContext(ctx context.Context, kv ...string) context.Context 
 	if len(kv)%2 == 1 {
 		panic(fmt.Sprintf("AppendToOutgoingContext got an odd number of input pairs for header: %d", len(kv)))
 	}
-	var header http.Header
-	headerRaw := ctx.Value(headerOutgoingKey{})
-	if headerRaw == nil {
+	extraData, ok := ctx.Value(extraDataKey{}).(map[string]http.Header)
+	if !ok {
+		extraData = map[string]http.Header{}
+		ctx = context.WithValue(ctx, extraDataKey{}, extraData)
+	}
+	header, ok := extraData[headerOutgoingKey]
+	if !ok {
 		header = make(http.Header)
-	} else {
-		header = headerRaw.(http.Header)
+		extraData[headerOutgoingKey] = header
 	}
 	for i := 0; i < len(kv); i += 2 {
 		// todo(DMwangnima): think about lowering
-		header.Add(kv[i], kv[i+1])
+		header.Add(strings.ToLower(kv[i]), kv[i+1])
 	}
-	return context.WithValue(ctx, headerOutgoingKey{}, header)
+	return ctx
 }
 
 func ExtractFromOutgoingContext(ctx context.Context) http.Header {
-	headerRaw := ctx.Value(headerOutgoingKey{})
-	if headerRaw == nil {
+	extraData, ok := ctx.Value(extraDataKey{}).(map[string]http.Header)
+	if !ok {
 		return nil
 	}
-	// since headerOutgoingKey is only used in triple_protocol package, we need not verify the type
-	return headerRaw.(http.Header)
+	if outGoingDataHeader, ok := extraData[headerOutgoingKey]; !ok {
+		return nil
+	} else {
+		return outGoingDataHeader
+	}
 }
 
 // FromIncomingContext retrieves headers passed by client-side. It is like grpc.FromIncomingContext.
+// it must call after append/setOutgoingContext to return current value
 // Please refer to https://github.com/grpc/grpc-go/blob/master/Documentation/grpc-metadata.md#receiving-metadata-1.
 func FromIncomingContext(ctx context.Context) (http.Header, bool) {
-	header, ok := ctx.Value(headerIncomingKey{}).(http.Header)
+	data, ok := ctx.Value(extraDataKey{}).(map[string]http.Header)
 	if !ok {
 		return nil, false
+	} else if incomingDataHeader, ok := data[headerIncomingKey]; !ok {
+		return nil, false
+	} else {
+		return incomingDataHeader, true
 	}
-	return header, true
 }
 
 // SetHeader is used for setting response header in server-side. It is like grpc.SendHeader(ctx, header) but
