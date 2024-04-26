@@ -122,6 +122,7 @@ func (cli *Client) dial(interfaceName string, info *ClientInfo, opts ...Referenc
 
 	return &Connection{refOpts: newRefOpts}, nil
 }
+
 func generateInvocation(methodName string, reqs []interface{}, resp interface{}, callType string, opts *CallOptions) (protocol.Invocation, error) {
 	var paramsRawVals []interface{}
 	for _, req := range reqs {
