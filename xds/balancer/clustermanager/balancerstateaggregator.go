@@ -155,7 +155,7 @@ func (bsa *balancerStateAggregator) UpdateState(id string, state balancer.State)
 	bsa.cc.UpdateState(bsa.build())
 }
 
-// clearState Reset everything to init state (Connecting) but keep the entry in
+// clearStates Reset everything to init state (Connecting) but keep the entry in
 // map (to keep the weight).
 //
 // Caller must hold bsa.mu.
