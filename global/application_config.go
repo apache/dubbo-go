@@ -44,14 +44,15 @@ func (c *ApplicationConfig) Clone() *ApplicationConfig {
 	}
 
 	return &ApplicationConfig{
-		Organization: c.Organization,
-		Name:         c.Name,
-		Module:       c.Module,
-		Group:        c.Group,
-		Version:      c.Version,
-		Owner:        c.Owner,
-		Environment:  c.Environment,
-		MetadataType: c.MetadataType,
-		Tag:          c.Tag,
+		Organization:        c.Organization,
+		Name:                c.Name,
+		Module:              c.Module,
+		Group:               c.Group,
+		Version:             c.Version,
+		Owner:               c.Owner,
+		Environment:         c.Environment,
+		MetadataType:        c.MetadataType,
+		Tag:                 c.Tag,
+		MetadataServicePort: c.MetadataServicePort,
 	}
 }
