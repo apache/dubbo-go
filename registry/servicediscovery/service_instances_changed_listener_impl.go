@@ -19,6 +19,7 @@ package servicediscovery
 
 import (
 	"encoding/gob"
+	"errors"
 	"reflect"
 	"sync"
 	"time"
@@ -87,7 +88,6 @@ func (lstn *ServiceInstancesChangedListenerImpl) OnEvent(e observer.Event) error
 	if !ok {
 		return nil
 	}
-	var err error
 
 	lstn.mutex.Lock()
 	defer lstn.mutex.Unlock()
@@ -119,15 +119,7 @@ func (lstn *ServiceInstancesChangedListenerImpl) OnEvent(e observer.Event) error
 			revisionToInstances[revision] = append(subInstances, instance)
 			metadataInfo := lstn.revisionToMetadata[revision]
 			if metadataInfo == nil {
-				if val, ok := metaCache.Get(revision); ok {
-					metadataInfo = val.(*common.MetadataInfo)
-				} else {
-					metadataInfo, err = GetMetadataInfo(lstn.app, instance, revision)
-					if err != nil {
-						return err
-					}
-					metaCache.Set(revision, metadataInfo)
-				}
+				metadataInfo = GetMetadataInfo(lstn.app, instance, revision)
 			}
 			instance.SetServiceMetadata(metadataInfo)
 			for _, service := range metadataInfo.Services {
@@ -225,44 +217,49 @@ func (lstn *ServiceInstancesChangedListenerImpl) GetEventType() reflect.Type {
 }
 
 // GetMetadataInfo get metadata info when MetadataStorageTypePropertyName is null
-func GetMetadataInfo(app string, instance registry.ServiceInstance, revision string) (*common.MetadataInfo, error) {
+func GetMetadataInfo(app string, instance registry.ServiceInstance, revision string) *common.MetadataInfo {
 	cacheOnce.Do(func() {
 		initCache(app)
 	})
 	if metadataInfo, ok := metaCache.Get(revision); ok {
-		return metadataInfo.(*common.MetadataInfo), nil
+		return metadataInfo.(*common.MetadataInfo)
 	}
 
 	var metadataStorageType string
-	var metadataInfo *common.MetadataInfo
+	metadataInfo := common.EmptyMetadataInfo
+	var err error
 	if instance.GetMetadata() == nil {
 		metadataStorageType = constant.DefaultMetadataStorageType
 	} else {
 		metadataStorageType = instance.GetMetadata()[constant.MetadataStorageTypePropertyName]
 	}
 	if metadataStorageType == constant.RemoteMetadataStorageType {
-		remoteMetadataServiceImpl, err := extension.GetRemoteMetadataService()
-		if err != nil {
-			return nil, err
-		}
-		metadataInfo, err = remoteMetadataServiceImpl.GetMetadata(instance)
-		if err != nil {
-			return nil, err
+		remoteMetadataServiceImpl, remoteMetadataErr := extension.GetRemoteMetadataService()
+		if remoteMetadataErr == nil {
+			metadataInfo, err = remoteMetadataServiceImpl.GetMetadata(instance)
+		} else {
+			err = remoteMetadataErr
 		}
 	} else {
-		var err error
 		proxyFactory := extension.GetMetadataServiceProxyFactory(constant.DefaultKey)
 		metadataService := proxyFactory.GetProxy(instance)
-		defer destroyInvoker(metadataService)
-		metadataInfo, err = metadataService.GetMetadataInfo(revision)
-		if err != nil {
-			return nil, err
+		if metadataService != nil {
+			defer destroyInvoker(metadataService)
+			metadataInfo, err = metadataService.GetMetadataInfo(revision)
+		} else {
+			err = errors.New("get remote metadata error please check instance " + instance.GetHost() + " is alive")
 		}
 	}
 
-	metaCache.Set(revision, metadataInfo)
+	if err != nil {
+		logger.Errorf("get metadata of %s failed, %v", instance.GetHost(), err)
+	}
 
-	return metadataInfo, nil
+	if metadataInfo != common.EmptyMetadataInfo {
+		metaCache.Set(revision, metadataInfo)
+	}
+
+	return metadataInfo
 }
 
 func destroyInvoker(metadataService service.MetadataService) {
