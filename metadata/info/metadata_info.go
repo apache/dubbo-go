@@ -22,6 +22,7 @@ import (
 	"hash/crc32"
 	"net/url"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -66,8 +67,18 @@ type MetadataInfo struct {
 	subscribedServiceURLs map[string][]*common.URL `hessian:"-"` // client subscribed service urls
 }
 
+func NewAppMetadataInfo(app string) *MetadataInfo {
+	return NewMetadataInfo(app, "")
+}
+
 func NewMetadataInfo(app, tag string) *MetadataInfo {
-	return NewMetadataInfoWithParams(app, "", make(map[string]*ServiceInfo))
+	return &MetadataInfo{
+		App:                   app,
+		Tag:                   tag,
+		Services:              make(map[string]*ServiceInfo),
+		exportedServiceURLs:   make(map[string][]*common.URL),
+		subscribedServiceURLs: make(map[string][]*common.URL),
+	}
 }
 
 func NewMetadataInfoWithParams(app string, revision string, services map[string]*ServiceInfo) *MetadataInfo {
@@ -207,9 +218,9 @@ type ServiceInfo struct {
 	URL        *common.URL `json:"-" hessian:"-"`
 }
 
-// nolint
 func NewServiceInfoWithURL(url *common.URL) *ServiceInfo {
 	service := NewServiceInfo(url.Service(), url.Group(), url.Version(), url.Protocol, url.Path, nil)
+	service.Port, _ = strconv.Atoi(url.Port)
 	service.URL = url
 	// TODO includeKeys load dynamic
 	p := make(map[string]string, 8)
@@ -231,7 +242,6 @@ func NewServiceInfoWithURL(url *common.URL) *ServiceInfo {
 	return service
 }
 
-// nolint
 func NewServiceInfo(name, group, version, protocol, path string, params map[string]string) *ServiceInfo {
 	serviceKey := common.ServiceKey(name, group, version)
 	matchKey := common.MatchKey(serviceKey, protocol)
@@ -256,16 +266,13 @@ func (si *ServiceInfo) GetMethods() []string {
 	return strings.Split(s, ",")
 }
 
-// nolint
 func (si *ServiceInfo) GetParams() url.Values {
 	v := url.Values{}
-	methodNames := si.Params[constant.MethodsKey]
-	if len(methodNames) == 0 {
-		return v
-	}
 	methods := gxset.NewSet()
-	for _, method := range strings.Split(si.Params[constant.MethodsKey], ",") {
-		methods.Add(method)
+	if methodNames, ok := si.Params[constant.MethodsKey]; ok {
+		for _, method := range strings.Split(methodNames, ",") {
+			methods.Add(method)
+		}
 	}
 	for k, p := range si.Params {
 		ms := strings.Index(k, ".")
@@ -278,7 +285,6 @@ func (si *ServiceInfo) GetParams() url.Values {
 	return v
 }
 
-// nolint
 func (si *ServiceInfo) GetMatchKey() string {
 	if si.MatchKey != "" {
 		return si.MatchKey
@@ -288,7 +294,6 @@ func (si *ServiceInfo) GetMatchKey() string {
 	return si.MatchKey
 }
 
-// nolint
 func (si *ServiceInfo) GetServiceKey() string {
 	if si.ServiceKey != "" {
 		return si.ServiceKey

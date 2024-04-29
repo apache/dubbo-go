@@ -109,15 +109,8 @@ func (rc *InstanceOptions) init(opts ...InstanceOption) error {
 	}
 
 	// init protocol
-	protocols := rcCompat.Protocols
-	if len(protocols) <= 0 {
-		protocol := &config.ProtocolConfig{}
-		protocols = make(map[string]*config.ProtocolConfig, 1)
-		protocols[constant.Dubbo] = protocol
-		rcCompat.Protocols = protocols
-	}
-	for _, protocol := range protocols {
-		if err := protocol.Init(); err != nil {
+	for _, protocolConfig := range rcCompat.Protocols {
+		if err := protocolConfig.Init(); err != nil {
 			return err
 		}
 	}
@@ -168,6 +161,7 @@ func (rc *InstanceOptions) init(opts ...InstanceOption) error {
 		return err
 	}
 
+	compatInstanceOptions(rcCompat, rc) // overrider options config because some config are changed after init
 	return nil
 }
 
