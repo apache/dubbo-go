@@ -25,5 +25,3 @@ import (
 type MetadataReportFactory interface {
 	CreateMetadataReport(*common.URL) MetadataReport
 }
-
-type BaseMetadataReportFactory struct{}
