@@ -51,16 +51,18 @@ import (
 // Server is TRIPLE adaptation layer representation. It makes use of tri.Server to
 // provide functionality.
 type Server struct {
-	triServer *tri.Server
-	mu        sync.RWMutex
-	services  map[string]grpc.ServiceInfo
+	triServer         *tri.Server
+	mu                sync.RWMutex
+	services          map[string]grpc.ServiceInfo
+	tlsConfigProvider tri.TLSConfigProvider
 }
 
 // NewServer creates a new TRIPLE server.
 // triServer would not be initialized since we could not get configurations here.
-func NewServer() *Server {
+func NewServer(tlsConfigProvider tri.TLSConfigProvider) *Server {
 	return &Server{
-		services: make(map[string]grpc.ServiceInfo),
+		services:          make(map[string]grpc.ServiceInfo),
+		tlsConfigProvider: tlsConfigProvider,
 	}
 }
 
@@ -69,7 +71,7 @@ func (s *Server) Start(invoker protocol.Invoker, info *server.ServiceInfo) {
 	URL := invoker.GetURL()
 	addr := URL.Location
 	// initialize tri.Server
-	s.triServer = tri.NewServer(addr)
+	s.triServer = tri.NewServer(addr, s.tlsConfigProvider)
 
 	serialization := URL.GetParam(constant.SerializationKey, constant.ProtobufSerialization)
 	switch serialization {

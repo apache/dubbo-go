@@ -19,22 +19,31 @@ package triple_protocol
 
 import (
 	"context"
+	"crypto/tls"
+	"net"
 	"net/http"
+	"strconv"
 	"sync"
-)
 
-import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"github.com/dubbogo/gost/log/logger"
 	"github.com/dubbogo/grpc-go"
-
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 )
 
+type TLSConfigProvider func() (*tls.Config, error)
+
 type Server struct {
-	mu       sync.Mutex
-	mux      *http.ServeMux
-	handlers map[string]*Handler
-	httpSrv  *http.Server
+	mu                sync.Mutex
+	mux               *http.ServeMux
+	handlers          map[string]*Handler
+	httpSrv           *http.Server
+	httpsSrv          *http.Server
+	httpLn            net.Listener
+	httpsLn           net.Listener
+	addr              string
+	tlsConfigProvider TLSConfigProvider
 }
 
 func (s *Server) RegisterUnaryHandler(
@@ -157,11 +166,86 @@ func (s *Server) RegisterCompatStreamHandler(
 	return nil
 }
 
+func (s *Server) getHTTPSAddress(addr string) string {
+	host, port, _ := net.SplitHostPort(addr)
+	portNum, _ := strconv.Atoi(port)
+	portNum++
+	return net.JoinHostPort(host, strconv.Itoa(portNum))
+}
+
 func (s *Server) Run() error {
 	// todo(DMwangnima): deal with TLS
-	s.httpSrv.Handler = h2c.NewHandler(s.mux, &http2.Server{})
+	// Check if both listeners are nil
+	// todo http and https port can be different based on mutual tls mode and tls config provider existed or not
+	httpAddr := s.addr
+	httpsAddr := s.getHTTPSAddress(s.addr)
+	httpOn := true
+	httpsOn := false
+	if s.tlsConfigProvider != nil {
+		httpsOn = true
+	}
 
-	if err := s.httpSrv.ListenAndServe(); err != nil {
+	handler := h2c.NewHandler(s.mux, &http2.Server{})
+
+	//setHTTPHeaders := func(h http.Handler) http.Handler {
+	//	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	//		// Set http scheme header
+	//		r.Header.Set(constant.HttpHeaderXSchemeName, "http")
+	//		r.Header.Set(constant.HttpHeaderXHostName, r.Host)
+	//		r.Header.Set(constant.HttpHeaderXPathName, r.RequestURI)
+	//		r.Header.Set(constant.HttpHeaderXMethodName, r.Method)
+	//		h.ServeHTTP(w, r)
+	//	})
+	//}
+
+	setHTTPSHeaders := func(h http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Set https scheme header
+			r.Header.Set(constant.HttpHeaderXSchemeName, "https")
+			r.Header.Set(constant.HttpHeaderXHostName, r.Host)
+			r.Header.Set(constant.HttpHeaderXPathName, r.RequestURI)
+			r.Header.Set(constant.HttpHeaderXMethodName, r.Method)
+			certs := r.TLS.PeerCertificates
+			if len(certs) > 0 {
+				peerCert := certs[0]
+				if len(peerCert.URIs) > 0 {
+					spiffeURI := peerCert.URIs[0].String()
+					// Set spiffe scheme header
+					r.Header.Set(constant.HttpHeaderXSpiffeName, spiffeURI)
+				}
+			}
+			h.ServeHTTP(w, r)
+		})
+	}
+
+	if s.httpLn == nil && httpOn {
+		httpLn, err := net.Listen("tcp", httpAddr)
+		if err != nil {
+			httpLn.Close()
+			return err
+		}
+		s.httpLn = httpLn
+		s.httpSrv = &http.Server{Handler: handler}
+
+	}
+	if s.httpsLn == nil && httpsOn {
+		tlsCfg, err := s.tlsConfigProvider()
+		if err != nil {
+			logger.Error("can not get tls config")
+		}
+		httpsLn, err := tls.Listen("tcp", httpsAddr, tlsCfg)
+		if err != nil {
+			httpsLn.Close()
+			return err
+		}
+		s.httpsLn = httpsLn
+		s.httpsSrv = &http.Server{Handler: setHTTPSHeaders(handler)}
+	}
+	if httpsOn {
+		go s.httpsSrv.Serve(s.httpsLn)
+	}
+	// http should be on now
+	if err := s.httpSrv.Serve(s.httpLn); err != nil {
 		return err
 	}
 	return nil
@@ -172,13 +256,17 @@ func (s *Server) Stop() error {
 }
 
 func (s *Server) GracefulStop(ctx context.Context) error {
+	if s.httpsSrv != nil {
+		s.httpsSrv.Shutdown(ctx)
+	}
 	return s.httpSrv.Shutdown(ctx)
 }
 
-func NewServer(addr string) *Server {
+func NewServer(addr string, provider TLSConfigProvider) *Server {
 	return &Server{
-		mux:      http.NewServeMux(),
-		handlers: make(map[string]*Handler),
-		httpSrv:  &http.Server{Addr: addr},
+		mux:               http.NewServeMux(),
+		handlers:          make(map[string]*Handler),
+		addr:              addr,
+		tlsConfigProvider: provider,
 	}
 }

@@ -1,0 +1,37 @@
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: httpbin
+  namespace: foo
+spec:
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals: ["cluster.local/ns/default/sa/sleep"]
+        - source:
+            namespaces: ["test"]
+      to:
+        - operation:
+            methods: ["GET"]
+            paths: ["/info*"]
+        - operation:
+            methods: ["POST"]
+            paths: ["/data"]
+      when:
+        - key: request.auth.claims[iss]
+          values: ["dubbo.apache.org"]
+        - key: request.headers[User-Agent]
+          values: [ "Mozilla/*" ]
+        - key: source.ip
+          values: [ "10.1.2.3", "10.2.0.0/16" ]
+        - key: request.auth.principal
+          values: [ "issuer.example.com/subject-admin" ]
+        - key: source.principal
+          values: [ "cluster.local/ns/default/sa/productpage" ]
+        - key: request.auth.audiences
+          values: [ "a.example.com", "b.example.com" ]
+        - key: request.auth.claims[iss]
+          values: [ "*@foo.com" ]
+        - key: request.auth.claims[nestedkey1][nestedkey2]
+          values: [ "some-value1", "some-value2" ]

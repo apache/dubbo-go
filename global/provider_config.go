@@ -38,6 +38,8 @@ type ProviderConfig struct {
 	// adaptive service
 	AdaptiveService        bool `yaml:"adaptive-service" json:"adaptive-service" property:"adaptive-service"`
 	AdaptiveServiceVerbose bool `yaml:"adaptive-service-verbose" json:"adaptive-service-verbose" property:"adaptive-service-verbose"`
+	// Enable xds
+	Xds bool `yaml:"xds" json:"xds" property:"xds"`
 }
 
 func DefaultProviderConfig() *ProviderConfig {
@@ -83,5 +85,6 @@ func (c *ProviderConfig) Clone() *ProviderConfig {
 		ConfigType:             newConfigType,
 		AdaptiveService:        c.AdaptiveService,
 		AdaptiveServiceVerbose: c.AdaptiveServiceVerbose,
+		Xds:                    c.Xds,
 	}
 }

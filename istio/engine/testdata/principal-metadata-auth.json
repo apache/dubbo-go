@@ -1,0 +1,83 @@
+{
+  "version": "app1_version_1",
+  "rules": {
+    "action": "ALLOW",
+    "policies": {
+      "ns[foo]-policy[httpbin]-rule[0]": {
+        "permissions": [
+          {
+            "and_rules": {
+              "rules": [
+                {
+                  "or_rules": {
+                    "rules": [
+                      {
+                        "header": {
+                          "name": ":method",
+                          "string_match": {
+                            "exact": "POST"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "principals": [
+          {
+            "and_ids": {
+              "ids": [
+                {
+                  "or_ids": {
+                    "ids": [
+                      {
+                        "authenticated": {
+                          "principal_name": {
+                            "safe_regex": {
+                              "regex": ".*/ns/dubbo/.*"
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "or_ids": {
+                    "ids": [
+                      {
+                        "metadata": {
+                          "filter": "istio_authn",
+                          "path": [
+                            {
+                              "key": "request.auth.claims"
+                            },
+                            {
+                              "key": "aud"
+                            }
+                          ],
+                          "value": {
+                            "list_match": {
+                              "one_of": {
+                                "string_match": {
+                                  "exact": "dev"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  }
+}

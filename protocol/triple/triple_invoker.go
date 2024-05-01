@@ -229,8 +229,8 @@ func (ti *TripleInvoker) Destroy() {
 	})
 }
 
-func NewTripleInvoker(url *common.URL) (*TripleInvoker, error) {
-	cm, err := newClientManager(url)
+func NewTripleInvoker(url *common.URL, tlsConfigProvider tri.TLSConfigProvider) (*TripleInvoker, error) {
+	cm, err := newClientManager(url, tlsConfigProvider)
 	if err != nil {
 		return nil, err
 	}

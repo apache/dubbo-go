@@ -1,0 +1,29 @@
+http_filters:
+- name: envoy.filters.http.jwt_authn
+  config:
+    # 定义JWT提供者
+    providers:
+      provider_name1:
+        issuer: "https://example.com" # JWT发行者
+        audiences:
+        - "exampleAudience" # 允许的受众列表
+        local_jwks:
+          inline_string: "PUBLIC_KEY" # 公钥，可以是内联字符串或文件路径
+
+    # 定义匹配规则和要求
+    rules:
+    - match:
+        prefix: "/protected" # 匹配以/protected开头的路径
+      requires:
+        provider_name: "provider_name1" # 应用上面定义的JWT提供者
+
+    # 另一个规则示例，匹配所有路径，要求使用特定的JWT提供者
+    - match:
+        prefix: "/"
+      requires:
+        provider_name: "provider_name1"
+
+    # 支持的JWT算法
+    supported_algs:
+    - "RS256"
+    - "ES256"

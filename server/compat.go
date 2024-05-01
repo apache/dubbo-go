@@ -86,6 +86,7 @@ func compatProtocolConfig(c *global.ProtocolConfig) *config.ProtocolConfig {
 		Ip:                   c.Ip,
 		Port:                 c.Port,
 		Params:               c.Params,
+		TLSProvider:          c.TLsProvider,
 		MaxServerSendMsgSize: c.MaxServerSendMsgSize,
 		MaxServerRecvMsgSize: c.MaxServerRecvMsgSize,
 	}

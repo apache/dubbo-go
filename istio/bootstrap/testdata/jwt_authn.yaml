@@ -1,0 +1,29 @@
+apiVersion: "security.istio.io/v1beta1"
+kind: "RequestAuthentication"
+metadata:
+  name: "httpbin-demo1"
+  namespace: foo
+spec:
+#  selector:
+#    matchLabels:
+#      app: httpbin
+  jwtRules:
+    - issuer: "https://dubbo.apache.org/"
+      audiences:
+        - dev
+        - test
+      fromHeaders:
+        - name: "Authorization"
+          prefix: "Bearer "
+      jwks: |
+        {
+          "keys": [
+            {
+              "alg": "RS256",
+              "e": "AQAB",
+              "kid": "key1",
+              "kty": "RSA",
+              "n": "tI4hr2gYjv1YJ98eVn5IGyCqH7ylXOdx-QSwb-ERxvweJDUMZcLx62dIELXwM8Jv1iOl3pDRBvk6Gl7CYSqNblsXvtnKwCUBAkv7IKGjlIjZSIBhO6J7n33M3T-BDf0YBWHpHAEuOXOwIn19w0jeGSTgTF6u3AuGXa6lZMqtxKbaWsA2c621LB8hB2s6aAOe01FEl3-e037lsuIgMKYQJUBGfoGy4OlIukVZz3M3BwbJiuuIUVl_JjVR0Nt-FuM8rXOdjWFOgn1XUz269dUv22dm3u1EJ3wpJ12rfUDtANrosk-2d32qURLwkb7DeALj8pTCayT0Qz44YjBEtROo1w"
+            }
+          ]
+        }

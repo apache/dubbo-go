@@ -60,6 +60,7 @@ const (
 	SslEnabledKey          = "ssl-enabled"
 	ParamsTypeKey          = "parameter-type-names" // key used in pass through invoker factory, to define param type
 	MetadataTypeKey        = "metadata-type"
+	TLSProvider            = "tls-provider"
 	MaxCallSendMsgSize     = "max-call-send-msg-size"
 	MaxServerSendMsgSize   = "max-server-send-msg-size"
 	MaxCallRecvMsgSize     = "max-call-recv-msg-size"
@@ -72,6 +73,11 @@ const (
 	TLSCert       = "tls_cert"
 	CACert        = "ca_cert"
 	TLSServerNAME = "tls_server_name"
+)
+
+// tls provider
+const (
+	TLSProviderXdsKey = "xds-provider"
 )
 
 const (
@@ -87,6 +93,10 @@ const (
 	AuthConsumerFilterKey                = "sign"
 	AuthProviderFilterKey                = "auth"
 	EchoFilterKey                        = "echo"
+	MTLSFilterKey                        = "mtls"
+	JwtFilterKey                         = "jwt"
+	AuthnFilterKey                       = "authn"
+	RBACFilterKey                        = "rbac"
 	ExecuteLimitFilterKey                = "execute"
 	GenericFilterKey                     = "generic"
 	GenericServiceFilterKey              = "generic_service"
@@ -210,6 +220,34 @@ const (
 	ExportKey              = "export"
 )
 
+// xds keys
+const (
+	XdsKey                     = "xds"
+	MutualTLSModeKey           = "mtls"
+	TLSSubjectAltNamesMatchKey = "tls.subjectAltNameMatch"
+	TLSSubjectAltNamesValueKey = "tls.subjectAltNameValue"
+	ClusterIDKey               = "clusterID"
+)
+
+// http header keys
+const (
+	HttpHeaderXSchemeName      = ":scheme"
+	HttpHeaderXMethodName      = ":method"
+	HttpHeaderXPathName        = ":path"
+	HttpHeaderXHostName        = ":authority"
+	HttpHeaderXSpiffeName      = ":spiffe"
+	HttpHeaderXAuthName        = ":auth"
+	HttpHeaderXMTLSMode        = ":mtls-mode"
+	HttpHeaderXSourceIp        = ":source.ip"
+	HttpHeaderXSourcePrincipal = ":source.principal"
+	// request auth claims
+	HttpHeaderXRequestAuthPrincipal   = ":request.auth.principal"
+	HttpHeaderXRequestAuthAudiences   = ":request.auth.audiences"
+	HttpHeaderXRequestAuthClaimsIss   = ":request.auth.claims.iss"
+	HttpHeaderXRequestAuthClaimsSub   = ":request.auth.claims.sub"
+	HttpHeaderXRequestAuthClaimsJwtId = ":request.auth.claims.jti"
+)
+
 // config center keys
 const (
 	ConfigNamespaceKey        = "config-center.namespace"
@@ -328,6 +366,7 @@ const (
 	Scope                            = "scope"
 	Wildcard                         = "wildcard"
 	MeshRouterFactoryKey             = "mesh"
+	XdsRouterFactoryKey              = "xds"
 )
 
 // Auth filter
