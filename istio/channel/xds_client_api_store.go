@@ -32,7 +32,6 @@ type ResponseInfo struct {
 type ApiStore struct {
 	mutex     sync.Mutex
 	responses map[string]*ResponseInfo
-	rdsMutex  sync.Mutex
 }
 
 const (
