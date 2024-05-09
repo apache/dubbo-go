@@ -1,0 +1,507 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package javascript
+
+import (
+	"context"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"fmt"
+	"sync"
+	"testing"
+
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"github.com/dop251/goja"
+	_ "github.com/dop251/goja_nodejs/console"
+	"github.com/dop251/goja_nodejs/require"
+)
+
+var url1, _ = common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?anyhost=true&" +
+	"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
+	"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
+	"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
+	"side=provider&timeout=3000&timestamp=1556509797245")
+
+var url2, _ = common.NewURL("dubbo://127.0.0.1:20001/com.ikurento.user.UserProvider?anyhost=true&" +
+	"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
+	"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
+	"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1448&revision=0.0.1&" +
+	"side=provider&timeout=3000&timestamp=1556509797246")
+
+var url3, _ = common.NewURL("dubbo://127.0.0.1:20002/com.ikurento.user.UserProvider?anyhost=true&" +
+	"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
+	"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
+	"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1449&revision=0.0.1&" +
+	"side=provider&timeout=3000&timestamp=1556509797247")
+
+func getRouteArgs() ([]protocol.Invoker, protocol.Invocation, context.Context) {
+	return []protocol.Invoker{
+			protocol.NewBaseInvoker(url1), protocol.NewBaseInvoker(url2), protocol.NewBaseInvoker(url3),
+		}, invocation.NewRPCInvocation("GetUser", nil, map[string]interface{}{
+			"attachmentKey": []string{"attachmentValue"},
+		}),
+		context.TODO()
+}
+
+const script_prefix = `
+
+var console = require('console')
+
+`
+const script_suffix = `
+
+__go_program_get_result = route(invokers,invocation,context)
+
+`
+
+var Func_Script string = `
+function route(invokers,invocation,context) {
+	var result = [];
+	for (var i = 0; i < invokers.length; i++) {
+		println(invokers[i].GetURL().Path);
+		println(invokers[i].GetURL().Address())
+		println(invokers[i].GetURL().Protocol)           
+		println(invokers[i].GetURL().Location)          
+		println(invokers[i].GetURL().Ip)           
+		println(invokers[i].GetURL().Port)           
+		println(invokers[i].GetURL().PrimitiveURL)           
+    	println(invokers[i].GetURL().Username)       
+    	println(invokers[i].GetURL().Password)       
+    	println(invokers[i].GetURL().Methods)          
+    	println(invokers[i].GetURL().SubURL)          
+
+	    if ("127.0.0.1" === invokers[i].GetURL().Ip) {
+			if (invokers[i].GetURL().Port !== "20000"){
+				invokers[i].GetURL().Ip = "10.20.3.3"
+				result.push(invokers[i]);
+			}
+	    }
+	}
+	return result;
+}`
+
+func rt_link_external_libraries(runtime *goja.Runtime) {
+	require.NewRegistry().Enable(runtime)
+}
+
+var res = []protocol.Invoker{}
+
+func rt_init_args(runtime *goja.Runtime) {
+	invokers, invocation, context := getRouteArgs()
+	// 在 Goja 中注册 Go 的 struct
+	err := runtime.Set("invokers", invokers)
+	err = runtime.Set("invocation", invocation)
+	err = runtime.Set("context", context)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func re_init_res_recv(runtime *goja.Runtime) {
+	err := runtime.Set("__go_program_get_result", nil)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func TestFuncImplByStructure(t *testing.T) {
+	runtime := goja.New()
+
+	test_invokers, test_invocation, test_context := []protocol.Invoker{protocol.NewBaseInvoker(url1)}, invocation.NewRPCInvocation("GetUser", nil, map[string]interface{}{"attachmentKey": []string{"attachmentValue"}}), context.TODO()
+	// set invoker test field
+	for _, invoker := range test_invokers {
+		invoker.GetURL().Methods = []string{"testMethods"}
+		invoker.GetURL().Username = "testUsername"
+		invoker.GetURL().Password = "testPassword"
+		invoker.GetURL().SetParam(constant.VersionKey, "testVersion")
+		invoker.GetURL().SetParam(constant.GroupKey, "testGroup")
+		invoker.GetURL().SetParam(constant.InterfaceKey, "testInterface")
+		invoker.GetURL().SubURL = url3
+	}
+
+	rt_link_external_libraries(runtime)
+
+	err := runtime.Set("invokers", test_invokers)
+	err = runtime.Set("invocation", test_invocation)
+	err = runtime.Set("context", test_context)
+	if err != nil {
+		panic(err)
+	}
+
+	re_init_res_recv(runtime)
+
+	// run go func in javaScript
+	_ = runtime.Set(`check`, func(str string, args ...interface{}) {
+		/*
+			here set fmt.print to check func support
+		*/
+		fmt.Printf("support %s\n", str)
+		fmt.Print(args...)
+		fmt.Print("\n")
+	})
+
+	/*
+		//not require
+
+		invokers[0].GetURL().URLEqual(url *URL) bool
+		invokers[0].GetURL().ReplaceParams(param url.Values)
+		invokers[0].GetURL().RangeParams(f func(key string, value string) bool)
+		invokers[0].GetURL().GetParams() url.Values
+		invokers[0].GetURL().SetParams(m url.Values)
+		invokers[0].GetURL().MergeURL(anotherUrl *URL) *URL
+		invokers[0].GetURL().Clone() *URL
+		invokers[0].GetURL().CloneExceptParams(excludeParams *gxset.HashSet) *URL
+		invokers[0].GetURL().Compare(comp common.Comparator) int
+
+		test_invocation.SetInvoker(invoker protocol.Invoker)
+		test_invocation.CallBack()
+		test_invocation.SetCallBack(c interface{})
+
+	*/
+	// 在 JavaScript 中调用 Go 的 struct 的方法
+	_, err = runtime.RunString(`var console = require('console')
+function route(invokers, invocation, context) {
+    var result = [];
+    for (var i = 0; i < invokers.length; i++) {
+        // get all field 
+        check(
+            'invokers[i].GetURL().Path',
+            invokers[i].GetURL().Path
+        )
+        check(
+            'invokers[i].GetURL().Address()',
+            invokers[i].GetURL().Address()
+        )
+        check(
+            'invokers[i].GetURL().Protocol',
+            invokers[i].GetURL().Protocol
+        )
+        check(
+            'invokers[i].GetURL().Location',
+            invokers[i].GetURL().Location
+        )
+        check(
+            'invokers[i].GetURL().Ip',
+            invokers[i].GetURL().Ip
+        )
+        check(
+            'invokers[i].GetURL().Port',
+            invokers[i].GetURL().Port
+        )
+        check(
+            'invokers[i].GetURL().PrimitiveURL',
+            invokers[i].GetURL().PrimitiveURL
+        )
+        check(
+            'invokers[i].GetURL().Username',
+            invokers[i].GetURL().Username
+        )
+        check(
+            'invokers[i].GetURL().Password',
+            invokers[i].GetURL().Password
+        )
+        check(
+            'invokers[i].GetURL().Methods',
+            invokers[i].GetURL().Methods
+        )
+        check(
+            'invokers[i].GetURL().SubURL',
+            invokers[i].GetURL().SubURL
+        )
+        // do all call 
+        check(
+            'invokers[i].GetURL()',
+            invokers[i].GetURL()
+        )
+        check(
+            'invokers[i].GetURL().JavaClassName()',
+            invokers[i].GetURL().JavaClassName()
+        )
+        check(
+            'invokers[i].GetURL().Group()',
+            invokers[i].GetURL().Group()
+        )
+        check(
+            'invokers[i].GetURL().Interface()',
+            invokers[i].GetURL().Interface()
+        )
+        check(
+            'invokers[i].GetURL().Version()',
+            invokers[i].GetURL().Version()
+        )
+        check(
+            'invokers[i].GetURL().Address()',
+            invokers[i].GetURL().Address()
+        )
+        check(
+            'invokers[i].GetURL().String()',
+            invokers[i].GetURL().String()
+        )
+        check(
+            'invokers[i].GetURL().Key()',
+            invokers[i].GetURL().Key()
+        )
+        check(
+            'invokers[i].GetURL().GetCacheInvokerMapKey()',
+            invokers[i].GetURL().GetCacheInvokerMapKey()
+        )
+        check(
+            'invokers[i].GetURL().ServiceKey()',
+            invokers[i].GetURL().ServiceKey()
+        )
+        check(
+            'invokers[i].GetURL().ColonSeparatedKey()',
+            invokers[i].GetURL().ColonSeparatedKey()
+        )
+        check(
+            'invokers[i].GetURL().EncodedServiceKey()',
+            invokers[i].GetURL().EncodedServiceKey()
+        )
+        check(
+            'invokers[i].GetURL().Service()',
+            invokers[i].GetURL().Service()
+        )
+        check(
+            'invokers[i].GetURL().AddParam("key-string", "value-string")',
+            invokers[i].GetURL().AddParam("key-string", "value-string")
+        )
+        check(
+            'invokers[i].GetURL().AddParamAvoidNil("key-string", "value-string")',
+            invokers[i].GetURL().AddParamAvoidNil("key-string", "value-string")
+        )
+        check(
+            'invokers[i].GetURL().SetParam("key-string", "value-string")',
+            invokers[i].GetURL().SetParam("key-string", "value-string")
+        )
+        check(
+            'invokers[i].GetURL().SetAttribute("key-string", "value-interface{}")',
+            invokers[i].GetURL().SetAttribute("key-string", "value-interface{}")
+        )
+        check(
+            'invokers[i].GetURL().GetAttribute("key-string")',
+            invokers[i].GetURL().GetAttribute("key-string")
+        )
+        check(
+            'invokers[i].GetURL().DelParam("key-string")',
+            invokers[i].GetURL().DelParam("key-string")
+        )
+        check(
+            'invokers[i].GetURL().GetParam("key-string", "default-value")',
+            invokers[i].GetURL().GetParam("key-string", "default-value")
+        )
+        check(
+            'invokers[i].GetURL().GetNonDefaultParam("key-string")',
+            invokers[i].GetURL().GetNonDefaultParam("key-string")
+        )
+        check(
+            'invokers[i].GetURL().GetParamAndDecoded("key-string")',
+            invokers[i].GetURL().GetParamAndDecoded("key-string")
+        )
+        check(
+            'invokers[i].GetURL().GetRawParam("key-string")',
+            invokers[i].GetURL().GetRawParam("key-string")
+        )
+        check(
+            'invokers[i].GetURL().GetParamBool("key-string", true)',
+            invokers[i].GetURL().GetParamBool("key-string", true)
+        )
+        check(
+            'invokers[i].GetURL().GetParamInt("key-string", 64)',
+            invokers[i].GetURL().GetParamInt("key-string", 64)
+        )
+        check(
+            'invokers[i].GetURL().GetParamInt32("key-string", 64)',
+            invokers[i].GetURL().GetParamInt32("key-string", 64)
+        )
+        check(
+            'invokers[i].GetURL().GetParamByIntValue("key-string",64 )',
+            invokers[i].GetURL().GetParamByIntValue("key-string", 64)
+        )
+        check(
+            'invokers[i].GetURL().GetMethodParamInt("GetUser", "key-string", 64)',
+            invokers[i].GetURL().GetMethodParamInt("GetUser", "key-string", 64)
+        )
+        check(
+            'invokers[i].GetURL().GetMethodParamIntValue("GetUser", "key-string", 65)',
+            invokers[i].GetURL().GetMethodParamIntValue("GetUser", "key-string", 65)
+        )
+        check(
+            'invokers[i].GetURL().GetMethodParamInt64("GetUser", " key-string", 64)',
+            invokers[i].GetURL().GetMethodParamInt64("GetUser", " key-string", 64)
+        )
+        check(
+            'invokers[i].GetURL().GetMethodParam("GetUser", "key-string", "d string")',
+            invokers[i].GetURL().GetMethodParam("GetUser", "key-string", "d string")
+        )
+        check(
+            'invokers[i].GetURL().GetMethodParamBool("GetUser", "key-string", false)',
+            invokers[i].GetURL().GetMethodParamBool("GetUser", "key-string", false)
+        )
+        check(
+            'invokers[i].GetURL().ToMap()',
+            invokers[i].GetURL().ToMap()
+        )
+        check(
+            'invokers[i].GetURL().CloneWithParams(["a", "b", "c", "d"])',
+            invokers[i].GetURL().CloneWithParams(["a", "b", "c", "d"])
+        )
+        check(
+            'invokers[i].GetURL().GetParamDuration("s string", "d string")',
+            invokers[i].GetURL().GetParamDuration("s string", "d string")
+        )
+		// test invocation
+        check(
+            'invocation.MethodName()',
+            invocation.MethodName()
+        )
+        check(
+            'invocation.ActualMethodName()',
+            invocation.ActualMethodName()
+        )
+        check(
+            'invocation.IsGenericInvocation()',
+            invocation.IsGenericInvocation()
+        )
+        check(
+            'invocation.ParameterTypes()',
+            invocation.ParameterTypes()
+        )
+        check(
+            'invocation.ParameterTypeNames()',
+            invocation.ParameterTypeNames()
+        )
+        check(
+            'invocation.ParameterValues()',
+            invocation.ParameterValues()
+        )
+        check(
+            'invocation.ParameterRawValues()',
+            invocation.ParameterRawValues()
+        )
+        check(
+            'invocation.Arguments()',
+            invocation.Arguments()
+        )
+        check(
+            'invocation.Reply()',
+            invocation.Reply()
+        )
+        check(
+            'invocation.SetReply("interface key")',
+            invocation.SetReply("interface key")
+        )
+        check(
+            'invocation.Attachments()',
+            invocation.Attachments()
+        )
+        check(
+            'invocation.GetAttachmentInterface("key-string")',
+            invocation.GetAttachmentInterface("key-string")
+        )
+        check(
+            'invocation.Attributes()',
+            invocation.Attributes()
+        )
+        check(
+            'invocation.Invoker()',
+            invocation.Invoker()
+        )
+        check(
+            'invocation.ServiceKey()',
+            invocation.ServiceKey()
+        )
+        check(
+            'invocation.SetAttachment("key-string", "value-interface{}")',
+            invocation.SetAttachment("key-string", "value-interface{}")
+        )
+        check(
+            'invocation.GetAttachment("key-string")',
+            invocation.GetAttachment("key-string")
+        )
+        check(
+            'invocation.GetAttachmentWithDefaultValue("key-string", "defaultValue-string")',
+            invocation.GetAttachmentWithDefaultValue("key-string", "defaultValue-string")
+        )
+        check(
+            'invocation.SetAttribute("key-string", "value-interface{}")',
+            invocation.SetAttribute("key-string", "value-interface{}")
+        )
+        check(
+            'invocation.GetAttribute("key-string")',
+            invocation.GetAttribute("key-string")
+        )
+        check(
+            'invocation.GetAttributeWithDefaultValue("key-string", "defaultValue-interface{}")',
+            invocation.GetAttributeWithDefaultValue("key-string", "defaultValue-interface{}")
+        )
+        check(
+            'invocation.GetAttachmentAsContext()',
+            invocation.GetAttachmentAsContext()
+        )
+    }
+    return result;
+}
+
+__go_program_get_result = route(invokers,
+    invocation, context)
+`)
+
+}
+
+func TestFuncWithCompile(t *testing.T) {
+	pg, err := goja.Compile("routeJs", script_prefix+Func_Script+script_suffix, true)
+	if err != nil {
+		panic(err)
+	}
+	rt := goja.New()
+	rt_link_external_libraries(rt)
+	rt_init_args(rt)
+	re_init_res_recv(rt)
+	res, err := rt.RunProgram(pg)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("%#v\n", res)
+	fmt.Printf("%#v\n", res.Export())
+}
+
+func TestFuncWithCompileConcurrent(t *testing.T) {
+	pg, err := goja.Compile("routeJs", script_prefix+Func_Script+script_suffix, true)
+	if err != nil {
+		panic(err)
+	}
+	wg := sync.WaitGroup{}
+	wg.Add(100)
+	for i := 0; i <= 100; i++ {
+		go func() {
+			defer wg.Done()
+			rt := goja.New()
+			rt_link_external_libraries(rt)
+			rt_init_args(rt)
+			re_init_res_recv(rt)
+			res, err := rt.RunProgram(pg)
+			if err != nil {
+				panic(err)
+			}
+			fmt.Printf("%#v\n", res)
+			fmt.Printf("%#v\n", res.Export())
+		}()
+	}
+	wg.Wait()
+}

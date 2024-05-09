@@ -319,6 +319,7 @@ const (
 	TagRouterFactoryKey              = "tag"
 	ConditionAppRouterFactoryKey     = "provider.condition"
 	ConditionServiceRouterFactoryKey = "service.condition"
+	ScriptRouterFactoryKey           = "consumer.script"
 	ForceKey                         = "force"
 	Arguments                        = "arguments"
 	Attachments                      = "attachments"
