@@ -25,5 +25,5 @@ func NewScriptRouterFactory() router.PriorityRouterFactory {
 
 // NewPriorityRouter construct a new PriorityRouter
 func (f *ScriptRouteFactory) NewPriorityRouter() (router.PriorityRouter, error) {
-	return NewScriptPriorityRouter(), nil
+	return NewScriptRouter(), nil
 }

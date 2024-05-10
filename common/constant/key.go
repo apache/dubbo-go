@@ -308,6 +308,7 @@ const (
 
 // Use for router module
 const (
+	ScriptRouterRuleSuffix           = ".script-router"
 	TagRouterRuleSuffix              = ".tag-router"
 	ConditionRouterRuleSuffix        = ".condition-router" // Specify condition router suffix
 	MeshRouteSuffix                  = ".MESHAPPRULE"      // Specify mesh router suffix

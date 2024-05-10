@@ -840,7 +840,21 @@ func (c *URL) Clone() *URL {
 		newURL.SetParam(key, value)
 		return true
 	})
+	c.RangeAttributes(func(key string, value interface{}) bool {
+		newURL.SetAttribute(key, value)
+		return true
+	})
 	return newURL
+}
+
+func (c *URL) RangeAttributes(f func(key string, value interface{}) bool) {
+	c.attributesLock.RLock()
+	defer c.attributesLock.RUnlock()
+	for k, v := range c.attributes {
+		if !f(k, v) {
+			break
+		}
+	}
 }
 
 func (c *URL) CloneExceptParams(excludeParams *gxset.HashSet) *URL {

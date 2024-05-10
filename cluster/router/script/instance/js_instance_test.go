@@ -15,44 +15,51 @@
  * limitations under the License.
  */
 
-package javascript
+package instance
 
 import (
 	"context"
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"fmt"
-	"sync"
-	"testing"
-
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"fmt"
 	"github.com/dop251/goja"
 	_ "github.com/dop251/goja_nodejs/console"
 	"github.com/dop251/goja_nodejs/require"
+	"github.com/stretchr/testify/assert"
+	"sync"
+	"testing"
 )
 
-var url1, _ = common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?anyhost=true&" +
-	"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
-	"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
-	"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
-	"side=provider&timeout=3000&timestamp=1556509797245")
-
-var url2, _ = common.NewURL("dubbo://127.0.0.1:20001/com.ikurento.user.UserProvider?anyhost=true&" +
-	"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
-	"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
-	"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1448&revision=0.0.1&" +
-	"side=provider&timeout=3000&timestamp=1556509797246")
-
-var url3, _ = common.NewURL("dubbo://127.0.0.1:20002/com.ikurento.user.UserProvider?anyhost=true&" +
-	"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
-	"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
-	"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1449&revision=0.0.1&" +
-	"side=provider&timeout=3000&timestamp=1556509797247")
+var url1 = func() *common.URL {
+	i, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?anyhost=true&" +
+		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
+		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
+		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
+		"side=provider&timeout=3000&timestamp=1556509797245")
+	return i
+}
+var url2 = func() *common.URL {
+	u, _ := common.NewURL("dubbo://127.0.0.1:20001/com.ikurento.user.UserProvider?anyhost=true&" +
+		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
+		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
+		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1448&revision=0.0.1&" +
+		"side=provider&timeout=3000&timestamp=1556509797246")
+	return u
+}
+var url3 = func() *common.URL {
+	i, _ := common.NewURL("dubbo://127.0.0.1:20002/com.ikurento.user.UserProvider?anyhost=true&" +
+		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
+		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
+		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1449&revision=0.0.1&" +
+		"side=provider&timeout=3000&timestamp=1556509797247")
+	return i
+}
 
 func getRouteArgs() ([]protocol.Invoker, protocol.Invocation, context.Context) {
 	return []protocol.Invoker{
-			protocol.NewBaseInvoker(url1), protocol.NewBaseInvoker(url2), protocol.NewBaseInvoker(url3),
+			protocol.NewBaseInvoker(url1()), protocol.NewBaseInvoker(url2()), protocol.NewBaseInvoker(url3()),
 		}, invocation.NewRPCInvocation("GetUser", nil, map[string]interface{}{
 			"attachmentKey": []string{"attachmentValue"},
 		}),
@@ -64,28 +71,11 @@ const script_prefix = `
 var console = require('console')
 
 `
-const script_suffix = `
-
-__go_program_get_result = route(invokers,invocation,context)
-
-`
 
 var Func_Script string = `
 function route(invokers,invocation,context) {
 	var result = [];
 	for (var i = 0; i < invokers.length; i++) {
-		println(invokers[i].GetURL().Path);
-		println(invokers[i].GetURL().Address())
-		println(invokers[i].GetURL().Protocol)           
-		println(invokers[i].GetURL().Location)          
-		println(invokers[i].GetURL().Ip)           
-		println(invokers[i].GetURL().Port)           
-		println(invokers[i].GetURL().PrimitiveURL)           
-    	println(invokers[i].GetURL().Username)       
-    	println(invokers[i].GetURL().Password)       
-    	println(invokers[i].GetURL().Methods)          
-    	println(invokers[i].GetURL().SubURL)          
-
 	    if ("127.0.0.1" === invokers[i].GetURL().Ip) {
 			if (invokers[i].GetURL().Port !== "20000"){
 				invokers[i].GetURL().Ip = "10.20.3.3"
@@ -99,8 +89,6 @@ function route(invokers,invocation,context) {
 func rt_link_external_libraries(runtime *goja.Runtime) {
 	require.NewRegistry().Enable(runtime)
 }
-
-var res = []protocol.Invoker{}
 
 func rt_init_args(runtime *goja.Runtime) {
 	invokers, invocation, context := getRouteArgs()
@@ -123,7 +111,7 @@ func re_init_res_recv(runtime *goja.Runtime) {
 func TestFuncImplByStructure(t *testing.T) {
 	runtime := goja.New()
 
-	test_invokers, test_invocation, test_context := []protocol.Invoker{protocol.NewBaseInvoker(url1)}, invocation.NewRPCInvocation("GetUser", nil, map[string]interface{}{"attachmentKey": []string{"attachmentValue"}}), context.TODO()
+	test_invokers, test_invocation, test_context := []protocol.Invoker{protocol.NewBaseInvoker(url1())}, invocation.NewRPCInvocation("GetUser", nil, map[string]interface{}{"attachmentKey": []string{"attachmentValue"}}), context.TODO()
 	// set invoker test field
 	for _, invoker := range test_invokers {
 		invoker.GetURL().Methods = []string{"testMethods"}
@@ -132,7 +120,7 @@ func TestFuncImplByStructure(t *testing.T) {
 		invoker.GetURL().SetParam(constant.VersionKey, "testVersion")
 		invoker.GetURL().SetParam(constant.GroupKey, "testGroup")
 		invoker.GetURL().SetParam(constant.InterfaceKey, "testInterface")
-		invoker.GetURL().SubURL = url3
+		invoker.GetURL().SubURL = url3()
 	}
 
 	rt_link_external_libraries(runtime)
@@ -461,11 +449,11 @@ function route(invokers, invocation, context) {
 __go_program_get_result = route(invokers,
     invocation, context)
 `)
-
+	assert.Nil(t, err)
 }
 
 func TestFuncWithCompile(t *testing.T) {
-	pg, err := goja.Compile("routeJs", script_prefix+Func_Script+script_suffix, true)
+	pg, err := goja.Compile("routeJs", script_prefix+Func_Script+js_, true)
 	if err != nil {
 		panic(err)
 	}
@@ -477,18 +465,18 @@ func TestFuncWithCompile(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("%#v\n", res)
-	fmt.Printf("%#v\n", res.Export())
+	assert.Equal(t, 2, len(res.Export().([]interface{})))
+	assert.Equal(t, "10.20.3.3", (*(res.Export().([]interface{})[0]).(*protocol.BaseInvoker)).GetURL().Ip)
 }
 
 func TestFuncWithCompileConcurrent(t *testing.T) {
-	pg, err := goja.Compile("routeJs", script_prefix+Func_Script+script_suffix, true)
+	pg, err := goja.Compile("routeJs", script_prefix+Func_Script+js_, true)
 	if err != nil {
 		panic(err)
 	}
 	wg := sync.WaitGroup{}
 	wg.Add(100)
-	for i := 0; i <= 100; i++ {
+	for i := 0; i < 100; i++ {
 		go func() {
 			defer wg.Done()
 			rt := goja.New()
@@ -499,9 +487,43 @@ func TestFuncWithCompileConcurrent(t *testing.T) {
 			if err != nil {
 				panic(err)
 			}
-			fmt.Printf("%#v\n", res)
-			fmt.Printf("%#v\n", res.Export())
+			assert.Equal(t, 2, len(res.Export().([]interface{})))
+			assert.Equal(t, "10.20.3.3", (*(res.Export().([]interface{})[0]).(*protocol.BaseInvoker)).GetURL().Ip)
 		}()
 	}
 	wg.Wait()
+}
+func TestFuncWithCompileAndRunRepeatedly(t *testing.T) {
+	pg, err := goja.Compile("routeJs", script_prefix+`
+function route(invokers,invocation,context) {
+	var result = [];
+	for (var i = 0; i < invokers.length; i++) {
+		if ("127.0.0.1" === invokers[i].GetURL().Ip) {
+			if (invokers[i].GetURL().Port !== "20000"){
+				invokers[i].GetURL().Ip = "10.20.3.3"
+				invokers[i].GetURL().Port = "20004"
+				result.push(invokers[i]);
+			}
+	    }
+	}
+	return result;
+}`+js_, true)
+	if err != nil {
+		panic(err)
+	}
+	rt := goja.New()
+	rt.Set(`println`, func(args ...interface{}) {
+	})
+	for i := 0; i < 100; i++ {
+		rt_link_external_libraries(rt)
+		rt_init_args(rt)
+		re_init_res_recv(rt)
+		res, err := rt.RunProgram(pg)
+		if err != nil {
+			panic(err)
+		}
+		assert.Equal(t, 2, len(res.Export().([]interface{})))
+		assert.Equal(t, "10.20.3.3", (*(res.Export().([]interface{})[0]).(*protocol.BaseInvoker)).GetURL().Ip)
+		assert.Equal(t, "20004", (*(res.Export().([]interface{})[0]).(*protocol.BaseInvoker)).GetURL().Port)
+	}
 }
