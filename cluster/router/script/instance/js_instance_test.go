@@ -23,7 +23,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
-	"fmt"
 	"github.com/dop251/goja"
 	_ "github.com/dop251/goja_nodejs/console"
 	"github.com/dop251/goja_nodejs/require"
@@ -66,6 +65,7 @@ func getRouteArgs() ([]protocol.Invoker, protocol.Invocation, context.Context) {
 		context.TODO()
 }
 
+const testResetIp = "10.20.3.3"
 const script_prefix = `
 
 var console = require('console')
@@ -78,7 +78,7 @@ function route(invokers,invocation,context) {
 	for (var i = 0; i < invokers.length; i++) {
 	    if ("127.0.0.1" === invokers[i].GetURL().Ip) {
 			if (invokers[i].GetURL().Port !== "20000"){
-				invokers[i].GetURL().Ip = "10.20.3.3"
+				invokers[i].GetURL().Ip = "` + testResetIp + `"
 				result.push(invokers[i]);
 			}
 	    }
@@ -94,7 +94,13 @@ func rt_init_args(runtime *goja.Runtime) {
 	invokers, invocation, context := getRouteArgs()
 	// 在 Goja 中注册 Go 的 struct
 	err := runtime.Set("invokers", invokers)
+	if err != nil {
+		panic(err)
+	}
 	err = runtime.Set("invocation", invocation)
+	if err != nil {
+		panic(err)
+	}
 	err = runtime.Set("context", context)
 	if err != nil {
 		panic(err)
@@ -111,8 +117,10 @@ func re_init_res_recv(runtime *goja.Runtime) {
 func TestFuncImplByStructure(t *testing.T) {
 	runtime := goja.New()
 
-	test_invokers, test_invocation, test_context := []protocol.Invoker{protocol.NewBaseInvoker(url1())}, invocation.NewRPCInvocation("GetUser", nil, map[string]interface{}{"attachmentKey": []string{"attachmentValue"}}), context.TODO()
-	// set invoker test field
+	test_invokers := []protocol.Invoker{protocol.NewBaseInvoker(url1())}
+	test_invocation := invocation.NewRPCInvocation("GetUser", nil, map[string]interface{}{"attachmentKey": []string{"attachmentValue"}})
+	test_context := context.TODO() // set invoker test field
+
 	for _, invoker := range test_invokers {
 		invoker.GetURL().Methods = []string{"testMethods"}
 		invoker.GetURL().Username = "testUsername"
@@ -139,9 +147,9 @@ func TestFuncImplByStructure(t *testing.T) {
 		/*
 			here set fmt.print to check func support
 		*/
-		fmt.Printf("support %s\n", str)
-		fmt.Print(args...)
-		fmt.Print("\n")
+		//fmt.Printf("support %s\n", str)
+		//fmt.Print(args...)
+		//fmt.Print("\n")
 	})
 
 	/*
@@ -453,7 +461,7 @@ __go_program_get_result = route(invokers,
 }
 
 func TestFuncWithCompile(t *testing.T) {
-	pg, err := goja.Compile("routeJs", script_prefix+Func_Script+js_, true)
+	pg, err := goja.Compile("routeJs", script_prefix+Func_Script+js_script_suffix, true)
 	if err != nil {
 		panic(err)
 	}
@@ -466,11 +474,11 @@ func TestFuncWithCompile(t *testing.T) {
 		panic(err)
 	}
 	assert.Equal(t, 2, len(res.Export().([]interface{})))
-	assert.Equal(t, "10.20.3.3", (*(res.Export().([]interface{})[0]).(*protocol.BaseInvoker)).GetURL().Ip)
+	assert.Equal(t, testResetIp, (*(res.Export().([]interface{})[0]).(*protocol.BaseInvoker)).GetURL().Ip)
 }
 
 func TestFuncWithCompileConcurrent(t *testing.T) {
-	pg, err := goja.Compile("routeJs", script_prefix+Func_Script+js_, true)
+	pg, err := goja.Compile("routeJs", script_prefix+Func_Script+js_script_suffix, true)
 	if err != nil {
 		panic(err)
 	}
@@ -500,19 +508,20 @@ function route(invokers,invocation,context) {
 	for (var i = 0; i < invokers.length; i++) {
 		if ("127.0.0.1" === invokers[i].GetURL().Ip) {
 			if (invokers[i].GetURL().Port !== "20000"){
-				invokers[i].GetURL().Ip = "10.20.3.3"
+				invokers[i].GetURL().Ip = "`+testResetIp+`"
 				invokers[i].GetURL().Port = "20004"
 				result.push(invokers[i]);
 			}
 	    }
 	}
 	return result;
-}`+js_, true)
+}`+js_script_suffix, true)
 	if err != nil {
 		panic(err)
 	}
 	rt := goja.New()
 	rt.Set(`println`, func(args ...interface{}) {
+		//fmt.Println(args...)
 	})
 	for i := 0; i < 100; i++ {
 		rt_link_external_libraries(rt)
@@ -523,7 +532,7 @@ function route(invokers,invocation,context) {
 			panic(err)
 		}
 		assert.Equal(t, 2, len(res.Export().([]interface{})))
-		assert.Equal(t, "10.20.3.3", (*(res.Export().([]interface{})[0]).(*protocol.BaseInvoker)).GetURL().Ip)
+		assert.Equal(t, testResetIp, (*(res.Export().([]interface{})[0]).(*protocol.BaseInvoker)).GetURL().Ip)
 		assert.Equal(t, "20004", (*(res.Export().([]interface{})[0]).(*protocol.BaseInvoker)).GetURL().Port)
 	}
 }

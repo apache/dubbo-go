@@ -29,7 +29,13 @@ type jsInstance struct {
 func (j jsInstance) initCallArgs(invokers []protocol.Invoker, invocation protocol.Invocation) {
 	j.rt.ClearInterrupt()
 	err := j.rt.Set(`invokers`, invokers)
+	if err != nil {
+		panic(err)
+	}
 	err = j.rt.Set(`invocation`, invocation)
+	if err != nil {
+		panic(err)
+	}
 	err = j.rt.Set(`context`, invocation.GetAttachmentAsContext())
 	if err != nil {
 		panic(err)

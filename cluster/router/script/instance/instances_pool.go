@@ -28,7 +28,7 @@ import (
 
 const (
 	js_script_result_name = `__go_program_get_result`
-	js_                   = "\n" + js_script_result_name + ` = route(invokers, invocation, context)`
+	js_script_suffix      = "\n" + js_script_result_name + ` = route(invokers, invocation, context)`
 )
 
 type jsInstances struct {
@@ -64,7 +64,7 @@ func (i *jsInstances) RunScript(_ string, invokers []protocol.Invoker, invocatio
 }
 
 func (i *jsInstances) Compile(key, rawScript string) error {
-	pg, err := goja.Compile(key+`_jsScriptRoute`, rawScript+js_, true)
+	pg, err := goja.Compile(key+`_jsScriptRoute`, rawScript+js_script_suffix, true)
 	if err != nil {
 		return err
 	}
@@ -105,5 +105,6 @@ func setInstances(tpName string, instance ScriptInstances) {
 }
 
 func init() {
+	factory = make(map[string]ScriptInstances)
 	setInstances(`javascript`, newJsInstances())
 }
