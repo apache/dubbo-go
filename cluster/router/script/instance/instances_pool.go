@@ -36,7 +36,7 @@ type jsInstances struct {
 	program atomic.Pointer[goja.Program] // applicationName to compiledProgram
 }
 
-func newJsInstance() *jsInstances {
+func newJsInstances() *jsInstances {
 	return &jsInstances{
 		insPool: &sync.Pool{New: func() any {
 			return newJsMather()
@@ -45,22 +45,26 @@ func newJsInstance() *jsInstances {
 }
 
 func (i *jsInstances) RunScript(_ string, invokers []protocol.Invoker, invocation protocol.Invocation) ([]protocol.Invoker, error) {
+	pg := i.program.Load()
+	if pg == nil {
+		return invokers, nil
+	}
 	matcher := i.insPool.Get().(*jsInstance)
 	matcher.initCallArgs(invokers, invocation)
 	matcher.initReplyVar()
-	res, err := matcher.runScript(i.program.Load())
+	scriptRes, err := matcher.runScript(i.program.Load())
 	if err != nil {
 		return nil, err
 	}
 	result := make([]protocol.Invoker, 0)
-	for _, ress := range res.([]interface{}) {
-		result = append(result, ress.(protocol.Invoker))
+	for _, res := range scriptRes.([]interface{}) {
+		result = append(result, res.(protocol.Invoker))
 	}
 	return result, nil
 }
 
-func (i *jsInstances) Compile(rawScript string) error {
-	pg, err := goja.Compile(`jsScriptRoute`, rawScript+js_, true)
+func (i *jsInstances) Compile(key, rawScript string) error {
+	pg, err := goja.Compile(key+`_jsScriptRoute`, rawScript+js_, true)
 	if err != nil {
 		return err
 	}
@@ -68,25 +72,38 @@ func (i *jsInstances) Compile(rawScript string) error {
 	return nil
 }
 
-type ScriptInstance interface {
-	RunScript(rawScript string, invokers []protocol.Invoker, invocation protocol.Invocation) ([]protocol.Invoker, error)
-	Compile(rawScript string) error
+func (i *jsInstances) Destroy() {
+	i.program.Store(nil)
 }
 
-var factory map[string]ScriptInstance
+type ScriptInstances interface {
+	RunScript(rawScript string, invokers []protocol.Invoker, invocation protocol.Invocation) ([]protocol.Invoker, error)
+	Compile(name, rawScript string) error
+	Destroy()
+}
 
-func GetInstance(scriptType string) (ScriptInstance, error) {
+var factory map[string]ScriptInstances
+
+func GetInstances(scriptType string) (ScriptInstances, error) {
 	ins, ok := factory[strings.ToLower(scriptType)]
 	if !ok {
-		return nil, errors.New("script type not exist: " + scriptType)
+		return nil, errors.New("script type not be loaded: " + scriptType)
 	}
 	return ins, nil
 }
 
-func setInstance(tpName string, instance ScriptInstance) {
+func RangeInstances(f func(instance ScriptInstances) bool) {
+	for _, instance := range factory {
+		if !f(instance) {
+			break
+		}
+	}
+}
+
+func setInstances(tpName string, instance ScriptInstances) {
 	factory[tpName] = instance
 }
 
 func init() {
-	setInstance(`javascript`, newJsInstance())
+	setInstances(`javascript`, newJsInstances())
 }

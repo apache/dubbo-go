@@ -25,7 +25,9 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/remoting"
 	"github.com/dubbogo/gost/log/logger"
+	"gopkg.in/yaml.v3"
 	"strings"
 	"sync"
 )
@@ -51,13 +53,94 @@ func NewScriptRouter() *ScriptRouter {
 	}
 	return a
 }
+
+func parseRoute(routeContent string) (*config.RouterConfig, error) {
+	routeDecoder := yaml.NewDecoder(strings.NewReader(routeContent))
+	routerConfig := &config.RouterConfig{}
+	err := routeDecoder.Decode(routerConfig)
+	if err != nil {
+		return nil, err
+	}
+	return routerConfig, nil
+}
+
 func (s *ScriptRouter) Process(event *config_center.ConfigChangeEvent) {
-	//TODO implement me
-	panic("implement me")
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	rawConf, ok := event.Value.(string)
+	if !ok {
+		panic(ok)
+	}
+	cfg, err := parseRoute(rawConf)
+	if err != nil {
+		logger.Errorf("Parse route cfg failed: %v", err)
+		return
+	}
+	checkConfig := func(*config.RouterConfig) bool {
+		if "" == cfg.ScriptType {
+			logger.Errorf("`type` field must be set in config")
+			return false
+		}
+		if "" == cfg.Script {
+			logger.Errorf("`script` field must be set in config")
+			return false
+		}
+		if "" == cfg.Key {
+			logger.Errorf("`key` field must be set in config")
+			return false
+		}
+		if cfg.Key != config.GetApplicationConfig().Name {
+			logger.Errorf("`key` not equal applicationName , script route config load fail")
+			return false
+		}
+		if !*cfg.Enabled {
+			logger.Infof("`enabled` field equiles false, this rule will be ignored :%s", cfg.Script)
+			return false
+		}
+		return true
+	}
+	switch event.ConfigType {
+	case remoting.EventTypeAdd:
+		if !checkConfig(cfg) {
+			return
+		}
+
+		in, err := ins.GetInstances(cfg.ScriptType)
+		if err != nil {
+			logger.Errorf("GetInstances failed: %v", err)
+		}
+
+		err = in.Compile(cfg.Key, cfg.Script)
+		if err != nil {
+			logger.Errorf("Compile Script failed: %v", err)
+		}
+		s.enabled = true
+	case remoting.EventTypeDel:
+		s.enabled = false
+
+		ins.RangeInstances(func(instance ins.ScriptInstances) bool {
+			instance.Destroy()
+			return true
+		})
+	case remoting.EventTypeUpdate:
+		if !checkConfig(cfg) {
+			return
+		}
+		in, err := ins.GetInstances(cfg.ScriptType)
+		if err != nil {
+			logger.Errorf("GetInstances failed: %v", err)
+		}
+		err = in.Compile(cfg.Key, cfg.Script)
+		if err != nil {
+			logger.Errorf("Compile Script failed: %v", err)
+		}
+		s.enabled = true
+	}
 }
 
 func (s *ScriptRouter) runScript(scriptType, rawScript string, invokers []protocol.Invoker, invocation protocol.Invocation) ([]protocol.Invoker, error) {
-	in, err := ins.GetInstance(scriptType)
+	in, err := ins.GetInstances(scriptType)
 	if err != nil {
 		return nil, err
 	}
