@@ -32,6 +32,7 @@ import (
 	"sync"
 )
 
+// ScriptRouter only takes effect on consumers and only supports application granular management.
 type ScriptRouter struct {
 	mu         sync.RWMutex
 	scriptType string
@@ -170,7 +171,5 @@ func (s *ScriptRouter) Priority() int64 {
 	return 0
 }
 
-func (s *ScriptRouter) Notify(invokers []protocol.Invoker) {
-	//TODO implement me
-	panic("implement me")
+func (s *ScriptRouter) Notify(_ []protocol.Invoker) {
 }

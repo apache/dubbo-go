@@ -65,26 +65,21 @@ func getRouteArgs() ([]protocol.Invoker, protocol.Invocation, context.Context) {
 		context.TODO()
 }
 
-const testResetIp = "10.20.3.3"
-const script_prefix = `
-
-var console = require('console')
-
-`
+var localIp = common.GetLocalIp()
 
 var Func_Script string = `
-function route(invokers,invocation,context) {
+(function route(invokers,invocation,context) {
 	var result = [];
 	for (var i = 0; i < invokers.length; i++) {
 	    if ("127.0.0.1" === invokers[i].GetURL().Ip) {
 			if (invokers[i].GetURL().Port !== "20000"){
-				invokers[i].GetURL().Ip = "` + testResetIp + `"
+				invokers[i].GetURL().Ip = "` + localIp + `"
 				result.push(invokers[i]);
 			}
 	    }
 	}
 	return result;
-}`
+}(invokers,invocation,context));`
 
 func rt_link_external_libraries(runtime *goja.Runtime) {
 	require.NewRegistry().Enable(runtime)
@@ -108,7 +103,7 @@ func rt_init_args(runtime *goja.Runtime) {
 }
 
 func re_init_res_recv(runtime *goja.Runtime) {
-	err := runtime.Set("__go_program_get_result", nil)
+	err := runtime.Set(js_script_result_name, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -461,7 +456,7 @@ __go_program_get_result = route(invokers,
 }
 
 func TestFuncWithCompile(t *testing.T) {
-	pg, err := goja.Compile("routeJs", script_prefix+Func_Script+js_script_suffix, true)
+	pg, err := goja.Compile("routeJs", js_script_perfix+Func_Script, true)
 	if err != nil {
 		panic(err)
 	}
@@ -474,11 +469,11 @@ func TestFuncWithCompile(t *testing.T) {
 		panic(err)
 	}
 	assert.Equal(t, 2, len(res.Export().([]interface{})))
-	assert.Equal(t, testResetIp, (*(res.Export().([]interface{})[0]).(*protocol.BaseInvoker)).GetURL().Ip)
+	assert.Equal(t, localIp, (*(res.Export().([]interface{})[0]).(*protocol.BaseInvoker)).GetURL().Ip)
 }
 
 func TestFuncWithCompileConcurrent(t *testing.T) {
-	pg, err := goja.Compile("routeJs", script_prefix+Func_Script+js_script_suffix, true)
+	pg, err := goja.Compile("routeJs", js_script_perfix+Func_Script, true)
 	if err != nil {
 		panic(err)
 	}
@@ -496,26 +491,26 @@ func TestFuncWithCompileConcurrent(t *testing.T) {
 				panic(err)
 			}
 			assert.Equal(t, 2, len(res.Export().([]interface{})))
-			assert.Equal(t, "10.20.3.3", (*(res.Export().([]interface{})[0]).(*protocol.BaseInvoker)).GetURL().Ip)
+			assert.Equal(t, localIp, (*(res.Export().([]interface{})[0]).(*protocol.BaseInvoker)).GetURL().Ip)
 		}()
 	}
 	wg.Wait()
 }
 func TestFuncWithCompileAndRunRepeatedly(t *testing.T) {
-	pg, err := goja.Compile("routeJs", script_prefix+`
+	pg, err := goja.Compile("routeJs", js_script_perfix+`(
 function route(invokers,invocation,context) {
 	var result = [];
 	for (var i = 0; i < invokers.length; i++) {
 		if ("127.0.0.1" === invokers[i].GetURL().Ip) {
 			if (invokers[i].GetURL().Port !== "20000"){
-				invokers[i].GetURL().Ip = "`+testResetIp+`"
+				invokers[i].GetURL().Ip = "`+localIp+`"
 				invokers[i].GetURL().Port = "20004"
 				result.push(invokers[i]);
 			}
 	    }
 	}
 	return result;
-}`+js_script_suffix, true)
+})(invokers,invocation,context)`, true)
 	if err != nil {
 		panic(err)
 	}
@@ -532,7 +527,40 @@ function route(invokers,invocation,context) {
 			panic(err)
 		}
 		assert.Equal(t, 2, len(res.Export().([]interface{})))
-		assert.Equal(t, testResetIp, (*(res.Export().([]interface{})[0]).(*protocol.BaseInvoker)).GetURL().Ip)
+		assert.Equal(t, localIp, (*(res.Export().([]interface{})[0]).(*protocol.BaseInvoker)).GetURL().Ip)
 		assert.Equal(t, "20004", (*(res.Export().([]interface{})[0]).(*protocol.BaseInvoker)).GetURL().Port)
 	}
+}
+
+func TestScriptWhitBrackets(t *testing.T) {
+	script := `__go_program_result = 
+
+(function route(invokers,invocation,context) {
+	var result = [];
+	for (var i = 0; i < invokers.length; i++) {
+		if ("127.0.0.1" === invokers[i].GetURL().Ip) {
+			if (invokers[i].GetURL().Port !== "20000"){
+				invokers[i].GetURL().Ip = "` + localIp + `"
+				invokers[i].GetURL().Port = "20004"
+				result.push(invokers[i]);
+			}
+	    }
+	}
+	return result;
+}(invokers, invocation, context));`
+	pg, err := goja.Compile("routeJs", js_script_perfix+script, true)
+	if err != nil {
+		panic(err)
+	}
+	rt := goja.New()
+	rt_link_external_libraries(rt)
+	rt_init_args(rt)
+	re_init_res_recv(rt)
+	res, err := rt.RunProgram(pg)
+	if err != nil {
+		panic(err)
+	}
+	assert.Equal(t, 2, len(res.Export().([]interface{})))
+	assert.Equal(t, localIp, (*(res.Export().([]interface{})[0]).(*protocol.BaseInvoker)).GetURL().Ip)
+	assert.Equal(t, "20004", (*(res.Export().([]interface{})[0]).(*protocol.BaseInvoker)).GetURL().Port)
 }

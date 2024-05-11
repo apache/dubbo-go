@@ -29,7 +29,7 @@ func init() {
 		and cause warning if config center is empty.
 		User can import this package and config config center to use tag router.
 	*/
-	extension.SetRouterFactory(constant.TagRouterFactoryKey, NewScriptRouterFactory)
+	extension.SetRouterFactory(constant.ScriptRouterFactoryKey, NewScriptRouterFactory)
 }
 
 // RouteFactory router factory

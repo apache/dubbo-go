@@ -20,61 +20,8 @@ package instance
 import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"errors"
-	"github.com/dop251/goja"
-	"go.uber.org/atomic"
 	"strings"
-	"sync"
 )
-
-const (
-	js_script_result_name = `__go_program_get_result`
-	js_script_suffix      = "\n" + js_script_result_name + ` = route(invokers, invocation, context)`
-)
-
-type jsInstances struct {
-	insPool *sync.Pool                   // store *goja.runtime
-	program atomic.Pointer[goja.Program] // applicationName to compiledProgram
-}
-
-func newJsInstances() *jsInstances {
-	return &jsInstances{
-		insPool: &sync.Pool{New: func() any {
-			return newJsMather()
-		}},
-	}
-}
-
-func (i *jsInstances) RunScript(_ string, invokers []protocol.Invoker, invocation protocol.Invocation) ([]protocol.Invoker, error) {
-	pg := i.program.Load()
-	if pg == nil {
-		return invokers, nil
-	}
-	matcher := i.insPool.Get().(*jsInstance)
-	matcher.initCallArgs(invokers, invocation)
-	matcher.initReplyVar()
-	scriptRes, err := matcher.runScript(i.program.Load())
-	if err != nil {
-		return nil, err
-	}
-	result := make([]protocol.Invoker, 0)
-	for _, res := range scriptRes.([]interface{}) {
-		result = append(result, res.(protocol.Invoker))
-	}
-	return result, nil
-}
-
-func (i *jsInstances) Compile(key, rawScript string) error {
-	pg, err := goja.Compile(key+`_jsScriptRoute`, rawScript+js_script_suffix, true)
-	if err != nil {
-		return err
-	}
-	i.program.Store(pg)
-	return nil
-}
-
-func (i *jsInstances) Destroy() {
-	i.program.Store(nil)
-}
 
 type ScriptInstances interface {
 	RunScript(rawScript string, invokers []protocol.Invoker, invocation protocol.Invocation) ([]protocol.Invoker, error)
