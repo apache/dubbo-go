@@ -18,6 +18,8 @@
 package instance
 
 import (
+	"context"
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"errors"
 	"strings"
@@ -54,4 +56,58 @@ func setInstances(tpName string, instance ScriptInstances) {
 func init() {
 	factory = make(map[string]ScriptInstances)
 	setInstances(`javascript`, newJsInstances())
+}
+
+// scriptInvokerPack for security
+// if script change input Invoker's url during Route() call ,
+// it will influence call Route() next time ,
+// there are no operation to recover .
+type scriptInvokerPack interface {
+	protocol.Invoker
+}
+
+type scriptInvokerPackImpl struct {
+	copiedURL *common.URL
+	invoker   protocol.Invoker
+	isRan     bool
+}
+
+func (f *scriptInvokerPackImpl) GetURL() *common.URL {
+	return f.copiedURL
+}
+
+func (f *scriptInvokerPackImpl) IsAvailable() bool {
+	if !f.isRan {
+		return true
+	} else {
+		return f.invoker.IsAvailable()
+	}
+}
+
+func (f *scriptInvokerPackImpl) Destroy() {
+	if !f.isRan {
+		panic("Destroy should not be called")
+	} else {
+		f.invoker.Destroy()
+	}
+}
+
+func (f *scriptInvokerPackImpl) Invoke(ctx context.Context, inv protocol.Invocation) protocol.Result {
+	if !f.isRan {
+		panic("Invoke should not be called")
+	} else {
+		return f.invoker.Invoke(ctx, inv)
+	}
+}
+
+func (f *scriptInvokerPackImpl) setRanMode() {
+	f.isRan = true
+}
+
+func newScriptInvokerImpl(invoker protocol.Invoker) *scriptInvokerPackImpl {
+	return &scriptInvokerPackImpl{
+		copiedURL: invoker.GetURL().Clone(),
+		invoker:   invoker,
+		isRan:     false,
+	}
 }

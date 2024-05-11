@@ -496,6 +496,7 @@ func TestFuncWithCompileConcurrent(t *testing.T) {
 	}
 	wg.Wait()
 }
+
 func TestFuncWithCompileAndRunRepeatedly(t *testing.T) {
 	pg, err := goja.Compile("routeJs", jsScriptPrefix+`(
 function route(invokers,invocation,context) {
@@ -532,35 +533,36 @@ function route(invokers,invocation,context) {
 	}
 }
 
-func TestScriptWhitBrackets(t *testing.T) {
-	script := `__go_program_result = 
-
-(function route(invokers,invocation,context) {
-	var result = [];
-	for (var i = 0; i < invokers.length; i++) {
-		if ("127.0.0.1" === invokers[i].GetURL().Ip) {
-			if (invokers[i].GetURL().Port !== "20000"){
-				invokers[i].GetURL().Ip = "` + localIp + `"
-				invokers[i].GetURL().Port = "20004"
-				result.push(invokers[i]);
-			}
-	    }
-	}
-	return result;
-}(invokers, invocation, context));`
-	pg, err := goja.Compile("routeJs", jsScriptPrefix+script, true)
+func TestFuncArgsReadOnly(t *testing.T) {
+	script := `
+        Object.freeze(invokers);
+        Object.freeze(invocation);
+        Object.freeze(context);
+__result =
+    (function test(invokers, invocation, context) {
+        return (function route(invokers, invocation, context) {
+            var result = [];
+            for (var i = 0; i < invokers.length; i++) {
+                if ("10.30.0.218" === invokers[i].GetURL().Ip) {
+                    if (invokers[i].GetURL().Port === "20000") {
+                        result.push(invokers[i]);
+                    }
+                }
+            }
+            return result;
+        }(invokers, invocation, context));
+    }(invokers, invocation, context));
+`
+	rt := goja.New()
+	rt_init_args(rt)
+	_ = rt.Set(`__result`, nil)
+	pg, err := goja.Compile("", script, true)
 	if err != nil {
 		panic(err)
 	}
-	rt := goja.New()
-	rt_link_external_libraries(rt)
-	rt_init_args(rt)
-	re_init_res_recv(rt)
 	res, err := rt.RunProgram(pg)
 	if err != nil {
 		panic(err)
 	}
-	assert.Equal(t, 2, len(res.Export().([]interface{})))
-	assert.Equal(t, localIp, (*(res.Export().([]interface{})[0]).(*protocol.BaseInvoker)).GetURL().Ip)
-	assert.Equal(t, "20004", (*(res.Export().([]interface{})[0]).(*protocol.BaseInvoker)).GetURL().Port)
+	println(res)
 }

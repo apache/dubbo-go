@@ -88,18 +88,26 @@ type jsInstance struct {
 
 func (i *jsInstances) RunScript(_ string, invokers []protocol.Invoker, invocation protocol.Invocation) ([]protocol.Invoker, error) {
 	pg := i.program.Load()
-	if pg == nil {
+	if pg == nil || len(invokers) == 0 {
 		return invokers, nil
 	}
 	matcher := i.insPool.Get().(*jsInstance)
-	matcher.initCallArgs(invokers, invocation)
+
+	packInvokers := make([]protocol.Invoker, 0, len(invokers))
+	for _, invoker := range invokers {
+		packInvokers = append(packInvokers, newScriptInvokerImpl(invoker))
+	}
+
+	matcher.initCallArgs(packInvokers, invocation)
 	matcher.initReplyVar()
 	scriptRes, err := matcher.runScript(i.program.Load())
 	if err != nil {
 		return nil, err
 	}
+
 	result := make([]protocol.Invoker, 0, len(scriptRes.(*goja.Object).Export().([]interface{})))
 	for _, res := range scriptRes.(*goja.Object).Export().([]interface{}) {
+		res.(*scriptInvokerPackImpl).setRanMode()
 		result = append(result, res.(protocol.Invoker))
 	}
 	return result, nil
