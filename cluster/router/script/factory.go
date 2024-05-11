@@ -27,15 +27,15 @@ func init() {
 	/*
 		Tag router is not imported in dubbo-go/imports/imports.go, because it relies on config center,
 		and cause warning if config center is empty.
-		User can import this package and config config center to use tag router.
+		User can import this package and config config center to use Script router.
 	*/
 	extension.SetRouterFactory(constant.ScriptRouterFactoryKey, NewScriptRouterFactory)
 }
 
-// RouteFactory router factory
+// ScriptRouteFactory router factory
 type ScriptRouteFactory struct{}
 
-// NewTagRouterFactory constructs a new PriorityRouterFactory
+// NewScriptRouterFactory constructs a new PriorityRouterFactory
 func NewScriptRouterFactory() router.PriorityRouterFactory {
 	return &ScriptRouteFactory{}
 }

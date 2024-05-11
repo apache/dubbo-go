@@ -27,7 +27,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 	"github.com/dubbogo/gost/log/logger"
-	"gopkg.in/yaml.v3"
+	"gopkg.in/yaml.v2"
 	"strings"
 	"sync"
 )
@@ -97,7 +97,6 @@ func (s *ScriptRouter) Process(event *config_center.ConfigChangeEvent) {
 		}
 		if !*cfg.Enabled {
 			logger.Infof("`enabled` field equiles false, this rule will be ignored :%s", cfg.Script)
-			return false
 		}
 		return true
 	}
@@ -112,13 +111,20 @@ func (s *ScriptRouter) Process(event *config_center.ConfigChangeEvent) {
 			logger.Errorf("GetInstances failed: %v", err)
 		}
 
+		s.rawScript = cfg.Script
+		s.scriptType = cfg.ScriptType
+
 		err = in.Compile(cfg.Key, cfg.Script)
 		if err != nil {
 			logger.Errorf("Compile Script failed: %v", err)
 		}
+
 		s.enabled = true
 	case remoting.EventTypeDel:
+
 		s.enabled = false
+		s.rawScript = ""
+		s.scriptType = ""
 
 		ins.RangeInstances(func(instance ins.ScriptInstances) bool {
 			instance.Destroy()
@@ -128,14 +134,20 @@ func (s *ScriptRouter) Process(event *config_center.ConfigChangeEvent) {
 		if !checkConfig(cfg) {
 			return
 		}
+
 		in, err := ins.GetInstances(cfg.ScriptType)
 		if err != nil {
 			logger.Errorf("GetInstances failed: %v", err)
 		}
+
+		s.rawScript = cfg.Script
+		s.scriptType = cfg.ScriptType
+
 		err = in.Compile(cfg.Key, cfg.Script)
 		if err != nil {
 			logger.Errorf("Compile Script failed: %v", err)
 		}
+
 		s.enabled = true
 	}
 }
@@ -152,14 +164,21 @@ func (s *ScriptRouter) Route(invokers []protocol.Invoker, url *common.URL, invoc
 	if invokers == nil || len(invokers) == 0 {
 		return []protocol.Invoker{}
 	}
-	if s.enabled == false {
+
+	s.mu.RLock()
+	enabled, scriptType, rawScript := s.enabled, s.scriptType, s.rawScript
+	s.mu.RUnlock()
+
+	if enabled == false {
 		return invokers
 	}
-	res, err := s.runScript(s.scriptType, s.rawScript, invokers, invocation)
+
+	res, err := s.runScript(scriptType, rawScript, invokers, invocation)
 	if err != nil {
 		logger.Warnf("ScriptRouter.Route error: %v", err)
 		return []protocol.Invoker{}
 	}
+
 	return res
 }
 

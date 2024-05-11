@@ -25,13 +25,14 @@ import (
 )
 
 const (
-	js_script_result_name = `__go_program_result`
-	js_script_perfix      = "\n" + js_script_result_name + ` = `
+	jsScriptResultName = `__go_program_result`
+	jsScriptPrefix     = "\n" + jsScriptResultName + ` = `
 )
 
 /*
-The expected js script is passed in
-```js
+The expect get js script is like
+
+"
 
 	(function route(invokers,invocation,context) {
 		var result = [];
@@ -46,7 +47,7 @@ The expected js script is passed in
 		return result;
 	}(invokers,invocation,context));
 
-```
+"
 ---
   - Supports method calling.
     Parameter methods are mapped by the passed in type.
@@ -68,10 +69,6 @@ like `invokers[i].GetURL().Port`
   - The expected way to get the return value is
     like `var result = []; result.push(invokers[i]);`
 */
-type jsInstance struct {
-	rt *goja.Runtime
-}
-
 type jsInstances struct {
 	insPool *sync.Pool                   // store *goja.runtime
 	program atomic.Pointer[goja.Program] // applicationName to compiledProgram
@@ -83,6 +80,10 @@ func newJsInstances() *jsInstances {
 			return newJsMather()
 		}},
 	}
+}
+
+type jsInstance struct {
+	rt *goja.Runtime
 }
 
 func (i *jsInstances) RunScript(_ string, invokers []protocol.Invoker, invocation protocol.Invocation) ([]protocol.Invoker, error) {
@@ -97,15 +98,15 @@ func (i *jsInstances) RunScript(_ string, invokers []protocol.Invoker, invocatio
 	if err != nil {
 		return nil, err
 	}
-	result := make([]protocol.Invoker, 0, len(scriptRes.([]interface{})))
-	for _, res := range scriptRes.([]interface{}) {
+	result := make([]protocol.Invoker, 0, len(scriptRes.(*goja.Object).Export().([]interface{})))
+	for _, res := range scriptRes.(*goja.Object).Export().([]interface{}) {
 		result = append(result, res.(protocol.Invoker))
 	}
 	return result, nil
 }
 
 func (i *jsInstances) Compile(key, rawScript string) error {
-	pg, err := goja.Compile(key+`_jsScriptRoute`, js_script_perfix+rawScript, true)
+	pg, err := goja.Compile(key+`_jsScriptRoute`, jsScriptPrefix+rawScript, true)
 	if err != nil {
 		return err
 	}
@@ -133,9 +134,9 @@ func (j jsInstance) initCallArgs(invokers []protocol.Invoker, invocation protoco
 	}
 }
 
-// must be set, or throw err like `js_script_result_name` not define
+// must be set, or throw err like `var jsScriptResultName` not define
 func (j jsInstance) initReplyVar() {
-	err := j.rt.Set(js_script_result_name, nil)
+	err := j.rt.Set(jsScriptResultName, nil)
 	if err != nil {
 		panic(err)
 	}

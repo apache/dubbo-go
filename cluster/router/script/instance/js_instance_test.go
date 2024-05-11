@@ -103,7 +103,7 @@ func rt_init_args(runtime *goja.Runtime) {
 }
 
 func re_init_res_recv(runtime *goja.Runtime) {
-	err := runtime.Set(js_script_result_name, nil)
+	err := runtime.Set(jsScriptResultName, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -456,7 +456,7 @@ __go_program_get_result = route(invokers,
 }
 
 func TestFuncWithCompile(t *testing.T) {
-	pg, err := goja.Compile("routeJs", js_script_perfix+Func_Script, true)
+	pg, err := goja.Compile("routeJs", jsScriptPrefix+Func_Script, true)
 	if err != nil {
 		panic(err)
 	}
@@ -473,7 +473,7 @@ func TestFuncWithCompile(t *testing.T) {
 }
 
 func TestFuncWithCompileConcurrent(t *testing.T) {
-	pg, err := goja.Compile("routeJs", js_script_perfix+Func_Script, true)
+	pg, err := goja.Compile("routeJs", jsScriptPrefix+Func_Script, true)
 	if err != nil {
 		panic(err)
 	}
@@ -497,7 +497,7 @@ func TestFuncWithCompileConcurrent(t *testing.T) {
 	wg.Wait()
 }
 func TestFuncWithCompileAndRunRepeatedly(t *testing.T) {
-	pg, err := goja.Compile("routeJs", js_script_perfix+`(
+	pg, err := goja.Compile("routeJs", jsScriptPrefix+`(
 function route(invokers,invocation,context) {
 	var result = [];
 	for (var i = 0; i < invokers.length; i++) {
@@ -548,7 +548,7 @@ func TestScriptWhitBrackets(t *testing.T) {
 	}
 	return result;
 }(invokers, invocation, context));`
-	pg, err := goja.Compile("routeJs", js_script_perfix+script, true)
+	pg, err := goja.Compile("routeJs", jsScriptPrefix+script, true)
 	if err != nil {
 		panic(err)
 	}
