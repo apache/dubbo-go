@@ -131,7 +131,13 @@ func TestStructureFuncImpl(t *testing.T) {
 	rt_link_external_libraries(runtime)
 
 	err := runtime.Set("invokers", test_invokers)
+	if err != nil {
+		panic(err)
+	}
 	err = runtime.Set("invocation", test_invocation)
+	if err != nil {
+		panic(err)
+	}
 	err = runtime.Set("context", test_context)
 	if err != nil {
 		panic(err)
@@ -150,7 +156,7 @@ func TestStructureFuncImpl(t *testing.T) {
 	})
 
 	/*
-		//not require
+		//may not require
 
 		invokers[0].GetURL().URLEqual(url *URL) bool
 		invokers[0].GetURL().ReplaceParams(param url.Values)
@@ -162,9 +168,9 @@ func TestStructureFuncImpl(t *testing.T) {
 		invokers[0].GetURL().CloneExceptParams(excludeParams *gxset.HashSet) *URL
 		invokers[0].GetURL().Compare(comp common.Comparator) int
 
-		test_invocation.SetInvoker(invoker protocol.Invoker)
-		test_invocation.CallBack()
-		test_invocation.SetCallBack(c interface{})
+		invocation.SetInvoker(invoker protocol.Invoker)
+		invocation.CallBack()
+		invocation.SetCallBack(c interface{})
 
 	*/
 	// 在 JavaScript 中调用 Go 的 struct 的方法
@@ -518,7 +524,7 @@ function route(invokers,invocation,context) {
 		panic(err)
 	}
 	rt := goja.New()
-	rt.Set(`println`, func(args ...interface{}) {
+	_ = rt.Set(`println`, func(args ...interface{}) {
 		//fmt.Println(args...)
 	})
 	for i := 0; i < 100; i++ {
