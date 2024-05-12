@@ -28,6 +28,7 @@ import (
 	_ "github.com/dop251/goja_nodejs/console"
 	"github.com/dop251/goja_nodejs/require"
 	"github.com/stretchr/testify/assert"
+	"reflect"
 	"sync"
 	"testing"
 )
@@ -110,7 +111,7 @@ func re_init_res_recv(runtime *goja.Runtime) {
 	}
 }
 
-func TestFuncImplByStructure(t *testing.T) {
+func TestStructureFuncImpl(t *testing.T) {
 	runtime := goja.New()
 
 	test_invokers := []protocol.Invoker{protocol.NewBaseInvoker(url1())}
@@ -565,8 +566,43 @@ func setRunScriptEnv() *goja.Runtime {
 }
 
 func TestRunScriptInPanic(t *testing.T) {
-	rt := setRunScriptEnv()
-	const script = `(function route(invokers, invocation, context) {
+	willPanic := func(errScript string) {
+		rt := setRunScriptEnv()
+		pg, err := goja.Compile(``, errScript, true)
+		assert.Nil(t, err)
+		res, err := func() (res interface{}, err error) {
+			defer func(err *error) {
+				panicReason := recover()
+				if panicReason != nil {
+					switch panicReason.(type) {
+					case string:
+						*err = fmt.Errorf("panic: %s", panicReason.(string))
+					case error:
+						*err = panicReason.(error)
+					default:
+						*err = fmt.Errorf("panic occurred: failed to retrieve panic information. Expected string or error, got %T", panicReason)
+					}
+				}
+			}(&err)
+			res, err = rt.RunProgram(pg)
+			testData := res.(*goja.Object).Export()
+			assert.Equal(t, reflect.ValueOf([]interface{}{}), reflect.ValueOf(testData))
+			return
+		}()
+		assert.NotNil(t, err)
+		assert.Nil(t, res)
+	}
+	wontPanic := func(errScript string) {
+		rt := setRunScriptEnv()
+		pg, err := goja.Compile(``, errScript, true)
+		assert.Nil(t, err)
+		res, err := rt.RunProgram(pg)
+		assert.Nil(t, err)
+		assert.NotNil(t, res)
+		data := res.Export()
+		assert.NotNil(t, data)
+	}
+	const scriptInvokePanic = `(function route(invokers, invocation, context) {
     var result = [];
     for (var i = 0; i < invokers.length; i++) {
         if ("127.0.0.1" === invokers[i].GetURL().Ip) {
@@ -581,23 +617,88 @@ func TestRunScriptInPanic(t *testing.T) {
     return result;
 }(invokers, invocation, context));
 `
-	pg, err := goja.Compile(``, script, true)
-	assert.Nil(t, err)
-	res, err := func() (res interface{}, err error) {
-		defer func(err *error) {
-			panicReason := recover()
-			switch panicReason.(type) {
-			case string:
-				*err = fmt.Errorf("panic: %s", panicReason.(string))
-			case error:
-				*err = panicReason.(error)
-			default:
-				*err = fmt.Errorf("panic occurred: failed to retrieve panic information. Expected string or error, got %T", panicReason)
-			}
-		}(&err)
-		res, err = rt.RunProgram(pg)
-		return
-	}()
-	assert.NotNil(t, err)
-	assert.Nil(t, res)
+	willPanic(scriptInvokePanic)
+	const scriptNodeDestroyPanic = `(function route(invokers, invocation, context) {
+    var result = [];
+    for (var i = 0; i < invokers.length; i++) {
+        if ("127.0.0.1" === invokers[i].GetURL().Ip) {
+            if (invokers[i].GetURL().Port !== "20000") {
+                invokers[i].GetURL().Ip = "anotherIP"
+                // Destroy() call should go panic 
+                invokers[i].Destroy()
+                result.push(invokers[i]);
+            }
+        }
+    }
+    return result;
+}(invokers, invocation, context));
+`
+	willPanic(scriptNodeDestroyPanic)
+
+	// Wrong Call will go panic , recover , and return an error
+	const scriptCallWrongFunc = `(function route(invokers, invocation, context) {
+    var result = [];
+    for (var i = 0; i < invokers.length; i++) {
+        if ("127.0.0.1" === invokers[i].GetURL().Ip) {
+						// err here 
+            if (invokers[i].GetURLS(" Err Here ").Port !== "20000") {
+                invokers[i].GetURLS().Ip = "anotherIP"
+                result.push(invokers[i]);
+            }
+        }
+    }
+    return result;
+}(invokers, invocation, context));
+`
+	willPanic(scriptCallWrongFunc)
+
+	// these case means
+	// error input is program acceptable, but it will make an undefined error
+	const scriptCallWrongArgs1 = `(function route(invokers, invocation, context) {
+    var result = [];
+    for (var i = 0; i < invokers.length; i++) {
+        if ("127.0.0.1" === invokers[i].GetURL().Ip) {
+            if (invokers[i].GetURL(" Err Here ").Port !== "20000") {
+//---------------------------------^  here wont go err , it will trans to ()
+                invokers[i].GetURL().Ip = "anotherIP"
+                result.push(invokers[i]);
+            }
+        }
+    }
+    return result;
+}(invokers, invocation, context));
+`
+	wontPanic(scriptCallWrongArgs1)
+
+	const scriptCallWrongArgs2 = `(function route(invokers, invocation, context) {
+    var result = [];
+    for (var i = 0; i < invokers.length; i++) {
+        if ("127.0.0.1" === invokers[i].GetURL().Ip) {
+            if (invokers[i].GetURL(" Err Here ").Port !== "20000") {
+                invokers[i].GetURL().AddParam( null , "key string", "value string")
+//---------------------------------------------^  here wont go err , it will trans to ("" , "key string" , "value string")
+                result.push(invokers[i]);
+            }
+        }
+    }
+    return result;
+}(invokers, invocation, context));
+`
+	wontPanic(scriptCallWrongArgs2)
+
+	const scriptCallWrongArgs3 = `(function route(invokers, invocation, context) {
+    var result = [];
+    for (var i = 0; i < invokers.length; i++) {
+        if ("127.0.0.1" === invokers[i].GetURL().Ip) {
+            if (invokers[i].GetURL(" Err Here ").Port !== "20000") {
+                invokers[i].GetURL().AddParam( invocation , "key string", "value string")
+//---------------------------------------------^  here wont go err , it will trans to ("[object Object]" , "key string" , "value string")
+                result.push(invokers[i]);
+            }
+        }
+    }
+    return result;
+}(invokers, invocation, context));
+`
+	wontPanic(scriptCallWrongArgs3)
 }

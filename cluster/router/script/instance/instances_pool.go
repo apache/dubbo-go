@@ -62,21 +62,17 @@ func setInstances(tpName string, instance ScriptInstances) {
 // if script change input Invoker's url during Route() call ,
 // it will influence call Route() next time ,
 // there are no operation to recover .
-type scriptInvokerPack interface {
-	protocol.Invoker
-}
-
-type scriptInvokerPackImpl struct {
+type scriptInvokerPack struct {
+	isRan     bool
 	copiedURL *common.URL
 	invoker   protocol.Invoker
-	isRan     bool
 }
 
-func (f *scriptInvokerPackImpl) GetURL() *common.URL {
+func (f *scriptInvokerPack) GetURL() *common.URL {
 	return f.copiedURL
 }
 
-func (f *scriptInvokerPackImpl) IsAvailable() bool {
+func (f *scriptInvokerPack) IsAvailable() bool {
 	if !f.isRan {
 		return true
 	} else {
@@ -84,7 +80,7 @@ func (f *scriptInvokerPackImpl) IsAvailable() bool {
 	}
 }
 
-func (f *scriptInvokerPackImpl) Destroy() {
+func (f *scriptInvokerPack) Destroy() {
 	if !f.isRan {
 		panic("Destroy should not be called")
 	} else {
@@ -92,7 +88,7 @@ func (f *scriptInvokerPackImpl) Destroy() {
 	}
 }
 
-func (f *scriptInvokerPackImpl) Invoke(ctx context.Context, inv protocol.Invocation) protocol.Result {
+func (f *scriptInvokerPack) Invoke(ctx context.Context, inv protocol.Invocation) protocol.Result {
 	if !f.isRan {
 		panic("Invoke should not be called")
 	} else {
@@ -100,12 +96,12 @@ func (f *scriptInvokerPackImpl) Invoke(ctx context.Context, inv protocol.Invocat
 	}
 }
 
-func (f *scriptInvokerPackImpl) setRanMode() {
+func (f *scriptInvokerPack) setRanMode() {
 	f.isRan = true
 }
 
-func newScriptInvokerImpl(invoker protocol.Invoker) *scriptInvokerPackImpl {
-	return &scriptInvokerPackImpl{
+func newScriptInvokerImpl(invoker protocol.Invoker) *scriptInvokerPack {
+	return &scriptInvokerPack{
 		copiedURL: invoker.GetURL().Clone(),
 		invoker:   invoker,
 		isRan:     false,

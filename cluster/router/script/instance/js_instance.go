@@ -109,11 +109,11 @@ func (i *jsInstances) Run(_ string, invokers []protocol.Invoker, invocation prot
 
 	result := make([]protocol.Invoker, 0, len(rtInvokersArr))
 	for _, res := range rtInvokersArr {
-		if i, ok := res.(*scriptInvokerPackImpl); ok {
+		if i, ok := res.(*scriptInvokerPack); ok {
 			i.setRanMode()
 			result = append(result, res.(protocol.Invoker))
 		} else {
-			return invokers, fmt.Errorf("invalid element type , it should be (*scriptInvokerPackImpl) , but type is : %s)", reflect.TypeOf(res).String())
+			return invokers, fmt.Errorf("invalid element type , it should be (*scriptInvokerPack) , but type is : %s)", reflect.TypeOf(res).String())
 		}
 	}
 	return result, nil
