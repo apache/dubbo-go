@@ -19,7 +19,9 @@ package instance
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"fmt"
 	"github.com/dop251/goja"
+	"reflect"
 	"sync"
 	"sync/atomic"
 )
@@ -30,44 +32,39 @@ const (
 )
 
 /*
-The expect get js script is like
+  - The expect get js script is like
 
-"
+    (function route(invokers, invocation, context) {
+    var result = [];
+    for (var i = 0; i < invokers.length; i++) {
+    if ("127.0.0.1" === invokers[i].GetURL().Ip) {
+    if (invokers[i].GetURL().Port !== "20000") {
+    invokers[i].GetURL().Ip = "anotherIP"
+    result.push(invokers[i]);
+    }
+    }
+    }
+    return result;
+    }(invokers, invocation, context));
 
-	(function route(invokers,invocation,context) {
-		var result = [];
-		for (var i = 0; i < invokers.length; i++) {
-		    if ("127.0.0.1" === invokers[i].GetURL().Ip) {
-				if (invokers[i].GetURL().Port !== "20000"){
-					invokers[i].GetURL().Ip = "anotherIP"
-					result.push(invokers[i]);
-				}
-		    }
-		}
-		return result;
-	}(invokers,invocation,context));
+  - The expected way to get the return value is like:
 
-"
+    var result = [];
+    result.push(invokers[i]);
+    return result;
+
 ---
   - Supports method calling.
     Parameter methods are mapped by the passed in type.
     The first letter is capitalized (does not comply with js specifications)
 
-like `invokers[i].GetURL().SetParam("testKey","testValue")`
+e.g. `invokers[i].GetURL().SetParam("testKey","testValue")`
 
 ---
   - Like the Go language, it supports direct access to
     exportable variables within parameters.
 
-like `invokers[i].GetURL().Port`
-
----
-  - important! The parameters passed in will be references,
-    Changing the parameters will change the value passed in the go language
-
----
-  - The expected way to get the return value is
-    like `var result = []; result.push(invokers[i]);`
+e.g. `invokers[i].GetURL().Port`
 */
 type jsInstances struct {
 	insPool *sync.Pool                   // store *goja.runtime
@@ -77,7 +74,7 @@ type jsInstances struct {
 func newJsInstances() *jsInstances {
 	return &jsInstances{
 		insPool: &sync.Pool{New: func() any {
-			return newJsMather()
+			return newJsInstance()
 		}},
 	}
 }
@@ -86,7 +83,7 @@ type jsInstance struct {
 	rt *goja.Runtime
 }
 
-func (i *jsInstances) RunScript(_ string, invokers []protocol.Invoker, invocation protocol.Invocation) ([]protocol.Invoker, error) {
+func (i *jsInstances) Run(_ string, invokers []protocol.Invoker, invocation protocol.Invocation) ([]protocol.Invoker, error) {
 	pg := i.program.Load()
 	if pg == nil || len(invokers) == 0 {
 		return invokers, nil
@@ -102,13 +99,22 @@ func (i *jsInstances) RunScript(_ string, invokers []protocol.Invoker, invocatio
 	matcher.initReplyVar()
 	scriptRes, err := matcher.runScript(i.program.Load())
 	if err != nil {
-		return nil, err
+		return invokers, err
 	}
 
-	result := make([]protocol.Invoker, 0, len(scriptRes.(*goja.Object).Export().([]interface{})))
-	for _, res := range scriptRes.(*goja.Object).Export().([]interface{}) {
-		res.(*scriptInvokerPackImpl).setRanMode()
-		result = append(result, res.(protocol.Invoker))
+	rtInvokersArr, ok := scriptRes.(*goja.Object).Export().([]interface{})
+	if !ok {
+		return invokers, fmt.Errorf("script result is not array , script return type: %s", reflect.ValueOf(scriptRes.(*goja.Object).Export()).String())
+	}
+
+	result := make([]protocol.Invoker, 0, len(rtInvokersArr))
+	for _, res := range rtInvokersArr {
+		if i, ok := res.(*scriptInvokerPackImpl); ok {
+			i.setRanMode()
+			result = append(result, res.(protocol.Invoker))
+		} else {
+			return invokers, fmt.Errorf("invalid element type , it should be (*scriptInvokerPackImpl) , but type is : %s)", reflect.TypeOf(res).String())
+		}
 	}
 	return result, nil
 }
@@ -150,12 +156,26 @@ func (j jsInstance) initReplyVar() {
 	}
 }
 
-func newJsMather() *jsInstance {
+func newJsInstance() *jsInstance {
 	return &jsInstance{
 		rt: goja.New(),
 	}
 }
 
-func (j jsInstance) runScript(pg *goja.Program) (interface{}, error) {
-	return j.rt.RunProgram(pg)
+func (j jsInstance) runScript(pg *goja.Program) (res interface{}, err error) {
+	defer func(res *interface{}, err *error) {
+		if panicReason := recover(); panicReason != nil {
+			*res = nil
+			switch panicReason := panicReason.(type) {
+			case string:
+				*err = fmt.Errorf("panic: %s", panicReason)
+			case error:
+				*err = panicReason
+			default:
+				*err = fmt.Errorf("panic occurred: failed to retrieve panic information. Expected string or error, got %T", panicReason)
+			}
+		}
+	}(&res, &err)
+	res, err = j.rt.RunProgram(pg)
+	return res, err
 }

@@ -23,6 +23,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"fmt"
 	"github.com/dop251/goja"
 	_ "github.com/dop251/goja_nodejs/console"
 	"github.com/dop251/goja_nodejs/require"
@@ -533,36 +534,70 @@ function route(invokers,invocation,context) {
 	}
 }
 
-func TestFuncArgsReadOnly(t *testing.T) {
-	script := `
-        Object.freeze(invokers);
-        Object.freeze(invocation);
-        Object.freeze(context);
-__result =
-    (function test(invokers, invocation, context) {
-        return (function route(invokers, invocation, context) {
-            var result = [];
-            for (var i = 0; i < invokers.length; i++) {
-                if ("10.30.0.218" === invokers[i].GetURL().Ip) {
-                    if (invokers[i].GetURL().Port === "20000") {
-                        result.push(invokers[i]);
-                    }
-                }
+func setRunScriptEnv() *goja.Runtime {
+	runtime := goja.New()
+	rt_link_external_libraries(runtime)
+	srcInvoker1, srcInvoker2, srcInvoker3 := protocol.NewBaseInvoker(url1()), protocol.NewBaseInvoker(url2()), protocol.NewBaseInvoker(url3())
+
+	getArgs := func() ([]protocol.Invoker, *invocation.RPCInvocation, context.Context) {
+		return []protocol.Invoker{
+				newScriptInvokerImpl(srcInvoker1), newScriptInvokerImpl(srcInvoker2), newScriptInvokerImpl(srcInvoker3),
+			}, invocation.NewRPCInvocation("GetUser", nil, map[string]interface{}{
+				"attachmentKey": []string{"attachmentValue"},
+			}), context.TODO()
+	}
+
+	invokers, invocation, context := getArgs()
+	err := runtime.Set("invokers", invokers)
+	if err != nil {
+		panic(err)
+	}
+	err = runtime.Set("invocation", invocation)
+	if err != nil {
+		panic(err)
+	}
+	err = runtime.Set("context", context)
+	if err != nil {
+		panic(err)
+	}
+	re_init_res_recv(runtime)
+	return runtime
+}
+
+func TestRunScriptInPanic(t *testing.T) {
+	rt := setRunScriptEnv()
+	const script = `(function route(invokers, invocation, context) {
+    var result = [];
+    for (var i = 0; i < invokers.length; i++) {
+        if ("127.0.0.1" === invokers[i].GetURL().Ip) {
+            if (invokers[i].GetURL().Port !== "20000") {
+                invokers[i].GetURL().Ip = "anotherIP"
+                // Invoke() call should go panic 
+                invokers[i].Invoke(context, invocation)
+                result.push(invokers[i]);
             }
-            return result;
-        }(invokers, invocation, context));
-    }(invokers, invocation, context));
+        }
+    }
+    return result;
+}(invokers, invocation, context));
 `
-	rt := goja.New()
-	rt_init_args(rt)
-	_ = rt.Set(`__result`, nil)
-	pg, err := goja.Compile("", script, true)
-	if err != nil {
-		panic(err)
-	}
-	res, err := rt.RunProgram(pg)
-	if err != nil {
-		panic(err)
-	}
-	println(res)
+	pg, err := goja.Compile(``, script, true)
+	assert.Nil(t, err)
+	res, err := func() (res interface{}, err error) {
+		defer func(err *error) {
+			panicReason := recover()
+			switch panicReason.(type) {
+			case string:
+				*err = fmt.Errorf("panic: %s", panicReason.(string))
+			case error:
+				*err = panicReason.(error)
+			default:
+				*err = fmt.Errorf("panic occurred: failed to retrieve panic information. Expected string or error, got %T", panicReason)
+			}
+		}(&err)
+		res, err = rt.RunProgram(pg)
+		return
+	}()
+	assert.NotNil(t, err)
+	assert.Nil(t, res)
 }

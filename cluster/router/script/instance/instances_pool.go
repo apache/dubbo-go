@@ -25,8 +25,13 @@ import (
 	"strings"
 )
 
+func init() {
+	factory = make(map[string]ScriptInstances)
+	setInstances(`javascript`, newJsInstances())
+}
+
 type ScriptInstances interface {
-	RunScript(rawScript string, invokers []protocol.Invoker, invocation protocol.Invocation) ([]protocol.Invoker, error)
+	Run(rawScript string, invokers []protocol.Invoker, invocation protocol.Invocation) ([]protocol.Invoker, error)
 	Compile(name, rawScript string) error
 	Destroy()
 }
@@ -51,11 +56,6 @@ func RangeInstances(f func(instance ScriptInstances) bool) {
 
 func setInstances(tpName string, instance ScriptInstances) {
 	factory[tpName] = instance
-}
-
-func init() {
-	factory = make(map[string]ScriptInstances)
-	setInstances(`javascript`, newJsInstances())
 }
 
 // scriptInvokerPack for security

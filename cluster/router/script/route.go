@@ -157,10 +157,10 @@ func (s *ScriptRouter) runScript(scriptType, rawScript string, invokers []protoc
 	if err != nil {
 		return nil, err
 	}
-	return in.RunScript(rawScript, invokers, invocation)
+	return in.Run(rawScript, invokers, invocation)
 }
 
-func (s *ScriptRouter) Route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
+func (s *ScriptRouter) Route(invokers []protocol.Invoker, _ *common.URL, invocation protocol.Invocation) []protocol.Invoker {
 	if invokers == nil || len(invokers) == 0 {
 		return []protocol.Invoker{}
 	}
@@ -176,7 +176,6 @@ func (s *ScriptRouter) Route(invokers []protocol.Invoker, url *common.URL, invoc
 	res, err := s.runScript(scriptType, rawScript, invokers, invocation)
 	if err != nil {
 		logger.Warnf("ScriptRouter.Route error: %v", err)
-		return []protocol.Invoker{}
 	}
 
 	return res
