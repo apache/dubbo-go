@@ -31,41 +31,6 @@ const (
 	jsScriptPrefix     = "\n" + jsScriptResultName + ` = `
 )
 
-/*
-  - The expect get js script is like
-
-    (function route(invokers, invocation, context) {
-    var result = [];
-    for (var i = 0; i < invokers.length; i++) {
-    if ("127.0.0.1" === invokers[i].GetURL().Ip) {
-    if (invokers[i].GetURL().Port !== "20000") {
-    invokers[i].GetURL().Ip = "anotherIP"
-    result.push(invokers[i]);
-    }
-    }
-    }
-    return result;
-    }(invokers, invocation, context));
-
-  - The expected way to get the return value is like:
-
-    var result = [];
-    result.push(invokers[i]);
-    return result;
-
----
-  - Supports method calling.
-    Parameter methods are mapped by the passed in type.
-    The first letter is capitalized (does not comply with js specifications)
-
-e.g. `invokers[i].GetURL().SetParam("testKey","testValue")`
-
----
-  - Like the Go language, it supports direct access to
-    exportable variables within parameters.
-
-e.g. `invokers[i].GetURL().Port`
-*/
 type jsInstances struct {
 	insPool *sync.Pool                   // store *goja.runtime
 	program atomic.Pointer[goja.Program] // applicationName to compiledProgram
