@@ -113,13 +113,17 @@ func (s *ScriptRouter) Process(event *config_center.ConfigChangeEvent) {
 
 		s.rawScript = cfg.Script
 		s.scriptType = cfg.ScriptType
+		s.enabled = *cfg.Enabled
 
-		err = in.Compile(cfg.Key, cfg.Script)
-		if err != nil {
-			logger.Errorf("Compile Script failed: %v", err)
+		if s.enabled {
+			err = in.Compile(cfg.Key, cfg.Script)
+			if err != nil {
+				logger.Errorf("Compile Script failed: %v", err)
+			}
+		} else {
+			in.Destroy()
 		}
 
-		s.enabled = true
 	case remoting.EventTypeDel:
 
 		s.enabled = false
@@ -142,13 +146,16 @@ func (s *ScriptRouter) Process(event *config_center.ConfigChangeEvent) {
 
 		s.rawScript = cfg.Script
 		s.scriptType = cfg.ScriptType
+		s.enabled = *cfg.Enabled
 
-		err = in.Compile(cfg.Key, cfg.Script)
-		if err != nil {
-			logger.Errorf("Compile Script failed: %v", err)
+		if s.enabled {
+			err = in.Compile(cfg.Key, cfg.Script)
+			if err != nil {
+				logger.Errorf("Compile Script failed: %v", err)
+			}
+		} else {
+			in.Destroy()
 		}
-
-		s.enabled = true
 	}
 }
 
