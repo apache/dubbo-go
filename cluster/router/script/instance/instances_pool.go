@@ -19,10 +19,11 @@ package instance
 
 import (
 	"context"
-	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"errors"
 	"strings"
+
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
 func init() {

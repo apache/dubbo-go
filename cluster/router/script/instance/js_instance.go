@@ -18,12 +18,13 @@
 package instance
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"fmt"
-	"github.com/dop251/goja"
 	"reflect"
 	"sync"
 	"sync/atomic"
+
+	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"github.com/dop251/goja"
 )
 
 const (

@@ -19,18 +19,19 @@ package instance
 
 import (
 	"context"
+	"fmt"
+	"reflect"
+	"sync"
+	"testing"
+
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
-	"fmt"
 	"github.com/dop251/goja"
 	_ "github.com/dop251/goja_nodejs/console"
 	"github.com/dop251/goja_nodejs/require"
 	"github.com/stretchr/testify/assert"
-	"reflect"
-	"sync"
-	"testing"
 )
 
 var url1 = func() *common.URL {
