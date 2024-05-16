@@ -1,0 +1,12 @@
+version: v1
+managed:
+  enabled: true
+  go_package_prefix:
+    default: github.com/apache/dubbo-go/protocol/triple/triple_protocol/gen
+plugins:
+  - name: go
+    out: triple_protocol/gen
+    opt: paths=source_relative
+  - name: triple
+    out: triple_protocol/gen
+    opt: paths=source_relative

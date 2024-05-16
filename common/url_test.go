@@ -49,7 +49,10 @@ func TestNewURLWithOptions(t *testing.T) {
 		WithPort("8080"),
 		WithMethods(methods),
 		WithParams(params),
-		WithParamsValue("key2", "value2"))
+		WithParamsValue("key2", "value2"),
+		WithAttribute("key3", "value3"),
+		WithAttribute("key4", "value4"),
+	)
 	assert.Equal(t, "/com.test.Service", u.Path)
 	assert.Equal(t, userName, u.Username)
 	assert.Equal(t, password, u.Password)
@@ -58,6 +61,7 @@ func TestNewURLWithOptions(t *testing.T) {
 	assert.Equal(t, "8080", u.Port)
 	assert.Equal(t, methods, u.Methods)
 	assert.Equal(t, 2, len(u.params))
+	assert.Equal(t, 2, len(u.attributes))
 }
 
 func TestURL(t *testing.T) {
@@ -304,6 +308,24 @@ func TestURLGetMethodParamBool(t *testing.T) {
 	assert.Equal(t, false, v)
 }
 
+func TestURLGetAttribute(t *testing.T) {
+	u := URL{}
+	key := "key"
+	notExistKey := "not-exist-key"
+	val := "value"
+	u.SetAttribute(key, val)
+
+	rawVal, ok := u.GetAttribute(key)
+	assert.Equal(t, true, ok)
+	v, ok := rawVal.(string)
+	assert.Equal(t, true, ok)
+	assert.Equal(t, val, v)
+
+	rawVal, ok = u.GetAttribute(notExistKey)
+	assert.Equal(t, false, ok)
+	assert.Nil(t, rawVal)
+}
+
 func TestMergeUrl(t *testing.T) {
 	referenceUrlParams := url.Values{}
 	referenceUrlParams.Set(constant.ClusterKey, "random")
@@ -318,7 +340,7 @@ func TestMergeUrl(t *testing.T) {
 	referenceUrl, _ := NewURL("mock1://127.0.0.1:1111", WithParams(referenceUrlParams), WithMethods([]string{"testMethod"}))
 	serviceUrl, _ := NewURL("mock2://127.0.0.1:20000", WithParams(serviceUrlParams))
 
-	mergedUrl := MergeURL(serviceUrl, referenceUrl)
+	mergedUrl := serviceUrl.MergeURL(referenceUrl)
 	assert.Equal(t, "random", mergedUrl.GetParam(constant.ClusterKey, ""))
 	assert.Equal(t, "1", mergedUrl.GetParam("test2", ""))
 	assert.Equal(t, "1", mergedUrl.GetParam("test3", ""))

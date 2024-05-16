@@ -18,20 +18,23 @@
 package metrics
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
-const eventType = constant.MetricApp
+const eventType = constant.MetricsConfigCenter
 
 var ch = make(chan metrics.MetricsEvent, 10)
 var info = metrics.NewMetricKey("dubbo_configcenter_total", "Config Changed Total")
 
 func init() {
-	metrics.AddCollector("application_info", func(mr metrics.MetricRegistry, config *metrics.ReporterConfig) {
-		c := &configCenterCollector{r: mr}
-		c.start()
+	metrics.AddCollector("config_center", func(mr metrics.MetricRegistry, url *common.URL) {
+		if url.GetParamBool(constant.ConfigCenterEnabledKey, true) {
+			c := &configCenterCollector{r: mr}
+			c.start()
+		}
 	})
 }
 

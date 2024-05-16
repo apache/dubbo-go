@@ -26,4 +26,5 @@ const (
 	Hessian2Serialization = "hessian2"
 	ProtobufSerialization = "protobuf"
 	MsgpackSerialization  = "msgpack"
+	JSONSerialization     = "json"
 )

@@ -39,11 +39,13 @@ require (
 	github.com/influxdata/tdigest v0.0.1
 	github.com/jinzhu/copier v0.3.5
 	github.com/knadh/koanf v1.5.0
-	github.com/magiconair/properties v1.8.1
+	github.com/kr/pretty v0.3.0 // indirect
+	github.com/magiconair/properties v1.8.5
 	github.com/mattn/go-colorable v0.1.13
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
+	github.com/nacos-group/nacos-sdk-go v1.0.9 // indirect
 	github.com/nacos-group/nacos-sdk-go/v2 v2.2.2
 	github.com/oliveagle/jsonpath v0.0.0-20180606110733-2e52cf6e6852
 	github.com/opentracing/opentracing-go v1.2.0
@@ -52,6 +54,7 @@ require (
 	github.com/polarismesh/polaris-go v1.3.0
 	github.com/prometheus/client_golang v1.13.0
 	github.com/prometheus/common v0.37.0
+	github.com/rogpeppe/go-internal v1.8.0 // indirect
 	github.com/sirupsen/logrus v1.8.1
 	github.com/stretchr/testify v1.8.3
 	go.etcd.io/etcd/api/v3 v3.5.7
@@ -70,6 +73,7 @@ require (
 	go.uber.org/atomic v1.10.0
 	go.uber.org/multierr v1.8.0 // indirect
 	go.uber.org/zap v1.21.0
+	golang.org/x/net v0.17.0
 	golang.org/x/oauth2 v0.6.0 // indirect
 	google.golang.org/genproto v0.0.0-20221227171554-f9683d7f8bef
 	google.golang.org/grpc v1.52.0

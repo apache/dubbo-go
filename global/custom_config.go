@@ -15,23 +15,18 @@
  * limitations under the License.
  */
 
-package rpc
+package global
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
-)
+// CustomConfig
+//
+// # Experimental
+//
+// Notice: This struct is EXPERIMENTAL and may be changed or removed in a
+// later release.
+type CustomConfig struct {
+	ConfigMap map[string]interface{} `yaml:"config-map" json:"config-map,omitempty" property:"config-map"`
+}
 
-const (
-	applicationNameKey = constant.ApplicationNameKey
-	groupKey           = constant.GroupKey
-	hostnameKey        = constant.HostnameKey
-	interfaceKey       = constant.InterfaceKey
-	ipKey              = constant.IpKey
-	methodKey          = constant.MethodKey
-	versionKey         = constant.VersionKey
-)
-
-const (
-	providerField = "provider"
-	consumerField = "consumer"
-)
+func DefaultCustomConfig() *CustomConfig {
+	return &CustomConfig{}
+}

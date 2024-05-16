@@ -23,6 +23,7 @@ import (
 
 import (
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/router/chain"
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	_ "dubbo.apache.org/dubbo-go/v3/metrics/prometheus"
 )
@@ -41,8 +42,9 @@ type RouterConfig struct {
 }
 
 type Tag struct {
-	Name      string   `yaml:"name" json:"name,omitempty" property:"name"`
-	Addresses []string `yaml:"addresses" json:"addresses,omitempty" property:"addresses"`
+	Name      string               `yaml:"name" json:"name,omitempty" property:"name"`
+	Match     []*common.ParamMatch `yaml:"match" json:"match,omitempty" property:"match"`
+	Addresses []string             `yaml:"addresses" json:"addresses,omitempty" property:"addresses"`
 }
 
 // Prefix dubbo.router

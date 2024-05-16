@@ -25,6 +25,7 @@ import (
 )
 
 import (
+	gxset "github.com/dubbogo/gost/container/set"
 	"github.com/dubbogo/gost/log/logger"
 
 	"github.com/go-co-op/gocron"
@@ -310,4 +311,9 @@ func (mr *MetadataReport) doHandlerMetadataCollection(metadataMap map[*identifie
 		}
 	}
 	return false
+}
+
+func (mr *MetadataReport) GetConfigKeysByGroup(group string) (*gxset.HashSet, error) {
+	//TODO implement me
+	panic("implement me")
 }

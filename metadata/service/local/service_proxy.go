@@ -40,7 +40,7 @@ import (
 // GetMetadataInfo need to be implemented.
 // TODO use ProxyFactory to create proxy
 type MetadataServiceProxy struct {
-	invkr protocol.Invoker
+	Invoker protocol.Invoker
 }
 
 // nolint
@@ -58,7 +58,7 @@ func (m *MetadataServiceProxy) GetExportedURLs(serviceInterface string, group st
 		invocation.WithAttachments(map[string]interface{}{constant.AsyncKey: "false"}),
 		invocation.WithParameterValues([]reflect.Value{siV, gV, vV, pV}))
 
-	res := m.invkr.Invoke(context.Background(), inv)
+	res := m.Invoker.Invoke(context.Background(), inv)
 	if res.Error() != nil {
 		logger.Errorf("could not get the metadata service from remote provider: %v", res.Error())
 		return []*common.URL{}, nil
@@ -180,7 +180,7 @@ func (m *MetadataServiceProxy) GetMetadataInfo(revision string) (*common.Metadat
 		invocation.WithReply(reflect.ValueOf(&common.MetadataInfo{}).Interface()),
 		invocation.WithAttachments(map[string]interface{}{constant.AsyncKey: "false"}),
 		invocation.WithParameterValues([]reflect.Value{rV}))
-	res := m.invkr.Invoke(context.Background(), inv)
+	res := m.Invoker.Invoke(context.Background(), inv)
 	if res.Error() != nil {
 		logger.Errorf("could not get the metadata info from remote provider: %v", res.Error())
 		return nil, res.Error()

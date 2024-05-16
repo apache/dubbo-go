@@ -47,7 +47,11 @@ import (
 
 // ReferenceConfig is the configuration of service consumer
 type ReferenceConfig struct {
-	pxy              *proxy.Proxy
+	pxy        *proxy.Proxy
+	invoker    protocol.Invoker
+	urls       []*common.URL
+	rootConfig *RootConfig
+
 	id               string
 	InterfaceName    string            `yaml:"interface"  json:"interface,omitempty" property:"interface"`
 	Check            *bool             `yaml:"check"  json:"check,omitempty" property:"check"`
@@ -65,15 +69,13 @@ type ReferenceConfig struct {
 	Methods          []*MethodConfig   `yaml:"methods"  json:"methods,omitempty" property:"methods"`
 	Async            bool              `yaml:"async"  json:"async,omitempty" property:"async"`
 	Params           map[string]string `yaml:"params"  json:"params,omitempty" property:"params"`
-	invoker          protocol.Invoker
-	urls             []*common.URL
-	Generic          string `yaml:"generic"  json:"generic,omitempty" property:"generic"`
-	Sticky           bool   `yaml:"sticky"   json:"sticky,omitempty" property:"sticky"`
-	RequestTimeout   string `yaml:"timeout"  json:"timeout,omitempty" property:"timeout"`
-	ForceTag         bool   `yaml:"force.tag"  json:"force.tag,omitempty" property:"force.tag"`
-	TracingKey       string `yaml:"tracing-key" json:"tracing-key,omitempty" propertiy:"tracing-key"`
-	rootConfig       *RootConfig
+	Generic          string            `yaml:"generic"  json:"generic,omitempty" property:"generic"`
+	Sticky           bool              `yaml:"sticky"   json:"sticky,omitempty" property:"sticky"`
+	RequestTimeout   string            `yaml:"timeout"  json:"timeout,omitempty" property:"timeout"`
+	ForceTag         bool              `yaml:"force.tag"  json:"force.tag,omitempty" property:"force.tag"`
+	TracingKey       string            `yaml:"tracing-key" json:"tracing-key,omitempty" propertiy:"tracing-key"`
 	metaDataType     string
+	metricsEnable    bool
 	MeshProviderPort int `yaml:"mesh-provider-port" json:"mesh-provider-port,omitempty" propertiy:"mesh-provider-port"`
 }
 
@@ -100,27 +102,31 @@ func (rc *ReferenceConfig) Init(root *RootConfig) error {
 			rc.Version = root.Application.Version
 		}
 	}
-	if rc.Filter == "" {
-		rc.Filter = root.Consumer.Filter
+	rc.RegistryIDs = translateIds(rc.RegistryIDs)
+	if root.Consumer != nil {
+		if rc.Filter == "" {
+			rc.Filter = root.Consumer.Filter
+		}
+		if len(rc.RegistryIDs) <= 0 {
+			rc.RegistryIDs = root.Consumer.RegistryIDs
+		}
+		if rc.Protocol == "" {
+			rc.Protocol = root.Consumer.Protocol
+		}
+		if rc.TracingKey == "" {
+			rc.TracingKey = root.Consumer.TracingKey
+		}
+		if rc.Check == nil {
+			rc.Check = &root.Consumer.Check
+		}
 	}
 	if rc.Cluster == "" {
 		rc.Cluster = "failover"
 	}
-	rc.RegistryIDs = translateIds(rc.RegistryIDs)
-	if len(rc.RegistryIDs) <= 0 {
-		rc.RegistryIDs = root.Consumer.RegistryIDs
+	if root.Metrics.Enable != nil {
+		rc.metricsEnable = *root.Metrics.Enable
 	}
 
-	if rc.Protocol == "" {
-		rc.Protocol = root.Consumer.Protocol
-	}
-
-	if rc.TracingKey == "" {
-		rc.TracingKey = root.Consumer.TracingKey
-	}
-	if rc.Check == nil {
-		rc.Check = &root.Consumer.Check
-	}
 	return verify(rc)
 }
 
@@ -214,13 +220,13 @@ func (rc *ReferenceConfig) Refer(srv interface{}) {
 				}
 				// replace params of serviceURL with params of cfgUrl
 				// other stuff, e.g. IP, port, etc., are same as serviceURL
-				newURL := common.MergeURL(serviceURL, cfgURL)
+				newURL := serviceURL.MergeURL(cfgURL)
 				newURL.AddParam("peer", "true")
 				rc.urls = append(rc.urls, newURL)
 			}
 		}
 	} else { // use registry configs
-		rc.urls = loadRegistries(rc.RegistryIDs, rc.rootConfig.Registries, common.CONSUMER)
+		rc.urls = LoadRegistries(rc.RegistryIDs, rc.rootConfig.Registries, common.CONSUMER)
 		// set url to regURLs
 		for _, regURL := range rc.urls {
 			regURL.SubURL = cfgURL
@@ -354,6 +360,9 @@ func (rc *ReferenceConfig) getURLMap() url.Values {
 	defaultReferenceFilter := constant.DefaultReferenceFilters
 	if rc.Generic != "" {
 		defaultReferenceFilter = constant.GenericFilterKey + "," + defaultReferenceFilter
+	}
+	if rc.metricsEnable {
+		defaultReferenceFilter += fmt.Sprintf(",%s", constant.MetricsFilterKey)
 	}
 	urlMap.Set(constant.ReferenceFilterKey, mergeValue(rc.Filter, "", defaultReferenceFilter))
 

@@ -93,8 +93,8 @@ func TestNewServiceConfigBuilder(t *testing.T) {
 		assert.Equal(t, serviceConfig.IsExport(), false)
 	})
 
-	t.Run("loadRegistries&loadProtocol&getRandomPort", func(t *testing.T) {
-		registries := loadRegistries(serviceConfig.RegistryIDs, serviceConfig.RCRegistriesMap, common.PROVIDER)
+	t.Run("LoadRegistries&loadProtocol&getRandomPort", func(t *testing.T) {
+		registries := LoadRegistries(serviceConfig.RegistryIDs, serviceConfig.RCRegistriesMap, common.PROVIDER)
 		assert.Equal(t, len(registries), 1)
 		assert.Equal(t, "service-discovery-registry", registries[0].Protocol)
 		assert.Equal(t, registries[0].Port, "8848")
@@ -114,7 +114,7 @@ func TestNewServiceConfigBuilder(t *testing.T) {
 		values := serviceConfig.getUrlMap()
 		assert.Equal(t, values.Get("methods.Say.weight"), "0")
 		assert.Equal(t, values.Get("methods.Say.tps.limit.rate"), "")
-		assert.Equal(t, values.Get(constant.ServiceFilterKey), "echo,metrics,token,accesslog,tps,generic_service,execute,pshutdown")
+		assert.Equal(t, values.Get(constant.ServiceFilterKey), "echo,token,accesslog,tps,generic_service,execute,pshutdown")
 	})
 
 	t.Run("Implement", func(t *testing.T) {

@@ -57,6 +57,8 @@ const (
 	DefaultHTTPRspBufferSize = 1024
 	// PathPrefix ...
 	PathPrefix = byte('/')
+	// Max HTTP header size in Mib
+	MaxHeaderSize = 8 * 1024 * 1024
 )
 
 // Server is JSON RPC server wrapper
@@ -121,7 +123,7 @@ func (s *Server) handlePkg(conn net.Conn) {
 	}
 
 	for {
-		bufReader := bufio.NewReader(conn)
+		bufReader := bufio.NewReader(io.LimitReader(conn, MaxHeaderSize))
 		r, err := http.ReadRequest(bufReader)
 		if err != nil {
 			logger.Warnf("[ReadRequest] error: %v", err)

@@ -24,10 +24,14 @@ import (
 
 import (
 	"github.com/dubbogo/gost/log/logger"
+
 	"go.opentelemetry.io/contrib/propagators/b3"
+
 	"go.opentelemetry.io/otel/propagation"
+
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+
 	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
 )
 

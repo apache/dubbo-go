@@ -43,6 +43,8 @@ type rpcCommonMetrics struct {
 	requestsProcessingTotal       metrics.GaugeVec
 	requestsSucceedTotal          metrics.CounterVec
 	requestsSucceedTotalAggregate metrics.AggregateCounterVec
+	requestsFailedTotal           metrics.CounterVec
+	requestsFailedTotalAggregate  metrics.AggregateCounterVec
 	rtMilliseconds                metrics.RtVec
 	rtMillisecondsQuantiles       metrics.QuantileMetricVec
 	rtMillisecondsAggregate       metrics.RtVec
@@ -66,12 +68,14 @@ func (pm *providerMetrics) init(registry metrics.MetricRegistry) {
 	pm.requestsProcessingTotal = metrics.NewGaugeVec(registry, metrics.NewMetricKey("dubbo_provider_requests_processing_total", "The number of received requests being processed by the provider"))
 	pm.requestsSucceedTotal = metrics.NewCounterVec(registry, metrics.NewMetricKey("dubbo_provider_requests_succeed_total", "The number of requests successfully received by the provider"))
 	pm.requestsSucceedTotalAggregate = metrics.NewAggregateCounterVec(registry, metrics.NewMetricKey("dubbo_provider_requests_succeed_total_aggregate", "The number of successful requests received by the provider under the sliding window"))
+	pm.requestsFailedTotal = metrics.NewCounterVec(registry, metrics.NewMetricKey("dubbo_provider_requests_failed_total", "Total Failed Requests"))
+	pm.requestsFailedTotalAggregate = metrics.NewAggregateCounterVec(registry, metrics.NewMetricKey("dubbo_provider_requests_failed_total_aggregate", "Total Failed Aggregate Requests"))
 	pm.rtMilliseconds = metrics.NewRtVec(registry,
 		metrics.NewMetricKey("dubbo_provider_rt_milliseconds", "response time among all requests processed by the provider"),
 		&metrics.RtOpts{Aggregate: false},
 	)
 	pm.rtMillisecondsAggregate = metrics.NewRtVec(registry,
-		metrics.NewMetricKey("dubbo_provider_rt_milliseconds", "response time of the provider under the sliding window"),
+		metrics.NewMetricKey("dubbo_provider_rt", "response time of the provider under the sliding window"),
 		&metrics.RtOpts{Aggregate: true, BucketNum: metrics.DefaultBucketNum, TimeWindowSeconds: metrics.DefaultTimeWindowSeconds},
 	)
 	pm.rtMillisecondsQuantiles = metrics.NewQuantileMetricVec(registry, []*metrics.MetricKey{
@@ -89,12 +93,14 @@ func (cm *consumerMetrics) init(registry metrics.MetricRegistry) {
 	cm.requestsProcessingTotal = metrics.NewGaugeVec(registry, metrics.NewMetricKey("dubbo_consumer_requests_processing_total", "The number of received requests being processed by the consumer"))
 	cm.requestsSucceedTotal = metrics.NewCounterVec(registry, metrics.NewMetricKey("dubbo_consumer_requests_succeed_total", "The number of successful requests sent by consumers"))
 	cm.requestsSucceedTotalAggregate = metrics.NewAggregateCounterVec(registry, metrics.NewMetricKey("dubbo_consumer_requests_succeed_total_aggregate", "The number of successful requests sent by consumers under the sliding window"))
+	cm.requestsFailedTotal = metrics.NewCounterVec(registry, metrics.NewMetricKey("dubbo_consumer_requests_failed_total", "Total Failed Requests"))
+	cm.requestsFailedTotalAggregate = metrics.NewAggregateCounterVec(registry, metrics.NewMetricKey("dubbo_consumer_requests_failed_total_aggregate", "Total Failed Aggregate Requests"))
 	cm.rtMilliseconds = metrics.NewRtVec(registry,
 		metrics.NewMetricKey("dubbo_consumer_rt_milliseconds", "response time among all requests from consumers"),
 		&metrics.RtOpts{Aggregate: false},
 	)
 	cm.rtMillisecondsAggregate = metrics.NewRtVec(registry,
-		metrics.NewMetricKey("dubbo_consumer_rt_milliseconds", "response time of the consumer under the sliding window"),
+		metrics.NewMetricKey("dubbo_consumer_rt", "response time of the consumer under the sliding window"),
 		&metrics.RtOpts{Aggregate: true, BucketNum: metrics.DefaultBucketNum, TimeWindowSeconds: metrics.DefaultTimeWindowSeconds},
 	)
 	cm.rtMillisecondsQuantiles = metrics.NewQuantileMetricVec(registry, []*metrics.MetricKey{

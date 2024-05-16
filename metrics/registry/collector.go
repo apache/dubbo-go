@@ -18,6 +18,7 @@
 package registry
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 )
@@ -27,9 +28,11 @@ var (
 )
 
 func init() {
-	metrics.AddCollector("registry", func(m metrics.MetricRegistry, c *metrics.ReporterConfig) {
-		rc := &registryCollector{metrics.BaseCollector{R: m}}
-		go rc.start()
+	metrics.AddCollector("registry", func(m metrics.MetricRegistry, url *common.URL) {
+		if url.GetParamBool(constant.RegistryEnabledKey, true) {
+			rc := &registryCollector{metrics.BaseCollector{R: m}}
+			go rc.start()
+		}
 	})
 }
 

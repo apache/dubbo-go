@@ -7,7 +7,7 @@ dubbogo-cli 是 Apach/dubbo-go 生态的子项目，为开发者提供便利的�
 执行以下指令安装dubbogo-cli 至 $GOPATH/bin
 
 ```
-go install dubbo.apache.org/dubbo-go/v3/dubbogo-cli@latest
+go install dubbo.apache.org/dubbo-go/v3/tools/dubbogo-cli@latest
 ```
 
 ## 2. 功能概览

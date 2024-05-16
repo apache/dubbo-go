@@ -38,10 +38,19 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/metadata/identifier"
+	"dubbo.apache.org/dubbo-go/v3/metadata/mapping/metadata"
 	"dubbo.apache.org/dubbo-go/v3/metadata/report"
 	"dubbo.apache.org/dubbo-go/v3/metadata/report/factory"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/remoting/nacos"
+)
+
+const (
+	// the number is a little big tricky
+	// it will be used in query which looks up all keys with the target group
+	// now, one key represents one application
+	// so only a group has more than 9999 applications will failed
+	maxKeysNum = 9999
 )
 
 func init() {
@@ -55,13 +64,14 @@ func init() {
 // of MetadataReport based on nacos.
 type nacosMetadataReport struct {
 	client *nacosClient.NacosConfigClient
+	group  string
 }
 
 // GetAppMetadata get metadata info from nacos
 func (n *nacosMetadataReport) GetAppMetadata(metadataIdentifier *identifier.SubscriberMetadataIdentifier) (*common.MetadataInfo, error) {
 	data, err := n.getConfig(vo.ConfigParam{
 		DataId: metadataIdentifier.GetIdentifierKey(),
-		Group:  metadataIdentifier.Group,
+		Group:  n.group,
 	})
 	if err != nil {
 		return nil, err
@@ -84,7 +94,7 @@ func (n *nacosMetadataReport) PublishAppMetadata(metadataIdentifier *identifier.
 
 	return n.storeMetadata(vo.ConfigParam{
 		DataId:  metadataIdentifier.GetIdentifierKey(),
-		Group:   metadataIdentifier.Group,
+		Group:   n.group,
 		Content: string(data),
 	})
 }
@@ -93,7 +103,7 @@ func (n *nacosMetadataReport) PublishAppMetadata(metadataIdentifier *identifier.
 func (n *nacosMetadataReport) StoreProviderMetadata(providerIdentifier *identifier.MetadataIdentifier, serviceDefinitions string) error {
 	return n.storeMetadata(vo.ConfigParam{
 		DataId:  providerIdentifier.GetIdentifierKey(),
-		Group:   providerIdentifier.Group,
+		Group:   n.group,
 		Content: serviceDefinitions,
 	})
 }
@@ -102,7 +112,7 @@ func (n *nacosMetadataReport) StoreProviderMetadata(providerIdentifier *identifi
 func (n *nacosMetadataReport) StoreConsumerMetadata(consumerMetadataIdentifier *identifier.MetadataIdentifier, serviceParameterString string) error {
 	return n.storeMetadata(vo.ConfigParam{
 		DataId:  consumerMetadataIdentifier.GetIdentifierKey(),
-		Group:   consumerMetadataIdentifier.Group,
+		Group:   n.group,
 		Content: serviceParameterString,
 	})
 }
@@ -111,7 +121,7 @@ func (n *nacosMetadataReport) StoreConsumerMetadata(consumerMetadataIdentifier *
 func (n *nacosMetadataReport) SaveServiceMetadata(metadataIdentifier *identifier.ServiceMetadataIdentifier, url *common.URL) error {
 	return n.storeMetadata(vo.ConfigParam{
 		DataId:  metadataIdentifier.GetIdentifierKey(),
-		Group:   metadataIdentifier.Group,
+		Group:   n.group,
 		Content: url.String(),
 	})
 }
@@ -120,7 +130,7 @@ func (n *nacosMetadataReport) SaveServiceMetadata(metadataIdentifier *identifier
 func (n *nacosMetadataReport) RemoveServiceMetadata(metadataIdentifier *identifier.ServiceMetadataIdentifier) error {
 	return n.deleteMetadata(vo.ConfigParam{
 		DataId: metadataIdentifier.GetIdentifierKey(),
-		Group:  metadataIdentifier.Group,
+		Group:  n.group,
 	})
 }
 
@@ -128,7 +138,7 @@ func (n *nacosMetadataReport) RemoveServiceMetadata(metadataIdentifier *identifi
 func (n *nacosMetadataReport) GetExportedURLs(metadataIdentifier *identifier.ServiceMetadataIdentifier) ([]string, error) {
 	return n.getConfigAsArray(vo.ConfigParam{
 		DataId: metadataIdentifier.GetIdentifierKey(),
-		Group:  metadataIdentifier.Group,
+		Group:  n.group,
 	})
 }
 
@@ -151,7 +161,7 @@ func (n *nacosMetadataReport) GetSubscribedURLs(subscriberMetadataIdentifier *id
 func (n *nacosMetadataReport) GetServiceDefinition(metadataIdentifier *identifier.MetadataIdentifier) (string, error) {
 	return n.getConfig(vo.ConfigParam{
 		DataId: metadataIdentifier.GetIdentifierKey(),
-		Group:  metadataIdentifier.Group,
+		Group:  n.group,
 	})
 }
 
@@ -288,6 +298,37 @@ func (n *nacosMetadataReport) GetServiceAppMapping(key string, group string, lis
 	return set, nil
 }
 
+// GetConfigKeysByGroup will return all keys with the group
+func (n *nacosMetadataReport) GetConfigKeysByGroup(group string) (*gxset.HashSet, error) {
+	group = n.resolvedGroup(group)
+	page, err := n.client.Client().SearchConfig(vo.SearchConfigParam{
+		Search: "accurate",
+		Group:  group,
+		PageNo: 1,
+		// actually it's impossible for user to create 9999 application under one group
+		PageSize: maxKeysNum,
+	})
+
+	result := gxset.NewSet()
+	if err != nil {
+		return result, perrors.WithMessage(err, "can not find the configClient config")
+	}
+	for _, itm := range page.PageItems {
+		result.Add(itm.DataId)
+	}
+	return result, nil
+}
+
+// resolvedGroup will regular the group. Now, it will replace the '/' with '-'.
+// '/' is a special character for nacos
+func (n *nacosMetadataReport) resolvedGroup(group string) string {
+	if len(group) <= 0 {
+		group = metadata.DefaultGroup
+		return group
+	}
+	return strings.ReplaceAll(group, "/", "-")
+}
+
 // RemoveServiceAppMappingListener remove the serviceMapping listener from metadata center
 func (n *nacosMetadataReport) RemoveServiceAppMappingListener(key string, group string) error {
 	return n.removeServiceMappingListener(key, group)
@@ -299,7 +340,8 @@ type nacosMetadataReportFactory struct{}
 func (n *nacosMetadataReportFactory) CreateMetadataReport(url *common.URL) report.MetadataReport {
 	url.SetParam(constant.NacosNamespaceID, url.GetParam(constant.MetadataReportNamespaceKey, ""))
 	url.SetParam(constant.TimeoutKey, url.GetParam(constant.TimeoutKey, constant.DefaultRegTimeout))
-	url.SetParam(constant.NacosGroupKey, url.GetParam(constant.MetadataReportGroupKey, constant.ServiceDiscoveryDefaultGroup))
+	group := url.GetParam(constant.MetadataReportGroupKey, constant.ServiceDiscoveryDefaultGroup)
+	url.SetParam(constant.NacosGroupKey, group)
 	url.SetParam(constant.NacosUsername, url.Username)
 	url.SetParam(constant.NacosPassword, url.Password)
 	client, err := nacos.NewNacosConfigClientByUrl(url)
@@ -307,5 +349,5 @@ func (n *nacosMetadataReportFactory) CreateMetadataReport(url *common.URL) repor
 		logger.Errorf("Could not create nacos metadata report. URL: %s", url.String())
 		return nil
 	}
-	return &nacosMetadataReport{client: client}
+	return &nacosMetadataReport{client: client, group: group}
 }

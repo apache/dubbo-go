@@ -54,6 +54,11 @@ func (m *mockMetadataReportFactory) CreateMetadataReport(*common.URL) report.Met
 
 type mockMetadataReport struct{}
 
+func (m mockMetadataReport) GetConfigKeysByGroup(group string) (*gxset.HashSet, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (m mockMetadataReport) RegisterServiceAppMapping(string, string, string) error {
 	panic("implement me")
 }

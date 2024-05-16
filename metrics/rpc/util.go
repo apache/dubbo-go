@@ -35,22 +35,23 @@ import (
 // buildLabels will build the labels for the rpc metrics
 func buildLabels(url *common.URL, invocation protocol.Invocation) map[string]string {
 	return map[string]string{
-		applicationNameKey: url.GetParam(constant.ApplicationKey, ""),
-		groupKey:           url.Group(),
-		hostnameKey:        common.GetLocalHostName(),
-		interfaceKey:       url.Service(),
-		ipKey:              common.GetLocalIp(),
-		versionKey:         url.GetParam(constant.AppVersionKey, ""),
-		methodKey:          invocation.MethodName(),
+		constant.TagApplicationName:    url.GetParam(constant.ApplicationKey, ""),
+		constant.TagApplicationVersion: url.GetParam(constant.AppVersionKey, ""),
+		constant.TagHostname:           common.GetLocalHostName(),
+		constant.TagIp:                 common.GetLocalIp(),
+		constant.TagInterface:          url.Service(),
+		constant.TagMethod:             invocation.MethodName(),
+		constant.TagGroup:              url.Group(),
+		constant.TagVersion:            url.GetParam(constant.VersionKey, ""),
 	}
 }
 
 // getRole will get the application role from the url
 func getRole(url *common.URL) (role string) {
 	if isProvider(url) {
-		role = providerField
+		role = constant.SideProvider
 	} else if isConsumer(url) {
-		role = consumerField
+		role = constant.SideConsumer
 	} else {
 		logger.Warnf("The url belongs neither the consumer nor the provider, "+
 			"so the invocation will be ignored. url: %s", url.String())

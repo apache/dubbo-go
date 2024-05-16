@@ -200,3 +200,7 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
+
+   For the package protocol/triple:
+
+   This package contains a modified portion of 'connect-go', a family of libraries for building gRPC-compatible HTTP APIs also under the "Apache License 2.0" license, see https://github.com/bufbuild/connect-go/blob/main/LICENSE.

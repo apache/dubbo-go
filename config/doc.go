@@ -15,8 +15,7 @@
  * limitations under the License.
  */
 
-// Package config defines the Dubbo-go config, which carries ApplicationConfig、
-// RegisterConfig、ProtocolConfig、RouterConfig and MetadataReportConfig etc.
-// Configuration is greater than convention in dubbo-go. Please refer
-// to https://github.com/apache/dubbo-go-samples for more information.
+// Package config assembles all Dubbo configurations and works as the entrance of the whole Dubbo process.
+//
+// Deprecated: This package is for internal use only starting from 3.2.0, users must not depend on this package directly.
 package config

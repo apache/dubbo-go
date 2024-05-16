@@ -15,5 +15,5 @@
  * limitations under the License.
  */
 
-// Package metrics define interfaces for metrics collection.
+// Package metrics is for collecting RPC and many other metrics.
 package metrics

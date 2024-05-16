@@ -1,0 +1,12 @@
+version: v1
+lint:
+  use:
+    - DEFAULT
+  ignore:
+    # We don't control these definitions, so we ignore lint errors.
+    - connectext/grpc/health/v1/health.proto
+    - connectext/grpc/reflection/v1alpha/reflection.proto
+    - connectext/grpc/status/v1/status.proto
+breaking:
+  use:
+    - WIRE_JSON

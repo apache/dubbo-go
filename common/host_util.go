@@ -20,6 +20,7 @@ package common
 import (
 	"os"
 	"strconv"
+	"strings"
 )
 
 import (
@@ -79,4 +80,29 @@ func isValidPort(port string) bool {
 
 	portInt, err := strconv.Atoi(port)
 	return err == nil && portInt > 0 && portInt < 65536
+}
+
+func IsMatchGlobPattern(pattern, value string) bool {
+	if constant.AnyValue == pattern {
+		return true
+	}
+	if pattern == "" && value == "" {
+		return true
+	}
+	if pattern == "" || value == "" {
+		return false
+	}
+
+	i := strings.Index(pattern, constant.AnyValue)
+	if i == -1 { // doesn't find "*"
+		return value == pattern
+	} else if i == len(pattern)-1 { // "*" is at the end
+		return strings.HasPrefix(value, pattern[0:i])
+	} else if i == 0 { // "*" is at the beginning
+		return strings.HasSuffix(value, pattern[i+1:])
+	} else { // "*" is in the middle
+		prefix := pattern[0:i]
+		suffix := pattern[i+1:]
+		return strings.HasPrefix(value, prefix) && strings.HasSuffix(value, suffix)
+	}
 }

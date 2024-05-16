@@ -59,7 +59,7 @@ const (
 	// DefaultServiceFilters defines default service filters, it is highly recommended
 	// that put the AdaptiveServiceProviderFilterKey at the end.
 	DefaultServiceFilters = EchoFilterKey + "," +
-		MetricsFilterKey + "," + TokenFilterKey + "," + AccessLogFilterKey + "," + TpsLimitFilterKey + "," +
+		TokenFilterKey + "," + AccessLogFilterKey + "," + TpsLimitFilterKey + "," +
 		GenericServiceFilterKey + "," + ExecuteLimitFilterKey + "," + GracefulShutdownProviderFilterKey
 
 	DefaultReferenceFilters = GracefulShutdownConsumerFilterKey

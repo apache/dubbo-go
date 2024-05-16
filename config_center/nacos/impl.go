@@ -162,11 +162,8 @@ func (n *nacosDynamicConfiguration) GetConfigKeysByGroup(group string) (*gxset.H
 
 // GetRule Get router rule
 func (n *nacosDynamicConfiguration) GetRule(key string, opts ...config_center.Option) (string, error) {
-	tmpOpts := &config_center.Options{}
-	for _, opt := range opts {
-		opt(tmpOpts)
-	}
-	resolvedGroup := n.resolvedGroup(tmpOpts.Group)
+	tmpOpts := config_center.NewOptions(opts...)
+	resolvedGroup := n.resolvedGroup(tmpOpts.Center.Group)
 	content, err := n.client.Client().GetConfig(vo.ConfigParam{
 		DataId: key,
 		Group:  resolvedGroup,

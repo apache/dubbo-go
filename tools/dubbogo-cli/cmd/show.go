@@ -31,8 +31,8 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/dubbogo-cli/metadata"
-	_ "dubbo.apache.org/dubbo-go/v3/dubbogo-cli/metadata/zookeeper"
+	"dubbo.apache.org/dubbo-go/v3/tools/dubbogo-cli/metadata"
+	_ "dubbo.apache.org/dubbo-go/v3/tools/dubbogo-cli/metadata/zookeeper"
 )
 
 // showCmd represents the show command
@@ -113,4 +113,3 @@ func show(cmd *cobra.Command, _ []string) {
 		fmt.Printf("======================\n")
 	}
 }
-

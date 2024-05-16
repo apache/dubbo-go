@@ -19,7 +19,6 @@ package config
 
 import (
 	"github.com/creasty/defaults"
-
 	"github.com/pkg/errors"
 )
 
@@ -30,7 +29,7 @@ import (
 // ApplicationConfig is a configuration for current applicationConfig, whether the applicationConfig is a provider or a consumer
 type ApplicationConfig struct {
 	Organization string `default:"dubbo-go" yaml:"organization" json:"organization,omitempty" property:"organization"`
-	Name         string `default:"dubbo.io" yaml:"name" json:"name,omitempty" property:"name"`
+	Name         string `yaml:"name" json:"name,omitempty" property:"name"`
 	Module       string `default:"sample" yaml:"module" json:"module,omitempty" property:"module"`
 	Group        string `yaml:"group" json:"group,omitempty" property:"module"`
 	Version      string `yaml:"version" json:"version,omitempty" property:"version"`
@@ -53,6 +52,9 @@ func (ac *ApplicationConfig) Init() error {
 	}
 	if err := ac.check(); err != nil {
 		return err
+	}
+	if ac.Name == "" {
+		ac.Name = constant.DefaultDubboApp
 	}
 	return nil
 }

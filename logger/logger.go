@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+// Package logger is unified facade provided by Dubbo to work with different logger frameworks, eg, Zapper, Logrus.
 package logger
 
 import (

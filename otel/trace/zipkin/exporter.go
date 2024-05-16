@@ -22,13 +22,14 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/otel/trace"
+	"go.opentelemetry.io/otel/exporters/zipkin"
+
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
 import (
-	"go.opentelemetry.io/otel/exporters/zipkin"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/otel/trace"
 )
 
 var (

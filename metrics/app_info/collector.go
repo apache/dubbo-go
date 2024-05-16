@@ -18,6 +18,7 @@
 package app_info
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 )
 
@@ -29,7 +30,7 @@ import (
 var info = metrics.NewMetricKey("dubbo_application_info_total", "Total Application Info") // Total Application Info	include application name、version etc
 
 func init() {
-	metrics.AddCollector("application_info", func(mr metrics.MetricRegistry, config *metrics.ReporterConfig) {
+	metrics.AddCollector("application_info", func(mr metrics.MetricRegistry, _ *common.URL) {
 		mr.Counter(&metrics.MetricId{Name: info.Name, Desc: info.Desc, Tags: metrics.GetApplicationLevel().Tags()}).Inc()
 	})
 }

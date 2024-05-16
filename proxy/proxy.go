@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+// Package proxy is a core RPC concept and is especially designed for Dubbo2 protocol.
 package proxy
 
 import (

@@ -83,7 +83,8 @@ func (invoker *failbackClusterInvoker) tryTimerTaskProc(ctx context.Context, ret
 	result := retryInvoker.Invoke(ctx, retryTask.invocation)
 	if result.Error() != nil {
 		retryTask.lastInvoker = retryInvoker
-		invoker.checkRetry(retryTask, result.Error())
+		retryTask.lastErr = result.Error()
+		retryTask.checkRetry()
 	}
 }
 
@@ -112,22 +113,6 @@ func (invoker *failbackClusterInvoker) process(ctx context.Context) {
 			}
 			go invoker.tryTimerTaskProc(ctx, retryTask)
 		}
-	}
-}
-
-func (invoker *failbackClusterInvoker) checkRetry(retryTask *retryTimerTask, err error) {
-	logger.Errorf("Failed retry to invoke the method %v in the service %v, wait again. The exception: %v.\n",
-		retryTask.invocation.MethodName(), invoker.GetURL().Service(), err.Error())
-	retryTask.retries++
-	retryTask.lastT = time.Now()
-	if retryTask.retries > invoker.maxRetries {
-		logger.Errorf("Failed retry times exceed threshold (%v), We have to abandon, invocation-> %v.\n",
-			retryTask.retries, retryTask.invocation)
-		return
-	}
-
-	if err := invoker.taskList.Put(retryTask); err != nil {
-		logger.Errorf("invoker.taskList.Put(retryTask:%#v) = error:%v", retryTask, err)
 	}
 }
 
@@ -166,7 +151,7 @@ func (invoker *failbackClusterInvoker) Invoke(ctx context.Context, invocation pr
 			return &protocol.RPCResult{}
 		}
 
-		timerTask := newRetryTimerTask(loadBalance, invocation, invokers, ivk)
+		timerTask := newRetryTimerTask(loadBalance, invocation, invokers, ivk, invoker)
 		invoker.taskList.Put(timerTask)
 
 		logger.Errorf("Failback to invoke the method %v in the service %v, wait for retry in background. Ignored exception: %v.\n",
@@ -189,21 +174,50 @@ func (invoker *failbackClusterInvoker) Destroy() {
 }
 
 type retryTimerTask struct {
-	loadbalance loadbalance.LoadBalance
-	invocation  protocol.Invocation
-	invokers    []protocol.Invoker
-	lastInvoker protocol.Invoker
-	retries     int64
-	lastT       time.Time
+	loadbalance    loadbalance.LoadBalance
+	invocation     protocol.Invocation
+	invokers       []protocol.Invoker
+	lastInvoker    protocol.Invoker
+	retries        int64
+	maxRetries     int64
+	lastT          time.Time
+	clusterInvoker *failbackClusterInvoker
+	lastErr        error
+}
+
+func (t *retryTimerTask) checkRetry() {
+	logger.Errorf("Failed retry to invoke the method %v in the service %v, wait again. The exception: %v.\n",
+		t.invocation.MethodName(), t.clusterInvoker.GetURL().Service(), t.lastErr)
+	t.retries++
+	t.lastT = time.Now()
+	if t.retries > t.maxRetries {
+		logger.Errorf("Retry times exceed threshold (%v), invocation-> %v.\n",
+			t.retries, t.invocation)
+		return
+	}
+
+	if err := t.clusterInvoker.taskList.Put(t); err != nil {
+		logger.Errorf("invoker.taskList.Put(retryTask:%#v) = error:%v", t, err)
+	}
 }
 
 func newRetryTimerTask(loadbalance loadbalance.LoadBalance, invocation protocol.Invocation, invokers []protocol.Invoker,
-	lastInvoker protocol.Invoker) *retryTimerTask {
-	return &retryTimerTask{
-		loadbalance: loadbalance,
-		invocation:  invocation,
-		invokers:    invokers,
-		lastInvoker: lastInvoker,
-		lastT:       time.Now(),
+	lastInvoker protocol.Invoker, cInvoker *failbackClusterInvoker) *retryTimerTask {
+	task := &retryTimerTask{
+		loadbalance:    loadbalance,
+		invocation:     invocation,
+		invokers:       invokers,
+		lastInvoker:    lastInvoker,
+		lastT:          time.Now(),
+		clusterInvoker: cInvoker,
 	}
+
+	if retries, ok := invocation.GetAttachment(constant.RetriesKey); ok {
+		rInt, _ := strconv.Atoi(retries)
+		task.maxRetries = int64(rInt)
+	} else {
+		task.maxRetries = cInvoker.maxRetries
+	}
+
+	return task
 }

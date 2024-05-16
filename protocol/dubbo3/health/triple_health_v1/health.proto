@@ -20,7 +20,7 @@
 
 syntax = "proto3";
 
-package grpc.health.v1;
+package dubbogo.health.v1;
 
 option go_package = "github.com/dubbogo/grpc-go/health/triple_health_v1";
 

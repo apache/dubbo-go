@@ -208,7 +208,7 @@ func (c *RegistryConfig) toURLs(roleType common.RoleType) ([]*common.URL, error)
 	return urls, err
 }
 
-func loadRegistries(registryIds []string, registries map[string]*RegistryConfig, roleType common.RoleType) []*common.URL {
+func LoadRegistries(registryIds []string, registries map[string]*RegistryConfig, roleType common.RoleType) []*common.URL {
 	var registryURLs []*common.URL
 	//trSlice := strings.Split(targetRegistries, ",")
 

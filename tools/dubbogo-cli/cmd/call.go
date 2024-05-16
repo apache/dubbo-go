@@ -26,8 +26,8 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/dubbogo-cli/internal/client"
-	"dubbo.apache.org/dubbo-go/v3/dubbogo-cli/internal/json_register"
+	"dubbo.apache.org/dubbo-go/v3/tools/dubbogo-cli/internal/client"
+	"dubbo.apache.org/dubbo-go/v3/tools/dubbogo-cli/internal/json_register"
 )
 
 // callCmd represents the call command

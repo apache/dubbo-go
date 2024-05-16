@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+// Package registry provides Registry definition, service discovery workflow, and various registry server adaptions.
 package registry
 
 import (

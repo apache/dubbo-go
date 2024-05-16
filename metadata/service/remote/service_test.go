@@ -58,6 +58,11 @@ func (mrf *metadataReportFactory) CreateMetadataReport(*common.URL) report.Metad
 
 type metadataReport struct{}
 
+func (mr metadataReport) GetConfigKeysByGroup(group string) (*gxset.HashSet, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (mr metadataReport) RegisterServiceAppMapping(string, string, string) error {
 	panic("implement me")
 }

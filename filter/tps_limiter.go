@@ -35,6 +35,20 @@ import (
 //	interface : "com.ikurento.user.UserProvider"
 //	... # other configuration
 //	tps.limiter: "the name of limiter",
+/*
+ * please register your implementation by invoking SetTpsLimitStrategy
+ * "UserProvider":
+ *   registry: "hangzhouzk"
+ *   protocol : "dubbo"
+ *   interface : "com.ikurento.user.UserProvider"
+ *   ... # other configuration
+ *   tps.limiter: "method-service" # the name of limiter
+ *   tps.limit.strategy: "name of implementation" # service-level
+ *   methods:
+ *    - name: "GetUser"
+ *      tps.interval: 3000
+ *      tps.limit.strategy: "name of implementation" # method-level
+ */
 type TpsLimiter interface {
 	IsAllowable(*common.URL, protocol.Invocation) bool
 }

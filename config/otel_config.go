@@ -19,8 +19,11 @@ package config
 
 import (
 	"github.com/creasty/defaults"
+
 	"github.com/dubbogo/gost/log/logger"
+
 	"github.com/pkg/errors"
+
 	"go.opentelemetry.io/otel"
 )
 
@@ -30,7 +33,7 @@ import (
 )
 
 type OtelConfig struct {
-	TraceConfig *OtelTraceConfig `yaml:"trace" json:"trace,omitempty" property:"trace"`
+	TraceConfig *OtelTraceConfig `yaml:"tracing" json:"trace,omitempty" property:"trace"`
 }
 
 type OtelTraceConfig struct {

@@ -46,7 +46,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	_ "dubbo.apache.org/dubbo-go/v3/registry/event"
 	"dubbo.apache.org/dubbo-go/v3/registry/servicediscovery/synthesizer"
-	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
 func init() {
@@ -206,6 +205,7 @@ func shouldRegister(url *common.URL) bool {
 
 func (s *ServiceDiscoveryRegistry) Subscribe(url *common.URL, notify registry.NotifyListener) error {
 	if !shouldSubscribe(url) {
+		logger.Infof("Service %s is set to not subscribe to instances.", url.ServiceKey())
 		return nil
 	}
 	_, err := s.metaDataService.SubscribeURL(url)
@@ -219,6 +219,7 @@ func (s *ServiceDiscoveryRegistry) Subscribe(url *common.URL, notify registry.No
 		return perrors.Errorf("Should has at least one way to know which services this interface belongs to,"+
 			" either specify 'provided-by' for reference or enable metadata-report center subscription url:%s", url.String())
 	}
+	logger.Infof("Find initial mapping applications %q for service %s.", services, url.ServiceKey())
 	// first notify
 	mappingListener.OnEvent(registry.NewServiceMappingChangedEvent(url.ServiceKey(), services))
 	return nil
@@ -235,11 +236,11 @@ func (s *ServiceDiscoveryRegistry) SubscribeURL(url *common.URL, notify registry
 	protocolServiceKey := url.ServiceKey() + ":" + protocol
 	listener := s.serviceListeners[serviceNamesKey]
 	if listener == nil {
-		listener = NewServiceInstancesChangedListener(services)
+		listener = NewServiceInstancesChangedListener(url.GetParam(constant.ApplicationKey, ""), services)
 		for _, serviceNameTmp := range services.Values() {
 			serviceName := serviceNameTmp.(string)
 			instances := s.serviceDiscovery.GetInstances(serviceName)
-			logger.Infof("Synchronized instance notification on subscription, instance list size %s", len(instances))
+			logger.Infof("Synchronized instance notification on application %s subscription, instance list size %s", serviceName, len(instances))
 			err = listener.OnEvent(&registry.ServiceInstancesChangedEvent{
 				ServiceName: serviceName,
 				Instances:   instances,
@@ -252,46 +253,23 @@ func (s *ServiceDiscoveryRegistry) SubscribeURL(url *common.URL, notify registry
 	s.serviceListeners[serviceNamesKey] = listener
 	listener.AddListenerAndNotify(protocolServiceKey, notify)
 	event := metricMetadata.NewMetadataMetricTimeEvent(metricMetadata.SubscribeServiceRt)
-	err = s.serviceDiscovery.AddListener(listener)
-	event.Succ = err != nil
-	event.End = time.Now()
-	event.Attachment[constant.InterfaceKey] = url.Interface()
-	metrics.Publish(event)
-	metrics.Publish(metricsRegistry.NewServerSubscribeEvent(err == nil))
-	if err != nil {
-		logger.Errorf("add instance listener catch error,url:%s err:%s", url.String(), err.Error())
-	}
+
+	logger.Infof("Start subscribing to registry for applications :%s with a new go routine.", serviceNamesKey)
+	go func() {
+		err = s.serviceDiscovery.AddListener(listener)
+		event.Succ = err != nil
+		event.End = time.Now()
+		event.Attachment[constant.InterfaceKey] = url.Interface()
+		metrics.Publish(event)
+		metrics.Publish(metricsRegistry.NewServerSubscribeEvent(err == nil))
+		if err != nil {
+			logger.Errorf("add instance listener catch error,url:%s err:%s", url.String(), err.Error())
+		}
+	}()
 }
 
 // LoadSubscribeInstances load subscribe instance
 func (s *ServiceDiscoveryRegistry) LoadSubscribeInstances(url *common.URL, notify registry.NotifyListener) error {
-	appName := url.GetParam(constant.ApplicationKey, url.Username)
-	instances := s.serviceDiscovery.GetInstances(appName)
-	for _, instance := range instances {
-		if instance.GetMetadata() == nil {
-			logger.Warnf("Instance metadata is nil: %s", instance.GetHost())
-			continue
-		}
-		revision, ok := instance.GetMetadata()[constant.ExportedServicesRevisionPropertyName]
-		if !ok {
-			logger.Warnf("Instance metadata revision is nil: %s", instance.GetHost())
-			continue
-		}
-		if "0" == revision {
-			logger.Infof("Find instance without valid service metadata: %s", instance.GetHost())
-			continue
-		}
-		metadataInfo, err := GetMetadataInfo(instance, revision)
-		if err != nil {
-			return err
-		}
-		instance.SetServiceMetadata(metadataInfo)
-		for _, serviceInfo := range metadataInfo.Services {
-			for _, url := range instance.ToURLs(serviceInfo) {
-				notify.Notify(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: url})
-			}
-		}
-	}
 	return nil
 }
 

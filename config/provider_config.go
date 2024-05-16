@@ -126,15 +126,15 @@ func (c *ProviderConfig) Init(rc *RootConfig) error {
 	for k, v := range rc.Protocols {
 		if v.Name == tripleConstant.TRIPLE {
 			// Auto create grpc based health check service.
-			healthService := NewServiceConfigBuilder().
-				SetProtocolIDs(k).
-				SetNotRegister(true).
-				SetInterface(constant.HealthCheckServiceInterface).
-				Build()
-			if err := healthService.Init(rc); err != nil {
-				return err
-			}
-			c.Services[constant.HealthCheckServiceTypeName] = healthService
+			//healthService := NewServiceConfigBuilder().
+			//	SetProtocolIDs(k).
+			//	SetNotRegister(true).
+			//	SetInterface(constant.HealthCheckServiceInterface).
+			//	Build()
+			//if err := healthService.Init(rc); err != nil {
+			//	return err
+			//}
+			//c.Services[constant.HealthCheckServiceTypeName] = healthService
 
 			// Auto create reflection service configure only when provider with triple service is configured.
 			tripleReflectionService := NewServiceConfigBuilder().

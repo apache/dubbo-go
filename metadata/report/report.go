@@ -76,4 +76,6 @@ type MetadataReport interface {
 
 	// RemoveServiceAppMappingListener remove the serviceMapping listener by key and group
 	RemoveServiceAppMappingListener(string, string) error
+
+	GetConfigKeysByGroup(group string) (*gxset.HashSet, error)
 }

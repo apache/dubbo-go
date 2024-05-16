@@ -36,7 +36,8 @@ import (
 
 // MockDynamicConfigurationFactory defines content
 type MockDynamicConfigurationFactory struct {
-	Content string
+	Content             string
+	ConfiguratorContent string
 }
 
 const (
@@ -82,6 +83,8 @@ func (f *MockDynamicConfigurationFactory) GetDynamicConfiguration(_ *common.URL)
 	})
 	if len(f.Content) != 0 {
 		dynamicConfiguration.content = f.Content
+	} else if len(f.ConfiguratorContent) != 0 {
+		dynamicConfiguration.content = f.ConfiguratorContent
 	}
 	return dynamicConfiguration, err
 }
@@ -168,7 +171,7 @@ func (c *MockDynamicConfiguration) MockServiceConfigEvent() {
 		},
 	}
 	value, _ := yaml.Marshal(config)
-	key := "group*" + mockServiceName + ":1.0.0" + constant.ConfiguratorSuffix
+	key := mockServiceName + ":1.0.0:group" + constant.ConfiguratorSuffix
 	c.listener[key].Process(&ConfigChangeEvent{Key: key, Value: string(value), ConfigType: remoting.EventTypeAdd})
 }
 
