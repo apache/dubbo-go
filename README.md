@@ -87,6 +87,7 @@ See the [samples](https://github.com/apache/dubbo-go-samples) for detailed infor
 - [Console](https://github.com/apache/dubbo-kubernetes), under development
 - [Samples](https://github.com/apache/dubbo-go-samples)
 - [Interoperability with Dubbo Java](https://dubbo-next.staged.apache.org/zh-cn/overview/mannual/golang-sdk/tutorial/interop-dubbo/)
+- [Protoc-gen-go-triple](https://github.com/dubbogo/protoc-gen-go-triple/)
 
 ## Contributing
 
