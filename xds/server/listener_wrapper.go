@@ -346,7 +346,7 @@ func (l *listenerWrapper) run() {
 	}
 }
 
-// handleLDSUpdate is the callback which handles LDS Updates. It writes the
+// handleListenerUpdate is the callback which handles LDS Updates. It writes the
 // received update to the update channel, which is picked up by the run
 // goroutine.
 func (l *listenerWrapper) handleListenerUpdate(update resource.ListenerUpdate, err error) {

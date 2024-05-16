@@ -19,6 +19,7 @@ package triple
 
 import (
 	"context"
+	"net/http"
 	"testing"
 
 	"dubbo.apache.org/dubbo-go/v3/common"
@@ -35,7 +36,7 @@ func Test_parseInvocation(t *testing.T) {
 		ctx    func() context.Context
 		url    *common.URL
 		invo   func() protocol.Invocation
-		expect func(t *testing.T, ctx context.Context, callType string, inRaw []interface{}, methodName string, err error)
+		expect func(t *testing.T, callType string, inRaw []interface{}, methodName string, err error)
 	}{
 		{
 			desc: "miss callType",
@@ -46,7 +47,7 @@ func Test_parseInvocation(t *testing.T) {
 			invo: func() protocol.Invocation {
 				return invocation.NewRPCInvocationWithOptions()
 			},
-			expect: func(t *testing.T, ctx context.Context, callType string, inRaw []interface{}, methodName string, err error) {
+			expect: func(t *testing.T, callType string, inRaw []interface{}, methodName string, err error) {
 				assert.NotNil(t, err)
 			},
 		},
@@ -61,7 +62,7 @@ func Test_parseInvocation(t *testing.T) {
 				iv.SetAttribute(constant.CallTypeKey, 1)
 				return iv
 			},
-			expect: func(t *testing.T, ctx context.Context, callType string, inRaw []interface{}, methodName string, err error) {
+			expect: func(t *testing.T, callType string, inRaw []interface{}, methodName string, err error) {
 				assert.NotNil(t, err)
 			},
 		},
@@ -76,7 +77,7 @@ func Test_parseInvocation(t *testing.T) {
 				iv.SetAttribute(constant.CallTypeKey, constant.CallUnary)
 				return iv
 			},
-			expect: func(t *testing.T, ctx context.Context, callType string, inRaw []interface{}, methodName string, err error) {
+			expect: func(t *testing.T, callType string, inRaw []interface{}, methodName string, err error) {
 				assert.NotNil(t, err)
 			},
 		},
@@ -84,8 +85,8 @@ func Test_parseInvocation(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
-			ctx, callType, inRaw, methodName, err := parseInvocation(test.ctx(), test.url, test.invo())
-			test.expect(t, ctx, callType, inRaw, methodName, err)
+			callType, inRaw, methodName, err := parseInvocation(test.ctx(), test.url, test.invo())
+			test.expect(t, callType, inRaw, methodName, err)
 		})
 	}
 }
@@ -112,7 +113,7 @@ func Test_parseAttachments(t *testing.T) {
 			},
 			expect: func(t *testing.T, ctx context.Context, err error) {
 				assert.Nil(t, err)
-				header := tri.ExtractFromOutgoingContext(ctx)
+				header := http.Header(tri.ExtractFromOutgoingContext(ctx))
 				assert.NotNil(t, header)
 				assert.Equal(t, "interface", header.Get(constant.InterfaceKey))
 				assert.Equal(t, "token", header.Get(constant.TokenKey))
@@ -132,7 +133,7 @@ func Test_parseAttachments(t *testing.T) {
 			},
 			expect: func(t *testing.T, ctx context.Context, err error) {
 				assert.Nil(t, err)
-				header := tri.ExtractFromOutgoingContext(ctx)
+				header := http.Header(tri.ExtractFromOutgoingContext(ctx))
 				assert.NotNil(t, header)
 				assert.Equal(t, "val1", header.Get("key1"))
 				assert.Equal(t, []string{"key2_1", "key2_2"}, header.Values("key2"))
@@ -157,7 +158,10 @@ func Test_parseAttachments(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
-			ctx, err := parseAttachments(test.ctx(), test.url, test.invo())
+			ctx := test.ctx()
+			inv := test.invo()
+			parseAttachments(ctx, test.url, inv)
+			ctx, err := mergeAttachmentToOutgoing(ctx, inv)
 			test.expect(t, ctx, err)
 		})
 	}

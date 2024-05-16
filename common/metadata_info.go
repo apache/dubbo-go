@@ -33,20 +33,24 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
-var IncludeKeys = gxset.NewSet(
-	constant.ApplicationKey,
-	constant.GroupKey,
-	constant.TimestampKey,
-	constant.SerializationKey,
-	constant.ClusterKey,
-	constant.LoadbalanceKey,
-	constant.PathKey,
-	constant.TimeoutKey,
-	constant.TokenKey,
-	constant.VersionKey,
-	constant.WarmupKey,
-	constant.WeightKey,
-	constant.ReleaseKey)
+var (
+	IncludeKeys = gxset.NewSet(
+		constant.ApplicationKey,
+		constant.GroupKey,
+		constant.TimestampKey,
+		constant.SerializationKey,
+		constant.ClusterKey,
+		constant.LoadbalanceKey,
+		constant.PathKey,
+		constant.TimeoutKey,
+		constant.TokenKey,
+		constant.VersionKey,
+		constant.WarmupKey,
+		constant.WeightKey,
+		constant.ReleaseKey)
+
+	EmptyMetadataInfo = &MetadataInfo{}
+)
 
 // MetadataInfo the metadata information of instance
 type MetadataInfo struct {
