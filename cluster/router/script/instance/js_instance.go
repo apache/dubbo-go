@@ -36,6 +36,16 @@ const (
 	jsScriptPrefix     = "\n" + jsScriptResultName + ` = `
 )
 
+type jsInstances struct {
+	insPool *sync.Pool // store *goja.runtime
+	pgLock  sync.RWMutex
+	program map[string]*program // rawScript to compiledProgram
+}
+
+type jsInstance struct {
+	rt *goja.Runtime
+}
+
 type program struct {
 	pg    *goja.Program
 	count int32
@@ -52,12 +62,6 @@ func (p *program) addCount(i int) int {
 	return int(atomic.AddInt32(&p.count, int32(i)))
 }
 
-type jsInstances struct {
-	insPool *sync.Pool // store *goja.runtime
-	pgLock  sync.RWMutex
-	program map[string]*program // applicationName to compiledProgram
-}
-
 func newJsInstances() *jsInstances {
 	return &jsInstances{
 		insPool: &sync.Pool{New: func() any {
@@ -66,16 +70,12 @@ func newJsInstances() *jsInstances {
 	}
 }
 
-type jsInstance struct {
-	rt *goja.Runtime
-}
-
 func (i *jsInstances) Run(rawScript string, invokers []protocol.Invoker, invocation protocol.Invocation) ([]protocol.Invoker, error) {
 	i.pgLock.RLock()
 	pg, ok := i.program[rawScript]
 	i.pgLock.RUnlock()
 
-	if pg == nil || len(invokers) == 0 {
+	if !ok || len(invokers) == 0 {
 		return invokers, nil
 	}
 	matcher := i.insPool.Get().(*jsInstance)
