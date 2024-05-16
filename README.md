@@ -23,25 +23,50 @@ You can learn how to develop a dubbo-go RPC application step by step in 5 minute
 It's as simple as the code shown below, you define a service with Protobuf, provide your own service implementation, register it to a server, and start the server.
 
 ```go
-func (s *GreeterServer) SayHello(ctx context.Context, in *greet.HelloRequest) (*greet.User, error) {
-    return &greet.User{Name: "Hello " + in.Name, Id: "12345", Age: 21}, nil
+func (srv *GreetTripleServer) Greet(ctx context.Context, req *greet.GreetRequest) (*greet.GreetResponse, error) {
+	resp := &greet.GreetResponse{Greeting: req.Name}
+	return resp, nil
 }
 
 func main() {
-	s := config.NewServer()
-	s.RegisterService(&GreeterServer{})
-	s.Serve(net.Listen("tcp", ":50051"))
+	srv, _ := server.NewServer(
+		server.WithServerProtocol(
+			protocol.WithPort(20000),
+			protocol.WithTriple(),
+		),
+	)
+
+	_ := greet.RegisterGreetServiceHandler(srv, &GreetTripleServer{})
+
+	if err := srv.Serve(); err != nil {
+		logger.Error(err)
+	}
 }
 ```
 
 After the server is up and running, call your service via cURL:
 
+```shell
+curl \
+    --header "Content-Type: application/json" \
+    --data '{"name": "Dubbo"}' \
+    http://localhost:20000/greet.GreetService/Greet
 ```
-curl -XPOST \
-     -H 'Content-Type: application/json' \
-     -H 'Micro-Endpoint: Helloworld.Greeting' \
-     -d '{"name": "alice"}' \
-      http://localhost:8080
+
+Or, you can start a standard dubbo-go client to call the service:
+
+```go
+func main() {
+	cli, _ := client.NewClient(
+		client.WithClientURL("127.0.0.1:20000"),
+	)
+
+	svc, _ := greet.NewGreetService(cli)
+
+	resp, _ := svc.Greet(context.Background(), &greet.GreetRequest{Name: "hello world"})
+	
+	logger.Infof("Greet response: %s", resp.Greeting)
+}
 ```
 
 See the [samples](https://github.com/apache/dubbo-go-samples) for detailed information on usage. Next, learn how to deploy, monitor and manage the traffic of your dubbo-go application by visiting the official website.
