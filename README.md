@@ -18,7 +18,7 @@ Visit [the official website](https://dubbo.apache.org/) for more information.
 
 ## Getting started
 
-You can learn how to develop a dubbo-go RPC application step by step in 5 minutes by following our [Quick Start](https://dubbo-next.staged.apache.org/zh-cn/overview/mannual/golang-sdk/quickstart/rpc/) demo. 
+You can learn how to develop a dubbo-go RPC application step by step in 5 minutes by following our [Quick Start](https://github.com/apache/dubbo-go-samples/tree/main/helloworld) demo. 
 
 It's as simple as the code shown below, you define a service with Protobuf, provide your own service implementation, register it to a server, and start the server.
 
