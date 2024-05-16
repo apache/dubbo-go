@@ -19,13 +19,11 @@ package invocation
 
 import (
 	"context"
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
+	"net/http"
 	"reflect"
 	"strings"
 	"sync"
-)
-
-import (
-	"google.golang.org/grpc/metadata"
 )
 
 import (
@@ -246,19 +244,35 @@ func (r *RPCInvocation) GetAttributeWithDefaultValue(key string, defaultValue in
 }
 
 func (r *RPCInvocation) GetAttachmentAsContext() context.Context {
-	gRPCMD := make(metadata.MD, 0)
 	ctx := context.Background()
+	var header = http.Header{}
 	for k, v := range r.Attachments() {
 		if str, ok := v.(string); ok {
-			gRPCMD.Set(k, str)
+			header.Set(k, str)
 			continue
 		}
 		if str, ok := v.([]string); ok {
-			gRPCMD.Set(k, str...)
+			for _, s := range str {
+				header.Add(k, s)
+			}
 			continue
 		}
 	}
-	return metadata.NewOutgoingContext(ctx, gRPCMD)
+	return triple_protocol.NewOutgoingContext(ctx, header)
+}
+
+func (r *RPCInvocation) MergeAttachmentFromContext(ctx context.Context) {
+	header := triple_protocol.ExtractFromOutgoingContext(ctx)
+	if header == nil {
+		return
+	}
+	for k, v := range header {
+		if len(v) == 1 {
+			r.SetAttachment(k, v[0])
+		} else {
+			r.SetAttachment(k, v)
+		}
+	}
 }
 
 // /////////////////////////

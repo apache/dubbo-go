@@ -256,6 +256,10 @@ func (m *MockInvocation) GetAttachmentAsContext() context.Context {
 	return ret0
 }
 
+func (m *MockInvocation) MergeAttachmentFromContext(ctx context.Context) {
+	m.ctrl.Call(m, "MergeAttachmentFromContext", reflect.TypeOf((*MockInvocation)(nil).GetAttachmentWithDefaultValue), ctx)
+}
+
 // GetAttachmentAsContext indicates an expected call of GetAttachmentAsContext
 func (mr *MockInvocationMockRecorder) GetAttachmentAsContext() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAttachmentAsContext", reflect.TypeOf((*MockInvocation)(nil).GetAttachmentAsContext))

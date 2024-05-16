@@ -20,7 +20,9 @@ package script
 import (
 	"strings"
 	"sync"
+)
 
+import (
 	ins "dubbo.apache.org/dubbo-go/v3/cluster/router/script/instance"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	conf "dubbo.apache.org/dubbo-go/v3/common/config"
@@ -29,31 +31,26 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
+
 	"github.com/dubbogo/gost/log/logger"
+
 	"gopkg.in/yaml.v2"
 )
 
 // ScriptRouter only takes effect on consumers and only supports application granular management.
 type ScriptRouter struct {
-	mu         sync.RWMutex
-	scriptType string
-	key        string // key to application - name
-	enabled    bool   // enabled
-	rawScript  string
+	mu              sync.RWMutex
+	scriptType      string
+	applicationName string // applicationName to application - name
+	enabled         bool   // enabled
+	rawScript       string
 }
 
 func NewScriptRouter() *ScriptRouter {
-	applicationName := config.GetApplicationConfig().Name
-	a := &ScriptRouter{
-		key:     applicationName,
-		enabled: false,
+	return &ScriptRouter{
+		applicationName: "",
+		enabled:         false,
 	}
-
-	dynamicConfiguration := conf.GetEnvInstance().GetDynamicConfiguration()
-	if dynamicConfiguration != nil {
-		dynamicConfiguration.AddListener(strings.Join([]string{applicationName, constant.ScriptRouterRuleSuffix}, ""), a)
-	}
-	return a
 }
 
 func parseRoute(routeContent string) (*config.RouterConfig, error) {
@@ -89,11 +86,7 @@ func (s *ScriptRouter) Process(event *config_center.ConfigChangeEvent) {
 			return false
 		}
 		if "" == cfg.Key {
-			logger.Errorf("`key` field must be set in config")
-			return false
-		}
-		if cfg.Key != config.GetApplicationConfig().Name {
-			logger.Errorf("`key` not equal applicationName , script route config load fail")
+			logger.Errorf("`applicationName` field must be set in config")
 			return false
 		}
 		if !*cfg.Enabled {
@@ -122,19 +115,19 @@ func (s *ScriptRouter) Process(event *config_center.ConfigChangeEvent) {
 				logger.Errorf("Compile Script failed: %v", err)
 			}
 		} else {
-			in.Destroy()
+			in.Destroy(s.applicationName, s.rawScript)
 		}
 
 	case remoting.EventTypeDel:
+		in, _ := ins.GetInstances(s.scriptType)
 
 		s.enabled = false
+		if in != nil {
+			in.Destroy(s.applicationName, s.rawScript)
+		}
 		s.rawScript = ""
 		s.scriptType = ""
 
-		ins.RangeInstances(func(instance ins.ScriptInstances) bool {
-			instance.Destroy()
-			return true
-		})
 	case remoting.EventTypeUpdate:
 		if !checkConfig(cfg) {
 			return
@@ -155,7 +148,7 @@ func (s *ScriptRouter) Process(event *config_center.ConfigChangeEvent) {
 				logger.Errorf("Compile Script failed: %v", err)
 			}
 		} else {
-			in.Destroy()
+			in.Destroy(s.applicationName, s.rawScript)
 		}
 	}
 }
@@ -177,7 +170,7 @@ func (s *ScriptRouter) Route(invokers []protocol.Invoker, _ *common.URL, invocat
 	enabled, scriptType, rawScript := s.enabled, s.scriptType, s.rawScript
 	s.mu.RUnlock()
 
-	if enabled == false {
+	if enabled == false || s.scriptType == "" || s.rawScript == "" {
 		return invokers
 	}
 
@@ -197,5 +190,44 @@ func (s *ScriptRouter) Priority() int64 {
 	return 0
 }
 
-func (s *ScriptRouter) Notify(_ []protocol.Invoker) {
+func (s *ScriptRouter) Notify(invokers []protocol.Invoker) {
+	if len(invokers) == 0 {
+		return
+	}
+	url := invokers[0].GetURL()
+	if url == nil {
+		logger.Error("Failed to notify a dynamically Script rule, because url is empty")
+		return
+	}
+
+	dynamicConfiguration := conf.GetEnvInstance().GetDynamicConfiguration()
+	if dynamicConfiguration == nil {
+		logger.Infof("Config center does not start, Script router will not be enabled")
+		return
+	}
+
+	providerApplication := url.GetParam("application", "")
+	if providerApplication == "" {
+		logger.Warn("Script router get providerApplication is empty, will not subscribe to provider app rules.")
+		return
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if providerApplication != s.applicationName {
+		if s.applicationName != "" {
+			dynamicConfiguration.RemoveListener(strings.Join([]string{s.applicationName, constant.ScriptRouterRuleSuffix}, ""), s)
+		}
+
+		listenTarget := strings.Join([]string{providerApplication, constant.ScriptRouterRuleSuffix}, "")
+		dynamicConfiguration.AddListener(listenTarget, s)
+		s.applicationName = providerApplication
+		value, err := dynamicConfiguration.GetRule(listenTarget)
+		if err != nil {
+			logger.Errorf("Failed to query Script rule, applicationName=%s, listening=%s, err=%v", s.applicationName, listenTarget, err)
+			return
+		}
+		s.Process(&config_center.ConfigChangeEvent{Key: listenTarget, Value: value, ConfigType: remoting.EventTypeUpdate})
+	}
 }

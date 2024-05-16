@@ -18,12 +18,16 @@
 package instance
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"sync"
 	"sync/atomic"
+)
 
+import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
+
 	"github.com/dop251/goja"
 )
 
@@ -32,9 +36,26 @@ const (
 	jsScriptPrefix     = "\n" + jsScriptResultName + ` = `
 )
 
+type program struct {
+	pg    *goja.Program
+	count int32
+}
+
+func newProgram(pg *goja.Program) *program {
+	return &program{
+		pg:    pg,
+		count: 1,
+	}
+}
+
+func (p *program) addCount(i int) int {
+	return int(atomic.AddInt32(&p.count, int32(i)))
+}
+
 type jsInstances struct {
-	insPool *sync.Pool                   // store *goja.runtime
-	program atomic.Pointer[goja.Program] // applicationName to compiledProgram
+	insPool *sync.Pool // store *goja.runtime
+	pgLock  sync.RWMutex
+	program map[string]*program // applicationName to compiledProgram
 }
 
 func newJsInstances() *jsInstances {
@@ -49,8 +70,11 @@ type jsInstance struct {
 	rt *goja.Runtime
 }
 
-func (i *jsInstances) Run(_ string, invokers []protocol.Invoker, invocation protocol.Invocation) ([]protocol.Invoker, error) {
-	pg := i.program.Load()
+func (i *jsInstances) Run(rawScript string, invokers []protocol.Invoker, invocation protocol.Invocation) ([]protocol.Invoker, error) {
+	i.pgLock.RLock()
+	pg, ok := i.program[rawScript]
+	i.pgLock.RUnlock()
+
 	if pg == nil || len(invokers) == 0 {
 		return invokers, nil
 	}
@@ -61,12 +85,14 @@ func (i *jsInstances) Run(_ string, invokers []protocol.Invoker, invocation prot
 		packInvokers = append(packInvokers, newScriptInvokerImpl(invoker))
 	}
 
-	matcher.initCallArgs(packInvokers, invocation)
+	ctx := invocation.GetAttachmentAsContext()
+	matcher.initCallArgs(packInvokers, invocation, ctx)
 	matcher.initReplyVar()
-	scriptRes, err := matcher.runScript(i.program.Load())
+	scriptRes, err := matcher.runScript(pg.pg)
 	if err != nil {
 		return invokers, err
 	}
+	invocation.MergeAttachmentFromContext(ctx)
 
 	rtInvokersArr, ok := scriptRes.(*goja.Object).Export().([]interface{})
 	if !ok {
@@ -75,30 +101,60 @@ func (i *jsInstances) Run(_ string, invokers []protocol.Invoker, invocation prot
 
 	result := make([]protocol.Invoker, 0, len(rtInvokersArr))
 	for _, res := range rtInvokersArr {
-		if i, ok := res.(*scriptInvokerPack); ok {
+		if i, ok := res.(*scriptInvokerWrapper); ok {
 			i.setRanMode()
 			result = append(result, res.(protocol.Invoker))
 		} else {
-			return invokers, fmt.Errorf("invalid element type , it should be (*scriptInvokerPack) , but type is : %s)", reflect.TypeOf(res).String())
+			return invokers, fmt.Errorf("invalid element type , it should be (*scriptInvokerWrapper) , but type is : %s)", reflect.TypeOf(res).String())
 		}
 	}
 	return result, nil
 }
 
 func (i *jsInstances) Compile(key, rawScript string) error {
-	pg, err := goja.Compile(key+`_jsScriptRoute`, jsScriptPrefix+rawScript, true)
-	if err != nil {
-		return err
+	var (
+		ok bool
+		pg *program
+	)
+
+	i.pgLock.RLock()
+	pg, ok = i.program[rawScript]
+	i.pgLock.RUnlock()
+
+	if ok {
+		pg.addCount(1)
+		return nil
+	} else {
+
+		newPg, err := goja.Compile(key+`_jsScriptRoute`, jsScriptPrefix+rawScript, true)
+		if err != nil {
+			return err
+		}
+
+		i.pgLock.Lock()
+		// double check to avoid race
+		if pg, ok = i.program[rawScript]; ok {
+			pg.addCount(1)
+		} else {
+			i.program[rawScript] = newProgram(newPg)
+		}
+		i.pgLock.Unlock()
+		return nil
 	}
-	i.program.Store(pg)
-	return nil
+
 }
 
-func (i *jsInstances) Destroy() {
-	i.program.Store(nil)
+func (i *jsInstances) Destroy(_, rawScript string) {
+	i.pgLock.Lock()
+	if pg, ok := i.program[rawScript]; ok {
+		if pg.addCount(-1) == 0 {
+			delete(i.program, rawScript)
+		}
+	}
+	i.pgLock.Unlock()
 }
 
-func (j jsInstance) initCallArgs(invokers []protocol.Invoker, invocation protocol.Invocation) {
+func (j jsInstance) initCallArgs(invokers []protocol.Invoker, invocation protocol.Invocation, ctx context.Context) {
 	j.rt.ClearInterrupt()
 	err := j.rt.Set(`invokers`, invokers)
 	if err != nil {
@@ -108,7 +164,7 @@ func (j jsInstance) initCallArgs(invokers []protocol.Invoker, invocation protoco
 	if err != nil {
 		panic(err)
 	}
-	err = j.rt.Set(`context`, invocation.GetAttachmentAsContext())
+	err = j.rt.Set(`context`, ctx)
 	if err != nil {
 		panic(err)
 	}

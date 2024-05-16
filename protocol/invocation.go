@@ -53,6 +53,7 @@ type Invocation interface {
 	GetAttachmentInterface(string) interface{}
 	GetAttachmentWithDefaultValue(key string, defaultValue string) string
 	GetAttachmentAsContext() context.Context
+	MergeAttachmentFromContext(ctx context.Context)
 
 	// Attributes firstly introduced on dubbo-java 2.7.6. It is
 	// used in internal invocation, that is, it's not passed between

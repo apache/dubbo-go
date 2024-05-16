@@ -23,14 +23,18 @@ import (
 	"reflect"
 	"sync"
 	"testing"
+)
 
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+
 	"github.com/dop251/goja"
 	_ "github.com/dop251/goja_nodejs/console"
 	"github.com/dop251/goja_nodejs/require"
+
 	"github.com/stretchr/testify/assert"
 )
 

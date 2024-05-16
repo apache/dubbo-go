@@ -21,7 +21,9 @@ import (
 	"context"
 	"errors"
 	"strings"
+)
 
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
@@ -34,7 +36,7 @@ func init() {
 type ScriptInstances interface {
 	Run(rawScript string, invokers []protocol.Invoker, invocation protocol.Invocation) ([]protocol.Invoker, error)
 	Compile(name, rawScript string) error
-	Destroy()
+	Destroy(name, rawScript string)
 }
 
 var factory map[string]ScriptInstances
@@ -59,21 +61,21 @@ func setInstances(tpName string, instance ScriptInstances) {
 	factory[tpName] = instance
 }
 
-// scriptInvokerPack for security
+// scriptInvokerWrapper for security
 // if script change input Invoker's url during Route() call ,
 // it will influence call Route() next time ,
 // there are no operation to recover .
-type scriptInvokerPack struct {
+type scriptInvokerWrapper struct {
 	isRan     bool
 	copiedURL *common.URL
 	invoker   protocol.Invoker
 }
 
-func (f *scriptInvokerPack) GetURL() *common.URL {
+func (f *scriptInvokerWrapper) GetURL() *common.URL {
 	return f.copiedURL
 }
 
-func (f *scriptInvokerPack) IsAvailable() bool {
+func (f *scriptInvokerWrapper) IsAvailable() bool {
 	if !f.isRan {
 		return true
 	} else {
@@ -81,7 +83,7 @@ func (f *scriptInvokerPack) IsAvailable() bool {
 	}
 }
 
-func (f *scriptInvokerPack) Destroy() {
+func (f *scriptInvokerWrapper) Destroy() {
 	if !f.isRan {
 		panic("Destroy should not be called")
 	} else {
@@ -89,7 +91,7 @@ func (f *scriptInvokerPack) Destroy() {
 	}
 }
 
-func (f *scriptInvokerPack) Invoke(ctx context.Context, inv protocol.Invocation) protocol.Result {
+func (f *scriptInvokerWrapper) Invoke(ctx context.Context, inv protocol.Invocation) protocol.Result {
 	if !f.isRan {
 		panic("Invoke should not be called")
 	} else {
@@ -97,12 +99,12 @@ func (f *scriptInvokerPack) Invoke(ctx context.Context, inv protocol.Invocation)
 	}
 }
 
-func (f *scriptInvokerPack) setRanMode() {
+func (f *scriptInvokerWrapper) setRanMode() {
 	f.isRan = true
 }
 
-func newScriptInvokerImpl(invoker protocol.Invoker) *scriptInvokerPack {
-	return &scriptInvokerPack{
+func newScriptInvokerImpl(invoker protocol.Invoker) *scriptInvokerWrapper {
+	return &scriptInvokerWrapper{
 		copiedURL: invoker.GetURL().Clone(),
 		invoker:   invoker,
 		isRan:     false,
