@@ -18,7 +18,7 @@ Visit [the official website](https://dubbo.apache.org/) for more information.
 
 ## Getting started
 
-You can learn how to develop a dubbo-go RPC application step by step in 5 minutes by following our [Quick Start]() demo. 
+You can learn how to develop a dubbo-go RPC application step by step in 5 minutes by following our [Quick Start](https://dubbo-next.staged.apache.org/zh-cn/overview/mannual/golang-sdk/quickstart/rpc/) demo. 
 
 It's as simple as the code shown below, you define a service with Protobuf, provide your own service implementation, register it to a server, and start the server.
 
@@ -44,13 +44,13 @@ curl -XPOST \
       http://localhost:8080
 ```
 
-See the [samples](https://github.com/apache/dubbo-go-samples) for detailed information on usage. Next, learn how to [deploy](), [monitor]() and [manage the traffic]() of your dubbo-go application.
+See the [samples](https://github.com/apache/dubbo-go-samples) for detailed information on usage. Next, learn how to deploy, monitor and manage the traffic of your dubbo-go application by visiting the official website.
 
 ## Features
 
-<img src="https://dubbogo.github.io/img/devops.png" height="300px" display="display: block, margin: auto" />
+![dubbo-go-architecture](./doc/imgs/arc.png)
 
-- **RPC Protocols**: Triple(gRPC compatible and HTTP-friendly), Dubbo2(TCP)
+- **RPC Protocols**: Triple, gRPC compatible and HTTP-friendly
 - **Service Discovery**: Nacos, Zookeeper, Etcd, Polaris-mesh, Consul.
 - **Load Balance**: Adaptive, Random, RoundRobin, LeastActive, ConsistentHash
 - **Traffic Management**: traffic split, timeout, rate limiting, canary release
@@ -59,11 +59,9 @@ See the [samples](https://github.com/apache/dubbo-go-samples) for detailed infor
 - **HA Strategy**: Failover, Failfast, Failsafe/Failback, Available, Broadcast, Forking
 
 ## Ecosystem
-- [CLI]()
-- [Console]()
-- [Samples]()
-- [Generator]()
-- [Interoperability with Dubbo2 (tcp + hessian2)]()
+- [Console](https://github.com/apache/dubbo-kubernetes), under development
+- [Samples](https://github.com/apache/dubbo-go-samples)
+- [Interoperability with Dubbo Java](https://dubbo-next.staged.apache.org/zh-cn/overview/mannual/golang-sdk/tutorial/interop-dubbo/)
 
 ## Contributing
 
