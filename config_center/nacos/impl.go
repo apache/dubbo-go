@@ -58,7 +58,7 @@ type nacosDynamicConfiguration struct {
 	cltLock      sync.Mutex
 	done         chan struct{}
 	client       *nacosClient.NacosConfigClient
-	keyListeners sync.Map
+	keyListeners sync.Map // sync.Map[listenKey]*sync.Map[config_center.ConfigurationListener]context.CancelFunc
 	parser       parser.ConfigurationParser
 }
 
