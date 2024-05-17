@@ -126,22 +126,20 @@ func (i *jsInstances) Compile(key, rawScript string) error {
 		return nil
 	} else {
 
-		newPg, err := goja.Compile(key+`_jsScriptRoute`, jsScriptPrefix+rawScript, true)
-		if err != nil {
-			return err
-		}
-
 		i.pgLock.Lock()
+		defer i.pgLock.Unlock()
 		// double check to avoid race
 		if pg, ok = i.program[rawScript]; ok {
 			pg.addCount(1)
 		} else {
+			newPg, err := goja.Compile(key+`_jsScriptRoute`, jsScriptPrefix+rawScript, true)
+			if err != nil {
+				return err
+			}
 			i.program[rawScript] = newProgram(newPg)
 		}
-		i.pgLock.Unlock()
 		return nil
 	}
-
 }
 
 func (i *jsInstances) Destroy(_, rawScript string) {
