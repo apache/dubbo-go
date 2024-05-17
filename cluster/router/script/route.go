@@ -83,7 +83,7 @@ func (s *ScriptRouter) Process(event *config_center.ConfigChangeEvent) {
 		if s.enabled && s.scriptType != "" {
 			in, err := ins.GetInstances(s.scriptType)
 			if err != nil {
-				logger.Errorf("GetInstances failed to Destory: %v", err)
+				logger.Errorf("GetInstances failed to Destroy: %v", err)
 			}
 			in.Destroy(s.applicationName, s.rawScript)
 		}
