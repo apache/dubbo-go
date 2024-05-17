@@ -76,80 +76,61 @@ func (s *ScriptRouter) Process(event *config_center.ConfigChangeEvent) {
 		logger.Errorf("Parse route cfg failed: %v", err)
 		return
 	}
-	checkConfig := func(*config.RouterConfig) bool {
+
+	switch event.ConfigType {
+	case remoting.EventTypeAdd, remoting.EventTypeUpdate:
+		//destroy old instance
+		if s.enabled && s.scriptType != "" {
+			in, err := ins.GetInstances(s.scriptType)
+			if err != nil {
+				logger.Errorf("GetInstances failed to Destory: %v", err)
+			}
+			in.Destroy(s.applicationName, s.rawScript)
+		}
+		// check new config
 		if "" == cfg.ScriptType {
 			logger.Errorf("`type` field must be set in config")
-			return false
+			return
 		}
 		if "" == cfg.Script {
 			logger.Errorf("`script` field must be set in config")
-			return false
+			return
 		}
 		if "" == cfg.Key {
 			logger.Errorf("`applicationName` field must be set in config")
-			return false
+			return
 		}
 		if !*cfg.Enabled {
 			logger.Infof("`enabled` field equiles false, this rule will be ignored :%s", cfg.Script)
 		}
-		return true
-	}
-	switch event.ConfigType {
-	case remoting.EventTypeAdd:
-		if !checkConfig(cfg) {
-			return
-		}
-
-		in, err := ins.GetInstances(cfg.ScriptType)
-		if err != nil {
-			logger.Errorf("GetInstances failed: %v", err)
-		}
-
+		// rewrite to ScriptRouter
 		s.rawScript = cfg.Script
 		s.scriptType = cfg.ScriptType
 		s.enabled = *cfg.Enabled
 
+		// compile script
+		in, err := ins.GetInstances(s.scriptType)
+		if err != nil {
+			logger.Errorf("GetInstances failed: %v", err)
+		}
 		if s.enabled {
-			err = in.Compile(cfg.Key, cfg.Script)
+			err = in.Compile(s.applicationName, cfg.Script)
+			// fail, disable rule
 			if err != nil {
+				s.enabled = false
 				logger.Errorf("Compile Script failed: %v", err)
 			}
-		} else {
-			in.Destroy(s.applicationName, s.rawScript)
 		}
 
 	case remoting.EventTypeDel:
 		in, _ := ins.GetInstances(s.scriptType)
 
-		s.enabled = false
-		if in != nil {
+		if in != nil && s.enabled {
 			in.Destroy(s.applicationName, s.rawScript)
 		}
+		s.enabled = false
 		s.rawScript = ""
 		s.scriptType = ""
-
-	case remoting.EventTypeUpdate:
-		if !checkConfig(cfg) {
-			return
-		}
-
-		in, err := ins.GetInstances(cfg.ScriptType)
-		if err != nil {
-			logger.Errorf("GetInstances failed: %v", err)
-		}
-
-		s.rawScript = cfg.Script
-		s.scriptType = cfg.ScriptType
-		s.enabled = *cfg.Enabled
-
-		if s.enabled {
-			err = in.Compile(cfg.Key, cfg.Script)
-			if err != nil {
-				logger.Errorf("Compile Script failed: %v", err)
-			}
-		} else {
-			in.Destroy(s.applicationName, s.rawScript)
-		}
 	}
 }
 
