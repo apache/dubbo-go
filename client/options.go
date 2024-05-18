@@ -531,9 +531,9 @@ func (cliOpts *ClientOptions) init(opts ...ClientOption) error {
 
 type ClientOption func(*ClientOptions)
 
-func WithClientCheck() ClientOption {
+func WithClientNoCheck() ClientOption {
 	return func(opts *ClientOptions) {
-		opts.Consumer.Check = true
+		opts.Consumer.Check = false
 	}
 }
 

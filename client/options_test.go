@@ -70,11 +70,11 @@ func TestWithClientCheck(t *testing.T) {
 		{
 			desc: "config check",
 			opts: []ClientOption{
-				WithClientCheck(),
+				WithClientNoCheck(),
 			},
 			verify: func(t *testing.T, cli *Client, err error) {
 				assert.Nil(t, err)
-				assert.Equal(t, true, cli.cliOpts.Consumer.Check)
+				assert.Equal(t, false, cli.cliOpts.Consumer.Check)
 			},
 		},
 	}
