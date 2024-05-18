@@ -19,6 +19,7 @@ package nacos
 
 import (
 	"context"
+	"sync"
 )
 
 import (
@@ -36,37 +37,50 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
-func callback(listener config_center.ConfigurationListener, _, group, dataId, data string) {
-	listener.Process(&config_center.ConfigChangeEvent{Key: dataId, Value: data, ConfigType: remoting.EventTypeUpdate})
-	metrics.Publish(metricsConfigCenter.NewIncMetricEvent(dataId, group, remoting.EventTypeUpdate, metricsConfigCenter.Nacos))
+func callback(listenersMap *sync.Map, _, group, dataId, data string) {
+	listenersMap.Range(func(key, value any) bool {
+		key.(config_center.ConfigurationListener).Process(&config_center.ConfigChangeEvent{Key: dataId, Value: data, ConfigType: remoting.EventTypeUpdate})
+		metrics.Publish(metricsConfigCenter.NewIncMetricEvent(dataId, group, remoting.EventTypeUpdate, metricsConfigCenter.Nacos))
+		return true
+	})
 }
 
 func (n *nacosDynamicConfiguration) addListener(key string, listener config_center.ConfigurationListener) {
-	_, loaded := n.keyListeners.Load(key)
+	rawListenersMap, loaded := n.keyListeners.Load(key)
 	if !loaded {
-		err := n.client.Client().ListenConfig(vo.ConfigParam{
-			DataId: key,
-			Group:  n.resolvedGroup(n.url.GetParam(constant.NacosGroupKey, constant2.DEFAULT_GROUP)),
-			OnChange: func(namespace, group, dataId, data string) {
-				go callback(listener, namespace, group, dataId, data)
-			},
-		})
-		if err != nil {
-			logger.Errorf("nacos : listen config fail, error:%v ", err)
+		_, cancel := context.WithCancel(context.Background())
+		listenersMap := &sync.Map{}
+		listenersMap.Store(listener, cancel)
+
+		// double load for invalid race
+		rawListenersMap, loaded = n.keyListeners.LoadOrStore(key, listenersMap)
+		if !loaded {
+			err := n.client.Client().ListenConfig(vo.ConfigParam{
+				DataId: key,
+				Group:  n.resolvedGroup(n.url.GetParam(constant.NacosGroupKey, constant2.DEFAULT_GROUP)),
+				OnChange: func(namespace, group, dataId, data string) {
+					go callback(listenersMap, namespace, group, dataId, data)
+				},
+			})
+			if err != nil {
+				n.keyListeners.Delete(key)
+				logger.Errorf("nacos : listen config fail, error:%v ", err)
+				return
+			}
 			return
 		}
-		_, cancel := context.WithCancel(context.Background())
-		newListener := make(map[config_center.ConfigurationListener]context.CancelFunc)
-		newListener[listener] = cancel
-		n.keyListeners.Store(key, newListener)
-		return
 	}
-
-	// TODO check goroutine alive, but this version of go_nacos_sdk is not support.
-	logger.Infof("profile:%s. this profile is already listening", key)
+	_, cancel := context.WithCancel(context.Background())
+	listenersMap := rawListenersMap.(*sync.Map)
+	listenersMap.Store(listener, cancel)
 }
 
 func (n *nacosDynamicConfiguration) removeListener(key string, listener config_center.ConfigurationListener) {
-	// TODO: not supported in current go_nacos_sdk version
-	logger.Warn("not supported in current go_nacos_sdk version")
+	rawListenersMap, loaded := n.keyListeners.Load(key)
+	if !loaded {
+		logger.Errorf("nacos : key:%s is not be listened", key)
+	} else {
+		listenersMap := rawListenersMap.(*sync.Map)
+		listenersMap.Delete(listener)
+	}
 }

@@ -39,6 +39,8 @@ type RouterConfig struct {
 	Priority   int      `default:"0" yaml:"priority" json:"priority,omitempty" property:"priority"`
 	Conditions []string `yaml:"conditions" json:"conditions,omitempty" property:"conditions"`
 	Tags       []Tag    `yaml:"tags" json:"tags,omitempty" property:"tags"`
+	ScriptType string   `yaml:"type" json:"type,omitempty" property:"type"`
+	Script     string   `yaml:"script" json:"script,omitempty" property:"script"`
 }
 
 type Tag struct {

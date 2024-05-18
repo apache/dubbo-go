@@ -77,15 +77,6 @@ func (t RoleType) Role() string {
 	return DubboRole[t]
 }
 
-type baseURL struct {
-	Protocol string
-	Location string // ip+port
-	Ip       string
-	Port     string
-
-	PrimitiveURL string
-}
-
 // noCopy may be embedded into structs which must not be copied
 // after the first use.
 //
@@ -105,7 +96,12 @@ func (*noCopy) Unlock() {}
 type URL struct {
 	noCopy noCopy
 
-	baseURL
+	Protocol string
+	Location string // ip+port
+	Ip       string
+	Port     string
+
+	PrimitiveURL string
 	// url.Values is not safe map, add to avoid concurrent map read and map write error
 	paramsLock sync.RWMutex
 	params     url.Values
@@ -245,7 +241,7 @@ func NewURLWithOptions(opts ...Option) *URL {
 // NewURL will create a new URL
 // the urlString should not be empty
 func NewURL(urlString string, opts ...Option) (*URL, error) {
-	s := URL{baseURL: baseURL{}}
+	s := URL{}
 	if urlString == "" {
 		return &s, nil
 	}
@@ -257,7 +253,7 @@ func NewURL(urlString string, opts ...Option) (*URL, error) {
 
 	// rawURLString = "//" + rawURLString
 	if !strings.Contains(rawURLString, "//") {
-		t := URL{baseURL: baseURL{}}
+		t := URL{}
 		for _, opt := range opts {
 			opt(&t)
 		}
@@ -844,7 +840,21 @@ func (c *URL) Clone() *URL {
 		newURL.SetParam(key, value)
 		return true
 	})
+	c.RangeAttributes(func(key string, value interface{}) bool {
+		newURL.SetAttribute(key, value)
+		return true
+	})
 	return newURL
+}
+
+func (c *URL) RangeAttributes(f func(key string, value interface{}) bool) {
+	c.attributesLock.RLock()
+	defer c.attributesLock.RUnlock()
+	for k, v := range c.attributes {
+		if !f(k, v) {
+			break
+		}
+	}
 }
 
 func (c *URL) CloneExceptParams(excludeParams *gxset.HashSet) *URL {
