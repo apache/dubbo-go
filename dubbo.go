@@ -78,8 +78,8 @@ func (ins *Instance) NewClient(opts ...client.ClientOption) (*client.Client, err
 	otelCfg := ins.insOpts.CloneOtel()
 
 	if conCfg != nil {
-		if conCfg.Check {
-			cliOpts = append(cliOpts, client.WithClientCheck())
+		if !conCfg.Check {
+			cliOpts = append(cliOpts, client.WithClientNoCheck())
 		}
 		// these options come from Consumer and Root.
 		// for dubbo-go developers, referring config/ConsumerConfig.Init and config/ReferenceConfig
