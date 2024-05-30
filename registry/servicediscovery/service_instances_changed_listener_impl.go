@@ -114,7 +114,7 @@ func (lstn *ServiceInstancesChangedListenerImpl) OnEvent(e observer.Event) error
 			}
 			subInstances := revisionToInstances[revision]
 			if subInstances == nil {
-				subInstances = make([]registry.ServiceInstance, 8)
+				subInstances = make([]registry.ServiceInstance, 0, 8)
 			}
 			revisionToInstances[revision] = append(subInstances, instance)
 			metadataInfo := lstn.revisionToMetadata[revision]

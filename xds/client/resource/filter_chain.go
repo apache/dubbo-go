@@ -110,7 +110,7 @@ type RouteWithInterceptors struct {
 // ConstructUsableRouteConfiguration takes Route Configuration and converts it
 // into matchable route configuration, with instantiated HTTP Filters per route.
 func (f *FilterChain) ConstructUsableRouteConfiguration(config RouteConfigUpdate) ([]VirtualHostWithInterceptors, error) {
-	vhs := make([]VirtualHostWithInterceptors, len(config.VirtualHosts))
+	vhs := make([]VirtualHostWithInterceptors, 0, len(config.VirtualHosts))
 	for _, vh := range config.VirtualHosts {
 		vhwi, err := f.convertVirtualHost(vh)
 		if err != nil {
