@@ -41,13 +41,10 @@ import (
 )
 
 var (
-	routePattern = regexp.MustCompile("([&!=,]*)\\s*([^&!=,\\s]+)")
-
-	illegalMsg = "Illegal route rule \"%s\", The error char '%s' before '%s'"
-
+	routePattern     = regexp.MustCompile("([&!=,]*)\\s*([^&!=,\\s]+)")
+	illegalMsg       = "Illegal route rule \"%s\", The error char '%s' before '%s'"
 	matcherFactories = make([]matcher.ConditionMatcherFactory, 0, 8)
-
-	once sync.Once
+	once             sync.Once
 )
 
 type StateRouter struct {
