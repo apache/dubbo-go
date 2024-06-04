@@ -739,6 +739,7 @@ func TestServiceRouter(t *testing.T) {
 	ccURL, _ := common.NewURL("mock://127.0.0.1:1111")
 	mockFactory := &config_center.MockDynamicConfigurationFactory{
 		Content: `
+configVersion: v3.0
 scope: service
 force: true
 enabled: true
@@ -783,6 +784,7 @@ func TestApplicationRouter(t *testing.T) {
 	ccURL, _ := common.NewURL("mock://127.0.0.1:1111")
 	mockFactory := &config_center.MockDynamicConfigurationFactory{
 		Content: `
+configVersion: V3.0
 scope: application
 force: true
 enabled: true

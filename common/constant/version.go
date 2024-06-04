@@ -21,5 +21,5 @@ const (
 	Version      = "3.2.0"     // apache/dubbo-go version
 	Name         = "dubbogo"   // module name
 	DATE         = "2024/1/10" // release date
-	RouteVersion = "3.1"
+	RouteVersion = "v3.1"
 )

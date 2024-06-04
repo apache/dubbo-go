@@ -148,7 +148,7 @@ func generateCondition(rawConfig string) (condRouter, bool, bool, error) {
 	rawVersion, ok := m["configVersion"]
 	if !ok {
 		return nil, false, false, fmt.Errorf("miss `ConfigVersion` in %s", rawConfig)
-	} else if version, ok := rawVersion.(string); ok {
+	} else if version, ok := rawVersion.(string); !ok {
 		return nil, false, false, fmt.Errorf("`ConfigVersion should be `string` got %v`", rawVersion)
 	} else {
 		var (
@@ -162,9 +162,9 @@ func generateCondition(rawConfig string) (condRouter, bool, bool, error) {
 			switch mode {
 			case utils.VersionEqual:
 				cr, force, enable, err = generateMultiConditionRoute(rawConfig)
-			case utils.VersionLess:
-				cr, force, enable, err = generateConditionsRoute(rawConfig)
 			case utils.VersionGreater:
+				cr, force, enable, err = generateConditionsRoute(rawConfig)
+			case utils.VersionLess:
 				err = fmt.Errorf("config version %s is greater than %s", rawVersion, constant.RouteVersion)
 			default:
 				panic("invalid version compare return")
