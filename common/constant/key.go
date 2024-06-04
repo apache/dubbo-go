@@ -322,6 +322,7 @@ const (
 	ConditionServiceRouterFactoryKey = "service.condition"
 	ScriptRouterFactoryKey           = "consumer.script"
 	ForceKey                         = "force"
+	PriorityKey                      = "priority"
 	Arguments                        = "arguments"
 	Attachments                      = "attachments"
 	Param                            = "param"

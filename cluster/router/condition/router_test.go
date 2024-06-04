@@ -213,7 +213,7 @@ func TestRouteMatchFilter(t *testing.T) {
 			router, err := NewConditionStateRouter(url)
 			assert.Nil(t, err)
 
-			filteredInvokers := router.Route(invokerList, data.comsumerURL, rpcInvocation)
+			filteredInvokers, _ := router.Route(invokerList, data.comsumerURL, rpcInvocation)
 			resVal := len(filteredInvokers)
 			assert.Equal(t, data.wantVal, resVal)
 		})
@@ -239,7 +239,7 @@ func TestRouterMethodRoute(t *testing.T) {
 			wantVal: true,
 		},
 		{
-			name:        "Exactly one method, match",
+			name:        "Exactly one method, Route",
 			consumerURL: remoteConsumerAddr + "?methods=getFoo",
 			rule:        "methods=getFoo => host = 1.2.3.4",
 
@@ -406,7 +406,7 @@ func TestRouteReturn(t *testing.T) {
 			router, err := NewConditionStateRouter(url)
 			assert.Nil(t, err)
 
-			filterInvokers := router.Route(invokers, consumerURL, rpcInvocation)
+			filterInvokers, _ := router.Route(invokers, consumerURL, rpcInvocation)
 			resVal := len(filterInvokers)
 
 			assert.Equal(t, data.wantVal, resVal)
@@ -478,7 +478,7 @@ func TestRouteArguments(t *testing.T) {
 
 			rpcInvocation := invocation.NewRPCInvocation("getBar", arguments, nil)
 
-			filterInvokers := router.Route(invokerList, consumerURL, rpcInvocation)
+			filterInvokers, _ := router.Route(invokerList, consumerURL, rpcInvocation)
 			resVal := len(filterInvokers)
 			assert.Equal(t, data.wantVal, resVal)
 
@@ -558,7 +558,7 @@ func TestRouteAttachments(t *testing.T) {
 			router, err := NewConditionStateRouter(url)
 			assert.Nil(t, err)
 
-			filterInvokers := router.Route(invokerList, consumerURL, rpcInvocation)
+			filterInvokers, _ := router.Route(invokerList, consumerURL, rpcInvocation)
 
 			resVal := len(filterInvokers)
 			assert.Equal(t, data.wantVal, resVal)
@@ -647,7 +647,7 @@ func TestRouteRangePattern(t *testing.T) {
 			router, err := NewConditionStateRouter(url)
 			assert.Nil(t, err)
 
-			filterInvokers := router.Route(invokerList, consumerURL, rpcInvocation)
+			filterInvokers, _ := router.Route(invokerList, consumerURL, rpcInvocation)
 
 			resVal := len(filterInvokers)
 			assert.Equal(t, data.wantVal, resVal)
@@ -678,7 +678,7 @@ func TestRouteMultipleConditions(t *testing.T) {
 		wantVal int
 	}{
 		{
-			name:        "All conditions match",
+			name:        "All conditions Route",
 			argument:    "a",
 			consumerURL: localConsumerAddr + "?application=consumer_app",
 			rule:        "application=consumer_app&arguments[0]=a => host = 127.0.0.1",
@@ -686,7 +686,7 @@ func TestRouteMultipleConditions(t *testing.T) {
 			wantVal: 2,
 		},
 		{
-			name:        "One of the conditions does not match",
+			name:        "One of the conditions does not Route",
 			argument:    "a",
 			consumerURL: localConsumerAddr + "?application=another_consumer_app",
 			rule:        "application=consumer_app&arguments[0]=a => host = 127.0.0.1",
@@ -711,7 +711,7 @@ func TestRouteMultipleConditions(t *testing.T) {
 
 			rpcInvocation := invocation.NewRPCInvocation(method, arguments, nil)
 
-			filterInvokers := router.Route(invokerList, consumerUrl, rpcInvocation)
+			filterInvokers, _ := router.Route(invokerList, consumerUrl, rpcInvocation)
 			resVal := len(filterInvokers)
 			assert.Equal(t, data.wantVal, resVal)
 		})

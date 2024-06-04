@@ -18,6 +18,10 @@
 package condition
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/cluster/utils"
+	"fmt"
+	"gopkg.in/yaml.v2"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -37,20 +41,69 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
+type conditionRoute []*StateRouter
+
+func (p conditionRoute) route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
+	if len(invokers) == 0 || len(p) == 0 {
+		return invokers
+	}
+	for _, router := range p {
+		invokers, _ = router.Route(invokers, url, invocation)
+		if len(invokers) == 0 {
+			break
+		}
+	}
+	return invokers
+}
+
+type multiplyConditionRoute []*StateRouter
+
+func (m multiplyConditionRoute) route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
+	if len(invokers) == 0 || len(m) == 0 {
+		return invokers
+	}
+	for _, router := range m {
+		matchInvokers, isMatch := router.Route(invokers, url, invocation)
+		if !isMatch || (len(matchInvokers) == 0 && !router.force) {
+			continue
+		}
+		return matchInvokers
+	}
+	return []protocol.Invoker{}
+}
+
+type condRouter interface {
+	route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker
+}
+
 type DynamicRouter struct {
-	conditionRouters []*StateRouter
-	routerConfig     *config.RouterConfig
+	mu              sync.RWMutex
+	force           bool
+	enable          bool
+	conditionRouter condRouter
 }
 
 func (d *DynamicRouter) Route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
-	if len(invokers) == 0 || len(d.conditionRouters) == 0 {
+	if len(invokers) == 0 {
 		return invokers
 	}
 
-	for _, router := range d.conditionRouters {
-		invokers = router.Route(invokers, url, invocation)
+	d.mu.RLock()
+	force, enable, cr := d.force, d.enable, d.conditionRouter
+	d.mu.RUnlock()
+
+	if !enable {
+		return invokers
 	}
-	return invokers
+	if cr != nil {
+		res := cr.route(invokers, url, invocation)
+		if len(res) == 0 && !force {
+			return invokers
+		}
+		return res
+	} else {
+		return invokers
+	}
 }
 
 func (d *DynamicRouter) URL() *common.URL {
@@ -58,45 +111,133 @@ func (d *DynamicRouter) URL() *common.URL {
 }
 
 func (d *DynamicRouter) Process(event *config_center.ConfigChangeEvent) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
 	if event.ConfigType == remoting.EventTypeDel {
-		d.routerConfig = nil
-		d.conditionRouters = make([]*StateRouter, 0)
+		d.conditionRouter = nil
 	} else {
-		routerConfig, err := parseRoute(event.Value.(string))
+		rc, force, enable, err := generateCondition(event.Value.(string))
 		if err != nil {
-			logger.Warnf("[condition router]Build a new condition route config error, %+v and we will use the original condition rule configuration.", err)
-			return
+			logger.Errorf("generate condition error: %v", err)
+			d.conditionRouter = nil
+		} else {
+			d.force, d.enable, d.conditionRouter = force, enable, rc
 		}
-		d.routerConfig = routerConfig
-		conditions, err := generateConditions(d.routerConfig)
-		if err != nil {
-			logger.Warnf("[condition router]Build a new condition route config error, %+v and we will use the original condition rule configuration.", err)
-			return
-		}
-		d.conditionRouters = conditions
 	}
 }
 
-func generateConditions(routerConfig *config.RouterConfig) ([]*StateRouter, error) {
-	if routerConfig == nil {
-		return make([]*StateRouter, 0), nil
+/*
+to check configVersion, here need decode twice.
+From a performance perspective, decoding from a string and decoding from a map[string]interface{}
+cost nearly same (a few milliseconds).
+
+To keep the code simpler,
+here use yaml-to-map and yaml-to-struct, not yaml-to-map-to-struct
+
+generateCondition @return(router,force,enable,error)
+*/
+func generateCondition(rawConfig string) (condRouter, bool, bool, error) {
+	m := map[string]interface{}{}
+
+	err := yaml.Unmarshal([]byte(rawConfig), m)
+	if err != nil {
+		return nil, false, false, err
 	}
+
+	rawVersion, ok := m["configVersion"]
+	if !ok {
+		return nil, false, false, fmt.Errorf("miss `ConfigVersion` in %s", rawConfig)
+	} else if version, ok := rawVersion.(string); ok {
+		return nil, false, false, fmt.Errorf("`ConfigVersion should be `string` got %v`", rawVersion)
+	} else {
+		var (
+			cr     condRouter
+			enable bool
+			force  bool
+		)
+		if mode, compareErr := utils.CompareVersions(constant.RouteVersion, version); compareErr != nil {
+			return nil, false, false, fmt.Errorf("invalid version %s, %s", version, compareErr.Error())
+		} else {
+			switch mode {
+			case utils.VersionEqual:
+				cr, force, enable, err = generateMultiConditionRoute(rawConfig)
+			case utils.VersionLess:
+				cr, force, enable, err = generateConditionsRoute(rawConfig)
+			case utils.VersionGreater:
+				err = fmt.Errorf("config version %s is greater than %s", rawVersion, constant.RouteVersion)
+			default:
+				panic("invalid version compare return")
+			}
+			if err != nil {
+				err = fmt.Errorf("generate condition error: %s", err.Error())
+			}
+		}
+		return cr, force, enable, err
+	}
+}
+
+func generateMultiConditionRoute(rawConfig string) (multiplyConditionRoute, bool, bool, error) {
+	routerConfig, err := parseMultiConditionRoute(rawConfig)
+	if err != nil {
+		logger.Warnf("[condition router]Build a new condition route config error, %s and we will use the original condition rule configuration.", err.Error())
+		return nil, false, false, err
+	}
+
+	force, enable := routerConfig.Enabled, routerConfig.Force
+	if !enable {
+		return nil, false, false, nil
+	}
+
 	conditionRouters := make([]*StateRouter, 0, len(routerConfig.Conditions))
 	for _, conditionRule := range routerConfig.Conditions {
 		url, err := common.NewURL("condition://")
 		if err != nil {
-			return nil, err
+			return nil, false, false, err
 		}
-		url.AddParam(constant.RuleKey, conditionRule)
-		url.AddParam(constant.ForceKey, strconv.FormatBool(*routerConfig.Force))
-		url.AddParam(constant.EnabledKey, strconv.FormatBool(*routerConfig.Enabled))
+		url.AddParam(constant.RuleKey, conditionRule.Rule)
+		url.AddParam(constant.ForceKey, strconv.FormatBool(conditionRule.Force))
+		url.AddParam(constant.PriorityKey, strconv.FormatInt(int64(conditionRule.Priority), 10))
 		conditionRoute, err := NewConditionStateRouter(url)
 		if err != nil {
-			return nil, err
+			return nil, false, false, err
 		}
 		conditionRouters = append(conditionRouters, conditionRoute)
 	}
-	return conditionRouters, nil
+
+	sort.Slice(conditionRouters, func(i, j int) bool {
+		return conditionRouters[i].priority < conditionRouters[j].priority
+	})
+	return conditionRouters, force, enable, nil
+}
+
+func generateConditionsRoute(rawConfig string) (conditionRoute, bool, bool, error) {
+	routerConfig, err := parseConditionRoute(rawConfig)
+	if err != nil {
+		logger.Warnf("[condition router]Build a new condition route config error, %s and we will use the original condition rule configuration.", err.Error())
+		return nil, false, false, err
+	}
+
+	force, enable := *routerConfig.Enabled, *routerConfig.Force
+	if !enable {
+		return nil, false, false, nil
+	}
+
+	conditionRouters := make([]*StateRouter, 0, len(routerConfig.Conditions))
+	for _, conditionRule := range routerConfig.Conditions {
+		url, err := common.NewURL("condition://")
+		if err != nil {
+			return nil, false, false, err
+		}
+		url.AddParam(constant.RuleKey, conditionRule)
+		url.AddParam(constant.ForceKey, strconv.FormatBool(*routerConfig.Force))
+		conditionRoute, err := NewConditionStateRouter(url)
+		if err != nil {
+			return nil, false, false, err
+		}
+		conditionRouters = append(conditionRouters, conditionRoute)
+	}
+	return conditionRouters, force, enable, nil
 }
 
 // ServiceRouter is Service level router
@@ -142,7 +283,6 @@ type ApplicationRouter struct {
 	DynamicRouter
 	application        string
 	currentApplication string
-	mu                 sync.Mutex
 }
 
 func NewApplicationRouter() *ApplicationRouter {
@@ -183,9 +323,6 @@ func (a *ApplicationRouter) Notify(invokers []protocol.Invoker) {
 		logger.Warn("condition router get providerApplication is empty, will not subscribe to provider app rules.")
 		return
 	}
-
-	a.mu.Lock()
-	defer a.mu.Unlock()
 
 	if providerApplicaton != a.application {
 		if a.application != "" {

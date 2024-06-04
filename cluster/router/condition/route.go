@@ -48,7 +48,7 @@ var (
 )
 
 type StateRouter struct {
-	enable        bool
+	priority      int64
 	force         bool
 	url           *common.URL
 	whenCondition map[string]matcher.Matcher
@@ -63,41 +63,38 @@ func NewConditionStateRouter(url *common.URL) (*StateRouter, error) {
 	}
 
 	force := url.GetParamBool(constant.ForceKey, false)
-	enable := url.GetParamBool(constant.EnabledKey, true)
+	priority := url.GetParamInt(constant.PriorityKey, constant.DefaultPriority)
 	c := &StateRouter{
-		url:    url,
-		force:  force,
-		enable: enable,
+		url:      url,
+		force:    force,
+		priority: priority,
 	}
 
-	if enable {
-		when, then, err := generateMatcher(url)
-		if err != nil {
-			return nil, err
-		}
-		c.whenCondition = when
-		c.thenCondition = then
+	when, then, err := generateMatcher(url)
+	if err != nil {
+		return nil, err
 	}
+	c.whenCondition = when
+	c.thenCondition = then
 	return c, nil
 }
 
 // Route Determine the target invokers list.
-func (s *StateRouter) Route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
-	if !s.enable {
-		return invokers
-	}
-
+// condition rule like `self_condition => peers_condition `
+//
+// @return active_peers_invokers, Is_self_condition_match_success
+func (s *StateRouter) Route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) ([]protocol.Invoker, bool) {
 	if len(invokers) == 0 {
-		return invokers
+		return invokers, false
 	}
 
 	if !s.matchWhen(url, invocation) {
-		return invokers
+		return invokers, false
 	}
 
 	if len(s.thenCondition) == 0 {
 		logger.Warn("condition state router thenCondition is empty")
-		return []protocol.Invoker{}
+		return []protocol.Invoker{}, true
 	}
 
 	var result = make([]protocol.Invoker, 0, len(invokers))
@@ -107,22 +104,7 @@ func (s *StateRouter) Route(invokers []protocol.Invoker, url *common.URL, invoca
 		}
 	}
 
-	if len(result) != 0 {
-		return result
-	} else if s.force {
-		logger.Warn("execute condition state router result list is empty. and force=true")
-		return result
-	}
-
-	return invokers
-}
-
-func (s *StateRouter) URL() *common.URL {
-	return s.url
-}
-
-func (s *StateRouter) Priority() int64 {
-	return 0
+	return result, true
 }
 
 func (s *StateRouter) matchWhen(url *common.URL, invocation protocol.Invocation) bool {
@@ -315,9 +297,19 @@ func (a byPriority) Len() int           { return len(a) }
 func (a byPriority) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a byPriority) Less(i, j int) bool { return a[i].Priority() < a[j].Priority() }
 
-func parseRoute(routeContent string) (*config.RouterConfig, error) {
+func parseConditionRoute(routeContent string) (*config.RouterConfig, error) {
 	routeDecoder := yaml.NewDecoder(strings.NewReader(routeContent))
 	routerConfig := &config.RouterConfig{}
+	err := routeDecoder.Decode(routerConfig)
+	if err != nil {
+		return nil, err
+	}
+	return routerConfig, nil
+}
+
+func parseMultiConditionRoute(routeContent string) (*config.ConditionRouter, error) {
+	routeDecoder := yaml.NewDecoder(strings.NewReader(routeContent))
+	routerConfig := &config.ConditionRouter{}
 	err := routeDecoder.Decode(routerConfig)
 	if err != nil {
 		return nil, err
