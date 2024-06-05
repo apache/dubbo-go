@@ -18,9 +18,7 @@
 package condition
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/cluster/utils"
 	"fmt"
-	"gopkg.in/yaml.v2"
 	"sort"
 	"strconv"
 	"strings"
@@ -28,10 +26,7 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/log/logger"
-)
-
-import (
+	"dubbo.apache.org/dubbo-go/v3/cluster/utils"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	conf "dubbo.apache.org/dubbo-go/v3/common/config"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
@@ -39,6 +34,10 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
+
+	"github.com/dubbogo/gost/log/logger"
+
+	"gopkg.in/yaml.v2"
 )
 
 type conditionRoute []*StateRouter
