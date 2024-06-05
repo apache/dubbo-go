@@ -147,32 +147,25 @@ func generateCondition(rawConfig string) (condRouter, bool, bool, error) {
 	rawVersion, ok := m["configVersion"]
 	if !ok {
 		return nil, false, false, fmt.Errorf("miss `ConfigVersion` in %s", rawConfig)
-	} else if version, ok := rawVersion.(string); !ok {
-		return nil, false, false, fmt.Errorf("`ConfigVersion should be `string` got %v`", rawVersion)
-	} else {
-		var (
-			cr     condRouter
-			enable bool
-			force  bool
-		)
-		if mode, compareErr := utils.CompareVersions(constant.RouteVersion, version); compareErr != nil {
-			return nil, false, false, fmt.Errorf("invalid version %s, %s", version, compareErr.Error())
-		} else {
-			switch mode {
-			case utils.VersionEqual:
-				cr, force, enable, err = generateMultiConditionRoute(rawConfig)
-			case utils.VersionGreater:
-				cr, force, enable, err = generateConditionsRoute(rawConfig)
-			case utils.VersionLess:
-				err = fmt.Errorf("config version %s is greater than %s", rawVersion, constant.RouteVersion)
-			default:
-				panic("invalid version compare return")
-			}
-			if err != nil {
-				err = fmt.Errorf("generate condition error: %s", err.Error())
-			}
-		}
-		return cr, force, enable, err
+	}
+
+	version, ok := rawVersion.(string)
+	if !ok {
+		return nil, false, false, fmt.Errorf("`ConfigVersion` should be of type `string`, got %T", rawVersion)
+	}
+
+	v, parseErr := utils.ParseVersion(version)
+	if parseErr != nil {
+		return nil, false, false, fmt.Errorf("invalid version %s: %s", version, parseErr.Error())
+	}
+
+	switch {
+	case v.Equal(utils.V3_1) || v.Greater(utils.V3_1):
+		return generateMultiConditionRoute(rawConfig)
+	case v.Less(utils.V3_1):
+		return generateConditionsRoute(rawConfig)
+	default:
+		panic("invalid version compare return")
 	}
 }
 

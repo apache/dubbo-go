@@ -24,9 +24,14 @@ import (
 	"strings"
 )
 
-var parseVersionRe = regexp.MustCompile(`^[Vv](\d+(\.\d+)*)$`)
+type Version []int
 
-func parseVersion(versionStr string) ([]int, error) {
+var (
+	parseVersionRe = regexp.MustCompile(`^[Vv](\d+(\.\d+)*)$`)
+	V3_1, _        = ParseVersion("v3.1")
+)
+
+func ParseVersion(versionStr string) (Version, error) {
 	if versionContainsIllegalCharacters(versionStr) {
 		return nil, fmt.Errorf("illegal version string: %s , parse fail ", versionStr)
 	}
@@ -50,43 +55,44 @@ func parseVersion(versionStr string) ([]int, error) {
 }
 
 const (
-	VersionEqual   = 0
-	VersionLess    = -1
-	VersionGreater = 1
+	versionEqual   = 0
+	versionLess    = -1
+	versionGreater = 1
 )
 
-func CompareVersions(src, target string) (int, error) {
-	version1, err := parseVersion(src)
-	if err != nil {
-		return 0, err
-	}
-	version2, err := parseVersion(target)
-	if err != nil {
-		return 0, err
-	}
+func (v Version) Equal(target Version) bool {
+	return v.compareVersions(target) == versionEqual
+}
+func (v Version) Less(target Version) bool {
+	return v.compareVersions(target) == versionLess
+}
+func (v Version) Greater(target Version) bool {
+	return v.compareVersions(target) == versionGreater
+}
 
-	for i := 0; i < len(version1) || i < len(version2); i++ {
+func (v Version) compareVersions(target Version) int {
+	for i := 0; i < len(v) || i < len(target); i++ {
 		v1 := 0
-		if i < len(version1) {
-			v1 = version1[i]
+		if i < len(v) {
+			v1 = v[i]
 		}
 		v2 := 0
-		if i < len(version2) {
-			v2 = version2[i]
+		if i < len(target) {
+			v2 = target[i]
 		}
 		if v1 > v2 {
-			return VersionGreater, nil
+			return versionGreater
 		} else if v1 < v2 {
-			return VersionLess, nil
+			return versionLess
 		}
 	}
 
-	if len(version1) > len(version2) {
-		return VersionGreater, nil
-	} else if len(version1) < len(version2) {
-		return VersionLess, nil
+	if len(v) > len(target) {
+		return versionGreater
+	} else if len(v) < len(target) {
+		return versionLess
 	} else {
-		return VersionEqual, nil
+		return versionEqual
 	}
 }
 
