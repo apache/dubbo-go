@@ -49,6 +49,22 @@ type Tag struct {
 	Addresses []string             `yaml:"addresses" json:"addresses,omitempty" property:"addresses"`
 }
 
+type ConditionRule struct {
+	Rule     string `validate:"required" yaml:"rule" json:"rule,omitempty" property:"rule"`
+	Priority int    `default:"0" yaml:"priority" json:"priority,omitempty" property:"priority"`
+	Force    bool   `default:"false" yaml:"force" json:"force,omitempty" property:"force"`
+}
+
+// ConditionRouter -- when RouteConfigVersion == v3.1, decode by this
+type ConditionRouter struct {
+	Scope      string          `validate:"required" yaml:"scope" json:"scope,omitempty" property:"scope"` // must be chosen from `service` and `application`.
+	Key        string          `validate:"required" yaml:"key" json:"key,omitempty" property:"key"`       // specifies which service or application the rule body acts on.
+	Force      bool            `default:"false" yaml:"force" json:"force,omitempty" property:"force"`
+	Runtime    bool            `default:"false" yaml:"runtime" json:"runtime,omitempty" property:"runtime"`
+	Enabled    bool            `default:"true" yaml:"enabled" json:"enabled,omitempty" property:"enabled"`
+	Conditions []ConditionRule `yaml:"conditions" json:"conditions,omitempty" property:"conditions"`
+}
+
 // Prefix dubbo.router
 func (RouterConfig) Prefix() string {
 	return constant.RouterConfigPrefix
