@@ -19,6 +19,7 @@ package common
 
 import (
 	"context"
+	"dubbo.apache.org/dubbo-go/v3/common/dubboutil"
 	"reflect"
 	"strings"
 	"sync"
@@ -340,6 +341,10 @@ func suitableMethods(typ reflect.Type) (string, map[string]*MethodType) {
 			}
 			methods[methodName] = mt
 			mts = append(mts, methodName)
+			//For better interoperability with java class,
+			//we convert the first letter in methodName between
+			//upper and lower case
+			mts = append(mts, dubboutil.SwapCaseFirstRune(methodName))
 		}
 	}
 	return strings.Join(mts, ","), methods
