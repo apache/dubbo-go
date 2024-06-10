@@ -50,9 +50,20 @@ type Tag struct {
 }
 
 type ConditionRule struct {
-	Rule     string `validate:"required" yaml:"rule" json:"rule,omitempty" property:"rule"`
-	Priority int    `default:"0" yaml:"priority" json:"priority,omitempty" property:"priority"`
-	Force    bool   `default:"false" yaml:"force" json:"force,omitempty" property:"force"`
+	From     ConditionRuleFrom `yaml:"from" json:"from,omitempty" property:"from"`
+	To       []ConditionRuleTo `yaml:"to" json:"to,omitempty" property:"to"`
+	Priority int               `default:"0" yaml:"priority" json:"priority,omitempty" property:"priority"`
+	Ratio    int               `default:"0" yaml:"ratio" json:"ratio,omitempty" property:"priority"`
+	Force    bool              `default:"false" yaml:"force" json:"force,omitempty" property:"force"`
+}
+
+type ConditionRuleFrom struct {
+	Match string `yaml:"match" json:"match,omitempty" property:"match"`
+}
+
+type ConditionRuleTo struct {
+	Match  string `yaml:"match" json:"match,omitempty" property:"match"`
+	Weight int    `default:"100" yaml:"weight" json:"weight,omitempty" property:"weight"`
 }
 
 // ConditionRouter -- when RouteConfigVersion == v3.1, decode by this

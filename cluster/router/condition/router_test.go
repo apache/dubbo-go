@@ -214,7 +214,7 @@ func TestRouteMatchFilter(t *testing.T) {
 			router, err := NewConditionStateRouter(url)
 			assert.Nil(t, err)
 
-			filteredInvokers, _ := router.Route(invokerList, data.comsumerURL, rpcInvocation)
+			filteredInvokers := router.Route(invokerList, data.comsumerURL, rpcInvocation)
 			resVal := len(filteredInvokers)
 			assert.Equal(t, data.wantVal, resVal)
 		})
@@ -407,7 +407,7 @@ func TestRouteReturn(t *testing.T) {
 			router, err := NewConditionStateRouter(url)
 			assert.Nil(t, err)
 
-			filterInvokers, _ := router.Route(invokers, consumerURL, rpcInvocation)
+			filterInvokers := router.Route(invokers, consumerURL, rpcInvocation)
 			resVal := len(filterInvokers)
 
 			assert.Equal(t, data.wantVal, resVal)
@@ -479,7 +479,7 @@ func TestRouteArguments(t *testing.T) {
 
 			rpcInvocation := invocation.NewRPCInvocation("getBar", arguments, nil)
 
-			filterInvokers, _ := router.Route(invokerList, consumerURL, rpcInvocation)
+			filterInvokers := router.Route(invokerList, consumerURL, rpcInvocation)
 			resVal := len(filterInvokers)
 			assert.Equal(t, data.wantVal, resVal)
 
@@ -559,7 +559,7 @@ func TestRouteAttachments(t *testing.T) {
 			router, err := NewConditionStateRouter(url)
 			assert.Nil(t, err)
 
-			filterInvokers, _ := router.Route(invokerList, consumerURL, rpcInvocation)
+			filterInvokers := router.Route(invokerList, consumerURL, rpcInvocation)
 
 			resVal := len(filterInvokers)
 			assert.Equal(t, data.wantVal, resVal)
@@ -648,7 +648,7 @@ func TestRouteRangePattern(t *testing.T) {
 			router, err := NewConditionStateRouter(url)
 			assert.Nil(t, err)
 
-			filterInvokers, _ := router.Route(invokerList, consumerURL, rpcInvocation)
+			filterInvokers := router.Route(invokerList, consumerURL, rpcInvocation)
 
 			resVal := len(filterInvokers)
 			assert.Equal(t, data.wantVal, resVal)
@@ -712,7 +712,7 @@ func TestRouteMultipleConditions(t *testing.T) {
 
 			rpcInvocation := invocation.NewRPCInvocation(method, arguments, nil)
 
-			filterInvokers, _ := router.Route(invokerList, consumerUrl, rpcInvocation)
+			filterInvokers := router.Route(invokerList, consumerUrl, rpcInvocation)
 			resVal := len(filterInvokers)
 			assert.Equal(t, data.wantVal, resVal)
 		})
@@ -867,39 +867,46 @@ func buildInvokers() []protocol.Invoker {
 func TestConditionRoutePriority(t *testing.T) {
 	ivks := buildInvokers()
 	ar := NewApplicationRouter()
-	ar.Process(&config_center.ConfigChangeEvent{Key: "", Value: `
-configVersion: v3.1
+	ar.Process(&config_center.ConfigChangeEvent{Key: "", Value: `configVersion: v3.1
 scope: service
-force: true
+force: false
 runtime: true
 enabled: true
-key: org.apache.dubbo.samples.CommentService
-conditionAction : true 
+key: shop
 conditions:
-  - rule: method=getComment & env=gray => region=Hangzhou & env=gray
-    priority: 3
-  - rule: method=getComment & env=gray => region=beijing & env=gray
-    priority: 3
-  - rule: method=getComment & env=gray => region=$region & env=gray 
-    priority: 3
-  - rule: method=getComment & env=normal => region=beijing 
-    priority: 3
-  - rule: method=getComment => region=$region ######### match here
-    priority: 30
-  - rule: method=echo => region=$region
-  - rule: method=echo =>
-    force: true
+  - from:
+      match:
+    to:
+      - match: region=$region & version=v1
+      - match: region=$region & version=v2
+        weight: 200
+      - match: region=$region & version=v3
+        weight: 300
+    force: false
+    ratio: 20
+    priority: 20
+  - from: ## match here 
+      match:
+        region=beijing & version=v1
+    to:
+      - match: env=$env & region=beijing
+    force: false
+    ratio: 20 
+    priority: 100
 `, ConfigType: remoting.EventTypeUpdate})
-	consumerUrl, err := common.NewURL("consumer://127.0.0.1/com.foo.BarService?env=gray&region=beijing")
+	consumerUrl, err := common.NewURL("consumer://127.0.0.1/com.foo.BarService?env=gray&region=beijing&version=v1")
 	if err != nil {
 		panic(err)
 	}
 	got := ar.Route(ivks, consumerUrl, invocation.NewRPCInvocation("getComment", nil, nil))
 	expLen := 0
 	for _, ivk := range ivks {
-		if ivk.GetURL().GetParam("region", "") == "beijing" {
+		if ivk.GetURL().GetParam("region", "") == "beijing" && "gray" == ivk.GetURL().GetParam("env", "") {
 			expLen++
 		}
+	}
+	if len(ivks)*100/expLen <= 20 {
+		expLen = 0
 	}
 	assert.Equal(t, expLen, len(got))
 }

@@ -323,12 +323,14 @@ const (
 	ScriptRouterFactoryKey           = "consumer.script"
 	ForceKey                         = "force"
 	PriorityKey                      = "priority"
+	RatioKey                         = "RatioKey"
 	Arguments                        = "arguments"
 	Attachments                      = "attachments"
 	Param                            = "param"
 	Scope                            = "scope"
 	Wildcard                         = "wildcard"
 	MeshRouterFactoryKey             = "mesh"
+	DefaultConditionSubSetWeight     = 100
 )
 
 // Auth filter

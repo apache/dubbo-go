@@ -40,14 +40,15 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-type conditionRoute []*StateRouter
+// for version 3.0-
+type stateRouters []*StateRouter
 
-func (p conditionRoute) route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
+func (p stateRouters) route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
 	if len(invokers) == 0 || len(p) == 0 {
 		return invokers
 	}
 	for _, router := range p {
-		invokers, _ = router.Route(invokers, url, invocation)
+		invokers = router.Route(invokers, url, invocation)
 		if len(invokers) == 0 {
 			break
 		}
@@ -55,7 +56,7 @@ func (p conditionRoute) route(invokers []protocol.Invoker, url *common.URL, invo
 	return invokers
 }
 
-type multiplyConditionRoute []*StateRouter
+type multiplyConditionRoute []*MultiDestRouter
 
 func (m multiplyConditionRoute) route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
 	if len(invokers) == 0 || len(m) == 0 {
@@ -176,21 +177,23 @@ func generateMultiConditionRoute(rawConfig string) (multiplyConditionRoute, bool
 		return nil, false, false, err
 	}
 
-	force, enable := routerConfig.Enabled, routerConfig.Force
+	enable, force := routerConfig.Enabled, routerConfig.Force
 	if !enable {
 		return nil, false, false, nil
 	}
 
-	conditionRouters := make([]*StateRouter, 0, len(routerConfig.Conditions))
+	conditionRouters := make([]*MultiDestRouter, 0, len(routerConfig.Conditions))
 	for _, conditionRule := range routerConfig.Conditions {
 		url, err := common.NewURL("condition://")
 		if err != nil {
 			return nil, false, false, err
 		}
-		url.AddParam(constant.RuleKey, conditionRule.Rule)
+		url.SetAttribute(constant.RuleKey, conditionRule)
 		url.AddParam(constant.ForceKey, strconv.FormatBool(conditionRule.Force))
 		url.AddParam(constant.PriorityKey, strconv.FormatInt(int64(conditionRule.Priority), 10))
-		conditionRoute, err := NewConditionStateRouter(url)
+		url.AddParam(constant.RatioKey, strconv.FormatInt(int64(conditionRule.Ratio), 10))
+
+		conditionRoute, err := NewConditionMultiDestRouter(url)
 		if err != nil {
 			return nil, false, false, err
 		}
@@ -203,7 +206,7 @@ func generateMultiConditionRoute(rawConfig string) (multiplyConditionRoute, bool
 	return conditionRouters, force, enable, nil
 }
 
-func generateConditionsRoute(rawConfig string) (conditionRoute, bool, bool, error) {
+func generateConditionsRoute(rawConfig string) (stateRouters, bool, bool, error) {
 	routerConfig, err := parseConditionRoute(rawConfig)
 	if err != nil {
 		logger.Warnf("[condition router]Build a new condition route config error, %s and we will use the original condition rule configuration.", err.Error())
