@@ -301,11 +301,12 @@ func parseConditionRoute(routeContent string) (*config.RouterConfig, error) {
 
 // MultiDestRouter Multiply-Destination-Router
 type MultiDestRouter struct {
-	whenCondition map[string]matcher.Matcher
-	thenCondition []condSet
-	ratio         int // default 0, 0 to 100
-	priority      int
-	force         bool
+	whenCondition  map[string]matcher.Matcher
+	trafficDisable bool
+	thenCondition  []condSet
+	ratio          int
+	priority       int
+	force          bool
 }
 
 type condSet struct {
@@ -369,6 +370,11 @@ func (m MultiDestRouter) Route(invokers []protocol.Invoker, url *common.URL, inv
 		return invokers, false
 	}
 
+	if m.trafficDisable {
+		invocation.SetAttachment(constant.TrafficDisableKey, struct{}{})
+		return []protocol.Invoker{}, true
+	}
+
 	if len(m.thenCondition) == 0 {
 		logger.Warn("condition state router thenCondition is empty")
 		return []protocol.Invoker{}, true
@@ -415,11 +421,12 @@ func NewConditionMultiDestRouter(url *common.URL) (*MultiDestRouter, error) {
 	}
 
 	c := &MultiDestRouter{
-		whenCondition: make(map[string]matcher.Matcher),
-		thenCondition: make([]condSet, 0, len(condConf.To)),
-		ratio:         int(url.GetParamInt32(constant.RatioKey, constant.DefaultRouteRatio)),
-		priority:      int(url.GetParamInt32(constant.PriorityKey, constant.DefaultRoutePriority)),
-		force:         url.GetParamBool(constant.ForceKey, false),
+		whenCondition:  make(map[string]matcher.Matcher),
+		thenCondition:  make([]condSet, 0, len(condConf.To)),
+		trafficDisable: url.GetParamBool(constant.TrafficDisableKey, false),
+		ratio:          int(url.GetParamInt32(constant.RatioKey, constant.DefaultRouteRatio)),
+		priority:       int(url.GetParamInt32(constant.PriorityKey, constant.DefaultRoutePriority)),
+		force:          url.GetParamBool(constant.ForceKey, false),
 	}
 
 	m, err := parseRule(condConf.From.Match)

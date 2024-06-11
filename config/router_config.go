@@ -50,9 +50,10 @@ type Tag struct {
 }
 
 type ConditionRule struct {
-	From     ConditionRuleFrom `yaml:"from" json:"from,omitempty" property:"from"`
-	To       []ConditionRuleTo `yaml:"to" json:"to,omitempty" property:"to"`
 	Priority int               `default:"0" yaml:"priority" json:"priority,omitempty" property:"priority"`
+	From     ConditionRuleFrom `yaml:"from" json:"from,omitempty" property:"from"`
+	Disable  bool              `default:"false" yaml:"trafficDisable" json:"trafficDisable,omitempty" property:"trafficDisable"`
+	To       []ConditionRuleTo `yaml:"to" json:"to,omitempty" property:"to"`
 	Ratio    int               `default:"0" yaml:"ratio" json:"ratio,omitempty" property:"priority"`
 	Force    bool              `default:"false" yaml:"force" json:"force,omitempty" property:"force"`
 }

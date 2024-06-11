@@ -891,7 +891,7 @@ conditions:
     to:
       - match: env=$env & region=beijing
     force: false
-    priority: 10
+    priority: 100
 `, ConfigType: remoting.EventTypeUpdate})
 	consumerUrl, err := common.NewURL("consumer://127.0.0.1/com.foo.BarService?env=gray&region=beijing&version=v1")
 	if err != nil {
@@ -1032,7 +1032,7 @@ func TestConditionRouteMatchFail(t *testing.T) {
 	ar := NewApplicationRouter()
 	ar.Process(&config_center.ConfigChangeEvent{Key: "", Value: `configVersion: v3.1
 scope: service
-force: true
+force: false
 runtime: true
 enabled: true
 key: shop
@@ -1041,10 +1041,42 @@ conditions:
       match:
     to:
       - match: region=$region & env=$env & err-tag=Err-tag
-  - from: 
+  - from:
       match:
+    trafficDisable: true
     to:
       - match:
+`, ConfigType: remoting.EventTypeUpdate})
+	consumerUrl, err := common.NewURL("consumer://127.0.0.1/com.foo.BarService?env=gray&region=beijing")
+	if err != nil {
+		panic(err)
+	}
+	got := ar.Route(ivks, consumerUrl, invocation.NewRPCInvocation("errMethod", nil, nil))
+	assert.Equal(t, 0, len(got))
+}
+
+func TestConditionRouteBanSpecialTraffic(t *testing.T) {
+	ivks := buildInvokers()
+	ar := NewApplicationRouter()
+	ar.Process(&config_center.ConfigChangeEvent{Key: "", Value: `configVersion: v3.1
+scope: service
+force: true
+runtime: true
+enabled: true
+key: shop
+conditions:
+  - from:
+      match: env=gray
+    to:
+      - match: 
+    force: true
+    priority: 100
+  - from:
+      match: 
+    to:
+      - match: 
+    force: true
+    priority: 100
 `, ConfigType: remoting.EventTypeUpdate})
 	consumerUrl, err := common.NewURL("consumer://127.0.0.1/com.foo.BarService?env=gray&region=beijing")
 	if err != nil {

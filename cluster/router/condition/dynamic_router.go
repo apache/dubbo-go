@@ -63,11 +63,11 @@ func (m multiplyConditionRoute) route(invokers []protocol.Invoker, url *common.U
 		return invokers
 	}
 	for _, router := range m {
-		matchInvokers, isMatch := router.Route(invokers, url, invocation)
-		if !isMatch || (len(matchInvokers) == 0 && !router.force) {
+		res, isMatchWhen := router.Route(invokers, url, invocation)
+		if !isMatchWhen || (len(res) == 0 && invocation.GetAttachmentInterface(constant.TrafficDisableKey) == nil && !router.force) {
 			continue
 		}
-		return matchInvokers
+		return res
 	}
 	return []protocol.Invoker{}
 }
@@ -97,8 +97,10 @@ func (d *DynamicRouter) Route(invokers []protocol.Invoker, url *common.URL, invo
 	}
 	if cr != nil {
 		res := cr.route(invokers, url, invocation)
-		if len(res) == 0 && !force {
-			return invokers
+		if len(res) == 0 {
+			if invocation.GetAttachmentInterface(constant.TrafficDisableKey) == nil && !force {
+				return invokers
+			}
 		}
 		return res
 	} else {
@@ -190,6 +192,7 @@ func generateMultiConditionRoute(rawConfig string) (multiplyConditionRoute, bool
 		}
 
 		url.SetAttribute(constant.RuleKey, conditionRule)
+		url.AddParam(constant.TrafficDisableKey, strconv.FormatBool(conditionRule.Disable))
 		url.AddParam(constant.ForceKey, strconv.FormatBool(conditionRule.Force))
 		if conditionRule.Priority < 0 {
 			logger.Warnf("got conditionRouteConfig.conditions.priority (%d < 0) is invalid, ignore priority value, use defatult %d ", conditionRule.Priority, constant.DefaultRoutePriority)
