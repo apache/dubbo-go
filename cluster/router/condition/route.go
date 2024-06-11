@@ -315,7 +315,7 @@ type condSet struct {
 
 func newCondSet(cond map[string]matcher.Matcher, subSetWeight int) *condSet {
 	if subSetWeight <= 0 {
-		subSetWeight = constant.DefaultConditionSubSetWeight
+		subSetWeight = constant.DefaultRouteConditionSubSetWeight
 	}
 	return &condSet{cond: cond, subSetWeight: subSetWeight}
 }
@@ -346,14 +346,14 @@ func (s *destSets) addDest(weight int, ivks []protocol.Invoker) {
 	s.weightSum += weight
 }
 
-func (s *destSets) roundDest() []protocol.Invoker {
+func (s *destSets) randDest() []protocol.Invoker {
 	if len(s.dest) == 1 {
 		return s.dest[0].ivks
 	}
 	sum := rand.Intn(s.weightSum)
 	for _, d := range s.dest {
 		sum -= d.weight
-		if sum < 0 {
+		if sum <= 0 {
 			return d.ivks
 		}
 	}
@@ -386,10 +386,13 @@ func (m MultiDestRouter) Route(invokers []protocol.Invoker, url *common.URL, inv
 			destinations.addDest(condition.subSetWeight, res)
 		}
 	}
-	res := destinations.roundDest()
 
-	if len(invokers)*100/len(res) > m.ratio {
-		return res, true
+	if len(destinations.dest) != 0 {
+		res := destinations.randDest()
+		// check x% > m.ratio%
+		if len(res)*100/len(invokers) > m.ratio {
+			return res, true
+		}
 	}
 
 	return []protocol.Invoker{}, true
@@ -414,8 +417,8 @@ func NewConditionMultiDestRouter(url *common.URL) (*MultiDestRouter, error) {
 	c := &MultiDestRouter{
 		whenCondition: make(map[string]matcher.Matcher),
 		thenCondition: make([]condSet, 0, len(condConf.To)),
-		ratio:         int(url.GetParamInt32(constant.RatioKey, 0)),
-		priority:      int(url.GetParamInt32(constant.PriorityKey, 0)),
+		ratio:         int(url.GetParamInt32(constant.RatioKey, constant.DefaultRouteRatio)),
+		priority:      int(url.GetParamInt32(constant.PriorityKey, constant.DefaultRoutePriority)),
 		force:         url.GetParamBool(constant.ForceKey, false),
 	}
 

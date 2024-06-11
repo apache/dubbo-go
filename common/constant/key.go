@@ -308,29 +308,31 @@ const (
 
 // Use for router module
 const (
-	ScriptRouterRuleSuffix           = ".script-router"
-	TagRouterRuleSuffix              = ".tag-router"
-	ConditionRouterRuleSuffix        = ".condition-router" // Specify condition router suffix
-	MeshRouteSuffix                  = ".MESHAPPRULE"      // Specify mesh router suffix
-	ForceUseTag                      = "dubbo.force.tag"   // the tag in attachment
-	ForceUseCondition                = "dubbo.force.condition"
-	Tagkey                           = "dubbo.tag" // key of tag
-	ConditionKey                     = "dubbo.condition"
-	AttachmentKey                    = DubboCtxKey("attachment") // key in context in invoker
-	TagRouterFactoryKey              = "tag"
-	ConditionAppRouterFactoryKey     = "provider.condition"
-	ConditionServiceRouterFactoryKey = "service.condition"
-	ScriptRouterFactoryKey           = "consumer.script"
-	ForceKey                         = "force"
-	PriorityKey                      = "priority"
-	RatioKey                         = "RatioKey"
-	Arguments                        = "arguments"
-	Attachments                      = "attachments"
-	Param                            = "param"
-	Scope                            = "scope"
-	Wildcard                         = "wildcard"
-	MeshRouterFactoryKey             = "mesh"
-	DefaultConditionSubSetWeight     = 100
+	ScriptRouterRuleSuffix            = ".script-router"
+	TagRouterRuleSuffix               = ".tag-router"
+	ConditionRouterRuleSuffix         = ".condition-router" // Specify condition router suffix
+	MeshRouteSuffix                   = ".MESHAPPRULE"      // Specify mesh router suffix
+	ForceUseTag                       = "dubbo.force.tag"   // the tag in attachment
+	ForceUseCondition                 = "dubbo.force.condition"
+	Tagkey                            = "dubbo.tag" // key of tag
+	ConditionKey                      = "dubbo.condition"
+	AttachmentKey                     = DubboCtxKey("attachment") // key in context in invoker
+	TagRouterFactoryKey               = "tag"
+	ConditionAppRouterFactoryKey      = "provider.condition"
+	ConditionServiceRouterFactoryKey  = "service.condition"
+	ScriptRouterFactoryKey            = "consumer.script"
+	ForceKey                          = "force"
+	PriorityKey                       = "priority"
+	RatioKey                          = "RatioKey"
+	Arguments                         = "arguments"
+	Attachments                       = "attachments"
+	Param                             = "param"
+	Scope                             = "scope"
+	Wildcard                          = "wildcard"
+	MeshRouterFactoryKey              = "mesh"
+	DefaultRouteRatio                 = 0
+	DefaultRouteConditionSubSetWeight = 100
+	DefaultRoutePriority              = 0
 )
 
 // Auth filter

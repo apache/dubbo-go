@@ -188,10 +188,19 @@ func generateMultiConditionRoute(rawConfig string) (multiplyConditionRoute, bool
 		if err != nil {
 			return nil, false, false, err
 		}
+
 		url.SetAttribute(constant.RuleKey, conditionRule)
 		url.AddParam(constant.ForceKey, strconv.FormatBool(conditionRule.Force))
-		url.AddParam(constant.PriorityKey, strconv.FormatInt(int64(conditionRule.Priority), 10))
-		url.AddParam(constant.RatioKey, strconv.FormatInt(int64(conditionRule.Ratio), 10))
+		if conditionRule.Priority < 0 {
+			logger.Warnf("got conditionRouteConfig.conditions.priority (%d < 0) is invalid, ignore priority value, use defatult %d ", conditionRule.Priority, constant.DefaultRoutePriority)
+		} else {
+			url.AddParam(constant.PriorityKey, strconv.FormatInt(int64(conditionRule.Priority), 10))
+		}
+		if conditionRule.Ratio < 0 || conditionRule.Ratio > 100 {
+			logger.Warnf("got conditionRouteConfig.conditions.ratio (%d) is invalid, hope (0 - 100), ignore ratio value, use defatult %d ", conditionRule.Ratio, constant.DefaultRouteRatio)
+		} else {
+			url.AddParam(constant.RatioKey, strconv.FormatInt(int64(conditionRule.Ratio), 10))
+		}
 
 		conditionRoute, err := NewConditionMultiDestRouter(url)
 		if err != nil {
