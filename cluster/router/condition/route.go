@@ -18,6 +18,7 @@
 package condition
 
 import (
+	"math/rand"
 	"regexp"
 	"sort"
 	"strings"
@@ -48,9 +49,6 @@ var (
 )
 
 type StateRouter struct {
-	priority      int64
-	force         bool
-	url           *common.URL
 	whenCondition map[string]matcher.Matcher
 	thenCondition map[string]matcher.Matcher
 }
@@ -62,13 +60,7 @@ func NewConditionStateRouter(url *common.URL) (*StateRouter, error) {
 		return nil, errors.Errorf("No ConditionMatcherFactory exists")
 	}
 
-	force := url.GetParamBool(constant.ForceKey, false)
-	priority := url.GetParamInt(constant.PriorityKey, constant.DefaultPriority)
-	c := &StateRouter{
-		url:      url,
-		force:    force,
-		priority: priority,
-	}
+	c := &StateRouter{}
 
 	when, then, err := generateMatcher(url)
 	if err != nil {
@@ -83,18 +75,18 @@ func NewConditionStateRouter(url *common.URL) (*StateRouter, error) {
 // condition rule like `self_condition => peers_condition `
 //
 // @return active_peers_invokers, Is_self_condition_match_success
-func (s *StateRouter) Route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) ([]protocol.Invoker, bool) {
+func (s *StateRouter) Route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
 	if len(invokers) == 0 {
-		return invokers, false
+		return invokers
 	}
 
 	if !s.matchWhen(url, invocation) {
-		return invokers, false
+		return invokers
 	}
 
 	if len(s.thenCondition) == 0 {
 		logger.Warn("condition state router thenCondition is empty")
-		return []protocol.Invoker{}, true
+		return []protocol.Invoker{}
 	}
 
 	var result = make([]protocol.Invoker, 0, len(invokers))
@@ -104,7 +96,7 @@ func (s *StateRouter) Route(invokers []protocol.Invoker, url *common.URL, invoca
 		}
 	}
 
-	return result, true
+	return result
 }
 
 func (s *StateRouter) matchWhen(url *common.URL, invocation protocol.Invocation) bool {
@@ -305,6 +297,156 @@ func parseConditionRoute(routeContent string) (*config.RouterConfig, error) {
 		return nil, err
 	}
 	return routerConfig, nil
+}
+
+// MultiDestRouter Multiply-Destination-Router
+type MultiDestRouter struct {
+	whenCondition  map[string]matcher.Matcher
+	trafficDisable bool
+	thenCondition  []condSet
+	ratio          int
+	priority       int
+	force          bool
+}
+
+type condSet struct {
+	cond         map[string]matcher.Matcher
+	subSetWeight int
+}
+
+func newCondSet(cond map[string]matcher.Matcher, subSetWeight int) *condSet {
+	if subSetWeight <= 0 {
+		subSetWeight = constant.DefaultRouteConditionSubSetWeight
+	}
+	return &condSet{cond: cond, subSetWeight: subSetWeight}
+}
+
+type destSets struct {
+	dest []struct {
+		weight int
+		ivks   []protocol.Invoker
+	}
+	weightSum int
+}
+
+func newDestSets() *destSets {
+	return &destSets{
+		dest: make([]struct {
+			weight int
+			ivks   []protocol.Invoker
+		}, 0),
+		weightSum: 0,
+	}
+}
+
+func (s *destSets) addDest(weight int, ivks []protocol.Invoker) {
+	s.dest = append(s.dest, struct {
+		weight int
+		ivks   []protocol.Invoker
+	}{weight: weight, ivks: ivks})
+	s.weightSum += weight
+}
+
+func (s *destSets) randDest() []protocol.Invoker {
+	if len(s.dest) == 1 {
+		return s.dest[0].ivks
+	}
+	sum := rand.Intn(s.weightSum)
+	for _, d := range s.dest {
+		sum -= d.weight
+		if sum <= 0 {
+			return d.ivks
+		}
+	}
+	return nil
+}
+
+func (m MultiDestRouter) Route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) ([]protocol.Invoker, bool) {
+	if len(invokers) == 0 {
+		return invokers, false
+	}
+
+	if !doMatch(url, nil, invocation, m.whenCondition, true) {
+		return invokers, false
+	}
+
+	if m.trafficDisable {
+		invocation.SetAttachment(constant.TrafficDisableKey, struct{}{})
+		return []protocol.Invoker{}, true
+	}
+
+	if len(m.thenCondition) == 0 {
+		logger.Warn("condition state router thenCondition is empty")
+		return []protocol.Invoker{}, true
+	}
+
+	destinations := newDestSets()
+	for _, condition := range m.thenCondition {
+		res := make([]protocol.Invoker, 0)
+		for _, invoker := range invokers {
+			if doMatch(invoker.GetURL(), url, nil, condition.cond, false) {
+				res = append(res, invoker)
+			}
+		}
+		if len(res) != 0 {
+			destinations.addDest(condition.subSetWeight, res)
+		}
+	}
+
+	if len(destinations.dest) != 0 {
+		res := destinations.randDest()
+		// check x% > m.ratio%
+		if len(res)*100/len(invokers) > m.ratio {
+			return res, true
+		}
+	}
+
+	return []protocol.Invoker{}, true
+}
+
+func NewConditionMultiDestRouter(url *common.URL) (*MultiDestRouter, error) {
+	once.Do(initMatcherFactories)
+
+	if len(matcherFactories) == 0 {
+		return nil, errors.Errorf("No ConditionMatcherFactory exists")
+	}
+
+	rawCondConf, ok := url.GetAttribute(constant.RuleKey)
+	if !ok {
+		return nil, errors.Errorf("Condition Router can't get the rule key")
+	}
+	condConf, ok := rawCondConf.(config.ConditionRule)
+	if !ok {
+		return nil, errors.Errorf("Condition Router get the rule key invaild , got %T", rawCondConf)
+	}
+
+	c := &MultiDestRouter{
+		whenCondition:  make(map[string]matcher.Matcher),
+		thenCondition:  make([]condSet, 0, len(condConf.To)),
+		trafficDisable: url.GetParamBool(constant.TrafficDisableKey, false),
+		ratio:          int(url.GetParamInt32(constant.RatioKey, constant.DefaultRouteRatio)),
+		priority:       int(url.GetParamInt32(constant.PriorityKey, constant.DefaultRoutePriority)),
+		force:          url.GetParamBool(constant.ForceKey, false),
+	}
+
+	m, err := parseRule(condConf.From.Match)
+	if err != nil {
+		return nil, err
+	}
+	for k, v := range m {
+		// if key same, cover
+		c.whenCondition[k] = v
+	}
+
+	for _, ruleTo := range condConf.To {
+		cond, err := parseRule(ruleTo.Match)
+		if err != nil {
+			return nil, err
+		}
+		c.thenCondition = append(c.thenCondition, *newCondSet(cond, ruleTo.Weight))
+	}
+
+	return c, nil
 }
 
 func parseMultiConditionRoute(routeContent string) (*config.ConditionRouter, error) {
