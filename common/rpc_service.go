@@ -344,6 +344,7 @@ func suitableMethods(typ reflect.Type) (string, map[string]*MethodType) {
 			//For better interoperability with java class,
 			//we convert the first letter in methodName between
 			//upper and lower case
+			methods[dubboutil.SwapCaseFirstRune(methodName)] = mt
 			mts = append(mts, dubboutil.SwapCaseFirstRune(methodName))
 		}
 	}
