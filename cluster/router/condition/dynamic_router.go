@@ -213,6 +213,9 @@ func generateMultiConditionRoute(rawConfig string) (multiplyConditionRoute, bool
 	}
 
 	sort.Slice(conditionRouters, func(i, j int) bool {
+		if conditionRouters[i].trafficDisable {
+			return true
+		}
 		return conditionRouters[i].priority > conditionRouters[j].priority
 	})
 	return conditionRouters, force, enable, nil
