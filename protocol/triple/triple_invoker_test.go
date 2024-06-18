@@ -21,13 +21,18 @@ import (
 	"context"
 	"net/http"
 	"testing"
+)
 
+import (
+	"github.com/stretchr/testify/assert"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
-	"github.com/stretchr/testify/assert"
 )
 
 func Test_parseInvocation(t *testing.T) {

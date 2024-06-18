@@ -18,10 +18,14 @@
 package triple_protocol
 
 import (
+	"testing"
+)
+
+import (
 	"github.com/dubbogo/grpc-go/codes"
 	"github.com/dubbogo/grpc-go/status"
+
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestCompatError(t *testing.T) {

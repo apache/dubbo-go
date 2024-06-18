@@ -23,6 +23,12 @@ import (
 )
 
 import (
+	"github.com/dubbogo/gost/log/logger"
+
+	"gopkg.in/yaml.v2"
+)
+
+import (
 	ins "dubbo.apache.org/dubbo-go/v3/cluster/router/script/instance"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	conf "dubbo.apache.org/dubbo-go/v3/common/config"
@@ -31,10 +37,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
-
-	"github.com/dubbogo/gost/log/logger"
-
-	"gopkg.in/yaml.v2"
 )
 
 // ScriptRouter only takes effect on consumers and only supports application granular management.

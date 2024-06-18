@@ -20,7 +20,9 @@ package iwrr
 import (
 	"math/rand"
 	"sync"
+)
 
+import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
