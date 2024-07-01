@@ -64,7 +64,8 @@ func GetNacosConfig(url *common.URL) ([]nacosConstant.ServerConfig, nacosConstan
 	}
 
 	var serverConfigs []nacosConstant.ServerConfig
-	if len(url.Location) != 0 {
+	// if the endpoint is set, the location will be ignored
+	if len(url.GetParam(constant.NacosEndpoint, "")) == 0 {
 		addresses := strings.Split(url.Location, ",")
 		serverConfigs = make([]nacosConstant.ServerConfig, 0, len(addresses))
 		for _, addr := range addresses {
