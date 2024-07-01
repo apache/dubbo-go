@@ -192,12 +192,12 @@ func WithRegisterInterface() Option {
 
 func WithoutUseAsMetaReport() Option {
 	return func(opts *Options) {
-		opts.Registry.UseAsMetaReport = false
+		opts.Registry.UseAsMetaReport = "false"
 	}
 }
 
 func WithoutUseAsConfigCenter() Option {
 	return func(opts *Options) {
-		opts.Registry.UseAsConfigCenter = false
+		opts.Registry.UseAsConfigCenter = "false"
 	}
 }
