@@ -21,20 +21,24 @@ import (
 	"fmt"
 	"reflect"
 	"time"
-
-	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/interoperability"
-	hessian "github.com/apache/dubbo-go-hessian2"
-	perrors "github.com/pkg/errors"
 )
 
 import (
+	hessian "github.com/apache/dubbo-go-hessian2"
+
+	perrors "github.com/pkg/errors"
+
+	msgpack "github.com/ugorji/go/codec"
+
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"google.golang.org/protobuf/proto"
 
 	"google.golang.org/protobuf/runtime/protoiface"
+)
 
-	msgpack "github.com/ugorji/go/codec"
+import (
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/interoperability"
 )
 
 const (

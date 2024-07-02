@@ -15,24 +15,25 @@
  * limitations under the License.
  */
 
-package triple_protocol
+// Package server provides APIs for registering services and starting an RPC server.
+
+package dubboutil
 
 import (
-	"testing"
+	"unicode"
 )
 
-import (
-	"github.com/dubbogo/grpc-go/codes"
-	"github.com/dubbogo/grpc-go/status"
+func SwapCaseFirstRune(s string) string {
+	if s == "" {
+		return s
+	}
 
-	"github.com/stretchr/testify/assert"
-)
-
-func TestCompatError(t *testing.T) {
-	err := status.Error(codes.Code(1234), "user defined")
-	triErr, ok := compatError(err)
-	assert.True(t, ok)
-	assert.Equal(t, Code(1234), triErr.Code())
-	assert.Equal(t, "user defined", triErr.Message())
-	assert.Equal(t, 1, len(triErr.Details()))
+	// convert str to rune slice
+	r := []rune(s)
+	if unicode.IsUpper(r[0]) {
+		r[0] = unicode.ToLower(r[0])
+	} else {
+		r[0] = unicode.ToUpper(r[0])
+	}
+	return string(r)
 }

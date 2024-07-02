@@ -25,14 +25,19 @@ import (
 	"os"
 	"sync"
 	"time"
+)
 
+import (
 	"github.com/dubbogo/gost/log/logger"
 
 	structpb "github.com/golang/protobuf/ptypes/struct"
 
+	perrors "github.com/pkg/errors"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/remoting/xds/common"
 	"dubbo.apache.org/dubbo-go/v3/xds/client"
-	perrors "github.com/pkg/errors"
 )
 
 const (

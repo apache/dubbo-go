@@ -20,7 +20,9 @@ package aliasmethod // weighted random with alias-method algorithm
 
 import (
 	"math/rand"
+)
 
+import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )

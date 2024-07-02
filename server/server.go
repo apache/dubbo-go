@@ -33,6 +33,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	dubboutil "dubbo.apache.org/dubbo-go/v3/common/dubboutil"
 	"dubbo.apache.org/dubbo-go/v3/metadata"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	registry_exposed "dubbo.apache.org/dubbo-go/v3/registry/exposed_tmp"
@@ -180,6 +181,18 @@ func (s *Server) exportServices() (err error) {
 			err = svcOpts.ExportWithoutInfo()
 		} else {
 			info := infoRaw.(*ServiceInfo)
+			//Add a method with a name of a differtent first-letter case
+			//to achieve interoperability with java
+			var additionalMethods []MethodInfo
+			for _, method := range info.Methods {
+				newMethod := method
+				newMethod.Name = dubboutil.SwapCaseFirstRune(method.Name)
+				additionalMethods = append(additionalMethods, newMethod)
+			}
+			for _, additionalMethod := range additionalMethods {
+				info.Methods = append(info.Methods, additionalMethod)
+			}
+
 			err = svcOpts.ExportWithInfo(info)
 		}
 		if err != nil {

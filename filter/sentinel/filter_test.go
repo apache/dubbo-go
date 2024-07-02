@@ -19,8 +19,6 @@ package sentinel
 
 import (
 	"context"
-	"github.com/alibaba/sentinel-golang/core/circuitbreaker"
-	"github.com/pkg/errors"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -28,7 +26,10 @@ import (
 )
 
 import (
+	"github.com/alibaba/sentinel-golang/core/circuitbreaker"
 	"github.com/alibaba/sentinel-golang/core/flow"
+
+	"github.com/pkg/errors"
 
 	"github.com/stretchr/testify/assert"
 )

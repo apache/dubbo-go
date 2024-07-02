@@ -18,10 +18,13 @@
 package triple_protocol
 
 import (
-	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/url"
 	"testing"
+)
+
+import (
+	"github.com/stretchr/testify/assert"
 )
 
 func TestServer_RegisterMuxHandle(t *testing.T) {

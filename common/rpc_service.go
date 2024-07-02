@@ -32,6 +32,10 @@ import (
 	perrors "github.com/pkg/errors"
 )
 
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/dubboutil"
+)
+
 // RPCService the type alias of interface{}
 type RPCService = interface{}
 
@@ -340,6 +344,11 @@ func suitableMethods(typ reflect.Type) (string, map[string]*MethodType) {
 			}
 			methods[methodName] = mt
 			mts = append(mts, methodName)
+			//For better interoperability with java class,
+			//we convert the first letter in methodName between
+			//upper and lower case
+			methods[dubboutil.SwapCaseFirstRune(methodName)] = mt
+			mts = append(mts, dubboutil.SwapCaseFirstRune(methodName))
 		}
 	}
 	return strings.Join(mts, ","), methods

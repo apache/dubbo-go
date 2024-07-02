@@ -20,7 +20,9 @@ package loadbalance_test
 import (
 	"fmt"
 	"testing"
+)
 
+import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/aliasmethod"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/consistenthashing"
