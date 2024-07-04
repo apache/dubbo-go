@@ -159,20 +159,21 @@ func (lstn *ServiceInstancesChangedListenerImpl) OnEvent(e observer.Event) error
 				newServiceURLs[serviceInfo.GetMatchKey()] = urls
 			}
 		}
-		lstn.serviceUrls = newServiceURLs
-
-		for key, notifyListener := range lstn.listeners {
-			urls := lstn.serviceUrls[key]
-			events := make([]*registry.ServiceEvent, 0, len(urls))
-			for _, url := range urls {
-				events = append(events, &registry.ServiceEvent{
-					Action:  remoting.EventTypeAdd,
-					Service: url,
-				})
-			}
-			notifyListener.NotifyAll(events, func() {})
-		}
 	}
+
+	lstn.serviceUrls = newServiceURLs
+	for key, notifyListener := range lstn.listeners {
+		urls := lstn.serviceUrls[key]
+		events := make([]*registry.ServiceEvent, 0, len(urls))
+		for _, url := range urls {
+			events = append(events, &registry.ServiceEvent{
+				Action:  remoting.EventTypeAdd,
+				Service: url,
+			})
+		}
+		notifyListener.NotifyAll(events, func() {})
+	}
+
 	return nil
 }
 

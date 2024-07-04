@@ -261,7 +261,7 @@ func (n *nacosServiceDiscovery) AddListener(listener registry.ServiceInstancesCh
 
 					instances = append(instances, &registry.DefaultServiceInstance{
 						ID:          id,
-						ServiceName: service.ServiceName,
+						ServiceName: serviceName,
 						Host:        service.Ip,
 						Port:        int(service.Port),
 						Enable:      service.Enable,
