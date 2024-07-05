@@ -189,6 +189,7 @@ func (g *grpcHandler) NewConn(
 	// content-type -> codecName -> codec
 	codecName := grpcCodecFromContentType(getHeaderCanonical(request.Header, headerContentType))
 	codec := g.Codecs.Get(codecName) // handler.go guarantees this is not nil
+	backupCodec := g.Codecs.Get(g.ExpectedCodecName)
 	protocolName := ProtocolGRPC
 	conn := wrapHandlerConnWithCodedErrors(&grpcHandlerConn{
 		spec: g.Spec,
@@ -203,6 +204,7 @@ func (g *grpcHandler) NewConn(
 				writer:           responseWriter,
 				compressionPool:  g.CompressionPools.Get(responseCompression),
 				codec:            codec,
+				backupCodec:      backupCodec,
 				compressMinBytes: g.CompressMinBytes,
 				bufferPool:       g.BufferPool,
 				sendMaxBytes:     g.SendMaxBytes,
@@ -216,6 +218,7 @@ func (g *grpcHandler) NewConn(
 			envelopeReader: envelopeReader{
 				reader:          request.Body,
 				codec:           codec,
+				backupCodec:     backupCodec,
 				compressionPool: g.CompressionPools.Get(requestCompression),
 				bufferPool:      g.BufferPool,
 				readMaxBytes:    g.ReadMaxBytes,

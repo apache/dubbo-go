@@ -186,6 +186,10 @@ func WithVersion(version string) Option {
 	return &versionOption{version}
 }
 
+func WithExpectedCodecName(ExpectedCodecName string) Option {
+	return &ExpectedCodecNameOption{ExpectedCodecName: ExpectedCodecName}
+}
+
 // Option implements both [ClientOption] and [HandlerOption], so it can be
 // applied both client-side and server-side.
 type Option interface {
@@ -469,6 +473,18 @@ func (o *idempotencyOption) applyToClient(config *clientConfig) {
 
 func (o *idempotencyOption) applyToHandler(config *handlerConfig) {
 	config.IdempotencyLevel = o.idempotencyLevel
+}
+
+type ExpectedCodecNameOption struct {
+	ExpectedCodecName string
+}
+
+func (o *ExpectedCodecNameOption) applyToClient(config *clientConfig) {
+	//Do nothing as client doesn't have codec issues
+}
+
+func (o *ExpectedCodecNameOption) applyToHandler(config *handlerConfig) {
+	config.ExpectedCodecName = o.ExpectedCodecName
 }
 
 type tripleOption struct{}

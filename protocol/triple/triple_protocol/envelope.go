@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"github.com/dubbogo/gost/log/logger"
 	"io"
 )
 
@@ -51,6 +52,7 @@ func (e *envelope) IsSet(flag uint8) bool {
 type envelopeWriter struct {
 	writer           io.Writer
 	codec            Codec
+	backupCodec      Codec
 	compressMinBytes int
 	compressionPool  *compressionPool
 	bufferPool       *bufferPool
@@ -70,7 +72,13 @@ func (w *envelopeWriter) Marshal(message interface{}) *Error {
 	}
 	raw, err := w.codec.Marshal(message)
 	if err != nil {
-		return errorf(CodeInternal, "marshal message: %w", err)
+		if w.codec.Name() != w.backupCodec.Name() {
+			logger.Warnf("failed to marshal message with codec %s, trying alternative codec %s", w.codec.Name(), w.backupCodec.Name())
+			raw, err = w.backupCodec.Marshal(message)
+		}
+		if err != nil {
+			return errorf(CodeInternal, "marshal message: %w", err)
+		}
 	}
 	// We can't avoid allocating the byte slice, so we may as well reuse it once
 	// we're done with it.
@@ -127,6 +135,7 @@ func (w *envelopeWriter) write(env *envelope) *Error {
 type envelopeReader struct {
 	reader          io.Reader
 	codec           Codec
+	backupCodec     Codec //backupCodec is for mismatch between expected codec and content-type
 	last            envelope
 	compressionPool *compressionPool
 	bufferPool      *bufferPool
@@ -189,7 +198,13 @@ func (r *envelopeReader) Unmarshal(message interface{}) *Error {
 	}
 
 	if err := r.codec.Unmarshal(data.Bytes(), message); err != nil {
-		return errorf(CodeInvalidArgument, "unmarshal into %T: %w", message, err)
+		if r.backupCodec.Name() != r.codec.Name() {
+			logger.Warnf("failed to unmarshal message with codec %s, trying alternative codec %s", r.codec.Name(), r.backupCodec.Name())
+			err = r.backupCodec.Unmarshal(data.Bytes(), message)
+		}
+		if err != nil {
+			return errorf(CodeInvalidArgument, "unmarshal into %T: %w", message, err)
+		}
 	}
 	return nil
 }
