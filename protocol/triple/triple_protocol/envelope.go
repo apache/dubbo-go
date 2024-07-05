@@ -18,8 +18,11 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
-	"github.com/dubbogo/gost/log/logger"
 	"io"
+)
+
+import (
+	"github.com/dubbogo/gost/log/logger"
 )
 
 // flagEnvelopeCompressed indicates that the data is compressed. It has the
