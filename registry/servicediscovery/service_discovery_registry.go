@@ -210,18 +210,19 @@ func (s *ServiceDiscoveryRegistry) Subscribe(url *common.URL, notify registry.No
 	}
 	_, err := s.metaDataService.SubscribeURL(url)
 	if err != nil {
-		return perrors.WithMessage(err, "subscribe url error: "+url.String())
+		return perrors.WithMessage(err, "save subscribe url error: "+url.String())
 	}
 
 	mappingListener := NewMappingListener(s.url, url, s.subscribedServices, notify)
 	services := s.getServices(url, mappingListener)
 	if services.Empty() {
-		return perrors.Errorf("Should has at least one way to know which services this interface belongs to,"+
+		logger.Infof("Should has at least one way to know which services this interface belongs to,"+
 			" either specify 'provided-by' for reference or enable metadata-report center subscription url:%s", url.String())
+	} else {
+		logger.Infof("Find initial mapping applications %q for service %s.", services, url.ServiceKey())
+		// first notify
+		err = mappingListener.OnEvent(registry.NewServiceMappingChangedEvent(url.ServiceKey(), services))
 	}
-	logger.Infof("Find initial mapping applications %q for service %s.", services, url.ServiceKey())
-	// first notify
-	err = mappingListener.OnEvent(registry.NewServiceMappingChangedEvent(url.ServiceKey(), services))
 	if err != nil {
 		logger.Errorf("[ServiceDiscoveryRegistry] ServiceInstancesChangedListenerImpl handle error:%v", err)
 	}

@@ -55,8 +55,8 @@ type RegistryConfig struct {
 	Weight            int64             `yaml:"weight" json:"weight,omitempty" property:"weight"`          // Affects traffic distribution among registriesConfig, useful when subscribe to multiple registriesConfig Take effect only when no preferred registry is specified.
 	Params            map[string]string `yaml:"params" json:"params,omitempty" property:"params"`
 	RegistryType      string            `yaml:"registry-type"`
-	UseAsMetaReport   bool              `default:"true" yaml:"use-as-meta-report" json:"use-as-meta-report,omitempty" property:"use-as-meta-report"`
-	UseAsConfigCenter bool              `default:"true" yaml:"use-as-config-center" json:"use-as-config-center,omitempty" property:"use-as-config-center"`
+	UseAsMetaReport   string            `yaml:"use-as-meta-report" json:"use-as-meta-report,omitempty" property:"use-as-meta-report"`
+	UseAsConfigCenter string            `yaml:"use-as-config-center" json:"use-as-config-center,omitempty" property:"use-as-config-center"`
 }
 
 // Prefix dubbo.registries
@@ -93,7 +93,15 @@ func (c *RegistryConfig) getUrlMap(roleType common.RoleType) url.Values {
 
 func (c *RegistryConfig) startRegistryConfig() error {
 	c.translateRegistryAddress()
-	if c.UseAsMetaReport && isValid(c.Address) {
+	useAsMetaReport := true
+	if len(c.UseAsMetaReport) > 0 {
+		var err error
+		useAsMetaReport, err = strconv.ParseBool(c.UseAsMetaReport)
+		if err != nil {
+			return perrors.Wrap(err, "Start RegistryConfig failed.")
+		}
+	}
+	if useAsMetaReport && isValid(c.Address) {
 		if tmpUrl, err := c.toMetadataReportUrl(); err == nil {
 			instance.SetMetadataReportInstanceByReg(tmpUrl)
 		} else {

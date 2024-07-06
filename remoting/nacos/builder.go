@@ -63,25 +63,29 @@ func GetNacosConfig(url *common.URL) ([]nacosConstant.ServerConfig, nacosConstan
 			perrors.New("url.location is empty!")
 	}
 
-	addresses := strings.Split(url.Location, ",")
-	serverConfigs := make([]nacosConstant.ServerConfig, 0, len(addresses))
-	for _, addr := range addresses {
-		ip, portStr, err := net.SplitHostPort(addr)
-		if err != nil {
-			return []nacosConstant.ServerConfig{}, nacosConstant.ClientConfig{},
-				perrors.WithMessagef(err, "split [%s] ", addr)
+	var serverConfigs []nacosConstant.ServerConfig
+	// if the endpoint is set, the location will be ignored
+	if len(url.GetParam(constant.NacosEndpoint, "")) == 0 {
+		addresses := strings.Split(url.Location, ",")
+		serverConfigs = make([]nacosConstant.ServerConfig, 0, len(addresses))
+		for _, addr := range addresses {
+			ip, portStr, err := net.SplitHostPort(addr)
+			if err != nil {
+				return []nacosConstant.ServerConfig{}, nacosConstant.ClientConfig{},
+					perrors.WithMessagef(err, "split [%s] ", addr)
+			}
+			portContextPath := strings.Split(portStr, constant.PathSeparator)
+			port, err := strconv.Atoi(portContextPath[0])
+			if err != nil {
+				return []nacosConstant.ServerConfig{}, nacosConstant.ClientConfig{},
+					perrors.WithMessagef(err, "port [%s] ", portContextPath[0])
+			}
+			var contextPath string
+			if len(portContextPath) > 1 {
+				contextPath = constant.PathSeparator + strings.Join(portContextPath[1:], constant.PathSeparator)
+			}
+			serverConfigs = append(serverConfigs, nacosConstant.ServerConfig{IpAddr: ip, Port: uint64(port), ContextPath: contextPath})
 		}
-		portContextPath := strings.Split(portStr, constant.PathSeparator)
-		port, err := strconv.Atoi(portContextPath[0])
-		if err != nil {
-			return []nacosConstant.ServerConfig{}, nacosConstant.ClientConfig{},
-				perrors.WithMessagef(err, "port [%s] ", portContextPath[0])
-		}
-		var contextPath string
-		if len(portContextPath) > 1 {
-			contextPath = constant.PathSeparator + strings.Join(portContextPath[1:], constant.PathSeparator)
-		}
-		serverConfigs = append(serverConfigs, nacosConstant.ServerConfig{IpAddr: ip, Port: uint64(port), ContextPath: contextPath})
 	}
 
 	timeout := url.GetParamDuration(constant.NacosTimeout, constant.DefaultRegTimeout)

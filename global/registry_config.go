@@ -37,8 +37,8 @@ type RegistryConfig struct {
 	Weight            int64             `yaml:"weight" json:"weight,omitempty" property:"weight"`          // Affects traffic distribution among registriesConfig, useful when subscribe to multiple registriesConfig Take effect only when no preferred registry is specified.
 	Params            map[string]string `yaml:"params" json:"params,omitempty" property:"params"`
 	RegistryType      string            `yaml:"registry-type"`
-	UseAsMetaReport   bool              `default:"true" yaml:"use-as-meta-report" json:"use-as-meta-report,omitempty" property:"use-as-meta-report"`
-	UseAsConfigCenter bool              `default:"true" yaml:"use-as-config-center" json:"use-as-config-center,omitempty" property:"use-as-config-center"`
+	UseAsMetaReport   string            `yaml:"use-as-meta-report" json:"use-as-meta-report,omitempty" property:"use-as-meta-report"`
+	UseAsConfigCenter string            `yaml:"use-as-config-center" json:"use-as-config-center,omitempty" property:"use-as-config-center"`
 }
 
 func DefaultRegistryConfig() *RegistryConfig {
