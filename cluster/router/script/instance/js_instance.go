@@ -26,9 +26,11 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/protocol"
-
 	"github.com/dop251/goja"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
 const (

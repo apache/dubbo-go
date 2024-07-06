@@ -22,8 +22,6 @@ import (
 	"errors"
 	"fmt"
 	"sync"
-
-	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 )
 
 import (
@@ -34,6 +32,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
+	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 )
 
 var triAttachmentKeys = []string{

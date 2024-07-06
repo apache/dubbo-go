@@ -371,6 +371,7 @@ type handlerConfig struct {
 	CompressionPools            map[string]*compressionPool
 	CompressionNames            []string
 	Codecs                      map[string]Codec
+	ExpectedCodecName           string
 	CompressMinBytes            int
 	Interceptor                 Interceptor
 	Procedure                   string
@@ -424,16 +425,18 @@ func (c *handlerConfig) newProtocolHandlers(streamType StreamType) []protocolHan
 	// protocol -> protocolHandler
 	handlers := make([]protocolHandler, 0, len(protocols))
 	// initialize codec and compressor
-	codecs := newReadOnlyCodecs(c.Codecs)
 	compressors := newReadOnlyCompressionPools(
 		c.CompressionPools,
 		c.CompressionNames,
 	)
+	codecs := newReadOnlyCodecs(c.Codecs)
+
 	for _, protocol := range protocols {
 		handlers = append(handlers, protocol.NewHandler(&protocolHandlerParams{
-			Spec:             c.newSpec(streamType),
-			Codecs:           codecs,
-			CompressionPools: compressors,
+			Spec:              c.newSpec(streamType),
+			Codecs:            codecs,
+			CompressionPools:  compressors,
+			ExpectedCodecName: c.ExpectedCodecName,
 			// config content
 			CompressMinBytes:            c.CompressMinBytes,
 			BufferPool:                  c.BufferPool,

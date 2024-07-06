@@ -18,7 +18,6 @@
 package condition
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/remoting"
 	"testing"
 )
 
@@ -35,6 +34,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config_center/configurator"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
 const (

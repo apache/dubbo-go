@@ -28,7 +28,13 @@ import (
 	"strconv"
 	"strings"
 	"time"
+)
 
+import (
+	"github.com/dubbogo/gost/log/logger"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/xds/client/bootstrap"
 	"dubbo.apache.org/dubbo-go/v3/xds/credentials/certgenerate"
 	"dubbo.apache.org/dubbo-go/v3/xds/credentials/certprovider"
@@ -36,7 +42,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/xds/credentials/certprovider/remote"
 	"dubbo.apache.org/dubbo-go/v3/xds/internal"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/envconfig"
-	"github.com/dubbogo/gost/log/logger"
 )
 
 func init() {

@@ -87,6 +87,8 @@ func (s *Server) Start(invoker protocol.Invoker, info *server.ServiceInfo) {
 	// todo:// move tls config to handleService
 
 	hanOpts := getHanOpts(URL)
+	//Set expected codec name from serviceinfo
+	hanOpts = append(hanOpts, tri.WithExpectedCodecName(serialization))
 	intfName := URL.Interface()
 	if info != nil {
 		// new triple idl mode
@@ -119,6 +121,8 @@ func (s *Server) RefreshService(invoker protocol.Invoker, info *server.ServiceIn
 		panic(fmt.Sprintf("Unsupported serialization: %s", serialization))
 	}
 	hanOpts := getHanOpts(URL)
+	//Set expected codec name from serviceinfo
+	hanOpts = append(hanOpts, tri.WithExpectedCodecName(serialization))
 	intfName := URL.Interface()
 	if info != nil {
 		s.handleServiceWithInfo(intfName, invoker, info, hanOpts...)
