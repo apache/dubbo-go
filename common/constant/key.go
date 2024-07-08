@@ -326,7 +326,6 @@ const (
 	ForceKey                          = "force"
 	TrafficDisableKey                 = "trafficDisable"
 	PriorityKey                       = "priority"
-	RatioKey                          = "RatioKey"
 	Arguments                         = "arguments"
 	Attachments                       = "attachments"
 	Param                             = "param"

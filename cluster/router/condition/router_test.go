@@ -18,6 +18,9 @@
 package condition
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/remoting"
+	"sync"
 	"testing"
 )
 
@@ -27,14 +30,13 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/common/config"
+	commonConfig "dubbo.apache.org/dubbo-go/v3/common/config"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/config_center/configurator"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
-	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
 const (
@@ -750,7 +752,7 @@ conditions:
  - 'method=sayHello => region=hangzhou'`,
 	}
 	dc, _ := mockFactory.GetDynamicConfiguration(ccURL)
-	config.GetEnvInstance().SetDynamicConfiguration(dc)
+	commonConfig.GetEnvInstance().SetDynamicConfiguration(dc)
 
 	router := NewServiceRouter()
 	router.Notify(invokerList)
@@ -795,7 +797,7 @@ conditions:
  - 'method=sayHello => region=hangzhou'`,
 	}
 	dc, _ := mockFactory.GetDynamicConfiguration(ccURL)
-	config.GetEnvInstance().SetDynamicConfiguration(dc)
+	commonConfig.GetEnvInstance().SetDynamicConfiguration(dc)
 
 	router := NewApplicationRouter()
 	router.Notify(invokerList)
@@ -852,6 +854,68 @@ var providerUrls = []string{
 	"dubbo://dubbo.apache.org/com.foo.BarService?region=hangzhou&env=normal",
 }
 
+func Test_parseMultiConditionRoute(t *testing.T) {
+	type args struct {
+		routeContent string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    *config.ConditionRouter
+		wantErr assert.ErrorAssertionFunc
+	}{
+		{name: "testParseConfig", args: args{`configVersion: v3.1 
+scope: service      
+key: org.apache.dubbo.samples.CommentService 
+force: false        
+runtime: true       
+enabled: true       
+trafficDisabled:
+  - match: arguments[0] = "false"
+  - match: host = 10.20.153.10,10.20.153.11
+
+#######
+regionalTry: true
+
+#######
+conditions:
+  - from:
+      match: tag=gray
+    to:
+      - match: tag!=gray
+        weight: 100
+      - match: tag=gray
+        weight: 900
+  - from:
+      match: version=v1
+    to:
+      - match: version=v1`}, want: &config.ConditionRouter{
+			Scope:   "service",
+			Key:     "org.apache.dubbo.samples.CommentService",
+			Force:   false,
+			Runtime: true,
+			Enabled: true,
+			TrafficDisabled: []config.ConditionRuleDisable{
+				{`arguments[0] = "false"`},
+				{`host = 10.20.153.10,10.20.153.11`},
+			},
+			RegionalTry: true,
+			Conditions: []config.ConditionRule{{config.ConditionRuleFrom{Match: `tag=gray`},
+				[]config.ConditionRuleTo{{`tag!=gray`, 100}, {`tag=gray`, 900}},
+			}, {config.ConditionRuleFrom{Match: `version=v1`},
+				[]config.ConditionRuleTo{{`version=v1`, 0}},
+			}},
+		}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := parseMultiConditionRoute(tt.args.routeContent)
+			assert.Nil(t, err)
+			assert.Equalf(t, tt.want, got, "parseMultiConditionRoute(%v)", tt.args.routeContent)
+		})
+	}
+}
+
 func buildInvokers() []protocol.Invoker {
 	res := make([]protocol.Invoker, 0, len(providerUrls))
 	for _, url := range providerUrls {
@@ -864,224 +928,102 @@ func buildInvokers() []protocol.Invoker {
 	return res
 }
 
-func TestConditionRoutePriority(t *testing.T) {
-	ivks := buildInvokers()
-	ar := NewApplicationRouter()
-	ar.Process(&config_center.ConfigChangeEvent{Key: "", Value: `configVersion: v3.1
-scope: service
-force: false
-runtime: true
-enabled: true
-key: shop
-conditions:
-  - from:
-      match:
-    to:
-      - match: region=$region & version=v1
-      - match: region=$region & version=v2
-        weight: 200
-      - match: region=$region & version=v3
-        weight: 300
-    force: false
-    ratio: 20
-    priority: 20
-  - from: 
-      match:
-        region=beijing & version=v1
-    to:
-      - match: env=$env & region=beijing
-    force: false
-    priority: 100
-`, ConfigType: remoting.EventTypeUpdate})
-	consumerUrl, err := common.NewURL("consumer://127.0.0.1/com.foo.BarService?env=gray&region=beijing&version=v1")
+type INVOKERS_FILTERS []multiCond
+
+func genMatcher(rule string) multiCond {
+	cond, err := parseRule(rule)
 	if err != nil {
 		panic(err)
 	}
-	got := ar.Route(ivks, consumerUrl, invocation.NewRPCInvocation("getComment", nil, nil))
-	expLen := 0
-	for _, ivk := range ivks {
-		if ivk.GetURL().GetParam("region", "") == "beijing" && "gray" == ivk.GetURL().GetParam("env", "") {
-			expLen++
+	m := multiCond{
+		rule:  rule,
+		match: cond,
+	}
+	return m
+}
+
+func NewINVOKERS_FILTERS() INVOKERS_FILTERS {
+	return []multiCond{}
+}
+
+func (INV INVOKERS_FILTERS) add(rule string) INVOKERS_FILTERS {
+	m := genMatcher(rule)
+	return append(INV, m)
+}
+
+func (INV INVOKERS_FILTERS) do(inv []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
+	for _, cond := range INV {
+		tmpInv := make([]protocol.Invoker, 0)
+		for _, invoker := range inv {
+			if cond.matchInvoker(url, invoker, invocation) {
+				tmpInv = append(tmpInv, invoker)
+			}
 		}
+		inv = tmpInv
 	}
-	if len(ivks)*100/expLen <= 20 {
-		expLen = 0
-	}
-	assert.Equal(t, expLen, len(got))
+	return inv
 }
-
-func TestConditionRouteTrafficDisable(t *testing.T) {
-	ivks := buildInvokers()
-	ar := NewApplicationRouter()
-	ar.Process(&config_center.ConfigChangeEvent{Key: "", Value: `configVersion: v3.1
-scope: service
-force: true
-runtime: true
-enabled: true
-key: shop
-conditions:
-  - from:
-      match:
-    to:
-      - match: region=$region & version=v1
-      - match: region=$region & version=v2
-        weight: 200
-      - match: region=$region & version=v3
-        weight: 300
-    force: false
-    ratio: 20
-    priority: 20
-  - from: 
-      match:
-        region=beijing & version=v1
-    to:
-    force: true
-    ratio: 20 
-    priority: 100
-`, ConfigType: remoting.EventTypeUpdate})
-	consumerUrl, err := common.NewURL("consumer://127.0.0.1/com.foo.BarService?env=gray&region=beijing")
+func newUrl(url string) *common.URL {
+	res, err := common.NewURL(url)
 	if err != nil {
 		panic(err)
 	}
-	got := ar.Route(ivks, consumerUrl, invocation.NewRPCInvocation("echo", nil, nil))
-	assert.Equal(t, 0, len(got))
+	return res
 }
-
-func TestConditionRouteRegionPriority(t *testing.T) {
-	ivks := buildInvokers()
-	ar := NewApplicationRouter()
-	ar.Process(&config_center.ConfigChangeEvent{Key: "", Value: `configVersion: v3.1
-scope: service
-force: true
-runtime: true
-enabled: true
-key: shop
-conditions:
-  - from:
-      match:
-    to:
-      - match: region=$region & env=$env
-`, ConfigType: remoting.EventTypeUpdate})
-	consumerUrl, err := common.NewURL("consumer://127.0.0.1/com.foo.BarService?env=gray&region=beijing")
-	if err != nil {
-		panic(err)
+func Test_multiplyConditionRoute_route(t *testing.T) {
+	d := DynamicRouter{
+		mu:              sync.RWMutex{},
+		force:           false,
+		enable:          false,
+		conditionRouter: nil,
 	}
-	got := ar.Route(ivks, consumerUrl, invocation.NewRPCInvocation("getComment", nil, nil))
-	expLen := 0
-	for _, ivk := range ivks {
-		if ivk.GetURL().GetRawParam("env") == consumerUrl.GetRawParam("env") &&
-			ivk.GetURL().GetRawParam("region") == consumerUrl.GetRawParam("region") {
-			expLen++
+	tests := []struct {
+		name    string
+		content string
+		args    struct {
+			invokers   []protocol.Invoker
+			url        *common.URL
+			invocation protocol.Invocation
 		}
-	}
-	assert.Equal(t, expLen, len(got))
-	consumerUrl, err = common.NewURL("consumer://127.0.0.1/com.foo.BarService?env=gray&region=hangzhou")
-	if err != nil {
-		panic(err)
-	}
-	got = ar.Route(ivks, consumerUrl, invocation.NewRPCInvocation("getComment", nil, nil))
-	expLen = 0
-	for _, ivk := range ivks {
-		if ivk.GetURL().GetRawParam("env") == consumerUrl.GetRawParam("env") &&
-			ivk.GetURL().GetRawParam("region") == consumerUrl.GetRawParam("region") {
-			expLen++
-		}
-	}
-	assert.Equal(t, expLen, len(got))
-	consumerUrl, err = common.NewURL("consumer://127.0.0.1/com.foo.BarService?env=normal&region=shanghai")
-	if err != nil {
-		panic(err)
-	}
-	got = ar.Route(ivks, consumerUrl, invocation.NewRPCInvocation("getComment", nil, nil))
-	expLen = 0
-	for _, ivk := range ivks {
-		if ivk.GetURL().GetRawParam("region") == consumerUrl.GetRawParam("region") &&
-			ivk.GetURL().GetRawParam("env") == consumerUrl.GetRawParam("env") {
-			expLen++
-		}
-	}
-	assert.Equal(t, expLen, len(got))
-}
-
-func TestConditionRouteRegionPriorityFail(t *testing.T) {
-	ivks := buildInvokers()
-	ar := NewApplicationRouter()
-	ar.Process(&config_center.ConfigChangeEvent{Key: "", Value: `configVersion: v3.1
-scope: service
-force: true
-runtime: true
-enabled: true
-key: shop
-conditions:
-  - from:
-      match:
-    to:
-      - match: region=$region & env=$env
-    ratio: 100
-`, ConfigType: remoting.EventTypeUpdate})
-	consumerUrl, err := common.NewURL("consumer://127.0.0.1/com.foo.BarService?env=gray&region=beijing")
-	if err != nil {
-		panic(err)
-	}
-	got := ar.Route(ivks, consumerUrl, invocation.NewRPCInvocation("getComment", nil, nil))
-	assert.Equal(t, 0, len(got))
-}
-
-func TestConditionRouteMatchFail(t *testing.T) {
-	ivks := buildInvokers()
-	ar := NewApplicationRouter()
-	ar.Process(&config_center.ConfigChangeEvent{Key: "", Value: `configVersion: v3.1
-scope: service
-force: false
-runtime: true
-enabled: true
-key: shop
-conditions:
-  - from:
-      match:
-    to:
-      - match: region=$region & env=$env & err-tag=Err-tag
-  - from:
-      match:
-    trafficDisable: true
-    to:
-      - match:
-`, ConfigType: remoting.EventTypeUpdate})
-	consumerUrl, err := common.NewURL("consumer://127.0.0.1/com.foo.BarService?env=gray&region=beijing")
-	if err != nil {
-		panic(err)
-	}
-	got := ar.Route(ivks, consumerUrl, invocation.NewRPCInvocation("errMethod", nil, nil))
-	assert.Equal(t, 0, len(got))
-}
-
-func TestConditionRouteBanSpecialTraffic(t *testing.T) {
-	ivks := buildInvokers()
-	ar := NewApplicationRouter()
-	ar.Process(&config_center.ConfigChangeEvent{Key: "", Value: `configVersion: v3.1
-scope: service
-force: true
-runtime: true
-enabled: true
-key: shop
+		invokers_filters INVOKERS_FILTERS
+	}{
+		{
+			name: "test base condition",
+			content: `configVersion: v3.1 
+scope: service      
+key: org.apache.dubbo.samples.CommentService 
+force: false        
+runtime: true       
+enabled: true       
 conditions:
   - from:
       match: env=gray
     to:
-      - match: 
-    force: true
-    priority: 100
-  - from:
-      match: 
-    to:
-      - match: 
-    force: true
-    priority: 100
-`, ConfigType: remoting.EventTypeUpdate})
-	consumerUrl, err := common.NewURL("consumer://127.0.0.1/com.foo.BarService?env=gray&region=beijing")
-	if err != nil {
-		panic(err)
+      - match: env!=gray
+        weight: 100
+`,
+			args: struct {
+				invokers   []protocol.Invoker
+				url        *common.URL
+				invocation protocol.Invocation
+			}{
+				invokers:   buildInvokers(),
+				url:        newUrl("consumer://127.0.0.1/com.foo.BarService?env=gray&region=beijing"),
+				invocation: invocation.NewRPCInvocation("echo", nil, nil),
+			},
+			invokers_filters: NewINVOKERS_FILTERS().add("env!=gray"),
+		},
 	}
-	got := ar.Route(ivks, consumerUrl, invocation.NewRPCInvocation("errMethod", nil, nil))
-	assert.Equal(t, len(ivks), len(got))
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d.Process(&config_center.ConfigChangeEvent{
+				Value:      tt.content,
+				ConfigType: remoting.EventTypeUpdate,
+			})
+			assert.Equalf(t,
+				tt.invokers_filters.do(tt.args.invokers, tt.args.url, tt.args.invocation),
+				d.Route(tt.args.invokers, tt.args.url, tt.args.invocation),
+				"route(%v, %v, %v)", tt.args.invokers, tt.args.url, tt.args.invocation)
+		})
+	}
 }

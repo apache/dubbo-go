@@ -299,63 +299,69 @@ func parseConditionRoute(routeContent string) (*config.RouterConfig, error) {
 	return routerConfig, nil
 }
 
+type multiCond struct {
+	rule  string
+	match map[string]matcher.Matcher
+}
+
+func (m *multiCond) matchRequest(url *common.URL, invocation protocol.Invocation) bool {
+	return doMatch(url, nil, invocation, m.match, true)
+}
+
+func (m *multiCond) matchInvoker(url *common.URL, ivk protocol.Invoker, invocation protocol.Invocation) bool {
+	return doMatch(ivk.GetURL(), url, nil, m.match, false)
+}
+
 // MultiDestRouter Multiply-Destination-Router
 type MultiDestRouter struct {
-	whenCondition  map[string]matcher.Matcher
-	trafficDisable bool
-	thenCondition  []condSet
-	ratio          int
-	priority       int
-	force          bool
+	whenCondition multiCond
+	thenCondition []condSet
 }
 
 type condSet struct {
-	cond         map[string]matcher.Matcher
+	multiCond
 	subSetWeight int
 }
 
-func newCondSet(cond map[string]matcher.Matcher, subSetWeight int) *condSet {
+func newCondSet(rule string, cond map[string]matcher.Matcher, subSetWeight int) *condSet {
 	if subSetWeight <= 0 {
 		subSetWeight = constant.DefaultRouteConditionSubSetWeight
 	}
-	return &condSet{cond: cond, subSetWeight: subSetWeight}
+	return &condSet{multiCond{rule, cond}, subSetWeight}
+}
+
+type destination struct {
+	matchRule string
+	weight    int
+	ivks      []protocol.Invoker
 }
 
 type destSets struct {
-	dest []struct {
-		weight int
-		ivks   []protocol.Invoker
-	}
-	weightSum int
+	destinations []*destination
+	weightSum    int
 }
 
 func newDestSets() *destSets {
 	return &destSets{
-		dest: make([]struct {
-			weight int
-			ivks   []protocol.Invoker
-		}, 0),
-		weightSum: 0,
+		destinations: []*destination{},
+		weightSum:    0,
 	}
 }
 
-func (s *destSets) addDest(weight int, ivks []protocol.Invoker) {
-	s.dest = append(s.dest, struct {
-		weight int
-		ivks   []protocol.Invoker
-	}{weight: weight, ivks: ivks})
+func (s *destSets) addDest(weight int, rule string, ivks []protocol.Invoker) {
+	s.destinations = append(s.destinations, &destination{weight: weight, matchRule: rule, ivks: ivks})
 	s.weightSum += weight
 }
 
-func (s *destSets) randDest() []protocol.Invoker {
-	if len(s.dest) == 1 {
-		return s.dest[0].ivks
+func (s *destSets) randDest() *destination {
+	if len(s.destinations) == 1 {
+		return s.destinations[0]
 	}
 	sum := rand.Intn(s.weightSum)
-	for _, d := range s.dest {
+	for _, d := range s.destinations {
 		sum -= d.weight
 		if sum <= 0 {
-			return d.ivks
+			return d
 		}
 	}
 	return nil
@@ -366,13 +372,8 @@ func (m MultiDestRouter) Route(invokers []protocol.Invoker, url *common.URL, inv
 		return invokers, false
 	}
 
-	if !doMatch(url, nil, invocation, m.whenCondition, true) {
+	if !m.whenCondition.matchRequest(url, invocation) {
 		return invokers, false
-	}
-
-	if m.trafficDisable {
-		invocation.SetAttachment(constant.TrafficDisableKey, struct{}{})
-		return []protocol.Invoker{}, true
 	}
 
 	if len(m.thenCondition) == 0 {
@@ -384,21 +385,25 @@ func (m MultiDestRouter) Route(invokers []protocol.Invoker, url *common.URL, inv
 	for _, condition := range m.thenCondition {
 		res := make([]protocol.Invoker, 0)
 		for _, invoker := range invokers {
-			if doMatch(invoker.GetURL(), url, nil, condition.cond, false) {
+			if condition.matchInvoker(url, invoker, invocation) {
 				res = append(res, invoker)
 			}
 		}
 		if len(res) != 0 {
-			destinations.addDest(condition.subSetWeight, res)
+			destinations.addDest(condition.subSetWeight, condition.rule, res)
 		}
 	}
 
-	if len(destinations.dest) != 0 {
-		res := destinations.randDest()
-		// check x% > m.ratio%
-		if len(res)*100/len(invokers) > m.ratio {
-			return res, true
+	d := destinations.randDest()
+	if d != nil {
+		// use to print log, if route empty
+		i, ok := invocation.Attributes()["condition-chain"].([]string)
+		if !ok {
+			invocation.Attributes()["condition-chain"] = []string{}
 		}
+		i = append(i, "From: "+m.whenCondition.rule+", To: "+d.matchRule)
+
+		return d.ivks, true
 	}
 
 	return []protocol.Invoker{}, true
@@ -421,21 +426,18 @@ func NewConditionMultiDestRouter(url *common.URL) (*MultiDestRouter, error) {
 	}
 
 	c := &MultiDestRouter{
-		whenCondition:  make(map[string]matcher.Matcher),
-		thenCondition:  make([]condSet, 0, len(condConf.To)),
-		trafficDisable: url.GetParamBool(constant.TrafficDisableKey, false),
-		ratio:          int(url.GetParamInt32(constant.RatioKey, constant.DefaultRouteRatio)),
-		priority:       int(url.GetParamInt32(constant.PriorityKey, constant.DefaultRoutePriority)),
-		force:          url.GetParamBool(constant.ForceKey, false),
+		whenCondition: multiCond{match: map[string]matcher.Matcher{}},
+		thenCondition: make([]condSet, 0, len(condConf.To)),
 	}
 
 	m, err := parseRule(condConf.From.Match)
 	if err != nil {
 		return nil, err
 	}
+	c.whenCondition.rule = condConf.From.Match
 	for k, v := range m {
 		// if key same, cover
-		c.whenCondition[k] = v
+		c.whenCondition.match[k] = v
 	}
 
 	for _, ruleTo := range condConf.To {
@@ -443,7 +445,7 @@ func NewConditionMultiDestRouter(url *common.URL) (*MultiDestRouter, error) {
 		if err != nil {
 			return nil, err
 		}
-		c.thenCondition = append(c.thenCondition, *newCondSet(cond, ruleTo.Weight))
+		c.thenCondition = append(c.thenCondition, *newCondSet(ruleTo.Match, cond, ruleTo.Weight))
 	}
 
 	return c, nil
