@@ -17,10 +17,6 @@
 
 package constant
 
-import (
-	"math"
-)
-
 type DubboCtxKey string
 
 const (
@@ -325,16 +321,13 @@ const (
 	ScriptRouterFactoryKey            = "consumer.script"
 	ForceKey                          = "force"
 	TrafficDisableKey                 = "trafficDisable"
-	PriorityKey                       = "priority"
 	Arguments                         = "arguments"
 	Attachments                       = "attachments"
 	Param                             = "param"
 	Scope                             = "scope"
 	Wildcard                          = "wildcard"
 	MeshRouterFactoryKey              = "mesh"
-	DefaultRouteRatio                 = 0
 	DefaultRouteConditionSubSetWeight = 100
-	DefaultRoutePriority              = 0
 )
 
 // Auth filter
@@ -454,7 +447,4 @@ const (
 // priority
 const (
 	DefaultPriority = 0
-	HighestPriority = math.MinInt32
-	// LowestPriority for metadata service
-	LowestPriority = math.MaxInt32
 )
