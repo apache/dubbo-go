@@ -19,7 +19,6 @@ package condition
 
 import (
 	"fmt"
-	"github.com/pkg/errors"
 	"strconv"
 	"strings"
 	"sync"
@@ -27,6 +26,8 @@ import (
 
 import (
 	"github.com/dubbogo/gost/log/logger"
+
+	"github.com/pkg/errors"
 
 	"gopkg.in/yaml.v2"
 )

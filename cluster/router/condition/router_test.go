@@ -18,8 +18,6 @@
 package condition
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/config"
-	"dubbo.apache.org/dubbo-go/v3/remoting"
 	"sync"
 	"testing"
 )
@@ -33,10 +31,12 @@ import (
 	commonConfig "dubbo.apache.org/dubbo-go/v3/common/config"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/config_center/configurator"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
 const (
@@ -959,6 +959,7 @@ func (INV INVOKERS_FILTERS) filtrate(inv []protocol.Invoker, url *common.URL, in
 	}
 	return inv
 }
+
 func newUrl(url string) *common.URL {
 	res, err := common.NewURL(url)
 	if err != nil {
@@ -966,7 +967,13 @@ func newUrl(url string) *common.URL {
 	}
 	return res
 }
+
 func Test_multiplyConditionRoute_route(t *testing.T) {
+	type args struct {
+		invokers   []protocol.Invoker
+		url        *common.URL
+		invocation protocol.Invocation
+	}
 	d := DynamicRouter{
 		mu:              sync.RWMutex{},
 		force:           false,
@@ -974,13 +981,9 @@ func Test_multiplyConditionRoute_route(t *testing.T) {
 		conditionRouter: nil,
 	}
 	tests := []struct {
-		name    string
-		content string
-		args    struct {
-			invokers   []protocol.Invoker
-			url        *common.URL
-			invocation protocol.Invocation
-		}
+		name             string
+		content          string
+		args             args
 		invokers_filters INVOKERS_FILTERS
 		expResLen        int
 		multiDestination []struct {
@@ -1003,11 +1006,7 @@ conditions:
       - match: env!=gray
         weight: 100
 `,
-			args: struct {
-				invokers   []protocol.Invoker
-				url        *common.URL
-				invocation protocol.Invocation
-			}{
+			args: args{
 				invokers:   buildInvokers(),
 				url:        newUrl("consumer://127.0.0.1/com.foo.BarService?env=gray&region=beijing"),
 				invocation: invocation.NewRPCInvocation("echo", nil, nil),
@@ -1036,11 +1035,7 @@ conditions:
     to:
       - match: host!=127.0.0.1
 `,
-			args: struct {
-				invokers   []protocol.Invoker
-				url        *common.URL
-				invocation protocol.Invocation
-			}{
+			args: args{
 				invokers:   buildInvokers(),
 				url:        newUrl("consumer://127.0.0.1/com.foo.BarService?env=gray&region=beijing"),
 				invocation: invocation.NewRPCInvocation("echo", nil, nil),
@@ -1069,11 +1064,7 @@ conditions:
     to:
       - match: host!=127.0.0.1
 `,
-			args: struct {
-				invokers   []protocol.Invoker
-				url        *common.URL
-				invocation protocol.Invocation
-			}{
+			args: args{
 				invokers:   buildInvokers(),
 				url:        newUrl("consumer://127.0.0.1/com.foo.BarService?env=gray&region=beijing"),
 				invocation: invocation.NewRPCInvocation("echo", nil, nil),
@@ -1102,11 +1093,7 @@ conditions:
     to:
       - match: host!=127.0.0.1
 `,
-			args: struct {
-				invokers   []protocol.Invoker
-				url        *common.URL
-				invocation protocol.Invocation
-			}{
+			args: args{
 				invokers:   buildInvokers(),
 				url:        newUrl("consumer://127.0.0.1/com.foo.BarService?env=gray&region=beijing"),
 				invocation: invocation.NewRPCInvocation("echo", nil, nil),
@@ -1135,11 +1122,7 @@ conditions:
       - match: env=ErrTag # all invoker can't match this
         weight: 100
 `,
-			args: struct {
-				invokers   []protocol.Invoker
-				url        *common.URL
-				invocation protocol.Invocation
-			}{
+			args: args{
 				invokers:   buildInvokers(),
 				url:        newUrl("consumer://127.0.0.1/com.foo.BarService?env=gray&region=beijing"),
 				invocation: invocation.NewRPCInvocation("echo", nil, nil),
@@ -1161,11 +1144,7 @@ conditions:
       - match: env!=gray     
         weight: 100
 `,
-			args: struct {
-				invokers   []protocol.Invoker
-				url        *common.URL
-				invocation protocol.Invocation
-			}{
+			args: args{
 				invokers:   buildInvokers(),
 				url:        newUrl("consumer://127.0.0.1/com.foo.BarService?env=gray&region=beijing"),
 				invocation: invocation.NewRPCInvocation("echo", nil, nil),
@@ -1189,11 +1168,7 @@ conditions:
   - to:
       - match: region!=beijing
 `,
-			args: struct {
-				invokers   []protocol.Invoker
-				url        *common.URL
-				invocation protocol.Invocation
-			}{
+			args: args{
 				invokers:   buildInvokers(),
 				url:        newUrl("consumer://127.0.0.1/com.foo.BarService?env=gray&region=beijing"),
 				invocation: invocation.NewRPCInvocation("echo", nil, nil),
@@ -1219,11 +1194,7 @@ conditions:
   - to:
       - match: region!=beijing
 `,
-			args: struct {
-				invokers   []protocol.Invoker
-				url        *common.URL
-				invocation protocol.Invocation
-			}{
+			args: args{
 				invokers:   buildInvokers(),
 				url:        newUrl("consumer://127.0.0.1/com.foo.BarService?env=gray&region=beijing"),
 				invocation: invocation.NewRPCInvocation("echo", nil, nil),
@@ -1253,11 +1224,7 @@ conditions:
       - match: region=beijing
         weight: 200
 `,
-			args: struct {
-				invokers   []protocol.Invoker
-				url        *common.URL
-				invocation protocol.Invocation
-			}{
+			args: args{
 				invokers:   buildInvokers(),
 				url:        newUrl("consumer://127.0.0.1/com.foo.BarService?env=gray&region=beijing"),
 				invocation: invocation.NewRPCInvocation("echo", nil, nil),
@@ -1302,11 +1269,7 @@ conditions:
       - match: region=beijing
         weight: 200
 `,
-			args: struct {
-				invokers   []protocol.Invoker
-				url        *common.URL
-				invocation protocol.Invocation
-			}{
+			args: args{
 				invokers:   buildInvokers(),
 				url:        newUrl("consumer://127.0.0.1/com.foo.BarService?env=gray&region=beijing"),
 				invocation: invocation.NewRPCInvocation("echo", nil, nil),
@@ -1352,11 +1315,7 @@ conditions:
       - match: region=beijing
         weight: 200
 `,
-			args: struct {
-				invokers   []protocol.Invoker
-				url        *common.URL
-				invocation protocol.Invocation
-			}{
+			args: args{
 				invokers:   buildInvokers(),
 				url:        newUrl("consumer://127.0.0.1/com.foo.BarService?env=gray&region=beijing"),
 				invocation: invocation.NewRPCInvocation("echo", nil, nil),
