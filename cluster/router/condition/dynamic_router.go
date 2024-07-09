@@ -87,7 +87,7 @@ func (m *multiplyConditionRoute) route(invokers []protocol.Invoker, url *common.
 			if len(invokers) == 0 {
 				routeChains, ok := invocation.Attributes()["condition-chain"].([]string)
 				if ok {
-					logger.Errorf("Condition-router route an empty set, by %v", strings.Join(routeChains, ","))
+					logger.Errorf("request[%s] route an empty set in condition-route:: %s", url.String(), strings.Join(routeChains, "-->"))
 				}
 				return []protocol.Invoker{}
 			}
@@ -224,16 +224,16 @@ func generateMultiConditionRoute(rawConfig string) (*multiplyConditionRoute, boo
 
 	conditionRouters := make([]*MultiDestRouter, 0, len(routerConfig.Conditions))
 	for _, conditionRule := range routerConfig.Conditions {
-		url, err := common.NewURL("condition://")
-		if err != nil {
-			return nil, false, false, err
+		url, err1 := common.NewURL("condition://")
+		if err1 != nil {
+			return nil, false, false, err1
 		}
 
 		url.SetAttribute(constant.RuleKey, conditionRule)
 
-		conditionRoute, err := NewConditionMultiDestRouter(url)
-		if err != nil {
-			return nil, false, false, err
+		conditionRoute, err2 := NewConditionMultiDestRouter(url)
+		if err2 != nil {
+			return nil, false, false, err2
 		}
 		conditionRouters = append(conditionRouters, conditionRoute)
 	}

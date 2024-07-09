@@ -354,6 +354,9 @@ func (s *destSets) addDest(weight int, rule string, ivks []protocol.Invoker) {
 }
 
 func (s *destSets) randDest() *destination {
+	if s.weightSum == 0 {
+		return nil
+	}
 	if len(s.destinations) == 1 {
 		return s.destinations[0]
 	}
@@ -393,19 +396,23 @@ func (m MultiDestRouter) Route(invokers []protocol.Invoker, url *common.URL, inv
 			destinations.addDest(condition.subSetWeight, condition.rule, res)
 		}
 	}
+	// use to print log, if route empty
+	i, ok := invocation.Attributes()["condition-chain"].([]string)
+	if !ok {
+		i = []string{}
+	}
 
 	d := destinations.randDest()
 	if d != nil {
-		// use to print log, if route empty
-		i, ok := invocation.Attributes()["condition-chain"].([]string)
-		if !ok {
-			invocation.Attributes()["condition-chain"] = []string{}
-		}
-		i = append(i, "From: "+m.whenCondition.rule+", To: "+d.matchRule)
-
+		invocation.Attributes()["condition-chain"] = append(i, "request="+m.whenCondition.rule+",invokers="+d.matchRule)
 		return d.ivks, true
 	}
 
+	thenRule := make([]string, 0, len(m.thenCondition))
+	for _, set := range m.thenCondition {
+		thenRule = append(thenRule, set.rule)
+	}
+	invocation.Attributes()["condition-chain"] = append(i, "request="+m.whenCondition.rule+",invokers!="+strings.Join(thenRule, ","))
 	return []protocol.Invoker{}, true
 }
 
