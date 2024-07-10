@@ -86,7 +86,7 @@ func getServer(t *testing.T) (*Server, *common.URL) {
 
 	methods, err := common.ServiceMap.Register("com.ikurento.user.AdminProvider", "dubbo", "", "", &AdminProvider{})
 	assert.NoError(t, err)
-	assert.Equal(t, "GetAdmin", methods)
+	assert.Equal(t, "GetAdmin,getAdmin", methods)
 
 	// config
 	SetClientConf(ClientConfig{

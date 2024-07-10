@@ -101,7 +101,7 @@ func TestServiceMapRegister(t *testing.T) {
 	s := &TestService{}
 	methods, err := ServiceMap.Register(testInterfaceName, "testporotocol", "", "v1", s)
 	assert.NoError(t, err)
-	assert.Equal(t, "MethodOne,MethodThree,methodTwo", methods)
+	assert.Equal(t, "MethodOne,methodOne,MethodThree,methodThree,methodTwo,MethodTwo", methods)
 
 	// repeat
 	_, err = ServiceMap.Register(testInterfaceName, "testporotocol", "", "v1", s)
