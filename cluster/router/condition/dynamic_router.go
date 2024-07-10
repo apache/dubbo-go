@@ -27,8 +27,6 @@ import (
 import (
 	"github.com/dubbogo/gost/log/logger"
 
-	"github.com/pkg/errors"
-
 	"gopkg.in/yaml.v2"
 )
 
@@ -60,12 +58,10 @@ func (p stateRouters) route(invokers []protocol.Invoker, url *common.URL, invoca
 }
 
 type multiplyConditionRoute struct {
-	regionalTry     bool
+	affinityMatcher *multiCond
 	trafficDisabled []*multiCond
 	routes          []*MultiDestRouter
 }
-
-var regionalMatcher = new(multiCond)
 
 func (m *multiplyConditionRoute) route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
 	if len(m.trafficDisabled) != 0 {
@@ -96,10 +92,10 @@ func (m *multiplyConditionRoute) route(invokers []protocol.Invoker, url *common.
 		delete(invocation.Attributes(), "condition-chain")
 	}
 
-	if m.regionalTry {
+	if m.affinityMatcher != nil {
 		regionalInvokers := make([]protocol.Invoker, 0)
 		for _, invoker := range invokers {
-			if regionalMatcher.matchInvoker(url, invoker, invocation) {
+			if m.affinityMatcher.matchInvoker(url, invoker, invocation) {
 				regionalInvokers = append(regionalInvokers, invoker)
 			}
 		}
@@ -224,6 +220,7 @@ func generateMultiConditionRoute(rawConfig string) (*multiplyConditionRoute, boo
 	}
 
 	conditionRouters := make([]*MultiDestRouter, 0, len(routerConfig.Conditions))
+	disableMultiConds := make([]*multiCond, 0, len(routerConfig.Conditions)/2)
 	for _, conditionRule := range routerConfig.Conditions {
 		url, err1 := common.NewURL("condition://")
 		if err1 != nil {
@@ -236,21 +233,24 @@ func generateMultiConditionRoute(rawConfig string) (*multiplyConditionRoute, boo
 		if err2 != nil {
 			return nil, false, false, err2
 		}
-		conditionRouters = append(conditionRouters, conditionRoute)
+		if conditionRoute.thenCondition != nil && len(conditionRoute.thenCondition) != 0 {
+			conditionRouters = append(conditionRouters, conditionRoute)
+		} else {
+			disableMultiConds = append(disableMultiConds, &conditionRoute.whenCondition)
+		}
 	}
 
-	disableMultiConds := make([]*multiCond, 0, len(routerConfig.TrafficDisabled))
-	for _, disabledMatch := range routerConfig.TrafficDisabled {
-		tmpCond := multiCond{rule: disabledMatch.Match}
-		tmpCond.match, err = parseRule(tmpCond.rule)
+	var affinityMatcher = new(multiCond)
+	if routerConfig.AffinityAware.Enabled {
+		affinityMatcher.rule = routerConfig.AffinityAware.Key + "=$" + routerConfig.AffinityAware.Key
+		affinityMatcher.match, err = parseRule(affinityMatcher.rule)
 		if err != nil {
-			return nil, false, false, errors.Wrap(err, "parse trafficDisable Condition Fail")
+			return nil, false, false, err
 		}
-		disableMultiConds = append(disableMultiConds, &tmpCond)
 	}
 
 	return &multiplyConditionRoute{
-		regionalTry:     routerConfig.RegionalTry,
+		affinityMatcher: affinityMatcher,
 		trafficDisabled: disableMultiConds,
 		routes:          conditionRouters,
 	}, force, enable, nil
@@ -384,9 +384,4 @@ func (a *ApplicationRouter) Notify(invokers []protocol.Invoker) {
 		}
 		a.Process(&config_center.ConfigChangeEvent{Key: key, Value: value, ConfigType: remoting.EventTypeUpdate})
 	}
-}
-
-func init() {
-	regionalMatcher.rule = `region = $region`
-	regionalMatcher.match, _ = parseRule(regionalMatcher.rule)
 }

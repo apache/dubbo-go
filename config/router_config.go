@@ -67,16 +67,20 @@ type ConditionRuleDisable struct {
 	Match string `yaml:"match" json:"match,omitempty" property:"match"`
 }
 
+type AffinityAware struct {
+	Key     string `default:"" yaml:"key" json:"key,omitempty" property:"key"`
+	Enabled bool   `default:"false" yaml:"enabled" json:"enabled,omitempty" property:"enabled"`
+}
+
 // ConditionRouter -- when RouteConfigVersion == v3.1, decode by this
 type ConditionRouter struct {
-	Scope           string                 `validate:"required" yaml:"scope" json:"scope,omitempty" property:"scope"` // must be chosen from `service` and `application`.
-	Key             string                 `validate:"required" yaml:"key" json:"key,omitempty" property:"key"`       // specifies which service or application the rule body acts on.
-	Force           bool                   `default:"false" yaml:"force" json:"force,omitempty" property:"force"`
-	Runtime         bool                   `default:"false" yaml:"runtime" json:"runtime,omitempty" property:"runtime"`
-	Enabled         bool                   `default:"true" yaml:"enabled" json:"enabled,omitempty" property:"enabled"`
-	TrafficDisabled []ConditionRuleDisable `yaml:"trafficDisabled" json:"trafficDisabled,omitempty" property:"trafficDisabled"`
-	RegionalTry     bool                   `default:"false" yaml:"regionalTry" json:"regionalTry,omitempty" property:"regionalTry"`
-	Conditions      []ConditionRule        `yaml:"conditions" json:"conditions,omitempty" property:"conditions"`
+	Scope         string          `validate:"required" yaml:"scope" json:"scope,omitempty" property:"scope"` // must be chosen from `service` and `application`.
+	Key           string          `validate:"required" yaml:"key" json:"key,omitempty" property:"key"`       // specifies which service or application the rule body acts on.
+	Force         bool            `default:"false" yaml:"force" json:"force,omitempty" property:"force"`
+	Runtime       bool            `default:"false" yaml:"runtime" json:"runtime,omitempty" property:"runtime"`
+	Enabled       bool            `default:"true" yaml:"enabled" json:"enabled,omitempty" property:"enabled"`
+	AffinityAware AffinityAware   `default:"false" yaml:"affinityAware" json:"affinityAware,omitempty" property:"affinityAware"`
+	Conditions    []ConditionRule `yaml:"conditions" json:"conditions,omitempty" property:"conditions"`
 }
 
 // Prefix dubbo.router

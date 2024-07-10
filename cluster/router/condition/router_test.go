@@ -864,21 +864,22 @@ func Test_parseMultiConditionRoute(t *testing.T) {
 		want    *config.ConditionRouter
 		wantErr assert.ErrorAssertionFunc
 	}{
-		{name: "testParseConfig", args: args{`configVersion: v3.1 
-scope: service      
-key: org.apache.dubbo.samples.CommentService 
-force: false        
-runtime: true       
-enabled: true       
-trafficDisabled:
-  - match: arguments[0] = "false"
-  - match: host = 10.20.153.10,10.20.153.11
+		{name: "testParseConfig", args: args{`configVersion: v3.1
+scope: service
+key: org.apache.dubbo.samples.CommentService
+force: false
+runtime: true
+enabled: true
 
 #######
-regionalTry: true
+affinityAware:
+  key: region
+  enabled: true
 
 #######
 conditions:
+  - from:
+      match: tag=tag1     # disable traffic
   - from:
       match: tag=gray
     to:
@@ -895,12 +896,34 @@ conditions:
 			Force:   false,
 			Runtime: true,
 			Enabled: true,
-			TrafficDisabled: []config.ConditionRuleDisable{
-				{Match: `arguments[0] = "false"`},
-				{Match: `host = 10.20.153.10,10.20.153.11`},
+			AffinityAware: config.AffinityAware{
+				Key:     "region",
+				Enabled: true,
 			},
-			RegionalTry: true,
-			Conditions:  []config.ConditionRule{{From: config.ConditionRuleFrom{Match: `tag=gray`}, To: []config.ConditionRuleTo{{Match: `tag!=gray`, Weight: 100}, {Match: `tag=gray`, Weight: 900}}}, {From: config.ConditionRuleFrom{Match: `version=v1`}, To: []config.ConditionRuleTo{{Match: `version=v1`, Weight: 0}}}},
+			Conditions: []config.ConditionRule{
+				{
+					From: config.ConditionRuleFrom{Match: "tag=tag1"},
+					To:   nil,
+				}, {
+					From: config.ConditionRuleFrom{
+						Match: `tag=gray`,
+					},
+					To: []config.ConditionRuleTo{{
+						Match:  `tag!=gray`,
+						Weight: 100,
+					}, {
+						Match:  `tag=gray`,
+						Weight: 900,
+					}},
+				}, {
+					From: config.ConditionRuleFrom{
+						Match: `version=v1`,
+					},
+					To: []config.ConditionRuleTo{{
+						Match:  `version=v1`,
+						Weight: 0,
+					}},
+				}},
 		}},
 	}
 	for _, tt := range tests {
@@ -1134,9 +1157,11 @@ conditions:
 scope: service      
 key: org.apache.dubbo.samples.CommentService 
 force: false 
-regionalTry : true
 runtime: true       
 enabled: true       
+affinityAware:
+  key: region
+  enabled: true
 conditions:
   - from:
       match: env=gray     
@@ -1156,7 +1181,9 @@ conditions:
 scope: service      
 key: org.apache.dubbo.samples.CommentService 
 force: false 
-regionalTry : true
+affinityAware:
+  key: region
+  enabled: true
 runtime: true       
 enabled: true       
 conditions:
@@ -1180,12 +1207,14 @@ conditions:
 scope: service      
 key: org.apache.dubbo.samples.CommentService 
 force: false 
-regionalTry : true
+affinityAware:
+  key: region
+  enabled: true
 runtime: true       
 enabled: true     
-trafficDisabled: 
-  - match: host=127.0.0.1
 conditions:
+  - from:
+      match: host=127.0.0.1 # <--- disabled 
   - from:
       match: env=gray     
     to:
