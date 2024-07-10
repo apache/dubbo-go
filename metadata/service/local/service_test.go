@@ -108,12 +108,24 @@ func TestMetadataService(t *testing.T) {
 		"\"timeout\":\"3000\",\"timestamp\":\"1556509797245\",\"version\":\"0.0.1\"}," +
 		"\"canonicalName\":\"com.ikurento.user.UserProvider\",\"codeSource\":\"\"," +
 		"\"methods\":[{\"name\":\"GetUser\",\"parameterTypes\":[\"slice\"],\"returnType\":\"ptr\"," +
-		"\"parameters\":null}],\"types\":null}"
+		"\"parameters\":null},{\"name\":\"getUser\",\"parameterTypes\":[\"slice\"],\"returnType\":\"ptr\"" +
+		",\"parameters\":null}],\"types\":null}"
+	expected2 := "{\"parameters\":{\"anyhost\":\"true\",\"application\":\"BDTService\"," +
+		"\"bean.name\":\"UserProvider\",\"category\":\"providers\",\"default.timeout\":\"10000\"," +
+		"\"dubbo\":\"dubbo-provider-golang-1.0.0\",\"environment\":\"dev\",\"group\":\"group1\"," +
+		"\"interface\":\"com.ikurento.user.UserProvider\",\"ip\":\"192.168.56.1\"," +
+		"\"methods\":\"GetUser\",\"module\":\"dubbogo user-info server\",\"org\":\"ikurento.com\"," +
+		"\"owner\":\"ZX\",\"pid\":\"1447\",\"revision\":\"0.0.1\",\"side\":\"provider\"," +
+		"\"timeout\":\"3000\",\"timestamp\":\"1556509797245\",\"version\":\"0.0.1\"}," +
+		"\"canonicalName\":\"com.ikurento.user.UserProvider\",\"codeSource\":\"\"," +
+		"\"methods\":[{\"name\":\"getUser\",\"parameterTypes\":[\"slice\"],\"returnType\":\"ptr\"," +
+		"\"parameters\":null},{\"name\":\"GetUser\",\"parameterTypes\":[\"slice\"],\"returnType\":\"ptr\"" +
+		",\"parameters\":null}],\"types\":null}"
 	def1, err := mts.GetServiceDefinition(serviceName, group, version)
-	assert.Equal(t, expected, def1)
+	assert.Equal(t, true, (def1 == expected || def1 == expected2))
 	assert.NoError(t, err)
 	serviceKey := definition.ServiceDescriperBuild(serviceName, group, version)
 	def2, err := mts.GetServiceDefinitionByServiceKey(serviceKey)
-	assert.Equal(t, expected, def2)
+	assert.Equal(t, true, (def2 == expected || def2 == expected2))
 	assert.NoError(t, err)
 }

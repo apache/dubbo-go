@@ -332,7 +332,7 @@ func InitTest(t *testing.T) (*Server, *common.URL) {
 
 	methods, err := common.ServiceMap.Register("com.ikurento.user.UserProvider", "dubbo", "", "", &UserProvider{})
 	assert.NoError(t, err)
-	assert.Equal(t, "GetBigPkg,GetUser,GetUser0,GetUser1,GetUser2,GetUser3,GetUser4,GetUser5,GetUser6", methods)
+	assert.Equal(t, "GetBigPkg,getBigPkg,GetUser,getUser,GetUser0,getUser0,GetUser1,getUser1,GetUser2,getUser2,GetUser3,getUser3,GetUser4,getUser4,GetUser5,getUser5,GetUser6,getUser6", methods)
 
 	// config
 	SetClientConf(ClientConfig{

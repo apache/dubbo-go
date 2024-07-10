@@ -496,7 +496,7 @@ func (m *tripleUnaryMarshaler) Marshal(message interface{}) *Error {
 	}
 	data, err := m.codec.Marshal(message)
 	if err != nil {
-		if m.codec.Name() != m.backupCodec.Name() {
+		if m.backupCodec != nil && m.codec.Name() != m.backupCodec.Name() {
 			logger.Warnf("failed to marshal message with codec %s, trying alternative codec %s", m.codec.Name(), m.backupCodec.Name())
 			data, err = m.backupCodec.Marshal(message)
 		}
@@ -559,7 +559,7 @@ type tripleUnaryUnmarshaler struct {
 func (u *tripleUnaryUnmarshaler) Unmarshal(message interface{}) *Error {
 	err := u.UnmarshalFunc(message, u.codec.Unmarshal)
 	if err != nil {
-		if u.codec.Name() != u.backupCodec.Name() {
+		if u.backupCodec != nil && u.codec.Name() != u.backupCodec.Name() {
 			logger.Warnf("failed to unmarshal message with codec %s, trying alternative codec %s", u.codec.Name(), u.backupCodec.Name())
 			err = u.UnmarshalFunc(message, u.codec.Unmarshal)
 		}
