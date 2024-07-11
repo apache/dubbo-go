@@ -19,6 +19,7 @@ package config
 
 import (
 	"github.com/creasty/defaults"
+	"reflect"
 )
 
 import (
@@ -74,13 +75,13 @@ type AffinityAware struct {
 
 // ConditionRouter -- when RouteConfigVersion == v3.1, decode by this
 type ConditionRouter struct {
-	Scope         string          `validate:"required" yaml:"scope" json:"scope,omitempty" property:"scope"` // must be chosen from `service` and `application`.
-	Key           string          `validate:"required" yaml:"key" json:"key,omitempty" property:"key"`       // specifies which service or application the rule body acts on.
-	Force         bool            `default:"false" yaml:"force" json:"force,omitempty" property:"force"`
-	Runtime       bool            `default:"false" yaml:"runtime" json:"runtime,omitempty" property:"runtime"`
-	Enabled       bool            `default:"true" yaml:"enabled" json:"enabled,omitempty" property:"enabled"`
-	AffinityAware AffinityAware   `default:"false" yaml:"affinityAware" json:"affinityAware,omitempty" property:"affinityAware"`
-	Conditions    []ConditionRule `yaml:"conditions" json:"conditions,omitempty" property:"conditions"`
+	Scope         string           `validate:"required" yaml:"scope" json:"scope,omitempty" property:"scope"` // must be chosen from `service` and `application`.
+	Key           string           `validate:"required" yaml:"key" json:"key,omitempty" property:"key"`       // specifies which service or application the rule body acts on.
+	Force         bool             `default:"false" yaml:"force" json:"force,omitempty" property:"force"`
+	Runtime       bool             `default:"false" yaml:"runtime" json:"runtime,omitempty" property:"runtime"`
+	Enabled       bool             `default:"true" yaml:"enabled" json:"enabled,omitempty" property:"enabled"`
+	AffinityAware AffinityAware    `default:"false" yaml:"affinityAware" json:"affinityAware,omitempty" property:"affinityAware"`
+	Conditions    []*ConditionRule `yaml:"conditions" json:"conditions,omitempty" property:"conditions"`
 }
 
 // Prefix dubbo.router
@@ -184,4 +185,19 @@ func (rcb *RouterConfigBuilder) Build() *RouterConfig {
 		panic(err)
 	}
 	return rcb.routerConfig
+}
+
+func (x *ConditionRule) Equal(t *ConditionRule) bool {
+	if !reflect.DeepEqual(x.From, t.From) {
+		return false
+	}
+	if len(x.To) != len(t.To) {
+		return false
+	}
+	for i := range x.To {
+		if !reflect.DeepEqual(x.To[i], t.To[i]) {
+			return false
+		}
+	}
+	return true
 }

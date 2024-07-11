@@ -427,7 +427,7 @@ func NewConditionMultiDestRouter(url *common.URL) (*MultiDestRouter, error) {
 	if !ok {
 		return nil, errors.Errorf("Condition Router can't get the rule key")
 	}
-	condConf, ok := rawCondConf.(config.ConditionRule)
+	condConf, ok := rawCondConf.(*config.ConditionRule)
 	if !ok {
 		return nil, errors.Errorf("Condition Router get the rule key invaild , got %T", rawCondConf)
 	}

@@ -219,9 +219,16 @@ func generateMultiConditionRoute(rawConfig string) (*multiplyConditionRoute, boo
 		return nil, false, false, nil
 	}
 
+	// remove same condition
+	removeDuplicates(routerConfig.Conditions)
+
 	conditionRouters := make([]*MultiDestRouter, 0, len(routerConfig.Conditions))
 	disableMultiConds := make([]*multiCond, 0, len(routerConfig.Conditions)/2)
 	for _, conditionRule := range routerConfig.Conditions {
+		// removeDuplicates will set nil
+		if conditionRule == nil {
+			continue
+		}
 		url, err1 := common.NewURL("condition://")
 		if err1 != nil {
 			return nil, false, false, err1
@@ -387,5 +394,18 @@ func (a *ApplicationRouter) Notify(invokers []protocol.Invoker) {
 			return
 		}
 		a.Process(&config_center.ConfigChangeEvent{Key: key, Value: value, ConfigType: remoting.EventTypeUpdate})
+	}
+}
+
+func removeDuplicates(rules []*config.ConditionRule) {
+	for i := 0; i < len(rules); i++ {
+		if rules[i] == nil {
+			continue
+		}
+		for j := i + 1; j < len(rules); j++ {
+			if rules[j] != nil && rules[i].Equal(rules[j]) {
+				rules[j] = nil
+			}
+		}
 	}
 }

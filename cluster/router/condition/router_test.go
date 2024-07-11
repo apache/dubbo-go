@@ -900,7 +900,7 @@ conditions:
 				Key:     "region",
 				Enabled: true,
 			},
-			Conditions: []config.ConditionRule{
+			Conditions: []*config.ConditionRule{
 				{
 					From: config.ConditionRuleFrom{Match: "tag=tag1"},
 					To:   nil,
@@ -1023,6 +1023,32 @@ force: false
 runtime: true       
 enabled: true       
 conditions:
+  - from:
+      match: env=gray
+    to:
+      - match: env!=gray
+        weight: 100
+`,
+			args: args{
+				invokers:   buildInvokers(),
+				url:        newUrl("consumer://127.0.0.1/com.foo.BarService?env=gray&region=beijing"),
+				invocation: invocation.NewRPCInvocation("echo", nil, nil),
+			},
+			invokers_filters: NewINVOKERS_FILTERS().add("env!=gray"),
+		}, {
+			name: "test removeDuplicates condition",
+			content: `configVersion: v3.1 
+scope: service      
+key: org.apache.dubbo.samples.CommentService 
+force: false        
+runtime: true       
+enabled: true       
+conditions:
+  - from:
+      match: env=gray
+    to:
+      - match: env!=gray
+        weight: 100
   - from:
       match: env=gray
     to:
