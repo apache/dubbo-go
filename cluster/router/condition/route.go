@@ -431,6 +431,10 @@ func NewConditionMultiDestRouter(url *common.URL) (*MultiDestRouter, error) {
 	if !ok {
 		return nil, errors.Errorf("Condition Router get the rule key invaild , got %T", rawCondConf)
 	}
+	// ensure config effective
+	if (condConf.To == nil || len(condConf.To) == 0) && condConf.From.Match == "" {
+		return nil, nil
+	}
 
 	c := &MultiDestRouter{
 		whenCondition: multiCond{match: map[string]matcher.Matcher{}},

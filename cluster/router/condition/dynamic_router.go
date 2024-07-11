@@ -233,6 +233,10 @@ func generateMultiConditionRoute(rawConfig string) (*multiplyConditionRoute, boo
 		if err2 != nil {
 			return nil, false, false, err2
 		}
+		// got invalid condition config, continue
+		if conditionRoute == nil {
+			continue
+		}
 		if conditionRoute.thenCondition != nil && len(conditionRoute.thenCondition) != 0 {
 			conditionRouters = append(conditionRouters, conditionRoute)
 		} else {
