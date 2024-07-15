@@ -58,15 +58,14 @@ func (p stateRouters) route(invokers []protocol.Invoker, url *common.URL, invoca
 }
 
 type multiplyConditionRoute struct {
-	affinityMatcher *multiCond
-	trafficDisabled []*multiCond
+	trafficDisabled []*FieldMatcher
 	routes          []*MultiDestRouter
 }
 
 func (m *multiplyConditionRoute) route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
 	if len(m.trafficDisabled) != 0 {
 		for _, cond := range m.trafficDisabled {
-			if cond.matchRequest(url, invocation) {
+			if cond.MatchRequest(url, invocation) {
 				logger.Warnf("Request has been disabled %s by Condition.trafficDisable.match=\"%s\"", url.String(), cond.rule)
 				invocation.SetAttachment(constant.TrafficDisableKey, struct{}{})
 				return []protocol.Invoker{}
@@ -90,18 +89,6 @@ func (m *multiplyConditionRoute) route(invokers []protocol.Invoker, url *common.
 			}
 		}
 		delete(invocation.Attributes(), "condition-chain")
-	}
-
-	if m.affinityMatcher != nil {
-		regionalInvokers := make([]protocol.Invoker, 0)
-		for _, invoker := range invokers {
-			if m.affinityMatcher.matchInvoker(url, invoker, invocation) {
-				regionalInvokers = append(regionalInvokers, invoker)
-			}
-		}
-		if len(regionalInvokers) != 0 {
-			return regionalInvokers
-		}
 	}
 
 	return invokers
@@ -223,7 +210,7 @@ func generateMultiConditionRoute(rawConfig string) (*multiplyConditionRoute, boo
 	removeDuplicates(routerConfig.Conditions)
 
 	conditionRouters := make([]*MultiDestRouter, 0, len(routerConfig.Conditions))
-	disableMultiConds := make([]*multiCond, 0, len(routerConfig.Conditions)/2)
+	disableMultiConds := make([]*FieldMatcher, 0)
 	for _, conditionRule := range routerConfig.Conditions {
 		// removeDuplicates will set nil
 		if conditionRule == nil {
@@ -251,17 +238,7 @@ func generateMultiConditionRoute(rawConfig string) (*multiplyConditionRoute, boo
 		}
 	}
 
-	var affinityMatcher = new(multiCond)
-	if routerConfig.AffinityAware.Enabled {
-		affinityMatcher.rule = routerConfig.AffinityAware.Key + "=$" + routerConfig.AffinityAware.Key
-		affinityMatcher.match, err = parseRule(affinityMatcher.rule)
-		if err != nil {
-			return nil, false, false, err
-		}
-	}
-
 	return &multiplyConditionRoute{
-		affinityMatcher: affinityMatcher,
 		trafficDisabled: disableMultiConds,
 		routes:          conditionRouters,
 	}, force, enable, nil
@@ -374,20 +351,20 @@ func (a *ApplicationRouter) Notify(invokers []protocol.Invoker) {
 		return
 	}
 
-	providerApplicaton := url.GetParam("application", "")
-	if providerApplicaton == "" || providerApplicaton == a.currentApplication {
+	providerApplication := url.GetParam("application", "")
+	if providerApplication == "" || providerApplication == a.currentApplication {
 		logger.Warn("condition router get providerApplication is empty, will not subscribe to provider app rules.")
 		return
 	}
 
-	if providerApplicaton != a.application {
+	if providerApplication != a.application {
 		if a.application != "" {
 			dynamicConfiguration.RemoveListener(strings.Join([]string{a.application, constant.ConditionRouterRuleSuffix}, ""), a)
 		}
 
-		key := strings.Join([]string{providerApplicaton, constant.ConditionRouterRuleSuffix}, "")
+		key := strings.Join([]string{providerApplication, constant.ConditionRouterRuleSuffix}, "")
 		dynamicConfiguration.AddListener(key, a)
-		a.application = providerApplicaton
+		a.application = providerApplication
 		value, err := dynamicConfiguration.GetRule(key)
 		if err != nil {
 			logger.Errorf("Failed to query condition rule, key=%s, err=%v", key, err)

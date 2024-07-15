@@ -872,11 +872,6 @@ runtime: true
 enabled: true
 
 #######
-affinityAware:
-  key: region
-  enabled: true
-
-#######
 conditions:
   - from:
       match: tag=tag1     # disable traffic
@@ -896,10 +891,6 @@ conditions:
 			Force:   false,
 			Runtime: true,
 			Enabled: true,
-			AffinityAware: config.AffinityAware{
-				Key:     "region",
-				Enabled: true,
-			},
 			Conditions: []*config.ConditionRule{
 				{
 					From: config.ConditionRuleFrom{Match: "tag=tag1"},
@@ -947,14 +938,14 @@ func buildInvokers() []protocol.Invoker {
 	return res
 }
 
-type INVOKERS_FILTERS []multiCond
+type INVOKERS_FILTERS []FieldMatcher
 
-func genMatcher(rule string) multiCond {
+func genMatcher(rule string) FieldMatcher {
 	cond, err := parseRule(rule)
 	if err != nil {
 		panic(err)
 	}
-	m := multiCond{
+	m := FieldMatcher{
 		rule:  rule,
 		match: cond,
 	}
@@ -962,7 +953,7 @@ func genMatcher(rule string) multiCond {
 }
 
 func NewINVOKERS_FILTERS() INVOKERS_FILTERS {
-	return []multiCond{}
+	return []FieldMatcher{}
 }
 
 func (INV INVOKERS_FILTERS) add(rule string) INVOKERS_FILTERS {
@@ -974,7 +965,7 @@ func (INV INVOKERS_FILTERS) filtrate(inv []protocol.Invoker, url *common.URL, in
 	for _, cond := range INV {
 		tmpInv := make([]protocol.Invoker, 0)
 		for _, invoker := range inv {
-			if cond.matchInvoker(url, invoker, invocation) {
+			if cond.MatchInvoker(url, invoker, invocation) {
 				tmpInv = append(tmpInv, invoker)
 			}
 		}
@@ -1178,64 +1169,11 @@ conditions:
 			},
 			invokers_filters: NewINVOKERS_FILTERS(),
 		}, {
-			name: "test Match, Route and regional try",
-			content: `configVersion: v3.1 
-scope: service      
-key: org.apache.dubbo.samples.CommentService 
-force: false 
-runtime: true       
-enabled: true       
-affinityAware:
-  key: region
-  enabled: true
-conditions:
-  - from:
-      match: env=gray     
-    to:
-      - match: env!=gray     
-        weight: 100
-`,
-			args: args{
-				invokers:   buildInvokers(),
-				url:        newUrl("consumer://127.0.0.1/com.foo.BarService?env=gray&region=beijing"),
-				invocation: invocation.NewRPCInvocation("echo", nil, nil),
-			},
-			invokers_filters: NewINVOKERS_FILTERS().add(`env!=gray`).add("region=beijing"),
-		}, {
-			name: "test Match, Route and regional try fail",
-			content: `configVersion: v3.1 
-scope: service      
-key: org.apache.dubbo.samples.CommentService 
-force: false 
-affinityAware:
-  key: region
-  enabled: true
-runtime: true       
-enabled: true       
-conditions:
-  - from:
-      match: env=gray     
-    to:
-      - match: env!=gray     
-        weight: 100
-  - to:
-      - match: region!=beijing
-`,
-			args: args{
-				invokers:   buildInvokers(),
-				url:        newUrl("consumer://127.0.0.1/com.foo.BarService?env=gray&region=beijing"),
-				invocation: invocation.NewRPCInvocation("echo", nil, nil),
-			},
-			invokers_filters: NewINVOKERS_FILTERS().add(`env!=gray`).add("region!=beijing"),
-		}, {
 			name: "test traffic disabled and ignore condition-route.force",
 			content: `configVersion: v3.1 
 scope: service      
 key: org.apache.dubbo.samples.CommentService 
 force: false 
-affinityAware:
-  key: region
-  enabled: true
 runtime: true       
 enabled: true     
 conditions:

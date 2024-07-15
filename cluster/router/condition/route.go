@@ -299,35 +299,47 @@ func parseConditionRoute(routeContent string) (*config.RouterConfig, error) {
 	return routerConfig, nil
 }
 
-type multiCond struct {
+type FieldMatcher struct {
 	rule  string
 	match map[string]matcher.Matcher
 }
 
-func (m *multiCond) matchRequest(url *common.URL, invocation protocol.Invocation) bool {
+func NewFieldMatcher(rule string) (FieldMatcher, error) {
+	m, err := parseRule(rule)
+	if err != nil {
+		return FieldMatcher{}, err
+	}
+	return FieldMatcher{rule: rule, match: m}, nil
+}
+
+func (m *FieldMatcher) MatchRequest(url *common.URL, invocation protocol.Invocation) bool {
 	return doMatch(url, nil, invocation, m.match, true)
 }
 
-func (m *multiCond) matchInvoker(url *common.URL, ivk protocol.Invoker, invocation protocol.Invocation) bool {
+func (m *FieldMatcher) MatchInvoker(url *common.URL, ivk protocol.Invoker, invocation protocol.Invocation) bool {
 	return doMatch(ivk.GetURL(), url, nil, m.match, false)
 }
 
 // MultiDestRouter Multiply-Destination-Router
 type MultiDestRouter struct {
-	whenCondition multiCond
+	whenCondition FieldMatcher
 	thenCondition []condSet
 }
 
 type condSet struct {
-	multiCond
+	FieldMatcher
 	subSetWeight int
 }
 
-func newCondSet(rule string, cond map[string]matcher.Matcher, subSetWeight int) *condSet {
+func newCondSet(rule string, subSetWeight int) (condSet, error) {
 	if subSetWeight <= 0 {
 		subSetWeight = constant.DefaultRouteConditionSubSetWeight
 	}
-	return &condSet{multiCond{rule, cond}, subSetWeight}
+	m, err := NewFieldMatcher(rule)
+	if err != nil {
+		return condSet{}, err
+	}
+	return condSet{FieldMatcher: m, subSetWeight: subSetWeight}, nil
 }
 
 type destination struct {
@@ -375,7 +387,7 @@ func (m MultiDestRouter) Route(invokers []protocol.Invoker, url *common.URL, inv
 		return invokers, false
 	}
 
-	if !m.whenCondition.matchRequest(url, invocation) {
+	if !m.whenCondition.MatchRequest(url, invocation) {
 		return invokers, false
 	}
 
@@ -388,7 +400,7 @@ func (m MultiDestRouter) Route(invokers []protocol.Invoker, url *common.URL, inv
 	for _, condition := range m.thenCondition {
 		res := make([]protocol.Invoker, 0)
 		for _, invoker := range invokers {
-			if condition.matchInvoker(url, invoker, invocation) {
+			if condition.MatchInvoker(url, invoker, invocation) {
 				res = append(res, invoker)
 			}
 		}
@@ -437,26 +449,21 @@ func NewConditionMultiDestRouter(url *common.URL) (*MultiDestRouter, error) {
 	}
 
 	c := &MultiDestRouter{
-		whenCondition: multiCond{match: map[string]matcher.Matcher{}},
 		thenCondition: make([]condSet, 0, len(condConf.To)),
 	}
 
-	m, err := parseRule(condConf.From.Match)
+	var err error
+	c.whenCondition, err = NewFieldMatcher(condConf.From.Match)
 	if err != nil {
 		return nil, err
 	}
-	c.whenCondition.rule = condConf.From.Match
-	for k, v := range m {
-		// if key same, cover
-		c.whenCondition.match[k] = v
-	}
 
 	for _, ruleTo := range condConf.To {
-		cond, err := parseRule(ruleTo.Match)
+		cs, err := newCondSet(ruleTo.Match, ruleTo.Weight)
 		if err != nil {
 			return nil, err
 		}
-		c.thenCondition = append(c.thenCondition, *newCondSet(ruleTo.Match, cond, ruleTo.Weight))
+		c.thenCondition = append(c.thenCondition, cs)
 	}
 
 	return c, nil
