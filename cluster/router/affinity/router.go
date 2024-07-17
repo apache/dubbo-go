@@ -52,6 +52,7 @@ func (s *ServiceAffinityRoute) Notify(invokers []protocol.Invoker) {
 	if len(invokers) == 0 {
 		return
 	}
+
 	url := invokers[0].GetURL()
 	if url == nil {
 		logger.Error("Failed to notify a Service Affinity rule, because url is empty")
@@ -63,6 +64,7 @@ func (s *ServiceAffinityRoute) Notify(invokers []protocol.Invoker) {
 		logger.Infof("Config center does not start, Condition router will not be enabled")
 		return
 	}
+
 	key := strings.Join([]string{url.ColonSeparatedKey(), constant.AffinityRuleSuffix}, "")
 	dynamicConfiguration.AddListener(key, s)
 	value, err := dynamicConfiguration.GetRule(key)
@@ -70,6 +72,7 @@ func (s *ServiceAffinityRoute) Notify(invokers []protocol.Invoker) {
 		logger.Errorf("Failed to query affinity rule, key=%s, err=%v", key, err)
 		return
 	}
+
 	s.Process(&config_center.ConfigChangeEvent{Key: key, Value: value, ConfigType: remoting.EventTypeAdd})
 }
 
@@ -118,15 +121,16 @@ func (s *ApplicationAffinityRoute) Notify(invokers []protocol.Invoker) {
 		if s.application != "" {
 			dynamicConfiguration.RemoveListener(strings.Join([]string{s.application, constant.AffinityRuleSuffix}, ""), s)
 		}
+		s.application = providerApplication
 
 		key := strings.Join([]string{providerApplication, constant.AffinityRuleSuffix}, "")
 		dynamicConfiguration.AddListener(key, s)
-		s.application = providerApplication
 		value, err := dynamicConfiguration.GetRule(key)
 		if err != nil {
 			logger.Errorf("Failed to query condition rule, key=%s, err=%v", key, err)
 			return
 		}
+
 		s.Process(&config_center.ConfigChangeEvent{Key: key, Value: value, ConfigType: remoting.EventTypeUpdate})
 	}
 }
@@ -148,14 +152,16 @@ func (a *affinityRoute) Process(event *config_center.ConfigChangeEvent) {
 	case remoting.EventTypeDel:
 	case remoting.EventTypeAdd, remoting.EventTypeUpdate:
 		cfg, err := parseConfig(event.Value.(string))
-		if cfg.AffinityAware.Ratio < 0 || cfg.AffinityAware.Ratio > 100 {
-			logger.Errorf("Failed to parse affinity config, affinity.ratio=%d, expect 0-100", a.ratio)
-			return
-		}
 		if err != nil {
 			logger.Errorf("Failed to parse affinity config, key=%s, err=%v", a.key, err)
 			return
 		}
+
+		if cfg.AffinityAware.Ratio < 0 || cfg.AffinityAware.Ratio > 100 {
+			logger.Errorf("Failed to parse affinity config, affinity.ratio=%d, expect 0-100", a.ratio)
+			return
+		}
+
 		key := strings.TrimSpace(cfg.AffinityAware.Key)
 		if !cfg.Enabled || key == "" {
 			return
@@ -166,6 +172,7 @@ func (a *affinityRoute) Process(event *config_center.ConfigChangeEvent) {
 			logger.Errorf("Failed to parse affinity config, key=%s, rule=%s ,err=%v", a.key, rule, err)
 			return
 		}
+
 		a.matcher, a.enabled, a.key, a.ratio = &f, true, key, cfg.AffinityAware.Ratio
 	}
 }

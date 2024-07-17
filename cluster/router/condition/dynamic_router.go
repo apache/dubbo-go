@@ -210,7 +210,7 @@ func generateMultiConditionRoute(rawConfig string) (*multiplyConditionRoute, boo
 	removeDuplicates(routerConfig.Conditions)
 
 	conditionRouters := make([]*MultiDestRouter, 0, len(routerConfig.Conditions))
-	disableMultiConds := make([]*FieldMatcher, 0)
+	disableMultiConditions := make([]*FieldMatcher, 0)
 	for _, conditionRule := range routerConfig.Conditions {
 		// removeDuplicates will set nil
 		if conditionRule == nil {
@@ -234,12 +234,12 @@ func generateMultiConditionRoute(rawConfig string) (*multiplyConditionRoute, boo
 		if conditionRoute.thenCondition != nil && len(conditionRoute.thenCondition) != 0 {
 			conditionRouters = append(conditionRouters, conditionRoute)
 		} else {
-			disableMultiConds = append(disableMultiConds, &conditionRoute.whenCondition)
+			disableMultiConditions = append(disableMultiConditions, &conditionRoute.whenCondition)
 		}
 	}
 
 	return &multiplyConditionRoute{
-		trafficDisabled: disableMultiConds,
+		trafficDisabled: disableMultiConditions,
 		routes:          conditionRouters,
 	}, force, enable, nil
 }
