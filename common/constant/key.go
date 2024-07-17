@@ -309,6 +309,7 @@ const (
 	ScriptRouterRuleSuffix            = ".script-router"
 	TagRouterRuleSuffix               = ".tag-router"
 	ConditionRouterRuleSuffix         = ".condition-router" // Specify condition router suffix
+	AffinityRuleSuffix                = ".affinity-router"  // Specify affinity router suffix
 	MeshRouteSuffix                   = ".MESHAPPRULE"      // Specify mesh router suffix
 	ForceUseTag                       = "dubbo.force.tag"   // the tag in attachment
 	ForceUseCondition                 = "dubbo.force.condition"

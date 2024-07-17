@@ -854,6 +854,18 @@ var providerUrls = []string{
 	"dubbo://dubbo.apache.org/com.foo.BarService?region=hangzhou&env=normal",
 }
 
+func buildInvokers() []protocol.Invoker {
+	res := make([]protocol.Invoker, 0, len(providerUrls))
+	for _, url := range providerUrls {
+		u, err := common.NewURL(url)
+		if err != nil {
+			panic(err)
+		}
+		res = append(res, protocol.NewBaseInvoker(u))
+	}
+	return res
+}
+
 func Test_parseMultiConditionRoute(t *testing.T) {
 	type args struct {
 		routeContent string
@@ -926,20 +938,6 @@ conditions:
 	}
 }
 
-func buildInvokers() []protocol.Invoker {
-	res := make([]protocol.Invoker, 0, len(providerUrls))
-	for _, url := range providerUrls {
-		u, err := common.NewURL(url)
-		if err != nil {
-			panic(err)
-		}
-		res = append(res, protocol.NewBaseInvoker(u))
-	}
-	return res
-}
-
-type INVOKERS_FILTERS []FieldMatcher
-
 func genMatcher(rule string) FieldMatcher {
 	cond, err := parseRule(rule)
 	if err != nil {
@@ -952,16 +950,18 @@ func genMatcher(rule string) FieldMatcher {
 	return m
 }
 
-func NewINVOKERS_FILTERS() INVOKERS_FILTERS {
+type InvokersFilters []FieldMatcher
+
+func NewINVOKERS_FILTERS() InvokersFilters {
 	return []FieldMatcher{}
 }
 
-func (INV INVOKERS_FILTERS) add(rule string) INVOKERS_FILTERS {
+func (INV InvokersFilters) add(rule string) InvokersFilters {
 	m := genMatcher(rule)
 	return append(INV, m)
 }
 
-func (INV INVOKERS_FILTERS) filtrate(inv []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
+func (INV InvokersFilters) filtrate(inv []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
 	for _, cond := range INV {
 		tmpInv := make([]protocol.Invoker, 0)
 		for _, invoker := range inv {
@@ -998,10 +998,10 @@ func Test_multiplyConditionRoute_route(t *testing.T) {
 		name             string
 		content          string
 		args             args
-		invokers_filters INVOKERS_FILTERS
+		invokers_filters InvokersFilters
 		expResLen        int
 		multiDestination []struct {
-			invokers_filters INVOKERS_FILTERS
+			invokers_filters InvokersFilters
 			weight           float32
 		}
 	}{
@@ -1223,7 +1223,7 @@ conditions:
 				invocation: invocation.NewRPCInvocation("echo", nil, nil),
 			},
 			multiDestination: []struct {
-				invokers_filters INVOKERS_FILTERS
+				invokers_filters InvokersFilters
 				weight           float32
 			}{{
 				invokers_filters: NewINVOKERS_FILTERS().add(`env=gray`).add(`region=beijing`),
@@ -1268,7 +1268,7 @@ conditions:
 				invocation: invocation.NewRPCInvocation("echo", nil, nil),
 			},
 			multiDestination: []struct {
-				invokers_filters INVOKERS_FILTERS
+				invokers_filters InvokersFilters
 				weight           float32
 			}{{
 				invokers_filters: NewINVOKERS_FILTERS().add(`env!=gray`).add(`region=beijing`),
@@ -1314,7 +1314,7 @@ conditions:
 				invocation: invocation.NewRPCInvocation("echo", nil, nil),
 			},
 			multiDestination: []struct {
-				invokers_filters INVOKERS_FILTERS
+				invokers_filters InvokersFilters
 				weight           float32
 			}{{
 				invokers_filters: NewINVOKERS_FILTERS().add(`env=gray`).add(`region=beijing`),

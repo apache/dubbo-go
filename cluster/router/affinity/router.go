@@ -63,7 +63,7 @@ func (s *ServiceAffinityRoute) Notify(invokers []protocol.Invoker) {
 		logger.Infof("Config center does not start, Condition router will not be enabled")
 		return
 	}
-	key := strings.Join([]string{url.ColonSeparatedKey(), constant.ConditionRouterRuleSuffix}, "")
+	key := strings.Join([]string{url.ColonSeparatedKey(), constant.AffinityRuleSuffix}, "")
 	dynamicConfiguration.AddListener(key, s)
 	value, err := dynamicConfiguration.GetRule(key)
 	if err != nil {
@@ -87,7 +87,7 @@ func newApplicationAffinityRoute() *ApplicationAffinityRoute {
 
 	dynamicConfiguration := conf.GetEnvInstance().GetDynamicConfiguration()
 	if dynamicConfiguration != nil {
-		dynamicConfiguration.AddListener(strings.Join([]string{applicationName, constant.ConditionRouterRuleSuffix}, ""), a)
+		dynamicConfiguration.AddListener(strings.Join([]string{applicationName, constant.AffinityRuleSuffix}, ""), a)
 	}
 	return a
 }
@@ -108,20 +108,20 @@ func (s *ApplicationAffinityRoute) Notify(invokers []protocol.Invoker) {
 		return
 	}
 
-	providerApplicaton := url.GetParam("application", "")
-	if providerApplicaton == "" || providerApplicaton == s.currentApplication {
+	providerApplication := url.GetParam("application", "")
+	if providerApplication == "" || providerApplication == s.currentApplication {
 		logger.Warn("condition router get providerApplication is empty, will not subscribe to provider app rules.")
 		return
 	}
 
-	if providerApplicaton != s.application {
+	if providerApplication != s.application {
 		if s.application != "" {
-			dynamicConfiguration.RemoveListener(strings.Join([]string{s.application, constant.ConditionRouterRuleSuffix}, ""), s)
+			dynamicConfiguration.RemoveListener(strings.Join([]string{s.application, constant.AffinityRuleSuffix}, ""), s)
 		}
 
-		key := strings.Join([]string{providerApplicaton, constant.ConditionRouterRuleSuffix}, "")
+		key := strings.Join([]string{providerApplication, constant.AffinityRuleSuffix}, "")
 		dynamicConfiguration.AddListener(key, s)
-		s.application = providerApplicaton
+		s.application = providerApplication
 		value, err := dynamicConfiguration.GetRule(key)
 		if err != nil {
 			logger.Errorf("Failed to query condition rule, key=%s, err=%v", key, err)
@@ -144,9 +144,14 @@ func (a *affinityRoute) Process(event *config_center.ConfigChangeEvent) {
 	defer a.mu.Unlock()
 	a.matcher, a.enabled, a.key, a.ratio = nil, false, "", 0
 
-	if event.ConfigType == remoting.EventTypeDel {
-	} else {
+	switch event.ConfigType {
+	case remoting.EventTypeDel:
+	case remoting.EventTypeAdd, remoting.EventTypeUpdate:
 		cfg, err := parseConfig(event.Value.(string))
+		if cfg.AffinityAware.Ratio < 0 || cfg.AffinityAware.Ratio > 100 {
+			logger.Errorf("Failed to parse affinity config, affinity.ratio=%d, expect 0-100", a.ratio)
+			return
+		}
 		if err != nil {
 			logger.Errorf("Failed to parse affinity config, key=%s, err=%v", a.key, err)
 			return
@@ -184,7 +189,7 @@ func (a *affinityRoute) Route(invokers []protocol.Invoker, url *common.URL, invo
 			res = append(res, invoker)
 		}
 	}
-	if len(res) >= int(float32(ratio)/float32(100)) {
+	if float32(len(res))/float32(len(invokers)) >= float32(ratio)/float32(100) {
 		return res
 	}
 
@@ -206,6 +211,6 @@ func (a *affinityRoute) Notify(_ []protocol.Invoker) {
 
 func parseConfig(c string) (config.AffinityRouter, error) {
 	res := config.AffinityRouter{}
-	err := yaml.Unmarshal([]byte(c), res)
+	err := yaml.Unmarshal([]byte(c), &res)
 	return res, err
 }
