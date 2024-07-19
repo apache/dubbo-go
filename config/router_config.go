@@ -18,6 +18,10 @@
 package config
 
 import (
+	"reflect"
+)
+
+import (
 	"github.com/creasty/defaults"
 )
 
@@ -50,12 +54,8 @@ type Tag struct {
 }
 
 type ConditionRule struct {
-	Priority int               `default:"0" yaml:"priority" json:"priority,omitempty" property:"priority"`
-	From     ConditionRuleFrom `yaml:"from" json:"from,omitempty" property:"from"`
-	Disable  bool              `default:"false" yaml:"trafficDisable" json:"trafficDisable,omitempty" property:"trafficDisable"`
-	To       []ConditionRuleTo `yaml:"to" json:"to,omitempty" property:"to"`
-	Ratio    int               `default:"0" yaml:"ratio" json:"ratio,omitempty" property:"priority"`
-	Force    bool              `default:"false" yaml:"force" json:"force,omitempty" property:"force"`
+	From ConditionRuleFrom `yaml:"from" json:"from,omitempty" property:"from"`
+	To   []ConditionRuleTo `yaml:"to" json:"to,omitempty" property:"to"`
 }
 
 type ConditionRuleFrom struct {
@@ -67,14 +67,32 @@ type ConditionRuleTo struct {
 	Weight int    `default:"100" yaml:"weight" json:"weight,omitempty" property:"weight"`
 }
 
+type ConditionRuleDisable struct {
+	Match string `yaml:"match" json:"match,omitempty" property:"match"`
+}
+
+type AffinityAware struct {
+	Key   string `default:"" yaml:"key" json:"key,omitempty" property:"key"`
+	Ratio int32  `default:"0" yaml:"ratio" json:"ratio,omitempty" property:"ratio"`
+}
+
 // ConditionRouter -- when RouteConfigVersion == v3.1, decode by this
 type ConditionRouter struct {
-	Scope      string          `validate:"required" yaml:"scope" json:"scope,omitempty" property:"scope"` // must be chosen from `service` and `application`.
-	Key        string          `validate:"required" yaml:"key" json:"key,omitempty" property:"key"`       // specifies which service or application the rule body acts on.
-	Force      bool            `default:"false" yaml:"force" json:"force,omitempty" property:"force"`
-	Runtime    bool            `default:"false" yaml:"runtime" json:"runtime,omitempty" property:"runtime"`
-	Enabled    bool            `default:"true" yaml:"enabled" json:"enabled,omitempty" property:"enabled"`
-	Conditions []ConditionRule `yaml:"conditions" json:"conditions,omitempty" property:"conditions"`
+	Scope      string           `validate:"required" yaml:"scope" json:"scope,omitempty" property:"scope"` // must be chosen from `service` and `application`.
+	Key        string           `validate:"required" yaml:"key" json:"key,omitempty" property:"key"`       // specifies which service or application the rule body acts on.
+	Force      bool             `default:"false" yaml:"force" json:"force,omitempty" property:"force"`
+	Runtime    bool             `default:"false" yaml:"runtime" json:"runtime,omitempty" property:"runtime"`
+	Enabled    bool             `default:"true" yaml:"enabled" json:"enabled,omitempty" property:"enabled"`
+	Conditions []*ConditionRule `yaml:"conditions" json:"conditions,omitempty" property:"conditions"`
+}
+
+// AffinityRouter -- RouteConfigVersion == v3.1
+type AffinityRouter struct {
+	Scope         string        `validate:"required" yaml:"scope" json:"scope,omitempty" property:"scope"` // must be chosen from `service` and `application`.
+	Key           string        `validate:"required" yaml:"key" json:"key,omitempty" property:"key"`       // specifies which service or application the rule body acts on.
+	Runtime       bool          `default:"false" yaml:"runtime" json:"runtime,omitempty" property:"runtime"`
+	Enabled       bool          `default:"true" yaml:"enabled" json:"enabled,omitempty" property:"enabled"`
+	AffinityAware AffinityAware `yaml:"affinityAware" json:"affinityAware,omitempty" property:"affinityAware"`
 }
 
 // Prefix dubbo.router
@@ -178,4 +196,19 @@ func (rcb *RouterConfigBuilder) Build() *RouterConfig {
 		panic(err)
 	}
 	return rcb.routerConfig
+}
+
+func (x *ConditionRule) Equal(t *ConditionRule) bool {
+	if !reflect.DeepEqual(x.From, t.From) {
+		return false
+	}
+	if len(x.To) != len(t.To) {
+		return false
+	}
+	for i := range x.To {
+		if !reflect.DeepEqual(x.To[i], t.To[i]) {
+			return false
+		}
+	}
+	return true
 }
