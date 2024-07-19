@@ -82,7 +82,7 @@ type ApplicationAffinityRoute struct {
 	currentApplication string
 }
 
-func newApplicationAffinityRoute() *ApplicationAffinityRoute {
+func newApplicationAffinityRouter() *ApplicationAffinityRoute {
 	applicationName := config.GetApplicationConfig().Name
 	a := &ApplicationAffinityRoute{
 		currentApplication: applicationName,

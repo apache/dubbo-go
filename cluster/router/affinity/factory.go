@@ -24,34 +24,30 @@ import (
 )
 
 func init() {
-	extension.SetRouterFactory(constant.AffinityServiceRouterFactoryKey, NewServiceAffinityRouteFactory)
-	extension.SetRouterFactory(constant.AffinityAppRouterFactoryKey, NewApplicationAffinityRouteFactory)
+	extension.SetRouterFactory(constant.AffinityServiceRouterFactoryKey, NewServiceAffinityRouterFactory)
+	extension.SetRouterFactory(constant.AffinityAppRouterFactoryKey, NewApplicationAffinityRouterFactory)
 }
 
-// ServiceAffinityRouteFactory router factory
-type ServiceAffinityRouteFactory struct{}
+// ServiceAffinityRouterFactory router factory
+type ServiceAffinityRouterFactory struct{}
 
-// NewServiceAffinityRouteFactory constructs a new PriorityRouterFactory
-func NewServiceAffinityRouteFactory() router.PriorityRouterFactory {
-	return &ServiceAffinityRouteNewer{}
+// NewServiceAffinityRouterFactory constructs a new PriorityRouterFactory
+func NewServiceAffinityRouterFactory() router.PriorityRouterFactory {
+	return &ServiceAffinityRouterFactory{}
 }
 
-type ServiceAffinityRouteNewer struct{}
-
-func (n ServiceAffinityRouteNewer) NewPriorityRouter() (router.PriorityRouter, error) {
+func (n ServiceAffinityRouterFactory) NewPriorityRouter() (router.PriorityRouter, error) {
 	return newServiceAffinityRoute(), nil
 }
 
-// ApplicationAffinityRouteFactory router factory
-type ApplicationAffinityRouteFactory struct{}
+// ApplicationAffinityRouterFactory router factory
+type ApplicationAffinityRouterFactory struct{}
 
-// NewApplicationAffinityRouteFactory constructs a new PriorityRouterFactory
-func NewApplicationAffinityRouteFactory() router.PriorityRouterFactory {
-	return &ApplicationAffinityRouteNewer{}
+// NewApplicationAffinityRouterFactory constructs a new PriorityRouterFactory
+func NewApplicationAffinityRouterFactory() router.PriorityRouterFactory {
+	return &ApplicationAffinityRouterFactory{}
 }
 
-type ApplicationAffinityRouteNewer struct{}
-
-func (n ApplicationAffinityRouteNewer) NewPriorityRouter() (router.PriorityRouter, error) {
-	return newApplicationAffinityRoute(), nil
+func (n ApplicationAffinityRouterFactory) NewPriorityRouter() (router.PriorityRouter, error) {
+	return newApplicationAffinityRouter(), nil
 }
