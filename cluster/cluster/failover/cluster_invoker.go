@@ -19,6 +19,7 @@ package failover
 
 import (
 	"context"
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	"fmt"
 )
 
@@ -83,7 +84,7 @@ func (invoker *failoverClusterInvoker) Invoke(ctx context.Context, invocation pr
 		invoked = append(invoked, ivk)
 		// DO INVOKE
 		result = ivk.Invoke(ctx, invocation)
-		if result.Error() != nil {
+		if result.Error() != nil && !isBizError(result.Error()) {
 			providers = append(providers, ivk.GetURL().Key())
 			continue
 		}
@@ -100,13 +101,16 @@ func (invoker *failoverClusterInvoker) Invoke(ctx context.Context, invocation pr
 		}
 	}
 
-	return &protocol.RPCResult{
-		Err: perrors.Wrap(result.Error(), fmt.Sprintf("Failed to invoke the method %v in the service %v. "+
-			"Tried %v times of the providers %v (%v/%v)from the registry %v on the consumer %v using the dubbo version %v. "+
-			"Last error is %+v.", methodName, invokerSvc, retries, providers, len(providers), len(invokers),
-			invokerUrl, ip, constant.Version, result.Error().Error()),
-		),
-	}
+	logger.Errorf(fmt.Sprintf("Failed to invoke the method %v in the service %v. "+
+		"Tried %v times of the providers %v (%v/%v)from the registry %v on the consumer %v using the dubbo version %v. "+
+		"Last error is %+v.", methodName, invokerSvc, retries, providers, len(providers), len(invokers),
+		invokerUrl, ip, constant.Version, result.Error().Error()))
+
+	return result
+}
+
+func isBizError(err error) bool {
+	return triple_protocol.IsWireError(err) && triple_protocol.CodeOf(err) == triple_protocol.CodeBizError
 }
 
 func getRetries(invokers []protocol.Invoker, methodName string) int {

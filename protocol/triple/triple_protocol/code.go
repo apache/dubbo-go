@@ -104,6 +104,8 @@ const (
 	// authentication credentials for the operation.
 	CodeUnauthenticated Code = 16
 
+	CodeBizError Code = 17
+
 	minCode = CodeCanceled
 	maxCode = CodeUnauthenticated
 )
