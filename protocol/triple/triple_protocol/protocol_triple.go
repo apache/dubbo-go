@@ -561,7 +561,7 @@ func (u *tripleUnaryUnmarshaler) Unmarshal(message interface{}) *Error {
 	if err != nil {
 		if u.backupCodec != nil && u.codec.Name() != u.backupCodec.Name() {
 			logger.Warnf("failed to unmarshal message with codec %s, trying alternative codec %s", u.codec.Name(), u.backupCodec.Name())
-			err = u.UnmarshalFunc(message, u.codec.Unmarshal)
+			err = u.UnmarshalFunc(message, u.backupCodec.Unmarshal)
 		}
 	}
 	return err
