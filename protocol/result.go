@@ -53,9 +53,10 @@ var _ Result = (*RPCResult)(nil)
 
 // RPCResult is default RPC result.
 type RPCResult struct {
-	Attrs map[string]interface{}
-	Err   error
-	Rest  interface{}
+	Attrs  map[string]interface{}
+	BizErr error
+	Err    error
+	Rest   interface{}
 }
 
 // SetError sets error.
@@ -66,6 +67,16 @@ func (r *RPCResult) SetError(err error) {
 // Error gets error.
 func (r *RPCResult) Error() error {
 	return r.Err
+}
+
+// SetBizError sets error.
+func (r *RPCResult) SetBizError(err error) {
+	r.BizErr = err
+}
+
+// BizError gets error. Replaced with error code in triple protocol since 3.2.0
+func (r *RPCResult) BizError() error {
+	return r.BizErr
 }
 
 // SetResult sets invoker result.
