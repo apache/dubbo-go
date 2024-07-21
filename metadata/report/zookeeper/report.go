@@ -263,6 +263,6 @@ func (mf *zookeeperMetadataReportFactory) CreateMetadataReport(url *common.URL) 
 	}
 
 	reporter.cacheListener = NewCacheListener(rootDir, reporter.listener)
-	reporter.listener.ListenConfigurationEvent(rootDir+constant.PathSeparator+metadata.DefaultGroup, reporter.cacheListener)
+	reporter.listener.ListenConfigurationEvent(rootDir+metadata.DefaultGroup, reporter.cacheListener)
 	return reporter
 }

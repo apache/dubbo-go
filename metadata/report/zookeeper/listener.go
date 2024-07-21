@@ -18,6 +18,7 @@
 package zookeeper
 
 import (
+	"github.com/dubbogo/go-zookeeper/zk"
 	"strings"
 	"sync"
 )
@@ -49,8 +50,7 @@ func NewCacheListener(rootPath string, listener *zookeeper.ZkEventListener) *Cac
 
 // AddListener will add a listener if loaded
 func (l *CacheListener) AddListener(key string, listener registry.MappingListener) {
-	// FIXME do not use Client.ExistW, cause it has a bug(can not watch zk node that do not exist)
-	_, _, _, err := l.zkEventListener.Client.Conn.ExistsW(key)
+	exists, _, watcher, err := l.zkEventListener.Client.Conn.ExistsW(key)
 	// reference from https://stackoverflow.com/questions/34018908/golang-why-dont-we-have-a-set-datastructure
 	// make a map[your type]struct{} like set in java
 	if err != nil {
@@ -60,6 +60,23 @@ func (l *CacheListener) AddListener(key string, listener registry.MappingListene
 	if loaded {
 		listeners.(map[registry.MappingListener]struct{})[listener] = struct{}{}
 		l.keyListeners.Store(key, listeners)
+	}
+
+	if !exists {
+		go func(w *zk.Watcher) {
+			zkEvt := <-w.EvtCh
+			v, _, err := l.zkEventListener.Client.GetContent(zkEvt.Path)
+			if err != nil {
+				// FIXME, retry on failure
+				logger.Errorf("Received new mapping node notification %s, but failed to notify to subscribe.", string(v))
+				return
+			}
+			l.DataChange(remoting.Event{
+				Path:    zkEvt.Path,
+				Action:  remoting.EventTypeAdd,
+				Content: string(v),
+			})
+		}(watcher)
 	}
 }
 
