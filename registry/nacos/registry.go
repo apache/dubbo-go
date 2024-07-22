@@ -169,7 +169,7 @@ func (nr *nacosRegistry) Subscribe(url *common.URL, notifyListener registry.Noti
 	if role != common.CONSUMER {
 		return nil
 	}
-	serviceName := getServiceName(url)
+	serviceName := url.GetParam(constant.InterfaceKey, "")
 	if serviceName == "*" {
 		// Subscribe to all services
 		for {
