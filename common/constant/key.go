@@ -17,10 +17,6 @@
 
 package constant
 
-import (
-	"math"
-)
-
 type DubboCtxKey string
 
 const (
@@ -313,6 +309,7 @@ const (
 	ScriptRouterRuleSuffix            = ".script-router"
 	TagRouterRuleSuffix               = ".tag-router"
 	ConditionRouterRuleSuffix         = ".condition-router" // Specify condition router suffix
+	AffinityRuleSuffix                = ".affinity-router"  // Specify affinity router suffix
 	MeshRouteSuffix                   = ".MESHAPPRULE"      // Specify mesh router suffix
 	ForceUseTag                       = "dubbo.force.tag"   // the tag in attachment
 	ForceUseCondition                 = "dubbo.force.condition"
@@ -320,22 +317,20 @@ const (
 	ConditionKey                      = "dubbo.condition"
 	AttachmentKey                     = DubboCtxKey("attachment") // key in context in invoker
 	TagRouterFactoryKey               = "tag"
+	AffinityAppRouterFactoryKey       = "application.affinity"
+	AffinityServiceRouterFactoryKey   = "service.affinity"
 	ConditionAppRouterFactoryKey      = "provider.condition"
 	ConditionServiceRouterFactoryKey  = "service.condition"
 	ScriptRouterFactoryKey            = "consumer.script"
 	ForceKey                          = "force"
 	TrafficDisableKey                 = "trafficDisable"
-	PriorityKey                       = "priority"
-	RatioKey                          = "RatioKey"
 	Arguments                         = "arguments"
 	Attachments                       = "attachments"
 	Param                             = "param"
 	Scope                             = "scope"
 	Wildcard                          = "wildcard"
 	MeshRouterFactoryKey              = "mesh"
-	DefaultRouteRatio                 = 0
 	DefaultRouteConditionSubSetWeight = 100
-	DefaultRoutePriority              = 0
 )
 
 // Auth filter
@@ -455,7 +450,4 @@ const (
 // priority
 const (
 	DefaultPriority = 0
-	HighestPriority = math.MinInt32
-	// LowestPriority for metadata service
-	LowestPriority = math.MaxInt32
 )

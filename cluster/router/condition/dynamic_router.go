@@ -19,7 +19,6 @@ package condition
 
 import (
 	"fmt"
-	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -58,20 +57,41 @@ func (p stateRouters) route(invokers []protocol.Invoker, url *common.URL, invoca
 	return invokers
 }
 
-type multiplyConditionRoute []*MultiDestRouter
+type multiplyConditionRoute struct {
+	trafficDisabled []*FieldMatcher
+	routes          []*MultiDestRouter
+}
 
-func (m multiplyConditionRoute) route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
-	if len(invokers) == 0 || len(m) == 0 {
-		return invokers
-	}
-	for _, router := range m {
-		res, isMatchWhen := router.Route(invokers, url, invocation)
-		if !isMatchWhen || (len(res) == 0 && invocation.GetAttachmentInterface(constant.TrafficDisableKey) == nil && !router.force) {
-			continue
+func (m *multiplyConditionRoute) route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
+	if len(m.trafficDisabled) != 0 {
+		for _, cond := range m.trafficDisabled {
+			if cond.MatchRequest(url, invocation) {
+				logger.Warnf("Request has been disabled %s by Condition.trafficDisable.match=\"%s\"", url.String(), cond.rule)
+				invocation.SetAttachment(constant.TrafficDisableKey, struct{}{})
+				return []protocol.Invoker{}
+			}
 		}
-		return res
 	}
-	return []protocol.Invoker{}
+
+	if len(invokers) != 0 && len(m.routes) != 0 {
+		for _, router := range m.routes {
+			isMatchWhen := false
+			invokers, isMatchWhen = router.Route(invokers, url, invocation)
+			if !isMatchWhen {
+				continue
+			}
+			if len(invokers) == 0 {
+				routeChains, ok := invocation.Attributes()["condition-chain"].([]string)
+				if ok {
+					logger.Errorf("request[%s] route an empty set in condition-route:: %s", url.String(), strings.Join(routeChains, "-->"))
+				}
+				return []protocol.Invoker{}
+			}
+		}
+		delete(invocation.Attributes(), "condition-chain")
+	}
+
+	return invokers
 }
 
 type condRouter interface {
@@ -174,7 +194,7 @@ func generateCondition(rawConfig string) (condRouter, bool, bool, error) {
 	}
 }
 
-func generateMultiConditionRoute(rawConfig string) (multiplyConditionRoute, bool, bool, error) {
+func generateMultiConditionRoute(rawConfig string) (*multiplyConditionRoute, bool, bool, error) {
 	routerConfig, err := parseMultiConditionRoute(rawConfig)
 	if err != nil {
 		logger.Warnf("[condition router]Build a new condition route config error, %s and we will use the original condition rule configuration.", err.Error())
@@ -186,41 +206,42 @@ func generateMultiConditionRoute(rawConfig string) (multiplyConditionRoute, bool
 		return nil, false, false, nil
 	}
 
+	// remove same condition
+	removeDuplicates(routerConfig.Conditions)
+
 	conditionRouters := make([]*MultiDestRouter, 0, len(routerConfig.Conditions))
+	disableMultiConditions := make([]*FieldMatcher, 0)
 	for _, conditionRule := range routerConfig.Conditions {
-		url, err := common.NewURL("condition://")
-		if err != nil {
-			return nil, false, false, err
+		// removeDuplicates will set nil
+		if conditionRule == nil {
+			continue
+		}
+		url, err1 := common.NewURL("condition://")
+		if err1 != nil {
+			return nil, false, false, err1
 		}
 
 		url.SetAttribute(constant.RuleKey, conditionRule)
-		url.AddParam(constant.TrafficDisableKey, strconv.FormatBool(conditionRule.Disable))
-		url.AddParam(constant.ForceKey, strconv.FormatBool(conditionRule.Force))
-		if conditionRule.Priority < 0 {
-			logger.Warnf("got conditionRouteConfig.conditions.priority (%d < 0) is invalid, ignore priority value, use defatult %d ", conditionRule.Priority, constant.DefaultRoutePriority)
-		} else {
-			url.AddParam(constant.PriorityKey, strconv.FormatInt(int64(conditionRule.Priority), 10))
-		}
-		if conditionRule.Ratio < 0 || conditionRule.Ratio > 100 {
-			logger.Warnf("got conditionRouteConfig.conditions.ratio (%d) is invalid, hope (0 - 100), ignore ratio value, use defatult %d ", conditionRule.Ratio, constant.DefaultRouteRatio)
-		} else {
-			url.AddParam(constant.RatioKey, strconv.FormatInt(int64(conditionRule.Ratio), 10))
-		}
 
-		conditionRoute, err := NewConditionMultiDestRouter(url)
-		if err != nil {
-			return nil, false, false, err
+		conditionRoute, err2 := NewConditionMultiDestRouter(url)
+		if err2 != nil {
+			return nil, false, false, err2
 		}
-		conditionRouters = append(conditionRouters, conditionRoute)
+		// got invalid condition config, continue
+		if conditionRoute == nil {
+			continue
+		}
+		if conditionRoute.thenCondition != nil && len(conditionRoute.thenCondition) != 0 {
+			conditionRouters = append(conditionRouters, conditionRoute)
+		} else {
+			disableMultiConditions = append(disableMultiConditions, &conditionRoute.whenCondition)
+		}
 	}
 
-	sort.Slice(conditionRouters, func(i, j int) bool {
-		if conditionRouters[i].trafficDisable {
-			return true
-		}
-		return conditionRouters[i].priority > conditionRouters[j].priority
-	})
-	return conditionRouters, force, enable, nil
+	return &multiplyConditionRoute{
+		trafficDisabled: disableMultiConditions,
+		routes:          conditionRouters,
+	}, force, enable, nil
 }
 
 func generateConditionsRoute(rawConfig string) (stateRouters, bool, bool, error) {
@@ -330,25 +351,38 @@ func (a *ApplicationRouter) Notify(invokers []protocol.Invoker) {
 		return
 	}
 
-	providerApplicaton := url.GetParam("application", "")
-	if providerApplicaton == "" || providerApplicaton == a.currentApplication {
+	providerApplication := url.GetParam("application", "")
+	if providerApplication == "" || providerApplication == a.currentApplication {
 		logger.Warn("condition router get providerApplication is empty, will not subscribe to provider app rules.")
 		return
 	}
 
-	if providerApplicaton != a.application {
+	if providerApplication != a.application {
 		if a.application != "" {
 			dynamicConfiguration.RemoveListener(strings.Join([]string{a.application, constant.ConditionRouterRuleSuffix}, ""), a)
 		}
 
-		key := strings.Join([]string{providerApplicaton, constant.ConditionRouterRuleSuffix}, "")
+		key := strings.Join([]string{providerApplication, constant.ConditionRouterRuleSuffix}, "")
 		dynamicConfiguration.AddListener(key, a)
-		a.application = providerApplicaton
+		a.application = providerApplication
 		value, err := dynamicConfiguration.GetRule(key)
 		if err != nil {
 			logger.Errorf("Failed to query condition rule, key=%s, err=%v", key, err)
 			return
 		}
 		a.Process(&config_center.ConfigChangeEvent{Key: key, Value: value, ConfigType: remoting.EventTypeUpdate})
+	}
+}
+
+func removeDuplicates(rules []*config.ConditionRule) {
+	for i := 0; i < len(rules); i++ {
+		if rules[i] == nil {
+			continue
+		}
+		for j := i + 1; j < len(rules); j++ {
+			if rules[j] != nil && rules[i].Equal(rules[j]) {
+				rules[j] = nil
+			}
+		}
 	}
 }

@@ -20,6 +20,7 @@ package server
 
 import (
 	"context"
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	"fmt"
 	"sort"
 	"sync"
@@ -106,7 +107,9 @@ func (ii *infoInvoker) Invoke(ctx context.Context, invocation protocol.Invocatio
 	if method, ok := ii.methodMap[name]; ok {
 		res, err := method.MethodFunc(ctx, args, ii.svc)
 		result.SetResult(res)
-		result.SetError(err)
+		if err != nil {
+			result.SetError(triple_protocol.NewError(triple_protocol.CodeBizError, err))
+		}
 		return result
 	}
 	result.SetError(fmt.Errorf("no match method for %s", name))

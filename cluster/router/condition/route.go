@@ -299,63 +299,84 @@ func parseConditionRoute(routeContent string) (*config.RouterConfig, error) {
 	return routerConfig, nil
 }
 
+type FieldMatcher struct {
+	rule  string
+	match map[string]matcher.Matcher
+}
+
+func NewFieldMatcher(rule string) (FieldMatcher, error) {
+	m, err := parseRule(rule)
+	if err != nil {
+		return FieldMatcher{}, err
+	}
+	return FieldMatcher{rule: rule, match: m}, nil
+}
+
+func (m *FieldMatcher) MatchRequest(url *common.URL, invocation protocol.Invocation) bool {
+	return doMatch(url, nil, invocation, m.match, true)
+}
+
+func (m *FieldMatcher) MatchInvoker(url *common.URL, ivk protocol.Invoker, invocation protocol.Invocation) bool {
+	return doMatch(ivk.GetURL(), url, nil, m.match, false)
+}
+
 // MultiDestRouter Multiply-Destination-Router
 type MultiDestRouter struct {
-	whenCondition  map[string]matcher.Matcher
-	trafficDisable bool
-	thenCondition  []condSet
-	ratio          int
-	priority       int
-	force          bool
+	whenCondition FieldMatcher
+	thenCondition []condSet
 }
 
 type condSet struct {
-	cond         map[string]matcher.Matcher
+	FieldMatcher
 	subSetWeight int
 }
 
-func newCondSet(cond map[string]matcher.Matcher, subSetWeight int) *condSet {
+func newCondSet(rule string, subSetWeight int) (condSet, error) {
 	if subSetWeight <= 0 {
 		subSetWeight = constant.DefaultRouteConditionSubSetWeight
 	}
-	return &condSet{cond: cond, subSetWeight: subSetWeight}
+	m, err := NewFieldMatcher(rule)
+	if err != nil {
+		return condSet{}, err
+	}
+	return condSet{FieldMatcher: m, subSetWeight: subSetWeight}, nil
+}
+
+type destination struct {
+	matchRule string
+	weight    int
+	ivks      []protocol.Invoker
 }
 
 type destSets struct {
-	dest []struct {
-		weight int
-		ivks   []protocol.Invoker
-	}
-	weightSum int
+	destinations []*destination
+	weightSum    int
 }
 
 func newDestSets() *destSets {
 	return &destSets{
-		dest: make([]struct {
-			weight int
-			ivks   []protocol.Invoker
-		}, 0),
-		weightSum: 0,
+		destinations: []*destination{},
+		weightSum:    0,
 	}
 }
 
-func (s *destSets) addDest(weight int, ivks []protocol.Invoker) {
-	s.dest = append(s.dest, struct {
-		weight int
-		ivks   []protocol.Invoker
-	}{weight: weight, ivks: ivks})
+func (s *destSets) addDest(weight int, rule string, ivks []protocol.Invoker) {
+	s.destinations = append(s.destinations, &destination{weight: weight, matchRule: rule, ivks: ivks})
 	s.weightSum += weight
 }
 
-func (s *destSets) randDest() []protocol.Invoker {
-	if len(s.dest) == 1 {
-		return s.dest[0].ivks
+func (s *destSets) randDest() *destination {
+	if s.weightSum == 0 {
+		return nil
+	}
+	if len(s.destinations) == 1 {
+		return s.destinations[0]
 	}
 	sum := rand.Intn(s.weightSum)
-	for _, d := range s.dest {
+	for _, d := range s.destinations {
 		sum -= d.weight
 		if sum <= 0 {
-			return d.ivks
+			return d
 		}
 	}
 	return nil
@@ -366,13 +387,8 @@ func (m MultiDestRouter) Route(invokers []protocol.Invoker, url *common.URL, inv
 		return invokers, false
 	}
 
-	if !doMatch(url, nil, invocation, m.whenCondition, true) {
+	if !m.whenCondition.MatchRequest(url, invocation) {
 		return invokers, false
-	}
-
-	if m.trafficDisable {
-		invocation.SetAttachment(constant.TrafficDisableKey, struct{}{})
-		return []protocol.Invoker{}, true
 	}
 
 	if len(m.thenCondition) == 0 {
@@ -384,23 +400,31 @@ func (m MultiDestRouter) Route(invokers []protocol.Invoker, url *common.URL, inv
 	for _, condition := range m.thenCondition {
 		res := make([]protocol.Invoker, 0)
 		for _, invoker := range invokers {
-			if doMatch(invoker.GetURL(), url, nil, condition.cond, false) {
+			if condition.MatchInvoker(url, invoker, invocation) {
 				res = append(res, invoker)
 			}
 		}
 		if len(res) != 0 {
-			destinations.addDest(condition.subSetWeight, res)
+			destinations.addDest(condition.subSetWeight, condition.rule, res)
 		}
 	}
-
-	if len(destinations.dest) != 0 {
-		res := destinations.randDest()
-		// check x% > m.ratio%
-		if len(res)*100/len(invokers) > m.ratio {
-			return res, true
-		}
+	// use to print log, if route empty
+	i, ok := invocation.Attributes()["condition-chain"].([]string)
+	if !ok {
+		i = []string{}
 	}
 
+	d := destinations.randDest()
+	if d != nil {
+		invocation.Attributes()["condition-chain"] = append(i, "request="+m.whenCondition.rule+",invokers="+d.matchRule)
+		return d.ivks, true
+	}
+
+	thenRule := make([]string, 0, len(m.thenCondition))
+	for _, set := range m.thenCondition {
+		thenRule = append(thenRule, set.rule)
+	}
+	invocation.Attributes()["condition-chain"] = append(i, "request="+m.whenCondition.rule+",invokers!="+strings.Join(thenRule, ","))
 	return []protocol.Invoker{}, true
 }
 
@@ -415,35 +439,31 @@ func NewConditionMultiDestRouter(url *common.URL) (*MultiDestRouter, error) {
 	if !ok {
 		return nil, errors.Errorf("Condition Router can't get the rule key")
 	}
-	condConf, ok := rawCondConf.(config.ConditionRule)
+	condConf, ok := rawCondConf.(*config.ConditionRule)
 	if !ok {
 		return nil, errors.Errorf("Condition Router get the rule key invaild , got %T", rawCondConf)
 	}
-
-	c := &MultiDestRouter{
-		whenCondition:  make(map[string]matcher.Matcher),
-		thenCondition:  make([]condSet, 0, len(condConf.To)),
-		trafficDisable: url.GetParamBool(constant.TrafficDisableKey, false),
-		ratio:          int(url.GetParamInt32(constant.RatioKey, constant.DefaultRouteRatio)),
-		priority:       int(url.GetParamInt32(constant.PriorityKey, constant.DefaultRoutePriority)),
-		force:          url.GetParamBool(constant.ForceKey, false),
+	// ensure config effective
+	if (condConf.To == nil || len(condConf.To) == 0) && condConf.From.Match == "" {
+		return nil, nil
 	}
 
-	m, err := parseRule(condConf.From.Match)
+	c := &MultiDestRouter{
+		thenCondition: make([]condSet, 0, len(condConf.To)),
+	}
+
+	var err error
+	c.whenCondition, err = NewFieldMatcher(condConf.From.Match)
 	if err != nil {
 		return nil, err
 	}
-	for k, v := range m {
-		// if key same, cover
-		c.whenCondition[k] = v
-	}
 
 	for _, ruleTo := range condConf.To {
-		cond, err := parseRule(ruleTo.Match)
+		cs, err := newCondSet(ruleTo.Match, ruleTo.Weight)
 		if err != nil {
 			return nil, err
 		}
-		c.thenCondition = append(c.thenCondition, *newCondSet(cond, ruleTo.Weight))
+		c.thenCondition = append(c.thenCondition, cs)
 	}
 
 	return c, nil
