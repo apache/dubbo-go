@@ -195,22 +195,26 @@ func (s *ScriptRouter) Notify(invokers []protocol.Invoker) {
 		return
 	}
 
+	var (
+		listenTarget, value string
+		err                 error
+	)
 	s.mu.Lock()
-	defer s.mu.Unlock()
-
 	if providerApplication != s.applicationName {
 		if s.applicationName != "" {
 			dynamicConfiguration.RemoveListener(strings.Join([]string{s.applicationName, constant.ScriptRouterRuleSuffix}, ""), s)
 		}
 
-		listenTarget := strings.Join([]string{providerApplication, constant.ScriptRouterRuleSuffix}, "")
+		listenTarget = strings.Join([]string{providerApplication, constant.ScriptRouterRuleSuffix}, "")
 		dynamicConfiguration.AddListener(listenTarget, s)
 		s.applicationName = providerApplication
-		value, err := dynamicConfiguration.GetRule(listenTarget)
+		value, err = dynamicConfiguration.GetRule(listenTarget)
 		if err != nil {
 			logger.Errorf("Failed to query Script rule, applicationName=%s, listening=%s, err=%v", s.applicationName, listenTarget, err)
-			return
 		}
+	}
+	s.mu.Unlock()
+	if value != "" && err != nil {
 		s.Process(&config_center.ConfigChangeEvent{Key: listenTarget, Value: value, ConfigType: remoting.EventTypeUpdate})
 	}
 }
