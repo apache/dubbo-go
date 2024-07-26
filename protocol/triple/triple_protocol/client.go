@@ -286,9 +286,9 @@ func applyDefaultTimeout(ctx context.Context, timeout time.Duration) (context.Co
 
 	// Todo(finalt) Temporarily solve the problem that the timeout time is not valid
 	if !ok {
-		timeoutVal := ctx.Value(constant.Dubbo + constant.TimeoutKey)
+		timeoutVal := ctx.Value(constant.TimeoutKey)
 		if timeoutVal != nil {
-			if s, ok := timeoutVal.(string); ok && s != "" {
+			if s, exist := timeoutVal.(string); exist && s != "" {
 				if newTimeout, err := time.ParseDuration(s); err == nil {
 					ctx, cancel = context.WithDeadline(ctx, time.Now().Add(newTimeout))
 					applyFlag = true
