@@ -19,8 +19,6 @@ package script
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/router"
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/common/extension"
 )
 
 func init() {
@@ -29,7 +27,8 @@ func init() {
 		and cause warning if config center is empty.
 		User can import this package and config config center to use Script router.
 	*/
-	extension.SetRouterFactory(constant.ScriptRouterFactoryKey, NewScriptRouterFactory)
+	// TODO(finalt) Temporarily removed until fixed (https://github.com/apache/dubbo-go/pull/2716)
+	//extension.SetRouterFactory(constant.ScriptRouterFactoryKey, NewScriptRouterFactory)
 }
 
 // ScriptRouteFactory router factory
