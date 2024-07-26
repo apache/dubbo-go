@@ -25,10 +25,6 @@ import (
 	"time"
 )
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
-)
-
 // Client is a reusable, concurrency-safe client for a single procedure.
 // Depending on the procedure's type, use the CallUnary, CallClientStream,
 // CallServerStream, or CallBidiStream method.
@@ -286,7 +282,7 @@ func applyDefaultTimeout(ctx context.Context, timeout time.Duration) (context.Co
 
 	// Todo(finalt) Temporarily solve the problem that the timeout time is not valid
 	if !ok {
-		timeoutVal := ctx.Value(constant.TimeoutKey)
+		timeoutVal := ctx.Value("dubbo.timeout.key")
 		if timeoutVal != nil {
 			if s, exist := timeoutVal.(string); exist && s != "" {
 				if newTimeout, err := time.ParseDuration(s); err == nil {
