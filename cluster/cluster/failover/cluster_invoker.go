@@ -19,8 +19,8 @@ package failover
 
 import (
 	"context"
-	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	"fmt"
+	"strconv"
 )
 
 import (
@@ -35,6 +35,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 )
 
 type failoverClusterInvoker struct {
@@ -61,7 +62,7 @@ func (invoker *failoverClusterInvoker) Invoke(ctx context.Context, invocation pr
 	}
 
 	methodName := invocation.ActualMethodName()
-	retries := getRetries(invokers, methodName)
+	retries := getRetries(invokers, methodName, invocation)
 	loadBalance := base.GetLoadBalance(invokers[0], methodName)
 
 	for i := 0; i <= retries; i++ {
@@ -113,7 +114,13 @@ func isBizError(err error) bool {
 	return triple_protocol.IsWireError(err) && triple_protocol.CodeOf(err) == triple_protocol.CodeBizError
 }
 
-func getRetries(invokers []protocol.Invoker, methodName string) int {
+func getRetries(invokers []protocol.Invoker, methodName string, invocation protocol.Invocation) int {
+	// Todo(finalt) Temporarily solve the problem that the retries is not valid
+	if retries, ok := invocation.GetAttachment(constant.RetriesKey); ok {
+		if rInt, err := strconv.Atoi(retries); err == nil {
+			return rInt
+		}
+	}
 	if len(invokers) <= 0 {
 		return constant.DefaultRetriesInt
 	}

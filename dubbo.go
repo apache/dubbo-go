@@ -220,7 +220,7 @@ func (ins *Instance) loadConsumer() error {
 	conLock.RLock()
 	defer conLock.RUnlock()
 	for intfName, definition := range consumerServices {
-		conn, dialErr := cli.DialWithInfo(intfName, definition.Info)
+		conn, dialErr := cli.DialWithDefinition(intfName, definition)
 		if dialErr != nil {
 			return dialErr
 		}
