@@ -19,6 +19,7 @@ package nacos
 
 import (
 	"fmt"
+	"regexp"
 	"sync"
 )
 
@@ -122,20 +123,32 @@ func (n *nacosServiceDiscovery) GetDefaultPageSize() int {
 
 // GetServices will return the all services
 func (n *nacosServiceDiscovery) GetServices() *gxset.HashSet {
-	services, err := n.namingClient.Client().GetAllServicesInfo(vo.GetAllServiceInfoParam{
-		GroupName: n.group,
-	})
-
 	res := gxset.NewSet()
-	if err != nil {
-		logger.Errorf("Could not query the services: %v", err)
-		return res
-	}
 
-	for _, e := range services.Doms {
-		res.Add(e)
+	//Filter out interface-level service DataIds
+	const pattern = `^providers:[\w\.]+(?::[\w\.]*:|::[\w\.]*)?$`
+	re := regexp.MustCompile(pattern)
+	for pageNo := uint32(1); ; pageNo++ {
+		services, err := n.namingClient.Client().GetAllServicesInfo(vo.GetAllServiceInfoParam{
+			PageSize:  uint32(n.GetDefaultPageSize()),
+			PageNo:    pageNo,
+			GroupName: n.group,
+		})
+
+		if err != nil {
+			logger.Errorf("Could not query the services: %v", err)
+			return res
+		}
+		for _, e := range services.Doms {
+			if !re.MatchString(e) {
+				res.Add(e)
+			}
+		}
+
+		if int(services.Count) < n.GetDefaultPageSize() {
+			return res
+		}
 	}
-	return res
 }
 
 // GetInstances will return the instances of serviceName and the group
