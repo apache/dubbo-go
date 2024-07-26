@@ -53,7 +53,7 @@ var url3 = func() *common.URL {
 	return i
 }
 
-func getRouteArgs() ([]protocol.Invoker, protocol.Invocation, context.Context) {
+func getRouteCheckArgs() ([]protocol.Invoker, protocol.Invocation, context.Context) {
 	return []protocol.Invoker{
 			protocol.NewBaseInvoker(url1()), protocol.NewBaseInvoker(url2()), protocol.NewBaseInvoker(url3()),
 		}, invocation.NewRPCInvocation("GetUser", nil, map[string]interface{}{
@@ -94,7 +94,7 @@ script: |
 `},
 			args: func() args {
 				res := args{}
-				res.invokers, res.invocation, _ = getRouteArgs()
+				res.invokers, res.invocation, _ = getRouteCheckArgs()
 				return res
 			}(),
 			want: func(invokers []protocol.Invoker) bool {
@@ -104,6 +104,31 @@ script: |
 					}
 				}
 				return true
+			},
+		}, {
+			name: "disable test",
+			fields: fields{cfgContent: `configVersion: v3.0
+key: dubbo.io
+type: javascript
+enabled: false
+script: |
+  (function route(invokers,invocation,context) {
+  	var result = [];
+  	for (var i = 0; i < invokers.length; i++) {
+      invokers[i].GetURL().Port = "20001" 
+      result.push(invokers[i]);
+  	}
+  	return result;
+  }(invokers,invocation,context));
+`},
+			args: func() args {
+				res := args{}
+				res.invokers, res.invocation, _ = getRouteCheckArgs()
+				return res
+			}(),
+			want: func(invokers []protocol.Invoker) bool {
+				expect_invokers, _, _ := getRouteCheckArgs()
+				return checkInvokersSame(invokers, expect_invokers)
 			},
 		}, {
 			name: "bad input",
@@ -123,11 +148,12 @@ script: |
 `},
 			args: func() args {
 				res := args{}
-				res.invokers, res.invocation, _ = getRouteArgs()
+				res.invokers, res.invocation, _ = getRouteCheckArgs()
 				return res
 			}(),
 			want: func(invokers []protocol.Invoker) bool {
-				return true
+				expect_invokers, _, _ := getRouteCheckArgs()
+				return checkInvokersSame(invokers, expect_invokers)
 			},
 		}, {
 			name: "bad call and recover",
@@ -151,11 +177,37 @@ script: |
 `},
 			args: func() args {
 				res := args{}
-				res.invokers, res.invocation, _ = getRouteArgs()
+				res.invokers, res.invocation, _ = getRouteCheckArgs()
 				return res
 			}(),
 			want: func(invokers []protocol.Invoker) bool {
-				return true
+				expect_invokers, _, _ := getRouteCheckArgs()
+				return checkInvokersSame(invokers, expect_invokers)
+			},
+		}, {
+			name: "bad type",
+			fields: fields{cfgContent: `configVersion: v3.0
+key: dubbo.io
+type: errorType     # <---
+enabled: true
+script: |
+  (function route(invokers,invocation,context) {
+  	var result = [];
+  	for (var i = 0; i < invokers.length; i++) {
+      invokers[i].GetURL().Port = "20001" 
+      result.push(invokers[i]);
+  	}
+  	return result;
+  }(invokers,invocation,context));
+`},
+			args: func() args {
+				res := args{}
+				res.invokers, res.invocation, _ = getRouteCheckArgs()
+				return res
+			}(),
+			want: func(invokers []protocol.Invoker) bool {
+				expect_invokers, _, _ := getRouteCheckArgs()
+				return checkInvokersSame(invokers, expect_invokers)
 			},
 		},
 	}
@@ -167,4 +219,19 @@ script: |
 			assert.True(t, tt.want(got))
 		})
 	}
+}
+
+func checkInvokersSame(invokers []protocol.Invoker, otherInvokers []protocol.Invoker) bool {
+	k := map[string]struct{}{}
+	for _, invoker := range otherInvokers {
+		k[invoker.GetURL().String()] = struct{}{}
+	}
+	for _, invoker := range invokers {
+		_, ok := k[invoker.GetURL().String()]
+		if !ok {
+			return false
+		}
+		delete(k, invoker.GetURL().String())
+	}
+	return len(k) == 0
 }

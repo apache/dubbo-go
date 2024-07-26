@@ -116,6 +116,8 @@ func (s *ScriptRouter) Process(event *config_center.ConfigChangeEvent) {
 		in, err := ins.GetInstances(s.scriptType)
 		if err != nil {
 			logger.Errorf("GetInstances failed: %v", err)
+			s.enabled = false
+			return
 		}
 		if s.enabled {
 			err = in.Compile(s.rawScript)
