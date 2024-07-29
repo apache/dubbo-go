@@ -66,6 +66,7 @@ func (p *program) addCount(i int) int {
 
 func newJsInstances() *jsInstances {
 	return &jsInstances{
+		program: map[string]*program{},
 		insPool: &sync.Pool{New: func() any {
 			return newJsInstance()
 		}},
@@ -113,7 +114,7 @@ func (i *jsInstances) Run(rawScript string, invokers []protocol.Invoker, invocat
 	return result, nil
 }
 
-func (i *jsInstances) Compile(key, rawScript string) error {
+func (i *jsInstances) Compile(rawScript string) error {
 	var (
 		ok bool
 		pg *program
@@ -134,7 +135,7 @@ func (i *jsInstances) Compile(key, rawScript string) error {
 		if pg, ok = i.program[rawScript]; ok {
 			pg.addCount(1)
 		} else {
-			newPg, err := goja.Compile(key+`_jsScriptRoute`, jsScriptPrefix+rawScript, true)
+			newPg, err := goja.Compile("", jsScriptPrefix+rawScript, true)
 			if err != nil {
 				return err
 			}
@@ -144,7 +145,7 @@ func (i *jsInstances) Compile(key, rawScript string) error {
 	}
 }
 
-func (i *jsInstances) Destroy(_, rawScript string) {
+func (i *jsInstances) Destroy(rawScript string) {
 	i.pgLock.Lock()
 	if pg, ok := i.program[rawScript]; ok {
 		if pg.addCount(-1) == 0 {

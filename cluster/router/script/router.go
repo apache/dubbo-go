@@ -41,11 +41,12 @@ import (
 
 // ScriptRouter only takes effect on consumers and only supports application granular management.
 type ScriptRouter struct {
-	mu              sync.RWMutex
-	scriptType      string
-	applicationName string // applicationName to application - name
-	enabled         bool   // enabled
-	rawScript       string
+	applicationName string
+
+	mu         sync.RWMutex
+	enabled    bool
+	scriptType string
+	rawScript  string
 }
 
 func NewScriptRouter() *ScriptRouter {
@@ -86,8 +87,9 @@ func (s *ScriptRouter) Process(event *config_center.ConfigChangeEvent) {
 			in, err := ins.GetInstances(s.scriptType)
 			if err != nil {
 				logger.Errorf("GetInstances failed to Destroy: %v", err)
+			} else {
+				in.Destroy(s.rawScript)
 			}
-			in.Destroy(s.applicationName, s.rawScript)
 		}
 		// check new config
 		if "" == cfg.ScriptType {
@@ -106,17 +108,19 @@ func (s *ScriptRouter) Process(event *config_center.ConfigChangeEvent) {
 			logger.Infof("`enabled` field equiles false, this rule will be ignored :%s", cfg.Script)
 		}
 		// rewrite to ScriptRouter
+		s.enabled = *cfg.Enabled
 		s.rawScript = cfg.Script
 		s.scriptType = cfg.ScriptType
-		s.enabled = *cfg.Enabled
 
 		// compile script
 		in, err := ins.GetInstances(s.scriptType)
 		if err != nil {
 			logger.Errorf("GetInstances failed: %v", err)
+			s.enabled = false
+			return
 		}
 		if s.enabled {
-			err = in.Compile(s.applicationName, cfg.Script)
+			err = in.Compile(s.rawScript)
 			// fail, disable rule
 			if err != nil {
 				s.enabled = false
@@ -128,7 +132,7 @@ func (s *ScriptRouter) Process(event *config_center.ConfigChangeEvent) {
 		in, _ := ins.GetInstances(s.scriptType)
 
 		if in != nil && s.enabled {
-			in.Destroy(s.applicationName, s.rawScript)
+			in.Destroy(s.rawScript)
 		}
 		s.enabled = false
 		s.rawScript = ""
@@ -195,21 +199,21 @@ func (s *ScriptRouter) Notify(invokers []protocol.Invoker) {
 		return
 	}
 
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
+	var (
+		listenTarget, value string
+		err                 error
+	)
 	if providerApplication != s.applicationName {
 		if s.applicationName != "" {
 			dynamicConfiguration.RemoveListener(strings.Join([]string{s.applicationName, constant.ScriptRouterRuleSuffix}, ""), s)
 		}
 
-		listenTarget := strings.Join([]string{providerApplication, constant.ScriptRouterRuleSuffix}, "")
+		listenTarget = strings.Join([]string{providerApplication, constant.ScriptRouterRuleSuffix}, "")
 		dynamicConfiguration.AddListener(listenTarget, s)
 		s.applicationName = providerApplication
-		value, err := dynamicConfiguration.GetRule(listenTarget)
+		value, err = dynamicConfiguration.GetRule(listenTarget)
 		if err != nil {
 			logger.Errorf("Failed to query Script rule, applicationName=%s, listening=%s, err=%v", s.applicationName, listenTarget, err)
-			return
 		}
 		s.Process(&config_center.ConfigChangeEvent{Key: listenTarget, Value: value, ConfigType: remoting.EventTypeUpdate})
 	}
