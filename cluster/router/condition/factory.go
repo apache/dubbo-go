@@ -19,12 +19,13 @@ package condition
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/router"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
 )
 
 func init() {
-	// TODO(finalt) Temporarily removed until fixed
-	//extension.SetRouterFactory(constant.ConditionServiceRouterFactoryKey, NewServiceConditionRouterFactory)
-	//extension.SetRouterFactory(constant.ConditionAppRouterFactoryKey, NewAppConditionRouterFactory)
+	extension.SetRouterFactory(constant.ConditionServiceRouterFactoryKey, NewServiceConditionRouterFactory)
+	extension.SetRouterFactory(constant.ConditionAppRouterFactoryKey, NewAppConditionRouterFactory)
 }
 
 // ServiceRouteFactory router factory
