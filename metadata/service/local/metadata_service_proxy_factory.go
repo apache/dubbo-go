@@ -36,8 +36,12 @@ import (
 
 func init() {
 	factory := service.NewBaseMetadataServiceProxyFactory(createProxy)
+	factoryV2 := service.NewBaseMetadataServiceProxyFactoryV2(createProxyV2)
 	extension.SetMetadataServiceProxyFactory(constant.DefaultKey, func() service.MetadataServiceProxyFactory {
 		return factory
+	})
+	extension.SetMetadataServiceProxyFactoryV2(constant.MetadataServiceV2, func() service.MetadataServiceProxyFactoryV2 {
+		return factoryV2
 	})
 }
 
@@ -75,26 +79,65 @@ func createProxy(ins registry.ServiceInstance) service.MetadataService {
 	}
 }
 
+func createProxyV2(ins registry.ServiceInstance) service.MetadataServiceV2 {
+	urls := buildStandardMetadataServiceURL(ins)
+	if len(urls) == 0 {
+		logger.Errorf("metadata service urls not found, %v", ins)
+		return nil
+	}
+
+	u := urls[0]
+	p := extension.GetProtocol(u.Protocol)
+	invoker := p.Refer(u)
+	if invoker == nil { // can't connect instance
+		return nil
+	}
+	return &MetadataServiceProxyV2{
+		Invoker: invoker,
+	}
+}
+
 // buildStandardMetadataServiceURL will use standard format to build the metadata service url.
 func buildStandardMetadataServiceURL(ins registry.ServiceInstance) []*common.URL {
 	ps := getMetadataServiceUrlParams(ins)
 	if ps[constant.ProtocolKey] == "" {
 		return nil
 	}
+
 	res := make([]*common.URL, 0, len(ps))
 	sn := ins.GetServiceName()
 	host := ins.GetHost()
+
+	metaV := ins.GetMetadata()[constant.MetadataVersion]
+	protocol := ps[constant.ProtocolKey]
+	if metaV != "" {
+		protocol = "tri"
+	}
+
 	convertedParams := make(map[string][]string, len(ps))
 	for k, v := range ps {
 		convertedParams[k] = []string{v}
 	}
 	u := common.NewURLWithOptions(common.WithIp(host),
 		common.WithPath(constant.MetadataServiceName),
-		common.WithProtocol(ps[constant.ProtocolKey]),
+		common.WithProtocol(protocol),
 		common.WithPort(ps[constant.PortKey]),
 		common.WithParams(convertedParams),
 		common.WithParamsValue(constant.GroupKey, sn),
 		common.WithParamsValue(constant.InterfaceKey, constant.MetadataServiceName))
+
+	if protocol == "tri" {
+		u.SetAttribute(constant.ClientInfoKey, "info")
+		u.Methods = []string{"GetMetadataInfo", "getMetadataInfo"}
+		if metaV == constant.MetadataServiceV2Version {
+			u.Path = constant.MetadataServiceV2Name
+			u.SetParam(constant.VersionKey, metaV)
+			u.SetParam(constant.InterfaceKey, constant.MetadataServiceV2Name)
+		} else {
+			u.SetParam(constant.SerializationKey, constant.Hessian2Serialization)
+		}
+	}
+
 	res = append(res, u)
 
 	return res
@@ -107,11 +150,11 @@ func getMetadataServiceUrlParams(ins registry.ServiceInstance) map[string]string
 	ps := ins.GetMetadata()
 	res := make(map[string]string, 2)
 	if str, ok := ps[constant.MetadataServiceURLParamsPropertyName]; ok && len(str) > 0 {
-
 		err := json.Unmarshal([]byte(str), &res)
 		if err != nil {
 			logger.Errorf("could not parse the metadata service url parameters to map", err)
 		}
 	}
+
 	return res
 }

@@ -18,6 +18,8 @@
 package service
 
 import (
+	"context"
+	triple_api "dubbo.apache.org/dubbo-go/v3/metadata/triple_api/proto"
 	"sync"
 )
 
@@ -134,4 +136,30 @@ func ConvertURLArrToIntfArr(urls []*common.URL) []interface{} {
 		res = append(res, u.String())
 	}
 	return res
+}
+
+// MetadataServiceV2 is a client for the org.apache.dubbo.metadata.MetadataServiceV2 service.
+type MetadataServiceV2 interface {
+	GetMetadataInfo(ctx context.Context, req *triple_api.Revision) (*triple_api.MetadataInfoV2, error)
+}
+
+type MetadataServiceProxyFactoryV2 interface {
+	GetProxy(ins registry.ServiceInstance) MetadataServiceV2
+}
+
+type MetadataServiceProxyCreatorV2 func(ins registry.ServiceInstance) MetadataServiceV2
+
+type BaseMetadataServiceProxyFactoryV2 struct {
+	proxies sync.Map
+	creator MetadataServiceProxyCreatorV2
+}
+
+func (b *BaseMetadataServiceProxyFactoryV2) GetProxy(ins registry.ServiceInstance) MetadataServiceV2 {
+	return b.creator(ins)
+}
+
+func NewBaseMetadataServiceProxyFactoryV2(creator MetadataServiceProxyCreatorV2) *BaseMetadataServiceProxyFactoryV2 {
+	return &BaseMetadataServiceProxyFactoryV2{
+		creator: creator,
+	}
 }

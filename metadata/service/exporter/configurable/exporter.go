@@ -18,6 +18,11 @@
 package configurable
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
+	"dubbo.apache.org/dubbo-go/v3/server"
+	"strconv"
+	"strings"
 	"sync"
 )
 
@@ -39,9 +44,11 @@ import (
 
 // MetadataServiceExporter is the ConfigurableMetadataServiceExporter which implement MetadataServiceExporter interface
 type MetadataServiceExporter struct {
-	ServiceConfig   *config.ServiceConfig
-	lock            sync.RWMutex
-	metadataService service.MetadataService
+	ServiceConfig     *config.ServiceConfig
+	v2Exporter        protocol.Exporter
+	lock              sync.RWMutex
+	metadataService   service.MetadataService
+	metadataServiceV2 service.MetadataServiceV2
 }
 
 func init() {
@@ -49,24 +56,35 @@ func init() {
 }
 
 // NewMetadataServiceExporter will return a service_exporter.MetadataServiceExporter with the specified  metadata service
-func NewMetadataServiceExporter(metadataService service.MetadataService) exporter.MetadataServiceExporter {
+func NewMetadataServiceExporter(metadataService service.MetadataService, metadataServiceV2 service.MetadataServiceV2) exporter.MetadataServiceExporter {
 	return &MetadataServiceExporter{
-		metadataService: metadataService,
+		metadataService:   metadataService,
+		metadataServiceV2: metadataServiceV2,
 	}
 }
 
 // Export will export the metadataService
 func (exporter *MetadataServiceExporter) Export(url *common.URL) error {
 	if !exporter.IsExported() {
-		version, _ := exporter.metadataService.Version()
 		exporter.lock.Lock()
 		defer exporter.lock.Unlock()
+		var err error
+		err = exporter.exportV1()
+		err = exporter.exportV2()
+		return err
+	}
+	logger.Warnf("[Metadata Service] The MetadataService has been exported : %v ", exporter.ServiceConfig.GetExportedUrls())
+	return nil
+}
+
+func (exporter *MetadataServiceExporter) exportV1() error {
+	version, _ := exporter.metadataService.Version()
+	pro, port := getMetadataProtocolAndPort()
+	if pro == constant.DefaultProtocol {
 		exporter.ServiceConfig = config.NewServiceConfigBuilder().
 			SetServiceID(constant.SimpleMetadataServiceName).
-			SetProtocolIDs(constant.DefaultProtocol).
-			AddRCProtocol(constant.DefaultProtocol, config.NewProtocolConfigBuilder().
-				SetName(constant.DefaultProtocol).SetPort(getMetadataPort()).
-				Build()).
+			SetProtocolIDs(pro).
+			AddRCProtocol(pro, config.NewProtocolConfigBuilder().SetName(pro).SetPort(port).Build()).
 			SetRegistryIDs("N/A").
 			SetInterface(constant.MetadataServiceName).
 			SetGroup(config.GetApplicationConfig().Name).
@@ -76,34 +94,80 @@ func (exporter *MetadataServiceExporter) Export(url *common.URL) error {
 			Build()
 		exporter.ServiceConfig.Implement(exporter.metadataService)
 		err := exporter.ServiceConfig.Export()
-
 		logger.Infof("[Metadata Service] The MetadataService exports urls : %v ", exporter.ServiceConfig.GetExportedUrls())
 		return err
+	} else {
+		ivkURL := common.NewURLWithOptions(
+			common.WithPath(constant.MetadataServiceName),
+			common.WithProtocol("tri"),
+			common.WithPort(port),
+			common.WithParamsValue(constant.GroupKey, config.GetApplicationConfig().Name),
+			common.WithParamsValue(constant.VersionKey, version),
+			common.WithInterface(constant.MetadataServiceName),
+			common.WithMethods(strings.Split("getMetadataInfo,GetMetadataInfo", ",")),
+			common.WithAttribute(constant.ServiceInfoKey, &info),
+		)
+
+		invoker := server.NewInternalInvoker(ivkURL, &info, exporter.metadataServiceV2)
+		exporter.v2Exporter = extension.GetProtocol(protocolwrapper.FILTER).Export(invoker)
+
+		logger.Infof("[Metadata Service] MetadataServiceV2 has been exported at url : %v ", invoker.GetURL())
+		return nil
 	}
-	logger.Warnf("[Metadata Service] The MetadataService has been exported : %v ", exporter.ServiceConfig.GetExportedUrls())
+}
+
+func (exporter *MetadataServiceExporter) exportV2() error {
+	info := server.MetadataServiceV2_ServiceInfo
+	pro, port := getMetadataProtocolAndPort()
+	if pro == constant.DefaultProtocol {
+		port = "-1"
+	}
+	ivkURL := common.NewURLWithOptions(
+		common.WithPath(constant.MetadataServiceV2Name),
+		common.WithProtocol("tri"),
+		common.WithPort(port),
+		common.WithParamsValue(constant.GroupKey, config.GetApplicationConfig().Name),
+		common.WithParamsValue(constant.VersionKey, "2.0.0"),
+		common.WithInterface(constant.MetadataServiceV2Name),
+		common.WithMethods(strings.Split("getMetadataInfo,GetMetadataInfo", ",")),
+		common.WithAttribute(constant.ServiceInfoKey, &info),
+	)
+
+	invoker := server.NewInternalInvoker(ivkURL, &info, exporter.metadataServiceV2)
+	exporter.v2Exporter = extension.GetProtocol(protocolwrapper.FILTER).Export(invoker)
+
+	logger.Infof("[Metadata Service] MetadataServiceV2 has been exported at url : %v ", invoker.GetURL())
 	return nil
 }
 
-func getMetadataPort() string {
+func getMetadataProtocolAndPort() (string, string) {
 	rootConfig := config.GetRootConfig()
 	port := rootConfig.Application.MetadataServicePort
+	protocol := "tri"
 	if port == "" {
-		protocolConfig, ok := rootConfig.Protocols[constant.DefaultProtocol]
+		protocolConfig, ok := rootConfig.Protocols[protocol]
 		if ok {
 			port = protocolConfig.Port
 		} else {
-			logger.Warnf("[Metadata Service] Dubbo-go %s version's MetadataService only support dubbo protocol,"+
-				"MetadataService will use random port",
-				constant.Version)
+			defaultProtocol := rootConfig.Protocols[constant.DefaultProtocol]
+			if defaultProtocol != nil {
+				port = defaultProtocol.Port
+				protocol = constant.DefaultProtocol
+			} else {
+				port = strconv.Itoa(constant.DefaultPort)
+			}
 		}
 	}
-	return port
+	return protocol, port
 }
 
 // Unexport will unexport the metadataService
 func (exporter *MetadataServiceExporter) Unexport() {
 	if exporter.IsExported() {
 		exporter.ServiceConfig.Unexport()
+	}
+	if exporter.v2Exporter != nil {
+		exporter.v2Exporter.UnExport()
 	}
 }
 

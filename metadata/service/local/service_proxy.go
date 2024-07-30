@@ -19,6 +19,7 @@ package local
 
 import (
 	"context"
+	triple_api "dubbo.apache.org/dubbo-go/v3/metadata/triple_api/proto"
 	"reflect"
 )
 
@@ -173,18 +174,63 @@ func (m *MetadataServiceProxy) Version() (string, error) {
 
 // nolint
 func (m *MetadataServiceProxy) GetMetadataInfo(revision string) (*common.MetadataInfo, error) {
-	rV := reflect.ValueOf(revision)
 	const methodName = "getMetadataInfo"
-	inv := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName(methodName),
-		invocation.WithArguments([]interface{}{rV.Interface()}),
-		invocation.WithReply(reflect.ValueOf(&common.MetadataInfo{}).Interface()),
-		invocation.WithAttachments(map[string]interface{}{constant.AsyncKey: "false"}),
-		invocation.WithParameterValues([]reflect.Value{rV}))
+
+	metadataInfo := &common.MetadataInfo{}
+	inv, _ := generateInvocation(m.Invoker.GetURL(), methodName, revision, metadataInfo, constant.CallUnary)
 	res := m.Invoker.Invoke(context.Background(), inv)
 	if res.Error() != nil {
 		logger.Errorf("could not get the metadata info from remote provider: %v", res.Error())
 		return nil, res.Error()
 	}
+
 	metaDataInfo := res.Result().(*common.MetadataInfo)
 	return metaDataInfo, nil
+}
+
+type MetadataServiceProxyV2 struct {
+	Invoker protocol.Invoker
+}
+
+func (m *MetadataServiceProxyV2) GetMetadataInfo(ctx context.Context, req *triple_api.Revision) (*triple_api.MetadataInfoV2, error) {
+	const methodName = "getMetadataInfo"
+
+	metadataInfo := &triple_api.MetadataInfoV2{}
+	inv, _ := generateInvocation(m.Invoker.GetURL(), methodName, req, metadataInfo, constant.CallUnary)
+	res := m.Invoker.Invoke(context.Background(), inv)
+	if res.Error() != nil {
+		logger.Errorf("could not get the metadata info from remote provider: %v", res.Error())
+		return nil, res.Error()
+	}
+
+	return metadataInfo, nil
+}
+
+func generateInvocation(u *common.URL, methodName string, req interface{}, resp interface{}, callType string) (protocol.Invocation, error) {
+	var inv *invocation.RPCInvocation
+	if u.Protocol == "tri" {
+		var paramsRawVals []interface{}
+		paramsRawVals = append(paramsRawVals, req)
+		if resp != nil {
+			paramsRawVals = append(paramsRawVals, resp)
+		}
+		inv = invocation.NewRPCInvocationWithOptions(
+			invocation.WithMethodName(methodName),
+			invocation.WithAttachment(constant.TimeoutKey, "5000"),
+			invocation.WithAttachment(constant.RetriesKey, "2"),
+			invocation.WithArguments([]interface{}{req}),
+			invocation.WithReply(resp),
+			invocation.WithParameterRawValues(paramsRawVals),
+		)
+		inv.SetAttribute(constant.CallTypeKey, callType)
+	} else {
+		rV := reflect.ValueOf(req)
+		inv = invocation.NewRPCInvocationWithOptions(invocation.WithMethodName(methodName),
+			invocation.WithArguments([]interface{}{rV.Interface()}),
+			invocation.WithReply(reflect.ValueOf(&common.MetadataInfo{}).Interface()),
+			invocation.WithAttachments(map[string]interface{}{constant.AsyncKey: "false"}),
+			invocation.WithParameterValues([]reflect.Value{rV}))
+	}
+
+	return inv, nil
 }

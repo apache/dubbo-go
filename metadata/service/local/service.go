@@ -18,6 +18,8 @@
 package local
 
 import (
+	"context"
+	triple_api "dubbo.apache.org/dubbo-go/v3/metadata/triple_api/proto"
 	"sort"
 	"sync"
 )
@@ -39,6 +41,7 @@ import (
 
 func init() {
 	extension.SetLocalMetadataService(constant.DefaultKey, GetLocalMetadataService)
+	extension.SetLocalMetadataServiceV2(constant.MetadataServiceV2, GetLocalMetadataServiceV2)
 }
 
 // version will be used by Version func
@@ -61,6 +64,9 @@ type MetadataService struct {
 var (
 	metadataServiceInstance *MetadataService
 	metadataServiceInitOnce sync.Once
+
+	metadataServiceV2Instance *MetadataServiceV2
+	metadataServiceV2InitOnce sync.Once
 )
 
 // GetLocalMetadataService which should be singleton initiates a metadata service
@@ -279,4 +285,45 @@ func (mts *MetadataService) GetMetadataServiceURL() (*common.URL, error) {
 func (mts *MetadataService) SetMetadataServiceURL(url *common.URL) error {
 	mts.metadataServiceURL = url
 	return nil
+}
+
+func GetLocalMetadataServiceV2() (service.MetadataServiceV2, error) {
+	metadataServiceV2InitOnce.Do(func() {
+		delegate, _ := GetLocalMetadataService()
+		metadataServiceV2Instance = &MetadataServiceV2{
+			delegate: delegate,
+		}
+	})
+	return metadataServiceV2Instance, nil
+}
+
+type MetadataServiceV2 struct {
+	service.BaseMetadataService
+	delegate service.MetadataService
+}
+
+func (mtsV2 *MetadataServiceV2) GetMetadataInfo(ctx context.Context, req *triple_api.Revision) (*triple_api.MetadataInfoV2, error) {
+	metadataInfo, err := mtsV2.delegate.GetMetadataInfo(req.GetValue())
+	return &triple_api.MetadataInfoV2{
+		App:      metadataInfo.App,
+		Version:  metadataInfo.Revision,
+		Services: convert(metadataInfo.Services),
+	}, err
+}
+
+func convert(serviceInfos map[string]*common.ServiceInfo) map[string]*triple_api.ServiceInfoV2 {
+	serviceInfoV2s := make(map[string]*triple_api.ServiceInfoV2, len(serviceInfos))
+	for k, info := range serviceInfos {
+		serviceInfoV2 := &triple_api.ServiceInfoV2{
+			Name:     info.Name,
+			Group:    info.Group,
+			Version:  info.Version,
+			Protocol: info.Protocol,
+			Port:     0,
+			Path:     info.Path,
+			Params:   info.Params,
+		}
+		serviceInfoV2s[k] = serviceInfoV2
+	}
+	return serviceInfoV2s
 }

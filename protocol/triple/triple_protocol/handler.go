@@ -16,6 +16,7 @@ package triple_protocol
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 )
@@ -363,7 +364,11 @@ func (h *Handler) ServeHTTP(responseWriter http.ResponseWriter, request *http.Re
 	svcGroup := request.Header.Get(tripleServiceGroup)
 	svcVersion := request.Header.Get(tripleServiceVersion)
 	// todo(DMwangnima): inspect ok
-	implementation := h.implementations[getIdentifier(svcGroup, svcVersion)]
+	implementation, ok := h.implementations[getIdentifier(svcGroup, svcVersion)]
+	if !ok {
+		_ = connCloser.Close(errors.New("no implementation for " + svcVersion))
+		return
+	}
 	_ = connCloser.Close(implementation(ctx, connCloser))
 }
 

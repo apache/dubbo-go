@@ -15,32 +15,28 @@
  * limitations under the License.
  */
 
-package main
+package event
 
 import (
-	_ "dubbo.apache.org/dubbo-go/v3/imports"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
-	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto/triple_gen/greettriple"
-	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/server/api"
-	"dubbo.apache.org/dubbo-go/v3/server"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
-func main() {
-	srv, err := server.NewServer(
-		server.WithServerProtocol(
-			protocol.WithTriple(),
-			protocol.WithPort(20000),
-		),
-	)
+func init() {
+	extension.AddCustomizers(&MetadtaServiceVersionCustomizer{})
+}
 
-	if err != nil {
-		panic(err)
-	}
-	if err := greettriple.RegisterGreetServiceHandler(srv, &api.GreetTripleServer{}); err != nil {
-		panic(err)
-	}
+// MetadtaServiceVersionCustomizer will try to add meta-v key to instance metadata
+type MetadtaServiceVersionCustomizer struct {
+}
 
-	if err := srv.Serve(); err != nil {
-		panic(err)
-	}
+// GetPriority will return 0, which means it will be invoked at the beginning
+func (p *MetadtaServiceVersionCustomizer) GetPriority() int {
+	return 0
+}
+
+// Customize put the the string like [{"protocol": "dubbo", "port": 123}] into instance's metadata
+func (p *MetadtaServiceVersionCustomizer) Customize(instance registry.ServiceInstance) {
+	instance.GetMetadata()[constant.MetadataVersion] = constant.MetadataServiceV2Version
 }

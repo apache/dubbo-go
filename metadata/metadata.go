@@ -38,6 +38,8 @@ var (
 
 func ExportMetadataService() {
 	ms, err := extension.GetLocalMetadataService(constant.DefaultKey)
+	msV2, err := extension.GetLocalMetadataServiceV2(constant.MetadataServiceV2)
+
 	if err != nil {
 		logger.Warnf("could not init metadata service", err)
 		return
@@ -54,7 +56,7 @@ func ExportMetadataService() {
 	// So using sync.Once will result in dead lock
 	exporting.Store(true)
 
-	expt := extension.GetMetadataServiceExporter(constant.DefaultKey, ms)
+	expt := extension.GetMetadataServiceExporter(constant.DefaultKey, ms, msV2)
 	if expt == nil {
 		logger.Warnf("get metadata service exporter failed, pls check if you import _ \"dubbo.apache.org/dubbo-go/v3/metadata/service/exporter/configurable\"")
 		return

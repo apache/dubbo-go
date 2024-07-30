@@ -15,32 +15,33 @@
  * limitations under the License.
  */
 
-package main
+syntax = "proto3";
+package org.apache.dubbo.metadata;
 
-import (
-	_ "dubbo.apache.org/dubbo-go/v3/imports"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
-	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto/triple_gen/greettriple"
-	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/server/api"
-	"dubbo.apache.org/dubbo-go/v3/server"
-)
+option go_package = "dubbo.apache.org/dubbo-go/v3/metadata/triple_api;triple_api";
+option java_package = "org.apache.dubbo.metadata";
+option java_multiple_files = true;
 
-func main() {
-	srv, err := server.NewServer(
-		server.WithServerProtocol(
-			protocol.WithTriple(),
-			protocol.WithPort(20000),
-		),
-	)
+service MetadataServiceV2{
+    rpc GetMetadataInfo(Revision) returns (MetadataInfoV2);
+}
 
-	if err != nil {
-		panic(err)
-	}
-	if err := greettriple.RegisterGreetServiceHandler(srv, &api.GreetTripleServer{}); err != nil {
-		panic(err)
-	}
+message Revision{
+    string value = 1;
+}
 
-	if err := srv.Serve(); err != nil {
-		panic(err)
-	}
+message MetadataInfoV2{
+    string app = 1;
+    string version = 2;
+    map<string,ServiceInfoV2> services = 3;
+}
+
+message ServiceInfoV2{
+    string name = 1;
+    string group = 2;
+    string version = 3;
+    string protocol = 4;
+    int32 port = 5;
+    string path = 6;
+    map<string,string> params = 7;
 }

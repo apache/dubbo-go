@@ -56,6 +56,74 @@ func DefaultReferenceConfig() *ReferenceConfig {
 	}
 }
 
+func (c *ReferenceConfig) GetOptions() []ReferenceOption {
+	var refOpts []ReferenceOption
+	if c.InterfaceName != "" {
+		refOpts = append(refOpts, WithReference_InterfaceName(c.InterfaceName))
+	}
+	if c.Check != nil {
+		refOpts = append(refOpts, WithReference_Check(*c.Check))
+	}
+	if c.URL != "" {
+		refOpts = append(refOpts, WithReference_URL(c.URL))
+	}
+	if c.Filter != "" {
+		refOpts = append(refOpts, WithReference_Filter(c.Filter))
+	}
+	if c.Protocol != "" {
+		refOpts = append(refOpts, WithReference_Protocol(c.Protocol))
+	}
+	if c.RegistryIDs != nil && len(c.RegistryIDs) > 0 {
+		refOpts = append(refOpts, WithReference_RegistryIDs(c.RegistryIDs))
+	}
+	if c.Cluster != "" {
+		refOpts = append(refOpts, WithReference_Cluster(c.Cluster))
+	}
+	if c.Loadbalance != "" {
+		refOpts = append(refOpts, WithReference_LoadBalance(c.Loadbalance))
+	}
+	if c.Retries != "" {
+		if rInt, err := strconv.Atoi(c.Retries); err == nil {
+			refOpts = append(refOpts, WithReference_Retries(rInt))
+		}
+	}
+	if c.Group != "" {
+		refOpts = append(refOpts, WithReference_Group(c.Group))
+	}
+	if c.Version != "" {
+		refOpts = append(refOpts, WithReference_Version(c.Version))
+	}
+	if c.Serialization != "" {
+		refOpts = append(refOpts, WithReference_Serialization(c.Serialization))
+	}
+	if c.ProvidedBy != "" {
+		refOpts = append(refOpts, WithReference_ProviderBy(c.ProvidedBy))
+	}
+	if c.Params != nil && len(c.Params) > 0 {
+		newParams := make(map[string]string, len(c.Params))
+		for k, v := range c.Params {
+			newParams[k] = v
+		}
+		refOpts = append(refOpts, WithReference_Params(newParams))
+	}
+	if c.Generic != "" {
+		refOpts = append(refOpts, WithReference_Generic(c.Generic))
+	}
+	if c.Sticky {
+		refOpts = append(refOpts, WithReference_Sticky(c.Sticky))
+	}
+	if c.RequestTimeout != "" {
+		refOpts = append(refOpts, WithReference_RequestTimeout(c.RequestTimeout))
+	}
+	if c.TracingKey != "" {
+		refOpts = append(refOpts, WithReference_TracingKey(c.TracingKey))
+	}
+	if c.MeshProviderPort != 0 {
+		refOpts = append(refOpts, WithReference_MeshProviderPort(c.MeshProviderPort))
+	}
+	return refOpts
+}
+
 // Clone a new ReferenceConfig
 func (c *ReferenceConfig) Clone() *ReferenceConfig {
 	if c == nil {

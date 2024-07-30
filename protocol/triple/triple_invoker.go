@@ -143,6 +143,10 @@ func (ti *TripleInvoker) Invoke(ctx context.Context, invocation protocol.Invocat
 }
 
 func mergeAttachmentToOutgoing(ctx context.Context, inv protocol.Invocation) (context.Context, error) {
+	// Todo(finalt) Temporarily solve the problem that the timeout time is not valid
+	if timeout, ok := inv.GetAttachment(constant.TimeoutKey); ok {
+		ctx = context.WithValue(ctx, "dubbo.timeout.key", timeout)
+	}
 	for key, valRaw := range inv.Attachments() {
 		if str, ok := valRaw.(string); ok {
 			ctx = tri.AppendToOutgoingContext(ctx, key, str)

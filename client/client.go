@@ -23,6 +23,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	invocation_impl "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
@@ -100,6 +101,20 @@ func (cli *Client) Dial(interfaceName string, opts ...ReferenceOption) (*Connect
 
 func (cli *Client) DialWithInfo(interfaceName string, info *ClientInfo, opts ...ReferenceOption) (*Connection, error) {
 	return cli.dial(interfaceName, info, opts...)
+}
+
+func (cli *Client) DialWithDefinition(interfaceName string, definition *ClientDefinition, opts ...ReferenceOption) (*Connection, error) {
+	// TODO(finalt) Temporarily solve the config_center configuration does not work
+	refName := common.GetReference(definition.Svc)
+	if refConfig, ok := cli.cliOpts.Consumer.References[refName]; ok {
+		ref := cli.cliOpts.overallReference.Clone()
+		for _, opt := range refConfig.GetOptions() {
+			opt(ref)
+		}
+		opts = append(opts, setReference(ref))
+	}
+
+	return cli.dial(interfaceName, definition.Info, opts...)
 }
 
 func (cli *Client) dial(interfaceName string, info *ClientInfo, opts ...ReferenceOption) (*Connection, error) {

@@ -127,6 +127,10 @@ func newInfoInvoker(url *common.URL, info *ServiceInfo, svc common.RPCService) p
 	return invoker
 }
 
+func NewInternalInvoker(url *common.URL, info *ServiceInfo, svc common.RPCService) protocol.Invoker {
+	return newInfoInvoker(url, info, svc)
+}
+
 // Register assemble invoker chains like ProviderConfig.Load, init a service per call
 func (s *Server) Register(handler interface{}, info *ServiceInfo, opts ...ServiceOption) error {
 	newSvcOpts, err := s.genSvcOpts(handler, opts...)

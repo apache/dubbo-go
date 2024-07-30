@@ -644,11 +644,65 @@ func compatGlobalConsumerConfig(c *config.ConsumerConfig) *global.ConsumerConfig
 		ProxyFactory:                   c.ProxyFactory,
 		Check:                          c.Check,
 		AdaptiveService:                c.AdaptiveService,
+		References:                     compatGlobalReferences(c.References),
 		TracingKey:                     c.TracingKey,
 		FilterConf:                     c.FilterConf,
 		MaxWaitTimeForServiceDiscovery: c.MaxWaitTimeForServiceDiscovery,
 		MeshEnabled:                    c.MeshEnabled,
 	}
+}
+
+func compatGlobalReferences(c map[string]*config.ReferenceConfig) map[string]*global.ReferenceConfig {
+	refs := make(map[string]*global.ReferenceConfig, len(c))
+	for name, ref := range c {
+		refs[name] = &global.ReferenceConfig{
+			InterfaceName:    ref.InterfaceName,
+			Check:            ref.Check,
+			URL:              ref.URL,
+			Filter:           ref.Filter,
+			Protocol:         ref.Protocol,
+			RegistryIDs:      ref.RegistryIDs,
+			Cluster:          ref.Cluster,
+			Loadbalance:      ref.Loadbalance,
+			Retries:          ref.Retries,
+			Group:            ref.Group,
+			Version:          ref.Version,
+			Serialization:    ref.Serialization,
+			ProvidedBy:       ref.ProvidedBy,
+			Methods:          compatGlobalMethod(ref.Methods),
+			Async:            ref.Async,
+			Params:           ref.Params,
+			Generic:          ref.Generic,
+			Sticky:           ref.Sticky,
+			RequestTimeout:   ref.RequestTimeout,
+			ForceTag:         ref.ForceTag,
+			TracingKey:       ref.TracingKey,
+			MeshProviderPort: ref.MeshProviderPort,
+		}
+	}
+	return refs
+}
+
+func compatGlobalMethod(m []*config.MethodConfig) []*global.MethodConfig {
+	methods := make([]*global.MethodConfig, 0, len(m))
+	for _, method := range m {
+		methods = append(methods, &global.MethodConfig{
+			InterfaceId:                 method.InterfaceId,
+			InterfaceName:               method.InterfaceName,
+			Name:                        method.Name,
+			Retries:                     method.Retries,
+			LoadBalance:                 method.LoadBalance,
+			Weight:                      method.Weight,
+			TpsLimitInterval:            method.TpsLimitInterval,
+			TpsLimitRate:                method.TpsLimitRate,
+			TpsLimitStrategy:            method.TpsLimitStrategy,
+			ExecuteLimit:                method.ExecuteLimit,
+			ExecuteLimitRejectedHandler: method.ExecuteLimitRejectedHandler,
+			Sticky:                      method.Sticky,
+			RequestTimeout:              method.RequestTimeout,
+		})
+	}
+	return methods
 }
 
 func compatGlobalMetricConfig(c *config.MetricsConfig) *global.MetricsConfig {
