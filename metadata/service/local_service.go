@@ -163,3 +163,7 @@ func NewBaseMetadataServiceProxyFactoryV2(creator MetadataServiceProxyCreatorV2)
 		creator: creator,
 	}
 }
+
+type MetadataServiceV1 interface {
+	GetMetadataInfo(ctx context.Context, req string) (*triple_api.MetadataInfo, error)
+}

@@ -327,16 +327,6 @@ func (s *ServiceConfig) Export() error {
 				s.exporters = append(s.exporters, exporter)
 			}
 		} else {
-			if ivkURL.GetParam(constant.InterfaceKey, "") == constant.MetadataServiceName {
-				ms, err := extension.GetLocalMetadataService("")
-				if err != nil {
-					logger.Warnf("export org.apache.dubbo.metadata.MetadataService failed beacause of %s ! pls check if you import _ \"dubbo.apache.org/dubbo-go/v3/metadata/service/local\"", err)
-					return nil
-				}
-				if err := ms.SetMetadataServiceURL(ivkURL); err != nil {
-					logger.Warnf("SetMetadataServiceURL error = %s", err)
-				}
-			}
 			invoker = s.generatorInvoker(ivkURL, info)
 			exporter := extension.GetProtocol(protocolwrapper.FILTER).Export(invoker)
 			if exporter == nil {

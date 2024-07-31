@@ -176,7 +176,13 @@ func (m *MetadataServiceProxy) Version() (string, error) {
 func (m *MetadataServiceProxy) GetMetadataInfo(revision string) (*common.MetadataInfo, error) {
 	const methodName = "getMetadataInfo"
 
-	metadataInfo := &common.MetadataInfo{}
+	var metadataInfo interface{}
+	if m.Invoker.GetURL().Protocol == constant.DefaultProtocol {
+		metadataInfo = &common.MetadataInfo{}
+	} else {
+		metadataInfo = &triple_api.MetadataInfo{}
+	}
+
 	inv, _ := generateInvocation(m.Invoker.GetURL(), methodName, revision, metadataInfo, constant.CallUnary)
 	res := m.Invoker.Invoke(context.Background(), inv)
 	if res.Error() != nil {
@@ -184,8 +190,35 @@ func (m *MetadataServiceProxy) GetMetadataInfo(revision string) (*common.Metadat
 		return nil, res.Error()
 	}
 
-	metaDataInfo := res.Result().(*common.MetadataInfo)
-	return metaDataInfo, nil
+	if m.Invoker.GetURL().Protocol == constant.DefaultProtocol {
+		return res.Result().(*common.MetadataInfo), nil
+	} else {
+		metadataInfoV1, _ := metadataInfo.(*triple_api.MetadataInfo)
+		return convertMetadataInfo(metadataInfoV1), nil
+	}
+}
+
+func convertMetadataInfo(v1 *triple_api.MetadataInfo) *common.MetadataInfo {
+	infos := make(map[string]*common.ServiceInfo, 0)
+	for k, v := range v1.Services {
+		info := &common.ServiceInfo{
+			Name:     v.Name,
+			Group:    v.Group,
+			Version:  v.Version,
+			Protocol: v.Protocol,
+			Path:     v.Path,
+			Params:   v.Params,
+		}
+		infos[k] = info
+	}
+
+	metadataInfo := &common.MetadataInfo{
+		Reported: false,
+		App:      v1.App,
+		Revision: v1.Version,
+		Services: infos,
+	}
+	return metadataInfo
 }
 
 type MetadataServiceProxyV2 struct {

@@ -41,6 +41,7 @@ import (
 
 func init() {
 	extension.SetLocalMetadataService(constant.DefaultKey, GetLocalMetadataService)
+	extension.SetLocalMetadataServiceV1(constant.MetadataServiceV1, GetLocalMetadataServiceV1)
 	extension.SetLocalMetadataServiceV2(constant.MetadataServiceV2, GetLocalMetadataServiceV2)
 }
 
@@ -67,6 +68,9 @@ var (
 
 	metadataServiceV2Instance *MetadataServiceV2
 	metadataServiceV2InitOnce sync.Once
+
+	metadataServiceV1Instance *MetadataServiceV1
+	metadataServiceV1InitOnce sync.Once
 )
 
 // GetLocalMetadataService which should be singleton initiates a metadata service
@@ -287,6 +291,47 @@ func (mts *MetadataService) SetMetadataServiceURL(url *common.URL) error {
 	return nil
 }
 
+func GetLocalMetadataServiceV1() (service.MetadataServiceV1, error) {
+	metadataServiceV1InitOnce.Do(func() {
+		delegate, _ := GetLocalMetadataService()
+		metadataServiceV1Instance = &MetadataServiceV1{
+			delegate: delegate,
+		}
+	})
+	return metadataServiceV1Instance, nil
+}
+
+type MetadataServiceV1 struct {
+	service.BaseMetadataService
+	delegate service.MetadataService
+}
+
+func (mtsV1 *MetadataServiceV1) GetMetadataInfo(ctx context.Context, revision string) (*triple_api.MetadataInfo, error) {
+	metadataInfo, err := mtsV1.delegate.GetMetadataInfo(revision)
+	return &triple_api.MetadataInfo{
+		App:      metadataInfo.App,
+		Version:  metadataInfo.Revision,
+		Services: convertV1(metadataInfo.Services),
+	}, err
+}
+
+func convertV1(serviceInfos map[string]*common.ServiceInfo) map[string]*triple_api.ServiceInfo {
+	serviceInfoV1s := make(map[string]*triple_api.ServiceInfo, len(serviceInfos))
+	for k, info := range serviceInfos {
+		serviceInfo := &triple_api.ServiceInfo{
+			Name:     info.Name,
+			Group:    info.Group,
+			Version:  info.Version,
+			Protocol: info.Protocol,
+			Port:     0,
+			Path:     info.Path,
+			Params:   info.Params,
+		}
+		serviceInfoV1s[k] = serviceInfo
+	}
+	return serviceInfoV1s
+}
+
 func GetLocalMetadataServiceV2() (service.MetadataServiceV2, error) {
 	metadataServiceV2InitOnce.Do(func() {
 		delegate, _ := GetLocalMetadataService()
@@ -307,11 +352,11 @@ func (mtsV2 *MetadataServiceV2) GetMetadataInfo(ctx context.Context, req *triple
 	return &triple_api.MetadataInfoV2{
 		App:      metadataInfo.App,
 		Version:  metadataInfo.Revision,
-		Services: convert(metadataInfo.Services),
+		Services: convertV2(metadataInfo.Services),
 	}, err
 }
 
-func convert(serviceInfos map[string]*common.ServiceInfo) map[string]*triple_api.ServiceInfoV2 {
+func convertV2(serviceInfos map[string]*common.ServiceInfo) map[string]*triple_api.ServiceInfoV2 {
 	serviceInfoV2s := make(map[string]*triple_api.ServiceInfoV2, len(serviceInfos))
 	for k, info := range serviceInfos {
 		serviceInfoV2 := &triple_api.ServiceInfoV2{

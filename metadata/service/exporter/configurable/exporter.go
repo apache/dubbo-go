@@ -46,8 +46,10 @@ import (
 type MetadataServiceExporter struct {
 	ServiceConfig     *config.ServiceConfig
 	v2Exporter        protocol.Exporter
+	Exporter          protocol.Exporter
 	lock              sync.RWMutex
 	metadataService   service.MetadataService
+	metadataServiceV1 service.MetadataServiceV1
 	metadataServiceV2 service.MetadataServiceV2
 }
 
@@ -56,9 +58,10 @@ func init() {
 }
 
 // NewMetadataServiceExporter will return a service_exporter.MetadataServiceExporter with the specified  metadata service
-func NewMetadataServiceExporter(metadataService service.MetadataService, metadataServiceV2 service.MetadataServiceV2) exporter.MetadataServiceExporter {
+func NewMetadataServiceExporter(metadataService service.MetadataService, metadataServiceV1 service.MetadataServiceV1, metadataServiceV2 service.MetadataServiceV2) exporter.MetadataServiceExporter {
 	return &MetadataServiceExporter{
 		metadataService:   metadataService,
+		metadataServiceV1: metadataServiceV1,
 		metadataServiceV2: metadataServiceV2,
 	}
 }
@@ -94,9 +97,12 @@ func (exporter *MetadataServiceExporter) exportV1() error {
 			Build()
 		exporter.ServiceConfig.Implement(exporter.metadataService)
 		err := exporter.ServiceConfig.Export()
-		logger.Infof("[Metadata Service] The MetadataService exports urls : %v ", exporter.ServiceConfig.GetExportedUrls())
+		logger.Infof("[Metadata Service] MetadataService has been exported at url : %v ", exporter.ServiceConfig.GetExportedUrls())
+		exporter.metadataService.SetMetadataServiceURL(exporter.ServiceConfig.GetExportedUrls()[0])
 		return err
 	} else {
+		info := server.MetadataService_ServiceInfo
+
 		ivkURL := common.NewURLWithOptions(
 			common.WithPath(constant.MetadataServiceName),
 			common.WithProtocol("tri"),
@@ -106,12 +112,13 @@ func (exporter *MetadataServiceExporter) exportV1() error {
 			common.WithInterface(constant.MetadataServiceName),
 			common.WithMethods(strings.Split("getMetadataInfo,GetMetadataInfo", ",")),
 			common.WithAttribute(constant.ServiceInfoKey, &info),
+			common.WithParamsValue(constant.SerializationKey, constant.Hessian2Serialization),
 		)
 
-		invoker := server.NewInternalInvoker(ivkURL, &info, exporter.metadataServiceV2)
-		exporter.v2Exporter = extension.GetProtocol(protocolwrapper.FILTER).Export(invoker)
-
-		logger.Infof("[Metadata Service] MetadataServiceV2 has been exported at url : %v ", invoker.GetURL())
+		invoker := server.NewInternalInvoker(ivkURL, &info, exporter.metadataServiceV1)
+		exporter.Exporter = extension.GetProtocol(protocolwrapper.FILTER).Export(invoker)
+		logger.Infof("[Metadata Service] MetadataService has been exported at url : %v ", invoker.GetURL())
+		exporter.metadataService.SetMetadataServiceURL(ivkURL)
 		return nil
 	}
 }
@@ -135,8 +142,9 @@ func (exporter *MetadataServiceExporter) exportV2() error {
 
 	invoker := server.NewInternalInvoker(ivkURL, &info, exporter.metadataServiceV2)
 	exporter.v2Exporter = extension.GetProtocol(protocolwrapper.FILTER).Export(invoker)
-
 	logger.Infof("[Metadata Service] MetadataServiceV2 has been exported at url : %v ", invoker.GetURL())
+	// do not set, because it will override MetadataService
+	//exporter.metadataService.SetMetadataServiceURL(ivkURL)
 	return nil
 }
 

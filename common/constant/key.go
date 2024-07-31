@@ -363,6 +363,7 @@ const (
 
 	MetadataVersion = "meta-v"
 
+	MetadataServiceV1        = "MetadataServiceV1"
 	MetadataServiceV2        = "MetadataServiceV2"
 	MetadataServiceV2Version = "2.0.0"
 )

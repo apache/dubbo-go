@@ -48,3 +48,26 @@ var MetadataServiceV2_ServiceInfo = ServiceInfo{
 		},
 	},
 }
+
+type MetadataServiceHandler interface {
+	GetMetadataInfo(ctx context.Context, revision string) (*triple_api.MetadataInfo, error)
+}
+
+var MetadataService_ServiceInfo = ServiceInfo{
+	InterfaceName: "org.apache.dubbo.metadata.MetadataService",
+	ServiceType:   (*MetadataServiceHandler)(nil),
+	Methods: []MethodInfo{
+		{
+			Name: "getMetadataInfo",
+			Type: constant.CallUnary,
+			ReqInitFunc: func() interface{} {
+				return new(string)
+			},
+			MethodFunc: func(ctx context.Context, args []interface{}, handler interface{}) (interface{}, error) {
+				revision := args[0].(*string)
+				res, err := handler.(MetadataServiceHandler).GetMetadataInfo(ctx, *revision)
+				return res, err
+			},
+		},
+	},
+}

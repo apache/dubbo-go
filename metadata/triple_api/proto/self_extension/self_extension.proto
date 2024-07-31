@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package self_extension;
+
+option go_package = "github.com/apache/dubbo-go-samples/java_interop/non-protobuf-triple/proto/self_extension;self_extension";
+
+import "google/protobuf/descriptor.proto";
+import "hessian2_extend/hessian2_extend.proto";
+
+message Time {
+  option (hessian2_extend.message_extend) = {
+    java_class_name: "java.sql.Time";
+    reference_path: "dubbo.apache.org/dubbo-go/v3/proto/java_sql_time";
+  };
+}

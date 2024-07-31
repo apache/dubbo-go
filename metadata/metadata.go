@@ -38,6 +38,7 @@ var (
 
 func ExportMetadataService() {
 	ms, err := extension.GetLocalMetadataService(constant.DefaultKey)
+	msV1, err := extension.GetLocalMetadataServiceV1(constant.MetadataServiceV1)
 	msV2, err := extension.GetLocalMetadataServiceV2(constant.MetadataServiceV2)
 
 	if err != nil {
@@ -56,7 +57,7 @@ func ExportMetadataService() {
 	// So using sync.Once will result in dead lock
 	exporting.Store(true)
 
-	expt := extension.GetMetadataServiceExporter(constant.DefaultKey, ms, msV2)
+	expt := extension.GetMetadataServiceExporter(constant.DefaultKey, ms, msV1, msV2)
 	if expt == nil {
 		logger.Warnf("get metadata service exporter failed, pls check if you import _ \"dubbo.apache.org/dubbo-go/v3/metadata/service/exporter/configurable\"")
 		return
@@ -66,12 +67,6 @@ func ExportMetadataService() {
 	if err != nil {
 		logger.Errorf("could not export the metadata service, err = %s", err.Error())
 		return
-	}
-
-	// report interface-app mapping
-	err = publishMapping(expt)
-	if err != nil {
-		logger.Errorf("Publish interface-application mapping failed, got error %#v", err)
 	}
 }
 

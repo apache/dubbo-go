@@ -143,7 +143,7 @@ func buildStandardMetadataServiceURL(ins registry.ServiceInstance) []*common.URL
 	return res
 }
 
-// getMetadataServiceUrlParams this will convert the metadata service url parameters to map structure
+// getMetadataServiceUrlParams this will convertV2 the metadata service url parameters to map structure
 // it looks like:
 // {"dubbo":{"timeout":"10000","version":"1.0.0","dubbo":"2.0.2","release":"2.7.6","port":"20880"}}
 func getMetadataServiceUrlParams(ins registry.ServiceInstance) map[string]string {
