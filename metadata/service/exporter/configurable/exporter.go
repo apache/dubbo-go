@@ -71,20 +71,20 @@ func (exporter *MetadataServiceExporter) Export() error {
 		exporter.lock.Lock()
 		defer exporter.lock.Unlock()
 		var err error
-		err = exporter.exportV1()
+		pro, port := getMetadataProtocolAndPort()
+		err = exporter.exportV1(pro, port)
 		if err != nil {
 			return err
 		}
-		err = exporter.exportV2()
+		err = exporter.exportV2(pro, port)
 		return err
 	}
 	logger.Warnf("[Metadata Service] The MetadataService has been exported : %v ", exporter.ServiceConfig.GetExportedUrls())
 	return nil
 }
 
-func (exporter *MetadataServiceExporter) exportV1() error {
+func (exporter *MetadataServiceExporter) exportV1(pro, port string) error {
 	version, _ := exporter.metadataService.Version()
-	pro, port := getMetadataProtocolAndPort()
 	if pro == constant.DefaultProtocol {
 		exporter.ServiceConfig = config.NewServiceConfigBuilder().
 			SetServiceID(constant.SimpleMetadataServiceName).
@@ -125,9 +125,8 @@ func (exporter *MetadataServiceExporter) exportV1() error {
 	}
 }
 
-func (exporter *MetadataServiceExporter) exportV2() error {
+func (exporter *MetadataServiceExporter) exportV2(pro, port string) error {
 	info := server.MetadataServiceV2_ServiceInfo
-	pro, port := getMetadataProtocolAndPort()
 	// v2 only supports triple protocol
 	if pro == constant.DefaultProtocol {
 		return nil
@@ -180,15 +179,16 @@ func getMetadataProtocolAndPort() (string, string) {
 	}
 
 	if protocolConfig == nil {
+		port = common.GetRandomPort("0")
 		if protocol == "" || protocol == constant.TriProtocol {
 			protocolConfig = &config.ProtocolConfig{
 				Name: constant.TriProtocol,
-				Port: "0", // use a random port
+				Port: port, // use a random port
 			}
 		} else {
 			protocolConfig = &config.ProtocolConfig{
 				Name: constant.DefaultProtocol,
-				Port: "0", // use a random port
+				Port: port, // use a random port
 			}
 		}
 	}

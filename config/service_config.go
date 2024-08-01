@@ -32,7 +32,6 @@ import (
 	"github.com/creasty/defaults"
 
 	"github.com/dubbogo/gost/log/logger"
-	gxnet "github.com/dubbogo/gost/net"
 
 	perrors "github.com/pkg/errors"
 
@@ -222,12 +221,7 @@ func getRandomPort(protocolConfigs []*ProtocolConfig) *list.List {
 			continue
 		}
 
-		tcp, err := gxnet.ListenOnTCPRandomPort(proto.Ip)
-		if err != nil {
-			panic(perrors.New(fmt.Sprintf("Get tcp port error, err is {%v}", err)))
-		}
-		defer tcp.Close()
-		ports.PushBack(strings.Split(tcp.Addr().String(), ":")[1])
+		ports.PushBack(common.GetRandomPort(proto.Ip))
 	}
 	return ports
 }

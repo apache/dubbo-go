@@ -18,7 +18,6 @@
 package config
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/metadata/service"
 	"sync"
 )
 
@@ -39,6 +38,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
+	"dubbo.apache.org/dubbo-go/v3/metadata/service"
 	"dubbo.apache.org/dubbo-go/v3/metadata/service/exporter"
 )
 
