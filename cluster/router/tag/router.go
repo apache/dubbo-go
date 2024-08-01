@@ -94,6 +94,10 @@ func (p *PriorityRouter) Notify(invokers []protocol.Invoker) {
 		logger.Errorf("query router rule fail,key=%s,err=%v", key, err)
 		return
 	}
+	if value == "" {
+		logger.Infof("router rule is empty,key=%s", key)
+		return
+	}
 	p.Process(&config_center.ConfigChangeEvent{Key: key, Value: value, ConfigType: remoting.EventTypeAdd})
 }
 

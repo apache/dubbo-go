@@ -308,6 +308,10 @@ func (s *ServiceRouter) Notify(invokers []protocol.Invoker) {
 		logger.Errorf("Failed to query condition rule, key=%s, err=%v", key, err)
 		return
 	}
+	if value == "" {
+		logger.Infof("Condition rule is empty, key=%s", key)
+		return
+	}
 	s.Process(&config_center.ConfigChangeEvent{Key: key, Value: value, ConfigType: remoting.EventTypeAdd})
 }
 
@@ -368,6 +372,10 @@ func (a *ApplicationRouter) Notify(invokers []protocol.Invoker) {
 		value, err := dynamicConfiguration.GetRule(key)
 		if err != nil {
 			logger.Errorf("Failed to query condition rule, key=%s, err=%v", key, err)
+			return
+		}
+		if value == "" {
+			logger.Infof("Condition rule is empty, key=%s", key)
 			return
 		}
 		a.Process(&config_center.ConfigChangeEvent{Key: key, Value: value, ConfigType: remoting.EventTypeUpdate})

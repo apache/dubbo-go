@@ -19,6 +19,8 @@ package tag
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/router"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
 )
 
 func init() {
@@ -27,8 +29,7 @@ func init() {
 		and cause warning if config center is empty.
 		User can import this package and config config center to use tag router.
 	*/
-	// TODO(finalt) Temporarily removed until fixed
-	//extension.SetRouterFactory(constant.TagRouterFactoryKey, NewTagRouterFactory)
+	extension.SetRouterFactory(constant.TagRouterFactoryKey, NewTagRouterFactory)
 }
 
 // RouteFactory router factory
