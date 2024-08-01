@@ -35,8 +35,8 @@ func init() {
 
 type ScriptInstances interface {
 	Run(rawScript string, invokers []protocol.Invoker, invocation protocol.Invocation) ([]protocol.Invoker, error)
-	Compile(name, rawScript string) error
-	Destroy(name, rawScript string)
+	Compile(rawScript string) error
+	Destroy(rawScript string)
 }
 
 var factory map[string]ScriptInstances
