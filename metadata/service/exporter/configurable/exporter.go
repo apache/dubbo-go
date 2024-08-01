@@ -104,7 +104,7 @@ func (exporter *MetadataServiceExporter) exportV1() error {
 
 		ivkURL := common.NewURLWithOptions(
 			common.WithPath(constant.MetadataServiceName),
-			common.WithProtocol("tri"),
+			common.WithProtocol(constant.TriProtocol),
 			common.WithPort(port),
 			common.WithParamsValue(constant.GroupKey, config.GetApplicationConfig().Name),
 			common.WithParamsValue(constant.VersionKey, version),
@@ -131,7 +131,7 @@ func (exporter *MetadataServiceExporter) exportV2() error {
 	}
 	ivkURL := common.NewURLWithOptions(
 		common.WithPath(constant.MetadataServiceV2Name),
-		common.WithProtocol("tri"),
+		common.WithProtocol(constant.TriProtocol),
 		common.WithPort(port),
 		common.WithParamsValue(constant.GroupKey, config.GetApplicationConfig().Name),
 		common.WithParamsValue(constant.VersionKey, "2.0.0"),

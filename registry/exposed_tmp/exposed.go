@@ -131,7 +131,7 @@ func selectMetadataServiceExportedURL() *common.URL {
 	for _, url := range urlList {
 		selectedUrl = url
 		// triple first
-		if url.Protocol == "tri" {
+		if url.Protocol == constant.TriProtocol {
 			break
 		}
 	}

@@ -235,7 +235,7 @@ func (m *MetadataServiceProxyV2) GetMetadataInfo(ctx context.Context, req *tripl
 
 func generateInvocation(u *common.URL, methodName string, req interface{}, resp interface{}, callType string) (protocol.Invocation, error) {
 	var inv *invocation.RPCInvocation
-	if u.Protocol == "tri" {
+	if u.Protocol == constant.TriProtocol {
 		var paramsRawVals []interface{}
 		paramsRawVals = append(paramsRawVals, req)
 		if resp != nil {

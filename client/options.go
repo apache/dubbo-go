@@ -124,7 +124,7 @@ func (refOpts *ReferenceOptions) init(opts ...ReferenceOption) error {
 
 	// init protocol
 	if ref.Protocol == "" {
-		ref.Protocol = "tri"
+		ref.Protocol = constant.TriProtocol
 		if refOpts.Consumer != nil && refOpts.Consumer.Protocol != "" {
 			ref.Protocol = refOpts.Consumer.Protocol
 		}
@@ -342,7 +342,7 @@ func WithProtocolDubbo() ReferenceOption {
 
 func WithProtocolTriple() ReferenceOption {
 	return func(opts *ReferenceOptions) {
-		opts.Reference.Protocol = "tri"
+		opts.Reference.Protocol = constant.TriProtocol
 	}
 }
 
@@ -514,7 +514,7 @@ func (cliOpts *ClientOptions) init(opts ...ClientOption) error {
 
 	// init protocol
 	if cliOpts.Consumer.Protocol == "" {
-		cliOpts.Consumer.Protocol = "tri"
+		cliOpts.Consumer.Protocol = constant.TriProtocol
 	}
 
 	// init serialization
@@ -766,7 +766,7 @@ func WithClientProtocolDubbo() ClientOption {
 
 func WithClientProtocolTriple() ClientOption {
 	return func(opts *ClientOptions) {
-		opts.Consumer.Protocol = "tri"
+		opts.Consumer.Protocol = constant.TriProtocol
 	}
 }
 

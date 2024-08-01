@@ -111,7 +111,7 @@ func buildStandardMetadataServiceURL(ins registry.ServiceInstance) []*common.URL
 	metaV := ins.GetMetadata()[constant.MetadataVersion]
 	protocol := ps[constant.ProtocolKey]
 	if metaV == constant.MetadataServiceV2Version {
-		protocol = "tri"
+		protocol = constant.TriProtocol
 	}
 
 	convertedParams := make(map[string][]string, len(ps))
@@ -126,7 +126,7 @@ func buildStandardMetadataServiceURL(ins registry.ServiceInstance) []*common.URL
 		common.WithParamsValue(constant.GroupKey, sn),
 		common.WithParamsValue(constant.InterfaceKey, constant.MetadataServiceName))
 
-	if protocol == "tri" {
+	if protocol == constant.TriProtocol {
 		u.SetAttribute(constant.ClientInfoKey, "info")
 		u.Methods = []string{"GetMetadataInfo", "getMetadataInfo"}
 		if metaV == constant.MetadataServiceV2Version {
