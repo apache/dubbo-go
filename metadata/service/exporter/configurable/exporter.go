@@ -18,9 +18,6 @@
 package configurable
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/protocol"
-	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
-	"dubbo.apache.org/dubbo-go/v3/server"
 	"strings"
 	"sync"
 )
@@ -38,7 +35,10 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/metadata/service"
 	"dubbo.apache.org/dubbo-go/v3/metadata/service/exporter"
 	_ "dubbo.apache.org/dubbo-go/v3/metadata/service/remote"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/dubbo"
+	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
+	"dubbo.apache.org/dubbo-go/v3/server"
 )
 
 // MetadataServiceExporter is the ConfigurableMetadataServiceExporter which implement MetadataServiceExporter interface
@@ -66,7 +66,7 @@ func NewMetadataServiceExporter(metadataService service.MetadataService, metadat
 }
 
 // Export will export the metadataService
-func (exporter *MetadataServiceExporter) Export(url *common.URL) error {
+func (exporter *MetadataServiceExporter) Export() error {
 	if !exporter.IsExported() {
 		exporter.lock.Lock()
 		defer exporter.lock.Unlock()
@@ -194,23 +194,30 @@ func getMetadataProtocolAndPort() (string, string) {
 
 // Unexport will unexport the metadataService
 func (exporter *MetadataServiceExporter) Unexport() {
-	if exporter.IsExported() {
+	if exporter.IsExported() && exporter.ServiceConfig != nil {
 		exporter.ServiceConfig.Unexport()
+		exporter.ServiceConfig = nil
 	}
 	if exporter.v2Exporter != nil {
 		exporter.v2Exporter.UnExport()
+		exporter.v2Exporter = nil
+	}
+	if exporter.Exporter != nil {
+		exporter.Exporter.UnExport()
+		exporter.Exporter = nil
 	}
 }
 
 // GetExportedURLs will return the urls that export use.
 // Notice！The exported url is not same as url in registry , for example it lack the ip.
 func (exporter *MetadataServiceExporter) GetExportedURLs() []*common.URL {
-	return exporter.ServiceConfig.GetExportedUrls()
+	url, _ := exporter.metadataService.GetMetadataServiceURL()
+	return []*common.URL{url}
 }
 
 // IsExported will return is metadataServiceExporter exported or not
 func (exporter *MetadataServiceExporter) IsExported() bool {
 	exporter.lock.RLock()
 	defer exporter.lock.RUnlock()
-	return exporter.ServiceConfig != nil && exporter.ServiceConfig.IsExport()
+	return exporter.ServiceConfig != nil && exporter.ServiceConfig.IsExport() || exporter.Exporter != nil
 }

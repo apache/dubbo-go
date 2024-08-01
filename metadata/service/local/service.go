@@ -19,7 +19,6 @@ package local
 
 import (
 	"context"
-	triple_api "dubbo.apache.org/dubbo-go/v3/metadata/triple_api/proto"
 	"sort"
 	"sync"
 )
@@ -37,6 +36,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/metadata/definition"
 	"dubbo.apache.org/dubbo-go/v3/metadata/service"
+	triple_api "dubbo.apache.org/dubbo-go/v3/metadata/triple_api/proto"
 )
 
 func init() {

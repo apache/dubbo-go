@@ -372,7 +372,7 @@ func exportMetadataService() {
 		return
 	}
 
-	err = expt.Export(nil)
+	err = expt.Export()
 	if err != nil {
 		logger.Errorf("could not export the metadata service, err = %s", err.Error())
 		return

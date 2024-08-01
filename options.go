@@ -18,8 +18,11 @@
 package dubbo
 
 import (
-	log "github.com/dubbogo/gost/log/logger"
 	"strconv"
+)
+
+import (
+	log "github.com/dubbogo/gost/log/logger"
 )
 
 import (

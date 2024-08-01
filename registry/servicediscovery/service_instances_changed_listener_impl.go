@@ -19,7 +19,6 @@ package servicediscovery
 
 import (
 	"context"
-	triple_api "dubbo.apache.org/dubbo-go/v3/metadata/triple_api/proto"
 	"encoding/gob"
 	"errors"
 	"reflect"
@@ -39,6 +38,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/metadata/service"
 	"dubbo.apache.org/dubbo-go/v3/metadata/service/local"
+	triple_api "dubbo.apache.org/dubbo-go/v3/metadata/triple_api/proto"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/registry/servicediscovery/store"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
