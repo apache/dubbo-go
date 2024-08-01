@@ -108,7 +108,13 @@ func (ii *infoInvoker) Invoke(ctx context.Context, invocation protocol.Invocatio
 		res, err := method.MethodFunc(ctx, args, ii.svc)
 		result.SetResult(res)
 		if err != nil {
-			result.SetError(triple_protocol.NewError(triple_protocol.CodeBizError, err))
+			var proError *triple_protocol.Error
+			if !errors.As(err, &proError) {
+				err = triple_protocol.NewError(triple_protocol.CodeBizError, err)
+			} else if proError.Code() != triple_protocol.CodeBizError {
+				err = triple_protocol.NewError(proError.Code(), proError.Unwrap())
+			}
+			result.SetError(err)
 		}
 		return result
 	}
