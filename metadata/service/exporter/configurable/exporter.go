@@ -120,7 +120,7 @@ func (exporter *MetadataServiceExporter) exportV1() error {
 		invoker := server.NewInternalInvoker(ivkURL, &info, exporter.metadataServiceV1)
 		exporter.Exporter = extension.GetProtocol(protocolwrapper.FILTER).Export(invoker)
 		logger.Infof("[Metadata Service] MetadataService has been exported at url : %v ", invoker.GetURL())
-		exporter.metadataService.SetMetadataServiceURL(ivkURL)
+		exporter.metadataService.SetMetadataServiceURL(invoker.GetURL())
 		return nil
 	}
 }
@@ -160,18 +160,23 @@ func getMetadataProtocolAndPort() (string, string) {
 	}
 
 	var protocolConfig *config.ProtocolConfig
-	for s, pc := range rootConfig.Protocols {
-		if s != constant.DefaultProtocol && s != constant.TriProtocol {
+	for _, pc := range rootConfig.Protocols {
+		if pc.Name != constant.DefaultProtocol && pc.Name != constant.TriProtocol {
 			continue
 		}
-		if s == protocol {
+		if pc.Name == protocol {
 			protocolConfig = pc
 			break
 		}
 	}
 
 	if protocol == "" {
-		protocolConfig = rootConfig.Protocols[constant.TriProtocol]
+		for _, pc := range rootConfig.Protocols {
+			if pc.Name == constant.TriProtocol {
+				protocolConfig = pc
+				break
+			}
+		}
 	}
 
 	if protocolConfig == nil {

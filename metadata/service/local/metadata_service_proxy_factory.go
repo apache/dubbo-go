@@ -133,6 +133,7 @@ func buildStandardMetadataServiceURL(ins registry.ServiceInstance) []*common.URL
 			u.Path = constant.MetadataServiceV2Name
 			u.SetParam(constant.VersionKey, metaV)
 			u.SetParam(constant.InterfaceKey, constant.MetadataServiceV2Name)
+			u.DelParam(constant.SerializationKey)
 		} else {
 			u.SetParam(constant.SerializationKey, constant.Hessian2Serialization)
 		}
