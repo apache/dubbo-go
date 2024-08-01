@@ -249,7 +249,8 @@ func GetMetadataInfo(app string, instance registry.ServiceInstance, revision str
 			metadataServiceV2 := proxyFactoryV2.GetProxy(instance)
 			if metadataServiceV2 != nil {
 				defer destroyInvokerV2(metadataServiceV2)
-				metadataInfoV2, err := metadataServiceV2.GetMetadataInfo(context.Background(), &triple_api.MetadataRequest{Revision: revision})
+				var metadataInfoV2 *triple_api.MetadataInfoV2
+				metadataInfoV2, err = metadataServiceV2.GetMetadataInfo(context.Background(), &triple_api.MetadataRequest{Revision: revision})
 				if err != nil {
 					logger.Errorf("get metadata of %s failed, %v", instance.GetHost(), err)
 				}

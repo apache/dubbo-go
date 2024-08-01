@@ -19,9 +19,8 @@
 package metadata
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/metadata/service"
 	"github.com/dubbogo/gost/log/logger"
-
-	perrors "github.com/pkg/errors"
 
 	"go.uber.org/atomic"
 )
@@ -29,7 +28,6 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/metadata/service/exporter"
 )
 
 var (
@@ -37,9 +35,16 @@ var (
 )
 
 func ExportMetadataService() {
-	ms, err := extension.GetLocalMetadataService(constant.DefaultKey)
-	msV1, err := extension.GetLocalMetadataServiceV1(constant.MetadataServiceV1)
-	msV2, err := extension.GetLocalMetadataServiceV2(constant.MetadataServiceV2)
+	var (
+		err  error
+		ms   service.MetadataService
+		msV1 service.MetadataServiceV1
+		msV2 service.MetadataServiceV2
+	)
+
+	ms, err = extension.GetLocalMetadataService(constant.DefaultKey)
+	msV1, err = extension.GetLocalMetadataServiceV1(constant.MetadataServiceV1)
+	msV2, err = extension.GetLocalMetadataServiceV2(constant.MetadataServiceV2)
 
 	if err != nil {
 		logger.Warnf("could not init metadata service", err)
@@ -68,17 +73,4 @@ func ExportMetadataService() {
 		logger.Errorf("could not export the metadata service, err = %s", err.Error())
 		return
 	}
-}
-
-// OnEvent only handle ServiceConfigExportedEvent
-func publishMapping(sc exporter.MetadataServiceExporter) error {
-	urls := sc.GetExportedURLs()
-
-	for _, u := range urls {
-		err := extension.GetGlobalServiceNameMapping().Map(u)
-		if err != nil {
-			return perrors.WithMessage(err, "could not map the service: "+u.String())
-		}
-	}
-	return nil
 }
