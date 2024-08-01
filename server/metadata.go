@@ -9,7 +9,7 @@ import (
 
 // MetadataServiceV2Handler is an implementation of the org.apache.dubbo.metadata.MetadataServiceV2 service.
 type MetadataServiceV2Handler interface {
-	GetMetadataInfo(context.Context, *triple_api.Revision) (*triple_api.MetadataInfoV2, error)
+	GetMetadataInfo(context.Context, *triple_api.MetadataRequest) (*triple_api.MetadataInfoV2, error)
 }
 
 var MetadataServiceV2_ServiceInfo = ServiceInfo{
@@ -20,10 +20,10 @@ var MetadataServiceV2_ServiceInfo = ServiceInfo{
 			Name: "GetMetadataInfo",
 			Type: constant.CallUnary,
 			ReqInitFunc: func() interface{} {
-				return new(triple_api.Revision)
+				return new(triple_api.MetadataRequest)
 			},
 			MethodFunc: func(ctx context.Context, args []interface{}, handler interface{}) (interface{}, error) {
-				req := args[0].(*triple_api.Revision)
+				req := args[0].(*triple_api.MetadataRequest)
 				res, err := handler.(MetadataServiceV2Handler).GetMetadataInfo(ctx, req)
 				if err != nil {
 					return nil, err
@@ -35,10 +35,10 @@ var MetadataServiceV2_ServiceInfo = ServiceInfo{
 			Name: "getMetadataInfo",
 			Type: constant.CallUnary,
 			ReqInitFunc: func() interface{} {
-				return new(triple_api.Revision)
+				return new(triple_api.MetadataRequest)
 			},
 			MethodFunc: func(ctx context.Context, args []interface{}, handler interface{}) (interface{}, error) {
-				req := args[0].(*triple_api.Revision)
+				req := args[0].(*triple_api.MetadataRequest)
 				res, err := handler.(MetadataServiceV2Handler).GetMetadataInfo(ctx, req)
 				if err != nil {
 					return nil, err

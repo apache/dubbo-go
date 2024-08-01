@@ -347,8 +347,8 @@ type MetadataServiceV2 struct {
 	delegate service.MetadataService
 }
 
-func (mtsV2 *MetadataServiceV2) GetMetadataInfo(ctx context.Context, req *triple_api.Revision) (*triple_api.MetadataInfoV2, error) {
-	metadataInfo, err := mtsV2.delegate.GetMetadataInfo(req.GetValue())
+func (mtsV2 *MetadataServiceV2) GetMetadataInfo(ctx context.Context, req *triple_api.MetadataRequest) (*triple_api.MetadataInfoV2, error) {
+	metadataInfo, err := mtsV2.delegate.GetMetadataInfo(req.GetRevision())
 	return &triple_api.MetadataInfoV2{
 		App:      metadataInfo.App,
 		Version:  metadataInfo.Revision,

@@ -176,12 +176,7 @@ func (m *MetadataServiceProxy) Version() (string, error) {
 func (m *MetadataServiceProxy) GetMetadataInfo(revision string) (*common.MetadataInfo, error) {
 	const methodName = "getMetadataInfo"
 
-	var metadataInfo interface{}
-	if m.Invoker.GetURL().Protocol == constant.DefaultProtocol {
-		metadataInfo = &common.MetadataInfo{}
-	} else {
-		metadataInfo = &triple_api.MetadataInfo{}
-	}
+	metadataInfo := &triple_api.MetadataInfo{}
 
 	inv, _ := generateInvocation(m.Invoker.GetURL(), methodName, revision, metadataInfo, constant.CallUnary)
 	res := m.Invoker.Invoke(context.Background(), inv)
@@ -190,12 +185,11 @@ func (m *MetadataServiceProxy) GetMetadataInfo(revision string) (*common.Metadat
 		return nil, res.Error()
 	}
 
-	if m.Invoker.GetURL().Protocol == constant.DefaultProtocol {
-		return res.Result().(*common.MetadataInfo), nil
-	} else {
-		metadataInfoV1, _ := metadataInfo.(*triple_api.MetadataInfo)
-		return convertMetadataInfo(metadataInfoV1), nil
+	if metadataInfo.Services == nil {
+		metadataInfo = res.Result().(*triple_api.MetadataInfo)
 	}
+
+	return convertMetadataInfo(metadataInfo), nil
 }
 
 func convertMetadataInfo(v1 *triple_api.MetadataInfo) *common.MetadataInfo {
@@ -225,8 +219,8 @@ type MetadataServiceProxyV2 struct {
 	Invoker protocol.Invoker
 }
 
-func (m *MetadataServiceProxyV2) GetMetadataInfo(ctx context.Context, req *triple_api.Revision) (*triple_api.MetadataInfoV2, error) {
-	const methodName = "getMetadataInfo"
+func (m *MetadataServiceProxyV2) GetMetadataInfo(ctx context.Context, req *triple_api.MetadataRequest) (*triple_api.MetadataInfoV2, error) {
+	const methodName = "GetMetadataInfo"
 
 	metadataInfo := &triple_api.MetadataInfoV2{}
 	inv, _ := generateInvocation(m.Invoker.GetURL(), methodName, req, metadataInfo, constant.CallUnary)
@@ -260,7 +254,7 @@ func generateInvocation(u *common.URL, methodName string, req interface{}, resp 
 		rV := reflect.ValueOf(req)
 		inv = invocation.NewRPCInvocationWithOptions(invocation.WithMethodName(methodName),
 			invocation.WithArguments([]interface{}{rV.Interface()}),
-			invocation.WithReply(reflect.ValueOf(&common.MetadataInfo{}).Interface()),
+			invocation.WithReply(resp),
 			invocation.WithAttachments(map[string]interface{}{constant.AsyncKey: "false"}),
 			invocation.WithParameterValues([]reflect.Value{rV}))
 	}

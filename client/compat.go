@@ -27,15 +27,17 @@ import (
 // todo(DMwangnima): remove these functions when refactoring dubbo-go
 func compatApplicationConfig(c *global.ApplicationConfig) *config.ApplicationConfig {
 	return &config.ApplicationConfig{
-		Organization: c.Organization,
-		Name:         c.Name,
-		Module:       c.Module,
-		Group:        c.Group,
-		Version:      c.Version,
-		Owner:        c.Owner,
-		Environment:  c.Environment,
-		MetadataType: c.MetadataType,
-		Tag:          c.Tag,
+		Organization:            c.Organization,
+		Name:                    c.Name,
+		Module:                  c.Module,
+		Group:                   c.Group,
+		Version:                 c.Version,
+		Owner:                   c.Owner,
+		Environment:             c.Environment,
+		MetadataType:            c.MetadataType,
+		Tag:                     c.Tag,
+		MetadataServicePort:     c.MetadataServicePort,
+		MetadataServiceProtocol: c.MetadataServiceProtocol,
 	}
 }
 

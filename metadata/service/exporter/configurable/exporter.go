@@ -21,7 +21,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
 	"dubbo.apache.org/dubbo-go/v3/server"
-	"strconv"
 	"strings"
 	"sync"
 )
@@ -126,8 +125,9 @@ func (exporter *MetadataServiceExporter) exportV1() error {
 func (exporter *MetadataServiceExporter) exportV2() error {
 	info := server.MetadataServiceV2_ServiceInfo
 	pro, port := getMetadataProtocolAndPort()
+	// v2 only supports triple protocol
 	if pro == constant.DefaultProtocol {
-		port = "-1"
+		return nil
 	}
 	ivkURL := common.NewURLWithOptions(
 		common.WithPath(constant.MetadataServiceV2Name),
@@ -151,22 +151,45 @@ func (exporter *MetadataServiceExporter) exportV2() error {
 func getMetadataProtocolAndPort() (string, string) {
 	rootConfig := config.GetRootConfig()
 	port := rootConfig.Application.MetadataServicePort
-	protocol := "tri"
-	if port == "" {
-		protocolConfig, ok := rootConfig.Protocols[protocol]
-		if ok {
-			port = protocolConfig.Port
+	protocol := rootConfig.Application.MetadataServiceProtocol
+	if protocol != "" && port != "" {
+		return protocol, port
+	}
+
+	var protocolConfig *config.ProtocolConfig
+	for s, pc := range rootConfig.Protocols {
+		if s != constant.DefaultProtocol && s != constant.TriProtocol {
+			continue
+		}
+		if s == protocol {
+			protocolConfig = pc
+			break
+		}
+	}
+
+	if protocol == "" {
+		protocolConfig = rootConfig.Protocols[constant.TriProtocol]
+	}
+
+	if protocolConfig == nil {
+		if protocol == "" || protocol == constant.TriProtocol {
+			protocolConfig = &config.ProtocolConfig{
+				Name: constant.TriProtocol,
+				Port: "0", // use a random port
+			}
 		} else {
-			defaultProtocol := rootConfig.Protocols[constant.DefaultProtocol]
-			if defaultProtocol != nil {
-				port = defaultProtocol.Port
-				protocol = constant.DefaultProtocol
-			} else {
-				port = strconv.Itoa(constant.DefaultPort)
+			protocolConfig = &config.ProtocolConfig{
+				Name: constant.DefaultProtocol,
+				Port: "0", // use a random port
 			}
 		}
 	}
-	return protocol, port
+
+	if port == "" {
+		return protocolConfig.Name, protocolConfig.Port
+	} else {
+		return protocolConfig.Name, port
+	}
 }
 
 // Unexport will unexport the metadataService

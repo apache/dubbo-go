@@ -110,7 +110,7 @@ func buildStandardMetadataServiceURL(ins registry.ServiceInstance) []*common.URL
 
 	metaV := ins.GetMetadata()[constant.MetadataVersion]
 	protocol := ps[constant.ProtocolKey]
-	if metaV != "" {
+	if metaV == constant.MetadataServiceV2Version {
 		protocol = "tri"
 	}
 

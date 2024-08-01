@@ -140,7 +140,7 @@ func ConvertURLArrToIntfArr(urls []*common.URL) []interface{} {
 
 // MetadataServiceV2 is a client for the org.apache.dubbo.metadata.MetadataServiceV2 service.
 type MetadataServiceV2 interface {
-	GetMetadataInfo(ctx context.Context, req *triple_api.Revision) (*triple_api.MetadataInfoV2, error)
+	GetMetadataInfo(ctx context.Context, req *triple_api.MetadataRequest) (*triple_api.MetadataInfoV2, error)
 }
 
 type MetadataServiceProxyFactoryV2 interface {
