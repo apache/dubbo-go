@@ -18,6 +18,7 @@
 package config
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/metadata/service"
 	"sync"
 )
 
@@ -347,9 +348,16 @@ func (rb *RootConfigBuilder) Build() *RootConfig {
 }
 
 func exportMetadataService() {
-	ms, err := extension.GetLocalMetadataService(constant.DefaultKey)
-	msV1, err := extension.GetLocalMetadataServiceV1(constant.MetadataServiceV1)
-	msV2, err := extension.GetLocalMetadataServiceV2(constant.MetadataServiceV2)
+	var (
+		err  error
+		ms   service.MetadataService
+		msV1 service.MetadataServiceV1
+		msV2 service.MetadataServiceV2
+	)
+
+	ms, err = extension.GetLocalMetadataService(constant.DefaultKey)
+	msV1, err = extension.GetLocalMetadataServiceV1(constant.MetadataServiceV1)
+	msV2, err = extension.GetLocalMetadataServiceV2(constant.MetadataServiceV2)
 	if err != nil {
 		logger.Warnf("could not init metadata service", err)
 		return
