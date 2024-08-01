@@ -72,6 +72,9 @@ func (exporter *MetadataServiceExporter) Export() error {
 		defer exporter.lock.Unlock()
 		var err error
 		err = exporter.exportV1()
+		if err != nil {
+			return err
+		}
 		err = exporter.exportV2()
 		return err
 	}

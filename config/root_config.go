@@ -356,10 +356,18 @@ func exportMetadataService() {
 	)
 
 	ms, err = extension.GetLocalMetadataService(constant.DefaultKey)
+	if err != nil {
+		logger.Warn("could not init metadata service", err)
+		return
+	}
 	msV1, err = extension.GetLocalMetadataServiceV1(constant.MetadataServiceV1)
+	if err != nil {
+		logger.Warn("could not init metadata service", err)
+		return
+	}
 	msV2, err = extension.GetLocalMetadataServiceV2(constant.MetadataServiceV2)
 	if err != nil {
-		logger.Warnf("could not init metadata service", err)
+		logger.Warn("could not init metadata service", err)
 		return
 	}
 
