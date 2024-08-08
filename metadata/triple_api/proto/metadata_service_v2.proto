@@ -15,16 +15,33 @@
  * limitations under the License.
  */
 
-package exporter
+syntax = "proto3";
+package org.apache.dubbo.metadata;
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/common"
-)
+option go_package = "dubbo.apache.org/dubbo-go/v3/metadata/triple_api;triple_api";
+option java_package = "org.apache.dubbo.metadata";
+option java_multiple_files = true;
 
-// MetadataServiceExporter will export & unexport the metadata service,  get exported url, and return is exported or not
-type MetadataServiceExporter interface {
-	Export() error
-	Unexport()
-	GetExportedURLs() []*common.URL
-	IsExported() bool
+service MetadataServiceV2{
+    rpc GetMetadataInfo(MetadataRequest) returns (MetadataInfoV2);
+}
+
+message MetadataRequest{
+    string revision = 1;
+}
+
+message MetadataInfoV2{
+    string app = 1;
+    string version = 2;
+    map<string,ServiceInfoV2> services = 3;
+}
+
+message ServiceInfoV2{
+    string name = 1;
+    string group = 2;
+    string version = 3;
+    string protocol = 4;
+    int32 port = 5;
+    string path = 6;
+    map<string,string> params = 7;
 }

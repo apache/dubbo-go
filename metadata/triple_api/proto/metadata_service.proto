@@ -1,0 +1,72 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// The canonical version of this proto can be found at
+// https://github.com/grpc/grpc-proto/blob/master/grpc/health/v1/health.proto
+
+syntax = "proto3";
+
+package org.apache.dubbo.metadata;
+
+option go_package = "dubbo.apache.org/dubbo-go/v3/metadata/triple_api";
+
+import "hessian2_extend/hessian2_extend.proto";
+
+service MetadataService{
+  rpc GetMetadataInfo(MetadataRequest) returns (MetadataInfo){
+
+    option (hessian2_extend.method_extend) = {
+      method_name: "getMetadataInfo";
+    };
+  };
+
+  option (hessian2_extend.service_extend) = {
+    interface_name: "org.apache.dubbo.metadata.MetadataService";
+  };
+}
+
+message MetadataRequest{
+  string revision = 1;
+
+  option (hessian2_extend.message_extend) = {
+    extend_args: true;
+  };
+}
+
+message MetadataInfo{
+  string app = 1;
+  string version = 2;
+  map<string,ServiceInfo> services = 3;
+
+  option (hessian2_extend.message_extend) = {
+    java_class_name: "org.apache.dubbo.metadata.MetadataInfo";
+  };
+}
+
+message ServiceInfo{
+  string name = 1;
+  string group = 2;
+  string version = 3;
+  string protocol = 4;
+  int32 port = 5;
+  string path = 6;
+  map<string,string> params = 7;
+
+  option (hessian2_extend.message_extend) = {
+    java_class_name: "org.apache.dubbo.metadata.MetadataInfo$ServiceInfo";
+  };
+}

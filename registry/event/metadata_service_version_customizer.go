@@ -15,16 +15,28 @@
  * limitations under the License.
  */
 
-package exporter
+package event
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
-// MetadataServiceExporter will export & unexport the metadata service,  get exported url, and return is exported or not
-type MetadataServiceExporter interface {
-	Export() error
-	Unexport()
-	GetExportedURLs() []*common.URL
-	IsExported() bool
+func init() {
+	extension.AddCustomizers(&MetadtaServiceVersionCustomizer{})
+}
+
+// MetadtaServiceVersionCustomizer will try to add meta-v key to instance metadata
+type MetadtaServiceVersionCustomizer struct {
+}
+
+// GetPriority will return 0, which means it will be invoked at the beginning
+func (p *MetadtaServiceVersionCustomizer) GetPriority() int {
+	return 0
+}
+
+// Customize put the the string like [{"protocol": "dubbo", "port": 123}] into instance's metadata
+func (p *MetadtaServiceVersionCustomizer) Customize(instance registry.ServiceInstance) {
+	instance.GetMetadata()[constant.MetadataVersion] = constant.MetadataServiceV2Version
 }

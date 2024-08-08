@@ -20,7 +20,6 @@ package server
 
 import (
 	"context"
-	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	"fmt"
 	"sort"
 	"sync"
@@ -37,6 +36,7 @@ import (
 	dubboutil "dubbo.apache.org/dubbo-go/v3/common/dubboutil"
 	"dubbo.apache.org/dubbo-go/v3/metadata"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	registry_exposed "dubbo.apache.org/dubbo-go/v3/registry/exposed_tmp"
 )
 
@@ -108,7 +108,13 @@ func (ii *infoInvoker) Invoke(ctx context.Context, invocation protocol.Invocatio
 		res, err := method.MethodFunc(ctx, args, ii.svc)
 		result.SetResult(res)
 		if err != nil {
-			result.SetError(triple_protocol.NewError(triple_protocol.CodeBizError, err))
+			var proError *triple_protocol.Error
+			if !errors.As(err, &proError) {
+				err = triple_protocol.NewError(triple_protocol.CodeBizError, err)
+			} else if proError.Code() != triple_protocol.CodeBizError {
+				err = triple_protocol.NewError(proError.Code(), proError.Unwrap())
+			}
+			result.SetError(err)
 		}
 		return result
 	}
@@ -125,6 +131,10 @@ func newInfoInvoker(url *common.URL, info *ServiceInfo, svc common.RPCService) p
 	}
 	invoker.init()
 	return invoker
+}
+
+func NewInternalInvoker(url *common.URL, info *ServiceInfo, svc common.RPCService) protocol.Invoker {
+	return newInfoInvoker(url, info, svc)
 }
 
 // Register assemble invoker chains like ProviderConfig.Load, init a service per call

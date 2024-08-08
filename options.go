@@ -18,6 +18,10 @@
 package dubbo
 
 import (
+	"strconv"
+)
+
+import (
 	log "github.com/dubbogo/gost/log/logger"
 )
 
@@ -327,6 +331,18 @@ func WithRemoteMetadata() InstanceOption {
 func WithTag(tag string) InstanceOption {
 	return func(opts *InstanceOptions) {
 		opts.Application.Tag = tag
+	}
+}
+
+func WithMetadataServicePort(port int) InstanceOption {
+	return func(insOpts *InstanceOptions) {
+		insOpts.Application.MetadataServicePort = strconv.Itoa(port)
+	}
+}
+
+func WithMetadataServiceProtocol(protocol string) InstanceOption {
+	return func(insOpts *InstanceOptions) {
+		insOpts.Application.MetadataServiceProtocol = protocol
 	}
 }
 

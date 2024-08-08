@@ -38,6 +38,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
+	"dubbo.apache.org/dubbo-go/v3/metadata/service"
 	"dubbo.apache.org/dubbo-go/v3/metadata/service/exporter"
 )
 
@@ -347,9 +348,26 @@ func (rb *RootConfigBuilder) Build() *RootConfig {
 }
 
 func exportMetadataService() {
-	ms, err := extension.GetLocalMetadataService(constant.DefaultKey)
+	var (
+		err  error
+		ms   service.MetadataService
+		msV1 service.MetadataServiceV1
+		msV2 service.MetadataServiceV2
+	)
+
+	ms, err = extension.GetLocalMetadataService(constant.DefaultKey)
 	if err != nil {
-		logger.Warnf("could not init metadata service", err)
+		logger.Warn("could not init metadata service", err)
+		return
+	}
+	msV1, err = extension.GetLocalMetadataServiceV1(constant.MetadataServiceV1)
+	if err != nil {
+		logger.Warn("could not init metadata service", err)
+		return
+	}
+	msV2, err = extension.GetLocalMetadataServiceV2(constant.MetadataServiceV2)
+	if err != nil {
+		logger.Warn("could not init metadata service", err)
 		return
 	}
 
@@ -364,23 +382,18 @@ func exportMetadataService() {
 	// So using sync.Once will result in dead lock
 	exporting.Store(true)
 
-	expt := extension.GetMetadataServiceExporter(constant.DefaultKey, ms)
+	expt := extension.GetMetadataServiceExporter(constant.DefaultKey, ms, msV1, msV2)
 	if expt == nil {
 		logger.Warnf("get metadata service exporter failed, pls check if you import _ \"dubbo.apache.org/dubbo-go/v3/metadata/service/exporter/configurable\"")
 		return
 	}
 
-	err = expt.Export(nil)
+	err = expt.Export()
 	if err != nil {
 		logger.Errorf("could not export the metadata service, err = %s", err.Error())
 		return
 	}
 
-	// report interface-app mapping
-	err = publishMapping(expt)
-	if err != nil {
-		logger.Errorf("Publish interface-application mapping failed, got error %#v", err)
-	}
 }
 
 // OnEvent only handle ServiceConfigExportedEvent

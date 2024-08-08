@@ -233,7 +233,7 @@ func (s *ServiceDiscoveryRegistry) SubscribeURL(url *common.URL, notify registry
 	// FIXME ServiceNames.String() is not good
 	var err error
 	serviceNamesKey := services.String()
-	protocol := "tri" // consume "tri" protocol by default, other protocols need to be specified on reference/consumer explicitly
+	protocol := constant.TriProtocol // consume "tri" protocol by default, other protocols need to be specified on reference/consumer explicitly
 	if url.Protocol != "" {
 		protocol = url.Protocol
 	}

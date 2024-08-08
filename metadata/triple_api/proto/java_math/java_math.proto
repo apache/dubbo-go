@@ -15,16 +15,12 @@
  * limitations under the License.
  */
 
-package exporter
+syntax = "proto3";
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/common"
-)
+package java_math;
 
-// MetadataServiceExporter will export & unexport the metadata service,  get exported url, and return is exported or not
-type MetadataServiceExporter interface {
-	Export() error
-	Unexport()
-	GetExportedURLs() []*common.URL
-	IsExported() bool
-}
+option go_package = "dubbo.apache.org/dubbo-go/v3/proto/java_math;java_math";
+
+message Decimal {}
+
+message Integer {}

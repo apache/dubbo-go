@@ -26,12 +26,12 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	_ "dubbo.apache.org/dubbo-go/v3/filter/filter_impl"
 	"dubbo.apache.org/dubbo-go/v3/metadata/service/local"
 	_ "dubbo.apache.org/dubbo-go/v3/metrics/prometheus"
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/dubbo"
+	_ "dubbo.apache.org/dubbo-go/v3/protocol/triple"
 	_ "dubbo.apache.org/dubbo-go/v3/proxy/proxy_factory"
 	"dubbo.apache.org/dubbo-go/v3/remoting/getty"
 )
@@ -56,16 +56,15 @@ func TestConfigurableExporter(t *testing.T) {
 	})
 	mockInitProviderWithSingleRegistry()
 	metadataService, _ := local.GetLocalMetadataService()
-	exported := NewMetadataServiceExporter(metadataService)
+	metadataServiceV1, _ := local.GetLocalMetadataServiceV1()
+	metadataServiceV2, _ := local.GetLocalMetadataServiceV2()
+	exported := NewMetadataServiceExporter(metadataService, metadataServiceV1, metadataServiceV2)
 
 	t.Run("configurableExporter", func(t *testing.T) {
-		registryURL, _ := common.NewURL("service-discovery://localhost:12345")
-		subURL, _ := common.NewURL("dubbo://localhost:20003")
-		registryURL.SubURL = subURL
 		assert.Equal(t, false, exported.IsExported())
-		assert.NoError(t, exported.Export(registryURL))
+		assert.NoError(t, exported.Export())
 		assert.Equal(t, true, exported.IsExported())
-		assert.Regexp(t, "dubbo://:[0-9]{1,}/org.apache.dubbo.metadata.MetadataService*", exported.GetExportedURLs()[0].String())
+		assert.Regexp(t, "tri://:[0-9]{1,}/org.apache.dubbo.metadata.MetadataService*", exported.GetExportedURLs()[0].String())
 		exported.Unexport()
 		assert.Equal(t, false, exported.IsExported())
 	})

@@ -15,16 +15,34 @@
  * limitations under the License.
  */
 
-package exporter
+syntax = "proto3";
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/common"
-)
+package java8_time;
 
-// MetadataServiceExporter will export & unexport the metadata service,  get exported url, and return is exported or not
-type MetadataServiceExporter interface {
-	Export() error
-	Unexport()
-	GetExportedURLs() []*common.URL
-	IsExported() bool
-}
+option go_package = "dubbo.apache.org/dubbo-go/v3/proto/java8_time;java8_time";
+
+message Duration{}
+
+message Instant {}
+
+message LocalDate{}
+
+message LocalDateTime{}
+
+message LocalTime{}
+
+message MonthDay{}
+
+message OffsetDateTime{}
+
+message OffsetTime{}
+
+message Period{}
+
+message Year{}
+
+message YearMonth{}
+
+message ZoneOffSet{}
+
+message ZonedDateTime{}

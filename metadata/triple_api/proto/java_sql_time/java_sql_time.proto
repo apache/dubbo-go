@@ -15,16 +15,12 @@
  * limitations under the License.
  */
 
-package exporter
+syntax = "proto3";
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/common"
-)
+package java_sql_time;
 
-// MetadataServiceExporter will export & unexport the metadata service,  get exported url, and return is exported or not
-type MetadataServiceExporter interface {
-	Export() error
-	Unexport()
-	GetExportedURLs() []*common.URL
-	IsExported() bool
-}
+option go_package = "dubbo.apache.org/dubbo-go/v3/proto/java_sql_time;java_sql_time";
+
+message Time {}
+
+message Date {}

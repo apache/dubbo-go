@@ -27,6 +27,7 @@ const (
 	OverrideProtocol = "override" //compatible with 2.6.x
 	EmptyProtocol    = "empty"
 	RouterProtocol   = "router"
+	TriProtocol      = "tri"
 )
 
 const (

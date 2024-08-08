@@ -18,6 +18,7 @@
 package common
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -26,6 +27,8 @@ import (
 import (
 	"github.com/dubbogo/gost/log/logger"
 	gxnet "github.com/dubbogo/gost/net"
+
+	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -105,4 +108,13 @@ func IsMatchGlobPattern(pattern, value string) bool {
 		suffix := pattern[i+1:]
 		return strings.HasPrefix(value, prefix) && strings.HasSuffix(value, suffix)
 	}
+}
+
+func GetRandomPort(ip string) string {
+	tcp, err := gxnet.ListenOnTCPRandomPort(ip)
+	if err != nil {
+		panic(perrors.New(fmt.Sprintf("Get tcp port error, err is {%v}", err)))
+	}
+	defer tcp.Close()
+	return strings.Split(tcp.Addr().String(), ":")[1]
 }
