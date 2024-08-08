@@ -45,10 +45,10 @@ func NewTripleExporter(key string, invoker protocol.Invoker, exporterMap *sync.M
 // UnExport and unregister Triple service from registry and memory.
 func (te *TripleExporter) UnExport() {
 	interfaceName := te.GetInvoker().GetURL().GetParam(constant.InterfaceKey, "")
-	te.BaseExporter.UnExport()
 	// todo: move UnRegister logic to a better place
 	err := common.ServiceMap.UnRegister(interfaceName, TRIPLE, te.GetInvoker().GetURL().ServiceKey())
 	if err != nil {
 		logger.Errorf("[GrpcNewExporter.UnExport] error: %v", err)
 	}
+	te.BaseExporter.UnExport()
 }
