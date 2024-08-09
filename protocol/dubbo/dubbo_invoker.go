@@ -193,7 +193,6 @@ func (di *DubboInvoker) IsAvailable() bool {
 // Destroy destroy dubbo client invoker.
 func (di *DubboInvoker) Destroy() {
 	di.quitOnce.Do(func() {
-		di.BaseInvoker.Destroy()
 		client := di.getClient()
 		if client != nil {
 			activeNumber := client.DecreaseActiveNumber()
@@ -203,6 +202,7 @@ func (di *DubboInvoker) Destroy() {
 				client.Close()
 			}
 		}
+		di.BaseInvoker.Destroy()
 	})
 }
 

@@ -784,10 +784,9 @@ func (c *URL) MergeURL(anotherUrl *URL) *URL {
 	for key, value := range anotherUrl.GetParams() {
 		if _, ok := mergedURL.GetNonDefaultParam(key); !ok {
 			if len(value) > 0 {
-				params[key] = value
+				params[key] = make([]string, len(value))
+				copy(params[key], value)
 			}
-			params[key] = make([]string, len(value))
-			copy(params[key], value)
 		}
 	}
 

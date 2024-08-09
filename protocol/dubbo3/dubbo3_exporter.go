@@ -52,10 +52,10 @@ func NewDubboExporter(key string, invoker protocol.Invoker, exporterMap *sync.Ma
 func (de *DubboExporter) UnExport() {
 	url := de.GetInvoker().GetURL()
 	interfaceName := url.GetParam(constant.InterfaceKey, "")
-	de.BaseExporter.UnExport()
 	err := common.ServiceMap.UnRegister(interfaceName, tripleConstant.TRIPLE, url.ServiceKey())
 	if err != nil {
 		logger.Errorf("[DubboExporter.UnExport] error: %v", err)
 	}
 	de.serviceMap.Delete(interfaceName)
+	de.BaseExporter.UnExport()
 }
