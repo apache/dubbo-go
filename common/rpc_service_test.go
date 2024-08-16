@@ -37,6 +37,7 @@ const (
 	testInterfaceName             = "testService"
 	testProtocol                  = "testprotocol"
 	testSuiteMethodExpectedString = "interface {}"
+	testTripleServiceName         = "com.test.TriplePath"
 )
 
 type TestService struct{}
@@ -88,6 +89,12 @@ type TestService1 struct{}
 
 func (s *TestService1) Reference() string {
 	return referenceTestPathDistinct
+}
+
+type TestTriplePBService struct{}
+
+func (s *TestTriplePBService) XXX_InterfaceName() string {
+	return testTripleServiceName
 }
 
 func TestServiceMapRegister(t *testing.T) {
@@ -250,4 +257,8 @@ func TestGetReference(t *testing.T) {
 	}{}
 	ref5 := GetReference(s5)
 	assert.Equal(t, expectedReference, ref5)
+
+	s6 := &TestTriplePBService{}
+	ref6 := GetReference(s6)
+	assert.Equal(t, testTripleServiceName, ref6)
 }

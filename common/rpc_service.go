@@ -52,10 +52,14 @@ type TriplePBService interface {
 }
 
 // GetReference return the reference id of the service.
-// If the service implemented the ReferencedRPCService interface,
+// If the service implemented the TriplePBService or ReferencedRPCService interface,
 // it will call the Reference method. If not, it will
 // return the struct name as the reference id.
 func GetReference(service RPCService) string {
+	if s, ok := service.(TriplePBService); ok {
+		return s.XXX_InterfaceName()
+	}
+
 	if s, ok := service.(ReferencedRPCService); ok {
 		return s.Reference()
 	}
