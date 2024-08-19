@@ -51,7 +51,7 @@ var healthServer *HealthTripleServer
 
 func NewServer() *HealthTripleServer {
 	return &HealthTripleServer{
-		statusMap: map[string]triple_health.HealthCheckResponse_ServingStatus{"": triple_health.HealthCheckResponse_NOT_SERVING},
+		statusMap: map[string]triple_health.HealthCheckResponse_ServingStatus{"": triple_health.HealthCheckResponse_SERVING},
 		updates:   make(map[string]map[triple_health.Health_WatchServer]chan triple_health.HealthCheckResponse_ServingStatus),
 	}
 }
