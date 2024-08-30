@@ -46,9 +46,9 @@ func NewRestExporter(key string, invoker protocol.Invoker, exporterMap *sync.Map
 // Unexport unexport the RestExporter
 func (re *RestExporter) UnExport() {
 	interfaceName := re.GetInvoker().GetURL().GetParam(constant.InterfaceKey, "")
-	re.BaseExporter.UnExport()
 	err := common.ServiceMap.UnRegister(interfaceName, REST, re.GetInvoker().GetURL().ServiceKey())
 	if err != nil {
 		logger.Errorf("[RestExporter.UnExport] error: %v", err)
 	}
+	re.BaseExporter.UnExport()
 }

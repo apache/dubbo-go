@@ -88,11 +88,12 @@ func (bi *BaseInvoker) Invoke(context context.Context, invocation Invocation) Re
 	return &RPCResult{}
 }
 
-// Destroy changes available and destroyed flag
+// Destroy changes available and destroyed flag and release the url's allocated memory
 func (bi *BaseInvoker) Destroy() {
 	logger.Infof("Destroy invoker: %s", bi.GetURL())
 	bi.destroyed.Store(true)
 	bi.available.Store(false)
+	bi.url = nil
 }
 
 func (bi *BaseInvoker) String() string {
