@@ -101,7 +101,7 @@ func (pi *PassThroughProxyInvoker) Invoke(ctx context.Context, invocation protoc
 	}
 	method := srv.Method()["Service"]
 
-	in := make([]reflect.Value, 5)
+	in := make([]reflect.Value, 0, 5)
 	in = append(in, srv.Rcvr())
 	in = append(in, reflect.ValueOf(invocation.MethodName()))
 	in = append(in, reflect.ValueOf(invocation.GetAttachmentInterface(constant.ParamsTypeKey)))
