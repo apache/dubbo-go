@@ -20,12 +20,12 @@ jobs:
         golang:
           - '1.20'
     steps:
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.go_version }}
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v3.4.0
+        uses: golangci/golangci-lint-action@v6
         with:
           version: v1.54
           args: --timeout=10m
