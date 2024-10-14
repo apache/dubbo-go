@@ -177,7 +177,7 @@ func (di *DubboInvoker) getTimeout(ivc *invocation.RPCInvocation) time.Duration 
 		}
 	}
 	// set timeout into invocation
-	ivc.SetAttachment(constant.TimeoutKey, strconv.Itoa(int(timeout.Nanoseconds())))
+	ivc.SetAttachment(constant.TimeoutKey, strconv.Itoa(int(timeout.Milliseconds())))
 	return timeout
 }
 
