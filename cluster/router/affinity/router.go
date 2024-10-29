@@ -61,7 +61,7 @@ func (s *ServiceAffinityRoute) Notify(invokers []protocol.Invoker) {
 
 	dynamicConfiguration := conf.GetEnvInstance().GetDynamicConfiguration()
 	if dynamicConfiguration == nil {
-		logger.Infof("Config center does not start, Condition router will not be enabled")
+		logger.Infof("Config center does not start, Affinity router will not be enabled")
 		return
 	}
 
@@ -101,19 +101,19 @@ func (s *ApplicationAffinityRoute) Notify(invokers []protocol.Invoker) {
 	}
 	url := invokers[0].GetURL()
 	if url == nil {
-		logger.Error("Failed to notify a dynamically condition rule, because url is empty")
+		logger.Error("Failed to notify a dynamically affinity rule, because url is empty")
 		return
 	}
 
 	dynamicConfiguration := conf.GetEnvInstance().GetDynamicConfiguration()
 	if dynamicConfiguration == nil {
-		logger.Infof("Config center does not start, Condition router will not be enabled")
+		logger.Infof("Config center does not start, Affinity router will not be enabled")
 		return
 	}
 
 	providerApplication := url.GetParam("application", "")
 	if providerApplication == "" || providerApplication == s.currentApplication {
-		logger.Warn("condition router get providerApplication is empty, will not subscribe to provider app rules.")
+		logger.Warn("Affinity router get providerApplication is empty, will not subscribe to provider app rules.")
 		return
 	}
 
@@ -127,7 +127,7 @@ func (s *ApplicationAffinityRoute) Notify(invokers []protocol.Invoker) {
 		dynamicConfiguration.AddListener(key, s)
 		value, err := dynamicConfiguration.GetRule(key)
 		if err != nil {
-			logger.Errorf("Failed to query condition rule, key=%s, err=%v", key, err)
+			logger.Errorf("Failed to query affinity rule, key=%s, err=%v", key, err)
 			return
 		}
 
