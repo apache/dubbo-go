@@ -94,7 +94,7 @@ func NewDefault() *Logger {
 		lg  *zap.SugaredLogger
 		err error
 	)
-	if lv, err = zapcore.ParseLevel("info"); err != nil {
+	if lv, err = zapcore.ParseLevel("debug"); err != nil {
 		lv = zapcore.InfoLevel
 	}
 	encoder := zapcore.NewConsoleEncoder(encoderConfig())
