@@ -99,7 +99,7 @@ func NewDefault() *Logger {
 	}
 	encoder := zapcore.NewConsoleEncoder(encoderConfig())
 	lg = zap.New(zapcore.NewCore(encoder, zapcore.AddSync(os.Stdout), lv),
-		zap.AddCaller(), zap.AddCallerSkip(1)).Sugar()
+		zap.AddCaller(), zap.AddCallerSkip(2)).Sugar()
 	return &Logger{lg: lg}
 }
 
