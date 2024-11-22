@@ -1207,7 +1207,7 @@ func TestWithKeepAliveConfig(t *testing.T) {
 			},
 		},
 		{
-			desc: "config keepalive with larger than 10s",
+			desc: "config keepalive interval with larger than 10s",
 			opts: []ClientOption{
 				WithKeepAliveInterval(time.Second * 20),
 			},
@@ -1217,7 +1217,7 @@ func TestWithKeepAliveConfig(t *testing.T) {
 			},
 		},
 		{
-			desc: "config keepalive with larger than 10s",
+			desc: "config keepalive interval and timeout",
 			opts: []ClientOption{
 				WithKeepAliveInterval(time.Second * 20),
 				WithKeepAliveTimeout(time.Second * 30),
@@ -1229,7 +1229,7 @@ func TestWithKeepAliveConfig(t *testing.T) {
 			},
 		},
 		{
-			desc: "default keepalive",
+			desc: "default config",
 			opts: []ClientOption{},
 			verify: func(t *testing.T, cli *Client, err error) {
 				assert.Nil(t, err)
