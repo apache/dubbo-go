@@ -23,28 +23,30 @@ import (
 
 // ReferenceConfig is the configuration of service consumer
 type ReferenceConfig struct {
-	InterfaceName    string            `yaml:"interface"  json:"interface,omitempty" property:"interface"`
-	Check            *bool             `yaml:"check"  json:"check,omitempty" property:"check"`
-	URL              string            `yaml:"url"  json:"url,omitempty" property:"url"`
-	Filter           string            `yaml:"filter" json:"filter,omitempty" property:"filter"`
-	Protocol         string            `yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
-	RegistryIDs      []string          `yaml:"registry-ids"  json:"registry-ids,omitempty"  property:"registry-ids"`
-	Cluster          string            `yaml:"cluster"  json:"cluster,omitempty" property:"cluster"`
-	Loadbalance      string            `yaml:"loadbalance"  json:"loadbalance,omitempty" property:"loadbalance"`
-	Retries          string            `yaml:"retries"  json:"retries,omitempty" property:"retries"`
-	Group            string            `yaml:"group"  json:"group,omitempty" property:"group"`
-	Version          string            `yaml:"version"  json:"version,omitempty" property:"version"`
-	Serialization    string            `yaml:"serialization" json:"serialization" property:"serialization"`
-	ProvidedBy       string            `yaml:"provided_by"  json:"provided_by,omitempty" property:"provided_by"`
-	Methods          []*MethodConfig   `yaml:"methods"  json:"methods,omitempty" property:"methods"`
-	Async            bool              `yaml:"async"  json:"async,omitempty" property:"async"`
-	Params           map[string]string `yaml:"params"  json:"params,omitempty" property:"params"`
-	Generic          string            `yaml:"generic"  json:"generic,omitempty" property:"generic"`
-	Sticky           bool              `yaml:"sticky"   json:"sticky,omitempty" property:"sticky"`
-	RequestTimeout   string            `yaml:"timeout"  json:"timeout,omitempty" property:"timeout"`
-	ForceTag         bool              `yaml:"force.tag"  json:"force.tag,omitempty" property:"force.tag"`
-	TracingKey       string            `yaml:"tracing-key" json:"tracing-key,omitempty" propertiy:"tracing-key"`
-	MeshProviderPort int               `yaml:"mesh-provider-port" json:"mesh-provider-port,omitempty" propertiy:"mesh-provider-port"`
+	InterfaceName     string            `yaml:"interface"  json:"interface,omitempty" property:"interface"`
+	Check             *bool             `yaml:"check"  json:"check,omitempty" property:"check"`
+	URL               string            `yaml:"url"  json:"url,omitempty" property:"url"`
+	Filter            string            `yaml:"filter" json:"filter,omitempty" property:"filter"`
+	Protocol          string            `yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
+	RegistryIDs       []string          `yaml:"registry-ids"  json:"registry-ids,omitempty"  property:"registry-ids"`
+	Cluster           string            `yaml:"cluster"  json:"cluster,omitempty" property:"cluster"`
+	Loadbalance       string            `yaml:"loadbalance"  json:"loadbalance,omitempty" property:"loadbalance"`
+	Retries           string            `yaml:"retries"  json:"retries,omitempty" property:"retries"`
+	Group             string            `yaml:"group"  json:"group,omitempty" property:"group"`
+	Version           string            `yaml:"version"  json:"version,omitempty" property:"version"`
+	Serialization     string            `yaml:"serialization" json:"serialization" property:"serialization"`
+	ProvidedBy        string            `yaml:"provided_by"  json:"provided_by,omitempty" property:"provided_by"`
+	Methods           []*MethodConfig   `yaml:"methods"  json:"methods,omitempty" property:"methods"`
+	Async             bool              `yaml:"async"  json:"async,omitempty" property:"async"`
+	Params            map[string]string `yaml:"params"  json:"params,omitempty" property:"params"`
+	Generic           string            `yaml:"generic"  json:"generic,omitempty" property:"generic"`
+	Sticky            bool              `yaml:"sticky"   json:"sticky,omitempty" property:"sticky"`
+	RequestTimeout    string            `yaml:"timeout"  json:"timeout,omitempty" property:"timeout"`
+	ForceTag          bool              `yaml:"force.tag"  json:"force.tag,omitempty" property:"force.tag"`
+	TracingKey        string            `yaml:"tracing-key" json:"tracing-key,omitempty" propertiy:"tracing-key"`
+	MeshProviderPort  int               `yaml:"mesh-provider-port" json:"mesh-provider-port,omitempty" propertiy:"mesh-provider-port"`
+	KeepAliveInterval string            `yaml:"keep-alive-interval" json:"keep-alive-interval,omitempty" property:"keep-alive-interval"`
+	KeepAliveTimeout  string            `yaml:"keep-alive-timeout" json:"keep-alive-timeout,omitempty" property:"keep-alive-timeout"`
 }
 
 func DefaultReferenceConfig() *ReferenceConfig {
@@ -53,6 +55,8 @@ func DefaultReferenceConfig() *ReferenceConfig {
 		//Protocol: "tri",
 		Methods: make([]*MethodConfig, 0, 8),
 		//Params:   make(map[string]string, 8),
+		KeepAliveInterval: "10s",
+		KeepAliveTimeout:  "20s",
 	}
 }
 
@@ -121,6 +125,12 @@ func (c *ReferenceConfig) GetOptions() []ReferenceOption {
 	if c.MeshProviderPort != 0 {
 		refOpts = append(refOpts, WithReference_MeshProviderPort(c.MeshProviderPort))
 	}
+	if c.KeepAliveInterval != "" {
+		refOpts = append(refOpts, WithReference_KeepAliveInterval(c.KeepAliveInterval))
+	}
+	if c.KeepAliveTimeout != "" {
+		refOpts = append(refOpts, WithReference_KeepAliveTimeout(c.KeepAliveTimeout))
+	}
 	return refOpts
 }
 
@@ -153,28 +163,30 @@ func (c *ReferenceConfig) Clone() *ReferenceConfig {
 	}
 
 	return &ReferenceConfig{
-		InterfaceName:    c.InterfaceName,
-		Check:            newCheck,
-		URL:              c.URL,
-		Filter:           c.Filter,
-		Protocol:         c.Protocol,
-		RegistryIDs:      newRegistryIDs,
-		Cluster:          c.Cluster,
-		Loadbalance:      c.Loadbalance,
-		Retries:          c.Retries,
-		Group:            c.Group,
-		Version:          c.Version,
-		Serialization:    c.Serialization,
-		ProvidedBy:       c.ProvidedBy,
-		Methods:          newMethods,
-		Async:            c.Async,
-		Params:           newParams,
-		Generic:          c.Generic,
-		Sticky:           c.Sticky,
-		RequestTimeout:   c.RequestTimeout,
-		ForceTag:         c.ForceTag,
-		TracingKey:       c.TracingKey,
-		MeshProviderPort: c.MeshProviderPort,
+		InterfaceName:     c.InterfaceName,
+		Check:             newCheck,
+		URL:               c.URL,
+		Filter:            c.Filter,
+		Protocol:          c.Protocol,
+		RegistryIDs:       newRegistryIDs,
+		Cluster:           c.Cluster,
+		Loadbalance:       c.Loadbalance,
+		Retries:           c.Retries,
+		Group:             c.Group,
+		Version:           c.Version,
+		Serialization:     c.Serialization,
+		ProvidedBy:        c.ProvidedBy,
+		Methods:           newMethods,
+		Async:             c.Async,
+		Params:            newParams,
+		Generic:           c.Generic,
+		Sticky:            c.Sticky,
+		RequestTimeout:    c.RequestTimeout,
+		ForceTag:          c.ForceTag,
+		TracingKey:        c.TracingKey,
+		MeshProviderPort:  c.MeshProviderPort,
+		KeepAliveInterval: c.KeepAliveInterval,
+		KeepAliveTimeout:  c.KeepAliveTimeout,
 	}
 }
 
@@ -305,5 +317,17 @@ func WithReference_TracingKey(tracingKey string) ReferenceOption {
 func WithReference_MeshProviderPort(port int) ReferenceOption {
 	return func(cfg *ReferenceConfig) {
 		cfg.MeshProviderPort = port
+	}
+}
+
+func WithReference_KeepAliveInterval(interval string) ReferenceOption {
+	return func(cfg *ReferenceConfig) {
+		cfg.KeepAliveInterval = interval
+	}
+}
+
+func WithReference_KeepAliveTimeout(timeout string) ReferenceOption {
+	return func(cfg *ReferenceConfig) {
+		cfg.KeepAliveTimeout = timeout
 	}
 }
