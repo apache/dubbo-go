@@ -270,7 +270,12 @@ func (s *Server) handleServiceWithInfo(interfaceName string, invoker protocol.In
 					ctx = context.WithValue(ctx, constant.AttachmentKey, attachments)
 					invo := invocation.NewRPCInvocation(m.Name, args, attachments)
 					res := invoker.Invoke(ctx, invo)
-					return res.Result().(*tri.Response), res.Error()
+					if triResp, ok := res.Result().(*tri.Response); ok {
+						return triResp, res.Error()
+					}
+					// please refer to proxy/proxy_factory/ProxyInvoker.Invoke
+					triResp := tri.NewResponse([]interface{}{res.Result()})
+					return triResp, res.Error()
 				},
 				opts...,
 			)

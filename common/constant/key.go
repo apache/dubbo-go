@@ -51,7 +51,7 @@ const (
 	TokenKey               = "token"
 	LocalAddr              = "local-addr"
 	RemoteAddr             = "remote-addr"
-	DefaultRemotingTimeout = 3000
+	DefaultRemotingTimeout = 1000
 	ReleaseKey             = "release"
 	AnyhostKey             = "anyhost"
 	PortKey                = "port"
