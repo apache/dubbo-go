@@ -86,7 +86,7 @@ func (lstn *ServiceInstancesChangedListenerImpl) OnEvent(e observer.Event) error
 	if !ok {
 		return nil
 	}
-
+	var err error
 	lstn.mutex.Lock()
 	defer lstn.mutex.Unlock()
 
@@ -120,7 +120,7 @@ func (lstn *ServiceInstancesChangedListenerImpl) OnEvent(e observer.Event) error
 				if val, ok := metaCache.Get(revision); ok {
 					metadataInfo = val.(*info.MetadataInfo)
 				} else {
-					metadataInfo, err := GetMetadataInfo(lstn.app, instance, revision)
+					metadataInfo, err = GetMetadataInfo(lstn.app, instance, revision)
 					if err != nil {
 						return err
 					}
