@@ -22,7 +22,7 @@ jobs:
     steps:
       - uses: actions/setup-go@v5
         with:
-          go-version: ${{ matrix.go_version }}
+          go-version: ${{ matrix.golang }}
       - uses: actions/checkout@v4
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3.4.0
