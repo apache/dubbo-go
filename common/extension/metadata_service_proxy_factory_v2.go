@@ -17,34 +17,32 @@
 
 package extension
 
-import (
-	"fmt"
-)
+// import (
+// 	"fmt"
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
-)
+// 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+// 	//"dubbo.apache.org/dubbo-go/v3/metadata/service"
+// )
 
-	//"dubbo.apache.org/dubbo-go/v3/metadata/service"
-var metadataServiceProxyFactoryMapV2 = make(map[string]func() service.MetadataServiceProxyFactoryV2, 2)
+// var metadataServiceProxyFactoryMapV2 = make(map[string]func() service.MetadataServiceProxyFactoryV2, 2)
 
-type MetadataServiceProxyFactoryFuncV2 func() service.MetadataServiceProxyFactoryV2
+// type MetadataServiceProxyFactoryFuncV2 func() service.MetadataServiceProxyFactoryV2
 
-// SetMetadataServiceProxyFactory store the name-creator pair
-func SetMetadataServiceProxyFactoryV2(name string, creator MetadataServiceProxyFactoryFuncV2) {
-	metadataServiceProxyFactoryMapV2[name] = creator
-}
+// // SetMetadataServiceProxyFactory store the name-creator pair
+// func SetMetadataServiceProxyFactoryV2(name string, creator MetadataServiceProxyFactoryFuncV2) {
+// 	metadataServiceProxyFactoryMapV2[name] = creator
+// }
 
-// GetMetadataServiceProxyFactory will create an instance.
-// it will panic if the factory with name not found
-func GetMetadataServiceProxyFactoryV2(name string) service.MetadataServiceProxyFactoryV2 {
-	if name == "" {
-		name = constant.DefaultKey
-	}
-	if f, ok := metadataServiceProxyFactoryMapV2[name]; ok {
-		return f()
-	}
-	panic(fmt.Sprintf("could not find the metadata service factory creator for name: %s, "+
-		"please check whether you have imported relative packages, "+
-		"local - dubbo.apache.org/dubbo-go/v3/metadata/service/local", name))
-}
+// // GetMetadataServiceProxyFactory will create an instance.
+// // it will panic if the factory with name not found
+// func GetMetadataServiceProxyFactoryV2(name string) service.MetadataServiceProxyFactoryV2 {
+// 	if name == "" {
+// 		name = constant.DefaultKey
+// 	}
+// 	if f, ok := metadataServiceProxyFactoryMapV2[name]; ok {
+// 		return f()
+// 	}
+// 	panic(fmt.Sprintf("could not find the metadata service factory creator for name: %s, "+
+// 		"please check whether you have imported relative packages, "+
+// 		"local - dubbo.apache.org/dubbo-go/v3/metadata/service/local", name))
+// }
