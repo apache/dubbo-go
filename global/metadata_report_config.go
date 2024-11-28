@@ -27,8 +27,6 @@ type MetadataReportConfig struct {
 	Group     string            `yaml:"group" json:"group,omitempty"`
 	Namespace string            `yaml:"namespace" json:"namespace,omitempty"`
 	Params    map[string]string `yaml:"params"  json:"parameters,omitempty"`
-	// metadataType of this application is defined by application config, local or remote
-	metadataType string
 }
 
 func DefaultMetadataReportConfig() *MetadataReportConfig {

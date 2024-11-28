@@ -15,33 +15,13 @@
  * limitations under the License.
  */
 
-package graceful_shutdown
-
-import (
-	"time"
-)
-
-import (
-	hessian "github.com/apache/dubbo-go-hessian2"
-
-	"github.com/dubbogo/gost/log/logger"
-)
+package report
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 )
 
-func init() {
-	hessian.RegisterPOJO(&common.URL{})
-}
-
-func parseDuration(timeout string, desc string, def time.Duration) time.Duration {
-	res, err := time.ParseDuration(timeout)
-	if err != nil {
-		logger.Errorf("The %s configuration is invalid: %s, and we will use the default value: %s, err: %v",
-			desc, timeout, def.String(), err)
-		res = def
-	}
-
-	return res
+// MetadataReportFactory interface will create metadata report
+type MetadataReportFactory interface {
+	CreateMetadataReport(*common.URL) MetadataReport
 }

@@ -19,65 +19,40 @@
 package metadata
 
 import (
-	"github.com/dubbogo/gost/log/logger"
-
-	"go.uber.org/atomic"
-)
-
-import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/metadata/service"
+	"dubbo.apache.org/dubbo-go/v3/metadata/info"
 )
 
 var (
-	exporting = &atomic.Bool{}
+	registryMetadataInfo                 = make(map[string]*info.MetadataInfo)
+	metadataService      MetadataService = &DefaultMetadataService{metadataMap: registryMetadataInfo}
 )
 
-func ExportMetadataService() {
-	var (
-		err  error
-		ms   service.MetadataService
-		msV1 service.MetadataServiceV1
-		msV2 service.MetadataServiceV2
-	)
+func GetMetadataService() MetadataService {
+	return metadataService
+}
 
-	ms, err = extension.GetLocalMetadataService(constant.DefaultKey)
-	if err != nil {
-		logger.Warn("could not init metadata service", err)
-		return
-	}
-	msV1, err = extension.GetLocalMetadataServiceV1(constant.MetadataServiceV1)
-	if err != nil {
-		logger.Warn("could not init metadata service", err)
-		return
-	}
-	msV2, err = extension.GetLocalMetadataServiceV2(constant.MetadataServiceV2)
-	if err != nil {
-		logger.Warn("could not init metadata service", err)
-		return
-	}
+func GetMetadataInfo(registryId string) *info.MetadataInfo {
+	return registryMetadataInfo[registryId]
+}
 
-	if exporting.Load() {
-		return
+func AddService(registryId string, url *common.URL) {
+	if _, exist := registryMetadataInfo[registryId]; !exist {
+		registryMetadataInfo[registryId] = info.NewMetadataInfo(
+			url.GetParam(constant.ApplicationKey, ""),
+			url.GetParam(constant.ApplicationTagKey, ""),
+		)
 	}
+	registryMetadataInfo[registryId].AddService(url)
+}
 
-	// In theory, we can use sync.Once
-	// But sync.Once is not reentrant.
-	// Now the invocation chain is createRegistry -> tryInitMetadataService -> metadataServiceExporter.export
-	// -> createRegistry -> initMetadataService...
-	// So using sync.Once will result in dead lock
-	exporting.Store(true)
-
-	expt := extension.GetMetadataServiceExporter(constant.DefaultKey, ms, msV1, msV2)
-	if expt == nil {
-		logger.Warnf("get metadata service exporter failed, pls check if you import _ \"dubbo.apache.org/dubbo-go/v3/metadata/service/exporter/configurable\"")
-		return
+func AddSubscribeURL(registryId string, url *common.URL) {
+	if _, exist := registryMetadataInfo[registryId]; !exist {
+		registryMetadataInfo[registryId] = info.NewMetadataInfo(
+			url.GetParam(constant.ApplicationKey, ""),
+			url.GetParam(constant.ApplicationTagKey, ""),
+		)
 	}
-
-	err = expt.Export()
-	if err != nil {
-		logger.Errorf("could not export the metadata service, err = %s", err.Error())
-		return
-	}
+	registryMetadataInfo[registryId].AddSubscribeURL(url)
 }

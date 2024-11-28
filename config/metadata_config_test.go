@@ -15,33 +15,33 @@
  * limitations under the License.
  */
 
-package graceful_shutdown
+package config
 
 import (
-	"time"
+	"testing"
 )
 
 import (
-	hessian "github.com/apache/dubbo-go-hessian2"
-
-	"github.com/dubbogo/gost/log/logger"
+	"github.com/stretchr/testify/assert"
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
-func init() {
-	hessian.RegisterPOJO(&common.URL{})
-}
+func TestNewMetadataReportConfigBuilder(t *testing.T) {
+	config := NewMetadataReportConfigBuilder().
+		SetProtocol("nacos").
+		SetAddress("127.0.0.1:8848").
+		SetUsername("nacos").
+		SetPassword("123456").
+		SetTimeout("10s").
+		SetGroup("dubbo").
+		Build()
 
-func parseDuration(timeout string, desc string, def time.Duration) time.Duration {
-	res, err := time.ParseDuration(timeout)
-	if err != nil {
-		logger.Errorf("The %s configuration is invalid: %s, and we will use the default value: %s, err: %v",
-			desc, timeout, def.String(), err)
-		res = def
-	}
+	assert.Equal(t, config.Prefix(), constant.MetadataReportPrefix)
 
-	return res
+	url, err := config.ToUrl()
+	assert.NoError(t, err)
+	assert.Equal(t, url.GetParam(constant.TimeoutKey, "3s"), "10s")
 }

@@ -20,20 +20,35 @@ package metadata
 import (
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
 import (
+	"github.com/dubbogo/gost/log/logger"
+
+	perrors "github.com/pkg/errors"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/global"
 )
 
+var (
+	metadataOptions *Options
+	exportOnce      sync.Once
+)
+
 type Options struct {
-	Metadata *global.MetadataReportConfig
+	appName      string
+	metadataType string
+	port         int
 }
 
 func defaultOptions() *Options {
-	return &Options{Metadata: global.DefaultMetadataReportConfig()}
+	return &Options{metadataType: constant.DefaultMetadataStorageType}
 }
 
 func NewOptions(opts ...Option) *Options {
@@ -44,73 +59,168 @@ func NewOptions(opts ...Option) *Options {
 	return metaOptions
 }
 
+func (opts *Options) Init() error {
+	metadataOptions = opts
+	var err error
+	exportOnce.Do(func() {
+		if opts.metadataType != constant.RemoteMetadataStorageType {
+			exporter := &serviceExporter{service: metadataService, opts: opts}
+			defer func() {
+				// TODO remove this recover func,this just to avoid some unit test failed,this will not happen in user side mostly
+				// config test -> metadata exporter -> dubbo protocol/remoting -> config,cycle import will occur
+				// some day we fix the cycle import then can remove this recover
+				if err := recover(); err != nil {
+					logger.Errorf("metadata export failed,please check if dubbo protocol is imported, error: %v", err)
+				}
+			}()
+			err = exporter.Export()
+		}
+	})
+	return err
+}
+
 type Option func(*Options)
 
-func WithZookeeper() Option {
-	return func(opts *Options) {
-		opts.Metadata.Protocol = constant.ZookeeperKey
+func WithAppName(app string) Option {
+	return func(options *Options) {
+		options.appName = app
 	}
 }
 
-func WithNacos() Option {
-	return func(opts *Options) {
-		opts.Metadata.Protocol = constant.NacosKey
+func WithMetadataType(typ string) Option {
+	return func(options *Options) {
+		options.metadataType = typ
 	}
 }
 
-func WithEtcdV3() Option {
-	return func(opts *Options) {
-		opts.Metadata.Protocol = constant.EtcdV3Key
+func WithPort(port int) Option {
+	return func(options *Options) {
+		options.port = port
 	}
 }
 
-func WithMetadata(meta string) Option {
-	return func(opts *Options) {
-		opts.Metadata.Protocol = meta
+type ReportOptions struct {
+	registryId string
+	*global.MetadataReportConfig
+}
+
+func (opts *ReportOptions) Init() error {
+	url, err := opts.toUrl()
+	if err != nil {
+		logger.Errorf("metadata report create error %v", err)
+		return err
+	}
+	return addMetadataReport(opts.registryId, url)
+}
+
+func (opts *ReportOptions) toUrl() (*common.URL, error) {
+	res, err := common.NewURL(opts.Address,
+		common.WithUsername(opts.Username),
+		common.WithPassword(opts.Password),
+		common.WithLocation(opts.Address),
+		common.WithProtocol(opts.Protocol),
+		common.WithParamsValue(constant.TimeoutKey, opts.Timeout),
+		common.WithParamsValue(constant.MetadataReportGroupKey, opts.Group),
+		common.WithParamsValue(constant.MetadataReportNamespaceKey, opts.Namespace),
+		common.WithParamsValue(constant.ClientNameKey, strings.Join([]string{constant.MetadataReportPrefix, opts.Protocol, opts.Address}, "-")),
+	)
+	if err != nil || len(res.Protocol) == 0 {
+		return nil, perrors.New("Invalid MetadataReport Config.")
+	}
+	res.SetParam("metadata", res.Protocol)
+	for key, val := range opts.Params {
+		res.SetParam(key, val)
+	}
+	return res, nil
+}
+
+func defaultReportOptions() *ReportOptions {
+	return &ReportOptions{MetadataReportConfig: global.DefaultMetadataReportConfig()}
+}
+
+func NewReportOptions(opts ...ReportOption) *ReportOptions {
+	reportOptions := defaultReportOptions()
+	for _, opt := range opts {
+		opt(reportOptions)
+	}
+	return reportOptions
+}
+
+type ReportOption func(*ReportOptions)
+
+func WithZookeeper() ReportOption {
+	return func(opts *ReportOptions) {
+		opts.Protocol = constant.ZookeeperKey
 	}
 }
 
-func WithAddress(address string) Option {
-	return func(opts *Options) {
+func WithNacos() ReportOption {
+	return func(opts *ReportOptions) {
+		opts.Protocol = constant.NacosKey
+	}
+}
+
+func WithEtcdV3() ReportOption {
+	return func(opts *ReportOptions) {
+		opts.Protocol = constant.EtcdV3Key
+	}
+}
+
+func WithProtocol(meta string) ReportOption {
+	return func(opts *ReportOptions) {
+		opts.Protocol = meta
+	}
+}
+
+// WithAddress address metadata report will to use, if a URL schema is set,this will also set the protocol,
+// such as WithAddress("zookeeper://127.0.0.1") will set address to "127.0.0.1" and protocol to "zookeeper"
+func WithAddress(address string) ReportOption {
+	return func(opts *ReportOptions) {
 		if i := strings.Index(address, "://"); i > 0 {
-			opts.Metadata.Protocol = address[0:i]
+			opts.Protocol = address[0:i]
 		}
-		opts.Metadata.Address = address
+		opts.Address = address
 	}
 }
 
-func WithUsername(username string) Option {
-	return func(opts *Options) {
-		opts.Metadata.Username = username
+func WithUsername(username string) ReportOption {
+	return func(opts *ReportOptions) {
+		opts.Username = username
 	}
 }
 
-func WithPassword(password string) Option {
-	return func(opts *Options) {
-		opts.Metadata.Password = password
+func WithPassword(password string) ReportOption {
+	return func(opts *ReportOptions) {
+		opts.Password = password
 	}
 }
 
-func WithTimeout(timeout time.Duration) Option {
-	return func(opts *Options) {
-		opts.Metadata.Timeout = strconv.Itoa(int(timeout.Milliseconds()))
+func WithTimeout(timeout time.Duration) ReportOption {
+	return func(opts *ReportOptions) {
+		opts.Timeout = strconv.Itoa(int(timeout.Milliseconds()))
 	}
 }
 
-func WithGroup(group string) Option {
-	return func(opts *Options) {
-		opts.Metadata.Group = group
+func WithGroup(group string) ReportOption {
+	return func(opts *ReportOptions) {
+		opts.Group = group
 	}
 }
 
-func WithNamespace(namespace string) Option {
-	return func(opts *Options) {
-		opts.Metadata.Namespace = namespace
+func WithNamespace(namespace string) ReportOption {
+	return func(opts *ReportOptions) {
+		opts.Namespace = namespace
 	}
 }
 
-func WithParams(params map[string]string) Option {
-	return func(opts *Options) {
-		opts.Metadata.Params = params
+func WithParams(params map[string]string) ReportOption {
+	return func(opts *ReportOptions) {
+		opts.Params = params
+	}
+}
+
+func WithRegistryId(id string) ReportOption {
+	return func(opts *ReportOptions) {
+		opts.registryId = id
 	}
 }

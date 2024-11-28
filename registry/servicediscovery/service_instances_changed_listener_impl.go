@@ -18,9 +18,7 @@
 package servicediscovery
 
 import (
-	"context"
 	"encoding/gob"
-	"errors"
 	"reflect"
 	"sync"
 	"time"
@@ -38,7 +36,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/metadata/service"
 	"dubbo.apache.org/dubbo-go/v3/metadata/service/local"
-	triple_api "dubbo.apache.org/dubbo-go/v3/metadata/triple_api/proto"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/registry/servicediscovery/store"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
@@ -50,7 +47,7 @@ var (
 )
 
 func initCache(app string) {
-	gob.Register(&common.MetadataInfo{})
+	gob.Register(&info.MetadataInfo{})
 	fileName := constant.DefaultMetaFileName + app
 	cache, err := store.NewCacheManager(constant.DefaultMetaCacheName, fileName, time.Minute*10, constant.DefaultEntrySize, true)
 	if err != nil {
@@ -65,7 +62,7 @@ type ServiceInstancesChangedListenerImpl struct {
 	serviceNames       *gxset.HashSet
 	listeners          map[string]registry.NotifyListener
 	serviceUrls        map[string][]*common.URL
-	revisionToMetadata map[string]*common.MetadataInfo
+	revisionToMetadata map[string]*info.MetadataInfo
 	allInstances       map[string][]registry.ServiceInstance
 	mutex              sync.Mutex
 }
@@ -79,7 +76,7 @@ func NewServiceInstancesChangedListener(app string, services *gxset.HashSet) reg
 		serviceNames:       services,
 		listeners:          make(map[string]registry.NotifyListener),
 		serviceUrls:        make(map[string][]*common.URL),
-		revisionToMetadata: make(map[string]*common.MetadataInfo),
+		revisionToMetadata: make(map[string]*info.MetadataInfo),
 		allInstances:       make(map[string][]registry.ServiceInstance),
 	}
 }
@@ -96,8 +93,8 @@ func (lstn *ServiceInstancesChangedListenerImpl) OnEvent(e observer.Event) error
 
 	lstn.allInstances[ce.ServiceName] = ce.Instances
 	revisionToInstances := make(map[string][]registry.ServiceInstance)
-	newRevisionToMetadata := make(map[string]*common.MetadataInfo)
-	localServiceToRevisions := make(map[*common.ServiceInfo]*gxset.HashSet)
+	newRevisionToMetadata := make(map[string]*info.MetadataInfo)
+	localServiceToRevisions := make(map[*info.ServiceInfo]*gxset.HashSet)
 	protocolRevisionsToUrls := make(map[string]map[*gxset.HashSet][]*common.URL)
 	newServiceURLs := make(map[string][]*common.URL)
 
@@ -220,16 +217,16 @@ func (lstn *ServiceInstancesChangedListenerImpl) GetEventType() reflect.Type {
 }
 
 // GetMetadataInfo get metadata info when MetadataStorageTypePropertyName is null
-func GetMetadataInfo(app string, instance registry.ServiceInstance, revision string) *common.MetadataInfo {
+func GetMetadataInfo(app string, instance registry.ServiceInstance, revision string) (*info.MetadataInfo, error) {
 	cacheOnce.Do(func() {
 		initCache(app)
 	})
 	if metadataInfo, ok := metaCache.Get(revision); ok {
-		return metadataInfo.(*common.MetadataInfo)
+		return metadataInfo.(*info.MetadataInfo), nil
 	}
 
 	var metadataStorageType string
-	metadataInfo := common.EmptyMetadataInfo
+	var metadataInfo *info.MetadataInfo
 	var err error
 	if instance.GetMetadata() == nil {
 		metadataStorageType = constant.DefaultMetadataStorageType
@@ -237,95 +234,16 @@ func GetMetadataInfo(app string, instance registry.ServiceInstance, revision str
 		metadataStorageType = instance.GetMetadata()[constant.MetadataStorageTypePropertyName]
 	}
 	if metadataStorageType == constant.RemoteMetadataStorageType {
-		remoteMetadataServiceImpl, remoteMetadataErr := extension.GetRemoteMetadataService()
-		if remoteMetadataErr == nil {
-			metadataInfo, err = remoteMetadataServiceImpl.GetMetadata(instance)
-		} else {
-			err = remoteMetadataErr
+		metadataInfo, err = metadata.GetMetadataFromMetadataReport(revision, instance)
+		if err != nil {
+			return nil, err
 		}
 	} else {
-		if instance.GetMetadata()[constant.MetadataVersion] == constant.MetadataServiceV2Version {
-			proxyFactoryV2 := extension.GetMetadataServiceProxyFactoryV2(constant.MetadataServiceV2)
-			metadataServiceV2 := proxyFactoryV2.GetProxy(instance)
-			if metadataServiceV2 != nil {
-				defer destroyInvokerV2(metadataServiceV2)
-				var metadataInfoV2 *triple_api.MetadataInfoV2
-				metadataInfoV2, err = metadataServiceV2.GetMetadataInfo(context.Background(), &triple_api.MetadataRequest{Revision: revision})
-				if err != nil {
-					logger.Errorf("get metadata of %s failed, %v", instance.GetHost(), err)
-				}
-				metadataInfo = convertMetadataInfo(metadataInfoV2)
-			} else {
-				err = errors.New("get remote metadata error please check instance " + instance.GetHost() + " is alive")
-			}
-		} else {
-			proxyFactory := extension.GetMetadataServiceProxyFactory(constant.DefaultKey)
-			metadataService := proxyFactory.GetProxy(instance)
-			if metadataService != nil {
-				defer destroyInvoker(metadataService)
-				metadataInfo, err = metadataService.GetMetadataInfo(revision)
-			} else {
-				err = errors.New("get remote metadata error please check instance " + instance.GetHost() + " is alive")
-			}
+		metadataInfo, err = metadata.GetMetadataFromRpc(revision, instance)
+		if err != nil {
+			return nil, err
 		}
 	}
-
-	if err != nil {
-		logger.Errorf("get metadata of %s failed, %v", instance.GetHost(), err)
-	}
-
-	if metadataInfo != common.EmptyMetadataInfo {
-		metaCache.Set(revision, metadataInfo)
-	}
-
-	return metadataInfo
-}
-
-func convertMetadataInfo(v2 *triple_api.MetadataInfoV2) *common.MetadataInfo {
-	infos := make(map[string]*common.ServiceInfo, 0)
-	for k, v := range v2.Services {
-		info := &common.ServiceInfo{
-			Name:     v.Name,
-			Group:    v.Group,
-			Version:  v.Version,
-			Protocol: v.Protocol,
-			Path:     v.Path,
-			Params:   v.Params,
-		}
-		infos[k] = info
-	}
-
-	metadataInfo := &common.MetadataInfo{
-		Reported: false,
-		App:      v2.App,
-		Revision: v2.Version,
-		Services: infos,
-	}
-	return metadataInfo
-}
-
-func destroyInvoker(metadataService service.MetadataService) {
-	if metadataService == nil {
-		return
-	}
-
-	proxy := metadataService.(*local.MetadataServiceProxy)
-	if proxy.Invoker == nil {
-		return
-	}
-
-	proxy.Invoker.Destroy()
-}
-
-func destroyInvokerV2(metadataService service.MetadataServiceV2) {
-	if metadataService == nil {
-		return
-	}
-
-	proxy := metadataService.(*local.MetadataServiceProxyV2)
-	if proxy.Invoker == nil {
-		return
-	}
-
-	proxy.Invoker.Destroy()
+	metaCache.Set(revision, metadataInfo)
+	return metadataInfo, nil
 }
