@@ -84,7 +84,15 @@ func (n *nacosMetadataReport) PublishAppMetadata(application, revision string, m
 	if err != nil {
 		return err
 	}
-
+	// compatible with java impl
+	err = n.storeMetadata(vo.ConfigParam{
+		DataId:  application + constant.PathSeparator + revision,
+		Content: string(data),
+	})
+	if err != nil {
+		return err
+	}
+	// compatible with dubbo-go 3.1.x before
 	return n.storeMetadata(vo.ConfigParam{
 		DataId:  application + constant.PathSeparator + revision,
 		Content: string(data),
