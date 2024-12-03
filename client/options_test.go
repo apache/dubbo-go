@@ -1228,15 +1228,6 @@ func TestWithKeepAliveConfig(t *testing.T) {
 				assert.Equal(t, "30s", cli.cliOpts.overallReference.KeepAliveTimeout)
 			},
 		},
-		{
-			desc: "default config",
-			opts: []ClientOption{},
-			verify: func(t *testing.T, cli *Client, err error) {
-				assert.Nil(t, err)
-				assert.Equal(t, "10s", cli.cliOpts.overallReference.KeepAliveInterval)
-				assert.Equal(t, "20s", cli.cliOpts.overallReference.KeepAliveTimeout)
-			},
-		},
 	}
 	processNewClientCases(t, cases)
 }

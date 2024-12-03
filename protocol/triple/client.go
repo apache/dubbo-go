@@ -132,8 +132,8 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 	}
 	cliOpts = append(cliOpts, tri.WithSendMaxBytes(maxCallSendMsgSize))
 	//set keepalive interval and keepalive timeout
-	keepAliveInterval := url.GetParamDuration(constant.KeepAliveInterval, "")
-	keepAliveTimeout := url.GetParamDuration(constant.KeepAliveTimeout, "")
+	keepAliveInterval := url.GetParamDuration(constant.KeepAliveInterval, constant.DefaultKeepAliveInterval)
+	keepAliveTimeout := url.GetParamDuration(constant.KeepAliveTimeout, constant.DefaultKeepAliveTimeout)
 	var isIDL bool
 	// set serialization
 	serialization := url.GetParam(constant.SerializationKey, constant.ProtobufSerialization)
