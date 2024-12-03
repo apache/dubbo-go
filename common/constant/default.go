@@ -107,7 +107,7 @@ const (
 
 	DefaultKeepAliveInterval = "10s"
 	DefaultKeepAliveTimeout  = "20s"
-	MinKeepAliveInterval     = 10 * time.Second // KeepAliveMinInterval is the minimum ping interval to invoid to many ping
+	MinKeepAliveInterval     = 10 * time.Second // KeepAliveMinInterval is the minimum ping interval to invoid too many ping
 )
 
 const (
