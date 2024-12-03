@@ -17,10 +17,6 @@
 
 package constant
 
-import (
-	"time"
-)
-
 type DubboCtxKey string
 
 const (
@@ -67,8 +63,7 @@ const (
 	MaxCallRecvMsgSize     = "max-call-recv-msg-size"
 	MaxServerRecvMsgSize   = "max-server-recv-msg-size"
 	KeepAliveInterval      = "keep-alive-interval"
-	KeepAliveTimeout       = "keep-alive-time-out"
-	KeepAliveMinInterval   = 10 * time.Second // KeepAliveMinInterval is the minimum ping interval to invoid to many ping
+	KeepAliveTimeout       = "keep-alive-timeout"
 )
 
 // tls constant

@@ -55,8 +55,6 @@ func DefaultReferenceConfig() *ReferenceConfig {
 		//Protocol: "tri",
 		Methods: make([]*MethodConfig, 0, 8),
 		//Params:   make(map[string]string, 8),
-		KeepAliveInterval: "10s",
-		KeepAliveTimeout:  "20s",
 	}
 }
 
