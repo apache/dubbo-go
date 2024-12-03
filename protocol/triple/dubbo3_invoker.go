@@ -78,14 +78,15 @@ func NewDubbo3Invoker(url *common.URL) (*DubboInvoker, error) {
 	dubboSerializerType := url.GetParam(constant.SerializationKey, constant.ProtobufSerialization)
 	triCodecType := tripleConstant.CodecType(dubboSerializerType)
 	// new triple client
-	opts := []triConfig.OptionFunction{
+	opts := make([]triConfig.OptionFunction, 10) //preallocation
+	opts = append(opts,
 		triConfig.WithClientTimeout(timeout),
 		triConfig.WithCodecType(triCodecType),
 		triConfig.WithLocation(url.Location),
 		triConfig.WithHeaderAppVersion(url.GetParam(constant.AppVersionKey, "")),
 		triConfig.WithHeaderGroup(url.GetParam(constant.GroupKey, "")),
 		triConfig.WithLogger(logger.GetLogger()),
-	}
+	)
 	maxCallRecvMsgSize := constant.DefaultMaxCallRecvMsgSize
 	if maxCall, err := humanize.ParseBytes(url.GetParam(constant.MaxCallRecvMsgSize, "")); err == nil && maxCall != 0 {
 		maxCallRecvMsgSize = int(maxCall)
@@ -94,9 +95,17 @@ func NewDubbo3Invoker(url *common.URL) (*DubboInvoker, error) {
 	if maxCall, err := humanize.ParseBytes(url.GetParam(constant.MaxCallSendMsgSize, "")); err == nil && maxCall != 0 {
 		maxCallSendMsgSize = int(maxCall)
 	}
-	opts = append(opts, triConfig.WithGRPCMaxCallRecvMessageSize(maxCallRecvMsgSize))
-	opts = append(opts, triConfig.WithGRPCMaxCallSendMessageSize(maxCallSendMsgSize))
-
+	opts = append(opts,
+		triConfig.WithGRPCMaxCallRecvMessageSize(maxCallRecvMsgSize),
+		triConfig.WithGRPCMaxCallSendMessageSize(maxCallSendMsgSize),
+	)
+	//grpc keepalive config
+	keepAliveInterval := url.GetParamDuration(constant.KeepAliveInterval, "")
+	keepAliveTimeout := url.GetParamDuration(constant.KeepAliveTimeout, "")
+	opts = append(opts,
+		triConfig.WithGRPCKeepAliveTimeInterval(keepAliveInterval),
+		triConfig.WithGRPCKeepAliveTimeout(keepAliveTimeout),
+	)
 	tracingKey := url.GetParam(constant.TracingConfigKey, "")
 	if tracingKey != "" {
 		tracingConfig := config.GetTracingConfig(tracingKey)
