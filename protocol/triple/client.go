@@ -131,7 +131,7 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 		maxCallSendMsgSize = int(sendMsgSize)
 	}
 	cliOpts = append(cliOpts, tri.WithSendMaxBytes(maxCallSendMsgSize))
-	//set keepalive interval and keepalive timeout
+	// set keepalive interval and keepalive timeout
 	keepAliveInterval := url.GetParamDuration(constant.KeepAliveInterval, constant.DefaultKeepAliveInterval)
 	keepAliveTimeout := url.GetParamDuration(constant.KeepAliveTimeout, constant.DefaultKeepAliveTimeout)
 	var isIDL bool
