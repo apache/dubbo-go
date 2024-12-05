@@ -96,8 +96,7 @@ func NewDubbo3Invoker(url *common.URL) (*DubboInvoker, error) {
 	}
 	opts = append(opts, triConfig.WithGRPCMaxCallRecvMessageSize(maxCallRecvMsgSize))
 	opts = append(opts, triConfig.WithGRPCMaxCallSendMessageSize(maxCallSendMsgSize))
-
-	//grpc keepalive config
+	// grpc keepalive config
 	keepAliveInterval := url.GetParamDuration(constant.KeepAliveInterval, constant.DefaultKeepAliveInterval)
 	keepAliveTimeout := url.GetParamDuration(constant.KeepAliveTimeout, constant.DefaultKeepAliveTimeout)
 	opts = append(opts, triConfig.WithGRPCKeepAliveTimeInterval(keepAliveInterval))
