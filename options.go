@@ -204,7 +204,11 @@ func reportConfigToReportOptions(mc *global.MetadataReportConfig) (*metadata.Rep
 func (rc *InstanceOptions) initRegistryMetadataReport() error {
 	if len(rc.Registries) > 0 {
 		for id, reg := range rc.Registries {
-			if reg.UseAsMetaReport {
+			ok, err := strconv.ParseBool(reg.UseAsMetaReport)
+			if err != nil {
+				return err
+			}
+			if ok {
 				opts, err := registryToReportOptions(id, reg)
 				if err != nil {
 					return err

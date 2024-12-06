@@ -18,6 +18,8 @@
 package servicediscovery
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/metadata"
+	"dubbo.apache.org/dubbo-go/v3/metadata/info"
 	"encoding/gob"
 	"reflect"
 	"sync"
@@ -33,9 +35,6 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/metadata/service"
-	"dubbo.apache.org/dubbo-go/v3/metadata/service/local"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/registry/servicediscovery/store"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
@@ -118,7 +117,11 @@ func (lstn *ServiceInstancesChangedListenerImpl) OnEvent(e observer.Event) error
 			revisionToInstances[revision] = append(subInstances, instance)
 			metadataInfo := lstn.revisionToMetadata[revision]
 			if metadataInfo == nil {
-				metadataInfo = GetMetadataInfo(lstn.app, instance, revision)
+				meta, err := GetMetadataInfo(lstn.app, instance, revision)
+				if err != nil {
+					return err
+				}
+				metadataInfo = meta
 			}
 			instance.SetServiceMetadata(metadataInfo)
 			for _, service := range metadataInfo.Services {

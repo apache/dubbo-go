@@ -30,7 +30,7 @@ type ApplicationConfig struct {
 	MetadataType            string `default:"local" yaml:"metadata-type" json:"metadataType,omitempty" property:"metadataType"`
 	Tag                     string `yaml:"tag" json:"tag,omitempty" property:"tag"`
 	MetadataServicePort     string `yaml:"metadata-service-port" json:"metadata-service-port,omitempty" property:"metadata-service-port"`
-	MetadataServiceProtocol string `yaml:"metadata-service-protocol" json:"metadata-service-protocol,omitempty" property:"metadata-service-protocol"`
+	MetadataServiceProtocol string `default:"dubbo" yaml:"metadata-service-protocol" json:"metadata-service-protocol,omitempty" property:"metadata-service-protocol"`
 }
 
 func DefaultApplicationConfig() *ApplicationConfig {

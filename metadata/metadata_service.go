@@ -18,6 +18,10 @@
 package metadata
 
 import (
+	"context"
+	"dubbo.apache.org/dubbo-go/v3/config"
+	tripleapi "dubbo.apache.org/dubbo-go/v3/metadata/triple_api/proto"
+	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
 	"fmt"
 	"strconv"
 	"strings"
@@ -25,8 +29,6 @@ import (
 
 import (
 	"github.com/dubbogo/gost/log/logger"
-	gxnet "github.com/dubbogo/gost/net"
-
 	perrors "github.com/pkg/errors"
 )
 
@@ -66,7 +68,7 @@ type DefaultMetadataService struct {
 	metadataUrl *common.URL
 }
 
-func (mts *DefaultMetadataService) SetMetadataServiceURL(url *common.URL) {
+func (mts *DefaultMetadataService) setMetadataServiceURL(url *common.URL) {
 	mts.metadataUrl = url
 }
 
@@ -137,7 +139,7 @@ func (mts *DefaultMetadataService) MethodMapper() map[string]string {
 	}
 }
 
-// serviceExporter export MetadataService with dubbo protocol
+// serviceExporter export MetadataService
 type serviceExporter struct {
 	opts             *Options
 	service          MetadataService
@@ -146,13 +148,27 @@ type serviceExporter struct {
 
 // Export will export the metadataService
 func (e *serviceExporter) Export() error {
-	version, _ := e.service.Version()
 	var port string
 	if e.opts.port == 0 {
-		port = randomPort()
+		port = common.GetRandomPort("")
 	} else {
 		port = strconv.Itoa(e.opts.port)
 	}
+	if e.opts.protocol == constant.DefaultProtocol {
+		err := e.exportDubbo(port)
+		if err != nil {
+			return err
+		}
+	} else {
+		e.exportTripleV1(port)
+		// v2 only supports triple protocol
+		e.exportV2(port)
+	}
+	return nil
+}
+
+func (e *serviceExporter) exportDubbo(port string) error {
+	version, _ := e.service.Version()
 	ivkURL := common.NewURLWithOptions(
 		common.WithPath(constant.MetadataServiceName),
 		common.WithProtocol(constant.DefaultProtocol),
@@ -177,24 +193,155 @@ func (e *serviceExporter) Export() error {
 	proxyFactory := extension.GetProxyFactory("")
 	invoker := proxyFactory.GetInvoker(ivkURL)
 	e.protocolExporter = extension.GetProtocol(ivkURL.Protocol).Export(invoker)
-	e.service.(*DefaultMetadataService).SetMetadataServiceURL(ivkURL)
-	logger.Infof("[Metadata Service] The MetadataService exports urls : %v ", ivkURL)
+	e.service.(*DefaultMetadataService).setMetadataServiceURL(ivkURL)
 	return nil
 }
 
-func randomPort() string {
-	tcp, err := gxnet.ListenOnTCPRandomPort("")
-	if err != nil {
-		panic(perrors.New(fmt.Sprintf("Get tcp port error, err is {%v}", err)))
+func (e *serviceExporter) exportTripleV1(port string) {
+	version, _ := e.service.Version()
+	ivkURL := common.NewURLWithOptions(
+		common.WithPath(constant.MetadataServiceName),
+		common.WithProtocol(constant.TriProtocol),
+		common.WithPort(port),
+		common.WithParamsValue(constant.GroupKey, e.opts.appName),
+		common.WithParamsValue(constant.VersionKey, version),
+		common.WithInterface(constant.MetadataServiceName),
+		common.WithMethods(strings.Split("getMetadataInfo,GetMetadataInfo", ",")),
+		common.WithParamsValue(constant.SerializationKey, constant.Hessian2Serialization),
+	)
+	m := &MetadataServiceV1{delegate: e.service}
+	invoker := &serviceInvoker{
+		BaseInvoker: protocol.NewBaseInvoker(ivkURL),
+		invoke: func(context context.Context, invocation protocol.Invocation) protocol.Result {
+			name := invocation.MethodName()
+			args := invocation.Arguments()
+			result := new(protocol.RPCResult)
+			if name == "getMetadataInfo" || name == "GetMetadataInfo" {
+				meta, err := m.GetMetadataInfo(context, args[0].(string))
+				result.SetResult(meta)
+				result.SetError(err)
+			} else {
+				result.SetError(fmt.Errorf("no match method for %s", name))
+			}
+			return result
+		},
 	}
-	err = tcp.Close()
-	if err != nil {
-		panic(perrors.New(fmt.Sprintf("Close tcp port error, err is {%v}", err)))
-	}
-	return strings.Split(tcp.Addr().String(), ":")[1]
+	e.protocolExporter = extension.GetProtocol(protocolwrapper.FILTER).Export(invoker)
+
+	e.service.(*DefaultMetadataService).setMetadataServiceURL(invoker.GetURL())
 }
 
-// UnExport will unExport the metadataService
-func (e *serviceExporter) UnExport() {
-	e.protocolExporter.UnExport()
+func (e *serviceExporter) exportV2(port string) {
+	// v2 only supports triple protocol
+	ivkURL := common.NewURLWithOptions(
+		common.WithPath(constant.MetadataServiceV2Name),
+		common.WithProtocol(constant.TriProtocol),
+		common.WithPort(port),
+		common.WithParamsValue(constant.GroupKey, e.opts.appName),
+		common.WithParamsValue(constant.VersionKey, "2.0.0"),
+		common.WithInterface(constant.MetadataServiceV2Name),
+		common.WithMethods(strings.Split("getMetadataInfo,GetMetadataInfo", ",")),
+	)
+	m := &MetadataServiceV2{delegate: e.service}
+	invoker := &serviceInvoker{
+		BaseInvoker: protocol.NewBaseInvoker(ivkURL),
+		invoke: func(context context.Context, invocation protocol.Invocation) protocol.Result {
+			name := invocation.MethodName()
+			args := invocation.Arguments()
+			result := new(protocol.RPCResult)
+			if name == "getMetadataInfo" || name == "GetMetadataInfo" {
+				meta, err := m.GetMetadataInfo(context, args[0].(*tripleapi.MetadataRequest))
+				result.SetResult(meta)
+				result.SetError(err)
+			} else {
+				result.SetError(fmt.Errorf("no match method for %s", name))
+			}
+			return result
+		},
+	}
+	config.SetProviderService(m)
+	e.protocolExporter = extension.GetProtocol(protocolwrapper.FILTER).Export(invoker)
+	// do not set, because it will override MetadataService
+	//exporter.metadataService.SetMetadataServiceURL(ivkURL)
+}
+
+// serviceInvoker, if base on server.infoInvoker will cause cycle dependency, so we need to use this way
+type serviceInvoker struct {
+	*protocol.BaseInvoker
+	invoke func(context context.Context, invocation protocol.Invocation) protocol.Result
+}
+
+func (si serviceInvoker) Invoke(context context.Context, invocation protocol.Invocation) protocol.Result {
+	return si.invoke(context, invocation)
+}
+
+type MetadataServiceHandler interface {
+	GetMetadataInfo(ctx context.Context, revision string) (*info.MetadataInfo, error)
+}
+
+type MetadataServiceV1 struct {
+	delegate MetadataService
+}
+
+func (mtsV1 *MetadataServiceV1) GetMetadataInfo(ctx context.Context, revision string) (*info.MetadataInfo, error) {
+	metadataInfo, err := mtsV1.delegate.GetMetadataInfo(revision)
+	if err != nil {
+		return nil, err
+	}
+	return metadataInfo, nil
+}
+
+func convertV1(serviceInfos map[string]*info.ServiceInfo) map[string]*tripleapi.ServiceInfo {
+	serviceInfoV1s := make(map[string]*tripleapi.ServiceInfo, len(serviceInfos))
+	for k, i := range serviceInfos {
+		serviceInfo := &tripleapi.ServiceInfo{
+			Name:     i.Name,
+			Group:    i.Group,
+			Version:  i.Version,
+			Protocol: i.Protocol,
+			Port:     0,
+			Path:     i.Path,
+			Params:   i.Params,
+		}
+		serviceInfoV1s[k] = serviceInfo
+	}
+	return serviceInfoV1s
+}
+
+// MetadataServiceV2Handler is an implementation of the org.apache.dubbo.metadata.MetadataServiceV2 service.
+type MetadataServiceV2Handler interface {
+	GetMetadataInfo(context.Context, *tripleapi.MetadataRequest) (*tripleapi.MetadataInfoV2, error)
+}
+
+type MetadataServiceV2 struct {
+	delegate MetadataService
+}
+
+func (mtsV2 *MetadataServiceV2) GetMetadataInfo(ctx context.Context, req *tripleapi.MetadataRequest) (*tripleapi.MetadataInfoV2, error) {
+	metadataInfo, err := mtsV2.delegate.GetMetadataInfo(req.GetRevision())
+	if err != nil {
+		return nil, err
+	}
+	return &tripleapi.MetadataInfoV2{
+		App:      metadataInfo.App,
+		Version:  metadataInfo.Revision,
+		Services: convertV2(metadataInfo.Services),
+	}, err
+}
+
+func convertV2(serviceInfos map[string]*info.ServiceInfo) map[string]*tripleapi.ServiceInfoV2 {
+	serviceInfoV2s := make(map[string]*tripleapi.ServiceInfoV2, len(serviceInfos))
+	for k, serviceInfo := range serviceInfos {
+		serviceInfoV2 := &tripleapi.ServiceInfoV2{
+			Name:     serviceInfo.Name,
+			Group:    serviceInfo.Group,
+			Version:  serviceInfo.Version,
+			Protocol: serviceInfo.Protocol,
+			Port:     0,
+			Path:     serviceInfo.Path,
+			Params:   serviceInfo.Params,
+		}
+		serviceInfoV2s[k] = serviceInfoV2
+	}
+	return serviceInfoV2s
 }

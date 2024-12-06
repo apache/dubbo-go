@@ -121,7 +121,7 @@ func (x *ServiceInfo) GetParams() map[string]string {
 	return nil
 }
 
-func init() {
-	dubbo_go_hessian2.RegisterPOJO(new(MetadataInfo))
-	dubbo_go_hessian2.RegisterPOJO(new(ServiceInfo))
-}
+//func init() {
+//	dubbo_go_hessian2.RegisterPOJO(new(MetadataInfo))
+//	dubbo_go_hessian2.RegisterPOJO(new(ServiceInfo))
+//}

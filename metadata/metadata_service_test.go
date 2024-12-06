@@ -297,11 +297,6 @@ func TestDefaultMetadataServiceVersion(t *testing.T) {
 	assert.Equal(t, version, got)
 }
 
-func Test_randomPort(t *testing.T) {
-	port := randomPort()
-	assert.True(t, port != "")
-}
-
 func Test_serviceExporterExport(t *testing.T) {
 	mockExporter := new(mockExporter)
 	defer mockExporter.AssertExpectations(t)
@@ -311,13 +306,13 @@ func Test_serviceExporterExport(t *testing.T) {
 		return mockProtocol
 	})
 	t.Run("normal", func(t *testing.T) {
-		port := randomPort()
+		port := common.GetRandomPort("")
 		p, err := strconv.Atoi(port)
 		assert.Nil(t, err)
 		opts := &Options{
-			appName:      "dubbo-app",
-			metadataType: constant.RemoteMetadataStorageType,
-			port:         p,
+			AppName:      "dubbo-app",
+			MetadataType: constant.RemoteMetadataStorageType,
+			Port:         p,
 		}
 		mockProtocol.On("Export").Return(mockExporter).Once()
 		mockExporter.On("UnExport").Once()
@@ -331,13 +326,13 @@ func Test_serviceExporterExport(t *testing.T) {
 	})
 	// first t.Run has called commom.ServiceMap.Register ,second will fail
 	t.Run("get methods error", func(t *testing.T) {
-		port := randomPort()
+		port := common.GetRandomPort("")
 		p, err := strconv.Atoi(port)
 		assert.Nil(t, err)
 		opts := &Options{
-			appName:      "dubbo-app",
-			metadataType: constant.RemoteMetadataStorageType,
-			port:         p,
+			AppName:      "dubbo-app",
+			MetadataType: constant.RemoteMetadataStorageType,
+			Port:         p,
 		}
 		e := &serviceExporter{
 			opts:    opts,
@@ -348,13 +343,13 @@ func Test_serviceExporterExport(t *testing.T) {
 	})
 	t.Run("port == 0", func(t *testing.T) {
 		opts := &Options{
-			appName:      "dubbo-app",
-			metadataType: constant.RemoteMetadataStorageType,
-			port:         0,
+			AppName:      "dubbo-app",
+			MetadataType: constant.RemoteMetadataStorageType,
+			Port:         0,
 		}
 		// UnRegister first otherwise will fail
 		err := common.ServiceMap.UnRegister(constant.MetadataServiceName, constant.DefaultProtocol,
-			common.ServiceKey(constant.MetadataServiceName, opts.appName, version))
+			common.ServiceKey(constant.MetadataServiceName, opts.AppName, version))
 		assert.Nil(t, err)
 		mockProtocol.On("Export").Return(mockExporter).Once()
 		mockExporter.On("UnExport").Once()

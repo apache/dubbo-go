@@ -144,15 +144,21 @@ func (mc *MetadataReportConfig) Init(rc *RootConfig) error {
 		return opts.Init()
 	}
 	if rc.Registries != nil && len(rc.Registries) > 0 {
-		// if metadata report config is not avaible, then init metadata report instance with registries
+		// if metadata report config is not available, then init metadata report instance with registries
 		for id, reg := range rc.Registries {
-			if reg.UseAsMetaReport && isValid(reg.Address) {
-				opts, err := registryToReportOptions(id, reg)
+			if isValid(reg.Address) {
+				ok, err := strconv.ParseBool(reg.UseAsMetaReport)
 				if err != nil {
 					return err
 				}
-				if err = opts.Init(); err != nil {
-					return err
+				if ok {
+					opts, err := registryToReportOptions(id, reg)
+					if err != nil {
+						return err
+					}
+					if err = opts.Init(); err != nil {
+						return err
+					}
 				}
 			}
 		}

@@ -45,10 +45,11 @@ type Options struct {
 	appName      string
 	metadataType string
 	port         int
+	protocol     string
 }
 
 func defaultOptions() *Options {
-	return &Options{metadataType: constant.DefaultMetadataStorageType}
+	return &Options{metadataType: constant.DefaultMetadataStorageType, protocol: constant.DefaultProtocol}
 }
 
 func NewOptions(opts ...Option) *Options {
@@ -96,6 +97,12 @@ func WithMetadataType(typ string) Option {
 func WithPort(port int) Option {
 	return func(options *Options) {
 		options.port = port
+	}
+}
+
+func WithMetadataProtocol(protocol string) Option {
+	return func(options *Options) {
+		options.protocol = protocol
 	}
 }
 

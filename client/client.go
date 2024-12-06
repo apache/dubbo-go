@@ -20,6 +20,7 @@ package client
 
 import (
 	"context"
+	"strconv"
 	"time"
 )
 
@@ -147,7 +148,11 @@ func (cli *Client) dial(interfaceName string, info *ClientInfo, opts ...Referenc
 func (cli *Client) initRegistryMetadataReport() error {
 	if len(cli.cliOpts.Registries) > 0 {
 		for id, reg := range cli.cliOpts.Registries {
-			if reg.UseAsMetaReport {
+			ok, err := strconv.ParseBool(reg.UseAsMetaReport)
+			if err != nil {
+				return err
+			}
+			if ok {
 				opts, err := registryToReportOptions(id, reg)
 				if err != nil {
 					return err

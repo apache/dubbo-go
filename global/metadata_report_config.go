@@ -46,14 +46,13 @@ func (c *MetadataReportConfig) Clone() *MetadataReportConfig {
 	}
 
 	return &MetadataReportConfig{
-		Protocol:     c.Protocol,
-		Address:      c.Address,
-		Username:     c.Username,
-		Password:     c.Password,
-		Timeout:      c.Timeout,
-		Group:        c.Group,
-		Namespace:    c.Namespace,
-		Params:       newParams,
-		metadataType: c.metadataType,
+		Protocol:  c.Protocol,
+		Address:   c.Address,
+		Username:  c.Username,
+		Password:  c.Password,
+		Timeout:   c.Timeout,
+		Group:     c.Group,
+		Namespace: c.Namespace,
+		Params:    newParams,
 	}
 }

@@ -115,6 +115,9 @@ func GetRandomPort(ip string) string {
 	if err != nil {
 		panic(perrors.New(fmt.Sprintf("Get tcp port error, err is {%v}", err)))
 	}
-	defer tcp.Close()
+	err = tcp.Close()
+	if err != nil {
+		panic(perrors.New(fmt.Sprintf("Close tcp port error, err is {%v}", err)))
+	}
 	return strings.Split(tcp.Addr().String(), ":")[1]
 }

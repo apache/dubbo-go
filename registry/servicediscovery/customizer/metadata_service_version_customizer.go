@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package event
+package customizer
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"

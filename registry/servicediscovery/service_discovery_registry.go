@@ -228,10 +228,10 @@ func (s *serviceDiscoveryRegistry) Subscribe(url *common.URL, notify registry.No
 	} else {
 		logger.Infof("Find initial mapping applications %q for service %s.", services, url.ServiceKey())
 		// first notify
-		err = mappingListener.OnEvent(registry.NewServiceMappingChangedEvent(url.ServiceKey(), services))
-	}
-	if err != nil {
-		logger.Errorf("[ServiceDiscoveryRegistry] ServiceInstancesChangedListenerImpl handle error:%v", err)
+		err := mappingListener.OnEvent(registry.NewServiceMappingChangedEvent(url.ServiceKey(), services))
+		if err != nil {
+			logger.Errorf("[ServiceDiscoveryRegistry] ServiceInstancesChangedListenerImpl handle error:%v", err)
+		}
 	}
 	return nil
 }

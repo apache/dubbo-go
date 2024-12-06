@@ -36,12 +36,12 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/global"
 	dubboutil "dubbo.apache.org/dubbo-go/v3/common/dubboutil"
+	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/metadata"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
-	"dubbo.apache.org/dubbo-go/v3/registry/exposed_tmp"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
+	"dubbo.apache.org/dubbo-go/v3/registry/exposed_tmp"
 )
 
 // proServices are for internal services
@@ -57,12 +57,14 @@ type Server struct {
 	svcOptsMap sync.Map
 }
 
-// ServiceInfo is meta info of a service
+// ServiceInfo is meta info of a service, just for compatible with generate pb.go file
 type ServiceInfo struct {
-	InterfaceName string
-	ServiceType   interface{}
-	Methods       []MethodInfo
-	Meta          map[string]interface{}
+	common.ServiceInfo
+}
+
+// MethodInfo just for compatible with generate pb.go file
+type MethodInfo struct {
+	common.MethodInfo
 }
 
 type infoInvoker struct {
@@ -231,6 +233,7 @@ func (s *Server) Serve() error {
 		metadata.WithAppName(s.cfg.Application.Name),
 		metadata.WithMetadataType(s.cfg.Application.MetadataType),
 		metadata.WithPort(getMetadataPort(s.cfg)),
+		metadata.WithMetadataProtocol(s.cfg.Application.MetadataServiceProtocol),
 	)
 	if err := opts.Init(); err != nil {
 		return err
@@ -327,10 +330,6 @@ func getMetadataPort(opts *ServerOptions) int {
 		protocolConfig, ok := opts.Protocols[constant.DefaultProtocol]
 		if ok {
 			port = protocolConfig.Port
-		} else {
-			logger.Warnf("[Metadata Service] Dubbo-go %s version's MetadataService only support dubbo protocol,"+
-				"MetadataService will use random port",
-				constant.Version)
 		}
 	}
 	if port == "" {
@@ -347,7 +346,11 @@ func getMetadataPort(opts *ServerOptions) int {
 func (s *Server) initRegistryMetadataReport() error {
 	if len(s.cfg.Registries) > 0 {
 		for id, reg := range s.cfg.Registries {
-			if reg.UseAsMetaReport {
+			ok, err := strconv.ParseBool(reg.UseAsMetaReport)
+			if err != nil {
+				return err
+			}
+			if ok {
 				opts, err := registryToReportOptions(id, reg)
 				if err != nil {
 					return err
@@ -380,15 +383,6 @@ func registryToReportOptions(id string, rc *global.RegistryConfig) (*metadata.Re
 		metadata.WithTimeout(timeout)(opts)
 	}
 	return opts, nil
-}
-
-type MethodInfo struct {
-	Name           string
-	Type           string
-	ReqInitFunc    func() interface{}
-	StreamInitFunc func(baseStream interface{}) interface{}
-	MethodFunc     func(ctx context.Context, args []interface{}, handler interface{}) (interface{}, error)
-	Meta           map[string]interface{}
 }
 
 func NewServer(opts ...ServerOption) (*Server, error) {
