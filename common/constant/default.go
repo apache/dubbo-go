@@ -19,6 +19,7 @@ package constant
 
 import (
 	"math"
+	"time"
 )
 
 const (
@@ -103,6 +104,10 @@ const (
 
 	DefaultMaxCallRecvMsgSize = 1024 * 1024 * 4
 	DefaultMaxCallSendMsgSize = math.MaxInt32
+
+	DefaultKeepAliveInterval = "10s"
+	DefaultKeepAliveTimeout  = "20s"
+	MinKeepAliveInterval     = 10 * time.Second // KeepAliveMinInterval is the minimum ping interval to invoid too many ping
 )
 
 const (
