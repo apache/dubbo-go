@@ -284,7 +284,7 @@ func TestDefaultMetadataServiceSetMetadataServiceURL(t *testing.T) {
 			mts := &DefaultMetadataService{
 				metadataMap: map[string]*info.MetadataInfo{},
 			}
-			mts.SetMetadataServiceURL(tt.args.url)
+			mts.setMetadataServiceURL(tt.args.url)
 			assert.Equal(t, tt.want, mts.metadataUrl)
 		})
 	}
@@ -300,29 +300,28 @@ func TestDefaultMetadataServiceVersion(t *testing.T) {
 func Test_serviceExporterExport(t *testing.T) {
 	mockExporter := new(mockExporter)
 	defer mockExporter.AssertExpectations(t)
-	mockProtocol := new(mockProtocol)
-	defer mockProtocol.AssertExpectations(t)
+	dubboProtocol := new(mockProtocol)
+	defer dubboProtocol.AssertExpectations(t)
 	extension.SetProtocol("dubbo", func() protocol.Protocol {
-		return mockProtocol
+		return dubboProtocol
 	})
 	t.Run("normal", func(t *testing.T) {
 		port := common.GetRandomPort("")
 		p, err := strconv.Atoi(port)
 		assert.Nil(t, err)
 		opts := &Options{
-			AppName:      "dubbo-app",
-			MetadataType: constant.RemoteMetadataStorageType,
-			Port:         p,
+			appName:      "dubbo-app",
+			metadataType: constant.RemoteMetadataStorageType,
+			protocol:     constant.Dubbo,
+			port:         p,
 		}
-		mockProtocol.On("Export").Return(mockExporter).Once()
-		mockExporter.On("UnExport").Once()
+		dubboProtocol.On("Export").Return(mockExporter).Once()
 		e := &serviceExporter{
 			opts:    opts,
 			service: &DefaultMetadataService{},
 		}
 		err = e.Export()
 		assert.Nil(t, err)
-		e.UnExport()
 	})
 	// first t.Run has called commom.ServiceMap.Register ,second will fail
 	t.Run("get methods error", func(t *testing.T) {
@@ -330,9 +329,10 @@ func Test_serviceExporterExport(t *testing.T) {
 		p, err := strconv.Atoi(port)
 		assert.Nil(t, err)
 		opts := &Options{
-			AppName:      "dubbo-app",
-			MetadataType: constant.RemoteMetadataStorageType,
-			Port:         p,
+			appName:      "dubbo-app",
+			metadataType: constant.RemoteMetadataStorageType,
+			protocol:     constant.Dubbo,
+			port:         p,
 		}
 		e := &serviceExporter{
 			opts:    opts,
@@ -343,30 +343,21 @@ func Test_serviceExporterExport(t *testing.T) {
 	})
 	t.Run("port == 0", func(t *testing.T) {
 		opts := &Options{
-			AppName:      "dubbo-app",
-			MetadataType: constant.RemoteMetadataStorageType,
-			Port:         0,
+			appName:      "dubbo-app",
+			metadataType: constant.RemoteMetadataStorageType,
+			protocol:     constant.Dubbo,
+			port:         0,
 		}
 		// UnRegister first otherwise will fail
 		err := common.ServiceMap.UnRegister(constant.MetadataServiceName, constant.DefaultProtocol,
-			common.ServiceKey(constant.MetadataServiceName, opts.AppName, version))
+			common.ServiceKey(constant.MetadataServiceName, opts.appName, version))
 		assert.Nil(t, err)
-		mockProtocol.On("Export").Return(mockExporter).Once()
-		mockExporter.On("UnExport").Once()
+		dubboProtocol.On("Export").Return(mockExporter).Once()
 		e := &serviceExporter{
 			opts:    opts,
 			service: &DefaultMetadataService{},
 		}
 		err = e.Export()
 		assert.Nil(t, err)
-		e.UnExport()
 	})
-}
-
-func Test_serviceExporterUnExport(t *testing.T) {
-	mockExporter := new(mockExporter)
-	defer mockExporter.AssertExpectations(t)
-	serviceExporter := &serviceExporter{protocolExporter: mockExporter}
-	mockExporter.On("UnExport").Once()
-	serviceExporter.UnExport()
 }

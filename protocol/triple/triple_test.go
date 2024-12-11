@@ -50,7 +50,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/server/api"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	_ "dubbo.apache.org/dubbo-go/v3/proxy/proxy_factory"
-	"dubbo.apache.org/dubbo-go/v3/server"
 )
 
 const (

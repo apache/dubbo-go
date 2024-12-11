@@ -122,9 +122,7 @@ func TestGetMetadataFromRpc(t *testing.T) {
 
 func Test_buildMetadataServiceURL(t *testing.T) {
 	type args struct {
-		serviceName string
-		host        string
-		params      map[string]string
+		ins registry.ServiceInstance
 	}
 	tests := []struct {
 		name string
@@ -134,11 +132,20 @@ func Test_buildMetadataServiceURL(t *testing.T) {
 		{
 			name: "normal",
 			args: args{
-				serviceName: "dubbo-app",
-				host:        "dubbo.io",
-				params: map[string]string{
-					constant.ProtocolKey: "dubbo",
-					constant.PortKey:     "3000",
+				&registry.DefaultServiceInstance{
+					ServiceName: "dubbo-app",
+					Host:        "dubbo.io",
+					Metadata: map[string]string{
+						constant.ProtocolKey: "dubbo",
+						constant.PortKey:     "3000",
+						constant.MetadataServiceURLParamsPropertyName: `{
+							"group":"dubbo_registry_nacos_server",
+							"port":"3000",
+							"protocol":"dubbo",
+							"serialization":"hessian2",
+							"version":"1.0.0"
+						}`,
+					},
 				},
 			},
 			want: common.NewURLWithOptions(
@@ -150,6 +157,8 @@ func Test_buildMetadataServiceURL(t *testing.T) {
 				common.WithParams(map[string][]string{
 					constant.ProtocolKey: {"dubbo"},
 					constant.PortKey:     {"3000"},
+					constant.SerializationKey: {constant.Hessian2Serialization},
+					constant.VersionKey: {"1.0.0"},
 				}),
 				common.WithParamsValue(constant.GroupKey, "dubbo-app"),
 				common.WithParamsValue(constant.InterfaceKey, constant.MetadataServiceName),
@@ -158,23 +167,25 @@ func Test_buildMetadataServiceURL(t *testing.T) {
 		{
 			name: "no protocol",
 			args: args{
-				serviceName: "dubbo-app",
-				host:        "dubbo.io",
-				params:      map[string]string{},
+				&registry.DefaultServiceInstance{
+					ServiceName: "dubbo-app",
+					Host:        "dubbo.io",
+					Metadata:    map[string]string{},
+				},
 			},
 			want: nil,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equalf(t, tt.want, buildMetadataServiceURL(tt.args.serviceName, tt.args.host, tt.args.params), "buildMetadataServiceURL(%v, %v, %v)", tt.args.serviceName, tt.args.host, tt.args.params)
+			assert.Equalf(t, tt.want, buildStandardMetadataServiceURL(tt.args.ins), "buildMetadataServiceURL(%v)", tt.args.ins)
 		})
 	}
 }
 
 func Test_getMetadataServiceUrlParams(t *testing.T) {
 	type args struct {
-		jsonStr string
+		ins registry.ServiceInstance
 	}
 	tests := []struct {
 		name string
@@ -184,15 +195,19 @@ func Test_getMetadataServiceUrlParams(t *testing.T) {
 		{
 			name: "normal",
 			args: args{
-				jsonStr: `{
-					"application": "BDTService",
-					"group": "BDTService",
-					"port": "64658",
-					"protocol": "dubbo",
-					"release": "dubbo-golang-3.0.0",
-					"timestamp": "1713432877",
-					"version": "1.0.0"
-				}`,
+				&registry.DefaultServiceInstance{
+					Metadata: map[string]string{
+						constant.MetadataServiceURLParamsPropertyName: `{
+							"application": "BDTService",
+							"group": "BDTService",
+							"port": "64658",
+							"protocol": "dubbo",
+							"release": "dubbo-golang-3.0.0",
+							"timestamp": "1713432877",
+							"version": "1.0.0"
+						}`,
+					},
+				},
 			},
 			want: map[string]string{
 				"application": "BDTService",
@@ -207,14 +222,18 @@ func Test_getMetadataServiceUrlParams(t *testing.T) {
 		{
 			name: "wrong format",
 			args: args{
-				jsonStr: "xxx",
+				&registry.DefaultServiceInstance{
+					Metadata: map[string]string{
+						constant.MetadataServiceURLParamsPropertyName: `xxx`,
+					},
+				},
 			},
 			want: map[string]string{},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equalf(t, tt.want, getMetadataServiceUrlParams(tt.args.jsonStr), "getMetadataServiceUrlParams(%v)", tt.args.jsonStr)
+			assert.Equalf(t, tt.want, getMetadataServiceUrlParams(tt.args.ins), "getMetadataServiceUrlParams(%v)", tt.args.ins)
 		})
 	}
 }
@@ -244,7 +263,7 @@ type mockInvoker struct {
 }
 
 func (m *mockInvoker) GetURL() *common.URL {
-	return nil
+	return common.NewURLWithOptions(common.WithProtocol(constant.DefaultProtocol))
 }
 
 func (m *mockInvoker) IsAvailable() bool {

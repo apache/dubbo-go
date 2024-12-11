@@ -54,10 +54,10 @@ type Server struct {
 	svcOptsMap sync.Map
 }
 
-// ServiceInfo type alias, just for compatible with old generate pb.go file
+// ServiceInfo Deprecated： common.ServiceInfo type alias, just for compatible with old generate pb.go file
 type ServiceInfo = common.ServiceInfo
 
-// MethodInfo type alias， just for compatible with old generate pb.go file
+// MethodInfo Deprecated： common.MethodInfo type alias， just for compatible with old generate pb.go file
 type MethodInfo = common.MethodInfo
 
 type ServiceDefinition struct {

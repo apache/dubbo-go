@@ -64,6 +64,9 @@ func GetMetadataFromRpc(revision string, instance registry.ServiceInstance) (*in
 	} else {
 		remoteService = &remoteMetadataServiceV1{invoker: invoker}
 	}
+	defer func() {
+		invoker.Destroy()
+	}()
 	return remoteService.getMetadataInfo(context.Background(), revision)
 }
 
@@ -109,28 +112,6 @@ func convertMetadataInfoV2(v2 *tripleapi.MetadataInfoV2) *info.MetadataInfo {
 	}
 	return metadataInfo
 }
-
-//func convertMetadataInfo(v1 *tripleapi.MetadataInfo) *info.MetadataInfo {
-//	infos := make(map[string]*info.ServiceInfo, len(v1.Services))
-//	for k, v := range v1.Services {
-//		serviceInfo := &info.ServiceInfo{
-//			Name:     v.Name,
-//			Group:    v.Group,
-//			Version:  v.Version,
-//			Protocol: v.Protocol,
-//			Path:     v.Path,
-//			Params:   v.Params,
-//		}
-//		infos[k] = serviceInfo
-//	}
-//
-//	metadataInfo := &info.MetadataInfo{
-//		App:      v1.App,
-//		Revision: v1.Version,
-//		Services: infos,
-//	}
-//	return metadataInfo
-//}
 
 func generateInvocation(u *common.URL, methodName string, req interface{}, resp interface{}, callType string) (protocol.Invocation, error) {
 	var inv *invocation.RPCInvocation
@@ -192,9 +173,9 @@ func buildStandardMetadataServiceURL(ins registry.ServiceInstance) *common.URL {
 	host := ins.GetHost()
 
 	metaV := ins.GetMetadata()[constant.MetadataVersion]
-	protocol := ps[constant.ProtocolKey]
+	proto := ps[constant.ProtocolKey]
 	if metaV == constant.MetadataServiceV2Version {
-		protocol = constant.TriProtocol
+		proto = constant.TriProtocol
 	}
 
 	convertedParams := make(map[string][]string, len(ps))
@@ -203,13 +184,13 @@ func buildStandardMetadataServiceURL(ins registry.ServiceInstance) *common.URL {
 	}
 	u := common.NewURLWithOptions(common.WithIp(host),
 		common.WithPath(constant.MetadataServiceName),
-		common.WithProtocol(protocol),
+		common.WithProtocol(proto),
 		common.WithPort(ps[constant.PortKey]),
 		common.WithParams(convertedParams),
 		common.WithParamsValue(constant.GroupKey, sn),
 		common.WithParamsValue(constant.InterfaceKey, constant.MetadataServiceName))
 
-	if protocol == constant.TriProtocol {
+	if proto == constant.TriProtocol {
 		u.SetAttribute(constant.ClientInfoKey, "info")
 		u.Methods = []string{"GetMetadataInfo", "getMetadataInfo"}
 		if metaV == constant.MetadataServiceV2Version {
