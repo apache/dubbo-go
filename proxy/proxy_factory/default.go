@@ -19,7 +19,6 @@ package proxy_factory
 
 import (
 	"context"
-	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	"errors"
 	"fmt"
 	"reflect"
@@ -37,6 +36,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	"dubbo.apache.org/dubbo-go/v3/proxy"
 )
 
@@ -80,7 +80,7 @@ func (factory *DefaultProxyFactory) GetInvoker(url *common.URL) protocol.Invoker
 	if url.Protocol == constant.TriProtocol || (url.SubURL != nil && url.SubURL.Protocol == constant.TriProtocol) {
 		if info, ok := url.GetAttribute(constant.ServiceInfoKey); ok {
 			svc, _ := url.GetAttribute(constant.RpcServiceKey)
-			return newTriInvoker(url, info.(*common.ServiceInfo), svc)
+			return newInfoInvoker(url, info.(*common.ServiceInfo), svc)
 		}
 	}
 	return &ProxyInvoker{
@@ -182,14 +182,14 @@ func getProviderURL(url *common.URL) *common.URL {
 	return url.SubURL
 }
 
-type triProxyInvoker struct {
+type infoProxyInvoker struct {
 	protocol.BaseInvoker
 	info      *common.ServiceInfo
 	svc       common.RPCService
 	methodMap map[string]*common.MethodInfo
 }
 
-func (tpi *triProxyInvoker) init() {
+func (tpi *infoProxyInvoker) init() {
 	methodMap := make(map[string]*common.MethodInfo)
 	for i := range tpi.info.Methods {
 		methodMap[tpi.info.Methods[i].Name] = &tpi.info.Methods[i]
@@ -197,7 +197,7 @@ func (tpi *triProxyInvoker) init() {
 	tpi.methodMap = methodMap
 }
 
-func (tpi *triProxyInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
+func (tpi *infoProxyInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 	name := invocation.MethodName()
 	args := invocation.Arguments()
 	result := new(protocol.RPCResult)
@@ -220,8 +220,8 @@ func (tpi *triProxyInvoker) Invoke(ctx context.Context, invocation protocol.Invo
 	return result
 }
 
-func newTriInvoker(url *common.URL, info *common.ServiceInfo, svc common.RPCService) protocol.Invoker {
-	invoker := &triProxyInvoker{
+func newInfoInvoker(url *common.URL, info *common.ServiceInfo, svc common.RPCService) protocol.Invoker {
+	invoker := &infoProxyInvoker{
 		BaseInvoker: *protocol.NewBaseInvoker(url),
 		info:        info,
 		svc:         svc,

@@ -19,9 +19,6 @@ package metadata
 
 import (
 	"context"
-	tripleapi "dubbo.apache.org/dubbo-go/v3/metadata/triple_api/proto"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
-	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"encoding/json"
 	"reflect"
 )
@@ -37,6 +34,9 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
+	tripleapi "dubbo.apache.org/dubbo-go/v3/metadata/triple_api/proto"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 

@@ -19,15 +19,13 @@ package metadata
 
 import (
 	"context"
-	tripleapi "dubbo.apache.org/dubbo-go/v3/metadata/triple_api/proto"
-	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
-	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	"strconv"
 	"strings"
 )
 
 import (
 	"github.com/dubbogo/gost/log/logger"
+
 	perrors "github.com/pkg/errors"
 )
 
@@ -36,7 +34,10 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
+	tripleapi "dubbo.apache.org/dubbo-go/v3/metadata/triple_api/proto"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 )
 
 // version will be used by Version func

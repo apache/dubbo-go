@@ -18,8 +18,6 @@
 package servicediscovery
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/metadata"
-	"dubbo.apache.org/dubbo-go/v3/metadata/info"
 	"encoding/gob"
 	"reflect"
 	"sync"
@@ -35,6 +33,8 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/metadata"
+	"dubbo.apache.org/dubbo-go/v3/metadata/info"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/registry/servicediscovery/store"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
