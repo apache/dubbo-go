@@ -19,6 +19,9 @@ package proxy_factory
 
 import (
 	"context"
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
+	"errors"
+	"fmt"
 	"reflect"
 	"strings"
 )
@@ -74,6 +77,12 @@ func (factory *DefaultProxyFactory) GetAsyncProxy(invoker protocol.Invoker, call
 
 // GetInvoker gets a invoker
 func (factory *DefaultProxyFactory) GetInvoker(url *common.URL) protocol.Invoker {
+	if url.Protocol == constant.TriProtocol || (url.SubURL != nil && url.SubURL.Protocol == constant.TriProtocol) {
+		if info, ok := url.GetAttribute(constant.ServiceInfoKey); ok {
+			svc, _ := url.GetAttribute(constant.RpcServiceKey)
+			return newTriInvoker(url, info.(*common.ServiceInfo), svc)
+		}
+	}
 	return &ProxyInvoker{
 		BaseInvoker: *protocol.NewBaseInvoker(url),
 	}
@@ -171,4 +180,52 @@ func getProviderURL(url *common.URL) *common.URL {
 		return url
 	}
 	return url.SubURL
+}
+
+type triProxyInvoker struct {
+	protocol.BaseInvoker
+	info      *common.ServiceInfo
+	svc       common.RPCService
+	methodMap map[string]*common.MethodInfo
+}
+
+func (tpi *triProxyInvoker) init() {
+	methodMap := make(map[string]*common.MethodInfo)
+	for i := range tpi.info.Methods {
+		methodMap[tpi.info.Methods[i].Name] = &tpi.info.Methods[i]
+	}
+	tpi.methodMap = methodMap
+}
+
+func (tpi *triProxyInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
+	name := invocation.MethodName()
+	args := invocation.Arguments()
+	result := new(protocol.RPCResult)
+	if method, ok := tpi.methodMap[name]; ok {
+		res, err := method.MethodFunc(ctx, args, tpi.svc)
+		result.SetResult(res)
+		if err != nil {
+			var proError *triple_protocol.Error
+			if !errors.As(err, &proError) {
+				err = triple_protocol.NewError(triple_protocol.CodeBizError, err)
+			} else if proError.Code() != triple_protocol.CodeBizError {
+				err = triple_protocol.NewError(proError.Code(), proError.Unwrap())
+			}
+			result.SetError(err)
+		}
+		return result
+	}
+	result.SetError(fmt.Errorf("no match method for %s", name))
+
+	return result
+}
+
+func newTriInvoker(url *common.URL, info *common.ServiceInfo, svc common.RPCService) protocol.Invoker {
+	invoker := &triProxyInvoker{
+		BaseInvoker: *protocol.NewBaseInvoker(url),
+		info:        info,
+		svc:         svc,
+	}
+	invoker.init()
+	return invoker
 }

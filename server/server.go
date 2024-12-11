@@ -19,8 +19,6 @@
 package server
 
 import (
-	"context"
-	"fmt"
 	"sort"
 	"strconv"
 	"sync"
@@ -40,7 +38,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/metadata"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
-	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	"dubbo.apache.org/dubbo-go/v3/registry/exposed_tmp"
 )
 
@@ -50,101 +47,27 @@ var proLock sync.Mutex
 
 type Server struct {
 	invoker protocol.Invoker
-	info    *ServiceInfo
+	info    *common.ServiceInfo
 
 	cfg *ServerOptions
 
 	svcOptsMap sync.Map
 }
 
-// ServiceInfo is meta info of a service, just for compatible with generate pb.go file
-type ServiceInfo struct {
-	common.ServiceInfo
-}
+// ServiceInfo type alias, just for compatible with old generate pb.go file
+type ServiceInfo = common.ServiceInfo
 
-// MethodInfo just for compatible with generate pb.go file
-type MethodInfo struct {
-	common.MethodInfo
-}
-
-type infoInvoker struct {
-	url       *common.URL
-	base      *protocol.BaseInvoker
-	info      *ServiceInfo
-	svc       common.RPCService
-	methodMap map[string]*MethodInfo
-}
+// MethodInfo type alias， just for compatible with old generate pb.go file
+type MethodInfo = common.MethodInfo
 
 type ServiceDefinition struct {
 	Handler interface{}
-	Info    *ServiceInfo
+	Info    *common.ServiceInfo
 	Opts    []ServiceOption
 }
 
-func (ii *infoInvoker) init() {
-	url := ii.base.GetURL()
-	if url.SubURL != nil {
-		url = url.SubURL
-	}
-	ii.url = url
-	methodMap := make(map[string]*MethodInfo)
-	for i := range ii.info.Methods {
-		methodMap[ii.info.Methods[i].Name] = &ii.info.Methods[i]
-	}
-	ii.methodMap = methodMap
-}
-
-func (ii *infoInvoker) GetURL() *common.URL {
-	return ii.base.GetURL()
-}
-
-func (ii *infoInvoker) IsAvailable() bool {
-	return ii.base.IsAvailable()
-}
-
-func (ii *infoInvoker) Destroy() {
-	ii.base.Destroy()
-}
-
-func (ii *infoInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
-	name := invocation.MethodName()
-	args := invocation.Arguments()
-	result := new(protocol.RPCResult)
-	if method, ok := ii.methodMap[name]; ok {
-		res, err := method.MethodFunc(ctx, args, ii.svc)
-		result.SetResult(res)
-		if err != nil {
-			var proError *triple_protocol.Error
-			if !errors.As(err, &proError) {
-				err = triple_protocol.NewError(triple_protocol.CodeBizError, err)
-			} else if proError.Code() != triple_protocol.CodeBizError {
-				err = triple_protocol.NewError(proError.Code(), proError.Unwrap())
-			}
-			result.SetError(err)
-		}
-		return result
-	}
-	result.SetError(fmt.Errorf("no match method for %s", name))
-
-	return result
-}
-
-func newInfoInvoker(url *common.URL, info *ServiceInfo, svc common.RPCService) protocol.Invoker {
-	invoker := &infoInvoker{
-		base: protocol.NewBaseInvoker(url),
-		info: info,
-		svc:  svc,
-	}
-	invoker.init()
-	return invoker
-}
-
-func NewInternalInvoker(url *common.URL, info *ServiceInfo, svc common.RPCService) protocol.Invoker {
-	return newInfoInvoker(url, info, svc)
-}
-
 // Register assemble invoker chains like ProviderConfig.Load, init a service per call
-func (s *Server) Register(handler interface{}, info *ServiceInfo, opts ...ServiceOption) error {
+func (s *Server) Register(handler interface{}, info *common.ServiceInfo, opts ...ServiceOption) error {
 	newSvcOpts, err := s.genSvcOpts(handler, opts...)
 	if err != nil {
 		return err
@@ -199,10 +122,10 @@ func (s *Server) exportServices() (err error) {
 		if infoRaw == nil {
 			err = svcOpts.ExportWithoutInfo()
 		} else {
-			info := infoRaw.(*ServiceInfo)
+			info := infoRaw.(*common.ServiceInfo)
 			//Add a method with a name of a differtent first-letter case
 			//to achieve interoperability with java
-			var additionalMethods []MethodInfo
+			var additionalMethods []common.MethodInfo
 			for _, method := range info.Methods {
 				newMethod := method
 				newMethod.Name = dubboutil.SwapCaseFirstRune(method.Name)
@@ -307,7 +230,7 @@ type InternalService struct {
 	// internal service name
 	Name    string
 	svcOpts *ServiceOptions
-	info    *ServiceInfo
+	info    *common.ServiceInfo
 	// This is required
 	// This options is service configuration
 	// Return serviceDefinition and bool, where bool indicates whether it is exported

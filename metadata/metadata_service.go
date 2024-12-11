@@ -19,10 +19,9 @@ package metadata
 
 import (
 	"context"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	tripleapi "dubbo.apache.org/dubbo-go/v3/metadata/triple_api/proto"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
-	"fmt"
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	"strconv"
 	"strings"
 )
@@ -144,6 +143,7 @@ type serviceExporter struct {
 	opts             *Options
 	service          MetadataService
 	protocolExporter protocol.Exporter
+	v2Exporter       protocol.Exporter
 }
 
 // Export will export the metadataService
@@ -199,6 +199,7 @@ func (e *serviceExporter) exportDubbo(port string) error {
 
 func (e *serviceExporter) exportTripleV1(port string) {
 	version, _ := e.service.Version()
+	svc := &MetadataServiceV1{delegate: e.service}
 	ivkURL := common.NewURLWithOptions(
 		common.WithPath(constant.MetadataServiceName),
 		common.WithProtocol(constant.TriProtocol),
@@ -208,30 +209,17 @@ func (e *serviceExporter) exportTripleV1(port string) {
 		common.WithInterface(constant.MetadataServiceName),
 		common.WithMethods(strings.Split("getMetadataInfo,GetMetadataInfo", ",")),
 		common.WithParamsValue(constant.SerializationKey, constant.Hessian2Serialization),
+		common.WithAttribute(constant.ServiceInfoKey, &MetadataService_ServiceInfo),
+		common.WithAttribute(constant.RpcServiceKey, svc),
 	)
-	m := &MetadataServiceV1{delegate: e.service}
-	invoker := &serviceInvoker{
-		BaseInvoker: protocol.NewBaseInvoker(ivkURL),
-		invoke: func(context context.Context, invocation protocol.Invocation) protocol.Result {
-			name := invocation.MethodName()
-			args := invocation.Arguments()
-			result := new(protocol.RPCResult)
-			if name == "getMetadataInfo" || name == "GetMetadataInfo" {
-				meta, err := m.GetMetadataInfo(context, args[0].(string))
-				result.SetResult(meta)
-				result.SetError(err)
-			} else {
-				result.SetError(fmt.Errorf("no match method for %s", name))
-			}
-			return result
-		},
-	}
+	proxyFactory := extension.GetProxyFactory("")
+	invoker := proxyFactory.GetInvoker(ivkURL)
 	e.protocolExporter = extension.GetProtocol(protocolwrapper.FILTER).Export(invoker)
-
 	e.service.(*DefaultMetadataService).setMetadataServiceURL(invoker.GetURL())
 }
 
 func (e *serviceExporter) exportV2(port string) {
+	v2 := &MetadataServiceV2{delegate: e.service}
 	// v2 only supports triple protocol
 	ivkURL := common.NewURLWithOptions(
 		common.WithPath(constant.MetadataServiceV2Name),
@@ -241,26 +229,12 @@ func (e *serviceExporter) exportV2(port string) {
 		common.WithParamsValue(constant.VersionKey, "2.0.0"),
 		common.WithInterface(constant.MetadataServiceV2Name),
 		common.WithMethods(strings.Split("getMetadataInfo,GetMetadataInfo", ",")),
+		common.WithAttribute(constant.ServiceInfoKey, &MetadataServiceV2_ServiceInfo),
+		common.WithAttribute(constant.RpcServiceKey, v2),
 	)
-	m := &MetadataServiceV2{delegate: e.service}
-	invoker := &serviceInvoker{
-		BaseInvoker: protocol.NewBaseInvoker(ivkURL),
-		invoke: func(context context.Context, invocation protocol.Invocation) protocol.Result {
-			name := invocation.MethodName()
-			args := invocation.Arguments()
-			result := new(protocol.RPCResult)
-			if name == "getMetadataInfo" || name == "GetMetadataInfo" {
-				meta, err := m.GetMetadataInfo(context, args[0].(*tripleapi.MetadataRequest))
-				result.SetResult(meta)
-				result.SetError(err)
-			} else {
-				result.SetError(fmt.Errorf("no match method for %s", name))
-			}
-			return result
-		},
-	}
-	config.SetProviderService(m)
-	e.protocolExporter = extension.GetProtocol(protocolwrapper.FILTER).Export(invoker)
+	proxyFactory := extension.GetProxyFactory("")
+	invoker := proxyFactory.GetInvoker(ivkURL)
+	e.v2Exporter = extension.GetProtocol(protocolwrapper.FILTER).Export(invoker)
 	// do not set, because it will override MetadataService
 	//exporter.metadataService.SetMetadataServiceURL(ivkURL)
 }
@@ -344,4 +318,60 @@ func convertV2(serviceInfos map[string]*info.ServiceInfo) map[string]*tripleapi.
 		serviceInfoV2s[k] = serviceInfoV2
 	}
 	return serviceInfoV2s
+}
+
+var MetadataService_ServiceInfo = common.ServiceInfo{
+	InterfaceName: "org.apache.dubbo.metadata.MetadataService",
+	ServiceType:   (*MetadataServiceHandler)(nil),
+	Methods: []common.MethodInfo{
+		{
+			Name: "getMetadataInfo",
+			Type: constant.CallUnary,
+			ReqInitFunc: func() interface{} {
+				return new(string)
+			},
+			MethodFunc: func(ctx context.Context, args []interface{}, handler interface{}) (interface{}, error) {
+				revision := args[0].(*string)
+				res, err := handler.(MetadataServiceHandler).GetMetadataInfo(ctx, *revision)
+				return res, err
+			},
+		},
+	},
+}
+
+var MetadataServiceV2_ServiceInfo = common.ServiceInfo{
+	InterfaceName: "org.apache.dubbo.metadata.MetadataServiceV2",
+	ServiceType:   (*MetadataServiceV2Handler)(nil),
+	Methods: []common.MethodInfo{
+		{
+			Name: "GetMetadataInfo",
+			Type: constant.CallUnary,
+			ReqInitFunc: func() interface{} {
+				return new(tripleapi.MetadataRequest)
+			},
+			MethodFunc: func(ctx context.Context, args []interface{}, handler interface{}) (interface{}, error) {
+				req := args[0].(*tripleapi.MetadataRequest)
+				res, err := handler.(MetadataServiceV2Handler).GetMetadataInfo(ctx, req)
+				if err != nil {
+					return nil, err
+				}
+				return triple_protocol.NewResponse(res), nil
+			},
+		},
+		{
+			Name: "getMetadataInfo",
+			Type: constant.CallUnary,
+			ReqInitFunc: func() interface{} {
+				return new(tripleapi.MetadataRequest)
+			},
+			MethodFunc: func(ctx context.Context, args []interface{}, handler interface{}) (interface{}, error) {
+				req := args[0].(*tripleapi.MetadataRequest)
+				res, err := handler.(MetadataServiceV2Handler).GetMetadataInfo(ctx, req)
+				if err != nil {
+					return nil, err
+				}
+				return triple_protocol.NewResponse(res), nil
+			},
+		},
+	},
 }

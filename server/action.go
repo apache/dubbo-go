@@ -128,11 +128,11 @@ func (svcOpts *ServiceOptions) ExportWithoutInfo() error {
 	return svcOpts.export(nil)
 }
 
-func (svcOpts *ServiceOptions) ExportWithInfo(info *ServiceInfo) error {
+func (svcOpts *ServiceOptions) ExportWithInfo(info *common.ServiceInfo) error {
 	return svcOpts.export(info)
 }
 
-func (svcOpts *ServiceOptions) export(info *ServiceInfo) error {
+func (svcOpts *ServiceOptions) export(info *common.ServiceInfo) error {
 	svc := svcOpts.Service
 
 	if info != nil {
@@ -249,12 +249,13 @@ func (svcOpts *ServiceOptions) export(info *ServiceInfo) error {
 	return nil
 }
 
-func (svcOpts *ServiceOptions) generatorInvoker(url *common.URL, info *ServiceInfo) protocol.Invoker {
+func (svcOpts *ServiceOptions) generatorInvoker(url *common.URL, info *common.ServiceInfo) protocol.Invoker {
 	proxyFactory := extension.GetProxyFactory(svcOpts.ProxyFactoryKey)
-	if info == nil {
-		return proxyFactory.GetInvoker(url)
+	if info != nil {
+		url.SetAttribute(constant.ServiceInfoKey, info)
+		url.SetAttribute(constant.RpcServiceKey, svcOpts.rpcService)
 	}
-	return newInfoInvoker(url, info, svcOpts.rpcService)
+	return proxyFactory.GetInvoker(url)
 }
 
 // setRegistrySubURL set registry sub url is ivkURl

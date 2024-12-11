@@ -336,12 +336,13 @@ func (s *ServiceConfig) Export() error {
 	return nil
 }
 
-func (s *ServiceConfig) generatorInvoker(regUrl *common.URL, info interface{}) protocol.Invoker {
+func (s *ServiceConfig) generatorInvoker(url *common.URL, info interface{}) protocol.Invoker {
 	proxyFactory := extension.GetProxyFactory(s.ProxyFactoryKey)
-	if info == nil {
-		return proxyFactory.GetInvoker(regUrl)
+	if info != nil {
+		url.SetAttribute(constant.ServiceInfoKey, info)
+		url.SetAttribute(constant.RpcServiceKey, s.rpcService)
 	}
-	return NewInfoInvoker(regUrl, info, s.rpcService)
+	return proxyFactory.GetInvoker(url)
 }
 
 // setRegistrySubURL set registry sub url is ivkURl
