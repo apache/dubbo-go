@@ -111,6 +111,46 @@ type ReportOptions struct {
 	*global.MetadataReportConfig
 }
 
+func InitRegistryMetadataReport(registries map[string]*global.RegistryConfig) error {
+	if len(registries) > 0 {
+		for id, reg := range registries {
+			ok, err := reg.UseAsMetadataReport()
+			if err != nil {
+				return err
+			}
+			if ok {
+				opts := fromRegistry(id, reg)
+				if err := opts.Init(); err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func fromRegistry(id string, rc *global.RegistryConfig) *ReportOptions {
+	opts := NewReportOptions(
+		WithRegistryId(id),
+		WithProtocol(rc.Protocol),
+		WithAddress(rc.Address),
+		WithUsername(rc.Username),
+		WithPassword(rc.Password),
+		WithGroup(rc.Group),
+		WithNamespace(rc.Namespace),
+		WithParams(rc.Params),
+	)
+	if rc.Timeout != "" {
+		timeout, err := time.ParseDuration(rc.Timeout)
+		if err != nil {
+			logger.Errorf("parse registry timeout config error %v", rc.Timeout)
+		} else {
+			WithTimeout(timeout)(opts)
+		}
+	}
+	return opts
+}
+
 func (opts *ReportOptions) Init() error {
 	url, err := opts.toUrl()
 	if err != nil {

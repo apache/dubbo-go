@@ -159,7 +159,7 @@ func (rc *InstanceOptions) init(opts ...InstanceOption) error {
 	if err := rc.initMetadataReport(); err != nil {
 		return err
 	}
-	if err := rc.initRegistryMetadataReport(); err != nil {
+	if err := metadata.InitRegistryMetadataReport(rc.Registries); err != nil {
 		return err
 	}
 
@@ -193,48 +193,6 @@ func reportConfigToReportOptions(mc *global.MetadataReportConfig) (*metadata.Rep
 	)
 	if mc.Timeout != "" {
 		timeout, err := time.ParseDuration(mc.Timeout)
-		if err != nil {
-			return nil, err
-		}
-		metadata.WithTimeout(timeout)(opts)
-	}
-	return opts, nil
-}
-
-func (rc *InstanceOptions) initRegistryMetadataReport() error {
-	if len(rc.Registries) > 0 {
-		for id, reg := range rc.Registries {
-			ok, err := strconv.ParseBool(reg.UseAsMetaReport)
-			if err != nil {
-				return err
-			}
-			if ok {
-				opts, err := registryToReportOptions(id, reg)
-				if err != nil {
-					return err
-				}
-				if err := opts.Init(); err != nil {
-					return err
-				}
-			}
-		}
-	}
-	return nil
-}
-
-func registryToReportOptions(id string, rc *global.RegistryConfig) (*metadata.ReportOptions, error) {
-	opts := metadata.NewReportOptions(
-		metadata.WithRegistryId(id),
-		metadata.WithProtocol(rc.Protocol),
-		metadata.WithAddress(rc.Address),
-		metadata.WithUsername(rc.Username),
-		metadata.WithPassword(rc.Password),
-		metadata.WithGroup(rc.Group),
-		metadata.WithNamespace(rc.Namespace),
-		metadata.WithParams(rc.Params),
-	)
-	if rc.Timeout != "" {
-		timeout, err := time.ParseDuration(rc.Timeout)
 		if err != nil {
 			return nil, err
 		}

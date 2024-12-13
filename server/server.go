@@ -22,7 +22,6 @@ import (
 	"sort"
 	"strconv"
 	"sync"
-	"time"
 )
 
 import (
@@ -34,8 +33,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	dubboutil "dubbo.apache.org/dubbo-go/v3/common/dubboutil"
-	"dubbo.apache.org/dubbo-go/v3/global"
+	"dubbo.apache.org/dubbo-go/v3/common/dubboutil"
 	"dubbo.apache.org/dubbo-go/v3/metadata"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/registry/exposed_tmp"
@@ -149,7 +147,7 @@ func (s *Server) exportServices() (err error) {
 func (s *Server) Serve() error {
 	// the registryConfig in ServiceOptions and ServerOptions all need to init a metadataReporter,
 	// when ServiceOptions.init() is called we don't know if a new registry config is set in the future use serviceOption
-	if err := s.initRegistryMetadataReport(); err != nil {
+	if err := metadata.InitRegistryMetadataReport(s.cfg.Registries); err != nil {
 		return err
 	}
 	opts := metadata.NewOptions(
@@ -264,48 +262,6 @@ func getMetadataPort(opts *ServerOptions) int {
 		return 0
 	}
 	return p
-}
-
-func (s *Server) initRegistryMetadataReport() error {
-	if len(s.cfg.Registries) > 0 {
-		for id, reg := range s.cfg.Registries {
-			ok, err := strconv.ParseBool(reg.UseAsMetaReport)
-			if err != nil {
-				return err
-			}
-			if ok {
-				opts, err := registryToReportOptions(id, reg)
-				if err != nil {
-					return err
-				}
-				if err := opts.Init(); err != nil {
-					return err
-				}
-			}
-		}
-	}
-	return nil
-}
-
-func registryToReportOptions(id string, rc *global.RegistryConfig) (*metadata.ReportOptions, error) {
-	opts := metadata.NewReportOptions(
-		metadata.WithRegistryId(id),
-		metadata.WithProtocol(rc.Protocol),
-		metadata.WithAddress(rc.Address),
-		metadata.WithUsername(rc.Username),
-		metadata.WithPassword(rc.Password),
-		metadata.WithGroup(rc.Group),
-		metadata.WithNamespace(rc.Namespace),
-		metadata.WithParams(rc.Params),
-	)
-	if rc.Timeout != "" {
-		timeout, err := time.ParseDuration(rc.Timeout)
-		if err != nil {
-			return nil, err
-		}
-		metadata.WithTimeout(timeout)(opts)
-	}
-	return opts, nil
 }
 
 func NewServer(opts ...ServerOption) (*Server, error) {
