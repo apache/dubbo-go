@@ -59,7 +59,7 @@ func GetMetadataFromRpc(revision string, instance registry.ServiceInstance) (*in
 		return nil, perrors.New("can not connect to remote metadata service host: " + url.Ip)
 	}
 	var remoteService remoteMetadataService
-	if instance.GetMetadata()[constant.MetadataVersion] == constant.MetadataServiceV2Version {
+	if url.Protocol == constant.TriProtocol && instance.GetMetadata()[constant.MetadataVersion] == constant.MetadataServiceV2Version {
 		remoteService = &triMetadataServiceV2{invoker: invoker}
 	} else {
 		remoteService = &remoteMetadataServiceV1{invoker: invoker}
@@ -174,10 +174,6 @@ func buildStandardMetadataServiceURL(ins registry.ServiceInstance) *common.URL {
 
 	metaV := ins.GetMetadata()[constant.MetadataVersion]
 	proto := ps[constant.ProtocolKey]
-	if metaV == constant.MetadataServiceV2Version {
-		proto = constant.TriProtocol
-	}
-
 	convertedParams := make(map[string][]string, len(ps))
 	for k, v := range ps {
 		convertedParams[k] = []string{v}
