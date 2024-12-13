@@ -155,10 +155,10 @@ func Test_buildMetadataServiceURL(t *testing.T) {
 				common.WithProtocol("dubbo"),
 				common.WithPort("3000"),
 				common.WithParams(map[string][]string{
-					constant.ProtocolKey: {"dubbo"},
-					constant.PortKey:     {"3000"},
+					constant.ProtocolKey:      {"dubbo"},
+					constant.PortKey:          {"3000"},
 					constant.SerializationKey: {constant.Hessian2Serialization},
-					constant.VersionKey: {"1.0.0"},
+					constant.VersionKey:       {"1.0.0"},
 				}),
 				common.WithParamsValue(constant.GroupKey, "dubbo-app"),
 				common.WithParamsValue(constant.InterfaceKey, constant.MetadataServiceName),
