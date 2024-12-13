@@ -53,7 +53,7 @@ type DubboCodec struct{}
 // EncodeRequest encodes request for transport
 func (c *DubboCodec) EncodeRequest(request *remoting.Request) (*bytes.Buffer, error) {
 	if request.Event {
-		return c.encodeHeartbeartReqeust(request)
+		return c.encodeHeartbeatRequest(request)
 	}
 
 	invoc, ok := request.Data.(*protocol.Invocation)
@@ -107,7 +107,7 @@ func (c *DubboCodec) EncodeRequest(request *remoting.Request) (*bytes.Buffer, er
 }
 
 // encode heartbeat request
-func (c *DubboCodec) encodeHeartbeartReqeust(request *remoting.Request) (*bytes.Buffer, error) {
+func (c *DubboCodec) encodeHeartbeatRequest(request *remoting.Request) (*bytes.Buffer, error) {
 	header := impl.DubboHeader{
 		Type:     impl.PackageHeartbeat,
 		SerialID: constant.SHessian2,
