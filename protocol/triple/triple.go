@@ -32,7 +32,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/internal"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
-	"dubbo.apache.org/dubbo-go/v3/server"
 )
 
 const (
@@ -58,10 +57,10 @@ type TripleProtocol struct {
 func (tp *TripleProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	url := invoker.GetURL()
 	serviceKey := url.ServiceKey()
-	var info *server.ServiceInfo
+	var info *common.ServiceInfo
 	infoRaw, ok := url.GetAttribute(constant.ServiceInfoKey)
 	if ok {
-		info = infoRaw.(*server.ServiceInfo)
+		info = infoRaw.(*common.ServiceInfo)
 	}
 	exporter := NewTripleExporter(serviceKey, invoker, tp.ExporterMap())
 	tp.SetExporterMap(serviceKey, exporter)
@@ -73,7 +72,7 @@ func (tp *TripleProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 
 // *Important*. This function is only for testing. When server package is finished, remove this function
 // and modify related tests.
-func (tp *TripleProtocol) exportForTest(invoker protocol.Invoker, info *server.ServiceInfo) protocol.Exporter {
+func (tp *TripleProtocol) exportForTest(invoker protocol.Invoker, info *common.ServiceInfo) protocol.Exporter {
 	url := invoker.GetURL()
 	serviceKey := url.ServiceKey()
 	// todo: retrieve this info from url
@@ -85,7 +84,7 @@ func (tp *TripleProtocol) exportForTest(invoker protocol.Invoker, info *server.S
 	return exporter
 }
 
-func (tp *TripleProtocol) openServer(invoker protocol.Invoker, info *server.ServiceInfo) {
+func (tp *TripleProtocol) openServer(invoker protocol.Invoker, info *common.ServiceInfo) {
 	url := invoker.GetURL()
 	tp.serverLock.Lock()
 	defer tp.serverLock.Unlock()

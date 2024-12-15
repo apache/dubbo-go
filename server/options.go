@@ -460,7 +460,7 @@ type ServiceOptions struct {
 	exported        *atomic.Bool
 	needExport      bool
 	metadataType    string
-	info            *ServiceInfo
+	info            *common.ServiceInfo
 	ProxyFactoryKey string
 	rpcService      common.RPCService
 	cacheMutex      sync.Mutex

@@ -19,6 +19,7 @@ package dubbo
 
 import (
 	"strconv"
+	"time"
 )
 
 import (
@@ -110,15 +111,8 @@ func (rc *InstanceOptions) init(opts ...InstanceOption) error {
 	}
 
 	// init protocol
-	protocols := rcCompat.Protocols
-	if len(protocols) <= 0 {
-		protocol := &config.ProtocolConfig{}
-		protocols = make(map[string]*config.ProtocolConfig, 1)
-		protocols[constant.Dubbo] = protocol
-		rcCompat.Protocols = protocols
-	}
-	for _, protocol := range protocols {
-		if err := protocol.Init(); err != nil {
+	for _, protocolConfig := range rcCompat.Protocols {
+		if err := protocolConfig.Init(); err != nil {
 			return err
 		}
 	}
@@ -133,9 +127,6 @@ func (rc *InstanceOptions) init(opts ...InstanceOption) error {
 		}
 	}
 
-	if err := rcCompat.MetadataReport.Init(rcCompat); err != nil {
-		return err
-	}
 	if err := rcCompat.Metrics.Init(rcCompat); err != nil {
 		return err
 	}
@@ -165,7 +156,49 @@ func (rc *InstanceOptions) init(opts ...InstanceOption) error {
 	}
 	config.SetRootConfig(*rcCompat)
 
+	if err := rc.initMetadataReport(); err != nil {
+		return err
+	}
+	if err := metadata.InitRegistryMetadataReport(rc.Registries); err != nil {
+		return err
+	}
+
+	compatInstanceOptions(rcCompat, rc) // overrider options config because some config are changed after init
 	return nil
+}
+
+func (rc *InstanceOptions) initMetadataReport() error {
+	if rc.MetadataReport.Address != "" {
+		opts, err := reportConfigToReportOptions(rc.MetadataReport)
+		if err != nil {
+			return err
+		}
+		if err := opts.Init(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func reportConfigToReportOptions(mc *global.MetadataReportConfig) (*metadata.ReportOptions, error) {
+	opts := metadata.NewReportOptions(
+		metadata.WithRegistryId(constant.DefaultKey),
+		metadata.WithProtocol(mc.Protocol),
+		metadata.WithAddress(mc.Address),
+		metadata.WithUsername(mc.Username),
+		metadata.WithPassword(mc.Password),
+		metadata.WithGroup(mc.Group),
+		metadata.WithNamespace(mc.Namespace),
+		metadata.WithParams(mc.Params),
+	)
+	if mc.Timeout != "" {
+		timeout, err := time.ParseDuration(mc.Timeout)
+		if err != nil {
+			return nil, err
+		}
+		metadata.WithTimeout(timeout)(opts)
+	}
+	return opts, nil
 }
 
 func (rc *InstanceOptions) Prefix() string {
@@ -385,11 +418,11 @@ func WithConfigCenter(opts ...config_center.Option) InstanceOption {
 	}
 }
 
-func WithMetadataReport(opts ...metadata.Option) InstanceOption {
-	metadataOpts := metadata.NewOptions(opts...)
+func WithMetadataReport(opts ...metadata.ReportOption) InstanceOption {
+	metadataOpts := metadata.NewReportOptions(opts...)
 
 	return func(cfg *InstanceOptions) {
-		cfg.MetadataReport = metadataOpts.Metadata
+		cfg.MetadataReport = metadataOpts.MetadataReportConfig
 	}
 }
 

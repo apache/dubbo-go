@@ -27,8 +27,6 @@ type MetadataReportConfig struct {
 	Group     string            `yaml:"group" json:"group,omitempty"`
 	Namespace string            `yaml:"namespace" json:"namespace,omitempty"`
 	Params    map[string]string `yaml:"params"  json:"parameters,omitempty"`
-	// metadataType of this application is defined by application config, local or remote
-	metadataType string
 }
 
 func DefaultMetadataReportConfig() *MetadataReportConfig {
@@ -48,14 +46,13 @@ func (c *MetadataReportConfig) Clone() *MetadataReportConfig {
 	}
 
 	return &MetadataReportConfig{
-		Protocol:     c.Protocol,
-		Address:      c.Address,
-		Username:     c.Username,
-		Password:     c.Password,
-		Timeout:      c.Timeout,
-		Group:        c.Group,
-		Namespace:    c.Namespace,
-		Params:       newParams,
-		metadataType: c.metadataType,
+		Protocol:  c.Protocol,
+		Address:   c.Address,
+		Username:  c.Username,
+		Password:  c.Password,
+		Timeout:   c.Timeout,
+		Group:     c.Group,
+		Namespace: c.Namespace,
+		Params:    newParams,
 	}
 }

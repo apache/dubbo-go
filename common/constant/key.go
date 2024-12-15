@@ -147,6 +147,7 @@ const (
 	CallHTTP                           = "http"
 	CallHTTP2                          = "http2"
 	ServiceInfoKey                     = "service-info"
+	RpcServiceKey                      = "rpc-service"
 	ClientInfoKey                      = "client-info"
 )
 
@@ -166,6 +167,7 @@ const (
 // registry keys
 const (
 	RegistryKey             = "registry"
+	RegistryIdKey           = "registry.id"
 	RegistryProtocol        = "registry"
 	ServiceRegistryProtocol = "service-discovery-registry"
 	RegistryRoleKey         = "registry.role"
@@ -188,6 +190,7 @@ const (
 
 const (
 	ApplicationKey         = "application"
+	ApplicationTagKey      = "application.tag"
 	OrganizationKey        = "organization"
 	NameKey                = "name"
 	ModuleKey              = "module"
