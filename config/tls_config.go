@@ -20,6 +20,7 @@ package config
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
 	"os"
 )
 
@@ -85,7 +86,7 @@ func GetClientTlsConfig(opt *TLSConfig) (*tls.Config, error) {
 		return nil, err
 	}
 	if ok := ca.AppendCertsFromPEM(caBytes); !ok {
-		return nil, err
+		return nil, errors.New("failed to append ca certs")
 	}
 	cfg.RootCAs = ca
 	//need mTls
