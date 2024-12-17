@@ -17,12 +17,13 @@
 
 package global
 
-import "strconv"
+import (
+	"strconv"
+)
 
 // todo(DMwangnima): finish refactoring and move related logic from config package to this file.
 // This RegistryConfig is a copy of /config/RegistryConfig right now.
 // Please refer to issue(https://github.com/apache/dubbo-go/issues/2377).
-
 // RegistryConfig is the configuration of the registry center
 type RegistryConfig struct {
 	Protocol          string            `validate:"required" yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
