@@ -17,6 +17,8 @@
 
 package global
 
+import "strconv"
+
 // todo(DMwangnima): finish refactoring and move related logic from config package to this file.
 // This RegistryConfig is a copy of /config/RegistryConfig right now.
 // Please refer to issue(https://github.com/apache/dubbo-go/issues/2377).
@@ -42,7 +44,7 @@ type RegistryConfig struct {
 }
 
 func DefaultRegistryConfig() *RegistryConfig {
-	return &RegistryConfig{}
+	return &RegistryConfig{UseAsMetaReport: "true", UseAsConfigCenter: "true", Timeout: "5s", TTL: "15m"}
 }
 
 // Clone a new RegistryConfig
@@ -74,4 +76,11 @@ func (c *RegistryConfig) Clone() *RegistryConfig {
 		UseAsMetaReport:   c.UseAsMetaReport,
 		UseAsConfigCenter: c.UseAsConfigCenter,
 	}
+}
+
+func (c *RegistryConfig) UseAsMetadataReport() (bool, error) {
+	if c.UseAsMetaReport == "" {
+		return true, nil
+	}
+	return strconv.ParseBool(c.UseAsMetaReport)
 }

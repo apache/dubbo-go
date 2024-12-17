@@ -45,7 +45,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo3"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
-	"dubbo.apache.org/dubbo-go/v3/server"
 )
 
 // Server is TRIPLE adaptation layer representation. It makes use of tri.Server to
@@ -65,7 +64,7 @@ func NewServer() *Server {
 }
 
 // Start TRIPLE server
-func (s *Server) Start(invoker protocol.Invoker, info *server.ServiceInfo) {
+func (s *Server) Start(invoker protocol.Invoker, info *common.ServiceInfo) {
 	URL := invoker.GetURL()
 	addr := URL.Location
 	// initialize tri.Server
@@ -109,7 +108,7 @@ func (s *Server) Start(invoker protocol.Invoker, info *server.ServiceInfo) {
 
 // todo(DMwangnima): extract a common function
 // RefreshService refreshes Triple Service
-func (s *Server) RefreshService(invoker protocol.Invoker, info *server.ServiceInfo) {
+func (s *Server) RefreshService(invoker protocol.Invoker, info *common.ServiceInfo) {
 	URL := invoker.GetURL()
 	serialization := URL.GetParam(constant.SerializationKey, constant.ProtobufSerialization)
 	switch serialization {
@@ -221,7 +220,7 @@ func (s *Server) compatRegisterHandler(interfaceName string, svc dubbo3.Dubbo3Gr
 }
 
 // handleServiceWithInfo injects invoker and create handler based on ServiceInfo
-func (s *Server) handleServiceWithInfo(interfaceName string, invoker protocol.Invoker, info *server.ServiceInfo, opts ...tri.HandlerOption) {
+func (s *Server) handleServiceWithInfo(interfaceName string, invoker protocol.Invoker, info *common.ServiceInfo, opts ...tri.HandlerOption) {
 	for _, method := range info.Methods {
 		m := method
 		procedure := joinProcedure(interfaceName, method.Name)
@@ -314,7 +313,7 @@ func (s *Server) handleServiceWithInfo(interfaceName string, invoker protocol.In
 	}
 }
 
-func (s *Server) saveServiceInfo(interfaceName string, info *server.ServiceInfo) {
+func (s *Server) saveServiceInfo(interfaceName string, info *common.ServiceInfo) {
 	ret := grpc.ServiceInfo{}
 	ret.Methods = make([]grpc.MethodInfo, 0, len(info.Methods))
 	for _, method := range info.Methods {
@@ -391,12 +390,12 @@ func (s *Server) GracefulStop() {
 // createServiceInfoWithReflection is for non-idl scenario.
 // It makes use of reflection to extract method parameters information and create ServiceInfo.
 // As a result, Server could use this ServiceInfo to register.
-func createServiceInfoWithReflection(svc common.RPCService) *server.ServiceInfo {
-	var info server.ServiceInfo
+func createServiceInfoWithReflection(svc common.RPCService) *common.ServiceInfo {
+	var info common.ServiceInfo
 	val := reflect.ValueOf(svc)
 	typ := reflect.TypeOf(svc)
 	methodNum := val.NumMethod()
-	methodInfos := make([]server.MethodInfo, methodNum)
+	methodInfos := make([]common.MethodInfo, methodNum)
 	for i := 0; i < methodNum; i++ {
 		methodType := typ.Method(i)
 		if methodType.Name == "Reference" {
@@ -413,7 +412,7 @@ func createServiceInfoWithReflection(svc common.RPCService) *server.ServiceInfo 
 		for j := 2; j < paramsNum; j++ {
 			paramsTypes[j-2] = methodType.Type.In(j)
 		}
-		methodInfo := server.MethodInfo{
+		methodInfo := common.MethodInfo{
 			Name: methodType.Name,
 			// only support Unary invocation now
 			Type: constant.CallUnary,

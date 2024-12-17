@@ -92,6 +92,7 @@ type ServiceConfig struct {
 	exporters       []protocol.Exporter
 
 	metadataType string
+	rc           *RootConfig
 }
 
 // Prefix returns dubbo.service.${InterfaceName}.
@@ -100,6 +101,7 @@ func (s *ServiceConfig) Prefix() string {
 }
 
 func (s *ServiceConfig) Init(rc *RootConfig) error {
+	s.rc = rc
 	if err := initProviderMethodConfig(s); err != nil {
 		return err
 	}
@@ -277,6 +279,7 @@ func (s *ServiceConfig) Export() error {
 			common.WithPort(port),
 			common.WithParams(urlMap),
 			common.WithParamsValue(constant.BeanNameKey, s.id),
+			common.WithParamsValue(constant.ApplicationTagKey, s.rc.Application.Tag),
 			//common.WithParamsValue(constant.SslEnabledKey, strconv.FormatBool(config.GetSslEnabled())),
 			common.WithMethods(strings.Split(methods, ",")),
 			common.WithToken(s.Token),
@@ -328,18 +331,18 @@ func (s *ServiceConfig) Export() error {
 			}
 			s.exporters = append(s.exporters, exporter)
 		}
-		publishServiceDefinition(ivkURL)
 	}
 	s.exported.Store(true)
 	return nil
 }
 
-func (s *ServiceConfig) generatorInvoker(regUrl *common.URL, info interface{}) protocol.Invoker {
+func (s *ServiceConfig) generatorInvoker(url *common.URL, info interface{}) protocol.Invoker {
 	proxyFactory := extension.GetProxyFactory(s.ProxyFactoryKey)
-	if info == nil {
-		return proxyFactory.GetInvoker(regUrl)
+	if info != nil {
+		url.SetAttribute(constant.ServiceInfoKey, info)
+		url.SetAttribute(constant.RpcServiceKey, s.rpcService)
 	}
-	return NewInfoInvoker(regUrl, info, s.rpcService)
+	return proxyFactory.GetInvoker(url)
 }
 
 // setRegistrySubURL set registry sub url is ivkURl

@@ -29,6 +29,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 	"dubbo.apache.org/dubbo-go/v3/remoting/zookeeper"
@@ -48,7 +49,7 @@ func NewCacheListener(rootPath string, listener *zookeeper.ZkEventListener) *Cac
 }
 
 // AddListener will add a listener if loaded
-func (l *CacheListener) AddListener(key string, listener registry.MappingListener) {
+func (l *CacheListener) AddListener(key string, listener mapping.MappingListener) {
 	// FIXME do not use Client.ExistW, cause it has a bug(can not watch zk node that do not exist)
 	_, _, _, err := l.zkEventListener.Client.Conn.ExistsW(key)
 	// reference from https://stackoverflow.com/questions/34018908/golang-why-dont-we-have-a-set-datastructure
@@ -56,25 +57,25 @@ func (l *CacheListener) AddListener(key string, listener registry.MappingListene
 	if err != nil {
 		return
 	}
-	listeners, loaded := l.keyListeners.LoadOrStore(key, map[registry.MappingListener]struct{}{listener: {}})
+	listeners, loaded := l.keyListeners.LoadOrStore(key, map[mapping.MappingListener]struct{}{listener: {}})
 	if loaded {
-		listeners.(map[registry.MappingListener]struct{})[listener] = struct{}{}
+		listeners.(map[mapping.MappingListener]struct{})[listener] = struct{}{}
 		l.keyListeners.Store(key, listeners)
 	}
 }
 
 // RemoveListener will delete a listener if loaded
-func (l *CacheListener) RemoveListener(key string, listener registry.MappingListener) {
+func (l *CacheListener) RemoveListener(key string, listener mapping.MappingListener) {
 	listeners, loaded := l.keyListeners.Load(key)
 	if loaded {
-		delete(listeners.(map[registry.MappingListener]struct{}), listener)
+		delete(listeners.(map[mapping.MappingListener]struct{}), listener)
 	}
 }
 
 // DataChange changes all listeners' event
 func (l *CacheListener) DataChange(event remoting.Event) bool {
 	if listeners, ok := l.keyListeners.Load(event.Path); ok {
-		for listener := range listeners.(map[registry.MappingListener]struct{}) {
+		for listener := range listeners.(map[mapping.MappingListener]struct{}) {
 			appNames := strings.Split(event.Content, constant.CommaSeparator)
 			set := gxset.NewSet()
 			for _, e := range appNames {

@@ -240,7 +240,7 @@ func SetConsumerServiceWithInfo(svc common.RPCService, info *client.ClientInfo) 
 }
 
 // SetProviderServiceWithInfo sets the provider service with the server information.
-func SetProviderServiceWithInfo(svc common.RPCService, info *server.ServiceInfo) {
+func SetProviderServiceWithInfo(svc common.RPCService, info *common.ServiceInfo) {
 	proLock.Lock()
 	defer proLock.Unlock()
 	providerServices[info.InterfaceName] = &server.ServiceDefinition{

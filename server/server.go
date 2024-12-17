@@ -19,9 +19,8 @@
 package server
 
 import (
-	"context"
-	"fmt"
 	"sort"
+	"strconv"
 	"sync"
 )
 
@@ -33,11 +32,11 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	dubboutil "dubbo.apache.org/dubbo-go/v3/common/dubboutil"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/dubboutil"
 	"dubbo.apache.org/dubbo-go/v3/metadata"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
-	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
-	registry_exposed "dubbo.apache.org/dubbo-go/v3/registry/exposed_tmp"
+	"dubbo.apache.org/dubbo-go/v3/registry/exposed_tmp"
 )
 
 // proServices are for internal services
@@ -46,99 +45,27 @@ var proLock sync.Mutex
 
 type Server struct {
 	invoker protocol.Invoker
-	info    *ServiceInfo
+	info    *common.ServiceInfo
 
 	cfg *ServerOptions
 
 	svcOptsMap sync.Map
 }
 
-// ServiceInfo is meta info of a service
-type ServiceInfo struct {
-	InterfaceName string
-	ServiceType   interface{}
-	Methods       []MethodInfo
-	Meta          map[string]interface{}
-}
+// ServiceInfo Deprecated： common.ServiceInfo type alias, just for compatible with old generate pb.go file
+type ServiceInfo = common.ServiceInfo
 
-type infoInvoker struct {
-	url       *common.URL
-	base      *protocol.BaseInvoker
-	info      *ServiceInfo
-	svc       common.RPCService
-	methodMap map[string]*MethodInfo
-}
+// MethodInfo Deprecated： common.MethodInfo type alias， just for compatible with old generate pb.go file
+type MethodInfo = common.MethodInfo
 
 type ServiceDefinition struct {
 	Handler interface{}
-	Info    *ServiceInfo
+	Info    *common.ServiceInfo
 	Opts    []ServiceOption
 }
 
-func (ii *infoInvoker) init() {
-	url := ii.base.GetURL()
-	if url.SubURL != nil {
-		url = url.SubURL
-	}
-	ii.url = url
-	methodMap := make(map[string]*MethodInfo)
-	for i := range ii.info.Methods {
-		methodMap[ii.info.Methods[i].Name] = &ii.info.Methods[i]
-	}
-	ii.methodMap = methodMap
-}
-
-func (ii *infoInvoker) GetURL() *common.URL {
-	return ii.base.GetURL()
-}
-
-func (ii *infoInvoker) IsAvailable() bool {
-	return ii.base.IsAvailable()
-}
-
-func (ii *infoInvoker) Destroy() {
-	ii.base.Destroy()
-}
-
-func (ii *infoInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
-	name := invocation.MethodName()
-	args := invocation.Arguments()
-	result := new(protocol.RPCResult)
-	if method, ok := ii.methodMap[name]; ok {
-		res, err := method.MethodFunc(ctx, args, ii.svc)
-		result.SetResult(res)
-		if err != nil {
-			var proError *triple_protocol.Error
-			if !errors.As(err, &proError) {
-				err = triple_protocol.NewError(triple_protocol.CodeBizError, err)
-			} else if proError.Code() != triple_protocol.CodeBizError {
-				err = triple_protocol.NewError(proError.Code(), proError.Unwrap())
-			}
-			result.SetError(err)
-		}
-		return result
-	}
-	result.SetError(fmt.Errorf("no match method for %s", name))
-
-	return result
-}
-
-func newInfoInvoker(url *common.URL, info *ServiceInfo, svc common.RPCService) protocol.Invoker {
-	invoker := &infoInvoker{
-		base: protocol.NewBaseInvoker(url),
-		info: info,
-		svc:  svc,
-	}
-	invoker.init()
-	return invoker
-}
-
-func NewInternalInvoker(url *common.URL, info *ServiceInfo, svc common.RPCService) protocol.Invoker {
-	return newInfoInvoker(url, info, svc)
-}
-
 // Register assemble invoker chains like ProviderConfig.Load, init a service per call
-func (s *Server) Register(handler interface{}, info *ServiceInfo, opts ...ServiceOption) error {
+func (s *Server) Register(handler interface{}, info *common.ServiceInfo, opts ...ServiceOption) error {
 	newSvcOpts, err := s.genSvcOpts(handler, opts...)
 	if err != nil {
 		return err
@@ -193,10 +120,10 @@ func (s *Server) exportServices() (err error) {
 		if infoRaw == nil {
 			err = svcOpts.ExportWithoutInfo()
 		} else {
-			info := infoRaw.(*ServiceInfo)
+			info := infoRaw.(*common.ServiceInfo)
 			//Add a method with a name of a differtent first-letter case
 			//to achieve interoperability with java
-			var additionalMethods []MethodInfo
+			var additionalMethods []common.MethodInfo
 			for _, method := range info.Methods {
 				newMethod := method
 				newMethod.Name = dubboutil.SwapCaseFirstRune(method.Name)
@@ -218,14 +145,29 @@ func (s *Server) exportServices() (err error) {
 }
 
 func (s *Server) Serve() error {
+	// the registryConfig in ServiceOptions and ServerOptions all need to init a metadataReporter,
+	// when ServiceOptions.init() is called we don't know if a new registry config is set in the future use serviceOption
+	if err := metadata.InitRegistryMetadataReport(s.cfg.Registries); err != nil {
+		return err
+	}
+	opts := metadata.NewOptions(
+		metadata.WithAppName(s.cfg.Application.Name),
+		metadata.WithMetadataType(s.cfg.Application.MetadataType),
+		metadata.WithPort(getMetadataPort(s.cfg)),
+		metadata.WithMetadataProtocol(s.cfg.Application.MetadataServiceProtocol),
+	)
+	if err := opts.Init(); err != nil {
+		return err
+	}
 	if err := s.exportServices(); err != nil {
 		return err
 	}
 	if err := s.exportInternalServices(); err != nil {
 		return err
 	}
-	metadata.ExportMetadataService()
-	registry_exposed.RegisterServiceInstance(s.cfg.Application.Name, s.cfg.Application.Tag, s.cfg.Application.MetadataType)
+	if err := exposed_tmp.RegisterServiceInstance(); err != nil {
+		return err
+	}
 	select {}
 }
 
@@ -286,7 +228,7 @@ type InternalService struct {
 	// internal service name
 	Name    string
 	svcOpts *ServiceOptions
-	info    *ServiceInfo
+	info    *common.ServiceInfo
 	// This is required
 	// This options is service configuration
 	// Return serviceDefinition and bool, where bool indicates whether it is exported
@@ -303,13 +245,23 @@ type InternalService struct {
 	Priority int
 }
 
-type MethodInfo struct {
-	Name           string
-	Type           string
-	ReqInitFunc    func() interface{}
-	StreamInitFunc func(baseStream interface{}) interface{}
-	MethodFunc     func(ctx context.Context, args []interface{}, handler interface{}) (interface{}, error)
-	Meta           map[string]interface{}
+func getMetadataPort(opts *ServerOptions) int {
+	port := opts.Application.MetadataServicePort
+	if port == "" {
+		protocolConfig, ok := opts.Protocols[constant.DefaultProtocol]
+		if ok {
+			port = protocolConfig.Port
+		}
+	}
+	if port == "" {
+		return 0
+	}
+	p, err := strconv.Atoi(port)
+	if err != nil {
+		logger.Error("MetadataService port parse error %v, MetadataService will use random port", err)
+		return 0
+	}
+	return p
 }
 
 func NewServer(opts ...ServerOption) (*Server, error) {
