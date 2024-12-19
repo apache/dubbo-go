@@ -97,15 +97,15 @@ func (rc *registryCollector) directoryHandler(event *RegistryMetricsEvent) {
 	typ := event.Attachment["DirTyp"]
 	switch typ {
 	case NumAllInc:
-		rc.R.Counter(metrics.NewMetricId(DirectoryMetricNumAll, level)).Inc()
+		rc.R.Gauge(metrics.NewMetricId(DirectoryMetricNumAll, level)).Inc()
 	case NumAllDec:
-		rc.R.Counter(metrics.NewMetricId(DirectoryMetricNumAll, level)).Add(-1)
+		rc.R.Gauge(metrics.NewMetricId(DirectoryMetricNumAll, level)).Add(-1)
 	case NumDisableTotal:
-		rc.R.Counter(metrics.NewMetricId(DirectoryMetricNumDisable, level)).Inc()
+		rc.R.Gauge(metrics.NewMetricId(DirectoryMetricNumDisable, level)).Inc()
 	case NumToReconnectTotal:
-		rc.R.Counter(metrics.NewMetricId(DirectoryMetricNumToReconnect, level)).Inc()
+		rc.R.Gauge(metrics.NewMetricId(DirectoryMetricNumToReconnect, level)).Inc()
 	case NumValidTotal:
-		rc.R.Counter(metrics.NewMetricId(DirectoryMetricNumValid, level)).Inc()
+		rc.R.Gauge(metrics.NewMetricId(DirectoryMetricNumValid, level)).Inc()
 	default:
 	}
 
