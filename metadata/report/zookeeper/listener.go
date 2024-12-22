@@ -34,6 +34,43 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/remoting/zookeeper"
 )
 
+// ListenerSet defines a thread-safe set of listeners
+type ListenerSet struct {
+	sync.RWMutex
+	listeners map[registry.MappingListener]struct{}
+}
+
+func newListenerSet(listener registry.MappingListener) *ListenerSet {
+	return &ListenerSet{
+		listeners: map[registry.MappingListener]struct{}{
+			listener: {},
+		},
+	}
+}
+
+func (s *ListenerSet) addListener(listener registry.MappingListener) {
+	s.Lock()
+	defer s.Unlock()
+	s.listeners[listener] = struct{}{}
+}
+
+func (s *ListenerSet) removeListener(listener registry.MappingListener) {
+	s.Lock()
+	defer s.Unlock()
+	delete(s.listeners, listener)
+}
+
+func (s *ListenerSet) forEach(f func(registry.MappingListener) error) error {
+	s.RLock()
+	defer s.RUnlock()
+	for listener := range s.listeners {
+		if err := f(listener); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // CacheListener defines keyListeners and rootPath
 type CacheListener struct {
 	// key is zkNode Path and value is set of listeners
@@ -56,10 +93,9 @@ func (l *CacheListener) AddListener(key string, listener registry.MappingListene
 	if err != nil {
 		return
 	}
-	listeners, loaded := l.keyListeners.LoadOrStore(key, map[registry.MappingListener]struct{}{listener: {}})
+	listeners, loaded := l.keyListeners.LoadOrStore(key, newListenerSet(listener))
 	if loaded {
-		listeners.(map[registry.MappingListener]struct{})[listener] = struct{}{}
-		l.keyListeners.Store(key, listeners)
+		listeners.(*ListenerSet).addListener(listener)
 	}
 }
 
@@ -67,24 +103,24 @@ func (l *CacheListener) AddListener(key string, listener registry.MappingListene
 func (l *CacheListener) RemoveListener(key string, listener registry.MappingListener) {
 	listeners, loaded := l.keyListeners.Load(key)
 	if loaded {
-		delete(listeners.(map[registry.MappingListener]struct{}), listener)
+		listeners.(*ListenerSet).removeListener(listener)
 	}
 }
 
 // DataChange changes all listeners' event
 func (l *CacheListener) DataChange(event remoting.Event) bool {
 	if listeners, ok := l.keyListeners.Load(event.Path); ok {
-		for listener := range listeners.(map[registry.MappingListener]struct{}) {
-			appNames := strings.Split(event.Content, constant.CommaSeparator)
-			set := gxset.NewSet()
-			for _, e := range appNames {
-				set.Add(e)
-			}
-			err := listener.OnEvent(registry.NewServiceMappingChangedEvent(l.pathToKey(event.Path), set))
-			if err != nil {
-				logger.Error("Error notify mapping change event.", err)
-				return false
-			}
+		appNames := strings.Split(event.Content, constant.CommaSeparator)
+		set := gxset.NewSet()
+		for _, e := range appNames {
+			set.Add(e)
+		}
+		err := listeners.(*ListenerSet).forEach(func(listener registry.MappingListener) error {
+			return listener.OnEvent(registry.NewServiceMappingChangedEvent(l.pathToKey(event.Path), set))
+		})
+		if err != nil {
+			logger.Error("Error notify mapping change event.", err)
+			return false
 		}
 		return true
 	}
