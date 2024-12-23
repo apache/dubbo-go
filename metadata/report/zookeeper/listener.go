@@ -40,27 +40,36 @@ type ListenerSet struct {
 	listeners map[registry.MappingListener]struct{}
 }
 
-func newListenerSet(listener registry.MappingListener) *ListenerSet {
+func NewListenerSet() *ListenerSet {
 	return &ListenerSet{
-		listeners: map[registry.MappingListener]struct{}{
-			listener: {},
-		},
+		listeners: make(map[registry.MappingListener]struct{}),
 	}
 }
 
-func (s *ListenerSet) addListener(listener registry.MappingListener) {
+// Add adds a listener to the set
+func (s *ListenerSet) Add(listener registry.MappingListener) {
 	s.Lock()
 	defer s.Unlock()
 	s.listeners[listener] = struct{}{}
 }
 
-func (s *ListenerSet) removeListener(listener registry.MappingListener) {
+// Remove removes a listener from the set
+func (s *ListenerSet) Remove(listener registry.MappingListener) {
 	s.Lock()
 	defer s.Unlock()
 	delete(s.listeners, listener)
 }
 
-func (s *ListenerSet) forEach(f func(registry.MappingListener) error) error {
+// Has checks if a listener exists in the set
+func (s *ListenerSet) Has(listener registry.MappingListener) bool {
+	s.RLock()
+	defer s.RUnlock()
+	_, ok := s.listeners[listener]
+	return ok
+}
+
+// ForEach iterates over all listeners in the set
+func (s *ListenerSet) ForEach(f func(registry.MappingListener) error) error {
 	s.RLock()
 	defer s.RUnlock()
 	for listener := range s.listeners {
@@ -93,9 +102,13 @@ func (l *CacheListener) AddListener(key string, listener registry.MappingListene
 	if err != nil {
 		return
 	}
-	listeners, loaded := l.keyListeners.LoadOrStore(key, newListenerSet(listener))
+	// create new set with the listener
+	listenerSet := NewListenerSet()
+	listenerSet.Add(listener)
+	// try to store the new set. If key exists, add listener to existing set
+	listeners, loaded := l.keyListeners.LoadOrStore(key, listenerSet)
 	if loaded {
-		listeners.(*ListenerSet).addListener(listener)
+		listeners.(*ListenerSet).Add(listener)
 	}
 }
 
@@ -103,7 +116,7 @@ func (l *CacheListener) AddListener(key string, listener registry.MappingListene
 func (l *CacheListener) RemoveListener(key string, listener registry.MappingListener) {
 	listeners, loaded := l.keyListeners.Load(key)
 	if loaded {
-		listeners.(*ListenerSet).removeListener(listener)
+		listeners.(*ListenerSet).Remove(listener)
 	}
 }
 
@@ -115,7 +128,7 @@ func (l *CacheListener) DataChange(event remoting.Event) bool {
 		for _, e := range appNames {
 			set.Add(e)
 		}
-		err := listeners.(*ListenerSet).forEach(func(listener registry.MappingListener) error {
+		err := listeners.(*ListenerSet).ForEach(func(listener registry.MappingListener) error {
 			return listener.OnEvent(registry.NewServiceMappingChangedEvent(l.pathToKey(event.Path), set))
 		})
 		if err != nil {
