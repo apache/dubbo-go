@@ -102,14 +102,9 @@ func (l *CacheListener) AddListener(key string, listener registry.MappingListene
 	if err != nil {
 		return
 	}
-	// create new set with the listener
-	listenerSet := NewListenerSet()
-	listenerSet.Add(listener)
 	// try to store the new set. If key exists, add listener to existing set
-	listeners, loaded := l.keyListeners.LoadOrStore(key, listenerSet)
-	if loaded {
-		listeners.(*ListenerSet).Add(listener)
-	}
+	listeners, _ := l.keyListeners.LoadOrStore(key, NewListenerSet())
+	listeners.(*ListenerSet).Add(listener)
 }
 
 // RemoveListener will delete a listener if loaded
