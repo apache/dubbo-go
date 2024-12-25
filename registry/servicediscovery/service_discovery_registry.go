@@ -363,4 +363,3 @@ func (s *serviceDiscoveryRegistry) stopListen(url *common.URL) {
 	}
 	s.lock.Unlock()
 }
-
