@@ -137,8 +137,6 @@ func (dir *RegistryDirectory) Subscribe(url *common.URL) error {
 		timeout, _ = time.ParseDuration(constant.DefaultRegTimeout)
 	}
 
-	fmt.Println("timeout:\n\n", timeout)
-
 	done := make(chan struct{})
 
 	go func() {
