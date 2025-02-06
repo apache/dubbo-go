@@ -139,10 +139,10 @@ func (dir *RegistryDirectory) Subscribe(url *common.URL) error {
 
 	select {
 	case <-done:
-		logger.Infof("Register completed successfully for service: %s", url.Key())
+		logger.Infof("register completed successfully for service: %s", url.Key())
 		return nil
 	case <-time.After(timeout):
-		logger.Errorf("Register timed out for service: %s", url.Key())
+		logger.Errorf("register timed out for service: %s", url.Key())
 		return fmt.Errorf("register timed out for service: %s", url.Key())
 	}
 }
