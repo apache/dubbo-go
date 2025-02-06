@@ -118,15 +118,33 @@ func (dir *RegistryDirectory) Subscribe(url *common.URL) error {
 			logger.Error("registry.Subscribe(url:%v, dir:%v) = error:%v", url, dir, err)
 		}
 
+	}()
+
+	// Get the timeout time from the registration center configuration (default time 5s)
+	timeoutStr := dir.registry.GetURL().GetParam(constant.RegistryTimeoutKey, "")
+	timeout, _ := time.ParseDuration(timeoutStr)
+
+	done := make(chan struct{})
+
+	go func() {
 		urlToReg := getConsumerUrlToRegistry(url)
 		err := dir.registry.Register(urlToReg)
 		if err != nil {
 			logger.Errorf("consumer service %v register registry %v error, error message is %s",
 				url.String(), dir.registry.GetURL().String(), err.Error())
 		}
+
+		close(done)
 	}()
 
-	return nil
+	select {
+	case <-done:
+		logger.Infof("Register completed successfully for service: %s", url.Key())
+		return nil
+	case <-time.After(timeout):
+		logger.Errorf("Register timed out for service: %s", url.Key())
+		return fmt.Errorf("register timed out for service: %s", url.Key())
+	}
 }
 
 // Notify monitor changes from registry,and update the cacheServices
