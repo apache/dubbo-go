@@ -121,7 +121,14 @@ func (dir *RegistryDirectory) Subscribe(url *common.URL) error {
 	}()
 
 	// Get the timeout time from the registration center configuration (default time 5s)
-	timeoutStr := dir.registry.GetURL().GetParam(constant.RegistryTimeoutKey, "")
+	registerUrl := dir.registry.GetURL()
+
+	var timeoutStr string
+	if registerUrl == nil {
+		timeoutStr = url.GetParam(constant.TimeoutKey, "1s")
+	} else {
+		timeoutStr = registerUrl.GetParam(constant.RegistryTimeoutKey, "")
+	}
 	timeout, _ := time.ParseDuration(timeoutStr)
 
 	done := make(chan struct{})
