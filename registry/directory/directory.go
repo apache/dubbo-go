@@ -124,12 +124,20 @@ func (dir *RegistryDirectory) Subscribe(url *common.URL) error {
 	registerUrl := dir.registry.GetURL()
 
 	var timeoutStr string
-	if registerUrl == nil {
-		timeoutStr = url.GetParam(constant.TimeoutKey, "1s")
-	} else {
-		timeoutStr = registerUrl.GetParam(constant.RegistryTimeoutKey, "")
+
+	if registerUrl != nil {
+		if val := registerUrl.GetParam(constant.RegistryTimeoutKey, ""); val != "" {
+			timeoutStr = val
+		}
 	}
-	timeout, _ := time.ParseDuration(timeoutStr)
+
+	timeout, err := time.ParseDuration(timeoutStr)
+	if err != nil {
+		logger.Warnf("Invalid timeout value %s, using default %s", timeoutStr, constant.DefaultRegTimeout)
+		timeout, _ = time.ParseDuration(constant.DefaultRegTimeout)
+	}
+
+	fmt.Println("timeout:\n\n", timeout)
 
 	done := make(chan struct{})
 
