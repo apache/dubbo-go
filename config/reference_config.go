@@ -378,7 +378,7 @@ func (rc *ReferenceConfig) getURLMap() url.Values {
 
 // GenericLoad ...
 func (rc *ReferenceConfig) GenericLoad(id string) {
-	genericService := generic.NewGenericService(rc.id)
+	genericService := generic.NewGenericService(id)
 	SetConsumerService(genericService)
 	rc.id = id
 	rc.Refer(genericService)
