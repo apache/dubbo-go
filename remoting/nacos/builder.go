@@ -122,5 +122,9 @@ func NewNacosClientByURL(url *common.URL) (*nacosClient.NacosNamingClient, error
 		return nil, perrors.New("nacos client name must set")
 	}
 	logger.Infof("[Nacos Client] New nacos client with config = %+v", scs)
+	namespaceID := url.GetParam(constant.NacosNamespaceID, "")
+	if len(namespaceID) > 0 {
+		clientName += namespaceID
+	}
 	return nacosClient.NewNacosNamingClient(clientName, true, scs, cc)
 }
