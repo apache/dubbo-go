@@ -81,7 +81,7 @@ func newRegistryProtocol() *registryProtocol {
 func (proto *registryProtocol) getRegistry(registryUrl *common.URL) registry.Registry {
 	var err error
 
-	namespace := registryUrl.GetParam("registry.namespace", "")
+	namespace := registryUrl.GetParam(constant.RegistryNamespaceKey, "")
 	cacheKey := registryUrl.PrimitiveURL
 	if namespace != "" {
 		cacheKey = cacheKey + "?" + constant.NacosNamespaceID + "=" + namespace
