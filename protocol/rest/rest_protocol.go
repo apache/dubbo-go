@@ -20,22 +20,21 @@ package rest
 import (
 	"sync"
 	"time"
-)
 
-import (
-	"github.com/dubbogo/gost/log/logger"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/rest/client"
+	"github.com/dubbogo/gost/log/logger"
+
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/rest/client/client_impl"
+
 	rest_config "dubbo.apache.org/dubbo-go/v3/protocol/rest/config"
+
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/rest/config/reader"
 	"dubbo.apache.org/dubbo-go/v3/protocol/rest/server"
+
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/rest/server/server_impl"
 )
 
@@ -93,6 +92,7 @@ func (rp *RestProtocol) Refer(url *common.URL) protocol.Invoker {
 	requestTimeout := time.Duration(3 * time.Second)
 	requestTimeoutStr := url.GetParam(constant.TimeoutKey, "3s")
 	connectTimeout := requestTimeout // config.GetConsumerConfig().ConnectTimeout
+	keepAliveTimeout := url.GetParamDuration(constant.KeepAliveTimeout, constant.DefaultKeepAliveTimeout)
 	// end
 	if t, err := time.ParseDuration(requestTimeoutStr); err == nil {
 		requestTimeout = t
@@ -103,7 +103,7 @@ func (rp *RestProtocol) Refer(url *common.URL) protocol.Invoker {
 		logger.Errorf("%s service doesn't has consumer config", url.Path)
 		return nil
 	}
-	restOptions := client.RestOptions{RequestTimeout: requestTimeout, ConnectTimeout: connectTimeout}
+	restOptions := client.RestOptions{RequestTimeout: requestTimeout, ConnectTimeout: connectTimeout, KeppAliveTimeout: keepAliveTimeout}
 	restClient := rp.getClient(restOptions, restServiceConfig.Client)
 	invoker := NewRestInvoker(url, &restClient, restServiceConfig.RestMethodConfigsMap)
 	rp.SetInvokers(invoker)

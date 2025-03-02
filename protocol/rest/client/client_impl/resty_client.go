@@ -22,19 +22,13 @@ import (
 	"net"
 	"net/http"
 	"path"
-	"time"
-)
 
-import (
 	"github.com/go-resty/resty/v2"
 
-	perrors "github.com/pkg/errors"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/protocol/rest/client"
+	perrors "github.com/pkg/errors"
 )
 
 func init() {
@@ -56,13 +50,11 @@ func NewRestyClient(restOption *client.RestOptions) client.RestClient {
 				if err != nil {
 					return nil, err
 				}
-				err = c.SetDeadline(time.Now().Add(restOption.RequestTimeout))
-				if err != nil {
-					return nil, err
-				}
 				return c, nil
 			},
+			IdleConnTimeout: restOption.KeppAliveTimeout,
 		})
+	client.SetTimeout(restOption.RequestTimeout)
 	return &RestyClient{
 		client: client,
 	}
