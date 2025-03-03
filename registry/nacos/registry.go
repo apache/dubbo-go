@@ -161,64 +161,47 @@ func (nr *nacosRegistry) UnRegister(url *common.URL) error {
 
 // Subscribe returns nil if subscribing registry successfully. If not returns an error.
 func (nr *nacosRegistry) Subscribe(url *common.URL, notifyListener registry.NotifyListener) error {
-	// TODO
 	role, _ := strconv.Atoi(url.GetParam(constant.RegistryRoleKey, ""))
 	if role != common.CONSUMER {
 		return nil
 	}
 	serviceName := url.GetParam(constant.InterfaceKey, "")
-	if serviceName == "*" {
-		// Subscribe to all services
+	var serviceNames []string
+	var err error
+	if serviceName == constant.AnyValue {
+		serviceNames, err = nr.getAllSubscribeServiceNames(url)
+	} else {
+		serviceNames = []string{getSubscribeName(url)}
+	}
+	err = nr.subscribe(serviceNames, notifyListener)
+	return err
+}
+
+// subscribe subscribe services
+func (nr *nacosRegistry) subscribe(serviceNames []string, notifyListener registry.NotifyListener) error {
+	if len(serviceNames) == 0 {
+		logger.Warnf("No services to listen to.")
+		return nil
+	}
+	outerLoop:
 		for {
 			if !nr.IsAvailable() {
 				logger.Warnf("event listener game over.")
 				return perrors.New("nacosRegistry is not available.")
 			}
-
-			services, err := nr.getAllSubscribeServiceNames(url)
-			if err != nil {
-				if !nr.IsAvailable() {
-					logger.Warnf("event listener game over.")
-					return err
-				}
-				logger.Warnf("getAllServices() = err:%v", perrors.WithStack(err))
-				time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
-				continue
-			}
-
-			for _, service := range services {
-				listener, err := NewNacosListenerWithServiceName(service, nr.URL, nr.namingClient)
+			for _, serviceName := range serviceNames {
+				listener, err := NewNacosListenerWithServiceName(serviceName, nr.URL, nr.namingClient)
 				metrics.Publish(metricsRegistry.NewSubscribeEvent(err == nil))
 				if err != nil {
-					logger.Warnf("Failed to subscribe to service '%s': %v", service, err)
-					continue
+					logger.Warnf("getAllServices() = err:%v", perrors.WithStack(err))
+					time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
+					break outerLoop
 				}
-
-				nr.handleServiceEvents(listener, notifyListener)
+				go nr.handleServiceEvents(listener, notifyListener)
 			}
+			return nil
 		}
-	} else {
-		// Subscribe to a specific service
-		for {
-			if !nr.IsAvailable() {
-				logger.Warnf("event listener game over.")
-				return perrors.New("nacosRegistry is not available.")
-			}
-
-			listener, err := NewNacosListenerWithServiceName(getSubscribeName(url), nr.URL, nr.namingClient)
-			metrics.Publish(metricsRegistry.NewSubscribeEvent(err == nil))
-			if err != nil {
-				if !nr.IsAvailable() {
-					logger.Warnf("event listener game over.")
-					return err
-				}
-				logger.Warnf("getListener() = err:%v", perrors.WithStack(err))
-				time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
-				continue
-			}
-			nr.handleServiceEvents(listener, notifyListener)
-		}
-	}
+	return nil
 }
 
 // getAllServices retrieves the list of all services from the registry
