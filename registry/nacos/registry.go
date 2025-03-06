@@ -170,11 +170,13 @@ func (nr *nacosRegistry) Subscribe(url *common.URL, notifyListener registry.Noti
 	var err error
 	if serviceName == constant.AnyValue {
 		serviceNames, err = nr.getAllSubscribeServiceNames(url)
+		if err != nil {
+			return err
+		}
 	} else {
 		serviceNames = []string{getSubscribeName(url)}
 	}
-	err = nr.subscribe(serviceNames, notifyListener)
-	return err
+	return nr.subscribe(serviceNames, notifyListener)
 }
 
 // subscribe subscribe services
@@ -211,27 +213,24 @@ func (nr *nacosRegistry) getAllSubscribeServiceNames(url *common.URL) ([]string,
 		PageNo:    1,
 		PageSize:  math.MaxInt32,
 	})
+	if err != nil {
+		logger.Errorf("query services error: %v", err)
+		return nil, err
+	}
 	var subScribeServiceNames []string
 	categories := strings.Split(url.GetParam(constant.CategoryKey, constant.DefaultCategory), constant.CommaSeparator)
 	for _, dom := range services.Doms {
 		if strings.Contains(dom, constant.NacosServiceNameSeparator) {
 			realCategory := strings.Split(dom, constant.NacosServiceNameSeparator)[0]
-			if contains(categories, realCategory) {
-				subScribeServiceNames = append(subScribeServiceNames, dom)
+			for _, item := range categories {
+				if item == realCategory {
+					subScribeServiceNames = append(subScribeServiceNames, dom)
+				}
 			}
 		}
 	}
 
 	return subScribeServiceNames, err
-}
-
-func contains(slice []string, element string) bool {
-	for _, item := range slice {
-		if item == element {
-			return true
-		}
-	}
-	return false
 }
 
 // handleServiceEvents receives service events from the listener and notifies the notifyListener
