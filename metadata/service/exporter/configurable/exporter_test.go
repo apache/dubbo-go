@@ -104,7 +104,7 @@ func mockInitProviderWithSingleRegistry() {
 					Interface:   "com.MockService",
 					ProtocolIDs: []string{"mock"},
 					Cluster:     "failover",
-					Loadbalance: "random",
+					LoadBalance: "random",
 					Retries:     "3",
 					Group:       "huadong_idc",
 					Version:     "1.0.0",

@@ -54,7 +54,7 @@ type ServiceConfig struct {
 	Interface                   string            `yaml:"interface"  json:"interface,omitempty" property:"interface"`
 	RegistryIDs                 []string          `yaml:"registry-ids"  json:"registry-ids,omitempty"  property:"registry-ids"`
 	Cluster                     string            `default:"failover" yaml:"cluster"  json:"cluster,omitempty" property:"cluster"`
-	Loadbalance                 string            `default:"random" yaml:"loadbalance"  json:"loadbalance,omitempty"  property:"loadbalance"`
+	LoadBalance                 string            `default:"random" yaml:"loadbalance"  json:"loadbalance,omitempty"  property:"loadbalance"`
 	Group                       string            `yaml:"group"  json:"group,omitempty" property:"group"`
 	Version                     string            `yaml:"version"  json:"version,omitempty" property:"version" `
 	Methods                     []*MethodConfig   `yaml:"methods"  json:"methods,omitempty" property:"methods"`
@@ -397,7 +397,7 @@ func (s *ServiceConfig) getUrlMap() url.Values {
 	urlMap.Set(constant.InterfaceKey, s.Interface)
 	urlMap.Set(constant.TimestampKey, strconv.FormatInt(time.Now().Unix(), 10))
 	urlMap.Set(constant.ClusterKey, s.Cluster)
-	urlMap.Set(constant.LoadbalanceKey, s.Loadbalance)
+	urlMap.Set(constant.LoadbalanceKey, s.LoadBalance)
 	urlMap.Set(constant.WarmupKey, s.Warmup)
 	urlMap.Set(constant.RetriesKey, s.Retries)
 	if s.Group != "" {
@@ -536,8 +536,8 @@ func (pcb *ServiceConfigBuilder) SetMetadataType(setMetadataType string) *Servic
 	return pcb
 }
 
-func (pcb *ServiceConfigBuilder) SetLoadBalancce(lb string) *ServiceConfigBuilder {
-	pcb.serviceConfig.Loadbalance = lb
+func (pcb *ServiceConfigBuilder) SetLoadBalance(lb string) *ServiceConfigBuilder {
+	pcb.serviceConfig.LoadBalance = lb
 	return pcb
 }
 

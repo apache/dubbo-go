@@ -63,7 +63,7 @@ func TestNewServiceConfigBuilder(t *testing.T) {
 			SetProtocolIDs("dubbo").
 			SetInterface("org.apache.dubbo.HelloService").
 			SetMetadataType("local").
-			SetLoadBalancce("random").
+			SetLoadBalance("random").
 			SetWarmUpTie("warmup").
 			SetCluster("cluster").
 			AddRCRegistry("nacos", registryConfig).

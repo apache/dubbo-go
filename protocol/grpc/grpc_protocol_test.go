@@ -50,7 +50,7 @@ func doInitProvider() {
 					ProtocolIDs: []string{"grpc"},
 					RegistryIDs: []string{"shanghai_reg1,shanghai_reg2,hangzhou_reg1,hangzhou_reg2,hangzhou_service_discovery_reg"},
 					Cluster:     "failover",
-					Loadbalance: "random",
+					LoadBalance: "random",
 					Retries:     "3",
 					Methods: []*config.MethodConfig{
 						{
