@@ -65,7 +65,7 @@ type nacosListener struct {
 func NewNacosListenerWithServiceName(serviceName string, regURL *common.URL, namingClient *nacosClient.NacosNamingClient) (*nacosListener, error) {
 	listener := &nacosListener{
 		namingClient: namingClient,
-		serviceName: serviceName,
+		serviceName:  serviceName,
 		regURL:       regURL,
 		events:       gxchan.NewUnboundedChan(32),
 		instanceMap:  map[string]model.Instance{},
