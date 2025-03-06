@@ -62,8 +62,8 @@ type nacosListener struct {
 }
 
 // NewNacosListenerWithServiceName creates a data listener for nacos
-func NewNacosListenerWithServiceName(serviceName string, regURL *common.URL, namingClient *nacosClient.NacosNamingClient) (*nacosListener, error) {
-	listener := &nacosListener{
+func NewNacosListenerWithServiceName(serviceName string, regURL *common.URL, namingClient *nacosClient.NacosNamingClient) *nacosListener {
+	return &nacosListener{
 		namingClient: namingClient,
 		serviceName:  serviceName,
 		regURL:       regURL,
@@ -71,8 +71,6 @@ func NewNacosListenerWithServiceName(serviceName string, regURL *common.URL, nam
 		instanceMap:  map[string]model.Instance{},
 		done:         make(chan struct{}),
 	}
-	err := listener.listenService(serviceName)
-	return listener, err
 }
 
 func generateUrl(instance model.Instance) *common.URL {

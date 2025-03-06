@@ -185,23 +185,26 @@ func (nr *nacosRegistry) subscribe(serviceNames []string, notifyListener registr
 		logger.Warnf("No services to listen to.")
 		return nil
 	}
-outerLoop:
-	for {
-		if !nr.IsAvailable() {
-			logger.Warnf("event listener game over.")
-			return perrors.New("nacosRegistry is not available.")
-		}
-		for _, serviceName := range serviceNames {
-			listener, err := NewNacosListenerWithServiceName(serviceName, nr.URL, nr.namingClient)
-			metrics.Publish(metricsRegistry.NewSubscribeEvent(err == nil))
-			if err != nil {
-				logger.Warnf("getAllServices() = err:%v", perrors.WithStack(err))
-				time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
-				break outerLoop
+	for _, serviceName := range serviceNames {
+		serviceName := serviceName
+		go func() {
+			for {
+				if !nr.IsAvailable() {
+					logger.Warnf("event listener game over.")
+					return
+				}
+				listener := NewNacosListenerWithServiceName(serviceName, nr.URL, nr.namingClient)
+				err := listener.listenService(serviceName)
+				metrics.Publish(metricsRegistry.NewSubscribeEvent(err == nil))
+				if err != nil {
+					logger.Warnf("listen service s% err:%v", serviceName, perrors.WithStack(err))
+					time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
+				} else {
+					// this will block for loop
+					nr.handleServiceEvents(listener, notifyListener)
+				}
 			}
-			go nr.handleServiceEvents(listener, notifyListener)
-		}
-		return nil
+		}()
 	}
 	return nil
 }
