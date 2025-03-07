@@ -539,7 +539,7 @@ func (pcb *ServiceConfigBuilder) SetMetadataType(setMetadataType string) *Servic
 	return pcb
 }
 
-func (pcb *ServiceConfigBuilder) SetLoadBalancce(lb string) *ServiceConfigBuilder {
+func (pcb *ServiceConfigBuilder) SetLoadBalance(lb string) *ServiceConfigBuilder {
 	pcb.serviceConfig.Loadbalance = lb
 	return pcb
 }
