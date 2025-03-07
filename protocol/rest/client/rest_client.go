@@ -23,8 +23,9 @@ import (
 )
 
 type RestOptions struct {
-	RequestTimeout time.Duration
-	ConnectTimeout time.Duration
+	RequestTimeout   time.Duration
+	ConnectTimeout   time.Duration
+	KeppAliveTimeout time.Duration
 }
 
 type RestClientRequest struct {

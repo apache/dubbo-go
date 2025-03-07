@@ -22,7 +22,6 @@ import (
 	"net"
 	"net/http"
 	"path"
-	"time"
 )
 
 import (
@@ -56,13 +55,11 @@ func NewRestyClient(restOption *client.RestOptions) client.RestClient {
 				if err != nil {
 					return nil, err
 				}
-				err = c.SetDeadline(time.Now().Add(restOption.RequestTimeout))
-				if err != nil {
-					return nil, err
-				}
 				return c, nil
 			},
+			IdleConnTimeout: restOption.KeppAliveTimeout,
 		})
+	client.SetTimeout(restOption.RequestTimeout)
 	return &RestyClient{
 		client: client,
 	}
