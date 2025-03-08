@@ -142,7 +142,6 @@ func (s *Server) handlePkg(conn net.Conn) {
 		for k := range r.Header {
 			reqHeader[k] = r.Header.Get(k)
 		}
-
 		reqHeader["Path"] = r.URL.Path[1:] // to get service name
 		if r.URL.Path[0] != PathPrefix {
 			reqHeader["Path"] = r.URL.Path
