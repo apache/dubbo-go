@@ -65,7 +65,7 @@ func testBidiStream(cli greettriple.GreetService) error {
 		return err
 	}
 	if sendErr := stream.Send(&greet.GreetStreamRequest{Name: "triple"}); sendErr != nil {
-		return err
+		return sendErr
 	}
 	resp, err := stream.Recv()
 	if err != nil {
@@ -89,7 +89,7 @@ func testClientStream(cli greettriple.GreetService) error {
 	}
 	for i := 0; i < 5; i++ {
 		if sendErr := stream.Send(&greet.GreetClientStreamRequest{Name: "triple"}); sendErr != nil {
-			return err
+			return sendErr
 		}
 	}
 	resp, err := stream.CloseAndRecv()
