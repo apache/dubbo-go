@@ -20,6 +20,7 @@ package nacos
 import (
 	"bytes"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -158,92 +159,81 @@ func (nr *nacosRegistry) UnRegister(url *common.URL) error {
 	return nil
 }
 
-func (nr *nacosRegistry) subscribe(conf *common.URL) (registry.Listener, error) {
-	return NewNacosListener(conf, nr.URL, nr.namingClient)
-}
-
 // Subscribe returns nil if subscribing registry successfully. If not returns an error.
 func (nr *nacosRegistry) Subscribe(url *common.URL, notifyListener registry.NotifyListener) error {
-	// TODO
 	role, _ := strconv.Atoi(url.GetParam(constant.RegistryRoleKey, ""))
 	if role != common.CONSUMER {
 		return nil
 	}
 	serviceName := url.GetParam(constant.InterfaceKey, "")
-	if serviceName == "*" {
-		// Subscribe to all services
-		for {
-			if !nr.IsAvailable() {
-				logger.Warnf("event listener game over.")
-				return perrors.New("nacosRegistry is not available.")
-			}
-
-			services, err := nr.getAllSubscribeServiceNames()
-			if err != nil {
-				if !nr.IsAvailable() {
-					logger.Warnf("event listener game over.")
-					return err
-				}
-				logger.Warnf("getAllServices() = err:%v", perrors.WithStack(err))
-				time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
-				continue
-			}
-
-			for _, service := range services {
-				listener, err := nr.subscribeToService(url, service)
-				metrics.Publish(metricsRegistry.NewSubscribeEvent(err == nil))
-				if err != nil {
-					logger.Warnf("Failed to subscribe to service '%s': %v", service, err)
-					continue
-				}
-
-				nr.handleServiceEvents(listener, notifyListener)
-			}
+	var serviceNames []string
+	var err error
+	if serviceName == constant.AnyValue {
+		serviceNames, err = nr.getAllSubscribeServiceNames(url)
+		if err != nil {
+			return err
 		}
 	} else {
-		// Subscribe to a specific service
-		for {
-			if !nr.IsAvailable() {
-				logger.Warnf("event listener game over.")
-				return perrors.New("nacosRegistry is not available.")
-			}
+		serviceNames = []string{getSubscribeName(url)}
+	}
+	return nr.subscribe(serviceNames, notifyListener)
+}
 
-			listener, err := nr.subscribe(url)
+// subscribe subscribe services
+func (nr *nacosRegistry) subscribe(serviceNames []string, notifyListener registry.NotifyListener) error {
+	if len(serviceNames) == 0 {
+		logger.Warnf("No services to listen to.")
+		return nil
+	}
+	for {
+		if !nr.IsAvailable() {
+			logger.Warnf("event listener game over.")
+			return perrors.New("nacosRegistry is not available.")
+		}
+		var err error
+		for _, serviceName := range serviceNames {
+			listener := NewNacosListenerWithServiceName(serviceName, nr.URL, nr.namingClient)
+			err = listener.listenService(serviceName)
 			metrics.Publish(metricsRegistry.NewSubscribeEvent(err == nil))
 			if err != nil {
-				if !nr.IsAvailable() {
-					logger.Warnf("event listener game over.")
-					return err
-				}
-				logger.Warnf("getListener() = err:%v", perrors.WithStack(err))
+				logger.Warnf("getAllServices() = err:%v", perrors.WithStack(err))
 				time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
-				continue
+				break
 			}
-			nr.handleServiceEvents(listener, notifyListener)
+			go nr.handleServiceEvents(listener, notifyListener)
+		}
+		if err == nil {
+			break
 		}
 	}
+	return nil
 }
 
 // getAllServices retrieves the list of all services from the registry
-func (nr *nacosRegistry) getAllSubscribeServiceNames() ([]string, error) {
+func (nr *nacosRegistry) getAllSubscribeServiceNames(url *common.URL) ([]string, error) {
 	services, err := nr.namingClient.Client().GetAllServicesInfo(vo.GetAllServiceInfoParam{
 		GroupName: nr.GetParam(constant.RegistryGroupKey, defaultGroup),
 		PageNo:    1,
-		PageSize:  10,
+		PageSize:  math.MaxInt32,
 	})
-	subScribeServiceNames := []string{}
+	if err != nil {
+		logger.Errorf("query services error: %v", err)
+		return nil, err
+	}
+	var subScribeServiceNames []string
+	categories := strings.Split(url.GetParam(constant.CategoryKey, constant.DefaultCategory), constant.CommaSeparator)
 	for _, dom := range services.Doms {
-		if strings.HasPrefix(dom, "providers:") {
-			subScribeServiceNames = append(subScribeServiceNames, dom)
+		if strings.Contains(dom, constant.NacosServiceNameSeparator) {
+			realCategory := strings.Split(dom, constant.NacosServiceNameSeparator)[0]
+			for _, item := range categories {
+				if item == realCategory {
+					subScribeServiceNames = append(subScribeServiceNames, dom)
+				}
+			}
 		}
 	}
 
 	return subScribeServiceNames, err
-}
-
-// subscribeToService subscribes to a specific service in the registry
-func (nr *nacosRegistry) subscribeToService(url *common.URL, service string) (listener registry.Listener, err error) {
-	return NewNacosListenerWithServiceName(service, url, nr.URL, nr.namingClient)
 }
 
 // handleServiceEvents receives service events from the listener and notifies the notifyListener
@@ -262,7 +252,7 @@ func (nr *nacosRegistry) handleServiceEvents(listener registry.Listener, notifyL
 
 // UnSubscribe :
 func (nr *nacosRegistry) UnSubscribe(url *common.URL, _ registry.NotifyListener) error {
-	param := createSubscribeParam(url, nr.URL, nil)
+	param := createSubscribeParam(getSubscribeName(url), nr.URL, nil)
 	if param == nil {
 		return nil
 	}
@@ -294,28 +284,7 @@ func (nr *nacosRegistry) LoadSubscribeInstances(url *common.URL, notify registry
 	return nil
 }
 
-func createSubscribeParam(url, regUrl *common.URL, cb callback) *vo.SubscribeParam {
-	serviceName := getSubscribeName(url)
-	groupName := regUrl.GetParam(constant.RegistryGroupKey, defaultGroup)
-	if cb == nil {
-		v, ok := listenerCache.Load(serviceName + groupName)
-		if !ok {
-			return nil
-		}
-		listener, ok := v.(*nacosListener)
-		if !ok {
-			return nil
-		}
-		cb = listener.Callback
-	}
-	return &vo.SubscribeParam{
-		ServiceName:       serviceName,
-		SubscribeCallback: cb,
-		GroupName:         groupName,
-	}
-}
-
-func createSubscribeParamWithServiceName(serviceName string, regUrl *common.URL, cb callback) *vo.SubscribeParam {
+func createSubscribeParam(serviceName string, regUrl *common.URL, cb callback) *vo.SubscribeParam {
 	groupName := regUrl.GetParam(constant.RegistryGroupKey, defaultGroup)
 	if cb == nil {
 		v, ok := listenerCache.Load(serviceName + groupName)
