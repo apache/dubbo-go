@@ -829,20 +829,35 @@ func (c *URL) MergeURL(anotherUrl *URL) *URL {
 
 // Clone will copy the URL
 func (c *URL) Clone() *URL {
-	newURL := &URL{}
-	if err := copier.Copy(newURL, c); err != nil {
-		// this is impossible
-		return newURL
+	newURL := &URL{
+		Protocol:     c.Protocol,
+		Location:     c.Location,
+		Ip:           c.Ip,
+		Port:         c.Port,
+		PrimitiveURL: c.PrimitiveURL,
+		Path:         c.Path,
+		Username:     c.Username,
+		Password:     c.Password,
+		Methods:      make([]string, len(c.Methods)),
 	}
-	newURL.params = url.Values{}
-	c.RangeParams(func(key, value string) bool {
-		newURL.SetParam(key, value)
-		return true
-	})
-	c.RangeAttributes(func(key string, value interface{}) bool {
-		newURL.SetAttribute(key, value)
-		return true
-	})
+	copy(newURL.Methods, c.Methods)
+	newURL.params = make(url.Values, len(c.params))
+	c.paramsLock.RLock()
+	for key, values := range c.params {
+		newValues := make([]string, len(values))
+		copy(newValues, values)
+		newURL.params[key] = newValues
+	}
+	c.paramsLock.RUnlock()
+	newURL.attributes = make(map[string]interface{}, len(c.attributes))
+	c.attributesLock.RLock()
+	for key, value := range c.attributes {
+		newURL.attributes[key] = value
+	}
+	c.attributesLock.RUnlock()
+	if c.SubURL != nil {
+		newURL.SubURL = c.SubURL.Clone()
+	}
 	return newURL
 }
 

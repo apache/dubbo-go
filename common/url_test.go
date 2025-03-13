@@ -19,6 +19,7 @@ package common
 
 import (
 	"encoding/base64"
+	"fmt"
 	"net/url"
 	"testing"
 )
@@ -572,5 +573,33 @@ func TestIsAnyCondition(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			assert.Equalf(t, tt.want, IsAnyCondition(tt.args.intf, tt.args.group, tt.args.version, tt.args.serviceURL), "IsAnyCondition(%v, %v, %v, %v)", tt.args.intf, tt.args.group, tt.args.version, tt.args.serviceURL)
 		})
+	}
+}
+
+func TestSubURLCopy(t *testing.T) {
+	original := &URL{SubURL: &URL{Protocol: "test"}}
+	cloned := original.Clone()
+	cloned.SubURL.Protocol = "modified"
+	if original.SubURL.Protocol == "modified" {
+		t.Errorf("SubURL was shallow-copied; expected deep copy")
+	}
+}
+
+func BenchmarkClone(b *testing.B) {
+	u := &URL{
+		Protocol:   "dubbo",
+		Ip:         "127.0.0.1",
+		Port:       "8080",
+		params:     make(url.Values),
+		attributes: make(map[string]interface{}),
+	}
+	for i := 0; i < 1000; i++ {
+		u.params.Set(fmt.Sprintf("key%d", i), fmt.Sprintf("value%d", i))
+		u.attributes[fmt.Sprintf("attr%d", i)] = i
+	}
+	u.SubURL = &URL{Protocol: "nested"}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		u.Clone()
 	}
 }
