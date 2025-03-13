@@ -41,7 +41,8 @@ import (
 )
 
 var attachmentKey = []string{
-	constant.InterfaceKey, constant.GroupKey, constant.TokenKey, constant.TimeoutKey,
+	constant.InterfaceKey, constant.GroupKey, constant.TokenKey,
+	//constant.TimeoutKey,
 	constant.VersionKey,
 }
 
