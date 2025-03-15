@@ -26,7 +26,6 @@ import (
 
 import (
 	"github.com/olekukonko/tablewriter"
-
 	"github.com/spf13/cobra"
 )
 
@@ -38,17 +37,16 @@ import (
 // showCmd represents the show command
 var showCmd = &cobra.Command{
 	Use:   "show",
-	Short: "show interfaces and methods",
-	Long:  ``,
+	Short: "Show interfaces and methods from registry or metadata center",
+	Long:  `Displays available interfaces and their methods from the specified registry or metadata center.`,
 	Run:   show,
 }
 
 func init() {
 	rootCmd.AddCommand(showCmd)
-	showCmd.Flags().String("r", "", "")
-	showCmd.Flags().String("mc", "", "Get Metadata in MetadataCenter")
-	showCmd.Flags().String("h", "h", "")
-
+	showCmd.Flags().String("r", "", "Registry type (e.g., zookeeper)")
+	showCmd.Flags().String("mc", "", "Metadata center type (e.g., zookeeper)")
+	showCmd.Flags().String("h", "", "Host address of registry or metadata center (e.g., 127.0.0.1:2181)")
 }
 
 func show(cmd *cobra.Command, _ []string) {
@@ -57,19 +55,18 @@ func show(cmd *cobra.Command, _ []string) {
 		err        error
 	)
 
-	registry, err := cmd.Flags().GetString("r")
-	if err != nil {
-		panic(err)
-	}
+	registry, _ := cmd.Flags().GetString("r")
+	metadataCenter, _ := cmd.Flags().GetString("mc")
+	host, _ := cmd.Flags().GetString("h")
 
-	metadataCenter, err := cmd.Flags().GetString("mc")
-	if err != nil {
-		panic(err)
+	// Validate inputs
+	if registry == "" && metadataCenter == "" {
+		log.Println("Error: At least one of --r (registry) or --mc (metadata center) must be specified")
+		return
 	}
-
-	host, err := cmd.Flags().GetString("h")
-	if err != nil {
-		panic(err)
+	if host == "" {
+		log.Println("Error: Host (--h) is required")
+		return
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
@@ -78,34 +75,46 @@ func show(cmd *cobra.Command, _ []string) {
 	if registry != "" {
 		registryFactory, ok := metadata.GetFactory(registry)
 		if !ok {
-			log.Print("registry not support")
+			log.Printf("Error: Registry type '%s' is not supported", registry)
 			return
 		}
-		methodsMap, err = registryFactory("dubbogo-cli", []string{host}).ShowRegistryCenterChildren()
+		// Pass the raw host address instead of constructing a URL
+		hostArg := []string{host}
+		methodsMap, err = registryFactory("dubbogo-cli", hostArg).ShowRegistryCenterChildren()
 		if err != nil {
-			panic(err)
+			log.Printf("Failed to fetch registry data from %s: %v", registry, err)
+			fmt.Printf("======================\n")
+			fmt.Printf("Registry (%s): No data available\n", registry)
+			fmt.Printf("======================\n")
+			return
 		}
 		fmt.Printf("======================\n")
-		fmt.Printf("Registry:\n")
-		for k, v := range methodsMap {
-			table.Append([]string{k, strings.Join(v, ", ")})
+		fmt.Printf("Registry (%s):\n", registry)
+		if len(methodsMap) == 0 {
+			fmt.Println("No interfaces found")
+		} else {
+			for k, v := range methodsMap {
+				table.Append([]string{k, strings.Join(v, ", ")})
+			}
+			table.Render()
 		}
-		table.Render()
 		fmt.Printf("======================\n")
 	}
 
 	if metadataCenter != "" {
 		metadataCenterFactory, ok := metadata.GetFactory(metadataCenter)
 		if !ok {
-			log.Print("metadataCenter not support")
+			log.Printf("Error: Metadata center type '%s' is not supported", metadataCenter)
 			return
 		}
-		methodsMap, err = metadataCenterFactory("dubbogo-cli", []string{host}).ShowMetadataCenterChildren()
+		hostArg := []string{host}
+		methodsMap, err = metadataCenterFactory("dubbogo-cli", hostArg).ShowMetadataCenterChildren()
 		if err != nil {
-			panic(err)
+			log.Printf("Error fetching metadata center data: %v", err)
+			return
 		}
 		fmt.Printf("======================\n")
-		fmt.Printf("MetadataCenter:\n")
+		fmt.Printf("MetadataCenter (%s):\n", metadataCenter)
 		for k, v := range methodsMap {
 			table.Append([]string{k, strings.Join(v, ", ")})
 		}
