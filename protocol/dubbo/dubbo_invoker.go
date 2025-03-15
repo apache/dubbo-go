@@ -41,8 +41,7 @@ import (
 )
 
 var attachmentKey = []string{
-	constant.InterfaceKey, constant.GroupKey, constant.TokenKey, constant.TimeoutKey,
-	constant.VersionKey,
+	constant.InterfaceKey, constant.GroupKey, constant.TokenKey, constant.VersionKey,
 }
 
 // DubboInvoker is implement of protocol.Invoker. A dubboInvoker refers to one service and ip.

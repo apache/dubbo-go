@@ -127,6 +127,7 @@ func (refOpts *ReferenceOptions) refer(srv common.RPCService, info *ClientInfo) 
 		common.WithParams(refOpts.getURLMap()),
 		common.WithParamsValue(constant.BeanNameKey, refOpts.id),
 		common.WithParamsValue(constant.MetadataTypeKey, refOpts.metaDataType),
+		common.WithParamsValue(constant.TimeoutKey, refOpts.Consumer.RequestTimeout),
 		common.WithParamsValue(constant.KeepAliveInterval, ref.KeepAliveInterval),
 		common.WithParamsValue(constant.KeepAliveTimeout, ref.KeepAliveTimeout),
 	)
