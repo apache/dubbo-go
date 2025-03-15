@@ -829,20 +829,38 @@ func (c *URL) MergeURL(anotherUrl *URL) *URL {
 
 // Clone will copy the URL
 func (c *URL) Clone() *URL {
-	newURL := &URL{}
-	if err := copier.Copy(newURL, c); err != nil {
-		// this is impossible
-		return newURL
+	newURL := &URL{
+		Protocol:     c.Protocol,
+		Location:     c.Location,
+		Ip:           c.Ip,
+		Port:         c.Port,
+		PrimitiveURL: c.PrimitiveURL,
+		Path:         c.Path,
+		Username:     c.Username,
+		Password:     c.Password,
+		Methods:      append([]string(nil), c.Methods...),
+		params:       make(url.Values, len(c.params)),
+		attributes:   make(map[string]interface{}, len(c.attributes)),
 	}
-	newURL.params = url.Values{}
-	c.RangeParams(func(key, value string) bool {
-		newURL.SetParam(key, value)
-		return true
-	})
-	c.RangeAttributes(func(key string, value interface{}) bool {
-		newURL.SetAttribute(key, value)
-		return true
-	})
+	c.paramsLock.RLock()
+	defer c.paramsLock.RUnlock()
+	if c.params != nil {
+		for key, values := range c.params {
+			newValues := make([]string, len(values))
+			copy(newValues, values)
+			newURL.params[key] = newValues
+		}
+	}
+	c.attributesLock.RLock()
+	defer c.attributesLock.RUnlock()
+	if c.attributes != nil {
+		for key, value := range c.attributes {
+			newURL.attributes[key] = value
+		}
+	}
+	if c.SubURL != nil {
+		newURL.SubURL = c.SubURL.Clone()
+	}
 	return newURL
 }
 
