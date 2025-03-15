@@ -62,6 +62,8 @@ const (
 	MaxServerSendMsgSize   = "max-server-send-msg-size"
 	MaxCallRecvMsgSize     = "max-call-recv-msg-size"
 	MaxServerRecvMsgSize   = "max-server-recv-msg-size"
+	KeepAliveInterval      = "keep-alive-interval"
+	KeepAliveTimeout       = "keep-alive-timeout"
 )
 
 // tls constant
@@ -145,6 +147,7 @@ const (
 	CallHTTP                           = "http"
 	CallHTTP2                          = "http2"
 	ServiceInfoKey                     = "service-info"
+	RpcServiceKey                      = "rpc-service"
 	ClientInfoKey                      = "client-info"
 )
 
@@ -164,6 +167,7 @@ const (
 // registry keys
 const (
 	RegistryKey             = "registry"
+	RegistryIdKey           = "registry.id"
 	RegistryProtocol        = "registry"
 	ServiceRegistryProtocol = "service-discovery-registry"
 	RegistryRoleKey         = "registry.role"
@@ -186,6 +190,7 @@ const (
 
 const (
 	ApplicationKey         = "application"
+	ApplicationTagKey      = "application.tag"
 	OrganizationKey        = "organization"
 	NameKey                = "name"
 	ModuleKey              = "module"
