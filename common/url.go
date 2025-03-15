@@ -838,23 +838,26 @@ func (c *URL) Clone() *URL {
 		Path:         c.Path,
 		Username:     c.Username,
 		Password:     c.Password,
-		Methods:      make([]string, len(c.Methods)),
+		Methods:      append([]string(nil), c.Methods...),
+		params:       make(url.Values, len(c.params)),
+		attributes:   make(map[string]interface{}, len(c.attributes)),
 	}
-	copy(newURL.Methods, c.Methods)
-	newURL.params = make(url.Values, len(c.params))
 	c.paramsLock.RLock()
-	for key, values := range c.params {
-		newValues := make([]string, len(values))
-		copy(newValues, values)
-		newURL.params[key] = newValues
+	defer c.paramsLock.RUnlock()
+	if c.params != nil {
+		for key, values := range c.params {
+			newValues := make([]string, len(values))
+			copy(newValues, values)
+			newURL.params[key] = newValues
+		}
 	}
-	c.paramsLock.RUnlock()
-	newURL.attributes = make(map[string]interface{}, len(c.attributes))
 	c.attributesLock.RLock()
-	for key, value := range c.attributes {
-		newURL.attributes[key] = value
+	defer c.attributesLock.RUnlock()
+	if c.attributes != nil {
+		for key, value := range c.attributes {
+			newURL.attributes[key] = value
+		}
 	}
-	c.attributesLock.RUnlock()
 	if c.SubURL != nil {
 		newURL.SubURL = c.SubURL.Clone()
 	}

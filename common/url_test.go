@@ -394,6 +394,8 @@ func TestColonSeparatedKey(t *testing.T) {
 }
 
 func TestCompareURLEqualFunc(t *testing.T) {
+	// Reset to default to avoid interference
+	SetCompareURLEqualFunc(defaultCompareURLEqual)
 	// test Default
 	url1, _ := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?anyhost=true&" +
 		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
@@ -424,6 +426,7 @@ func TestCompareURLEqualFunc(t *testing.T) {
 	assert.False(t, GetCompareURLEqualFunc()(url1, url2))
 	assert.False(t, GetCompareURLEqualFunc()(url1, url2, constant.TimestampKey, constant.RemoteTimestampKey))
 
+	SetCompareURLEqualFunc(defaultCompareURLEqual)
 	url1, _ = NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?anyhost=true&" +
 		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
 		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
@@ -577,12 +580,19 @@ func TestIsAnyCondition(t *testing.T) {
 }
 
 func TestSubURLCopy(t *testing.T) {
-	original := &URL{SubURL: &URL{Protocol: "test"}}
+	original := &URL{
+		SubURL: &URL{
+			Protocol: "test",
+			params:   url.Values{"key": []string{"value"}},
+		},
+	}
 	cloned := original.Clone()
 	cloned.SubURL.Protocol = "modified"
-	if original.SubURL.Protocol == "modified" {
-		t.Errorf("SubURL was shallow-copied; expected deep copy")
-	}
+	cloned.SubURL.params.Set("key", "modified")
+	assert.Equal(t, "test", original.SubURL.Protocol)
+	assert.Equal(t, []string{"value"}, original.SubURL.params["key"])
+	assert.Equal(t, "modified", cloned.SubURL.Protocol)
+	assert.Equal(t, []string{"modified"}, cloned.SubURL.params["key"])
 }
 
 func BenchmarkClone(b *testing.B) {
