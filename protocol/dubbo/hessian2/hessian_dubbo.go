@@ -76,7 +76,7 @@ func NewHessianCodec(reader *bufio.Reader) *HessianCodec {
 	}
 }
 
-// NewHessianCodec generate a new hessian codec instance
+// NewHessianCodecCustom generate a new hessian codec instance
 func NewHessianCodecCustom(pkgType PackageType, reader *bufio.Reader, bodyLen int) *HessianCodec {
 	return &HessianCodec{
 		pkgType: pkgType,
