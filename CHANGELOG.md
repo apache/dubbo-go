@@ -67,7 +67,7 @@ This release brings multiple bug fixes, new features, and code enhancements to i
 ### Contributors
 
 Special thanks to all contributors for their efforts in improving Apache Dubbo-Go:
-
+@1kasa
 @AlbumenJ
 @AlexStocks
 @alingse
@@ -75,7 +75,6 @@ Special thanks to all contributors for their efforts in improving Apache Dubbo-G
 @baerwang
 @chickenlj
 @cuishuang
-@dandelion1kasa
 @FinalT
 @FoghostCn
 @gexincoding
