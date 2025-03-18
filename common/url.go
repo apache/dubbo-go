@@ -839,12 +839,11 @@ func (c *URL) Clone() *URL {
 		Username:     c.Username,
 		Password:     c.Password,
 		Methods:      append([]string(nil), c.Methods...),
-		params:       make(url.Values, len(c.params)),
-		attributes:   make(map[string]interface{}, len(c.attributes)),
 	}
 	c.paramsLock.RLock()
 	defer c.paramsLock.RUnlock()
 	if c.params != nil {
+		newURL.params = make(url.Values, len(c.params))
 		for key, values := range c.params {
 			newValues := make([]string, len(values))
 			copy(newValues, values)
@@ -854,6 +853,7 @@ func (c *URL) Clone() *URL {
 	c.attributesLock.RLock()
 	defer c.attributesLock.RUnlock()
 	if c.attributes != nil {
+		newURL.attributes = make(map[string]interface{}, len(c.attributes))
 		for key, value := range c.attributes {
 			newURL.attributes[key] = value
 		}
