@@ -77,3 +77,8 @@ func TestIsValidPort(t *testing.T) {
 	assert.Equal(t, false, isValidPort("65536"))
 	assert.Equal(t, true, isValidPort("20000"))
 }
+
+func TestGetRandomPort(t *testing.T) {
+	port := GetRandomPort("")
+	assert.True(t, port != "")
+}

@@ -50,7 +50,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/server/api"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	_ "dubbo.apache.org/dubbo-go/v3/proxy/proxy_factory"
-	"dubbo.apache.org/dubbo-go/v3/server"
 )
 
 const (
@@ -67,7 +66,7 @@ const (
 
 type tripleInvoker struct {
 	url     *common.URL
-	info    *server.ServiceInfo
+	info    *common.ServiceInfo
 	base    *protocol.BaseInvoker
 	handler interface{}
 }
@@ -99,7 +98,7 @@ func (t *tripleInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 	panic(fmt.Sprintf("no match method for %s", name))
 }
 
-func runTripleServer(interfaceName string, group string, version string, addr string, info *server.ServiceInfo, handler interface{}) {
+func runTripleServer(interfaceName string, group string, version string, addr string, info *common.ServiceInfo, handler interface{}) {
 	url := common.NewURLWithOptions(
 		common.WithPath(interfaceName),
 		common.WithLocation(addr),

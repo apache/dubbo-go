@@ -17,10 +17,6 @@
 
 package dubbo3
 
-import (
-	_ "dubbo.apache.org/dubbo-go/v3/metadata/service/exporter/configurable"
-)
-
 const (
 	mockDubbo3CommonUrl2 = "tri://127.0.0.1:20003/DubboGreeterImpl?accesslog=&anyhost=true&app.version=0.0.1&application=BDTService&async=false&bean.name=greeterImpl" +
 		"&category=providers&cluster=failover&dubbo=dubbo-provider-golang-2.6.0&environment=dev&execute.limit=&execute.limit.rejected.handler=&generic=false&group=&interface=org.apache.dubbo.DubboGreeterImpl" +

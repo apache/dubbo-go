@@ -123,6 +123,9 @@ func (s *Server) handlePkg(conn net.Conn) {
 
 	for {
 		bufReader := bufio.NewReader(io.LimitReader(conn, MaxHeaderSize))
+		if _, err := bufReader.Peek(1); err == io.EOF {
+			return
+		}
 		r, err := http.ReadRequest(bufReader)
 		if err != nil {
 			logger.Warnf("[ReadRequest] error: %v", err)
