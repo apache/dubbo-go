@@ -16,7 +16,6 @@ package triple_protocol
 
 import (
 	"context"
-	"fmt"
 )
 
 // UnaryFunc is the generic signature of a unary RPC. Interceptors may wrap
@@ -118,7 +117,6 @@ func (c *chain) WrapStreamingClient(next StreamingClientFunc) StreamingClientFun
 }
 
 func (c *chain) WrapStreamingHandler(next StreamingHandlerFunc) StreamingHandlerFunc {
-	fmt.Printf("33333333\n\n\n")
 	for _, interceptor := range c.interceptors {
 		next = interceptor.WrapStreamingHandler(next)
 	}
