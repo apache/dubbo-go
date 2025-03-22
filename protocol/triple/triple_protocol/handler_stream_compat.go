@@ -19,10 +19,10 @@ package triple_protocol
 
 import (
 	"context"
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"github.com/dubbogo/grpc-go"
 	"github.com/dubbogo/grpc-go/metadata"
 )
