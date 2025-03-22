@@ -21,9 +21,11 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
+	"maps"
 	"math"
 	"net"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -838,29 +840,25 @@ func (c *URL) Clone() *URL {
 		Path:         c.Path,
 		Username:     c.Username,
 		Password:     c.Password,
-		Methods:      append([]string(nil), c.Methods...),
+		Methods:      slices.Clone(c.Methods),
 	}
+
 	c.paramsLock.RLock()
-	defer c.paramsLock.RUnlock()
 	if c.params != nil {
-		newURL.params = make(url.Values, len(c.params))
-		for key, values := range c.params {
-			newValues := make([]string, len(values))
-			copy(newValues, values)
-			newURL.params[key] = newValues
-		}
+		newURL.params = maps.Clone(c.params)
 	}
+	c.paramsLock.RUnlock()
+
 	c.attributesLock.RLock()
-	defer c.attributesLock.RUnlock()
 	if c.attributes != nil {
-		newURL.attributes = make(map[string]interface{}, len(c.attributes))
-		for key, value := range c.attributes {
-			newURL.attributes[key] = value
-		}
+		newURL.attributes = maps.Clone(c.attributes)
 	}
+	c.attributesLock.RUnlock()
+
 	if c.SubURL != nil {
 		newURL.SubURL = c.SubURL.Clone()
 	}
+
 	return newURL
 }
 
