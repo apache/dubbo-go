@@ -102,7 +102,6 @@ func generateCompatStreamHandlerFunc(
 		}
 		return streamFunc(srv, stream)
 	}
-
 	if interceptor != nil {
 		implementation = interceptor.WrapStreamingHandler(implementation)
 	}

@@ -63,7 +63,7 @@ func (ti *TripleInvoker) getClientManager() *clientManager {
 // Invoke is used to call client-side method.
 func (ti *TripleInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 	var result protocol.RPCResult
-	fmt.Printf("q1111111\n\n\n")
+
 	if !ti.BaseInvoker.IsAvailable() {
 		// Generally, the case will not happen, because the invoker has been removed
 		// from the invoker list before destroy,so no new request will enter the destroyed invoker
@@ -91,7 +91,7 @@ func (ti *TripleInvoker) Invoke(ctx context.Context, invocation protocol.Invocat
 		result.SetError(err)
 		return &result
 	}
-	logger.Info("ctx:%v\n", ctx)
+
 	inRawLen := len(inRaw)
 
 	if !ti.clientManager.isIDL {

@@ -74,7 +74,6 @@ func (f UnaryInterceptorFunc) WrapStreamingClient(next StreamingClientFunc) Stre
 
 // WrapStreamingHandler implements [Interceptor] with a no-op.
 func (f UnaryInterceptorFunc) WrapStreamingHandler(next StreamingHandlerFunc) StreamingHandlerFunc {
-	fmt.Printf("11111111111\n\n\n")
 	return next
 }
 
