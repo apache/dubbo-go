@@ -25,7 +25,6 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"github.com/dubbogo/grpc-go"
 	"github.com/dubbogo/grpc-go/metadata"
 	"github.com/dubbogo/grpc-go/status"
@@ -34,6 +33,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	dubbo_protocol "dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
