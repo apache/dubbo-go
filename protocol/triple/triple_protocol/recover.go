@@ -16,6 +16,7 @@ package triple_protocol
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 )
 
@@ -80,6 +81,7 @@ func (i *recoverHandlerInterceptor) WrapUnaryHandler(next UnaryHandlerFunc) Unar
 }
 
 func (i *recoverHandlerInterceptor) WrapStreamingHandler(next StreamingHandlerFunc) StreamingHandlerFunc {
+	fmt.Printf("22222222\n\n\n")
 	return func(ctx context.Context, conn StreamingHandlerConn) (retErr error) {
 		panicked := true
 		defer func() {
