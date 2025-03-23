@@ -19,6 +19,7 @@ package common
 
 import (
 	"encoding/base64"
+	"fmt"
 	"net/url"
 	"testing"
 )
@@ -393,6 +394,8 @@ func TestColonSeparatedKey(t *testing.T) {
 }
 
 func TestCompareURLEqualFunc(t *testing.T) {
+	// Reset to default to avoid interference
+	SetCompareURLEqualFunc(defaultCompareURLEqual)
 	// test Default
 	url1, _ := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?anyhost=true&" +
 		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
@@ -423,6 +426,7 @@ func TestCompareURLEqualFunc(t *testing.T) {
 	assert.False(t, GetCompareURLEqualFunc()(url1, url2))
 	assert.False(t, GetCompareURLEqualFunc()(url1, url2, constant.TimestampKey, constant.RemoteTimestampKey))
 
+	SetCompareURLEqualFunc(defaultCompareURLEqual)
 	url1, _ = NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?anyhost=true&" +
 		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
 		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
@@ -572,5 +576,40 @@ func TestIsAnyCondition(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			assert.Equalf(t, tt.want, IsAnyCondition(tt.args.intf, tt.args.group, tt.args.version, tt.args.serviceURL), "IsAnyCondition(%v, %v, %v, %v)", tt.args.intf, tt.args.group, tt.args.version, tt.args.serviceURL)
 		})
+	}
+}
+
+func TestSubURLCopy(t *testing.T) {
+	original := &URL{
+		SubURL: &URL{
+			Protocol: "test",
+			params:   url.Values{"key": []string{"value"}},
+		},
+	}
+	cloned := original.Clone()
+	cloned.SubURL.Protocol = "modified"
+	cloned.SubURL.params.Set("key", "modified")
+	assert.Equal(t, "test", original.SubURL.Protocol)
+	assert.Equal(t, []string{"value"}, original.SubURL.params["key"])
+	assert.Equal(t, "modified", cloned.SubURL.Protocol)
+	assert.Equal(t, []string{"modified"}, cloned.SubURL.params["key"])
+}
+
+func BenchmarkClone(b *testing.B) {
+	u := &URL{
+		Protocol:   "dubbo",
+		Ip:         "127.0.0.1",
+		Port:       "8080",
+		params:     make(url.Values),
+		attributes: make(map[string]interface{}),
+	}
+	for i := 0; i < 1000; i++ {
+		u.params.Set(fmt.Sprintf("key%d", i), fmt.Sprintf("value%d", i))
+		u.attributes[fmt.Sprintf("attr%d", i)] = i
+	}
+	u.SubURL = &URL{Protocol: "nested"}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		u.Clone()
 	}
 }
