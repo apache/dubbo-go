@@ -840,13 +840,11 @@ func (c *URL) Clone() *URL {
 		Password:     c.Password,
 	}
 
-	// Deep copy Methods
 	if c.Methods != nil {
 		newURL.Methods = make([]string, len(c.Methods))
 		copy(newURL.Methods, c.Methods)
 	}
 
-	// Deep copy params
 	c.paramsLock.RLock()
 	defer c.paramsLock.RUnlock()
 	if c.params != nil {
@@ -858,7 +856,6 @@ func (c *URL) Clone() *URL {
 		}
 	}
 
-	// Deep copy attributes
 	c.attributesLock.RLock()
 	defer c.attributesLock.RUnlock()
 	if c.attributes != nil {
@@ -868,7 +865,6 @@ func (c *URL) Clone() *URL {
 		}
 	}
 
-	// Deep copy SubURL
 	if c.SubURL != nil {
 		newURL.SubURL = c.SubURL.Clone()
 	}
