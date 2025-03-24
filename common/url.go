@@ -779,6 +779,14 @@ func (c *URL) MergeURL(anotherUrl *URL) *URL {
 	// After Clone, it is a new URL that there is no thread safe issue.
 	mergedURL := c.Clone()
 	params := mergedURL.GetParams()
+	if params == nil {
+		mergedURL.paramsLock.Lock()
+		if mergedURL.params == nil {
+			mergedURL.params = make(url.Values)
+		}
+		params = mergedURL.params
+		mergedURL.paramsLock.Unlock()
+	}
 	// iterator the anotherUrl if c not have the key ,merge in
 	// anotherUrl usually will not changed. so change RangeParams to GetParams to avoid the string value copy.// Group get group
 	for key, value := range anotherUrl.GetParams() {
