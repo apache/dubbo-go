@@ -463,3 +463,8 @@ const (
 const (
 	DefaultPriority = 0
 )
+
+const (
+	TripleGoInterfaceName = "XXX_TRIPLE_GO_INTERFACE_NAME"
+	TripleGoMethodName    = "XXX_TRIPLE_GO_METHOD_NAME"
+)
