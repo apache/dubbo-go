@@ -29,6 +29,8 @@ import (
 import (
 	"github.com/dubbogo/gost/log/logger"
 
+	hessian "github.com/apache/dubbo-go-hessian2"
+
 	grpc_go "github.com/dubbogo/grpc-go"
 
 	"github.com/dustin/go-humanize"
@@ -395,7 +397,8 @@ func createServiceInfoWithReflection(svc common.RPCService) *common.ServiceInfo 
 	val := reflect.ValueOf(svc)
 	typ := reflect.TypeOf(svc)
 	methodNum := val.NumMethod()
-	methodInfos := make([]common.MethodInfo, methodNum)
+	// +1 for genteric method
+	methodInfos := make([]common.MethodInfo, methodNum+1)
 	for i := 0; i < methodNum; i++ {
 		methodType := typ.Method(i)
 		if methodType.Name == "Reference" {
@@ -426,6 +429,23 @@ func createServiceInfoWithReflection(svc common.RPCService) *common.ServiceInfo 
 		}
 		methodInfos[i] = methodInfo
 	}
+
+	// only support no-idl mod call unary
+	genericMethodInfo := common.MethodInfo{
+		Name: "$invoke",
+		Type: constant.CallUnary,
+		ReqInitFunc: func() interface{} {
+			params := make([]interface{}, 3)
+			// params must be pointer
+			params[0] = func(s string) *string { return &s }("methodName") // methodName *string
+			params[1] = &[]string{}                                        // argv type  *[]string
+			params[2] = &[]hessian.Object{}                                // argv       *[]hessian.Object
+			return params
+		},
+	}
+
+	methodInfos[methodNum] = genericMethodInfo
+
 	info.Methods = methodInfos
 
 	return &info
