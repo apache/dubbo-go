@@ -130,6 +130,7 @@ func (nr *nacosRegistry) Register(url *common.URL) error {
 	}
 	nr.registryUrls = append(nr.registryUrls, url)
 	return nil
+	//	test
 }
 
 func createDeregisterParam(url *common.URL, serviceName string, groupName string) vo.DeregisterInstanceParam {
