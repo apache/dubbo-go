@@ -37,15 +37,9 @@ github:
         # Enable projects for project management boards
         projects: true
     protected_branches:
-        master:
-            # only disable force push
-            foo: bar
-        3.0:
-            # only disable force push
-            foo: bar
-        3.1:
-            # only disable force push
-            foo: bar
+        master: {} # only disable force push
+        3.0: {} # only disable force push
+        3.1:  {} # only disable force push
     enabled_merge_buttons:
         # enable squash button:
         squash: true
