@@ -398,6 +398,7 @@ func createServiceInfoWithReflection(svc common.RPCService) *common.ServiceInfo 
 	typ := reflect.TypeOf(svc)
 	methodNum := val.NumMethod()
 
+	// +1 for generic call method
 	methodInfos := make([]common.MethodInfo, 0, methodNum+1)
 
 	for i := 0; i < methodNum; i++ {
