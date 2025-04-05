@@ -397,8 +397,9 @@ func createServiceInfoWithReflection(svc common.RPCService) *common.ServiceInfo 
 	val := reflect.ValueOf(svc)
 	typ := reflect.TypeOf(svc)
 	methodNum := val.NumMethod()
-	// +1 for genteric method
-	methodInfos := make([]common.MethodInfo, methodNum+1)
+
+	methodInfos := make([]common.MethodInfo, 0, methodNum+1)
+
 	for i := 0; i < methodNum; i++ {
 		methodType := typ.Method(i)
 		if methodType.Name == "Reference" {
@@ -427,7 +428,7 @@ func createServiceInfoWithReflection(svc common.RPCService) *common.ServiceInfo 
 				return params
 			},
 		}
-		methodInfos[i] = methodInfo
+		methodInfos = append(methodInfos, methodInfo)
 	}
 
 	// only support no-idl mod call unary
@@ -444,7 +445,7 @@ func createServiceInfoWithReflection(svc common.RPCService) *common.ServiceInfo 
 		},
 	}
 
-	methodInfos[methodNum] = genericMethodInfo
+	methodInfos = append(methodInfos, genericMethodInfo)
 
 	info.Methods = methodInfos
 
