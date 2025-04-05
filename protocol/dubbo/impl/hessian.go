@@ -136,8 +136,8 @@ func marshalRequest(encoder *hessian.Encoder, p DubboPackage) ([]byte, error) {
 	}
 	_ = encoder.Encode(types)
 	for _, v := range args {
-		if err := encoder.Encode(v); err != nil {
-			return nil, perrors.Wrapf(err, "failed to encode argument: %v", v)
+		if e := encoder.Encode(v); e != nil {
+			return nil, perrors.Wrapf(e, "failed to encode argument: %v", v)
 		}
 	}
 
