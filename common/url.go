@@ -410,6 +410,23 @@ func (c *URL) ServiceKey() string {
 		c.GetParam(constant.GroupKey, ""), c.GetParam(constant.VersionKey, ""))
 }
 
+func (c *URL) Reset() {
+	c.Ip = ""
+	c.Password = ""
+	c.Location = ""
+	c.Port = ""
+	c.PrimitiveURL = ""
+	c.Path = ""
+	c.Password = ""
+	c.Username = ""
+
+	c.params = nil
+	c.attributes = nil
+	c.Methods = nil
+	c.SubURL = nil
+
+}
+
 func ServiceKey(intf string, group string, version string) string {
 	if intf == "" {
 		return ""
@@ -835,7 +852,7 @@ func (c *URL) MergeURL(anotherUrl *URL) *URL {
 
 // Clone will copy the URL
 func (c *URL) Clone() *URL {
-	newURL := &URL{}
+	newURL := urlPool.Get().(*URL)
 	if err := copier.Copy(newURL, c); err != nil {
 		// this is impossible
 		return newURL
@@ -1005,7 +1022,7 @@ func appendParam(target *bytes.Buffer, url *URL, key string) {
 
 func releaseURL(u *URL) {
 	// Clear fields before putting back to the pool
-	u = nil
+	u.Reset()
 
 	urlPool.Put(u)
 }
