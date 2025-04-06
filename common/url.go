@@ -410,22 +410,6 @@ func (c *URL) ServiceKey() string {
 		c.GetParam(constant.GroupKey, ""), c.GetParam(constant.VersionKey, ""))
 }
 
-func (c *URL) Reset() {
-	c.Ip = ""
-	c.Password = ""
-	c.Location = ""
-	c.Port = ""
-	c.PrimitiveURL = ""
-	c.Path = ""
-	c.Password = ""
-	c.Username = ""
-
-	c.params = nil
-	c.attributes = nil
-	c.Methods = nil
-	c.SubURL = nil
-}
-
 func ServiceKey(intf string, group string, version string) string {
 	if intf == "" {
 		return ""
@@ -1020,8 +1004,5 @@ func appendParam(target *bytes.Buffer, url *URL, key string) {
 }
 
 func releaseURL(u *URL) {
-	// Clear fields before putting back to the pool
-	u.Reset()
-
 	urlPool.Put(u)
 }
