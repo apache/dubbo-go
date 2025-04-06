@@ -94,6 +94,13 @@ type extraDataKey struct{}
 const headerIncomingKey string = "headerIncomingKey"
 const headerOutgoingKey string = "headerOutgoingKey"
 
+var extraDataKeyInstance = extraDataKey{}
+
+// GetextraDataKey 返回 extraDataKey 的单例实例
+func GetextraDataKey() extraDataKey {
+	return extraDataKeyInstance
+}
+
 type handlerOutgoingKey struct{}
 
 func newIncomingContext(ctx context.Context, data http.Header) context.Context {

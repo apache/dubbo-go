@@ -221,6 +221,9 @@ func (s *Server) compatRegisterHandler(interfaceName string, svc dubbo3.Dubbo3Gr
 	}
 }
 
+type extraDataKey struct {
+}
+
 // handleServiceWithInfo injects invoker and create handler based on ServiceInfo
 func (s *Server) handleServiceWithInfo(interfaceName string, invoker protocol.Invoker, info *common.ServiceInfo, opts ...tri.HandlerOption) {
 	for _, method := range info.Methods {
@@ -247,8 +250,24 @@ func (s *Server) handleServiceWithInfo(interfaceName string, invoker protocol.In
 					attachments := generateAttachments(req.Header())
 					// inject attachments
 					ctx = context.WithValue(ctx, constant.AttachmentKey, attachments)
+					oldAttachments := map[string]interface{}{}
+					if original, ok := ctx.Value(constant.AttachmentKey).(map[string]interface{}); ok {
+						for k, v := range original {
+							oldAttachments[k] = v
+						}
+					}
 					invo := invocation.NewRPCInvocation(m.Name, args, attachments)
 					res := invoker.Invoke(ctx, invo)
+					newAttachments, _ := ctx.Value(constant.AttachmentKey).(map[string]interface{})
+					for key, val := range newAttachments {
+						if _, exists := oldAttachments[key]; !exists {
+							if vs, ok := val.([]string); ok && len(vs) > 0 {
+								ctx = tri.AppendToOutgoingContext(ctx, key, vs[0])
+							} else {
+								logger.Warnf("Attachment key=%s has invalid type: %T", key, val)
+							}
+						}
+					}
 					// todo(DMwangnima): modify InfoInvoker to get a unified processing logic
 					// please refer to server/InfoInvoker.Invoke()
 					if triResp, ok := res.Result().(*tri.Response); ok {

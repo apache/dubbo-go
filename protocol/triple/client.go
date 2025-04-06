@@ -70,6 +70,19 @@ func (cm *clientManager) callUnary(ctx context.Context, method string, req, resp
 	if err := triClient.CallUnary(ctx, triReq, triResp); err != nil {
 		return err
 	}
+	fmt.Printf("triResp.Header():%+v\n\n\n", triResp.Header())
+	val := ctx.Value(constant.AttachmentKey)
+	if val != nil {
+		if attachments, ok := val.(map[string]interface{}); ok {
+			// 从 Response 的 Trailer 中取值，放进原有的 attachments
+			for k, v := range triResp.Trailer() {
+				if len(v) > 0 {
+					attachments[k] = v[0] // 只取第一个值
+				}
+			}
+		}
+	}
+
 	return nil
 }
 

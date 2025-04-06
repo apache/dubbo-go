@@ -104,7 +104,6 @@ func (di *DubboInvoker) Invoke(ctx context.Context, ivc protocol.Invocation) pro
 		logger.Debugf("result.Err: %v", result.Err)
 		return &result
 	}
-
 	if !di.BaseInvoker.IsAvailable() {
 		// Generally, the case will not happen, because the invoker has been removed
 		// from the invoker list before destroy,so no new request will enter the destroyed invoker

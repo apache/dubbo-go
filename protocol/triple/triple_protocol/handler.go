@@ -78,6 +78,7 @@ func generateUnaryHandlerFunc(
 			return nil, errorf(CodeInternal, "unexpected handler request type %T", request)
 		}
 		res, err := unary(ctx, typed)
+
 		if res == nil && err == nil {
 			// This is going to panic during serialization. Debugging is much easier
 			// if we panic here instead, so we can include the procedure name.
@@ -104,11 +105,13 @@ func generateUnaryHandlerFunc(
 		request.header = conn.RequestHeader()
 		// embed header in context so that user logic could process them via FromIncomingContext
 		ctx = newIncomingContext(ctx, conn.RequestHeader())
+		ctx = NewOutgoingContext(ctx, http.Header{})
 
 		response, err := untyped(ctx, request)
 		if err != nil {
 			return err
 		}
+
 		// merge headers
 		mergeHeaders(conn.ResponseHeader(), response.Header())
 		mergeHeaders(conn.ResponseTrailer(), response.Trailer())
@@ -318,7 +321,6 @@ func (h *Handler) ServeHTTP(responseWriter http.ResponseWriter, request *http.Re
 	}
 
 	contentType := canonicalizeContentType(getHeaderCanonical(request.Header, headerContentType))
-
 	// inspect contentType
 	// Find our implementation of the RPC protocol in use.
 	var protocolHdl protocolHandler

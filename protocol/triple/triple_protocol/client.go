@@ -111,7 +111,6 @@ func NewClient(httpClient HTTPClient, url string, options ...ClientOption) *Clie
 		if err := unaryFunc(ctx, request, response); err != nil {
 			return err
 		}
-
 		return nil
 	}
 	return client
