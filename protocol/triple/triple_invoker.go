@@ -91,7 +91,7 @@ func (ti *TripleInvoker) Invoke(ctx context.Context, invocation protocol.Invocat
 		result.SetError(err)
 		return &result
 	}
-	
+
 	inRawLen := len(inRaw)
 
 	if !ti.clientManager.isIDL {

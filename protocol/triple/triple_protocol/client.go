@@ -113,7 +113,6 @@ func NewClient(httpClient HTTPClient, url string, options ...ClientOption) *Clie
 		}
 		return nil
 	}
-	
 	return client
 }
 

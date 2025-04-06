@@ -221,9 +221,6 @@ func (s *Server) compatRegisterHandler(interfaceName string, svc dubbo3.Dubbo3Gr
 	}
 }
 
-type extraDataKey struct {
-}
-
 // handleServiceWithInfo injects invoker and create handler based on ServiceInfo
 func (s *Server) handleServiceWithInfo(interfaceName string, invoker protocol.Invoker, info *common.ServiceInfo, opts ...tri.HandlerOption) {
 	for _, method := range info.Methods {
