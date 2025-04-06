@@ -95,7 +95,11 @@ Please visit [CONTRIBUTING](./CONTRIBUTING.md) for details on submitting patches
 
 ## Contact
 
-- [DingTalk Group](https://www.dingtalk.com/en): 23331795
+Join our discussion group through Ding talk, WeChat, or Discord.
+
+discord https://discord.gg/C5ywvytg
+![invite.png](./doc/imgs/invite.png)
+
 
 ## [User List](https://github.com/apache/dubbo-go/issues/2)
 
