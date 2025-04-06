@@ -30,6 +30,10 @@ import (
 	"golang.org/x/net/http2/h2c"
 )
 
+import (
+	"github.com/dubbogo/gost/log/logger"
+)
+
 type Server struct {
 	mu       sync.Mutex
 	mux      *http.ServeMux
@@ -157,9 +161,18 @@ func (s *Server) RegisterCompatStreamHandler(
 	return nil
 }
 
+func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	handler, pattern := s.mux.Handler(r)
+	if pattern == "" {
+		logger.Warnf("404: didn't register this method - %s\n", r.URL.Path)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 func (s *Server) Run() error {
 	// todo(DMwangnima): deal with TLS
-	s.httpSrv.Handler = h2c.NewHandler(s.mux, &http2.Server{})
+	s.httpSrv.Handler = h2c.NewHandler(s, &http2.Server{})
 
 	if err := s.httpSrv.ListenAndServe(); err != nil {
 		return err
