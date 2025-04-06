@@ -59,14 +59,15 @@ var (
 	DubboNodes          = [...]string{"consumers", "configurators", "routers", "providers"} // Dubbo service node
 	DubboRole           = [...]string{"consumer", "", "routers", "provider"}                // Dubbo service role
 	compareURLEqualFunc CompareURLEqualFunc                                                 // function to compare two URL is equal
-	urlPool             sync.Pool
+	urlPool             = sync.Pool{
+		New: func() interface{} {
+			return &URL{}
+		},
+	}
 )
 
 func init() {
 	compareURLEqualFunc = defaultCompareURLEqual
-	urlPool.New = func() interface{} {
-		return &URL{}
-	}
 }
 
 // nolint
