@@ -424,7 +424,6 @@ func (c *URL) Reset() {
 	c.attributes = nil
 	c.Methods = nil
 	c.SubURL = nil
-
 }
 
 func ServiceKey(intf string, group string, version string) string {
