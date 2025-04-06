@@ -70,7 +70,7 @@ func (cm *clientManager) callUnary(ctx context.Context, method string, req, resp
 	if err := triClient.CallUnary(ctx, triReq, triResp); err != nil {
 		return err
 	}
-	fmt.Printf("triResp.Header():%+v\n\n\n", triResp.Header())
+
 	val := ctx.Value(constant.AttachmentKey)
 	if val != nil {
 		if attachments, ok := val.(map[string]interface{}); ok {
