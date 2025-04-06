@@ -70,6 +70,16 @@ func (cm *clientManager) callUnary(ctx context.Context, method string, req, resp
 	if err := triClient.CallUnary(ctx, triReq, triResp); err != nil {
 		return err
 	}
+	val := ctx.Value(constant.AttachmentKey)
+	if val != nil {
+		if attachments, ok := val.(map[string]interface{}); ok {
+			for k, v := range triResp.Trailer() {
+				if len(v) > 0 {
+					attachments[k] = v[0]
+				}
+			}
+		}
+	}
 	return nil
 }
 
