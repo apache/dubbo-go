@@ -247,7 +247,7 @@ func (s *Server) handleServiceWithInfo(interfaceName string, invoker protocol.In
 					attachments := generateAttachments(req.Header())
 					// inject attachments
 					ctx = context.WithValue(ctx, constant.AttachmentKey, attachments)
-					oldAttachments := map[string]interface{}{}
+					oldAttachments := make(map[string]interface{})
 					if original, ok := ctx.Value(constant.AttachmentKey).(map[string]interface{}); ok {
 						for k, v := range original {
 							oldAttachments[k] = v
@@ -255,13 +255,17 @@ func (s *Server) handleServiceWithInfo(interfaceName string, invoker protocol.In
 					}
 					invo := invocation.NewRPCInvocation(m.Name, args, attachments)
 					res := invoker.Invoke(ctx, invo)
-					newAttachments, _ := ctx.Value(constant.AttachmentKey).(map[string]interface{})
-					for key, val := range newAttachments {
-						if _, exists := oldAttachments[key]; !exists {
-							if vs, ok := val.([]string); ok && len(vs) > 0 {
-								ctx = tri.AppendToOutgoingContext(ctx, key, vs[0])
-							} else {
-								logger.Warnf("Attachment key=%s has invalid type: %T", key, val)
+					newAttachments, ok := ctx.Value(constant.AttachmentKey).(map[string]interface{})
+					if !ok {
+						logger.Warnf("AttachmentKey is not map[string]interface{}, got: %T", newAttachments)
+					} else {
+						for key, val := range newAttachments {
+							if _, exists := oldAttachments[key]; !exists {
+								if vs, ok := val.([]string); ok && len(vs) > 0 {
+									ctx = tri.AppendToOutgoingContext(ctx, key, vs[0])
+								} else {
+									logger.Warnf("Attachment key=%s has invalid type: %T", key, val)
+								}
 							}
 						}
 					}
