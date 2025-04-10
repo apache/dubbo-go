@@ -1,25 +1,24 @@
 linters-settings:
   govet:
-    check-shadowing: true
-  golint:
-    min-confidence: 0
+    enable:
+      - shadow
   gocyclo:
     min-complexity: 10
-  maligned:
-    suggest-new: true
   dupl:
     threshold: 100
   goconst:
     min-len: 2
     min-occurrences: 2
   depguard:
-    list-type: blacklist
-    packages:
-      # logging is allowed only by logutils.Log, logrus
-      # is allowed to use only in logutils package
-      - github.com/sirupsen/logrus
+    rules:
+      main:
+        deny:
+          - pkg: "github.com/sirupsen/logrus"
+            desc: logging is allowed only by logutils.Log, logrus is allowed to use only in logutils package
   misspell:
     locale: US
+    ignore-words:
+      - nto
   lll:
     line-length: 140
   goimports:
@@ -40,11 +39,6 @@ linters:
     - ineffassign
     - misspell
 
-run:
-  skip-dirs:
-    - test/testdata_etc
-    - pkg/golinters/goanalysis/(checker|passes)
-
 issues:
   exclude-rules:
     - text: "weak cryptographic primitive"
@@ -53,10 +47,6 @@ issues:
     - linters:
         - staticcheck
       text: "SA1019:"
-
-# golangci.com configuration
-# https://github.com/golangci/golangci/wiki/Configuration
-service:
-  golangci-lint-version: 1.15.x # use the fixed version to not introduce new linters unexpectedly
-  prepare:
-    - echo "here I can run custom commands, but no preparation needed for this repo"
+  exclude-dirs:
+    - test/testdata_etc
+    - pkg/golinters/goanalysis/(checker|passes)
