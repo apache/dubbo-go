@@ -34,7 +34,7 @@ import (
 )
 
 var (
-	argumentsPattern      = regexp.MustCompile(`arguments\[([0-9]+)\]`)
+	argumentsPattern      = regexp.MustCompile("arguments\\[([0-9]+)\\]")
 	notFoundArgumentValue = "dubbo internal not found argument condition value"
 )
 
