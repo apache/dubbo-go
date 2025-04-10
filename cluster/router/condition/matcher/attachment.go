@@ -32,7 +32,7 @@ import (
 )
 
 var (
-	attachmentPattern       = regexp.MustCompile("attachments\\[([a-zA-Z0-9_]+)\\]")
+	attachmentPattern       = regexp.MustCompile(`attachments\[([a-zA-Z0-9_]+)\]`)
 	notFoundAttachmentValue = "dubbo internal not found attachment condition value"
 )
 
