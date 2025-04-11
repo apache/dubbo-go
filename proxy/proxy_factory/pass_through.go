@@ -19,7 +19,6 @@ package proxy_factory
 
 import (
 	"context"
-	"fmt"
 	"reflect"
 )
 
@@ -84,8 +83,6 @@ func (pi *PassThroughProxyInvoker) Invoke(ctx context.Context, invocation protoc
 	result := &protocol.RPCResult{}
 	result.SetAttachments(invocation.Attachments())
 	url := getProviderURL(pi.GetURL())
-
-	fmt.Printf("nvocation.Attachments():%+v\n", invocation.Attachments())
 
 	arguments := invocation.Arguments()
 	srv := common.ServiceMap.GetServiceByServiceKey(url.Protocol, url.ServiceKey())

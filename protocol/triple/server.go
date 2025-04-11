@@ -277,13 +277,7 @@ func (s *Server) handleServiceWithInfo(interfaceName string, invoker protocol.In
 							triResp.Header().Set(k, fmt.Sprintf("%v", val))
 						}
 					}
-					//// todo(DMwangnima): modify InfoInvoker to get a unified processing logic
-					//// please refer to server/InfoInvoker.Invoke()
-					//if triResp, ok := res.Result().(*tri.Response); ok {
-					//	return triResp, res.Error()
-					//}
-					//// please refer to proxy/proxy_factory/ProxyInvoker.Invoke
-					//triResp := tri.NewResponse([]interface{}{res.Result()})
+					// todo(DMwangnima): modify InfoInvoker to get a unified processing logic
 					return triResp, res.Error()
 				},
 				opts...,
