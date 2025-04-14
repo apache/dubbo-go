@@ -62,6 +62,13 @@ func NewInstance(opts ...InstanceOption) (*Instance, error) {
 	return &Instance{insOpts: newInsOpts}, nil
 }
 
+// SetOptions adds options to instance. It is used to set the options after the instance is created.
+func (ins *Instance) SetOptions(opts ...InstanceOption) {
+	for _, opt := range opts {
+		opt(ins.insOpts)
+	}
+}
+
 // NewClient is like client.NewClient, but inject configurations from RootConfig and
 // ConsumerConfig
 func (ins *Instance) NewClient(opts ...client.ClientOption) (*client.Client, error) {
