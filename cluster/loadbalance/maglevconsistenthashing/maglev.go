@@ -18,7 +18,7 @@
 package maglevconsistenthashing
 
 import (
-	"hash/fnv"
+	"github.com/cespare/xxhash/v2"
 
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
@@ -57,13 +57,15 @@ func (m *Maglev) buildLookupTable() {
 			if inserted >= m.tableSize {
 				break
 			}
-			offset := permutations[i][next[i]%m.tableSize]
+			idx := next[i]
+			offset := permutations[i][idx%m.tableSize]
 			for m.lookupTable[offset] != -1 {
-				next[i]++
-				offset = permutations[i][next[i]%m.tableSize]
+				idx++
+				next[i] = idx
+				offset = permutations[i][idx%m.tableSize]
 			}
 			m.lookupTable[offset] = i
-			next[i]++
+			next[i] = idx + 1
 			inserted++
 		}
 	}
@@ -82,11 +84,12 @@ func (m *Maglev) generatePermutations() [][]int {
 func (m *Maglev) calculatePermutation(node protocol.Invoker) []int {
 	u := node.GetURL()
 	address := u.Ip + ":" + u.Port
-	offset := hash(address) % uint64(m.tableSize)
-	skip := 1 + (hash(address+"skip") % uint64(m.tableSize-1))
+	tableSize := uint64(m.tableSize)
+	offset := hash(address) % tableSize
+	skip := 1 + (hash(address+"skip") % (tableSize - 1))
 	permutation := make([]int, m.tableSize)
 	for i := 0; i < m.tableSize; i++ {
-		permutation[i] = int((offset + uint64(i)*skip) % uint64(m.tableSize))
+		permutation[i] = int((offset + uint64(i)*skip) % tableSize)
 	}
 	return permutation
 }
@@ -96,11 +99,9 @@ func (m *Maglev) Pick(key string) protocol.Invoker {
 	return m.invokers[m.lookupTable[index]]
 }
 
-// hash 简单的哈希函数示例
+// hash.Hash64
 func hash(s string) uint64 {
-	h := fnv.New64a()
-	h.Write([]byte(s))
-	return h.Sum64()
+	return xxhash.Sum64String(s)
 }
 
 // isPrime 函数用于判断一个数是否为素数
@@ -108,8 +109,14 @@ func isPrime(num int) bool {
 	if num < 2 {
 		return false
 	}
-	for i := 2; i*i <= num; i++ {
-		if num%i == 0 {
+	if num <= 3 {
+		return true
+	}
+	if num%2 == 0 || num%3 == 0 {
+		return false
+	}
+	for i := 5; i*i <= num; i += 6 {
+		if num%i == 0 || num%(i+2) == 0 {
 			return false
 		}
 	}
@@ -118,9 +125,17 @@ func isPrime(num int) bool {
 
 // NextPrime 函数用于找出比 n 大的第一个素数
 func NextPrime(n int) int {
-	num := n + 1
-	for !isPrime(num) {
+	if n <= 2 {
+		return 2
+	}
+	num := n
+	if num%2 == 0 {
 		num++
+	} else {
+		num += 2
+	}
+	for !isPrime(num) {
+		num += 2
 	}
 	return num
 }
