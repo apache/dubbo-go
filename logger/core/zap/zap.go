@@ -32,19 +32,15 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/logger"
 	"dubbo.apache.org/dubbo-go/v3/logger/core"
-	glog "github.com/dubbogo/gost/log/logger"
-)
-
-var (
-	zapAtomicLevel zap.AtomicLevel = zap.NewAtomicLevel()
 )
 
 func init() {
 	extension.SetLogger("zap", instantiate)
 }
 
-func instantiate(config *common.URL) (log glog.Logger, err error) {
+func instantiate(config *common.URL) (log logger.Logger, err error) {
 	var (
 		level    string
 		lv       zapcore.Level
@@ -81,13 +77,13 @@ func instantiate(config *common.URL) (log glog.Logger, err error) {
 		encoder = zapcore.NewConsoleEncoder(encoderConfig())
 	}
 
-	zapAtomicLevel = zap.NewAtomicLevelAt(lv)
+	zapAtomicLevel := zap.NewAtomicLevelAt(lv)
 	log = zap.New(zapcore.NewCore(encoder, zapcore.NewMultiWriteSyncer(sync...), zapAtomicLevel),
 		zap.AddCaller(), zap.AddCallerSkip(1)).Sugar()
-	return log, nil
+	return &logger.DubboLogger{Logger: log, DynamicLevel: zapAtomicLevel}, nil
 }
 
-func NewDefault() *core.Logger {
+func NewDefault() *logger.DubboLogger {
 	var (
 		lv  zapcore.Level
 		lg  *zap.SugaredLogger
@@ -99,16 +95,7 @@ func NewDefault() *core.Logger {
 	encoder := zapcore.NewConsoleEncoder(encoderConfig())
 	lg = zap.New(zapcore.NewCore(encoder, zapcore.AddSync(os.Stdout), lv),
 		zap.AddCaller(), zap.AddCallerSkip(2)).Sugar()
-	return &core.Logger{L: lg}
-}
-
-func SetLevel(level string) error {
-	lv, err := zapcore.ParseLevel(level)
-	if err != nil {
-		return err
-	}
-	zapAtomicLevel.SetLevel(lv)
-	return nil
+	return &logger.DubboLogger{Logger: lg}
 }
 
 func encoderConfig() zapcore.EncoderConfig {

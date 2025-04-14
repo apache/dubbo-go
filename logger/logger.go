@@ -19,39 +19,128 @@
 package logger
 
 import (
-	"fmt"
-)
-
-import (
 	"github.com/sirupsen/logrus"
 	"go.uber.org/zap"
-)
-import (
-	corezap "dubbo.apache.org/dubbo-go/v3/logger/core/zap"
-	"github.com/dubbogo/gost/log/logger"
+	"go.uber.org/zap/zapcore"
 )
 
-func SetLoggerLevel(level string) error {
-	l := logger.GetLogger()
-	if _, ok := l.(*zap.SugaredLogger); ok {
-		_, err := zap.ParseAtomicLevel(level)
-		if err != nil {
-			return fmt.Errorf("failed to parse log level: %v", err)
-		}
-		if err := corezap.SetLevel(level); err != nil {
-			return fmt.Errorf("failed to set zap logger level: %v", err)
-		}
+var logger Logger
 
-		return nil
+func init() {
+	InitLogger(nil)
+}
+
+// InitLogger use for init logger by @conf
+func InitLogger(conf *Config) {
+	var (
+		zapLogger *zap.Logger
+		config    = &Config{}
+	)
+	if conf == nil || conf.ZapConfig == nil {
+		zapLoggerEncoderConfig := zapcore.EncoderConfig{
+			TimeKey:        "time",
+			LevelKey:       "level",
+			NameKey:        "logger",
+			CallerKey:      "caller",
+			MessageKey:     "message",
+			StacktraceKey:  "stacktrace",
+			EncodeLevel:    zapcore.CapitalColorLevelEncoder,
+			EncodeTime:     zapcore.ISO8601TimeEncoder,
+			EncodeDuration: zapcore.SecondsDurationEncoder,
+			EncodeCaller:   zapcore.ShortCallerEncoder,
+		}
+		config.ZapConfig = &zap.Config{
+			Level:            zap.NewAtomicLevelAt(zap.InfoLevel),
+			Development:      false,
+			Encoding:         "console",
+			EncoderConfig:    zapLoggerEncoderConfig,
+			OutputPaths:      []string{"stdout"},
+			ErrorOutputPaths: []string{"stderr"},
+		}
+	} else {
+		config.ZapConfig = conf.ZapConfig
 	}
 
-	if ll, ok := l.(*logrus.Logger); ok {
-		lv, err := logrus.ParseLevel(level)
-		if err != nil {
-			return fmt.Errorf("failed to parse log level: %v", err)
-		}
-		ll.SetLevel(lv)
-		return nil
+	if conf != nil {
+		config.CallerSkip = conf.CallerSkip
 	}
-	return fmt.Errorf("unsupported logger type: %T", l)
+
+	if config.CallerSkip == 0 {
+		config.CallerSkip = 1
+	}
+
+	if conf == nil || conf.LumberjackConfig == nil {
+		zapLogger, _ = config.ZapConfig.Build(zap.AddCaller(), zap.AddCallerSkip(config.CallerSkip))
+	} else {
+		config.LumberjackConfig = conf.LumberjackConfig
+		zapLogger = initZapLoggerWithSyncer(config)
+	}
+
+	logger = &DubboLogger{Logger: zapLogger.Sugar(), DynamicLevel: config.ZapConfig.Level}
+}
+
+// SetLogger sets logger for dubbo and getty
+func SetLogger(log Logger) {
+	logger = log
+}
+
+// GetLogger gets the loggerF
+func GetLogger() Logger {
+	return logger
+}
+
+// SetLoggerLevel use for set logger level
+func SetLoggerLevel(level string) bool {
+	if l, ok := logger.(OpsLogger); ok {
+		return l.SetLoggerLevel(level)
+	}
+	return false
+}
+
+// OpsLogger use for the SetLoggerLevel
+type OpsLogger interface {
+	Logger
+	SetLoggerLevel(level string) bool
+}
+
+// SetLoggerLevel use for set logger level
+func (dl *DubboLogger) SetLoggerLevel(level string) bool {
+	if _, ok := dl.Logger.(*zap.SugaredLogger); ok {
+		if lv, err := zapcore.ParseLevel(level); err == nil {
+			dl.DynamicLevel.SetLevel(lv)
+			return true
+		}
+	} else if l, ok := dl.Logger.(*logrus.Logger); ok {
+		if lv, err := logrus.ParseLevel(level); err == nil {
+			l.SetLevel(lv)
+			return true
+		}
+	}
+	return false
+}
+
+// initZapLoggerWithSyncer init zap Logger with syncer
+func initZapLoggerWithSyncer(conf *Config) *zap.Logger {
+	core := zapcore.NewCore(
+		conf.getEncoder(),
+		conf.getLogWriter(),
+		zap.NewAtomicLevelAt(conf.ZapConfig.Level.Level()),
+	)
+
+	return zap.New(core, zap.AddCaller(), zap.AddCallerSkip(conf.CallerSkip))
+}
+
+// getEncoder get encoder by config, zapcore support json and console encoder
+func (c *Config) getEncoder() zapcore.Encoder {
+	if c.ZapConfig.Encoding == "json" {
+		return zapcore.NewJSONEncoder(c.ZapConfig.EncoderConfig)
+	} else if c.ZapConfig.Encoding == "console" {
+		return zapcore.NewConsoleEncoder(c.ZapConfig.EncoderConfig)
+	}
+	return nil
+}
+
+// getLogWriter get Lumberjack writer by LumberjackConfig
+func (c *Config) getLogWriter() zapcore.WriteSyncer {
+	return zapcore.AddSync(c.LumberjackConfig)
 }

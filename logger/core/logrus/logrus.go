@@ -32,15 +32,15 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/logger"
 	"dubbo.apache.org/dubbo-go/v3/logger/core"
-	glog "github.com/dubbogo/gost/log/logger"
 )
 
 func init() {
 	extension.SetLogger("logrus", instantiate)
 }
 
-func instantiate(config *common.URL) (log glog.Logger, err error) {
+func instantiate(config *common.URL) (log logger.Logger, err error) {
 	var (
 		level     string
 		writer    []io.Writer
@@ -80,5 +80,5 @@ func instantiate(config *common.URL) (log glog.Logger, err error) {
 		formatter = &logrus.TextFormatter{}
 	}
 	lg.SetFormatter(formatter)
-	return &core.Logger{L: lg}, err
+	return &logger.DubboLogger{Logger: lg}, err
 }
