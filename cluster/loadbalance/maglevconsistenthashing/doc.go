@@ -15,16 +15,5 @@
  * limitations under the License.
  */
 
-package constant
-
-const (
-	LoadBalanceKeyConsistentHashing             = "consistenthashing"
-	LoadBalanceKeyLeastActive                   = "leastactive"
-	LoadBalanceKeyRandom                        = "random"
-	LoadBalanceKeyRoundRobin                    = "roundrobin"
-	LoadBalanceKeyP2C                           = "p2c"
-	LoadXDSRingHash                             = "xdsringhash"
-	LoadBalanceKeyInterleavedWeightedRoundRobin = "interleavedweightedroundrobin"
-	LoadBalanceKeyAliasMethod                   = "aliasmethod"
-	LoadBalanceKeyMaglevConsistentHashing       = "maglevconsistenthashing"
-)
+// Package maglevconsistenthashing implements ConsistentHash load balance strategy.
+package maglevconsistenthashing

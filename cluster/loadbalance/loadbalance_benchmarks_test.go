@@ -20,14 +20,13 @@ package loadbalance_test
 import (
 	"fmt"
 	"testing"
-)
 
-import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/aliasmethod"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/consistenthashing"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/iwrr"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/leastactive"
+	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/maglevconsistenthashing"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/p2c"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/random"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/ringhash"
@@ -84,4 +83,8 @@ func BenchmarkRandomLoadbalance(b *testing.B) {
 
 func BenchmarkAliasMethodLoadbalance(b *testing.B) {
 	Benchloadbalance(b, extension.GetLoadbalance(constant.LoadBalanceKeyAliasMethod))
+}
+
+func BenchmarkMaglevConsistentHashingLoadBalance(b *testing.B) {
+	Benchloadbalance(b, extension.GetLoadbalance(constant.LoadBalanceKeyMaglevConsistentHashing))
 }
