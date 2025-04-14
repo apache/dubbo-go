@@ -24,10 +24,7 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/log/logger"
-
 	"github.com/mattn/go-colorable"
-
 	"github.com/sirupsen/logrus"
 )
 
@@ -35,18 +32,15 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	. "dubbo.apache.org/dubbo-go/v3/logger"
+	"dubbo.apache.org/dubbo-go/v3/logger/core"
+	glog "github.com/dubbogo/gost/log/logger"
 )
 
 func init() {
 	extension.SetLogger("logrus", instantiate)
 }
 
-type Logger struct {
-	lg *logrus.Logger
-}
-
-func instantiate(config *common.URL) (log logger.Logger, err error) {
+func instantiate(config *common.URL) (log glog.Logger, err error) {
 	var (
 		level     string
 		writer    []io.Writer
@@ -70,7 +64,7 @@ func instantiate(config *common.URL) (log logger.Logger, err error) {
 		case "console":
 			writer = append(writer, os.Stdout)
 		case "file":
-			file := FileConfig(config)
+			file := core.FileConfig(config)
 			writer = append(writer, colorable.NewNonColorable(file))
 		}
 	}
@@ -86,45 +80,5 @@ func instantiate(config *common.URL) (log logger.Logger, err error) {
 		formatter = &logrus.TextFormatter{}
 	}
 	lg.SetFormatter(formatter)
-	return &Logger{lg: lg}, err
-}
-
-func (l *Logger) Debug(args ...interface{}) {
-	l.lg.Debug(args...)
-}
-
-func (l *Logger) Debugf(template string, args ...interface{}) {
-	l.lg.Debugf(template, args...)
-}
-
-func (l *Logger) Info(args ...interface{}) {
-	l.lg.Info(args...)
-}
-
-func (l *Logger) Infof(template string, args ...interface{}) {
-	l.lg.Infof(template, args...)
-}
-
-func (l *Logger) Warn(args ...interface{}) {
-	l.lg.Warn(args...)
-}
-
-func (l *Logger) Warnf(template string, args ...interface{}) {
-	l.lg.Warnf(template, args...)
-}
-
-func (l *Logger) Error(args ...interface{}) {
-	l.lg.Error(args...)
-}
-
-func (l *Logger) Errorf(template string, args ...interface{}) {
-	l.lg.Errorf(template, args...)
-}
-
-func (l *Logger) Fatal(args ...interface{}) {
-	l.lg.Fatal(args...)
-}
-
-func (l *Logger) Fatalf(fmt string, args ...interface{}) {
-	l.lg.Fatalf(fmt, args...)
+	return &core.Logger{L: lg}, err
 }

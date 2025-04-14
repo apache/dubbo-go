@@ -16,42 +16,24 @@
  */
 
 // Package logger is unified facade provided by Dubbo to work with different logger frameworks, eg, Zapper, Logrus.
-package logger
+package core
 
 import (
-	"fmt"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 import (
-	"github.com/sirupsen/logrus"
-	"go.uber.org/zap"
-)
-import (
-	corezap "dubbo.apache.org/dubbo-go/v3/logger/core/zap"
-	"github.com/dubbogo/gost/log/logger"
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
-func SetLoggerLevel(level string) error {
-	l := logger.GetLogger()
-	if _, ok := l.(*zap.SugaredLogger); ok {
-		_, err := zap.ParseAtomicLevel(level)
-		if err != nil {
-			return fmt.Errorf("failed to parse log level: %v", err)
-		}
-		if err := corezap.SetLevel(level); err != nil {
-			return fmt.Errorf("failed to set zap logger level: %v", err)
-		}
-
-		return nil
+func FileConfig(config *common.URL) *lumberjack.Logger {
+	return &lumberjack.Logger{
+		Filename:   config.GetParam(constant.LoggerFileNameKey, "dubbo.log"),
+		MaxSize:    config.GetParamByIntValue(constant.LoggerFileNaxSizeKey, 1),
+		MaxBackups: config.GetParamByIntValue(constant.LoggerFileMaxBackupsKey, 1),
+		MaxAge:     config.GetParamByIntValue(constant.LoggerFileMaxAgeKey, 3),
+		LocalTime:  config.GetParamBool(constant.LoggerFileLocalTimeKey, true),
+		Compress:   config.GetParamBool(constant.LoggerFileCompressKey, true),
 	}
-
-	if ll, ok := l.(*logrus.Logger); ok {
-		lv, err := logrus.ParseLevel(level)
-		if err != nil {
-			return fmt.Errorf("failed to parse log level: %v", err)
-		}
-		ll.SetLevel(lv)
-		return nil
-	}
-	return fmt.Errorf("unsupported logger type: %T", l)
 }
