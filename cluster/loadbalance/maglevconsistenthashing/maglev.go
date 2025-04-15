@@ -18,6 +18,8 @@
 package maglevconsistenthashing
 
 import (
+	"math"
+
 	"github.com/cespare/xxhash/v2"
 
 	"dubbo.apache.org/dubbo-go/v3/protocol"
@@ -109,14 +111,15 @@ func isPrime(num int) bool {
 	if num < 2 {
 		return false
 	}
-	if num <= 3 {
+	if num == 2 {
 		return true
 	}
-	if num%2 == 0 || num%3 == 0 {
+	if num%2 == 0 {
 		return false
 	}
-	for i := 5; i*i <= num; i += 6 {
-		if num%i == 0 || num%(i+2) == 0 {
+	sqrt := int(math.Sqrt(float64(num)))
+	for i := 3; i <= sqrt; i += 2 {
+		if num%i == 0 {
 			return false
 		}
 	}
@@ -125,17 +128,9 @@ func isPrime(num int) bool {
 
 // NextPrime 函数用于找出比 n 大的第一个素数
 func NextPrime(n int) int {
-	if n <= 2 {
-		return 2
+	for num := n + 1; ; num++ {
+		if isPrime(num) {
+			return num
+		}
 	}
-	num := n
-	if num%2 == 0 {
-		num++
-	} else {
-		num += 2
-	}
-	for !isPrime(num) {
-		num += 2
-	}
-	return num
 }
