@@ -19,21 +19,64 @@
 package logger
 
 import (
-	"gopkg.in/natefinch/lumberjack.v2"
+	dubbogoLogger "github.com/dubbogo/gost/log/logger"
+
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
-)
+var logger Logger
 
-func FileConfig(config *common.URL) *lumberjack.Logger {
-	return &lumberjack.Logger{
-		Filename:   config.GetParam(constant.LoggerFileNameKey, "dubbo.log"),
-		MaxSize:    config.GetParamByIntValue(constant.LoggerFileNaxSizeKey, 1),
-		MaxBackups: config.GetParamByIntValue(constant.LoggerFileMaxBackupsKey, 1),
-		MaxAge:     config.GetParamByIntValue(constant.LoggerFileMaxAgeKey, 3),
-		LocalTime:  config.GetParamBool(constant.LoggerFileLocalTimeKey, true),
-		Compress:   config.GetParamBool(constant.LoggerFileCompressKey, true),
+func init() {
+	dubbogoLogger.InitLogger(nil)
+}
+
+// SetLogger sets logger for dubbo and getty
+func SetLogger(log Logger) {
+	logger = log
+}
+
+// GetLogger gets the loggerF
+func GetLogger() Logger {
+	return logger
+}
+
+// SetLoggerLevel use for set logger level
+func SetLoggerLevel(level string) bool {
+	if l, ok := logger.(OpsLogger); ok {
+		return l.SetLoggerLevel(level)
 	}
+	return false
+}
+
+// OpsLogger use for the SetLoggerLevel
+type OpsLogger interface {
+	Logger
+	SetLoggerLevel(level string) bool
+}
+
+// initZapLoggerWithSyncer init zap Logger with syncer
+func initZapLoggerWithSyncer(conf *Config) *zap.Logger {
+	core := zapcore.NewCore(
+		conf.getEncoder(),
+		conf.getLogWriter(),
+		zap.NewAtomicLevelAt(conf.ZapConfig.Level.Level()),
+	)
+
+	return zap.New(core, zap.AddCaller(), zap.AddCallerSkip(conf.CallerSkip))
+}
+
+// getEncoder get encoder by config, zapcore support json and console encoder
+func (c *Config) getEncoder() zapcore.Encoder {
+	if c.ZapConfig.Encoding == "json" {
+		return zapcore.NewJSONEncoder(c.ZapConfig.EncoderConfig)
+	} else if c.ZapConfig.Encoding == "console" {
+		return zapcore.NewConsoleEncoder(c.ZapConfig.EncoderConfig)
+	}
+	return nil
+}
+
+// getLogWriter get Lumberjack writer by LumberjackConfig
+func (c *Config) getLogWriter() zapcore.WriteSyncer {
+	return zapcore.AddSync(c.LumberjackConfig)
 }
