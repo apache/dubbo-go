@@ -15,29 +15,28 @@
  * limitations under the License.
  */
 
-package extension
+package logger
 
 import (
-	"github.com/pkg/errors"
+	"github.com/natefinch/lumberjack"
+	"go.uber.org/zap"
 )
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/logger"
-)
-
-var logs = make(map[string]func(config *common.URL) (logger.Logger, error))
-
-func SetLogger(driver string, log func(config *common.URL) (logger.Logger, error)) {
-	logs[driver] = log
+type Config struct {
+	LumberjackConfig *lumberjack.Logger `yaml:"lumberjack-config"`
+	ZapConfig        *zap.Config        `yaml:"zap-config"`
+	CallerSkip       int
 }
 
-func GetLogger(driver string, config *common.URL) (logger.Logger, error) {
-	if logs[driver] != nil {
-		return logs[driver](config)
-	} else {
-		return nil, errors.Errorf("logger for %s does not exist. "+
-			"please make sure that you have imported the package "+
-			"dubbo.apache.org/dubbo-go/v3/logger/%s", driver, driver)
-	}
+type Logger interface {
+	Debug(args ...any)
+	Debugf(template string, args ...any)
+	Info(args ...any)
+	Infof(template string, args ...any)
+	Warn(args ...any)
+	Warnf(template string, args ...any)
+	Error(args ...any)
+	Errorf(template string, args ...any)
+	Fatal(args ...any)
+	Fatalf(fmt string, args ...any)
 }
