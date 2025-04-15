@@ -79,7 +79,7 @@ func instantiate(config *common.URL) (log logger.Logger, err error) {
 
 	zapAtomicLevel := zap.NewAtomicLevelAt(lv)
 	log = zap.New(zapcore.NewCore(encoder, zapcore.NewMultiWriteSyncer(sync...), zapAtomicLevel),
-		zap.AddCaller(), zap.AddCallerSkip(1)).Sugar()
+		zap.AddCaller(), zap.AddCallerSkip(2)).Sugar()
 	return &logger.DubboLogger{Logger: log, DynamicLevel: zapAtomicLevel}, nil
 }
 
