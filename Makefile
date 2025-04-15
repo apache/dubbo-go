@@ -76,7 +76,7 @@ fmt:
 LOCALBIN ?= $(shell pwd)/bin
 $(LOCALBIN):
 	mkdir -p $(LOCALBIN)
-GOLANG_LINT_VERSION ?= v1.44.2
+GOLANG_LINT_VERSION ?= v1.64.8
 GOLANG_LINT ?= $(LOCALBIN)/golangci-lint
 GOLANG_LINT_INSTALL_SCRIPT ?= "https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh"
 

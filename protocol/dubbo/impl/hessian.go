@@ -136,7 +136,9 @@ func marshalRequest(encoder *hessian.Encoder, p DubboPackage) ([]byte, error) {
 	}
 	_ = encoder.Encode(types)
 	for _, v := range args {
-		_ = encoder.Encode(v)
+		if e := encoder.Encode(v); e != nil {
+			return nil, perrors.Wrapf(e, "failed to encode argument: %v", v)
+		}
 	}
 
 	request.Attachments[PATH_KEY] = service.Path
