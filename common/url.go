@@ -779,6 +779,10 @@ func (c *URL) MergeURL(anotherUrl *URL) *URL {
 	// After Clone, it is a new URL that there is no thread safe issue.
 	mergedURL := c.Clone()
 	params := mergedURL.GetParams()
+	if params == nil {
+		mergedURL.params = make(url.Values)
+		params = mergedURL.params
+	}
 	// iterator the anotherUrl if c not have the key ,merge in
 	// anotherUrl usually will not changed. so change RangeParams to GetParams to avoid the string value copy.// Group get group
 	for key, value := range anotherUrl.GetParams() {
@@ -829,20 +833,46 @@ func (c *URL) MergeURL(anotherUrl *URL) *URL {
 
 // Clone will copy the URL
 func (c *URL) Clone() *URL {
-	newURL := &URL{}
-	if err := copier.Copy(newURL, c); err != nil {
-		// this is impossible
-		return newURL
+	newURL := &URL{
+		Protocol:     c.Protocol,
+		Location:     c.Location,
+		Ip:           c.Ip,
+		Port:         c.Port,
+		PrimitiveURL: c.PrimitiveURL,
+		Path:         c.Path,
+		Username:     c.Username,
+		Password:     c.Password,
 	}
-	newURL.params = url.Values{}
-	c.RangeParams(func(key, value string) bool {
-		newURL.SetParam(key, value)
-		return true
-	})
-	c.RangeAttributes(func(key string, value interface{}) bool {
-		newURL.SetAttribute(key, value)
-		return true
-	})
+
+	if c.Methods != nil {
+		newURL.Methods = make([]string, len(c.Methods))
+		copy(newURL.Methods, c.Methods)
+	}
+
+	c.paramsLock.RLock()
+	defer c.paramsLock.RUnlock()
+	if c.params != nil {
+		newURL.params = make(url.Values, len(c.params))
+		for key, values := range c.params {
+			newValues := make([]string, len(values))
+			copy(newValues, values)
+			newURL.params[key] = newValues
+		}
+	}
+
+	c.attributesLock.RLock()
+	defer c.attributesLock.RUnlock()
+	if c.attributes != nil {
+		newURL.attributes = make(map[string]interface{}, len(c.attributes))
+		for key, value := range c.attributes {
+			newURL.attributes[key] = value
+		}
+	}
+
+	if c.SubURL != nil {
+		newURL.SubURL = c.SubURL.Clone()
+	}
+
 	return newURL
 }
 
