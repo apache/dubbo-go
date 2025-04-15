@@ -34,8 +34,6 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/log/logger"
-
 	v3adminpb "github.com/envoyproxy/go-control-plane/envoy/admin/v3"
 	v2corepb "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	v3corepb "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -51,6 +49,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/logger"
 	"dubbo.apache.org/dubbo-go/v3/xds/client"
 	_ "dubbo.apache.org/dubbo-go/v3/xds/client/controller/version/v2"
 	_ "dubbo.apache.org/dubbo-go/v3/xds/client/controller/version/v3"

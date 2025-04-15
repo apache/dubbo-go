@@ -24,8 +24,6 @@ import (
 import (
 	hessian "github.com/apache/dubbo-go-hessian2"
 
-	"github.com/dubbogo/gost/log/logger"
-
 	"github.com/knadh/koanf"
 )
 
@@ -33,6 +31,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
+	"dubbo.apache.org/dubbo-go/v3/logger"
 	"dubbo.apache.org/dubbo-go/v3/registry/exposed_tmp"
 )
 

@@ -25,8 +25,6 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/log/logger"
-
 	"github.com/knadh/koanf"
 
 	"github.com/pkg/errors"
@@ -35,6 +33,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/constant/file"
+	"dubbo.apache.org/dubbo-go/v3/logger"
 )
 
 type loaderConf struct {

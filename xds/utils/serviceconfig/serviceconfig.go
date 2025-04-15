@@ -31,13 +31,15 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/log/logger"
-
 	"google.golang.org/grpc/balancer"
 
 	"google.golang.org/grpc/codes"
 
 	externalserviceconfig "google.golang.org/grpc/serviceconfig"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/logger"
 )
 
 // BalancerConfig wraps the name and config associated with one load balancing

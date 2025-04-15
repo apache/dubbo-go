@@ -23,9 +23,11 @@ import (
 )
 
 import (
-	log "github.com/dubbogo/gost/log/logger"
-
 	"google.golang.org/grpc"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/logger"
 )
 
 // server is used to implement helloworld.GreeterServer.
@@ -41,7 +43,7 @@ func NewService() *server {
 
 // SayHello implements helloworld.GreeterServer
 func (s *server) SayHello(ctx context.Context, in *HelloRequest) (*HelloReply, error) {
-	log.Infof("Received: %v", in.GetName())
+	logger.Infof("Received: %v", in.GetName())
 	return &HelloReply{Message: "Hello " + in.GetName()}, nil
 }
 
@@ -73,7 +75,7 @@ func NewServer(address string) (*Server, error) {
 
 func (s *Server) Start() {
 	if err := s.server.Serve(s.listener); err != nil {
-		log.Fatalf("failed to serve: %v", err)
+		logger.Fatalf("failed to serve: %v", err)
 	}
 }
 

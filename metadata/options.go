@@ -25,8 +25,6 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/log/logger"
-
 	perrors "github.com/pkg/errors"
 )
 
@@ -34,6 +32,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/global"
+	"dubbo.apache.org/dubbo-go/v3/logger"
 )
 
 var (

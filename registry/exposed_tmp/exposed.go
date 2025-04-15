@@ -18,12 +18,9 @@
 package exposed_tmp
 
 import (
-	"github.com/dubbogo/gost/log/logger"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/logger"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 

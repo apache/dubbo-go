@@ -25,8 +25,6 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/log/logger"
-
 	"gopkg.in/yaml.v2"
 )
 
@@ -37,6 +35,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
+	"dubbo.apache.org/dubbo-go/v3/logger"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )

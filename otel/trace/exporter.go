@@ -23,8 +23,6 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/log/logger"
-
 	"go.opentelemetry.io/contrib/propagators/b3"
 
 	"go.opentelemetry.io/otel/propagation"
@@ -33,6 +31,10 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 
 	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/logger"
 )
 
 type ExporterConfig struct {

@@ -34,8 +34,6 @@ import (
 )
 
 import (
-	dubbogoLogger "github.com/dubbogo/gost/log/logger"
-
 	v2corepb "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	v3corepb "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 
@@ -48,6 +46,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/logger"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource/version"
 	"dubbo.apache.org/dubbo-go/v3/xds/credentials/certprovider"
 	"dubbo.apache.org/dubbo-go/v3/xds/internal"
@@ -276,7 +275,7 @@ func bootstrapConfigFromEnvVariable() ([]byte, error) {
 		//
 		// Note that even if the content is invalid, we don't failover to the
 		// file content env variable.
-		dubbogoLogger.Debugf("xds: using bootstrap file with name %q", fName)
+		logger.Debugf("xds: using bootstrap file with name %q", fName)
 		return bootstrapFileReadFunc(fName)
 	}
 
@@ -306,7 +305,7 @@ func NewConfig() (*Config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("xds: Failed to read bootstrap config: %v", err)
 	}
-	dubbogoLogger.Debugf("Bootstrap content: %s", data)
+	logger.Debugf("Bootstrap content: %s", data)
 	return NewConfigFromContents(data)
 }
 
@@ -375,7 +374,7 @@ func NewConfigFromContents(data []byte) (*Config, error) {
 			}
 		case "client_default_listener_resource_name_template":
 			if !envconfig.XDSFederation {
-				dubbogoLogger.Warnf("xds: bootstrap field %v is not support when Federation is disabled", k)
+				logger.Warnf("xds: bootstrap field %v is not support when Federation is disabled", k)
 				continue
 			}
 			if err := json.Unmarshal(v, &config.ClientDefaultListenerResourceNameTemplate); err != nil {
@@ -383,14 +382,14 @@ func NewConfigFromContents(data []byte) (*Config, error) {
 			}
 		case "authorities":
 			if !envconfig.XDSFederation {
-				dubbogoLogger.Warnf("xds: bootstrap field %v is not support when Federation is disabled", k)
+				logger.Warnf("xds: bootstrap field %v is not support when Federation is disabled", k)
 				continue
 			}
 			if err := json.Unmarshal(v, &config.Authorities); err != nil {
 				return nil, fmt.Errorf("xds: json.Unmarshal(%v) for field %q failed during bootstrap: %v", string(v), k, err)
 			}
 		default:
-			dubbogoLogger.Warnf("Bootstrap content has unknown field: %s", k)
+			logger.Warnf("Bootstrap content has unknown field: %s", k)
 		}
 		// Do not fail the xDS bootstrap when an unknown field is seen. This can
 		// happen when an older version client reads a newer version bootstrap
@@ -427,7 +426,7 @@ func NewConfigFromContents(data []byte) (*Config, error) {
 	if err := config.updateNodeProto(node); err != nil {
 		return nil, err
 	}
-	dubbogoLogger.Infof("Bootstrap config for creating xds-client: %v", pretty.ToJSON(config))
+	logger.Infof("Bootstrap config for creating xds-client: %v", pretty.ToJSON(config))
 	return config, nil
 }
 

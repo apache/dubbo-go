@@ -29,12 +29,14 @@ import (
 )
 
 import (
-	dubbogoLogger "github.com/dubbogo/gost/log/logger"
-
 	"google.golang.org/grpc/balancer"
 	"google.golang.org/grpc/balancer/base"
 
 	"google.golang.org/grpc/connectivity"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/logger"
 )
 
 type subBalancerState struct {
@@ -53,7 +55,7 @@ func (s *subBalancerState) String() string {
 
 type balancerStateAggregator struct {
 	cc     balancer.ClientConn
-	logger dubbogoLogger.Logger
+	logger logger.Logger
 
 	mu sync.Mutex
 	// If started is false, no updates should be sent to the parent cc. A closed
@@ -68,7 +70,7 @@ type balancerStateAggregator struct {
 	idToPickerState map[string]*subBalancerState
 }
 
-func newBalancerStateAggregator(cc balancer.ClientConn, logger dubbogoLogger.Logger) *balancerStateAggregator {
+func newBalancerStateAggregator(cc balancer.ClientConn, logger logger.Logger) *balancerStateAggregator {
 	return &balancerStateAggregator{
 		cc:              cc,
 		logger:          logger,

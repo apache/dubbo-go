@@ -27,8 +27,6 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/log/logger"
-
 	hessian "github.com/apache/dubbo-go-hessian2"
 
 	grpc_go "github.com/dubbogo/grpc-go"
@@ -43,6 +41,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/internal"
+	"dubbo.apache.org/dubbo-go/v3/logger"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo3"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"

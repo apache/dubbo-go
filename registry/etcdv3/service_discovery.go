@@ -27,7 +27,6 @@ import (
 	gxset "github.com/dubbogo/gost/container/set"
 	gxetcd "github.com/dubbogo/gost/database/kv/etcd/v3"
 	gxpage "github.com/dubbogo/gost/hash/page"
-	"github.com/dubbogo/gost/log/logger"
 
 	"github.com/hashicorp/vault/sdk/helper/jsonutil"
 )
@@ -36,6 +35,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/logger"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 	"dubbo.apache.org/dubbo-go/v3/remoting/etcdv3"

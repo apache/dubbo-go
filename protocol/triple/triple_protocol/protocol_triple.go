@@ -31,9 +31,11 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/log/logger"
-
 	"google.golang.org/protobuf/types/known/anypb"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/logger"
 )
 
 const (

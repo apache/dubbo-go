@@ -22,14 +22,13 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/log/logger"
-
 	perrors "github.com/pkg/errors"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/logger"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 

@@ -50,8 +50,6 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/log/logger"
-
 	"github.com/modern-go/concurrent"
 )
 
@@ -60,6 +58,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	_ "dubbo.apache.org/dubbo-go/v3/filter/handler"
+	"dubbo.apache.org/dubbo-go/v3/logger"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 

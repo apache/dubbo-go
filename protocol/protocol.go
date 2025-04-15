@@ -23,11 +23,8 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/log/logger"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/logger"
 )
 
 // Protocol is the interface that wraps the basic Export, Refer and Destroy method.

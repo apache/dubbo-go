@@ -29,11 +29,12 @@ import (
 )
 
 import (
-	log "github.com/dubbogo/gost/log/logger"
-
 	"github.com/golang/protobuf/proto"
-
 	"google.golang.org/grpc"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/logger"
 )
 
 type routeGuideServer struct {
@@ -172,7 +173,7 @@ func NewServer(address string) (*Server, error) {
 
 func (s *Server) Start() {
 	if err := s.server.Serve(s.listener); err != nil {
-		log.Fatalf("failed to serve: %v", err)
+		logger.Fatalf("failed to serve: %v", err)
 	}
 }
 

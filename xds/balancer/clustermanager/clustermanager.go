@@ -30,8 +30,6 @@ import (
 )
 
 import (
-	dubbogoLogger "github.com/dubbogo/gost/log/logger"
-
 	"google.golang.org/grpc/balancer"
 
 	"google.golang.org/grpc/resolver"
@@ -40,6 +38,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/logger"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/balancergroup"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/hierarchy"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/pretty"
@@ -55,7 +54,7 @@ type bb struct{}
 
 func (bb) Build(cc balancer.ClientConn, opts balancer.BuildOptions) balancer.Balancer {
 	b := &bal{}
-	b.logger = dubbogoLogger.GetLogger()
+	b.logger = logger.GetLogger()
 	b.stateAggregator = newBalancerStateAggregator(cc, b.logger)
 	b.stateAggregator.start()
 	b.bg = balancergroup.New(cc, opts, b.stateAggregator, b.logger)
@@ -73,7 +72,7 @@ func (bb) ParseConfig(c json.RawMessage) (serviceconfig.LoadBalancingConfig, err
 }
 
 type bal struct {
-	logger dubbogoLogger.Logger
+	logger logger.Logger
 
 	// TODO: make this package not dependent on xds specific code. Same as for
 	// weighted target balancer.

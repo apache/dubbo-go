@@ -23,10 +23,6 @@ import (
 )
 
 import (
-	log "github.com/dubbogo/gost/log/logger"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
@@ -92,8 +88,8 @@ func (rc *InstanceOptions) init(opts ...InstanceOption) error {
 		return err
 	}
 	if err := rcCompat.ConfigCenter.Init(rcCompat); err != nil {
-		log.Infof("[Config Center] Config center doesn't start")
-		log.Debugf("config center doesn't start because %s", err)
+		logger.Infof("[Config Center] Config center doesn't start")
+		logger.Debugf("config center doesn't start because %s", err)
 	} else {
 		compatInstanceOptions(rcCompat, rc)
 		if err = rcCompat.Logger.Init(); err != nil { // init logger using config from config center again

@@ -24,11 +24,11 @@ import (
 
 import (
 	gxset "github.com/dubbogo/gost/container/set"
-	"github.com/dubbogo/gost/log/logger"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/logger"
 	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/remoting"

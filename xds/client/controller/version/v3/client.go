@@ -30,8 +30,6 @@ import (
 )
 
 import (
-	dubbogoLogger "github.com/dubbogo/gost/log/logger"
-
 	v3corepb "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	v3discoverypb "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 
@@ -47,6 +45,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/logger"
 	controllerversion "dubbo.apache.org/dubbo-go/v3/xds/client/controller/version"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
 	resourceversion "dubbo.apache.org/dubbo-go/v3/xds/client/resource/version"
@@ -72,7 +71,7 @@ func newClient(opts controllerversion.BuildOptions) (controllerversion.MetadataW
 		return nil, fmt.Errorf("xds: unsupported Node proto type: %T, want %T", opts.NodeProto, v3corepb.Node{})
 	}
 	v3c := &client{
-		nodeProto: nodeProto, logger: dubbogoLogger.GetLogger(),
+		nodeProto: nodeProto, logger: logger.GetLogger(),
 	}
 	return v3c, nil
 }
@@ -84,7 +83,7 @@ type adsStream v3discoverypb.AggregatedDiscoveryService_StreamAggregatedResource
 // are multiplexed.
 type client struct {
 	nodeProto *v3corepb.Node
-	logger    dubbogoLogger.Logger
+	logger    logger.Logger
 }
 
 func (v3c *client) NewStream(ctx context.Context, cc *grpc.ClientConn) (grpc.ClientStream, error) {

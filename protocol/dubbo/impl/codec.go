@@ -25,13 +25,12 @@ import (
 import (
 	hessian "github.com/apache/dubbo-go-hessian2"
 
-	"github.com/dubbogo/gost/log/logger"
-
 	perrors "github.com/pkg/errors"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/logger"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 

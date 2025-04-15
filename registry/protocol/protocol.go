@@ -26,7 +26,6 @@ import (
 
 import (
 	gxset "github.com/dubbogo/gost/container/set"
-	"github.com/dubbogo/gost/log/logger"
 
 	perrors "github.com/pkg/errors"
 )
@@ -38,6 +37,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	_ "dubbo.apache.org/dubbo-go/v3/config_center/configurator"
+	"dubbo.apache.org/dubbo-go/v3/logger"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
 	"dubbo.apache.org/dubbo-go/v3/registry"

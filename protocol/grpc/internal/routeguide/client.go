@@ -24,11 +24,8 @@ import (
 )
 
 import (
-	log "github.com/dubbogo/gost/log/logger"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/logger"
 )
 
 func init() {
@@ -44,9 +41,9 @@ func PrintFeatures(stream RouteGuide_ListFeaturesClient) {
 			break
 		}
 		if err != nil {
-			log.Fatalf("Fait to receive a feature: %v", err)
+			logger.Fatalf("Fait to receive a feature: %v", err)
 		}
-		log.Infof("Feature: name: %q, point:(%v, %v)", feature.GetName(),
+		logger.Infof("Feature: name: %q, point:(%v, %v)", feature.GetName(),
 			feature.GetLocation().GetLatitude(), feature.GetLocation().GetLongitude())
 	}
 }
@@ -60,17 +57,17 @@ func RunRecordRoute(stream RouteGuide_RecordRouteClient) {
 	for i := 0; i < pointCount; i++ {
 		points = append(points, randomPoint(r))
 	}
-	log.Infof("Traversing %d points.", len(points))
+	logger.Infof("Traversing %d points.", len(points))
 	for _, point := range points {
 		if err := stream.Send(point); err != nil {
-			log.Fatalf("%v.Send(%v) = %v", stream, point, err)
+			logger.Fatalf("%v.Send(%v) = %v", stream, point, err)
 		}
 	}
 	reply, err := stream.CloseAndRecv()
 	if err != nil {
-		log.Fatalf("%v.CloseAndRecv() got error %v, want %v", stream, err, nil)
+		logger.Fatalf("%v.CloseAndRecv() got error %v, want %v", stream, err, nil)
 	}
-	log.Infof("Route summary: %v", reply)
+	logger.Infof("Route summary: %v", reply)
 }
 
 // runRouteChat receives a sequence of route notes, while sending notes for various locations.
@@ -93,14 +90,14 @@ func RunRouteChat(stream RouteGuide_RouteChatClient) {
 				return
 			}
 			if err != nil {
-				log.Fatalf("Failed to receive a note : %v", err)
+				logger.Fatalf("Failed to receive a note : %v", err)
 			}
-			log.Infof("Got message %s at point(%d, %d)", in.Message, in.Location.Latitude, in.Location.Longitude)
+			logger.Infof("Got message %s at point(%d, %d)", in.Message, in.Location.Latitude, in.Location.Longitude)
 		}
 	}()
 	for _, note := range notes {
 		if err := stream.Send(note); err != nil {
-			log.Fatalf("Failed to send a note: %v", err)
+			logger.Fatalf("Failed to send a note: %v", err)
 		}
 	}
 	stream.CloseSend()

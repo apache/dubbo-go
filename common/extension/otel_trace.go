@@ -22,10 +22,7 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/log/logger"
-)
-
-import (
+	"dubbo.apache.org/dubbo-go/v3/logger"
 	"dubbo.apache.org/dubbo-go/v3/otel/trace"
 )
 

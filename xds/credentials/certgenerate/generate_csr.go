@@ -38,7 +38,7 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/log/logger"
+	"dubbo.apache.org/dubbo-go/v3/logger"
 )
 
 // minimumRsaKeySize is the minimum RSA key size to generate certificates

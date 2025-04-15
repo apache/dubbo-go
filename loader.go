@@ -25,8 +25,6 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/log/logger"
-
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/json"
 	"github.com/knadh/koanf/parsers/toml"
@@ -41,6 +39,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/constant/file"
 	"dubbo.apache.org/dubbo-go/v3/config/parsers/properties"
+	"dubbo.apache.org/dubbo-go/v3/logger"
 )
 
 var (

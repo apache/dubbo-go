@@ -31,8 +31,6 @@ import (
 )
 
 import (
-	dubbogoLogger "github.com/dubbogo/gost/log/logger"
-
 	"google.golang.org/grpc/attributes"
 
 	"google.golang.org/grpc/balancer"
@@ -46,6 +44,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/logger"
 	"dubbo.apache.org/dubbo-go/v3/xds/balancer/priority"
 	"dubbo.apache.org/dubbo-go/v3/xds/client"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
@@ -74,12 +73,12 @@ type bb struct{}
 func (bb) Build(cc balancer.ClientConn, opts balancer.BuildOptions) balancer.Balancer {
 	priorityBuilder := balancer.Get(priority.Name)
 	if priorityBuilder == nil {
-		dubbogoLogger.Errorf("priority balancer is needed but not registered")
+		logger.Errorf("priority balancer is needed but not registered")
 		return nil
 	}
 	priorityConfigParser, ok := priorityBuilder.(balancer.ConfigParser)
 	if !ok {
-		dubbogoLogger.Errorf("priority balancer builder is not a config parser")
+		logger.Errorf("priority balancer builder is not a config parser")
 		return nil
 	}
 
@@ -92,7 +91,7 @@ func (bb) Build(cc balancer.ClientConn, opts balancer.BuildOptions) balancer.Bal
 		priorityBuilder:      priorityBuilder,
 		priorityConfigParser: priorityConfigParser,
 	}
-	b.logger = dubbogoLogger.GetLogger()
+	b.logger = logger.GetLogger()
 	b.logger.Infof("Created")
 
 	b.resourceWatcher = newResourceResolver(b)
@@ -142,7 +141,7 @@ type clusterResolverBalancer struct {
 	bOpts           balancer.BuildOptions
 	updateCh        *buffer.Unbounded // Channel for updates from gRPC.
 	resourceWatcher *resourceResolver
-	logger          dubbogoLogger.Logger
+	logger          logger.Logger
 	closed          *grpcsync.Event
 	done            *grpcsync.Event
 

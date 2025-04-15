@@ -34,8 +34,6 @@ import (
 
 	v3cncftypepb "github.com/cncf/xds/go/xds/type/v3"
 
-	dubbogoLogger "github.com/dubbogo/gost/log/logger"
-
 	v3listenerpb "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	v3routepb "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	v3httppb "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
@@ -47,6 +45,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/logger"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource/version"
 	"dubbo.apache.org/dubbo-go/v3/xds/httpfilter"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/pretty"
@@ -61,7 +60,7 @@ func UnmarshalListener(opts *UnmarshalOptions) (map[string]ListenerUpdateErrTupl
 	return update, md, err
 }
 
-func unmarshalListenerResource(r *anypb.Any, f UpdateValidatorFunc, logger dubbogoLogger.Logger) (string, ListenerUpdate, error) {
+func unmarshalListenerResource(r *anypb.Any, f UpdateValidatorFunc, logger logger.Logger) (string, ListenerUpdate, error) {
 	if !IsListenerResource(r.GetTypeUrl()) {
 		return "", ListenerUpdate{}, fmt.Errorf("unexpected resource type: %q ", r.GetTypeUrl())
 	}
@@ -71,7 +70,7 @@ func unmarshalListenerResource(r *anypb.Any, f UpdateValidatorFunc, logger dubbo
 	if err := proto.Unmarshal(r.GetValue(), lis); err != nil {
 		return "", ListenerUpdate{}, fmt.Errorf("failed to unmarshal resource: %v", err)
 	}
-	dubbogoLogger.Debugf("Resource with name: %v, type: %T, contains: %v", lis.GetName(), lis, pretty.ToJSON(lis))
+	logger.Debugf("Resource with name: %v, type: %T, contains: %v", lis.GetName(), lis, pretty.ToJSON(lis))
 
 	lu, err := processListener(lis, logger, v2)
 	if err != nil {
@@ -86,7 +85,7 @@ func unmarshalListenerResource(r *anypb.Any, f UpdateValidatorFunc, logger dubbo
 	return lis.GetName(), *lu, nil
 }
 
-func processListener(lis *v3listenerpb.Listener, logger dubbogoLogger.Logger, v2 bool) (*ListenerUpdate, error) {
+func processListener(lis *v3listenerpb.Listener, logger logger.Logger, v2 bool) (*ListenerUpdate, error) {
 	if lis.GetApiListener() != nil {
 		return processClientSideListener(lis, logger, v2)
 	}
@@ -95,7 +94,7 @@ func processListener(lis *v3listenerpb.Listener, logger dubbogoLogger.Logger, v2
 
 // processClientSideListener checks if the provided Listener proto meets
 // the expected criteria. If so, it returns a non-empty routeConfigName.
-func processClientSideListener(lis *v3listenerpb.Listener, logger dubbogoLogger.Logger, v2 bool) (*ListenerUpdate, error) {
+func processClientSideListener(lis *v3listenerpb.Listener, logger logger.Logger, v2 bool) (*ListenerUpdate, error) {
 	update := &ListenerUpdate{}
 
 	apiLisAny := lis.GetApiListener().GetApiListener()
@@ -282,7 +281,7 @@ func processHTTPFilters(filters []*v3httppb.HttpFilter, server bool) ([]HTTPFilt
 	return ret, nil
 }
 
-func processServerSideListener(lis *v3listenerpb.Listener, logger dubbogoLogger.Logger) (*ListenerUpdate, error) {
+func processServerSideListener(lis *v3listenerpb.Listener, logger logger.Logger) (*ListenerUpdate, error) {
 	if n := len(lis.ListenerFilters); n != 0 {
 		return nil, fmt.Errorf("unsupported field 'listener_filters' contains %d entries", n)
 	}

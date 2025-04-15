@@ -22,7 +22,7 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/log/logger"
+	"dubbo.apache.org/dubbo-go/v3/logger"
 )
 
 func VerboseDebugf(msg string, args ...interface{}) {

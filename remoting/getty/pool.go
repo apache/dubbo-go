@@ -30,9 +30,11 @@ import (
 import (
 	getty "github.com/apache/dubbo-getty"
 
-	"github.com/dubbogo/gost/log/logger"
-
 	perrors "github.com/pkg/errors"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/logger"
 )
 
 type gettyRPCClient struct {

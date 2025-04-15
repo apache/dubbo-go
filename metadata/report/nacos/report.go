@@ -25,7 +25,6 @@ import (
 import (
 	gxset "github.com/dubbogo/gost/container/set"
 	nacosClient "github.com/dubbogo/gost/database/kv/nacos"
-	"github.com/dubbogo/gost/log/logger"
 
 	"github.com/nacos-group/nacos-sdk-go/v2/vo"
 
@@ -36,6 +35,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/logger"
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
 	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
 	"dubbo.apache.org/dubbo-go/v3/metadata/report"

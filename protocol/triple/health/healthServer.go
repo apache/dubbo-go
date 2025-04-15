@@ -23,8 +23,6 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/log/logger"
-
 	"github.com/dubbogo/grpc-go/codes"
 	"github.com/dubbogo/grpc-go/status"
 )
@@ -33,6 +31,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/internal"
+	"dubbo.apache.org/dubbo-go/v3/logger"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/health/triple_health"
 	"dubbo.apache.org/dubbo-go/v3/server"
 )

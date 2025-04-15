@@ -23,8 +23,6 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/log/logger"
-
 	constant2 "github.com/nacos-group/nacos-sdk-go/v2/common/constant"
 	"github.com/nacos-group/nacos-sdk-go/v2/vo"
 )
@@ -32,6 +30,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
+	"dubbo.apache.org/dubbo-go/v3/logger"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 	metricsConfigCenter "dubbo.apache.org/dubbo-go/v3/metrics/config_center"
 	"dubbo.apache.org/dubbo-go/v3/remoting"

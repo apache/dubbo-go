@@ -36,16 +36,13 @@ import (
 )
 
 import (
-	dubbogoLogger "github.com/dubbogo/gost/log/logger"
-
 	"google.golang.org/grpc/backoff"
 
 	"google.golang.org/grpc/connectivity"
-
-	"google.golang.org/grpc/grpclog"
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/logger"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/bootstrap"
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
 	internalbackoff "dubbo.apache.org/dubbo-go/v3/xds/utils/backoff"
@@ -54,8 +51,6 @@ import (
 )
 
 var (
-	logger = grpclog.Component("xds")
-
 	// Backoff strategy for temporary errors received from Accept(). If this
 	// needs to be configurable, we can inject it through ListenerWrapperParams.
 	bs = internalbackoff.Exponential{Config: backoff.Config{
@@ -125,7 +120,7 @@ func NewListenerWrapper(params ListenerWrapperParams) (net.Listener, <-chan stru
 		ldsUpdateCh: make(chan ldsUpdateWithError, 1),
 		rdsUpdateCh: make(chan rdsHandlerUpdate, 1),
 	}
-	lw.logger = dubbogoLogger.GetLogger()
+	lw.logger = logger.GetLogger()
 
 	// Serve() verifies that Addr() returns a valid TCPAddr. So, it is safe to
 	// ignore the error from SplitHostPort().
@@ -154,7 +149,7 @@ type ldsUpdateWithError struct {
 // particular invocation of Serve().
 type listenerWrapper struct {
 	net.Listener
-	logger dubbogoLogger.Logger
+	logger logger.Logger
 
 	name          string
 	xdsCredsInUse bool

@@ -28,7 +28,6 @@ import (
 
 import (
 	nacosClient "github.com/dubbogo/gost/database/kv/nacos"
-	"github.com/dubbogo/gost/log/logger"
 
 	"github.com/nacos-group/nacos-sdk-go/v2/vo"
 
@@ -39,6 +38,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/logger"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 	metricsRegistry "dubbo.apache.org/dubbo-go/v3/metrics/registry"
 	"dubbo.apache.org/dubbo-go/v3/registry"

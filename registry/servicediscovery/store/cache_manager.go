@@ -25,9 +25,11 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/log/logger"
-
 	"github.com/hashicorp/golang-lru"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/logger"
 )
 
 type CacheManager struct {

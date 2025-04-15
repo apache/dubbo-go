@@ -33,9 +33,11 @@ import (
 )
 
 import (
-	dubbogoLogger "github.com/dubbogo/gost/log/logger"
-
 	"google.golang.org/protobuf/types/known/anypb"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/logger"
 )
 
 // UnmarshalOptions wraps the input parameters for `UnmarshalXxx` functions.
@@ -45,7 +47,7 @@ type UnmarshalOptions struct {
 	// Resources are the xDS resources resources in the received response.
 	Resources []*anypb.Any
 	// Logger is the prefix logger to be used during unmarshaling.
-	Logger dubbogoLogger.Logger
+	Logger logger.Logger
 	// UpdateValidator is a post unmarshal validation check provided by the
 	// upper layer.
 	UpdateValidator UpdateValidatorFunc

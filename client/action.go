@@ -26,7 +26,6 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/log/logger"
 	gxstrings "github.com/dubbogo/gost/strings"
 
 	constant2 "github.com/dubbogo/triple/pkg/common/constant"
@@ -41,6 +40,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
+	"dubbo.apache.org/dubbo-go/v3/logger"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
 	"dubbo.apache.org/dubbo-go/v3/proxy"

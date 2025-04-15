@@ -29,8 +29,6 @@ import (
 import (
 	"github.com/afex/hystrix-go/hystrix"
 
-	"github.com/dubbogo/gost/log/logger"
-
 	perrors "github.com/pkg/errors"
 
 	"gopkg.in/yaml.v2"
@@ -41,6 +39,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/filter"
+	"dubbo.apache.org/dubbo-go/v3/logger"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 

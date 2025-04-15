@@ -29,7 +29,7 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/log/logger"
+	"dubbo.apache.org/dubbo-go/v3/logger"
 )
 
 // Logger is the logger used for the non-depth log functions.

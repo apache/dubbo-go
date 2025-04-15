@@ -25,9 +25,10 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/log/logger"
-
 	"github.com/oliveagle/jsonpath"
+)
+import (
+	"dubbo.apache.org/dubbo-go/v3/logger"
 )
 
 const (

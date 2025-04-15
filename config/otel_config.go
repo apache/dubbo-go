@@ -20,8 +20,6 @@ package config
 import (
 	"github.com/creasty/defaults"
 
-	"github.com/dubbogo/gost/log/logger"
-
 	"github.com/pkg/errors"
 
 	"go.opentelemetry.io/otel"
@@ -29,6 +27,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/logger"
 	"dubbo.apache.org/dubbo-go/v3/otel/trace"
 )
 

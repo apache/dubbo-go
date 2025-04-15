@@ -30,8 +30,6 @@ import (
 )
 
 import (
-	dubbogoLogger "github.com/dubbogo/gost/log/logger"
-
 	v3corepb "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	v3endpointpb "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	v3typepb "github.com/envoyproxy/go-control-plane/envoy/type/v3"
@@ -42,6 +40,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/logger"
 	"dubbo.apache.org/dubbo-go/v3/xds/utils/pretty"
 )
 
@@ -54,7 +53,7 @@ func UnmarshalEndpoints(opts *UnmarshalOptions) (map[string]EndpointsUpdateErrTu
 	return update, md, err
 }
 
-func unmarshalEndpointsResource(r *anypb.Any, logger dubbogoLogger.Logger) (string, EndpointsUpdate, error) {
+func unmarshalEndpointsResource(r *anypb.Any, logger logger.Logger) (string, EndpointsUpdate, error) {
 	if !IsEndpointsResource(r.GetTypeUrl()) {
 		return "", EndpointsUpdate{}, fmt.Errorf("unexpected resource type: %q ", r.GetTypeUrl())
 	}
@@ -63,7 +62,7 @@ func unmarshalEndpointsResource(r *anypb.Any, logger dubbogoLogger.Logger) (stri
 	if err := proto.Unmarshal(r.GetValue(), cla); err != nil {
 		return "", EndpointsUpdate{}, fmt.Errorf("failed to unmarshal resource: %v", err)
 	}
-	dubbogoLogger.Debugf("Resource with name: %v, type: %T, contains: %v", cla.GetClusterName(), cla, pretty.ToJSON(cla))
+	logger.Debugf("Resource with name: %v, type: %T, contains: %v", cla.GetClusterName(), cla, pretty.ToJSON(cla))
 
 	u, err := parseEDSRespProto(cla)
 	if err != nil {

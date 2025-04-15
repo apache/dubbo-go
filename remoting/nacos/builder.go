@@ -26,7 +26,6 @@ import (
 
 import (
 	nacosClient "github.com/dubbogo/gost/database/kv/nacos"
-	"github.com/dubbogo/gost/log/logger"
 
 	nacosConstant "github.com/nacos-group/nacos-sdk-go/v2/common/constant"
 
@@ -36,6 +35,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/logger"
 )
 
 // NewNacosConfigClientByUrl read the config from url and build an instance

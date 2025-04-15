@@ -22,8 +22,6 @@ import (
 )
 
 import (
-	log "github.com/dubbogo/gost/log/logger"
-
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/json"
 	"github.com/knadh/koanf/parsers/toml"
@@ -37,6 +35,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant/file"
 	"dubbo.apache.org/dubbo-go/v3/config/parsers/properties"
+	"dubbo.apache.org/dubbo-go/v3/logger"
 )
 
 // GetConfigResolver get config resolver
@@ -95,7 +94,7 @@ func resolvePlaceholder(resolver *koanf.Koanf) *koanf.Koanf {
 	}
 	err := resolver.Load(confmap.Provider(m, resolver.Delim()), nil)
 	if err != nil {
-		log.Errorf("resolvePlaceholder error %s", err)
+		logger.Errorf("resolvePlaceholder error %s", err)
 	}
 	return resolver
 }
