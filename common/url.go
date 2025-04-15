@@ -59,6 +59,11 @@ var (
 	DubboNodes          = [...]string{"consumers", "configurators", "routers", "providers"} // Dubbo service node
 	DubboRole           = [...]string{"consumer", "", "routers", "provider"}                // Dubbo service role
 	compareURLEqualFunc CompareURLEqualFunc                                                 // function to compare two URL is equal
+	urlPool             = sync.Pool{
+		New: func() interface{} {
+			return &URL{}
+		},
+	}
 )
 
 func init() {
@@ -776,6 +781,8 @@ func (c *URL) ToMap() map[string]string {
 // except constant.LoadbalanceKey, constant.ClusterKey, constant.RetriesKey, constant.TimeoutKey.
 // due to URL is not thread-safe, so this method is not thread-safe
 func (c *URL) MergeURL(anotherUrl *URL) *URL {
+	// put the anotherUrl into the pool
+	defer releaseURL(anotherUrl)
 	// After Clone, it is a new URL that there is no thread safe issue.
 	mergedURL := c.Clone()
 	params := mergedURL.GetParams()
@@ -829,7 +836,7 @@ func (c *URL) MergeURL(anotherUrl *URL) *URL {
 
 // Clone will copy the URL
 func (c *URL) Clone() *URL {
-	newURL := &URL{}
+	newURL := urlPool.Get().(*URL)
 	if err := copier.Copy(newURL, c); err != nil {
 		// this is impossible
 		return newURL
@@ -995,4 +1002,8 @@ func appendParam(target *bytes.Buffer, url *URL, key string) {
 	if strings.TrimSpace(value) != "" {
 		target.Write([]byte(value))
 	}
+}
+
+func releaseURL(u *URL) {
+	urlPool.Put(u)
 }
