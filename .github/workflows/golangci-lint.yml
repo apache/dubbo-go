@@ -18,7 +18,7 @@ jobs:
     strategy:
       matrix:
         golang:
-          - '1.20'
+          - '1.23'
     steps:
       - uses: actions/setup-go@v5
         with:
@@ -27,6 +27,7 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v6
         with:
-          version: v1.54
+          install-mode: goinstall
+          version: v1.64
           args: --timeout=10m
           skip-go-installation: true

@@ -18,21 +18,18 @@
 package client
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
 	"strconv"
 	"time"
-)
 
-import (
 	"github.com/dubbogo/gost/log/logger"
+
 	gxstrings "github.com/dubbogo/gost/strings"
-
 	constant2 "github.com/dubbogo/triple/pkg/common/constant"
-)
 
-import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory/static"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	commonCfg "dubbo.apache.org/dubbo-go/v3/common/config"
@@ -193,7 +190,7 @@ func processURL(ref *global.ReferenceConfig, regsCompat map[string]*config.Regis
 		for _, urlStr := range urlStrings {
 			serviceURL, err := common.NewURL(urlStr, common.WithProtocol(ref.Protocol))
 			if err != nil {
-				return nil, fmt.Errorf(fmt.Sprintf("url configuration error,  please check your configuration, user specified URL %v refer error, error message is %v ", urlStr, err.Error()))
+				return nil, errors.New(fmt.Sprintf("url configuration error,  please check your configuration, user specified URL %v refer error, error message is %v ", urlStr, err.Error()))
 			}
 			if serviceURL.Protocol == constant.RegistryProtocol { // serviceURL in this branch is a registry protocol
 				serviceURL.SubURL = cfgURL
