@@ -41,7 +41,7 @@ func GetLogger() Logger {
 	return logger
 }
 
-// SetLoggerLevel use for set logger level
+// SetLoggerLevel is used to set the logger level.
 func SetLoggerLevel(level string) bool {
 	if l, ok := logger.(OpsLogger); ok {
 		return l.SetLoggerLevel(level)
