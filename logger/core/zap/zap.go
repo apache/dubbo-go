@@ -83,22 +83,19 @@ func instantiate(config *common.URL) (log logger.Logger, err error) {
 	log = zap.New(zapcore.NewCore(
 		encoder, zapcore.NewMultiWriteSyncer(sync...), zapAtomicLevel,
 	), zap.AddCaller(), zap.AddCallerSkip(1)).Sugar()
-	return dubbogoLogger.NewDubboLogger(log, zapAtomicLevel), nil
+	return &dubbogoLogger.DubboLogger{Logger: log, DynamicLevel: zapAtomicLevel}, nil
 }
 
 func NewDefault() *dubbogoLogger.DubboLogger {
 	var (
-		lv  zapcore.Level
-		lg  *zap.SugaredLogger
-		err error
+		lg *zap.SugaredLogger
 	)
-	if lv, err = zapcore.ParseLevel("info"); err != nil {
-		lv = zapcore.InfoLevel
-	}
+
 	encoder := zapcore.NewConsoleEncoder(encoderConfig())
-	lg = zap.New(zapcore.NewCore(encoder, zapcore.AddSync(os.Stdout), lv),
+	zapAtomicLevel := zap.NewAtomicLevelAt(zapcore.InfoLevel)
+	lg = zap.New(zapcore.NewCore(encoder, zapcore.AddSync(os.Stdout), zapAtomicLevel),
 		zap.AddCaller(), zap.AddCallerSkip(2)).Sugar()
-	return &dubbogoLogger.DubboLogger{Logger: lg}
+	return &dubbogoLogger.DubboLogger{Logger: lg, DynamicLevel: zapAtomicLevel}
 }
 
 func encoderConfig() zapcore.EncoderConfig {
