@@ -99,11 +99,18 @@ func createRegisterParam(url *common.URL, serviceName string, groupName string) 
 	params[constant.MethodsKey] = strings.Join(url.Methods, ",")
 	common.HandleRegisterIPAndPort(url)
 	port, _ := strconv.Atoi(url.Port)
+
+	weightStr := url.GetParam(constant.WeightKey, "1.0")
+	weight, err := strconv.ParseFloat(weightStr, 64)
+	if err != nil {
+		weight = 1.0
+	}
+
 	instance := vo.RegisterInstanceParam{
 		Ip:          url.Ip,
 		Port:        uint64(port),
 		Metadata:    params,
-		Weight:      1,
+		Weight:      weight,
 		Enable:      true,
 		Healthy:     true,
 		Ephemeral:   true,

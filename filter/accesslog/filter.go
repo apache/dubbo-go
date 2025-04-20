@@ -177,7 +177,7 @@ func (f *Filter) buildAccessLogData(_ protocol.Invoker, invocation protocol.Invo
 }
 
 // OnResponse do nothing
-func (f *Filter) OnResponse(_ context.Context, result protocol.Result, _ protocol.Invoker, _ protocol.Invocation) protocol.Result {
+func (f *Filter) OnResponse(ctx context.Context, result protocol.Result, _ protocol.Invoker, _ protocol.Invocation) protocol.Result {
 	return result
 }
 
