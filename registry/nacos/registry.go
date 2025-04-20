@@ -102,8 +102,12 @@ func createRegisterParam(url *common.URL, serviceName string, groupName string) 
 
 	weightStr := url.GetParam(constant.WeightKey, "1.0")
 	weight, err := strconv.ParseFloat(weightStr, 64)
-	if err != nil {
-		weight = 1.0
+	if err != nil || weight <= constant.MinNacosWeight {
+		logger.Warnf("Invalid weight value %q, using default 1.0. err: %v", weightStr, err)
+		weight = constant.DefaultNacosWeight
+	} else if weight > constant.MaxNacosWeight {
+		logger.Warnf("Weight %f exceeds Nacos maximum 10000, setting to 10000", weight)
+		weight = constant.MaxNacosWeight
 	}
 
 	instance := vo.RegisterInstanceParam{
