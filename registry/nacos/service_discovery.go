@@ -315,6 +315,7 @@ func (n *nacosServiceDiscovery) toRegisterInstance(instance registry.ServiceInst
 		metadata = make(map[string]string, 1)
 	}
 
+	fmt.Printf("n.register instance %+v\n", n.registryURL)
 	weightStr := n.registryURL.GetParam(constant.RegistryKey+"."+constant.WeightKey, "1.0")
 	weight, err := strconv.ParseFloat(weightStr, 64)
 	if err != nil || weight <= constant.MinNacosWeight {
