@@ -280,6 +280,7 @@ func TestDecodeFromTcpStream(t *testing.T) {
 		ResponseStatus: Zero,
 	}
 	resp, err := codecW.Write(service, header, []interface{}{cs})
+	assert.NoError(t, err)
 
 	// set reader buffer = 1024 to split resp into two parts
 	codec := NewStreamingHessianCodecCustom(0, bufio.NewReaderSize(bytes.NewReader(resp), 1024), 0)
