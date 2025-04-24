@@ -66,7 +66,7 @@ func (m *MockTpsLimiter) IsAllowable(arg0 *common.URL, arg1 protocol.Invocation)
 }
 
 // IsAllowable indicates an expected call of IsAllowable
-func (mr *MockTpsLimiterMockRecorder) IsAllowable(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockTpsLimiterMockRecorder) IsAllowable(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsAllowable", reflect.TypeOf((*MockTpsLimiter)(nil).IsAllowable), arg0, arg1)
 }

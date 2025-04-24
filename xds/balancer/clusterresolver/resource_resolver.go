@@ -40,7 +40,7 @@ type resourceUpdate struct {
 }
 
 type discoveryMechanism interface {
-	lastUpdate() (interface{}, bool)
+	lastUpdate() (any, bool)
 	resolveNow()
 	stop()
 }
@@ -214,7 +214,7 @@ type edsDiscoveryMechanism struct {
 	updateReceived bool
 }
 
-func (er *edsDiscoveryMechanism) lastUpdate() (interface{}, bool) {
+func (er *edsDiscoveryMechanism) lastUpdate() (any, bool) {
 	if !er.updateReceived {
 		return nil, false
 	}

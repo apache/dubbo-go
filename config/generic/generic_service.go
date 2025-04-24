@@ -27,7 +27,7 @@ import (
 
 // GenericService uses for generic invoke for service call
 type GenericService struct {
-	Invoke       func(ctx context.Context, methodName string, types []string, args []hessian.Object) (interface{}, error) `dubbo:"$invoke"`
+	Invoke       func(ctx context.Context, methodName string, types []string, args []hessian.Object) (any, error) `dubbo:"$invoke"`
 	referenceStr string
 }
 

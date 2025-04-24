@@ -242,7 +242,7 @@ func file_health_proto_rawDescGZIP() []byte {
 
 var file_health_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_health_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
-var file_health_proto_goTypes = []interface{}{
+var file_health_proto_goTypes = []any{
 	(HealthCheckResponse_ServingStatus)(0), // 0: dubbo.health.v1.HealthCheckResponse.ServingStatus
 	(*HealthCheckRequest)(nil),             // 1: dubbo.health.v1.HealthCheckRequest
 	(*HealthCheckResponse)(nil),            // 2: dubbo.health.v1.HealthCheckResponse
@@ -266,7 +266,7 @@ func file_health_proto_init() {
 		return
 	}
 	if !protoimpl.UnsafeEnabled {
-		file_health_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
+		file_health_proto_msgTypes[0].Exporter = func(v any, i int) any {
 			switch v := v.(*HealthCheckRequest); i {
 			case 0:
 				return &v.state
@@ -278,7 +278,7 @@ func file_health_proto_init() {
 				return nil
 			}
 		}
-		file_health_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+		file_health_proto_msgTypes[1].Exporter = func(v any, i int) any {
 			switch v := v.(*HealthCheckResponse); i {
 			case 0:
 				return &v.state

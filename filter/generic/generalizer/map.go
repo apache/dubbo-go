@@ -52,12 +52,12 @@ func GetMapGeneralizer() Generalizer {
 
 type MapGeneralizer struct{}
 
-func (g *MapGeneralizer) Generalize(obj interface{}) (gobj interface{}, err error) {
+func (g *MapGeneralizer) Generalize(obj any) (gobj any, err error) {
 	gobj = objToMap(obj)
 	return
 }
 
-func (g *MapGeneralizer) Realize(obj interface{}, typ reflect.Type) (interface{}, error) {
+func (g *MapGeneralizer) Realize(obj any, typ reflect.Type) (any, error) {
 	newobj := reflect.New(typ).Interface()
 	err := mapstructure.Decode(obj, newobj)
 	if err != nil {
@@ -67,7 +67,7 @@ func (g *MapGeneralizer) Realize(obj interface{}, typ reflect.Type) (interface{}
 	return reflect.ValueOf(newobj).Elem().Interface(), nil
 }
 
-func (g *MapGeneralizer) GetType(obj interface{}) (typ string, err error) {
+func (g *MapGeneralizer) GetType(obj any) (typ string, err error) {
 	typ, err = hessian2.GetJavaName(obj)
 	// no error or error is not NilError
 	if err == nil || err != hessian2.NilError {
@@ -84,8 +84,8 @@ func (g *MapGeneralizer) GetType(obj interface{}) (typ string, err error) {
 	return
 }
 
-// objToMap converts an object(interface{}) to a map
-func objToMap(obj interface{}) interface{} {
+// objToMap converts an object(any) to a map
+func objToMap(obj any) any {
 	if obj == nil {
 		return obj
 	}
@@ -104,7 +104,7 @@ func objToMap(obj interface{}) interface{} {
 
 	switch t.Kind() {
 	case reflect.Struct:
-		result := make(map[string]interface{}, t.NumField())
+		result := make(map[string]any, t.NumField())
 		if isPojo {
 			result["class"] = pojo.JavaClassName()
 		}
@@ -141,14 +141,14 @@ func objToMap(obj interface{}) interface{} {
 		return result
 	case reflect.Array, reflect.Slice:
 		value := reflect.ValueOf(obj)
-		newTemps := make([]interface{}, 0, value.Len())
+		newTemps := make([]any, 0, value.Len())
 		for i := 0; i < value.Len(); i++ {
 			newTemp := objToMap(value.Index(i).Interface())
 			newTemps = append(newTemps, newTemp)
 		}
 		return newTemps
 	case reflect.Map:
-		newTempMap := make(map[interface{}]interface{}, v.Len())
+		newTempMap := make(map[any]any, v.Len())
 		iter := v.MapRange()
 		for iter.Next() {
 			if !iter.Value().CanInterface() {
@@ -167,7 +167,7 @@ func objToMap(obj interface{}) interface{} {
 }
 
 // mapKey converts the map key to interface type
-func mapKey(key reflect.Value) interface{} {
+func mapKey(key reflect.Value) any {
 	switch key.Kind() {
 	case reflect.Bool, reflect.Int, reflect.Int8,
 		reflect.Int16, reflect.Int32, reflect.Int64,
@@ -185,7 +185,7 @@ func mapKey(key reflect.Value) interface{} {
 }
 
 // setInMap sets the struct into the map using the tag or the name of the struct as the key
-func setInMap(m map[string]interface{}, structField reflect.StructField, value interface{}) (result map[string]interface{}) {
+func setInMap(m map[string]any, structField reflect.StructField, value any) (result map[string]any) {
 	result = m
 	if tagName := structField.Tag.Get("m"); tagName == "" {
 		result[toUnexport(structField.Name)] = value
@@ -201,7 +201,7 @@ func toUnexport(a string) string {
 }
 
 // isPrimitive determines if the object is primitive
-func isPrimitive(obj interface{}) bool {
+func isPrimitive(obj any) bool {
 	if _, ok := obj.(time.Time); ok {
 		return true
 	}

@@ -49,7 +49,7 @@ func TestFilter_Invoke(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	normalInvocation := invocation.NewRPCInvocation("Hello", []interface{}{"arg1"}, make(map[string]interface{}))
+	normalInvocation := invocation.NewRPCInvocation("Hello", []any{"arg1"}, make(map[string]any))
 
 	mockInvoker := mock.NewMockInvoker(ctrl)
 	mockInvoker.EXPECT().GetURL().Return(invokeUrl).Times(2)
@@ -78,11 +78,11 @@ func TestFilter_InvokeWithGenericCall(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	genericInvocation := invocation.NewRPCInvocation(constant.Generic, []interface{}{
+	genericInvocation := invocation.NewRPCInvocation(constant.Generic, []any{
 		"hello",
 		[]string{"java.lang.String"},
 		[]string{"arg1"},
-	}, make(map[string]interface{}))
+	}, make(map[string]any))
 
 	mockInvoker := mock.NewMockInvoker(ctrl)
 	mockInvoker.EXPECT().GetURL().Return(invokeUrl).Times(3)

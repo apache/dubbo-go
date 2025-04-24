@@ -24,7 +24,7 @@ import (
 )
 
 // PrintInterface print the interface by level
-func PrintInterface(v interface{}) {
+func PrintInterface(v any) {
 	val := reflect.ValueOf(v).Elem()
 	typ := reflect.TypeOf(v)
 	log.Printf("%+v\n", v)

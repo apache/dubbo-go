@@ -113,7 +113,7 @@ type URL struct {
 
 	attributesLock sync.RWMutex
 	// attributes should not be transported
-	attributes map[string]interface{} `hessian:"-"`
+	attributes map[string]any `hessian:"-"`
 	// special for registry
 	SubURL *URL
 }
@@ -219,10 +219,10 @@ func WithToken(token string) Option {
 }
 
 // WithAttribute sets attribute for URL
-func WithAttribute(key string, attribute interface{}) Option {
+func WithAttribute(key string, attribute any) Option {
 	return func(url *URL) {
 		if url.attributes == nil {
-			url.attributes = make(map[string]interface{})
+			url.attributes = make(map[string]any)
 		}
 		url.attributes[key] = attribute
 	}
@@ -530,16 +530,16 @@ func (c *URL) SetParam(key string, value string) {
 	c.params.Set(key, value)
 }
 
-func (c *URL) SetAttribute(key string, value interface{}) {
+func (c *URL) SetAttribute(key string, value any) {
 	c.attributesLock.Lock()
 	defer c.attributesLock.Unlock()
 	if c.attributes == nil {
-		c.attributes = make(map[string]interface{})
+		c.attributes = make(map[string]any)
 	}
 	c.attributes[key] = value
 }
 
-func (c *URL) GetAttribute(key string) (interface{}, bool) {
+func (c *URL) GetAttribute(key string) (any, bool) {
 	c.attributesLock.RLock()
 	defer c.attributesLock.RUnlock()
 	r, ok := c.attributes[key]
@@ -815,7 +815,7 @@ func (c *URL) MergeURL(anotherUrl *URL) *URL {
 	}
 	// merge attributes
 	if mergedURL.attributes == nil {
-		mergedURL.attributes = make(map[string]interface{}, len(anotherUrl.attributes))
+		mergedURL.attributes = make(map[string]any, len(anotherUrl.attributes))
 	}
 	for attrK, attrV := range anotherUrl.attributes {
 		if _, ok := mergedURL.GetAttribute(attrK); !ok {
@@ -839,14 +839,14 @@ func (c *URL) Clone() *URL {
 		newURL.SetParam(key, value)
 		return true
 	})
-	c.RangeAttributes(func(key string, value interface{}) bool {
+	c.RangeAttributes(func(key string, value any) bool {
 		newURL.SetAttribute(key, value)
 		return true
 	})
 	return newURL
 }
 
-func (c *URL) RangeAttributes(f func(key string, value interface{}) bool) {
+func (c *URL) RangeAttributes(f func(key string, value any) bool) {
 	c.attributesLock.RLock()
 	defer c.attributesLock.RUnlock()
 	for k, v := range c.attributes {

@@ -383,7 +383,7 @@ func WithServerProtocol(opts ...protocol.Option) ServerOption {
 
 // todo(DMwangnima): this configuration would be used by filter/hystrix
 // think about a more ideal way to configure
-func WithServerFilterConf(conf interface{}) ServerOption {
+func WithServerFilterConf(conf any) ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.FilterConf = conf
 	}

@@ -2024,7 +2024,7 @@ func TestHandlerReturnsNilResponse(t *testing.T) {
 	t.Parallel()
 
 	var panics int
-	recoverPanic := func(_ context.Context, spec triple.Spec, _ http.Header, p interface{}) error {
+	recoverPanic := func(_ context.Context, spec triple.Spec, _ http.Header, p any) error {
 		panics++
 		assert.NotNil(t, p)
 		str := fmt.Sprint(p)
@@ -2151,11 +2151,11 @@ func (c failCodec) Name() string {
 	return "proto"
 }
 
-func (c failCodec) Marshal(message interface{}) ([]byte, error) {
+func (c failCodec) Marshal(message any) ([]byte, error) {
 	return nil, errors.New("boom")
 }
 
-func (c failCodec) Unmarshal(data []byte, message interface{}) error {
+func (c failCodec) Unmarshal(data []byte, message any) error {
 	protoMessage, ok := message.(proto.Message)
 	if !ok {
 		return fmt.Errorf("not protobuf: %T", message)

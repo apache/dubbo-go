@@ -48,7 +48,7 @@ func TestZoneWareInvokerWithPreferredSuccess(t *testing.T) {
 	// defer ctrl.Finish()
 
 	mockResult := &protocol.RPCResult{
-		Attrs: map[string]interface{}{constant.PreferredKey: "true"},
+		Attrs: map[string]any{constant.PreferredKey: "true"},
 		Rest:  clusterpkg.Rest{Tried: 0, Success: true},
 	}
 
@@ -106,7 +106,7 @@ func TestZoneWareInvokerWithWeightSuccess(t *testing.T) {
 			invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(
 				func(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 					return &protocol.RPCResult{
-						Attrs: map[string]interface{}{constant.WeightKey: w1},
+						Attrs: map[string]any{constant.WeightKey: w1},
 						Rest:  clusterpkg.Rest{Tried: 0, Success: true},
 					}
 				}).MaxTimes(100)
@@ -115,7 +115,7 @@ func TestZoneWareInvokerWithWeightSuccess(t *testing.T) {
 			invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(
 				func(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 					return &protocol.RPCResult{
-						Attrs: map[string]interface{}{constant.WeightKey: w2},
+						Attrs: map[string]any{constant.WeightKey: w2},
 						Rest:  clusterpkg.Rest{Tried: 0, Success: true},
 					}
 				}).MaxTimes(100)
@@ -163,7 +163,7 @@ func TestZoneWareInvokerWithZoneSuccess(t *testing.T) {
 		invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(
 			func(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 				return &protocol.RPCResult{
-					Attrs: map[string]interface{}{constant.RegistryZoneKey: zoneValue},
+					Attrs: map[string]any{constant.RegistryZoneKey: zoneValue},
 					Rest:  clusterpkg.Rest{Tried: 0, Success: true},
 				}
 			}).AnyTimes()

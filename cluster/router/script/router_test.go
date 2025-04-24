@@ -62,7 +62,7 @@ var url3 = func() *common.URL {
 func getRouteCheckArgs() ([]protocol.Invoker, protocol.Invocation, context.Context) {
 	return []protocol.Invoker{
 			protocol.NewBaseInvoker(url1()), protocol.NewBaseInvoker(url2()), protocol.NewBaseInvoker(url3()),
-		}, invocation.NewRPCInvocation("GetUser", nil, map[string]interface{}{
+		}, invocation.NewRPCInvocation("GetUser", nil, map[string]any{
 			"attachmentKey": []string{"attachmentValue"},
 		}),
 		context.TODO()

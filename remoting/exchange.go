@@ -56,7 +56,7 @@ type Request struct {
 	ID       int64
 	Version  string // protocol version
 	SerialID byte   // serial ID (ignore)
-	Data     interface{}
+	Data     any
 	TwoWay   bool
 	Event    bool
 }
@@ -77,7 +77,7 @@ type Response struct {
 	Status   uint8
 	Event    bool
 	Error    error
-	Result   interface{}
+	Result   any
 }
 
 // NewResponse create to a new Response.
@@ -125,7 +125,7 @@ type AsyncCallbackResponse struct {
 	Cause     error
 	Start     time.Time // invoke(call) start time == write start time
 	ReadStart time.Time // read start time, write duration = ReadStart - Start
-	Reply     interface{}
+	Reply     any
 }
 
 // PendingResponse is the client sends request to server, there is one
@@ -137,7 +137,7 @@ type PendingResponse struct {
 	ReadStart time.Time
 	Callback  common.AsyncCallback
 	response  *Response
-	Reply     interface{}
+	Reply     any
 	Done      chan struct{}
 }
 

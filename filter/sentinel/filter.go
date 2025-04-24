@@ -60,7 +60,7 @@ type DubboLoggerWrapper struct {
 	logger.Logger
 }
 
-func (d DubboLoggerWrapper) Debug(msg string, keysAndValues ...interface{}) {
+func (d DubboLoggerWrapper) Debug(msg string, keysAndValues ...any) {
 	d.Logger.Debug(logging.AssembleMsg(logging.GlobalCallerDepth, "DEBUG", msg, nil, keysAndValues...))
 }
 
@@ -68,7 +68,7 @@ func (d DubboLoggerWrapper) DebugEnabled() bool {
 	return true
 }
 
-func (d DubboLoggerWrapper) Info(msg string, keysAndValues ...interface{}) {
+func (d DubboLoggerWrapper) Info(msg string, keysAndValues ...any) {
 	d.Logger.Info(logging.AssembleMsg(logging.GlobalCallerDepth, "INFO", msg, nil, keysAndValues...))
 }
 
@@ -76,7 +76,7 @@ func (d DubboLoggerWrapper) InfoEnabled() bool {
 	return true
 }
 
-func (d DubboLoggerWrapper) Warn(msg string, keysAndValues ...interface{}) {
+func (d DubboLoggerWrapper) Warn(msg string, keysAndValues ...any) {
 	d.Logger.Warn(logging.AssembleMsg(logging.GlobalCallerDepth, "WARN", msg, nil, keysAndValues...))
 }
 
@@ -84,7 +84,7 @@ func (d DubboLoggerWrapper) WarnEnabled() bool {
 	return true
 }
 
-func (d DubboLoggerWrapper) Error(err error, msg string, keysAndValues ...interface{}) {
+func (d DubboLoggerWrapper) Error(err error, msg string, keysAndValues ...any) {
 	d.Logger.Warn(logging.AssembleMsg(logging.GlobalCallerDepth, "ERROR", msg, err, keysAndValues...))
 }
 

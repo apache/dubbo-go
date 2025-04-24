@@ -55,7 +55,7 @@ func (_ grpcJson) Name() string {
 }
 
 // Marshal implements grpc encoding package Codec interface method,returns the wire format of v.
-func (j grpcJson) Marshal(v interface{}) (out []byte, err error) {
+func (j grpcJson) Marshal(v any) (out []byte, err error) {
 	if pm, ok := v.(proto.Message); ok {
 		b := new(bytes.Buffer)
 		err := j.Marshaler.Marshal(b, pm)
@@ -68,7 +68,7 @@ func (j grpcJson) Marshal(v interface{}) (out []byte, err error) {
 }
 
 // Unmarshal implements grpc encoding package Codec interface method,Unmarshal parses the wire format into v.
-func (j grpcJson) Unmarshal(data []byte, v interface{}) (err error) {
+func (j grpcJson) Unmarshal(data []byte, v any) (err error) {
 	if pm, ok := v.(proto.Message); ok {
 		b := bytes.NewBuffer(data)
 		return j.Unmarshaler.Unmarshal(b, pm)

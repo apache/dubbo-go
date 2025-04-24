@@ -185,17 +185,17 @@ func CurrentTimeMillis() int64 {
 
 // CleanAllStatus is used to clean all status
 func CleanAllStatus() {
-	delete1 := func(key, _ interface{}) bool {
+	delete1 := func(key, _ any) bool {
 		methodStatistics.Delete(key)
 		return true
 	}
 	methodStatistics.Range(delete1)
-	delete2 := func(key, _ interface{}) bool {
+	delete2 := func(key, _ any) bool {
 		serviceStatistic.Delete(key)
 		return true
 	}
 	serviceStatistic.Range(delete2)
-	delete3 := func(key, _ interface{}) bool {
+	delete3 := func(key, _ any) bool {
 		invokerBlackList.Delete(key)
 		return true
 	}
@@ -225,7 +225,7 @@ func RemoveInvokerUnhealthyStatus(invoker Invoker) {
 // GetBlackListInvokers get at most size of blockSize invokers from black list
 func GetBlackListInvokers(blockSize int) []Invoker {
 	resultIvks := make([]Invoker, 0, 16)
-	invokerBlackList.Range(func(k, v interface{}) bool {
+	invokerBlackList.Range(func(k, v any) bool {
 		resultIvks = append(resultIvks, v.(Invoker))
 		return true
 	})

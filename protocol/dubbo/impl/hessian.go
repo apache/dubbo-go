@@ -124,11 +124,11 @@ func marshalRequest(encoder *hessian.Encoder, p DubboPackage) ([]byte, error) {
 	_ = encoder.Encode(service.Version)
 	_ = encoder.Encode(service.Method)
 
-	args, ok := request.Params.([]interface{})
+	args, ok := request.Params.([]any)
 
 	if !ok {
 		logger.Infof("request args are: %+v", request.Params)
-		return nil, perrors.Errorf("@params is not of type: []interface{}")
+		return nil, perrors.Errorf("@params is not of type: []any")
 	}
 	types, err := GetArgsTypeList(args)
 	if err != nil {
@@ -199,17 +199,17 @@ func version2Int(version string) int {
 
 func unmarshalRequestBody(body []byte, p *DubboPackage) error {
 	if p.Body == nil {
-		p.SetBody(make([]interface{}, 7))
+		p.SetBody(make([]any, 7))
 	}
 	decoder := hessian.NewDecoder(body)
 	var (
 		err                                                     error
-		dubboVersion, target, serviceVersion, method, argsTypes interface{}
-		args                                                    []interface{}
+		dubboVersion, target, serviceVersion, method, argsTypes any
+		args                                                    []any
 	)
-	req, ok := p.Body.([]interface{})
+	req, ok := p.Body.([]any)
 	if !ok {
-		return perrors.Errorf("@reqObj is not of type: []interface{}")
+		return perrors.Errorf("@reqObj is not of type: []any")
 	}
 	dubboVersion, err = decoder.Decode()
 	if err != nil {
@@ -242,7 +242,7 @@ func unmarshalRequestBody(body []byte, p *DubboPackage) error {
 	req[4] = argsTypes
 
 	ats := hessian.DescRegex.FindAllString(argsTypes.(string), -1)
-	var arg interface{}
+	var arg any
 	for i := 0; i < len(ats); i++ {
 		arg, err = decoder.Decode()
 		if err != nil {
@@ -258,10 +258,10 @@ func unmarshalRequestBody(body []byte, p *DubboPackage) error {
 	}
 
 	if attachments == nil || attachments == "" {
-		attachments = map[interface{}]interface{}{constant.InterfaceKey: target}
+		attachments = map[any]any{constant.InterfaceKey: target}
 	}
 
-	if v, ok := attachments.(map[interface{}]interface{}); ok {
+	if v, ok := attachments.(map[any]any); ok {
 		v[DUBBO_VERSION_KEY] = dubboVersion
 		req[6] = ToMapStringInterface(v)
 		buildServerSidePackageBody(p)
@@ -292,7 +292,7 @@ func unmarshalResponseBody(body []byte, p *DubboPackage) error {
 			if err != nil {
 				return perrors.WithStack(err)
 			}
-			if v, ok := attachments.(map[interface{}]interface{}); ok {
+			if v, ok := attachments.(map[any]any); ok {
 				atta := ToMapStringInterface(v)
 				response.Attachments = atta
 			} else {
@@ -317,7 +317,7 @@ func unmarshalResponseBody(body []byte, p *DubboPackage) error {
 			if err != nil {
 				return perrors.WithStack(err)
 			}
-			if v, ok := attachments.(map[interface{}]interface{}); ok {
+			if v, ok := attachments.(map[any]any); ok {
 				atta := ToMapStringInterface(v)
 				response.Attachments = atta
 			} else {
@@ -333,7 +333,7 @@ func unmarshalResponseBody(body []byte, p *DubboPackage) error {
 			if err != nil {
 				return perrors.WithStack(err)
 			}
-			if v, ok := attachments.(map[interface{}]interface{}); ok {
+			if v, ok := attachments.(map[any]any); ok {
 				atta := ToMapStringInterface(v)
 				response.Attachments = atta
 			} else {
@@ -346,11 +346,11 @@ func unmarshalResponseBody(body []byte, p *DubboPackage) error {
 }
 
 func buildServerSidePackageBody(pkg *DubboPackage) {
-	req := pkg.GetBody().([]interface{}) // length of body should be 7
+	req := pkg.GetBody().([]any) // length of body should be 7
 	if len(req) > 0 {
 		var dubboVersion, argsTypes string
-		var args []interface{}
-		var attachments map[string]interface{}
+		var args []any
+		var attachments map[string]any
 		svc := Service{}
 		if req[0] != nil {
 			dubboVersion = req[0].(string)
@@ -368,10 +368,10 @@ func buildServerSidePackageBody(pkg *DubboPackage) {
 			argsTypes = req[4].(string)
 		}
 		if req[5] != nil {
-			args = req[5].([]interface{})
+			args = req[5].([]any)
 		}
 		if req[6] != nil {
-			attachments = req[6].(map[string]interface{})
+			attachments = req[6].(map[string]any)
 		}
 		if svc.Path == "" && attachments[constant.PathKey] != nil && len(attachments[constant.PathKey].(string)) > 0 {
 			svc.Path = attachments[constant.PathKey].(string)
@@ -385,7 +385,7 @@ func buildServerSidePackageBody(pkg *DubboPackage) {
 			svc.Group = attachments[constant.GroupKey].(string)
 		}
 		pkg.SetService(svc)
-		pkg.SetBody(map[string]interface{}{
+		pkg.SetBody(map[string]any{
 			"dubboVersion": dubboVersion,
 			"argsTypes":    argsTypes,
 			"args":         args,
@@ -395,7 +395,7 @@ func buildServerSidePackageBody(pkg *DubboPackage) {
 	}
 }
 
-func GetArgsTypeList(args []interface{}) (string, error) {
+func GetArgsTypeList(args []any) (string, error) {
 	var (
 		typ   string
 		types string
@@ -419,7 +419,7 @@ func GetArgsTypeList(args []interface{}) (string, error) {
 	return types, nil
 }
 
-func getArgType(v interface{}) string {
+func getArgType(v any) string {
 	if v == nil {
 		return "V"
 	}
@@ -480,7 +480,7 @@ func getArgType(v interface{}) string {
 		return "[Ljava.lang.String;"
 	case []hessian.Object:
 		return "[Ljava.lang.Object;"
-	case map[interface{}]interface{}:
+	case map[any]any:
 		// return  "java.util.HashMap"
 		return "java.util.Map"
 	case hessian.POJOEnum:
@@ -535,8 +535,8 @@ func getArgType(v interface{}) string {
 	// return "java.lang.RuntimeException"
 }
 
-func ToMapStringInterface(origin map[interface{}]interface{}) map[string]interface{} {
-	dest := make(map[string]interface{}, len(origin))
+func ToMapStringInterface(origin map[any]any) map[string]any {
+	dest := make(map[string]any, len(origin))
 	for k, v := range origin {
 		if kv, ok := k.(string); ok {
 			if v == nil {

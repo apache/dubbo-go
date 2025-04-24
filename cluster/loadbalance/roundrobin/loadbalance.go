@@ -120,7 +120,7 @@ func (lb *rrLoadBalance) Select(invokers []protocol.Invoker, invocation protocol
 func cleanIfRequired(clean bool, invokers *cachedInvokers, now *time.Time) {
 	if clean && atomic.CompareAndSwapInt32(&state, Complete, Updating) {
 		defer atomic.CompareAndSwapInt32(&state, Updating, Complete)
-		invokers.Range(func(identify, robin interface{}) bool {
+		invokers.Range(func(identify, robin any) bool {
 			weightedRoundRobin := robin.(*weightedRoundRobin)
 			elapsed := now.Sub(*weightedRoundRobin.lastUpdate).Nanoseconds()
 			if elapsed > recyclePeriod {

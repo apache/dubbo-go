@@ -46,7 +46,7 @@ func createInstance() registry.ServiceInstance {
 }
 
 type mockMetadataService struct {
-	urls []interface{}
+	urls []any
 }
 
 func (m *mockMetadataService) Reference() string {
@@ -77,7 +77,7 @@ func (m *mockMetadataService) PublishServiceDefinition(*common.URL) error {
 	panic("implement me")
 }
 
-func (m *mockMetadataService) GetExportedURLs(string, string, string, string) ([]interface{}, error) {
+func (m *mockMetadataService) GetExportedURLs(string, string, string, string) ([]any, error) {
 	return m.urls, nil
 }
 

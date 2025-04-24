@@ -318,7 +318,7 @@ func file_proto_metadata_service_v2_proto_rawDescGZIP() []byte {
 }
 
 var file_proto_metadata_service_v2_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
-var file_proto_metadata_service_v2_proto_goTypes = []interface{}{
+var file_proto_metadata_service_v2_proto_goTypes = []any{
 	(*MetadataRequest)(nil), // 0: org.apache.dubbo.metadata.MetadataRequest
 	(*MetadataInfoV2)(nil),  // 1: org.apache.dubbo.metadata.MetadataInfoV2
 	(*ServiceInfoV2)(nil),   // 2: org.apache.dubbo.metadata.ServiceInfoV2
@@ -344,7 +344,7 @@ func file_proto_metadata_service_v2_proto_init() {
 		return
 	}
 	if !protoimpl.UnsafeEnabled {
-		file_proto_metadata_service_v2_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
+		file_proto_metadata_service_v2_proto_msgTypes[0].Exporter = func(v any, i int) any {
 			switch v := v.(*MetadataRequest); i {
 			case 0:
 				return &v.state
@@ -356,7 +356,7 @@ func file_proto_metadata_service_v2_proto_init() {
 				return nil
 			}
 		}
-		file_proto_metadata_service_v2_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+		file_proto_metadata_service_v2_proto_msgTypes[1].Exporter = func(v any, i int) any {
 			switch v := v.(*MetadataInfoV2); i {
 			case 0:
 				return &v.state
@@ -368,7 +368,7 @@ func file_proto_metadata_service_v2_proto_init() {
 				return nil
 			}
 		}
-		file_proto_metadata_service_v2_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+		file_proto_metadata_service_v2_proto_msgTypes[2].Exporter = func(v any, i int) any {
 			switch v := v.(*ServiceInfoV2); i {
 			case 0:
 				return &v.state

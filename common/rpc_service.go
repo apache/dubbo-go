@@ -36,8 +36,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/dubboutil"
 )
 
-// RPCService the type alias of interface{}
-type RPCService = interface{}
+// RPCService the type alias of any
+type RPCService = any
 
 // ReferencedRPCService is the rpc service interface which wraps base Reference method.
 //
@@ -46,7 +46,7 @@ type ReferencedRPCService interface {
 	Reference() string
 }
 
-// TriplePBService is  the type alias of interface{}
+// TriplePBService is  the type alias of any
 type TriplePBService interface {
 	XXX_InterfaceName() string
 }
@@ -83,7 +83,7 @@ type AsyncCallbackService interface {
 }
 
 // CallbackResponse for different protocol
-type CallbackResponse interface{}
+type CallbackResponse any
 
 // AsyncCallback async callback method
 type AsyncCallback func(response CallbackResponse)
@@ -422,16 +422,16 @@ func suiteMethod(method reflect.Method) *MethodType {
 // ServiceInfo is meta info of a service
 type ServiceInfo struct {
 	InterfaceName string
-	ServiceType   interface{}
+	ServiceType   any
 	Methods       []MethodInfo
-	Meta          map[string]interface{}
+	Meta          map[string]any
 }
 
 type MethodInfo struct {
 	Name           string
 	Type           string
-	ReqInitFunc    func() interface{}
-	StreamInitFunc func(baseStream interface{}) interface{}
-	MethodFunc     func(ctx context.Context, args []interface{}, handler interface{}) (interface{}, error)
-	Meta           map[string]interface{}
+	ReqInitFunc    func() any
+	StreamInitFunc func(baseStream any) any
+	MethodFunc     func(ctx context.Context, args []any, handler any) (any, error)
+	Meta           map[string]any
 }

@@ -69,8 +69,8 @@ func TestMarshalRequestWithTypedNilPointer(t *testing.T) {
 			Method:  "Echo",
 		},
 		Body: &RequestPayload{
-			Params: []interface{}{(*int32)(nil)},
-			Attachments: map[string]interface{}{
+			Params: []any{(*int32)(nil)},
+			Attachments: map[string]any{
 				"key": "value",
 			},
 		},
@@ -91,8 +91,8 @@ func TestMarshalRequestWithNonNilPointer(t *testing.T) {
 			Method:  "Echo",
 		},
 		Body: &RequestPayload{
-			Params: []interface{}{&val},
-			Attachments: map[string]interface{}{
+			Params: []any{&val},
+			Attachments: map[string]any{
 				"key": "value",
 			},
 		},

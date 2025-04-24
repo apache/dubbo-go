@@ -226,7 +226,7 @@ func (dir *RegistryDirectory) refreshAllInvokers(events []*registry.ServiceEvent
 		dir.registerLock.Lock()
 		defer dir.registerLock.Unlock()
 		// get need clear invokers from original invoker list
-		dir.cacheInvokersMap.Range(func(k, v interface{}) bool {
+		dir.cacheInvokersMap.Range(func(k, v any) bool {
 			if !dir.eventMatched(k.(string), events) {
 				// delete unused invoker from cache
 				if invoker := dir.uncacheInvokerWithKey(k.(string)); invoker != nil {
@@ -338,7 +338,7 @@ func (dir *RegistryDirectory) convertUrl(res *registry.ServiceEvent) *common.URL
 func (dir *RegistryDirectory) toGroupInvokers() []protocol.Invoker {
 	groupInvokersMap := make(map[string][]protocol.Invoker)
 
-	dir.cacheInvokersMap.Range(func(key, value interface{}) bool {
+	dir.cacheInvokersMap.Range(func(key, value any) bool {
 		invoker := value.(protocol.Invoker)
 		group := invoker.GetURL().GetParam(constant.GroupKey, "")
 		groupInvokersMap[group] = append(groupInvokersMap[group], invoker)
@@ -374,7 +374,7 @@ func (dir *RegistryDirectory) toGroupInvokers() []protocol.Invoker {
 func (dir *RegistryDirectory) uncacheInvokerWithClusterID(clusterID string) []protocol.Invoker {
 	logger.Debugf("All service will be deleted in cache invokers with clusterID %s!", clusterID)
 	invokerKeys := make([]string, 0)
-	dir.cacheInvokersMap.Range(func(key, cacheInvoker interface{}) bool {
+	dir.cacheInvokersMap.Range(func(key, cacheInvoker any) bool {
 		if cacheInvoker.(protocol.Invoker).GetURL().GetParam(constant.MeshClusterIDKey, "") == clusterID {
 			invokerKeys = append(invokerKeys, key.(string))
 		}

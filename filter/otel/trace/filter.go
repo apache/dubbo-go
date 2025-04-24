@@ -124,7 +124,7 @@ func (f *otelClientFilter) Invoke(ctx context.Context, invoker protocol.Invoker,
 
 	attachments := invocation.Attachments()
 	if attachments == nil {
-		attachments = map[string]interface{}{}
+		attachments = map[string]any{}
 	}
 	Inject(ctx, attachments, f.Propagators)
 	for k, v := range attachments {
