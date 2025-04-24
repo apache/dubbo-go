@@ -52,21 +52,21 @@ var attachmentKey = []string{
 	constant.VersionKey, tripleConstant.TripleServiceGroup, tripleConstant.TripleServiceVersion,
 }
 
-// DubboInvoker is implement of protocol.Invoker, a dubboInvoker refer to one service and ip.
-type DubboInvoker struct {
+// Dubbo3Invoker is implement of protocol.Invoker, a dubbo3Invoker refer to one service and ip.
+type Dubbo3Invoker struct {
 	protocol.BaseInvoker
 	// the net layer client, it is focus on network communication.
 	client *triple.TripleClient
-	// quitOnce is used to make sure DubboInvoker is only destroyed once
+	// quitOnce is used to make sure Dubbo3Invoker is only destroyed once
 	quitOnce sync.Once
 	// timeout for service(interface) level.
 	timeout time.Duration
-	// clientGuard is the client lock of dubbo invoker
+	// clientGuard is the client lock of dubbo3 invoker
 	clientGuard *sync.RWMutex
 }
 
-// NewDubboInvoker constructor
-func NewDubboInvoker(url *common.URL) (*DubboInvoker, error) {
+// NewDubbo3Invoker constructor
+func NewDubbo3Invoker(url *common.URL) (*Dubbo3Invoker, error) {
 	rt := config.GetConsumerConfig().RequestTimeout
 
 	timeout := url.GetParamDuration(constant.TimeoutKey, rt)
@@ -131,7 +131,7 @@ func NewDubboInvoker(url *common.URL) (*DubboInvoker, error) {
 		return nil, err
 	}
 
-	return &DubboInvoker{
+	return &Dubbo3Invoker{
 		BaseInvoker: *protocol.NewBaseInvoker(url),
 		client:      client,
 		timeout:     timeout,
@@ -139,14 +139,14 @@ func NewDubboInvoker(url *common.URL) (*DubboInvoker, error) {
 	}, nil
 }
 
-func (di *DubboInvoker) setClient(client *triple.TripleClient) {
+func (di *Dubbo3Invoker) setClient(client *triple.TripleClient) {
 	di.clientGuard.Lock()
 	defer di.clientGuard.Unlock()
 
 	di.client = client
 }
 
-func (di *DubboInvoker) getClient() *triple.TripleClient {
+func (di *Dubbo3Invoker) getClient() *triple.TripleClient {
 	di.clientGuard.RLock()
 	defer di.clientGuard.RUnlock()
 
@@ -154,7 +154,7 @@ func (di *DubboInvoker) getClient() *triple.TripleClient {
 }
 
 // Invoke call remoting.
-func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
+func (di *Dubbo3Invoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
 	var (
 		result protocol.RPCResult
 	)
@@ -162,7 +162,7 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 	if !di.BaseInvoker.IsAvailable() {
 		// Generally, the case will not happen, because the invoker has been removed
 		// from the invoker list before destroy,so no new request will enter the destroyed invoker
-		logger.Warnf("this dubboInvoker is destroyed")
+		logger.Warnf("this dubbo3Invoker is destroyed")
 		result.Err = protocol.ErrDestroyedInvoker
 		return &result
 	}
@@ -234,7 +234,7 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 }
 
 // get timeout including methodConfig
-func (di *DubboInvoker) getTimeout(invocation *invocation_impl.RPCInvocation) time.Duration {
+func (di *Dubbo3Invoker) getTimeout(invocation *invocation_impl.RPCInvocation) time.Duration {
 	timeout := di.GetURL().GetParam(strings.Join([]string{constant.MethodKeys, invocation.MethodName(), constant.TimeoutKey}, "."), "")
 	if len(timeout) != 0 {
 		if t, err := time.ParseDuration(timeout); err == nil {
@@ -249,7 +249,7 @@ func (di *DubboInvoker) getTimeout(invocation *invocation_impl.RPCInvocation) ti
 }
 
 // IsAvailable check if invoker is available, now it is useless
-func (di *DubboInvoker) IsAvailable() bool {
+func (di *Dubbo3Invoker) IsAvailable() bool {
 	client := di.getClient()
 	if client != nil {
 		// FIXME here can't check if tcp server is started now!!!
@@ -259,7 +259,7 @@ func (di *DubboInvoker) IsAvailable() bool {
 }
 
 // Destroy destroy dubbo3 client invoker.
-func (di *DubboInvoker) Destroy() {
+func (di *Dubbo3Invoker) Destroy() {
 	di.quitOnce.Do(func() {
 		di.BaseInvoker.Destroy()
 		client := di.getClient()
