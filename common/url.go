@@ -781,13 +781,11 @@ func (c *URL) ToMap() map[string]string {
 // except constant.LoadbalanceKey, constant.ClusterKey, constant.RetriesKey, constant.TimeoutKey.
 // due to URL is not thread-safe, so this method is not thread-safe
 func (c *URL) MergeURL(anotherUrl *URL) *URL {
-	// put the anotherUrl into the pool
-	defer releaseURL(anotherUrl)
 	// After Clone, it is a new URL that there is no thread safe issue.
 	mergedURL := c.Clone()
 	params := mergedURL.GetParams()
 	// iterator the anotherUrl if c not have the key ,merge in
-	// anotherUrl usually will not changed. so change RangeParams to GetParams to avoid the string value copy.// Group get group
+	// anotherUrl usually will not be changed. so change RangeParams to GetParams to avoid the string value copy.// Group get group
 	for key, value := range anotherUrl.GetParams() {
 		if _, ok := mergedURL.GetNonDefaultParam(key); !ok {
 			if len(value) > 0 {
@@ -996,14 +994,31 @@ func GetSubscribeName(url *URL) string {
 	return buffer.String()
 }
 
+func (c *URL) Reset() {
+	c.params = make(url.Values)
+	c.attributes = make(map[string]interface{})
+	c.Methods = make([]string, 0)
+	c.SubURL = nil
+
+	c.Ip = ""
+	c.Username = ""
+	c.Password = ""
+	c.Location = ""
+	c.Path = ""
+	c.Port = ""
+	c.PrimitiveURL = ""
+	c.Protocol = ""
+}
+
+func ReleaseURL(c *URL) {
+	c.Reset()
+	urlPool.Put(c)
+}
+
 func appendParam(target *bytes.Buffer, url *URL, key string) {
 	value := url.GetParam(key, "")
 	target.Write([]byte(constant.NacosServiceNameSeparator))
 	if strings.TrimSpace(value) != "" {
 		target.Write([]byte(value))
 	}
-}
-
-func releaseURL(u *URL) {
-	urlPool.Put(u)
 }
