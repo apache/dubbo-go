@@ -21,12 +21,6 @@ linters-settings:
       - nto
   lll:
     line-length: 140
-  gofmt:
-    # simplify code: gofmt with `-s` option, true by default
-    simplify: true
-    rewrite-rules:
-    - pattern: interface{}
-      replacement: any
   goimports:
     local-prefixes: github.com/golangci/golangci-lint
   gocritic:
@@ -43,7 +37,6 @@ linters:
     - govet
     - staticcheck
     - ineffassign
-    - gofmt
     - misspell
 
 issues:
