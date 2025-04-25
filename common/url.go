@@ -1010,7 +1010,7 @@ func (c *URL) Reset() {
 	c.Protocol = ""
 }
 
-func ReleaseURL(c *URL) {
+func (c *URL) ReleaseURL() {
 	c.Reset()
 	urlPool.Put(c)
 }
