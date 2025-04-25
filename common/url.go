@@ -21,9 +21,11 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
+	"maps"
 	"math"
 	"net"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -829,20 +831,34 @@ func (c *URL) MergeURL(anotherUrl *URL) *URL {
 
 // Clone will copy the URL
 func (c *URL) Clone() *URL {
-	newURL := &URL{}
-	if err := copier.Copy(newURL, c); err != nil {
-		// this is impossible
-		return newURL
+	newURL := &URL{
+		Protocol:     c.Protocol,
+		Location:     c.Location,
+		Ip:           c.Ip,
+		Port:         c.Port,
+		PrimitiveURL: c.PrimitiveURL,
+		Path:         c.Path,
+		Username:     c.Username,
+		Password:     c.Password,
+		Methods:      slices.Clone(c.Methods),
 	}
-	newURL.params = url.Values{}
-	c.RangeParams(func(key, value string) bool {
-		newURL.SetParam(key, value)
-		return true
-	})
-	c.RangeAttributes(func(key string, value interface{}) bool {
-		newURL.SetAttribute(key, value)
-		return true
-	})
+
+	c.paramsLock.RLock()
+	if c.params != nil {
+		newURL.params = maps.Clone(c.params)
+	}
+	c.paramsLock.RUnlock()
+
+	c.attributesLock.RLock()
+	if c.attributes != nil {
+		newURL.attributes = maps.Clone(c.attributes)
+	}
+	c.attributesLock.RUnlock()
+
+	if c.SubURL != nil {
+		newURL.SubURL = c.SubURL.Clone()
+	}
+
 	return newURL
 }
 
