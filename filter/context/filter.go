@@ -125,8 +125,8 @@ func (f *contextFilter) Invoke(ctx context.Context, invoker protocol.Invoker, in
 func (f *contextFilter) OnResponse(ctx context.Context, result protocol.Result, _ protocol.Invoker,
 	_ protocol.Invocation) protocol.Result {
 
-	attachments := ctx.Value(constant.AttachmentServerKey).(map[string]interface{})
-	filtered := make(map[string]interface{})
+	attachments := ctx.Value(constant.AttachmentServerKey).(map[string]any)
+	filtered := make(map[string]any)
 	for key, value := range attachments {
 		if _, exists := unloadingKeys[strings.ToLower(key)]; !exists {
 			filtered[key] = value
