@@ -251,7 +251,6 @@ func (s *Server) handleServiceWithInfo(interfaceName string, invoker protocol.In
 					ctx = context.WithValue(ctx, constant.AttachmentServerKey, capturedAttachments)
 					invo := invocation.NewRPCInvocation(m.Name, args, attachments)
 					res := invoker.Invoke(ctx, invo)
-
 					// todo(DMwangnima): modify InfoInvoker to get a unified processing logic
 					// please refer to server/InfoInvoker.Invoke()
 					var triResp *tri.Response
@@ -259,12 +258,8 @@ func (s *Server) handleServiceWithInfo(interfaceName string, invoker protocol.In
 						triResp = existingResp
 					} else {
 						// please refer to proxy/proxy_factory/ProxyInvoker.Invoke
-						triResp = tri.NewResponse([]interface{}{res.Result()})
+						triResp = tri.NewResponse([]any{res.Result()})
 					}
-          
-					// please refer to proxy/proxy_factory/ProxyInvoker.Invoke
-					triResp := tri.NewResponse([]any{res.Result()})
-
 					for k, v := range res.Attachments() {
 						switch val := v.(type) {
 						case string:
@@ -277,7 +272,6 @@ func (s *Server) handleServiceWithInfo(interfaceName string, invoker protocol.In
 							triResp.Header().Set(k, fmt.Sprintf("%v", val))
 						}
 					}
-					// todo(DMwangnima): modify InfoInvoker to get a unified processing logic
 					return triResp, res.Error()
 				},
 				opts...,
