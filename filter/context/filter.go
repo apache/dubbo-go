@@ -120,16 +120,18 @@ func (f *contextFilter) Invoke(ctx context.Context, invoker protocol.Invoker, in
 // OnResponse pass attachments to result
 func (f *contextFilter) OnResponse(ctx context.Context, result protocol.Result, _ protocol.Invoker,
 	_ protocol.Invocation) protocol.Result {
-
-	attachments := ctx.Value(constant.AttachmentServerKey).(map[string]any)
-	filtered := make(map[string]any)
-	for key, value := range attachments {
-		if _, exists := unloadingKeys[strings.ToLower(key)]; !exists {
-			filtered[key] = value
+	attachmentsRaw := ctx.Value(constant.AttachmentServerKey)
+	if attachmentsRaw != nil {
+		if attachments, ok := attachmentsRaw.(map[string]any); ok {
+			filtered := make(map[string]any)
+			for key, value := range attachments {
+				if _, exists := unloadingKeys[strings.ToLower(key)]; !exists {
+					filtered[key] = value
+				}
+			}
+			result.SetAttachments(filtered)
 		}
 	}
-
-	result.SetAttachments(filtered)
 
 	return result
 }
