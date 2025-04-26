@@ -247,15 +247,40 @@ func (s *Server) handleServiceWithInfo(interfaceName string, invoker protocol.In
 					attachments := generateAttachments(req.Header())
 					// inject attachments
 					ctx = context.WithValue(ctx, constant.AttachmentKey, attachments)
+					capturedAttachments := make(map[string]interface{})
+					ctx = context.WithValue(ctx, constant.AttachmentServerKey, capturedAttachments)
 					invo := invocation.NewRPCInvocation(m.Name, args, attachments)
 					res := invoker.Invoke(ctx, invo)
+					for k, v := range capturedAttachments {
+						res.AddAttachment(k, v)
+					}
+
 					// todo(DMwangnima): modify InfoInvoker to get a unified processing logic
 					// please refer to server/InfoInvoker.Invoke()
-					if triResp, ok := res.Result().(*tri.Response); ok {
-						return triResp, res.Error()
+					var triResp *tri.Response
+					if existingResp, ok := res.Result().(*tri.Response); ok {
+						triResp = existingResp
+					} else {
+						// please refer to proxy/proxy_factory/ProxyInvoker.Invoke
+						triResp = tri.NewResponse([]interface{}{res.Result()})
 					}
+          
 					// please refer to proxy/proxy_factory/ProxyInvoker.Invoke
 					triResp := tri.NewResponse([]any{res.Result()})
+
+					for k, v := range res.Attachments() {
+						switch val := v.(type) {
+						case string:
+							triResp.Header().Set(k, val)
+						case []string:
+							if len(val) > 0 {
+								triResp.Header().Set(k, val[0])
+							}
+						default:
+							triResp.Header().Set(k, fmt.Sprintf("%v", val))
+						}
+					}
+					// todo(DMwangnima): modify InfoInvoker to get a unified processing logic
 					return triResp, res.Error()
 				},
 				opts...,

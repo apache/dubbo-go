@@ -321,6 +321,7 @@ const (
 	Tagkey                            = "dubbo.tag" // key of tag
 	ConditionKey                      = "dubbo.condition"
 	AttachmentKey                     = DubboCtxKey("attachment") // key in context in invoker
+	AttachmentServerKey               = DubboCtxKey("server-attachment")
 	TagRouterFactoryKey               = "tag"
 	AffinityAppRouterFactoryKey       = "application.affinity"
 	AffinityServiceRouterFactoryKey   = "service.affinity"
